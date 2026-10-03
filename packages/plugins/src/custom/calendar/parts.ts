@@ -1,9 +1,12 @@
-import type { ICalendar, TCalendarCollection, TCalendarDate } from '@soldy-ui/core'
+import type { ICalendar, TCalendarCollection, TCalendarDate, TCalendarPicker } from '@soldy-ui/core'
 import type { TCollectionElements } from '../collection'
-import type { TCalendarDay, TCalendarPager } from './types'
+import type { TCalendarDay, TCalendarPager, TCalendarPickerHit, TCalendarPickerPart } from './types'
 
 /** Кнопки листания — по частям разметки владельца (`__prev`, `__next`). */
 const PAGERS: readonly TCalendarPager[] = ['prev', 'next']
+
+/** Кнопки шапки панели выбора — `__picker-prev`, `__picker-next`, `__picker-heading`. */
+const PICKER_PARTS: readonly TCalendarPickerPart[] = ['prev', 'next', 'heading']
 
 /**
  * День календаря, в узле которого лежит `target`, — один поиск на оба плагина
@@ -41,6 +44,41 @@ export function dayElementOf(
 	const element = item ? (elements?.getElementByItem(item) ?? null) : null
 
 	return element?.isConnected ? element : null
+}
+
+/**
+ * Кнопка шапки панели выбора месяца и года, в которой лежит `target`, панель
+ * этой кнопки и место панели среди `pickers` — один поиск на оба плагина
+ * календаря.
+ *
+ * Своей и своего места панель делает не место в DOM, а шапка: `id` шапки
+ * места пишет плагин связок календаря, и панель, в которой его нет, чужая —
+ * например, панель календаря, вложенного в этот. Части находят по классам
+ * владельца (`classes.resolve`), как кнопки листания.
+ */
+export function pickerPartOf(
+	owner: ICalendar,
+	pickers: readonly TCalendarPicker[],
+	target: EventTarget | null,
+): TCalendarPickerHit | undefined {
+	if (!(target instanceof Element)) return undefined
+
+	for (const part of PICKER_PARTS) {
+		const button = target.closest(owner.classes.resolve(`__picker-${part}`, { point: true }))
+		const panel = button?.closest(owner.classes.resolve('__picker', { point: true }))
+
+		if (!panel) continue
+
+		const index = pickers.findIndex(({ labelledBy }) => {
+			const heading = labelledBy ? panel.ownerDocument.getElementById(labelledBy) : null
+
+			return heading !== null && panel.contains(heading)
+		})
+
+		return index === -1 ? undefined : { part, index, panel }
+	}
+
+	return undefined
 }
 
 /**

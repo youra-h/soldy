@@ -22,7 +22,13 @@ import {
 	required,
 	triggerResize,
 } from './helpers'
-import { TAnchorPlugin, TDismissPlugin, TElementPlugin, TPluginBundle } from '@soldy-ui/plugins'
+import {
+	TAnchorPlugin,
+	TDismissPlugin,
+	TElementPlugin,
+	TFrameLayoutPlugin,
+	TPluginBundle,
+} from '@soldy-ui/plugins'
 import type { IDismissPluginOptions } from '@soldy-ui/plugins'
 import { FRAME_LAYER_ATTRIBUTE, TFrame, TPopover } from '@soldy-ui/core'
 
@@ -184,6 +190,35 @@ describe('привязка к якорю', () => {
 
 		expect(frame.x).toBe(10)
 		expect(frame.y).toBe(20)
+	})
+
+	/**
+	 * Панель внутри контейнера (`contained`) встаёт в нём там, где решит тема:
+	 * координаты окна ей ни к чему, и стороны у неё нет.
+	 */
+	it('панель внутри контейнера якорь не двигает и стороны не держит', () => {
+		const frame = new TFrame({ position: 'fixed' })
+		const plugin = anchorFor(frame)
+
+		plugin.setAnchor(anchorAt({ left: 100, bottom: 250 }))
+
+		expect(frame.y).toBe(250)
+		expect(frame.dataset.get('placement')).toBe('bottom-start')
+
+		frame.contained = true
+
+		expect(frame.dataset.get('placement')).toBeUndefined()
+
+		plugin.setAnchor(anchorAt({ left: 300, bottom: 400 }))
+
+		expect(frame.x).toBe(100)
+		expect(frame.y).toBe(250)
+
+		frame.contained = false
+
+		expect(frame.x).toBe(300)
+		expect(frame.y).toBe(400)
+		expect(frame.dataset.get('placement')).toBe('bottom-start')
 	})
 
 	it('offset сдвигает панель вниз при bottom-*', () => {
@@ -1360,5 +1395,41 @@ describe('нажатие мимо', () => {
 
 			expect(seen).toEqual([true])
 		})
+	})
+})
+
+/**
+ * Раскладка Frame внутри контейнера: `absolute` от позиционированного предка
+ * и без координат — где встать, решает тема, а инлайн `left`/`top` её бы
+ * перебил.
+ */
+describe('раскладка панели внутри контейнера', () => {
+	function layoutOf(frame: TFrame): TFrameLayoutPlugin {
+		const plugin = new TFrameLayoutPlugin()
+
+		plugin.install(createPluginContext(frame, []))
+
+		return plugin
+	}
+
+	it('contained — absolute без left и top; снятый — снова координаты и position', () => {
+		const frame = new TFrame({ position: 'fixed', x: 10, y: 20, width: 300 })
+		const layout = layoutOf(frame)
+		const changes = vi.fn()
+
+		layout.events.on('change:styles', changes)
+		frame.contained = true
+
+		expect(changes).toHaveBeenCalledTimes(1)
+		expect(layout.styles).toEqual({
+			position: 'absolute',
+			width: '300px',
+			height: 'auto',
+			'z-index': 0,
+		})
+
+		frame.contained = false
+
+		expect(layout.styles).toMatchObject({ position: 'fixed', left: '10px', top: '20px' })
 	})
 })

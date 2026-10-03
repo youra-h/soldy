@@ -47,12 +47,16 @@ export default { ...SetupPopover, components: { Frame, Button, Icon } }
 			Открытость — это `visible` панели, а не `rendered`: закрытие её
 			прячет, а не размонтирует. Сторону у края окна выбирает
 			`TAnchorPlugin` поверх `placement`.
+
+			`contained` оставляет панель в корне, без телепорта: она накрывает
+			ближайший позиционированный предок, и якорь её не двигает.
 		-->
 		<Frame
 			embedded="popover.frame"
 			class="s-popover__panel"
 			tabindex="-1"
 			:visible="open"
+			:contained="contained"
 			position="fixed"
 			:anchor_anchor="rootElement"
 			:anchor_placement="placement"

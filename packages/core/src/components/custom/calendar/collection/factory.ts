@@ -4,6 +4,7 @@ import TCalendarItem from '../item/item.class'
 import type { ICalendarItem } from '../item/types'
 import {
 	TCalendarFocusExtension,
+	TCalendarPickerExtension,
 	TCalendarSelectionExtension,
 	TCalendarViewExtension,
 } from './extensions'
@@ -17,8 +18,9 @@ import {
  *
  * Порядок значим: то, что в `install` подписывается на соседа, ставится после
  * него. `focus` слушает `view`, `selection` — `focus` (предпросмотр диапазона
- * идёт до фокуса). В том же порядке они узнают о пришедшем календаре: вид
- * строит сетки раньше, чем фокус встаёт в показанный месяц.
+ * идёт до фокуса), `picker` — `view` (панель показывает месяц своей сетки).
+ * В том же порядке они узнают о пришедшем календаре: вид строит сетки
+ * раньше, чем фокус встаёт в показанный месяц.
  */
 export function calendarExtensions(): TExtensionSet<ICalendarItem> {
 	return {
@@ -26,5 +28,6 @@ export function calendarExtensions(): TExtensionSet<ICalendarItem> {
 		view: () => new TCalendarViewExtension(),
 		focus: () => new TCalendarFocusExtension(),
 		selection: () => new TCalendarSelectionExtension(),
+		picker: () => new TCalendarPickerExtension(),
 	}
 }

@@ -60,6 +60,14 @@ export type TCalendarEvents = TValueControlEvents<TCalendarValue> & {
 	'change:prevLabel': (value: string) => void
 	/** change:nextLabel */
 	'change:nextLabel': (value: string) => void
+	/** change:prevYearLabel */
+	'change:prevYearLabel': (value: string) => void
+	/** change:nextYearLabel */
+	'change:nextYearLabel': (value: string) => void
+	/** change:prevYearsLabel */
+	'change:prevYearsLabel': (value: string) => void
+	/** change:nextYearsLabel */
+	'change:nextYearsLabel': (value: string) => void
 }
 
 /** Пропсы самого календаря (без коллекционной части). */
@@ -86,6 +94,14 @@ export interface ICalendarComponentProps extends IValueControlProps<TCalendarVal
 	prevLabel?: string
 	/** Имя кнопки «следующий месяц» для скринридера */
 	nextLabel?: string
+	/** Имя стрелки панели выбора «предыдущий год» — на уровне месяцев */
+	prevYearLabel?: string
+	/** Имя стрелки панели выбора «следующий год» — на уровне месяцев */
+	nextYearLabel?: string
+	/** Имя стрелки панели выбора «предыдущие 12 лет» — на уровне лет */
+	prevYearsLabel?: string
+	/** Имя стрелки панели выбора «следующие 12 лет» — на уровне лет */
+	nextYearsLabel?: string
 }
 
 /** Полный набор пропсов календаря: свои и коллекционные (`mode`). */
@@ -110,6 +126,14 @@ export interface ICalendar extends IValueControl<TCalendarValue, ICalendarProps,
 	prevLabel: string
 	/** Имя кнопки «следующий месяц» */
 	nextLabel: string
+	/** Имя стрелки панели выбора «предыдущий год» */
+	prevYearLabel: string
+	/** Имя стрелки панели выбора «следующий год» */
+	nextYearLabel: string
+	/** Имя стрелки панели выбора «предыдущие 12 лет» */
+	prevYearsLabel: string
+	/** Имя стрелки панели выбора «следующие 12 лет» */
+	nextYearsLabel: string
 	/** Первый день недели: `weekStart`, а без него — по локали */
 	readonly firstDay: TWeekday
 	/** Дни недели — заголовки колонок, от первого дня недели */

@@ -126,7 +126,31 @@ async function mountCalendar(props: Partial<ICalendarProps> = {}, mode?: TCalend
 		pointer,
 		selection: engine.extensions.selection,
 		view: engine.extensions.view,
+		picker: engine.extensions.picker,
 	}
+}
+
+/**
+ * Панель выбора месяца и года места 0 — поповер внутри календаря
+ * (`contained`), поэтому в корне: список и шапка со стрелками и кнопкой года.
+ * Своей панель делает `id` шапки из наборов места.
+ */
+function pickerPanel(root: Element, heading: string) {
+	const panel = document.createElement('div')
+	const prev = document.createElement('button')
+	const title = document.createElement('button')
+	const next = document.createElement('button')
+
+	panel.className = 's-calendar__picker'
+	prev.className = 's-calendar__picker-prev'
+	prev.innerHTML = '<svg class="s-test-icon"></svg>'
+	title.className = 's-calendar__picker-heading'
+	title.id = heading
+	next.className = 's-calendar__picker-next'
+	panel.append(prev, title, next)
+	root.appendChild(panel)
+
+	return { prev, title, next }
 }
 
 describe('нажатие', () => {
@@ -186,6 +210,57 @@ describe('нажатие', () => {
 		setup.tileOf('2026-09-10').click()
 
 		expect(setup.owner.value).toEqual(['2026-09-10', '2026-09-14'])
+	})
+})
+
+describe('шапка панели выбора месяца и года', () => {
+	async function mountPicker(heading = 'h0') {
+		const setup = await mountCalendar()
+
+		setup.picker.pickerSets(0).heading.add('id', 'h0')
+		setup.picker.pickers[0].popover.open = true
+
+		return { ...setup, ...pickerPanel(setup.root, heading) }
+	}
+
+	const level = (setup: Awaited<ReturnType<typeof mountPicker>>) => setup.picker.pickers[0].level
+
+	const heading = (setup: Awaited<ReturnType<typeof mountPicker>>) =>
+		setup.picker.pickers[0].heading
+
+	it('кнопка года меняет уровень: месяцы ⇄ годы', async () => {
+		const setup = await mountPicker()
+
+		setup.title.click()
+
+		expect(level(setup)).toBe('years')
+
+		setup.title.click()
+
+		expect(level(setup)).toBe('months')
+	})
+
+	it('стрелки листают год — и со значка внутри стрелки тоже; листание сетки не трогают', async () => {
+		const setup = await mountPicker()
+
+		setup.next.click()
+
+		expect(heading(setup)).toBe('2027')
+
+		setup.prev
+			.querySelector('.s-test-icon')
+			?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+
+		expect(heading(setup)).toBe('2026')
+		expect(setup.view.months).toEqual(['2026-09-01'])
+	})
+
+	it('чужая панель — без шапки места — не трогается', async () => {
+		const setup = await mountPicker('foreign')
+
+		setup.next.click()
+
+		expect(heading(setup)).toBe('2026')
 	})
 })
 

@@ -49,6 +49,19 @@ describe('Frame · телепорт', () => {
 		expect(first.children).toHaveLength(0)
 	})
 
+	it('contained — без телепорта: узел на месте, в контейнере компонента', () => {
+		const { container } = mount(
+			<Frame contained visible>
+				Панель
+			</Frame>,
+		)
+
+		expect(frame().parentElement).toBe(container)
+		expect(frame().dataset.contained).toBe('true')
+		expect(frame().style.position).toBe('absolute')
+		expect(frame().style.left).toBe('')
+	})
+
 	it('цели нет — узла нет', () => {
 		mount(<Frame target="#missing" visible />)
 
@@ -140,6 +153,16 @@ describe('Frame · пропсы потребителя', () => {
 describe('Frame · серверный рендер', () => {
 	it('renderToString не падает: портала на сервере нет', () => {
 		expect(renderToString(<Frame visible>Панель</Frame>)).toBe('')
+	})
+
+	it('contained рисуется и на сервере: портала нет, узел на месте', () => {
+		expect(
+			renderToString(
+				<Frame contained visible>
+					Панель
+				</Frame>,
+			),
+		).toContain('Панель')
 	})
 
 	it('гидратация без расхождений, узел появляется после неё', () => {

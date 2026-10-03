@@ -193,6 +193,27 @@ describe('коллекции', () => {
 
 		expect(titles()).toEqual(['m1-title-0', 'm1-title-1', 'm1-title-2'])
 	})
+
+	it('Calendar: панель выбора месяца и года называет её шапка — на каждом месте', () => {
+		const owner = new TCalendar({ months: ['2026-01-01', '2026-02-01'] })
+		const collection = new TCalendarCollectionFacade({}, { owner })
+		const bundle = new TPluginBundle(owner, 'm1')
+			.use(TCollectionBundlesPlugin)
+			.use(TCalendarIdsPlugin)
+		const headings = () => collection.pickers.map(({ labelledBy }) => labelledBy)
+
+		bundle.get(TCollectionBundlesPlugin)?.bindEngine(collection.engine)
+
+		expect(headings()).toEqual(['m1-picker-0', 'm1-picker-1'])
+		expect(collection.pickers.map(({ headingAria }) => headingAria.id)).toEqual([
+			'm1-picker-0',
+			'm1-picker-1',
+		])
+
+		owner.months = ['2026-01-01', '2026-02-01', '2026-03-01']
+
+		expect(headings()).toEqual(['m1-picker-0', 'm1-picker-1', 'm1-picker-2'])
+	})
 })
 
 describe('общий name радио', () => {

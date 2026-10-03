@@ -13,8 +13,10 @@ export {
 	startOfWeek,
 	endOfWeek,
 	startOfMonth,
+	yearOf,
 	monthsBetween,
 	monthGrid,
+	dateFromParts,
 	weekdayOf,
 	isWeekday,
 } from './date'

@@ -39,6 +39,12 @@ export const CalendarCollectionDescriptor = defineDescriptor(() =>
 				 */
 				prevDisabled: { type: Boolean, protected: true, triggers: ['change:paging'] },
 				nextDisabled: { type: Boolean, protected: true, triggers: ['change:paging'] },
+				/**
+				 * Панели выбора месяца и года — по одной на сетку: поповер и
+				 * список, которые разметка отдаёт компонентам, и снимок шапки и
+				 * стрелок. Создаёт и ведёт их расширение `picker` коллекции.
+				 */
+				pickers: { type: Array, protected: true, triggers: ['change:pickers'] },
 			},
 		},
 	}),

@@ -34,7 +34,7 @@ export default class TPopover
 	static defaultValues: typeof TComponentView.defaultValues &
 		TDefaultValues<
 			IPopoverProps,
-			'open' | 'closable' | 'closeLabel' | 'lazyMount' | 'placement'
+			'open' | 'closable' | 'closeLabel' | 'lazyMount' | 'placement' | 'contained'
 		> = {
 		...TComponentView.defaultValues,
 		// Строчный корень: триггер встаёт и в строку текста, и в ряд тегов
@@ -44,6 +44,7 @@ export default class TPopover
 		closeLabel: 'Close',
 		lazyMount: false,
 		placement: 'bottom-start',
+		contained: false,
 	}
 
 	protected _open!: boolean
@@ -51,6 +52,7 @@ export default class TPopover
 	protected _closeLabel: string
 	protected _lazyMount: boolean
 	protected _placement: TPopoverPlacement
+	protected _contained: boolean
 	/** Открывали ли панель хоть раз — после этого `lazyMount` содержимое не прячет. */
 	protected _opened = false
 	protected _triggerAria: TAria
@@ -64,6 +66,7 @@ export default class TPopover
 		this._closeLabel = props.closeLabel ?? ctor.defaultValues.closeLabel
 		this._lazyMount = props.lazyMount ?? ctor.defaultValues.lazyMount
 		this._placement = props.placement ?? ctor.defaultValues.placement
+		this._contained = props.contained ?? ctor.defaultValues.contained
 
 		// Сторона панели связки: панель — диалог. Имя пишет `TAriaPlugin` в
 		// этот же набор
@@ -156,6 +159,24 @@ export default class TPopover
 	}
 
 	/**
+	 * Панель внутри контейнера: не телепортируется в `body` и не привязывается
+	 * к триггеру, а накрывает ближайший позиционированный предок целиком — так
+	 * панель выбора месяца и года накрывает календарь. Поведение поповера то же:
+	 * связка с триггером, Escape, нажатие мимо, фокус. Разметка отдаёт значение
+	 * панели (Frame), раскладку держит тема.
+	 */
+	get contained(): boolean {
+		return this._contained
+	}
+
+	set contained(value: boolean) {
+		if (this._contained === value) return
+
+		this._contained = value
+		this.events.emit('change:contained', value)
+	}
+
+	/**
 	 * Сторона триггера в связке с панелью.
 	 *
 	 * Отдельный набор, а не часть `aria`: `aria` описывает панель, а это —
@@ -216,6 +237,7 @@ export default class TPopover
 			closeLabel: this._closeLabel,
 			lazyMount: this._lazyMount,
 			placement: this._placement,
+			contained: this._contained,
 		}
 	}
 }

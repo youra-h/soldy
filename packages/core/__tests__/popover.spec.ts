@@ -18,6 +18,7 @@ describe('умолчания', () => {
 		expect(popover.closeLabel).toBe('Close')
 		expect(popover.lazyMount).toBe(false)
 		expect(popover.placement).toBe('bottom-start')
+		expect(popover.contained).toBe(false)
 		expect(popover.contentRendered).toBe(true)
 	})
 
@@ -35,6 +36,7 @@ describe('умолчания', () => {
 			closeLabel: 'Закрыть',
 			lazyMount: true,
 			placement: 'top-end',
+			contained: true,
 		})
 
 		expect(popover.getProps()).toMatchObject({
@@ -43,6 +45,7 @@ describe('умолчания', () => {
 			closeLabel: 'Закрыть',
 			lazyMount: true,
 			placement: 'top-end',
+			contained: true,
 		})
 	})
 })
@@ -180,6 +183,7 @@ describe('события', () => {
 		['closeLabel', 'change:closeLabel', 'Закрыть'],
 		['lazyMount', 'change:lazyMount', true],
 		['placement', 'change:placement', 'top-start'],
+		['contained', 'change:contained', true],
 	] as const)('%s шлёт %s только на реальное изменение', (prop, event, value) => {
 		const popover = new TPopover()
 		const handler = vi.fn()

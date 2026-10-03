@@ -10,6 +10,10 @@ import type { TFrameLayoutPluginEvents } from './types'
  * Подписывается на `change:x/y/width/height/zIndex/position` и отдаёт готовый
  * набор, который шаблон вешает на элемент.
  *
+ * Панель внутри контейнера (`contained`) встаёт `absolute` от ближайшего
+ * позиционированного предка и без координат: где в нём встать, решает тема
+ * по `data-contained`, а `left`/`top` в инлайне её бы перебили.
+ *
  * Про чужие элементы не знает ничего. Привязка к якорю — отдельная
  * ответственность и отдельный плагин `TAnchorPlugin`: он вычисляет координаты
  * и пишет их сюда же, в `x`/`y`/`width`. Здесь остаётся только отрисовка того,
@@ -55,6 +59,7 @@ export class TFrameLayoutPlugin extends TBasePlugin<any, TFrameLayoutPluginEvent
 		this._listenTo(frame.events, 'change:height', update)
 		this._listenTo(frame.events, 'change:zIndex', update)
 		this._listenTo(frame.events, 'change:position', update)
+		this._listenTo(frame.events, 'change:contained', update)
 
 		this._update()
 	}
@@ -64,11 +69,9 @@ export class TFrameLayoutPlugin extends TBasePlugin<any, TFrameLayoutPluginEvent
 
 		const frame = this._frame
 
-		const styles: Record<string, string | number> = {
-			position: frame.position,
-			left: toCssValue(frame.x),
-			top: toCssValue(frame.y),
-		}
+		const styles: Record<string, string | number> = frame.contained
+			? { position: 'absolute' }
+			: { position: frame.position, left: toCssValue(frame.x), top: toCssValue(frame.y) }
 
 		if (frame.width !== undefined) styles['width'] = toCssValue(frame.width)
 		if (frame.height !== undefined) styles['height'] = toCssValue(frame.height)

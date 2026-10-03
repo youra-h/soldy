@@ -120,6 +120,32 @@ describe('разметка', () => {
 		expect(isOpen()).toBe(false)
 	})
 
+	/**
+	 * Внутри контейнера панель не телепортирована: она в корне, сразу за
+	 * триггером, и накрывает ближайший позиционированный предок — раскладка
+	 * ставит её `absolute` без координат, место задаёт тема.
+	 */
+	it('contained: панель в корне, без телепорта и координат; нажатие в ней не закрывает', async () => {
+		await render(() => page({ contained: true }))
+
+		const root = find('.s-popover')
+
+		expect(root.contains(panel())).toBe(true)
+		expect(panel().dataset.contained).toBe('true')
+		expect(panel().style.position).toBe('absolute')
+		expect(panel().style.left).toBe('')
+		expect(panel().style.top).toBe('')
+
+		await open()
+
+		expect(isOpen()).toBe(true)
+		expect(document.activeElement).toBe(find('.s-test-first'))
+
+		await click(find('.s-test-first'))
+
+		expect(isOpen()).toBe(true)
+	})
+
 	it('панель — диалог, aria-controls триггера ведёт на неё', async () => {
 		await render(() => page())
 

@@ -51,6 +51,8 @@ export const PopoverDescriptor = defineDescriptor(() =>
 				closeLabel: { type: String, triggers: ['change:closeLabel'] },
 				lazyMount: { type: Boolean, triggers: ['change:lazyMount'] },
 				placement: { type: String, triggers: ['change:placement'] },
+				/** Панель накрывает ближайший позиционированный предок, а не встаёт у триггера. */
+				contained: { type: Boolean, triggers: ['change:contained'] },
 				/**
 				 * Сторона триггера в связке с панелью и его вид «нажат». Вычисляют
 				 * ядро и `TPopoverIdsPlugin` (`aria-controls`), шаблон раскладывает

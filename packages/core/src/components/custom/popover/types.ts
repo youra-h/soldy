@@ -27,6 +27,8 @@ export type TPopoverEvents = TComponentViewEvents & {
 	'change:lazyMount': (value: boolean) => void
 	/** change:placement */
 	'change:placement': (value: TPopoverPlacement) => void
+	/** change:contained */
+	'change:contained': (value: boolean) => void
 	/** change:triggerAria — набор атрибутов триггера изменился */
 	'change:triggerAria': (value: TAriaAttributes) => void
 }
@@ -45,6 +47,12 @@ export interface IPopoverProps extends IComponentViewProps {
 	lazyMount?: boolean
 	/** Сторона и выравнивание панели у триггера */
 	placement?: TPopoverPlacement
+	/**
+	 * Панель внутри контейнера: не уходит в `body` и не встаёт у триггера, а
+	 * накрывает ближайший позиционированный предок целиком. `placement` тогда
+	 * не действует
+	 */
+	contained?: boolean
 }
 
 export interface IPopover extends IComponentView<IPopoverProps, TPopoverEvents> {
@@ -58,6 +66,8 @@ export interface IPopover extends IComponentView<IPopoverProps, TPopoverEvents> 
 	lazyMount: boolean
 	/** Сторона и выравнивание панели у триггера */
 	placement: TPopoverPlacement
+	/** Панель накрывает ближайший позиционированный предок, а не встаёт у триггера */
+	contained: boolean
 	/**
 	 * ARIA триггера — второй стороны связки «триггер ↔ панель»:
 	 * `aria-haspopup`, `aria-expanded`; `aria-controls` пишет плагин

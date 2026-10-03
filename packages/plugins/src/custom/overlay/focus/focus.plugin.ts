@@ -52,7 +52,7 @@ export abstract class TOverlayFocusPlugin<
 > extends TBasePlugin<any, TEvents> {
 	/** Открытость владельца: по ней плагин включается и ею же закрывает. */
 	private _open: IOverlayOpenState | null = null
-	private _dismiss: TDismissPlugin | null = null
+	protected _dismiss: TDismissPlugin | null = null
 	/** Корень компонента — на нём висит слушатель клавиш. */
 	protected _root: Element | null = null
 	/** Панель, найденная при открытии, — на ней тоже висит слушатель клавиш. */
@@ -210,8 +210,9 @@ export abstract class TOverlayFocusPlugin<
 		this._unlisten()
 
 		this._panel = this._dismiss?.findPanel() ?? this._panelFallback(root)
-		// Корень и панель бывают одним узлом — тогда и слушатель на нём один
-		this._targets = this._panel && this._panel !== root ? [root, this._panel] : [root]
+		// Корень и панель бывают одним узлом, а панель внутри контейнера лежит в
+		// корне — клавиши панели и так всплывают до него, и слушатель один
+		this._targets = this._panel && !root.contains(this._panel) ? [root, this._panel] : [root]
 
 		for (const target of this._targets) target.addEventListener('keydown', this._onKeyDown)
 	}

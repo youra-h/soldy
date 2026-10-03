@@ -38,6 +38,13 @@ export type TListBoxEngineOptions<TOwner extends IListBox = IListBox> = {
 export type TListBoxExtensionEvents = {
 	'change:view': (value: TListBoxView | undefined) => void
 	'change:indicator': (value: TListIndicator) => void
+	/**
+	 * Пользователь выбрал элемент — кликом по строке или Enter и пробелом.
+	 * Приходит на каждый принятый выбор, и на повторный выбор выбранного
+	 * тоже: в `single` он снимает выбор, и по `change:selection` выбор
+	 * пользователя не отличить ни от снятия, ни от записи `value` из кода
+	 */
+	choose: (item: IListBoxItem) => void
 }
 
 export type TListBoxExtensions<TItem extends IListBoxItem> = {

@@ -5,7 +5,7 @@ import { TElementPlugin } from '../../element'
 import { TCollectionBundlesPlugin, TCollectionElements } from '../../collection'
 import { isFocusableElement } from '../../../utils'
 import type { IDomEventTarget } from '../../../utils'
-import { dayElementOf, dayOf, pagerOf } from '../parts'
+import { dayElementOf, dayOf, pagerOf, pickerPartOf } from '../parts'
 import type { TCalendarPager } from '../types'
 import type { TCalendarKeyboardPluginEvents, TCalendarMove } from './types'
 
@@ -68,6 +68,11 @@ const PAGER_OFF: Readonly<Record<TCalendarPager, (view: ICalendarViewExtension) 
  * вместе с сеткой, но не DOM. Кроме случая, когда кнопка погасла у края под
  * фокусом (`change:paging`): выключенная кнопка фокус теряет, и он упал бы на
  * страницу, поэтому плагин переводит его на остановку сетки, как React Aria.
+ *
+ * То же у стрелок панели выбора месяца и года (`change:pickers`): стрелка
+ * погасла у границы лет под фокусом — фокус на список той же панели. Решает
+ * выход расширения, а не атрибут: разметка выключит кнопку позже, а фокус
+ * должен уйти с неё раньше.
  */
 export class TCalendarKeyboardPlugin extends TBasePlugin<ICalendar, TCalendarKeyboardPluginEvents> {
 	private _owner: ICalendar | null = null
@@ -116,6 +121,7 @@ export class TCalendarKeyboardPlugin extends TBasePlugin<ICalendar, TCalendarKey
 
 		this._listenTo(engine.extensions.focus.events, 'change:focusedDate', this._onFocusedDate)
 		this._listenTo(engine.extensions.view.events, 'change:paging', this._onPaging)
+		this._listenTo(engine.extensions.picker.events, 'change:pickers', this._onPickers)
 	}
 
 	/** Корень сменился — слушатели переезжают, ожидание узла прежнего корня снимается. */
@@ -235,6 +241,27 @@ export class TCalendarKeyboardPlugin extends TBasePlugin<ICalendar, TCalendarKey
 		const pager = pagerOf(owner, root, this._activeElement)
 
 		if (pager && PAGER_OFF[pager](engine.extensions.view)) this._follow()
+	}
+
+	/** Стрелка панели выбора погасла, пока на ней фокус, — фокус на список панели. */
+	private readonly _onPickers = (): void => {
+		const engine = this._engine
+		const owner = this._owner
+
+		if (!engine || !owner) return
+
+		const pickers = engine.extensions.picker.pickers
+		const hit = pickerPartOf(owner, pickers, this._activeElement)
+		const picker = hit ? pickers[hit.index] : undefined
+
+		if (!hit || !picker || hit.part === 'heading') return
+		if (!(hit.part === 'prev' ? picker.prevDisabled : picker.nextDisabled)) return
+
+		const list = hit.panel.querySelector(
+			owner.classes.resolve('__picker-list', { point: true }),
+		)
+
+		if (isFocusableElement(list)) list.focus()
 	}
 
 	/** DOM-фокус — на день с фокусом коллекции; узла ещё нет — ждать его. */

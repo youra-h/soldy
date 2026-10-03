@@ -62,6 +62,15 @@ export const CalendarDescriptor = defineDescriptor(() =>
 				months: { type: Array, triggers: ['change:months'] },
 				prevLabel: { type: String, triggers: ['change:prevLabel'] },
 				nextLabel: { type: String, triggers: ['change:nextLabel'] },
+				/**
+				 * Имена стрелок панели выбора месяца и года: на месяцах они
+				 * листают год, на годах — страницу из 12 лет. Набор стрелки по
+				 * уровню панели собирает коллекция (`pickers`).
+				 */
+				prevYearLabel: { type: String, triggers: ['change:prevYearLabel'] },
+				nextYearLabel: { type: String, triggers: ['change:nextYearLabel'] },
+				prevYearsLabel: { type: String, triggers: ['change:prevYearsLabel'] },
+				nextYearsLabel: { type: String, triggers: ['change:nextYearsLabel'] },
 				/** Подписи колонок — от первого дня недели, на языке локали. */
 				weekdays: {
 					type: Array,

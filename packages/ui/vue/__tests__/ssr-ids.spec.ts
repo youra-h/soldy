@@ -17,7 +17,7 @@
 
 import { describe, it, expect, afterEach } from 'vitest'
 import { createSSRApp, h, type VNode } from 'vue'
-import { renderToString } from 'vue/server-renderer'
+import { renderToString, type SSRContext } from 'vue/server-renderer'
 import {
 	Accordion,
 	Calendar,
@@ -35,19 +35,30 @@ afterEach(() => {
 	for (const container of containers.splice(0)) container.remove()
 })
 
-/** Рендер сервера и гидратация той же разметки; предупреждения Vue — наружу. */
+/**
+ * Рендер сервера и гидратация той же разметки; предупреждения Vue — наружу.
+ *
+ * Страница сервера — целиком, с телепортами: панели оверлеев (Frame) Vue
+ * рендерит не в разметку приложения, а в `context.teleports`, и серверная
+ * страница кладёт их в начало `body`, перед приложением. Гидратация
+ * телепорта ищет его содержимое с первого узла цели и запоминает, где
+ * остановилась, на самой цели, поэтому `body` у каждого рендера свой.
+ */
 async function hydrate(render: () => VNode): Promise<{
 	server: HTMLElement
 	client: HTMLElement
 	warnings: string[]
 }> {
-	const html = await renderToString(createSSRApp({ render }))
+	const context: SSRContext = {}
+	const html = await renderToString(createSSRApp({ render }), context)
 	const server = document.createElement('div')
 	const client = document.createElement('div')
 	const warnings: string[] = []
 
 	server.innerHTML = html
 	client.innerHTML = html
+	document.body = document.createElement('body')
+	document.body.innerHTML = context.teleports?.body ?? ''
 	document.body.append(client)
 	containers.push(client)
 
@@ -125,10 +136,10 @@ describe('id при гидратации', () => {
 		const { server, client, warnings } = await hydrate(() =>
 			h(Calendar, { months: ['2026-09-01', '2026-10-01'] }),
 		)
-		const ids = attrs(client, '.s-calendar__title', 'id')
+		const ids = attrs(client, '.s-calendar__title-text', 'id')
 
 		expect(warnings).toEqual([])
-		expect(ids).toEqual(attrs(server, '.s-calendar__title', 'id'))
+		expect(ids).toEqual(attrs(server, '.s-calendar__title-text', 'id'))
 		expect(attrs(client, '[role="grid"]', 'aria-labelledby')).toEqual(ids)
 		expect(new Set(ids).size).toBe(2)
 	})

@@ -1,17 +1,31 @@
-import type { ICalendar, ICalendarViewExtension, TCalendarCollection } from '@soldy-ui/core'
+import type {
+	ICalendar,
+	ICalendarPickerExtension,
+	ICalendarViewExtension,
+	TCalendarCollection,
+} from '@soldy-ui/core'
 import { TBasePlugin } from '../../../base'
 import type { IPluginContext } from '../../../base'
 import { TElementPlugin } from '../../element'
 import { TCollectionBundlesPlugin, TCollectionElements } from '../../collection'
 import type { IDomEventTarget } from '../../../utils'
-import { dayOf, pagerOf } from '../parts'
-import type { TCalendarPager } from '../types'
+import { dayOf, pagerOf, pickerPartOf } from '../parts'
+import type { TCalendarPager, TCalendarPickerPart } from '../types'
 import type { TCalendarPointerPluginEvents } from './types'
 
 /** Листание по кнопке — команда вида коллекции. */
 const PAGE: Readonly<Record<TCalendarPager, (view: ICalendarViewExtension) => void>> = {
 	prev: (view) => view.showPrev(),
 	next: (view) => view.showNext(),
+}
+
+/** Кнопки шапки панели выбора месяца и года — команды расширения `picker` для места. */
+const PICK: Readonly<
+	Record<TCalendarPickerPart, (picker: ICalendarPickerExtension, index: number) => void>
+> = {
+	prev: (picker, index) => picker.showPrev(index),
+	next: (picker, index) => picker.showNext(index),
+	heading: (picker, index) => picker.toggleLevel(index),
 }
 
 /**
@@ -25,6 +39,10 @@ const PAGE: Readonly<Record<TCalendarPager, (view: ICalendarViewExtension) => vo
  *
  * - Нажатие по кнопке листания — `showPrev`/`showNext` вида. Enter и пробел на
  *   кнопке дают тот же `click` — браузер делает его у `<button>` сам.
+ * - Нажатие по кнопке шапки панели выбора месяца и года — команда расширения
+ *   `picker` для места панели: стрелки листают год или страницу лет, кнопка
+ *   года меняет уровень. Панель — поповер внутри календаря (`contained`), и
+ *   её нажатия всплывают до корня; выбор в её списке ловит само расширение.
  * - Нажатие по дню — где угодно в ячейке, с плиткой и содержимым слота, —
  *   `chooseDate` выбора. Недоступный и выключенный день выбор отклоняет сам,
  *   по заполнителю соседнего месяца не происходит ничего: дня у него нет.
@@ -88,6 +106,15 @@ export class TCalendarPointerPlugin extends TBasePlugin<ICalendar, TCalendarPoin
 		const root = this._root
 
 		if (!engine || !owner || !root) return
+
+		const picker = engine.extensions.picker
+		const hit = pickerPartOf(owner, picker.pickers, event.target)
+
+		if (hit) {
+			PICK[hit.part](picker, hit.index)
+
+			return
+		}
 
 		const pager = pagerOf(owner, root, event.target)
 

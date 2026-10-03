@@ -190,6 +190,7 @@ async function mountCalendar(props: Partial<ICalendarProps> = {}, mode?: TCalend
 		focus: engine.extensions.focus,
 		selection: engine.extensions.selection,
 		view: engine.extensions.view,
+		picker: engine.extensions.picker,
 	}
 }
 
@@ -428,6 +429,72 @@ describe('кнопки листания', () => {
 		setup.owner.disabled = true
 
 		await setup.settle()
+
+		expect(document.activeElement).toBe(setup.next)
+	})
+})
+
+/**
+ * Стрелки панели выбора месяца и года. Панель телепортирована — вне корня
+ * календаря, и своей плагин узнаёт её по шапке: в ней `id` из наборов места.
+ */
+describe('стрелки панели выбора месяца и года', () => {
+	/** Панель места 0 в `body`, как её телепортирует поповер: список, шапка, стрелки. */
+	function panelOf(heading: string) {
+		const panel = document.createElement('div')
+		const list = document.createElement('div')
+		const header = document.createElement('div')
+		const prev = document.createElement('button')
+		const title = document.createElement('button')
+		const next = document.createElement('button')
+
+		panel.className = 's-calendar__picker'
+		list.className = 's-calendar__picker-list'
+		list.tabIndex = 0
+		prev.className = 's-calendar__picker-prev'
+		next.className = 's-calendar__picker-next'
+		title.id = heading
+		header.append(prev, title, next)
+		panel.append(list, header)
+		document.body.appendChild(panel)
+
+		return { list, prev, next }
+	}
+
+	async function mountPicker(heading = 'h0') {
+		const setup = await mountCalendar({ max: '2027-10-31' })
+		const picker = setup.picker
+
+		picker.pickerSets(0).heading.add('id', 'h0')
+		picker.pickers[0].popover.open = true
+
+		return { ...setup, picker, ...panelOf(heading) }
+	}
+
+	it('стрелка погасла у границы лет под фокусом — фокус на список той же панели', async () => {
+		const setup = await mountPicker()
+
+		setup.next.focus()
+		setup.picker.showNext(0)
+
+		expect(setup.picker.pickers[0].nextDisabled).toBe(true)
+		expect(document.activeElement).toBe(setup.list)
+	})
+
+	it('стрелка, которая не погасла, фокус оставляет', async () => {
+		const setup = await mountPicker()
+
+		setup.prev.focus()
+		setup.picker.showPrev(0)
+
+		expect(document.activeElement).toBe(setup.prev)
+	})
+
+	it('чужая панель — без шапки места — не трогается', async () => {
+		const setup = await mountPicker('foreign')
+
+		setup.next.focus()
+		setup.picker.showNext(0)
 
 		expect(document.activeElement).toBe(setup.next)
 	})

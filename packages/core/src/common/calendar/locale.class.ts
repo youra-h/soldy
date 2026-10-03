@@ -19,6 +19,8 @@ const GREGORIAN_MONTHS: readonly string[] = ['gregory', 'buddhist', 'japanese', 
 const SUNDAY: TCalendarDate = '1970-01-04'
 
 const TITLE: Intl.DateTimeFormatOptions = { month: 'long', year: 'numeric' }
+const MONTH: Intl.DateTimeFormatOptions = { month: 'short' }
+const YEAR: Intl.DateTimeFormatOptions = { year: 'numeric' }
 const DAY: Intl.DateTimeFormatOptions = { day: 'numeric' }
 const FULL: Intl.DateTimeFormatOptions = { dateStyle: 'full' }
 
@@ -49,6 +51,23 @@ export class TCalendarLocale implements ICalendarLocale {
 
 	monthTitle(date: TCalendarDate): string {
 		return this._formatter('title', TITLE).format(utcDateOf(date))
+	}
+
+	/** Месяц без числа и года Intl пишет самостоятельной формой сам. */
+	monthName(date: TCalendarDate): string {
+		return this._formatter('month', MONTH).format(utcDateOf(date))
+	}
+
+	yearTitle(date: TCalendarDate): string {
+		return this._formatter('year', YEAR).format(utcDateOf(date))
+	}
+
+	/**
+	 * Отрезок — `formatRange`, а не два года через тире: разделитель и
+	 * повтор эры у каждой локали свои (`2017–2028`, `2017年～2028年`).
+	 */
+	yearsTitle(from: TCalendarDate, to: TCalendarDate): string {
+		return this._formatter('year', YEAR).formatRange(utcDateOf(from), utcDateOf(to))
 	}
 
 	/**

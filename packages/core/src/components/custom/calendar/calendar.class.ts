@@ -40,7 +40,13 @@ export default class TCalendar
 	static defaultValues: typeof TValueControl.defaultValues &
 		TDefaultValues<
 			ICalendarProps,
-			'locale' | 'prevLabel' | 'nextLabel',
+			| 'locale'
+			| 'prevLabel'
+			| 'nextLabel'
+			| 'prevYearLabel'
+			| 'nextYearLabel'
+			| 'prevYearsLabel'
+			| 'nextYearsLabel',
 			'min' | 'max' | 'unavailable' | 'weekStart' | 'timeZone' | 'months'
 		> = {
 		...TValueControl.defaultValues,
@@ -56,6 +62,11 @@ export default class TCalendar
 		// со стрелкой без имени для скринридера безымянна
 		prevLabel: 'Previous month',
 		nextLabel: 'Next month',
+		// Стрелки панели выбора месяца и года — тоже кнопки без текста
+		prevYearLabel: 'Previous year',
+		nextYearLabel: 'Next year',
+		prevYearsLabel: 'Previous 12 years',
+		nextYearsLabel: 'Next 12 years',
 	}
 
 	protected _min: TCalendarDate | undefined
@@ -67,6 +78,10 @@ export default class TCalendar
 	protected _months: TCalendarDate[] | undefined
 	protected _prevLabel: string
 	protected _nextLabel: string
+	protected _prevYearLabel: string
+	protected _nextYearLabel: string
+	protected _prevYearsLabel: string
+	protected _nextYearsLabel: string
 
 	constructor(props: Partial<ICalendarProps> = {}) {
 		const ctor = new.target as typeof TCalendar
@@ -84,6 +99,10 @@ export default class TCalendar
 		this._months = props.months ?? ctor.defaultValues.months
 		this._prevLabel = props.prevLabel ?? ctor.defaultValues.prevLabel
 		this._nextLabel = props.nextLabel ?? ctor.defaultValues.nextLabel
+		this._prevYearLabel = props.prevYearLabel ?? ctor.defaultValues.prevYearLabel
+		this._nextYearLabel = props.nextYearLabel ?? ctor.defaultValues.nextYearLabel
+		this._prevYearsLabel = props.prevYearsLabel ?? ctor.defaultValues.prevYearsLabel
+		this._nextYearsLabel = props.nextYearsLabel ?? ctor.defaultValues.nextYearsLabel
 	}
 
 	/** Невалидная строка границей не считается. */
@@ -198,6 +217,57 @@ export default class TCalendar
 	}
 
 	/**
+	 * Имя стрелки «предыдущий год» в панели выбора месяца и года — на уровне
+	 * месяцев. Набор стрелки по уровню панели собирает расширение коллекции.
+	 */
+	get prevYearLabel(): string {
+		return this._prevYearLabel
+	}
+
+	set prevYearLabel(value: string) {
+		if (this._prevYearLabel === value) return
+
+		this._prevYearLabel = value
+		this.events.emit('change:prevYearLabel', value)
+	}
+
+	/** Имя стрелки «следующий год» в панели выбора. */
+	get nextYearLabel(): string {
+		return this._nextYearLabel
+	}
+
+	set nextYearLabel(value: string) {
+		if (this._nextYearLabel === value) return
+
+		this._nextYearLabel = value
+		this.events.emit('change:nextYearLabel', value)
+	}
+
+	/** Имя стрелки «предыдущие 12 лет» в панели выбора — на уровне лет. */
+	get prevYearsLabel(): string {
+		return this._prevYearsLabel
+	}
+
+	set prevYearsLabel(value: string) {
+		if (this._prevYearsLabel === value) return
+
+		this._prevYearsLabel = value
+		this.events.emit('change:prevYearsLabel', value)
+	}
+
+	/** Имя стрелки «следующие 12 лет» в панели выбора. */
+	get nextYearsLabel(): string {
+		return this._nextYearsLabel
+	}
+
+	set nextYearsLabel(value: string) {
+		if (this._nextYearsLabel === value) return
+
+		this._nextYearsLabel = value
+		this.events.emit('change:nextYearsLabel', value)
+	}
+
+	/**
 	 * Имя кнопки «предыдущий месяц». Своего экземпляра у кнопки нет — набор
 	 * отдаётся значением, как у кнопок ленты Scroller.
 	 */
@@ -241,6 +311,10 @@ export default class TCalendar
 			months: this._months,
 			prevLabel: this._prevLabel,
 			nextLabel: this._nextLabel,
+			prevYearLabel: this._prevYearLabel,
+			nextYearLabel: this._nextYearLabel,
+			prevYearsLabel: this._prevYearsLabel,
+			nextYearsLabel: this._nextYearsLabel,
 		}
 	}
 }

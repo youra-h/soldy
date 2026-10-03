@@ -246,6 +246,31 @@ describe('выбор пользователя: выключенный элеме
 		})
 	})
 
+	/**
+	 * О принятом выборе список сообщает событием `choose` — и о повторном
+	 * выборе выбранного, который в `single` выбор снимает: по
+	 * `change:selection` его не отличить ни от снятия, ни от записи `value`.
+	 */
+	it('choose — на каждый принятый выбор, после переключения; на отказ и на код — нет', () => {
+		const { owner, collection, items } = createListBox(['a', 'b'])
+		const list = collection.engine.extensions.list
+		const chosen: string[] = []
+
+		list.events.on('choose', (item) => chosen.push(`${item.value}:${String(owner.value)}`))
+
+		list.chooseItem(items[1])
+		list.chooseItem(items[1])
+
+		expect(chosen).toEqual(['b:b', 'b:undefined'])
+
+		items[0].disabled = true
+		list.chooseItem(items[0])
+		owner.value = 'b'
+		collection.engine.extensions.selection.toggle(items[1])
+
+		expect(chosen).toHaveLength(2)
+	})
+
 	/** Отказ — только выбору пользователя: из кода выбрать выключенный вправе приложение. */
 	it('selection.select выключенный элемент выбирает', () => {
 		const { collection, items } = createListBox(['a', 'b'])

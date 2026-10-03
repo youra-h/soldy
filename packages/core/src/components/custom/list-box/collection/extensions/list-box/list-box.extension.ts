@@ -180,6 +180,10 @@ export class TListBoxExtension<
 	 *
 	 * Проверка здесь, а не в `TSelectionExtension`: выбрать выключенный элемент
 	 * из кода (`select`, `toggle`) — право приложения.
+	 *
+	 * Принятый выбор сообщается событием `choose` — после переключения, когда
+	 * значение списка уже новое. Так же сообщает о выборе пользователя
+	 * `TSelectExtension`.
 	 */
 	chooseItem(item: TItem): boolean {
 		const selection = this._selection
@@ -187,6 +191,7 @@ export class TListBoxExtension<
 		if (!selection || item.disabled) return false
 
 		selection.toggle(item)
+		this.events.emit('choose', item)
 
 		return true
 	}

@@ -18,6 +18,8 @@ import type {
 	TCalendarFocusEvents,
 	TCalendarFocusExtension,
 	TCalendarFocusItemEvents,
+	TCalendarPickerEvents,
+	TCalendarPickerExtension,
 	TCalendarSelectionEvents,
 	TCalendarSelectionExtension,
 	TCalendarSelectionItemEvents,
@@ -38,6 +40,8 @@ export type TCalendarCollectionExtensions = {
 	selection: TCalendarSelectionExtension
 	/** Фокус сетки */
 	focus: TCalendarFocusExtension
+	/** Панели выбора месяца и года */
+	picker: TCalendarPickerExtension
 }
 
 export type TCalendarCollection = TCollectionEngine<
@@ -68,11 +72,12 @@ export type TCalendarAdapters = {
 	focus: ICalendarFocusItemExtension
 }
 
-/** События фасада коллекции: база с `batch` плюс карты трёх расширений календаря. */
+/** События фасада коллекции: база с `batch` плюс карты четырёх расширений календаря. */
 export type TCalendarCollectionFacadeEvents = TBatchCollectionFacadeEvents<ICalendarItem> &
 	TCalendarViewEvents &
 	TCalendarSelectionEvents &
-	TCalendarFocusEvents
+	TCalendarFocusEvents &
+	TCalendarPickerEvents
 
 /** События фасада дня: порядок плюс адаптеры выбора и фокуса. */
 export type TCalendarItemCollectionFacadeEvents = TOrderItemFacadeEvents &
