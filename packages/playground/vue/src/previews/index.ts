@@ -7,6 +7,7 @@ import {
 	Calendar,
 	CheckBox,
 	ComponentView,
+	DateInput,
 	Dialog,
 	DragAndDrop,
 	Drawer,
@@ -230,6 +231,12 @@ export const PREVIEWS: Record<string, TPreview> = {
 	// её перекрывает
 	calendar: (bind) =>
 		h(Calendar as Component, { locale: globalThis.navigator.language, ...bind }),
+
+	// Локаль — язык браузера, как у календаря: без неё поле рисует en-US. Имени
+	// у поля нет, как у ползунка, — даёт его aria_label: подпись Label части
+	// не назовёт, они не поля ввода
+	'date-input': (bind) =>
+		h(DateInput, { locale: globalThis.navigator.language, aria_label: 'Дата', ...bind }),
 
 	// Триггер — Button, связку с панелью и вид «нажат» он берёт из scope
 	// слота. В содержимом есть кнопка: на неё при открытии уходит фокус

@@ -9,7 +9,7 @@
     "components",
     "framework-agnostic"
   ],
-  "license": "MIT AND Unicode-3.0",
+  "license": "MIT AND Unicode-3.0 AND Apache-2.0",
   "author": "Yuri Soldatov",
   "repository": {
     "type": "git",
@@ -34,7 +34,8 @@
   },
   "files": [
     "dist",
-    "LICENSE-Unicode-3.0"
+    "LICENSE-Unicode-3.0",
+    "LICENSE-Apache-2.0"
   ],
   "scripts": {
     "build": "vite build -c vite.lib.config.ts && tsc -p tsconfig.build.json",

@@ -7,6 +7,7 @@ import {
 	CheckBoxDescriptor,
 	ComponentViewDescriptor,
 	ControlDescriptor,
+	DateInputDescriptor,
 	DialogDescriptor,
 	DragAndDropDescriptor,
 	DrawerDescriptor,
@@ -127,6 +128,14 @@ export const COMPONENTS: readonly TComponentEntry[] = [
 		showcase: true,
 		span: 1,
 		description: 'Сетки месяцев: выбор одной даты, нескольких или диапазона',
+	},
+	{
+		id: 'date-input',
+		label: 'DateInput',
+		descriptor: DateInputDescriptor,
+		showcase: true,
+		span: 1,
+		description: 'Поле даты по частям в формате локали: дата выделяется и копируется целиком',
 	},
 	{
 		id: 'popover',

@@ -16,4 +16,5 @@ export * from './event'
 export * from './classes'
 export * from './scale'
 // Расчёт дат — внутренний: наружу только типы, которые называет API календаря
-export type { TCalendarDate, TWeekday, TDateUnit } from './calendar'
+// и поля даты
+export type { TCalendarDate, TWeekday, TDateUnit, TDatePart } from './calendar'

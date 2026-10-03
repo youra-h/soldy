@@ -21,6 +21,7 @@ import {
 	Calendar,
 	CheckBox,
 	ComponentView,
+	DateInput,
 	Dialog,
 	DragAndDrop,
 	Drawer,
@@ -96,6 +97,14 @@ const dragAndDrop = new TDragAndDrop()
 	<!-- @vue-expect-error — направления `up` нет -->
 	<ComponentView direction="up" />
 	<ComponentView direction="rtl" />
+
+	<!-- @vue-expect-error — дата строкой YYYY-MM-DD, а не объектом Date -->
+	<DateInput :value="new Date()" />
+	<DateInput value="2026-05-12" />
+
+	<!-- @vue-expect-error — локаль строкой -->
+	<DateInput :locale="42" />
+	<DateInput locale="ru-RU" />
 
 	<!-- @vue-expect-error — места `left` у окна нет: стороны логические -->
 	<Dialog placement="left" />

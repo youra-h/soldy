@@ -63,3 +63,11 @@ The first day of the week by region, which the calendar uses when a locale does 
 [cldr-json](https://github.com/unicode-org/cldr-json) 48.2.0, © Unicode, Inc., licensed under the
 [Unicode License v3](https://www.unicode.org/license.txt); its text ships with the package as
 `LICENSE-Unicode-3.0`. The package keeps only the regions whose week does not start on Monday.
+
+The placeholders of empty date parts in the date input (`дд.мм.гггг`, `mm/dd/yyyy`) by language
+are [React Spectrum](https://github.com/adobe/react-spectrum) data —
+`packages/react-stately/src/datepicker/placeholders.ts` at commit `d0110f7`, based on the strings
+of `<input type="date">` in Chrome and Firefox, © 2020 Adobe, licensed under the
+[Apache License 2.0](https://www.apache.org/licenses/LICENSE-2.0); its text ships with the
+package as `LICENSE-Apache-2.0`. The package keeps only the table of the year, month and day
+placeholders.

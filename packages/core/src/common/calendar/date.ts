@@ -52,12 +52,8 @@ export function parseDate(value: unknown): TCalendarDate | undefined {
 
 	if (!match) return undefined
 
-	const year = Number(match[1])
-	const month = Number(match[2])
-	const day = Number(match[3])
-	const valid = year >= 1 && month >= 1 && month <= 12 && day >= 1 && day <= daysIn(year, month)
-
-	return valid ? value : undefined
+	// Формат уже ровно `YYYY-MM-DD`: собранная из тех же чисел строка — она же
+	return dateIfExists(Number(match[1]), Number(match[2]), Number(match[3]))
 }
 
 /**
@@ -110,7 +106,7 @@ export function addMonths(date: TCalendarDate, count: number): TCalendarDate {
 	const nextYear = Math.floor(index / 12)
 	const nextMonth = (index % 12) + 1
 
-	return compose(nextYear, nextMonth, Math.min(day, daysIn(nextYear, nextMonth)))
+	return compose(nextYear, nextMonth, Math.min(day, daysInMonth(nextYear, nextMonth)))
 }
 
 /** Дата через `count` лет; 29 февраля в невисокосном году — 28-е. */
@@ -173,7 +169,7 @@ export function monthsBetween(from: TCalendarDate, to: TCalendarDate): number {
 export function monthGrid(month: TCalendarDate, first: TWeekday): TMonthGridDay[][] {
 	const [year, monthNumber] = partsOf(month)
 	const start = daysFromCivil(year, monthNumber, 1)
-	const end = start + daysIn(year, monthNumber) - 1
+	const end = start + daysInMonth(year, monthNumber) - 1
 	const weeks: TMonthGridDay[][] = []
 
 	for (let week = start - weekOffset(start, first); week <= end; week += 7) {
@@ -192,6 +188,25 @@ export function monthGrid(month: TCalendarDate, first: TWeekday): TMonthGridDay[
 /** Дата по году, месяцу и дню — в пределах поддерживаемых дат. */
 export function dateFromParts(year: number, month: number, day: number): TCalendarDate {
 	return fromDays(clampDays(daysFromCivil(year, month, day)))
+}
+
+/**
+ * Дата ровно из этих чисел, если такая есть: год от 1 до 9999, месяц от 1 до
+ * 12, день есть в месяце. Иначе `undefined` — в отличие от `dateFromParts`,
+ * который уносит 31 февраля в март.
+ */
+export function dateIfExists(year: number, month: number, day: number): TCalendarDate | undefined {
+	const integers = [year, month, day].every((value) => Number.isInteger(value))
+
+	if (!integers || year < 1 || year > 9999 || month < 1 || month > 12) return undefined
+	if (day < 1 || day > daysInMonth(year, month)) return undefined
+
+	return compose(year, month, day)
+}
+
+/** Дней в месяце года; месяц — от 1 до 12. */
+export function daysInMonth(year: number, month: number): number {
+	return month === 2 && isLeapYear(year) ? 29 : MONTH_LENGTHS[month - 1]
 }
 
 /**
@@ -292,11 +307,6 @@ function partsOf(date: TCalendarDate): [number, number, number] {
 /** Строка даты из частей: год — не короче четырёх цифр. */
 function compose(year: number, month: number, day: number): TCalendarDate {
 	return `${String(year).padStart(4, '0')}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
-}
-
-/** Дней в месяце; месяц — от 1. */
-function daysIn(year: number, month: number): number {
-	return month === 2 && isLeapYear(year) ? 29 : MONTH_LENGTHS[month - 1]
 }
 
 function isLeapYear(year: number): boolean {
