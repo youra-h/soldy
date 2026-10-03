@@ -21,6 +21,12 @@ import type { TPopoverPointerPluginEvents } from './types'
  * Панель внутри контейнера (`contained`) не телепортирована и лежит в самом
  * корне: нажатие в ней всплывает до корня, но это не нажатие по триггеру.
  * Панель плагин узнаёт у `TDismissPlugin`, по пометке владельцем.
+ *
+ * Внутри ли панели нажатие, решает путь события, а не цель: нажатие может
+ * сменить содержимое панели (выбор года в календаре пересобирает список под
+ * месяцы), и фреймворк перерисует его между обработчиками того же клика. До
+ * корня клик дойдёт с целью, которой в панели уже нет, а путь собран при
+ * отправке и панель в нём остаётся.
  */
 export class TPopoverPointerPlugin extends TBasePlugin<any, TPopoverPointerPluginEvents> {
 	private _owner: IPopover | null = null
@@ -63,10 +69,10 @@ export class TPopoverPointerPlugin extends TBasePlugin<any, TPopoverPointerPlugi
 
 	private readonly _onClick = (event: MouseEvent): void => {
 		const owner = this._owner
-		const target = event.target
+		const panel = this._dismiss?.findPanel()
 
 		if (!owner) return
-		if (target instanceof Node && this._dismiss?.findPanel()?.contains(target)) return
+		if (panel && event.composedPath().includes(panel)) return
 
 		owner.open = !owner.open
 	}

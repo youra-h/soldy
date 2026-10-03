@@ -305,6 +305,24 @@ describe('панель внутри корня (contained)', () => {
 		expect(owner.open).toBe(false)
 	})
 
+	/**
+	 * Нажатие сменило содержимое панели: выбор года в календаре пересобирает
+	 * список под месяцы, и фреймворк перерисовывает его между обработчиками
+	 * того же клика. До корня клик доходит с целью, которой в панели уже нет.
+	 */
+	it('нажатие, после которого содержимое панели перерисовано, — тоже не по триггеру', async () => {
+		const { owner } = await setup('<button class="first">Первая</button>', {
+			contained: true,
+		})
+		const first = nodeOf('.first')
+
+		first.addEventListener('click', () => first.replaceWith(document.createElement('div')))
+		first.click()
+
+		expect(first.isConnected).toBe(false)
+		expect(owner.open).toBe(true)
+	})
+
 	it('Escape закрывает один раз и возвращает фокус на триггер', async () => {
 		const { owner } = await setup('<button class="first">Первая</button>', {
 			contained: true,

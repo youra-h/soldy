@@ -431,6 +431,39 @@ describe('выбор месяца и года', () => {
 		}
 	})
 
+	/**
+	 * Мышью целиком: выбор года пересобирает список под месяцы, и Vue
+	 * перерисовывает его между обработчиками того же клика — до корня поповера
+	 * клик доходит с целью, которой в панели уже нет. Панель остаётся открытой.
+	 */
+	it('мышью: год — снова месяцы этого года, панель открыта; месяц — закрывает и ставит месяц', async () => {
+		await show({ months: ['2026-09-01'] })
+		await open()
+
+		const tile = (label: string) => {
+			const option = options().find((item) => item.textContent?.trim() === label)
+
+			if (!option) throw new Error(`${label}: плитки нет`)
+
+			return rowOf(option).row
+		}
+
+		await userEvent.click(find('.s-calendar__picker-heading'))
+		await expect.poll(() => options()[0]?.textContent?.trim()).toBe('2017')
+
+		await userEvent.click(tile('2024'))
+		await expect.poll(() => options()[0]?.textContent?.trim()).toBe('Jan')
+		await nextFrame()
+
+		expect(find('.s-popover__panel').checkVisibility()).toBe(true)
+		expect(find('.s-calendar__picker-heading').textContent?.trim()).toBe('2024')
+
+		await userEvent.click(tile('Mar'))
+
+		await expect.poll(titles).toEqual(['March 2024'])
+		await expect.poll(() => find('.s-popover__panel').checkVisibility()).toBe(false)
+	})
+
 	it('указатель — рука на месяцах и годах, у выключенных вне границ — обычный', async () => {
 		await show({ months: ['2026-09-01'], min: '2026-03-01', max: '2026-10-31' })
 		await open()
