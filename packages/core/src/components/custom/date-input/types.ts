@@ -85,6 +85,12 @@ export type TDigitEntry = {
 	readonly advance: boolean
 }
 
+/** Своя правка значения: части, из которых оно собрано, и само значение. */
+export type TDateInputEdit = {
+	readonly parts: TDateInputParts
+	readonly date: TDateInputValue
+}
+
 /** Итог стирания цифры: части и набранные цифры, к которым допишется следующая. */
 export type TDigitErase = {
 	readonly parts: TDateInputParts

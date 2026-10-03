@@ -34,10 +34,8 @@ import type {
 	TDateInputParts,
 	TDateInputSegment,
 	TDateInputValue,
+	TDateInputEdit,
 } from './types'
-
-/** Своя правка значения: части, из которых оно собрано, и само значение. */
-type TPendingEdit = { readonly parts: TDateInputParts; readonly date: TDateInputValue }
 
 /**
  * Поле даты из частей по формату локали: день, месяц и год — в порядке и с
@@ -91,7 +89,7 @@ export class TDateInput
 	/** Цифры, набранные в часть под фокусом: к ним допишется следующая */
 	protected _typed = ''
 	/** Своя правка, которую сейчас пишет сеттер `value` */
-	private _pending: TPendingEdit | undefined = undefined
+	private _pending: TDateInputEdit | undefined = undefined
 
 	constructor(props: Partial<IDateInputProps> = {}) {
 		const ctor = new.target as typeof TDateInput
@@ -387,7 +385,7 @@ export class TDateInput
 			return true
 		}
 
-		const pending: TPendingEdit = { parts: next, date }
+		const pending: TDateInputEdit = { parts: next, date }
 
 		this._pending = pending
 		this.value = date
