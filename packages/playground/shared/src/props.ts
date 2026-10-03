@@ -6,7 +6,7 @@ import {
 	CALENDAR_MODES,
 	CHECK_BOX_VIEWS,
 	COMPONENT_VARIANTS,
-	DATE_GRANULARITIES,
+	DATE_INPUT_KINDS,
 	DIALOG_PLACEMENTS,
 	DIRECTIONS,
 	DRAWER_PLACEMENTS,
@@ -178,12 +178,11 @@ const OWN: Record<string, Record<string, string>> = {
 		nextYearsLabel: 'Имя стрелки «следующие 12 лет» в панели выбора — на списке лет',
 	},
 	'date-input': {
-		value: 'Дата строкой YYYY-MM-DD, с точностью до минуты — YYYY-MM-DDTHH:mm. Пока части набраны не все, значения нет',
+		value: 'Дата строкой YYYY-MM-DD, у поля даты и времени — YYYY-MM-DDTHH:mm. Пока части набраны не все, значения нет',
 		min: 'Первый верный день или момент, YYYY-MM-DD или YYYY-MM-DDTHH:mm. Раньше — не прижимается, а помечается ошибкой',
 		max: 'Последний верный день или момент. Граница-день пропускает любое время своего дня',
 		locale: 'Локаль формата, тег BCP 47: порядок частей, разделители, цифры, цикл часов и направление — ru-RU, en-US, ar-EG',
-		granularity:
-			'Точность: день — только дата, минута — ещё час, минута и, у 12-часовой локали, AM/PM. Цикл часов берётся из локали',
+		kind: 'Вид поля: date — только дата, datetime — ещё час, минута и, у 12-часовой локали, AM/PM. Цикл часов берётся из локали',
 	},
 	slider: {
 		min: 'Начало хода',
@@ -349,7 +348,7 @@ const OPTIONS: Record<string, Record<string, readonly string[]>> = {
 	tooltip: { placement: TOOLTIP_PLACEMENTS, type: TOOLTIP_TYPES },
 	slider: { orientation: SLIDE_ORIENTATIONS, snap: SLIDE_SNAPS, tooltip: SLIDER_TOOLTIPS },
 	calendar: { mode: CALENDAR_MODES },
-	'date-input': { granularity: DATE_GRANULARITIES },
+	'date-input': { kind: DATE_INPUT_KINDS },
 	'progress-linear': { orientation: PROGRESS_LINEAR_ORIENTATIONS },
 	dialog: { placement: DIALOG_PLACEMENTS },
 	drawer: { placement: DRAWER_PLACEMENTS, swipe: DRAWER_SWIPES },

@@ -9,7 +9,7 @@ import {
 import type { TCalendarDate, TDatePart } from '../../../../common'
 import { AS_IS, clamp, numberOf, numberRule, wrap } from '../segments'
 import type { TFieldPart } from '../segments'
-import type { TDateFieldToken, TGroupContext, TPartGroup, TPartGroupKind } from '../format'
+import type { TDateFieldToken, TGroupContext, TPartGroup, TGroupSpec } from '../format'
 import type { TDateInputParts, TDatePartLimits } from '../types'
 
 /** Формат частей даты: день и месяц — двумя цифрами, год — полностью. */
@@ -27,7 +27,7 @@ const MONTHS: TDatePartLimits = { min: 1, max: 12 }
  * поля: буддийский у `th-TH` больше на `yearOffset`. День не длиннее месяца:
  * смена месяца или года его прижимает (31-е в апреле — 30-е).
  */
-export const DATE_GROUP: TPartGroupKind = {
+export const DATE_GROUP: TGroupSpec = {
 	options: OPTIONS,
 	parse: (text) => {
 		const date = parseDate(text)

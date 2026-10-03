@@ -1,5 +1,5 @@
 export {
-	kindsOf,
+	groupSpecsOf,
 	fieldValueOf,
 	partsOfValue,
 	outOfBounds,

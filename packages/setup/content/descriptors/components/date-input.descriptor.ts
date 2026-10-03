@@ -2,7 +2,7 @@
  * Дескриптор DateInput (TDateInput).
  *
  * Наследует `InputControlDescriptor` (value, name, readonly, required, id,
- * disabled, size, variant, ...) и добавляет границы, локаль формата и точность:
+ * disabled, size, variant, ...) и добавляет границы, локаль формата и вид поля:
  * дата или дата со временем. Значение вводится по частям в формате локали, а
  * всё оно выделяется, копируется и удаляется, как текст: части нередактируемые,
  * их клавиши, указатель и буфер обмена переводят в команды ядра три плагина
@@ -47,18 +47,18 @@ export const DateInputDescriptor = defineDescriptor(() =>
 			},
 			props: {
 				/**
-				 * Строкой: дата `YYYY-MM-DD` или, с точностью до минуты, дата со
+				 * Строкой: дата `YYYY-MM-DD` или, у поля даты и времени, дата со
 				 * временем `YYYY-MM-DDTHH:mm`. Другого значения у поля нет.
 				 */
 				value: { type: String },
 				min: { type: String, triggers: ['change:min'] },
 				max: { type: String, triggers: ['change:max'] },
 				locale: { type: String, triggers: ['change:locale'] },
-				/** `day` — дата, `minute` — ещё час, минута и период суток по циклу локали. */
-				granularity: { type: String, triggers: ['change:granularity'] },
+				/** `date` — дата, `datetime` — ещё час, минута и период суток по циклу локали. */
+				kind: { type: String, triggers: ['change:kind'] },
 				/**
 				 * Части и разделители в порядке формата. Перечитываются на правку
-				 * частей и на всё, что пишет их наборы: локаль и точность — текст,
+				 * частей и на всё, что пишет их наборы: локаль и вид поля — текст,
 				 * имена, порядок и состав частей, `disabled` — остановки Tab,
 				 * `readonly` и `required` — `aria-readonly` и `aria-required`,
 				 * границы — `aria-invalid`.
@@ -69,7 +69,7 @@ export const DateInputDescriptor = defineDescriptor(() =>
 					triggers: [
 						'change:segments',
 						'change:locale',
-						'change:granularity',
+						'change:kind',
 						'change:disabled',
 						'change:readonly',
 						'change:required',
@@ -77,11 +77,11 @@ export const DateInputDescriptor = defineDescriptor(() =>
 						'change:max',
 					],
 				},
-				/** `dir` и `lang` ряда частей — по формату локали в точности поля. */
+				/** `dir` и `lang` ряда частей — по формату локали и виду поля. */
 				segmentsAttrs: {
 					type: Object,
 					protected: true,
-					triggers: ['change:locale', 'change:granularity'],
+					triggers: ['change:locale', 'change:kind'],
 				},
 			},
 		},

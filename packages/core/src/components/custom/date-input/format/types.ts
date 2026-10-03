@@ -1,5 +1,5 @@
 import type { TFieldPart } from '../segments'
-import type { TDateFieldPart, TDateGranularity, TDateInputParts } from '../types'
+import type { TDateFieldPart, TDateInputKind, TDateInputParts } from '../types'
 
 /** Кусок формата поля: часть с её правилом или литерал между частями — как его отдал Intl. */
 export type TDateFieldToken = TFieldPart | { readonly type: 'literal'; readonly text: string }
@@ -43,9 +43,9 @@ export type TPartGroup = {
 
 /**
  * Вид группы — дата или время: кусок значения, опции Intl и группа в
- * формате локали. Значение поля — куски видов его точности через `T`.
+ * формате локали. Значение поля — куски групп его вида через `T`.
  */
-export type TPartGroupKind = {
+export type TGroupSpec = {
 	/** Опции Intl, которыми формат поля пишет части группы */
 	readonly options: Intl.DateTimeFormatOptions
 	/** Числа частей из куска значения (`YYYY-MM-DD`, `HH:mm`); не кусок — `undefined` */
@@ -59,9 +59,9 @@ export type TPartGroupKind = {
 }
 
 /**
- * Формат поля в локали и точности — всё, что поле берёт у локали: порядок
+ * Формат поля в локали и виде — всё, что поле берёт у локали: порядок
  * частей и литералы между ними, правила частей, направление ряда, цифры и
- * имена частей для скринридера. Один объект на тег локали и точность.
+ * имена частей для скринридера. Один объект на тег локали и вид поля.
  *
  * Части даты — в календаре поля: буддийском, если календарь подписей
  * буддийский (`th-TH` вводит год 2569, как его пишет заголовок календаря),
@@ -70,8 +70,8 @@ export type TPartGroupKind = {
  * григорианские.
  */
 export interface IDateFieldFormat {
-	/** Точность поля: из каких групп собирается значение */
-	readonly granularity: TDateGranularity
+	/** Вид поля: из каких групп собирается значение */
+	readonly kind: TDateInputKind
 	/**
 	 * Части и литералы в порядке формата Intl: день, месяц, час и минута —
 	 * двумя цифрами, год — полностью. Литералы — как есть, с пробелами
@@ -80,7 +80,7 @@ export interface IDateFieldFormat {
 	readonly tokens: readonly TDateFieldToken[]
 	/** Части по порядку формата */
 	readonly parts: readonly TFieldPart[]
-	/** Группы точности по порядку значения: дата, затем время */
+	/** Группы вида по порядку значения: дата, затем время */
 	readonly groups: readonly TPartGroup[]
 	/**
 	 * Направление ряда частей — по первому сильному знаку даты в локали:

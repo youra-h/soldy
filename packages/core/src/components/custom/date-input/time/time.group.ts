@@ -1,7 +1,7 @@
 import { DEFAULT_LOCALE } from '../../../../common'
 import { AS_IS, numberRule, wrap } from '../segments'
 import type { TFieldPart, TPartEntry } from '../segments'
-import type { TDateFieldToken, TGroupContext, TPartGroup, TPartGroupKind } from '../format'
+import type { TDateFieldToken, TGroupContext, TPartGroup, TGroupSpec } from '../format'
 import type { TDateInputParts, TDatePartLimits } from '../types'
 import { HALF_DAY, hasDayPeriod, hourInCycle, hourLimits, hourOfDay } from './hour-cycle'
 import type { THourCycle } from './types'
@@ -51,7 +51,7 @@ const DAY_PERIOD_FALLBACK: readonly [string, string] = ['AM', 'PM']
  * не подтвердил. Формат без периода показывает час суток целиком: набранный
  * там час и есть выбор половины.
  */
-export const TIME_GROUP: TPartGroupKind = {
+export const TIME_GROUP: TGroupSpec = {
 	options: OPTIONS,
 	parse: (text) => {
 		const match = TIME_FORMAT.exec(text)

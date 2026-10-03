@@ -1,7 +1,7 @@
 import { DEFAULT_LOCALE, calendarLocale } from '../../../../common'
-import { kindsOf } from '../date-time'
+import { groupSpecsOf } from '../date-time'
 import type { TFieldPart } from '../segments'
-import type { TDateFieldPart, TDateGranularity } from '../types'
+import type { TDateFieldPart, TDateInputKind } from '../types'
 import type { IDateFieldFormat, TDateFieldToken, TPartGroup } from './types'
 
 /**
@@ -35,42 +35,39 @@ const RTL_SCRIPT =
 	/[\p{Script=Hebrew}\p{Script=Arabic}\p{Script=Syriac}\p{Script=Thaana}\p{Script=Nko}\p{Script=Samaritan}\p{Script=Mandaic}\p{Script=Adlam}\p{Script=Hanifi_Rohingya}]/u
 
 /**
- * Форматы по тегу, как его задали, и точности. Карта заводится при первом
+ * Форматы по тегу, как его задали, и виду поля. Карта заводится при первом
  * обращении, а не при загрузке модуля: приложению без поля даты она не нужна.
  */
-let formats: Map<string, Map<TDateGranularity, IDateFieldFormat>> | undefined
+let formats: Map<string, Map<TDateInputKind, IDateFieldFormat>> | undefined
 
 /**
- * Формат поля в локали `locale` и точности `granularity` — один на тег и
- * точность: форматтеры Intl создаются один раз и служат всем полям с ними.
+ * Формат поля в локали `locale` и виде `kind` — один на тег и
+ * вид: форматтеры Intl создаются один раз и служат всем полям с ними.
  * Невалидный и пустой тег — `en-US`.
  */
-export function fieldFormat(
-	locale: string | undefined,
-	granularity: TDateGranularity,
-): IDateFieldFormat {
+export function fieldFormat(locale: string | undefined, kind: TDateInputKind): IDateFieldFormat {
 	formats ??= new Map()
 
 	const key = locale ?? ''
-	let byGranularity = formats.get(key)
+	let byKind = formats.get(key)
 
-	if (byGranularity === undefined) {
-		byGranularity = new Map()
-		formats.set(key, byGranularity)
+	if (byKind === undefined) {
+		byKind = new Map()
+		formats.set(key, byKind)
 	}
 
-	let format = byGranularity.get(granularity)
+	let format = byKind.get(kind)
 
 	if (format === undefined) {
-		format = createFormat(locale, granularity)
-		byGranularity.set(granularity, format)
+		format = createFormat(locale, kind)
+		byKind.set(kind, format)
 	}
 
 	return format
 }
 
 /**
- * Формат Intl с частями групп точности. Тег и календарь — у локали календаря
+ * Формат Intl с частями групп вида поля. Тег и календарь — у локали календаря
  * (`calendarLocale`): календарь поля буддийский, если буддийский календарь
  * подписей, иначе григорианский — эры у поля нет, а японская эра меняется
  * посреди года. Цикл часов — только от локали, с ключом `-u-hc-` тоже.
@@ -79,12 +76,12 @@ export function fieldFormat(
  * Intl отдал не ровно по одной части каждого типа — формат собирается из
  * запасных форматов групп. У известных движков такой локали нет.
  */
-function createFormat(tag: string | undefined, granularity: TDateGranularity): IDateFieldFormat {
+function createFormat(tag: string | undefined, kind: TDateInputKind): IDateFieldFormat {
 	const { locale, calendar } = calendarLocale(tag)
-	const kinds = kindsOf(granularity)
+	const specs = groupSpecsOf(kind)
 	const formatter = new Intl.DateTimeFormat([locale, DEFAULT_LOCALE], {
-		...kinds.reduce<Intl.DateTimeFormatOptions>(
-			(all, kind) => ({ ...all, ...kind.options }),
+		...specs.reduce<Intl.DateTimeFormatOptions>(
+			(all, spec) => ({ ...all, ...spec.options }),
 			{},
 		),
 		calendar: calendar === 'buddhist' ? 'buddhist' : 'gregory',
@@ -93,13 +90,13 @@ function createFormat(tag: string | undefined, granularity: TDateGranularity): I
 	const resolved = formatter.resolvedOptions()
 	const sample = formatter.formatToParts(SAMPLE)
 	const digits = digitsOf(resolved.numberingSystem)
-	const groups = kinds.map((kind) =>
-		kind.create({ resolved, sample, sampleYear: SAMPLE_YEAR, digits }),
+	const groups = specs.map((spec) =>
+		spec.create({ resolved, sample, sampleYear: SAMPLE_YEAR, digits }),
 	)
 	const tokens = tokensOf(sample, groups) ?? isoTokensOf(groups)
 
 	return {
-		granularity,
+		kind,
 		tokens,
 		parts: tokens.flatMap((token) => (token.type === 'literal' ? [] : [token])),
 		groups,

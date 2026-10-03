@@ -1,16 +1,16 @@
 import { DATE_GROUP } from '../date'
 import { TIME_GROUP } from '../time'
 import { asciiDigits } from '../segments'
-import type { IDateFieldFormat, TPartGroupKind } from '../format'
-import type { TDateFieldPart, TDateGranularity, TDateInputParts, TDateInputValue } from '../types'
+import type { IDateFieldFormat, TGroupSpec } from '../format'
+import type { TDateFieldPart, TDateInputKind, TDateInputParts, TDateInputValue } from '../types'
 import type { TValuePiece } from './types'
 
 /**
- * Дата и время вместе — значение поля по его точности.
+ * Дата и время вместе — значение поля по его виду.
  *
- * Значение — куски видов групп точности через `T`, как `value` у
- * `<input type="datetime-local">`: `day` — дата `YYYY-MM-DD`, `minute` — ещё
- * время `HH:mm`. Своих правил частей здесь нет: части даты и времени
+ * Значение — куски групп вида поля через `T`, как `value` у
+ * `<input type="datetime-local">`: `date` — дата `YYYY-MM-DD`, `datetime` —
+ * ещё время `HH:mm`. Своих правил частей здесь нет: части даты и времени
  * согласует каждая группа у себя, а связей между группами нет вовсе.
  */
 
@@ -18,13 +18,13 @@ import type { TValuePiece } from './types'
 const SEPARATOR = 'T'
 
 /**
- * Точности поля — виды групп по порядку значения. Каждая следующая — та же
- * предыдущая и ещё группа: кусок под тем же номером в любой точности одного
- * вида, поэтому значения разной точности сравниваются кусок за куском.
+ * Виды поля — спецификации групп по порядку значения. Каждый следующий — тот
+ * же предыдущий и ещё группа: кусок под тем же номером в любом виде — одной
+ * группы, поэтому значения разного вида сравниваются кусок за куском.
  */
-const PRECISIONS: Readonly<Record<TDateGranularity, readonly TPartGroupKind[]>> = {
-	day: [DATE_GROUP],
-	minute: [DATE_GROUP, TIME_GROUP],
+const KINDS: Readonly<Record<TDateInputKind, readonly TGroupSpec[]>> = {
+	date: [DATE_GROUP],
+	datetime: [DATE_GROUP, TIME_GROUP],
 }
 
 /**
@@ -38,22 +38,22 @@ const DIRECTION_MARKS = /[؜‎‏‪-‮⁦-⁩]/g
 /** Группы цифр текста, уже приведённого к цифрам ASCII. */
 const DIGIT_GROUPS = /\d+/g
 
-/** Виды групп точности — по порядку значения. */
-export function kindsOf(granularity: TDateGranularity): readonly TPartGroupKind[] {
-	return PRECISIONS[granularity]
+/** Спецификации групп вида поля — по порядку значения. */
+export function groupSpecsOf(kind: TDateInputKind): readonly TGroupSpec[] {
+	return KINDS[kind]
 }
 
 /**
  * Значение из частей — только когда есть все части формата и такое значение
- * есть: дата в точности до дня, дата со временем — до минуты.
+ * есть: у поля даты — дата, у поля даты и времени — дата со временем.
  */
 export function fieldValueOf(parts: TDateInputParts, format: IDateFieldFormat): TDateInputValue {
 	if (format.parts.some((part) => parts[part.type] === undefined)) return undefined
 
-	return composeValue(parts, PRECISIONS[format.granularity])
+	return composeValue(parts, KINDS[format.kind])
 }
 
-/** Части значения — даты или даты со временем, при любой точности поля; не значение — пусто. */
+/** Части значения — даты или даты со временем, при любом виде поля; не значение — пусто. */
 export function partsOfValue(value: unknown): TDateInputParts {
 	return mergeParts(readValue(value)?.map((piece) => piece.parts) ?? [])
 }
@@ -87,11 +87,11 @@ export function nowOf(format: IDateFieldFormat): TDateInputParts {
 }
 
 /**
- * Значение из текста, который вставили в поле, — в точности формата; не
+ * Значение из текста, который вставили в поле, — в виде поля формата; не
  * собрать — `undefined`.
  *
  * Цифры приводятся к ASCII, метки направления выбрасываются. Дальше — ISO
- * точности (`YYYY-MM-DD`, `YYYY-MM-DDTHH:mm`) или группы цифр в порядке
+ * вида поля (`YYYY-MM-DD`, `YYYY-MM-DDTHH:mm`) или группы цифр в порядке
  * числовых частей формата: разделители между ними любые, год — полностью, в
  * календаре поля (`th-TH` — 2569, то есть 2026), час — в цикле локали. Слова
  * (период суток, `PM`) группа ищет в тексте сама. Значение должно быть: 31
@@ -99,9 +99,9 @@ export function nowOf(format: IDateFieldFormat): TDateInputParts {
  */
 export function parseFieldText(text: string, format: IDateFieldFormat): TDateInputValue {
 	const normalized = asciiDigits(text.replace(DIRECTION_MARKS, ''), format.digits).trim()
-	const kinds = PRECISIONS[format.granularity]
+	const specs = KINDS[format.kind]
 
-	if (readValue(normalized)?.length === kinds.length) return normalized
+	if (readValue(normalized)?.length === specs.length) return normalized
 
 	const numeric = format.parts.filter((part) => part.rule.numeric).map((part) => part.type)
 	const found = normalized.match(DIGIT_GROUPS) ?? []
@@ -113,35 +113,35 @@ export function parseFieldText(text: string, format: IDateFieldFormat): TDateInp
 
 	if (!pieces.every((parts) => parts !== undefined)) return undefined
 
-	return composeValue(mergeParts(pieces), kinds)
+	return composeValue(mergeParts(pieces), specs)
 }
 
-/** Значение по числам частей из кусков видов `kinds`; не собрать кусок — `undefined`. */
-function composeValue(parts: TDateInputParts, kinds: readonly TPartGroupKind[]): TDateInputValue {
-	const pieces = kinds.map((kind) => kind.compose(parts))
+/** Значение по числам частей из кусков групп `specs`; не собрать кусок — `undefined`. */
+function composeValue(parts: TDateInputParts, specs: readonly TGroupSpec[]): TDateInputValue {
+	const pieces = specs.map((spec) => spec.compose(parts))
 
 	return pieces.every((piece) => piece !== undefined) ? pieces.join(SEPARATOR) : undefined
 }
 
 /**
- * Куски значения любой точности: точность — по числу кусков, каждый кусок
- * должен прочитаться видом своей группы. Не значение — `undefined`.
+ * Куски значения любого вида: вид — по числу кусков, каждый кусок
+ * должен прочитаться спецификацией своей группы. Не значение — `undefined`.
  */
 function readValue(value: unknown): readonly TValuePiece[] | undefined {
 	if (typeof value !== 'string') return undefined
 
 	const texts = value.split(SEPARATOR)
-	const kinds = Object.values(PRECISIONS).find((precision) => precision.length === texts.length)
+	const specs = Object.values(KINDS).find((kind) => kind.length === texts.length)
 
-	if (kinds === undefined) return undefined
+	if (specs === undefined) return undefined
 
-	const pieces = kinds.flatMap((kind, index) => {
-		const parts = kind.parse(texts[index])
+	const pieces = specs.flatMap((spec, index) => {
+		const parts = spec.parse(texts[index])
 
-		return parts === undefined ? [] : [{ kind, text: texts[index], parts }]
+		return parts === undefined ? [] : [{ spec, text: texts[index], parts }]
 	})
 
-	return pieces.length === kinds.length ? pieces : undefined
+	return pieces.length === specs.length ? pieces : undefined
 }
 
 /** Порядок значений — кусок за куском, пока куски есть у обоих. */
@@ -149,7 +149,7 @@ function compare(a: readonly TValuePiece[], b: readonly TValuePiece[]): number {
 	const length = Math.min(a.length, b.length)
 
 	for (let index = 0; index < length; index++) {
-		const order = a[index].kind.compare(a[index].text, b[index].text)
+		const order = a[index].spec.compare(a[index].text, b[index].text)
 
 		if (order !== 0) return order
 	}

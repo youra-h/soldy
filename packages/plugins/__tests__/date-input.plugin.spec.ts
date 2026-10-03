@@ -127,7 +127,7 @@ async function mount(props: Partial<IDateInputProps> = {}) {
 	render()
 	owner.events.on('change:segments', render)
 	owner.events.on('change:locale', render)
-	owner.events.on('change:granularity', render)
+	owner.events.on('change:kind', render)
 	owner.events.on('change:disabled', render)
 
 	const bundle = new TPluginBundle(owner)
@@ -383,7 +383,7 @@ describe('клавиши', () => {
 	it('время: час и минута цифрами, буква выбирает период суток, регистр не важен', async () => {
 		const { owner, segment, press, type } = await mount({
 			locale: 'en-US',
-			granularity: 'minute',
+			kind: 'datetime',
 		})
 
 		segment('month').focus()
@@ -405,7 +405,7 @@ describe('клавиши', () => {
 	it('↑/↓ у периода суток — другой период, час переезжает за ним', async () => {
 		const { owner, segment, press } = await mount({
 			locale: 'en-US',
-			granularity: 'minute',
+			kind: 'datetime',
 			value: '2026-05-12T14:30',
 		})
 
@@ -420,7 +420,7 @@ describe('клавиши', () => {
 	it('буква не периода — не поля; с которой начинаются оба имени — период не меняет', async () => {
 		const en = await mount({
 			locale: 'en-US',
-			granularity: 'minute',
+			kind: 'datetime',
 			value: '2026-05-12T14:30',
 		})
 
@@ -433,7 +433,7 @@ describe('клавиши', () => {
 		// ko-KR: «오전» и «오후» — оба с одной буквы
 		const ko = await mount({
 			locale: 'ko-KR',
-			granularity: 'minute',
+			kind: 'datetime',
 			value: '2026-05-12T14:30',
 		})
 		const first = ko.segment('dayPeriod').textContent?.[0] ?? ''
@@ -443,16 +443,16 @@ describe('клавиши', () => {
 		expect(ko.owner.value).toBe('2026-05-12T14:30')
 	})
 
-	it('смена точности — части времени появляются и пропадают, фокус с пропавшей части снят', async () => {
+	it('смена вида — части времени появляются и пропадают, фокус с пропавшей части снят', async () => {
 		const { owner, row, segment } = await mount({ value: '2026-05-12' })
 
-		owner.granularity = 'minute'
+		owner.kind = 'datetime'
 		expect(row.querySelectorAll('.s-date-input__segment')).toHaveLength(5)
 
 		segment('minute').focus()
 		expect(owner.focusedSegment).toBe('minute')
 
-		owner.granularity = 'day'
+		owner.kind = 'date'
 		expect(row.querySelectorAll('.s-date-input__segment')).toHaveLength(3)
 		expect(owner.focusedSegment).toBeUndefined()
 	})

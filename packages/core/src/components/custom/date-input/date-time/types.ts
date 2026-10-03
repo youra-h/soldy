@@ -1,9 +1,9 @@
-import type { TPartGroupKind } from '../format'
+import type { TGroupSpec } from '../format'
 import type { TDateInputParts } from '../types'
 
-/** Кусок значения, прочитанный видом своей группы. */
+/** Кусок значения, прочитанный спецификацией своей группы. */
 export type TValuePiece = {
-	readonly kind: TPartGroupKind
+	readonly spec: TGroupSpec
 	readonly text: string
 	readonly parts: TDateInputParts
 }

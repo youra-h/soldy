@@ -23,7 +23,7 @@ import type {
 	IDateInput,
 	IDateInputProps,
 	TDateFieldPart,
-	TDateGranularity,
+	TDateInputKind,
 	TDateInputBound,
 	TDateInputEdge,
 	TDateInputEvents,
@@ -35,24 +35,24 @@ import type {
 } from './types'
 
 /**
- * Поле даты из частей по формату локали: день, месяц и год, а с точностью до
- * минуты — ещё час, минута и период суток, в порядке и с разделителями
- * `Intl.DateTimeFormat#formatToParts`.
+ * Поле даты из частей по формату локали: день, месяц и год, а у поля даты и
+ * времени (`kind: 'datetime'`) — ещё час, минута и период суток, в порядке и с
+ * разделителями `Intl.DateTimeFormat#formatToParts`.
  *
  * **Части — буфер правки.** Число каждой части ядро держит само
  * (`TDateInputParts`); значение (`value`) пишется, когда собраны все части
- * точности и такое значение есть, и снимается, когда собранное разобрали.
- * Запись снаружи — части берутся из неё (дата или дата со временем — при любой
- * точности), не значение — части пусты; эхо своей записи (`v-model` вернул то
+ * вида поля и такое значение есть, и снимается, когда собранное разобрали.
+ * Запись снаружи — части берутся из неё (дата или дата со временем — при любом
+ * виде поля), не значение — части пусты; эхо своей записи (`v-model` вернул то
  * же значение) части не трогает. Отменили `change:value:before` — правки нет,
  * поправили — части показывают итог.
  *
- * **Формат — только от `locale` и точности** (`granularity`): порядок частей,
+ * **Формат — только от `locale` и вида поля** (`kind`): порядок частей,
  * разделители, цифры, цикл часов, имена периодов суток, подсказки пустых
  * частей, имена частей и направление ряда — формат поля локали
- * (`fieldFormat(locale, granularity)`). Смена локали и точности
+ * (`fieldFormat(locale, kind)`). Смена локали и вида
  * частей не трогает: другими становятся текст и состав частей формата, а
- * время, скрытое точностью до дня, остаётся в частях и вернётся. Значение
+ * время, скрытое у поля даты, остаётся в частях и вернётся. Значение
  * пишется заново, только если те же части в новом формате собираются иначе.
  *
  * **Фокус части** ведёт ядро (`focusedSegment`, как `focusedDate` у
@@ -75,19 +75,19 @@ export class TDateInput
 	static override baseClass = 's-date-input'
 
 	static defaultValues: typeof TInputControl.defaultValues &
-		TDefaultValues<IDateInputProps, 'locale' | 'granularity', 'min' | 'max'> = {
+		TDefaultValues<IDateInputProps, 'locale' | 'kind', 'min' | 'max'> = {
 		...TInputControl.defaultValues,
 		min: undefined,
 		max: undefined,
 		// Языка интерфейса библиотека не знает: дефолт английский, как у календаря
 		locale: DEFAULT_LOCALE,
-		granularity: 'day',
+		kind: 'date',
 	}
 
 	protected _min: TDateInputBound
 	protected _max: TDateInputBound
 	protected _locale: string
-	protected _granularity: TDateGranularity
+	protected _kind: TDateInputKind
 	protected _parts: TDateInputParts
 	protected _focusedSegment: TDateFieldPart | undefined = undefined
 	/** Цифры, набранные в часть под фокусом: к ним допишется следующая */
@@ -103,7 +103,7 @@ export class TDateInput
 		this._min = props.min ?? ctor.defaultValues.min
 		this._max = props.max ?? ctor.defaultValues.max
 		this._locale = props.locale ?? ctor.defaultValues.locale
-		this._granularity = props.granularity ?? ctor.defaultValues.granularity
+		this._kind = props.kind ?? ctor.defaultValues.kind
 		this._parts = partsOfValue(this._value)
 
 		// Корень — группа частей: имя ей даёт `aria_label` или `aria_labelledBy`
@@ -159,22 +159,22 @@ export class TDateInput
 		this._formatChanged(before)
 	}
 
-	get granularity(): TDateGranularity {
-		return this._granularity
+	get kind(): TDateInputKind {
+		return this._kind
 	}
 
 	/**
-	 * Части сохраняются по типу, а значение собирается из них в новой точности
+	 * Части сохраняются по типу, а значение собирается из них в новом виде
 	 * — так же, как после правки: время ушло из значения и вернётся в него, а
 	 * дата без набранного времени значения не даёт.
 	 */
-	set granularity(value: TDateGranularity) {
-		if (this._granularity === value) return
+	set kind(value: TDateInputKind) {
+		if (this._kind === value) return
 
 		const before = fieldValueOf(this._parts, this._format)
 
-		this._granularity = value
-		this.events.emit('change:granularity', value)
+		this._kind = value
+		this.events.emit('change:kind', value)
 		this._formatChanged(before)
 	}
 
@@ -336,7 +336,7 @@ export class TDateInput
 
 	/**
 	 * Вставленное значение заменяет части, которые показывает поле: время,
-	 * скрытое точностью до дня, остаётся в частях.
+	 * скрытое у поля даты, остаётся в частях.
 	 */
 	paste(text: string): boolean {
 		if (!this._editable) return false
@@ -356,7 +356,7 @@ export class TDateInput
 			min: this._min,
 			max: this._max,
 			locale: this._locale,
-			granularity: this._granularity,
+			kind: this._kind,
 		}
 	}
 
@@ -364,9 +364,9 @@ export class TDateInput
 	/* Внутреннее                                                         */
 	/* ------------------------------------------------------------------ */
 
-	/** Формат поля локали в точности поля — один объект на тег и точность. */
+	/** Формат поля локали и вида — один объект на тег и вид. */
 	protected get _format(): IDateFieldFormat {
-		return fieldFormat(this._locale, this._granularity)
+		return fieldFormat(this._locale, this._kind)
 	}
 
 	/** Часть формата под фокусом с её правилом; фокуса нет — `undefined`. */
@@ -384,7 +384,7 @@ export class TDateInput
 	/**
 	 * Значение сменилось — части за ним. Своя правка оставляет свои части, если
 	 * значение записалось как есть: из него те же части не собрать (у недописанной
-	 * даты значения нет вовсе, а время, ушедшее из значения при точности до дня,
+	 * даты значения нет вовсе, а время, ушедшее из значения у поля даты,
 	 * в частях остаётся). Запись снаружи и поправленная в `change:value:before`
 	 * правка берут части из значения, набранные цифры сбрасываются.
 	 */
@@ -454,13 +454,13 @@ export class TDateInput
 	}
 
 	/**
-	 * Формат сменился — локаль или точность. Набранные цифры были в прежнем
+	 * Формат сменился — локаль или вид поля. Набранные цифры были в прежнем
 	 * формате; части под фокусом в новом может не быть (период суток у
-	 * 24-часовой локали, время у точности до дня) — тогда фокуса в поле нет: её
+	 * 24-часовой локали, время у поля даты) — тогда фокуса в поле нет: её
 	 * узел разметка сняла вместе с DOM-фокусом.
 	 *
 	 * Значение пишется заново, только если те же части в новом формате
-	 * собираются иначе, чем в прежнем (`before`): точность меняет вид значения, а
+	 * собираются иначе, чем в прежнем (`before`): вид поля меняет форму значения, а
 	 * цикл часов — нужен ли выбранный период суток. Значение, записанное снаружи
 	 * и полем не собранное, смена формата, которая его прочтение не меняет, не
 	 * трогает.

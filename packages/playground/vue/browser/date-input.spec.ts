@@ -329,7 +329,7 @@ describe('клавиши и фокус', () => {
 
 describe('время', () => {
 	it('en-US: час и минута цифрами, буква — период суток, фокус идёт по частям', async () => {
-		const ctrl = await show({ locale: 'en-US', granularity: 'minute', value: undefined })
+		const ctrl = await show({ locale: 'en-US', kind: 'datetime', value: undefined })
 
 		await userEvent.click(segment('month'))
 		await userEvent.keyboard('05122026')
@@ -348,7 +348,7 @@ describe('время', () => {
 	})
 
 	it('ru: 24 часа, ←/→ ходят из даты во время', async () => {
-		const ctrl = await show({ granularity: 'minute', value: '2026-05-12T14:30' })
+		const ctrl = await show({ kind: 'datetime', value: '2026-05-12T14:30' })
 
 		await userEvent.click(segment('year'))
 		await userEvent.keyboard('{ArrowRight}')
@@ -360,7 +360,7 @@ describe('время', () => {
 	})
 
 	it('дата и время — один ряд в строку', async () => {
-		await show({ locale: 'en-US', granularity: 'minute', value: '2026-05-12T14:30' })
+		await show({ locale: 'en-US', kind: 'datetime', value: '2026-05-12T14:30' })
 
 		const tops = [...document.querySelectorAll('.s-date-input__segment')].map(
 			(node) => node.getBoundingClientRect().top,
@@ -370,7 +370,7 @@ describe('время', () => {
 	})
 
 	it('Ctrl+A и Ctrl+C — дата со временем текстом поля, без переводов строк', async () => {
-		await show({ granularity: 'minute', value: '2026-05-12T14:30' })
+		await show({ kind: 'datetime', value: '2026-05-12T14:30' })
 
 		await userEvent.click(segment('hour'))
 		await userEvent.keyboard('{Control>}a{/Control}')

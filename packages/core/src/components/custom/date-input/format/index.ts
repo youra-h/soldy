@@ -4,5 +4,5 @@ export type {
 	TDateFieldToken,
 	TGroupContext,
 	TPartGroup,
-	TPartGroupKind,
+	TGroupSpec,
 } from './types'

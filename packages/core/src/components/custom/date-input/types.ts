@@ -21,10 +21,10 @@ export type TTimePart = 'hour' | 'minute' | 'dayPeriod'
 export type TDateFieldPart = TDatePart | TTimePart
 
 /**
- * Точность поля: `day` — дата `YYYY-MM-DD`, `minute` — дата со временем
+ * Вид поля: `date` — дата `YYYY-MM-DD`, `datetime` — дата со временем
  * `YYYY-MM-DDTHH:mm`.
  */
-export type TDateGranularity = 'day' | 'minute'
+export type TDateInputKind = 'date' | 'datetime'
 
 /**
  * Дата со временем — строка `YYYY-MM-DDTHH:mm`, как `value` у
@@ -36,8 +36,8 @@ export type TDateGranularity = 'day' | 'minute'
 export type TDateTime = string
 
 /**
- * Значение поля — по точности: дата `YYYY-MM-DD` или дата со временем
- * `YYYY-MM-DDTHH:mm`. Пока не собраны все части точности, значения нет:
+ * Значение поля — по виду: дата `YYYY-MM-DD` или дата со временем
+ * `YYYY-MM-DDTHH:mm`. Пока не собраны все части вида, значения нет:
  * `undefined`.
  */
 export type TDateInputValue = TCalendarDate | TDateTime | undefined
@@ -50,7 +50,7 @@ export type TDateInputBound = TCalendarDate | TDateTime | undefined
 
 /**
  * Набранные части — числа по типу, без локали: год григорианский, час — от 0
- * до 23, период суток — 0 до полудня и 1 после. Смена локали и точности их не
+ * до 23, период суток — 0 до полудня и 1 после. Смена локали и вида их не
  * трогает: другими становятся только текст и состав частей формата. Нет числа
  * — часть пуста.
  *
@@ -131,8 +131,8 @@ export type TDateInputEvents = TInputControlEvents<TDateInputValue> & {
 	'change:max': (value: TDateInputBound) => void
 	/** change:locale */
 	'change:locale': (value: string) => void
-	/** change:granularity */
-	'change:granularity': (value: TDateGranularity) => void
+	/** change:kind */
+	'change:kind': (value: TDateInputKind) => void
 	/**
 	 * Части надо перечитать: набрали, стёрли, вставили или записали значение.
 	 * Без аргумента: событие значит «перечитай `segments`»
@@ -153,10 +153,10 @@ export interface IDateInputProps extends IInputControlProps<TDateInputValue> {
 	/** Локаль формата (BCP 47): порядок частей, разделители, цифры, цикл часов, направление */
 	locale?: string
 	/**
-	 * Точность: `day` — дата, `minute` — ещё час, минута и, у 12-часового цикла
+	 * Вид поля: `date` — дата, `datetime` — ещё час, минута и, у 12-часового цикла
 	 * локали, период суток
 	 */
-	granularity?: TDateGranularity
+	kind?: TDateInputKind
 }
 
 export interface IDateInput extends IInputControl<
@@ -170,8 +170,8 @@ export interface IDateInput extends IInputControl<
 	max: TDateInputBound
 	/** Локаль формата */
 	locale: string
-	/** Точность: дата или дата со временем */
-	granularity: TDateGranularity
+	/** Вид поля: дата или дата со временем */
+	kind: TDateInputKind
 	/** Собранное значение вне `min`/`max` */
 	readonly invalid: boolean
 	/** Части и разделители в порядке формата локали */

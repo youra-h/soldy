@@ -564,7 +564,7 @@ describe('вставка', () => {
 	})
 
 	it('разбор вставки — та же функция для любого формата поля', () => {
-		const format = fieldFormat('en-US', 'day')
+		const format = fieldFormat('en-US', 'date')
 
 		expect(parseFieldText('05/12/2026', format)).toBe('2026-05-12')
 		expect(parseFieldText('12/31/2026', format)).toBe('2026-12-31')
@@ -770,7 +770,7 @@ describe('фокус части', () => {
 
 describe('время: формат', () => {
 	it('en-US — 12 часов: части и литералы в порядке formatToParts, период суток последним', () => {
-		const input = field({ locale: 'en-US', granularity: 'minute', value: '2026-05-12T14:30' })
+		const input = field({ locale: 'en-US', kind: 'datetime', value: '2026-05-12T14:30' })
 
 		expect(input.segments.map((segment) => segment.text)).toEqual(
 			expectedTimeSegments('en-US', '2026-05-12T14:30'),
@@ -783,7 +783,7 @@ describe('время: формат', () => {
 	})
 
 	it('ru — 24 часа: периода суток нет', () => {
-		const input = field({ locale: 'ru-RU', granularity: 'minute', value: '2026-05-12T14:30' })
+		const input = field({ locale: 'ru-RU', kind: 'datetime', value: '2026-05-12T14:30' })
 
 		expect(input.segments.map((segment) => segment.text)).toEqual(
 			expectedTimeSegments('ru-RU', '2026-05-12T14:30'),
@@ -794,7 +794,7 @@ describe('время: формат', () => {
 
 	it('ko-KR и zh-TW — период суток перед часом, как его ставит локаль', () => {
 		for (const locale of ['ko-KR', 'zh-TW']) {
-			const input = field({ locale, granularity: 'minute', value: '2026-05-12T09:05' })
+			const input = field({ locale, kind: 'datetime', value: '2026-05-12T09:05' })
 
 			expect(
 				input.segments.map((segment) => segment.text),
@@ -805,7 +805,7 @@ describe('время: формат', () => {
 	})
 
 	it('ar-EG — цифры и имя периода суток локали', () => {
-		const input = field({ locale: 'ar-EG', granularity: 'minute', value: '2026-05-12T14:30' })
+		const input = field({ locale: 'ar-EG', kind: 'datetime', value: '2026-05-12T14:30' })
 
 		expect(input.segments.map((segment) => segment.text)).toEqual(
 			expectedTimeSegments('ar-EG', '2026-05-12T14:30'),
@@ -815,25 +815,25 @@ describe('время: формат', () => {
 	})
 
 	it('ход часа — по циклу локали: h12 — 1–12, h23 — 0–23', () => {
-		const en = part(field({ locale: 'en-US', granularity: 'minute' }), 'hour')
-		const ru = part(field({ locale: 'ru-RU', granularity: 'minute' }), 'hour')
+		const en = part(field({ locale: 'en-US', kind: 'datetime' }), 'hour')
+		const ru = part(field({ locale: 'ru-RU', kind: 'datetime' }), 'hour')
 
 		expect([en.aria['aria-valuemin'], en.aria['aria-valuemax']]).toEqual(['1', '12'])
 		expect([ru.aria['aria-valuemin'], ru.aria['aria-valuemax']]).toEqual(['0', '23'])
 	})
 
 	it('цикл часов — только от локали: ключ -u-hc- его меняет', () => {
-		expect(orderOf(field({ locale: 'en-US-u-hc-h23', granularity: 'minute' }))).not.toContain(
+		expect(orderOf(field({ locale: 'en-US-u-hc-h23', kind: 'datetime' }))).not.toContain(
 			'dayPeriod',
 		)
-		expect(orderOf(field({ locale: 'ru-RU-u-hc-h12', granularity: 'minute' }))).toContain(
+		expect(orderOf(field({ locale: 'ru-RU-u-hc-h12', kind: 'datetime' }))).toContain(
 			'dayPeriod',
 		)
 
 		// h11: полдень — 0 после полудня, а не 12
 		const h11 = field({
 			locale: 'ja-JP-u-hc-h11',
-			granularity: 'minute',
+			kind: 'datetime',
 			value: '2026-05-12T12:00',
 		})
 
@@ -845,7 +845,7 @@ describe('время: формат', () => {
 		// h24: полночь — 24
 		const h24 = field({
 			locale: 'en-US-u-hc-h24',
-			granularity: 'minute',
+			kind: 'datetime',
 			value: '2026-05-12T00:15',
 		})
 
@@ -853,7 +853,7 @@ describe('время: формат', () => {
 	})
 
 	it('подсказки частей времени — черта, имена — Intl.DisplayNames на языке локали', () => {
-		const input = field({ locale: 'en-US', granularity: 'minute' })
+		const input = field({ locale: 'en-US', kind: 'datetime' })
 
 		expect(partsOf(input).map(({ text }) => text)).toEqual([
 			'mm',
@@ -865,7 +865,7 @@ describe('время: формат', () => {
 		])
 
 		for (const locale of ['ru-RU', 'en-US', 'ko-KR']) {
-			const named = field({ locale, granularity: 'minute' })
+			const named = field({ locale, kind: 'datetime' })
 
 			for (const type of ['hour', 'minute'] as const) {
 				expect(part(named, type).aria['aria-label'], `${locale} ${type}`).toBe(
@@ -877,14 +877,14 @@ describe('время: формат', () => {
 		expect(part(input, 'dayPeriod').aria['aria-label']).toBe(partName('en-US', 'dayPeriod'))
 	})
 
-	it('один формат на тег и точность', () => {
-		expect(fieldFormat('ru-RU', 'minute')).toBe(fieldFormat('ru-RU', 'minute'))
-		expect(fieldFormat('ru-RU', 'minute')).not.toBe(fieldFormat('ru-RU', 'day'))
-		expect(fieldFormat('ru-RU', 'day').granularity).toBe('day')
+	it('один формат на тег и вид поля', () => {
+		expect(fieldFormat('ru-RU', 'datetime')).toBe(fieldFormat('ru-RU', 'datetime'))
+		expect(fieldFormat('ru-RU', 'datetime')).not.toBe(fieldFormat('ru-RU', 'date'))
+		expect(fieldFormat('ru-RU', 'date').kind).toBe('date')
 	})
 
 	it('период суток для скринридера: значение — 0 или 1, текст — имя периода', () => {
-		const input = field({ locale: 'en-US', granularity: 'minute', value: '2026-05-12T14:30' })
+		const input = field({ locale: 'en-US', kind: 'datetime', value: '2026-05-12T14:30' })
 
 		expect(part(input, 'dayPeriod').aria).toMatchObject({
 			role: 'spinbutton',
@@ -899,7 +899,7 @@ describe('время: формат', () => {
 
 describe('время: набор', () => {
 	it('ru: час и минута цифрами, значение — дата со временем', () => {
-		const input = field({ locale: 'ru-RU', granularity: 'minute' }, 'day')
+		const input = field({ locale: 'ru-RU', kind: 'datetime' }, 'day')
 
 		type(input, '12052026')
 		expect(input.focusedSegment).toBe('hour')
@@ -913,7 +913,7 @@ describe('время: набор', () => {
 	})
 
 	it('en-US: без периода суток значения нет; буква выбирает период', () => {
-		const input = field({ locale: 'en-US', granularity: 'minute' }, 'month')
+		const input = field({ locale: 'en-US', kind: 'datetime' }, 'month')
 
 		type(input, '05122026')
 		type(input, '0230')
@@ -929,7 +929,7 @@ describe('время: набор', () => {
 	})
 
 	it('буква не периода — не набор, а с которой начинаются оба имени — период не меняет', () => {
-		const en = field({ locale: 'en-US', granularity: 'minute', value: '2026-05-12T14:30' })
+		const en = field({ locale: 'en-US', kind: 'datetime', value: '2026-05-12T14:30' })
 
 		en.focusSegment('dayPeriod')
 		expect(en.typeKey('x')).toBe(false)
@@ -937,7 +937,7 @@ describe('время: набор', () => {
 		expect(en.value).toBe('2026-05-12T14:30')
 
 		// ko-KR: «오전» и «오후» — оба с «오»
-		const ko = field({ locale: 'ko-KR', granularity: 'minute', value: '2026-05-12T14:30' })
+		const ko = field({ locale: 'ko-KR', kind: 'datetime', value: '2026-05-12T14:30' })
 		const am = formattedPart('ko-KR', '2026-05-12T02:30', 'dayPeriod') ?? ''
 		const pm = formattedPart('ko-KR', '2026-05-12T14:30', 'dayPeriod') ?? ''
 
@@ -948,7 +948,7 @@ describe('время: набор', () => {
 	})
 
 	it('буква периода — как в имени локали: es-MX «a.m.» и «p.m.»', () => {
-		const input = field({ locale: 'es-MX', granularity: 'minute', value: '2026-05-12T14:30' })
+		const input = field({ locale: 'es-MX', kind: 'datetime', value: '2026-05-12T14:30' })
 
 		input.focusSegment('dayPeriod')
 		input.typeKey('a')
@@ -959,10 +959,7 @@ describe('время: набор', () => {
 	})
 
 	it('час и минута h23 начинаются с нуля, час h12 — нет', () => {
-		const ru = field(
-			{ locale: 'ru-RU', granularity: 'minute', value: '2026-05-12T14:30' },
-			'hour',
-		)
+		const ru = field({ locale: 'ru-RU', kind: 'datetime', value: '2026-05-12T14:30' }, 'hour')
 
 		type(ru, '0')
 		expect(part(ru, 'hour').text).toBe('00')
@@ -976,7 +973,7 @@ describe('время: набор', () => {
 		type(ru, '00')
 		expect(ru.value).toBe('2026-05-12T07:00')
 
-		const en = field({ locale: 'en-US', granularity: 'minute' }, 'hour')
+		const en = field({ locale: 'en-US', kind: 'datetime' }, 'hour')
 
 		type(en, '0')
 		expect(part(en, 'hour').placeholder).toBe(true)
@@ -988,7 +985,7 @@ describe('время: набор', () => {
 
 	it('час 12-часового цикла: «12» до полудня — полночь, после — полдень', () => {
 		const input = field(
-			{ locale: 'en-US', granularity: 'minute', value: '2026-05-12T09:15' },
+			{ locale: 'en-US', kind: 'datetime', value: '2026-05-12T09:15' },
 			'hour',
 		)
 
@@ -1003,7 +1000,7 @@ describe('время: набор', () => {
 
 	it('набранный час идёт в половину суток выбранного периода', () => {
 		const input = field(
-			{ locale: 'en-US', granularity: 'minute', value: '2026-05-12T14:30' },
+			{ locale: 'en-US', kind: 'datetime', value: '2026-05-12T14:30' },
 			'hour',
 		)
 
@@ -1012,7 +1009,7 @@ describe('время: набор', () => {
 	})
 
 	it('период выбран раньше часа — час набирается в его половину суток', () => {
-		const input = field({ locale: 'en-US', granularity: 'minute' }, 'dayPeriod')
+		const input = field({ locale: 'en-US', kind: 'datetime' }, 'dayPeriod')
 
 		input.typeKey('p')
 		input.focusSegment('hour')
@@ -1027,7 +1024,7 @@ describe('время: набор', () => {
 describe('время: стрелки, Home и End', () => {
 	it('↑/↓ у периода суток — другой период, час переезжает за ним', () => {
 		const input = field(
-			{ locale: 'en-US', granularity: 'minute', value: '2026-05-12T14:30' },
+			{ locale: 'en-US', kind: 'datetime', value: '2026-05-12T14:30' },
 			'dayPeriod',
 		)
 
@@ -1040,7 +1037,7 @@ describe('время: стрелки, Home и End', () => {
 
 	it('↑/↓ у часа 12-часового цикла — по кругу в своей половине суток', () => {
 		const input = field(
-			{ locale: 'en-US', granularity: 'minute', value: '2026-05-12T11:30' },
+			{ locale: 'en-US', kind: 'datetime', value: '2026-05-12T11:30' },
 			'hour',
 		)
 
@@ -1058,7 +1055,7 @@ describe('время: стрелки, Home и End', () => {
 
 	it('↑/↓ у часа 24-часового цикла и у минуты — по кругу, соседей не трогают', () => {
 		const input = field(
-			{ locale: 'ru-RU', granularity: 'minute', value: '2026-05-12T23:59' },
+			{ locale: 'ru-RU', kind: 'datetime', value: '2026-05-12T23:59' },
 			'hour',
 		)
 
@@ -1071,7 +1068,7 @@ describe('время: стрелки, Home и End', () => {
 	})
 
 	it('пустая часть времени начинает с текущего момента', () => {
-		const input = field({ locale: 'en-US', granularity: 'minute', value: '2026-05-12' }, 'hour')
+		const input = field({ locale: 'en-US', kind: 'datetime', value: '2026-05-12' }, 'hour')
 
 		input.shiftSegment(1)
 		expect(part(input, 'hour').text).toBe('12')
@@ -1088,7 +1085,7 @@ describe('время: стрелки, Home и End', () => {
 
 	it('Home и End — края хода: час по циклу, период — до и после полудня', () => {
 		const input = field(
-			{ locale: 'en-US', granularity: 'minute', value: '2026-05-12T14:30' },
+			{ locale: 'en-US', kind: 'datetime', value: '2026-05-12T14:30' },
 			'hour',
 		)
 
@@ -1107,7 +1104,7 @@ describe('время: стрелки, Home и End', () => {
 describe('время: стирание', () => {
 	it('Backspace стирает цифру минуты, а период суток — целиком', () => {
 		const input = field(
-			{ locale: 'en-US', granularity: 'minute', value: '2026-05-12T14:30' },
+			{ locale: 'en-US', kind: 'datetime', value: '2026-05-12T14:30' },
 			'minute',
 		)
 
@@ -1126,7 +1123,7 @@ describe('время: стирание', () => {
 
 	it('Delete очищает часть времени, и значения нет', () => {
 		const input = field(
-			{ locale: 'ru-RU', granularity: 'minute', value: '2026-05-12T14:30' },
+			{ locale: 'ru-RU', kind: 'datetime', value: '2026-05-12T14:30' },
 			'hour',
 		)
 
@@ -1138,14 +1135,14 @@ describe('время: стирание', () => {
 
 describe('время: вставка', () => {
 	it('ISO со временем заменяет всё значение', () => {
-		const input = field({ locale: 'ru-RU', granularity: 'minute' }, 'hour')
+		const input = field({ locale: 'ru-RU', kind: 'datetime' }, 'hour')
 
 		expect(input.paste('2026-05-12T14:30')).toBe(true)
 		expect(input.value).toBe('2026-05-12T14:30')
 	})
 
 	it('формат поля: en-US — с периодом суток, ru — 24 часа', () => {
-		const en = field({ locale: 'en-US', granularity: 'minute' }, 'day')
+		const en = field({ locale: 'en-US', kind: 'datetime' }, 'day')
 
 		expect(en.paste('05/12/2026, 02:30 PM')).toBe(true)
 		expect(en.value).toBe('2026-05-12T14:30')
@@ -1153,7 +1150,7 @@ describe('время: вставка', () => {
 		expect(en.paste('5/12/2026 12:05 am')).toBe(true)
 		expect(en.value).toBe('2026-05-12T00:05')
 
-		const ru = field({ locale: 'ru-RU', granularity: 'minute' }, 'day')
+		const ru = field({ locale: 'ru-RU', kind: 'datetime' }, 'day')
 
 		expect(ru.paste('12.05.2026, 14:30')).toBe(true)
 		expect(ru.value).toBe('2026-05-12T14:30')
@@ -1161,8 +1158,8 @@ describe('время: вставка', () => {
 
 	it('текст поля вставляется обратно в поле той же локали', () => {
 		for (const locale of ['en-US', 'ar-EG', 'ko-KR', 'ru-RU', 'th-TH']) {
-			const source = field({ locale, granularity: 'minute', value: '2026-05-12T14:30' })
-			const target = field({ locale, granularity: 'minute' }, 'day')
+			const source = field({ locale, kind: 'datetime', value: '2026-05-12T14:30' })
+			const target = field({ locale, kind: 'datetime' }, 'day')
 
 			expect(target.paste(text(source)), locale).toBe(true)
 			expect(target.value, locale).toBe('2026-05-12T14:30')
@@ -1170,10 +1167,7 @@ describe('время: вставка', () => {
 	})
 
 	it('не значение — ничего не меняется', () => {
-		const en = field(
-			{ locale: 'en-US', granularity: 'minute', value: '2026-05-12T14:30' },
-			'day',
-		)
+		const en = field({ locale: 'en-US', kind: 'datetime', value: '2026-05-12T14:30' }, 'day')
 
 		for (const value of [
 			// Без периода суток у 12-часового цикла час не прочесть
@@ -1190,18 +1184,15 @@ describe('время: вставка', () => {
 			expect(en.value, value).toBe('2026-05-12T14:30')
 		}
 
-		const ru = field(
-			{ locale: 'ru-RU', granularity: 'minute', value: '2026-05-12T14:30' },
-			'day',
-		)
+		const ru = field({ locale: 'ru-RU', kind: 'datetime', value: '2026-05-12T14:30' }, 'day')
 
 		expect(ru.paste('12.05.2026, 24:00')).toBe(false)
 		expect(ru.value).toBe('2026-05-12T14:30')
 	})
 
-	it('разбор вставки — по точности формата', () => {
-		const day = fieldFormat('ru-RU', 'day')
-		const minute = fieldFormat('ru-RU', 'minute')
+	it('разбор вставки — по виду поля', () => {
+		const day = fieldFormat('ru-RU', 'date')
+		const minute = fieldFormat('ru-RU', 'datetime')
 
 		expect(parseFieldText('12.05.2026', day)).toBe('2026-05-12')
 		expect(parseFieldText('12.05.2026', minute)).toBeUndefined()
@@ -1210,21 +1201,21 @@ describe('время: вставка', () => {
 	})
 })
 
-describe('точность', () => {
-	it('по умолчанию — до дня', () => {
+describe('вид поля', () => {
+	it('по умолчанию — дата', () => {
 		const input = field({ locale: 'ru-RU' })
 
-		expect(input.granularity).toBe('day')
+		expect(input.kind).toBe('date')
 		expect(orderOf(input)).toEqual(['day', 'month', 'year'])
 	})
 
-	it('смена точности: части сохраняются по типу, значение собирается в новой точности', () => {
+	it('смена вида: части сохраняются по типу, значение собирается в новом виде', () => {
 		const input = field({ locale: 'ru-RU', value: '2026-05-12' })
 		const values: Array<string | undefined> = []
 
 		input.events.on('change:value', ({ newValue }) => values.push(newValue))
 
-		input.granularity = 'minute'
+		input.kind = 'datetime'
 		expect(input.value).toBeUndefined()
 		expect(part(input, 'day').text).toBe('12')
 		expect(part(input, 'hour').placeholder).toBe(true)
@@ -1233,11 +1224,11 @@ describe('точность', () => {
 		type(input, '1430')
 		expect(input.value).toBe('2026-05-12T14:30')
 
-		input.granularity = 'day'
+		input.kind = 'date'
 		expect(input.value).toBe('2026-05-12')
 
 		// Время осталось в частях и вернулось
-		input.granularity = 'minute'
+		input.kind = 'datetime'
 		expect(input.value).toBe('2026-05-12T14:30')
 		expect(values).toEqual([
 			undefined,
@@ -1248,22 +1239,22 @@ describe('точность', () => {
 		])
 	})
 
-	it('значение со временем при точности до дня — время в частях и вернётся', () => {
+	it('значение со временем у поля даты — время в частях и вернётся', () => {
 		const input = field({ locale: 'ru-RU', value: '2026-05-12T14:30' })
 		const values = vi.fn()
 
 		expect(text(input)).toBe('12.05.2026')
 
 		input.events.on('change:value', values)
-		input.granularity = 'minute'
+		input.kind = 'datetime'
 
 		expect(input.value).toBe('2026-05-12T14:30')
 		expect(values).not.toHaveBeenCalled()
 		expect(part(input, 'minute').text).toBe('30')
 	})
 
-	it('дата при точности до минуты — части даты из неё, время пустое', () => {
-		const input = field({ locale: 'ru-RU', granularity: 'minute', value: '2026-05-12' })
+	it('дата у поля даты и времени — части даты из неё, время пустое', () => {
+		const input = field({ locale: 'ru-RU', kind: 'datetime', value: '2026-05-12' })
 
 		expect(part(input, 'year').text).toBe('2026')
 		expect(part(input, 'hour').placeholder).toBe(true)
@@ -1271,52 +1262,52 @@ describe('точность', () => {
 		expect(input.value).toBe('2026-05-12')
 	})
 
-	it('отменённая запись при смене точности оставляет значение', () => {
-		const input = field({ locale: 'ru-RU', granularity: 'minute', value: '2026-05-12T14:30' })
+	it('отменённая запись при смене вида оставляет значение', () => {
+		const input = field({ locale: 'ru-RU', kind: 'datetime', value: '2026-05-12T14:30' })
 
 		input.events.on('change:value:before', (e: TChangeEvent<string | undefined>) =>
 			e.preventDefault(),
 		)
-		input.granularity = 'day'
+		input.kind = 'date'
 
-		expect(input.granularity).toBe('day')
+		expect(input.kind).toBe('date')
 		expect(input.value).toBe('2026-05-12T14:30')
 		expect(text(input)).toBe('12.05.2026')
 	})
 
 	it('части под фокусом нет в новом формате — фокуса в поле нет', () => {
-		const input = field({ locale: 'en-US', granularity: 'minute' }, 'dayPeriod')
+		const input = field({ locale: 'en-US', kind: 'datetime' }, 'dayPeriod')
 
 		input.locale = 'ru-RU'
 		expect(input.focusedSegment).toBeUndefined()
 
 		input.focusSegment('hour')
-		input.granularity = 'day'
+		input.kind = 'date'
 		expect(input.focusedSegment).toBeUndefined()
 
 		// Часть есть и в новом формате — фокус на ней
 		input.focusSegment('month')
-		input.granularity = 'minute'
+		input.kind = 'datetime'
 		expect(input.focusedSegment).toBe('month')
 	})
 
-	it('вставка при точности до дня меняет дату, а скрытое время остаётся', () => {
-		const input = field({ locale: 'ru-RU', granularity: 'minute', value: '2026-05-12T14:30' })
+	it('вставка у поля даты меняет дату, а скрытое время остаётся', () => {
+		const input = field({ locale: 'ru-RU', kind: 'datetime', value: '2026-05-12T14:30' })
 
-		input.granularity = 'day'
+		input.kind = 'date'
 		input.focusSegment('day')
 		expect(input.paste('01.06.2027')).toBe(true)
 		expect(input.value).toBe('2027-06-01')
 
-		input.granularity = 'minute'
+		input.kind = 'datetime'
 		expect(input.value).toBe('2027-06-01T14:30')
 	})
 
-	it('набранные цифры при смене точности сбрасываются', () => {
-		const input = field({ locale: 'ru-RU', granularity: 'minute' }, 'year')
+	it('набранные цифры при смене вида сбрасываются', () => {
+		const input = field({ locale: 'ru-RU', kind: 'datetime' }, 'year')
 
 		type(input, '20')
-		input.granularity = 'day'
+		input.kind = 'date'
 		type(input, '5')
 
 		expect(part(input, 'year').text).toBe('5')
@@ -1325,7 +1316,7 @@ describe('точность', () => {
 
 describe('время: смена цикла часов', () => {
 	it('час, набранный в 24 часах, выбирает период: в 12 часах значение то же', () => {
-		const input = field({ locale: 'ru-RU', granularity: 'minute' }, 'day')
+		const input = field({ locale: 'ru-RU', kind: 'datetime' }, 'day')
 
 		type(input, '120520261430')
 		expect(input.value).toBe('2026-05-12T14:30')
@@ -1339,7 +1330,7 @@ describe('время: смена цикла часов', () => {
 	})
 
 	it('час без выбранного периода — значение там, где период не нужен', () => {
-		const input = field({ locale: 'en-US', granularity: 'minute' }, 'month')
+		const input = field({ locale: 'en-US', kind: 'datetime' }, 'month')
 		const values: Array<string | undefined> = []
 
 		type(input, '051220260230')
@@ -1361,7 +1352,7 @@ describe('время: смена цикла часов', () => {
 		input.locale = 'en-US'
 		expect(input.value).toBe('вчера')
 
-		input.granularity = 'minute'
+		input.kind = 'datetime'
 		expect(input.value).toBe('вчера')
 	})
 })
@@ -1370,7 +1361,7 @@ describe('время: границы', () => {
 	it('min и max со временем сравниваются до минуты', () => {
 		const input = field({
 			locale: 'ru-RU',
-			granularity: 'minute',
+			kind: 'datetime',
 			value: '2026-05-12T14:30',
 			min: '2026-05-12T15:00',
 		})
@@ -1392,7 +1383,7 @@ describe('время: границы', () => {
 	it('дата и дата со временем сравниваются по дню', () => {
 		const input = field({
 			locale: 'ru-RU',
-			granularity: 'minute',
+			kind: 'datetime',
 			value: '2026-05-12T23:59',
 			max: '2026-05-12',
 		})

@@ -230,7 +230,7 @@ describe('время', () => {
 		await render(() =>
 			h(DateInput, {
 				locale: 'en-US',
-				granularity: 'minute',
+				kind: 'datetime',
 				name: 'meeting',
 				value: '2026-05-12T14:30',
 			}),
@@ -257,7 +257,7 @@ describe('время', () => {
 	})
 
 	it('ru: 24 часа, периода суток нет; пустое время — черта', async () => {
-		await render(() => h(DateInput, { locale: 'ru-RU', granularity: 'minute' }))
+		await render(() => h(DateInput, { locale: 'ru-RU', kind: 'datetime' }))
 
 		expect(rowContent().map(([, text]) => text)).toEqual([
 			'дд',
@@ -279,7 +279,7 @@ describe('время', () => {
 		await render(() =>
 			h(DateInput, {
 				locale: 'ru-RU',
-				granularity: 'minute',
+				kind: 'datetime',
 				value: date.value,
 				'onUpdate:value': (value: string | undefined) => {
 					date.value = value
@@ -294,14 +294,14 @@ describe('время', () => {
 		expect(document.activeElement).toBe(segment('minute'))
 	})
 
-	it('смена точности: части времени появляются, значение — в новой точности', async () => {
+	it('смена вида: части времени появляются, значение — в новом виде', async () => {
 		const date = ref<string | undefined>('2026-05-12T14:30')
-		const granularity = ref<'day' | 'minute'>('minute')
+		const kind = ref<'date' | 'datetime'>('datetime')
 
 		await render(() =>
 			h(DateInput, {
 				locale: 'ru-RU',
-				granularity: granularity.value,
+				kind: kind.value,
 				value: date.value,
 				'onUpdate:value': (value: string | undefined) => {
 					date.value = value
@@ -309,14 +309,14 @@ describe('время', () => {
 			}),
 		)
 
-		granularity.value = 'day'
+		kind.value = 'date'
 		await nextTick()
 
 		expect(date.value).toBe('2026-05-12')
 		expect(rowContent().map(([, text]) => text)).toEqual(['12', '.', '05', '.', '2026'])
 
 		// Время осталось в частях и вернулось
-		granularity.value = 'minute'
+		kind.value = 'datetime'
 		await nextTick()
 
 		expect(date.value).toBe('2026-05-12T14:30')
