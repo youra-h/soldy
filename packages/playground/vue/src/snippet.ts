@@ -1,5 +1,4 @@
 import {
-	acceptsEngine,
 	isEmptyField,
 	type TComponentEntry,
 	type TPluginPropAddress,
@@ -65,9 +64,7 @@ export function instanceSnippet(
 		case 'component':
 			return componentInstanceSnippet(entry, control.name, value, control.preset)
 		case 'collection':
-			return acceptsEngine(entry)
-				? collectionInstanceSnippet(entry, control.name, value, control.preset)
-				: collectionMarkupSnippet(entry, control.name, value, control.preset)
+			return collectionInstanceSnippet(entry, control.name, value, control.preset)
 		case 'plugin':
 			return pluginInstanceSnippet(entry, control.plugin, value, control.preset)
 	}
@@ -97,14 +94,15 @@ function componentInstanceSnippet(
 }
 
 /**
- * Второй способ для коллекционных пропов — не `instance.${prop}`, а движок.
+ * Второй способ для коллекционных пропов — не `instance.${prop}`, а движок,
+ * переданный пропом `:engine`.
  *
- * `createEngineSelection` — не догадка, а точное отражение того, чем сейчас
- * управляет стенд: единственный редактируемый коллекционный проп — `mode`, и
- * он живёт на расширении `selection` (`TSelectionCollectionFacade.mode`
- * делегирует туда же). Тот же уровень и по той же причине выбран в
- * `PropRow.vue` для собственного фасада стенда — появись когда-нибудь другой
- * коллекционный проп вне `selection`, оба места придётся поправить вместе.
+ * Движок — сборщиком самого компонента (`createEngineAccordion` и соседи): в
+ * нём уже стоит выбор, и записать `mode` можно до монтирования. Общий уровень
+ * `createEngineSelection` не годится календарю — выбор у него свой, дат, — а
+ * в движке уровня `createEngine` выбора до монтирования ещё нет. Единственный
+ * редактируемый коллекционный проп — `mode`, и у всех коллекций он живёт на
+ * их расширении `selection`.
  */
 function collectionInstanceSnippet(
 	entry: TComponentEntry,
@@ -112,46 +110,19 @@ function collectionInstanceSnippet(
 	value: unknown,
 	preset?: Record<string, unknown>,
 ): string {
+	const create = `createEngine${entry.label}`
+
 	return [
 		'<script setup lang="ts">',
 		`import { ${entry.label} } from '@soldy-ui/vue'`,
-		"import { createEngineSelection } from '@soldy-ui/core'",
+		`import { ${create} } from '@soldy-ui/core'`,
 		'',
-		'const engine = createEngineSelection()',
+		`const engine = ${create}()`,
 		...assignment(`engine.extensions.selection.${prop}`, value),
 		'</script>',
 		'',
 		'<template>',
 		`\t<${entry.label}${presetAttrs(preset)} :engine="engine" />`,
-		'</template>',
-	].join('\n')
-}
-
-/**
- * Коллекционный проп коллекции, которая движка снаружи не берёт (календарь:
- * дни кладёт в коллекцию его вид). Через инстанс до её фасада не дотянуться,
- * и проп доносит разметка рядом с `ctrl` — так его передаёт и сам стенд
- * (`PropRow.vue`, `acceptsEngine`).
- */
-function collectionMarkupSnippet(
-	entry: TComponentEntry,
-	prop: string,
-	value: unknown,
-	preset?: Record<string, unknown>,
-): string {
-	const ctor = entry.descriptor().ctor?.name ?? 'TComponent'
-	const own = isEmptyField(value) ? '' : ` ${attr(prop, value)}`
-
-	return [
-		'<script setup lang="ts">',
-		`import { ${entry.label} } from '@soldy-ui/vue'`,
-		`import { ${ctor} } from '@soldy-ui/core'`,
-		'',
-		`const instance = new ${ctor}()`,
-		'</script>',
-		'',
-		'<template>',
-		`\t<${entry.label}${presetAttrs(preset)}${own} :ctrl="instance" />`,
 		'</template>',
 	].join('\n')
 }

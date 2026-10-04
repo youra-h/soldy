@@ -25,6 +25,7 @@ import type {
 	TScrollBehavior,
 	TCalendarMode,
 	TDateInputKind,
+	TDatePickerMode,
 	TTimePrecision,
 	TSelectionMode,
 	TSelectEditableMode,
@@ -166,6 +167,12 @@ export const DATE_INPUT_KINDS = enumOf<TDateInputKind>()(['date', 'datetime'])
 
 /** Точность времени поля даты: до минуты или до секунды. */
 export const TIME_PRECISIONS = enumOf<TTimePrecision>()(['minute', 'second'])
+
+/**
+ * Режим DatePicker — свой, а не календаря: несколько разных дат поле не
+ * покажет, поэтому режимов два — одна дата или диапазон.
+ */
+export const DATE_PICKER_MODES = enumOf<TDatePickerMode>()(['single', 'range'])
 
 /** Что делает ввод текста в поле Select при `editable: true`. */
 export const SELECT_EDITABLE_MODES = enumOf<TSelectEditableMode>()(['none', 'search', 'filter'])
