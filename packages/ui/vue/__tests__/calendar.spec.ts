@@ -565,19 +565,18 @@ describe('выбор месяца и года', () => {
 	})
 
 	/**
-	 * Режет или переносит подпись список по уровню — `contentFit` ставит
-	 * расширение календаря, и разметка его не перебивает: месяцы —
-	 * многоточием, годы — переносом.
+	 * Подпись шире плитки список переносит между словами — у месяцев и у лет:
+	 * `contentFit` ставит расширение календаря, и разметка его не перебивает.
 	 */
-	it('подпись шире плитки: месяцы — многоточием, годы — переносом', async () => {
+	it('подпись шире плитки переносится — у месяцев и у лет', async () => {
 		await render(() => h(Calendar))
 		await openPicker()
 
 		const fits = () => options().map((item) => item.dataset.contentFit)
 		const list = () => find('.s-calendar__picker-list')
 
-		expect(list().dataset.contentFit).toBe('truncate')
-		expect(new Set(fits())).toEqual(new Set(['truncate']))
+		expect(list().dataset.contentFit).toBe('wrap')
+		expect(new Set(fits())).toEqual(new Set(['wrap']))
 
 		heading().click()
 		await settle()
@@ -587,8 +586,9 @@ describe('выбор месяца и года', () => {
 
 		await pick('2028')
 
-		expect(list().dataset.contentFit).toBe('truncate')
-		expect(new Set(fits())).toEqual(new Set(['truncate']))
+		expect(heading().textContent?.trim()).toBe('2028')
+		expect(list().dataset.contentFit).toBe('wrap')
+		expect(new Set(fits())).toEqual(new Set(['wrap']))
 	})
 
 	it('стрелки шапки: имена по уровню, листание года и страницы', async () => {

@@ -86,7 +86,7 @@ const transitionsOf = (selector: string, property: string, pseudo?: string) => (
 const animationOf = (selector: string, pseudo?: string) => (): string =>
 	getComputedStyle(node(selector), pseudo).animationName
 
-/** Плагин темы замерил табы и включил их переходы. */
+/** Плагин темы замерил табы: геометрия активного таба записана. */
 const tabsMeasured = async () => {
 	await expect
 		.poll(() => node('.s-tabs').classList.contains('s-tabs--ready-animation'))

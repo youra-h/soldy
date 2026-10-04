@@ -40,6 +40,7 @@ import {
 	TooltipDescriptor,
 	ValueControlDescriptor,
 } from '@soldy-ui/setup'
+import type { TMotionMode } from '@soldy-ui/plugins'
 import type { TComponentEntry, TThemeEntry, TIconPackEntry } from './types'
 
 /**
@@ -343,3 +344,14 @@ export const THEMES: readonly TThemeEntry[] = [{ id: 'oren', label: 'Oren', valu
 
 /** Пакеты иконок. Реализуют контракт `ICON_ROLES`. */
 export const ICON_PACKS: readonly TIconPackEntry[] = [{ id: 'material', label: 'Material' }]
+
+/**
+ * Режимы движения библиотеки (`useMotion`) с подписями — в порядке списка в
+ * шапке. Ключ — режим, поэтому запись покрывает `TMotionMode` целиком: новый
+ * режим библиотеки стенд попросит у себя на компиляции.
+ */
+export const MOTION_MODES: Readonly<Record<TMotionMode, string>> = {
+	system: 'Система',
+	full: 'Всегда',
+	reduce: 'Без движения',
+}

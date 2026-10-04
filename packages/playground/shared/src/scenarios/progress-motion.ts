@@ -1,3 +1,4 @@
+import { MOTION_MODES } from '../registry'
 import type { IScenarioContext } from './types'
 
 /**
@@ -12,8 +13,11 @@ import type { IScenarioContext } from './types'
 /** Последний шаг любого сценария движения. */
 export const VERDICT = 'Всё так — ✓, иначе ✗'
 
-/** Просьба системы убрать движение — как её включить на стенде. */
-export const REDUCE = 'DevTools → Rendering → prefers-reduced-motion: reduce'
+/**
+ * Движение убрано — как это включить на стенде: режимом в шапке, не трогая
+ * настройку системы. Тема рисует его так же, как просьбу системы.
+ */
+export const REDUCE = `Выберите в шапке «Движение» → «${MOTION_MODES.reduce}»`
 
 /** Цикл «Загрузки»: сколько и что держит сцена на каждом шаге. */
 export const LOADING = {

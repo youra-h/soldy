@@ -295,50 +295,36 @@ describe('годы', () => {
 })
 
 /**
- * Подпись шире плитки список режет или переносит — по уровню: имя месяца
- * многоточием, подпись года с эрой (`th-TH`) — переносом, иначе многоточие
- * срезало бы номер. Решает расширение, а не разметка: уровень знает только оно.
+ * Подпись шире плитки список переносит между словами — на обоих уровнях: имя
+ * месяца бывает в несколько слов (`vi-VN` — «Tháng 10»), подпись года — с эрой
+ * (`th-TH`), и многоточие срезало бы номер — то, чем плитки и различаются.
+ * Решает расширение, а не разметка: список создаёт оно.
  */
 describe('подпись шире плитки', () => {
 	const fits = (setup: TCalendarSetup) =>
 		options(setup).map((item) => item.dataset.get('content-fit'))
 
-	it('месяцы режутся многоточием, годы переносятся — и у списка, и у его плиток', () => {
+	it('переносится у месяцев и у лет — у списка и у каждой его плитки', () => {
 		const setup = calendar({ months: ['2026-09-01'] })
 
-		expect(open(setup).list.contentFit).toBe('truncate')
-		expect(new Set(fits(setup))).toEqual(new Set(['truncate']))
+		// С самого создания места, до первого открытия
+		expect(panel(setup).list.contentFit).toBe('wrap')
+
+		expect(open(setup).list.contentFit).toBe('wrap')
+		expect(new Set(fits(setup))).toEqual(new Set(['wrap']))
 
 		setup.picker.toggleLevel(0)
 
 		expect(panel(setup).list.contentFit).toBe('wrap')
 		expect(new Set(fits(setup))).toEqual(new Set(['wrap']))
 
-		// Страница лет — по-прежнему годы
+		// Другая страница лет, и выбор года — снова месяцы
 		setup.picker.showNext(0)
+		choose(setup, 2030)
 
+		expect(panel(setup).level).toBe('months')
 		expect(panel(setup).list.contentFit).toBe('wrap')
-	})
-
-	it('выбор года, кнопка шапки и новое открытие возвращают месяцам многоточие', () => {
-		const setup = calendar({ months: ['2026-09-01'] })
-
-		open(setup)
-		setup.picker.toggleLevel(0)
-		choose(setup, 2028)
-
-		expect(panel(setup).list.contentFit).toBe('truncate')
-
-		setup.picker.toggleLevel(0)
-		setup.picker.toggleLevel(0)
-
-		expect(panel(setup).list.contentFit).toBe('truncate')
-
-		setup.picker.toggleLevel(0)
-		setup.picker.close(0)
-
-		expect(open(setup).list.contentFit).toBe('truncate')
-		expect(new Set(fits(setup))).toEqual(new Set(['truncate']))
+		expect(new Set(fits(setup))).toEqual(new Set(['wrap']))
 	})
 })
 
