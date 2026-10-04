@@ -2,8 +2,8 @@
  * CSS-переходы темы в настоящем браузере — общее для спеков, которые смотрят,
  * как слой появляется и исчезает (`drawer.spec.ts`, `dialog.spec.ts`), как
  * новое значение доезжает до места переходом (`slider.spec.ts`,
- * `progress-linear.spec.ts`, `tabs-contained.spec.ts`) и что ведут кадры
- * анимации (`progress-spinner.spec.ts`, `motion-mode.spec.ts`).
+ * `progress-linear.spec.ts`, `tabs-line.spec.ts`, `tabs-contained.spec.ts`) и
+ * что ведут кадры анимации (`progress-spinner.spec.ts`, `motion-mode.spec.ts`).
  *
  * Хуков под анимацию у кода нет: переход держит тема, и увидеть его можно
  * только на самом узле. Браузер заводит на каждое свойство, которое идёт
