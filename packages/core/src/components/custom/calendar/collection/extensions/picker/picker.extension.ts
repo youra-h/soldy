@@ -174,6 +174,17 @@ export class TCalendarPickerExtension
 		this._page(index, 1)
 	}
 
+	/**
+	 * Нажатие по подложке — по самой панели вокруг её содержимого: панель
+	 * накрывает календарь, а выбирают в содержимом. Закрывает записью `open`,
+	 * как выбор месяца, и фокус на заголовок возвращает плагин фокуса поповера.
+	 */
+	close(index: number): void {
+		const place = this._places[index]
+
+		if (place) place.popover.open = false
+	}
+
 	/* ------------------------------------------------------------------ */
 	/* Внутреннее                                                         */
 	/* ------------------------------------------------------------------ */
@@ -185,9 +196,10 @@ export class TCalendarPickerExtension
 		if (existing) return existing
 
 		// Без кнопки закрытия, как панель «…» у Tags: закрывают её выбор
-		// месяца, нажатие мимо, Escape и повторное нажатие на заголовок.
-		// Содержимое не монтируется до первого открытия
-		const popover = new TPopover({ closable: false, lazyMount: true })
+		// месяца, нажатие мимо, Escape, повторное нажатие на заголовок,
+		// нажатие по подложке (`close`) и жест за полосу — панель смахивают
+		// вниз. Содержимое не монтируется до первого открытия
+		const popover = new TPopover({ closable: false, lazyMount: true, swipe: 'handle' })
 		const list = new TListBox()
 		const engine = createEngineListBox({ owner: list })
 		const month = this._gridMonth(index)

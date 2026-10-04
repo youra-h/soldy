@@ -66,7 +66,9 @@ export function pixel(colors: string[]): Uint8ClampedArray {
  * подчиняется режиму (`forced-color-adjust: none`): иначе браузер заменил бы и
  * её цвет.
  */
-export function systemColor(keyword: 'Highlight' | 'GrayText'): string {
+export function systemColor(
+	keyword: 'Highlight' | 'HighlightText' | 'GrayText' | 'CanvasText',
+): string {
 	const probe = document.createElement('span')
 
 	probe.style.setProperty('forced-color-adjust', 'none')
@@ -82,6 +84,18 @@ export function systemColor(keyword: 'Highlight' | 'GrayText'): string {
 
 /** Непрозрачность цвета: у вуали она меньше единицы, у ступени равна ей. */
 export const opacity = (color: string): number => pixel([color])[3] / 255
+
+/**
+ * Рисует ли браузер контур узла: стиль задан, толщина есть, цвет не
+ * прозрачный. Прозрачный контур — вторая половина кромки панелей: в обычном
+ * режиме его не видно, а в режиме принудительных цветов браузер красит его
+ * системным цветом, и он становится рамкой.
+ */
+export const outlined = (element: Element): boolean => {
+	const { outlineStyle, outlineWidth, outlineColor } = style(element)
+
+	return outlineStyle !== 'none' && parseFloat(outlineWidth) >= 1 && opacity(outlineColor) > 0
+}
 
 /**
  * Светлота OKLab — единственная мера, сравнимая между схемами: шкала темы

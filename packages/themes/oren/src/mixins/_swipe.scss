@@ -34,12 +34,25 @@ $return-easing: cubic-bezier(0.33, 1, 0.68, 1);
 
 // Полоса: зона захвата по центру которой штрих, курсор «можно взять». Сама
 // полоса декоративна — нажатие по ней ничего не делает, тянут её жестом.
+//
+// Штрих — фон псевдоэлемента. В режиме принудительных цветов (высокий
+// контраст Windows) браузер заменяет фоны цветом поверхности, и штрих слился
+// бы с панелью — от полосы осталось бы пустое поле. Поэтому там он системного
+// цвета текста и без подмены (`forced-color-adjust: none`), как точка
+// выбранного радио.
 @mixin handle {
 	@apply flex items-center justify-center cursor-grab;
 
 	&::before {
 		content: '';
 		@apply block shrink-0 rounded-full bg-s-neutral-300;
+	}
+
+	@media (forced-colors: active) {
+		&::before {
+			forced-color-adjust: none;
+			background-color: CanvasText;
+		}
 	}
 }
 

@@ -9,7 +9,7 @@ import type { IPluginContext } from '../../../base'
 import { TElementPlugin } from '../../element'
 import { TCollectionBundlesPlugin, TCollectionElements } from '../../collection'
 import type { IDomEventTarget } from '../../../utils'
-import { dayOf, pagerOf, pickerPartOf } from '../parts'
+import { dayOf, pagerOf, pickerBackdropOf, pickerPartOf } from '../parts'
 import type { TCalendarPager, TCalendarPickerPart } from '../types'
 import type { TCalendarPointerPluginEvents } from './types'
 
@@ -43,6 +43,15 @@ const PICK: Readonly<
  *   `picker` для места панели: стрелки листают год или страницу лет, кнопка
  *   года меняет уровень. Панель — поповер внутри календаря (`contained`), и
  *   её нажатия всплывают до корня; выбор в её списке ловит само расширение.
+ * - Нажатие по подложке панели выбора — по самой панели вокруг её
+ *   содержимого — `close` расширения `picker` для места; фокус на заголовок
+ *   возвращает плагин фокуса поповера. В счёт идёт только нажатие, которое
+ *   началось и кончилось на подложке, и только `click`, который никто не
+ *   погасил. `click` с целью «панель» дают и протяжка из содержимого за его
+ *   край — панель общий предок нажатия и отпускания, — и жест за полосу:
+ *   панель захватила указатель, а свой `click` жест гасит. Закрывает `click`,
+ *   а не `pointerdown`: иначе действие `mousedown` того же нажатия унесло бы
+ *   фокус, возвращённый на заголовок, на `body`.
  * - Нажатие по дню — где угодно в ячейке, с плиткой и содержимым слота, —
  *   `chooseDate` выбора. Недоступный и выключенный день выбор отклоняет сам,
  *   по заполнителю соседнего месяца не происходит ничего: дня у него нет.
@@ -55,6 +64,11 @@ export class TCalendarPointerPlugin extends TBasePlugin<ICalendar, TCalendarPoin
 	private _root: Element | null = null
 	private _elements: TCollectionElements | null = null
 	private _engine: TCalendarCollection | null = null
+	/**
+	 * Место, по подложке которого нажали и не отпустили мимо неё, — до `click`
+	 * этого нажатия; нажали не по подложке — `undefined`.
+	 */
+	private _pressedBackdrop: number | undefined = undefined
 
 	override install(ctx: IPluginContext): void {
 		super.install(ctx)
@@ -88,14 +102,19 @@ export class TCalendarPointerPlugin extends TBasePlugin<ICalendar, TCalendarPoin
 		const previous: IDomEventTarget | null = this._root
 
 		previous?.removeEventListener('click', this._onClick)
+		previous?.removeEventListener('pointerdown', this._onPointerDown)
+		previous?.removeEventListener('pointerup', this._onPointerUp)
 		previous?.removeEventListener('pointerover', this._onPointerOver)
 		previous?.removeEventListener('pointerleave', this._onPointerLeave)
 
 		this._root = root
+		this._pressedBackdrop = undefined
 
 		const target: IDomEventTarget | null = root
 
 		target?.addEventListener('click', this._onClick)
+		target?.addEventListener('pointerdown', this._onPointerDown)
+		target?.addEventListener('pointerup', this._onPointerUp)
 		target?.addEventListener('pointerover', this._onPointerOver)
 		target?.addEventListener('pointerleave', this._onPointerLeave)
 	}
@@ -104,14 +123,27 @@ export class TCalendarPointerPlugin extends TBasePlugin<ICalendar, TCalendarPoin
 		const engine = this._engine
 		const owner = this._owner
 		const root = this._root
+		const pressed = this._pressedBackdrop
+
+		// Нажатие кончилось этим `click`: следующий — уже от другого нажатия
+		this._pressedBackdrop = undefined
 
 		if (!engine || !owner || !root) return
 
 		const picker = engine.extensions.picker
-		const hit = pickerPartOf(owner, picker.pickers, event.target)
+		const pickers = picker.pickers
+		const hit = pickerPartOf(owner, pickers, event.target)
 
 		if (hit) {
 			PICK[hit.part](picker, hit.index)
+
+			return
+		}
+
+		const backdrop = pickerBackdropOf(pickers, event.target)
+
+		if (backdrop !== undefined) {
+			if (backdrop === pressed && !event.defaultPrevented) picker.close(backdrop)
 
 			return
 		}
@@ -127,6 +159,24 @@ export class TCalendarPointerPlugin extends TBasePlugin<ICalendar, TCalendarPoin
 		const day = dayOf(engine, this._elements, event.target)
 
 		if (day) engine.extensions.selection.chooseDate(day.item.date)
+	}
+
+	/** Нажатие началось — по подложке ли: в счёт идёт только начатое на ней. */
+	private readonly _onPointerDown = (event: PointerEvent): void => {
+		this._pressedBackdrop = this._backdropOf(event.target)
+	}
+
+	/** Отпустили не на той подложке, где нажали, — это уже не нажатие по ней. */
+	private readonly _onPointerUp = (event: PointerEvent): void => {
+		if (this._backdropOf(event.target) !== this._pressedBackdrop) {
+			this._pressedBackdrop = undefined
+		}
+	}
+
+	private _backdropOf(target: EventTarget | null): number | undefined {
+		const engine = this._engine
+
+		return engine ? pickerBackdropOf(engine.extensions.picker.pickers, target) : undefined
 	}
 
 	private readonly _onPointerOver = (event: PointerEvent): void => {

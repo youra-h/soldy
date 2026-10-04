@@ -422,6 +422,13 @@ describe('выбор месяца и года', () => {
 		await settle()
 	}
 	const panel = () => find('.s-calendar__picker')
+	/** Нажатие мышью по узлу — нажатие, отпускание и `click`, как у браузера. */
+	const pressOn = async (node: HTMLElement) => {
+		node.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, pointerType: 'mouse' }))
+		node.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, pointerType: 'mouse' }))
+		node.click()
+		await settle()
+	}
 
 	it('заголовок — кнопка, триггер панели; текст и живая область — внутри', async () => {
 		await render(() => h(Calendar))
@@ -452,6 +459,35 @@ describe('выбор месяца и года', () => {
 		expect(options()).toHaveLength(12)
 		expect(row('Sep').getAttribute('aria-selected')).toBe('true')
 		expect(row('Mar').getAttribute('aria-selected')).toBe('false')
+	})
+
+	it('полоса жеста — прямой потомок панели, немая для скринридера', async () => {
+		await render(() => h(Calendar))
+		await openPicker()
+
+		const handle = find('.s-popover__handle')
+
+		// Плагин жеста узнаёт полосу только прямым потомком панели
+		expect(handle.parentElement).toBe(find('.s-popover__panel'))
+		expect(handle.getAttribute('aria-hidden')).toBe('true')
+	})
+
+	it('нажатие по подложке — самой панели — закрывает её, фокус — на заголовок', async () => {
+		await render(() => h(Calendar))
+		await openPicker()
+		await pressOn(find('.s-popover__panel'))
+
+		expect(title().getAttribute('aria-expanded')).toBe('false')
+		expect(document.activeElement).toBe(title())
+		expect(titles()).toEqual(['September 2026'])
+	})
+
+	it('нажатие по карточке панель не закрывает', async () => {
+		await render(() => h(Calendar))
+		await openPicker()
+		await pressOn(panel())
+
+		expect(title().getAttribute('aria-expanded')).toBe('true')
 	})
 
 	it('список в DOM раньше шапки: фокус при открытии встаёт на список', async () => {
