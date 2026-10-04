@@ -48,11 +48,14 @@ a {
 	height: 100vh;
 }
 
+/* Узкой шапке контролы уходят на вторую строку, к правому краю, а не за край окна */
 .pg__header {
 	grid-area: header;
 	display: flex;
+	flex-wrap: wrap;
+	justify-content: flex-end;
 	align-items: center;
-	gap: 16px;
+	gap: 8px 16px;
 	padding: 10px 20px;
 	border-bottom: 1px solid var(--s-neutral-200);
 	background: var(--s-component-surface);
@@ -104,6 +107,27 @@ a {
 .pg__control-label {
 	color: var(--s-neutral-500);
 	font-size: 12px;
+}
+
+/*
+ * Плашка «движение выключено» — перед переключателем «Движение», на который
+ * она ссылается. Места в шапке она не требует: берёт свободное, не шире своего
+ * текста, а в тесной шапке режет текст многоточием. Поэтому контролы при её
+ * появлении не сдвигаются и на вторую строку не уходят.
+ */
+.pg__motion-off {
+	flex: 1 1 0;
+	min-width: 0;
+	max-width: max-content;
+	margin: 0;
+	padding: 2px 10px;
+	overflow: hidden;
+	border-radius: 999px;
+	font-size: 12px;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+	color: var(--s-caution-700);
+	background: var(--s-caution-100);
 }
 
 .pg__sidebar {
