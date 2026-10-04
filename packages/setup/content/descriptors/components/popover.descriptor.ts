@@ -52,8 +52,13 @@ export const PopoverDescriptor = defineDescriptor(() =>
 				closeLabel: { type: String, triggers: ['change:closeLabel'] },
 				lazyMount: { type: Boolean, triggers: ['change:lazyMount'] },
 				placement: { type: String, triggers: ['change:placement'] },
-				/** Панель накрывает ближайший позиционированный предок, а не встаёт у триггера. */
+				/** Панель прижата к краю ближайшего позиционированного предка, а не встаёт у триггера. */
 				contained: { type: Boolean, triggers: ['change:contained'] },
+				/**
+				 * Край контейнера, к которому прижата панель внутри него: по нему же
+				 * она уходит жестом, а полоса встаёт у противоположного края.
+				 */
+				edge: { type: String, triggers: ['change:edge'] },
 				/** За что панель смахивают, чтобы закрыть. По умолчанию — ни за что. */
 				swipe: { type: String, triggers: ['change:swipe'] },
 				/**
@@ -65,10 +70,14 @@ export const PopoverDescriptor = defineDescriptor(() =>
 				triggerAria: { type: Object, protected: true, triggers: ['change:triggerAria'] },
 				triggerDataset: { type: Object, protected: true, triggers: ['change:open'] },
 				/**
-				 * `data-*` панели: её тянут. Панель — Frame без экземпляра в ядре, и
-				 * набор для неё — поповера, как `aria` панели.
+				 * `data-*` панели: её тянут, а в контейнере — её край. Панель — Frame
+				 * без экземпляра в ядре, и набор для неё — поповера, как `aria` панели.
 				 */
-				panelDataset: { type: Object, protected: true, triggers: ['change:swiping'] },
+				panelDataset: {
+					type: Object,
+					protected: true,
+					triggers: ['change:swiping', 'change:contained', 'change:edge'],
+				},
 				/** Имя кнопки закрытия. Отдельный набор: кнопка — сосед содержимого. */
 				closeAria: { type: Object, protected: true, triggers: ['change:closeLabel'] },
 				/** Смонтировано ли содержимое: `lazyMount` прячет его до первого открытия. */

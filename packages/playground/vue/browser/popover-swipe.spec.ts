@@ -7,7 +7,8 @@
  * разметки и темы выходит на экране: полоса у края со стороны триггера и не
  * накрывает содержимое, `touch-action` на панели, нажатие на полосу фокус не
  * уводит, а настоящая мышь закрывает панель от триггера — вниз под ним, вверх
- * над ним, внутри контейнера вниз — и к триггеру возвращает её на место.
+ * над ним, внутри контейнера к своему краю (`edge`, полоса — у противоположного)
+ * — и к триггеру возвращает её на место.
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
@@ -33,8 +34,10 @@ const nextFrame = () => new Promise<void>((resolve) => requestAnimationFrame(() 
 type TShowOptions = {
 	/** Отступ страницы сверху, px: под триггером мало места — панель над ним */
 	top?: number
-	/** Поповер в контейнере 400 × 300: панель накрывает его, а не встаёт у триггера */
+	/** Поповер в контейнере 400 × 300: панель у его края, а не у триггера */
 	contained?: boolean
+	/** Направление контейнера: в RTL начало строки — справа */
+	dir?: 'ltr' | 'rtl'
 }
 
 /**
@@ -43,7 +46,7 @@ type TShowOptions = {
  */
 const show = async (
 	props: Partial<IPopoverProps> = {},
-	{ top = 40, contained = false }: TShowOptions = {},
+	{ top = 40, contained = false, dir = 'ltr' }: TShowOptions = {},
 ) => {
 	const opened = ref(false)
 
@@ -83,6 +86,7 @@ const show = async (
 								'div',
 								{
 									class: 's-test-host',
+									dir,
 									style: 'position: relative; width: 400px; height: 300px',
 								},
 								[popover()],
@@ -120,8 +124,8 @@ const open = async () => {
 	await expect.poll(active).toBe(find('.s-test-first'))
 }
 
-/** Протянуть мышью от середины узла на `dy` по вертикали — настоящими событиями, по шагам. */
-const drag = (from: HTMLElement, dy: number, steps = 10) => {
+/** Протянуть мышью от середины узла на `dx`, `dy` — настоящими событиями, по шагам. */
+const dragBy = (from: HTMLElement, dx: number, dy: number, steps = 10) => {
 	const box = from.getBoundingClientRect()
 	const x = box.width / 2
 	const y = box.height / 2
@@ -130,11 +134,14 @@ const drag = (from: HTMLElement, dy: number, steps = 10) => {
 	// Playwright ждала бы, пока узел окажется под ней
 	return userEvent.dragAndDrop(from, from, {
 		sourcePosition: { x, y },
-		targetPosition: { x, y: y + dy },
+		targetPosition: { x: x + dx, y: y + dy },
 		steps,
 		force: true,
 	})
 }
+
+/** Протянуть мышью от середины узла на `dy` по вертикали. */
+const drag = (from: HTMLElement, dy: number, steps = 10) => dragBy(from, 0, dy, steps)
 
 beforeEach(async () => {
 	document.documentElement.dataset.theme = 'oren'
@@ -251,17 +258,67 @@ describe('жест', () => {
 		expect(panel().style.getPropertyValue('--s-swipe-offset')).toBe('')
 	})
 
-	it('внутри контейнера — вниз', async () => {
-		const { opened } = await show({ swipe: 'handle' }, { contained: true })
+	/**
+	 * Панель в контейнере прижата к краю `edge`, полоса — у противоположного
+	 * края, смахивают к краю. Физическая сторона — с учётом направления
+	 * контейнера: `start` в RTL — справа.
+	 */
+	describe('внутри контейнера — к своему краю', () => {
+		type TSide = 'top' | 'bottom' | 'left' | 'right'
 
-		await open()
+		const opposite: Record<TSide, TSide> = {
+			top: 'bottom',
+			bottom: 'top',
+			left: 'right',
+			right: 'left',
+		}
 
-		expect(find('.s-test-host').contains(panel())).toBe(true)
+		/** Шаг к стороне: куда тянуть, чтобы панель ушла к ней. */
+		const toward: Record<TSide, [number, number]> = {
+			top: [0, -150],
+			bottom: [0, 150],
+			left: [-150, 0],
+			right: [150, 0],
+		}
 
-		await drag(handle(), 150)
+		it.each([
+			['top', 'ltr', 'top'],
+			['bottom', 'ltr', 'bottom'],
+			['start', 'ltr', 'left'],
+			['end', 'ltr', 'right'],
+			['start', 'rtl', 'right'],
+			['end', 'rtl', 'left'],
+		] as const)(
+			'%s (%s): панель у края %s, полоса — у противоположного, от края не смахнуть',
+			async (edge, dir, side) => {
+				const { opened } = await show({ swipe: 'handle', edge }, { contained: true, dir })
 
-		await expect.poll(isOpen).toBe(false)
-		expect(opened.value).toBe(false)
+				await open()
+
+				const host = find('.s-test-host').getBoundingClientRect()
+				const box = panel().getBoundingClientRect()
+
+				expect(find('.s-test-host').contains(panel())).toBe(true)
+				expect(Math.abs(box[side] - host[side])).toBeLessThan(EPSILON)
+				expect(
+					Math.abs(
+						handle().getBoundingClientRect()[opposite[side]] - box[opposite[side]],
+					),
+				).toBeLessThan(EPSILON)
+
+				const [dx, dy] = toward[opposite[side]]
+
+				await dragBy(handle(), dx, dy)
+				await expect.poll(() => panel().style.getPropertyValue('--s-swipe-offset')).toBe('')
+
+				expect(isOpen()).toBe(true)
+
+				await dragBy(handle(), ...toward[side])
+
+				await expect.poll(isOpen).toBe(false)
+				expect(opened.value).toBe(false)
+			},
+		)
 	})
 
 	it('за всю панель — тянут за свободное место, с кнопки — нет', async () => {

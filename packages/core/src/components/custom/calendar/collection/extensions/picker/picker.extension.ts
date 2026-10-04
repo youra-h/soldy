@@ -198,7 +198,8 @@ export class TCalendarPickerExtension
 		// Без кнопки закрытия, как панель «…» у Tags: закрывают её выбор
 		// месяца, нажатие мимо, Escape, повторное нажатие на заголовок,
 		// нажатие по подложке (`close`) и жест за полосу — панель смахивают
-		// вниз. Содержимое не монтируется до первого открытия
+		// к её краю, вверх (край задаёт разметка). Содержимое не монтируется
+		// до первого открытия
 		const popover = new TPopover({ closable: false, lazyMount: true, swipe: 'handle' })
 		const list = new TListBox()
 		const engine = createEngineListBox({ owner: list })

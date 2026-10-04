@@ -31,6 +31,7 @@ import type {
 	TSelectEditableMode,
 	TSelectPlacement,
 	TTagsOverflow,
+	TPopoverEdge,
 	TPopoverPlacement,
 	TTooltipPlacement,
 	TTooltipType,
@@ -191,6 +192,9 @@ export const POPOVER_PLACEMENTS = enumOf<TPopoverPlacement>()([
 	'top-start',
 	'top-end',
 ])
+
+/** Край контейнера, к которому прижата панель поповера внутри него. */
+export const POPOVER_EDGES = enumOf<TPopoverEdge>()(['top', 'bottom', 'start', 'end'])
 
 /**
  * Сторона и выравнивание подсказки у триггера. Значения те же, что у

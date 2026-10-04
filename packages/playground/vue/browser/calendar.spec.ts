@@ -4,9 +4,9 @@
  * Здесь то, чего jsdom не считает вовсе. Раскладка: высота месяца под шесть
  * недель при любом месяце — сетка не прыгает при листании, а соседние месяцы
  * стоят вровень, — кольцо фокуса, которое помещается в ячейку дня, и панель
- * выбора месяца и года: подложка во весь календарь и карточка под рядом
- * заголовков — поле вокруг неё, полоса жеста у её низа, одна ширина при любом
- * числе сеток, кромка в режиме принудительных цветов, — список 4 колонки по 3
+ * выбора месяца и года: подложка во весь календарь и карточка у её верхнего
+ * края — во всю ширину при любом числе сеток, высотой по содержимому, полоса
+ * жеста у её низа, кромка в режиме принудительных цветов, — список 4 колонки по 3
  * строки и подписи, которые не рвут слово. Фокус: порядок Tab,
  * `:focus-visible`, клик из Enter на кнопке листания, перенос DOM-фокуса за
  * фокусом коллекции, когда узел нового дня появляется кадром позже, и путь
@@ -419,24 +419,21 @@ describe('выбор месяца и года', () => {
 	}
 
 	/**
-	 * Подложка — сама панель во весь календарь, а выбирают в карточке: под
-	 * рядом заголовков, по центру строки. Поле подложки вокруг карточки — в том
-	 * же ритме, что её отступ: сбоку и от ряда заголовков оно равно отступу,
-	 * снизу — не меньше. Так подложку видно со всех сторон карточки, и туда
-	 * естественно нажать, чтобы вернуться. Высота карточки — по содержимому:
-	 * шапка над списком, под списком — отступ или полоса жеста.
+	 * Подложка — сама панель во весь календарь, а выбирают в карточке: она
+	 * выезжает сверху, как выезжающая панель, — от верхнего края календаря и во
+	 * всю его ширину. Меняется только низ: высота карточки — по содержимому,
+	 * шапка над списком, под списком — отступ или полоса жеста, — и под ней
+	 * видно подложку с последними неделями месяца.
 	 */
 	const expectCard = () => {
 		const calendar = box('.s-calendar')
-		const row = box('.s-calendar__heading')
 		const card = box('.s-calendar__picker')
-		const gap = padding()
 
 		expectSameBox(box('.s-popover__panel'), calendar)
-		expect(Math.abs(card.left - calendar.left - gap)).toBeLessThanOrEqual(EPSILON)
-		expect(Math.abs(calendar.right - card.right - gap)).toBeLessThanOrEqual(EPSILON)
-		expect(Math.abs(card.top - row.bottom - gap)).toBeLessThanOrEqual(EPSILON)
-		expect(calendar.bottom - card.bottom).toBeGreaterThanOrEqual(gap - EPSILON)
+		expect(Math.abs(card.top - calendar.top)).toBeLessThanOrEqual(EPSILON)
+		expect(Math.abs(card.left - calendar.left)).toBeLessThanOrEqual(EPSILON)
+		expect(Math.abs(card.right - calendar.right)).toBeLessThanOrEqual(EPSILON)
+		expect(calendar.bottom - card.bottom).toBeGreaterThan(box('.s-calendar__weekday').height)
 		expect(box('.s-calendar__picker-header').bottom).toBeLessThanOrEqual(
 			box('.s-calendar__picker-list').top + EPSILON,
 		)
@@ -473,31 +470,18 @@ describe('выбор месяца и года', () => {
 
 	/**
 	 * Карточка — одна на весь календарь, сколько бы сеток он ни показывал:
-	 * подложка накрывает все, а карточка той же ширины, что у одной сетки, и
-	 * стоит по центру календаря.
+	 * подложка накрывает все, карточка — во всю ширину календаря у его верхнего
+	 * края.
 	 */
-	it('три сетки — карточка той же ширины, что у одной, и по центру календаря', async () => {
-		await show({ months: ['2026-09-01'] })
-		await open()
-
-		const single = box('.s-calendar__picker').width
-
-		cleanup()
+	it('три сетки — карточка во всю ширину календаря, у верхнего края', async () => {
 		await show({ months: ['2026-08-01', '2026-09-01', '2026-10-01'] })
 		await open()
-
-		const calendar = box('.s-calendar')
-		const card = box('.s-calendar__picker')
 
 		// Три месяца стоят в ряд — иначе проверять нечего
 		expect(
 			distinct(findAll('.s-calendar__month').map((month) => month.offsetTop)),
 		).toHaveLength(1)
-		expectSameBox(box('.s-popover__panel'), calendar)
-		expect(Math.abs(card.width - single)).toBeLessThanOrEqual(EPSILON)
-		expect(
-			Math.abs(card.left + card.width / 2 - (calendar.left + calendar.width / 2)),
-		).toBeLessThanOrEqual(EPSILON)
+		expectCard()
 	})
 
 	/**
@@ -687,8 +671,8 @@ describe('выбор месяца и года', () => {
 	const expanded = () => find('.s-calendar__title').getAttribute('aria-expanded')
 
 	/**
-	 * Подложку видно со всех сторон карточки: нажатие по ней закрывает панель,
-	 * как Escape, — фокус возвращается на заголовок, а не падает на страницу.
+	 * Подложку видно под карточкой: нажатие по ней закрывает панель, как
+	 * Escape, — фокус возвращается на заголовок, а не падает на страницу.
 	 */
 	it('нажатие по подложке закрывает панель, фокус — на заголовок, месяц прежний', async () => {
 		await show({ months: ['2026-09-01'] })
@@ -722,11 +706,12 @@ describe('выбор месяца и года', () => {
 	})
 
 	/**
-	 * Жест — за полосу у низа карточки, вниз: подложка стоит, а карточка с
-	 * полосой идёт за указателем — уедь подложка с ней, и она вылезла бы за
-	 * календарь. Отпущенная, не смахнув, карточка возвращается на место.
+	 * Жест — за полосу у низа карточки, вверх: карточка выехала сверху и уходит
+	 * туда же. Подложка стоит, а карточка с полосой идёт за указателем — уедь
+	 * подложка с ней, и она вылезла бы за календарь. Отпущенная, не смахнув,
+	 * карточка возвращается на место.
 	 */
-	it('протяжка за полосу тянет карточку, подложка стоит; отпущенная — на место', async () => {
+	it('протяжка за полосу вверх тянет карточку, подложка стоит; отпущенная — на место', async () => {
 		await show({ months: ['2026-09-01'] })
 		await open()
 
@@ -740,12 +725,12 @@ describe('выбор месяца и года', () => {
 
 		try {
 			await userEvent.hover(grip, {
-				position: { x: width / 2, y: height / 2 + 30 },
+				position: { x: width / 2, y: height / 2 - 30 },
 				force: true,
 			})
 			await nextFrame()
 
-			expect(Math.abs(box('.s-calendar__picker').top - card.top - 30)).toBeLessThanOrEqual(1)
+			expect(Math.abs(box('.s-calendar__picker').top - card.top + 30)).toBeLessThanOrEqual(1)
 			expectSameBox(box('.s-popover__panel'), panel)
 		} finally {
 			await commands.mouseUp()
@@ -757,21 +742,35 @@ describe('выбор месяца и года', () => {
 		expect(expanded()).toBe('true')
 	})
 
-	it('жест за полосу вниз закрывает панель, фокус — на заголовок', async () => {
-		await show({ months: ['2026-09-01'] })
-		await open()
-
+	/** Протянуть полосу мышью на `dy` по вертикали — настоящими событиями, по шагам. */
+	const dragGrip = (dy: number) => {
 		const grip = find('.s-popover__handle')
 		const { width, height } = grip.getBoundingClientRect()
 
 		// `force`: точка отпускания — за пределами полосы, и проверка попадания
 		// Playwright ждала бы, пока полоса окажется под ней
-		await userEvent.dragAndDrop(grip, grip, {
+		return userEvent.dragAndDrop(grip, grip, {
 			sourcePosition: { x: width / 2, y: height / 2 },
-			targetPosition: { x: width / 2, y: height / 2 + 150 },
+			targetPosition: { x: width / 2, y: height / 2 + dy },
 			steps: 10,
 			force: true,
 		})
+	}
+
+	it('жест за полосу вверх закрывает панель, фокус — на заголовок; вниз — нет', async () => {
+		await show({ months: ['2026-09-01'] })
+		await open()
+
+		const card = box('.s-calendar__picker')
+
+		await dragGrip(150)
+		await expect
+			.poll(() => Math.abs(box('.s-calendar__picker').top - card.top) <= EPSILON)
+			.toBe(true)
+
+		expect(expanded()).toBe('true')
+
+		await dragGrip(-150)
 
 		await expect.poll(expanded).toBe('false')
 		await expect.poll(() => document.activeElement).toBe(find('.s-calendar__title'))

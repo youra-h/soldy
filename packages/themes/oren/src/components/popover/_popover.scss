@@ -62,14 +62,33 @@
 	max-height: min(24rem, calc(50dvh - 1.5rem));
 }
 
-// Панель внутри контейнера (`contained`): не в `body` у триггера, а поверх
-// ближайшего позиционированного предка — накрывает его целиком. Раскладка
-// ставит её `absolute` без координат, место задаёт тема. Потолков ширины и
-// высоты у неё нет: её размер и есть размер контейнера.
+// Панель внутри контейнера (`contained`): не в `body` у триггера, а у края
+// ближайшего позиционированного предка (`data-edge`) — как выезжающая панель в
+// контейнере. Раскладка ставит её `absolute` без координат, место задаёт тема:
+// вдоль края — во всю его длину, поперёк — по содержимому, но не больше
+// контейнера. Потолков окна у неё нет: её мера — контейнер, и длинное
+// содержимое прокручивается в нём.
 .s-popover__panel[data-contained='true'] {
-	inset: 0;
-	max-width: none;
-	max-height: none;
+	max-width: 100%;
+	max-height: 100%;
+
+	&[data-edge='top'] {
+		inset: 0 0 auto;
+	}
+
+	&[data-edge='bottom'] {
+		inset: auto 0 0;
+	}
+
+	&[data-edge='start'] {
+		inset-block: 0;
+		inset-inline: 0 auto;
+	}
+
+	&[data-edge='end'] {
+		inset-block: 0;
+		inset-inline: auto 0;
+	}
 }
 
 .s-popover__content {
@@ -109,13 +128,14 @@
 // Жест (`swipe`) — смахнуть панель, чтобы закрыть. Панель у триггера уходит
 // от него: под триггером — вниз, над ним — вверх. Сторону после flip пишет
 // плагин якоря в саму панель (`data-placement`), поэтому и тема читает её
-// там. Панель внутри контейнера уходит вниз.
+// там. Панель внутри контейнера уходит к своему краю (`data-edge`).
 //
-// Полоса, за которую тянут, стоит у края со стороны триггера, а у панели в
-// контейнере — сверху: там, откуда панель тянут. Зона захвата — поле панели
-// с этой стороны, поэтому содержимое и кнопку закрытия она не накрывает, а
-// раскладка ряда «содержимое и кнопка» остаётся прежней. Вид полосы — общий
-// с выезжающей панелью (`swipe.handle`).
+// Полоса, за которую тянут, стоит там, откуда панель тянут: у края со
+// стороны триггера, а у панели в контейнере — у края, противоположного её
+// краю (панель сверху — полоса снизу, у начала строки — у конца). Зона
+// захвата — поле панели с этой стороны, поэтому содержимое и кнопку закрытия
+// она не накрывает, а раскладка ряда «содержимое и кнопка» остаётся прежней.
+// Вид полосы — общий с выезжающей панелью (`swipe.handle`).
 //
 // Сдвиг во время жеста — `translate` по переменной плагина
 // (`--s-swipe-offset`), и только у панели с жестом: `translate`, даже
@@ -127,9 +147,24 @@
 	translate: 0 var(--s-swipe-offset, 0px);
 	padding-block-start: swipe.$handle;
 
-	&[data-placement^='top'] {
+	&:is([data-placement^='top'], [data-edge='top']) {
 		padding-block-start: 0;
 		padding-block-end: swipe.$handle;
+	}
+
+	// Панель у бокового края уходит вбок: сдвиг — по горизонтали, поле полосы
+	// — у противоположного края строки
+	&:is([data-edge='start'], [data-edge='end']) {
+		translate: var(--s-swipe-offset, 0px) 0;
+		padding-block-start: 0;
+	}
+
+	&[data-edge='start'] {
+		padding-inline-end: swipe.$handle;
+	}
+
+	&[data-edge='end'] {
+		padding-inline-start: swipe.$handle;
 	}
 
 	&:not([data-swiping='true']) {
@@ -155,6 +190,24 @@
 	@include swipe.grip(inline);
 }
 
-.s-popover__panel[data-placement^='top'] > .s-popover__handle {
+.s-popover__panel:is([data-placement^='top'], [data-edge='top']) > .s-popover__handle {
 	@apply top-auto bottom-0;
+}
+
+// У бокового края полоса — во всю высоту панели у противоположного края
+// строки, штрих поперёк строки
+.s-popover__panel:is([data-edge='start'], [data-edge='end']) > .s-popover__handle {
+	@apply inset-y-0;
+	inset-inline: auto;
+	inline-size: swipe.$handle;
+	block-size: auto;
+	@include swipe.grip(block);
+}
+
+.s-popover__panel[data-edge='start'] > .s-popover__handle {
+	inset-inline-end: 0;
+}
+
+.s-popover__panel[data-edge='end'] > .s-popover__handle {
+	inset-inline-start: 0;
 }

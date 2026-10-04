@@ -20,6 +20,7 @@ describe('умолчания', () => {
 		expect(popover.lazyMount).toBe(false)
 		expect(popover.placement).toBe('bottom-start')
 		expect(popover.contained).toBe(false)
+		expect(popover.edge).toBe('bottom')
 		expect(popover.swipe).toBe('none')
 		expect(popover.contentRendered).toBe(true)
 	})
@@ -39,6 +40,7 @@ describe('умолчания', () => {
 			lazyMount: true,
 			placement: 'top-end',
 			contained: true,
+			edge: 'top',
 			swipe: 'handle',
 		})
 
@@ -49,6 +51,7 @@ describe('умолчания', () => {
 			lazyMount: true,
 			placement: 'top-end',
 			contained: true,
+			edge: 'top',
 			swipe: 'handle',
 		})
 	})
@@ -188,6 +191,7 @@ describe('события', () => {
 		['lazyMount', 'change:lazyMount', true],
 		['placement', 'change:placement', 'top-start'],
 		['contained', 'change:contained', true],
+		['edge', 'change:edge', 'start'],
 		['swipe', 'change:swipe', 'panel'],
 	] as const)('%s шлёт %s только на реальное изменение', (prop, event, value) => {
 		const popover = new TPopover()
@@ -225,7 +229,7 @@ describe('жест', () => {
 		expect(isSwipeable(new TPopover())).toBe(true)
 	})
 
-	it('куда уходит: у триггера сторону решает якорь (null), внутри контейнера — вниз', () => {
+	it('куда уходит: у триггера сторону решает якорь (null), внутри контейнера — к краю', () => {
 		const popover = new TPopover()
 		const sides: unknown[] = []
 
@@ -237,9 +241,38 @@ describe('жест', () => {
 
 		expect(popover.swipeSide).toBe('bottom')
 
+		popover.edge = 'top'
+
+		expect(popover.swipeSide).toBe('top')
+
 		popover.contained = false
 
-		expect(sides).toEqual(['bottom', null])
+		expect(sides).toEqual(['bottom', 'top', null])
+	})
+
+	it('край у панели у триггера стороны ухода не меняет', () => {
+		const popover = new TPopover()
+		const sides = vi.fn()
+
+		popover.events.on('change:swipeSide', sides)
+		popover.edge = 'start'
+
+		expect(popover.swipeSide).toBeNull()
+		expect(sides).not.toHaveBeenCalled()
+	})
+
+	it('край — в data-edge панели, только внутри контейнера', () => {
+		const popover = new TPopover({ edge: 'end' })
+
+		expect(popover.panelDataset).not.toHaveProperty('data-edge')
+
+		popover.contained = true
+
+		expect(popover.panelDataset).toEqual({ 'data-swiping': 'false', 'data-edge': 'end' })
+
+		popover.edge = 'top'
+
+		expect(popover.panelDataset['data-edge']).toBe('top')
 	})
 
 	it('полосу рисуют, пока жест включён', () => {
