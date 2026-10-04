@@ -16,6 +16,8 @@ import { defineComponent, h } from 'vue'
 import { COMPONENT_SIZES } from '@soldy-ui/playground-shared'
 import { Tabs, TabsItem } from '@soldy-ui/vue'
 
+import { pseudoBox } from './pseudo-box'
+
 import '@soldy-ui/theme-oren'
 
 /**
@@ -147,10 +149,10 @@ describe('таб покрывает крестик', () => {
 		// сверяется в тех же единицах — полоса лежит под всем табом, а не под
 		// строкой. Что крестик внутри таба — по боксам, дробные с дробными.
 		await expect
-			.poll(() => px(list.style.getPropertyValue('--underline-size')))
+			.poll(() => px(list.style.getPropertyValue('--active-tab-size')))
 			.toBe(item.offsetWidth)
 
-		expect(px(list.style.getPropertyValue('--underline-pos'))).toBe(item.offsetLeft)
+		expect(px(list.style.getPropertyValue('--active-tab-pos'))).toBe(item.offsetLeft)
 
 		const itemBox = box(item)
 		const closeBox = box(close)
@@ -160,32 +162,26 @@ describe('таб покрывает крестик', () => {
 	})
 
 	/**
-	 * Карточка — ближайший к крестику узел с фоном. Она обязана быть табом
-	 * целиком: не одной строкой (крестик остался бы за краем) и не списком.
+	 * Карточка — `::before` списка по месту и длине обёртки таба (до замера —
+	 * фон самой обёртки, `tabs-contained.spec.ts`). Она обязана быть табом
+	 * целиком: не одной строкой — крестик остался бы за краем. Место и длину
+	 * плагин берёт в целых `offset*`, поэтому край карточки сверяется с
+	 * допуском в пиксель.
 	 */
 	it('карточка активного таба view="contained" — весь таб вместе с крестиком', async () => {
 		render(harness({ view: 'contained' }))
 
+		const list = find('.s-tabs__list')
 		const { item, close } = tab('a')
 
-		const card = () => {
-			let node = close.parentElement
+		await expect.poll(() => getComputedStyle(list, '::before').content).not.toBe('none')
 
-			while (node && getComputedStyle(node).backgroundColor === 'rgba(0, 0, 0, 0)') {
-				node = node.parentElement
-			}
-
-			return node
-		}
-
-		await expect.poll(() => card()?.classList.contains('s-tabs__list')).toBe(false)
-
-		const cardBox = box(card() ?? document.body)
+		const cardBox = pseudoBox(list, '::before')
 		const closeBox = box(close)
 
-		expect(cardBox.width).toBeCloseTo(box(item).width, 1)
-		expect(closeBox.left).toBeGreaterThanOrEqual(cardBox.left)
-		expect(closeBox.right).toBeLessThanOrEqual(cardBox.right)
+		expect(Math.abs(cardBox.width - box(item).width)).toBeLessThanOrEqual(1)
+		expect(closeBox.left).toBeGreaterThanOrEqual(cardBox.left - 1)
+		expect(closeBox.right).toBeLessThanOrEqual(cardBox.right + 1)
 	})
 })
 

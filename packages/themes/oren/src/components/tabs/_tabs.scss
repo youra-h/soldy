@@ -93,7 +93,7 @@
 $line: ':where(.s-tabs:not(.s-tabs--view-contained, .s-tabs--view-outline))';
 
 #{$line} {
-	// Horizontal list: separator + indicator via ::after (uses --underline-pos and --underline-size)
+	// Horizontal list: separator + indicator via ::after (uses --active-tab-pos and --active-tab-size)
 	&.s-tabs--horizontal {
 		.s-tabs__list {
 			@apply relative border-b;
@@ -103,13 +103,13 @@ $line: ':where(.s-tabs:not(.s-tabs--view-contained, .s-tabs--view-outline))';
 				@apply absolute left-0 h-0.5;
 				@apply -bottom-px;
 				@apply rounded-full;
-				width: var(--underline-size, 0px);
-				transform: translateX(var(--underline-pos, 0px));
+				width: var(--active-tab-size, 0px);
+				transform: translateX(var(--active-tab-pos, 0px));
 			}
 		}
 	}
 
-	/* Vertical orientation: indicator is a vertical bar beside the list (uses --underline-pos and --underline-size) */
+	/* Vertical orientation: indicator is a vertical bar beside the list (uses --active-tab-pos and --active-tab-size) */
 	&.s-tabs--vertical {
 		.s-tabs__list {
 			@apply relative border-r;
@@ -119,8 +119,8 @@ $line: ':where(.s-tabs:not(.s-tabs--view-contained, .s-tabs--view-outline))';
 				@apply absolute top-0 w-0.5;
 				@apply -right-px;
 				@apply rounded-full;
-				height: var(--underline-size, 0px);
-				transform: translateY(var(--underline-pos, 0px));
+				height: var(--active-tab-size, 0px);
+				transform: translateY(var(--active-tab-pos, 0px));
 			}
 		}
 
@@ -136,11 +136,11 @@ $line: ':where(.s-tabs:not(.s-tabs--view-contained, .s-tabs--view-outline))';
 		}
 	}
 
-	/* Transition включается только после монтирования (--ready добавляется core через el setter) */
+	/* Transition включается только после монтирования (--ready-animation ставит TTabsViewPlugin темы) */
 	&.s-tabs--ready-animation .s-tabs__list::after {
 		transition:
-			transform 0.2s ease,
-			width 0.2s ease;
+			transform mixines.$move-duration mixines.$move-easing,
+			width mixines.$move-duration mixines.$move-easing;
 	}
 
 	@include mixines.tabs-line-variant('neutral');
@@ -162,17 +162,80 @@ $line: ':where(.s-tabs:not(.s-tabs--view-contained, .s-tabs--view-outline))';
 	}
 }
 
+// Карточка активного таба покрывает таб целиком — обёртку, а не строку:
+// кнопка закрытия стоит рядом со строкой, и карточка строки её бы не покрыла.
+//
+// Рисуется она двумя путями. До замера — в серверной разметке, до первого
+// кадра и в приложении без `useTheme` — это фон самой выбранной обёртки:
+// переменных геометрии ещё нет. Когда `TTabsViewPlugin` записал их и поставил
+// `--ready-animation`, карточка — `::before` списка по `--active-tab-*`, и к
+// новому табу она переезжает переходом (`active-tab-move`), как полоса `line`.
+// Именно `::before`: он стоит в дереве раньше табов, и позиционированные табы
+// ложатся поверх него без `z-index`.
+//
+// Правила карточки — дочерними комбинаторами: свой список и свои табы. Иначе
+// карточку получили бы и списки вложенных табов (Tabs в панели) любого вида.
 .s-tabs--view-contained {
+	// Отступ карточки от края списка — паддинг списка: по поперечной оси табы
+	// растянуты на весь список, и карточка, отступив на него же, встаёт ровно
+	// на таб. Одно значение на оба места.
+	$inset: calc(var(--spacing) * 1);
+
 	.s-tabs__list {
-		@apply p-1 gap-1.5;
+		// Точка отсчёта: `offset*` таба считаются от ближайшего
+		// позиционированного предка, и карточка встаёт от него же
+		@apply relative gap-1.5;
 		@apply rounded-md;
+		padding: $inset;
 	}
 
-	// Карточка активного таба — на обёртке, а не на строке: кнопка закрытия
-	// стоит рядом со строкой, и карточка строки её бы не покрыла. Скругление
-	// и проявление фона — те же, что у строки-Button.
+	// Скругление и проявление фона — те же, что у строки-Button. Скругление —
+	// у каждой обёртки: фон таба, с которого ушла статичная карточка, гаснет
+	// переходом и до конца держит углы.
 	.s-tabs-item {
 		@apply rounded-md transition-colors duration-200;
+	}
+
+	&:not(.s-tabs--ready-animation) > .s-tabs__list > .s-tabs-item[data-selected='true'] {
+		@include mixines.tabs-contained-card;
+	}
+
+	// Видна карточка только при выбранном табе: у карточки нулевой длины видна
+	// полоска тени. Выбор переключает видимость, а не саму карточку: адаптер
+	// снимает `data-selected` со старого таба и ставит новому отдельными
+	// записями, и пересчёт стиля между ними (его требует, например, смена
+	// `tabindex` у таба под фокусом) снял бы псевдоэлемент вместе с переходом —
+	// новый таб получил бы карточку без переезда.
+	&.s-tabs--ready-animation > .s-tabs__list::before {
+		content: '';
+		@apply invisible absolute pointer-events-none;
+		@include mixines.tabs-contained-card;
+	}
+
+	&.s-tabs--ready-animation > .s-tabs__list:has(> .s-tabs-item[data-selected='true'])::before {
+		@apply visible;
+	}
+
+	// Место физическое — сдвиг от левого и верхнего края, как `offset*` таба,
+	// — поэтому в RTL знак строки не нужен
+	&.s-tabs--horizontal > .s-tabs__list::before {
+		top: $inset;
+		bottom: $inset;
+		left: 0;
+		width: var(--active-tab-size, 0px);
+		transform: translateX(var(--active-tab-pos, 0px));
+
+		@include mixines.active-tab-move(width);
+	}
+
+	&.s-tabs--vertical > .s-tabs__list::before {
+		top: 0;
+		left: $inset;
+		right: $inset;
+		height: var(--active-tab-size, 0px);
+		transform: translateY(var(--active-tab-pos, 0px));
+
+		@include mixines.active-tab-move(height);
 	}
 
 	@include mixines.tabs-contained-variant('neutral');
@@ -321,8 +384,8 @@ $line: ':where(.s-tabs:not(.s-tabs--view-contained, .s-tabs--view-outline))';
 	// кнопки запрещён, а подпись крестика вошла бы в имя таба.
 	//
 	// Поэтому всё, что покрывает таб целиком, — наведение, кольцо фокуса,
-	// карточка активного таба у `contained`, — стоит на обёртке: на строке
-	// крестик остался бы за краем.
+	// карточка активного таба у `contained`, — стоит на обёртке или меряется
+	// по ней: на строке крестик остался бы за краем.
 	@apply relative flex items-center;
 
 	> * {

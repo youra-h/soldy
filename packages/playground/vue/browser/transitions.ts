@@ -2,7 +2,7 @@
  * CSS-переходы темы в настоящем браузере — общее для спеков, которые смотрят,
  * как слой появляется и исчезает (`drawer.spec.ts`, `dialog.spec.ts`), и как
  * новое значение доезжает до места переходом (`slider.spec.ts`,
- * `progress-linear.spec.ts`).
+ * `progress-linear.spec.ts`, `tabs-contained.spec.ts`).
  *
  * Хуков под анимацию у кода нет: переход держит тема, и увидеть его можно
  * только на самом узле. Браузер заводит на каждое свойство, которое идёт
@@ -99,6 +99,42 @@ export const transitionRuns = (element: HTMLElement): string[] => {
 
 	return runs
 }
+
+/**
+ * `transitionRuns` у псевдоэлемента узла. События переходов псевдоэлемента
+ * браузер шлёт на сам узел с полем `pseudoElement`, а события переходов
+ * детей всплывают до него же — их слушатель пропускает: так переходы цвета у
+ * табов под указателем не попадают в переезд карточки списка.
+ */
+export const pseudoTransitionRuns = (element: HTMLElement, pseudo: string): string[] => {
+	const runs: string[] = []
+
+	element.addEventListener('transitionrun', (event) => {
+		if (event.target !== element || event.pseudoElement !== pseudo) return
+
+		runs.push(event.propertyName)
+	})
+
+	return runs
+}
+
+/**
+ * Переходы псевдоэлемента узла доигрывают — `settled` для него. Переход,
+ * перебитый новым значением, отменяется, и его `finished` отклонён: для
+ * ожидания это тоже конец.
+ */
+export const pseudoSettled = (element: Element, pseudo: string): Promise<unknown> =>
+	Promise.all(
+		element
+			.getAnimations({ subtree: true })
+			.filter(
+				(animation) =>
+					animation.effect instanceof KeyframeEffect &&
+					animation.effect.target === element &&
+					animation.effect.pseudoElement === pseudo,
+			)
+			.map((animation) => animation.finished.catch(() => undefined)),
+	)
 
 /**
  * Дождаться событий переходов. Переход заводит пересчёт стиля — без замера
