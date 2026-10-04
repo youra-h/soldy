@@ -1,5 +1,6 @@
 import { TComponentView } from '../../base/component-view'
 import type { TDefaultValues } from '../../base/component'
+import type { TSwipe, TSwipeSide } from '../../base/layer'
 import { TAria } from '../../../common'
 import type { TAriaAttributes, TDatasetAttributes } from '../../../common'
 import type { IPopover, IPopoverProps, TPopoverEvents, TPopoverPlacement } from './types'
@@ -24,6 +25,15 @@ import type { IPopover, IPopoverProps, TPopoverEvents, TPopoverPlacement } from 
  * раскладывает на Frame, триггеру — `triggerAria` в scope слота `trigger`.
  * Здесь в них роль и открытость, а `id` панели и ссылку на него пишет плагин
  * `TPopoverIdsPlugin`: `id` нужны документу, а не поповеру.
+ *
+ * **Жест** (`swipe`, по умолчанию выключен) — смахнуть панель, чтобы закрыть:
+ * поповер — смахиваемый слой (`ISwipeable`), тянет его `TSwipePlugin`, общий
+ * с выезжающей панелью. Панель у триггера уходит от него — вниз, если стоит
+ * под триггером, и вверх, если над ним. Сторону решает flip плагина якоря, и
+ * знает её только узел панели, поэтому `swipeSide` у такой панели — `null`.
+ * Панель внутри контейнера уходит вниз. Признак «тянут» (`swiping`) панель
+ * получает набором `panelDataset`: корень поповера — не панель, и `dataset`
+ * лежит на корне. Закрывает жест записью `open`, как Escape.
  */
 export default class TPopover
 	extends TComponentView<IPopoverProps, TPopoverEvents>
@@ -34,7 +44,7 @@ export default class TPopover
 	static defaultValues: typeof TComponentView.defaultValues &
 		TDefaultValues<
 			IPopoverProps,
-			'open' | 'closable' | 'closeLabel' | 'lazyMount' | 'placement' | 'contained'
+			'open' | 'closable' | 'closeLabel' | 'lazyMount' | 'placement' | 'contained' | 'swipe'
 		> = {
 		...TComponentView.defaultValues,
 		// Строчный корень: триггер встаёт и в строку текста, и в ряд тегов
@@ -45,6 +55,7 @@ export default class TPopover
 		lazyMount: false,
 		placement: 'bottom-start',
 		contained: false,
+		swipe: 'none',
 	}
 
 	protected _open!: boolean
@@ -53,6 +64,8 @@ export default class TPopover
 	protected _lazyMount: boolean
 	protected _placement: TPopoverPlacement
 	protected _contained: boolean
+	protected _swipe: TSwipe
+	protected _swiping = false
 	/** Открывали ли панель хоть раз — после этого `lazyMount` содержимое не прячет. */
 	protected _opened = false
 	protected _triggerAria: TAria
@@ -67,6 +80,7 @@ export default class TPopover
 		this._lazyMount = props.lazyMount ?? ctor.defaultValues.lazyMount
 		this._placement = props.placement ?? ctor.defaultValues.placement
 		this._contained = props.contained ?? ctor.defaultValues.contained
+		this._swipe = props.swipe ?? ctor.defaultValues.swipe
 
 		// Сторона панели связки: панель — диалог. Имя пишет `TAriaPlugin` в
 		// этот же набор
@@ -174,6 +188,69 @@ export default class TPopover
 
 		this._contained = value
 		this.events.emit('change:contained', value)
+		// Место панели решает, куда она уходит жестом
+		this.events.emit('change:swipeSide', this.swipeSide)
+	}
+
+	/**
+	 * За что панель можно смахнуть, чтобы закрыть: ни за что (по умолчанию), за
+	 * полосу или за любое место, кроме контролов и прокручиваемых областей.
+	 */
+	get swipe(): TSwipe {
+		return this._swipe
+	}
+
+	set swipe(value: TSwipe) {
+		if (this._swipe === value) return
+
+		this._swipe = value
+
+		// Жест выключили посреди жеста — тянуть больше нечего
+		if (value === 'none') this._setSwiping(false)
+
+		this.events.emit('change:swipe', value)
+	}
+
+	/**
+	 * Куда панель уходит жестом. Внутри контейнера — вниз. У триггера — от
+	 * него, но под ним или над ним панель встаёт по решению flip плагина якоря,
+	 * и знает это только её узел: здесь `null`.
+	 */
+	get swipeSide(): TSwipeSide | null {
+		return this._contained ? 'bottom' : null
+	}
+
+	/** Идёт жест: с `beginSwipe` до `endSwipe` или до закрытия панели. */
+	get swiping(): boolean {
+		return this._swiping
+	}
+
+	/**
+	 * Рисовать ли полосу, за которую панель тянут. Рисуется, пока жест включён,
+	 * — и при `panel` тоже: она говорит, что панель можно смахнуть.
+	 */
+	get handleRendered(): boolean {
+		return this._swipe !== 'none'
+	}
+
+	/**
+	 * Жест начался: панель тянут. Закрытую панель и панель без жеста тянуть
+	 * нельзя — тогда жест не начинается.
+	 */
+	beginSwipe(): boolean {
+		if (this._swipe === 'none' || !this._open) return false
+
+		this._setSwiping(true)
+
+		return true
+	}
+
+	/**
+	 * Жест кончился. Закрывать или нет, решил плагин по пройденному пути и
+	 * скорости, и закрывает он записью `open`, как Escape.
+	 */
+	endSwipe(): void {
+		this._setSwiping(false)
 	}
 
 	/**
@@ -204,6 +281,18 @@ export default class TPopover
 		return { 'data-selected': this._open ? 'true' : 'false' }
 	}
 
+	/**
+	 * Состояние панели для темы: панель тянут (`data-swiping`), и переход её
+	 * сдвига снят — она идёт за пальцем без задержки.
+	 *
+	 * Отдельный набор, а не `dataset`: корень поповера — обёртка триггера, а
+	 * панель — Frame без экземпляра в ядре, и её `data-*` раскладывает разметка,
+	 * как `aria` панели.
+	 */
+	get panelDataset(): TDatasetAttributes {
+		return { 'data-swiping': this._swiping ? 'true' : 'false' }
+	}
+
 	/** Имя кнопки закрытия — соседней с содержимым, а не самой панели. */
 	get closeAria(): TAriaAttributes {
 		return { 'aria-label': this._closeLabel }
@@ -222,11 +311,21 @@ export default class TPopover
 
 		if (value) this._opened = true
 
+		// Закрытую панель не тянут: жест кончается вместе с ней
+		if (!value) this._setSwiping(false)
+
 		this._triggerAria.add('aria-expanded', value ? 'true' : 'false')
 
 		// Тема и потребитель, красящий свой триггер по контексту, читают
 		// открытость с корня — как у Select
 		this._dataset.add('open', value)
+	}
+
+	protected _setSwiping(value: boolean): void {
+		if (this._swiping === value) return
+
+		this._swiping = value
+		this.events.emit('change:swiping', value)
 	}
 
 	override getProps(): IPopoverProps {
@@ -238,6 +337,7 @@ export default class TPopover
 			lazyMount: this._lazyMount,
 			placement: this._placement,
 			contained: this._contained,
+			swipe: this._swipe,
 		}
 	}
 }

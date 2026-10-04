@@ -1,4 +1,5 @@
 @use '../../mixins/modal';
+@use '../../mixins/swipe';
 
 // Drawer — выезжающая панель.
 //
@@ -10,8 +11,9 @@
 // Своё у панели — край, размер по оси края, полоса жеста, въезд и выезд и
 // место в контейнере. Всё это раскладка темы, без замеров: код отдаёт
 // значения модификатором (`--placement-*`), переменными (`--drawer-width`,
-// `--drawer-height`, сдвиг жеста `--drawer-swipe`) и `data-*` (`data-open`,
-// `data-swiping`, `data-contained`).
+// `--drawer-height`, сдвиг жеста `--s-swipe-offset`) и `data-*`
+// (`data-open`, `data-swiping`, `data-contained`). Полоса и сдвиг жеста —
+// общие с поповером (`mixins/_swipe.scss`).
 
 // Ширина панели у бокового края, пока `width` не задан: колонка фильтров или
 // меню, а не вторая страница.
@@ -20,14 +22,6 @@ $width: 20rem;
 // Полоса подложки, которая видна при любом размере панели: по ней панель
 // закрывают нажатием мимо, и из-под панели видно, откуда её открыли.
 $gap: 3rem;
-
-// Зона захвата полосы жеста — не меньше 44px (WCAG 2.5.5, Apple HIG): полосу
-// берут пальцем.
-$handle: 2.75rem;
-
-// Сама полоса — штрих посередине зоны, вдоль края.
-$grip-length: 2.25rem;
-$grip-thickness: 0.25rem;
 
 // Въезд и выезд. Числа подобраны глазом, машина сторожит только то, что
 // въезд не вспышка и подложка идёт вместе с панелью (AGENTS.md темы, «Что
@@ -138,21 +132,21 @@ $backdrop-easing: linear;
 }
 
 // Где стоит панель. Открытая — на месте, а во время жеста — со сдвигом к
-// краю, который пишет плагин жеста (`--drawer-swipe`, px со знаком оси окна).
-// Закрытая — за своим краем (`--drawer-away`, своя переменная темы): туда она
-// уезжает при закрытии и оттуда въезжает при открытии.
+// краю, который пишет плагин жеста (`--s-swipe-offset`, px со знаком оси
+// окна). Закрытая — за своим краем (`--drawer-away`, своя переменная темы):
+// туда она уезжает при закрытии и оттуда въезжает при открытии.
 //
 // Сдвиг — `translate`, а не отступ: он от размера самой панели и ничего не
 // раскладывает заново. RTL читается атрибутом, а не `:dir()` — его сборка
 // превращает в список языков (AGENTS.md темы).
 .s-drawer--placement-start,
 .s-drawer--placement-end {
-	translate: var(--drawer-swipe, 0px) 0;
+	translate: var(--s-swipe-offset, 0px) 0;
 }
 
 .s-drawer--placement-top,
 .s-drawer--placement-bottom {
-	translate: 0 var(--drawer-swipe, 0px);
+	translate: 0 var(--s-swipe-offset, 0px);
 }
 
 .s-drawer--placement-start {
@@ -243,36 +237,23 @@ $backdrop-easing: linear;
 
 // Полоса жеста — посередине края, за который тянут, то есть края со стороны
 // страницы. Своя дорожка сетки, а не наложение: зона захвата не накрывает
-// заголовок и кнопку закрытия. Сама полоса декоративна — нажатие по ней
-// ничего не делает, тянут её жестом.
+// заголовок и кнопку закрытия. Вид полосы — общий с поповером
+// (`swipe.handle`).
 .s-drawer__handle {
 	grid-area: handle;
-	@apply flex items-center justify-center cursor-grab;
-
-	&::before {
-		content: '';
-		@apply block shrink-0 rounded-full bg-s-neutral-300;
-	}
+	@include swipe.handle;
 }
 
 .s-drawer--placement-top > .s-drawer__handle,
 .s-drawer--placement-bottom > .s-drawer__handle {
-	block-size: $handle;
-
-	&::before {
-		inline-size: $grip-length;
-		block-size: $grip-thickness;
-	}
+	block-size: swipe.$handle;
+	@include swipe.grip(inline);
 }
 
 .s-drawer--placement-start > .s-drawer__handle,
 .s-drawer--placement-end > .s-drawer__handle {
-	inline-size: $handle;
-
-	&::before {
-		inline-size: $grip-thickness;
-		block-size: $grip-length;
-	}
+	inline-size: swipe.$handle;
+	@include swipe.grip(block);
 }
 
 // Дорожка полосы — у края со стороны страницы. Отступ содержимого с её

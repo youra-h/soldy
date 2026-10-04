@@ -11,7 +11,7 @@
  * триггер). Остальное — `playground/vue/browser/popover.spec.ts`.
  */
 
-import { describe, it, expect, afterEach } from 'vitest'
+import { describe, it, expect, afterEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { defineComponent, h, nextTick, type VNode } from 'vue'
 import { Button, Popover, Select, SelectItem } from '@soldy-ui/vue'
@@ -602,5 +602,78 @@ describe('lazyMount', () => {
 		await render(() => page())
 
 		expect(document.querySelector('.s-test-first')).not.toBeNull()
+	})
+})
+
+describe('жест', () => {
+	const handle = () => document.querySelector('.s-popover__handle')
+
+	/** Указатель мышью в точке по вертикали — как его слушает плагин жеста. */
+	const pointer = (type: string, target: Element, y: number) =>
+		target.dispatchEvent(
+			new PointerEvent(type, {
+				bubbles: true,
+				cancelable: true,
+				clientX: 100,
+				clientY: y,
+				pointerId: 1,
+				pointerType: 'mouse',
+				button: 0,
+				isPrimary: true,
+			}),
+		)
+
+	it('без жеста полосы нет; с жестом — первая в панели, немая для скринридера', async () => {
+		const popover = new TPopover()
+
+		await render(() => page({ ctrl: popover }))
+
+		expect(handle()).toBeNull()
+
+		popover.swipe = 'handle'
+		await nextTick()
+
+		expect(handle()).toBe(panel().firstElementChild)
+		expect(handle()?.getAttribute('aria-hidden')).toBe('true')
+
+		popover.swipe = 'panel'
+		await nextTick()
+
+		expect(handle()).not.toBeNull()
+	})
+
+	/**
+	 * Коробку панели задаёт тест: jsdom раскладку не считает. Сторону после
+	 * flip плагин якоря пишет в панель и в jsdom — под триггером. Жест мышью
+	 * по полосе вниз — дальше четверти высоты панели.
+	 */
+	it('смахнули вниз от триггера — закрыта, v-model видит закрытие, фокус — на триггер', async () => {
+		const mounted = await render(() => page({ swipe: 'handle' }))
+
+		await open()
+
+		expect(panel().dataset.placement).toBe('bottom-start')
+		expect(panel().dataset.swiping).toBe('false')
+
+		vi.spyOn(panel(), 'getBoundingClientRect').mockReturnValue(new DOMRect(0, 8, 300, 200))
+
+		const grip = find('.s-popover__handle')
+
+		pointer('pointerdown', grip, 13)
+		pointer('pointermove', panel(), 108)
+
+		expect(panel().style.getPropertyValue('--s-swipe-offset')).toBe('95px')
+
+		await nextTick()
+
+		expect(panel().dataset.swiping).toBe('true')
+
+		pointer('pointerup', panel(), 113)
+		await nextTick()
+
+		expect(isOpen()).toBe(false)
+		expect(panel().dataset.swiping).toBe('false')
+		expect(mounted.findComponent(Popover).emitted('update:open')).toEqual([[true], [false]])
+		expect(document.activeElement).toBe(trigger())
 	})
 })

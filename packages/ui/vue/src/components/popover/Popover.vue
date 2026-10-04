@@ -50,6 +50,11 @@ export default { ...SetupPopover, components: { Frame, Button, Icon } }
 
 			`contained` оставляет панель в корне, без телепорта: она накрывает
 			ближайший позиционированный предок, и якорь её не двигает.
+
+			`panelDataset` — `data-*` панели от поповера: признак «тянут»
+			(`data-swiping`), по которому тема снимает переход, пока панель идёт
+			за пальцем. Сдвиг во время жеста (`--s-swipe-offset`) плагин жеста
+			пишет в панель сам.
 		-->
 		<Frame
 			embedded="popover.frame"
@@ -61,8 +66,18 @@ export default { ...SetupPopover, components: { Frame, Button, Icon } }
 			:anchor_anchor="rootElement"
 			:anchor_placement="placement"
 			:anchor_offset="8"
-			v-bind="{ ...aria, ...dismiss_ownerAttribute }"
+			v-bind="{ ...aria, ...panelDataset, ...dismiss_ownerAttribute }"
 		>
+			<!--
+				Полоса, за которую панель тянут, — пока жест включён. Она говорит,
+				что панель можно смахнуть, и сама ничего не делает: потребитель её
+				не адресует, скринридеру она не нужна (`aria-hidden`). Стоит она у
+				края со стороны триггера — туда её ставит тема по `data-placement`
+				панели. Закрыть без перетаскивания — Escape, нажатие мимо и
+				крестик.
+			-->
+			<div v-if="handleRendered" class="s-popover__handle" aria-hidden="true" />
+
 			<!--
 				Содержимое в DOM раньше кнопки закрытия — в том же порядке, в
 				каком читается верхний ряд панели: текст от начала строки,

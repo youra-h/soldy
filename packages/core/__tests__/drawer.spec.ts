@@ -6,6 +6,7 @@ import {
 	TModalLayer,
 	TCloseEvent,
 	FRAME_LAYER_ATTRIBUTE,
+	isSwipeable,
 } from '@soldy-ui/core'
 import type { TCloseReason } from '@soldy-ui/core'
 
@@ -231,6 +232,22 @@ describe('внутри контейнера', () => {
 })
 
 describe('жест', () => {
+	it('смахиваемый слой: уходит к своему краю, change:swipeSide — вместе с краем', () => {
+		const drawer = new TDrawer()
+		const sides: unknown[] = []
+
+		drawer.events.on('change:swipeSide', (side) => sides.push(side))
+
+		expect(isSwipeable(drawer)).toBe(true)
+		expect(drawer.swipeSide).toBe('end')
+
+		drawer.placement = 'bottom'
+		drawer.placement = 'bottom'
+
+		expect(drawer.swipeSide).toBe('bottom')
+		expect(sides).toEqual(['bottom'])
+	})
+
 	it('полосу рисуют, пока жест включён', () => {
 		const drawer = new TDrawer()
 

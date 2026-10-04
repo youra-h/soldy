@@ -3,8 +3,8 @@
  *
  * Наследует ComponentViewDescriptor (rendered, visible, tag, наборы и плагины
  * element/ready) и добавляет открытость, кнопку закрытия, `lazyMount`,
- * сторону панели, выходы для разметки и плагины: имя диалога, нажатие мимо,
- * клик по триггеру и модель фокуса.
+ * сторону панели, жест, выходы для разметки и плагины: имя диалога, нажатие
+ * мимо, клик по триггеру, модель фокуса и жест.
  */
 
 import { defineComponent, defineDescriptor, defineType } from '../../../protected/define'
@@ -16,6 +16,7 @@ import {
 	PopoverFocusPluginDescriptor,
 	PopoverIdsPluginDescriptor,
 	PopoverPointerPluginDescriptor,
+	SwipePluginDescriptor,
 } from '../plugins'
 import { ComponentViewDescriptor } from './component-view.descriptor'
 
@@ -53,6 +54,8 @@ export const PopoverDescriptor = defineDescriptor(() =>
 				placement: { type: String, triggers: ['change:placement'] },
 				/** Панель накрывает ближайший позиционированный предок, а не встаёт у триггера. */
 				contained: { type: Boolean, triggers: ['change:contained'] },
+				/** За что панель смахивают, чтобы закрыть. По умолчанию — ни за что. */
+				swipe: { type: String, triggers: ['change:swipe'] },
 				/**
 				 * Сторона триггера в связке с панелью и его вид «нажат». Вычисляют
 				 * ядро и `TPopoverIdsPlugin` (`aria-controls`), шаблон раскладывает
@@ -61,6 +64,11 @@ export const PopoverDescriptor = defineDescriptor(() =>
 				 */
 				triggerAria: { type: Object, protected: true, triggers: ['change:triggerAria'] },
 				triggerDataset: { type: Object, protected: true, triggers: ['change:open'] },
+				/**
+				 * `data-*` панели: её тянут. Панель — Frame без экземпляра в ядре, и
+				 * набор для неё — поповера, как `aria` панели.
+				 */
+				panelDataset: { type: Object, protected: true, triggers: ['change:swiping'] },
 				/** Имя кнопки закрытия. Отдельный набор: кнопка — сосед содержимого. */
 				closeAria: { type: Object, protected: true, triggers: ['change:closeLabel'] },
 				/** Смонтировано ли содержимое: `lazyMount` прячет его до первого открытия. */
@@ -69,6 +77,11 @@ export const PopoverDescriptor = defineDescriptor(() =>
 					protected: true,
 					triggers: ['change:open', 'change:lazyMount'],
 				},
+				/**
+				 * Рисовать ли полосу, за которую тянут. Вычисляет ядро: разметка
+				 * без экземпляра формулу не повторяет.
+				 */
+				handleRendered: { type: Boolean, protected: true, triggers: ['change:swipe'] },
 			},
 		},
 
@@ -85,6 +98,8 @@ export const PopoverDescriptor = defineDescriptor(() =>
 			PopoverFocusPluginDescriptor,
 			// `id` панели и `aria-controls` триггера
 			PopoverIdsPluginDescriptor,
+			// Смахнуть панель, чтобы закрыть. После dismiss: берёт у него панель
+			SwipePluginDescriptor,
 		],
 	}),
 )

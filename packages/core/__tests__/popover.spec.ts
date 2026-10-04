@@ -1,12 +1,13 @@
 import { describe, it, expect, vi } from 'vitest'
-import { TPopover } from '@soldy-ui/core'
+import { TPopover, isSwipeable } from '@soldy-ui/core'
 
 /**
  * Модель Popover: состояние панели и то, что из него следует для разметки.
  *
- * Фокус, Escape, Tab и клик по триггеру — плагины, нажатие мимо — плагин
- * оверлея; здесь только ядро: умолчания, связка «триггер ↔ панель» с обеих
- * сторон и выходы, которые разметка раскладывает как есть.
+ * Фокус, Escape, Tab и клик по триггеру — плагины, нажатие мимо и жест —
+ * плагины оверлея; здесь только ядро: умолчания, связка «триггер ↔ панель» с
+ * обеих сторон, значения жеста и выходы, которые разметка раскладывает как
+ * есть.
  */
 
 describe('умолчания', () => {
@@ -19,6 +20,7 @@ describe('умолчания', () => {
 		expect(popover.lazyMount).toBe(false)
 		expect(popover.placement).toBe('bottom-start')
 		expect(popover.contained).toBe(false)
+		expect(popover.swipe).toBe('none')
 		expect(popover.contentRendered).toBe(true)
 	})
 
@@ -37,6 +39,7 @@ describe('умолчания', () => {
 			lazyMount: true,
 			placement: 'top-end',
 			contained: true,
+			swipe: 'handle',
 		})
 
 		expect(popover.getProps()).toMatchObject({
@@ -46,6 +49,7 @@ describe('умолчания', () => {
 			lazyMount: true,
 			placement: 'top-end',
 			contained: true,
+			swipe: 'handle',
 		})
 	})
 })
@@ -184,6 +188,7 @@ describe('события', () => {
 		['lazyMount', 'change:lazyMount', true],
 		['placement', 'change:placement', 'top-start'],
 		['contained', 'change:contained', true],
+		['swipe', 'change:swipe', 'panel'],
 	] as const)('%s шлёт %s только на реальное изменение', (prop, event, value) => {
 		const popover = new TPopover()
 		const handler = vi.fn()
@@ -203,5 +208,98 @@ describe('события', () => {
 		expect(popover.triggerAria.valueOf()).not.toBe(popover.triggerAria.valueOf())
 		expect(popover.triggerDataset).not.toBe(popover.triggerDataset)
 		expect(popover.closeAria).not.toBe(popover.closeAria)
+		expect(popover.panelDataset).not.toBe(popover.panelDataset)
+	})
+})
+
+/**
+ * Жест — смахнуть панель, чтобы закрыть. Тянет плагин жеста, ядро держит
+ * значения: за что тянуть, куда панель уходит и признак «тянут».
+ */
+describe('жест', () => {
+	/** Открытый поповер: закрытый не тянут. */
+	const shown = (props: ConstructorParameters<typeof TPopover>[0] = {}) =>
+		new TPopover({ open: true, ...props })
+
+	it('смахиваемый слой: контракт жеста узнаётся тип-гардом', () => {
+		expect(isSwipeable(new TPopover())).toBe(true)
+	})
+
+	it('куда уходит: у триггера сторону решает якорь (null), внутри контейнера — вниз', () => {
+		const popover = new TPopover()
+		const sides: unknown[] = []
+
+		popover.events.on('change:swipeSide', (side) => sides.push(side))
+
+		expect(popover.swipeSide).toBeNull()
+
+		popover.contained = true
+
+		expect(popover.swipeSide).toBe('bottom')
+
+		popover.contained = false
+
+		expect(sides).toEqual(['bottom', null])
+	})
+
+	it('полосу рисуют, пока жест включён', () => {
+		const popover = new TPopover()
+
+		expect(popover.handleRendered).toBe(false)
+
+		popover.swipe = 'handle'
+
+		expect(popover.handleRendered).toBe(true)
+
+		popover.swipe = 'panel'
+
+		expect(popover.handleRendered).toBe(true)
+	})
+
+	it('beginSwipe: data-swiping панели и change:swiping, endSwipe — назад', () => {
+		const popover = shown({ swipe: 'handle' })
+		const changes: boolean[] = []
+
+		popover.events.on('change:swiping', (value) => changes.push(value))
+
+		expect(popover.panelDataset).toEqual({ 'data-swiping': 'false' })
+		expect(popover.beginSwipe()).toBe(true)
+		expect(popover.swiping).toBe(true)
+		expect(popover.panelDataset).toEqual({ 'data-swiping': 'true' })
+
+		popover.endSwipe()
+
+		expect(popover.swiping).toBe(false)
+		expect(changes).toEqual([true, false])
+	})
+
+	it('признак «тянут» — у панели, а не у корня: dataset корня его не несёт', () => {
+		const popover = shown({ swipe: 'handle' })
+
+		popover.beginSwipe()
+
+		expect(popover.dataset.has('swiping')).toBe(false)
+	})
+
+	it('без жеста и у закрытой панели жест не начинается', () => {
+		expect(shown().beginSwipe()).toBe(false)
+		expect(new TPopover({ swipe: 'panel' }).beginSwipe()).toBe(false)
+	})
+
+	it('закрытие и выключенный жест кончают начатый жест', () => {
+		const closed = shown({ swipe: 'panel' })
+
+		closed.beginSwipe()
+		closed.open = false
+
+		expect(closed.swiping).toBe(false)
+
+		const switched = shown({ swipe: 'panel' })
+
+		switched.beginSwipe()
+		switched.swipe = 'none'
+
+		expect(switched.swiping).toBe(false)
+		expect(switched.panelDataset).toEqual({ 'data-swiping': 'false' })
 	})
 })

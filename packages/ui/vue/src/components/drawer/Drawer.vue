@@ -46,8 +46,8 @@ export default { ...SetupDrawer, inheritAttrs: false, components: { Button, Icon
 				владельцем, край (`s-drawer--placement-*`), размер
 				(`--drawer-width`, `--drawer-height`), `data-open`,
 				`data-swiping` и `data-contained`. Сдвиг во время жеста
-				(`--drawer-swipe`) плагин жеста пишет в неё сам. `tabindex="-1"` —
-				фокус встаёт на саму панель, когда внутри нечего фокусировать.
+				(`--s-swipe-offset`) плагин жеста пишет в неё сам. `tabindex="-1"`
+				— фокус встаёт на саму панель, когда внутри нечего фокусировать.
 
 				Порядок в DOM — полоса, заголовок, тело, подвал, потом кнопка
 				закрытия: фокус при открытии попадает на первый контрол

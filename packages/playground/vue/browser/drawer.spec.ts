@@ -34,8 +34,8 @@ const DEFAULT_WIDTH = 320
 /** Полоса подложки, которую тема оставляет при любом размере панели: `3rem`. */
 const GAP = 48
 
-/** Зона захвата полосы жеста — не меньше 44px. */
-const GRIP_ZONE = 44
+/** Зона захвата полосы жеста — не меньше 24px: минимум цели по WCAG 2.5.8. */
+const GRIP_ZONE = 24
 
 /** Допуск на субпиксельное округление координат. */
 const EPSILON = 1
@@ -492,7 +492,7 @@ describe('прокрутка страницы', () => {
 })
 
 describe('жест', () => {
-	it('полосы нет без жеста; с жестом зона захвата — не меньше 44px поперёк края', async () => {
+	it('полосы нет без жеста; с жестом зона захвата — не меньше 24px поперёк края', async () => {
 		await show()
 
 		expect(document.querySelector('.s-drawer__handle')).toBeNull()
@@ -583,7 +583,7 @@ describe('жест', () => {
 
 		expect(isOpen()).toBe(true)
 		expect(reasons).toEqual([])
-		expect(panel().style.getPropertyValue('--drawer-swipe')).toBe('')
+		expect(panel().style.getPropertyValue('--s-swipe-offset')).toBe('')
 	})
 
 	it('отменённое close:before — панель остаётся и возвращается на место', async () => {
@@ -604,7 +604,7 @@ describe('жест', () => {
 
 		expect(reasons).toEqual(['swipe'])
 		expect(isOpen()).toBe(true)
-		expect(panel().style.getPropertyValue('--drawer-swipe')).toBe('')
+		expect(panel().style.getPropertyValue('--s-swipe-offset')).toBe('')
 	})
 
 	describe('за всю панель', () => {
