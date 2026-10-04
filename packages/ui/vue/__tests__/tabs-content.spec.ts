@@ -7,7 +7,7 @@
 
 import { describe, it, expect, afterEach } from 'vitest'
 import { mount } from '@vue/test-utils'
-import { nextTick } from 'vue'
+import { h, nextTick } from 'vue'
 import { Tabs, TabsItem, TabsContent } from '@soldy-ui/vue'
 import Harness from './TabsContent.test.vue'
 
@@ -40,6 +40,53 @@ describe('показ панели по активному табу', () => {
 		// Попади она в default-слот, оказалась бы внутри [role=tablist]
 		expect(wrapper.find('[role="tablist"] .s-tabs__panel').exists()).toBe(false)
 		expect(wrapper.find('.s-tabs__panel').exists()).toBe(true)
+	})
+})
+
+/**
+ * Тема рисует вид набора от его корня дочерними комбинаторами — свой список,
+ * его табы и свою панель (`themes/oren/AGENTS.md`, «Tabs: вид — от своего
+ * списка»): правило для потомков досталось бы и табам в панели. Держится это
+ * на разметке: список и панели — дети корня, табы — дети списка.
+ */
+describe('разметка, на которую опирается тема', () => {
+	it('табы разметки — дети списка, список и панель — дети корня', () => {
+		const wrapper = render()
+		const root = wrapper.find('.s-tabs').element
+		const list = wrapper.find('.s-tabs__list').element
+		const items = wrapper.findAll('.s-tabs-item')
+
+		expect(list.parentElement).toBe(root)
+		expect(wrapper.find('.s-tabs__panel').element.parentElement).toBe(root)
+		expect(items).toHaveLength(2)
+
+		for (const item of items) expect(item.element.parentElement).toBe(list)
+
+		wrapper.unmount()
+	})
+
+	it('табы из items — дети списка, список и панель — дети корня', () => {
+		const wrapper = mount(Tabs, {
+			props: {
+				items: [
+					{ value: 'a', text: 'A', _: { active: true } },
+					{ value: 'b', text: 'B' },
+					{ value: 'c', text: 'C' },
+				],
+			},
+			slots: { content: () => h(TabsContent, { value: 'a' }, () => 'Панель A') },
+		})
+		const root = wrapper.element
+		const list = wrapper.find('.s-tabs__list').element
+		const items = wrapper.findAll('.s-tabs-item')
+
+		expect(list.parentElement).toBe(root)
+		expect(wrapper.find('.s-tabs__panel').element.parentElement).toBe(root)
+		expect(items).toHaveLength(3)
+
+		for (const item of items) expect(item.element.parentElement).toBe(list)
+
+		wrapper.unmount()
 	})
 })
 
