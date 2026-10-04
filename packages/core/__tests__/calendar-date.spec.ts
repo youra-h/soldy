@@ -470,8 +470,8 @@ describe('подписи', () => {
 		expect(locale.weekdayName(1, 'long')).toBe(
 			formatter('ru', { weekday: 'long' }).format(monday),
 		)
-		expect(locale.weekdayName(1, 'short')).toBe(
-			formatter('ru', { weekday: 'short' }).format(monday),
+		expect(locale.weekdayName(1, 'narrow')).toBe(
+			formatter('ru', { weekday: 'narrow' }).format(monday),
 		)
 	})
 

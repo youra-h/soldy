@@ -35,8 +35,8 @@ export type TCalendarUnavailable = (
 
 /** Заголовок колонки — день недели. */
 export type TCalendarWeekday = {
-	/** Короткое имя — подпись колонки (`Mon`) */
-	short: string
+	/** Узкое имя — подпись колонки (`M`) */
+	narrow: string
 	/** Полное имя — для скринридера (`Monday`, `abbr` у `<th>`) */
 	long: string
 }

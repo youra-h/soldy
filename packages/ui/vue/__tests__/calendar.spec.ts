@@ -92,14 +92,15 @@ describe('разметка', () => {
 		expect([...root.children].map((node) => node.classList[node.classList.length - 1])).toEqual(
 			['s-calendar__prev', 's-calendar__next', 's-calendar__month'],
 		)
+		// Подписи колонок — узкие имена
 		expect(findAll('.s-calendar__weekday').map((cell) => cell.textContent?.trim())).toEqual([
-			'Sun',
-			'Mon',
-			'Tue',
-			'Wed',
-			'Thu',
-			'Fri',
-			'Sat',
+			'S',
+			'M',
+			'T',
+			'W',
+			'T',
+			'F',
+			'S',
 		])
 		expect(find('.s-calendar__grid thead').getAttribute('aria-hidden')).toBe('true')
 	})
@@ -152,10 +153,12 @@ describe('разметка', () => {
 	it('первый день недели по локали: у ru-RU колонки с понедельника', async () => {
 		await render(() => h(Calendar, { locale: 'ru-RU' }))
 
-		expect(find('.s-calendar__weekday').textContent?.trim()).toBe(
-			new Intl.DateTimeFormat('ru-RU', { weekday: 'short', timeZone: 'UTC' }).format(
-				Date.UTC(2026, 8, 21),
-			),
+		// Узкие имена повторяются (понедельник и пятница — «П»), поэтому
+		// сверяется весь ряд; 2026-09-21 — понедельник
+		const narrow = new Intl.DateTimeFormat('ru-RU', { weekday: 'narrow', timeZone: 'UTC' })
+
+		expect(findAll('.s-calendar__weekday').map((cell) => cell.textContent?.trim())).toEqual(
+			[0, 1, 2, 3, 4, 5, 6].map((offset) => narrow.format(Date.UTC(2026, 8, 21 + offset))),
 		)
 	})
 
@@ -559,6 +562,33 @@ describe('выбор месяца и года', () => {
 
 		expect(titles()).toEqual(['February 2028'])
 		expect(title().getAttribute('aria-expanded')).toBe('false')
+	})
+
+	/**
+	 * Режет или переносит подпись список по уровню — `contentFit` ставит
+	 * расширение календаря, и разметка его не перебивает: месяцы —
+	 * многоточием, годы — переносом.
+	 */
+	it('подпись шире плитки: месяцы — многоточием, годы — переносом', async () => {
+		await render(() => h(Calendar))
+		await openPicker()
+
+		const fits = () => options().map((item) => item.dataset.contentFit)
+		const list = () => find('.s-calendar__picker-list')
+
+		expect(list().dataset.contentFit).toBe('truncate')
+		expect(new Set(fits())).toEqual(new Set(['truncate']))
+
+		heading().click()
+		await settle()
+
+		expect(list().dataset.contentFit).toBe('wrap')
+		expect(new Set(fits())).toEqual(new Set(['wrap']))
+
+		await pick('2028')
+
+		expect(list().dataset.contentFit).toBe('truncate')
+		expect(new Set(fits())).toEqual(new Set(['truncate']))
 	})
 
 	it('стрелки шапки: имена по уровню, листание года и страницы', async () => {

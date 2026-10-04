@@ -294,6 +294,54 @@ describe('годы', () => {
 	})
 })
 
+/**
+ * Подпись шире плитки список режет или переносит — по уровню: имя месяца
+ * многоточием, подпись года с эрой (`th-TH`) — переносом, иначе многоточие
+ * срезало бы номер. Решает расширение, а не разметка: уровень знает только оно.
+ */
+describe('подпись шире плитки', () => {
+	const fits = (setup: TCalendarSetup) =>
+		options(setup).map((item) => item.dataset.get('content-fit'))
+
+	it('месяцы режутся многоточием, годы переносятся — и у списка, и у его плиток', () => {
+		const setup = calendar({ months: ['2026-09-01'] })
+
+		expect(open(setup).list.contentFit).toBe('truncate')
+		expect(new Set(fits(setup))).toEqual(new Set(['truncate']))
+
+		setup.picker.toggleLevel(0)
+
+		expect(panel(setup).list.contentFit).toBe('wrap')
+		expect(new Set(fits(setup))).toEqual(new Set(['wrap']))
+
+		// Страница лет — по-прежнему годы
+		setup.picker.showNext(0)
+
+		expect(panel(setup).list.contentFit).toBe('wrap')
+	})
+
+	it('выбор года, кнопка шапки и новое открытие возвращают месяцам многоточие', () => {
+		const setup = calendar({ months: ['2026-09-01'] })
+
+		open(setup)
+		setup.picker.toggleLevel(0)
+		choose(setup, 2028)
+
+		expect(panel(setup).list.contentFit).toBe('truncate')
+
+		setup.picker.toggleLevel(0)
+		setup.picker.toggleLevel(0)
+
+		expect(panel(setup).list.contentFit).toBe('truncate')
+
+		setup.picker.toggleLevel(0)
+		setup.picker.close(0)
+
+		expect(open(setup).list.contentFit).toBe('truncate')
+		expect(new Set(fits(setup))).toEqual(new Set(['truncate']))
+	})
+})
+
 describe('стрелки', () => {
 	it('на месяцах — год, на годах — страница из 12 лет', () => {
 		const setup = calendar({ months: ['2026-09-01'] })
