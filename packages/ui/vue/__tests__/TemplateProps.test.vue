@@ -190,6 +190,10 @@ const dragAndDrop = new TDragAndDrop()
 	<Popover :lazyMount="'yes'" />
 	<Popover lazyMount />
 
+	<!-- @vue-expect-error — жест за полосу или за панель, а не флаг -->
+	<Popover :swipe="true" />
+	<Popover swipe="handle" />
+
 	<!-- @vue-expect-error — доля числом, а не строкой -->
 	<ProgressLinear value="40" />
 	<ProgressLinear :value="40" />

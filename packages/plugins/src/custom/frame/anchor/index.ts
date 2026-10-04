@@ -1,4 +1,4 @@
-export { TAnchorPlugin } from './anchor.plugin'
+export { TAnchorPlugin, ANCHOR_PLACEMENT_ATTRIBUTE } from './anchor.plugin'
 export type {
 	IAnchorPluginOptions,
 	TAnchorPluginEvents,

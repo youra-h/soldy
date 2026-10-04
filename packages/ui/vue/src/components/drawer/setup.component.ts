@@ -5,7 +5,7 @@ import BaseDrawer, { type DrawerProps } from './base.component'
 /**
  * Логики здесь нет: нажатие мимо — `TDismissPlugin`, фокус, Tab и Escape —
  * `TModalFocusPlugin`, немой фон — `THideOutsidePlugin`, запертая прокрутка —
- * `TScrollLockPlugin`, жест — `TDrawerSwipePlugin`, слой и размер в стилях —
+ * `TScrollLockPlugin`, жест — `TSwipePlugin`, слой и размер в стилях —
  * `TDrawerLayoutPlugin`. Разметка раскладывает то, что отдали ядро и плагины.
  */
 export default {

@@ -1,7 +1,8 @@
 import { TModalLayer } from '../../base/modal-layer'
 import type { TDefaultValues } from '../../base/component'
+import type { TSwipe, TSwipeSide } from '../../base/layer'
 import type { TDatasetAttributes } from '../../../common'
-import type { IDrawer, IDrawerProps, TDrawerEvents, TDrawerPlacement, TDrawerSwipe } from './types'
+import type { IDrawer, IDrawerProps, TDrawerEvents, TDrawerPlacement } from './types'
 
 /**
  * Выезжающая панель — модальный слой у края экрана.
@@ -18,14 +19,15 @@ import type { IDrawer, IDrawerProps, TDrawerEvents, TDrawerPlacement, TDrawerSwi
  * нет — ни «присутствия», ни хуков под анимацию: закрытая панель спрятана
  * `visible`, а переход до скрытия и после показа держит CSS.
  *
- * **Жест** (`swipe`) — смахнуть панель к её краю, чтобы закрыть. Тянет
- * `TDrawerSwipePlugin`: сдвиг во время жеста — операция над узлом, и через
- * обмен на каждом кадре он не ходит. В ядро приходят только значения:
- * `beginSwipe`/`endSwipe` — признак «тянут» (`swiping`, `data-swiping`: по
- * нему тема снимает переход, пока панель идёт за пальцем) — и закрытие
- * запросом с причиной `swipe`. Жест закрывает и при `dismissible: false`: его
- * потребитель включает сам. Отменённое `close:before` оставляет панель
- * открытой, и она возвращается на место.
+ * **Жест** (`swipe`) — смахнуть панель к её краю, чтобы закрыть: панель —
+ * смахиваемый слой (`ISwipeable`), и уходит она к своему краю, `swipeSide`
+ * равен `placement`. Тянет `TSwipePlugin`, общий для слоёв: сдвиг во время
+ * жеста — операция над узлом, и через обмен на каждом кадре он не ходит. В
+ * ядро приходят только значения: `beginSwipe`/`endSwipe` — признак «тянут»
+ * (`swiping`, `data-swiping`: по нему тема снимает переход, пока панель идёт
+ * за пальцем) — и закрытие запросом с причиной `swipe`. Жест закрывает и при
+ * `dismissible: false`: его потребитель включает сам. Отменённое
+ * `close:before` оставляет панель открытой, и она возвращается на место.
  *
  * **Внутри контейнера** (`contained`) панель не телепортируется, а встаёт в
  * ближайшем позиционированном предке — например, в модальном окне.
@@ -45,7 +47,7 @@ export default class TDrawer extends TModalLayer<IDrawerProps, TDrawerEvents> im
 	}
 
 	protected _placement!: TDrawerPlacement
-	protected _swipe: TDrawerSwipe
+	protected _swipe: TSwipe
 	protected _contained!: boolean
 	protected _swiping = false
 	/** Последнее отданное `locksScroll`: событие — только на его смену. */
@@ -101,14 +103,16 @@ export default class TDrawer extends TModalLayer<IDrawerProps, TDrawerEvents> im
 
 		this._applyPlacement(value, this._placement)
 		this.events.emit('change:placement', value)
+		// Край — он же сторона ухода жестом
+		this.events.emit('change:swipeSide', value)
 	}
 
 	/** За что панель можно утянуть к её краю: ни за что, за полосу или за любое место. */
-	get swipe(): TDrawerSwipe {
+	get swipe(): TSwipe {
 		return this._swipe
 	}
 
-	set swipe(value: TDrawerSwipe) {
+	set swipe(value: TSwipe) {
 		if (this._swipe === value) return
 
 		this._swipe = value
@@ -129,6 +133,11 @@ export default class TDrawer extends TModalLayer<IDrawerProps, TDrawerEvents> im
 
 		this._applyContained(value)
 		this.events.emit('change:contained', value)
+	}
+
+	/** Куда панель уходит жестом — к своему краю. */
+	get swipeSide(): TSwipeSide {
+		return this._placement
 	}
 
 	/** Идёт жест: с `beginSwipe` до `endSwipe` или до скрытия панели. */

@@ -4,8 +4,8 @@ import BasePopover, { type PopoverProps } from './base.component'
 
 /**
  * Логики здесь нет: клик по триггеру — `TPopoverPointerPlugin`, нажатие и
- * фокус мимо — `TDismissPlugin`, фокус, Escape и Tab — `TPopoverFocusPlugin`.
- * Разметка раскладывает то, что отдали ядро и плагины.
+ * фокус мимо — `TDismissPlugin`, фокус, Escape и Tab — `TPopoverFocusPlugin`,
+ * жест — `TSwipePlugin`. Разметка раскладывает то, что отдали ядро и плагины.
  */
 export default {
 	name: '_Popover',

@@ -1,23 +1,78 @@
 // @vitest-environment jsdom
 
 /**
- * TDrawerSwipePlugin — жест выезжающей панели: смахнуть к краю, чтобы закрыть.
+ * TSwipePlugin — жест слоя: смахнуть панель, чтобы закрыть. Выезжающая
+ * панель уходит к своему краю, поповер — от триггера, а внутри контейнера —
+ * вниз.
  *
- * Разметку тест строит сам — корень с полосой, заголовком и телом, наборы
- * ядра на корне, как их кладёт Vue, — а плагины собраны настоящим набором.
+ * Разметку тест строит сам — у выезжающей панели корень с полосой, заголовком
+ * и телом, у поповера корень с триггером и панель с пометкой владельцем, наборы
+ * ядра на узлах, как их кладёт Vue, — а плагины собраны настоящим набором.
  * Коробку панели задаёт тест: jsdom раскладку не считает. Время событий тоже
  * задаёт тест — по нему плагин считает скорость в конце жеста. Захвата
  * указателя в jsdom нет, поэтому события тест шлёт прямо в узлы; настоящий
- * ввод — `playground/vue/browser/drawer.spec.ts`.
+ * ввод — `playground/vue/browser/drawer.spec.ts` и
+ * `playground/vue/browser/popover.spec.ts`.
  */
 
-import { describe, it, expect, afterEach, vi } from 'vitest'
-import { TDrawer, TLayer } from '@soldy-ui/core'
-import type { IDrawerProps, TCloseReason, TDrawerPlacement } from '@soldy-ui/core'
-import { TDrawerSwipePlugin, TElementPlugin, TPluginBundle } from '../src'
-import type { IPlugin, IPluginConstructor } from '../src'
+import { describe, it, expect, expectTypeOf, afterEach, vi } from 'vitest'
+import { TButton, TDrawer, TLayer, TPopover, isSwipeable } from '@soldy-ui/core'
+import type { IDrawerProps, IPopoverProps, TCloseReason, TDrawerPlacement } from '@soldy-ui/core'
+import { TDismissPlugin, TElementPlugin, TPluginBundle, TSwipePlugin } from '../src'
+import type { IPlugin, IPluginConstructor, ISwipeOwner } from '../src'
 
 const nextFrame = () => new Promise((resolve) => requestAnimationFrame(resolve))
+
+/** Переменная сдвига панели во время жеста — контракт плагина с темой. */
+const SWIPE_VARIABLE = '--s-swipe-offset'
+
+/**
+ * Указатель: событие с точкой и временем, всплывает до панели. Отдаёт
+ * событие — по нему видно, погашено ли.
+ */
+function pointer(
+	type: string,
+	target: Element,
+	x: number,
+	y: number,
+	time: number,
+	init: PointerEventInit = {},
+): PointerEvent {
+	const event = new PointerEvent(type, {
+		bubbles: true,
+		cancelable: true,
+		clientX: x,
+		clientY: y,
+		pointerId: 1,
+		pointerType: 'mouse',
+		button: 0,
+		isPrimary: true,
+		...init,
+	})
+
+	Object.defineProperty(event, 'timeStamp', { value: time })
+	target.dispatchEvent(event)
+
+	return event
+}
+
+/**
+ * Жест по панели: нажатие на `target`, протяжка по точкам через `step` мс и
+ * отпускание в последней — протяжка и отпускание приходят панели, как с
+ * захватом указателя. Точки — `[x, y]`.
+ */
+const swipeOn =
+	(panel: Element) =>
+	(target: Element, path: [number, number][], step = 16): void => {
+		const [start, ...rest] = path
+
+		pointer('pointerdown', target, start[0], start[1], 0)
+		rest.forEach(([x, y], index) => pointer('pointermove', panel, x, y, (index + 1) * step))
+
+		const [x, y] = rest[rest.length - 1] ?? start
+
+		pointer('pointerup', panel, x, y, rest.length * step)
+	}
 
 /** Плагин, который тест поставил сам: без него дальше проверять нечего. */
 function pluginOf<P extends IPlugin<any, any>>(
@@ -76,7 +131,10 @@ type TMountOptions = { dir?: 'ltr' | 'rtl' }
  */
 async function mount(props: Partial<IDrawerProps> = {}, { dir = 'ltr' }: TMountOptions = {}) {
 	const drawer = new TDrawer({ visible: true, swipe: 'handle', ...props })
-	const bundle = new TPluginBundle(drawer).use(TElementPlugin).use(TDrawerSwipePlugin)
+	// Открытость модального слоя — `visible`, как в дескрипторе Drawer
+	const bundle = new TPluginBundle(drawer)
+		.use(TElementPlugin)
+		.use(TSwipePlugin, { property: 'visible' })
 
 	bundles.push(bundle)
 
@@ -103,53 +161,11 @@ async function mount(props: Partial<IDrawerProps> = {}, { dir = 'ltr' }: TMountO
 
 	drawer.events.on('close:before', (event) => reasons.push(event.reason))
 
-	/**
-	 * Указатель: событие с точкой и временем, всплывает до корня. Отдаёт
-	 * событие — по нему видно, погашено ли.
-	 */
-	const pointer = (
-		type: string,
-		target: Element,
-		x: number,
-		y: number,
-		time: number,
-		init: PointerEventInit = {},
-	): PointerEvent => {
-		const event = new PointerEvent(type, {
-			bubbles: true,
-			cancelable: true,
-			clientX: x,
-			clientY: y,
-			pointerId: 1,
-			pointerType: 'mouse',
-			button: 0,
-			isPrimary: true,
-			...init,
-		})
-
-		Object.defineProperty(event, 'timeStamp', { value: time })
-		target.dispatchEvent(event)
-
-		return event
-	}
-
-	/**
-	 * Жест от точки по пути: нажатие, протяжка по точкам через `step` мс и
-	 * отпускание в последней. Точки — `[x, y]`.
-	 */
-	const swipe = (target: Element, path: [number, number][], step = 16): void => {
-		const [start, ...rest] = path
-
-		pointer('pointerdown', target, start[0], start[1], 0)
-		rest.forEach(([x, y], index) => pointer('pointermove', root, x, y, (index + 1) * step))
-
-		const [x, y] = rest[rest.length - 1] ?? start
-
-		pointer('pointerup', root, x, y, rest.length * step)
-	}
+	/** Жест по корню: у выезжающей панели корень и есть панель. */
+	const swipe = swipeOn(root)
 
 	/** Сдвиг панели во время жеста: переменная темы на корне. */
-	const offset = () => root.style.getPropertyValue('--drawer-swipe')
+	const offset = () => root.style.getPropertyValue(SWIPE_VARIABLE)
 
 	return { drawer, bundle, root, handle, reasons, pointer, swipe, offset }
 }
@@ -567,11 +583,298 @@ describe('жест выключили посреди жеста', () => {
 
 	it('после destroy плагин владельца не слушает: жест не включается', async () => {
 		const { drawer, bundle, root } = await mount({ swipe: 'none' })
-		const plugin = pluginOf(bundle, TDrawerSwipePlugin)
+		const plugin = pluginOf(bundle, TSwipePlugin)
 
 		plugin.destroy()
 		drawer.swipe = 'handle'
 
+		expect(root.style.touchAction).toBe('')
+	})
+})
+
+/** Коробка панели поповера: 300 × 200, под триггером, в окне 1000 × 800. */
+const POPOVER_BOX = new DOMRect(100, 300, 300, 200)
+
+type TPopoverMountOptions = {
+	/**
+	 * Сторона панели после flip — `data-placement`, который плагин якоря пишет
+	 * в саму панель; `null` — атрибута нет
+	 */
+	placement?: string | null
+}
+
+/**
+ * Открытый поповер: корень с триггером и панель с пометкой владельцем — в
+ * конце `body`, а внутри контейнера (`contained`) — в самом корне. На панели —
+ * номер слоя, как у Frame, полоса и содержимое с текстом и кнопкой. Жест по
+ * умолчанию — за полосу.
+ */
+async function mountPopover(
+	props: Partial<IPopoverProps> = {},
+	{ placement = 'bottom-start' }: TPopoverMountOptions = {},
+) {
+	const popover = new TPopover({ open: true, swipe: 'handle', ...props })
+	const bundle = new TPluginBundle(popover)
+		.use(TElementPlugin)
+		.use(TDismissPlugin)
+		.use(TSwipePlugin)
+
+	bundles.push(bundle)
+
+	const root = document.createElement('span')
+	const panel = document.createElement('div')
+
+	root.className = popover.classes.base
+	root.innerHTML = '<button class="s-test-trigger">Открыть</button>'
+
+	for (const [name, value] of Object.entries(pluginOf(bundle, TDismissPlugin).ownerAttribute)) {
+		panel.setAttribute(name, value)
+	}
+
+	// Панель — Frame, свой слой
+	panel.setAttribute('data-layer', '1001')
+
+	if (placement !== null) panel.setAttribute('data-placement', placement)
+
+	panel.tabIndex = -1
+	panel.innerHTML = [
+		`<div class="${popover.classes.resolve('__handle')}"></div>`,
+		'<div class="s-test-content"><p class="s-test-text">Текст</p><button class="s-test-button">Действие</button></div>',
+	].join('')
+
+	document.body.append(root)
+
+	if (popover.contained) {
+		root.append(panel)
+	} else {
+		document.body.append(panel)
+	}
+
+	vi.spyOn(panel, 'getBoundingClientRect').mockReturnValue(POPOVER_BOX)
+
+	pluginOf(bundle, TElementPlugin).element = root
+	await nextFrame()
+
+	const handle = nodeOf(`.${popover.classes.resolve('__handle')}`, panel)
+	const changes: boolean[] = []
+
+	popover.events.on('change:open', (value) => changes.push(value))
+
+	/** Сдвиг панели во время жеста: переменная темы на панели. */
+	const offset = () => panel.style.getPropertyValue(SWIPE_VARIABLE)
+
+	return { popover, bundle, root, panel, handle, changes, swipe: swipeOn(panel), offset }
+}
+
+describe('поповер', () => {
+	it('тянут панель, а не корень: касание вдоль оси забирает жест на панели', async () => {
+		const { root, panel } = await mountPopover()
+
+		expect(panel.style.touchAction).toBe('pan-x pinch-zoom')
+		expect(root.style.touchAction).toBe('')
+	})
+
+	it('закрытый жест не слушает; открытие и выключенный жест — по подписке', async () => {
+		const { popover, panel } = await mountPopover({ open: false })
+
+		expect(panel.style.touchAction).toBe('')
+
+		popover.open = true
+
+		expect(panel.style.touchAction).toBe('pan-x pinch-zoom')
+
+		popover.swipe = 'none'
+
+		expect(panel.style.touchAction).toBe('')
+	})
+
+	it('под триггером — вниз от него, к триггеру — с сопротивлением', async () => {
+		const { panel, handle, offset } = await mountPopover()
+
+		pointer('pointerdown', handle, 250, 305, 0)
+		pointer('pointermove', panel, 250, 385, 16)
+
+		expect(offset()).toBe('80px')
+
+		pointer('pointermove', panel, 250, 281, 32)
+
+		// 24 px к триггеру — половина предела
+		expect(offset()).toBe('-12px')
+	})
+
+	it('смахнули дальше четверти — закрыта записью open, жест кончен', async () => {
+		const { popover, handle, swipe, changes } = await mountPopover()
+
+		// Медленно: 60 px из 200 за 600 мс — дело в пути, а не в скорости
+		swipe(
+			handle,
+			[
+				[250, 305],
+				[250, 325],
+				[250, 345],
+				[250, 365],
+			],
+			200,
+		)
+
+		expect(popover.open).toBe(false)
+		expect(changes).toEqual([false])
+		expect(popover.swiping).toBe(false)
+	})
+
+	it('ближе четверти и медленно — панель на месте: сдвиг уходит кадром позже', async () => {
+		const { popover, handle, swipe, offset } = await mountPopover()
+
+		swipe(
+			handle,
+			[
+				[250, 305],
+				[250, 325],
+				[250, 345],
+			],
+			200,
+		)
+
+		expect(popover.open).toBe(true)
+		expect(popover.swiping).toBe(false)
+		expect(offset()).toBe('40px')
+
+		await nextFrame()
+
+		expect(offset()).toBe('')
+	})
+
+	it('над триггером (flip) — вверх: сторону плагин берёт с узла панели', async () => {
+		const { popover, panel, handle, offset } = await mountPopover({}, { placement: 'top-end' })
+
+		pointer('pointerdown', handle, 250, 495, 0)
+		pointer('pointermove', panel, 250, 415, 16)
+
+		expect(offset()).toBe('-80px')
+
+		pointer('pointerup', panel, 250, 415, 400)
+
+		expect(popover.open).toBe(false)
+	})
+
+	it('flip между жестами — сторона читается заново в начале жеста', async () => {
+		const { popover, panel, handle, swipe } = await mountPopover()
+
+		panel.setAttribute('data-placement', 'top-start')
+
+		// Вниз — к триггеру, который теперь под панелью: не закрытие
+		swipe(
+			handle,
+			[
+				[250, 495],
+				[250, 535],
+				[250, 575],
+			],
+			200,
+		)
+
+		expect(popover.open).toBe(true)
+
+		swipe(
+			handle,
+			[
+				[250, 495],
+				[250, 455],
+				[250, 415],
+			],
+			200,
+		)
+
+		expect(popover.open).toBe(false)
+	})
+
+	it('внутри контейнера — вниз, стороны на узле не нужно', async () => {
+		const { popover, root, panel, handle, swipe } = await mountPopover(
+			{ contained: true },
+			{ placement: null },
+		)
+
+		expect(root.contains(panel)).toBe(true)
+		expect(popover.swipeSide).toBe('bottom')
+
+		swipe(
+			handle,
+			[
+				[250, 305],
+				[250, 345],
+				[250, 385],
+			],
+			200,
+		)
+
+		expect(popover.open).toBe(false)
+	})
+
+	it('у триггера без стороны на узле жест не начинается: уходить некуда', async () => {
+		const { popover, panel, handle } = await mountPopover({}, { placement: null })
+
+		pointer('pointerdown', handle, 250, 305, 0)
+		pointer('pointermove', panel, 250, 385, 16)
+
+		expect(popover.swiping).toBe(false)
+
+		pointer('pointerup', panel, 250, 385, 400)
+
+		expect(popover.open).toBe(true)
+	})
+
+	it('за всю панель — с текста, но не с кнопки', async () => {
+		const { popover, panel } = await mountPopover({ swipe: 'panel' })
+
+		pointer('pointerdown', nodeOf('.s-test-button', panel), 250, 400, 0)
+		pointer('pointermove', panel, 250, 480, 16)
+
+		expect(popover.swiping).toBe(false)
+
+		pointer('pointerup', panel, 250, 480, 32)
+		pointer('pointerdown', nodeOf('.s-test-text', panel), 250, 400, 48)
+		pointer('pointermove', panel, 250, 480, 64)
+
+		expect(popover.swiping).toBe(true)
+	})
+
+	it('закрыли посреди жеста — жест кончен, следов на панели нет', async () => {
+		const { popover, panel, handle, offset } = await mountPopover()
+
+		pointer('pointerdown', handle, 250, 305, 0)
+		pointer('pointermove', panel, 250, 385, 16)
+
+		expect(popover.swiping).toBe(true)
+
+		popover.open = false
+
+		expect(popover.swiping).toBe(false)
+		expect(offset()).toBe('')
+		expect(panel.style.touchAction).toBe('')
+	})
+})
+
+describe('контракт жеста', () => {
+	it('выезжающая панель и поповер — владельцы жеста', () => {
+		expectTypeOf<TDrawer>().toExtend<ISwipeOwner>()
+		expectTypeOf<TPopover>().toExtend<ISwipeOwner>()
+
+		expect(isSwipeable(new TDrawer())).toBe(true)
+		expect(isSwipeable(new TPopover())).toBe(true)
+	})
+
+	it('владельца без контракта плагин не трогает', async () => {
+		const button = new TButton()
+		const bundle = new TPluginBundle(button).use(TElementPlugin).use(TSwipePlugin)
+		const root = document.createElement('button')
+
+		bundles.push(bundle)
+		document.body.append(root)
+
+		pluginOf(bundle, TElementPlugin).element = root
+		await nextFrame()
+
+		expect(isSwipeable(button)).toBe(false)
 		expect(root.style.touchAction).toBe('')
 	})
 })
