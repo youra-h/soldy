@@ -1,6 +1,5 @@
 @use './mixins' as mixines;
 @use '../button/mixins' as button;
-@use '../../mixins/motion';
 .s-tabs {
 	$this: &;
 
@@ -105,6 +104,14 @@
 // список и панели — дети корня, табы — дети списка.
 $line: ':where(.s-tabs:not(.s-tabs--view-contained, .s-tabs--view-outline))';
 
+// Полоса под активным табом — `::after` списка по `--active-tab-*`. К новому
+// табу она переезжает так же, как карточка `contained` (`active-tab-move`):
+// место и длина вместе, длина — по главной оси, у вертикальных табов это
+// высота, и табы разной высоты полоса проходит без скачка длины. Едет она
+// только при смене активного таба; первая отрисовка, ресайз и сдвиг соседей
+// ставят её на место сразу. Модификатор `--ready-animation` ей не нужен: до
+// замера переменных нет и полоса нулевой длины, а первую запись плагин темы
+// делает без признака переезда.
 #{$line} {
 	// Horizontal list: separator + indicator via ::after (uses --active-tab-pos and --active-tab-size)
 	&.s-tabs--horizontal {
@@ -118,6 +125,8 @@ $line: ':where(.s-tabs:not(.s-tabs--view-contained, .s-tabs--view-outline))';
 				@apply rounded-full;
 				width: var(--active-tab-size, 0px);
 				transform: translateX(var(--active-tab-pos, 0px));
+
+				@include mixines.active-tab-move(width);
 			}
 		}
 	}
@@ -134,6 +143,8 @@ $line: ':where(.s-tabs:not(.s-tabs--view-contained, .s-tabs--view-outline))';
 				@apply rounded-full;
 				height: var(--active-tab-size, 0px);
 				transform: translateY(var(--active-tab-pos, 0px));
+
+				@include mixines.active-tab-move(height);
 			}
 		}
 
@@ -146,18 +157,6 @@ $line: ':where(.s-tabs:not(.s-tabs--view-contained, .s-tabs--view-outline))';
 					@apply -left-px;
 				}
 			}
-		}
-	}
-
-	// Полоса едет к новому табу переходом — только после монтирования
-	// (`--ready-animation` ставит `TTabsViewPlugin` темы) и только когда режим
-	// движения его разрешает (`motion.allowed`): иначе она встаёт на новый таб
-	// сразу, как карточка `contained`.
-	&.s-tabs--ready-animation > .s-tabs__list::after {
-		@include motion.allowed {
-			transition:
-				transform mixines.$move-duration mixines.$move-easing,
-				width mixines.$move-duration mixines.$move-easing;
 		}
 	}
 

@@ -12,8 +12,9 @@
  *
  * Сами значения в jsdom нулевые — раскладки нет, — проверяется, что
  * переменные записаны. Что полоса встаёт под активный таб, проверяет браузерный
- * прогон (`playground/vue/browser/tabs-layout.spec.ts`), что карточка
- * `contained` переезжает переходом, — `playground/vue/browser/tabs-contained.spec.ts`.
+ * прогон (`playground/vue/browser/tabs-layout.spec.ts`), что полоса и карточка
+ * `contained` переезжают переходом, — `playground/vue/browser/tabs-line.spec.ts`
+ * и `tabs-contained.spec.ts`.
  */
 
 import { describe, it, expect, afterEach } from 'vitest'
