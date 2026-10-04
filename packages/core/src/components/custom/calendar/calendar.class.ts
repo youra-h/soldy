@@ -284,7 +284,17 @@ export default class TCalendar
 		return isWeekday(this._weekStart) ? this._weekStart : calendarLocale(this._locale).firstDay
 	}
 
-	/** Дни недели от первого: короткое имя — подпись колонки, полное — для скринридера. */
+	/**
+	 * Дни недели от первого: узкое имя — подпись колонки, полное — для
+	 * скринридера.
+	 *
+	 * Узкое, а не короткое: узкую форму CLDR задаёт под шапку календаря, в
+	 * букву-две. Короткая у части локалей — целое слово (`ar` — «الخميس», `ml`
+	 * — «വെള്ളി»), и колонке её не вместить. Узкие имена бывают одинаковыми
+	 * (`S` и `S` у `en-US`): колонку называет её место, а имя дня скринридеру —
+	 * полная дата. У `ur` и `sw` узкие имена в CLDR — латинские буквы
+	 * (`S M T W T F S`), и подписи колонок у них такие же.
+	 */
 	get weekdays(): TCalendarWeekday[] {
 		const locale = calendarLocale(this._locale)
 		const first = this.firstDay
@@ -293,7 +303,7 @@ export default class TCalendar
 			const day = weekdayOf(first + offset)
 
 			return {
-				short: locale.weekdayName(day, 'short'),
+				narrow: locale.weekdayName(day, 'narrow'),
 				long: locale.weekdayName(day, 'long'),
 			}
 		})

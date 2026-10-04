@@ -32,8 +32,8 @@ export type TMonthGridDay = {
 	outside: boolean
 }
 
-/** Ширина имени дня недели: короткое — подпись колонки, полное — для скринридера. */
-export type TWeekdayWidth = 'short' | 'long'
+/** Ширина имени дня недели: узкое — подпись колонки, полное — для скринридера. */
+export type TWeekdayWidth = 'narrow' | 'long'
 
 /** Часть даты в поле ввода: день, месяц или год. */
 export type TDatePart = 'day' | 'month' | 'year'

@@ -7,7 +7,9 @@
  * выбора месяца и года: подложка во весь календарь и карточка у её верхнего
  * края — во всю ширину при любом числе сеток, высотой по содержимому, полоса
  * жеста у её низа, кромка в режиме принудительных цветов, — список 4 колонки по 3
- * строки и подписи, которые не рвут слово. Фокус: порядок Tab,
+ * строки, имена месяцев, срезанные многоточием только шире плитки, подписи лет,
+ * которые не рвут слово, и узкие имена дней недели в своих колонках и под
+ * карточкой. Фокус: порядок Tab,
  * `:focus-visible`, клик из Enter на кнопке листания, перенос DOM-фокуса за
  * фокусом коллекции, когда узел нового дня появляется кадром позже, и путь
  * фокуса через панель выбора — в том числе после нажатия по подложке и жеста.
@@ -74,6 +76,19 @@ const findAll = (selector: string): HTMLElement[] =>
 	[...document.querySelectorAll(selector)].filter(
 		(node): node is HTMLElement => node instanceof HTMLElement,
 	)
+
+/**
+ * Прямоугольник самих строк текста узла, а не его коробки: область подписи
+ * плитки — во всю плитку, колонка дня недели — шире имени. Текст, срезанный
+ * многоточием, он отдаёт целиком — той ширины, что текст просит.
+ */
+const labelBox = (node: HTMLElement) => {
+	const range = document.createRange()
+
+	range.selectNodeContents(node)
+
+	return range.getBoundingClientRect()
+}
 
 /** Ячейка дня по дате — по его имени, полной дате, как её прочтёт скринридер. */
 const dayCell = (date: string): HTMLElement => {
@@ -347,15 +362,6 @@ describe('выбор месяца и года', () => {
 		return { row, text }
 	}
 
-	/** Прямоугольник самих строк подписи, а не её области: область — во всю строку. */
-	const labelBox = (text: HTMLElement) => {
-		const range = document.createRange()
-
-		range.selectNodeContents(text)
-
-		return range.getBoundingClientRect()
-	}
-
 	/** Шаги между соседними значениями по возрастанию. */
 	const steps = (values: number[]) =>
 		[...values]
@@ -524,21 +530,6 @@ describe('выбор месяца и года', () => {
 		},
 	)
 
-	it('годы — так же ровной сеткой 4×3, и подписи th-TH с эрой не режутся', async () => {
-		await show({ months: ['2026-09-01'], locale: 'th-TH' })
-		await open()
-
-		await userEvent.click(find('.s-calendar__picker-heading'))
-		await expect.poll(() => options()[0]?.textContent?.trim()).not.toBe(undefined)
-		await nextFrame()
-
-		expectGrid()
-
-		for (const text of findAll('.s-calendar__picker-list .s-button__text')) {
-			expect(text.scrollWidth).toBeLessThanOrEqual(text.clientWidth)
-		}
-	})
-
 	/** Слова подписи, которые разошлись по двум строкам. */
 	const brokenWords = (text: HTMLElement): string[] =>
 		[...text.childNodes].flatMap((node) =>
@@ -557,31 +548,134 @@ describe('выбор месяца и года', () => {
 		)
 
 	/**
-	 * Подпись переносится только между словами, а слово не рвёт. Слово шире
-	 * области текста заходит в поля строки поровну с обеих сторон — подпись
-	 * остаётся по центру, — но из плитки не выходит. У `ar-EG` такое слово —
-	 * «أغسطس», и шире области оно на любом размере.
+	 * Видимая часть подписи: текст, который область срезает (`overflow` не
+	 * `visible`), виден только в её границах.
+	 */
+	const visibleBox = (text: HTMLElement) => {
+		const label = labelBox(text)
+
+		if (getComputedStyle(text).overflowX === 'visible') return label
+
+		const area = text.getBoundingClientRect()
+
+		return { left: Math.max(label.left, area.left), right: Math.min(label.right, area.right) }
+	}
+
+	/**
+	 * Подпись года переносится только между словами — у `th-TH` она с эрой
+	 * («พ.ศ. 2569»), и многоточие срезало бы номер. На любом размере слова
+	 * целы, подпись не срезана и стоит в своей плитке.
 	 */
 	it.each(COMPONENT_SIZES)(
-		'size %s: ar-EG — слова подписей целы, подпись по центру и в своей плитке',
+		'size %s: годы — так же ровной сеткой 4×3, подписи th-TH с эрой переносятся, а не режутся',
 		async (size) => {
-			await show({ months: ['2026-09-01'], locale: 'ar-EG', size })
+			await show({ months: ['2026-09-01'], locale: 'th-TH', size })
 			await open()
+
+			const january = options()[0]?.textContent
+
+			await userEvent.click(find('.s-calendar__picker-heading'))
+			await expect.poll(() => options()[0]?.textContent).not.toBe(january)
+			await nextFrame()
+
+			expectGrid()
 
 			for (const option of options()) {
 				const { row, text } = rowOf(option)
 				const cell = row.getBoundingClientRect()
 				const label = labelBox(text)
+				const name = text.textContent?.trim() ?? ''
 
-				expect(brokenWords(text), text.textContent ?? '').toEqual([])
-				expect(label.left).toBeGreaterThanOrEqual(cell.left - EPSILON)
-				expect(label.right).toBeLessThanOrEqual(cell.right + EPSILON)
-				expect(
-					Math.abs(label.left + label.width / 2 - (cell.left + cell.width / 2)),
-				).toBeLessThanOrEqual(1)
+				expect(brokenWords(text), name).toEqual([])
+				expect(text.scrollWidth, name).toBeLessThanOrEqual(text.clientWidth)
+				expect(label.left, name).toBeGreaterThanOrEqual(cell.left - EPSILON)
+				expect(label.right, name).toBeLessThanOrEqual(cell.right + EPSILON)
 			}
 		},
 	)
+
+	/**
+	 * Имя месяца режется многоточием — и только шире самой плитки: полей у
+	 * такой подписи нет. Имя, которому плитки хватает, стоит целым и по
+	 * центру; шире плитки — режется у её края, и видимая часть из плитки не
+	 * выходит. Самые длинные имена — у `ta-IN` («ஜூலை») и `ml-IN` («സെപ്റ്റം»,
+	 * «ഫെബ്രു»); `ar-EG` — то же справа налево. Граница в пиксель вокруг
+	 * ширины плитки — на округление: там проверяется только место.
+	 */
+	describe.each(['ar-EG', 'ta-IN', 'ml-IN'])('месяцы %s', (locale) => {
+		it.each(COMPONENT_SIZES)(
+			'size %s: в своей плитке — целые по центру, шире плитки — многоточием',
+			async (size) => {
+				await show({ months: ['2026-09-01'], locale, size })
+				await open()
+
+				for (const option of options()) {
+					const { row, text } = rowOf(option)
+					const cell = row.getBoundingClientRect()
+					const label = labelBox(text)
+					const visible = visibleBox(text)
+					const name = text.textContent?.trim() ?? ''
+
+					expect(visible.left, name).toBeGreaterThanOrEqual(cell.left - EPSILON)
+					expect(visible.right, name).toBeLessThanOrEqual(cell.right + EPSILON)
+
+					if (label.width < cell.width - 1) {
+						expect(text.scrollWidth, name).toBeLessThanOrEqual(text.clientWidth)
+						expect(
+							Math.abs(label.left + label.width / 2 - (cell.left + cell.width / 2)),
+							name,
+						).toBeLessThanOrEqual(1)
+					}
+
+					if (label.width > cell.width + 1) {
+						expect(getComputedStyle(text).textOverflow, name).toBe('ellipsis')
+					}
+				}
+			},
+		)
+	})
+
+	/**
+	 * Дни недели — узкие имена. Короткие у `ar-EG` и `ml-IN` — целые слова,
+	 * шире колонки: колонка срезала их посреди буквы, а под открытой панелью
+	 * их края выглядывали из-под карточки. Узкое имя стоит в своей колонке, и
+	 * карточка открытой панели накрывает его целиком.
+	 */
+	describe.each(['ar-EG', 'ml-IN'])('дни недели %s', (locale) => {
+		it.each(COMPONENT_SIZES)(
+			'size %s: имя дня — в своей колонке, под открытой панелью — под карточкой',
+			async (size) => {
+				await show({ months: ['2026-09-01'], locale, size })
+
+				const weekdays = findAll('.s-calendar__weekday')
+
+				expect(weekdays).toHaveLength(7)
+
+				for (const weekday of weekdays) {
+					const column = weekday.getBoundingClientRect()
+					const label = labelBox(weekday)
+					const name = weekday.textContent?.trim() ?? ''
+
+					expect(label.left, name).toBeGreaterThanOrEqual(column.left - EPSILON)
+					expect(label.right, name).toBeLessThanOrEqual(column.right + EPSILON)
+				}
+
+				await open()
+
+				const card = box('.s-calendar__picker')
+
+				for (const weekday of weekdays) {
+					const label = labelBox(weekday)
+					const name = weekday.textContent?.trim() ?? ''
+
+					expect(label.left, name).toBeGreaterThanOrEqual(card.left - EPSILON)
+					expect(label.right, name).toBeLessThanOrEqual(card.right + EPSILON)
+					expect(label.top, name).toBeGreaterThanOrEqual(card.top - EPSILON)
+					expect(label.bottom, name).toBeLessThanOrEqual(card.bottom + EPSILON)
+				}
+			},
+		)
+	})
 
 	/**
 	 * Мышью целиком: выбор года пересобирает список под месяцы, и Vue

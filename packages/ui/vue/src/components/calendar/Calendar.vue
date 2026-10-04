@@ -146,10 +146,11 @@ export default { ...SetupCalendar, components: { Button, Icon, ListBox, Popover,
 					Содержимое панели — карточка: список и шапка. Список — ListBox
 					места: месяцы года или годы страницы, по 12; раскладку в 4 колонки
 					по 3 строки даёт тема. Выбор в нём ловит расширение `picker` —
-					событием списка, а не обработчиком здесь. Колонка — четверть
-					карточки, и длинная подпись года (у `th-TH` — с эрой, «พ.ศ. 2569»)
-					переносится между словами, а не режется многоточием: строки
-					высокие, места под вторую строку хватает.
+					событием списка, а не обработчиком здесь. Подпись шире плитки
+					список режет или переносит по уровню, и `contentFit` списку ставит
+					то же расширение: имя месяца — многоточием, подпись года (у
+					`th-TH` — с эрой, «พ.ศ. 2569») — переносом между словами.
+					Разметка `contentFit` не передаёт: проп спорил бы с уровнем.
 
 					Список в DOM раньше шапки: фокус при открытии встаёт на первую
 					остановку панели — на список с выбранным месяцем, а не на кнопку
@@ -163,7 +164,6 @@ export default { ...SetupCalendar, components: { Button, Icon, ListBox, Popover,
 						:engine="pickers[index].engine"
 						:size="size"
 						indicator="none"
-						contentFit="wrap"
 						:aria_labelledBy="pickers[index].labelledBy"
 					/>
 
@@ -223,7 +223,7 @@ export default { ...SetupCalendar, components: { Button, Icon, ListBox, Popover,
 			-->
 			<table class="s-calendar__grid" v-bind="grid.gridAria">
 				<!--
-					Дни недели — короткие имена из `weekdays`, по `th` на день.
+					Дни недели — узкие имена из `weekdays`, по `th` на день.
 
 					Строка скрыта от скринридера, и это отступление от APG, где у
 					колонок есть заголовки: имя дня — полная дата, день недели в нём
@@ -237,7 +237,7 @@ export default { ...SetupCalendar, components: { Button, Icon, ListBox, Popover,
 							:key="index"
 							class="s-calendar__weekday"
 						>
-							{{ weekday.short }}
+							{{ weekday.narrow }}
 						</th>
 					</tr>
 				</thead>
