@@ -18,7 +18,6 @@ import type {
 	IListBoxItemProps,
 	TListBoxCollection,
 } from '../../../../list-box'
-import type { TListContentFit } from '../../../../list'
 import { calendarBounds } from '../../../dates'
 import type { ICalendarItem } from '../../../item/types'
 import type { ICalendar } from '../../../types'
@@ -41,18 +40,6 @@ const LAST_YEAR = 9999
 
 /** Месяцы года — от 1. */
 const MONTHS: readonly number[] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
-
-/**
- * Что делать с подписью шире плитки — по уровню. Имя месяца режется
- * многоточием: это короткая форма, обычно одно слово, и слову шире плитки
- * перенос не поможет — его пришлось бы рвать. Подпись года переносится между
- * словами: у `th-TH` она с эрой («พ.ศ. 2569»), и многоточие срезало бы номер —
- * то, по чему год и выбирают.
- */
-const CONTENT_FIT: Readonly<Record<TCalendarPickerLevel, TListContentFit>> = {
-	months: 'truncate',
-	years: 'wrap',
-}
 
 /**
  * Место панели: что она показывает и её экземпляры. Уровень, год и страница
@@ -214,7 +201,12 @@ export class TCalendarPickerExtension
 		// к её краю, вверх (край задаёт разметка). Содержимое не монтируется
 		// до первого открытия
 		const popover = new TPopover({ closable: false, lazyMount: true, swipe: 'handle' })
-		const list = new TListBox()
+		// Подпись шире плитки список переносит между словами — на обоих
+		// уровнях. Имя месяца бывает в несколько слов (`vi-VN` — «Tháng 10»),
+		// подпись года — с эрой (`th-TH` — «พ.ศ. 2569»), и многоточие срезало
+		// бы номер — то, чем плитки и различаются. Слово шире плитки переносить
+		// некуда: его режет тема, у края плитки
+		const list = new TListBox({ contentFit: 'wrap' })
 		const engine = createEngineListBox({ owner: list })
 		const month = this._gridMonth(index)
 		const year = month === undefined ? FIRST_YEAR : yearOf(month)
@@ -330,8 +322,7 @@ export class TCalendarPickerExtension
 	 * Состав списка по уровню и что в нём выбрано — то, что сейчас показано:
 	 * месяц сетки среди месяцев, год панели среди лет. Значение списка
 	 * пишется после состава: расширение `value` сводит его с выбором по
-	 * значениям элементов. Подпись шире плитки список режет или переносит —
-	 * тоже по уровню (`CONTENT_FIT`).
+	 * значениям элементов.
 	 */
 	private _fill(place: TPlace, index: number): void {
 		const owner = this._ctx.options.get('owner')
@@ -340,8 +331,6 @@ export class TCalendarPickerExtension
 
 		const locale = calendarLocale(owner.locale)
 		const bounds = this._yearBounds(owner)
-
-		place.list.contentFit = CONTENT_FIT[place.level]
 
 		if (place.level === 'months') {
 			const dates = calendarBounds(owner.min, owner.max)

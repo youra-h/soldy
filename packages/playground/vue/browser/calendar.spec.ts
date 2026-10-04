@@ -7,9 +7,9 @@
  * выбора месяца и года: подложка во весь календарь и карточка у её верхнего
  * края — во всю ширину при любом числе сеток, высотой по содержимому, полоса
  * жеста у её низа, кромка в режиме принудительных цветов, — список 4 колонки по 3
- * строки, имена месяцев, срезанные многоточием только шире плитки, подписи лет,
- * которые не рвут слово, и узкие имена дней недели в своих колонках и под
- * карточкой. Фокус: порядок Tab,
+ * строки, подписи месяцев и лет, которые переносятся между словами и не рвут
+ * слово, а слово шире плитки срезают многоточием, и узкие имена дней недели в
+ * своих колонках и под карточкой. Фокус: порядок Tab,
  * `:focus-visible`, клик из Enter на кнопке листания, перенос DOM-фокуса за
  * фокусом коллекции, когда узел нового дня появляется кадром позже, и путь
  * фокуса через панель выбора — в том числе после нажатия по подложке и жеста.
@@ -595,12 +595,57 @@ describe('выбор месяца и года', () => {
 	)
 
 	/**
-	 * Имя месяца режется многоточием — и только шире самой плитки: полей у
-	 * такой подписи нет. Имя, которому плитки хватает, стоит целым и по
-	 * центру; шире плитки — режется у её края, и видимая часть из плитки не
-	 * выходит. Самые длинные имена — у `ta-IN` («ஜூலை») и `ml-IN` («സെപ്റ്റം»,
-	 * «ഫെബ്രു»); `ar-EG` — то же справа налево. Граница в пиксель вокруг
-	 * ширины плитки — на округление: там проверяется только место.
+	 * Имя месяца в несколько слов переносится между словами, а не режется: у
+	 * `vi-VN` оно «Tháng 10», и на крупных размерах шире плитки. Многоточие
+	 * срезало бы номер, и «Tháng 10»–«Tháng 12» стали бы одинаковым «Tháng …».
+	 * На любом размере подпись видна целиком — ничего из неё не срезано, — слова
+	 * целы, и она стоит в своей плитке по ширине и по высоте: две строки в
+	 * плитку помещаются.
+	 */
+	it.each(COMPONENT_SIZES)(
+		'size %s: месяцы vi-VN в несколько слов переносятся между словами, а не режутся',
+		async (size) => {
+			await show({ months: ['2026-09-01'], locale: 'vi-VN', size })
+			await open()
+
+			expectGrid()
+
+			// Подписи разные — различимы они, если видны целиком (ниже)
+			const names = options().map((option) => rowOf(option).text.textContent?.trim())
+
+			expect(new Set(names).size).toBe(12)
+
+			for (const option of options()) {
+				const { row, text } = rowOf(option)
+				const cell = row.getBoundingClientRect()
+				const area = text.getBoundingClientRect()
+				const label = labelBox(text)
+				const name = text.textContent?.trim() ?? ''
+
+				expect(brokenWords(text), name).toEqual([])
+				// Ничего не срезано: строки подписи — внутри области текста, а
+				// она срезает всё, что за её краем
+				expect(label.left, name).toBeGreaterThanOrEqual(area.left - EPSILON)
+				expect(label.right, name).toBeLessThanOrEqual(area.right + EPSILON)
+				expect(label.top, name).toBeGreaterThanOrEqual(area.top - EPSILON)
+				expect(label.bottom, name).toBeLessThanOrEqual(area.bottom + EPSILON)
+				// И в своей плитке
+				expect(label.left, name).toBeGreaterThanOrEqual(cell.left - EPSILON)
+				expect(label.right, name).toBeLessThanOrEqual(cell.right + EPSILON)
+				expect(label.top, name).toBeGreaterThanOrEqual(cell.top - EPSILON)
+				expect(label.bottom, name).toBeLessThanOrEqual(cell.bottom + EPSILON)
+			}
+		},
+	)
+
+	/**
+	 * Слову шире самой плитки переносить некуда — оно режется многоточием, и
+	 * только оно: полей у подписи нет, а разрезать слово переносом подпись не
+	 * даёт. Имя, которому плитки хватает, стоит целым и по центру; шире плитки
+	 * — режется у её края, и видимая часть из плитки не выходит. Самые длинные
+	 * слова — у `ta-IN` («ஜூலை») и `ml-IN` («സെപ്റ്റം», «ഫെബ്രു»); `ar-EG` — то
+	 * же справа налево. Граница в пиксель вокруг ширины плитки — на
+	 * округление: там проверяется только место.
 	 */
 	describe.each(['ar-EG', 'ta-IN', 'ml-IN'])('месяцы %s', (locale) => {
 		it.each(COMPONENT_SIZES)(
@@ -616,6 +661,7 @@ describe('выбор месяца и года', () => {
 					const visible = visibleBox(text)
 					const name = text.textContent?.trim() ?? ''
 
+					expect(brokenWords(text), name).toEqual([])
 					expect(visible.left, name).toBeGreaterThanOrEqual(cell.left - EPSILON)
 					expect(visible.right, name).toBeLessThanOrEqual(cell.right + EPSILON)
 
