@@ -134,10 +134,45 @@ $self-focus: ('&:focus', '&:focus-visible');
 	}
 }
 
-// Кольцо фокуса поверхности
+// Кольцо фокуса поверхности.
+//
+// В режиме принудительных цветов — системный цвет фокуса, как у кольца поля
+// (`field-focus` в `input/_mixins.scss`). Цвет темы браузер в этом режиме и
+// сам заменил бы им, но не у выбранной поверхности: подмену цветов ей снимает
+// `button-state-forced`, и кольцо осталось бы ступенью темы.
 @mixin button-focus-ring {
 	@apply duration-100;
 	@apply outline-2 outline-offset-2 outline-s-component;
+
+	@media (forced-colors: active) {
+		outline-color: Highlight;
+	}
+}
+
+// Выбор в режиме принудительных цветов (высокий контраст Windows) — хвост
+// `button-state-bg` и `button-state-veil`. Фон браузер в этом режиме заменяет
+// цветом поверхности — заливку целиком, вуаль вместе с её прозрачностью, — и
+// выбор пропал бы вместе с ним: у триггера открытой панели (Popover, заголовок
+// Calendar, кнопка DatePicker) пропадало «нажато», у строки Select — выбор.
+// Выбранное красится системной подсветкой с системным текстом подсветки, как
+// выбранный день Calendar: так этот режим показывает выбор везде.
+//
+// Без подмены цветов (`forced-color-adjust: none`): иначе браузер положил бы
+// под текст подложку цвета страницы, и он стоял бы на подсветке в её
+// прямоугольнике. Подмены нет и у кольца фокуса — свой системный цвет оно
+// берёт само (`button-focus-ring`), — и у рамки `outlined` (`button-look`).
+//
+// Выбор под клавиатурной подсветкой — та же подсветка: селектор повторён,
+// потому что правило фона такого выбора на атрибут сильнее.
+@mixin button-state-forced {
+	@media (forced-colors: active) {
+		&[data-selected='true']:not([data-disabled='true']),
+		&[data-selected='true'][data-highlighted='true']:not([data-disabled='true']) {
+			forced-color-adjust: none;
+			background-color: Highlight;
+			color: HighlightText;
+		}
+	}
 }
 
 // Фон состояний ступенью: hover и подсветка, нажатие и выбор, маска выбранного
@@ -179,8 +214,17 @@ $self-focus: ('&:focus', '&:focus-visible');
 			@apply absolute inset-0 pointer-events-none;
 			@apply opacity-20 transition-colors duration-200;
 			@apply bg-s-neutral-50;
+
+			// В режиме принудительных цветов выбранное — системная подсветка
+			// (`button-state-forced`), а слой маски был бы поверх неё цветом
+			// темы. Подсветку строки без выбора этот режим не показывает тоже.
+			@media (forced-colors: active) {
+				content: none;
+			}
 		}
 	}
+
+	@include button-state-forced;
 }
 
 // Фон состояний вуалью — наведение и подсветка, нажатие и выбор, выбор под
@@ -206,11 +250,14 @@ $self-focus: ('&:focus', '&:focus-visible');
 	&[data-selected='true'][data-highlighted='true']:not([data-disabled='true']) {
 		@include veil.veil($color, veil.density(var(--s-component-state-active-hover), $fill));
 	}
+
+	@include button-state-forced;
 }
 
 // Те же состояния без фона и без маски — у вида `none`. Селекторы те же, что у
 // `button-state-bg` и `button-state-veil`: `none` обязан погасить то, что
-// нарисовал вид под ним — и ступень, и вуаль.
+// нарисовал вид под ним — и ступень, и вуаль, и подсветку выбора в режиме
+// принудительных цветов (`button-state-forced`).
 @mixin button-state-none {
 	&:hover:not([data-disabled='true']),
 	&[data-highlighted='true']:not([data-disabled='true']) {
@@ -231,6 +278,19 @@ $self-focus: ('&:focus', '&:focus-visible');
 
 		&::after {
 			content: none;
+		}
+	}
+
+	// Выбор `none` не рисует и в режиме принудительных цветов, поэтому
+	// возвращает всё, что меняет подсветка вида под ним: подмену цветов — от
+	// родителя, фон и текст — своего вида (`button-look`). Текст своего вида
+	// браузер подменит цветом текста режима, а системный текст подсветки
+	// оставил бы как есть, и на фоне страницы тот пропал бы.
+	@media (forced-colors: active) {
+		&[data-selected='true']:not([data-disabled='true']),
+		&[data-selected='true'][data-highlighted='true']:not([data-disabled='true']) {
+			forced-color-adjust: inherit;
+			@apply bg-transparent text-s-component;
 		}
 	}
 }
@@ -285,6 +345,19 @@ $self-focus: ('&:focus', '&:focus-visible');
 		#{list.join(('&:hover',), $focused)} {
 			&:not([data-disabled='true']) {
 				border-color: var(--s-#{$color}-400);
+			}
+		}
+
+		// Рамка выбранной в режиме принудительных цветов — той же подсветкой,
+		// что фон (`button-state-forced`): подмены цветов у выбранной нет, и
+		// рамка осталась бы ступенью темы. Селекторы — и с наведением и
+		// фокусом: правило их рамки выше бывает сильнее выбранного — у пилюли
+		// тега фокус читается `:has()` её строки.
+		@media (forced-colors: active) {
+			#{list.join(('&', '&:hover'), $focused)} {
+				&[data-selected='true']:not([data-disabled='true']) {
+					border-color: Highlight;
+				}
 			}
 		}
 	} @else if $view == 'none' {
