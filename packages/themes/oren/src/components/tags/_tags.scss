@@ -303,6 +303,17 @@ $focused: '&:has(> #{$row}:focus)';
 	@include button.button-view('plain');
 }
 
+// Выбранная пилюля в режиме принудительных цветов — системная подсветка с её
+// текстом и без подмены цветов браузером (`button-state-forced`), и внутри
+// пилюли подмены тоже нет. Строка берёт цвет пилюли и так (`color: inherit`
+// выше), а у крестика цвет свой, вида `plain`: на подсветке он остался бы
+// ступенью темы.
+@media (forced-colors: active) {
+	.s-tags-item[data-selected='true']:not([data-disabled='true']) > .s-tags-item__close {
+		color: inherit;
+	}
+}
+
 // Кнопка «…» — тоже `plain` по контексту: значения вида разметка не передаёт.
 :where(.s-tags__more) {
 	@include button.button-view('plain');
