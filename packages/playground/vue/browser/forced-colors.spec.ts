@@ -1,7 +1,7 @@
 /**
  * Режим принудительных цветов (высокий контраст Windows) в настоящем
  * браузере: кромка панелей оверлеев, кольцо фокуса полей, выбор у Button и
- * активный таб.
+ * клавиатурная подсветка строк списков, активный таб.
  *
  * В этом режиме браузер перекрашивает страницу сам: фон и текст берёт из
  * системной палитры, а тени убирает. Кромку панелей Popover и Select тема
@@ -23,7 +23,8 @@
  * списка и выбранный тег — тема рисует фоном, и в этом режиме он пропал бы
  * вместе с фоном. Его красит системная подсветка (см. ниже). Ею же отмечен
  * активный таб: полосу, карточку и линии списка Tabs тема тоже рисует фонами
- * (см. конец файла).
+ * (см. конец файла). Строку под стрелками — тоже фоном, и её в этом режиме
+ * обводит контур (см. ниже).
  *
  * Режим включает эмуляция Chromium — та же, что в DevTools → Rendering: она
  * меняет не только ответ медиазапроса, но и сами цвета. jsdom не делает ни
@@ -349,24 +350,18 @@ describe.each(TRIGGERS)('$name: нажатый триггер', ({ trigger, mark
 })
 
 /**
- * Подсветка — у каждого вида со своим фоном состояний, с вариантом и без, и у
- * выбора под клавиатурной подсветкой: правило его фона на атрибут сильнее, а
- * маска поверх заливки была бы цветом темы.
+ * Виды со своим фоном состояний, с вариантом и без: подсветка — у каждого.
+ * Выбор под клавиатурной подсветкой — в конце файла, вместе с подсветкой.
  */
 const VIEWS = [
 	{ name: 'filled', props: { view: 'filled' } },
 	{ name: 'filled с вариантом', props: { view: 'filled', variant: 'accent' } },
 	{ name: 'plain', props: { view: 'plain' } },
 	{ name: 'outlined', props: { view: 'outlined' } },
-	{ name: 'plain под подсветкой', props: { view: 'plain', 'data-highlighted': 'true' } },
-	{
-		name: 'filled с вариантом под подсветкой',
-		props: { view: 'filled', variant: 'accent', 'data-highlighted': 'true' },
-	},
 ] as const
 
 describe.each(VIEWS)('Button, $name: выбранная кнопка', ({ props }) => {
-	it.each(SCHEMES)('%s: системная подсветка, слоя поверх неё нет', async (scheme) => {
+	it.each(SCHEMES)('%s: системная подсветка', async (scheme) => {
 		await forcedColors('active')
 		await show(scheme, () => h(Button, { text: 'Выбрано', 'data-selected': 'true', ...props }))
 
@@ -375,7 +370,6 @@ describe.each(VIEWS)('Button, $name: выбранная кнопка', ({ props 
 		await settled(button)
 
 		expectHighlight(button)
-		expect(style(button, '::after').content).toBe('none')
 	})
 })
 
@@ -538,6 +532,227 @@ describe('строки и теги: выбор', () => {
 		expect(pixel([style(find('.s-tags-item__close', pill)).color])).toEqual(
 			pixel([systemColor('HighlightText')]),
 		)
+	})
+})
+
+/**
+ * Клавиатурная подсветка — строка ListBox и опция Select под стрелками
+ * (`data-highlighted`, его пишет `TListItemPlugin`). Тема рисует её фоном
+ * состояний, как выбор, и в этом режиме она пропала бы вместе с фоном, а у
+ * Select фокус остаётся на поле, и другой отметки у строки нет. Заливка
+ * `Highlight` уже значит «выбрано», поэтому подсветку показывает контур
+ * внутри рамки строки: `Highlight` у строки без выбора, `HighlightText` — на
+ * заливке выбранной (`button-state-forced`).
+ *
+ * Внутри — значит наружу контур не выходит, и прокрутка списка его не
+ * обрежет. И не вплотную к рамке: между ней и контуром остаётся полоса фона
+ * строки. Вплотную текст подсветки на заливке выбранной лёг бы у самого края
+ * и слился бы со страницей — в палитрах режима он часто её цвета (так и в
+ * эмуляции Chromium), — и выбор под подсветкой выглядел бы просто выбором.
+ */
+const expectContour = (element: Element, keyword: 'Highlight' | 'HighlightText'): void => {
+	const { outlineStyle, outlineWidth, outlineOffset, outlineColor } = style(element)
+
+	expect(outlined(element), 'контур').toBe(true)
+	expect(outlineStyle, 'сплошной').toBe('solid')
+	expect(
+		-(parseFloat(outlineOffset) + parseFloat(outlineWidth)),
+		'полоса фона между рамкой и контуром',
+	).toBeGreaterThanOrEqual(1)
+	expect(pixel([outlineColor]), 'цвет контура').toEqual(pixel([systemColor(keyword)]))
+}
+
+describe.each(VIEWS)('Button, $name: подсветка без выбора', ({ props }) => {
+	it.each(SCHEMES)('%s: контур цветом фокуса, заливки подсветки нет', async (scheme) => {
+		await forcedColors('active')
+		await show(scheme, () =>
+			h(Button, { text: 'Подсвечено', 'data-highlighted': 'true', ...props }),
+		)
+
+		const button = find('.s-button')
+
+		await settled(button)
+
+		expectContour(button, 'Highlight')
+		expect(pixel([style(button).backgroundColor]), 'фон').not.toEqual(
+			pixel([systemColor('Highlight')]),
+		)
+	})
+})
+
+/**
+ * Выбор под подсветкой показывает оба состояния: заливку выбора и контур на
+ * ней. Правило фона такого выбора на атрибут сильнее, а маска поверх заливки
+ * была бы цветом темы — её здесь нет.
+ */
+describe.each(VIEWS)('Button, $name: выбор под подсветкой', ({ props }) => {
+	it.each(SCHEMES)('%s: системная подсветка с контуром, слоя поверх неё нет', async (scheme) => {
+		await forcedColors('active')
+		await show(scheme, () =>
+			h(Button, {
+				text: 'Выбрано',
+				'data-selected': 'true',
+				'data-highlighted': 'true',
+				...props,
+			}),
+		)
+
+		const button = find('.s-button')
+
+		await settled(button)
+
+		expectHighlight(button)
+		expectContour(button, 'HighlightText')
+		expect(style(button, '::after').content).toBe('none')
+	})
+})
+
+/**
+ * Под фокусом — тот же контур. Правило кольца фокуса стоит раньше и по весу
+ * не сильнее, и будь у выбранной под подсветкой объявлен только цвет
+ * контура, место и толщину взяло бы кольцо: снаружи, цветом текста
+ * подсветки, которого на фоне страницы не видно.
+ */
+describe('Button: выбор под подсветкой и под фокусом', () => {
+	it.each(SCHEMES)('%s: контур текстом подсветки, а не кольцо снаружи', async (scheme) => {
+		await forcedColors('active')
+		await show(scheme, () =>
+			h('div', [
+				h('button', { class: 's-test-before' }, 'До'),
+				h(Button, { text: 'Выбрано', 'data-selected': 'true', 'data-highlighted': 'true' }),
+			]),
+		)
+
+		find('.s-test-before').focus()
+		await userEvent.keyboard('{Tab}')
+
+		const button = find('.s-button')
+
+		expect(document.activeElement).toBe(button)
+		expect(button.matches(':focus-visible')).toBe(true)
+		await settled(button)
+
+		expectContour(button, 'HighlightText')
+	})
+})
+
+/**
+ * У `none` фона нет ни в каком состоянии, и подсветку он не рисует и здесь:
+ * ни у подсвеченной, ни у выбранной под подсветкой контура нет, и обе
+ * выглядят как кнопка в покое.
+ */
+const NONE_HIGHLIGHTED = [
+	{ name: 'подсвеченная', props: { 'data-highlighted': 'true' } },
+	{
+		name: 'выбранная под подсветкой',
+		props: { 'data-selected': 'true', 'data-highlighted': 'true' },
+	},
+] as const
+
+describe.each(NONE_HIGHLIGHTED)('Button, none, $name', ({ props }) => {
+	it.each(SCHEMES)('%s: контура нет, вид — как в покое', async (scheme) => {
+		await forcedColors('active')
+		await show(scheme, () =>
+			h('div', [
+				h(Button, { text: 'Кнопка', view: 'none', class: 's-test-state', ...props }),
+				h(Button, { text: 'Кнопка', view: 'none', class: 's-test-idle' }),
+			]),
+		)
+
+		const button = find('.s-test-state')
+		const idle = find('.s-test-idle')
+
+		await settled(button)
+
+		expect(outlined(button), 'контур').toBe(false)
+		expect(pixel([style(button).backgroundColor]), 'фон').toEqual(
+			pixel([style(idle).backgroundColor]),
+		)
+		expect(pixel([style(button).color]), 'текст').toEqual(pixel([style(idle).color]))
+	})
+})
+
+/**
+ * Строки под стрелками — в настоящем списке, а не атрибутом руками: до строки
+ * подсветка доезжает набором элемента. Выбрана средняя из трёх строк. ListBox
+ * держит позицию подсветки на выбранной строке без отметки, и первая стрелка
+ * уводит с неё на последнюю; у Select подсветки нет, и первая стрелка встаёт
+ * на выбранную, вторая — на последнюю.
+ */
+const LISTS = [
+	{
+		name: 'ListBox',
+		rows: '.s-list-box-item > .s-button',
+		focus: '.s-list-box',
+		toLast: '{ArrowDown}',
+		markup: () =>
+			h(ListBox, { value: 'b' }, () => [
+				h(ListBoxItem, { key: 'a', value: 'a', text: 'Москва' }),
+				h(ListBoxItem, { key: 'b', value: 'b', text: 'Тверь' }),
+				h(ListBoxItem, { key: 'c', value: 'c', text: 'Казань' }),
+			]),
+	},
+	{
+		name: 'Select',
+		rows: '.s-select-item > .s-button',
+		focus: '.s-select__field input',
+		toLast: '{ArrowDown}{ArrowDown}',
+		markup: () =>
+			h(Select, { open: true, value: 'b' }, () => [
+				h(SelectItem, { key: 'a', value: 'a', text: 'Москва' }),
+				h(SelectItem, { key: 'b', value: 'b', text: 'Тверь' }),
+				h(SelectItem, { key: 'c', value: 'c', text: 'Казань' }),
+			]),
+	},
+]
+
+describe.each(LISTS)('$name: строка под стрелками', ({ rows, focus, toLast, markup }) => {
+	/** Строки списка в порядке разметки: первая, выбранная, последняя. */
+	const allRows = (): HTMLElement[] => Array.from(document.querySelectorAll<HTMLElement>(rows))
+
+	/** Нажать клавиши, дождаться подсветки строки и конца переходов цвета. */
+	const press = async (keys: string, row: HTMLElement): Promise<void> => {
+		await userEvent.keyboard(keys)
+		await expect.poll(() => row.dataset.highlighted).toBe('true')
+		await Promise.all(allRows().map(settled))
+	}
+
+	it.each(SCHEMES)(
+		'%s: в режиме принудительных цветов — контур, отличимый от выбора',
+		async (scheme) => {
+			await forcedColors('active')
+			await show(scheme, markup)
+
+			const [first, chosen, last] = allRows()
+
+			find(focus).focus()
+			await press(toLast, last)
+
+			expectContour(last, 'Highlight')
+			expect(pixel([style(last).backgroundColor]), 'фон подсвеченной').not.toEqual(
+				pixel([systemColor('Highlight')]),
+			)
+			expect(outlined(first), 'строка в покое').toBe(false)
+			expect(outlined(chosen), 'выбранная без подсветки').toBe(false)
+			expectHighlight(chosen)
+
+			await press('{ArrowUp}', chosen)
+
+			expectHighlight(chosen)
+			expectContour(chosen, 'HighlightText')
+			expect(outlined(last), 'подсветка ушла').toBe(false)
+		},
+	)
+
+	it.each(SCHEMES)('%s: в обычном режиме контура нет', async (scheme) => {
+		await show(scheme, markup)
+
+		const [, , last] = allRows()
+
+		find(focus).focus()
+		await press(toLast, last)
+
+		expect(outlined(last)).toBe(false)
 	})
 })
 
