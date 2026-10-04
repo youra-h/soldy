@@ -1,6 +1,7 @@
 /**
  * Режим принудительных цветов (высокий контраст Windows) в настоящем
- * браузере: кромка панелей оверлеев, кольцо фокуса полей и выбор у Button.
+ * браузере: кромка панелей оверлеев, кольцо фокуса полей, выбор у Button и
+ * активный таб.
  *
  * В этом режиме браузер перекрашивает страницу сам: фон и текст берёт из
  * системной палитры, а тени убирает. Кромку панелей Popover и Select тема
@@ -20,7 +21,9 @@
  *
  * Выбор у Button — «нажато» у кнопки, открывшей панель, выбранная строка
  * списка и выбранный тег — тема рисует фоном, и в этом режиме он пропал бы
- * вместе с фоном. Его красит системная подсветка (см. конец файла).
+ * вместе с фоном. Его красит системная подсветка (см. ниже). Ею же отмечен
+ * активный таб: полосу, карточку и линии списка Tabs тема тоже рисует фонами
+ * (см. конец файла).
  *
  * Режим включает эмуляция Chromium — та же, что в DevTools → Rendering: она
  * меняет не только ответ медиазапроса, но и сами цвета. jsdom не делает ни
@@ -45,6 +48,8 @@ import {
 	Popover,
 	Select,
 	SelectItem,
+	Tabs,
+	TabsItem,
 	Tags,
 	TagsItem,
 	Tooltip,
@@ -534,4 +539,101 @@ describe('строки и теги: выбор', () => {
 			pixel([systemColor('HighlightText')]),
 		)
 	})
+})
+
+/**
+ * Активный таб тема отмечает фонами: у вида по умолчанию — полоса, фон
+ * `::after` списка, у `contained` — карточка поверхности с тенью, у
+ * `outline` — разрыв в линиях списка, фонах `::before` и `::after`. В этом
+ * режиме браузер заменяет фоны цветом страницы, и активный таб отличался бы от
+ * соседей одной непрозрачностью текста. Отметка — системная подсветка, как
+ * выбор у Button (`themes/oren/src/components/tabs/_mixins.scss`): полоса —
+ * фоном, у `outline` — рамка активного таба, а линии списка — цветом рамок,
+ * которые браузер красит сам, карточка — контуром.
+ */
+describe('Tabs: активный таб', () => {
+	const TABS = ['Первый', 'Второй', 'Третий']
+
+	/** Активен средний таб: соседи у него с обеих сторон. */
+	const tabs = (view?: 'outline' | 'contained') =>
+		h(Tabs, { view }, () =>
+			TABS.map((text, index) =>
+				h(TabsItem, { key: text, value: String(index), text, active: index === 1 }),
+			),
+		)
+
+	const list = () => find('.s-tabs__list')
+	const active = () => find('.s-tabs-item[data-selected="true"]')
+	const idle = () => find('.s-tabs-item:not([data-selected="true"])')
+	const highlight = () => pixel([systemColor('Highlight')])
+
+	/**
+	 * Полоса лежит на линии под списком, а линию — рамку списка — браузер
+	 * красит системным текстом сам. Пока полоса была цвета страницы, на её месте
+	 * в линии был разрыв.
+	 */
+	it.each(SCHEMES)('%s: вид по умолчанию — полоса подсветкой поверх линии', async (scheme) => {
+		await forcedColors('active')
+		await show(scheme, () => tabs())
+
+		const strip = pixel([style(list(), '::after').backgroundColor])
+
+		expect(strip).toEqual(highlight())
+		expect(strip).not.toEqual(pixel([style(list()).borderBottomColor]))
+	})
+
+	/**
+	 * Линии списка продолжают рамки табов по краю списка, как в проверке «той
+	 * же ступени» у `tabs-view.spec.ts`, и под активным табом в них разрыв.
+	 */
+	it.each(SCHEMES)(
+		'%s: outline — линии списка цветом рамок, рамка активного — подсветкой',
+		async (scheme) => {
+			await forcedColors('active')
+			await show(scheme, () => tabs('outline'))
+
+			const frame = pixel([style(idle()).borderTopColor])
+
+			for (const pseudo of ['::before', '::after']) {
+				const line = pixel([style(list(), pseudo).backgroundColor])
+
+				expect(line, pseudo).toEqual(frame)
+				expect(line, pseudo).not.toEqual(pixel([systemColor('Canvas')]))
+			}
+
+			expect(pixel([style(active()).borderTopColor]), 'активный').toEqual(highlight())
+			expect(frame, 'соседний').not.toEqual(highlight())
+		},
+	)
+
+	/**
+	 * Карточку до замера рисует выбранная обёртка, после — `::before` списка
+	 * (`tabs-contained.spec.ts`), и контур есть у обеих: правило одно на обе.
+	 */
+	it.each(SCHEMES)(
+		'%s: contained — карточка обведена подсветкой до замера и после',
+		async (scheme) => {
+			await forcedColors('active')
+			document.documentElement.dataset.theme = scheme
+			render(defineComponent({ render: () => tabs('contained') }))
+
+			// Микрозадача, а не кадр: адаптер отрисовал, плагин темы ещё не мерил
+			await nextTick()
+
+			expect(outlined(active()), 'до замера, выбранная обёртка').toBe(true)
+			expect(pixel([style(active()).outlineColor])).toEqual(highlight())
+			expect(outlined(idle()), 'до замера, соседняя обёртка').toBe(false)
+
+			await expect
+				.poll(() => find('.s-tabs').classList.contains('s-tabs--ready-animation'))
+				.toBe(true)
+
+			expect(outlined(list(), '::before'), 'после замера, карточка').toBe(true)
+			expect(pixel([style(list(), '::before').outlineColor])).toEqual(highlight())
+
+			for (const item of document.querySelectorAll('.s-tabs-item')) {
+				expect(outlined(item), 'после замера, обёртка').toBe(false)
+			}
+		},
+	)
 })
