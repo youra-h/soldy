@@ -15,9 +15,9 @@ import { defineComponent, defineDescriptor } from '../../../protected/define'
 import { TDrawer } from '@soldy-ui/core'
 import {
 	DrawerLayoutPluginDescriptor,
-	DrawerSwipePluginDescriptor,
 	ModalIdsPluginDescriptor,
 	ScrollLockPluginDescriptor,
+	SwipePluginDescriptor,
 } from '../plugins'
 import { ModalLayerDescriptor } from './modal-layer.descriptor'
 
@@ -60,8 +60,8 @@ export const DrawerDescriptor = defineDescriptor(() =>
 			DrawerLayoutPluginDescriptor,
 			// Страница под панелью не прокручивается — если панель поверх неё
 			ScrollLockPluginDescriptor.with({ property: 'locksScroll' }),
-			// Смахнуть панель к её краю
-			DrawerSwipePluginDescriptor,
+			// Смахнуть панель к её краю. Открытость модального слоя — `visible`
+			SwipePluginDescriptor.with({ property: 'visible' }),
 			// Имя от заголовка: `id` заголовка и ссылка на него
 			ModalIdsPluginDescriptor,
 		],

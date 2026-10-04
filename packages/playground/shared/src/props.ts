@@ -10,7 +10,7 @@ import {
 	DIALOG_PLACEMENTS,
 	DIRECTIONS,
 	DRAWER_PLACEMENTS,
-	DRAWER_SWIPES,
+	SWIPES,
 	FRAME_PLACEMENTS,
 	FRAME_POSITIONS,
 	HTML_TAGS,
@@ -203,7 +203,7 @@ const OWN: Record<string, Record<string, string>> = {
 			'Подсказка со значением у ручки: нет, видна, пока ручку наводят, держат, тянут или она в фокусе с клавиатуры (auto), или всегда',
 	},
 	popover: {
-		open: 'Открыта ли панель. Закрывают её крестик, Escape, нажатие и фокус мимо',
+		open: 'Открыта ли панель. Закрывают её крестик, Escape, нажатие и фокус мимо и жест',
 		closable: 'Показывать ли кнопку закрытия в углу панели',
 		closeLabel: 'Имя кнопки закрытия для скринридера',
 		lazyMount:
@@ -212,6 +212,7 @@ const OWN: Record<string, Record<string, string>> = {
 			'Сторона и выравнивание панели у триггера. У края окна сторону переворачивает flip',
 		contained:
 			'Панель внутри контейнера: не уходит в body, а накрывает ближайший позиционированный предок целиком',
+		swipe: 'За что панель можно смахнуть, чтобы закрыть: ни за что, за полосу или за любое место, кроме контролов. Смахивают от триггера, в контейнере — вниз',
 	},
 	dialog: {
 		visible:
@@ -347,14 +348,14 @@ const OPTIONS: Record<string, Record<string, readonly string[]>> = {
 		placement: SELECT_PLACEMENTS,
 		tags_overflow: TAGS_OVERFLOWS,
 	},
-	popover: { placement: POPOVER_PLACEMENTS },
+	popover: { placement: POPOVER_PLACEMENTS, swipe: SWIPES },
 	tooltip: { placement: TOOLTIP_PLACEMENTS, type: TOOLTIP_TYPES },
 	slider: { orientation: SLIDE_ORIENTATIONS, snap: SLIDE_SNAPS, tooltip: SLIDER_TOOLTIPS },
 	calendar: { mode: CALENDAR_MODES },
 	'date-input': { kind: DATE_INPUT_KINDS, timePrecision: TIME_PRECISIONS },
 	'progress-linear': { orientation: PROGRESS_LINEAR_ORIENTATIONS },
 	dialog: { placement: DIALOG_PLACEMENTS },
-	drawer: { placement: DRAWER_PLACEMENTS, swipe: DRAWER_SWIPES },
+	drawer: { placement: DRAWER_PLACEMENTS, swipe: SWIPES },
 	tabs: {
 		view: TABS_VIEWS,
 		orientation: TABS_ORIENTATIONS,

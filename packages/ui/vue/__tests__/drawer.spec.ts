@@ -348,7 +348,7 @@ describe('закрытие пользователем', () => {
 		pointer('pointerdown', find('.s-drawer__handle'), 705)
 		pointer('pointermove', panel(), 800)
 
-		expect(panel().style.getPropertyValue('--drawer-swipe')).toBe('95px')
+		expect(panel().style.getPropertyValue('--s-swipe-offset')).toBe('95px')
 
 		await nextTick()
 

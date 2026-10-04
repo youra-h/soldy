@@ -35,7 +35,7 @@ import type {
 	TTooltipType,
 	TDialogPlacement,
 	TDrawerPlacement,
-	TDrawerSwipe,
+	TSwipe,
 } from '@soldy-ui/core'
 import type { TFramePlacement } from '@soldy-ui/plugins'
 
@@ -213,8 +213,8 @@ export const DIALOG_PLACEMENTS = enumOf<TDialogPlacement>()([
 /** У какого края экрана стоит выезжающая панель. */
 export const DRAWER_PLACEMENTS = enumOf<TDrawerPlacement>()(['start', 'end', 'top', 'bottom'])
 
-/** За что выезжающую панель можно утянуть к её краю. */
-export const DRAWER_SWIPES = enumOf<TDrawerSwipe>()(['none', 'handle', 'panel'])
+/** За что слой смахивают, чтобы закрыть: выезжающую панель и поповер. */
+export const SWIPES = enumOf<TSwipe>()(['none', 'handle', 'panel'])
 
 /**
  * Сторона и выравнивание панели у якоря — `anchor_placement`. Тип объявляет не

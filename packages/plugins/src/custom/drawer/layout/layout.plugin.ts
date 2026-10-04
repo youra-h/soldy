@@ -10,7 +10,7 @@ import type { TModalLayoutVariables } from '../../overlay/modal-layout'
  * бокового края и `--drawer-height` у верхнего и нижнего. Край, анимацию и
  * место в контейнере раскладывает тема по модификатору и `data-*`.
  *
- * Сдвига во время жеста здесь нет: его пишет в узел `TDrawerSwipePlugin`, и
+ * Сдвига во время жеста здесь нет: его пишет в узел `TSwipePlugin`, и
  * через обмен на каждом кадре он не ходит.
  */
 export class TDrawerLayoutPlugin extends TModalLayoutPlugin {

@@ -10,6 +10,16 @@ import type {
 } from './types'
 
 /**
+ * Атрибут фактической стороны панели после flip: плагин пишет его в `dataset`
+ * Frame. Читают его тема и плагин жеста (`TSwipePlugin`): панель у триггера
+ * уходит жестом от него, а под ним она или над ним, знает только её узел.
+ *
+ * Имя с префиксом `data-`: по нему читают узел, а `dataset` принимает имя с
+ * префиксом как есть.
+ */
+export const ANCHOR_PLACEMENT_ATTRIBUTE = 'data-placement'
+
+/**
  * TAnchorPlugin — привязка Frame к чужому элементу.
  *
  * Общий слой для всего, что открывается у чего-то: выпадающий список Select,
@@ -145,7 +155,7 @@ export class TAnchorPlugin extends TBasePlugin<any, TAnchorPluginEvents> {
 		this._anchor = null
 		this._unsubscribe()
 		this._actualPlacement = null
-		this._frame?.dataset.add('placement', null)
+		this._frame?.dataset.add(ANCHOR_PLACEMENT_ATTRIBUTE, null)
 		this.events.emit('change:anchor', null)
 	}
 
@@ -357,7 +367,7 @@ export class TAnchorPlugin extends TBasePlugin<any, TAnchorPluginEvents> {
 		if (this._actualPlacement === placement) return
 
 		this._actualPlacement = placement
-		this._frame?.dataset.add('placement', placement)
+		this._frame?.dataset.add(ANCHOR_PLACEMENT_ATTRIBUTE, placement)
 	}
 
 	/**

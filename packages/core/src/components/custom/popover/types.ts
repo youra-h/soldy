@@ -3,6 +3,7 @@ import type {
 	IComponentViewProps,
 	TComponentViewEvents,
 } from '../../base/component-view'
+import type { ISwipeable, TSwipe, TSwipeableEvents } from '../../base/layer'
 import type { TAria, TAriaAttributes, TDatasetAttributes } from '../../../common'
 
 /**
@@ -16,22 +17,23 @@ import type { TAria, TAriaAttributes, TDatasetAttributes } from '../../../common
  */
 export type TPopoverPlacement = 'bottom-start' | 'bottom-end' | 'top-start' | 'top-end'
 
-export type TPopoverEvents = TComponentViewEvents & {
-	/** change:open */
-	'change:open': (value: boolean) => void
-	/** change:closable */
-	'change:closable': (value: boolean) => void
-	/** change:closeLabel */
-	'change:closeLabel': (value: string) => void
-	/** change:lazyMount */
-	'change:lazyMount': (value: boolean) => void
-	/** change:placement */
-	'change:placement': (value: TPopoverPlacement) => void
-	/** change:contained */
-	'change:contained': (value: boolean) => void
-	/** change:triggerAria — набор атрибутов триггера изменился */
-	'change:triggerAria': (value: TAriaAttributes) => void
-}
+export type TPopoverEvents = TComponentViewEvents &
+	TSwipeableEvents & {
+		/** change:open */
+		'change:open': (value: boolean) => void
+		/** change:closable */
+		'change:closable': (value: boolean) => void
+		/** change:closeLabel */
+		'change:closeLabel': (value: string) => void
+		/** change:lazyMount */
+		'change:lazyMount': (value: boolean) => void
+		/** change:placement */
+		'change:placement': (value: TPopoverPlacement) => void
+		/** change:contained */
+		'change:contained': (value: boolean) => void
+		/** change:triggerAria — набор атрибутов триггера изменился */
+		'change:triggerAria': (value: TAriaAttributes) => void
+	}
 
 export interface IPopoverProps extends IComponentViewProps {
 	/** Открыта ли панель */
@@ -53,9 +55,19 @@ export interface IPopoverProps extends IComponentViewProps {
 	 * не действует
 	 */
 	contained?: boolean
+	/**
+	 * За что панель можно смахнуть, чтобы закрыть: панель у триггера — от него,
+	 * панель внутри контейнера — вниз
+	 */
+	swipe?: TSwipe
 }
 
-export interface IPopover extends IComponentView<IPopoverProps, TPopoverEvents> {
+/**
+ * Поповер. Панель смахивают, чтобы закрыть (`ISwipeable`): у триггера — от
+ * него, и сторону после flip знает только узел панели (`swipeSide` — `null`),
+ * внутри контейнера — вниз.
+ */
+export interface IPopover extends IComponentView<IPopoverProps, TPopoverEvents>, ISwipeable {
 	/** Открыта ли панель */
 	open: boolean
 	/** Показывать ли кнопку закрытия в углу панели */
@@ -75,8 +87,12 @@ export interface IPopover extends IComponentView<IPopoverProps, TPopoverEvents> 
 	readonly triggerAria: TAria
 	/** `data-*` триггера для темы: открытый триггер выглядит нажатым */
 	readonly triggerDataset: TDatasetAttributes
+	/** `data-*` панели для темы: панель тянут (`data-swiping`) */
+	readonly panelDataset: TDatasetAttributes
 	/** Имя кнопки закрытия: `closeLabel` */
 	readonly closeAria: TAriaAttributes
 	/** Смонтировано ли содержимое панели: без `lazyMount` — всегда */
 	readonly contentRendered: boolean
+	/** Рисовать ли полосу, за которую панель тянут: жест включён */
+	readonly handleRendered: boolean
 }
