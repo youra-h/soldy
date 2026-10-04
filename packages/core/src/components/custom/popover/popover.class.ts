@@ -319,8 +319,10 @@ export default class TPopover
 	}
 
 	/**
-	 * Состояние панели для темы: панель тянут (`data-swiping`), и переход её
-	 * сдвига снят — она идёт за пальцем без задержки. У панели внутри
+	 * Состояние панели для темы: открыта ли она (`data-open`) — по нему тема
+	 * проявляет и гасит панель переходом, без хуков под анимацию, как у
+	 * Dialog, — и тянут ли её (`data-swiping`): тогда переход сдвига снят, и
+	 * панель идёт за пальцем без задержки. У панели внутри
 	 * контейнера — ещё её край (`data-edge`): по нему тема прижимает панель и
 	 * ставит полосу жеста. У панели у триггера края нет — свою сторону она
 	 * получает от плагина якоря (`data-placement`).
@@ -330,11 +332,12 @@ export default class TPopover
 	 * как `aria` панели.
 	 */
 	get panelDataset(): TDatasetAttributes {
-		const swiping = this._swiping ? 'true' : 'false'
+		const state = {
+			'data-open': this._open ? 'true' : 'false',
+			'data-swiping': this._swiping ? 'true' : 'false',
+		}
 
-		return this._contained
-			? { 'data-swiping': swiping, 'data-edge': this._edge }
-			: { 'data-swiping': swiping }
+		return this._contained ? { ...state, 'data-edge': this._edge } : state
 	}
 
 	/** Имя кнопки закрытия — соседней с содержимым, а не самой панели. */

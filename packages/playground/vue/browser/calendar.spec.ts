@@ -27,6 +27,7 @@ import { COMPONENT_SIZES } from '@soldy-ui/playground-shared'
 import { outlined, pixel, style, systemColor } from './colors'
 import { DIRECTION_CASES, pointing, setDir, sidesOf, type TLine } from './directions'
 import { forcedColors } from './media'
+import { transitioning, whileLeaving } from './transitions'
 
 import '@soldy-ui/theme-oren'
 
@@ -307,11 +308,21 @@ describe('выбор месяца и года', () => {
 			[],
 		)
 
-	/** Открыть панель нажатием на заголовок и дождаться её на экране. */
+	/** Переходы панели — её и карточки внутри — доиграли: геометрия на месте. */
+	const settled = async () => {
+		await nextFrame()
+		await Promise.all(
+			find('.s-popover__panel')
+				.getAnimations({ subtree: true })
+				.map((animation) => animation.finished),
+		)
+	}
+
+	/** Открыть панель нажатием на заголовок и дождаться её на месте. */
 	const open = async () => {
 		await userEvent.click(find('.s-calendar__title'))
 		await expect.poll(() => options().length).toBe(12)
-		await nextFrame()
+		await settled()
 	}
 
 	/** Прямоугольник узла по селектору. */
@@ -756,6 +767,35 @@ describe('выбор месяца и года', () => {
 			force: true,
 		})
 	}
+
+	/**
+	 * Закрытая панель не пропадает разом: подложка гаснет на месте, а карточка
+	 * с полосой уезжает вверх, за край календаря, — смахнутая от места, где её
+	 * отпустили, а не вернувшись сначала на место.
+	 */
+	it('смахнутая карточка уходит вверх, подложка гаснет на месте', async () => {
+		await show({ months: ['2026-09-01'] })
+		await open()
+
+		const backdrop = box('.s-popover__panel')
+		const start = box('.s-calendar__picker').top
+
+		await dragGrip(-150)
+
+		const tops: number[] = []
+		const seen = await whileLeaving(find('.s-popover__panel'), () => {
+			expectSameBox(box('.s-popover__panel'), backdrop)
+			expect(transitioning(find('.s-popover__panel'))).toContain('opacity')
+			tops.push(box('.s-calendar__picker').top)
+		})
+
+		expect(seen).toBeGreaterThan(1)
+		expect(tops[0]).toBeLessThan(start - EPSILON)
+
+		for (let index = 1; index < tops.length; index += 1) {
+			expect(tops[index]).toBeLessThanOrEqual(tops[index - 1] + EPSILON)
+		}
+	})
 
 	it('жест за полосу вверх закрывает панель, фокус — на заголовок; вниз — нет', async () => {
 		await show({ months: ['2026-09-01'] })

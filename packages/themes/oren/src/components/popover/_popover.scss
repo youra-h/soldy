@@ -1,5 +1,6 @@
 @use '../button/mixins' as button;
 @use '../../mixins/swipe';
+@use './mixins' as motion;
 
 // Popover — триггер и панель поверх страницы с произвольным содержимым.
 //
@@ -141,8 +142,9 @@
 // (`--s-swipe-offset`), и только у панели с жестом: `translate`, даже
 // нулевой, делает панель контейнером для `position: fixed` внутри неё. Пока
 // панель тянут (`data-swiping`), перехода нет: она идёт за пальцем без
-// задержки. Отпущенная, но не смахнутая, возвращается переходом, а смахнутая
-// просто прячется — как при любом закрытии поповера.
+// задержки. Отпущенная, но не смахнутая, возвращается переходом появления, а
+// смахнутая уходит переходом исчезания — от места, где её отпустили, дальше к
+// своей стороне (ниже, «Появление и исчезание»).
 .s-popover__panel:has(> .s-popover__handle) {
 	translate: 0 var(--s-swipe-offset, 0px);
 	padding-block-start: swipe.$handle;
@@ -165,16 +167,6 @@
 
 	&[data-edge='end'] {
 		padding-inline-start: swipe.$handle;
-	}
-
-	&:not([data-swiping='true']) {
-		transition: translate swipe.$return-duration swipe.$return-easing;
-
-		// Просьбу системы убрать движение возврат выполняет: панель встаёт на
-		// место сразу, как ручка Slider.
-		@media (prefers-reduced-motion: reduce) {
-			transition: none;
-		}
 	}
 
 	// Тянут — курсор «держу», и по всей панели, куда бы он ни ушёл.
@@ -210,4 +202,91 @@
 
 .s-popover__panel[data-edge='end'] > .s-popover__handle {
 	inset-inline-start: 0;
+}
+
+// Появление и исчезание — переход темы по `data-open` панели, как у Dialog:
+// хуков под анимацию у кода нет. Закрытие — `display: none` от разметки, и
+// `transition-behavior: allow-discrete` откладывает его до конца перехода, а
+// `@starting-style` даёт показанной панели начальное состояние. Длительность и
+// кривую браузер берёт из стиля, в который узел переходит: появление — из
+// `[data-open='true']`, исчезание — из `[data-open='false']`.
+//
+// Любая панель проявляется и гаснет прозрачностью. Панель, у которой есть своя
+// сторона, ещё и движется — как выезжающая панель Drawer:
+// - внутри контейнера — к своему краю (`edge`): въезжает от него и уезжает к
+//   нему;
+// - со смахиванием (`swipe`) у триггера — уезжает от него, по стороне после
+//   flip. Въезжает она на месте: снизу у триггера её никто не ждёт.
+//
+// Так смахнутая панель не моргает: плагин снимает её сдвиг вместе с
+// закрытием, и уход начинается с того места, где её отпустили, — к стороне,
+// куда её тянули. Тот же переход появления возвращает на место отпущенную, но
+// не смахнутую панель.
+//
+// Пока панель тянут, перехода нет: она идёт за указателем без задержки. Поэтому
+// тайминги — под `:not([data-swiping='true'])`, как у Drawer.
+//
+// Закрытая панель, пока гаснет, нажатий не ловит: она уже не открыта, и
+// нажатие сквозь неё — нажатие по тому, что под ней.
+//
+// Просьбу системы убрать движение (`prefers-reduced-motion`) переход
+// выполняет: панель только проявляется и гаснет на месте, а отпущенная
+// возвращается сразу, как ручка Slider. Прозрачность — не движение.
+.s-popover__panel {
+	&[data-placement^='bottom'],
+	&[data-edge='bottom'] {
+		--s-popover-away: 0 100%;
+	}
+
+	&[data-placement^='top'],
+	&[data-edge='top'] {
+		--s-popover-away: 0 -100%;
+	}
+
+	&[data-edge='start'] {
+		--s-popover-away: calc(-100% * var(--s-dir-sign)) 0;
+	}
+
+	&[data-edge='end'] {
+		--s-popover-away: calc(100% * var(--s-dir-sign)) 0;
+	}
+
+	&[data-open='false'] {
+		@apply pointer-events-none opacity-0;
+	}
+
+	&:not([data-swiping='true']) {
+		transition-property: opacity, translate, display;
+		transition-behavior: allow-discrete;
+
+		&[data-open='true'] {
+			transition-duration: motion.$enter-fade, motion.$enter-duration, motion.$enter-duration;
+			transition-timing-function: linear, motion.$enter-easing, linear;
+		}
+
+		&[data-open='false'] {
+			transition-duration: motion.$exit-duration;
+			transition-timing-function: linear, motion.$exit-easing, linear;
+		}
+
+		@media (prefers-reduced-motion: reduce) {
+			transition-property: opacity, display;
+		}
+	}
+}
+
+// Уход к своей стороне — после правил сдвига жеста: вес у них равный, и
+// закрытая панель берёт свой `translate` порядком
+.s-popover__panel[data-open='false']:is([data-contained='true'], :has(> .s-popover__handle)) {
+	translate: var(--s-popover-away);
+}
+
+@starting-style {
+	.s-popover__panel[data-open='true'] {
+		@apply opacity-0;
+	}
+
+	.s-popover__panel[data-open='true'][data-contained='true'] {
+		translate: var(--s-popover-away);
+	}
 }

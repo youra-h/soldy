@@ -19,6 +19,8 @@ import { Button, Popover } from '@soldy-ui/vue'
 import type { IPopoverProps } from '@soldy-ui/core'
 import type { DescriptorSlots, PopoverDescriptor } from '@soldy-ui/setup'
 
+import { whileLeaving } from './transitions'
+
 import '@soldy-ui/theme-oren'
 
 type TTriggerScope = DescriptorSlots<typeof PopoverDescriptor>['trigger']
@@ -118,10 +120,16 @@ const handle = () => find('.s-popover__handle')
 const active = () => document.activeElement
 const isOpen = () => getComputedStyle(panel()).display !== 'none'
 
-/** Открыть кликом и дождаться, пока фокус уйдёт в панель. */
+/** Открыть кликом и дождаться, пока фокус уйдёт в панель, а панель встанет на место. */
 const open = async () => {
 	await userEvent.click(trigger())
 	await expect.poll(active).toBe(find('.s-test-first'))
+	// Панель в контейнере въезжает от своего края: геометрия — после перехода
+	await Promise.all(
+		panel()
+			.getAnimations()
+			.map((animation) => animation.finished),
+	)
 }
 
 /** Протянуть мышью от середины узла на `dx`, `dy` — настоящими событиями, по шагам. */
@@ -333,5 +341,65 @@ describe('жест', () => {
 
 		await expect.poll(isOpen).toBe(false)
 		expect(opened.value).toBe(false)
+	})
+})
+
+/**
+ * Смахнутая панель не моргает: плагин снимает сдвиг вместе с закрытием, а
+ * тема уводит закрытую панель к её стороне, как выезжающую панель, — уход
+ * начинается с места, где её отпустили, и идёт дальше, пока панель гаснет.
+ * Вернись она на место, а потом погасни, — было бы видно мигание.
+ */
+describe('уход смахнутой панели', () => {
+	/** Положение панели по оси в каждом кадре ухода, пока она не пропала. */
+	const leaving = async (axis: 'top' | 'left') => {
+		const positions: number[] = []
+		const seen = await whileLeaving(panel(), () => {
+			positions.push(panel().getBoundingClientRect()[axis])
+		})
+
+		expect(seen).toBeGreaterThan(1)
+
+		return positions
+	}
+
+	/** Идут в одну сторону: каждое следующее не ближе к началу, чем прошлое. */
+	const expectOneWay = (positions: number[], sign: 1 | -1) => {
+		for (let index = 1; index < positions.length; index += 1) {
+			expect((positions[index] - positions[index - 1]) * sign).toBeGreaterThanOrEqual(
+				-EPSILON,
+			)
+		}
+	}
+
+	it('у триггера — дальше от него, гаснет на ходу', async () => {
+		await show({ swipe: 'handle' })
+		await open()
+
+		const start = panel().getBoundingClientRect().top
+
+		await drag(handle(), 150)
+
+		const positions = await leaving('top')
+
+		expectOneWay(positions, 1)
+		expect(positions[0]).toBeGreaterThan(start + EPSILON)
+	})
+
+	it.each([
+		['top', 'top', -1],
+		['start', 'left', -1],
+	] as const)('в контейнере у края %s — дальше к краю', async (edge, axis, sign) => {
+		await show({ swipe: 'handle', edge }, { contained: true })
+		await open()
+
+		const start = panel().getBoundingClientRect()[axis]
+
+		await dragBy(handle(), axis === 'left' ? -150 : 0, axis === 'top' ? -150 : 0)
+
+		const positions = await leaving(axis)
+
+		expectOneWay(positions, sign)
+		expect((positions[0] - start) * sign).toBeGreaterThan(EPSILON)
 	})
 })

@@ -2,6 +2,7 @@
 @use '../button/mixins' as button;
 @use '../../mixins/modal';
 @use '../../mixins/swipe';
+@use '../popover/mixins' as motion;
 
 // Calendar — сетки показанных месяцев и одна пара кнопок листания на все.
 //
@@ -547,10 +548,6 @@
 // равный вес проиграл бы порядком.
 $picker-panel: '.s-calendar__month > .s-calendar__heading > .s-popover__panel[data-contained="true"]';
 
-// Появление — прозрачностью, коротко: подложка и карточка проявляются вместе,
-// и календарь не сменяется карточкой за один кадр. Число — вкус.
-$picker-enter-duration: 150ms;
-
 #{$picker-panel} {
 	// Своей поверхности у подложки нет: ни фона контрола, ни кромки, ни тени —
 	// поверхность у карточки. Скругление — то же, что у плиток дня: у
@@ -567,6 +564,13 @@ $picker-enter-duration: 150ms;
 	// Во весь календарь, а не по высоте содержимого, как общая панель с краем
 	// `top`: вся панель — подложка.
 	inset: 0;
+
+	// Подложка не движется: ни сдвигом жеста, ни въездом и уходом общей панели
+	// с краем — она проявляется и гаснет на месте, прозрачностью общей панели.
+	// Движется карточка с полосой (ниже). Контейнер размеров — для их ухода:
+	// высота подложки — путь, после которого карточки в календаре не видно.
+	translate: none;
+	container-type: size;
 
 	// Карточка — одна ячейка сетки во всю ширину, у верхнего края. Место под
 	// карточкой — подложка. Полоса жеста — в той же ячейке, у нижнего края
@@ -588,18 +592,6 @@ $picker-enter-duration: 150ms;
 		@apply absolute inset-0;
 		z-index: -1;
 		@include modal.backdrop;
-	}
-
-	transition: opacity $picker-enter-duration linear;
-}
-
-// Начальная прозрачность показанной панели — откуда идёт появление. Исчезает
-// панель сразу, как любой поповер: `display: none` от разметки, без
-// `allow-discrete`. Смахнутая карточка поэтому не возвращается на место, пока
-// гаснет, — её просто нет.
-@starting-style {
-	#{$picker-panel} {
-		opacity: 0;
 	}
 }
 
@@ -699,15 +691,29 @@ $picker-enter-duration: 150ms;
 	grid-area: 1 / 1;
 }
 
-// Жест тянет карточку с полосой, а подложка стоит: уедь она с карточкой — и
-// вылезла бы за календарь. Поэтому общий сдвиг панели Popover здесь снят.
+#{$picker-panel}:has(> .s-popover__handle) .s-calendar__picker {
+	padding-block-end: swipe.$handle;
+}
+
+// Движется карточка с полосой, а подложка стоит: уедь она с карточкой — и
+// вылезла бы за календарь. Поэтому движение общей панели Popover — сдвиг
+// жеста, въезд и уход к краю — здесь у карточки и полосы, одним правилом на
+// обе, а у подложки оно снято (выше). Время и кривые — те же, что у общей
+// панели (`popover/_mixins.scss`): уход обязан кончиться вместе с её
+// исчезанием, по его концу разметка панель прячет.
+//
 // Сдвиг плагин пишет в саму панель (`--s-swipe-offset`), а свойство
 // зарегистрировано без наследования (`mixins/_swipe.scss`): панель отдаёт его
-// детям своей переменной, незарегистрированной, — она наследуется. Возврат на
-// место — тем же переходом, что у панели Popover, и так же без него, пока
-// тянут.
-#{$picker-panel}:has(> .s-popover__handle) {
-	translate: none;
+// детям своей переменной, незарегистрированной, — она наследуется.
+//
+// Въезжает карточка сверху — из-за верхнего края календаря, — и туда же уходит
+// при любом закрытии: смахнутая — от места, где её отпустили. Путь — высота
+// подложки (`cqh`): у полосы свой размер, и `-100%` у неё и у карточки разный,
+// а карточка выше календаря не бывает. Пока тянут, перехода нет; отпущенная,
+// но не смахнутая, возвращается переходом появления. Просьбу убрать движение
+// переход выполняет: карточка проявляется и гаснет на месте вместе с
+// подложкой.
+#{$picker-panel} {
 	--s-calendar-swipe: var(--s-swipe-offset, 0px);
 
 	> .s-popover__content,
@@ -715,16 +721,29 @@ $picker-enter-duration: 150ms;
 		translate: 0 var(--s-calendar-swipe);
 	}
 
+	&[data-open='false'] > :is(.s-popover__content, .s-popover__handle) {
+		translate: 0 -100cqh;
+	}
+
 	&:not([data-swiping='true']) > :is(.s-popover__content, .s-popover__handle) {
-		transition: translate swipe.$return-duration swipe.$return-easing;
+		transition-property: translate;
+		transition-duration: motion.$enter-duration;
+		transition-timing-function: motion.$enter-easing;
 
 		@media (prefers-reduced-motion: reduce) {
 			transition: none;
 		}
 	}
 
-	.s-calendar__picker {
-		padding-block-end: swipe.$handle;
+	&[data-open='false']:not([data-swiping='true']) > :is(.s-popover__content, .s-popover__handle) {
+		transition-duration: motion.$exit-duration;
+		transition-timing-function: motion.$exit-easing;
+	}
+}
+
+@starting-style {
+	#{$picker-panel}[data-open='true'] > :is(.s-popover__content, .s-popover__handle) {
+		translate: 0 -100cqh;
 	}
 }
 

@@ -102,6 +102,18 @@ describe('data-* для темы', () => {
 		expect(popover.dataset.get('open')).toBe('true')
 	})
 
+	// Панель телепортирована, и `data-open` корня до неё не доходит: свой — в
+	// её наборе, по нему тема проявляет и гасит панель
+	it('data-open панели — в её наборе, следует за open', () => {
+		const popover = new TPopover()
+
+		expect(popover.panelDataset['data-open']).toBe('false')
+
+		popover.open = true
+
+		expect(popover.panelDataset).toEqual({ 'data-open': 'true', 'data-swiping': 'false' })
+	})
+
 	it('открытый триггер — data-selected, отдельным набором от ARIA', () => {
 		const popover = new TPopover()
 
@@ -268,7 +280,11 @@ describe('жест', () => {
 
 		popover.contained = true
 
-		expect(popover.panelDataset).toEqual({ 'data-swiping': 'false', 'data-edge': 'end' })
+		expect(popover.panelDataset).toEqual({
+			'data-open': 'false',
+			'data-swiping': 'false',
+			'data-edge': 'end',
+		})
 
 		popover.edge = 'top'
 
@@ -295,10 +311,10 @@ describe('жест', () => {
 
 		popover.events.on('change:swiping', (value) => changes.push(value))
 
-		expect(popover.panelDataset).toEqual({ 'data-swiping': 'false' })
+		expect(popover.panelDataset['data-swiping']).toBe('false')
 		expect(popover.beginSwipe()).toBe(true)
 		expect(popover.swiping).toBe(true)
-		expect(popover.panelDataset).toEqual({ 'data-swiping': 'true' })
+		expect(popover.panelDataset['data-swiping']).toBe('true')
 
 		popover.endSwipe()
 
@@ -333,6 +349,6 @@ describe('жест', () => {
 		switched.swipe = 'none'
 
 		expect(switched.swiping).toBe(false)
-		expect(switched.panelDataset).toEqual({ 'data-swiping': 'false' })
+		expect(switched.panelDataset['data-swiping']).toBe('false')
 	})
 })

@@ -70,13 +70,14 @@ export const PopoverDescriptor = defineDescriptor(() =>
 				triggerAria: { type: Object, protected: true, triggers: ['change:triggerAria'] },
 				triggerDataset: { type: Object, protected: true, triggers: ['change:open'] },
 				/**
-				 * `data-*` панели: её тянут, а в контейнере — её край. Панель — Frame
-				 * без экземпляра в ядре, и набор для неё — поповера, как `aria` панели.
+				 * `data-*` панели: открыта ли она, тянут ли её, а в контейнере — её
+				 * край. Панель — Frame без экземпляра в ядре, и набор для неё —
+				 * поповера, как `aria` панели.
 				 */
 				panelDataset: {
 					type: Object,
 					protected: true,
-					triggers: ['change:swiping', 'change:contained', 'change:edge'],
+					triggers: ['change:open', 'change:swiping', 'change:contained', 'change:edge'],
 				},
 				/** Имя кнопки закрытия. Отдельный набор: кнопка — сосед содержимого. */
 				closeAria: { type: Object, protected: true, triggers: ['change:closeLabel'] },

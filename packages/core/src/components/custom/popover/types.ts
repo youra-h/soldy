@@ -110,8 +110,8 @@ export interface IPopover extends IComponentView<IPopoverProps, TPopoverEvents>,
 	/** `data-*` триггера для темы: открытый триггер выглядит нажатым */
 	readonly triggerDataset: TDatasetAttributes
 	/**
-	 * `data-*` панели для темы: панель тянут (`data-swiping`), а внутри
-	 * контейнера — ещё её край (`data-edge`)
+	 * `data-*` панели для темы: открыта ли она (`data-open`), тянут ли её
+	 * (`data-swiping`), а внутри контейнера — ещё её край (`data-edge`)
 	 */
 	readonly panelDataset: TDatasetAttributes
 	/** Имя кнопки закрытия: `closeLabel` */

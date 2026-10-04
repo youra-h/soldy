@@ -3493,19 +3493,19 @@ this._syncDisabled() // начальное состояние — руками
   `"false"`, а не снимает атрибут: тема смотрит `[data-x='true']`, и
   «выключено» надо отличать от «неприменимо». Снимает только `null`.
 
-| Источник               | Что пишет                                                                                                                                                                                                                  |
-| ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `TSelectionExtension`  | `data-selected` — **всем** элементам коллекции                                                                                                                                                                             |
-| `TActivationExtension` | `data-selected` — то же имя при состоянии `active`                                                                                                                                                                         |
-| `TListBoxExtension`    | `data-content-fit` — уже разрешённый (элемент поверх списка) и `data-indicator`                                                                                                                                            |
-| `TSelectExtension`     | `data-content-fit` и `data-indicator` — значения самого Select                                                                                                                                                             |
-| `TListItemPlugin`      | `data-highlighted`                                                                                                                                                                                                         |
-| `TControl`             | `data-disabled` — на любом теге, от тега не зависит                                                                                                                                                                        |
-| `TLayer`               | `data-layer` — номер слоя показанной панели, тот же, что `zIndex`                                                                                                                                                          |
-| `TModalLayer`          | `data-open` — открытость окна и выезжающей панели, у панели и подложки                                                                                                                                                     |
-| `TProgress`            | `data-indeterminate` — бег индикатора выполнения, у линии и кольца                                                                                                                                                         |
-| `TAnchorPlugin`        | `data-placement` — фактическая сторона панели после flip                                                                                                                                                                   |
-| ядро компонента        | своё состояние — `data-open` у `TSelect` и `TPopover`, `data-maximized` у `TDialog`, `data-swiping` и `data-contained` у `TDrawer`, `data-swiping` у панели `TPopover` (набор `panelDataset`), `data-dragging` у `TSlider` |
+| Источник               | Что пишет                                                                                                                                                                                                                                             |
+| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `TSelectionExtension`  | `data-selected` — **всем** элементам коллекции                                                                                                                                                                                                        |
+| `TActivationExtension` | `data-selected` — то же имя при состоянии `active`                                                                                                                                                                                                    |
+| `TListBoxExtension`    | `data-content-fit` — уже разрешённый (элемент поверх списка) и `data-indicator`                                                                                                                                                                       |
+| `TSelectExtension`     | `data-content-fit` и `data-indicator` — значения самого Select                                                                                                                                                                                        |
+| `TListItemPlugin`      | `data-highlighted`                                                                                                                                                                                                                                    |
+| `TControl`             | `data-disabled` — на любом теге, от тега не зависит                                                                                                                                                                                                   |
+| `TLayer`               | `data-layer` — номер слоя показанной панели, тот же, что `zIndex`                                                                                                                                                                                     |
+| `TModalLayer`          | `data-open` — открытость окна и выезжающей панели, у панели и подложки                                                                                                                                                                                |
+| `TProgress`            | `data-indeterminate` — бег индикатора выполнения, у линии и кольца                                                                                                                                                                                    |
+| `TAnchorPlugin`        | `data-placement` — фактическая сторона панели после flip                                                                                                                                                                                              |
+| ядро компонента        | своё состояние — `data-open` у `TSelect` и `TPopover`, `data-maximized` у `TDialog`, `data-swiping` и `data-contained` у `TDrawer`, `data-open`, `data-swiping` и `data-edge` у панели `TPopover` (набор `panelDataset`), `data-dragging` у `TSlider` |
 
 Два правила, которые легко нарушить:
 
@@ -3804,7 +3804,16 @@ CheckBox и Switch (HTML не знает `readonly` у чекбокса). Поэ
   ставит её полем панели там, откуда панель тянут, — у края со стороны
   триггера, а в контейнере у края, противоположного `edge`; содержимое и
   крестик она не накрывает, зона захвата не меньше 24px. Закрывает жест записью `open`, как крестик, и
-  фокус возвращается. Сторожат
+  фокус возвращается. **Появление и исчезание — переход темы**, как у
+  Dialog: панель проявляется и гаснет по `data-open` своего набора
+  (`panelDataset` — панель телепортирована, и `data-open` корня до неё не
+  доходит), `@starting-style` и `transition-behavior: allow-discrete`,
+  хуков под анимацию в ядре и адаптере нет. Панель со своей стороной ещё и
+  движется, как Drawer: в контейнере въезжает от своего края и уезжает к
+  нему, со смахиванием у триггера уезжает от него. Поэтому смахнутая панель
+  не моргает: плагин снимает сдвиг вместе с закрытием, и уход начинается с
+  места, где её отпустили. Закрытая, пока гаснет, нажатий не ловит. При
+  `prefers-reduced-motion` остаётся одна прозрачность. Сторожат
   `core/__tests__/popover.spec.ts`,
   `plugins/__tests__/popover-focus.plugin.spec.ts`,
   `plugins/__tests__/swipe.plugin.spec.ts`,

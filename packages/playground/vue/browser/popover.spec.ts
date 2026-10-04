@@ -6,7 +6,8 @@
  * делает сам плагин фокуса. Здесь — что они складываются с браузерными в
  * порядок «триггер → панель → то, что за поповером», хотя панель
  * телепортирована в конец `body`. Раскладку jsdom тоже не считает: отступ
- * панели от триггера и место крестика в кнопке закрытия меряются только здесь.
+ * панели от триггера и место крестика в кнопке закрытия меряются только здесь,
+ * как и появление и исчезание панели переходом темы.
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
@@ -15,6 +16,8 @@ import { userEvent } from 'vitest/browser'
 import { defineComponent, h, nextTick } from 'vue'
 import { Button, Popover } from '@soldy-ui/vue'
 import type { DescriptorSlots, PopoverDescriptor } from '@soldy-ui/setup'
+
+import { settled, transitioning, whileLeaving } from './transitions'
 
 import '@soldy-ui/theme-oren'
 
@@ -224,5 +227,45 @@ describe('закрытие и возврат фокуса', () => {
 
 		await expect.poll(isOpen).toBe(false)
 		expect(active()).toBe(find('.s-test-after'))
+	})
+})
+
+/**
+ * Появление и исчезание — переход темы по `data-open` панели, как у Dialog:
+ * `@starting-style` даёт показанной панели нулевую прозрачность,
+ * `allow-discrete` откладывает `display: none` до конца исчезания. Хуков под
+ * анимацию у кода нет — видно это по переходу на самой панели.
+ */
+describe('появление и исчезание', () => {
+	it('открытие — панель проявляется, закрытие — гаснет на месте и только потом пропадает', async () => {
+		await show()
+
+		const runs: string[] = []
+
+		panel().addEventListener('transitionrun', (event) => runs.push(event.propertyName))
+
+		await open()
+
+		expect(runs).toContain('opacity')
+
+		await settled(panel())
+
+		const { top, left } = panel().getBoundingClientRect()
+
+		await userEvent.keyboard('{Escape}')
+
+		// Гаснет: до конца перехода панель в документе и нажатий не ловит. Панель
+		// без жеста не уезжает — переходит только прозрачность
+		const seen = await whileLeaving(panel(), () => {
+			const box = panel().getBoundingClientRect()
+
+			expect(panel().dataset.open).toBe('false')
+			expect(getComputedStyle(panel()).pointerEvents).toBe('none')
+			expect(transitioning(panel()).filter((name) => name !== 'display')).toEqual(['opacity'])
+			expect(Math.abs(box.top - top)).toBeLessThan(1)
+			expect(Math.abs(box.left - left)).toBeLessThan(1)
+		})
+
+		expect(seen).toBeGreaterThan(1)
 	})
 })
