@@ -22,8 +22,8 @@ import '@soldy-ui/theme-oren'
 
 type TTriggerScope = DescriptorSlots<typeof PopoverDescriptor>['trigger']
 
-/** Зона захвата полосы жеста — не меньше 44px. */
-const GRIP_ZONE = 44
+/** Зона захвата полосы жеста — не меньше 24px: минимум цели по WCAG 2.5.8. */
+const GRIP_ZONE = 24
 
 /** Допуск на субпиксельное округление координат. */
 const EPSILON = 1
@@ -154,7 +154,7 @@ describe('полоса', () => {
 		expect(getComputedStyle(panel()).translate).toBe('none')
 	})
 
-	it('под триггером — у верхнего края панели, зона захвата не меньше 44px', async () => {
+	it('под триггером — у верхнего края панели, зона захвата не меньше 24px', async () => {
 		await show({ swipe: 'handle' })
 		await open()
 
