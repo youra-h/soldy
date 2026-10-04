@@ -54,6 +54,10 @@ $move-easing: ease;
 	}
 }
 
+// Миксины вариантов включаются в корень набора и красят свой список и его
+// табы — дочерними комбинаторами, а не потомков: иначе вариант внешних табов
+// достался бы табам в их панели (`_tabs.scss`, «Внешний вид»).
+
 // Миксин для view="line"
 // $color     — семейство цвета (neutral, accent, positive, negative, caution)
 // $text      — ступень текста при наведении и у активного таба (как текст
@@ -74,7 +78,7 @@ $move-easing: ease;
 // под списком — рамку — браузер красит системным текстом сам.
 @mixin tabs-line-variant($color, $text: 800, $border: 300, $indicator: 600) {
 	// Цвет разделительной линии и индикатора
-	.s-tabs__list {
+	> .s-tabs__list {
 		// Обычное объявление, не `@apply border-s-…` — почему, см. input/_mixins.scss
 		border-color: var(--s-#{$color}-#{$border});
 
@@ -83,7 +87,7 @@ $move-easing: ease;
 		}
 
 		// Цвет текста при hover и у активного таба
-		.s-tabs-item {
+		> .s-tabs-item {
 			&:hover:not([data-disabled='true']) > #{$row} {
 				@apply #{'text-s-' + $color + '-' + $text};
 			}
@@ -107,11 +111,11 @@ $move-easing: ease;
 // тенью внутри контейнера; её вид от варианта не зависит (`tabs-contained-card`),
 // от варианта — цвет контейнера и текста.
 @mixin tabs-contained-variant($color, $text: 800, $container-bg: 100) {
-	.s-tabs__list {
+	> .s-tabs__list {
 		@apply #{'bg-s-' + $color + '-' + $container-bg};
 	}
 
-	.s-tabs-item {
+	> .s-tabs__list > .s-tabs-item {
 		&:hover:not([data-disabled='true']) > #{$row} {
 			@apply #{'text-s-' + $color + '-' + $text};
 		}
@@ -145,14 +149,14 @@ $move-easing: ease;
 // нет: системный цвет рамки браузер и так оставляет, а подмену унаследовал бы
 // текст таба.
 @mixin tabs-outline-variant($color, $text: 800, $border: 300) {
-	.s-tabs__list {
+	> .s-tabs__list {
 		&::before,
 		&::after {
 			@apply #{'bg-s-' + $color + '-' + $border};
 		}
 	}
 
-	.s-tabs-item {
+	> .s-tabs__list > .s-tabs-item {
 		border-color: var(--s-#{$color}-#{$border});
 
 		// @apply border-b-transparent;

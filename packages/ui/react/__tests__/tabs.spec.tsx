@@ -29,7 +29,7 @@ import {
 	type TabsItemProps,
 	type TabsProps,
 } from '@soldy-ui/react'
-import { mount, nextFrame } from './mount'
+import { find, mount, nextFrame } from './mount'
 
 afterEach(() => {
 	vi.restoreAllMocks()
@@ -204,6 +204,40 @@ describe('показ панели по активному табу', () => {
 		await nextFrame()
 
 		expect(warn).not.toHaveBeenCalled()
+	})
+})
+
+/**
+ * Тема рисует вид набора от его корня дочерними комбинаторами — свой список,
+ * его табы и свою панель (`themes/oren/AGENTS.md`, «Tabs: вид — от своего
+ * списка»): правило для потомков досталось бы и табам в панели. Держится это
+ * на разметке: список и панели — дети корня (`Elevate` своего узла не даёт),
+ * табы — дети списка.
+ */
+describe('разметка, на которую опирается тема', () => {
+	/** Табы набора — дети списка, список и показанная панель — дети корня. */
+	function expectOwnParts(root: HTMLElement, count: number): void {
+		const list = find(root, ':scope > .s-tabs__list', HTMLElement)
+		const tabItems = [...document.querySelectorAll('.s-tabs-item')]
+
+		expect(panel().parentElement).toBe(root)
+		expect(tabItems).toHaveLength(count)
+
+		for (const tabItem of tabItems) expect(tabItem.parentElement).toBe(list)
+	}
+
+	it('табы разметки — дети списка, список и панель — дети корня', () => {
+		const { root } = mount(<Harness />)
+
+		expectOwnParts(root(), 2)
+	})
+
+	it('табы из items — дети списка, список и панель — дети корня', () => {
+		const { root } = mount(
+			<Tabs items={ITEMS} content={<Tabs.Content value="a">Панель A</Tabs.Content>} />,
+		)
+
+		expectOwnParts(root(), ITEMS.length)
 	})
 })
 
