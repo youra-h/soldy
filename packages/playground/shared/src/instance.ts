@@ -19,19 +19,3 @@ export function createInstance(entry: TComponentEntry): TInstance {
 
 	return new Ctor()
 }
-
-/**
- * Принимает ли коллекция компонента готовый движок снаружи — проп `engine`
- * фасада коллекции.
- *
- * Через него вторая колонка и правит коллекционный проп: строит свой фасад на
- * том же движке, что отдаёт компоненту. Коллекция без такого пропа (у
- * календаря дни кладёт в неё его вид) движка снаружи не берёт, и её проп
- * туда уходит разметкой рядом с `ctrl` — сборка применяет его к фасаду так же,
- * как пресет строки.
- */
-export function acceptsEngine(entry: TComponentEntry): boolean {
-	const props = entry.collectionDescriptor?.().props ?? []
-
-	return props.some((prop) => prop.name.name === 'engine')
-}

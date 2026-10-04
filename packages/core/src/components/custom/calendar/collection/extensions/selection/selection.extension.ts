@@ -50,6 +50,11 @@ const STRATEGIES: Readonly<Record<TCalendarMode, TCalendarSelectionCtor>> = {
  * второй пишет пару. Пока якорь стоит, дни показывают предпросмотр — от якоря
  * до дня под указателем, без указателя — до фокуса.
  *
+ * **Выбор пользователя сообщается событием `choose`** — когда значение и
+ * якорь уже на месте. По `change:value` его не отличить от записи из кода, а
+ * первый конец диапазона значения не меняет вовсе: так панель DatePicker
+ * узнаёт, что выбор закончен, — второй день диапазона, а не первый.
+ *
  * **Что день знает от выбора:** `aria-selected` (и `false`), `data-selected`,
  * `data-range-start`, `data-range-end`, `data-range-middle`, `data-preview` и
  * `unavailable` дня — по правилу календаря с якорем. Пишет
@@ -187,6 +192,7 @@ export class TCalendarSelectionExtension
 		focusOf(this._ctx)?.focusDate(chosen)
 		this._write(choice.value)
 		this._paintAll()
+		this.events.emit('choose', chosen)
 
 		return true
 	}

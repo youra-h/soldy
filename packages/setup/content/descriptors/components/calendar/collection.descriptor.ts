@@ -5,9 +5,11 @@
  * (`CalendarDescriptor`, `CalendarItemDescriptor`): адаптер собирает
  * компонент из обоих рантайм-списков.
  *
- * Базы `CollectionDescriptor` здесь нет: её `items`, `trackBy` и `engine`
- * календарю не положены. Состав дней кладёт вид по месяцам сеток, ключ сверки
- * — дата, и чужой `trackBy` сломал бы её.
+ * Базы `CollectionDescriptor` здесь нет: её `items` и `trackBy` календарю не
+ * положены. Состав дней кладёт вид по месяцам сеток, ключ сверки — дата, и
+ * чужой `trackBy` сломал бы её. Движок снаружи (`engine`) — положен: его
+ * держит тот, кто показывает календарь и зовёт команды его расширений, —
+ * DatePicker, — а дни в нём кладёт тот же вид.
  */
 
 import { defineComponent, defineDescriptor } from '../../../../protected/define'
@@ -26,6 +28,13 @@ export const CalendarCollectionDescriptor = defineDescriptor(() =>
 		 */
 		contribution: {
 			props: {
+				/**
+				 * Готовая коллекция снаружи — аналог `ctrl` у компонента, как у
+				 * остальных коллекций (`CollectionDescriptor`). Без триггеров: это
+				 * вход, а не наблюдаемое значение. Собирает её `createEngineCalendar`;
+				 * чего движку не хватает, фасад доустановит при привязке.
+				 */
+				engine: { type: Object },
 				mode: { type: String, triggers: ['change:mode'] },
 				/**
 				 * Сетки показанных месяцев. `change:mode` — из-за

@@ -274,10 +274,6 @@
 	&[data-open='true'] &__arrow {
 		@apply rotate-180;
 	}
-
-	&--disabled {
-		@apply opacity-50 pointer-events-none;
-	}
 }
 
 // Панель телепортируется в body, поэтому вложенным селектором её не достать.

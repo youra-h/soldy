@@ -1,6 +1,6 @@
 /**
- * Цвет текста в панелях оверлеев — Select и Popover — в обеих схемах, по
- * вычисленным стилям.
+ * Цвет текста в панелях оверлеев — Select, Popover и DatePicker — в обеих
+ * схемах, по вычисленным стилям.
  *
  * Панель телепортирована в `body` и без своего цвета текста берёт цвет
  * страницы. Опции Select этого не замечают: строку рисует `Button` со своим
@@ -22,7 +22,7 @@
 import { describe, it, expect, afterEach } from 'vitest'
 import { render, cleanup } from 'vitest-browser-vue'
 import { defineComponent, h, nextTick } from 'vue'
-import { Button, Popover, Select } from '@soldy-ui/vue'
+import { Button, DatePicker, Popover, Select } from '@soldy-ui/vue'
 
 import { find, shift, style } from './colors'
 
@@ -53,6 +53,7 @@ const scene = defineComponent({
 					default: () => h('span', { class: 's-test-popover' }, 'Содержимое панели'),
 				},
 			),
+			h(DatePicker, { open: true, aria_label: 'Дата' }),
 		]),
 })
 
@@ -75,6 +76,23 @@ const away = (text: string, panel: string): number =>
 
 afterEach(() => {
 	cleanup()
+})
+
+/**
+ * Панель DatePicker — та же семья оверлеев: своё содержимое без своего цвета
+ * текста (подпись, сообщение рядом с календарём) берёт её текст, а не текст
+ * страницы. Календарь свой цвет ставит сам, поэтому меряется сама панель.
+ */
+describe('DatePicker: текст панели', () => {
+	it.each(SCHEMES)('%s: панель отходит текстом от фона, как Popover', async (scheme) => {
+		await show(scheme)
+
+		const popover = away('.s-test-popover', '.s-popover__panel')
+		const picker = away('.s-date-picker__panel', '.s-date-picker__panel')
+
+		expect(Math.sign(picker), 'в ту же сторону').toBe(Math.sign(popover))
+		expect(picker, 'на столько же').toBeCloseTo(popover, 3)
+	})
 })
 
 describe('Select: текст в панели помимо опций', () => {

@@ -31,6 +31,7 @@ import { defineComponent, h, nextTick, type VNode } from 'vue'
 import {
 	Button,
 	DateInput,
+	DatePicker,
 	Dialog,
 	Drawer,
 	Input,
@@ -132,6 +133,11 @@ const PANELS = [
 					default: () => 'Сохранить черновик',
 				},
 			),
+	},
+	{
+		name: 'DatePicker',
+		panel: '.s-date-picker__panel',
+		markup: () => h(DatePicker, { open: true, aria_label: 'Дата' }),
 	},
 ]
 

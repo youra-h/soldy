@@ -17,6 +17,8 @@ import { userEvent } from 'vitest/browser'
 import { defineComponent, h, nextTick } from 'vue'
 import { Calendar } from '@soldy-ui/vue'
 
+import { DIRECTION_CASES, pointing, setDir, sidesOf, type TLine } from './directions'
+
 import '@soldy-ui/theme-oren'
 
 /** Допуск на субпиксельное округление координат. */
@@ -27,8 +29,9 @@ const nextFrame = () => new Promise<void>((resolve) => requestAnimationFrame(() 
 /**
  * Календарь между двумя кнопками — чтобы было откуда войти по Tab и куда
  * уйти. Узел корня плагины получают кадром позже, дни — ещё позже владельца.
+ * `dir` — направление узла, в котором стоит календарь.
  */
-const show = async (props: Record<string, unknown>, dir: 'ltr' | 'rtl' = 'ltr') => {
+const show = async (props: Record<string, unknown>, dir?: TLine) => {
 	render(
 		defineComponent({
 			render: () =>
@@ -79,6 +82,7 @@ beforeEach(() => {
 
 afterEach(() => {
 	cleanup()
+	setDir(document.documentElement)
 })
 
 describe('высота месяца', () => {
@@ -228,6 +232,33 @@ describe('фокус', () => {
 		await expect.poll(titles).toEqual(['October 2026'])
 		expect(find('.s-calendar__next').hasAttribute('disabled')).toBe(true)
 		await expect.poll(() => document.activeElement).toBe(dayCell('2026-10-16'))
+	})
+})
+
+/**
+ * Стрелки — то, что тема зеркалит сама: роль иконки одна, `arrowRight`, а у
+ * стрелки нет логических направлений. Знак тема берёт у ближайшего `dir`, как
+ * браузер — направленность раскладки, поэтому календарь с `direction="ltr"` в
+ * RTL-предке остаётся календарём LTR целиком (`browser/directions.ts`). Панель
+ * выбора месяца и года лежит в календаре, и её стрелки идут за ним.
+ */
+describe.each(DIRECTION_CASES)('стрелки по ближайшему dir: $name', (scenario) => {
+	const { start, end } = sidesOf(scenario.line)
+
+	it('«назад» смотрит в начало строки, «вперёд» — в конец: у листания и в панели выбора', async () => {
+		setDir(document.documentElement, scenario.page)
+		await show({ months: ['2026-09-01'], direction: scenario.direction }, scenario.ancestor)
+
+		expect(pointing('.s-calendar__prev'), 'листание «назад»').toBe(start)
+		expect(pointing('.s-calendar__next'), 'листание «вперёд»').toBe(end)
+
+		await userEvent.click(find('.s-calendar__title'))
+		await expect
+			.poll(() => findAll('.s-calendar__picker-list .s-list-box-item').length)
+			.toBe(12)
+
+		expect(pointing('.s-calendar__picker-prev'), 'панель «назад»').toBe(start)
+		expect(pointing('.s-calendar__picker-next'), 'панель «вперёд»').toBe(end)
 	})
 })
 

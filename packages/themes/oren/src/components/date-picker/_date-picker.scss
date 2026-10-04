@@ -1,0 +1,232 @@
+@use 'sass:map';
+@use '../button/mixins' as button;
+@use '../input/mixins' as input;
+@use '../../mixins/required' as required;
+
+// DatePicker — поле даты и календарь в панели, как Select — поле и список.
+//
+//   .s-date-picker                  корень — якорь панели; у диапазона — коробка поля
+//     .s-date-picker__field         поле одной даты — DateInput
+//       .s-date-input__trailing     слот поля (тема DateInput)
+//         .s-date-picker__trigger   кнопка календаря — Button
+//     .s-date-picker__start         поле начала диапазона — DateInput
+//     .s-date-picker__dash          тире между полями
+//     .s-date-picker__end           поле конца диапазона — DateInput
+//     .s-date-picker__trigger       кнопка календаря после поля конца
+//
+//   .s-date-picker__panel           панель — Frame, телепортирована в `body`
+//     .s-date-picker__calendar      календарь — Calendar
+//
+// От ядра приходят: у корня — модификаторы режима (`--single`, `--range`),
+// `--size-*`, `--variant-*`, `--required` и `data-disabled`; у кнопки —
+// `data-selected`, пока панель открыта. Поле и календарь приносят свои
+// состояния сами, и коробка диапазона читает их с полей: фокус части и
+// `data-invalid`.
+//
+// Своего у темы здесь немного. Поле, его коробку и кнопку в слоте рисует
+// DateInput, день и сетку — Calendar, панель — та же семья оверлеев, что у
+// Select и Popover. DatePicker добавляет кнопку, коробку диапазона и панель.
+.s-date-picker {
+	// Строчный флекс по полю: DatePicker встаёт в строку, как само поле даты, и
+	// ширина у него — по дате и кнопке, а не по контейнеру. Задали корню
+	// ширину — поле растягивается до неё, а кнопка остаётся у его конца.
+	@apply inline-flex;
+}
+
+.s-date-picker__field {
+	@apply grow;
+
+	// Сторона кнопки — строка слота поля.
+	--s-date-picker-trigger: var(--s-date-input-slot-row);
+}
+
+// Кнопка календаря — квадрат со стороной в строку слота: в коробке поля она
+// стоит на том же просвете от рамки, что подсветка части, и на любом размере
+// не выше её. Значок в ней — по кеглю кнопки: иконку разметка рисует без
+// своего размера, а рисунок календаря плотный, и по шкале иконок на `lg` и
+// крупнее он перевешивал бы дату рядом.
+.s-date-picker__trigger {
+	@apply shrink-0 px-0;
+	inline-size: var(--s-date-picker-trigger);
+	block-size: var(--s-date-picker-trigger);
+}
+
+// Вид кнопки — `plain` по контексту, как у очистки Select: значения вида
+// разметка не передаёт, а кнопка в поле не спорит с датой. Открытая панель —
+// кнопка нажата: `data-selected` у неё рисует вуаль выбора того же вида.
+// Нулевая специфичность, как у базового вида Button.
+:where(.s-date-picker__trigger) {
+	@include button.button-view('plain');
+}
+
+// Размер коробки диапазона — по шкале поля (`input.$sizes`): высота и кегль
+// тире те же, что у DateInput того же размера. Интерлиньяж утилиты кегля
+// перебивается в том же правиле: строка тире — строка слота, как у ряда частей.
+@mixin range-size($size) {
+	$scale: map.get(input.$sizes, $size);
+
+	@include input.field-height('date-picker', $size);
+
+	> .s-date-picker__dash {
+		@if map.get($scale, 'text') {
+			@apply #{map.get($scale, 'text')};
+		}
+
+		line-height: var(--s-date-picker-slot-row);
+	}
+}
+
+// Диапазон — одна коробка на оба поля.
+//
+// Период — одно значение: два конца, одна кнопка, один календарь. Поэтому и
+// рамка у него одна, а поля внутри — без своей коробки. Коробка та же, что у
+// DateInput (`input.field`): рамка, поверхность, высота размера, кольцо. Кольцо
+// горит, пока фокус на части любого из полей, — как у DateInput, фокус на
+// кнопке его не зажигает. Ошибка — рамкой ошибки, пока её нашло хоть одно
+// поле: дата вне границ, недоступная или конец раньше начала.
+//
+// Раскладка — сетка из четырёх колонок: начало, тире, конец, кнопка. Ширина
+// не меняется, пока даты набирают: колонки полей равны (`1fr`), и держит их
+// поле начала своим минимумом ряда — шириной самой широкой даты, как у
+// DateInput. Поле конца шириной по дате стоит у конца своей колонки, рядом с
+// кнопкой. Свободное место обеих колонок оказывается по сторонам тире, и тире
+// стоит посередине между датами, а не прилипает к одной из них. Колонки
+// логические: в RTL начало справа, кнопка слева.
+.s-date-picker--range {
+	@include input.field('date-picker');
+	@include range-size('normal');
+
+	display: inline-grid;
+	grid-template-columns: 1fr auto 1fr auto;
+
+	// Сторона кнопки — строка слота коробки.
+	--s-date-picker-trigger: var(--s-date-picker-slot-row);
+
+	&:has(.s-date-input__segment:focus) {
+		@include input.field-focus;
+	}
+
+	&.s-date-picker--required::after {
+		@include required.required-indicator();
+	}
+
+	@each $variant in input.$variants {
+		&.s-date-picker--variant-#{$variant} {
+			@include input.input-variant($variant, $enabled: ":not([data-disabled='true'])");
+		}
+	}
+
+	// Ошибка перекрывает и заданный вариант, как у DateInput.
+	&:has(> .s-date-input[data-invalid='true']) {
+		@include input.input-variant('negative', $enabled: ":not([data-disabled='true'])");
+	}
+
+	@each $size, $_ in input.$sizes {
+		&.s-date-picker--size-#{$size} {
+			@include range-size($size);
+		}
+	}
+
+	// Выключенный период гаснет датами, как DateInput: даты гасят поля, кнопку —
+	// её `disabled`, тире — здесь.
+	&[data-disabled='true'] > .s-date-picker__dash {
+		@apply opacity-s-component-disabled;
+	}
+
+	// Поле внутри коробки — без своей: ни рамки, ни поверхности, ни кольца, ни
+	// маркера обязательности — всё это у коробки. Высота — во всю строку
+	// коробки: нажатие у её края попадает в поле, и плагин указателя поля
+	// отдаёт фокус ближайшей части.
+	//
+	// Кольцо снимается и правилом фокуса: в режиме принудительных цветов поле
+	// под фокусом возвращает себе контур сплошным (`input.field-focus`).
+	> .s-date-input {
+		@apply self-stretch;
+		height: auto;
+		border-width: 0;
+		background-color: transparent;
+
+		&,
+		&:has(.s-date-input__segment:focus) {
+			outline-style: none;
+		}
+
+		&.s-date-input--required::after {
+			content: none;
+		}
+	}
+
+	// Поле конца — шириной по дате, у конца своей колонки. Минимум ряда держит
+	// поле начала: формат у полей один, и минимумы равны.
+	> .s-date-picker__end {
+		@apply justify-self-end;
+
+		.s-date-input__segments {
+			min-inline-size: 0;
+		}
+	}
+
+	// Кнопка — с тем же отступом от рамки, что в слоте поля (`pe-1` слота
+	// DateInput).
+	> .s-date-picker__trigger {
+		@apply me-1;
+	}
+}
+
+// Рамка коробки без варианта — нейтраль, как у DateInput. Нулевая
+// специфичность — вариант перекрывает базу, не споря с ней.
+:where(.s-date-picker--range) {
+	@include input.input-variant('neutral', $enabled: ":not([data-disabled='true'])");
+}
+
+// Пустой период — подсказка целиком: тире гаснет вместе с подсказками частей
+// обоих полей, как разделители пустой даты у DateInput. Набрана хоть одна часть
+// — тире становится текстом периода.
+//
+// Условие — контекст нулевой специфичности, как у пустой даты DateInput:
+// сборка сливает правила с одинаковыми объявлениями в одно `:is()` с весом
+// самого тяжёлого, и тяжёлое условие подняло бы вес чужого правила.
+$empty: ".s-date-picker--range:where(:not(:has(.s-date-input__segment:not([data-placeholder='true']))))";
+
+#{$empty} > .s-date-picker__dash {
+	@apply text-s-neutral-500;
+}
+
+// Принудительные цвета: подсказку здесь от значения отличает только системный
+// цвет неактивного текста — тот же, что у подсказок частей DateInput.
+@media (forced-colors: active) {
+	#{$empty} > .s-date-picker__dash {
+		color: GrayText;
+	}
+}
+
+// Панель — Frame, телепортированный в `body`: вложенным селектором её не
+// достать. Та же семья оверлеев, что панели Select и Popover: поверхность
+// контрола, текст темы, тень и кромка — кольцо и прозрачный контур, который в
+// режиме принудительных цветов становится рамкой. Вокруг календаря — поля
+// панели; его собственный запас вокруг плиток и кнопок остаётся внутри.
+//
+// Высота — по календарю. Потолок половиной окна, как у Popover, срезал бы
+// месяц уже на экране ноутбука, хотя под полем места хватает: месяц держит
+// высоту под шесть недель. Поэтому потолок — окно целиком, и прокручивается
+// панель, только когда ниже окна сам календарь (телефон боком). Когда ни над
+// полем, ни под ним места нет — поле посередине низкого окна, — панель встаёт
+// туда, где места больше, и заходит за край: сдвиг `TAnchorPlugin` держит её
+// в окне только по строке.
+.s-date-picker__panel {
+	@apply overflow-y-auto rounded-md box-border p-2;
+	@apply bg-s-component-surface text-s-component shadow-md;
+	@apply ring-1 ring-s-neutral-300;
+	@apply outline outline-transparent;
+	max-width: calc(100vw - 1rem);
+	max-height: calc(100dvh - 1rem);
+}
+
+// Ширина панели — по календарю. Раскладка Frame пишет панели ширину инлайном
+// (`auto`), а у панели с `left` ширина по содержимому — это место от `left`
+// до края окна: у поля справа месяцы сложились бы в столбец. Поэтому ширину по
+// содержимому просит сам календарь, как содержимое Popover (`w-max`). Панель
+// упирается в свой потолок, и месяцы переносятся уже по ширине окна.
+.s-date-picker__panel > .s-date-picker__calendar {
+	@apply w-max;
+}

@@ -30,12 +30,13 @@
  * сообщением `ResizeObserver loop completed with undelivered notifications`.
  */
 
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { render } from 'vitest-browser-vue'
 import { userEvent } from 'vitest/browser'
 import { defineComponent, h } from 'vue'
 import { Tags } from '@soldy-ui/vue'
 
+import { DIRECTION_CASES, pointing, setDir, sidesOf, type TLine } from './directions'
 import { expectClearOfFades, expectFocusedClearOfFades, fades } from './fades'
 import { expectRingInsideHorizontally, expectRingInsideVertically } from './focus-ring'
 import { expectInsideWindow } from './viewport'
@@ -80,10 +81,11 @@ const SEVERAL = 560
  */
 const ROWS = 320
 
-const harness = (width: number, props: Record<string, unknown> = {}) =>
+/** Ряд в узле шириной `width`; `dir` — направление этого узла, предка ряда. */
+const harness = (width: number, props: Record<string, unknown> = {}, dir?: TLine) =>
 	defineComponent({
 		render() {
-			return h('div', { class: 's-host', style: `width: ${width}px` }, [
+			return h('div', { class: 's-host', dir, style: `width: ${width}px` }, [
 				h(Tags, {
 					overflow: 'popover',
 					closable: true,
@@ -578,6 +580,38 @@ describe('режим arrows: ряд листают кнопки', () => {
 		await userEvent.keyboard('{ArrowRight}')
 
 		expect(document.activeElement).toBe(line(TAGS[1]))
+	})
+
+	/**
+	 * Лента в наборе — та же, что сама по себе: стрелки и маску ей зеркалит тема
+	 * знаком строки у ближайшего `dir`. Своего направления у ленты набора нет,
+	 * она берёт его у корня набора, куда `dir` пишет проп `direction`: набор с
+	 * `direction="ltr"` в RTL-предке листается лентой LTR (`browser/directions.ts`).
+	 */
+	describe.each(DIRECTION_CASES)('лента по ближайшему dir: $name', (scenario) => {
+		const { start, end } = sidesOf(scenario.line)
+
+		afterEach(() => {
+			setDir(document.documentElement)
+		})
+
+		it('«назад» смотрит в начало строки, «вперёд» — в конец, гаснет только конец', async () => {
+			setDir(document.documentElement, scenario.page)
+			render(
+				harness(
+					NARROW,
+					{ overflow: 'arrows', direction: scenario.direction },
+					scenario.ancestor,
+				),
+			)
+
+			await scrollable()
+
+			expect(pointing('.s-scroller__prev'), '«назад»').toBe(start)
+			expect(pointing('.s-scroller__next'), '«вперёд»').toBe(end)
+			expect(fades(viewport())[end], 'конец строки').toBeGreaterThan(0)
+			expect(fades(viewport())[start], 'начало строки').toBe(0)
+		})
 	})
 
 	/** Фокус за краем ленту подтягивает сам — и не под подсказку у края, а в чистую часть. */

@@ -446,8 +446,14 @@ $focused: '&:has(> #{$row}:focus)';
 				// Ширина подсказки — как у ленты
 				--s-tags-fade: 1.5rem;
 
+				// Градиент — от начала строки к концу, сторону задаёт угол со
+				// знаком строки, как у ленты (`scroller/_scroller.scss`): в RTL
+				// начало строки — правый край, и подсказки меняются местами
+				// вместе с ним, а ступени остаются на своих логических местах.
+				// Знак — ближайшего `dir` (`direction.css`): у Select с
+				// `direction="ltr"` в RTL-предке ряд гаснет как в LTR.
 				mask-image: linear-gradient(
-					to right,
+					calc(90deg * var(--s-dir-sign)),
 					transparent 0,
 					#000 var(--s-tags-fade-start),
 					#000 calc(100% - var(--s-tags-fade-end)),
@@ -479,21 +485,6 @@ $focused: '&:has(> #{$row}:focus)';
 				// краем браузер оставил бы у края, под подсказкой, где его почти
 				// не видно.
 				scroll-padding-inline: var(--s-tags-fade);
-
-				// В RTL начало строки — правый край, и подсказки меняются
-				// местами вместе с ним: меняется направление маски, ступени
-				// остаются на своих логических местах. Направление — атрибутом
-				// у ряда или у любого предка, а не `:dir(rtl)`: сборка
-				// переписывает его в список языков (`AGENTS.md` пакета).
-				&:is([dir='rtl'] *, [dir='rtl']) {
-					mask-image: linear-gradient(
-						to left,
-						transparent 0,
-						#000 var(--s-tags-fade-start),
-						#000 calc(100% - var(--s-tags-fade-end)),
-						transparent 100%
-					);
-				}
 			}
 		}
 	}

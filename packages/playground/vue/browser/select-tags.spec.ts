@@ -22,7 +22,7 @@
  * `plugins/src/custom/tags/scroll/`.
  */
 
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { render, cleanup } from 'vitest-browser-vue'
 import { userEvent } from 'vitest/browser'
 import { defineComponent, h } from 'vue'
@@ -30,6 +30,7 @@ import { COMPONENT_SIZES } from '@soldy-ui/playground-shared'
 import { Select, SelectItem } from '@soldy-ui/vue'
 import type { TDirection, TTagsOverflow } from '@soldy-ui/core'
 
+import { DIRECTION_CASES, setDir, sidesOf, type TLine } from './directions'
 import { expectFocusedClearOfFades, fades } from './fades'
 import { expectRingInsideHorizontally, expectRingInsideVertically } from './focus-ring'
 import { expectInsideWindow } from './viewport'
@@ -135,6 +136,8 @@ const pairHarness = (options: {
 	size?: (typeof COMPONENT_SIZES)[number]
 	overflow?: TTagsOverflow
 	direction?: TDirection
+	/** Направление узла, в котором стоят оба поля. */
+	dir?: TLine
 }) =>
 	defineComponent({
 		render() {
@@ -160,7 +163,7 @@ const pairHarness = (options: {
 					),
 				])
 
-			return h('div', [select(options.value), select()])
+			return h('div', { dir: options.dir }, [select(options.value), select()])
 		},
 	})
 
@@ -673,9 +676,14 @@ describe('tags_overflow: scroll — подсказка у края вместо 
 	/** Ряд первого поля — того, где выбор есть. */
 	const row = () => find('.s-select__field .s-tags')
 
-	/** Поле со всеми тегами; ряду в нём тесно, и он прокручивается. */
-	const renderCrowded = async (direction?: TDirection) => {
-		render(pairHarness({ value: ALL_VALUES, texts: OPTIONS, overflow: 'scroll', direction }))
+	/**
+	 * Поле со всеми тегами; ряду в нём тесно, и он прокручивается. `direction`
+	 * — проп Select, `dir` — направление узла, в котором поле стоит.
+	 */
+	const renderCrowded = async (direction?: TDirection, dir?: TLine) => {
+		render(
+			pairHarness({ value: ALL_VALUES, texts: OPTIONS, overflow: 'scroll', direction, dir }),
+		)
 
 		await expect.poll(() => fieldTags().length).toBe(OPTIONS.length)
 		await expect.poll(() => scrolls(row())).toBe(true)
@@ -763,6 +771,27 @@ describe('tags_overflow: scroll — подсказка у края вместо 
 
 		await expect.poll(() => fades(row()).left).toBeGreaterThan(0)
 		expect(fades(row()).right, 'правый край').toBe(0)
+	})
+
+	/**
+	 * Сторону маски тема берёт знаком строки у ближайшего `dir`, как браузер —
+	 * направленность ряда: у Select с `direction="ltr"` в RTL-предке ряд гаснет
+	 * как в LTR, а не с той стороны (`browser/directions.ts`).
+	 */
+	describe.each(DIRECTION_CASES)('по ближайшему dir: $name', (scenario) => {
+		const { start, end } = sidesOf(scenario.line)
+
+		afterEach(() => {
+			setDir(document.documentElement)
+		})
+
+		it('в начале ряда гаснет только конец строки', async () => {
+			setDir(document.documentElement, scenario.page)
+			await renderCrowded(scenario.direction, scenario.ancestor)
+
+			await expect.poll(() => fades(row())[end]).toBeGreaterThan(0)
+			expect(fades(row())[start], 'начало строки').toBe(0)
+		})
 	})
 
 	/**

@@ -35,11 +35,11 @@ Web Components connect that model to a framework and render the markup: BEM clas
   event, and items come from the `items` prop or from markup. Calendar is a collection too: its
   days are items, built from the months on screen.
 - **Accessibility from the WAI-ARIA Authoring Practices.** Tabs, Tags, Accordion, Select, Switch,
-  RadioGroup, Slider, Popover, Tooltip, Dialog, Drawer and Calendar take roles and relations from
-  their APG patterns, and ProgressLinear and ProgressSpinner use the `progressbar` role. Select
-  implements the Combobox keyboard model, and Tabs the Tabs one: arrow keys and Home/End with
-  automatic activation, and a single Tab stop. ARIA is computed outside the framework and rendered
-  with the markup, so it is in place from the first render.
+  RadioGroup, Slider, Popover, Tooltip, Dialog, Drawer, Calendar and DatePicker take roles and
+  relations from their APG patterns, and ProgressLinear and ProgressSpinner use the `progressbar`
+  role. Select implements the Combobox keyboard model, and Tabs the Tabs one: arrow keys and
+  Home/End with automatic activation, and a single Tab stop. ARIA is computed outside the
+  framework and rendered with the markup, so it is in place from the first render.
 - **Themes and icon packs are pluggable contracts.** A theme styles `s-*` classes and `data-*`
   attributes, never `aria-*`, so an accessibility fix does not break the look. An icon pack is
   plain data for a fixed set of roles, with no bundler-specific imports.
@@ -131,6 +131,8 @@ The component set, as the playground shows it:
 | RadioGroup      | One option out of several: native radio buttons sharing a `name`                               |
 | Select          | Select field: an input plus a list in an overlay, the Combobox pattern                         |
 | Calendar        | Month grids: pick a single date, several dates or a range                                      |
+| DateInput       | Date and time field typed in parts in the locale's format, selected and copied as a whole      |
+| DatePicker      | Date field and a calendar in a panel: a single date or a range                                 |
 | Popover         | Panel at a trigger with any content: a non-modal dialog                                        |
 | Tooltip         | Hint for an element, shown on hover and on keyboard focus                                      |
 | Dialog          | Modal window: centered or at an edge of the screen, can be maximized to full screen            |
@@ -157,15 +159,7 @@ What each adapter implements so far:
 | Solid          | `@soldy-ui/solid`   | Button                                                                                                               |
 | Web Components | `@soldy-ui/webc`    | Button (`<soldy-button>`)                                                                                            |
 
-### In development
-
-A new component comes to Vue first and moves to the other adapters after that. The dates are
-estimates:
-
-| Component  | What it is                                                                    | Package         | Expected      |
-| ---------- | ----------------------------------------------------------------------------- | --------------- | ------------- |
-| DateInput  | Date field typed in parts in the locale's format, selectable as a whole       | `@soldy-ui/vue` | November 2026 |
-| DatePicker | DateInput and Calendar in a dropdown panel, like the input and list of Select | `@soldy-ui/vue` | November 2026 |
+A new component comes to Vue first and moves to the other adapters after that.
 
 ## Repository structure
 
