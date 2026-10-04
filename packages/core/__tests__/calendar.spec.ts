@@ -542,6 +542,35 @@ describe('выбор', () => {
 		expect(setup.collection.anchor).toBeUndefined()
 	})
 
+	it('choose: выбор пользователя — когда значение и якорь на месте', () => {
+		const setup = calendar({}, 'range')
+		const chosen: Array<[string, string | undefined, TCalendarValue]> = []
+
+		setup.selection.events.on('choose', (date) =>
+			chosen.push([date, setup.collection.anchor, setup.owner.value]),
+		)
+
+		setup.selection.chooseDate('2026-09-20')
+		setup.selection.chooseDate('2026-09-12')
+
+		expect(chosen).toEqual([
+			['2026-09-20', '2026-09-20', undefined],
+			['2026-09-12', undefined, ['2026-09-12', '2026-09-20']],
+		])
+	})
+
+	it('choose не приходит на отказ и на запись value из кода', () => {
+		const setup = calendar({ unavailable: (date) => date === '2026-09-15' })
+		const chosen = vi.fn()
+
+		setup.collection.events.on('choose', chosen)
+
+		setup.selection.chooseDate('2026-09-15')
+		setup.owner.value = '2026-09-10'
+
+		expect(chosen).not.toHaveBeenCalled()
+	})
+
 	it('запись value снаружи снимает якорь и переводит фокус на первую дату', () => {
 		const setup = calendar({}, 'range')
 
@@ -632,6 +661,31 @@ describe('фокус', () => {
 
 		setup.focus.focusDate('2025-01-01')
 		expect(setup.collection.focusedDate).toBe('2026-09-10')
+	})
+
+	it('resetFocus — на выбранную дату, и её месяц показан', () => {
+		const setup = calendar({ value: '2026-03-10' })
+
+		setup.focus.focusDate('2026-07-04')
+		expect(keys(setup.collection.grids)).toEqual(['2026-07-01'])
+
+		setup.focus.resetFocus()
+
+		expect(setup.collection.focusedDate).toBe('2026-03-10')
+		expect(keys(setup.collection.grids)).toEqual(['2026-03-01'])
+	})
+
+	it('resetFocus без значения — на сегодня в границах; выключенный — не трогает', () => {
+		const setup = calendar({ max: '2026-09-20' })
+
+		setup.focus.focusDate('2026-08-04')
+		setup.focus.resetFocus()
+		expect(setup.collection.focusedDate).toBe('2026-09-20')
+
+		setup.focus.focusDate('2026-08-04')
+		setup.owner.disabled = true
+		setup.focus.resetFocus()
+		expect(setup.collection.focusedDate).toBe('2026-08-04')
 	})
 
 	it('адаптеры дня: selected и focused со своими событиями', () => {

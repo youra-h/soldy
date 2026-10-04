@@ -35,6 +35,11 @@ export interface ICalendarFocusExtension<
 	shiftFocus(unit: TDateUnit, count: number): void
 	/** Поставить фокус на первый или последний день его недели */
 	moveFocusToEdge(edge: TCalendarWeekEdge): void
+	/**
+	 * Вернуть фокус на старт: первую выбранную дату, иначе сегодня, в
+	 * границах, — и показать её месяц
+	 */
+	resetFocus(): void
 }
 
 export type TCalendarFocusItemEvents = TBaseItemEventsExtension & {

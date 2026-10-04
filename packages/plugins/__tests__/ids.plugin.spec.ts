@@ -14,6 +14,7 @@ import {
 	TCalendar,
 	TCalendarCollectionFacade,
 	TDateInput,
+	TDatePicker,
 	TDialog,
 	TDrawer,
 	TPopover,
@@ -31,6 +32,7 @@ import {
 	TCalendarIdsPlugin,
 	TCollectionBundlesPlugin,
 	TDateInputIdsPlugin,
+	TDatePickerIdsPlugin,
 	TDialogIdsPlugin,
 	TDismissPlugin,
 	TModalIdsPlugin,
@@ -120,6 +122,15 @@ describe('оверлеи', () => {
 		dialog.alert = false
 
 		expect(dialog.aria.has('aria-describedby')).toBe(false)
+	})
+
+	it('DatePicker: id панели и aria-controls кнопки календаря — один id', () => {
+		const picker = new TDatePicker()
+
+		new TPluginBundle(picker, 'm1').use(TDatePickerIdsPlugin)
+
+		expect(picker.panelAria.get('id')).toBe('m1-panel')
+		expect(picker.triggerAria.get('aria-controls')).toBe('m1-panel')
 	})
 
 	it('пометка панели владельцем — от монтирования', () => {

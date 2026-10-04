@@ -29,6 +29,8 @@ export const ICON_ROLES = [
 	// вернуть размер
 	'arrowsOutward',
 	'arrowsInward',
+	// Кнопка календаря DatePicker
+	'calendar',
 ] as const
 
 export type TIconRole = (typeof ICON_ROLES)[number]
