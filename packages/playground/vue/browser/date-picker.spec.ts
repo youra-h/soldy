@@ -27,21 +27,24 @@ import '@soldy-ui/theme-oren'
 const nextFrame = () => new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
 
 /**
- * DatePicker между текстом и полем страницы — чтобы было куда нажать мимо.
- * Узел корня плагины получают кадром позже.
+ * Поле страницы над DatePicker — чтобы было куда нажать мимо. Над, а не
+ * рядом: панель открывается под полем и шириной с календарь, и соседа в
+ * строке она накрыла бы там, где шрифт шире и строка переносится. Узел
+ * корня плагины получают кадром позже.
  */
 const show = async (
 	props: Partial<IDatePickerProps> = {},
-	style = 'padding: 16px',
+	align: 'start' | 'end' = 'start',
 ): Promise<TDatePicker> => {
 	const ctrl = new TDatePicker(props)
+	const style = `padding: 16px; display: flex; flex-direction: column; gap: 8px; align-items: flex-${align}`
 
 	render(
 		defineComponent({
 			render: () =>
 				h('div', { class: 's-host', style }, [
+					h('input', { class: 's-test-outside', 'aria-label': 'Рядом' }),
 					h(DatePicker, { ctrl, aria_label: 'Дата заезда' }),
-					h('input', { class: 's-test-after', 'aria-label': 'После' }),
 				]),
 		}),
 	)
@@ -158,10 +161,10 @@ describe('закрытие', () => {
 		await userEvent.click(trigger())
 		await expect.poll(active).toBe(day('2026-05-12'))
 
-		await userEvent.click(find('.s-test-after'))
+		await userEvent.click(find('.s-test-outside'))
 
 		await expect.poll(isOpen).toBe(false)
-		expect(active()).toBe(find('.s-test-after'))
+		expect(active()).toBe(find('.s-test-outside'))
 	})
 })
 
@@ -259,7 +262,7 @@ describe('панель у края окна', () => {
 
 		cleanup()
 
-		await show({ value: '2026-05-12' }, 'display: flex; flex-direction: row-reverse')
+		await show({ value: '2026-05-12' }, 'end')
 		await userEvent.click(trigger())
 		await expect.poll(active).toBe(day('2026-05-12'))
 
