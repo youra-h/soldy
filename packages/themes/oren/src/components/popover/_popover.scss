@@ -1,12 +1,6 @@
 @use '../button/mixins' as button;
 @use '../../mixins/swipe';
 
-// Возврат панели на место, когда её отпустили, не смахнув. Кривая — та же,
-// что у въезда Drawer: панель подъезжает, а не врезается. Время короче: путь
-// возврата — не длиннее четверти панели. Число подобрано глазом.
-$swipe-return-duration: 250ms;
-$swipe-return-easing: cubic-bezier(0.33, 1, 0.68, 1);
-
 // Popover — триггер и панель поверх страницы с произвольным содержимым.
 //
 // Корень — обёртка триггера (слот `trigger`). Панель телепортирована в `body`,
@@ -139,7 +133,7 @@ $swipe-return-easing: cubic-bezier(0.33, 1, 0.68, 1);
 	}
 
 	&:not([data-swiping='true']) {
-		transition: translate $swipe-return-duration $swipe-return-easing;
+		transition: translate swipe.$return-duration swipe.$return-easing;
 
 		// Просьбу системы убрать движение возврат выполняет: панель встаёт на
 		// место сразу, как ручка Slider.
