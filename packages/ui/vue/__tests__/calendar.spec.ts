@@ -14,7 +14,7 @@ import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { defineComponent, h, nextTick, ref, type VNode } from 'vue'
 import { Calendar } from '@soldy-ui/vue'
-import { TCalendar } from '@soldy-ui/core'
+import { TCalendar, createEngineCalendar } from '@soldy-ui/core'
 import type { ICalendarItem, TCalendarValue } from '@soldy-ui/core'
 
 const nextFrame = () => new Promise((resolve) => requestAnimationFrame(resolve))
@@ -565,5 +565,44 @@ describe('выбор месяца и года', () => {
 		await render(() => h(Calendar, { disabled: true }))
 
 		expect(title().hasAttribute('disabled')).toBe(true)
+	})
+})
+
+describe('движок снаружи', () => {
+	it('календарь работает на переданном движке: его команды видны в разметке', async () => {
+		const ctrl = new TCalendar()
+		const engine = createEngineCalendar()
+		const chosen = vi.fn()
+
+		engine.extensions.selection.events.on('choose', chosen)
+
+		await render(() => h(Calendar, { ctrl, engine }))
+
+		// Принятый компонент пишет владельца в опции движка
+		expect(engine.options.get('owner')).toBe(ctrl)
+
+		engine.extensions.focus.focusDate('2026-11-03')
+		await settle()
+
+		expect(titles()).toEqual(['November 2026'])
+		expect(dayCell('2026-11-03').getAttribute('tabindex')).toBe('0')
+
+		dayCell('2026-11-05').click()
+		await settle()
+
+		expect(ctrl.value).toBe('2026-11-05')
+		expect(chosen).toHaveBeenCalledWith('2026-11-05')
+	})
+
+	it('снятый календарь снимает владельца с движка', async () => {
+		const ctrl = new TCalendar()
+		const engine = createEngineCalendar()
+
+		await render(() => h(Calendar, { ctrl, engine }))
+
+		wrapper?.unmount()
+		wrapper = null
+
+		expect(engine.options.get('owner')).toBeUndefined()
 	})
 })

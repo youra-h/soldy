@@ -22,6 +22,7 @@ import {
 	CheckBox,
 	ComponentView,
 	DateInput,
+	DatePicker,
 	Dialog,
 	DragAndDrop,
 	Drawer,
@@ -113,6 +114,22 @@ const dragAndDrop = new TDragAndDrop()
 	<!-- @vue-expect-error — точность времени: до минуты или до секунды -->
 	<DateInput timePrecision="hour" />
 	<DateInput timePrecision="second" />
+
+	<!-- @vue-expect-error — режима `multiple` у DatePicker нет: поле не покажет несколько дат -->
+	<DatePicker mode="multiple" />
+	<DatePicker mode="range" />
+
+	<!-- @vue-expect-error — значение — дата строкой или парой, а не объектом Date -->
+	<DatePicker :value="new Date()" />
+	<DatePicker :value="['2026-05-12', '2026-05-20']" />
+
+	<!-- @vue-expect-error — дня недели 7 нет: 0 — воскресенье … 6 — суббота -->
+	<DatePicker :weekStart="7" />
+	<DatePicker :weekStart="1" />
+
+	<!-- @vue-expect-error — имя кнопки календаря строкой -->
+	<DatePicker :triggerLabel="42" />
+	<DatePicker triggerLabel="Выбрать дату" />
 
 	<!-- @vue-expect-error — места `left` у окна нет: стороны логические -->
 	<Dialog placement="left" />

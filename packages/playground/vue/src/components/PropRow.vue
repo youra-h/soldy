@@ -1,9 +1,8 @@
 <script setup lang="ts">
 import { computed, onUnmounted, shallowRef, watch } from 'vue'
-import { createEngineSelection, isEventSource } from '@soldy-ui/core'
+import { createEngine, isEventSource } from '@soldy-ui/core'
 import { TPluginBundle } from '@soldy-ui/plugins'
 import {
-	acceptsEngine,
 	createInstance,
 	isEmptyField,
 	type TComponentEntry,
@@ -51,22 +50,15 @@ const isCollectionRow = props.control.scope === 'collection'
  * первого рендера превью, тем же способом, каким это делает любой потребитель
  * библиотеки.
  *
- * Уровня `createEngineSelection` достаточно: единственный редактируемый
- * коллекционный проп на странице — `mode`, а он живёт на расширении
- * `selection`. Остальное (`accordion`, `list`, `select`, `factory`...)
- * недостающее компонент доустановит сам при привязке — и в компоненте пропом,
- * и в компоненте инстансом, потому что оба получают один и тот же движок.
- *
- * Коллекция, которая движка снаружи не берёт (`acceptsEngine`), своего движка
- * у строки не получает: её проп уходит разметкой рядом с `ctrl` (`markupOnly`).
+ * Уровня `createEngine` достаточно, и он один на все коллекции: состав
+ * деталей у каждой свой, а недостающее — `selection` с единственным
+ * редактируемым коллекционным пропом `mode`, `accordion`, вид календаря,
+ * `factory`… — доставит фасад стенда при сборке, своим же конструктором.
+ * Готовый выбор уровня `createEngineSelection` календарю не годится: выбор у
+ * него свой, дат, а стандартный занял бы его место. Компонент получает тот же
+ * движок — и в колонке пропом, и в колонке инстансом.
  */
-const engine = isCollectionRow && acceptsEngine(props.entry) ? createEngineSelection() : null
-
-/**
- * Коллекционный проп, который до фасада компонента доносит только разметка:
- * движка снаружи коллекция не берёт, и фасада стенду строить не на чем.
- */
-const markupOnly = isCollectionRow && !engine
+const engine = isCollectionRow ? createEngine() : null
 
 /**
  * Фасад коллекции правой колонки — тонкая обёртка над тем же движком.
@@ -177,8 +169,6 @@ const instanceBind = computed(() => ({
 	// инстансу, и к фасаду коллекции (`applyInitialProps`), а `mode`
 	// у компонентной строки иначе записать некуда — своего движка у неё нет
 	...props.control.preset,
-	// Так же — проп коллекции, которая движка снаружи не берёт
-	...(markupOnly && !isEmptyField(value.value) ? { [props.control.name]: value.value } : {}),
 	ctrl: instance.value,
 	// Отдаём собственный движок пропом — компонент допривяжет к нему свой
 	// `owner` сам, а `engine:create`, который он при этом эмитит, идёт в общий

@@ -8,6 +8,7 @@ import {
 	ComponentViewDescriptor,
 	ControlDescriptor,
 	DateInputDescriptor,
+	DatePickerDescriptor,
 	DialogDescriptor,
 	DragAndDropDescriptor,
 	DrawerDescriptor,
@@ -137,6 +138,14 @@ export const COMPONENTS: readonly TComponentEntry[] = [
 		span: 1,
 		description:
 			'Поле даты и времени по частям в формате локали: значение выделяется и копируется целиком',
+	},
+	{
+		id: 'date-picker',
+		label: 'DatePicker',
+		descriptor: DatePickerDescriptor,
+		showcase: true,
+		span: 1,
+		description: 'Поле даты и календарь в панели: одна дата или диапазон',
 	},
 	{
 		id: 'popover',

@@ -1,0 +1,449 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { TDatePicker } from '@soldy-ui/core'
+import type { IDatePickerProps, TChangeEvent, TDatePickerValue } from '@soldy-ui/core'
+
+/**
+ * DatePicker — поле даты и календарь в панели. Сам он дат не считает:
+ * раздаёт полям и календарю общее, держит одно значение на две стороны и
+ * открывает и закрывает панель.
+ *
+ * Правка поля — так, как её делают плагины поля: вставка значения текстом и
+ * очистка части. Выбор дня — команда расширения выбора календаря, как её
+ * зовут плагины календаря.
+ *
+ * Сегодня во всех тестах — суббота 2026-09-26: время подменено полднем по
+ * местному времени, и дата не зависит от пояса машины.
+ */
+
+beforeEach(() => {
+	vi.useFakeTimers({ toFake: ['Date'] })
+	vi.setSystemTime(new Date(2026, 8, 26, 12))
+})
+
+afterEach(() => {
+	vi.useRealTimers()
+})
+
+function picker(props: Partial<IDatePickerProps> = {}): TDatePicker {
+	return new TDatePicker(props)
+}
+
+/** Значения DatePicker из `change:value` — по порядку. */
+function values(target: TDatePicker): TDatePickerValue[] {
+	const list: TDatePickerValue[] = []
+
+	target.events.on('change:value', ({ newValue }) => list.push(newValue))
+
+	return list
+}
+
+describe('без аргументов', () => {
+	it('одна дата, панель закрыта, значения нет', () => {
+		const target = picker()
+
+		expect(target.mode).toBe('single')
+		expect(target.open).toBe(false)
+		expect(target.closeOnSelect).toBe(true)
+		expect(target.value).toBeUndefined()
+		expect(target.classes.toArray()).toContain('s-date-picker--single')
+		expect(target.dataset.get('open')).toBe('false')
+	})
+
+	it('кнопка и панель названы, связка кнопки — диалог', () => {
+		const target = picker()
+
+		expect(target.triggerAria.toObject()).toEqual({
+			'aria-haspopup': 'dialog',
+			'aria-expanded': 'false',
+			'aria-label': 'Choose date',
+		})
+		expect(target.panelAria.toObject()).toEqual({
+			role: 'dialog',
+			'aria-modal': 'true',
+			'aria-label': 'Choose date',
+		})
+		expect(target.triggerDataset).toEqual({ 'data-selected': 'false' })
+	})
+
+	it('экземпляры — на всю жизнь, движок — календаря', () => {
+		const target = picker()
+
+		expect(target.field).toBe(target.field)
+		expect(target.engine.options.get('owner')).toBe(target.calendar)
+		expect(target.engine.extensions.selection.mode).toBe('single')
+	})
+})
+
+describe('общее — полям и календарю', () => {
+	it('из пропсов конструктора', () => {
+		const unavailable = (date: string) => date === '2026-09-15'
+		const target = picker({
+			disabled: true,
+			readonly: true,
+			required: true,
+			size: 'lg',
+			locale: 'ru-RU',
+			min: '2026-01-01',
+			max: '2026-12-31',
+			unavailable,
+			weekStart: 1,
+			timeZone: 'Asia/Tokyo',
+			name: 'date',
+		})
+
+		for (const input of [target.field, target.start, target.end]) {
+			expect(input.disabled).toBe(true)
+			expect(input.readonly).toBe(true)
+			expect(input.required).toBe(true)
+			expect(input.size).toBe('lg')
+			expect(input.locale).toBe('ru-RU')
+			expect(input.min).toBe('2026-01-01')
+			expect(input.max).toBe('2026-12-31')
+		}
+
+		expect(target.field.name).toBe('date')
+		expect(target.start.name).toBe('')
+		expect(target.calendar.disabled).toBe(true)
+		expect(target.calendar.size).toBe('lg')
+		expect(target.calendar.locale).toBe('ru-RU')
+		expect(target.calendar.min).toBe('2026-01-01')
+		expect(target.calendar.max).toBe('2026-12-31')
+		expect(target.calendar.unavailable).toBe(unavailable)
+		expect(target.calendar.weekStart).toBe(1)
+		expect(target.calendar.timeZone).toBe('Asia/Tokyo')
+	})
+
+	it('смена свойства доходит до всех, кому оно нужно', () => {
+		const target = picker()
+
+		target.disabled = true
+		target.size = 'sm'
+		target.locale = 'de-DE'
+		target.min = '2026-02-01'
+		target.max = '2026-02-28'
+		target.readonly = true
+		target.required = true
+		target.weekStart = 0
+		target.timeZone = 'UTC'
+		target.name = 'when'
+
+		for (const input of [target.field, target.start, target.end]) {
+			expect(input.disabled).toBe(true)
+			expect(input.size).toBe('sm')
+			expect(input.locale).toBe('de-DE')
+			expect(input.min).toBe('2026-02-01')
+			expect(input.max).toBe('2026-02-28')
+			expect(input.readonly).toBe(true)
+			expect(input.required).toBe(true)
+		}
+
+		expect(target.field.name).toBe('when')
+		expect(target.calendar.disabled).toBe(true)
+		expect(target.calendar.size).toBe('sm')
+		expect(target.calendar.locale).toBe('de-DE')
+		expect(target.calendar.min).toBe('2026-02-01')
+		expect(target.calendar.max).toBe('2026-02-28')
+		expect(target.calendar.weekStart).toBe(0)
+		expect(target.calendar.timeZone).toBe('UTC')
+	})
+
+	it('режим — выбору коллекции календаря и модификатор корня', () => {
+		const target = picker()
+
+		target.mode = 'range'
+
+		expect(target.engine.extensions.selection.mode).toBe('range')
+		expect(target.classes.toArray()).toContain('s-date-picker--range')
+		expect(target.classes.toArray()).not.toContain('s-date-picker--single')
+	})
+})
+
+describe('значение', () => {
+	it('своё — календарю как есть и в поле режима', () => {
+		const single = picker({ value: '2026-09-10' })
+
+		expect(single.calendar.value).toBe('2026-09-10')
+		expect(single.field.value).toBe('2026-09-10')
+
+		const range = picker({ mode: 'range', value: ['2026-09-20', '2026-09-10'] })
+
+		// Пара задом наперёд — как задана: показывает её по возрастанию календарь
+		expect(range.calendar.value).toEqual(['2026-09-20', '2026-09-10'])
+		expect(range.start.value).toBe('2026-09-20')
+		expect(range.end.value).toBe('2026-09-10')
+	})
+
+	it('запись снаружи — на обе стороны', () => {
+		const target = picker({ mode: 'range' })
+
+		target.value = ['2026-10-01', '2026-10-05']
+
+		expect(target.calendar.value).toEqual(['2026-10-01', '2026-10-05'])
+		expect(target.start.value).toBe('2026-10-01')
+		expect(target.end.value).toBe('2026-10-05')
+	})
+
+	it('выбор дня в календаре — значение и поле', () => {
+		const target = picker()
+		const changes = values(target)
+
+		target.engine.extensions.selection.chooseDate('2026-09-12')
+
+		expect(target.value).toBe('2026-09-12')
+		expect(target.field.value).toBe('2026-09-12')
+		expect(changes).toEqual(['2026-09-12'])
+	})
+
+	it('диапазон из календаря: первый день значения не трогает, второй пишет пару в поля', () => {
+		const target = picker({ mode: 'range' })
+		const changes = values(target)
+		const { selection } = target.engine.extensions
+
+		selection.chooseDate('2026-09-20')
+
+		expect(target.value).toBeUndefined()
+		expect(target.start.value).toBeUndefined()
+
+		selection.chooseDate('2026-09-12')
+
+		expect(target.value).toEqual(['2026-09-12', '2026-09-20'])
+		expect(target.start.value).toBe('2026-09-12')
+		expect(target.end.value).toBe('2026-09-20')
+		expect(changes).toEqual([['2026-09-12', '2026-09-20']])
+	})
+
+	it('правка поля — значение и календарь', () => {
+		const target = picker()
+
+		target.field.paste('2026-09-14')
+
+		expect(target.value).toBe('2026-09-14')
+		expect(target.calendar.value).toBe('2026-09-14')
+	})
+
+	it('недонабранный конец значения не даёт и набранного не стирает', () => {
+		const target = picker({ mode: 'range' })
+
+		target.start.paste('2026-09-01')
+
+		expect(target.value).toBeUndefined()
+		expect(target.start.value).toBe('2026-09-01')
+
+		target.end.paste('2026-09-07')
+
+		expect(target.value).toEqual(['2026-09-01', '2026-09-07'])
+		expect(target.calendar.value).toEqual(['2026-09-01', '2026-09-07'])
+
+		// Конец разобрали — пары нет, а начало осталось
+		target.end.focusSegment('year')
+		target.end.clearSegment()
+
+		expect(target.value).toBeUndefined()
+		expect(target.calendar.value).toBeUndefined()
+		expect(target.start.value).toBe('2026-09-01')
+	})
+
+	it('отменённая запись: поле-источник получает обратно принятое', () => {
+		const target = picker({ value: '2026-09-10' })
+
+		target.events.on('change:value:before', (e: TChangeEvent<TDatePickerValue>) =>
+			e.preventDefault(),
+		)
+
+		target.field.paste('2026-09-14')
+
+		expect(target.value).toBe('2026-09-10')
+		expect(target.field.value).toBe('2026-09-10')
+		expect(target.calendar.value).toBe('2026-09-10')
+	})
+
+	it('поправленная запись: источник и другая сторона получают итог', () => {
+		const target = picker()
+
+		target.events.on('change:value:before', (e: TChangeEvent<TDatePickerValue>) => {
+			e.value = '2026-09-01'
+		})
+
+		target.field.paste('2026-09-14')
+
+		expect(target.value).toBe('2026-09-01')
+		expect(target.field.value).toBe('2026-09-01')
+		expect(target.calendar.value).toBe('2026-09-01')
+	})
+
+	it('отменённый выбор в календаре: календарь получает обратно принятое', () => {
+		const target = picker({ value: '2026-09-10' })
+
+		target.events.on('change:value:before', (e: TChangeEvent<TDatePickerValue>) =>
+			e.preventDefault(),
+		)
+
+		target.engine.extensions.selection.chooseDate('2026-09-12')
+
+		expect(target.value).toBe('2026-09-10')
+		expect(target.calendar.value).toBe('2026-09-10')
+		expect(target.field.value).toBe('2026-09-10')
+	})
+
+	it('смена режима: значение — в форме режима, поля — нового режима', () => {
+		const target = picker({ value: '2026-09-10' })
+
+		target.mode = 'range'
+
+		expect(target.value).toEqual(['2026-09-10', '2026-09-10'])
+		expect(target.start.value).toBe('2026-09-10')
+		expect(target.end.value).toBe('2026-09-10')
+
+		target.value = ['2026-09-12', '2026-09-20']
+		target.mode = 'single'
+
+		expect(target.value).toBe('2026-09-12')
+		expect(target.field.value).toBe('2026-09-12')
+	})
+
+	it('пустое значение раскладывается по полям нового режима', () => {
+		const target = picker()
+
+		target.start.paste('2026-09-01')
+		target.mode = 'range'
+
+		expect(target.value).toBeUndefined()
+		expect(target.start.value).toBeUndefined()
+		expect(target.end.value).toBeUndefined()
+	})
+
+	it('правка поля чужого режима значения не меняет', () => {
+		const target = picker()
+
+		target.start.paste('2026-09-01')
+
+		expect(target.value).toBeUndefined()
+	})
+})
+
+describe('панель', () => {
+	it('открытость: события, data-open, связка кнопки и её вид', () => {
+		const target = picker()
+		const opened = vi.fn()
+		const closed = vi.fn()
+
+		target.events.on('open', opened)
+		target.events.on('close', closed)
+
+		target.toggleOpen()
+
+		expect(target.open).toBe(true)
+		expect(opened).toHaveBeenCalledTimes(1)
+		expect(target.dataset.get('open')).toBe('true')
+		expect(target.triggerAria.get('aria-expanded')).toBe('true')
+		expect(target.triggerDataset).toEqual({ 'data-selected': 'true' })
+
+		target.toggleOpen()
+
+		expect(target.open).toBe(false)
+		expect(closed).toHaveBeenCalledTimes(1)
+	})
+
+	it('выключенный и только для чтения не открываются; выключение закрывает', () => {
+		const target = picker({ disabled: true })
+
+		expect(target.openable).toBe(false)
+
+		target.open = true
+		expect(target.open).toBe(false)
+
+		target.disabled = false
+		target.readonly = true
+		expect(target.openable).toBe(false)
+
+		target.readonly = false
+		target.open = true
+		target.disabled = true
+
+		expect(target.open).toBe(false)
+	})
+
+	it('открытие ставит фокус сетки на выбранную дату и показывает её месяц', () => {
+		const target = picker({ value: '2026-03-10' })
+		const { focus } = target.engine.extensions
+
+		focus.focusDate('2026-07-04')
+		target.open = true
+
+		expect(focus.focusedDate).toBe('2026-03-10')
+		expect(target.calendar.months).toEqual(['2026-03-01'])
+	})
+
+	it('без значения открытие ставит фокус на сегодня', () => {
+		const target = picker()
+		const { focus } = target.engine.extensions
+
+		focus.focusDate('2026-07-04')
+		target.open = true
+
+		expect(focus.focusedDate).toBe('2026-09-26')
+	})
+
+	it('выбор закрывает панель; в диапазоне — второй день', () => {
+		const single = picker({ open: true })
+
+		single.engine.extensions.selection.chooseDate('2026-09-12')
+		expect(single.open).toBe(false)
+
+		const range = picker({ mode: 'range', open: true })
+
+		range.engine.extensions.selection.chooseDate('2026-09-12')
+		expect(range.open).toBe(true)
+
+		range.engine.extensions.selection.chooseDate('2026-09-14')
+		expect(range.open).toBe(false)
+	})
+
+	it('closeOnSelect: false — выбор панель не закрывает', () => {
+		const target = picker({ open: true, closeOnSelect: false })
+
+		target.engine.extensions.selection.chooseDate('2026-09-12')
+
+		expect(target.open).toBe(true)
+	})
+
+	it('закрытие посреди диапазона снимает якорь', () => {
+		const target = picker({ mode: 'range', open: true })
+		const { selection } = target.engine.extensions
+
+		selection.chooseDate('2026-09-12')
+		expect(selection.anchor).toBe('2026-09-12')
+
+		target.open = false
+
+		expect(selection.anchor).toBeUndefined()
+	})
+})
+
+describe('имена и наборы', () => {
+	it('triggerLabel называет и кнопку, и панель', () => {
+		const target = picker()
+
+		target.triggerLabel = 'Выбрать дату'
+
+		expect(target.triggerAria.get('aria-label')).toBe('Выбрать дату')
+		expect(target.panelAria.get('aria-label')).toBe('Выбрать дату')
+	})
+
+	it('набор корня: у диапазона — группа с aria DatePicker, у одной даты — пусто', () => {
+		const target = picker({ disabled: true })
+
+		expect(target.rootAria).toEqual({})
+
+		target.mode = 'range'
+
+		expect(target.rootAria).toEqual({ role: 'group', 'aria-disabled': 'true' })
+	})
+
+	it('имена концов — свойства DatePicker', () => {
+		const target = picker({ startLabel: 'Заезд', endLabel: 'Выезд' })
+
+		expect(target.startLabel).toBe('Заезд')
+		expect(target.endLabel).toBe('Выезд')
+	})
+})

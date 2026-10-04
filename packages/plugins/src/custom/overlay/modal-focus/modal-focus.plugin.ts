@@ -1,6 +1,6 @@
 import type { IPluginContext } from '../../../base'
 import { TDismissPlugin } from '../../dismiss'
-import { focusFirst, tabStops } from '../../../utils'
+import { trapTab } from '../../../utils'
 import { TOverlayFocusPlugin } from '../focus'
 import type { IOverlayOpenOptions } from '../types'
 
@@ -20,7 +20,8 @@ const PRESS_END = ['click', 'pointercancel'] as const
  * держат фокус на ней самой (`tabindex="-1"`), и Tab с неё никуда не уводит:
  * модальное окно тем и модально, что выйти из него можно только закрыв.
  * Порядок остановок внутри панели ведёт браузер — плагин вмешивается только
- * на краях.
+ * на краях. Ловушка — общая утилита `trapTab`: ею же замыкает Tab панель
+ * DatePicker.
  *
  * **Возвращать фокус некуда, кроме запомненного элемента.** Триггера у
  * модального окна не бывает: открыть его может и кнопка на другом конце
@@ -72,39 +73,9 @@ export class TModalFocusPlugin extends TOverlayFocusPlugin {
 		return root
 	}
 
-	/** Tab по кругу внутри панели; за её пределы фокус не выходит. */
+	/** Tab по кругу внутри панели; за её пределы фокус не выходит (`trapTab`). */
 	protected override _onTab(event: KeyboardEvent): void {
-		const panel = this._panel
-		const active = panel?.ownerDocument.activeElement
-
-		if (!panel || !active) return
-
-		// Фокус увели из панели мимо плагина (`focus()` со стороны) — вернуть
-		// его в неё, а не гадать, откуда он ушёл
-		if (!panel.contains(active)) {
-			if (focusFirst([...tabStops(panel), panel])) event.preventDefault()
-
-			return
-		}
-
-		const stops = tabStops(panel)
-
-		// Фокусировать внутри нечего: панель держит его сама, и Tab с неё
-		// никуда не ведёт
-		if (stops.length === 0) {
-			event.preventDefault()
-
-			return
-		}
-
-		const edge = event.shiftKey ? stops[0] : stops[stops.length - 1]
-
-		// Не край панели — порядок ведёт браузер
-		if (active !== edge && active !== panel) return
-
-		const wrapped = event.shiftKey ? [...stops].reverse() : stops
-
-		if (focusFirst(wrapped)) event.preventDefault()
+		if (this._panel) trapTab(event, this._panel)
 	}
 
 	/**

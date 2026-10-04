@@ -46,7 +46,7 @@ describe('instanceSnippet', () => {
 		expect(code).toContain('const instance = new TAccordion()')
 		expect(code).toContain("instance.view = 'plain'")
 		expect(code).toContain(':ctrl="instance"')
-		expect(code).not.toContain('createEngineSelection')
+		expect(code).not.toContain('createEngine')
 	})
 
 	/**
@@ -61,7 +61,7 @@ describe('instanceSnippet', () => {
 			'multiple',
 		)
 
-		expect(code).toContain('const engine = createEngineSelection()')
+		expect(code).toContain('const engine = createEngineAccordion()')
 		expect(code).toContain("engine.extensions.selection.mode = 'multiple'")
 		expect(code).toContain(':engine="engine"')
 		expect(code).not.toContain('instance.mode')
@@ -69,21 +69,21 @@ describe('instanceSnippet', () => {
 	})
 
 	/**
-	 * Коллекция календаря движка снаружи не берёт: дни кладёт в неё вид. До её
-	 * фасада проп доносит разметка рядом с `ctrl` — так его передаёт и сам
-	 * стенд, — а движка и `:engine` в коде нет.
+	 * Движок — сборщиком самого компонента: у календаря выбор свой, дат, и
+	 * общий уровень `createEngineSelection` поставил бы на его место чужой.
 	 */
-	it('коллекционное свойство без движка снаружи — разметкой рядом с ctrl', () => {
+	it('у календаря — его сборщик движка', () => {
 		const code = instanceSnippet(
 			entryOf('calendar'),
 			control({ name: 'mode', scope: 'collection' }),
 			'range',
 		)
 
-		expect(code).toContain('const instance = new TCalendar()')
-		expect(code).toContain('<Calendar :mode="\'range\'" :ctrl="instance" />')
-		expect(code).not.toContain('engine')
-		expect(code).not.toContain('instance.mode')
+		expect(code).toContain("import { createEngineCalendar } from '@soldy-ui/core'")
+		expect(code).toContain('const engine = createEngineCalendar()')
+		expect(code).toContain("engine.extensions.selection.mode = 'range'")
+		expect(code).toContain('<Calendar :engine="engine" />')
+		expect(code).not.toContain('createEngineSelection')
 	})
 
 	/**
@@ -197,7 +197,7 @@ describe.each([
 			value,
 		)
 
-		expect(code).toContain('const engine = createEngineSelection()\n</script>')
+		expect(code).toContain('const engine = createEngineAccordion()\n</script>')
 		expect(code).not.toContain('mode')
 		expect(code).toContain('\t<Accordion :engine="engine" />')
 	})

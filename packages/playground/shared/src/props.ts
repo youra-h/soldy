@@ -7,6 +7,7 @@ import {
 	CHECK_BOX_VIEWS,
 	COMPONENT_VARIANTS,
 	DATE_INPUT_KINDS,
+	DATE_PICKER_MODES,
 	DIALOG_PLACEMENTS,
 	DIRECTIONS,
 	DRAWER_PLACEMENTS,
@@ -115,9 +116,9 @@ const PLUGIN: Record<string, string> = {
 		'Переносить панель на другую сторону, если на выбранной она не влезает по высоте окна',
 	anchor_offset: 'Отступ панели от якоря, px',
 	dismiss_enabled:
-		'Слушать ли нажатие мимо панели, чтобы её закрыть. У Select, Popover и Tooltip его ведёт сам плагин по open, у Dialog и Drawer — по visible',
+		'Слушать ли нажатие мимо панели, чтобы её закрыть. У Select, Popover, Tooltip и DatePicker его ведёт сам плагин по open, у Dialog и Drawer — по visible',
 	hideOutside_enabled:
-		'Прятать ли страницу под окном от скринридера. У Dialog и Drawer его ведёт сам плагин по visible',
+		'Прятать ли страницу под окном от скринридера. У Dialog и Drawer его ведёт сам плагин по visible, у DatePicker — по open',
 	scrollLock_enabled:
 		'Запирать ли прокрутку страницы под окном. У Dialog его ведёт сам плагин по visible, у Drawer — пока панель открыта и не внутри контейнера',
 }
@@ -186,6 +187,20 @@ const OWN: Record<string, Record<string, string>> = {
 		kind: 'Вид поля: date — только дата, datetime — ещё час, минута и, у 12-часовой локали, AM/PM. Цикл часов берётся из локали',
 		timePrecision:
 			'Точность времени: minute — до минуты, second — ещё секунда. У поля даты (kind: date) ничего не меняет',
+	},
+	'date-picker': {
+		value: 'Дата строкой YYYY-MM-DD; в range — пара «начало, конец», её задают кодом. Пока поле набрано не целиком, значения нет',
+		mode: 'Режим: одна дата — одно поле, диапазон — поля начала и конца в одной коробке. Кнопка и календарь — одни',
+		open: 'Открыта ли панель с календарём. Открывают её кнопка календаря и Alt+↓ на поле',
+		closeOnSelect: 'Закрывать панель после выбора дня; в диапазоне — после второго',
+		min: 'Первый день, который можно выбрать, YYYY-MM-DD: в календаре раньше — ни фокуса, ни выбора, в поле — ошибка',
+		max: 'Последний день, который можно выбрать, YYYY-MM-DD',
+		weekStart: 'Первый день недели календаря: 0 — воскресенье … 6 — суббота. Пусто — по локали',
+		locale: 'Локаль поля и календаря, тег BCP 47: порядок частей, подписи, первый день недели — ru-RU, en-US, he-IL',
+		timeZone: 'Часовой пояс «сегодня», имя IANA: Europe/Moscow. Пусто — пояс среды',
+		triggerLabel: 'Имя кнопки календаря и панели для скринридера',
+		startLabel: 'Имя поля начала диапазона для скринридера',
+		endLabel: 'Имя поля конца диапазона для скринридера',
 	},
 	slider: {
 		min: 'Начало хода',
@@ -353,6 +368,7 @@ const OPTIONS: Record<string, Record<string, readonly string[]>> = {
 	slider: { orientation: SLIDE_ORIENTATIONS, snap: SLIDE_SNAPS, tooltip: SLIDER_TOOLTIPS },
 	calendar: { mode: CALENDAR_MODES },
 	'date-input': { kind: DATE_INPUT_KINDS, timePrecision: TIME_PRECISIONS },
+	'date-picker': { mode: DATE_PICKER_MODES },
 	'progress-linear': { orientation: PROGRESS_LINEAR_ORIENTATIONS },
 	dialog: { placement: DIALOG_PLACEMENTS },
 	drawer: { placement: DRAWER_PLACEMENTS, swipe: SWIPES },

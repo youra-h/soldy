@@ -18,8 +18,9 @@ import BaseCalendar, { type CalendarProps } from './base.component'
  * месяца и года — расширения коллекции, клавиши и нажатия — плагины
  * календаря. Разметка раскладывает то, что они отдали.
  *
- * Коллекция своя всегда: движка снаружи календарь не принимает — дни кладёт
- * в него вид по месяцам сеток, и ключ сверки у них — дата.
+ * Движок снаружи — как у остальных коллекций: его держит тот, кто зовёт
+ * команды расширений календаря (панель DatePicker). Состава и ключа сверки
+ * снаружи нет — дни кладёт в движок вид по месяцам сеток, и ключ у них — дата.
  */
 export default {
 	name: '_Calendar',
@@ -34,7 +35,13 @@ export default {
 
 		const collectionAdapter = createVueAdapterContext(
 			CalendarCollectionDescriptor(),
-			{ props, options: { owner: adapter.instance } },
+			{
+				props,
+				// Готовая коллекция снаружи. Дали — фасад работает на ней и своей
+				// не создаёт, лишь доложит недостающие расширения в неё же.
+				// Не дали — соберёт свою. Развилка в `completeEngine`
+				options: { owner: adapter.instance, engine: props.engine },
+			},
 			{ bundle: adapter.bundle },
 		).use(TCollectionExtension, { elevator: VueElevatorFactory })
 

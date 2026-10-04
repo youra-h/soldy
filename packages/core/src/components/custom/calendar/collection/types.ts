@@ -1,4 +1,5 @@
 import type {
+	ICollectionProps,
 	IOrderItemExtension,
 	TBatchExtension,
 	TCollectionEngine,
@@ -58,12 +59,15 @@ export type TCalendarCollection = TCollectionEngine<
 export type TCalendarCollectionFacadeEngine = TCollectionEngine<any, any>
 
 /**
- * Owner-level props коллекции календаря — только режим выбора.
+ * Owner-level props коллекции календаря — режим выбора и движок снаружи.
  *
- * Состава (`items`) и ключа сверки (`trackBy`) среди них нет: дни кладёт в
+ * Движок снаружи — как у остальных коллекций: его держит тот, кто показывает
+ * календарь и зовёт команды его расширений (панель DatePicker). Состава
+ * (`items`) и ключа сверки (`trackBy`) среди пропсов нет: дни кладёт в
  * коллекцию сам календарь, по показанным месяцам, и ключ — дата.
  */
-export interface ICalendarCollectionProps extends ICalendarSelectionCollectionProps {}
+export interface ICalendarCollectionProps
+	extends ICalendarSelectionCollectionProps, ICollectionProps<TCalendarCollectionFacadeEngine> {}
 
 /** Item-адаптеры коллекции календаря — для фасада дня. */
 export type TCalendarAdapters = {
