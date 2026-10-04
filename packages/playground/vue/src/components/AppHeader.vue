@@ -4,10 +4,29 @@ import { useRoute } from 'vue-router'
 import { Select, Switch } from '@soldy-ui/vue'
 import { useTheme } from '../composables/useTheme'
 import { useIconPack } from '../composables/useIconPack'
+import { useMotionMode, type TMotionOffReason } from '../composables/useMotionMode'
 import { propertiesRoute, TESTS_ROUTE } from '../router'
 
 const { theme, dark, themes } = useTheme()
 const { pack, packs, apply } = useIconPack()
+const { mode, modes, offReason, choose } = useMotionMode()
+
+/** Чем выключено движение — в плашке шапки. */
+const OFF_REASONS: Record<TMotionOffReason, string> = {
+	system: 'так просит система',
+	stand: 'режимом стенда',
+}
+
+/**
+ * Плашка, пока движение выключено: пропавшая анимация иначе выглядит поломкой
+ * компонента. Тот же текст — в `title`: в тесной шапке плашка режет его
+ * многоточием.
+ */
+const motionOff = computed(
+	() =>
+		offReason.value &&
+		`Движение выключено — ${OFF_REASONS[offReason.value]}. «${modes.full}» вернёт его`,
+)
 
 const route = useRoute()
 
@@ -26,6 +45,20 @@ const counterpart = computed(() =>
 	<header class="pg__header">
 		<div class="pg__brand">soldy <span>· playground</span></div>
 		<RouterLink :to="counterpart.to" class="pg__switch">{{ counterpart.label }}</RouterLink>
+
+		<p v-if="motionOff" class="pg__motion-off" :title="motionOff">{{ motionOff }}</p>
+
+		<div class="pg__control">
+			<span class="pg__control-label">Движение</span>
+			<Select :value="mode" size="sm" @update:value="choose($event)">
+				<Select.Item
+					v-for="(label, value) in modes"
+					:key="value"
+					:value="value"
+					:text="label"
+				/>
+			</Select>
+		</div>
 
 		<div class="pg__control">
 			<span class="pg__control-label">Тема</span>
