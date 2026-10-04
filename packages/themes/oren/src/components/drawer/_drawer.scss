@@ -137,8 +137,11 @@ $backdrop-easing: linear;
 // туда она уезжает при закрытии и оттуда въезжает при открытии.
 //
 // Сдвиг — `translate`, а не отступ: он от размера самой панели и ничего не
-// раскладывает заново. RTL читается атрибутом, а не `:dir()` — его сборка
-// превращает в список языков (AGENTS.md темы).
+// раскладывает заново. Логических направлений у сдвига нет, поэтому у
+// боковых краёв его знак — знак строки `--s-dir-sign` (`direction.css`), то
+// есть ближайшего `dir`: `start` в RTL справа и уезжает вправо. Селектор по
+// атрибуту у предка ближайшего не видит, и панель с `direction="ltr"` на
+// RTL-странице въезжала бы не со своего края.
 .s-drawer--placement-start,
 .s-drawer--placement-end {
 	translate: var(--s-swipe-offset, 0px) 0;
@@ -150,21 +153,11 @@ $backdrop-easing: linear;
 }
 
 .s-drawer--placement-start {
-	--drawer-away: -100% 0;
+	--drawer-away: calc(-100% * var(--s-dir-sign)) 0;
 }
 
 .s-drawer--placement-end {
-	--drawer-away: 100% 0;
-}
-
-:is([dir='rtl'] .s-drawer, .s-drawer[dir='rtl']) {
-	&.s-drawer--placement-start {
-		--drawer-away: 100% 0;
-	}
-
-	&.s-drawer--placement-end {
-		--drawer-away: -100% 0;
-	}
+	--drawer-away: calc(100% * var(--s-dir-sign)) 0;
 }
 
 .s-drawer--placement-top {

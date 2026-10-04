@@ -274,3 +274,36 @@ describe('тема не стилизуется по нативному disabled'
 		expect(scan(/\[\s*disabled[^\]]*\]?/g)).toEqual([])
 	})
 })
+
+/**
+ * Направление письма тема читает знаком строки — переменной `--s-dir-sign`,
+ * которую задают правила `direction.css`, а наследование доносит до блока от
+ * ближайшего `dir` (`AGENTS.md` пакета, «Ловушка сборки»). Селектор по атрибуту
+ * у предка ближайшего `dir` не видит: блок с `direction="ltr"` в RTL-предке
+ * получал зеркало RTL — так было у стрелок Scroller и Calendar, бега
+ * ProgressLinear, выезда Drawer и маски ряда тегов. `:dir()` ближайший видит,
+ * но сборка переписывает его в список языков, и правило перестаёт зависеть от
+ * `dir` вовсе.
+ */
+describe('направление письма — знаком строки, а не селектором', () => {
+	/** Пробелы после скобки селектору не мешают, поэтому ловятся и они. */
+	it('селектор по атрибуту dir — только в правилах знака', () => {
+		expect(
+			scan(/\[\s*dir\b[^\]]*\]?/g).filter((hit) => !hit.startsWith('direction.css: ')),
+		).toEqual([])
+	})
+
+	it('нет :dir()', () => {
+		expect(scan(/:dir\(/g)).toEqual([])
+	})
+
+	/** Без правил знака переменная пуста, и каждое зеркало темы — тоже. */
+	it('знак задан странице без dir и обоим направлениям', () => {
+		const rules = stripComments(readFileSync(join(SRC, 'direction.css'), 'utf8'))
+		const sign = (selector: string) => propertyValues(block(rules, selector), '--s-dir-sign')
+
+		expect(sign(':root')).toEqual(['1'])
+		expect(sign("[dir='ltr']")).toEqual(['1'])
+		expect(sign("[dir='rtl']")).toEqual(['-1'])
+	})
+})

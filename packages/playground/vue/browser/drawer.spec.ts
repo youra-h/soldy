@@ -22,6 +22,7 @@ import { defineComponent, h, nextTick, ref, type VNode } from 'vue'
 import { Drawer, Input } from '@soldy-ui/vue'
 import type { IDrawerProps, TCloseEvent, TCloseReason, TDrawerPlacement } from '@soldy-ui/core'
 
+import { DIRECTION_CASES, setDir, sidesOf, type TLine } from './directions'
 import { reducedMotion } from './media'
 import { durationOf, settled, transitionOf, transitioning, whileLeaving } from './transitions'
 import { expectClassicScrollbar } from './viewport'
@@ -60,6 +61,8 @@ const inside = (): VNode[] => [
 type TShowOptions = {
 	/** Панель в контейнере 600 × 300 с отступом от края страницы */
 	contained?: boolean
+	/** Направление контейнера */
+	dir?: TLine
 	content?: () => VNode[]
 	/** Подписчик `close:before` */
 	onCloseBefore?: (event: TCloseEvent) => void
@@ -73,7 +76,7 @@ type TShowOptions = {
  */
 const show = async (
 	props: Partial<IDrawerProps> = {},
-	{ contained = false, content = inside, onCloseBefore, tall = false }: TShowOptions = {},
+	{ contained = false, dir, content = inside, onCloseBefore, tall = false }: TShowOptions = {},
 ) => {
 	const shown = ref(false)
 	const reasons: TCloseReason[] = []
@@ -115,6 +118,7 @@ const show = async (
 								'div',
 								{
 									class: 's-test-host',
+									dir,
 									style: 'position: relative; width: 600px; height: 300px; margin-top: 20px',
 								},
 								[drawer()],
@@ -211,6 +215,8 @@ beforeEach(async () => {
 
 afterEach(async () => {
 	cleanup()
+	setDir(document.documentElement)
+	setDir(document.body)
 	await reducedMotion('no-preference')
 })
 
@@ -452,6 +458,64 @@ describe('въезд и выезд', () => {
 
 		await expect.poll(isOpen).toBe(false)
 	})
+})
+
+/**
+ * Боковая панель въезжает из-за своего края и уезжает за него. Место у края —
+ * логическое, его браузер ставит сам, а сторону сдвига — тема: у сдвига
+ * логических направлений нет. Знак она берёт у ближайшего `dir`, как браузер —
+ * направленность, поэтому панель с `direction="ltr"` в RTL-предке въезжает из-за
+ * своего края, а не из-за противоположного (`browser/directions.ts`).
+ *
+ * Предок панели на странице — `body`: туда она уходит телепортом. Предок панели
+ * в контейнере — сам контейнер.
+ */
+describe.each(DIRECTION_CASES)('выезд по ближайшему dir: $name', (scenario) => {
+	const sides = sidesOf(scenario.line)
+
+	it.each([
+		['start', false],
+		['end', false],
+		['start', true],
+		['end', true],
+	] as const)(
+		'%s, в контейнере — %s: въезжает из-за своего края',
+		async (placement, contained) => {
+			setDir(document.documentElement, scenario.page)
+			setDir(document.body, contained ? undefined : scenario.ancestor)
+
+			await show(
+				{ placement, direction: scenario.direction },
+				{ contained, dir: contained ? scenario.ancestor : undefined },
+			)
+			await openInPage()
+
+			const edge = placement === 'start' ? sides.start : sides.end
+			const area = contained
+				? find('.s-test-host').getBoundingClientRect()
+				: { left: 0, right: viewport().width }
+			const entry = transitionOf(panel(), 'translate')
+
+			// Начало въезда — положение закрытой панели: переход стоит на паузе, и
+			// мгновение выбирает тест
+			entry.pause()
+			entry.currentTime = 0
+
+			const away = panel().getBoundingClientRect()
+
+			entry.finish()
+
+			const box = panel().getBoundingClientRect()
+
+			// Отступ открытой панели от своего края и заход закрытой за него
+			const gap = edge === 'left' ? box.left - area.left : area.right - box.right
+			const beyond = edge === 'left' ? area.left - away.right : away.left - area.right
+
+			// Открытая — у своего края: направление сцены то, что ждёт тест
+			expect(Math.abs(gap), `открытая — у края ${edge}`).toBeLessThan(EPSILON)
+			expect(beyond, `закрытая — целиком за краем ${edge}`).toBeGreaterThan(-EPSILON)
+		},
+	)
 })
 
 /**

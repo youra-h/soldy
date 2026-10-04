@@ -19,6 +19,7 @@ import { userEvent } from 'vitest/browser'
 import { defineComponent, h } from 'vue'
 import { Scroller } from '@soldy-ui/vue'
 
+import { DIRECTION_CASES, pointing, setDir, sidesOf, type TLine } from './directions'
 import { expectClearOfFades, expectFocusedClearOfFades, fades } from './fades'
 
 import '@soldy-ui/theme-oren'
@@ -32,7 +33,8 @@ const NARROW = 260
 /** Ширина, на которой помещается всё. */
 const WIDE = 900
 
-const harness = (width: number, dir: 'ltr' | 'rtl' = 'ltr', props: Record<string, unknown> = {}) =>
+/** Лента в узле шириной `width`; `dir` — направление этого узла, предка ленты. */
+const harness = (width: number, dir?: TLine, props: Record<string, unknown> = {}) =>
 	defineComponent({
 		render() {
 			return h('div', { class: 's-host', dir, style: `width: ${width}px` }, [
@@ -83,6 +85,7 @@ beforeEach(() => {
 
 afterEach(() => {
 	cleanup()
+	setDir(document.documentElement)
 })
 
 describe('узкая лента: содержимое не помещается', () => {
@@ -182,6 +185,38 @@ describe('правое-левое письмо', () => {
 
 		await userEvent.click(next())
 		await expect.poll(() => viewport().scrollLeft).toBeLessThan(0)
+	})
+})
+
+/**
+ * Что тема зеркалит сама — то, у чего логических направлений нет: стрелки
+ * кнопок (роль иконки одна, `arrowRight`) и сторону маски подсказки. Знак она
+ * берёт у ближайшего `dir`, как браузер — направленность ряда, поэтому лента с
+ * `direction="ltr"` в RTL-предке остаётся лентой LTR целиком, а не только
+ * раскладкой (`browser/directions.ts`).
+ */
+describe.each(DIRECTION_CASES)('зеркало темы по ближайшему dir: $name', (scenario) => {
+	const { start, end } = sidesOf(scenario.line)
+
+	const show = async () => {
+		setDir(document.documentElement, scenario.page)
+		render(harness(NARROW, scenario.ancestor, { direction: scenario.direction }))
+
+		await settled(canNext, 'true')
+	}
+
+	it('«назад» смотрит в начало строки, «вперёд» — в конец', async () => {
+		await show()
+
+		expect(pointing('.s-scroller__prev'), '«назад»').toBe(start)
+		expect(pointing('.s-scroller__next'), '«вперёд»').toBe(end)
+	})
+
+	it('в начале строки гаснет только её конец', async () => {
+		await show()
+
+		expect(fades(viewport())[end], 'конец строки').toBeGreaterThan(0)
+		expect(fades(viewport())[start], 'начало строки').toBe(0)
 	})
 })
 

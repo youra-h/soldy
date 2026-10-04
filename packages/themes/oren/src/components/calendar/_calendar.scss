@@ -151,29 +151,18 @@
 	@include button.button-view('plain');
 }
 
-// Календарь в правом-левом письме: сам корень с атрибутом или любой предок с
-// ним.
-//
-// Атрибут, а не `:dir(rtl)`: сборка темы даунлевелит `:dir()` в список
-// `:lang()` (подробности — в `AGENTS.md` пакета). Раскладке это не мешает — она
-// логическая и считается по настоящей направленности.
-$rtl: ":is([dir='rtl'] .s-calendar, .s-calendar[dir='rtl'])";
-
 // Стрелка смотрит в свою сторону. Роль в контракте иконок одна — `arrowRight`,
 // и ту, что показывает в начало строки, зеркалит тема: в LTR это «назад», в
-// RTL — «вперёд». Так же, как у ленты Scroller.
+// RTL — «вперёд». Так же, как у ленты Scroller: знак `scaleX` — знак строки
+// `--s-dir-sign` (`direction.css`), то есть ближайшего `dir`, и календарь с
+// `direction="ltr"` в RTL-предке остаётся календарём LTR. Раскладке знак не
+// нужен — она логическая и считается по направленности сама.
 .s-calendar__prev .s-icon {
-	transform: scaleX(-1);
+	transform: scaleX(calc(-1 * var(--s-dir-sign)));
 }
 
-#{$rtl} {
-	.s-calendar__prev .s-icon {
-		transform: none;
-	}
-
-	.s-calendar__next .s-icon {
-		transform: scaleX(-1);
-	}
+.s-calendar__next .s-icon {
+	transform: scaleX(var(--s-dir-sign));
 }
 
 // Месяц — заголовок над сеткой.
@@ -647,17 +636,11 @@ $rtl: ":is([dir='rtl'] .s-calendar, .s-calendar[dir='rtl'])";
 }
 
 // Стрелка «назад» смотрит в начало строки, как у кнопок листания: панель
-// внутри календаря, и правило направления письма у неё календарное.
+// внутри календаря, и знак строки она наследует от него.
 .s-calendar__picker-prev .s-icon {
-	transform: scaleX(-1);
+	transform: scaleX(calc(-1 * var(--s-dir-sign)));
 }
 
-#{$rtl} {
-	.s-calendar__picker-prev .s-icon {
-		transform: none;
-	}
-
-	.s-calendar__picker-next .s-icon {
-		transform: scaleX(-1);
-	}
+.s-calendar__picker-next .s-icon {
+	transform: scaleX(var(--s-dir-sign));
 }

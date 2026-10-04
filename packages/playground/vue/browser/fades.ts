@@ -21,17 +21,29 @@ const EPSILON = 0.5
 /**
  * Маска подсказки, как её отдаёт браузер: градиент по строке в четыре
  * ступени — прозрачное у края, непрозрачное со второй ступени по третью и
- * снова прозрачное у другого края.
+ * снова прозрачное у другого края. Сторону градиента тема задаёт углом со
+ * знаком строки, и браузер отдаёт его углом: `90deg` — к правому краю,
+ * `-90deg` — к левому.
  */
 const FADE_MASK = new RegExp(
 	[
-		String.raw`^linear-gradient\(to (?<to>left|right)`,
+		String.raw`^linear-gradient\((?<angle>-?[\d.]+)deg`,
 		String.raw`rgba\(0, 0, 0, 0\) 0px`,
 		String.raw`rgb\(0, 0, 0\) (?<from>[\d.]+)px`,
 		String.raw`rgb\(0, 0, 0\) (?:100%|calc\(100% - (?<until>[\d.]+)px\))`,
 		String.raw`rgba\(0, 0, 0, 0\) 100%\)$`,
 	].join(', '),
 )
+
+/** Край, к которому идёт градиент, — по углу. Градиент подсказки идёт по строке. */
+const towards = (angle: number): 'left' | 'right' => {
+	const turn = ((angle % 360) + 360) % 360
+
+	if (turn === 90) return 'right'
+	if (turn === 270) return 'left'
+
+	throw new Error(`градиент маски идёт не по строке: ${angle}deg`)
+}
 
 /**
  * Сколько гаснет у левого и у правого края узла — по вычисленной маске.
@@ -49,7 +61,9 @@ export const fades = (element: Element): { left: number; right: number } => {
 	const from = Number(stops.from)
 	const until = stops.until ? Number(stops.until) : 0
 
-	return stops.to === 'right' ? { left: from, right: until } : { left: until, right: from }
+	return towards(Number(stops.angle)) === 'right'
+		? { left: from, right: until }
+		: { left: until, right: from }
 }
 
 /**

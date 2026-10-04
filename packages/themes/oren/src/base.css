@@ -10,3 +10,4 @@
  * одинаковая специфичность, побеждает тот, кто ниже. */
 @import './tokens-dark.css';
 @import './utilities.css';
+@import './direction.css';
