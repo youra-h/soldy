@@ -64,10 +64,11 @@ export function pixel(colors: string[]): Uint8ClampedArray {
 /**
  * Системный цвет в текущем режиме, как его разрешает браузер. Проба не
  * подчиняется режиму (`forced-color-adjust: none`): иначе браузер заменил бы и
- * её цвет.
+ * её цвет. `Canvas` — фон страницы в этом режиме: им браузер заменяет фоны
+ * темы.
  */
 export function systemColor(
-	keyword: 'Highlight' | 'HighlightText' | 'GrayText' | 'CanvasText',
+	keyword: 'Highlight' | 'HighlightText' | 'GrayText' | 'CanvasText' | 'Canvas',
 ): string {
 	const probe = document.createElement('span')
 
@@ -89,10 +90,11 @@ export const opacity = (color: string): number => pixel([color])[3] / 255
  * Рисует ли браузер контур узла: стиль задан, толщина есть, цвет не
  * прозрачный. Прозрачный контур — вторая половина кромки панелей: в обычном
  * режиме его не видно, а в режиме принудительных цветов браузер красит его
- * системным цветом, и он становится рамкой.
+ * системным цветом, и он становится рамкой. Псевдоэлемент — как у `style()`:
+ * карточку активного таба `contained` тема рисует `::before` списка.
  */
-export const outlined = (element: Element): boolean => {
-	const { outlineStyle, outlineWidth, outlineColor } = style(element)
+export const outlined = (element: Element, pseudo?: string): boolean => {
+	const { outlineStyle, outlineWidth, outlineColor } = style(element, pseudo)
 
 	return outlineStyle !== 'none' && parseFloat(outlineWidth) >= 1 && opacity(outlineColor) > 0
 }
