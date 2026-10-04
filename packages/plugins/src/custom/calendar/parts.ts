@@ -47,13 +47,24 @@ export function dayElementOf(
 }
 
 /**
+ * Лежит ли в узле шапка места `picker` — по ней панель выбора и узнаётся своей.
+ *
+ * Своей и своего места панель делает не место в DOM, а шапка: `id` шапки
+ * места пишет плагин связок календаря, и панель, в которой его нет, чужая —
+ * например, панель календаря, вложенного в этот.
+ */
+function holdsHeading(node: Element, { labelledBy }: TCalendarPicker): boolean {
+	const heading = labelledBy ? node.ownerDocument.getElementById(labelledBy) : null
+
+	return heading !== null && node.contains(heading)
+}
+
+/**
  * Кнопка шапки панели выбора месяца и года, в которой лежит `target`, панель
  * этой кнопки и место панели среди `pickers` — один поиск на оба плагина
  * календаря.
  *
- * Своей и своего места панель делает не место в DOM, а шапка: `id` шапки
- * места пишет плагин связок календаря, и панель, в которой его нет, чужая —
- * например, панель календаря, вложенного в этот. Части находят по классам
+ * Своей панель делает шапка места (`holdsHeading`). Части находят по классам
  * владельца (`classes.resolve`), как кнопки листания.
  */
 export function pickerPartOf(
@@ -69,16 +80,36 @@ export function pickerPartOf(
 
 		if (!panel) continue
 
-		const index = pickers.findIndex(({ labelledBy }) => {
-			const heading = labelledBy ? panel.ownerDocument.getElementById(labelledBy) : null
-
-			return heading !== null && panel.contains(heading)
-		})
+		const index = pickers.findIndex((picker) => holdsHeading(panel, picker))
 
 		return index === -1 ? undefined : { part, index, panel }
 	}
 
 	return undefined
+}
+
+/**
+ * Место, чья подложка — `target`; `target` не подложка — `undefined`.
+ *
+ * Подложка — сама панель поповера места, а не узел в ней: панель накрывает
+ * календарь, а выбирают в её содержимом, и у нажатия мимо содержимого цель —
+ * панель. Псевдоэлемент панели — тоже панель: у нажатия по нему та же цель.
+ * Панель находят по классу её поповера (`classes.resolve`), своей её делает
+ * шапка места (`holdsHeading`).
+ */
+export function pickerBackdropOf(
+	pickers: readonly TCalendarPicker[],
+	target: EventTarget | null,
+): number | undefined {
+	if (!(target instanceof Element)) return undefined
+
+	const index = pickers.findIndex(
+		(picker) =>
+			target.matches(picker.popover.classes.resolve('__panel', { point: true })) &&
+			holdsHeading(target, picker),
+	)
+
+	return index === -1 ? undefined : index
 }
 
 /**

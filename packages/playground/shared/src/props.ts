@@ -18,6 +18,7 @@ import {
 	LABEL_POSITIONS,
 	LIST_CONTENT_FITS,
 	LIST_INDICATORS,
+	POPOVER_EDGES,
 	POPOVER_PLACEMENTS,
 	PROGRESS_LINEAR_ORIENTATIONS,
 	RADIO_GROUP_VIEWS,
@@ -226,8 +227,9 @@ const OWN: Record<string, Record<string, string>> = {
 		placement:
 			'Сторона и выравнивание панели у триггера. У края окна сторону переворачивает flip',
 		contained:
-			'Панель внутри контейнера: не уходит в body, а накрывает ближайший позиционированный предок целиком',
-		swipe: 'За что панель можно смахнуть, чтобы закрыть: ни за что, за полосу или за любое место, кроме контролов. Смахивают от триггера, в контейнере — вниз',
+			'Панель внутри контейнера: не уходит в body, а прижимается к краю (edge) ближайшего позиционированного предка',
+		edge: 'Край контейнера, к которому прижата панель внутри него. К нему её смахивают, полоса — у противоположного края. start и end меняются местами в RTL',
+		swipe: 'За что панель можно смахнуть, чтобы закрыть: ни за что, за полосу или за любое место, кроме контролов. Смахивают от триггера, в контейнере — к её краю (edge)',
 	},
 	dialog: {
 		visible:
@@ -363,7 +365,7 @@ const OPTIONS: Record<string, Record<string, readonly string[]>> = {
 		placement: SELECT_PLACEMENTS,
 		tags_overflow: TAGS_OVERFLOWS,
 	},
-	popover: { placement: POPOVER_PLACEMENTS, swipe: SWIPES },
+	popover: { placement: POPOVER_PLACEMENTS, edge: POPOVER_EDGES, swipe: SWIPES },
 	tooltip: { placement: TOOLTIP_PLACEMENTS, type: TOOLTIP_TYPES },
 	slider: { orientation: SLIDE_ORIENTATIONS, snap: SLIDE_SNAPS, tooltip: SLIDER_TOOLTIPS },
 	calendar: { mode: CALENDAR_MODES },

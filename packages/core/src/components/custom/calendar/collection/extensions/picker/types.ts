@@ -78,4 +78,6 @@ export interface ICalendarPickerExtension extends IExtension<ICalendarItem, TCal
 	showPrev(index: number): void
 	/** Стрелка «вперёд» */
 	showNext(index: number): void
+	/** Закрыть панель места — нажатие по её подложке. Места нет — ничего */
+	close(index: number): void
 }

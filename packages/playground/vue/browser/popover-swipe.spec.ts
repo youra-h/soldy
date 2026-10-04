@@ -7,7 +7,8 @@
  * разметки и темы выходит на экране: полоса у края со стороны триггера и не
  * накрывает содержимое, `touch-action` на панели, нажатие на полосу фокус не
  * уводит, а настоящая мышь закрывает панель от триггера — вниз под ним, вверх
- * над ним, внутри контейнера вниз — и к триггеру возвращает её на место.
+ * над ним, внутри контейнера к своему краю (`edge`, полоса — у противоположного)
+ * — и к триггеру возвращает её на место.
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
@@ -17,6 +18,8 @@ import { defineComponent, h, nextTick, ref } from 'vue'
 import { Button, Popover } from '@soldy-ui/vue'
 import type { IPopoverProps } from '@soldy-ui/core'
 import type { DescriptorSlots, PopoverDescriptor } from '@soldy-ui/setup'
+
+import { whileLeaving } from './transitions'
 
 import '@soldy-ui/theme-oren'
 
@@ -33,8 +36,10 @@ const nextFrame = () => new Promise<void>((resolve) => requestAnimationFrame(() 
 type TShowOptions = {
 	/** Отступ страницы сверху, px: под триггером мало места — панель над ним */
 	top?: number
-	/** Поповер в контейнере 400 × 300: панель накрывает его, а не встаёт у триггера */
+	/** Поповер в контейнере 400 × 300: панель у его края, а не у триггера */
 	contained?: boolean
+	/** Направление контейнера: в RTL начало строки — справа */
+	dir?: 'ltr' | 'rtl'
 }
 
 /**
@@ -43,7 +48,7 @@ type TShowOptions = {
  */
 const show = async (
 	props: Partial<IPopoverProps> = {},
-	{ top = 40, contained = false }: TShowOptions = {},
+	{ top = 40, contained = false, dir = 'ltr' }: TShowOptions = {},
 ) => {
 	const opened = ref(false)
 
@@ -83,6 +88,7 @@ const show = async (
 								'div',
 								{
 									class: 's-test-host',
+									dir,
 									style: 'position: relative; width: 400px; height: 300px',
 								},
 								[popover()],
@@ -114,14 +120,20 @@ const handle = () => find('.s-popover__handle')
 const active = () => document.activeElement
 const isOpen = () => getComputedStyle(panel()).display !== 'none'
 
-/** Открыть кликом и дождаться, пока фокус уйдёт в панель. */
+/** Открыть кликом и дождаться, пока фокус уйдёт в панель, а панель встанет на место. */
 const open = async () => {
 	await userEvent.click(trigger())
 	await expect.poll(active).toBe(find('.s-test-first'))
+	// Панель в контейнере въезжает от своего края: геометрия — после перехода
+	await Promise.all(
+		panel()
+			.getAnimations()
+			.map((animation) => animation.finished),
+	)
 }
 
-/** Протянуть мышью от середины узла на `dy` по вертикали — настоящими событиями, по шагам. */
-const drag = (from: HTMLElement, dy: number, steps = 10) => {
+/** Протянуть мышью от середины узла на `dx`, `dy` — настоящими событиями, по шагам. */
+const dragBy = (from: HTMLElement, dx: number, dy: number, steps = 10) => {
 	const box = from.getBoundingClientRect()
 	const x = box.width / 2
 	const y = box.height / 2
@@ -130,11 +142,14 @@ const drag = (from: HTMLElement, dy: number, steps = 10) => {
 	// Playwright ждала бы, пока узел окажется под ней
 	return userEvent.dragAndDrop(from, from, {
 		sourcePosition: { x, y },
-		targetPosition: { x, y: y + dy },
+		targetPosition: { x: x + dx, y: y + dy },
 		steps,
 		force: true,
 	})
 }
+
+/** Протянуть мышью от середины узла на `dy` по вертикали. */
+const drag = (from: HTMLElement, dy: number, steps = 10) => dragBy(from, 0, dy, steps)
 
 beforeEach(async () => {
 	document.documentElement.dataset.theme = 'oren'
@@ -251,17 +266,67 @@ describe('жест', () => {
 		expect(panel().style.getPropertyValue('--s-swipe-offset')).toBe('')
 	})
 
-	it('внутри контейнера — вниз', async () => {
-		const { opened } = await show({ swipe: 'handle' }, { contained: true })
+	/**
+	 * Панель в контейнере прижата к краю `edge`, полоса — у противоположного
+	 * края, смахивают к краю. Физическая сторона — с учётом направления
+	 * контейнера: `start` в RTL — справа.
+	 */
+	describe('внутри контейнера — к своему краю', () => {
+		type TSide = 'top' | 'bottom' | 'left' | 'right'
 
-		await open()
+		const opposite: Record<TSide, TSide> = {
+			top: 'bottom',
+			bottom: 'top',
+			left: 'right',
+			right: 'left',
+		}
 
-		expect(find('.s-test-host').contains(panel())).toBe(true)
+		/** Шаг к стороне: куда тянуть, чтобы панель ушла к ней. */
+		const toward: Record<TSide, [number, number]> = {
+			top: [0, -150],
+			bottom: [0, 150],
+			left: [-150, 0],
+			right: [150, 0],
+		}
 
-		await drag(handle(), 150)
+		it.each([
+			['top', 'ltr', 'top'],
+			['bottom', 'ltr', 'bottom'],
+			['start', 'ltr', 'left'],
+			['end', 'ltr', 'right'],
+			['start', 'rtl', 'right'],
+			['end', 'rtl', 'left'],
+		] as const)(
+			'%s (%s): панель у края %s, полоса — у противоположного, от края не смахнуть',
+			async (edge, dir, side) => {
+				const { opened } = await show({ swipe: 'handle', edge }, { contained: true, dir })
 
-		await expect.poll(isOpen).toBe(false)
-		expect(opened.value).toBe(false)
+				await open()
+
+				const host = find('.s-test-host').getBoundingClientRect()
+				const box = panel().getBoundingClientRect()
+
+				expect(find('.s-test-host').contains(panel())).toBe(true)
+				expect(Math.abs(box[side] - host[side])).toBeLessThan(EPSILON)
+				expect(
+					Math.abs(
+						handle().getBoundingClientRect()[opposite[side]] - box[opposite[side]],
+					),
+				).toBeLessThan(EPSILON)
+
+				const [dx, dy] = toward[opposite[side]]
+
+				await dragBy(handle(), dx, dy)
+				await expect.poll(() => panel().style.getPropertyValue('--s-swipe-offset')).toBe('')
+
+				expect(isOpen()).toBe(true)
+
+				await dragBy(handle(), ...toward[side])
+
+				await expect.poll(isOpen).toBe(false)
+				expect(opened.value).toBe(false)
+			},
+		)
 	})
 
 	it('за всю панель — тянут за свободное место, с кнопки — нет', async () => {
@@ -276,5 +341,65 @@ describe('жест', () => {
 
 		await expect.poll(isOpen).toBe(false)
 		expect(opened.value).toBe(false)
+	})
+})
+
+/**
+ * Смахнутая панель не моргает: плагин снимает сдвиг вместе с закрытием, а
+ * тема уводит закрытую панель к её стороне, как выезжающую панель, — уход
+ * начинается с места, где её отпустили, и идёт дальше, пока панель гаснет.
+ * Вернись она на место, а потом погасни, — было бы видно мигание.
+ */
+describe('уход смахнутой панели', () => {
+	/** Положение панели по оси в каждом кадре ухода, пока она не пропала. */
+	const leaving = async (axis: 'top' | 'left') => {
+		const positions: number[] = []
+		const seen = await whileLeaving(panel(), () => {
+			positions.push(panel().getBoundingClientRect()[axis])
+		})
+
+		expect(seen).toBeGreaterThan(1)
+
+		return positions
+	}
+
+	/** Идут в одну сторону: каждое следующее не ближе к началу, чем прошлое. */
+	const expectOneWay = (positions: number[], sign: 1 | -1) => {
+		for (let index = 1; index < positions.length; index += 1) {
+			expect((positions[index] - positions[index - 1]) * sign).toBeGreaterThanOrEqual(
+				-EPSILON,
+			)
+		}
+	}
+
+	it('у триггера — дальше от него, гаснет на ходу', async () => {
+		await show({ swipe: 'handle' })
+		await open()
+
+		const start = panel().getBoundingClientRect().top
+
+		await drag(handle(), 150)
+
+		const positions = await leaving('top')
+
+		expectOneWay(positions, 1)
+		expect(positions[0]).toBeGreaterThan(start + EPSILON)
+	})
+
+	it.each([
+		['top', 'top', -1],
+		['start', 'left', -1],
+	] as const)('в контейнере у края %s — дальше к краю', async (edge, axis, sign) => {
+		await show({ swipe: 'handle', edge }, { contained: true })
+		await open()
+
+		const start = panel().getBoundingClientRect()[axis]
+
+		await dragBy(handle(), axis === 'left' ? -150 : 0, axis === 'top' ? -150 : 0)
+
+		const positions = await leaving(axis)
+
+		expectOneWay(positions, sign)
+		expect((positions[0] - start) * sign).toBeGreaterThan(EPSILON)
 	})
 })

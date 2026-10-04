@@ -42,7 +42,7 @@ import {
 } from '@soldy-ui/vue'
 import type { DescriptorSlots, PopoverDescriptor } from '@soldy-ui/setup'
 
-import { find, opacity, pixel, settled, style, systemColor } from './colors'
+import { find, outlined, pixel, settled, style, systemColor } from './colors'
 import { forcedColors } from './media'
 
 import '@soldy-ui/theme-oren'
@@ -62,13 +62,6 @@ const show = async (scheme: (typeof SCHEMES)[number], markup: () => VNode) => {
 	await nextTick()
 	await nextFrame()
 	await nextFrame()
-}
-
-/** Рисует ли браузер контур узла: стиль задан, толщина есть, цвет не прозрачный. */
-const outlined = (element: Element): boolean => {
-	const { outlineStyle, outlineWidth, outlineColor } = style(element)
-
-	return outlineStyle !== 'none' && parseFloat(outlineWidth) >= 1 && opacity(outlineColor) > 0
 }
 
 afterEach(async () => {

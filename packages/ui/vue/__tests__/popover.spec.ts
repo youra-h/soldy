@@ -165,10 +165,12 @@ describe('разметка', () => {
 		expect(root.dataset.open).toBe('true')
 		expect(trigger().dataset.selected).toBe('true')
 		expect(trigger().getAttribute('aria-expanded')).toBe('true')
-		// ARIA панели — на панели, не на корне; data-* корня — не на панели
+		// ARIA панели — на панели, не на корне. `data-open` у панели свой, из её
+		// набора (`panelDataset`): корень телепортированной панели его не отдаёт
 		expect(root.hasAttribute('role')).toBe(false)
-		expect(panel().hasAttribute('data-open')).toBe(false)
+		expect(panel().dataset.open).toBe('true')
 		expect(panel().dataset.layer).toMatch(/^\d+$/)
+		expect(root.hasAttribute('data-layer')).toBe(false)
 	})
 
 	it('aria_label даёт диалогу имя', async () => {

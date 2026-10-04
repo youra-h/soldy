@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 
 /**
- * TCalendarPointerPlugin — нажатия по дням и кнопкам листания и наведение для
- * предпросмотра диапазона.
+ * TCalendarPointerPlugin — нажатия по дням, кнопкам листания и панели выбора
+ * месяца и года и наведение для предпросмотра диапазона.
  *
  * Плагины собраны настоящими bundle, как в рантайме, но без адаптера: разметку
  * тест строит сам в том виде, в каком её рисует Vue, — корень, кнопки листания
@@ -132,25 +132,39 @@ async function mountCalendar(props: Partial<ICalendarProps> = {}, mode?: TCalend
 
 /**
  * Панель выбора месяца и года места 0 — поповер внутри календаря
- * (`contained`), поэтому в корне: список и шапка со стрелками и кнопкой года.
- * Своей панель делает `id` шапки из наборов места.
+ * (`contained`), поэтому в корне. Панель поповера — подложка: в ней полоса
+ * жеста и содержимое, в содержимом — карточка со списком и шапкой, в шапке —
+ * стрелки и кнопка года. Своей панель делает `id` шапки из наборов места.
  */
 function pickerPanel(root: Element, heading: string) {
-	const panel = document.createElement('div')
+	const backdrop = document.createElement('div')
+	const handle = document.createElement('div')
+	const content = document.createElement('div')
+	const card = document.createElement('div')
+	const list = document.createElement('div')
+	const header = document.createElement('div')
 	const prev = document.createElement('button')
 	const title = document.createElement('button')
 	const next = document.createElement('button')
 
-	panel.className = 's-calendar__picker'
+	backdrop.className = 's-popover__panel'
+	handle.className = 's-popover__handle'
+	content.className = 's-popover__content'
+	card.className = 's-calendar__picker'
+	list.className = 's-calendar__picker-list'
+	header.className = 's-calendar__picker-header'
 	prev.className = 's-calendar__picker-prev'
 	prev.innerHTML = '<svg class="s-test-icon"></svg>'
 	title.className = 's-calendar__picker-heading'
 	title.id = heading
 	next.className = 's-calendar__picker-next'
-	panel.append(prev, title, next)
-	root.appendChild(panel)
+	header.append(prev, title, next)
+	card.append(list, header)
+	content.appendChild(card)
+	backdrop.append(handle, content)
+	root.appendChild(backdrop)
 
-	return { prev, title, next }
+	return { backdrop, handle, card, list, prev, title, next }
 }
 
 describe('нажатие', () => {
@@ -213,7 +227,7 @@ describe('нажатие', () => {
 	})
 })
 
-describe('шапка панели выбора месяца и года', () => {
+describe('панель выбора месяца и года', () => {
 	async function mountPicker(heading = 'h0') {
 		const setup = await mountCalendar()
 
@@ -261,6 +275,82 @@ describe('шапка панели выбора месяца и года', () => 
 		setup.next.click()
 
 		expect(heading(setup)).toBe('2026')
+	})
+
+	/**
+	 * Подложка — сама панель поповера вокруг содержимого. Нажатие браузер
+	 * отдаёт тремя событиями, и цели у них свои: `pointerdown` — узлу под
+	 * нажатием, `pointerup` — узлу под отпусканием, `click` — их общему предку.
+	 */
+	describe('подложка', () => {
+		/** Нажатие мышью: каждому событию — своя цель, как у браузера. */
+		const press = (down: Element, up: Element, click: Element): MouseEvent => {
+			const event = new MouseEvent('click', { bubbles: true, cancelable: true })
+
+			down.dispatchEvent(
+				new PointerEvent('pointerdown', { bubbles: true, pointerType: 'mouse' }),
+			)
+			up.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, pointerType: 'mouse' }))
+			click.dispatchEvent(event)
+
+			return event
+		}
+
+		const isOpen = (setup: Awaited<ReturnType<typeof mountPicker>>) =>
+			setup.picker.pickers[0].popover.open
+
+		it('нажатие по подложке закрывает панель места', async () => {
+			const setup = await mountPicker()
+
+			press(setup.backdrop, setup.backdrop, setup.backdrop)
+
+			expect(isOpen(setup)).toBe(false)
+		})
+
+		it('нажатие по карточке, списку, полосе и стрелке шапки панель не закрывает', async () => {
+			const setup = await mountPicker()
+
+			for (const node of [setup.card, setup.list, setup.handle, setup.next]) {
+				press(node, node, node)
+			}
+
+			expect(isOpen(setup)).toBe(true)
+		})
+
+		it('протяжка из карточки, отпущенная на подложке, — не нажатие по подложке', async () => {
+			const setup = await mountPicker()
+
+			press(setup.card, setup.backdrop, setup.backdrop)
+
+			expect(isOpen(setup)).toBe(true)
+		})
+
+		it('нажатие на подложке, отпущенное на карточке, — тоже нет', async () => {
+			const setup = await mountPicker()
+
+			press(setup.backdrop, setup.card, setup.backdrop)
+
+			expect(isOpen(setup)).toBe(true)
+		})
+
+		it('погашенный click — нет: так кончается жест, а он решает сам', async () => {
+			const setup = await mountPicker()
+
+			setup.backdrop.addEventListener('click', (event) => event.preventDefault())
+
+			expect(press(setup.backdrop, setup.backdrop, setup.backdrop).defaultPrevented).toBe(
+				true,
+			)
+			expect(isOpen(setup)).toBe(true)
+		})
+
+		it('чужая панель — без шапки места — по нажатию не закрывается', async () => {
+			const setup = await mountPicker('foreign')
+
+			press(setup.backdrop, setup.backdrop, setup.backdrop)
+
+			expect(isOpen(setup)).toBe(true)
+		})
 	})
 })
 

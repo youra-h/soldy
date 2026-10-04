@@ -20,6 +20,7 @@ describe('умолчания', () => {
 		expect(popover.lazyMount).toBe(false)
 		expect(popover.placement).toBe('bottom-start')
 		expect(popover.contained).toBe(false)
+		expect(popover.edge).toBe('bottom')
 		expect(popover.swipe).toBe('none')
 		expect(popover.contentRendered).toBe(true)
 	})
@@ -39,6 +40,7 @@ describe('умолчания', () => {
 			lazyMount: true,
 			placement: 'top-end',
 			contained: true,
+			edge: 'top',
 			swipe: 'handle',
 		})
 
@@ -49,6 +51,7 @@ describe('умолчания', () => {
 			lazyMount: true,
 			placement: 'top-end',
 			contained: true,
+			edge: 'top',
 			swipe: 'handle',
 		})
 	})
@@ -97,6 +100,18 @@ describe('data-* для темы', () => {
 		popover.open = true
 
 		expect(popover.dataset.get('open')).toBe('true')
+	})
+
+	// Панель телепортирована, и `data-open` корня до неё не доходит: свой — в
+	// её наборе, по нему тема проявляет и гасит панель
+	it('data-open панели — в её наборе, следует за open', () => {
+		const popover = new TPopover()
+
+		expect(popover.panelDataset['data-open']).toBe('false')
+
+		popover.open = true
+
+		expect(popover.panelDataset).toEqual({ 'data-open': 'true', 'data-swiping': 'false' })
 	})
 
 	it('открытый триггер — data-selected, отдельным набором от ARIA', () => {
@@ -188,6 +203,7 @@ describe('события', () => {
 		['lazyMount', 'change:lazyMount', true],
 		['placement', 'change:placement', 'top-start'],
 		['contained', 'change:contained', true],
+		['edge', 'change:edge', 'start'],
 		['swipe', 'change:swipe', 'panel'],
 	] as const)('%s шлёт %s только на реальное изменение', (prop, event, value) => {
 		const popover = new TPopover()
@@ -225,7 +241,7 @@ describe('жест', () => {
 		expect(isSwipeable(new TPopover())).toBe(true)
 	})
 
-	it('куда уходит: у триггера сторону решает якорь (null), внутри контейнера — вниз', () => {
+	it('куда уходит: у триггера сторону решает якорь (null), внутри контейнера — к краю', () => {
 		const popover = new TPopover()
 		const sides: unknown[] = []
 
@@ -237,9 +253,42 @@ describe('жест', () => {
 
 		expect(popover.swipeSide).toBe('bottom')
 
+		popover.edge = 'top'
+
+		expect(popover.swipeSide).toBe('top')
+
 		popover.contained = false
 
-		expect(sides).toEqual(['bottom', null])
+		expect(sides).toEqual(['bottom', 'top', null])
+	})
+
+	it('край у панели у триггера стороны ухода не меняет', () => {
+		const popover = new TPopover()
+		const sides = vi.fn()
+
+		popover.events.on('change:swipeSide', sides)
+		popover.edge = 'start'
+
+		expect(popover.swipeSide).toBeNull()
+		expect(sides).not.toHaveBeenCalled()
+	})
+
+	it('край — в data-edge панели, только внутри контейнера', () => {
+		const popover = new TPopover({ edge: 'end' })
+
+		expect(popover.panelDataset).not.toHaveProperty('data-edge')
+
+		popover.contained = true
+
+		expect(popover.panelDataset).toEqual({
+			'data-open': 'false',
+			'data-swiping': 'false',
+			'data-edge': 'end',
+		})
+
+		popover.edge = 'top'
+
+		expect(popover.panelDataset['data-edge']).toBe('top')
 	})
 
 	it('полосу рисуют, пока жест включён', () => {
@@ -262,10 +311,10 @@ describe('жест', () => {
 
 		popover.events.on('change:swiping', (value) => changes.push(value))
 
-		expect(popover.panelDataset).toEqual({ 'data-swiping': 'false' })
+		expect(popover.panelDataset['data-swiping']).toBe('false')
 		expect(popover.beginSwipe()).toBe(true)
 		expect(popover.swiping).toBe(true)
-		expect(popover.panelDataset).toEqual({ 'data-swiping': 'true' })
+		expect(popover.panelDataset['data-swiping']).toBe('true')
 
 		popover.endSwipe()
 
@@ -300,6 +349,6 @@ describe('жест', () => {
 		switched.swipe = 'none'
 
 		expect(switched.swiping).toBe(false)
-		expect(switched.panelDataset).toEqual({ 'data-swiping': 'false' })
+		expect(switched.panelDataset['data-swiping']).toBe('false')
 	})
 })

@@ -17,6 +17,19 @@ import type { TAria, TAriaAttributes, TDatasetAttributes } from '../../../common
  */
 export type TPopoverPlacement = 'bottom-start' | 'bottom-end' | 'top-start' | 'top-end'
 
+/**
+ * Край контейнера, к которому прижата панель внутри него (`contained`): сверху,
+ * снизу, у начала или у конца строки. `start` и `end` — логические: в RTL
+ * панель встаёт у другого края вместе со строкой.
+ *
+ * Одно значение решает всё, что зависит от края, как `placement` у Drawer:
+ * место панели (вдоль края — во всю длину, поперёк — по содержимому), сторону,
+ * куда её смахивают (`swipeSide` — к этому краю), и место полосы жеста — у
+ * противоположного края, откуда панель тянут. Union ядра, а не реестр темы:
+ * значение читают ядро и плагин жеста.
+ */
+export type TPopoverEdge = 'top' | 'bottom' | 'start' | 'end'
+
 export type TPopoverEvents = TComponentViewEvents &
 	TSwipeableEvents & {
 		/** change:open */
@@ -31,6 +44,8 @@ export type TPopoverEvents = TComponentViewEvents &
 		'change:placement': (value: TPopoverPlacement) => void
 		/** change:contained */
 		'change:contained': (value: boolean) => void
+		/** change:edge */
+		'change:edge': (value: TPopoverEdge) => void
 		/** change:triggerAria — набор атрибутов триггера изменился */
 		'change:triggerAria': (value: TAriaAttributes) => void
 	}
@@ -51,13 +66,18 @@ export interface IPopoverProps extends IComponentViewProps {
 	placement?: TPopoverPlacement
 	/**
 	 * Панель внутри контейнера: не уходит в `body` и не встаёт у триггера, а
-	 * накрывает ближайший позиционированный предок целиком. `placement` тогда
-	 * не действует
+	 * прижимается к краю `edge` ближайшего позиционированного предка.
+	 * `placement` тогда не действует
 	 */
 	contained?: boolean
 	/**
+	 * Край контейнера, к которому прижата панель внутри него. Панель у
+	 * триггера его не читает
+	 */
+	edge?: TPopoverEdge
+	/**
 	 * За что панель можно смахнуть, чтобы закрыть: панель у триггера — от него,
-	 * панель внутри контейнера — вниз
+	 * панель внутри контейнера — к своему краю `edge`
 	 */
 	swipe?: TSwipe
 }
@@ -65,7 +85,7 @@ export interface IPopoverProps extends IComponentViewProps {
 /**
  * Поповер. Панель смахивают, чтобы закрыть (`ISwipeable`): у триггера — от
  * него, и сторону после flip знает только узел панели (`swipeSide` — `null`),
- * внутри контейнера — вниз.
+ * внутри контейнера — к своему краю (`edge`).
  */
 export interface IPopover extends IComponentView<IPopoverProps, TPopoverEvents>, ISwipeable {
 	/** Открыта ли панель */
@@ -78,8 +98,10 @@ export interface IPopover extends IComponentView<IPopoverProps, TPopoverEvents>,
 	lazyMount: boolean
 	/** Сторона и выравнивание панели у триггера */
 	placement: TPopoverPlacement
-	/** Панель накрывает ближайший позиционированный предок, а не встаёт у триггера */
+	/** Панель прижата к краю ближайшего позиционированного предка, а не встаёт у триггера */
 	contained: boolean
+	/** Край контейнера, к которому прижата панель внутри него */
+	edge: TPopoverEdge
 	/**
 	 * ARIA триггера — второй стороны связки «триггер ↔ панель»:
 	 * `aria-haspopup`, `aria-expanded`; `aria-controls` пишет плагин
@@ -87,7 +109,10 @@ export interface IPopover extends IComponentView<IPopoverProps, TPopoverEvents>,
 	readonly triggerAria: TAria
 	/** `data-*` триггера для темы: открытый триггер выглядит нажатым */
 	readonly triggerDataset: TDatasetAttributes
-	/** `data-*` панели для темы: панель тянут (`data-swiping`) */
+	/**
+	 * `data-*` панели для темы: открыта ли она (`data-open`), тянут ли её
+	 * (`data-swiping`), а внутри контейнера — ещё её край (`data-edge`)
+	 */
 	readonly panelDataset: TDatasetAttributes
 	/** Имя кнопки закрытия: `closeLabel` */
 	readonly closeAria: TAriaAttributes

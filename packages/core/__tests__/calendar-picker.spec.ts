@@ -111,6 +111,13 @@ describe('места', () => {
 		expect(popover.open).toBe(false)
 	})
 
+	it('панель смахивают за полосу: жест у поповера места включён', () => {
+		const { popover } = panel(calendar())
+
+		expect(popover.swipe).toBe('handle')
+		expect(popover.handleRendered).toBe(true)
+	})
+
 	it('сетки меньше — место без сетки закрывает свою панель', () => {
 		const setup = calendar({ months: ['2026-01-01', '2026-09-01'] })
 		const second = open(setup, 1)
@@ -395,6 +402,37 @@ describe('границы', () => {
 		setup.owner.disabled = true
 
 		expect(picker.popover.open).toBe(false)
+	})
+})
+
+/**
+ * Нажатие по подложке — по самой панели вокруг её содержимого — плагин
+ * указателя переводит в команду `close` места.
+ */
+describe('закрытие', () => {
+	it('close закрывает панель своего места, соседняя остаётся открытой', () => {
+		const setup = calendar({ months: ['2026-01-01', '2026-09-01'] })
+		const first = open(setup, 0)
+		const second = open(setup, 1)
+
+		setup.picker.close(1)
+
+		expect(second.popover.open).toBe(false)
+		expect(first.popover.open).toBe(true)
+		expect(setup.owner.months).toEqual(['2026-01-01', '2026-09-01'])
+	})
+
+	it('месту без сетки — ничего: мест не прибавилось, открытая панель не тронута', () => {
+		const setup = calendar({ months: ['2026-09-01'] })
+		const picker = open(setup)
+		const changes = vi.fn()
+
+		setup.collection.events.on('change:pickers', changes)
+		setup.picker.close(1)
+
+		expect(picker.popover.open).toBe(true)
+		expect(setup.collection.pickers).toHaveLength(1)
+		expect(changes).not.toHaveBeenCalled()
 	})
 })
 

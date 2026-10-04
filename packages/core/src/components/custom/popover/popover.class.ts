@@ -3,7 +3,13 @@ import type { TDefaultValues } from '../../base/component'
 import type { TSwipe, TSwipeSide } from '../../base/layer'
 import { TAria } from '../../../common'
 import type { TAriaAttributes, TDatasetAttributes } from '../../../common'
-import type { IPopover, IPopoverProps, TPopoverEvents, TPopoverPlacement } from './types'
+import type {
+	IPopover,
+	IPopoverProps,
+	TPopoverEdge,
+	TPopoverEvents,
+	TPopoverPlacement,
+} from './types'
 
 /**
  * Поповер: панель с произвольным содержимым у триггера.
@@ -31,7 +37,7 @@ import type { IPopover, IPopoverProps, TPopoverEvents, TPopoverPlacement } from 
  * с выезжающей панелью. Панель у триггера уходит от него — вниз, если стоит
  * под триггером, и вверх, если над ним. Сторону решает flip плагина якоря, и
  * знает её только узел панели, поэтому `swipeSide` у такой панели — `null`.
- * Панель внутри контейнера уходит вниз. Признак «тянут» (`swiping`) панель
+ * Панель внутри контейнера прижата к краю (`edge`) и уходит к нему. Признак «тянут» (`swiping`) панель
  * получает набором `panelDataset`: корень поповера — не панель, и `dataset`
  * лежит на корне. Закрывает жест записью `open`, как Escape.
  */
@@ -44,7 +50,14 @@ export default class TPopover
 	static defaultValues: typeof TComponentView.defaultValues &
 		TDefaultValues<
 			IPopoverProps,
-			'open' | 'closable' | 'closeLabel' | 'lazyMount' | 'placement' | 'contained' | 'swipe'
+			| 'open'
+			| 'closable'
+			| 'closeLabel'
+			| 'lazyMount'
+			| 'placement'
+			| 'contained'
+			| 'edge'
+			| 'swipe'
 		> = {
 		...TComponentView.defaultValues,
 		// Строчный корень: триггер встаёт и в строку текста, и в ряд тегов
@@ -55,6 +68,8 @@ export default class TPopover
 		lazyMount: false,
 		placement: 'bottom-start',
 		contained: false,
+		// Снизу, как лист снизу на телефоне: панель смахивают вниз
+		edge: 'bottom',
 		swipe: 'none',
 	}
 
@@ -64,6 +79,7 @@ export default class TPopover
 	protected _lazyMount: boolean
 	protected _placement: TPopoverPlacement
 	protected _contained: boolean
+	protected _edge: TPopoverEdge
 	protected _swipe: TSwipe
 	protected _swiping = false
 	/** Открывали ли панель хоть раз — после этого `lazyMount` содержимое не прячет. */
@@ -80,6 +96,7 @@ export default class TPopover
 		this._lazyMount = props.lazyMount ?? ctor.defaultValues.lazyMount
 		this._placement = props.placement ?? ctor.defaultValues.placement
 		this._contained = props.contained ?? ctor.defaultValues.contained
+		this._edge = props.edge ?? ctor.defaultValues.edge
 		this._swipe = props.swipe ?? ctor.defaultValues.swipe
 
 		// Сторона панели связки: панель — диалог. Имя пишет `TAriaPlugin` в
@@ -174,10 +191,10 @@ export default class TPopover
 
 	/**
 	 * Панель внутри контейнера: не телепортируется в `body` и не привязывается
-	 * к триггеру, а накрывает ближайший позиционированный предок целиком — так
-	 * панель выбора месяца и года накрывает календарь. Поведение поповера то же:
-	 * связка с триггером, Escape, нажатие мимо, фокус. Разметка отдаёт значение
-	 * панели (Frame), раскладку держит тема.
+	 * к триггеру, а прижимается к краю (`edge`) ближайшего позиционированного
+	 * предка — так панель выбора месяца и года выезжает сверху календаря.
+	 * Поведение поповера то же: связка с триггером, Escape, нажатие мимо,
+	 * фокус. Разметка отдаёт значение панели (Frame), раскладку держит тема.
 	 */
 	get contained(): boolean {
 		return this._contained
@@ -190,6 +207,26 @@ export default class TPopover
 		this.events.emit('change:contained', value)
 		// Место панели решает, куда она уходит жестом
 		this.events.emit('change:swipeSide', this.swipeSide)
+	}
+
+	/**
+	 * Край контейнера, к которому прижата панель внутри него (`contained`). К
+	 * нему же панель уходит жестом, а полоса встаёт у противоположного края —
+	 * там, откуда панель тянут. Панель у триггера края не читает: её сторону
+	 * решает flip плагина якоря.
+	 */
+	get edge(): TPopoverEdge {
+		return this._edge
+	}
+
+	set edge(value: TPopoverEdge) {
+		if (this._edge === value) return
+
+		this._edge = value
+		this.events.emit('change:edge', value)
+
+		// Сторона ухода сменилась только у панели в контейнере
+		if (this._contained) this.events.emit('change:swipeSide', this.swipeSide)
 	}
 
 	/**
@@ -212,12 +249,12 @@ export default class TPopover
 	}
 
 	/**
-	 * Куда панель уходит жестом. Внутри контейнера — вниз. У триггера — от
-	 * него, но под ним или над ним панель встаёт по решению flip плагина якоря,
-	 * и знает это только её узел: здесь `null`.
+	 * Куда панель уходит жестом. Внутри контейнера — к своему краю (`edge`). У
+	 * триггера — от него, но под ним или над ним панель встаёт по решению flip
+	 * плагина якоря, и знает это только её узел: здесь `null`.
 	 */
 	get swipeSide(): TSwipeSide | null {
-		return this._contained ? 'bottom' : null
+		return this._contained ? this._edge : null
 	}
 
 	/** Идёт жест: с `beginSwipe` до `endSwipe` или до закрытия панели. */
@@ -282,15 +319,25 @@ export default class TPopover
 	}
 
 	/**
-	 * Состояние панели для темы: панель тянут (`data-swiping`), и переход её
-	 * сдвига снят — она идёт за пальцем без задержки.
+	 * Состояние панели для темы: открыта ли она (`data-open`) — по нему тема
+	 * проявляет и гасит панель переходом, без хуков под анимацию, как у
+	 * Dialog, — и тянут ли её (`data-swiping`): тогда переход сдвига снят, и
+	 * панель идёт за пальцем без задержки. У панели внутри
+	 * контейнера — ещё её край (`data-edge`): по нему тема прижимает панель и
+	 * ставит полосу жеста. У панели у триггера края нет — свою сторону она
+	 * получает от плагина якоря (`data-placement`).
 	 *
 	 * Отдельный набор, а не `dataset`: корень поповера — обёртка триггера, а
 	 * панель — Frame без экземпляра в ядре, и её `data-*` раскладывает разметка,
 	 * как `aria` панели.
 	 */
 	get panelDataset(): TDatasetAttributes {
-		return { 'data-swiping': this._swiping ? 'true' : 'false' }
+		const state = {
+			'data-open': this._open ? 'true' : 'false',
+			'data-swiping': this._swiping ? 'true' : 'false',
+		}
+
+		return this._contained ? { ...state, 'data-edge': this._edge } : state
 	}
 
 	/** Имя кнопки закрытия — соседней с содержимым, а не самой панели. */
@@ -337,6 +384,7 @@ export default class TPopover
 			lazyMount: this._lazyMount,
 			placement: this._placement,
 			contained: this._contained,
+			edge: this._edge,
 			swipe: this._swipe,
 		}
 	}
