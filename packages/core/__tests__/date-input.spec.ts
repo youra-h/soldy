@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { TChangeEvent, TDateInput } from '@soldy-ui/core'
 import type {
 	IDateInputProps,
+	TCalendarUnavailable,
 	TDateFieldPart,
 	TDateInputPart,
 	TDateInputSegment,
@@ -751,6 +752,164 @@ describe('состояния', () => {
 
 		expect(literal(field({ locale: 'ru-RU' }))?.placeholder).toBe(true)
 		expect(literal(field({ locale: 'ru-RU', value: '2026-05-12' }))?.placeholder).toBe(false)
+	})
+})
+
+/**
+ * Недоступный день — та же функция `unavailable`, что у календаря: поле
+ * помечает ошибкой день, которого календарь выбрать не даст, тем же правилом,
+ * что дату вне `min`/`max`.
+ */
+describe('недоступный день', () => {
+	it('день значения, который отвергает правило, — invalid: data-invalid и aria-invalid', () => {
+		const input = field({
+			locale: 'ru-RU',
+			value: '2026-05-12',
+			unavailable: (date) => date === '2026-05-12',
+		})
+
+		expect(input.invalid).toBe(true)
+		expect(input.dataset.get('invalid')).toBe('true')
+		expect(partsOf(input).every(({ aria }) => aria['aria-invalid'] === 'true')).toBe(true)
+	})
+
+	it('не прижимается и не отменяется: значение остаётся набранным', () => {
+		const input = field(
+			{ locale: 'ru-RU', unavailable: (date) => date === '2026-05-12' },
+			'day',
+		)
+
+		type(input, '12052026')
+
+		expect(input.value).toBe('2026-05-12')
+		expect(text(input)).toBe('12.05.2026')
+		expect(input.invalid).toBe(true)
+
+		// Набрали доступный день — ошибки нет
+		input.focusSegment('day')
+		type(input, '13')
+
+		expect(input.value).toBe('2026-05-13')
+		expect(input.invalid).toBe(false)
+		expect(input.dataset.get('invalid')).toBe('false')
+	})
+
+	it('правило зовётся без якоря: начатого диапазона у поля нет', () => {
+		const rule = vi.fn<TCalendarUnavailable>(() => false)
+
+		field({ value: '2026-05-12', unavailable: rule })
+
+		expect(rule).toHaveBeenCalled()
+		expect(
+			rule.mock.calls.every(
+				([date, anchor]) => date === '2026-05-12' && anchor === undefined,
+			),
+		).toBe(true)
+	})
+
+	it('смена правила пересчитывает ошибку; правило снято — ошибки нет', () => {
+		const input = field({ locale: 'ru-RU', value: '2026-05-12' })
+		const changes = vi.fn()
+
+		input.events.on('change:unavailable', changes)
+
+		expect(input.invalid).toBe(false)
+
+		input.unavailable = (date) => date === '2026-05-12'
+
+		expect(changes).toHaveBeenCalledTimes(1)
+		expect(input.invalid).toBe(true)
+		expect(input.dataset.get('invalid')).toBe('true')
+		expect(part(input, 'day').aria['aria-invalid']).toBe('true')
+
+		input.unavailable = undefined
+
+		expect(input.invalid).toBe(false)
+		expect(input.dataset.get('invalid')).toBe('false')
+		expect(part(input, 'day').aria['aria-invalid']).toBeNull()
+	})
+
+	it('та же функция — не смена', () => {
+		const rule: TCalendarUnavailable = () => true
+		const input = field({ unavailable: rule })
+		const changes = vi.fn()
+
+		input.events.on('change:unavailable', changes)
+		input.unavailable = rule
+
+		expect(changes).not.toHaveBeenCalled()
+	})
+
+	it('значения нет — правило не зовётся, ошибки нет', () => {
+		const rule = vi.fn<TCalendarUnavailable>(() => true)
+		const input = field({ locale: 'ru-RU', unavailable: rule }, 'day')
+
+		type(input, '12')
+
+		expect(input.value).toBeUndefined()
+		expect(input.invalid).toBe(false)
+		expect(rule).not.toHaveBeenCalled()
+
+		// Записанное снаружи «не значение» — тоже проверять нечего
+		input.value = 'вчера'
+
+		expect(input.invalid).toBe(false)
+		expect(rule).not.toHaveBeenCalled()
+	})
+
+	it('у поля даты и времени правило получает день значения', () => {
+		const rule = vi.fn<TCalendarUnavailable>((date) => date === '2026-05-12')
+		const input = field({
+			locale: 'ru-RU',
+			kind: 'datetime',
+			timePrecision: 'second',
+			value: '2026-05-12T14:30:15',
+			unavailable: rule,
+		})
+
+		expect(input.invalid).toBe(true)
+		expect(rule.mock.calls.every(([date]) => date === '2026-05-12')).toBe(true)
+
+		input.value = '2026-05-13T00:00:00'
+
+		expect(input.invalid).toBe(false)
+	})
+
+	it('снимок частей зовёт правило раз, а не на каждую часть', () => {
+		const rule = vi.fn<TCalendarUnavailable>(() => true)
+		const input = field({
+			locale: 'ru-RU',
+			kind: 'datetime',
+			value: '2026-05-12T14:30',
+			unavailable: rule,
+		})
+
+		rule.mockClear()
+
+		const parts = partsOf(input)
+
+		expect(parts.length).toBeGreaterThan(1)
+		expect(parts.every(({ aria }) => aria['aria-invalid'] === 'true')).toBe(true)
+		expect(rule).toHaveBeenCalledTimes(1)
+	})
+
+	it('вне границ и недоступный — ошибка одна: снятое правило оставляет ошибку границ', () => {
+		const input = field({
+			locale: 'ru-RU',
+			value: '2026-05-12',
+			max: '2026-05-01',
+			unavailable: () => true,
+		})
+
+		expect(input.invalid).toBe(true)
+
+		input.unavailable = undefined
+
+		expect(input.invalid).toBe(true)
+
+		input.max = undefined
+
+		expect(input.invalid).toBe(false)
 	})
 })
 

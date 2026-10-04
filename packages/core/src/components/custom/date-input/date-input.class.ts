@@ -2,7 +2,15 @@ import { TInputControl } from '../../base/input-control'
 import type { TDefaultValues } from '../../base/component'
 import { DEFAULT_LOCALE, TAria, TAttributes } from '../../../common'
 import type { TAttributesMap } from '../../../common'
-import { fieldValueOf, nowOf, outOfBounds, parseFieldText, partsOfValue } from './date-time'
+import type { TCalendarUnavailable } from '../calendar'
+import {
+	dateOfValue,
+	fieldValueOf,
+	nowOf,
+	outOfBounds,
+	parseFieldText,
+	partsOfValue,
+} from './date-time'
 import { fieldFormat } from './format'
 import type { IDateFieldFormat } from './format'
 import {
@@ -84,7 +92,10 @@ const SEGMENT_ROLE = 'spinbutton'
  * `min` и `max` значение не прижимают: собранное значение вне них — `invalid`
  * (`data-invalid` у корня, `aria-invalid` у частей), и его видно таким, каким
  * его набрали. Сравнение — с точностью грубейшего: дата и дата со временем —
- * по дню, время до минуты и время до секунды — до минуты.
+ * по дню, время до минуты и время до секунды — до минуты. Так же и день,
+ * которого не даст выбрать календарь: `unavailable` — та же функция, что у
+ * календаря, — поле зовёт с днём значения (у даты со временем — с её днём) и
+ * без якоря: начатого диапазона у поля нет.
  */
 export class TDateInput
 	extends TInputControl<TDateInputValue, IDateInputProps, TDateInputEvents>
@@ -93,10 +104,15 @@ export class TDateInput
 	static override baseClass = 's-date-input'
 
 	static defaultValues: typeof TInputControl.defaultValues &
-		TDefaultValues<IDateInputProps, 'locale' | 'kind' | 'timePrecision', 'min' | 'max'> = {
+		TDefaultValues<
+			IDateInputProps,
+			'locale' | 'kind' | 'timePrecision',
+			'min' | 'max' | 'unavailable'
+		> = {
 		...TInputControl.defaultValues,
 		min: undefined,
 		max: undefined,
+		unavailable: undefined,
 		// Языка интерфейса библиотека не знает: дефолт английский, как у календаря
 		locale: DEFAULT_LOCALE,
 		kind: 'date',
@@ -105,6 +121,7 @@ export class TDateInput
 
 	protected _min: TDateInputBound
 	protected _max: TDateInputBound
+	protected _unavailable: TCalendarUnavailable | undefined
 	protected _locale: string
 	protected _kind: TDateInputKind
 	protected _timePrecision: TTimePrecision
@@ -124,6 +141,7 @@ export class TDateInput
 
 		this._min = props.min ?? ctor.defaultValues.min
 		this._max = props.max ?? ctor.defaultValues.max
+		this._unavailable = props.unavailable ?? ctor.defaultValues.unavailable
 		this._locale = props.locale ?? ctor.defaultValues.locale
 		this._kind = props.kind ?? ctor.defaultValues.kind
 		this._timePrecision = props.timePrecision ?? ctor.defaultValues.timePrecision
@@ -135,6 +153,7 @@ export class TDateInput
 		this.events.on('change:value', () => this._syncInvalid())
 		this.events.on('change:min', () => this._syncInvalid())
 		this.events.on('change:max', () => this._syncInvalid())
+		this.events.on('change:unavailable', () => this._syncInvalid())
 
 		this._syncInvalid()
 	}
@@ -165,6 +184,18 @@ export class TDateInput
 
 		this._max = value
 		this.events.emit('change:max', value)
+	}
+
+	/** Функция сверяется по ссылке: заданная заново — смена, как у календаря. */
+	get unavailable(): TCalendarUnavailable | undefined {
+		return this._unavailable
+	}
+
+	set unavailable(value: TCalendarUnavailable | undefined) {
+		if (this._unavailable === value) return
+
+		this._unavailable = value
+		this.events.emit('change:unavailable', value)
 	}
 
 	get locale(): string {
@@ -221,9 +252,12 @@ export class TDateInput
 		this._formatChanged(before)
 	}
 
-	/** Собранное значение вне `min`/`max`. Значения нет — верно: проверять нечего. */
+	/**
+	 * Собранное значение вне `min`/`max` или его день недоступен. Значения нет —
+	 * верно: проверять нечего.
+	 */
 	get invalid(): boolean {
-		return outOfBounds(this._value, this._min, this._max)
+		return outOfBounds(this._value, this._min, this._max) || this._unavailableValue()
 	}
 
 	get focusedSegment(): TDateFieldPart | undefined {
@@ -236,11 +270,13 @@ export class TDateInput
 
 	/**
 	 * Части и разделители в порядке формата локали — снимок на каждое чтение,
-	 * как сетки календаря.
+	 * как сетки календаря. `invalid` считается раз на снимок, а не на часть:
+	 * функцию потребителя `unavailable` на каждую часть заново не зовут.
 	 */
 	get segments(): TDateInputSegment[] {
 		const format = this._format
 		const empty = emptyParts(this._parts, format)
+		const invalid = this.invalid
 
 		return format.tokens.map((token, index) =>
 			token.type === 'literal'
@@ -251,7 +287,7 @@ export class TDateInput
 						placeholder: empty,
 						aria: { 'aria-hidden': 'true' },
 					}
-				: this._segment(token, format),
+				: this._segment(token, format, invalid),
 		)
 	}
 
@@ -418,6 +454,7 @@ export class TDateInput
 			...super.getProps(),
 			min: this._min,
 			max: this._max,
+			unavailable: this._unavailable,
 			locale: this._locale,
 			kind: this._kind,
 			timePrecision: this._timePrecision,
@@ -539,11 +576,22 @@ export class TDateInput
 		if (fieldValueOf(this._parts, this._format) !== before) this._commit(this._parts)
 	}
 
+	/** День значения отвергает функция `unavailable`. Значения нет — проверять нечего. */
+	protected _unavailableValue(): boolean {
+		const date = dateOfValue(this._value)
+
+		return date !== undefined && Boolean(this._unavailable?.(date, undefined))
+	}
+
 	/**
 	 * Часть — снимок для разметки: своё ядра и поверх — наборы части
-	 * (`segmentSets`).
+	 * (`segmentSets`). `invalid` — поля, посчитанный на весь снимок.
 	 */
-	protected _segment(part: TFieldPart, format: IDateFieldFormat): TDateInputPart {
+	protected _segment(
+		part: TFieldPart,
+		format: IDateFieldFormat,
+		invalid: boolean,
+	): TDateInputPart {
 		const { type } = part
 		const { min, max } = part.rule.limits(this._parts)
 		const shown = shownOf(this._parts, part)
@@ -568,7 +616,7 @@ export class TDateInput
 				'aria-valuetext': counter && !empty ? text : null,
 				'aria-valuemin': counter ? String(min) : null,
 				'aria-valuemax': counter ? String(max) : null,
-				'aria-invalid': this.invalid ? 'true' : null,
+				'aria-invalid': invalid ? 'true' : null,
 				'aria-required': this.required ? 'true' : null,
 				'aria-readonly': this.readonly ? 'true' : null,
 				'aria-disabled': this.disabled ? 'true' : null,
@@ -581,7 +629,7 @@ export class TDateInput
 		}
 	}
 
-	/** `data-invalid` — состояние для темы: значение вне `min`/`max`. */
+	/** `data-invalid` — состояние для темы: значение вне `min`/`max` или его день недоступен. */
 	protected _syncInvalid(): void {
 		this._dataset.add('invalid', this.invalid)
 	}

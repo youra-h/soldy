@@ -69,6 +69,10 @@ export type TDatePickerEvents = TInputControlEvents<TDatePickerValue> & {
 	'change:startLabel': (value: string) => void
 	/** change:endLabel */
 	'change:endLabel': (value: string) => void
+	/** change:startName */
+	'change:startName': (value: string) => void
+	/** change:endName */
+	'change:endName': (value: string) => void
 	/** change:triggerAria — набор кнопки календаря изменился */
 	'change:triggerAria': (value: TAriaAttributes) => void
 	/** change:panelAria — набор панели изменился */
@@ -86,7 +90,10 @@ export interface IDatePickerProps extends IInputControlProps<TDatePickerValue> {
 	min?: TCalendarDate
 	/** Последний день, который можно выбрать */
 	max?: TCalendarDate
-	/** Недоступные дни календаря: фокус на них встаёт, выбор — нет */
+	/**
+	 * Недоступные дни: в календаре фокус на них встаёт, выбор — нет, в поле —
+	 * ошибка. Конец диапазона проверяется с якорем — набранным началом
+	 */
 	unavailable?: TCalendarUnavailable
 	/** Первый день недели; не задан — по локали */
 	weekStart?: TWeekday
@@ -100,6 +107,13 @@ export interface IDatePickerProps extends IInputControlProps<TDatePickerValue> {
 	startLabel?: string
 	/** Имя поля конца диапазона */
 	endLabel?: string
+	/**
+	 * Имя начала диапазона при отправке формы. `name` — у поля одной даты: у
+	 * диапазона значений два, и уходят они под своими именами
+	 */
+	startName?: string
+	/** Имя конца диапазона при отправке формы */
+	endName?: string
 }
 
 export interface IDatePicker extends IInputControl<
@@ -117,7 +131,7 @@ export interface IDatePicker extends IInputControl<
 	min: TCalendarDate | undefined
 	/** Последний день, который можно выбрать */
 	max: TCalendarDate | undefined
-	/** Недоступные дни календаря */
+	/** Недоступные дни — календарю и полям */
 	unavailable: TCalendarUnavailable | undefined
 	/** Первый день недели; `undefined` — по локали */
 	weekStart: TWeekday | undefined
@@ -131,6 +145,10 @@ export interface IDatePicker extends IInputControl<
 	startLabel: string
 	/** Имя поля конца диапазона */
 	endLabel: string
+	/** Имя начала диапазона при отправке формы */
+	startName: string
+	/** Имя конца диапазона при отправке формы */
+	endName: string
 	/** Можно ли сейчас открыть панель: не `disabled` и не `readonly` */
 	readonly openable: boolean
 	/** Поле одной даты — экземпляр `TDateInput`, которым владеет DatePicker */

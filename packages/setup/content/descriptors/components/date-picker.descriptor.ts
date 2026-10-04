@@ -4,7 +4,8 @@
  * Наследует `InputControlDescriptor` (value, name, readonly, required, id,
  * disabled, size, variant, ...) и добавляет режим, открытость панели и то, что
  * DatePicker отдаёт полям и календарю: границы, недоступные дни, первый день
- * недели, локаль, пояс «сегодня» — и имена кнопки и концов диапазона.
+ * недели, локаль, пояс «сегодня» — имена кнопки и концов диапазона и имена
+ * концов в форме.
  *
  * Поля (`field`, `start`, `end`), календарь и его движок — экземпляры ядра
  * DatePicker: разметка отдаёт их компонентам целиком (`:ctrl`, `:engine`), как
@@ -62,6 +63,12 @@ export const DatePickerDescriptor = defineDescriptor(() =>
 				triggerLabel: { type: String, triggers: ['change:triggerLabel'] },
 				startLabel: { type: String, triggers: ['change:startLabel'] },
 				endLabel: { type: String, triggers: ['change:endLabel'] },
+				/**
+				 * Имена концов диапазона в форме — у полей концов, как `name` у
+				 * поля одной даты: значение в форму отдаёт поле.
+				 */
+				startName: { type: String, triggers: ['change:startName'] },
+				endName: { type: String, triggers: ['change:endName'] },
 				/**
 				 * Сторона кнопки календаря в связке с панелью и её вид «нажат».
 				 * Вычисляют ядро и `TDatePickerIdsPlugin` (`aria-controls`): своего

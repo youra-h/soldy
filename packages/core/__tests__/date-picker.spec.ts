@@ -1,6 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { TDatePicker } from '@soldy-ui/core'
-import type { IDatePickerProps, TChangeEvent, TDatePickerValue } from '@soldy-ui/core'
+import type {
+	IDatePickerProps,
+	TCalendarUnavailable,
+	TChangeEvent,
+	TDatePickerValue,
+} from '@soldy-ui/core'
 
 /**
  * DatePicker — поле даты и календарь в панели. Сам он дат не считает:
@@ -26,6 +31,11 @@ afterEach(() => {
 
 function picker(props: Partial<IDatePickerProps> = {}): TDatePicker {
 	return new TDatePicker(props)
+}
+
+/** Ночей от `from` до `to` — разность дат в днях. */
+function nights(from: string, to: string): number {
+	return (Date.parse(to) - Date.parse(from)) / 86_400_000
 }
 
 /** Значения DatePicker из `change:value` — по порядку. */
@@ -445,5 +455,195 @@ describe('имена и наборы', () => {
 
 		expect(target.startLabel).toBe('Заезд')
 		expect(target.endLabel).toBe('Выезд')
+	})
+})
+
+/**
+ * Поле помечает ошибкой то, что не даст выбрать календарь, и набранное не
+ * прижимает: недоступную дату, а конец диапазона — ещё и раньше начала.
+ */
+describe('ошибка в поле', () => {
+	it('недоступный день: полю одной даты, началу и календарю — правило как есть', () => {
+		const unavailable: TCalendarUnavailable = (date) => date === '2026-09-15'
+		const target = picker({ unavailable })
+
+		expect(target.field.unavailable).toBe(unavailable)
+		expect(target.start.unavailable).toBe(unavailable)
+		expect(target.calendar.unavailable).toBe(unavailable)
+
+		target.field.paste('2026-09-15')
+
+		// Значение принято, видна ошибка
+		expect(target.value).toBe('2026-09-15')
+		expect(target.field.invalid).toBe(true)
+
+		target.field.paste('2026-09-16')
+
+		expect(target.field.invalid).toBe(false)
+	})
+
+	it('смена правила доходит до полей и календаря; снятое — ошибки нет', () => {
+		const target = picker({ mode: 'range', value: ['2026-09-15', '2026-09-15'] })
+		const unavailable: TCalendarUnavailable = (date) => date === '2026-09-15'
+
+		target.unavailable = unavailable
+
+		expect(target.field.unavailable).toBe(unavailable)
+		expect(target.calendar.unavailable).toBe(unavailable)
+		expect(target.start.invalid).toBe(true)
+		expect(target.end.invalid).toBe(true)
+
+		target.unavailable = undefined
+
+		expect(target.start.invalid).toBe(false)
+		expect(target.end.unavailable).toBeUndefined()
+		expect(target.end.invalid).toBe(false)
+	})
+
+	it('конец раньше начала — ошибка поля конца; значение как набрано', () => {
+		const target = picker({ mode: 'range' })
+
+		target.start.paste('2026-09-20')
+		target.end.paste('2026-09-10')
+
+		expect(target.value).toEqual(['2026-09-20', '2026-09-10'])
+		expect(target.end.min).toBe('2026-09-20')
+		expect(target.end.invalid).toBe(true)
+		expect(target.end.dataset.get('invalid')).toBe('true')
+		expect(target.start.invalid).toBe(false)
+
+		// Однодневный период — не ошибка
+		target.end.paste('2026-09-20')
+		expect(target.end.invalid).toBe(false)
+
+		// Начало сдвинули раньше конца — ошибка снята
+		target.end.paste('2026-09-10')
+		target.start.paste('2026-09-05')
+		expect(target.end.invalid).toBe(false)
+
+		// Начало разобрали — конец сверяется со своими границами
+		target.start.paste('2026-09-25')
+		expect(target.end.invalid).toBe(true)
+		target.start.focusSegment('year')
+		target.start.clearSegment()
+		expect(target.end.min).toBeUndefined()
+		expect(target.end.invalid).toBe(false)
+	})
+
+	it('пара задом наперёд снаружи: календарь её упорядочит, поле конца — ошибка', () => {
+		const target = picker({ mode: 'range', value: ['2026-09-20', '2026-09-10'] })
+
+		expect(target.end.invalid).toBe(true)
+		expect(target.start.invalid).toBe(false)
+	})
+
+	it('min конца — начало, пока оно позже min DatePicker', () => {
+		const target = picker({ mode: 'range', min: '2026-09-10' })
+
+		target.start.paste('2026-09-05')
+
+		// Начало раньше min — ошибка у него, конец сверяется с min
+		expect(target.start.invalid).toBe(true)
+		expect(target.end.min).toBe('2026-09-10')
+
+		target.start.paste('2026-09-12')
+		expect(target.end.min).toBe('2026-09-12')
+
+		target.min = '2026-09-15'
+		expect(target.start.min).toBe('2026-09-15')
+		expect(target.end.min).toBe('2026-09-15')
+
+		target.min = undefined
+		expect(target.end.min).toBe('2026-09-12')
+	})
+
+	it('начало за max конец не поднимает: конец, равный такому началу, — тоже ошибка', () => {
+		const target = picker({ mode: 'range', max: '2026-09-30' })
+
+		target.start.paste('2026-10-05')
+		target.end.paste('2026-10-05')
+
+		expect(target.start.invalid).toBe(true)
+		expect(target.end.min).toBeUndefined()
+		expect(target.end.invalid).toBe(true)
+
+		// max сдвинули за начало — начало снова поднимает min конца
+		target.max = '2026-10-31'
+
+		expect(target.end.min).toBe('2026-10-05')
+		expect(target.start.invalid).toBe(false)
+		expect(target.end.invalid).toBe(false)
+	})
+
+	it('недоступный конец — с якорем «начало»: «не дольше трёх ночей»', () => {
+		const rule = vi.fn<TCalendarUnavailable>(
+			(date, anchor) => anchor !== undefined && nights(anchor, date) > 3,
+		)
+		const target = picker({ mode: 'range', unavailable: rule })
+
+		target.start.paste('2026-09-10')
+		target.end.paste('2026-09-14')
+
+		expect(target.value).toEqual(['2026-09-10', '2026-09-14'])
+		expect(target.end.invalid).toBe(true)
+		// Начало — без якоря, как у поля одной даты
+		expect(target.start.invalid).toBe(false)
+		expect(rule).toHaveBeenCalledWith('2026-09-14', '2026-09-10')
+		expect(rule).toHaveBeenCalledWith('2026-09-10', undefined)
+
+		// Начало сдвинули — правило конца пересобрано с новым якорем
+		target.start.paste('2026-09-11')
+
+		expect(target.end.invalid).toBe(false)
+	})
+
+	it('к change:value DatePicker конец уже сверен с новым началом', () => {
+		const target = picker({ mode: 'range', value: ['2026-09-10', '2026-09-12'] })
+		const seen: boolean[] = []
+
+		target.events.on('change:value', () => seen.push(target.end.invalid))
+
+		target.start.paste('2026-09-20')
+
+		expect(target.value).toEqual(['2026-09-20', '2026-09-12'])
+		expect(seen).toEqual([true])
+	})
+})
+
+describe('форма', () => {
+	it('имена концов — name полей концов; name — полю одной даты', () => {
+		const target = picker({ name: 'date', startName: 'checkIn', endName: 'checkOut' })
+
+		expect(target.field.name).toBe('date')
+		expect(target.start.name).toBe('checkIn')
+		expect(target.end.name).toBe('checkOut')
+	})
+
+	it('смена имён концов — полям концов, с событием', () => {
+		const target = picker()
+		const changes = vi.fn()
+
+		target.events.on('change:startName', changes)
+		target.events.on('change:endName', changes)
+
+		target.startName = 'from'
+		target.endName = 'to'
+
+		expect(target.start.name).toBe('from')
+		expect(target.end.name).toBe('to')
+		expect(target.field.name).toBe('')
+		expect(changes).toHaveBeenCalledTimes(2)
+
+		target.startName = 'from'
+		expect(changes).toHaveBeenCalledTimes(2)
+	})
+
+	it('без имён концов поля концов в форму не уходят', () => {
+		const target = picker({ mode: 'range', name: 'date' })
+
+		expect(target.startName).toBe('')
+		expect(target.endName).toBe('')
+		expect(target.start.name).toBe('')
+		expect(target.end.name).toBe('')
 	})
 })
