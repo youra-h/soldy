@@ -12,14 +12,15 @@ import type { TTabsLayoutPluginEvents } from './types'
  * - DOM-элементы каждого таба (через реестр bundles + TElementPlugin).
  *
  * Эмитит change:layout при изменении размеров — нужно для обновления позиции/размера
- * индикатора активного таба (view: line/outline) и при переносе табов на другую строку.
+ * активного таба, по которым тема рисует его отметку, и при переносе табов на
+ * другую строку.
  *
  * Оба наблюдателя смотрят border-box: наблюдать надо ровно то, что меряется
  * по `change:layout`, — `TTabsActiveTabPlugin` берёт позицию и размер таба из
  * `offsetLeft`/`offsetTop` и `offsetWidth`/`offsetHeight`. Умолчание
  * `content-box` пропустило бы смену одного паддинга или рамки таба (паддинг
- * по размеру, толщина рамки по состоянию), и `--underline-size`/`--gap-size`
- * держались бы по старому размеру до ближайшего пересчёта по другой причине.
+ * по размеру, толщина рамки по состоянию), и геометрия активного таба
+ * держалась бы по старому размеру до ближайшего пересчёта по другой причине.
  */
 export class TTabsLayoutPlugin extends TBasePlugin<any, TTabsLayoutPluginEvents> {
 	private _rootObserver: ResizeObserver | null = null

@@ -10,6 +10,7 @@ import type { IThemePlugins } from '@soldy-ui/setup'
 import { TTabsViewPlugin } from './tabs-view.plugin'
 
 export const plugins: readonly IThemePlugins[] = [
-	// Полоса и разрыв линии под активным табом (`--underline-*`, `--gap-*`)
+	// Геометрия активного таба (`--active-tab-*`, `--gap-*`) и признак её
+	// переезда: полоса `line`, карточка `contained`, разрыв линии `outline`
 	{ type: TTabs, plugins: [TTabsViewPlugin] },
 ]

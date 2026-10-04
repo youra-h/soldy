@@ -2,6 +2,40 @@
 // со строкой, а не внутри неё (`_tabs.scss`, `.s-tabs-item`).
 $row: ':not(.s-tabs-item__close)';
 
+// Переезд геометрии активного таба — время и кривая, одни у полосы `line` и
+// карточки `contained`.
+$move-duration: 0.2s;
+$move-easing: ease;
+
+// Переезд отметки активного таба — псевдоэлемента списка по `--active-tab-*`:
+// сдвиг по главной оси и длина вдоль неё — `width` у горизонтальных табов,
+// `height` у вертикальных ($size). Так едет карточка `contained`.
+//
+// Идёт, только пока на списке стоит признак `--active-tab-moving`: его ставит
+// `TTabsViewPlugin` на смену активного таба и снимает, когда переход доиграл.
+// Без признака длительность нулевая — ресайз, сдвиг от закрытия соседа и
+// первая отрисовка ставят отметку на место сразу: переедь она за 200 мс, она
+// отставала бы от текста своего таба. Длительность считается от признака в
+// стиле после записи, поэтому переход начинает та же запись, что ставит
+// признак.
+//
+// И только когда система о движении не просила: переезд — переход значения,
+// как ход ручки Slider и доля ProgressLinear, а не сообщение, и при просьбе
+// отметка встаёт на новый таб сразу.
+@mixin active-tab-move($size) {
+	@media (prefers-reduced-motion: no-preference) {
+		transition-property: transform, $size;
+		transition-duration: calc(var(--active-tab-moving, 0) * #{$move-duration});
+		transition-timing-function: $move-easing;
+	}
+}
+
+// Вид карточки активного таба у `contained` — один на все варианты: до замера
+// её рисует выбранная обёртка, после — псевдоэлемент списка (`_tabs.scss`).
+@mixin tabs-contained-card {
+	@apply rounded-md bg-s-component-surface shadow-sm;
+}
+
 // Миксин для view="line"
 // $color     — семейство цвета (neutral, accent, positive, negative, caution)
 // $text      — ступень текста при наведении и у активного таба (как текст
@@ -37,7 +71,9 @@ $row: ':not(.s-tabs-item__close)';
 }
 
 // Миксин для view="contained"
-// Список обёрнут в контейнер. Активный таб — белая карточка с тенью внутри контейнера.
+// Список обёрнут в контейнер. Активный таб — карточка поверхности контрола с
+// тенью внутри контейнера; её вид от варианта не зависит (`tabs-contained-card`),
+// от варианта — цвет контейнера и текста.
 @mixin tabs-contained-variant($color, $text: 800, $container-bg: 100) {
 	.s-tabs__list {
 		@apply #{'bg-s-' + $color + '-' + $container-bg};
@@ -48,13 +84,8 @@ $row: ':not(.s-tabs-item__close)';
 			@apply #{'text-s-' + $color + '-' + $text};
 		}
 
-		// Карточка — на обёртке: она покрывает и кнопку закрытия
-		&[data-selected='true'] {
-			@apply bg-s-component-surface shadow-sm;
-
-			> #{$row} {
-				@apply #{'text-s-' + $color + '-' + $text};
-			}
+		&[data-selected='true'] > #{$row} {
+			@apply #{'text-s-' + $color + '-' + $text};
 		}
 	}
 }
