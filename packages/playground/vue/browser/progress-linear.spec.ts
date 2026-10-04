@@ -27,6 +27,7 @@ import { ProgressLinear } from '@soldy-ui/vue'
 import { COMPONENT_SIZES } from '@soldy-ui/playground-shared'
 
 import { find, pixel, systemColor } from './colors'
+import { DIRECTION_CASES, setDir, sidesOf, type TLine } from './directions'
 import { forcedColors, reducedMotion } from './media'
 import { settled, transitionEvents, transitionRuns } from './transitions'
 
@@ -43,9 +44,10 @@ const SCHEMES = ['oren', 'oren-dark'] as const
 
 /**
  * Полоса на странице шириной 400 px. Значение держит экземпляр ядра: через
- * него тест и меняет долю, флаг и ось.
+ * него тест и меняет долю, флаг и ось. `dir` — направление узла, в котором
+ * стоит полоса.
  */
-function mount(props: Partial<IProgressLinearProps> = {}, dir: 'ltr' | 'rtl' = 'ltr') {
+function mount(props: Partial<IProgressLinearProps> = {}, dir?: TLine) {
 	const ctrl = new TProgressLinear(props)
 
 	render(
@@ -166,6 +168,7 @@ beforeEach(() => {
 
 afterEach(async () => {
 	cleanup()
+	setDir(document.documentElement)
 	await reducedMotion('no-preference')
 	await forcedColors('none')
 })
@@ -298,6 +301,32 @@ describe('бег', () => {
 		expect(segment().width).toBe(width)
 		expect(root().offsetWidth - Number.parseFloat(width)).toBeGreaterThan(EPSILON)
 		expect(shiftsAt([0.25, 0.5, 0.75])).toEqual(shifts)
+	})
+})
+
+/**
+ * Место отрезка — логическое, его браузер ставит у начала строки сам, а знак
+ * сдвига — тема: у сдвига логических направлений нет. Знак она берёт у
+ * ближайшего `dir`, как браузер — направленность, поэтому полоса с
+ * `direction="ltr"` в RTL-предке бежит слева направо (`browser/directions.ts`).
+ */
+describe.each(DIRECTION_CASES)('бег по ближайшему dir: $name', (scenario) => {
+	const { start } = sidesOf(scenario.line)
+
+	/** Конец строки справа — сдвиг к нему растёт, слева — убывает. */
+	const toEnd = scenario.line === 'ltr' ? 1 : -1
+
+	it('отрезок стоит у начала строки и идёт к её концу', async () => {
+		setDir(document.documentElement, scenario.page)
+		mount({ indeterminate: true, direction: scenario.direction }, scenario.ancestor)
+		await transitionEvents()
+
+		expect(segment()[start], 'отрезок у начала строки').toBe('0px')
+
+		const [quarter, half, threeQuarters] = shiftsAt([0.25, 0.5, 0.75])
+
+		expect(toEnd * (half - quarter), 'к концу строки').toBeGreaterThan(0)
+		expect(toEnd * (threeQuarters - half), 'к концу строки').toBeGreaterThan(0)
 	})
 })
 
