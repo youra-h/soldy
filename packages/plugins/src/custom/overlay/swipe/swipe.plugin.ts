@@ -156,6 +156,13 @@ function scrollsAlong(node: Element, panel: Element, axis: TSwipeAxis): boolean 
  * указатель (`pointercancel`) — это не решение пользователя, и панель
  * возвращается тоже.
  *
+ * **Закрытая панель сдвиг сохраняет** — и закрытая жестом, и закрытая посреди
+ * жеста: она исчезает переходом темы, и куда — решает тема. Выезжающая панель
+ * и поповер уезжают к своей стороне от места, где их отпустили, а карточка
+ * выбора месяца в календаре гаснет там же, где её отпустили. Снимай плагин
+ * сдвиг на закрытии, панель прыгнула бы на место посреди исчезания. Снимается
+ * он, когда панель показывают снова: показанная панель стоит на месте.
+ *
  * **Касание.** Пока жест включён, плагин ставит панели `touch-action` по оси:
  * без него браузер забрал бы касание под прокрутку страницы, и жест не работал
  * бы пальцем, а поведение не должно зависеть от CSS темы. Прокручиваемая
@@ -259,6 +266,9 @@ export class TSwipePlugin extends TBasePlugin<ISwipeOwner, TSwipePluginEvents> {
 		target.addEventListener('lostpointercapture', this._onPointerEnd)
 		target.addEventListener('click', this._onClick)
 
+		// Сдвиг, с которым панель закрыли, остался до этого показа
+		panel.style.removeProperty(SWIPE_VARIABLE)
+
 		// Вдоль оси касание — жесту, поперёк — браузеру; масштаб — браузеру
 		this._touchAction = panel.style.getPropertyValue('touch-action')
 		panel.style.setProperty(
@@ -303,7 +313,10 @@ export class TSwipePlugin extends TBasePlugin<ISwipeOwner, TSwipePluginEvents> {
 		restoreStyle(panel, 'touch-action', this._touchAction)
 
 		this._cancelReset()
-		panel.style.removeProperty(SWIPE_VARIABLE)
+
+		// Жест выключили у открытой панели — она встаёт на место. Закрытая
+		// исчезает со своим сдвигом, его снимет следующий показ
+		if (this._open?.read()) panel.style.removeProperty(SWIPE_VARIABLE)
 
 		this._target = null
 	}
@@ -475,10 +488,11 @@ export class TSwipePlugin extends TBasePlugin<ISwipeOwner, TSwipePluginEvents> {
 	}
 
 	/**
-	 * Жест кончился. Признак «тянут» снимается сразу, а сдвиг — кадром позже:
-	 * к этому кадру тема уже снова включила переход, и панель поедет — к краю,
-	 * если закрылась, или на место. Сними сдвиг сразу — возврат фокуса при
-	 * закрытии пересчитал бы стили раньше, и панель прыгнула бы на место.
+	 * Жест кончился. Признак «тянут» снимается сразу, а сдвиг отпущенной
+	 * панели — кадром позже: к этому кадру тема уже снова включила переход, и
+	 * панель поедет на место. Сними сдвиг сразу — пересчёт стилей пришёлся бы
+	 * раньше, и панель прыгнула бы на место. Закрылась панель — ожидание
+	 * снимает отвязка жеста (`_detach`), а сдвиг остаётся до следующего показа.
 	 */
 	private _finish(gesture: TSwipeGesture, close: boolean): void {
 		const panel = this._target

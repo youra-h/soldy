@@ -17,7 +17,7 @@ import { defineComponent, h, nextTick } from 'vue'
 import { Button, Popover } from '@soldy-ui/vue'
 import type { DescriptorSlots, PopoverDescriptor } from '@soldy-ui/setup'
 
-import { settled, transitioning, whileLeaving } from './transitions'
+import { settled, whileLeaving } from './transitions'
 
 import '@soldy-ui/theme-oren'
 
@@ -252,20 +252,29 @@ describe('появление и исчезание', () => {
 
 		const { top, left } = panel().getBoundingClientRect()
 
+		runs.length = 0
 		await userEvent.keyboard('{Escape}')
 
-		// Гаснет: до конца перехода панель в документе и нажатий не ловит. Панель
-		// без жеста не уезжает — переходит только прозрачность
+		// Гаснет: до конца перехода панель в документе и нажатий не ловит, а
+		// прозрачность только убывает. Панель без жеста не уезжает — переходит
+		// одна прозрачность
+		const opacities: number[] = []
 		const seen = await whileLeaving(panel(), () => {
 			const box = panel().getBoundingClientRect()
 
 			expect(panel().dataset.open).toBe('false')
 			expect(getComputedStyle(panel()).pointerEvents).toBe('none')
-			expect(transitioning(panel()).filter((name) => name !== 'display')).toEqual(['opacity'])
 			expect(Math.abs(box.top - top)).toBeLessThan(1)
 			expect(Math.abs(box.left - left)).toBeLessThan(1)
+			opacities.push(Number(getComputedStyle(panel()).opacity))
 		})
 
 		expect(seen).toBeGreaterThan(1)
+		expect(runs.filter((name) => name !== 'display')).toEqual(['opacity'])
+		expect(Math.min(...opacities)).toBeLessThan(1)
+
+		for (let index = 1; index < opacities.length; index += 1) {
+			expect(opacities[index]).toBeLessThanOrEqual(opacities[index - 1])
+		}
 	})
 })

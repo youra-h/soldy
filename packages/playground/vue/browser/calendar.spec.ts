@@ -27,7 +27,7 @@ import { COMPONENT_SIZES } from '@soldy-ui/playground-shared'
 import { outlined, pixel, style, systemColor } from './colors'
 import { DIRECTION_CASES, pointing, setDir, sidesOf, type TLine } from './directions'
 import { forcedColors } from './media'
-import { transitioning, whileLeaving } from './transitions'
+import { whileLeaving } from './transitions'
 
 import '@soldy-ui/theme-oren'
 
@@ -769,32 +769,50 @@ describe('выбор месяца и года', () => {
 	}
 
 	/**
-	 * Закрытая панель не пропадает разом: подложка гаснет на месте, а карточка
-	 * с полосой уезжает вверх, за край календаря, — смахнутая от места, где её
-	 * отпустили, а не вернувшись сначала на место.
+	 * Закрытая панель гаснет целиком, карточка вместе с подложкой, и ничего не
+	 * движется: уезжай карточка, её место на миг потемнело бы под ещё не
+	 * погасшей вуалью, — закрытие читалось бы вспышкой. Смахнутая карточка
+	 * гаснет там, где её отпустили, а не вернувшись сначала на место.
 	 */
-	it('смахнутая карточка уходит вверх, подложка гаснет на месте', async () => {
+	const expectFadingInPlace = async (card: DOMRect) => {
+		const backdrop = box('.s-popover__panel')
+		const opacities: number[] = []
+		const seen = await whileLeaving(find('.s-popover__panel'), () => {
+			expectSameBox(box('.s-popover__panel'), backdrop)
+			expectSameBox(box('.s-calendar__picker'), card)
+			opacities.push(Number(style(find('.s-popover__panel')).opacity))
+		})
+
+		expect(seen).toBeGreaterThan(1)
+		expect(Math.min(...opacities)).toBeLessThan(1)
+
+		for (let index = 1; index < opacities.length; index += 1) {
+			expect(opacities[index]).toBeLessThanOrEqual(opacities[index - 1])
+		}
+	}
+
+	it('закрытая карточка гаснет на месте вместе с подложкой', async () => {
 		await show({ months: ['2026-09-01'] })
 		await open()
 
-		const backdrop = box('.s-popover__panel')
+		const card = box('.s-calendar__picker')
+
+		await userEvent.keyboard('{Escape}')
+		await expectFadingInPlace(card)
+	})
+
+	it('смахнутая карточка гаснет там, где её отпустили, вместе с подложкой', async () => {
+		await show({ months: ['2026-09-01'] })
+		await open()
+
 		const start = box('.s-calendar__picker').top
 
 		await dragGrip(-150)
 
-		const tops: number[] = []
-		const seen = await whileLeaving(find('.s-popover__panel'), () => {
-			expectSameBox(box('.s-popover__panel'), backdrop)
-			expect(transitioning(find('.s-popover__panel'))).toContain('opacity')
-			tops.push(box('.s-calendar__picker').top)
-		})
+		const card = box('.s-calendar__picker')
 
-		expect(seen).toBeGreaterThan(1)
-		expect(tops[0]).toBeLessThan(start - EPSILON)
-
-		for (let index = 1; index < tops.length; index += 1) {
-			expect(tops[index]).toBeLessThanOrEqual(tops[index - 1] + EPSILON)
-		}
+		expect(card.top).toBeLessThan(start - EPSILON)
+		await expectFadingInPlace(card)
 	})
 
 	it('жест за полосу вверх закрывает панель, фокус — на заголовок; вниз — нет', async () => {

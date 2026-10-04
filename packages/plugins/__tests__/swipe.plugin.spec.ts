@@ -567,18 +567,40 @@ describe('отпустили', () => {
 })
 
 describe('жест выключили посреди жеста', () => {
-	it('закрыли панель — жест кончен, сдвига и следов на корне нет', async () => {
+	it('закрыли панель — жест кончен, следов на корне нет, сдвиг — до следующего показа', async () => {
 		const { drawer, root, handle, pointer, offset } = await mount({ swipe: 'panel' })
 
 		pointer('pointerdown', handle, 705, 400, 0)
 		pointer('pointermove', root, 805, 400, 16)
 
+		const pulled = offset()
+
 		drawer.visible = false
 
 		expect(drawer.swiping).toBe(false)
-		expect(offset()).toBe('')
 		expect(root.style.userSelect).toBe('')
 		expect(root.style.touchAction).toBe('')
+		// Закрытая панель исчезает переходом темы оттуда, где её отпустили
+		expect(offset()).toBe(pulled)
+
+		await nextFrame()
+
+		expect(offset()).toBe(pulled)
+
+		drawer.visible = true
+
+		expect(offset()).toBe('')
+	})
+
+	it('жест выключили у открытой панели — сдвиг снят, панель на месте', async () => {
+		const { drawer, root, handle, pointer, offset } = await mount({ swipe: 'panel' })
+
+		pointer('pointerdown', handle, 705, 400, 0)
+		pointer('pointermove', root, 805, 400, 16)
+		drawer.swipe = 'none'
+
+		expect(drawer.swiping).toBe(false)
+		expect(offset()).toBe('')
 	})
 
 	it('после destroy плагин владельца не слушает: жест не включается', async () => {
@@ -838,7 +860,7 @@ describe('поповер', () => {
 		expect(popover.swiping).toBe(true)
 	})
 
-	it('закрыли посреди жеста — жест кончен, следов на панели нет', async () => {
+	it('закрыли посреди жеста — жест кончен, следов на панели нет, кроме сдвига до показа', async () => {
 		const { popover, panel, handle, offset } = await mountPopover()
 
 		pointer('pointerdown', handle, 250, 305, 0)
@@ -849,7 +871,13 @@ describe('поповер', () => {
 		popover.open = false
 
 		expect(popover.swiping).toBe(false)
+		expect(offset()).toBe('80px')
+
+		popover.open = true
+
 		expect(offset()).toBe('')
+
+		popover.open = false
 		expect(panel.style.touchAction).toBe('')
 	})
 })
