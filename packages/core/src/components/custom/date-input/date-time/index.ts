@@ -3,6 +3,7 @@ export {
 	fieldValueOf,
 	partsOfValue,
 	outOfBounds,
+	dateOfValue,
 	nowOf,
 	parseFieldText,
 } from './date-time'

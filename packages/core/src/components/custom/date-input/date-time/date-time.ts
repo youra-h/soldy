@@ -1,6 +1,7 @@
 import { DATE_GROUP } from '../date'
 import { TIME_GROUPS } from '../time'
 import { asciiDigits } from '../segments'
+import type { TCalendarDate } from '../../../../common'
 import type { IDateFieldFormat, TGroupSpec } from '../format'
 import type {
 	TDateFieldPart,
@@ -108,6 +109,14 @@ export function outOfBounds(value: unknown, min: unknown, max: unknown): boolean
 		(low !== undefined && compare(own, low) < 0) ||
 		(upper !== undefined && compare(own, upper) > 0)
 	)
+}
+
+/**
+ * День значения — кусок даты значения любого вида и точности: у даты — она
+ * сама, у даты со временем — её день. Не значение — `undefined`.
+ */
+export function dateOfValue(value: unknown): TCalendarDate | undefined {
+	return readValue(value)?.find((piece) => piece.spec === DATE_GROUP)?.text
 }
 
 /** Числа частей текущего момента — по группам формата. */

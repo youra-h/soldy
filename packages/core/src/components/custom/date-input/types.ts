@@ -12,6 +12,7 @@ import type {
 	TDatasetAttributes,
 	TDatePart,
 } from '../../../common'
+import type { TCalendarUnavailable } from '../calendar'
 
 /**
  * Часть времени в поле: час, минута, секунда и период суток — до полудня или
@@ -170,6 +171,8 @@ export type TDateInputEvents = TInputControlEvents<TDateInputValue> & {
 	'change:min': (value: TDateInputBound) => void
 	/** change:max */
 	'change:max': (value: TDateInputBound) => void
+	/** change:unavailable */
+	'change:unavailable': (value: TCalendarUnavailable | undefined) => void
 	/** change:locale */
 	'change:locale': (value: string) => void
 	/** change:kind */
@@ -194,6 +197,12 @@ export interface IDateInputProps extends IInputControlProps<TDateInputValue> {
 	min?: TDateInputBound
 	/** Последний день или момент, который поле считает верным */
 	max?: TDateInputBound
+	/**
+	 * Недоступные дни — та же функция, что у календаря: день значения, который
+	 * она отвергает, — `aria-invalid`. Поле зовёт её без якоря: начатого
+	 * диапазона у поля нет
+	 */
+	unavailable?: TCalendarUnavailable
 	/** Локаль формата (BCP 47): порядок частей, разделители, цифры, цикл часов, направление */
 	locale?: string
 	/**
@@ -217,13 +226,15 @@ export interface IDateInput extends IInputControl<
 	min: TDateInputBound
 	/** Последний верный день или момент */
 	max: TDateInputBound
+	/** Недоступные дни */
+	unavailable: TCalendarUnavailable | undefined
 	/** Локаль формата */
 	locale: string
 	/** Вид поля: дата или дата со временем */
 	kind: TDateInputKind
 	/** Точность времени: до минуты или до секунды */
 	timePrecision: TTimePrecision
-	/** Собранное значение вне `min`/`max` */
+	/** Собранное значение вне `min`/`max` или его день недоступен */
 	readonly invalid: boolean
 	/** Части и разделители в порядке формата локали */
 	readonly segments: TDateInputSegment[]

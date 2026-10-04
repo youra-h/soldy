@@ -9,7 +9,8 @@
  * нажатие в соседнее поле отдаёт ему фокус с первого раза, а клавиши
  * календаря и поля — те же, что у них самих. Раскладка: коробка диапазона не
  * меняет ширину, пока даты набирают, а панель у правого края окна не
- * сжимается.
+ * сжимается. Тема: ошибку поля конца коробка диапазона показывает своей
+ * рамкой.
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
@@ -20,6 +21,7 @@ import { TDatePicker } from '@soldy-ui/core'
 import type { IDatePickerProps } from '@soldy-ui/core'
 import { DatePicker } from '@soldy-ui/vue'
 
+import { settled } from './colors'
 import { expectInsideWindow } from './viewport'
 
 import '@soldy-ui/theme-oren'
@@ -249,6 +251,50 @@ describe('диапазон', () => {
 			await nextTick()
 			expect(width(), `конец, после «${key}»`).toBeCloseTo(empty, 0)
 		}
+	})
+})
+
+/**
+ * Ошибку считает поле, а рамку рисует коробка диапазона: у полей внутри своей
+ * рамки нет. Цвета темы спек не знает (`themes/oren/AGENTS.md`) и сверяет
+ * отношение: рамка ошибки отличается от обычной и равна рамке варианта
+ * `negative` — ошибка в теме выглядит одинаково, задал её потребитель или
+ * посчитало ядро. Указатель перед чтением уводится с коробки: наведение красит
+ * рамку на ступень темнее.
+ */
+describe('ошибка', () => {
+	const border = async (): Promise<string> => {
+		await userEvent.hover(find('.s-test-outside'))
+		await nextFrame()
+		await settled(root())
+
+		return getComputedStyle(root()).borderColor
+	}
+
+	it('конец раньше начала — коробка диапазона в рамке ошибки', async () => {
+		const ctrl = await show({ mode: 'range', value: ['2026-05-12', '2026-05-20'] })
+		const valid = await border()
+
+		// en-US: месяц, день, год — день конца 05 вместо 20
+		await userEvent.click(segment('day', '.s-date-picker__end'))
+		await userEvent.keyboard('05')
+
+		// Набранное не прижимается: значение — как набрано, ошибка — у конца
+		expect(ctrl.value).toEqual(['2026-05-12', '2026-05-05'])
+		expect(find('.s-date-picker__end').dataset.invalid).toBe('true')
+		expect(find('.s-date-picker__start').dataset.invalid).toBe('false')
+
+		const invalid = await border()
+
+		expect(invalid).not.toBe(valid)
+
+		// Конец снова после начала — рамка обычная; вариант negative — та же,
+		// что у ошибки
+		ctrl.value = ['2026-05-12', '2026-05-20']
+		expect(await border()).toBe(valid)
+
+		ctrl.variant = 'negative'
+		expect(await border()).toBe(invalid)
 	})
 })
 

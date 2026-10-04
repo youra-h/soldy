@@ -267,6 +267,122 @@ describe('диапазон', () => {
 	})
 })
 
+/**
+ * Ошибку считает ядро поля; здесь — что она доходит до разметки: смена одного
+ * правила недоступности перечитывает части (`aria-invalid`) и набор корня
+ * поля (`data-invalid`).
+ */
+describe('ошибка в поле', () => {
+	it('правило недоступности, заданное позже, помечает части и корень поля', async () => {
+		const ctrl = new TDatePicker({ value: '2026-09-15' })
+
+		await render(() => h(DatePicker, { ctrl }))
+
+		const field = find('.s-date-picker__field')
+		const parts = () => findAll('.s-date-picker__field .s-date-input__segment')
+
+		expect(field.dataset.invalid).toBe('false')
+		expect(parts().some((part) => part.hasAttribute('aria-invalid'))).toBe(false)
+
+		ctrl.unavailable = (date) => date === '2026-09-15'
+		await settle()
+
+		expect(field.dataset.invalid).toBe('true')
+		expect(parts().every((part) => part.getAttribute('aria-invalid') === 'true')).toBe(true)
+	})
+
+	it('конец раньше начала — ошибка у поля конца, у начала её нет', async () => {
+		await render(() => h(DatePicker, { mode: 'range', value: ['2026-09-20', '2026-09-10'] }))
+
+		expect(find('.s-date-picker__end').dataset.invalid).toBe('true')
+		expect(find('.s-date-picker__start').dataset.invalid).toBe('false')
+	})
+})
+
+/**
+ * Значение в форму отдают поля — скрытым полем DateInput. Что уйдёт при
+ * отправке, считает сам браузер (`FormData`): поле без имени он пропускает.
+ */
+describe('форма', () => {
+	function entries(): [string, FormDataEntryValue][] {
+		const form = document.querySelector('form')
+
+		if (!(form instanceof HTMLFormElement)) throw new Error('формы нет')
+
+		return [...new FormData(form).entries()]
+	}
+
+	it('одна дата — под name', async () => {
+		await render(() =>
+			h('form', [
+				h(DatePicker, {
+					name: 'date',
+					startName: 'from',
+					endName: 'to',
+					value: '2026-09-10',
+				}),
+			]),
+		)
+
+		expect(entries()).toEqual([['date', '2026-09-10']])
+	})
+
+	it('концы диапазона — под startName и endName', async () => {
+		const value = ref<TDatePickerValue>(['2026-09-10', '2026-09-14'])
+		const names = ref({ startName: 'from', endName: 'to' })
+
+		await render(() =>
+			h('form', [
+				h(DatePicker, {
+					mode: 'range',
+					name: 'date',
+					...names.value,
+					value: value.value,
+				}),
+			]),
+		)
+
+		expect(entries()).toEqual([
+			['from', '2026-09-10'],
+			['to', '2026-09-14'],
+		])
+
+		names.value = { startName: 'checkIn', endName: 'checkOut' }
+		await settle()
+
+		expect(entries()).toEqual([
+			['checkIn', '2026-09-10'],
+			['checkOut', '2026-09-14'],
+		])
+	})
+
+	it('недонабранный период: каждый конец уходит своим значением', async () => {
+		const ctrl = new TDatePicker({ mode: 'range', startName: 'from', endName: 'to' })
+
+		await render(() => h('form', [h(DatePicker, { ctrl })]))
+
+		ctrl.start.paste('2026-09-10')
+		await settle()
+
+		// Значения у DatePicker ещё нет, а начало в форме — есть
+		expect(ctrl.value).toBeUndefined()
+		expect(entries()).toEqual([
+			['from', '2026-09-10'],
+			['to', ''],
+		])
+	})
+
+	it('без имён концов диапазон в форму не уходит', async () => {
+		await render(() =>
+			h('form', [
+				h(DatePicker, { mode: 'range', name: 'date', value: ['2026-09-10', '2026-09-14'] }),
+			]),
+		)
+
+		expect(entries()).toEqual([])
+	})
+})
+
 describe('экземпляры ядра', () => {
 	it('внешний ctrl: поле, календарь и движок — его', async () => {
 		const ctrl = new TDatePicker({ value: '2026-09-10' })

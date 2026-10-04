@@ -2,8 +2,9 @@
  * Дескриптор DateInput (TDateInput).
  *
  * Наследует `InputControlDescriptor` (value, name, readonly, required, id,
- * disabled, size, variant, ...) и добавляет границы, локаль формата, вид поля —
- * дата или дата со временем — и точность времени: до минуты или до секунды.
+ * disabled, size, variant, ...) и добавляет границы и недоступные дни, локаль
+ * формата, вид поля — дата или дата со временем — и точность времени: до
+ * минуты или до секунды.
  * Значение вводится по частям в формате локали, а всё оно выделяется,
  * копируется и удаляется, как текст: на компьютере части нередактируемые, их
  * клавиши, указатель и буфер обмена переводят в команды ядра плагины поля.
@@ -58,6 +59,12 @@ export const DateInputDescriptor = defineDescriptor(() =>
 				value: { type: String },
 				min: { type: String, triggers: ['change:min'] },
 				max: { type: String, triggers: ['change:max'] },
+				/**
+				 * Недоступные дни — та же функция, что у календаря: день значения,
+				 * который она отвергает, поле помечает ошибкой, как дату вне
+				 * границ. Зовётся без якоря.
+				 */
+				unavailable: { type: Function, triggers: ['change:unavailable'] },
 				locale: { type: String, triggers: ['change:locale'] },
 				/** `date` — дата, `datetime` — ещё час, минута и период суток по циклу локали. */
 				kind: { type: String, triggers: ['change:kind'] },
@@ -69,7 +76,7 @@ export const DateInputDescriptor = defineDescriptor(() =>
 				 * их наборы ядро: локаль, вид поля и точность времени — текст,
 				 * имена, порядок и состав частей, `disabled` — остановки Tab,
 				 * `readonly` и `required` — `aria-readonly` и `aria-required`,
-				 * границы — `aria-invalid`.
+				 * границы и недоступные дни — `aria-invalid`.
 				 */
 				segments: {
 					type: Array,
@@ -84,6 +91,7 @@ export const DateInputDescriptor = defineDescriptor(() =>
 						'change:required',
 						'change:min',
 						'change:max',
+						'change:unavailable',
 					],
 				},
 				/** `dir` и `lang` ряда частей — по формату локали, виду поля и точности. */

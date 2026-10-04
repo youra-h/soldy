@@ -1,6 +1,6 @@
 import { TInputControl } from '../../base/input-control'
 import type { TDefaultValues } from '../../base/component'
-import { DEFAULT_LOCALE, TAria } from '../../../common'
+import { DEFAULT_LOCALE, TAria, compareDates, parseDate } from '../../../common'
 import { sameValue } from '../../../common/utility/same-value'
 import type {
 	TAriaAttributes,
@@ -51,11 +51,18 @@ const SIDES: readonly TDatePickerSide[] = ['calendar', 'fields']
  * фокус сетки на старт (`resetFocus`), закрытие снимает начатый диапазон
  * (`cancelRange`), а выбор пользователя (`choose`) закрывает панель.
  *
- * **Общее — вниз, от ядра.** `disabled`, `size`, `variant`, `locale`, `min` и
- * `max` DatePicker отдаёт полям и календарю, `readonly` и `required` — полям,
- * `unavailable`, `weekStart` и `timeZone` — календарю, `name` — полю одной
- * даты, режим — выбору коллекции. Разметка эти значения не пробрасывает:
- * второй путь к тем же данным разошёлся бы с первым.
+ * **Общее — вниз, от ядра.** `disabled`, `size`, `variant`, `locale`, `min`,
+ * `max` и `unavailable` DatePicker отдаёт полям и календарю, `readonly` и
+ * `required` — полям, `weekStart` и `timeZone` — календарю, `name` — полю
+ * одной даты, `startName` и `endName` — полям концов, режим — выбору
+ * коллекции. Разметка эти значения не пробрасывает: второй путь к тем же
+ * данным разошёлся бы с первым.
+ *
+ * **Поле помечает ошибкой то, что не даст выбрать календарь**, и набранное не
+ * прижимает: дату вне границ и недоступную, а конец диапазона — ещё и раньше
+ * начала. Конец сверяется с набранным началом, как второй день в календаре —
+ * с якорем: начало — его `min`, а правило недоступности он получает с якорем
+ * «начало». Сменились начало, правило или границы — сверка конца пересобрана.
  *
  * **Значение одно, сторон две** — календарь и поля режима (`IDatePickerFields`,
  * стратегия на режим, как выбор у календаря). Своё значение уходит на обе
@@ -92,7 +99,9 @@ export class TDatePicker
 			| 'locale'
 			| 'triggerLabel'
 			| 'startLabel'
-			| 'endLabel',
+			| 'endLabel'
+			| 'startName'
+			| 'endName',
 			'min' | 'max' | 'unavailable' | 'weekStart' | 'timeZone'
 		> = {
 		...TInputControl.defaultValues,
@@ -111,6 +120,9 @@ export class TDatePicker
 		triggerLabel: 'Choose date',
 		startLabel: 'Start date',
 		endLabel: 'End date',
+		// Без имени, как `name`: поле без имени в форму не уходит
+		startName: '',
+		endName: '',
 	}
 
 	protected _mode: TDatePickerMode
@@ -125,6 +137,8 @@ export class TDatePicker
 	protected _triggerLabel: string
 	protected _startLabel: string
 	protected _endLabel: string
+	protected _startName: string
+	protected _endName: string
 	protected readonly _field: IDateInput
 	protected readonly _start: IDateInput
 	protected readonly _end: IDateInput
@@ -165,6 +179,8 @@ export class TDatePicker
 		this._triggerLabel = props.triggerLabel ?? ctor.defaultValues.triggerLabel
 		this._startLabel = props.startLabel ?? ctor.defaultValues.startLabel
 		this._endLabel = props.endLabel ?? ctor.defaultValues.endLabel
+		this._startName = props.startName ?? ctor.defaultValues.startName
+		this._endName = props.endName ?? ctor.defaultValues.endName
 
 		// Общее полям и календарю — с самого начала, конструктором
 		const shared = {
@@ -176,10 +192,13 @@ export class TDatePicker
 			max: this._max,
 		}
 		const input = { ...shared, readonly: this.readonly, required: this.required }
+		// Правило недоступности — полю одной даты и началу как есть; концу — с
+		// якорем «начало», когда начало разложено (`_syncEnd`)
+		const ruled = { ...input, unavailable: this._unavailable }
 
-		this._field = new TDateInput({ ...input, name: this.name })
-		this._start = new TDateInput(input)
-		this._end = new TDateInput(input)
+		this._field = new TDateInput({ ...ruled, name: this.name })
+		this._start = new TDateInput({ ...ruled, name: this._startName })
+		this._end = new TDateInput({ ...input, name: this._endName })
 		this._inputs = [this._field, this._start, this._end]
 		this._fieldSet = { field: this._field, start: this._start, end: this._end }
 		this._fields = new FIELDS[this._mode](this._fieldSet)
@@ -197,6 +216,9 @@ export class TDatePicker
 		this._classes.add(`--${this._mode}`)
 
 		for (const side of SIDES) this._write(side)
+
+		// Конец — от начала, которое только что разложено
+		this._syncEnd()
 
 		// Набор кнопки: `dialog`, а не `true` — `true` у ARIA значит `menu`
 		this._triggerAria = new TAria()
@@ -218,6 +240,8 @@ export class TDatePicker
 		this._applyOpen(props.open ?? ctor.defaultValues.open)
 
 		this._listenOwn()
+		// Раньше сторон: к `change:value` DatePicker конец уже сверен с новым началом
+		this._listenStart()
 		this._listenSides()
 		this._syncOpenable()
 	}
@@ -324,11 +348,14 @@ export class TDatePicker
 		return this._min
 	}
 
+	/** Полю одной даты и началу — как есть, концу — вместе с началом (`_syncEndMin`). */
 	set min(value: TCalendarDate | undefined) {
 		if (this._min === value) return
 
 		this._min = value
-		this._inputs.forEach((input) => (input.min = value))
+		this._field.min = value
+		this._start.min = value
+		this._syncEndMin()
 		this._calendar.min = value
 		this.events.emit('change:min', value)
 	}
@@ -337,16 +364,21 @@ export class TDatePicker
 		return this._max
 	}
 
+	/** Всем полям; `min` конца зависит и от него — начало за `max` его не поднимает. */
 	set max(value: TCalendarDate | undefined) {
 		if (this._max === value) return
 
 		this._max = value
 		this._inputs.forEach((input) => (input.max = value))
+		this._syncEndMin()
 		this._calendar.max = value
 		this.events.emit('change:max', value)
 	}
 
-	/** Функция сверяется по ссылке: заданная заново — смена. */
+	/**
+	 * Функция сверяется по ссылке: заданная заново — смена. Полю одной даты,
+	 * началу и календарю — как есть, концу — с якорем «начало» (`_syncEndRule`).
+	 */
 	get unavailable(): TCalendarUnavailable | undefined {
 		return this._unavailable
 	}
@@ -355,6 +387,9 @@ export class TDatePicker
 		if (this._unavailable === value) return
 
 		this._unavailable = value
+		this._field.unavailable = value
+		this._start.unavailable = value
+		this._syncEndRule()
 		this._calendar.unavailable = value
 		this.events.emit('change:unavailable', value)
 	}
@@ -434,6 +469,35 @@ export class TDatePicker
 		this.events.emit('change:endLabel', value)
 	}
 
+	/**
+	 * Имя начала диапазона в форме — `name` поля начала: значение в форму
+	 * отдаёт поле, как у одной даты.
+	 */
+	get startName(): string {
+		return this._startName
+	}
+
+	set startName(value: string) {
+		if (this._startName === value) return
+
+		this._startName = value
+		this._start.name = value
+		this.events.emit('change:startName', value)
+	}
+
+	/** Имя конца диапазона в форме — `name` поля конца. */
+	get endName(): string {
+		return this._endName
+	}
+
+	set endName(value: string) {
+		if (this._endName === value) return
+
+		this._endName = value
+		this._end.name = value
+		this.events.emit('change:endName', value)
+	}
+
 	/* ------------------------------------------------------------------ */
 	/* Выходы для разметки                                                */
 	/* ------------------------------------------------------------------ */
@@ -489,6 +553,8 @@ export class TDatePicker
 			triggerLabel: this._triggerLabel,
 			startLabel: this._startLabel,
 			endLabel: this._endLabel,
+			startName: this._startName,
+			endName: this._endName,
 		}
 	}
 
@@ -550,6 +616,50 @@ export class TDatePicker
 		this.events.on('change:name', (value: string) => (this._field.name = value))
 	}
 
+	/** Начало сменилось — конец сверяется с ним заново. */
+	private _listenStart(): void {
+		this._start.events.on('change:value', () => this._syncEnd())
+	}
+
+	/**
+	 * Сверка конца диапазона с началом — как второго дня в календаре с якорем:
+	 * раньше начала — ошибка (`min`), а недоступен ли конец, решает правило с
+	 * якорем «начало».
+	 */
+	private _syncEnd(): void {
+		this._syncEndMin()
+		this._syncEndRule()
+	}
+
+	/**
+	 * `min` конца — начало, когда оно позже `min` DatePicker и не за `max`.
+	 * Начало за `max` конец не поднимает: граница раньше `min` у поля
+	 * схлопывается в `min`, и конец, равный такому началу, прошёл бы проверку,
+	 * оставаясь за `max`. Ошибку тогда показывает начало, а конец сверяется со
+	 * своими границами.
+	 */
+	private _syncEndMin(): void {
+		this._end.min = endMinOf(this._min, this._max, this._startDate)
+	}
+
+	/**
+	 * Правило конца — правило DatePicker с якорем «начало»: так «не дольше N
+	 * ночей» и «не через занятые дни» проверяются и у набранного конца.
+	 * Пересобирается на смену правила и начала — новая функция, и поле
+	 * пересчитывает ошибку.
+	 */
+	private _syncEndRule(): void {
+		const rule = this._unavailable
+		const anchor = this._startDate
+
+		this._end.unavailable = rule === undefined ? undefined : (date) => rule(date, anchor)
+	}
+
+	/** Набранное начало диапазона; не набрано или не дата — `undefined`. */
+	private get _startDate(): TCalendarDate | undefined {
+		return parseDate(this._start.value)
+	}
+
 	/** Правка сторон — в своё значение; выбор пользователя в календаре — закрытие. */
 	private _listenSides(): void {
 		this._calendar.events.on('change:value', () => {
@@ -600,6 +710,25 @@ export class TDatePicker
 			this._writing = undefined
 		}
 	}
+}
+
+/**
+ * Первый верный день конца диапазона: начало, когда оно позже `min` и не за
+ * `max`, иначе сам `min`. Невалидная граница не ограничивает, как у поля.
+ */
+function endMinOf(
+	min: TCalendarDate | undefined,
+	max: TCalendarDate | undefined,
+	start: TCalendarDate | undefined,
+): TCalendarDate | undefined {
+	const low = parseDate(min)
+	const high = parseDate(max)
+
+	if (start === undefined) return min
+	if (low !== undefined && compareDates(start, low) <= 0) return min
+	if (high !== undefined && compareDates(start, high) > 0) return min
+
+	return start
 }
 
 /**
