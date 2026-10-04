@@ -8,8 +8,8 @@
  * заводит ни переходов, ни анимаций. Как полоса лежит и движется, решает тема
  * (`themes/oren/src/components/progress-linear/_progress-linear.scss`): доля
  * едет переходом, бег — сдвиг отрезка, у горизонтальной зеркальный в RTL, у
- * вертикальной — снизу вверх в любом направлении письма. При просьбе системы
- * убрать движение доля встаёт сразу, а бег тот же. В принудительных цветах
+ * вертикальной — снизу вверх в любом направлении письма. Без движения доля
+ * встаёт сразу, а вместо бега мерцает вся дорожка. В принудительных цветах
  * дорожка, заливка и бегущий отрезок берут системные цвета: браузер иначе
  * заменил бы их фоны цветом поверхности.
  *
@@ -29,7 +29,7 @@ import { COMPONENT_SIZES } from '@soldy-ui/playground-shared'
 import { find, pixel, systemColor } from './colors'
 import { DIRECTION_CASES, setDir, sidesOf, type TLine } from './directions'
 import { forcedColors, reducedMotion } from './media'
-import { settled, transitionEvents, transitionRuns } from './transitions'
+import { animatedProperties, settled, transitionEvents, transitionRuns } from './transitions'
 
 import '@soldy-ui/theme-oren'
 
@@ -112,7 +112,10 @@ function transitionStarts(element: HTMLElement): string[] {
 	return starts
 }
 
-/** Анимация бега — у псевдоэлемента корня; нет её — тест падает здесь. */
+/**
+ * Анимация отрезка — у псевдоэлемента корня: бег, а без движения — мерцание.
+ * Нет её — тест падает здесь.
+ */
 function runOf(element: HTMLElement): CSSAnimation {
 	const found = element
 		.getAnimations({ subtree: true })
@@ -123,7 +126,7 @@ function runOf(element: HTMLElement): CSSAnimation {
 				animation.effect.pseudoElement === '::after',
 		)
 
-	if (!(found instanceof CSSAnimation)) throw new Error('анимации бега нет')
+	if (!(found instanceof CSSAnimation)) throw new Error('анимации отрезка нет')
 
 	return found
 }
@@ -275,20 +278,13 @@ describe('бег', () => {
 	})
 
 	/**
-	 * Бег одинаков при любых настройках системы — решение владельца, как у
-	 * выезда Drawer: у неизвестной доли движение и есть сообщение «работа
-	 * идёт», а отрезок, который стоит на месте и мерцает, читается как
-	 * зависшая полоса. Сторож решения: без него бег снова спрятали бы под
-	 * `prefers-reduced-motion`.
+	 * Бег — движение, и без него (здесь — по просьбе системы) отрезок не
+	 * бежит. Стоять ему нельзя: стоящий отрезок читался бы зависшей полосой.
+	 * Вместо бега вся дорожка мерцает прозрачностью: отрезок во всю её длину,
+	 * на месте, и кадры ведут одну прозрачность. Режим приложения поверх
+	 * системы — `browser/motion-mode.spec.ts`.
 	 */
-	it('система просит меньше движения — отрезок всё равно бежит', async () => {
-		mount({ indeterminate: true })
-		await transitionEvents()
-
-		const width = segment().width
-		const shifts = shiftsAt([0.25, 0.5, 0.75])
-
-		cleanup()
+	it('система просит меньше движения — бега нет, мерцает вся дорожка', async () => {
 		await reducedMotion('reduce')
 
 		// Эмуляция действует — иначе сторож проверял бы обычный режим
@@ -297,10 +293,11 @@ describe('бег', () => {
 		mount({ indeterminate: true })
 		await transitionEvents()
 
-		// Тот же отрезок, а не вся дорожка, и идёт он тем же путём
-		expect(segment().width).toBe(width)
-		expect(root().offsetWidth - Number.parseFloat(width)).toBeGreaterThan(EPSILON)
-		expect(shiftsAt([0.25, 0.5, 0.75])).toEqual(shifts)
+		expect(Math.abs(Number.parseFloat(segment().width) - root().clientWidth)).toBeLessThan(
+			EPSILON,
+		)
+		expect(segment().translate).toBe('none')
+		expect(animatedProperties(runOf(root()))).toEqual(['opacity'])
 	})
 })
 
@@ -421,14 +418,7 @@ describe('вертикальная полоса', () => {
 		expect(shiftsAt([0.25, 0.5, 0.75], 'x')).toEqual([0, 0, 0])
 	})
 
-	it('система просит меньше движения — отрезок всё равно бежит', async () => {
-		mount({ indeterminate: true, orientation: 'vertical' })
-		await transitionEvents()
-
-		const height = segment().height
-		const shifts = shiftsAt([0.25, 0.5, 0.75], 'y')
-
-		cleanup()
+	it('система просит меньше движения — бега нет, мерцает вся полоса', async () => {
 		await reducedMotion('reduce')
 
 		// Эмуляция действует — иначе сторож проверял бы обычный режим
@@ -437,10 +427,11 @@ describe('вертикальная полоса', () => {
 		mount({ indeterminate: true, orientation: 'vertical' })
 		await transitionEvents()
 
-		// Тот же отрезок, а не вся полоса, и идёт он тем же путём — вверх
-		expect(segment().height).toBe(height)
-		expect(root().offsetHeight - Number.parseFloat(height)).toBeGreaterThan(EPSILON)
-		expect(shiftsAt([0.25, 0.5, 0.75], 'y')).toEqual(shifts)
+		expect(Math.abs(Number.parseFloat(segment().height) - root().clientHeight)).toBeLessThan(
+			EPSILON,
+		)
+		expect(segment().translate).toBe('none')
+		expect(animatedProperties(runOf(root()))).toEqual(['opacity'])
 	})
 })
 

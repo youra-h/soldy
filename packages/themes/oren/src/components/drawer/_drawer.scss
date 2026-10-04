@@ -1,4 +1,5 @@
 @use '../../mixins/modal';
+@use '../../mixins/motion';
 @use '../../mixins/swipe';
 
 // Drawer — выезжающая панель.
@@ -133,8 +134,10 @@ $backdrop-easing: linear;
 
 // Где стоит панель. Открытая — на месте, а во время жеста — со сдвигом к
 // краю, который пишет плагин жеста (`--s-swipe-offset`, px со знаком оси
-// окна). Закрытая — за своим краем (`--drawer-away`, своя переменная темы):
-// туда она уезжает при закрытии и оттуда въезжает при открытии.
+// окна). Закрытая с движением — за своим краем (`--drawer-away`, своя
+// переменная темы): туда она уезжает при закрытии и оттуда въезжает при
+// открытии. Без движения закрытая стоит, где стояла, и прозрачна: проявляется
+// и гаснет на месте, как окно Dialog.
 //
 // Сдвиг — `translate`, а не отступ: он от размера самой панели и ничего не
 // раскладывает заново. Логических направлений у сдвига нет, поэтому у
@@ -168,14 +171,22 @@ $backdrop-easing: linear;
 	--drawer-away: 0 100%;
 }
 
+// С движением закрытая панель не гаснет, а уезжает: прозрачность у неё —
+// только без движения.
 .s-drawer[data-open='false'] {
-	translate: var(--drawer-away);
+	@apply opacity-0;
+
+	@include motion.allowed {
+		@apply opacity-100;
+		translate: var(--drawer-away);
+	}
 }
 
 // Въезд и выезд. Закрытие — `display: none` от разметки, и
 // `transition-behavior: allow-discrete` откладывает его до конца перехода, а
-// `@starting-style` даёт показанной панели и подложке начальное положение —
-// за краем и прозрачную. Хуков под анимацию у кода нет.
+// `@starting-style` даёт показанной панели и подложке начальное состояние —
+// прозрачную, а панели ещё и место за краем: из них переход берёт то, что
+// ведёт. Хуков под анимацию у кода нет.
 //
 // Длительность и кривую браузер берёт из стиля, в который узел переходит:
 // въезд — из `[data-open='true']`, выезд — из `[data-open='false']`.
@@ -185,12 +196,12 @@ $backdrop-easing: linear;
 // жеста действует `transition-property` по умолчанию, `all`, и с ненулевой
 // длительностью панель отставала бы от указателя.
 //
-// Просьбу системы убрать движение (`prefers-reduced-motion`) выезд не
-// выполняет — решение владельца: это обычный сдвиг панели от её края, так
-// панель открывается и закрывается при любых настройках системы. Ход ручек
-// Slider и листание Scroller просьбу выполняют.
+// Въезд и выезд — движение, и идут они, только когда режим движения их
+// разрешает (`motion.allowed`). Без движения панель проявляется и гаснет на
+// месте прозрачностью — тем же временем, что подложка, — а отпущенная после
+// жеста встаёт на место сразу.
 .s-drawer:not([data-swiping='true']) {
-	transition-property: translate, display;
+	transition-property: opacity, display;
 	transition-behavior: allow-discrete;
 
 	&[data-open='true'] {
@@ -201,6 +212,10 @@ $backdrop-easing: linear;
 	&[data-open='false'] {
 		transition-duration: $exit-duration;
 		transition-timing-function: $exit-easing;
+	}
+
+	@include motion.allowed {
+		transition-property: translate, display;
 	}
 }
 
@@ -220,6 +235,7 @@ $backdrop-easing: linear;
 
 @starting-style {
 	.s-drawer[data-open='true'] {
+		@apply opacity-0;
 		translate: var(--drawer-away);
 	}
 

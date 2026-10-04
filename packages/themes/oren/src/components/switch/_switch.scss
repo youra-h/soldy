@@ -1,5 +1,6 @@
 @use './mixins' as mixines;
 @use '../../mixins/fade';
+@use '../../mixins/motion';
 @use '../../mixins/required' as required;
 .s-switch {
 	$this: &;
@@ -49,13 +50,19 @@
 		// логических направлений, и в RTL он увёл бы ручку вправо. Селектора
 		// по `[dir='rtl']` здесь нет: он зеркалил бы и переключатель с
 		// `direction="ltr"` внутри RTL-предка.
+		//
+		// Ход ручки — движение: переходом, только когда режим движения его
+		// разрешает (`motion.allowed`), а без движения ручка встаёт сразу.
 		&--thumb {
 			@apply relative;
 			@apply flex items-center justify-center;
 			@apply bg-s-component-knob;
 			@apply rounded-full shadow-md;
 			@apply absolute top-0.5 start-0.5;
-			@apply transition-[inset-inline-start] duration-200;
+
+			@include motion.allowed {
+				@apply transition-[inset-inline-start] duration-200;
+			}
 		}
 	}
 

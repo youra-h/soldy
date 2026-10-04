@@ -1,4 +1,5 @@
 @use './mixins' as mixins;
+@use '../../mixins/motion';
 .s-skeleton {
 	$this: &;
 
@@ -43,20 +44,30 @@
 		}
 
 		// animation
+		//
+		// Волна — блик, который бежит по заглушке, то есть движение: она идёт,
+		// только когда режим движения её разрешает (`motion.allowed`). Без
+		// движения у волны пульсация, как у `pulse`.
 		#{$this}--animation-wave & {
 			@apply overflow-hidden;
-			animation: none;
+			@include mixins.skeleton-pulse;
+
+			@include motion.allowed {
+				animation: none;
+			}
 
 			&::after {
-				content: '';
-				@apply absolute inset-0;
-				background: linear-gradient(
-					90deg,
-					transparent 0%,
-					rgba(255, 255, 255, 0.4) 50%,
-					transparent 100%
-				);
-				animation: skeleton-wave 1.5s ease-in-out infinite;
+				@include motion.allowed {
+					content: '';
+					@apply absolute inset-0;
+					background: linear-gradient(
+						90deg,
+						transparent 0%,
+						rgba(255, 255, 255, 0.4) 50%,
+						transparent 100%
+					);
+					animation: skeleton-wave 1.5s ease-in-out infinite;
+				}
 			}
 		}
 
@@ -109,7 +120,7 @@
 // иначе под ним осталась бы пульсация базы.
 :where(.s-skeleton) .s-skeleton__placeholder {
 	@apply rounded-md;
-	animation: skeleton-pulse 1.5s ease-in-out infinite;
+	@include mixins.skeleton-pulse;
 
 	@include mixins.skeleton-variant('neutral');
 }

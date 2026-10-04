@@ -1,4 +1,5 @@
 @use './mixins' as mixines;
+@use '../../mixins/motion';
 
 // Стилизуется только элемент. У контейнера группы стилей нет намеренно
 // (решение владельца): радио одной группы могут стоять где угодно в разметке —
@@ -27,23 +28,34 @@
 		@apply sr-only;
 	}
 
-	// Кольцо. Цвет рамки и отметки задаёт вариант (`radio-variant`).
+	// Кольцо. Цвет рамки и отметки задаёт вариант (`radio-variant`). Цвет
+	// меняется переходом в любом режиме движения, а толщина кольца у вида
+	// `ring` — движение (`motion.allowed`): без него кольцо утолщается сразу.
 	&__control {
 		@apply inline-flex shrink-0 items-center justify-center;
 		@apply rounded-full border;
 		@apply bg-s-component-surface;
-		@apply transition-[border-color,border-width,background-color] duration-150;
+		@apply transition-[border-color,background-color] duration-150;
 		width: var(--radio-control-size);
 		height: var(--radio-control-size);
+
+		@include motion.allowed {
+			transition-property: border-color, border-width, background-color;
+		}
 	}
 
 	// Точка — отметка вида по умолчанию. Стоит всегда, у невыбранного сжата в
-	// ноль: так она проявляется из центра, а не возникает скачком.
+	// ноль: так она проявляется из центра, а не возникает скачком. Рост точки
+	// — движение (`motion.allowed`): без него она возникает сразу.
 	&__indicator {
 		@apply rounded-full bg-current;
-		@apply scale-0 transition-transform duration-150;
+		@apply scale-0;
 		width: calc(var(--radio-control-size) / 2);
 		height: calc(var(--radio-control-size) / 2);
+
+		@include motion.allowed {
+			@apply transition-transform duration-150;
+		}
 	}
 
 	// Подпись. Её может не быть: радио без текста — законный случай, подпись

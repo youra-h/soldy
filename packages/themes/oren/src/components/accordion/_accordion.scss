@@ -1,9 +1,13 @@
 @use '../button/mixins' as button;
+@use '../../mixins/motion';
 
 .s-accordion {
 	@apply flex flex-col gap-1;
 }
 
+// Раскрытие секции и поворот стрелки — движение: идут переходом, только когда
+// режим движения его разрешает (`motion.allowed`), а без движения секция
+// раскрывается и стрелка поворачивается сразу.
 .s-accordion-item {
 	$this: &;
 
@@ -22,8 +26,11 @@
 	}
 
 	&__arrow {
-		@apply transition-transform duration-300;
 		@apply shrink-0;
+
+		@include motion.allowed {
+			@apply transition-transform duration-300;
+		}
 	}
 
 	// Поворот — только стрелки своего заголовка: правило через потомка
@@ -35,7 +42,10 @@
 
 	&__body {
 		@apply grid grid-rows-[0fr];
-		transition: grid-template-rows 300ms ease;
+
+		@include motion.allowed {
+			transition: grid-template-rows 300ms ease;
+		}
 	}
 
 	&[data-selected='true'] > &__body {
@@ -44,7 +54,10 @@
 
 	&__content {
 		@apply overflow-hidden py-0;
-		transition: padding 300ms ease;
+
+		@include motion.allowed {
+			transition: padding 300ms ease;
+		}
 	}
 
 	// Отступ — только своей панели: у свёрнутой секции вложенного Accordion он

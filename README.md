@@ -116,6 +116,11 @@ createApp(App).mount('#app')
 
 The dark scheme is switched on with `<html data-theme="oren-dark">`.
 
+Motion — panels sliding in, thumbs travelling, indicators running — follows the system's
+reduced-motion setting by default. An application that wants motion regardless, or never, sets one
+mode for the whole library at its entry point: `useMotion('full')` or `useMotion('reduce')` from
+`@soldy-ui/plugins`.
+
 ## Components
 
 The component set, as the playground shows it:

@@ -1,8 +1,9 @@
 /**
  * CSS-переходы темы в настоящем браузере — общее для спеков, которые смотрят,
- * как слой появляется и исчезает (`drawer.spec.ts`, `dialog.spec.ts`), и как
+ * как слой появляется и исчезает (`drawer.spec.ts`, `dialog.spec.ts`), как
  * новое значение доезжает до места переходом (`slider.spec.ts`,
- * `progress-linear.spec.ts`, `tabs-contained.spec.ts`).
+ * `progress-linear.spec.ts`, `tabs-contained.spec.ts`) и что ведут кадры
+ * анимации (`progress-spinner.spec.ts`, `motion-mode.spec.ts`).
  *
  * Хуков под анимацию у кода нет: переход держит тема, и увидеть его можно
  * только на самом узле. Браузер заводит на каждое свойство, которое идёт
@@ -146,4 +147,20 @@ export const pseudoSettled = (element: Element, pseudo: string): Promise<unknown
 export const transitionEvents = async (): Promise<void> => {
 	await nextFrame()
 	await nextFrame()
+}
+
+/** Служебные ключи кадра `getKeyframes()` — не свойства. */
+const FRAME_KEYS = new Set(['offset', 'computedOffset', 'easing', 'composite'])
+
+/**
+ * Свойства, которые ведут кадры анимации. Так видно, движение ли она: бег
+ * индикатора ведёт сдвиг или поворот, мерцание без движения — одну
+ * прозрачность.
+ */
+export const animatedProperties = (animation: Animation): string[] => {
+	const frames = animation.effect instanceof KeyframeEffect ? animation.effect.getKeyframes() : []
+
+	return [...new Set(frames.flatMap((frame) => Object.keys(frame)))].filter(
+		(key) => !FRAME_KEYS.has(key),
+	)
 }

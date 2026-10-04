@@ -8,8 +8,8 @@
  * заводит ни переходов, ни анимаций. Как кольцо выглядит и движется, решает
  * тема (`themes/oren/src/components/progress-spinner/_progress-spinner.scss`):
  * диаметр — шкала размеров, доля — длина штриха дуги и едет переходом, бег —
- * поворот всего рисунка по часовой, в RTL тот же. При просьбе системы убрать
- * движение доля встаёт сразу, а бег тот же. В принудительных цветах штрихи
+ * поворот всего рисунка по часовой, в RTL тот же. Без движения доля встаёт
+ * сразу, а вместо бега мерцает всё кольцо. В принудительных цветах штрихи
  * берут системные цвета: сам браузер SVG не перекрашивает.
  *
  * Переходы ловит слушатель, повешенный до действия, а не снимок после него:
@@ -27,7 +27,7 @@ import { COMPONENT_SIZES } from '@soldy-ui/playground-shared'
 
 import { find, pixel, systemColor } from './colors'
 import { forcedColors, reducedMotion } from './media'
-import { settled, transitionEvents, transitionRuns } from './transitions'
+import { animatedProperties, settled, transitionEvents, transitionRuns } from './transitions'
 
 import '@soldy-ui/theme-oren'
 
@@ -342,18 +342,13 @@ describe('бег', () => {
 	})
 
 	/**
-	 * Бег одинаков при любых настройках системы — решение владельца, как у
-	 * линии и выезда Drawer: у неизвестной доли движение и есть сообщение
-	 * «работа идёт». Сторож решения: без него бег снова спрятали бы под
-	 * `prefers-reduced-motion`.
+	 * Бег — движение, и без него (здесь — по просьбе системы) рисунок стоит.
+	 * Полное кольцо, которое стоит, читалось бы готовой работой, поэтому
+	 * бегущая дуга без движения — всё кольцо сплошным штрихом, и она мерцает
+	 * прозрачностью: кадры ведут одну прозрачность. Режим приложения поверх
+	 * системы — `browser/motion-mode.spec.ts`.
 	 */
-	it('система просит меньше движения — рисунок всё равно крутится', async () => {
-		mount({ indeterminate: true })
-		await transitionEvents()
-
-		const angles = anglesAt([0.25, 0.5, 0.75])
-
-		cleanup()
+	it('система просит меньше движения — рисунок стоит, мерцает всё кольцо', async () => {
 		await reducedMotion('reduce')
 
 		// Эмуляция действует — иначе сторож проверял бы обычный режим
@@ -362,9 +357,23 @@ describe('бег', () => {
 		mount({ indeterminate: true })
 		await transitionEvents()
 
-		expect(runOf().animationName).toBe(RUN)
+		expect(ring().getAnimations()).toEqual([])
 		expect(getComputedStyle(runner()).visibility).toBe('visible')
-		expect(anglesAt([0.25, 0.5, 0.75])).toEqual(angles)
+
+		const [dash, gap] = getComputedStyle(runner())
+			.strokeDasharray.split(',')
+			.map((value) => Number.parseFloat(value))
+
+		expect(dash).toBe(1)
+		expect(gap).toBe(0)
+
+		const pulse = runner()
+			.getAnimations()
+			.find((animation) => animation instanceof CSSAnimation)
+
+		if (!pulse) throw new Error('мерцания нет')
+
+		expect(animatedProperties(pulse)).toEqual(['opacity'])
 	})
 })
 

@@ -80,7 +80,11 @@ export interface IListProps {
 	maxRows?: number
 	/** Что делать с не помещающимся текстом */
 	contentFit?: TListContentFit
-	/** Как прокручивать к элементу при навигации */
+	/**
+	 * Как прокручивать к элементу при навигации: `none` — не прокручивать,
+	 * `instant` — сразу, `smooth` — плавно, если режим движения библиотеки
+	 * движение не убрал, иначе сразу
+	 */
 	scrollBehavior?: TScrollBehavior
 	/** Где показывать отметку выбранного элемента */
 	indicator?: TListIndicator
@@ -97,7 +101,11 @@ export interface IList {
 	maxRows: number
 	/** Что делать с не помещающимся текстом */
 	contentFit: TListContentFit
-	/** Как прокручивать к элементу при навигации */
+	/**
+	 * Как прокручивать к элементу при навигации: `none` — не прокручивать,
+	 * `instant` — сразу, `smooth` — плавно, если режим движения библиотеки
+	 * движение не убрал, иначе сразу
+	 */
 	scrollBehavior: TScrollBehavior
 	/** Где показывать отметку выбранного элемента */
 	indicator: TListIndicator

@@ -1,4 +1,5 @@
 @use '../button/mixins' as button;
+@use '../../mixins/motion';
 
 // Select — поле выбора из списка.
 //
@@ -263,12 +264,17 @@
 	}
 
 	// Стрелка смотрит вниз, а при открытой панели разворачивается вверх —
-	// тот же приём, что у стрелки Accordion.
+	// тот же приём, что у стрелки Accordion. Поворот — движение: переходом,
+	// только когда режим движения его разрешает (`motion.allowed`).
 	//
 	// Класс на обёртке слота, а не на самой иконке: подменишь иконку через
 	// `#arrow-icon` — поворот всё равно работает.
 	&__arrow {
-		@apply inline-flex shrink-0 transition-transform duration-200;
+		@apply inline-flex shrink-0;
+
+		@include motion.allowed {
+			@apply transition-transform duration-200;
+		}
 	}
 
 	&[data-open='true'] &__arrow {

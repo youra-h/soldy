@@ -7,6 +7,7 @@ import type {
 	TCollectionEngine,
 } from '@soldy-ui/core'
 import type { IPluginContext } from '../../../base'
+import { smoothScrollBehavior } from '../../../motion'
 import { TElementPlugin } from '../../element'
 import { TCollectionElements } from '../../collection'
 import { TListNavigationPlugin } from '../../list/navigation'
@@ -152,15 +153,19 @@ export class TSelectKeyboardPlugin
 	 *
 	 * `scrollIntoView` есть не везде: его нет в jsdom и он бессмыслен для узла
 	 * вне документа. Прокрутка — удобство, а не часть контракта.
+	 *
+	 * Плавная прокрутка — движение: `smooth` плавный, только пока режим
+	 * движения библиотеки его не убрал (`smoothScrollBehavior`).
 	 */
 	private _scrollTo(uid: string | number): void {
-		const behavior = this._list?.scrollBehavior ?? 'smooth'
+		const behavior = this._list?.scrollBehavior
+		const option = this._optionElement(uid)
 
-		if (behavior === 'none') return
+		if (!option || behavior === undefined || behavior === 'none') return
 
-		this._optionElement(uid)?.scrollIntoView?.({
+		option.scrollIntoView?.({
 			block: 'nearest',
-			behavior: behavior === 'instant' ? 'instant' : 'smooth',
+			behavior: behavior === 'instant' ? 'instant' : smoothScrollBehavior(option),
 		})
 	}
 
