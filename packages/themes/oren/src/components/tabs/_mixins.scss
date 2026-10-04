@@ -1,3 +1,5 @@
+@use '../../mixins/motion';
+
 // Строка таба — всё в обёртке элемента, кроме кнопки закрытия: она стоит рядом
 // со строкой, а не внутри неё (`_tabs.scss`, `.s-tabs-item`).
 $row: ':not(.s-tabs-item__close)';
@@ -19,11 +21,11 @@ $move-easing: ease;
 // стиле после записи, поэтому переход начинает та же запись, что ставит
 // признак.
 //
-// И только когда система о движении не просила: переезд — переход значения,
-// как ход ручки Slider и доля ProgressLinear, а не сообщение, и при просьбе
-// отметка встаёт на новый таб сразу.
+// Переезд — движение, и идёт он, только когда режим движения его разрешает
+// (`motion.allowed`): иначе отметка встаёт на новый таб сразу, как ручка
+// Slider и доля ProgressLinear.
 @mixin active-tab-move($size) {
-	@media (prefers-reduced-motion: no-preference) {
+	@include motion.allowed {
 		transition-property: transform, $size;
 		transition-duration: calc(var(--active-tab-moving, 0) * #{$move-duration});
 		transition-timing-function: $move-easing;

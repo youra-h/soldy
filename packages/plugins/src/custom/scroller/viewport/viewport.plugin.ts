@@ -4,6 +4,7 @@ import type { IPluginContext } from '../../../base'
 import { TElementPlugin } from '../../element'
 import { isFocusableElement, itemOf, scrollWindowOf, tabStops } from '../../../utils'
 import type { IDomEventTarget } from '../../../utils'
+import { smoothScrollBehavior } from '../../../motion'
 import { resolveEdges } from './edges'
 import { resolveFocusShift } from './focus'
 import type { TScrollerViewportPluginEvents } from './types'
@@ -270,6 +271,13 @@ export class TScrollerViewportPlugin extends TBasePlugin<IScroller, TScrollerVie
 	 *
 	 * Знак — по вычисленному направлению письма: в RTL начало строки справа,
 	 * и «вперёд» уводит ленту влево.
+	 *
+	 * Листает плавно, если движение не убрано (`smoothScrollBehavior`): по
+	 * умолчанию — пока система о движении не просила, а режим движения
+	 * библиотеки может задать приложение. Плавность — в вызове, а не проп
+	 * ядра: из трёх значений `TScrollBehavior` у ленты осмысленны два, и
+	 * третье было бы мёртвым значением в перечислении. Правило темы с этим не
+	 * спорит — `scroll-behavior` она не объявляет.
 	 */
 	private _scroll(direction: TScrollerDirection): void {
 		const viewport = this._viewport
@@ -281,7 +289,7 @@ export class TScrollerViewportPlugin extends TBasePlugin<IScroller, TScrollerVie
 
 		viewport.scrollBy({
 			left: (rtl ? -forward : forward) * viewport.clientWidth,
-			behavior: prefersReducedMotion() ? 'instant' : 'smooth',
+			behavior: smoothScrollBehavior(viewport),
 		})
 	}
 
@@ -423,21 +431,4 @@ export class TScrollerViewportPlugin extends TBasePlugin<IScroller, TScrollerVie
  */
 function isButtonDisabled(owner: IScroller, side: TScrollerDirection): boolean {
 	return side === 'prev' ? owner.prevDisabled : owner.nextDisabled
-}
-
-/**
- * Просит ли пользователь обойтись без анимации.
- *
- * Плавность задаёт плагин в вызове, а не проп ядра: из трёх значений
- * `TScrollBehavior` у ленты осмысленны два, и третье было бы мёртвым
- * значением в перечислении. Правило темы с этим не спорит — `scroll-behavior`
- * она не объявляет.
- *
- * Среда без `matchMedia` (серверная отрисовка, jsdom) считается обычной: там
- * анимации всё равно нет.
- */
-function prefersReducedMotion(): boolean {
-	return (
-		typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches
-	)
 }

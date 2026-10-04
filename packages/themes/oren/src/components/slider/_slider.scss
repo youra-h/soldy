@@ -1,3 +1,4 @@
+@use '../../mixins/motion';
 @use '../../mixins/tooltip';
 @use './mixins' as mixines;
 
@@ -130,9 +131,8 @@
 		@apply absolute rounded-full;
 		background-color: var(--s-slider-fill);
 		// Список переходов — явно, как у ручки: с умолчанием `all` края ехали
-		// переходом и при протяжке, и при просьбе системы убрать движение, и
-		// заливка догоняла ручку. Края в список добавляет только блок
-		// `prefers-reduced-motion: no-preference` ниже.
+		// переходом и при протяжке, и без движения, и заливка догоняла ручку.
+		// Края в список добавляет только надстройка движения ниже.
 		transition-property: none;
 		transition-duration: 150ms;
 		transition-timing-function: ease-out;
@@ -277,8 +277,7 @@
 	// всплывала бы от курсора над пустым местом у ручки. Переход —
 	// прозрачностью, а `visibility` в списке переходов держит плашку видимой,
 	// пока она гаснет: курсор успевает перейти с ручки на подсказку.
-	// Прозрачность — не движение, и просьба системы убрать движение её не
-	// касается.
+	// Прозрачность — не движение, и режим движения её не касается.
 	&--tooltip-auto #{$this}__tooltip {
 		@apply invisible opacity-0;
 		transition-property: opacity, visibility;
@@ -345,8 +344,8 @@
 		}
 
 		// Щелчок: кольцо цвета заливки расходится от ручки, которая встала на
-		// метку при перетаскивании (анимация — ниже, под
-		// `prefers-reduced-motion`). В покое кольца нет.
+		// метку при перетаскивании (анимация — ниже, в надстройке движения). В
+		// покое кольца нет.
 		&::after {
 			content: '';
 			@apply absolute rounded-full pointer-events-none opacity-0;
@@ -475,25 +474,31 @@
 }
 
 // Ход ручек и заливки — плавный: от клавиатуры и от смены значения кодом.
-// Позиции в список переходов добавляет только этот блок — базовые правила
-// частей их не анимируют, — поэтому во время перетаскивания ручка и заливка
-// идут за указателем без задержки, при просьбе системы убрать движение — тоже.
-@media (prefers-reduced-motion: no-preference) {
-	.s-slider:not([data-dragging='true']) > .s-slider__track {
-		> .s-slider__thumb {
+// Позиции в список переходов добавляет только надстройка движения — базовые
+// правила частей их не анимируют, — поэтому во время перетаскивания ручка и
+// заливка идут за указателем без задержки, а без движения встают на новое
+// значение сразу.
+.s-slider:not([data-dragging='true']) > .s-slider__track {
+	> .s-slider__thumb {
+		@include motion.allowed {
 			transition-property: box-shadow, inset-inline-start, inset-block-end;
 		}
+	}
 
-		> .s-slider__range {
+	> .s-slider__range {
+		@include motion.allowed {
 			transition-property:
 				inset-inline-start, inset-inline-end, inset-block-start, inset-block-end;
 		}
 	}
+}
 
-	// Щелчок — отклик метки, на которую встала ручка: кольцо расходится от
-	// ручки и гаснет. Только при перетаскивании: клавиша и так ходит по шагу, а
-	// на первой отрисовке кольцо вспыхнуло бы у каждой занятой метки.
-	.s-slider[data-dragging='true'] .s-slider__mark[data-current='true']::after {
+// Щелчок — отклик метки, на которую встала ручка: кольцо расходится от ручки
+// и гаснет. Только при перетаскивании: клавиша и так ходит по шагу, а на
+// первой отрисовке кольцо вспыхнуло бы у каждой занятой метки. Кольцо растёт
+// — это движение, и без него отклика нет.
+.s-slider[data-dragging='true'] .s-slider__mark[data-current='true']::after {
+	@include motion.allowed {
 		animation: s-slider-detent 400ms ease-out;
 	}
 }

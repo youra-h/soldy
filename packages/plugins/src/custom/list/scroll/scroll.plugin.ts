@@ -1,7 +1,8 @@
-import type { IControl, IList, TCollectionEngine, TScrollBehavior } from '@soldy-ui/core'
+import type { IControl, IList, TCollectionEngine } from '@soldy-ui/core'
 import { frameDebounce } from '@soldy-ui/core'
 import { TBasePlugin } from '../../../base'
 import type { IPluginContext } from '../../../base'
+import { smoothScrollBehavior } from '../../../motion'
 import { TElementPlugin } from '../../element'
 import { TCollectionBundlesPlugin, TCollectionElements } from '../../collection'
 import { TListKeyboardPlugin } from '../keyboard'
@@ -12,6 +13,8 @@ import type { TListScrollPluginEvents } from './types'
  *
  * Поведение берётся из `scrollBehavior` инстанса (`IList`): свойством владеет
  * ядро, плагин его только применяет. Так устроены и остальные плагины пакета.
+ * Плавная прокрутка — движение: `smooth` плавный, только пока режим движения
+ * библиотеки его не убрал (`smoothScrollBehavior`).
  */
 export class TListScrollPlugin extends TBasePlugin<any, TListScrollPluginEvents> {
 	private _element: Element | null = null
@@ -88,19 +91,18 @@ export class TListScrollPlugin extends TBasePlugin<any, TListScrollPluginEvents>
 	private _scrollToItem(uid: string | number, mode: 'center' | 'nearest'): void {
 		if (!this._element) return
 
-		const behavior: TScrollBehavior = this._list?.scrollBehavior ?? 'smooth'
+		const behavior = this._list?.scrollBehavior
 
-		if (behavior === 'none') return
+		if (behavior === undefined || behavior === 'none') return
 
 		const targetElement = this._collectionElements?.getElementByUid(uid)
 
 		if (!targetElement) return
 
+		const scroll = behavior === 'instant' ? 'instant' : smoothScrollBehavior(targetElement)
+
 		if (mode === 'nearest') {
-			targetElement.scrollIntoView({
-				block: 'nearest',
-				behavior: behavior === 'instant' ? 'instant' : 'smooth',
-			})
+			targetElement.scrollIntoView({ block: 'nearest', behavior: scroll })
 			return
 		}
 
@@ -113,10 +115,7 @@ export class TListScrollPlugin extends TBasePlugin<any, TListScrollPluginEvents>
 		const scrollTop =
 			container.scrollTop + (targetRect.top - containerRect.top) - container.clientHeight / 2
 
-		container.scrollTo({
-			top: scrollTop,
-			behavior: behavior === 'instant' ? 'instant' : 'smooth',
-		})
+		container.scrollTo({ top: scrollTop, behavior: scroll })
 	}
 
 	private _isFullyVisible(el: Element): boolean {

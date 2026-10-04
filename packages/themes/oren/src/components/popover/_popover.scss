@@ -1,6 +1,7 @@
 @use '../button/mixins' as button;
+@use '../../mixins/motion';
 @use '../../mixins/swipe';
-@use './mixins' as motion;
+@use './mixins' as mixines;
 
 // Popover — триггер и панель поверх страницы с произвольным содержимым.
 //
@@ -144,7 +145,8 @@
 // панель тянут (`data-swiping`), перехода нет: она идёт за пальцем без
 // задержки. Отпущенная, но не смахнутая, возвращается переходом появления, а
 // смахнутая уходит переходом исчезания — от места, где её отпустили, дальше к
-// своей стороне (ниже, «Появление и исчезание»).
+// своей стороне (ниже, «Появление и исчезание»). Без движения отпущенная
+// встаёт на место сразу, а смахнутая гаснет там, где её отпустили.
 .s-popover__panel:has(> .s-popover__handle) {
 	translate: 0 var(--s-swipe-offset, 0px);
 	padding-block-start: swipe.$handle;
@@ -229,9 +231,14 @@
 // Закрытая панель, пока гаснет, нажатий не ловит: она уже не открыта, и
 // нажатие сквозь неё — нажатие по тому, что под ней.
 //
-// Просьбу системы убрать движение (`prefers-reduced-motion`) переход
-// выполняет: панель только проявляется и гаснет на месте, а отпущенная
-// возвращается сразу, как ручка Slider. Прозрачность — не движение.
+// Движение — въезд, возврат и уход — идёт, только когда режим движения его
+// разрешает (`motion.allowed`). Без движения панель только проявляется и
+// гаснет на месте, а отпущенная встаёт на место сразу, как ручка Slider.
+// Прозрачность — не движение, она остаётся в любом режиме.
+//
+// Тайминги — списком на три свойства в порядке движения: прозрачность,
+// сдвиг, `display`. Без движения сдвига в списке свойств нет, и `display`
+// берёт второе время — то же, что при движении.
 .s-popover__panel {
 	&[data-placement^='bottom'],
 	&[data-edge='bottom'] {
@@ -256,30 +263,34 @@
 	}
 
 	&:not([data-swiping='true']) {
-		transition-property: opacity, translate, display;
+		transition-property: opacity, display;
 		transition-behavior: allow-discrete;
 
 		&[data-open='true'] {
-			transition-duration: motion.$enter-fade, motion.$enter-duration, motion.$enter-duration;
-			transition-timing-function: linear, motion.$enter-easing, linear;
+			transition-duration:
+				mixines.$enter-fade, mixines.$enter-duration, mixines.$enter-duration;
+			transition-timing-function: linear, mixines.$enter-easing, linear;
 		}
 
 		// `display` — до конца ухода, самого долгого из переходов
 		&[data-open='false'] {
-			transition-duration: motion.$exit-fade, motion.$exit-duration, motion.$exit-duration;
-			transition-timing-function: linear, motion.$exit-easing, linear;
+			transition-duration: mixines.$exit-fade, mixines.$exit-duration, mixines.$exit-duration;
+			transition-timing-function: linear, mixines.$exit-easing, linear;
 		}
 
-		@media (prefers-reduced-motion: reduce) {
-			transition-property: opacity, display;
+		@include motion.allowed {
+			transition-property: opacity, translate, display;
 		}
 	}
 }
 
-// Уход к своей стороне — после правил сдвига жеста: вес у них равный, и
-// закрытая панель берёт свой `translate` порядком
+// Уход к своей стороне — движение: без него закрытая панель гаснет на месте.
+// После правил сдвига жеста: вес у них равный, и закрытая панель берёт свой
+// `translate` порядком.
 .s-popover__panel[data-open='false']:is([data-contained='true'], :has(> .s-popover__handle)) {
-	translate: var(--s-popover-away);
+	@include motion.allowed {
+		translate: var(--s-popover-away);
+	}
 }
 
 @starting-style {

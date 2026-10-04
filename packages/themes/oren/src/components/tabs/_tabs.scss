@@ -1,5 +1,6 @@
 @use './mixins' as mixines;
 @use '../button/mixins' as button;
+@use '../../mixins/motion';
 .s-tabs {
 	$this: &;
 
@@ -136,11 +137,16 @@ $line: ':where(.s-tabs:not(.s-tabs--view-contained, .s-tabs--view-outline))';
 		}
 	}
 
-	/* Transition включается только после монтирования (--ready-animation ставит TTabsViewPlugin темы) */
+	// Полоса едет к новому табу переходом — только после монтирования
+	// (`--ready-animation` ставит `TTabsViewPlugin` темы) и только когда режим
+	// движения его разрешает (`motion.allowed`): иначе она встаёт на новый таб
+	// сразу, как карточка `contained`.
 	&.s-tabs--ready-animation .s-tabs__list::after {
-		transition:
-			transform mixines.$move-duration mixines.$move-easing,
-			width mixines.$move-duration mixines.$move-easing;
+		@include motion.allowed {
+			transition:
+				transform mixines.$move-duration mixines.$move-easing,
+				width mixines.$move-duration mixines.$move-easing;
+		}
 	}
 
 	@include mixines.tabs-line-variant('neutral');

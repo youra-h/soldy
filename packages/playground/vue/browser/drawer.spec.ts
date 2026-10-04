@@ -6,8 +6,8 @@
  * классы, переменные и `data-*`. Здесь — что из них выходит на экране:
  * панель у своего края (логического — в RTL `start` справа), во всю высоту
  * или ширину, внутри контейнера — в его границах; въезд и выезд — переходом
- * темы: без вспышки в первых кадрах, подложка темнеет вместе с панелью, и
- * так при любых настройках движения в системе. Прокрутка страницы, запертая
+ * темы: без вспышки в первых кадрах, подложка темнеет вместе с панелью, а без
+ * движения панель проявляется и гаснет на месте. Прокрутка страницы, запертая
  * под панелью, возвращается, когда панель выехала, — вернись она на
  * закрытии, панель съехала бы вбок в начале выезда.
  *
@@ -431,12 +431,13 @@ describe('въезд и выезд', () => {
 	})
 
 	/**
-	 * Выезд одинаков при любых настройках системы — решение владельца: это
-	 * обычный сдвиг панели от края, так панель открывается и закрывается.
-	 * Сторож решения: без него переход снова спрятали бы под
-	 * `prefers-reduced-motion`.
+	 * Въезд и выезд — движение, и без него (здесь — по просьбе системы) панель
+	 * проявляется и гаснет на месте прозрачностью, как окно Dialog, а
+	 * подложка темнеет и светлеет, как всегда. Исчезает панель по-прежнему
+	 * после перехода. Режим приложения поверх системы —
+	 * `browser/motion-mode.spec.ts`.
 	 */
-	it('система просит меньше движения — панель всё равно въезжает и выезжает', async () => {
+	it('система просит меньше движения — панель проявляется и гаснет на месте', async () => {
 		await reducedMotion('reduce')
 		await show()
 
@@ -445,17 +446,41 @@ describe('въезд и выезд', () => {
 
 		await openInPage()
 
-		expect(transitioning(panel())).toContain('translate')
+		expect(transitioning(panel())).toContain('opacity')
+		expect(transitioning(panel())).not.toContain('translate')
 		expect(transitioning(backdrop())).toContain('opacity')
+
+		// Начало проявления — на том же месте, где панель встанет: переход
+		// стоит на паузе, и мгновение выбирает тест
+		const fade = transitionOf(panel(), 'opacity')
+
+		fade.pause()
+		fade.currentTime = 0
+
+		const start = panel().getBoundingClientRect()
+
+		expect(Number(getComputedStyle(panel()).opacity)).toBe(0)
+
+		fade.finish()
+
+		expect(panel().getBoundingClientRect().left).toBe(start.left)
 
 		await expect.poll(active).toBe(find('.s-test-first'))
 		await settled(panel())
+
+		const place = panel().getBoundingClientRect().left
+
 		await escapeInPage()
 
-		// Выезжает: до конца перехода панель в документе
 		expect(panel().dataset.open).toBe('false')
-		expect(getComputedStyle(panel()).display).not.toBe('none')
+		expect(transitioning(panel())).not.toContain('translate')
 
+		// Гаснет на месте и до конца перехода остаётся в документе
+		const seen = await whileLeaving(panel(), () => {
+			expect(panel().getBoundingClientRect().left, 'панель на месте').toBe(place)
+		})
+
+		expect(seen).toBeGreaterThan(1)
 		await expect.poll(isOpen).toBe(false)
 	})
 })

@@ -48,6 +48,15 @@ import { TButton } from '@soldy-ui/core'
 usePlugins(TButton, [TRipplePlugin])
 ```
 
+Set the motion mode of the whole library at the entry point of the application. By default motion
+follows the system's reduced-motion setting:
+
+```ts
+import { useMotion } from '@soldy-ui/plugins'
+
+useMotion('full') // motion even when the system asks to reduce it; 'reduce' — never
+```
+
 ## Documentation
 
 - [Soldy UI README](https://github.com/youra-h/soldy#readme) — what the library is and how it is

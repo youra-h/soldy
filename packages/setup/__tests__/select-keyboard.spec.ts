@@ -24,7 +24,9 @@ import {
 	TListItemPlugin,
 	TPluginBundle,
 	TSelectItemIdsPlugin,
+	useMotion,
 } from '@soldy-ui/plugins'
+import type { TMotionMode } from '@soldy-ui/plugins'
 
 const nextFrame = () => new Promise((resolve) => requestAnimationFrame(resolve))
 
@@ -561,6 +563,42 @@ describe('прокрутка к подсвеченной опции', () => {
 		press('ArrowDown')
 
 		expect(scrolls).toHaveLength(1)
+	})
+
+	/**
+	 * Плавная прокрутка — движение, и `smooth` плавный, только пока режим
+	 * движения библиотеки его не убрал: заданный приложением (`useMotion`) или,
+	 * без него, настройкой системы. Систему задаёт заглушка `matchMedia` у окна:
+	 * в jsdom его нет вовсе.
+	 */
+	describe('smooth и режим движения', () => {
+		const systemReduces = (reduce: boolean) => {
+			const view = required(document.defaultView, 'окно документа')
+
+			Object.defineProperty(view, 'matchMedia', {
+				configurable: true,
+				value: (query: string) => ({ media: query, matches: reduce }),
+			})
+		}
+
+		afterEach(() => {
+			useMotion('system')
+			Reflect.deleteProperty(required(document.defaultView, 'окно документа'), 'matchMedia')
+		})
+
+		it.each<[string, TMotionMode, boolean, ScrollBehavior]>([
+			['режим reduce — сразу', 'reduce', false, 'instant'],
+			['система просит меньше движения — сразу', 'system', true, 'instant'],
+			['full поверх просьбы системы — плавно', 'full', true, 'smooth'],
+		])('%s', async (_name, mode, reduce, behavior) => {
+			const { press, scrolls } = await setup(['Москва', 'Тверь'])
+
+			systemReduces(reduce)
+			useMotion(mode)
+			press('ArrowDown')
+
+			expect(scrolls).toEqual([{ block: 'nearest', behavior }])
+		})
 	})
 })
 

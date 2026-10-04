@@ -1,3 +1,9 @@
 @mixin skeleton-variant($color: 'neutral', $bg-idx: 100) {
 	@apply #{'bg-s-' + $color + '-' + $bg-idx};
 }
+
+// Пульсация заглушки — прозрачностью, не движение: она идёт в любом режиме
+// движения. Одна у вида по умолчанию и у волны без движения.
+@mixin skeleton-pulse {
+	animation: skeleton-pulse 1.5s ease-in-out infinite;
+}

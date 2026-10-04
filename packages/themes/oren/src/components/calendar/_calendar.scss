@@ -1,8 +1,9 @@
 @use './mixins' as mixines;
 @use '../button/mixins' as button;
 @use '../../mixins/modal';
+@use '../../mixins/motion';
 @use '../../mixins/swipe';
-@use '../popover/mixins' as motion;
+@use '../popover/mixins' as popover;
 
 // Calendar — сетки показанных месяцев и одна пара кнопок листания на все.
 //
@@ -716,9 +717,11 @@ $picker-panel: '.s-calendar__month > .s-calendar__heading > .s-popover__panel[da
 // её отпустили (сдвиг плагин снимает только при следующем показе). Уезжай она
 // при закрытии, её путь — высота календаря — кончился бы за треть исчезания, и
 // место светлой карточки на миг потемнело бы под ещё не погасшей вуалью, а
-// потом снова посветлело: закрытие читалось бы вспышкой. Просьбу убрать
-// движение переход выполняет: карточка и въезжает без движения, проявляясь
-// вместе с подложкой.
+// потом снова посветлело: закрытие читалось бы вспышкой.
+//
+// Въезд и возврат — движение, и идут они, только когда режим движения их
+// разрешает (`motion.allowed`). Без движения карточка проявляется вместе с
+// подложкой на своём месте, а отпущенная встаёт на место сразу.
 #{$picker-panel} {
 	--s-calendar-swipe: var(--s-swipe-offset, 0px);
 
@@ -728,12 +731,10 @@ $picker-panel: '.s-calendar__month > .s-calendar__heading > .s-popover__panel[da
 	}
 
 	&[data-open='true']:not([data-swiping='true']) > :is(.s-popover__content, .s-popover__handle) {
-		transition-property: translate;
-		transition-duration: motion.$enter-duration;
-		transition-timing-function: motion.$enter-easing;
-
-		@media (prefers-reduced-motion: reduce) {
-			transition: none;
+		@include motion.allowed {
+			transition-property: translate;
+			transition-duration: popover.$enter-duration;
+			transition-timing-function: popover.$enter-easing;
 		}
 	}
 }
