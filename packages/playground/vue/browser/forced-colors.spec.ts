@@ -638,6 +638,74 @@ describe('Button: выбор под подсветкой и под фокусо�
 })
 
 /**
+ * Рамка залитой кнопки. Заливку режим убирает, и без рамки `filled` остался бы
+ * одним текстом, как `plain`: не видно ни что это кнопка, ни куда нажимать.
+ * Рамка — системного цвета кнопки, у выбранной — подсветкой, как у
+ * `outlined`. `filled` — база под видами по контексту, и строка списка рамку
+ * от неё не получает.
+ */
+const FRAMED = [
+	{ name: 'filled', props: { view: 'filled' } },
+	{ name: 'filled с вариантом', props: { view: 'filled', variant: 'accent' } },
+	{ name: 'вид по умолчанию', props: {} },
+] as const
+
+const SIDES = ['top', 'right', 'bottom', 'left'] as const
+
+const frameOf = (element: Element) =>
+	SIDES.map((side) => [
+		style(element).getPropertyValue(`border-${side}-width`),
+		style(element).getPropertyValue(`border-${side}-style`),
+		pixel([style(element).getPropertyValue(`border-${side}-color`)]).join(),
+	])
+
+describe.each(FRAMED)('Button, $name: рамка', ({ props }) => {
+	it.each(SCHEMES)('%s: в покое — цветом кнопки, выбранная — подсветкой', async (scheme) => {
+		await forcedColors('active')
+		await show(scheme, () =>
+			h('div', [
+				h(Button, { text: 'Покой', class: 's-test-idle', ...props }),
+				h(Button, {
+					text: 'Выбрано',
+					class: 's-test-selected',
+					'data-selected': 'true',
+					...props,
+				}),
+			]),
+		)
+
+		const frame = (keyword: 'ButtonText' | 'Highlight') =>
+			SIDES.map(() => ['1px', 'solid', pixel([systemColor(keyword)]).join()])
+
+		expect(frameOf(find('.s-test-idle')), 'покой').toEqual(frame('ButtonText'))
+		expect(frameOf(find('.s-test-selected')), 'выбрано').toEqual(frame('Highlight'))
+	})
+
+	it.each(SCHEMES)('%s: в обычном режиме рамки нет', async (scheme) => {
+		await show(scheme, () => h(Button, { text: 'Покой', ...props }))
+
+		expect(style(find('.s-button')).borderTopWidth).toBe('0px')
+	})
+})
+
+describe('строка ListBox: рамки нет', () => {
+	it.each(SCHEMES)('%s: ни в покое, ни выбранной', async (scheme) => {
+		await forcedColors('active')
+		await show(scheme, () =>
+			h(ListBox, { value: 'b' }, () => [
+				h(ListBoxItem, { key: 'a', value: 'a', text: 'Москва' }),
+				h(ListBoxItem, { key: 'b', value: 'b', text: 'Тверь' }),
+			]),
+		)
+
+		const rows = [...document.querySelectorAll('.s-list-box-item > .s-button')]
+
+		expect(rows).toHaveLength(2)
+		expect(rows.map((row) => style(row).borderTopWidth)).toEqual(['0px', '0px'])
+	})
+})
+
+/**
  * Выбор встаёт сразу, без перехода цвета. У выбранной подмена цветов снята, и
  * переход кнопки шёл бы от цвета темы: строка ListBox с вариантом 200 мс
  * показывала свой синий текст на проступающей подсветке. Остальные проверки
