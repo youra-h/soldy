@@ -67,9 +67,9 @@ export class TPatchCommand<TItem> implements ICommand<TItem> {
 				this._run(ctx, new TUpdateCommand<TItem>(existing, source))
 				matchedKeys.add(key)
 			} else {
-				// Добавляем новый элемент в конец (сохраняем порядок).
-				// Длина берётся на каждом шаге: предыдущие вставки её уже сдвинули.
-				this._run(ctx, new TInsertCommand<TItem>(source, ctx.storage.items.length))
+				// Добавляем новый элемент в конец (сохраняем порядок): позицию
+				// команда берёт в момент вставки — предыдущие её уже сдвинули
+				this._run(ctx, new TInsertCommand<TItem>(source))
 			}
 		}
 
