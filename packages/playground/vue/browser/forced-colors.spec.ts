@@ -801,6 +801,50 @@ describe('Switch', () => {
 
 		expect(style(find('.s-switch__track')).outlineStyle).toBe('none')
 	})
+
+	/**
+	 * Включение — сразу подсветкой. У включённой дорожки подмена цветов снята,
+	 * и переход шёл бы от цвета темы: дорожка с вариантом мелькала заливкой
+	 * варианта, прежде чем встать подсветкой.
+	 */
+	it.each(SCHEMES)('%s: включение — подсветкой в том же кадре', async (scheme) => {
+		await forcedColors('active')
+		await show(scheme, () => h(Switch, { variant: 'accent' }))
+
+		await userEvent.click(find('.s-switch input'))
+
+		const rail = find('.s-switch__track')
+
+		expect(rail.getAnimations(), 'переходы').toEqual([])
+		expect(pixel([style(rail).backgroundColor])).toEqual(pixel([systemColor('Highlight')]))
+	})
+})
+
+/**
+ * Выбранный день Calendar — сразу подсветкой: у выбранной плитки подмена
+ * цветов снята, и переход шёл бы от заливки выбора темы. И подсветкой под
+ * указателем: после клика курсор стоит на дне, а правило выбранного дня под
+ * указателем сильнее правила режима, пока то красило фон плитки, а не
+ * переменные заливки. С вариантом — его переменные правило режима тоже
+ * перекрывает.
+ */
+describe('Calendar: выбор дня', () => {
+	it.each(SCHEMES)('%s: подсветкой в том же кадре', async (scheme) => {
+		await forcedColors('active')
+		await show(scheme, () => h(Calendar, { months: ['2026-09-01'], variant: 'accent' }))
+
+		const days = [...document.querySelectorAll<HTMLElement>('.s-calendar-item')]
+		const target = days[14]
+
+		if (!target) throw new Error('дня нет')
+
+		await userEvent.click(target)
+
+		const day = find('.s-calendar-item[data-selected="true"] > .s-calendar-item__day')
+
+		expect(day.getAnimations(), 'переходы').toEqual([])
+		expect(pixel([style(day).backgroundColor])).toEqual(pixel([systemColor('Highlight')]))
+	})
 })
 
 describe('Button: подсвеченная под фокусом', () => {
