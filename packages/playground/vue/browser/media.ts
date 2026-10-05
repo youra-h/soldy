@@ -1,7 +1,8 @@
 /**
  * Эмуляция медиазапросов Chromium — общее для спеков, которые смотрят, как тема
  * отвечает на настройки системы (`drawer.spec.ts`, `slider.spec.ts`,
- * `forced-colors.spec.ts`, `progress-spinner.spec.ts`, `motion-mode.spec.ts`).
+ * `forced-colors.spec.ts`, `progress-spinner.spec.ts`, `motion-mode.spec.ts`,
+ * `tabs-nested.spec.ts`).
  *
  * Эмуляция — та же, что в DevTools → Rendering: браузер отвечает на
  * медиазапрос так, будто настройку выбрали в системе. Снимается она значением

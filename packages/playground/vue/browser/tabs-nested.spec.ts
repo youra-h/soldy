@@ -17,6 +17,11 @@
  * Расхождения собираются списком с именем свойства, и ждётся пустой список.
  * Виды, ориентации и выравнивания — списки стенда, сверенные с темой и ядром
  * (`@soldy-ui/playground-shared`): новое значение попадёт в матрицу само.
+ *
+ * В режиме принудительных цветов (высокий контраст Windows) у вида свои
+ * правила — системные цвета полосы, линий и рамки активного таба, — и они
+ * тоже пишутся от своего корня: потомковое правило `outline` красило полосу
+ * вложенных `line` цветом текста, и она сливалась с линией под списком.
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
@@ -28,6 +33,7 @@ import { Tabs, TabsContent, TabsItem } from '@soldy-ui/vue'
 import { TABS_ALIGNMENTS, TABS_ORIENTATIONS, TABS_VIEWS } from '@soldy-ui/playground-shared'
 
 import { find, style } from './colors'
+import { forcedColors } from './media'
 
 import '@soldy-ui/theme-oren'
 
@@ -224,12 +230,27 @@ const ALIGNMENT_CASES = TABS_ALIGNMENTS.flatMap((alignment) =>
 	})),
 )
 
+/**
+ * Принудительные цвета: вид внешних × вид внутренних, внешние в обеих
+ * ориентациях. Ориентация внутренних системных цветов не меняет.
+ */
+const FORCED_CASES = TABS_VIEWS.flatMap((outerView) =>
+	TABS_ORIENTATIONS.flatMap((outerOrientation) =>
+		TABS_VIEWS.map((innerView) => ({
+			name: `${outerView} ${ORIENTATION_NAMES[outerOrientation]} → ${innerView}`,
+			outer: outerOf(outerView, outerOrientation),
+			inner: { view: innerView } satisfies TTabsLook,
+		})),
+	),
+)
+
 beforeEach(() => {
 	document.documentElement.dataset.theme = 'oren'
 })
 
-afterEach(() => {
+afterEach(async () => {
 	cleanup()
+	await forcedColors('none')
 })
 
 /**
@@ -260,6 +281,17 @@ describe('вариант внутренних табов — свой', () => {
 describe('выравнивание внешних табов', () => {
 	for (const { name, outer, inner } of ALIGNMENT_CASES) {
 		it(`${name}: внутренние — как вне других`, async () => {
+			await show(outer, inner)
+
+			expect(misses()).toEqual([])
+		})
+	}
+})
+
+describe('принудительные цвета', () => {
+	for (const { name, outer, inner } of FORCED_CASES) {
+		it(`${name}: внутренние — как вне других`, async () => {
+			await forcedColors('active')
 			await show(outer, inner)
 
 			expect(misses()).toEqual([])
