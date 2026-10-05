@@ -68,7 +68,7 @@ export function pixel(colors: string[]): Uint8ClampedArray {
  * темы.
  */
 export function systemColor(
-	keyword: 'Highlight' | 'HighlightText' | 'GrayText' | 'CanvasText' | 'Canvas',
+	keyword: 'Highlight' | 'HighlightText' | 'GrayText' | 'CanvasText' | 'Canvas' | 'ButtonText',
 ): string {
 	const probe = document.createElement('span')
 

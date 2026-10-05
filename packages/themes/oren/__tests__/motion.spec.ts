@@ -1,9 +1,10 @@
 import { describe, it, expect } from 'vitest'
 import { readFileSync, readdirSync, statSync } from 'node:fs'
 import { join, relative, resolve } from 'node:path'
-import { build as viteBuild } from 'vite'
 import postcss from 'postcss'
 import type { AtRule, ChildNode, Container, Declaration, Rule } from 'postcss'
+
+import { buildCss } from './build-css'
 
 /**
  * Движение в теме — только надстройкой (`src/mixins/_motion.scss`).
@@ -120,30 +121,6 @@ function animated(decl: Declaration): string[] {
 	if (decl.prop === 'animation-name') return postcss.list.comma(decl.value)
 
 	return itemsOf(decl.value).flatMap(namesOf)
-}
-
-/** Сборка CSS — в памяти, тем же конфигом, что у `build:css`. */
-async function buildCss(): Promise<string> {
-	const result = await viteBuild({
-		root: ROOT,
-		configFile: resolve(ROOT, 'vite.config.ts'),
-		logLevel: 'silent',
-		build: { write: false },
-	})
-
-	for (const output of [result].flat()) {
-		if (!('output' in output)) throw new Error('CSS-сборка ушла в режим наблюдения')
-
-		for (const file of output.output) {
-			if (file.type !== 'asset' || file.fileName !== 'index.css') continue
-
-			return typeof file.source === 'string'
-				? file.source
-				: new TextDecoder().decode(file.source)
-		}
-	}
-
-	throw new Error('CSS-сборка не отдала index.css')
 }
 
 /** Предки узла — правила и директивы, от ближайшего. */

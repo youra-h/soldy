@@ -496,15 +496,29 @@
 // Текст дней на подсветке — без подложки, которую браузер кладёт под текст в
 // этом режиме (`forced-color-adjust: none` у плитки): иначе каждый номер на
 // ленте стоял бы в прямоугольнике цвета страницы.
+//
+// Перехода цвета у плитки нет: без подмены он шёл бы от цвета темы, и
+// выбранный день 150 мс показывал бы заливку выбора, прежде чем встать
+// подсветкой (так же у кнопки, `button-transition`).
 @media (forced-colors: active) {
+	.s-calendar-item__day {
+		transition-property: none;
+	}
+
 	.s-calendar-item[data-selected='true']:not([data-preview='true']) > .s-calendar-item__day {
 		forced-color-adjust: none;
 		color: HighlightText;
 	}
 
-	.s-calendar-item[data-selected='true']:not([data-range-middle='true'], [data-preview='true'])
-		> .s-calendar-item__day {
-		background-color: Highlight;
+	// Заливка выбранной плитки — переменными на корне, а не фоном плитки, как
+	// у ProgressLinear: плитку красят правила выбора, наведения и нажатия, и
+	// правило режима не спорит с ними по специфичности. Фоном плитки оно
+	// проигрывало правилу выбранного дня под указателем, и день, на котором
+	// после клика остался курсор, стоял цветом темы.
+	.s-calendar {
+		--s-calendar-fill: Highlight;
+		--s-calendar-fill-hover: Highlight;
+		--s-calendar-fill-active: Highlight;
 	}
 
 	.s-calendar-item::before {

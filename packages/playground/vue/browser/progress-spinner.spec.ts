@@ -380,10 +380,22 @@ describe('бег', () => {
 /**
  * Принудительные цвета (высокий контраст Windows): штрихи SVG браузер не
  * перекрашивает, и кольцо осталось бы в цветах темы, чужих палитре
- * пользователя. Тема отдаёт штрихам системные цвета — дорожке `GrayText`,
- * дугам `Highlight`, — и правило режима не проигрывает ни варианту, ни бегу.
+ * пользователя. Тема отдаёт штрихам системные цвета — дугам `Highlight`, а
+ * дорожке цвет текста при вдвое меньшей толщине, — и правило режима не
+ * проигрывает ни варианту, ни бегу. Дорожка была `GrayText` той же толщины, и
+ * рядом с `Highlight` во многих палитрах почти того же цвета: долю было не
+ * разглядеть.
  */
 describe('принудительные цвета', () => {
+	/** Дорожка — цвета текста и вдвое тоньше дуги. */
+	const expectThinTrack = () => {
+		expect(strokeOf(track()), 'цвет дорожки').toEqual(pixel([systemColor('CanvasText')]))
+		expect(
+			Number.parseFloat(getComputedStyle(track()).strokeWidth) * 2,
+			'толщина дорожки',
+		).toBe(Number.parseFloat(getComputedStyle(range()).strokeWidth))
+	}
+
 	it.each(SCHEMES)('%s: дорожка и дуга доли — системными цветами', async (scheme) => {
 		await forcedColors('active')
 		document.documentElement.dataset.theme = scheme
@@ -394,7 +406,7 @@ describe('принудительные цвета', () => {
 		// Режим действует — иначе сторож проверял бы обычный режим
 		expect(matchMedia('(forced-colors: active)').matches).toBe(true)
 
-		expect(strokeOf(track())).toEqual(pixel([systemColor('GrayText')]))
+		expectThinTrack()
 		expect(strokeOf(range())).toEqual(pixel([systemColor('Highlight')]))
 	})
 
@@ -405,7 +417,7 @@ describe('принудительные цвета', () => {
 		mount({ indeterminate: true })
 		await transitionEvents()
 
-		expect(strokeOf(track())).toEqual(pixel([systemColor('GrayText')]))
+		expectThinTrack()
 		expect(strokeOf(runner())).toEqual(pixel([systemColor('Highlight')]))
 	})
 })

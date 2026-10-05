@@ -24,7 +24,8 @@
  * вместе с фоном. Его красит системная подсветка (см. ниже). Ею же отмечен
  * активный таб: полосу, карточку и линии списка Tabs тема тоже рисует фонами
  * (см. конец файла). Строку под стрелками — тоже фоном, и её в этом режиме
- * обводит контур (см. ниже).
+ * обводит контур (см. ниже). Дорожку и ручку Switch тема тоже рисует фонами,
+ * и переключатель пропадал целиком — его рисуют системные цвета (см. ниже).
  *
  * Режим включает эмуляция Chromium — та же, что в DevTools → Rendering: она
  * меняет не только ответ медиазапроса, но и сами цвета. jsdom не делает ни
@@ -49,6 +50,8 @@ import {
 	Popover,
 	Select,
 	SelectItem,
+	Skeleton,
+	Switch,
 	Tabs,
 	TabsItem,
 	Tags,
@@ -582,8 +585,8 @@ describe.each(VIEWS)('Button, $name: подсветка без выбора', ({
 
 /**
  * Выбор под подсветкой показывает оба состояния: заливку выбора и контур на
- * ней. Правило фона такого выбора на атрибут сильнее, а маска поверх заливки
- * была бы цветом темы — её здесь нет.
+ * ней. Правило фона такого выбора на атрибут сильнее, а слой поверх заливки
+ * был бы цветом темы — его здесь нет.
  */
 describe.each(VIEWS)('Button, $name: выбор под подсветкой', ({ props }) => {
 	it.each(SCHEMES)('%s: системная подсветка с контуром, слоя поверх неё нет', async (scheme) => {
@@ -603,6 +606,7 @@ describe.each(VIEWS)('Button, $name: выбор под подсветкой', ({
 
 		expectHighlight(button)
 		expectContour(button, 'HighlightText')
+		expect(style(button).backgroundImage, 'слой').toBe('none')
 		expect(style(button, '::after').content).toBe('none')
 	})
 })
@@ -633,6 +637,277 @@ describe('Button: выбор под подсветкой и под фокусо�
 		await settled(button)
 
 		expectContour(button, 'HighlightText')
+	})
+})
+
+/**
+ * Рамка залитой кнопки. Заливку режим убирает, и без рамки `filled` остался бы
+ * одним текстом, как `plain`: не видно ни что это кнопка, ни куда нажимать.
+ * Рамка — системного цвета кнопки, у выбранной — подсветкой, как у
+ * `outlined`. `filled` — база под видами по контексту, и строка списка рамку
+ * от неё не получает.
+ */
+const FRAMED = [
+	{ name: 'filled', props: { view: 'filled' } },
+	{ name: 'filled с вариантом', props: { view: 'filled', variant: 'accent' } },
+	{ name: 'вид по умолчанию', props: {} },
+] as const
+
+const SIDES = ['top', 'right', 'bottom', 'left'] as const
+
+const frameOf = (element: Element) =>
+	SIDES.map((side) => [
+		style(element).getPropertyValue(`border-${side}-width`),
+		style(element).getPropertyValue(`border-${side}-style`),
+		pixel([style(element).getPropertyValue(`border-${side}-color`)]).join(),
+	])
+
+describe.each(FRAMED)('Button, $name: рамка', ({ props }) => {
+	it.each(SCHEMES)('%s: в покое — цветом кнопки, выбранная — подсветкой', async (scheme) => {
+		await forcedColors('active')
+		await show(scheme, () =>
+			h('div', [
+				h(Button, { text: 'Покой', class: 's-test-idle', ...props }),
+				h(Button, {
+					text: 'Выбрано',
+					class: 's-test-selected',
+					'data-selected': 'true',
+					...props,
+				}),
+			]),
+		)
+
+		const frame = (keyword: 'ButtonText' | 'Highlight') =>
+			SIDES.map(() => ['1px', 'solid', pixel([systemColor(keyword)]).join()])
+
+		expect(frameOf(find('.s-test-idle')), 'покой').toEqual(frame('ButtonText'))
+		expect(frameOf(find('.s-test-selected')), 'выбрано').toEqual(frame('Highlight'))
+	})
+
+	it.each(SCHEMES)('%s: в обычном режиме рамки нет', async (scheme) => {
+		await show(scheme, () => h(Button, { text: 'Покой', ...props }))
+
+		expect(style(find('.s-button')).borderTopWidth).toBe('0px')
+	})
+})
+
+describe('строка ListBox: рамки нет', () => {
+	it.each(SCHEMES)('%s: ни в покое, ни выбранной', async (scheme) => {
+		await forcedColors('active')
+		await show(scheme, () =>
+			h(ListBox, { value: 'b' }, () => [
+				h(ListBoxItem, { key: 'a', value: 'a', text: 'Москва' }),
+				h(ListBoxItem, { key: 'b', value: 'b', text: 'Тверь' }),
+			]),
+		)
+
+		const rows = [...document.querySelectorAll('.s-list-box-item > .s-button')]
+
+		expect(rows).toHaveLength(2)
+		expect(rows.map((row) => style(row).borderTopWidth)).toEqual(['0px', '0px'])
+	})
+})
+
+/**
+ * Выбор встаёт сразу, без перехода цвета. У выбранной подмена цветов снята, и
+ * переход кнопки шёл бы от цвета темы: строка ListBox с вариантом 200 мс
+ * показывала свой синий текст на проступающей подсветке. Остальные проверки
+ * ждут конца переходов (`settled`) и этого не видят.
+ */
+describe.each(VIEWS)('Button, $name: выбор без перехода', ({ props }) => {
+	it.each(SCHEMES)('%s: подсветка — в том же кадре', async (scheme) => {
+		await forcedColors('active')
+		await show(scheme, () => h(Button, { text: 'Кнопка', ...props }))
+
+		const button = find('.s-button')
+
+		button.setAttribute('data-selected', 'true')
+
+		expect(button.getAnimations(), 'переходы').toEqual([])
+		expectHighlight(button)
+	})
+})
+
+/**
+ * Подсвеченная без выбора под фокусом — одна отметка, и у любого цвета та же.
+ * Пока вид разворачивался на каждый вариант, правило контура варианта было
+ * сильнее кольца фокуса, а нейтрали — нет: у нейтральной кнопки под фокусом
+ * стояло кольцо снаружи, у кнопки с вариантом — контур внутри.
+ */
+/**
+ * Switch. Дорожка и ручка — фоны, тень ручки браузер убирает, поле
+ * прозрачное: переключатель пропадал целиком. Здесь он — переключатель
+ * системы: у выключенного контур дорожки и ручка цветом текста, у включённого
+ * дорожка подсветкой и ручка текстом подсветки, у выключенного поля —
+ * `GrayText` (`themes/oren/src/components/switch/_switch.scss`).
+ */
+describe('Switch', () => {
+	const STATES = [
+		{ name: 'выключен', props: {}, track: null, frame: 'CanvasText', knob: 'CanvasText' },
+		{
+			name: 'включён',
+			props: { value: true },
+			track: 'Highlight',
+			frame: 'Highlight',
+			knob: 'HighlightText',
+		},
+		{
+			name: 'включён, с вариантом',
+			props: { value: true, variant: 'accent' },
+			track: 'Highlight',
+			frame: 'Highlight',
+			knob: 'HighlightText',
+		},
+		{
+			name: 'неактивен',
+			props: { disabled: true },
+			track: null,
+			frame: 'GrayText',
+			knob: 'GrayText',
+		},
+		{
+			name: 'неактивен и включён',
+			props: { disabled: true, value: true },
+			track: 'GrayText',
+			frame: 'GrayText',
+			knob: 'Canvas',
+		},
+	] as const
+
+	describe.each(STATES)('$name', ({ props, track, frame, knob }) => {
+		it.each(SCHEMES)('%s: дорожка и ручка — системными цветами', async (scheme) => {
+			await forcedColors('active')
+			await show(scheme, () => h(Switch, props))
+
+			const rail = find('.s-switch__track')
+			const thumb = find('.s-switch__track--thumb')
+
+			const { outlineStyle, outlineWidth, outlineColor, backgroundColor } = style(rail)
+
+			expect([outlineStyle, outlineWidth], 'контур дорожки').toEqual(['solid', '1px'])
+			expect(pixel([outlineColor]), 'цвет контура').toEqual(pixel([systemColor(frame)]))
+
+			if (track) {
+				expect(pixel([backgroundColor]), 'дорожка').toEqual(pixel([systemColor(track)]))
+			}
+
+			expect(pixel([style(thumb).backgroundColor]), 'ручка').toEqual(
+				pixel([systemColor(knob)]),
+			)
+		})
+	})
+
+	it.each(SCHEMES)('%s: в обычном режиме контура у дорожки нет', async (scheme) => {
+		await show(scheme, () => h(Switch, {}))
+
+		expect(style(find('.s-switch__track')).outlineStyle).toBe('none')
+	})
+
+	/**
+	 * Включение — сразу подсветкой. У включённой дорожки подмена цветов снята,
+	 * и переход шёл бы от цвета темы: дорожка с вариантом мелькала заливкой
+	 * варианта, прежде чем встать подсветкой.
+	 */
+	it.each(SCHEMES)('%s: включение — подсветкой в том же кадре', async (scheme) => {
+		await forcedColors('active')
+		await show(scheme, () => h(Switch, { variant: 'accent' }))
+
+		await userEvent.click(find('.s-switch input'))
+
+		const rail = find('.s-switch__track')
+
+		expect(rail.getAnimations(), 'переходы').toEqual([])
+		expect(pixel([style(rail).backgroundColor])).toEqual(pixel([systemColor('Highlight')]))
+	})
+})
+
+/**
+ * Выбранный день Calendar — сразу подсветкой: у выбранной плитки подмена
+ * цветов снята, и переход шёл бы от заливки выбора темы. И подсветкой под
+ * указателем: после клика курсор стоит на дне, а правило выбранного дня под
+ * указателем сильнее правила режима, пока то красило фон плитки, а не
+ * переменные заливки. С вариантом — его переменные правило режима тоже
+ * перекрывает.
+ */
+/**
+ * Skeleton. Заглушка — фон, и браузер заменял его цветом страницы: на месте
+ * будущего содержимого не было ничего. Здесь она — сплошной `GrayText` у любого
+ * варианта, а блика волны — светлого слоя цвета темы — нет
+ * (`themes/oren/src/components/skeleton/_skeleton.scss`).
+ */
+describe('Skeleton', () => {
+	const LOOKS = [
+		{ name: 'по умолчанию', props: {} },
+		{ name: 'с вариантом', props: { variant: 'accent' } },
+		{ name: 'волна', props: { animation: 'wave' } },
+	] as const
+
+	describe.each(LOOKS)('$name', ({ props }) => {
+		it.each(SCHEMES)('%s: заглушка — неактивным системным цветом', async (scheme) => {
+			await forcedColors('active')
+			await show(scheme, () => h(Skeleton, { width: 120, height: 20, ...props }))
+
+			const placeholder = find('.s-skeleton__placeholder')
+
+			expect(pixel([style(placeholder).backgroundColor])).toEqual(
+				pixel([systemColor('GrayText')]),
+			)
+			expect(style(placeholder, '::after').content, 'блик').toBe('none')
+		})
+	})
+})
+
+describe('Calendar: выбор дня', () => {
+	it.each(SCHEMES)('%s: подсветкой в том же кадре', async (scheme) => {
+		await forcedColors('active')
+		await show(scheme, () => h(Calendar, { months: ['2026-09-01'], variant: 'accent' }))
+
+		const days = [...document.querySelectorAll<HTMLElement>('.s-calendar-item')]
+		const target = days[14]
+
+		if (!target) throw new Error('дня нет')
+
+		await userEvent.click(target)
+
+		const day = find('.s-calendar-item[data-selected="true"] > .s-calendar-item__day')
+
+		expect(day.getAnimations(), 'переходы').toEqual([])
+		expect(pixel([style(day).backgroundColor])).toEqual(pixel([systemColor('Highlight')]))
+	})
+})
+
+describe('Button: подсвеченная под фокусом', () => {
+	const OUTLINE = ['outline-style', 'outline-width', 'outline-offset', 'outline-color'] as const
+
+	it.each(SCHEMES)('%s: вариант отмечен так же, как нейтраль', async (scheme) => {
+		await forcedColors('active')
+		await show(scheme, () =>
+			h('div', [
+				h(Button, {
+					text: 'Нейтраль',
+					class: 's-test-neutral',
+					'data-highlighted': 'true',
+				}),
+				h(Button, {
+					text: 'Вариант',
+					class: 's-test-variant',
+					variant: 'accent',
+					'data-highlighted': 'true',
+				}),
+			]),
+		)
+
+		const outlineOf = async (selector: string) => {
+			const button = find(selector)
+
+			button.focus({ focusVisible: true })
+			expect(button.matches(':focus-visible'), selector).toBe(true)
+			await settled(button)
+
+			return OUTLINE.map((property) => style(button).getPropertyValue(property))
+		}
+
+		expect(await outlineOf('.s-test-variant')).toEqual(await outlineOf('.s-test-neutral'))
 	})
 })
 
