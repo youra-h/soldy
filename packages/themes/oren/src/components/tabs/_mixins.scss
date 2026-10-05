@@ -100,7 +100,7 @@ $move-easing: ease;
 	}
 
 	@media (forced-colors: active) {
-		.s-tabs__list::after {
+		> .s-tabs__list::after {
 			forced-color-adjust: none;
 			background-color: Highlight;
 		}
@@ -171,7 +171,7 @@ $move-easing: ease;
 	}
 
 	@media (forced-colors: active) {
-		.s-tabs__list {
+		> .s-tabs__list {
 			&::before,
 			&::after {
 				forced-color-adjust: none;
@@ -179,7 +179,7 @@ $move-easing: ease;
 			}
 		}
 
-		.s-tabs-item[data-selected='true'] {
+		> .s-tabs__list > .s-tabs-item[data-selected='true'] {
 			border-color: Highlight;
 		}
 	}

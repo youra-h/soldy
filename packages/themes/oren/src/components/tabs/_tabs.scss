@@ -70,11 +70,6 @@
 		}
 	}
 
-	// Контент
-	&__content {
-		@apply flex-1 p-4;
-	}
-
 	// Отключенное состояние. Нативного псевдокласса здесь нет: корень — не
 	// форм-элемент, на нём он не срабатывает никогда. Гасит блок модификатор;
 	// сами элементы disabled получают от расширения коллекции.
@@ -131,15 +126,18 @@ $line: ':where(.s-tabs:not(.s-tabs--view-contained, .s-tabs--view-outline))';
 		}
 	}
 
-	/* Vertical orientation: indicator is a vertical bar beside the list (uses --active-tab-pos and --active-tab-size) */
+	// Вертикальные: линия и полоса — у края списка, обращённого к панели.
+	// Сторона логическая: в RTL список встаёт по другую сторону от панели, и
+	// физическая оставила бы линию и полосу на внешнем краю. Место полосы вдоль
+	// списка — сдвиг по вертикали, от направления письма оно не зависит.
 	&.s-tabs--vertical {
 		> .s-tabs__list {
-			@apply relative border-r;
+			@apply relative border-e;
 
 			&::after {
 				content: '';
 				@apply absolute top-0 w-0.5;
-				@apply -right-px;
+				@apply -inset-e-px;
 				@apply rounded-full;
 				height: var(--active-tab-size, 0px);
 				transform: translateY(var(--active-tab-pos, 0px));
@@ -148,13 +146,13 @@ $line: ':where(.s-tabs:not(.s-tabs--view-contained, .s-tabs--view-outline))';
 			}
 		}
 
-		/* If tabs positioned to the end, place border/indicator on the right */
+		// Табы в конце ряда: панель — у начала списка
 		&.s-tabs--position-end {
 			> .s-tabs__list {
-				@apply border-r-0 border-l;
+				@apply border-e-0 border-s;
 
 				&::after {
-					@apply -left-px;
+					@apply inset-e-auto -inset-s-px;
 				}
 			}
 		}
@@ -332,11 +330,13 @@ $line: ':where(.s-tabs:not(.s-tabs--view-contained, .s-tabs--view-outline))';
 		}
 	}
 
+	// Вертикальные: линия и открытая сторона вкладок — к панели, логическими
+	// сторонами, как у `line`
 	&.s-tabs--vertical {
 		> .s-tabs__list {
 			&::before,
 			&::after {
-				@apply right-0 w-px h-auto;
+				@apply inset-e-0 w-px h-auto;
 			}
 
 			// Левая часть бордера (до активного таба)
@@ -353,18 +353,18 @@ $line: ':where(.s-tabs:not(.s-tabs--view-contained, .s-tabs--view-outline))';
 		}
 
 		> .s-tabs__list > .s-tabs-item {
-			@apply rounded-l-md rounded-r-none border-r-0 border-b;
+			@apply rounded-s-md rounded-e-none border-e-0 border-b;
 		}
 
 		&.s-tabs--position-end {
 			> .s-tabs__list {
 				&::before,
 				&::after {
-					@apply left-0 right-auto;
+					@apply inset-s-0 inset-e-auto;
 				}
 
 				> .s-tabs-item {
-					@apply rounded-r-md rounded-l-none border-l-0 border-r;
+					@apply rounded-e-md rounded-s-none border-s-0 border-e;
 				}
 			}
 		}
