@@ -1344,7 +1344,7 @@ class TListBoxItemExtension extends TBaseItemExtension<TItem, TParent, TListBoxI
 движка тоже инвариантен: `TCollectionEngine<T, A>` не принимает движок с другой
 картой расширений, будь то набор другого уровня, `Partial<...>` или объединение.
 Опция `engine` фасадов (`tabs`, `list-box`, `select`, `accordion`, `tags`,
-`radio-group`, `calendar`) принимает движок любого уровня и сама достраивает
+`radio-group`, `calendar`, `table`) принимает движок любого уровня и сама достраивает
 недостающее, поэтому она объявлена как `TCollectionEngine<any, any>`. Это
 констрейнт. Точный
 тип ставится там, где движок создаётся (`createEngine*`, `TTabsCollection` и
@@ -1517,7 +1517,7 @@ get closable() { return !this._item.disabled && (this._item.closable ?? this._pa
 сам по себе, — из `items` или разметкой. Элемент, который должен остаться
 выключенным, выключают после включения владельца.
 
-Сторожит `core/__tests__/collection-disabled-inherit.spec.ts`: шесть
+Сторожит `core/__tests__/collection-disabled-inherit.spec.ts`: семь
 `createEngine*` — свой `disabled` из `items`, переключения владельца,
 `batch.patch` и число `change:disabled` у элементов. Разметка —
 `ui/vue/__tests__/list-box-item-disabled.spec.ts`.
@@ -1535,7 +1535,7 @@ get closable() { return !this._item.disabled && (this._item.closable ?? this._pa
 пропа»). Из класса ядра, из `IStylableProps` и из типа данных `items` они
 никуда не делись, но значение из данных расширение перекрывает владельцевым.
 
-Сторожит `core/__tests__/collection-style-inherit.spec.ts`: шесть
+Сторожит `core/__tests__/collection-style-inherit.spec.ts`: семь
 `createEngine*` — значение из `items`, `batch.patch`, число модификаторов
 после смены у владельца и число `change:size` у элемента.
 
