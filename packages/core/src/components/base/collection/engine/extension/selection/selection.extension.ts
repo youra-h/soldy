@@ -4,7 +4,7 @@ import type { TSelectionEvents, TSelectionMode, ISelectionExtension } from './ty
 import type { ISelectionItemExtension } from './item'
 import { TSelectionItemExtension } from './item'
 import { TBaseOwnerItemExtension } from '../base-owner-item-extension.class'
-import type { TMetaExtension } from '../meta'
+import type { TMetaEntry, TMetaExtension } from '../meta'
 import type { TDataset } from '../../../../../../common'
 
 /**
@@ -89,22 +89,20 @@ export class TSelectionExtension<TItem extends object = any>
 		const meta = ctx.extensions.meta as TMetaExtension<TItem> | undefined
 
 		if (meta) {
-			const applyMeta = (item: TItem, m: Record<string, unknown>) => {
-				if (!m.selected) return
+			// Отметки одной записи `meta` отдаёт одним списком — и выбираются
+			// они одной операцией
+			const selectMarked = (entries: readonly TMetaEntry<TItem>[]) =>
+				this._selectMarked(
+					entries.filter((entry) => entry.meta.selected).map(({ item }) => item),
+				)
 
-				this.select(item)
-			}
-
-			meta.events.on('meta:applied', applyMeta)
-			meta.events.on('meta:changed', applyMeta)
+			meta.events.on('meta:applied', selectMarked)
+			meta.events.on('meta:changed', selectMarked)
 
 			// Догон: расширение могло прийти в уже наполненную коллекцию, и свои
-			// `meta:applied` оно тогда пропустило. Снимок помнит `meta`
-			ctx.driver.valueOf().forEach((item) => {
-				const remembered = meta.get?.(item)
-
-				if (remembered) applyMeta(item, remembered)
-			})
+			// `meta:applied` оно тогда пропустило. Снимок помнит `meta`, а
+			// отметки собираются той же группой
+			this._selectMarked(ctx.driver.valueOf().filter((item) => meta.get?.(item)?.selected))
 		}
 	}
 
@@ -226,6 +224,50 @@ export class TSelectionExtension<TItem extends object = any>
 		for (const item of items) {
 			if (this._selected.delete(item)) changed = true
 		}
+
+		if (changed) this._notifySelected()
+	}
+
+	/**
+	 * Выбрать отмеченные в данных (`_: { selected: true }`) — группу одной
+	 * операцией: отметки одной записи `meta` отдаёт одним списком, догон при
+	 * установке собирает их так же.
+	 *
+	 * Шаги те же, что у `select` на каждый элемент группы: хук
+	 * `item:select:before` по порядку, в `single` принятый заменяет прежний —
+	 * итог «последний принятый». Различается цена: состав сверяется одним
+	 * множеством, а `change:selection` — одно, в конце, и только если выбор
+	 * сменился. `select` в цикле сверял бы состав копией хранилища на каждую
+	 * отметку и слал бы своё событие, и подписчики выбора проходили бы
+	 * коллекцию на каждую.
+	 *
+	 * Не `selectMany`: тот в `single` не выбирает намеренно, а отметка из
+	 * данных в `single` выбирает.
+	 */
+	private _selectMarked(items: readonly TItem[]): void {
+		if (this._mode === 'none' || items.length === 0) return
+
+		const before = this.selected
+		const stored = new Set(this._ctx.driver.valueOf())
+
+		for (const item of items) {
+			if (this._selected.has(item) || !stored.has(item)) continue
+
+			const event = new TSelectEvent(item)
+
+			this.events.emit('item:select:before', event)
+
+			if (event.defaultPrevented) continue
+
+			if (!this.multiple) this._selected.clear()
+
+			this._selected.add(item)
+		}
+
+		// В `single` поздний принятый мог вернуть выбор к прежнему
+		const changed =
+			before.length !== this._selected.size ||
+			before.some((item) => !this._selected.has(item))
 
 		if (changed) this._notifySelected()
 	}

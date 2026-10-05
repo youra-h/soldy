@@ -1,3 +1,4 @@
+import { sameValue } from '../../../../../../common/utility/same-value'
 import { TBaseExtension } from '../base-extension.class'
 import type { IExtension, IExtensionContext } from '../types'
 import type { TSelectionExtension } from '../selection'
@@ -119,8 +120,15 @@ export class TValueSelectionExtension<
 	 * Выбор, отменённый в `item:select:before`, значение не меняет: оно
 	 * откатывается к тому, что выбрано на самом деле. В `single` выбор заменяет
 	 * прежний сам, поэтому отменённый оставляет прежний; в `multiple` выбор
-	 * собирается заново в порядке значения, и отменённого в нём просто нет.
+	 * собирается заново пачкой (`selectMany`) в порядке значения — одно
+	 * `change:selection` на все ключи, — и отменённого в нём просто нет.
 	 * В режиме `none` выбора нет вовсе — сводить нечего.
+	 *
+	 * Выбор `multiple`, уже собранный по значению тем же порядком, не
+	 * пересобирается: сброс и пачка дали бы два `change:selection` без смены
+	 * выбора. Так сверка на `change:items` молчит, когда выбор сложился в той
+	 * же записи раньше неё — из отметок данных, — а `select` выбранного в
+	 * `single` молчит и так.
 	 */
 	private _valueToSelection(): void {
 		const selection = this._selection
@@ -128,25 +136,50 @@ export class TValueSelectionExtension<
 
 		if (!selection || !owner || this._syncing || selection.mode === 'none') return
 
-		const items = toKeys(owner.value)
-			.map((key) => this._ctx.driver.valueOf().find((candidate) => candidate.value === key))
-			.filter((item) => item !== undefined)
+		const items = this._itemsOf(toKeys(owner.value))
 
 		let rejected = false
 
 		this._syncing = true
 
 		try {
-			if (selection.multiple || items.length === 0) selection.resetSelection()
+			if (selection.multiple) {
+				if (!sameValue(selection.selected, items)) {
+					selection.resetSelection()
+					selection.selectMany(items)
+				}
 
-			for (const item of items) {
-				if (!selection.select(item)) rejected = true
+				rejected = items.some((item) => !selection.isSelected(item))
+			} else {
+				if (items.length === 0) selection.resetSelection()
+
+				for (const item of items) {
+					if (!selection.select(item)) rejected = true
+				}
 			}
 		} finally {
 			this._syncing = false
 		}
 
 		if (rejected) this._selectionToValue()
+	}
+
+	/**
+	 * Элементы ключей значения — по карте «значение → элемент», собранной за
+	 * вызов одним проходом по составу: поиск на каждый ключ проходил бы его
+	 * столько раз, сколько ключей. Значение у нескольких элементов — первый,
+	 * как у `find`.
+	 */
+	private _itemsOf(keys: readonly (string | number)[]): TItem[] {
+		if (keys.length === 0) return []
+
+		const byValue = new Map<string | number | undefined, TItem>()
+
+		for (const item of this._ctx.driver.valueOf()) {
+			if (!byValue.has(item.value)) byValue.set(item.value, item)
+		}
+
+		return keys.map((key) => byValue.get(key)).filter((item) => item !== undefined)
 	}
 }
 

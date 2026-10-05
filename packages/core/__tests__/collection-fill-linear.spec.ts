@@ -14,6 +14,13 @@
  * элементов — вдвое больше записей, а не вчетверо. Значение владельца
  * сверяется с составом раз на запись, а не на каждый добавленный элемент.
  *
+ * Выбранных при наполнении бывает много — отметкой в данных
+ * (`_: { selected: true }`) или значением владельца в `multiple`. Выбор,
+ * поставленный по одному элементу, слал бы `change:selection` на каждый, и
+ * подписчики выбора проходили бы всю коллекцию на каждый выбранный. Отметки
+ * записи и ключи значения выбираются одной операцией: смен выбора за
+ * наполнение — одна-две при любом числе выбранных.
+ *
  * Сценарий один на все коллекции: забытая коллекция иначе прошла бы мимо.
  * Каждая сборка — замыкание на своей фабрике, как в
  * `collection-style-inherit.spec.ts`: общая сигнатура движков стёрла бы их
@@ -43,8 +50,8 @@ import type { TAria, TDataset } from '@soldy-ui/core'
 /** Сколько элементов в меньшем наполнении; большее — вдвое. */
 const COUNT = 100
 
-/** Источник элемента — то, что приходит в `items`. */
-type TSource = { value: string }
+/** Источник элемента — то, что приходит в `items`; `_` — отметки из данных. */
+type TSource = { value: string; _?: { selected: boolean } }
 
 /** Наборы элемента, записи в которые считаются. */
 type TItemSets = { readonly aria: TAria; readonly dataset: TDataset }
@@ -64,11 +71,24 @@ function sources(count: number): TSource[] {
 	return Array.from({ length: count }, (_, index) => ({ value: `v${index}` }))
 }
 
+/** Каждый `MARK_STEP`-й источник отмечен выбранным: отметок — доля состава. */
+const MARK_STEP = 4
+
+/** Отмечен ли выбранным источник с номером `index`. */
+const isMarked = (index: number) => index % MARK_STEP === 0
+
+/** `count` источников, каждый `MARK_STEP`-й — с `_: { selected: true }`. */
+function markedSources(count: number): TSource[] {
+	return sources(count).map((source, index) =>
+		isMarked(index) ? { ...source, _: { selected: true } } : source,
+	)
+}
+
 /**
  * У строки таблицы `value` нет: строка — запись приложения, и `value`
- * источника становится ключом записи.
+ * источника становится ключом записи. Отметки из данных — как есть.
  */
-const tableRow = ({ value }: TSource) => ({ data: { value } })
+const tableRow = ({ value, ...marks }: TSource) => ({ data: { value }, ...marks })
 
 const cases: TCase[] = [
 	{
@@ -134,12 +154,16 @@ const cases: TCase[] = [
  * `dataset` элементов. Считается каждая запись, а не только сменившая
  * значение: проход, который пишет то же самое, стоит столько же.
  */
-function writesOnFill(build: () => THarness, count: number): number {
+function writesOnFill(
+	build: () => THarness,
+	count: number,
+	make: (count: number) => TSource[] = sources,
+): number {
 	const harness = build()
 	const add = vi.spyOn(TAttributes.prototype, 'add')
 
 	try {
-		harness.fill(sources(count))
+		harness.fill(make(count))
 
 		const sets = new Set<unknown>(harness.items().flatMap((item) => [item.aria, item.dataset]))
 
@@ -291,5 +315,210 @@ describe.each(valuedCases)('$name · значение владельца при 
 
 		expect(once.selectionChanges()).toBeGreaterThan(0)
 		expect(twice.selectionChanges()).toBe(once.selectionChanges())
+	})
+})
+
+/** Коллекция с выбором в `multiple`, ещё пустая. */
+type TMarkedHarness = THarness & {
+	/** Сколько раз за наполнение сменился выбор. */
+	readonly selectionChanges: () => number
+}
+
+/**
+ * `aria` — чем элемент объявляет выбор скринридеру; у строки таблицы выбор
+ * объявляет её чекбокс, и набор строки его не несёт.
+ */
+type TMarkedCase = { name: string; aria?: string; build(): TMarkedHarness }
+
+const markedCases: TMarkedCase[] = [
+	{
+		name: 'ListBox',
+		aria: 'aria-selected',
+		build: () => {
+			const { batch, selection } = createEngineListBox({ owner: new TListBox() }).extensions
+			const changes = vi.fn()
+
+			selection.mode = 'multiple'
+			selection.events.on('change:selection', changes)
+
+			return {
+				fill: (list) => batch.set(list),
+				items: () => batch.items,
+				selectionChanges: () => changes.mock.calls.length,
+			}
+		},
+	},
+	{
+		name: 'Select',
+		aria: 'aria-selected',
+		build: () => {
+			const { batch, selection } = createEngineSelect({ owner: new TSelect() }).extensions
+			const changes = vi.fn()
+
+			selection.mode = 'multiple'
+			selection.events.on('change:selection', changes)
+
+			return {
+				fill: (list) => batch.set(list),
+				items: () => batch.items,
+				selectionChanges: () => changes.mock.calls.length,
+			}
+		},
+	},
+	{
+		name: 'Tags',
+		aria: 'aria-selected',
+		build: () => {
+			const { batch, selection } = createEngineTags({ owner: new TTags() }).extensions
+			const changes = vi.fn()
+
+			selection.mode = 'multiple'
+			selection.events.on('change:selection', changes)
+
+			return {
+				fill: (list) => batch.set(list),
+				items: () => batch.items,
+				selectionChanges: () => changes.mock.calls.length,
+			}
+		},
+	},
+	{
+		name: 'Accordion',
+		aria: 'aria-expanded',
+		build: () => {
+			const { batch, selection } = createEngineAccordion({
+				owner: new TAccordion(),
+			}).extensions
+			const changes = vi.fn()
+
+			selection.mode = 'multiple'
+			selection.events.on('change:selection', changes)
+
+			return {
+				fill: (list) => batch.set(list),
+				items: () => batch.items,
+				selectionChanges: () => changes.mock.calls.length,
+			}
+		},
+	},
+	{
+		name: 'Table',
+		build: () => {
+			const { batch, selection } = createEngineTable({ owner: new TTable() }).extensions
+			const changes = vi.fn()
+
+			selection.mode = 'multiple'
+			selection.events.on('change:selection', changes)
+
+			return {
+				fill: (list) => batch.set(list.map(tableRow)),
+				items: () => batch.items,
+				selectionChanges: () => changes.mock.calls.length,
+			}
+		},
+	},
+]
+
+describe.each(markedCases)('$name · отметки выбора из данных', ({ build, aria }) => {
+	it('одна смена выбора за наполнение, признак выбора у каждого элемента итоговый', () => {
+		const harness = build()
+
+		harness.fill(markedSources(COUNT))
+
+		const items = harness.items()
+		const marks = items.map((_, index) => String(isMarked(index)))
+
+		expect(harness.selectionChanges()).toBe(1)
+		expect(items.map((item) => item.dataset.get('selected'))).toEqual(marks)
+		// Добавленному признак пишут при добавлении, когда отмеченный ещё не
+		// выбран, — итог ставит смена выбора в конце записи
+		expect(items.map((item) => aria && item.aria.get(aria))).toEqual(
+			marks.map((mark) => aria && mark),
+		)
+	})
+
+	it('вдвое больше элементов и отметок — вдвое больше записей в наборы, а не вчетверо', () => {
+		const once = writesOnFill(build, COUNT, markedSources)
+		const twice = writesOnFill(build, 2 * COUNT, markedSources)
+
+		expect(twice).toBeLessThanOrEqual(2 * once)
+	})
+})
+
+/** Владелец в `multiple` со значением из многих ключей; состав приходит после. */
+type TKeyedHarness = {
+	/** Сколько раз за наполнение сменился выбор. */
+	readonly selectionChanges: () => number
+	/** Сколько элементов выбрано. */
+	readonly selectedCount: () => number
+	/** Наполнить: весь состав — одной записью, `batch.set`. */
+	fill(sources: TSource[]): void
+}
+
+type TKeyedCase = { name: string; build(value: string[]): TKeyedHarness }
+
+const keyedCases: TKeyedCase[] = [
+	{
+		name: 'ListBox',
+		build: (value) => {
+			const owner = new TListBox({ value })
+			const { batch, selection } = createEngineListBox({ owner }).extensions
+			const changes = vi.fn()
+
+			selection.mode = 'multiple'
+			selection.events.on('change:selection', changes)
+
+			return {
+				selectionChanges: () => changes.mock.calls.length,
+				selectedCount: () => selection.selectedCount,
+				fill: (list) => batch.set(list),
+			}
+		},
+	},
+	{
+		name: 'Select',
+		build: (value) => {
+			const owner = new TSelect({ value })
+			const { batch, selection } = createEngineSelect({ owner }).extensions
+			const changes = vi.fn()
+
+			selection.mode = 'multiple'
+			selection.events.on('change:selection', changes)
+
+			return {
+				selectionChanges: () => changes.mock.calls.length,
+				selectedCount: () => selection.selectedCount,
+				fill: (list) => batch.set(list),
+			}
+		},
+	},
+	{
+		name: 'Tags',
+		build: (value) => {
+			const owner = new TTags({ value })
+			const { batch, selection } = createEngineTags({ owner }).extensions
+			const changes = vi.fn()
+
+			selection.mode = 'multiple'
+			selection.events.on('change:selection', changes)
+
+			return {
+				selectionChanges: () => changes.mock.calls.length,
+				selectedCount: () => selection.selectedCount,
+				fill: (list) => batch.set(list),
+			}
+		},
+	},
+]
+
+describe.each(keyedCases)('$name · значение из многих ключей при наполнении', ({ build }) => {
+	it('ключи значения выбираются пачкой — не больше двух смен выбора при любом их числе', () => {
+		const list = sources(COUNT)
+		const harness = build(list.map(({ value }) => value))
+
+		harness.fill(list)
+
+		expect(harness.selectedCount()).toBe(COUNT)
+		expect(harness.selectionChanges()).toBeLessThanOrEqual(2)
 	})
 })
