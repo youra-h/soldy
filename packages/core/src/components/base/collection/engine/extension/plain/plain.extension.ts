@@ -38,7 +38,11 @@ export class TPlainExtension<TItem extends object>
 	 * @param item
 	 */
 	push(item: Partial<TItem>): TItem {
-		return this.insert(item, this._ctx.driver.valueOf().length)
+		const command = new TInsertCommand(item)
+
+		this._ctx.execute(command)
+
+		return command.item as TItem
 	}
 
 	remove(item: TItem): void {

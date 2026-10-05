@@ -34,6 +34,36 @@ describe('TInsertCommand', () => {
 		expect(storage.items).toEqual([item])
 	})
 
+	it('apply: без индекса — в конец хранилища', () => {
+		const storage = new TArrayStorage<Item>()
+		const a: Item = { id: 1, name: 'a' }
+		const b: Item = { id: 2, name: 'b' }
+
+		storage.insert(a, 0)
+		new TInsertCommand(b).apply(createContext(storage))
+
+		expect(storage.items).toEqual([a, b])
+	})
+
+	/**
+	 * «В конец» — длина в момент вставки, а не снимок до команды: подписчик
+	 * `item:add:before` мог сам вставить или удалить элементы.
+	 */
+	it('apply: без индекса — в конец и тогда, когда хук сдвинул состав', () => {
+		const driver = new TCollectionStorageDriver<Item>(new TArrayStorage<Item>())
+		const a: Item = { id: 1, name: 'a' }
+		const b: Item = { id: 2, name: 'b' }
+		const c: Item = { id: 3, name: 'c' }
+
+		driver.execute(new TInsertCommand<Item>(a))
+		driver.events.on('item:add:before', (e) => {
+			if (e.item === b) driver.execute(new TInsertCommand<Item>(c))
+		})
+		driver.execute(new TInsertCommand<Item>(b))
+
+		expect(driver.valueOf()).toEqual([a, c, b])
+	})
+
 	it('emitEvents: эмитит item:added и change:count', () => {
 		const storage = new TArrayStorage<Item>()
 		const events = createEvents()

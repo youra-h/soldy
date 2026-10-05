@@ -29,6 +29,7 @@
 
 import { describe, it, expect, vi } from 'vitest'
 import {
+	createEngine,
 	createEngineAccordion,
 	createEngineListBox,
 	createEngineRadioGroup,
@@ -38,6 +39,7 @@ import {
 	createEngineTags,
 	TAccordion,
 	TAttributes,
+	TCollectionStorageDriver,
 	TListBox,
 	TRadioGroup,
 	TSelect,
@@ -181,6 +183,51 @@ describe.each(cases)('$name · наполнение линейно по числ
 		// Наборы элементов пишутся при наполнении: иначе считать было бы нечего
 		expect(once).toBeGreaterThan(0)
 		expect(twice).toBeLessThanOrEqual(2 * once)
+	})
+})
+
+/**
+ * Сколько элементов скопировали снимки состава (`driver.valueOf()`) за
+ * `fill`. Снимок — копия хранилища: взятый на каждый вставляемый элемент
+ * (позиция «в конец» по длине снимка), он делал пачку квадратичной даже без
+ * выбора — 20 000 строк копировали 200 млн элементов.
+ */
+function copiesOf(fill: () => void): number {
+	const valueOf = vi.spyOn(TCollectionStorageDriver.prototype, 'valueOf')
+
+	try {
+		fill()
+
+		return valueOf.mock.results.reduce(
+			(sum, result) => sum + (Array.isArray(result.value) ? result.value.length : 0),
+			0,
+		)
+	} finally {
+		valueOf.mockRestore()
+	}
+}
+
+describe.each(cases)('$name · снимки состава при наполнении', ({ build }) => {
+	it('вдвое больше элементов — вдвое больше скопированных, а не вчетверо', () => {
+		const once = copiesOf(() => build().fill(sources(COUNT)))
+		const twice = copiesOf(() => build().fill(sources(2 * COUNT)))
+
+		expect(twice).toBeLessThanOrEqual(2 * once)
+	})
+})
+
+describe('движок без компонента · снимки состава', () => {
+	it('batch.set и push по одному копий состава не снимают', () => {
+		expect(copiesOf(() => createEngine({ items: sources(COUNT) }))).toBe(0)
+
+		const engine = createEngine<TSource>()
+
+		expect(
+			copiesOf(() => sources(COUNT).forEach((item) => engine.extensions.plain.push(item))),
+		).toBe(0)
+		expect(engine.extensions.batch.items.map((item) => item.value)).toEqual(
+			sources(COUNT).map((item) => item.value),
+		)
 	})
 })
 

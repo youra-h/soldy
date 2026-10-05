@@ -133,12 +133,9 @@ export class TBatchExtension<TItem extends object>
 		if (!items.length) return
 
 		this._ctx.batch(() => {
-			items.forEach((item) => {
-				// Добавляем в конец, чтобы сохранить порядок items.
-				this._ctx.execute(
-					new TInsertCommand<TItem>(item, this._ctx.driver.valueOf().length),
-				)
-			})
+			// В конец, чтобы сохранить порядок items. Позицию считает команда —
+			// снимок состава на каждый элемент копировал бы хранилище N раз
+			items.forEach((item) => this._ctx.execute(new TInsertCommand<TItem>(item)))
 		})
 
 		this.events.emit('items:added', items)

@@ -1,12 +1,20 @@
 import type { ICommand, ICommandContext } from './types'
 import { TInsertEvent } from '../types'
 
+/**
+ * Команда вставки. Позиция — индекс в хранилище; не задана — в конец.
+ *
+ * «В конец» команда считает сама, по длине хранилища в момент вставки, а не
+ * вызывающий по снимку состава: снимок — копия хранилища, и пачка из N
+ * элементов копировала бы его N раз. И длина в момент вставки верна, даже
+ * если подписчик `item:add:before` сам вставил или удалил элементы.
+ */
 export class TInsertCommand<TItem> implements ICommand<TItem> {
 	private _event: TInsertEvent<TItem>
 
 	constructor(
 		public item: Partial<TItem>,
-		public index: number = 0,
+		public index?: number,
 	) {
 		this._event = new TInsertEvent<TItem>(this.item)
 	}
@@ -22,7 +30,7 @@ export class TInsertCommand<TItem> implements ICommand<TItem> {
 
 		this.item = this._event.item
 
-		ctx.storage.insert(this.item as TItem, this.index)
+		ctx.storage.insert(this.item as TItem, this.index ?? ctx.storage.items.length)
 	}
 
 	emitEvents(ctx: ICommandContext<TItem>): void {
