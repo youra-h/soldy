@@ -32,10 +32,11 @@ import type {
  * а запись состава сводит всё, что задела, в одно — в её конце.
  *
  * **Ячейки** — пересечение записи строки и показанных колонок — отдаёт
- * item-адаптер строки. Устаревают они от показанных колонок и ещё от поля и
- * выравнивания показанной колонки: их расширение слушает только у показанных.
- * Об этом всём — одно событие `change:cells` на операцию; о записи строки
- * адаптеру сообщает сама строка.
+ * item-адаптер строки. Устаревают они от показанных колонок и ещё от поля,
+ * выравнивания и признака заголовка строки у показанной колонки: их
+ * расширение слушает только у показанных. Об этом всём — одно событие
+ * `change:cells` на операцию; о записи строки и наборе её заголовка адаптеру
+ * сообщает сама строка.
  */
 export class TTableColumnsExtension<TRow extends ITableRow = ITableRow>
 	extends TBaseOwnerItemExtension<TRow, ITableColumnsItemExtension<TRow>, TTableColumnsEvents>
@@ -55,9 +56,10 @@ export class TTableColumnsExtension<TRow extends ITableRow = ITableRow>
 	private _staleCells = false
 
 	/**
-	 * Обработчики поля и выравнивания — по показанной колонке. Скрытая и
-	 * удалённая колонки ячеек не дают, и их расширение не слушает: подписка
-	 * удерживала бы коллекцию, пока жива сама колонка.
+	 * Обработчики поля, выравнивания и признака заголовка строки — по
+	 * показанной колонке. Скрытая и удалённая колонки ячеек не дают, и их
+	 * расширение не слушает: подписка удерживала бы коллекцию, пока жива сама
+	 * колонка.
 	 */
 	private readonly _watchers = new Map<ITableColumn, () => void>()
 
@@ -114,7 +116,7 @@ export class TTableColumnsExtension<TRow extends ITableRow = ITableRow>
 		this._flush()
 	}
 
-	/** Поле или выравнивание показанной колонки сменилось — устарели ячейки. */
+	/** Поле, выравнивание или признак заголовка показанной колонки сменились — устарели ячейки. */
 	private _notifyCells(): void {
 		this._staleCells = true
 		this._flush()
@@ -138,7 +140,10 @@ export class TTableColumnsExtension<TRow extends ITableRow = ITableRow>
 		if (cells) this.events.emit('change:cells')
 	}
 
-	/** Слушать поле и выравнивание показанных колонок, а ушедших — больше не слушать. */
+	/**
+	 * Слушать поле, выравнивание и признак заголовка строки у показанных
+	 * колонок, а у ушедших — больше не слушать.
+	 */
 	private _watchShown(): void {
 		const shown = new Set(this.shownColumns)
 
@@ -147,6 +152,7 @@ export class TTableColumnsExtension<TRow extends ITableRow = ITableRow>
 
 			column.events.off('change:field', watcher)
 			column.events.off('change:align', watcher)
+			column.events.off('change:rowHeader', watcher)
 			this._watchers.delete(column)
 		}
 
@@ -158,6 +164,7 @@ export class TTableColumnsExtension<TRow extends ITableRow = ITableRow>
 			this._watchers.set(column, watcher)
 			column.events.on('change:field', watcher)
 			column.events.on('change:align', watcher)
+			column.events.on('change:rowHeader', watcher)
 		}
 	}
 }

@@ -40,6 +40,7 @@ import {
 	Skeleton,
 	Slider,
 	Switch,
+	Table,
 	Tabs,
 	Tags,
 	Tooltip,
@@ -274,6 +275,30 @@ const dragAndDrop = new TDragAndDrop()
 	<!-- @vue-expect-error — флаг, а не строка -->
 	<Switch :required="'yes'" />
 	<Switch required />
+
+	<!-- @vue-expect-error — режима выбора строк `many` нет -->
+	<Table mode="many" />
+	<Table mode="multiple" />
+
+	<!-- @vue-expect-error — колонка данными без поля: по нему колонки сверяются -->
+	<Table :columns="[{ text: 'Имя' }]" />
+	<Table :columns="[{ field: 'name', text: 'Имя', rowHeader: true }]" />
+
+	<!-- @vue-expect-error — направления `up` у сортировки нет -->
+	<Table :sort="[{ field: 'name', direction: 'up' }]" />
+	<Table :sort="[{ field: 'name', direction: 'desc' }]" />
+
+	<!-- @vue-expect-error — имя чекбокса «выбрать все» строкой -->
+	<Table :selectAllLabel="42" />
+	<Table selectAllLabel="Выбрать все" />
+
+	<!-- @vue-expect-error — флаг, а не строка -->
+	<Table.Column :visible="'yes'" />
+	<Table.Column direction="rtl" />
+
+	<!-- @vue-expect-error — направления письма `up` нет -->
+	<Table.Row direction="up" />
+	<Table.Row direction="rtl" />
 
 	<!-- @vue-expect-error — опечатка в ориентации -->
 	<Tabs orientation="vertcal" />

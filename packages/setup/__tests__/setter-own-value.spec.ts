@@ -41,6 +41,9 @@ import {
 	TSelect,
 	TSelectCollectionFacade,
 	TSelectItemCollectionFacade,
+	TTable,
+	TTableCollectionFacade,
+	TTableRowCollectionFacade,
 	TTabs,
 	TTabsCollectionFacade,
 	TTabsItemCollectionFacade,
@@ -179,6 +182,24 @@ const COLLECTIONS: Readonly<Record<string, readonly [string | null, () => TMount
 			facade.items = SOURCES
 
 			return withItem(facade, new TSelectItemCollectionFacade())
+		},
+	],
+	// Строки — над записями, колонки и сортировка — данными
+	TableCollectionDescriptor: [
+		'TableCollectionRowDescriptor',
+		() => {
+			const facade = new TTableCollectionFacade(
+				{
+					columns: [{ field: 'value', text: 'Value', sortable: true }],
+					sort: [{ field: 'value', direction: 'asc' }],
+					mode: 'multiple',
+				},
+				{ owner: new TTable() },
+			)
+
+			facade.items = SOURCES.map((data) => ({ data }))
+
+			return withItem(facade, new TTableRowCollectionFacade())
 		},
 	],
 	TabsCollectionDescriptor: [

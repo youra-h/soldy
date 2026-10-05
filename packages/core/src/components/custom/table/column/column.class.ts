@@ -6,6 +6,7 @@ import type {
 	ITableColumnProps,
 	TTableColumnAlign,
 	TTableColumnEvents,
+	TTableColumnStyle,
 	TTableCompare,
 } from './types'
 
@@ -18,7 +19,8 @@ import type {
  * слой, а не контрол.
  *
  * Своё у колонки — поле записи (`field`), заголовок, ширина с границами,
- * выравнивание, сортируемость и своё сравнение записей. О строках и о
+ * выравнивание, сортируемость, своё сравнение записей и признак заголовка
+ * строки (`rowHeader`: ячейки колонки называют свои строки). О строках и о
  * коллекции она не знает: место колонки в коллекции отдаёт её фасад, какие
  * колонки показаны — коллекция, а отсортированы ли строки по колонке —
  * расширение сортировки коллекции строк, оно же пишет это в её наборы.
@@ -26,7 +28,8 @@ import type {
  * **Ширина хранится как задана**, итог отдаёт геттер — своё значение, прижатое
  * к `minWidth` и `maxWidth`. Поэтому порядок записи не важен, и своё значение
  * возвращается, когда границы снова его пускают. `change:width` — о смене
- * итога: и от своего значения, и от границ.
+ * итога: и от своего значения, и от границ. Теме итог уходит переменной
+ * заголовка (`widthStyle`): формула одна, а не в каждой разметке.
  */
 export default class TTableColumn<
 	TProps extends ITableColumnProps = ITableColumnProps,
@@ -40,7 +43,7 @@ export default class TTableColumn<
 	static defaultValues: typeof TComponentView.defaultValues &
 		TDefaultValues<
 			ITableColumnProps,
-			'field' | 'text' | 'align' | 'sortable',
+			'field' | 'text' | 'align' | 'sortable' | 'rowHeader',
 			'width' | 'minWidth' | 'maxWidth' | 'compare'
 		> = {
 		...TComponentView.defaultValues,
@@ -54,6 +57,8 @@ export default class TTableColumn<
 		// Кнопка сортировки в заголовке — решение потребителя
 		sortable: false,
 		compare: undefined,
+		// Какая колонка называет строки, знает только потребитель
+		rowHeader: false,
 	}
 
 	protected _field: string
@@ -65,6 +70,7 @@ export default class TTableColumn<
 	protected _align: TTableColumnAlign
 	protected _sortable: boolean
 	protected _compare: TTableCompare | undefined
+	protected _rowHeader: boolean
 
 	constructor(props: Partial<TProps> = {}) {
 		super(props)
@@ -79,6 +85,7 @@ export default class TTableColumn<
 		this._align = props.align ?? ctor.defaultValues.align
 		this._sortable = props.sortable ?? ctor.defaultValues.sortable
 		this._compare = props.compare ?? ctor.defaultValues.compare
+		this._rowHeader = props.rowHeader ?? ctor.defaultValues.rowHeader
 
 		this._syncAlign()
 	}
@@ -195,6 +202,28 @@ export default class TTableColumn<
 		this._sink.emit('change:compare', value)
 	}
 
+	get rowHeader(): boolean {
+		return this._rowHeader
+	}
+
+	set rowHeader(value: boolean) {
+		if (this._rowHeader === value) return
+
+		this._rowHeader = value
+		this._sink.emit('change:rowHeader', value)
+	}
+
+	/**
+	 * `--s-table-column-width` — итог ширины в px. Без ширины переменной нет:
+	 * ширину колонки решает тема. Считает ядро, а не разметка: в шести
+	 * адаптерах одна формула была бы шесть раз.
+	 */
+	get widthStyle(): TTableColumnStyle {
+		const width = this.width
+
+		return width === undefined ? {} : { '--s-table-column-width': `${width}px` }
+	}
+
 	/**
 	 * Сменить своё значение или границу. Хранимое не прижимается —
 	 * пересчитывается итог, и `change:width` приходит, только если он сменился.
@@ -226,6 +255,7 @@ export default class TTableColumn<
 			align: this._align,
 			sortable: this._sortable,
 			compare: this._compare,
+			rowHeader: this._rowHeader,
 		} as TProps
 	}
 }

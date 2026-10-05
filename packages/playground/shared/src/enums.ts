@@ -30,6 +30,7 @@ import type {
 	TSelectionMode,
 	TSelectEditableMode,
 	TSelectPlacement,
+	TTableSortMode,
 	TTagsOverflow,
 	TPopoverEdge,
 	TPopoverPlacement,
@@ -174,6 +175,9 @@ export const TIME_PRECISIONS = enumOf<TTimePrecision>()(['minute', 'second'])
  * покажет, поэтому режимов два — одна дата или диапазон.
  */
 export const DATE_PICKER_MODES = enumOf<TDatePickerMode>()(['single', 'range'])
+
+/** Сколько колонок сортируют строки таблицы: одна или несколько. */
+export const TABLE_SORT_MODES = enumOf<TTableSortMode>()(['single', 'multiple'])
 
 /** Что делает ввод текста в поле Select при `editable: true`. */
 export const SELECT_EDITABLE_MODES = enumOf<TSelectEditableMode>()(['none', 'search', 'filter'])

@@ -31,6 +31,7 @@ import {
 	TListBox,
 	TRadioGroup,
 	TSelect,
+	TTable,
 	TTabs,
 	TTags,
 	createEngineAccordion,
@@ -38,6 +39,7 @@ import {
 	createEngineListBox,
 	createEngineRadioGroup,
 	createEngineSelect,
+	createEngineTable,
 	createEngineTabs,
 	createEngineTags,
 } from '@soldy-ui/core'
@@ -53,6 +55,8 @@ import {
 	RadioGroupDescriptor,
 	SelectCollectionDescriptor,
 	SelectDescriptor,
+	TableCollectionDescriptor,
+	TableDescriptor,
 	TabsCollectionDescriptor,
 	TabsDescriptor,
 	TagsCollectionDescriptor,
@@ -182,6 +186,16 @@ const COLLECTIONS: Readonly<Record<string, TCollectionKit>> = {
 			owner,
 			engine,
 			mount: () => mountOver(SelectDescriptor(), SelectCollectionDescriptor(), owner, engine),
+		}
+	},
+	TableCollectionDescriptor: () => {
+		const owner = new TTable()
+		const engine = createEngineTable()
+
+		return {
+			owner,
+			engine,
+			mount: () => mountOver(TableDescriptor(), TableCollectionDescriptor(), owner, engine),
 		}
 	},
 	TabsCollectionDescriptor: () => {

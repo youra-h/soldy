@@ -20,13 +20,18 @@ const mounted = () => new Promise<void>((resolve) => requestAnimationFrame(() =>
 /**
  * Инстанс и компонент монтируются в одной записи таблицы. Разнесённые по
  * столбцам, они стали бы независимыми объединениями, и `TCheckBox` уходил бы
- * в `ctrl` компонента `Switch`: карты событий у них разные.
+ * в `ctrl` компонента `Switch`: карты событий у них разные. По той же причине
+ * отмену записи ставит сама запись (`rejecting`): подписка через объединение
+ * инстансов не компилируется.
  */
 const CHECKABLES = [
 	[
 		'CheckBox',
-		(readonly: boolean) => {
+		(readonly: boolean, rejecting = false) => {
 			const ctrl = new TCheckBox({ readonly })
+
+			if (rejecting) ctrl.events.on('change:value:before', (e) => e.preventDefault())
+
 			const input = mount(CheckBox, { props: { ctrl }, attachTo: document.body }).find(
 				'input',
 			)
@@ -36,8 +41,11 @@ const CHECKABLES = [
 	],
 	[
 		'Switch',
-		(readonly: boolean) => {
+		(readonly: boolean, rejecting = false) => {
 			const ctrl = new TSwitch({ readonly })
+
+			if (rejecting) ctrl.events.on('change:value:before', (e) => e.preventDefault())
+
 			const input = mount(Switch, { props: { ctrl }, attachTo: document.body }).find('input')
 
 			return { ctrl, input }
@@ -64,6 +72,41 @@ describe.each(CHECKABLES)('%s · клик', (_name, mountCheckable) => {
 
 		expect(input.element.checked).toBe(false)
 		expect(ctrl.value).toBe(false)
+	})
+
+	/**
+	 * `change` уже не отменить: поле браузер переключил до клика. Модель
+	 * запись не приняла и не сменилась — разметка поле не перерисует, и вернуть
+	 * его обязан плагин.
+	 */
+	it('модель отменила запись в change:value:before — поле возвращается к модели', async () => {
+		const { ctrl, input } = mountCheckable(false, true)
+
+		await mounted()
+		await input.trigger('click')
+
+		expect(ctrl.value).toBe(false)
+		expect(input.element.checked).toBe(false)
+	})
+})
+
+describe('CheckBox · отменённая запись и indeterminate', () => {
+	it('модель отменила запись — «часть» возвращается в поле', async () => {
+		const ctrl = new TCheckBox({ indeterminate: true })
+		const input = mount(CheckBox, { props: { ctrl }, attachTo: document.body }).find('input')
+
+		// Снимая «часть», чекбокс гасит её раньше записи отметки, — вернуть её
+		// вместе с отменой записи
+		ctrl.events.on('change:value:before', (e) => {
+			e.preventDefault()
+			ctrl.indeterminate = true
+		})
+
+		await mounted()
+		await input.trigger('click')
+
+		expect([ctrl.value, ctrl.indeterminate]).toEqual([false, true])
+		expect([input.element.checked, input.element.indeterminate]).toEqual([false, true])
 	})
 })
 

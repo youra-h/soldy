@@ -56,7 +56,27 @@ export class TInputBoolPlugin extends TBasePlugin<any, TInputBoolPluginEvents> {
 		if (this._instance?.readonly || this._input?.disabled) return
 
 		this._instance?.toggle()
+		this._syncInput()
 		this.events.emit('change:value', { value: this._instance?.value })
+	}
+
+	/**
+	 * Узел — по модели после переключения. Браузер переключил поле сам, ещё до
+	 * клика, а модель вправе запись не принять: её отменил или поправил
+	 * подписчик `change:value:before` — так, например, чекбокс выбора строки
+	 * таблицы отдаёт решение выбору строк. Модель тогда не сменилась, и
+	 * разметка поле не перерисует: и Vue, и React пишут `checked` в узел только
+	 * на смену своего значения. Без этой записи поле осталось бы переключённым
+	 * при прежней модели.
+	 */
+	private _syncInput(): void {
+		const input = this._input
+		const instance = this._instance
+
+		if (!input || !instance) return
+
+		input.checked = instance.value === true
+		input.indeterminate = instance.indeterminate === true
 	}
 
 	private _removeInputListener(): void {

@@ -2,6 +2,7 @@ import { TSelectionCollectionFacade } from '../../../../base/collection'
 import type { TCollectionEngine, TCollectionFacadeOptions } from '../../../../base/collection'
 import { completeEngine } from '../../../../base/collection/create/internal'
 import type { TDefaultValues } from '../../../../base/component'
+import type { ICheckBox } from '../../../check-box/types'
 import type { TTableColumnSource } from '../../column/collection/types'
 import type { ITableColumn } from '../../column/types'
 import type { ITableRow } from '../../row/types'
@@ -21,9 +22,10 @@ import type {
  *
  * Состав и выбор строк — из базы с выбором; остальное — проекция расширений
  * коллекции: колонки и показанные колонки (`columns`), сколько показанных
- * строк выбрано и команды выбора показанных (`table`), сортировка строк по
- * колонкам (`sort`). Своего фасад не делает ничего: события расширений он
- * отдаёт наружу `relayAll`, команды остаются у них.
+ * строк выбрано, команды выбора показанных и чекбокс «выбрать все»
+ * (`table`), сортировка строк по колонкам (`sort`). Своего фасад не делает
+ * ничего: события расширений он отдаёт наружу `relayAll`, команды остаются у
+ * них.
  */
 export class TTableCollectionFacade extends TSelectionCollectionFacade<
 	ITableRow,
@@ -31,12 +33,14 @@ export class TTableCollectionFacade extends TSelectionCollectionFacade<
 	TTableCollectionFacadeEvents
 > {
 	/**
-	 * Умолчания сортировки: снятый из разметки проп связка возвращает к ним.
-	 * Не заданная сортировка — порядок данных.
+	 * Умолчания колонок и сортировки: снятый из разметки проп связка
+	 * возвращает к ним. Не заданные колонки — колонок нет, не заданная
+	 * сортировка — порядок данных.
 	 */
 	static override defaultValues: typeof TSelectionCollectionFacade.defaultValues &
-		TDefaultValues<ITableCollectionProps, 'sortMode' | 'presorted', 'sort'> = {
+		TDefaultValues<ITableCollectionProps, 'sortMode' | 'presorted', 'sort' | 'columns'> = {
 		...TSelectionCollectionFacade.defaultValues,
+		columns: undefined,
 		sort: undefined,
 		sortMode: 'single',
 		presorted: false,
@@ -89,9 +93,9 @@ export class TTableCollectionFacade extends TSelectionCollectionFacade<
 		return this.extensions.columns.columns
 	}
 
-	/** Колонки данными: сверка по `field` */
-	set columns(sources: readonly TTableColumnSource[]) {
-		this.extensions.columns.columns = sources
+	/** Колонки данными: сверка по `field`. Не заданы — колонок нет */
+	set columns(sources: readonly TTableColumnSource[] | undefined) {
+		this.extensions.columns.columns = sources ?? []
 	}
 
 	/** Показанные колонки — видимые, в порядке коллекции колонок */
@@ -99,9 +103,29 @@ export class TTableCollectionFacade extends TSelectionCollectionFacade<
 		return this.extensions.columns.shownColumns
 	}
 
+	/**
+	 * Сколько колонок в строке таблицы — показанные и колонка выбора, пока
+	 * выбор строк включён. Не меньше одной: на столько колонок встаёт ячейка
+	 * пустой таблицы (`colspan`)
+	 */
+	get columnCount(): number {
+		const selection = this.extensions.table.selecting ? 1 : 0
+
+		return Math.max(1, this.shownColumns.length + selection)
+	}
+
 	/** Сколько показанных строк выбрано — для чекбокса шапки */
 	get shownSelection(): TTableShownSelection {
 		return this.extensions.table.shownSelection
+	}
+
+	/**
+	 * Чекбокс «выбрать все показанные» — экземпляр, который держит таблица:
+	 * отметку, «часть» и выключенность пишет она, а запись отметки — просьба
+	 * выбрать или снять показанные строки
+	 */
+	get selectAll(): ICheckBox {
+		return this.extensions.table.selectAll
 	}
 
 	/** Сортировка — колонки и направления по приоритету; пусто — порядок данных */

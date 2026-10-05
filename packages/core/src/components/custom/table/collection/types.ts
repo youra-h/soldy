@@ -26,6 +26,7 @@ import type {
 	TTableEngineOptions,
 	TTableExtension,
 	TTableExtensionEvents,
+	TTableItemEvents,
 	TTableSortEvents,
 	TTableSortExtension,
 	TTableSortMode,
@@ -41,7 +42,7 @@ export type TTableCollectionExtensions = {
 	selection: TSelectionExtension<ITableRow>
 	/** Колонки: их коллекция, показанные колонки и ячейки строк */
 	columns: TTableColumnsExtension
-	/** Что строки получают от таблицы и выбор показанных строк */
+	/** Что строки получают от таблицы, выбор показанных строк и чекбоксы колонки выбора */
 	table: TTableExtension
 	/** Порядок показанных строк по колонкам */
 	sort: TTableSortExtension
@@ -115,5 +116,7 @@ export type TTableCollectionFacadeEvents = TSelectionCollectionFacadeEvents<ITab
 	TTableExtensionEvents &
 	TTableSortEvents
 
-/** События фасада строки: порядок и выбор из базы плюс ячейки. */
-export type TTableRowCollectionFacadeEvents = TSelectionItemFacadeEvents & TTableColumnsItemEvents
+/** События фасада строки: порядок и выбор из базы плюс ячейки и включённый выбор строк. */
+export type TTableRowCollectionFacadeEvents = TSelectionItemFacadeEvents &
+	TTableColumnsItemEvents &
+	TTableItemEvents

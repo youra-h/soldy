@@ -33,9 +33,9 @@ Web Components connect that model to a framework and render the markup: BEM clas
   RadioGroup run on the same engine with pluggable extensions: selection, activation, order,
   filtering. Every insert, update, remove, move and clear first emits a cancellable `*:before`
   event, and items come from the `items` prop or from markup. Calendar is a collection too: its
-  days are items, built from the months on screen.
+  days are items, built from the months on screen. A Table is two: rows and columns.
 - **Accessibility from the WAI-ARIA Authoring Practices.** Tabs, Tags, Accordion, Select, Switch,
-  RadioGroup, Slider, Popover, Tooltip, Dialog, Drawer, Calendar and DatePicker take roles and
+  RadioGroup, Slider, Popover, Tooltip, Dialog, Drawer, Calendar, DatePicker and Table take roles and
   relations from their APG patterns, and ProgressLinear and ProgressSpinner use the `progressbar`
   role. Select implements the Combobox keyboard model, and Tabs the Tabs one: arrow keys and
   Home/End with automatic activation, and a single Tab stop. ARIA is computed outside the
@@ -144,6 +144,7 @@ The component set, as the playground shows it:
 | Drawer          | Panel that slides in at an edge of the screen or a container, can be swiped away               |
 | Scroller        | Single-row strip of any content, paged with two buttons                                        |
 | ListBox         | List with single or multiple selection                                                         |
+| Table           | Table: columns as data, sorting by column headers, row selection with checkboxes               |
 | Tabs            | Tabs: a tab list and panels linked by value                                                    |
 | Tags            | Tag set: close buttons, optional selection                                                     |
 | Accordion       | Sections that expand one at a time or several at once                                          |

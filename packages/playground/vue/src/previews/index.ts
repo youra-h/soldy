@@ -1,6 +1,6 @@
 import { defineComponent, h, mergeProps, ref, watch, type Component } from 'vue'
 import type { DescriptorSlots, PopoverDescriptor, TooltipDescriptor } from '@soldy-ui/setup'
-import { COLLECTION_ITEMS } from '@soldy-ui/playground-shared'
+import { COLLECTION_ITEMS, TABLE_COLUMNS, TABLE_ROWS } from '@soldy-ui/playground-shared'
 import {
 	Accordion,
 	Button,
@@ -25,6 +25,7 @@ import {
 	Skeleton,
 	Slider,
 	Switch,
+	Table,
 	Tabs,
 	Tags,
 	Tooltip,
@@ -307,6 +308,25 @@ export const PREVIEWS: Record<string, TPreview> = {
 		h(ListBox as Component, bind, () =>
 			ITEMS.map((item) => h(ListBox.Item, { key: item.value, ...item })),
 		),
+
+	/**
+	 * Строки и колонки — данными (`items`, `columns`): частей разметкой у
+	 * таблицы нет, заголовки и строки она рисует сама. Имени без видимой
+	 * подписи у таблицы нет — превью даёт его пропом, как поповеру.
+	 *
+	 * Обёртка — граница ширины, как у ленты: таблица встаёт во всю ширину
+	 * места, а сцена ячейки — флексбокс, и таблица держала бы там только свой
+	 * минимум.
+	 */
+	table: (bind) =>
+		h('div', { style: 'width:100%' }, [
+			h(Table as Component, {
+				items: TABLE_ROWS,
+				columns: TABLE_COLUMNS,
+				aria_label: 'Сотрудники',
+				...bind,
+			}),
+		]),
 
 	tabs: (bind) =>
 		h(Tabs as Component, bind, {

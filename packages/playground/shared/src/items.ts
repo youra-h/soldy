@@ -19,3 +19,34 @@ export const COLLECTION_ITEMS = [
 
 /** Значения состава — то, чем задают выбор целиком. */
 export const COLLECTION_VALUES = COLLECTION_ITEMS.map((item) => item.value)
+
+/**
+ * Записи приложения для таблицы стенда — то, что показывают её строки.
+ *
+ * Пять, как у остальных коллекций, и с полями, по которым видно сортировку:
+ * текст в алфавите языка и числа. Своё у таблицы — запись, а не текст и
+ * значение элемента: колонки раскладывают её по полям.
+ */
+export const TABLE_RECORDS = [
+	{ id: 1, name: 'Анна Смирнова', city: 'Казань', age: 30 },
+	{ id: 2, name: 'Борис Петров', city: 'Омск', age: 41 },
+	{ id: 3, name: 'Вера Иванова', city: 'Тверь', age: 25 },
+	{ id: 4, name: 'Глеб Сорокин', city: 'Пермь', age: 37 },
+	{ id: 5, name: 'Дина Орлова', city: 'Сочи', age: 29 },
+]
+
+/**
+ * Строки таблицы стенда — над записями. Одна выключена: выключенную строку
+ * пользователь не выбирает, и чекбокс шапки её не считает.
+ */
+export const TABLE_ROWS = TABLE_RECORDS.map((data) => ({ data, disabled: data.id === 4 }))
+
+/**
+ * Колонки таблицы стенда — данными: имя называет строки (`rowHeader`), все
+ * сортируются, у возраста — ширина и выравнивание по концу, как у чисел.
+ */
+export const TABLE_COLUMNS = [
+	{ field: 'name', text: 'Имя', rowHeader: true, sortable: true },
+	{ field: 'city', text: 'Город', sortable: true },
+	{ field: 'age', text: 'Возраст', align: 'end' as const, width: 120, sortable: true },
+]
