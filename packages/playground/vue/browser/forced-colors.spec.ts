@@ -50,6 +50,7 @@ import {
 	Popover,
 	Select,
 	SelectItem,
+	Skeleton,
 	Switch,
 	Tabs,
 	TabsItem,
@@ -828,6 +829,34 @@ describe('Switch', () => {
  * переменные заливки. С вариантом — его переменные правило режима тоже
  * перекрывает.
  */
+/**
+ * Skeleton. Заглушка — фон, и браузер заменял его цветом страницы: на месте
+ * будущего содержимого не было ничего. Здесь она — сплошной `GrayText` у любого
+ * варианта, а блика волны — светлого слоя цвета темы — нет
+ * (`themes/oren/src/components/skeleton/_skeleton.scss`).
+ */
+describe('Skeleton', () => {
+	const LOOKS = [
+		{ name: 'по умолчанию', props: {} },
+		{ name: 'с вариантом', props: { variant: 'accent' } },
+		{ name: 'волна', props: { animation: 'wave' } },
+	] as const
+
+	describe.each(LOOKS)('$name', ({ props }) => {
+		it.each(SCHEMES)('%s: заглушка — неактивным системным цветом', async (scheme) => {
+			await forcedColors('active')
+			await show(scheme, () => h(Skeleton, { width: 120, height: 20, ...props }))
+
+			const placeholder = find('.s-skeleton__placeholder')
+
+			expect(pixel([style(placeholder).backgroundColor])).toEqual(
+				pixel([systemColor('GrayText')]),
+			)
+			expect(style(placeholder, '::after').content, 'блик').toBe('none')
+		})
+	})
+})
+
 describe('Calendar: выбор дня', () => {
 	it.each(SCHEMES)('%s: подсветкой в том же кадре', async (scheme) => {
 		await forcedColors('active')

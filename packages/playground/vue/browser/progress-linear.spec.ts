@@ -438,12 +438,25 @@ describe('вертикальная полоса', () => {
 /**
  * Принудительные цвета (высокий контраст Windows): браузер заменил бы фоны
  * полосы системным цветом поверхности, и от неё не осталось бы ничего. Тема
- * отдаёт системные цвета — дорожке `GrayText`, заливке и бегущему отрезку
- * `Highlight`, как у кольца ProgressSpinner, — и правило режима не
- * проигрывает ни варианту, ни бегу. Отрезок раньше проигрывал: правило бега
+ * рисует её как индикатор системы: дорожка пустая, цвета страницы, в контуре
+ * цвета текста, заливка и бегущий отрезок — `Highlight`, — и правило режима
+ * не проигрывает ни варианту, ни бегу. Дорожка была `GrayText`, и рядом с
+ * `Highlight` во многих палитрах она почти того же цвета: долю было не
+ * разглядеть. Отрезок раньше проигрывал: правило бега
  * специфичнее правила режима, и отрезок оставался цвета темы.
  */
 describe('принудительные цвета', () => {
+	/** Дорожка пустая — цвета страницы — в контуре цвета текста. */
+	const expectEmptyTrack = () => {
+		const { outlineStyle, outlineWidth, outlineColor } = getComputedStyle(root())
+
+		expect(backgroundOf(getComputedStyle(root())), 'дорожка').toEqual(
+			pixel([systemColor('Canvas')]),
+		)
+		expect([outlineStyle, outlineWidth], 'контур').toEqual(['solid', '1px'])
+		expect(pixel([outlineColor]), 'цвет контура').toEqual(pixel([systemColor('CanvasText')]))
+	}
+
 	it.each(SCHEMES)('%s: дорожка и заливка — системными цветами', async (scheme) => {
 		await forcedColors('active')
 		document.documentElement.dataset.theme = scheme
@@ -454,7 +467,7 @@ describe('принудительные цвета', () => {
 		// Режим действует — иначе сторож проверял бы обычный режим
 		expect(matchMedia('(forced-colors: active)').matches).toBe(true)
 
-		expect(backgroundOf(getComputedStyle(root()))).toEqual(pixel([systemColor('GrayText')]))
+		expectEmptyTrack()
 		expect(backgroundOf(getComputedStyle(range()))).toEqual(pixel([systemColor('Highlight')]))
 	})
 
@@ -465,7 +478,7 @@ describe('принудительные цвета', () => {
 		mount({ indeterminate: true, variant: 'positive' })
 		await transitionEvents()
 
-		expect(backgroundOf(getComputedStyle(root()))).toEqual(pixel([systemColor('GrayText')]))
+		expectEmptyTrack()
 		expect(backgroundOf(segment())).toEqual(pixel([systemColor('Highlight')]))
 	})
 })
