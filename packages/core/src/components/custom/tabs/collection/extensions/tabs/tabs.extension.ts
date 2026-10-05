@@ -131,7 +131,11 @@ export class TTabsExtension<TOwner extends ITabs = ITabs, TItem extends ITabsIte
 		if (activation) {
 			activation.events.on('change:activation', () => this._syncSelectedAria())
 
-			ctx.driver.events.on('item:added', () => this._syncSelectedAria())
+			// Добавленному — только ему: проход по всем на каждый `item:added`
+			// пачки сделал бы наполнение квадратичным
+			ctx.driver.events.on('item:added', (e) =>
+				this._applySelectedAria(e.item as TItem, activation),
+			)
 
 			// Закрыли активный таб — активным становится сосед: иначе в списке не
 			// останется ни активного таба, ни панели. Это политика Tabs, а не
@@ -214,9 +218,12 @@ export class TTabsExtension<TOwner extends ITabs = ITabs, TItem extends ITabsIte
 
 		if (!activation) return
 
-		this._ctx.driver.valueOf().forEach((item) => {
-			item.aria.add('aria-selected', activation.isActive(item) ? 'true' : 'false')
-		})
+		this._ctx.driver.valueOf().forEach((item) => this._applySelectedAria(item, activation))
+	}
+
+	/** `aria-selected` одного таба — по текущему активному. */
+	private _applySelectedAria(item: TItem, activation: IActivationExtension<TItem>): void {
+		item.aria.add('aria-selected', activation.isActive(item) ? 'true' : 'false')
 	}
 
 	/**

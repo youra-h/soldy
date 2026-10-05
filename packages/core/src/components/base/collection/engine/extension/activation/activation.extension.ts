@@ -40,9 +40,11 @@ export class TActivationExtension<TItem extends object = any>
 	override install(ctx: IExtensionContext<TItem>): void {
 		super.install(ctx)
 
+		// Всем — на смену активного, добавленному — только ему, как у
+		// `TSelectionExtension`: проход по всем на каждый `item:added` пачки
+		// сделал бы наполнение квадратичным
 		this.events.on('change:activation', () => this._syncDataset())
-		ctx.driver.events.on('item:added', () => this._syncDataset())
-		ctx.driver.events.on('change:items', () => this._syncDataset())
+		ctx.driver.events.on('item:added', (e) => this._writeDataset(e.item as TItem))
 		this._syncDataset()
 
 		// Удалили активный — только сброс. Кого активировать взамен и нужно ли
@@ -150,9 +152,12 @@ export class TActivationExtension<TItem extends object = any>
 	 * конкретного компонента.
 	 */
 	private _syncDataset(): void {
-		this._ctx?.driver.valueOf().forEach((item: TItem) => {
-			;(item as { dataset?: TDataset }).dataset?.add('selected', this.isActive(item))
-		})
+		this._ctx?.driver.valueOf().forEach((item: TItem) => this._writeDataset(item))
+	}
+
+	/** `data-selected` одного элемента — по текущему активному. */
+	private _writeDataset(item: TItem): void {
+		;(item as { dataset?: TDataset }).dataset?.add('selected', this.isActive(item))
 	}
 
 	/**

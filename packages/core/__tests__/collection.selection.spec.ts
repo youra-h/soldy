@@ -1,5 +1,10 @@
 import { describe, it, expect, vi } from 'vitest'
-import { TCollectionEngine, TPlainExtension, TSelectionExtension } from '@soldy-ui/core'
+import {
+	TBatchExtension,
+	TCollectionEngine,
+	TPlainExtension,
+	TSelectionExtension,
+} from '@soldy-ui/core'
 import type { TSelectEvent, TSelectionMode } from '@soldy-ui/core'
 
 type Item = { id: number; name: string }
@@ -15,6 +20,26 @@ function createCollection() {
 		extensions: { plain, selection },
 	})
 }
+
+/** Коллекция с пачкой: наполнение `batch.set` и сверка `patch`. */
+function createBatchCollection() {
+	const plain = new TPlainExtension<Item>()
+	const batch = new TBatchExtension<Item>()
+	const selection = new TSelectionExtension<Item>()
+
+	return new TCollectionEngine<
+		Item,
+		{
+			plain: TPlainExtension<Item>
+			batch: TBatchExtension<Item>
+			selection: TSelectionExtension<Item>
+		}
+	>({
+		extensions: { plain, batch, selection },
+	})
+}
+
+type TBatchCollection = ReturnType<typeof createBatchCollection>
 
 describe('TSelectionExtension', () => {
 	it('изначально selectedCount === 0', () => {
@@ -454,7 +479,64 @@ describe('TSelectionExtension', () => {
 		expect(handler).not.toHaveBeenCalled()
 	})
 
+	// --- Наполнение пачкой ---
+
+	// Пачка шлёт `item:added` на каждый элемент разом в конце, когда в
+	// хранилище уже все: проход по всем на каждый из них — N² записей
+	it('наполнение пачкой: data-selected — одна запись на элемент, у всех с наполнения', () => {
+		const col = createBatchCollection()
+		const list = Array.from({ length: 50 }, (_, index) => ({
+			id: index,
+			name: String(index),
+			dataset: { add: vi.fn() },
+		}))
+
+		col.extensions.batch.set(list)
+
+		for (const item of list) {
+			expect(item.dataset.add.mock.calls).toEqual([['selected', false]])
+		}
+	})
+
 	// --- Авто-очистка при удалении ---
+
+	// Удаление из хранилища — всегда команда с `item:removed`, в пачке и в
+	// сверке тоже: отдельной сверки выбора с составом нет
+	it.each([
+		{
+			way: 'remove',
+			run: (col: TBatchCollection, item: Item) => col.extensions.plain.remove(item),
+		},
+		{
+			way: 'remove внутри batch',
+			run: (col: TBatchCollection, item: Item) =>
+				col.batch(() => col.extensions.plain.remove(item)),
+		},
+		{
+			way: 'patch с trackBy',
+			run: (col: TBatchCollection, item: Item) => {
+				const { batch } = col.extensions
+
+				batch.trackBy = (source) => source.id
+				batch.patch(batch.items.filter((stored) => stored !== item))
+			},
+		},
+	])('выбранный, удалённый через $way, уходит из выбора', ({ run }) => {
+		const col = createBatchCollection()
+		const { plain, selection } = col.extensions
+		const a: Item = { id: 1, name: 'a' }
+		const b: Item = { id: 2, name: 'b' }
+
+		selection.mode = 'multiple'
+		plain.push(a)
+		plain.push(b)
+		selection.selectMany([a, b])
+
+		run(col, a)
+
+		expect(selection.isSelected(a)).toBe(false)
+		expect(selection.selected).toEqual([b])
+	})
 
 	it('снимает выделение при удалении элемента', () => {
 		const col = createCollection()

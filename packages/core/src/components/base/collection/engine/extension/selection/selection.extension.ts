@@ -66,11 +66,16 @@ export class TSelectionExtension<TItem extends object = any>
 	install(ctx: IExtensionContext<TItem>): void {
 		super.install(ctx)
 
+		// Всем — на смену выбора, добавленному — только ему: пачка шлёт
+		// `item:added` на каждый элемент разом в конце, и проход по всем на
+		// каждый из них сделал бы наполнение квадратичным. Выбор остальных
+		// элементов запись состава не меняет — прохода на `change:items` нет
 		this.events.on('change:selection', () => this._syncDataset())
-		ctx.driver.events.on('item:added', () => this._syncDataset())
-		ctx.driver.events.on('change:items', () => this._syncDataset())
+		ctx.driver.events.on('item:added', (e) => this._writeDataset(e.item as TItem))
 		this._syncDataset()
 
+		// Любое удаление из хранилища — команда с `item:removed`, в том числе
+		// очистка и сверка `patch`: здесь выбор и теряет удалённый элемент
 		ctx.driver.events.on('item:removed', (e) => {
 			if (this._selected.has(e.item)) {
 				this._selected.delete(e.item)
@@ -79,12 +84,6 @@ export class TSelectionExtension<TItem extends object = any>
 
 		ctx.driver.events.on('reset', () => {
 			this.resetSelection()
-		})
-
-		ctx.driver.events.on('change:items', (items: readonly TItem[]) => {
-			this._selected.forEach((item) => {
-				if (!items.includes(item)) this._selected.delete(item)
-			})
 		})
 
 		const meta = ctx.extensions.meta as TMetaExtension<TItem> | undefined
@@ -130,9 +129,12 @@ export class TSelectionExtension<TItem extends object = any>
 	 * приведение типа: элементом коллекции может быть и не компонент.
 	 */
 	private _syncDataset(): void {
-		this._ctx?.driver.valueOf().forEach((item: TItem) => {
-			;(item as { dataset?: TDataset }).dataset?.add('selected', this.isSelected(item))
-		})
+		this._ctx?.driver.valueOf().forEach((item: TItem) => this._writeDataset(item))
+	}
+
+	/** `data-selected` одного элемента — по текущему выбору. */
+	private _writeDataset(item: TItem): void {
+		;(item as { dataset?: TDataset }).dataset?.add('selected', this.isSelected(item))
 	}
 
 	/**

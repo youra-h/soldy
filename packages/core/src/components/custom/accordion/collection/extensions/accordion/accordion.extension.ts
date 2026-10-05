@@ -68,8 +68,12 @@ export class TAccordionExtension<
 		const selection = ctx.extensions.selection as ISelectionExtension<TItem> | undefined
 
 		if (selection) {
+			// Всем — на смену выбора, добавленной — только ей: проход по всем на
+			// каждый `item:added` пачки сделал бы наполнение квадратичным
 			selection.events.on('change:selection', () => this._syncExpanded(selection))
-			ctx.driver.events.on('item:added', () => this._syncExpanded(selection))
+			ctx.driver.events.on('item:added', (e) =>
+				this._applyExpanded(e.item as TItem, selection),
+			)
 
 			this._syncExpanded(selection)
 		}
@@ -136,8 +140,11 @@ export class TAccordionExtension<
 
 	/** `aria-expanded` заголовка — у каждой секции: раскрыта ли её панель. */
 	private _syncExpanded(selection: ISelectionExtension<TItem>): void {
-		this._ctx.driver.valueOf().forEach((item) => {
-			item.aria.add('aria-expanded', selection.isSelected(item) ? 'true' : 'false')
-		})
+		this._ctx.driver.valueOf().forEach((item) => this._applyExpanded(item, selection))
+	}
+
+	/** `aria-expanded` заголовка одной секции. */
+	private _applyExpanded(item: TItem, selection: ISelectionExtension<TItem>): void {
+		item.aria.add('aria-expanded', selection.isSelected(item) ? 'true' : 'false')
 	}
 }
