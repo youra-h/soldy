@@ -155,7 +155,12 @@ export class TSelectExtension<
 			selection.events.on('change:selection', () => this._onSelectionChanged())
 			selection.events.on('change:mode', () => this._onModeChanged())
 
-			ctx.driver.events.on('item:added', () => this._syncSelectedAria())
+			// Добавленной — только ей: пачка шлёт `item:added` на каждую опцию
+			// разом в конце, и проход по всем на каждую сделал бы наполнение
+			// квадратичным. Всем — на смену выбора, в `_onSelectionChanged`
+			ctx.driver.events.on('item:added', (e) =>
+				this._applySelectedAria(e.item as TItem, selection),
+			)
 			ctx.driver.events.on('item:removed', () => this._onSelectionChanged())
 		}
 
@@ -490,9 +495,12 @@ export class TSelectExtension<
 
 		if (!selection || !this._ctx) return
 
-		this._ctx.driver.valueOf().forEach((item) => {
-			item.aria.add('aria-selected', selection.isSelected(item) ? 'true' : 'false')
-		})
+		this._ctx.driver.valueOf().forEach((item) => this._applySelectedAria(item, selection))
+	}
+
+	/** `aria-selected` одной опции — по текущему выбору. */
+	private _applySelectedAria(item: TItem, selection: ISelectionExtension<TItem>): void {
+		item.aria.add('aria-selected', selection.isSelected(item) ? 'true' : 'false')
 	}
 
 	/**

@@ -105,7 +105,12 @@ export class TTagsExtension<TOwner extends ITags = ITags, TItem extends ITagsIte
 			selection.events.on('change:mode', () => this._applyMode())
 			selection.events.on('change:selection', () => this._syncSelectedAria())
 
-			ctx.driver.events.on('item:added', () => this._applyMode())
+			// Добавленному — только его роль: набор ряда от состава не зависит, а
+			// проход по всем на каждый `item:added` пачки сделал бы наполнение
+			// квадратичным
+			ctx.driver.events.on('item:added', (e) =>
+				this._applyItemRole(e.item as TItem, selection),
+			)
 			ctx.driver.events.on('item:removed', () => this._applyMode())
 
 			this._applyMode()

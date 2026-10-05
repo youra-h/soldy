@@ -50,8 +50,10 @@ export class TValueSelectionExtension<
 		this._selection?.events.on('change:selection', () => this._selectionToValue())
 
 		// Элемент мог приехать позже, чем выставили `value`: опции регистрируются
-		// при монтировании, а проп приходит сразу
-		ctx.driver.events.on('item:added', () => this._valueToSelection())
+		// при монтировании, а проп приходит сразу. Сверка — раз на запись:
+		// `change:items` приходит следом за `item:*` каждой команды и пачки, а
+		// сверка на каждый `item:added` пачки проходила бы весь состав на
+		// каждый добавленный элемент
 		ctx.driver.events.on('change:items', () => this._valueToSelection())
 
 		// Владелец пришёл — его `value` и выбор коллекции сводятся заново, а
@@ -111,7 +113,8 @@ export class TValueSelectionExtension<
 	 * `value` → выбор.
 	 *
 	 * Значения без соответствующего элемента молча игнорируются: список мог ещё
-	 * не приехать, и повторный проход случится на `item:added`.
+	 * не приехать, и повторный проход случится на смене состава
+	 * (`change:items`).
 	 *
 	 * Выбор, отменённый в `item:select:before`, значение не меняет: оно
 	 * откатывается к тому, что выбрано на самом деле. В `single` выбор заменяет
