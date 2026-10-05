@@ -3,6 +3,7 @@ import type {
 	IComponentViewProps,
 	TComponentViewEvents,
 } from '../../../base/component-view'
+import type { TTableRecord } from '../row/types'
 
 /**
  * Выравнивание содержимого колонки.
@@ -11,6 +12,14 @@ import type {
  * логические: `start` и `end` — начало и конец строки в направлении письма.
  */
 export type TTableColumnAlign = 'start' | 'center' | 'end'
+
+/**
+ * Своё сравнение двух записей для сортировки по колонке — по возрастанию, как
+ * у `Array.prototype.sort`: отрицательное — `a` раньше, положительное — позже,
+ * ноль — равны, и равные остаются в порядке данных. Убывание — тот же порядок
+ * наоборот. Строки без записи сравнение не получает: они всегда в конце.
+ */
+export type TTableCompare = (a: TTableRecord, b: TTableRecord) => number
 
 export type TTableColumnEvents = TComponentViewEvents & {
 	/** change:field */
@@ -28,6 +37,10 @@ export type TTableColumnEvents = TComponentViewEvents & {
 	'change:maxWidth': (value: number | undefined) => void
 	/** change:align */
 	'change:align': (value: TTableColumnAlign) => void
+	/** change:sortable */
+	'change:sortable': (value: boolean) => void
+	/** change:compare */
+	'change:compare': (value: TTableCompare | undefined) => void
 }
 
 export interface ITableColumnProps extends IComponentViewProps {
@@ -43,6 +56,10 @@ export interface ITableColumnProps extends IComponentViewProps {
 	maxWidth?: number
 	/** Выравнивание содержимого колонки */
 	align?: TTableColumnAlign
+	/** Пользователь сортирует строки по колонке — кнопкой в заголовке */
+	sortable?: boolean
+	/** Своё сравнение записей. Не задано — значения поля `field` */
+	compare?: TTableCompare
 }
 
 export interface ITableColumn<
@@ -64,4 +81,12 @@ export interface ITableColumn<
 	maxWidth: number | undefined
 	/** Выравнивание содержимого колонки */
 	align: TTableColumnAlign
+	/**
+	 * Пользователь сортирует строки по колонке — кнопкой в заголовке. Решение
+	 * потребителя, поэтому по умолчанию нет. Код сортирует строки и по
+	 * несортируемой колонке — записью состояния сортировки
+	 */
+	sortable: boolean
+	/** Своё сравнение записей. Не задано — значения поля `field` */
+	compare: TTableCompare | undefined
 }

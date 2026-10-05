@@ -6,6 +6,7 @@ import type {
 	ITableColumnProps,
 	TTableColumnAlign,
 	TTableColumnEvents,
+	TTableCompare,
 } from './types'
 
 /**
@@ -16,9 +17,11 @@ import type {
  * шапки, `th`. Своего `disabled` у заголовка нет, поэтому база — визуальный
  * слой, а не контрол.
  *
- * Своё у колонки — поле записи (`field`), заголовок, ширина с границами и
- * выравнивание. О строках и о коллекции она не знает: место колонки в
- * коллекции отдаёт её фасад, а какие колонки показаны — коллекция.
+ * Своё у колонки — поле записи (`field`), заголовок, ширина с границами,
+ * выравнивание, сортируемость и своё сравнение записей. О строках и о
+ * коллекции она не знает: место колонки в коллекции отдаёт её фасад, какие
+ * колонки показаны — коллекция, а отсортированы ли строки по колонке —
+ * расширение сортировки коллекции строк, оно же пишет это в её наборы.
  *
  * **Ширина хранится как задана**, итог отдаёт геттер — своё значение, прижатое
  * к `minWidth` и `maxWidth`. Поэтому порядок записи не важен, и своё значение
@@ -37,8 +40,8 @@ export default class TTableColumn<
 	static defaultValues: typeof TComponentView.defaultValues &
 		TDefaultValues<
 			ITableColumnProps,
-			'field' | 'text' | 'align',
-			'width' | 'minWidth' | 'maxWidth'
+			'field' | 'text' | 'align' | 'sortable',
+			'width' | 'minWidth' | 'maxWidth' | 'compare'
 		> = {
 		...TComponentView.defaultValues,
 		tag: 'th',
@@ -48,6 +51,9 @@ export default class TTableColumn<
 		width: undefined,
 		minWidth: undefined,
 		maxWidth: undefined,
+		// Кнопка сортировки в заголовке — решение потребителя
+		sortable: false,
+		compare: undefined,
 	}
 
 	protected _field: string
@@ -57,6 +63,8 @@ export default class TTableColumn<
 	protected _minWidth: number | undefined
 	protected _maxWidth: number | undefined
 	protected _align: TTableColumnAlign
+	protected _sortable: boolean
+	protected _compare: TTableCompare | undefined
 
 	constructor(props: Partial<TProps> = {}) {
 		super(props)
@@ -69,6 +77,8 @@ export default class TTableColumn<
 		this._minWidth = props.minWidth ?? ctor.defaultValues.minWidth
 		this._maxWidth = props.maxWidth ?? ctor.defaultValues.maxWidth
 		this._align = props.align ?? ctor.defaultValues.align
+		this._sortable = props.sortable ?? ctor.defaultValues.sortable
+		this._compare = props.compare ?? ctor.defaultValues.compare
 
 		this._syncAlign()
 	}
@@ -162,6 +172,29 @@ export default class TTableColumn<
 		this._sink.emit('change:align', value)
 	}
 
+	get sortable(): boolean {
+		return this._sortable
+	}
+
+	set sortable(value: boolean) {
+		if (this._sortable === value) return
+
+		this._sortable = value
+		this._sink.emit('change:sortable', value)
+	}
+
+	get compare(): TTableCompare | undefined {
+		return this._compare
+	}
+
+	/** Функция сверяется по ссылке: новая функция — новое сравнение. */
+	set compare(value: TTableCompare | undefined) {
+		if (this._compare === value) return
+
+		this._compare = value
+		this._sink.emit('change:compare', value)
+	}
+
 	/**
 	 * Сменить своё значение или границу. Хранимое не прижимается —
 	 * пересчитывается итог, и `change:width` приходит, только если он сменился.
@@ -191,6 +224,8 @@ export default class TTableColumn<
 			minWidth: this._minWidth,
 			maxWidth: this._maxWidth,
 			align: this._align,
+			sortable: this._sortable,
+			compare: this._compare,
 		} as TProps
 	}
 }
