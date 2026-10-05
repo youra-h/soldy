@@ -19,16 +19,25 @@ import {
 	createEngineListBox,
 	createEngineRadioGroup,
 	createEngineSelect,
+	createEngineTable,
 	createEngineTabs,
 	createEngineTags,
 	TAccordion,
 	TListBox,
 	TRadioGroup,
 	TSelect,
+	TTable,
 	TTabs,
 	TTags,
 } from '@soldy-ui/core'
-import type { TClasses, TComponentSize, TComponentVariant, TValuePayload } from '@soldy-ui/core'
+import type {
+	ITableRow,
+	TClasses,
+	TComponentSize,
+	TComponentVariant,
+	TTableRecord,
+	TValuePayload,
+} from '@soldy-ui/core'
 
 /** Источник элемента — то, что приходит в `items`. */
 type TSource = { value: string; size?: TComponentSize; variant?: TComponentVariant }
@@ -74,6 +83,26 @@ function found<TItem extends { readonly value: string | number }>(
 	if (!item) throw new Error(`элемент "${value}" не найден`)
 
 	return item
+}
+
+/**
+ * У строки таблицы `value` нет: строка — запись приложения. `value` источника
+ * становится ключом записи, по нему же строка и находится; остальное — пропсы
+ * строки как есть.
+ */
+const tableRow = ({ value, ...props }: TSource) => ({ ...props, data: { value } })
+
+/** Ключ записи строки. */
+const keyOf = (data: TTableRecord | undefined): unknown =>
+	data && 'value' in data ? data.value : undefined
+
+/** Строка таблицы по ключу записи. */
+function foundRow(rows: ReadonlyArray<ITableRow>, value: string): ITableRow {
+	const row = rows.find((candidate) => keyOf(candidate.data) === value)
+
+	if (!row) throw new Error(`строка "${value}" не найдена`)
+
+	return row
 }
 
 /**
@@ -188,6 +217,26 @@ const cases: TCase[] = [
 				patch: (sources) => {
 					batch.trackBy = (item) => item.value
 					batch.patch(sources)
+				},
+			}
+		},
+	},
+	{
+		name: 'Table',
+		build: ({ size, variant, items }) => {
+			const owner = new TTable({ size, variant })
+			const { batch, plain } = createEngineTable({
+				owner,
+				items: items.map(tableRow),
+			}).extensions
+
+			return {
+				owner,
+				item: (value) => foundRow(batch.items, value),
+				push: (source) => plain.push(tableRow(source)),
+				patch: (sources) => {
+					batch.trackBy = (row) => keyOf(row.data)
+					batch.patch(sources.map(tableRow))
 				},
 			}
 		},

@@ -8,6 +8,7 @@ import {
 	TTableColumn,
 	TTableColumnCollectionFacade,
 	TTableColumnsExtension,
+	TTableRow,
 	createEngine,
 	createEngineTableColumns,
 } from '@soldy-ui/core'
@@ -15,6 +16,7 @@ import type {
 	IExtension,
 	ITableColumn,
 	ITableColumnsExtension,
+	ITableRow,
 	TNoEvents,
 	TTableColumnSource,
 	TTableColumnsEvents,
@@ -30,31 +32,33 @@ import { columnsOf } from '../src/components/custom/table/collection/extensions/
  * порядок (`order`), перемещение (`plain`). Свои у неё — показанные колонки и
  * одно событие «перечитай показанные».
  *
- * Строки здесь голые — только состав: ни ячеек, ни сортировки у движка строк
- * пока нет.
+ * Движок строк здесь голый — только состав и колонки: ячейки строк, выбор и
+ * свойства таблицы на строках — в `table.spec.ts`.
  */
 
-type TRow = { id: number; name: string; age: number }
-
 type TRowsExtensions = {
-	plain: TPlainExtension<TRow>
-	batch: TBatchExtension<TRow>
-	columns: TTableColumnsExtension<TRow>
+	plain: TPlainExtension<ITableRow>
+	batch: TBatchExtension<ITableRow>
+	columns: TTableColumnsExtension
 }
 
 /** Голый движок строк: состав и колонки. */
-function rows(): TCollectionEngine<TRow, TRowsExtensions> {
-	return new TCollectionEngine<TRow, TRowsExtensions>({
+function rows(): TCollectionEngine<ITableRow, TRowsExtensions> {
+	return new TCollectionEngine<ITableRow, TRowsExtensions>({
 		extensions: {
-			plain: new TPlainExtension<TRow>(),
-			batch: new TBatchExtension<TRow>(),
-			columns: new TTableColumnsExtension<TRow>(),
+			plain: new TPlainExtension<ITableRow>(),
+			batch: new TBatchExtension<ITableRow>(),
+			columns: new TTableColumnsExtension(),
 		},
 	})
 }
 
+/** Строка над записью приложения. */
+const row = (id: number, name: string, age: number): ITableRow =>
+	new TTableRow({ data: { id, name, age } })
+
 /** Расширение колонок голого движка строк, уже с колонками из данных. */
-function columnsWith(sources: readonly TTableColumnSource[]): ITableColumnsExtension<TRow> {
+function columnsWith(sources: readonly TTableColumnSource[]): ITableColumnsExtension {
 	const { columns } = rows().extensions
 
 	columns.columns = sources
@@ -66,7 +70,7 @@ const fields = (columns: ReadonlyArray<ITableColumn>): string[] =>
 	columns.map((column) => column.field)
 
 /** Колонка по полю; нет такой — тест падает здесь. */
-function columnOf(columns: ITableColumnsExtension<TRow>, field: string): ITableColumn {
+function columnOf(columns: ITableColumnsExtension, field: string): ITableColumn {
 	const found = columns.columns.find((column) => column.field === field)
 
 	if (!found) throw new Error(`колонки ${field} нет`)
@@ -75,7 +79,7 @@ function columnOf(columns: ITableColumnsExtension<TRow>, field: string): ITableC
 }
 
 /** Счётчик «перечитай показанные» — ставится до действия. */
-function watchShown(columns: ITableColumnsExtension<TRow>) {
+function watchShown(columns: ITableColumnsExtension) {
 	const shown = vi.fn<TTableColumnsEvents['change:shownColumns']>()
 
 	columns.events.on('change:shownColumns', shown)
@@ -105,12 +109,14 @@ describe('колонки в движке строк', () => {
 		const engine = rows()
 		const { columns, batch } = engine.extensions
 
-		batch.set([{ id: 1, name: 'Анна', age: 30 }])
+		const anna = row(1, 'Анна', 30)
+
+		batch.set([anna])
 		columns.columns = [NAME, AGE]
 
 		expect(fields(columns.columns)).toEqual(['name', 'age'])
 		expect(fields(columns.engine.extensions.batch.items)).toEqual(['name', 'age'])
-		expect(batch.items).toEqual([{ id: 1, name: 'Анна', age: 30 }])
+		expect(batch.items).toEqual([anna])
 	})
 
 	it('колонки живут в движке строк: кто получил движок, получил и колонки', () => {
@@ -132,9 +138,9 @@ describe('колонки в движке строк', () => {
 	})
 
 	it('ставится в движок, пришедший снаружи', () => {
-		const engine = createEngine<TRow>({ items: [{ id: 1, name: 'Анна', age: 30 }] })
+		const engine = createEngine<ITableRow>({ items: [row(1, 'Анна', 30)] })
 
-		engine.use(new TTableColumnsExtension<TRow>())
+		engine.use(new TTableColumnsExtension())
 
 		const columns = columnsOf(engine)
 
@@ -147,12 +153,12 @@ describe('колонки в движке строк', () => {
 	})
 
 	it('сосед узнаёт колонки по контракту', () => {
-		const stranger: IExtension<TRow> = {
+		const stranger: IExtension<ITableRow> = {
 			name: 'columns',
 			events: new TEvented<TNoEvents>(),
 			install: () => {},
 		}
-		const engine = createEngine<TRow>()
+		const engine = createEngine<ITableRow>()
 
 		expect(columnsOf(rows())).toBeInstanceOf(TTableColumnsExtension)
 		expect(columnsOf(engine)).toBeUndefined()
