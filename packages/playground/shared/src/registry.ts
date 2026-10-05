@@ -351,7 +351,7 @@ export const ICON_PACKS: readonly TIconPackEntry[] = [{ id: 'material', label: '
  * режим библиотеки стенд попросит у себя на компиляции.
  */
 export const MOTION_MODES: Readonly<Record<TMotionMode, string>> = {
-	system: 'Система',
+	system: 'Как в системе',
 	full: 'Всегда',
 	reduce: 'Без движения',
 }
