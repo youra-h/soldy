@@ -29,7 +29,7 @@ function isBatch<TRow extends object>(ext: IExtension<TRow>): ext is IBatchExten
 }
 
 function isSelection<TRow extends object>(ext: IExtension<TRow>): ext is ISelectionExtension<TRow> {
-	return 'isSelected' in ext && 'select' in ext && 'deselect' in ext && 'multiple' in ext
+	return 'isSelected' in ext && 'selectMany' in ext && 'deselectMany' in ext && 'multiple' in ext
 }
 
 /** Расширение колонок, если оно есть в коллекции. */

@@ -27,8 +27,12 @@ import type {
  * трогают — как выбор пользователя в списке. Выбрать или снять выключенную
  * строку из кода — право приложения: стандартный `selection`.
  *
- * В стандартный `selection` это не поднято: потребитель у него один —
- * таблица. Соседей — выбор и состав — расширение узнаёт по контракту.
+ * Счёт «все / часть / ни одной» и правило «выключенную не трогать» в
+ * стандартный `selection` не подняты: потребитель у них один — таблица. А
+ * выбирают и снимают команды его пачкой (`selectMany`, `deselectMany`):
+ * поштучный выбор слал бы `change:selection` на каждую строку, и каждый его
+ * подписчик проходил бы все строки. Соседей — выбор и состав — расширение
+ * узнаёт по контракту.
  */
 export class TTableExtension<TOwner extends ITable = ITable, TRow extends ITableRow = ITableRow>
 	extends TBaseExtension<TRow, TTableExtensionEvents, TTableEngineOptions<TOwner>>
@@ -120,30 +124,23 @@ export class TTableExtension<TOwner extends ITable = ITable, TRow extends ITable
 		return selected === selectable ? 'all' : 'some'
 	}
 
+	/**
+	 * Пачкой: одно `change:selection` на все строки, и `shownSelection`
+	 * пересчитывается по нему один раз. Только в `multiple` — это правило
+	 * `selectMany`.
+	 */
 	selectShown(): void {
-		const selection = selectionOf(this._ctx)
-		const batch = batchOf(this._ctx)
-
-		if (!selection?.multiple || !batch) return
-
-		this._group(() => {
-			for (const row of batch.shown) {
-				if (!row.disabled) selection.select(row)
-			}
-		})
+		selectionOf(this._ctx)?.selectMany(this._selectableShown())
 	}
 
+	/** Пачкой, как `selectShown`. */
 	deselectShown(): void {
-		const selection = selectionOf(this._ctx)
-		const batch = batchOf(this._ctx)
+		selectionOf(this._ctx)?.deselectMany(this._selectableShown())
+	}
 
-		if (!selection || !batch) return
-
-		this._group(() => {
-			for (const row of batch.shown) {
-				if (!row.disabled) selection.deselect(row)
-			}
-		})
+	/** Показанные строки, которые пользователь может выбрать, — не выключенные. */
+	private _selectableShown(): TRow[] {
+		return (batchOf(this._ctx)?.shown ?? []).filter((row) => !row.disabled)
 	}
 
 	/**

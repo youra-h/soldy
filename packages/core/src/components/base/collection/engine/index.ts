@@ -34,6 +34,7 @@ export * from './options'
 export { TCollectionStorageDriver } from './driver.class'
 export type {
 	ICollectionStorageDriver,
+	IQueryStrategy,
 	ICollectionEngineCore,
 	ICollectionProps,
 	TCollectionEngineItemSource,

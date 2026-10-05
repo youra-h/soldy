@@ -925,7 +925,7 @@ Contributions при этом объявляют `mode` записываемым
 
 Стандартный набор — `core/src/components/base/collection/engine/extension/`
 (`plain`, `batch`, `activation`, `selection`, `value`, `order`, `unique`,
-`meta`, `factory`, `filter`). Своё
+`meta`, `factory`, `filter`, `memory`). Своё
 расширение заводится, **когда конкретной коллекции нужна функциональность сверх
 стандартной**, а не чтобы куда-то положить код.
 

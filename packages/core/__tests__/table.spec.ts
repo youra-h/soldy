@@ -684,6 +684,43 @@ describe('выбраны все показанные', () => {
 
 		expect(facade.shownSelection).toBe('none')
 	})
+
+	// Пачкой, а не по строке: поштучный выбор слал change:selection на каждую
+	// строку, и каждый подписчик проходил все строки — время росло квадратично
+	it('команды шапки на 1000 строк — по одному change:selection и change:shownSelection', () => {
+		const records = Array.from({ length: 1000 }, (_, index) => ({ id: index + 1 }))
+		const facade = new TTableCollectionFacade({ items: records.map(source), mode: 'multiple' })
+		const selection = vi.fn()
+		const shownSelection = vi.fn()
+
+		facade.extensions.selection.events.on('change:selection', selection)
+		facade.events.on('change:shownSelection', shownSelection)
+
+		facade.selectShown()
+
+		expect(facade.selected).toHaveLength(1000)
+		expect(selection).toHaveBeenCalledOnce()
+		expect(shownSelection.mock.calls).toEqual([['all']])
+
+		facade.deselectShown()
+
+		expect(facade.selected).toEqual([])
+		expect(selection).toHaveBeenCalledTimes(2)
+		expect(shownSelection.mock.calls).toEqual([['all'], ['none']])
+	})
+
+	it('команды шапки читают показанные строки из памяти выборки', () => {
+		const facade = table('multiple')
+		const queries = vi.fn()
+
+		void facade.shown
+		facade.engine.getCore().driver.events.on('items:query:before', queries)
+
+		facade.selectShown()
+		facade.deselectShown()
+
+		expect(queries).not.toHaveBeenCalled()
+	})
 })
 
 describe('движок снаружи', () => {
