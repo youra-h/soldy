@@ -18,12 +18,16 @@ import type {
 import type { TTableColumnSource } from '../column/collection/types'
 import type { ITableRow, ITableRowProps } from '../row/types'
 import type {
+	TTableColumnSort,
 	TTableColumnsEvents,
 	TTableColumnsExtension,
 	TTableColumnsItemEvents,
 	TTableEngineOptions,
 	TTableExtension,
 	TTableExtensionEvents,
+	TTableSortEvents,
+	TTableSortExtension,
+	TTableSortMode,
 } from './extensions'
 
 export type TTableCollectionExtensions = {
@@ -38,6 +42,8 @@ export type TTableCollectionExtensions = {
 	columns: TTableColumnsExtension
 	/** Что строки получают от таблицы и выбор показанных строк */
 	table: TTableExtension
+	/** Порядок показанных строк по колонкам */
+	sort: TTableSortExtension
 }
 
 /** Коллекция строк таблицы. */
@@ -56,7 +62,7 @@ export type TTableCollectionFacadeEngine = TCollectionEngine<any, any>
 
 /**
  * Пропсы коллекции строк: движок снаружи, состав и ключ сверки строк, режим
- * выбора и колонки данными.
+ * выбора, колонки данными и сортировка.
  *
  * `TCollection` по умолчанию — `TTableCollectionFacadeEngine`: `engine`
  * принимает движок любого уровня сборки, как у остальных коллекций.
@@ -75,22 +81,36 @@ export interface ITableCollectionProps<
 	 * обновляется на месте, новая встаёт в конец, пропавшая удаляется
 	 */
 	columns?: TTableColumnSource[]
+	/**
+	 * Сортировка — колонки и направления по приоритету. Не задана — строки в
+	 * порядке данных. Сверка по содержимому: тот же список, собранный заново, —
+	 * не смена
+	 */
+	sort?: TTableColumnSort[]
+	/** Сколько колонок сортируют строки: одна или несколько */
+	sortMode?: TTableSortMode
+	/**
+	 * Строки приходят упорядоченными — например, их сортирует сервер: таблица
+	 * держит сортировку и сообщает о её смене, но строки не переставляет
+	 */
+	presorted?: boolean
 }
 
 /**
  * Входные пропсы фасада коллекции строк: состав, ключ сверки и режим выбора —
- * базе, колонки — расширению колонок.
+ * базе, колонки — расширению колонок, сортировка — расширению сортировки.
  */
 export type TTableCollectionFacadeProps = TSelectionFacadeProps<ITableRow> &
-	Pick<ITableCollectionProps, 'columns'>
+	Pick<ITableCollectionProps, 'columns' | 'sort' | 'sortMode' | 'presorted'>
 
 /** Пропсы строки от коллекции: выбранность. */
 export interface ITableCollectionItemProps extends ISelectionCollectionItemProps {}
 
-/** События фасада коллекции строк: база выбора плюс карты `columns` и `table`. */
+/** События фасада коллекции строк: база выбора плюс карты `columns`, `table` и `sort`. */
 export type TTableCollectionFacadeEvents = TSelectionCollectionFacadeEvents<ITableRow> &
 	TTableColumnsEvents &
-	TTableExtensionEvents
+	TTableExtensionEvents &
+	TTableSortEvents
 
 /** События фасада строки: порядок и выбор из базы плюс ячейки. */
 export type TTableRowCollectionFacadeEvents = TSelectionItemFacadeEvents & TTableColumnsItemEvents
