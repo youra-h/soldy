@@ -24,7 +24,8 @@
  * вместе с фоном. Его красит системная подсветка (см. ниже). Ею же отмечен
  * активный таб: полосу, карточку и линии списка Tabs тема тоже рисует фонами
  * (см. конец файла). Строку под стрелками — тоже фоном, и её в этом режиме
- * обводит контур (см. ниже).
+ * обводит контур (см. ниже). Дорожку и ручку Switch тема тоже рисует фонами,
+ * и переключатель пропадал целиком — его рисуют системные цвета (см. ниже).
  *
  * Режим включает эмуляция Chromium — та же, что в DevTools → Rendering: она
  * меняет не только ответ медиазапроса, но и сами цвета. jsdom не делает ни
@@ -49,6 +50,7 @@ import {
 	Popover,
 	Select,
 	SelectItem,
+	Switch,
 	Tabs,
 	TabsItem,
 	Tags,
@@ -731,6 +733,76 @@ describe.each(VIEWS)('Button, $name: выбор без перехода', ({ pro
  * сильнее кольца фокуса, а нейтрали — нет: у нейтральной кнопки под фокусом
  * стояло кольцо снаружи, у кнопки с вариантом — контур внутри.
  */
+/**
+ * Switch. Дорожка и ручка — фоны, тень ручки браузер убирает, поле
+ * прозрачное: переключатель пропадал целиком. Здесь он — переключатель
+ * системы: у выключенного контур дорожки и ручка цветом текста, у включённого
+ * дорожка подсветкой и ручка текстом подсветки, у выключенного поля —
+ * `GrayText` (`themes/oren/src/components/switch/_switch.scss`).
+ */
+describe('Switch', () => {
+	const STATES = [
+		{ name: 'выключен', props: {}, track: null, frame: 'CanvasText', knob: 'CanvasText' },
+		{
+			name: 'включён',
+			props: { value: true },
+			track: 'Highlight',
+			frame: 'Highlight',
+			knob: 'HighlightText',
+		},
+		{
+			name: 'включён, с вариантом',
+			props: { value: true, variant: 'accent' },
+			track: 'Highlight',
+			frame: 'Highlight',
+			knob: 'HighlightText',
+		},
+		{
+			name: 'неактивен',
+			props: { disabled: true },
+			track: null,
+			frame: 'GrayText',
+			knob: 'GrayText',
+		},
+		{
+			name: 'неактивен и включён',
+			props: { disabled: true, value: true },
+			track: 'GrayText',
+			frame: 'GrayText',
+			knob: 'Canvas',
+		},
+	] as const
+
+	describe.each(STATES)('$name', ({ props, track, frame, knob }) => {
+		it.each(SCHEMES)('%s: дорожка и ручка — системными цветами', async (scheme) => {
+			await forcedColors('active')
+			await show(scheme, () => h(Switch, props))
+
+			const rail = find('.s-switch__track')
+			const thumb = find('.s-switch__track--thumb')
+
+			const { outlineStyle, outlineWidth, outlineColor, backgroundColor } = style(rail)
+
+			expect([outlineStyle, outlineWidth], 'контур дорожки').toEqual(['solid', '1px'])
+			expect(pixel([outlineColor]), 'цвет контура').toEqual(pixel([systemColor(frame)]))
+
+			if (track) {
+				expect(pixel([backgroundColor]), 'дорожка').toEqual(pixel([systemColor(track)]))
+			}
+
+			expect(pixel([style(thumb).backgroundColor]), 'ручка').toEqual(
+				pixel([systemColor(knob)]),
+			)
+		})
+	})
+
+	it.each(SCHEMES)('%s: в обычном режиме контура у дорожки нет', async (scheme) => {
+		await show(scheme, () => h(Switch, {}))
+
+		expect(style(find('.s-switch__track')).outlineStyle).toBe('none')
+	})
+})
+
 describe('Button: подсвеченная под фокусом', () => {
 	const OUTLINE = ['outline-style', 'outline-width', 'outline-offset', 'outline-color'] as const
 

@@ -122,3 +122,59 @@
 :where(.s-switch) {
 	@include mixines.switch-variant('.s-switch', $color: 'neutral');
 }
+
+// Принудительные цвета (высокий контраст Windows): дорожка и ручка — фоны, а
+// фон браузер заменяет цветом страницы и тень убирает, поле же прозрачное, —
+// переключатель пропадал целиком. Поэтому в этом режиме он рисуется как
+// переключатель системы: у выключенного — контур дорожки и ручка цветом
+// текста, у включённого — дорожка системной подсветкой и ручка текстом
+// подсветки, у выключенного поля — `GrayText`. Контур — `outline` внутрь, а не
+// рамка: рамка сузила бы дорожку, и включённая ручка вышла бы за её край.
+// Ручке и включённой дорожке подмена цветов снята: иначе их фоны снова стали
+// бы цветом страницы. Кольцо фокуса — системного цвета фокуса, как у кольца
+// поля: у включённой дорожки подмены нет, и оно осталось бы цветом темы.
+@media (forced-colors: active) {
+	.s-switch {
+		$this: &;
+
+		&__track {
+			outline: 1px solid CanvasText;
+			outline-offset: -1px;
+
+			&--thumb {
+				forced-color-adjust: none;
+				background-color: CanvasText;
+			}
+		}
+
+		input:checked + #{$this}__track {
+			forced-color-adjust: none;
+			background-color: Highlight;
+			outline-color: Highlight;
+
+			#{$this}__track--thumb {
+				background-color: HighlightText;
+			}
+		}
+
+		input:disabled + #{$this}__track {
+			outline-color: GrayText;
+
+			#{$this}__track--thumb {
+				background-color: GrayText;
+			}
+		}
+
+		input:checked:disabled + #{$this}__track {
+			background-color: GrayText;
+
+			#{$this}__track--thumb {
+				background-color: Canvas;
+			}
+		}
+
+		input:focus-visible + #{$this}__track {
+			outline-color: Highlight;
+		}
+	}
+}
