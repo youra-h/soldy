@@ -121,6 +121,24 @@ describe('значение владельца откатывается к выб
 		expect(owner.value).toEqual(['a'])
 	})
 
+	// Ключи значения выбираются пачкой (`selectMany`): отменённый — тот, кто
+	// после пачки не выбран
+	it('ListBox multiple: отменённое при наполнении уходит из value', () => {
+		const owner = new TListBox({ value: ['a', 'b', 'c'] })
+		const engine = createEngineListBox({ owner })
+		const { batch, selection } = engine.extensions
+
+		selection.mode = 'multiple'
+		selection.events.on('item:select:before', (e) => {
+			if (e.item.value === 'b') e.preventDefault()
+		})
+
+		batch.set(ABC)
+
+		expect(selection.selected.map((item) => item.value)).toEqual(['a', 'c'])
+		expect(owner.value).toEqual(['a', 'c'])
+	})
+
 	it('RadioGroup: отменённое значение возвращается к отмеченному радио', () => {
 		const owner = new TRadioGroup({ value: 'a' })
 		const collection = new TRadioGroupCollectionFacade({}, { owner })

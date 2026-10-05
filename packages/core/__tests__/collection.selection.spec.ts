@@ -4,6 +4,8 @@ import {
 	TCollectionEngine,
 	TPlainExtension,
 	TSelectionExtension,
+	createEngine,
+	createEngineSelection,
 } from '@soldy-ui/core'
 import type { TSelectEvent, TSelectionMode } from '@soldy-ui/core'
 
@@ -722,6 +724,153 @@ describe('TSelectionExtension', () => {
 		for (const item of list) {
 			expect(item.dataset.add.mock.calls).toEqual([['selected', false]])
 		}
+	})
+
+	// --- Отметки из данных ---
+
+	/**
+	 * Отметки одной записи `meta` отдаёт одним списком в её конце, и выбор
+	 * ставит их одной операцией: хук — на каждую отметку, `change:selection` —
+	 * одно. Поштучно каждое `change:selection` проходило бы коллекцию, и выбор
+	 * тысяч строк из данных стоил бы столько же проходов.
+	 */
+	describe('отметки выбора из данных', () => {
+		/** `count` источников; `_: { selected: true }` — у номеров из `marked`. */
+		function sourcesOf(count: number, marked: readonly number[]) {
+			return Array.from({ length: count }, (_, id) => ({
+				id,
+				name: String(id),
+				...(marked.includes(id) ? { _: { selected: true } } : {}),
+			}))
+		}
+
+		/** Пустая коллекция с выбором в `mode`: счётчик `change:selection` и хук. */
+		function marked(mode: TSelectionMode) {
+			const engine = createEngineSelection<Item>()
+			const { selection } = engine.extensions
+			const changes = vi.fn<(items: Item[]) => void>()
+			const before = vi.fn<(e: TSelectEvent<Item>) => void>()
+
+			selection.mode = mode
+			selection.events.on('change:selection', changes)
+			selection.events.on('item:select:before', before)
+
+			return { engine, selection, changes, before }
+		}
+
+		it('batch.set в multiple: хук на каждую отметку по порядку, change:selection одно', () => {
+			const { engine, selection, changes, before } = marked('multiple')
+
+			engine.extensions.batch.set(sourcesOf(50, [3, 10, 20, 40]))
+
+			const items = engine.extensions.batch.items
+			const expected = [items[3], items[10], items[20], items[40]]
+
+			expect(before.mock.calls.map(([e]) => e.item)).toEqual(expected)
+			expect(selection.selected).toEqual(expected)
+			expect(changes.mock.calls).toEqual([[expected]])
+		})
+
+		it('batch.set в single: из нескольких отметок выбран последний принятый, change:selection одно', () => {
+			const { engine, selection, changes } = marked('single')
+
+			engine.extensions.batch.set(sourcesOf(10, [2, 5, 7]))
+
+			const last = engine.extensions.batch.items[7]
+
+			expect(selection.selected).toEqual([last])
+			expect(changes.mock.calls).toEqual([[[last]]])
+		})
+
+		it('single: отменённый хук последней отметки оставляет предыдущую принятую', () => {
+			const { engine, selection, changes, before } = marked('single')
+
+			before.mockImplementation((e) => {
+				if (e.item.id === 7) e.preventDefault()
+			})
+			engine.extensions.batch.set(sourcesOf(10, [2, 5, 7]))
+
+			expect(selection.selected).toEqual([engine.extensions.batch.items[5]])
+			expect(changes).toHaveBeenCalledOnce()
+		})
+
+		it('single: группа вернула выбор к прежнему — без change:selection', () => {
+			const { engine, selection, changes, before } = marked('single')
+			const { batch } = engine.extensions
+
+			batch.trackBy = (source) => source.id
+			batch.set(sourcesOf(3, []))
+
+			const [a, b] = batch.items
+
+			selection.select(a)
+			changes.mockClear()
+			before.mockClear()
+
+			// Обновлённые — в порядке входа: сперва `b`, затем снова `a`. Хук — тому,
+			// кто становится выбранным: `a` выбран и остаётся, ему хука нет
+			batch.patch([
+				{ id: 1, name: '1', _: { selected: true } },
+				{ id: 0, name: '0', _: { selected: true } },
+				{ id: 2, name: '2' },
+			])
+
+			expect(before.mock.calls.map(([e]) => e.item)).toEqual([b])
+			expect(selection.selected).toEqual([a])
+			expect(changes).not.toHaveBeenCalled()
+		})
+
+		it('patch в multiple: отметки обновлённых — той же группой, change:selection одно', () => {
+			const { engine, selection, changes } = marked('multiple')
+			const { batch } = engine.extensions
+
+			batch.trackBy = (source) => source.id
+			batch.set(sourcesOf(5, []))
+			batch.patch(sourcesOf(5, [1, 3]))
+
+			const items = batch.items
+
+			expect(selection.selected).toEqual([items[1], items[3]])
+			expect(changes).toHaveBeenCalledOnce()
+		})
+
+		it('none: отметки не выбираются — ни хука, ни события', () => {
+			const { engine, selection, changes, before } = marked('none')
+
+			engine.extensions.batch.set(sourcesOf(5, [1, 3]))
+
+			expect(selection.selected).toEqual([])
+			expect(before).not.toHaveBeenCalled()
+			expect(changes).not.toHaveBeenCalled()
+		})
+
+		it('meta.apply — выбор сразу', () => {
+			const { engine, selection, changes } = marked('multiple')
+
+			engine.extensions.batch.set(sourcesOf(3, []))
+
+			const b = engine.extensions.batch.items[1]
+
+			engine.extensions.meta.apply(b, { selected: true })
+
+			expect(selection.selected).toEqual([b])
+			expect(changes).toHaveBeenCalledOnce()
+		})
+
+		it('догон при установке: отметки наполненной коллекции — одной группой', () => {
+			const engine = createEngine<Item>({ items: sourcesOf(10, [1, 4, 7]) })
+			const selection = new TSelectionExtension<Item>()
+			const changes = vi.fn()
+
+			selection.mode = 'multiple'
+			selection.events.on('change:selection', changes)
+			engine.use(selection)
+
+			const items = engine.extensions.batch.items
+
+			expect(selection.selected).toEqual([items[1], items[4], items[7]])
+			expect(changes).toHaveBeenCalledOnce()
+		})
 	})
 
 	// --- Авто-очистка при удалении ---

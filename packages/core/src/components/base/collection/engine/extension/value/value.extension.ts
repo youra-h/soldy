@@ -151,9 +151,7 @@ export class TValueSelectionExtension<
 
 		if (!selection || !owner || this._syncing || selection.mode === 'none') return
 
-		const items = toKeys(owner.value)
-			.map((key) => this._ctx.driver.valueOf().find((candidate) => candidate.value === key))
-			.filter((item) => item !== undefined)
+		const items = this._itemsOf(toKeys(owner.value))
 
 		this._syncing = true
 
@@ -164,6 +162,24 @@ export class TValueSelectionExtension<
 		}
 
 		if (items.some((item) => !selection.isSelected(item))) this._selectionToValue()
+	}
+
+	/**
+	 * Элементы ключей значения — по карте «значение → элемент», собранной за
+	 * вызов одним проходом по составу: поиск на каждый ключ проходил бы его
+	 * столько раз, сколько ключей. Значение у нескольких элементов — первый,
+	 * как у `find`.
+	 */
+	private _itemsOf(keys: readonly (string | number)[]): TItem[] {
+		if (keys.length === 0) return []
+
+		const byValue = new Map<string | number | undefined, TItem>()
+
+		for (const item of this._ctx.driver.valueOf()) {
+			if (!byValue.has(item.value)) byValue.set(item.value, item)
+		}
+
+		return keys.map((key) => byValue.get(key)).filter((item) => item !== undefined)
 	}
 }
 

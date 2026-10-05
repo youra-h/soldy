@@ -4,7 +4,7 @@ import type { TSelectionEvents, TSelectionMode, ISelectionExtension } from './ty
 import type { ISelectionItemExtension } from './item'
 import { TSelectionItemExtension } from './item'
 import { TBaseOwnerItemExtension } from '../base-owner-item-extension.class'
-import type { TMetaExtension } from '../meta'
+import type { TMetaEntry, TMetaExtension } from '../meta'
 import type { TDataset } from '../../../../../../common'
 import { sameValue } from '../../../../../../common/utility/same-value'
 
@@ -102,23 +102,36 @@ export class TSelectionExtension<TItem extends object = any>
 		const meta = ctx.extensions.meta as TMetaExtension<TItem> | undefined
 
 		if (meta) {
-			const applyMeta = (item: TItem, m: Record<string, unknown>) => {
-				if (!m.selected) return
+			// Отметки одной записи `meta` отдаёт одним списком — и выбираются
+			// они одной операцией
+			const selectMarked = (entries: readonly TMetaEntry<TItem>[]) =>
+				this._selectMarked(
+					entries.filter((entry) => entry.meta.selected).map(({ item }) => item),
+				)
 
-				this.select(item)
-			}
-
-			meta.events.on('meta:applied', applyMeta)
-			meta.events.on('meta:changed', applyMeta)
+			meta.events.on('meta:applied', selectMarked)
+			meta.events.on('meta:changed', selectMarked)
 
 			// Догон: расширение могло прийти в уже наполненную коллекцию, и свои
-			// `meta:applied` оно тогда пропустило. Снимок помнит `meta`
-			ctx.driver.valueOf().forEach((item) => {
-				const remembered = meta.get?.(item)
-
-				if (remembered) applyMeta(item, remembered)
-			})
+			// `meta:applied` оно тогда пропустило. Снимок помнит `meta`, а
+			// отметки собираются той же группой
+			this._selectMarked(ctx.driver.valueOf().filter((item) => meta.get?.(item)?.selected))
 		}
+	}
+
+	/**
+	 * Выбрать отмеченные в данных (`_: { selected: true }`) — группу одной
+	 * заменой выбора: в `multiple` к выбранным добавляются отмеченные, в
+	 * `single` итог — последний принятый, как у `select` по одной отметке.
+	 * Хук `item:select:before` — каждой отметке, которая становится выбранной,
+	 * `change:selection` — одно, и только если выбор сменился. `select` по
+	 * одной сверял бы состав и слал событие на каждую отметку, и подписчики
+	 * выбора проходили бы коллекцию столько раз.
+	 */
+	private _selectMarked(items: readonly TItem[]): void {
+		if (items.length === 0) return
+
+		this.replaceSelection(this.multiple ? [...this._selected, ...items] : items)
 	}
 
 	/**
