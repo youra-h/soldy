@@ -277,17 +277,19 @@ $focused: '&:has(> #{$row}:focus)';
 	}
 }
 
-// Вид пилюли — вид набора, та же матрица, что у Button. Без модификатора
-// набора — вид Button по умолчанию, `filled` с нейтралью; вариант читается с
-// модификатора самого элемента. Нулевая специфичность базы — как у Button:
-// модификатор набора перекрывает её, не споря.
+// Вид пилюли — вид набора, тот же, что у Button. Без модификатора набора —
+// вид Button по умолчанию, `filled` с нейтралью; цвет — с модификатора
+// варианта самого элемента (`button-tones`). Нулевая специфичность базы — как
+// у Button: модификатор набора перекрывает её, не споря.
+@include button.button-tones('s-tags-item');
+
 :where(.s-tags-item) {
-	@include button.button-view('filled', $focused, 's-tags-item');
+	@include button.button-view('filled', $focused);
 }
 
 @each $view in button.$views {
 	#{in-row('.s-tags--view-' + $view, '.s-tags-item')} {
-		@include button.button-view($view, $focused, 's-tags-item');
+		@include button.button-view($view, $focused);
 	}
 }
 

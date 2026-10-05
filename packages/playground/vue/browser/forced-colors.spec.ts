@@ -582,8 +582,8 @@ describe.each(VIEWS)('Button, $name: подсветка без выбора', ({
 
 /**
  * Выбор под подсветкой показывает оба состояния: заливку выбора и контур на
- * ней. Правило фона такого выбора на атрибут сильнее, а маска поверх заливки
- * была бы цветом темы — её здесь нет.
+ * ней. Правило фона такого выбора на атрибут сильнее, а слой поверх заливки
+ * был бы цветом темы — его здесь нет.
  */
 describe.each(VIEWS)('Button, $name: выбор под подсветкой', ({ props }) => {
 	it.each(SCHEMES)('%s: системная подсветка с контуром, слоя поверх неё нет', async (scheme) => {
@@ -603,6 +603,7 @@ describe.each(VIEWS)('Button, $name: выбор под подсветкой', ({
 
 		expectHighlight(button)
 		expectContour(button, 'HighlightText')
+		expect(style(button).backgroundImage, 'слой').toBe('none')
 		expect(style(button, '::after').content).toBe('none')
 	})
 })
@@ -633,6 +634,47 @@ describe('Button: выбор под подсветкой и под фокусо�
 		await settled(button)
 
 		expectContour(button, 'HighlightText')
+	})
+})
+
+/**
+ * Подсвеченная без выбора под фокусом — одна отметка, и у любого цвета та же.
+ * Пока вид разворачивался на каждый вариант, правило контура варианта было
+ * сильнее кольца фокуса, а нейтрали — нет: у нейтральной кнопки под фокусом
+ * стояло кольцо снаружи, у кнопки с вариантом — контур внутри.
+ */
+describe('Button: подсвеченная под фокусом', () => {
+	const OUTLINE = ['outline-style', 'outline-width', 'outline-offset', 'outline-color'] as const
+
+	it.each(SCHEMES)('%s: вариант отмечен так же, как нейтраль', async (scheme) => {
+		await forcedColors('active')
+		await show(scheme, () =>
+			h('div', [
+				h(Button, {
+					text: 'Нейтраль',
+					class: 's-test-neutral',
+					'data-highlighted': 'true',
+				}),
+				h(Button, {
+					text: 'Вариант',
+					class: 's-test-variant',
+					variant: 'accent',
+					'data-highlighted': 'true',
+				}),
+			]),
+		)
+
+		const outlineOf = async (selector: string) => {
+			const button = find(selector)
+
+			button.focus({ focusVisible: true })
+			expect(button.matches(':focus-visible'), selector).toBe(true)
+			await settled(button)
+
+			return OUTLINE.map((property) => style(button).getPropertyValue(property))
+		}
+
+		expect(await outlineOf('.s-test-variant')).toEqual(await outlineOf('.s-test-neutral'))
 	})
 })
 
