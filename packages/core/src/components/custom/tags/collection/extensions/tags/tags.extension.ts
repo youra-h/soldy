@@ -111,7 +111,6 @@ export class TTagsExtension<TOwner extends ITags = ITags, TItem extends ITagsIte
 			ctx.driver.events.on('item:added', (e) =>
 				this._applyItemRole(e.item as TItem, selection),
 			)
-			ctx.driver.events.on('item:removed', () => this._applyMode())
 
 			this._applyMode()
 		}

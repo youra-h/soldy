@@ -6,6 +6,7 @@ import { TSelectionItemExtension } from './item'
 import { TBaseOwnerItemExtension } from '../base-owner-item-extension.class'
 import type { TMetaExtension } from '../meta'
 import type { TDataset } from '../../../../../../common'
+import { sameValue } from '../../../../../../common/utility/same-value'
 
 /**
  * TSelectionExtension — расширение для управления выборкой элементов.
@@ -25,6 +26,8 @@ export class TSelectionExtension<TItem extends object = any>
 
 	private _selected: Set<TItem> = new Set()
 	private _mode: TSelectionMode = 'single'
+	/** Запись удалила выбранный элемент — объявить на её `change:items`. */
+	private _lostOnWrite = false
 
 	constructor(options?: IBaseOwnerItemExtensionOptions<TItem, ISelectionItemExtension<TItem>>) {
 		super(TSelectionItemExtension, options)
@@ -75,11 +78,21 @@ export class TSelectionExtension<TItem extends object = any>
 		this._syncDataset()
 
 		// Любое удаление из хранилища — команда с `item:removed`, в том числе
-		// очистка и сверка `patch`: здесь выбор и теряет удалённый элемент
+		// очистка и сверка `patch`: здесь выбор и теряет удалённый элемент.
+		// Потерю выбор объявляет, как активация — снятие удалённого активного,
+		// но раз на запись: запись удаляет пачкой, и `change:selection` на
+		// каждый удалённый выбранный прогнал бы подписчиков выбора по всей
+		// коллекции столько раз. `change:items` приходит следом за всеми
+		// `item:removed` каждой записи — команды и пачки
 		ctx.driver.events.on('item:removed', (e) => {
-			if (this._selected.has(e.item)) {
-				this._selected.delete(e.item)
-			}
+			if (this._selected.delete(e.item)) this._lostOnWrite = true
+		})
+
+		ctx.driver.events.on('change:items', () => {
+			if (!this._lostOnWrite) return
+
+			this._lostOnWrite = false
+			this._notifySelected()
 		})
 
 		ctx.driver.events.on('reset', () => {
@@ -228,6 +241,60 @@ export class TSelectionExtension<TItem extends object = any>
 		}
 
 		if (changed) this._notifySelected()
+	}
+
+	/**
+	 * Заменить выбор: выбранными остаются эти элементы, в этом порядке.
+	 *
+	 * Одна операция, а не сброс и добор: `resetSelection` и `select` по одному
+	 * слали `change:selection` на каждый шаг — и тогда, когда выбор в итоге не
+	 * менялся. «То же самое» решает сама операция, как сеттер: тот же состав
+	 * тем же порядком — не смена, и события нет.
+	 *
+	 * Хук `item:select:before` — только тому, кто становится выбранным: уже
+	 * выбранный остаётся без хука, как у `select`, снимаемый уходит без хука,
+	 * как у `deselect`. Элемент вне коллекции пропускается.
+	 *
+	 * - `multiple` — выбраны принятые из списка, в его порядке; отмена одного
+	 *   остальных не отменяет;
+	 * - `single` — как `select` по списку: принятый заменяет прежний, итог —
+	 *   последний принятый. Пустой список снимает выбор, а список, где не
+	 *   принят никто, оставляет прежний — как отменённый `select`;
+	 * - `none` — выбора нет.
+	 */
+	replaceSelection(items: readonly TItem[]): void {
+		if (this._mode === 'none') return
+
+		const before = this.selected
+		const stored = new Set(this._ctx.driver.valueOf())
+
+		const accepts = (item: TItem): boolean => {
+			if (!stored.has(item)) return false
+			if (this._selected.has(item)) return true
+
+			const event = new TSelectEvent(item)
+
+			this.events.emit('item:select:before', event)
+
+			return !event.defaultPrevented
+		}
+
+		let next: TItem[]
+
+		if (this.multiple) {
+			next = [...new Set(items)].filter(accepts)
+		} else {
+			next = items.length === 0 ? [] : before
+
+			for (const item of items) {
+				if (accepts(item)) next = [item]
+			}
+		}
+
+		if (sameValue(before, next)) return
+
+		this._selected = new Set(next)
+		this._notifySelected()
 	}
 
 	/** @returns выбран ли элемент после вызова */

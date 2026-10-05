@@ -296,6 +296,232 @@ describe('TSelectionExtension', () => {
 		})
 	})
 
+	/**
+	 * Удалили выбранный — выбор сменился, и об этом `change:selection`, как
+	 * активация объявляет снятие удалённого активного. Раз на запись: запись
+	 * удаляет пачкой, а подписчики выбора проходят всю коллекцию.
+	 */
+	describe('удаление выбранного', () => {
+		function filled(mode: TSelectionMode = 'multiple') {
+			const col = createBatchCollection()
+			const { batch, selection } = col.extensions
+			const list: Item[] = [
+				{ id: 1, name: 'a' },
+				{ id: 2, name: 'b' },
+				{ id: 3, name: 'c' },
+				{ id: 4, name: 'd' },
+			]
+
+			batch.set(list)
+			selection.mode = mode
+
+			const changes = vi.fn<(items: Item[]) => void>()
+
+			return { col, list, changes }
+		}
+
+		it('удалённый выбранный — одно change:selection с оставшимся выбором', () => {
+			const { col, list, changes } = filled()
+			const { plain, selection } = col.extensions
+			const [a, b, c] = list
+
+			selection.selectMany([a, b, c])
+			selection.events.on('change:selection', changes)
+			plain.remove(b)
+
+			expect(selection.selected).toEqual([a, c])
+			expect(changes.mock.calls).toEqual([[[a, c]]])
+		})
+
+		it('в single — то же: удалённый выбранный снимает выбор с событием', () => {
+			const { col, list, changes } = filled('single')
+			const { plain, selection } = col.extensions
+
+			selection.select(list[1])
+			selection.events.on('change:selection', changes)
+			plain.remove(list[1])
+
+			expect(selection.selected).toEqual([])
+			expect(changes.mock.calls).toEqual([[[]]])
+		})
+
+		it('удалённый невыбранный выбор не меняет — события нет', () => {
+			const { col, list, changes } = filled()
+			const { plain, selection } = col.extensions
+
+			selection.selectMany([list[0]])
+			selection.events.on('change:selection', changes)
+			plain.remove(list[1])
+
+			expect(changes).not.toHaveBeenCalled()
+		})
+
+		it('пачка удаляет несколько выбранных — одно change:selection, после всех item:removed', () => {
+			const { col, list, changes } = filled()
+			const { batch, selection } = col.extensions
+			const [a, b, c, d] = list
+			const order: string[] = []
+
+			selection.selectMany([a, b, c])
+			selection.events.on('change:selection', changes)
+			selection.events.on('change:selection', () => order.push('selection'))
+			col.getCore().driver.events.on('item:removed', () => order.push('removed'))
+			batch.remove([a, b, d])
+
+			expect(selection.selected).toEqual([c])
+			expect(changes.mock.calls).toEqual([[[c]]])
+			expect(order).toEqual(['removed', 'removed', 'removed', 'selection'])
+		})
+
+		it('очистка — одно change:selection с пустым выбором', () => {
+			const { col, list, changes } = filled()
+			const { batch, selection } = col.extensions
+
+			selection.selectMany(list)
+			selection.events.on('change:selection', changes)
+			batch.clear()
+
+			expect(selection.selected).toEqual([])
+			expect(changes.mock.calls).toEqual([[[]]])
+		})
+
+		it('сверка patch убрала выбранные — одно change:selection', () => {
+			const { col, list, changes } = filled()
+			const { batch, selection } = col.extensions
+			const [a, b, c, d] = list
+
+			batch.trackBy = (item) => item.id
+			selection.selectMany([a, b, c])
+			selection.events.on('change:selection', changes)
+			batch.patch([a, d])
+
+			expect(selection.selected).toEqual([a])
+			expect(changes.mock.calls).toEqual([[[a]]])
+		})
+	})
+
+	/**
+	 * Замена выбора — одна операция: «то же самое» решает она сама, как сеттер,
+	 * и сброс с добором, дававшие событие на каждый шаг, ей не нужны.
+	 */
+	describe('замена выбора', () => {
+		function filled(mode: TSelectionMode = 'multiple') {
+			const col = createCollection()
+			const { plain, selection } = col.extensions
+			const list: Item[] = [
+				{ id: 1, name: 'a' },
+				{ id: 2, name: 'b' },
+				{ id: 3, name: 'c' },
+			]
+
+			list.forEach((item) => plain.push(item))
+			selection.mode = mode
+
+			const changes = vi.fn<(items: Item[]) => void>()
+			const before = vi.fn<(e: TSelectEvent<Item>) => void>()
+
+			return { selection, list, changes, before }
+		}
+
+		it('тот же состав тем же порядком — не смена: события и хуков нет', () => {
+			const { selection, list, changes, before } = filled()
+			const [a, b] = list
+
+			selection.selectMany([a, b])
+			selection.events.on('change:selection', changes)
+			selection.events.on('item:select:before', before)
+			selection.replaceSelection([a, b])
+
+			expect(changes).not.toHaveBeenCalled()
+			expect(before).not.toHaveBeenCalled()
+		})
+
+		it('другой порядок — смена: одно событие, выбор в порядке замены', () => {
+			const { selection, list, changes } = filled()
+			const [a, b] = list
+
+			selection.selectMany([a, b])
+			selection.events.on('change:selection', changes)
+			selection.replaceSelection([b, a])
+
+			expect(selection.selected).toEqual([b, a])
+			expect(changes.mock.calls).toEqual([[[b, a]]])
+		})
+
+		it('хук — только тому, кто становится выбранным; отмена одного остальных не отменяет', () => {
+			const { selection, list, changes, before } = filled()
+			const [a, b, c] = list
+
+			selection.selectMany([a])
+			before.mockImplementation((e) => {
+				if (e.item === b) e.preventDefault()
+			})
+			selection.events.on('item:select:before', before)
+			selection.events.on('change:selection', changes)
+			selection.replaceSelection([a, b, c])
+
+			expect(before.mock.calls.map(([e]) => e.item)).toEqual([b, c])
+			expect(selection.selected).toEqual([a, c])
+			expect(changes).toHaveBeenCalledTimes(1)
+		})
+
+		it('выбранный вне списка снимается без хука; элемент вне коллекции пропускается', () => {
+			const { selection, list, changes, before } = filled()
+			const [a, b] = list
+			const stranger: Item = { id: 9, name: 'z' }
+
+			selection.selectMany([a, b])
+			selection.events.on('item:select:before', before)
+			selection.events.on('change:selection', changes)
+			selection.replaceSelection([b, stranger])
+
+			expect(before).not.toHaveBeenCalled()
+			expect(selection.selected).toEqual([b])
+			expect(changes).toHaveBeenCalledTimes(1)
+		})
+
+		it('single: принятый заменяет прежний, итог — последний принятый', () => {
+			const { selection, list, changes } = filled('single')
+			const [a, b, c] = list
+
+			selection.select(a)
+			selection.events.on('change:selection', changes)
+			selection.replaceSelection([b, c])
+
+			expect(selection.selected).toEqual([c])
+			expect(changes.mock.calls).toEqual([[[c]]])
+		})
+
+		it('single: не принят никто — прежний остаётся, пустой список снимает выбор', () => {
+			const { selection, list, changes, before } = filled('single')
+			const [a, b] = list
+
+			selection.select(a)
+			before.mockImplementation((e) => e.preventDefault())
+			selection.events.on('item:select:before', before)
+			selection.events.on('change:selection', changes)
+			selection.replaceSelection([b])
+
+			expect(selection.selected).toEqual([a])
+			expect(changes).not.toHaveBeenCalled()
+
+			selection.replaceSelection([])
+
+			expect(selection.selected).toEqual([])
+			expect(changes.mock.calls).toEqual([[[]]])
+		})
+
+		it('none: выбора нет', () => {
+			const { selection, list, changes } = filled('none')
+
+			selection.events.on('change:selection', changes)
+			selection.replaceSelection(list)
+
+			expect(selection.selected).toEqual([])
+			expect(changes).not.toHaveBeenCalled()
+		})
+	})
+
 	// --- toggle ---
 
 	it('toggle: переключает выделение', () => {

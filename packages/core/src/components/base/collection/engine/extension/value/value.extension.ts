@@ -89,21 +89,41 @@ export class TValueSelectionExtension<
 		return this._ctx?.extensions.selection as TSelectionExtension<TItem> | undefined
 	}
 
-	/** Выбор → `value`. */
+	/**
+	 * Выбор → `value`.
+	 *
+	 * Выбор говорит только за элементы, которые есть в коллекции. Ключ, чьего
+	 * элемента в ней нет, в значении остаётся: список сменился (серверный поиск
+	 * заменил `items`) или ещё не приехал, и вернувшийся элемент снова станет
+	 * выбранным на сверке `change:items`. Поэтому удаление выбранного элемента
+	 * значения не меняет, хотя выбор о нём объявляет, а выбор другого элемента
+	 * не стирает ключ, которого в коллекции нет. Ключи остаются в своём
+	 * порядке, новые выбранные встают в конец.
+	 */
 	private _selectionToValue(): void {
 		const selection = this._selection
 		const owner = this._ctx.options.get('owner')
 
 		if (!selection || !owner || this._syncing) return
 
-		const selected = selection.selected
+		const selected = selection.selected.map((item) => item.value as string | number)
+		const stored = new Set(this._ctx.driver.valueOf().map((item) => item.value))
+		const previous = toKeys(owner.value)
 
 		this._syncing = true
 
 		try {
-			owner.value = selection.multiple
-				? selected.map((item) => item.value as string | number)
-				: (selected[0]?.value ?? undefined)
+			if (selection.multiple) {
+				const chosen = new Set(selected)
+				const kept = new Set(previous)
+
+				owner.value = [
+					...previous.filter((key) => chosen.has(key) || !stored.has(key)),
+					...selected.filter((key) => !kept.has(key)),
+				]
+			} else {
+				owner.value = selected[0] ?? previous.find((key) => !stored.has(key))
+			}
 		} finally {
 			this._syncing = false
 		}
@@ -116,10 +136,13 @@ export class TValueSelectionExtension<
 	 * не приехать, и повторный проход случится на смене состава
 	 * (`change:items`).
 	 *
+	 * Выбор сводится одной заменой (`replaceSelection`), а не сбросом и
+	 * добором: выбор, уже собранный по значению, замена не трогает и
+	 * `change:selection` не шлёт — «то же самое» решает выбор, а не сверка.
+	 *
 	 * Выбор, отменённый в `item:select:before`, значение не меняет: оно
-	 * откатывается к тому, что выбрано на самом деле. В `single` выбор заменяет
-	 * прежний сам, поэтому отменённый оставляет прежний; в `multiple` выбор
-	 * собирается заново в порядке значения, и отменённого в нём просто нет.
+	 * откатывается к тому, что выбрано на самом деле. В `single` отменённый
+	 * оставляет прежний; в `multiple` отменённого в выборе просто нет.
 	 * В режиме `none` выбора нет вовсе — сводить нечего.
 	 */
 	private _valueToSelection(): void {
@@ -132,21 +155,15 @@ export class TValueSelectionExtension<
 			.map((key) => this._ctx.driver.valueOf().find((candidate) => candidate.value === key))
 			.filter((item) => item !== undefined)
 
-		let rejected = false
-
 		this._syncing = true
 
 		try {
-			if (selection.multiple || items.length === 0) selection.resetSelection()
-
-			for (const item of items) {
-				if (!selection.select(item)) rejected = true
-			}
+			selection.replaceSelection(items)
 		} finally {
 			this._syncing = false
 		}
 
-		if (rejected) this._selectionToValue()
+		if (items.some((item) => !selection.isSelected(item))) this._selectionToValue()
 	}
 }
 
