@@ -49,7 +49,7 @@ const counterpart = computed(() =>
 		<p v-if="motionOff" class="pg__motion-off" :title="motionOff">{{ motionOff }}</p>
 
 		<div class="pg__control">
-			<span class="pg__control-label">Движение</span>
+			<span class="pg__control-label">Анимация движения</span>
 			<Select :value="mode" size="sm" @update:value="choose($event)">
 				<Select.Item
 					v-for="(label, value) in modes"

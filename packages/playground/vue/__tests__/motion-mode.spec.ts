@@ -82,13 +82,13 @@ async function mountHeader(): Promise<VueWrapper> {
 	return header
 }
 
-/** Выбрать режим, как человек: открыть «Движение» в шапке и нажать пункт. */
+/** Выбрать режим, как человек: открыть «Анимация движения» в шапке и нажать пункт. */
 async function choose(wrapper: VueWrapper, label: string): Promise<void> {
 	const control = wrapper
 		.findAll('.pg__control')
-		.find((node) => node.get('.pg__control-label').text() === 'Движение')
+		.find((node) => node.get('.pg__control-label').text() === 'Анимация движения')
 
-	if (!control) throw new Error('в шапке нет переключателя «Движение»')
+	if (!control) throw new Error('в шапке нет переключателя «Анимация движения»')
 
 	const field = control.get('input')
 
@@ -125,8 +125,8 @@ afterEach(async () => {
 	vi.unstubAllGlobals()
 })
 
-describe('переключатель «Движение»', () => {
-	it('выбор ставит режим на корень документа, «Система» его снимает', async () => {
+describe('переключатель «Анимация движения»', () => {
+	it('выбор ставит режим на корень документа, «Как в системе» его снимает', async () => {
 		const wrapper = await mountHeader()
 
 		await choose(wrapper, MOTION_MODES.reduce)
@@ -173,7 +173,7 @@ describe('плашка «движение выключено»', () => {
 		)
 	})
 
-	it('при «Система» — когда так просит система', async () => {
+	it('при «Как в системе» — когда так просит система', async () => {
 		stubSystem(true)
 
 		const wrapper = await mountHeader()
