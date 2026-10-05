@@ -446,6 +446,20 @@ describe('событие ячеек — одно на смену', () => {
 })
 
 describe('выбор строк', () => {
+	// Режим решает и выбор, и колонку выбора: без просьбы потребителя колонки
+	// чекбоксов у таблицы нет
+	it('режим по умолчанию — none: выбрать строку нельзя', () => {
+		const facade = new TTableCollectionFacade({ items: [ANNA, BORIS].map(source) })
+		const [anna] = facade.items
+
+		expect(facade.mode).toBe('none')
+		expect(createEngineTable().extensions.selection.mode).toBe('none')
+
+		facade.extensions.selection.select(anna)
+
+		expect(facade.selected).toEqual([])
+	})
+
 	it('single: выбор строки снимает выбор с другой', () => {
 		const facade = table('single')
 		const [anna, boris] = facade.items
@@ -583,14 +597,37 @@ describe('выбраны все показанные', () => {
 		expect(changed.mock.calls).toEqual([['all'], ['some']])
 	})
 
-	it('все строки выключены — ни одной, выбрать нечего', () => {
+	it('все строки выключены — выбирать нечего: empty', () => {
 		const facade = table('multiple')
+		const changed = vi.fn()
 
+		facade.events.on('change:shownSelection', changed)
 		facade.items.forEach((row) => (row.disabled = true))
 		facade.selectShown()
 
 		expect(facade.selected).toEqual([])
+		expect(facade.shownSelection).toBe('empty')
+		expect(changed.mock.calls).toEqual([['empty']])
+
+		facade.items[0].disabled = false
+
 		expect(facade.shownSelection).toBe('none')
+		expect(changed.mock.calls).toEqual([['empty'], ['none']])
+	})
+
+	it('выбранная строка, которую выключили последней, — выбирать нечего, а не «все»', () => {
+		const facade = table('multiple')
+		const [anna, boris, vera] = facade.items
+
+		facade.extensions.selection.select(anna)
+		boris.disabled = true
+		vera.disabled = true
+
+		expect(facade.shownSelection).toBe('all')
+
+		anna.disabled = true
+
+		expect(facade.shownSelection).toBe('empty')
 	})
 
 	it('удалили невыбранную строку — выбраны все', () => {
@@ -670,6 +707,7 @@ describe('выбраны все показанные', () => {
 		facade.selectShown()
 
 		expect(facade.selected).toEqual([])
+		expect(facade.shownSelection).toBe('empty')
 
 		owner.disabled = false
 		facade.selectShown()
@@ -677,12 +715,12 @@ describe('выбраны все показанные', () => {
 		expect(facade.shownSelection).toBe('all')
 	})
 
-	it('пустая таблица — ни одной', () => {
+	it('пустая таблица — выбирать нечего', () => {
 		const facade = new TTableCollectionFacade({ mode: 'multiple' })
 
 		facade.selectShown()
 
-		expect(facade.shownSelection).toBe('none')
+		expect(facade.shownSelection).toBe('empty')
 	})
 
 	// Пачкой, а не по строке: поштучный выбор слал change:selection на каждую
@@ -779,6 +817,17 @@ describe('фасад коллекции строк', () => {
 		expect(fields(engine.extensions.columns.columns)).toEqual(['id'])
 	})
 
+	// Снятый из разметки проп связка возвращает к умолчанию — колонок нет, как
+	// у сортировки: снятая сортировка — порядок данных
+	it('колонки не заданы — колонок нет', () => {
+		const facade = table('multiple')
+
+		facade.columns = undefined
+
+		expect(facade.columns).toEqual([])
+		expect(facade.shownColumns).toEqual([])
+	})
+
 	it('события колонок и выбора показанных доходят до фасада', () => {
 		const facade = table('multiple')
 		const shown = vi.fn()
@@ -795,5 +844,384 @@ describe('фасад коллекции строк', () => {
 		expect(shown).toHaveBeenCalledOnce()
 		expect(cells).toHaveBeenCalledOnce()
 		expect(selection).toHaveBeenCalledWith('all')
+	})
+})
+
+describe('выбор строк включён — колонка выбора', () => {
+	it('selecting — режим не none; событие только на смену признака', () => {
+		const facade = table('none')
+		const selecting = vi.fn()
+
+		facade.events.on('change:selecting', selecting)
+
+		expect(facade.extensions.table.selecting).toBe(false)
+
+		facade.mode = 'single'
+		facade.mode = 'multiple'
+
+		expect(facade.extensions.table.selecting).toBe(true)
+
+		facade.mode = 'none'
+
+		expect(facade.extensions.table.selecting).toBe(false)
+		expect(selecting.mock.calls).toEqual([[true], [false]])
+	})
+
+	it('строка знает, включён ли выбор: признак и событие фасада строки', () => {
+		const facade = table('none')
+		const row = facadeOf(facade.engine, rowOf(facade.items, 1))
+		const selecting = vi.fn()
+
+		row.events.on('change:selecting', selecting)
+
+		expect(row.selecting).toBe(false)
+
+		facade.mode = 'multiple'
+
+		expect(row.selecting).toBe(true)
+		expect(selecting).toHaveBeenCalledOnce()
+		expect(new TTableRowCollectionFacade().selecting).toBe(false)
+	})
+
+	it('число колонок строки — показанные и колонка выбора, не меньше одной', () => {
+		const facade = table('none')
+
+		expect(facade.columnCount).toBe(2)
+
+		facade.mode = 'single'
+
+		expect(facade.columnCount).toBe(3)
+
+		columnOf(facade.columns, 'age').hide()
+
+		expect(facade.columnCount).toBe(2)
+
+		facade.columns = []
+		facade.mode = 'none'
+
+		expect(facade.columnCount).toBe(1)
+	})
+})
+
+describe('чекбокс «выбрать все»', () => {
+	it('вид счёта показанных: ни одной, часть, все, выбирать нечего', () => {
+		const facade = table('multiple')
+		const { selectAll } = facade
+		const [anna, boris, vera] = facade.items
+		const { selection } = facade.extensions
+
+		expect([selectAll.value, selectAll.indeterminate, selectAll.disabled]).toEqual([
+			false,
+			false,
+			false,
+		])
+
+		selection.select(anna)
+
+		expect([selectAll.value, selectAll.indeterminate]).toEqual([false, true])
+
+		selection.select(boris)
+		selection.select(vera)
+
+		expect([selectAll.value, selectAll.indeterminate]).toEqual([true, false])
+
+		facade.items.forEach((row) => (row.disabled = true))
+
+		expect([selectAll.value, selectAll.indeterminate, selectAll.disabled]).toEqual([
+			false,
+			false,
+			true,
+		])
+	})
+
+	it('отметка — просьба выбрать все показанные, снятая — снять с них выбор', () => {
+		const facade = table('multiple')
+		const { selectAll } = facade
+
+		selectAll.value = true
+
+		expect(facade.selected).toEqual([...facade.items])
+		expect(selectAll.value).toBe(true)
+
+		selectAll.toggle()
+
+		expect(facade.selected).toEqual([])
+		expect(selectAll.value).toBe(false)
+	})
+
+	it('из «части» — выбрать все: так его переключает клик', () => {
+		const facade = table('multiple')
+		const { selectAll } = facade
+
+		facade.extensions.selection.select(facade.items[0])
+		selectAll.toggle()
+
+		expect(facade.shownSelection).toBe('all')
+		expect([selectAll.value, selectAll.indeterminate]).toEqual([true, false])
+	})
+
+	it('отменённый выбор: отметка остаётся видом выбора', () => {
+		const facade = table('multiple')
+		const { selectAll } = facade
+		const changed = vi.fn()
+
+		facade.extensions.selection.events.on('item:select:before', (e) => e.preventDefault())
+		selectAll.events.on('change:value', changed)
+		selectAll.toggle()
+
+		expect(facade.selected).toEqual([])
+		expect([selectAll.value, selectAll.indeterminate]).toEqual([false, false])
+		expect(changed).not.toHaveBeenCalled()
+	})
+
+	it('отменён выбор части строк — «часть», хоть чекбокс и просили отметить', () => {
+		const facade = table('multiple')
+		const { selectAll } = facade
+		const anna = rowOf(facade.items, 1)
+
+		facade.extensions.selection.events.on('item:select:before', (e) => {
+			if (e.item !== anna) e.preventDefault()
+		})
+		selectAll.toggle()
+
+		expect(facade.selected).toEqual([anna])
+		expect([selectAll.value, selectAll.indeterminate]).toEqual([false, true])
+	})
+
+	it('из «части» с отменённым выбором — «часть» возвращается', () => {
+		const facade = table('multiple')
+		const { selectAll } = facade
+		const [anna] = facade.items
+
+		facade.extensions.selection.select(anna)
+		facade.extensions.selection.events.on('item:select:before', (e) => e.preventDefault())
+		selectAll.toggle()
+
+		expect(facade.selected).toEqual([anna])
+		expect([selectAll.value, selectAll.indeterminate]).toEqual([false, true])
+	})
+
+	it('у выключенной таблицы выключен; размер и вариант — таблицы', () => {
+		const owner = new TTable({ disabled: true, size: 'lg' })
+		const facade = new TTableCollectionFacade(
+			{ items: [ANNA, BORIS].map(source), mode: 'multiple' },
+			{ owner },
+		)
+		const { selectAll } = facade
+
+		expect(selectAll.disabled).toBe(true)
+		expect(selectAll.size).toBe('lg')
+
+		owner.disabled = false
+		owner.size = 'sm'
+
+		expect(selectAll.disabled).toBe(false)
+		expect(selectAll.size).toBe('sm')
+	})
+
+	it('один на таблицу: тот же экземпляр у фасада и у расширения', () => {
+		const facade = table('multiple')
+
+		expect(facade.selectAll).toBe(facade.extensions.table.selectAll)
+		expect(facade.selectAll).toBe(facade.selectAll)
+	})
+})
+
+describe('чекбокс строки', () => {
+	it('вид выбора строки — и когда выбор пришёл не от него', () => {
+		const facade = table('multiple')
+		const anna = rowOf(facade.items, 1)
+		const checkBox = facade.extensions.table.checkBoxOf(anna)
+
+		expect(checkBox.value).toBe(false)
+
+		facade.selectShown()
+
+		expect(checkBox.value).toBe(true)
+
+		facade.extensions.selection.deselect(anna)
+
+		expect(checkBox.value).toBe(false)
+	})
+
+	it('отметка — просьба выбрать строку, снятая — снять выбор', () => {
+		const facade = table('multiple')
+		const anna = rowOf(facade.items, 1)
+		const checkBox = facade.extensions.table.checkBoxOf(anna)
+
+		checkBox.toggle()
+
+		expect(facade.selected).toEqual([anna])
+		expect(checkBox.value).toBe(true)
+
+		checkBox.toggle()
+
+		expect(facade.selected).toEqual([])
+		expect(checkBox.value).toBe(false)
+	})
+
+	it('single: выбор строки снимает отметку с другой', () => {
+		const facade = table('single')
+		const { table: extension } = facade.extensions
+		const anna = extension.checkBoxOf(rowOf(facade.items, 1))
+		const boris = extension.checkBoxOf(rowOf(facade.items, 2))
+
+		anna.toggle()
+		boris.toggle()
+
+		expect(facade.selected).toEqual([rowOf(facade.items, 2)])
+		expect([anna.value, boris.value]).toEqual([false, true])
+	})
+
+	it('отменённый выбор: строка не выбрана, и чекбокс не отмечен', () => {
+		const facade = table('multiple')
+		const anna = rowOf(facade.items, 1)
+		const checkBox = facade.extensions.table.checkBoxOf(anna)
+		const changed = vi.fn()
+
+		facade.extensions.selection.events.on('item:select:before', (e) => e.preventDefault())
+		checkBox.events.on('change:value', changed)
+		checkBox.toggle()
+
+		expect(facade.selected).toEqual([])
+		expect(checkBox.value).toBe(false)
+		expect(changed).not.toHaveBeenCalled()
+	})
+
+	it('выключенная строка: чекбокс выключен, и просьба её не выбирает', () => {
+		const facade = table('multiple')
+		const anna = rowOf(facade.items, 1)
+		const checkBox = facade.extensions.table.checkBoxOf(anna)
+
+		anna.disabled = true
+
+		expect(checkBox.disabled).toBe(true)
+
+		checkBox.value = true
+
+		expect(facade.selected).toEqual([])
+		expect(checkBox.value).toBe(false)
+
+		anna.disabled = false
+
+		expect(checkBox.disabled).toBe(false)
+	})
+
+	it('один на строку, пока она в коллекции; размер и вариант — таблицы', () => {
+		const owner = new TTable({ size: 'lg' })
+		const facade = new TTableCollectionFacade(
+			{
+				items: [ANNA, BORIS].map(source),
+				trackBy: (row) => idOf(row.data),
+				mode: 'multiple',
+			},
+			{ owner },
+		)
+		const anna = rowOf(facade.items, 1)
+		const checkBox = facade.extensions.table.checkBoxOf(anna)
+
+		expect(facade.extensions.table.checkBoxOf(anna)).toBe(checkBox)
+		expect(checkBox.size).toBe('lg')
+
+		owner.size = 'sm'
+
+		expect(checkBox.size).toBe('sm')
+
+		facade.extensions.plain.remove(anna)
+		facade.extensions.plain.push(anna)
+
+		expect(facade.extensions.table.checkBoxOf(anna)).not.toBe(checkBox)
+	})
+
+	it('чекбокс строки отдаёт item-адаптер таблицы — тот же, что у расширения', () => {
+		const facade = table('multiple')
+		const anna = rowOf(facade.items, 1)
+		const context = new TItemContext(anna, facade.engine.getCore().extensions)
+
+		expect(context.adapters.table.checkBox).toBe(facade.extensions.table.checkBoxOf(anna))
+	})
+})
+
+describe('заголовок строки', () => {
+	/** Строка Анны с колонками и id заголовка, как его пишет плагин связок. */
+	function header(columns: readonly TTableColumnSource[]) {
+		const engine = rows([ANNA], columns)
+		const anna = rowOf(engine.extensions.batch.items, 1)
+
+		anna.headerAria.add('id', 'anna-header')
+
+		return { engine, anna, facade: facadeOf(engine, anna), columns: engine.extensions.columns }
+	}
+
+	it('ячейка колонки rowHeader — заголовок; набор заголовка строки — на ней', () => {
+		const { facade } = header([{ ...NAME, rowHeader: true }, AGE])
+
+		expect(facade.cells.map((cell) => cell.rowHeader)).toEqual([true, false])
+		expect(facade.cells.map((cell) => cell.aria)).toEqual([{ id: 'anna-header' }, {}])
+		expect(facade.rowHeaderId).toBe('anna-header')
+	})
+
+	it('колонок заголовка две — заголовки обе, набор с id — только у первой показанной', () => {
+		const { facade, columns } = header([
+			ID,
+			{ ...NAME, rowHeader: true },
+			{ ...AGE, rowHeader: true },
+		])
+
+		expect(facade.cells.map((cell) => cell.rowHeader)).toEqual([false, true, true])
+		expect(facade.cells.map((cell) => cell.aria)).toEqual([{}, { id: 'anna-header' }, {}])
+
+		columnOf(columns.columns, 'name').hide()
+
+		expect(facade.cells.map((cell) => cell.aria)).toEqual([{}, { id: 'anna-header' }])
+	})
+
+	it('без колонки заголовка ссылки нет; скрытая — тоже', () => {
+		const plain = header([NAME, AGE])
+
+		expect(plain.facade.rowHeaderId).toBeUndefined()
+		expect(plain.facade.cells.every((cell) => !cell.rowHeader)).toBe(true)
+
+		const hidden = header([{ ...NAME, rowHeader: true }, AGE])
+
+		columnOf(hidden.columns.columns, 'name').hide()
+
+		expect(hidden.facade.rowHeaderId).toBeUndefined()
+	})
+
+	it('признак заголовка и набор заголовка — событие ячеек', () => {
+		const { anna, facade, columns } = header([NAME, AGE])
+		const cells = watchCells(facade)
+
+		columnOf(columns.columns, 'name').rowHeader = true
+
+		expect(cells).toHaveBeenCalledOnce()
+		expect(facade.rowHeaderId).toBe('anna-header')
+
+		anna.headerAria.add('id', 'anna-header-2')
+
+		expect(cells).toHaveBeenCalledTimes(2)
+		expect(facade.rowHeaderId).toBe('anna-header-2')
+
+		// Признак скрытой колонки ячеек не трогает
+		const age = columnOf(columns.columns, 'age')
+
+		age.hide()
+		cells.mockClear()
+		age.rowHeader = true
+
+		expect(cells).not.toHaveBeenCalled()
+	})
+
+	it('у строки набор заголовка свой и сообщает о смене', () => {
+		const row = new TTableRow({ data: ANNA })
+		const changed = vi.fn()
+
+		row.events.on('change:headerAria', changed)
+		row.headerAria.add('id', 'x')
+		row.headerAria.add('id', 'x')
+
+		expect(row.headerAria.toObject()).toEqual({ id: 'x' })
+		expect(changed.mock.calls).toEqual([[{ id: 'x' }]])
 	})
 })

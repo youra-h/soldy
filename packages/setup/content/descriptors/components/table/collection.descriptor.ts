@@ -1,0 +1,83 @@
+/**
+ * Дескрипторы коллекционной части Table — фасады таблицы и строки.
+ *
+ * Членство в коллекции отделено от собственных пропсов компонента
+ * (`TableDescriptor`, `TableRowDescriptor`): адаптер собирает компонент из
+ * обоих рантайм-списков.
+ */
+
+import { defineComponent, defineDescriptor } from '../../../../protected/define'
+import { TTableCollectionFacade, TTableRowCollectionFacade } from '@soldy-ui/core'
+import { CollectionDescriptor } from '../collection'
+
+export const TableCollectionDescriptor = defineDescriptor(() =>
+	defineComponent({
+		ctor: TTableCollectionFacade,
+
+		extends: CollectionDescriptor(),
+
+		/**
+		 * Коллекционные props таблицы — то, что выводит фасад
+		 * `TTableCollectionFacade`: режим выбора строк, колонки данными и
+		 * сортировка; выходы — колонки и выбор для шапки.
+		 */
+		contribution: {
+			props: {
+				/** Режим выбора строк. `none` (по умолчанию) — колонки выбора нет */
+				mode: { type: String, triggers: ['change:mode'] },
+				/**
+				 * Колонки данными: сверка по `field`. Читаются экземпляры колонок,
+				 * пишутся данные — как `items` у строк
+				 */
+				columns: { type: Array, triggers: ['change:shownColumns'] },
+				sort: { type: Array, triggers: ['change:sort'] },
+				sortMode: { type: String, triggers: ['change:sortMode'] },
+				presorted: { type: Boolean, triggers: ['change:presorted'] },
+				selected: { type: Array, protected: true, triggers: ['change:selection'] },
+				/** Заголовки шапки — по одному на показанную колонку, в её порядке */
+				shownColumns: { type: Array, protected: true, triggers: ['change:shownColumns'] },
+				shownSelection: {
+					type: String,
+					protected: true,
+					triggers: ['change:shownSelection'],
+				},
+				/**
+				 * Сколько колонок в строке вместе с колонкой выбора — `colspan`
+				 * ячейки пустой таблицы. Посчитанное в разметке повторилось бы в
+				 * каждом адаптере.
+				 */
+				columnCount: {
+					type: Number,
+					protected: true,
+					triggers: ['change:shownColumns', 'change:selecting'],
+				},
+			},
+		},
+	}),
+)
+
+export const TableCollectionRowDescriptor = defineDescriptor(() =>
+	defineComponent({
+		ctor: TTableRowCollectionFacade,
+
+		/**
+		 * Item-level пропсы строки — то, что выводит фасад
+		 * `TTableRowCollectionFacade`: выбор, ячейки, имя строки и включён ли
+		 * выбор строк.
+		 */
+		contribution: {
+			props: {
+				selected: { type: Boolean, triggers: ['change:selected'] },
+				/** Ячейки — по одной на показанную колонку, в её порядке */
+				cells: { type: Array, protected: true, triggers: ['change:cells'] },
+				/**
+				 * `id` заголовка строки — им называют чекбокс выбора строки. Пока
+				 * колонки заголовка нет или она скрыта, ссылки нет.
+				 */
+				rowHeaderId: { type: String, protected: true, triggers: ['change:cells'] },
+				/** Выбор строк включён — у строки ячейка выбора */
+				selecting: { type: Boolean, protected: true, triggers: ['change:selecting'] },
+			},
+		},
+	}),
+)

@@ -26,6 +26,7 @@ import {
 	Input,
 	RadioGroup,
 	RadioGroupItem,
+	Table,
 	Tabs,
 	TabsContent,
 	TabsItem,
@@ -161,6 +162,22 @@ describe('id при гидратации', () => {
 			null,
 			null,
 		])
+	})
+
+	it('таблица: заголовки строк и имена их чекбоксов у сервера и браузера одни', async () => {
+		const { server, client, warnings } = await hydrate(() =>
+			h(Table, {
+				items: [{ data: { name: 'Анна' } }, { data: { name: 'Борис' } }],
+				columns: [{ field: 'name', text: 'Имя', rowHeader: true }],
+				mode: 'multiple',
+			}),
+		)
+		const ids = attrs(client, 'th[scope="row"]', 'id')
+
+		expect(warnings).toEqual([])
+		expect(ids).toEqual(attrs(server, 'th[scope="row"]', 'id'))
+		expect(attrs(client, '.s-table-row__select input', 'aria-labelledby')).toEqual(ids)
+		expect(new Set(ids).size).toBe(2)
 	})
 
 	it('группа радио без своего имени: общий name у сервера и браузера один', async () => {

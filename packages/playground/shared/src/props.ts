@@ -31,6 +31,7 @@ import {
 	SLIDE_ORIENTATIONS,
 	SLIDE_SNAPS,
 	SLIDER_TOOLTIPS,
+	TABLE_SORT_MODES,
 	TABS_ALIGNMENTS,
 	TABS_ORIENTATIONS,
 	TABS_POSITIONS,
@@ -279,6 +280,15 @@ const OWN: Record<string, Record<string, string>> = {
 	'list-box': {
 		view: 'Оформление списка',
 	},
+	table: {
+		mode: 'Выбор строк: none — колонки выбора нет, single — одна строка, multiple — несколько и чекбокс «выбрать все»',
+		locale: 'Язык сортировки, тег BCP 47: по нему сравниваются строки текста — алфавит и числа внутри строк',
+		selectAllLabel: 'Имя чекбокса «выбрать все» для скринридера. Нужен выбор нескольких строк',
+		sortMode:
+			'Сколько колонок сортируют строки: single — сортировка по другой колонке заменяет прежнюю, multiple — встаёт следующей',
+		presorted:
+			'Строки приходят упорядоченными, например с сервера: таблица держит сортировку и отметки колонок, но строки не переставляет',
+	},
 	tabs: {
 		orientation: 'Как расположен список вкладок',
 		alignment: 'Выравнивание вкладок вдоль списка',
@@ -384,6 +394,7 @@ const OPTIONS: Record<string, Record<string, readonly string[]>> = {
 		position: TABS_POSITIONS,
 	},
 	tags: { view: BUTTON_VIEWS, overflow: TAGS_OVERFLOWS },
+	table: { sortMode: TABLE_SORT_MODES },
 	skeleton: { shape: SKELETON_SHAPES, animation: SKELETON_ANIMATIONS },
 	frame: { position: FRAME_POSITIONS },
 }
@@ -424,6 +435,11 @@ export const PRESETS: Record<string, Record<string, Record<string, unknown>>> = 
 	},
 	'list-box': {
 		indicator: { mode: 'multiple' },
+	},
+	table: {
+		// Имя у чекбокса «выбрать все», а он есть только при выборе нескольких
+		// строк
+		selectAllLabel: { mode: 'multiple' },
 	},
 	tags: {
 		// Хвост уезжает в панель, и проверять его там нечем: закрытие тега из
@@ -514,6 +530,11 @@ export const NON_EDITABLE = new Set([
 	'unavailable',
 	// Месяцы сеток календаря — список дат по числу сеток; листание пишет их само
 	'months',
+	// Колонки таблицы — список записей с полями, ширинами и сравнением, как
+	// `items`: их задаёт само превью
+	'columns',
+	// Сортировка таблицы — список колонок с направлениями; пишут её заголовки
+	'sort',
 ])
 
 export function describeProp(componentId: string, prop: string): string | undefined {

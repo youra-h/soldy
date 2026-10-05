@@ -532,6 +532,52 @@ describe('ширина', () => {
 		expect(columnOf(columns, 'name')).toBe(name)
 		expect(name.width).toBe(300)
 	})
+
+	it('теме — итог переменной заголовка, в px; без ширины переменной нет', () => {
+		const column = new TTableColumn({ width: 300, maxWidth: 200 })
+
+		expect(column.widthStyle).toEqual({ '--s-table-column-width': '200px' })
+
+		column.maxWidth = undefined
+
+		expect(column.widthStyle).toEqual({ '--s-table-column-width': '300px' })
+
+		column.width = undefined
+
+		expect(column.widthStyle).toEqual({})
+		expect(new TTableColumn().widthStyle).toEqual({})
+	})
+
+	it('переменная — значение: каждое чтение собирает её заново', () => {
+		const column = new TTableColumn({ width: 120 })
+		const first = column.widthStyle
+
+		expect(column.widthStyle).not.toBe(first)
+		expect(column.widthStyle).toEqual(first)
+	})
+})
+
+describe('заголовок строки', () => {
+	it('по умолчанию колонка строки не называет; признак — из данных', () => {
+		expect(new TTableColumn().rowHeader).toBe(false)
+
+		const columns = columnsWith([{ ...NAME, rowHeader: true }, AGE])
+
+		expect(columns.columns.map((column) => column.rowHeader)).toEqual([true, false])
+	})
+
+	it('change:rowHeader — только на смену; в пропсах — признак', () => {
+		const column = new TTableColumn()
+		const changed = vi.fn()
+
+		column.events.on('change:rowHeader', changed)
+		column.rowHeader = false
+		column.rowHeader = true
+		column.rowHeader = true
+
+		expect(changed.mock.calls).toEqual([[true]])
+		expect(column.getProps()).toMatchObject({ rowHeader: true })
+	})
 })
 
 describe('заголовок', () => {

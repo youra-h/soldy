@@ -31,6 +31,9 @@ export const ICON_ROLES = [
 	'arrowsInward',
 	// Кнопка календаря DatePicker
 	'calendar',
+	// Отметка направления сортировки в заголовке колонки Table: стрелка вверх —
+	// по возрастанию, по убыванию её поворачивает тема
+	'arrowUpward',
 ] as const
 
 export type TIconRole = (typeof ICON_ROLES)[number]

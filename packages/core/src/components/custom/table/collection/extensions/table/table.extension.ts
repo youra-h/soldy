@@ -1,14 +1,26 @@
-import { TBaseExtension } from '../../../../../base/collection'
-import type { IExtensionContext } from '../../../../../base/collection'
+import { TBaseOwnerItemExtension } from '../../../../../base/collection'
+import type {
+	IBaseOwnerItemExtensionOptions,
+	IExtensionContext,
+} from '../../../../../base/collection'
+import type { IStylable } from '../../../../../base/stylable'
+import type { TChangeEvent } from '../../../../../../common'
+import TCheckBox from '../../../../check-box/check-box.class'
+import type { ICheckBox } from '../../../../check-box/types'
 import type { ITableRow } from '../../../row/types'
 import type { ITable } from '../../../types'
 import { batchOf, selectionOf } from '../guards'
+import { TTableItemExtension } from './item'
 import type {
 	ITableExtension,
+	ITableItemExtension,
 	TTableEngineOptions,
 	TTableExtensionEvents,
 	TTableShownSelection,
 } from './types'
+
+/** Чем таблица красит то, что рисует от её имени: строки и чекбоксы выбора. */
+type TStyled = Partial<Pick<IStylable, 'size' | 'variant'>>
 
 /**
  * Таблица над коллекцией строк — то, что строки знают благодаря таблице.
@@ -33,15 +45,39 @@ import type {
  * поштучный выбор слал бы `change:selection` на каждую строку, и каждый его
  * подписчик проходил бы все строки. Соседей — выбор и состав — расширение
  * узнаёт по контракту.
+ *
+ * **Колонка выбора** — пока выбор строк включён (`selecting`: режим не
+ * `none`). Её чекбоксы — экземпляры, которые держит таблица: «выбрать все» в
+ * шапке (`selectAll`) и по чекбоксу на строку (`checkBoxOf`). Отметка чекбокса
+ * — не своё состояние, а вид выбора: таблица пишет её от выбора, а запись
+ * отметки в чекбокс — просьба пользователя (так её делает клик). Просьбу
+ * таблица перехватывает до записи (`change:value:before`), гасит и выполняет
+ * командой выбора: состояние чекбокса не расходится с выбором, даже когда
+ * подписчик `item:select:before` выбор отменил, — тогда отметка просто
+ * остаётся прежней. Своя отметка у чекбокса рядом с выбором была бы второй
+ * копией одного факта, и после отменённого выбора они разошлись бы.
+ *
+ * Выключенность, размер и вариант чекбоксов таблица пишет тоже: чекбокс
+ * строки живёт, пока строка в коллекции, и переживает её монтирования, а
+ * значение, вернувшееся к умолчанию, пока строки на экране не было, разметка
+ * следующего монтирования ему не запишет.
  */
 export class TTableExtension<TOwner extends ITable = ITable, TRow extends ITableRow = ITableRow>
-	extends TBaseExtension<TRow, TTableExtensionEvents, TTableEngineOptions<TOwner>>
+	extends TBaseOwnerItemExtension<
+		TRow,
+		ITableItemExtension<TRow>,
+		TTableExtensionEvents,
+		TTableEngineOptions<TOwner>
+	>
 	implements ITableExtension<TRow>
 {
 	readonly name = 'table' as const
 
 	/** Последнее отданное `shownSelection`: событие — только на его смену. */
-	private _shownSelection: TTableShownSelection = 'none'
+	private _shownSelection: TTableShownSelection = 'empty'
+
+	/** Последнее отданное `selecting`: событие — только на его смену. */
+	private _selecting = false
 
 	/** Сколько действий над многими строками идёт: пересчёт — один, в конце внешнего. */
 	private _grouping = 0
@@ -55,6 +91,21 @@ export class TTableExtension<TOwner extends ITable = ITable, TRow extends ITable
 
 	private readonly _onDisabled = (): void => this._sync()
 
+	/** Чекбокс «выбрать все показанные» — один на таблицу. */
+	private readonly _selectAll: ICheckBox = new TCheckBox()
+
+	/**
+	 * Чекбоксы выбора строк — по строке, пока она в коллекции. Заводятся, когда
+	 * строку рисуют с колонкой выбора: у таблицы без выбора их нет вовсе.
+	 */
+	private readonly _checkBoxes = new Map<TRow, ICheckBox>()
+
+	constructor(options?: IBaseOwnerItemExtensionOptions<TRow, ITableItemExtension<TRow>>) {
+		super(TTableItemExtension, options)
+
+		this._selectAll.events.on('change:value:before', (e) => this._chooseShown(e))
+	}
+
 	override install(ctx: IExtensionContext<TRow, TTableEngineOptions<TOwner>>): void {
 		super.install(ctx)
 
@@ -63,13 +114,18 @@ export class TTableExtension<TOwner extends ITable = ITable, TRow extends ITable
 		ctx.driver.events.on('item:added', (e) => this._inheritOwner(e.item))
 		ctx.driver.events.on('item:updated', (e) => this._inheritOwner(e.item))
 
+		// Строка ушла из коллекции — её чекбокс больше не нужен. Удаление —
+		// всегда команда с `item:removed`, в том числе очистка и сверка `patch`
+		ctx.driver.events.on('item:removed', (e) => this._checkBoxes.delete(e.item))
+
 		// Таблица — опция движка: приходит и уходит после сборки. Подписки на
 		// неё живут в области наблюдателя — сменилась таблица, прежние сняты
 		ctx.options.watch('owner', (owner, scope) => {
 			if (!owner) return
 
-			// Догон: строки, лежавшие до прихода таблицы
+			// Догон: строки и чекбоксы выбора, заведённые до прихода таблицы
 			this._group(() => ctx.driver.valueOf().forEach((row) => this._inheritOwner(row)))
+			this._restyleCheckBoxes(owner)
 
 			// Смена у таблицы — всем строкам: `disabled` распространяется на
 			// них, как у `<fieldset>`, `size` и `variant` диктует она
@@ -80,18 +136,17 @@ export class TTableExtension<TOwner extends ITable = ITable, TRow extends ITable
 					}),
 				),
 			)
-			scope.on(owner.events, 'change:size', () =>
-				ctx.driver.valueOf().forEach((row) => this._applyStyle(row, owner)),
-			)
-			scope.on(owner.events, 'change:variant', () =>
-				ctx.driver.valueOf().forEach((row) => this._applyStyle(row, owner)),
-			)
+			scope.on(owner.events, 'change:size', () => this._restyle(owner))
+			scope.on(owner.events, 'change:variant', () => this._restyle(owner))
 		})
 
 		// Сколько показанных выбрано зависит от выбора, от показанных строк и от
 		// того, можно ли строку выбрать. Показанные сменились — сменились и
 		// строки, чей `disabled` слушать
-		selectionOf(ctx)?.events.on('change:selection', () => this._sync())
+		const selection = selectionOf(ctx)
+
+		selection?.events.on('change:selection', () => this._sync())
+		selection?.events.on('change:mode', () => this._syncSelecting())
 		batchOf(ctx)?.events.on('change:shown', () => {
 			this._watchShown()
 			this._sync()
@@ -99,14 +154,16 @@ export class TTableExtension<TOwner extends ITable = ITable, TRow extends ITable
 
 		// Догон: движок могли наполнить и выбрать в нём до установки
 		this._watchShown()
+		this._selecting = this.selecting
 		this._shownSelection = this.shownSelection
+		this._syncSelectAll()
 	}
 
 	get shownSelection(): TTableShownSelection {
 		const selection = selectionOf(this._ctx)
 		const batch = batchOf(this._ctx)
 
-		if (!selection || !batch) return 'none'
+		if (!selection || !batch) return 'empty'
 
 		let selectable = 0
 		let selected = 0
@@ -119,9 +176,21 @@ export class TTableExtension<TOwner extends ITable = ITable, TRow extends ITable
 			if (selection.isSelected(row)) selected++
 		}
 
+		if (selectable === 0) return 'empty'
+
 		if (selected === 0) return 'none'
 
 		return selected === selectable ? 'all' : 'some'
+	}
+
+	get selecting(): boolean {
+		const mode = selectionOf(this._ctx)?.mode
+
+		return mode !== undefined && mode !== 'none'
+	}
+
+	get selectAll(): ICheckBox {
+		return this._selectAll
 	}
 
 	/**
@@ -138,9 +207,71 @@ export class TTableExtension<TOwner extends ITable = ITable, TRow extends ITable
 		selectionOf(this._ctx)?.deselectMany(this._selectableShown())
 	}
 
+	checkBoxOf(row: TRow): ICheckBox {
+		const existing = this._checkBoxes.get(row)
+
+		if (existing) return existing
+
+		const checkBox: ICheckBox = new TCheckBox({
+			value: this._isSelected(row),
+			disabled: row.disabled,
+			size: row.size,
+			variant: row.variant,
+		})
+
+		checkBox.events.on('change:value:before', (e) => this._chooseRow(row, e))
+		this._checkBoxes.set(row, checkBox)
+
+		return checkBox
+	}
+
 	/** Показанные строки, которые пользователь может выбрать, — не выключенные. */
 	private _selectableShown(): TRow[] {
 		return (batchOf(this._ctx)?.shown ?? []).filter((row) => !row.disabled)
+	}
+
+	private _isSelected(row: TRow): boolean {
+		return selectionOf(this._ctx)?.isSelected(row) ?? false
+	}
+
+	/**
+	 * Запись отметки в чекбокс шапки. Та же, что у выбора, — это таблица пишет
+	 * вид, и запись проходит. Другая — просьба пользователя: гасится и
+	 * выполняется командой над показанными строками. Чекбокс снова получает
+	 * вид выбора — и когда команда ничего не сменила: снимая «часть», чекбокс
+	 * сам гасит её раньше записи отметки.
+	 */
+	private _chooseShown(e: TChangeEvent<boolean | undefined>): void {
+		const all = e.value === true
+
+		if (all === (this._shownSelection === 'all')) return
+
+		e.preventDefault()
+
+		if (all) this.selectShown()
+		else this.deselectShown()
+
+		this._syncSelectAll()
+	}
+
+	/**
+	 * Запись отметки в чекбокс строки. Та же, что у выбора, — это таблица пишет
+	 * вид, и запись проходит. Другая — просьба пользователя: гасится и
+	 * выполняется выбором строки. Выключенную строку пользователь не выбирает,
+	 * а отменённый выбор отметку не меняет — она остаётся видом выбора.
+	 */
+	private _chooseRow(row: TRow, e: TChangeEvent<boolean | undefined>): void {
+		const selection = selectionOf(this._ctx)
+		const selected = e.value === true
+
+		if (!selection || selected === selection.isSelected(row)) return
+
+		e.preventDefault()
+
+		if (row.disabled) return
+
+		if (selected) selection.select(row)
+		else selection.deselect(row)
 	}
 
 	/**
@@ -160,10 +291,22 @@ export class TTableExtension<TOwner extends ITable = ITable, TRow extends ITable
 		if (owner.disabled) row.disabled = true
 	}
 
-	/** `size` и `variant` строки — всегда таблицы. */
-	private _applyStyle(row: Partial<ITableRow>, owner: TOwner): void {
-		row.size = owner.size
-		row.variant = owner.variant
+	/** `size` и `variant` — всегда таблицы. */
+	private _applyStyle(target: TStyled, owner: TOwner): void {
+		target.size = owner.size
+		target.variant = owner.variant
+	}
+
+	/** Размер или вариант таблицы сменились — строкам и чекбоксам выбора. */
+	private _restyle(owner: TOwner): void {
+		this._ctx.driver.valueOf().forEach((row) => this._applyStyle(row, owner))
+		this._restyleCheckBoxes(owner)
+	}
+
+	/** Чекбоксам выбора — размер и вариант таблицы, как строкам. */
+	private _restyleCheckBoxes(owner: TOwner): void {
+		this._checkBoxes.forEach((checkBox) => this._applyStyle(checkBox, owner))
+		this._applyStyle(this._selectAll, owner)
 	}
 
 	/** Действие над многими строками: `shownSelection` пересчитывается один раз, в конце. */
@@ -178,16 +321,53 @@ export class TTableExtension<TOwner extends ITable = ITable, TRow extends ITable
 		}
 	}
 
-	/** Пересчитать `shownSelection` и сообщить, если сменилось. */
+	/**
+	 * Пересчитать `shownSelection` и сообщить, если сменилось, и вид выбора в
+	 * чекбоксах — им и без смены счёта: в `single` выбор переходит от строки к
+	 * строке, а счёт остаётся «часть».
+	 */
 	private _sync(): void {
 		if (this._grouping > 0) return
 
 		const value = this.shownSelection
-
-		if (value === this._shownSelection) return
+		const changed = value !== this._shownSelection
 
 		this._shownSelection = value
-		this.events.emit('change:shownSelection', value)
+		this._syncSelectAll()
+		this._syncCheckBoxes()
+
+		if (changed) this.events.emit('change:shownSelection', value)
+	}
+
+	/** Чекбокс шапки — вид `shownSelection`. */
+	private _syncSelectAll(): void {
+		const state = this._shownSelection
+
+		this._selectAll.indeterminate = state === 'some'
+		this._selectAll.value = state === 'all'
+		this._selectAll.disabled = state === 'empty'
+	}
+
+	/**
+	 * Чекбоксы строк — вид выбора и выключенности строк. Выключенность скрытой
+	 * строки чекбокс узнаёт, когда строку покажут снова: скрытых таблица не
+	 * слушает, а показ — тот же пересчёт.
+	 */
+	private _syncCheckBoxes(): void {
+		for (const [row, checkBox] of this._checkBoxes) {
+			checkBox.value = this._isSelected(row)
+			checkBox.disabled = row.disabled
+		}
+	}
+
+	/** Выбор строк включили или выключили — сообщить, если сменилось. */
+	private _syncSelecting(): void {
+		const value = this.selecting
+
+		if (value === this._selecting) return
+
+		this._selecting = value
+		this.events.emit('change:selecting', value)
 	}
 
 	/** Слушать `disabled` показанных строк, а ушедших из показанных — больше не слушать. */

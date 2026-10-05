@@ -51,6 +51,10 @@ import {
 	SelectCollectionItemDescriptor,
 	SelectDescriptor,
 	SelectItemDescriptor,
+	TableCollectionDescriptor,
+	TableCollectionRowDescriptor,
+	TableDescriptor,
+	TableRowDescriptor,
 	TabsCollectionContentDescriptor,
 	TabsCollectionDescriptor,
 	TabsCollectionItemDescriptor,
@@ -237,7 +241,8 @@ const COLLECTIONS: Readonly<Record<string, TCollectionKit>> = {
 /**
  * Коллекции, у которых элемента из разметки нет: состав кладёт сама коллекция.
  * Дни календаря кладёт вид по месяцам сеток, `items` у него не принимается, а
- * день монтируется только над элементом из состава (`ctrl`).
+ * день монтируется только над элементом из состава (`ctrl`). Строки таблицы —
+ * только данными: таблица рисует строку сама, над её экземпляром.
  */
 const DATA_ONLY: Readonly<Record<string, TCollectionKit>> = {
 	CalendarCollectionItemDescriptor: {
@@ -249,6 +254,24 @@ const DATA_ONLY: Readonly<Record<string, TCollectionKit>> = {
 				elevator,
 				source,
 			),
+	},
+	// Строки с колонкой заголовка и выбором: монтирование подписывает строку и
+	// на ячейки, и на выбор строк
+	TableCollectionRowDescriptor: {
+		list: () => {
+			const list = mountList(TableDescriptor(), TableCollectionDescriptor(), [
+				{ data: { id: 1, name: 'Анна' } },
+				{ data: { id: 2, name: 'Борис' } },
+			])
+			const { columns, selection } = list.engine.extensions
+
+			columns.columns = [{ field: 'name', rowHeader: true }]
+			selection.mode = 'multiple'
+
+			return list
+		},
+		item: (elevator, source) =>
+			mountItem(TableRowDescriptor(), TableCollectionRowDescriptor(), elevator, source),
 	},
 }
 

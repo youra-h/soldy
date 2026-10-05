@@ -23,6 +23,7 @@ import {
 	TRadioGroupItem,
 	TSelect,
 	TSelectItem,
+	TTableRow,
 	TTabsItem,
 	TTooltip,
 } from '@soldy-ui/core'
@@ -41,6 +42,7 @@ import {
 	TRadioGroupNamePlugin,
 	TSelectIdsPlugin,
 	TSelectItemIdsPlugin,
+	TTableRowIdsPlugin,
 	TTabsItemIdsPlugin,
 	TTooltipIdsPlugin,
 } from '../src'
@@ -165,6 +167,20 @@ describe('коллекции', () => {
 
 		expect(tab.aria.get('id')).toBe('m1-tab')
 		expect(tab.aria.get('aria-controls')).toBe('m1-panel')
+	})
+
+	it('Table.Row: id заголовка строки — от её монтирования, в набор заголовка', () => {
+		const row = new TTableRow({ data: { id: 1 } })
+
+		new TPluginBundle(row, 'm1').use(TTableRowIdsPlugin)
+
+		expect(row.headerAria.toObject()).toEqual({ id: 'm1-header' })
+
+		// Строку таблица рисует с готовым экземпляром: новое монтирование — свой id
+		new TPluginBundle(row, 'm2').use(TTableRowIdsPlugin)
+
+		expect(row.headerAria.get('id')).toBe('m2-header')
+		expect(row.aria.has('id')).toBe(false)
 	})
 
 	it('Accordion.Item: заголовок и панель ссылаются друг на друга', () => {

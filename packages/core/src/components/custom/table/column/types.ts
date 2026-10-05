@@ -21,6 +21,13 @@ export type TTableColumnAlign = 'start' | 'center' | 'end'
  */
 export type TTableCompare = (a: TTableRecord, b: TTableRecord) => number
 
+/**
+ * CSS-переменные заголовка колонки — и только они: итог ширины с единицей
+ * (`--s-table-column-width`). Ширину ячейки шапки ставит тема, а по шапке
+ * раскладка таблицы режет колонку.
+ */
+export type TTableColumnStyle = Record<`--${string}`, string>
+
 export type TTableColumnEvents = TComponentViewEvents & {
 	/** change:field */
 	'change:field': (value: string) => void
@@ -41,6 +48,8 @@ export type TTableColumnEvents = TComponentViewEvents & {
 	'change:sortable': (value: boolean) => void
 	/** change:compare */
 	'change:compare': (value: TTableCompare | undefined) => void
+	/** change:rowHeader */
+	'change:rowHeader': (value: boolean) => void
 }
 
 export interface ITableColumnProps extends IComponentViewProps {
@@ -60,6 +69,8 @@ export interface ITableColumnProps extends IComponentViewProps {
 	sortable?: boolean
 	/** Своё сравнение записей. Не задано — значения поля `field` */
 	compare?: TTableCompare
+	/** Ячейки колонки — заголовки строк: по их тексту строку называют */
+	rowHeader?: boolean
 }
 
 export interface ITableColumn<
@@ -89,4 +100,15 @@ export interface ITableColumn<
 	sortable: boolean
 	/** Своё сравнение записей. Не задано — значения поля `field` */
 	compare: TTableCompare | undefined
+	/**
+	 * Ячейки колонки — заголовки строк (`th scope="row"`): по тексту ячейки
+	 * строку называют, в том числе её чекбокс выбора. Решение потребителя,
+	 * поэтому по умолчанию нет
+	 */
+	rowHeader: boolean
+	/**
+	 * `--s-table-column-width` — итог ширины в px. Ширины нет — переменной нет,
+	 * и ширину колонки решает тема
+	 */
+	readonly widthStyle: TTableColumnStyle
 }

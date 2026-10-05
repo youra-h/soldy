@@ -4,7 +4,7 @@ import type {
 	IItemExtension,
 	TBaseItemEventsExtension,
 } from '../../../../../base/collection'
-import type { TDatasetAttributes } from '../../../../../../common'
+import type { TAriaAttributes, TDatasetAttributes } from '../../../../../../common'
 import type { TTableColumnsCollection, TTableColumnSource } from '../../../column/collection/types'
 import type { ITableColumn } from '../../../column/types'
 import type { ITableRow } from '../../../row/types'
@@ -17,9 +17,9 @@ export type TTableColumnsEvents = {
 	 */
 	'change:shownColumns': () => void
 	/**
-	 * Ячейки строк надо перечитать: сменились показанные колонки или поле и
-	 * выравнивание показанной колонки. Без аргумента — читатель берёт `cells`
-	 * строки. Одна операция — одно событие
+	 * Ячейки строк надо перечитать: сменились показанные колонки или поле,
+	 * выравнивание и признак заголовка строки у показанной колонки. Без
+	 * аргумента — читатель берёт `cells` строки. Одна операция — одно событие
 	 */
 	'change:cells': () => void
 }
@@ -36,15 +36,27 @@ export type TTableCell = {
 	column: ITableColumn
 	/** Поле записи строки под ключом колонки — `data[field]` */
 	value: unknown
+	/**
+	 * Ячейка — заголовок строки: колонка `rowHeader`. Разметка рисует её
+	 * `th scope="row"`, остальные — `td`
+	 */
+	rowHeader: boolean
+	/**
+	 * ARIA ячейки — набор заголовка строки (`headerAria`) у первой показанной
+	 * колонки `rowHeader`: на её `id` ссылается имя чекбокса выбора строки. У
+	 * остальных пусто — `id` в документе один
+	 */
+	aria: TAriaAttributes
 	/** Набор ячейки для темы — выравнивание колонки, `data-align` */
 	dataset: TDatasetAttributes
 }
 
 export type TTableColumnsItemEvents = TBaseItemEventsExtension & {
 	/**
-	 * Ячейки строки надо перечитать: сменились показанные колонки, поле или
-	 * выравнивание показанной колонки или запись строки. Без аргумента —
-	 * читатель берёт `cells`
+	 * Ячейки строки надо перечитать: сменились показанные колонки, поле,
+	 * выравнивание или признак заголовка строки у показанной колонки, запись
+	 * строки или набор её заголовка. Без аргумента — читатель берёт `cells` и
+	 * `rowHeaderId`
 	 */
 	'change:cells': () => void
 }
@@ -61,6 +73,13 @@ export interface ITableColumnsItemExtension<
 > extends IItemExtension<TRow, TEvents> {
 	/** Ячейки строки — по одной на показанную колонку, в порядке колонок */
 	readonly cells: TTableCell[]
+	/**
+	 * `id` заголовка строки — ячейки первой показанной колонки `rowHeader`, —
+	 * пока она показана. Ей называют чекбокс выбора строки. Колонки
+	 * заголовка нет или она скрыта — `undefined`: ссылка в пустоту имени не
+	 * дала бы
+	 */
+	readonly rowHeaderId: string | undefined
 }
 
 /**
