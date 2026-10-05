@@ -62,6 +62,19 @@ export interface ISelectionExtension<TItem extends object = any>
 	deselect(item: TItem): void
 
 	/**
+	 * Выбрать элементы пачкой — только в режиме `multiple`. Выбор каждого
+	 * отменяет подписчик `item:select:before`, отмена одного остальных не
+	 * отменяет. `change:selection` — одно на пачку, и только если выбор сменился.
+	 */
+	selectMany(items: readonly TItem[]): void
+
+	/**
+	 * Снять выделение с элементов пачкой. `change:selection` — одно на пачку, и
+	 * только если выбор сменился.
+	 */
+	deselectMany(items: readonly TItem[]): void
+
+	/**
 	 * Переключить выделение элемента.
 	 *
 	 * @returns выбран ли элемент после вызова

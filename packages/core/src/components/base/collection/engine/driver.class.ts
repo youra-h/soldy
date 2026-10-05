@@ -1,12 +1,22 @@
 import type { IStorage } from './storage'
 import type { ICommand, ICommandContext, IQueryCommand } from './commands'
-import type { ICollectionStorageDriver, TCollectionStorageDriverEvents } from './types'
+import type {
+	ICollectionStorageDriver,
+	IQueryStrategy,
+	TCollectionStorageDriverEvents,
+} from './types'
 import { TEvented } from '@soldy-ui/core'
 
 export class TCollectionStorageDriver<T> implements ICollectionStorageDriver<T> {
 	private _storage: IStorage<T> // Хранилище элементов коллекции
 	private _isBatching = false // Флаг, указывающий, что в данный момент выполняется батч
 	private _pendingCommands: ICommand<T>[] = [] // Список команд, которые были выполнены во время батча и должны быть обработаны после его завершения
+
+	/** Как `query()` получает выборку. По умолчанию — исполняет чтение на каждый вызов. */
+	private _queryStrategy: IQueryStrategy<T> = { read: (run) => run(), stale: () => {} }
+
+	/** Сколько команд записи применяется сейчас — с вложенными, из хуков. */
+	private _applying = 0
 
 	public readonly events = new TEvented<TCollectionStorageDriverEvents<T>>()
 
@@ -40,7 +50,7 @@ export class TCollectionStorageDriver<T> implements ICollectionStorageDriver<T> 
 		// Выполняется всегда сразу, в том числе внутри батча.
 		const ctx: ICommandContext<T> = { storage: this._storage, events: this.events }
 
-		command.apply(ctx)
+		this._apply(command, ctx)
 
 		if (!this._isBatching) {
 			command.emitEvents(ctx)
@@ -60,25 +70,44 @@ export class TCollectionStorageDriver<T> implements ICollectionStorageDriver<T> 
 	 * изменении состава, чтение — нет. Батчинг тоже ни при чём — откладывать
 	 * нечего, результат нужен сразу.
 	 *
+	 * Как получить выборку, решает стратегия чтения, — кроме чтения из хуков
+	 * команды записи, которая ещё применяется: хранилище тогда в движении, и
+	 * чтение исполняется как есть, мимо стратегии. Выборка до команды уже не
+	 * та, а середина команды (`patch` применил часть шагов) не годится в
+	 * выборку, которую стратегия отдала бы потом.
+	 *
 	 * @param command Читающая команда
 	 */
 	public query(command: IQueryCommand<T>): readonly T[] {
-		const ctx: ICommandContext<T> = { storage: this._storage, events: this.events }
+		const run = (): readonly T[] => {
+			command.apply({ storage: this._storage, events: this.events })
 
-		command.apply(ctx)
+			return command.result
+		}
 
-		return command.result
+		return this._applying > 0 ? run() : this._queryStrategy.read(run)
 	}
 
 	/**
 	 * Пометить прежнюю выборку недействительной.
 	 *
 	 * Драйвер не знает, кто и по какому правилу отбирает — он лишь передаёт
-	 * дальше, что спрашивать надо заново. Отдельно от `change:items`: состав
-	 * хранилища не менялся, и путать эти два факта нельзя.
+	 * дальше, что спрашивать надо заново: сначала стратегии чтения, потом
+	 * читателям. Отдельно от `change:items`: состав хранилища не менялся, и
+	 * путать эти два факта нельзя.
 	 */
 	public invalidateQuery(): void {
+		this._queryStrategy.stale()
+
 		this.events.emit('items:query:invalidated')
+	}
+
+	/**
+	 * Поставить стратегию чтения. Ставит её расширение коллекции; прежняя
+	 * выборка у новой стратегии не числится — первое чтение её исполнит.
+	 */
+	public useQueryStrategy(strategy: IQueryStrategy<T>): void {
+		this._queryStrategy = strategy
 	}
 
 	/**
@@ -106,6 +135,27 @@ export class TCollectionStorageDriver<T> implements ICollectionStorageDriver<T> 
 					this.events.emit('change:items', this._storage.items)
 				}
 			}
+		}
+	}
+
+	/**
+	 * Применить команду записи и сообщить стратегии чтения, если хранилище
+	 * изменилось, — сразу, а не с уведомлениями: подписчики `item:added`,
+	 * действие внутри `batch()` и следующая команда читают уже новый состав.
+	 * Отменённая команда хранилища не меняла — прежняя выборка верна.
+	 *
+	 * В `finally`: команда, оборванная исключением, могла успеть записать
+	 * часть (`patch`), и записанное — тоже запись.
+	 */
+	private _apply(command: ICommand<T>, ctx: ICommandContext<T>): void {
+		this._applying++
+
+		try {
+			command.apply(ctx)
+		} finally {
+			this._applying--
+
+			if (command.changed) this._queryStrategy.stale()
 		}
 	}
 }

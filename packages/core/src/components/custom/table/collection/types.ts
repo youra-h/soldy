@@ -6,6 +6,7 @@ import type {
 	TBatchExtension,
 	TCollectionEngine,
 	TFactoryExtension,
+	TMemoryExtension,
 	TMetaExtension,
 	TOrderExtension,
 	TPlainExtension,
@@ -44,6 +45,8 @@ export type TTableCollectionExtensions = {
 	table: TTableExtension
 	/** Порядок показанных строк по колонкам */
 	sort: TTableSortExtension
+	/** Память выборки: показанные строки — один раз до записи или смены условий */
+	memory: TMemoryExtension<ITableRow>
 }
 
 /** Коллекция строк таблицы. */

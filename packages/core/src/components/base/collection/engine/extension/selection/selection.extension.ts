@@ -176,6 +176,58 @@ export class TSelectionExtension<TItem extends object = any>
 		this._notifySelected()
 	}
 
+	/**
+	 * Выбрать элементы пачкой — отдельная операция, а не `select` в цикле:
+	 * у `select` каждый вызов сверяется с составом и шлёт своё
+	 * `change:selection`, и его подписчики (`data-selected` всех элементов,
+	 * пробросы в фасады) проходили бы коллекцию на каждый элемент пачки.
+	 * Здесь состав сверяется один раз, а `change:selection` — одно, в конце.
+	 *
+	 * Хук `item:select:before` — на каждый элемент, как у `select`: отмена
+	 * одного остальных не отменяет, принятый встаёт в выбор сразу. Элемент вне
+	 * коллекции и уже выбранный пропускаются без хука.
+	 *
+	 * В `single` и `none` пачка не выбирается: какой из её элементов оставить,
+	 * решал бы не пользователь, — тем же правилом `multiple → single` снимает
+	 * выбор целиком.
+	 */
+	selectMany(items: readonly TItem[]): void {
+		if (!this.multiple) return
+
+		const stored = new Set(this._ctx.driver.valueOf())
+		let changed = false
+
+		for (const item of items) {
+			if (this._selected.has(item) || !stored.has(item)) continue
+
+			const event = new TSelectEvent(item)
+
+			this.events.emit('item:select:before', event)
+
+			if (event.defaultPrevented) continue
+
+			this._selected.add(item)
+			changed = true
+		}
+
+		if (changed) this._notifySelected()
+	}
+
+	/**
+	 * Снять выделение с элементов пачкой — в любом режиме, как `deselect`.
+	 * Снятие хука не имеет, поэтому и сверять нечего: снимается то, что
+	 * выбрано, а `change:selection` — одно, в конце.
+	 */
+	deselectMany(items: readonly TItem[]): void {
+		let changed = false
+
+		for (const item of items) {
+			if (this._selected.delete(item)) changed = true
+		}
+
+		if (changed) this._notifySelected()
+	}
+
 	/** @returns выбран ли элемент после вызова */
 	toggle(item: TItem): boolean {
 		if (this._mode === 'none') return false

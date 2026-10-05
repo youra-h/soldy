@@ -894,6 +894,70 @@ describe('фасад коллекции строк', () => {
 	})
 })
 
+describe('память выборки', () => {
+	/** Счётчик выборок: каждая — сортировка всех строк. Ставится до действия. */
+	function watchQueries(engine: TTableCollection) {
+		const queries = vi.fn()
+
+		engine.getCore().driver.events.on('items:query:before', queries)
+
+		return queries
+	}
+
+	/** Значения поля `v` показанных строк — в показанном порядке. */
+	const shownV = (engine: TTableCollection): unknown[] =>
+		engine.extensions.batch.shown.map((row) =>
+			row.data && 'v' in row.data ? row.data.v : 'нет записи',
+		)
+
+	// Показанные строки на `change:shown` читает и сама таблица — пересчитывает
+	// выбор показанных. С памятью читатель после неё получает ту же сортировку
+	it('смена сортировки — одна сортировка на всех читателей, тот же массив', () => {
+		const engine = rows()
+		const { sort, batch } = engine.extensions
+		const queries = watchQueries(engine)
+
+		sort.sort = [{ field: 'age', direction: 'desc' }]
+
+		const shown = batch.shown
+
+		expect(ids(shown)).toEqual([2, 1, 4, 3])
+		expect(batch.shown).toBe(shown)
+		expect(batch.length).toBe(4)
+		expect(queries).toHaveBeenCalledOnce()
+	})
+
+	it('смена сортировки, языка и сравнения колонки — сортировка заново, по одной на смену', () => {
+		const RANK: Readonly<Record<string, number>> = { Zebra: 0, Äpfel: 1, Apfel: 2 }
+		const rankOf = (data: TTableRecord): number =>
+			'v' in data && typeof data.v === 'string' ? (RANK[data.v] ?? -1) : -1
+		const owner = new TTable({ locale: 'sv-SE' })
+		const engine = values(['Zebra', 'Äpfel', 'Apfel'])
+		const { sort } = engine.extensions
+		const queries = watchQueries(engine)
+
+		engine.options.set({ owner })
+		sort.sort = [{ field: 'v', direction: 'asc' }]
+
+		// По-шведски «ä» — после «z»
+		expect(shownV(engine)).toEqual(['Apfel', 'Zebra', 'Äpfel'])
+
+		sort.sort = [{ field: 'v', direction: 'desc' }]
+
+		expect(shownV(engine)).toEqual(['Äpfel', 'Zebra', 'Apfel'])
+
+		owner.locale = 'de-DE'
+
+		expect(shownV(engine)).toEqual(['Zebra', 'Äpfel', 'Apfel'])
+
+		columnOf(engine, 'v').compare = (a, b) => rankOf(a) - rankOf(b)
+
+		expect(shownV(engine)).toEqual(['Apfel', 'Äpfel', 'Zebra'])
+		expect(shownV(engine)).toEqual(['Apfel', 'Äpfel', 'Zebra'])
+		expect(queries).toHaveBeenCalledTimes(4)
+	})
+})
+
 describe('расширение снаружи', () => {
 	it('состояние, записанное до установки, применяется при установке', () => {
 		const engine = createEngine<ITableRow>({ items: [ANNA, BORIS, VERA].map(source) })

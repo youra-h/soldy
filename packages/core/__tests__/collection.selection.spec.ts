@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
 import { TCollectionEngine, TPlainExtension, TSelectionExtension } from '@soldy-ui/core'
+import type { TSelectEvent, TSelectionMode } from '@soldy-ui/core'
 
 type Item = { id: number; name: string }
 
@@ -130,6 +131,144 @@ describe('TSelectionExtension', () => {
 		col.extensions.selection.deselect(item)
 
 		expect(col.extensions.selection.isSelected(item)).toBe(false)
+	})
+
+	// --- selectMany / deselectMany ---
+
+	describe('пачкой', () => {
+		/** Коллекция в режиме `mode` с тремя элементами и счётчиком `change:selection`. */
+		function filled(mode: TSelectionMode = 'multiple') {
+			const col = createCollection()
+			const { plain, selection } = col.extensions
+			const list: Item[] = [
+				{ id: 1, name: 'a' },
+				{ id: 2, name: 'b' },
+				{ id: 3, name: 'c' },
+			]
+
+			list.forEach((item) => plain.push(item))
+			selection.mode = mode
+
+			const changes = vi.fn<(items: Item[]) => void>()
+
+			selection.events.on('change:selection', changes)
+
+			return { selection, list, changes }
+		}
+
+		it('selectMany: одно change:selection на пачку, выбор — в порядке пачки', () => {
+			const { selection, list, changes } = filled()
+
+			selection.selectMany(list)
+
+			expect(selection.selected).toEqual(list)
+			expect(changes.mock.calls).toEqual([[list]])
+		})
+
+		it('selectMany: item:select:before на каждый элемент, отмена одного остальных не отменяет', () => {
+			const { selection, list, changes } = filled()
+			const [a, b, c] = list
+			const before = vi.fn((e: TSelectEvent<Item>) => {
+				if (e.item === b) e.preventDefault()
+			})
+
+			selection.events.on('item:select:before', before)
+			selection.selectMany(list)
+
+			expect(before.mock.calls.map(([e]) => e.item)).toEqual([a, b, c])
+			expect(selection.selected).toEqual([a, c])
+			expect(changes).toHaveBeenCalledOnce()
+		})
+
+		it('selectMany: вне коллекции и уже выбранные — без хука; не сменилось ничего — без события', () => {
+			const { selection, list, changes } = filled()
+			const [a, b] = list
+			const stranger: Item = { id: 9, name: 'z' }
+			const before = vi.fn()
+
+			selection.select(a)
+			changes.mockClear()
+			selection.events.on('item:select:before', before)
+			selection.selectMany([a, stranger, b])
+
+			expect(before.mock.calls.map(([e]) => e.item)).toEqual([b])
+			expect(selection.selected).toEqual([a, b])
+			expect(changes).toHaveBeenCalledOnce()
+
+			changes.mockClear()
+			selection.selectMany([a, stranger, b])
+
+			expect(changes).not.toHaveBeenCalled()
+		})
+
+		it.each(['single', 'none'] as const)(
+			'selectMany: в %s пачка не выбирается — ни хука, ни события, прежний выбор на месте',
+			(mode) => {
+				const { selection, list, changes } = filled(mode)
+				const before = vi.fn()
+
+				if (mode === 'single') selection.select(list[2])
+				changes.mockClear()
+				selection.events.on('item:select:before', before)
+				selection.selectMany(list)
+
+				expect(selection.selected).toEqual(mode === 'single' ? [list[2]] : [])
+				expect(before).not.toHaveBeenCalled()
+				expect(changes).not.toHaveBeenCalled()
+			},
+		)
+
+		it('deselectMany: одно change:selection на пачку, невыбранные пропускаются', () => {
+			const { selection, list, changes } = filled()
+			const [a, b, c] = list
+
+			selection.selectMany([a, c])
+			changes.mockClear()
+			selection.deselectMany(list)
+
+			expect(selection.selected).toEqual([])
+			expect(changes.mock.calls).toEqual([[[]]])
+
+			changes.mockClear()
+			selection.deselectMany([a, b])
+
+			expect(changes).not.toHaveBeenCalled()
+		})
+
+		it('deselectMany: и в single', () => {
+			const { selection, list, changes } = filled('single')
+
+			selection.select(list[1])
+			changes.mockClear()
+			selection.deselectMany(list)
+
+			expect(selection.selected).toEqual([])
+			expect(changes).toHaveBeenCalledOnce()
+		})
+
+		it('data-selected — один проход по коллекции на пачку, а не по проходу на элемент', () => {
+			const col = createCollection()
+			const { plain, selection } = col.extensions
+			const dataset = { add: vi.fn() }
+			const list = Array.from({ length: 50 }, (_, index) => ({
+				id: index,
+				name: String(index),
+				dataset,
+			}))
+
+			list.forEach((item) => plain.push(item))
+			selection.mode = 'multiple'
+			dataset.add.mockClear()
+
+			selection.selectMany(list)
+
+			expect(dataset.add).toHaveBeenCalledTimes(list.length)
+
+			dataset.add.mockClear()
+			selection.deselectMany(list)
+
+			expect(dataset.add).toHaveBeenCalledTimes(list.length)
+		})
 	})
 
 	// --- toggle ---
