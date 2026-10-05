@@ -161,7 +161,6 @@ export class TSelectExtension<
 			ctx.driver.events.on('item:added', (e) =>
 				this._applySelectedAria(e.item as TItem, selection),
 			)
-			ctx.driver.events.on('item:removed', () => this._onSelectionChanged())
 		}
 
 		// Плейсхолдер поля — по составу тегов, а не по режиму: инстанс `tags`
@@ -404,9 +403,8 @@ export class TSelectExtension<
 	 * `TValueSelectionExtension`.
 	 *
 	 * Поле здесь пишется мягко (`_syncText`): `change:selection` приходит на
-	 * любое изменение выбора, а не только на выбор пользователя. Он же
-	 * обработчик `item:removed` — удалённую опцию `TSelectionExtension`
-	 * снимает с выбора молча — и догон выбора, сделанного до `install`.
+	 * любое изменение выбора, а не только на выбор пользователя, — в том числе
+	 * на удаление выбранной опции. Он же догон выбора, сделанного до `install`.
 	 */
 	private _onSelectionChanged(): void {
 		this._syncSelectedAria()

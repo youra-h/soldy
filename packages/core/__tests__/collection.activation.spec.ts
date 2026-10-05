@@ -4,6 +4,7 @@ import {
 	TPlainExtension,
 	TBatchExtension,
 	TActivationExtension,
+	createEngineActivation,
 } from '@soldy-ui/core'
 
 type Item = { id: number; name: string }
@@ -313,5 +314,25 @@ describe('TActivationExtension', () => {
 		col.extensions.plain.insert(a)
 
 		expect(col.extensions.activation.findActivatable(undefined, a)).toBeUndefined()
+	})
+
+	// --- Отметки из данных ---
+
+	// Отметки одной записи `meta` отдаёт одним списком, и активация проходит его
+	// по порядку: активный один — итог за последним принятым
+	it('отметки записи: активен последний принятый, отменённый оставляет предыдущего', () => {
+		const engine = createEngineActivation<Item>()
+		const { activation, batch } = engine.extensions
+
+		activation.events.on('item:activate:before', (e) => {
+			if (e.item.id === 3) e.preventDefault()
+		})
+		batch.set([
+			{ id: 1, name: 'a', _: { active: true } },
+			{ id: 2, name: 'b', _: { active: true } },
+			{ id: 3, name: 'c', _: { active: true } },
+		])
+
+		expect(activation.activeItem).toBe(batch.items[1])
 	})
 })

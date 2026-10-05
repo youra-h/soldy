@@ -110,14 +110,10 @@ export class TSelectTagsExtension<
 		if (!selection) return
 
 		selection.events.on('change:mode', () => this._syncMode())
-		selection.events.on('change:selection', () => this.syncTags())
-
-		// Удалённую опцию `TSelectionExtension` снимает с выбора молча, поэтому
-		// удаление слушаем сами. Его подписка заведена раньше нашей — `selection`
-		// стоит в составе до `tags`, — значит к этому моменту выбор уже без
-		// удалённой опции. `select` стоит после нас и плейсхолдер считает по уже
+		// Удалённую выбранную опцию выбор тоже объявляет `change:selection`.
+		// `select` стоит в составе после нас и плейсхолдер считает по уже
 		// пересобранным тегам
-		ctx.driver.events.on('item:removed', () => this.syncTags())
+		selection.events.on('change:selection', () => this.syncTags())
 
 		// Владелец — опция движка. Подписки на него живут в области наблюдателя —
 		// сменился владелец, прежние сняты

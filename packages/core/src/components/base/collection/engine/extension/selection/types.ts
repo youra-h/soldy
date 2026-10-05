@@ -75,6 +75,14 @@ export interface ISelectionExtension<TItem extends object = any>
 	deselectMany(items: readonly TItem[]): void
 
 	/**
+	 * Заменить выбор: выбранными остаются эти элементы, в этом порядке. В
+	 * `single` — последний принятый. Хук `item:select:before` — только тем, кто
+	 * становится выбранным. `change:selection` — одно, и только если выбор
+	 * сменился по составу или порядку.
+	 */
+	replaceSelection(items: readonly TItem[]): void
+
+	/**
 	 * Переключить выделение элемента.
 	 *
 	 * @returns выбран ли элемент после вызова

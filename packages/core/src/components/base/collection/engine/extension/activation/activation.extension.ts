@@ -3,7 +3,7 @@ import { TActivateEvent } from './types'
 import type { TActivationEvents, IActivationExtension } from './types'
 import { TActivationItemExtension, type IActivationItemExtension } from './item'
 import { TBaseOwnerItemExtension } from '../base-owner-item-extension.class'
-import type { TMetaExtension } from '../meta'
+import type { TMetaEntry, TMetaExtension } from '../meta'
 import type { TDataset } from '../../../../../../common'
 
 /**
@@ -63,21 +63,22 @@ export class TActivationExtension<TItem extends object = any>
 		const meta = ctx.extensions.meta as TMetaExtension<TItem> | undefined
 
 		if (meta) {
-			const applyMeta = (item: TItem, m: Record<string, unknown>) => {
-				if (!m.active) return
-
-				this.activate(item)
+			// Отметки одной записи `meta` отдаёт одним списком. Активный один, и
+			// отметка у него обычно одна, поэтому — по порядку, как по одной:
+			// итог — последний принятый
+			const activateMarked = (entries: readonly TMetaEntry<TItem>[]) => {
+				for (const { item, meta: marks } of entries) {
+					if (marks.active) this.activate(item)
+				}
 			}
 
-			meta.events.on('meta:applied', applyMeta)
-			meta.events.on('meta:changed', applyMeta)
+			meta.events.on('meta:applied', activateMarked)
+			meta.events.on('meta:changed', activateMarked)
 
 			// Догон: расширение могло прийти в уже наполненную коллекцию, и свои
 			// `meta:applied` оно тогда пропустило. Снимок помнит `meta`
 			ctx.driver.valueOf().forEach((item) => {
-				const remembered = meta.get?.(item)
-
-				if (remembered) applyMeta(item, remembered)
+				if (meta.get?.(item)?.active) this.activate(item)
 			})
 		}
 	}
