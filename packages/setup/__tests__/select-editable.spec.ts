@@ -46,7 +46,9 @@ const destroyAfter: Array<{ destroy(): void }> = []
  * `panel: true` — ещё и панель, как в `SelectDescriptor`: `TDismissPlugin` и
  * узел с его пометкой владельца (`ownerAttribute`) в документе, как
  * телепортированный Frame. По этому узлу плагин ввода узнаёт, что закрытая
- * панель ещё гаснет. Без неё ждать нечего, и отбор снимается сразу.
+ * панель ещё гаснет, а по границам `TDismissPlugin` (`isInside`) — что фокус
+ * ушёл в панель или в корень. Без панели ждать нечего, и отбор снимается
+ * сразу, а поле возвращается, куда бы фокус ни ушёл.
  */
 async function setup(
 	texts: string[],
@@ -455,42 +457,54 @@ describe('двойной Escape', () => {
 
 /**
  * `focusout` — вторая точка входа в тот же возврат: фокус ушёл совсем, а не
- * переключился на телепортированную панель (`data-owner`).
+ * переключился на телепортированную панель или внутрь корня. Границы — те же,
+ * что у нажатия мимо, их знает `TDismissPlugin` (`isInside`), поэтому Select
+ * собран с панелью. Поле показывает набранное (`typeInField`): иначе возврат
+ * писал бы в поле то, что в нём и так стоит, и не был бы виден.
  */
 describe('уход фокуса', () => {
 	it('фокус ушёл вникуда — поле возвращается к тексту выбранного', async () => {
-		const { owner, items, type, blurTo } = await setup(['Москва', 'Тверь'])
+		const { owner, items, editable, typeInField, blurTo } = await setup(
+			['Москва', 'Тверь'],
+			{},
+			{ panel: true },
+		)
 
 		owner.value = items[0].value
-		type('те')
+		typeInField('те')
 
 		blurTo()
 
 		expect(owner.field.value).toBe(items[0].text)
+		expect(editable.query).toBe('')
 	})
 
-	it('переход в панель (data-owner) поле не трогает', async () => {
-		const { owner, input, type, blurTo } = await setup(['Москва'])
+	it('переход в панель поле и набранное не трогает', async () => {
+		const { owner, editable, panel, typeInField, blurTo } = await setup(
+			['Москва'],
+			{},
+			{ panel: true },
+		)
 
-		type('мо')
-
-		const panel = document.createElement('div')
-
-		panel.setAttribute('data-owner', String(owner.uid))
-		document.body.appendChild(panel)
-
+		typeInField('мо')
 		blurTo(panel)
 
-		expect(input.value).toBe('мо')
+		expect(owner.field.value).toBe('мо')
+		expect(editable.query).toBe('мо')
 	})
 
-	it('переход внутрь корня поле не трогает', async () => {
-		const { root, input, type, blurTo } = await setup(['Москва'])
+	it('переход внутрь корня поле и набранное не трогает', async () => {
+		const { owner, editable, root, typeInField, blurTo } = await setup(
+			['Москва'],
+			{},
+			{ panel: true },
+		)
 
-		type('мо')
+		typeInField('мо')
 		blurTo(root)
 
-		expect(input.value).toBe('мо')
+		expect(owner.field.value).toBe('мо')
+		expect(editable.query).toBe('мо')
 	})
 })
 
