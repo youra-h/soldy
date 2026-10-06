@@ -9,6 +9,15 @@ import type { TTableColumnsCollection, TTableColumnSource } from '../../../colum
 import type { ITableColumn } from '../../../column/types'
 import type { ITableRow } from '../../../row/types'
 
+/**
+ * Ширина, которую пользователь задал колонке ручкой, — то, что приложению
+ * сохранить: колонка и итог её ширины в px.
+ */
+export type TTableColumnResize = {
+	column: ITableColumn
+	width: number
+}
+
 export type TTableColumnsEvents = {
 	/**
 	 * Показанные колонки надо перечитать: сменились состав, порядок или
@@ -22,6 +31,13 @@ export type TTableColumnsEvents = {
 	 * аргумента — читатель берёт `cells` строки. Одна операция — одно событие
 	 */
 	'change:cells': () => void
+	/**
+	 * Пользователь задал ширину показанной колонки ручкой: отпустил её, если за
+	 * жест ширина сменилась, или сдвинул клавишей. Одно событие на действие —
+	 * по нему приложение сохраняет настройку. Протяжку видно по `change:width`
+	 * колонки
+	 */
+	'column:resize': (payload: TTableColumnResize) => void
 }
 
 /**

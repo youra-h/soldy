@@ -1,22 +1,32 @@
 /**
- * Table в настоящем браузере: раскладка колонок, линии строк и выбранная
- * строка в принудительных цветах — тема.
+ * Table в настоящем браузере: раскладка колонок, линии строк, ручка ширины и
+ * выбранная строка в принудительных цветах — тема.
  *
  * Колонки, ячейки, сортировку и выбор считает ядро
  * (`core/__tests__/table*.spec.ts`), разметку — адаптер
  * (`ui/vue/__tests__/table.spec.ts`). Здесь то, чего jsdom не считает вовсе:
- * ширины, коробки текста и цвета. Как таблица лежит, решает тема
- * (`themes/oren/src/components/table/_table.scss`): раскладка фиксированная,
- * колонка с шириной — ровно её, колонка без ширины — не уже распорки в
- * заголовке, линии — рамки строк, а не ячеек, и выбранная строка в режиме
- * принудительных цветов — системной подсветкой.
+ * ширины, коробки текста, имена в дереве доступности и цвета. Как таблица
+ * лежит, решает тема (`themes/oren/src/components/table/_table.scss`):
+ * раскладка фиксированная, колонка с шириной — ровно её, колонка без ширины —
+ * не уже распорки в заголовке, линии — рамки строк, а не ячеек, и выбранная
+ * строка в режиме принудительных цветов — системной подсветкой.
+ *
+ * Ручку ширины тянет настоящий ввод Playwright: только так видно, что захват
+ * указателя доводит протяжку за полосой до заголовка, а стрелка делает ровно
+ * один шаг — ядра, без нативного шага поля.
  */
 
 import { describe, it, expect, afterEach } from 'vitest'
 import { render, cleanup } from 'vitest-browser-vue'
+import { commands, page, userEvent } from 'vitest/browser'
 import { defineComponent, h } from 'vue'
 import { createEngineTable } from '@soldy-ui/core'
-import type { TTableCollection, TTableColumnSource, TTableRecord } from '@soldy-ui/core'
+import type {
+	ITableColumn,
+	TTableCollection,
+	TTableColumnSource,
+	TTableRecord,
+} from '@soldy-ui/core'
 import { Table } from '@soldy-ui/vue'
 
 import { find, pixel, style, systemColor } from './colors'
@@ -55,12 +65,16 @@ function engineOf(columns: readonly TTableColumnSource[] = [NAME, CITY, AGE]): T
 	return engine
 }
 
-/** Таблица в контейнере заданной ширины. */
-async function mount(engine: TTableCollection, width = 600): Promise<void> {
+/** Таблица в контейнере заданной ширины и направления письма. */
+async function mount(
+	engine: TTableCollection,
+	width = 600,
+	dir: 'ltr' | 'rtl' = 'ltr',
+): Promise<void> {
 	render(
 		defineComponent({
 			render: () =>
-				h('div', { style: `width: ${width}px` }, [
+				h('div', { dir, style: `width: ${width}px` }, [
 					h(Table, { engine, aria_label: 'Сотрудники' }),
 				]),
 		}),
@@ -189,5 +203,289 @@ describe('принудительные цвета', () => {
 
 		expect(pixel([style(selected).backgroundColor])).toEqual(pixel([systemColor('Highlight')]))
 		expect(pixel([style(selected).color])).toEqual(pixel([systemColor('HighlightText')]))
+	})
+})
+
+/**
+ * Ручка ширины — полоса у конца заголовка с полем `input type="range"`.
+ *
+ * Протяжку ведёт плагин, ширину считает ядро, а раскладка — тема: здесь
+ * видно, что край колонки идёт за указателем ровно на сдвиг, в LTR и в RTL,
+ * соседи с шириной стоят на месте, а имя заголовка и ползунка — ровно текст
+ * колонки, без значения поля.
+ *
+ * Таблица — в месте не шире окна прогона (414 px): протяжка за край окна
+ * прокрутила бы страницу, и сдвиг указателя разошёлся бы со сдвигом края.
+ */
+describe('ручка ширины', () => {
+	const PLACE = 400
+
+	const NAME_RESIZE: TTableColumnSource = {
+		...NAME,
+		resizable: true,
+		width: 120,
+		minWidth: 80,
+		maxWidth: 300,
+	}
+	const CITY_RESIZE: TTableColumnSource = { ...CITY, resizable: true }
+	const AGE_RESIZE: TTableColumnSource = { ...AGE, resizable: true, width: 100 }
+	const ALL = [NAME_RESIZE, CITY_RESIZE, AGE_RESIZE]
+
+	/** Движок без колонки выбора: ширины шапки — только колонки данных. */
+	function resizeEngine(columns: readonly TTableColumnSource[]): TTableCollection {
+		const engine = engineOf(columns)
+
+		engine.extensions.selection.mode = 'none'
+
+		return engine
+	}
+
+	/** Колонка коллекции по полю. */
+	function columnOf(engine: TTableCollection, field: string): ITableColumn {
+		const found = engine.extensions.columns.columns.find((column) => column.field === field)
+
+		if (!found) throw new Error(`колонки ${field} нет`)
+
+		return found
+	}
+
+	const width = (element: Element) => element.getBoundingClientRect().width
+
+	/** Полоса ручки в заголовке. */
+	const resizerOf = (header: Element) => find('.s-table-column__resizer', header)
+
+	/** Поле ручки в заголовке. */
+	function fieldOf(header: Element): HTMLInputElement {
+		const field = resizerOf(header).querySelector('input')
+
+		if (!field) throw new Error('поля ручки нет')
+
+		return field
+	}
+
+	/**
+	 * Указатель в точку страницы. Наводится на `body`: точка протяжки лежит за
+	 * полосой, и наведение на саму полосу Playwright не принял бы.
+	 */
+	async function pointAt(x: number, y: number): Promise<void> {
+		const body = document.body.getBoundingClientRect()
+
+		await userEvent.hover(document.body, { position: { x: x - body.left, y: y - body.top } })
+	}
+
+	/** Протяжка ручки заголовка: нажатие в центре полосы, сдвиг по оси окна, отпускание. */
+	async function drag(header: Element, dx: number): Promise<void> {
+		const box = resizerOf(header).getBoundingClientRect()
+		const x = box.left + box.width / 2
+		const y = box.top + box.height / 2
+
+		await pointAt(x, y)
+		await commands.mouseDown()
+
+		try {
+			await pointAt(x + dx / 2, y)
+			await pointAt(x + dx, y)
+		} finally {
+			await commands.mouseUp()
+		}
+	}
+
+	it('протяжка на Δ — колонка шире на Δ; отпускание — один commit', async () => {
+		const engine = resizeEngine(ALL)
+		const name = columnOf(engine, 'name')
+		const commits: number[] = []
+
+		name.events.on('commit', (value) => commits.push(value))
+		await mount(engine, PLACE)
+
+		const [header] = headers()
+
+		await drag(header, 40)
+
+		expect(Math.abs(width(header) - 160)).toBeLessThanOrEqual(EPSILON)
+		expect(name.width).toBe(160)
+		expect(commits).toEqual([160])
+		expect(header.dataset.resizing).toBe('false')
+	})
+
+	it('RTL: ручка у левого края заголовка — колонку расширяет протяжка влево', async () => {
+		const engine = resizeEngine(ALL)
+
+		await mount(engine, PLACE, 'rtl')
+
+		const [header] = headers()
+		const resizer = resizerOf(header).getBoundingClientRect()
+		const left = header.getBoundingClientRect().left
+
+		// Полоса — на границе колонок, у левого края заголовка
+		expect(Math.abs(resizer.left + resizer.width / 2 - left)).toBeLessThanOrEqual(EPSILON)
+
+		await drag(header, -40)
+
+		expect(Math.abs(width(header) - 160)).toBeLessThanOrEqual(EPSILON)
+		expect(columnOf(engine, 'name').width).toBe(160)
+	})
+
+	it('протяжка — в границах колонки', async () => {
+		await mount(resizeEngine(ALL), PLACE)
+
+		const [header] = headers()
+
+		await drag(header, 240)
+
+		expect(Math.abs(width(header) - 300)).toBeLessThanOrEqual(EPSILON)
+	})
+
+	it('колонка без своей ширины: ручка — с замером, протяжка — от ширины, которую видно', async () => {
+		await mount(resizeEngine([CITY_RESIZE, AGE_RESIZE]), PLACE)
+
+		const [header] = headers()
+
+		// Ширину решает тема, и ручка ждёт замера — кадром позже наблюдателя
+		await expect.poll(() => header.querySelector('.s-table-column__resizer')).not.toBeNull()
+
+		const before = width(header)
+
+		await drag(header, -30)
+
+		expect(Math.abs(width(header) - (before - 30))).toBeLessThanOrEqual(EPSILON)
+		expect(header.dataset.sized).toBe('true')
+	})
+
+	it('ширина у всех колонок — таблица шириной в их сумму, соседи на месте', async () => {
+		await mount(resizeEngine([NAME_RESIZE, { ...CITY_RESIZE, width: 150 }, AGE_RESIZE]), PLACE)
+
+		const table = find('.s-table')
+		const [name, city, age] = headers()
+
+		// Излишек места колонкам не раздаётся: таблица — сумма их ширин
+		expect(Math.abs(width(table) - 370)).toBeLessThanOrEqual(EPSILON)
+
+		const cityLeft = city.getBoundingClientRect().left
+
+		await drag(name, 20)
+
+		expect(Math.abs(width(name) - 140)).toBeLessThanOrEqual(EPSILON)
+		expect(Math.abs(width(city) - 150)).toBeLessThanOrEqual(EPSILON)
+		expect(Math.abs(width(age) - 100)).toBeLessThanOrEqual(EPSILON)
+		expect(Math.abs(width(table) - 390)).toBeLessThanOrEqual(EPSILON)
+		// Соседа сдвинул край колонки — ровно на её прибавку
+		expect(Math.abs(city.getBoundingClientRect().left - (cityLeft + 20))).toBeLessThanOrEqual(
+			EPSILON,
+		)
+	})
+
+	it('клавиши: стрелка — ровно один шаг ядра, Shift — крупный, Home и End — края', async () => {
+		const engine = resizeEngine(ALL)
+
+		await mount(engine, PLACE)
+
+		const [header] = headers()
+		const field = fieldOf(header)
+
+		field.focus()
+		await userEvent.keyboard('{ArrowRight}')
+
+		expect(columnOf(engine, 'name').width).toBe(130)
+		await expect.poll(() => field.value).toBe('130')
+		expect(Math.abs(width(header) - 130)).toBeLessThanOrEqual(EPSILON)
+
+		await userEvent.keyboard('{Shift>}{ArrowRight}{/Shift}')
+
+		expect(columnOf(engine, 'name').width).toBe(230)
+
+		await userEvent.keyboard('{End}')
+
+		expect(columnOf(engine, 'name').width).toBe(300)
+
+		await userEvent.keyboard('{Home}')
+
+		expect(columnOf(engine, 'name').width).toBe(80)
+	})
+
+	it('клавиши в RTL: ← — шире', async () => {
+		const engine = resizeEngine(ALL)
+
+		await mount(engine, PLACE, 'rtl')
+
+		fieldOf(headers()[0]).focus()
+		await userEvent.keyboard('{ArrowLeft}')
+
+		expect(columnOf(engine, 'name').width).toBe(130)
+	})
+
+	it('имя заголовка и ползунка ручки — ровно текст колонки, без значения поля', async () => {
+		await mount(resizeEngine(ALL), PLACE)
+
+		const [name, city] = headers()
+
+		expect(page.getByRole('columnheader', { name: 'Имя', exact: true }).query()).toBe(name)
+		expect(page.getByRole('columnheader', { name: 'Город', exact: true }).query()).toBe(city)
+		expect(page.getByRole('slider', { name: 'Имя', exact: true }).query()).toBe(fieldOf(name))
+		// Сортирует по-прежнему кнопка с тем же именем
+		expect(page.getByRole('button', { name: 'Имя', exact: true }).query()).toBe(
+			find('.s-table-column__sort', name),
+		)
+	})
+
+	it('полоса — зона захвата не уже 24 px; у последней колонки — в таблице', async () => {
+		await mount(resizeEngine(ALL), PLACE)
+
+		const table = find('.s-table').getBoundingClientRect()
+		const [name, , age] = headers()
+
+		expect(width(resizerOf(name))).toBeGreaterThanOrEqual(24 - EPSILON)
+		expect(width(resizerOf(age))).toBeGreaterThanOrEqual(24 - EPSILON)
+		expect(resizerOf(age).getBoundingClientRect().right).toBeLessThanOrEqual(
+			table.right + EPSILON,
+		)
+
+		// На самой границе колонок — полоса
+		const edge = name.getBoundingClientRect()
+		const hit = document.elementFromPoint(edge.right, edge.top + edge.height / 2)
+
+		expect(resizerOf(name).contains(hit)).toBe(true)
+	})
+
+	it('кнопка сортировки у полосы нажимается: где они встречаются, нажатие — кнопке', async () => {
+		await mount(resizeEngine(ALL), PLACE)
+
+		const age = headers()[2]
+		const button = find('.s-table-column__sort', age)
+		const box = button.getBoundingClientRect()
+		const resizer = resizerOf(age).getBoundingClientRect()
+
+		// Полоса последней колонки заходит на её кнопку, прижатую к концу
+		expect(resizer.left).toBeLessThan(box.right)
+
+		const x = (Math.max(box.left, resizer.left) + box.right) / 2
+		const y = box.top + box.height / 2
+
+		expect(button.contains(document.elementFromPoint(x, y))).toBe(true)
+
+		const body = document.body.getBoundingClientRect()
+
+		await userEvent.click(document.body, { position: { x: x - body.left, y: y - body.top } })
+
+		await expect.poll(() => age.dataset.sort).toBe('asc')
+		expect(Math.abs(width(age) - 100)).toBeLessThanOrEqual(EPSILON)
+	})
+
+	it('линия — под наведением; в принудительных цветах — системным цветом фокуса', async () => {
+		await mount(resizeEngine(ALL), PLACE)
+
+		const resizer = resizerOf(headers()[0])
+		const line = () => style(resizer, '::before')
+
+		expect(line().opacity).toBe('0')
+
+		const box = resizer.getBoundingClientRect()
+
+		await pointAt(box.left + box.width / 2, box.top + box.height / 2)
+		await expect.poll(() => line().opacity).toBe('1')
+
+		await forcedColors('active')
+
+		expect(pixel([line().backgroundColor])).toEqual(pixel([systemColor('Highlight')]))
 	})
 })

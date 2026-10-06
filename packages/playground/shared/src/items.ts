@@ -44,9 +44,27 @@ export const TABLE_ROWS = TABLE_RECORDS.map((data) => ({ data, disabled: data.id
 /**
  * Колонки таблицы стенда — данными: имя называет строки (`rowHeader`), все
  * сортируются, у возраста — ширина и выравнивание по концу, как у чисел.
+ * Ширину каждой меняет ручка у края заголовка — в границах колонки.
  */
 export const TABLE_COLUMNS = [
-	{ field: 'name', text: 'Имя', rowHeader: true, sortable: true },
-	{ field: 'city', text: 'Город', sortable: true },
-	{ field: 'age', text: 'Возраст', align: 'end' as const, width: 120, sortable: true },
+	{
+		field: 'name',
+		text: 'Имя',
+		rowHeader: true,
+		sortable: true,
+		resizable: true,
+		minWidth: 120,
+		maxWidth: 360,
+	},
+	{ field: 'city', text: 'Город', sortable: true, resizable: true, minWidth: 100, maxWidth: 300 },
+	{
+		field: 'age',
+		text: 'Возраст',
+		align: 'end' as const,
+		width: 120,
+		sortable: true,
+		resizable: true,
+		minWidth: 80,
+		maxWidth: 200,
+	},
 ]
