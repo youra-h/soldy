@@ -10,7 +10,7 @@
  * `v-model`.
  */
 
-import { describe, it, expect, afterEach } from 'vitest'
+import { describe, it, expect, afterEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { defineComponent, h, nextTick, ref, type VNode } from 'vue'
 import { DateInput } from '@soldy-ui/vue'
@@ -570,5 +570,109 @@ describe('слоты', () => {
 		)
 
 		expect(press(find('.s-test-calendar'), 'ArrowUp').defaultPrevented).toBe(false)
+	})
+})
+
+/**
+ * Кнопка очистки — та же, что у Input: часть поля (`FieldDescriptor`). Что
+ * очистка делает с частями, проверяет ядро (`core/__tests__/date-input.spec.ts`),
+ * форму кнопки — браузерный прогон.
+ */
+describe('кнопка очистки', () => {
+	it('без clearable кнопки нет, и обёртки без слотов тоже', async () => {
+		await render(() => h(DateInput, { locale: 'ru-RU', value: '2026-05-12' }))
+
+		expect(document.querySelector('.s-date-input__clear')).toBeNull()
+		expect(document.querySelector('.s-date-input__trailing')).toBeNull()
+	})
+
+	it('по clearable — первой в обёртке у конца, перед кнопкой календаря', async () => {
+		await render(() =>
+			h(
+				DateInput,
+				{ locale: 'ru-RU', clearable: true, name: 'Дата' },
+				{ trailing: () => h('button', { class: 's-test-calendar' }, 'Календарь') },
+			),
+		)
+
+		const parts = ['.s-date-input__clear', '.s-test-calendar']
+
+		expect(
+			[...find('.s-date-input__trailing').children].map((node) =>
+				parts.find((part) => node.matches(part)),
+			),
+		).toEqual(parts)
+		expect(find('.s-date-input__clear').getAttribute('aria-label')).toBe('Clear Дата')
+	})
+
+	it('клик очищает все части и значение, до корня не всплывает', async () => {
+		const date = ref<string | undefined>('2026-05-12')
+		const rootClick = vi.fn()
+
+		await render(() =>
+			h(DateInput, {
+				locale: 'ru-RU',
+				clearable: true,
+				value: date.value,
+				'onUpdate:value': (value: string | undefined) => {
+					date.value = value
+				},
+				onClick: rootClick,
+			}),
+		)
+
+		find('.s-date-input__clear').click()
+		await nextTick()
+
+		expect(date.value).toBeUndefined()
+		expect(findAll('.s-date-input__segment').map((part) => part.dataset.placeholder)).toEqual([
+			'true',
+			'true',
+			'true',
+		])
+		expect(find('input[type="hidden"]')).toHaveProperty('value', '')
+		expect(rootClick).not.toHaveBeenCalled()
+	})
+
+	it('выключена вместе с полем, readonly её не гасит', async () => {
+		const disabled = ref(false)
+
+		await render(() =>
+			h(DateInput, {
+				clearable: true,
+				readonly: true,
+				disabled: disabled.value,
+				value: '2026-05-12',
+			}),
+		)
+
+		expect(find('.s-date-input__clear').hasAttribute('disabled')).toBe(false)
+
+		disabled.value = true
+		await nextTick()
+
+		expect(find('.s-date-input__clear').hasAttribute('disabled')).toBe(true)
+	})
+
+	it('своя кнопка — слот clear с командой очистки в scope, без clearable', async () => {
+		await render(() =>
+			h(
+				DateInput,
+				{ locale: 'ru-RU', value: '2026-05-12' },
+				{
+					clear: ({ clear }: { clear: () => void }) =>
+						h('button', { class: 's-test-clear', onClick: () => clear() }),
+				},
+			),
+		)
+
+		find('.s-test-clear').click()
+		await nextTick()
+
+		expect(find('.s-date-input__trailing > .s-test-clear')).toBeTruthy()
+		expect(document.querySelector('.s-date-input__clear')).toBeNull()
+		expect(
+			findAll('.s-date-input__segment').every((part) => part.dataset.placeholder === 'true'),
+		).toBe(true)
 	})
 })

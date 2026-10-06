@@ -3,7 +3,6 @@ import type { TDefaultValues } from '../../base/component'
 import type { TSwipe, TSwipeSide } from '../../base/layer'
 import { TAria } from '../../../common'
 import type {
-	TAriaAttributes,
 	TDatasetAttributes,
 	TScrollBehavior,
 	TValuePayload,
@@ -53,9 +52,15 @@ import type {
  * состояние самого Select, не то, что пользователь видит внутри поля и что
  * объявляет скринридеру. Этим владеет отдельный инстанс `TInput` (`field`):
  * Select создаёт его один раз и синхронизирует с ним общие свойства
- * (`disabled`, `size`, `variant`, `readonly`, `required`, `name`, `id`).
- * Второго значения поля рядом с этим не заводим — единственный держатель
- * текста, плейсхолдера и ARIA поля это и есть `field`.
+ * (`disabled`, `size`, `variant`, `readonly`, `required`, `name`, `id`,
+ * `clearable`, `clearLabel`). Второго значения поля рядом с этим не заводим —
+ * единственный держатель текста, плейсхолдера и ARIA поля это и есть `field`.
+ *
+ * **Кнопку очистки рисует поле**, а не Select: `clearable` и `clearLabel` —
+ * входы Select, которые уходят полю, а её имя (`clearAria`) и команда
+ * (`clear`) — у поля. Очистку поля Select слышит событием `clear` поля: выбор
+ * снимает `TSelectExtension`, одним путём и у встроенной кнопки, и у своей в
+ * слоте `clear`.
  *
  * **Жест** (`swipe`, по умолчанию выключен) — смахнуть панель, чтобы закрыть:
  * Select — смахиваемый слой (`ISwipeable`), тянет его `TSwipePlugin`, общий с
@@ -95,8 +100,9 @@ export class TSelect<
 		open: false,
 		placeholder: '',
 		closeOnSelect: true,
-		clearable: false,
-		clearLabel: 'Clear',
+		// Кнопку рисует поле: умолчания — его, второй копии не заводим
+		clearable: TInput.defaultValues.clearable,
+		clearLabel: TInput.defaultValues.clearLabel,
 		editable: false,
 		editableMode: 'search',
 		removeOnBackspace: false,
@@ -133,6 +139,11 @@ export class TSelect<
 		const ctor = new.target as typeof TSelect
 		const own = props as Partial<ISelectProps>
 
+		// Кнопку очистки рисует поле: свои `clearable` и `clearLabel` Select
+		// отдаёт ему при создании и при каждой смене, как `name` и `size`
+		this._clearable = own.clearable ?? ctor.defaultValues.clearable
+		this._clearLabel = own.clearLabel ?? ctor.defaultValues.clearLabel
+
 		// Поле — экземпляр `TInput`, которым владеет Select, а не второе
 		// значение рядом со своим `value`. Шаблон передаёт его целиком через
 		// `ctrl` (`<Input :ctrl="field">`), как `tags` передаётся в `<Tags>`.
@@ -154,11 +165,12 @@ export class TSelect<
 			required: this.required,
 			name: this.name,
 			id: this.id,
+			clearable: this._clearable,
+			clearLabel: this._clearLabel,
 		})
 
 		this._placeholder = own.placeholder ?? ctor.defaultValues.placeholder
 		this._closeOnSelect = own.closeOnSelect ?? ctor.defaultValues.closeOnSelect
-		this._clearLabel = own.clearLabel ?? ctor.defaultValues.clearLabel
 
 		this._maxRows = own.maxRows ?? ctor.defaultValues.maxRows
 		this._scrollBehavior = own.scrollBehavior ?? ctor.defaultValues.scrollBehavior
@@ -166,7 +178,6 @@ export class TSelect<
 		this._applyContentFit(own.contentFit ?? ctor.defaultValues.contentFit)
 		this._applyIndicator(own.indicator ?? ctor.defaultValues.indicator)
 
-		this._applyClearable(own.clearable ?? ctor.defaultValues.clearable)
 		// `_editableMode` — до `_applyEditable`: тот вызывает
 		// `_syncAutocomplete()`, и на момент вызова режим должен быть уже
 		// установлен (сам `aria-autocomplete` от режима не зависит).
@@ -213,6 +224,8 @@ export class TSelect<
 		this.events.on('change:required', (value: boolean) => (this._field.required = value))
 		this.events.on('change:name', (value: string) => (this._field.name = value))
 		this.events.on('change:id', (value: string | undefined) => (this._field.id = value))
+		this.events.on('change:clearable', (value: boolean) => (this._field.clearable = value))
+		this.events.on('change:clearLabel', (value: string) => (this._field.clearLabel = value))
 	}
 
 	/**
@@ -302,6 +315,7 @@ export class TSelect<
 		this._sink.emit('change:closeOnSelect', value)
 	}
 
+	/** Показывать ли кнопку очистки. Рисует её поле: значение уходит ему. */
 	get clearable(): boolean {
 		return this._clearable
 	}
@@ -309,10 +323,11 @@ export class TSelect<
 	set clearable(value: boolean) {
 		if (this._clearable === value) return
 
-		this._applyClearable(value)
+		this._clearable = value
 		this._sink.emit('change:clearable', value)
 	}
 
+	/** Слово для кнопки очистки — уходит полю, имя кнопки собирает оно. */
 	get clearLabel(): string {
 		return this._clearLabel
 	}
@@ -514,11 +529,11 @@ export class TSelect<
 	/**
 	 * Подгонять ли ширину панели под ширину поля.
 	 *
-	 * Производное от `contentFit`, и вычисляется здесь по той же причине, что и
-	 * `clearAria`: панель телепортирована, ширину ей задаёт плагин якоря, и
-	 * шаблону остаётся только пробросить это в `anchor_matchWidth`. Оставь
-	 * выражение `contentFit !== 'expand'` в разметке — и оно повторится в
-	 * каждом из шести адаптеров.
+	 * Производное от `contentFit`, и вычисляется здесь, а не в разметке:
+	 * панель телепортирована, ширину ей задаёт плагин якоря, и шаблону остаётся
+	 * только пробросить это в `anchor_matchWidth`. Оставь выражение
+	 * `contentFit !== 'expand'` в разметке — и оно повторится в каждом из шести
+	 * адаптеров.
 	 *
 	 * Списку такого свойства не нужно: у него ширину меняет сам `data-*`.
 	 */
@@ -565,22 +580,6 @@ export class TSelect<
 		return { 'data-swiping': this._swiping ? 'true' : 'false' }
 	}
 
-	/**
-	 * Имя кнопки очистки — вместе с именем поля: «Clear Город».
-	 *
-	 * Без него на форме с пятью полями в списке элементов скринридера будет
-	 * пять одинаковых «Clear, кнопка», и выбрать нужную нельзя. Та же причина,
-	 * по которой у таба имя кнопки закрытия собирается с его текстом.
-	 *
-	 * Отдельный набор, а не часть `aria`: `aria` описывает само поле, а это —
-	 * соседняя кнопка. Один элемент — один набор.
-	 */
-	get clearAria(): TAriaAttributes {
-		const name = this._name.trim()
-
-		return { 'aria-label': name ? `${this._clearLabel} ${name}` : this._clearLabel }
-	}
-
 	protected _applyOpen(value: boolean): void {
 		this._open = value
 
@@ -602,11 +601,6 @@ export class TSelect<
 
 		this._swiping = value
 		this._sink.emit('change:swiping', value)
-	}
-
-	protected _applyClearable(value: boolean): void {
-		this._clearable = value
-		this._classes.toggle('--clearable', value)
 	}
 
 	protected _applyEditable(value: boolean): void {

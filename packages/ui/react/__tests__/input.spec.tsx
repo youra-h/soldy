@@ -350,6 +350,134 @@ describe('Input · серверный рендер', () => {
 	})
 })
 
+/**
+ * Кнопка очистки — часть поля, как у Vue (`input-clear.spec.ts`): по
+ * `clearable`, первой в обёртке у конца поля, перед `trailing`, с именем от
+ * ядра. Клик очищает поле командой ядра и до корня не всплывает; своя кнопка —
+ * слот `clear` с командой в scope.
+ */
+describe('Input · кнопка очистки', () => {
+	/** Кнопка очистки внутри корня. */
+	const clearOf = (root: HTMLElement) => find(root, '.s-input__clear', HTMLButtonElement)
+
+	function click(element: HTMLElement): void {
+		act(() => element.click())
+	}
+
+	it('без clearable кнопки нет, и обёртки у конца поля тоже', () => {
+		const el = mount(<Input value="текст" />).root()
+
+		expect(el.querySelector('.s-input__clear')).toBeNull()
+		expect(el.querySelector('.s-input__trailing')).toBeNull()
+	})
+
+	it('по clearable — первой в обёртке у конца, перед содержимым trailing', () => {
+		const el = mount(<Input clearable name="Город" trailing={<i className="probe" />} />).root()
+		const parts = ['.s-input__clear', '.probe']
+
+		expect(
+			[...find(el, '.s-input__trailing', HTMLElement).children].map((node) =>
+				parts.find((part) => node.matches(part)),
+			),
+		).toEqual(parts)
+		expect(el.classList.contains('s-input--clearable')).toBe(true)
+		expect(clearOf(el).getAttribute('aria-label')).toBe('Clear Город')
+	})
+
+	it('слово имени задаёт clearLabel', () => {
+		const el = mount(<Input clearable name="Город" clearLabel="Очистить" />).root()
+
+		expect(clearOf(el).getAttribute('aria-label')).toBe('Очистить Город')
+	})
+
+	it('размер — поля, выключена — вместе с полем, readonly её не гасит', () => {
+		const view = mount(<Input clearable size="lg" readonly />)
+
+		expect(clearOf(view.root()).classList.contains('s-button--size-lg')).toBe(true)
+		expect(clearOf(view.root()).disabled).toBe(false)
+
+		view.render(<Input clearable size="lg" readonly disabled />)
+
+		expect(clearOf(view.root()).disabled).toBe(true)
+	})
+
+	it('клик очищает поле и до корня не всплывает', async () => {
+		const ctrl = new TInput({ value: 'текст' })
+		const onChangeValue = vi.fn()
+		const onActionPress = vi.fn()
+		const view = mount(
+			<Input
+				ctrl={ctrl}
+				clearable
+				onChangeValue={onChangeValue}
+				onActionPress={onActionPress}
+			/>,
+		)
+		const outside = vi.fn()
+
+		view.container.addEventListener('click', outside)
+
+		// Кнопка очищает по клику своего TActionPlugin — он слушает узел с `ready`
+		await nextFrame()
+
+		click(clearOf(view.root()))
+
+		expect(ctrl.value).toBe('')
+		expect(field(view.root()).value).toBe('')
+		expect(onChangeValue).toHaveBeenCalledTimes(1)
+		expect(onActionPress).not.toHaveBeenCalled()
+		expect(outside).not.toHaveBeenCalled()
+	})
+
+	it('кнопка зовёт команду ядра — clear приходит и у пустого поля', async () => {
+		const ctrl = new TInput({ value: '' })
+		const clear = vi.fn()
+
+		ctrl.events.on('clear', clear)
+
+		const el = mount(<Input ctrl={ctrl} clearable />).root()
+
+		await nextFrame()
+
+		click(clearOf(el))
+
+		expect(clear).toHaveBeenCalledTimes(1)
+	})
+
+	/**
+	 * Своя кнопка заменяет встроенную целиком и рисуется, когда задана, — без
+	 * `clearable`. Команду очистки она берёт из scope и зовёт голой функцией.
+	 */
+	it('своя кнопка — слот clear с командой очистки в scope', () => {
+		const ctrl = new TInput({ value: 'текст' })
+		const el = mount(
+			<Input
+				ctrl={ctrl}
+				clear={({ clear }: { clear: () => void }) => (
+					<button type="button" className="probe" onClick={() => clear()} />
+				)}
+			/>,
+		).root()
+
+		expect(el.querySelector('.s-input__trailing > .probe')).not.toBeNull()
+		expect(el.querySelector('.s-input__clear')).toBeNull()
+
+		click(find(el, '.probe', HTMLButtonElement))
+
+		expect(ctrl.value).toBe('')
+		expect(field(el).value).toBe('')
+	})
+
+	it('своя кнопка при clearable — вместо встроенной; слот не атрибут', () => {
+		const el = mount(<Input clearable clear={<b className="probe" />} />).root()
+
+		expect(el.querySelector('.probe')).not.toBeNull()
+		expect(el.querySelector('.s-input__clear')).toBeNull()
+		expect(el.hasAttribute('clear')).toBe(false)
+		expect(field(el).hasAttribute('clear')).toBe(false)
+	})
+})
+
 describe('Input · типы', () => {
 	/**
 	 * Событие `input` дескриптора даёт колбэк `onInput` — то же имя, что у

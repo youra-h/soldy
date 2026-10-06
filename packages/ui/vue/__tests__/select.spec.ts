@@ -236,18 +236,33 @@ describe('опции', () => {
 	})
 })
 
+/**
+ * Кнопку очистки рисует поле — `Input` внутри Select (`.s-input__clear`):
+ * `clearable` и `clearLabel` Select отдаёт полю, и своей кнопки у Select нет.
+ */
 describe('кнопка очистки', () => {
 	it('без clearable её нет', () => {
-		expect(render().find('.s-select__clear').exists()).toBe(false)
+		expect(render().find('.s-input__clear').exists()).toBe(false)
+	})
+
+	it('кнопка — поля, первой в его слоте у конца, перед стрелкой', () => {
+		const wrapper = render({ clearable: true })
+		const slot = wrapper.find('.s-select__field > .s-input__trailing')
+		const parts = ['.s-input__clear', '.s-select__arrow']
+
+		expect(
+			[...slot.element.children].map((node) => parts.find((part) => node.matches(part))),
+		).toEqual(parts)
+		expect(wrapper.find('.s-select__clear').exists()).toBe(false)
 	})
 
 	it('имя собрано с именем поля', () => {
-		const clear = render({ clearable: true }).find('.s-select__clear')
+		const clear = render({ clearable: true }).find('.s-input__clear')
 
 		expect(clear.attributes('aria-label')).toBe('Clear Город')
 	})
 
-	it('клик сбрасывает выбранное значение', async () => {
+	it('клик сбрасывает выбранное значение и панель не открывает', async () => {
 		const wrapper = render({ clearable: true })
 
 		await nextFrame()
@@ -257,11 +272,20 @@ describe('кнопка очистки', () => {
 		await nextTick()
 
 		expect(wrapper.find('input').element.value).toBe('Тверь')
+		expect(isOpen()).toBe(false)
 
-		await wrapper.find('.s-select__clear').trigger('click')
+		await wrapper.find('.s-input__clear').trigger('click')
 		await nextTick()
 
 		expect(wrapper.find('input').element.value).toBe('')
+		expect(options().map((option) => option.getAttribute('aria-selected'))).toEqual([
+			'false',
+			'false',
+			'false',
+		])
+		// Клик кнопки до корня не всплыл: select-only тумблит панель кликом по
+		// корню, и очистка открыла бы её
+		expect(isOpen()).toBe(false)
 	})
 
 	/**
@@ -304,6 +328,23 @@ describe('кнопка очистки', () => {
 		expect(errors).toEqual([])
 		expect(select.find('input').element.value).toBe('')
 		expect(selected()).toEqual(['false', 'false'])
+	})
+
+	/**
+	 * Слот Select уходит полю: своя кнопка встаёт на место встроенной в его
+	 * слоте у конца и заменяет её целиком — и при `clearable`.
+	 */
+	it('своя кнопка заменяет встроенную целиком и стоит на её месте', () => {
+		wrapper = mount(Select, {
+			props: { name: 'Город', clearable: true },
+			slots: { clear: '<button class="probe-clear" />' },
+			attachTo: document.body,
+		})
+
+		expect(wrapper.find('.s-input__clear').exists()).toBe(false)
+		expect(wrapper.find('.s-select__field .s-input__trailing > .probe-clear').exists()).toBe(
+			true,
+		)
 	})
 })
 
@@ -530,7 +571,7 @@ describe('слоты поля', () => {
 			attachTo: document.body,
 		})
 
-		expect(wrapper.find('.s-select__clear').exists()).toBe(true)
+		expect(wrapper.find('.s-input__clear').exists()).toBe(true)
 		expect(wrapper.find('.s-select__arrow').exists()).toBe(true)
 		expect(wrapper.find('.probe-trailing').exists()).toBe(true)
 

@@ -1,4 +1,4 @@
-import { TInputControl } from '../../base/input-control'
+import { TField } from '../../base/field'
 import type { TDefaultValues } from '../../base/component'
 import { DEFAULT_LOCALE, TAria, TAttributes } from '../../../common'
 import type { TAttributesMap } from '../../../common'
@@ -96,20 +96,23 @@ const SEGMENT_ROLE = 'spinbutton'
  * которого не даст выбрать календарь: `unavailable` — та же функция, что у
  * календаря, — поле зовёт с днём значения (у даты со временем — с её днём) и
  * без якоря: начатого диапазона у поля нет.
+ *
+ * **Очистка** (`clear`, кнопка `clearable`) опустошает все части, и скрытые
+ * форматом тоже: смена вида или точности после неё скрытое время не вернёт.
  */
 export class TDateInput
-	extends TInputControl<TDateInputValue, IDateInputProps, TDateInputEvents>
+	extends TField<TDateInputValue, IDateInputProps, TDateInputEvents>
 	implements IDateInput
 {
 	static override baseClass = 's-date-input'
 
-	static defaultValues: typeof TInputControl.defaultValues &
+	static defaultValues: typeof TField.defaultValues &
 		TDefaultValues<
 			IDateInputProps,
 			'locale' | 'kind' | 'timePrecision',
 			'min' | 'max' | 'unavailable'
 		> = {
-		...TInputControl.defaultValues,
+		...TField.defaultValues,
 		min: undefined,
 		max: undefined,
 		unavailable: undefined,
@@ -503,6 +506,18 @@ export class TDateInput
 
 		super._valueChanged(oldValue)
 		this.events.emit('change:segments')
+	}
+
+	/**
+	 * Шаг очистки поля (`clear`): пусты все части, и скрытые форматом — время у
+	 * поля даты, секунда у точности до минуты, — а набранные цифры сброшены.
+	 * Так пустеют и недописанные части, у которых значения нет. Это правка
+	 * частей, как Delete: значение снимает сеттер, и запись можно отменить в
+	 * `change:value:before`.
+	 */
+	protected override _clearValue(): void {
+		this._typed = ''
+		this._commit({})
 	}
 
 	/**

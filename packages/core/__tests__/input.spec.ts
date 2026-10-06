@@ -131,3 +131,134 @@ describe('TInput', () => {
 		expect(input.readonly).toBe(true)
 	})
 })
+
+/**
+ * Кнопка очистки — часть поля (база `TField`, общая с полем даты): признак,
+ * модификатор, имя кнопки и команда `clear`. Рисует кнопку разметка поля.
+ */
+describe('TInput · очистка', () => {
+	it('кнопки нет по умолчанию; clearable — модификатор и change:clearable', () => {
+		const input = new TInput()
+		const handler = vi.fn()
+
+		expect(input.clearable).toBe(false)
+		expect(input.classes.toArray()).not.toContain('s-input--clearable')
+
+		input.events.on('change:clearable', handler)
+		input.clearable = true
+
+		expect(input.classes.toArray()).toContain('s-input--clearable')
+		expect(handler).toHaveBeenCalledWith(true)
+
+		input.clearable = true
+		expect(handler).toHaveBeenCalledTimes(1)
+	})
+
+	describe('clearAria — имя кнопки', () => {
+		it('собирается с именем поля, чтобы кнопки были различимы', () => {
+			// На форме с пятью полями пять одинаковых «Clear, кнопка» в списке
+			// элементов скринридера выбрать нельзя
+			expect(new TInput({ name: 'Город' }).clearAria['aria-label']).toBe('Clear Город')
+		})
+
+		it('без имени поля остаётся одно слово', () => {
+			expect(new TInput().clearAria['aria-label']).toBe('Clear')
+			expect(new TInput({ name: '  ' }).clearAria['aria-label']).toBe('Clear')
+		})
+
+		it('слово переопределяется — язык интерфейса решает потребитель', () => {
+			const input = new TInput({ name: 'Город', clearLabel: 'Очистить' })
+			const handler = vi.fn()
+
+			expect(input.clearAria['aria-label']).toBe('Очистить Город')
+
+			input.events.on('change:clearLabel', handler)
+			input.clearLabel = 'Стереть'
+
+			expect(input.clearAria['aria-label']).toBe('Стереть Город')
+			expect(handler).toHaveBeenCalledWith('Стереть')
+		})
+
+		it('отдельный набор: это имя соседней кнопки, а не самого поля', () => {
+			expect(new TInput({ name: 'Город' }).aria.has('aria-label')).toBe(false)
+		})
+	})
+
+	describe('clear', () => {
+		it('очищает значение до пустой строки, потом шлёт clear', () => {
+			const input = new TInput({ value: 'текст' })
+			const seen: string[] = []
+
+			input.events.on('change:value', ({ newValue }) => seen.push(`change:value ${newValue}`))
+			input.events.on('clear', () => seen.push(`clear ${input.value}`))
+
+			input.clear()
+
+			expect(input.value).toBe('')
+			expect(seen).toEqual(['change:value ', 'clear '])
+		})
+
+		/**
+		 * Владелец поля очищает своё по событию: в `multiple` поле Select пусто и
+		 * при выбранных тегах, а снять их обязана та же кнопка.
+		 */
+		it('у пустого поля clear приходит тоже', () => {
+			const input = new TInput({ value: '' })
+			const clear = vi.fn()
+			const change = vi.fn()
+
+			input.events.on('clear', clear)
+			input.events.on('change:value', change)
+
+			input.clear()
+
+			expect(clear).toHaveBeenCalledTimes(1)
+			expect(change).not.toHaveBeenCalled()
+		})
+
+		/**
+		 * Кнопку только для чтения не гасят: select-only Select и есть `readonly`,
+		 * а очистка там работает. Выключенное поле выключает кнопку, а код зовёт
+		 * команду когда угодно.
+		 */
+		it('readonly и disabled её не останавливают', () => {
+			const readonly = new TInput({ value: 'a', readonly: true })
+			const disabled = new TInput({ value: 'b', disabled: true })
+
+			readonly.clear()
+			disabled.clear()
+
+			expect(readonly.value).toBe('')
+			expect(disabled.value).toBe('')
+		})
+
+		it('отменённая в change:value:before запись оставляет значение', () => {
+			const input = new TInput({ value: 'текст' })
+
+			input.events.on('change:value:before', (e) => e.preventDefault())
+			input.clear()
+
+			expect(input.value).toBe('текст')
+		})
+
+		/**
+		 * Разметка отдаёт `clear` в scope слота без инстанса, и своя кнопка зовёт
+		 * его голой функцией: метод прототипа потерял бы там `this`.
+		 */
+		it('взятая без инстанса — работает', () => {
+			const input = new TInput({ value: 'текст' })
+			const { clear } = input
+
+			clear()
+
+			expect(input.value).toBe('')
+		})
+	})
+
+	it('getProps несёт clearable и clearLabel', () => {
+		expect(new TInput({ clearable: true, clearLabel: 'Очистить' }).getProps()).toMatchObject({
+			clearable: true,
+			clearLabel: 'Очистить',
+		})
+	})
+})

@@ -1,6 +1,6 @@
 /**
  * Поле ввода Input в настоящем браузере — то, что рисует тема: рамка под
- * курсором и стороны слотов.
+ * курсором, стороны слотов и форма кнопки очистки.
  *
  * Рамку под курсором тема красит только включённому полю. Корень Input —
  * `div`, и `:not(:disabled)` у него истинно всегда: выключено вложенное поле,
@@ -20,9 +20,10 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { render, cleanup } from 'vitest-browser-vue'
 import { userEvent } from 'vitest/browser'
 import { defineComponent, h, nextTick, type VNode } from 'vue'
-import { COMPONENT_VARIANTS } from '@soldy-ui/playground-shared'
+import { COMPONENT_SIZES, COMPONENT_VARIANTS } from '@soldy-ui/playground-shared'
 import { Input } from '@soldy-ui/vue'
 
+import { expectClearSquare } from './clear-button'
 import { find, settled, style } from './colors'
 
 import '@soldy-ui/theme-oren'
@@ -159,5 +160,18 @@ describe('стороны слотов', () => {
 
 		expect(Math.abs(rtl.start - ltr.start), 'отступ leading').toBeLessThanOrEqual(EPSILON)
 		expect(Math.abs(rtl.end - ltr.end), 'отступ trailing').toBeLessThanOrEqual(EPSILON)
+	})
+})
+
+/**
+ * Кнопка очистки — квадрат со стороной в строку слота на любом размере
+ * (`clear-button.ts`). Своего размера у кнопки в разметке нет: высоту строки
+ * слоту даёт коробка поля по шкале размера.
+ */
+describe.each(COMPONENT_SIZES)('размер %s: кнопка очистки', (size) => {
+	it('квадрат высотой в строку слота, иконка внутри', async () => {
+		await show(() => h(Input, { clearable: true, size }))
+
+		expectClearSquare(find('.s-input__clear'), find('.s-input__trailing'), size)
 	})
 })

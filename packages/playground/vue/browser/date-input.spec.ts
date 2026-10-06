@@ -27,7 +27,10 @@ import { commands, userEvent } from 'vitest/browser'
 import { defineComponent, h, nextTick } from 'vue'
 import { TDateInput } from '@soldy-ui/core'
 import type { IDateInputProps } from '@soldy-ui/core'
+import { COMPONENT_SIZES } from '@soldy-ui/playground-shared'
 import { DateInput } from '@soldy-ui/vue'
+
+import { expectClearSquare } from './clear-button'
 
 import '@soldy-ui/theme-oren'
 
@@ -697,5 +700,33 @@ describe('ширина поля', () => {
 		}
 
 		expect(segment('second').textContent).toBe('59')
+	})
+})
+
+/**
+ * Кнопка очистки — та же, что у Input: квадрат со стороной в строку слота на
+ * любом размере (`clear-button.ts`), первой в слоте у конца поля. Нажатие
+ * очищает все части, а фокус на часть не уводит: кнопка — в слоте, и его
+ * нажатия плагин указателя поля не трогает.
+ */
+describe('кнопка очистки', () => {
+	it.each(COMPONENT_SIZES)('%s: квадрат высотой в строку слота, иконка внутри', async (size) => {
+		await show({ size }, { clearable: true })
+
+		expectClearSquare(find('.s-date-input__clear'), find('.s-date-input__trailing'), size)
+	})
+
+	it('нажатие очищает все части, фокус остаётся на кнопке', async () => {
+		const ctrl = await show({}, { clearable: true })
+
+		await userEvent.click(find('.s-date-input__clear'))
+
+		expect(ctrl.value).toBeUndefined()
+		expect(document.activeElement).toBe(find('.s-date-input__clear'))
+		expect(
+			[...document.querySelectorAll<HTMLElement>('.s-date-input__segment')].map(
+				(part) => part.dataset.placeholder,
+			),
+		).toEqual(['true', 'true', 'true'])
 	})
 })

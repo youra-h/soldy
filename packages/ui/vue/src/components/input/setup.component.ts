@@ -1,6 +1,7 @@
 import { InputDescriptor } from '@soldy-ui/setup'
 import {
 	useAdapter,
+	useIcon,
 	useSplitAttrs,
 	createVueAdapterContext,
 	type SetupContext,
@@ -17,6 +18,10 @@ export default {
 			props,
 		})
 
-		return { ...useAdapter(adapter, props, emit), ...useSplitAttrs() }
+		return {
+			...useAdapter(adapter, props, emit),
+			...useSplitAttrs(),
+			clearIconTag: useIcon('close'),
+		}
 	},
 }
