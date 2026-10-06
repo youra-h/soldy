@@ -1,10 +1,10 @@
 import { TBasePlugin } from '../../../base'
 import type { IPluginContext } from '../../../base'
+import { afterTransitions } from '../../../utils'
 import { TElementPlugin } from '../../element'
 import { bindOverlayOpen } from '../open-state'
 import type { IOverlayOpenState } from '../types'
 import { lockScroll, unlockScroll } from './lock'
-import { afterTransitions } from './transitions'
 import type { IScrollLockPluginOptions, TScrollLockPluginEvents } from './types'
 
 /**
@@ -30,7 +30,7 @@ import type { IScrollLockPluginOptions, TScrollLockPluginEvents } from './types'
  * — гаснет или уезжает переходом темы, — и полоса прокрутки, вернувшись
  * сразу, сузила бы область просмотра: окно по центру переехало бы на
  * полширины полосы, панель у края — на всю. Поэтому, выключившись, плагин
- * держит замок, пока корень не доиграет переходы закрытия (`transitions.ts`),
+ * держит замок, пока корень не доиграет переходы закрытия (`afterTransitions`),
  * и только потом отдаёт свой счёт. Открыли снова, пока он ждёт, — ожидание
  * отменяется, а счёт остаётся прежним: замок и так лежит. Снятый корень и
  * `destroy()` отпускают замок сразу: ждать перехода не у кого.

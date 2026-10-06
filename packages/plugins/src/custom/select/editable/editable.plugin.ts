@@ -8,6 +8,7 @@ import type {
 } from '@soldy-ui/core'
 import { TBasePlugin } from '../../../base'
 import type { IPluginContext } from '../../../base'
+import { afterTransitions } from '../../../utils'
 import { TDismissPlugin } from '../../dismiss'
 import { TElementPlugin } from '../../element'
 import { TCollectionBundlesPlugin } from '../../collection'
@@ -45,11 +46,11 @@ import type { TEditablePluginEvents } from './types'
  * `TInputPlugin` (`el.querySelector('input')`) — разметку и адаптеры трогать
  * не пришлось.
  *
- * **Возврат поля** — одна точка (`_returnField`), которая пишет
- * `owner.field.value` — экземпляр `TInput`, которым владеет Select (не
- * `<input>` напрямую: DOM больше нигде здесь не трогается). Закрытие панели
- * её не вызывает (владелец закрывает панель кликом по стрелке, оставляя
- * набранное как есть); точку вызывают два повода:
+ * **Возврат поля** — одна точка (`_returnField`): снимает набранное и отбор и
+ * пишет текст возврата в `owner.field.value` — экземпляр `TInput`, которым
+ * владеет Select (не `<input>` напрямую: DOM больше нигде здесь не
+ * трогается). Закрытие панели её не вызывает (владелец закрывает панель
+ * кликом по стрелке, оставляя набранное как есть); точку вызывают два повода:
  *
  * - второй `Escape` на уже закрытой панели (первый только закрывает —
  *   событие `escape` шлёт клавиатурная стратегия `TEditableKeyboardStrategy`,
@@ -57,11 +58,13 @@ import type { TEditablePluginEvents } from './types'
  *   `TSelectKeyboardPlugin`);
  * - `focusout`, когда фокус ушёл и с корня, и с телепортированной панели —
  *   границы те же, что у нажатия мимо (`TDismissPlugin.isInside`), и переход
- *   внутрь панели ничего не меняет;
- * - смена `editable`/`editableMode` — режим сменился, значит набранное и
- *   отбор относились к прежнему режиму и больше не актуальны. Никакой
- *   умной логики (что оставить, а что сбросить) для этого редкого перехода
- *   нет намеренно: сбрасывается всё, как при обычном возврате поля.
+ *   внутрь панели ничего не меняет.
+ *
+ * Смена `editable`/`editableMode` пишет в поле тот же текст возврата: режим
+ * сменился, значит набранное и отбор относились к прежнему режиму и больше
+ * не актуальны. Никакой умной логики (что оставить, а что сбросить) для
+ * этого редкого перехода нет намеренно: сбрасывается всё, как при обычном
+ * возврате поля, только отбор — сразу (см. ниже).
  *
  * Выбор сюда не входит: текст выбранного (`single`) и очистку поля
  * (`multiple`) пишет сама `TSelectExtension` — `owner.field.value` меняется
@@ -75,6 +78,37 @@ import type { TEditablePluginEvents } from './types'
  * выбор пользователя (`chooseItem`, `clear`). Смена `value` или состава,
  * закрытие тега во время ввода поле не трогают, и сброс на
  * `change:selection` оставил бы набранное в поле, развернув список целиком.
+ *
+ * **Отбор снимается, когда закрытая панель догасла.** Набор обычно кончается
+ * закрытием панели — выбором в `single`, Tab с поля, нажатием мимо, — а
+ * панель гаснет переходом темы и до его конца остаётся на экране. Сними
+ * плагин отбор тем же действием, гаснущая панель на миг показала бы весь
+ * список и вытянулась бы до его высоты. Поэтому выбор, второй `Escape` и
+ * уход фокуса снимают набранное и пишут поле сразу — это поле, а не панель, —
+ * а отбор (`filter.query`) снимают, когда панель доиграла свои переходы
+ * (`afterTransitions` — то же ожидание, что у замка прокрутки). Закрытая
+ * панель показывает то, что показывала. Панель открыта (выбор в `multiple`,
+ * `closeOnSelect: false`) или её узла нет (нет `TDismissPlugin`, корень не
+ * объявлен, рендер на сервере) — ждать нечего, и отбор снимается сразу.
+ * Ожидание одно: новый повод заменяет прежнее.
+ *
+ * Пока плагин ждёт:
+ *
+ * - панель открыли снова — отбор снимается сразу: поле уже показывает
+ *   выбранное или возвращённый текст, и суженная панель не дала бы увидеть
+ *   остальные опции без нового ввода;
+ * - в поле снова печатают — ожидание отменяется до записи набранного: отбор
+ *   теперь пишет ввод, а открытие панели из него иначе сняло бы только что
+ *   набранное;
+ * - отбор сменил кто-то другой (в `none` отбором ведает приложение) —
+ *   ожидание отменяется: это уже не тот отбор, который плагин собирался
+ *   снять;
+ * - `destroy()` — отбор снимается сразу: движок снаружи переживает
+ *   компонент, и ждать исчезания панели больше некому.
+ *
+ * Смена `editable`/`editableMode` снимает отбор сразу: это не закрытие
+ * панели, а отложенная запись стёрла бы отбор, который приложение ставит
+ * после перехода в `none`.
  *
  * Реакция на сам ввод (`_handleInput`) слушает DOM-событие `input`
  * вложенного `<input>`, а не `change:value` у `field`: `_returnField` тоже
@@ -90,6 +124,8 @@ export class TEditablePlugin extends TBasePlugin<any, TEditablePluginEvents> {
 	private _listening = false
 	private _focusListening = false
 	private _query = ''
+	/** Отмена ожидания, пока закрытая панель догаснет; `null` — плагин не ждёт. */
+	private _stopWaiting: (() => void) | null = null
 	private readonly _onInput = this._handleInput.bind(this)
 	private readonly _onFocusOut = this._handleFocusOut.bind(this)
 
@@ -127,20 +163,37 @@ export class TEditablePlugin extends TBasePlugin<any, TEditablePluginEvents> {
 			// оставил бы панель суженной прежним запросом. Именно на выбор
 			// пользователя (`choose`), а не на любую смену выбора: её поле
 			// переживает, пока в нём печатают, и отбор обязан пережить тоже.
+			// Отбор — когда закрытая выбором панель догаснет (см. JSDoc класса)
 			this._listenTo(this._selectExtension?.events, 'choose', () => {
-				if (this._owner?.editable) this._resetQuery()
+				if (this._owner?.editable) this._resetQueryAfterPanel()
 			})
+
+			// Отбор, который сменили, пока плагин ждал, — уже не тот, что он
+			// собирался снять
+			this._listenTo(this._filterExtension?.events, 'change:query', () =>
+				this._cancelFilterReset(),
+			)
 		})
 
-		// Оба свойства решают одно: слушать ввод или нет
+		// Оба свойства решают одно: слушать ввод или нет. Набранное и отбор
+		// относились к прежнему режиму и снимаются сразу: смена режима — не
+		// закрытие панели, и ждать её нечего
 		this._listenTo(this._owner?.events, 'change:editable', () => {
 			this._syncListener()
 			this._syncFocusListener()
-			this._returnField()
+			this._resetQuery()
+			this._writeFieldText()
 		})
 		this._listenTo(this._owner?.events, 'change:editableMode', () => {
 			this._syncListener()
-			this._returnField()
+			this._resetQuery()
+			this._writeFieldText()
+		})
+
+		// Панель открыли, пока плагин ждал её исчезания, — отбор снимается
+		// сразу: ждать больше нечего
+		this._listenTo(this._owner?.events, 'change:open', (open) => {
+			if (open) this._flushFilterReset()
 		})
 
 		// Escape на уже закрытой панели — вторая половина двойного Escape
@@ -148,6 +201,9 @@ export class TEditablePlugin extends TBasePlugin<any, TEditablePluginEvents> {
 	}
 
 	override destroy(): void {
+		// Движок снаружи переживает компонент: отбор, который ждал исчезания
+		// панели, снимается сейчас — ждать больше некому
+		this._flushFilterReset()
 		this._unlisten()
 		this._unlistenFocus()
 
@@ -192,6 +248,11 @@ export class TEditablePlugin extends TBasePlugin<any, TEditablePluginEvents> {
 	}
 
 	private _handleInput(event: Event): void {
+		// Снова печатают, пока закрытая панель догасала: отбор теперь пишет
+		// ввод. Отменить ожидание — до записи: иначе открытие панели из
+		// `_filter` и `_highlight` сняло бы только что набранный отбор
+		this._cancelFilterReset()
+
 		const target = event.target as HTMLInputElement | null
 		const value = target?.value ?? ''
 
@@ -294,18 +355,63 @@ export class TEditablePlugin extends TBasePlugin<any, TEditablePluginEvents> {
 	/**
 	 * Единая точка возврата поля: снимает набранное и отбор, пишет текст
 	 * возврата в `owner.field.value`. Вызывают второй `Escape` на закрытой
-	 * панели и уход фокуса — см. JSDoc класса.
+	 * панели и уход фокуса — см. JSDoc класса. Отбор — когда закрытая панель
+	 * догаснет.
 	 */
 	private _returnField(): void {
-		this._resetQuery()
+		this._resetQueryAfterPanel()
+		this._writeFieldText()
+	}
 
+	/** Текст возврата — в `owner.field.value`; набранное и отбор не трогает. */
+	private _writeFieldText(): void {
 		if (this._owner) this._owner.field.value = this._fieldText()
 	}
 
-	/** Сбросить только набранное и отбор, не трогая текст поля. */
+	/** Сбросить набранное и отбор сразу, не трогая текст поля. */
 	private _resetQuery(): void {
 		this._setQuery('')
+		this._clearFilter()
+	}
+
+	/**
+	 * Сбросить набранное сразу, а отбор — когда закрытая панель доиграет свои
+	 * переходы (см. JSDoc класса). Панель открыта или её узла нет — ждать
+	 * нечего, и отбор снимается сразу. Ожидание одно: новый вызов заменяет
+	 * прежнее.
+	 */
+	private _resetQueryAfterPanel(): void {
+		const panel = this._owner?.open ? null : (this._dismiss?.findPanel() ?? null)
+
+		if (!panel) {
+			this._resetQuery()
+
+			return
+		}
+
+		this._setQuery('')
+		this._cancelFilterReset()
+		this._stopWaiting = afterTransitions(panel, () => {
+			this._stopWaiting = null
+			this._filterExtension?.clear()
+		})
+	}
+
+	/** Снять отбор сейчас; ожидание исчезания панели, если шло, больше не нужно. */
+	private _clearFilter(): void {
+		this._cancelFilterReset()
 		this._filterExtension?.clear()
+	}
+
+	/** Плагин ждёт исчезания панели — снять отбор сейчас, не дожидаясь. */
+	private _flushFilterReset(): void {
+		if (this._stopWaiting) this._clearFilter()
+	}
+
+	/** Перестать ждать: отбор остаётся, каким его застали. */
+	private _cancelFilterReset(): void {
+		this._stopWaiting?.()
+		this._stopWaiting = null
 	}
 
 	private get _filterExtension(): IFilterExtension<ISelectItem> | undefined {

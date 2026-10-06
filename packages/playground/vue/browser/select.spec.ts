@@ -15,7 +15,7 @@ import { userEvent } from 'vitest/browser'
 import { defineComponent, h, nextTick } from 'vue'
 import { Select, SelectItem } from '@soldy-ui/vue'
 
-import { expectFadesInPlace, ownTransitionRuns, settled } from './transitions'
+import { expectFadesInPlace, ownTransitionRuns, settled, whileLeaving } from './transitions'
 
 import '@soldy-ui/theme-oren'
 
@@ -24,12 +24,12 @@ const nextFrame = () => new Promise<void>((resolve) => requestAnimationFrame(() 
 const CITIES = ['Москва', 'Тверь', 'Тула', 'Казань']
 
 /** Select на странице, корень объявлен плагинам: `TElementPlugin` ждёт кадр. */
-const show = async () => {
+const show = async (props: Record<string, unknown> = {}) => {
 	render(
 		defineComponent({
 			render: () =>
 				h('div', { style: 'padding: 40px; width: 320px' }, [
-					h(Select, null, {
+					h(Select, props, {
 						default: () =>
 							CITIES.map((text, index) =>
 								h(SelectItem, { key: text, value: String(index), text }),
@@ -55,6 +55,28 @@ const find = (selector: string): HTMLElement => {
 
 const field = () => find('.s-select__field input')
 const panel = () => find('.s-select__panel')
+
+/** Опции панели — по тексту. */
+const options = (): HTMLElement[] => [...panel().querySelectorAll<HTMLElement>('.s-select-item')]
+
+/**
+ * Тексты опций, которые не спрятал отбор. Опцию из разметки отбор прячет её
+ * `visible` (`display: none`), а не убирает из разметки, и у опции своё
+ * значение `display` и тогда, когда пропала вся панель.
+ */
+const shownOptions = (): string[] =>
+	options()
+		.filter((option) => getComputedStyle(option).display !== 'none')
+		.map((option) => option.textContent?.trim() ?? '')
+
+/** Опция с текстом; нет её — тест падает здесь, а не на нажатии. */
+const option = (text: string): HTMLElement => {
+	const found = options().find((element) => element.textContent?.trim() === text)
+
+	if (!found) throw new Error(`${text}: опции нет`)
+
+	return found
+}
 
 beforeEach(() => {
 	document.documentElement.dataset.theme = 'oren'
@@ -88,4 +110,55 @@ describe('появление и исчезание', () => {
 
 		await expectFadesInPlace(panel(), () => userEvent.keyboard('{Escape}'))
 	})
+})
+
+/**
+ * Набор с отбором обычно кончается закрытием панели — выбором в `single`, Tab
+ * с поля, нажатием мимо, — и набранное плагин ввода снимает тем же действием.
+ * Отбор он снимает, только когда закрытая панель догасла (`TEditablePlugin`):
+ * иначе гаснущая панель на миг показала бы весь список и вытянулась бы до его
+ * высоты — вспышка. Закрытая панель показывает то, что показывала.
+ */
+describe('отбор: гаснущая панель держит отобранное', () => {
+	it.each<[string, () => Promise<unknown>]>([
+		['выбор кликом', () => userEvent.click(option('Москва'))],
+		['Tab с поля', () => userEvent.keyboard('{Tab}')],
+	])(
+		'%s — пока панель гаснет, в ней одна опция и высота прежняя, догасла — отбор снят',
+		async (_, close) => {
+			await show({ editable: true, editableMode: 'filter' })
+
+			await userEvent.click(field())
+			await userEvent.keyboard('Мо')
+			await expect.poll(() => panel().dataset.open).toBe('true')
+			await settled(panel())
+
+			expect(shownOptions()).toEqual(['Москва'])
+
+			const { height } = panel().getBoundingClientRect()
+
+			await close()
+
+			const seen = await whileLeaving(panel(), () => {
+				expect(panel().dataset.open, 'закрыта').toBe('false')
+				expect(shownOptions(), 'опции гаснущей панели').toEqual(['Москва'])
+				expect(
+					Math.abs(panel().getBoundingClientRect().height - height),
+					'высота гаснущей панели',
+				).toBeLessThan(1)
+			})
+
+			// Исчезни панель сразу, проверять было бы нечего, и сторож прошёл бы сам
+			expect(seen, 'кадров на экране после закрытия').toBeGreaterThan(0)
+
+			// Догасла — отбор снят уже закрытой, и открытая снова панель
+			// показывает весь список
+			await expect.poll(shownOptions).toEqual(CITIES)
+
+			await userEvent.click(find('.s-select__arrow'))
+			await expect.poll(() => panel().dataset.open).toBe('true')
+
+			expect(shownOptions()).toEqual(CITIES)
+		},
+	)
 })

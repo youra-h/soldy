@@ -213,6 +213,10 @@ describe('ввод в поле под отбором', () => {
 	 * через `:ctrl`, поэтому запись реально меняет значение и `<input>`
 	 * перерисовывается сам — раньше на этом месте была прямая запись в DOM,
 	 * которую перетирал ближайший рендер `Input`.
+	 *
+	 * Отбор возврат снимает, когда закрытая панель догасла: иначе гаснущая
+	 * панель на миг показала бы весь список. Переходов jsdom не ведёт, и
+	 * ожидание кончается кадром позже; поле возвращается сразу.
 	 */
 	it('первый Escape закрывает панель и не трогает отбор, второй — снимает и возвращает текст', async () => {
 		const { wrapper, engine } = await renderSelect({
@@ -233,6 +237,12 @@ describe('ввод в поле под отбором', () => {
 		expect((wrapper.find('input').element as HTMLInputElement).value).toBe('тре')
 
 		await wrapper.find('input').trigger('keydown', { key: 'Escape' })
+		await nextTick()
+
+		expect((wrapper.find('input').element as HTMLInputElement).value).toBe('Первый')
+		expect(engine.extensions.filter.query).toBe('тре')
+
+		await nextFrame()
 		await nextTick()
 
 		expect(engine.extensions.filter.query).toBe('')
