@@ -24,6 +24,7 @@ import {
 	TElementPlugin,
 	TCollectionBundlesPlugin,
 	TCollectionElements,
+	TDismissPlugin,
 	TListItemPlugin,
 	TPluginBundle,
 	TSelectItemIdsPlugin,
@@ -31,12 +32,27 @@ import {
 
 const nextFrame = () => new Promise((resolve) => requestAnimationFrame(resolve))
 
+/** Все микрозадачи позади: цепочка ожидания `finished` отработала. */
+const flush = () => new Promise((resolve) => setTimeout(resolve, 0))
+
+/** Плагины, которые тест уничтожает после себя: они слушают документ. */
+const destroyAfter: Array<{ destroy(): void }> = []
+
 /**
  * Собирает Select с коллекцией, клавиатурой и вводом вручную — так же, как
  * `select-keyboard.spec.ts`, плюс настоящий `<input>` внутри корня: плагин
  * ищет его тем же способом, что `TInputPlugin` (`el.querySelector('input')`).
+ *
+ * `panel: true` — ещё и панель, как в `SelectDescriptor`: `TDismissPlugin` и
+ * узел с его пометкой владельца (`ownerAttribute`) в документе, как
+ * телепортированный Frame. По этому узлу плагин ввода узнаёт, что закрытая
+ * панель ещё гаснет. Без неё ждать нечего, и отбор снимается сразу.
  */
-async function setup(texts: string[], props: Partial<ISelectProps> = {}) {
+async function setup(
+	texts: string[],
+	props: Partial<ISelectProps> = {},
+	{ panel: withPanel = false }: { panel?: boolean } = {},
+) {
 	const owner = new TSelect({ editable: true, editableMode: 'search', ...props })
 	const facade = new TSelectCollectionFacade({}, { owner })
 	const items = texts.map((text) => new TSelectItem({ value: text.toLowerCase(), text }))
@@ -54,14 +70,39 @@ async function setup(texts: string[], props: Partial<ISelectProps> = {}) {
 	const elements = new TCollectionElements()
 	const keyboard = new TSelectKeyboardPlugin()
 	const editable = new TEditablePlugin()
+	const dismiss = new TDismissPlugin()
 
-	const ctx = createPluginContext(owner, [rootElement, bundles, elements, keyboard])
+	const ctx = createPluginContext(owner, [
+		rootElement,
+		bundles,
+		elements,
+		keyboard,
+		...(withPanel ? [dismiss] : []),
+	])
 
 	bundles.install(ctx)
 	elements.install(ctx)
+
+	// Нажатие мимо и пометка панели — раньше клавиатуры и ввода, как в
+	// `SelectDescriptor`
+	if (withPanel) {
+		dismiss.install(ctx)
+		destroyAfter.push(editable, dismiss)
+	}
+
 	keyboard.install(ctx)
 	// Подключается после клавиатуры — так же, как в `SelectDescriptor`
 	editable.install(ctx)
+
+	const panel = document.createElement('div')
+
+	if (withPanel) {
+		for (const [name, value] of Object.entries(dismiss.ownerAttribute)) {
+			panel.setAttribute(name, value)
+		}
+
+		document.body.appendChild(panel)
+	}
 
 	for (const item of items) {
 		const node = document.createElement('div')
@@ -122,6 +163,7 @@ async function setup(texts: string[], props: Partial<ISelectProps> = {}) {
 		editable,
 		input,
 		root,
+		panel,
 		type,
 		typeInField,
 		press,
@@ -129,7 +171,36 @@ async function setup(texts: string[], props: Partial<ISelectProps> = {}) {
 	}
 }
 
+/**
+ * CSS-переход, как его отдаёт `getAnimations()`, — как в
+ * `plugins/__tests__/scroll-lock.plugin.spec.ts`. Web Animations jsdom не
+ * знает, поэтому переходы панели подставляет тест, и кончает их он же:
+ * `finish()` — доиграл.
+ */
+class TProbeTransition {
+	readonly finished: Promise<TProbeTransition>
+	finish: () => void = () => {}
+
+	constructor() {
+		this.finished = new Promise((resolve) => {
+			this.finish = () => resolve(this)
+		})
+	}
+}
+
+/**
+ * Web Animations у окна и панели: класс перехода — в окне, как у браузера, а
+ * переходы панели отдаёт `current()` на каждый вызов.
+ */
+function stubTransitions(panel: Element, current: () => object[]): void {
+	Object.defineProperty(window, 'CSSTransition', { value: TProbeTransition, configurable: true })
+	Object.defineProperty(panel, 'getAnimations', { value: current, configurable: true })
+}
+
 afterEach(() => {
+	for (const plugin of destroyAfter.splice(0)) plugin.destroy()
+
+	Reflect.deleteProperty(window, 'CSSTransition')
 	document.body.innerHTML = ''
 })
 
@@ -635,5 +706,258 @@ describe('двойной Escape после смены списка', () => {
 		press('Escape')
 
 		expect(owner.field.value).toBe('Москва, центр')
+	})
+})
+
+/**
+ * Набор с отбором обычно кончается закрытием панели, а панель гаснет
+ * переходом темы и до его конца остаётся на экране. Набранное и поле плагин
+ * меняет сразу — это поле, а не панель, — а отбор снимает, когда закрытая
+ * панель доиграла свои переходы: снятый тем же действием, он показал бы в
+ * гаснущей панели весь список. Как это выглядит на экране —
+ * `playground/vue/browser/select.spec.ts`, «отбор: гаснущая панель держит
+ * отобранное».
+ */
+describe('отбор снимается, когда закрытая панель догасла', () => {
+	const CITIES = ['Москва', 'Тверь', 'Тула']
+
+	type TSelectSetup = Awaited<ReturnType<typeof setup>>
+
+	const shownTexts = ({ facade }: TSelectSetup) => facade.shown.map((item) => item.text)
+	const filterQuery = ({ facade }: TSelectSetup) => facade.engine.extensions.filter.query
+
+	/** Select с панелью под отбором «ту»: панель открыта, показана одна «Тула». */
+	async function filtered(props: Partial<ISelectProps> = {}): Promise<TSelectSetup> {
+		const select = await setup(CITIES, { editableMode: 'filter', ...props }, { panel: true })
+
+		select.typeInField('ту')
+
+		expect(select.owner.open).toBe(true)
+		expect(shownTexts(select)).toEqual(['Тула'])
+
+		return select
+	}
+
+	/** Чем кончается набор: панель закрыта, поле вернулось или показывает выбранное. */
+	describe.each<[string, (select: TSelectSetup) => void, string]>([
+		[
+			'выбор в single',
+			({ facade, items }) => facade.engine.extensions.select.chooseItem(items[2]),
+			'Тула',
+		],
+		[
+			'второй Escape',
+			({ press }) => {
+				press('Escape')
+				press('Escape')
+			},
+			'',
+		],
+		[
+			'уход фокуса',
+			({ press, blurTo }) => {
+				// Tab закрывает панель раньше, чем фокус уходит с поля
+				press('Tab')
+				blurTo()
+			},
+			'',
+		],
+	])('%s', (_, end, fieldText) => {
+		it('набранное и поле — сразу, отбор держится, пока панель доигрывает переход', async () => {
+			const select = await filtered()
+			const transition = new TProbeTransition()
+
+			stubTransitions(select.panel, () => [transition])
+			end(select)
+
+			expect(select.owner.open).toBe(false)
+			expect(select.editable.query).toBe('')
+			expect(select.owner.field.value).toBe(fieldText)
+			expect(filterQuery(select)).toBe('ту')
+			expect(shownTexts(select)).toEqual(['Тула'])
+
+			// Переходы закрытия плагин берёт кадром позже — и ждёт их конца
+			await nextFrame()
+			await flush()
+
+			expect(filterQuery(select)).toBe('ту')
+
+			transition.finish()
+			await flush()
+
+			expect(filterQuery(select)).toBe('')
+			expect(shownTexts(select)).toEqual(CITIES)
+		})
+
+		it('без переходов отбор снимается кадром позже', async () => {
+			const select = await filtered()
+
+			end(select)
+
+			expect(filterQuery(select)).toBe('ту')
+
+			await nextFrame()
+
+			expect(filterQuery(select)).toBe('')
+			expect(shownTexts(select)).toEqual(CITIES)
+		})
+	})
+
+	it('multiple: выбор панель не закрывает — отбор снимается сразу', async () => {
+		const select = await filtered()
+
+		select.facade.mode = 'multiple'
+		stubTransitions(select.panel, () => [new TProbeTransition()])
+		select.facade.engine.extensions.select.chooseItem(select.items[2])
+
+		expect(select.owner.open).toBe(true)
+		expect(select.editable.query).toBe('')
+		expect(filterQuery(select)).toBe('')
+		expect(shownTexts(select)).toEqual(CITIES)
+	})
+
+	it('closeOnSelect: false — панель открыта, отбор снимается сразу', async () => {
+		const select = await filtered({ closeOnSelect: false })
+
+		stubTransitions(select.panel, () => [new TProbeTransition()])
+		select.facade.engine.extensions.select.chooseItem(select.items[2])
+
+		expect(select.owner.open).toBe(true)
+		expect(filterQuery(select)).toBe('')
+	})
+
+	/**
+	 * Поле к этому времени уже показывает выбранное: панель, суженная прежним
+	 * запросом, не дала бы увидеть остальные опции без нового ввода.
+	 */
+	it('панель открыли снова, пока она гасла, — отбор снимается сразу', async () => {
+		const select = await filtered()
+		const transition = new TProbeTransition()
+
+		stubTransitions(select.panel, () => [transition])
+		select.facade.engine.extensions.select.chooseItem(select.items[2])
+		await nextFrame()
+
+		select.owner.open = true
+
+		expect(filterQuery(select)).toBe('')
+		expect(shownTexts(select)).toEqual(CITIES)
+
+		// Новый набор в открытой панели конец прежнего перехода не снимает
+		select.typeInField('тв')
+		transition.finish()
+		await flush()
+
+		expect(filterQuery(select)).toBe('тв')
+		expect(shownTexts(select)).toEqual(['Тверь'])
+	})
+
+	/**
+	 * Печатают, пока панель гасла: отбор теперь пишет ввод, и он же открывает
+	 * панель. Тот же текст отбор не меняет вовсе, и открытие панели сняло бы
+	 * только что набранное, не отмени ввод ожидание сам.
+	 */
+	it.each([
+		['другой текст', 'тв', ['Тверь']],
+		['тот же текст', 'ту', ['Тула']],
+	])(
+		'ввод во время ожидания (%s) — новый отбор переживает конец перехода',
+		async (_, text, shown) => {
+			const select = await filtered()
+			const transition = new TProbeTransition()
+
+			stubTransitions(select.panel, () => [transition])
+			select.press('Escape')
+			select.press('Escape')
+			await nextFrame()
+
+			select.typeInField(text)
+
+			expect(select.owner.open).toBe(true)
+			expect(select.editable.query).toBe(text)
+			expect(filterQuery(select)).toBe(text)
+
+			transition.finish()
+			await flush()
+
+			expect(filterQuery(select)).toBe(text)
+			expect(shownTexts(select)).toEqual(shown)
+		},
+	)
+
+	/**
+	 * В `none` отбором ведает приложение. Сменённый, пока плагин ждал, — уже не
+	 * тот отбор, который он собирался снять.
+	 */
+	it('отбор, сменённый во время ожидания кодом, переживает конец перехода', async () => {
+		const select = await setup(CITIES, { editableMode: 'none' }, { panel: true })
+		const filter = select.facade.engine.extensions.filter
+		const transition = new TProbeTransition()
+
+		filter.query = 'ту'
+		select.owner.open = true
+		stubTransitions(select.panel, () => [transition])
+		select.facade.engine.extensions.select.chooseItem(select.items[2])
+		await nextFrame()
+
+		expect(filter.query).toBe('ту')
+
+		filter.query = 'тв'
+		transition.finish()
+		await flush()
+
+		expect(filter.query).toBe('тв')
+		expect(shownTexts(select)).toEqual(['Тверь'])
+	})
+
+	/**
+	 * Смена режима — не закрытие панели: отбор снимается сразу, и отложенная
+	 * запись не сотрёт тот, что приложение поставит после перехода в `none`.
+	 */
+	it('смена режима снимает отбор сразу, хотя закрытая панель ещё гаснет', async () => {
+		const select = await filtered()
+
+		stubTransitions(select.panel, () => [new TProbeTransition()])
+		select.owner.open = false
+		select.owner.editableMode = 'search'
+
+		expect(select.editable.query).toBe('')
+		expect(filterQuery(select)).toBe('')
+		expect(shownTexts(select)).toEqual(CITIES)
+	})
+
+	it('смена режима во время ожидания снимает отбор сразу', async () => {
+		const select = await filtered()
+		const transition = new TProbeTransition()
+
+		stubTransitions(select.panel, () => [transition])
+		select.facade.engine.extensions.select.chooseItem(select.items[2])
+		select.owner.editableMode = 'none'
+
+		expect(filterQuery(select)).toBe('')
+
+		// Отбор приложения, поставленный после перехода в `none`, конец
+		// прежнего перехода не снимает
+		select.facade.engine.extensions.filter.query = 'тв'
+		await nextFrame()
+		transition.finish()
+		await flush()
+
+		expect(filterQuery(select)).toBe('тв')
+	})
+
+	/** Движок снаружи переживает компонент: ждать исчезания панели больше некому. */
+	it('destroy во время ожидания снимает отбор сразу', async () => {
+		const select = await filtered()
+
+		stubTransitions(select.panel, () => [new TProbeTransition()])
+		select.facade.engine.extensions.select.chooseItem(select.items[2])
+
+		expect(filterQuery(select)).toBe('ту')
+
+		select.editable.destroy()
+
+		expect(filterQuery(select)).toBe('')
+		expect(shownTexts(select)).toEqual(CITIES)
 	})
 })
