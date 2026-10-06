@@ -179,28 +179,6 @@ describe('когда панель открывать нельзя', () => {
 	})
 })
 
-describe('clearAria — имя кнопки очистки', () => {
-	it('собирается с именем поля, чтобы кнопки были различимы', () => {
-		// На форме с пятью полями пять одинаковых «Clear, кнопка» в списке
-		// элементов скринридера выбрать нельзя
-		expect(new TSelect({ name: 'Город' }).clearAria['aria-label']).toBe('Clear Город')
-	})
-
-	it('без имени поля остаётся одно слово', () => {
-		expect(new TSelect().clearAria['aria-label']).toBe('Clear')
-	})
-
-	it('слово переопределяется — язык интерфейса решает потребитель', () => {
-		const select = new TSelect({ name: 'Город', clearLabel: 'Очистить' })
-
-		expect(select.clearAria['aria-label']).toBe('Очистить Город')
-	})
-
-	it('отдельный набор: это имя соседней кнопки, а не самого поля', () => {
-		expect(new TSelect({ name: 'Город' }).aria.has('aria-label')).toBe(false)
-	})
-})
-
 describe('TSelectItem', () => {
 	it('объявляет себя как option', () => {
 		expect(new TSelectItem().aria.get('role')).toBe('option')
@@ -283,14 +261,40 @@ describe('value и выбор — одно и то же', () => {
 		expect(owner.value).toBeUndefined()
 	})
 
-	it('clear снимает выбор и обнуляет value', () => {
+	/**
+	 * Кнопку очистки рисует поле, и очищают поле: Select слышит его событие
+	 * `clear` и снимает выбор. Своей команды очистки у Select и его фасада нет —
+	 * путь один и у встроенной кнопки, и у своей в слоте.
+	 */
+	it('очистка поля снимает выбор и обнуляет value', () => {
 		const { owner, collection, facadeFor } = createSelect(['a', 'b'])
 
 		facadeFor(0).choose()
-		collection.clear()
+		owner.field.clear()
 
 		expect(collection.selected).toEqual([])
 		expect(owner.value).toBeUndefined()
+		expect(owner.field.value).toBe('')
+	})
+
+	/**
+	 * В `multiple` поле пусто и при выбранных тегах: шаг очистки поля значения
+	 * не меняет, а событие `clear` приходит всё равно — и снимает теги.
+	 */
+	it('в multiple очистка пустого поля снимает весь выбор', () => {
+		const { owner, collection, facadeFor } = createSelect(['a', 'b'])
+
+		collection.mode = 'multiple'
+		facadeFor(0).choose()
+		facadeFor(1).choose()
+
+		expect(owner.field.value).toBe('')
+
+		owner.field.clear()
+
+		expect(collection.selected).toEqual([])
+		expect(owner.value).toEqual([])
+		expect(collection.tags_engine?.extensions.batch.items).toEqual([])
 	})
 
 	/**
@@ -298,15 +302,21 @@ describe('value и выбор — одно и то же', () => {
 	 * слота зовёт его голой функцией. Метод прототипа терял там `this`: вызов
 	 * падал с TypeError, и своя кнопка очистки выбора не снимала.
 	 */
-	it('clear, взятый у фасада без инстанса, тоже снимает выбор', () => {
+	it('clear, взятый у поля без инстанса, тоже снимает выбор', () => {
 		const { owner, collection, facadeFor } = createSelect(['a', 'b'])
-		const { clear } = collection
+		const { clear } = owner.field
 
 		facadeFor(0).choose()
 		clear()
 
 		expect(collection.selected).toEqual([])
 		expect(owner.value).toBeUndefined()
+	})
+
+	it('своей команды очистки у фасада нет', () => {
+		const { collection } = createSelect(['a'])
+
+		expect('clear' in collection).toBe(false)
 	})
 
 	it('синхронизация не зацикливается', () => {
@@ -654,19 +664,19 @@ describe('набранное в поле и смена списка', () => {
 			expect(owner.field.value).toBe('A')
 		})
 
-		it('clear — пустотой', () => {
-			const { owner, collection } = typedOverSelected()
+		it('очистка поля — пустотой', () => {
+			const { owner } = typedOverSelected()
 
-			collection.clear()
+			owner.field.clear()
 
 			expect(owner.field.value).toBe('')
 		})
 
-		it('clear пустого поля тоже стирает набранное', () => {
-			const { owner, collection } = createSelect(['a'], { editable: true })
+		it('очистка поля без выбора тоже стирает набранное', () => {
+			const { owner } = createSelect(['a'], { editable: true })
 
 			owner.field.value = 'typed'
-			collection.clear()
+			owner.field.clear()
 
 			expect(owner.field.value).toBe('')
 		})
@@ -761,8 +771,8 @@ describe('набранное в поле и смена списка', () => {
 	 * `TEditablePlugin` — сбрасывает набранное и отбор.
 	 */
 	describe('choose', () => {
-		it('chooseItem и clear шлют его, когда поле уже записано', () => {
-			const { owner, collection, facadeFor, select } = createSelect(['a', 'b'], {
+		it('chooseItem и очистка поля шлют его, когда поле уже записано', () => {
+			const { owner, facadeFor, select } = createSelect(['a', 'b'], {
 				editable: true,
 			})
 			const seen: string[] = []
@@ -772,7 +782,7 @@ describe('набранное в поле и смена списка', () => {
 			owner.field.value = 'typed'
 			facadeFor(1).choose()
 			owner.field.value = 'typed'
-			collection.clear()
+			owner.field.clear()
 
 			expect(seen).toEqual(['B', ''])
 		})
@@ -851,6 +861,57 @@ describe('field — экземпляр TInput, которым владеет Sel
 		facadeFor(1).choose()
 
 		expect(owner.field.value).toBe('')
+	})
+
+	/**
+	 * Кнопку очистки рисует поле, а не Select: `clearable` и `clearLabel` —
+	 * входы Select, которые уходят полю, как `name` и `size`, а имя кнопки
+	 * собирает поле. Второй копии имени у Select нет.
+	 */
+	describe('кнопка очистки — у поля', () => {
+		it('clearable и clearLabel уходят полю при создании и при смене', () => {
+			const select = new TSelect({ clearable: true, clearLabel: 'Очистить' })
+
+			expect(select.field.clearable).toBe(true)
+			expect(select.field.clearLabel).toBe('Очистить')
+
+			select.clearable = false
+			select.clearLabel = 'Стереть'
+
+			expect(select.field.clearable).toBe(false)
+			expect(select.field.clearLabel).toBe('Стереть')
+		})
+
+		it('умолчания — поля', () => {
+			const select = new TSelect()
+
+			expect(select.clearable).toBe(TInput.defaultValues.clearable)
+			expect(select.clearLabel).toBe(TInput.defaultValues.clearLabel)
+		})
+
+		it('имя кнопки собирает поле, с именем Select: «Clear Город»', () => {
+			// На форме с пятью полями пять одинаковых «Clear, кнопка» в списке
+			// элементов скринридера выбрать нельзя
+			expect(new TSelect({ name: 'Город' }).field.clearAria['aria-label']).toBe('Clear Город')
+		})
+
+		it('смена clearLabel и имени доходит до имени кнопки', () => {
+			const select = new TSelect({ name: 'Город' })
+
+			select.clearLabel = 'Очистить'
+			expect(select.field.clearAria['aria-label']).toBe('Очистить Город')
+
+			select.name = 'Улица'
+			expect(select.field.clearAria['aria-label']).toBe('Очистить Улица')
+		})
+
+		it('своего имени кнопки и модификатора --clearable у Select нет', () => {
+			const select = new TSelect({ clearable: true })
+
+			expect('clearAria' in select).toBe(false)
+			expect(select.classes.toArray()).not.toContain('s-select--clearable')
+			expect(select.field.classes.toArray()).toContain('s-input--clearable')
+		})
 	})
 })
 

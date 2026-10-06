@@ -58,6 +58,11 @@ export const SelectDescriptor = defineDescriptor(() =>
 				 * дополняет их, а не заменяет.
 				 */
 				leading: { description: 'Перед полем' },
+				/**
+				 * Проброс слота `clear` поля: кнопку очистки рисует поле, а своя
+				 * кнопка заменяет её целиком. Scope — команда поля `clear`: она
+				 * очищает поле, а выбор Select снимает по её событию.
+				 */
 				clear: {
 					scope: { clear: defineType<() => void>(Function) },
 					description: 'Кнопка очистки значения',
@@ -83,6 +88,10 @@ export const SelectDescriptor = defineDescriptor(() =>
 				open: { type: Boolean, triggers: ['change:open'] },
 				placeholder: { type: String, triggers: ['change:placeholder'] },
 				closeOnSelect: { type: Boolean, triggers: ['change:closeOnSelect'] },
+				/**
+				 * Кнопку очистки рисует поле: `clearable` и `clearLabel` Select
+				 * отдаёт ему, как `name` и `size`, и её имя собирает поле.
+				 */
 				clearable: { type: Boolean, triggers: ['change:clearable'] },
 				clearLabel: { type: String, triggers: ['change:clearLabel'] },
 				editable: { type: Boolean, triggers: ['change:editable'] },
@@ -91,15 +100,6 @@ export const SelectDescriptor = defineDescriptor(() =>
 				placement: { type: String, triggers: ['change:placement'] },
 				/** За что панель смахивают, чтобы закрыть. По умолчанию — ни за что. */
 				swipe: { type: String, triggers: ['change:swipe'] },
-				/**
-				 * Имя кнопки очистки. Отдельный набор, а не часть `aria`: `aria`
-				 * описывает само поле, а это соседняя кнопка.
-				 */
-				clearAria: {
-					type: Object,
-					protected: true,
-					triggers: ['change:clearLabel', 'change:name'],
-				},
 				/**
 				 * Роль, `id` и множественность списка. Набор Select'а, а не свой:
 				 * список — разметка внутри шаблона, экземпляра у него нет.

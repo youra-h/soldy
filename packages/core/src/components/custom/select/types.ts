@@ -99,9 +99,9 @@ export interface ISelectComponentProps extends IInputControlProps<TSelectValue>,
 	placeholder?: string
 	/** Закрывать ли панель после выбора */
 	closeOnSelect?: boolean
-	/** Показывать ли кнопку очистки значения */
+	/** Показывать ли кнопку очистки значения. Рисует её поле, значение уходит ему */
 	clearable?: boolean
-	/** Слово для кнопки очистки; к нему добавляется имя поля */
+	/** Слово для кнопки очистки; к нему добавляется имя поля. Уходит полю */
 	clearLabel?: string
 	/**
 	 * Можно ли вводить текст в поле. `false` — select-only (по умолчанию).
@@ -152,9 +152,9 @@ export interface ISelect<
 	placeholder: string
 	/** Закрывать ли панель после выбора */
 	closeOnSelect: boolean
-	/** Показывать ли кнопку очистки значения */
+	/** Показывать ли кнопку очистки значения. Рисует её поле */
 	clearable: boolean
-	/** Слово для кнопки очистки */
+	/** Слово для кнопки очистки. Имя кнопки собирает поле (`field.clearAria`) */
 	clearLabel: string
 	/** Можно ли вводить текст в поле. `false` — select-only (по умолчанию) */
 	editable: boolean
@@ -171,8 +171,6 @@ export interface ISelect<
 	readonly panelPlacement: TSelectPanelPlacement
 	/** Разрешён ли плагину якоря flip. Производное от `placement` */
 	readonly panelFlip: boolean
-	/** Имя кнопки очистки целиком: `clearLabel` + имя поля */
-	readonly clearAria: TAriaAttributes
 	/**
 	 * ARIA списка в панели: `role="listbox"` — Select, `aria-multiselectable` —
 	 * коллекция, `id` — плагин связок

@@ -4722,9 +4722,16 @@ select-only (он же `readonly: true`) не открывался бы вовс
 `value` Select не заводит — тем, что видит пользователь (текст и плейсхолдер),
 владеет отдельный экземпляр `TInput` (`TSelect.field`): Select создаёт его
 один раз и синхронизирует с ним общие свойства (`disabled`, `size`, `variant`,
-`readonly`, `required`, `name`, `id`). Шаблон передаёт его целиком —
-`<Input :ctrl="field">`, тем же приёмом, что `<Tags :ctrl="tags">` — и не
-ставит рядом `:value` ни в каком виде, иначе снова завелись бы две копии.
+`readonly`, `required`, `name`, `id`, `clearable`, `clearLabel`). Шаблон
+передаёт его целиком — `<Input :ctrl="field">`, тем же приёмом, что
+`<Tags :ctrl="tags">` — и не ставит рядом `:value` ни в каком виде, иначе
+снова завелись бы две копии. Кнопку очистки рисует поле, а не Select: она
+часть поля — база `TField`, общая у Input и DateInput (`clearable`, имя
+`clearAria`, команда `clear`, слот `clear`). Очистку поля Select слышит его
+событием `clear` и снимает выбор в `TSelectExtension` — одним путём и у
+встроенной кнопки, и у своей в слоте. Сторожат `core/__tests__/input.spec.ts`
+(«TInput · очистка»), `core/__tests__/select.spec.ts` («кнопка очистки — у
+поля») и `ui/vue/__tests__/input-clear.spec.ts`.
 Пишут в `field.value` трое, каждый в свой момент: `TInputPlugin` — набранное,
 обычным `input`, как у любого `Input`; `TSelectExtension` — текст выбранного,
 в любом режиме, не только `editable` (`single` — текст, `multiple` — всегда

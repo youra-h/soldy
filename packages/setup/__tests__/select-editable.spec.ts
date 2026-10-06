@@ -601,7 +601,7 @@ describe('смена выбора', () => {
 		expect(editable.query).toBe('')
 	})
 
-	it('clear стирает набранное и снимает отбор — это тоже выбор, выбор «ничего»', async () => {
+	it('очистка поля стирает набранное и снимает отбор — это тоже выбор, выбор «ничего»', async () => {
 		const { owner, facade, items, editable, typeInField } = await setup(
 			['Москва', 'Тверь', 'Тула'],
 			{ editableMode: 'filter' },
@@ -611,7 +611,7 @@ describe('смена выбора', () => {
 		typeInField('ту')
 		expect(facade.shown.length).toBe(1)
 
-		facade.clear()
+		owner.field.clear()
 
 		expect(owner.field.value).toBe('')
 		expect(editable.query).toBe('')

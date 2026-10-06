@@ -1,5 +1,6 @@
 /**
- * Select в настоящем браузере: появление и исчезание панели.
+ * Select в настоящем браузере: появление и исчезание панели, форма кнопки
+ * очистки.
  *
  * Панель — Frame, телепортированный в `body`, и открытость для темы ей пишет
  * её слой: `data-open` корня Select до телепортированной панели не доходит.
@@ -13,8 +14,10 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { render, cleanup } from 'vitest-browser-vue'
 import { userEvent } from 'vitest/browser'
 import { defineComponent, h, nextTick } from 'vue'
+import { COMPONENT_SIZES } from '@soldy-ui/playground-shared'
 import { Select, SelectItem } from '@soldy-ui/vue'
 
+import { expectClearSquare } from './clear-button'
 import { expectFadesInPlace, ownTransitionRuns, settled, whileLeaving } from './transitions'
 
 import '@soldy-ui/theme-oren'
@@ -161,4 +164,63 @@ describe('отбор: гаснущая панель держит отобран�
 			expect(shownOptions()).toEqual(CITIES)
 		},
 	)
+})
+
+/**
+ * Кнопку очистки рисует поле — Input внутри Select, — и форма у неё та же:
+ * квадрат со стороной в строку слота на любом размере (`clear-button.ts`).
+ * Раньше Select рисовал кнопку сам, и на крупных размерах она выходила низкой
+ * и широкой. Клик очищает поле и панель не открывает: до корня, который
+ * тумблит панель, он не всплывает.
+ */
+describe('кнопка очистки', () => {
+	/** Select с выбранным значением и кнопкой очистки. */
+	const showClearable = async (size?: (typeof COMPONENT_SIZES)[number]) => {
+		render(
+			defineComponent({
+				render: () =>
+					h('div', { style: 'padding: 40px; width: 320px' }, [
+						h(
+							Select,
+							{ clearable: true, size, value: '0' },
+							{
+								default: () =>
+									CITIES.map((text, index) =>
+										h(SelectItem, { key: text, value: String(index), text }),
+									),
+							},
+						),
+					]),
+			}),
+		)
+
+		await nextTick()
+		await nextFrame()
+		await nextFrame()
+	}
+
+	it.each(COMPONENT_SIZES)('%s: квадрат высотой в строку слота, иконка внутри', async (size) => {
+		await showClearable(size)
+
+		expectClearSquare(
+			find('.s-select__field .s-input__clear'),
+			find('.s-select__field .s-input__trailing'),
+			size,
+		)
+	})
+
+	it('клик очищает поле и панель не открывает', async () => {
+		await showClearable()
+
+		const input = field()
+
+		if (!(input instanceof HTMLInputElement)) throw new Error('поле — не <input>')
+
+		await expect.poll(() => input.value).toBe('Москва')
+
+		await userEvent.click(find('.s-select__field .s-input__clear'))
+
+		await expect.poll(() => input.value).toBe('')
+		expect(find('.s-select').dataset.open).not.toBe('true')
+	})
 })

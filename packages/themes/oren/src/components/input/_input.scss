@@ -1,5 +1,6 @@
 @use 'sass:map';
 @use './mixins' as mixines;
+@use '../button/mixins' as button;
 @use '../../mixins/required' as required;
 
 // Наведение красит рамку только у включённого поля. Корень Input — `div` (по
@@ -59,6 +60,12 @@ $enabled: ':not(:has(> input:disabled))';
 		@apply pe-1;
 	}
 
+	// Кнопка очистки — первой в слоте у конца, квадрат в строку слота
+	// (`field-clear` в `_mixins.scss`).
+	&__clear {
+		@include mixines.field-clear('input');
+	}
+
 	&--required {
 		&#{$this}::after {
 			@include required.required-indicator();
@@ -95,4 +102,11 @@ $enabled: ':not(:has(> input:disabled))';
 // споря с ней.
 :where(.s-input) {
 	@include mixines.input-variant('neutral', $enabled);
+}
+
+// Вид кнопки очистки — `plain`, как у крестиков Dialog, Drawer и Popover:
+// значения вида разметка не передаёт, вид даёт контекст, и кнопка в поле не
+// спорит с текстом. Нулевая специфичность, как у базового вида Button.
+:where(.s-input__clear) {
+	@include button.button-view('plain');
 }

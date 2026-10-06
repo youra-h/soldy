@@ -1,17 +1,13 @@
-import type {
-	IInputControl,
-	IInputControlProps,
-	TInputControlEvents,
-} from '../../base/input-control'
+import type { IField, IFieldProps, TFieldEvents } from '../../base/field'
 
-export interface IInputProps extends IInputControlProps<string> {
+export interface IInputProps extends IFieldProps<string> {
 	placeholder?: string
 }
 
-export type TInputEvents = TInputControlEvents<string> & {
+export type TInputEvents = TFieldEvents<string> & {
 	'change:placeholder': (value: string) => void
 }
 
-export interface IInput extends IInputControl<string, IInputProps, TInputEvents> {
+export interface IInput extends IField<string, IInputProps, TInputEvents> {
 	placeholder: string
 }
