@@ -4025,7 +4025,11 @@ CheckBox и Switch (HTML не знает `readonly` у чекбокса). Поэ
   не выдержал бы. `role`, `aria-checked` и `aria-disabled` ядро радио не пишет:
   у нативного радио это `checked` и `disabled`. Выбор пользователя разметка
   отдаёт коллекции сама — `@change` у Vue, `onChange` поля у React: плагина
-  ввода у радио нет, и это единственный путь, а не второй. Сторожат
+  ввода у радио нет, и это единственный путь, а не второй. Выбор, отменённый в
+  `item:activate:before`, браузер к тому времени уже отметил, а модель не
+  сменилась, и разметка поля не перерисует, — поэтому после каждого `change`
+  поля группы к модели возвращает её плагин `TRadioGroupCheckedPlugin`. Сторожат
+  `plugins/__tests__/radio-group-checked.plugin.spec.ts`,
   `ui/vue/__tests__/radio-group.spec.ts`,
   `ui/react/__tests__/radio-group.spec.tsx` и
   `playground/vue/browser/radio-group.spec.ts`.
