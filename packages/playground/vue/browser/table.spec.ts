@@ -8,8 +8,9 @@
  * ширины, коробки текста, имена в дереве доступности и цвета. Как таблица
  * лежит, решает тема (`themes/oren/src/components/table/_table.scss`):
  * раскладка фиксированная, колонка с шириной — ровно её, колонка без ширины —
- * не уже распорки в заголовке, линии — рамки строк, а не ячеек, и выбранная
- * строка в режиме принудительных цветов — системной подсветкой.
+ * не уже распорки в заголовке, линии — рамки строк, а не ячеек: под шапкой —
+ * цвета рамки `outlined`, под строкой — тише неё, — и выбранная строка в
+ * режиме принудительных цветов — системной подсветкой.
  *
  * Ручку ширины тянет настоящий ввод Playwright: только так видно, что захват
  * указателя доводит протяжку за полосой до заголовка, а стрелка делает ровно
@@ -27,9 +28,9 @@ import type {
 	TTableColumnSource,
 	TTableRecord,
 } from '@soldy-ui/core'
-import { Table } from '@soldy-ui/vue'
+import { Button, Table } from '@soldy-ui/vue'
 
-import { find, pixel, style, systemColor } from './colors'
+import { find, pixel, settled, shift, style, systemColor } from './colors'
 import { forcedColors } from './media'
 
 import '@soldy-ui/theme-oren'
@@ -188,6 +189,152 @@ describe('линии строк', () => {
 		expect(pixel([style(disabled).borderBottomColor])).toEqual(
 			pixel([style(enabled).borderBottomColor]),
 		)
+	})
+
+	/**
+	 * Цвет линий. Под шапкой — граница: та же ступень, что у рамки `outlined`
+	 * у Button. Под строкой — тише шапки: вуаль нейтрали плотности заливки
+	 * `filled`, на шаг от того, на чём таблица стоит. Ступенью 400 линия шапки
+	 * горела ярче любой рамки рядом, а линию строки тише границы ступень не
+	 * даёт: 200 на поверхности контрола тёмной схемы — сама поверхность.
+	 *
+	 * Палитры тест не знает, как и сторож видов Button (`button-view.spec.ts`):
+	 * линию шапки он сверяет с рамкой кнопки рядом, а линию строки меряет —
+	 * насколько она ушла от подложки в сторону текста ячейки.
+	 */
+	describe('цвет', () => {
+		/** Обе схемы: правило у них общее, а подложки разные. */
+		const SCHEMES = ['oren', 'oren-dark'] as const
+
+		type TScheme = (typeof SCHEMES)[number]
+
+		/**
+		 * Где стоит таблица: на странице и на поверхности контрола — в карточке,
+		 * в панели Popover и Dialog.
+		 */
+		const BACKDROPS = {
+			страница: 'var(--s-neutral-50)',
+			'поверхность контрола': 'var(--s-component-surface)',
+		} as const
+
+		type TBackdrop = keyof typeof BACKDROPS
+
+		const CASES = SCHEMES.flatMap((scheme) =>
+			(Object.keys(BACKDROPS) as TBackdrop[]).map((backdrop) => ({ scheme, backdrop })),
+		)
+
+		/**
+		 * Порог заметности линии строки по светлоте OKLab — тот же, что у
+		 * нейтральной заливки `filled` у Button: линия — вуаль той же плотности.
+		 */
+		const VISIBLE_LINE = 0.02
+
+		afterEach(() => {
+			delete document.documentElement.dataset.theme
+		})
+
+		/**
+		 * Сцена: на каждой подложке — таблица и кнопка `outlined` рядом.
+		 * Указатель уведён: под ним рамка кнопки сильнее.
+		 */
+		async function showLines(scheme: TScheme): Promise<void> {
+			document.documentElement.dataset.theme = scheme
+			render(
+				defineComponent({
+					render: () =>
+						h('div', [
+							h('div', { class: 's-test-away', style: 'height: 24px' }),
+							...Object.entries(BACKDROPS).map(([name, color]) =>
+								h(
+									'div',
+									{
+										key: name,
+										'data-backdrop': name,
+										style: `background: ${color}; padding: 8px`,
+									},
+									[
+										h(Table, { engine: engineOf(), aria_label: 'Сотрудники' }),
+										h(Button, { view: 'outlined', text: 'Рамка' }),
+									],
+								),
+							),
+						]),
+				}),
+			)
+
+			await new Promise((resolve) => requestAnimationFrame(resolve))
+			await userEvent.hover(find('.s-test-away'))
+			await settled(document.body)
+		}
+
+		/** Части сцены на подложке: подложка, строка шапки, строка тела, её ячейка и кнопка. */
+		const partsOf = (backdrop: TBackdrop) => {
+			const root = find(`[data-backdrop="${backdrop}"]`)
+
+			return {
+				root,
+				head: find('.s-table__head-row', root),
+				row: find('.s-table-row', root),
+				cell: find('.s-table-row__cell', root),
+				button: find('.s-button--view-outlined', root),
+			}
+		}
+
+		/** Насколько линия ушла от подложки в сторону текста ячейки; минус — за подложку. */
+		function away(line: Element, backdrop: TBackdrop): number {
+			const { root, cell } = partsOf(backdrop)
+			const under = style(root).backgroundColor
+
+			return (
+				shift(style(line).borderBottomColor, under) *
+				Math.sign(shift(style(cell).color, under))
+			)
+		}
+
+		it.each(CASES)(
+			'$scheme, $backdrop: линия шапки — цвета рамки outlined',
+			async (scenario) => {
+				await showLines(scenario.scheme)
+
+				const { head, button } = partsOf(scenario.backdrop)
+
+				expect(pixel([style(head).borderBottomColor])).toEqual(
+					pixel([style(button).borderTopColor]),
+				)
+			},
+		)
+
+		it.each(CASES)(
+			'$scheme, $backdrop: линия строки уходит от подложки к тексту и тише шапки',
+			async (scenario) => {
+				await showLines(scenario.scheme)
+
+				const { head, row } = partsOf(scenario.backdrop)
+				const line = away(row, scenario.backdrop)
+
+				expect(line).toBeGreaterThan(VISIBLE_LINE)
+				expect(line).toBeLessThan(away(head, scenario.backdrop))
+			},
+		)
+
+		/**
+		 * Линия строки — вуаль, то есть цвет с прозрачностью. Фону браузер в этом
+		 * режиме прозрачность оставляет, и линия, которую он красил бы так же,
+		 * пропала бы. Она обязана стать цветом текста системы, как рамки,
+		 * которые браузер красит сам.
+		 */
+		describe('принудительные цвета', () => {
+			it.each(SCHEMES)('%s: линия строки — цветом текста системы', async (scheme) => {
+				await forcedColors('active')
+				await showLines(scheme)
+
+				const { row } = partsOf('страница')
+
+				expect(pixel([style(row).borderBottomColor])).toEqual(
+					pixel([systemColor('CanvasText')]),
+				)
+			})
+		})
 	})
 })
 
