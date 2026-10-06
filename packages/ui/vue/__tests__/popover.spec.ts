@@ -165,12 +165,45 @@ describe('разметка', () => {
 		expect(root.dataset.open).toBe('true')
 		expect(trigger().dataset.selected).toBe('true')
 		expect(trigger().getAttribute('aria-expanded')).toBe('true')
-		// ARIA панели — на панели, не на корне. `data-open` у панели свой, из её
-		// набора (`panelDataset`): корень телепортированной панели его не отдаёт
+		// ARIA панели — на панели, не на корне. `data-open` у панели свой, от её
+		// слоя (Frame): корень телепортированной панели его не отдаёт
 		expect(root.hasAttribute('role')).toBe(false)
 		expect(panel().dataset.open).toBe('true')
 		expect(panel().dataset.layer).toMatch(/^\d+$/)
 		expect(root.hasAttribute('data-layer')).toBe(false)
+	})
+
+	/**
+	 * Открытость панели для темы — `data-open` её слоя: по нему тема проявляет и
+	 * гасит панель. Писатель у атрибута один — Frame, чья видимость и есть
+	 * `open`, — поэтому он идёт за `open`, как бы его ни меняли: кликом по
+	 * триггеру, из инстанса, крестиком.
+	 */
+	it('data-open панели идёт за open', async () => {
+		const popover = new TPopover()
+
+		await render(() => page({ ctrl: popover }))
+
+		expect(panel().dataset.open).toBe('false')
+
+		await open()
+
+		expect(panel().dataset.open).toBe('true')
+
+		popover.open = false
+		await nextTick()
+
+		expect(panel().dataset.open).toBe('false')
+
+		popover.open = true
+		await nextTick()
+
+		expect(panel().dataset.open).toBe('true')
+
+		await click(find('.s-popover__close'))
+
+		expect(popover.open).toBe(false)
+		expect(panel().dataset.open).toBe('false')
 	})
 
 	it('aria_label даёт диалогу имя', async () => {

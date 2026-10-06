@@ -1,4 +1,5 @@
 @use '../button/mixins' as button;
+@use '../../mixins/anchored';
 @use '../../mixins/motion';
 
 // Select — поле выбора из списка.
@@ -299,11 +300,17 @@
 // текст темы, на странице со своим — её цвет, какой бы ни была панель под ним.
 // Опции бы этого не заметили — их строку красит `Button`, — а всё остальное
 // содержимое панели, первым слот `empty`, заметило бы.
+//
+// Появление и исчезание — как у панели Popover у триггера без жеста: панель
+// проявляется и гаснет на месте, одной прозрачностью и его временем, без
+// движения (`anchored.fade`).
 .s-select__panel {
 	@apply overflow-hidden rounded-md box-border;
 	@apply bg-s-component-surface text-s-component shadow-md;
 	@apply ring-1 ring-s-neutral-300;
 	@apply outline outline-transparent;
+
+	@include anchored.fade;
 }
 
 // Потолок по умолчанию, а не единственный: он действует, пока `maxRows` равен

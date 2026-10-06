@@ -10,7 +10,8 @@
  * календаря и поля — те же, что у них самих. Раскладка: коробка диапазона не
  * меняет ширину, пока даты набирают, а панель у правого края окна не
  * сжимается. Тема: ошибку поля конца коробка диапазона показывает своей
- * рамкой.
+ * рамкой, а панель проявляется и гаснет на месте переходом — jsdom переходов
+ * не ведёт.
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
@@ -22,6 +23,7 @@ import type { IDatePickerProps } from '@soldy-ui/core'
 import { DatePicker } from '@soldy-ui/vue'
 
 import { settled } from './colors'
+import { expectFadesInPlace, ownTransitionRuns } from './transitions'
 import { expectInsideWindow } from './viewport'
 
 import '@soldy-ui/theme-oren'
@@ -167,6 +169,30 @@ describe('закрытие', () => {
 
 		await expect.poll(isOpen).toBe(false)
 		expect(active()).toBe(find('.s-test-outside'))
+	})
+})
+
+/**
+ * Появление и исчезание — переход темы по `data-open` панели, его пишет слой
+ * панели (Frame). Панель проявляется и гаснет на месте, как поповер у
+ * триггера без жеста: переходит одна прозрачность. Хуков под анимацию у кода
+ * нет — видно это по переходу на самой панели.
+ */
+describe('появление и исчезание', () => {
+	it('открытие — панель проявляется, закрытие — гаснет на месте и до конца нажатий не ловит', async () => {
+		await show({ value: '2026-05-12' })
+
+		const runs = ownTransitionRuns(panel())
+
+		await userEvent.click(trigger())
+		await expect.poll(active).toBe(day('2026-05-12'))
+
+		// `transitionrun` браузер шлёт кадром позже пересчёта стиля
+		await expect.poll(() => runs).toContain('opacity')
+
+		await settled(panel())
+
+		await expectFadesInPlace(panel(), () => userEvent.keyboard('{Escape}'))
 	})
 })
 

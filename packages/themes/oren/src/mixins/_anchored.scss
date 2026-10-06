@@ -1,0 +1,43 @@
+@use '../components/popover/mixins' as popover;
+
+// Панель у якоря — немодальный слой у своего поля или триггера: панели
+// Popover, Select и DatePicker.
+
+// Появление и исчезание панели — переход темы по `data-open`, как у Dialog:
+// хуков под анимацию у кода нет. Атрибут пишет слой панели (Frame), поэтому он
+// есть у любой из них без проводки в разметке. Закрытие — `display: none` от
+// разметки, и `transition-behavior: allow-discrete` откладывает его до конца
+// перехода, а `@starting-style` даёт показанной панели начальную прозрачность.
+// Длительность и кривую браузер берёт из стиля, в который узел переходит:
+// появление — из `[data-open='true']`, исчезание — из `[data-open='false']`.
+//
+// Панель проявляется и гаснет на месте, одной прозрачностью. Прозрачность —
+// не движение, и переход идёт в любом режиме движения. Время — общей панели
+// Popover (`popover/_mixins.scss`): панели у якоря — одна семья, и
+// проявляются они одним темпом. Панель, у которой есть своя сторона, сверх
+// этого движется — это её надстройка поверх миксина (Popover в контейнере и
+// со смахиванием).
+//
+// Закрытая панель, пока гаснет, нажатий не ловит: она уже не открыта, и
+// нажатие сквозь неё — нажатие по тому, что под ней.
+@mixin fade {
+	transition-property: opacity, display;
+	transition-behavior: allow-discrete;
+
+	&[data-open='true'] {
+		transition-duration: popover.$enter-fade;
+		transition-timing-function: linear;
+	}
+
+	&[data-open='false'] {
+		@apply pointer-events-none opacity-0;
+		transition-duration: popover.$exit-fade;
+		transition-timing-function: linear;
+	}
+
+	@starting-style {
+		&[data-open='true'] {
+			@apply opacity-0;
+		}
+	}
+}

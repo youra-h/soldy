@@ -297,6 +297,67 @@ describe('TFrame', () => {
 		})
 	})
 
+	/**
+	 * Открытость — теме: по `data-open` она проявляет и гасит панель
+	 * переходом. Пишет её слой, а не владелец панели: панель телепортирована,
+	 * и `data-open` корня владельца до неё не доходит. Проекция `visible`, а
+	 * не своё состояние: атрибут идёт за видимостью, как бы её ни меняли.
+	 */
+	describe('data-open', () => {
+		it('у созданного скрытым — false, у созданного видимым — true', () => {
+			expect(new TFrame().dataset.get('open')).toBe('false')
+			expect(new TFrame({ visible: true }).dataset.get('open')).toBe('true')
+		})
+
+		it('идёт за show() и hide()', () => {
+			const frame = new TFrame()
+
+			frame.show()
+
+			expect(frame.dataset.get('open')).toBe('true')
+
+			frame.hide()
+
+			expect(frame.dataset.get('open')).toBe('false')
+		})
+
+		it('идёт за сеттером visible', () => {
+			const frame = new TFrame()
+
+			frame.visible = true
+
+			expect(frame.dataset.toObject()).toHaveProperty('data-open', 'true')
+
+			frame.visible = false
+
+			expect(frame.dataset.toObject()).toHaveProperty('data-open', 'false')
+		})
+
+		it('отменённое скрытие data-open не трогает', () => {
+			const frame = new TFrame({ visible: true })
+
+			frame.events.on('hide:before', (e) => e.preventDefault())
+			frame.hide()
+
+			expect(frame.dataset.get('open')).toBe('true')
+		})
+
+		it('смену сообщает change:dataset — по нему адаптер перерисует панель', () => {
+			const frame = new TFrame()
+			const opens: (string | null)[] = []
+
+			frame.events.on('change:dataset', (value) => opens.push(value['data-open']))
+
+			frame.show()
+
+			expect(opens.at(-1)).toBe('true')
+
+			frame.hide()
+
+			expect(opens.at(-1)).toBe('false')
+		})
+	})
+
 	it('nextZIndex и resetZIndexCounter работают', () => {
 		TFrame.resetZIndexCounter()
 

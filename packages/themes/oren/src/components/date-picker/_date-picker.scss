@@ -1,6 +1,7 @@
 @use 'sass:map';
 @use '../button/mixins' as button;
 @use '../input/mixins' as input;
+@use '../../mixins/anchored';
 @use '../../mixins/required' as required;
 
 // DatePicker — поле даты и календарь в панели, как Select — поле и список.
@@ -213,6 +214,10 @@ $empty: ".s-date-picker--range:where(:not(:has(.s-date-input__segment:not([data-
 // полем, ни под ним места нет — поле посередине низкого окна, — панель встаёт
 // туда, где места больше, и заходит за край: сдвиг `TAnchorPlugin` держит её
 // в окне только по строке.
+//
+// Появление и исчезание — как у панели Select: панель проявляется и гаснет на
+// месте, одной прозрачностью и временем панели Popover (`anchored.fade`), без
+// движения.
 .s-date-picker__panel {
 	@apply overflow-y-auto rounded-md box-border p-2;
 	@apply bg-s-component-surface text-s-component shadow-md;
@@ -220,6 +225,8 @@ $empty: ".s-date-picker--range:where(:not(:has(.s-date-input__segment:not([data-
 	@apply outline outline-transparent;
 	max-width: calc(100vw - 1rem);
 	max-height: calc(100dvh - 1rem);
+
+	@include anchored.fade;
 }
 
 // Ширина панели — по календарю. Раскладка Frame пишет панели ширину инлайном

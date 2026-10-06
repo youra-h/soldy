@@ -22,6 +22,16 @@ import type { ILayer, ILayerProps, TLayerEvents } from './types'
  * видимым, номер получает сразу: `show` для него не придёт, а на экране он
  * уже есть.
  *
+ * **Открытость для темы — `data-open`**: проекция `visible` в набор, второй
+ * записи состояния нет. По нему тема ведёт переход к закрытому виду и
+ * обратно: слой гаснет и проявляется, панель у края уезжает и въезжает.
+ * Своего появления и исчезания у ядра нет — ни «присутствия», ни хуков под
+ * анимацию: закрытый слой спрятан `visible`, а переход до скрытия и после
+ * показа держит CSS. Пишет атрибут сам слой, а не владелец панели: панель
+ * телепортирована, и `data-open` корня владельца до неё не доходит, а
+ * открытость панели — это видимость её слоя. Поэтому атрибут есть у панели
+ * любого Frame без проводки в разметке.
+ *
  * @example
  * const layer = new TLayer()
  * layer.show() // получает z-index, становится visible
@@ -81,6 +91,9 @@ export default class TLayer<
 		// он стоял бы с `z-index: 0` под всеми, и нажатие в панель, открытую
 		// поверх него, плагин оверлея счёл бы нажатием мимо
 		if (this.visible) this._raise()
+
+		this._syncOpen()
+		this.events.on('change:visible', () => this._syncOpen())
 	}
 
 	/**
@@ -96,6 +109,14 @@ export default class TLayer<
 		this._zIndex = TLayer.nextZIndex()
 		this._dataset.add(FRAME_LAYER_ATTRIBUTE, this._zIndex)
 		this._sink.emit('change:zIndex', this._zIndex)
+	}
+
+	/**
+	 * Открытость — теме: по `data-open` она ведёт переход к закрытому виду, и
+	 * переходу до скрытия есть к чему идти.
+	 */
+	private _syncOpen(): void {
+		this._dataset.add('open', this.visible)
 	}
 
 	get zIndex(): number {

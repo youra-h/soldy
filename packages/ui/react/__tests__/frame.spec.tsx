@@ -95,6 +95,24 @@ describe('Frame · rendered и visible', () => {
 
 		expect(document.querySelector('.s-frame')).toBeNull()
 	})
+
+	// Открытость для темы пишет слой: по `data-open` она проявляет и гасит
+	// панель переходом
+	it('data-open идёт за видимостью', () => {
+		const ctrl = new TFrame()
+
+		mount(<Frame ctrl={ctrl} />)
+
+		expect(frame().dataset.open).toBe('false')
+
+		act(() => ctrl.show())
+
+		expect(frame().dataset.open).toBe('true')
+
+		act(() => ctrl.hide())
+
+		expect(frame().dataset.open).toBe('false')
+	})
 })
 
 describe('Frame · слой и раскладка', () => {
