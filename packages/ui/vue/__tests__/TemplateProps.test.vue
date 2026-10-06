@@ -132,6 +132,10 @@ const dragAndDrop = new TDragAndDrop()
 	<DatePicker :triggerLabel="42" />
 	<DatePicker triggerLabel="Выбрать дату" />
 
+	<!-- @vue-expect-error — жест за полосу или за панель, а не флаг -->
+	<DatePicker :swipe="true" />
+	<DatePicker swipe="handle" />
+
 	<!-- @vue-expect-error — места `left` у окна нет: стороны логические -->
 	<Dialog placement="left" />
 	<Dialog placement="start" />
@@ -247,6 +251,10 @@ const dragAndDrop = new TDragAndDrop()
 	<!-- @vue-expect-error — стороны `left` у панели нет -->
 	<Select placement="left" />
 	<Select placement="top" />
+
+	<!-- @vue-expect-error — жест за полосу или за панель, а не флаг -->
+	<Select :swipe="true" />
+	<Select swipe="panel" />
 
 	<!-- @vue-expect-error — текст опции строкой -->
 	<Select.Item :text="42" />

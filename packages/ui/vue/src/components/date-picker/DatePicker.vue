@@ -126,6 +126,12 @@ export default { ...SetupDatePicker, components: { Button, Calendar, DateInput, 
 			На панель ложится набор `panelAria`: `role="dialog"`, `aria-modal`,
 			имя и `id`, на который ссылается `aria-controls` кнопки. `tabindex="-1"`
 			— фокус встаёт на саму панель, когда внутри нечего фокусировать.
+
+			`panelDataset` — `data-*` панели: признак «тянут» (`data-swiping`), по
+			которому тема снимает переход, пока панель идёт за пальцем. Набор
+			отдельный от `panelAria`: ARIA и `data-*` не смешиваются. Открытость
+			(`data-open`) Frame пишет сам, сторону после flip (`data-placement`) —
+			плагин якоря, сдвиг во время жеста (`--s-swipe-offset`) — плагин жеста.
 		-->
 		<Frame
 			embedded="date-picker.frame"
@@ -135,24 +141,40 @@ export default { ...SetupDatePicker, components: { Button, Calendar, DateInput, 
 			position="fixed"
 			:anchor_anchor="rootElement"
 			:anchor_offset="4"
-			v-bind="{ ...panelAria, ...dismiss_ownerAttribute }"
+			v-bind="{ ...panelAria, ...panelDataset, ...dismiss_ownerAttribute }"
 		>
 			<!--
+				Полоса, за которую панель тянут, — пока жест включён. Она говорит,
+				что панель можно смахнуть, и сама ничего не делает: потребитель её
+				не адресует, скринридеру она не нужна (`aria-hidden`). Стоит она у
+				края со стороны поля (`data-placement`), ставит её тема. Закрыть без
+				перетаскивания — Escape, выбор и нажатие мимо.
+			-->
+			<div v-if="handleRendered" class="s-date-picker__handle" aria-hidden="true" />
+
+			<!--
+				Содержимое — обёртка календаря, и прокручивается она, а не панель:
+				пока жест включён, плагин жеста отдаёт касание вдоль оси панели
+				жесту (`touch-action`), и прокручиваемую саму панель палец бы не
+				прокрутил. Своя прокрутка у содержимого касание оставляет себе.
+
 				Календарь — готовый Calendar над экземпляром и движком ядра
 				DatePicker. Своей поверхности у него нет, её даёт панель. Содержимое
 				дня — слот `item` DatePicker, отданный календарю под тем же именем,
 				со scope `{ item }`.
 			-->
-			<Calendar
-				embedded="date-picker.calendar"
-				class="s-date-picker__calendar"
-				:ctrl="calendar"
-				:engine="engine"
-			>
-				<template #item="{ item }">
-					<slot name="item" :item="item" />
-				</template>
-			</Calendar>
+			<div class="s-date-picker__content">
+				<Calendar
+					embedded="date-picker.calendar"
+					class="s-date-picker__calendar"
+					:ctrl="calendar"
+					:engine="engine"
+				>
+					<template #item="{ item }">
+						<slot name="item" :item="item" />
+					</template>
+				</Calendar>
+			</div>
 		</Frame>
 	</div>
 </template>

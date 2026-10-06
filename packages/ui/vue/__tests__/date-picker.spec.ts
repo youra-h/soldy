@@ -430,3 +430,91 @@ describe('слоты', () => {
 		expect(dayCell('2026-09-10').textContent?.trim()).toBe('10')
 	})
 })
+
+/**
+ * Жест — смахнуть панель, чтобы закрыть. Правила жеста проверяет плагин
+ * (`plugins/__tests__/swipe.plugin.spec.ts`), раскладку, прокрутку и настоящую
+ * мышь — браузер (`playground/vue/browser/anchored-swipe.spec.ts`). Здесь —
+ * проводка: полоса и признак «тянут» на телепортированной панели, календарь в
+ * своём содержимом, а закрытие жестом доходит до `v-model`.
+ */
+describe('жест', () => {
+	const handle = () => document.querySelector('.s-date-picker__handle')
+
+	/** Указатель мышью в точке по вертикали — как его слушает плагин жеста. */
+	const pointer = (type: string, target: Element, y: number) =>
+		target.dispatchEvent(
+			new PointerEvent(type, {
+				bubbles: true,
+				cancelable: true,
+				clientX: 100,
+				clientY: y,
+				pointerId: 1,
+				pointerType: 'mouse',
+				button: 0,
+				isPrimary: true,
+			}),
+		)
+
+	it('без жеста полосы нет; с жестом — первая в панели, немая; календарь — в содержимом', async () => {
+		const ctrl = new TDatePicker()
+
+		await render(() => h(DatePicker, { ctrl }))
+
+		expect(handle()).toBeNull()
+		expect(panel().dataset.swiping).toBe('false')
+		expect(find('.s-date-picker__content').parentElement).toBe(panel())
+		expect(find('.s-date-picker__calendar').parentElement).toBe(find('.s-date-picker__content'))
+
+		ctrl.swipe = 'handle'
+		await settle()
+
+		expect(handle()).toBe(panel().firstElementChild)
+		expect(handle()?.getAttribute('aria-hidden')).toBe('true')
+	})
+
+	/**
+	 * Коробку панели задаёт тест: jsdom раскладку не считает. Сторону после flip
+	 * плагин якоря пишет в панель и в jsdom — под полем. Жест мышью по полосе
+	 * вниз — дальше четверти высоты панели.
+	 */
+	it('смахнули вниз от поля — закрыта, v-model видит закрытие, признак «тянут» на панели', async () => {
+		const open = ref(false)
+
+		await render(() =>
+			h(DatePicker, {
+				swipe: 'handle',
+				open: open.value,
+				'onUpdate:open': (next: boolean) => {
+					open.value = next
+				},
+			}),
+		)
+
+		trigger().click()
+		await settle()
+
+		expect(open.value).toBe(true)
+		expect(panel().dataset.placement).toBe('bottom-start')
+
+		vi.spyOn(panel(), 'getBoundingClientRect').mockReturnValue(new DOMRect(0, 40, 300, 320))
+
+		const grip = handle()
+
+		if (!grip) throw new Error('полосы нет')
+
+		pointer('pointerdown', grip, 45)
+		pointer('pointermove', panel(), 145)
+		await nextTick()
+
+		expect(panel().style.getPropertyValue('--s-swipe-offset')).toBe('100px')
+		expect(panel().dataset.swiping).toBe('true')
+
+		pointer('pointerup', panel(), 150)
+		await settle()
+
+		expect(open.value).toBe(false)
+		expect(isOpen()).toBe(false)
+		expect(panel().dataset.swiping).toBe('false')
+	})
+})

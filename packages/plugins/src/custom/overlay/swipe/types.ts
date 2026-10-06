@@ -12,8 +12,8 @@ export type TSwipePluginEvents = TPluginEvents
  * Владелец глазами плагина: смахиваемый слой (`ISwipeable`), его шина и
  * классы — по базовому классу плагин узнаёт полосу (`__handle`).
  *
- * Контракт, а не класс: тот же плагин стоит на выезжающей панели и на
- * поповере, общего предка у них нет — есть только общий контракт.
+ * Контракт, а не класс: тот же плагин стоит на выезжающей панели, поповере,
+ * Select и DatePicker, общего предка у них нет — есть только общий контракт.
  */
 export interface ISwipeOwner extends ISwipeable {
 	readonly events: IListenable<TSwipeableEvents>

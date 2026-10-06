@@ -1,5 +1,6 @@
 import { TInputControl } from '../../base/input-control'
 import type { TDefaultValues } from '../../base/component'
+import type { TSwipe, TSwipeSide } from '../../base/layer'
 import { DEFAULT_LOCALE, TAria, compareDates, parseDate } from '../../../common'
 import { sameValue } from '../../../common/utility/same-value'
 import type {
@@ -83,6 +84,14 @@ const SIDES: readonly TDatePickerSide[] = ['calendar', 'fields']
  * поле, у диапазона — корень (`rootAria`) с полями концов внутри. Модификатор
  * режима (`--single`, `--range`) — для темы: коробку диапазона она строит на
  * корне.
+ *
+ * **Жест** (`swipe`, по умолчанию выключен) — смахнуть панель, чтобы закрыть:
+ * DatePicker — смахиваемый слой (`ISwipeable`), как Select. Панель уходит от
+ * поля — вниз, если стоит под ним, и вверх, если над ним; сторону решает flip
+ * плагина якоря, поэтому `swipeSide` — всегда `null`. Признак «тянут»
+ * (`swiping`) панель получает набором `panelDataset`, рядом с `panelAria`.
+ * Закрывает жест записью `open`, как Escape, и фокус возвращается туда, откуда
+ * открыли.
  */
 export class TDatePicker
 	extends TInputControl<TDatePickerValue, IDatePickerProps, TDatePickerEvents>
@@ -101,7 +110,8 @@ export class TDatePicker
 			| 'startLabel'
 			| 'endLabel'
 			| 'startName'
-			| 'endName',
+			| 'endName'
+			| 'swipe',
 			'min' | 'max' | 'unavailable' | 'weekStart' | 'timeZone'
 		> = {
 		...TInputControl.defaultValues,
@@ -123,6 +133,7 @@ export class TDatePicker
 		// Без имени, как `name`: поле без имени в форму не уходит
 		startName: '',
 		endName: '',
+		swipe: 'none',
 	}
 
 	protected _mode: TDatePickerMode
@@ -139,6 +150,8 @@ export class TDatePicker
 	protected _endLabel: string
 	protected _startName: string
 	protected _endName: string
+	protected _swipe: TSwipe
+	protected _swiping = false
 	protected readonly _field: IDateInput
 	protected readonly _start: IDateInput
 	protected readonly _end: IDateInput
@@ -181,6 +194,7 @@ export class TDatePicker
 		this._endLabel = props.endLabel ?? ctor.defaultValues.endLabel
 		this._startName = props.startName ?? ctor.defaultValues.startName
 		this._endName = props.endName ?? ctor.defaultValues.endName
+		this._swipe = props.swipe ?? ctor.defaultValues.swipe
 
 		// Общее полям и календарю — с самого начала, конструктором
 		const shared = {
@@ -498,6 +512,59 @@ export class TDatePicker
 		this.events.emit('change:endName', value)
 	}
 
+	/**
+	 * За что панель можно смахнуть, чтобы закрыть: ни за что (по умолчанию), за
+	 * полосу или за любое место, кроме контролов календаря и прокручиваемого
+	 * содержимого — с ними работают сами.
+	 */
+	get swipe(): TSwipe {
+		return this._swipe
+	}
+
+	set swipe(value: TSwipe) {
+		if (this._swipe === value) return
+
+		this._swipe = value
+
+		// Жест выключили посреди жеста — тянуть больше нечего
+		if (value === 'none') this._setSwiping(false)
+
+		this.events.emit('change:swipe', value)
+	}
+
+	/**
+	 * Куда панель уходит жестом — от поля. Под ним она или над ним, решает flip
+	 * плагина якоря, и знает это только её узел: здесь всегда `null`.
+	 */
+	get swipeSide(): TSwipeSide | null {
+		return null
+	}
+
+	/** Идёт жест: с `beginSwipe` до `endSwipe` или до закрытия панели. */
+	get swiping(): boolean {
+		return this._swiping
+	}
+
+	/**
+	 * Жест начался: панель тянут. Закрытую панель и панель без жеста тянуть
+	 * нельзя — тогда жест не начинается.
+	 */
+	beginSwipe(): boolean {
+		if (this._swipe === 'none' || !this._open) return false
+
+		this._setSwiping(true)
+
+		return true
+	}
+
+	/**
+	 * Жест кончился. Закрывать или нет, решил плагин по пройденному пути и
+	 * скорости, и закрывает он записью `open`, как Escape.
+	 */
+	endSwipe(): void {
+		this._setSwiping(false)
+	}
+
 	/* ------------------------------------------------------------------ */
 	/* Выходы для разметки                                                */
 	/* ------------------------------------------------------------------ */
@@ -530,6 +597,28 @@ export class TDatePicker
 	}
 
 	/**
+	 * Состояние панели для темы: тянут ли её (`data-swiping`) — тогда переход
+	 * сдвига снят, и панель идёт за пальцем без задержки.
+	 *
+	 * Открытости (`data-open`) в наборе нет: её пишет слой панели (`TLayer`),
+	 * чья видимость и есть `open`, — второй писатель атрибута разошёлся бы с
+	 * ним. Стороны тоже нет: после flip её пишет в панель плагин якоря
+	 * (`data-placement`). ARIA и `data-*` в один набор не смешиваются, поэтому
+	 * набор отдельный от `panelAria`.
+	 */
+	get panelDataset(): TDatasetAttributes {
+		return { 'data-swiping': this._swiping ? 'true' : 'false' }
+	}
+
+	/**
+	 * Рисовать ли полосу, за которую панель тянут. Рисуется, пока жест включён,
+	 * — и при `panel` тоже: она говорит, что панель можно смахнуть.
+	 */
+	get handleRendered(): boolean {
+		return this._swipe !== 'none'
+	}
+
+	/**
 	 * Набор корня. У диапазона корень — группа полей концов: роль и `aria`
 	 * DatePicker'а с именем от плагина имени. У одной даты группа частей — само
 	 * поле, имя разметка отдаёт ему, а корню ARIA не нужна.
@@ -555,6 +644,7 @@ export class TDatePicker
 			endLabel: this._endLabel,
 			startName: this._startName,
 			endName: this._endName,
+			swipe: this._swipe,
 		}
 	}
 
@@ -575,6 +665,10 @@ export class TDatePicker
 
 	protected _applyOpen(value: boolean): void {
 		this._open = value
+
+		// Закрытую панель не тянут: жест кончается вместе с ней
+		if (!value) this._setSwiping(false)
+
 		this._triggerAria.add('aria-expanded', value ? 'true' : 'false')
 		// Тема и потребитель, красящий кнопку или корень по контексту, читают
 		// открытость с корня — как у Select
@@ -584,6 +678,13 @@ export class TDatePicker
 	/** Открывать нечего — открытая панель закрывается, а не остаётся висеть. */
 	protected _syncOpenable(): void {
 		if (!this.openable && this._open) this.open = false
+	}
+
+	protected _setSwiping(value: boolean): void {
+		if (this._swiping === value) return
+
+		this._swiping = value
+		this.events.emit('change:swiping', value)
 	}
 
 	/** Свои свойства из базы — полям и календарю. */

@@ -1,7 +1,8 @@
 /**
  * CSS-переходы темы в настоящем браузере — общее для спеков, которые смотрят,
  * как слой появляется и исчезает (`drawer.spec.ts`, `dialog.spec.ts`,
- * `popover.spec.ts`, `select.spec.ts`, `date-picker.spec.ts`), как
+ * `popover.spec.ts`, `select.spec.ts`, `date-picker.spec.ts`,
+ * `popover-swipe.spec.ts`, `anchored-swipe.spec.ts`), как
  * новое значение доезжает до места переходом (`slider.spec.ts`,
  * `progress-linear.spec.ts`, `tabs-line.spec.ts`, `tabs-contained.spec.ts`) и
  * что ведут кадры анимации (`progress-spinner.spec.ts`, `motion-mode.spec.ts`).
@@ -123,8 +124,8 @@ export const ownTransitionRuns = (element: HTMLElement): string[] => {
 
 /**
  * Панель гаснет на месте и только потом пропадает — так закрывается панель у
- * якоря (`themes/oren/src/mixins/_anchored.scss`): Popover без жеста, Select и
- * DatePicker. Панель меряется открытой, `close` её закрывает, и пока у неё не
+ * якоря без жеста (`themes/oren/src/mixins/_anchored.scss`): Popover, Select
+ * и DatePicker. Панель меряется открытой, `close` её закрывает, и пока у неё не
  * `display: none`, она закрыта (`data-open`), нажатий не ловит — указатель в
  * её середине попадает в то, что под ней, — не сдвигается, а прозрачность у
  * неё только убывает. Переходит одна прозрачность: из переходов самой панели,

@@ -3,7 +3,7 @@
  *
  * Наследует InputControlDescriptor: value, name, readonly, required, плюс всё
  * от Control (disabled, focused, size, variant) и ComponentView. Добавляет
- * состояние панели и плагины оверлея.
+ * состояние панели, жест и плагины оверлея.
  */
 
 import { defineComponent, defineDescriptor, defineType } from '../../../../protected/define'
@@ -20,6 +20,7 @@ import {
 	SelectIdsPluginDescriptor,
 	SelectKeyboardPluginDescriptor,
 	SelectPointerPluginDescriptor,
+	SwipePluginDescriptor,
 } from '../../plugins'
 import { LIST_PROPS } from '../list'
 
@@ -88,6 +89,8 @@ export const SelectDescriptor = defineDescriptor(() =>
 				editableMode: { type: String, triggers: ['change:editableMode'] },
 				removeOnBackspace: { type: Boolean, triggers: ['change:removeOnBackspace'] },
 				placement: { type: String, triggers: ['change:placement'] },
+				/** За что панель смахивают, чтобы закрыть. По умолчанию — ни за что. */
+				swipe: { type: String, triggers: ['change:swipe'] },
 				/**
 				 * Имя кнопки очистки. Отдельный набор, а не часть `aria`: `aria`
 				 * описывает само поле, а это соседняя кнопка.
@@ -135,6 +138,18 @@ export const SelectDescriptor = defineDescriptor(() =>
 					protected: true,
 					triggers: ['change:placement'],
 				},
+				/**
+				 * `data-*` панели: тянут ли её. Панель — Frame без экземпляра в ядре,
+				 * и набор для неё — Select'а, как `listAria` списка. Открытость панели
+				 * (`data-open`) пишет её слой, сторону (`data-placement`) — плагин
+				 * якоря.
+				 */
+				panelDataset: { type: Object, protected: true, triggers: ['change:swiping'] },
+				/**
+				 * Рисовать ли полосу, за которую тянут. Вычисляет ядро: разметка
+				 * без экземпляра формулу не повторяет.
+				 */
+				handleRendered: { type: Boolean, protected: true, triggers: ['change:swipe'] },
 				// Общие с ListBox — объявлены один раз в `components/list.ts`
 				...LIST_PROPS,
 			},
@@ -163,6 +178,8 @@ export const SelectDescriptor = defineDescriptor(() =>
 			SelectBackspacePluginDescriptor,
 			// `id` списка и `aria-controls` поля
 			SelectIdsPluginDescriptor,
+			// Смахнуть панель, чтобы закрыть. После dismiss: берёт у него панель
+			SwipePluginDescriptor,
 		],
 	}),
 )

@@ -3,6 +3,7 @@ import type {
 	IInputControlProps,
 	TInputControlEvents,
 } from '../../base/input-control'
+import type { ISwipeable, TSwipe, TSwipeableEvents } from '../../base/layer'
 import type {
 	TAria,
 	TAriaAttributes,
@@ -40,44 +41,45 @@ export type TDatePickerValue = TCalendarDate | TCalendarRange | undefined
  */
 export type TDatePickerSide = 'calendar' | 'fields'
 
-export type TDatePickerEvents = TInputControlEvents<TDatePickerValue> & {
-	/** change:mode */
-	'change:mode': (value: TDatePickerMode) => void
-	/** change:open */
-	'change:open': (value: boolean) => void
-	/** open — панель открылась */
-	open: () => void
-	/** close — панель закрылась */
-	close: () => void
-	/** change:closeOnSelect */
-	'change:closeOnSelect': (value: boolean) => void
-	/** change:min */
-	'change:min': (value: TCalendarDate | undefined) => void
-	/** change:max */
-	'change:max': (value: TCalendarDate | undefined) => void
-	/** change:unavailable */
-	'change:unavailable': (value: TCalendarUnavailable | undefined) => void
-	/** change:weekStart */
-	'change:weekStart': (value: TWeekday | undefined) => void
-	/** change:locale */
-	'change:locale': (value: string) => void
-	/** change:timeZone */
-	'change:timeZone': (value: string | undefined) => void
-	/** change:triggerLabel */
-	'change:triggerLabel': (value: string) => void
-	/** change:startLabel */
-	'change:startLabel': (value: string) => void
-	/** change:endLabel */
-	'change:endLabel': (value: string) => void
-	/** change:startName */
-	'change:startName': (value: string) => void
-	/** change:endName */
-	'change:endName': (value: string) => void
-	/** change:triggerAria — набор кнопки календаря изменился */
-	'change:triggerAria': (value: TAriaAttributes) => void
-	/** change:panelAria — набор панели изменился */
-	'change:panelAria': (value: TAriaAttributes) => void
-}
+export type TDatePickerEvents = TInputControlEvents<TDatePickerValue> &
+	TSwipeableEvents & {
+		/** change:mode */
+		'change:mode': (value: TDatePickerMode) => void
+		/** change:open */
+		'change:open': (value: boolean) => void
+		/** open — панель открылась */
+		open: () => void
+		/** close — панель закрылась */
+		close: () => void
+		/** change:closeOnSelect */
+		'change:closeOnSelect': (value: boolean) => void
+		/** change:min */
+		'change:min': (value: TCalendarDate | undefined) => void
+		/** change:max */
+		'change:max': (value: TCalendarDate | undefined) => void
+		/** change:unavailable */
+		'change:unavailable': (value: TCalendarUnavailable | undefined) => void
+		/** change:weekStart */
+		'change:weekStart': (value: TWeekday | undefined) => void
+		/** change:locale */
+		'change:locale': (value: string) => void
+		/** change:timeZone */
+		'change:timeZone': (value: string | undefined) => void
+		/** change:triggerLabel */
+		'change:triggerLabel': (value: string) => void
+		/** change:startLabel */
+		'change:startLabel': (value: string) => void
+		/** change:endLabel */
+		'change:endLabel': (value: string) => void
+		/** change:startName */
+		'change:startName': (value: string) => void
+		/** change:endName */
+		'change:endName': (value: string) => void
+		/** change:triggerAria — набор кнопки календаря изменился */
+		'change:triggerAria': (value: TAriaAttributes) => void
+		/** change:panelAria — набор панели изменился */
+		'change:panelAria': (value: TAriaAttributes) => void
+	}
 
 export interface IDatePickerProps extends IInputControlProps<TDatePickerValue> {
 	/** Режим: одна дата или диапазон. По умолчанию `single` */
@@ -114,13 +116,20 @@ export interface IDatePickerProps extends IInputControlProps<TDatePickerValue> {
 	startName?: string
 	/** Имя конца диапазона при отправке формы */
 	endName?: string
+	/**
+	 * За что панель можно смахнуть, чтобы закрыть: ни за что (по умолчанию), за
+	 * полосу или за любое место, кроме контролов календаря и прокручиваемого
+	 * содержимого. Панель уходит от поля: под ним — вниз, над ним — вверх
+	 */
+	swipe?: TSwipe
 }
 
-export interface IDatePicker extends IInputControl<
-	TDatePickerValue,
-	IDatePickerProps,
-	TDatePickerEvents
-> {
+/**
+ * DatePicker. Панель смахивают, чтобы закрыть (`ISwipeable`): она у поля, и
+ * сторону после flip знает только её узел — `swipeSide` всегда `null`.
+ */
+export interface IDatePicker
+	extends IInputControl<TDatePickerValue, IDatePickerProps, TDatePickerEvents>, ISwipeable {
 	/** Режим: одна дата или диапазон */
 	mode: TDatePickerMode
 	/** Открыта ли панель с календарём */
@@ -173,6 +182,13 @@ export interface IDatePicker extends IInputControl<
 	 * плагин связок
 	 */
 	readonly panelAria: TAria
+	/**
+	 * `data-*` панели для темы: тянут ли её (`data-swiping`). Открытость
+	 * панели (`data-open`) пишет её слой
+	 */
+	readonly panelDataset: TDatasetAttributes
+	/** Рисовать ли полосу, за которую панель тянут: жест включён */
+	readonly handleRendered: boolean
 	/**
 	 * Набор корня. У диапазона корень — группа полей: `role="group"` и `aria`
 	 * DatePicker с именем; у одной даты группа — само поле, и набор пуст
