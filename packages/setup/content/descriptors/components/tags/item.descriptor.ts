@@ -6,12 +6,16 @@
  * Плагина подсветки здесь нет: в отличие от ListBoxItem, по тегам ходит
  * настоящий фокус, а не подсветка. Клавиатура набора — плагин владельца
  * (`TagsKeyboardPluginDescriptor`), остановку Tab пишет коллекция.
+ *
+ * Размер тегу диктует набор, поэтому вход `size` снят. `variant` — вход, в
+ * отличие от остальных элементов коллекций (`OWNER_STYLE_PROPS`): вариант у
+ * тега свой, и в одном наборе бывают теги разного цвета. Набор его не пишет —
+ * тег без своего варианта тема красит вариантом набора.
  */
 
 import { defineComponent, defineDescriptor, defineType } from '../../../../protected/define'
 import { TTagsItem } from '@soldy-ui/core'
 import { ValueControlDescriptor } from '../value-control.descriptor'
-import { OWNER_STYLE_PROPS } from '../stylable.descriptor'
 
 export const TagsItemDescriptor = defineDescriptor(() =>
 	defineComponent({
@@ -35,8 +39,9 @@ export const TagsItemDescriptor = defineDescriptor(() =>
 				'close-icon': { description: 'Иконка кнопки закрытия' },
 			},
 			props: {
-				// Размер и вид тега задаёт набор: входы сняты
-				...OWNER_STYLE_PROPS,
+				// Размер тега задаёт набор: вход снят. Вариант — свой, вход
+				// остаётся от `ValueControlDescriptor`
+				size: { protected: true },
 				text: { type: String, triggers: ['change:text'] },
 				closable: { type: Boolean, triggers: ['change:closable'] },
 				closeLabel: { type: String, triggers: ['change:closeLabel'] },

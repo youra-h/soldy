@@ -213,12 +213,12 @@ describe('переобъявление ходит в обе стороны', () 
 })
 
 describe('элементы коллекций: размер и вид задаёт владелец', () => {
+	// Tags.Item — не здесь: вариант у тега свой (ниже)
 	const items: Array<[string, () => IComponentDescriptor]> = [
 		['ListBox.Item', ListBoxItemDescriptor],
 		['Select.Item', SelectItemDescriptor],
 		['Tabs.Item', TabsItemDescriptor],
 		['Accordion.Item', AccordionItemDescriptor],
-		['Tags.Item', TagsItemDescriptor],
 		['RadioGroup.Item', RadioGroupItemDescriptor],
 	]
 
@@ -248,6 +248,39 @@ describe('элементы коллекций: размер и вид задаё
 		expect([size, variant, text]).toEqual(['size', 'variant', 'text'])
 		expectTypeOf<IListBoxItemProps>().toHaveProperty('size')
 		expectTypeOf<IListBoxItemProps>().toHaveProperty('variant')
+	})
+})
+
+/**
+ * Тег: размер диктует набор, а вариант у тега свой — в одном наборе теги
+ * бывают разного цвета. Снят только `size`, `variant` — вход, унаследованный
+ * от `ValueControlDescriptor`.
+ */
+describe('тег: размер задаёт набор, вариант — свой', () => {
+	it('в разметке size нет, variant есть', () => {
+		const descriptor = TagsItemDescriptor()
+		const surface = TSurface.of(descriptor, RawProfile)
+
+		expect(inputs(descriptor)).not.toContain('size')
+		expect(inputs(descriptor)).toContain('variant')
+		expect(propOf(descriptor, 'size').protected).toBe(true)
+		expect(propOf(descriptor, 'variant').protected).toBe(false)
+		// Размер живёт: тема читает модификатор, шаблон — сам проп
+		expect(surface.props.map((prop) => prop.exportName)).toContain('size')
+		expect(surface.exportEvents).toEqual(
+			expect.arrayContaining(['change:size', 'change:variant']),
+		)
+	})
+
+	it('в типах пропсов тега variant есть, size нет', () => {
+		type TTagProps = DescriptorProps<typeof TagsItemDescriptor>
+
+		// @ts-expect-error — размер тега диктует набор
+		const size: keyof TTagProps = 'size'
+		const variant: keyof TTagProps = 'variant'
+
+		expect([size, variant]).toEqual(['size', 'variant'])
+		expectTypeOf<TTagProps>().toHaveProperty('variant')
 	})
 })
 

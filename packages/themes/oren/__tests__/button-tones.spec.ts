@@ -10,6 +10,10 @@ import { buildCss } from './build-css'
  * `src/components/button/_mixins.scss`), а вид и его состояния объявлены один
  * раз на все цвета.
  *
+ * Пилюлю тега без своего варианта красит вариант набора — правилом по классу
+ * набора (`s-tags--variant-<v>`, `tags/_tags.scss`). Оно тоже вариант и тоже
+ * пишет только переменные.
+ *
  * Раньше вид разворачивался целиком на каждый вариант — и в каждом контексте:
  * у строк ListBox и Select, крестиков, кнопок Calendar, Dialog и Drawer, у
  * пилюль Tags по видам. Правило варианта сильнее правила нейтрали на класс, и
@@ -22,7 +26,7 @@ import { buildCss } from './build-css'
  * Читается собранный CSS: `@apply` развёрнут, вложенность раскрыта.
  */
 
-const VARIANT = /\.s-(?:button|tags-item)--variant-[a-z]+/
+const VARIANT = /\.s-(?:button|tags|tags-item)--variant-[a-z]+/
 
 describe('вариант Button и пилюли тега — только переменные цвета', async () => {
 	const css = postcss.parse(await buildCss())
@@ -33,8 +37,13 @@ describe('вариант Button и пилюли тега — только пер
 		if (rule.selectors.some((selector) => VARIANT.test(selector))) rules.push(rule)
 	})
 
-	it('правила вариантов есть', () => {
-		expect(rules.length).toBeGreaterThan(0)
+	/** У каждого блока свои: иначе проверки ниже прошли бы на одном Button. */
+	it.each(['s-button', 's-tags-item', 's-tags'])('правила вариантов %s есть', (block) => {
+		const own = rules.filter((rule) =>
+			rule.selectors.some((selector) => selector.includes(`.${block}--variant-`)),
+		)
+
+		expect(own.length).toBeGreaterThan(0)
 	})
 
 	it('правило варианта объявляет только переменные', () => {
