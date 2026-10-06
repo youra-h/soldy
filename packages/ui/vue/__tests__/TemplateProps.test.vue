@@ -320,6 +320,10 @@ const dragAndDrop = new TDragAndDrop()
 	<Tags.Item :closeLabel="42" />
 	<Tags.Item closeLabel="Удалить" />
 
+	<!-- @vue-expect-error — вариант тега — имя темы, а `rainbow` она не объявила -->
+	<Tags.Item variant="rainbow" />
+	<Tags.Item variant="brand" />
+
 	<!-- @vue-expect-error — стороны `left` у подсказки нет: сторона и выравнивание -->
 	<Tooltip placement="left" />
 	<Tooltip placement="top" />

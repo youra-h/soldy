@@ -201,43 +201,60 @@ $tone-steps: 300, 400, 500, 800;
 // получала слой поверх своей вуали, а кнопки листания Calendar теряли
 // `absolute`. У нейтрали слоя нет: её выбор под подсветкой — вуаль плотнее
 // обоих состояний.
+//
+// Блоки переменных одного цвета — свои миксины (`button-neutral-tones`,
+// `button-variant-tones`): цвет узлу задаёт не только модификатор его блока.
+// Пилюля тега без своего варианта берёт цвет от варианта набора, по классу
+// набора (`tags/_tags.scss`), а тег со своим `normal` — нейтраль поверх него.
+// Копия блока там разошлась бы с этим молча.
 @mixin button-tones($block) {
 	:where(.#{$block}) {
-		@each $step in $tone-steps {
-			--s-tone-#{$step}: var(--s-neutral-#{$step});
-		}
-
-		--s-tone-filled: #{veil.tint('neutral', var(--s-component-fill))};
-		--s-tone-filled-hover: #{veil.tint(
-				'neutral',
-				veil.density(var(--s-component-state-hover), var(--s-component-fill))
-			)};
-		--s-tone-filled-active: #{veil.tint(
-				'neutral',
-				veil.density(var(--s-component-state-active), var(--s-component-fill))
-			)};
-		--s-tone-filled-both: #{veil.tint(
-				'neutral',
-				veil.density(var(--s-component-state-active-hover), var(--s-component-fill))
-			)};
-		--s-tone-filled-layer: none;
-		--s-tone-filled-text: var(--s-component-text);
+		@include button-neutral-tones;
 	}
 
 	@each $variant in $variants {
 		.#{$block}--variant-#{$variant} {
-			@each $step in $tone-steps {
-				--s-tone-#{$step}: var(--s-#{$variant}-#{$step});
-			}
-
-			--s-tone-filled: var(--s-#{$variant}-500);
-			--s-tone-filled-hover: var(--s-#{$variant}-600);
-			--s-tone-filled-active: var(--s-#{$variant}-700);
-			--s-tone-filled-both: var(--s-#{$variant}-700);
-			--s-tone-filled-layer: linear-gradient(#{veil.layer(var(--s-neutral-50), 20%)} 0 0);
-			--s-tone-filled-text: var(--color-white);
+			@include button-variant-tones($variant);
 		}
 	}
+}
+
+// Переменные цвета нейтрали — вуаль своей плотности (`button-tones`).
+@mixin button-neutral-tones {
+	@each $step in $tone-steps {
+		--s-tone-#{$step}: var(--s-neutral-#{$step});
+	}
+
+	--s-tone-filled: #{veil.tint('neutral', var(--s-component-fill))};
+	--s-tone-filled-hover: #{veil.tint(
+			'neutral',
+			veil.density(var(--s-component-state-hover), var(--s-component-fill))
+		)};
+	--s-tone-filled-active: #{veil.tint(
+			'neutral',
+			veil.density(var(--s-component-state-active), var(--s-component-fill))
+		)};
+	--s-tone-filled-both: #{veil.tint(
+			'neutral',
+			veil.density(var(--s-component-state-active-hover), var(--s-component-fill))
+		)};
+	--s-tone-filled-layer: none;
+	--s-tone-filled-text: var(--s-component-text);
+}
+
+// Переменные цвета варианта `$variant` — ступени шкалы и насыщенная заливка
+// (`button-tones`).
+@mixin button-variant-tones($variant) {
+	@each $step in $tone-steps {
+		--s-tone-#{$step}: var(--s-#{$variant}-#{$step});
+	}
+
+	--s-tone-filled: var(--s-#{$variant}-500);
+	--s-tone-filled-hover: var(--s-#{$variant}-600);
+	--s-tone-filled-active: var(--s-#{$variant}-700);
+	--s-tone-filled-both: var(--s-#{$variant}-700);
+	--s-tone-filled-layer: linear-gradient(#{veil.layer(var(--s-neutral-50), 20%)} 0 0);
+	--s-tone-filled-text: var(--color-white);
 }
 
 // Выбор в режиме принудительных цветов (высокий контраст Windows) — хвост

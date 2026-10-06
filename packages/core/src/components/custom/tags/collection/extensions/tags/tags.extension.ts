@@ -28,9 +28,15 @@ import type { ITagsOverflowExtension } from '../overflow'
  *
  * Четыре обязанности:
  *
- * 1. **Размер и вид** тега диктует набор — как у
- *    `TListBoxExtension`/`TTabsExtension`, расширение пишет их значениями
- *    набора. `disabled` набора распространяется на теги, как у `<fieldset>`.
+ * 1. **Размер** тега диктует набор — как у `TListBoxExtension`/
+ *    `TTabsExtension`, расширение пишет его значением набора. `disabled`
+ *    набора распространяется на теги, как у `<fieldset>`. **Вариант** (цвет)
+ *    у тега свой, и расширение его не пишет: так в одном наборе бывают теги
+ *    разного цвета. Тег без своего варианта тема красит вариантом набора — с
+ *    класса набора (`s-tags--variant-<v>`), а свой модификатор тега его
+ *    перекрывает. Писать вариант набора тегу «если своего нет» значило бы
+ *    завести второй путь: в одном поле не различить, задал ли его потребитель
+ *    или записал набор.
  * 2. **Закрытие** — `closeTag`, копия `closeTab` у Tabs: закрывает только
  *    тег, закрываемый по своему item-адаптеру (выключенный — нет), и эмитит
  *    `item:close` перед удалением.
@@ -50,7 +56,7 @@ import type { ITagsOverflowExtension } from '../overflow'
  *
  * Вид набора (`TTags.view`) тегам, в отличие от ListBox, не доставляется:
  * пилюлю тега тема рисует по модификатору набора, и копия значения на
- * элементе была бы вторым путём к тем же данным.
+ * элементе была бы вторым путём к тем же данным. Вариант набора — так же.
  */
 export class TTagsExtension<TOwner extends ITags = ITags, TItem extends ITagsItem = ITagsItem>
 	extends TBaseOwnerItemExtension<
@@ -148,17 +154,15 @@ export class TTagsExtension<TOwner extends ITags = ITags, TItem extends ITagsIte
 			this._applyMode()
 
 			// Смена у владельца — всем элементам: `disabled` распространяется на
-			// них, как у `<fieldset>`, `size` и `variant` диктует он
+			// них, как у `<fieldset>`, `size` диктует он. Вариант тега свой —
+			// смена варианта у набора тегов не трогает
 			scope.on(owner.events, 'change:disabled', (value: boolean) => {
 				ctx.driver.valueOf().forEach((item) => {
 					item.disabled = value
 				})
 			})
 			scope.on(owner.events, 'change:size', () =>
-				ctx.driver.valueOf().forEach((item) => this._applyStyle(item, owner)),
-			)
-			scope.on(owner.events, 'change:variant', () =>
-				ctx.driver.valueOf().forEach((item) => this._applyStyle(item, owner)),
+				ctx.driver.valueOf().forEach((item) => this._applySize(item, owner)),
 			)
 
 			// Глобальный closable — в item-адаптеры (TTagsItemExtension резолвит
@@ -171,23 +175,23 @@ export class TTagsExtension<TOwner extends ITags = ITags, TItem extends ITagsIte
 	}
 
 	/**
-	 * Свойства владельца на элементе: `size` и `variant` — всегда его,
-	 * `disabled` — когда владелец выключен. Владельца нет — элемент со своим.
+	 * Свойства владельца на элементе: `size` — всегда его, `disabled` — когда
+	 * владелец выключен. Владельца нет — элемент со своим. Вариант тега свой
+	 * и сюда не входит.
 	 */
 	private _inheritOwner(item: TItem): void {
 		const owner = this._ctx.options.get('owner')
 
 		if (!owner) return
 
-		this._applyStyle(item, owner)
+		this._applySize(item, owner)
 
 		if (owner.disabled) item.disabled = true
 	}
 
-	/** `size` и `variant` элемента — всегда владельца. */
-	private _applyStyle(item: TItem, owner: TOwner): void {
+	/** `size` элемента — всегда владельца. */
+	private _applySize(item: TItem, owner: TOwner): void {
 		item.size = owner.size
-		item.variant = owner.variant
 	}
 
 	private get _selection(): ISelectionExtension<TItem> | undefined {
