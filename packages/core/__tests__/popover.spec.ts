@@ -102,16 +102,17 @@ describe('data-* для темы', () => {
 		expect(popover.dataset.get('open')).toBe('true')
 	})
 
-	// Панель телепортирована, и `data-open` корня до неё не доходит: свой — в
-	// её наборе, по нему тема проявляет и гасит панель
-	it('data-open панели — в её наборе, следует за open', () => {
+	// Панель телепортирована, и `data-open` корня до неё не доходит. Свой у неё
+	// — от слоя: открытость панели — это видимость её Frame. Второй писатель
+	// атрибута разошёлся бы с ним, поэтому в наборе панели его нет
+	it('data-open в наборе панели нет — его пишет её слой', () => {
 		const popover = new TPopover()
 
-		expect(popover.panelDataset['data-open']).toBe('false')
+		expect(popover.panelDataset).toEqual({ 'data-swiping': 'false' })
 
 		popover.open = true
 
-		expect(popover.panelDataset).toEqual({ 'data-open': 'true', 'data-swiping': 'false' })
+		expect(popover.panelDataset).toEqual({ 'data-swiping': 'false' })
 	})
 
 	it('открытый триггер — data-selected, отдельным набором от ARIA', () => {
@@ -281,7 +282,6 @@ describe('жест', () => {
 		popover.contained = true
 
 		expect(popover.panelDataset).toEqual({
-			'data-open': 'false',
 			'data-swiping': 'false',
 			'data-edge': 'end',
 		})

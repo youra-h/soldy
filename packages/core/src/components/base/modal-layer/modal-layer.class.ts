@@ -41,9 +41,8 @@ import type { IModalLayer, IModalLayerProps, TModalLayerEvents } from './types'
  *
  * **Открытость — `data-open`** у панели и подложки. По нему тема ведёт
  * переход к закрытому виду и обратно: окно гаснет и проявляется, панель
- * уезжает за край и въезжает. Своего появления и исчезания у ядра нет — ни
- * «присутствия», ни хуков под анимацию: закрытый слой спрятан `visible`, а
- * переход до скрытия и после показа держит CSS.
+ * уезжает за край и въезжает. У панели атрибут — от слоя (`TLayer`), как у
+ * любой панели; подложке его отдаёт набор `backdropDataset`.
  */
 export default class TModalLayer<
 	TProps extends IModalLayerProps = IModalLayerProps,
@@ -96,9 +95,6 @@ export default class TModalLayer<
 		this._titleAria.events.on('change', () =>
 			this._sink.emit('change:titleAria', this._titleAria.toObject()),
 		)
-
-		this._applyOpen()
-		this.events.on('change:visible', () => this._applyOpen())
 	}
 
 	/**
@@ -242,15 +238,6 @@ export default class TModalLayer<
 			...(layer === undefined ? {} : { [FRAME_LAYER_ATTRIBUTE]: layer }),
 			'data-open': String(this.visible),
 		}
-	}
-
-	/**
-	 * Открытость — теме: по `data-open` она ведёт переход к закрытому виду, и
-	 * переходу до скрытия есть к чему идти. Второй записи состояния тут нет —
-	 * это проекция `visible` в набор, как `data-open` у Popover.
-	 */
-	private _applyOpen(): void {
-		this._dataset.add('open', this.visible)
 	}
 
 	override getProps(): TProps {

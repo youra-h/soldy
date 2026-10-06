@@ -1,6 +1,7 @@
 /**
  * CSS-переходы темы в настоящем браузере — общее для спеков, которые смотрят,
- * как слой появляется и исчезает (`drawer.spec.ts`, `dialog.spec.ts`), как
+ * как слой появляется и исчезает (`drawer.spec.ts`, `dialog.spec.ts`,
+ * `popover.spec.ts`, `select.spec.ts`, `date-picker.spec.ts`), как
  * новое значение доезжает до места переходом (`slider.spec.ts`,
  * `progress-linear.spec.ts`, `tabs-line.spec.ts`, `tabs-contained.spec.ts`) и
  * что ведут кадры анимации (`progress-spinner.spec.ts`, `motion-mode.spec.ts`).
@@ -13,6 +14,8 @@
  * Одна копия на всех, как у `colors.ts` и `media.ts`: разойдись две, один спек
  * молча мерил бы переход иначе, чем другой.
  */
+
+import { expect } from 'vitest'
 
 /**
  * Переходы на узле доигрывают, прежде чем мерить. Только свои: переходы
@@ -99,6 +102,67 @@ export const transitionRuns = (element: HTMLElement): string[] => {
 	element.addEventListener('transitionrun', (event) => runs.push(event.propertyName))
 
 	return runs
+}
+
+/**
+ * `transitionRuns` только самого узла. События переходов детей всплывают до
+ * него, и панель со списком или календарём внутри получала бы цвет строки под
+ * указателем и кольцо фокуса дня, — появлению панели они не принадлежат.
+ */
+export const ownTransitionRuns = (element: HTMLElement): string[] => {
+	const runs: string[] = []
+
+	element.addEventListener('transitionrun', (event) => {
+		if (event.target !== element || event.pseudoElement !== '') return
+
+		runs.push(event.propertyName)
+	})
+
+	return runs
+}
+
+/**
+ * Панель гаснет на месте и только потом пропадает — так закрывается панель у
+ * якоря (`themes/oren/src/mixins/_anchored.scss`): Popover без жеста, Select и
+ * DatePicker. Панель меряется открытой, `close` её закрывает, и пока у неё не
+ * `display: none`, она закрыта (`data-open`), нажатий не ловит — указатель в
+ * её середине попадает в то, что под ней, — не сдвигается, а прозрачность у
+ * неё только убывает. Переходит одна прозрачность: из переходов самой панели,
+ * кроме `display`, — только `opacity`.
+ */
+export const expectFadesInPlace = async (
+	panel: HTMLElement,
+	close: () => Promise<unknown>,
+): Promise<void> => {
+	const { top, left, width, height } = panel.getBoundingClientRect()
+	const runs = ownTransitionRuns(panel)
+	const opacities: number[] = []
+
+	await close()
+
+	const seen = await whileLeaving(panel, () => {
+		const box = panel.getBoundingClientRect()
+		const hit = document.elementFromPoint(left + width / 2, top + height / 2)
+
+		expect(panel.dataset.open, 'закрыта').toBe('false')
+		expect(getComputedStyle(panel).pointerEvents, 'нажатий не ловит').toBe('none')
+		expect(hit !== null && panel.contains(hit), 'нажатие в середину — мимо неё').toBe(false)
+		expect(Math.abs(box.top - top), 'на месте по вертикали').toBeLessThan(1)
+		expect(Math.abs(box.left - left), 'на месте по горизонтали').toBeLessThan(1)
+		opacities.push(Number(getComputedStyle(panel).opacity))
+	})
+
+	// Исчезни панель сразу, проверять было бы нечего, и сторож прошёл бы сам
+	expect(seen, 'кадров на экране после закрытия').toBeGreaterThan(1)
+	expect(
+		runs.filter((name) => name !== 'display'),
+		'переходит одна прозрачность',
+	).toEqual(['opacity'])
+	expect(Math.min(...opacities), 'прозрачность убывает').toBeLessThan(1)
+
+	for (let index = 1; index < opacities.length; index += 1) {
+		expect(opacities[index], `кадр ${index}`).toBeLessThanOrEqual(opacities[index - 1])
+	}
 }
 
 /**
