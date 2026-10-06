@@ -13,9 +13,17 @@
 import { describe, it, expect, afterEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { defineComponent, nextTick } from 'vue'
+import { createEngineRadioGroup } from '@soldy-ui/core'
+import type { TRadioGroupCollection } from '@soldy-ui/core'
 import { RadioGroup, RadioGroupItem } from '@soldy-ui/vue'
 
 let wrapper: ReturnType<typeof mount> | null = null
+
+/**
+ * Кадр: слушатели плагинов встают по `ready` корня, а `TElementPlugin`
+ * объявляет узел через `requestAnimationFrame`.
+ */
+const nextFrame = () => new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
 
 afterEach(() => {
 	wrapper?.unmount()
@@ -66,6 +74,7 @@ const choose = async (value: string) => {
 /**
  * Группа с тремя радио и подписями. `value` — пропом, как `v-model:value`
  * снаружи; «B» выключается пропом `itemOff`, вся группа — `groupOff`.
+ * `engine` — движок снаружи, не дали — группа соберёт свой.
  */
 const Harness = {
 	components: { RadioGroup, RadioGroupItem },
@@ -73,10 +82,12 @@ const Harness = {
 		value: { type: String, default: undefined },
 		itemOff: Boolean,
 		groupOff: Boolean,
+		engine: { type: Object, default: undefined },
 	},
 	emits: ['update:value'],
 	template: `
 		<RadioGroup
+			:engine="engine"
 			:value="value"
 			:disabled="groupOff"
 			@update:value="$emit('update:value', $event)"
@@ -88,7 +99,12 @@ const Harness = {
 	`,
 }
 
-type THarnessProps = { value?: string; itemOff?: boolean; groupOff?: boolean }
+type THarnessProps = {
+	value?: string
+	itemOff?: boolean
+	groupOff?: boolean
+	engine?: TRadioGroupCollection
+}
 
 const render = async (props: THarnessProps = {}) => {
 	const mounted = mount(Harness, { props, attachTo: document.body })
@@ -243,6 +259,97 @@ describe('v-model:value ↔ checked', () => {
 
 			expect(checked()).toEqual(['b'])
 		})
+	})
+})
+
+/**
+ * Приложение вправе отказать в выборе — подписчиком `item:activate:before`.
+ * Браузер отмечает нажатое радио и снимает отметку с соседа ещё до клика, а
+ * модель запись не приняла и не сменилась: разметка поля не перерисует. Поля
+ * к модели возвращает плагин группы.
+ */
+describe('отменённый выбор', () => {
+	/**
+	 * Движок снаружи с отказом в выборе. Отказ включается и снимается по ходу
+	 * теста (`refuse.on`): радио, которое при монтировании отмечает значение,
+	 * тоже проходит `item:activate:before`.
+	 */
+	const refusing = (on: boolean) => {
+		const engine = createEngineRadioGroup()
+		const refuse = { on }
+
+		engine.extensions.activation.events.on('item:activate:before', (event) => {
+			if (refuse.on) event.preventDefault()
+		})
+
+		return { engine, refuse }
+	}
+
+	/** Клик пользователя: браузер отмечает радио, снимает отметку с соседа и шлёт `change`. */
+	const click = async (value: string) => {
+		radioOf(value).click()
+
+		await nextTick()
+	}
+
+	it('пустая группа — нажатое радио не остаётся отмеченным', async () => {
+		const { engine } = refusing(true)
+		const mounted = await render({ engine })
+
+		await nextFrame()
+		await click('a')
+
+		expect(engine.extensions.activation.activeItem).toBeUndefined()
+		expect(checked()).toEqual([])
+		expect(mounted.emitted('update:value')).toBeUndefined()
+	})
+
+	it('отметка возвращается выбранному соседу', async () => {
+		const { engine, refuse } = refusing(false)
+		const mounted = await render({ engine, value: 'b' })
+
+		refuse.on = true
+		await nextFrame()
+		await click('a')
+
+		expect(engine.extensions.activation.activeItem?.value).toBe('b')
+		expect(checked()).toEqual(['b'])
+		expect(mounted.emitted('update:value')).toBeUndefined()
+	})
+
+	/**
+	 * Отмеченному радио браузер `change` не шлёт: останься нажатое радио
+	 * отмеченным после отказа, повторный клик по нему не выбрал бы ничего.
+	 */
+	it('отказ сняли — клик по тому же радио выбирает его', async () => {
+		const { engine, refuse } = refusing(true)
+		const mounted = await render({ engine })
+
+		await nextFrame()
+		await click('a')
+
+		refuse.on = false
+		await click('a')
+
+		expect(engine.extensions.activation.activeItem?.value).toBe('a')
+		expect(checked()).toEqual(['a'])
+		expect(mounted.emitted('update:value')?.at(-1)).toEqual(['a'])
+	})
+
+	it('отказ при выбранном соседе сняли — клик выбирает нажатое радио', async () => {
+		const { engine, refuse } = refusing(false)
+		const mounted = await render({ engine, value: 'a' })
+
+		refuse.on = true
+		await nextFrame()
+		await click('b')
+
+		refuse.on = false
+		await click('b')
+
+		expect(engine.extensions.activation.activeItem?.value).toBe('b')
+		expect(checked()).toEqual(['b'])
+		expect(mounted.emitted('update:value')?.at(-1)).toEqual(['b'])
 	})
 })
 

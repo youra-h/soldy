@@ -847,6 +847,106 @@ describe('фасад коллекции строк', () => {
 	})
 })
 
+/**
+ * Ширину, которую пользователь задал ручкой, таблица отдаёт наружу одним
+ * событием на действие, — по нему приложение её сохраняет. Как ручка считает
+ * ширину, — `table-columns.spec.ts`, «ручка ширины».
+ */
+describe('ширина колонки от пользователя', () => {
+	const RESIZABLE: readonly TTableColumnSource[] = [
+		{ ...NAME, resizable: true, width: 150 },
+		{ ...AGE, resizable: true, width: 100 },
+	]
+
+	it('column:resize — у фасада на законченную правку показанной колонки, одно на действие', () => {
+		const facade = new TTableCollectionFacade({ columns: [...RESIZABLE] })
+		const resize = vi.fn()
+		const name = columnOf(facade.columns, 'name')
+
+		facade.events.on('column:resize', resize)
+
+		name.grab(150)
+		name.drag(10)
+		name.drag(30)
+
+		expect(resize).not.toHaveBeenCalled()
+
+		name.release()
+		columnOf(facade.columns, 'age').shift(-20)
+
+		expect(resize.mock.calls).toEqual([
+			[{ column: name, width: 180 }],
+			[{ column: columnOf(facade.columns, 'age'), width: 80 }],
+		])
+	})
+
+	it('скрытую колонку таблица не слушает, показанную снова — одной подпиской', () => {
+		const engine = rows([ANNA], [...RESIZABLE])
+		const name = columnOf(engine.extensions.columns.columns, 'name')
+		const resize = vi.fn()
+
+		engine.extensions.columns.events.on('column:resize', resize)
+
+		name.visible = false
+		name.shift(10)
+
+		expect(resize).not.toHaveBeenCalled()
+
+		name.visible = true
+		name.shift(10)
+
+		expect(resize.mock.calls).toEqual([[{ column: name, width: 170 }]])
+	})
+
+	it('удалённую колонку таблица больше не слушает', () => {
+		const engine = rows([ANNA], [...RESIZABLE])
+		const name = columnOf(engine.extensions.columns.columns, 'name')
+		const resize = vi.fn()
+
+		engine.extensions.columns.events.on('column:resize', resize)
+		engine.extensions.columns.columns = [AGE]
+		name.shift(10)
+
+		expect(resize).not.toHaveBeenCalled()
+	})
+
+	it('выключенная таблица выключает колонки: пришедшие, все на смену и поверх патча', () => {
+		const owner = new TTable({ disabled: true })
+		const facade = new TTableCollectionFacade({ columns: [...RESIZABLE] }, { owner })
+		const states = () => facade.columns.map((column) => column.disabled)
+
+		expect(states()).toEqual([true, true])
+
+		owner.disabled = false
+
+		expect(states()).toEqual([false, false])
+
+		owner.disabled = true
+		facade.columns = [{ ...NAME, disabled: false }, { ...AGE }, ID]
+
+		expect(states()).toEqual([true, true, true])
+		expect(facade.columns.every((column) => !column.resizerRendered)).toBe(true)
+	})
+
+	it('включённая таблица своё «выключено» колонки из данных не трогает', () => {
+		const facade = new TTableCollectionFacade(
+			{ columns: [{ ...NAME, disabled: true }, AGE] },
+			{ owner: new TTable() },
+		)
+
+		expect(facade.columns.map((column) => column.disabled)).toEqual([true, false])
+	})
+
+	it('таблица пришла после колонок — догон', () => {
+		const engine = rows([ANNA], [...RESIZABLE])
+		const owner = new TTable({ disabled: true })
+
+		engine.options.set({ owner })
+
+		expect(engine.extensions.columns.columns.every((column) => column.disabled)).toBe(true)
+	})
+})
+
 describe('выбор строк включён — колонка выбора', () => {
 	it('selecting — режим не none; событие только на смену признака', () => {
 		const facade = table('none')

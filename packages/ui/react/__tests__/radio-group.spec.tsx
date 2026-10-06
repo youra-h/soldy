@@ -21,14 +21,14 @@ import { describe, it, expect, expectTypeOf, vi, afterEach } from 'vitest'
 import { StrictMode, act, useState, type ReactNode } from 'react'
 import { hydrateRoot } from 'react-dom/client'
 import { renderToString } from 'react-dom/server'
-import { TRadioGroup, type TRadioGroupValue } from '@soldy-ui/core'
+import { TRadioGroup, createEngineRadioGroup, type TRadioGroupValue } from '@soldy-ui/core'
 import {
 	RadioGroup,
 	RadioGroupItem,
 	type RadioGroupItemProps,
 	type RadioGroupProps,
 } from '@soldy-ui/react'
-import { mount, track } from './mount'
+import { mount, nextFrame, track } from './mount'
 
 afterEach(() => {
 	vi.restoreAllMocks()
@@ -72,7 +72,7 @@ function choose(value: string): void {
 /** Движок так, как его видит тест: состав радио по значениям. */
 type TEngineView = { extensions: { batch: { items: readonly object[] } } }
 
-type THarnessProps = Pick<RadioGroupProps, 'value' | 'onChangeValue'> & {
+type THarnessProps = Pick<RadioGroupProps, 'value' | 'onChangeValue' | 'engine'> & {
 	/** Выключить радио «b». */
 	itemOff?: boolean
 	/** Выключить всю группу. */
@@ -83,6 +83,7 @@ type THarnessProps = Pick<RadioGroupProps, 'value' | 'onChangeValue'> & {
 /**
  * Группа с тремя радио и подписями. `value` — пропом, как значение
  * потребителя; «b» выключается пропом `itemOff`, вся группа — `groupOff`.
+ * `engine` — движок снаружи, не дали — группа соберёт свой.
  */
 function Harness({ itemOff, groupOff, ...group }: THarnessProps): ReactNode {
 	return (
@@ -322,6 +323,103 @@ describe('value ↔ checked', () => {
 
 			expect(checked()).toEqual(['b'])
 		})
+	})
+})
+
+/**
+ * Приложение вправе отказать в выборе — подписчиком `item:activate:before`.
+ * Браузер отмечает нажатое радио и снимает отметку с соседа ещё до клика, а
+ * модель запись не приняла и не сменилась: поле адаптера пишет отметку только
+ * на смену ядра и узел не тронет. Поля к модели возвращает плагин группы.
+ */
+describe('отменённый выбор', () => {
+	/**
+	 * Движок снаружи с отказом в выборе. Отказ включается и снимается по ходу
+	 * теста (`refuse.on`): радио, которое при монтировании отмечает значение,
+	 * тоже проходит `item:activate:before`.
+	 */
+	function refusing(on: boolean) {
+		const engine = createEngineRadioGroup()
+		const refuse = { on }
+
+		engine.extensions.activation.events.on('item:activate:before', (event) => {
+			if (refuse.on) event.preventDefault()
+		})
+
+		return { engine, refuse }
+	}
+
+	it('пустая группа — нажатое радио не остаётся отмеченным', async () => {
+		const { engine } = refusing(true)
+		const onChangeValue = vi.fn()
+
+		mount(<Harness engine={engine} onChangeValue={onChangeValue} />)
+		await nextFrame()
+
+		choose('a')
+
+		expect(engine.extensions.activation.activeItem).toBeUndefined()
+		expect(checked()).toEqual([])
+		expect(onChangeValue).not.toHaveBeenCalled()
+	})
+
+	it('отметка возвращается выбранному соседу', async () => {
+		const { engine, refuse } = refusing(false)
+		const onChangeValue = vi.fn()
+
+		mount(<Harness engine={engine} value="b" onChangeValue={onChangeValue} />)
+		await nextFrame()
+
+		refuse.on = true
+		choose('a')
+
+		expect(engine.extensions.activation.activeItem?.value).toBe('b')
+		expect(checked()).toEqual(['b'])
+		expect(onChangeValue).not.toHaveBeenCalled()
+	})
+
+	/**
+	 * React отдаёт `onChange`, только если клик сменил отметку, известную ему
+	 * по записи в узел. Останься нажатое радио отмеченным после отказа,
+	 * повторный клик по нему не дал бы `onChange`, и радио не выбралось бы.
+	 */
+	it('отказ сняли — клик по тому же радио выбирает его', async () => {
+		const { engine, refuse } = refusing(true)
+		const onChangeValue = vi.fn()
+
+		mount(<Harness engine={engine} onChangeValue={onChangeValue} />)
+		await nextFrame()
+
+		choose('a')
+		refuse.on = false
+		choose('a')
+
+		expect(onChangeValue).toHaveBeenLastCalledWith({ newValue: 'a', oldValue: undefined })
+		expect(engine.extensions.activation.activeItem?.value).toBe('a')
+		expect(checked()).toEqual(['a'])
+	})
+
+	/**
+	 * Нажатому радио отметку снимает и браузер — когда плагин возвращает её
+	 * соседу, стоящему раньше. Узел тогда уже совпал с моделью, но React
+	 * помнит отметку, которую увидел на клике: без записи и в такое поле
+	 * повторный клик по нажатому радио не дал бы `onChange`.
+	 */
+	it('отказ при выбранном соседе сняли — клик выбирает нажатое радио', async () => {
+		const { engine, refuse } = refusing(false)
+		const onChangeValue = vi.fn()
+
+		mount(<Harness engine={engine} value="a" onChangeValue={onChangeValue} />)
+		await nextFrame()
+
+		refuse.on = true
+		choose('b')
+		refuse.on = false
+		choose('b')
+
+		expect(onChangeValue).toHaveBeenLastCalledWith({ newValue: 'b', oldValue: 'a' })
+		expect(engine.extensions.activation.activeItem?.value).toBe('b')
+		expect(checked()).toEqual(['b'])
 	})
 })
 

@@ -1,15 +1,26 @@
 import { TBaseOwnerItemExtension } from '../../../../../base/collection'
-import type { IBaseOwnerItemExtensionOptions } from '../../../../../base/collection'
+import type {
+	IBaseOwnerItemExtensionOptions,
+	IExtensionContext,
+} from '../../../../../base/collection'
 import { createEngineTableColumns } from '../../../column/collection'
 import type { TTableColumnsCollection, TTableColumnSource } from '../../../column/collection'
 import type { ITableColumn } from '../../../column/types'
 import type { ITableRow } from '../../../row/types'
+import type { ITable } from '../../../types'
+import type { TTableEngineOptions } from '../table'
 import { TTableColumnsItemExtension } from './item'
 import type {
 	ITableColumnsExtension,
 	ITableColumnsItemExtension,
 	TTableColumnsEvents,
 } from './types'
+
+/** Обработчики показанной колонки: её ячейки и законченная правка ширины. */
+type TColumnWatchers = {
+	cells: () => void
+	commit: (width: number) => void
+}
 
 /**
  * Колонки таблицы — расширение коллекции строк.
@@ -37,9 +48,28 @@ import type {
  * расширение слушает только у показанных. Об этом всём — одно событие
  * `change:cells` на операцию; о записи строки и наборе её заголовка адаптеру
  * сообщает сама строка.
+ *
+ * **Таблица на колонках.** `disabled` таблицы распространяется на колонки, как
+ * на строки: выключенная таблица выключает их ручки, включённая — включает.
+ * Пишется он в обычное свойство колонки — при добавлении, на смену у таблицы
+ * и поверх патча. Таблица — опция движка строк (`owner`): она приходит и
+ * уходит после сборки, и расширение её наблюдает.
+ *
+ * **Ширина, которую задал пользователь**, — `column:resize`: законченная правка
+ * ручкой показанной колонки (`commit` колонки), одна на действие. Скрытую
+ * колонку пользователь не видит и ручкой не правит, и её расширение не
+ * слушает.
  */
-export class TTableColumnsExtension<TRow extends ITableRow = ITableRow>
-	extends TBaseOwnerItemExtension<TRow, ITableColumnsItemExtension<TRow>, TTableColumnsEvents>
+export class TTableColumnsExtension<
+	TRow extends ITableRow = ITableRow,
+	TOwner extends ITable = ITable,
+>
+	extends TBaseOwnerItemExtension<
+		TRow,
+		ITableColumnsItemExtension<TRow>,
+		TTableColumnsEvents,
+		TTableEngineOptions<TOwner>
+	>
 	implements ITableColumnsExtension<TRow>
 {
 	readonly name = 'columns' as const
@@ -56,12 +86,12 @@ export class TTableColumnsExtension<TRow extends ITableRow = ITableRow>
 	private _staleCells = false
 
 	/**
-	 * Обработчики поля, выравнивания и признака заголовка строки — по
-	 * показанной колонке. Скрытая и удалённая колонки ячеек не дают, и их
-	 * расширение не слушает: подписка удерживала бы коллекцию, пока жива сама
-	 * колонка.
+	 * Обработчики показанной колонки — поля, выравнивания и признака заголовка
+	 * строки (ячейки) и её законченной правки ширины. Скрытая и удалённая
+	 * колонки ячеек не дают и ручкой не правятся, и их расширение не слушает:
+	 * подписка удерживала бы коллекцию, пока жива сама колонка.
 	 */
-	private readonly _watchers = new Map<ITableColumn, () => void>()
+	private readonly _watchers = new Map<ITableColumn, TColumnWatchers>()
 
 	constructor(options?: IBaseOwnerItemExtensionOptions<TRow, ITableColumnsItemExtension<TRow>>) {
 		super(TTableColumnsItemExtension, options)
@@ -75,6 +105,31 @@ export class TTableColumnsExtension<TRow extends ITableRow = ITableRow>
 
 		// Видимость колонки: выборка устарела
 		plain.events.on('items:query:invalidated', () => this._notifyShown())
+
+		// Колонке — `disabled` таблицы: пришедшей и поверх патча, который пишет
+		// ей своё из данных
+		plain.events.on('item:added', (e) => this._inheritOwner(e.item))
+		plain.events.on('item:updated', (e) => this._inheritOwner(e.item))
+	}
+
+	override install(ctx: IExtensionContext<TRow, TTableEngineOptions<TOwner>>): void {
+		super.install(ctx)
+
+		// Таблица — опция движка: приходит и уходит после сборки. Подписка на
+		// неё живёт в области наблюдателя — сменилась таблица, прежняя снята
+		ctx.options.watch('owner', (owner, scope) => {
+			if (!owner) return
+
+			// Догон: колонки, пришедшие до таблицы
+			this.columns.forEach((column) => this._inheritOwner(column))
+
+			// Смена у таблицы — всем колонкам, как у `<fieldset>`
+			scope.on(owner.events, 'change:disabled', (value: boolean) =>
+				this.columns.forEach((column) => {
+					column.disabled = value
+				}),
+			)
+		})
 	}
 
 	get engine(): TTableColumnsCollection {
@@ -110,6 +165,17 @@ export class TTableColumnsExtension<TRow extends ITableRow = ITableRow>
 		return this._engine.extensions.batch.shown
 	}
 
+	/**
+	 * `disabled` таблицы на колонке — когда таблица выключена. Таблицы нет —
+	 * колонка со своим.
+	 *
+	 * Колонка или её источник: событие вставки несёт элемент типом источника, а
+	 * пишется свойство, которое есть у обоих.
+	 */
+	private _inheritOwner(column: Partial<ITableColumn>): void {
+		if (this._ctx?.options.get('owner')?.disabled) column.disabled = true
+	}
+
 	/** Показанные устарели — а с ними и ячейки. */
 	private _notifyShown(): void {
 		this._staleShown = true
@@ -141,30 +207,35 @@ export class TTableColumnsExtension<TRow extends ITableRow = ITableRow>
 	}
 
 	/**
-	 * Слушать поле, выравнивание и признак заголовка строки у показанных
-	 * колонок, а у ушедших — больше не слушать.
+	 * Слушать показанные колонки — поле, выравнивание, признак заголовка строки
+	 * и законченную правку ширины, — а ушедшие из показанных больше не слушать.
 	 */
 	private _watchShown(): void {
 		const shown = new Set(this.shownColumns)
 
-		for (const [column, watcher] of this._watchers) {
+		for (const [column, watchers] of this._watchers) {
 			if (shown.has(column)) continue
 
-			column.events.off('change:field', watcher)
-			column.events.off('change:align', watcher)
-			column.events.off('change:rowHeader', watcher)
+			column.events.off('change:field', watchers.cells)
+			column.events.off('change:align', watchers.cells)
+			column.events.off('change:rowHeader', watchers.cells)
+			column.events.off('commit', watchers.commit)
 			this._watchers.delete(column)
 		}
 
 		for (const column of shown) {
 			if (this._watchers.has(column)) continue
 
-			const watcher = (): void => this._notifyCells()
+			const watchers: TColumnWatchers = {
+				cells: () => this._notifyCells(),
+				commit: (width) => this.events.emit('column:resize', { column, width }),
+			}
 
-			this._watchers.set(column, watcher)
-			column.events.on('change:field', watcher)
-			column.events.on('change:align', watcher)
-			column.events.on('change:rowHeader', watcher)
+			this._watchers.set(column, watchers)
+			column.events.on('change:field', watchers.cells)
+			column.events.on('change:align', watchers.cells)
+			column.events.on('change:rowHeader', watchers.cells)
+			column.events.on('commit', watchers.commit)
 		}
 	}
 }

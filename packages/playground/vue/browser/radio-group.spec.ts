@@ -15,6 +15,8 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { render, cleanup } from 'vitest-browser-vue'
 import { userEvent } from 'vitest/browser'
 import { defineComponent, h, nextTick, ref } from 'vue'
+import { createEngineRadioGroup } from '@soldy-ui/core'
+import type { TRadioGroupCollection } from '@soldy-ui/core'
 import { Button, RadioGroup, RadioGroupItem } from '@soldy-ui/vue'
 
 import '@soldy-ui/theme-oren'
@@ -26,9 +28,11 @@ const picked = ref<string | number | undefined>()
 
 /**
  * Кнопка до и после группы — чтобы видеть, куда уводит Tab. «B» можно
- * выключить, подписи у радио — слотом.
+ * выключить, подписи у радио — слотом. `engine` — движок снаружи.
  */
-const show = async (options: { value?: string; offB?: boolean } = {}) => {
+const show = async (
+	options: { value?: string; offB?: boolean; engine?: TRadioGroupCollection } = {},
+) => {
 	picked.value = options.value
 
 	render(
@@ -38,6 +42,7 @@ const show = async (options: { value?: string; offB?: boolean } = {}) => {
 				h(
 					RadioGroup,
 					{
+						engine: options.engine,
 						value: picked.value,
 						'onUpdate:value': (value: string | number | undefined) => {
 							picked.value = value
@@ -157,6 +162,30 @@ describe('стрелки переносят отметку', () => {
 		expect(focusedRadio()).toBe('c')
 		await expect.poll(() => picked.value).toBe('c')
 		expect(radio('b').checked).toBe(false)
+	})
+
+	/**
+	 * Отказ в выборе — подписчик `item:activate:before`. Стрелка уже перенесла
+	 * отметку браузера на соседа, а модель её не приняла: поля к модели
+	 * возвращает плагин группы. Фокус остаётся там, куда его увёл браузер, —
+	 * по нему видно, что стрелку браузер выполнил.
+	 */
+	it('отказ в выборе — ↓ оставляет отметку и v-model у прежнего радио', async () => {
+		const engine = createEngineRadioGroup()
+
+		await show({ value: 'a', engine })
+		engine.extensions.activation.events.on('item:activate:before', (event) =>
+			event.preventDefault(),
+		)
+
+		radio('a').focus()
+		await userEvent.keyboard('{ArrowDown}')
+
+		expect(focusedRadio()).toBe('b')
+		expect(radio('a').checked).toBe(true)
+		expect(radio('b').checked).toBe(false)
+		expect(engine.extensions.activation.activeItem?.value).toBe('a')
+		expect(picked.value).toBe('a')
 	})
 })
 

@@ -1,6 +1,12 @@
 @use './mixins' as mixines;
 @use '../button/mixins' as button;
 @use '../../mixins/motion';
+@use '../../mixins/swipe';
+
+// Ручка ширины колонки: зона захвата — та же, что у полосы жеста, минимум цели
+// указателя по WCAG 2.5.8; линия границы — толщиной в кольцо фокуса.
+$resizer-zone: swipe.$handle;
+$resizer-line: 2px;
 
 // Table — таблица по паттернам APG Table и Sortable Table.
 //
@@ -9,9 +15,12 @@
 //       .s-table__head-row        строка заголовков — `tr`
 //         .s-table__select        заголовок колонки выбора — `th`, чекбокс «выбрать все»
 //         .s-table-column         заголовок колонки — Table.Column (`th`)
-//           __sort                кнопка сортировки (Button) у сортируемой колонки
-//             __sort-icon         отметка направления: иконка роли `arrowUpward`
-//           __text                текст заголовка у несортируемой колонки
+//           __content             обёртка содержимого — блок во всю ячейку
+//             __sort              кнопка сортировки (Button) у сортируемой колонки
+//               __sort-icon       отметка направления: иконка роли `arrowUpward`
+//             __text              текст заголовка у несортируемой колонки
+//           __resizer             полоса ручки ширины у конца заголовка
+//             __input             её поле — `input type="range"`, прозрачное
 //     .s-table__body              тело — `tbody`
 //       .s-table-row              строка — Table.Row (`tr`)
 //         __select                ячейка колонки выбора — `td`, чекбокс строки
@@ -21,8 +30,9 @@
 //
 // От ядра приходят: у корня — `data-disabled` и модификаторы `--size-*` и
 // `--variant-*`; у заголовка колонки — `data-align`, `data-sort` (`asc`,
-// `desc`) и `data-sort-priority` (с единицы, у всех отсортированных), а ширина
-// — переменной `--s-table-column-width`; у строки — `data-selected` и
+// `desc`), `data-sort-priority` (с единицы, у всех отсортированных),
+// `data-sized` (у колонки своя ширина) и `data-resizing` (тянут её ручку), а
+// ширина — переменной `--s-table-column-width`; у строки — `data-selected` и
 // `data-disabled`; у ячейки — `data-align` колонки.
 //
 // Своей поверхности у таблицы нет — ни фона, ни рамки, ни скругления. Она
@@ -50,6 +60,10 @@
 // минимума у колонки не знает — `min-width` ячейки она не читает, — а
 // наибольшую ширину таблицы считает по первой строке, то есть по шапке.
 //
+// Ширина задана у всех показанных колонок — таблица шириной в их сумму, а не
+// во всю ширину места: иначе раскладка раздала бы излишек всем колонкам, и
+// ширина колонки не совпала бы с заданной — ручка не держала бы её край.
+//
 // Геометрия — переменные размера на корне (`mixines.table-size`). Вложенная
 // таблица объявляет свои на своём корне и от внешней их не наследует; по той
 // же причине правила, которые зависят от корня, написаны от него дочерними
@@ -69,6 +83,10 @@
 
 	@apply w-full min-w-max table-fixed border-collapse;
 	@apply text-s-component;
+
+	// Свой слой: кнопки сортировки подняты над полосами ручек (`z-index`), но
+	// поверх соседей по странице этот подъём не выходит.
+	@apply isolate;
 
 	// Цифры одной ширины: числа в колонке стоят разрядами друг под другом.
 	font-variant-numeric: tabular-nums;
@@ -91,10 +109,34 @@
 	// тоже, и гаснут своими правилами: прозрачность корня легла бы на них
 	// второй раз.
 	&[data-disabled='true'] {
-		> #{$this}__head > #{$this}__head-row > .s-table-column > .s-table-column__text,
+		> #{$this}__head
+			> #{$this}__head-row
+			> .s-table-column
+			> .s-table-column__content
+			> .s-table-column__text,
 		> #{$this}__body > #{$this}__empty-row > #{$this}__empty {
 			@apply opacity-s-component-disabled;
 		}
+	}
+
+	// Ширина у всех показанных колонок — таблица шириной в их сумму (см. выше).
+	// Фиксированная таблица не уже суммы ширин своих колонок, какую ширину ей
+	// ни задай (CSS 2.1, 17.5.2.1), — значит, при нулевой она ровно сумма.
+	// Нижнюю границу по содержимому (`max-content`) правило снимает: в неё
+	// входит и содержимое заголовков — распорка, подпись шире колонки, — и
+	// таблица снова вышла бы шире суммы. Без колонок правило не действует —
+	// пустая шапка схлопнула бы таблицу.
+	&:has(> #{$this}__head > #{$this}__head-row > .s-table-column):not(
+			:has(> #{$this}__head > #{$this}__head-row > .s-table-column:not([data-sized='true']))
+		) {
+		inline-size: 0;
+		min-inline-size: 0;
+	}
+
+	// Пока тянут ручку — курсор ручки на всей таблице и без выделения текста:
+	// указатель уходит с полосы, а край колонки идёт за ним.
+	&:has(> #{$this}__head > #{$this}__head-row > .s-table-column[data-resizing='true']) {
+		@apply cursor-col-resize select-none;
 	}
 }
 
@@ -166,9 +208,12 @@
 // Заголовок колонки. Ширина — переменной, которую пишет код по ширине
 // колонки; нет её — колонка делит оставшееся место с такими же.
 //
+// Позиционирован: у его конца стоит полоса ручки ширины (ниже).
+//
 // Отсортированная колонка — текстом основного цвета, как выбранное: видно, по
 // какой колонке стоят строки, и без стрелки.
 .s-table-column {
+	@apply relative;
 	inline-size: var(--s-table-column-width, auto);
 
 	&[data-sort] {
@@ -189,6 +234,13 @@
 	}
 }
 
+// Обёртка содержимого — блок во всю ячейку: кнопка сортировки и текст
+// раскладываются в ней так же, как раньше прямо в ячейке, — с её стороной
+// (`text-align` наследуется от заголовка) и её шириной.
+.s-table-column__content {
+	@apply block;
+}
+
 // Кнопка сортировки — по ширине своего текста, а не во всю ячейку: подсветка
 // наведения обводит подпись со стрелкой, а не пустое место колонки. Поле
 // кнопки уходит в поле ячейки (отрицательный отступ у края, к которому она
@@ -204,7 +256,14 @@
 //
 // Потолка высоты у кнопки нет: свой (`max-h-full`) в ячейке таблицы считался бы
 // от высоты строки и резал бы подпись в две строки.
-.s-table-column > .s-table-column__sort {
+//
+// Кнопка поднята над полосами ручек ширины (`z-index`): полоса у конца
+// заголовка заходит на поле ячейки, а кнопка — тоже, и там, где они
+// встречаются, нажатие достаётся кнопке. Между кнопками соседних колонок
+// остаётся запас под кольцо фокуса с обеих сторон границы — его полоса не
+// делит ни с кем.
+.s-table-column > .s-table-column__content > .s-table-column__sort {
+	@apply relative z-2;
 	inline-size: fit-content;
 	max-inline-size: calc(100% + var(--s-table-button-inline));
 	block-size: auto;
@@ -231,7 +290,7 @@
 }
 
 // По центру — посередине ячейки, в своих полях.
-.s-table-column[data-align='center'] > .s-table-column__sort {
+.s-table-column[data-align='center'] > .s-table-column__content > .s-table-column__sort {
 	margin-inline: auto;
 	max-inline-size: 100%;
 }
@@ -239,7 +298,7 @@
 // По концу — у конца ячейки, а отметка — перед подписью: подпись стоит над
 // концом чисел колонки, а стрелка с внешней стороны. Порядок флекса
 // логический, и в RTL отметка сама уходит вправо от подписи.
-.s-table-column[data-align='end'] > .s-table-column__sort {
+.s-table-column[data-align='end'] > .s-table-column__content > .s-table-column__sort {
 	flex-direction: row-reverse;
 	margin-inline: auto calc(-1 * var(--s-table-button-inline));
 }
@@ -276,16 +335,24 @@
 }
 
 .s-table-column:not([data-sort])
+	> .s-table-column__content
 	> .s-table-column__sort:is(:hover, :focus-visible)
 	> .s-table-column__sort-icon {
 	@apply opacity-50;
 }
 
-.s-table-column[data-sort] > .s-table-column__sort > .s-table-column__sort-icon {
+.s-table-column[data-sort]
+	> .s-table-column__content
+	> .s-table-column__sort
+	> .s-table-column__sort-icon {
 	@apply opacity-100;
 }
 
-.s-table-column[data-sort='desc'] > .s-table-column__sort > .s-table-column__sort-icon > * {
+.s-table-column[data-sort='desc']
+	> .s-table-column__content
+	> .s-table-column__sort
+	> .s-table-column__sort-icon
+	> * {
 	@apply rotate-180;
 }
 
@@ -306,12 +373,81 @@
 
 .s-table__head-row:has(> .s-table-column[data-sort-priority='2'])
 	> .s-table-column[data-sort-priority]
+	> .s-table-column__content
 	> .s-table-column__sort
 	> .s-table-column__sort-icon::after {
 	content: var(--s-table-sort-priority);
 	@apply font-semibold leading-none;
 	font-size: 0.75em;
 	margin-inline-start: 0.125em;
+}
+
+// Ручка ширины — полоса у конца заголовка, во всю его высоту. Сама она
+// невидима: видна линия посередине — граница колонок, — и только когда к ручке
+// тянутся: под наведением, под фокусом поля с клавиатуры и пока её тянут.
+// Курсор — ручки ширины.
+//
+// Полоса — зона захвата в 24px, минимум цели указателя по WCAG 2.5.8, как у
+// полосы жеста (`mixins/_swipe.scss`). Стоит она по центру границы колонок:
+// половиной на своём заголовке, половиной на соседнем, — туда, куда целятся,
+// чтобы взять край. Поверх соседнего заголовка (`z-index`), но под кнопками
+// сортировки: где полоса заходит на кнопку, нажатие — кнопке. Запас под кольцо
+// фокуса по обе стороны границы кнопкам недоступен, поэтому у самой границы
+// полоса не уже двух запасов при любых кнопках.
+//
+// У последней колонки полоса целиком на своём заголовке: за краем таблицы она
+// раздвинула бы прокрутку её контейнера. Линия — у края таблицы.
+//
+// Жест полоса берёт себе целиком (`touch-action: none`): палец, который тянет
+// край колонки, не должен листать страницу.
+.s-table-column__resizer {
+	@apply absolute inset-y-0 z-1 cursor-col-resize select-none;
+	inline-size: $resizer-zone;
+	inset-inline-end: calc(-1 * $resizer-zone / 2);
+	touch-action: none;
+
+	// Линия — по центру полосы, на границе колонок.
+	&::before {
+		content: '';
+		@apply absolute inset-y-0 opacity-0;
+		@apply transition-opacity duration-150;
+		inline-size: $resizer-line;
+		inset-inline-start: calc(50% - $resizer-line / 2);
+		background-color: var(--s-component-focus-ring);
+	}
+
+	&:has(> .s-table-column__input:focus-visible)::before {
+		@apply opacity-100;
+	}
+
+	// Наведение — только там, где оно есть: после касания `:hover` залипает на
+	// полосе, и линия осталась бы гореть.
+	@media (hover: hover) {
+		&:hover::before {
+			@apply opacity-100;
+		}
+	}
+}
+
+.s-table-column[data-resizing='true'] > .s-table-column__resizer::before {
+	@apply opacity-100;
+}
+
+.s-table-column:last-child > .s-table-column__resizer {
+	inset-inline-end: 0;
+
+	&::before {
+		inset-inline-start: auto;
+		inset-inline-end: 0;
+	}
+}
+
+// Поле ручки — во всю полосу и прозрачное: остаётся в дереве доступности и в
+// порядке фокуса, и рамку курсора скринридер рисует по полосе. Указатель оно не
+// ловит: тянет плагин, а не браузер, — иначе край двигали бы двое.
+.s-table-column__input {
+	@apply absolute inset-0 m-0 p-0 size-full opacity-0;
+	@apply appearance-none pointer-events-none;
 }
 
 // Колонка выбора — шириной в коробку чекбокса и поля ячейки по обе стороны:
@@ -375,6 +511,10 @@
 // чекбокс рисуется системными цветами, как на соседних строках. Линия под
 // выбранной строкой — системным цветом текста, как линии остальных строк: без
 // подмены она осталась бы ступенью темы.
+//
+// Линия ручки ширины — фон псевдоэлемента, и браузер заменил бы его цветом
+// поверхности: под наведением, фокусом и в жесте линии не было бы. Поэтому она
+// системного цвета фокуса и без подмены, как кольцо фокуса Button.
 @media (forced-colors: active) {
 	.s-table-row[data-selected='true']:not([data-disabled='true']) {
 		forced-color-adjust: none;
@@ -385,5 +525,10 @@
 		> .s-table-row__select > * {
 			forced-color-adjust: auto;
 		}
+	}
+
+	.s-table-column__resizer::before {
+		forced-color-adjust: none;
+		background-color: Highlight;
 	}
 }
