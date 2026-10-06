@@ -54,15 +54,12 @@ export default {
 		return {
 			...refs,
 			...refsCollection,
-			/** Методы коллекции рефами не пробрасываются — отдаём инстанс. */
-			facade: collectionAdapter.instance,
 			/**
 			 * Экземпляр `TInput`, которым владеет Select. Не проп (не меняется
-			 * за время жизни компонента), поэтому отдаём инстансом, как
-			 * `facade` — `<Input :ctrl="field">` берёт его целиком.
+			 * за время жизни компонента), поэтому отдаём инстансом —
+			 * `<Input :ctrl="field">` берёт его целиком.
 			 */
 			field: adapter.instance.field,
-			clearIconTag: useIcon('close'),
 			arrowIconTag: useIcon('arrowDown'),
 			...useSplitAttrs(),
 		}

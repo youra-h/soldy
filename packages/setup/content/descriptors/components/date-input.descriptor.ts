@@ -1,7 +1,8 @@
 /**
  * Дескриптор DateInput (TDateInput).
  *
- * Наследует `InputControlDescriptor` (value, name, readonly, required, id,
+ * Наследует `FieldDescriptor` (кнопка очистки — clearable, clearLabel,
+ * clearAria, слот `clear` — поверх value, name, readonly, required, id,
  * disabled, size, variant, ...) и добавляет границы и недоступные дни, локаль
  * формата, вид поля — дата или дата со временем — и точность времени: до
  * минуты или до секунды.
@@ -26,19 +27,20 @@ import {
 	DateInputPointerPluginDescriptor,
 	DateInputTouchPluginDescriptor,
 } from '../plugins'
-import { InputControlDescriptor } from './input-control.descriptor'
+import { FieldDescriptor } from './field.descriptor'
 
 export const DateInputDescriptor = defineDescriptor(() =>
 	defineComponent({
 		ctor: TDateInput,
 
-		extends: InputControlDescriptor(),
+		extends: FieldDescriptor(),
 
 		contribution: {
 			/**
 			 * Слоты стоят по сторонам ряда частей, как у Input: в `trailing`
 			 * DatePicker ставит кнопку календаря. Содержимое получает сам инстанс
-			 * поля — кнопке рядом нужны его значение и команды.
+			 * поля — кнопке рядом нужны его значение и команды. Кнопка очистки
+			 * стоит в обёртке `trailing` перед его содержимым.
 			 */
 			slots: {
 				leading: {

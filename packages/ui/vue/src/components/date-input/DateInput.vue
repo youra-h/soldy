@@ -1,7 +1,9 @@
 <script lang="ts">
+import { Button } from '../button'
+import { Icon } from '../icon'
 import SetupDateInput from './setup.component'
 
-export default { ...SetupDateInput }
+export default { ...SetupDateInput, components: { Button, Icon } }
 </script>
 
 <template>
@@ -23,11 +25,12 @@ export default { ...SetupDateInput }
 			Рисуется по `tag`, по умолчанию `div`. На корне наборы `attrs` (`dir`
 			поля), `aria` (`role="group"`, имя — `aria_label` или
 			`aria_labelledBy`) и `dataset` (`data-disabled`, `data-invalid`).
-			Модификаторы — размер, вариант, `--readonly`, `--required`.
+			Модификаторы — размер, вариант, `--readonly`, `--required`,
+			`--clearable`.
 
-			Обработчиков в разметке нет: клавиши, буфер обмена, выделение и
-			контекстное меню ловят плагины на корне. Атрибуты снаружи падают на
-			корень.
+			Обработчик в разметке один — нажатие кнопки очистки: клавиши, буфер
+			обмена, выделение и контекстное меню ловят плагины на корне. Атрибуты
+			снаружи падают на корень.
 		-->
 
 		<!--
@@ -89,11 +92,40 @@ export default { ...SetupDateInput }
 		</span>
 
 		<!--
-			Слот `trailing` — после даты, со scope `{ ctrl }`: сюда DatePicker
-			поставит кнопку календаря. Обёртка рисуется, только когда слот задан;
-			тема ставит её у конца поля.
+			Обёртка у конца поля — по кнопке очистки, по своей кнопке в слоте
+			`clear` или по слоту `trailing`; тема ставит её у конца поля. Кнопка
+			очистки стоит в ней первой, перед содержимым `trailing`.
 		-->
-		<div v-if="$slots.trailing" class="s-date-input__trailing">
+		<div v-if="clearable || $slots.clear || $slots.trailing" class="s-date-input__trailing">
+			<!--
+				Кнопка очистки — та же, что у Input: по `clearable`, выключена
+				вместе с полем, `readonly` её не гасит. Имя ядро собирает с именем
+				поля (`clearAria`), очищает команда поля `clear` — все части, и
+				скрытые форматом тоже. Клик не всплывает до корня. Своя кнопка —
+				слот `clear`: заменяет встроенную целиком и рисуется, когда задана.
+
+				У кнопки нет `view`: значения вида объявляет тема, и разметка
+				библиотеки их не знает. Кнопку тема красит по контексту
+				(`.s-date-input__clear`).
+			-->
+			<slot name="clear" :clear="ctrl.clear">
+				<Button
+					embedded="date-input.clear"
+					v-if="clearable"
+					class="s-date-input__clear"
+					:size="size"
+					:disabled="disabled"
+					@click.stop="ctrl.clear()"
+					v-bind="clearAria"
+				>
+					<Icon embedded="date-input.clear-icon" :tag="clearIconTag" :size="size" />
+				</Button>
+			</slot>
+
+			<!--
+				Слот `trailing` — после даты и кнопки очистки, со scope
+				`{ ctrl }`: сюда DatePicker поставит кнопку календаря.
+			-->
 			<slot name="trailing" :ctrl="ctrl" />
 		</div>
 

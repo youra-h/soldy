@@ -20,7 +20,7 @@ Select — самый сложный компонент в проекте: в н
 - **Фасад и расширения коллекции** —
   `packages/core/src/components/custom/select/collection/`:
   - `facade/facade.class.ts` (`TSelectCollectionFacade`) — членство в
-    коллекции: геттеры `tags`/`tags_engine`, метод `clear()`;
+    коллекции: геттеры `tags`/`tags_engine`;
   - `extensions/select/select.extension.ts` (`TSelectExtension`) —
     многовыборность списка (`aria-multiselectable` в `listAria` Select), проброс
     `size`/`variant`/`contentFit`/`indicator` на опции (`disabled` опции —
@@ -59,7 +59,7 @@ props.engine }`, общий `bundle`) — та же форма, что у Tabs, 
 | --------------- | ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `field` (поле)  | экземпляр `TInput` в ядре, `TSelect.field`                       | существует всегда, пока жив Select — инвариант владельца, не зависит от коллекции; в него пишут `TInputPlugin` (набранное), `TSelectExtension` (текст выбранного), `TEditablePlugin` (возврат текста), клавиатурный плагин (`aria-activedescendant`)               |
 | `tags` (теги)   | экземпляр `TTags` в расширении коллекции, `TSelectTagsExtension` | существует только при выборе `mode: 'multiple'`, состав зависит от выбора — то есть от коллекции; наружу отдаётся геттером фасада (`facade.tags`, `facade.tags_engine`) и событием `change:tags`                                                                   |
-| кнопка очистки  | разметка (`<Button>` в `Select.vue`)                             | своего состояния нет: значения (`clearAria`, `clearLabel`) считает ядро (`TSelect`), действие — метод фасада `facade.clear()`; потребитель кнопку не адресует и пропсы ей не задаёт                                                                                |
+| кнопка очистки  | разметка поля (`<Button>` в `Input.vue`)                         | часть поля, а не Select: признак, имя (`clearAria`) и команду `clear` держит база поля `TField`; Select отдаёт полю `clearable` и `clearLabel`, а выбор снимает `TSelectExtension` по событию `clear` поля; потребитель кнопку не адресует                         |
 | стрелка         | разметка (`<span class="s-select__arrow">` в `Select.vue`)       | декоративна и своего состояния не имеет вовсе: открытость панели уже объявлена через `aria-expanded` на поле                                                                                                                                                       |
 | список (панель) | разметка + набор Select `listAria`                               | список у Select всегда один и внутри — потребитель его не адресует (см. AGENTS.md → «Часть или слот», строка «список Select»); поэтому его ARIA — набор Select `listAria`: роль пишет Select, многовыборность — коллекция, `id` — плагин связок `TSelectIdsPlugin` |
 

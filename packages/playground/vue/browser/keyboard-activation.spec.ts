@@ -42,6 +42,7 @@ import {
 	AccordionItem,
 	Button,
 	CheckBox,
+	DateInput,
 	Input,
 	ListBox,
 	ListBoxItem,
@@ -234,6 +235,33 @@ describe('вложенная кнопка нажимается', () => {
 		await expect.poll(tagTexts).toEqual(['Настройки'])
 	})
 
+	it.each(KEYS)('%s на кнопке очистки очищает Input', async (_name, key) => {
+		await show(() => h(Input, { clearable: true, value: 'текст' }))
+
+		const input = field('.s-input input')
+
+		// Без значения пустое поле ниже ничего бы не доказало
+		expect(input.value).toBe('текст')
+
+		find('.s-input__clear').focus()
+		await userEvent.keyboard(key)
+
+		await expect.poll(() => input.value).toBe('')
+	})
+
+	it.each(KEYS)('%s на кнопке очистки очищает DateInput', async (_name, key) => {
+		await show(() => h(DateInput, { clearable: true, locale: 'ru-RU', value: '2026-05-12' }))
+
+		const hidden = field('.s-date-input input[type="hidden"]')
+
+		expect(hidden.value).toBe('2026-05-12')
+
+		find('.s-date-input__clear').focus()
+		await userEvent.keyboard(key)
+
+		await expect.poll(() => hidden.value).toBe('')
+	})
+
 	it.each(KEYS)('%s на кнопке очистки очищает Select, панель закрыта', async (_name, key) => {
 		await show(() =>
 			h(Select, { clearable: true, value: 'msk' }, () => [
@@ -247,7 +275,7 @@ describe('вложенная кнопка нажимается', () => {
 		// Без значения пустое поле ниже ничего бы не доказало
 		await expect.poll(() => input.value).toBe('Москва')
 
-		find('.s-select__clear').focus()
+		find('.s-select .s-input__clear').focus()
 		await userEvent.keyboard(key)
 
 		await expect.poll(() => input.value).toBe('')

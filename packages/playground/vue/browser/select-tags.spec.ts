@@ -375,7 +375,7 @@ describe.each(COMPONENT_SIZES)('размер %s: минимальная шири
 		const slot = find('.s-input__trailing', field)
 
 		// Худший случай для минимума — в слоте и очистка, и стрелка.
-		expect(slot.querySelectorAll('.s-select__clear, .s-select__arrow')).toHaveLength(2)
+		expect(slot.querySelectorAll('.s-input__clear, .s-select__arrow')).toHaveLength(2)
 		expectWithin(box(slot), insideBorder(field), 'очистка и стрелка с отступом')
 	})
 })

@@ -10,7 +10,7 @@ import type {
 import type { TSelectCollectionFacadeEvents } from '../types'
 import type { ISelect } from '../../types'
 import type { ISelectItem } from '../../item/types'
-import type { TSelectExtension, TSelectTagsExtension } from '../extensions'
+import type { TSelectTagsExtension } from '../extensions'
 import type { ITags, TTagsCollection, TTagsOverflow } from '../../../tags'
 import type { ISelectCollectionProps, TSelectCollectionFacadeProps } from '../types'
 import type { TDefaultValues } from '../../../../base/component'
@@ -88,20 +88,6 @@ export class TSelectCollectionFacade extends TSelectionCollectionFacade<
 
 	set tags_overflow(value: TTagsOverflow) {
 		this._tags.overflow = value
-	}
-
-	/**
-	 * Снять выбор целиком — кнопка очистки поля.
-	 *
-	 * Поле, привязанное к инстансу, а не метод прототипа: разметка отдаёт его
-	 * в scope слота `clear` без инстанса, и своя кнопка зовёт его голой
-	 * функцией. Метод потерял бы там `this`. Привязка здесь одна на все
-	 * адаптеры — обёртку в шаблоне пришлось бы повторить в каждом.
-	 */
-	readonly clear = (): void => this._select.clear()
-
-	private get _select(): TSelectExtension<ISelect, ISelectItem> {
-		return this.extensions.select
 	}
 
 	private get _tags(): TSelectTagsExtension<ISelect, ISelectItem> {

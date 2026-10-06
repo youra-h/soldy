@@ -530,6 +530,124 @@ describe('стирание', () => {
 	})
 })
 
+/**
+ * Кнопка очистки — та же, что у Input (база `TField`): признак, имя кнопки и
+ * команда `clear`. Шаг очистки поля даты — пустые части, все, и скрытые
+ * форматом тоже.
+ */
+describe('очистка', () => {
+	it('кнопка по clearable — модификатор; имя собрано с именем поля', () => {
+		const input = field({ name: 'Дата', clearLabel: 'Очистить' })
+
+		expect(input.classes.toArray()).not.toContain('s-date-input--clearable')
+
+		input.clearable = true
+
+		expect(input.classes.toArray()).toContain('s-date-input--clearable')
+		expect(input.clearAria).toEqual({ 'aria-label': 'Очистить Дата' })
+	})
+
+	it('снимает значение и опустошает все части, потом шлёт clear', () => {
+		const input = field({ locale: 'ru-RU', value: '2026-05-12' })
+		const seen: string[] = []
+
+		input.events.on('change:value', ({ newValue }) => seen.push(`change:value ${newValue}`))
+		input.events.on('clear', () => seen.push(`clear ${text(input)}`))
+
+		input.clear()
+
+		expect(input.value).toBeUndefined()
+		expect(partsOf(input).every(({ placeholder }) => placeholder)).toBe(true)
+		expect(seen).toEqual(['change:value undefined', 'clear дд.мм.гггг'])
+	})
+
+	/**
+	 * У недописанной даты значения нет, и снимать его нечего, — а части с
+	 * набранным пустеют всё равно: иначе кнопка ничего бы не очистила.
+	 */
+	it('недописанные части без значения — тоже пустеют', () => {
+		const input = field({ locale: 'ru-RU' }, 'month')
+		const segments = vi.fn()
+		const clear = vi.fn()
+
+		type(input, '05')
+		expect(input.value).toBeUndefined()
+
+		input.events.on('change:segments', segments)
+		input.events.on('clear', clear)
+		input.clear()
+
+		expect(partsOf(input).every(({ placeholder }) => placeholder)).toBe(true)
+		expect(segments).toHaveBeenCalled()
+		expect(clear).toHaveBeenCalledTimes(1)
+	})
+
+	it('у пустого поля clear приходит тоже', () => {
+		const input = field({ locale: 'ru-RU' })
+		const clear = vi.fn()
+		const segments = vi.fn()
+
+		input.events.on('clear', clear)
+		input.events.on('change:segments', segments)
+		input.clear()
+
+		expect(clear).toHaveBeenCalledTimes(1)
+		expect(segments).not.toHaveBeenCalled()
+	})
+
+	/**
+	 * Время, скрытое у поля даты, остаётся в частях и возвращается при смене
+	 * вида. После очистки возвращаться нечему: поле пусто целиком.
+	 */
+	it('скрытое время — тоже: смена вида после очистки его не вернёт', () => {
+		const input = field({ locale: 'ru-RU', kind: 'datetime', value: '2026-05-12T14:30' })
+
+		input.kind = 'date'
+		expect(input.value).toBe('2026-05-12')
+
+		input.clear()
+		input.kind = 'datetime'
+
+		expect(input.value).toBeUndefined()
+		expect(partsOf(input).every(({ placeholder }) => placeholder)).toBe(true)
+	})
+
+	it('набранные цифры сброшены: следующая цифра начинает часть заново', () => {
+		const input = field({ locale: 'ru-RU', value: '2026-05-12' }, 'day')
+
+		type(input, '1')
+		input.clear()
+		type(input, '2')
+
+		expect(part(input, 'day').text).toBe('02')
+	})
+
+	/**
+	 * Кнопку только для чтения не гасят — так у Select, чьё поле select-only и
+	 * есть `readonly`, — и команда поле только для чтения очищает тоже.
+	 */
+	it('поле только для чтения — очищается', () => {
+		const input = field({ locale: 'ru-RU', value: '2026-05-12', readonly: true })
+
+		input.clear()
+
+		expect(input.value).toBeUndefined()
+		expect(partsOf(input).every(({ placeholder }) => placeholder)).toBe(true)
+	})
+
+	it('отменённая в change:value:before запись — части и значение на месте', () => {
+		const input = field({ locale: 'ru-RU', value: '2026-05-12' })
+
+		input.events.on('change:value:before', (e: TChangeEvent<string | undefined>) =>
+			e.preventDefault(),
+		)
+		input.clear()
+
+		expect(input.value).toBe('2026-05-12')
+		expect(text(input)).toBe('12.05.2026')
+	})
+})
+
 describe('вставка', () => {
 	it('ISO заменяет всю дату в любой части', () => {
 		const input = field({ locale: 'ru-RU', value: '2020-01-01' }, 'month')

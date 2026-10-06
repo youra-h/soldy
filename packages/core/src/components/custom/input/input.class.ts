@@ -1,15 +1,15 @@
-import { TInputControl } from '../../base/input-control'
+import { TField } from '../../base/field'
 import type { TDefaultValues } from '../../base/component'
 import type { IInput, IInputProps, TInputEvents } from './types'
 
-export class TInput extends TInputControl<string, IInputProps, TInputEvents> implements IInput {
+export class TInput extends TField<string, IInputProps, TInputEvents> implements IInput {
 	static override baseClass = 's-input'
 
-	static defaultValues: typeof TInputControl.defaultValues &
-		TDefaultValues<IInputProps, 'placeholder'> = {
-		...TInputControl.defaultValues,
-		placeholder: '',
-	}
+	static defaultValues: typeof TField.defaultValues & TDefaultValues<IInputProps, 'placeholder'> =
+		{
+			...TField.defaultValues,
+			placeholder: '',
+		}
 
 	protected _placeholder!: string
 
@@ -43,6 +43,14 @@ export class TInput extends TInputControl<string, IInputProps, TInputEvents> imp
 	 */
 	protected override get _ariaTag(): string {
 		return 'input'
+	}
+
+	/**
+	 * Очищенное текстовое поле — пустая строка. Пишется сеттером: запись можно
+	 * поправить или отменить в `change:value:before`, как правку пользователя.
+	 */
+	protected override _clearValue(): void {
+		this.value = ''
 	}
 
 	/**

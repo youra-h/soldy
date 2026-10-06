@@ -1,8 +1,4 @@
-import type {
-	IInputControl,
-	IInputControlProps,
-	TInputControlEvents,
-} from '../../base/input-control'
+import type { IField, IFieldProps, TFieldEvents } from '../../base/field'
 import type {
 	TAria,
 	TAriaAttributes,
@@ -166,7 +162,7 @@ export type TDateInputEdit = {
 	readonly value: TDateInputValue
 }
 
-export type TDateInputEvents = TInputControlEvents<TDateInputValue> & {
+export type TDateInputEvents = TFieldEvents<TDateInputValue> & {
 	/** change:min */
 	'change:min': (value: TDateInputBound) => void
 	/** change:max */
@@ -189,7 +185,7 @@ export type TDateInputEvents = TInputControlEvents<TDateInputValue> & {
 	'change:focusedSegment': (part: TDateFieldPart | undefined) => void
 }
 
-export interface IDateInputProps extends IInputControlProps<TDateInputValue> {
+export interface IDateInputProps extends IFieldProps<TDateInputValue> {
 	/**
 	 * Первый день или момент, который поле считает верным; раньше —
 	 * `aria-invalid`
@@ -217,11 +213,7 @@ export interface IDateInputProps extends IInputControlProps<TDateInputValue> {
 	timePrecision?: TTimePrecision
 }
 
-export interface IDateInput extends IInputControl<
-	TDateInputValue,
-	IDateInputProps,
-	TDateInputEvents
-> {
+export interface IDateInput extends IField<TDateInputValue, IDateInputProps, TDateInputEvents> {
 	/** Первый верный день или момент */
 	min: TDateInputBound
 	/** Последний верный день или момент */

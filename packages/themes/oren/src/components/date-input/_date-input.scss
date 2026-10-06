@@ -1,4 +1,5 @@
 @use './mixins' as mixines;
+@use '../button/mixins' as button;
 @use '../input/mixins' as input;
 @use '../../mixins/required' as required;
 
@@ -10,14 +11,15 @@
 //       .s-date-input__segment    часть даты или времени
 //       .s-date-input__literal    разделитель — литерал формата
 //     .s-date-input__trailing     слот после даты: кнопка календаря DatePicker
+//       .s-date-input__clear      кнопка очистки, первой в слоте — Button
 //
 // От ядра приходят: у корня — модификаторы `--size-*`, `--variant-*`,
-// `--readonly` и `--required`, `data-disabled` и `data-invalid` (собранная
-// дата вне `min`/`max`); у ряда — `dir`; у части — `data-type` (`day`,
-// `month`, `year`, у поля со временем ещё `hour`, `minute`, `dayPeriod` и, до
-// секунды, `second`) и `data-placeholder` (часть пуста и показывает
-// подсказку). Фокус — у самой части, по остановке Tab на часть; тема читает
-// его псевдоклассом `:focus`.
+// `--readonly`, `--required` и `--clearable`, `data-disabled` и
+// `data-invalid` (собранная дата вне `min`/`max`); у ряда — `dir`; у части —
+// `data-type` (`day`, `month`, `year`, у поля со временем ещё `hour`,
+// `minute`, `dayPeriod` и, до секунды, `second`) и `data-placeholder` (часть
+// пуста и показывает подсказку). Фокус — у самой части, по остановке Tab на
+// часть; тема читает его псевдоклассом `:focus`.
 //
 // Коробка поля — та же, что у Input (`input.field`): рамка, поверхность,
 // высота размера, строка слота и кольцо фокуса. Ширина — по дате и слотам, а
@@ -126,6 +128,19 @@
 
 .s-date-input__trailing {
 	@apply ms-auto pe-1;
+}
+
+// Кнопка очистки — квадрат в строку слота, как у Input (`input.field-clear`):
+// кнопка календаря DatePicker рядом — квадрат той же стороны.
+.s-date-input__clear {
+	@include input.field-clear('date-input');
+}
+
+// Вид кнопки очистки — `plain`, как у Input и кнопки календаря: значения
+// вида разметка не передаёт, вид даёт контекст. Нулевая специфичность, как у
+// базового вида Button.
+:where(.s-date-input__clear) {
+	@include button.button-view('plain');
 }
 
 // Ряд частей.

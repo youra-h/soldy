@@ -16,6 +16,7 @@ import {
 	TSelectItem,
 	TSelectCollectionFacade,
 	TSelectItemCollectionFacade,
+	TField,
 } from '@soldy-ui/core'
 import {
 	TElementPlugin,
@@ -44,6 +45,9 @@ import {
 	SelectItemDescriptor,
 	SelectCollectionDescriptor,
 	SelectCollectionItemDescriptor,
+	FieldDescriptor,
+	InputDescriptor,
+	DateInputDescriptor,
 	defineComponent,
 	CommonProfile,
 	createAdapterContext,
@@ -388,6 +392,47 @@ describe('Select', () => {
 		const itemDescriptor = SelectItemDescriptor()
 
 		expect(() => assemble(itemDescriptor, item)).not.toThrow()
+	})
+})
+
+/**
+ * Кнопка очистки — часть поля: `FieldDescriptor`, общий у Input и DateInput.
+ * Select её не рисует — свои `clearable` и `clearLabel` он отдаёт полю, а
+ * имени кнопки у него нет.
+ */
+describe('поле: кнопка очистки', () => {
+	it('FieldDescriptor — база TField поверх InputControl', () => {
+		const d = FieldDescriptor()
+
+		expect(d.ctor).toBe(TField)
+		expect(propNames(d)).toEqual(
+			expect.arrayContaining(['readonly', 'clearable', 'clearLabel', 'clearAria']),
+		)
+	})
+
+	it.each([
+		['Input', InputDescriptor],
+		['DateInput', DateInputDescriptor],
+	])('%s наследует кнопку очистки и слот clear', (_name, factory) => {
+		const d = factory()
+
+		expect(propNames(d)).toEqual(
+			expect.arrayContaining(['clearable', 'clearLabel', 'clearAria']),
+		)
+		expect(d.slots.map((slot) => slot.name)).toContain('clear')
+	})
+
+	it('событие clear дескриптор не публикует — это поверхность инстанса', () => {
+		expect(eventNames(InputDescriptor())).not.toContain('clear')
+		expect(eventNames(DateInputDescriptor())).not.toContain('clear')
+	})
+
+	it('у Select своего имени кнопки нет — его собирает поле', () => {
+		const names = propNames(SelectDescriptor())
+
+		expect(names).toContain('clearable')
+		expect(names).toContain('clearLabel')
+		expect(names).not.toContain('clearAria')
 	})
 })
 

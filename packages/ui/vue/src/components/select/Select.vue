@@ -1,13 +1,12 @@
 <script lang="ts">
 import { Frame } from '../frame'
 import { Input } from '../input'
-import { Button } from '../button'
 import { Icon } from '../icon'
 import { Tags } from '../tags'
 import { SelectItem } from './item'
 import SetupSelect from './setup.component'
 
-export default { ...SetupSelect, components: { Frame, Input, Button, Icon, Tags, SelectItem } }
+export default { ...SetupSelect, components: { Frame, Input, Icon, Tags, SelectItem } }
 </script>
 
 <template>
@@ -32,8 +31,13 @@ export default { ...SetupSelect, components: { Frame, Input, Button, Icon, Tags,
 			`TInput` (`field`), которым владеет Select (см. `TSelect.field`,
 			`TSelectExtension`). Рядом `:value`/`:placeholder`/`aria` не
 			ставить ни в каком виде — тогда снова завелись бы вторые копии.
-			`disabled`, `size`, `variant`, `readonly`, `required`, `name`, `id`
-			тоже несёт инстанс: Select синхронизирует их с ним сам.
+			`disabled`, `size`, `variant`, `readonly`, `required`, `name`, `id`,
+			`clearable`, `clearLabel` тоже несёт инстанс: Select синхронизирует
+			их с ним сам.
+
+			Кнопку очистки рисует поле — первой в своём слоте у конца, перед
+			стрелкой. Очищает поле его команда `clear`, а выбор снимает
+			`TSelectExtension` по её событию: здесь кнопки нет.
 
 			`readonly` вложенного `Input` — обычный `readonly` Select, которым
 			управляет `editable`. В select-only (`editable: false`, по
@@ -71,26 +75,17 @@ export default { ...SetupSelect, components: { Frame, Input, Button, Icon, Tags,
 					<slot name="leading" />
 				</template>
 
-				<template #trailing>
-					<!--
-						У кнопки очистки нет `view`: значения вида объявляет тема, и
-						разметка библиотеки их не знает. Кнопку тема красит по контексту
-						(`.s-select__clear`).
-					-->
-					<slot name="clear" :clear="facade.clear">
-						<Button
-							embedded="select.clear"
-							v-if="clearable"
-							class="s-select__clear"
-							:size="size"
-							:disabled="disabled"
-							@click.stop="facade.clear()"
-							v-bind="clearAria"
-						>
-							<Icon embedded="select.clear-icon" :tag="clearIconTag" :size="size" />
-						</Button>
-					</slot>
+				<!--
+					Своя кнопка очистки — проброс слота `clear` поля со scope поля:
+					команда `clear` очищает поле, а выбор снимается по её событию.
+					Слот отдаётся полю, только когда задан Select'у: иначе поле
+					рисует свою кнопку по `clearable`.
+				-->
+				<template v-if="$slots.clear" #clear="{ clear }">
+					<slot name="clear" :clear="clear" />
+				</template>
 
+				<template #trailing>
 					<!--
 						Стрелка декоративна: состояние панели уже сказано через
 						`aria-expanded` на поле, второй раз объявлять его не надо.
