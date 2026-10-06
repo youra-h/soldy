@@ -104,8 +104,12 @@ $variants: 'accent', 'positive', 'negative', 'caution';
 //   обязан выглядеть выбранным. Одной вуали наведения мало: в тёмной схеме её
 //   почти не видно, а однодневный предпросмотр — якорь, пока указатель ушёл, —
 //   без кромки не отличался бы от дня под указателем;
-// - отметка «сегодня» — рамка насыщенной ступени: на простом дне и на полосе
-//   она видна одинаково.
+// - отметка «сегодня» — рамка той же пары ступеней, что у рамки Button
+//   `outlined` и коробки CheckBox: 300 «слабая граница», а на вуали —
+//   наведения, нажатия, ленты и предпросмотра — 400 «граница», как у рамки
+//   кнопки под наведением. Насыщенной ступенью рамка горела ярче любой рамки
+//   рядом, а 300 на вуали мало: в тёмной схеме на панели DatePicker лента
+//   почти ровно ступени 300, и рамка в ней пропадала.
 @mixin calendar-colors($color) {
 	--s-calendar-fill: var(--s-#{$color}-500);
 	--s-calendar-fill-hover: var(--s-#{$color}-600);
@@ -116,5 +120,6 @@ $variants: 'accent', 'positive', 'negative', 'caution';
 	--s-calendar-preview: #{veil.tint($color, var(--s-component-state-hover))};
 	--s-calendar-preview-edge: var(--s-#{$color}-400);
 	--s-calendar-band-text: var(--s-#{$color}-800);
-	--s-calendar-today: var(--s-#{$color}-500);
+	--s-calendar-today: var(--s-#{$color}-300);
+	--s-calendar-today-veiled: var(--s-#{$color}-400);
 }

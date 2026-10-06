@@ -13,6 +13,7 @@
  * `:focus-visible`, клик из Enter на кнопке листания, перенос DOM-фокуса за
  * фокусом коллекции, когда узел нового дня появляется кадром позже, и путь
  * фокуса через панель выбора — в том числе после нажатия по подложке и жеста.
+ * Цвет: рамка «сегодня» — пара рамки `outlined` у Button, видная и на вуали.
  * Модель проверяет ядро, клавиши и указатель — тесты плагинов, проводку —
  * `ui/vue/__tests__/calendar.spec.ts`.
  */
@@ -21,12 +22,12 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { render, cleanup } from 'vitest-browser-vue'
 import { commands, page, userEvent } from 'vitest/browser'
 import { defineComponent, h, nextTick } from 'vue'
-import { Calendar } from '@soldy-ui/vue'
+import { Button, Calendar } from '@soldy-ui/vue'
 import { createEngineCalendar } from '@soldy-ui/core'
 import type { TSwipe } from '@soldy-ui/core'
 import { COMPONENT_SIZES } from '@soldy-ui/playground-shared'
 
-import { outlined, pixel, style, systemColor } from './colors'
+import { find, lightness, outlined, pixel, settled, style, systemColor } from './colors'
 import { DIRECTION_CASES, pointing, setDir, sidesOf, type TLine } from './directions'
 import { forcedColors } from './media'
 import { whileLeaving } from './transitions'
@@ -61,15 +62,6 @@ const show = async (props: Record<string, unknown>, dir?: TLine) => {
 	await nextTick()
 	await nextFrame()
 	await nextFrame()
-}
-
-/** Узел по селектору; нет его — тест падает здесь, а не на чтении свойства. */
-const find = (selector: string): HTMLElement => {
-	const element = document.querySelector(selector)
-
-	if (!(element instanceof HTMLElement)) throw new Error(`${selector}: HTML-узла нет`)
-
-	return element
 }
 
 const findAll = (selector: string): HTMLElement[] =>
@@ -307,6 +299,273 @@ describe('указатель', () => {
 			.poll(() => findAll('.s-calendar-item[data-range-middle="true"]').length)
 			.toBe(2)
 		expect(findAll('.s-calendar-item[data-preview="true"]')).toHaveLength(0)
+	})
+})
+
+/**
+ * Рамка «сегодня» — пара рамки `outlined` у Button: в покое та же ступень,
+ * что у рамки кнопки, а на вуали — под наведением и нажатием, на ленте
+ * диапазона и в предпросмотре — на ступень сильнее, как рамка кнопки под
+ * наведением. Насыщенной ступенью рамка горела ярче любой рамки рядом, а
+ * ступени покоя на вуали мало: в тёмной схеме на панели DatePicker лента почти
+ * её цвета, и рамка в ней пропадала.
+ *
+ * Палитры тест не знает, как и сторож видов Button (`button-view.spec.ts`):
+ * рамку он сверяет с рамкой кнопки рядом, а на вуали меряет, насколько она
+ * ушла от того, что под ней, в сторону текста дня.
+ */
+describe('рамка «сегодня»', () => {
+	/** Обе схемы: рамка пропадала только в тёмной, а правило у схем общее. */
+	const SCHEMES = ['oren', 'oren-dark'] as const
+
+	type TScheme = (typeof SCHEMES)[number]
+
+	/**
+	 * Где стоит календарь: на странице и в панели DatePicker — у неё
+	 * поверхность контрола, как у панелей Select и Popover.
+	 */
+	const BACKDROPS = {
+		страница: 'var(--s-neutral-50)',
+		'панель DatePicker': 'var(--s-component-surface)',
+	} as const
+
+	type TBackdrop = keyof typeof BACKDROPS
+
+	const CASES = SCHEMES.flatMap((scheme) =>
+		(Object.keys(BACKDROPS) as TBackdrop[]).map((backdrop) => ({ scheme, backdrop })),
+	)
+
+	/** Порог заметности рамки по светлоте OKLab — тот же, что у рамки `outlined` у Button. */
+	const VISIBLE_BORDER = 0.04
+
+	/** Пропсы календаря от даты «сегодня». */
+	type TProps = (today: string) => Record<string, unknown>
+
+	/** Сегодня по UTC: тот же день отмечает календарь с `timeZone: 'UTC'`. */
+	const todayInUtc = () => new Date().toISOString().slice(0, 10)
+
+	/** Сутки в миллисекундах. */
+	const DAY = 24 * 60 * 60 * 1000
+
+	/** Дата на `days` дней от `date`. */
+	const daysFrom = (date: string, days: number) =>
+		new Date(Date.parse(date) + days * DAY).toISOString().slice(0, 10)
+
+	/**
+	 * Диапазон со вчера до завтра: сегодня — его середина, на ленте. Месяц
+	 * сетки задан, и выбор в соседнем месяце её не сдвигает.
+	 */
+	const band: TProps = (today) => ({
+		mode: 'range',
+		value: [daysFrom(today, -1), daysFrom(today, 1)],
+	})
+
+	/** Ряд сцены: части стоят рядом, каждая своей высоты. */
+	const ROW = 'display: flex; gap: 8px; align-items: flex-start'
+
+	/**
+	 * Сцена: на каждой подложке — месяц, в котором сегодня, и кнопка
+	 * `outlined` рядом. Указатель уведён со всех частей.
+	 */
+	const showToday = async (scheme: TScheme, props: TProps = () => ({})) => {
+		const today = todayInUtc()
+
+		document.documentElement.dataset.theme = scheme
+		render(
+			defineComponent({
+				render: () =>
+					h('div', { style: ROW }, [
+						h('div', { class: 's-test-away', style: 'width: 24px; height: 24px' }),
+						...Object.entries(BACKDROPS).map(([name, color]) =>
+							h(
+								'div',
+								{
+									key: name,
+									'data-backdrop': name,
+									style: `background: ${color}; padding: 8px; ${ROW}`,
+								},
+								[
+									h(Calendar, {
+										months: [`${today.slice(0, 7)}-01`],
+										timeZone: 'UTC',
+										...props(today),
+									}),
+									h(Button, { view: 'outlined', text: 'Рамка' }),
+								],
+							),
+						),
+					]),
+			}),
+		)
+
+		await nextTick()
+		await nextFrame()
+		await nextFrame()
+		await userEvent.hover(find('.s-test-away'))
+		await settled(document.body)
+	}
+
+	/** Части сцены на подложке: сама подложка, кнопка, день «сегодня» и его плитка. */
+	const partsOf = (backdrop: TBackdrop) => {
+		const root = find(`[data-backdrop="${backdrop}"]`)
+		const cell = find('.s-calendar-item[data-today="true"]', root)
+
+		return {
+			root,
+			cell,
+			tile: find('.s-calendar-item__day', cell),
+			button: find('.s-button--view-outlined', root),
+		}
+	}
+
+	/** Цвет рамки — байтами sRGB: запись браузера сравнивать нельзя. */
+	const borderOf = (element: HTMLElement) => pixel([style(element).borderTopColor])
+
+	it.each(CASES)('$scheme, $backdrop: в покое — цвета рамки outlined', async (scenario) => {
+		await showToday(scenario.scheme)
+
+		const { tile, button } = partsOf(scenario.backdrop)
+
+		expect(borderOf(tile)).toEqual(borderOf(button))
+	})
+
+	it.each(CASES)(
+		'$scheme, $backdrop: под наведением — цвета рамки outlined под наведением',
+		async (scenario) => {
+			await showToday(scenario.scheme)
+
+			const { cell, tile, button } = partsOf(scenario.backdrop)
+
+			await userEvent.hover(button)
+			await settled(document.body)
+
+			const hovered = borderOf(button)
+
+			await userEvent.hover(cell)
+			await settled(document.body)
+
+			expect(borderOf(tile)).toEqual(hovered)
+		},
+	)
+
+	/** Вуаль под рамкой. */
+	interface IVeil {
+		name: string
+		/** Пропсы календаря, при которых она бывает. */
+		props: TProps
+		/** Поставить её и держать, пока идёт замер. */
+		hold: (cell: HTMLElement, measure: () => void) => Promise<void>
+		/** Состояние дня, при котором она стоит. */
+		state: string
+		/** Её цвет. */
+		color: (cell: HTMLElement) => string
+	}
+
+	/** Наведение и нажатие красят саму плитку. */
+	const tileVeil = (cell: HTMLElement) =>
+		style(find('.s-calendar-item__day', cell)).backgroundColor
+
+	/** Лента и предпросмотр лежат под плиткой — псевдоэлементом ячейки. */
+	const bandVeil = (cell: HTMLElement) => style(cell, '::before').backgroundColor
+
+	const VEILS: readonly IVeil[] = [
+		{
+			name: 'наведение',
+			props: () => ({}),
+			hold: async (cell, measure) => {
+				await userEvent.hover(cell)
+				await settled(document.body)
+				measure()
+			},
+			state: ':hover',
+			color: tileVeil,
+		},
+		{
+			// Нажали и увели указатель: наведения на дне уже нет, а вуаль
+			// нажатия держится до отпускания
+			name: 'нажатие',
+			props: () => ({}),
+			hold: async (cell, measure) => {
+				await userEvent.hover(cell)
+				await commands.mouseDown()
+
+				try {
+					await userEvent.hover(find('.s-test-away'))
+					await settled(document.body)
+					measure()
+				} finally {
+					await commands.mouseUp()
+				}
+			},
+			state: ':active:not(:hover)',
+			color: tileVeil,
+		},
+		{
+			name: 'лента',
+			props: band,
+			hold: async (_cell, measure) => measure(),
+			state: '[data-range-middle="true"]',
+			color: bandVeil,
+		},
+		{
+			// Якорь — сам день «сегодня». Указатель ушёл, и предпросмотр идёт
+			// от якоря до фокуса — до того же дня
+			name: 'предпросмотр',
+			props: () => ({ mode: 'range' }),
+			hold: async (cell, measure) => {
+				await userEvent.click(cell)
+				await userEvent.hover(find('.s-test-away'))
+				await settled(document.body)
+				measure()
+			},
+			state: '[data-preview="true"]',
+			color: bandVeil,
+		},
+	]
+
+	describe.each(VEILS)('на вуали: $name', (veil) => {
+		it.each(CASES)(
+			'$scheme, $backdrop: рамка уходит от вуали к тексту дня',
+			async (scenario) => {
+				await showToday(scenario.scheme, veil.props)
+
+				const { root, cell, tile } = partsOf(scenario.backdrop)
+
+				await veil.hold(cell, () => {
+					expect(cell.matches(veil.state), veil.state).toBe(true)
+
+					// Под рамкой — подложка и вуаль: фон плитки лежит и под её рамкой
+					const under = [style(root).backgroundColor, veil.color(cell)]
+					const base = lightness(under)
+					const toward = Math.sign(lightness([...under, style(tile).color]) - base)
+					const border =
+						(lightness([...under, style(tile).borderTopColor]) - base) * toward
+
+					expect(border).toBeGreaterThan(VISIBLE_BORDER)
+				})
+			},
+		)
+	})
+
+	/**
+	 * На вуали ступень подменяет переменная, а не `border-color`: правило
+	 * рамки на вуали было бы сильнее правила режима принудительных цветов, и на
+	 * подсветке ленты рамка осталась бы ступенью темы, а не текстом подсветки.
+	 */
+	describe('принудительные цвета', () => {
+		afterEach(async () => {
+			await forcedColors('none')
+		})
+
+		it.each(SCHEMES)('%s: рамка на ленте — текстом подсветки', async (scheme) => {
+			await forcedColors('active')
+			await showToday(scheme, band)
+
+			const { cell, tile } = partsOf('страница')
+
+			expect(cell.dataset.rangeMiddle).toBe('true')
+			expect(borderOf(tile)).toEqual(pixel([systemColor('HighlightText')]))
+		})
 	})
 })
 
