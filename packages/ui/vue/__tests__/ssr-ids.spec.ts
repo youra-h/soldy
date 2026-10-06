@@ -180,6 +180,25 @@ describe('id при гидратации', () => {
 		expect(new Set(ids).size).toBe(2)
 	})
 
+	it('таблица: заголовки колонок и их ручки названы обёрткой содержимого у сервера и браузера одинаково', async () => {
+		const { server, client, warnings } = await hydrate(() =>
+			h(Table, {
+				items: [{ data: { name: 'Анна', age: 30 } }],
+				columns: [
+					{ field: 'name', text: 'Имя', resizable: true, width: 150 },
+					{ field: 'age', text: 'Возраст', resizable: true, width: 100 },
+				],
+			}),
+		)
+		const ids = attrs(client, '.s-table-column__content', 'id')
+
+		expect(warnings).toEqual([])
+		expect(ids).toEqual(attrs(server, '.s-table-column__content', 'id'))
+		expect(attrs(client, '.s-table-column', 'aria-labelledby')).toEqual(ids)
+		expect(attrs(client, '.s-table-column__resizer input', 'aria-labelledby')).toEqual(ids)
+		expect(new Set(ids).size).toBe(2)
+	})
+
 	it('группа радио без своего имени: общий name у сервера и браузера один', async () => {
 		const { server, client, warnings } = await hydrate(() =>
 			h(RadioGroup, null, () => [

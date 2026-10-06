@@ -3749,19 +3749,19 @@ this._syncDisabled() // начальное состояние — руками
   `"false"`, а не снимает атрибут: тема смотрит `[data-x='true']`, и
   «выключено» надо отличать от «неприменимо». Снимает только `null`.
 
-| Источник               | Что пишет                                                                                                                                                                                                                                             |
-| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `TSelectionExtension`  | `data-selected` — **всем** элементам коллекции                                                                                                                                                                                                        |
-| `TActivationExtension` | `data-selected` — то же имя при состоянии `active`                                                                                                                                                                                                    |
-| `TListBoxExtension`    | `data-content-fit` — уже разрешённый (элемент поверх списка) и `data-indicator`                                                                                                                                                                       |
-| `TSelectExtension`     | `data-content-fit` и `data-indicator` — значения самого Select                                                                                                                                                                                        |
-| `TListItemPlugin`      | `data-highlighted`                                                                                                                                                                                                                                    |
-| `TControl`             | `data-disabled` — на любом теге, от тега не зависит                                                                                                                                                                                                   |
-| `TLayer`               | `data-layer` — номер слоя показанной панели, тот же, что `zIndex`                                                                                                                                                                                     |
-| `TModalLayer`          | `data-open` — открытость окна и выезжающей панели, у панели и подложки                                                                                                                                                                                |
-| `TProgress`            | `data-indeterminate` — бег индикатора выполнения, у линии и кольца                                                                                                                                                                                    |
-| `TAnchorPlugin`        | `data-placement` — фактическая сторона панели после flip                                                                                                                                                                                              |
-| ядро компонента        | своё состояние — `data-open` у `TSelect` и `TPopover`, `data-maximized` у `TDialog`, `data-swiping` и `data-contained` у `TDrawer`, `data-open`, `data-swiping` и `data-edge` у панели `TPopover` (набор `panelDataset`), `data-dragging` у `TSlider` |
+| Источник               | Что пишет                                                                                                                                                                                                                                                                                                                          |
+| ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `TSelectionExtension`  | `data-selected` — **всем** элементам коллекции                                                                                                                                                                                                                                                                                     |
+| `TActivationExtension` | `data-selected` — то же имя при состоянии `active`                                                                                                                                                                                                                                                                                 |
+| `TListBoxExtension`    | `data-content-fit` — уже разрешённый (элемент поверх списка) и `data-indicator`                                                                                                                                                                                                                                                    |
+| `TSelectExtension`     | `data-content-fit` и `data-indicator` — значения самого Select                                                                                                                                                                                                                                                                     |
+| `TListItemPlugin`      | `data-highlighted`                                                                                                                                                                                                                                                                                                                 |
+| `TControl`             | `data-disabled` — на любом теге, от тега не зависит                                                                                                                                                                                                                                                                                |
+| `TLayer`               | `data-layer` — номер слоя показанной панели, тот же, что `zIndex`                                                                                                                                                                                                                                                                  |
+| `TModalLayer`          | `data-open` — открытость окна и выезжающей панели, у панели и подложки                                                                                                                                                                                                                                                             |
+| `TProgress`            | `data-indeterminate` — бег индикатора выполнения, у линии и кольца                                                                                                                                                                                                                                                                 |
+| `TAnchorPlugin`        | `data-placement` — фактическая сторона панели после flip                                                                                                                                                                                                                                                                           |
+| ядро компонента        | своё состояние — `data-open` у `TSelect` и `TPopover`, `data-maximized` у `TDialog`, `data-swiping` и `data-contained` у `TDrawer`, `data-open`, `data-swiping` и `data-edge` у панели `TPopover` (набор `panelDataset`), `data-dragging` у `TSlider`, `data-sized` (своя ширина) и `data-resizing` (тянут ручку) у `TTableColumn` |
 
 Два правила, которые легко нарушить:
 
@@ -3810,9 +3810,10 @@ this._syncDisabled() // начальное состояние — руками
 сюда `dir` по `direction` (`'inherit'` снимает атрибут — направление
 наследуется от предка). Отдельного пропа `dir` в контракте нет — раньше он
 дублировал то же значение вторым путём, и его вычисляли (`dir ?? undefined`)
-в каждом адаптере отдельно. `TControl` дописывает `disabled`; появится второй
-нативный атрибут с тем же правилом «есть у тега / нет у тега» — он идёт сюда
-же, а не в третий набор.
+в каждом адаптере отдельно. `TControl` дописывает `disabled`, колонка таблицы
+(`TTableColumn`) — `scope="col"`, пока её тег `th`; появится ещё нативный
+атрибут с тем же правилом «есть у тега / нет у тега» — он идёт сюда же, а не
+в третий набор.
 
 **Половину правила решает тег её элемента.** Нативный `disabled` в `attrs` —
 тег корня, `tag`. ARIA-половину — тег элемента, на котором стоит `aria`: хук
@@ -4552,11 +4553,34 @@ CheckBox и Switch (HTML не знает `readonly` у чекбокса). Поэ
   `TInputBoolPlugin`: модель не сменилась, и разметка поле не перерисует.
   Выбирать нечего (`empty`: строк нет, все выключены, выключена таблица) —
   чекбокс шапки выключен. Пустая таблица — строка с одной ячейкой во всю
-  ширину (`colspan` — `columnCount`), содержимое — слот `empty`. Сторожат
+  ширину (`colspan` — `columnCount`), содержимое — слот `empty`. **Ширина
+  колонки** — ручка у конца заголовка колонки `resizable` (по умолчанию нет):
+  нативный `input type="range"` в полосе, как поле ручки Slider, а не
+  `role="separator"` (APG Window Splitter) — до него жест мобильного
+  скринридера не доходит. Ход поля — `minWidth` и `maxWidth`, без них —
+  пределы ядра; ширина в ходе всегда (`resizer`). Заголовок и поле названы
+  обёрткой содержимого (`aria-labelledby`, `TTableColumnIdsPlugin`): значение
+  поля вошло бы в имя заголовка («Имя 150»), а строк библиотеки в имени нет;
+  `scope="col"` колонка пишет в `attrs`, пока её тег `th`. Жест, клавиши и
+  замер — `TTableColumnResizePlugin`: протяжка от замеренной ширины, сторона
+  роста — по вычисленному направлению (`slideDirection`), стрелки — `arrowStep`,
+  Shift и PageUp/PageDown — крупный шаг, Home и End — края хода, жест
+  скринридера — шаг в сторону правки; шаги — опции установки. Ширину колонки
+  без своей ширины ядро узнаёт от него (`notifyWidth`), до замера ручки нет.
+  Нажатие без движения ширину не задаёт, `commit` колонки — одно на действие и
+  только на смену итога, а наружу его отдаёт таблица — `column:resize`
+  (`{ column, width }`), по нему приложение сохраняет настройку. `disabled`
+  таблицы колонкам пишет расширение `columns`, как строкам — `table`: у
+  выключенной ручки нет. Тема: полоса в 24 px — по центру границы колонок, у
+  последней — внутри таблицы, под кнопками сортировки; в жесте
+  (`data-resizing`) — курсор ручки и без выделения на всей таблице; ширина у
+  всех показанных колонок (`data-sized`) — таблица шириной в их сумму: иначе
+  раскладка раздала бы излишек, и ручка не держала бы колонку. Сторожат
   `core/__tests__/table.spec.ts`, `core/__tests__/table-columns.spec.ts`,
   `core/__tests__/table-sort.spec.ts`, `plugins/__tests__/ids.plugin.spec.ts`,
-  `ui/vue/__tests__/table.spec.ts`, `ui/vue/__tests__/input-bool.spec.ts` и
-  `playground/vue/browser/table.spec.ts`.
+  `plugins/__tests__/table-column-resize.plugin.spec.ts`,
+  `ui/vue/__tests__/table.spec.ts`, `ui/vue/__tests__/input-bool.spec.ts`,
+  `ui/vue/__tests__/ssr-ids.spec.ts` и `playground/vue/browser/table.spec.ts`.
 
 **ComboBox отдельным компонентом не заводим.** Ark и Radix держат `Select` и
 `Combobox` врозь, потому что у них расходится модель значения: у select-only
@@ -4854,23 +4878,24 @@ Disabled — так же: тема читает `data-disabled`, которое 
 компонентов свои: они пишут при установке, синхронно, — связка есть уже в
 первой (и серверной) отрисовке, как у `TAriaPlugin`.
 
-| Компонент      | Кто пишет                      | Что                                                                        |
-| -------------- | ------------------------------ | -------------------------------------------------------------------------- |
-| Popover        | `TPopoverIdsPlugin`            | `id` панели, `aria-controls` в `triggerAria`                               |
-| Tooltip        | `TTooltipIdsPlugin`            | `id` панели, в `triggerAria` — ссылка по `type`                            |
-| Drawer         | `TModalIdsPlugin`              | `id` в `titleAria`, `aria-labelledby` панели                               |
-| Dialog         | `TDialogIdsPlugin`             | то же и `id` в `bodyAria`, `aria-describedby` при `alert`                  |
-| Select         | `TSelectIdsPlugin`             | `id` в `listAria`, `aria-controls` поля                                    |
-| Select.Item    | `TSelectItemIdsPlugin`         | `id` опции; `aria-activedescendant` берёт его из её `aria`                 |
-| Tabs.Item      | `TTabsItemIdsPlugin`           | `id` таба и `aria-controls` его панели                                     |
-| Tabs.Content   | `TTabsContentBindingExtension` | `id` и `aria-labelledby` — то, что записал её таб; своей формулы нет       |
-| Accordion.Item | `TAccordionItemIdsPlugin`      | `id` и `aria-controls` заголовка, `id` и `aria-labelledby` в `contentAria` |
-| Calendar       | `TCalendarIdsPlugin`           | по месту сетки — `id` заголовка, ссылка на него у сетки, `id` шапки панели |
-| DateInput      | `TDateInputIdsPlugin`          | `id` частей по типу — в наборы частей (`segmentSets`)                      |
-| DatePicker     | `TDatePickerIdsPlugin`         | `id` в `panelAria`, `aria-controls` в `triggerAria`                        |
-| RadioGroup     | `TRadioGroupNamePlugin`        | общий `name` радио: своё имя группы, иначе `id` монтирования               |
-| Table.Row      | `TTableRowIdsPlugin`           | `id` заголовка строки — в `headerAria`; на него ссылается её чекбокс       |
-| оверлеи        | `TDismissPlugin`               | `data-owner` панели                                                        |
+| Компонент      | Кто пишет                      | Что                                                                                  |
+| -------------- | ------------------------------ | ------------------------------------------------------------------------------------ |
+| Popover        | `TPopoverIdsPlugin`            | `id` панели, `aria-controls` в `triggerAria`                                         |
+| Tooltip        | `TTooltipIdsPlugin`            | `id` панели, в `triggerAria` — ссылка по `type`                                      |
+| Drawer         | `TModalIdsPlugin`              | `id` в `titleAria`, `aria-labelledby` панели                                         |
+| Dialog         | `TDialogIdsPlugin`             | то же и `id` в `bodyAria`, `aria-describedby` при `alert`                            |
+| Select         | `TSelectIdsPlugin`             | `id` в `listAria`, `aria-controls` поля                                              |
+| Select.Item    | `TSelectItemIdsPlugin`         | `id` опции; `aria-activedescendant` берёт его из её `aria`                           |
+| Tabs.Item      | `TTabsItemIdsPlugin`           | `id` таба и `aria-controls` его панели                                               |
+| Tabs.Content   | `TTabsContentBindingExtension` | `id` и `aria-labelledby` — то, что записал её таб; своей формулы нет                 |
+| Accordion.Item | `TAccordionItemIdsPlugin`      | `id` и `aria-controls` заголовка, `id` и `aria-labelledby` в `contentAria`           |
+| Calendar       | `TCalendarIdsPlugin`           | по месту сетки — `id` заголовка, ссылка на него у сетки, `id` шапки панели           |
+| DateInput      | `TDateInputIdsPlugin`          | `id` частей по типу — в наборы частей (`segmentSets`)                                |
+| DatePicker     | `TDatePickerIdsPlugin`         | `id` в `panelAria`, `aria-controls` в `triggerAria`                                  |
+| RadioGroup     | `TRadioGroupNamePlugin`        | общий `name` радио: своё имя группы, иначе `id` монтирования                         |
+| Table.Row      | `TTableRowIdsPlugin`           | `id` заголовка строки — в `headerAria`; на него ссылается её чекбокс                 |
+| Table.Column   | `TTableColumnIdsPlugin`        | `id` обёртки содержимого — в `contentAria`; ссылка на неё — в `aria` и `resizerAria` |
+| оверлеи        | `TDismissPlugin`               | `data-owner` панели                                                                  |
 
 `id` поля (`Input`, `CheckBox`, `Switch`, поле Select) — значение потребителя:
 задают его там, где на поле ссылается разметка потребителя. Не задан — атрибута

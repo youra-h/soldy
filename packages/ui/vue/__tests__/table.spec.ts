@@ -10,7 +10,7 @@
  * тогда, когда модель выбор отменила.
  */
 
-import { describe, it, expect, afterEach } from 'vitest'
+import { describe, it, expect, afterEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { defineComponent, h, nextTick, type VNode } from 'vue'
 import { Table, TableColumn, TableRow } from '@soldy-ui/vue'
@@ -484,6 +484,112 @@ describe('имена чекбоксов', () => {
 		)
 
 		expect(checkBoxInput('.s-table__select').getAttribute('aria-label')).toBe('Выбрать все')
+	})
+})
+
+/**
+ * Ручка ширины — полоса с полем у края заголовка. Какой станет ширина, решает
+ * ядро (`core/__tests__/table-columns.spec.ts`), указатель и клавиши ведёт
+ * плагин (`plugins/__tests__/table-column-resize.plugin.spec.ts`), протяжку в
+ * настоящей раскладке — браузер (`playground/vue/browser/table.spec.ts`).
+ * Здесь — что полоса рисуется, когда она есть, имена доходят до разметки, а
+ * ширина — до заголовка и наружу событием таблицы.
+ */
+describe('ручка ширины', () => {
+	const RESIZABLE: TTableColumnSource = { ...NAME, resizable: true, width: 150 }
+
+	/** Поле ручки в заголовке. */
+	function resizerField(root: ParentNode = document): HTMLInputElement {
+		const field = find('.s-table-column__resizer', root).querySelector('input')
+
+		if (!(field instanceof HTMLInputElement)) throw new Error('поля ручки нет')
+
+		return field
+	}
+
+	/** Колонка коллекции по полю. */
+	function columnOf(engine: TTableCollection, field: string): ITableColumn {
+		const found = engine.extensions.columns.columns.find((column) => column.field === field)
+
+		if (!found) throw new Error(`колонки ${field} нет`)
+
+		return found
+	}
+
+	it('полоса с полем — у колонки resizable: ход и ширина колонки; у остальных её нет', async () => {
+		await render(() =>
+			h(Table, {
+				items: [{ data: ANNA }],
+				columns: [{ ...RESIZABLE, minWidth: 100, maxWidth: 300 }, AGE],
+			}),
+		)
+
+		const [name, age] = findAll('.s-table-column')
+		const field = resizerField(name)
+
+		expect(field.type).toBe('range')
+		expect([field.min, field.max, field.value]).toEqual(['100', '300', '150'])
+		expect(findAll('.s-table-column__resizer', age)).toEqual([])
+	})
+
+	it('колонка без своей ширины — полоса появляется с замером ширины', async () => {
+		const engine = engineOf('none', [ANNA], [{ ...NAME, resizable: true }])
+
+		await render(() => h(Table, { engine }))
+
+		expect(findAll('.s-table-column__resizer')).toEqual([])
+
+		columnOf(engine, 'name').notifyWidth(180)
+		await settle()
+
+		expect(resizerField().value).toBe('180')
+		// Замер — не своя ширина: ширину колонки по-прежнему решает тема
+		expect(find('.s-table-column').style.getPropertyValue('--s-table-column-width')).toBe('')
+	})
+
+	it('у выключенной таблицы ручек нет', async () => {
+		await render(() =>
+			h(Table, { items: [{ data: ANNA }], columns: [RESIZABLE], disabled: true }),
+		)
+
+		expect(findAll('.s-table-column__resizer')).toEqual([])
+	})
+
+	it('заголовок и поле названы обёрткой содержимого — ровно текст колонки', async () => {
+		await render(() => h(Table, { items: [{ data: ANNA }], columns: [RESIZABLE, AGE] }))
+
+		for (const header of findAll('.s-table-column')) {
+			const content = find('.s-table-column__content', header)
+
+			expect(content.id).not.toBe('')
+			expect(header.getAttribute('aria-labelledby')).toBe(content.id)
+		}
+
+		const name = findAll('.s-table-column')[0]
+
+		expect(resizerField(name).getAttribute('aria-labelledby')).toBe(
+			find('.s-table-column__content', name).id,
+		)
+		expect(text(find('.s-table-column__content', name))).toBe('Имя')
+	})
+
+	it('клавиша на поле — ширина заголовка, поле и column:resize таблицы', async () => {
+		const resize = vi.fn()
+		const engine = engineOf('none', [ANNA], [RESIZABLE])
+
+		await render(() => h(Table, { engine, 'onColumn:resize': resize }))
+
+		const header = find('.s-table-column')
+
+		resizerField().dispatchEvent(
+			new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true, cancelable: true }),
+		)
+		await settle()
+
+		expect(header.style.getPropertyValue('--s-table-column-width')).toBe('160px')
+		expect(header.dataset.sized).toBe('true')
+		expect(resizerField().value).toBe('160')
+		expect(resize.mock.calls).toEqual([[{ column: columnOf(engine, 'name'), width: 160 }]])
 	})
 })
 

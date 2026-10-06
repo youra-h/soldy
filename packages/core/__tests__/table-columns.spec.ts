@@ -15,6 +15,7 @@ import {
 import type {
 	IExtension,
 	ITableColumn,
+	ITableColumnProps,
 	ITableColumnsExtension,
 	ITableRow,
 	TNoEvents,
@@ -555,6 +556,453 @@ describe('ширина', () => {
 		expect(column.widthStyle).not.toBe(first)
 		expect(column.widthStyle).toEqual(first)
 	})
+
+	it('data-sized — своя ширина, с первой отрисовки; границы его не меняют', () => {
+		const column = new TTableColumn({ maxWidth: 200 })
+
+		expect(column.dataset.get('sized')).toBe('false')
+		expect(new TTableColumn({ width: 120 }).dataset.get('sized')).toBe('true')
+
+		column.width = 300
+
+		expect(column.dataset.get('sized')).toBe('true')
+
+		column.minWidth = 400
+		column.width = undefined
+
+		expect(column.dataset.get('sized')).toBe('false')
+	})
+})
+
+/**
+ * Ручка ширины — значение у колонки, операция у плагина: где указатель и какая
+ * клавиша, знает плагин (`plugins/__tests__/table-column-resize.plugin.spec.ts`),
+ * а здесь — какой станет ширина: ход, пределы, нажатие без движения и одно
+ * `commit` на действие.
+ */
+describe('ручка ширины', () => {
+	/** Колонка с ручкой — и счётчик `commit`, поставленный до действия. */
+	function resizable(props: Partial<ITableColumnProps> = {}) {
+		const column = new TTableColumn({ resizable: true, ...props })
+		const commit = vi.fn<(width: number) => void>()
+
+		column.events.on('commit', commit)
+
+		return { column, commit }
+	}
+
+	describe('рисовать ли ручку', () => {
+		it('по умолчанию ручки нет: решение потребителя; признак — из данных', () => {
+			expect(new TTableColumn({ width: 120 }).resizable).toBe(false)
+			expect(new TTableColumn({ width: 120 }).resizerRendered).toBe(false)
+
+			const columns = columnsWith([{ ...NAME, resizable: true }, AGE])
+
+			expect(columns.columns.map((column) => column.resizable)).toEqual([true, false])
+		})
+
+		it('ручка — у колонки с известной шириной: своей или по замеру', () => {
+			const { column } = resizable()
+
+			// Ширину решает тема, и до замера полю нечего показать
+			expect(column.resizerRendered).toBe(false)
+
+			column.notifyWidth(150)
+
+			expect(column.resizerRendered).toBe(true)
+			expect(resizable({ width: 120 }).column.resizerRendered).toBe(true)
+		})
+
+		it('замер ноль — колонка не разложена, ширина снова неизвестна', () => {
+			const { column } = resizable()
+
+			column.notifyWidth(150)
+			column.notifyWidth(0)
+
+			expect(column.resizerRendered).toBe(false)
+		})
+
+		it('у выключенной колонки ручки нет', () => {
+			const { column } = resizable({ width: 120, disabled: true })
+
+			expect(column.resizerRendered).toBe(false)
+
+			column.disabled = false
+
+			expect(column.resizerRendered).toBe(true)
+		})
+
+		it('change:resizerRendered — только на смену', () => {
+			const column = new TTableColumn()
+			const rendered = vi.fn()
+
+			column.events.on('change:resizerRendered', rendered)
+
+			column.resizable = true
+			column.notifyWidth(150)
+			column.notifyWidth(160)
+			column.width = 200
+			column.disabled = true
+			column.disabled = true
+
+			expect(rendered.mock.calls).toEqual([[true], [false]])
+		})
+
+		it('change:resizable и change:disabled — только на смену; в пропсах — оба', () => {
+			const column = new TTableColumn()
+			const changed = vi.fn()
+
+			column.events.on('change:resizable', changed)
+			column.events.on('change:disabled', changed)
+
+			column.resizable = true
+			column.resizable = true
+			column.disabled = true
+			column.disabled = true
+
+			expect(changed.mock.calls).toEqual([[true], [true]])
+			expect(column.getProps()).toMatchObject({ resizable: true, disabled: true })
+		})
+	})
+
+	describe('поле ручки', () => {
+		it('ход — границы колонки; значение — итог ширины', () => {
+			const { column } = resizable({ width: 150, minWidth: 100, maxWidth: 300 })
+
+			expect(column.resizer).toEqual({ min: 100, max: 300, value: 150 })
+
+			column.width = 500
+
+			expect(column.resizer).toEqual({ min: 100, max: 300, value: 300 })
+		})
+
+		it('без границ — пределы ядра: конечные и вокруг обычной ширины', () => {
+			const { min, max, value } = resizable({ width: 150 }).column.resizer
+
+			expect(value).toBe(150)
+			expect(min).toBeGreaterThan(0)
+			expect(min).toBeLessThan(150)
+			expect(max).toBeGreaterThan(150)
+			expect(Number.isFinite(max)).toBe(true)
+		})
+
+		it('ширина всегда в ходе: ширина за пределами ядра расширяет ход до себя', () => {
+			const wide = resizable({ width: 100_000 }).column.resizer
+			const narrow = resizable({ width: 1 }).column.resizer
+
+			expect(wide.max).toBe(100_000)
+			expect(narrow.min).toBe(1)
+		})
+
+		it('одна граница — пределы ядра её не переходят', () => {
+			expect(resizable({ width: 20, maxWidth: 30 }).column.resizer).toEqual({
+				min: 20,
+				max: 30,
+				value: 20,
+			})
+			expect(resizable({ width: 5000, minWidth: 4000 }).column.resizer.min).toBe(4000)
+		})
+
+		it('нижняя граница сильнее верхней, как у итога', () => {
+			expect(resizable({ width: 150, minWidth: 300, maxWidth: 200 }).column.resizer).toEqual({
+				min: 300,
+				max: 300,
+				value: 300,
+			})
+		})
+
+		it('без своей ширины — замер', () => {
+			const { column } = resizable({ minWidth: 100 })
+
+			column.notifyWidth(180.4)
+
+			expect(column.resizer.value).toBe(180)
+		})
+
+		it('поле — значение: каждое чтение собирает его заново', () => {
+			const { column } = resizable({ width: 150 })
+			const first = column.resizer
+
+			expect(column.resizer).not.toBe(first)
+			expect(column.resizer).toEqual(first)
+		})
+
+		it('change:resizer — только на смену хода или ширины', () => {
+			const { column } = resizable({ width: 150 })
+			const changed = vi.fn()
+
+			column.events.on('change:resizer', changed)
+
+			// Замер колонке со своей шириной поля не меняет
+			column.notifyWidth(170)
+			column.width = 150
+			column.maxWidth = 300
+			column.maxWidth = 300
+			column.width = 200
+
+			expect(changed.mock.calls).toEqual([
+				[{ min: column.resizer.min, max: 300, value: 150 }],
+				[{ min: column.resizer.min, max: 300, value: 200 }],
+			])
+		})
+	})
+
+	describe('жест указателя', () => {
+		it('нажатие без движения ширину не задаёт и commit не шлёт', () => {
+			const { column, commit } = resizable()
+			const width = vi.fn()
+
+			column.notifyWidth(150)
+			column.events.on('change:width', width)
+
+			expect(column.grab(150)).toBe(true)
+
+			column.drag(0)
+			column.release()
+
+			expect(column.width).toBeUndefined()
+			expect(width).not.toHaveBeenCalled()
+			expect(commit).not.toHaveBeenCalled()
+		})
+
+		it('протяжка — ширина при нажатии плюс сдвиг; commit — один, на отпускание', () => {
+			const { column, commit } = resizable({ width: 150 })
+			const width = vi.fn()
+
+			column.events.on('change:width', width)
+
+			column.grab(150)
+			column.drag(10)
+			column.drag(25)
+			column.drag(-5)
+
+			expect(width.mock.calls).toEqual([[160], [175], [145]])
+			expect(commit).not.toHaveBeenCalled()
+
+			column.release()
+
+			expect(column.width).toBe(145)
+			expect(commit.mock.calls).toEqual([[145]])
+		})
+
+		it('ширина нажатия — замер, а не своя: сдвиг идёт от того, что видно', () => {
+			const { column } = resizable({ width: 150 })
+
+			column.grab(170)
+			column.drag(10)
+
+			expect(column.width).toBe(180)
+		})
+
+		it('колонка без своей ширины: протяжка задаёт её, commit — с итогом', () => {
+			const { column, commit } = resizable()
+
+			column.notifyWidth(200)
+			column.grab(200)
+			column.drag(-40)
+			column.release()
+
+			expect(column.width).toBe(160)
+			expect(column.getProps().width).toBe(160)
+			expect(commit.mock.calls).toEqual([[160]])
+		})
+
+		it('туда и обратно — ширина та же, commit нет', () => {
+			const { column, commit } = resizable({ width: 150 })
+
+			column.grab(150)
+			column.drag(30)
+			column.drag(0)
+			column.release()
+
+			expect(column.width).toBe(150)
+			expect(commit).not.toHaveBeenCalled()
+		})
+
+		it('протяжка — в ходе ручки; ход считан при нажатии, на весь жест', () => {
+			const { column } = resizable({ width: 150, minWidth: 100, maxWidth: 200 })
+
+			column.grab(150)
+			column.drag(500)
+
+			expect(column.width).toBe(200)
+
+			column.drag(-500)
+
+			expect(column.width).toBe(100)
+		})
+
+		it('ширина — целые px', () => {
+			const { column, commit } = resizable({ width: 150 })
+
+			column.grab(150.4)
+			column.drag(10.3)
+			column.release()
+
+			expect(column.width).toBe(160)
+			expect(commit.mock.calls).toEqual([[160]])
+		})
+
+		it('data-resizing — от нажатия до отпускания; с первой отрисовки false', () => {
+			const { column } = resizable({ width: 150 })
+
+			expect(column.dataset.get('resizing')).toBe('false')
+
+			column.grab(150)
+
+			expect(column.dataset.get('resizing')).toBe('true')
+
+			column.release()
+
+			expect(column.dataset.get('resizing')).toBe('false')
+		})
+
+		it('без ручки жеста нет: не resizable или выключена', () => {
+			const fixed = new TTableColumn({ width: 150 })
+			const { column } = resizable({ width: 150, disabled: true })
+
+			expect(fixed.grab(150)).toBe(false)
+			expect(column.grab(150)).toBe(false)
+
+			fixed.drag(20)
+			column.drag(20)
+
+			expect(fixed.width).toBe(150)
+			expect(column.width).toBe(150)
+			expect(column.dataset.get('resizing')).toBe('false')
+		})
+
+		it('вне жеста протяжка и отпускание ничего не делают', () => {
+			const { column, commit } = resizable({ width: 150 })
+
+			column.drag(20)
+			column.release()
+
+			expect(column.width).toBe(150)
+			expect(commit).not.toHaveBeenCalled()
+		})
+
+		it('выключили посреди жеста — протяжка стоит, отпускание отдаёт сделанное', () => {
+			const { column, commit } = resizable({ width: 150 })
+
+			column.grab(150)
+			column.drag(20)
+			column.disabled = true
+			column.drag(40)
+			column.release()
+
+			expect(column.width).toBe(170)
+			expect(commit.mock.calls).toEqual([[170]])
+		})
+
+		it('новое нажатие закрывает незаконченный жест', () => {
+			const { column, commit } = resizable({ width: 150 })
+
+			column.grab(150)
+			column.drag(20)
+			column.grab(170)
+
+			expect(commit.mock.calls).toEqual([[170]])
+
+			column.drag(10)
+			column.release()
+
+			expect(commit.mock.calls).toEqual([[170], [180]])
+		})
+	})
+
+	describe('клавиши', () => {
+		it('shift — шире и уже на сдвиг; commit на каждое действие', () => {
+			const { column, commit } = resizable({ width: 150 })
+
+			column.shift(10)
+			column.shift(-30)
+
+			expect(column.width).toBe(130)
+			expect(commit.mock.calls).toEqual([[160], [130]])
+		})
+
+		it('у края хода — ни смены, ни commit', () => {
+			const { column, commit } = resizable({ width: 200, maxWidth: 200 })
+
+			column.shift(10)
+
+			expect(column.width).toBe(200)
+			expect(commit).not.toHaveBeenCalled()
+
+			column.shift(-10)
+
+			expect(commit.mock.calls).toEqual([[190]])
+		})
+
+		it('moveToEdge — края хода', () => {
+			const { column, commit } = resizable({ width: 150, minWidth: 100, maxWidth: 300 })
+
+			column.moveToEdge('end')
+
+			expect(column.width).toBe(300)
+
+			column.moveToEdge('start')
+			column.moveToEdge('start')
+
+			expect(column.width).toBe(100)
+			expect(commit.mock.calls).toEqual([[300], [100]])
+		})
+
+		it('без своей ширины — от замера; без замера клавиши ничего не делают', () => {
+			const { column, commit } = resizable()
+
+			column.shift(10)
+			column.moveToEdge('end')
+
+			expect(column.width).toBeUndefined()
+
+			column.notifyWidth(150)
+			column.shift(10)
+
+			expect(column.width).toBe(160)
+			expect(commit.mock.calls).toEqual([[160]])
+		})
+
+		it('без ручки клавиши ничего не делают', () => {
+			const fixed = new TTableColumn({ width: 150 })
+			const { column } = resizable({ width: 150, disabled: true })
+
+			fixed.shift(10)
+			fixed.moveToEdge('end')
+			column.shift(10)
+			column.moveToEdge('end')
+
+			expect(fixed.width).toBe(150)
+			expect(column.width).toBe(150)
+		})
+	})
+
+	describe('наборы', () => {
+		it('у поля ручки и обёртки содержимого — свои, пустые до плагина связок', () => {
+			const column = new TTableColumn()
+
+			expect(column.resizerAria.toObject()).toEqual({})
+			expect(column.contentAria.toObject()).toEqual({})
+			expect(column.resizerAria).not.toBe(column.contentAria)
+			expect(column.resizerAria).not.toBe(column.aria)
+		})
+
+		it('смена набора — событие с его снимком', () => {
+			const column = new TTableColumn()
+			const resizer = vi.fn()
+			const content = vi.fn()
+
+			column.events.on('change:resizerAria', resizer)
+			column.events.on('change:contentAria', content)
+
+			column.resizerAria.add('aria-labelledby', 'x')
+			column.contentAria.add('id', 'x')
+
+			expect(resizer.mock.calls).toEqual([[{ 'aria-labelledby': 'x' }]])
+			expect(content.mock.calls).toEqual([[{ id: 'x' }]])
+		})
+	})
 })
 
 describe('заголовок строки', () => {
@@ -583,6 +1031,20 @@ describe('заголовок строки', () => {
 describe('заголовок', () => {
 	it('корень — ячейка шапки', () => {
 		expect(new TTableColumn().tag).toBe('th')
+	})
+
+	it('scope="col" — нативный атрибут заголовка-th; у другого тега его нет', () => {
+		const column = new TTableColumn()
+
+		expect(column.attrs.toObject()).toMatchObject({ scope: 'col' })
+
+		column.tag = 'td'
+
+		expect(column.attrs.has('scope')).toBe(false)
+
+		column.tag = 'th'
+
+		expect(column.attrs.get('scope')).toBe('col')
 	})
 
 	it('data-align — с первой отрисовки, по умолчанию start', () => {

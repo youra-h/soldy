@@ -19,7 +19,8 @@ export const TableCollectionDescriptor = defineDescriptor(() =>
 		/**
 		 * Коллекционные props таблицы — то, что выводит фасад
 		 * `TTableCollectionFacade`: режим выбора строк, колонки данными и
-		 * сортировка; выходы — колонки и выбор для шапки.
+		 * сортировка; выходы — колонки и выбор для шапки; событие — ширина,
+		 * которую пользователь задал колонке.
 		 */
 		contribution: {
 			props: {
@@ -52,6 +53,12 @@ export const TableCollectionDescriptor = defineDescriptor(() =>
 					triggers: ['change:shownColumns', 'change:selecting'],
 				},
 			},
+			/**
+			 * Пользователь задал ширину колонки ручкой — одно событие на действие,
+			 * с колонкой и итогом её ширины: по нему приложение сохраняет
+			 * настройку.
+			 */
+			events: ['column:resize'],
 		},
 	}),
 )
