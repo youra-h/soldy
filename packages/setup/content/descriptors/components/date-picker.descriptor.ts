@@ -14,7 +14,8 @@
  *
  * Паттерн — APG Date Picker Dialog: поле и отдельная кнопка календаря, панель —
  * диалог, модальный для клавиатуры и скринридера, а нажатие мимо просто её
- * закрывает. См. AGENTS.md, «Даты» и «Готовые паттерны».
+ * закрывает. Жест (`swipe`) смахивает панель от поля, как у Select. См.
+ * AGENTS.md, «Даты» и «Готовые паттерны».
  */
 
 import { defineComponent, defineDescriptor, defineType } from '../../../protected/define'
@@ -26,6 +27,7 @@ import {
 	DatePickerTriggerPluginDescriptor,
 	DismissPluginDescriptor,
 	HideOutsidePluginDescriptor,
+	SwipePluginDescriptor,
 } from '../plugins'
 import { InputControlDescriptor } from './input-control.descriptor'
 
@@ -69,6 +71,8 @@ export const DatePickerDescriptor = defineDescriptor(() =>
 				 */
 				startName: { type: String, triggers: ['change:startName'] },
 				endName: { type: String, triggers: ['change:endName'] },
+				/** За что панель смахивают, чтобы закрыть. По умолчанию — ни за что. */
+				swipe: { type: String, triggers: ['change:swipe'] },
 				/**
 				 * Сторона кнопки календаря в связке с панелью и её вид «нажат».
 				 * Вычисляют ядро и `TDatePickerIdsPlugin` (`aria-controls`): своего
@@ -79,6 +83,17 @@ export const DatePickerDescriptor = defineDescriptor(() =>
 				triggerDataset: { type: Object, protected: true, triggers: ['change:open'] },
 				/** Роль, модальность, имя и `id` панели: панель — Frame без экземпляра в ядре. */
 				panelAria: { type: Object, protected: true, triggers: ['change:panelAria'] },
+				/**
+				 * `data-*` панели: тянут ли её. Набор отдельный от `panelAria`: ARIA
+				 * и `data-*` не смешиваются. Открытость панели (`data-open`) пишет её
+				 * слой, сторону (`data-placement`) — плагин якоря.
+				 */
+				panelDataset: { type: Object, protected: true, triggers: ['change:swiping'] },
+				/**
+				 * Рисовать ли полосу, за которую тянут. Вычисляет ядро: разметка
+				 * без экземпляра формулу не повторяет.
+				 */
+				handleRendered: { type: Boolean, protected: true, triggers: ['change:swipe'] },
 				/**
 				 * Набор корня: у диапазона корень — группа полей концов со своим
 				 * именем, у одной даты группа — само поле. Перечитывается на смену
@@ -113,6 +128,8 @@ export const DatePickerDescriptor = defineDescriptor(() =>
 			DatePickerFocusPluginDescriptor,
 			// `id` панели и `aria-controls` кнопки
 			DatePickerIdsPluginDescriptor,
+			// Смахнуть панель, чтобы закрыть. После dismiss: берёт у него панель
+			SwipePluginDescriptor,
 		],
 	}),
 )

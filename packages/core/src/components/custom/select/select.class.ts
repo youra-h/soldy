@@ -1,7 +1,14 @@
 import { TInputControl } from '../../base/input-control'
 import type { TDefaultValues } from '../../base/component'
+import type { TSwipe, TSwipeSide } from '../../base/layer'
 import { TAria } from '../../../common'
-import type { TAriaAttributes, TScrollBehavior, TValuePayload, TEventSink } from '../../../common'
+import type {
+	TAriaAttributes,
+	TDatasetAttributes,
+	TScrollBehavior,
+	TValuePayload,
+	TEventSink,
+} from '../../../common'
 import type { TComponentSize, TComponentVariant } from '../../../common'
 import { LIST_DEFAULTS, LIST_CONTENT_FIT_ATTRIBUTE, LIST_INDICATOR_ATTRIBUTE } from '../list'
 import type { IListProps, TListContentFit, TListIndicator } from '../list'
@@ -49,6 +56,15 @@ import type {
  * (`disabled`, `size`, `variant`, `readonly`, `required`, `name`, `id`).
  * Второго значения поля рядом с этим не заводим — единственный держатель
  * текста, плейсхолдера и ARIA поля это и есть `field`.
+ *
+ * **Жест** (`swipe`, по умолчанию выключен) — смахнуть панель, чтобы закрыть:
+ * Select — смахиваемый слой (`ISwipeable`), тянет его `TSwipePlugin`, общий с
+ * поповером и выезжающей панелью. Панель уходит от поля — вниз, если стоит под
+ * ним, и вверх, если над ним. Сторону решает flip плагина якоря, и знает её
+ * только узел панели, поэтому `swipeSide` — всегда `null`. Признак «тянут»
+ * (`swiping`) панель получает набором `panelDataset`: панель — Frame без
+ * экземпляра в ядре, и `dataset` Select лежит на корне. Закрывает жест записью
+ * `open`, как Escape.
  */
 export class TSelect<
 	TProps extends ISelectProps = ISelectProps,
@@ -72,6 +88,7 @@ export class TSelect<
 			| 'editableMode'
 			| 'removeOnBackspace'
 			| 'placement'
+			| 'swipe'
 		> = {
 		...TInputControl.defaultValues,
 		...LIST_DEFAULTS,
@@ -84,6 +101,7 @@ export class TSelect<
 		editableMode: 'search',
 		removeOnBackspace: false,
 		placement: 'auto',
+		swipe: 'none',
 		// Не `false` от `TInputControl`: select-only (`editable: false`) и есть
 		// `readonly`, с ним Select и стартует. Умолчание уходит адаптеру через
 		// декларацию пропа, и Vue отдал бы отсутствующему `readonly` не то.
@@ -104,6 +122,8 @@ export class TSelect<
 	protected _editableMode!: TSelectEditableMode
 	protected _removeOnBackspace!: boolean
 	protected _placement!: TSelectPlacement
+	protected _swipe!: TSwipe
+	protected _swiping = false
 	protected readonly _field: IInput
 	protected readonly _listAria: TAria
 
@@ -154,6 +174,7 @@ export class TSelect<
 		this._applyEditable(own.editable ?? ctor.defaultValues.editable)
 		this._removeOnBackspace = own.removeOnBackspace ?? ctor.defaultValues.removeOnBackspace
 		this._placement = own.placement ?? ctor.defaultValues.placement
+		this._swipe = own.swipe ?? ctor.defaultValues.swipe
 		// Тем же правилом, что и сеттер `editable`, только без события — и
 		// после `TInputControl`, поэтому проп `readonly` здесь перекрывается.
 		this._applyReadonly(!this._editable)
@@ -381,6 +402,67 @@ export class TSelect<
 		this._sink.emit('change:placement', value)
 	}
 
+	/**
+	 * За что панель можно смахнуть, чтобы закрыть: ни за что (по умолчанию), за
+	 * полосу или за любое место, кроме опций и прокручиваемого списка — с ними
+	 * работают сами.
+	 */
+	get swipe(): TSwipe {
+		return this._swipe
+	}
+
+	set swipe(value: TSwipe) {
+		if (this._swipe === value) return
+
+		this._swipe = value
+
+		// Жест выключили посреди жеста — тянуть больше нечего
+		if (value === 'none') this._setSwiping(false)
+
+		this._sink.emit('change:swipe', value)
+	}
+
+	/**
+	 * Куда панель уходит жестом — от поля. Под ним она или над ним, решает flip
+	 * плагина якоря, и знает это только её узел: здесь всегда `null`.
+	 */
+	get swipeSide(): TSwipeSide | null {
+		return null
+	}
+
+	/** Идёт жест: с `beginSwipe` до `endSwipe` или до закрытия панели. */
+	get swiping(): boolean {
+		return this._swiping
+	}
+
+	/**
+	 * Рисовать ли полосу, за которую панель тянут. Рисуется, пока жест включён,
+	 * — и при `panel` тоже: она говорит, что панель можно смахнуть.
+	 */
+	get handleRendered(): boolean {
+		return this._swipe !== 'none'
+	}
+
+	/**
+	 * Жест начался: панель тянут. Закрытую панель и панель без жеста тянуть
+	 * нельзя — тогда жест не начинается.
+	 */
+	beginSwipe(): boolean {
+		if (this._swipe === 'none' || !this._open) return false
+
+		this._setSwiping(true)
+
+		return true
+	}
+
+	/**
+	 * Жест кончился. Закрывать или нет, решил плагин по пройденному пути и
+	 * скорости, и закрывает он записью `open`, как Escape.
+	 */
+	endSwipe(): void {
+		this._setSwiping(false)
+	}
+
 	/** Сколько строк показывать до появления прокрутки. `0` — все. */
 	get maxRows(): number {
 		return this._maxRows
@@ -467,6 +549,23 @@ export class TSelect<
 	}
 
 	/**
+	 * Состояние панели для темы: тянут ли её (`data-swiping`) — тогда переход
+	 * сдвига снят, и панель идёт за пальцем без задержки.
+	 *
+	 * Открытости (`data-open`) в наборе нет: её пишет слой панели (`TLayer`),
+	 * чья видимость и есть `open`, — второй писатель атрибута разошёлся бы с
+	 * ним. Стороны тоже нет: после flip её пишет в панель плагин якоря
+	 * (`data-placement`).
+	 *
+	 * Отдельный набор, а не `dataset`: `dataset` Select лежит на корне, а панель
+	 * — Frame без экземпляра в ядре, и её `data-*` раскладывает разметка, как
+	 * `listAria` списка.
+	 */
+	get panelDataset(): TDatasetAttributes {
+		return { 'data-swiping': this._swiping ? 'true' : 'false' }
+	}
+
+	/**
 	 * Имя кнопки очистки — вместе с именем поля: «Clear Город».
 	 *
 	 * Без него на форме с пятью полями в списке элементов скринридера будет
@@ -484,6 +583,10 @@ export class TSelect<
 
 	protected _applyOpen(value: boolean): void {
 		this._open = value
+
+		// Закрытую панель не тянут: жест кончается вместе с ней
+		if (!value) this._setSwiping(false)
+
 		this._classes.toggle('--open', value)
 		// `aria-expanded` — в `field.aria`: паттерн combobox описывает нативный
 		// `<input>`, а не корневой `div`.
@@ -492,6 +595,13 @@ export class TSelect<
 		// на корне Select. ARIA поля и `data-*` корня живут на разных
 		// элементах — тема ждёт `data-open` там, где ищет стрелку.
 		this._dataset.add('open', value)
+	}
+
+	protected _setSwiping(value: boolean): void {
+		if (this._swiping === value) return
+
+		this._swiping = value
+		this._sink.emit('change:swiping', value)
 	}
 
 	protected _applyClearable(value: boolean): void {
@@ -573,6 +683,7 @@ export class TSelect<
 			editableMode: this._editableMode,
 			removeOnBackspace: this._removeOnBackspace,
 			placement: this._placement,
+			swipe: this._swipe,
 			maxRows: this._maxRows,
 			contentFit: this._contentFit,
 			scrollBehavior: this._scrollBehavior,

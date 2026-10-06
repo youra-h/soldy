@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { TDatePicker } from '@soldy-ui/core'
+import { TDatePicker, isSwipeable } from '@soldy-ui/core'
 import type {
 	IDatePickerProps,
 	TCalendarUnavailable,
@@ -427,6 +427,111 @@ describe('панель', () => {
 		target.open = false
 
 		expect(selection.anchor).toBeUndefined()
+	})
+})
+
+/**
+ * Жест — смахнуть панель, чтобы закрыть. Тянет плагин жеста, как у Select,
+ * ядро держит значения: за что тянуть, куда панель уходит и признак «тянут».
+ * Панель у поля, и сторону после flip знает только её узел.
+ */
+describe('жест — смахнуть панель, чтобы закрыть', () => {
+	/** Открытый DatePicker: закрытую панель не тянут. */
+	const shown = (props: Partial<IDatePickerProps> = {}) => picker({ open: true, ...props })
+
+	it('по умолчанию выключен: полосы нет, сторону решает якорь', () => {
+		const target = picker()
+
+		expect(target.swipe).toBe('none')
+		expect(target.handleRendered).toBe(false)
+		expect(target.swipeSide).toBeNull()
+		expect(target.swiping).toBe(false)
+	})
+
+	it('смахиваемый слой: контракт жеста узнаётся тип-гардом', () => {
+		expect(isSwipeable(picker())).toBe(true)
+	})
+
+	it('swipe шлёт change:swipe только на реальное изменение, getProps его отдаёт', () => {
+		const target = picker()
+		const handler = vi.fn()
+
+		target.events.on('change:swipe', handler)
+		target.swipe = 'handle'
+		target.swipe = 'handle'
+
+		expect(handler.mock.calls).toEqual([['handle']])
+		expect(picker({ swipe: 'panel' }).getProps().swipe).toBe('panel')
+	})
+
+	it('полосу рисуют, пока жест включён', () => {
+		const target = picker({ swipe: 'panel' })
+
+		expect(target.handleRendered).toBe(true)
+
+		target.swipe = 'none'
+
+		expect(target.handleRendered).toBe(false)
+	})
+
+	it('beginSwipe: data-swiping панели и change:swiping, endSwipe — назад', () => {
+		const target = shown({ swipe: 'handle' })
+		const changes: boolean[] = []
+
+		target.events.on('change:swiping', (value) => changes.push(value))
+
+		expect(target.panelDataset).toEqual({ 'data-swiping': 'false' })
+		expect(target.beginSwipe()).toBe(true)
+		expect(target.panelDataset).toEqual({ 'data-swiping': 'true' })
+
+		target.endSwipe()
+
+		expect(target.swiping).toBe(false)
+		expect(changes).toEqual([true, false])
+	})
+
+	// ARIA и `data-*` панели — разные наборы: признак «тянут» не попадает ни в
+	// `panelAria`, ни в `dataset` корня, а открытость панели пишет её слой
+	it('признак «тянут» — в своём наборе панели, а не в panelAria и не у корня', () => {
+		const target = shown({ swipe: 'handle' })
+
+		target.beginSwipe()
+
+		expect(target.panelAria.toObject()).not.toHaveProperty('data-swiping')
+		expect(target.dataset.has('swiping')).toBe(false)
+		expect(target.panelDataset).not.toHaveProperty('data-open')
+		expect(target.panelDataset).not.toBe(target.panelDataset)
+	})
+
+	it('без жеста и у закрытой панели жест не начинается', () => {
+		expect(shown().beginSwipe()).toBe(false)
+		expect(picker({ swipe: 'panel' }).beginSwipe()).toBe(false)
+	})
+
+	it('закрытие — и выбором, и только для чтения — и выключенный жест кончают начатый жест', () => {
+		const chosen = shown({ swipe: 'panel' })
+
+		chosen.beginSwipe()
+		chosen.engine.extensions.selection.chooseDate('2026-09-12')
+
+		expect(chosen.open).toBe(false)
+		expect(chosen.swiping).toBe(false)
+
+		const readonly = shown({ swipe: 'panel' })
+
+		readonly.beginSwipe()
+		readonly.readonly = true
+
+		expect(readonly.open).toBe(false)
+		expect(readonly.swiping).toBe(false)
+
+		const switched = shown({ swipe: 'panel' })
+
+		switched.beginSwipe()
+		switched.swipe = 'none'
+
+		expect(switched.swiping).toBe(false)
+		expect(switched.panelDataset['data-swiping']).toBe('false')
 	})
 })
 

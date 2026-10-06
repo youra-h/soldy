@@ -158,6 +158,7 @@ const OWN: Record<string, Record<string, string>> = {
 			'Удалять выбранные теги по Backspace в пустом поле. Нужны editable и множественный выбор',
 		placement:
 			'С какой стороны открывается панель: auto — снизу, у края окна сверху; top и bottom — всегда там',
+		swipe: 'За что панель можно смахнуть, чтобы закрыть: ни за что, за полосу или за любое место, кроме опций и прокручиваемого списка. Смахивают от поля: под ним — вниз, над ним — вверх',
 		tags_overflow:
 			'Что делать с тегами в поле, когда они не помещаются в строку: переносить, прокручивать, листать стрелками или убрать хвост в панель. Нужен множественный выбор',
 	},
@@ -206,6 +207,7 @@ const OWN: Record<string, Record<string, string>> = {
 		name: 'Имя одной даты при отправке формы. У диапазона концы уходят под startName и endName',
 		startName: 'Имя начала диапазона при отправке формы',
 		endName: 'Имя конца диапазона при отправке формы',
+		swipe: 'За что панель можно смахнуть, чтобы закрыть: ни за что, за полосу или за любое место, кроме контролов календаря и прокручиваемого содержимого. Смахивают от поля: под ним — вниз, над ним — вверх',
 	},
 	slider: {
 		min: 'Начало хода',
@@ -376,6 +378,7 @@ const OPTIONS: Record<string, Record<string, readonly string[]>> = {
 	select: {
 		editableMode: SELECT_EDITABLE_MODES,
 		placement: SELECT_PLACEMENTS,
+		swipe: SWIPES,
 		tags_overflow: TAGS_OVERFLOWS,
 	},
 	popover: { placement: POPOVER_PLACEMENTS, edge: POPOVER_EDGES, swipe: SWIPES },
@@ -383,7 +386,7 @@ const OPTIONS: Record<string, Record<string, readonly string[]>> = {
 	slider: { orientation: SLIDE_ORIENTATIONS, snap: SLIDE_SNAPS, tooltip: SLIDER_TOOLTIPS },
 	calendar: { mode: CALENDAR_MODES },
 	'date-input': { kind: DATE_INPUT_KINDS, timePrecision: TIME_PRECISIONS },
-	'date-picker': { mode: DATE_PICKER_MODES },
+	'date-picker': { mode: DATE_PICKER_MODES, swipe: SWIPES },
 	'progress-linear': { orientation: PROGRESS_LINEAR_ORIENTATIONS },
 	dialog: { placement: DIALOG_PLACEMENTS },
 	drawer: { placement: DRAWER_PLACEMENTS, swipe: SWIPES },

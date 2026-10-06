@@ -3,11 +3,12 @@
 /**
  * TSwipePlugin — жест слоя: смахнуть панель, чтобы закрыть. Выезжающая
  * панель уходит к своему краю, поповер — от триггера, а внутри контейнера —
- * вниз.
+ * к своему краю, панели Select и DatePicker — от поля.
  *
  * Разметку тест строит сам — у выезжающей панели корень с полосой, заголовком
- * и телом, у поповера корень с триггером и панель с пометкой владельцем, наборы
- * ядра на узлах, как их кладёт Vue, — а плагины собраны настоящим набором.
+ * и телом, у поповера, Select и DatePicker корень и панель с пометкой
+ * владельцем, наборы ядра на узлах, как их кладёт Vue, — а плагины собраны
+ * настоящим набором.
  * Коробку панели задаёт тест: jsdom раскладку не считает. Время событий тоже
  * задаёт тест — по нему плагин считает скорость в конце жеста. Захвата
  * указателя в jsdom нет, поэтому события тест шлёт прямо в узлы; настоящий
@@ -16,10 +17,25 @@
  */
 
 import { describe, it, expect, expectTypeOf, afterEach, vi } from 'vitest'
-import { TButton, TDrawer, TLayer, TPopover, isSwipeable } from '@soldy-ui/core'
-import type { IDrawerProps, IPopoverProps, TCloseReason, TDrawerPlacement } from '@soldy-ui/core'
+import {
+	TButton,
+	TDatePicker,
+	TDrawer,
+	TLayer,
+	TPopover,
+	TSelect,
+	isCloseRequestable,
+	isSwipeable,
+} from '@soldy-ui/core'
+import type {
+	IDrawerProps,
+	IPopoverProps,
+	TCloseReason,
+	TDrawerPlacement,
+	TSwipeableEvents,
+} from '@soldy-ui/core'
 import { TDismissPlugin, TElementPlugin, TPluginBundle, TSwipePlugin } from '../src'
-import type { IPlugin, IPluginConstructor, ISwipeOwner } from '../src'
+import type { IListenable, IPlugin, IPluginConstructor, ISwipeOwner } from '../src'
 
 const nextFrame = () => new Promise((resolve) => requestAnimationFrame(resolve))
 
@@ -882,13 +898,159 @@ describe('поповер', () => {
 	})
 })
 
+/**
+ * Владелец панели у поля — Select или DatePicker — глазами теста: контракт
+ * жеста и открытость, которую жест пишет.
+ */
+interface IFieldOwner extends ISwipeOwner {
+	open: boolean
+	readonly events: IListenable<TSwipeableEvents & { 'change:open': (value: boolean) => void }>
+}
+
+/**
+ * Открытая панель у поля — Select или DatePicker: корень с полем и панель с
+ * пометкой владельцем в конце `body`, номер слоя и сторона после flip на ней,
+ * как их пишут Frame и плагин якоря. Внутри — полоса и содержимое с кнопкой.
+ * Жест — за полосу.
+ */
+async function mountField(
+	create: () => IFieldOwner,
+	{ placement = 'bottom-start' }: { placement?: string } = {},
+) {
+	const owner = create()
+	const bundle = new TPluginBundle(owner)
+		.use(TElementPlugin)
+		.use(TDismissPlugin)
+		.use(TSwipePlugin)
+
+	bundles.push(bundle)
+
+	const root = document.createElement('div')
+	const panel = document.createElement('div')
+
+	root.className = owner.classes.base
+	root.innerHTML = '<input class="s-test-field" aria-label="Поле">'
+
+	for (const [name, value] of Object.entries(pluginOf(bundle, TDismissPlugin).ownerAttribute)) {
+		panel.setAttribute(name, value)
+	}
+
+	panel.setAttribute('data-layer', '1001')
+	panel.setAttribute('data-placement', placement)
+	panel.innerHTML = [
+		`<div class="${owner.classes.resolve('__handle')}"></div>`,
+		'<div class="s-test-content"><button class="s-test-button">Действие</button></div>',
+	].join('')
+
+	document.body.append(root, panel)
+	vi.spyOn(panel, 'getBoundingClientRect').mockReturnValue(POPOVER_BOX)
+
+	pluginOf(bundle, TElementPlugin).element = root
+	await nextFrame()
+
+	const handle = nodeOf(`.${owner.classes.resolve('__handle')}`, panel)
+	const changes: boolean[] = []
+
+	owner.events.on('change:open', (value) => changes.push(value))
+
+	return { owner, root, panel, handle, changes, swipe: swipeOn(panel) }
+}
+
+/**
+ * Панели Select и DatePicker стоят у поля, как поповер у триггера: уходят от
+ * него по стороне после flip, а запроса закрытия у владельца нет — жест
+ * закрывает записью `open`.
+ */
+describe.each<[string, () => IFieldOwner]>([
+	['Select', () => new TSelect({ open: true, swipe: 'handle' })],
+	['DatePicker', () => new TDatePicker({ open: true, swipe: 'handle' })],
+])('панель у поля: %s', (_, create) => {
+	it('тянут панель, а не корень: касание вдоль оси забирает жест на панели', async () => {
+		const { root, panel } = await mountField(create)
+
+		expect(panel.style.touchAction).toBe('pan-x pinch-zoom')
+		expect(root.style.touchAction).toBe('')
+	})
+
+	it('запроса закрытия у владельца нет — смахнутую панель закрывает запись open', async () => {
+		const { owner, handle, swipe, changes } = await mountField(create)
+
+		expect(isCloseRequestable(owner)).toBe(false)
+
+		// Медленно: 60 px из 200 за 600 мс — дело в пути, а не в скорости
+		swipe(
+			handle,
+			[
+				[250, 305],
+				[250, 325],
+				[250, 345],
+				[250, 365],
+			],
+			200,
+		)
+
+		expect(owner.open).toBe(false)
+		expect(changes).toEqual([false])
+		expect(owner.swiping).toBe(false)
+	})
+
+	it('над полем (flip) — вверх: сторону плагин берёт с узла панели', async () => {
+		const { owner, panel, handle } = await mountField(create, { placement: 'top-start' })
+
+		pointer('pointerdown', handle, 250, 495, 0)
+		pointer('pointermove', panel, 250, 415, 16)
+
+		expect(panel.style.getPropertyValue(SWIPE_VARIABLE)).toBe('-80px')
+
+		pointer('pointerup', panel, 250, 415, 400)
+
+		expect(owner.open).toBe(false)
+	})
+
+	it('к полю — не закрытие: панель остаётся, сдвиг уходит кадром позже', async () => {
+		const { owner, panel, handle, swipe } = await mountField(create)
+
+		swipe(
+			handle,
+			[
+				[250, 305],
+				[250, 265],
+				[250, 225],
+			],
+			200,
+		)
+
+		expect(owner.open).toBe(true)
+
+		await nextFrame()
+
+		expect(panel.style.getPropertyValue(SWIPE_VARIABLE)).toBe('')
+	})
+
+	it('закрытая панель жест не слушает; открыли снова — слушает', async () => {
+		const { owner, panel } = await mountField(create)
+
+		owner.open = false
+
+		expect(panel.style.touchAction).toBe('')
+
+		owner.open = true
+
+		expect(panel.style.touchAction).toBe('pan-x pinch-zoom')
+	})
+})
+
 describe('контракт жеста', () => {
-	it('выезжающая панель и поповер — владельцы жеста', () => {
+	it('выезжающая панель, поповер, Select и DatePicker — владельцы жеста', () => {
 		expectTypeOf<TDrawer>().toExtend<ISwipeOwner>()
 		expectTypeOf<TPopover>().toExtend<ISwipeOwner>()
+		expectTypeOf<TSelect>().toExtend<ISwipeOwner>()
+		expectTypeOf<TDatePicker>().toExtend<ISwipeOwner>()
 
 		expect(isSwipeable(new TDrawer())).toBe(true)
 		expect(isSwipeable(new TPopover())).toBe(true)
+		expect(isSwipeable(new TSelect())).toBe(true)
+		expect(isSwipeable(new TDatePicker())).toBe(true)
 	})
 
 	it('владельца без контракта плагин не трогает', async () => {

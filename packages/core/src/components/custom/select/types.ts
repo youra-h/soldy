@@ -4,7 +4,8 @@ import type {
 	TInputControlEvents,
 } from '../../base/input-control'
 import type { TCollectionStorageDriverEvents } from '../../base/collection'
-import type { TAria, TAriaAttributes } from '../../../common'
+import type { ISwipeable, TSwipe, TSwipeableEvents } from '../../base/layer'
+import type { TAria, TAriaAttributes, TDatasetAttributes } from '../../../common'
 import type { IList, IListProps, TListEvents } from '../list'
 import type { IInput } from '../input'
 import type { ISelectCollectionProps } from './collection/types'
@@ -57,7 +58,8 @@ export type TSelectPanelPlacement = 'bottom-start' | 'top-start'
 
 export type TSelectEvents = TInputControlEvents<TSelectValue> &
 	TCollectionStorageDriverEvents<ISelectItem> &
-	TListEvents & {
+	TListEvents &
+	TSwipeableEvents & {
 		/** change:open */
 		'change:open': (value: boolean) => void
 		/** open — панель открылась */
@@ -123,17 +125,27 @@ export interface ISelectComponentProps extends IInputControlProps<TSelectValue>,
 	 * нижнего края окна сверху. `top` и `bottom` держат сторону всегда.
 	 */
 	placement?: TSelectPlacement
+	/**
+	 * За что панель можно смахнуть, чтобы закрыть: ни за что (по умолчанию), за
+	 * полосу или за любое место, кроме опций и прокручиваемого списка. Панель
+	 * уходит от поля: под ним — вниз, над ним — вверх
+	 */
+	swipe?: TSwipe
 }
 
 /** Полный набор props: собственные + коллекционные. */
 export interface ISelectProps
 	extends ISelectComponentProps, ISelectCollectionProps<ISelectItemProps, ISelectItem> {}
 
+/**
+ * Select. Панель смахивают, чтобы закрыть (`ISwipeable`): она у поля, и
+ * сторону после flip знает только её узел — `swipeSide` всегда `null`.
+ */
 export interface ISelect<
 	TProps extends ISelectProps = ISelectProps,
 	TEvents extends TSelectEvents = TSelectEvents,
 >
-	extends IInputControl<TSelectValue, TProps, TEvents>, IList {
+	extends IInputControl<TSelectValue, TProps, TEvents>, IList, ISwipeable {
 	/** Открыта ли панель со списком */
 	open: boolean
 	/** Текст поля, пока ничего не выбрано */
@@ -168,6 +180,13 @@ export interface ISelect<
 	readonly listAria: TAria
 	/** Подгонять ли ширину панели под поле. Производное от `contentFit` */
 	readonly autoFitWidth: boolean
+	/**
+	 * `data-*` панели для темы: тянут ли её (`data-swiping`). Открытость
+	 * панели (`data-open`) пишет её слой
+	 */
+	readonly panelDataset: TDatasetAttributes
+	/** Рисовать ли полосу, за которую панель тянут: жест включён */
+	readonly handleRendered: boolean
 	/** Переключить панель. Ничего не делает, если открывать нельзя. */
 	toggleOpen(): void
 	/** Можно ли сейчас открыть панель */

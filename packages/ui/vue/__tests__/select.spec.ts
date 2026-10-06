@@ -6,7 +6,7 @@
  * и остаётся связанной с полем, ARIA собирается в один набор.
  */
 
-import { describe, it, expect, afterEach } from 'vitest'
+import { describe, it, expect, afterEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { defineComponent, nextTick, h, ref } from 'vue'
 
@@ -17,6 +17,7 @@ import { defineComponent, nextTick, h, ref } from 'vue'
 const nextFrame = () => new Promise((resolve) => requestAnimationFrame(resolve))
 import { Frame, Select, SelectItem, Input, propsSelect } from '@soldy-ui/vue'
 import { TAnchorPlugin } from '@soldy-ui/plugins'
+import { TSelect } from '@soldy-ui/core'
 import type { IInput, TSelectPlacement } from '@soldy-ui/core'
 import Harness from './Select.test.vue'
 
@@ -727,5 +728,126 @@ describe('сторона панели', () => {
 
 		expect(plugin?.placement).toBe('bottom-start')
 		expect(plugin?.flip).toBe(true)
+	})
+})
+
+/**
+ * Жест — смахнуть панель, чтобы закрыть. Правила жеста проверяет плагин
+ * (`plugins/__tests__/swipe.plugin.spec.ts`), раскладку и настоящую мышь —
+ * браузер (`playground/vue/browser/anchored-swipe.spec.ts`). Здесь — проводка:
+ * полоса и признак «тянут» на телепортированной панели, а закрытие жестом
+ * доходит до `v-model`.
+ */
+describe('жест', () => {
+	const frame = (): HTMLElement => {
+		const node = document.querySelector('.s-select__panel')
+
+		if (!(node instanceof HTMLElement)) throw new Error('панели нет')
+
+		return node
+	}
+	const handle = () => document.querySelector('.s-select__handle')
+
+	/** Указатель мышью в точке по вертикали — как его слушает плагин жеста. */
+	const pointer = (type: string, target: Element, y: number) =>
+		target.dispatchEvent(
+			new PointerEvent(type, {
+				bubbles: true,
+				cancelable: true,
+				clientX: 100,
+				clientY: y,
+				pointerId: 1,
+				pointerType: 'mouse',
+				button: 0,
+				isPrimary: true,
+			}),
+		)
+
+	/** Select на `v-model:open` с тремя опциями. */
+	const mountOpen = (props: Record<string, unknown> = {}) => {
+		const opened = ref(false)
+		const select = mount(
+			defineComponent({
+				render: () =>
+					h(
+						Select,
+						{
+							...props,
+							open: opened.value,
+							'onUpdate:open': (value: boolean) => {
+								opened.value = value
+							},
+						},
+						() =>
+							['Москва', 'Тверь', 'Тула'].map((text) =>
+								h(SelectItem, { key: text, value: text, text }),
+							),
+					),
+			}),
+			{ attachTo: document.body },
+		)
+
+		wrapper = select
+
+		return { select, opened }
+	}
+
+	it('без жеста полосы нет; с жестом — первая в панели, вне списка и немая для скринридера', async () => {
+		const ctrl = new TSelect()
+
+		wrapper = mount(Select, { props: { ctrl }, attachTo: document.body })
+		await nextTick()
+
+		expect(handle()).toBeNull()
+		expect(frame().dataset.swiping).toBe('false')
+
+		ctrl.swipe = 'handle'
+		await nextTick()
+
+		expect(handle()).toBe(frame().firstElementChild)
+		expect(handle()?.getAttribute('aria-hidden')).toBe('true')
+		expect(handle()?.closest('[role="listbox"]')).toBeNull()
+
+		ctrl.swipe = 'panel'
+		await nextTick()
+
+		expect(handle()).not.toBeNull()
+	})
+
+	/**
+	 * Коробку панели задаёт тест: jsdom раскладку не считает. Сторону после flip
+	 * плагин якоря пишет в панель и в jsdom — под полем. Жест мышью по полосе
+	 * вниз — дальше четверти высоты панели.
+	 */
+	it('смахнули вниз от поля — закрыта, v-model видит закрытие, признак «тянут» на панели', async () => {
+		const { select, opened } = mountOpen({ swipe: 'handle' })
+
+		await nextFrame()
+		await select.find('input').trigger('click')
+		await nextTick()
+
+		expect(isOpen()).toBe(true)
+		expect(frame().dataset.placement).toBe('bottom-start')
+
+		vi.spyOn(frame(), 'getBoundingClientRect').mockReturnValue(new DOMRect(0, 40, 300, 160))
+
+		const grip = handle()
+
+		if (!grip) throw new Error('полосы нет')
+
+		pointer('pointerdown', grip, 45)
+		pointer('pointermove', frame(), 125)
+		await nextTick()
+
+		expect(frame().style.getPropertyValue('--s-swipe-offset')).toBe('80px')
+		expect(frame().dataset.swiping).toBe('true')
+
+		pointer('pointerup', frame(), 130)
+		await nextTick()
+
+		expect(isOpen()).toBe(false)
+		expect(opened.value).toBe(false)
+		expect(frame().dataset.swiping).toBe('false')
+		expect(select.findComponent(Select).emitted('update:open')).toEqual([[true], [false]])
 	})
 })

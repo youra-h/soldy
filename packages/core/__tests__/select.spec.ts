@@ -17,6 +17,7 @@ import {
 	TSelectItemCollectionFacade,
 	TItemContextRegistry,
 	TInput,
+	isSwipeable,
 } from '@soldy-ui/core'
 import type {
 	ISelectItem,
@@ -1527,5 +1528,114 @@ describe('removeOnBackspace — удаление тегов по Backspace', () 
 		const select = new TSelect({ removeOnBackspace: true })
 
 		expect(select.getProps().removeOnBackspace).toBe(true)
+	})
+})
+
+/**
+ * Жест — смахнуть панель, чтобы закрыть. Тянет плагин жеста (общий с
+ * поповером и выезжающей панелью), ядро держит значения: за что тянуть, куда
+ * панель уходит и признак «тянут». Панель у поля, и сторону после flip знает
+ * только её узел.
+ */
+describe('жест — смахнуть панель, чтобы закрыть', () => {
+	/** Открытый Select: закрытую панель не тянут. */
+	const shown = (props: Partial<ISelectProps> = {}) => new TSelect({ open: true, ...props })
+
+	it('по умолчанию выключен: полосы нет, сторону решает якорь', () => {
+		const select = new TSelect()
+
+		expect(select.swipe).toBe('none')
+		expect(select.handleRendered).toBe(false)
+		expect(select.swipeSide).toBeNull()
+		expect(select.swiping).toBe(false)
+	})
+
+	it('смахиваемый слой: контракт жеста узнаётся тип-гардом', () => {
+		expect(isSwipeable(new TSelect())).toBe(true)
+	})
+
+	it('swipe шлёт change:swipe только на реальное изменение, getProps его отдаёт', () => {
+		const select = new TSelect()
+		const handler = vi.fn()
+
+		select.events.on('change:swipe', handler)
+		select.swipe = 'panel'
+		select.swipe = 'panel'
+
+		expect(handler.mock.calls).toEqual([['panel']])
+		expect(new TSelect({ swipe: 'handle' }).getProps().swipe).toBe('handle')
+	})
+
+	it('полосу рисуют, пока жест включён', () => {
+		const select = new TSelect({ swipe: 'handle' })
+
+		expect(select.handleRendered).toBe(true)
+
+		select.swipe = 'panel'
+
+		expect(select.handleRendered).toBe(true)
+
+		select.swipe = 'none'
+
+		expect(select.handleRendered).toBe(false)
+	})
+
+	it('beginSwipe: data-swiping панели и change:swiping, endSwipe — назад', () => {
+		const select = shown({ swipe: 'handle' })
+		const changes: boolean[] = []
+
+		select.events.on('change:swiping', (value) => changes.push(value))
+
+		expect(select.panelDataset).toEqual({ 'data-swiping': 'false' })
+		expect(select.beginSwipe()).toBe(true)
+		expect(select.swiping).toBe(true)
+		expect(select.panelDataset).toEqual({ 'data-swiping': 'true' })
+
+		select.endSwipe()
+
+		expect(select.swiping).toBe(false)
+		expect(changes).toEqual([true, false])
+	})
+
+	// Панель телепортирована, и `dataset` корня до неё не доходит. Открытость
+	// панели пишет её слой, сторону — плагин якоря: в наборе их нет
+	it('признак «тянут» — у панели, а не у корня; data-open в наборе панели нет', () => {
+		const select = shown({ swipe: 'handle' })
+
+		select.beginSwipe()
+
+		expect(select.dataset.has('swiping')).toBe(false)
+		expect(select.panelDataset).not.toHaveProperty('data-open')
+		expect(select.panelDataset).not.toBe(select.panelDataset)
+	})
+
+	it('без жеста и у закрытой панели жест не начинается', () => {
+		expect(shown().beginSwipe()).toBe(false)
+		expect(new TSelect({ swipe: 'panel' }).beginSwipe()).toBe(false)
+	})
+
+	it('закрытие — и выключением — и выключенный жест кончают начатый жест', () => {
+		const closed = shown({ swipe: 'panel' })
+
+		closed.beginSwipe()
+		closed.open = false
+
+		expect(closed.swiping).toBe(false)
+
+		const disabled = shown({ swipe: 'panel' })
+
+		disabled.beginSwipe()
+		disabled.disabled = true
+
+		expect(disabled.open).toBe(false)
+		expect(disabled.swiping).toBe(false)
+
+		const switched = shown({ swipe: 'panel' })
+
+		switched.beginSwipe()
+		switched.swipe = 'none'
+
+		expect(switched.swiping).toBe(false)
+		expect(switched.panelDataset['data-swiping']).toBe('false')
 	})
 })

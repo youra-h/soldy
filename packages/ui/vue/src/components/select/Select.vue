@@ -128,6 +128,13 @@ export default { ...SetupSelect, components: { Frame, Input, Button, Icon, Tags,
 			Сторону панели шаблон не вычисляет: `placement` Select ядро переводит
 			в `panelPlacement` и `panelFlip`, а у края окна сторону выбирает
 			`TAnchorPlugin`, если `placement` не запретил ему flip.
+
+			`panelDataset` — `data-*` панели от Select: признак «тянут»
+			(`data-swiping`), по которому тема снимает переход, пока панель идёт
+			за пальцем. Открытость (`data-open`) Frame пишет сам — это видимость
+			его слоя, — а сторону после flip (`data-placement`) пишет плагин
+			якоря. Сдвиг во время жеста (`--s-swipe-offset`) плагин жеста пишет
+			в панель сам.
 		-->
 		<Frame
 			embedded="select.frame"
@@ -139,8 +146,19 @@ export default { ...SetupSelect, components: { Frame, Input, Button, Icon, Tags,
 			:anchor_matchWidth="autoFitWidth"
 			:anchor_offset="4"
 			class="s-select__panel"
-			v-bind="dismiss_ownerAttribute"
+			v-bind="{ ...panelDataset, ...dismiss_ownerAttribute }"
 		>
+			<!--
+				Полоса, за которую панель тянут, — пока жест включён. Она говорит,
+				что панель можно смахнуть, и сама ничего не делает: потребитель её
+				не адресует, скринридеру она не нужна (`aria-hidden`). Стоит она у
+				края со стороны поля (`data-placement`), ставит её тема. Прямой
+				потомок панели и вне списка: в `[role=listbox]` скринридер счёл бы
+				её опцией, а плагин жеста узнаёт полосу только у самой панели.
+				Закрыть без перетаскивания — Escape и нажатие мимо.
+			-->
+			<div v-if="handleRendered" class="s-select__handle" aria-hidden="true" />
+
 			<div class="s-select__list" v-bind="listAria">
 				<slot>
 					<!--

@@ -31,6 +31,7 @@ import {
 	Accordion,
 	AccordionItem,
 	Calendar,
+	DatePicker,
 	Drawer,
 	Popover,
 	ProgressLinear,
@@ -205,6 +206,23 @@ const CASES: readonly TCase[] = [
 				),
 			),
 		'.s-popover__panel',
+		'translate',
+	),
+	transition(
+		'Select: уход смахнутой панели от поля',
+		() =>
+			show(() =>
+				h(Select, { open: true, swipe: 'handle' }, () => [
+					h(SelectItem, { value: 'a', text: 'Москва' }),
+				]),
+			),
+		'.s-select__panel',
+		'translate',
+	),
+	transition(
+		'DatePicker: уход смахнутой панели от поля',
+		() => show(() => h(DatePicker, { open: true, swipe: 'handle', value: '2026-05-12' })),
+		'.s-date-picker__panel',
 		'translate',
 	),
 	transition(
