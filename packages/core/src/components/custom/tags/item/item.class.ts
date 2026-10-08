@@ -1,7 +1,7 @@
 import { TValueControl } from '../../../base/value-control'
 import type { TDefaultValues } from '../../../base/component'
-import { TAria, TChangeEvent } from '../../../../common'
-import type { TEventSink } from '../../../../common'
+import { DEFAULT_TRANSLATIONS, TAria, TChangeEvent } from '../../../../common'
+import type { TEventSink, TTranslations } from '../../../../common'
 import type { ITagsItem, ITagsItemProps, TTagsItemEvents } from './types'
 
 /**
@@ -33,16 +33,15 @@ export default class TTagsItem<
 	static override baseClass = 's-tags-item'
 
 	static defaultValues: typeof TValueControl.defaultValues &
-		TDefaultValues<ITagsItemProps, 'text' | 'closeLabel', 'closable'> = {
+		TDefaultValues<ITagsItemProps, 'text', 'closable'> = {
 		...TValueControl.defaultValues,
 		text: '',
 		value: '',
 		closable: undefined,
-		closeLabel: 'Close',
 		tag: 'div',
 	}
 
-	protected _closeLabel!: string
+	protected _translations: TTranslations = DEFAULT_TRANSLATIONS
 	protected _closeAria: TAria
 
 	protected _text: string
@@ -53,8 +52,6 @@ export default class TTagsItem<
 
 		const ctor = new.target as typeof TTagsItem
 		const customProps = props as Partial<ITagsItemProps>
-
-		this._closeLabel = customProps.closeLabel ?? ctor.defaultValues.closeLabel
 
 		this._text = customProps.text ?? ctor.defaultValues.text
 
@@ -140,19 +137,20 @@ export default class TTagsItem<
 	}
 
 	/**
-	 * Слово для кнопки закрытия. Дефолт английский — язык интерфейса ядру
-	 * неизвестен, а промолчать нельзя: кнопка останется без имени.
+	 * Словарь строк библиотеки: тег читает из него имя кнопки закрытия. Та же
+	 * ссылка — ничего не меняет; новый словарь переписывает имя в `closeAria`
+	 * раньше события.
 	 */
-	get closeLabel(): string {
-		return this._closeLabel
+	get translations(): TTranslations {
+		return this._translations
 	}
 
-	set closeLabel(value: string) {
-		if (this._closeLabel === value) return
+	set translations(value: TTranslations) {
+		if (this._translations === value) return
 
-		this._closeLabel = value
+		this._translations = value
 		this._syncCloseName()
-		this._sink.emit('change:closeLabel', value)
+		this._sink.emit('change:translations', value)
 	}
 
 	/**
@@ -169,12 +167,12 @@ export default class TTagsItem<
 
 	/**
 	 * Имя кнопки закрытия — вместе с текстом тега: «Close Настройки». Без
-	 * текста все кнопки набора назывались бы одинаково.
+	 * текста все кнопки набора назывались бы одинаково. Как имя складывается с
+	 * текстом, решает строка словаря (раздел `tags`): порядок слов у каждого
+	 * языка свой.
 	 */
 	private _syncCloseName(): void {
-		const text = this.text.trim()
-
-		this._closeAria.add('aria-label', text ? `${this._closeLabel} ${text}` : this._closeLabel)
+		this._closeAria.add('aria-label', this._translations.tags.close(this.text.trim()))
 	}
 
 	override getProps(): TProps {
@@ -182,7 +180,6 @@ export default class TTagsItem<
 			...super.getProps(),
 			text: this.text,
 			closable: this.closable,
-			closeLabel: this._closeLabel,
 		} as TProps
 	}
 }

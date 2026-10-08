@@ -1,5 +1,5 @@
 import { dateFromParts } from './date'
-import { DEFAULT_LOCALE } from './locale.class'
+import { DEFAULT_LOCALE } from '../locale'
 import type { TCalendarDate } from './types'
 
 /**

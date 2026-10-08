@@ -5,10 +5,12 @@ import type {
 } from '../../base/input-control'
 import type { ISwipeable, TSwipe, TSwipeableEvents } from '../../base/layer'
 import type {
+	ITranslatable,
 	TAria,
 	TAriaAttributes,
 	TCalendarDate,
 	TDatasetAttributes,
+	TTranslatableEvents,
 	TWeekday,
 } from '../../../common'
 import type {
@@ -42,7 +44,8 @@ export type TDatePickerValue = TCalendarDate | TCalendarRange | undefined
 export type TDatePickerSide = 'calendar' | 'fields'
 
 export type TDatePickerEvents = TInputControlEvents<TDatePickerValue> &
-	TSwipeableEvents & {
+	TSwipeableEvents &
+	TTranslatableEvents & {
 		/** change:mode */
 		'change:mode': (value: TDatePickerMode) => void
 		/** change:open */
@@ -65,12 +68,6 @@ export type TDatePickerEvents = TInputControlEvents<TDatePickerValue> &
 		'change:locale': (value: string) => void
 		/** change:timeZone */
 		'change:timeZone': (value: string | undefined) => void
-		/** change:triggerLabel */
-		'change:triggerLabel': (value: string) => void
-		/** change:startLabel */
-		'change:startLabel': (value: string) => void
-		/** change:endLabel */
-		'change:endLabel': (value: string) => void
 		/** change:startName */
 		'change:startName': (value: string) => void
 		/** change:endName */
@@ -99,16 +96,13 @@ export interface IDatePickerProps extends IInputControlProps<TDatePickerValue> {
 	unavailable?: TCalendarUnavailable
 	/** Первый день недели; не задан — по локали */
 	weekStart?: TWeekday
-	/** Локаль поля и календаря (BCP 47) */
+	/**
+	 * Локаль поля и календаря (BCP 47). В разметке её нет: язык задаёт
+	 * приложение на всю библиотеку, и пишет его плагин языка
+	 */
 	locale?: string
 	/** Часовой пояс «сегодня» (IANA); не задан — пояс среды */
 	timeZone?: string
-	/** Имя кнопки календаря и панели для скринридера */
-	triggerLabel?: string
-	/** Имя поля начала диапазона */
-	startLabel?: string
-	/** Имя поля конца диапазона */
-	endLabel?: string
 	/**
 	 * Имя начала диапазона при отправке формы. `name` — у поля одной даты: у
 	 * диапазона значений два, и уходят они под своими именами
@@ -129,7 +123,10 @@ export interface IDatePickerProps extends IInputControlProps<TDatePickerValue> {
  * сторону после flip знает только её узел — `swipeSide` всегда `null`.
  */
 export interface IDatePicker
-	extends IInputControl<TDatePickerValue, IDatePickerProps, TDatePickerEvents>, ISwipeable {
+	extends
+		IInputControl<TDatePickerValue, IDatePickerProps, TDatePickerEvents>,
+		ISwipeable,
+		ITranslatable {
 	/** Режим: одна дата или диапазон */
 	mode: TDatePickerMode
 	/** Открыта ли панель с календарём */
@@ -148,12 +145,10 @@ export interface IDatePicker
 	locale: string
 	/** Часовой пояс «сегодня» */
 	timeZone: string | undefined
-	/** Имя кнопки календаря и панели */
-	triggerLabel: string
-	/** Имя поля начала диапазона */
-	startLabel: string
-	/** Имя поля конца диапазона */
-	endLabel: string
+	/** Имя поля начала диапазона — из словаря, раздел `datePicker` */
+	readonly startLabel: string
+	/** Имя поля конца диапазона — из словаря */
+	readonly endLabel: string
 	/** Имя начала диапазона при отправке формы */
 	startName: string
 	/** Имя конца диапазона при отправке формы */
@@ -171,8 +166,8 @@ export interface IDatePicker
 	/** Движок коллекции календаря: по нему DatePicker зовёт команды выбора и фокуса */
 	readonly engine: TCalendarCollection
 	/**
-	 * Набор кнопки календаря: `aria-haspopup="dialog"`, `aria-expanded`, имя —
-	 * DatePicker, `aria-controls` — плагин связок
+	 * Набор кнопки календаря: `aria-haspopup="dialog"`, `aria-expanded`, имя из
+	 * словаря — DatePicker, `aria-controls` — плагин связок
 	 */
 	readonly triggerAria: TAria
 	/** Вид кнопки календаря: `data-selected`, пока панель открыта */

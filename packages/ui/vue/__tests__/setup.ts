@@ -1,3 +1,6 @@
+import { afterEach } from 'vitest'
+import { DEFAULT_LOCALE } from '@soldy-ui/core'
+import { useLocale, useTranslations } from '@soldy-ui/plugins'
 import { setIcons } from '@soldy-ui/setup'
 import * as material from '@soldy-ui/icons-material'
 
@@ -25,3 +28,14 @@ if (!('ResizeObserver' in globalThis)) {
  */
 
 setIcons(material)
+
+/**
+ * Язык и словарь библиотеки тоже задаёт приложение (`useLocale`,
+ * `useTranslations`), и они одни на процесс. Тест, который их задал, следующему
+ * их не оставляет: после каждого — снова английские.
+ */
+
+afterEach(() => {
+	useLocale(DEFAULT_LOCALE)
+	useTranslations()
+})

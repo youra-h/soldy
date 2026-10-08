@@ -15,6 +15,7 @@
 
 import { describe, it, expect, vi } from 'vitest'
 import {
+	DEFAULT_TRANSLATIONS,
 	TTags,
 	TTagsItem,
 	TTagsCollectionFacade,
@@ -22,7 +23,13 @@ import {
 	TItemContextRegistry,
 	createEngineTags,
 } from '../src'
-import type { ITagsItem, ITagsItemProps, ITagsProps } from '@soldy-ui/core'
+import type { ITagsItem, ITagsItemProps, ITagsProps, TTranslations } from '@soldy-ui/core'
+
+/** Раздел тегов словаря, где имя стоит внутри фразы: порядок слов — дело языка. */
+const REMOVE: TTranslations['tags'] = {
+	...DEFAULT_TRANSLATIONS.tags,
+	close: (name) => `Убрать тег «${name}»`,
+}
 
 function createTags(texts: string[], props: Partial<ITagsProps> = {}) {
 	const owner = new TTags(props)
@@ -369,47 +376,52 @@ describe('view — модификатор набора', () => {
  * изменении набор сообщает `change:closeAria` — это триггер пропа.
  */
 describe('closeAria', () => {
-	it('содержит текст тега вместе с closeLabel', () => {
+	it('содержит текст тега вместе со строкой словаря', () => {
 		const tag = new TTagsItem({ text: 'Настройки' })
 
 		expect(tag.closeAria.valueOf()).toEqual({ 'aria-label': 'Close Настройки' })
 	})
 
-	it('closeLabel переопределяется пропом', () => {
-		const tag = new TTagsItem({ text: 'Настройки', closeLabel: 'Удалить' })
+	it('строку задаёт словарь — и порядок слов в ней тоже', () => {
+		const tag = new TTagsItem({ text: 'Настройки' })
 
-		expect(tag.closeAria.valueOf()).toEqual({ 'aria-label': 'Удалить Настройки' })
+		tag.translations = { ...DEFAULT_TRANSLATIONS, tags: REMOVE }
+
+		expect(tag.closeAria.valueOf()).toEqual({ 'aria-label': 'Убрать тег «Настройки»' })
 	})
 
 	it('без текста имя — одно слово кнопки', () => {
 		expect(new TTagsItem().closeAria.get('aria-label')).toBe('Close')
 	})
 
-	it('имя следует за текстом и словом кнопки, набор сообщает change:closeAria', () => {
+	it('имя следует за текстом и словарём, набор сообщает change:closeAria', () => {
 		const tag = new TTagsItem({ text: 'Настройки' })
 		const seen: unknown[] = []
 
 		tag.events.on('change:closeAria', (value) => seen.push(value))
 
 		tag.text = 'Почта'
-		tag.closeLabel = 'Удалить'
+		tag.translations = { ...DEFAULT_TRANSLATIONS, tags: REMOVE }
 
-		expect(tag.closeAria.get('aria-label')).toBe('Удалить Почта')
-		expect(seen).toEqual([{ 'aria-label': 'Close Почта' }, { 'aria-label': 'Удалить Почта' }])
+		expect(tag.closeAria.get('aria-label')).toBe('Убрать тег «Почта»')
+		expect(seen).toEqual([
+			{ 'aria-label': 'Close Почта' },
+			{ 'aria-label': 'Убрать тег «Почта»' },
+		])
 	})
 
-	it('к change:text и change:closeLabel имя уже новое', () => {
+	it('к change:text и change:translations имя уже новое', () => {
 		const tag = new TTagsItem({ text: 'Настройки' })
 		const names: unknown[] = []
 		const read = () => names.push(tag.closeAria.get('aria-label'))
 
 		tag.events.on('change:text', read)
-		tag.events.on('change:closeLabel', read)
+		tag.events.on('change:translations', read)
 
 		tag.text = 'Почта'
-		tag.closeLabel = 'Удалить'
+		tag.translations = { ...DEFAULT_TRANSLATIONS, tags: REMOVE }
 
-		expect(names).toEqual(['Close Почта', 'Удалить Почта'])
+		expect(names).toEqual(['Close Почта', 'Убрать тег «Почта»'])
 	})
 
 	/**

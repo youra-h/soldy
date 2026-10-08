@@ -17,6 +17,7 @@ import { defineComponent, h, nextTick, type VNode } from 'vue'
 import { Button, Popover, Select, SelectItem } from '@soldy-ui/vue'
 import { TPopover } from '@soldy-ui/core'
 import type { IPopoverProps } from '@soldy-ui/core'
+import { useTranslations } from '@soldy-ui/plugins'
 import type { DescriptorSlots, PopoverDescriptor } from '@soldy-ui/setup'
 
 const nextFrame = () => new Promise((resolve) => requestAnimationFrame(resolve))
@@ -212,10 +213,12 @@ describe('разметка', () => {
 		expect(panel().getAttribute('aria-label')).toBe('Фильтры')
 	})
 
-	it('крестик назван closeLabel, closable: false его убирает', async () => {
+	it('крестик назван словарём приложения, closable: false его убирает', async () => {
+		useTranslations({ popover: { close: 'Закрыть' } })
+
 		await render(() =>
 			h('div', [
-				h(Popover, { closeLabel: 'Закрыть' }, { default: inside }),
+				h(Popover, null, { default: inside }),
 				h(Popover, { closable: false, class: 's-test-bare' }, { default: inside }),
 			]),
 		)

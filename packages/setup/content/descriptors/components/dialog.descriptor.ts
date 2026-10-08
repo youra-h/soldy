@@ -41,7 +41,6 @@ export const DialogDescriptor = defineDescriptor(() =>
 				offset: { type: [Number, String], triggers: ['change:offset'] },
 				maximized: { type: Boolean, triggers: ['change:maximized'] },
 				maximizable: { type: Boolean, triggers: ['change:maximizable'] },
-				maximizeLabel: { type: String, triggers: ['change:maximizeLabel'] },
 				alert: { type: Boolean, triggers: ['change:alert'] },
 				/**
 				 * Сторона связки у тела — `id` для `aria-describedby`
@@ -49,11 +48,14 @@ export const DialogDescriptor = defineDescriptor(() =>
 				 * `TDialogIdsPlugin`.
 				 */
 				bodyAria: { type: Object, protected: true, triggers: ['change:bodyAria'] },
-				/** Имя и состояние кнопки разворота. Отдельный набор: кнопка — сосед содержимого. */
+				/**
+				 * Имя кнопки разворота — из словаря — и её состояние. Отдельный
+				 * набор: кнопка — сосед содержимого.
+				 */
 				maximizeAria: {
 					type: Object,
 					protected: true,
-					triggers: ['change:maximizeLabel', 'change:maximized'],
+					triggers: ['change:translations', 'change:maximized'],
 				},
 			},
 		},

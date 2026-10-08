@@ -1,8 +1,13 @@
 import { TLayer, TCloseEvent, FRAME_LAYER_ATTRIBUTE } from '../layer'
 import type { TCloseReason } from '../layer'
 import type { TDefaultValues } from '../component'
-import { TAria } from '../../../common'
-import type { TAriaAttributes, TDatasetAttributes, TEventSink } from '../../../common'
+import { DEFAULT_TRANSLATIONS, TAria } from '../../../common'
+import type {
+	TAriaAttributes,
+	TDatasetAttributes,
+	TEventSink,
+	TTranslations,
+} from '../../../common'
 import type { IModalLayer, IModalLayerProps, TModalLayerEvents } from './types'
 
 /**
@@ -35,6 +40,11 @@ import type { IModalLayer, IModalLayerProps, TModalLayerEvents } from './types'
  * родитель, который открытость пишет сам, с панелью не разойдётся. Поэтому
  * не `hide:before` — его шлёт и программное скрытие.
  *
+ * **Имя кнопки закрытия — из словаря** (`translations`, раздел `modal`), а не
+ * проп: строки библиотеки приложение задаёт одним словарём на всё приложение,
+ * и пишет его компоненту плагин словаря. Кнопку разворота окна (`dialog`)
+ * называет тот же словарь.
+ *
  * **Размер — значение, раскладка — тема.** Ширина и высота уходят теме
  * переменными раскладки наследника (`TDialogLayoutPlugin`,
  * `TDrawerLayoutPlugin`); не заданы — размер выбирает тема.
@@ -52,26 +62,21 @@ export default class TModalLayer<
 	implements IModalLayer<TProps, TEvents>
 {
 	static defaultValues: typeof TLayer.defaultValues &
-		TDefaultValues<
-			IModalLayerProps,
-			'closable' | 'closeLabel' | 'dismissible',
-			'width' | 'height'
-		> = {
+		TDefaultValues<IModalLayerProps, 'closable' | 'dismissible', 'width' | 'height'> = {
 		...TLayer.defaultValues,
 		// Не `'auto'`, как у Frame: размер по умолчанию выбирает тема, а
 		// `auto` растянул бы окно по экрану
 		width: undefined,
 		height: undefined,
 		closable: true,
-		closeLabel: 'Close',
 		dismissible: true,
 	}
 
 	protected _width: number | string | undefined
 	protected _height: number | string | undefined
 	protected _closable: boolean
-	protected _closeLabel: string
 	protected _dismissible: boolean
+	protected _translations: TTranslations = DEFAULT_TRANSLATIONS
 	protected _titleAria: TAria
 
 	constructor(props: Partial<TProps> = {}) {
@@ -82,7 +87,6 @@ export default class TModalLayer<
 		this._width = props.width ?? ctor.defaultValues.width
 		this._height = props.height ?? ctor.defaultValues.height
 		this._closable = props.closable ?? ctor.defaultValues.closable
-		this._closeLabel = props.closeLabel ?? ctor.defaultValues.closeLabel
 		this._dismissible = props.dismissible ?? ctor.defaultValues.dismissible
 
 		this._aria.add('role', 'dialog')
@@ -174,18 +178,18 @@ export default class TModalLayer<
 	}
 
 	/**
-	 * Имя кнопки закрытия. Дефолт английский: язык интерфейса ядру неизвестен,
-	 * а оставить кнопку без имени нельзя.
+	 * Словарь строк библиотеки: слой читает из него имя кнопки закрытия, окно
+	 * — ещё и кнопки разворота. Та же ссылка — ничего не меняет.
 	 */
-	get closeLabel(): string {
-		return this._closeLabel
+	get translations(): TTranslations {
+		return this._translations
 	}
 
-	set closeLabel(value: string) {
-		if (this._closeLabel === value) return
+	set translations(value: TTranslations) {
+		if (this._translations === value) return
 
-		this._closeLabel = value
-		this._sink.emit('change:closeLabel', value)
+		this._translations = value
+		this._sink.emit('change:translations', value)
 	}
 
 	/**
@@ -216,7 +220,7 @@ export default class TModalLayer<
 
 	/** Имя кнопки закрытия — соседней с содержимым, а не самой панели. */
 	get closeAria(): TAriaAttributes {
-		return { 'aria-label': this._closeLabel }
+		return { 'aria-label': this._translations.modal.close }
 	}
 
 	/**
@@ -246,7 +250,6 @@ export default class TModalLayer<
 			width: this._width,
 			height: this._height,
 			closable: this._closable,
-			closeLabel: this._closeLabel,
 			dismissible: this._dismissible,
 		}
 	}

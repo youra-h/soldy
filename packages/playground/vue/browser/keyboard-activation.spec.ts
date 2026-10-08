@@ -250,7 +250,7 @@ describe('вложенная кнопка нажимается', () => {
 	})
 
 	it.each(KEYS)('%s на кнопке очистки очищает DateInput', async (_name, key) => {
-		await show(() => h(DateInput, { clearable: true, locale: 'ru-RU', value: '2026-05-12' }))
+		await show(() => h(DateInput, { clearable: true, value: '2026-05-12' }))
 
 		const hidden = field('.s-date-input input[type="hidden"]')
 

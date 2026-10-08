@@ -15,6 +15,7 @@ import { mount } from '@vue/test-utils'
 import { defineComponent, h, nextTick, ref, type VNode } from 'vue'
 import { Calendar } from '@soldy-ui/vue'
 import { TCalendar, createEngineCalendar } from '@soldy-ui/core'
+import { useLocale, useTranslations } from '@soldy-ui/plugins'
 import type { ICalendarItem, TCalendarValue } from '@soldy-ui/core'
 
 const nextFrame = () => new Promise((resolve) => requestAnimationFrame(resolve))
@@ -150,8 +151,10 @@ describe('разметка', () => {
 		expect(findAll('.s-calendar__grid')).toHaveLength(2)
 	})
 
-	it('первый день недели по локали: у ru-RU колонки с понедельника', async () => {
-		await render(() => h(Calendar, { locale: 'ru-RU' }))
+	it('первый день недели по языку приложения: у ru-RU колонки с понедельника', async () => {
+		useLocale('ru-RU')
+
+		await render(() => h(Calendar))
 
 		// Узкие имена повторяются (понедельник и пятница — «П»), поэтому
 		// сверяется весь ряд; 2026-09-21 — понедельник
@@ -183,8 +186,10 @@ describe('разметка', () => {
 })
 
 describe('кнопки листания', () => {
-	it('имена — из prevLabel и nextLabel', async () => {
-		await render(() => h(Calendar, { prevLabel: 'Назад', nextLabel: 'Вперёд' }))
+	it('имена — из словаря приложения', async () => {
+		useTranslations({ calendar: { prevMonth: 'Назад', nextMonth: 'Вперёд' } })
+
+		await render(() => h(Calendar))
 
 		expect(prev().getAttribute('aria-label')).toBe('Назад')
 		expect(next().getAttribute('aria-label')).toBe('Вперёд')
@@ -592,7 +597,9 @@ describe('выбор месяца и года', () => {
 	})
 
 	it('стрелки шапки: имена по уровню, листание года и страницы', async () => {
-		await render(() => h(Calendar, { prevYearLabel: 'Предыдущий год' }))
+		useTranslations({ calendar: { prevYear: 'Предыдущий год' } })
+
+		await render(() => h(Calendar))
 		await openPicker()
 
 		const prev = find('.s-calendar__picker-prev')

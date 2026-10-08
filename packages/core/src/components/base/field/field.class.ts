@@ -1,6 +1,7 @@
 import { TInputControl } from '../input-control'
 import type { TDefaultValues } from '../component'
-import type { TAriaAttributes, TEventSink } from '../../../common'
+import { DEFAULT_TRANSLATIONS } from '../../../common'
+import type { TAriaAttributes, TEventSink, TTranslations } from '../../../common'
 import type { IField, IFieldProps, TFieldEvents } from './types'
 
 /**
@@ -8,11 +9,12 @@ import type { IField, IFieldProps, TFieldEvents } from './types'
  * (`TDateInput`): кнопка очистки значения.
  *
  * Кнопка — часть поля, а не его владельца: Select рисует её не сам, а отдаёт
- * своему полю `clearable` и `clearLabel`, как `name` и `size`. Поэтому всё,
- * что следует из кнопки, живёт здесь один раз: признак `clearable` с
- * модификатором `--clearable`, имя кнопки (`clearAria`) и команда `clear`.
- * Две копии в формах разошлись бы, как расходились фасады, пока у них не было
- * баз. Блок CSS называет форма, поэтому своего `baseClass` у базы нет.
+ * своему полю `clearable`, как `name` и `size`. Поэтому всё, что следует из
+ * кнопки, живёт здесь один раз: признак `clearable` с модификатором
+ * `--clearable`, имя кнопки (`clearAria`, строка словаря `field`) и команда
+ * `clear`. Две копии в формах разошлись бы, как расходились фасады, пока у
+ * них не было баз. Блок CSS называет форма, поэтому своего `baseClass` у базы
+ * нет.
  *
  * **Очистка — два шага.** Сначала шаг формы (`_clearValue`): у Input — пустая
  * строка, у поля даты — пустые части. Потом база шлёт `clear` — всегда, даже у
@@ -36,15 +38,13 @@ export default class TField<
 	implements IField<TValue, TProps, TEvents>
 {
 	static defaultValues: typeof TInputControl.defaultValues &
-		TDefaultValues<IFieldProps<any>, 'clearable' | 'clearLabel'> = {
+		TDefaultValues<IFieldProps<any>, 'clearable'> = {
 		...TInputControl.defaultValues,
 		clearable: false,
-		// Языка интерфейса библиотека не знает: дефолт английский
-		clearLabel: 'Clear',
 	}
 
 	protected _clearable!: boolean
-	protected _clearLabel: string
+	protected _translations: TTranslations = DEFAULT_TRANSLATIONS
 
 	constructor(props: Partial<TProps> = {}) {
 		super(props)
@@ -52,7 +52,6 @@ export default class TField<
 		const ctor = new.target as typeof TField
 
 		this._applyClearable(props.clearable ?? ctor.defaultValues.clearable)
-		this._clearLabel = props.clearLabel ?? ctor.defaultValues.clearLabel
 	}
 
 	/**
@@ -74,15 +73,19 @@ export default class TField<
 		this._sink.emit('change:clearable', value)
 	}
 
-	get clearLabel(): string {
-		return this._clearLabel
+	/**
+	 * Словарь строк библиотеки: поле читает из него имя кнопки очистки. Та же
+	 * ссылка — ничего не меняет.
+	 */
+	get translations(): TTranslations {
+		return this._translations
 	}
 
-	set clearLabel(value: string) {
-		if (this._clearLabel === value) return
+	set translations(value: TTranslations) {
+		if (this._translations === value) return
 
-		this._clearLabel = value
-		this._sink.emit('change:clearLabel', value)
+		this._translations = value
+		this._sink.emit('change:translations', value)
 	}
 
 	/**
@@ -90,15 +93,14 @@ export default class TField<
 	 *
 	 * Без него на форме с пятью полями в списке элементов скринридера будет
 	 * пять одинаковых «Clear, кнопка», и выбрать нужную нельзя. Та же причина,
-	 * по которой у таба имя кнопки закрытия собирается с его текстом.
+	 * по которой у таба имя кнопки закрытия собирается с его текстом. Как имя
+	 * складывается с именем поля, решает строка словаря (раздел `field`).
 	 *
 	 * Отдельный набор, а не часть `aria`: `aria` описывает само поле, а это —
 	 * соседняя кнопка. Один элемент — один набор.
 	 */
 	get clearAria(): TAriaAttributes {
-		const name = this._name.trim()
-
-		return { 'aria-label': name ? `${this._clearLabel} ${name}` : this._clearLabel }
+		return { 'aria-label': this._translations.field.clear(this._name.trim()) }
 	}
 
 	/**
@@ -129,7 +131,6 @@ export default class TField<
 		return {
 			...super.getProps(),
 			clearable: this._clearable,
-			clearLabel: this._clearLabel,
 		}
 	}
 }

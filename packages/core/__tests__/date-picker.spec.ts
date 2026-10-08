@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { TDatePicker, isSwipeable } from '@soldy-ui/core'
+import { DEFAULT_TRANSLATIONS, TDatePicker, isSwipeable } from '@soldy-ui/core'
 import type {
 	IDatePickerProps,
 	TCalendarUnavailable,
@@ -536,10 +536,16 @@ describe('жест — смахнуть панель, чтобы закрыть'
 })
 
 describe('имена и наборы', () => {
-	it('triggerLabel называет и кнопку, и панель', () => {
+	it('имя кнопки из словаря называет и кнопку, и панель', () => {
 		const target = picker()
 
-		target.triggerLabel = 'Выбрать дату'
+		expect(target.triggerAria.get('aria-label')).toBe('Choose date')
+		expect(target.panelAria.get('aria-label')).toBe('Choose date')
+
+		target.translations = {
+			...DEFAULT_TRANSLATIONS,
+			datePicker: { ...DEFAULT_TRANSLATIONS.datePicker, trigger: 'Выбрать дату' },
+		}
 
 		expect(target.triggerAria.get('aria-label')).toBe('Выбрать дату')
 		expect(target.panelAria.get('aria-label')).toBe('Выбрать дату')
@@ -555,8 +561,16 @@ describe('имена и наборы', () => {
 		expect(target.rootAria).toEqual({ role: 'group', 'aria-disabled': 'true' })
 	})
 
-	it('имена концов — свойства DatePicker', () => {
-		const target = picker({ startLabel: 'Заезд', endLabel: 'Выезд' })
+	it('имена концов — выходы DatePicker из словаря', () => {
+		const target = picker()
+
+		expect(target.startLabel).toBe('Start date')
+		expect(target.endLabel).toBe('End date')
+
+		target.translations = {
+			...DEFAULT_TRANSLATIONS,
+			datePicker: { ...DEFAULT_TRANSLATIONS.datePicker, start: 'Заезд', end: 'Выезд' },
+		}
 
 		expect(target.startLabel).toBe('Заезд')
 		expect(target.endLabel).toBe('Выезд')

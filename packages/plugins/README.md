@@ -57,6 +57,18 @@ import { useMotion } from '@soldy-ui/plugins'
 useMotion('full') // motion even when the system asks to reduce it; 'reduce' — never
 ```
 
+The language and the strings of the library are set the same way, once for the whole application.
+A component has neither of its own: its plugins write them on mount and on every change, so the
+first render — the server one too — is already in the application's language:
+
+```ts
+import { useLocale, useTranslations } from '@soldy-ui/plugins'
+
+useLocale('ru-RU') // Intl: date labels, first day of the week, date field format, sorting
+useTranslations({ field: { clear: (name) => `Очистить «${name}»` } }) // over the English default
+useTranslations() // back to English
+```
+
 ## Documentation
 
 - [Soldy UI README](https://github.com/youra-h/soldy#readme) — what the library is and how it is

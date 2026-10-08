@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { TInput } from '@soldy-ui/core'
+import { DEFAULT_TRANSLATIONS, TInput } from '@soldy-ui/core'
 
 describe('TInput', () => {
 	it('создаётся через { props } и через plain props', () => {
@@ -166,17 +166,19 @@ describe('TInput · очистка', () => {
 			expect(new TInput({ name: '  ' }).clearAria['aria-label']).toBe('Clear')
 		})
 
-		it('слово переопределяется — язык интерфейса решает потребитель', () => {
-			const input = new TInput({ name: 'Город', clearLabel: 'Очистить' })
+		it('строку задаёт словарь приложения — и порядок слов в ней тоже', () => {
+			const input = new TInput({ name: 'Город' })
 			const handler = vi.fn()
+			const translations = {
+				...DEFAULT_TRANSLATIONS,
+				field: { clear: (name: string) => `Очистить поле «${name}»` },
+			}
 
-			expect(input.clearAria['aria-label']).toBe('Очистить Город')
+			input.events.on('change:translations', handler)
+			input.translations = translations
 
-			input.events.on('change:clearLabel', handler)
-			input.clearLabel = 'Стереть'
-
-			expect(input.clearAria['aria-label']).toBe('Стереть Город')
-			expect(handler).toHaveBeenCalledWith('Стереть')
+			expect(input.clearAria['aria-label']).toBe('Очистить поле «Город»')
+			expect(handler).toHaveBeenCalledWith(translations)
 		})
 
 		it('отдельный набор: это имя соседней кнопки, а не самого поля', () => {
@@ -255,10 +257,7 @@ describe('TInput · очистка', () => {
 		})
 	})
 
-	it('getProps несёт clearable и clearLabel', () => {
-		expect(new TInput({ clearable: true, clearLabel: 'Очистить' }).getProps()).toMatchObject({
-			clearable: true,
-			clearLabel: 'Очистить',
-		})
+	it('getProps несёт clearable', () => {
+		expect(new TInput({ clearable: true }).getProps()).toMatchObject({ clearable: true })
 	})
 })

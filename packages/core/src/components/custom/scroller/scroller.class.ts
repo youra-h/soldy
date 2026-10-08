@@ -1,6 +1,7 @@
 import { TControl } from '../../base/control'
 import type { TDefaultValues } from '../../base/component'
-import type { TAriaAttributes } from '../../../common'
+import { DEFAULT_TRANSLATIONS } from '../../../common'
+import type { TAriaAttributes, TTranslations } from '../../../common'
 import type {
 	IScroller,
 	IScrollerProps,
@@ -30,6 +31,10 @@ import type {
  * `TScrollerViewportPlugin` и сообщает сюда (`notifyViewport`) — тем же
  * приёмом, что `notifyFit` у тегов. Сама прокрутка — тоже его: ядро только
  * просит (`scroll:request`).
+ *
+ * Имена кнопок — из словаря (`translations`, раздел `scroller`): кнопка со
+ * стрелкой без имени для скринридера безымянна, а строки библиотеки задаёт
+ * приложение одним словарём.
  */
 export default class TScroller
 	extends TControl<IScrollerProps, TScrollerEvents>
@@ -38,18 +43,13 @@ export default class TScroller
 	static override baseClass = 's-scroller'
 
 	static defaultValues: typeof TControl.defaultValues &
-		TDefaultValues<IScrollerProps, 'prevLabel' | 'nextLabel', 'viewportAria'> = {
+		TDefaultValues<IScrollerProps, never, 'viewportAria'> = {
 		...TControl.defaultValues,
-		// Дефолты английские: языка интерфейса библиотека не знает, а кнопка
-		// со стрелкой без имени для скринридера безымянна
-		prevLabel: 'Scroll back',
-		nextLabel: 'Scroll forward',
 		// Роль ряда есть не у всякой ленты: у набора тегов без выбора её нет
 		viewportAria: undefined,
 	}
 
-	protected _prevLabel: string
-	protected _nextLabel: string
+	protected _translations: TTranslations = DEFAULT_TRANSLATIONS
 	protected _viewportAria: TAriaAttributes | undefined
 	protected _canPrev = false
 	protected _canNext = false
@@ -60,8 +60,6 @@ export default class TScroller
 
 		const ctor = new.target as typeof TScroller
 
-		this._prevLabel = props.prevLabel ?? ctor.defaultValues.prevLabel
-		this._nextLabel = props.nextLabel ?? ctor.defaultValues.nextLabel
 		this._viewportAria = props.viewportAria ?? ctor.defaultValues.viewportAria
 
 		// Оба признака стоят с первой отрисовки и значением `"false"`, а не
@@ -71,28 +69,19 @@ export default class TScroller
 		this._dataset.add('can-next', this._canNext)
 	}
 
-	/** Имя кнопки «назад» для скринридера. */
-	get prevLabel(): string {
-		return this._prevLabel
+	/**
+	 * Словарь строк библиотеки: лента читает из него имена кнопок. Та же ссылка
+	 * — ничего не меняет.
+	 */
+	get translations(): TTranslations {
+		return this._translations
 	}
 
-	set prevLabel(value: string) {
-		if (this._prevLabel === value) return
+	set translations(value: TTranslations) {
+		if (this._translations === value) return
 
-		this._prevLabel = value
-		this.events.emit('change:prevLabel', value)
-	}
-
-	/** Имя кнопки «вперёд» для скринридера. */
-	get nextLabel(): string {
-		return this._nextLabel
-	}
-
-	set nextLabel(value: string) {
-		if (this._nextLabel === value) return
-
-		this._nextLabel = value
-		this.events.emit('change:nextLabel', value)
+		this._translations = value
+		this.events.emit('change:translations', value)
 	}
 
 	/**
@@ -130,12 +119,12 @@ export default class TScroller
 
 	/** Имя кнопки «назад». Своего экземпляра у кнопки нет — набор отдаётся значением. */
 	get prevAria(): TAriaAttributes {
-		return { 'aria-label': this._prevLabel }
+		return { 'aria-label': this._translations.scroller.prev }
 	}
 
 	/** Имя кнопки «вперёд». */
 	get nextAria(): TAriaAttributes {
-		return { 'aria-label': this._nextLabel }
+		return { 'aria-label': this._translations.scroller.next }
 	}
 
 	/**
@@ -223,8 +212,6 @@ export default class TScroller
 	override getProps(): IScrollerProps {
 		return {
 			...super.getProps(),
-			prevLabel: this._prevLabel,
-			nextLabel: this._nextLabel,
 			viewportAria: this._viewportAria,
 		}
 	}

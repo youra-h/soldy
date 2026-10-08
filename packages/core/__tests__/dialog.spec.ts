@@ -1,5 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { TDialog, TFrame, TLayer, TCloseEvent, FRAME_LAYER_ATTRIBUTE } from '@soldy-ui/core'
+import {
+	DEFAULT_TRANSLATIONS,
+	TDialog,
+	TFrame,
+	TLayer,
+	TCloseEvent,
+	FRAME_LAYER_ATTRIBUTE,
+} from '@soldy-ui/core'
 import type { TCloseReason } from '@soldy-ui/core'
 
 /**
@@ -30,8 +37,7 @@ describe('умолчания', () => {
 		expect(dialog.maximized).toBe(false)
 		expect(dialog.maximizable).toBe(false)
 		expect(dialog.closable).toBe(true)
-		expect(dialog.closeLabel).toBe('Close')
-		expect(dialog.maximizeLabel).toBe('Maximize')
+		expect(dialog.translations).toBe(DEFAULT_TRANSLATIONS)
 		expect(dialog.dismissible).toBe(true)
 		expect(dialog.alert).toBe(false)
 	})
@@ -69,8 +75,6 @@ describe('умолчания', () => {
 			maximized: true,
 			maximizable: true,
 			closable: false,
-			closeLabel: 'Закрыть',
-			maximizeLabel: 'Развернуть',
 			dismissible: false,
 			alert: true,
 			target: '#modals',
@@ -115,18 +119,20 @@ describe('ARIA окна', () => {
 })
 
 describe('кнопки', () => {
-	it('крестик назван closeLabel', () => {
+	it('крестик назван словарём — раздел modal', () => {
 		const dialog = new TDialog()
 
 		expect(dialog.closeAria).toEqual({ 'aria-label': 'Close' })
 
-		dialog.closeLabel = 'Закрыть'
+		dialog.translations = { ...DEFAULT_TRANSLATIONS, modal: { close: 'Закрыть' } }
 
 		expect(dialog.closeAria).toEqual({ 'aria-label': 'Закрыть' })
 	})
 
 	it('кнопка разворота — переключатель: имя одно, состояние в aria-pressed', () => {
-		const dialog = new TDialog({ maximizeLabel: 'Развернуть' })
+		const dialog = new TDialog()
+
+		dialog.translations = { ...DEFAULT_TRANSLATIONS, dialog: { maximize: 'Развернуть' } }
 
 		expect(dialog.maximizeAria).toEqual({
 			'aria-label': 'Развернуть',

@@ -16,7 +16,7 @@ import { defineComponent, nextTick, h, ref } from 'vue'
  */
 const nextFrame = () => new Promise((resolve) => requestAnimationFrame(resolve))
 import { Frame, Select, SelectItem, Input, propsSelect } from '@soldy-ui/vue'
-import { TAnchorPlugin } from '@soldy-ui/plugins'
+import { TAnchorPlugin, useTranslations } from '@soldy-ui/plugins'
 import { TSelect } from '@soldy-ui/core'
 import type { IInput, TSelectPlacement } from '@soldy-ui/core'
 import Harness from './Select.test.vue'
@@ -238,7 +238,8 @@ describe('опции', () => {
 
 /**
  * Кнопку очистки рисует поле — `Input` внутри Select (`.s-input__clear`):
- * `clearable` и `clearLabel` Select отдаёт полю, и своей кнопки у Select нет.
+ * `clearable` Select отдаёт полю, имя кнопке поле собирает из своего словаря,
+ * и своей кнопки у Select нет.
  */
 describe('кнопка очистки', () => {
 	it('без clearable её нет', () => {
@@ -260,6 +261,14 @@ describe('кнопка очистки', () => {
 		const clear = render({ clearable: true }).find('.s-input__clear')
 
 		expect(clear.attributes('aria-label')).toBe('Clear Город')
+	})
+
+	it('строку имени поле берёт из словаря приложения — через Select она не идёт', () => {
+		useTranslations({ field: { clear: (name) => `Очистить ${name}` } })
+
+		const clear = render({ clearable: true }).find('.s-input__clear')
+
+		expect(clear.attributes('aria-label')).toBe('Очистить Город')
 	})
 
 	it('клик сбрасывает выбранное значение и панель не открывает', async () => {

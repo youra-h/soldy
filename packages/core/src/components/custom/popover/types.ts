@@ -4,7 +4,13 @@ import type {
 	TComponentViewEvents,
 } from '../../base/component-view'
 import type { ISwipeable, TSwipe, TSwipeableEvents } from '../../base/layer'
-import type { TAria, TAriaAttributes, TDatasetAttributes } from '../../../common'
+import type {
+	ITranslatable,
+	TAria,
+	TAriaAttributes,
+	TDatasetAttributes,
+	TTranslatableEvents,
+} from '../../../common'
 
 /**
  * Сторона и выравнивание панели у триггера.
@@ -31,13 +37,12 @@ export type TPopoverPlacement = 'bottom-start' | 'bottom-end' | 'top-start' | 't
 export type TPopoverEdge = 'top' | 'bottom' | 'start' | 'end'
 
 export type TPopoverEvents = TComponentViewEvents &
-	TSwipeableEvents & {
+	TSwipeableEvents &
+	TTranslatableEvents & {
 		/** change:open */
 		'change:open': (value: boolean) => void
 		/** change:closable */
 		'change:closable': (value: boolean) => void
-		/** change:closeLabel */
-		'change:closeLabel': (value: string) => void
 		/** change:lazyMount */
 		'change:lazyMount': (value: boolean) => void
 		/** change:placement */
@@ -55,8 +60,6 @@ export interface IPopoverProps extends IComponentViewProps {
 	open?: boolean
 	/** Показывать ли кнопку закрытия в углу панели */
 	closable?: boolean
-	/** Имя кнопки закрытия для скринридера */
-	closeLabel?: string
 	/**
 	 * Не монтировать содержимое, пока панель ни разу не открывали. После
 	 * первого открытия содержимое остаётся, закрытие только прячет панель.
@@ -87,13 +90,12 @@ export interface IPopoverProps extends IComponentViewProps {
  * него, и сторону после flip знает только узел панели (`swipeSide` — `null`),
  * внутри контейнера — к своему краю (`edge`).
  */
-export interface IPopover extends IComponentView<IPopoverProps, TPopoverEvents>, ISwipeable {
+export interface IPopover
+	extends IComponentView<IPopoverProps, TPopoverEvents>, ISwipeable, ITranslatable {
 	/** Открыта ли панель */
 	open: boolean
 	/** Показывать ли кнопку закрытия в углу панели */
 	closable: boolean
-	/** Имя кнопки закрытия для скринридера */
-	closeLabel: string
 	/** Не монтировать содержимое до первого открытия */
 	lazyMount: boolean
 	/** Сторона и выравнивание панели у триггера */
@@ -115,7 +117,7 @@ export interface IPopover extends IComponentView<IPopoverProps, TPopoverEvents>,
 	 * пишет её слой
 	 */
 	readonly panelDataset: TDatasetAttributes
-	/** Имя кнопки закрытия: `closeLabel` */
+	/** Имя кнопки закрытия — из словаря, раздел `popover` */
 	readonly closeAria: TAriaAttributes
 	/** Смонтировано ли содержимое панели: без `lazyMount` — всегда */
 	readonly contentRendered: boolean

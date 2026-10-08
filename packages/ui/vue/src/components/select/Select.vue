@@ -32,8 +32,9 @@ export default { ...SetupSelect, components: { Frame, Input, Icon, Tags, SelectI
 			`TSelectExtension`). Рядом `:value`/`:placeholder`/`aria` не
 			ставить ни в каком виде — тогда снова завелись бы вторые копии.
 			`disabled`, `size`, `variant`, `readonly`, `required`, `name`, `id`,
-			`clearable`, `clearLabel` тоже несёт инстанс: Select синхронизирует
-			их с ним сам.
+			`clearable` тоже несёт инстанс: Select синхронизирует их с ним сам.
+			Словарь — имя кнопки очистки — поле получает от своего плагина
+			словаря.
 
 			Кнопку очистки рисует поле — первой в своём слоте у конца, перед
 			стрелкой. Очищает поле его команда `clear`, а выбор снимает

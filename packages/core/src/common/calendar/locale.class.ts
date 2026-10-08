@@ -1,13 +1,7 @@
+import { DEFAULT_LOCALE } from '../locale'
 import { addDays, utcDateOf } from './date'
 import { firstDayOfWeek } from './week'
 import type { ICalendarLocale, TCalendarDate, TWeekday, TWeekdayWidth } from './types'
-
-/**
- * Локаль по умолчанию. Язык интерфейса ядру неизвестен, а дефолт английский
- * (AGENTS.md, «Языка интерфейса библиотека не знает»): так сервер и браузер
- * без заданной локали рисуют одно и то же.
- */
-export const DEFAULT_LOCALE = 'en-US'
 
 /**
  * Календари с григорианскими месяцами: у них другие только годы и эры, и

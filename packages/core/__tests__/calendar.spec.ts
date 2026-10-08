@@ -1,5 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { TCalendar, TCalendarCollectionFacade, createEngineCalendar } from '@soldy-ui/core'
+import {
+	DEFAULT_TRANSLATIONS,
+	TCalendar,
+	TCalendarCollectionFacade,
+	createEngineCalendar,
+} from '@soldy-ui/core'
 import type {
 	ICalendarItem,
 	ICalendarProps,
@@ -357,24 +362,23 @@ describe('кнопки листания', () => {
 	it('имена по умолчанию английские; набор кнопки — её имя', () => {
 		const { owner } = calendar()
 
-		expect(owner.prevLabel).toBe('Previous month')
-		expect(owner.nextLabel).toBe('Next month')
 		expect(owner.prevAria).toEqual({ 'aria-label': 'Previous month' })
 		expect(owner.nextAria).toEqual({ 'aria-label': 'Next month' })
 	})
 
-	it('смена имени — событие и новый набор; то же имя — не смена', () => {
-		const { owner } = calendar({ prevLabel: 'Назад' })
+	it('имена — из словаря: новый словарь — событие и новые наборы', () => {
+		const { owner } = calendar()
 		const changes = vi.fn()
 
-		owner.events.on('change:nextLabel', changes)
-		owner.nextLabel = 'Вперёд'
-		owner.nextLabel = 'Вперёд'
+		owner.events.on('change:translations', changes)
+		owner.translations = {
+			...DEFAULT_TRANSLATIONS,
+			calendar: { ...DEFAULT_TRANSLATIONS.calendar, prevMonth: 'Назад', nextMonth: 'Вперёд' },
+		}
 
 		expect(changes).toHaveBeenCalledTimes(1)
 		expect(owner.prevAria).toEqual({ 'aria-label': 'Назад' })
 		expect(owner.nextAria).toEqual({ 'aria-label': 'Вперёд' })
-		expect(owner.getProps()).toMatchObject({ prevLabel: 'Назад', nextLabel: 'Вперёд' })
 	})
 
 	it('change:paging — на листание', () => {

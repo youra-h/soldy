@@ -11,6 +11,9 @@
  * Открытость — `visible`: модальный слой сам и есть слой, и `open` рядом с
  * ним был бы вторым путём к одному факту. Поэтому плагины слоя ставятся с
  * `property: 'visible'`.
+ *
+ * Имена кнопок — из словаря приложения: его пишет плагин словаря, а разметка
+ * получает готовые наборы (`closeAria`, у окна — `maximizeAria`).
  */
 
 import { defineComponent, defineDescriptor } from '../../../protected/define'
@@ -20,6 +23,7 @@ import {
 	HideOutsidePluginDescriptor,
 	ModalFocusPluginDescriptor,
 	ScrollLockPluginDescriptor,
+	TranslationsPluginDescriptor,
 } from '../plugins'
 import { LayerDescriptor } from './layer.descriptor'
 
@@ -43,7 +47,6 @@ export const ModalLayerDescriptor = defineDescriptor(() =>
 				width: { type: [Number, String], triggers: ['change:width'] },
 				height: { type: [Number, String], triggers: ['change:height'] },
 				closable: { type: Boolean, triggers: ['change:closable'] },
-				closeLabel: { type: String, triggers: ['change:closeLabel'] },
 				dismissible: { type: Boolean, triggers: ['change:dismissible'] },
 				/**
 				 * Сторона связки у заголовка — части без экземпляра. Набор слоя:
@@ -51,8 +54,11 @@ export const ModalLayerDescriptor = defineDescriptor(() =>
 				 * раскладывает на свой элемент.
 				 */
 				titleAria: { type: Object, protected: true, triggers: ['change:titleAria'] },
-				/** Имя кнопки закрытия. Отдельный набор: кнопка — сосед содержимого. */
-				closeAria: { type: Object, protected: true, triggers: ['change:closeLabel'] },
+				/**
+				 * Имя кнопки закрытия — из словаря. Отдельный набор: кнопка — сосед
+				 * содержимого.
+				 */
+				closeAria: { type: Object, protected: true, triggers: ['change:translations'] },
 				/**
 				 * Номер слоя и открытость у подложки: они у неё те же, что у
 				 * панели. По открытости подложка гаснет вместе с панелью.
@@ -71,6 +77,9 @@ export const ModalLayerDescriptor = defineDescriptor(() =>
 		},
 
 		plugins: [
+			// Словарь приложения — до поведения: имена кнопок есть с первой
+			// отрисовки
+			TranslationsPluginDescriptor,
 			// Нажатие мимо — по подложке. Без `focusOutside`: фокус из модального
 			// слоя не уходит, его держит модель фокуса. Раньше фокуса и фона:
 			// оба берут у него панель

@@ -562,14 +562,14 @@ setup, одинаково для всех, а не подстройкой под
 
 ```ts
 static defaultValues: typeof TValueControl.defaultValues &
-	TDefaultValues<ITabsItemProps, 'text' | 'closeLabel', 'closable'> = {
+	TDefaultValues<ITabsItemProps, 'text', 'closable'> = {
 	...TValueControl.defaultValues,
 	text: '',
 	closable: undefined,
 	…
 }
 
-this._closeLabel = own.closeLabel ?? ctor.defaultValues.closeLabel
+this._text = own.text ?? ctor.defaultValues.text
 ```
 
 Родительский `typeof` обязателен, иначе статическая сторона наследника

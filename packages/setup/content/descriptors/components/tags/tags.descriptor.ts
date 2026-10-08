@@ -9,6 +9,10 @@
  * Tab, стрелки между тегами (`TagsKeyboardPluginDescriptor`). Без выбора
  * (`mode="none"`) набор — список без действия у строк, и клавиатура молчит.
  * См. AGENTS, «Граница переиспользования» и «Готовые паттерны».
+ *
+ * Имя кнопки «…» — из словаря приложения (плагин словаря). Кнопки листания
+ * в `arrows` — ленты: имена им лента берёт из своего словаря, и сквозь Tags
+ * они не идут.
  */
 
 import { defineComponent, defineDescriptor, defineType } from '../../../../protected/define'
@@ -21,6 +25,7 @@ import {
 	TagsKeyboardPluginDescriptor,
 	TagsOverflowPluginDescriptor,
 	TagsScrollPluginDescriptor,
+	TranslationsPluginDescriptor,
 } from '../../plugins'
 
 export const TagsDescriptor = defineDescriptor(() =>
@@ -78,20 +83,16 @@ export const TagsDescriptor = defineDescriptor(() =>
 				 * ленте (`viewportAria`). Вне `arrows` набор пуст.
 				 */
 				rowAria: { type: Object, protected: true, triggers: ['change:rowAria'] },
-				/** Имя кнопки «…» для скринридера. */
-				moreLabel: { type: String, triggers: ['change:moreLabel'] },
 				/**
-				 * Имена кнопок листания: Tags отдаёт их ленте как есть — языка
-				 * интерфейса библиотека не знает. Своих умолчаний нет, английские
-				 * держит лента.
+				 * Имя кнопки «…» — из словаря. Выход: разметка отдаёт его панели,
+				 * диалог без имени скринридер объявил бы безымянным.
 				 */
-				prevLabel: { type: String, triggers: ['change:prevLabel'] },
-				nextLabel: { type: String, triggers: ['change:nextLabel'] },
+				moreLabel: { type: String, protected: true, triggers: ['change:translations'] },
 				/**
 				 * Имя кнопки «…» готовым набором: своего экземпляра у неё нет, она
 				 * — содержимое слота `trigger` у панели.
 				 */
-				moreAria: { type: Object, protected: true, triggers: ['change:moreLabel'] },
+				moreAria: { type: Object, protected: true, triggers: ['change:translations'] },
 				/**
 				 * Классы панели: теги в ней телепортированы, и селекторы вида до них
 				 * не достают. Считает это ядро, а не шаблон каждого адаптера.
@@ -103,6 +104,8 @@ export const TagsDescriptor = defineDescriptor(() =>
 		},
 
 		plugins: [
+			// Словарь приложения: имя кнопки «…» — с первой отрисовки
+			TranslationsPluginDescriptor,
 			// Коллекция: реестр bundles + доступ к DOM-элементам
 			CollectionBundlesPluginDescriptor,
 			CollectionElementsPluginDescriptor,

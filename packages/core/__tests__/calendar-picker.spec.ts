@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { TCalendar, TCalendarCollectionFacade } from '@soldy-ui/core'
+import { DEFAULT_TRANSLATIONS, TCalendar, TCalendarCollectionFacade } from '@soldy-ui/core'
 import type { ICalendarProps, IListBoxItem, TCalendarPicker } from '@soldy-ui/core'
 
 /**
@@ -365,17 +365,21 @@ describe('стрелки', () => {
 		expect(panel(setup).nextAria).toEqual({ 'aria-label': 'Next 12 years' })
 	})
 
-	it('смена имени — change:pickers и новый набор; то же имя — не смена', () => {
+	it('смена словаря — change:pickers и новый набор; тот же словарь — не смена', () => {
 		const setup = calendar()
 		const changes = vi.fn()
+		const translations = {
+			...DEFAULT_TRANSLATIONS,
+			calendar: { ...DEFAULT_TRANSLATIONS.calendar, prevYear: 'Предыдущий год' },
+		}
 
 		setup.collection.events.on('change:pickers', changes)
-		setup.owner.prevYearLabel = 'Предыдущий год'
+		setup.owner.translations = translations
 
 		expect(changes).toHaveBeenCalledTimes(1)
 		expect(panel(setup).prevAria).toEqual({ 'aria-label': 'Предыдущий год' })
 
-		setup.owner.prevYearLabel = 'Предыдущий год'
+		setup.owner.translations = translations
 
 		expect(changes).toHaveBeenCalledTimes(1)
 	})

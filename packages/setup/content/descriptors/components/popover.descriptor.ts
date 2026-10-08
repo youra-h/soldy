@@ -3,8 +3,9 @@
  *
  * Наследует ComponentViewDescriptor (rendered, visible, tag, наборы и плагины
  * element/ready) и добавляет открытость, кнопку закрытия, `lazyMount`,
- * сторону панели, жест, выходы для разметки и плагины: имя диалога, нажатие
- * мимо, клик по триггеру, модель фокуса и жест.
+ * сторону панели, жест, выходы для разметки и плагины: словарь приложения
+ * (имя кнопки закрытия), имя диалога, нажатие мимо, клик по триггеру, модель
+ * фокуса и жест.
  */
 
 import { defineComponent, defineDescriptor, defineType } from '../../../protected/define'
@@ -17,6 +18,7 @@ import {
 	PopoverIdsPluginDescriptor,
 	PopoverPointerPluginDescriptor,
 	SwipePluginDescriptor,
+	TranslationsPluginDescriptor,
 } from '../plugins'
 import { ComponentViewDescriptor } from './component-view.descriptor'
 
@@ -49,7 +51,6 @@ export const PopoverDescriptor = defineDescriptor(() =>
 			props: {
 				open: { type: Boolean, triggers: ['change:open'] },
 				closable: { type: Boolean, triggers: ['change:closable'] },
-				closeLabel: { type: String, triggers: ['change:closeLabel'] },
 				lazyMount: { type: Boolean, triggers: ['change:lazyMount'] },
 				placement: { type: String, triggers: ['change:placement'] },
 				/** Панель прижата к краю ближайшего позиционированного предка, а не встаёт у триггера. */
@@ -79,8 +80,11 @@ export const PopoverDescriptor = defineDescriptor(() =>
 					protected: true,
 					triggers: ['change:swiping', 'change:contained', 'change:edge'],
 				},
-				/** Имя кнопки закрытия. Отдельный набор: кнопка — сосед содержимого. */
-				closeAria: { type: Object, protected: true, triggers: ['change:closeLabel'] },
+				/**
+				 * Имя кнопки закрытия — из словаря. Отдельный набор: кнопка — сосед
+				 * содержимого.
+				 */
+				closeAria: { type: Object, protected: true, triggers: ['change:translations'] },
 				/** Смонтировано ли содержимое: `lazyMount` прячет его до первого открытия. */
 				contentRendered: {
 					type: Boolean,
@@ -96,6 +100,8 @@ export const PopoverDescriptor = defineDescriptor(() =>
 		},
 
 		plugins: [
+			// Словарь приложения: имя кнопки закрытия — с первой отрисовки
+			TranslationsPluginDescriptor,
 			// Имя диалога: у панели `role="dialog"`, и без имени скринридер
 			// объявит безымянный диалог
 			AriaPluginDescriptor,

@@ -8,17 +8,26 @@
  * наборы части — на её узел, `dir` и `lang` — на ряд, значение — в скрытое
  * поле, а клавиши на настоящей разметке доходят до модели и возвращаются
  * `v-model`.
+ *
+ * Язык поля задаёт приложение (`useLocale`), своего у поля нет: здесь он
+ * русский, а тест на другом языке задаёт свой. После теста язык снова
+ * английский — его возвращает общий `setup.ts`.
  */
 
-import { describe, it, expect, afterEach, vi } from 'vitest'
+import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { defineComponent, h, nextTick, ref, type VNode } from 'vue'
 import { DateInput } from '@soldy-ui/vue'
 import type { IDateInput, TTimePrecision } from '@soldy-ui/core'
+import { useLocale } from '@soldy-ui/plugins'
 
 const nextFrame = () => new Promise((resolve) => requestAnimationFrame(resolve))
 
 let wrapper: ReturnType<typeof mount> | null = null
+
+beforeEach(() => {
+	useLocale('ru-RU')
+})
 
 afterEach(() => {
 	wrapper?.unmount()
@@ -123,7 +132,7 @@ function formatted(locale: string, date: string): string[] {
 
 describe('разметка', () => {
 	it('ru: корень — группа, в ряду части и разделители в порядке формата', async () => {
-		await render(() => h(DateInput, { locale: 'ru-RU', aria_label: 'Дата рождения' }))
+		await render(() => h(DateInput, { aria_label: 'Дата рождения' }))
 
 		const root = find('.s-date-input')
 
@@ -142,7 +151,7 @@ describe('разметка', () => {
 	})
 
 	it('часть — spinbutton со своей остановкой Tab, разделитель скрыт от скринридера', async () => {
-		await render(() => h(DateInput, { locale: 'ru-RU', value: '2026-05-12' }))
+		await render(() => h(DateInput, { value: '2026-05-12' }))
 
 		const day = segment('day')
 
@@ -164,7 +173,9 @@ describe('разметка', () => {
 	})
 
 	it('ar-EG: ряд справа налево, цифры арабские, разделители с метками направления', async () => {
-		await render(() => h(DateInput, { locale: 'ar-EG', value: '2026-05-12' }))
+		useLocale('ar-EG')
+
+		await render(() => h(DateInput, { value: '2026-05-12' }))
 
 		expect(find('.s-date-input__segments').getAttribute('dir')).toBe('rtl')
 		expect(rowContent().map(([, text]) => text)).toEqual(formatted('ar-EG', '2026-05-12'))
@@ -209,7 +220,6 @@ describe('v-model', () => {
 
 		await render(() =>
 			h(DateInput, {
-				locale: 'ru-RU',
 				value: date.value,
 				'onUpdate:value': (value: string | undefined) => {
 					date.value = value
@@ -228,7 +238,7 @@ describe('v-model', () => {
 	it('значение снаружи — части из него', async () => {
 		const date = ref<string | undefined>('2026-05-12')
 
-		await render(() => h(DateInput, { locale: 'ru-RU', value: date.value }))
+		await render(() => h(DateInput, { value: date.value }))
 
 		date.value = '2027-01-02'
 		await nextTick()
@@ -239,9 +249,10 @@ describe('v-model', () => {
 
 describe('время', () => {
 	it('en-US: час, минута и период суток — в ряду в порядке формата, значение — в скрытом поле', async () => {
+		useLocale('en-US')
+
 		await render(() =>
 			h(DateInput, {
-				locale: 'en-US',
 				kind: 'datetime',
 				name: 'meeting',
 				value: '2026-05-12T14:30',
@@ -269,7 +280,7 @@ describe('время', () => {
 	})
 
 	it('ru: 24 часа, периода суток нет; пустое время — черта', async () => {
-		await render(() => h(DateInput, { locale: 'ru-RU', kind: 'datetime' }))
+		await render(() => h(DateInput, { kind: 'datetime' }))
 
 		expect(rowContent().map(([, text]) => text)).toEqual([
 			'дд',
@@ -290,7 +301,6 @@ describe('время', () => {
 
 		await render(() =>
 			h(DateInput, {
-				locale: 'ru-RU',
 				kind: 'datetime',
 				value: date.value,
 				'onUpdate:value': (value: string | undefined) => {
@@ -312,7 +322,6 @@ describe('время', () => {
 
 		await render(() =>
 			h(DateInput, {
-				locale: 'ru-RU',
 				kind: kind.value,
 				value: date.value,
 				'onUpdate:value': (value: string | undefined) => {
@@ -336,9 +345,10 @@ describe('время', () => {
 	})
 
 	it('до секунды: секунда в ряду за минутой, значение — в скрытом поле', async () => {
+		useLocale('en-US')
+
 		await render(() =>
 			h(DateInput, {
-				locale: 'en-US',
 				kind: 'datetime',
 				timePrecision: 'second',
 				name: 'meeting',
@@ -373,7 +383,6 @@ describe('время', () => {
 
 		await render(() =>
 			h(DateInput, {
-				locale: 'ru-RU',
 				kind: 'datetime',
 				timePrecision: 'second',
 				value: date.value,
@@ -401,7 +410,6 @@ describe('время', () => {
 
 		await render(() =>
 			h(DateInput, {
-				locale: 'ru-RU',
 				kind: 'datetime',
 				timePrecision: timePrecision.value,
 				value: date.value,
@@ -441,15 +449,13 @@ describe('время', () => {
 	})
 })
 
-describe('смена локали', () => {
+describe('смена языка приложения', () => {
 	it('часть меняет место, а её узел остаётся тем же', async () => {
-		const locale = ref('ru-RU')
-
-		await render(() => h(DateInput, { locale: locale.value, value: '2026-05-12' }))
+		await render(() => h(DateInput, { value: '2026-05-12' }))
 
 		const day = segment('day')
 
-		locale.value = 'en-US'
+		useLocale('en-US')
 		await nextTick()
 
 		expect(segment('day')).toBe(day)
@@ -464,7 +470,7 @@ describe('сенсорный режим', () => {
 	}
 
 	it('касание делает части редактируемыми, нажатие мышью — снова нет', async () => {
-		await render(() => h(DateInput, { locale: 'ru-RU', value: '2026-05-12' }))
+		await render(() => h(DateInput, { value: '2026-05-12' }))
 
 		pointerDown(segment('month'), 'touch')
 		await nextTick()
@@ -494,7 +500,6 @@ describe('сенсорный режим', () => {
 
 		await render(() =>
 			h(DateInput, {
-				locale: 'ru-RU',
 				value: date.value,
 				'onUpdate:value': (value: string | undefined) => {
 					date.value = value
@@ -528,7 +533,7 @@ describe('сенсорный режим', () => {
 	})
 
 	it('у каждой части свой id — от монтирования и типа части', async () => {
-		await render(() => h(DateInput, { locale: 'ru-RU' }))
+		await render(() => h(DateInput))
 
 		const parts = findAll('.s-date-input__segment')
 
@@ -542,17 +547,13 @@ describe('слоты', () => {
 		const seen: IDateInput[] = []
 
 		await render(() =>
-			h(
-				DateInput,
-				{ locale: 'ru-RU' },
-				{
-					trailing: ({ ctrl }: { ctrl: IDateInput }) => {
-						seen.push(ctrl)
+			h(DateInput, null, {
+				trailing: ({ ctrl }: { ctrl: IDateInput }) => {
+					seen.push(ctrl)
 
-						return h('button', { class: 's-test-calendar' }, 'Календарь')
-					},
+					return h('button', { class: 's-test-calendar' }, 'Календарь')
 				},
-			),
+			}),
 		)
 
 		expect(find('.s-date-input__trailing').querySelector('.s-test-calendar')).not.toBeNull()
@@ -580,7 +581,7 @@ describe('слоты', () => {
  */
 describe('кнопка очистки', () => {
 	it('без clearable кнопки нет, и обёртки без слотов тоже', async () => {
-		await render(() => h(DateInput, { locale: 'ru-RU', value: '2026-05-12' }))
+		await render(() => h(DateInput, { value: '2026-05-12' }))
 
 		expect(document.querySelector('.s-date-input__clear')).toBeNull()
 		expect(document.querySelector('.s-date-input__trailing')).toBeNull()
@@ -590,7 +591,7 @@ describe('кнопка очистки', () => {
 		await render(() =>
 			h(
 				DateInput,
-				{ locale: 'ru-RU', clearable: true, name: 'Дата' },
+				{ clearable: true, name: 'Дата' },
 				{ trailing: () => h('button', { class: 's-test-calendar' }, 'Календарь') },
 			),
 		)
@@ -611,7 +612,6 @@ describe('кнопка очистки', () => {
 
 		await render(() =>
 			h(DateInput, {
-				locale: 'ru-RU',
 				clearable: true,
 				value: date.value,
 				'onUpdate:value': (value: string | undefined) => {
@@ -658,7 +658,7 @@ describe('кнопка очистки', () => {
 		await render(() =>
 			h(
 				DateInput,
-				{ locale: 'ru-RU', value: '2026-05-12' },
+				{ value: '2026-05-12' },
 				{
 					clear: ({ clear }: { clear: () => void }) =>
 						h('button', { class: 's-test-clear', onClick: () => clear() }),

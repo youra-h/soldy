@@ -1,7 +1,7 @@
 import { TValueControl } from '../../base/value-control'
 import type { TDefaultValues } from '../../base/component'
-import { TAria } from '../../../common'
-import type { TAriaAttributes } from '../../../common'
+import { DEFAULT_TRANSLATIONS, TAria } from '../../../common'
+import type { TAriaAttributes, TTranslations } from '../../../common'
 import type { ITagsProps, TTagsEvents, ITags, TTagsValue, TTagsView, TTagsOverflow } from './types'
 
 /** Класс панели, в которую уезжают непоместившиеся теги. */
@@ -52,37 +52,25 @@ const PANEL_CLASS = 's-tags__panel'
  * значение уезжает в тему через `data-overflow`: раскладка ряда — её дело.
  * Знание «какие теги не поместились» ядро держит отдельно, в расширении
  * коллекции `overflow`: оно требует и владельца, и списка сразу.
+ *
+ * Имя кнопки «…» — из словаря (`translations`, раздел `tags`). Кнопки листания
+ * в `arrows` — ленты, и имена им лента берёт из своего словаря сама.
  */
 export class TTags extends TValueControl<TTagsValue, ITagsProps, TTagsEvents> implements ITags {
 	static override baseClass = 's-tags'
 
 	static defaultValues: typeof TValueControl.defaultValues &
-		TDefaultValues<
-			ITagsProps,
-			'closable' | 'overflow' | 'moreLabel',
-			'view' | 'prevLabel' | 'nextLabel'
-		> = {
+		TDefaultValues<ITagsProps, 'closable' | 'overflow', 'view'> = {
 		...TValueControl.defaultValues,
 		closable: false,
 		view: undefined,
 		overflow: 'wrap',
-		// Язык интерфейса библиотеке неизвестен, а оставить кнопку без имени
-		// нельзя: дефолт английский, как `closeLabel` у тега
-		moreLabel: 'More',
-		// А у кнопок листания дефолт держит лента: они её, и второй экземпляр
-		// тех же английских слов однажды разошёлся бы с первым. Ключ всё равно
-		// объявлен — им снятый пропом `undefined` возвращает ленту к своему
-		// (AGENTS.md, «Умолчание пропа — в декларации»)
-		prevLabel: undefined,
-		nextLabel: undefined,
 	}
 
 	protected _closable!: boolean
 	protected _view: TTagsView | undefined
 	protected _overflow!: TTagsOverflow
-	protected _moreLabel!: string
-	protected _prevLabel: string | undefined
-	protected _nextLabel: string | undefined
+	protected _translations: TTranslations = DEFAULT_TRANSLATIONS
 	protected _rowAria: TAria
 
 	/**
@@ -100,9 +88,6 @@ export class TTags extends TValueControl<TTagsValue, ITagsProps, TTagsEvents> im
 		const ctor = new.target as typeof TTags
 
 		this._closable = props.closable ?? ctor.defaultValues.closable
-		this._moreLabel = props.moreLabel ?? ctor.defaultValues.moreLabel
-		this._prevLabel = props.prevLabel ?? ctor.defaultValues.prevLabel
-		this._nextLabel = props.nextLabel ?? ctor.defaultValues.nextLabel
 
 		this._rowAria = new TAria()
 
@@ -149,49 +134,28 @@ export class TTags extends TValueControl<TTagsValue, ITagsProps, TTagsEvents> im
 		this.events.emit('change:overflow', value)
 	}
 
-	/** Имя кнопки «…» — той, что открывает панель с непоместившимися тегами. */
-	get moreLabel(): string {
-		return this._moreLabel
+	/**
+	 * Словарь строк библиотеки: набор читает из него имя кнопки «…». Та же
+	 * ссылка — ничего не меняет.
+	 */
+	get translations(): TTranslations {
+		return this._translations
 	}
 
-	set moreLabel(value: string) {
-		if (this._moreLabel === value) return
+	set translations(value: TTranslations) {
+		if (this._translations === value) return
 
-		this._moreLabel = value
-		this.events.emit('change:moreLabel', value)
+		this._translations = value
+		this.events.emit('change:translations', value)
 	}
 
 	/**
-	 * Имена кнопок листания — сквозь Tags в ленту.
-	 *
-	 * Своего умолчания здесь нет намеренно: кнопки принадлежат ленте, дефолты
-	 * держит она, и вторая копия тех же английских строк однажды разошлась бы
-	 * с первой. `undefined` — «не задавали»: лента остаётся при своём.
-	 *
-	 * Пропом, а не значением из `aria`: языка интерфейса библиотека не знает
-	 * (AGENTS.md, «Языка интерфейса библиотека не знает») — ровно та же
-	 * причина, по которой у Tags есть `moreLabel`.
+	 * Имя кнопки «…» — той, что открывает панель с непоместившимися тегами.
+	 * Выход, а не вход: строку даёт словарь, а разметка отдаёт её панели —
+	 * диалогу без имени скринридер объявил бы безымянный.
 	 */
-	get prevLabel(): string | undefined {
-		return this._prevLabel
-	}
-
-	set prevLabel(value: string | undefined) {
-		if (this._prevLabel === value) return
-
-		this._prevLabel = value
-		this.events.emit('change:prevLabel', value)
-	}
-
-	get nextLabel(): string | undefined {
-		return this._nextLabel
-	}
-
-	set nextLabel(value: string | undefined) {
-		if (this._nextLabel === value) return
-
-		this._nextLabel = value
-		this.events.emit('change:nextLabel', value)
+	get moreLabel(): string {
+		return this._translations.tags.more
 	}
 
 	/**
@@ -239,7 +203,7 @@ export class TTags extends TValueControl<TTagsValue, ITagsProps, TTagsEvents> im
 	 * «Часть или слот»). Тот же приём, что у `triggerAria` Popover.
 	 */
 	get moreAria(): TAriaAttributes {
-		return { 'aria-label': this._moreLabel }
+		return { 'aria-label': this.moreLabel }
 	}
 
 	/**
@@ -320,9 +284,6 @@ export class TTags extends TValueControl<TTagsValue, ITagsProps, TTagsEvents> im
 			closable: this._closable,
 			view: this._view,
 			overflow: this._overflow,
-			moreLabel: this._moreLabel,
-			prevLabel: this._prevLabel,
-			nextLabel: this._nextLabel,
 		} as ITagsProps
 	}
 }

@@ -18,6 +18,7 @@ import { defineComponent, h, nextTick, ref, type Ref, type VNode } from 'vue'
 import { Dialog, Drawer } from '@soldy-ui/vue'
 import { TDrawer } from '@soldy-ui/core'
 import type { IDrawerProps, TCloseEvent, TCloseReason } from '@soldy-ui/core'
+import { useTranslations } from '@soldy-ui/plugins'
 
 const nextFrame = () => new Promise((resolve) => requestAnimationFrame(resolve))
 
@@ -264,9 +265,11 @@ describe('закрытие пользователем', () => {
 		}
 	}
 
-	it('крестик — причина button, назван closeLabel, фокус возвращается', async () => {
+	it('крестик — причина button, назван словарём приложения, фокус возвращается', async () => {
+		useTranslations({ modal: { close: 'Закрыть' } })
+
 		const { reasons, ...listener } = recorder()
-		const shown = await render({ props: { closeLabel: 'Закрыть', ...listener } })
+		const shown = await render({ props: { ...listener } })
 
 		await open(shown)
 

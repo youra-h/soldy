@@ -4,12 +4,14 @@ import { useRoute } from 'vue-router'
 import { Select, Switch } from '@soldy-ui/vue'
 import { useTheme } from '../composables/useTheme'
 import { useIconPack } from '../composables/useIconPack'
+import { useLanguage } from '../composables/useLanguage'
 import { useMotionMode, type TMotionOffReason } from '../composables/useMotionMode'
 import { propertiesRoute, TESTS_ROUTE } from '../router'
 
 const { theme, dark, themes } = useTheme()
 const { pack, packs, apply } = useIconPack()
 const { mode, modes, offReason, choose } = useMotionMode()
+const { language, languages, choose: chooseLanguage } = useLanguage()
 
 /** Чем выключено движение — в плашке шапки. */
 const OFF_REASONS: Record<TMotionOffReason, string> = {
@@ -53,6 +55,18 @@ const counterpart = computed(() =>
 			<Select :value="mode" size="sm" @update:value="choose($event)">
 				<Select.Item
 					v-for="(label, value) in modes"
+					:key="value"
+					:value="value"
+					:text="label"
+				/>
+			</Select>
+		</div>
+
+		<div class="pg__control">
+			<span class="pg__control-label">Язык</span>
+			<Select :value="language" size="sm" @update:value="chooseLanguage($event)">
+				<Select.Item
+					v-for="(label, value) in languages"
 					:key="value"
 					:value="value"
 					:text="label"

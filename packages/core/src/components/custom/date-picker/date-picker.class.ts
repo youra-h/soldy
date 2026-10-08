@@ -1,7 +1,13 @@
 import { TInputControl } from '../../base/input-control'
 import type { TDefaultValues } from '../../base/component'
 import type { TSwipe, TSwipeSide } from '../../base/layer'
-import { DEFAULT_LOCALE, TAria, compareDates, parseDate } from '../../../common'
+import {
+	DEFAULT_LOCALE,
+	DEFAULT_TRANSLATIONS,
+	TAria,
+	compareDates,
+	parseDate,
+} from '../../../common'
 import { sameValue } from '../../../common/utility/same-value'
 import type {
 	TAriaAttributes,
@@ -9,6 +15,7 @@ import type {
 	TComponentSize,
 	TComponentVariant,
 	TDatasetAttributes,
+	TTranslations,
 	TValuePayload,
 	TWeekday,
 } from '../../../common'
@@ -57,7 +64,10 @@ const SIDES: readonly TDatePickerSide[] = ['calendar', 'fields']
  * `required` — полям, `weekStart` и `timeZone` — календарю, `name` — полю
  * одной даты, `startName` и `endName` — полям концов, режим — выбору
  * коллекции. Разметка эти значения не пробрасывает: второй путь к тем же
- * данным разошёлся бы с первым.
+ * данным разошёлся бы с первым. Словарь строк (`translations`) не уходит
+ * вниз: DatePicker читает из него только свой раздел — имена кнопки и концов
+ * диапазона, — а поля и календарь получают словарь от своих плагинов
+ * словаря, как поле Select.
  *
  * **Поле помечает ошибкой то, что не даст выбрать календарь**, и набранное не
  * прижимает: дату вне границ и недоступную, а конец диапазона — ещё и раньше
@@ -102,16 +112,7 @@ export class TDatePicker
 	static defaultValues: typeof TInputControl.defaultValues &
 		TDefaultValues<
 			IDatePickerProps,
-			| 'mode'
-			| 'open'
-			| 'closeOnSelect'
-			| 'locale'
-			| 'triggerLabel'
-			| 'startLabel'
-			| 'endLabel'
-			| 'startName'
-			| 'endName'
-			| 'swipe',
+			'mode' | 'open' | 'closeOnSelect' | 'locale' | 'startName' | 'endName' | 'swipe',
 			'min' | 'max' | 'unavailable' | 'weekStart' | 'timeZone'
 		> = {
 		...TInputControl.defaultValues,
@@ -125,11 +126,6 @@ export class TDatePicker
 		weekStart: undefined,
 		locale: DEFAULT_LOCALE,
 		timeZone: undefined,
-		// Дефолты английские: языка интерфейса библиотека не знает, а кнопка со
-		// значком и поле без подписи безымянны для скринридера
-		triggerLabel: 'Choose date',
-		startLabel: 'Start date',
-		endLabel: 'End date',
 		// Без имени, как `name`: поле без имени в форму не уходит
 		startName: '',
 		endName: '',
@@ -145,9 +141,7 @@ export class TDatePicker
 	protected _weekStart: TWeekday | undefined
 	protected _locale: string
 	protected _timeZone: string | undefined
-	protected _triggerLabel: string
-	protected _startLabel: string
-	protected _endLabel: string
+	protected _translations: TTranslations = DEFAULT_TRANSLATIONS
 	protected _startName: string
 	protected _endName: string
 	protected _swipe: TSwipe
@@ -189,9 +183,6 @@ export class TDatePicker
 		this._weekStart = props.weekStart ?? ctor.defaultValues.weekStart
 		this._locale = props.locale ?? ctor.defaultValues.locale
 		this._timeZone = props.timeZone ?? ctor.defaultValues.timeZone
-		this._triggerLabel = props.triggerLabel ?? ctor.defaultValues.triggerLabel
-		this._startLabel = props.startLabel ?? ctor.defaultValues.startLabel
-		this._endLabel = props.endLabel ?? ctor.defaultValues.endLabel
 		this._startName = props.startName ?? ctor.defaultValues.startName
 		this._endName = props.endName ?? ctor.defaultValues.endName
 		this._swipe = props.swipe ?? ctor.defaultValues.swipe
@@ -240,7 +231,6 @@ export class TDatePicker
 			this.events.emit('change:triggerAria', this._triggerAria.toObject()),
 		)
 		this._triggerAria.add('aria-haspopup', 'dialog')
-		this._triggerAria.add('aria-label', this._triggerLabel)
 
 		// Набор панели: диалог, модальный для клавиатуры и скринридера
 		this._panelAria = new TAria()
@@ -249,7 +239,8 @@ export class TDatePicker
 		)
 		this._panelAria.add('role', 'dialog')
 		this._panelAria.add('aria-modal', 'true')
-		this._panelAria.add('aria-label', this._triggerLabel)
+
+		this._syncTriggerName()
 
 		this._applyOpen(props.open ?? ctor.defaultValues.open)
 
@@ -445,42 +436,35 @@ export class TDatePicker
 		this.events.emit('change:timeZone', value)
 	}
 
-	/** Имя кнопки календаря — оно же имя панели, которую кнопка открывает. */
-	get triggerLabel(): string {
-		return this._triggerLabel
+	/**
+	 * Словарь строк библиотеки: DatePicker читает из него имя кнопки
+	 * календаря — оно же имя панели — и имена полей концов диапазона. Та же
+	 * ссылка — ничего не меняет; новый словарь переписывает имя в наборах
+	 * кнопки и панели раньше события.
+	 */
+	get translations(): TTranslations {
+		return this._translations
 	}
 
-	set triggerLabel(value: string) {
-		if (this._triggerLabel === value) return
+	set translations(value: TTranslations) {
+		if (this._translations === value) return
 
-		this._triggerLabel = value
-		this._triggerAria.add('aria-label', value)
-		this._panelAria.add('aria-label', value)
-		this.events.emit('change:triggerLabel', value)
+		this._translations = value
+		this._syncTriggerName()
+		this.events.emit('change:translations', value)
 	}
 
-	/** Имя поля начала диапазона: разметка отдаёт его полю как `aria_label`. */
+	/**
+	 * Имя поля начала диапазона — выход, а не вход: строку даёт словарь, а
+	 * разметка отдаёт её полю начала как `aria_label`.
+	 */
 	get startLabel(): string {
-		return this._startLabel
+		return this._translations.datePicker.start
 	}
 
-	set startLabel(value: string) {
-		if (this._startLabel === value) return
-
-		this._startLabel = value
-		this.events.emit('change:startLabel', value)
-	}
-
-	/** Имя поля конца диапазона. */
+	/** Имя поля конца диапазона — из словаря, как у начала. */
 	get endLabel(): string {
-		return this._endLabel
-	}
-
-	set endLabel(value: string) {
-		if (this._endLabel === value) return
-
-		this._endLabel = value
-		this.events.emit('change:endLabel', value)
+		return this._translations.datePicker.end
 	}
 
 	/**
@@ -639,9 +623,6 @@ export class TDatePicker
 			weekStart: this._weekStart,
 			locale: this._locale,
 			timeZone: this._timeZone,
-			triggerLabel: this._triggerLabel,
-			startLabel: this._startLabel,
-			endLabel: this._endLabel,
 			startName: this._startName,
 			endName: this._endName,
 			swipe: this._swipe,
@@ -678,6 +659,17 @@ export class TDatePicker
 	/** Открывать нечего — открытая панель закрывается, а не остаётся висеть. */
 	protected _syncOpenable(): void {
 		if (!this.openable && this._open) this.open = false
+	}
+
+	/**
+	 * Имя кнопки календаря из словаря — в наборы кнопки и панели: панель
+	 * называется так же, как кнопка, которая её открывает.
+	 */
+	protected _syncTriggerName(): void {
+		const name = this._translations.datePicker.trigger
+
+		this._triggerAria.add('aria-label', name)
+		this._panelAria.add('aria-label', name)
 	}
 
 	protected _setSwiping(value: boolean): void {

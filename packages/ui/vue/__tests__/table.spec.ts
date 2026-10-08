@@ -23,6 +23,7 @@ import type {
 	TTableColumnSource,
 	TTableRecord,
 } from '@soldy-ui/core'
+import { useTranslations } from '@soldy-ui/plugins'
 
 const nextFrame = () => new Promise((resolve) => requestAnimationFrame(resolve))
 
@@ -473,15 +474,13 @@ describe('имена чекбоксов', () => {
 		expect(findAll('th[scope="row"]')).toEqual([])
 	})
 
-	it('чекбокс шапки — имя из пропа таблицы, по умолчанию английское', async () => {
+	it('чекбокс шапки — имя из словаря приложения, по умолчанию английское', async () => {
 		await render(() => h(Table, { engine: engineOf('multiple') }))
 
 		expect(checkBoxInput('.s-table__select').getAttribute('aria-label')).toBe('Select all')
 
-		wrapper?.unmount()
-		await render(() =>
-			h(Table, { engine: engineOf('multiple'), selectAllLabel: 'Выбрать все' }),
-		)
+		useTranslations({ table: { selectAll: 'Выбрать все' } })
+		await nextTick()
 
 		expect(checkBoxInput('.s-table__select').getAttribute('aria-label')).toBe('Выбрать все')
 	})

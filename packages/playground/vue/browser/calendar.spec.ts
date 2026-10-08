@@ -25,6 +25,7 @@ import { defineComponent, h, nextTick } from 'vue'
 import { Button, Calendar } from '@soldy-ui/vue'
 import { createEngineCalendar } from '@soldy-ui/core'
 import type { TSwipe } from '@soldy-ui/core'
+import { useLocale } from '@soldy-ui/plugins'
 import { COMPONENT_SIZES } from '@soldy-ui/playground-shared'
 
 import { find, lightness, outlined, pixel, settled, style, systemColor } from './colors'
@@ -782,7 +783,9 @@ describe('выбор месяца и года', () => {
 	it.each(['sm', 'normal', 'xl'] as const)(
 		'size %s: месяцы — 4×3 ровными ячейками с зазором, подпись по центру, шапка над списком',
 		async (size) => {
-			await show({ months: ['2026-09-01'], locale: 'ru-RU', size })
+			useLocale('ru-RU')
+
+			await show({ months: ['2026-09-01'], size })
 			await open()
 
 			expectGrid()
@@ -828,7 +831,9 @@ describe('выбор месяца и года', () => {
 	it.each(COMPONENT_SIZES)(
 		'size %s: годы — так же ровной сеткой 4×3, подписи th-TH с эрой переносятся, а не режутся',
 		async (size) => {
-			await show({ months: ['2026-09-01'], locale: 'th-TH', size })
+			useLocale('th-TH')
+
+			await show({ months: ['2026-09-01'], size })
 			await open()
 
 			const january = options()[0]?.textContent
@@ -864,7 +869,9 @@ describe('выбор месяца и года', () => {
 	it.each(COMPONENT_SIZES)(
 		'size %s: месяцы vi-VN в несколько слов переносятся между словами, а не режутся',
 		async (size) => {
-			await show({ months: ['2026-09-01'], locale: 'vi-VN', size })
+			useLocale('vi-VN')
+
+			await show({ months: ['2026-09-01'], size })
 			await open()
 
 			expectGrid()
@@ -910,7 +917,9 @@ describe('выбор месяца и года', () => {
 		it.each(COMPONENT_SIZES)(
 			'size %s: в своей плитке — целые по центру, шире плитки — многоточием',
 			async (size) => {
-				await show({ months: ['2026-09-01'], locale, size })
+				useLocale(locale)
+
+				await show({ months: ['2026-09-01'], size })
 				await open()
 
 				for (const option of options()) {
@@ -950,7 +959,9 @@ describe('выбор месяца и года', () => {
 		it.each(COMPONENT_SIZES)(
 			'size %s: имя дня — в своей колонке, под открытой панелью — под карточкой',
 			async (size) => {
-				await show({ months: ['2026-09-01'], locale, size })
+				useLocale(locale)
+
+				await show({ months: ['2026-09-01'], size })
 
 				const weekdays = findAll('.s-calendar__weekday')
 

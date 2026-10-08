@@ -8,6 +8,7 @@
 
 import { describe, it, expect } from 'vitest'
 import {
+	DEFAULT_TRANSLATIONS,
 	TAria,
 	TButton,
 	TControl,
@@ -585,10 +586,15 @@ describe('TTabsItem.closeAria · имя кнопки закрытия', () => {
 		expect(new TTabsItem({ closable: true }).closeAria['aria-label']).toBe('Close')
 	})
 
-	it('слово переопределяется — язык интерфейса решает потребитель', () => {
-		const item = new TTabsItem({ text: 'Почта', closeLabel: 'Закрыть' })
+	it('строку задаёт словарь приложения — и порядок слов в ней тоже', () => {
+		const item = new TTabsItem({ text: 'Почта' })
 
-		expect(item.closeAria['aria-label']).toBe('Закрыть Почта')
+		item.translations = {
+			...DEFAULT_TRANSLATIONS,
+			tabs: { close: (name) => `Закрыть вкладку «${name}»` },
+		}
+
+		expect(item.closeAria['aria-label']).toBe('Закрыть вкладку «Почта»')
 	})
 
 	it('следует за текстом таба', () => {

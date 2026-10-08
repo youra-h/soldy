@@ -16,6 +16,7 @@ import { mount } from '@vue/test-utils'
 import { nextTick } from 'vue'
 import { TTags, createEngineTags } from '@soldy-ui/core'
 import type { ITagsProps, TTagsCollection, TTagsOverflow } from '@soldy-ui/core'
+import { useTranslations } from '@soldy-ui/plugins'
 import { Tags } from '@soldy-ui/vue'
 import * as material from '@soldy-ui/icons-material'
 
@@ -155,11 +156,10 @@ describe('режим arrows', () => {
 	})
 
 	/**
-	 * Кнопки принадлежат ленте, и английские умолчания держит она: своих строк
-	 * у Tags нет, а незаданный проп доезжает `undefined` и её дефолт не
-	 * перетирает.
+	 * Кнопки принадлежат ленте, и имена ей даёт её же словарь: сквозь Tags
+	 * они не идут, своих строк у Tags для них нет.
 	 */
-	it('имена кнопок не заданы — остаются умолчания ленты', async () => {
+	it('имена кнопок — английские умолчания ленты', async () => {
 		await mountTags('arrows')
 
 		expect(document.querySelector('.s-scroller__prev')?.getAttribute('aria-label')).toBe(
@@ -170,8 +170,10 @@ describe('режим arrows', () => {
 		)
 	})
 
-	it('заданные Tags имена доезжают до кнопок и обновляются', async () => {
-		const { ctrl } = await mountTags('arrows', { prevLabel: 'Назад', nextLabel: 'Вперёд' })
+	it('словарь приложения доезжает до кнопок ленты и обновляет их на лету', async () => {
+		useTranslations({ scroller: { prev: 'Назад', next: 'Вперёд' } })
+
+		await mountTags('arrows')
 
 		expect(document.querySelector('.s-scroller__prev')?.getAttribute('aria-label')).toBe(
 			'Назад',
@@ -180,7 +182,7 @@ describe('режим arrows', () => {
 			'Вперёд',
 		)
 
-		ctrl.prevLabel = 'К началу'
+		useTranslations({ scroller: { prev: 'К началу' } })
 		await nextTick()
 
 		expect(document.querySelector('.s-scroller__prev')?.getAttribute('aria-label')).toBe(
@@ -249,16 +251,17 @@ describe('режим popover', () => {
 		)
 	})
 
-	it('кнопка «…» несёт связку с панелью и своё имя', async () => {
-		const { ctrl, engine } = await mountTags('popover')
+	it('кнопка «…» несёт связку с панелью и своё имя — из словаря, как и панель', async () => {
+		const { engine } = await mountTags('popover')
 
 		engine.extensions.overflow.notifyFit(1)
-		ctrl.moreLabel = 'Ещё'
+		useTranslations({ tags: { more: 'Ещё' } })
 		await nextTick()
 
 		const button = more()
 
 		expect(button?.getAttribute('aria-label')).toBe('Ещё')
+		expect(document.querySelector('.s-popover__panel')?.getAttribute('aria-label')).toBe('Ещё')
 		expect(button?.getAttribute('aria-haspopup')).toBe('dialog')
 		expect(button?.getAttribute('aria-expanded')).toBe('false')
 		expect(button?.getAttribute('aria-controls')).toBeTruthy()

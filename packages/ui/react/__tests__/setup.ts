@@ -8,6 +8,8 @@
 
 import { afterEach, beforeEach, expect } from 'vitest'
 import { format } from 'node:util'
+import { DEFAULT_LOCALE } from '@soldy-ui/core'
+import { useLocale, useTranslations } from '@soldy-ui/plugins'
 import { setIcons } from '@soldy-ui/setup'
 import * as material from '@soldy-ui/icons-material'
 
@@ -112,4 +114,19 @@ afterEach(() => {
 	for (const undo of restore.splice(0)) undo()
 
 	expect(messages, 'в консоль ушли ошибки или предупреждения').toEqual([])
+})
+
+/**
+ * Язык и словарь библиотеки задаёт приложение (`useLocale`, `useTranslations`),
+ * и они одни на процесс: тест, который их задал, следующему их не оставляет.
+ *
+ * Хук объявлен после сторожа и потому идёт раньше него (`'stack'`), но после
+ * хуков спека и `mount.ts`: корни к этому времени размонтированы, и смена
+ * словаря не трогает живой компонент мимо `act`. Тот, что остался бы, сторож
+ * увидел бы предупреждением React.
+ */
+
+afterEach(() => {
+	useLocale(DEFAULT_LOCALE)
+	useTranslations()
 })

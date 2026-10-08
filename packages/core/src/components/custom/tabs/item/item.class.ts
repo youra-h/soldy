@@ -1,7 +1,7 @@
 import { TValueControl } from '../../../base/value-control'
 import type { TDefaultValues } from '../../../base/component'
-import { TChangeEvent } from '../../../../common'
-import type { TAriaAttributes, TEventSink } from '../../../../common'
+import { DEFAULT_TRANSLATIONS, TChangeEvent } from '../../../../common'
+import type { TAriaAttributes, TEventSink, TTranslations } from '../../../../common'
 import type { ITabsItem, ITabsItemProps, TTabsItemEvents } from './types'
 
 /**
@@ -19,16 +19,15 @@ export default class TTabsItem<
 	static override baseClass = 's-tabs-item'
 
 	static defaultValues: typeof TValueControl.defaultValues &
-		TDefaultValues<ITabsItemProps, 'text' | 'closeLabel', 'closable'> = {
+		TDefaultValues<ITabsItemProps, 'text', 'closable'> = {
 		...TValueControl.defaultValues,
 		text: '',
 		value: '',
 		closable: undefined,
-		closeLabel: 'Close',
 		tag: 'div',
 	}
 
-	protected _closeLabel!: string
+	protected _translations: TTranslations = DEFAULT_TRANSLATIONS
 
 	protected _text: string
 	protected _closable: boolean | undefined
@@ -40,8 +39,6 @@ export default class TTabsItem<
 
 		// Type assertion: TProps extends ITabsItemProps, поэтому props содержит text и closable
 		const customProps = props as Partial<ITabsItemProps>
-
-		this._closeLabel = customProps.closeLabel ?? ctor.defaultValues.closeLabel
 
 		this._text = customProps.text ?? ctor.defaultValues.text
 
@@ -123,19 +120,18 @@ export default class TTabsItem<
 	}
 
 	/**
-	 * Слово для кнопки закрытия. Дефолт английский, как и остальные
-	 * идентификаторы в библиотеке: язык интерфейса ядру неизвестен, а
-	 * промолчать нельзя — кнопка останется без имени.
+	 * Словарь строк библиотеки: таб читает из него имя кнопки закрытия. Та же
+	 * ссылка — ничего не меняет.
 	 */
-	get closeLabel(): string {
-		return this._closeLabel
+	get translations(): TTranslations {
+		return this._translations
 	}
 
-	set closeLabel(value: string) {
-		if (this._closeLabel === value) return
+	set translations(value: TTranslations) {
+		if (this._translations === value) return
 
-		this._closeLabel = value
-		this._sink.emit('change:closeLabel', value)
+		this._translations = value
+		this._sink.emit('change:translations', value)
 	}
 
 	/**
@@ -144,7 +140,9 @@ export default class TTabsItem<
 	 * Без текста все кнопки закрытия в наборе называются одинаково, и по
 	 * списку элементов скринридера («Close, кнопка» пять раз подряд) выбрать
 	 * нужную невозможно. Это и есть та накопленная практика, ради которой
-	 * имя вообще считается здесь, а не пишется в шаблоне.
+	 * имя вообще считается здесь, а не пишется в шаблоне. Как имя складывается
+	 * с текстом, решает строка словаря (раздел `tabs`): порядок слов у каждого
+	 * языка свой.
 	 *
 	 * Отдельный набор, а не часть `aria`: `aria` описывает сам таб, а это —
 	 * кнопка рядом с ним. Один элемент — один набор.
@@ -154,10 +152,8 @@ export default class TTabsItem<
 	 * табе (`TTabsKeyboardPlugin`). Мышью кнопка нажимается как раньше.
 	 */
 	get closeAria(): TAriaAttributes {
-		const text = this.text.trim()
-
 		return {
-			'aria-label': text ? `${this._closeLabel} ${text}` : this._closeLabel,
+			'aria-label': this._translations.tabs.close(this.text.trim()),
 			tabindex: '-1',
 		}
 	}
@@ -167,7 +163,6 @@ export default class TTabsItem<
 			...super.getProps(),
 			text: this.text,
 			closable: this.closable,
-			closeLabel: this._closeLabel,
 		} as TProps
 	}
 }

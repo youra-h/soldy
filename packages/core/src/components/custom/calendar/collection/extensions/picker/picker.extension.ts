@@ -63,7 +63,7 @@ type TPlace = {
  * месяцы, выбор месяца показывает его в сетке и закрывает панель.
  *
  * Расширение коллекции, а не разметка: панели нужны и владелец — локаль,
- * границы, выключенность, имена стрелок, — и вид — месяц сетки и
+ * границы, выключенность, словарь с именами стрелок, — и вид — месяц сетки и
  * `showMonth`. Связки «выбрали месяц → показать и закрыть» и «выбрали год →
  * снова месяцы» решаются здесь один раз, а не в разметке каждого адаптера.
  *
@@ -118,11 +118,8 @@ export class TCalendarPickerExtension
 			scope.on(owner.events, 'change:min', () => this._refresh())
 			scope.on(owner.events, 'change:max', () => this._refresh())
 
-			// Имена стрелок — только выход
-			scope.on(owner.events, 'change:prevYearLabel', () => this._notify())
-			scope.on(owner.events, 'change:nextYearLabel', () => this._notify())
-			scope.on(owner.events, 'change:prevYearsLabel', () => this._notify())
-			scope.on(owner.events, 'change:nextYearsLabel', () => this._notify())
+			// Имена стрелок — из словаря календаря, и это только выход
+			scope.on(owner.events, 'change:translations', () => this._notify())
 
 			// Выключенный календарь выбирать не даёт: заголовок выключен, а
 			// открытая панель закрывается
@@ -374,6 +371,7 @@ export class TCalendarPickerExtension
 	/** Выход места — снимок, новые объекты на каждое чтение. */
 	private _snapshot(owner: ICalendar, place: TPlace): TCalendarPicker {
 		const locale = calendarLocale(owner.locale)
+		const names = owner.translations.calendar
 		const bounds = this._yearBounds(owner)
 		const months = place.level === 'months'
 		const first = months ? place.year : place.page
@@ -392,8 +390,8 @@ export class TCalendarPickerExtension
 					),
 			headingAria: place.sets.heading.toObject(),
 			labelledBy: place.sets.heading.get('id'),
-			prevAria: label(months ? owner.prevYearLabel : owner.prevYearsLabel),
-			nextAria: label(months ? owner.nextYearLabel : owner.nextYearsLabel),
+			prevAria: label(months ? names.prevYear : names.prevYears),
+			nextAria: label(months ? names.nextYear : names.nextYears),
 			prevDisabled: first - 1 < bounds.low,
 			nextDisabled: last + 1 > bounds.high,
 		}

@@ -1,11 +1,11 @@
 /**
  * Дескриптор DateInput (TDateInput).
  *
- * Наследует `FieldDescriptor` (кнопка очистки — clearable, clearLabel,
- * clearAria, слот `clear` — поверх value, name, readonly, required, id,
- * disabled, size, variant, ...) и добавляет границы и недоступные дни, локаль
- * формата, вид поля — дата или дата со временем — и точность времени: до
- * минуты или до секунды.
+ * Наследует `FieldDescriptor` (кнопка очистки — clearable, clearAria, слот
+ * `clear` и словарь — поверх value, name, readonly, required, id, disabled,
+ * size, variant, ...) и добавляет границы и недоступные дни, вид поля — дата
+ * или дата со временем — и точность времени: до минуты или до секунды. Язык
+ * формата задаёт приложение на всю библиотеку: его пишет плагин языка.
  * Значение вводится по частям в формате локали, а всё оно выделяется,
  * копируется и удаляется, как текст: на компьютере части нередактируемые, их
  * клавиши, указатель и буфер обмена переводят в команды ядра плагины поля.
@@ -26,6 +26,7 @@ import {
 	DateInputKeyboardPluginDescriptor,
 	DateInputPointerPluginDescriptor,
 	DateInputTouchPluginDescriptor,
+	LocalePluginDescriptor,
 } from '../plugins'
 import { FieldDescriptor } from './field.descriptor'
 
@@ -67,7 +68,11 @@ export const DateInputDescriptor = defineDescriptor(() =>
 				 * границ. Зовётся без якоря.
 				 */
 				unavailable: { type: Function, triggers: ['change:unavailable'] },
-				locale: { type: String, triggers: ['change:locale'] },
+				/**
+				 * Язык формата — не вход: его задаёт приложение на всю библиотеку,
+				 * и пишет плагин языка.
+				 */
+				locale: { type: String, protected: true, triggers: ['change:locale'] },
 				/** `date` — дата, `datetime` — ещё час, минута и период суток по циклу локали. */
 				kind: { type: String, triggers: ['change:kind'] },
 				/** `minute` — время до минуты, `second` — ещё секунда. У поля даты ничего не меняет. */
@@ -106,6 +111,8 @@ export const DateInputDescriptor = defineDescriptor(() =>
 		},
 
 		plugins: [
+			// Язык приложения — до поведения частей: формат с первой отрисовки
+			LocalePluginDescriptor,
 			// Клавиши частей и DOM-фокус за частью под фокусом ядра
 			DateInputKeyboardPluginDescriptor,
 			// Нажатие мимо частей и контекстное меню над рядом

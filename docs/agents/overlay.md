@@ -57,8 +57,9 @@
 - **`TModalLayer`** (`core/src/components/base/modal-layer/`) — общая база
   модального окна **`TDialog`** и выезжающей панели **`TDrawer`**: всё, что
   следует из модальности, один раз — `role="dialog"`, `aria-modal`, имя от
-  заголовка (`titleAria`), кнопка закрытия (`closable`, `closeLabel`,
-  `closeAria`), `dismissible`, запрос закрытия с `close:before`, размер
+  заголовка (`titleAria`), кнопка закрытия (`closable`, `closeAria` — имя из
+  словаря приложения, раздел `modal`), `dismissible`, запрос закрытия с
+  `close:before`, размер
   (`width`/`height`) и номер слоя с открытостью у подложки
   (`backdropDataset`): у панели `data-open` от слоя, а у подложки экземпляра
   нет. По `data-open` панели и подложки окно проявляется и гаснет, а панель

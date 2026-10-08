@@ -53,14 +53,15 @@ import type {
  * объявляет скринридеру. Этим владеет отдельный инстанс `TInput` (`field`):
  * Select создаёт его один раз и синхронизирует с ним общие свойства
  * (`disabled`, `size`, `variant`, `readonly`, `required`, `name`, `id`,
- * `clearable`, `clearLabel`). Второго значения поля рядом с этим не заводим —
- * единственный держатель текста, плейсхолдера и ARIA поля это и есть `field`.
+ * `clearable`). Второго значения поля рядом с этим не заводим — единственный
+ * держатель текста, плейсхолдера и ARIA поля это и есть `field`.
  *
- * **Кнопку очистки рисует поле**, а не Select: `clearable` и `clearLabel` —
- * входы Select, которые уходят полю, а её имя (`clearAria`) и команда
- * (`clear`) — у поля. Очистку поля Select слышит событием `clear` поля: выбор
- * снимает `TSelectExtension`, одним путём и у встроенной кнопки, и у своей в
- * слоте `clear`.
+ * **Кнопку очистки рисует поле**, а не Select: `clearable` — вход Select,
+ * который уходит полю, а имя кнопки (`clearAria`) и команда (`clear`) — у
+ * поля. Имя поле берёт из своего словаря, который пишет ему его же плагин
+ * словаря, — через Select строки не идут. Очистку поля Select слышит событием
+ * `clear` поля: выбор снимает `TSelectExtension`, одним путём и у встроенной
+ * кнопки, и у своей в слоте `clear`.
  *
  * **Жест** (`swipe`, по умолчанию выключен) — смахнуть панель, чтобы закрыть:
  * Select — смахиваемый слой (`ISwipeable`), тянет его `TSwipePlugin`, общий с
@@ -88,7 +89,6 @@ export class TSelect<
 			| 'placeholder'
 			| 'closeOnSelect'
 			| 'clearable'
-			| 'clearLabel'
 			| 'editable'
 			| 'editableMode'
 			| 'removeOnBackspace'
@@ -100,9 +100,8 @@ export class TSelect<
 		open: false,
 		placeholder: '',
 		closeOnSelect: true,
-		// Кнопку рисует поле: умолчания — его, второй копии не заводим
+		// Кнопку рисует поле: умолчание — его, второй копии не заводим
 		clearable: TInput.defaultValues.clearable,
-		clearLabel: TInput.defaultValues.clearLabel,
 		editable: false,
 		editableMode: 'search',
 		removeOnBackspace: false,
@@ -119,7 +118,6 @@ export class TSelect<
 	protected _placeholder!: string
 	protected _closeOnSelect!: boolean
 	protected _clearable!: boolean
-	protected _clearLabel!: string
 	protected _maxRows!: number
 	protected _contentFit!: TListContentFit
 	protected _scrollBehavior!: TScrollBehavior
@@ -139,10 +137,9 @@ export class TSelect<
 		const ctor = new.target as typeof TSelect
 		const own = props as Partial<ISelectProps>
 
-		// Кнопку очистки рисует поле: свои `clearable` и `clearLabel` Select
-		// отдаёт ему при создании и при каждой смене, как `name` и `size`
+		// Кнопку очистки рисует поле: свой `clearable` Select отдаёт ему при
+		// создании и при каждой смене, как `name` и `size`
 		this._clearable = own.clearable ?? ctor.defaultValues.clearable
-		this._clearLabel = own.clearLabel ?? ctor.defaultValues.clearLabel
 
 		// Поле — экземпляр `TInput`, которым владеет Select, а не второе
 		// значение рядом со своим `value`. Шаблон передаёт его целиком через
@@ -166,7 +163,6 @@ export class TSelect<
 			name: this.name,
 			id: this.id,
 			clearable: this._clearable,
-			clearLabel: this._clearLabel,
 		})
 
 		this._placeholder = own.placeholder ?? ctor.defaultValues.placeholder
@@ -225,7 +221,6 @@ export class TSelect<
 		this.events.on('change:name', (value: string) => (this._field.name = value))
 		this.events.on('change:id', (value: string | undefined) => (this._field.id = value))
 		this.events.on('change:clearable', (value: boolean) => (this._field.clearable = value))
-		this.events.on('change:clearLabel', (value: string) => (this._field.clearLabel = value))
 	}
 
 	/**
@@ -325,18 +320,6 @@ export class TSelect<
 
 		this._clearable = value
 		this._sink.emit('change:clearable', value)
-	}
-
-	/** Слово для кнопки очистки — уходит полю, имя кнопки собирает оно. */
-	get clearLabel(): string {
-		return this._clearLabel
-	}
-
-	set clearLabel(value: string) {
-		if (this._clearLabel === value) return
-
-		this._clearLabel = value
-		this._sink.emit('change:clearLabel', value)
 	}
 
 	/**
@@ -672,7 +655,6 @@ export class TSelect<
 			placeholder: this._placeholder,
 			closeOnSelect: this._closeOnSelect,
 			clearable: this._clearable,
-			clearLabel: this._clearLabel,
 			editable: this._editable,
 			editableMode: this._editableMode,
 			removeOnBackspace: this._removeOnBackspace,

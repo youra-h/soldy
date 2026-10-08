@@ -83,7 +83,8 @@ export default { ...SetupDatePicker, components: { Button, Calendar, DateInput, 
 			корне. Поля внутри без своей рамки (тема, по контексту), кнопка — после
 			поля конца, а не в его слоте: она выбирает весь период, а не конец.
 			Тире — для глаза, скринридеру оно не нужно: поля называют свои концы
-			сами — именами `startLabel` и `endLabel`.
+			сами — именами `startLabel` и `endLabel`, выходами DatePicker из
+			словаря.
 		-->
 		<template v-else>
 			<DateInput

@@ -4,7 +4,7 @@ import type {
 	TValueControlEvents,
 } from '../../base/value-control'
 import type { TCollectionStorageDriverEvents } from '../../base/collection'
-import type { TAriaAttributes } from '../../../common'
+import type { ITranslatable, TAriaAttributes, TTranslatableEvents } from '../../../common'
 import type { TButtonView } from '../button/types'
 import type { ITagsCollectionProps } from './collection/types'
 import type { ITagsItem, ITagsItemProps } from './item/types'
@@ -45,19 +45,14 @@ export type TTagsView = TButtonView
 export type TTagsOverflow = 'wrap' | 'scroll' | 'arrows' | 'popover'
 
 export type TTagsEvents = TValueControlEvents<TTagsValue> &
-	TCollectionStorageDriverEvents<ITagsItem> & {
+	TCollectionStorageDriverEvents<ITagsItem> &
+	TTranslatableEvents & {
 		/** change:closable */
 		'change:closable': (value: boolean) => void
 		/** change:view */
 		'change:view': (value: TTagsView | undefined) => void
 		/** change:overflow */
 		'change:overflow': (value: TTagsOverflow) => void
-		/** change:moreLabel */
-		'change:moreLabel': (value: string) => void
-		/** change:prevLabel */
-		'change:prevLabel': (value: string | undefined) => void
-		/** change:nextLabel */
-		'change:nextLabel': (value: string | undefined) => void
 		/** change:rowAria — набор атрибутов ряда изменился */
 		'change:rowAria': (value: TAriaAttributes) => void
 	}
@@ -70,18 +65,6 @@ export interface ITagsComponentProps extends IValueControlProps<TTagsValue> {
 	view?: TTagsView
 	/** Что делать с тегами, которым не хватило ширины ряда. По умолчанию `wrap` */
 	overflow?: TTagsOverflow
-	/** Имя кнопки «…», открывающей панель с непоместившимися тегами */
-	moreLabel?: string
-	/**
-	 * Имя кнопки «назад» у ленты в режиме `arrows`.
-	 *
-	 * Своего умолчания у Tags нет: кнопки принадлежат ленте, и английские
-	 * дефолты держит она. Не задано — доезжает `undefined`, и лента остаётся
-	 * при своём.
-	 */
-	prevLabel?: string
-	/** Имя кнопки «вперёд» у ленты в режиме `arrows`; умолчание держит лента */
-	nextLabel?: string
 }
 
 /** Полный набор пропсов Tags: компонентные + коллекция (engine, items, mode). */
@@ -91,19 +74,16 @@ export interface ITagsProps
 export interface ITags<
 	TProps extends ITagsComponentProps = ITagsProps,
 	TEvents extends TTagsEvents = TTagsEvents,
-> extends IValueControl<TTagsValue, TProps, TEvents> {
+>
+	extends IValueControl<TTagsValue, TProps, TEvents>, ITranslatable {
 	/** Разрешить закрытие тегов (глобально; тег переопределяет своим `closable`) */
 	closable: boolean
 	/** Внешний вид тегов — модификатор набора; тегам значение не доставляется */
 	view: TTagsView | undefined
 	/** Что делать с тегами, которым не хватило ширины ряда */
 	overflow: TTagsOverflow
-	/** Имя кнопки «…», открывающей панель с непоместившимися тегами */
-	moreLabel: string
-	/** Имя кнопки «назад» у ленты; `undefined` — умолчание держит лента */
-	prevLabel: string | undefined
-	/** Имя кнопки «вперёд» у ленты; `undefined` — умолчание держит лента */
-	nextLabel: string | undefined
+	/** Имя кнопки «…», открывающей панель с непоместившимися тегами, — из словаря */
+	readonly moreLabel: string
 	/** Ряд завёрнут в ленту со стрелками — то есть режим переполнения `arrows` */
 	readonly arrows: boolean
 	/**
@@ -116,7 +96,7 @@ export interface ITags<
 	 * решает режим переполнения, а не тот, кто пишет; `null` снимает атрибут
 	 */
 	setRowAria(name: string, value: string | null): void
-	/** Имя кнопки «…»: `moreLabel`. Своего экземпляра у кнопки нет */
+	/** Набор кнопки «…»: имя `moreLabel`. Своего экземпляра у кнопки нет */
 	readonly moreAria: TAriaAttributes
 	/** Классы ряда плюс свой класс панели: теги в ней — не потомки корня */
 	readonly panelClasses: string[]

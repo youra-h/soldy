@@ -1,19 +1,20 @@
 /**
  * Кнопка очистки Input — часть поля, а не владельца: её рисует сам Input,
- * Select только отдаёт полю `clearable` и `clearLabel`.
+ * Select только отдаёт полю `clearable`.
  *
  * Здесь — проводка: кнопка по `clearable`, первой в обёртке у конца поля,
- * перед содержимым `trailing`, с именем от ядра (`clearAria`); клик очищает
- * поле командой ядра `clear` и до предков не всплывает; своя кнопка — слот
- * `clear` с командой в scope. Что очистка делает с моделью, проверяет ядро
- * (`core/__tests__/input.spec.ts`), форму кнопки — браузерный прогон
- * (`playground/vue/browser/input.spec.ts`).
+ * перед содержимым `trailing`, с именем от ядра (`clearAria`, строка словаря
+ * приложения с именем поля); клик очищает поле командой ядра `clear` и до
+ * предков не всплывает; своя кнопка — слот `clear` с командой в scope. Что
+ * очистка делает с моделью, проверяет ядро (`core/__tests__/input.spec.ts`),
+ * форму кнопки — браузерный прогон (`playground/vue/browser/input.spec.ts`).
  */
 
 import { describe, it, expect, afterEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { h, nextTick, type VNode } from 'vue'
 import { TInput } from '@soldy-ui/core'
+import { useTranslations } from '@soldy-ui/plugins'
 import { Input } from '@soldy-ui/vue'
 
 let wrapper: ReturnType<typeof mount> | null = null
@@ -55,12 +56,13 @@ describe('Input · кнопка очистки', () => {
 		expect(input.classes()).toContain('s-input--clearable')
 	})
 
-	it('имя собрано с именем поля, слово задаёт clearLabel', async () => {
+	it('имя собрано с именем поля, строку задаёт словарь приложения', async () => {
 		const input = render({ clearable: true, name: 'Город' })
 
 		expect(input.find('.s-input__clear').attributes('aria-label')).toBe('Clear Город')
 
-		await input.setProps({ clearLabel: 'Очистить' })
+		useTranslations({ field: { clear: (name) => `Очистить ${name}` } })
+		await nextTick()
 
 		expect(input.find('.s-input__clear').attributes('aria-label')).toBe('Очистить Город')
 	})

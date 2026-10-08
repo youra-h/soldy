@@ -16,7 +16,14 @@
  */
 
 import { describe, it, expect, vi } from 'vitest'
-import { TTags, TTagsItem, TTagsCollectionFacade, TSelect, TSelectCollectionFacade } from '../src'
+import {
+	DEFAULT_TRANSLATIONS,
+	TTags,
+	TTagsItem,
+	TTagsCollectionFacade,
+	TSelect,
+	TSelectCollectionFacade,
+} from '../src'
 import type { IPopover, ITagsItem, ITagsProps } from '@soldy-ui/core'
 
 function createTags(texts: string[], props: Partial<ITagsProps> = {}) {
@@ -66,9 +73,19 @@ describe('свойство overflow', () => {
 		expect(changed).toHaveBeenCalledExactlyOnceWith('popover')
 	})
 
-	it('имя кнопки «…» — проп с английским дефолтом', () => {
-		expect(new TTags().moreAria).toEqual({ 'aria-label': 'More' })
-		expect(new TTags({ moreLabel: 'Ещё' }).moreAria).toEqual({ 'aria-label': 'Ещё' })
+	it('имя кнопки «…» — из словаря, по умолчанию английское', () => {
+		const tags = new TTags()
+
+		expect(tags.moreLabel).toBe('More')
+		expect(tags.moreAria).toEqual({ 'aria-label': 'More' })
+
+		tags.translations = {
+			...DEFAULT_TRANSLATIONS,
+			tags: { ...DEFAULT_TRANSLATIONS.tags, more: 'Ещё' },
+		}
+
+		expect(tags.moreLabel).toBe('Ещё')
+		expect(tags.moreAria).toEqual({ 'aria-label': 'Ещё' })
 	})
 
 	it('arrows — признак режима, а не сравнение строки в шести разметках', () => {
@@ -80,35 +97,6 @@ describe('свойство overflow', () => {
 
 		expect(tags.arrows).toBe(true)
 		expect(tags.dataset.get('data-overflow')).toBe('arrows')
-	})
-})
-
-/**
- * Кнопки листания принадлежат ленте, и английские умолчания держит она. У
- * Tags своих строк нет: второй экземпляр тех же слов однажды разошёлся бы с
- * первым, а `undefined` доезжает до ленты и оставляет её при своём.
- */
-describe('имена кнопок листания', () => {
-	it('не заданы — их нет вовсе, дефолт держит лента', () => {
-		const tags = new TTags()
-
-		expect(tags.prevLabel).toBeUndefined()
-		expect(tags.nextLabel).toBeUndefined()
-	})
-
-	it('заданные доезжают и сообщают об изменении', () => {
-		const tags = new TTags({ prevLabel: 'Назад', nextLabel: 'Вперёд' })
-		const changed = vi.fn()
-
-		expect(tags.prevLabel).toBe('Назад')
-		expect(tags.nextLabel).toBe('Вперёд')
-
-		tags.events.on('change:prevLabel', changed)
-
-		tags.prevLabel = 'К началу'
-		tags.prevLabel = 'К началу'
-
-		expect(changed).toHaveBeenCalledExactlyOnceWith('К началу')
 	})
 })
 

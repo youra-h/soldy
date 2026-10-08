@@ -3,7 +3,13 @@ import type {
 	IValueControlProps,
 	TValueControlEvents,
 } from '../../base/value-control'
-import type { TAriaAttributes, TCalendarDate, TWeekday } from '../../../common'
+import type {
+	ITranslatable,
+	TAriaAttributes,
+	TCalendarDate,
+	TTranslatableEvents,
+	TWeekday,
+} from '../../../common'
 import type { ICalendarCollectionProps } from './collection/types'
 
 /** Диапазон дат: начало и конец по возрастанию; одна дата — однодневный диапазон. */
@@ -41,34 +47,23 @@ export type TCalendarWeekday = {
 	long: string
 }
 
-export type TCalendarEvents = TValueControlEvents<TCalendarValue> & {
-	/** change:min */
-	'change:min': (value: TCalendarDate | undefined) => void
-	/** change:max */
-	'change:max': (value: TCalendarDate | undefined) => void
-	/** change:unavailable */
-	'change:unavailable': (value: TCalendarUnavailable | undefined) => void
-	/** change:weekStart */
-	'change:weekStart': (value: TWeekday | undefined) => void
-	/** change:locale */
-	'change:locale': (value: string) => void
-	/** change:timeZone */
-	'change:timeZone': (value: string | undefined) => void
-	/** Сменились показанные месяцы — записью, листанием или уходом фокуса */
-	'change:months': (value: TCalendarDate[] | undefined) => void
-	/** change:prevLabel */
-	'change:prevLabel': (value: string) => void
-	/** change:nextLabel */
-	'change:nextLabel': (value: string) => void
-	/** change:prevYearLabel */
-	'change:prevYearLabel': (value: string) => void
-	/** change:nextYearLabel */
-	'change:nextYearLabel': (value: string) => void
-	/** change:prevYearsLabel */
-	'change:prevYearsLabel': (value: string) => void
-	/** change:nextYearsLabel */
-	'change:nextYearsLabel': (value: string) => void
-}
+export type TCalendarEvents = TValueControlEvents<TCalendarValue> &
+	TTranslatableEvents & {
+		/** change:min */
+		'change:min': (value: TCalendarDate | undefined) => void
+		/** change:max */
+		'change:max': (value: TCalendarDate | undefined) => void
+		/** change:unavailable */
+		'change:unavailable': (value: TCalendarUnavailable | undefined) => void
+		/** change:weekStart */
+		'change:weekStart': (value: TWeekday | undefined) => void
+		/** change:locale */
+		'change:locale': (value: string) => void
+		/** change:timeZone */
+		'change:timeZone': (value: string | undefined) => void
+		/** Сменились показанные месяцы — записью, листанием или уходом фокуса */
+		'change:months': (value: TCalendarDate[] | undefined) => void
+	}
 
 /** Пропсы самого календаря (без коллекционной части). */
 export interface ICalendarComponentProps extends IValueControlProps<TCalendarValue> {
@@ -80,7 +75,10 @@ export interface ICalendarComponentProps extends IValueControlProps<TCalendarVal
 	unavailable?: TCalendarUnavailable
 	/** Первый день недели; не задан — по локали */
 	weekStart?: TWeekday
-	/** Локаль подписей и первого дня недели (BCP 47) */
+	/**
+	 * Локаль подписей и первого дня недели (BCP 47). В разметке её нет: язык
+	 * задаёт приложение на всю библиотеку, и пишет его плагин языка
+	 */
 	locale?: string
 	/** Часовой пояс «сегодня» (IANA); не задан — пояс среды */
 	timeZone?: string
@@ -90,24 +88,13 @@ export interface ICalendarComponentProps extends IValueControlProps<TCalendarVal
 	 * сетка на месяце фокуса
 	 */
 	months?: TCalendarDate[]
-	/** Имя кнопки «предыдущий месяц» для скринридера */
-	prevLabel?: string
-	/** Имя кнопки «следующий месяц» для скринридера */
-	nextLabel?: string
-	/** Имя стрелки панели выбора «предыдущий год» — на уровне месяцев */
-	prevYearLabel?: string
-	/** Имя стрелки панели выбора «следующий год» — на уровне месяцев */
-	nextYearLabel?: string
-	/** Имя стрелки панели выбора «предыдущие 12 лет» — на уровне лет */
-	prevYearsLabel?: string
-	/** Имя стрелки панели выбора «следующие 12 лет» — на уровне лет */
-	nextYearsLabel?: string
 }
 
 /** Полный набор пропсов календаря: свои и коллекционные (`mode`). */
 export interface ICalendarProps extends ICalendarComponentProps, ICalendarCollectionProps {}
 
-export interface ICalendar extends IValueControl<TCalendarValue, ICalendarProps, TCalendarEvents> {
+export interface ICalendar
+	extends IValueControl<TCalendarValue, ICalendarProps, TCalendarEvents>, ITranslatable {
 	/** Первый день, который можно выбрать */
 	min: TCalendarDate | undefined
 	/** Последний день, который можно выбрать */
@@ -122,23 +109,14 @@ export interface ICalendar extends IValueControl<TCalendarValue, ICalendarProps,
 	timeZone: string | undefined
 	/** Месяцы сеток — как заданы или как их показала коллекция */
 	months: TCalendarDate[] | undefined
-	/** Имя кнопки «предыдущий месяц» */
-	prevLabel: string
-	/** Имя кнопки «следующий месяц» */
-	nextLabel: string
-	/** Имя стрелки панели выбора «предыдущий год» */
-	prevYearLabel: string
-	/** Имя стрелки панели выбора «следующий год» */
-	nextYearLabel: string
-	/** Имя стрелки панели выбора «предыдущие 12 лет» */
-	prevYearsLabel: string
-	/** Имя стрелки панели выбора «следующие 12 лет» */
-	nextYearsLabel: string
 	/** Первый день недели: `weekStart`, а без него — по локали */
 	readonly firstDay: TWeekday
 	/** Дни недели — заголовки колонок, от первого дня недели */
 	readonly weekdays: TCalendarWeekday[]
-	/** Набор кнопки «предыдущий месяц»: её имя. Своего экземпляра у кнопки нет */
+	/**
+	 * Набор кнопки «предыдущий месяц»: её имя из словаря (раздел `calendar`).
+	 * Своего экземпляра у кнопки нет
+	 */
 	readonly prevAria: TAriaAttributes
 	/** Набор кнопки «следующий месяц» */
 	readonly nextAria: TAriaAttributes

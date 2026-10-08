@@ -13,6 +13,7 @@ import { mount } from '@vue/test-utils'
 import { defineComponent, h, nextTick, type VNode } from 'vue'
 import { Scroller } from '@soldy-ui/vue'
 import { TScroller } from '@soldy-ui/core'
+import { useTranslations } from '@soldy-ui/plugins'
 
 const nextFrame = () => new Promise((resolve) => requestAnimationFrame(resolve))
 
@@ -165,15 +166,15 @@ describe('вьюпорт', () => {
 })
 
 describe('имена кнопок', () => {
-	it('приходят из пропов и обновляются вместе с ними', async () => {
-		const ctrl = new TScroller({ prevLabel: 'Назад', nextLabel: 'Вперёд' })
+	it('приходят из словаря приложения и обновляются вместе с ним', async () => {
+		useTranslations({ scroller: { prev: 'Назад', next: 'Вперёд' } })
 
-		await render(() => h(Scroller, { ctrl }, { default: content }))
+		await render(() => h(Scroller, null, { default: content }))
 
 		expect(find('.s-scroller__prev').getAttribute('aria-label')).toBe('Назад')
 		expect(find('.s-scroller__next').getAttribute('aria-label')).toBe('Вперёд')
 
-		ctrl.prevLabel = 'К началу'
+		useTranslations({ scroller: { prev: 'К началу', next: 'Вперёд' } })
 		await nextTick()
 
 		expect(find('.s-scroller__prev').getAttribute('aria-label')).toBe('К началу')

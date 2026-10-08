@@ -29,7 +29,7 @@ export default class TDialog extends TModalLayer<IDialogProps, TDialogEvents> im
 	static defaultValues: typeof TModalLayer.defaultValues &
 		TDefaultValues<
 			IDialogProps,
-			'placement' | 'maximized' | 'maximizable' | 'maximizeLabel' | 'alert',
+			'placement' | 'maximized' | 'maximizable' | 'alert',
 			'offset'
 		> = {
 		...TModalLayer.defaultValues,
@@ -38,7 +38,6 @@ export default class TDialog extends TModalLayer<IDialogProps, TDialogEvents> im
 		offset: undefined,
 		maximized: false,
 		maximizable: false,
-		maximizeLabel: 'Maximize',
 		alert: false,
 	}
 
@@ -46,7 +45,6 @@ export default class TDialog extends TModalLayer<IDialogProps, TDialogEvents> im
 	protected _offset: number | string | undefined
 	protected _maximized!: boolean
 	protected _maximizable: boolean
-	protected _maximizeLabel: string
 	protected _alert!: boolean
 	protected _bodyAria: TAria
 
@@ -63,7 +61,6 @@ export default class TDialog extends TModalLayer<IDialogProps, TDialogEvents> im
 
 		this._offset = props.offset ?? ctor.defaultValues.offset
 		this._maximizable = props.maximizable ?? ctor.defaultValues.maximizable
-		this._maximizeLabel = props.maximizeLabel ?? ctor.defaultValues.maximizeLabel
 
 		this._applyAlert(props.alert ?? ctor.defaultValues.alert)
 		this._applyPlacement(props.placement ?? ctor.defaultValues.placement)
@@ -132,21 +129,6 @@ export default class TDialog extends TModalLayer<IDialogProps, TDialogEvents> im
 		this.events.emit('change:maximizable', value)
 	}
 
-	/**
-	 * Имя кнопки разворота. Одно на оба состояния: кнопка — переключатель, и
-	 * состояние она сообщает `aria-pressed`, а не сменой имени (APG, Button).
-	 */
-	get maximizeLabel(): string {
-		return this._maximizeLabel
-	}
-
-	set maximizeLabel(value: string) {
-		if (this._maximizeLabel === value) return
-
-		this._maximizeLabel = value
-		this.events.emit('change:maximizeLabel', value)
-	}
-
 	/** Окно — предупреждение: `role="alertdialog"`, описание — тело окна. */
 	get alert(): boolean {
 		return this._alert
@@ -168,10 +150,14 @@ export default class TDialog extends TModalLayer<IDialogProps, TDialogEvents> im
 		return this._bodyAria
 	}
 
-	/** Имя кнопки разворота и её состояние: нажата — окно развёрнуто. */
+	/**
+	 * Имя кнопки разворота и её состояние: нажата — окно развёрнуто. Имя из
+	 * словаря одно на оба состояния: кнопка — переключатель, и состояние она
+	 * сообщает `aria-pressed`, а не сменой имени (APG, Button).
+	 */
 	get maximizeAria(): TAriaAttributes {
 		return {
-			'aria-label': this._maximizeLabel,
+			'aria-label': this._translations.dialog.maximize,
 			'aria-pressed': this._maximized ? 'true' : 'false',
 		}
 	}
@@ -206,7 +192,6 @@ export default class TDialog extends TModalLayer<IDialogProps, TDialogEvents> im
 			offset: this._offset,
 			maximized: this._maximized,
 			maximizable: this._maximizable,
-			maximizeLabel: this._maximizeLabel,
 			alert: this._alert,
 		}
 	}

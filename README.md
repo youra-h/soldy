@@ -121,6 +121,22 @@ reduced-motion setting by default. An application that wants motion regardless, 
 mode for the whole library at its entry point: `useMotion('full')` or `useMotion('reduce')` from
 `@soldy-ui/plugins`.
 
+Language and the strings the library draws itself — names of buttons without text (close, scroll,
+clear) and of fields nothing else names — are set the same way, once for the whole library, the
+server included. The language goes to Intl (date labels, first day of the week, the date field
+format, table sorting), the strings are a dictionary laid over the English default; components
+pick up a change without remounting:
+
+```ts
+import { useLocale, useTranslations } from '@soldy-ui/plugins'
+
+useLocale('ru-RU')
+useTranslations({
+  modal: { close: 'Закрыть' },
+  tabs: { close: (name) => `Закрыть вкладку «${name}»` },
+})
+```
+
 ## Components
 
 The component set, as the playground shows it:

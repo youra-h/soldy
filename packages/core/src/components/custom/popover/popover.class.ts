@@ -1,8 +1,8 @@
 import { TComponentView } from '../../base/component-view'
 import type { TDefaultValues } from '../../base/component'
 import type { TSwipe, TSwipeSide } from '../../base/layer'
-import { TAria } from '../../../common'
-import type { TAriaAttributes, TDatasetAttributes } from '../../../common'
+import { DEFAULT_TRANSLATIONS, TAria } from '../../../common'
+import type { TAriaAttributes, TDatasetAttributes, TTranslations } from '../../../common'
 import type {
 	IPopover,
 	IPopoverProps,
@@ -40,6 +40,9 @@ import type {
  * Панель внутри контейнера прижата к краю (`edge`) и уходит к нему. Признак «тянут» (`swiping`) панель
  * получает набором `panelDataset`: корень поповера — не панель, и `dataset`
  * лежит на корне. Закрывает жест записью `open`, как Escape.
+ *
+ * Имя кнопки закрытия — из словаря (`translations`, раздел `popover`): строки
+ * библиотеки задаёт приложение, а компоненту словарь пишет плагин словаря.
  */
 export default class TPopover
 	extends TComponentView<IPopoverProps, TPopoverEvents>
@@ -50,21 +53,13 @@ export default class TPopover
 	static defaultValues: typeof TComponentView.defaultValues &
 		TDefaultValues<
 			IPopoverProps,
-			| 'open'
-			| 'closable'
-			| 'closeLabel'
-			| 'lazyMount'
-			| 'placement'
-			| 'contained'
-			| 'edge'
-			| 'swipe'
+			'open' | 'closable' | 'lazyMount' | 'placement' | 'contained' | 'edge' | 'swipe'
 		> = {
 		...TComponentView.defaultValues,
 		// Строчный корень: триггер встаёт и в строку текста, и в ряд тегов
 		tag: 'span',
 		open: false,
 		closable: true,
-		closeLabel: 'Close',
 		lazyMount: false,
 		placement: 'bottom-start',
 		contained: false,
@@ -75,7 +70,7 @@ export default class TPopover
 
 	protected _open!: boolean
 	protected _closable: boolean
-	protected _closeLabel: string
+	protected _translations: TTranslations = DEFAULT_TRANSLATIONS
 	protected _lazyMount: boolean
 	protected _placement: TPopoverPlacement
 	protected _contained: boolean
@@ -92,7 +87,6 @@ export default class TPopover
 		const ctor = new.target as typeof TPopover
 
 		this._closable = props.closable ?? ctor.defaultValues.closable
-		this._closeLabel = props.closeLabel ?? ctor.defaultValues.closeLabel
 		this._lazyMount = props.lazyMount ?? ctor.defaultValues.lazyMount
 		this._placement = props.placement ?? ctor.defaultValues.placement
 		this._contained = props.contained ?? ctor.defaultValues.contained
@@ -142,18 +136,18 @@ export default class TPopover
 	}
 
 	/**
-	 * Имя кнопки закрытия. Дефолт английский: язык интерфейса ядру неизвестен,
-	 * а оставить кнопку без имени нельзя.
+	 * Словарь строк библиотеки: поповер читает из него имя кнопки закрытия.
+	 * Та же ссылка — ничего не меняет.
 	 */
-	get closeLabel(): string {
-		return this._closeLabel
+	get translations(): TTranslations {
+		return this._translations
 	}
 
-	set closeLabel(value: string) {
-		if (this._closeLabel === value) return
+	set translations(value: TTranslations) {
+		if (this._translations === value) return
 
-		this._closeLabel = value
-		this.events.emit('change:closeLabel', value)
+		this._translations = value
+		this.events.emit('change:translations', value)
 	}
 
 	/**
@@ -341,7 +335,7 @@ export default class TPopover
 
 	/** Имя кнопки закрытия — соседней с содержимым, а не самой панели. */
 	get closeAria(): TAriaAttributes {
-		return { 'aria-label': this._closeLabel }
+		return { 'aria-label': this._translations.popover.close }
 	}
 
 	/**
@@ -379,7 +373,6 @@ export default class TPopover
 			...super.getProps(),
 			open: this._open,
 			closable: this._closable,
-			closeLabel: this._closeLabel,
 			lazyMount: this._lazyMount,
 			placement: this._placement,
 			contained: this._contained,

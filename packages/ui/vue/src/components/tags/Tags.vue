@@ -34,9 +34,8 @@ export default { ...SetupTags, components: { Button, Icon, Popover, Scroller, Ta
 				отрезаны от роли двумя обёртками. Набор пишет коллекция — здесь
 				только проводка.
 
-				Имена кнопок ленты идут сквозь: языка интерфейса библиотека не
-				знает. Не заданы — доезжает `undefined`, и лента остаётся при
-				своих английских умолчаниях.
+				Имена кнопок ленты сквозь Tags не идут: лента берёт их из своего
+				словаря, который ей пишет её же плагин словаря.
 
 				Панели в этом режиме нет: делить состав некому, и `fitted` равен
 				всему показанному.
@@ -47,8 +46,6 @@ export default { ...SetupTags, components: { Button, Icon, Popover, Scroller, Ta
 				:size="size"
 				:disabled="disabled"
 				:viewport-aria="rowAria"
-				:prev-label="prevLabel"
-				:next-label="nextLabel"
 			>
 				<TagsItem v-for="item in fitted" :key="item.uid" :ctrl="item">
 					<template #leading>

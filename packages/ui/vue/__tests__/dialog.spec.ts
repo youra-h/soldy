@@ -18,6 +18,7 @@ import { defineComponent, h, nextTick, ref, type Ref, type VNode } from 'vue'
 import { Dialog, Select, SelectItem } from '@soldy-ui/vue'
 import { TDialog } from '@soldy-ui/core'
 import type { IDialogProps, TCloseEvent, TCloseReason } from '@soldy-ui/core'
+import { useTranslations } from '@soldy-ui/plugins'
 import type { TDialogOffsetEvent } from '@soldy-ui/plugins'
 import * as material from '@soldy-ui/icons-material'
 
@@ -342,8 +343,10 @@ describe('отступ', () => {
 })
 
 describe('кнопки шапки', () => {
-	it('крестик назван closeLabel, closable: false его убирает из DOM', async () => {
-		await render({ props: { closeLabel: 'Закрыть' } })
+	it('крестик назван словарём приложения, closable: false его убирает из DOM', async () => {
+		useTranslations({ modal: { close: 'Закрыть' } })
+
+		await render()
 
 		expect(find('.s-dialog__close').getAttribute('aria-label')).toBe('Закрыть')
 
@@ -363,7 +366,9 @@ describe('кнопки шапки', () => {
 		wrapper?.unmount()
 		document.body.innerHTML = ''
 
-		await render({ props: { maximizable: true, maximizeLabel: 'Развернуть' } })
+		useTranslations({ dialog: { maximize: 'Развернуть' } })
+
+		await render({ props: { maximizable: true } })
 
 		const button = find('.s-dialog__maximize')
 

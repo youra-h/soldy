@@ -1,8 +1,14 @@
 import { TValueControl } from '../../base/value-control'
 import type { TDefaultValues } from '../../base/component'
-import { DEFAULT_LOCALE, calendarLocale, isWeekday, weekdayOf } from '../../../common'
+import {
+	DEFAULT_LOCALE,
+	DEFAULT_TRANSLATIONS,
+	calendarLocale,
+	isWeekday,
+	weekdayOf,
+} from '../../../common'
 import { sameValue } from '../../../common/utility/same-value'
-import type { TAriaAttributes, TCalendarDate, TWeekday } from '../../../common'
+import type { TAriaAttributes, TCalendarDate, TTranslations, TWeekday } from '../../../common'
 import type {
 	ICalendar,
 	ICalendarProps,
@@ -19,8 +25,10 @@ const WEEK: readonly number[] = [0, 1, 2, 3, 4, 5, 6]
  * Календарь — владелец коллекции дней.
  *
  * Сам он держит только то, что задаёт потребитель: значение, границы,
- * недоступные дни, локаль, пояс «сегодня», месяцы сеток и имена кнопок
- * листания. Всё, что календарь делает с днями, — коллекция и её расширения
+ * недоступные дни, пояс «сегодня» и месяцы сеток, — и то, что задаёт
+ * приложение на всю библиотеку: язык (`locale`) и словарь строк
+ * (`translations`, раздел `calendar` — имена кнопок листания и стрелок панели
+ * выбора). Всё, что календарь делает с днями, — коллекция и её расширения
  * (`collection/extensions`): `view` кладёт в неё дни показанных месяцев,
  * `selection` выбирает, `focus` ведёт фокус по сетке. Режим выбора (`mode`) —
  * свойство коллекции, как у ListBox.
@@ -40,13 +48,7 @@ export default class TCalendar
 	static defaultValues: typeof TValueControl.defaultValues &
 		TDefaultValues<
 			ICalendarProps,
-			| 'locale'
-			| 'prevLabel'
-			| 'nextLabel'
-			| 'prevYearLabel'
-			| 'nextYearLabel'
-			| 'prevYearsLabel'
-			| 'nextYearsLabel',
+			'locale',
 			'min' | 'max' | 'unavailable' | 'weekStart' | 'timeZone' | 'months'
 		> = {
 		...TValueControl.defaultValues,
@@ -58,15 +60,6 @@ export default class TCalendar
 		locale: DEFAULT_LOCALE,
 		timeZone: undefined,
 		months: undefined,
-		// Дефолты английские: языка интерфейса библиотека не знает, а кнопка
-		// со стрелкой без имени для скринридера безымянна
-		prevLabel: 'Previous month',
-		nextLabel: 'Next month',
-		// Стрелки панели выбора месяца и года — тоже кнопки без текста
-		prevYearLabel: 'Previous year',
-		nextYearLabel: 'Next year',
-		prevYearsLabel: 'Previous 12 years',
-		nextYearsLabel: 'Next 12 years',
 	}
 
 	protected _min: TCalendarDate | undefined
@@ -76,12 +69,7 @@ export default class TCalendar
 	protected _locale: string
 	protected _timeZone: string | undefined
 	protected _months: TCalendarDate[] | undefined
-	protected _prevLabel: string
-	protected _nextLabel: string
-	protected _prevYearLabel: string
-	protected _nextYearLabel: string
-	protected _prevYearsLabel: string
-	protected _nextYearsLabel: string
+	protected _translations: TTranslations = DEFAULT_TRANSLATIONS
 
 	constructor(props: Partial<ICalendarProps> = {}) {
 		const ctor = new.target as typeof TCalendar
@@ -97,12 +85,6 @@ export default class TCalendar
 		this._locale = props.locale ?? ctor.defaultValues.locale
 		this._timeZone = props.timeZone ?? ctor.defaultValues.timeZone
 		this._months = props.months ?? ctor.defaultValues.months
-		this._prevLabel = props.prevLabel ?? ctor.defaultValues.prevLabel
-		this._nextLabel = props.nextLabel ?? ctor.defaultValues.nextLabel
-		this._prevYearLabel = props.prevYearLabel ?? ctor.defaultValues.prevYearLabel
-		this._nextYearLabel = props.nextYearLabel ?? ctor.defaultValues.nextYearLabel
-		this._prevYearsLabel = props.prevYearsLabel ?? ctor.defaultValues.prevYearsLabel
-		this._nextYearsLabel = props.nextYearsLabel ?? ctor.defaultValues.nextYearsLabel
 	}
 
 	/** Невалидная строка границей не считается. */
@@ -192,79 +174,20 @@ export default class TCalendar
 		this.events.emit('change:months', value)
 	}
 
-	/** Имя кнопки «предыдущий месяц» для скринридера. */
-	get prevLabel(): string {
-		return this._prevLabel
-	}
-
-	set prevLabel(value: string) {
-		if (this._prevLabel === value) return
-
-		this._prevLabel = value
-		this.events.emit('change:prevLabel', value)
-	}
-
-	/** Имя кнопки «следующий месяц» для скринридера. */
-	get nextLabel(): string {
-		return this._nextLabel
-	}
-
-	set nextLabel(value: string) {
-		if (this._nextLabel === value) return
-
-		this._nextLabel = value
-		this.events.emit('change:nextLabel', value)
-	}
-
 	/**
-	 * Имя стрелки «предыдущий год» в панели выбора месяца и года — на уровне
-	 * месяцев. Набор стрелки по уровню панели собирает расширение коллекции.
+	 * Словарь строк библиотеки: календарь читает из него имена кнопок
+	 * листания, а расширение `picker` — стрелок панели выбора месяца и года. Та
+	 * же ссылка — ничего не меняет.
 	 */
-	get prevYearLabel(): string {
-		return this._prevYearLabel
+	get translations(): TTranslations {
+		return this._translations
 	}
 
-	set prevYearLabel(value: string) {
-		if (this._prevYearLabel === value) return
+	set translations(value: TTranslations) {
+		if (this._translations === value) return
 
-		this._prevYearLabel = value
-		this.events.emit('change:prevYearLabel', value)
-	}
-
-	/** Имя стрелки «следующий год» в панели выбора. */
-	get nextYearLabel(): string {
-		return this._nextYearLabel
-	}
-
-	set nextYearLabel(value: string) {
-		if (this._nextYearLabel === value) return
-
-		this._nextYearLabel = value
-		this.events.emit('change:nextYearLabel', value)
-	}
-
-	/** Имя стрелки «предыдущие 12 лет» в панели выбора — на уровне лет. */
-	get prevYearsLabel(): string {
-		return this._prevYearsLabel
-	}
-
-	set prevYearsLabel(value: string) {
-		if (this._prevYearsLabel === value) return
-
-		this._prevYearsLabel = value
-		this.events.emit('change:prevYearsLabel', value)
-	}
-
-	/** Имя стрелки «следующие 12 лет» в панели выбора. */
-	get nextYearsLabel(): string {
-		return this._nextYearsLabel
-	}
-
-	set nextYearsLabel(value: string) {
-		if (this._nextYearsLabel === value) return
-
-		this._nextYearsLabel = value
-		this.events.emit('change:nextYearsLabel', value)
+		this._translations = value
+		this.events.emit('change:translations', value)
 	}
 
 	/**
@@ -272,12 +195,12 @@ export default class TCalendar
 	 * отдаётся значением, как у кнопок ленты Scroller.
 	 */
 	get prevAria(): TAriaAttributes {
-		return { 'aria-label': this._prevLabel }
+		return { 'aria-label': this._translations.calendar.prevMonth }
 	}
 
 	/** Имя кнопки «следующий месяц». */
 	get nextAria(): TAriaAttributes {
-		return { 'aria-label': this._nextLabel }
+		return { 'aria-label': this._translations.calendar.nextMonth }
 	}
 
 	get firstDay(): TWeekday {
@@ -319,12 +242,6 @@ export default class TCalendar
 			locale: this._locale,
 			timeZone: this._timeZone,
 			months: this._months,
-			prevLabel: this._prevLabel,
-			nextLabel: this._nextLabel,
-			prevYearLabel: this._prevYearLabel,
-			nextYearLabel: this._nextYearLabel,
-			prevYearsLabel: this._prevYearsLabel,
-			nextYearsLabel: this._nextYearsLabel,
 		}
 	}
 }

@@ -3,9 +3,11 @@
  *
  * Наследует `ControlDescriptor` (disabled, focused, size, variant, имя
  * `aria_label` / `aria_labelledBy`, ...) и добавляет язык сортировки и имя
- * чекбокса «выбрать все». Строки, колонки, ячейки, выбор и сортировка —
- * коллекция и её расширения (`TableCollectionDescriptor`): разметка только
- * раскладывает то, что они отдали.
+ * чекбокса «выбрать все» — выходами: язык и словарь задаёт приложение на всю
+ * библиотеку, и пишут их плагины языка и словаря. Строки, колонки, ячейки,
+ * выбор и сортировка — коллекция и её расширения
+ * (`TableCollectionDescriptor`): разметка только раскладывает то, что они
+ * отдали.
  *
  * Колонки и строки задаются только данными (`columns`, `items`): частей
  * разметкой у таблицы нет — заголовок колонки (`Table.Column`) и строку
@@ -19,6 +21,7 @@ import { defineComponent, defineDescriptor, defineType } from '../../../../prote
 import { TTable } from '@soldy-ui/core'
 import type { ITableColumn, ITableRow } from '@soldy-ui/core'
 import { ControlDescriptor } from '../control.descriptor'
+import { LocalePluginDescriptor, TranslationsPluginDescriptor } from '../../plugins'
 
 export const TableDescriptor = defineDescriptor(() =>
 	defineComponent({
@@ -48,13 +51,28 @@ export const TableDescriptor = defineDescriptor(() =>
 				empty: { description: 'Когда показанных строк нет' },
 			},
 			props: {
-				locale: { type: String, triggers: ['change:locale'] },
 				/**
-				 * Имя чекбокса «выбрать все»: своего текста у ячейки шапки нет, а
-				 * языка интерфейса библиотека не знает — умолчание английское.
+				 * Язык сортировки — не вход: его задаёт приложение на всю
+				 * библиотеку, и пишет плагин языка, как `size` элементам пишет
+				 * владелец.
 				 */
-				selectAllLabel: { type: String, triggers: ['change:selectAllLabel'] },
+				locale: { type: String, protected: true, triggers: ['change:locale'] },
+				/**
+				 * Имя чекбокса «выбрать все» — из словаря: своего текста у ячейки
+				 * шапки нет, и разметка отдаёт чекбоксу готовое имя.
+				 */
+				selectAllLabel: {
+					type: String,
+					protected: true,
+					triggers: ['change:translations'],
+				},
 			},
 		},
+
+		plugins: [
+			// Язык и словарь приложения — с первой отрисовки
+			LocalePluginDescriptor,
+			TranslationsPluginDescriptor,
+		],
 	}),
 )

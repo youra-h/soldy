@@ -116,7 +116,8 @@ export class TDateInput
 		min: undefined,
 		max: undefined,
 		unavailable: undefined,
-		// Языка интерфейса библиотека не знает: дефолт английский, как у календаря
+		// Язык задаёт приложение (плагин языка), а до него — английский, как у
+		// календаря
 		locale: DEFAULT_LOCALE,
 		kind: 'date',
 		timePrecision: 'minute',

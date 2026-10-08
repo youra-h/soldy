@@ -18,3 +18,6 @@ export * from './scale'
 // Расчёт дат — внутренний: наружу только типы, которые называет API календаря
 // и поля даты
 export type { TCalendarDate, TWeekday, TDateUnit, TDatePart } from './calendar'
+// Язык и словарь по умолчанию: от них отсчитывает приложение, когда задаёт свои
+// (`useLocale`, `useTranslations` из `@soldy-ui/plugins`)
+export * from './locale'
