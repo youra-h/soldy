@@ -8,7 +8,8 @@
  * накрывает содержимое, `touch-action` на панели, нажатие на полосу фокус не
  * уводит, а настоящая мышь закрывает панель от триггера — вниз под ним, вверх
  * над ним, внутри контейнера к своему краю (`edge`, полоса — у противоположного)
- * — и к триггеру возвращает её на место.
+ * — и к триггеру возвращает её на место. Смахнутая уходит, пока гаснет, а
+ * пропадает, когда догасла; без движения панель с полосой гаснет на месте.
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
@@ -19,7 +20,13 @@ import { Button, Popover } from '@soldy-ui/vue'
 import type { IPopoverProps } from '@soldy-ui/core'
 import type { DescriptorSlots, PopoverDescriptor } from '@soldy-ui/setup'
 
-import { whileLeaving } from './transitions'
+import { reducedMotion } from './media'
+import {
+	expectFadesInPlace,
+	expectHidesWhenFaded,
+	ownTransitions,
+	whileLeaving,
+} from './transitions'
 
 import '@soldy-ui/theme-oren'
 
@@ -156,8 +163,9 @@ beforeEach(async () => {
 	await page.viewport(1000, 700)
 })
 
-afterEach(() => {
+afterEach(async () => {
 	cleanup()
+	await reducedMotion('no-preference')
 })
 
 describe('полоса', () => {
@@ -348,17 +356,26 @@ describe('жест', () => {
  * Смахнутая панель не моргает: плагин снимает сдвиг вместе с закрытием, а
  * тема уводит закрытую панель к её стороне, как выезжающую панель, — уход
  * начинается с места, где её отпустили, и идёт дальше, пока панель гаснет.
- * Вернись она на место, а потом погасни, — было бы видно мигание.
+ * Вернись она на место, а потом погасни, — было бы видно мигание. Пропадает
+ * панель, когда догасла, а не доехав: хвоста пути за угасанием не видно.
  */
 describe('уход смахнутой панели', () => {
-	/** Положение панели по оси в каждом кадре ухода, пока она не пропала. */
-	const leaving = async (axis: 'top' | 'left') => {
+	/**
+	 * Смахнуть панель `swipe` и снять её положение по оси в каждом кадре
+	 * ухода, пока она не пропала.
+	 */
+	const leaving = async (axis: 'top' | 'left', swipe: () => Promise<unknown>) => {
+		const transitions = ownTransitions(panel())
+
+		await swipe()
+
 		const positions: number[] = []
 		const seen = await whileLeaving(panel(), () => {
 			positions.push(panel().getBoundingClientRect()[axis])
 		})
 
 		expect(seen).toBeGreaterThan(1)
+		expectHidesWhenFaded(transitions)
 
 		return positions
 	}
@@ -377,10 +394,7 @@ describe('уход смахнутой панели', () => {
 		await open()
 
 		const start = panel().getBoundingClientRect().top
-
-		await drag(handle(), 150)
-
-		const positions = await leaving('top')
+		const positions = await leaving('top', () => drag(handle(), 150))
 
 		expectOneWay(positions, 1)
 		expect(positions[0]).toBeGreaterThan(start + EPSILON)
@@ -394,12 +408,27 @@ describe('уход смахнутой панели', () => {
 		await open()
 
 		const start = panel().getBoundingClientRect()[axis]
-
-		await dragBy(handle(), axis === 'left' ? -150 : 0, axis === 'top' ? -150 : 0)
-
-		const positions = await leaving(axis)
+		const positions = await leaving(axis, () =>
+			dragBy(handle(), axis === 'left' ? -150 : 0, axis === 'top' ? -150 : 0),
+		)
 
 		expectOneWay(positions, sign)
 		expect((positions[0] - start) * sign).toBeGreaterThan(EPSILON)
+	})
+
+	/**
+	 * Без движения (здесь — по просьбе системы) панель с полосой от триггера
+	 * не уходит: гаснет на месте, как панель без жеста, и пропадает, когда
+	 * догасла. Времени ухода у неё нет, и `display` брать его не должен.
+	 */
+	it('без движения — гаснет на месте и пропадает, когда догасла', async () => {
+		await reducedMotion('reduce')
+		await show({ swipe: 'handle' })
+
+		// Эмуляция действует — иначе сторож проверял бы обычный режим
+		expect(matchMedia('(prefers-reduced-motion: reduce)').matches).toBe(true)
+
+		await open()
+		await expectFadesInPlace(panel(), () => userEvent.keyboard('{Escape}'))
 	})
 })
