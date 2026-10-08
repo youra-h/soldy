@@ -26,6 +26,9 @@ import type {
 	TTableEngineOptions,
 	TTableExtension,
 	TTableExtensionEvents,
+	TTableGridEvents,
+	TTableGridExtension,
+	TTableGridItemEvents,
 	TTableItemEvents,
 	TTableSortEvents,
 	TTableSortExtension,
@@ -46,6 +49,8 @@ export type TTableCollectionExtensions = {
 	table: TTableExtension
 	/** Порядок показанных строк по колонкам */
 	sort: TTableSortExtension
+	/** Режим сетки: ячейка под фокусом, выбор строки нажатием, наборы сетки */
+	grid: TTableGridExtension
 	/** Память выборки: показанные строки — один раз до записи или смены условий */
 	memory: TMemoryExtension<ITableRow>
 }
@@ -98,6 +103,11 @@ export interface ITableCollectionProps<
 	 * держит сортировку и сообщает о её смене, но строки не переставляет
 	 */
 	presorted?: boolean
+	/**
+	 * Режим сетки (APG Data Grid): одна остановка Tab, стрелки по ячейкам,
+	 * строку выбирают нажатием и пробелом. Без него — простая таблица
+	 */
+	grid?: boolean
 }
 
 /**
@@ -105,18 +115,20 @@ export interface ITableCollectionProps<
  * базе, колонки — расширению колонок, сортировка — расширению сортировки.
  */
 export type TTableCollectionFacadeProps = TSelectionFacadeProps<ITableRow> &
-	Pick<ITableCollectionProps, 'columns' | 'sort' | 'sortMode' | 'presorted'>
+	Pick<ITableCollectionProps, 'columns' | 'sort' | 'sortMode' | 'presorted' | 'grid'>
 
 /** Пропсы строки от коллекции: выбранность. */
 export interface ITableCollectionItemProps extends ISelectionCollectionItemProps {}
 
-/** События фасада коллекции строк: база выбора плюс карты `columns`, `table` и `sort`. */
+/** События фасада коллекции строк: база выбора плюс карты `columns`, `table`, `sort` и `grid`. */
 export type TTableCollectionFacadeEvents = TSelectionCollectionFacadeEvents<ITableRow> &
 	TTableColumnsEvents &
 	TTableExtensionEvents &
-	TTableSortEvents
+	TTableSortEvents &
+	TTableGridEvents
 
-/** События фасада строки: порядок и выбор из базы плюс ячейки и включённый выбор строк. */
+/** События фасада строки: порядок и выбор из базы плюс ячейки, включённый выбор строк и набор ячеек сетки. */
 export type TTableRowCollectionFacadeEvents = TSelectionItemFacadeEvents &
 	TTableColumnsItemEvents &
-	TTableItemEvents
+	TTableItemEvents &
+	TTableGridItemEvents

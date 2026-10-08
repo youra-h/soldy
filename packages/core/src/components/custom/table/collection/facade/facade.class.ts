@@ -2,6 +2,7 @@ import { TSelectionCollectionFacade } from '../../../../base/collection'
 import type { TCollectionEngine, TCollectionFacadeOptions } from '../../../../base/collection'
 import { completeEngine } from '../../../../base/collection/create/internal'
 import type { TDefaultValues } from '../../../../base/component'
+import type { TAriaAttributes } from '../../../../../common'
 import type { ICheckBox } from '../../../check-box/types'
 import type { TTableColumnSource } from '../../column/collection/types'
 import type { ITableColumn } from '../../column/types'
@@ -23,7 +24,8 @@ import type {
  * Состав и выбор строк — из базы с выбором; остальное — проекция расширений
  * коллекции: колонки и показанные колонки (`columns`), сколько показанных
  * строк выбрано, команды выбора показанных и чекбокс «выбрать все»
- * (`table`), сортировка строк по колонкам (`sort`). Своего фасад не делает
+ * (`table`), сортировка строк по колонкам (`sort`), режим сетки и набор её
+ * ячеек (`grid`). Своего фасад не делает
  * ничего: события расширений он отдаёт наружу `relayAll`, команды остаются у
  * них.
  */
@@ -38,12 +40,17 @@ export class TTableCollectionFacade extends TSelectionCollectionFacade<
 	 * сортировка — порядок данных.
 	 */
 	static override defaultValues: typeof TSelectionCollectionFacade.defaultValues &
-		TDefaultValues<ITableCollectionProps, 'sortMode' | 'presorted', 'sort' | 'columns'> = {
+		TDefaultValues<
+			ITableCollectionProps,
+			'sortMode' | 'presorted' | 'grid',
+			'sort' | 'columns'
+		> = {
 		...TSelectionCollectionFacade.defaultValues,
 		columns: undefined,
 		sort: undefined,
 		sortMode: 'single',
 		presorted: false,
+		grid: false,
 	}
 
 	constructor(
@@ -69,6 +76,7 @@ export class TTableCollectionFacade extends TSelectionCollectionFacade<
 		this.events.relayAll(this.extensions.columns.events)
 		this.events.relayAll(this.extensions.table.events)
 		this.events.relayAll(this.extensions.sort.events)
+		this.events.relayAll(this.extensions.grid.events)
 
 		this.applyProps(props)
 	}
@@ -84,6 +92,7 @@ export class TTableCollectionFacade extends TSelectionCollectionFacade<
 		if (props.sortMode) this.sortMode = props.sortMode
 		if (props.presorted) this.presorted = props.presorted
 		if (props.sort?.length) this.sort = props.sort
+		if (props.grid) this.grid = props.grid
 
 		super.applyProps(props)
 	}
@@ -154,6 +163,23 @@ export class TTableCollectionFacade extends TSelectionCollectionFacade<
 
 	set presorted(value: boolean) {
 		this.extensions.sort.presorted = value
+	}
+
+	/** Режим сетки: одна остановка Tab, стрелки по ячейкам, строку выбирают нажатием */
+	get grid(): boolean {
+		return this.extensions.grid.grid
+	}
+
+	set grid(value: boolean) {
+		this.extensions.grid.grid = value
+	}
+
+	/**
+	 * Набор ячеек сетки, у которых нет своего экземпляра, — в шапке это ячейка
+	 * колонки выбора. Вне сетки пуст
+	 */
+	get cellAria(): TAriaAttributes {
+		return this.extensions.grid.cellAria
 	}
 
 	/** Выбрать все показанные строки, которые можно выбрать */

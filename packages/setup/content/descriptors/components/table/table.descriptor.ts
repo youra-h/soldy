@@ -23,8 +23,10 @@ import type { ITableColumn, ITableRow } from '@soldy-ui/core'
 import { ControlDescriptor } from '../control.descriptor'
 import {
 	CollectionBundlesPluginDescriptor,
+	CollectionElementsPluginDescriptor,
 	LocalePluginDescriptor,
 	TableColumnReorderPluginDescriptor,
+	TableGridPluginDescriptor,
 	TableNamesPluginDescriptor,
 } from '../../plugins'
 
@@ -69,11 +71,16 @@ export const TableDescriptor = defineDescriptor(() =>
 			LocalePluginDescriptor,
 			// Имя чекбокса «выбрать все» от локали
 			TableNamesPluginDescriptor,
-			// Коллекция строк: реестр bundles — от него плагины узнают движок
+			// Коллекция строк: реестр bundles — от него плагины узнают движок — и
+			// доступ к узлам строк
 			CollectionBundlesPluginDescriptor,
+			CollectionElementsPluginDescriptor,
 			// Перестановка колонок указателем и клавишами. После реестра bundles:
 			// движок узнаёт от него
 			TableColumnReorderPluginDescriptor,
+			// Сетка: клавиши, выбор строки нажатием, DOM-фокус за фокусом сетки.
+			// После реестров: движок и узлы строк узнаёт от них
+			TableGridPluginDescriptor,
 		],
 	}),
 )

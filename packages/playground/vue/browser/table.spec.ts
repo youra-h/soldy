@@ -630,6 +630,100 @@ describe('перестановка колонок', () => {
 	})
 })
 
+/**
+ * Сетка (APG Data Grid) настоящими клавишами: Tab входит в таблицу на ячейку
+ * под фокусом сетки и выходит из неё за таблицу, минуя поля и кнопки ячеек;
+ * стрелки ведут фокус по ячейкам; строка под фокусом и под указателем
+ * подсвечена, ячейка под фокусом с клавиатуры — в кольце внутри своих границ.
+ */
+describe('сетка', () => {
+	/** Сетка с выбором строк между двумя кнопками: Tab входит и выходит. */
+	async function mountGrid(): Promise<TTableCollection> {
+		const engine = engineOf()
+
+		engine.extensions.grid.grid = true
+
+		render(
+			defineComponent({
+				render: () =>
+					h('div', { style: 'width: 400px' }, [
+						h('button', { class: 's-test-before' }, 'до'),
+						h(Table, { engine, aria_label: 'Сотрудники' }),
+						h('button', { class: 's-test-after' }, 'после'),
+					]),
+			}),
+		)
+
+		await new Promise((resolve) => requestAnimationFrame(resolve))
+
+		return engine
+	}
+
+	it('Tab — на ячейку, стрелки — по ячейкам, Tab — за таблицу мимо полей ячеек', async () => {
+		await mountGrid()
+
+		find('.s-test-before').focus()
+		await userEvent.keyboard('{Tab}')
+
+		// Выбор включили после колонок — фокус сетки на первой из них
+		expect(document.activeElement).toBe(headers()[0])
+
+		await userEvent.keyboard('{ArrowDown}{ArrowRight}')
+
+		expect(document.activeElement).toBe(rows()[0].children[2])
+
+		await userEvent.keyboard('{Tab}')
+
+		expect(document.activeElement).toBe(find('.s-test-after'))
+
+		// Shift+Tab — обратно на ту же ячейку: у сетки одна остановка
+		await userEvent.keyboard('{Shift>}{Tab}{/Shift}')
+
+		expect(document.activeElement).toBe(rows()[0].children[2])
+	})
+
+	it('ячейка под фокусом с клавиатуры — в кольце внутри своих границ', async () => {
+		await mountGrid()
+
+		find('.s-test-before').focus()
+		await userEvent.keyboard('{Tab}{ArrowDown}')
+
+		const cell = rows()[0].children[1]
+
+		expect(document.activeElement).toBe(cell)
+		expect(style(cell).outlineStyle).toBe('solid')
+		expect(parseFloat(style(cell).outlineOffset)).toBeLessThan(0)
+	})
+
+	it('строка под фокусом и под указателем подсвечена; нажатие по строке — её выбор', async () => {
+		const engine = await mountGrid()
+		const [first, second] = rows()
+
+		await userEvent.hover(find('.s-test-before'))
+		await settled(document.body)
+
+		expect(opacity(style(second).backgroundColor)).toBe(0)
+
+		await userEvent.hover(second.children[2])
+		await settled(second)
+
+		expect(opacity(style(second).backgroundColor)).toBeGreaterThan(0)
+
+		await userEvent.click(second.children[2])
+
+		expect(engine.extensions.selection.selected).toEqual([engine.extensions.batch.items[1]])
+		expect(second.getAttribute('aria-selected')).toBe('true')
+
+		// Фокус встал на нажатую ячейку — её строка подсвечена и без указателя
+		await userEvent.hover(find('.s-test-before'))
+		await settled(document.body)
+
+		expect(second.contains(document.activeElement)).toBe(true)
+		expect(opacity(style(first).backgroundColor)).toBe(0)
+		expect(style(second).backgroundColor).not.toBe(style(first).backgroundColor)
+	})
+})
+
 describe('принудительные цвета', () => {
 	it('выбранная строка — системной подсветкой', async () => {
 		const engine = engineOf()

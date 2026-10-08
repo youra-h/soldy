@@ -644,6 +644,85 @@ describe('перестановка колонок', () => {
 })
 
 /**
+ * Сетка — наборы коллекции в разметке и плагин сетки на корне. Ходьбу и выбор
+ * считает ядро (`core/__tests__/table-grid.spec.ts`), клавиши — плагин
+ * (`plugins/__tests__/table-grid.plugin.spec.ts`). Здесь — что наборы доезжают
+ * до своих узлов, а плагин находит ячейки в разметке Vue: узлы строк из
+ * реестра, ячейки по колонкам сетки.
+ */
+describe('сетка', () => {
+	it('роль grid и остановка Tab — у таблицы, ячейки и заголовки фокус только принимают', async () => {
+		await render(() =>
+			h(Table, {
+				items: [{ data: ANNA }, { data: BORIS }],
+				columns: [NAME, AGE],
+				mode: 'multiple',
+				grid: true,
+			}),
+		)
+
+		const table = find('.s-table')
+
+		expect(table.getAttribute('role')).toBe('grid')
+		expect(table.getAttribute('tabindex')).toBe('0')
+		expect(table.getAttribute('aria-multiselectable')).toBe('true')
+		expect(table.dataset.grid).toBe('true')
+		expect(find('.s-table__select').getAttribute('tabindex')).toBe('-1')
+
+		for (const header of findAll('.s-table-column')) {
+			expect(header.getAttribute('tabindex')).toBe('-1')
+		}
+
+		for (const cell of findAll('.s-table-row__cell, .s-table-row__select')) {
+			expect(cell.getAttribute('tabindex')).toBe('-1')
+		}
+
+		expect(findAll('.s-table-row').map((row) => row.getAttribute('aria-selected'))).toEqual([
+			'false',
+			'false',
+		])
+	})
+
+	it('без сетки — простая таблица: ни роли, ни tabindex, ни aria-selected', async () => {
+		await render(() => h(Table, { items: [{ data: ANNA }], columns: [NAME], mode: 'multiple' }))
+
+		expect(find('.s-table').hasAttribute('role')).toBe(false)
+		expect(find('.s-table').hasAttribute('tabindex')).toBe(false)
+		expect(find('.s-table-row__cell').hasAttribute('tabindex')).toBe(false)
+		expect(find('.s-table-row').hasAttribute('aria-selected')).toBe(false)
+	})
+
+	it('Tab в таблицу — на ячейку, стрелка — на соседнюю, пробел — выбор строки', async () => {
+		const engine = engineOf('multiple')
+
+		engine.extensions.grid.grid = true
+
+		await render(() => h(Table, { engine }))
+
+		find('.s-table').focus()
+
+		// Выбор включили после колонок — фокус сетки на первой из них
+		expect(document.activeElement).toBe(find('.s-table-column'))
+
+		document.activeElement?.dispatchEvent(
+			new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true, cancelable: true }),
+		)
+
+		const cell = find('.s-table-row th')
+
+		expect(document.activeElement).toBe(cell)
+
+		cell.dispatchEvent(
+			new KeyboardEvent('keydown', { key: ' ', bubbles: true, cancelable: true }),
+		)
+		await settle()
+
+		expect(engine.extensions.selection.selected).toEqual([rowOf(engine, 1)])
+		expect(find('.s-table-row').getAttribute('aria-selected')).toBe('true')
+	})
+})
+
+/**
  * Клик по чекбоксу браузер переключает сам, до обработчиков. Выбор — решение
  * модели: подписчик `item:select:before` его отменяет, и тогда ни поле, ни
  * строка отмеченными не остаются.

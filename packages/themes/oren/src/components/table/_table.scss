@@ -602,8 +602,9 @@ $resizer-line: 3px;
 // Строка — высотой в кнопку и запасы (`--s-table-row`): ниже строка не бывает,
 // выше — если содержимое ячейки выше.
 //
-// Наведения у строки нет: в роли `table` нажатие по строке ничего не делает —
-// выбирают чекбоксом, — а подсветка обещала бы отклик, которого не будет.
+// Наведения у строки простой таблицы нет: в роли `table` нажатие по строке
+// ничего не делает — выбирают чекбоксом, — а подсветка обещала бы отклик,
+// которого не будет. У сетки — есть (ниже).
 .s-table-row {
 	block-size: var(--s-table-row);
 
@@ -618,6 +619,52 @@ $resizer-line: 3px;
 	// выбранной на вид.
 	&[data-disabled='true'] > .s-table-row__cell {
 		@apply opacity-s-component-disabled;
+	}
+}
+
+// Сетка (`data-grid`, APG Data Grid): строку выбирают нажатием и проходят
+// клавиатурой, и строка под указателем и строка ячейки под фокусом подсвечены
+// вуалью наведения — видно, какую строку выберет нажатие или пробел. Выбранная
+// под подсветкой — плотнее выбора, как строка ListBox. У выключенной таблицы
+// подсветки нет: выбирать нечего, — у выключенной строки нет наведения, а фокус
+// на её ячейке подсвечен: по ней проходят клавиатурой. Наведение — только там,
+// где оно есть: после касания `:hover` залипает на строке.
+.s-table[data-grid='true']:not([data-disabled='true']) > .s-table__body > .s-table-row {
+	&:focus-within {
+		background-color: var(--s-table-hover);
+	}
+
+	@media (hover: hover) {
+		&:not([data-disabled='true']):hover {
+			background-color: var(--s-table-hover);
+		}
+	}
+
+	&[data-selected='true']:focus-within {
+		background-color: var(--s-table-active-hover);
+	}
+
+	@media (hover: hover) {
+		&[data-selected='true']:not([data-disabled='true']):hover {
+			background-color: var(--s-table-active-hover);
+		}
+	}
+}
+
+// Ячейка сетки под фокусом с клавиатуры — кольцом фокуса внутри своих границ:
+// снаружи оно легло бы на соседние ячейки и линии строк, а у края таблицы его
+// срезал бы контейнер с прокруткой. Так же обведена кнопка сортировки, которая
+// занимает свою ячейку целиком.
+.s-table[data-grid='true'] {
+	> .s-table__head > .s-table__head-row > :is(.s-table-column, .s-table__select),
+	> .s-table__body > .s-table-row > :is(.s-table-row__cell, .s-table-row__select) {
+		&:focus-visible {
+			@apply outline-2 -outline-offset-2 outline-s-component;
+
+			@media (forced-colors: active) {
+				outline-color: Highlight;
+			}
+		}
 	}
 }
 

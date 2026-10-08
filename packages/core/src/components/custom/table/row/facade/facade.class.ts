@@ -1,4 +1,5 @@
 import { TSelectionItemFacade } from '../../../../base/collection'
+import type { TAriaAttributes } from '../../../../../common'
 import type { TItemContext } from '../../../../base/collection'
 import type { TTableCell } from '../../collection/extensions'
 import type {
@@ -14,7 +15,8 @@ import type { ITableRow } from '../types'
  * разложенная по показанным колонкам, — и `id` заголовка строки, которым
  * называют её чекбокс выбора (`rowHeaderId`). Считает их item-адаптер колонок.
  * Включён ли выбор строк — у строки тогда ячейка выбора, — отдаёт item-адаптер
- * таблицы (`selecting`). Фасад только отдаёт.
+ * таблицы (`selecting`), набор ячеек сетки — item-адаптер сетки
+ * (`cellAria`). Фасад только отдаёт.
  */
 export class TTableRowCollectionFacade extends TSelectionItemFacade<
 	ITableRow,
@@ -28,6 +30,7 @@ export class TTableRowCollectionFacade extends TSelectionItemFacade<
 
 		this.events.relayAll(this._context.adapters.columns.events)
 		this.events.relayAll(this._context.adapters.table.events)
+		this.events.relayAll(this._context.adapters.grid.events)
 	}
 
 	/** Ячейки строки — по одной на показанную колонку. Вне коллекции ячеек нет */
@@ -41,6 +44,14 @@ export class TTableRowCollectionFacade extends TSelectionItemFacade<
 	 */
 	get rowHeaderId(): string | undefined {
 		return this._context?.adapters.columns.rowHeaderId
+	}
+
+	/**
+	 * Набор каждой ячейки строки, и ячейки выбора тоже: в сетке ячейка
+	 * принимает фокус. Вне сетки и вне коллекции пуст
+	 */
+	get cellAria(): TAriaAttributes {
+		return this._context?.adapters.grid.cellAria ?? {}
 	}
 
 	/** Выбор строк включён: у строки ячейка выбора. Вне коллекции — нет */
