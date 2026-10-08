@@ -8,14 +8,12 @@
  *
  * Стенд, а не пакет адаптера: здесь единственное место, где настоящие
  * компоненты встречаются с собранной темой. Правила, которые эти тесты
- * стерегут, — раскладка поля с тегами, его минимальная ширина, доля строки
- * поля у однострочного ряда (в `arrows` — у вьюпорта ленты, а кнопки листания
- * стоят сверх неё) и обрезка слота с тегами — лежат в
- * `themes/oren/src/components/select/_select.scss`, а
- * сжатие тега, которому не хватает места в поле, его натуральная ширина в
- * однострочном ряду, ряд `scroll` без полосы прокрутки, с подсказкой у края и
- * запасом под кольцо фокуса и обрезка ряда `popover` с запасом под кольцо — в
- * `themes/oren/src/components/tags/_tags.scss`.
+ * стерегут, — раскладка поля с тегами, его минимальная ширина, ширина ряда
+ * `scroll` (по тегам, но не шире половины поля) и обрезка слота с тегами —
+ * лежат в `themes/oren/src/components/select/_select.scss`, а сжатие тега,
+ * которому не хватает места в поле, его натуральная ширина в ряду `scroll` и
+ * ряд `scroll` без полосы прокрутки, с подсказкой у края и запасом под кольцо
+ * фокуса — в `themes/oren/src/components/tags/_tags.scss`.
  * Геометрия строки поля — высота размера и строка слота, в которую встают
  * теги, очистка и стрелка, — в `themes/oren/src/components/input/_input.scss`.
  * Тег под фокусом в чистую часть ряда `scroll` доводит плагин ряда тегов —
@@ -32,9 +30,7 @@ import type { TDirection, TTagsOverflow } from '@soldy-ui/core'
 
 import { DIRECTION_CASES, setDir, sidesOf, type TLine } from './directions'
 import { expectFocusedClearOfFades, fades } from './fades'
-import { expectRingInsideHorizontally, expectRingInsideVertically } from './focus-ring'
-import { expectSplit, isSplit } from './tags-split'
-import { expectInsideWindow } from './viewport'
+import { expectRingInsideVertically } from './focus-ring'
 
 import '@soldy-ui/theme-oren'
 
@@ -55,21 +51,6 @@ const OPTIONS = ['Москва', 'Тверь', 'Тула', 'Казань', 'Са
 
 /** Значения всех опций сразу — выбор, который в одну строку не помещается. */
 const ALL_VALUES = OPTIONS.map((_, index) => String(index))
-
-/**
- * Опций столько, что хвост не помещается и в панель: она упирается в свой
- * потолок высоты и обязана прокручивать содержимое, а не расти за край окна.
- *
- * Последняя — заведомо шире панели: на ней и видно, что тег в панели не
- * сжимается. Стоит она в конце, чтобы в поле помещались первые, обычные: ряд,
- * в который не влез ни один тег, — случай не этого спека.
- */
-const MANY_OPTIONS = [
-	...Array.from({ length: 23 }, (_, index) => `Екатеринбург-${index + 1}`),
-	'Петропавловск-Камчатский, улица Ленинградская, 24',
-]
-
-const MANY_VALUES = MANY_OPTIONS.map((_, index) => String(index))
 
 const Harness = {
 	render: () =>
@@ -173,10 +154,7 @@ const arrow = () => document.querySelector('.s-select__arrow') as HTMLElement
 const tags = () => [...document.querySelectorAll('.s-tags-item')]
 const options = () => [...document.querySelectorAll('[role="option"]')] as HTMLElement[]
 
-/**
- * Теги, оставшиеся в самом поле: в `popover` хвост ряда уезжает в панель, а
- * она телепортирована в `body` и в поле уже не лежит.
- */
+/** Теги в поле — внутри корня, когда полей на странице два. */
 const fieldTags = (root: ParentNode = document) => [
 	...root.querySelectorAll('.s-select__field .s-tags-item'),
 ]
@@ -243,29 +221,6 @@ const ensureOpen = async () => {
 }
 
 const nextFrame = () => new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
-
-/**
- * Открывает панель хвоста за кнопкой «…» и отдаёт её узлы, когда раскладка
- * улеглась.
- *
- * Координаты панели пишет `TAnchorPlugin`, и первый расчёт идёт по ещё
- * нулевому размеру скрытой панели: сторону он объявляет сразу
- * (`data-placement`), а поправку по настоящему размеру приносит
- * `ResizeObserver` кадром позже — отсюда два кадра ожидания.
- */
-const openTailPanel = async () => {
-	await expectSplit(() => find('.s-select__field .s-tags'))
-	await userEvent.click(find('.s-tags__more'))
-	await expect.poll(() => document.querySelector('.s-tags__panel')).not.toBeNull()
-
-	const frame = find('.s-popover__panel')
-
-	await expect.poll(() => frame.dataset.placement).toBeDefined()
-	await nextFrame()
-	await nextFrame()
-
-	return { frame, content: find('.s-popover__content'), tail: find('.s-tags__panel') }
-}
 
 /** Добавляет `count` тегов к уже выбранным — выбором опций, как это делает человек. */
 const addTags = async (count: number) => {
@@ -477,58 +432,26 @@ describe.each(COMPONENT_SIZES)('размер %s: высота поля с одн
 const scrolls = (element: Element) => element.scrollWidth > element.clientWidth
 
 /**
- * Режимы, в которых ряд не переносится, и признак того, что раскладка улеглась.
+ * Ряд `scroll` в поле: все теги остаются в ряду, и раскладка улеглась, когда
+ * они все в поле.
  *
- * - `scroll` — все теги остаются в ряду, уезжать им некуда.
- * - `arrows` — тоже все, только внутри вьюпорта ленты: ждём, пока она поймёт,
- *   что листать есть куда.
- * - `popover` — хвост уезжает в панель, и это занимает кадры замера: ждём,
- *   пока ряд поделится окончательно, — кнопка «…» встанет внутрь ряда
- *   (`tags-split.ts`). Само её появление — ещё не конец замера.
- *
- * `crowded` — ряду поля тесно, всем тегам натуральной ширины места в нём нет:
- * ряд прокручивается, лента листается, хвост уехал в панель. Без этого
- * проверка натуральной ширины пуста — тег, которому места хватает, не
- * сжимается и при сломанном правиле. У `arrows` и `popover` теснота видна уже
- * в признаке раскладки, у `scroll` — нет: все теги в ряду и в широком поле.
+ * `crowded` — ряду поля тесно, всем тегам натуральной ширины места в нём нет,
+ * и ряд прокручивается. Без этого проверка натуральной ширины пуста — тег,
+ * которому места хватает, не сжимается и при сломанном правиле.
  */
-const SINGLE_ROW_MODES = [
-	{
-		overflow: 'scroll',
-		settled: () => fieldTags().length === OPTIONS.length,
-		crowded: (root: ParentNode) => scrolls(find('.s-select__field .s-tags', root)),
-	},
-	{
-		overflow: 'arrows',
-		settled: () =>
-			document
-				.querySelector('.s-select__field .s-scroller')
-				?.getAttribute('data-can-next') === 'true',
-		crowded: (root: ParentNode) =>
-			scrolls(find('.s-select__field .s-scroller__viewport', root)),
-	},
-	{
-		overflow: 'popover',
-		settled: () => isSplit(find('.s-select__field .s-tags')),
-		crowded: (root: ParentNode) =>
-			root.querySelector('.s-select__field .s-tags__more') !== null,
-	},
-] as const
+const settled = () => fieldTags().length === OPTIONS.length
+const crowded = (root: ParentNode) => scrolls(find('.s-select__field .s-tags', root))
 
 /**
  * Рост поля привязан к `wrap` — умолчанию, в котором ряд переносится по
- * строкам. В `scroll` и `popover` переносить нечего: ряд стоит одной строкой
+ * строкам. В `scroll` переносить нечего: ряд стоит одной строкой
  * (`tags/_tags.scss`), и поле обязано остаться высоты размера. Иначе выходит,
- * что его растит сам факт тегов, а не перенос.
- *
- * Это сторож условия `data-overflow='wrap'` в правиле роста
- * (`select/_select.scss`): без него в `popover` слот вытягивается по кнопке
- * «…» и тянет за собой поле.
- *
- * Сколько тегов осталось в ряду, а сколько уехало в панель, проверяет
- * `tags-overflow.spec.ts` — здесь важны строка и высота.
+ * что его растит сам факт тегов, а не перенос. Это сторож условия
+ * `data-overflow='wrap'` в правиле роста (`select/_select.scss`).
  */
-describe.each(SINGLE_ROW_MODES)('tags_overflow: $overflow', ({ overflow, settled, crowded }) => {
+describe('tags_overflow: scroll', () => {
+	const overflow = 'scroll'
+
 	it('ряд — одна строка, а поле не выше поля без выбора', async () => {
 		render(pairHarness({ value: ALL_VALUES, texts: OPTIONS, overflow }))
 
@@ -540,18 +463,14 @@ describe.each(SINGLE_ROW_MODES)('tags_overflow: $overflow', ({ overflow, settled
 
 		const [tagged, empty] = roots
 		const field = box(find('.s-select__field', tagged))
+		const parts = fieldTags(tagged).map(box)
 
-		// Части ряда в поле: теги и, в `popover`, кнопка «…». Своя высота у
-		// кнопки — высота пилюли тега, а она выше строки поля, и без строки
-		// поля кнопка ложилась бы на нижнюю рамку.
-		const parts = [...fieldTags(tagged), ...tagged.querySelectorAll('.s-tags__more')].map(box)
-
-		expect(parts.length, 'частей ряда в поле').toBeGreaterThan(0)
+		expect(parts.length, 'тегов в поле').toBeGreaterThan(0)
 		expect(new Set(parts.map((part) => Math.round(part.top))).size, 'строк в ряду').toBe(1)
 
 		parts.forEach((part, index) => {
-			expect(part.height, `часть ряда ${index}: высота`).toBeCloseTo(parts[0].height, 1)
-			expect(part.bottom, `часть ряда ${index}: низ`).toBeLessThanOrEqual(field.bottom)
+			expect(part.height, `тег ${index}: высота`).toBeCloseTo(parts[0].height, 1)
+			expect(part.bottom, `тег ${index}: низ`).toBeLessThanOrEqual(field.bottom)
 		})
 
 		expect(field.height, 'поле с тегами').toBeCloseTo(
@@ -565,8 +484,8 @@ describe.each(SINGLE_ROW_MODES)('tags_overflow: $overflow', ({ overflow, settled
 	 * Linux) занимает место под тегами, и Chromium прогона рисует такую же
 	 * (`vitest.browser.config.ts` снимает `--hide-scrollbars`). Поле здесь
 	 * постоянной высоты, и ряд `scroll` с полосой вытягивался на 11px ниже его
-	 * нижней рамки. Теги при этом стояли на месте, поэтому проверка частей
-	 * ряда выше этого не видит.
+	 * нижней рамки. Теги при этом стояли на месте, поэтому проверка тегов
+	 * выше этого не видит.
 	 *
 	 * Предусловие — теснота: полоса появляется, только когда ряд
 	 * прокручивается.
@@ -587,10 +506,9 @@ describe.each(SINGLE_ROW_MODES)('tags_overflow: $overflow', ({ overflow, settled
 	})
 
 	/**
-	 * Долю строки слот берёт под теги, а не под сам факт режима: в `multiple`
-	 * контейнер тегов стоит в разметке всегда, и по нему одному доля
-	 * включалась заранее — поле без выбора отдавало полстроки пустому слоту, а
-	 * ввод ужимался вдвое.
+	 * Место слот берёт под теги, а не под сам факт режима: в `multiple`
+	 * контейнер тегов стоит в разметке всегда, и правило, включённое по нему
+	 * одному, отдало бы место пустому слоту.
 	 */
 	it('без выбора слот тегов места не занимает', async () => {
 		render(pairHarness({ value: ALL_VALUES, texts: OPTIONS, overflow }))
@@ -601,46 +519,57 @@ describe.each(SINGLE_ROW_MODES)('tags_overflow: $overflow', ({ overflow, settled
 		const taggedSlot = box(find('.s-input__leading', tagged)).width
 		const emptySlot = box(find('.s-input__leading', empty)).width
 
-		// С тегами слот — доля строки; без тегов он не должен быть даже её
-		// четвертью, иначе доля включилась по пустому ряду
+		// С тегами слот — до половины поля; без тегов он не должен быть даже
+		// четвертью этого, иначе правило включилось по пустому ряду
 		expect(emptySlot, 'пустой слот').toBeLessThan(taggedSlot / 4)
 	})
 
 	/**
-	 * Доля — это именно доля. Без неё база слота равна ширине всего ряда, и
-	 * при шринке флексбокса всё сжатие достаётся слоту, а ввод садится на свой
-	 * минимум (`min-w-16` из `_input.scss`) при любом числе тегов.
-	 *
-	 * В `arrows` долю берёт вьюпорт ленты, а кнопки листания стоят сверх неё:
-	 * база слота там — кнопки, а не ноль. Ряд тегов в неё не входит, пока у
-	 * вьюпорта в поле стоит `contain`, — без него та же беда вернулась бы и
-	 * сюда.
-	 *
-	 * Сторож правил доли в `select/_select.scss` — тех, чей список режимов
-	 * легко забыть пополнить: каждый новый однострочный режим обязан попасть в
-	 * одно из них.
+	 * Потолок — половина поля. Без него база слота равна ширине всего ряда, и
+	 * при сжатии строки всё сжатие достаётся слоту, а ввод садится на свой
+	 * минимум (`min-w-16` из `_input.scss`) при любом числе тегов сверх строки.
 	 */
-	it('ряд берёт долю строки, а не всю её', async () => {
+	it('тесный ряд не шире половины поля, а ввод шире своего минимума', async () => {
 		render(pairHarness({ value: ALL_VALUES, texts: OPTIONS, overflow }))
 
 		await expect.poll(settled).toBe(true)
 
 		const [tagged] = [...document.querySelectorAll('.s-select')]
+		const field = find('.s-select__field', tagged)
 		const slot = box(find('.s-input__leading', tagged)).width
 
-		expect(slot, 'слот тегов').toBeLessThan(FIELD_WIDTH * 0.6)
+		expect(crowded(tagged), 'ряду тесно').toBe(true)
+		expect(slot, 'слот тегов').toBeLessThanOrEqual(field.clientWidth / 2 + 0.5)
+		expect(box(find('input', tagged)).width, 'ввод').toBeGreaterThan(MIN_INPUT_WIDTH * 2)
 	})
 
 	/**
-	 * Не поместившееся в однострочном ряду прокручивается, листается или
-	 * уезжает в панель, а не сжимается. В поле это держит правило режима
-	 * (`tags/_tags.scss`): автоматический минимум ширины тегу там снят ради
-	 * `wrap`, где одному тегу переносить некуда, и без `shrink-0` в `scroll`
-	 * флексбокс ужимал пилюлю до крестика — листать становилось нечего.
-	 *
-	 * У `arrows` и `popover` правило уже было — у детей вьюпорта ленты и у
-	 * тегов ряда с кнопкой «…», и тест их сторожит. Новый однострочный режим
-	 * попадёт под него сам.
+	 * Случай из задачи: пока ряд брал долю строки при любом числе тегов, один
+	 * тег стоял в половине поля, а между ним и вводом зияла пустота — где
+	 * начинается ввод, было не понять. Ряд — по своим тегам, и ввод стоит
+	 * сразу за последним.
+	 */
+	it('ряд по своим тегам: ввод сразу за последним тегом', async () => {
+		render(pairHarness({ value: ['0'], texts: OPTIONS, overflow }))
+
+		await expect.poll(() => fieldTags().length).toBe(1)
+
+		const [tagged] = [...document.querySelectorAll('.s-select')]
+		const [tag] = fieldTags(tagged)
+
+		expect(crowded(tagged), 'ряду тесно').toBe(false)
+		// Между тегом и вводом — только зазоры строки поля
+		expect(box(find('input', tagged)).left - box(tag).right, 'от тега до ввода').toBeLessThan(
+			12,
+		)
+	})
+
+	/**
+	 * Не поместившееся в ряду `scroll` прокручивается, а не сжимается. В поле
+	 * это держит правило режима (`tags/_tags.scss`): автоматический минимум
+	 * ширины тегу там снят ради `wrap`, где одному тегу переносить некуда, и
+	 * без `shrink-0` в `scroll` флексбокс ужимал пилюлю до крестика — листать
+	 * становилось нечего.
 	 */
 	it('тег в ряду натуральной ширины', async () => {
 		render(pairHarness({ value: ALL_VALUES, texts: OPTIONS, overflow }))
@@ -929,203 +858,5 @@ describe('tags_overflow: scroll — кольцо фокуса крестика',
 
 		expect(row.scrollLeft, 'ряд в начале прокрутки').toBe(0)
 		expect(box(fieldTags()[0]).left - box(row).left, 'от начала ряда до тега').toBeCloseTo(0, 1)
-	})
-})
-
-/**
- * Кнопка «…» в поле стоит в конце ряда, вплотную к вводу, а не сразу за
- * последним тегом.
- *
- * Ряд в поле — доля строки (`flex-1` в `select/_select.scss`), и его конец —
- * это место, где начинается ввод. Туда кнопку уводит тот же автоотступ, что
- * в самостоятельном наборе (`tags/_tags.scss`): свободное место доли остаётся
- * между тегами и кнопкой. Пока отступ в поле снимали, кнопка шла сразу за
- * тегом, и дыра зияла уже между ней и вводом.
- */
-describe('кнопка «…» в поле', () => {
-	it('стоит в конце ряда, у ввода, а не сразу за последним тегом', async () => {
-		render(pairHarness({ value: ALL_VALUES, texts: OPTIONS, overflow: 'popover' }))
-
-		await expectSplit(() => find('.s-select__field .s-tags'))
-
-		const tagged = find('.s-select')
-		const parts = fieldTags(tagged)
-		const last = parts[parts.length - 1]
-		const row = box(find('.s-select__field .s-tags', tagged))
-		const more = box(find('.s-tags__more', tagged))
-
-		expect(parts.length, 'тегов в поле').toBeGreaterThan(0)
-
-		// Место между последним тегом и кнопкой есть — значит, она не «едет» за
-		// тегами, а стоит у края. Без него проверки ниже пусты: кнопка вплотную
-		// за тегом была бы у края и при снятом отступе
-		expect(more.left - box(last).right, 'место между тегом и кнопкой').toBeGreaterThan(1)
-
-		// Допуск на субпиксели
-		expect(row.right - more.right, 'от кнопки до края ряда').toBeLessThan(2)
-		expect(
-			box(find('.s-select__field input', tagged)).left - more.right,
-			'от кнопки до ввода',
-		).toBeLessThan(12)
-	})
-
-	/**
-	 * Кольцо кнопки выходит за неё на 4px, а режут его двое: сам ряд —
-	 * `popover` обрезает то, что не поместилось, — и слот тегов, который
-	 * обрезает тег шире себя. Край ряда и край слота у кнопки совпадают, и у
-	 * кольца пропадала задняя сторона. Запас под кольцо — за краем обрезки у
-	 * обоих (`tags/_tags.scss`, `select/_select.scss`), поэтому оба режут и по
-	 * вертикали: проверяются обе оси.
-	 */
-	it('ни ряд, ни слот не срезают кольцо фокуса кнопки', async () => {
-		render(pairHarness({ value: ALL_VALUES, texts: OPTIONS, overflow: 'popover' }))
-
-		await expectSplit(() => find('.s-select__field .s-tags'))
-
-		const button = find('.s-select__field .s-tags__more')
-		const row = find('.s-select__field .s-tags')
-		const slot = find('.s-select__field .s-input__leading')
-
-		// Кнопка — у самого края ряда и слота. Отойди она от края, кольцу было
-		// бы куда выйти и без запаса, и проверка ниже прошла бы вхолостую
-		expect(box(row).right - box(button).right, 'от кнопки до края ряда').toBeCloseTo(0, 1)
-		expect(box(slot).right - box(button).right, 'от кнопки до края слота').toBeCloseTo(0, 1)
-
-		// С клавиатуры: кольцо рисует `:focus-visible`. Остановки Tab в поле —
-		// крестики тегов ряда, за ними кнопка
-		for (let step = 0; step <= OPTIONS.length && document.activeElement !== button; step++) {
-			await userEvent.keyboard('{Tab}')
-		}
-
-		expect(document.activeElement, 'фокус на кнопке «…»').toBe(button)
-
-		for (const [area, name] of [
-			[row, 'ряд'],
-			[slot, 'слот'],
-		] as const) {
-			expectRingInsideHorizontally(button, area, `кнопка «…», ${name}`)
-			expectRingInsideVertically(button, area, `кнопка «…», ${name}`)
-		}
-	})
-})
-
-/**
- * Лента `arrows` в поле. Долю строки поля берёт её вьюпорт, а кнопки листания
- * стоят сверх неё (`select/_select.scss`). Кнопки растут с размером, и пока
- * долю пополам с вводом делила лента вместе с ними, крупные кнопки её съедали:
- * в поле обычной ширины на `xl` вьюпорт был не шире подсказки у края и гас
- * целиком, а на `2xl` сжимался до своего паддинга, и кнопка «вперёд» выходила
- * за слот. Поэтому проверяется каждый размер, и в поле обычной ширины.
- */
-describe.each(COMPONENT_SIZES)('размер %s: лента arrows в поле', (size) => {
-	/** Поле со всеми тегами: ленте в нём тесно, и она стоит в начале. */
-	const renderCrowded = async () => {
-		render(pairHarness({ value: ALL_VALUES, texts: OPTIONS, overflow: 'arrows', size }))
-
-		await expect.poll(() => find('.s-select__field .s-scroller').dataset.canNext).toBe('true')
-	}
-
-	/**
-	 * Чистая часть ленты — вьюпорт без подсказок у краёв. В середине ленты
-	 * гаснут оба края, и вьюпорт не шире двух подсказок гас бы там целиком:
-	 * листать ряд можно, а увидеть тег нельзя.
-	 *
-	 * Ширина подсказки — из маски, а не числом темы: в начале ленты гаснет
-	 * только её конец.
-	 */
-	it('у ленты есть чистая часть', async () => {
-		await renderCrowded()
-
-		const viewport = find('.s-select__field .s-scroller__viewport')
-		const fade = fades(viewport).right
-
-		// Без подсказки проверка ниже пуста: чистая часть есть у любого вьюпорта
-		expect(fade, 'подсказка у конца ленты').toBeGreaterThan(0)
-		expect(box(viewport).width - 2 * fade, 'чистая часть ленты').toBeGreaterThan(0)
-	})
-
-	/**
-	 * Кнопка «вперёд» стоит у правого края слота тегов: лента кончается там,
-	 * где начинается ввод. Слот обрезает тег шире себя, край его обрезки
-	 * совпадал с краем кнопки, и у кольца фокуса пропадала правая сторона.
-	 * Запас под кольцо — за краем обрезки слота (`select/_select.scss`), а с
-	 * запасом слот режет и по вертикали: кнопки ленты растянуты по строке
-	 * слота, и кольцо умещается в запас впритык. Поэтому обе оси и каждый
-	 * размер — строка слота у каждого своя.
-	 */
-	it('слот не срезает кольцо фокуса кнопки «вперёд»', async () => {
-		await renderCrowded()
-
-		const button = find('.s-select__field .s-scroller__next')
-		const slot = find('.s-select__field .s-input__leading')
-
-		// Кнопка — у самого края слота. Выйди она за край, слот срезал бы и её
-		// саму; отойди от края — кольцу было бы куда выйти и без запаса, и
-		// проверка ниже прошла бы вхолостую
-		expect(box(slot).right - box(button).right, 'от кнопки до края слота').toBeCloseTo(0, 1)
-
-		// С клавиатуры: кольцо рисует `:focus-visible`. Вперёд табом до кнопки не
-		// дойти — крестики тегов докручивают ленту до конца, и кнопка гаснет, —
-		// а назад из ввода она первая остановка
-		input().focus()
-		await userEvent.keyboard('{Shift>}{Tab}{/Shift}')
-
-		expect(document.activeElement, 'фокус на кнопке «вперёд»').toBe(button)
-
-		expectRingInsideHorizontally(button, slot, 'кнопка «вперёд», слот')
-		expectRingInsideVertically(button, slot, 'кнопка «вперёд», слот')
-	})
-})
-
-/**
- * Случай из задачи: выбрано столько тегов, что хвост в панели не помещается.
- *
- * Размер панели держит панель Popover — её потолки ширины и высоты и её
- * прокрутка (`popover/_popover.scss`). Своего потолка у ряда тегов нет и быть
- * не должно: это был бы второй путь к тому же числу. Здесь проверяется, что
- * потолки работают и в поле, где ряд тегов — доля строки, а не контейнер.
- *
- * Сколько тегов осталось в ряду, а сколько уехало в панель, проверяет
- * `tags-overflow.spec.ts` — здесь важны границы окна и прокрутка.
- */
-describe('панель хвоста в поле', () => {
-	it('помещается в окно и прокручивает хвост внутри себя', async () => {
-		render(pairHarness({ value: MANY_VALUES, texts: MANY_OPTIONS, overflow: 'popover' }))
-
-		const { frame, content } = await openTailPanel()
-
-		expectInsideWindow(frame, 'панель хвоста')
-
-		// Хвост выше панели — иначе прокручивать нечего, и сторож пуст
-		expect(content.scrollHeight, 'высота хвоста').toBeGreaterThan(content.clientHeight)
-	})
-
-	/**
-	 * В `wrap` тег поля шире слота сжимается и обрезает текст многоточием:
-	 * одному тегу переносить некуда. В панели так нельзя: ширину тега по его
-	 * узлу помнит замер `TTagsOverflowPlugin`, и в открытой панели тоже, —
-	 * сожмись тег по месту, замер погнался бы за собственным результатом.
-	 */
-	it('тег в панели остаётся натуральной ширины, а панель листает его вбок', async () => {
-		render(pairHarness({ value: MANY_VALUES, texts: MANY_OPTIONS, overflow: 'popover' }))
-
-		const { content, tail } = await openTailPanel()
-
-		const texts = [
-			...tail.querySelectorAll('.s-button:not(.s-tags-item__close) .s-button__text'),
-		]
-
-		expect(texts.length, 'тегов в панели').toBeGreaterThan(0)
-
-		texts.forEach((text, index) => {
-			expect(text.scrollWidth, `тег ${index}: текст обрезан`).toBeLessThanOrEqual(
-				text.clientWidth,
-			)
-		})
-
-		// Самый длинный тег шире панели — на то он и заведён. Сожмись он по
-		// месту, панели было бы нечего листать, и проверка выше прошла бы
-		// вхолостую: обрезать нечего, когда обрезать некуда.
-		expect(content.scrollWidth, 'ширина хвоста').toBeGreaterThan(content.clientWidth)
 	})
 })

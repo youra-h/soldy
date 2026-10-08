@@ -8,7 +8,7 @@ export const zhCN = freezeLocale({
 		dialog: { maximize: '最大化' },
 		popover: { close: '关闭' },
 		tabs: { close: '关闭{name}' },
-		tags: { close: '关闭{name}', more: '更多' },
+		tags: { close: '关闭{name}' },
 		scroller: { prev: '向前滚动', next: '向后滚动' },
 		field: { clear: '清除{name}' },
 		table: { selectAll: '全选' },

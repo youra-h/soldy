@@ -11,7 +11,7 @@ export const arEG = freezeLocale({
 		dialog: { maximize: 'تكبير' },
 		popover: { close: 'إغلاق' },
 		tabs: { close: 'إغلاق {name}' },
-		tags: { close: 'إغلاق {name}', more: 'المزيد' },
+		tags: { close: 'إغلاق {name}' },
 		scroller: { prev: 'التمرير للخلف', next: 'التمرير للأمام' },
 		field: { clear: 'مسح {name}' },
 		table: { selectAll: 'تحديد الكل' },

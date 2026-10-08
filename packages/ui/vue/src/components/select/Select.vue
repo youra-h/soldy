@@ -64,14 +64,19 @@ export default { ...SetupSelect, components: { Frame, Input, Icon, Tags, SelectI
 						Теги — второй компонент со своей коллекцией, не разметка: связка
 						«опция ⇄ тег» целиком в `TSelectTagsExtension`. Есть только в
 						`multiple` — в `single` `tags` пуст, и слот получает то же поле.
+
+						Слот `tags` отдаёт инстанс тегов и его коллекцию — то, что
+						встроенный `Tags` берёт `:ctrl` и `:engine`: свой ряд получает
+						связку готовой и раскладывает теги, как ему нужно.
 					-->
-					<Tags
-						embedded="select.tags"
-						v-if="tags"
-						class="s-select__tags"
-						:ctrl="tags"
-						:engine="tags_engine ?? undefined"
-					/>
+					<slot v-if="tags" name="tags" :tags="tags" :engine="tags_engine">
+						<Tags
+							embedded="select.tags"
+							class="s-select__tags"
+							:ctrl="tags"
+							:engine="tags_engine ?? undefined"
+						/>
+					</slot>
 					<slot name="leading" />
 				</template>
 

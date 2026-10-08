@@ -3,7 +3,6 @@ import {
 	useAdapter,
 	useCollectionAdapter,
 	VueElevatorFactory,
-	useIcon,
 	createVueAdapterContext,
 	type SetupContext,
 } from '../../adapter'
@@ -34,6 +33,6 @@ export default {
 
 		const refsCollection = useCollectionAdapter(collectionAdapter, props, emit)
 
-		return { ...refs, ...refsCollection, moreIconTag: useIcon('moreHoriz') }
+		return { ...refs, ...refsCollection }
 	},
 }

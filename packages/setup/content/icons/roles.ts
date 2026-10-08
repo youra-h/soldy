@@ -24,7 +24,6 @@ export const ICON_ROLES = [
 	'close',
 	'arrowDown',
 	'arrowRight',
-	'moreHoriz',
 	// Кнопка разворота модального окна: стрелки наружу — развернуть, внутрь —
 	// вернуть размер
 	'arrowsOutward',

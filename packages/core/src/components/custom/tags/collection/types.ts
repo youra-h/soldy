@@ -16,14 +16,11 @@ import type {
 	TValueSelectionExtension,
 } from '../../../base/collection'
 import type { ITagsItemExtension } from './extensions/tags/item/types'
-import { TTagsExtension, TTagsOverflowExtension } from './extensions'
-import type { TTagsEngineOptions, TTagsOverflowExtensionEvents } from './extensions'
+import { TTagsExtension } from './extensions'
+import type { TTagsEngineOptions } from './extensions'
 import type { ITags } from '../types'
 import type { ITagsItem, ITagsItemProps } from '../item/types'
-import type {
-	TSelectionItemFacadeEvents,
-	TSelectionCollectionFacadeEvents,
-} from '../../../base/collection'
+import type { TSelectionItemFacadeEvents } from '../../../base/collection'
 import type { TTagsItemEventsExtension } from './extensions/tags/item/types'
 
 export type TTagsCollectionExtensions<TItem extends ITagsItem = ITagsItem> = {
@@ -37,8 +34,6 @@ export type TTagsCollectionExtensions<TItem extends ITagsItem = ITagsItem> = {
 	/** Связь `value` набора с выбором коллекции — в обе стороны. */
 	value: TValueSelectionExtension<any, TItem>
 	tags: TTagsExtension<ITags, TItem>
-	/** Деление ряда и панели, когда тегам не хватает ширины. */
-	overflow: TTagsOverflowExtension<ITags, TItem>
 }
 
 export type TTagsCollection = TCollectionEngine<
@@ -103,12 +98,3 @@ export type TTagsAdapters<TItem extends ITagsItem = ITagsItem> = {
  * События фасада элемента Tags: набор базы плюс карта адаптера `tags`.
  */
 export type TTagsItemCollectionFacadeEvents = TSelectionItemFacadeEvents & TTagsItemEventsExtension
-
-/**
- * События фасада коллекции Tags: набор базы плюс карта расширения `overflow`.
- *
- * Состав проброса — это карты источников, списка имён у фасада нет
- * (AGENTS.md, «Карта событий выводится из источника»).
- */
-export type TTagsCollectionFacadeEvents = TSelectionCollectionFacadeEvents<ITagsItem> &
-	TTagsOverflowExtensionEvents

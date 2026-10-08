@@ -77,10 +77,6 @@ const NAMED: Record<string, Record<string, (locale: TLocale) => string>> = {
 	TagsItemDescriptor: {
 		closeAria: ({ translations }) => formatName(translations.tags.close, ''),
 	},
-	TagsDescriptor: {
-		moreAria: ({ translations }) => translations.tags.more,
-		names_more: ({ translations }) => translations.tags.more,
-	},
 	ScrollerDescriptor: {
 		prevAria: ({ translations }) => translations.scroller.prev,
 		nextAria: ({ translations }) => translations.scroller.next,

@@ -4,10 +4,9 @@
  * Здесь сторожится то, чего не видит ни один тест компонента: превью живёт в
  * ячейке страницы, ячейка — флексбокс, и у флекс-элемента автоминимум равен
  * его содержимому. Ряд тегов из-за этого держал свою ширину в узкой колонке:
- * теги уходили за край, замер мерил не ту ширину, и `overflow` не срабатывал
- * вовсе — ни кнопки «…» в `popover`, ни прокрутки в `scroll`. Проверить это
- * можно только на настоящей странице: в самодельном контейнере такой ячейки
- * нет.
+ * теги уходили за край, и `overflow` не срабатывал вовсе — прокрутки в
+ * `scroll` не было. Проверить это можно только на настоящей странице: в
+ * самодельном контейнере такой ячейки нет.
  *
  * Ширину задаёт `body`, а не окно: размер окна прогона — не то, что открыто у
  * человека, а колонки страницы считаются от ширины страницы.
@@ -28,8 +27,7 @@ import '../src/styles.css'
 setIcons(material)
 useTheme(oren)
 
-/** Ширины страницы: на первой теги помещаются, на остальных — нет. */
-const WIDE = 1440
+/** Ширины страницы, на которых теги в колонку не помещаются. */
 const NARROW = [1100, 900, 760]
 
 const settle = () => new Promise((resolve) => setTimeout(resolve, 300))
@@ -69,7 +67,7 @@ const pick = async (row: HTMLElement, value: string) => {
 
 /** Ряд тегов первой колонки строки — той, что правится пропами. */
 const rowOf = (prop: HTMLElement): HTMLElement => {
-	const element = prop.querySelector('.pg-col .s-tags:not(.s-tags__panel)')
+	const element = prop.querySelector('.pg-col .s-tags')
 
 	if (!(element instanceof HTMLElement)) throw new Error('ряда тегов в колонке нет')
 
@@ -120,44 +118,6 @@ afterEach(() => {
 })
 
 describe('строка overflow на странице компонента', () => {
-	it('popover: ряд не вылезает из ячейки, а хвост уходит под кнопку «…»', async () => {
-		await pick(prop, 'popover')
-
-		for (const width of NARROW) {
-			await page(width)
-
-			const row = rowOf(prop)
-			const stage = stageOf(prop)
-
-			// Ряд в ячейке: шире — значит, замер считает по чужой ширине
-			expect(
-				row.getBoundingClientRect().right,
-				`ширина ${width}: ряд за краем ячейки`,
-			).toBeLessThanOrEqual(stage.right + 0.5)
-
-			expect(contentEdge(row), `ширина ${width}: теги за краем ячейки`).toBeLessThanOrEqual(
-				stage.right + 0.5,
-			)
-
-			expect(
-				prop.querySelector('.s-tags__more'),
-				`ширина ${width}: кнопки «…» нет`,
-			).not.toBeNull()
-		}
-	})
-
-	/**
-	 * Помещаются ли на широкой странице все пять тегов, зависит от ширины
-	 * колонки, а она — от окна прогона; поэтому здесь сторожится не отсутствие
-	 * кнопки, а то, что ряд и на просторе остаётся в своих границах.
-	 */
-	it('popover: на широкой странице ряд тоже в границах ячейки', async () => {
-		await pick(prop, 'popover')
-		await page(WIDE)
-
-		expect(contentEdge(rowOf(prop))).toBeLessThanOrEqual(stageOf(prop).right + 0.5)
-	})
-
 	it('scroll: ряд прокручивается внутри ячейки, а не выходит за неё', async () => {
 		await pick(prop, 'scroll')
 		await page(NARROW[1])

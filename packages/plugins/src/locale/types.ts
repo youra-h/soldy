@@ -40,8 +40,6 @@ export type TTranslations = {
 	readonly tags: {
 		/** Имя кнопки закрытия тега — шаблон с текстом тега на месте `{name}` */
 		readonly close: string
-		/** Имя кнопки «…» — той, что открывает панель с непоместившимися тегами */
-		readonly more: string
 	}
 	/** Лента с кнопками листания */
 	readonly scroller: {

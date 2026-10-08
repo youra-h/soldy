@@ -1,25 +1,22 @@
 /**
- * Разметка переполнения: ряд рисует `fitted`, панель — `overflowed`.
+ * Разметка переполнения ряда тегов и слоты своей раскладки.
  *
- * Каждый тег отрисован ровно один раз: вторая отрисовка того же элемента
- * перетёрла бы его запись в реестре bundles (ключ там `uid`), и плагины
- * пошли бы работать с чужим узлом. Поэтому здесь проверяется не только то,
- * что тег есть, но и то, что он один.
+ * У набора два режима, `wrap` и `scroll`, и оба — раскладка темы: разметка
+ * отдаёт режим через `data-overflow` и рисует все показанные теги. Ленту со
+ * стрелками или хвост в панели собирают в своей разметке: слот `default`
+ * отдаёт ей показанные теги (`shown`), а Select — слот `tags` со своим
+ * инстансом тегов и его коллекцией.
  *
- * Замер здесь подставляется руками (`notifyFit`) — в jsdom раскладки нет, и
- * плагин, который меряет ряд по-настоящему, проверяется в браузерном
- * `playground/vue/browser/tags-overflow.spec.ts`.
+ * Раскладку проверяет браузерный `playground/vue/browser/tags-overflow.spec.ts`:
+ * в jsdom у ряда нет ни ширины, ни прокрутки.
  */
 
 import { describe, it, expect, afterEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { h, nextTick } from 'vue'
 import { TTags, createEngineTags } from '@soldy-ui/core'
-import type { ITagsProps, TTagsCollection, TTagsOverflow } from '@soldy-ui/core'
-import { enUS, extendLocale, ruRU } from '@soldy-ui/plugins'
-import type { TLocale } from '@soldy-ui/plugins'
-import { LocaleProvider, Tags } from '@soldy-ui/vue'
-import * as material from '@soldy-ui/icons-material'
+import type { ITags, ITagsItem, TTagsCollection, TTagsOverflow } from '@soldy-ui/core'
+import { Select, SelectItem, Tags, TagsItem } from '@soldy-ui/vue'
 
 let wrapper: ReturnType<typeof mount> | null = null
 
@@ -31,323 +28,141 @@ afterEach(() => {
 
 const TEXTS = ['Москва', 'Тверь', 'Тула']
 
-/** Набор тегов, собранный снаружи: замер потом подставляется в его коллекцию. */
-const createTags = (overflow: TTagsOverflow, props: Partial<ITagsProps> = {}) => {
-	const ctrl = new TTags({ overflow, closable: true, ...props })
+const mountTags = async (overflow: TTagsOverflow) => {
+	const ctrl = new TTags({ overflow, closable: true })
 	const engine = createEngineTags({
 		owner: ctrl,
 		items: TEXTS.map((text) => ({ value: text, text })),
 	})
 
-	return { ctrl, engine: engine as TTagsCollection }
-}
-
-const mountTags = async (overflow: TTagsOverflow, props: Partial<ITagsProps> = {}) => {
-	const { ctrl, engine } = createTags(overflow, props)
-
-	wrapper = mount(Tags, { props: { ctrl, engine }, attachTo: document.body })
-
-	await nextTick()
-
-	return { ctrl, engine }
-}
-
-/** Теги внутри провайдера локали; локаль меняют пропом провайдера. */
-const mountLocalized = async (overflow: TTagsOverflow, locale: TLocale) => {
-	const { ctrl, engine } = createTags(overflow)
-	const provider = mount(LocaleProvider, {
-		props: { locale },
-		slots: { default: () => h(Tags, { ctrl, engine }) },
+	wrapper = mount(Tags, {
+		props: { ctrl, engine: engine as TTagsCollection },
 		attachTo: document.body,
 	})
 
-	wrapper = provider
 	await nextTick()
-
-	return { ctrl, engine, provider }
 }
 
 /** Строки тегов внутри узла — носители текста. */
 const textsIn = (scope: ParentNode) =>
 	[...scope.querySelectorAll('.s-tags-item')].map((item) => item.textContent?.trim())
 
-const row = (): HTMLElement => {
-	const element = document.querySelector('.s-tags:not(.s-tags__panel)')
+/** Узел по селектору; нет его — тест падает здесь, а не на чтении свойства. */
+const find = (selector: string): HTMLElement => {
+	const element = document.querySelector(selector)
 
-	if (!(element instanceof HTMLElement)) throw new Error('ряда тегов нет')
+	if (!(element instanceof HTMLElement)) throw new Error(`${selector}: узла нет`)
 
 	return element
 }
 
-const panel = (): HTMLElement | null => document.querySelector('.s-tags__panel')
-
-const more = (): HTMLElement | null => document.querySelector('.s-tags__more')
-
-describe('режим wrap и scroll: панели нет', () => {
-	it.each(['wrap', 'scroll'] as const)(
-		'%s: все теги в ряду, кнопки «…» нет',
-		async (overflow) => {
-			await mountTags(overflow)
-
-			expect(textsIn(row())).toEqual(TEXTS)
-			expect(more()).toBeNull()
-			expect(panel()).toBeNull()
-		},
+/** Своя раскладка тегов: обёртка с классом и в ней по `TagsItem` на тег. */
+const ownRow = (shown: ITagsItem[]) =>
+	h(
+		'div',
+		{ class: 'own' },
+		shown.map((item) => h(TagsItem, { key: item.uid, ctrl: item })),
 	)
+
+describe('режимы wrap и scroll', () => {
+	it.each(['wrap', 'scroll'] as const)('%s: все теги в ряду', async (overflow) => {
+		await mountTags(overflow)
+
+		expect(textsIn(find('.s-tags'))).toEqual(TEXTS)
+	})
 
 	it('режим уезжает в тему через data-overflow', async () => {
 		await mountTags('scroll')
 
-		expect(row().dataset.overflow).toBe('scroll')
-	})
-
-	it('ленты в этих режимах нет вовсе', async () => {
-		await mountTags('wrap')
-
-		expect(document.querySelector('.s-scroller')).toBeNull()
+		expect(find('.s-tags').dataset.overflow).toBe('scroll')
 	})
 })
 
 /**
- * Режим `arrows`: ряд заворачивается в ленту, и рядом становится её вьюпорт.
- *
- * Здесь важна проводка — куда уехали теги, роль и состояния. Раскладку и само
- * листание проверяет `playground/vue/browser/tags-overflow.spec.ts`: в jsdom у
- * вьюпорта нет ни ширины, ни прокрутки.
+ * Слот `default` отдаёт показанные теги: так их раскладывают в ленту или
+ * делят на ряд и панель, не трогая набор. Тег в своей разметке — тот же
+ * элемент коллекции: закрывается и выбывает так же.
  */
-describe('режим arrows', () => {
-	const viewport = (): HTMLElement => {
-		const element = document.querySelector('.s-scroller__viewport')
+describe('слот default: своя раскладка показанных тегов', () => {
+	const mountOwn = async () => {
+		wrapper = mount(Tags, {
+			props: { closable: true, items: TEXTS.map((text) => ({ value: text, text })) },
+			slots: { default: ({ shown }: { shown: ITagsItem[] }) => ownRow(shown) },
+			attachTo: document.body,
+		})
 
-		if (!(element instanceof HTMLElement)) throw new Error('вьюпорта ленты нет')
-
-		return element
+		await nextTick()
 	}
 
-	it('теги лежат во вьюпорте ленты, а не прямыми детьми корня', async () => {
-		await mountTags('arrows')
+	it('теги стоят в своей разметке, каждый — один раз', async () => {
+		await mountOwn()
 
-		expect(textsIn(viewport())).toEqual(TEXTS)
-		expect(row().querySelectorAll(':scope > .s-tags-item')).toHaveLength(0)
-		// Каждый тег отрисован ровно один раз: второй перетёр бы запись в реестре
-		expect(textsIn(document.body)).toEqual(TEXTS)
+		expect(textsIn(find('.own'))).toEqual(TEXTS)
+		expect(document.querySelectorAll('.s-tags-item')).toHaveLength(TEXTS.length)
 	})
 
-	it('делить нечего: ни панели, ни кнопки «…»', async () => {
-		await mountTags('arrows')
+	it('закрытый тег выбывает и из своей разметки', async () => {
+		await mountOwn()
 
-		expect(more()).toBeNull()
-		expect(panel()).toBeNull()
-		expect(row().dataset.overflow).toBe('arrows')
-	})
+		const close = find('.own .s-tags-item:nth-child(2) .s-tags-item__close')
 
-	it('роль ряда стоит на вьюпорте, а корень её не несёт', async () => {
-		const { engine } = await mountTags('arrows')
-
-		expect(viewport().getAttribute('role')).toBe('list')
-		expect(row().hasAttribute('role')).toBe(false)
-
-		engine.extensions.selection.mode = 'multiple'
+		close.click()
 		await nextTick()
 
-		expect(viewport().getAttribute('role')).toBe('listbox')
-		expect(viewport().getAttribute('aria-orientation')).toBe('horizontal')
-		expect(viewport().getAttribute('aria-multiselectable')).toBe('true')
-		expect(row().hasAttribute('role')).toBe(false)
-	})
-
-	it('кнопки листания в разметке, и выключенность набора до них доезжает', async () => {
-		const { ctrl } = await mountTags('arrows')
-
-		const buttons = ['.s-scroller__prev', '.s-scroller__next'].map((selector) =>
-			document.querySelector(selector),
-		)
-
-		expect(buttons.every((button) => button !== null)).toBe(true)
-
-		ctrl.disabled = true
-		await nextTick()
-
-		expect(buttons.map((button) => button?.hasAttribute('disabled'))).toEqual([true, true])
-	})
-
-	/**
-	 * Кнопки принадлежат ленте, и имена ей пишет её же плагин имён: сквозь
-	 * Tags они не идут, своих строк у Tags для них нет.
-	 */
-	it('имена кнопок — английские умолчания ленты', async () => {
-		await mountTags('arrows')
-
-		expect(document.querySelector('.s-scroller__prev')?.getAttribute('aria-label')).toBe(
-			'Scroll back',
-		)
-		expect(document.querySelector('.s-scroller__next')?.getAttribute('aria-label')).toBe(
-			'Scroll forward',
-		)
-	})
-
-	it('локаль поддерева доезжает до кнопок ленты и обновляет их на лету', async () => {
-		const { provider } = await mountLocalized('arrows', ruRU)
-
-		expect(document.querySelector('.s-scroller__prev')?.getAttribute('aria-label')).toBe(
-			'Прокрутить назад',
-		)
-		expect(document.querySelector('.s-scroller__next')?.getAttribute('aria-label')).toBe(
-			'Прокрутить вперёд',
-		)
-
-		await provider.setProps({
-			locale: extendLocale(enUS, { translations: { scroller: { prev: 'К началу' } } }),
-		})
-
-		expect(document.querySelector('.s-scroller__prev')?.getAttribute('aria-label')).toBe(
-			'К началу',
-		)
-	})
-
-	it('смена режима возвращает ряд на корень', async () => {
-		const { ctrl, engine } = await mountTags('arrows')
-
-		engine.extensions.selection.mode = 'multiple'
-		ctrl.overflow = 'wrap'
-		await nextTick()
-
-		expect(document.querySelector('.s-scroller')).toBeNull()
-		expect(row().getAttribute('role')).toBe('listbox')
-		expect(textsIn(row())).toEqual(TEXTS)
+		expect(textsIn(find('.own'))).toEqual(['Москва', 'Тула'])
 	})
 })
 
-describe('режим popover', () => {
-	it('до замера теги в ряду, и кнопки «…» нет: хвоста нет — нет и её', async () => {
-		await mountTags('popover')
+/**
+ * Слот `tags` у Select отдаёт инстанс тегов и его коллекцию — то, что
+ * встроенный `Tags` берёт `:ctrl` и `:engine`. Свой ряд получает связку
+ * «опция ⇄ тег» готовой.
+ */
+describe('слот tags у Select', () => {
+	type TTagsScope = { tags: ITags; engine: TTagsCollection }
 
-		expect(textsIn(row())).toEqual(TEXTS)
-		expect(more()).toBeNull()
-	})
-
-	it('после замера хвост уезжает в панель, и каждый тег отрисован один раз', async () => {
-		const { engine } = await mountTags('popover')
-
-		engine.extensions.overflow.notifyFit(1)
-		await nextTick()
-
-		expect(textsIn(row())).toEqual(['Москва'])
-		expect(textsIn(document.body)).toEqual(TEXTS)
-
-		const opened = panel()
-
-		expect(opened).not.toBeNull()
-		expect(textsIn(opened ?? document.createElement('div'))).toEqual(['Тверь', 'Тула'])
-	})
-
-	/**
-	 * Ряд — флексбокс, и тег несёт свой номер в коллекции стилем (`order`):
-	 * перестановка не переписывает разметку. Кнопка элементом коллекции не
-	 * является, и без такого же номера она встала бы нулевой — то есть сразу
-	 * за первым тегом, а не в конец ряда. Раскладку сторожит браузерный
-	 * `playground/vue/browser/tags-overflow.spec.ts`, здесь — сам номер.
-	 */
-	it('кнопка «…» встаёт на место первого не поместившегося тега', async () => {
-		const { engine } = await mountTags('popover')
-
-		engine.extensions.overflow.notifyFit(2)
-		await nextTick()
-
-		const wrapper = document.querySelector('.s-tags__overflow')
-
-		expect(wrapper?.getAttribute('style')).toContain('order: 2')
-
-		engine.extensions.overflow.notifyFit(1)
-		await nextTick()
-
-		expect(document.querySelector('.s-tags__overflow')?.getAttribute('style')).toContain(
-			'order: 1',
-		)
-	})
-
-	it('кнопка «…» несёт связку с панелью и своё имя — от локали, как и панель', async () => {
-		const { engine } = await mountLocalized('popover', ruRU)
-
-		engine.extensions.overflow.notifyFit(1)
-		await nextTick()
-
-		const button = more()
-
-		expect(button?.getAttribute('aria-label')).toBe('Ещё')
-		expect(document.querySelector('.s-popover__panel')?.getAttribute('aria-label')).toBe('Ещё')
-		expect(button?.getAttribute('aria-haspopup')).toBe('dialog')
-		expect(button?.getAttribute('aria-expanded')).toBe('false')
-		expect(button?.getAttribute('aria-controls')).toBeTruthy()
-	})
-
-	it('панель несёт классы ряда и его роль — селекторы вида до неё не достают', async () => {
-		const { engine } = await mountTags('popover')
-
-		engine.extensions.overflow.notifyFit(1)
-		await nextTick()
-
-		expect(panel()?.classList.contains('s-tags')).toBe(true)
-		expect(panel()?.getAttribute('role')).toBe('list')
-	})
-})
-
-describe('значок кнопки «…»', () => {
-	it('иконка роли moreHoriz из пакета, а не символ многоточия текстом', async () => {
-		const { engine } = await mountTags('popover')
-
-		engine.extensions.overflow.notifyFit(1)
-		await nextTick()
-
-		const icon = more()?.querySelector('svg.s-icon')
-
-		// Путь сверяется с пакетом: jsdom дописывает закрывающий тег, поэтому
-		// строки `body` целиком сравнивать нечем
-		const path = /d="([^"]+)"/.exec(material.moreHoriz.body)?.[1]
-
-		expect(icon?.getAttribute('viewBox')).toBe(material.moreHoriz.viewBox)
-		expect(icon?.querySelector('path')?.getAttribute('d')).toBe(path)
-		// Текста у кнопки нет вовсе: имя ей даёт `aria-label`
-		expect(more()?.textContent?.trim()).toBe('')
-	})
-
-	it('слот more-icon подменяет значок, панель и деление остаются', async () => {
-		const { ctrl, engine } = createTags('popover')
-
-		wrapper = mount(Tags, {
-			props: { ctrl, engine },
-			slots: { 'more-icon': '<i class="own-icon" />' },
+	const mountSelect = async (mode: 'single' | 'multiple') => {
+		wrapper = mount(Select, {
+			props: { mode, value: mode === 'multiple' ? ['msk', 'tver'] : 'msk' },
+			slots: {
+				default: () => [
+					h(SelectItem, { value: 'msk', text: 'Москва' }),
+					h(SelectItem, { value: 'tver', text: 'Тверь' }),
+				],
+				tags: ({ tags, engine }: TTagsScope) =>
+					h(
+						Tags,
+						{ ctrl: tags, engine, class: 'own-tags' },
+						{ default: ({ shown }: { shown: ITagsItem[] }) => ownRow(shown) },
+					),
+			},
 			attachTo: document.body,
 		})
 
 		await nextTick()
+	}
 
-		engine.extensions.overflow.notifyFit(1)
-		await nextTick()
+	it('свой ряд встаёт на место встроенного и получает выбранное тегами', async () => {
+		await mountSelect('multiple')
 
-		expect(more()?.querySelector('.own-icon')).not.toBeNull()
-		expect(more()?.querySelector('svg.s-icon')).toBeNull()
-		expect(textsIn(row())).toEqual(['Москва'])
+		expect(document.querySelector('.s-select__tags')).toBeNull()
+		expect(find('.s-select__field .own-tags').contains(find('.own'))).toBe(true)
+		expect(textsIn(find('.own'))).toEqual(['Москва', 'Тверь'])
 	})
-})
 
-describe('состав ряда принадлежит потребителю, когда он его объявил', () => {
-	it('своё содержимое слота отменяет и деление, и панель', async () => {
-		const { ctrl, engine } = createTags('popover')
+	it('закрытый в своём ряду тег снимает выбор опции', async () => {
+		await mountSelect('multiple')
 
-		wrapper = mount(Tags, {
-			props: { ctrl, engine },
-			slots: { default: '<span class="own">свои теги</span>' },
-			attachTo: document.body,
-		})
-
+		find('.own .s-tags-item:first-child .s-tags-item__close').click()
 		await nextTick()
 
-		engine.extensions.overflow.notifyFit(0)
-		await nextTick()
+		expect(textsIn(find('.own'))).toEqual(['Тверь'])
+		expect(wrapper?.emitted('update:value')?.at(-1)).toEqual([['tver']])
+	})
 
-		expect(document.querySelectorAll('.own')).toHaveLength(1)
-		expect(more()).toBeNull()
-		expect(panel()).toBeNull()
+	it('без множественного выбора слота нет: тегов в поле не бывает', async () => {
+		await mountSelect('single')
+
+		expect(document.querySelector('.own-tags')).toBeNull()
 	})
 })

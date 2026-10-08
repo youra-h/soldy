@@ -656,8 +656,8 @@ get closable() { return !this._item.disabled && (this._item.closable ?? this._pa
 после смены у владельца и число `change:size` у элемента; у Tags — размер
 набора и свой вариант из `items`, патча, вставки и кода, который смена у
 набора не трогает. Вход тега — `setup/__tests__/prop-redeclare.spec.ts`,
-разметка — `ui/vue/__tests__/tags-variant.spec.ts`, цвет пилюли в ряду,
-ленте и панели — `playground/vue/browser/tags-variant.spec.ts`.
+разметка — `ui/vue/__tests__/tags-variant.spec.ts`, цвет пилюли в ряду и в
+своей раскладке слота — `playground/vue/browser/tags-variant.spec.ts`.
 
 ### Элемент входит в коллекцию при монтировании, а не при сборке (критично)
 

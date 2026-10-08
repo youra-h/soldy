@@ -16,7 +16,7 @@ import type { TTagsScrollPluginEvents } from './types'
  * паддинг-бокс ряда без `scroll-padding` (`scrollWindowOf`): сколько места
  * держать у края, знает только тема — у самостоятельного ряда это запас под
  * кольцо фокуса, в поле Select — ширина подсказки. Счёт — общая доводка
- * (`nearestShift`), та же, что у ленты `arrows`.
+ * (`nearestShift`), та же, что у ленты (`TScrollerViewportPlugin`).
  *
  * Плагин, а не расширение или разметка: и прямоугольники, и прокрутка — это
  * операции над DOM. Решения:
@@ -43,9 +43,9 @@ import type { TTagsScrollPluginEvents } from './types'
  * клавиатуры нет: `focus()` после нажатия клавиши браузер считает фокусом с
  * клавиатуры, и `focusin` приходит сюда с `:focus-visible`.
  *
- * Слушает, только пока `overflow === 'scroll'`: в `wrap` и `popover` ряд не
- * прокручивается, а в `arrows` фокус доводит лента. Режим выражен подпиской,
- * а не проверкой внутри обработчика.
+ * Слушает, только пока `overflow === 'scroll'`: в `wrap` ряд не
+ * прокручивается. Режим выражен подпиской, а не проверкой внутри
+ * обработчика.
  */
 export class TTagsScrollPlugin extends TBasePlugin<ITags, TTagsScrollPluginEvents> {
 	/** Корень набора: в `scroll` он и есть прокручиваемый ряд. */

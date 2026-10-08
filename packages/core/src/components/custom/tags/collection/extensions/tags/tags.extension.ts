@@ -18,7 +18,6 @@ import type {
 	ITagsExtension,
 } from './types'
 import { TTagsItemExtension, type ITagsItemExtension } from './item'
-import type { ITagsOverflowExtension } from '../overflow'
 
 /**
  * TTagsExtension — то, что тег знает благодаря коллекции.
@@ -44,9 +43,7 @@ import type { ITagsOverflowExtension } from '../overflow'
  *    (`role="list"`/`"listitem"`), а `listbox`/`option` с `aria-selected`,
  *    как только `selection.mode` перестаёт быть `none`. Пишет это
  *    расширение, а не элемент и не `TSelectionExtension`: тот общий для всех
- *    коллекций, а конкретная пара ролей — знание Tags. Куда роль ложится,
- *    решает режим переполнения: в `arrows` ряд — вьюпорт ленты (`rowAria`),
- *    в остальных — сам корень.
+ *    коллекций, а конкретная пара ролей — знание Tags.
  * 4. **Остановка Tab** — roving tabindex по паттерну APG Listbox, пока выбор
  *    включён: весь набор — одна остановка, между тегами ходят стрелки
  *    (`TTagsKeyboardPlugin`). Кнопка закрытия из порядка Tab выведена — тег
@@ -130,8 +127,6 @@ export class TTagsExtension<TOwner extends ITags = ITags, TItem extends ITagsIte
 		ctx.driver.events.on('change:items', () => this._syncTabStop())
 		selection?.events.on('change:mode', () => this._syncTabStop())
 		selection?.events.on('change:selection', () => this._syncTabStop())
-		// Тег, уехавший в панель, из порядка обхода выбывает
-		this._overflow?.events.on('change:fit', () => this._syncTabStop())
 
 		this._syncTabStop()
 
@@ -198,10 +193,6 @@ export class TTagsExtension<TOwner extends ITags = ITags, TItem extends ITagsIte
 		return this._ctx.extensions.selection as ISelectionExtension<TItem> | undefined
 	}
 
-	private get _overflow(): ITagsOverflowExtension<TItem> | undefined {
-		return this._ctx.extensions.overflow as ITagsOverflowExtension<TItem> | undefined
-	}
-
 	/**
 	 * Роль набора и его тегов зависит от режима выбора: `list`/`listitem`,
 	 * пока `mode === 'none'`, иначе `listbox`/`option` — как APG listbox.
@@ -211,12 +202,8 @@ export class TTagsExtension<TOwner extends ITags = ITags, TItem extends ITagsIte
 	 * `multiple` выбрать можно несколько (`aria-multiselectable`). У `list`
 	 * таких атрибутов нет — оба снимаются.
 	 *
-	 * Все три — атрибуты **ряда**, а не корня, поэтому пишутся через
-	 * `setRowAria`: в `arrows` рядом становится вьюпорт ленты, и место
-	 * выбирает Tags. Он же переносит их на смене режима — подписываться на неё
-	 * расширению не нужно. Что написал потребитель (`aria-label`), не трогаем:
-	 * это его знание о корне. Владельца нет — ряда тоже, роли пишутся только
-	 * тегам.
+	 * Что написал потребитель (`aria-label`), не трогаем: это его знание о
+	 * корне. Владельца нет — набора тоже, роли пишутся только тегам.
 	 */
 	private _applyMode(): void {
 		const selection = this._selection
@@ -227,9 +214,9 @@ export class TTagsExtension<TOwner extends ITags = ITags, TItem extends ITagsIte
 		const owner = this._ctx.options.get('owner')
 
 		if (owner) {
-			owner.setRowAria('role', selecting ? 'listbox' : 'list')
-			owner.setRowAria('aria-orientation', selecting ? 'horizontal' : null)
-			owner.setRowAria('aria-multiselectable', selection.multiple ? 'true' : null)
+			owner.aria.add('role', selecting ? 'listbox' : 'list')
+			owner.aria.add('aria-orientation', selecting ? 'horizontal' : null)
+			owner.aria.add('aria-multiselectable', selection.multiple ? 'true' : null)
 		}
 
 		this._ctx.driver.valueOf().forEach((item) => this._applyItemRole(item, selection))
@@ -316,25 +303,14 @@ export class TTagsExtension<TOwner extends ITags = ITags, TItem extends ITagsIte
 	}
 
 	/**
-	 * Тег, на который можно перейти: не disabled, visible, rendered и стоит в
-	 * ряду.
+	 * Тег, на который можно перейти: не disabled, visible и rendered.
 	 *
 	 * Публичный, потому что правило одно на всех: по нему считаются остановка
 	 * Tab и навигация с клавиатуры. Копия в плагине однажды разошлась бы с
 	 * остановкой.
-	 *
-	 * Тег, уехавший в панель переполнения, фокус принять не может: панель
-	 * закрыта, а открытая — отдельный диалог со своей моделью фокуса
-	 * (`TPopoverFocusPlugin`). Ряд и панель — две стороны одного набора, и
-	 * стрелки ходят по той, на которой стоит фокус.
 	 */
 	isEnabledTag(item: TItem): boolean {
-		return (
-			!item.disabled &&
-			item.visible &&
-			item.rendered &&
-			!(this._overflow?.overflowed.includes(item) ?? false)
-		)
+		return !item.disabled && item.visible && item.rendered
 	}
 
 	/**

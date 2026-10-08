@@ -4,7 +4,6 @@ import type {
 	TValueControlEvents,
 } from '../../base/value-control'
 import type { TCollectionStorageDriverEvents } from '../../base/collection'
-import type { TAria, TAriaAttributes } from '../../../common'
 import type { TButtonView } from '../button/types'
 import type { ITagsCollectionProps } from './collection/types'
 import type { ITagsItem, ITagsItemProps } from './item/types'
@@ -29,20 +28,19 @@ export type TTagsView = TButtonView
 /**
  * Что делать с тегами, которым не хватило ширины ряда.
  *
- * Одно свойство перечислением, а не пара «переносить или нет» + «чем листать»:
- * пара даёт состояния, которых не бывает («переносим на строки» и «листаем»
- * разом). Тот же приём, что у `TListContentFit` и `TListIndicator`.
+ * Одно свойство перечислением, а не пара флагов: тот же приём, что у
+ * `TListContentFit` и `TListIndicator`.
  *
  * - `wrap` — теги переносятся на новую строку. Умолчание: так ряд ведёт себя
  *   в теме (`flex-wrap`), и смена поведения по умолчанию была бы ломающей.
  * - `scroll` — одна строка с нативной прокруткой.
- * - `arrows` — одна строка, которую листают кнопки: ряд заворачивается в
- *   ленту (`Scroller`), и рядом становится её вьюпорт. Роль ряда уезжает
- *   туда же (`rowAria`): внутри `role="listbox"` кнопкам листания места нет.
- * - `popover` — одна строка, в конце кнопка «…» с панелью, где лежат
- *   непоместившиеся теги.
+ *
+ * Оба значения — раскладка темы: ряд не меряется и не делится, поэтому набор
+ * тегов не тянет за собой ни замера, ни панели. Ленту со стрелками или хвост
+ * за кнопкой собирают в своей разметке: слот `default` отдаёт ей показанные
+ * теги (`shown`).
  */
-export type TTagsOverflow = 'wrap' | 'scroll' | 'arrows' | 'popover'
+export type TTagsOverflow = 'wrap' | 'scroll'
 
 export type TTagsEvents = TValueControlEvents<TTagsValue> &
 	TCollectionStorageDriverEvents<ITagsItem> & {
@@ -52,10 +50,6 @@ export type TTagsEvents = TValueControlEvents<TTagsValue> &
 		'change:view': (value: TTagsView | undefined) => void
 		/** change:overflow */
 		'change:overflow': (value: TTagsOverflow) => void
-		/** change:rowAria — набор атрибутов ряда изменился */
-		'change:rowAria': (value: TAriaAttributes) => void
-		/** change:moreAria — набор атрибутов кнопки «…» изменился */
-		'change:moreAria': (value: TAriaAttributes) => void
 	}
 
 /** Пропсы самого компонента (без коллекционной части). */
@@ -82,22 +76,4 @@ export interface ITags<
 	view: TTagsView | undefined
 	/** Что делать с тегами, которым не хватило ширины ряда */
 	overflow: TTagsOverflow
-	/** Ряд завёрнут в ленту со стрелками — то есть режим переполнения `arrows` */
-	readonly arrows: boolean
-	/**
-	 * Атрибуты ряда, когда рядом стал не корень: в `arrows` ряд — вьюпорт
-	 * ленты, и роль набора уезжает туда. Вне `arrows` набор пуст
-	 */
-	readonly rowAria: TAriaAttributes
-	/**
-	 * Записать атрибут ряда. Куда он ляжет — на корень или во вьюпорт ленты —
-	 * решает режим переполнения, а не тот, кто пишет; `null` снимает атрибут
-	 */
-	setRowAria(name: string, value: string | null): void
-	/** Атрибуты кнопки «…»: имя от локали пишет плагин имён. Своего экземпляра у кнопки нет */
-	readonly moreAria: TAria
-	/** Классы ряда плюс свой класс панели: теги в ней — не потомки корня */
-	readonly panelClasses: string[]
-	/** ARIA панели: роль повторяет роль ряда */
-	readonly panelAria: TAriaAttributes
 }

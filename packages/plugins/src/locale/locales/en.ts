@@ -13,7 +13,7 @@ export const enUS = freezeLocale({
 		dialog: { maximize: 'Maximize' },
 		popover: { close: 'Close' },
 		tabs: { close: 'Close {name}' },
-		tags: { close: 'Close {name}', more: 'More' },
+		tags: { close: 'Close {name}' },
 		scroller: { prev: 'Scroll back', next: 'Scroll forward' },
 		field: { clear: 'Clear {name}' },
 		table: { selectAll: 'Select all' },

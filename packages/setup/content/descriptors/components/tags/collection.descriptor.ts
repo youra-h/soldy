@@ -25,25 +25,6 @@ export const TagsCollectionDescriptor = defineDescriptor(() =>
 			props: {
 				mode: { type: String, triggers: ['change:mode'] },
 				selected: { type: Array, protected: true, triggers: ['change:selection'] },
-				/**
-				 * Деление показанного на ряд и панель — знание о составе, поэтому
-				 * оно приходит из коллекции, а не из компонента. Вне `popover`
-				 * `fitted` равен показанному, а `overflowed` пуст.
-				 */
-				fitted: { type: Array, protected: true, triggers: ['change:fit'] },
-				overflowed: { type: Array, protected: true, triggers: ['change:fit'] },
-				/**
-				 * Инстанс панели — то, что `<Popover :ctrl="...">` берёт готовым.
-				 * Создаёт его расширение: закрытие опустевшей панели тогда решается
-				 * в ядре, а не привязкой в шаблоне каждого адаптера.
-				 */
-				panel: { type: Object, protected: true, triggers: ['change:panel'] },
-				/**
-				 * Место кнопки «…» в ряду. Тег несёт свой номер в коллекции стилем
-				 * (`order`), и кнопке нужен свой: без него она встаёт нулевой, то
-				 * есть сразу за первым тегом, а не в конец ряда.
-				 */
-				moreOrder: { type: Number, protected: true, triggers: ['change:fit'] },
 			},
 			events: [],
 		},
