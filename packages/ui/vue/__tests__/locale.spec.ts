@@ -59,12 +59,15 @@ const tabs = () =>
 const weekdays = () =>
 	[...document.querySelectorAll('.s-calendar__weekday')].map((cell) => cell.textContent?.trim())
 
-/** Узкие имена недели языка `locale`, с первого дня `first` (2026-09-20 — воскресенье). */
+/**
+ * Короткие имена недели языка `locale`, с первого дня `first` (2026-09-20 —
+ * воскресенье): у `en-US` и `ru-RU` подпись колонки — короткое имя.
+ */
 function week(locale: string, first: number): string[] {
-	const narrow = new Intl.DateTimeFormat(locale, { weekday: 'narrow', timeZone: 'UTC' })
+	const short = new Intl.DateTimeFormat(locale, { weekday: 'short', timeZone: 'UTC' })
 
 	return [0, 1, 2, 3, 4, 5, 6].map((offset) =>
-		narrow.format(Date.UTC(2026, 8, 20 + first + offset)),
+		short.format(Date.UTC(2026, 8, 20 + first + offset)),
 	)
 }
 

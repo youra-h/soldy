@@ -72,6 +72,17 @@ function dayCell(date: string): HTMLElement {
 }
 
 const titles = () => findAll('.s-calendar__title').map((title) => title.textContent?.trim())
+const weekdays = () => findAll('.s-calendar__weekday').map((cell) => cell.textContent?.trim())
+
+/** Короткие имена недели языка `locale`, с первого дня `first` (2026-09-20 — воскресенье). */
+function shortWeek(locale: string, first: number): string[] {
+	const short = new Intl.DateTimeFormat(locale, { weekday: 'short', timeZone: 'UTC' })
+
+	return [0, 1, 2, 3, 4, 5, 6].map((offset) =>
+		short.format(Date.UTC(2026, 8, 20 + first + offset)),
+	)
+}
+
 const prev = () => find('.s-calendar__prev')
 const next = () => find('.s-calendar__next')
 
@@ -103,16 +114,8 @@ describe('разметка', () => {
 			's-calendar__next',
 			's-calendar__grid',
 		])
-		// Подписи колонок — узкие имена
-		expect(findAll('.s-calendar__weekday').map((cell) => cell.textContent?.trim())).toEqual([
-			'S',
-			'M',
-			'T',
-			'W',
-			'T',
-			'F',
-			'S',
-		])
+		// Подписи колонок — короткие имена: у en-US в них не больше трёх букв
+		expect(weekdays()).toEqual(shortWeek('en-US', 0))
 		expect(find('.s-calendar__grid thead').getAttribute('aria-hidden')).toBe('true')
 	})
 
@@ -191,13 +194,9 @@ describe('разметка', () => {
 	it('первый день недели по локали поддерева: у ru-RU колонки с понедельника', async () => {
 		await render(() => h(LocaleProvider, { locale: ruRU }, () => h(Calendar)))
 
-		// Узкие имена повторяются (понедельник и пятница — «П»), поэтому
-		// сверяется весь ряд; 2026-09-21 — понедельник
-		const narrow = new Intl.DateTimeFormat('ru-RU', { weekday: 'narrow', timeZone: 'UTC' })
-
-		expect(findAll('.s-calendar__weekday').map((cell) => cell.textContent?.trim())).toEqual(
-			[0, 1, 2, 3, 4, 5, 6].map((offset) => narrow.format(Date.UTC(2026, 8, 21 + offset))),
-		)
+		// Короткие имена: у ru-RU они различимы, а узкие повторялись бы —
+		// понедельник и пятница — «П»
+		expect(weekdays()).toEqual(shortWeek('ru-RU', 1))
 	})
 
 	it('слот item — своё содержимое дня; scope — сам день', async () => {

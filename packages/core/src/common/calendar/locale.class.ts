@@ -1,6 +1,7 @@
 import { DEFAULT_LOCALE } from '../locale'
-import { addDays, utcDateOf } from './date'
+import { WEEKDAYS, addDays, utcDateOf } from './date'
 import { firstDayOfWeek } from './week'
+import { weekdayLabelWidth } from './weekday-label'
 import type { ICalendarLocale, TCalendarDate, TWeekday, TWeekdayWidth } from './types'
 
 /**
@@ -35,6 +36,8 @@ export class TCalendarLocale implements ICalendarLocale {
 	readonly firstDay: TWeekday
 	readonly calendar: string
 	private readonly _formatters = new Map<string, Intl.DateTimeFormat>()
+	/** Форма подписи колонки дня недели; считается при первом обращении */
+	private _labelWidth: 'short' | 'narrow' | undefined
 
 	/** @param tag тег локали; невалидный и пустой — `en-US` */
 	constructor(tag: string | undefined) {
@@ -80,6 +83,19 @@ export class TCalendarLocale implements ICalendarLocale {
 
 	weekdayName(day: TWeekday, width: TWeekdayWidth): string {
 		return this._formatter(width, { weekday: width }).format(utcDateOf(addDays(SUNDAY, day)))
+	}
+
+	/**
+	 * Форма — по семи коротким именам недели (`weekdayLabelWidth`), одна на все
+	 * дни. Считается при первом обращении и живёт вместе с объектом, как
+	 * форматтеры: имена у тега не меняются.
+	 */
+	weekdayLabel(day: TWeekday): string {
+		this._labelWidth ??= weekdayLabelWidth(
+			WEEKDAYS.map((weekday) => this.weekdayName(weekday, 'short')),
+		)
+
+		return this.weekdayName(day, this._labelWidth)
 	}
 
 	private _formatter(key: string, options: Intl.DateTimeFormatOptions): Intl.DateTimeFormat {
