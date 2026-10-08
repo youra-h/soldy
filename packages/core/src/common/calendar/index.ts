@@ -24,6 +24,7 @@ export {
 } from './date'
 export { todayDate } from './today'
 export { calendarLocale } from './locale'
+export { weekdayLabelWidth } from './weekday-label'
 export { DATE_PART_PLACEHOLDERS } from './placeholders'
 export type {
 	TCalendarDate,

@@ -32,8 +32,11 @@ export type TMonthGridDay = {
 	outside: boolean
 }
 
-/** Ширина имени дня недели: узкое — подпись колонки, полное — для скринридера. */
-export type TWeekdayWidth = 'narrow' | 'long'
+/**
+ * Ширина имени дня недели: короткое или узкое — подпись колонки (какое,
+ * решает `weekdayLabelWidth` по всей неделе локали), полное — для скринридера.
+ */
+export type TWeekdayWidth = 'narrow' | 'short' | 'long'
 
 /** Часть даты в поле ввода: день, месяц или год. */
 export type TDatePart = 'day' | 'month' | 'year'
@@ -74,4 +77,10 @@ export interface ICalendarLocale {
 	fullDate(date: TCalendarDate): string
 	/** Имя дня недели */
 	weekdayName(day: TWeekday, width: TWeekdayWidth): string
+	/**
+	 * Подпись колонки дня недели: короткое имя, если у всех коротких имён
+	 * недели не больше трёх букв, иначе узкое (`weekdayLabelWidth`). Форма одна
+	 * на все дни локали
+	 */
+	weekdayLabel(day: TWeekday): string
 }

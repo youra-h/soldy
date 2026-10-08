@@ -236,7 +236,8 @@ export default { ...SetupCalendar, components: { Button, Icon, ListBox, Popover,
 				-->
 				<table class="s-calendar__grid" v-bind="grid.gridAria">
 					<!--
-						Дни недели — узкие имена из `weekdays`, по `th` на день.
+						Дни недели — подписи из `weekdays`, по `th` на день: короткое
+						имя или узкое, какое выбрало ядро по локали.
 
 						Строка скрыта от скринридера, и это отступление от APG, где у
 						колонок есть заголовки: имя дня — полная дата, день недели в нём
@@ -250,7 +251,7 @@ export default { ...SetupCalendar, components: { Button, Icon, ListBox, Popover,
 								:key="index"
 								class="s-calendar__weekday"
 							>
-								{{ weekday.narrow }}
+								{{ weekday.label }}
 							</th>
 						</tr>
 					</thead>

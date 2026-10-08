@@ -95,7 +95,7 @@ describe('без аргументов', () => {
 		expect(owner.months).toBeUndefined()
 		expect(owner.classes.toArray()).toContain('s-calendar')
 		expect(owner.weekdays).toHaveLength(7)
-		expect(owner.weekdays[0].narrow).toBe(weekdayName('en-US', 0, 'narrow'))
+		expect(owner.weekdays[0].label).toBe(weekdayName('en-US', 0, 'short'))
 		expect(owner.weekdays[0].long).toBe(weekdayName('en-US', 0))
 	})
 
@@ -739,34 +739,40 @@ describe('локаль и сегодня', () => {
 	})
 
 	/**
-	 * Подпись колонки — узкое имя: короткое у `ar-EG` — целое слово, и
-	 * колонке его не вместить. Полное имя — рядом, для скринридера.
+	 * Подпись колонки — короткое имя, если оно короткое у всей недели, иначе
+	 * узкое: короткое у `ar-EG` — целое слово, и колонке его не вместить.
+	 * Полное имя — рядом, для скринридера. Само правило —
+	 * `calendar-date.spec.ts`.
 	 */
-	it('подписи колонок — узкие имена локали: у ar-EG короче коротких', () => {
-		const owner = new TCalendar({ locale: 'ar-EG', weekStart: 0 })
+	it('подписи колонок: у en-US короткие имена, у ar-EG — узкие', () => {
+		const english = new TCalendar({ weekStart: 0 })
+		const arabic = new TCalendar({ locale: 'ar-EG', weekStart: 0 })
 
-		expect(owner.weekdays.map(({ narrow }) => narrow)).toEqual(
+		expect(english.weekdays.map(({ label }) => label)).toEqual(
+			WEEK_DAYS.map((index) => weekdayName('en-US', index, 'short')),
+		)
+		expect(arabic.weekdays.map(({ label }) => label)).toEqual(
 			WEEK_DAYS.map((index) => weekdayName('ar-EG', index, 'narrow')),
 		)
-		expect(owner.weekdays.map(({ long }) => long)).toEqual(
+		expect(arabic.weekdays.map(({ long }) => long)).toEqual(
 			WEEK_DAYS.map((index) => weekdayName('ar-EG', index)),
 		)
-
-		for (const index of WEEK_DAYS) {
-			expect(owner.weekdays[index].narrow.length).toBeLessThan(
-				weekdayName('ar-EG', index, 'short').length,
-			)
-		}
 	})
 
-	it('смена locale и weekStart меняет подписи колонок', () => {
+	it('смена locale и weekStart меняет подписи колонок — и их форму', () => {
 		const owner = new TCalendar({ weekStart: 0 })
 
 		owner.locale = 'ru-RU'
 		owner.weekStart = 1
 
-		expect(owner.weekdays.map(({ narrow }) => narrow)).toEqual(
-			[1, 2, 3, 4, 5, 6, 0].map((index) => weekdayName('ru-RU', index, 'narrow')),
+		expect(owner.weekdays.map(({ label }) => label)).toEqual(
+			[1, 2, 3, 4, 5, 6, 0].map((index) => weekdayName('ru-RU', index, 'short')),
+		)
+
+		owner.locale = 'ar-EG'
+
+		expect(owner.weekdays.map(({ label }) => label)).toEqual(
+			[1, 2, 3, 4, 5, 6, 0].map((index) => weekdayName('ar-EG', index, 'narrow')),
 		)
 	})
 })

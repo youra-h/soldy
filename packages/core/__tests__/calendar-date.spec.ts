@@ -20,17 +20,20 @@ import {
 	startOfMonth,
 	startOfWeek,
 	todayDate,
+	weekdayLabelWidth,
 	yearOf,
 } from '../src/common/calendar'
 import type { TCalendarDate, TWeekday } from '../src/common/calendar'
 
 /**
  * Расчёт дат календаря — `common/calendar`: разбор, сдвиги, недели, сетка
- * месяца, «сегодня» в часовом поясе, первый день недели и подписи локали.
+ * месяца, «сегодня» в часовом поясе, первый день недели, подписи локали и
+ * правило подписи колонки дня недели.
  *
  * Строки Intl сверяются с тем же форматтером, а не с литералом: ICU разных
- * версий Node пишет их по-разному. Оракул дней — `Date` через
- * `setUTCFullYear`: `Date.UTC` уносит годы 0–99 в 1900-е.
+ * версий Node пишет их по-разному. Правило подписи колонки — наоборот, на
+ * литералах: оно судит о знаках имени, и ICU ему не нужен. Оракул дней —
+ * `Date` через `setUTCFullYear`: `Date.UTC` уносит годы 0–99 в 1900-е.
  */
 
 const FIRST_DAYS: readonly TWeekday[] = [0, 1, 2, 3, 4, 5, 6]
@@ -470,6 +473,9 @@ describe('подписи', () => {
 		expect(locale.weekdayName(1, 'long')).toBe(
 			formatter('ru', { weekday: 'long' }).format(monday),
 		)
+		expect(locale.weekdayName(1, 'short')).toBe(
+			formatter('ru', { weekday: 'short' }).format(monday),
+		)
 		expect(locale.weekdayName(1, 'narrow')).toBe(
 			formatter('ru', { weekday: 'narrow' }).format(monday),
 		)
@@ -514,5 +520,71 @@ describe('подписи', () => {
 		const title = formatter('en-US', { month: 'long', year: 'numeric' })
 
 		expect(calendarLocale('zz').monthTitle('2026-09-01')).toBe(title.format(september))
+	})
+})
+
+/**
+ * Подпись колонки — короткое имя, если у всех семи коротких имён не больше
+ * трёх знаков шириной в букву (`L`, `N`, `Mc`), иначе узкое у всех семи.
+ */
+describe('подпись колонки дня недели', () => {
+	/** Короткие имена недели с воскресенья — строкой через пробел. */
+	const week = (names: string): string[] => names.split(' ')
+
+	it('короткое — у недели, где в каждом имени не больше трёх букв', () => {
+		expect(weekdayLabelWidth(week('вс пн вт ср чт пт сб'))).toBe('short')
+		expect(weekdayLabelWidth(week('周日 周一 周二 周三 周四 周五 周六'))).toBe('short')
+	})
+
+	it('точка сокращения места буквы не занимает: «lun.» — короткое', () => {
+		expect(weekdayLabelWidth(week('dim. lun. mar. mer. jeu. ven. sam.'))).toBe('short')
+	})
+
+	it('знаки над и под буквой (Mn) не считаются: «मंगल» и «शुक्र» — по три', () => {
+		expect(weekdayLabelWidth(week('रवि सोम मंगल बुध गुरु शुक्र शनि'))).toBe('short')
+	})
+
+	it('протяжённые гласные (Mc) считаются: тамильское «ஞாயி.» — четыре', () => {
+		expect(weekdayLabelWidth(week('ஞாயி. திங். செவ். புத. வியா. வெள். சனி'))).toBe('narrow')
+	})
+
+	it('протяжённая анусвара телугу считается: «మంగళ» — четыре', () => {
+		expect(weekdayLabelWidth(week('ఆది సోమ మంగళ బుధ గురు శుక్ర శని'))).toBe('narrow')
+	})
+
+	it('целые слова — узкое: арабская неделя', () => {
+		expect(weekdayLabelWidth(week('الأحد الاثنين الثلاثاء الأربعاء الخميس الجمعة السبت'))).toBe(
+			'narrow',
+		)
+	})
+
+	it('тайские гласные в строке — буквы: «อาทิตย์» — пять', () => {
+		expect(weekdayLabelWidth(week('อาทิตย์ จันทร์ อังคาร พุธ พฤหัส ศุกร์ เสาร์'))).toBe(
+			'narrow',
+		)
+	})
+
+	it('одно длинное имя из семи переводит в узкие всю неделю', () => {
+		expect(weekdayLabelWidth(week('niedz. pon. wt. śr. czw. pt. sob.'))).toBe('narrow')
+		expect(weekdayLabelWidth(week('nd. pon. wt. śr. czw. pt. sob.'))).toBe('short')
+	})
+
+	it('локаль подписывает колонки формой своей недели', () => {
+		// 2026-09-20 — воскресенье
+		const names = (locale: string, weekday: 'short' | 'narrow'): string[] => {
+			const format = formatter(locale, { weekday })
+
+			return FIRST_DAYS.map((day) => format.format(utc(2026, 9, 20 + day)))
+		}
+		const labels = (locale: string): string[] =>
+			FIRST_DAYS.map((day) => calendarLocale(locale).weekdayLabel(day))
+
+		expect(labels('ru')).toEqual(names('ru', 'short'))
+		expect(labels('en-US')).toEqual(names('en-US', 'short'))
+		expect(labels('ar-EG')).toEqual(names('ar-EG', 'narrow'))
+		expect(labels('ml-IN')).toEqual(names('ml-IN', 'narrow'))
+		// Формы различимы — иначе сверка выше ничего не доказала бы
+		expect(names('ru', 'short')).not.toEqual(names('ru', 'narrow'))
+		expect(names('ar-EG', 'narrow')).not.toEqual(names('ar-EG', 'short'))
 	})
 })
