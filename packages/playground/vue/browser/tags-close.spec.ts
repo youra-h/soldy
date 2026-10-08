@@ -9,6 +9,9 @@
  * всё это тема держит сама. Проверки не знают, как именно: каждая сверяет
  * крестик со строкой, а пилюлю — с её же состояниями, а не с числами темы. В
  * jsdom раскладки нет.
+ *
+ * Последний раздел — зона нажатия крестика: минимум цели указателя по WCAG
+ * 2.5.8 при прежнем виде крестика.
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
@@ -17,6 +20,7 @@ import { userEvent } from 'vitest/browser'
 import { defineComponent, h } from 'vue'
 import { COMPONENT_SIZES } from '@soldy-ui/playground-shared'
 import { Select, SelectItem, Tags, TagsItem } from '@soldy-ui/vue'
+import type { TTagsOverflow } from '@soldy-ui/core'
 
 import '@soldy-ui/theme-oren'
 
@@ -41,13 +45,19 @@ const harness = (tags: Record<string, unknown>, dir: 'ltr' | 'rtl' = 'ltr') =>
 	})
 
 /** Select с тегами в поле — их размеры задаёт слот поля, а не шкала Button. */
-const selectHarness = (size: (typeof COMPONENT_SIZES)[number]) =>
+const selectHarness = (size: (typeof COMPONENT_SIZES)[number], overflow?: TTagsOverflow) =>
 	defineComponent({
 		render() {
 			return h('div', { style: 'width: 460px' }, [
 				h(
 					Select,
-					{ mode: 'multiple', editable: true, value: ['0'], size },
+					{
+						mode: 'multiple',
+						editable: true,
+						value: ['0'],
+						size,
+						tags_overflow: overflow,
+					},
 					{ default: () => [h(SelectItem, { key: '0', value: '0', text: 'Москва' })] },
 				),
 			])
@@ -313,5 +323,141 @@ describe.each(COMPONENT_SIZES)('теги в поле Select, размер %s', (
 			1,
 		)
 		expect(rowBox.height).toBeCloseTo(box(item).height, 1)
+	})
+})
+
+/**
+ * Зона нажатия крестика — квадрат со стороной в минимум цели указателя по
+ * WCAG 2.5.8 (AA), по центру крестика и по высоте не дальше пилюли
+ * (`tags/_tags.scss`). Сам крестик мельче на всех ступенях, кроме `2xl`, но и
+ * на ней углов квадрата не ловит: они у него скруглены, а у `outlined` рамка
+ * пилюли снимает с него по пикселю сверху и снизу. В режиме выбора вплотную к
+ * крестику — нажимаемая строка тега.
+ *
+ * За пилюлю зона не выходит: снаружи она перехватывала бы нажатия у соседей, а
+ * ряду `scroll` добавила бы переполнение. Пилюля ниже минимума — у тега в поле
+ * Select на `sm`, — и там зона во всю её высоту. Подпись тега зона тоже не
+ * отнимает: сразу перед зоной — строка.
+ *
+ * Место и размер крестика прежние — их держат проверки выше: в его коробку
+ * зона не входит.
+ *
+ * Попадание — узел в точке внутри крестика, сам он или его значок: проверке
+ * всё равно, что из них сверху.
+ */
+describe('зона нажатия крестика', () => {
+	/** Минимум цели указателя по WCAG 2.5.8 (AA), px — число стандарта, а не темы. */
+	const MIN_TARGET = 24
+
+	const center = (element: Element) => {
+		const { left, top, width, height } = box(element)
+
+		return { x: left + width / 2, y: top + height / 2 }
+	}
+
+	/**
+	 * Нажатие в точке достаётся узлу: то, что в точке, лежит в нём.
+	 *
+	 * Точку Blink проверяет квадратом 1×1 вправо и вниз от неё
+	 * (`HitTestLocation`), и узел ловит её, если задевает квадрат: у левого и
+	 * верхнего края — и точку, не дошедшую до него меньше пикселя. Здесь
+	 * квадрат — с центром в точке, поэтому запас у всех краёв одинаков: точка в
+	 * углу зоны задевает её на полпикселя, а точка на пиксель за краем не
+	 * достаёт до него на полпикселя.
+	 */
+	const lands = (target: Element, x: number, y: number) => {
+		const hit = document.elementFromPoint(x - 0.5, y - 0.5)
+
+		return hit !== null && target.contains(hit)
+	}
+
+	/**
+	 * В углах зоны нажатие достаётся крестику, сразу за пилюлей — нет, а сразу
+	 * перед зоной со стороны строки — строке.
+	 */
+	const expectZone = (item: HTMLElement) => {
+		const close = find(':scope > .s-tags-item__close', item)
+		const row = rowOf(item)
+		const pill = box(item)
+		const { x, y } = center(close)
+		const left = x - MIN_TARGET / 2
+		const right = x + MIN_TARGET / 2
+		const top = Math.max(y - MIN_TARGET / 2, pill.top)
+		const bottom = Math.min(y + MIN_TARGET / 2, pill.bottom)
+		const corners = {
+			'левый верхний': [left, top],
+			'правый верхний': [right, top],
+			'левый нижний': [left, bottom],
+			'правый нижний': [right, bottom],
+		}
+
+		for (const [corner, [cornerX, cornerY]] of Object.entries(corners)) {
+			expect(lands(close, cornerX, cornerY), `угол зоны: ${corner}`).toBe(true)
+		}
+
+		expect(lands(close, x, pill.top - 1), 'над пилюлей').toBe(false)
+		expect(lands(close, x, pill.bottom + 1), 'под пилюлей').toBe(false)
+		expect(lands(close, pill.left - 1, y), 'левее пилюли').toBe(false)
+		expect(lands(close, pill.right + 1, y), 'правее пилюли').toBe(false)
+
+		const rowFirst = center(row).x < x
+
+		expect(lands(row, rowFirst ? left - 1 : right + 1, y), 'перед зоной').toBe(true)
+	}
+
+	/** Ряд `scroll` — прокручиваемая область: зона не добавила ему прокрутки по вертикали. */
+	const expectNoBlockScroll = (row: HTMLElement) => {
+		expect(row.scrollHeight, 'прокрутка ряда по вертикали').toBeLessThanOrEqual(
+			row.clientHeight,
+		)
+	}
+
+	const cases = (['filled', 'outlined'] as const).flatMap((view) =>
+		[
+			{ mode: 'multiple', label: 'с выбором' },
+			{ mode: 'none', label: 'без выбора' },
+		].map((set) => ({ view, ...set })),
+	)
+
+	describe.each(COMPONENT_SIZES)('размер %s', (size) => {
+		describe.each(cases)('view $view, набор $label', ({ view, mode }) => {
+			it('в ряду wrap — в углах крестик, за пилюлей нет', () => {
+				render(harness({ size, view, mode }))
+
+				expectZone(itemOf('a'))
+			})
+
+			it('в ряду scroll — так же, и прокрутки по вертикали у ряда нет', () => {
+				render(harness({ size, view, mode, overflow: 'scroll' }))
+
+				expectZone(itemOf('a'))
+				expectNoBlockScroll(find('.s-tags'))
+			})
+		})
+
+		describe('в поле Select', () => {
+			it('в ряду wrap — в углах крестик, за пилюлей нет', async () => {
+				render(selectHarness(size))
+
+				await expect.poll(() => document.querySelectorAll('.s-tags-item').length).toBe(1)
+
+				expectZone(find('.s-tags-item'))
+			})
+
+			it('в ряду scroll — так же, и прокрутки по вертикали у ряда нет', async () => {
+				render(selectHarness(size, 'scroll'))
+
+				await expect.poll(() => document.querySelectorAll('.s-tags-item').length).toBe(1)
+
+				expectZone(find('.s-tags-item'))
+				expectNoBlockScroll(find('.s-tags'))
+			})
+		})
+	})
+
+	it('в RTL — та же зона у крестика слева от текста', () => {
+		render(harness({ size: 'sm' }, 'rtl'))
+
+		expectZone(itemOf('a'))
 	})
 })
