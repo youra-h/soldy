@@ -1,20 +1,22 @@
 import type { IDatePicker, TEventSink } from '@soldy-ui/core'
-import { TNamesPlugin } from '../../../locale/names.plugin'
+import { TFieldNamesPlugin } from '../../field/names'
 import type { TTranslations } from '../../../locale/types'
 import type { TDatePickerNamesPluginEvents } from './types'
 
 /**
  * TDatePickerNamesPlugin — имена DatePicker от локали.
  *
- * Имя кнопки календаря — в её набор (`triggerAria`) и в набор панели
- * (`panelAria`): панель называется так же, как кнопка, которая её открывает.
- * Имена полей концов диапазона — выходами (`start`, `end`): поля — свои
- * компоненты, и имя им разметка отдаёт пропом `aria_label`, который пишет их
- * собственный `TAriaPlugin`. Текст кнопок подвала панели при `confirmable` —
- * тоже выходами (`confirm`, `cancel`): кнопки — свои компоненты, и текст им
- * разметка отдаёт пропом `text`.
+ * Имя кнопки очистки — как у любого поля (`TFieldNamesPlugin`): DatePicker —
+ * поле, и имя его кнопки собирается с его именем (`field.clear`). Имя кнопки
+ * календаря — в её набор (`triggerAria`) и в набор панели (`panelAria`):
+ * панель называется так же, как кнопка, которая её открывает. Имена полей
+ * концов диапазона — выходами (`start`, `end`): поля — свои компоненты, и имя
+ * им разметка отдаёт пропом `aria_label`, который пишет их собственный
+ * `TAriaPlugin`. Текст кнопок подвала панели при `confirmable` — тоже выходами
+ * (`confirm`, `cancel`): кнопки — свои компоненты, и текст им разметка отдаёт
+ * пропом `text`.
  */
-export class TDatePickerNamesPlugin extends TNamesPlugin<
+export class TDatePickerNamesPlugin extends TFieldNamesPlugin<
 	IDatePicker,
 	TDatePickerNamesPluginEvents
 > {
@@ -48,6 +50,8 @@ export class TDatePickerNamesPlugin extends TNamesPlugin<
 	}
 
 	protected override _name(owner: IDatePicker, translations: TTranslations): void {
+		super._name(owner, translations)
+
 		const { trigger, start, end, confirm, cancel } = translations.datePicker
 
 		owner.triggerAria.add('aria-label', trigger)

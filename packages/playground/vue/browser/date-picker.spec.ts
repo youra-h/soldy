@@ -20,8 +20,10 @@ import { userEvent } from 'vitest/browser'
 import { defineComponent, h, nextTick } from 'vue'
 import { TDatePicker } from '@soldy-ui/core'
 import type { IDatePickerProps } from '@soldy-ui/core'
+import { COMPONENT_SIZES } from '@soldy-ui/playground-shared'
 import { DatePicker } from '@soldy-ui/vue'
 
+import { expectClearSquare } from './clear-button'
 import { settled } from './colors'
 import { expectFadesInPlace, ownTransitionRuns } from './transitions'
 import { expectInsideWindow } from './viewport'
@@ -366,6 +368,68 @@ describe('диапазон', () => {
 			await nextTick()
 			expect(width(), `конец, после «${key}»`).toBeCloseTo(empty, 0)
 		}
+	})
+})
+
+/**
+ * Кнопка очистки — DatePicker'а, одна на значение: у одной даты — первой в
+ * слоте у конца поля, у диапазона — одна на период, своей колонкой коробки
+ * перед кнопкой календаря. Форма — та же, что у очистки полей: квадрат со
+ * стороной в строку слота на любом размере (`clear-button.ts`); у диапазона
+ * строку слота коробки держит кнопка календаря. Нажатие очищает период
+ * целиком, а фокус остаётся на кнопке: она вне частей, и их плагин указателя
+ * её нажатия не трогает.
+ */
+describe('кнопка очистки', () => {
+	const clear = () => find('.s-date-picker__clear')
+	const placeholders = () =>
+		[...document.querySelectorAll<HTMLElement>('.s-date-input__segment')].map(
+			(part) => part.dataset.placeholder,
+		)
+
+	it.each(COMPONENT_SIZES)('%s, одна дата: квадрат в строку слота поля', async (size) => {
+		await show({ size, clearable: true })
+
+		expectClearSquare(clear(), find('.s-date-picker__field .s-date-input__trailing'), size)
+	})
+
+	it.each(COMPONENT_SIZES)(
+		'%s, диапазон: квадрат кнопки календаря, перед ней, внутри коробки',
+		async (size) => {
+			await show({ size, mode: 'range', clearable: true })
+
+			const own = clear().getBoundingClientRect()
+			const next = trigger().getBoundingClientRect()
+			const box = root().getBoundingClientRect()
+
+			expectClearSquare(clear(), trigger(), size)
+			expect(own.right, 'перед кнопкой календаря').toBeLessThanOrEqual(next.left)
+			expect(own.top, 'в строку с кнопкой календаря').toBeCloseTo(next.top, 0)
+			expect(own.left, 'после дат').toBeGreaterThan(
+				find('.s-date-picker__end .s-date-input__segments').getBoundingClientRect().left,
+			)
+			expect(own.top, 'внутри коробки сверху').toBeGreaterThanOrEqual(box.top)
+			expect(own.bottom, 'внутри коробки снизу').toBeLessThanOrEqual(box.bottom)
+		},
+	)
+
+	it('диапазон: нажатие очищает оба конца, и набранный не до конца; фокус на кнопке', async () => {
+		const ctrl = await show({ mode: 'range', clearable: true })
+
+		// en-US: месяц, день, год — начало целиком, у конца только месяц
+		await userEvent.click(segment('month', '.s-date-picker__start'))
+		await userEvent.keyboard('05122026')
+		await userEvent.click(segment('month', '.s-date-picker__end'))
+		await userEvent.keyboard('05')
+
+		expect(ctrl.start.value).toBe('2026-05-12')
+		expect(ctrl.value).toBeUndefined()
+
+		await userEvent.click(clear())
+
+		expect(ctrl.start.value).toBeUndefined()
+		expect(placeholders().every((placeholder) => placeholder === 'true')).toBe(true)
+		expect(active()).toBe(clear())
 	})
 })
 

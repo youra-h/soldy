@@ -1,13 +1,18 @@
 /**
  * Дескриптор DatePicker (TDatePicker).
  *
- * Наследует `InputControlDescriptor` (value, name, readonly, required, id,
- * disabled, size, variant, ...) и добавляет режим, открытость панели, выбор
- * с подтверждением и то, что DatePicker отдаёт полям и календарю: границы,
- * недоступные дни, первый день недели, пояс «сегодня» — и имена концов в
- * форме. Язык, имена кнопки и концов диапазона и текст кнопок подвала — от
- * локали поддерева: их пишут плагины языка и имён, а разметка получает
- * готовые выходы.
+ * Наследует `FieldDescriptor` — DatePicker сам поле: кнопка очистки
+ * (`clearable`, набор `clearAria`, слот `clear`) поверх value, name, readonly,
+ * required, id, disabled, size, variant, ... Добавляет режим, открытость
+ * панели, выбор с подтверждением и то, что DatePicker отдаёт полям и
+ * календарю: границы, недоступные дни, первый день недели, пояс «сегодня» — и
+ * имена концов в форме. Язык, имена кнопок и концов диапазона и текст кнопок
+ * подвала — от локали поддерева: их пишут плагины языка и имён, а разметка
+ * получает готовые выходы.
+ *
+ * Кнопка очистки одна на значение: у одной даты — в слоте `clear` поля, перед
+ * кнопкой календаря, у диапазона — одна на период, после поля конца. Полям
+ * `clearable` не уходит: очищает DatePicker свой режим целиком.
  *
  * Поля (`field`, `start`, `end`), календарь и его движок — экземпляры ядра
  * DatePicker: разметка отдаёт их компонентам целиком (`:ctrl`, `:engine`), как
@@ -33,13 +38,13 @@ import {
 	LocalePluginDescriptor,
 	SwipePluginDescriptor,
 } from '../plugins'
-import { InputControlDescriptor } from './input-control.descriptor'
+import { FieldDescriptor } from './field.descriptor'
 
 export const DatePickerDescriptor = defineDescriptor(() =>
 	defineComponent({
 		ctor: TDatePicker,
 
-		extends: InputControlDescriptor(),
+		extends: FieldDescriptor(),
 
 		contribution: {
 			slots: {
@@ -150,8 +155,8 @@ export const DatePickerDescriptor = defineDescriptor(() =>
 			DatePickerFocusPluginDescriptor,
 			// `id` панели и `aria-controls` кнопки
 			DatePickerIdsPluginDescriptor,
-			// Имя кнопки календаря и панели, имена полей концов и текст кнопок
-			// подвала от локали
+			// Имена кнопок очистки и календаря, панели и полей концов и текст
+			// кнопок подвала от локали
 			DatePickerNamesPluginDescriptor,
 			// Смахнуть панель, чтобы закрыть. После dismiss: берёт у него панель
 			SwipePluginDescriptor,

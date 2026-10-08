@@ -85,7 +85,8 @@ const NAMED: Record<string, Record<string, (locale: TLocale) => string>> = {
 		prevAria: ({ translations }) => translations.scroller.prev,
 		nextAria: ({ translations }) => translations.scroller.next,
 	},
-	FieldDescriptor: { clearAria: ({ translations }) => formatName(translations.field.clear, '') },
+	// Базе поля (`FieldDescriptor`) плагин имён не ставится, как модальному слою:
+	// он один на компонент, и у DatePicker кнопок с именами больше
 	InputDescriptor: { clearAria: ({ translations }) => formatName(translations.field.clear, '') },
 	DateInputDescriptor: {
 		clearAria: ({ translations }) => formatName(translations.field.clear, ''),
@@ -96,6 +97,7 @@ const NAMED: Record<string, Record<string, (locale: TLocale) => string>> = {
 		nextAria: ({ translations }) => translations.calendar.nextMonth,
 	},
 	DatePickerDescriptor: {
+		clearAria: ({ translations }) => formatName(translations.field.clear, ''),
 		triggerAria: ({ translations }) => translations.datePicker.trigger,
 		panelAria: ({ translations }) => translations.datePicker.trigger,
 		names_start: ({ translations }) => translations.datePicker.start,

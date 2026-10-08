@@ -3,7 +3,8 @@
  * поля от локали, вместе с именем поля.
  *
  * Пропсов нет: плагин пишет в набор поля (`clearAria`), а его разметка уже
- * раскладывает.
+ * раскладывает. Ставят его формы поля — Input и DateInput; у DatePicker имя
+ * кнопки пишет его наследник `TDatePickerNamesPlugin`.
  */
 
 import { definePlugin } from '../../../protected/define'

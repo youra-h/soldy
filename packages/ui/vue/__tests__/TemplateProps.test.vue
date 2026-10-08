@@ -138,6 +138,10 @@ const dragAndDrop = new TDragAndDrop()
 	<DatePicker :swipe="true" />
 	<DatePicker swipe="handle" />
 
+	<!-- @vue-expect-error — кнопка очистки — флаг поля, а не строка -->
+	<DatePicker :clearable="'yes'" />
+	<DatePicker clearable />
+
 	<!-- @vue-expect-error — места `left` у окна нет: стороны логические -->
 	<Dialog placement="left" />
 	<Dialog placement="start" />

@@ -1,4 +1,4 @@
-import { TInputControl } from '../../base/input-control'
+import { TField } from '../../base/field'
 import type { TDefaultValues } from '../../base/component'
 import type { TSwipe, TSwipeSide } from '../../base/layer'
 import { DEFAULT_LOCALE, TAria, compareDates, parseDate } from '../../../common'
@@ -67,9 +67,10 @@ function commitOf(confirmable: boolean, host: IDatePickerCommitHost): IDatePicke
  * коллекции. Разметка эти значения не пробрасывает: второй путь к тем же
  * данным разошёлся бы с первым. Строк библиотеки DatePicker не строит и вниз
  * не раздаёт: имя кнопки календаря (оно же имя панели) в наборы `triggerAria`
- * и `panelAria` и имена полей концов диапазона даёт его плагин имён
- * (`TDatePickerNamesPlugin`), а поля и календарь, смонтированные своими
- * компонентами, получают имена от своих плагинов имён, как поле Select.
+ * и `panelAria`, имя кнопки очистки в `clearAria` и имена полей концов
+ * диапазона даёт его плагин имён (`TDatePickerNamesPlugin`), а поля и
+ * календарь, смонтированные своими компонентами, получают имена от своих
+ * плагинов имён, как поле Select.
  *
  * **Поле помечает ошибкой то, что не даст выбрать календарь**, и набранное не
  * прижимает: дату вне границ и недоступную, а конец диапазона — ещё и раньше
@@ -100,6 +101,14 @@ function commitOf(confirmable: boolean, host: IDatePickerCommitHost): IDatePicke
  * любое другое закрытие возвращает календарю значение DatePicker. Пока
  * диапазон выбран наполовину, «OK» выключена (`confirmDisabled`).
  *
+ * **Кнопка очистки — DatePicker как поле** (база `TField`, третья форма поля
+ * рядом с Input и DateInput): `clearable`, набор кнопки `clearAria` и команда
+ * `clear`. Кнопка одна на значение: у диапазона — одна на период, а не по
+ * кнопке у конца, как одна у него рамка и одна кнопка календаря. Полям
+ * `clearable` не уходит: очищает DatePicker весь свой режим, у диапазона —
+ * оба конца, и набранные не до конца, у которых значения нет. Поэтому и
+ * событие `clear` у DatePicker одно на оба режима.
+ *
  * Паттерн доступности — APG Date Picker Dialog: поле и отдельная кнопка, у
  * панели `role="dialog"` и `aria-modal`. У одной даты группа частей — само
  * поле, у диапазона — корень (`rootAria`) с полями концов внутри. Модификатор
@@ -115,12 +124,12 @@ function commitOf(confirmable: boolean, host: IDatePickerCommitHost): IDatePicke
  * открыли.
  */
 export class TDatePicker
-	extends TInputControl<TDatePickerValue, IDatePickerProps, TDatePickerEvents>
+	extends TField<TDatePickerValue, IDatePickerProps, TDatePickerEvents>
 	implements IDatePicker
 {
 	static override baseClass = 's-date-picker'
 
-	static defaultValues: typeof TInputControl.defaultValues &
+	static defaultValues: typeof TField.defaultValues &
 		TDefaultValues<
 			IDatePickerProps,
 			| 'mode'
@@ -133,7 +142,7 @@ export class TDatePicker
 			| 'swipe',
 			'min' | 'max' | 'unavailable' | 'weekStart' | 'timeZone'
 		> = {
-		...TInputControl.defaultValues,
+		...TField.defaultValues,
 		mode: 'single',
 		open: false,
 		closeOnSelect: true,
@@ -692,6 +701,18 @@ export class TDatePicker
 		for (const side of SIDES) if (side !== this._source) this._write(side)
 
 		super._valueChanged(oldValue)
+	}
+
+	/**
+	 * Шаг очистки (`clear`): поля режима пустеют командой поля — у диапазона
+	 * оба конца. Записью своего значения этого не сделать: у конца, набранного
+	 * не до конца, значения нет, и `undefined` его частей не тронул бы. Это
+	 * правка полей, как Delete по частям: значение DatePicker снимает сторона
+	 * полей, и запись можно отменить в `change:value:before` — тогда поля
+	 * получат принятое обратно.
+	 */
+	protected override _clearValue(): void {
+		this._fields.clear()
 	}
 
 	protected _applyOpen(value: boolean): void {
