@@ -48,6 +48,12 @@ const RESIZE_MAX = 1600
  * итога: и от своего значения, и от границ. Теме итог уходит переменной
  * заголовка (`widthStyle`): формула одна, а не в каждой разметке.
  *
+ * **Перестановка** (`reorderable`) — колонку берут за заголовок и переносят на
+ * другое место среди показанных. Место колонки знает коллекция колонок, а не
+ * она, поэтому жест и команда перестановки — у расширения `columns`
+ * коллекции строк; колонка только разрешает себя взять и сообщает это теме
+ * (`data-reorderable`).
+ *
  * **Ручка ширины** (`resizable`) — поле у края заголовка. Границы слоёв те же,
  * что у Slider: **значение — здесь, операция — в плагине.** Жест и клавиши
  * приходят командами (`grab`, `drag`, `release`, `shift`, `moveToEdge`): где
@@ -70,7 +76,14 @@ export default class TTableColumn<
 	static defaultValues: typeof TComponentView.defaultValues &
 		TDefaultValues<
 			ITableColumnProps,
-			'field' | 'text' | 'align' | 'sortable' | 'rowHeader' | 'resizable' | 'disabled',
+			| 'field'
+			| 'text'
+			| 'align'
+			| 'sortable'
+			| 'rowHeader'
+			| 'resizable'
+			| 'reorderable'
+			| 'disabled',
 			'width' | 'minWidth' | 'maxWidth' | 'compare'
 		> = {
 		...TComponentView.defaultValues,
@@ -88,6 +101,8 @@ export default class TTableColumn<
 		rowHeader: false,
 		// Ручка ширины — тоже решение потребителя
 		resizable: false,
+		// Перестановка за заголовок — тоже
+		reorderable: false,
 		disabled: false,
 	}
 
@@ -102,6 +117,7 @@ export default class TTableColumn<
 	protected _compare: TTableCompare | undefined
 	protected _rowHeader: boolean
 	protected _resizable: boolean
+	protected _reorderable: boolean
 	protected _disabled: boolean
 	/** Последний замер плагина — ширина колонки, которую решила тема */
 	protected _measuredWidth: number | undefined = undefined
@@ -124,6 +140,7 @@ export default class TTableColumn<
 		this._compare = props.compare ?? ctor.defaultValues.compare
 		this._rowHeader = props.rowHeader ?? ctor.defaultValues.rowHeader
 		this._resizable = props.resizable ?? ctor.defaultValues.resizable
+		this._reorderable = props.reorderable ?? ctor.defaultValues.reorderable
 		this._disabled = props.disabled ?? ctor.defaultValues.disabled
 
 		this._resizerAria = new TAria()
@@ -138,6 +155,7 @@ export default class TTableColumn<
 
 		this._syncAlign()
 		this._syncSized()
+		this._syncReorderable()
 
 		this.events.on('change:tag', () => this._syncScope())
 		this._syncScope()
@@ -281,6 +299,18 @@ export default class TTableColumn<
 			this._resizable = value
 		})
 		this._sink.emit('change:resizable', value)
+	}
+
+	get reorderable(): boolean {
+		return this._reorderable
+	}
+
+	set reorderable(value: boolean) {
+		if (this._reorderable === value) return
+
+		this._reorderable = value
+		this._syncReorderable()
+		this._sink.emit('change:reorderable', value)
 	}
 
 	get disabled(): boolean {
@@ -474,6 +504,15 @@ export default class TTableColumn<
 		if (nextRendered !== rendered) this._sink.emit('change:resizerRendered', nextRendered)
 	}
 
+	/**
+	 * `data-reorderable` — колонку можно взять за заголовок, с первой отрисовки:
+	 * тема подсвечивает такой заголовок под указателем и отдаёт его жесту
+	 * касания. Выключенную таблицу тема различает сама — по корню.
+	 */
+	protected _syncReorderable(): void {
+		this._dataset.add('reorderable', this._reorderable)
+	}
+
 	/** `data-align` — выравнивание для темы, с первой отрисовки. */
 	protected _syncAlign(): void {
 		this._dataset.add('align', this._align)
@@ -511,6 +550,7 @@ export default class TTableColumn<
 			compare: this._compare,
 			rowHeader: this._rowHeader,
 			resizable: this._resizable,
+			reorderable: this._reorderable,
 			disabled: this._disabled,
 		} as TProps
 	}

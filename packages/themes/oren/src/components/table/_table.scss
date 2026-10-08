@@ -255,8 +255,9 @@ $resizer-line: 3px;
 	}
 }
 
-// Заголовок, с которым что-то делают, — с кнопкой сортировки или ручкой
-// ширины — подсвечен целиком: прямоугольник от линии до линии, во всю ячейку.
+// Заголовок, с которым что-то делают, — с кнопкой сортировки, ручкой ширины
+// или тот, что можно перетащить, — подсвечен целиком: прямоугольник от линии
+// до линии, во всю ячейку.
 // По нему видно, где колонка кончается, а у её границы — ручка ширины, как в
 // таблицах ClickUp. Подсветку рисует заголовок, а не кнопка: у колонки с одной
 // ручкой кнопки нет, а подсветка та же.
@@ -271,9 +272,9 @@ $resizer-line: 3px;
 .s-table:not([data-disabled='true'])
 	> .s-table__head
 	> .s-table__head-row
-	> .s-table-column:has(
-		> .s-table-column__content > .s-table-column__sort,
-		> .s-table-column__resizer
+	> .s-table-column:is(
+		[data-reorderable='true'],
+		:has(> .s-table-column__content > .s-table-column__sort, > .s-table-column__resizer)
 	) {
 	@media (hover: hover) {
 		&:hover {
@@ -505,6 +506,77 @@ $resizer-line: 3px;
 	}
 }
 
+// Перестановка колонки — заголовком, а не колонкой: строк в таблице бывают
+// тысячи, и колонка встаёт на новое место одной перестановкой, когда заголовок
+// отпустили (как в таблицах ClickUp).
+//
+// Взятый заголовок (`data-dragging`) идёт за указателем — сдвигом из
+// переменной, которую пишет плагин жеста (`--s-table-column-drag`), — и поднят
+// над соседями и их ручками. Сдвиг — не переход: заголовок стоит там, где
+// указатель, в любом режиме движения. Поверхность у него своя, контрола, с
+// тенью и вуалью нажатия: он лежит над чужими заголовками, и без фона их
+// подписи проступали бы сквозь него. Фон — картинкой, а не цветом: цвет
+// заголовка — его состояние наведения и нажатия (выше), а картинка ложится
+// поверх и закрывает его. Ручки у взятого нет — край колонки сейчас не тянут.
+//
+// Палец, который тянет заголовок вдоль строки, не листает таблицу: вдоль
+// строки жест — перестановке, поперёк — прокрутке страницы.
+.s-table-column[data-reorderable='true'] {
+	touch-action: pan-y;
+}
+
+.s-table-column[data-dragging='true'] {
+	@apply z-3 shadow-md;
+	translate: var(--s-table-column-drag, 0) 0;
+	background-image:
+		linear-gradient(var(--s-table-active), var(--s-table-active)),
+		linear-gradient(var(--s-component-surface), var(--s-component-surface));
+
+	> .s-table-column__resizer {
+		@apply invisible;
+	}
+}
+
+// Пока тащат заголовок — курсор «тащу» на всей таблице и без выделения текста:
+// указатель уходит со своего заголовка. Кнопка сортировки ставит свой курсор,
+// и во взятом заголовке его перекрывают.
+.s-table:has(> .s-table__head > .s-table__head-row > .s-table-column[data-dragging='true']) {
+	@apply cursor-grabbing select-none;
+}
+
+.s-table-column[data-dragging='true'] .s-table-column__sort {
+	@apply cursor-grabbing;
+}
+
+// Место, куда встанет колонка, — линия у края заголовка под меткой
+// (`data-drop`): перед ним или после него. Цвет и толщина — линии ручки
+// ширины, но во всю высоту заголовка: это не ручка, а место вставки. Стоит
+// линия на границе колонок, а у края таблицы — внутри неё: за краем она
+// раздвинула бы прокрутку контейнера. Над взятым заголовком: он идёт за
+// указателем и закрыл бы линию, когда несут к соседу.
+.s-table-column[data-drop]::before {
+	content: '';
+	@apply pointer-events-none absolute inset-y-0 z-4;
+	inline-size: $resizer-line;
+	background-color: var(--s-component-focus-ring);
+}
+
+.s-table-column[data-drop='before']::before {
+	inset-inline-start: calc(-1 * $resizer-line / 2);
+}
+
+.s-table-column[data-drop='after']::before {
+	inset-inline-end: calc(-1 * $resizer-line / 2);
+}
+
+.s-table-column:first-child[data-drop='before']::before {
+	inset-inline-start: 0;
+}
+
+.s-table-column:last-child[data-drop='after']::before {
+	inset-inline-end: 0;
+}
+
 // Поле ручки — во всю полосу и прозрачное: остаётся в дереве доступности и в
 // порядке фокуса, и рамку курсора скринридер рисует по полосе. Указатель оно не
 // ловит: тянет плагин, а не браузер, — иначе край двигали бы двое.
@@ -575,9 +647,10 @@ $resizer-line: 3px;
 // выбранной строкой — системным цветом текста, как линии остальных строк: без
 // подмены она осталась бы вуалью темы.
 //
-// Линия ручки ширины — фон псевдоэлемента, и браузер заменил бы его цветом
-// поверхности: под наведением, фокусом и в жесте линии не было бы. Поэтому она
-// системного цвета фокуса и без подмены, как кольцо фокуса Button.
+// Линия ручки ширины и линия места вставки колонки — фоны псевдоэлементов, и
+// браузер заменил бы их цветом поверхности: под наведением, фокусом и в жесте
+// линий не было бы. Поэтому они системного цвета фокуса и без подмены, как
+// кольцо фокуса Button.
 @media (forced-colors: active) {
 	.s-table-row[data-selected='true']:not([data-disabled='true']) {
 		forced-color-adjust: none;
@@ -590,7 +663,8 @@ $resizer-line: 3px;
 		}
 	}
 
-	.s-table-column__resizer::before {
+	.s-table-column__resizer::before,
+	.s-table-column[data-drop]::before {
 		forced-color-adjust: none;
 		background-color: Highlight;
 	}

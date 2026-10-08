@@ -597,6 +597,53 @@ describe('ручка ширины', () => {
 })
 
 /**
+ * Перестановку ведёт плагин таблицы, место колонки — расширение коллекции.
+ * Здесь — что плагин стоит на корне таблицы и находит её заголовки, а
+ * перестановка доезжает до шапки и ячеек строк и уходит наружу `column:move`.
+ * Протяжку указателем — `playground/vue/browser/table.spec.ts`.
+ */
+describe('перестановка колонок', () => {
+	const MOVABLE: readonly TTableColumnSource[] = [
+		{ ...NAME, reorderable: true },
+		{ ...AGE, reorderable: true },
+	]
+
+	it('data-reorderable — на заголовке колонки', async () => {
+		await render(() => h(Table, { items: [{ data: ANNA }], columns: [MOVABLE[0], AGE] }))
+
+		const [name, age] = findAll('.s-table-column')
+
+		expect(name.dataset.reorderable).toBe('true')
+		expect(age.dataset.reorderable).toBe('false')
+	})
+
+	it('Ctrl+Shift+← на кнопке сортировки — шапка и ячейки в новом порядке, column:move', async () => {
+		const move = vi.fn()
+		const engine = engineOf('none', [ANNA], [...MOVABLE])
+
+		await render(() => h(Table, { engine, 'onColumn:move': move }))
+
+		const age = find('.s-table-column__sort')
+
+		age.dispatchEvent(
+			new KeyboardEvent('keydown', {
+				key: 'ArrowLeft',
+				ctrlKey: true,
+				shiftKey: true,
+				bubbles: true,
+				cancelable: true,
+			}),
+		)
+		await settle()
+
+		expect(findAll('.s-table-column').map(text)).toEqual(['Возраст', 'Имя'])
+		expect(findAll('.s-table-row__cell').map(text)).toEqual(['30', 'Анна'])
+		expect(move).toHaveBeenCalledTimes(1)
+		expect(move.mock.calls[0][0].order).toEqual(['age', 'name'])
+	})
+})
+
+/**
  * Клик по чекбоксу браузер переключает сам, до обработчиков. Выбор — решение
  * модели: подписчик `item:select:before` его отменяет, и тогда ни поле, ни
  * строка отмеченными не остаются.

@@ -852,6 +852,49 @@ describe('фасад коллекции строк', () => {
  * событием на действие, — по нему приложение её сохраняет. Как ручка считает
  * ширину, — `table-columns.spec.ts`, «ручка ширины».
  */
+/**
+ * Порядок, в который пользователь переставил колонки, таблица отдаёт наружу
+ * одним событием на действие — по нему приложение его сохраняет. Как
+ * переставляет расширение, — `table-columns.spec.ts`, «перестановка колонок».
+ */
+describe('порядок колонок от пользователя', () => {
+	const MOVABLE: readonly TTableColumnSource[] = [
+		{ ...NAME, reorderable: true },
+		{ ...AGE, reorderable: true },
+	]
+
+	it('column:move — у фасада, одно на действие, с порядком полей', () => {
+		const facade = new TTableCollectionFacade({ columns: [...MOVABLE] })
+		const move = vi.fn()
+		const age = columnOf(facade.columns, 'age')
+		const { columns } = facade.extensions
+
+		facade.events.on('column:move', move)
+
+		columns.dragStart(age)
+		columns.dragOver(0)
+
+		expect(move).not.toHaveBeenCalled()
+
+		columns.dragEnd()
+
+		expect(move.mock.calls).toEqual([[{ column: age, order: ['age', 'name'] }]])
+		expect(facade.shownColumns.map((column) => column.field)).toEqual(['age', 'name'])
+	})
+
+	it('выключенная таблица колонку не переставляет', () => {
+		const owner = new TTable({ disabled: true })
+		const facade = new TTableCollectionFacade({ columns: [...MOVABLE] }, { owner })
+		const move = vi.fn()
+
+		facade.events.on('column:move', move)
+
+		expect(facade.extensions.columns.moveColumn(columnOf(facade.columns, 'age'), 0)).toBe(false)
+		expect(facade.extensions.columns.dragStart(columnOf(facade.columns, 'age'))).toBe(false)
+		expect(move).not.toHaveBeenCalled()
+	})
+})
+
 describe('ширина колонки от пользователя', () => {
 	const RESIZABLE: readonly TTableColumnSource[] = [
 		{ ...NAME, resizable: true, width: 150 },

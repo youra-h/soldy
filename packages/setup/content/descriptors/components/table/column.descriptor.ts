@@ -10,7 +10,10 @@
  *
  * Корень — ячейка шапки (`th`), на ней наборы колонки (`aria-sort`,
  * `aria-labelledby`, `data-sort`, `data-sort-priority`, `data-align`,
- * `data-sized`, `data-resizing`) и ширина переменной (`widthStyle`).
+ * `data-sized`, `data-resizing`, `data-reorderable`, а в жесте перестановки —
+ * `data-dragging` и `data-drop`) и ширина переменной (`widthStyle`).
+ * Перестановку ведёт плагин таблицы, а не колонки: место колонки знает
+ * коллекция колонок.
  * Содержимое — слот по умолчанию в обёртке с набором `contentAria`: его
  * наполняет таблица — кнопкой сортировки или текстом. За обёрткой — ручка
  * ширины (`resizerRendered`): поле с ходом и шириной (`resizer`) и набором
@@ -52,6 +55,7 @@ export const TableColumnDescriptor = defineDescriptor(() =>
 				compare: { type: Function, protected: true, triggers: ['change:compare'] },
 				rowHeader: { type: Boolean, protected: true, triggers: ['change:rowHeader'] },
 				resizable: { type: Boolean, protected: true, triggers: ['change:resizable'] },
+				reorderable: { type: Boolean, protected: true, triggers: ['change:reorderable'] },
 				disabled: { type: Boolean, protected: true, triggers: ['change:disabled'] },
 				/**
 				 * Ширина колонки — `--s-table-column-width`. Считает ядро: в шести

@@ -288,6 +288,17 @@ describe('заголовок колонки — ячейкой', () => {
 		expect(pixel([resizable.hover])).toEqual(pixel([sortable.hover]))
 	})
 
+	it('заголовок, который можно только перетащить, подсвечен так же', async () => {
+		await mountAway(engineOf([NAME, { ...CITY, reorderable: true }]))
+
+		const [name, city] = headers()
+		const sortable = await hoverBackground(name)
+		const reorderable = await hoverBackground(city)
+
+		expect(opacity(reorderable.hover)).toBeGreaterThan(0)
+		expect(pixel([reorderable.hover])).toEqual(pixel([sortable.hover]))
+	})
+
 	it('у выключенной таблицы подсветки нет', async () => {
 		await mountAway(engineOf(), true)
 
@@ -467,6 +478,155 @@ describe('линии строк', () => {
 				)
 			})
 		})
+	})
+})
+
+/**
+ * Перестановка колонок — заголовком: пока его тащат, за указателем идёт он
+ * один, а колонка и строки стоят на месте; на месте вставки — линия. Колонка
+ * встаёт на новое место одной перестановкой, когда заголовок отпустили.
+ * Нажатие без протяжки остаётся нажатием кнопки сортировки, а протяжка её не
+ * нажимает. Клавиши — Ctrl+Shift+←/→ на кнопке, и фокус с неё не уходит.
+ */
+describe('перестановка колонок', () => {
+	const MOVABLE = [NAME, CITY, AGE].map((column) => ({ ...column, reorderable: true }))
+
+	/**
+	 * Место не шире окна прогона (414 px): протяжка за край окна прокрутила бы
+	 * страницу, и коробки до и после протяжки разошлись бы на прокрутку.
+	 */
+	const PLACE = 400
+
+	/** Движок без колонки выбора: заголовки шапки — только колонки данных. */
+	function moveEngine(): TTableCollection {
+		const engine = engineOf(MOVABLE)
+
+		engine.extensions.selection.mode = 'none'
+
+		return engine
+	}
+
+	const fieldsOf = (engine: TTableCollection) =>
+		engine.extensions.columns.columns.map((column) => column.field)
+
+	/** Указатель в точку страницы — наводится на `body`: точка бывает за таблицей. */
+	async function pointAt(x: number, y: number): Promise<void> {
+		const body = document.body.getBoundingClientRect()
+
+		await userEvent.hover(document.body, { position: { x: x - body.left, y: y - body.top } })
+	}
+
+	/** Середина узла. */
+	function middleOf(element: Element): { x: number; y: number } {
+		const box = element.getBoundingClientRect()
+
+		return { x: box.left + box.width / 2, y: box.top + box.height / 2 }
+	}
+
+	it('тащат заголовок — колонка и строки на месте; отпустили — колонка на новом месте', async () => {
+		const engine = moveEngine()
+		const moves: string[][] = []
+
+		engine.extensions.columns.events.on('column:move', ({ order }) => moves.push(order))
+		await mount(engine, PLACE)
+
+		const [name, city] = headers()
+		const cell = rows()[0].children[0]
+		const from = middleOf(name)
+		const before = { header: name.getBoundingClientRect(), cell: cell.getBoundingClientRect() }
+
+		await pointAt(from.x, from.y)
+		await commands.mouseDown()
+
+		try {
+			await pointAt(from.x + 40, from.y)
+			await pointAt(middleOf(city).x + 10, from.y)
+
+			// Заголовок идёт за указателем, ячейка его колонки — на месте
+			const dragged = name.getBoundingClientRect()
+
+			expect(name.dataset.dragging).toBe('true')
+			expect(dragged.left - before.header.left).toBeGreaterThan(100)
+			expect(
+				Math.abs(cell.getBoundingClientRect().left - before.cell.left),
+			).toBeLessThanOrEqual(EPSILON)
+			// Метка — у конца соседа, линия видна
+			expect(city.dataset.drop).toBe('after')
+			expect(parseFloat(style(city, '::before').width)).toBe(3)
+			expect(fieldsOf(engine)).toEqual(['name', 'city', 'age'])
+		} finally {
+			await commands.mouseUp()
+		}
+
+		expect(fieldsOf(engine)).toEqual(['city', 'name', 'age'])
+		expect(moves).toEqual([['city', 'name', 'age']])
+
+		await expect
+			.poll(() => headers().map((header) => header.textContent?.trim()))
+			.toEqual(['Город', 'Имя', 'Возраст'])
+
+		// Ячейки строк — в новом порядке, сдвиг заголовка снят
+		expect(rows()[0].children[1].textContent?.trim()).toBe('Анна Смирнова')
+		expect(headers()[1].dataset.dragging).toBeUndefined()
+		expect(headers()[1].style.getPropertyValue('--s-table-column-drag')).toBe('')
+	})
+
+	it('протяжка кнопку сортировки не нажимает, нажатие без протяжки — сортирует', async () => {
+		const engine = moveEngine()
+
+		await mount(engine, PLACE)
+
+		const [name, city] = headers()
+		const from = middleOf(name)
+
+		await pointAt(from.x, from.y)
+		await commands.mouseDown()
+
+		try {
+			await pointAt(from.x + 30, from.y)
+			await pointAt(middleOf(city).x + 20, from.y)
+		} finally {
+			await commands.mouseUp()
+		}
+
+		expect(fieldsOf(engine)).toEqual(['city', 'name', 'age'])
+
+		// Нажатие на колонку после протяжки не досталось
+		await new Promise((resolve) => requestAnimationFrame(resolve))
+		expect(headers().some((header) => header.dataset.sort)).toBe(false)
+
+		const sortable = headers()[1]
+
+		await userEvent.click(find('.s-table-column__sort', sortable))
+
+		await expect.poll(() => sortable.dataset.sort).toBe('asc')
+		expect(fieldsOf(engine)).toEqual(['city', 'name', 'age'])
+	})
+
+	it('Ctrl+Shift+→ на кнопке — колонка на шаг дальше, фокус остаётся на кнопке', async () => {
+		const engine = moveEngine()
+
+		await mount(engine, PLACE)
+
+		const button = find('.s-table-column__sort', headers()[0])
+
+		button.focus()
+		await userEvent.keyboard('{Control>}{Shift>}{ArrowRight}{/Shift}{/Control}')
+
+		expect(fieldsOf(engine)).toEqual(['city', 'name', 'age'])
+		await expect.poll(() => headers()[1].contains(document.activeElement)).toBe(true)
+		expect(document.activeElement).toBe(button)
+	})
+
+	it('RTL: Ctrl+Shift+← — к концу строки', async () => {
+		const engine = moveEngine()
+
+		await mount(engine, PLACE, 'rtl')
+
+		find('.s-table-column__sort', headers()[0]).focus()
+		await userEvent.keyboard('{Control>}{Shift>}{ArrowLeft}{/Shift}{/Control}')
+
+		expect(fieldsOf(engine)).toEqual(['city', 'name', 'age'])
 	})
 })
 
