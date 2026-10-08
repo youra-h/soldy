@@ -2,10 +2,12 @@
  * Дескриптор Table (TTable) — таблица по паттернам APG Table и Sortable Table.
  *
  * Наследует `ControlDescriptor` (disabled, focused, size, variant, имя
- * `aria_label` / `aria_labelledBy`, ...) и добавляет язык сортировки и имя
- * чекбокса «выбрать все». Строки, колонки, ячейки, выбор и сортировка —
- * коллекция и её расширения (`TableCollectionDescriptor`): разметка только
- * раскладывает то, что они отдали.
+ * `aria_label` / `aria_labelledBy`, ...) и добавляет язык сортировки — тег
+ * локали поддерева, его пишет плагин языка, — и имя чекбокса «выбрать все» —
+ * выход плагина имён (`names_selectAll`). Строки, колонки, ячейки,
+ * выбор и сортировка — коллекция и её расширения
+ * (`TableCollectionDescriptor`): разметка только раскладывает то, что они
+ * отдали.
  *
  * Колонки и строки задаются только данными (`columns`, `items`): частей
  * разметкой у таблицы нет — заголовок колонки (`Table.Column`) и строку
@@ -19,6 +21,7 @@ import { defineComponent, defineDescriptor, defineType } from '../../../../prote
 import { TTable } from '@soldy-ui/core'
 import type { ITableColumn, ITableRow } from '@soldy-ui/core'
 import { ControlDescriptor } from '../control.descriptor'
+import { LocalePluginDescriptor, TableNamesPluginDescriptor } from '../../plugins'
 
 export const TableDescriptor = defineDescriptor(() =>
 	defineComponent({
@@ -48,13 +51,19 @@ export const TableDescriptor = defineDescriptor(() =>
 				empty: { description: 'Когда показанных строк нет' },
 			},
 			props: {
-				locale: { type: String, triggers: ['change:locale'] },
 				/**
-				 * Имя чекбокса «выбрать все»: своего текста у ячейки шапки нет, а
-				 * языка интерфейса библиотека не знает — умолчание английское.
+				 * Язык сортировки — не вход: это тег локали поддерева, и пишет его
+				 * плагин языка, как `size` элементам пишет владелец.
 				 */
-				selectAllLabel: { type: String, triggers: ['change:selectAllLabel'] },
+				locale: { type: String, protected: true, triggers: ['change:locale'] },
 			},
 		},
+
+		plugins: [
+			// Язык сортировки — с первой отрисовки
+			LocalePluginDescriptor,
+			// Имя чекбокса «выбрать все» от локали
+			TableNamesPluginDescriptor,
+		],
 	}),
 )

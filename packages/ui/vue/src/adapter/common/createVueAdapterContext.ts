@@ -1,9 +1,10 @@
-import { toRaw, useId } from 'vue'
+import { inject, toRaw, useId } from 'vue'
 import {
 	createAdapterContext,
 	type IAdapterContextConfig,
 	type IAdapterContextOptions,
 } from '@soldy-ui/setup'
+import { LOCALE_KEY } from '../locale/key'
 
 /**
  * Опции и конфиг — те же, что у `createAdapterContext`: setup их экспортирует,
@@ -36,6 +37,11 @@ function stripTopLevelProxies<T extends object>(value: T): T {
  * есть текущий компонент. Id монтирования, заданный опцией явно, остаётся за
  * тем, кто его задал.
  *
+ * Там же — локаль поддерева (`locale`): источник ближайшего `LocaleProvider`
+ * выше по дереву (`inject`). Провайдера нет — опция не задана, и у набора
+ * своя английская. Локаль, заданная опцией явно, тоже остаётся за тем, кто её
+ * задал.
+ *
  * Сигнатура — сама `createAdapterContext`: своих параметров типа у обёртки
  * нет, контракт контекста выводится из дескриптора там же, где и у остальных
  * адаптеров.
@@ -49,6 +55,7 @@ export const createVueAdapterContext: typeof createAdapterContext = (descriptor,
 			options:
 				options.options !== undefined ? stripTopLevelProxies(options.options) : undefined,
 			mountId: options.mountId ?? useId(),
+			locale: options.locale ?? inject(LOCALE_KEY, undefined),
 		},
 		config,
 	)

@@ -4,7 +4,7 @@ import type {
 	TValueControlEvents,
 } from '../../base/value-control'
 import type { TCollectionStorageDriverEvents } from '../../base/collection'
-import type { TAriaAttributes } from '../../../common'
+import type { TAria, TAriaAttributes } from '../../../common'
 import type { TButtonView } from '../button/types'
 import type { ITagsCollectionProps } from './collection/types'
 import type { ITagsItem, ITagsItemProps } from './item/types'
@@ -52,14 +52,10 @@ export type TTagsEvents = TValueControlEvents<TTagsValue> &
 		'change:view': (value: TTagsView | undefined) => void
 		/** change:overflow */
 		'change:overflow': (value: TTagsOverflow) => void
-		/** change:moreLabel */
-		'change:moreLabel': (value: string) => void
-		/** change:prevLabel */
-		'change:prevLabel': (value: string | undefined) => void
-		/** change:nextLabel */
-		'change:nextLabel': (value: string | undefined) => void
 		/** change:rowAria — набор атрибутов ряда изменился */
 		'change:rowAria': (value: TAriaAttributes) => void
+		/** change:moreAria — набор атрибутов кнопки «…» изменился */
+		'change:moreAria': (value: TAriaAttributes) => void
 	}
 
 /** Пропсы самого компонента (без коллекционной части). */
@@ -70,18 +66,6 @@ export interface ITagsComponentProps extends IValueControlProps<TTagsValue> {
 	view?: TTagsView
 	/** Что делать с тегами, которым не хватило ширины ряда. По умолчанию `wrap` */
 	overflow?: TTagsOverflow
-	/** Имя кнопки «…», открывающей панель с непоместившимися тегами */
-	moreLabel?: string
-	/**
-	 * Имя кнопки «назад» у ленты в режиме `arrows`.
-	 *
-	 * Своего умолчания у Tags нет: кнопки принадлежат ленте, и английские
-	 * дефолты держит она. Не задано — доезжает `undefined`, и лента остаётся
-	 * при своём.
-	 */
-	prevLabel?: string
-	/** Имя кнопки «вперёд» у ленты в режиме `arrows`; умолчание держит лента */
-	nextLabel?: string
 }
 
 /** Полный набор пропсов Tags: компонентные + коллекция (engine, items, mode). */
@@ -98,12 +82,6 @@ export interface ITags<
 	view: TTagsView | undefined
 	/** Что делать с тегами, которым не хватило ширины ряда */
 	overflow: TTagsOverflow
-	/** Имя кнопки «…», открывающей панель с непоместившимися тегами */
-	moreLabel: string
-	/** Имя кнопки «назад» у ленты; `undefined` — умолчание держит лента */
-	prevLabel: string | undefined
-	/** Имя кнопки «вперёд» у ленты; `undefined` — умолчание держит лента */
-	nextLabel: string | undefined
 	/** Ряд завёрнут в ленту со стрелками — то есть режим переполнения `arrows` */
 	readonly arrows: boolean
 	/**
@@ -116,8 +94,8 @@ export interface ITags<
 	 * решает режим переполнения, а не тот, кто пишет; `null` снимает атрибут
 	 */
 	setRowAria(name: string, value: string | null): void
-	/** Имя кнопки «…»: `moreLabel`. Своего экземпляра у кнопки нет */
-	readonly moreAria: TAriaAttributes
+	/** Атрибуты кнопки «…»: имя от локали пишет плагин имён. Своего экземпляра у кнопки нет */
+	readonly moreAria: TAria
 	/** Классы ряда плюс свой класс панели: теги в ней — не потомки корня */
 	readonly panelClasses: string[]
 	/** ARIA панели: роль повторяет роль ряда */

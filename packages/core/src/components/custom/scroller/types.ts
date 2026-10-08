@@ -1,5 +1,5 @@
 import type { IControl, IControlProps, TControlEvents } from '../../base/control'
-import type { TAriaAttributes } from '../../../common'
+import type { TAria, TAriaAttributes } from '../../../common'
 
 /**
  * Куда листать ленту: `prev` — к началу строки, `next` — к её концу.
@@ -20,10 +20,10 @@ export type TScrollerViewport = {
 }
 
 export type TScrollerEvents = TControlEvents & {
-	/** change:prevLabel */
-	'change:prevLabel': (value: string) => void
-	/** change:nextLabel */
-	'change:nextLabel': (value: string) => void
+	/** change:prevAria — набор атрибутов кнопки «назад» изменился */
+	'change:prevAria': (value: TAriaAttributes) => void
+	/** change:nextAria — набор атрибутов кнопки «вперёд» изменился */
+	'change:nextAria': (value: TAriaAttributes) => void
 	/** change:viewportAria */
 	'change:viewportAria': (value: TAriaAttributes | undefined) => void
 	/** change:canPrev */
@@ -43,10 +43,6 @@ export type TScrollerEvents = TControlEvents & {
 }
 
 export interface IScrollerProps extends IControlProps {
-	/** Имя кнопки «назад» для скринридера */
-	prevLabel?: string
-	/** Имя кнопки «вперёд» для скринридера */
-	nextLabel?: string
 	/**
 	 * Атрибуты вьюпорта от потребителя: роль ряда и всё, что к ней прилагается.
 	 *
@@ -58,10 +54,6 @@ export interface IScrollerProps extends IControlProps {
 }
 
 export interface IScroller extends IControl<IScrollerProps, TScrollerEvents> {
-	/** Имя кнопки «назад» для скринридера */
-	prevLabel: string
-	/** Имя кнопки «вперёд» для скринридера */
-	nextLabel: string
 	/** Атрибуты вьюпорта от потребителя */
 	viewportAria: TAriaAttributes | undefined
 	/** Есть ли куда листать к началу строки */
@@ -70,10 +62,10 @@ export interface IScroller extends IControl<IScrollerProps, TScrollerEvents> {
 	readonly canNext: boolean
 	/** Есть ли внутри ленты свои остановки Tab */
 	readonly hasTabStops: boolean
-	/** Имя кнопки «назад»: `prevLabel`. Своего экземпляра у кнопки нет */
-	readonly prevAria: TAriaAttributes
-	/** Имя кнопки «вперёд»: `nextLabel` */
-	readonly nextAria: TAriaAttributes
+	/** Атрибуты кнопки «назад»: имя от локали пишет плагин имён. Своего экземпляра у кнопки нет */
+	readonly prevAria: TAria
+	/** Атрибуты кнопки «вперёд» */
+	readonly nextAria: TAria
 	/** Выключена ли кнопка «назад»: выключена лента или упёрлись в начало */
 	readonly prevDisabled: boolean
 	/** Выключена ли кнопка «вперёд»: выключена лента или упёрлись в конец */

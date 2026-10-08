@@ -20,7 +20,8 @@ import { StrictMode, act, createRef, type ReactElement } from 'react'
 import { hydrateRoot } from 'react-dom/client'
 import { renderToString } from 'react-dom/server'
 import { TInput, type IInput, type TValuePayload } from '@soldy-ui/core'
-import { Input, type InputProps } from '@soldy-ui/react'
+import { ruRU } from '@soldy-ui/plugins'
+import { Input, LocaleProvider, type InputProps } from '@soldy-ui/react'
 import { find, mount, nextFrame, track } from './mount'
 
 afterEach(() => {
@@ -384,8 +385,12 @@ describe('Input · кнопка очистки', () => {
 		expect(clearOf(el).getAttribute('aria-label')).toBe('Clear Город')
 	})
 
-	it('слово имени задаёт clearLabel', () => {
-		const el = mount(<Input clearable name="Город" clearLabel="Очистить" />).root()
+	it('строку имени задаёт локаль поддерева', () => {
+		const el = mount(
+			<LocaleProvider locale={ruRU}>
+				<Input clearable name="Город" />
+			</LocaleProvider>,
+		).root()
 
 		expect(clearOf(el).getAttribute('aria-label')).toBe('Очистить Город')
 	})

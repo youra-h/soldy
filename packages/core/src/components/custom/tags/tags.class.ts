@@ -52,38 +52,27 @@ const PANEL_CLASS = 's-tags__panel'
  * значение уезжает в тему через `data-overflow`: раскладка ряда — её дело.
  * Знание «какие теги не поместились» ядро держит отдельно, в расширении
  * коллекции `overflow`: оно требует и владельца, и списка сразу.
+ *
+ * Имя кнопки «…» — от локали: его пишет в набор кнопки (`moreAria`) плагин
+ * имён (`TTagsNamesPlugin`), он же отдаёт его разметке для панели. Кнопки
+ * листания в `arrows` — ленты, и имена им пишет плагин имён ленты.
  */
 export class TTags extends TValueControl<TTagsValue, ITagsProps, TTagsEvents> implements ITags {
 	static override baseClass = 's-tags'
 
 	static defaultValues: typeof TValueControl.defaultValues &
-		TDefaultValues<
-			ITagsProps,
-			'closable' | 'overflow' | 'moreLabel',
-			'view' | 'prevLabel' | 'nextLabel'
-		> = {
+		TDefaultValues<ITagsProps, 'closable' | 'overflow', 'view'> = {
 		...TValueControl.defaultValues,
 		closable: false,
 		view: undefined,
 		overflow: 'wrap',
-		// Язык интерфейса библиотеке неизвестен, а оставить кнопку без имени
-		// нельзя: дефолт английский, как `closeLabel` у тега
-		moreLabel: 'More',
-		// А у кнопок листания дефолт держит лента: они её, и второй экземпляр
-		// тех же английских слов однажды разошёлся бы с первым. Ключ всё равно
-		// объявлен — им снятый пропом `undefined` возвращает ленту к своему
-		// (AGENTS.md, «Умолчание пропа — в декларации»)
-		prevLabel: undefined,
-		nextLabel: undefined,
 	}
 
 	protected _closable!: boolean
 	protected _view: TTagsView | undefined
 	protected _overflow!: TTagsOverflow
-	protected _moreLabel!: string
-	protected _prevLabel: string | undefined
-	protected _nextLabel: string | undefined
 	protected _rowAria: TAria
+	protected _moreAria: TAria
 
 	/**
 	 * Имена атрибутов, объявленных свойствами ряда, а не корня.
@@ -100,14 +89,16 @@ export class TTags extends TValueControl<TTagsValue, ITagsProps, TTagsEvents> im
 		const ctor = new.target as typeof TTags
 
 		this._closable = props.closable ?? ctor.defaultValues.closable
-		this._moreLabel = props.moreLabel ?? ctor.defaultValues.moreLabel
-		this._prevLabel = props.prevLabel ?? ctor.defaultValues.prevLabel
-		this._nextLabel = props.nextLabel ?? ctor.defaultValues.nextLabel
 
 		this._rowAria = new TAria()
 
 		this._rowAria.events.on('change', () =>
 			this.events.emit('change:rowAria', this._rowAria.toObject()),
+		)
+
+		this._moreAria = new TAria()
+		this._moreAria.events.on('change', () =>
+			this.events.emit('change:moreAria', this._moreAria.toObject()),
 		)
 
 		this._applyView(props.view ?? ctor.defaultValues.view)
@@ -149,51 +140,6 @@ export class TTags extends TValueControl<TTagsValue, ITagsProps, TTagsEvents> im
 		this.events.emit('change:overflow', value)
 	}
 
-	/** Имя кнопки «…» — той, что открывает панель с непоместившимися тегами. */
-	get moreLabel(): string {
-		return this._moreLabel
-	}
-
-	set moreLabel(value: string) {
-		if (this._moreLabel === value) return
-
-		this._moreLabel = value
-		this.events.emit('change:moreLabel', value)
-	}
-
-	/**
-	 * Имена кнопок листания — сквозь Tags в ленту.
-	 *
-	 * Своего умолчания здесь нет намеренно: кнопки принадлежат ленте, дефолты
-	 * держит она, и вторая копия тех же английских строк однажды разошлась бы
-	 * с первой. `undefined` — «не задавали»: лента остаётся при своём.
-	 *
-	 * Пропом, а не значением из `aria`: языка интерфейса библиотека не знает
-	 * (AGENTS.md, «Языка интерфейса библиотека не знает») — ровно та же
-	 * причина, по которой у Tags есть `moreLabel`.
-	 */
-	get prevLabel(): string | undefined {
-		return this._prevLabel
-	}
-
-	set prevLabel(value: string | undefined) {
-		if (this._prevLabel === value) return
-
-		this._prevLabel = value
-		this.events.emit('change:prevLabel', value)
-	}
-
-	get nextLabel(): string | undefined {
-		return this._nextLabel
-	}
-
-	set nextLabel(value: string | undefined) {
-		if (this._nextLabel === value) return
-
-		this._nextLabel = value
-		this.events.emit('change:nextLabel', value)
-	}
-
 	/**
 	 * Ряд завёрнут в ленту со стрелками.
 	 *
@@ -206,8 +152,8 @@ export class TTags extends TValueControl<TTagsValue, ITagsProps, TTagsEvents> im
 	}
 
 	/**
-	 * Атрибуты ряда, когда рядом стал вьюпорт ленты, — снимком, как `moreAria`
-	 * и `panelAria`: за границу core → ui уходит значение, а не живой набор.
+	 * Атрибуты ряда, когда рядом стал вьюпорт ленты, — снимком, как
+	 * `panelAria`: за границу core → ui уходит значение, а не живой набор.
 	 *
 	 * Вне `arrows` он пуст: ряд там — сам корень, и всё это стоит на нём.
 	 */
@@ -232,14 +178,15 @@ export class TTags extends TValueControl<TTagsValue, ITagsProps, TTagsEvents> im
 	}
 
 	/**
-	 * Имя кнопки «…».
+	 * Набор кнопки «…» — той, что открывает панель с непоместившимися тегами.
 	 *
-	 * Значением, а не набором `aria`: кнопка — содержимое слота `trigger` у
-	 * панели, своего экземпляра у неё нет, писать некуда (см. AGENTS.md,
-	 * «Часть или слот»). Тот же приём, что у `triggerAria` Popover.
+	 * Набор набора тегов, а не свой: кнопка — содержимое слота `trigger` у
+	 * панели, своего экземпляра у неё нет (см. AGENTS.md, «Часть или слот»).
+	 * Живой: имя пишет плагин имён от локали, об изменении набор сообщает
+	 * `change:moreAria`.
 	 */
-	get moreAria(): TAriaAttributes {
-		return { 'aria-label': this._moreLabel }
+	get moreAria(): TAria {
+		return this._moreAria
 	}
 
 	/**
@@ -320,9 +267,6 @@ export class TTags extends TValueControl<TTagsValue, ITagsProps, TTagsEvents> im
 			closable: this._closable,
 			view: this._view,
 			overflow: this._overflow,
-			moreLabel: this._moreLabel,
-			prevLabel: this._prevLabel,
-			nextLabel: this._nextLabel,
 		} as ITagsProps
 	}
 }

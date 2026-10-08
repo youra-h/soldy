@@ -15,8 +15,6 @@ export type TTagsItemEvents = TValueControlEvents<string | number> & {
 	'change:closable': (value: boolean | undefined) => void
 	/** Запись своего `closable` — подправить или отменить (`TChangeEvent`) */
 	'change:closable:before': (e: TChangeEvent<boolean | undefined>) => void
-	/** change:closeLabel */
-	'change:closeLabel': (value: string) => void
 	/** change:closeAria — набор атрибутов кнопки закрытия изменился */
 	'change:closeAria': (value: TAriaAttributes) => void
 }
@@ -27,8 +25,6 @@ export interface ITagsItemProps
 	text?: string
 	/** Можно ли закрыть тег (undefined = наследовать от родителя TTags) */
 	closable?: boolean
-	/** Слово для кнопки закрытия; к нему добавляется текст тега */
-	closeLabel?: string
 }
 
 export interface ITagsItem<
@@ -39,11 +35,9 @@ export interface ITagsItem<
 	text: string
 	/** Можно ли закрыть тег (undefined = наследовать от родителя TTags) */
 	closable?: boolean | undefined
-	/** Слово для кнопки закрытия; к нему добавляется текст тега */
-	closeLabel: string
 	/**
-	 * Атрибуты кнопки закрытия — живой набор, как `aria` строки: имя
-	 * (`closeLabel` + текст тега) пишет тег, `tabindex` — коллекция
+	 * Атрибуты кнопки закрытия — живой набор, как `aria` строки: имя с текстом
+	 * тега от локали пишет плагин имён, `tabindex` — коллекция
 	 */
 	readonly closeAria: TAria
 }

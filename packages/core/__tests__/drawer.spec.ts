@@ -38,7 +38,6 @@ describe('умолчания', () => {
 		expect(drawer.swipe).toBe('none')
 		expect(drawer.contained).toBe(false)
 		expect(drawer.closable).toBe(true)
-		expect(drawer.closeLabel).toBe('Close')
 		expect(drawer.dismissible).toBe(true)
 		expect(drawer.width).toBeUndefined()
 		expect(drawer.height).toBeUndefined()
@@ -59,7 +58,6 @@ describe('умолчания', () => {
 			swipe: 'panel',
 			contained: true,
 			closable: false,
-			closeLabel: 'Закрыть',
 			dismissible: false,
 			target: '#drawers',
 		} as const
@@ -98,10 +96,10 @@ describe('ARIA', () => {
 		expect(drawer.aria.get('aria-modal')).toBe('true')
 	})
 
-	it('крестик назван closeLabel', () => {
-		const drawer = new TDrawer({ closeLabel: 'Закрыть' })
+	it('набор крестика — от модального слоя: имени в нём ядро не пишет', () => {
+		const drawer = new TDrawer()
 
-		expect(drawer.closeAria).toEqual({ 'aria-label': 'Закрыть' })
+		expect(drawer.closeAria.valueOf()).toEqual({})
 	})
 })
 

@@ -19,14 +19,12 @@ const viewport = (patch: Partial<TScrollerViewport> = {}): TScrollerViewport => 
 })
 
 describe('умолчания', () => {
-	it('листать некуда, имена кнопок английские, роли ряда нет', () => {
+	it('листать некуда, роли ряда нет', () => {
 		const scroller = new TScroller()
 
 		expect(scroller.canPrev).toBe(false)
 		expect(scroller.canNext).toBe(false)
 		expect(scroller.hasTabStops).toBe(false)
-		expect(scroller.prevLabel).toBe('Scroll back')
-		expect(scroller.nextLabel).toBe('Scroll forward')
 		expect(scroller.viewportAria).toBeUndefined()
 	})
 
@@ -39,17 +37,9 @@ describe('умолчания', () => {
 
 	it('пропсы конструктора перекрывают умолчания', () => {
 		const role = { role: 'listbox' }
-		const scroller = new TScroller({
-			prevLabel: 'Назад',
-			nextLabel: 'Вперёд',
-			viewportAria: role,
-		})
+		const scroller = new TScroller({ viewportAria: role })
 
-		expect(scroller.getProps()).toMatchObject({
-			prevLabel: 'Назад',
-			nextLabel: 'Вперёд',
-			viewportAria: role,
-		})
+		expect(scroller.getProps()).toMatchObject({ viewportAria: role })
 	})
 })
 
@@ -198,30 +188,24 @@ describe('команды', () => {
 	})
 })
 
-describe('имена кнопок', () => {
-	it('следуют за своим пропом', () => {
+describe('наборы кнопок', () => {
+	it('имён ядро не строит: наборы пусты, имена пишет плагин имён', () => {
 		const scroller = new TScroller()
 
-		expect(scroller.prevAria).toEqual({ 'aria-label': 'Scroll back' })
-		expect(scroller.nextAria).toEqual({ 'aria-label': 'Scroll forward' })
-
-		scroller.prevLabel = 'Назад'
-		scroller.nextLabel = 'Вперёд'
-
-		expect(scroller.prevAria).toEqual({ 'aria-label': 'Назад' })
-		expect(scroller.nextAria).toEqual({ 'aria-label': 'Вперёд' })
+		expect(scroller.prevAria.valueOf()).toEqual({})
+		expect(scroller.nextAria.valueOf()).toEqual({})
 	})
 
-	it('смена имени сообщается один раз', () => {
+	it('запись сообщается событием набора; то же значение — молча', () => {
 		const scroller = new TScroller()
 		const changed = vi.fn()
 
-		scroller.events.on('change:prevLabel', changed)
+		scroller.events.on('change:prevAria', changed)
 
-		scroller.prevLabel = 'Назад'
-		scroller.prevLabel = 'Назад'
+		scroller.prevAria.add('aria-label', 'Назад')
+		scroller.prevAria.add('aria-label', 'Назад')
 
-		expect(changed).toHaveBeenCalledTimes(1)
+		expect(changed).toHaveBeenCalledExactlyOnceWith({ 'aria-label': 'Назад' })
 	})
 })
 

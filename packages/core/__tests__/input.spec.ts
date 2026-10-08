@@ -154,33 +154,27 @@ describe('TInput · очистка', () => {
 		expect(handler).toHaveBeenCalledTimes(1)
 	})
 
-	describe('clearAria — имя кнопки', () => {
-		it('собирается с именем поля, чтобы кнопки были различимы', () => {
-			// На форме с пятью полями пять одинаковых «Clear, кнопка» в списке
-			// элементов скринридера выбрать нельзя
-			expect(new TInput({ name: 'Город' }).clearAria['aria-label']).toBe('Clear Город')
+	describe('clearAria — набор кнопки', () => {
+		it('имени ядро не строит: его с именем поля пишет плагин имён', () => {
+			expect(new TInput({ name: 'Город' }).clearAria.has('aria-label')).toBe(false)
 		})
 
-		it('без имени поля остаётся одно слово', () => {
-			expect(new TInput().clearAria['aria-label']).toBe('Clear')
-			expect(new TInput({ name: '  ' }).clearAria['aria-label']).toBe('Clear')
-		})
-
-		it('слово переопределяется — язык интерфейса решает потребитель', () => {
-			const input = new TInput({ name: 'Город', clearLabel: 'Очистить' })
+		it('набор живой: запись — change:clearAria со снимком', () => {
+			const input = new TInput({ name: 'Город' })
 			const handler = vi.fn()
 
-			expect(input.clearAria['aria-label']).toBe('Очистить Город')
+			input.events.on('change:clearAria', handler)
+			input.clearAria.add('aria-label', 'Очистить Город')
 
-			input.events.on('change:clearLabel', handler)
-			input.clearLabel = 'Стереть'
-
-			expect(input.clearAria['aria-label']).toBe('Стереть Город')
-			expect(handler).toHaveBeenCalledWith('Стереть')
+			expect(handler).toHaveBeenCalledWith({ 'aria-label': 'Очистить Город' })
 		})
 
-		it('отдельный набор: это имя соседней кнопки, а не самого поля', () => {
-			expect(new TInput({ name: 'Город' }).aria.has('aria-label')).toBe(false)
+		it('отдельный набор: это соседняя кнопка, а не само поле', () => {
+			const input = new TInput({ name: 'Город' })
+
+			input.clearAria.add('aria-label', 'Очистить Город')
+
+			expect(input.aria.has('aria-label')).toBe(false)
 		})
 	})
 
@@ -255,10 +249,7 @@ describe('TInput · очистка', () => {
 		})
 	})
 
-	it('getProps несёт clearable и clearLabel', () => {
-		expect(new TInput({ clearable: true, clearLabel: 'Очистить' }).getProps()).toMatchObject({
-			clearable: true,
-			clearLabel: 'Очистить',
-		})
+	it('getProps несёт clearable', () => {
+		expect(new TInput({ clearable: true }).getProps()).toMatchObject({ clearable: true })
 	})
 })

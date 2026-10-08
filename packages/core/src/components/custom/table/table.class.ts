@@ -15,23 +15,20 @@ import type { ITable, ITableProps, TTableEvents } from './types'
  *
  * Своё у таблицы — язык (`locale`): по нему сортировка сравнивает строки.
  * Хранится как задан; невалидный тег сортировка читает как `en-US`, а не
- * падает. И имя чекбокса «выбрать все» (`selectAllLabel`): своего текста у
- * ячейки шапки колонки выбора нет, а языка интерфейса библиотека не знает —
- * умолчание английское, как у `closeLabel`.
+ * падает. С setup его пишет плагин языка — тег локали поддерева. Имя чекбокса
+ * «выбрать все» — строка локали, и отдаёт её разметке плагин имён таблицы
+ * (`TTableNamesPlugin`): ядро имён не строит.
  */
 export class TTable extends TControl<ITableProps, TTableEvents> implements ITable {
 	static override baseClass = 's-table'
 
-	static defaultValues: typeof TControl.defaultValues &
-		TDefaultValues<ITableProps, 'locale' | 'selectAllLabel'> = {
+	static defaultValues: typeof TControl.defaultValues & TDefaultValues<ITableProps, 'locale'> = {
 		...TControl.defaultValues,
 		tag: 'table',
 		locale: DEFAULT_LOCALE,
-		selectAllLabel: 'Select all',
 	}
 
 	protected _locale: string
-	protected _selectAllLabel: string
 
 	constructor(props: Partial<ITableProps> = {}) {
 		super(props)
@@ -39,7 +36,6 @@ export class TTable extends TControl<ITableProps, TTableEvents> implements ITabl
 		const ctor = new.target as typeof TTable
 
 		this._locale = props.locale ?? ctor.defaultValues.locale
-		this._selectAllLabel = props.selectAllLabel ?? ctor.defaultValues.selectAllLabel
 	}
 
 	get locale(): string {
@@ -53,22 +49,10 @@ export class TTable extends TControl<ITableProps, TTableEvents> implements ITabl
 		this.events.emit('change:locale', value)
 	}
 
-	get selectAllLabel(): string {
-		return this._selectAllLabel
-	}
-
-	set selectAllLabel(value: string) {
-		if (this._selectAllLabel === value) return
-
-		this._selectAllLabel = value
-		this.events.emit('change:selectAllLabel', value)
-	}
-
 	override getProps(): ITableProps {
 		return {
 			...super.getProps(),
 			locale: this._locale,
-			selectAllLabel: this._selectAllLabel,
 		}
 	}
 }

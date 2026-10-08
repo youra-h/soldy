@@ -2,7 +2,8 @@
  * Дескриптор TagsItem (TTagsItem).
  *
  * Наследует `ValueControlDescriptor` (value, name, disabled, focused, size,
- * variant, ...), добавляет `text`, `closable`, `closeLabel`, `closeAria`.
+ * variant, ...), добавляет `text`, `closable`, `closeAria`. Имя крестика —
+ * шаблон локали с текстом тега: его пишет плагин имён.
  * Плагина подсветки здесь нет: в отличие от ListBoxItem, по тегам ходит
  * настоящий фокус, а не подсветка. Клавиатура набора — плагин владельца
  * (`TagsKeyboardPluginDescriptor`), остановку Tab пишет коллекция.
@@ -16,6 +17,7 @@
 import { defineComponent, defineDescriptor, defineType } from '../../../../protected/define'
 import { TTagsItem } from '@soldy-ui/core'
 import { ValueControlDescriptor } from '../value-control.descriptor'
+import { TagsItemNamesPluginDescriptor } from '../../plugins'
 
 export const TagsItemDescriptor = defineDescriptor(() =>
 	defineComponent({
@@ -44,12 +46,12 @@ export const TagsItemDescriptor = defineDescriptor(() =>
 				size: { protected: true },
 				text: { type: String, triggers: ['change:text'] },
 				closable: { type: Boolean, triggers: ['change:closable'] },
-				closeLabel: { type: String, triggers: ['change:closeLabel'] },
 				/**
 				 * Атрибуты кнопки закрытия. Отдельный набор, а не часть `aria`:
 				 * `aria` описывает сам тег, а это — кнопка рядом с ним. Набор
-				 * живой, как `aria`: имя пишет тег, `tabindex` — коллекция по
-				 * режиму выбора, и триггер один — набор сам сообщает, что изменился.
+				 * живой, как `aria`: имя от локали пишет плагин имён, `tabindex` —
+				 * коллекция по режиму выбора, и триггер один — набор сам
+				 * сообщает, что изменился.
 				 */
 				closeAria: {
 					type: Object,
@@ -58,5 +60,10 @@ export const TagsItemDescriptor = defineDescriptor(() =>
 				},
 			},
 		},
+
+		plugins: [
+			// Имя крестика от локали — с первой отрисовки
+			TagsItemNamesPluginDescriptor,
+		],
 	}),
 )

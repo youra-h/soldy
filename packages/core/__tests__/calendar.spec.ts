@@ -354,27 +354,25 @@ describe('вид у границ', () => {
 })
 
 describe('кнопки листания', () => {
-	it('имена по умолчанию английские; набор кнопки — её имя', () => {
+	it('имён ядро не строит: наборы кнопок пусты, их пишет плагин имён', () => {
 		const { owner } = calendar()
 
-		expect(owner.prevLabel).toBe('Previous month')
-		expect(owner.nextLabel).toBe('Next month')
-		expect(owner.prevAria).toEqual({ 'aria-label': 'Previous month' })
-		expect(owner.nextAria).toEqual({ 'aria-label': 'Next month' })
+		expect(owner.prevAria.valueOf()).toEqual({})
+		expect(owner.nextAria.valueOf()).toEqual({})
 	})
 
-	it('смена имени — событие и новый набор; то же имя — не смена', () => {
-		const { owner } = calendar({ prevLabel: 'Назад' })
-		const changes = vi.fn()
+	it('наборы живые: запись — событие набора со снимком', () => {
+		const { owner } = calendar()
+		const prev = vi.fn()
+		const next = vi.fn()
 
-		owner.events.on('change:nextLabel', changes)
-		owner.nextLabel = 'Вперёд'
-		owner.nextLabel = 'Вперёд'
+		owner.events.on('change:prevAria', prev)
+		owner.events.on('change:nextAria', next)
+		owner.prevAria.add('aria-label', 'Назад')
+		owner.nextAria.add('aria-label', 'Вперёд')
 
-		expect(changes).toHaveBeenCalledTimes(1)
-		expect(owner.prevAria).toEqual({ 'aria-label': 'Назад' })
-		expect(owner.nextAria).toEqual({ 'aria-label': 'Вперёд' })
-		expect(owner.getProps()).toMatchObject({ prevLabel: 'Назад', nextLabel: 'Вперёд' })
+		expect(prev).toHaveBeenCalledWith({ 'aria-label': 'Назад' })
+		expect(next).toHaveBeenCalledWith({ 'aria-label': 'Вперёд' })
 	})
 
 	it('change:paging — на листание', () => {

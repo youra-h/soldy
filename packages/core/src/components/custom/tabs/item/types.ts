@@ -3,7 +3,7 @@ import type {
 	IValueControlProps,
 	TValueControlEvents,
 } from '../../../base/value-control'
-import type { TChangeEvent, TValuePayload, TAriaAttributes } from '../../../../common'
+import type { TAria, TAriaAttributes, TChangeEvent, TValuePayload } from '../../../../common'
 import type { ITabsCollectionItemProps } from '../collection/types'
 
 // Параметр держит арность дженерика: аргумент передают на вызовах.
@@ -17,8 +17,8 @@ export type TTabsItemEvents<TTab = any> = TValueControlEvents<string | number> &
 	'change:closable': (value: boolean | undefined) => void
 	/** Запись своего `closable` — подправить или отменить (`TChangeEvent`) */
 	'change:closable:before': (e: TChangeEvent<boolean | undefined>) => void
-	/** change:closeLabel */
-	'change:closeLabel': (value: string) => void
+	/** change:closeAria — набор атрибутов кнопки закрытия изменился */
+	'change:closeAria': (value: TAriaAttributes) => void
 }
 
 export interface ITabsItemProps
@@ -27,8 +27,6 @@ export interface ITabsItemProps
 	text?: string
 	/** Можно ли закрыть таб (undefined = наследовать от родителя TTabs) */
 	closable?: boolean
-	/** Слово для кнопки закрытия; к нему добавляется текст таба */
-	closeLabel?: string
 }
 
 export interface ITabsItem<
@@ -39,8 +37,6 @@ export interface ITabsItem<
 	text: string
 	/** Можно ли закрыть таб (undefined = наследовать от родителя TTabs) */
 	closable?: boolean | undefined
-	/** Слово для кнопки закрытия; к нему добавляется текст таба */
-	closeLabel: string
-	/** Имя кнопки закрытия целиком: `closeLabel` + текст таба */
-	readonly closeAria: TAriaAttributes
+	/** Атрибуты кнопки закрытия: `tabindex` пишет таб, имя с текстом от локали — плагин имён */
+	readonly closeAria: TAria
 }

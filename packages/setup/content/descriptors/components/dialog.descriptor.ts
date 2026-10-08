@@ -9,7 +9,11 @@
 
 import { defineComponent, defineDescriptor } from '../../../protected/define'
 import { TDialog } from '@soldy-ui/core'
-import { DialogIdsPluginDescriptor, DialogLayoutPluginDescriptor } from '../plugins'
+import {
+	DialogIdsPluginDescriptor,
+	DialogLayoutPluginDescriptor,
+	DialogNamesPluginDescriptor,
+} from '../plugins'
 import { ModalLayerDescriptor } from './modal-layer.descriptor'
 
 export const DialogDescriptor = defineDescriptor(() =>
@@ -41,7 +45,6 @@ export const DialogDescriptor = defineDescriptor(() =>
 				offset: { type: [Number, String], triggers: ['change:offset'] },
 				maximized: { type: Boolean, triggers: ['change:maximized'] },
 				maximizable: { type: Boolean, triggers: ['change:maximizable'] },
-				maximizeLabel: { type: String, triggers: ['change:maximizeLabel'] },
 				alert: { type: Boolean, triggers: ['change:alert'] },
 				/**
 				 * Сторона связки у тела — `id` для `aria-describedby`
@@ -49,12 +52,12 @@ export const DialogDescriptor = defineDescriptor(() =>
 				 * `TDialogIdsPlugin`.
 				 */
 				bodyAria: { type: Object, protected: true, triggers: ['change:bodyAria'] },
-				/** Имя и состояние кнопки разворота. Отдельный набор: кнопка — сосед содержимого. */
-				maximizeAria: {
-					type: Object,
-					protected: true,
-					triggers: ['change:maximizeLabel', 'change:maximized'],
-				},
+				/**
+				 * Набор кнопки разворота — её имя и состояние. Отдельный набор:
+				 * кнопка — сосед содержимого. Состояние пишет окно, имя —
+				 * `TDialogNamesPlugin`.
+				 */
+				maximizeAria: { type: Object, protected: true, triggers: ['change:maximizeAria'] },
 			},
 		},
 
@@ -63,6 +66,8 @@ export const DialogDescriptor = defineDescriptor(() =>
 			DialogLayoutPluginDescriptor,
 			// Имя от заголовка и описание предупреждения: `id` и ссылки на них
 			DialogIdsPluginDescriptor,
+			// Имена кнопок закрытия и разворота от локали
+			DialogNamesPluginDescriptor,
 		],
 	}),
 )

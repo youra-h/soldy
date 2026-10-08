@@ -9,11 +9,16 @@ export type TCalendarPickerLevel = 'months' | 'years'
 
 /**
  * Наборы места панели — то, что пишут в панель снаружи расширения: `id`
- * шапки (плагин связок). По нему панель и её список называются шапкой.
+ * шапки (плагин связок), по которому панель и её список называются шапкой, и
+ * имена стрелок (плагин имён) — по уровню панели: год или страница лет.
  */
 export type TCalendarPickerSets = {
 	/** Шапка панели: год или отрезок лет */
 	heading: TAria
+	/** Стрелка «назад» */
+	prev: TAria
+	/** Стрелка «вперёд» */
+	next: TAria
 }
 
 /**
@@ -42,7 +47,7 @@ export type TCalendarPicker = {
 	 * Плагин связок его не записал — `undefined`
 	 */
 	labelledBy: string | undefined
-	/** Набор стрелки «назад»: имя по уровню — год или страница лет */
+	/** Набор стрелки «назад»: имя по уровню — год или страница лет — пишет плагин имён */
 	prevAria: TAriaAttributes
 	/** Набор стрелки «вперёд» */
 	nextAria: TAriaAttributes
@@ -55,7 +60,7 @@ export type TCalendarPicker = {
 export type TCalendarPickerEvents = {
 	/**
 	 * Панели надо перечитать: сменились уровень, год или страница, состав
-	 * мест (месяцы сеток), подписи, границы или `id` шапки. Без аргумента —
+	 * мест (месяцы сеток), подписи, границы, `id` шапки или имена стрелок. Без аргумента —
 	 * выход собирается из владельца, вида и мест
 	 */
 	'change:pickers': () => void
@@ -70,7 +75,7 @@ export type TCalendarPickerEvents = {
 export interface ICalendarPickerExtension extends IExtension<ICalendarItem, TCalendarPickerEvents> {
 	/** Панели мест — по одной на сетку, в порядке сеток */
 	readonly pickers: TCalendarPicker[]
-	/** Наборы места `index`: пишет в них плагин связок */
+	/** Наборы места `index`: пишут в них плагины связок и имён */
 	pickerSets(index: number): TCalendarPickerSets
 	/** Кнопка шапки: месяцы ⇄ годы */
 	toggleLevel(index: number): void

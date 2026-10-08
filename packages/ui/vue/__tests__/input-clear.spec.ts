@@ -1,20 +1,21 @@
 /**
  * Кнопка очистки Input — часть поля, а не владельца: её рисует сам Input,
- * Select только отдаёт полю `clearable` и `clearLabel`.
+ * Select только отдаёт полю `clearable`.
  *
  * Здесь — проводка: кнопка по `clearable`, первой в обёртке у конца поля,
- * перед содержимым `trailing`, с именем от ядра (`clearAria`); клик очищает
- * поле командой ядра `clear` и до предков не всплывает; своя кнопка — слот
- * `clear` с командой в scope. Что очистка делает с моделью, проверяет ядро
- * (`core/__tests__/input.spec.ts`), форму кнопки — браузерный прогон
- * (`playground/vue/browser/input.spec.ts`).
+ * перед содержимым `trailing`, с набором от ядра (`clearAria`; имя с именем
+ * поля пишет плагин имён от локали); клик очищает поле командой ядра `clear` и до
+ * предков не всплывает; своя кнопка — слот `clear` с командой в scope. Что
+ * очистка делает с моделью, проверяет ядро (`core/__tests__/input.spec.ts`),
+ * форму кнопки — браузерный прогон (`playground/vue/browser/input.spec.ts`).
  */
 
 import { describe, it, expect, afterEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { h, nextTick, type VNode } from 'vue'
 import { TInput } from '@soldy-ui/core'
-import { Input } from '@soldy-ui/vue'
+import { ruRU } from '@soldy-ui/plugins'
+import { Input, LocaleProvider } from '@soldy-ui/vue'
 
 let wrapper: ReturnType<typeof mount> | null = null
 
@@ -55,14 +56,23 @@ describe('Input · кнопка очистки', () => {
 		expect(input.classes()).toContain('s-input--clearable')
 	})
 
-	it('имя собрано с именем поля, слово задаёт clearLabel', async () => {
+	it('имя собрано с именем поля по шаблону локали и следует за name', async () => {
 		const input = render({ clearable: true, name: 'Город' })
 
 		expect(input.find('.s-input__clear').attributes('aria-label')).toBe('Clear Город')
 
-		await input.setProps({ clearLabel: 'Очистить' })
+		await input.setProps({ name: 'Улица' })
 
-		expect(input.find('.s-input__clear').attributes('aria-label')).toBe('Очистить Город')
+		expect(input.find('.s-input__clear').attributes('aria-label')).toBe('Clear Улица')
+	})
+
+	it('под провайдером — строка его локали', () => {
+		wrapper = mount(LocaleProvider, {
+			props: { locale: ruRU },
+			slots: { default: () => h(Input, { clearable: true, name: 'Город' }) },
+		})
+
+		expect(wrapper.find('.s-input__clear').attributes('aria-label')).toBe('Очистить Город')
 	})
 
 	it('размер — поля, выключена — вместе с полем, readonly её не гасит', async () => {

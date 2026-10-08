@@ -864,45 +864,33 @@ describe('field — экземпляр TInput, которым владеет Sel
 	})
 
 	/**
-	 * Кнопку очистки рисует поле, а не Select: `clearable` и `clearLabel` —
-	 * входы Select, которые уходят полю, как `name` и `size`, а имя кнопки
-	 * собирает поле. Второй копии имени у Select нет.
+	 * Кнопку очистки рисует поле, а не Select: `clearable` — вход Select,
+	 * который уходит полю, как `name` и `size`, а набор кнопки — у поля, и имя
+	 * в него пишет плагин имён поля. Второй копии набора у Select нет.
 	 */
 	describe('кнопка очистки — у поля', () => {
-		it('clearable и clearLabel уходят полю при создании и при смене', () => {
-			const select = new TSelect({ clearable: true, clearLabel: 'Очистить' })
+		it('clearable уходит полю при создании и при смене', () => {
+			const select = new TSelect({ clearable: true })
 
 			expect(select.field.clearable).toBe(true)
-			expect(select.field.clearLabel).toBe('Очистить')
 
 			select.clearable = false
-			select.clearLabel = 'Стереть'
 
 			expect(select.field.clearable).toBe(false)
-			expect(select.field.clearLabel).toBe('Стереть')
 		})
 
-		it('умолчания — поля', () => {
-			const select = new TSelect()
-
-			expect(select.clearable).toBe(TInput.defaultValues.clearable)
-			expect(select.clearLabel).toBe(TInput.defaultValues.clearLabel)
+		it('умолчание — поля', () => {
+			expect(new TSelect().clearable).toBe(TInput.defaultValues.clearable)
 		})
 
-		it('имя кнопки собирает поле, с именем Select: «Clear Город»', () => {
-			// На форме с пятью полями пять одинаковых «Clear, кнопка» в списке
-			// элементов скринридера выбрать нельзя
-			expect(new TSelect({ name: 'Город' }).field.clearAria['aria-label']).toBe('Clear Город')
-		})
-
-		it('смена clearLabel и имени доходит до имени кнопки', () => {
+		it('набор кнопки — у поля; имя поля, из которого плагин имён собирает имя кнопки, — от Select', () => {
 			const select = new TSelect({ name: 'Город' })
 
-			select.clearLabel = 'Очистить'
-			expect(select.field.clearAria['aria-label']).toBe('Очистить Город')
+			expect(select.field.clearAria.has('aria-label')).toBe(false)
+			expect(select.field.name).toBe('Город')
 
 			select.name = 'Улица'
-			expect(select.field.clearAria['aria-label']).toBe('Очистить Улица')
+			expect(select.field.name).toBe('Улица')
 		})
 
 		it('своего имени кнопки и модификатора --clearable у Select нет', () => {

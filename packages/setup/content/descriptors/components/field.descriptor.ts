@@ -3,14 +3,16 @@
  *
  * Наследует InputControlDescriptor (value, name, readonly, required, id,
  * disabled, focused, size, variant, ...) и добавляет кнопку очистки: признак
- * `clearable`, слово `clearLabel`, имя кнопки `clearAria` и слот `clear`.
- * Саму кнопку рисует разметка формы — у конца поля, первой в слоте
- * `trailing`. Select своей кнопки не рисует: `clearable` и `clearLabel` он
- * отдаёт полю.
+ * `clearable`, набор кнопки `clearAria`, слот `clear` и плагин имён — имя
+ * кнопки собирается из шаблона локали и имени поля. Саму кнопку рисует
+ * разметка формы — у конца поля, первой в слоте `trailing`. Select своей
+ * кнопки не рисует: `clearable` он отдаёт полю, а имя кнопке пишет плагин
+ * имён самого поля.
  */
 
 import { defineComponent, defineDescriptor, defineType } from '../../../protected/define'
 import { TField } from '@soldy-ui/core'
+import { FieldNamesPluginDescriptor } from '../plugins'
 import { InputControlDescriptor } from './input-control.descriptor'
 
 export const FieldDescriptor = defineDescriptor(() =>
@@ -33,18 +35,18 @@ export const FieldDescriptor = defineDescriptor(() =>
 			},
 			props: {
 				clearable: { type: Boolean, triggers: ['change:clearable'] },
-				clearLabel: { type: String, triggers: ['change:clearLabel'] },
 				/**
-				 * Имя кнопки очистки — со словом `clearLabel` и именем поля.
-				 * Отдельный набор, а не часть `aria`: `aria` описывает само поле, а
-				 * это соседняя кнопка.
+				 * Набор кнопки очистки: отдельный, а не часть `aria` — `aria`
+				 * описывает само поле, а это соседняя кнопка. Имя с именем поля в
+				 * него пишет `TFieldNamesPlugin`.
 				 */
-				clearAria: {
-					type: Object,
-					protected: true,
-					triggers: ['change:clearLabel', 'change:name'],
-				},
+				clearAria: { type: Object, protected: true, triggers: ['change:clearAria'] },
 			},
 		},
+
+		plugins: [
+			// Имя кнопки очистки от локали — с первой отрисовки
+			FieldNamesPluginDescriptor,
+		],
 	}),
 )

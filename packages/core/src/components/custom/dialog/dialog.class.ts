@@ -1,7 +1,6 @@
 import { TModalLayer } from '../../base/modal-layer'
 import type { TDefaultValues } from '../../base/component'
 import { TAria } from '../../../common'
-import type { TAriaAttributes } from '../../../common'
 import type { IDialog, IDialogProps, TDialogEvents, TDialogPlacement } from './types'
 
 /**
@@ -29,7 +28,7 @@ export default class TDialog extends TModalLayer<IDialogProps, TDialogEvents> im
 	static defaultValues: typeof TModalLayer.defaultValues &
 		TDefaultValues<
 			IDialogProps,
-			'placement' | 'maximized' | 'maximizable' | 'maximizeLabel' | 'alert',
+			'placement' | 'maximized' | 'maximizable' | 'alert',
 			'offset'
 		> = {
 		...TModalLayer.defaultValues,
@@ -38,7 +37,6 @@ export default class TDialog extends TModalLayer<IDialogProps, TDialogEvents> im
 		offset: undefined,
 		maximized: false,
 		maximizable: false,
-		maximizeLabel: 'Maximize',
 		alert: false,
 	}
 
@@ -46,9 +44,9 @@ export default class TDialog extends TModalLayer<IDialogProps, TDialogEvents> im
 	protected _offset: number | string | undefined
 	protected _maximized!: boolean
 	protected _maximizable: boolean
-	protected _maximizeLabel: string
 	protected _alert!: boolean
 	protected _bodyAria: TAria
+	protected _maximizeAria: TAria
 
 	constructor(props: Partial<IDialogProps> = {}) {
 		super(props)
@@ -61,9 +59,14 @@ export default class TDialog extends TModalLayer<IDialogProps, TDialogEvents> im
 			this.events.emit('change:bodyAria', this._bodyAria.toObject()),
 		)
 
+		this._maximizeAria = new TAria()
+
+		this._maximizeAria.events.on('change', () =>
+			this.events.emit('change:maximizeAria', this._maximizeAria.toObject()),
+		)
+
 		this._offset = props.offset ?? ctor.defaultValues.offset
 		this._maximizable = props.maximizable ?? ctor.defaultValues.maximizable
-		this._maximizeLabel = props.maximizeLabel ?? ctor.defaultValues.maximizeLabel
 
 		this._applyAlert(props.alert ?? ctor.defaultValues.alert)
 		this._applyPlacement(props.placement ?? ctor.defaultValues.placement)
@@ -132,21 +135,6 @@ export default class TDialog extends TModalLayer<IDialogProps, TDialogEvents> im
 		this.events.emit('change:maximizable', value)
 	}
 
-	/**
-	 * Имя кнопки разворота. Одно на оба состояния: кнопка — переключатель, и
-	 * состояние она сообщает `aria-pressed`, а не сменой имени (APG, Button).
-	 */
-	get maximizeLabel(): string {
-		return this._maximizeLabel
-	}
-
-	set maximizeLabel(value: string) {
-		if (this._maximizeLabel === value) return
-
-		this._maximizeLabel = value
-		this.events.emit('change:maximizeLabel', value)
-	}
-
 	/** Окно — предупреждение: `role="alertdialog"`, описание — тело окна. */
 	get alert(): boolean {
 		return this._alert
@@ -168,12 +156,15 @@ export default class TDialog extends TModalLayer<IDialogProps, TDialogEvents> im
 		return this._bodyAria
 	}
 
-	/** Имя кнопки разворота и её состояние: нажата — окно развёрнуто. */
-	get maximizeAria(): TAriaAttributes {
-		return {
-			'aria-label': this._maximizeLabel,
-			'aria-pressed': this._maximized ? 'true' : 'false',
-		}
+	/**
+	 * Набор кнопки разворота: её имя и состояние — нажата, когда окно
+	 * развёрнуто. Имя одно на оба состояния: кнопка — переключатель, и
+	 * состояние она сообщает `aria-pressed`, а не сменой имени (APG, Button).
+	 * Живой: состояние пишет окно, имя от локали — плагин имён
+	 * (`TDialogNamesPlugin`), об изменении набор сообщает `change:maximizeAria`.
+	 */
+	get maximizeAria(): TAria {
+		return this._maximizeAria
 	}
 
 	protected _applyAlert(value: boolean): void {
@@ -197,6 +188,7 @@ export default class TDialog extends TModalLayer<IDialogProps, TDialogEvents> im
 
 		// Тема по нему разворачивает окно, а место и размер перестают действовать
 		this._dataset.add('maximized', value)
+		this._maximizeAria.add('aria-pressed', value ? 'true' : 'false')
 	}
 
 	override getProps(): IDialogProps {
@@ -206,7 +198,6 @@ export default class TDialog extends TModalLayer<IDialogProps, TDialogEvents> im
 			offset: this._offset,
 			maximized: this._maximized,
 			maximizable: this._maximizable,
-			maximizeLabel: this._maximizeLabel,
 			alert: this._alert,
 		}
 	}

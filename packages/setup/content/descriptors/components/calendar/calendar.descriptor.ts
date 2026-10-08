@@ -3,10 +3,11 @@
  *
  * Наследует `ValueControlDescriptor` (value, name, disabled, focused, size,
  * variant, ...) и добавляет то, что задаёт потребитель: границы, недоступные
- * дни, первый день недели, локаль, пояс «сегодня», месяцы сеток и имена кнопок
- * листания. Всё, что календарь делает с днями, — коллекция и её расширения
- * (`CalendarCollectionDescriptor`); клавиши и указатель переводят в их команды
- * плагины владельца.
+ * дни, первый день недели, пояс «сегодня» и месяцы сеток. Язык и имена кнопок
+ * — от локали поддерева: их пишут плагины языка и имён, а разметка получает
+ * готовые выходы. Всё, что календарь делает с днями, —
+ * коллекция и её расширения (`CalendarCollectionDescriptor`); клавиши и
+ * указатель переводят в их команды плагины владельца.
  *
  * Сетка — по APG (Date Picker Dialog): фокус и наборы стоят на самой ячейке
  * дня, весь календарь — одна остановка Tab на все сетки, а заголовок месяца —
@@ -23,6 +24,8 @@ import {
 	CalendarPointerPluginDescriptor,
 	CollectionBundlesPluginDescriptor,
 	CollectionElementsPluginDescriptor,
+	CalendarNamesPluginDescriptor,
+	LocalePluginDescriptor,
 } from '../../plugins'
 
 export const CalendarDescriptor = defineDescriptor(() =>
@@ -53,37 +56,37 @@ export const CalendarDescriptor = defineDescriptor(() =>
 				max: { type: String, triggers: ['change:max'] },
 				unavailable: { type: Function, triggers: ['change:unavailable'] },
 				weekStart: { type: Number, triggers: ['change:weekStart'] },
-				locale: { type: String, triggers: ['change:locale'] },
+				/**
+				 * Язык подписей и первого дня недели — не вход: это тег локали
+				 * поддерева, и пишет его плагин языка.
+				 */
+				locale: { type: String, protected: true, triggers: ['change:locale'] },
 				timeZone: { type: String, triggers: ['change:timeZone'] },
 				/**
 				 * Месяц каждой сетки. Вид пишет сюда и те месяцы, что показал сам
 				 * (листание, уход фокуса), поэтому у пропа есть `v-model:months`.
 				 */
 				months: { type: Array, triggers: ['change:months'] },
-				prevLabel: { type: String, triggers: ['change:prevLabel'] },
-				nextLabel: { type: String, triggers: ['change:nextLabel'] },
-				/**
-				 * Имена стрелок панели выбора месяца и года: на месяцах они
-				 * листают год, на годах — страницу из 12 лет. Набор стрелки по
-				 * уровню панели собирает коллекция (`pickers`).
-				 */
-				prevYearLabel: { type: String, triggers: ['change:prevYearLabel'] },
-				nextYearLabel: { type: String, triggers: ['change:nextYearLabel'] },
-				prevYearsLabel: { type: String, triggers: ['change:prevYearsLabel'] },
-				nextYearsLabel: { type: String, triggers: ['change:nextYearsLabel'] },
 				/** Подписи колонок — от первого дня недели, на языке локали. */
 				weekdays: {
 					type: Array,
 					protected: true,
 					triggers: ['change:locale', 'change:weekStart'],
 				},
-				/** Имена кнопок: своего экземпляра у них нет, набор отдаётся значением. */
-				prevAria: { type: Object, protected: true, triggers: ['change:prevLabel'] },
-				nextAria: { type: Object, protected: true, triggers: ['change:nextLabel'] },
+				/**
+				 * Наборы кнопок листания: своего экземпляра у кнопок нет, и наборы
+				 * держит календарь. Имена в них — и в наборы стрелок панели выбора
+				 * месяца и года, которые разметка получает выходом коллекции
+				 * `pickers`, — пишет `TCalendarNamesPlugin`.
+				 */
+				prevAria: { type: Object, protected: true, triggers: ['change:prevAria'] },
+				nextAria: { type: Object, protected: true, triggers: ['change:nextAria'] },
 			},
 		},
 
 		plugins: [
+			// Язык — до поведения: подписи с первой отрисовки
+			LocalePluginDescriptor,
 			// Коллекция: реестр bundles + доступ к DOM-узлам дней
 			CollectionBundlesPluginDescriptor,
 			CollectionElementsPluginDescriptor,
@@ -94,6 +97,9 @@ export const CalendarDescriptor = defineDescriptor(() =>
 			// Имена сеток: `id` заголовка месяца и ссылка сетки на него.
 			// После реестра bundles: движок узнаёт от него
 			CalendarIdsPluginDescriptor,
+			// Имена кнопок листания и стрелок панели выбора от локали. После
+			// реестра bundles: движок узнаёт от него
+			CalendarNamesPluginDescriptor,
 		],
 	}),
 )

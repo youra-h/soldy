@@ -10,9 +10,10 @@
 
 import { describe, it, expect, afterEach } from 'vitest'
 import { mount } from '@vue/test-utils'
-import { defineComponent, h, nextTick, type VNode } from 'vue'
-import { Scroller } from '@soldy-ui/vue'
+import { defineComponent, h, nextTick, ref, type VNode } from 'vue'
+import { LocaleProvider, Scroller } from '@soldy-ui/vue'
 import { TScroller } from '@soldy-ui/core'
+import { enUS, extendLocale, ruRU } from '@soldy-ui/plugins'
 
 const nextFrame = () => new Promise((resolve) => requestAnimationFrame(resolve))
 
@@ -165,15 +166,19 @@ describe('вьюпорт', () => {
 })
 
 describe('имена кнопок', () => {
-	it('приходят из пропов и обновляются вместе с ними', async () => {
-		const ctrl = new TScroller({ prevLabel: 'Назад', nextLabel: 'Вперёд' })
+	it('приходят от локали поддерева и обновляются вместе с ней', async () => {
+		const locale = ref(ruRU)
 
-		await render(() => h(Scroller, { ctrl }, { default: content }))
+		await render(() =>
+			h(LocaleProvider, { locale: locale.value }, () =>
+				h(Scroller, null, { default: content }),
+			),
+		)
 
-		expect(find('.s-scroller__prev').getAttribute('aria-label')).toBe('Назад')
-		expect(find('.s-scroller__next').getAttribute('aria-label')).toBe('Вперёд')
+		expect(find('.s-scroller__prev').getAttribute('aria-label')).toBe('Прокрутить назад')
+		expect(find('.s-scroller__next').getAttribute('aria-label')).toBe('Прокрутить вперёд')
 
-		ctrl.prevLabel = 'К началу'
+		locale.value = extendLocale(enUS, { translations: { scroller: { prev: 'К началу' } } })
 		await nextTick()
 
 		expect(find('.s-scroller__prev').getAttribute('aria-label')).toBe('К началу')

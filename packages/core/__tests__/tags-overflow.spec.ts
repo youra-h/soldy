@@ -66,9 +66,16 @@ describe('свойство overflow', () => {
 		expect(changed).toHaveBeenCalledExactlyOnceWith('popover')
 	})
 
-	it('имя кнопки «…» — проп с английским дефолтом', () => {
-		expect(new TTags().moreAria).toEqual({ 'aria-label': 'More' })
-		expect(new TTags({ moreLabel: 'Ещё' }).moreAria).toEqual({ 'aria-label': 'Ещё' })
+	it('имени кнопки «…» ядро не строит: набор пуст, имя пишет плагин имён', () => {
+		const tags = new TTags()
+		const changed = vi.fn()
+
+		expect(tags.moreAria.valueOf()).toEqual({})
+
+		tags.events.on('change:moreAria', changed)
+		tags.moreAria.add('aria-label', 'Ещё')
+
+		expect(changed).toHaveBeenCalledExactlyOnceWith({ 'aria-label': 'Ещё' })
 	})
 
 	it('arrows — признак режима, а не сравнение строки в шести разметках', () => {
@@ -80,35 +87,6 @@ describe('свойство overflow', () => {
 
 		expect(tags.arrows).toBe(true)
 		expect(tags.dataset.get('data-overflow')).toBe('arrows')
-	})
-})
-
-/**
- * Кнопки листания принадлежат ленте, и английские умолчания держит она. У
- * Tags своих строк нет: второй экземпляр тех же слов однажды разошёлся бы с
- * первым, а `undefined` доезжает до ленты и оставляет её при своём.
- */
-describe('имена кнопок листания', () => {
-	it('не заданы — их нет вовсе, дефолт держит лента', () => {
-		const tags = new TTags()
-
-		expect(tags.prevLabel).toBeUndefined()
-		expect(tags.nextLabel).toBeUndefined()
-	})
-
-	it('заданные доезжают и сообщают об изменении', () => {
-		const tags = new TTags({ prevLabel: 'Назад', nextLabel: 'Вперёд' })
-		const changed = vi.fn()
-
-		expect(tags.prevLabel).toBe('Назад')
-		expect(tags.nextLabel).toBe('Вперёд')
-
-		tags.events.on('change:prevLabel', changed)
-
-		tags.prevLabel = 'К началу'
-		tags.prevLabel = 'К началу'
-
-		expect(changed).toHaveBeenCalledExactlyOnceWith('К началу')
 	})
 })
 

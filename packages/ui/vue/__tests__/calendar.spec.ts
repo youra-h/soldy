@@ -13,8 +13,9 @@
 import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { defineComponent, h, nextTick, ref, type VNode } from 'vue'
-import { Calendar } from '@soldy-ui/vue'
+import { Calendar, LocaleProvider } from '@soldy-ui/vue'
 import { TCalendar, createEngineCalendar } from '@soldy-ui/core'
+import { ruRU } from '@soldy-ui/plugins'
 import type { ICalendarItem, TCalendarValue } from '@soldy-ui/core'
 
 const nextFrame = () => new Promise((resolve) => requestAnimationFrame(resolve))
@@ -150,8 +151,8 @@ describe('разметка', () => {
 		expect(findAll('.s-calendar__grid')).toHaveLength(2)
 	})
 
-	it('первый день недели по локали: у ru-RU колонки с понедельника', async () => {
-		await render(() => h(Calendar, { locale: 'ru-RU' }))
+	it('первый день недели по локали поддерева: у ru-RU колонки с понедельника', async () => {
+		await render(() => h(LocaleProvider, { locale: ruRU }, () => h(Calendar)))
 
 		// Узкие имена повторяются (понедельник и пятница — «П»), поэтому
 		// сверяется весь ряд; 2026-09-21 — понедельник
@@ -183,11 +184,19 @@ describe('разметка', () => {
 })
 
 describe('кнопки листания', () => {
-	it('имена — из prevLabel и nextLabel', async () => {
-		await render(() => h(Calendar, { prevLabel: 'Назад', nextLabel: 'Вперёд' }))
+	it('имена — от локали поддерева, без провайдера — английские', async () => {
+		await render(() => h(Calendar))
 
-		expect(prev().getAttribute('aria-label')).toBe('Назад')
-		expect(next().getAttribute('aria-label')).toBe('Вперёд')
+		expect(prev().getAttribute('aria-label')).toBe('Previous month')
+		expect(next().getAttribute('aria-label')).toBe('Next month')
+
+		wrapper?.unmount()
+		document.body.innerHTML = ''
+
+		await render(() => h(LocaleProvider, { locale: ruRU }, () => h(Calendar)))
+
+		expect(prev().getAttribute('aria-label')).toBe('Предыдущий месяц')
+		expect(next().getAttribute('aria-label')).toBe('Следующий месяц')
 	})
 
 	it('у границы кнопка гаснет, в другую сторону — нет', async () => {
@@ -592,13 +601,13 @@ describe('выбор месяца и года', () => {
 	})
 
 	it('стрелки шапки: имена по уровню, листание года и страницы', async () => {
-		await render(() => h(Calendar, { prevYearLabel: 'Предыдущий год' }))
+		await render(() => h(Calendar))
 		await openPicker()
 
 		const prev = find('.s-calendar__picker-prev')
 		const next = find('.s-calendar__picker-next')
 
-		expect(prev.getAttribute('aria-label')).toBe('Предыдущий год')
+		expect(prev.getAttribute('aria-label')).toBe('Previous year')
 		expect(next.getAttribute('aria-label')).toBe('Next year')
 
 		next.click()

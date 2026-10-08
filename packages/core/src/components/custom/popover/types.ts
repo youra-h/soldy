@@ -36,8 +36,6 @@ export type TPopoverEvents = TComponentViewEvents &
 		'change:open': (value: boolean) => void
 		/** change:closable */
 		'change:closable': (value: boolean) => void
-		/** change:closeLabel */
-		'change:closeLabel': (value: string) => void
 		/** change:lazyMount */
 		'change:lazyMount': (value: boolean) => void
 		/** change:placement */
@@ -48,6 +46,8 @@ export type TPopoverEvents = TComponentViewEvents &
 		'change:edge': (value: TPopoverEdge) => void
 		/** change:triggerAria — набор атрибутов триггера изменился */
 		'change:triggerAria': (value: TAriaAttributes) => void
+		/** change:closeAria — набор атрибутов кнопки закрытия изменился */
+		'change:closeAria': (value: TAriaAttributes) => void
 	}
 
 export interface IPopoverProps extends IComponentViewProps {
@@ -55,8 +55,6 @@ export interface IPopoverProps extends IComponentViewProps {
 	open?: boolean
 	/** Показывать ли кнопку закрытия в углу панели */
 	closable?: boolean
-	/** Имя кнопки закрытия для скринридера */
-	closeLabel?: string
 	/**
 	 * Не монтировать содержимое, пока панель ни разу не открывали. После
 	 * первого открытия содержимое остаётся, закрытие только прячет панель.
@@ -92,8 +90,6 @@ export interface IPopover extends IComponentView<IPopoverProps, TPopoverEvents>,
 	open: boolean
 	/** Показывать ли кнопку закрытия в углу панели */
 	closable: boolean
-	/** Имя кнопки закрытия для скринридера */
-	closeLabel: string
 	/** Не монтировать содержимое до первого открытия */
 	lazyMount: boolean
 	/** Сторона и выравнивание панели у триггера */
@@ -115,8 +111,8 @@ export interface IPopover extends IComponentView<IPopoverProps, TPopoverEvents>,
 	 * пишет её слой
 	 */
 	readonly panelDataset: TDatasetAttributes
-	/** Имя кнопки закрытия: `closeLabel` */
-	readonly closeAria: TAriaAttributes
+	/** Атрибуты кнопки закрытия: имя от локали пишет плагин имён */
+	readonly closeAria: TAria
 	/** Смонтировано ли содержимое панели: без `lazyMount` — всегда */
 	readonly contentRendered: boolean
 	/** Рисовать ли полосу, за которую панель тянут: жест включён */

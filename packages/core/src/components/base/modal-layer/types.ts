@@ -14,8 +14,6 @@ export interface IModalLayerProps extends ILayerProps {
 	height?: number | string
 	/** Показывать ли кнопку закрытия */
 	closable?: boolean
-	/** Имя кнопки закрытия для скринридера */
-	closeLabel?: string
 	/**
 	 * Закрывают ли панель нажатие мимо и Escape. Выключено — только кнопка
 	 * закрытия, свой жест панели и код
@@ -36,12 +34,12 @@ export type TModalLayerEvents = TLayerEvents & {
 	'change:height': (value: number | string | undefined) => void
 	/** change:closable */
 	'change:closable': (value: boolean) => void
-	/** change:closeLabel */
-	'change:closeLabel': (value: string) => void
 	/** change:dismissible */
 	'change:dismissible': (value: boolean) => void
 	/** change:titleAria — набор атрибутов заголовка изменился */
 	'change:titleAria': (value: TAriaAttributes) => void
+	/** change:closeAria — набор атрибутов кнопки закрытия изменился */
+	'change:closeAria': (value: TAriaAttributes) => void
 }
 
 export interface IModalLayer<
@@ -55,14 +53,12 @@ export interface IModalLayer<
 	height: number | string | undefined
 	/** Показывать ли кнопку закрытия */
 	closable: boolean
-	/** Имя кнопки закрытия для скринридера */
-	closeLabel: string
 	/** Закрывают ли панель нажатие мимо и Escape */
 	dismissible: boolean
 	/** Атрибуты заголовка: `id`, на который ссылается `aria-labelledby` панели, пишет плагин */
 	readonly titleAria: TAria
-	/** Имя кнопки закрытия: `closeLabel` */
-	readonly closeAria: TAriaAttributes
+	/** Атрибуты кнопки закрытия: имя от локали пишет плагин имён */
+	readonly closeAria: TAria
 	/** `data-*` подложки: тот же номер слоя и та же открытость, что у панели */
 	readonly backdropDataset: TDatasetAttributes
 }

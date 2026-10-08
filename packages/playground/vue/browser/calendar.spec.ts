@@ -22,9 +22,11 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { render, cleanup } from 'vitest-browser-vue'
 import { commands, page, userEvent } from 'vitest/browser'
 import { defineComponent, h, nextTick } from 'vue'
-import { Button, Calendar } from '@soldy-ui/vue'
+import { Button, Calendar, LocaleProvider } from '@soldy-ui/vue'
 import { createEngineCalendar } from '@soldy-ui/core'
 import type { TSwipe } from '@soldy-ui/core'
+import { enUS, extendLocale } from '@soldy-ui/plugins'
+import type { TLocale } from '@soldy-ui/plugins'
 import { COMPONENT_SIZES } from '@soldy-ui/playground-shared'
 
 import { find, lightness, outlined, pixel, settled, style, systemColor } from './colors'
@@ -47,15 +49,17 @@ const nextFrame = () => new Promise<void>((resolve) => requestAnimationFrame(() 
  * уйти. Узел корня плагины получают кадром позже, дни — ещё позже владельца.
  * `dir` — направление узла, в котором стоит календарь.
  */
-const show = async (props: Record<string, unknown>, dir?: TLine) => {
+const show = async (props: Record<string, unknown>, dir?: TLine, locale: TLocale = enUS) => {
 	render(
 		defineComponent({
 			render: () =>
-				h('div', { class: 's-host', dir }, [
-					h('button', { class: 's-test-before' }, 'До'),
-					h(Calendar, props),
-					h('button', { class: 's-test-after' }, 'После'),
-				]),
+				h(LocaleProvider, { locale }, () =>
+					h('div', { class: 's-host', dir }, [
+						h('button', { class: 's-test-before' }, 'До'),
+						h(Calendar, props),
+						h('button', { class: 's-test-after' }, 'После'),
+					]),
+				),
 		}),
 	)
 
@@ -63,6 +67,13 @@ const show = async (props: Record<string, unknown>, dir?: TLine) => {
 	await nextFrame()
 	await nextFrame()
 }
+
+/**
+ * Тот же календарь под провайдером с языком `tag`: своего языка у календаря
+ * нет, это тег локали поддерева. Строки — английские, раскладке они не важны.
+ */
+const showIn = (tag: string, props: Record<string, unknown>) =>
+	show(props, undefined, extendLocale(enUS, { tag }))
 
 const findAll = (selector: string): HTMLElement[] =>
 	[...document.querySelectorAll(selector)].filter(
@@ -782,7 +793,7 @@ describe('выбор месяца и года', () => {
 	it.each(['sm', 'normal', 'xl'] as const)(
 		'size %s: месяцы — 4×3 ровными ячейками с зазором, подпись по центру, шапка над списком',
 		async (size) => {
-			await show({ months: ['2026-09-01'], locale: 'ru-RU', size })
+			await showIn('ru-RU', { months: ['2026-09-01'], size })
 			await open()
 
 			expectGrid()
@@ -828,7 +839,7 @@ describe('выбор месяца и года', () => {
 	it.each(COMPONENT_SIZES)(
 		'size %s: годы — так же ровной сеткой 4×3, подписи th-TH с эрой переносятся, а не режутся',
 		async (size) => {
-			await show({ months: ['2026-09-01'], locale: 'th-TH', size })
+			await showIn('th-TH', { months: ['2026-09-01'], size })
 			await open()
 
 			const january = options()[0]?.textContent
@@ -864,7 +875,7 @@ describe('выбор месяца и года', () => {
 	it.each(COMPONENT_SIZES)(
 		'size %s: месяцы vi-VN в несколько слов переносятся между словами, а не режутся',
 		async (size) => {
-			await show({ months: ['2026-09-01'], locale: 'vi-VN', size })
+			await showIn('vi-VN', { months: ['2026-09-01'], size })
 			await open()
 
 			expectGrid()
@@ -910,7 +921,7 @@ describe('выбор месяца и года', () => {
 		it.each(COMPONENT_SIZES)(
 			'size %s: в своей плитке — целые по центру, шире плитки — многоточием',
 			async (size) => {
-				await show({ months: ['2026-09-01'], locale, size })
+				await showIn(locale, { months: ['2026-09-01'], size })
 				await open()
 
 				for (const option of options()) {
@@ -950,7 +961,7 @@ describe('выбор месяца и года', () => {
 		it.each(COMPONENT_SIZES)(
 			'size %s: имя дня — в своей колонке, под открытой панелью — под карточкой',
 			async (size) => {
-				await show({ months: ['2026-09-01'], locale, size })
+				await showIn(locale, { months: ['2026-09-01'], size })
 
 				const weekdays = findAll('.s-calendar__weekday')
 

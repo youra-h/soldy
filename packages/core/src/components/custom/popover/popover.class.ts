@@ -2,7 +2,7 @@ import { TComponentView } from '../../base/component-view'
 import type { TDefaultValues } from '../../base/component'
 import type { TSwipe, TSwipeSide } from '../../base/layer'
 import { TAria } from '../../../common'
-import type { TAriaAttributes, TDatasetAttributes } from '../../../common'
+import type { TDatasetAttributes } from '../../../common'
 import type {
 	IPopover,
 	IPopoverProps,
@@ -40,6 +40,9 @@ import type {
  * Панель внутри контейнера прижата к краю (`edge`) и уходит к нему. Признак «тянут» (`swiping`) панель
  * получает набором `panelDataset`: корень поповера — не панель, и `dataset`
  * лежит на корне. Закрывает жест записью `open`, как Escape.
+ *
+ * Имя кнопки закрытия — от локали: строки библиотеки задаёт локаль поддерева,
+ * и имя в набор кнопки (`closeAria`) пишет плагин имён (`TPopoverNamesPlugin`).
  */
 export default class TPopover
 	extends TComponentView<IPopoverProps, TPopoverEvents>
@@ -50,21 +53,13 @@ export default class TPopover
 	static defaultValues: typeof TComponentView.defaultValues &
 		TDefaultValues<
 			IPopoverProps,
-			| 'open'
-			| 'closable'
-			| 'closeLabel'
-			| 'lazyMount'
-			| 'placement'
-			| 'contained'
-			| 'edge'
-			| 'swipe'
+			'open' | 'closable' | 'lazyMount' | 'placement' | 'contained' | 'edge' | 'swipe'
 		> = {
 		...TComponentView.defaultValues,
 		// Строчный корень: триггер встаёт и в строку текста, и в ряд тегов
 		tag: 'span',
 		open: false,
 		closable: true,
-		closeLabel: 'Close',
 		lazyMount: false,
 		placement: 'bottom-start',
 		contained: false,
@@ -75,7 +70,6 @@ export default class TPopover
 
 	protected _open!: boolean
 	protected _closable: boolean
-	protected _closeLabel: string
 	protected _lazyMount: boolean
 	protected _placement: TPopoverPlacement
 	protected _contained: boolean
@@ -85,6 +79,7 @@ export default class TPopover
 	/** Открывали ли панель хоть раз — после этого `lazyMount` содержимое не прячет. */
 	protected _opened = false
 	protected _triggerAria: TAria
+	protected _closeAria: TAria
 
 	constructor(props: Partial<IPopoverProps> = {}) {
 		super(props)
@@ -92,7 +87,6 @@ export default class TPopover
 		const ctor = new.target as typeof TPopover
 
 		this._closable = props.closable ?? ctor.defaultValues.closable
-		this._closeLabel = props.closeLabel ?? ctor.defaultValues.closeLabel
 		this._lazyMount = props.lazyMount ?? ctor.defaultValues.lazyMount
 		this._placement = props.placement ?? ctor.defaultValues.placement
 		this._contained = props.contained ?? ctor.defaultValues.contained
@@ -111,6 +105,12 @@ export default class TPopover
 
 		// `dialog`, а не `true`: `true` у ARIA значит `menu`
 		this._triggerAria.add('aria-haspopup', 'dialog')
+
+		this._closeAria = new TAria()
+
+		this._closeAria.events.on('change', () =>
+			this.events.emit('change:closeAria', this._closeAria.toObject()),
+		)
 
 		this._applyOpen(props.open ?? ctor.defaultValues.open)
 	}
@@ -139,21 +139,6 @@ export default class TPopover
 
 		this._closable = value
 		this.events.emit('change:closable', value)
-	}
-
-	/**
-	 * Имя кнопки закрытия. Дефолт английский: язык интерфейса ядру неизвестен,
-	 * а оставить кнопку без имени нельзя.
-	 */
-	get closeLabel(): string {
-		return this._closeLabel
-	}
-
-	set closeLabel(value: string) {
-		if (this._closeLabel === value) return
-
-		this._closeLabel = value
-		this.events.emit('change:closeLabel', value)
 	}
 
 	/**
@@ -339,9 +324,13 @@ export default class TPopover
 		return this._contained ? { ...state, 'data-edge': this._edge } : state
 	}
 
-	/** Имя кнопки закрытия — соседней с содержимым, а не самой панели. */
-	get closeAria(): TAriaAttributes {
-		return { 'aria-label': this._closeLabel }
+	/**
+	 * Набор кнопки закрытия — соседней с содержимым, а не самой панели. Живой:
+	 * имя в него пишет плагин имён (`TPopoverNamesPlugin`) от локали, об
+	 * изменении набор сообщает `change:closeAria`.
+	 */
+	get closeAria(): TAria {
+		return this._closeAria
 	}
 
 	/**
@@ -379,7 +368,6 @@ export default class TPopover
 			...super.getProps(),
 			open: this._open,
 			closable: this._closable,
-			closeLabel: this._closeLabel,
 			lazyMount: this._lazyMount,
 			placement: this._placement,
 			contained: this._contained,

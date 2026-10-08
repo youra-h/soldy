@@ -16,7 +16,6 @@ describe('умолчания', () => {
 
 		expect(popover.open).toBe(false)
 		expect(popover.closable).toBe(true)
-		expect(popover.closeLabel).toBe('Close')
 		expect(popover.lazyMount).toBe(false)
 		expect(popover.placement).toBe('bottom-start')
 		expect(popover.contained).toBe(false)
@@ -36,7 +35,6 @@ describe('умолчания', () => {
 		const popover = new TPopover({
 			open: true,
 			closable: false,
-			closeLabel: 'Закрыть',
 			lazyMount: true,
 			placement: 'top-end',
 			contained: true,
@@ -47,7 +45,6 @@ describe('умолчания', () => {
 		expect(popover.getProps()).toMatchObject({
 			open: true,
 			closable: false,
-			closeLabel: 'Закрыть',
 			lazyMount: true,
 			placement: 'top-end',
 			contained: true,
@@ -139,14 +136,18 @@ describe('data-* для темы', () => {
 })
 
 describe('кнопка закрытия', () => {
-	it('имя — closeLabel', () => {
-		const popover = new TPopover({ closeLabel: 'Закрыть' })
+	it('имени ядро не строит: набор пуст, имя пишет плагин имён', () => {
+		expect(new TPopover().closeAria.valueOf()).toEqual({})
+	})
 
-		expect(popover.closeAria).toEqual({ 'aria-label': 'Закрыть' })
+	it('набор живой: запись — change:closeAria со снимком', () => {
+		const popover = new TPopover()
+		const changes = vi.fn()
 
-		popover.closeLabel = 'Скрыть'
+		popover.events.on('change:closeAria', changes)
+		popover.closeAria.add('aria-label', 'Закрыть')
 
-		expect(popover.closeAria).toEqual({ 'aria-label': 'Скрыть' })
+		expect(changes).toHaveBeenCalledWith({ 'aria-label': 'Закрыть' })
 	})
 })
 
@@ -200,7 +201,6 @@ describe('события', () => {
 
 	it.each([
 		['closable', 'change:closable', false],
-		['closeLabel', 'change:closeLabel', 'Закрыть'],
 		['lazyMount', 'change:lazyMount', true],
 		['placement', 'change:placement', 'top-start'],
 		['contained', 'change:contained', true],
@@ -224,7 +224,7 @@ describe('события', () => {
 
 		expect(popover.triggerAria.valueOf()).not.toBe(popover.triggerAria.valueOf())
 		expect(popover.triggerDataset).not.toBe(popover.triggerDataset)
-		expect(popover.closeAria).not.toBe(popover.closeAria)
+		expect(popover.closeAria.valueOf()).not.toBe(popover.closeAria.valueOf())
 		expect(popover.panelDataset).not.toBe(popover.panelDataset)
 	})
 })

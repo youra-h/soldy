@@ -11,6 +11,9 @@
  * Открытость — `visible`: модальный слой сам и есть слой, и `open` рядом с
  * ним был бы вторым путём к одному факту. Поэтому плагины слоя ставятся с
  * `property: 'visible'`.
+ *
+ * Имена кнопок — от локали поддерева: их пишет в наборы (`closeAria`, у окна —
+ * `maximizeAria`) плагин имён наследника, как связки — его плагин `ids`.
  */
 
 import { defineComponent, defineDescriptor } from '../../../protected/define'
@@ -43,7 +46,6 @@ export const ModalLayerDescriptor = defineDescriptor(() =>
 				width: { type: [Number, String], triggers: ['change:width'] },
 				height: { type: [Number, String], triggers: ['change:height'] },
 				closable: { type: Boolean, triggers: ['change:closable'] },
-				closeLabel: { type: String, triggers: ['change:closeLabel'] },
 				dismissible: { type: Boolean, triggers: ['change:dismissible'] },
 				/**
 				 * Сторона связки у заголовка — части без экземпляра. Набор слоя:
@@ -51,8 +53,11 @@ export const ModalLayerDescriptor = defineDescriptor(() =>
 				 * раскладывает на свой элемент.
 				 */
 				titleAria: { type: Object, protected: true, triggers: ['change:titleAria'] },
-				/** Имя кнопки закрытия. Отдельный набор: кнопка — сосед содержимого. */
-				closeAria: { type: Object, protected: true, triggers: ['change:closeLabel'] },
+				/**
+				 * Набор кнопки закрытия: кнопка — сосед содержимого. Имя в него
+				 * пишет плагин имён наследника.
+				 */
+				closeAria: { type: Object, protected: true, triggers: ['change:closeAria'] },
 				/**
 				 * Номер слоя и открытость у подложки: они у неё те же, что у
 				 * панели. По открытости подложка гаснет вместе с панелью.

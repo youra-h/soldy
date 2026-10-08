@@ -397,17 +397,15 @@ describe('Select', () => {
 
 /**
  * Кнопка очистки — часть поля: `FieldDescriptor`, общий у Input и DateInput.
- * Select её не рисует — свои `clearable` и `clearLabel` он отдаёт полю, а
- * имени кнопки у него нет.
+ * Select её не рисует — свой `clearable` он отдаёт полю, а набора кнопки у
+ * него нет: он у поля, и имя в него пишет плагин имён поля.
  */
 describe('поле: кнопка очистки', () => {
 	it('FieldDescriptor — база TField поверх InputControl', () => {
 		const d = FieldDescriptor()
 
 		expect(d.ctor).toBe(TField)
-		expect(propNames(d)).toEqual(
-			expect.arrayContaining(['readonly', 'clearable', 'clearLabel', 'clearAria']),
-		)
+		expect(propNames(d)).toEqual(expect.arrayContaining(['readonly', 'clearable', 'clearAria']))
 	})
 
 	it.each([
@@ -416,9 +414,7 @@ describe('поле: кнопка очистки', () => {
 	])('%s наследует кнопку очистки и слот clear', (_name, factory) => {
 		const d = factory()
 
-		expect(propNames(d)).toEqual(
-			expect.arrayContaining(['clearable', 'clearLabel', 'clearAria']),
-		)
+		expect(propNames(d)).toEqual(expect.arrayContaining(['clearable', 'clearAria']))
 		expect(d.slots.map((slot) => slot.name)).toContain('clear')
 	})
 
@@ -431,7 +427,6 @@ describe('поле: кнопка очистки', () => {
 		const names = propNames(SelectDescriptor())
 
 		expect(names).toContain('clearable')
-		expect(names).toContain('clearLabel')
 		expect(names).not.toContain('clearAria')
 	})
 })

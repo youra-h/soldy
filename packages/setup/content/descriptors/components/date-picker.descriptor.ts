@@ -4,13 +4,14 @@
  * Наследует `InputControlDescriptor` (value, name, readonly, required, id,
  * disabled, size, variant, ...) и добавляет режим, открытость панели и то, что
  * DatePicker отдаёт полям и календарю: границы, недоступные дни, первый день
- * недели, локаль, пояс «сегодня» — имена кнопки и концов диапазона и имена
- * концов в форме.
+ * недели, пояс «сегодня» — и имена концов в форме. Язык и имена кнопки и
+ * концов диапазона — от локали поддерева: их пишут плагины языка и имён, а
+ * разметка получает готовые выходы.
  *
  * Поля (`field`, `start`, `end`), календарь и его движок — экземпляры ядра
  * DatePicker: разметка отдаёт их компонентам целиком (`:ctrl`, `:engine`), как
- * Select — поле. Пропсов календаря сверх перечисленных (подписи кнопок, месяцы
- * сеток) здесь нет: они у `ctrl.calendar`.
+ * Select — поле. Пропсов календаря сверх перечисленных (месяцы сеток) здесь
+ * нет: они у `ctrl.calendar`.
  *
  * Паттерн — APG Date Picker Dialog: поле и отдельная кнопка календаря, панель —
  * диалог, модальный для клавиатуры и скринридера, а нажатие мимо просто её
@@ -27,6 +28,8 @@ import {
 	DatePickerTriggerPluginDescriptor,
 	DismissPluginDescriptor,
 	HideOutsidePluginDescriptor,
+	DatePickerNamesPluginDescriptor,
+	LocalePluginDescriptor,
 	SwipePluginDescriptor,
 } from '../plugins'
 import { InputControlDescriptor } from './input-control.descriptor'
@@ -60,11 +63,13 @@ export const DatePickerDescriptor = defineDescriptor(() =>
 				max: { type: String, triggers: ['change:max'] },
 				unavailable: { type: Function, triggers: ['change:unavailable'] },
 				weekStart: { type: Number, triggers: ['change:weekStart'] },
-				locale: { type: String, triggers: ['change:locale'] },
+				/**
+				 * Язык поля и календаря — не вход: это тег локали поддерева, и
+				 * пишет его плагин языка. Полям и календарю DatePicker отдаёт его
+				 * сам.
+				 */
+				locale: { type: String, protected: true, triggers: ['change:locale'] },
 				timeZone: { type: String, triggers: ['change:timeZone'] },
-				triggerLabel: { type: String, triggers: ['change:triggerLabel'] },
-				startLabel: { type: String, triggers: ['change:startLabel'] },
-				endLabel: { type: String, triggers: ['change:endLabel'] },
 				/**
 				 * Имена концов диапазона в форме — у полей концов, как `name` у
 				 * поля одной даты: значение в форму отдаёт поле.
@@ -115,6 +120,8 @@ export const DatePickerDescriptor = defineDescriptor(() =>
 		},
 
 		plugins: [
+			// Язык — до поведения: формат полей с первой отрисовки
+			LocalePluginDescriptor,
 			// Закрытие по нажатию мимо — без возврата фокуса и без подложки:
 			// соседнее поле получает фокус с первого нажатия
 			DismissPluginDescriptor,
@@ -128,6 +135,8 @@ export const DatePickerDescriptor = defineDescriptor(() =>
 			DatePickerFocusPluginDescriptor,
 			// `id` панели и `aria-controls` кнопки
 			DatePickerIdsPluginDescriptor,
+			// Имя кнопки календаря и панели, имена полей концов от локали
+			DatePickerNamesPluginDescriptor,
 			// Смахнуть панель, чтобы закрыть. После dismiss: берёт у него панель
 			SwipePluginDescriptor,
 		],

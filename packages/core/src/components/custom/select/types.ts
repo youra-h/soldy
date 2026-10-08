@@ -72,8 +72,6 @@ export type TSelectEvents = TInputControlEvents<TSelectValue> &
 		'change:closeOnSelect': (value: boolean) => void
 		/** change:clearable */
 		'change:clearable': (value: boolean) => void
-		/** change:clearLabel */
-		'change:clearLabel': (value: string) => void
 		/** change:editable */
 		'change:editable': (value: boolean) => void
 		/** change:editableMode */
@@ -101,8 +99,6 @@ export interface ISelectComponentProps extends IInputControlProps<TSelectValue>,
 	closeOnSelect?: boolean
 	/** Показывать ли кнопку очистки значения. Рисует её поле, значение уходит ему */
 	clearable?: boolean
-	/** Слово для кнопки очистки; к нему добавляется имя поля. Уходит полю */
-	clearLabel?: string
 	/**
 	 * Можно ли вводить текст в поле. `false` — select-only (по умолчанию).
 	 * Ставит `readonly`: `editable: true` снимает его, `false` — включает.
@@ -152,10 +148,8 @@ export interface ISelect<
 	placeholder: string
 	/** Закрывать ли панель после выбора */
 	closeOnSelect: boolean
-	/** Показывать ли кнопку очистки значения. Рисует её поле */
+	/** Показывать ли кнопку очистки значения. Рисует её поле, имя кнопки — тоже (`field.clearAria`) */
 	clearable: boolean
-	/** Слово для кнопки очистки. Имя кнопки собирает поле (`field.clearAria`) */
-	clearLabel: string
 	/** Можно ли вводить текст в поле. `false` — select-only (по умолчанию) */
 	editable: boolean
 	/** Что делает ввод текста при `editable: true`. Без него не действует */

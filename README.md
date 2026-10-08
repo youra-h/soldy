@@ -121,6 +121,33 @@ reduced-motion setting by default. An application that wants motion regardless, 
 mode for the whole library at its entry point: `useMotion('full')` or `useMotion('reduce')` from
 `@soldy-ui/plugins`.
 
+Language and the strings the library draws itself — names of buttons without text (close, scroll,
+clear) and of fields nothing else names — come as one value, a locale, from the nearest
+`LocaleProvider` up the tree. The tag goes to Intl (date labels, first day of the week, the date
+field format, table sorting), the strings are plain data with a `{name}` slot where a part's name
+goes. Change the provider's locale and components pick it up without remounting; a nested provider
+gives its subtree another language, and the server renders parallel requests each in its own:
+
+```vue
+<script setup lang="ts">
+import { ref } from 'vue'
+import { LocaleProvider } from '@soldy-ui/vue'
+import { ruRU, zhCN } from '@soldy-ui/plugins'
+
+const current = ref(ruRU) // current.value = zhCN switches on the fly
+</script>
+
+<template>
+  <LocaleProvider :locale="current">
+    <RouterView />
+  </LocaleProvider>
+</template>
+```
+
+Ready locales cover the six official UN languages (`enUS`, `ruRU`, `zhCN`, `frFR`, `esES`,
+`arEG`). Any other is an object of type `TLocale` the application writes itself, or one built over
+a ready locale: `extendLocale(enUS, { tag: 'mn-MN', translations: { modal: { close: 'Хаах' } } })`.
+
 ## Components
 
 The component set, as the playground shows it:

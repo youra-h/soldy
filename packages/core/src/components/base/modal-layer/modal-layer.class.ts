@@ -2,7 +2,7 @@ import { TLayer, TCloseEvent, FRAME_LAYER_ATTRIBUTE } from '../layer'
 import type { TCloseReason } from '../layer'
 import type { TDefaultValues } from '../component'
 import { TAria } from '../../../common'
-import type { TAriaAttributes, TDatasetAttributes, TEventSink } from '../../../common'
+import type { TDatasetAttributes, TEventSink } from '../../../common'
 import type { IModalLayer, IModalLayerProps, TModalLayerEvents } from './types'
 
 /**
@@ -35,6 +35,10 @@ import type { IModalLayer, IModalLayerProps, TModalLayerEvents } from './types'
  * родитель, который открытость пишет сам, с панелью не разойдётся. Поэтому
  * не `hide:before` — его шлёт и программное скрытие.
  *
+ * **Имя кнопки закрытия — от локали**, а не проп: строки библиотеки задаёт
+ * локаль поддерева, и имя в набор кнопки (`closeAria`) пишет плагин имён
+ * (`TModalNamesPlugin`). Слой держит только набор.
+ *
  * **Размер — значение, раскладка — тема.** Ширина и высота уходят теме
  * переменными раскладки наследника (`TDialogLayoutPlugin`,
  * `TDrawerLayoutPlugin`); не заданы — размер выбирает тема.
@@ -52,27 +56,22 @@ export default class TModalLayer<
 	implements IModalLayer<TProps, TEvents>
 {
 	static defaultValues: typeof TLayer.defaultValues &
-		TDefaultValues<
-			IModalLayerProps,
-			'closable' | 'closeLabel' | 'dismissible',
-			'width' | 'height'
-		> = {
+		TDefaultValues<IModalLayerProps, 'closable' | 'dismissible', 'width' | 'height'> = {
 		...TLayer.defaultValues,
 		// Не `'auto'`, как у Frame: размер по умолчанию выбирает тема, а
 		// `auto` растянул бы окно по экрану
 		width: undefined,
 		height: undefined,
 		closable: true,
-		closeLabel: 'Close',
 		dismissible: true,
 	}
 
 	protected _width: number | string | undefined
 	protected _height: number | string | undefined
 	protected _closable: boolean
-	protected _closeLabel: string
 	protected _dismissible: boolean
 	protected _titleAria: TAria
+	protected _closeAria: TAria
 
 	constructor(props: Partial<TProps> = {}) {
 		const ctor = new.target as typeof TModalLayer
@@ -82,7 +81,6 @@ export default class TModalLayer<
 		this._width = props.width ?? ctor.defaultValues.width
 		this._height = props.height ?? ctor.defaultValues.height
 		this._closable = props.closable ?? ctor.defaultValues.closable
-		this._closeLabel = props.closeLabel ?? ctor.defaultValues.closeLabel
 		this._dismissible = props.dismissible ?? ctor.defaultValues.dismissible
 
 		this._aria.add('role', 'dialog')
@@ -94,6 +92,12 @@ export default class TModalLayer<
 
 		this._titleAria.events.on('change', () =>
 			this._sink.emit('change:titleAria', this._titleAria.toObject()),
+		)
+
+		this._closeAria = new TAria()
+
+		this._closeAria.events.on('change', () =>
+			this._sink.emit('change:closeAria', this._closeAria.toObject()),
 		)
 	}
 
@@ -174,21 +178,6 @@ export default class TModalLayer<
 	}
 
 	/**
-	 * Имя кнопки закрытия. Дефолт английский: язык интерфейса ядру неизвестен,
-	 * а оставить кнопку без имени нельзя.
-	 */
-	get closeLabel(): string {
-		return this._closeLabel
-	}
-
-	set closeLabel(value: string) {
-		if (this._closeLabel === value) return
-
-		this._closeLabel = value
-		this._sink.emit('change:closeLabel', value)
-	}
-
-	/**
 	 * Закрывают ли панель нажатие мимо и Escape. Выключено — панель
 	 * закрывается только кнопкой закрытия, своим жестом и кодом. Закрыть её
 	 * только Escape — отменить `close:before` с причиной `outside`.
@@ -214,9 +203,13 @@ export default class TModalLayer<
 		return this._titleAria
 	}
 
-	/** Имя кнопки закрытия — соседней с содержимым, а не самой панели. */
-	get closeAria(): TAriaAttributes {
-		return { 'aria-label': this._closeLabel }
+	/**
+	 * Набор кнопки закрытия — соседней с содержимым, а не самой панели. Живой:
+	 * имя в него пишет плагин имён (`TModalNamesPlugin`) от локали, об
+	 * изменении набор сообщает `change:closeAria`.
+	 */
+	get closeAria(): TAria {
+		return this._closeAria
 	}
 
 	/**
@@ -246,7 +239,6 @@ export default class TModalLayer<
 			width: this._width,
 			height: this._height,
 			closable: this._closable,
-			closeLabel: this._closeLabel,
 			dismissible: this._dismissible,
 		}
 	}

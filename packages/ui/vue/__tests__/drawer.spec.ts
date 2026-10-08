@@ -264,9 +264,9 @@ describe('закрытие пользователем', () => {
 		}
 	}
 
-	it('крестик — причина button, назван closeLabel, фокус возвращается', async () => {
+	it('крестик — причина button, назван локалью, фокус возвращается', async () => {
 		const { reasons, ...listener } = recorder()
-		const shown = await render({ props: { closeLabel: 'Закрыть', ...listener } })
+		const shown = await render({ props: { ...listener } })
 
 		await open(shown)
 
@@ -274,7 +274,7 @@ describe('закрытие пользователем', () => {
 
 		const close = find('.s-drawer__close')
 
-		expect(close.getAttribute('aria-label')).toBe('Закрыть')
+		expect(close.getAttribute('aria-label')).toBe('Close')
 
 		close.click()
 		await nextTick()

@@ -20,8 +20,9 @@ import type { ITagsItem, ITagsItemProps, TTagsItemEvents } from './types'
  *
  * Кнопка закрытия, в отличие от таба, — живой набор `closeAria`, а не
  * вычисляемый снимок: её `tabindex` зависит от режима выбора коллекции, о
- * котором тег не знает. Имя пишет тег, `tabindex` — `TTagsExtension`, как
- * у `aria` строки роль пишет тег, а `aria-selected` — коллекция.
+ * котором тег не знает. Имя от локали пишет плагин имён
+ * (`TTagsItemNamesPlugin`), `tabindex` — `TTagsExtension`, как у `aria`
+ * строки роль пишет тег, а `aria-selected` — коллекция.
  */
 export default class TTagsItem<
 	TProps extends ITagsItemProps = ITagsItemProps,
@@ -33,16 +34,14 @@ export default class TTagsItem<
 	static override baseClass = 's-tags-item'
 
 	static defaultValues: typeof TValueControl.defaultValues &
-		TDefaultValues<ITagsItemProps, 'text' | 'closeLabel', 'closable'> = {
+		TDefaultValues<ITagsItemProps, 'text', 'closable'> = {
 		...TValueControl.defaultValues,
 		text: '',
 		value: '',
 		closable: undefined,
-		closeLabel: 'Close',
 		tag: 'div',
 	}
 
-	protected _closeLabel!: string
 	protected _closeAria: TAria
 
 	protected _text: string
@@ -54,8 +53,6 @@ export default class TTagsItem<
 		const ctor = new.target as typeof TTagsItem
 		const customProps = props as Partial<ITagsItemProps>
 
-		this._closeLabel = customProps.closeLabel ?? ctor.defaultValues.closeLabel
-
 		this._text = customProps.text ?? ctor.defaultValues.text
 
 		this._closable = customProps.closable ?? ctor.defaultValues.closable
@@ -65,8 +62,6 @@ export default class TTagsItem<
 		this._closeAria.events.on('change', () =>
 			this._sink.emit('change:closeAria', this._closeAria.toObject()),
 		)
-
-		this._syncCloseName()
 
 		this._classes.toggle(`--closable`, !!this._closable)
 
@@ -109,7 +104,6 @@ export default class TTagsItem<
 		if (e.defaultPrevented || e.value === this._text) return
 
 		this._text = e.value
-		this._syncCloseName()
 		this._sink.emit('change:text', { newValue: e.value, oldValue: e.oldValue })
 	}
 
@@ -140,26 +134,11 @@ export default class TTagsItem<
 	}
 
 	/**
-	 * Слово для кнопки закрытия. Дефолт английский — язык интерфейса ядру
-	 * неизвестен, а промолчать нельзя: кнопка останется без имени.
-	 */
-	get closeLabel(): string {
-		return this._closeLabel
-	}
-
-	set closeLabel(value: string) {
-		if (this._closeLabel === value) return
-
-		this._closeLabel = value
-		this._syncCloseName()
-		this._sink.emit('change:closeLabel', value)
-	}
-
-	/**
 	 * Атрибуты кнопки закрытия — отдельный набор, а не часть `aria`: `aria`
 	 * описывает сам тег, а это кнопка рядом с ним. Один элемент — один набор.
 	 *
-	 * Живой, как `aria`, потому что пишут в него двое: имя — тег, `tabindex` —
+	 * Живой, как `aria`, потому что пишут в него двое: имя с текстом тега
+	 * («Close Настройки») — плагин имён по шаблону локали, `tabindex` —
 	 * `TTagsExtension` по режиму выбора. За границу core → ui уходит снимок
 	 * (`valueOf()`), об изменении набор сообщает `change:closeAria`.
 	 */
@@ -167,22 +146,11 @@ export default class TTagsItem<
 		return this._closeAria
 	}
 
-	/**
-	 * Имя кнопки закрытия — вместе с текстом тега: «Close Настройки». Без
-	 * текста все кнопки набора назывались бы одинаково.
-	 */
-	private _syncCloseName(): void {
-		const text = this.text.trim()
-
-		this._closeAria.add('aria-label', text ? `${this._closeLabel} ${text}` : this._closeLabel)
-	}
-
 	override getProps(): TProps {
 		return {
 			...super.getProps(),
 			text: this.text,
 			closable: this.closable,
-			closeLabel: this._closeLabel,
 		} as TProps
 	}
 }

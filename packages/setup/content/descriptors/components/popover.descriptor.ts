@@ -4,7 +4,8 @@
  * Наследует ComponentViewDescriptor (rendered, visible, tag, наборы и плагины
  * element/ready) и добавляет открытость, кнопку закрытия, `lazyMount`,
  * сторону панели, жест, выходы для разметки и плагины: имя диалога, нажатие
- * мимо, клик по триггеру, модель фокуса и жест.
+ * мимо, клик по триггеру, модель фокуса, связки, имя кнопки закрытия от локали
+ * и жест.
  */
 
 import { defineComponent, defineDescriptor, defineType } from '../../../protected/define'
@@ -15,6 +16,7 @@ import {
 	DismissPluginDescriptor,
 	PopoverFocusPluginDescriptor,
 	PopoverIdsPluginDescriptor,
+	PopoverNamesPluginDescriptor,
 	PopoverPointerPluginDescriptor,
 	SwipePluginDescriptor,
 } from '../plugins'
@@ -49,7 +51,6 @@ export const PopoverDescriptor = defineDescriptor(() =>
 			props: {
 				open: { type: Boolean, triggers: ['change:open'] },
 				closable: { type: Boolean, triggers: ['change:closable'] },
-				closeLabel: { type: String, triggers: ['change:closeLabel'] },
 				lazyMount: { type: Boolean, triggers: ['change:lazyMount'] },
 				placement: { type: String, triggers: ['change:placement'] },
 				/** Панель прижата к краю ближайшего позиционированного предка, а не встаёт у триггера. */
@@ -79,8 +80,11 @@ export const PopoverDescriptor = defineDescriptor(() =>
 					protected: true,
 					triggers: ['change:swiping', 'change:contained', 'change:edge'],
 				},
-				/** Имя кнопки закрытия. Отдельный набор: кнопка — сосед содержимого. */
-				closeAria: { type: Object, protected: true, triggers: ['change:closeLabel'] },
+				/**
+				 * Набор кнопки закрытия: кнопка — сосед содержимого. Имя в него
+				 * пишет `TPopoverNamesPlugin`.
+				 */
+				closeAria: { type: Object, protected: true, triggers: ['change:closeAria'] },
 				/** Смонтировано ли содержимое: `lazyMount` прячет его до первого открытия. */
 				contentRendered: {
 					type: Boolean,
@@ -108,6 +112,8 @@ export const PopoverDescriptor = defineDescriptor(() =>
 			PopoverFocusPluginDescriptor,
 			// `id` панели и `aria-controls` триггера
 			PopoverIdsPluginDescriptor,
+			// Имя кнопки закрытия от локали
+			PopoverNamesPluginDescriptor,
 			// Смахнуть панель, чтобы закрыть. После dismiss: берёт у него панель
 			SwipePluginDescriptor,
 		],

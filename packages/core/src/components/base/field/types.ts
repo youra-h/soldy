@@ -1,18 +1,16 @@
 import type { IInputControl, IInputControlProps, TInputControlEvents } from '../input-control'
-import type { TAriaAttributes } from '../../../common'
+import type { TAria, TAriaAttributes } from '../../../common'
 
 export interface IFieldProps<T = string> extends IInputControlProps<T> {
 	/** Показывать ли кнопку очистки значения */
 	clearable?: boolean
-	/** Слово для кнопки очистки; к нему добавляется имя поля */
-	clearLabel?: string
 }
 
 export type TFieldEvents<T = string> = TInputControlEvents<T> & {
 	/** change:clearable */
 	'change:clearable': (value: boolean) => void
-	/** change:clearLabel */
-	'change:clearLabel': (value: string) => void
+	/** change:clearAria — набор атрибутов кнопки очистки изменился */
+	'change:clearAria': (value: TAriaAttributes) => void
 	/**
 	 * clear — поле очистили (`clear`): шаг очистки поля уже сделан. Приходит
 	 * всегда, даже у пустого поля: владелец поля очищает своё — Select снимает
@@ -28,10 +26,8 @@ export interface IField<
 > extends IInputControl<T, TProps, TEvents> {
 	/** Показывать ли кнопку очистки значения */
 	clearable: boolean
-	/** Слово для кнопки очистки */
-	clearLabel: string
-	/** Имя кнопки очистки целиком: `clearLabel` + имя поля */
-	readonly clearAria: TAriaAttributes
+	/** Атрибуты кнопки очистки: имя с именем поля от локали пишет плагин имён */
+	readonly clearAria: TAria
 	/**
 	 * Очистить поле и сообщить об этом событием `clear`. Привязана к
 	 * инстансу: разметка отдаёт её в scope слота `clear`, и своя кнопка зовёт

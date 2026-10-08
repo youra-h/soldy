@@ -83,21 +83,22 @@ export default { ...SetupDatePicker, components: { Button, Calendar, DateInput, 
 			корне. Поля внутри без своей рамки (тема, по контексту), кнопка — после
 			поля конца, а не в его слоте: она выбирает весь период, а не конец.
 			Тире — для глаза, скринридеру оно не нужно: поля называют свои концы
-			сами — именами `startLabel` и `endLabel`.
+			сами — именами `names_start` и `names_end`, выходами плагина имён
+			DatePicker от локали.
 		-->
 		<template v-else>
 			<DateInput
 				embedded="date-picker.start"
 				class="s-date-picker__start"
 				:ctrl="start"
-				:aria_label="startLabel"
+				:aria_label="names_start"
 			/>
 			<span class="s-date-picker__dash" aria-hidden="true">–</span>
 			<DateInput
 				embedded="date-picker.end"
 				class="s-date-picker__end"
 				:ctrl="end"
-				:aria_label="endLabel"
+				:aria_label="names_end"
 			/>
 			<Button
 				embedded="date-picker.trigger"

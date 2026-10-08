@@ -1,7 +1,7 @@
 import { TValueControl } from '../../../base/value-control'
 import type { TDefaultValues } from '../../../base/component'
-import { TChangeEvent } from '../../../../common'
-import type { TAriaAttributes, TEventSink } from '../../../../common'
+import { TAria, TChangeEvent } from '../../../../common'
+import type { TEventSink } from '../../../../common'
 import type { ITabsItem, ITabsItemProps, TTabsItemEvents } from './types'
 
 /**
@@ -19,16 +19,15 @@ export default class TTabsItem<
 	static override baseClass = 's-tabs-item'
 
 	static defaultValues: typeof TValueControl.defaultValues &
-		TDefaultValues<ITabsItemProps, 'text' | 'closeLabel', 'closable'> = {
+		TDefaultValues<ITabsItemProps, 'text', 'closable'> = {
 		...TValueControl.defaultValues,
 		text: '',
 		value: '',
 		closable: undefined,
-		closeLabel: 'Close',
 		tag: 'div',
 	}
 
-	protected _closeLabel!: string
+	protected _closeAria: TAria
 
 	protected _text: string
 	protected _closable: boolean | undefined
@@ -40,8 +39,6 @@ export default class TTabsItem<
 
 		// Type assertion: TProps extends ITabsItemProps, поэтому props содержит text и closable
 		const customProps = props as Partial<ITabsItemProps>
-
-		this._closeLabel = customProps.closeLabel ?? ctor.defaultValues.closeLabel
 
 		this._text = customProps.text ?? ctor.defaultValues.text
 
@@ -56,6 +53,16 @@ export default class TTabsItem<
 		// `aria-selected` — тоже не отсюда: его пишет TTabsExtension по
 		// событию активации.
 		this._aria.add('role', 'tab')
+
+		this._closeAria = new TAria()
+		this._closeAria.events.on('change', () =>
+			this._sink.emit('change:closeAria', this._closeAria.toObject()),
+		)
+
+		// Кнопка закрытия — не остановка Tab: по паттерну APG Tabs весь список —
+		// одна остановка, а закрывает таб с клавиатуры `Delete` на самом табе
+		// (`TTabsKeyboardPlugin`). Мышью кнопка нажимается как раньше
+		this._closeAria.add('tabindex', '-1')
 	}
 
 	/**
@@ -123,43 +130,20 @@ export default class TTabsItem<
 	}
 
 	/**
-	 * Слово для кнопки закрытия. Дефолт английский, как и остальные
-	 * идентификаторы в библиотеке: язык интерфейса ядру неизвестен, а
-	 * промолчать нельзя — кнопка останется без имени.
-	 */
-	get closeLabel(): string {
-		return this._closeLabel
-	}
-
-	set closeLabel(value: string) {
-		if (this._closeLabel === value) return
-
-		this._closeLabel = value
-		this._sink.emit('change:closeLabel', value)
-	}
-
-	/**
-	 * Имя кнопки закрытия — вместе с текстом таба: «Close Настройки».
+	 * Набор кнопки закрытия. Имя в нём — вместе с текстом таба: «Close
+	 * Настройки».
 	 *
 	 * Без текста все кнопки закрытия в наборе называются одинаково, и по
 	 * списку элементов скринридера («Close, кнопка» пять раз подряд) выбрать
-	 * нужную невозможно. Это и есть та накопленная практика, ради которой
-	 * имя вообще считается здесь, а не пишется в шаблоне.
+	 * нужную невозможно. Имя пишет плагин имён (`TTabsItemNamesPlugin`) по
+	 * шаблону локали — и на смену текста: порядок слов у каждого языка свой.
+	 * `tabindex` пишет таб сам. Об изменении набор сообщает `change:closeAria`.
 	 *
 	 * Отдельный набор, а не часть `aria`: `aria` описывает сам таб, а это —
 	 * кнопка рядом с ним. Один элемент — один набор.
-	 *
-	 * `tabindex="-1"`: кнопка не остановка Tab. По паттерну APG Tabs весь
-	 * список — одна остановка, а закрывает таб с клавиатуры `Delete` на самом
-	 * табе (`TTabsKeyboardPlugin`). Мышью кнопка нажимается как раньше.
 	 */
-	get closeAria(): TAriaAttributes {
-		const text = this.text.trim()
-
-		return {
-			'aria-label': text ? `${this._closeLabel} ${text}` : this._closeLabel,
-			tabindex: '-1',
-		}
+	get closeAria(): TAria {
+		return this._closeAria
 	}
 
 	override getProps(): TProps {
@@ -167,7 +151,6 @@ export default class TTabsItem<
 			...super.getProps(),
 			text: this.text,
 			closable: this.closable,
-			closeLabel: this._closeLabel,
 		} as TProps
 	}
 }

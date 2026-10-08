@@ -9,6 +9,9 @@
  * Tab, стрелки между тегами (`TagsKeyboardPluginDescriptor`). Без выбора
  * (`mode="none"`) набор — список без действия у строк, и клавиатура молчит.
  * См. AGENTS, «Граница переиспользования» и «Готовые паттерны».
+ *
+ * Имя кнопки «…» — от локали (плагин имён). Кнопки листания в `arrows` —
+ * ленты: имена им пишет плагин имён ленты, и сквозь Tags они не идут.
  */
 
 import { defineComponent, defineDescriptor, defineType } from '../../../../protected/define'
@@ -19,6 +22,7 @@ import {
 	CollectionBundlesPluginDescriptor,
 	CollectionElementsPluginDescriptor,
 	TagsKeyboardPluginDescriptor,
+	TagsNamesPluginDescriptor,
 	TagsOverflowPluginDescriptor,
 	TagsScrollPluginDescriptor,
 } from '../../plugins'
@@ -78,20 +82,12 @@ export const TagsDescriptor = defineDescriptor(() =>
 				 * ленте (`viewportAria`). Вне `arrows` набор пуст.
 				 */
 				rowAria: { type: Object, protected: true, triggers: ['change:rowAria'] },
-				/** Имя кнопки «…» для скринридера. */
-				moreLabel: { type: String, triggers: ['change:moreLabel'] },
 				/**
-				 * Имена кнопок листания: Tags отдаёт их ленте как есть — языка
-				 * интерфейса библиотека не знает. Своих умолчаний нет, английские
-				 * держит лента.
+				 * Набор кнопки «…»: своего экземпляра у неё нет, она — содержимое
+				 * слота `trigger` у панели. Имя в него пишет `TTagsNamesPlugin`,
+				 * он же отдаёт его выходом `names_more` — имя панели.
 				 */
-				prevLabel: { type: String, triggers: ['change:prevLabel'] },
-				nextLabel: { type: String, triggers: ['change:nextLabel'] },
-				/**
-				 * Имя кнопки «…» готовым набором: своего экземпляра у неё нет, она
-				 * — содержимое слота `trigger` у панели.
-				 */
-				moreAria: { type: Object, protected: true, triggers: ['change:moreLabel'] },
+				moreAria: { type: Object, protected: true, triggers: ['change:moreAria'] },
 				/**
 				 * Классы панели: теги в ней телепортированы, и селекторы вида до них
 				 * не достают. Считает это ядро, а не шаблон каждого адаптера.
@@ -103,6 +99,8 @@ export const TagsDescriptor = defineDescriptor(() =>
 		},
 
 		plugins: [
+			// Имя кнопки «…» и её панели от локали — с первой отрисовки
+			TagsNamesPluginDescriptor,
 			// Коллекция: реестр bundles + доступ к DOM-элементам
 			CollectionBundlesPluginDescriptor,
 			CollectionElementsPluginDescriptor,

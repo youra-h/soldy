@@ -29,7 +29,7 @@ import { resolveRegisteredPlugins } from '../../registry'
 import type { IBundleContext, IComponentDescriptor, TPropSpec } from '../../define'
 import { TMember } from '../exchange/member.class'
 import { TExternalPlugins } from './external-plugins.class'
-import type { IBundleTenancy } from './types'
+import type { IBundleTenancy, TBundleMount } from './types'
 
 function hasEmit(value: unknown): value is Pick<IEventEmitter, 'emit'> {
 	return (
@@ -55,9 +55,9 @@ export class TOwnBundle implements IBundleTenancy {
 		private readonly _descriptor: Pick<IComponentDescriptor, 'ctor' | 'plugins' | 'props'>,
 		private readonly _instance: object,
 		private readonly _context: IBundleContext,
-		mountId?: string,
+		mount: TBundleMount = {},
 	) {
-		const bundle = new TPluginBundle(_instance, mountId)
+		const bundle = new TPluginBundle(_instance, mount.mountId, mount.locale)
 
 		for (const plugin of _descriptor.plugins) bundle.use(plugin.ctor, plugin.options ?? {})
 

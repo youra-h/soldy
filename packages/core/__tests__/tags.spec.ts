@@ -364,52 +364,24 @@ describe('view — модификатор набора', () => {
 })
 
 /**
- * Атрибуты кнопки закрытия — живой набор: имя пишет тег, `tabindex` —
- * коллекция по режиму выбора. За границу уходит снимок (`valueOf()`), об
- * изменении набор сообщает `change:closeAria` — это триггер пропа.
+ * Атрибуты кнопки закрытия — живой набор: имя с текстом тега пишет плагин
+ * имён от локали, `tabindex` — коллекция по режиму выбора. За границу уходит
+ * снимок (`valueOf()`), об изменении набор сообщает `change:closeAria` — это
+ * триггер пропа.
  */
 describe('closeAria', () => {
-	it('содержит текст тега вместе с closeLabel', () => {
-		const tag = new TTagsItem({ text: 'Настройки' })
-
-		expect(tag.closeAria.valueOf()).toEqual({ 'aria-label': 'Close Настройки' })
+	it('имени ядро не строит: набор пуст, имя пишет плагин имён', () => {
+		expect(new TTagsItem({ text: 'Настройки' }).closeAria.valueOf()).toEqual({})
 	})
 
-	it('closeLabel переопределяется пропом', () => {
-		const tag = new TTagsItem({ text: 'Настройки', closeLabel: 'Удалить' })
-
-		expect(tag.closeAria.valueOf()).toEqual({ 'aria-label': 'Удалить Настройки' })
-	})
-
-	it('без текста имя — одно слово кнопки', () => {
-		expect(new TTagsItem().closeAria.get('aria-label')).toBe('Close')
-	})
-
-	it('имя следует за текстом и словом кнопки, набор сообщает change:closeAria', () => {
+	it('запись в набор сообщает change:closeAria со снимком', () => {
 		const tag = new TTagsItem({ text: 'Настройки' })
 		const seen: unknown[] = []
 
 		tag.events.on('change:closeAria', (value) => seen.push(value))
+		tag.closeAria.add('aria-label', 'Close Настройки')
 
-		tag.text = 'Почта'
-		tag.closeLabel = 'Удалить'
-
-		expect(tag.closeAria.get('aria-label')).toBe('Удалить Почта')
-		expect(seen).toEqual([{ 'aria-label': 'Close Почта' }, { 'aria-label': 'Удалить Почта' }])
-	})
-
-	it('к change:text и change:closeLabel имя уже новое', () => {
-		const tag = new TTagsItem({ text: 'Настройки' })
-		const names: unknown[] = []
-		const read = () => names.push(tag.closeAria.get('aria-label'))
-
-		tag.events.on('change:text', read)
-		tag.events.on('change:closeLabel', read)
-
-		tag.text = 'Почта'
-		tag.closeLabel = 'Удалить'
-
-		expect(names).toEqual(['Close Почта', 'Удалить Почта'])
+		expect(seen).toEqual([{ 'aria-label': 'Close Настройки' }])
 	})
 
 	/**
@@ -444,7 +416,7 @@ describe('closeAria', () => {
 			collection.mode = 'none'
 
 			expect(tabindexes(items)).toEqual([undefined])
-			expect(seen).toEqual([{ 'aria-label': 'Close a' }])
+			expect(seen).toEqual([{}])
 		})
 
 		it('тег, добавленный в режиме выбора, получает -1 сразу', () => {

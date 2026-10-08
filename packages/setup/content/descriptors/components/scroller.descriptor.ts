@@ -3,13 +3,14 @@
  * строку, которую двигают две кнопки.
  *
  * Наследует ControlDescriptor (size, variant, disabled, focused, наборы,
- * плагины element/ready/action/aria) и добавляет имена кнопок, атрибуты
- * вьюпорта от потребителя, выходы для разметки и плагин вьюпорта.
+ * плагины element/ready/action/aria) и добавляет атрибуты вьюпорта от
+ * потребителя, выходы для разметки, плагин вьюпорта и плагин имён кнопок
+ * от локали.
  */
 
 import { defineComponent, defineDescriptor } from '../../../protected/define'
 import { TScroller } from '@soldy-ui/core'
-import { ScrollerViewportPluginDescriptor } from '../plugins'
+import { ScrollerNamesPluginDescriptor, ScrollerViewportPluginDescriptor } from '../plugins'
 import { ControlDescriptor } from './control.descriptor'
 
 export const ScrollerDescriptor = defineDescriptor(() =>
@@ -30,17 +31,18 @@ export const ScrollerDescriptor = defineDescriptor(() =>
 				'next-icon': { description: 'Значок кнопки «вперёд»' },
 			},
 			props: {
-				prevLabel: { type: String, triggers: ['change:prevLabel'] },
-				nextLabel: { type: String, triggers: ['change:nextLabel'] },
 				/**
 				 * Роль ряда и всё, что к ней прилагается, приходит от
 				 * потребителя: своего экземпляра у вьюпорта нет, а кнопкам
 				 * внутри `role="listbox"` места нет — отсюда и проп.
 				 */
 				viewportAria: { type: Object, triggers: ['change:viewportAria'] },
-				/** Имена кнопок: своего экземпляра у них нет, набор отдаётся значением. */
-				prevAria: { type: Object, protected: true, triggers: ['change:prevLabel'] },
-				nextAria: { type: Object, protected: true, triggers: ['change:nextLabel'] },
+				/**
+				 * Наборы кнопок: своего экземпляра у кнопок нет, и наборы держит
+				 * лента. Имена в них пишет `TScrollerNamesPlugin`.
+				 */
+				prevAria: { type: Object, protected: true, triggers: ['change:prevAria'] },
+				nextAria: { type: Object, protected: true, triggers: ['change:nextAria'] },
 				/**
 				 * Выключенность кнопок считает ядро: «выключена лента **или**
 				 * упёрлись в край» — одно правило, а не условие в шести
@@ -65,7 +67,11 @@ export const ScrollerDescriptor = defineDescriptor(() =>
 			},
 		},
 
-		// Замер краёв, прокрутка и клики по кнопкам: всё это операции над DOM
-		plugins: [ScrollerViewportPluginDescriptor],
+		plugins: [
+			// Замер краёв, прокрутка и клики по кнопкам: всё это операции над DOM
+			ScrollerViewportPluginDescriptor,
+			// Имена кнопок от локали
+			ScrollerNamesPluginDescriptor,
+		],
 	}),
 )

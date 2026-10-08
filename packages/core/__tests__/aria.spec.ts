@@ -572,35 +572,30 @@ describe('TTabsItem · роль таба', () => {
 	})
 })
 
-describe('TTabsItem.closeAria · имя кнопки закрытия', () => {
-	it('содержит текст таба, чтобы кнопки были различимы', () => {
-		// Пять «Close, кнопка» подряд в списке элементов скринридера выбрать
-		// нельзя — поэтому имя собирается вместе с текстом
-		const item = new TTabsItem({ text: 'Настройки', closable: true })
-
-		expect(item.closeAria['aria-label']).toBe('Close Настройки')
+describe('TTabsItem.closeAria · набор кнопки закрытия', () => {
+	it('кнопка — не остановка Tab: это таб знает сам', () => {
+		// По APG Tabs весь список — одна остановка, а закрывает таб `Delete`
+		expect(new TTabsItem({ closable: true }).closeAria.get('tabindex')).toBe('-1')
 	})
 
-	it('без текста остаётся одно слово', () => {
-		expect(new TTabsItem({ closable: true }).closeAria['aria-label']).toBe('Close')
+	it('имени ядро не строит: его пишет плагин имён от локали', () => {
+		expect(new TTabsItem({ text: 'Почта' }).closeAria.has('aria-label')).toBe(false)
 	})
 
-	it('слово переопределяется — язык интерфейса решает потребитель', () => {
-		const item = new TTabsItem({ text: 'Почта', closeLabel: 'Закрыть' })
-
-		expect(item.closeAria['aria-label']).toBe('Закрыть Почта')
-	})
-
-	it('следует за текстом таба', () => {
-		const item = new TTabsItem({ text: 'Первый' })
-
-		item.text = 'Второй'
-
-		expect(item.closeAria['aria-label']).toBe('Close Второй')
-	})
-
-	it('отдельный набор: это имя кнопки рядом с табом, а не самого таба', () => {
+	it('набор живой: запись в него — `change:closeAria` со снимком', () => {
 		const item = new TTabsItem({ text: 'Почта' })
+		const seen: unknown[] = []
+
+		item.events.on('change:closeAria', (value) => seen.push(value))
+		item.closeAria.add('aria-label', 'Close Почта')
+
+		expect(seen).toEqual([{ 'aria-label': 'Close Почта', tabindex: '-1' }])
+	})
+
+	it('отдельный набор: это кнопка рядом с табом, а не сам таб', () => {
+		const item = new TTabsItem({ text: 'Почта' })
+
+		item.closeAria.add('aria-label', 'Close Почта')
 
 		expect(item.aria.has('aria-label')).toBe(false)
 	})

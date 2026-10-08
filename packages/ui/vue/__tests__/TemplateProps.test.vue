@@ -15,6 +15,7 @@
  * причине.
  */
 import { TButton, TDragAndDrop, TInput } from '@soldy-ui/core'
+import { ruRU } from '@soldy-ui/plugins'
 import {
 	Accordion,
 	Button,
@@ -31,6 +32,7 @@ import {
 	Input,
 	Label,
 	ListBox,
+	LocaleProvider,
 	Popover,
 	ProgressLinear,
 	ProgressSpinner,
@@ -84,9 +86,9 @@ const dragAndDrop = new TDragAndDrop()
 	<Calendar months="2026-09-01" />
 	<Calendar :months="['2026-09-01', '2026-10-01']" />
 
-	<!-- @vue-expect-error — имя кнопки листания строкой -->
-	<Calendar :prevLabel="42" />
-	<Calendar prevLabel="Предыдущий месяц" />
+	<!-- @vue-expect-error — пояс «сегодня» строкой IANA -->
+	<Calendar :timeZone="3" />
+	<Calendar timeZone="Europe/Moscow" />
 
 	<!-- @vue-expect-error — направления `up` нет -->
 	<Calendar.Item direction="up" />
@@ -104,9 +106,9 @@ const dragAndDrop = new TDragAndDrop()
 	<DateInput :value="new Date()" />
 	<DateInput value="2026-05-12" />
 
-	<!-- @vue-expect-error — локаль строкой -->
-	<DateInput :locale="42" />
-	<DateInput locale="ru-RU" />
+	<!-- @vue-expect-error — граница строкой YYYY-MM-DD, а не объектом Date -->
+	<DateInput :min="new Date()" />
+	<DateInput min="2026-01-01" />
 
 	<!-- @vue-expect-error — вид поля: дата или дата со временем -->
 	<DateInput kind="month" />
@@ -128,9 +130,9 @@ const dragAndDrop = new TDragAndDrop()
 	<DatePicker :weekStart="7" />
 	<DatePicker :weekStart="1" />
 
-	<!-- @vue-expect-error — имя кнопки календаря строкой -->
-	<DatePicker :triggerLabel="42" />
-	<DatePicker triggerLabel="Выбрать дату" />
+	<!-- @vue-expect-error — имя начала диапазона в форме строкой -->
+	<DatePicker :startName="42" />
+	<DatePicker startName="from" />
 
 	<!-- @vue-expect-error — жест за полосу или за панель, а не флаг -->
 	<DatePicker :swipe="true" />
@@ -152,9 +154,9 @@ const dragAndDrop = new TDragAndDrop()
 	<Dialog :dismissible="'no'" />
 	<Dialog :dismissible="false" />
 
-	<!-- @vue-expect-error — имя кнопки разворота строкой -->
-	<Dialog :maximizeLabel="42" />
-	<Dialog maximizeLabel="Развернуть" />
+	<!-- @vue-expect-error — флаг, а не строка -->
+	<Dialog :maximizable="'yes'" />
+	<Dialog maximizable />
 
 	<!-- @vue-expect-error — у DragAndDrop только свой инстанс -->
 	<DragAndDrop :ctrl="button" />
@@ -204,6 +206,10 @@ const dragAndDrop = new TDragAndDrop()
 	<ListBox.Item :selected="'yes'" />
 	<ListBox.Item selected />
 
+	<!-- @vue-expect-error — локаль объектом (`ruRU`), а не тегом -->
+	<LocaleProvider locale="ru-RU" />
+	<LocaleProvider :locale="ruRU" />
+
 	<!-- @vue-expect-error — стороны `left` у поповера нет: сторона и выравнивание -->
 	<Popover placement="left" />
 	<Popover placement="top-end" />
@@ -236,9 +242,9 @@ const dragAndDrop = new TDragAndDrop()
 	<ProgressSpinner :value="null" />
 	<ProgressSpinner indeterminate />
 
-	<!-- @vue-expect-error — имя кнопки ленты строкой -->
-	<Scroller :prevLabel="42" />
-	<Scroller prevLabel="Назад" />
+	<!-- @vue-expect-error — атрибуты вьюпорта набором, а не строкой роли -->
+	<Scroller viewportAria="listbox" />
+	<Scroller :viewportAria="{ role: 'listbox' }" />
 
 	<!-- @vue-expect-error — вида `stars` у радио нет -->
 	<RadioGroup view="stars" />
@@ -296,10 +302,6 @@ const dragAndDrop = new TDragAndDrop()
 	<Table :sort="[{ field: 'name', direction: 'up' }]" />
 	<Table :sort="[{ field: 'name', direction: 'desc' }]" />
 
-	<!-- @vue-expect-error — имя чекбокса «выбрать все» строкой -->
-	<Table :selectAllLabel="42" />
-	<Table selectAllLabel="Выбрать все" />
-
 	<!-- @vue-expect-error — флаг, а не строка -->
 	<Table.Column :visible="'yes'" />
 	<Table.Column direction="rtl" />
@@ -324,9 +326,9 @@ const dragAndDrop = new TDragAndDrop()
 	<Tags :closable="'yes'" />
 	<Tags closable />
 
-	<!-- @vue-expect-error — подпись кнопки закрытия строкой -->
-	<Tags.Item :closeLabel="42" />
-	<Tags.Item closeLabel="Удалить" />
+	<!-- @vue-expect-error — текст тега строкой -->
+	<Tags.Item :text="42" />
+	<Tags.Item text="Москва" />
 
 	<!-- @vue-expect-error — вариант тега — имя темы, а `rainbow` она не объявила -->
 	<Tags.Item variant="rainbow" />
