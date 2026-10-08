@@ -2,7 +2,7 @@
  * CSS-переходы темы в настоящем браузере — общее для спеков, которые смотрят,
  * как слой появляется и исчезает (`drawer.spec.ts`, `dialog.spec.ts`,
  * `popover.spec.ts`, `select.spec.ts`, `date-picker.spec.ts`,
- * `popover-swipe.spec.ts`, `anchored-swipe.spec.ts`), как
+ * `popover-swipe.spec.ts`, `anchored-swipe.spec.ts`, `calendar.spec.ts`), как
  * новое значение доезжает до места переходом (`slider.spec.ts`,
  * `progress-linear.spec.ts`, `tabs-line.spec.ts`, `tabs-contained.spec.ts`) и
  * что ведут кадры анимации (`progress-spinner.spec.ts`, `motion-mode.spec.ts`).
@@ -123,13 +123,54 @@ export const ownTransitionRuns = (element: HTMLElement): string[] => {
 }
 
 /**
+ * Переходы самого узла по свойствам — по мере прихода `transitionrun`, как у
+ * `ownTransitionRuns`. Переход берётся в самом событии, а читать его можно и
+ * после конца: длительность застаётся, даже если тест снова получил
+ * управление, когда переход уже доиграл, — ответ Playwright на ввод идёт
+ * кругом RPC. У свойства, которое переходом шло не раз, — последний переход.
+ */
+export const ownTransitions = (element: HTMLElement): ReadonlyMap<string, CSSTransition> => {
+	const found = new Map<string, CSSTransition>()
+
+	element.addEventListener('transitionrun', (event) => {
+		if (event.target !== element || event.pseudoElement !== '') return
+
+		found.set(event.propertyName, transitionOf(element, event.propertyName))
+	})
+
+	return found
+}
+
+/**
+ * Закрытая панель у якоря пропадает, когда догасла: `display` у неё идёт ровно
+ * время прозрачности (`themes/oren/src/mixins/_anchored.scss`) — и у той, что
+ * уходит от якоря дольше. Дольше прозрачности — и догасшая панель висела бы в
+ * раскладке прозрачной: глазу её нет, а скринридер видит закрытую панель, и
+ * то, что ждёт конца закрытия (`afterTransitions`), срабатывает позже. Короче —
+ * и панель пропала бы, не догаснув. Переходы — `ownTransitions`, заведённый
+ * до закрытия.
+ */
+export const expectHidesWhenFaded = (transitions: ReadonlyMap<string, CSSTransition>): void => {
+	const duration = (property: string): number => {
+		const transition = transitions.get(property)
+
+		if (transition === undefined) throw new Error(`${property}: перехода не было`)
+
+		return durationOf(transition)
+	}
+
+	expect(duration('display'), 'display — ровно время прозрачности').toBe(duration('opacity'))
+}
+
+/**
  * Панель гаснет на месте и только потом пропадает — так закрывается панель у
  * якоря без жеста (`themes/oren/src/mixins/_anchored.scss`): Popover, Select
- * и DatePicker. Панель меряется открытой, `close` её закрывает, и пока у неё не
- * `display: none`, она закрыта (`data-open`), нажатий не ловит — указатель в
- * её середине попадает в то, что под ней, — не сдвигается, а прозрачность у
- * неё только убывает. Переходит одна прозрачность: из переходов самой панели,
- * кроме `display`, — только `opacity`.
+ * и DatePicker, а без движения — и с жестом. Панель меряется открытой, `close`
+ * её закрывает, и пока у неё не `display: none`, она закрыта (`data-open`),
+ * нажатий не ловит — указатель в её середине попадает в то, что под ней, — не
+ * сдвигается, а прозрачность у неё только убывает. Переходит одна
+ * прозрачность: из переходов самой панели, кроме `display`, — только
+ * `opacity`. Пропадает панель, когда догасла (`expectHidesWhenFaded`).
  */
 export const expectFadesInPlace = async (
 	panel: HTMLElement,
@@ -137,6 +178,7 @@ export const expectFadesInPlace = async (
 ): Promise<void> => {
 	const { top, left, width, height } = panel.getBoundingClientRect()
 	const runs = ownTransitionRuns(panel)
+	const transitions = ownTransitions(panel)
 	const opacities: number[] = []
 
 	await close()
@@ -159,6 +201,7 @@ export const expectFadesInPlace = async (
 		runs.filter((name) => name !== 'display'),
 		'переходит одна прозрачность',
 	).toEqual(['opacity'])
+	expectHidesWhenFaded(transitions)
 	expect(Math.min(...opacities), 'прозрачность убывает').toBeLessThan(1)
 
 	for (let index = 1; index < opacities.length; index += 1) {

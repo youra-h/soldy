@@ -9,7 +9,8 @@
  * (`popover-swipe.spec.ts`): полоса у края со стороны поля и не накрывает
  * содержимое, `touch-action` на панели, настоящая мышь закрывает панель от
  * поля — вниз под ним, вверх над ним, — а к полю возвращает её на место, и
- * смахнутая уходит дальше от поля, пока гаснет.
+ * смахнутая уходит дальше от поля, пока гаснет, а пропадает, когда догасла.
+ * Без движения панель с полосой гаснет на месте.
  *
  * Своё у каждого: у Select фокус всё время на поле, и нажатие на полосу его
  * не уводит; у DatePicker закрытие жестом возвращает фокус туда, откуда
@@ -24,7 +25,14 @@ import { defineComponent, h, nextTick, ref, type Ref, type VNode } from 'vue'
 import { DatePicker, Select, SelectItem } from '@soldy-ui/vue'
 import type { TSwipe } from '@soldy-ui/core'
 
-import { settled, whileLeaving } from './transitions'
+import { reducedMotion } from './media'
+import {
+	expectFadesInPlace,
+	expectHidesWhenFaded,
+	ownTransitions,
+	settled,
+	whileLeaving,
+} from './transitions'
 
 import '@soldy-ui/theme-oren'
 
@@ -170,8 +178,9 @@ beforeEach(async () => {
 	await page.viewport(1000, 700)
 })
 
-afterEach(() => {
+afterEach(async () => {
 	cleanup()
+	await reducedMotion('no-preference')
 })
 
 describe.each([SELECT, DATE_PICKER])('$name', ({ show, open, ...selectors }) => {
@@ -284,13 +293,15 @@ describe.each([SELECT, DATE_PICKER])('$name', ({ show, open, ...selectors }) => 
 	 * уводит закрытую панель дальше от поля, как поповер у триггера, — уход
 	 * начинается с места, где её отпустили, и идёт дальше, пока панель гаснет.
 	 * Обе панели выше пути жеста, и до своей высоты закрытой есть куда ехать:
-	 * встань она там, где её отпустили, — уход не сработал.
+	 * встань она там, где её отпустили, — уход не сработал. Пропадает панель,
+	 * когда догасла, а не доехав: хвоста пути за угасанием не видно.
 	 */
 	it('уход смахнутой панели — от места, где отпустили, дальше от поля, гаснет на ходу', async () => {
 		await show({ swipe: 'handle' })
 		await open()
 
 		const start = panel().getBoundingClientRect().top
+		const transitions = ownTransitions(panel())
 
 		await drag(handle(), 150)
 
@@ -306,6 +317,24 @@ describe.each([SELECT, DATE_PICKER])('$name', ({ show, open, ...selectors }) => 
 		for (let index = 1; index < positions.length; index += 1) {
 			expect(positions[index] - positions[index - 1]).toBeGreaterThanOrEqual(-EPSILON)
 		}
+
+		expectHidesWhenFaded(transitions)
+	})
+
+	/**
+	 * Без движения (здесь — по просьбе системы) панель с полосой от поля не
+	 * уходит: гаснет на месте, как панель без жеста, и пропадает, когда
+	 * догасла. Времени ухода у неё нет, и `display` брать его не должен.
+	 */
+	it('без движения — гаснет на месте и пропадает, когда догасла', async () => {
+		await reducedMotion('reduce')
+		await show({ swipe: 'handle' })
+
+		// Эмуляция действует — иначе сторож проверял бы обычный режим
+		expect(matchMedia('(prefers-reduced-motion: reduce)').matches).toBe(true)
+
+		await open()
+		await expectFadesInPlace(panel(), () => userEvent.keyboard('{Escape}'))
 	})
 })
 
