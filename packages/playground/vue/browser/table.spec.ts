@@ -168,9 +168,10 @@ describe('подпись шапки вровень с текстом ячеек'
 /**
  * Заголовок, с которым что-то делают, читается ячейкой: под указателем он
  * подсвечен прямоугольником от линии до линии, и видно, где колонка
- * кончается, — а у её границы ручка ширины. Кнопка сортировки — во всю ячейку,
- * без угла, а стрелка стоит сразу за подписью, как в ClickUp, а не у другого
- * края кнопки.
+ * кончается, — а у её границы ручка ширины. Верхние углы заголовка мягче —
+ * вполовину скругления кнопки, нижние прямые. Кнопка сортировки — во всю
+ * ячейку, с углами заголовка, а стрелка стоит сразу за подписью, как в
+ * ClickUp, а не у другого края кнопки.
  */
 describe('заголовок колонки — ячейкой', () => {
 	/** Сколько от подписи до стрелки при любом выравнивании: зазор флекса кнопки, не больше. */
@@ -216,7 +217,7 @@ describe('заголовок колонки — ячейкой', () => {
 		await new Promise((resolve) => requestAnimationFrame(resolve))
 	}
 
-	it('кнопка сортировки — во всю ячейку заголовка и без угла', async () => {
+	it('кнопка сортировки — во всю ячейку заголовка', async () => {
 		await mount(engineOf())
 
 		for (const index of [0, 2]) {
@@ -229,7 +230,32 @@ describe('заголовок колонки — ячейкой', () => {
 			expect(Math.abs(own.right - box.right)).toBeLessThanOrEqual(EPSILON)
 			expect(Math.abs(own.top - box.top)).toBeLessThanOrEqual(EPSILON)
 			expect(Math.abs(own.bottom - box.bottom)).toBeLessThanOrEqual(EPSILON)
-			expect(style(button).borderTopLeftRadius).toBe('0px')
+		}
+	})
+
+	it('верхние углы заголовка и кнопки — вполовину скругления кнопки, нижние прямые', async () => {
+		render(
+			defineComponent({
+				render: () =>
+					h('div', { style: 'width: 600px' }, [
+						h(Table, { engine: engineOf(), aria_label: 'Сотрудники' }),
+						h(Button, { class: 's-test-button', text: 'Кнопка' }),
+					]),
+			}),
+		)
+		await new Promise((resolve) => requestAnimationFrame(resolve))
+
+		const header = headers()[0]
+		const { button } = sortParts(header)
+		const half = parseFloat(style(find('.s-test-button')).borderTopLeftRadius) / 2
+
+		expect(half).toBeGreaterThan(0)
+
+		for (const corner of [header, button]) {
+			expect(parseFloat(style(corner).borderTopLeftRadius)).toBe(half)
+			expect(parseFloat(style(corner).borderTopRightRadius)).toBe(half)
+			expect(style(corner).borderBottomLeftRadius).toBe('0px')
+			expect(style(corner).borderBottomRightRadius).toBe('0px')
 		}
 	})
 
@@ -961,14 +987,14 @@ describe('ручка ширины', () => {
 		)
 	})
 
-	it('полоса — зона захвата не уже 24 px; у последней колонки — в таблице', async () => {
+	it('полоса — зона захвата в 14 px; у последней колонки — в таблице', async () => {
 		await mount(resizeEngine(ALL), PLACE)
 
 		const table = find('.s-table').getBoundingClientRect()
 		const [name, , age] = headers()
 
-		expect(width(resizerOf(name))).toBeGreaterThanOrEqual(24 - EPSILON)
-		expect(width(resizerOf(age))).toBeGreaterThanOrEqual(24 - EPSILON)
+		expect(Math.abs(width(resizerOf(name)) - 14)).toBeLessThanOrEqual(EPSILON)
+		expect(Math.abs(width(resizerOf(age)) - 14)).toBeLessThanOrEqual(EPSILON)
 		expect(resizerOf(age).getBoundingClientRect().right).toBeLessThanOrEqual(
 			table.right + EPSILON,
 		)
@@ -1054,5 +1080,51 @@ describe('ручка ширины', () => {
 		await forcedColors('active')
 
 		expect(pixel([line().backgroundColor])).toEqual(pixel([systemColor('Highlight')]))
+	})
+
+	/**
+	 * Указатель, который прошёл через полосу мимоходом, линию не зажигает:
+	 * она ждёт, задержится ли он. Курсор ручки при этом встаёт сразу. Ручку
+	 * взяли — ждать нечего, и линия встаёт без задержки и под указателем.
+	 */
+	it('линия ждёт задержки указателя: мимоходом не моргает; взяли ручку — сразу', async () => {
+		await mount(resizeEngine(ALL), PLACE)
+
+		const resizer = resizerOf(headers()[0])
+		const line = () => style(resizer, '::before')
+		const box = resizer.getBoundingClientRect()
+		const y = box.top + box.height / 2
+
+		await pointAt(box.left + box.width / 2, y)
+
+		expect(style(resizer).cursor).toBe('col-resize')
+		expect(line().opacity).toBe('0')
+
+		// Ушёл раньше задержки — линия так и не появилась
+		await pointAt(box.left + box.width / 2 + 60, y)
+		await new Promise((resolve) => setTimeout(resolve, 400))
+
+		expect(line().opacity).toBe('0')
+
+		// Задержался — появилась
+		await pointAt(box.left + box.width / 2, y)
+		await expect.poll(() => line().opacity).toBe('1')
+
+		await pointAt(box.left + box.width / 2 + 60, y)
+		await expect.poll(() => line().opacity).toBe('0')
+
+		// Нажали на полосу сразу, не дожидаясь, — без задержки
+		await pointAt(box.left + box.width / 2, y)
+
+		expect(line().transitionDelay).not.toBe('0s')
+
+		await commands.mouseDown()
+
+		try {
+			await expect.poll(() => headers()[0].dataset.resizing).toBe('true')
+			expect(line().transitionDelay).toBe('0s')
+		} finally {
+			await commands.mouseUp()
+		}
 	})
 })
