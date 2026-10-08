@@ -30,6 +30,7 @@ import {
 	TListBox,
 	TRadioGroup,
 	TSelect,
+	TTable,
 	TTabs,
 	TTags,
 	createEngineAccordion,
@@ -37,6 +38,7 @@ import {
 	createEngineListBox,
 	createEngineRadioGroup,
 	createEngineSelect,
+	createEngineTable,
 	createEngineTabs,
 	createEngineTags,
 } from '@soldy-ui/core'
@@ -96,6 +98,11 @@ const ENGINES: Readonly<Record<string, () => TOwnedEngine>> = {
 		const owner = new TSelect()
 
 		return { owner, engine: createEngineSelect({ owner }) }
+	},
+	TableDescriptor: () => {
+		const owner = new TTable()
+
+		return { owner, engine: createEngineTable({ owner }) }
 	},
 	TabsDescriptor: () => {
 		const owner = new TTabs()

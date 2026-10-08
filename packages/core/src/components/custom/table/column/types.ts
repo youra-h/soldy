@@ -98,6 +98,8 @@ export type TTableColumnEvents = TComponentViewEvents & {
 	'change:rowHeader': (value: boolean) => void
 	/** change:resizable */
 	'change:resizable': (value: boolean) => void
+	/** change:reorderable */
+	'change:reorderable': (value: boolean) => void
 	/** change:disabled */
 	'change:disabled': (value: boolean) => void
 	/**
@@ -141,6 +143,8 @@ export interface ITableColumnProps extends IComponentViewProps {
 	rowHeader?: boolean
 	/** Пользователь меняет ширину колонки ручкой у края заголовка */
 	resizable?: boolean
+	/** Пользователь переставляет колонку, перетаскивая её заголовок или клавишами */
+	reorderable?: boolean
 	/** Колонка выключена: ручки нет. Пишет таблица — свой `disabled` */
 	disabled?: boolean
 }
@@ -190,8 +194,16 @@ export interface ITableColumn<
 	 */
 	resizable: boolean
 	/**
-	 * Колонка выключена: ручки нет, и команды ручки ничего не делают. Пишет
-	 * таблица — свой `disabled`, как строкам
+	 * Пользователь переставляет колонку: тащит её заголовок или жмёт
+	 * Ctrl+Shift+←/→ на нём. Решение потребителя, поэтому по умолчанию нет.
+	 * Колонку без него пользователь не возьмёт, но другие колонки встают по обе
+	 * стороны от неё. Код переставляет любые колонки — перемещением в коллекции
+	 * колонок
+	 */
+	reorderable: boolean
+	/**
+	 * Колонка выключена: ручки нет, и команды ручки ничего не делают; взять её
+	 * за заголовок нельзя. Пишет таблица — свой `disabled`, как строкам
 	 */
 	disabled: boolean
 	/**

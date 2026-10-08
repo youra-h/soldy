@@ -30,7 +30,7 @@ import type {
 } from '@soldy-ui/core'
 import { Button, Table } from '@soldy-ui/vue'
 
-import { find, pixel, settled, shift, style, systemColor } from './colors'
+import { find, opacity, pixel, settled, shift, style, systemColor } from './colors'
 import { forcedColors } from './media'
 
 import '@soldy-ui/theme-oren'
@@ -162,6 +162,175 @@ describe('подпись шапки вровень с текстом ячеек'
 		const cell = rows()[0].children[2]
 
 		expect(Math.abs(textBox(header).left - textBox(cell).left)).toBeLessThanOrEqual(EPSILON)
+	})
+})
+
+/**
+ * Заголовок, с которым что-то делают, читается ячейкой: под указателем он
+ * подсвечен прямоугольником от линии до линии, и видно, где колонка
+ * кончается, — а у её границы ручка ширины. Верхние углы заголовка мягче —
+ * вполовину скругления кнопки, нижние прямые. Кнопка сортировки — во всю
+ * ячейку, с углами заголовка, а стрелка стоит сразу за подписью, как в
+ * ClickUp, а не у другого края кнопки.
+ */
+describe('заголовок колонки — ячейкой', () => {
+	/** Сколько от подписи до стрелки при любом выравнивании: зазор флекса кнопки, не больше. */
+	const GAP = 8
+
+	/** Подпись и стрелка кнопки сортировки в заголовке. */
+	function sortParts(header: Element) {
+		const button = find('.s-table-column__sort', header)
+
+		return {
+			button,
+			text: textBox(find('.s-button__text', button)),
+			icon: find('.s-table-column__sort-icon', button).getBoundingClientRect(),
+		}
+	}
+
+	/** Фон заголовка без указателя на нём — и с указателем посередине. */
+	async function hoverBackground(header: Element): Promise<{ idle: string; hover: string }> {
+		await userEvent.hover(find('.s-test-away'))
+		await settled(header)
+
+		const idle = style(header).backgroundColor
+		const box = header.getBoundingClientRect()
+
+		await userEvent.hover(header, { position: { x: box.width / 2, y: box.height / 2 } })
+		await settled(header)
+
+		return { idle, hover: style(header).backgroundColor }
+	}
+
+	/** Таблица с полосой «мимо» над ней: туда уводят указатель. */
+	async function mountAway(engine: TTableCollection, disabled = false): Promise<void> {
+		render(
+			defineComponent({
+				render: () =>
+					h('div', { style: 'width: 600px' }, [
+						h('div', { class: 's-test-away', style: 'height: 24px' }),
+						h(Table, { engine, disabled, aria_label: 'Сотрудники' }),
+					]),
+			}),
+		)
+
+		await new Promise((resolve) => requestAnimationFrame(resolve))
+	}
+
+	it('кнопка сортировки — во всю ячейку заголовка', async () => {
+		await mount(engineOf())
+
+		for (const index of [0, 2]) {
+			const header = headers()[index]
+			const box = header.getBoundingClientRect()
+			const { button } = sortParts(header)
+			const own = button.getBoundingClientRect()
+
+			expect(Math.abs(own.left - box.left)).toBeLessThanOrEqual(EPSILON)
+			expect(Math.abs(own.right - box.right)).toBeLessThanOrEqual(EPSILON)
+			expect(Math.abs(own.top - box.top)).toBeLessThanOrEqual(EPSILON)
+			expect(Math.abs(own.bottom - box.bottom)).toBeLessThanOrEqual(EPSILON)
+		}
+	})
+
+	it('верхние углы заголовка и кнопки — вполовину скругления кнопки, нижние прямые', async () => {
+		render(
+			defineComponent({
+				render: () =>
+					h('div', { style: 'width: 600px' }, [
+						h(Table, { engine: engineOf(), aria_label: 'Сотрудники' }),
+						h(Button, { class: 's-test-button', text: 'Кнопка' }),
+					]),
+			}),
+		)
+		await new Promise((resolve) => requestAnimationFrame(resolve))
+
+		const header = headers()[0]
+		const { button } = sortParts(header)
+		const half = parseFloat(style(find('.s-test-button')).borderTopLeftRadius) / 2
+
+		expect(half).toBeGreaterThan(0)
+
+		for (const corner of [header, button]) {
+			expect(parseFloat(style(corner).borderTopLeftRadius)).toBe(half)
+			expect(parseFloat(style(corner).borderTopRightRadius)).toBe(half)
+			expect(style(corner).borderBottomLeftRadius).toBe('0px')
+			expect(style(corner).borderBottomRightRadius).toBe('0px')
+		}
+	})
+
+	/**
+	 * Отметка стоит и у неотсортированной колонки — невидимой, держа место, —
+	 * поэтому её место видно без сортировки.
+	 */
+	it('стрелка — сразу за подписью, у колонки по концу — перед ней', async () => {
+		await mount(engineOf())
+
+		const start = sortParts(headers()[0])
+
+		expect(start.icon.left).toBeGreaterThanOrEqual(start.text.right - EPSILON)
+		expect(start.icon.left - start.text.right).toBeLessThanOrEqual(GAP)
+
+		const end = sortParts(headers()[2])
+
+		expect(end.icon.right).toBeLessThanOrEqual(end.text.left + EPSILON)
+		expect(end.text.left - end.icon.right).toBeLessThanOrEqual(GAP)
+	})
+
+	it('кольцо фокуса кнопки — внутри ячейки', async () => {
+		await mount(engineOf())
+
+		const { button } = sortParts(headers()[0])
+
+		button.focus({ focusVisible: true })
+
+		expect(parseFloat(style(button).outlineOffset)).toBeLessThan(0)
+	})
+
+	it('сортируемый заголовок под указателем подсвечен; заголовок без действий — нет', async () => {
+		await mountAway(engineOf())
+
+		const [name, city] = headers()
+		const sortable = await hoverBackground(name)
+
+		expect(opacity(sortable.idle)).toBe(0)
+		expect(opacity(sortable.hover)).toBeGreaterThan(0)
+
+		const plain = await hoverBackground(city)
+
+		expect(opacity(plain.hover)).toBe(0)
+	})
+
+	it('заголовок с одной ручкой ширины подсвечен так же, как сортируемый', async () => {
+		const columns = [NAME, CITY].map((column) => ({ ...column, resizable: true, width: 160 }))
+
+		await mountAway(engineOf(columns))
+
+		const [name, city] = headers()
+		const sortable = await hoverBackground(name)
+		const resizable = await hoverBackground(city)
+
+		expect(opacity(resizable.hover)).toBeGreaterThan(0)
+		expect(pixel([resizable.hover])).toEqual(pixel([sortable.hover]))
+	})
+
+	it('заголовок, который можно только перетащить, подсвечен так же', async () => {
+		await mountAway(engineOf([NAME, { ...CITY, reorderable: true }]))
+
+		const [name, city] = headers()
+		const sortable = await hoverBackground(name)
+		const reorderable = await hoverBackground(city)
+
+		expect(opacity(reorderable.hover)).toBeGreaterThan(0)
+		expect(pixel([reorderable.hover])).toEqual(pixel([sortable.hover]))
+	})
+
+	it('у выключенной таблицы подсветки нет', async () => {
+		await mountAway(engineOf(), true)
+
+		const { hover } = await hoverBackground(headers()[0])
+
+		expect(opacity(hover)).toBe(0)
 	})
 })
 
@@ -335,6 +504,249 @@ describe('линии строк', () => {
 				)
 			})
 		})
+	})
+})
+
+/**
+ * Перестановка колонок — заголовком: пока его тащат, за указателем идёт он
+ * один, а колонка и строки стоят на месте; на месте вставки — линия. Колонка
+ * встаёт на новое место одной перестановкой, когда заголовок отпустили.
+ * Нажатие без протяжки остаётся нажатием кнопки сортировки, а протяжка её не
+ * нажимает. Клавиши — Ctrl+Shift+←/→ на кнопке, и фокус с неё не уходит.
+ */
+describe('перестановка колонок', () => {
+	const MOVABLE = [NAME, CITY, AGE].map((column) => ({ ...column, reorderable: true }))
+
+	/**
+	 * Место не шире окна прогона (414 px): протяжка за край окна прокрутила бы
+	 * страницу, и коробки до и после протяжки разошлись бы на прокрутку.
+	 */
+	const PLACE = 400
+
+	/** Движок без колонки выбора: заголовки шапки — только колонки данных. */
+	function moveEngine(): TTableCollection {
+		const engine = engineOf(MOVABLE)
+
+		engine.extensions.selection.mode = 'none'
+
+		return engine
+	}
+
+	const fieldsOf = (engine: TTableCollection) =>
+		engine.extensions.columns.columns.map((column) => column.field)
+
+	/** Указатель в точку страницы — наводится на `body`: точка бывает за таблицей. */
+	async function pointAt(x: number, y: number): Promise<void> {
+		const body = document.body.getBoundingClientRect()
+
+		await userEvent.hover(document.body, { position: { x: x - body.left, y: y - body.top } })
+	}
+
+	/** Середина узла. */
+	function middleOf(element: Element): { x: number; y: number } {
+		const box = element.getBoundingClientRect()
+
+		return { x: box.left + box.width / 2, y: box.top + box.height / 2 }
+	}
+
+	it('тащат заголовок — колонка и строки на месте; отпустили — колонка на новом месте', async () => {
+		const engine = moveEngine()
+		const moves: string[][] = []
+
+		engine.extensions.columns.events.on('column:move', ({ order }) => moves.push(order))
+		await mount(engine, PLACE)
+
+		const [name, city] = headers()
+		const cell = rows()[0].children[0]
+		const from = middleOf(name)
+		const before = { header: name.getBoundingClientRect(), cell: cell.getBoundingClientRect() }
+
+		await pointAt(from.x, from.y)
+		await commands.mouseDown()
+
+		try {
+			await pointAt(from.x + 40, from.y)
+			await pointAt(middleOf(city).x + 10, from.y)
+
+			// Заголовок идёт за указателем, ячейка его колонки — на месте
+			const dragged = name.getBoundingClientRect()
+
+			expect(name.dataset.dragging).toBe('true')
+			expect(dragged.left - before.header.left).toBeGreaterThan(100)
+			expect(
+				Math.abs(cell.getBoundingClientRect().left - before.cell.left),
+			).toBeLessThanOrEqual(EPSILON)
+			// Метка — у конца соседа, линия видна
+			expect(city.dataset.drop).toBe('after')
+			expect(parseFloat(style(city, '::before').width)).toBe(3)
+			expect(fieldsOf(engine)).toEqual(['name', 'city', 'age'])
+		} finally {
+			await commands.mouseUp()
+		}
+
+		expect(fieldsOf(engine)).toEqual(['city', 'name', 'age'])
+		expect(moves).toEqual([['city', 'name', 'age']])
+
+		await expect
+			.poll(() => headers().map((header) => header.textContent?.trim()))
+			.toEqual(['Город', 'Имя', 'Возраст'])
+
+		// Ячейки строк — в новом порядке, сдвиг заголовка снят
+		expect(rows()[0].children[1].textContent?.trim()).toBe('Анна Смирнова')
+		expect(headers()[1].dataset.dragging).toBeUndefined()
+		expect(headers()[1].style.getPropertyValue('--s-table-column-drag')).toBe('')
+	})
+
+	it('протяжка кнопку сортировки не нажимает, нажатие без протяжки — сортирует', async () => {
+		const engine = moveEngine()
+
+		await mount(engine, PLACE)
+
+		const [name, city] = headers()
+		const from = middleOf(name)
+
+		await pointAt(from.x, from.y)
+		await commands.mouseDown()
+
+		try {
+			await pointAt(from.x + 30, from.y)
+			await pointAt(middleOf(city).x + 20, from.y)
+		} finally {
+			await commands.mouseUp()
+		}
+
+		expect(fieldsOf(engine)).toEqual(['city', 'name', 'age'])
+
+		// Нажатие на колонку после протяжки не досталось
+		await new Promise((resolve) => requestAnimationFrame(resolve))
+		expect(headers().some((header) => header.dataset.sort)).toBe(false)
+
+		const sortable = headers()[1]
+
+		await userEvent.click(find('.s-table-column__sort', sortable))
+
+		await expect.poll(() => sortable.dataset.sort).toBe('asc')
+		expect(fieldsOf(engine)).toEqual(['city', 'name', 'age'])
+	})
+
+	it('Ctrl+Shift+→ на кнопке — колонка на шаг дальше, фокус остаётся на кнопке', async () => {
+		const engine = moveEngine()
+
+		await mount(engine, PLACE)
+
+		const button = find('.s-table-column__sort', headers()[0])
+
+		button.focus()
+		await userEvent.keyboard('{Control>}{Shift>}{ArrowRight}{/Shift}{/Control}')
+
+		expect(fieldsOf(engine)).toEqual(['city', 'name', 'age'])
+		await expect.poll(() => headers()[1].contains(document.activeElement)).toBe(true)
+		expect(document.activeElement).toBe(button)
+	})
+
+	it('RTL: Ctrl+Shift+← — к концу строки', async () => {
+		const engine = moveEngine()
+
+		await mount(engine, PLACE, 'rtl')
+
+		find('.s-table-column__sort', headers()[0]).focus()
+		await userEvent.keyboard('{Control>}{Shift>}{ArrowLeft}{/Shift}{/Control}')
+
+		expect(fieldsOf(engine)).toEqual(['city', 'name', 'age'])
+	})
+})
+
+/**
+ * Сетка (APG Data Grid) настоящими клавишами: Tab входит в таблицу на ячейку
+ * под фокусом сетки и выходит из неё за таблицу, минуя поля и кнопки ячеек;
+ * стрелки ведут фокус по ячейкам; строка под фокусом и под указателем
+ * подсвечена, ячейка под фокусом с клавиатуры — в кольце внутри своих границ.
+ */
+describe('сетка', () => {
+	/** Сетка с выбором строк между двумя кнопками: Tab входит и выходит. */
+	async function mountGrid(): Promise<TTableCollection> {
+		const engine = engineOf()
+
+		engine.extensions.grid.grid = true
+
+		render(
+			defineComponent({
+				render: () =>
+					h('div', { style: 'width: 400px' }, [
+						h('button', { class: 's-test-before' }, 'до'),
+						h(Table, { engine, aria_label: 'Сотрудники' }),
+						h('button', { class: 's-test-after' }, 'после'),
+					]),
+			}),
+		)
+
+		await new Promise((resolve) => requestAnimationFrame(resolve))
+
+		return engine
+	}
+
+	it('Tab — на ячейку, стрелки — по ячейкам, Tab — за таблицу мимо полей ячеек', async () => {
+		await mountGrid()
+
+		find('.s-test-before').focus()
+		await userEvent.keyboard('{Tab}')
+
+		// Выбор включили после колонок — фокус сетки на первой из них
+		expect(document.activeElement).toBe(headers()[0])
+
+		await userEvent.keyboard('{ArrowDown}{ArrowRight}')
+
+		expect(document.activeElement).toBe(rows()[0].children[2])
+
+		await userEvent.keyboard('{Tab}')
+
+		expect(document.activeElement).toBe(find('.s-test-after'))
+
+		// Shift+Tab — обратно на ту же ячейку: у сетки одна остановка
+		await userEvent.keyboard('{Shift>}{Tab}{/Shift}')
+
+		expect(document.activeElement).toBe(rows()[0].children[2])
+	})
+
+	it('ячейка под фокусом с клавиатуры — в кольце внутри своих границ', async () => {
+		await mountGrid()
+
+		find('.s-test-before').focus()
+		await userEvent.keyboard('{Tab}{ArrowDown}')
+
+		const cell = rows()[0].children[1]
+
+		expect(document.activeElement).toBe(cell)
+		expect(style(cell).outlineStyle).toBe('solid')
+		expect(parseFloat(style(cell).outlineOffset)).toBeLessThan(0)
+	})
+
+	it('строка под фокусом и под указателем подсвечена; нажатие по строке — её выбор', async () => {
+		const engine = await mountGrid()
+		const [first, second] = rows()
+
+		await userEvent.hover(find('.s-test-before'))
+		await settled(document.body)
+
+		expect(opacity(style(second).backgroundColor)).toBe(0)
+
+		await userEvent.hover(second.children[2])
+		await settled(second)
+
+		expect(opacity(style(second).backgroundColor)).toBeGreaterThan(0)
+
+		await userEvent.click(second.children[2])
+
+		expect(engine.extensions.selection.selected).toEqual([engine.extensions.batch.items[1]])
+		expect(second.getAttribute('aria-selected')).toBe('true')
+
+		// Фокус встал на нажатую ячейку — её строка подсвечена и без указателя
+		await userEvent.hover(find('.s-test-before'))
+		await settled(document.body)
+
+		expect(second.contains(document.activeElement)).toBe(true)
+		expect(opacity(style(first).backgroundColor)).toBe(0)
+		expect(style(second).backgroundColor).not.toBe(style(first).backgroundColor)
 	})
 })
 
@@ -575,14 +987,14 @@ describe('ручка ширины', () => {
 		)
 	})
 
-	it('полоса — зона захвата не уже 24 px; у последней колонки — в таблице', async () => {
+	it('полоса — зона захвата в 14 px; у последней колонки — в таблице', async () => {
 		await mount(resizeEngine(ALL), PLACE)
 
 		const table = find('.s-table').getBoundingClientRect()
 		const [name, , age] = headers()
 
-		expect(width(resizerOf(name))).toBeGreaterThanOrEqual(24 - EPSILON)
-		expect(width(resizerOf(age))).toBeGreaterThanOrEqual(24 - EPSILON)
+		expect(Math.abs(width(resizerOf(name)) - 14)).toBeLessThanOrEqual(EPSILON)
+		expect(Math.abs(width(resizerOf(age)) - 14)).toBeLessThanOrEqual(EPSILON)
 		expect(resizerOf(age).getBoundingClientRect().right).toBeLessThanOrEqual(
 			table.right + EPSILON,
 		)
@@ -594,28 +1006,62 @@ describe('ручка ширины', () => {
 		expect(resizerOf(name).contains(hit)).toBe(true)
 	})
 
-	it('кнопка сортировки у полосы нажимается: где они встречаются, нажатие — кнопке', async () => {
+	/**
+	 * Кнопка сортировки занимает ячейку целиком, и под ней полосе места не
+	 * осталось бы: полоса — над кнопкой. У границы колонок нажатие берёт ручка,
+	 * мимо полосы — кнопка, и сортирует колонку, не меняя её ширины.
+	 */
+	it('полоса — над кнопкой сортировки: у границы — ручка, мимо полосы — кнопка', async () => {
 		await mount(resizeEngine(ALL), PLACE)
 
-		const age = headers()[2]
-		const button = find('.s-table-column__sort', age)
-		const box = button.getBoundingClientRect()
-		const resizer = resizerOf(age).getBoundingClientRect()
+		const [name, , age] = headers()
+		const button = find('.s-table-column__sort', name)
+		const edge = name.getBoundingClientRect()
+		const y = edge.top + edge.height / 2
 
-		// Полоса последней колонки заходит на её кнопку, прижатую к концу
-		expect(resizer.left).toBeLessThan(box.right)
+		// Своя полоса у конца и полоса соседа у начала — обе над кнопкой
+		expect(resizerOf(name).contains(document.elementFromPoint(edge.right - 4, y))).toBe(true)
+		expect(resizerOf(name).contains(document.elementFromPoint(edge.right + 4, y))).toBe(true)
 
-		const x = (Math.max(box.left, resizer.left) + box.right) / 2
-		const y = box.top + box.height / 2
+		// Мимо полос — кнопка
+		const middle = edge.left + edge.width / 2
 
-		expect(button.contains(document.elementFromPoint(x, y))).toBe(true)
+		expect(button.contains(document.elementFromPoint(middle, y))).toBe(true)
+
+		// Полоса последней колонки — у края таблицы, над кнопкой по концу
+		const last = age.getBoundingClientRect()
+
+		expect(resizerOf(age).contains(document.elementFromPoint(last.right - 4, y))).toBe(true)
 
 		const body = document.body.getBoundingClientRect()
 
-		await userEvent.click(document.body, { position: { x: x - body.left, y: y - body.top } })
+		await userEvent.click(document.body, {
+			position: { x: middle - body.left, y: y - body.top },
+		})
 
-		await expect.poll(() => age.dataset.sort).toBe('asc')
-		expect(Math.abs(width(age) - 100)).toBeLessThanOrEqual(EPSILON)
+		await expect.poll(() => name.dataset.sort).toBe('asc')
+		expect(Math.abs(width(name) - 120)).toBeLessThanOrEqual(EPSILON)
+	})
+
+	/**
+	 * Линия ручки — 3 px и висит посередине высоты заголовка: рамок строк, линии
+	 * шапки и верхнего края она не касается.
+	 */
+	it('линия — 3 px, висит посередине, не касаясь краёв заголовка', async () => {
+		await mount(resizeEngine(ALL), PLACE)
+
+		const [name] = headers()
+		const line = style(resizerOf(name), '::before')
+		const header = name.getBoundingClientRect()
+		const resizer = resizerOf(name).getBoundingClientRect()
+		const top = resizer.top + parseFloat(line.top)
+		const bottom = top + parseFloat(line.height)
+
+		expect(parseFloat(line.width)).toBe(3)
+		// Отступ — десятая часть высоты заголовка сверху и снизу
+		expect(Math.abs(top - header.top - header.height / 10)).toBeLessThanOrEqual(EPSILON)
+		expect(header.bottom - bottom).toBeGreaterThan(0)
+		expect(Math.abs(top - header.top - (header.bottom - bottom))).toBeLessThanOrEqual(EPSILON)
 	})
 
 	it('линия — под наведением; в принудительных цветах — системным цветом фокуса', async () => {
@@ -634,5 +1080,51 @@ describe('ручка ширины', () => {
 		await forcedColors('active')
 
 		expect(pixel([line().backgroundColor])).toEqual(pixel([systemColor('Highlight')]))
+	})
+
+	/**
+	 * Указатель, который прошёл через полосу мимоходом, линию не зажигает:
+	 * она ждёт, задержится ли он. Курсор ручки при этом встаёт сразу. Ручку
+	 * взяли — ждать нечего, и линия встаёт без задержки и под указателем.
+	 */
+	it('линия ждёт задержки указателя: мимоходом не моргает; взяли ручку — сразу', async () => {
+		await mount(resizeEngine(ALL), PLACE)
+
+		const resizer = resizerOf(headers()[0])
+		const line = () => style(resizer, '::before')
+		const box = resizer.getBoundingClientRect()
+		const y = box.top + box.height / 2
+
+		await pointAt(box.left + box.width / 2, y)
+
+		expect(style(resizer).cursor).toBe('col-resize')
+		expect(line().opacity).toBe('0')
+
+		// Ушёл раньше задержки — линия так и не появилась
+		await pointAt(box.left + box.width / 2 + 60, y)
+		await new Promise((resolve) => setTimeout(resolve, 400))
+
+		expect(line().opacity).toBe('0')
+
+		// Задержался — появилась
+		await pointAt(box.left + box.width / 2, y)
+		await expect.poll(() => line().opacity).toBe('1')
+
+		await pointAt(box.left + box.width / 2 + 60, y)
+		await expect.poll(() => line().opacity).toBe('0')
+
+		// Нажали на полосу сразу, не дожидаясь, — без задержки
+		await pointAt(box.left + box.width / 2, y)
+
+		expect(line().transitionDelay).not.toBe('0s')
+
+		await commands.mouseDown()
+
+		try {
+			await expect.poll(() => headers()[0].dataset.resizing).toBe('true')
+			expect(line().transitionDelay).toBe('0s')
+		} finally {
+			await commands.mouseUp()
+		}
 	})
 })

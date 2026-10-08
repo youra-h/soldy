@@ -22,6 +22,15 @@ type TColumnWatchers = {
 	commit: (width: number) => void
 }
 
+/** Жест перестановки: какую колонку тащат, куда она встанет и на ком метка. */
+type TColumnDrag = {
+	column: ITableColumn
+	/** Место среди показанных, куда колонка встанет, если её отпустить */
+	to: number
+	/** Колонка под меткой — та, что сейчас стоит на месте `to`; на своём месте метки нет */
+	target: ITableColumn | undefined
+}
+
 /**
  * Колонки таблицы — расширение коллекции строк.
  *
@@ -59,6 +68,20 @@ type TColumnWatchers = {
  * ручкой показанной колонки (`commit` колонки), одна на действие. Скрытую
  * колонку пользователь не видит и ручкой не правит, и её расширение не
  * слушает.
+ *
+ * **Перестановка пользователем** — команда `moveColumn` и жест `dragStart` →
+ * `dragOver` → `dragEnd`. Место — среди показанных: скрытые колонки
+ * пользователь не видит и остаются на своих местах между соседями. Жест
+ * перестановкой не является, пока колонку не отпустили: взятой колонке
+ * расширение пишет `data-dragging`, колонке на месте, куда её принесли, —
+ * `data-drop` со стороной, а коллекцию не трогает. Строк в таблице бывают
+ * тысячи, и перестановка на каждом шаге указателя перерисовывала бы их все;
+ * так она одна — на отпускании, одним `column:move`. Где указатель и какая
+ * колонка под ним, знает плагин, а не расширение. Пользователь берёт только
+ * колонку `reorderable` и не выключенную; код переставляет любые —
+ * перемещением в коллекции колонок, без `column:move`. Состав показанных
+ * сменился посреди жеста — жест прерван: место, куда несли колонку, считалось
+ * от прежнего состава.
  */
 export class TTableColumnsExtension<
 	TRow extends ITableRow = ITableRow,
@@ -92,6 +115,9 @@ export class TTableColumnsExtension<
 	 * подписка удерживала бы коллекцию, пока жива сама колонка.
 	 */
 	private readonly _watchers = new Map<ITableColumn, TColumnWatchers>()
+
+	/** Жест перестановки, пока колонку не отпустили. */
+	private _drag: TColumnDrag | undefined = undefined
 
 	constructor(options?: IBaseOwnerItemExtensionOptions<TRow, ITableColumnsItemExtension<TRow>>) {
 		super(TTableColumnsItemExtension, options)
@@ -165,6 +191,69 @@ export class TTableColumnsExtension<
 		return this._engine.extensions.batch.shown
 	}
 
+	get dragged(): ITableColumn | undefined {
+		return this._drag?.column
+	}
+
+	moveColumn(column: ITableColumn, to: number): boolean {
+		if (!this._canMove(column)) return false
+
+		return this._move(column, to)
+	}
+
+	dragStart(column: ITableColumn): boolean {
+		if (!this._canMove(column)) return false
+
+		// Указатель у шапки один: новый жест закрывает незаконченный
+		this.dragCancel()
+
+		this._drag = { column, to: this.shownColumns.indexOf(column), target: undefined }
+		column.dataset.add('dragging', true)
+
+		return true
+	}
+
+	dragOver(to: number): void {
+		const drag = this._drag
+
+		if (!drag) return
+
+		const shown = this.shownColumns
+		const from = shown.indexOf(drag.column)
+		const place = within(to, 0, shown.length - 1)
+		const target = place === from ? undefined : shown[place]
+
+		drag.to = place
+
+		if (drag.target !== target) {
+			drag.target?.dataset.add('drop', null)
+			drag.target = target
+		}
+
+		target?.dataset.add('drop', place > from ? 'after' : 'before')
+	}
+
+	dragEnd(): void {
+		const drag = this._drag
+
+		if (!drag) return
+
+		this.dragCancel()
+
+		// Пока несли, колонку могли выключить вместе с таблицей
+		if (this._canMove(drag.column)) this._move(drag.column, drag.to)
+	}
+
+	dragCancel(): void {
+		const drag = this._drag
+
+		if (!drag) return
+
+		this._drag = undefined
+		drag.column.dataset.add('dragging', null)
+		drag.target?.dataset.add('drop', null)
+	}
+
 	/**
 	 * `disabled` таблицы на колонке — когда таблица выключена. Таблицы нет —
 	 * колонка со своим.
@@ -174,6 +263,40 @@ export class TTableColumnsExtension<
 	 */
 	private _inheritOwner(column: Partial<ITableColumn>): void {
 		if (this._ctx?.options.get('owner')?.disabled) column.disabled = true
+	}
+
+	/** Пользователь вправе переставить колонку: она `reorderable`, не выключена и показана. */
+	private _canMove(column: ITableColumn): boolean {
+		return column.reorderable && !column.disabled && this.shownColumns.includes(column)
+	}
+
+	/**
+	 * Колонку — на место `to` среди показанных: туда, где сейчас стоит колонка
+	 * этого места. В коллекции это её индекс — и когда колонку несут вперёд
+	 * (она встаёт после той колонки), и когда назад (перед ней). Скрытые
+	 * колонки между ними остаются на своих местах относительно соседей.
+	 */
+	private _move(column: ITableColumn, to: number): boolean {
+		const shown = this.shownColumns
+		const from = shown.indexOf(column)
+		const place = within(to, 0, shown.length - 1)
+
+		if (from === -1 || place === from) return false
+
+		const { batch, plain } = this._engine.extensions
+		const before = batch.items.indexOf(column)
+
+		plain.move(column, batch.items.indexOf(shown[place]), before)
+
+		// Перемещение отменил подписчик `item:move:before`
+		if (batch.items.indexOf(column) === before) return false
+
+		this.events.emit('column:move', {
+			column,
+			order: this.columns.map((each) => each.field),
+		})
+
+		return true
 	}
 
 	/** Показанные устарели — а с ними и ячейки. */
@@ -199,6 +322,8 @@ export class TTableColumnsExtension<
 		this._staleCells = false
 
 		if (shown) {
+			// Место, куда несли колонку, считалось от прежнего состава
+			this.dragCancel()
 			this._watchShown()
 			this.events.emit('change:shownColumns')
 		}
@@ -238,4 +363,9 @@ export class TTableColumnsExtension<
 			column.events.on('commit', watchers.commit)
 		}
 	}
+}
+
+/** Место в отрезке показанных. */
+function within(value: number, low: number, high: number): number {
+	return Math.min(Math.max(Math.round(value), low), high)
 }

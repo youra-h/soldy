@@ -1072,6 +1072,286 @@ describe('заголовок', () => {
 	})
 })
 
+/**
+ * Перестановка колонок пользователем — команда `moveColumn` и жест
+ * `dragStart` → `dragOver` → `dragEnd` расширения `columns`.
+ *
+ * Место — среди показанных: скрытые колонки пользователь не видит, и они
+ * остаются между своими соседями. Жест коллекцию не трогает, пока колонку не
+ * отпустили: перестановка одна, на отпускании, — строк в таблице тысячи, и
+ * перестановка на каждом шаге указателя перерисовывала бы их все.
+ */
+describe('перестановка колонок', () => {
+	const MOVABLE = [NAME, AGE, ID].map((source) => ({ ...source, reorderable: true }))
+
+	/** Колонки, которые пользователь вправе переставлять, и счётчик `column:move`. */
+	function movable(sources: readonly TTableColumnSource[] = MOVABLE) {
+		const columns = columnsWith(sources)
+		const move = vi.fn<TTableColumnsEvents['column:move']>()
+
+		columns.events.on('column:move', move)
+
+		return { columns, move }
+	}
+
+	describe('reorderable', () => {
+		it('по умолчанию нет; data-reorderable — с первой отрисовки', () => {
+			expect(new TTableColumn().reorderable).toBe(false)
+			expect(new TTableColumn().dataset.get('reorderable')).toBe('false')
+			expect(new TTableColumn({ reorderable: true }).dataset.get('reorderable')).toBe('true')
+		})
+
+		it('смена — data-reorderable и change:reorderable, только на смену; в пропсах', () => {
+			const column = new TTableColumn()
+			const changed = vi.fn()
+
+			column.events.on('change:reorderable', changed)
+
+			column.reorderable = true
+			column.reorderable = true
+
+			expect(changed).toHaveBeenCalledTimes(1)
+			expect(changed).toHaveBeenCalledWith(true)
+			expect(column.dataset.get('reorderable')).toBe('true')
+			expect(column.getProps()).toMatchObject({ reorderable: true })
+		})
+	})
+
+	describe('moveColumn', () => {
+		it('вперёд — после колонки места, назад — перед ней; column:move — с порядком', () => {
+			const { columns, move } = movable()
+			const name = columnOf(columns, 'name')
+
+			expect(columns.moveColumn(name, 2)).toBe(true)
+			expect(fields(columns.columns)).toEqual(['age', 'id', 'name'])
+			expect(move).toHaveBeenCalledTimes(1)
+			expect(move).toHaveBeenCalledWith({ column: name, order: ['age', 'id', 'name'] })
+
+			expect(columns.moveColumn(columnOf(columns, 'id'), 0)).toBe(true)
+			expect(fields(columns.columns)).toEqual(['id', 'age', 'name'])
+		})
+
+		it('место — среди показанных: скрытая колонка остаётся между соседями', () => {
+			const { columns } = movable([...MOVABLE, { field: 'city', reorderable: true }])
+			const age = columnOf(columns, 'age')
+
+			age.visible = false
+
+			expect(fields(columns.shownColumns)).toEqual(['name', 'id', 'city'])
+
+			// `city` — на место `name`, первое из показанных
+			columns.moveColumn(columnOf(columns, 'city'), 0)
+
+			expect(fields(columns.columns)).toEqual(['city', 'name', 'age', 'id'])
+
+			// `name` — на место `id`: скрытая `age` остаётся перед `id`
+			columns.moveColumn(columnOf(columns, 'name'), 2)
+
+			expect(fields(columns.columns)).toEqual(['city', 'age', 'id', 'name'])
+		})
+
+		it('место за краем показанных — край', () => {
+			const { columns } = movable()
+
+			columns.moveColumn(columnOf(columns, 'name'), 99)
+
+			expect(fields(columns.columns)).toEqual(['age', 'id', 'name'])
+
+			columns.moveColumn(columnOf(columns, 'name'), -5)
+
+			expect(fields(columns.columns)).toEqual(['name', 'age', 'id'])
+		})
+
+		it('отказ: без reorderable, выключенная, скрытая, то же место — без column:move', () => {
+			const { columns, move } = movable([NAME, ...MOVABLE.slice(1)])
+			const age = columnOf(columns, 'age')
+			const id = columnOf(columns, 'id')
+
+			expect(columns.moveColumn(columnOf(columns, 'name'), 2)).toBe(false)
+
+			age.disabled = true
+
+			expect(columns.moveColumn(age, 0)).toBe(false)
+
+			id.visible = false
+
+			expect(columns.moveColumn(id, 0)).toBe(false)
+
+			age.disabled = false
+
+			expect(columns.moveColumn(age, 1)).toBe(false)
+			expect(fields(columns.columns)).toEqual(['name', 'age', 'id'])
+			expect(move).not.toHaveBeenCalled()
+		})
+
+		it('колонку без reorderable можно обойти: другие встают по обе стороны от неё', () => {
+			const { columns } = movable([MOVABLE[0], { field: 'fixed' }, MOVABLE[2]])
+
+			columns.moveColumn(columnOf(columns, 'id'), 0)
+
+			expect(fields(columns.columns)).toEqual(['id', 'name', 'fixed'])
+		})
+
+		it('перемещение, отменённое в item:move:before, — false и без column:move', () => {
+			const { columns, move } = movable()
+
+			columns.engine.extensions.plain.events.on('item:move:before', (e) => e.preventDefault())
+
+			expect(columns.moveColumn(columnOf(columns, 'name'), 2)).toBe(false)
+			expect(fields(columns.columns)).toEqual(['name', 'age', 'id'])
+			expect(move).not.toHaveBeenCalled()
+		})
+
+		it('код переставляет любые колонки перемещением в коллекции — без column:move', () => {
+			const { columns, move } = movable([NAME, AGE])
+
+			columns.engine.extensions.plain.move(columnOf(columns, 'age'), 0)
+
+			expect(fields(columns.columns)).toEqual(['age', 'name'])
+			expect(move).not.toHaveBeenCalled()
+		})
+	})
+
+	describe('жест', () => {
+		const drop = (column: ITableColumn) => column.dataset.get('drop')
+
+		it('взятая колонка — data-dragging; коллекцию жест не трогает до отпускания', () => {
+			const { columns, move } = movable()
+			const name = columnOf(columns, 'name')
+			const shown = watchShown(columns)
+
+			expect(columns.dragStart(name)).toBe(true)
+			expect(columns.dragged).toBe(name)
+			expect(name.dataset.get('dragging')).toBe('true')
+
+			columns.dragOver(1)
+			columns.dragOver(2)
+
+			expect(fields(columns.columns)).toEqual(['name', 'age', 'id'])
+			expect(shown).not.toHaveBeenCalled()
+
+			columns.dragEnd()
+
+			expect(fields(columns.columns)).toEqual(['age', 'id', 'name'])
+			expect(shown).toHaveBeenCalledTimes(1)
+			expect(move).toHaveBeenCalledTimes(1)
+			expect(columns.dragged).toBeUndefined()
+			expect(name.dataset.has('dragging')).toBe(false)
+		})
+
+		it('метка — на колонке места, у края, к которому встанет колонка; на своём месте — нет', () => {
+			const { columns } = movable()
+			const [name, age, id] = columns.columns
+
+			columns.dragStart(age)
+			columns.dragOver(2)
+
+			expect(drop(id)).toBe('after')
+
+			columns.dragOver(0)
+
+			expect(drop(id)).toBeUndefined()
+			expect(drop(name)).toBe('before')
+
+			columns.dragOver(1)
+
+			expect(drop(name)).toBeUndefined()
+			expect([name, age, id].some((column) => column.dataset.has('drop'))).toBe(false)
+		})
+
+		it('отпустили на своём месте — перестановки и column:move нет', () => {
+			const { columns, move } = movable()
+
+			columns.dragStart(columnOf(columns, 'age'))
+			columns.dragOver(1)
+			columns.dragEnd()
+
+			expect(fields(columns.columns)).toEqual(['name', 'age', 'id'])
+			expect(move).not.toHaveBeenCalled()
+		})
+
+		it('dragCancel — колонка на месте, метки сняты', () => {
+			const { columns, move } = movable()
+			const [name, , id] = columns.columns
+
+			columns.dragStart(name)
+			columns.dragOver(2)
+			columns.dragCancel()
+
+			expect(fields(columns.columns)).toEqual(['name', 'age', 'id'])
+			expect(name.dataset.has('dragging')).toBe(false)
+			expect(id.dataset.has('drop')).toBe(false)
+			expect(move).not.toHaveBeenCalled()
+
+			// Вне жеста команды жеста ничего не делают
+			columns.dragOver(1)
+			columns.dragEnd()
+
+			expect(move).not.toHaveBeenCalled()
+		})
+
+		it('колонку без reorderable, выключенную и скрытую не взять', () => {
+			const { columns } = movable([NAME, ...MOVABLE.slice(1)])
+			const age = columnOf(columns, 'age')
+			const id = columnOf(columns, 'id')
+
+			expect(columns.dragStart(columnOf(columns, 'name'))).toBe(false)
+
+			age.disabled = true
+			id.visible = false
+
+			expect(columns.dragStart(age)).toBe(false)
+			expect(columns.dragStart(id)).toBe(false)
+			expect(columns.dragged).toBeUndefined()
+		})
+
+		it('выключили, пока несли, — отпускание колонку не переставляет', () => {
+			const { columns, move } = movable()
+			const name = columnOf(columns, 'name')
+
+			columns.dragStart(name)
+			columns.dragOver(2)
+			name.disabled = true
+			columns.dragEnd()
+
+			expect(fields(columns.columns)).toEqual(['name', 'age', 'id'])
+			expect(move).not.toHaveBeenCalled()
+			expect(name.dataset.has('dragging')).toBe(false)
+		})
+
+		it('состав показанных сменился посреди жеста — жест прерван', () => {
+			const { columns, move } = movable()
+			const [name, , id] = columns.columns
+
+			columns.dragStart(name)
+			columns.dragOver(2)
+			id.visible = false
+
+			expect(columns.dragged).toBeUndefined()
+			expect(name.dataset.has('dragging')).toBe(false)
+			expect(id.dataset.has('drop')).toBe(false)
+
+			columns.dragEnd()
+
+			expect(move).not.toHaveBeenCalled()
+		})
+
+		it('новый жест закрывает незаконченный без перестановки', () => {
+			const { columns, move } = movable()
+			const [name, age, id] = columns.columns
+
+			columns.dragStart(name)
+			columns.dragOver(2)
+			columns.dragStart(age)
+
+			expect(name.dataset.has('dragging')).toBe(false)
+			expect(id.dataset.has('drop')).toBe(false)
+			expect(columns.dragged).toBe(age)
+			expect(move).not.toHaveBeenCalled()
+		})
+	})
+})
+
 describe('фасад колонки', () => {
 	it('order — место колонки в коллекции; перестановка доходит событием', () => {
 		const columns = columnsWith([NAME, AGE, ID])

@@ -3,7 +3,12 @@ import type { TExtensionSet } from '../../../base/collection/create/internal'
 import { TMemoryExtension, TSelectionExtension } from '../../../base/collection'
 import TTableRow from '../row/row.class'
 import type { ITableRow } from '../row/types'
-import { TTableColumnsExtension, TTableExtension, TTableSortExtension } from './extensions'
+import {
+	TTableColumnsExtension,
+	TTableExtension,
+	TTableGridExtension,
+	TTableSortExtension,
+} from './extensions'
 
 /**
  * Детали рабочей коллекции строк — по порядку установки. См. `tabsExtensions`.
@@ -11,9 +16,10 @@ import { TTableColumnsExtension, TTableExtension, TTableSortExtension } from './
  * Базовые детали с выбором — состав, порядок, жизнь строк и выбор;
  * `factory` строит `TTableRow` из данных. Своё — `columns` (колонки и ячейки
  * строк), `table` (что строки получают от таблицы, выбор показанных и
- * чекбоксы колонки выбора) и `sort` (порядок показанных строк по колонкам).
+ * чекбоксы колонки выбора), `sort` (порядок показанных строк по колонкам) и
+ * `grid` (режим сетки: ячейка под фокусом и выбор строки нажатием).
  * Порядок значим: `table` в `install` подписывается на выбор и состав, `sort` —
- * на коллекцию колонок, и оба ставятся после них.
+ * на коллекцию колонок, `grid` — на всех троих, и ставятся они после них.
  *
  * `selection.mode` по умолчанию `'none'`, а не `'single'` из
  * `TSelectionExtension`: режим решает и выбор, и колонку выбора, а таблице без
@@ -37,6 +43,7 @@ export function tableExtensions(): TExtensionSet<ITableRow> {
 		columns: () => new TTableColumnsExtension(),
 		table: () => new TTableExtension(),
 		sort: () => new TTableSortExtension(),
+		grid: () => new TTableGridExtension(),
 		memory: () => new TMemoryExtension<ITableRow>(),
 	}
 }

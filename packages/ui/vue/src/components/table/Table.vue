@@ -21,8 +21,10 @@ export default { ...SetupTable, components: { Button, CheckBox, Icon, TableColum
 		<!--
 			Table — таблица по паттернам APG Table и Sortable Table. Корень — сама
 			`table`, рисуется по `tag`: роль `table` даёт тег, своей клавиатуры у
-			таблицы нет (Grid — отдельный режим). Имя таблице — `aria_label` или
-			`aria_labelledBy`.
+			таблицы нет. В режиме сетки (`grid`, APG Data Grid) роль `grid`,
+			`aria-multiselectable` и остановку Tab таблице пишет коллекция в её
+			`aria`, а клавиши и фокус ячеек ведёт плагин сетки на корне. Имя
+			таблице — `aria_label` или `aria_labelledBy`.
 
 			Логики в разметке нет: заголовки — показанные колонки коллекции
 			(`shownColumns`), строки — показанные строки (`shown`: в порядке
@@ -51,15 +53,18 @@ export default { ...SetupTable, components: { Button, CheckBox, Icon, TableColum
 					В `single` выбирать все нечего, и ячейка пуста — `td`, а не `th`:
 					пустой заголовок скринридеры и проверки доступности считают
 					ошибкой. Она только держит колонку.
+
+					Экземпляра у ячейки нет, и её набор держит коллекция (`cellAria`):
+					в сетке ячейка принимает фокус.
 				-->
-				<th v-if="mode === 'multiple'" class="s-table__select">
+				<th v-if="mode === 'multiple'" class="s-table__select" v-bind="cellAria">
 					<CheckBox
 						embedded="table.select-all"
 						:ctrl="selectAll"
 						:aria_label="names_selectAll"
 					/>
 				</th>
-				<td v-else-if="mode === 'single'" class="s-table__select"></td>
+				<td v-else-if="mode === 'single'" class="s-table__select" v-bind="cellAria"></td>
 
 				<!--
 					Заголовок колонки — Table.Column над экземпляром колонки, по одному на

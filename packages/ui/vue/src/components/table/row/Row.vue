@@ -18,8 +18,9 @@ export default { ...SetupTableRow, components: { CheckBox } }
 			Строка таблицы — Table.Row. Корень — `tr`, рисуется по `tag` строки. На
 			нём модификаторы размера и варианта (их строке диктует таблица) и набор
 			`dataset`: `data-selected` (пишет выбор коллекции — всем строкам) и
-			`data-disabled`. Наведения у строки нет: в роли `table` нажатие по
-			строке ничего не делает, выбирают чекбоксом.
+			`data-disabled`, а в сетке — `aria-selected`. Нажатие по строке ловит
+			плагин сетки таблицы: в сетке оно выбирает строку, в роли `table` не
+			делает ничего — выбирают чекбоксом.
 		-->
 
 		<!--
@@ -32,8 +33,12 @@ export default { ...SetupTableRow, components: { CheckBox } }
 			отметку не меняет. Имя — ссылка на заголовок строки (`aria-labelledby`
 			на `id` ячейки колонки `rowHeader`, `rowHeaderId`); заголовка нет —
 			нет и ссылки.
+
+			Набор ячеек строки (`cellAria`) — у этой ячейки и у ячеек колонок:
+			экземпляра у ячейки нет, и его держит строка. В сетке ячейка принимает
+			фокус.
 		-->
-		<td v-if="selecting" class="s-table-row__select">
+		<td v-if="selecting" class="s-table-row__select" v-bind="cellAria">
 			<CheckBox
 				embedded="table.select"
 				:ctrl="context?.adapters.table.checkBox"
@@ -57,12 +62,16 @@ export default { ...SetupTableRow, components: { CheckBox } }
 				v-if="cell.rowHeader"
 				class="s-table-row__cell"
 				scope="row"
-				v-bind="{ ...cell.dataset, ...cell.aria }"
+				v-bind="{ ...cell.dataset, ...cellAria, ...cell.aria }"
 			>
 				<slot name="cell" :column="cell.column" :value="cell.value">{{ cell.value }}</slot>
 			</th>
 
-			<td v-else class="s-table-row__cell" v-bind="{ ...cell.dataset, ...cell.aria }">
+			<td
+				v-else
+				class="s-table-row__cell"
+				v-bind="{ ...cell.dataset, ...cellAria, ...cell.aria }"
+			>
 				<slot name="cell" :column="cell.column" :value="cell.value">{{ cell.value }}</slot>
 			</td>
 		</template>
