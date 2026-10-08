@@ -78,9 +78,17 @@
 // закрытая гаснет там, где стоит, смахнутая — где её отпустили, как ручка
 // Slider. Прозрачность — не движение, она остаётся в любом режиме.
 //
-// Тайминги — списком на три свойства в порядке движения: прозрачность,
-// сдвиг, `display`. Без движения сдвига в списке свойств нет, и `display`
-// берёт второе время — то же, что при движении.
+// Тайминги без движения — те же, что у `fade`: одно время на прозрачность и
+// `display`. Надстройка движения пишет их списком на три свойства, в порядке
+// своего списка свойств: прозрачность, сдвиг, `display`.
+//
+// Из раскладки закрытая панель пропадает, когда догасла, — и та, что уходит:
+// `display` идёт временем прозрачности, а не ухода. Уход дольше прозрачности,
+// и его время задаёт скорость пути, а не срок панели: хвоста пути за угасанием
+// не видно, и ждать его некому. Догасшая панель, оставшись в раскладке, висела
+// бы прозрачной: глазу её уже нет, а скринридер видит закрытую панель, и то,
+// что ждёт конца закрытия (`afterTransitions` — сброс отбора Select),
+// срабатывало бы позже.
 @mixin panel($handle) {
 	&:has(> #{$handle}) {
 		translate: 0 var(--s-swipe-offset, 0px);
@@ -111,20 +119,21 @@
 	&:not([data-swiping='true']) {
 		@include fade;
 
-		&[data-open='true'] {
-			transition-duration:
-				popover.$enter-fade, popover.$enter-duration, popover.$enter-duration;
-			transition-timing-function: linear, popover.$enter-easing, linear;
-		}
-
-		// `display` — до конца ухода, самого долгого из переходов
-		&[data-open='false'] {
-			transition-duration: popover.$exit-fade, popover.$exit-duration, popover.$exit-duration;
-			transition-timing-function: linear, popover.$exit-easing, linear;
-		}
-
 		@include motion.allowed {
 			transition-property: opacity, translate, display;
+
+			&[data-open='true'] {
+				transition-duration:
+					popover.$enter-fade, popover.$enter-duration, popover.$enter-duration;
+				transition-timing-function: linear, popover.$enter-easing, linear;
+			}
+
+			// `display` — до конца прозрачности, а не ухода: догасшая панель
+			// пропадает, не дожидаясь хвоста пути
+			&[data-open='false'] {
+				transition-duration: popover.$exit-fade, popover.$exit-duration, popover.$exit-fade;
+				transition-timing-function: linear, popover.$exit-easing, linear;
+			}
 		}
 	}
 

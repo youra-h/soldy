@@ -32,7 +32,7 @@ import { COMPONENT_SIZES } from '@soldy-ui/playground-shared'
 import { find, lightness, outlined, pixel, settled, style, systemColor } from './colors'
 import { DIRECTION_CASES, pointing, setDir, sidesOf, type TLine } from './directions'
 import { forcedColors } from './media'
-import { whileLeaving } from './transitions'
+import { expectHidesWhenFaded, ownTransitions, whileLeaving } from './transitions'
 
 import '@soldy-ui/theme-oren'
 
@@ -1183,8 +1183,12 @@ describe('выбор месяца и года', () => {
 	 * движется: уезжай карточка, её место на миг потемнело бы под ещё не
 	 * погасшей вуалью, — закрытие читалось бы вспышкой. Смахнутая карточка
 	 * гаснет там, где её отпустили, а не вернувшись сначала на место.
+	 * Пропадает панель, когда догасла: `transitions` — её переходы с закрытия.
 	 */
-	const expectFadingInPlace = async (card: DOMRect) => {
+	const expectFadingInPlace = async (
+		card: DOMRect,
+		transitions: ReadonlyMap<string, CSSTransition>,
+	) => {
 		const backdrop = box('.s-popover__panel')
 		const opacities: number[] = []
 		const seen = await whileLeaving(find('.s-popover__panel'), () => {
@@ -1199,6 +1203,8 @@ describe('выбор месяца и года', () => {
 		for (let index = 1; index < opacities.length; index += 1) {
 			expect(opacities[index]).toBeLessThanOrEqual(opacities[index - 1])
 		}
+
+		expectHidesWhenFaded(transitions)
 	}
 
 	it('закрытая карточка гаснет на месте вместе с подложкой', async () => {
@@ -1206,9 +1212,10 @@ describe('выбор месяца и года', () => {
 		await open()
 
 		const card = box('.s-calendar__picker')
+		const transitions = ownTransitions(find('.s-popover__panel'))
 
 		await userEvent.keyboard('{Escape}')
-		await expectFadingInPlace(card)
+		await expectFadingInPlace(card, transitions)
 	})
 
 	it('смахнутая карточка гаснет там, где её отпустили, вместе с подложкой', async () => {
@@ -1216,13 +1223,14 @@ describe('выбор месяца и года', () => {
 		await open()
 
 		const start = box('.s-calendar__picker').top
+		const transitions = ownTransitions(find('.s-popover__panel'))
 
 		await dragGrip(-150)
 
 		const card = box('.s-calendar__picker')
 
 		expect(card.top).toBeLessThan(start - EPSILON)
-		await expectFadingInPlace(card)
+		await expectFadingInPlace(card, transitions)
 	})
 
 	it('жест за полосу вверх закрывает панель, фокус — на заголовок; вниз — нет', async () => {
