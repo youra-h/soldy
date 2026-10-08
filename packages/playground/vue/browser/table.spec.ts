@@ -1032,8 +1032,9 @@ describe('ручка ширины', () => {
 		const bottom = top + parseFloat(line.height)
 
 		expect(parseFloat(line.width)).toBe(3)
-		expect(top - header.top).toBeGreaterThan(header.height / 5)
-		expect(header.bottom - bottom).toBeGreaterThan(header.height / 5)
+		// Отступ — десятая часть высоты заголовка сверху и снизу
+		expect(Math.abs(top - header.top - header.height / 10)).toBeLessThanOrEqual(EPSILON)
+		expect(header.bottom - bottom).toBeGreaterThan(0)
 		expect(Math.abs(top - header.top - (header.bottom - bottom))).toBeLessThanOrEqual(EPSILON)
 	})
 

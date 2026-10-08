@@ -47,6 +47,9 @@ $sizes: (
 //   же размера;
 // - `--s-table-row` — высота строки: кнопка и запас под кольцо фокуса сверху
 //   и снизу (`--s-table-bleed`);
+// - `--s-table-head-row` — высота строки шапки: на 2px ниже строки тела —
+//   подписи колонок плотнее данных. Кольцо фокуса кнопки сортировки лежит
+//   внутри ячейки, и запас ему в шапке не нужен;
 // - `--s-table-cell-inline` — поле ячейки: поле кнопки и тот же запас. Текст
 //   ячейки стоит там же, где текст кнопки сортировки над ним, а кольцо фокуса
 //   кнопки — в своей ячейке, не на соседней и не за краем таблицы;
@@ -58,6 +61,7 @@ $sizes: (
 	--s-table-button: calc(var(--spacing) * #{map.get($button, 'h')});
 	--s-table-button-inline: calc(var(--spacing) * #{map.get($button, 'px')});
 	--s-table-row: calc(var(--s-table-button) + 2 * var(--s-table-bleed));
+	--s-table-head-row: calc(var(--s-table-row) - 2px);
 	--s-table-cell-inline: calc(var(--s-table-button-inline) + var(--s-table-bleed));
 	--s-table-check: calc(var(--spacing) * #{map.get($scale, 'check')});
 
