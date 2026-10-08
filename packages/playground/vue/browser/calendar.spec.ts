@@ -193,7 +193,12 @@ describe('кольцо фокуса', () => {
 })
 
 describe('фокус', () => {
-	it('Tab проходит «назад», «вперёд», заголовки месяцев и одну остановку на все сетки', async () => {
+	/**
+	 * Tab идёт за глазом: заголовок первого месяца у начала ряда, за ним — пара
+	 * кнопок листания, потом заголовки следующих месяцев и одна остановка на все
+	 * сетки.
+	 */
+	it('Tab проходит заголовок первого месяца, «назад», «вперёд», заголовки следующих и одну остановку на все сетки', async () => {
 		await show({ months: ['2026-09-01', '2026-10-01'], value: '2026-10-05' })
 
 		const [september, october] = findAll('.s-calendar__title')
@@ -201,13 +206,13 @@ describe('фокус', () => {
 		find('.s-test-before').focus()
 
 		await tab()
+		expect(document.activeElement).toBe(september)
+
+		await tab()
 		expect(document.activeElement).toBe(find('.s-calendar__prev'))
 
 		await tab()
 		expect(document.activeElement).toBe(find('.s-calendar__next'))
-
-		await tab()
-		expect(document.activeElement).toBe(september)
 
 		await tab()
 		expect(document.activeElement).toBe(october)
@@ -292,6 +297,181 @@ describe.each(DIRECTION_CASES)('стрелки по ближайшему dir: $n
 
 		expect(pointing('.s-calendar__picker-prev'), 'панель «назад»').toBe(start)
 		expect(pointing('.s-calendar__picker-next'), 'панель «вперёд»').toBe(end)
+	})
+})
+
+/** Прямоугольник узла. */
+const rectOf = (node: Element) => node.getBoundingClientRect()
+
+/**
+ * Плитка дня в колонке `column` (0 — первый день недели) второй недели
+ * месяца: вторая неделя всегда целиком в своём месяце, заполнителей в ней нет.
+ */
+const tileIn = (month: Element, column: number): DOMRect => {
+	const tile = month
+		.querySelectorAll('.s-calendar__week')[1]
+		?.children[column]?.querySelector('.s-calendar-item__day')
+
+	if (!tile) throw new Error(`колонка ${column}: плитки нет`)
+
+	return rectOf(tile)
+}
+
+/** Края прямоугольников по строке совпадают — с допуском на субпиксели. */
+const expectSameColumn = (actual: DOMRect, expected: DOMRect, what: string) => {
+	expect(Math.abs(actual.left - expected.left), `${what}: левый край`).toBeLessThanOrEqual(
+		EPSILON,
+	)
+	expect(Math.abs(actual.right - expected.right), `${what}: правый край`).toBeLessThanOrEqual(
+		EPSILON,
+	)
+}
+
+/** Центр прямоугольника по вертикали. */
+const middle = (rect: DOMRect) => rect.top + rect.height / 2
+
+/**
+ * Шапка — как в календаре Android: заголовок месяца у начала ряда, вровень с
+ * плиткой первой колонки, а «назад» и «вперёд» — вплотную у конца, над
+ * плитками шестой и седьмой колонок. Шапка панели выбора месяца и года
+ * устроена так же: год у начала, стрелки вплотную у конца с тем же зазором.
+ * Стороны — логические: в RTL заголовок справа, стрелки слева. Случаи —
+ * `browser/directions.ts`: решает ближайший `dir`.
+ */
+describe.each(DIRECTION_CASES)('шапка по ближайшему dir: $name', (scenario) => {
+	const { start, end } = sidesOf(scenario.line)
+
+	/** Между прямоугольниками по строке — от конца первого до начала второго. */
+	const between = (first: DOMRect, second: DOMRect) =>
+		scenario.line === 'ltr' ? second.left - first.right : first.left - second.right
+
+	it('заголовок у начала, стрелки над двумя последними колонками; в панели — год у начала, стрелки у конца', async () => {
+		setDir(document.documentElement, scenario.page)
+		await show({ months: ['2026-09-01'], direction: scenario.direction }, scenario.ancestor)
+
+		const month = find('.s-calendar__month')
+		const title = rectOf(find('.s-calendar__title'))
+		const prev = rectOf(find('.s-calendar__prev'))
+		const next = rectOf(find('.s-calendar__next'))
+
+		expect(
+			Math.abs(title[start] - tileIn(month, 0)[start]),
+			'заголовок — вровень с первой колонкой',
+		).toBeLessThanOrEqual(EPSILON)
+		expectSameColumn(prev, tileIn(month, 5), '«назад» над шестой колонкой')
+		expectSameColumn(next, tileIn(month, 6), '«вперёд» над седьмой колонкой')
+
+		// Один ряд, и заголовок на стрелки не заходит
+		expect(Math.abs(middle(prev) - middle(title))).toBeLessThanOrEqual(EPSILON)
+		expect(Math.abs(middle(next) - middle(title))).toBeLessThanOrEqual(EPSILON)
+		expect(between(title, prev)).toBeGreaterThanOrEqual(-EPSILON)
+
+		const gap = between(prev, next)
+
+		await userEvent.click(find('.s-calendar__title'))
+		await expect
+			.poll(() => findAll('.s-calendar__picker-list .s-list-box-item').length)
+			.toBe(12)
+
+		const header = rectOf(find('.s-calendar__picker-header'))
+		const heading = rectOf(find('.s-calendar__picker-heading'))
+		const pickerPrev = rectOf(find('.s-calendar__picker-prev'))
+		const pickerNext = rectOf(find('.s-calendar__picker-next'))
+
+		expect(Math.abs(heading[start] - header[start]), 'год — у начала').toBeLessThanOrEqual(
+			EPSILON,
+		)
+		expect(Math.abs(pickerNext[end] - header[end]), '«вперёд» — у конца').toBeLessThanOrEqual(
+			EPSILON,
+		)
+		expect(
+			Math.abs(between(pickerPrev, pickerNext) - gap),
+			'стрелки вплотную, с зазором кнопок листания',
+		).toBeLessThanOrEqual(EPSILON)
+		expect(between(heading, pickerPrev), 'год на стрелки не заходит').toBeGreaterThan(0)
+	})
+})
+
+/**
+ * Подвал — строка под сетками во всю ширину календаря, только когда слот
+ * передан. Кнопки стоят у конца строки, вровень с плиткой последней колонки, а
+ * ширину календаря задают месяцы: подвал в одном ряду с ними раздвинул бы его,
+ * и кнопки листания повисли бы за последней колонкой.
+ */
+describe('подвал', () => {
+	/** Календарь с подвалом из кнопок с подписями `labels`. */
+	const showWithFooter = async (
+		props: Record<string, unknown>,
+		labels: readonly string[],
+		dir?: TLine,
+	) => {
+		render(
+			defineComponent({
+				render: () =>
+					h(LocaleProvider, { locale: enUS }, () =>
+						h('div', { class: 's-host', dir }, [
+							h(Calendar, props, {
+								footer: () =>
+									labels.map((text) =>
+										h(Button, { class: 's-test-action', text }),
+									),
+							}),
+						]),
+					),
+			}),
+		)
+
+		await nextTick()
+		await nextFrame()
+		await nextFrame()
+	}
+
+	it('без слота подвала нет', async () => {
+		await show({ months: ['2026-09-01'] })
+
+		expect(document.querySelector('.s-calendar__footer')).toBeNull()
+	})
+
+	it.each(['ltr', 'rtl'] as const)(
+		'%s: под сетками, кнопки у конца строки — вровень с последней колонкой',
+		async (line) => {
+			await showWithFooter({ months: ['2026-09-01'] }, ['Cancel', 'OK'], line)
+
+			const { end } = sidesOf(line)
+			const footer = rectOf(find('.s-calendar__footer'))
+			const actions = findAll('.s-test-action').map(rectOf)
+			const last = actions[actions.length - 1]
+			const month = find('.s-calendar__month')
+
+			expect(footer.top).toBeGreaterThanOrEqual(rectOf(find('.s-calendar__grid')).bottom)
+			expect(Math.abs(last[end] - tileIn(month, 6)[end])).toBeLessThanOrEqual(EPSILON)
+			// Ширину календаря задаёт месяц
+			expectSameColumn(rectOf(find('.s-calendar')), rectOf(month), 'календарь — по месяцу')
+		},
+	)
+
+	it('кнопки шире месяца календарь не раздвигают: стрелки — над последними колонками', async () => {
+		const wide = 'A very long action label that does not fit the month'
+
+		await showWithFooter({ months: ['2026-09-01'], size: 'sm' }, [wide, wide], 'ltr')
+
+		const month = find('.s-calendar__month')
+
+		expectSameColumn(rectOf(find('.s-calendar')), rectOf(month), 'календарь — по месяцу')
+		expectSameColumn(rectOf(find('.s-calendar__next')), tileIn(month, 6), '«вперёд»')
+	})
+
+	it('два месяца с подвалом — между ними прежний зазор, стрелки над последним', async () => {
+		await showWithFooter({ months: ['2026-09-01', '2026-10-01'] }, ['Cancel', 'OK'], 'ltr')
+
+		const [september, october] = findAll('.s-calendar__month')
+		const gap = parseFloat(getComputedStyle(find('.s-calendar__months')).columnGap)
+
+		expect(Math.abs(rectOf(october).left - rectOf(september).right - gap)).toBeLessThanOrEqual(
+			EPSILON,
+		)
+		expectSameColumn(rectOf(find('.s-calendar__next')), tileIn(october, 6), '«вперёд»')
+		expectSameColumn(rectOf(find('.s-calendar__prev')), tileIn(october, 5), '«назад»')
 	})
 })
 

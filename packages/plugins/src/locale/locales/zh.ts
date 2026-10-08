@@ -20,6 +20,12 @@ export const zhCN = freezeLocale({
 			prevYears: '前 12 年',
 			nextYears: '后 12 年',
 		},
-		datePicker: { trigger: '选择日期', start: '开始日期', end: '结束日期' },
+		datePicker: {
+			trigger: '选择日期',
+			start: '开始日期',
+			end: '结束日期',
+			confirm: '确定',
+			cancel: '取消',
+		},
 	},
 })

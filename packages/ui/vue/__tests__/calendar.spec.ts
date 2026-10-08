@@ -84,15 +84,25 @@ function press(from: Element, key: string, init: KeyboardEventInit = {}): Keyboa
 	return event
 }
 
+/** Последний класс узла — его часть: у компонента soldy первым идёт блок. */
+const partsOf = (node: Element) =>
+	[...node.children].map((child) => child.classList[child.classList.length - 1])
+
 describe('разметка', () => {
-	it('кнопки листания стоят до сеток, сетка — таблица с шапкой дней недели', async () => {
+	it('кнопки листания — за заголовком первого месяца, сетка — таблица с шапкой дней недели', async () => {
 		await render(() => h(Calendar))
 
 		const root = find('.s-calendar')
 
-		expect([...root.children].map((node) => node.classList[node.classList.length - 1])).toEqual(
-			['s-calendar__prev', 's-calendar__next', 's-calendar__month'],
-		)
+		// Подвала без слота нет
+		expect(partsOf(root)).toEqual(['s-calendar__months'])
+		expect(partsOf(find('.s-calendar__months'))).toEqual(['s-calendar__month'])
+		expect(partsOf(find('.s-calendar__month'))).toEqual([
+			's-calendar__heading',
+			's-calendar__prev',
+			's-calendar__next',
+			's-calendar__grid',
+		])
 		// Подписи колонок — узкие имена
 		expect(findAll('.s-calendar__weekday').map((cell) => cell.textContent?.trim())).toEqual([
 			'S',
@@ -144,11 +154,38 @@ describe('разметка', () => {
 		expect(dayCell('2026-09-26').getAttribute('aria-current')).toBe('date')
 	})
 
-	it('несколько месяцев — сетка на каждый, у каждого свой заголовок', async () => {
+	it('несколько месяцев — сетка на каждый, у каждого свой заголовок; кнопки листания — одни, у первого', async () => {
 		await render(() => h(Calendar, { months: ['2026-01-01', '2026-09-01'] }))
+
+		const [january, september] = findAll('.s-calendar__month')
 
 		expect(titles()).toEqual(['January 2026', 'September 2026'])
 		expect(findAll('.s-calendar__grid')).toHaveLength(2)
+		expect(findAll('.s-calendar__prev')).toHaveLength(1)
+		expect(findAll('.s-calendar__next')).toHaveLength(1)
+		expect(january.contains(prev())).toBe(true)
+		expect(partsOf(september)).toEqual(['s-calendar__heading', 's-calendar__grid'])
+	})
+
+	it('слот footer — подвал после ряда месяцев, своей строкой', async () => {
+		await render(() =>
+			h(
+				Calendar,
+				{ months: ['2026-01-01', '2026-09-01'] },
+				{
+					footer: () => h('button', { class: 's-test-action' }, 'Готово'),
+				},
+			),
+		)
+
+		const footer = find('.s-calendar__footer')
+
+		expect(partsOf(find('.s-calendar'))).toEqual(['s-calendar__months', 's-calendar__footer'])
+		expect(partsOf(find('.s-calendar__months'))).toEqual([
+			's-calendar__month',
+			's-calendar__month',
+		])
+		expect(footer.querySelector('.s-test-action')?.textContent).toBe('Готово')
 	})
 
 	it('первый день недели по локали поддерева: у ru-RU колонки с понедельника', async () => {
@@ -506,11 +543,18 @@ describe('выбор месяца и года', () => {
 		await render(() => h(Calendar))
 		await openPicker()
 
-		const children = [...panel().children].map(
-			(node) => node.classList[node.classList.length - 1],
-		)
+		expect(partsOf(panel())).toEqual(['s-calendar__picker-list', 's-calendar__picker-header'])
+	})
 
-		expect(children).toEqual(['s-calendar__picker-list', 's-calendar__picker-header'])
+	it('в шапке год идёт перед стрелками — Tab за глазом', async () => {
+		await render(() => h(Calendar))
+		await openPicker()
+
+		expect(partsOf(find('.s-calendar__picker-header'))).toEqual([
+			's-calendar__picker-heading',
+			's-calendar__picker-prev',
+			's-calendar__picker-next',
+		])
 	})
 
 	it('месяц → панель закрыта, сетка на нём — v-model:months', async () => {

@@ -21,6 +21,8 @@ import type {
 } from '../calendar'
 import { TDateInput } from '../date-input'
 import type { IDateInput } from '../date-input'
+import { TConfirmCommit, TInstantCommit } from './commit'
+import type { IDatePickerCommit, IDatePickerCommitHost } from './commit'
 import { TRangeFields, TSingleFields } from './fields'
 import type { IDatePickerFields, TDatePickerFieldSet, TDatePickerFieldsMap } from './fields'
 import type {
@@ -41,6 +43,11 @@ const FIELDS: TDatePickerFieldsMap = {
 /** Стороны значения — куда DatePicker раскладывает своё. */
 const SIDES: readonly TDatePickerSide[] = ['calendar', 'fields']
 
+/** Политика фиксации на `confirmable` — её заводит сеттер: по «OK» или сразу. */
+function commitOf(confirmable: boolean, host: IDatePickerCommitHost): IDatePickerCommit {
+	return confirmable ? new TConfirmCommit(host) : new TInstantCommit(host)
+}
+
 /**
  * Поле даты и календарь в панели, как Select — поле и список.
  *
@@ -48,9 +55,10 @@ const SIDES: readonly TDatePickerSide[] = ['calendar', 'fields']
  * `start` и `end` — концы диапазона), календарь и движок его коллекции
  * создаёт он сам и отдаёт разметке целиком, как Select — `field`, а расширение
  * `picker` календаря — ListBox панели месяцев. Подписки на них прямые. Движок
- * DatePicker держит, потому что зовёт команды его расширений: открытие ставит
- * фокус сетки на старт (`resetFocus`), закрытие снимает начатый диапазон
- * (`cancelRange`), а выбор пользователя (`choose`) закрывает панель.
+ * DatePicker держит, потому что зовёт команды его расширений и слушает их:
+ * открытие ставит фокус сетки на старт (`resetFocus`), закрытие снимает
+ * начатый диапазон (`cancelRange`), выбор пользователя (`choose`) закрывает
+ * панель, а якорь выключает «OK» (`confirmDisabled`).
  *
  * **Общее — вниз, от ядра.** `disabled`, `size`, `variant`, `locale`, `min`,
  * `max` и `unavailable` DatePicker отдаёт полям и календарю, `readonly` и
@@ -82,7 +90,16 @@ const SIDES: readonly TDatePickerSide[] = ['calendar', 'fields']
  * **Открытость — как у Select:** `open`, `toggleOpen()`, `openable` (не
  * `disabled` и не `readonly`), события `open` и `close`, `data-open`. Открывают
  * панель кнопка календаря и Alt+↓ на поле — плагин; ввод в поле её не
- * открывает. Выбор закрывает её при `closeOnSelect` — в диапазоне второй день.
+ * открывает. Выбор закрывает её при `closeOnSelect` — в диапазоне второй день,
+ * — если его не подтверждают кнопкой.
+ *
+ * **Выбор подтверждают кнопкой, если `confirmable`.** Когда правка календаря
+ * становится значением, решает политика фиксации (`commit/`, стратегия, её
+ * меняет сеттер `confirmable`): сразу — по умолчанию — или по «OK». По «OK»
+ * выбор в календаре — черновик, и хранит его сам календарь: второй копии
+ * значения нет. `confirm()` переносит его в значение и закрывает панель,
+ * любое другое закрытие возвращает календарю значение DatePicker. Пока
+ * диапазон выбран наполовину, «OK» выключена (`confirmDisabled`).
  *
  * **Кнопка очистки — DatePicker как поле** (база `TField`, третья форма поля
  * рядом с Input и DateInput): `clearable`, набор кнопки `clearAria` и команда
@@ -115,13 +132,21 @@ export class TDatePicker
 	static defaultValues: typeof TField.defaultValues &
 		TDefaultValues<
 			IDatePickerProps,
-			'mode' | 'open' | 'closeOnSelect' | 'locale' | 'startName' | 'endName' | 'swipe',
+			| 'mode'
+			| 'open'
+			| 'closeOnSelect'
+			| 'confirmable'
+			| 'locale'
+			| 'startName'
+			| 'endName'
+			| 'swipe',
 			'min' | 'max' | 'unavailable' | 'weekStart' | 'timeZone'
 		> = {
 		...TField.defaultValues,
 		mode: 'single',
 		open: false,
 		closeOnSelect: true,
+		confirmable: false,
 		min: undefined,
 		max: undefined,
 		unavailable: undefined,
@@ -138,6 +163,7 @@ export class TDatePicker
 	protected _mode: TDatePickerMode
 	protected _open!: boolean
 	protected _closeOnSelect: boolean
+	protected _confirmable: boolean
 	protected _min: TCalendarDate | undefined
 	protected _max: TCalendarDate | undefined
 	protected _unavailable: TCalendarUnavailable | undefined
@@ -171,6 +197,19 @@ export class TDatePicker
 		},
 		fields: () => this._fields.layout(this.value),
 	}
+	/** Команды DatePicker для политики фиксации: когда их звать, решает она */
+	private readonly _commitHost: IDatePickerCommitHost = {
+		accept: () => this._acceptCalendar(),
+		reset: () => this._write('calendar'),
+		closeAfterChoice: () => {
+			// Без якоря — выбор закончен: одна дата или второй день диапазона
+			if (this._closeOnSelect && this._engine.extensions.selection.anchor === undefined) {
+				this.open = false
+			}
+		},
+	}
+	/** Политика фиксации: когда правка календаря становится значением */
+	private _commit: IDatePickerCommit
 
 	constructor(props: Partial<IDatePickerProps> = {}) {
 		const ctor = new.target as typeof TDatePicker
@@ -179,6 +218,8 @@ export class TDatePicker
 
 		this._mode = props.mode ?? ctor.defaultValues.mode
 		this._closeOnSelect = props.closeOnSelect ?? ctor.defaultValues.closeOnSelect
+		this._confirmable = props.confirmable ?? ctor.defaultValues.confirmable
+		this._commit = commitOf(this._confirmable, this._commitHost)
 		this._min = props.min ?? ctor.defaultValues.min
 		this._max = props.max ?? ctor.defaultValues.max
 		this._unavailable = props.unavailable ?? ctor.defaultValues.unavailable
@@ -248,6 +289,7 @@ export class TDatePicker
 		// Раньше сторон: к `change:value` DatePicker конец уже сверен с новым началом
 		this._listenStart()
 		this._listenSides()
+		this._listenChoice()
 		this._syncOpenable()
 	}
 
@@ -284,9 +326,12 @@ export class TDatePicker
 	}
 
 	/**
-	 * Поля — нового режима, значение календаря — в его форме: выбор коллекции
-	 * переписывает его сам, и оно возвращается сюда его `change:value`. Значение
-	 * уже в форме режима — раскладывается по полям нового режима здесь.
+	 * Поля — нового режима, значение — в его форме. Форму пишет выбор
+	 * коллекции: он переписывает значение календаря, и DatePicker берёт его
+	 * оттуда при любой политике фиксации — по «OK» правка календаря значением
+	 * сама не становится. Черновик сбрасывается раньше: форму нового режима
+	 * получает значение DatePicker, а не начатый выбор. Значение уже в форме
+	 * режима — раскладывается по полям нового режима здесь.
 	 */
 	set mode(value: TDatePickerMode) {
 		if (this._mode === value) return
@@ -294,7 +339,9 @@ export class TDatePicker
 		this._classes.swapClass({ oldClass: `--${this._mode}`, newClass: `--${value}` })
 		this._mode = value
 		this._fields = new FIELDS[value](this._fieldSet)
+		this._write('calendar')
 		this._engine.extensions.selection.mode = value
+		this._acceptCalendar()
 		this._write('fields')
 		this.events.emit('change:mode', value)
 	}
@@ -307,7 +354,8 @@ export class TDatePicker
 	 * Открыли — календарь с начала: фокус сетки на выбранной дате, иначе на
 	 * сегодня, и её месяц показан. Закрыли посреди диапазона — якорь снят:
 	 * закрытая панель прячется, а не размонтируется, и он пережил бы её
-	 * невидимым.
+	 * невидимым. Закрытие — ещё и повод политики фиксации: по «OK» оно
+	 * сбрасывает черновик, каким бы путём панель ни закрыли.
 	 */
 	set open(value: boolean) {
 		if (this._open === value) return
@@ -319,6 +367,7 @@ export class TDatePicker
 			this._engine.extensions.focus.resetFocus()
 		} else {
 			this._engine.extensions.selection.cancelRange()
+			this._commit.close()
 		}
 
 		this.events.emit('change:open', value)
@@ -338,6 +387,7 @@ export class TDatePicker
 		this.open = !this._open
 	}
 
+	/** Закрывать ли панель после выбора. При `confirmable` не действует. */
 	get closeOnSelect(): boolean {
 		return this._closeOnSelect
 	}
@@ -347,6 +397,45 @@ export class TDatePicker
 
 		this._closeOnSelect = value
 		this.events.emit('change:closeOnSelect', value)
+	}
+
+	get confirmable(): boolean {
+		return this._confirmable
+	}
+
+	/**
+	 * Политика фиксации — стратегия: сразу или по «OK». Черновик при смене
+	 * сбрасывается — календарь снова показывает значение DatePicker. У закрытой
+	 * панели черновика нет, и запись — эхо.
+	 */
+	set confirmable(value: boolean) {
+		if (this._confirmable === value) return
+
+		this._confirmable = value
+		this._commit = commitOf(value, this._commitHost)
+		this._write('calendar')
+		this.events.emit('change:confirmable', value)
+	}
+
+	/**
+	 * Выключена ли «OK»: пока диапазон выбран наполовину — стоит якорь.
+	 * Нажатие молча оставило бы прежний диапазон, а начатый выбор потерялся бы.
+	 */
+	get confirmDisabled(): boolean {
+		return this._engine.extensions.selection.anchor !== undefined
+	}
+
+	/**
+	 * «OK» панели: значение календаря — в значение DatePicker, панель закрыта.
+	 * Отменили или поправили запись в `change:value:before` — календарь
+	 * получает обратно принятое, как любая сторона. Пока «OK» выключена
+	 * (`confirmDisabled`), не делает ничего, как выключенная кнопка.
+	 */
+	confirm(): void {
+		if (this.confirmDisabled) return
+
+		this._acceptCalendar()
+		this.open = false
 	}
 
 	get min(): TCalendarDate | undefined {
@@ -586,6 +675,7 @@ export class TDatePicker
 			mode: this._mode,
 			open: this._open,
 			closeOnSelect: this._closeOnSelect,
+			confirmable: this._confirmable,
 			min: this._min,
 			max: this._max,
 			unavailable: this._unavailable,
@@ -723,12 +813,13 @@ export class TDatePicker
 		return parseDate(this._start.value)
 	}
 
-	/** Правка сторон — в своё значение; выбор пользователя в календаре — закрытие. */
+	/**
+	 * Правка сторон. Правка поля — сразу в своё значение, правка календаря — в
+	 * политику фиксации: сразу или черновиком до «OK».
+	 */
 	private _listenSides(): void {
 		this._calendar.events.on('change:value', () => {
-			if (this._writing !== 'calendar') {
-				this._accept('calendar', pickerValueOf(this._calendar.value))
-			}
+			if (this._writing !== 'calendar') this._commit.edit()
 		})
 
 		for (const input of this._inputs) {
@@ -738,13 +829,27 @@ export class TDatePicker
 				}
 			})
 		}
+	}
 
-		this._engine.extensions.selection.events.on('choose', () => {
-			// Без якоря — выбор закончен: одна дата или второй день диапазона
-			if (this._closeOnSelect && this._engine.extensions.selection.anchor === undefined) {
-				this.open = false
-			}
-		})
+	/**
+	 * Выбор пользователя в календаре — политике фиксации: сразу он закрывает
+	 * панель, по «OK» — нет. Якорь — выключенность «OK».
+	 */
+	private _listenChoice(): void {
+		const { selection } = this._engine.extensions
+
+		selection.events.on('choose', () => this._commit.choose())
+
+		// Якорь ставит первый день диапазона и снимает второй, а смена режима и
+		// отмена — только снимают: каждая его смена выключает «OK» или включает
+		selection.events.on('change:anchor', (anchor) =>
+			this.events.emit('change:confirmDisabled', anchor !== undefined),
+		)
+	}
+
+	/** Значение календаря — в своё: календарь — сторона, как поля. */
+	private _acceptCalendar(): void {
+		this._accept('calendar', pickerValueOf(this._calendar.value))
 	}
 
 	/**

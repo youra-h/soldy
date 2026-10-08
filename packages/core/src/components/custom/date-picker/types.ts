@@ -49,6 +49,13 @@ export type TDatePickerEvents = TFieldEvents<TDatePickerValue> &
 		close: () => void
 		/** change:closeOnSelect */
 		'change:closeOnSelect': (value: boolean) => void
+		/** change:confirmable */
+		'change:confirmable': (value: boolean) => void
+		/**
+		 * change:confirmDisabled — «OK» выключилась (диапазон начат) или снова
+		 * включилась (выбран второй день или начатое сняли)
+		 */
+		'change:confirmDisabled': (value: boolean) => void
 		/** change:min */
 		'change:min': (value: TCalendarDate | undefined) => void
 		/** change:max */
@@ -80,8 +87,18 @@ export interface IDatePickerProps extends IFieldProps<TDatePickerValue> {
 	mode?: TDatePickerMode
 	/** Открыта ли панель с календарём */
 	open?: boolean
-	/** Закрывать ли панель после выбора: в диапазоне — после второго дня */
+	/**
+	 * Закрывать ли панель после выбора: в диапазоне — после второго дня. При
+	 * `confirmable` не действует: выбор там панель не закрывает
+	 */
 	closeOnSelect?: boolean
+	/**
+	 * Выбор подтверждают кнопкой: в подвале панели — «Отмена» и «OK». Выбор в
+	 * календаре — черновик: значение он меняет только по «OK», а любое другое
+	 * закрытие панели его сбрасывает. По умолчанию выбор становится значением
+	 * сразу
+	 */
+	confirmable?: boolean
 	/** Первый день, который можно выбрать; раньше — ни фокуса, ни выбора в календаре, ошибка в поле */
 	min?: TCalendarDate
 	/** Последний день, который можно выбрать */
@@ -128,8 +145,15 @@ export interface IDatePicker
 	mode: TDatePickerMode
 	/** Открыта ли панель с календарём */
 	open: boolean
-	/** Закрывать ли панель после выбора */
+	/** Закрывать ли панель после выбора; при `confirmable` не действует */
 	closeOnSelect: boolean
+	/** Выбор подтверждают кнопкой «OK»: до неё он — черновик календаря */
+	confirmable: boolean
+	/**
+	 * Выключена ли «OK»: пока диапазон выбран наполовину — стоит якорь.
+	 * Нажатие молча оставило бы прежний диапазон
+	 */
+	readonly confirmDisabled: boolean
 	/** Первый день, который можно выбрать */
 	min: TCalendarDate | undefined
 	/** Последний день, который можно выбрать */
@@ -184,4 +208,9 @@ export interface IDatePicker
 	readonly rootAria: TAriaAttributes
 	/** Переключить панель. Ничего не делает, если открывать нельзя */
 	toggleOpen(): void
+	/**
+	 * «OK»: значение календаря — в значение DatePicker, панель закрыта. Пока
+	 * «OK» выключена (`confirmDisabled`), не делает ничего
+	 */
+	confirm(): void
 }
