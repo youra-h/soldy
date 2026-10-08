@@ -39,6 +39,7 @@ import { Tags } from '@soldy-ui/vue'
 import { DIRECTION_CASES, pointing, setDir, sidesOf, type TLine } from './directions'
 import { expectClearOfFades, expectFocusedClearOfFades, fades } from './fades'
 import { expectRingInsideHorizontally, expectRingInsideVertically } from './focus-ring'
+import { expectSplit } from './tags-split'
 import { expectInsideWindow } from './viewport'
 
 import '@soldy-ui/theme-oren'
@@ -152,7 +153,7 @@ const settled = (count: number) => expect.poll(() => inRow().length).toBe(count)
  * `ResizeObserver` кадром позже — отсюда два кадра ожидания.
  */
 const openPanel = async () => {
-	await expect.poll(() => more()).not.toBeNull()
+	await expectSplit(row)
 	await userEvent.click(find('.s-tags__more'))
 	await expect.poll(() => panel()).not.toBeNull()
 
@@ -261,7 +262,7 @@ describe('узкий ряд: хвост уезжает в панель', () => {
 	})
 
 	it('в ряду остаются только поместившиеся, и они внутри его ширины', async () => {
-		await expect.poll(() => more()).not.toBeNull()
+		await expectSplit(row)
 
 		const box = row().getBoundingClientRect()
 		const button = find('.s-tags__more').getBoundingClientRect()
@@ -281,7 +282,7 @@ describe('узкий ряд: хвост уезжает в панель', () => {
 	it('значок кнопки — иконка с ненулевым боксом', async () => {
 		// Ряд не переносится и не сжимается: иконка без размера от темы
 		// схлопнулась бы здесь в 0×0, как крестики Tabs и Tags на `xl`
-		await expect.poll(() => more()).not.toBeNull()
+		await expectSplit(row)
 
 		const icon = document.querySelector('.s-tags__more svg.s-icon')
 
@@ -295,7 +296,7 @@ describe('узкий ряд: хвост уезжает в панель', () => {
 	})
 
 	it('в панели — ровно непоместившиеся, и каждый тег отрисован один раз', async () => {
-		await expect.poll(() => more()).not.toBeNull()
+		await expectSplit(row)
 
 		const fitted = inRow()
 
@@ -307,7 +308,7 @@ describe('узкий ряд: хвост уезжает в панель', () => {
 	})
 
 	it('закрыли последний тег панели — панель закрылась', async () => {
-		await expect.poll(() => more()).not.toBeNull()
+		await expectSplit(row)
 		await userEvent.click(find('.s-tags__more'))
 		await expect.poll(() => panel()).not.toBeNull()
 
@@ -333,7 +334,7 @@ describe('в ряду несколько тегов', () => {
 	 * Здесь это и видно: в DOM порядок был верным всегда, врала раскладка.
 	 */
 	it('кнопка «…» стоит за всеми тегами ряда, а не между ними', async () => {
-		await expect.poll(() => more()).not.toBeNull()
+		await expectSplit(row)
 
 		const button = find('.s-tags__more').getBoundingClientRect()
 
@@ -351,7 +352,7 @@ describe('в ряду несколько тегов', () => {
 	 * автоотступ кнопки. Иначе её край прыгал бы с каждым закрытым тегом.
 	 */
 	it('кнопка «…» прижата к концу строки', async () => {
-		await expect.poll(() => more()).not.toBeNull()
+		await expectSplit(row)
 
 		const box = row().getBoundingClientRect()
 		const button = find('.s-tags__more').getBoundingClientRect()
@@ -375,7 +376,7 @@ describe('ряд справа налево', () => {
 	it('в RTL кнопка уезжает к левому краю, а теги остаются справа', async () => {
 		render(harness(SEVERAL, { direction: 'rtl' }))
 
-		await expect.poll(() => more()).not.toBeNull()
+		await expectSplit(row)
 
 		// Направление дошло до корня — иначе проверка ниже сторожит LTR
 		expect(row().getAttribute('dir')).toBe('rtl')
@@ -453,7 +454,7 @@ describe('ряд меняет ширину', () => {
 
 		host().style.width = `${NARROW}px`
 
-		await expect.poll(() => more()).not.toBeNull()
+		await expectSplit(row)
 		expect(inRow().length).toBeLessThan(TAGS.length)
 
 		host().style.width = `${WIDE}px`
@@ -1172,7 +1173,7 @@ describe('режим popover: кольцо фокуса у краёв ряда',
 	})
 
 	it('ряд не срезает кольцо первого тега', async () => {
-		await expect.poll(() => more()).not.toBeNull()
+		await expectSplit(row)
 
 		const item = find('.s-tags-item')
 
@@ -1195,7 +1196,7 @@ describe('режим popover: кольцо фокуса у краёв ряда',
 	})
 
 	it('ряд не срезает кольцо кнопки «…»', async () => {
-		await expect.poll(() => more()).not.toBeNull()
+		await expectSplit(row)
 
 		const button = find('.s-tags__more')
 

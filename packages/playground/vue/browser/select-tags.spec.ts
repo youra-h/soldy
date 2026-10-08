@@ -33,6 +33,7 @@ import type { TDirection, TTagsOverflow } from '@soldy-ui/core'
 import { DIRECTION_CASES, setDir, sidesOf, type TLine } from './directions'
 import { expectFocusedClearOfFades, fades } from './fades'
 import { expectRingInsideHorizontally, expectRingInsideVertically } from './focus-ring'
+import { expectSplit, isSplit } from './tags-split'
 import { expectInsideWindow } from './viewport'
 
 import '@soldy-ui/theme-oren'
@@ -253,7 +254,7 @@ const nextFrame = () => new Promise<void>((resolve) => requestAnimationFrame(() 
  * `ResizeObserver` кадром позже — отсюда два кадра ожидания.
  */
 const openTailPanel = async () => {
-	await expect.poll(() => document.querySelector('.s-tags__more')).not.toBeNull()
+	await expectSplit(() => find('.s-select__field .s-tags'))
 	await userEvent.click(find('.s-tags__more'))
 	await expect.poll(() => document.querySelector('.s-tags__panel')).not.toBeNull()
 
@@ -481,8 +482,9 @@ const scrolls = (element: Element) => element.scrollWidth > element.clientWidth
  * - `scroll` — все теги остаются в ряду, уезжать им некуда.
  * - `arrows` — тоже все, только внутри вьюпорта ленты: ждём, пока она поймёт,
  *   что листать есть куда.
- * - `popover` — хвост уезжает в панель, и это занимает кадры замера: ждём
- *   кнопку «…».
+ * - `popover` — хвост уезжает в панель, и это занимает кадры замера: ждём,
+ *   пока ряд поделится окончательно, — кнопка «…» встанет внутрь ряда
+ *   (`tags-split.ts`). Само её появление — ещё не конец замера.
  *
  * `crowded` — ряду поля тесно, всем тегам натуральной ширины места в нём нет:
  * ряд прокручивается, лента листается, хвост уехал в панель. Без этого
@@ -507,7 +509,7 @@ const SINGLE_ROW_MODES = [
 	},
 	{
 		overflow: 'popover',
-		settled: () => document.querySelector('.s-tags__more') !== null,
+		settled: () => isSplit(find('.s-select__field .s-tags')),
 		crowded: (root: ParentNode) =>
 			root.querySelector('.s-select__field .s-tags__more') !== null,
 	},
@@ -540,8 +542,8 @@ describe.each(SINGLE_ROW_MODES)('tags_overflow: $overflow', ({ overflow, settled
 		const field = box(find('.s-select__field', tagged))
 
 		// Части ряда в поле: теги и, в `popover`, кнопка «…». Своя высота у
-		// кнопки — размерная высота Button, то есть высота всего поля, и без
-		// строки поля она вылезала за рамку.
+		// кнопки — высота пилюли тега, а она выше строки поля, и без строки
+		// поля кнопка ложилась бы на нижнюю рамку.
 		const parts = [...fieldTags(tagged), ...tagged.querySelectorAll('.s-tags__more')].map(box)
 
 		expect(parts.length, 'частей ряда в поле').toBeGreaterThan(0)
@@ -885,10 +887,11 @@ describe('tags_overflow: scroll — подсказка у края вместо 
  *
  * Прокрутка по строке делает ряд прокручиваемой областью и по вертикали, а
  * такая область режет всё, что вышло за её паддинг-бокс. Ряд стоял ровно по
- * строке слота, крестик отступает от её края на 2px, а кольцо выходит за
- * крестик на 4px: от кольца оставались одни боковые дуги. Запас под кольцо —
- * паддинг ряда (`tags/_tags.scss`). Высоты поля он не меняет, и за рамку ряд
- * не выводит — это сторожат тесты режима выше.
+ * строке слота, а кольцо выходит за крестик на 4px — дальше, чем крестик
+ * отступает от края строки (2px у `sm`, 3px у `normal`), — и ряд срезал
+ * кольцо сверху и снизу. Запас под кольцо — паддинг ряда (`tags/_tags.scss`).
+ * Высоты поля он не меняет, и за рамку ряд не выводит — это сторожат тесты
+ * режима выше.
  *
  * По строке запаса в поле нет, хотя у самостоятельного ряда `scroll` он есть
  * (`tags-overflow.spec.ts`): у пилюли в поле нет остановки Tab, и её кольцо
@@ -943,7 +946,7 @@ describe('кнопка «…» в поле', () => {
 	it('стоит в конце ряда, у ввода, а не сразу за последним тегом', async () => {
 		render(pairHarness({ value: ALL_VALUES, texts: OPTIONS, overflow: 'popover' }))
 
-		await expect.poll(() => document.querySelector('.s-tags__more')).not.toBeNull()
+		await expectSplit(() => find('.s-select__field .s-tags'))
 
 		const tagged = find('.s-select')
 		const parts = fieldTags(tagged)
@@ -977,7 +980,7 @@ describe('кнопка «…» в поле', () => {
 	it('ни ряд, ни слот не срезают кольцо фокуса кнопки', async () => {
 		render(pairHarness({ value: ALL_VALUES, texts: OPTIONS, overflow: 'popover' }))
 
-		await expect.poll(() => document.querySelector('.s-tags__more')).not.toBeNull()
+		await expectSplit(() => find('.s-select__field .s-tags'))
 
 		const button = find('.s-select__field .s-tags__more')
 		const row = find('.s-select__field .s-tags')

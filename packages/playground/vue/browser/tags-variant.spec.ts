@@ -23,6 +23,7 @@ import { defineComponent, h } from 'vue'
 import { Button, Tags } from '@soldy-ui/vue'
 
 import { find, settled, style } from './colors'
+import { expectSplit } from './tags-split'
 
 import '@soldy-ui/theme-oren'
 
@@ -154,7 +155,7 @@ describe('ряд popover', () => {
 	it('теги в панели — тех же цветов, что в ряду', async () => {
 		render(harness(180, { overflow: 'popover', variant: 'accent' }))
 
-		await expect.poll(() => document.querySelector('.s-tags__more')).not.toBeNull()
+		await expectSplit(() => find('.s-tags:not(.s-tags__panel)'))
 		await userEvent.click(find('.s-tags__more'))
 		await expect.poll(() => document.querySelector('.s-tags__panel')).not.toBeNull()
 		await nextFrame()
