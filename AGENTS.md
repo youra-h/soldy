@@ -598,9 +598,8 @@ TCollectionItemComponent
 Лента (`Scroller`) опирается на CSS темы — на снап `start` у элементов
 вьюпорта и на `scroll-padding-inline` вьюпорта шириной в подсказку у края: это
 окно, куда `TScrollerViewportPlugin` доводит элемент под фокусом с клавиатуры
-вместе с его элементом ленты — целиком, если тот не шире окна (сторожат
-`playground/vue/browser/scroller.spec.ts` и
-`playground/vue/browser/tags-overflow.spec.ts`). Ряд тегов `scroll` — так
+вместе с его элементом ленты — целиком, если тот не шире окна (сторожит
+`playground/vue/browser/scroller.spec.ts`). Ряд тегов `scroll` — так
 же: окно ряда задаёт его `scroll-padding-inline` — запас под кольцо фокуса, в
 поле Select ширина подсказки, — и тег под фокусом с клавиатуры туда доводит
 `TTagsScrollPlugin` (сторожат `playground/vue/browser/tags-overflow.spec.ts` и

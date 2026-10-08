@@ -1,4 +1,4 @@
-import { TTagsExtension, TTagsOverflowExtension } from './extensions'
+import { TTagsExtension } from './extensions'
 import { TValueSelectionExtension } from './../../../base'
 import { TSelectionExtension } from './../../../base/collection'
 import { selectionExtensions } from './../../../base/collection/create/internal'
@@ -29,9 +29,6 @@ export function tagsExtensions(): TExtensionSet<ITagsItem> {
 
 		// Связь `value` ↔ выбор. Без неё проп `value` у Tags был бы объявлен, но мёртв
 		value: () => new TValueSelectionExtension<ITags, ITagsItem>(),
-		// Деление на ряд и панель: режим держит владелец, состав — коллекция.
-		// До `tags`: остановку Tab тот считает по тегам ряда и слушает деление
-		overflow: () => new TTagsOverflowExtension(),
 		tags: () => new TTagsExtension(),
 	}
 }

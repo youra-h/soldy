@@ -8,7 +8,7 @@
 
 import { defineComponent, defineDescriptor, defineType } from '../../../../protected/define'
 import { TSelect } from '@soldy-ui/core'
-import type { IInput, ISelectItem } from '@soldy-ui/core'
+import type { IInput, ISelectItem, ITags, TTagsCollection } from '@soldy-ui/core'
 import { InputControlDescriptor } from '../input-control.descriptor'
 import {
 	CollectionBundlesPluginDescriptor,
@@ -50,6 +50,22 @@ export const SelectDescriptor = defineDescriptor(() =>
 				field: {
 					scope: { field: defineType<IInput>(Object) },
 					description: 'Содержимое поля вместо встроенного Input',
+				},
+				/**
+				 * Ряд тегов в поле, пока выбор множественный. Scope — инстанс тегов и
+				 * его коллекция, те же, что встроенный `Tags` берёт `:ctrl` и
+				 * `:engine`: связка «опция ⇄ тег» живёт в `TSelectTagsExtension`, и
+				 * своя разметка ряда получает её готовой. Так ряд раскладывают
+				 * иначе, чем `wrap` и `scroll`, — в ленту или с хвостом в панели, —
+				 * не трогая Select.
+				 */
+				tags: {
+					scope: {
+						tags: defineType<ITags>(Object),
+						engine: defineType<TTagsCollection>(Object),
+					},
+					description:
+						'Ряд тегов в поле при множественном выборе вместо встроенного Tags',
 				},
 				/**
 				 * `leading` и `trailing` — проброс одноимённых слотов Input: у него

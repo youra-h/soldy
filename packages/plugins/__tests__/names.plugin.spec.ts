@@ -19,7 +19,6 @@ import {
 	TScroller,
 	TTable,
 	TTabsItem,
-	TTags,
 	TTagsItem,
 } from '@soldy-ui/core'
 import {
@@ -34,7 +33,6 @@ import {
 	TTableNamesPlugin,
 	TTabsItemNamesPlugin,
 	TTagsItemNamesPlugin,
-	TTagsNamesPlugin,
 	enUS,
 	extendLocale,
 	ruRU,
@@ -194,23 +192,6 @@ describe('имя с текстом части: шаблон локали и см
 })
 
 describe('выходы плагина: имена для вложенных компонентов', () => {
-	it('Tags: «…» — в набор кнопки и выходом more для панели', () => {
-		const tags = new TTags()
-		const { source, plugin } = mount(tags, TTagsNamesPlugin)
-		const changes = vi.fn()
-
-		expect(tags.moreAria.get('aria-label')).toBe('More')
-		expect(plugin?.more).toBe('More')
-
-		plugin?.events.on('change:more', changes)
-		source.locale = ruRU
-		source.locale = extendLocale(ruRU, { tag: 'ru-BY' })
-
-		expect(plugin?.more).toBe('Ещё')
-		expect(tags.moreAria.get('aria-label')).toBe('Ещё')
-		expect(changes).toHaveBeenCalledExactlyOnceWith('Ещё')
-	})
-
 	it('Table: «выбрать все» — выходом selectAll', () => {
 		const { source, plugin } = mount(new TTable(), TTableNamesPlugin)
 		const changes = vi.fn()

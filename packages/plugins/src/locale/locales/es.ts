@@ -8,7 +8,7 @@ export const esES = freezeLocale({
 		dialog: { maximize: 'Maximizar' },
 		popover: { close: 'Cerrar' },
 		tabs: { close: 'Cerrar {name}' },
-		tags: { close: 'Cerrar {name}', more: 'Más' },
+		tags: { close: 'Cerrar {name}' },
 		scroller: { prev: 'Desplazar hacia atrás', next: 'Desplazar hacia adelante' },
 		field: { clear: 'Borrar {name}' },
 		table: { selectAll: 'Seleccionar todo' },

@@ -20,7 +20,6 @@ import {
 	TPopover,
 	TScroller,
 	TTabsItem,
-	TTags,
 	TTagsItem,
 } from '../src'
 import type { TAria } from '../src'
@@ -39,7 +38,6 @@ function nameSets(): Record<string, TNameSet[]> {
 	const popover = new TPopover()
 	const tab = new TTabsItem({ text: 'Почта', closable: true })
 	const tag = new TTagsItem({ text: 'Почта', closable: true })
-	const tags = new TTags()
 	const scroller = new TScroller()
 	const input = new TInput({ name: 'Город' })
 	const dateInput = new TDateInput({ name: 'Дата' })
@@ -55,7 +53,6 @@ function nameSets(): Record<string, TNameSet[]> {
 		Popover: [{ set: popover.closeAria, events: popover.events, event: 'change:closeAria' }],
 		'Tabs.Item': [{ set: tab.closeAria, events: tab.events, event: 'change:closeAria' }],
 		'Tags.Item': [{ set: tag.closeAria, events: tag.events, event: 'change:closeAria' }],
-		Tags: [{ set: tags.moreAria, events: tags.events, event: 'change:moreAria' }],
 		Scroller: [
 			{ set: scroller.prevAria, events: scroller.events, event: 'change:prevAria' },
 			{ set: scroller.nextAria, events: scroller.events, event: 'change:nextAria' },
@@ -100,6 +97,5 @@ describe('ядро имён кнопок не строит', () => {
 		}
 
 		expect('translations' in new TDialog()).toBe(false)
-		expect('moreLabel' in new TTags()).toBe(false)
 	})
 })

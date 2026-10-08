@@ -9,9 +9,6 @@
  * Tab, стрелки между тегами (`TagsKeyboardPluginDescriptor`). Без выбора
  * (`mode="none"`) набор — список без действия у строк, и клавиатура молчит.
  * См. AGENTS, «Граница переиспользования» и «Готовые паттерны».
- *
- * Имя кнопки «…» — от локали (плагин имён). Кнопки листания в `arrows` —
- * ленты: имена им пишет плагин имён ленты, и сквозь Tags они не идут.
  */
 
 import { defineComponent, defineDescriptor, defineType } from '../../../../protected/define'
@@ -22,8 +19,6 @@ import {
 	CollectionBundlesPluginDescriptor,
 	CollectionElementsPluginDescriptor,
 	TagsKeyboardPluginDescriptor,
-	TagsNamesPluginDescriptor,
-	TagsOverflowPluginDescriptor,
 	TagsScrollPluginDescriptor,
 } from '../../plugins'
 
@@ -38,9 +33,18 @@ export const TagsDescriptor = defineDescriptor(() =>
 			 * Tags — не список: заголовка и подвала ListBox здесь нет, потому что у
 			 * задачи нет потребителя для них. Слоты элементов статические и
 			 * получают элемент через scope (см. ListBox).
+			 *
+			 * `default` отдаёт показанные теги (`shown` — состав после отбора):
+			 * своя разметка раскладывает их, как ей нужно, — в ленту `Scroller`,
+			 * в ряд с хвостом в `Popover` за кнопкой. Своего замера и панели у
+			 * набора нет, и раскладка сверх `wrap` и `scroll` — дело того, кто
+			 * заполняет слот.
 			 */
 			slots: {
-				default: { description: 'Теги — элементы коллекции' },
+				default: {
+					scope: { shown: defineType<ITagsItem[]>(Array) },
+					description: 'Теги — элементы коллекции; scope — показанные теги',
+				},
 				item: {
 					scope: { item: defineType<ITagsItem>(Object) },
 					description: 'Содержимое тега при работе через проп items',
@@ -53,9 +57,6 @@ export const TagsDescriptor = defineDescriptor(() =>
 					scope: { item: defineType<ITagsItem>(Object) },
 					description: 'После содержимого тега',
 				},
-				// Подмена значка кнопки «…» в одном месте; по умолчанию он берётся из
-				// пакета иконок по роли `moreHoriz` (см. `ICON_ROLES`)
-				'more-icon': { description: 'Значок кнопки «…» в режиме overflow="popover"' },
 			},
 			props: {
 				closable: { type: Boolean, triggers: ['change:closable'] },
@@ -67,47 +68,19 @@ export const TagsDescriptor = defineDescriptor(() =>
 				view: { type: String, triggers: ['change:view'] },
 				/**
 				 * Что делать с тегами, которым не хватило ширины ряда: переносить
-				 * (`wrap`, по умолчанию), прокручивать (`scroll`), листать
-				 * кнопками (`arrows`) или убирать хвост в панель за кнопкой «…»
-				 * (`popover`). Само значение уезжает в тему через `data-overflow`.
+				 * (`wrap`, по умолчанию) или прокручивать (`scroll`). Само значение
+				 * уезжает в тему через `data-overflow`.
 				 */
 				overflow: { type: String, triggers: ['change:overflow'] },
-				/**
-				 * Ряд завёрнут в ленту со стрелками — режим `arrows`. Признаком, а
-				 * не сравнением строки: иначе оно повторилось бы в шести разметках.
-				 */
-				arrows: { type: Boolean, protected: true, triggers: ['change:overflow'] },
-				/**
-				 * Атрибуты ряда, когда ряд — вьюпорт ленты: разметка отдаёт их
-				 * ленте (`viewportAria`). Вне `arrows` набор пуст.
-				 */
-				rowAria: { type: Object, protected: true, triggers: ['change:rowAria'] },
-				/**
-				 * Набор кнопки «…»: своего экземпляра у неё нет, она — содержимое
-				 * слота `trigger` у панели. Имя в него пишет `TTagsNamesPlugin`,
-				 * он же отдаёт его выходом `names_more` — имя панели.
-				 */
-				moreAria: { type: Object, protected: true, triggers: ['change:moreAria'] },
-				/**
-				 * Классы панели: теги в ней телепортированы, и селекторы вида до них
-				 * не достают. Считает это ядро, а не шаблон каждого адаптера.
-				 */
-				panelClasses: { type: Array, protected: true, triggers: ['change:classes'] },
-				/** ARIA панели: роль повторяет роль ряда. */
-				panelAria: { type: Object, protected: true, triggers: ['change:aria'] },
 			},
 		},
 
 		plugins: [
-			// Имя кнопки «…» и её панели от локали — с первой отрисовки
-			TagsNamesPluginDescriptor,
 			// Коллекция: реестр bundles + доступ к DOM-элементам
 			CollectionBundlesPluginDescriptor,
 			CollectionElementsPluginDescriptor,
 			// Клавиатура по APG Listbox, пока выбор включён: стрелки, Home/End, Delete
 			TagsKeyboardPluginDescriptor,
-			// Замер ряда: сколько тегов помещается в строку в режиме `popover`
-			TagsOverflowPluginDescriptor,
 			// Доводка тега под фокусом в окно ряда, который прокручивается сам (`scroll`)
 			TagsScrollPluginDescriptor,
 		],

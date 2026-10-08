@@ -339,9 +339,9 @@ describe('плагин: фокус в ряду', () => {
 		expect(scrollBy).not.toHaveBeenCalled()
 	})
 
-	/** В `wrap` и `popover` ряд не прокручивается, в `arrows` фокус доводит лента. */
-	it.each(['wrap', 'popover', 'arrows'] as const)('%s — ряд стоит', async (overflow) => {
-		const { scrollBy } = await mount(overflow)
+	/** В `wrap` ряд не прокручивается. */
+	it('wrap — ряд стоит', async () => {
+		const { scrollBy } = await mount('wrap')
 
 		secondAtEnd()
 		focusWith(nodeOf('.second-close'), true)
@@ -361,7 +361,7 @@ describe('плагин: фокус в ряду', () => {
 		expect(scrollBy).toHaveBeenCalledOnce()
 
 		close.blur()
-		owner.overflow = 'arrows'
+		owner.overflow = 'wrap'
 		focusWith(close, true)
 
 		expect(scrollBy).toHaveBeenCalledOnce()

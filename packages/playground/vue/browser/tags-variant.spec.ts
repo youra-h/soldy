@@ -5,11 +5,10 @@
  * Вариант набора тегу не доставляется (`core/__tests__/collection-style-inherit.spec.ts`):
  * тема красит им тег по классу набора (`s-tags--variant-<v>`), а свой
  * модификатор тега (`s-tags-item--variant-<v>`) сильнее. Переменные цвета
- * стоят на самом теге (`button-tones`), и путь от набора до тега у правила
- * свой в каждом режиме ряда: в `wrap` тег — ребёнок набора, в `arrows` —
- * вьюпорта ленты, а в `popover` уехавший тег лежит в панели, вне корня набора.
- * Свой `normal` у тега — нейтраль и в цветном наборе: без модификатора тег
- * взял бы вариант набора.
+ * стоят на самом теге (`button-tones`), а правило набора достаёт до тега на
+ * любой глубине: в `wrap` и `scroll` тег — ребёнок набора, а своя раскладка в
+ * слоте `default` ставит его глубже, в свою обёртку. Свой `normal` у тега —
+ * нейтраль и в цветном наборе: без модификатора тег взял бы вариант набора.
  *
  * Цветов темы спек не знает: пилюля `filled` сверяется фоном и текстом с
  * эталонной кнопкой — без вида, того варианта, который тег обязан показать.
@@ -20,10 +19,10 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { render, cleanup } from 'vitest-browser-vue'
 import { userEvent } from 'vitest/browser'
 import { defineComponent, h } from 'vue'
-import { Button, Tags } from '@soldy-ui/vue'
+import type { ITagsItem } from '@soldy-ui/core'
+import { Button, Tags, TagsItem } from '@soldy-ui/vue'
 
 import { find, settled, style } from './colors'
-import { expectSplit } from './tags-split'
 
 import '@soldy-ui/theme-oren'
 
@@ -45,11 +44,26 @@ const TAGS: ReadonlyArray<{ text: string; variant?: TVariant }> = [
 const referenceOf = (variant: TVariant) => `s-test-reference-${variant ?? 'none'}`
 
 /**
+ * Своя раскладка в слоте `default`: теги не прямыми детьми набора, а в своей
+ * обёртке — так их ставит лента или ряд с хвостом в панели.
+ */
+const ownRow = ({ shown }: { shown: ITagsItem[] }) =>
+	h(
+		'div',
+		{ class: 's-test-own', style: 'display: flex; gap: 4px' },
+		shown.map((item) => h(TagsItem, { key: item.uid, ctrl: item })),
+	)
+
+/**
  * Эталоны — кнопки без вида, то есть `filled`, как пилюля набора без вида,
  * по одной на вариант; рядом — узел, на который уходит указатель, чтобы
  * наведение не перекрасило пилюлю.
  */
-const harness = (width: number, tags: Record<string, unknown>) =>
+const harness = (
+	width: number,
+	tags: Record<string, unknown>,
+	slots: { default?: typeof ownRow } = {},
+) =>
 	defineComponent({
 		render() {
 			return h('div', [
@@ -61,16 +75,22 @@ const harness = (width: number, tags: Record<string, unknown>) =>
 					),
 				),
 				h('div', { style: `width: ${width}px` }, [
-					h(Tags, {
-						items: TAGS.map(({ text, variant }) => ({ value: text, text, variant })),
-						...tags,
-					}),
+					h(
+						Tags,
+						{
+							items: TAGS.map(({ text, variant }) => ({
+								value: text,
+								text,
+								variant,
+							})),
+							...tags,
+						},
+						slots,
+					),
 				]),
 			])
 		},
 	})
-
-const nextFrame = () => new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
 
 /** Цвет поверхности: фон и текст. */
 const colorsOf = (element: Element) => {
@@ -89,10 +109,7 @@ const ownOf = (item: Element): TVariant => {
 	return tag.variant
 }
 
-/**
- * Каждый тег документа — в ряду и в панели — цвета кнопки своего варианта, а
- * без своего — варианта набора.
- */
+/** Каждый тег документа — цвета кнопки своего варианта, а без своего — варианта набора. */
 const expectTagsLikeReferences = async (set: TVariant) => {
 	await userEvent.hover(find('.s-test-away'))
 
@@ -132,39 +149,35 @@ it('эталонные кнопки вариантов разного цвета
 	)
 })
 
-describe.each(['wrap', 'arrows'] as const)('ряд %s', (overflow) => {
+describe.each(['wrap', 'scroll'] as const)('ряд %s', (overflow) => {
 	it('набор accent: тег без своего варианта — accent, свой вариант — поверх', async () => {
-		render(harness(overflow === 'arrows' ? 240 : 640, { overflow, variant: 'accent' }))
+		render(harness(overflow === 'scroll' ? 240 : 640, { overflow, variant: 'accent' }))
 
 		await expectTagsLikeReferences('accent')
 	})
 
 	it('набор без варианта: тег без своего — нейтраль, свой вариант — свой', async () => {
-		render(harness(overflow === 'arrows' ? 240 : 640, { overflow }))
+		render(harness(overflow === 'scroll' ? 240 : 640, { overflow }))
 
 		await expectTagsLikeReferences(undefined)
 	})
 })
 
-describe('ряд popover', () => {
-	/**
-	 * Панель телепортирована, и селектор набора до её тегов не доходит: на
-	 * панели свои классы ряда (`TTags.panelClasses`), по ним тема и красит
-	 * уехавшие теги.
-	 */
-	it('теги в панели — тех же цветов, что в ряду', async () => {
-		render(harness(180, { overflow: 'popover', variant: 'accent' }))
+/**
+ * Своя раскладка в слоте `default` ставит теги в свою обёртку, и правило
+ * «тег — ребёнок набора» до них не доставало бы: набор красит тег-потомок на
+ * любой глубине. Иначе ленту или ряд с панелью пришлось бы сопровождать
+ * своей копией матрицы видов.
+ */
+describe('своя раскладка в слоте', () => {
+	it('теги в своей обёртке — тех же цветов, что прямо в наборе', async () => {
+		render(harness(640, { variant: 'accent' }, { default: ownRow }))
 
-		await expectSplit(() => find('.s-tags:not(.s-tags__panel)'))
-		await userEvent.click(find('.s-tags__more'))
-		await expect.poll(() => document.querySelector('.s-tags__panel')).not.toBeNull()
-		await nextFrame()
+		const own = [...find('.s-test-own').children]
 
-		const inPanel = [...find('.s-tags__panel').querySelectorAll('.s-tags-item')]
-
-		// В панели есть оба случая: тег без своего варианта и со своим
-		expect(inPanel.some((item) => ownOf(item) === undefined)).toBe(true)
-		expect(inPanel.some((item) => ownOf(item) !== undefined)).toBe(true)
+		// Теги — в обёртке, а не детьми набора: иначе сверка ниже пуста
+		expect(own).toHaveLength(TAGS.length)
+		expect(own.every((item) => item.classList.contains('s-tags-item'))).toBe(true)
 
 		await expectTagsLikeReferences('accent')
 	})

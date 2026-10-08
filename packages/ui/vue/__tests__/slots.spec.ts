@@ -288,7 +288,7 @@ describe('соответствие контракту', () => {
 		)
 	})
 
-	it('Tags: слоты тегов и значок кнопки «…»', () => {
+	it('Tags: слоты тегов', () => {
 		expect(templateSlots('tags/Tags.vue')).toEqual(
 			TagsDescriptor()
 				.slots.map((slot) => slot.name)
