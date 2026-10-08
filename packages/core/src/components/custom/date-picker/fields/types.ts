@@ -26,6 +26,11 @@ export interface IDatePickerFields {
 	compose(): TDatePickerValue
 	/** Разложить значение по полям */
 	layout(value: TDatePickerValue): void
+	/**
+	 * Очистить поля режима их командой `clear` — все части, и набранные не до
+	 * конца: у них значения нет, и записью значения их не очистить.
+	 */
+	clear(): void
 }
 
 /** Конструктор стратегии: DatePicker заводит её на режим над своими полями. */

@@ -2,15 +2,19 @@
  * Дескриптор Input (TInput).
  *
  * Наследует FieldDescriptor (кнопка очистки — clearable, clearAria, слот
- * `clear` и плагин имён — поверх readonly, required, value, name, disabled,
- * focused, size, variant, ...) и добавляет placeholder, слоты `leading` и
- * `trailing` + плагины input-control, input.
+ * `clear` — поверх readonly, required, value, name, disabled, focused, size,
+ * variant, ...) и добавляет placeholder, слоты `leading` и `trailing` +
+ * плагины имён, input-control, input.
  */
 
 import { defineComponent, defineDescriptor, defineType } from '../../../protected/define'
 import { TInput } from '@soldy-ui/core'
 import type { IInput } from '@soldy-ui/core'
-import { InputControlPluginDescriptor, InputPluginDescriptor } from '../plugins'
+import {
+	FieldNamesPluginDescriptor,
+	InputControlPluginDescriptor,
+	InputPluginDescriptor,
+} from '../plugins'
 import { FieldDescriptor } from './field.descriptor'
 
 export const InputDescriptor = defineDescriptor(() =>
@@ -41,6 +45,11 @@ export const InputDescriptor = defineDescriptor(() =>
 			},
 		},
 
-		plugins: [InputControlPluginDescriptor, InputPluginDescriptor],
+		plugins: [
+			// Имя кнопки очистки от локали — с первой отрисовки
+			FieldNamesPluginDescriptor,
+			InputControlPluginDescriptor,
+			InputPluginDescriptor,
+		],
 	}),
 )

@@ -27,4 +27,8 @@ export class TSingleFields implements IDatePickerFields {
 	layout(value: TDatePickerValue): void {
 		this._field.value = Array.isArray(value) ? value[0] : value
 	}
+
+	clear(): void {
+		this._field.clear()
+	}
 }

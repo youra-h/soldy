@@ -268,6 +268,162 @@ describe('диапазон', () => {
 })
 
 /**
+ * Кнопка очистки — DatePicker'а: он сам поле (база `TField`), и кнопка у него
+ * одна на значение. У одной даты она стоит в слоте `clear` поля — первой у его
+ * конца, перед кнопкой календаря, — у диапазона одна на период, после поля
+ * конца. Своей кнопки поля не рисуют. Что очистка делает с моделью — у обоих
+ * концов, и у набранного не до конца, — проверяет ядро
+ * (`core/__tests__/date-picker.spec.ts`), форму кнопки — браузерный прогон.
+ */
+describe('кнопка очистки', () => {
+	const clearButtons = () => findAll('.s-date-picker__clear')
+	const clearButton = () => find('.s-date-picker__clear')
+
+	/** Своя кнопка в слоте `clear`: зовёт команду из scope голой функцией. */
+	const probe = ({ clear }: { clear: () => void }) =>
+		h('button', { class: 'probe-clear', onClick: () => clear() })
+
+	it('без clearable кнопки нет — ни у одной даты, ни у диапазона', async () => {
+		const mode = ref<'single' | 'range'>('single')
+
+		await render(() => h(DatePicker, { mode: mode.value, value: '2026-09-10' }))
+
+		expect(clearButtons()).toHaveLength(0)
+
+		mode.value = 'range'
+		await settle()
+
+		expect(clearButtons()).toHaveLength(0)
+		expect(findAll('.s-date-input__clear')).toHaveLength(0)
+	})
+
+	it('одна дата: первой в слоте у конца поля, перед кнопкой календаря; у поля своей нет', async () => {
+		await render(() => h(DatePicker, { clearable: true, name: 'Заезд' }))
+
+		const slot = find('.s-date-picker__field .s-date-input__trailing')
+
+		expect([...slot.children]).toEqual([clearButton(), trigger()])
+		expect(clearButton().getAttribute('aria-label')).toBe('Clear Заезд')
+		expect(root().classList.contains('s-date-picker--clearable')).toBe(true)
+		expect(find('.s-date-picker__field').classList.contains('s-date-input--clearable')).toBe(
+			false,
+		)
+		expect(findAll('.s-date-input__clear')).toHaveLength(0)
+	})
+
+	it('диапазон: одна на период — после поля конца, перед кнопкой календаря', async () => {
+		await render(() => h(DatePicker, { mode: 'range', clearable: true }))
+
+		expect(clearButtons()).toHaveLength(1)
+		expect(find('.s-date-picker__end').nextElementSibling).toBe(clearButton())
+		expect(clearButton().nextElementSibling).toBe(trigger())
+		expect(clearButton().getAttribute('aria-label')).toBe('Clear')
+		// У полей концов своих кнопок нет: `clearable` им не уходит
+		expect(findAll('.s-date-input__clear')).toHaveLength(0)
+	})
+
+	it('диапазон: клик очищает оба конца — v-model видит пустое, клик не всплывает', async () => {
+		const value = ref<TDatePickerValue>(['2026-09-10', '2026-09-14'])
+		const parentClick = vi.fn()
+
+		await render(() =>
+			h('div', { onClick: parentClick }, [
+				h(DatePicker, {
+					mode: 'range',
+					clearable: true,
+					value: value.value,
+					'onUpdate:value': (next: TDatePickerValue) => {
+						value.value = next
+					},
+				}),
+			]),
+		)
+
+		clearButton().click()
+		await settle()
+
+		expect(value.value).toBeUndefined()
+		expect(
+			findAll('.s-date-picker input[type="hidden"]').map((input) =>
+				input instanceof HTMLInputElement ? input.value : null,
+			),
+		).toEqual(['', ''])
+		expect(parentClick).not.toHaveBeenCalled()
+	})
+
+	it('кнопка зовёт команду DatePicker: clear — у него, в обоих режимах', async () => {
+		const ctrl = new TDatePicker({ clearable: true, value: '2026-09-10' })
+		const clear = vi.fn()
+
+		ctrl.events.on('clear', clear)
+
+		await render(() => h(DatePicker, { ctrl }))
+
+		clearButton().click()
+		await settle()
+
+		expect(ctrl.value).toBeUndefined()
+		expect(clear).toHaveBeenCalledTimes(1)
+
+		ctrl.mode = 'range'
+		ctrl.value = ['2026-09-10', '2026-09-14']
+		await settle()
+
+		clearButton().click()
+		await settle()
+
+		expect(ctrl.value).toBeUndefined()
+		expect(clear).toHaveBeenCalledTimes(2)
+	})
+
+	it('размер — DatePicker, выключена — вместе с ним, readonly её не гасит', async () => {
+		const disabled = ref(false)
+
+		await render(() =>
+			h(DatePicker, {
+				clearable: true,
+				size: 'lg',
+				readonly: true,
+				disabled: disabled.value,
+			}),
+		)
+
+		expect(clearButton().classList.contains('s-button--size-lg')).toBe(true)
+		expect(clearButton().hasAttribute('disabled')).toBe(false)
+
+		disabled.value = true
+		await settle()
+
+		expect(clearButton().hasAttribute('disabled')).toBe(true)
+	})
+
+	it('своя кнопка — слот clear с командой DatePicker в scope, у одной даты — в слоте поля', async () => {
+		const ctrl = new TDatePicker({ value: '2026-09-10' })
+		const clear = vi.fn()
+
+		ctrl.events.on('clear', clear)
+
+		await render(() => h(DatePicker, { ctrl }, { clear: probe }))
+
+		expect(find('.s-date-picker__field .s-date-input__trailing > .probe-clear')).toBeTruthy()
+		expect(clearButtons()).toHaveLength(0)
+
+		find('.probe-clear').click()
+		await settle()
+
+		expect(ctrl.value).toBeUndefined()
+		expect(clear).toHaveBeenCalledTimes(1)
+	})
+
+	it('своя кнопка у диапазона — после поля конца, вместо встроенной', async () => {
+		await render(() => h(DatePicker, { mode: 'range', clearable: true }, { clear: probe }))
+
+		expect(find('.s-date-picker__end').nextElementSibling).toBe(find('.probe-clear'))
+		expect(clearButtons()).toHaveLength(0)
+	})
+})
+
+/**
  * Ошибку считает ядро поля; здесь — что она доходит до разметки: смена одного
  * правила недоступности перечитывает части (`aria-invalid`) и набор корня
  * поля (`data-invalid`).

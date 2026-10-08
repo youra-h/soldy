@@ -171,6 +171,26 @@ describe('имя с текстом части: шаблон локали и см
 
 		expect(input.clearAria.get('aria-label')).toBe('Очистить Улица')
 	})
+
+	/**
+	 * DatePicker — поле, и плагин имён у него один: имя кнопки очистки пишет
+	 * его плагин, наследник плагина имён поля, тем же шаблоном.
+	 */
+	it('DatePicker: кнопка очистки — как у поля, с name DatePicker', () => {
+		const picker = new TDatePicker({ name: 'Заезд' })
+		const { source } = mount(picker, TDatePickerNamesPlugin)
+
+		expect(picker.clearAria.valueOf()).toEqual({ 'aria-label': 'Clear Заезд' })
+
+		picker.name = 'Выезд'
+
+		expect(picker.clearAria.get('aria-label')).toBe('Clear Выезд')
+
+		source.locale = ruRU
+
+		expect(picker.clearAria.get('aria-label')).toBe('Очистить Выезд')
+		expect(picker.triggerAria.get('aria-label')).toBe('Выбрать дату')
+	})
 })
 
 describe('выходы плагина: имена для вложенных компонентов', () => {

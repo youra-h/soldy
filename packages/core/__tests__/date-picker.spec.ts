@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { TDatePicker, isSwipeable } from '@soldy-ui/core'
+import { TDatePicker, TField, isSwipeable } from '@soldy-ui/core'
 import type {
+	IDateInput,
 	IDatePickerProps,
 	TCalendarUnavailable,
 	TChangeEvent,
@@ -326,6 +327,139 @@ describe('значение', () => {
 		target.start.paste('2026-09-01')
 
 		expect(target.value).toBeUndefined()
+	})
+})
+
+/**
+ * Кнопка очистки — DatePicker как поле (база `TField`): признак, набор кнопки и
+ * команда `clear`. Кнопка одна на значение, и полям `clearable` не уходит:
+ * очищает DatePicker свой режим целиком — у диапазона оба конца, в том числе
+ * набранные не до конца, у которых значения нет.
+ */
+describe('кнопка очистки', () => {
+	/** Пусты ли все части поля — в каждой подсказка, а не набранное. */
+	const blank = (input: IDateInput): boolean =>
+		input.segments.every((segment) => segment.placeholder)
+
+	it('DatePicker — поле: clearable с модификатором, имя кнопки пишет плагин имён', () => {
+		const target = picker()
+
+		expect(target).toBeInstanceOf(TField)
+		expect(target.clearable).toBe(false)
+		expect(target.classes.toArray()).not.toContain('s-date-picker--clearable')
+
+		target.clearable = true
+
+		expect(target.classes.toArray()).toContain('s-date-picker--clearable')
+		expect(target.getProps().clearable).toBe(true)
+		expect(target.clearAria.valueOf()).toEqual({})
+	})
+
+	it('полям clearable не уходит: кнопку рисует DatePicker, одну на значение', () => {
+		const target = picker({ clearable: true })
+
+		target.clearable = false
+		target.clearable = true
+
+		for (const input of [target.field, target.start, target.end]) {
+			expect(input.clearable).toBe(false)
+		}
+	})
+
+	it('одна дата: значение снято с поля и календаря, потом — clear', () => {
+		const target = picker({ value: '2026-09-10' })
+		const seen: string[] = []
+
+		target.events.on('change:value', ({ newValue }) => seen.push(`change:value ${newValue}`))
+		target.events.on('clear', () => seen.push(`clear ${target.calendar.value}`))
+
+		target.clear()
+
+		expect(target.value).toBeUndefined()
+		expect(target.field.value).toBeUndefined()
+		expect(blank(target.field)).toBe(true)
+		expect(seen).toEqual(['change:value undefined', 'clear undefined'])
+	})
+
+	it('диапазон: оба конца — одной сменой значения и одним clear', () => {
+		const target = picker({ mode: 'range', value: ['2026-09-10', '2026-09-14'] })
+		const changes = values(target)
+		const clear = vi.fn()
+
+		target.events.on('clear', clear)
+		target.clear()
+
+		expect(target.value).toBeUndefined()
+		expect(target.calendar.value).toBeUndefined()
+		expect([target.start.value, target.end.value]).toEqual([undefined, undefined])
+		expect(blank(target.start)).toBe(true)
+		expect(blank(target.end)).toBe(true)
+		expect(changes).toEqual([undefined])
+		expect(clear).toHaveBeenCalledTimes(1)
+	})
+
+	/**
+	 * Записью значения недонабранный конец не очистить: значения у него нет, и
+	 * `undefined` частей не тронул бы. Пустеет он командой поля.
+	 */
+	it('диапазон: конец, набранный не до конца, пустеет тоже', () => {
+		const target = picker({ mode: 'range' })
+
+		target.start.paste('2026-09-10')
+		// en-US: месяц, день, год — набран только месяц
+		target.end.focusSegment('month')
+		target.end.typeKey('0')
+		target.end.typeKey('9')
+
+		expect(target.value).toBeUndefined()
+		expect(blank(target.end)).toBe(false)
+
+		target.clear()
+
+		expect(target.start.value).toBeUndefined()
+		expect(blank(target.start)).toBe(true)
+		expect(blank(target.end)).toBe(true)
+	})
+
+	it('у пустого DatePicker clear приходит тоже', () => {
+		const target = picker({ mode: 'range' })
+		const clear = vi.fn()
+
+		target.events.on('clear', clear)
+		target.clear()
+
+		expect(clear).toHaveBeenCalledTimes(1)
+	})
+
+	/**
+	 * Кнопку только для чтения не гасят — как у полей: `readonly` запрещает
+	 * править части и открывать панель, а очистка его не спрашивает.
+	 */
+	it('только для чтения — очищается', () => {
+		const target = picker({
+			mode: 'range',
+			value: ['2026-09-10', '2026-09-14'],
+			readonly: true,
+		})
+
+		target.clear()
+
+		expect(target.value).toBeUndefined()
+		expect(blank(target.start)).toBe(true)
+		expect(blank(target.end)).toBe(true)
+	})
+
+	it('отменённая в change:value:before запись — значение и оба конца на месте', () => {
+		const target = picker({ mode: 'range', value: ['2026-09-10', '2026-09-14'] })
+
+		target.events.on('change:value:before', (e: TChangeEvent<TDatePickerValue>) =>
+			e.preventDefault(),
+		)
+		target.clear()
+
+		expect(target.value).toEqual(['2026-09-10', '2026-09-14'])
+		expect(target.calendar.value).toEqual(['2026-09-10', '2026-09-14'])
+		expect([target.start.value, target.end.value]).toEqual(['2026-09-10', '2026-09-14'])
 	})
 })
 
