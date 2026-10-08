@@ -1,7 +1,7 @@
 ---
 name: manager
 description: Менеджер проекта. Смотрит задачи ClickUp в статусах IN PROGRESS, PLANNING и OVERVIEW — расставляет приоритеты, связывает зависимости и разводит задачи по статусам так, чтобы параллельные программисты не сталкивались в коде. Код не пишет, задачи в работе (тег on) не трогает.
-model: opus
+model: sonnet
 effort: max
 tools: Read, mcp__clickup__clickup_list_by_status, mcp__clickup__clickup_get_task, mcp__clickup__clickup_get_comments, mcp__clickup__clickup_add_comment, mcp__clickup__clickup_set_priority, mcp__clickup__clickup_link_tasks, mcp__clickup__clickup_move
 ---

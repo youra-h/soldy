@@ -88,6 +88,9 @@ const tagsOf = (task) => (task.tags ?? []).map((tag) => tag.name.toLowerCase())
 /**
  * Куда роль может отправить задачу по итогам этапа: исход → ключ `config.statuses`.
  *
+ * OVERVIEW — только вопрос к владельцу, а не конец работы: аналитик с готовым
+ * исследованием отдаёт задачу тимлиду (PLANNING).
+ *
  * Программист работает на той же модели, что и тимлид, поэтому расхождения с
  * планом решает сам и тимлиду задачу не возвращает: с тем, что решить не смог,
  * он идёт к владельцу (OVERVIEW). Дизайнер с вопросами идёт к тимлиду — разметку
@@ -101,7 +104,7 @@ const tagsOf = (task) => (task.tags ?? []).map((tag) => tag.name.toLowerCase())
  * чужие задачи — см. `MANAGER_MOVES`.
  */
 const TRANSITIONS = {
-	analyst: { review: 'overview' },
+	analyst: { done: 'planning', questions: 'overview' },
 	techlead: { ready: 'inProgress', design: 'design', questions: 'overview', done: 'approved' },
 	designer: { done: 'approved', questions: 'planning' },
 	developer: { done: 'approved', questions: 'overview' },
@@ -413,7 +416,7 @@ const tools = {
 					type: 'string',
 					enum: [...new Set(Object.values(TRANSITIONS).flatMap(Object.keys))],
 					description:
-						'analyst: review (→ OVERVIEW). techlead: ready (план готов, вопросов нет → IN PROGRESS), design (нужен дизайн → DESIGN), questions (нужен владелец → OVERVIEW), done (работа программиста принята → APPROVED). designer: done (правились только тема и иконки, PR открыт → APPROVED), questions (нужен код или решение тимлида → PLANNING). developer: done (сделано и протестировано, PR открыт; остаток и находки, если есть, вынесены задачами → APPROVED), questions (критическое расхождение, задача не сделана → OVERVIEW).',
+						'analyst: done (исследование выложено, дальше решает тимлид → PLANNING), questions (без выбора владельца тимлиду не с чем работать → OVERVIEW). techlead: ready (план готов, вопросов нет → IN PROGRESS), design (нужен дизайн → DESIGN), questions (нужен владелец → OVERVIEW), done (работа программиста принята → APPROVED). designer: done (правились только тема и иконки, PR открыт → APPROVED), questions (нужен код или решение тимлида → PLANNING). developer: done (сделано и протестировано, PR открыт; остаток и находки, если есть, вынесены задачами → APPROVED), questions (критическое расхождение, задача не сделана → OVERVIEW).',
 				},
 			},
 			required: ['task_id', 'role', 'outcome'],

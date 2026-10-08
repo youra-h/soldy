@@ -6,7 +6,8 @@
 ## Поток
 
 ```
-ANALYSIS    → analyst   → исследование, #ANALYSIS → OVERVIEW
+ANALYSIS    → analyst   → исследование, #ANALYSIS → PLANNING  (исследование готово, решает тимлид)
+                                              → OVERVIEW  (нужен выбор владельца)
 PLANNING    → techlead  → #PLANNING → IN PROGRESS  (план готов, вопросов нет)
                                     → DESIGN       (компоненту нужен дизайн)
                                     → OVERVIEW     (нужен владелец)
