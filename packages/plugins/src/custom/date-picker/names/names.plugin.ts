@@ -10,7 +10,9 @@ import type { TDatePickerNamesPluginEvents } from './types'
  * (`panelAria`): панель называется так же, как кнопка, которая её открывает.
  * Имена полей концов диапазона — выходами (`start`, `end`): поля — свои
  * компоненты, и имя им разметка отдаёт пропом `aria_label`, который пишет их
- * собственный `TAriaPlugin`.
+ * собственный `TAriaPlugin`. Текст кнопок подвала панели при `confirmable` —
+ * тоже выходами (`confirm`, `cancel`): кнопки — свои компоненты, и текст им
+ * разметка отдаёт пропом `text`.
  */
 export class TDatePickerNamesPlugin extends TNamesPlugin<
 	IDatePicker,
@@ -18,6 +20,8 @@ export class TDatePickerNamesPlugin extends TNamesPlugin<
 > {
 	private _start = ''
 	private _end = ''
+	private _confirm = ''
+	private _cancel = ''
 
 	/** Имя поля начала диапазона. */
 	get start(): string {
@@ -29,12 +33,22 @@ export class TDatePickerNamesPlugin extends TNamesPlugin<
 		return this._end
 	}
 
+	/** Текст кнопки «OK» подвала панели. */
+	get confirm(): string {
+		return this._confirm
+	}
+
+	/** Текст кнопки «Отмена» подвала панели. */
+	get cancel(): string {
+		return this._cancel
+	}
+
 	protected override get _sink(): TEventSink<TDatePickerNamesPluginEvents> {
 		return this.events
 	}
 
 	protected override _name(owner: IDatePicker, translations: TTranslations): void {
-		const { trigger, start, end } = translations.datePicker
+		const { trigger, start, end, confirm, cancel } = translations.datePicker
 
 		owner.triggerAria.add('aria-label', trigger)
 		owner.panelAria.add('aria-label', trigger)
@@ -47,6 +61,16 @@ export class TDatePickerNamesPlugin extends TNamesPlugin<
 		if (this._end !== end) {
 			this._end = end
 			this._sink.emit('change:end', end)
+		}
+
+		if (this._confirm !== confirm) {
+			this._confirm = confirm
+			this._sink.emit('change:confirm', confirm)
+		}
+
+		if (this._cancel !== cancel) {
+			this._cancel = cancel
+			this._sink.emit('change:cancel', cancel)
 		}
 	}
 }

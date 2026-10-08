@@ -221,6 +221,27 @@ describe('выходы плагина: имена для вложенных ко
 		expect([plugin?.start, plugin?.end]).toEqual(['Дата начала', 'Дата окончания'])
 		expect(starts).toHaveBeenCalledExactlyOnceWith('Дата начала')
 	})
+
+	it('DatePicker: текст «OK» и «Отмена» подвала — выходами confirm и cancel', () => {
+		const { source, plugin } = mount(new TDatePicker(), TDatePickerNamesPlugin)
+		const confirms = vi.fn()
+		const cancels = vi.fn()
+
+		expect([plugin?.confirm, plugin?.cancel]).toEqual(['OK', 'Cancel'])
+
+		plugin?.events.on('change:confirm', confirms)
+		plugin?.events.on('change:cancel', cancels)
+		source.locale = ruRU
+		// Регион того же языка — те же строки, событий нет
+		source.locale = extendLocale(ruRU, { tag: 'ru-BY' })
+
+		expect([plugin?.confirm, plugin?.cancel]).toEqual([
+			ruRU.translations.datePicker.confirm,
+			ruRU.translations.datePicker.cancel,
+		])
+		expect(confirms).toHaveBeenCalledExactlyOnceWith(ruRU.translations.datePicker.confirm)
+		expect(cancels).toHaveBeenCalledExactlyOnceWith('Отмена')
+	})
 })
 
 describe('жизнь подписок', () => {

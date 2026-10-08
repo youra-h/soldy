@@ -20,6 +20,12 @@ export const ruRU = freezeLocale({
 			prevYears: 'Предыдущие 12 лет',
 			nextYears: 'Следующие 12 лет',
 		},
-		datePicker: { trigger: 'Выбрать дату', start: 'Дата начала', end: 'Дата окончания' },
+		datePicker: {
+			trigger: 'Выбрать дату',
+			start: 'Дата начала',
+			end: 'Дата окончания',
+			confirm: 'ОК',
+			cancel: 'Отмена',
+		},
 	},
 })

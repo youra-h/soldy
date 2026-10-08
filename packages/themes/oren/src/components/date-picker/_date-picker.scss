@@ -19,6 +19,9 @@
 //     .s-date-picker__handle        полоса жеста, если он включён (`swipe`)
 //     .s-date-picker__content       содержимое — прокручивается оно, а не панель
 //       .s-date-picker__calendar    календарь — Calendar
+//         .s-calendar__footer       подвал календаря (тема Calendar), при `confirmable`
+//           .s-date-picker__cancel  «Отмена» — Button
+//           .s-date-picker__confirm «OK» — Button
 //
 // От ядра приходят: у корня — модификаторы режима (`--single`, `--range`),
 // `--size-*`, `--variant-*`, `--required` и `data-disabled`; у кнопки —
@@ -251,4 +254,13 @@ $empty: ".s-date-picker--range:where(:not(:has(.s-date-input__segment:not([data-
 // упирается в свой потолок, и месяцы переносятся уже по ширине окна.
 .s-date-picker__content > .s-date-picker__calendar {
 	@apply w-max;
+}
+
+// Кнопки подвала при `confirmable` — «Отмена» и «OK» с текстом. Ставит их у
+// конца строки подвал календаря. Вид — `plain` по контексту, как у кнопок
+// листания: значения вида разметка не передаёт, а кнопки подвала не спорят с
+// выбранным днём. Нулевая специфичность, как у базового вида Button.
+:where(.s-date-picker__cancel),
+:where(.s-date-picker__confirm) {
+	@include button.button-view('plain');
 }

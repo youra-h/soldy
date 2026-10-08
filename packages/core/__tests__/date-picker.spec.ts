@@ -429,6 +429,248 @@ describe('панель', () => {
 })
 
 /**
+ * Выбор с подтверждением (`confirmable`). Выбор в календаре — черновик, и
+ * хранит его сам календарь: значения DatePicker и полей он не меняет, пока не
+ * нажали «OK» (`confirm()`), а любое другое закрытие панели возвращает
+ * календарю значение DatePicker. Когда правка календаря становится значением,
+ * решает политика фиксации — стратегия, которую меняет сеттер `confirmable`.
+ */
+describe('выбор с подтверждением', () => {
+	/** Открытая панель с подтверждением. */
+	const confirming = (props: Partial<IDatePickerProps> = {}) =>
+		picker({ confirmable: true, open: true, ...props })
+
+	it('по умолчанию выключен: «OK» включена, getProps его отдаёт', () => {
+		const target = picker()
+
+		expect(target.confirmable).toBe(false)
+		expect(target.confirmDisabled).toBe(false)
+		expect(target.getProps().confirmable).toBe(false)
+		expect(picker({ confirmable: true }).getProps().confirmable).toBe(true)
+	})
+
+	it('confirmable шлёт change:confirmable только на реальное изменение', () => {
+		const target = picker()
+		const handler = vi.fn()
+
+		target.events.on('change:confirmable', handler)
+		target.confirmable = true
+		target.confirmable = true
+
+		expect(handler.mock.calls).toEqual([[true]])
+	})
+
+	it('выбор — черновик календаря: ни значения, ни поля он не меняет', () => {
+		const target = confirming({ value: '2026-09-10' })
+		const changes = values(target)
+
+		target.engine.extensions.selection.chooseDate('2026-09-12')
+
+		expect(target.calendar.value).toBe('2026-09-12')
+		expect(target.value).toBe('2026-09-10')
+		expect(target.field.value).toBe('2026-09-10')
+		expect(changes).toEqual([])
+	})
+
+	it('выбор панель не закрывает, и closeOnSelect здесь не действует', () => {
+		const target = confirming({ closeOnSelect: true })
+
+		target.engine.extensions.selection.chooseDate('2026-09-12')
+
+		expect(target.open).toBe(true)
+	})
+
+	it('confirm() — черновик в значение и в поле, панель закрыта', () => {
+		const target = confirming({ value: '2026-09-10' })
+		const changes = values(target)
+		const closed = vi.fn()
+
+		target.events.on('close', closed)
+		target.engine.extensions.selection.chooseDate('2026-09-12')
+		target.confirm()
+
+		expect(target.value).toBe('2026-09-12')
+		expect(target.field.value).toBe('2026-09-12')
+		expect(target.calendar.value).toBe('2026-09-12')
+		expect(target.open).toBe(false)
+		expect(changes).toEqual(['2026-09-12'])
+		expect(closed).toHaveBeenCalledTimes(1)
+	})
+
+	it('confirm() без правки — значение то же, панель закрыта', () => {
+		const target = confirming({ value: '2026-09-10' })
+		const changes = values(target)
+
+		target.confirm()
+
+		expect(target.value).toBe('2026-09-10')
+		expect(target.open).toBe(false)
+		expect(changes).toEqual([])
+	})
+
+	it('закрытие сбрасывает черновик: календарь снова показывает значение', () => {
+		const target = confirming({ value: '2026-09-10' })
+		const changes = values(target)
+
+		target.engine.extensions.selection.chooseDate('2026-09-12')
+		target.open = false
+
+		expect(target.calendar.value).toBe('2026-09-10')
+		expect(target.value).toBe('2026-09-10')
+		expect(changes).toEqual([])
+
+		// И открытие начинает с принятого значения, а не с брошенного черновика
+		target.open = true
+
+		expect(target.engine.extensions.focus.focusedDate).toBe('2026-09-10')
+	})
+
+	it('диапазон: пока стоит якорь, «OK» выключена и confirm() ничего не делает', () => {
+		const target = confirming({ mode: 'range', value: ['2026-09-01', '2026-09-03'] })
+		const { selection } = target.engine.extensions
+		const switches: boolean[] = []
+
+		target.events.on('change:confirmDisabled', (value) => switches.push(value))
+
+		selection.chooseDate('2026-09-20')
+
+		expect(target.confirmDisabled).toBe(true)
+
+		target.confirm()
+
+		expect(target.open).toBe(true)
+		expect(target.value).toEqual(['2026-09-01', '2026-09-03'])
+		expect(selection.anchor).toBe('2026-09-20')
+
+		selection.chooseDate('2026-09-14')
+
+		expect(target.confirmDisabled).toBe(false)
+		expect(target.value).toEqual(['2026-09-01', '2026-09-03'])
+
+		target.confirm()
+
+		expect(target.value).toEqual(['2026-09-14', '2026-09-20'])
+		expect(target.start.value).toBe('2026-09-14')
+		expect(target.end.value).toBe('2026-09-20')
+		expect(target.open).toBe(false)
+		expect(switches).toEqual([true, false])
+	})
+
+	it('диапазон: снятый якорь включает «OK» снова', () => {
+		const target = confirming({ mode: 'range' })
+		const { selection } = target.engine.extensions
+
+		selection.chooseDate('2026-09-20')
+		selection.cancelRange()
+
+		expect(target.confirmDisabled).toBe(false)
+	})
+
+	it('отменённая запись: значение прежнее, календарь получает его обратно, панель закрыта', () => {
+		const target = confirming({ value: '2026-09-10' })
+
+		target.events.on('change:value:before', (e: TChangeEvent<TDatePickerValue>) =>
+			e.preventDefault(),
+		)
+
+		target.engine.extensions.selection.chooseDate('2026-09-12')
+		target.confirm()
+
+		expect(target.value).toBe('2026-09-10')
+		expect(target.calendar.value).toBe('2026-09-10')
+		expect(target.field.value).toBe('2026-09-10')
+		expect(target.open).toBe(false)
+	})
+
+	it('поправленная запись: календарь и поле получают итог', () => {
+		const target = confirming()
+
+		target.events.on('change:value:before', (e: TChangeEvent<TDatePickerValue>) => {
+			e.value = '2026-09-01'
+		})
+
+		target.engine.extensions.selection.chooseDate('2026-09-12')
+		target.confirm()
+
+		expect(target.value).toBe('2026-09-01')
+		expect(target.calendar.value).toBe('2026-09-01')
+		expect(target.field.value).toBe('2026-09-01')
+	})
+
+	it('правка поля — сразу значение, и календарь идёт за ним поверх черновика', () => {
+		const target = confirming({ value: '2026-09-10' })
+
+		target.engine.extensions.selection.chooseDate('2026-09-12')
+		target.field.paste('2026-09-14')
+
+		expect(target.value).toBe('2026-09-14')
+		expect(target.calendar.value).toBe('2026-09-14')
+	})
+
+	it('смена режима сбрасывает черновик, значение — в форме нового режима', () => {
+		const target = confirming({ value: '2026-09-10' })
+
+		target.engine.extensions.selection.chooseDate('2026-09-12')
+		target.mode = 'range'
+
+		expect(target.value).toEqual(['2026-09-10', '2026-09-10'])
+		expect(target.calendar.value).toEqual(['2026-09-10', '2026-09-10'])
+		expect(target.start.value).toBe('2026-09-10')
+		expect(target.end.value).toBe('2026-09-10')
+	})
+
+	it('смена режима без черновика — та же форма, что без подтверждения', () => {
+		const target = picker({ confirmable: true, value: '2026-09-10' })
+
+		target.mode = 'range'
+
+		expect(target.value).toEqual(['2026-09-10', '2026-09-10'])
+
+		target.value = ['2026-09-12', '2026-09-20']
+		target.mode = 'single'
+
+		expect(target.value).toBe('2026-09-12')
+		expect(target.field.value).toBe('2026-09-12')
+	})
+
+	it('смена confirmable сбрасывает черновик; дальше выбор — сразу значение', () => {
+		const target = confirming({ value: '2026-09-10' })
+		const { selection } = target.engine.extensions
+
+		selection.chooseDate('2026-09-12')
+		target.confirmable = false
+
+		expect(target.calendar.value).toBe('2026-09-10')
+		expect(target.value).toBe('2026-09-10')
+
+		selection.chooseDate('2026-09-15')
+
+		expect(target.value).toBe('2026-09-15')
+		expect(target.open).toBe(false)
+	})
+
+	it('включили на открытой панели — следующий выбор уже черновик', () => {
+		const target = picker({ open: true, value: '2026-09-10' })
+
+		target.confirmable = true
+		target.engine.extensions.selection.chooseDate('2026-09-12')
+
+		expect(target.value).toBe('2026-09-10')
+		expect(target.open).toBe(true)
+	})
+
+	it('выключение закрывает панель и сбрасывает черновик раньше, чем выключится календарь', () => {
+		const target = confirming({ value: '2026-09-10' })
+
+		target.engine.extensions.selection.chooseDate('2026-09-12')
+		target.disabled = true
+
+		expect(target.open).toBe(false)
+		expect(target.calendar.value).toBe('2026-09-10')
+	})
+})
+
+/**
  * Жест — смахнуть панель, чтобы закрыть. Тянет плагин жеста, как у Select,
  * ядро держит значения: за что тянуть, куда панель уходит и признак «тянут».
  * Панель у поля, и сторону после flip знает только её узел.

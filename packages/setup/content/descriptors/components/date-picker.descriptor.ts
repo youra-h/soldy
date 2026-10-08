@@ -2,11 +2,12 @@
  * Дескриптор DatePicker (TDatePicker).
  *
  * Наследует `InputControlDescriptor` (value, name, readonly, required, id,
- * disabled, size, variant, ...) и добавляет режим, открытость панели и то, что
- * DatePicker отдаёт полям и календарю: границы, недоступные дни, первый день
- * недели, пояс «сегодня» — и имена концов в форме. Язык и имена кнопки и
- * концов диапазона — от локали поддерева: их пишут плагины языка и имён, а
- * разметка получает готовые выходы.
+ * disabled, size, variant, ...) и добавляет режим, открытость панели, выбор
+ * с подтверждением и то, что DatePicker отдаёт полям и календарю: границы,
+ * недоступные дни, первый день недели, пояс «сегодня» — и имена концов в
+ * форме. Язык, имена кнопки и концов диапазона и текст кнопок подвала — от
+ * локали поддерева: их пишут плагины языка и имён, а разметка получает
+ * готовые выходы.
  *
  * Поля (`field`, `start`, `end`), календарь и его движок — экземпляры ядра
  * DatePicker: разметка отдаёт их компонентам целиком (`:ctrl`, `:engine`), как
@@ -59,6 +60,11 @@ export const DatePickerDescriptor = defineDescriptor(() =>
 				mode: { type: String, triggers: ['change:mode'] },
 				open: { type: Boolean, triggers: ['change:open'] },
 				closeOnSelect: { type: Boolean, triggers: ['change:closeOnSelect'] },
+				/**
+				 * Выбор подтверждают кнопкой: в подвале панели — «Отмена» и «OK»,
+				 * их текст — строки локали, выходы плагина имён.
+				 */
+				confirmable: { type: Boolean, triggers: ['change:confirmable'] },
 				min: { type: String, triggers: ['change:min'] },
 				max: { type: String, triggers: ['change:max'] },
 				unavailable: { type: Function, triggers: ['change:unavailable'] },
@@ -115,6 +121,15 @@ export const DatePickerDescriptor = defineDescriptor(() =>
 					protected: true,
 					triggers: ['change:disabled', 'change:readonly'],
 				},
+				/**
+				 * Выключена ли «OK»: пока диапазон выбран наполовину. Вычисляет
+				 * ядро по якорю выбора календаря — разметка формулу не повторяет.
+				 */
+				confirmDisabled: {
+					type: Boolean,
+					protected: true,
+					triggers: ['change:confirmDisabled'],
+				},
 			},
 			events: ['open', 'close'],
 		},
@@ -135,7 +150,8 @@ export const DatePickerDescriptor = defineDescriptor(() =>
 			DatePickerFocusPluginDescriptor,
 			// `id` панели и `aria-controls` кнопки
 			DatePickerIdsPluginDescriptor,
-			// Имя кнопки календаря и панели, имена полей концов от локали
+			// Имя кнопки календаря и панели, имена полей концов и текст кнопок
+			// подвала от локали
 			DatePickerNamesPluginDescriptor,
 			// Смахнуть панель, чтобы закрыть. После dismiss: берёт у него панель
 			SwipePluginDescriptor,

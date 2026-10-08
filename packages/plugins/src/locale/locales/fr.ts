@@ -20,6 +20,12 @@ export const frFR = freezeLocale({
 			prevYears: '12 années précédentes',
 			nextYears: '12 années suivantes',
 		},
-		datePicker: { trigger: 'Choisir une date', start: 'Date de début', end: 'Date de fin' },
+		datePicker: {
+			trigger: 'Choisir une date',
+			start: 'Date de début',
+			end: 'Date de fin',
+			confirm: 'OK',
+			cancel: 'Annuler',
+		},
 	},
 })

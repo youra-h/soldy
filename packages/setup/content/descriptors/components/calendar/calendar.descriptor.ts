@@ -50,6 +50,12 @@ export const CalendarDescriptor = defineDescriptor(() =>
 				// роль `arrowRight` у обеих, стрелку «назад» зеркалит тема
 				'prev-icon': { description: 'Значок кнопки «предыдущий месяц»' },
 				'next-icon': { description: 'Значок кнопки «следующий месяц»' },
+				/**
+				 * Подвал — строка под сетками во всю ширину календаря. Не задан —
+				 * строки нет вовсе. Так DatePicker с `confirmable` кладёт сюда
+				 * «Отмена» и «OK».
+				 */
+				footer: { description: 'Подвал под сетками — ряд действий' },
 			},
 			props: {
 				min: { type: String, triggers: ['change:min'] },

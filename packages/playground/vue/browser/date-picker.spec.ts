@@ -197,11 +197,18 @@ describe('появление и исчезание', () => {
 })
 
 describe('Tab в панели', () => {
-	it('ходит по кругу: с дня — на «назад», с «назад» обратно — на день', async () => {
+	/**
+	 * Остановки панели — по порядку DOM: заголовок месяца, «назад», «вперёд»,
+	 * день. С дня, последней остановки, Tab уходит по кругу на заголовок.
+	 */
+	it('ходит по кругу: с дня — на заголовок месяца, с заголовка обратно — на день', async () => {
 		await show({ value: '2026-05-12' })
 
 		await userEvent.click(trigger())
 		await expect.poll(active).toBe(day('2026-05-12'))
+
+		await tab()
+		expect(active()).toBe(find('.s-calendar__title'))
 
 		await tab()
 		expect(active()).toBe(find('.s-calendar__prev'))
@@ -211,8 +218,90 @@ describe('Tab в панели', () => {
 
 		await shiftTab()
 		await shiftTab()
+		await shiftTab()
 		expect(active()).toBe(day('2026-05-12'))
 		expect(isOpen()).toBe(true)
+	})
+})
+
+/**
+ * Выбор с подтверждением: модель проверяет ядро, проводку — тест Vue. Здесь —
+ * что подвал складывается с фокусом панели: Tab доходит до «Отмена» и «OK» —
+ * «OK» последней остановкой, — Enter на дне выбирает черновик, не закрывая
+ * панель, а «OK» и «Отмена» закрывают её и возвращают фокус туда, откуда
+ * открыли.
+ */
+describe('выбор с подтверждением', () => {
+	const cancel = () => find('.s-date-picker__cancel')
+	const confirm = () => find('.s-date-picker__confirm')
+
+	/** Открыть панель Alt+↓ с поля: фокус вернётся на часть месяца. */
+	const openFromField = async () => {
+		await userEvent.click(segment('month'))
+		await userEvent.keyboard('{Alt>}{ArrowDown}{/Alt}')
+		await expect.poll(active).toBe(day('2026-05-12'))
+	}
+
+	it('Enter на дне — черновик; Tab доходит до «Отмена» и «OK», «OK» — значение и фокус назад', async () => {
+		const ctrl = await show({ value: '2026-05-12', confirmable: true })
+
+		await openFromField()
+		await userEvent.keyboard('{ArrowRight}{Enter}')
+
+		// Черновик: панель открыта, значение и поле прежние
+		expect(isOpen()).toBe(true)
+		expect(ctrl.value).toBe('2026-05-12')
+		expect(segment('day').textContent).toBe('12')
+
+		await tab()
+		expect(active()).toBe(cancel())
+
+		await tab()
+		expect(active()).toBe(confirm())
+
+		// «OK» — последняя остановка: дальше Tab по кругу, на заголовок
+		await tab()
+		expect(active()).toBe(find('.s-calendar__title'))
+
+		await shiftTab()
+		expect(active()).toBe(confirm())
+
+		await userEvent.keyboard('{Enter}')
+
+		await expect.poll(isOpen).toBe(false)
+		expect(ctrl.value).toBe('2026-05-13')
+		expect(segment('day').textContent).toBe('13')
+		await expect.poll(active).toBe(segment('month'))
+	})
+
+	it('«Отмена» — значение прежнее, фокус туда, откуда открыли; снова открытая панель — на прежнем дне', async () => {
+		const ctrl = await show({ value: '2026-05-12', confirmable: true })
+
+		await openFromField()
+		await userEvent.keyboard('{ArrowRight}{Enter}')
+		await userEvent.click(cancel())
+
+		await expect.poll(isOpen).toBe(false)
+		expect(ctrl.value).toBe('2026-05-12')
+		await expect.poll(active).toBe(segment('month'))
+
+		await userEvent.keyboard('{Alt>}{ArrowDown}{/Alt}')
+
+		await expect.poll(active).toBe(day('2026-05-12'))
+		expect(day('2026-05-12').dataset.selected).toBe('true')
+		expect(day('2026-05-13').dataset.selected).toBe('false')
+	})
+
+	it('Escape — тоже отмена: черновик сброшен', async () => {
+		const ctrl = await show({ value: '2026-05-12', confirmable: true })
+
+		await openFromField()
+		await userEvent.keyboard('{ArrowRight}{Enter}')
+		await userEvent.keyboard('{Escape}')
+
+		await expect.poll(isOpen).toBe(false)
+		expect(ctrl.value).toBe('2026-05-12')
+		expect(ctrl.calendar.value).toBe('2026-05-12')
 	})
 })
 

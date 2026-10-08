@@ -100,6 +100,8 @@ const NAMED: Record<string, Record<string, (locale: TLocale) => string>> = {
 		panelAria: ({ translations }) => translations.datePicker.trigger,
 		names_start: ({ translations }) => translations.datePicker.start,
 		names_end: ({ translations }) => translations.datePicker.end,
+		names_confirm: ({ translations }) => translations.datePicker.confirm,
+		names_cancel: ({ translations }) => translations.datePicker.cancel,
 	},
 }
 

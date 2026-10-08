@@ -116,8 +116,9 @@ export default { ...SetupDatePicker, components: { Button, Calendar, DateInput, 
 		<!--
 			Панель — Frame, телепорт в `body`: поверхность, кромка и тень — как у
 			панелей Select и Popover. Открытость — `visible` панели, как у Select:
-			закрытая панель прячется, а не размонтируется. Подложки, крестика и
-			подвала нет — нажатие мимо закрывает панель.
+			закрытая панель прячется, а не размонтируется. Подложки и крестика нет
+			— нажатие мимо закрывает панель. Подвал — только при `confirmable`, и
+			рисует его календарь (ниже).
 
 			Якорь — корень: панель встаёт под ним от его начала, а у нижнего края
 			окна — над ним (сторону выбирает `TAnchorPlugin`). Панель
@@ -173,6 +174,36 @@ export default { ...SetupDatePicker, components: { Button, Calendar, DateInput, 
 				>
 					<template #item="{ item }">
 						<slot name="item" :item="item" />
+					</template>
+
+					<!--
+						Подвал — только при `confirmable`: выбор в календаре тогда
+						черновик, и значением его делает «OK» (`confirm()` ядра).
+						«Отмена» закрывает панель, а черновик сбрасывает само закрытие —
+						как у Escape и нажатия мимо. «Отмена» первой, «OK» — последней
+						остановкой Tab, как в календаре Android. Пока диапазон выбран
+						наполовину, «OK» выключена (`confirmDisabled`).
+
+						Текст — строки локали, выходы плагина имён (`names_cancel`,
+						`names_confirm`). Вида нет: тема красит кнопки по контексту, как
+						кнопки листания.
+					-->
+					<template v-if="confirmable" #footer>
+						<Button
+							embedded="date-picker.cancel"
+							class="s-date-picker__cancel"
+							:size="size"
+							:text="names_cancel"
+							@click="picker.open = false"
+						/>
+						<Button
+							embedded="date-picker.confirm"
+							class="s-date-picker__confirm"
+							:size="size"
+							:disabled="confirmDisabled"
+							:text="names_confirm"
+							@click="picker.confirm()"
+						/>
 					</template>
 				</Calendar>
 			</div>

@@ -23,6 +23,12 @@ export const arEG = freezeLocale({
 			prevYears: 'الـ 12 سنة السابقة',
 			nextYears: 'الـ 12 سنة التالية',
 		},
-		datePicker: { trigger: 'اختيار التاريخ', start: 'تاريخ البدء', end: 'تاريخ الانتهاء' },
+		datePicker: {
+			trigger: 'اختيار التاريخ',
+			start: 'تاريخ البدء',
+			end: 'تاريخ الانتهاء',
+			confirm: 'حسنًا',
+			cancel: 'إلغاء',
+		},
 	},
 })

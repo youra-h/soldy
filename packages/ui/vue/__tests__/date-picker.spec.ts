@@ -14,9 +14,10 @@
 import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { defineComponent, h, nextTick, ref, type VNode } from 'vue'
-import { DatePicker } from '@soldy-ui/vue'
+import { DatePicker, LocaleProvider } from '@soldy-ui/vue'
 import { TDatePicker } from '@soldy-ui/core'
 import type { ICalendarItem, TDatePickerValue } from '@soldy-ui/core'
+import { ruRU } from '@soldy-ui/plugins'
 
 const nextFrame = () => new Promise((resolve) => requestAnimationFrame(resolve))
 
@@ -264,6 +265,135 @@ describe('диапазон', () => {
 		expect(find('.s-date-picker__start input[type="hidden"]').getAttribute('value')).toBe(
 			'2026-09-10',
 		)
+	})
+})
+
+/**
+ * Выбор с подтверждением: модель — черновик в календаре, «OK» и сброс при
+ * закрытии — проверяет ядро. Здесь — подвал на настоящей разметке: он есть
+ * только при `confirmable`, текст кнопок — строки локали поддерева, «OK»
+ * гаснет посреди диапазона, а нажатия доходят до `v-model`.
+ */
+describe('выбор с подтверждением', () => {
+	const footer = () => document.querySelector('.s-date-picker__panel .s-calendar__footer')
+	const cancel = () => find('.s-date-picker__cancel')
+	const confirm = () => find('.s-date-picker__confirm')
+
+	/** DatePicker с `v-model:value` и `v-model:open` — значения в ссылках. */
+	async function bound(initial: TDatePickerValue, props: Record<string, unknown> = {}) {
+		const value = ref<TDatePickerValue>(initial)
+		const open = ref(false)
+
+		await render(() =>
+			h(DatePicker, {
+				confirmable: true,
+				...props,
+				value: value.value,
+				'onUpdate:value': (next: TDatePickerValue) => {
+					value.value = next
+				},
+				open: open.value,
+				'onUpdate:open': (next: boolean) => {
+					open.value = next
+				},
+			}),
+		)
+
+		trigger().click()
+		await settle()
+
+		return { value, open }
+	}
+
+	it('без confirmable подвала нет; с ним — «Отмена», потом «OK», в подвале календаря', async () => {
+		const ctrl = new TDatePicker()
+
+		await render(() => h(DatePicker, { ctrl }))
+
+		expect(footer()).toBeNull()
+
+		ctrl.confirmable = true
+		await settle()
+
+		const buttons = [...(footer()?.children ?? [])]
+
+		expect(buttons).toEqual([cancel(), confirm()])
+		expect(cancel().textContent?.trim()).toBe('Cancel')
+		expect(confirm().textContent?.trim()).toBe('OK')
+		expect(confirm().hasAttribute('disabled')).toBe(false)
+
+		ctrl.confirmable = false
+		await settle()
+
+		expect(footer()).toBeNull()
+	})
+
+	it('текст кнопок — от локали поддерева', async () => {
+		await render(() =>
+			h(LocaleProvider, { locale: ruRU }, () => h(DatePicker, { confirmable: true })),
+		)
+
+		expect(cancel().textContent?.trim()).toBe(ruRU.translations.datePicker.cancel)
+		expect(confirm().textContent?.trim()).toBe(ruRU.translations.datePicker.confirm)
+	})
+
+	it('выбор дня — черновик: v-model прежний, панель открыта; «OK» — значение и закрытие', async () => {
+		const { value, open } = await bound('2026-09-10')
+
+		dayCell('2026-09-12').click()
+		await settle()
+
+		expect(value.value).toBe('2026-09-10')
+		expect(open.value).toBe(true)
+		expect(dayCell('2026-09-12').dataset.selected).toBe('true')
+		expect(find('.s-date-picker__field input[type="hidden"]').getAttribute('value')).toBe(
+			'2026-09-10',
+		)
+
+		confirm().click()
+		await settle()
+
+		expect(value.value).toBe('2026-09-12')
+		expect(open.value).toBe(false)
+		expect(isOpen()).toBe(false)
+		expect(find('.s-date-picker__field input[type="hidden"]').getAttribute('value')).toBe(
+			'2026-09-12',
+		)
+	})
+
+	it('«Отмена» — панель закрыта, черновик сброшен, значение прежнее', async () => {
+		const { value, open } = await bound('2026-09-10')
+
+		dayCell('2026-09-12').click()
+		await settle()
+
+		cancel().click()
+		await settle()
+
+		expect(open.value).toBe(false)
+		expect(value.value).toBe('2026-09-10')
+		expect(dayCell('2026-09-10').dataset.selected).toBe('true')
+		expect(dayCell('2026-09-12').dataset.selected).toBe('false')
+	})
+
+	it('диапазон: «OK» гаснет на первом дне и загорается на втором', async () => {
+		const { value } = await bound(undefined, { mode: 'range' })
+
+		dayCell('2026-09-14').click()
+		await settle()
+
+		expect(confirm().hasAttribute('disabled')).toBe(true)
+
+		dayCell('2026-09-10').click()
+		await settle()
+
+		expect(confirm().hasAttribute('disabled')).toBe(false)
+		expect(value.value).toBeUndefined()
+
+		confirm().click()
+		await settle()
+
+		expect(value.value).toEqual(['2026-09-10', '2026-09-14'])
 	})
 })
 
