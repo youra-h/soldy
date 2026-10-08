@@ -3,13 +3,7 @@ import type {
 	IValueControlProps,
 	TValueControlEvents,
 } from '../../base/value-control'
-import type {
-	ITranslatable,
-	TAriaAttributes,
-	TCalendarDate,
-	TTranslatableEvents,
-	TWeekday,
-} from '../../../common'
+import type { TAria, TAriaAttributes, TCalendarDate, TWeekday } from '../../../common'
 import type { ICalendarCollectionProps } from './collection/types'
 
 /** Диапазон дат: начало и конец по возрастанию; одна дата — однодневный диапазон. */
@@ -47,23 +41,26 @@ export type TCalendarWeekday = {
 	long: string
 }
 
-export type TCalendarEvents = TValueControlEvents<TCalendarValue> &
-	TTranslatableEvents & {
-		/** change:min */
-		'change:min': (value: TCalendarDate | undefined) => void
-		/** change:max */
-		'change:max': (value: TCalendarDate | undefined) => void
-		/** change:unavailable */
-		'change:unavailable': (value: TCalendarUnavailable | undefined) => void
-		/** change:weekStart */
-		'change:weekStart': (value: TWeekday | undefined) => void
-		/** change:locale */
-		'change:locale': (value: string) => void
-		/** change:timeZone */
-		'change:timeZone': (value: string | undefined) => void
-		/** Сменились показанные месяцы — записью, листанием или уходом фокуса */
-		'change:months': (value: TCalendarDate[] | undefined) => void
-	}
+export type TCalendarEvents = TValueControlEvents<TCalendarValue> & {
+	/** change:min */
+	'change:min': (value: TCalendarDate | undefined) => void
+	/** change:max */
+	'change:max': (value: TCalendarDate | undefined) => void
+	/** change:unavailable */
+	'change:unavailable': (value: TCalendarUnavailable | undefined) => void
+	/** change:weekStart */
+	'change:weekStart': (value: TWeekday | undefined) => void
+	/** change:locale */
+	'change:locale': (value: string) => void
+	/** change:timeZone */
+	'change:timeZone': (value: string | undefined) => void
+	/** Сменились показанные месяцы — записью, листанием или уходом фокуса */
+	'change:months': (value: TCalendarDate[] | undefined) => void
+	/** change:prevAria — набор атрибутов кнопки «предыдущий месяц» изменился */
+	'change:prevAria': (value: TAriaAttributes) => void
+	/** change:nextAria — набор атрибутов кнопки «следующий месяц» изменился */
+	'change:nextAria': (value: TAriaAttributes) => void
+}
 
 /** Пропсы самого календаря (без коллекционной части). */
 export interface ICalendarComponentProps extends IValueControlProps<TCalendarValue> {
@@ -93,8 +90,7 @@ export interface ICalendarComponentProps extends IValueControlProps<TCalendarVal
 /** Полный набор пропсов календаря: свои и коллекционные (`mode`). */
 export interface ICalendarProps extends ICalendarComponentProps, ICalendarCollectionProps {}
 
-export interface ICalendar
-	extends IValueControl<TCalendarValue, ICalendarProps, TCalendarEvents>, ITranslatable {
+export interface ICalendar extends IValueControl<TCalendarValue, ICalendarProps, TCalendarEvents> {
 	/** Первый день, который можно выбрать */
 	min: TCalendarDate | undefined
 	/** Последний день, который можно выбрать */
@@ -114,10 +110,10 @@ export interface ICalendar
 	/** Дни недели — заголовки колонок, от первого дня недели */
 	readonly weekdays: TCalendarWeekday[]
 	/**
-	 * Набор кнопки «предыдущий месяц»: её имя из словаря (раздел `calendar`).
+	 * Атрибуты кнопки «предыдущий месяц»: имя от локали пишет плагин имён.
 	 * Своего экземпляра у кнопки нет
 	 */
-	readonly prevAria: TAriaAttributes
-	/** Набор кнопки «следующий месяц» */
-	readonly nextAria: TAriaAttributes
+	readonly prevAria: TAria
+	/** Атрибуты кнопки «следующий месяц» */
+	readonly nextAria: TAria
 }

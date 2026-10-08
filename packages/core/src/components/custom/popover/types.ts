@@ -4,13 +4,7 @@ import type {
 	TComponentViewEvents,
 } from '../../base/component-view'
 import type { ISwipeable, TSwipe, TSwipeableEvents } from '../../base/layer'
-import type {
-	ITranslatable,
-	TAria,
-	TAriaAttributes,
-	TDatasetAttributes,
-	TTranslatableEvents,
-} from '../../../common'
+import type { TAria, TAriaAttributes, TDatasetAttributes } from '../../../common'
 
 /**
  * Сторона и выравнивание панели у триггера.
@@ -37,8 +31,7 @@ export type TPopoverPlacement = 'bottom-start' | 'bottom-end' | 'top-start' | 't
 export type TPopoverEdge = 'top' | 'bottom' | 'start' | 'end'
 
 export type TPopoverEvents = TComponentViewEvents &
-	TSwipeableEvents &
-	TTranslatableEvents & {
+	TSwipeableEvents & {
 		/** change:open */
 		'change:open': (value: boolean) => void
 		/** change:closable */
@@ -53,6 +46,8 @@ export type TPopoverEvents = TComponentViewEvents &
 		'change:edge': (value: TPopoverEdge) => void
 		/** change:triggerAria — набор атрибутов триггера изменился */
 		'change:triggerAria': (value: TAriaAttributes) => void
+		/** change:closeAria — набор атрибутов кнопки закрытия изменился */
+		'change:closeAria': (value: TAriaAttributes) => void
 	}
 
 export interface IPopoverProps extends IComponentViewProps {
@@ -90,8 +85,7 @@ export interface IPopoverProps extends IComponentViewProps {
  * него, и сторону после flip знает только узел панели (`swipeSide` — `null`),
  * внутри контейнера — к своему краю (`edge`).
  */
-export interface IPopover
-	extends IComponentView<IPopoverProps, TPopoverEvents>, ISwipeable, ITranslatable {
+export interface IPopover extends IComponentView<IPopoverProps, TPopoverEvents>, ISwipeable {
 	/** Открыта ли панель */
 	open: boolean
 	/** Показывать ли кнопку закрытия в углу панели */
@@ -117,8 +111,8 @@ export interface IPopover
 	 * пишет её слой
 	 */
 	readonly panelDataset: TDatasetAttributes
-	/** Имя кнопки закрытия — из словаря, раздел `popover` */
-	readonly closeAria: TAriaAttributes
+	/** Атрибуты кнопки закрытия: имя от локали пишет плагин имён */
+	readonly closeAria: TAria
 	/** Смонтировано ли содержимое панели: без `lazyMount` — всегда */
 	readonly contentRendered: boolean
 	/** Рисовать ли полосу, за которую панель тянут: жест включён */

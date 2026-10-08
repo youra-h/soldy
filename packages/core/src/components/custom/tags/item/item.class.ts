@@ -1,7 +1,7 @@
 import { TValueControl } from '../../../base/value-control'
 import type { TDefaultValues } from '../../../base/component'
-import { DEFAULT_TRANSLATIONS, TAria, TChangeEvent } from '../../../../common'
-import type { TEventSink, TTranslations } from '../../../../common'
+import { TAria, TChangeEvent } from '../../../../common'
+import type { TEventSink } from '../../../../common'
 import type { ITagsItem, ITagsItemProps, TTagsItemEvents } from './types'
 
 /**
@@ -20,8 +20,9 @@ import type { ITagsItem, ITagsItemProps, TTagsItemEvents } from './types'
  *
  * Кнопка закрытия, в отличие от таба, — живой набор `closeAria`, а не
  * вычисляемый снимок: её `tabindex` зависит от режима выбора коллекции, о
- * котором тег не знает. Имя пишет тег, `tabindex` — `TTagsExtension`, как
- * у `aria` строки роль пишет тег, а `aria-selected` — коллекция.
+ * котором тег не знает. Имя от локали пишет плагин имён
+ * (`TTagsItemNamesPlugin`), `tabindex` — `TTagsExtension`, как у `aria`
+ * строки роль пишет тег, а `aria-selected` — коллекция.
  */
 export default class TTagsItem<
 	TProps extends ITagsItemProps = ITagsItemProps,
@@ -41,7 +42,6 @@ export default class TTagsItem<
 		tag: 'div',
 	}
 
-	protected _translations: TTranslations = DEFAULT_TRANSLATIONS
 	protected _closeAria: TAria
 
 	protected _text: string
@@ -62,8 +62,6 @@ export default class TTagsItem<
 		this._closeAria.events.on('change', () =>
 			this._sink.emit('change:closeAria', this._closeAria.toObject()),
 		)
-
-		this._syncCloseName()
 
 		this._classes.toggle(`--closable`, !!this._closable)
 
@@ -106,7 +104,6 @@ export default class TTagsItem<
 		if (e.defaultPrevented || e.value === this._text) return
 
 		this._text = e.value
-		this._syncCloseName()
 		this._sink.emit('change:text', { newValue: e.value, oldValue: e.oldValue })
 	}
 
@@ -137,42 +134,16 @@ export default class TTagsItem<
 	}
 
 	/**
-	 * Словарь строк библиотеки: тег читает из него имя кнопки закрытия. Та же
-	 * ссылка — ничего не меняет; новый словарь переписывает имя в `closeAria`
-	 * раньше события.
-	 */
-	get translations(): TTranslations {
-		return this._translations
-	}
-
-	set translations(value: TTranslations) {
-		if (this._translations === value) return
-
-		this._translations = value
-		this._syncCloseName()
-		this._sink.emit('change:translations', value)
-	}
-
-	/**
 	 * Атрибуты кнопки закрытия — отдельный набор, а не часть `aria`: `aria`
 	 * описывает сам тег, а это кнопка рядом с ним. Один элемент — один набор.
 	 *
-	 * Живой, как `aria`, потому что пишут в него двое: имя — тег, `tabindex` —
+	 * Живой, как `aria`, потому что пишут в него двое: имя с текстом тега
+	 * («Close Настройки») — плагин имён по шаблону локали, `tabindex` —
 	 * `TTagsExtension` по режиму выбора. За границу core → ui уходит снимок
 	 * (`valueOf()`), об изменении набор сообщает `change:closeAria`.
 	 */
 	get closeAria(): TAria {
 		return this._closeAria
-	}
-
-	/**
-	 * Имя кнопки закрытия — вместе с текстом тега: «Close Настройки». Без
-	 * текста все кнопки набора назывались бы одинаково. Как имя складывается с
-	 * текстом, решает строка словаря (раздел `tags`): порядок слов у каждого
-	 * языка свой.
-	 */
-	private _syncCloseName(): void {
-		this._closeAria.add('aria-label', this._translations.tags.close(this.text.trim()))
 	}
 
 	override getProps(): TProps {

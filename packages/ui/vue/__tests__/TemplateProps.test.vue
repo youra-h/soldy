@@ -15,6 +15,7 @@
  * причине.
  */
 import { TButton, TDragAndDrop, TInput } from '@soldy-ui/core'
+import { ruRU } from '@soldy-ui/plugins'
 import {
 	Accordion,
 	Button,
@@ -31,6 +32,7 @@ import {
 	Input,
 	Label,
 	ListBox,
+	LocaleProvider,
 	Popover,
 	ProgressLinear,
 	ProgressSpinner,
@@ -203,6 +205,10 @@ const dragAndDrop = new TDragAndDrop()
 	<!-- @vue-expect-error — флаг, а не строка -->
 	<ListBox.Item :selected="'yes'" />
 	<ListBox.Item selected />
+
+	<!-- @vue-expect-error — локаль объектом (`ruRU`), а не тегом -->
+	<LocaleProvider locale="ru-RU" />
+	<LocaleProvider :locale="ruRU" />
 
 	<!-- @vue-expect-error — стороны `left` у поповера нет: сторона и выравнивание -->
 	<Popover placement="left" />

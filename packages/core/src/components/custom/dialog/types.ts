@@ -24,6 +24,8 @@ export type TDialogEvents = TModalLayerEvents & {
 	'change:alert': (value: boolean) => void
 	/** change:bodyAria — набор атрибутов тела изменился */
 	'change:bodyAria': (value: TAriaAttributes) => void
+	/** change:maximizeAria — набор атрибутов кнопки разворота изменился */
+	'change:maximizeAria': (value: TAriaAttributes) => void
 }
 
 export interface IDialogProps extends IModalLayerProps {
@@ -71,8 +73,8 @@ export interface IDialog extends IModalLayer<IDialogProps, TDialogEvents> {
 	alert: boolean
 	/** Атрибуты тела: `id`, на который ссылается `aria-describedby` предупреждения, пишет плагин */
 	readonly bodyAria: TAria
-	/** Имя и состояние кнопки разворота: имя из словаря (раздел `dialog`) и `aria-pressed` */
-	readonly maximizeAria: TAriaAttributes
+	/** Атрибуты кнопки разворота: `aria-pressed` пишет окно, имя от локали — плагин имён */
+	readonly maximizeAria: TAria
 	/** Развернуть окно или вернуть ему размер — действие кнопки разворота */
 	toggleMaximized(): void
 }

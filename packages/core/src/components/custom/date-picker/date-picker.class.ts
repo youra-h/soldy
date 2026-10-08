@@ -1,13 +1,7 @@
 import { TInputControl } from '../../base/input-control'
 import type { TDefaultValues } from '../../base/component'
 import type { TSwipe, TSwipeSide } from '../../base/layer'
-import {
-	DEFAULT_LOCALE,
-	DEFAULT_TRANSLATIONS,
-	TAria,
-	compareDates,
-	parseDate,
-} from '../../../common'
+import { DEFAULT_LOCALE, TAria, compareDates, parseDate } from '../../../common'
 import { sameValue } from '../../../common/utility/same-value'
 import type {
 	TAriaAttributes,
@@ -15,7 +9,6 @@ import type {
 	TComponentSize,
 	TComponentVariant,
 	TDatasetAttributes,
-	TTranslations,
 	TValuePayload,
 	TWeekday,
 } from '../../../common'
@@ -64,10 +57,11 @@ const SIDES: readonly TDatePickerSide[] = ['calendar', 'fields']
  * `required` — полям, `weekStart` и `timeZone` — календарю, `name` — полю
  * одной даты, `startName` и `endName` — полям концов, режим — выбору
  * коллекции. Разметка эти значения не пробрасывает: второй путь к тем же
- * данным разошёлся бы с первым. Словарь строк (`translations`) не уходит
- * вниз: DatePicker читает из него только свой раздел — имена кнопки и концов
- * диапазона, — а поля и календарь получают словарь от своих плагинов
- * словаря, как поле Select.
+ * данным разошёлся бы с первым. Строк библиотеки DatePicker не строит и вниз
+ * не раздаёт: имя кнопки календаря (оно же имя панели) в наборы `triggerAria`
+ * и `panelAria` и имена полей концов диапазона даёт его плагин имён
+ * (`TDatePickerNamesPlugin`), а поля и календарь, смонтированные своими
+ * компонентами, получают имена от своих плагинов имён, как поле Select.
  *
  * **Поле помечает ошибкой то, что не даст выбрать календарь**, и набранное не
  * прижимает: дату вне границ и недоступную, а конец диапазона — ещё и раньше
@@ -141,7 +135,6 @@ export class TDatePicker
 	protected _weekStart: TWeekday | undefined
 	protected _locale: string
 	protected _timeZone: string | undefined
-	protected _translations: TTranslations = DEFAULT_TRANSLATIONS
 	protected _startName: string
 	protected _endName: string
 	protected _swipe: TSwipe
@@ -239,8 +232,6 @@ export class TDatePicker
 		)
 		this._panelAria.add('role', 'dialog')
 		this._panelAria.add('aria-modal', 'true')
-
-		this._syncTriggerName()
 
 		this._applyOpen(props.open ?? ctor.defaultValues.open)
 
@@ -437,37 +428,6 @@ export class TDatePicker
 	}
 
 	/**
-	 * Словарь строк библиотеки: DatePicker читает из него имя кнопки
-	 * календаря — оно же имя панели — и имена полей концов диапазона. Та же
-	 * ссылка — ничего не меняет; новый словарь переписывает имя в наборах
-	 * кнопки и панели раньше события.
-	 */
-	get translations(): TTranslations {
-		return this._translations
-	}
-
-	set translations(value: TTranslations) {
-		if (this._translations === value) return
-
-		this._translations = value
-		this._syncTriggerName()
-		this.events.emit('change:translations', value)
-	}
-
-	/**
-	 * Имя поля начала диапазона — выход, а не вход: строку даёт словарь, а
-	 * разметка отдаёт её полю начала как `aria_label`.
-	 */
-	get startLabel(): string {
-		return this._translations.datePicker.start
-	}
-
-	/** Имя поля конца диапазона — из словаря, как у начала. */
-	get endLabel(): string {
-		return this._translations.datePicker.end
-	}
-
-	/**
 	 * Имя начала диапазона в форме — `name` поля начала: значение в форму
 	 * отдаёт поле, как у одной даты.
 	 */
@@ -659,17 +619,6 @@ export class TDatePicker
 	/** Открывать нечего — открытая панель закрывается, а не остаётся висеть. */
 	protected _syncOpenable(): void {
 		if (!this.openable && this._open) this.open = false
-	}
-
-	/**
-	 * Имя кнопки календаря из словаря — в наборы кнопки и панели: панель
-	 * называется так же, как кнопка, которая её открывает.
-	 */
-	protected _syncTriggerName(): void {
-		const name = this._translations.datePicker.trigger
-
-		this._triggerAria.add('aria-label', name)
-		this._panelAria.add('aria-label', name)
 	}
 
 	protected _setSwiping(value: boolean): void {

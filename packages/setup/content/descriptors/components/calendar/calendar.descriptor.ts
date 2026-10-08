@@ -4,8 +4,8 @@
  * Наследует `ValueControlDescriptor` (value, name, disabled, focused, size,
  * variant, ...) и добавляет то, что задаёт потребитель: границы, недоступные
  * дни, первый день недели, пояс «сегодня» и месяцы сеток. Язык и имена кнопок
- * задаёт приложение на всю библиотеку — их пишут плагины языка и словаря, а
- * разметка получает готовые выходы. Всё, что календарь делает с днями, —
+ * — от локали поддерева: их пишут плагины языка и имён, а разметка получает
+ * готовые выходы. Всё, что календарь делает с днями, —
  * коллекция и её расширения (`CalendarCollectionDescriptor`); клавиши и
  * указатель переводят в их команды плагины владельца.
  *
@@ -24,8 +24,8 @@ import {
 	CalendarPointerPluginDescriptor,
 	CollectionBundlesPluginDescriptor,
 	CollectionElementsPluginDescriptor,
+	CalendarNamesPluginDescriptor,
 	LocalePluginDescriptor,
-	TranslationsPluginDescriptor,
 } from '../../plugins'
 
 export const CalendarDescriptor = defineDescriptor(() =>
@@ -57,8 +57,8 @@ export const CalendarDescriptor = defineDescriptor(() =>
 				unavailable: { type: Function, triggers: ['change:unavailable'] },
 				weekStart: { type: Number, triggers: ['change:weekStart'] },
 				/**
-				 * Язык подписей и первого дня недели — не вход: его задаёт
-				 * приложение на всю библиотеку, и пишет плагин языка.
+				 * Язык подписей и первого дня недели — не вход: это тег локали
+				 * поддерева, и пишет его плагин языка.
 				 */
 				locale: { type: String, protected: true, triggers: ['change:locale'] },
 				timeZone: { type: String, triggers: ['change:timeZone'] },
@@ -74,21 +74,19 @@ export const CalendarDescriptor = defineDescriptor(() =>
 					triggers: ['change:locale', 'change:weekStart'],
 				},
 				/**
-				 * Имена кнопок листания — из словаря: своего экземпляра у кнопок
-				 * нет, набор отдаётся значением. Стрелки панели выбора месяца и
-				 * года называет тот же словарь, а наборы собирает коллекция
-				 * (`pickers`).
+				 * Наборы кнопок листания: своего экземпляра у кнопок нет, и наборы
+				 * держит календарь. Имена в них — и в наборы стрелок панели выбора
+				 * месяца и года, которые разметка получает выходом коллекции
+				 * `pickers`, — пишет `TCalendarNamesPlugin`.
 				 */
-				prevAria: { type: Object, protected: true, triggers: ['change:translations'] },
-				nextAria: { type: Object, protected: true, triggers: ['change:translations'] },
+				prevAria: { type: Object, protected: true, triggers: ['change:prevAria'] },
+				nextAria: { type: Object, protected: true, triggers: ['change:nextAria'] },
 			},
 		},
 
 		plugins: [
-			// Язык и словарь приложения — до поведения: подписи и имена кнопок
-			// с первой отрисовки
+			// Язык — до поведения: подписи с первой отрисовки
 			LocalePluginDescriptor,
-			TranslationsPluginDescriptor,
 			// Коллекция: реестр bundles + доступ к DOM-узлам дней
 			CollectionBundlesPluginDescriptor,
 			CollectionElementsPluginDescriptor,
@@ -99,6 +97,9 @@ export const CalendarDescriptor = defineDescriptor(() =>
 			// Имена сеток: `id` заголовка месяца и ссылка сетки на него.
 			// После реестра bundles: движок узнаёт от него
 			CalendarIdsPluginDescriptor,
+			// Имена кнопок листания и стрелок панели выбора от локали. После
+			// реестра bundles: движок узнаёт от него
+			CalendarNamesPluginDescriptor,
 		],
 	}),
 )

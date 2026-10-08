@@ -3,15 +3,14 @@
  *
  * Наследует ValueControlDescriptor (value, name, disabled, focused, size, variant, ...)
  * и добавляет tag, text, closable, слоты строки и крестика + коллекционный плагин (active, order).
- * Имя крестика — строка словаря приложения с текстом таба: словарь пишет
- * плагин словаря.
+ * Имя крестика — шаблон локали с текстом таба: его пишет плагин имён.
  */
 
 import { defineComponent, defineDescriptor, defineType } from '../../../../protected/define'
 import { TTabsItem } from '@soldy-ui/core'
 import { ValueControlDescriptor } from '../value-control.descriptor'
 import { OWNER_STYLE_PROPS } from '../stylable.descriptor'
-import { TabsItemIdsPluginDescriptor, TranslationsPluginDescriptor } from '../../plugins'
+import { TabsItemIdsPluginDescriptor, TabsItemNamesPluginDescriptor } from '../../plugins'
 
 export const TabsItemDescriptor = defineDescriptor(() =>
 	defineComponent({
@@ -42,23 +41,19 @@ export const TabsItemDescriptor = defineDescriptor(() =>
 				text: { type: String, triggers: ['change:text'] },
 				closable: { type: Boolean, triggers: ['change:closable'] },
 				/**
-				 * Имя кнопки закрытия — строка словаря с текстом таба. Отдельный
-				 * набор, а не часть `aria`: `aria` описывает сам таб, а это кнопка
-				 * рядом с ним.
+				 * Набор кнопки закрытия: отдельный, а не часть `aria` — `aria`
+				 * описывает сам таб, а это кнопка рядом с ним. `tabindex` пишет
+				 * таб, имя с текстом таба — `TTabsItemNamesPlugin`.
 				 */
-				closeAria: {
-					type: Object,
-					protected: true,
-					triggers: ['change:translations', 'change:text'],
-				},
+				closeAria: { type: Object, protected: true, triggers: ['change:closeAria'] },
 			},
 		},
 
 		plugins: [
-			// Словарь приложения: имя крестика — с первой отрисовки
-			TranslationsPluginDescriptor,
 			// Связка «таб ↔ панель»: `id` таба и `aria-controls` его панели
 			TabsItemIdsPluginDescriptor,
+			// Имя крестика от локали — с первой отрисовки
+			TabsItemNamesPluginDescriptor,
 		],
 	}),
 )

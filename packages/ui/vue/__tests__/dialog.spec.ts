@@ -18,7 +18,6 @@ import { defineComponent, h, nextTick, ref, type Ref, type VNode } from 'vue'
 import { Dialog, Select, SelectItem } from '@soldy-ui/vue'
 import { TDialog } from '@soldy-ui/core'
 import type { IDialogProps, TCloseEvent, TCloseReason } from '@soldy-ui/core'
-import { useTranslations } from '@soldy-ui/plugins'
 import type { TDialogOffsetEvent } from '@soldy-ui/plugins'
 import * as material from '@soldy-ui/icons-material'
 
@@ -343,12 +342,10 @@ describe('отступ', () => {
 })
 
 describe('кнопки шапки', () => {
-	it('крестик назван словарём приложения, closable: false его убирает из DOM', async () => {
-		useTranslations({ modal: { close: 'Закрыть' } })
-
+	it('крестик назван локалью — без провайдера английской, closable: false его убирает из DOM', async () => {
 		await render()
 
-		expect(find('.s-dialog__close').getAttribute('aria-label')).toBe('Закрыть')
+		expect(find('.s-dialog__close').getAttribute('aria-label')).toBe('Close')
 
 		wrapper?.unmount()
 		document.body.innerHTML = ''
@@ -366,13 +363,11 @@ describe('кнопки шапки', () => {
 		wrapper?.unmount()
 		document.body.innerHTML = ''
 
-		useTranslations({ dialog: { maximize: 'Развернуть' } })
-
 		await render({ props: { maximizable: true } })
 
 		const button = find('.s-dialog__maximize')
 
-		expect(button.getAttribute('aria-label')).toBe('Развернуть')
+		expect(button.getAttribute('aria-label')).toBe('Maximize')
 		expect(button.getAttribute('aria-pressed')).toBe('false')
 	})
 

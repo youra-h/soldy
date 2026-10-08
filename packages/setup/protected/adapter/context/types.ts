@@ -3,7 +3,7 @@
  */
 
 import type { TEvented } from '@soldy-ui/core'
-import type { IPluginBundle } from '@soldy-ui/plugins'
+import type { ILocaleSource, IPluginBundle } from '@soldy-ui/plugins'
 import type { IComponentContract, IComponentDescriptor, IPluginsContract } from '../../define'
 import type { IAdapterProfile } from '../../naming'
 import type { TExchange } from '../exchange/exchange.class'
@@ -85,7 +85,20 @@ export interface IAdapterContextOptions<TInstance extends object = object> {
 	 * его собрал.
 	 */
 	mountId?: string
+	/**
+	 * Локаль поддерева — от провайдера локали фреймворка, ближайшего выше по
+	 * дереву: тег для Intl и строки библиотеки, с событием смены. Уходит своему
+	 * набору плагинов, как id монтирования (`IPluginBundle.locale`): по ней
+	 * плагины языка и имён пишут компоненту тег и имена кнопок — при сборке и
+	 * на каждую смену. Инстанс её не получает: язык знает место компонента в
+	 * дереве, а не экземпляр. Не задана — у набора своя английская. Набор не
+	 * свой (`config.bundle`) — локаль у того, кто его собрал.
+	 */
+	locale?: ILocaleSource
 }
+
+/** Что свой набор берёт от монтирования: id монтирования и локаль поддерева. */
+export type TBundleMount = Pick<IAdapterContextOptions, 'mountId' | 'locale'>
 
 export interface IAdapterContextConfig {
 	/**

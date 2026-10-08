@@ -56,7 +56,7 @@ export default { ...SetupTable, components: { Button, CheckBox, Icon, TableColum
 					<CheckBox
 						embedded="table.select-all"
 						:ctrl="selectAll"
-						:aria_label="selectAllLabel"
+						:aria_label="names_selectAll"
 					/>
 				</th>
 				<td v-else-if="mode === 'single'" class="s-table__select"></td>

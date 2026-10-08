@@ -11,7 +11,6 @@
 
 import { describe, it, expect, vi } from 'vitest'
 import {
-	DEFAULT_TRANSLATIONS,
 	TSelect,
 	TSelectItem,
 	TSelectCollectionFacade,
@@ -866,8 +865,8 @@ describe('field — экземпляр TInput, которым владеет Sel
 
 	/**
 	 * Кнопку очистки рисует поле, а не Select: `clearable` — вход Select,
-	 * который уходит полю, как `name` и `size`, а имя кнопки собирает поле из
-	 * своего словаря. Второй копии имени и словаря у Select нет.
+	 * который уходит полю, как `name` и `size`, а набор кнопки — у поля, и имя
+	 * в него пишет плагин имён поля. Второй копии набора у Select нет.
 	 */
 	describe('кнопка очистки — у поля', () => {
 		it('clearable уходит полю при создании и при смене', () => {
@@ -884,24 +883,14 @@ describe('field — экземпляр TInput, которым владеет Sel
 			expect(new TSelect().clearable).toBe(TInput.defaultValues.clearable)
 		})
 
-		it('имя кнопки собирает поле, с именем Select: «Clear Город»', () => {
-			// На форме с пятью полями пять одинаковых «Clear, кнопка» в списке
-			// элементов скринридера выбрать нельзя
-			expect(new TSelect({ name: 'Город' }).field.clearAria['aria-label']).toBe('Clear Город')
-		})
-
-		it('строку берёт словарь поля, имя — от Select', () => {
+		it('набор кнопки — у поля; имя поля, из которого плагин имён собирает имя кнопки, — от Select', () => {
 			const select = new TSelect({ name: 'Город' })
 
-			select.field.translations = {
-				...DEFAULT_TRANSLATIONS,
-				field: { clear: (name) => `Очистить ${name}` },
-			}
-			expect(select.field.clearAria['aria-label']).toBe('Очистить Город')
+			expect(select.field.clearAria.has('aria-label')).toBe(false)
+			expect(select.field.name).toBe('Город')
 
 			select.name = 'Улица'
-			expect(select.field.clearAria['aria-label']).toBe('Очистить Улица')
-			expect('translations' in select).toBe(false)
+			expect(select.field.name).toBe('Улица')
 		})
 
 		it('своего имени кнопки и модификатора --clearable у Select нет', () => {

@@ -16,6 +16,7 @@ import { TDrawer } from '@soldy-ui/core'
 import {
 	DrawerLayoutPluginDescriptor,
 	ModalIdsPluginDescriptor,
+	ModalNamesPluginDescriptor,
 	ScrollLockPluginDescriptor,
 	SwipePluginDescriptor,
 } from '../plugins'
@@ -64,6 +65,8 @@ export const DrawerDescriptor = defineDescriptor(() =>
 			SwipePluginDescriptor.with({ property: 'visible' }),
 			// Имя от заголовка: `id` заголовка и ссылка на него
 			ModalIdsPluginDescriptor,
+			// Имя кнопки закрытия от локали
+			ModalNamesPluginDescriptor,
 		],
 	}),
 )

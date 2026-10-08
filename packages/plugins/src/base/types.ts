@@ -1,4 +1,5 @@
 import type { TEvented } from '@soldy-ui/core'
+import type { ILocaleSource } from '../locale/types'
 import type { PLUGIN_EVENTS } from './events'
 
 /**
@@ -12,6 +13,8 @@ export interface IPluginContext {
 	 * (`IPluginBundle.createId`).
 	 */
 	createId(part: string): string
+	/** Локаль поддерева — та же, что у набора (`IPluginBundle.locale`). */
+	readonly locale: ILocaleSource
 }
 
 export type TPluginEvents = {
@@ -141,6 +144,20 @@ export interface IPluginBundle {
 	 * счётчика процесса — серверный рендер с таким адаптером по `id` не сойдётся.
 	 */
 	createId(part: string): string
+	/**
+	 * Локаль поддерева, в котором смонтирован компонент: тег для Intl и строки
+	 * библиотеки, с событием смены.
+	 *
+	 * Её даёт адаптер — от провайдера локали фреймворка, ближайшего выше по
+	 * дереву, как id монтирования — от `useId`: язык знает место компонента в
+	 * дереве, а не экземпляр. Поэтому сервер рисует параллельные запросы каждый
+	 * на своём языке, а вложенный провайдер даёт поддереву свой. Без провайдера
+	 * у набора своя английская локаль (`enUS`).
+	 *
+	 * Читают её плагины языка и имён (`TLocalePlugin`, `TNamesPlugin`): пишут
+	 * при установке и подписываются на смену.
+	 */
+	readonly locale: ILocaleSource
 	use<P extends IPlugin<any, any>>(
 		PluginCtor: IPluginConstructor<any, any, P>,
 		options?: object,

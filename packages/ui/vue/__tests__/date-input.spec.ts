@@ -9,24 +9,27 @@
  * поле, а клавиши на настоящей разметке доходят до модели и возвращаются
  * `v-model`.
  *
- * Язык поля задаёт приложение (`useLocale`), своего у поля нет: здесь он
- * русский, а тест на другом языке задаёт свой. После теста язык снова
- * английский — его возвращает общий `setup.ts`.
+ * Язык поля — тег локали поддерева (`LocaleProvider`), своего у поля нет:
+ * здесь он русский, а тест на другом языке задаёт свою локаль провайдеру.
  */
 
 import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { defineComponent, h, nextTick, ref, type VNode } from 'vue'
-import { DateInput } from '@soldy-ui/vue'
+import { DateInput, LocaleProvider } from '@soldy-ui/vue'
 import type { IDateInput, TTimePrecision } from '@soldy-ui/core'
-import { useLocale } from '@soldy-ui/plugins'
+import { arEG, enUS, ruRU } from '@soldy-ui/plugins'
+import type { TLocale } from '@soldy-ui/plugins'
 
 const nextFrame = () => new Promise((resolve) => requestAnimationFrame(resolve))
 
 let wrapper: ReturnType<typeof mount> | null = null
 
+/** Локаль провайдера, в котором монтируется поле: по умолчанию русская. */
+const locale = ref<TLocale>(ruRU)
+
 beforeEach(() => {
-	useLocale('ru-RU')
+	locale.value = ruRU
 })
 
 afterEach(() => {
@@ -37,7 +40,10 @@ afterEach(() => {
 
 /** Смонтировать и дождаться кадра: корень плагины получают через `requestAnimationFrame`. */
 async function render(content: () => VNode): Promise<void> {
-	wrapper = mount(defineComponent({ render: content }), { attachTo: document.body })
+	wrapper = mount(
+		defineComponent({ render: () => h(LocaleProvider, { locale: locale.value }, content) }),
+		{ attachTo: document.body },
+	)
 
 	await nextTick()
 	await nextFrame()
@@ -173,7 +179,7 @@ describe('разметка', () => {
 	})
 
 	it('ar-EG: ряд справа налево, цифры арабские, разделители с метками направления', async () => {
-		useLocale('ar-EG')
+		locale.value = arEG
 
 		await render(() => h(DateInput, { value: '2026-05-12' }))
 
@@ -249,7 +255,7 @@ describe('v-model', () => {
 
 describe('время', () => {
 	it('en-US: час, минута и период суток — в ряду в порядке формата, значение — в скрытом поле', async () => {
-		useLocale('en-US')
+		locale.value = enUS
 
 		await render(() =>
 			h(DateInput, {
@@ -345,7 +351,7 @@ describe('время', () => {
 	})
 
 	it('до секунды: секунда в ряду за минутой, значение — в скрытом поле', async () => {
-		useLocale('en-US')
+		locale.value = enUS
 
 		await render(() =>
 			h(DateInput, {
@@ -449,13 +455,13 @@ describe('время', () => {
 	})
 })
 
-describe('смена языка приложения', () => {
+describe('смена локали поддерева', () => {
 	it('часть меняет место, а её узел остаётся тем же', async () => {
 		await render(() => h(DateInput, { value: '2026-05-12' }))
 
 		const day = segment('day')
 
-		useLocale('en-US')
+		locale.value = enUS
 		await nextTick()
 
 		expect(segment('day')).toBe(day)
@@ -603,7 +609,7 @@ describe('кнопка очистки', () => {
 				parts.find((part) => node.matches(part)),
 			),
 		).toEqual(parts)
-		expect(find('.s-date-input__clear').getAttribute('aria-label')).toBe('Clear Дата')
+		expect(find('.s-date-input__clear').getAttribute('aria-label')).toBe('Очистить Дата')
 	})
 
 	it('клик очищает все части и значение, до корня не всплывает', async () => {

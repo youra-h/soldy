@@ -1,6 +1,3 @@
-import { afterEach } from 'vitest'
-import { DEFAULT_LOCALE } from '@soldy-ui/core'
-import { useLocale, useTranslations } from '@soldy-ui/plugins'
 import { setIcons, useTheme } from '@soldy-ui/setup'
 import * as material from '@soldy-ui/icons-material'
 import oren from '@soldy-ui/theme-oren/setup'
@@ -31,15 +28,3 @@ setIcons(material)
 
 /** Поведение темы подключает приложение (`src/main.ts`) — здесь тоже setup. */
 useTheme(oren)
-
-/**
- * Язык и словарь библиотеки задаёт приложение — у стенда это выбор языка в
- * шапке (`useLanguage`). Тест, который задал их сам (`useLocale`,
- * `useTranslations`), следующему их не оставляет: после каждого — снова
- * английские. Хук общий и для браузерного прогона, и объявлен раньше его хуков:
- * размонтирование спека идёт до него.
- */
-afterEach(() => {
-	useLocale(DEFAULT_LOCALE)
-	useTranslations()
-})

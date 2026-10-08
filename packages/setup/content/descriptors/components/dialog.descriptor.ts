@@ -9,7 +9,11 @@
 
 import { defineComponent, defineDescriptor } from '../../../protected/define'
 import { TDialog } from '@soldy-ui/core'
-import { DialogIdsPluginDescriptor, DialogLayoutPluginDescriptor } from '../plugins'
+import {
+	DialogIdsPluginDescriptor,
+	DialogLayoutPluginDescriptor,
+	DialogNamesPluginDescriptor,
+} from '../plugins'
 import { ModalLayerDescriptor } from './modal-layer.descriptor'
 
 export const DialogDescriptor = defineDescriptor(() =>
@@ -49,14 +53,11 @@ export const DialogDescriptor = defineDescriptor(() =>
 				 */
 				bodyAria: { type: Object, protected: true, triggers: ['change:bodyAria'] },
 				/**
-				 * Имя кнопки разворота — из словаря — и её состояние. Отдельный
-				 * набор: кнопка — сосед содержимого.
+				 * Набор кнопки разворота — её имя и состояние. Отдельный набор:
+				 * кнопка — сосед содержимого. Состояние пишет окно, имя —
+				 * `TDialogNamesPlugin`.
 				 */
-				maximizeAria: {
-					type: Object,
-					protected: true,
-					triggers: ['change:translations', 'change:maximized'],
-				},
+				maximizeAria: { type: Object, protected: true, triggers: ['change:maximizeAria'] },
 			},
 		},
 
@@ -65,6 +66,8 @@ export const DialogDescriptor = defineDescriptor(() =>
 			DialogLayoutPluginDescriptor,
 			// Имя от заголовка и описание предупреждения: `id` и ссылки на них
 			DialogIdsPluginDescriptor,
+			// Имена кнопок закрытия и разворота от локали
+			DialogNamesPluginDescriptor,
 		],
 	}),
 )

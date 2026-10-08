@@ -1,7 +1,7 @@
 import { TControl } from '../../base/control'
 import type { TDefaultValues } from '../../base/component'
-import { DEFAULT_TRANSLATIONS } from '../../../common'
-import type { TAriaAttributes, TTranslations } from '../../../common'
+import { TAria } from '../../../common'
+import type { TAriaAttributes } from '../../../common'
 import type {
 	IScroller,
 	IScrollerProps,
@@ -32,9 +32,10 @@ import type {
  * приёмом, что `notifyFit` у тегов. Сама прокрутка — тоже его: ядро только
  * просит (`scroll:request`).
  *
- * Имена кнопок — из словаря (`translations`, раздел `scroller`): кнопка со
- * стрелкой без имени для скринридера безымянна, а строки библиотеки задаёт
- * приложение одним словарём.
+ * Имена кнопок — от локали: кнопка со стрелкой без имени для скринридера
+ * безымянна, а строки библиотеки задаёт локаль поддерева. Лента держит наборы
+ * кнопок (`prevAria`, `nextAria`), имена в них пишет плагин имён
+ * (`TScrollerNamesPlugin`).
  */
 export default class TScroller
 	extends TControl<IScrollerProps, TScrollerEvents>
@@ -49,8 +50,9 @@ export default class TScroller
 		viewportAria: undefined,
 	}
 
-	protected _translations: TTranslations = DEFAULT_TRANSLATIONS
 	protected _viewportAria: TAriaAttributes | undefined
+	protected _prevAria: TAria
+	protected _nextAria: TAria
 	protected _canPrev = false
 	protected _canNext = false
 	protected _hasTabStops = false
@@ -67,21 +69,16 @@ export default class TScroller
 		// обоих `false` зависит её правило «листать нечего»
 		this._dataset.add('can-prev', this._canPrev)
 		this._dataset.add('can-next', this._canNext)
-	}
 
-	/**
-	 * Словарь строк библиотеки: лента читает из него имена кнопок. Та же ссылка
-	 * — ничего не меняет.
-	 */
-	get translations(): TTranslations {
-		return this._translations
-	}
+		this._prevAria = new TAria()
+		this._prevAria.events.on('change', () =>
+			this.events.emit('change:prevAria', this._prevAria.toObject()),
+		)
 
-	set translations(value: TTranslations) {
-		if (this._translations === value) return
-
-		this._translations = value
-		this.events.emit('change:translations', value)
+		this._nextAria = new TAria()
+		this._nextAria.events.on('change', () =>
+			this.events.emit('change:nextAria', this._nextAria.toObject()),
+		)
 	}
 
 	/**
@@ -117,14 +114,18 @@ export default class TScroller
 		return this._hasTabStops
 	}
 
-	/** Имя кнопки «назад». Своего экземпляра у кнопки нет — набор отдаётся значением. */
-	get prevAria(): TAriaAttributes {
-		return { 'aria-label': this._translations.scroller.prev }
+	/**
+	 * Набор кнопки «назад»: своего экземпляра у кнопки нет, и набор держит
+	 * лента. Живой: имя пишет плагин имён от локали, об изменении набор
+	 * сообщает `change:prevAria`.
+	 */
+	get prevAria(): TAria {
+		return this._prevAria
 	}
 
-	/** Имя кнопки «вперёд». */
-	get nextAria(): TAriaAttributes {
-		return { 'aria-label': this._translations.scroller.next }
+	/** Набор кнопки «вперёд» — как у «назад». */
+	get nextAria(): TAria {
+		return this._nextAria
 	}
 
 	/**

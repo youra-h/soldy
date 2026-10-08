@@ -34,8 +34,8 @@ export default { ...SetupTags, components: { Button, Icon, Popover, Scroller, Ta
 				отрезаны от роли двумя обёртками. Набор пишет коллекция — здесь
 				только проводка.
 
-				Имена кнопок ленты сквозь Tags не идут: лента берёт их из своего
-				словаря, который ей пишет её же плагин словаря.
+				Имена кнопок ленты сквозь Tags не идут: их пишет плагин имён самой
+				ленты.
 
 				Панели в этом режиме нет: делить состав некому, и `fitted` равен
 				всему показанному.
@@ -111,7 +111,7 @@ export default { ...SetupTags, components: { Button, Icon, Popover, Scroller, Ta
 					class="s-tags__overflow"
 					:style="{ order: moreOrder }"
 					:ctrl="panel"
-					:aria_label="moreLabel"
+					:aria_label="names_more"
 				>
 					<template #trigger="{ triggerAria, triggerDataset }">
 						<!--

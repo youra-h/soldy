@@ -2,9 +2,9 @@
  * Дескриптор Table (TTable) — таблица по паттернам APG Table и Sortable Table.
  *
  * Наследует `ControlDescriptor` (disabled, focused, size, variant, имя
- * `aria_label` / `aria_labelledBy`, ...) и добавляет язык сортировки и имя
- * чекбокса «выбрать все» — выходами: язык и словарь задаёт приложение на всю
- * библиотеку, и пишут их плагины языка и словаря. Строки, колонки, ячейки,
+ * `aria_label` / `aria_labelledBy`, ...) и добавляет язык сортировки — тег
+ * локали поддерева, его пишет плагин языка, — и имя чекбокса «выбрать все» —
+ * выход плагина имён (`names_selectAll`). Строки, колонки, ячейки,
  * выбор и сортировка — коллекция и её расширения
  * (`TableCollectionDescriptor`): разметка только раскладывает то, что они
  * отдали.
@@ -21,7 +21,7 @@ import { defineComponent, defineDescriptor, defineType } from '../../../../prote
 import { TTable } from '@soldy-ui/core'
 import type { ITableColumn, ITableRow } from '@soldy-ui/core'
 import { ControlDescriptor } from '../control.descriptor'
-import { LocalePluginDescriptor, TranslationsPluginDescriptor } from '../../plugins'
+import { LocalePluginDescriptor, TableNamesPluginDescriptor } from '../../plugins'
 
 export const TableDescriptor = defineDescriptor(() =>
 	defineComponent({
@@ -52,27 +52,18 @@ export const TableDescriptor = defineDescriptor(() =>
 			},
 			props: {
 				/**
-				 * Язык сортировки — не вход: его задаёт приложение на всю
-				 * библиотеку, и пишет плагин языка, как `size` элементам пишет
-				 * владелец.
+				 * Язык сортировки — не вход: это тег локали поддерева, и пишет его
+				 * плагин языка, как `size` элементам пишет владелец.
 				 */
 				locale: { type: String, protected: true, triggers: ['change:locale'] },
-				/**
-				 * Имя чекбокса «выбрать все» — из словаря: своего текста у ячейки
-				 * шапки нет, и разметка отдаёт чекбоксу готовое имя.
-				 */
-				selectAllLabel: {
-					type: String,
-					protected: true,
-					triggers: ['change:translations'],
-				},
 			},
 		},
 
 		plugins: [
-			// Язык и словарь приложения — с первой отрисовки
+			// Язык сортировки — с первой отрисовки
 			LocalePluginDescriptor,
-			TranslationsPluginDescriptor,
+			// Имя чекбокса «выбрать все» от локали
+			TableNamesPluginDescriptor,
 		],
 	}),
 )

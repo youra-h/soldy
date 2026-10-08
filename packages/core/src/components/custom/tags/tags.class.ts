@@ -1,7 +1,7 @@
 import { TValueControl } from '../../base/value-control'
 import type { TDefaultValues } from '../../base/component'
-import { DEFAULT_TRANSLATIONS, TAria } from '../../../common'
-import type { TAriaAttributes, TTranslations } from '../../../common'
+import { TAria } from '../../../common'
+import type { TAriaAttributes } from '../../../common'
 import type { ITagsProps, TTagsEvents, ITags, TTagsValue, TTagsView, TTagsOverflow } from './types'
 
 /** Класс панели, в которую уезжают непоместившиеся теги. */
@@ -53,8 +53,9 @@ const PANEL_CLASS = 's-tags__panel'
  * Знание «какие теги не поместились» ядро держит отдельно, в расширении
  * коллекции `overflow`: оно требует и владельца, и списка сразу.
  *
- * Имя кнопки «…» — из словаря (`translations`, раздел `tags`). Кнопки листания
- * в `arrows` — ленты, и имена им лента берёт из своего словаря сама.
+ * Имя кнопки «…» — от локали: его пишет в набор кнопки (`moreAria`) плагин
+ * имён (`TTagsNamesPlugin`), он же отдаёт его разметке для панели. Кнопки
+ * листания в `arrows` — ленты, и имена им пишет плагин имён ленты.
  */
 export class TTags extends TValueControl<TTagsValue, ITagsProps, TTagsEvents> implements ITags {
 	static override baseClass = 's-tags'
@@ -70,8 +71,8 @@ export class TTags extends TValueControl<TTagsValue, ITagsProps, TTagsEvents> im
 	protected _closable!: boolean
 	protected _view: TTagsView | undefined
 	protected _overflow!: TTagsOverflow
-	protected _translations: TTranslations = DEFAULT_TRANSLATIONS
 	protected _rowAria: TAria
+	protected _moreAria: TAria
 
 	/**
 	 * Имена атрибутов, объявленных свойствами ряда, а не корня.
@@ -93,6 +94,11 @@ export class TTags extends TValueControl<TTagsValue, ITagsProps, TTagsEvents> im
 
 		this._rowAria.events.on('change', () =>
 			this.events.emit('change:rowAria', this._rowAria.toObject()),
+		)
+
+		this._moreAria = new TAria()
+		this._moreAria.events.on('change', () =>
+			this.events.emit('change:moreAria', this._moreAria.toObject()),
 		)
 
 		this._applyView(props.view ?? ctor.defaultValues.view)
@@ -135,30 +141,6 @@ export class TTags extends TValueControl<TTagsValue, ITagsProps, TTagsEvents> im
 	}
 
 	/**
-	 * Словарь строк библиотеки: набор читает из него имя кнопки «…». Та же
-	 * ссылка — ничего не меняет.
-	 */
-	get translations(): TTranslations {
-		return this._translations
-	}
-
-	set translations(value: TTranslations) {
-		if (this._translations === value) return
-
-		this._translations = value
-		this.events.emit('change:translations', value)
-	}
-
-	/**
-	 * Имя кнопки «…» — той, что открывает панель с непоместившимися тегами.
-	 * Выход, а не вход: строку даёт словарь, а разметка отдаёт её панели —
-	 * диалогу без имени скринридер объявил бы безымянный.
-	 */
-	get moreLabel(): string {
-		return this._translations.tags.more
-	}
-
-	/**
 	 * Ряд завёрнут в ленту со стрелками.
 	 *
 	 * Признаком, а не сравнением строки в разметке: иначе `overflow ===
@@ -170,8 +152,8 @@ export class TTags extends TValueControl<TTagsValue, ITagsProps, TTagsEvents> im
 	}
 
 	/**
-	 * Атрибуты ряда, когда рядом стал вьюпорт ленты, — снимком, как `moreAria`
-	 * и `panelAria`: за границу core → ui уходит значение, а не живой набор.
+	 * Атрибуты ряда, когда рядом стал вьюпорт ленты, — снимком, как
+	 * `panelAria`: за границу core → ui уходит значение, а не живой набор.
 	 *
 	 * Вне `arrows` он пуст: ряд там — сам корень, и всё это стоит на нём.
 	 */
@@ -196,14 +178,15 @@ export class TTags extends TValueControl<TTagsValue, ITagsProps, TTagsEvents> im
 	}
 
 	/**
-	 * Имя кнопки «…».
+	 * Набор кнопки «…» — той, что открывает панель с непоместившимися тегами.
 	 *
-	 * Значением, а не набором `aria`: кнопка — содержимое слота `trigger` у
-	 * панели, своего экземпляра у неё нет, писать некуда (см. AGENTS.md,
-	 * «Часть или слот»). Тот же приём, что у `triggerAria` Popover.
+	 * Набор набора тегов, а не свой: кнопка — содержимое слота `trigger` у
+	 * панели, своего экземпляра у неё нет (см. AGENTS.md, «Часть или слот»).
+	 * Живой: имя пишет плагин имён от локали, об изменении набор сообщает
+	 * `change:moreAria`.
 	 */
-	get moreAria(): TAriaAttributes {
-		return { 'aria-label': this.moreLabel }
+	get moreAria(): TAria {
+		return this._moreAria
 	}
 
 	/**

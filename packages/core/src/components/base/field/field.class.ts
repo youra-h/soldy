@@ -1,7 +1,7 @@
 import { TInputControl } from '../input-control'
 import type { TDefaultValues } from '../component'
-import { DEFAULT_TRANSLATIONS } from '../../../common'
-import type { TAriaAttributes, TEventSink, TTranslations } from '../../../common'
+import { TAria } from '../../../common'
+import type { TEventSink } from '../../../common'
 import type { IField, IFieldProps, TFieldEvents } from './types'
 
 /**
@@ -11,8 +11,7 @@ import type { IField, IFieldProps, TFieldEvents } from './types'
  * Кнопка — часть поля, а не его владельца: Select рисует её не сам, а отдаёт
  * своему полю `clearable`, как `name` и `size`. Поэтому всё, что следует из
  * кнопки, живёт здесь один раз: признак `clearable` с модификатором
- * `--clearable`, имя кнопки (`clearAria`, строка словаря `field`) и команда
- * `clear`. Две копии в формах разошлись бы, как расходились фасады, пока у
+ * `--clearable`, набор кнопки (`clearAria`) и команда `clear`. Две копии в формах разошлись бы, как расходились фасады, пока у
  * них не было баз. Блок CSS называет форма, поэтому своего `baseClass` у базы
  * нет.
  *
@@ -44,7 +43,7 @@ export default class TField<
 	}
 
 	protected _clearable!: boolean
-	protected _translations: TTranslations = DEFAULT_TRANSLATIONS
+	protected _clearAria: TAria
 
 	constructor(props: Partial<TProps> = {}) {
 		super(props)
@@ -52,6 +51,11 @@ export default class TField<
 		const ctor = new.target as typeof TField
 
 		this._applyClearable(props.clearable ?? ctor.defaultValues.clearable)
+
+		this._clearAria = new TAria()
+		this._clearAria.events.on('change', () =>
+			this._sink.emit('change:clearAria', this._clearAria.toObject()),
+		)
 	}
 
 	/**
@@ -74,33 +78,19 @@ export default class TField<
 	}
 
 	/**
-	 * Словарь строк библиотеки: поле читает из него имя кнопки очистки. Та же
-	 * ссылка — ничего не меняет.
-	 */
-	get translations(): TTranslations {
-		return this._translations
-	}
-
-	set translations(value: TTranslations) {
-		if (this._translations === value) return
-
-		this._translations = value
-		this._sink.emit('change:translations', value)
-	}
-
-	/**
-	 * Имя кнопки очистки — вместе с именем поля: «Clear Город».
+	 * Набор кнопки очистки. Имя в нём — вместе с именем поля: «Clear Город».
 	 *
-	 * Без него на форме с пятью полями в списке элементов скринридера будет
-	 * пять одинаковых «Clear, кнопка», и выбрать нужную нельзя. Та же причина,
-	 * по которой у таба имя кнопки закрытия собирается с его текстом. Как имя
-	 * складывается с именем поля, решает строка словаря (раздел `field`).
+	 * Без имени поля на форме с пятью полями в списке элементов скринридера
+	 * будет пять одинаковых «Clear, кнопка», и выбрать нужную нельзя. Та же
+	 * причина, по которой у таба имя кнопки закрытия собирается с его текстом.
+	 * Имя пишет плагин имён (`TFieldNamesPlugin`) по шаблону локали — и на
+	 * смену имени поля; об изменении набор сообщает `change:clearAria`.
 	 *
 	 * Отдельный набор, а не часть `aria`: `aria` описывает само поле, а это —
 	 * соседняя кнопка. Один элемент — один набор.
 	 */
-	get clearAria(): TAriaAttributes {
-		return { 'aria-label': this._translations.field.clear(this._name.trim()) }
+	get clearAria(): TAria {
+		return this._clearAria
 	}
 
 	/**

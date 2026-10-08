@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import {
-	DEFAULT_TRANSLATIONS,
 	TDialog,
 	TDrawer,
 	TLayer,
@@ -39,7 +38,6 @@ describe('умолчания', () => {
 		expect(drawer.swipe).toBe('none')
 		expect(drawer.contained).toBe(false)
 		expect(drawer.closable).toBe(true)
-		expect(drawer.closeAria).toEqual({ 'aria-label': 'Close' })
 		expect(drawer.dismissible).toBe(true)
 		expect(drawer.width).toBeUndefined()
 		expect(drawer.height).toBeUndefined()
@@ -98,12 +96,10 @@ describe('ARIA', () => {
 		expect(drawer.aria.get('aria-modal')).toBe('true')
 	})
 
-	it('крестик назван словарём — раздел modal, общий с окном', () => {
+	it('набор крестика — от модального слоя: имени в нём ядро не пишет', () => {
 		const drawer = new TDrawer()
 
-		drawer.translations = { ...DEFAULT_TRANSLATIONS, modal: { close: 'Закрыть' } }
-
-		expect(drawer.closeAria).toEqual({ 'aria-label': 'Закрыть' })
+		expect(drawer.closeAria.valueOf()).toEqual({})
 	})
 })
 

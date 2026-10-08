@@ -2,7 +2,7 @@
  * Дескриптор Input (TInput).
  *
  * Наследует FieldDescriptor (кнопка очистки — clearable, clearAria, слот
- * `clear` и словарь — поверх readonly, required, value, name, disabled,
+ * `clear` и плагин имён — поверх readonly, required, value, name, disabled,
  * focused, size, variant, ...) и добавляет placeholder, слоты `leading` и
  * `trailing` + плагины input-control, input.
  */

@@ -122,20 +122,31 @@ mode for the whole library at its entry point: `useMotion('full')` or `useMotion
 `@soldy-ui/plugins`.
 
 Language and the strings the library draws itself — names of buttons without text (close, scroll,
-clear) and of fields nothing else names — are set the same way, once for the whole library, the
-server included. The language goes to Intl (date labels, first day of the week, the date field
-format, table sorting), the strings are a dictionary laid over the English default; components
-pick up a change without remounting:
+clear) and of fields nothing else names — come as one value, a locale, from the nearest
+`LocaleProvider` up the tree. The tag goes to Intl (date labels, first day of the week, the date
+field format, table sorting), the strings are plain data with a `{name}` slot where a part's name
+goes. Change the provider's locale and components pick it up without remounting; a nested provider
+gives its subtree another language, and the server renders parallel requests each in its own:
 
-```ts
-import { useLocale, useTranslations } from '@soldy-ui/plugins'
+```vue
+<script setup lang="ts">
+import { ref } from 'vue'
+import { LocaleProvider } from '@soldy-ui/vue'
+import { ruRU, zhCN } from '@soldy-ui/plugins'
 
-useLocale('ru-RU')
-useTranslations({
-  modal: { close: 'Закрыть' },
-  tabs: { close: (name) => `Закрыть вкладку «${name}»` },
-})
+const current = ref(ruRU) // current.value = zhCN switches on the fly
+</script>
+
+<template>
+  <LocaleProvider :locale="current">
+    <RouterView />
+  </LocaleProvider>
+</template>
 ```
+
+Ready locales cover the six official UN languages (`enUS`, `ruRU`, `zhCN`, `frFR`, `esES`,
+`arEG`). Any other is an object of type `TLocale` the application writes itself, or one built over
+a ready locale: `extendLocale(enUS, { tag: 'mn-MN', translations: { modal: { close: 'Хаах' } } })`.
 
 ## Components
 

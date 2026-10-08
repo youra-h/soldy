@@ -53,6 +53,7 @@ export function createPluginContext(
 		},
 		getInstance: bundle.getInstance.bind(bundle),
 		createId: bundle.createId.bind(bundle),
+		locale: bundle.locale,
 	}
 }
 

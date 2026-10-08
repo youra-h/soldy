@@ -536,7 +536,7 @@ describe('стирание', () => {
  * форматом тоже.
  */
 describe('очистка', () => {
-	it('кнопка по clearable — модификатор; имя собрано с именем поля', () => {
+	it('кнопка по clearable — модификатор; набор кнопки без имени — его пишет плагин имён', () => {
 		const input = field({ name: 'Дата' })
 
 		expect(input.classes.toArray()).not.toContain('s-date-input--clearable')
@@ -544,7 +544,7 @@ describe('очистка', () => {
 		input.clearable = true
 
 		expect(input.classes.toArray()).toContain('s-date-input--clearable')
-		expect(input.clearAria).toEqual({ 'aria-label': 'Clear Дата' })
+		expect(input.clearAria.valueOf()).toEqual({})
 	})
 
 	it('снимает значение и опустошает все части, потом шлёт clear', () => {

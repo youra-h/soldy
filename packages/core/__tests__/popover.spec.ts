@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { DEFAULT_TRANSLATIONS, TPopover, isSwipeable } from '@soldy-ui/core'
+import { TPopover, isSwipeable } from '@soldy-ui/core'
 
 /**
  * Модель Popover: состояние панели и то, что из него следует для разметки.
@@ -16,7 +16,6 @@ describe('умолчания', () => {
 
 		expect(popover.open).toBe(false)
 		expect(popover.closable).toBe(true)
-		expect(popover.closeAria).toEqual({ 'aria-label': 'Close' })
 		expect(popover.lazyMount).toBe(false)
 		expect(popover.placement).toBe('bottom-start')
 		expect(popover.contained).toBe(false)
@@ -137,16 +136,18 @@ describe('data-* для темы', () => {
 })
 
 describe('кнопка закрытия', () => {
-	it('имя — из словаря, раздел popover', () => {
+	it('имени ядро не строит: набор пуст, имя пишет плагин имён', () => {
+		expect(new TPopover().closeAria.valueOf()).toEqual({})
+	})
+
+	it('набор живой: запись — change:closeAria со снимком', () => {
 		const popover = new TPopover()
+		const changes = vi.fn()
 
-		popover.translations = { ...DEFAULT_TRANSLATIONS, popover: { close: 'Закрыть' } }
+		popover.events.on('change:closeAria', changes)
+		popover.closeAria.add('aria-label', 'Закрыть')
 
-		expect(popover.closeAria).toEqual({ 'aria-label': 'Закрыть' })
-
-		popover.translations = { ...DEFAULT_TRANSLATIONS, popover: { close: 'Скрыть' } }
-
-		expect(popover.closeAria).toEqual({ 'aria-label': 'Скрыть' })
+		expect(changes).toHaveBeenCalledWith({ 'aria-label': 'Закрыть' })
 	})
 })
 
@@ -223,7 +224,7 @@ describe('события', () => {
 
 		expect(popover.triggerAria.valueOf()).not.toBe(popover.triggerAria.valueOf())
 		expect(popover.triggerDataset).not.toBe(popover.triggerDataset)
-		expect(popover.closeAria).not.toBe(popover.closeAria)
+		expect(popover.closeAria.valueOf()).not.toBe(popover.closeAria.valueOf())
 		expect(popover.panelDataset).not.toBe(popover.panelDataset)
 	})
 })

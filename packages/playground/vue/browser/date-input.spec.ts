@@ -20,9 +20,8 @@
  * тестом его не достать, проверяется только то, что ряд становится
  * редактируемым и возвращается обратно.
  *
- * Язык поля задаёт приложение (`useLocale`), своего у поля нет: здесь он
- * русский, а тест на другом языке задаёт свой. После теста язык снова
- * английский — его возвращает общий `__tests__/setup.ts`.
+ * Язык поля — тег локали поддерева (`LocaleProvider`), своего у поля нет:
+ * здесь он русский, а тест на другом языке задаёт свой (`language`).
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
@@ -31,9 +30,9 @@ import { commands, userEvent } from 'vitest/browser'
 import { defineComponent, h, nextTick } from 'vue'
 import { TDateInput } from '@soldy-ui/core'
 import type { IDateInputProps } from '@soldy-ui/core'
-import { useLocale } from '@soldy-ui/plugins'
+import { enUS, extendLocale } from '@soldy-ui/plugins'
 import { COMPONENT_SIZES } from '@soldy-ui/playground-shared'
-import { DateInput } from '@soldy-ui/vue'
+import { DateInput, LocaleProvider } from '@soldy-ui/vue'
 
 import { expectClearSquare } from './clear-button'
 
@@ -41,8 +40,11 @@ import '@soldy-ui/theme-oren'
 
 const nextFrame = () => new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
 
+/** Язык провайдера, под которым `show` монтирует поле: по умолчанию русский. */
+let language = 'ru-RU'
+
 beforeEach(() => {
-	useLocale('ru-RU')
+	language = 'ru-RU'
 })
 
 /**
@@ -56,14 +58,19 @@ const show = async (
 ): Promise<TDateInput> => {
 	const ctrl = new TDateInput({ value: '2026-05-12', ...props })
 
+	// Строки раскладке не важны — английские, а язык Intl — тот, что задал тест
+	const locale = extendLocale(enUS, { tag: language })
+
 	render(
 		defineComponent({
 			render: () =>
-				h('div', { class: 's-host', dir, style: 'padding: 16px' }, [
-					h('span', { class: 's-test-before' }, 'Дата рождения '),
-					h(DateInput, { ctrl, aria_label: 'Дата рождения', ...attrs }),
-					h('button', { class: 's-test-after' }, 'После'),
-				]),
+				h(LocaleProvider, { locale }, () =>
+					h('div', { class: 's-host', dir, style: 'padding: 16px' }, [
+						h('span', { class: 's-test-before' }, 'Дата рождения '),
+						h(DateInput, { ctrl, aria_label: 'Дата рождения', ...attrs }),
+						h('button', { class: 's-test-after' }, 'После'),
+					]),
+				),
 		}),
 	)
 
@@ -319,7 +326,7 @@ describe('клавиши и фокус', () => {
 	})
 
 	it('ar-EG: ряд справа налево, ← ведёт к следующей части формата', async () => {
-		useLocale('ar-EG')
+		language = 'ar-EG'
 
 		await show()
 
@@ -337,7 +344,7 @@ describe('клавиши и фокус', () => {
 	})
 
 	it('he-IL на странице справа налево: цифры слева направо', async () => {
-		useLocale('he-IL')
+		language = 'he-IL'
 
 		await show({}, {}, 'rtl')
 
@@ -350,7 +357,7 @@ describe('клавиши и фокус', () => {
 
 describe('время', () => {
 	it('en-US: час и минута цифрами, буква — период суток, фокус идёт по частям', async () => {
-		useLocale('en-US')
+		language = 'en-US'
 
 		const ctrl = await show({ kind: 'datetime', value: undefined })
 
@@ -383,7 +390,7 @@ describe('время', () => {
 	})
 
 	it('дата и время — один ряд в строку', async () => {
-		useLocale('en-US')
+		language = 'en-US'
 
 		await show({ kind: 'datetime', value: '2026-05-12T14:30' })
 
@@ -408,7 +415,7 @@ describe('время', () => {
 	})
 
 	it('en-US до секунды: за минутой фокус на секунде, за ней — период суток', async () => {
-		useLocale('en-US')
+		language = 'en-US'
 
 		const ctrl = await show({
 			kind: 'datetime',
@@ -660,7 +667,7 @@ describe('ширина поля', () => {
 		['lt-LT', '20261211'],
 	] as const) {
 		it(`${locale}: с пустого поля до собранной даты корень не меняет ширину`, async () => {
-			useLocale(locale)
+			language = locale
 
 			await show({ value: undefined })
 			const empty = fieldWidth()
@@ -679,7 +686,7 @@ describe('ширина поля', () => {
 	}
 
 	it('поле со временем: пустое и набранное — одной ширины', async () => {
-		useLocale('en-US')
+		language = 'en-US'
 
 		const ctrl = await show({ kind: 'datetime', value: undefined })
 		const empty = fieldWidth()
@@ -694,7 +701,7 @@ describe('ширина поля', () => {
 	// секунды с периодом суток шире минимума поля со временем
 	for (const locale of ['en-US', 'ru-RU', 'ko-KR']) {
 		it(`${locale}: поле до секунды — пустое и набранное одной ширины`, async () => {
-			useLocale(locale)
+			language = locale
 
 			const ctrl = await show({
 				kind: 'datetime',

@@ -16,14 +16,7 @@
  */
 
 import { describe, it, expect, vi } from 'vitest'
-import {
-	DEFAULT_TRANSLATIONS,
-	TTags,
-	TTagsItem,
-	TTagsCollectionFacade,
-	TSelect,
-	TSelectCollectionFacade,
-} from '../src'
+import { TTags, TTagsItem, TTagsCollectionFacade, TSelect, TSelectCollectionFacade } from '../src'
 import type { IPopover, ITagsItem, ITagsProps } from '@soldy-ui/core'
 
 function createTags(texts: string[], props: Partial<ITagsProps> = {}) {
@@ -73,19 +66,16 @@ describe('свойство overflow', () => {
 		expect(changed).toHaveBeenCalledExactlyOnceWith('popover')
 	})
 
-	it('имя кнопки «…» — из словаря, по умолчанию английское', () => {
+	it('имени кнопки «…» ядро не строит: набор пуст, имя пишет плагин имён', () => {
 		const tags = new TTags()
+		const changed = vi.fn()
 
-		expect(tags.moreLabel).toBe('More')
-		expect(tags.moreAria).toEqual({ 'aria-label': 'More' })
+		expect(tags.moreAria.valueOf()).toEqual({})
 
-		tags.translations = {
-			...DEFAULT_TRANSLATIONS,
-			tags: { ...DEFAULT_TRANSLATIONS.tags, more: 'Ещё' },
-		}
+		tags.events.on('change:moreAria', changed)
+		tags.moreAria.add('aria-label', 'Ещё')
 
-		expect(tags.moreLabel).toBe('Ещё')
-		expect(tags.moreAria).toEqual({ 'aria-label': 'Ещё' })
+		expect(changed).toHaveBeenCalledExactlyOnceWith({ 'aria-label': 'Ещё' })
 	})
 
 	it('arrows — признак режима, а не сравнение строки в шести разметках', () => {

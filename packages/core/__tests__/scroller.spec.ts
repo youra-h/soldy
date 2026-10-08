@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { DEFAULT_TRANSLATIONS, TScroller } from '@soldy-ui/core'
+import { TScroller } from '@soldy-ui/core'
 import type { TScrollerDirection, TScrollerViewport } from '@soldy-ui/core'
 
 /**
@@ -19,14 +19,12 @@ const viewport = (patch: Partial<TScrollerViewport> = {}): TScrollerViewport => 
 })
 
 describe('умолчания', () => {
-	it('листать некуда, имена кнопок английские, роли ряда нет', () => {
+	it('листать некуда, роли ряда нет', () => {
 		const scroller = new TScroller()
 
 		expect(scroller.canPrev).toBe(false)
 		expect(scroller.canNext).toBe(false)
 		expect(scroller.hasTabStops).toBe(false)
-		expect(scroller.prevAria).toEqual({ 'aria-label': 'Scroll back' })
-		expect(scroller.nextAria).toEqual({ 'aria-label': 'Scroll forward' })
 		expect(scroller.viewportAria).toBeUndefined()
 	})
 
@@ -190,30 +188,24 @@ describe('команды', () => {
 	})
 })
 
-describe('имена кнопок', () => {
-	it('следуют за словарём — раздел scroller', () => {
+describe('наборы кнопок', () => {
+	it('имён ядро не строит: наборы пусты, имена пишет плагин имён', () => {
 		const scroller = new TScroller()
 
-		scroller.translations = {
-			...DEFAULT_TRANSLATIONS,
-			scroller: { prev: 'Назад', next: 'Вперёд' },
-		}
-
-		expect(scroller.prevAria).toEqual({ 'aria-label': 'Назад' })
-		expect(scroller.nextAria).toEqual({ 'aria-label': 'Вперёд' })
+		expect(scroller.prevAria.valueOf()).toEqual({})
+		expect(scroller.nextAria.valueOf()).toEqual({})
 	})
 
-	it('смена словаря сообщается один раз', () => {
+	it('запись сообщается событием набора; то же значение — молча', () => {
 		const scroller = new TScroller()
 		const changed = vi.fn()
-		const translations = { ...DEFAULT_TRANSLATIONS }
 
-		scroller.events.on('change:translations', changed)
+		scroller.events.on('change:prevAria', changed)
 
-		scroller.translations = translations
-		scroller.translations = translations
+		scroller.prevAria.add('aria-label', 'Назад')
+		scroller.prevAria.add('aria-label', 'Назад')
 
-		expect(changed).toHaveBeenCalledTimes(1)
+		expect(changed).toHaveBeenCalledExactlyOnceWith({ 'aria-label': 'Назад' })
 	})
 })
 

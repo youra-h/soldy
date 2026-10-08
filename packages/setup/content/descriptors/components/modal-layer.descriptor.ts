@@ -12,8 +12,8 @@
  * ним был бы вторым путём к одному факту. Поэтому плагины слоя ставятся с
  * `property: 'visible'`.
  *
- * Имена кнопок — из словаря приложения: его пишет плагин словаря, а разметка
- * получает готовые наборы (`closeAria`, у окна — `maximizeAria`).
+ * Имена кнопок — от локали поддерева: их пишет в наборы (`closeAria`, у окна —
+ * `maximizeAria`) плагин имён наследника, как связки — его плагин `ids`.
  */
 
 import { defineComponent, defineDescriptor } from '../../../protected/define'
@@ -23,7 +23,6 @@ import {
 	HideOutsidePluginDescriptor,
 	ModalFocusPluginDescriptor,
 	ScrollLockPluginDescriptor,
-	TranslationsPluginDescriptor,
 } from '../plugins'
 import { LayerDescriptor } from './layer.descriptor'
 
@@ -55,10 +54,10 @@ export const ModalLayerDescriptor = defineDescriptor(() =>
 				 */
 				titleAria: { type: Object, protected: true, triggers: ['change:titleAria'] },
 				/**
-				 * Имя кнопки закрытия — из словаря. Отдельный набор: кнопка — сосед
-				 * содержимого.
+				 * Набор кнопки закрытия: кнопка — сосед содержимого. Имя в него
+				 * пишет плагин имён наследника.
 				 */
-				closeAria: { type: Object, protected: true, triggers: ['change:translations'] },
+				closeAria: { type: Object, protected: true, triggers: ['change:closeAria'] },
 				/**
 				 * Номер слоя и открытость у подложки: они у неё те же, что у
 				 * панели. По открытости подложка гаснет вместе с панелью.
@@ -77,9 +76,6 @@ export const ModalLayerDescriptor = defineDescriptor(() =>
 		},
 
 		plugins: [
-			// Словарь приложения — до поведения: имена кнопок есть с первой
-			// отрисовки
-			TranslationsPluginDescriptor,
 			// Нажатие мимо — по подложке. Без `focusOutside`: фокус из модального
 			// слоя не уходит, его держит модель фокуса. Раньше фокуса и фона:
 			// оба берут у него панель

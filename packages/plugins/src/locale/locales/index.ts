@@ -1,0 +1,6 @@
+export { enUS } from './en'
+export { ruRU } from './ru'
+export { zhCN } from './zh'
+export { frFR } from './fr'
+export { esES } from './es'
+export { arEG } from './ar'

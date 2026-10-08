@@ -10,9 +10,8 @@
  * (`mode="none"`) набор — список без действия у строк, и клавиатура молчит.
  * См. AGENTS, «Граница переиспользования» и «Готовые паттерны».
  *
- * Имя кнопки «…» — из словаря приложения (плагин словаря). Кнопки листания
- * в `arrows` — ленты: имена им лента берёт из своего словаря, и сквозь Tags
- * они не идут.
+ * Имя кнопки «…» — от локали (плагин имён). Кнопки листания в `arrows` —
+ * ленты: имена им пишет плагин имён ленты, и сквозь Tags они не идут.
  */
 
 import { defineComponent, defineDescriptor, defineType } from '../../../../protected/define'
@@ -23,9 +22,9 @@ import {
 	CollectionBundlesPluginDescriptor,
 	CollectionElementsPluginDescriptor,
 	TagsKeyboardPluginDescriptor,
+	TagsNamesPluginDescriptor,
 	TagsOverflowPluginDescriptor,
 	TagsScrollPluginDescriptor,
-	TranslationsPluginDescriptor,
 } from '../../plugins'
 
 export const TagsDescriptor = defineDescriptor(() =>
@@ -84,15 +83,11 @@ export const TagsDescriptor = defineDescriptor(() =>
 				 */
 				rowAria: { type: Object, protected: true, triggers: ['change:rowAria'] },
 				/**
-				 * Имя кнопки «…» — из словаря. Выход: разметка отдаёт его панели,
-				 * диалог без имени скринридер объявил бы безымянным.
+				 * Набор кнопки «…»: своего экземпляра у неё нет, она — содержимое
+				 * слота `trigger` у панели. Имя в него пишет `TTagsNamesPlugin`,
+				 * он же отдаёт его выходом `names_more` — имя панели.
 				 */
-				moreLabel: { type: String, protected: true, triggers: ['change:translations'] },
-				/**
-				 * Имя кнопки «…» готовым набором: своего экземпляра у неё нет, она
-				 * — содержимое слота `trigger` у панели.
-				 */
-				moreAria: { type: Object, protected: true, triggers: ['change:translations'] },
+				moreAria: { type: Object, protected: true, triggers: ['change:moreAria'] },
 				/**
 				 * Классы панели: теги в ней телепортированы, и селекторы вида до них
 				 * не достают. Считает это ядро, а не шаблон каждого адаптера.
@@ -104,8 +99,8 @@ export const TagsDescriptor = defineDescriptor(() =>
 		},
 
 		plugins: [
-			// Словарь приложения: имя кнопки «…» — с первой отрисовки
-			TranslationsPluginDescriptor,
+			// Имя кнопки «…» и её панели от локали — с первой отрисовки
+			TagsNamesPluginDescriptor,
 			// Коллекция: реестр bundles + доступ к DOM-элементам
 			CollectionBundlesPluginDescriptor,
 			CollectionElementsPluginDescriptor,

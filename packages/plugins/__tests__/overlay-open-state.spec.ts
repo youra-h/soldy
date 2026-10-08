@@ -26,6 +26,7 @@ function contextOf(owner: object): IPluginContext {
 		get: bundle.get.bind(bundle),
 		getInstance: bundle.getInstance.bind(bundle),
 		createId: bundle.createId.bind(bundle),
+		locale: bundle.locale,
 	}
 }
 

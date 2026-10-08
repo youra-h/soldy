@@ -1,7 +1,6 @@
 import { TControl } from '../../base/control'
 import type { TDefaultValues } from '../../base/component'
-import { DEFAULT_LOCALE, DEFAULT_TRANSLATIONS } from '../../../common'
-import type { TTranslations } from '../../../common'
+import { DEFAULT_LOCALE } from '../../../common'
 import type { ITable, ITableProps, TTableEvents } from './types'
 
 /**
@@ -16,9 +15,9 @@ import type { ITable, ITableProps, TTableEvents } from './types'
  *
  * Своё у таблицы — язык (`locale`): по нему сортировка сравнивает строки.
  * Хранится как задан; невалидный тег сортировка читает как `en-US`, а не
- * падает. Задаёт его приложение одним языком на всё (плагин языка). И имя
- * чекбокса «выбрать все» (`selectAllLabel`): своего текста у ячейки шапки
- * колонки выбора нет, и строку даёт словарь (`translations`, раздел `table`).
+ * падает. С setup его пишет плагин языка — тег локали поддерева. Имя чекбокса
+ * «выбрать все» — строка локали, и отдаёт её разметке плагин имён таблицы
+ * (`TTableNamesPlugin`): ядро имён не строит.
  */
 export class TTable extends TControl<ITableProps, TTableEvents> implements ITable {
 	static override baseClass = 's-table'
@@ -30,7 +29,6 @@ export class TTable extends TControl<ITableProps, TTableEvents> implements ITabl
 	}
 
 	protected _locale: string
-	protected _translations: TTranslations = DEFAULT_TRANSLATIONS
 
 	constructor(props: Partial<ITableProps> = {}) {
 		super(props)
@@ -49,29 +47,6 @@ export class TTable extends TControl<ITableProps, TTableEvents> implements ITabl
 
 		this._locale = value
 		this.events.emit('change:locale', value)
-	}
-
-	/**
-	 * Словарь строк библиотеки: таблица читает из него имя чекбокса «выбрать
-	 * все». Та же ссылка — ничего не меняет.
-	 */
-	get translations(): TTranslations {
-		return this._translations
-	}
-
-	set translations(value: TTranslations) {
-		if (this._translations === value) return
-
-		this._translations = value
-		this.events.emit('change:translations', value)
-	}
-
-	/**
-	 * Имя чекбокса «выбрать все» — выход, а не вход: строку даёт словарь, а
-	 * разметка отдаёт её чекбоксу шапки, у которого своего текста нет.
-	 */
-	get selectAllLabel(): string {
-		return this._translations.table.selectAll
 	}
 
 	override getProps(): ITableProps {

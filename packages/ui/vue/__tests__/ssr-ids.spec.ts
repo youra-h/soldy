@@ -30,8 +30,9 @@ import {
 	Tabs,
 	TabsContent,
 	TabsItem,
+	LocaleProvider,
 } from '@soldy-ui/vue'
-import { useLocale } from '@soldy-ui/plugins'
+import { ruRU } from '@soldy-ui/plugins'
 
 const containers: HTMLElement[] = []
 
@@ -149,10 +150,8 @@ describe('id при гидратации', () => {
 	})
 
 	it('поле даты: id частей у сервера и браузера одни, редактируемости нет ни у кого', async () => {
-		useLocale('ru-RU')
-
 		const { server, client, warnings } = await hydrate(() =>
-			h(DateInput, { value: '2026-05-12' }),
+			h(LocaleProvider, { locale: ruRU }, () => h(DateInput, { value: '2026-05-12' })),
 		)
 		const ids = attrs(client, '.s-date-input__segment', 'id')
 

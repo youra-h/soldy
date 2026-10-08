@@ -6,16 +6,16 @@
 '@soldy-ui/react': minor
 ---
 
-Язык и строки библиотеки задаёт приложение, а не разметка. Сняты пропсы со строками: `closeLabel` (Dialog, Drawer, Popover, Tabs.Item, Tags.Item), `maximizeLabel` (Dialog), `clearLabel` (Input, DateInput, Select), `moreLabel` (Tags), `prevLabel` и `nextLabel` (Tags, Scroller, Calendar), `prevYearLabel`, `nextYearLabel`, `prevYearsLabel` и `nextYearsLabel` (Calendar), `triggerLabel`, `startLabel` и `endLabel` (DatePicker), `selectAllLabel` (Table). `locale` у Calendar, DateInput, DatePicker и Table больше не вход.
+Язык и строки библиотеки — локаль поддерева, а не пропсы. Сняты пропсы со строками: `closeLabel` (Dialog, Drawer, Popover, Tabs.Item, Tags.Item), `maximizeLabel` (Dialog), `clearLabel` (Input, DateInput, Select), `moreLabel` (Tags), `prevLabel` и `nextLabel` (Tags, Scroller, Calendar), `prevYearLabel`, `nextYearLabel`, `prevYearsLabel` и `nextYearsLabel` (Calendar), `triggerLabel`, `startLabel` и `endLabel` (DatePicker), `selectAllLabel` (Table). `locale` у Calendar, DateInput, DatePicker и Table больше не вход.
 
-Как обновиться: в точке входа приложения — на сервере тоже — задайте язык и строки вызовами из `@soldy-ui/plugins`:
+Как обновиться: оберните приложение — на сервере тоже, в каждом запросе — провайдером локали адаптера:
 
-```ts
-useLocale('ru-RU')
-useTranslations({
-  modal: { close: 'Закрыть' },
-  tabs: { close: (name) => `Закрыть вкладку «${name}»` },
-})
+```vue
+<LocaleProvider :locale="ruRU">
+  <App />
+</LocaleProvider>
 ```
 
-Строки накладываются на английское умолчание; строка с именем части (`tabs.close`, `tags.close`, `field.clear`) — функция от имени. Английские умолчания и тип словаря — `DEFAULT_LOCALE`, `DEFAULT_TRANSLATIONS` и `TTranslations` из `@soldy-ui/core`. Своего языка и своих строк у компонента нет: `locale` и `translations` экземпляра ядра пишут при монтировании плагины `TLocalePlugin` и `TTranslationsPlugin`, смену — на лету, без перемонтирования.
+Локаль — `{ tag, translations }` из `@soldy-ui/plugins`: тег BCP 47 для Intl и строки библиотеки, данные без функций (место имени части — `{name}`). Готовые — `enUS`, `ruRU`, `zhCN`, `frFR`, `esES`, `arEG`; свою пишут объектом типа `TLocale` или собирают поверх готовой — `extendLocale(enUS, { tag: 'mn-MN', translations: { modal: { close: 'Хаах' } } })`. Смена пропа провайдера доезжает до компонентов на лету, без перемонтирования; вложенный провайдер даёт поддереву свой язык; без провайдера — английский.
+
+В ядре строк больше нет: наборы кнопок (`closeAria`, `maximizeAria`, `prevAria`, `nextAria`, `clearAria`, `moreAria`) — живые `TAria`, имена в них пишут плагины имён (`TNamesPlugin` и наследники). Тег в `locale` ядра пишет `TLocalePlugin`. Контексту сборки локаль приходит опцией `locale` (`createAdapterContext`), плагину — `IPluginContext.locale`.

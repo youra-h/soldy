@@ -15,8 +15,8 @@ import { defineComponent, nextTick, h, ref } from 'vue'
  * плагины, которым нужен DOM-узел, включаются кадром позже. Ждём кадр.
  */
 const nextFrame = () => new Promise((resolve) => requestAnimationFrame(resolve))
-import { Frame, Select, SelectItem, Input, propsSelect } from '@soldy-ui/vue'
-import { TAnchorPlugin, useTranslations } from '@soldy-ui/plugins'
+import { Frame, LocaleProvider, Select, SelectItem, Input, propsSelect } from '@soldy-ui/vue'
+import { TAnchorPlugin, ruRU } from '@soldy-ui/plugins'
 import { TSelect } from '@soldy-ui/core'
 import type { IInput, TSelectPlacement } from '@soldy-ui/core'
 import Harness from './Select.test.vue'
@@ -238,7 +238,7 @@ describe('опции', () => {
 
 /**
  * Кнопку очистки рисует поле — `Input` внутри Select (`.s-input__clear`):
- * `clearable` Select отдаёт полю, имя кнопке поле собирает из своего словаря,
+ * `clearable` Select отдаёт полю, имя кнопке пишет плагин имён самого поля,
  * и своей кнопки у Select нет.
  */
 describe('кнопка очистки', () => {
@@ -263,12 +263,14 @@ describe('кнопка очистки', () => {
 		expect(clear.attributes('aria-label')).toBe('Clear Город')
 	})
 
-	it('строку имени поле берёт из словаря приложения — через Select она не идёт', () => {
-		useTranslations({ field: { clear: (name) => `Очистить ${name}` } })
+	it('строку имени поле берёт от локали поддерева — через Select она не идёт', () => {
+		wrapper = mount(LocaleProvider, {
+			props: { locale: ruRU },
+			slots: { default: () => h(Harness, { clearable: true }) },
+			attachTo: document.body,
+		})
 
-		const clear = render({ clearable: true }).find('.s-input__clear')
-
-		expect(clear.attributes('aria-label')).toBe('Очистить Город')
+		expect(wrapper.find('.s-input__clear').attributes('aria-label')).toBe('Очистить Город')
 	})
 
 	it('клик сбрасывает выбранное значение и панель не открывает', async () => {

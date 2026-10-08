@@ -1,91 +1,90 @@
-import { DEFAULT_TRANSLATIONS } from '@soldy-ui/core'
-import type { TPartialTranslations, TTranslations } from '@soldy-ui/core'
-import { localeStore } from './store'
+import type { TLocale, TLocalePatch, TPartialTranslations, TTranslations } from './types'
+
+/** Место для имени части в строке-шаблоне. */
+const NAME = '{name}'
 
 /**
- * Задать язык библиотеки — на всё приложение, как режим движения
- * (`useMotion`): зовут в точке входа, на сервере тоже.
+ * Строка с именем части: шаблон из локали, на месте `{name}` — имя.
  *
  * ```ts
- * useLocale('ru-RU') // подписи дат, первый день недели, формат поля даты, сортировка таблицы
+ * formatName('Закрыть {name}', 'Настройки') // 'Закрыть Настройки'
+ * formatName('Закрыть {name}', '')          // 'Закрыть'
  * ```
  *
- * Язык — тег BCP 47 для Intl, и только: строки библиотеки задаёт словарь
- * (`useTranslations`), это отдельный вызов. Компоненты с языком (календарь,
- * поле даты, DatePicker, таблица) получают его от плагина языка при
- * монтировании, а смену — на лету, без перемонтирования. Своего языка у
- * компонента нет. Тот же тег — ничего не меняет; тег, которого нет у движка,
- * Intl читает как `en-US`.
+ * Имя приходит без пробелов по краям. Пустое имя — у части имени нет, и
+ * строка остаётся без него: пробел, который стоял при имени, не повисает ни
+ * по краям, ни двойным в середине.
  */
-export function useLocale(tag: string): void {
-	localeStore.locale = tag
+export function formatName(template: string, name: string): string {
+	return template.split(NAME).join(name.trim()).replace(/ {2,}/g, ' ').trim()
 }
 
 /**
- * Задать строки библиотеки — на всё приложение: имена кнопок без текста
- * (закрыть, листать, очистить) и полей, которым подпись неоткуда взять.
+ * Локаль поверх готовой: свой тег, свои строки, остальное — от `base`.
  *
  * ```ts
- * useTranslations(ru)              // свой словарь поверх английского
- * useTranslations(ru, { tags: { more: 'Ещё теги' } }) // и точечно поверх него
- * useTranslations()                // снова английский
+ * const esMX = extendLocale(esES, { tag: 'es-MX' })
+ * const mn = extendLocale(enUS, {
+ * 	tag: 'mn-MN',
+ * 	translations: { modal: { close: 'Хаах' } },
+ * })
  * ```
  *
- * Части накладываются по порядку на английское умолчание
- * (`DEFAULT_TRANSLATIONS`), а не на результат прошлого вызова: словарь — это
- * то, что передано сейчас, и от истории вызовов не зависит. Чего в частях
- * нет, остаётся английским; ключ со значением `undefined` — тоже. Строка с
- * именем части — функция от имени (`tabs.close`, `tags.close`, `field.clear`):
- * порядок слов у каждого языка свой.
- *
- * Компоненты получают словарь от плагина словаря при монтировании, а смену —
- * на лету.
+ * Так делают регион готового языка, свою формулировку строки и язык, который
+ * переведён не целиком: чего в правке нет, остаётся от `base`; ключ со
+ * значением `undefined` строку не задаёт. Результат заморожен, как и готовые
+ * локали: объект один на всё поддерево, и правка на месте молча
+ * переименовала бы кнопки у всех компонентов, не сообщив ни одному.
  */
-export function useTranslations(...parts: readonly TPartialTranslations[]): void {
-	localeStore.translations = parts.length > 0 ? overlay(parts) : DEFAULT_TRANSLATIONS
+export function extendLocale(base: TLocale, patch: TLocalePatch): TLocale {
+	return Object.freeze({
+		tag: patch.tag ?? base.tag,
+		translations: overlay(base.translations, patch.translations ?? {}),
+	})
 }
 
 /**
- * Словарь из частей поверх английского. Разделы перечислены поимённо: новый
- * раздел словаря без строки здесь — ошибка компиляции, а не молча английский.
+ * Готовая локаль пакета — замороженной вместе с разделами, как результат
+ * `extendLocale`. Наружу не выходит: свою полную локаль приложение пишет
+ * обычным объектом.
  */
-function overlay(parts: readonly TPartialTranslations[]): TTranslations {
-	const translations: TTranslations = {
-		modal: section('modal', parts),
-		dialog: section('dialog', parts),
-		popover: section('popover', parts),
-		tabs: section('tabs', parts),
-		tags: section('tags', parts),
-		scroller: section('scroller', parts),
-		field: section('field', parts),
-		table: section('table', parts),
-		calendar: section('calendar', parts),
-		datePicker: section('datePicker', parts),
-	}
-
-	// Словарь один на всю библиотеку, как и английский: правка на месте молча
-	// переименовала бы кнопки у всех компонентов, не сообщив ни одному
-	Object.freeze(translations)
-
-	return translations
+export function freezeLocale(locale: TLocale): TLocale {
+	return extendLocale(locale, {})
 }
 
-/** Раздел `key`: английский, поверх — тот же раздел каждой части по порядку. */
+/**
+ * Строки правки поверх строк `base`. Разделы перечислены поимённо: новый
+ * раздел без строки здесь — ошибка компиляции, а не молча строки `base`.
+ */
+function overlay(base: TTranslations, patch: TPartialTranslations): TTranslations {
+	return Object.freeze({
+		modal: section(base, patch, 'modal'),
+		dialog: section(base, patch, 'dialog'),
+		popover: section(base, patch, 'popover'),
+		tabs: section(base, patch, 'tabs'),
+		tags: section(base, patch, 'tags'),
+		scroller: section(base, patch, 'scroller'),
+		field: section(base, patch, 'field'),
+		table: section(base, patch, 'table'),
+		calendar: section(base, patch, 'calendar'),
+		datePicker: section(base, patch, 'datePicker'),
+	})
+}
+
+/** Раздел `key`: строки `base`, поверх — заданные строки того же раздела правки. */
 function section<K extends keyof TTranslations>(
+	base: TTranslations,
+	patch: TPartialTranslations,
 	key: K,
-	parts: readonly TPartialTranslations[],
 ): TTranslations[K] {
-	const result = parts.reduce<TTranslations[K]>(
-		(merged, part) => ({ ...merged, ...defined(part[key]) }),
-		DEFAULT_TRANSLATIONS[key],
-	)
+	const result: TTranslations[K] = { ...base[key], ...defined(patch[key]) }
 
 	Object.freeze(result)
 
 	return result
 }
 
-/** Строки части без ключей со значением `undefined`: такой ключ строку не задаёт. */
+/** Строки раздела без ключей со значением `undefined`: такой ключ строку не задаёт. */
 function defined<T extends object>(part: Partial<T> | undefined): Partial<T> {
 	const result: Partial<T> = {}
 

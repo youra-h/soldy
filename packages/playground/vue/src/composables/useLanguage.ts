@@ -1,5 +1,5 @@
-import { ref, watchEffect } from 'vue'
-import { useLocale } from '@soldy-ui/plugins'
+import { computed, ref, watchEffect } from 'vue'
+import type { TLocale } from '@soldy-ui/plugins'
 import { LOCALES } from '@soldy-ui/playground-shared'
 
 const STORAGE_KEY = 'soldy-playground-locale'
@@ -35,22 +35,23 @@ try {
 	// Приватный режим или заблокированное хранилище — не повод падать
 }
 
+/** Локаль выбранного языка — та, что уходит провайдеру стенда. */
+const locale = computed<TLocale>(() => (LOCALES[language.value] ?? LOCALES['en-US']).locale)
+
 /**
- * Язык библиотеки на стенде: подписи дат, первый день недели, формат поля
- * даты и сортировка таблицы на любом языке из списка.
+ * Язык библиотеки на стенде: строки, подписи дат, первый день недели, формат
+ * поля даты и сортировка таблицы на любом языке из списка.
  *
- * Язык стенд держит сам и на каждую смену отдаёт библиотеке (`useLocale`), как
- * режим движения (`useMotionMode`): своего языка у компонента нет, и пропом
- * его на превью не задать. Компоненты получают смену на лету, без
- * перемонтирования. Строк библиотеки стенд не переводит: словарь
- * (`useTranslations`) — отдельный вызов, а готовых переводов у библиотеки нет.
+ * Язык стенд держит сам, а библиотеке отдаёт локалью провайдера
+ * (`LocaleProvider` вокруг стенда в `App.vue`, `locale`): своего языка у
+ * компонента нет, и пропом его на превью не задать. Смену провайдер пишет
+ * компонентам на лету, без перемонтирования.
  *
- * Язык общий на всё приложение (модульный `ref`), как тема (`useTheme`).
+ * Язык общий на всё приложение (модульный `ref`), как тема (`useTheme`), и
+ * переживает перезагрузку стенда (хранилище браузера).
  */
 export function useLanguage() {
 	watchEffect(() => {
-		useLocale(language.value)
-
 		try {
 			localStorage.setItem(STORAGE_KEY, language.value)
 		} catch {
@@ -63,5 +64,5 @@ export function useLanguage() {
 		if (isLanguage(value)) language.value = value
 	}
 
-	return { language, languages: LOCALES, choose }
+	return { language, locale, languages: LOCALES, choose }
 }

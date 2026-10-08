@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { DEFAULT_TRANSLATIONS, TDatePicker, isSwipeable } from '@soldy-ui/core'
+import { TDatePicker, isSwipeable } from '@soldy-ui/core'
 import type {
 	IDatePickerProps,
 	TCalendarUnavailable,
@@ -59,18 +59,16 @@ describe('без аргументов', () => {
 		expect(target.dataset.get('open')).toBe('false')
 	})
 
-	it('кнопка и панель названы, связка кнопки — диалог', () => {
+	it('связка кнопки — диалог, панель — модальный диалог; имена пишет плагин имён', () => {
 		const target = picker()
 
 		expect(target.triggerAria.toObject()).toEqual({
 			'aria-haspopup': 'dialog',
 			'aria-expanded': 'false',
-			'aria-label': 'Choose date',
 		})
 		expect(target.panelAria.toObject()).toEqual({
 			role: 'dialog',
 			'aria-modal': 'true',
-			'aria-label': 'Choose date',
 		})
 		expect(target.triggerDataset).toEqual({ 'data-selected': 'false' })
 	})
@@ -536,19 +534,13 @@ describe('жест — смахнуть панель, чтобы закрыть'
 })
 
 describe('имена и наборы', () => {
-	it('имя кнопки из словаря называет и кнопку, и панель', () => {
+	it('имён ядро не строит: имя кнопки и панели пишет плагин имён', () => {
 		const target = picker()
 
-		expect(target.triggerAria.get('aria-label')).toBe('Choose date')
-		expect(target.panelAria.get('aria-label')).toBe('Choose date')
-
-		target.translations = {
-			...DEFAULT_TRANSLATIONS,
-			datePicker: { ...DEFAULT_TRANSLATIONS.datePicker, trigger: 'Выбрать дату' },
-		}
-
-		expect(target.triggerAria.get('aria-label')).toBe('Выбрать дату')
-		expect(target.panelAria.get('aria-label')).toBe('Выбрать дату')
+		expect(target.triggerAria.has('aria-label')).toBe(false)
+		expect(target.panelAria.has('aria-label')).toBe(false)
+		expect('startLabel' in target).toBe(false)
+		expect('endLabel' in target).toBe(false)
 	})
 
 	it('набор корня: у диапазона — группа с aria DatePicker, у одной даты — пусто', () => {
@@ -559,21 +551,6 @@ describe('имена и наборы', () => {
 		target.mode = 'range'
 
 		expect(target.rootAria).toEqual({ role: 'group', 'aria-disabled': 'true' })
-	})
-
-	it('имена концов — выходы DatePicker из словаря', () => {
-		const target = picker()
-
-		expect(target.startLabel).toBe('Start date')
-		expect(target.endLabel).toBe('End date')
-
-		target.translations = {
-			...DEFAULT_TRANSLATIONS,
-			datePicker: { ...DEFAULT_TRANSLATIONS.datePicker, start: 'Заезд', end: 'Выезд' },
-		}
-
-		expect(target.startLabel).toBe('Заезд')
-		expect(target.endLabel).toBe('Выезд')
 	})
 })
 

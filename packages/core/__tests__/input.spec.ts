@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { DEFAULT_TRANSLATIONS, TInput } from '@soldy-ui/core'
+import { TInput } from '@soldy-ui/core'
 
 describe('TInput', () => {
 	it('создаётся через { props } и через plain props', () => {
@@ -154,35 +154,27 @@ describe('TInput · очистка', () => {
 		expect(handler).toHaveBeenCalledTimes(1)
 	})
 
-	describe('clearAria — имя кнопки', () => {
-		it('собирается с именем поля, чтобы кнопки были различимы', () => {
-			// На форме с пятью полями пять одинаковых «Clear, кнопка» в списке
-			// элементов скринридера выбрать нельзя
-			expect(new TInput({ name: 'Город' }).clearAria['aria-label']).toBe('Clear Город')
+	describe('clearAria — набор кнопки', () => {
+		it('имени ядро не строит: его с именем поля пишет плагин имён', () => {
+			expect(new TInput({ name: 'Город' }).clearAria.has('aria-label')).toBe(false)
 		})
 
-		it('без имени поля остаётся одно слово', () => {
-			expect(new TInput().clearAria['aria-label']).toBe('Clear')
-			expect(new TInput({ name: '  ' }).clearAria['aria-label']).toBe('Clear')
-		})
-
-		it('строку задаёт словарь приложения — и порядок слов в ней тоже', () => {
+		it('набор живой: запись — change:clearAria со снимком', () => {
 			const input = new TInput({ name: 'Город' })
 			const handler = vi.fn()
-			const translations = {
-				...DEFAULT_TRANSLATIONS,
-				field: { clear: (name: string) => `Очистить поле «${name}»` },
-			}
 
-			input.events.on('change:translations', handler)
-			input.translations = translations
+			input.events.on('change:clearAria', handler)
+			input.clearAria.add('aria-label', 'Очистить Город')
 
-			expect(input.clearAria['aria-label']).toBe('Очистить поле «Город»')
-			expect(handler).toHaveBeenCalledWith(translations)
+			expect(handler).toHaveBeenCalledWith({ 'aria-label': 'Очистить Город' })
 		})
 
-		it('отдельный набор: это имя соседней кнопки, а не самого поля', () => {
-			expect(new TInput({ name: 'Город' }).aria.has('aria-label')).toBe(false)
+		it('отдельный набор: это соседняя кнопка, а не само поле', () => {
+			const input = new TInput({ name: 'Город' })
+
+			input.clearAria.add('aria-label', 'Очистить Город')
+
+			expect(input.aria.has('aria-label')).toBe(false)
 		})
 	})
 

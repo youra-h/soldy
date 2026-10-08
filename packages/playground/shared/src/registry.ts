@@ -42,7 +42,8 @@ import {
 	TooltipDescriptor,
 	ValueControlDescriptor,
 } from '@soldy-ui/setup'
-import type { TMotionMode } from '@soldy-ui/plugins'
+import { arEG, enUS, esES, extendLocale, frFR, ruRU, zhCN } from '@soldy-ui/plugins'
+import type { TLocale, TMotionMode } from '@soldy-ui/plugins'
 import type { TComponentEntry, TThemeEntry, TIconPackEntry } from './types'
 
 /**
@@ -367,20 +368,33 @@ export const MOTION_MODES: Readonly<Record<TMotionMode, string>> = {
 	reduce: 'Без движения',
 }
 
+/** Язык в списке шапки: подпись и локаль библиотеки. */
+export type TLocaleEntry = {
+	readonly label: string
+	readonly locale: TLocale
+}
+
 /**
- * Языки библиотеки на стенде (`useLocale`) — теги BCP 47 с подписями, в
- * порядке списка в шапке. Свой язык у компонента не задаётся, поэтому
- * посмотреть подписи дат, неделю и формат поля на другом языке можно только
- * отсюда. Подборка — по тому, что язык меняет: неделя от понедельника
- * (`ru-RU`), справа налево (`he-IL`, `ar-EG` — ещё и арабские цифры),
- * буддийский год (`th-TH`), числа слитно с подписью (`ja-JP`).
+ * Языки библиотеки на стенде — по тегу BCP 47, в порядке списка в шапке:
+ * локаль уходит провайдеру (`LocaleProvider` вокруг стенда). Своего языка у
+ * компонента нет, поэтому посмотреть строки, подписи дат, неделю и формат
+ * поля на другом языке можно только отсюда.
+ *
+ * Сначала — готовые локали библиотеки (языки ООН). Дальше — языки без готовых
+ * строк, собранные поверх английской (`extendLocale`): строки английские, а
+ * Intl — свой. Подборка — по тому, что язык меняет: справа налево (`he-IL`,
+ * `ar-EG` — ещё и арабские цифры), буддийский год (`th-TH`), числа слитно с
+ * подписью (`ja-JP`).
  */
-export const LOCALES: Readonly<Record<string, string>> = {
-	'en-US': 'English',
-	'ru-RU': 'Русский',
-	'de-DE': 'Deutsch',
-	'he-IL': 'עברית',
-	'ar-EG': 'العربية',
-	'th-TH': 'ไทย',
-	'ja-JP': '日本語',
+export const LOCALES: Readonly<Record<string, TLocaleEntry>> = {
+	'en-US': { label: 'English', locale: enUS },
+	'ru-RU': { label: 'Русский', locale: ruRU },
+	'zh-CN': { label: '中文', locale: zhCN },
+	'fr-FR': { label: 'Français', locale: frFR },
+	'es-ES': { label: 'Español', locale: esES },
+	'ar-EG': { label: 'العربية', locale: arEG },
+	'de-DE': { label: 'Deutsch', locale: extendLocale(enUS, { tag: 'de-DE' }) },
+	'he-IL': { label: 'עברית', locale: extendLocale(enUS, { tag: 'he-IL' }) },
+	'th-TH': { label: 'ไทย', locale: extendLocale(enUS, { tag: 'th-TH' }) },
+	'ja-JP': { label: '日本語', locale: extendLocale(enUS, { tag: 'ja-JP' }) },
 }

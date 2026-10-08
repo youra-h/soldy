@@ -3,9 +3,9 @@
  *
  * Наследует ComponentViewDescriptor (rendered, visible, tag, наборы и плагины
  * element/ready) и добавляет открытость, кнопку закрытия, `lazyMount`,
- * сторону панели, жест, выходы для разметки и плагины: словарь приложения
- * (имя кнопки закрытия), имя диалога, нажатие мимо, клик по триггеру, модель
- * фокуса и жест.
+ * сторону панели, жест, выходы для разметки и плагины: имя диалога, нажатие
+ * мимо, клик по триггеру, модель фокуса, связки, имя кнопки закрытия от локали
+ * и жест.
  */
 
 import { defineComponent, defineDescriptor, defineType } from '../../../protected/define'
@@ -16,9 +16,9 @@ import {
 	DismissPluginDescriptor,
 	PopoverFocusPluginDescriptor,
 	PopoverIdsPluginDescriptor,
+	PopoverNamesPluginDescriptor,
 	PopoverPointerPluginDescriptor,
 	SwipePluginDescriptor,
-	TranslationsPluginDescriptor,
 } from '../plugins'
 import { ComponentViewDescriptor } from './component-view.descriptor'
 
@@ -81,10 +81,10 @@ export const PopoverDescriptor = defineDescriptor(() =>
 					triggers: ['change:swiping', 'change:contained', 'change:edge'],
 				},
 				/**
-				 * Имя кнопки закрытия — из словаря. Отдельный набор: кнопка — сосед
-				 * содержимого.
+				 * Набор кнопки закрытия: кнопка — сосед содержимого. Имя в него
+				 * пишет `TPopoverNamesPlugin`.
 				 */
-				closeAria: { type: Object, protected: true, triggers: ['change:translations'] },
+				closeAria: { type: Object, protected: true, triggers: ['change:closeAria'] },
 				/** Смонтировано ли содержимое: `lazyMount` прячет его до первого открытия. */
 				contentRendered: {
 					type: Boolean,
@@ -100,8 +100,6 @@ export const PopoverDescriptor = defineDescriptor(() =>
 		},
 
 		plugins: [
-			// Словарь приложения: имя кнопки закрытия — с первой отрисовки
-			TranslationsPluginDescriptor,
 			// Имя диалога: у панели `role="dialog"`, и без имени скринридер
 			// объявит безымянный диалог
 			AriaPluginDescriptor,
@@ -114,6 +112,8 @@ export const PopoverDescriptor = defineDescriptor(() =>
 			PopoverFocusPluginDescriptor,
 			// `id` панели и `aria-controls` триггера
 			PopoverIdsPluginDescriptor,
+			// Имя кнопки закрытия от локали
+			PopoverNamesPluginDescriptor,
 			// Смахнуть панель, чтобы закрыть. После dismiss: берёт у него панель
 			SwipePluginDescriptor,
 		],

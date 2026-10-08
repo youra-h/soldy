@@ -14,10 +14,10 @@
 import { describe, it, expect, afterEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { defineComponent, h, nextTick, type VNode } from 'vue'
-import { Button, Popover, Select, SelectItem } from '@soldy-ui/vue'
+import { Button, LocaleProvider, Popover, Select, SelectItem } from '@soldy-ui/vue'
 import { TPopover } from '@soldy-ui/core'
 import type { IPopoverProps } from '@soldy-ui/core'
-import { useTranslations } from '@soldy-ui/plugins'
+import { ruRU } from '@soldy-ui/plugins'
 import type { DescriptorSlots, PopoverDescriptor } from '@soldy-ui/setup'
 
 const nextFrame = () => new Promise((resolve) => requestAnimationFrame(resolve))
@@ -213,14 +213,14 @@ describe('разметка', () => {
 		expect(panel().getAttribute('aria-label')).toBe('Фильтры')
 	})
 
-	it('крестик назван словарём приложения, closable: false его убирает', async () => {
-		useTranslations({ popover: { close: 'Закрыть' } })
-
+	it('крестик назван локалью поддерева, closable: false его убирает', async () => {
 		await render(() =>
-			h('div', [
-				h(Popover, null, { default: inside }),
-				h(Popover, { closable: false, class: 's-test-bare' }, { default: inside }),
-			]),
+			h(LocaleProvider, { locale: ruRU }, () =>
+				h('div', [
+					h(Popover, null, { default: inside }),
+					h(Popover, { closable: false, class: 's-test-bare' }, { default: inside }),
+				]),
+			),
 		)
 
 		const [named, bare] = [...document.querySelectorAll('.s-popover__panel')]

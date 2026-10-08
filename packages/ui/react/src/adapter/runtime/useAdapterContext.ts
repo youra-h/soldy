@@ -18,6 +18,12 @@
  * монтирования один у всех контекстов компонента, в том числе
  * пересобранного: место в дереве то же. Фасад коллекции делит набор
  * владельца, и id монтирования у него владельца.
+ *
+ * Тем же `create` уходит и локаль поддерева (`locale`) — источник ближайшего
+ * `LocaleProvider` выше по дереву. Источник у провайдера один на всю его
+ * жизнь, а смену локали он пишет в себя сам, поэтому пересобирать контексты
+ * на смену языка незачем. Провайдера нет — опция не задана, и у набора своя
+ * английская.
  * Держим через `useRef`, а не `useState` или `useMemo`: их инициализатор React
  * 19 под StrictMode зовёт дважды, и второй контекст с живым набором плагинов
  * утёк бы, а кэш `useMemo` React вправе сбросить.
@@ -57,6 +63,7 @@ import { useContext, useEffect, useEffectEvent, useId, useMemo, useReducer, useR
 import { createAdapterContext } from '@soldy-ui/setup'
 import type { IAdapterContext, TElevatorFactory } from '@soldy-ui/setup'
 import { ElevatorContext, type TElevatorLayer } from '../elevator/layer'
+import { LocaleContext } from '../locale/context'
 import { TReactElevatorScope } from '../elevator/scope.class'
 import { TDrafts } from './drafts.class'
 
@@ -110,6 +117,7 @@ export function useAdapterContext<T extends TAdapterContexts>(
 	factory: (create: TCreateAdapterContext, elevator: TElevatorFactory) => T,
 ): TAssembly<T> {
 	const mountId = useId()
+	const locale = useContext(LocaleContext)
 	// Слой, который компонент увидел на рендере: из него сборка читает `up()`
 	const parent = useContext(ElevatorContext)
 	const ref = useRef<TBuilt<T> | null>(null)
@@ -122,11 +130,12 @@ export function useAdapterContext<T extends TAdapterContexts>(
 	const assemble = (layer: TElevatorLayer): TBuilt<T> => {
 		const scope = new TReactElevatorScope(layer)
 		const held: object[] = []
-		// Id монтирования, заданный опцией явно, остаётся за тем, кто его задал
+		// Id монтирования и локаль, заданные опцией явно, остаются за тем, кто
+		// их задал
 		const create: TCreateAdapterContext = (descriptor, options, config) => {
 			held.push(...drafts.take(options))
 
-			return createAdapterContext(descriptor, { mountId, ...options }, config)
+			return createAdapterContext(descriptor, { mountId, locale, ...options }, config)
 		}
 		const contexts = factory(create, scope.elevator)
 

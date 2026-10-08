@@ -1,5 +1,5 @@
 import type { IControl, IControlProps, TControlEvents } from '../../base/control'
-import type { ITranslatable, TAriaAttributes, TTranslatableEvents } from '../../../common'
+import type { TAria, TAriaAttributes } from '../../../common'
 
 /**
  * Куда листать ленту: `prev` — к началу строки, `next` — к её концу.
@@ -19,25 +19,28 @@ export type TScrollerViewport = {
 	hasTabStops: boolean
 }
 
-export type TScrollerEvents = TControlEvents &
-	TTranslatableEvents & {
-		/** change:viewportAria */
-		'change:viewportAria': (value: TAriaAttributes | undefined) => void
-		/** change:canPrev */
-		'change:canPrev': (value: boolean) => void
-		/** change:canNext */
-		'change:canNext': (value: boolean) => void
-		/** change:hasTabStops */
-		'change:hasTabStops': (value: boolean) => void
-		/**
-		 * Листнуть ленту в эту сторону.
-		 *
-		 * Запрос, а не факт: прокрутка — операция над DOM, её делает плагин.
-		 * Наружу событие не публикуется — оно связывает ядро с плагином, а
-		 * `@scroll` в разметке столкнулся бы с нативным событием прокрутки.
-		 */
-		'scroll:request': (direction: TScrollerDirection) => void
-	}
+export type TScrollerEvents = TControlEvents & {
+	/** change:prevAria — набор атрибутов кнопки «назад» изменился */
+	'change:prevAria': (value: TAriaAttributes) => void
+	/** change:nextAria — набор атрибутов кнопки «вперёд» изменился */
+	'change:nextAria': (value: TAriaAttributes) => void
+	/** change:viewportAria */
+	'change:viewportAria': (value: TAriaAttributes | undefined) => void
+	/** change:canPrev */
+	'change:canPrev': (value: boolean) => void
+	/** change:canNext */
+	'change:canNext': (value: boolean) => void
+	/** change:hasTabStops */
+	'change:hasTabStops': (value: boolean) => void
+	/**
+	 * Листнуть ленту в эту сторону.
+	 *
+	 * Запрос, а не факт: прокрутка — операция над DOM, её делает плагин.
+	 * Наружу событие не публикуется — оно связывает ядро с плагином, а
+	 * `@scroll` в разметке столкнулся бы с нативным событием прокрутки.
+	 */
+	'scroll:request': (direction: TScrollerDirection) => void
+}
 
 export interface IScrollerProps extends IControlProps {
 	/**
@@ -50,7 +53,7 @@ export interface IScrollerProps extends IControlProps {
 	viewportAria?: TAriaAttributes
 }
 
-export interface IScroller extends IControl<IScrollerProps, TScrollerEvents>, ITranslatable {
+export interface IScroller extends IControl<IScrollerProps, TScrollerEvents> {
 	/** Атрибуты вьюпорта от потребителя */
 	viewportAria: TAriaAttributes | undefined
 	/** Есть ли куда листать к началу строки */
@@ -59,10 +62,10 @@ export interface IScroller extends IControl<IScrollerProps, TScrollerEvents>, IT
 	readonly canNext: boolean
 	/** Есть ли внутри ленты свои остановки Tab */
 	readonly hasTabStops: boolean
-	/** Имя кнопки «назад» — из словаря, раздел `scroller`. Своего экземпляра у кнопки нет */
-	readonly prevAria: TAriaAttributes
-	/** Имя кнопки «вперёд» — из словаря */
-	readonly nextAria: TAriaAttributes
+	/** Атрибуты кнопки «назад»: имя от локали пишет плагин имён. Своего экземпляра у кнопки нет */
+	readonly prevAria: TAria
+	/** Атрибуты кнопки «вперёд» */
+	readonly nextAria: TAria
 	/** Выключена ли кнопка «назад»: выключена лента или упёрлись в начало */
 	readonly prevDisabled: boolean
 	/** Выключена ли кнопка «вперёд»: выключена лента или упёрлись в конец */

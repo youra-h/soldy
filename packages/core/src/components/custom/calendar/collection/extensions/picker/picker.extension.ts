@@ -8,7 +8,7 @@ import {
 	startOfMonth,
 	yearOf,
 } from '../../../../../../common'
-import type { TAriaAttributes, TCalendarDate } from '../../../../../../common'
+import type { TCalendarDate } from '../../../../../../common'
 import { TPopover } from '../../../../popover'
 import type { IPopover } from '../../../../popover'
 import { TListBox, createEngineListBox } from '../../../../list-box'
@@ -63,7 +63,7 @@ type TPlace = {
  * месяцы, выбор месяца показывает его в сетке и закрывает панель.
  *
  * Расширение коллекции, а не разметка: панели нужны и владелец — локаль,
- * границы, выключенность, словарь с именами стрелок, — и вид — месяц сетки и
+ * границы, выключенность, — и вид — месяц сетки и
  * `showMonth`. Связки «выбрали месяц → показать и закрыть» и «выбрали год →
  * снова месяцы» решаются здесь один раз, а не в разметке каждого адаптера.
  *
@@ -117,9 +117,6 @@ export class TCalendarPickerExtension
 			scope.on(owner.events, 'change:locale', () => this._refresh())
 			scope.on(owner.events, 'change:min', () => this._refresh())
 			scope.on(owner.events, 'change:max', () => this._refresh())
-
-			// Имена стрелок — из словаря календаря, и это только выход
-			scope.on(owner.events, 'change:translations', () => this._notify())
 
 			// Выключенный календарь выбирать не даёт: заголовок выключен, а
 			// открытая панель закрывается
@@ -211,7 +208,7 @@ export class TCalendarPickerExtension
 			popover,
 			list,
 			engine,
-			sets: { heading: new TAria() },
+			sets: { heading: new TAria(), prev: new TAria(), next: new TAria() },
 			level: 'months',
 			year,
 			page: pageOf(year),
@@ -229,6 +226,8 @@ export class TCalendarPickerExtension
 			this._choose(place, index, item),
 		)
 		place.sets.heading.events.on('change', () => this._notify())
+		place.sets.prev.events.on('change', () => this._notify())
+		place.sets.next.events.on('change', () => this._notify())
 
 		this._places[index] = place
 
@@ -371,7 +370,6 @@ export class TCalendarPickerExtension
 	/** Выход места — снимок, новые объекты на каждое чтение. */
 	private _snapshot(owner: ICalendar, place: TPlace): TCalendarPicker {
 		const locale = calendarLocale(owner.locale)
-		const names = owner.translations.calendar
 		const bounds = this._yearBounds(owner)
 		const months = place.level === 'months'
 		const first = months ? place.year : place.page
@@ -390,8 +388,8 @@ export class TCalendarPickerExtension
 					),
 			headingAria: place.sets.heading.toObject(),
 			labelledBy: place.sets.heading.get('id'),
-			prevAria: label(months ? names.prevYear : names.prevYears),
-			nextAria: label(months ? names.nextYear : names.nextYears),
+			prevAria: place.sets.prev.toObject(),
+			nextAria: place.sets.next.toObject(),
 			prevDisabled: first - 1 < bounds.low,
 			nextDisabled: last + 1 > bounds.high,
 		}
@@ -417,9 +415,4 @@ export class TCalendarPickerExtension
 /** Первый год страницы, на которой лежит `year`: страницы — по 12 лет от `0001`. */
 function pageOf(year: number): number {
 	return year - ((((year - FIRST_YEAR) % PAGE_SIZE) + PAGE_SIZE) % PAGE_SIZE)
-}
-
-/** Набор стрелки: только имя — значка в ней нет. */
-function label(text: string): TAriaAttributes {
-	return { 'aria-label': text }
 }

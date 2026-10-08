@@ -15,7 +15,7 @@
 
 import { describe, it, expect, expectTypeOf, vi } from 'vitest'
 import { TEvented } from '@soldy-ui/core'
-import { TBasePlugin, TPluginBundle } from '../src'
+import { TBasePlugin, TLocaleSource, TPluginBundle, enUS } from '../src'
 import type { IListenable, IPluginContext, TPluginEvents } from '../src'
 
 /** Лист без собственных событий: проверяется только то, что шлёт база. */
@@ -26,6 +26,7 @@ function context(): IPluginContext {
 		get: () => undefined,
 		getInstance: () => null,
 		createId: (part) => part,
+		locale: new TLocaleSource(enUS),
 	}
 }
 

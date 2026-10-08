@@ -12,8 +12,8 @@
 
 import { describe, it, expect, afterEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
-import { defineComponent, h, nextTick, type VNode } from 'vue'
-import { Table, TableColumn, TableRow } from '@soldy-ui/vue'
+import { defineComponent, h, nextTick, ref, type VNode } from 'vue'
+import { LocaleProvider, Table, TableColumn, TableRow } from '@soldy-ui/vue'
 import { TTable, createEngineTable } from '@soldy-ui/core'
 import type {
 	ITableColumn,
@@ -23,7 +23,8 @@ import type {
 	TTableColumnSource,
 	TTableRecord,
 } from '@soldy-ui/core'
-import { useTranslations } from '@soldy-ui/plugins'
+import { enUS, ruRU } from '@soldy-ui/plugins'
+import type { TLocale } from '@soldy-ui/plugins'
 
 const nextFrame = () => new Promise((resolve) => requestAnimationFrame(resolve))
 
@@ -474,12 +475,15 @@ describe('имена чекбоксов', () => {
 		expect(findAll('th[scope="row"]')).toEqual([])
 	})
 
-	it('чекбокс шапки — имя из словаря приложения, по умолчанию английское', async () => {
-		await render(() => h(Table, { engine: engineOf('multiple') }))
+	it('чекбокс шапки — имя от локали поддерева, на лету', async () => {
+		const locale = ref<TLocale>(enUS)
+		const engine = engineOf('multiple')
+
+		await render(() => h(LocaleProvider, { locale: locale.value }, () => h(Table, { engine })))
 
 		expect(checkBoxInput('.s-table__select').getAttribute('aria-label')).toBe('Select all')
 
-		useTranslations({ table: { selectAll: 'Выбрать все' } })
+		locale.value = ruRU
 		await nextTick()
 
 		expect(checkBoxInput('.s-table__select').getAttribute('aria-label')).toBe('Выбрать все')

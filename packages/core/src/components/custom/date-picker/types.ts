@@ -5,12 +5,10 @@ import type {
 } from '../../base/input-control'
 import type { ISwipeable, TSwipe, TSwipeableEvents } from '../../base/layer'
 import type {
-	ITranslatable,
 	TAria,
 	TAriaAttributes,
 	TCalendarDate,
 	TDatasetAttributes,
-	TTranslatableEvents,
 	TWeekday,
 } from '../../../common'
 import type {
@@ -44,8 +42,7 @@ export type TDatePickerValue = TCalendarDate | TCalendarRange | undefined
 export type TDatePickerSide = 'calendar' | 'fields'
 
 export type TDatePickerEvents = TInputControlEvents<TDatePickerValue> &
-	TSwipeableEvents &
-	TTranslatableEvents & {
+	TSwipeableEvents & {
 		/** change:mode */
 		'change:mode': (value: TDatePickerMode) => void
 		/** change:open */
@@ -123,10 +120,7 @@ export interface IDatePickerProps extends IInputControlProps<TDatePickerValue> {
  * сторону после flip знает только её узел — `swipeSide` всегда `null`.
  */
 export interface IDatePicker
-	extends
-		IInputControl<TDatePickerValue, IDatePickerProps, TDatePickerEvents>,
-		ISwipeable,
-		ITranslatable {
+	extends IInputControl<TDatePickerValue, IDatePickerProps, TDatePickerEvents>, ISwipeable {
 	/** Режим: одна дата или диапазон */
 	mode: TDatePickerMode
 	/** Открыта ли панель с календарём */
@@ -145,10 +139,6 @@ export interface IDatePicker
 	locale: string
 	/** Часовой пояс «сегодня» */
 	timeZone: string | undefined
-	/** Имя поля начала диапазона — из словаря, раздел `datePicker` */
-	readonly startLabel: string
-	/** Имя поля конца диапазона — из словаря */
-	readonly endLabel: string
 	/** Имя начала диапазона при отправке формы */
 	startName: string
 	/** Имя конца диапазона при отправке формы */
@@ -166,15 +156,15 @@ export interface IDatePicker
 	/** Движок коллекции календаря: по нему DatePicker зовёт команды выбора и фокуса */
 	readonly engine: TCalendarCollection
 	/**
-	 * Набор кнопки календаря: `aria-haspopup="dialog"`, `aria-expanded`, имя из
-	 * словаря — DatePicker, `aria-controls` — плагин связок
+	 * Набор кнопки календаря: `aria-haspopup="dialog"`, `aria-expanded` —
+	 * DatePicker, имя от локали — плагин имён, `aria-controls` — плагин связок
 	 */
 	readonly triggerAria: TAria
 	/** Вид кнопки календаря: `data-selected`, пока панель открыта */
 	readonly triggerDataset: TDatasetAttributes
 	/**
-	 * Набор панели: `role="dialog"`, `aria-modal`, имя — DatePicker, `id` —
-	 * плагин связок
+	 * Набор панели: `role="dialog"`, `aria-modal` — DatePicker, имя от локали
+	 * — плагин имён, `id` — плагин связок
 	 */
 	readonly panelAria: TAria
 	/**

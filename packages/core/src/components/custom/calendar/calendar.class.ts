@@ -1,14 +1,8 @@
 import { TValueControl } from '../../base/value-control'
 import type { TDefaultValues } from '../../base/component'
-import {
-	DEFAULT_LOCALE,
-	DEFAULT_TRANSLATIONS,
-	calendarLocale,
-	isWeekday,
-	weekdayOf,
-} from '../../../common'
+import { DEFAULT_LOCALE, TAria, calendarLocale, isWeekday, weekdayOf } from '../../../common'
 import { sameValue } from '../../../common/utility/same-value'
-import type { TAriaAttributes, TCalendarDate, TTranslations, TWeekday } from '../../../common'
+import type { TCalendarDate, TWeekday } from '../../../common'
 import type {
 	ICalendar,
 	ICalendarProps,
@@ -25,10 +19,11 @@ const WEEK: readonly number[] = [0, 1, 2, 3, 4, 5, 6]
  * Календарь — владелец коллекции дней.
  *
  * Сам он держит только то, что задаёт потребитель: значение, границы,
- * недоступные дни, пояс «сегодня» и месяцы сеток, — и то, что задаёт
- * приложение на всю библиотеку: язык (`locale`) и словарь строк
- * (`translations`, раздел `calendar` — имена кнопок листания и стрелок панели
- * выбора). Всё, что календарь делает с днями, — коллекция и её расширения
+ * недоступные дни, пояс «сегодня» и месяцы сеток, — и язык (`locale`): им
+ * считаются подписи и первый день недели, а с setup его пишет плагин языка —
+ * тег локали поддерева. Имён кнопок листания календарь не строит: он держит их
+ * наборы (`prevAria`, `nextAria`), а имена от локали пишет плагин имён
+ * (`TCalendarNamesPlugin`). Всё, что календарь делает с днями, — коллекция и её расширения
  * (`collection/extensions`): `view` кладёт в неё дни показанных месяцев,
  * `selection` выбирает, `focus` ведёт фокус по сетке. Режим выбора (`mode`) —
  * свойство коллекции, как у ListBox.
@@ -69,7 +64,8 @@ export default class TCalendar
 	protected _locale: string
 	protected _timeZone: string | undefined
 	protected _months: TCalendarDate[] | undefined
-	protected _translations: TTranslations = DEFAULT_TRANSLATIONS
+	protected _prevAria: TAria
+	protected _nextAria: TAria
 
 	constructor(props: Partial<ICalendarProps> = {}) {
 		const ctor = new.target as typeof TCalendar
@@ -85,6 +81,16 @@ export default class TCalendar
 		this._locale = props.locale ?? ctor.defaultValues.locale
 		this._timeZone = props.timeZone ?? ctor.defaultValues.timeZone
 		this._months = props.months ?? ctor.defaultValues.months
+
+		this._prevAria = new TAria()
+		this._prevAria.events.on('change', () =>
+			this.events.emit('change:prevAria', this._prevAria.toObject()),
+		)
+
+		this._nextAria = new TAria()
+		this._nextAria.events.on('change', () =>
+			this.events.emit('change:nextAria', this._nextAria.toObject()),
+		)
 	}
 
 	/** Невалидная строка границей не считается. */
@@ -175,32 +181,18 @@ export default class TCalendar
 	}
 
 	/**
-	 * Словарь строк библиотеки: календарь читает из него имена кнопок
-	 * листания, а расширение `picker` — стрелок панели выбора месяца и года. Та
-	 * же ссылка — ничего не меняет.
+	 * Набор кнопки «предыдущий месяц». Своего экземпляра у кнопки нет — набор
+	 * держит календарь, как лента Scroller — наборы своих кнопок. Живой: имя
+	 * пишет плагин имён от локали, об изменении набор сообщает
+	 * `change:prevAria`.
 	 */
-	get translations(): TTranslations {
-		return this._translations
+	get prevAria(): TAria {
+		return this._prevAria
 	}
 
-	set translations(value: TTranslations) {
-		if (this._translations === value) return
-
-		this._translations = value
-		this.events.emit('change:translations', value)
-	}
-
-	/**
-	 * Имя кнопки «предыдущий месяц». Своего экземпляра у кнопки нет — набор
-	 * отдаётся значением, как у кнопок ленты Scroller.
-	 */
-	get prevAria(): TAriaAttributes {
-		return { 'aria-label': this._translations.calendar.prevMonth }
-	}
-
-	/** Имя кнопки «следующий месяц». */
-	get nextAria(): TAriaAttributes {
-		return { 'aria-label': this._translations.calendar.nextMonth }
+	/** Набор кнопки «следующий месяц» — как у «предыдущего». */
+	get nextAria(): TAria {
+		return this._nextAria
 	}
 
 	get firstDay(): TWeekday {

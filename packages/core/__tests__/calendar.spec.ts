@@ -1,10 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import {
-	DEFAULT_TRANSLATIONS,
-	TCalendar,
-	TCalendarCollectionFacade,
-	createEngineCalendar,
-} from '@soldy-ui/core'
+import { TCalendar, TCalendarCollectionFacade, createEngineCalendar } from '@soldy-ui/core'
 import type {
 	ICalendarItem,
 	ICalendarProps,
@@ -359,26 +354,25 @@ describe('вид у границ', () => {
 })
 
 describe('кнопки листания', () => {
-	it('имена по умолчанию английские; набор кнопки — её имя', () => {
+	it('имён ядро не строит: наборы кнопок пусты, их пишет плагин имён', () => {
 		const { owner } = calendar()
 
-		expect(owner.prevAria).toEqual({ 'aria-label': 'Previous month' })
-		expect(owner.nextAria).toEqual({ 'aria-label': 'Next month' })
+		expect(owner.prevAria.valueOf()).toEqual({})
+		expect(owner.nextAria.valueOf()).toEqual({})
 	})
 
-	it('имена — из словаря: новый словарь — событие и новые наборы', () => {
+	it('наборы живые: запись — событие набора со снимком', () => {
 		const { owner } = calendar()
-		const changes = vi.fn()
+		const prev = vi.fn()
+		const next = vi.fn()
 
-		owner.events.on('change:translations', changes)
-		owner.translations = {
-			...DEFAULT_TRANSLATIONS,
-			calendar: { ...DEFAULT_TRANSLATIONS.calendar, prevMonth: 'Назад', nextMonth: 'Вперёд' },
-		}
+		owner.events.on('change:prevAria', prev)
+		owner.events.on('change:nextAria', next)
+		owner.prevAria.add('aria-label', 'Назад')
+		owner.nextAria.add('aria-label', 'Вперёд')
 
-		expect(changes).toHaveBeenCalledTimes(1)
-		expect(owner.prevAria).toEqual({ 'aria-label': 'Назад' })
-		expect(owner.nextAria).toEqual({ 'aria-label': 'Вперёд' })
+		expect(prev).toHaveBeenCalledWith({ 'aria-label': 'Назад' })
+		expect(next).toHaveBeenCalledWith({ 'aria-label': 'Вперёд' })
 	})
 
 	it('change:paging — на листание', () => {

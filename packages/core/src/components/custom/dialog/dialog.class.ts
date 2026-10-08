@@ -1,7 +1,6 @@
 import { TModalLayer } from '../../base/modal-layer'
 import type { TDefaultValues } from '../../base/component'
 import { TAria } from '../../../common'
-import type { TAriaAttributes } from '../../../common'
 import type { IDialog, IDialogProps, TDialogEvents, TDialogPlacement } from './types'
 
 /**
@@ -47,6 +46,7 @@ export default class TDialog extends TModalLayer<IDialogProps, TDialogEvents> im
 	protected _maximizable: boolean
 	protected _alert!: boolean
 	protected _bodyAria: TAria
+	protected _maximizeAria: TAria
 
 	constructor(props: Partial<IDialogProps> = {}) {
 		super(props)
@@ -57,6 +57,12 @@ export default class TDialog extends TModalLayer<IDialogProps, TDialogEvents> im
 
 		this._bodyAria.events.on('change', () =>
 			this.events.emit('change:bodyAria', this._bodyAria.toObject()),
+		)
+
+		this._maximizeAria = new TAria()
+
+		this._maximizeAria.events.on('change', () =>
+			this.events.emit('change:maximizeAria', this._maximizeAria.toObject()),
 		)
 
 		this._offset = props.offset ?? ctor.defaultValues.offset
@@ -151,15 +157,14 @@ export default class TDialog extends TModalLayer<IDialogProps, TDialogEvents> im
 	}
 
 	/**
-	 * Имя кнопки разворота и её состояние: нажата — окно развёрнуто. Имя из
-	 * словаря одно на оба состояния: кнопка — переключатель, и состояние она
-	 * сообщает `aria-pressed`, а не сменой имени (APG, Button).
+	 * Набор кнопки разворота: её имя и состояние — нажата, когда окно
+	 * развёрнуто. Имя одно на оба состояния: кнопка — переключатель, и
+	 * состояние она сообщает `aria-pressed`, а не сменой имени (APG, Button).
+	 * Живой: состояние пишет окно, имя от локали — плагин имён
+	 * (`TDialogNamesPlugin`), об изменении набор сообщает `change:maximizeAria`.
 	 */
-	get maximizeAria(): TAriaAttributes {
-		return {
-			'aria-label': this._translations.dialog.maximize,
-			'aria-pressed': this._maximized ? 'true' : 'false',
-		}
+	get maximizeAria(): TAria {
+		return this._maximizeAria
 	}
 
 	protected _applyAlert(value: boolean): void {
@@ -183,6 +188,7 @@ export default class TDialog extends TModalLayer<IDialogProps, TDialogEvents> im
 
 		// Тема по нему разворачивает окно, а место и размер перестают действовать
 		this._dataset.add('maximized', value)
+		this._maximizeAria.add('aria-pressed', value ? 'true' : 'false')
 	}
 
 	override getProps(): IDialogProps {

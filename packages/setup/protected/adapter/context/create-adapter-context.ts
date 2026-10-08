@@ -2,8 +2,8 @@
  * createAdapterContext — сборка компонента на монтирование: шесть шагов, сверху вниз.
  *
  * 1. Инстанс — `ctrl` или конструктор дескриптора.
- * 2–3. Набор плагинов: свой (`TOwnBundle`, с id монтирования `mountId`) или не
- *    свой (`TSharedBundle`).
+ * 2–3. Набор плагинов: свой (`TOwnBundle`, с id монтирования `mountId` и
+ *    локалью поддерева `locale`) или не свой (`TSharedBundle`).
  * 4. Участники обмена: инстанс, затем то, что даёт набор.
  * 5. Начальные значения — здесь и только здесь, одинаково для всех адаптеров:
  *    свой инстанс получил пропсы конструктором, и второй раз они не пишутся
@@ -71,7 +71,7 @@ export function createAdapterContext<TInstance extends object, TPlugins extends 
 	// 2–3. Набор: компоненту без своих плагинов реестр набора не создаёт
 	const tenancy: IBundleTenancy =
 		config.bundle === undefined && descriptor.plugins.length > 0
-			? new TOwnBundle(descriptor, instance, { embedded }, options.mountId)
+			? new TOwnBundle(descriptor, instance, { embedded }, options)
 			: new TSharedBundle(descriptor, config.bundle ?? null)
 
 	// 4. Участники

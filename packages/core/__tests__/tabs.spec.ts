@@ -874,7 +874,9 @@ describe('TTabs · ARIA списка табов', () => {
 
 describe('TTabsItem.closeAria · кнопка закрытия не остановка Tab', () => {
 	it('tabindex="-1": весь список — одна остановка, закрывает Delete на табе', () => {
-		expect(new TTabsItem({ text: 'Почта', closable: true }).closeAria.tabindex).toBe('-1')
+		expect(new TTabsItem({ text: 'Почта', closable: true }).closeAria.get('tabindex')).toBe(
+			'-1',
+		)
 	})
 })
 

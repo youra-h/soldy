@@ -1,4 +1,7 @@
 import { TEvented } from '@soldy-ui/core'
+import { enUS } from '../locale/locales/en'
+import { TLocaleSource } from '../locale/source.class'
+import type { ILocaleSource } from '../locale/types'
 import type { IPlugin, IPluginBundle, IPluginConstructor, TPluginBundleEvents } from './types'
 
 /** Наборов без id монтирования от адаптера: номер такого монтирования в процессе. */
@@ -15,11 +18,17 @@ export class TPluginBundle implements IPluginBundle {
 	/** Id монтирования, которому принадлежит набор (`createId`). */
 	private readonly _mountId: string
 
+	readonly locale: ILocaleSource
+
 	constructor(
 		private readonly _instance: object,
 		mountId?: string,
+		locale?: ILocaleSource,
 	) {
 		this._mountId = mountId || `s-${++unnamedMounts}`
+		// Без провайдера — своя английская: источник у набора свой, а не общий
+		// на процесс, и сменить её некому
+		this.locale = locale ?? new TLocaleSource(enUS)
 	}
 
 	get destroyed(): boolean {
@@ -52,6 +61,7 @@ export class TPluginBundle implements IPluginBundle {
 				get: this.get.bind(this),
 				getInstance: this.getInstance.bind(this),
 				createId: this.createId.bind(this),
+				locale: this.locale,
 			},
 			options,
 		)

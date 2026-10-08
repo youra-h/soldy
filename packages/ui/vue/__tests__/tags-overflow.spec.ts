@@ -13,11 +13,12 @@
 
 import { describe, it, expect, afterEach } from 'vitest'
 import { mount } from '@vue/test-utils'
-import { nextTick } from 'vue'
+import { h, nextTick } from 'vue'
 import { TTags, createEngineTags } from '@soldy-ui/core'
 import type { ITagsProps, TTagsCollection, TTagsOverflow } from '@soldy-ui/core'
-import { useTranslations } from '@soldy-ui/plugins'
-import { Tags } from '@soldy-ui/vue'
+import { enUS, extendLocale, ruRU } from '@soldy-ui/plugins'
+import type { TLocale } from '@soldy-ui/plugins'
+import { LocaleProvider, Tags } from '@soldy-ui/vue'
 import * as material from '@soldy-ui/icons-material'
 
 let wrapper: ReturnType<typeof mount> | null = null
@@ -49,6 +50,21 @@ const mountTags = async (overflow: TTagsOverflow, props: Partial<ITagsProps> = {
 	await nextTick()
 
 	return { ctrl, engine }
+}
+
+/** Теги внутри провайдера локали; локаль меняют пропом провайдера. */
+const mountLocalized = async (overflow: TTagsOverflow, locale: TLocale) => {
+	const { ctrl, engine } = createTags(overflow)
+	const provider = mount(LocaleProvider, {
+		props: { locale },
+		slots: { default: () => h(Tags, { ctrl, engine }) },
+		attachTo: document.body,
+	})
+
+	wrapper = provider
+	await nextTick()
+
+	return { ctrl, engine, provider }
 }
 
 /** Строки тегов внутри узла — носители текста. */
@@ -156,8 +172,8 @@ describe('режим arrows', () => {
 	})
 
 	/**
-	 * Кнопки принадлежат ленте, и имена ей даёт её же словарь: сквозь Tags
-	 * они не идут, своих строк у Tags для них нет.
+	 * Кнопки принадлежат ленте, и имена ей пишет её же плагин имён: сквозь
+	 * Tags они не идут, своих строк у Tags для них нет.
 	 */
 	it('имена кнопок — английские умолчания ленты', async () => {
 		await mountTags('arrows')
@@ -170,20 +186,19 @@ describe('режим arrows', () => {
 		)
 	})
 
-	it('словарь приложения доезжает до кнопок ленты и обновляет их на лету', async () => {
-		useTranslations({ scroller: { prev: 'Назад', next: 'Вперёд' } })
-
-		await mountTags('arrows')
+	it('локаль поддерева доезжает до кнопок ленты и обновляет их на лету', async () => {
+		const { provider } = await mountLocalized('arrows', ruRU)
 
 		expect(document.querySelector('.s-scroller__prev')?.getAttribute('aria-label')).toBe(
-			'Назад',
+			'Прокрутить назад',
 		)
 		expect(document.querySelector('.s-scroller__next')?.getAttribute('aria-label')).toBe(
-			'Вперёд',
+			'Прокрутить вперёд',
 		)
 
-		useTranslations({ scroller: { prev: 'К началу' } })
-		await nextTick()
+		await provider.setProps({
+			locale: extendLocale(enUS, { translations: { scroller: { prev: 'К началу' } } }),
+		})
 
 		expect(document.querySelector('.s-scroller__prev')?.getAttribute('aria-label')).toBe(
 			'К началу',
@@ -251,11 +266,10 @@ describe('режим popover', () => {
 		)
 	})
 
-	it('кнопка «…» несёт связку с панелью и своё имя — из словаря, как и панель', async () => {
-		const { engine } = await mountTags('popover')
+	it('кнопка «…» несёт связку с панелью и своё имя — от локали, как и панель', async () => {
+		const { engine } = await mountLocalized('popover', ruRU)
 
 		engine.extensions.overflow.notifyFit(1)
-		useTranslations({ tags: { more: 'Ещё' } })
 		await nextTick()
 
 		const button = more()

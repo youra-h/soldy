@@ -66,10 +66,10 @@ const counterpart = computed(() =>
 			<span class="pg__control-label">Язык</span>
 			<Select :value="language" size="sm" @update:value="chooseLanguage($event)">
 				<Select.Item
-					v-for="(label, value) in languages"
+					v-for="(entry, value) in languages"
 					:key="value"
 					:value="value"
-					:text="label"
+					:text="entry.label"
 				/>
 			</Select>
 		</div>

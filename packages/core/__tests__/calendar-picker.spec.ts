@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { DEFAULT_TRANSLATIONS, TCalendar, TCalendarCollectionFacade } from '@soldy-ui/core'
+import { TCalendar, TCalendarCollectionFacade } from '@soldy-ui/core'
 import type { ICalendarProps, IListBoxItem, TCalendarPicker } from '@soldy-ui/core'
 
 /**
@@ -351,35 +351,27 @@ describe('стрелки', () => {
 		expect(panel(setup).heading).toBe(years(2005, 2016))
 	})
 
-	it('имена — по уровню, по умолчанию английские', () => {
+	it('имён стрелок ядро не строит: наборы места пусты, их пишет плагин имён', () => {
 		const setup = calendar()
 
 		open(setup)
 
-		expect(panel(setup).prevAria).toEqual({ 'aria-label': 'Previous year' })
-		expect(panel(setup).nextAria).toEqual({ 'aria-label': 'Next year' })
-
-		setup.picker.toggleLevel(0)
-
-		expect(panel(setup).prevAria).toEqual({ 'aria-label': 'Previous 12 years' })
-		expect(panel(setup).nextAria).toEqual({ 'aria-label': 'Next 12 years' })
+		expect(panel(setup).prevAria).toEqual({})
+		expect(panel(setup).nextAria).toEqual({})
 	})
 
-	it('смена словаря — change:pickers и новый набор; тот же словарь — не смена', () => {
+	it('запись в набор стрелки — change:pickers и новый снимок; то же значение — не смена', () => {
 		const setup = calendar()
 		const changes = vi.fn()
-		const translations = {
-			...DEFAULT_TRANSLATIONS,
-			calendar: { ...DEFAULT_TRANSLATIONS.calendar, prevYear: 'Предыдущий год' },
-		}
 
+		open(setup)
 		setup.collection.events.on('change:pickers', changes)
-		setup.owner.translations = translations
+		setup.picker.pickerSets(0).prev.add('aria-label', 'Предыдущий год')
 
 		expect(changes).toHaveBeenCalledTimes(1)
 		expect(panel(setup).prevAria).toEqual({ 'aria-label': 'Предыдущий год' })
 
-		setup.owner.translations = translations
+		setup.picker.pickerSets(0).prev.add('aria-label', 'Предыдущий год')
 
 		expect(changes).toHaveBeenCalledTimes(1)
 	})

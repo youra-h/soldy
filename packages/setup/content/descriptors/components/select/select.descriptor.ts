@@ -90,7 +90,7 @@ export const SelectDescriptor = defineDescriptor(() =>
 				closeOnSelect: { type: Boolean, triggers: ['change:closeOnSelect'] },
 				/**
 				 * Кнопку очистки рисует поле: `clearable` Select отдаёт ему, как
-				 * `name` и `size`, а её имя поле собирает из своего словаря.
+				 * `name` и `size`, а имя кнопке пишет плагин имён самого поля.
 				 */
 				clearable: { type: Boolean, triggers: ['change:clearable'] },
 				editable: { type: Boolean, triggers: ['change:editable'] },

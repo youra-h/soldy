@@ -57,16 +57,20 @@ import { useMotion } from '@soldy-ui/plugins'
 useMotion('full') // motion even when the system asks to reduce it; 'reduce' — never
 ```
 
-The language and the strings of the library are set the same way, once for the whole application.
-A component has neither of its own: its plugins write them on mount and on every change, so the
-first render — the server one too — is already in the application's language:
+The language and the strings of the library are one value — a locale — that comes from the
+nearest `LocaleProvider` of the framework adapter. A component has neither of its own: the
+language and name plugins write them on mount and on every change, so the first render — the
+server one too — is already in the subtree's language. This package ships the locales and the tools
+to make your own:
 
 ```ts
-import { useLocale, useTranslations } from '@soldy-ui/plugins'
+import { enUS, esES, ruRU, extendLocale, formatName } from '@soldy-ui/plugins'
+import type { TLocale } from '@soldy-ui/plugins'
 
-useLocale('ru-RU') // Intl: date labels, first day of the week, date field format, sorting
-useTranslations({ field: { clear: (name) => `Очистить «${name}»` } }) // over the English default
-useTranslations() // back to English
+const esMX = extendLocale(esES, { tag: 'es-MX' }) // another region of a ready language
+const mn: TLocale = extendLocale(enUS, { tag: 'mn-MN', translations: { modal: { close: 'Хаах' } } })
+
+formatName(ruRU.translations.tabs.close, 'Почта') // 'Закрыть Почта'
 ```
 
 ## Documentation

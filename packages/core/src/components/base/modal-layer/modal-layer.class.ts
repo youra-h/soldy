@@ -1,13 +1,8 @@
 import { TLayer, TCloseEvent, FRAME_LAYER_ATTRIBUTE } from '../layer'
 import type { TCloseReason } from '../layer'
 import type { TDefaultValues } from '../component'
-import { DEFAULT_TRANSLATIONS, TAria } from '../../../common'
-import type {
-	TAriaAttributes,
-	TDatasetAttributes,
-	TEventSink,
-	TTranslations,
-} from '../../../common'
+import { TAria } from '../../../common'
+import type { TDatasetAttributes, TEventSink } from '../../../common'
 import type { IModalLayer, IModalLayerProps, TModalLayerEvents } from './types'
 
 /**
@@ -40,10 +35,9 @@ import type { IModalLayer, IModalLayerProps, TModalLayerEvents } from './types'
  * родитель, который открытость пишет сам, с панелью не разойдётся. Поэтому
  * не `hide:before` — его шлёт и программное скрытие.
  *
- * **Имя кнопки закрытия — из словаря** (`translations`, раздел `modal`), а не
- * проп: строки библиотеки приложение задаёт одним словарём на всё приложение,
- * и пишет его компоненту плагин словаря. Кнопку разворота окна (`dialog`)
- * называет тот же словарь.
+ * **Имя кнопки закрытия — от локали**, а не проп: строки библиотеки задаёт
+ * локаль поддерева, и имя в набор кнопки (`closeAria`) пишет плагин имён
+ * (`TModalNamesPlugin`). Слой держит только набор.
  *
  * **Размер — значение, раскладка — тема.** Ширина и высота уходят теме
  * переменными раскладки наследника (`TDialogLayoutPlugin`,
@@ -76,8 +70,8 @@ export default class TModalLayer<
 	protected _height: number | string | undefined
 	protected _closable: boolean
 	protected _dismissible: boolean
-	protected _translations: TTranslations = DEFAULT_TRANSLATIONS
 	protected _titleAria: TAria
+	protected _closeAria: TAria
 
 	constructor(props: Partial<TProps> = {}) {
 		const ctor = new.target as typeof TModalLayer
@@ -98,6 +92,12 @@ export default class TModalLayer<
 
 		this._titleAria.events.on('change', () =>
 			this._sink.emit('change:titleAria', this._titleAria.toObject()),
+		)
+
+		this._closeAria = new TAria()
+
+		this._closeAria.events.on('change', () =>
+			this._sink.emit('change:closeAria', this._closeAria.toObject()),
 		)
 	}
 
@@ -178,21 +178,6 @@ export default class TModalLayer<
 	}
 
 	/**
-	 * Словарь строк библиотеки: слой читает из него имя кнопки закрытия, окно
-	 * — ещё и кнопки разворота. Та же ссылка — ничего не меняет.
-	 */
-	get translations(): TTranslations {
-		return this._translations
-	}
-
-	set translations(value: TTranslations) {
-		if (this._translations === value) return
-
-		this._translations = value
-		this._sink.emit('change:translations', value)
-	}
-
-	/**
 	 * Закрывают ли панель нажатие мимо и Escape. Выключено — панель
 	 * закрывается только кнопкой закрытия, своим жестом и кодом. Закрыть её
 	 * только Escape — отменить `close:before` с причиной `outside`.
@@ -218,9 +203,13 @@ export default class TModalLayer<
 		return this._titleAria
 	}
 
-	/** Имя кнопки закрытия — соседней с содержимым, а не самой панели. */
-	get closeAria(): TAriaAttributes {
-		return { 'aria-label': this._translations.modal.close }
+	/**
+	 * Набор кнопки закрытия — соседней с содержимым, а не самой панели. Живой:
+	 * имя в него пишет плагин имён (`TModalNamesPlugin`) от локали, об
+	 * изменении набор сообщает `change:closeAria`.
+	 */
+	get closeAria(): TAria {
+		return this._closeAria
 	}
 
 	/**

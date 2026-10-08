@@ -1,12 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import {
-	DEFAULT_TRANSLATIONS,
-	TDialog,
-	TFrame,
-	TLayer,
-	TCloseEvent,
-	FRAME_LAYER_ATTRIBUTE,
-} from '@soldy-ui/core'
+import { TDialog, TFrame, TLayer, TCloseEvent, FRAME_LAYER_ATTRIBUTE } from '@soldy-ui/core'
 import type { TCloseReason } from '@soldy-ui/core'
 
 /**
@@ -37,7 +30,6 @@ describe('умолчания', () => {
 		expect(dialog.maximized).toBe(false)
 		expect(dialog.maximizable).toBe(false)
 		expect(dialog.closable).toBe(true)
-		expect(dialog.translations).toBe(DEFAULT_TRANSLATIONS)
 		expect(dialog.dismissible).toBe(true)
 		expect(dialog.alert).toBe(false)
 	})
@@ -119,38 +111,43 @@ describe('ARIA окна', () => {
 })
 
 describe('кнопки', () => {
-	it('крестик назван словарём — раздел modal', () => {
+	it('имён кнопок ядро не строит: наборы без имени, его пишет плагин имён', () => {
 		const dialog = new TDialog()
 
-		expect(dialog.closeAria).toEqual({ 'aria-label': 'Close' })
-
-		dialog.translations = { ...DEFAULT_TRANSLATIONS, modal: { close: 'Закрыть' } }
-
-		expect(dialog.closeAria).toEqual({ 'aria-label': 'Закрыть' })
+		expect(dialog.closeAria.has('aria-label')).toBe(false)
+		expect(dialog.maximizeAria.has('aria-label')).toBe(false)
 	})
 
-	it('кнопка разворота — переключатель: имя одно, состояние в aria-pressed', () => {
+	it('кнопка разворота — переключатель: состояние в aria-pressed пишет окно', () => {
 		const dialog = new TDialog()
+		const changes = vi.fn()
 
-		dialog.translations = { ...DEFAULT_TRANSLATIONS, dialog: { maximize: 'Развернуть' } }
+		expect(dialog.maximizeAria.get('aria-pressed')).toBe('false')
 
-		expect(dialog.maximizeAria).toEqual({
-			'aria-label': 'Развернуть',
-			'aria-pressed': 'false',
-		})
-
+		dialog.events.on('change:maximizeAria', changes)
 		dialog.toggleMaximized()
 
-		expect(dialog.maximizeAria).toEqual({
-			'aria-label': 'Развернуть',
-			'aria-pressed': 'true',
-		})
+		expect(dialog.maximizeAria.get('aria-pressed')).toBe('true')
+		expect(changes).toHaveBeenCalledWith({ 'aria-pressed': 'true' })
 	})
 
-	it('выходы — новые объекты на каждое чтение, а не ручка на состояние', () => {
+	it('развёрнутое со старта — нажатая кнопка с первой отрисовки', () => {
+		expect(new TDialog({ maximized: true }).maximizeAria.get('aria-pressed')).toBe('true')
+	})
+
+	it('набор крестика живой: запись — change:closeAria со снимком', () => {
+		const dialog = new TDialog()
+		const changes = vi.fn()
+
+		dialog.events.on('change:closeAria', changes)
+		dialog.closeAria.add('aria-label', 'Закрыть')
+
+		expect(changes).toHaveBeenCalledWith({ 'aria-label': 'Закрыть' })
+	})
+
+	it('выход подложки — новый объект на каждое чтение, а не ручка на состояние', () => {
 		const dialog = new TDialog()
 
-		expect(dialog.maximizeAria).not.toBe(dialog.maximizeAria)
 		expect(dialog.backdropDataset).not.toBe(dialog.backdropDataset)
 	})
 })

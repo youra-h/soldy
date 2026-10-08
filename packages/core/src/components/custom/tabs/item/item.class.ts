@@ -1,7 +1,7 @@
 import { TValueControl } from '../../../base/value-control'
 import type { TDefaultValues } from '../../../base/component'
-import { DEFAULT_TRANSLATIONS, TChangeEvent } from '../../../../common'
-import type { TAriaAttributes, TEventSink, TTranslations } from '../../../../common'
+import { TAria, TChangeEvent } from '../../../../common'
+import type { TEventSink } from '../../../../common'
 import type { ITabsItem, ITabsItemProps, TTabsItemEvents } from './types'
 
 /**
@@ -27,7 +27,7 @@ export default class TTabsItem<
 		tag: 'div',
 	}
 
-	protected _translations: TTranslations = DEFAULT_TRANSLATIONS
+	protected _closeAria: TAria
 
 	protected _text: string
 	protected _closable: boolean | undefined
@@ -53,6 +53,16 @@ export default class TTabsItem<
 		// `aria-selected` — тоже не отсюда: его пишет TTabsExtension по
 		// событию активации.
 		this._aria.add('role', 'tab')
+
+		this._closeAria = new TAria()
+		this._closeAria.events.on('change', () =>
+			this._sink.emit('change:closeAria', this._closeAria.toObject()),
+		)
+
+		// Кнопка закрытия — не остановка Tab: по паттерну APG Tabs весь список —
+		// одна остановка, а закрывает таб с клавиатуры `Delete` на самом табе
+		// (`TTabsKeyboardPlugin`). Мышью кнопка нажимается как раньше
+		this._closeAria.add('tabindex', '-1')
 	}
 
 	/**
@@ -120,42 +130,20 @@ export default class TTabsItem<
 	}
 
 	/**
-	 * Словарь строк библиотеки: таб читает из него имя кнопки закрытия. Та же
-	 * ссылка — ничего не меняет.
-	 */
-	get translations(): TTranslations {
-		return this._translations
-	}
-
-	set translations(value: TTranslations) {
-		if (this._translations === value) return
-
-		this._translations = value
-		this._sink.emit('change:translations', value)
-	}
-
-	/**
-	 * Имя кнопки закрытия — вместе с текстом таба: «Close Настройки».
+	 * Набор кнопки закрытия. Имя в нём — вместе с текстом таба: «Close
+	 * Настройки».
 	 *
 	 * Без текста все кнопки закрытия в наборе называются одинаково, и по
 	 * списку элементов скринридера («Close, кнопка» пять раз подряд) выбрать
-	 * нужную невозможно. Это и есть та накопленная практика, ради которой
-	 * имя вообще считается здесь, а не пишется в шаблоне. Как имя складывается
-	 * с текстом, решает строка словаря (раздел `tabs`): порядок слов у каждого
-	 * языка свой.
+	 * нужную невозможно. Имя пишет плагин имён (`TTabsItemNamesPlugin`) по
+	 * шаблону локали — и на смену текста: порядок слов у каждого языка свой.
+	 * `tabindex` пишет таб сам. Об изменении набор сообщает `change:closeAria`.
 	 *
 	 * Отдельный набор, а не часть `aria`: `aria` описывает сам таб, а это —
 	 * кнопка рядом с ним. Один элемент — один набор.
-	 *
-	 * `tabindex="-1"`: кнопка не остановка Tab. По паттерну APG Tabs весь
-	 * список — одна остановка, а закрывает таб с клавиатуры `Delete` на самом
-	 * табе (`TTabsKeyboardPlugin`). Мышью кнопка нажимается как раньше.
 	 */
-	get closeAria(): TAriaAttributes {
-		return {
-			'aria-label': this._translations.tabs.close(this.text.trim()),
-			tabindex: '-1',
-		}
+	get closeAria(): TAria {
+		return this._closeAria
 	}
 
 	override getProps(): TProps {

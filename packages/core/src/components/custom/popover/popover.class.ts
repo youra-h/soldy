@@ -1,8 +1,8 @@
 import { TComponentView } from '../../base/component-view'
 import type { TDefaultValues } from '../../base/component'
 import type { TSwipe, TSwipeSide } from '../../base/layer'
-import { DEFAULT_TRANSLATIONS, TAria } from '../../../common'
-import type { TAriaAttributes, TDatasetAttributes, TTranslations } from '../../../common'
+import { TAria } from '../../../common'
+import type { TDatasetAttributes } from '../../../common'
 import type {
 	IPopover,
 	IPopoverProps,
@@ -41,8 +41,8 @@ import type {
  * получает набором `panelDataset`: корень поповера — не панель, и `dataset`
  * лежит на корне. Закрывает жест записью `open`, как Escape.
  *
- * Имя кнопки закрытия — из словаря (`translations`, раздел `popover`): строки
- * библиотеки задаёт приложение, а компоненту словарь пишет плагин словаря.
+ * Имя кнопки закрытия — от локали: строки библиотеки задаёт локаль поддерева,
+ * и имя в набор кнопки (`closeAria`) пишет плагин имён (`TPopoverNamesPlugin`).
  */
 export default class TPopover
 	extends TComponentView<IPopoverProps, TPopoverEvents>
@@ -70,7 +70,6 @@ export default class TPopover
 
 	protected _open!: boolean
 	protected _closable: boolean
-	protected _translations: TTranslations = DEFAULT_TRANSLATIONS
 	protected _lazyMount: boolean
 	protected _placement: TPopoverPlacement
 	protected _contained: boolean
@@ -80,6 +79,7 @@ export default class TPopover
 	/** Открывали ли панель хоть раз — после этого `lazyMount` содержимое не прячет. */
 	protected _opened = false
 	protected _triggerAria: TAria
+	protected _closeAria: TAria
 
 	constructor(props: Partial<IPopoverProps> = {}) {
 		super(props)
@@ -105,6 +105,12 @@ export default class TPopover
 
 		// `dialog`, а не `true`: `true` у ARIA значит `menu`
 		this._triggerAria.add('aria-haspopup', 'dialog')
+
+		this._closeAria = new TAria()
+
+		this._closeAria.events.on('change', () =>
+			this.events.emit('change:closeAria', this._closeAria.toObject()),
+		)
 
 		this._applyOpen(props.open ?? ctor.defaultValues.open)
 	}
@@ -133,21 +139,6 @@ export default class TPopover
 
 		this._closable = value
 		this.events.emit('change:closable', value)
-	}
-
-	/**
-	 * Словарь строк библиотеки: поповер читает из него имя кнопки закрытия.
-	 * Та же ссылка — ничего не меняет.
-	 */
-	get translations(): TTranslations {
-		return this._translations
-	}
-
-	set translations(value: TTranslations) {
-		if (this._translations === value) return
-
-		this._translations = value
-		this.events.emit('change:translations', value)
 	}
 
 	/**
@@ -333,9 +324,13 @@ export default class TPopover
 		return this._contained ? { ...state, 'data-edge': this._edge } : state
 	}
 
-	/** Имя кнопки закрытия — соседней с содержимым, а не самой панели. */
-	get closeAria(): TAriaAttributes {
-		return { 'aria-label': this._translations.popover.close }
+	/**
+	 * Набор кнопки закрытия — соседней с содержимым, а не самой панели. Живой:
+	 * имя в него пишет плагин имён (`TPopoverNamesPlugin`) от локали, об
+	 * изменении набор сообщает `change:closeAria`.
+	 */
+	get closeAria(): TAria {
+		return this._closeAria
 	}
 
 	/**

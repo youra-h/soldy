@@ -4,13 +4,13 @@
  *
  * Наследует ControlDescriptor (size, variant, disabled, focused, наборы,
  * плагины element/ready/action/aria) и добавляет атрибуты вьюпорта от
- * потребителя, выходы для разметки, плагин словаря (имена кнопок) и плагин
- * вьюпорта.
+ * потребителя, выходы для разметки, плагин вьюпорта и плагин имён кнопок
+ * от локали.
  */
 
 import { defineComponent, defineDescriptor } from '../../../protected/define'
 import { TScroller } from '@soldy-ui/core'
-import { ScrollerViewportPluginDescriptor, TranslationsPluginDescriptor } from '../plugins'
+import { ScrollerNamesPluginDescriptor, ScrollerViewportPluginDescriptor } from '../plugins'
 import { ControlDescriptor } from './control.descriptor'
 
 export const ScrollerDescriptor = defineDescriptor(() =>
@@ -38,11 +38,11 @@ export const ScrollerDescriptor = defineDescriptor(() =>
 				 */
 				viewportAria: { type: Object, triggers: ['change:viewportAria'] },
 				/**
-				 * Имена кнопок — из словаря: своего экземпляра у кнопок нет, набор
-				 * отдаётся значением.
+				 * Наборы кнопок: своего экземпляра у кнопок нет, и наборы держит
+				 * лента. Имена в них пишет `TScrollerNamesPlugin`.
 				 */
-				prevAria: { type: Object, protected: true, triggers: ['change:translations'] },
-				nextAria: { type: Object, protected: true, triggers: ['change:translations'] },
+				prevAria: { type: Object, protected: true, triggers: ['change:prevAria'] },
+				nextAria: { type: Object, protected: true, triggers: ['change:nextAria'] },
 				/**
 				 * Выключенность кнопок считает ядро: «выключена лента **или**
 				 * упёрлись в край» — одно правило, а не условие в шести
@@ -68,10 +68,10 @@ export const ScrollerDescriptor = defineDescriptor(() =>
 		},
 
 		plugins: [
-			// Словарь приложения: имена кнопок — с первой отрисовки
-			TranslationsPluginDescriptor,
 			// Замер краёв, прокрутка и клики по кнопкам: всё это операции над DOM
 			ScrollerViewportPluginDescriptor,
+			// Имена кнопок от локали
+			ScrollerNamesPluginDescriptor,
 		],
 	}),
 )
