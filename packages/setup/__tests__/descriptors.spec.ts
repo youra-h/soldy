@@ -27,6 +27,8 @@ import {
 	TListKeyboardPlugin,
 	TListHeightPlugin,
 	TListItemPlugin,
+	TFieldNamesPlugin,
+	TDatePickerNamesPlugin,
 } from '@soldy-ui/plugins'
 import {
 	ButtonDescriptor,
@@ -48,6 +50,7 @@ import {
 	FieldDescriptor,
 	InputDescriptor,
 	DateInputDescriptor,
+	DatePickerDescriptor,
 	defineComponent,
 	CommonProfile,
 	createAdapterContext,
@@ -396,9 +399,9 @@ describe('Select', () => {
 })
 
 /**
- * Кнопка очистки — часть поля: `FieldDescriptor`, общий у Input и DateInput.
- * Select её не рисует — свой `clearable` он отдаёт полю, а набора кнопки у
- * него нет: он у поля, и имя в него пишет плагин имён поля.
+ * Кнопка очистки — часть поля: `FieldDescriptor`, общий у Input, DateInput и
+ * DatePicker. Select её не рисует — свой `clearable` он отдаёт полю, а набора
+ * кнопки у него нет: он у поля, и имя в него пишет плагин имён поля.
  */
 describe('поле: кнопка очистки', () => {
 	it('FieldDescriptor — база TField поверх InputControl', () => {
@@ -411,6 +414,7 @@ describe('поле: кнопка очистки', () => {
 	it.each([
 		['Input', InputDescriptor],
 		['DateInput', DateInputDescriptor],
+		['DatePicker', DatePickerDescriptor],
 	])('%s наследует кнопку очистки и слот clear', (_name, factory) => {
 		const d = factory()
 
@@ -421,6 +425,24 @@ describe('поле: кнопка очистки', () => {
 	it('событие clear дескриптор не публикует — это поверхность инстанса', () => {
 		expect(eventNames(InputDescriptor())).not.toContain('clear')
 		expect(eventNames(DateInputDescriptor())).not.toContain('clear')
+		expect(eventNames(DatePickerDescriptor())).not.toContain('clear')
+	})
+
+	/**
+	 * Плагин имён у компонента один (неймспейс `names`), а у DatePicker кнопок
+	 * с именами больше, чем у поля. Поэтому база его не ставит, как модальный
+	 * слой: формы ставят свой, и имя кнопки очистки у DatePicker пишет
+	 * наследник плагина имён поля.
+	 */
+	it('плагин имён — у формы, а не у базы: у DatePicker один, наследник плагина поля', () => {
+		const names = (d: IComponentDescriptor) =>
+			d.plugins.filter((plugin) => plugin.namespace === 'names').map((plugin) => plugin.ctor)
+
+		expect(names(FieldDescriptor())).toEqual([])
+		expect(names(InputDescriptor())).toEqual([TFieldNamesPlugin])
+		expect(names(DateInputDescriptor())).toEqual([TFieldNamesPlugin])
+		expect(names(DatePickerDescriptor())).toEqual([TDatePickerNamesPlugin])
+		expect(TDatePickerNamesPlugin.prototype).toBeInstanceOf(TFieldNamesPlugin)
 	})
 
 	it('у Select своего имени кнопки нет — его собирает поле', () => {

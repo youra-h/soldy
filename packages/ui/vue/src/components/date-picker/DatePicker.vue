@@ -37,8 +37,9 @@ export default { ...SetupDatePicker, components: { Button, Calendar, DateInput, 
 
 		<!--
 			Одна дата. Поле — готовый DateInput: коробка, части, кольцо фокуса и
-			ошибка — его. Кнопка календаря — в его слоте `trailing`: обёртку
-			слота у конца поля держит тема DateInput.
+			ошибка — его. Кнопки очистки и календаря — в его слотах `clear` и
+			`trailing`, в этом порядке: обёртку слотов у конца поля держит тема
+			DateInput.
 
 			Поле и есть группа частей, поэтому имя DatePicker (`aria_label`,
 			`aria_labelledBy`, `aria_describedBy`) уходит ему: так оно дойдёт и до
@@ -53,6 +54,36 @@ export default { ...SetupDatePicker, components: { Button, Calendar, DateInput, 
 			:aria_labelledBy="aria_labelledBy"
 			:aria_describedBy="aria_describedBy"
 		>
+			<!--
+				Кнопка очистки — DatePicker'а, а не поля: DatePicker сам поле (база
+				`TField`) и очищает своё значение целиком, а `clear` шлёт он, в обоих
+				режимах одинаково. Поле своей кнопки не рисует — `clearable` ему не
+				уходит, — а место у конца поля даёт его слот `clear`, первым, перед
+				кнопкой календаря.
+
+				Кнопка — та же, что у полей: по `clearable`, выключена вместе с
+				DatePicker, `readonly` её не гасит. Имя ядро собирает с именем
+				DatePicker (`clearAria`), очищает его команда `clear`. Клик не
+				всплывает до корня. Своя кнопка — слот `clear` DatePicker'а с его
+				командой в scope: заменяет встроенную целиком. Вида у кнопки нет —
+				тема красит её по контексту (`.s-date-picker__clear`).
+			-->
+			<template #clear>
+				<slot name="clear" :clear="ctrl.clear">
+					<Button
+						embedded="date-picker.clear"
+						v-if="clearable"
+						class="s-date-picker__clear"
+						:size="size"
+						:disabled="disabled"
+						@click.stop="ctrl.clear()"
+						v-bind="clearAria"
+					>
+						<Icon embedded="date-picker.clear-icon" :tag="clearIconTag" :size="size" />
+					</Button>
+				</slot>
+			</template>
+
 			<template #trailing>
 				<!--
 					Кнопка календаря. Вида нет: тема красит её по контексту, как
@@ -79,11 +110,11 @@ export default { ...SetupDatePicker, components: { Button, Calendar, DateInput, 
 		</DateInput>
 
 		<!--
-			Диапазон: поле начала, тире, поле конца и кнопка — одна коробка на
-			корне. Поля внутри без своей рамки (тема, по контексту), кнопка — после
-			поля конца, а не в его слоте: она выбирает весь период, а не конец.
-			Тире — для глаза, скринридеру оно не нужно: поля называют свои концы
-			сами — именами `names_start` и `names_end`, выходами плагина имён
+			Диапазон: поле начала, тире, поле конца и кнопки — одна коробка на
+			корне. Поля внутри без своей рамки (тема, по контексту), кнопки — после
+			поля конца, а не в его слоте: они работают со всем периодом, а не с
+			концом. Тире — для глаза, скринридеру оно не нужно: поля называют свои
+			концы сами — именами `names_start` и `names_end`, выходами плагина имён
 			DatePicker от локали.
 		-->
 		<template v-else>
@@ -100,6 +131,24 @@ export default { ...SetupDatePicker, components: { Button, Calendar, DateInput, 
 				:ctrl="end"
 				:aria_label="names_end"
 			/>
+			<!--
+				Кнопка очистки — одна на период, перед кнопкой календаря: период —
+				одно значение, и очищает она оба конца, в том числе набранные не до
+				конца. Та же кнопка и тот же слот `clear`, что у одной даты.
+			-->
+			<slot name="clear" :clear="ctrl.clear">
+				<Button
+					embedded="date-picker.clear"
+					v-if="clearable"
+					class="s-date-picker__clear"
+					:size="size"
+					:disabled="disabled"
+					@click.stop="ctrl.clear()"
+					v-bind="clearAria"
+				>
+					<Icon embedded="date-picker.clear-icon" :tag="clearIconTag" :size="size" />
+				</Button>
+			</slot>
 			<Button
 				embedded="date-picker.trigger"
 				class="s-date-picker__trigger"

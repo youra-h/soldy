@@ -38,4 +38,13 @@ export class TRangeFields implements IDatePickerFields {
 		this._start.value = start
 		this._end.value = end
 	}
+
+	/**
+	 * Оба конца: период — одно значение, и кнопка очистки у него одна. Конец,
+	 * набранный не до конца, пустеет тоже — значения у него нет, а части есть.
+	 */
+	clear(): void {
+		this._start.clear()
+		this._end.clear()
+	}
 }

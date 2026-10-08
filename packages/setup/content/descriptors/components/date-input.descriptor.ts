@@ -2,10 +2,11 @@
  * Дескриптор DateInput (TDateInput).
  *
  * Наследует `FieldDescriptor` (кнопка очистки — clearable, clearAria, слот
- * `clear` и плагин имён — поверх value, name, readonly, required, id, disabled,
- * size, variant, ...) и добавляет границы и недоступные дни, вид поля — дата
- * или дата со временем — и точность времени: до минуты или до секунды. Язык
- * формата — тег локали поддерева: его пишет плагин языка.
+ * `clear` — поверх value, name, readonly, required, id, disabled, size,
+ * variant, ...) и добавляет границы и недоступные дни, вид поля — дата или
+ * дата со временем — и точность времени: до минуты или до секунды. Язык
+ * формата — тег локали поддерева: его пишет плагин языка, имя кнопки
+ * очистки — плагин имён поля.
  * Значение вводится по частям в формате локали, а всё оно выделяется,
  * копируется и удаляется, как текст: на компьютере части нередактируемые, их
  * клавиши, указатель и буфер обмена переводят в команды ядра плагины поля.
@@ -26,6 +27,7 @@ import {
 	DateInputKeyboardPluginDescriptor,
 	DateInputPointerPluginDescriptor,
 	DateInputTouchPluginDescriptor,
+	FieldNamesPluginDescriptor,
 	LocalePluginDescriptor,
 } from '../plugins'
 import { FieldDescriptor } from './field.descriptor'
@@ -111,6 +113,8 @@ export const DateInputDescriptor = defineDescriptor(() =>
 		},
 
 		plugins: [
+			// Имя кнопки очистки от локали — с первой отрисовки
+			FieldNamesPluginDescriptor,
 			// Язык приложения — до поведения частей: формат с первой отрисовки
 			LocalePluginDescriptor,
 			// Клавиши частей и DOM-фокус за частью под фокусом ядра
