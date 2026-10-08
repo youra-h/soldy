@@ -1,0 +1,16 @@
+{
+  "name": "bench-table",
+  "private": true,
+  "type": "module",
+  "description": "Замер таблиц soldy и других библиотек, см. BENCHMARKS.md в корне",
+  "scripts": {
+    "build": "vite build",
+    "bench": "vite build && node run.mjs",
+    "prof": "node prof.mjs"
+  },
+  "dependencies": {
+    "@primeuix/themes": "3.0.1",
+    "naive-ui": "2.45.3",
+    "primevue": "5.0.2"
+  }
+}
