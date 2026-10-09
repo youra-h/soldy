@@ -166,6 +166,60 @@ describe('таблица и строка', () => {
 	})
 })
 
+/**
+ * Закреплённая шапка — свойство вида таблицы: ядро отдаёт его теме
+ * `data-sticky-head`, а закрепляет шапку тема. `false` пишется атрибутом, а
+ * не снимает его: тема отличает «выключено» от «неприменимо».
+ */
+describe('закреплённая шапка', () => {
+	it('по умолчанию выключена — data-sticky-head="false"', () => {
+		const owner = new TTable()
+
+		expect(owner.stickyHead).toBe(false)
+		expect(owner.dataset.get('sticky-head')).toBe('false')
+		expect(owner.getProps()).toMatchObject({ stickyHead: false })
+	})
+
+	it('проп конструктора — закреплена с первой отрисовки', () => {
+		const owner = new TTable({ stickyHead: true })
+
+		expect(owner.stickyHead).toBe(true)
+		expect(owner.dataset.get('sticky-head')).toBe('true')
+		expect(owner.getProps()).toMatchObject({ stickyHead: true })
+	})
+
+	it('change:stickyHead и атрибут — только на смену значения', () => {
+		const owner = new TTable()
+		const changed = vi.fn()
+		const dataset = vi.fn()
+
+		owner.events.on('change:stickyHead', changed)
+		owner.events.on('change:dataset', dataset)
+
+		owner.stickyHead = false
+
+		expect(changed).not.toHaveBeenCalled()
+		expect(dataset).not.toHaveBeenCalled()
+
+		owner.stickyHead = true
+
+		expect(changed).toHaveBeenCalledOnce()
+		expect(changed).toHaveBeenLastCalledWith(true)
+		expect(owner.dataset.get('sticky-head')).toBe('true')
+
+		owner.stickyHead = true
+
+		expect(changed).toHaveBeenCalledOnce()
+
+		owner.stickyHead = false
+
+		expect(changed).toHaveBeenCalledTimes(2)
+		expect(changed).toHaveBeenLastCalledWith(false)
+		expect(owner.dataset.get('sticky-head')).toBe('false')
+		expect(dataset).toHaveBeenCalledTimes(2)
+	})
+})
+
 describe('строки из данных', () => {
 	it('строки — TTableRow над записями, в порядке данных', () => {
 		const engine = rows([ANNA, BORIS])

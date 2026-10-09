@@ -227,6 +227,13 @@ a {
 	gap: 16px;
 }
 
+/*
+ * Ячейка витрины, её сцена и сцена колонки страницы — карточки стенда своего
+ * цвета. Карточка объявляет свою поверхность места (`--s-place-surface`) рядом
+ * с фоном, как карточка приложения: по ней тема красит закреплённую шапку
+ * Table, и без объявления шапка встала бы над строками пятном цвета страницы
+ * (`themes/oren/AGENTS.md`, «Поверхность места»).
+ */
 .pg-cell {
 	display: flex;
 	flex-direction: column;
@@ -235,6 +242,7 @@ a {
 	border: 1px solid var(--s-neutral-200);
 	border-radius: 8px;
 	background: var(--s-component-surface);
+	--s-place-surface: var(--s-component-surface);
 	transition:
 		border-color 150ms,
 		transform 150ms;
@@ -269,6 +277,7 @@ a {
 	padding: 12px;
 	border-radius: 6px;
 	background: var(--s-neutral-100);
+	--s-place-surface: var(--s-neutral-100);
 }
 
 /* ─── Строка свойства ────────────────────────────────────── */
@@ -356,7 +365,9 @@ a {
 	flex-wrap: wrap;
 	padding: 18px 12px;
 	min-height: 78px;
+	/* Поверхность места — рядом с фоном, см. `.pg-cell` */
 	background: var(--s-component-surface);
+	--s-place-surface: var(--s-component-surface);
 }
 
 /*

@@ -18,17 +18,24 @@ import type { ITable, ITableProps, TTableEvents } from './types'
  * падает. С setup его пишет плагин языка — тег локали поддерева. Имя чекбокса
  * «выбрать все» — строка локали, и отдаёт её разметке плагин имён таблицы
  * (`TTableNamesPlugin`): ядро имён не строит.
+ *
+ * И закреплённая шапка (`stickyHead`) — свойство вида таблицы, а не
+ * коллекции: строки и колонки от него не меняются. Ядро отдаёт его теме
+ * `data-sticky-head`, а как закрепить шапку, решает тема.
  */
 export class TTable extends TControl<ITableProps, TTableEvents> implements ITable {
 	static override baseClass = 's-table'
 
-	static defaultValues: typeof TControl.defaultValues & TDefaultValues<ITableProps, 'locale'> = {
+	static defaultValues: typeof TControl.defaultValues &
+		TDefaultValues<ITableProps, 'locale' | 'stickyHead'> = {
 		...TControl.defaultValues,
 		tag: 'table',
 		locale: DEFAULT_LOCALE,
+		stickyHead: false,
 	}
 
 	protected _locale: string
+	protected _stickyHead!: boolean
 
 	constructor(props: Partial<ITableProps> = {}) {
 		super(props)
@@ -36,6 +43,7 @@ export class TTable extends TControl<ITableProps, TTableEvents> implements ITabl
 		const ctor = new.target as typeof TTable
 
 		this._locale = props.locale ?? ctor.defaultValues.locale
+		this._applyStickyHead(props.stickyHead ?? ctor.defaultValues.stickyHead)
 	}
 
 	get locale(): string {
@@ -49,10 +57,33 @@ export class TTable extends TControl<ITableProps, TTableEvents> implements ITabl
 		this.events.emit('change:locale', value)
 	}
 
+	/**
+	 * Шапка закреплена у верхнего края прокрутки — контейнера или страницы, — и
+	 * строки уходят под неё. Без него шапка уезжает вместе со строками.
+	 */
+	get stickyHead(): boolean {
+		return this._stickyHead
+	}
+
+	set stickyHead(value: boolean) {
+		if (this._stickyHead === value) return
+
+		this._applyStickyHead(value)
+		this.events.emit('change:stickyHead', value)
+	}
+
 	override getProps(): ITableProps {
 		return {
 			...super.getProps(),
 			locale: this._locale,
+			stickyHead: this._stickyHead,
 		}
+	}
+
+	protected _applyStickyHead(value: boolean): void {
+		this._stickyHead = value
+
+		// Тема по нему закрепляет шапку
+		this._dataset.add('sticky-head', value)
 	}
 }
