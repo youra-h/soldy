@@ -2,27 +2,28 @@ import {
 	COMPONENTS,
 	SCENARIOS as SCENARIO_REGISTRY,
 	TOPICS as TOPIC_REGISTRY,
+	type IPreviewHost,
 	type TComponentEntry,
 	type TScenario,
 	type TTopic,
 } from '@soldy-ui/playground-shared'
-import { PREVIEW_COMPONENTS } from './previews'
-import { fixtureOf } from './scenarios/fixtures'
 
 /**
- * Что этот адаптер умеет показать.
+ * Что хост фреймворка умеет показать.
  *
- * Реестр в `@soldy-ui/playground-shared` — каталог **библиотеки**, он одинаков для
- * всех шести стендов. Но адаптеры дорастают до него по очереди: компоненты
- * сначала пишутся на Vue, обкатываются, и только потом переносятся дальше — в
- * React сейчас два компонента из двадцати.
+ * Реестр в `@soldy-ui/playground-shared` — каталог **библиотеки**, он одинаков
+ * для всех фреймворков. Но адаптеры дорастают до него по очереди: компоненты
+ * сначала пишутся на Vue, обкатываются, и только потом переносятся дальше — у
+ * React их пока двенадцать.
  *
- * Поэтому меню и витрина показывают пересечение каталога с картой превью. Чего
- * адаптер не реализовал — того в меню нет, вместо восемнадцати пунктов, ведущих
- * в пустоту. Обратное тоже верно: появился компонент в `previews` — страница
+ * Поэтому меню и витрина показывают пересечение каталога с картой превью
+ * хоста. Чего хост не умеет — того в меню нет, вместо пунктов, ведущих в
+ * пустоту. Обратное тоже верно: появился компонент в превью хоста — страница
  * возникает сама, править список не нужно.
  */
-export const AVAILABLE = COMPONENTS.filter((entry) => entry.id in PREVIEW_COMPONENTS)
+export function availableOf(host: IPreviewHost): readonly TComponentEntry[] {
+	return COMPONENTS.filter((entry) => host.previews.includes(entry.id))
+}
 
 /**
  * По алфавиту, а не в порядке реестра.
@@ -34,25 +35,42 @@ export const AVAILABLE = COMPONENTS.filter((entry) => entry.id in PREVIEW_COMPON
 const byLabel = (a: { label: string }, b: { label: string }) => a.label.localeCompare(b.label)
 
 /** Готовые компоненты — они и попадают на витрину. */
-export const SHOWCASE = AVAILABLE.filter((entry) => entry.showcase).sort(byLabel)
+export function showcaseOf(host: IPreviewHost): readonly TComponentEntry[] {
+	return availableOf(host)
+		.filter((entry) => entry.showcase)
+		.sort(byLabel)
+}
 
 /** Слои наследования: страница есть, на витрине им делать нечего. */
-export const LAYERS = AVAILABLE.filter((entry) => !entry.showcase).sort(byLabel)
+export function layersOf(host: IPreviewHost): readonly TComponentEntry[] {
+	return availableOf(host)
+		.filter((entry) => !entry.showcase)
+		.sort(byLabel)
+}
 
-export function findAvailable(id: string) {
-	return AVAILABLE.find((entry) => entry.id === id)
+export function findAvailable(host: IPreviewHost, id: string): TComponentEntry | undefined {
+	return availableOf(host).find((entry) => entry.id === id)
+}
+
+/** Может ли хост нарисовать сценарий: фикстура по ключу, без ключа — превью. */
+function drawable(host: IPreviewHost, scenario: TScenario): boolean {
+	return scenario.fixture === undefined
+		? host.previews.includes(scenario.component)
+		: host.fixtures.includes(scenario.fixture)
 }
 
 /**
- * Сценарии страницы тестов, которые этот адаптер может нарисовать.
+ * Сценарии страницы тестов, которые хост может нарисовать.
  *
  * То же пересечение, что у меню: реестр сценариев — каталог всей библиотеки,
- * а показывается только то, для чего у адаптера есть и компонент, и
- * фикстура. React с двумя компонентами покажет их сценарии, а не пустые блоки.
+ * а показывается только то, для чего у хоста есть и компонент, и фикстура.
+ * Хост без ProgressLinear покажет сценарии кольца, а не пустые блоки линии.
  */
-export const SCENARIOS = SCENARIO_REGISTRY.filter(
-	(scenario) => findAvailable(scenario.component) && fixtureOf(scenario),
-)
+export function scenariosOf(host: IPreviewHost): readonly TScenario[] {
+	return SCENARIO_REGISTRY.filter(
+		(scenario) => findAvailable(host, scenario.component) && drawable(host, scenario),
+	)
+}
 
 /** Темы, в которых есть что запустить, — в порядке меню. */
 export function topicsOf(scenarios: readonly TScenario[]): readonly TTopic[] {
@@ -60,8 +78,6 @@ export function topicsOf(scenarios: readonly TScenario[]): readonly TTopic[] {
 		scenarios.some((scenario) => scenario.topic === topic.id),
 	)
 }
-
-export const TOPICS = topicsOf(SCENARIOS)
 
 /**
  * Компоненты, у которых в теме есть сценарии, — по алфавиту, как меню
@@ -73,17 +89,18 @@ export function componentsOf(
 	scenarios: readonly TScenario[],
 	topic: string,
 ): readonly TComponentEntry[] {
-	return AVAILABLE.filter((entry) =>
+	return COMPONENTS.filter((entry) =>
 		scenarios.some((scenario) => scenario.topic === topic && scenario.component === entry.id),
 	).sort(byLabel)
 }
 
 /**
- * Адрес страницы тестов. Компонент сохраняется при смене темы, если в новой
- * теме у него есть сценарии, — иначе первый по алфавиту. Нет ни одной темы
- * со сценариями — `undefined`.
+ * Адрес страницы тестов фреймворка. Компонент сохраняется при смене темы,
+ * если в новой теме у него есть сценарии, — иначе первый по алфавиту. Нет ни
+ * одной темы со сценариями — `undefined`.
  */
 export function testsPath(
+	framework: string,
 	scenarios: readonly TScenario[],
 	topic: string | undefined = topicsOf(scenarios)[0]?.id,
 	component?: string,
@@ -93,5 +110,5 @@ export function testsPath(
 	const components = componentsOf(scenarios, topic)
 	const target = components.find((entry) => entry.id === component) ?? components[0]
 
-	return target ? `/tests/${topic}/${target.id}` : undefined
+	return target ? `/${framework}/tests/${topic}/${target.id}` : undefined
 }

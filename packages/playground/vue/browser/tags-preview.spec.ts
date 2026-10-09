@@ -102,7 +102,7 @@ let prop: HTMLElement
 beforeEach(async () => {
 	document.documentElement.dataset.theme = 'oren'
 
-	await router.push('/component/tags')
+	await router.push('/vue/tags')
 
 	render(App, { global: { plugins: [router] } })
 

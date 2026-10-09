@@ -1,24 +1,24 @@
 /**
- * Стенд обязан открываться на каждом компоненте.
+ * Стенд обязан открываться на каждом компоненте — у каждого фреймворка.
  *
  * Смысл проверки шире, чем «страница не упала». Страница строится из
  * дескриптора и рисует компонент **всеми** его пропами разом, в двух режимах —
  * пропом и через экземпляр ядра. Если компонент падает на каком-то сочетании,
  * ломается здесь, а не глазами через месяц. Прежнее демо такой проверки не
  * имело и потому годами показывало не то.
+ *
+ * Компонент рисует хост фреймворка в своём корне, поэтому внутрь превью тест
+ * смотрит по DOM: дерево компонентов оболочки корня хоста не видит.
  */
 
-import { describe, it, expect, beforeAll, beforeEach, vi } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { describe, it, expect, beforeAll, beforeEach, afterEach, vi } from 'vitest'
+import { mount, type DOMWrapper, type VueWrapper } from '@vue/test-utils'
 import { nextTick } from 'vue'
-
-const nextFrame = () => new Promise((resolve) => requestAnimationFrame(resolve))
 import { setIcons } from '@soldy-ui/setup'
 import * as material from '@soldy-ui/icons-material'
-import { Dialog } from '@soldy-ui/vue'
 import { COMPONENTS, propControls } from '@soldy-ui/playground-shared'
-import { AVAILABLE, SHOWCASE } from '../src/catalog'
-import { PREVIEW_COMPONENTS } from '../src/previews'
+import { availableOf, showcaseOf } from '../src/catalog'
+import { FRAMEWORKS, hostOf, loadHost } from '../src/hosts'
 import { router } from '../src/router'
 import { useIconPack } from '../src/composables/useIconPack'
 import OverviewPage from '../src/views/OverviewPage.vue'
@@ -27,8 +27,24 @@ import PropControl from '../src/components/PropControl.vue'
 import PropRow from '../src/components/PropRow.vue'
 import CodeView from '../src/components/CodeView.vue'
 
+const nextFrame = () => new Promise((resolve) => requestAnimationFrame(resolve))
+
 /**
- * Предупреждения Vue.
+ * Хосты — загрузчиком, как их грузит роутер: мимо загрузчика оболочка хост
+ * не импортирует, и тест тоже.
+ */
+await Promise.all(FRAMEWORKS.map(({ id }) => loadHost(id)))
+
+const IDS = FRAMEWORKS.map(({ id }) => id)
+
+/** Фреймворки, чей хост рисует все эти компоненты: проверка компонента — только там, где он есть. */
+const drawing = (...components: string[]) =>
+	IDS.filter((framework) =>
+		components.every((component) => hostOf(framework).previews.includes(component)),
+	)
+
+/**
+ * Предупреждения и ошибки в консоли.
  *
  * Стенд — единственное место, где компоненты рисуются всеми пропами разом, и
  * поэтому единственное, где такие предупреждения вообще всплывают. Первый же
@@ -37,8 +53,9 @@ import CodeView from '../src/components/CodeView.vue'
  * `useAdapter` эмитил `update:` и по плагинным.
  *
  * Ошибка тихая — в консоли, но не в тестах. Поэтому здесь она превращается в
- * падение: любое предупреждение Vue при отрисовке страницы означает, что
- * контракт компонента и его проводка разошлись.
+ * падение: любое предупреждение при отрисовке страницы означает, что контракт
+ * компонента и его проводка разошлись. Vue пишет их в `console.warn`, React —
+ * в `console.error`: ловятся оба.
  */
 const warnings: string[] = []
 
@@ -46,9 +63,13 @@ beforeAll(async () => {
 	setIcons(material)
 	// Компоненты пишут в консоль события — в отчёте это шум
 	vi.spyOn(console, 'log').mockImplementation(() => {})
-	vi.spyOn(console, 'warn').mockImplementation((...args) => {
-		warnings.push(args.map(String).join(' '))
-	})
+
+	for (const method of ['warn', 'error'] as const) {
+		vi.spyOn(console, method).mockImplementation((...args) => {
+			warnings.push(args.map(String).join(' '))
+		})
+	}
+
 	router.push('/')
 	await router.isReady()
 })
@@ -57,15 +78,62 @@ beforeEach(() => {
 	warnings.length = 0
 })
 
+/** Смонтированная страница теста — снимается после теста, даже упавшего. */
+let page: VueWrapper | undefined
+
+afterEach(() => {
+	page?.unmount()
+	page = undefined
+})
+
 /** Первая строка предупреждения: дальше идёт дерево компонентов, оно шумит. */
 function firstLines(): string[] {
 	return warnings.map((text) => text.split('\n')[0])
 }
 
+/**
+ * Предупреждения адаптера на настоящем сочетании пропов, на которые заведены
+ * задачи: страница фреймворка и начало текста. Решили задачу — строка уходит.
+ */
+const KNOWN_WARNINGS: readonly { framework: string; component: string; text: string }[] = [
+	// Временно, до 869feq966: Icon без tag рисует <error>, React предупреждает о
+	// неизвестном теге — строка `tag` с умолчанием ядра
+	{ framework: 'react', component: 'icon', text: 'The tag <%s> is unrecognized in this browser' },
+]
+
+/** Предупреждения страницы, кроме известных — тех, на которые заведены задачи. */
+function unknownWarnings(framework: string, component: string): string[] {
+	return firstLines().filter(
+		(line) =>
+			!KNOWN_WARNINGS.some(
+				(known) =>
+					known.framework === framework &&
+					known.component === component &&
+					line.startsWith(known.text),
+			),
+	)
+}
+
 const mountOptions = { global: { plugins: [router] }, attachTo: document.body }
 
+/**
+ * Страница компонента фреймворка. Часть проводки включается кадром позже:
+ * `TElementPlugin` отдаёт узел через requestAnimationFrame, и только тогда
+ * плагины вроде якоря Frame получают элемент и эмитят свои `update:`. Без
+ * ожидания проверка предупреждений была бы вакуумной — до эмита тест не
+ * доживал.
+ */
+async function openPage(framework: string, id: string): Promise<VueWrapper> {
+	page = mount(ComponentPage, { ...mountOptions, props: { framework, id } })
+
+	await nextTick()
+	await nextFrame()
+
+	return page
+}
+
 /** Строка страницы по имени пропа; без неё проверять нечего. */
-function rowOf(wrapper: ReturnType<typeof mount>, name: string) {
+function rowOf(wrapper: VueWrapper, name: string) {
 	const found = wrapper
 		.findAll('.pg-prop')
 		.find((row) => row.find('.pg-prop__name').text() === name)
@@ -75,14 +143,44 @@ function rowOf(wrapper: ReturnType<typeof mount>, name: string) {
 	return found
 }
 
+/** Строка компонентом — оболочки: по ней видно, что строка пережила перерисовку. */
+function rowComponentOf(wrapper: VueWrapper, name: string) {
+	const found = wrapper
+		.findAllComponents(PropRow)
+		.find((row) => row.props('control').name === name)
+
+	if (!found) throw new Error(`нет строки ${name}`)
+
+	return found
+}
+
+/**
+ * Значение — через контрол строки, тем же, что отдаёт он сам, — как клик
+ * пользователя. Отрисовку Select и Input проверяют их собственные тесты.
+ * Стёртое числовое поле и снятый выбор списка дают `undefined`, стёртое
+ * текстовое — `''`.
+ */
+async function enter(row: DOMWrapper<Element>, value: unknown): Promise<void> {
+	const control = row.findComponent(PropControl)
+
+	if (!control.exists()) throw new Error('у строки нет контрола')
+
+	control.vm.$emit('update:modelValue', value)
+	await nextTick()
+	await nextFrame()
+}
+
+/** Сцены колонок строки: в первой — пропы, во второй — экземпляр. */
+const stagesOf = (row: DOMWrapper<Element>) => row.findAll('.pg-col__stage')
+
 /**
  * Клики по двум разным элементам в каждой колонке строки ListBox — те же, что
  * в проверке строки `mode`. Результат — число выбранных по колонкам, а не общий
  * счёт по строке: упавшая проверка сразу показывает, в какой колонке режим не
  * доехал. Два выбранных — признак `multiple`: у ListBox режим в DOM не выведен.
  */
-async function selectedAfterTwoClicks(row: ReturnType<typeof rowOf>): Promise<number[]> {
-	const stages = row.findAll('.pg-col__stage')
+async function selectedAfterTwoClicks(row: DOMWrapper<Element>): Promise<number[]> {
+	const stages = stagesOf(row)
 
 	for (const stage of stages) {
 		const items = stage.findAll('.s-list-box-item .s-button')
@@ -96,37 +194,45 @@ async function selectedAfterTwoClicks(row: ReturnType<typeof rowOf>): Promise<nu
 	return stages.map((stage) => stage.findAll('.s-list-box-item[data-selected="true"]').length)
 }
 
-/**
- * Строка по имени пропа — компонентом, а не узлом: для поиска в дереве её
- * компонентов. У узла (`DOMWrapper`) такой поиск в `@vue/test-utils` не
- * типизирован.
- */
-function rowComponentOf(wrapper: ReturnType<typeof mount>, name: string) {
-	const found = wrapper
-		.findAllComponents(PropRow)
-		.find((row) => row.props('control').name === name)
-
-	if (!found) throw new Error(`нет строки ${name}`)
-
-	return found
-}
+/** Имя кнопки в каждой колонке строки. */
+const ariaLabels = (row: DOMWrapper<Element>) =>
+	row.findAll('.pg-col__stage .s-button').map((button) => button.attributes('aria-label'))
 
 /**
- * Панели окон строки по колонкам. Окно телепортировано в `body`, и в DOM
- * строки его нет: панель берётся у компонента окна из дерева строки. Открывать
- * окно не нужно — закрытая панель лежит в DOM (`v-show`), и стили на ней.
+ * Панели окон строки по колонкам. Окно телепортировано в `body` из корня хоста,
+ * и ни в DOM строки, ни в дереве её компонентов его нет. Панель колонки — та,
+ * что открыла её кнопка: после нажатия видна ровно она. Закрывает её «Отмена»
+ * в подвале — следующая колонка открывает свою.
  */
-function dialogPanels(row: ReturnType<typeof rowComponentOf>): HTMLElement[] {
-	return row.findAllComponents(Dialog).map((dialog) => {
-		const panel = dialog.vm.$refs.rootElement
+async function dialogPanels(row: DOMWrapper<Element>): Promise<HTMLElement[]> {
+	const panels: HTMLElement[] = []
 
-		if (!(panel instanceof HTMLElement)) throw new Error('у окна строки нет панели')
+	for (const stage of stagesOf(row)) {
+		await stage.get('.s-button').trigger('click')
+		await nextTick()
 
-		return panel
-	})
+		const open = [...document.querySelectorAll('.s-dialog')].filter(
+			(panel): panel is HTMLElement =>
+				panel instanceof HTMLElement && panel.style.display !== 'none',
+		)
+
+		if (open.length !== 1) throw new Error(`открытых окон ${open.length}, а не одно`)
+
+		const cancel = [...open[0].querySelectorAll('.s-button')].find(
+			(button) => button.textContent?.trim() === 'Отмена',
+		)
+
+		if (!(cancel instanceof HTMLElement)) throw new Error('в окне нет кнопки «Отмена»')
+
+		panels.push(open[0])
+		cancel.click()
+		await nextTick()
+	}
+
+	return panels
 }
 
-describe('каталог адаптера', () => {
+describe.each(IDS)('каталог хоста %s', (framework) => {
 	/**
 	 * Ключи карты превью — те же идентификаторы, что в общем реестре. Опечатка
 	 * (`list_box` вместо `list-box`) не сломает ничего заметного: компонент
@@ -134,39 +240,35 @@ describe('каталог адаптера', () => {
 	 */
 	it('каждое превью соответствует записи реестра', () => {
 		const known = new Set(COMPONENTS.map((entry) => entry.id))
-		const orphans = Object.keys(PREVIEW_COMPONENTS).filter((id) => !known.has(id))
 
-		expect(orphans).toEqual([])
+		expect(hostOf(framework).previews.filter((id) => !known.has(id))).toEqual([])
 	})
 
-	it('у каждой записи каталога есть превью', () => {
-		expect(AVAILABLE.filter((entry) => !(entry.id in PREVIEW_COMPONENTS))).toEqual([])
-	})
-})
+	it('витрина показывает все готовые компоненты хоста, каждый — нарисованным', async () => {
+		page = mount(OverviewPage, { ...mountOptions, props: { framework } })
 
-describe('витрина', () => {
-	it('показывает все готовые компоненты', () => {
-		const wrapper = mount(OverviewPage, mountOptions)
+		await nextTick()
+		await nextFrame()
 
-		expect(wrapper.findAll('.pg-cell')).toHaveLength(SHOWCASE.length)
+		const cells = page.findAll('.pg-cell')
+
+		expect(cells).toHaveLength(showcaseOf(hostOf(framework)).length)
+		expect(
+			cells.filter((cell) => !cell.find('.pg-cell__stage .pg-mount > *').exists()),
+		).toEqual([])
 		expect(firstLines()).toEqual([])
-
-		wrapper.unmount()
 	})
 })
 
 describe('страница компонента', () => {
-	it.each(AVAILABLE.map((entry) => [entry.id, entry] as const))(
-		'%s открывается и рисует строку на каждый проп',
-		async (id, entry) => {
-			const wrapper = mount(ComponentPage, { ...mountOptions, props: { id } })
+	const PAGES = IDS.flatMap((framework) =>
+		availableOf(hostOf(framework)).map((entry) => [framework, entry.id, entry] as const),
+	)
 
-			// Часть проводки включается кадром позже: `TElementPlugin` отдаёт узел
-			// через requestAnimationFrame, и только тогда плагины вроде якоря Frame
-			// получают элемент и эмитят свои `update:`. Без ожидания проверка
-			// предупреждений ниже была бы вакуумной — до эмита тест не доживал.
-			await nextTick()
-			await nextFrame()
+	it.each(PAGES)(
+		'%s/%s открывается и рисует строку на каждый проп',
+		async (framework, id, entry) => {
+			const wrapper = await openPage(framework, id)
 
 			// Все три группы: коллекционные свойства (`mode`) объявлены на
 			// фасаде, плагинные (`aria_label`) — на плагинах. Счёт из того же
@@ -176,46 +278,47 @@ describe('страница компонента', () => {
 				componentControls.length + collectionControls.length + pluginControls.length
 
 			expect(wrapper.findAll('.pg-prop')).toHaveLength(rows)
-			expect(firstLines()).toEqual([])
-
-			wrapper.unmount()
+			expect(unknownWarnings(framework, id)).toEqual([])
 		},
 	)
 
-	it('на неизвестный идентификатор отвечает, а не падает', () => {
-		const wrapper = mount(ComponentPage, { ...mountOptions, props: { id: 'нет-такого' } })
+	it('на неизвестный идентификатор отвечает, а не падает', async () => {
+		const wrapper = await openPage('vue', 'нет-такого')
 
 		expect(wrapper.find('.pg-empty').exists()).toBe(true)
-
-		wrapper.unmount()
 	})
+
+	/**
+	 * Адрес компонента переживает смену фреймворка, а компонента у нового может
+	 * не быть: страница говорит об этом и ведёт на витрину фреймворка.
+	 */
+	const MISSING = IDS.flatMap((framework) => {
+		const missing = COMPONENTS.find((entry) => !hostOf(framework).previews.includes(entry.id))
+
+		return missing ? [[framework, missing.id, missing.label] as const] : []
+	})
+
+	it.each(MISSING)(
+		'%s/%s: компонента у фреймворка нет — пустое состояние со ссылкой на витрину',
+		async (framework, id, label) => {
+			const wrapper = await openPage(framework, id)
+
+			expect(wrapper.findAll('.pg-prop')).toHaveLength(0)
+			expect(wrapper.get('.pg-empty').text()).toContain(label)
+			expect(wrapper.get('.pg-empty a').attributes('href')).toBe(`#/${framework}`)
+		},
+	)
 })
 
-/**
- * Переход между страницами — то, чего дымовая проверка выше не видит.
- *
- * Она монтирует `ComponentPage` заново на каждый идентификатор, а в браузере
- * маршрут `/component/:id` обслуживает **один и тот же** экземпляр страницы:
- * меняется только проп `id`. Строки пропов при этом переиспользуются, и всё,
- * что строка успела завести в `setup`, остаётся от прежнего компонента.
- *
- * Так и вышло: правая колонка ListBox рисовала корень с классами Button —
- * `ctrl` в ней оставался экземпляром `TButton`, а элементы приходили уже
- * списочные.
- */
 /**
  * Регрессия слота `content`: `Tabs.Content`, положенный в превью не в тот
  * слот, физически оказывается внутри `[role="tablist"]` — панель рядом с
  * табами, а не рядом со списком. Проверяем DOM, а не консоль: страница уже
- * ловит предупреждения Vue целиком, а эта проверка — про саму структуру.
+ * ловит предупреждения целиком, а эта проверка — про саму структуру.
  */
 describe('превью tabs', () => {
-	it('панель не лежит внутри списка табов', async () => {
-		const wrapper = mount(ComponentPage, { ...mountOptions, props: { id: 'tabs' } })
-
-		await nextTick()
-		await nextFrame()
-
+	it.each(drawing('tabs'))('%s: панель не лежит внутри списка табов', async (framework) => {
+		const wrapper = await openPage(framework, 'tabs')
 		const stages = wrapper.findAll('.pg-col__stage')
 
 		expect(stages.length).toBeGreaterThan(0)
@@ -227,28 +330,70 @@ describe('превью tabs', () => {
 			expect(list.findAll('.s-tabs__panel')).toHaveLength(0)
 			expect(stage.findAll('.s-tabs__panel').length).toBeGreaterThan(0)
 		}
-
-		wrapper.unmount()
 	})
 })
 
+/**
+ * Переход между страницами — то, чего дымовая проверка выше не видит.
+ *
+ * Она монтирует `ComponentPage` заново на каждый идентификатор, а в браузере
+ * маршрут `/:framework/:id` обслуживает **один и тот же** экземпляр страницы:
+ * меняется только проп `id`. Строки пропов при этом переиспользуются, и всё,
+ * что строка успела завести в `setup`, остаётся от прежнего компонента.
+ *
+ * Так и вышло: правая колонка ListBox рисовала корень с классами Button —
+ * `ctrl` в ней оставался экземпляром `TButton`, а элементы приходили уже
+ * списочные.
+ */
 describe('переход между компонентами', () => {
-	it('правая колонка показывает новый компонент, а не прежний', async () => {
-		const wrapper = mount(ComponentPage, { ...mountOptions, props: { id: 'button' } })
+	it.each(drawing('button', 'list-box'))(
+		'%s: колонки показывают новый компонент, а не прежний',
+		async (framework) => {
+			const wrapper = await openPage(framework, 'button')
 
+			await wrapper.setProps({ id: 'list-box' })
+			await nextTick()
+			await nextFrame()
+
+			const roots = wrapper.findAll('.pg-col__stage > .pg-mount > *')
+
+			expect(roots.length).toBeGreaterThan(0)
+			expect(roots.every((root) => root.classes('s-list-box'))).toBe(true)
+		},
+	)
+})
+
+/**
+ * Состояние страницы держит оболочка: строка, её значение, экземпляр ядра.
+ * Смена фреймворка перемонтирует только сцены — хост нового фреймворка
+ * получает в первой колонке значение строки пропом, а во второй тот же
+ * экземпляр, в плагин которого строка пишет значение заново.
+ */
+describe('смена фреймворка', () => {
+	it('значение строки переживает её: aria_label у Button, Vue → React, обе колонки', async () => {
+		const wrapper = await openPage('vue', 'button')
+
+		await enter(rowOf(wrapper, 'aria_label'), 'Закрыть')
+		expect(ariaLabels(rowOf(wrapper, 'aria_label'))).toEqual(['Закрыть', 'Закрыть'])
+
+		const before = rowOf(wrapper, 'aria_label').element
+		const draw = vi.spyOn(hostOf('react'), 'mount')
+
+		await wrapper.setProps({ framework: 'react' })
 		await nextTick()
 		await nextFrame()
 
-		await wrapper.setProps({ id: 'list-box' })
-		await nextTick()
-		await nextFrame()
+		const row = rowOf(wrapper, 'aria_label')
+		const drawn = draw.mock.calls.filter(([node]) => row.element.contains(node))
 
-		const roots = wrapper.findAll('.pg-col__stage > *')
+		draw.mockRestore()
 
-		expect(roots.length).toBeGreaterThan(0)
-		expect(roots.every((root) => root.classes('s-list-box'))).toBe(true)
-
-		wrapper.unmount()
+		// Строка та же, а обе сцены нарисовал хост React: первая получила
+		// значение пропом, вторая — экземпляр, в плагин которого его пишет строка
+		expect(row.element).toBe(before)
+		expect(drawn.map(([, mounted]) => mounted.props.aria_label)).toEqual(['Закрыть', undefined])
+		expect(ariaLabels(row)).toEqual(['Закрыть', 'Закрыть'])
+		expect(firstLines()).toEqual([])
 	})
 })
 
@@ -258,58 +403,33 @@ describe('переход между компонентами', () => {
  * `mode` объявлен на фасаде коллекции, а не на компоненте, и страница долго
  * его не показывала: строки строились только из компонентного дескриптора.
  * Проверка идёт до самой коллекции, а не до наличия строки: правая колонка
- * пишет `mode` не в инстанс, а в фасад поверх движка из `engine:create`, и
- * молчаливо не сработать там есть чему.
+ * пишет `mode` не в инстанс, а в фасад поверх своего движка, и молчаливо не
+ * сработать там есть чему.
  */
 describe('свойства коллекции', () => {
-	const modeRow = (wrapper: ReturnType<typeof mount>) =>
-		wrapper.findAll('.pg-prop').find((row) => row.find('.pg-prop__name').text() === 'mode')
-
-	it.each(['list-box', 'select', 'accordion', 'calendar'])(
-		'%s показывает строку mode',
-		async (id) => {
-			const wrapper = mount(ComponentPage, { ...mountOptions, props: { id } })
-
-			await nextTick()
-			await nextFrame()
-
-			expect(modeRow(wrapper)).toBeDefined()
-
-			wrapper.unmount()
-		},
+	const MODE_PAGES = ['list-box', 'select', 'accordion', 'calendar'].flatMap((id) =>
+		drawing(id).map((framework) => [framework, id] as const),
 	)
 
-	it('переключение mode доходит до коллекции в обеих колонках', async () => {
-		const wrapper = mount(ComponentPage, { ...mountOptions, props: { id: 'list-box' } })
+	it.each(MODE_PAGES)('%s/%s показывает строку mode', async (framework, id) => {
+		const wrapper = await openPage(framework, id)
 
-		await nextTick()
-		await nextFrame()
-
-		const row = modeRow(wrapper)
-
-		if (!row) throw new Error('нет строки mode')
-
-		// Значение шлём через сам контрол строки — так же, как это делает клик
-		// пользователя. Отрисовку Select проверяют его собственные тесты
-		row.findComponent(PropControl).vm.$emit('update:modelValue', 'multiple')
-		await nextTick()
-		await nextFrame()
-
-		// Наблюдаемое следствие `multiple` — два выбранных разом. У ListBox
-		// режим в DOM не выведен, и проверять его можно только поведением
-		for (const stage of row.findAll('.pg-col__stage')) {
-			const items = stage.findAll('.s-list-box-item .s-button')
-
-			await items[0].trigger('click')
-			await items[1].trigger('click')
-		}
-
-		await nextTick()
-
-		expect(row.findAll('.s-list-box-item[data-selected="true"]')).toHaveLength(4)
-
-		wrapper.unmount()
+		expect(rowOf(wrapper, 'mode').exists()).toBe(true)
 	})
+
+	it.each(drawing('list-box'))(
+		'%s: переключение mode доходит до коллекции в обеих колонках',
+		async (framework) => {
+			const wrapper = await openPage(framework, 'list-box')
+			const row = rowOf(wrapper, 'mode')
+
+			await enter(row, 'multiple')
+
+			// Наблюдаемое следствие `multiple` — два выбранных разом. У ListBox
+			// режим в DOM не выведен, и проверять его можно только поведением
+			expect(await selectedAfterTwoClicks(row)).toEqual([2, 2])
+		},
+	)
 
 	/**
 	 * Выбор у календаря свой, дат, а не стандартный: движок второй колонки
@@ -317,29 +437,24 @@ describe('свойства коллекции', () => {
 	 * до чужого. Признак режима — `aria-multiselectable` у сетки: несколько
 	 * дней выбирают в `multiple` и `range`.
 	 */
-	it('календарь: mode доходит до коллекции в обеих колонках', async () => {
-		const wrapper = mount(ComponentPage, { ...mountOptions, props: { id: 'calendar' } })
+	it.each(drawing('calendar'))(
+		'%s: mode календаря доходит до коллекции в обеих колонках',
+		async (framework) => {
+			const wrapper = await openPage(framework, 'calendar')
+			const row = rowOf(wrapper, 'mode')
 
-		await nextTick()
-		await nextFrame()
+			const multiselectable = () =>
+				row
+					.findAll('.s-calendar__grid')
+					.map((grid) => grid.attributes('aria-multiselectable'))
 
-		const row = modeRow(wrapper)
+			expect(multiselectable()).toEqual([undefined, undefined])
 
-		if (!row) throw new Error('нет строки mode')
+			await enter(row, 'range')
 
-		const multiselectable = () =>
-			row.findAll('.s-calendar__grid').map((grid) => grid.attributes('aria-multiselectable'))
-
-		expect(multiselectable()).toEqual([undefined, undefined])
-
-		row.findComponent(PropControl).vm.$emit('update:modelValue', 'range')
-		await nextTick()
-		await nextFrame()
-
-		expect(multiselectable()).toEqual(['true', 'true'])
-
-		wrapper.unmount()
-	})
+			expect(multiselectable()).toEqual(['true', 'true'])
+		},
+	)
 })
 
 /**
@@ -351,56 +466,42 @@ describe('свойства коллекции', () => {
  * `aria-label` на корне кнопки.
  */
 describe('свойства плагинов', () => {
-	const ariaLabels = (wrapper: ReturnType<typeof mount>) =>
-		rowOf(wrapper, 'aria_label')
-			.findAll('.pg-col__stage .s-button')
-			.map((button) => button.attributes('aria-label'))
+	it.each(drawing('button'))(
+		'%s: aria_label доходит до DOM в обеих колонках',
+		async (framework) => {
+			const wrapper = await openPage(framework, 'button')
 
-	it('aria_label доходит до DOM в обеих колонках', async () => {
-		const wrapper = mount(ComponentPage, { ...mountOptions, props: { id: 'button' } })
+			await enter(rowOf(wrapper, 'aria_label'), 'Закрыть')
 
-		await nextTick()
-		await nextFrame()
-
-		// Значение шлём через контрол строки — так же, как строка `mode`
-		rowOf(wrapper, 'aria_label')
-			.findComponent(PropControl)
-			.vm.$emit('update:modelValue', 'Закрыть')
-		await nextTick()
-		await nextFrame()
-
-		expect(ariaLabels(wrapper)).toEqual(['Закрыть', 'Закрыть'])
-
-		wrapper.unmount()
-	})
+			expect(ariaLabels(rowOf(wrapper, 'aria_label'))).toEqual(['Закрыть', 'Закрыть'])
+		},
+	)
 
 	/**
-	 * Смена пакета иконок меняет `key` превью, и правая колонка монтируется
-	 * заново — с новым bundle, чей плагин стартует без имени и снимает его с
-	 * инстанса. Значение обязано доехать и до этого bundle.
+	 * Смена пакета иконок рисует сцены заново, и правая колонка монтируется с
+	 * новым bundle, чей плагин стартует без имени и снимает его с инстанса.
+	 * Значение обязано доехать и до этого bundle.
 	 */
-	it('значение переживает перемонтирование колонок', async () => {
-		const { version } = useIconPack()
-		const wrapper = mount(ComponentPage, { ...mountOptions, props: { id: 'button' } })
+	it.each(drawing('button'))(
+		'%s: значение переживает перемонтирование колонок',
+		async (framework) => {
+			const { version } = useIconPack()
+			const wrapper = await openPage(framework, 'button')
 
-		await nextTick()
-		await nextFrame()
+			await enter(rowOf(wrapper, 'aria_label'), 'Закрыть')
 
-		rowOf(wrapper, 'aria_label')
-			.findComponent(PropControl)
-			.vm.$emit('update:modelValue', 'Закрыть')
-		await nextTick()
-		await nextFrame()
+			version.value++
 
-		version.value++
-		await nextTick()
-		await nextFrame()
+			try {
+				await nextTick()
+				await nextFrame()
 
-		expect(ariaLabels(wrapper)).toEqual(['Закрыть', 'Закрыть'])
-
-		wrapper.unmount()
-		version.value--
-	})
+				expect(ariaLabels(rowOf(wrapper, 'aria_label'))).toEqual(['Закрыть', 'Закрыть'])
+			} finally {
+				version.value--
+			}
+		},
+	)
 })
 
 /**
@@ -417,127 +518,115 @@ describe('свойства плагинов', () => {
  * размера и отступа на его панели.
  */
 describe('пресет строки', () => {
-	it('removeOnBackspace рисует Select в editable + multiple в обеих колонках', async () => {
-		const wrapper = mount(ComponentPage, { ...mountOptions, props: { id: 'select' } })
+	it.each(drawing('select'))(
+		'%s: removeOnBackspace рисует Select в editable + multiple в обеих колонках',
+		async (framework) => {
+			const wrapper = await openPage(framework, 'select')
+			const stages = stagesOf(rowOf(wrapper, 'removeOnBackspace'))
 
-		await nextTick()
-		await nextFrame()
+			expect(stages).toHaveLength(2)
 
-		const stages = rowOf(wrapper, 'removeOnBackspace').findAll('.pg-col__stage')
+			for (const stage of stages) {
+				expect(stage.find('.s-select__tags').exists()).toBe(true)
+				expect(stage.find('.s-select__field input').attributes('readonly')).toBeUndefined()
+			}
+		},
+	)
 
-		expect(stages).toHaveLength(2)
+	it.each(drawing('select'))('%s: соседние строки пресет не получают', async (framework) => {
+		const wrapper = await openPage(framework, 'select')
 
-		for (const stage of stages) {
-			expect(stage.find('.s-select__tags').exists()).toBe(true)
-			expect(stage.find('.s-select__field input').attributes('readonly')).toBeUndefined()
-		}
-
-		wrapper.unmount()
-	})
-
-	it('соседние строки пресет не получают', async () => {
-		const wrapper = mount(ComponentPage, { ...mountOptions, props: { id: 'select' } })
-
-		await nextTick()
-		await nextFrame()
-
-		for (const stage of rowOf(wrapper, 'closeOnSelect').findAll('.pg-col__stage')) {
+		for (const stage of stagesOf(rowOf(wrapper, 'closeOnSelect'))) {
 			expect(stage.find('.s-select__tags').exists()).toBe(false)
 		}
-
-		wrapper.unmount()
 	})
 
-	it('indicator рисует ListBox в multiple в обеих колонках', async () => {
-		const wrapper = mount(ComponentPage, { ...mountOptions, props: { id: 'list-box' } })
+	it.each(drawing('list-box'))(
+		'%s: indicator рисует ListBox в multiple в обеих колонках',
+		async (framework) => {
+			const wrapper = await openPage(framework, 'list-box')
 
-		await nextTick()
-		await nextFrame()
+			expect(await selectedAfterTwoClicks(rowOf(wrapper, 'indicator'))).toEqual([2, 2])
+		},
+	)
 
-		expect(await selectedAfterTwoClicks(rowOf(wrapper, 'indicator'))).toEqual([2, 2])
+	it.each(drawing('list-box'))(
+		'%s: соседние строки ListBox пресет не получают',
+		async (framework) => {
+			const wrapper = await openPage(framework, 'list-box')
 
-		wrapper.unmount()
-	})
-
-	it('соседние строки ListBox пресет не получают', async () => {
-		const wrapper = mount(ComponentPage, { ...mountOptions, props: { id: 'list-box' } })
-
-		await nextTick()
-		await nextFrame()
-
-		expect(await selectedAfterTwoClicks(rowOf(wrapper, 'view'))).toEqual([1, 1])
-
-		wrapper.unmount()
-	})
+			expect(await selectedAfterTwoClicks(rowOf(wrapper, 'view'))).toEqual([1, 1])
+		},
+	)
 
 	/**
 	 * Отступ у центра — поля области, по центру которой стоит окно: окно меньше
 	 * экрана от него не сдвигается. Строка растягивает окно по области (`auto`
 	 * — «по экрану с отступом»), и отступ виден зазором до краёв экрана.
 	 */
-	it('offset рисует Dialog по экрану с отступом в обеих колонках', async () => {
-		const wrapper = mount(ComponentPage, { ...mountOptions, props: { id: 'dialog' } })
+	it.each(drawing('dialog'))(
+		'%s: offset рисует Dialog по экрану с отступом в обеих колонках',
+		async (framework) => {
+			const wrapper = await openPage(framework, 'dialog')
 
-		await nextTick()
-		await nextFrame()
+			const sizes = async (name: string) =>
+				(await dialogPanels(rowOf(wrapper, name))).map((panel) => [
+					panel.style.getPropertyValue('--dialog-width'),
+					panel.style.getPropertyValue('--dialog-height'),
+				])
 
-		const sizes = (name: string) =>
-			dialogPanels(rowComponentOf(wrapper, name)).map((panel) => [
-				panel.style.getPropertyValue('--dialog-width'),
-				panel.style.getPropertyValue('--dialog-height'),
+			expect(await sizes('offset')).toEqual([
+				['auto', 'auto'],
+				['auto', 'auto'],
 			])
-
-		expect(sizes('offset')).toEqual([
-			['auto', 'auto'],
-			['auto', 'auto'],
-		])
-		expect(sizes('placement')).toEqual([
-			['', ''],
-			['', ''],
-		])
-
-		wrapper.unmount()
-	})
+			expect(await sizes('placement')).toEqual([
+				['', ''],
+				['', ''],
+			])
+		},
+	)
 
 	/**
 	 * Набор — в само поле строки, а не значением мимо контрола: проверяется
 	 * преобразование текста. `10%` уходит строкой как есть, `40` — числом, и
 	 * окно получает его пикселями.
 	 */
-	it('набранное в поле offset доходит до окна обеих колонок', async () => {
-		const wrapper = mount(ComponentPage, { ...mountOptions, props: { id: 'dialog' } })
+	it.each(drawing('dialog'))(
+		'%s: набранное в поле offset доходит до окна обеих колонок',
+		async (framework) => {
+			const wrapper = await openPage(framework, 'dialog')
+			const row = rowOf(wrapper, 'offset')
+			const field = row.find('.pg-prop__control input')
+			const tops = async () =>
+				(await dialogPanels(row)).map((panel) =>
+					panel.style.getPropertyValue('--dialog-offset-top'),
+				)
 
-		await nextTick()
-		await nextFrame()
+			await field.setValue('10%')
+			await nextTick()
+			await nextFrame()
 
-		const row = rowComponentOf(wrapper, 'offset')
-		const field = row.find('.pg-prop__control input')
-		const tops = () =>
-			dialogPanels(row).map((panel) => panel.style.getPropertyValue('--dialog-offset-top'))
+			expect(await tops()).toEqual(['10%', '10%'])
 
-		await field.setValue('10%')
-		await nextTick()
-		await nextFrame()
+			await field.setValue('40')
+			await nextTick()
+			await nextFrame()
 
-		expect(tops()).toEqual(['10%', '10%'])
+			expect(await tops()).toEqual(['40px', '40px'])
 
-		await field.setValue('40')
-		await nextTick()
-		await nextFrame()
+			// Пиксели окно получило бы и от строки '40' — число видно по коду
+			// колонок: он учит задавать пиксели числом. Код пишет хост, у
+			// которого есть генератор
+			const [propCode, instanceCode] = rowComponentOf(wrapper, 'offset')
+				.findAllComponents(CodeView)
+				.map((view) => view.props('code'))
 
-		expect(tops()).toEqual(['40px', '40px'])
-
-		// Пиксели окно получило бы и от строки '40' — число видно по коду
-		// колонок: он учит задавать пиксели числом
-		const [propCode, instanceCode] = row
-			.findAllComponents(CodeView)
-			.map((view) => view.props('code'))
-
-		expect(propCode).toContain(':offset="40"')
-		expect(instanceCode).toContain('instance.offset = 40')
-
-		wrapper.unmount()
-	})
+			if (hostOf(framework).snippets) {
+				expect(propCode).toContain(':offset="40"')
+				expect(instanceCode).toContain('instance.offset = 40')
+			}
+		},
+	)
 })
 
 /**
@@ -551,87 +640,65 @@ describe('пресет строки', () => {
  */
 describe('очищенное поле', () => {
 	/**
-	 * Значение — через контрол строки, тем же, что отдаёт он сам: стёртое
-	 * числовое поле и снятый выбор списка дают `undefined`, стёртое
-	 * текстовое — `''`.
-	 */
-	async function enter(row: ReturnType<typeof rowOf>, value: unknown): Promise<void> {
-		row.findComponent(PropControl).vm.$emit('update:modelValue', value)
-		await nextTick()
-		await nextFrame()
-	}
-
-	/**
 	 * Строка `max` — с пресетом `value: 40`, и по доле видно, куда встала
 	 * шкала. Строка `value` для этой проверки не годится: умолчание доли —
 	 * ноль, и `undefined`, записанный мимо правила, полоса рисует так же —
 	 * пустой, с `aria-valuenow="0"`.
 	 */
-	it('возвращает умолчание: шкала ProgressLinear снова до 100 в обеих колонках', async () => {
-		const wrapper = mount(ComponentPage, { ...mountOptions, props: { id: 'progress-linear' } })
+	it.each(drawing('progress-linear'))(
+		'%s: возвращает умолчание — шкала ProgressLinear снова до 100 в обеих колонках',
+		async (framework) => {
+			const wrapper = await openPage(framework, 'progress-linear')
+			const row = rowOf(wrapper, 'max')
+			const scales = () =>
+				row
+					.findAll('.pg-col__stage .s-progress-linear')
+					.map(
+						(bar) =>
+							`${bar.attributes('aria-valuenow')} из ${bar.attributes('aria-valuemax')}`,
+					)
 
-		await nextTick()
-		await nextFrame()
+			await enter(row, 50)
+			expect(scales()).toEqual(['40 из 50', '40 из 50'])
 
-		const row = rowOf(wrapper, 'max')
-		const scales = () =>
-			row
-				.findAll('.pg-col__stage .s-progress-linear')
-				.map(
-					(bar) =>
-						`${bar.attributes('aria-valuenow')} из ${bar.attributes('aria-valuemax')}`,
-				)
-
-		await enter(row, 50)
-		expect(scales()).toEqual(['40 из 50', '40 из 50'])
-
-		await enter(row, undefined)
-		expect(scales()).toEqual(['40 из 100', '40 из 100'])
-
-		wrapper.unmount()
-	})
+			await enter(row, undefined)
+			expect(scales()).toEqual(['40 из 100', '40 из 100'])
+		},
+	)
 
 	/**
 	 * У `mode` фасадов умолчания нет: «не задано» его сеттер не принимает, и
 	 * сбрасывать не к чему. Первая колонка режим оставляет — вторая тоже.
 	 */
-	it('без умолчания не пишет ничего: ListBox остаётся в multiple в обеих колонках', async () => {
-		const wrapper = mount(ComponentPage, { ...mountOptions, props: { id: 'list-box' } })
+	it.each(drawing('list-box'))(
+		'%s: без умолчания не пишет ничего — ListBox остаётся в multiple в обеих колонках',
+		async (framework) => {
+			const wrapper = await openPage(framework, 'list-box')
+			const row = rowOf(wrapper, 'mode')
 
-		await nextTick()
-		await nextFrame()
+			await enter(row, 'multiple')
+			await enter(row, undefined)
 
-		const row = rowOf(wrapper, 'mode')
-
-		await enter(row, 'multiple')
-		await enter(row, undefined)
-
-		expect(await selectedAfterTwoClicks(row)).toEqual([2, 2])
-
-		wrapper.unmount()
-	})
+			expect(await selectedAfterTwoClicks(row)).toEqual([2, 2])
+		},
+	)
 
 	/**
 	 * Значим ключ умолчания, а не значение: `aria_label` объявлен с умолчанием
 	 * `undefined`, и пишется оно, как любое другое. Проверка «умолчание не
 	 * `undefined`» оставила бы плагину второй колонки прежнее имя.
 	 */
-	it('пишет и объявленное undefined: имя уходит из обеих колонок', async () => {
-		const wrapper = mount(ComponentPage, { ...mountOptions, props: { id: 'button' } })
+	it.each(drawing('button'))(
+		'%s: пишет и объявленное undefined — имя уходит из обеих колонок',
+		async (framework) => {
+			const wrapper = await openPage(framework, 'button')
+			const row = rowOf(wrapper, 'aria_label')
 
-		await nextTick()
-		await nextFrame()
+			await enter(row, 'Закрыть')
+			expect(ariaLabels(row)).toEqual(['Закрыть', 'Закрыть'])
 
-		const row = rowOf(wrapper, 'aria_label')
-		const labels = () =>
-			row.findAll('.pg-col__stage .s-button').map((button) => button.attributes('aria-label'))
-
-		await enter(row, 'Закрыть')
-		expect(labels()).toEqual(['Закрыть', 'Закрыть'])
-
-		await enter(row, '')
-		expect(labels()).toEqual([undefined, undefined])
-
-		wrapper.unmount()
-	})
+			await enter(row, '')
+			expect(ariaLabels(row)).toEqual([undefined, undefined])
+		},
+	)
 })

@@ -98,10 +98,13 @@ jobs:
       # Стенд — единственное место, где компоненты рисуются всеми пропами разом
       # и в двух режимах (проп и экземпляр ядра). Молча сломавшаяся страница
       # обесценивает его целиком, поэтому типы проверяются наравне с адаптерами.
+      # Оболочка — Vue (vue-tsc), а хост превью фреймворка — своя программа
+      # типов со своим JSX: строка на хост.
       - name: Типы — Playground
         run: |
           npx tsc --noEmit -p packages/playground/shared/tsconfig.json
           npx vue-tsc --noEmit -p packages/playground/vue/tsconfig.json
+          npx tsc --noEmit -p packages/playground/vue/src/hosts/react/tsconfig.json
 
       - name: Типы — React
         run: npx tsc --noEmit -p packages/ui/react/tsconfig.json
@@ -139,13 +142,14 @@ jobs:
           npm run generate --workspace=@soldy-ui/icons-material
           git diff --exit-code packages/icons/material/src/index.ts
 
-      # Библиотеку Angular собрала «Сборка пакетов» выше, а стенда у пакета пока
-      # нет. Появится в packages/playground — его сборка встанет рядом со
-      # сборкой стенда Vue.
-
+      # Стенд один: оболочка на Vue, превью — хосты фреймворков, и хосты
+      # собираются вместе с ней, каждый своим ленивым куском. Хоста Angular у
+      # стенда пока нет — библиотеку Angular собрала «Сборка пакетов» выше, а
+      # хост встанет в эту сборку сам, папкой в packages/playground/vue/src/hosts.
+      #
       # Тему здесь не пересобираем: её собрал корневой build выше, а build:css
       # темы вычистил бы её же `dist/setup` — у CSS-сборки `emptyOutDir`.
-      - name: Сборка стенда Vue
+      - name: Сборка стенда
         run: npm run build --workspace=@soldy-ui/playground-vue
 
   lint:

@@ -22,8 +22,12 @@
     "__tests__/**/*",
     "browser/**/*",
     "env.d.ts",
+    "vite.base.ts",
     "vite.config.ts",
     "vitest.config.ts",
     "vitest.browser.config.ts"
-  ]
+  ],
+  // Хост React — своя программа типов (`src/hosts/react/tsconfig.json`, JSX
+  // React). Оболочка его не импортирует: грузит загрузчик, ленивым glob.
+  "exclude": ["src/hosts/react/**"]
 }

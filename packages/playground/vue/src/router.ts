@@ -1,36 +1,20 @@
-import { ref } from 'vue'
 import { createRouter, createWebHashHistory } from 'vue-router'
 import OverviewPage from './views/OverviewPage.vue'
 import ComponentPage from './views/ComponentPage.vue'
 import TestsPage from './views/TestsPage.vue'
 import AppSidebar from './components/AppSidebar.vue'
 import TestsSidebar from './components/TestsSidebar.vue'
-import { SCENARIOS, testsPath } from './catalog'
-
-/**
- * Страница, открывающаяся при запуске.
- *
- * Отдельной константой, чтобы менять из кода: во время работы над компонентом
- * удобно попадать сразу на него, а не кликать через витрину каждый раз.
- * Например: `'/component/select'` или `'/tests/events/button'`.
- */
-export const DEFAULT_ROUTE = '/'
-
-/** Страница тестов: всё, что под `/tests`, — `/tests/<тема>/<компонент>`. */
-export const TESTS_ROUTE = '/tests'
-
-/**
- * Последняя страница свойств — витрина или компонент.
- *
- * На неё ведёт ссылка «Свойства» со страницы тестов: ушёл проверить Button —
- * вернулся на Button, а не на витрину.
- */
-export const propertiesRoute = ref('/')
+import { scenariosOf, testsPath } from './catalog'
+import { isFramework, loadHost } from './hosts'
+import { DEFAULT_ROUTE, rememberProperties } from './navigation'
 
 /**
  * История в хеше, а не в путях: стенд открывают и как dev-сервер, и как
  * статику из файла — при `createWebHistory` второй вариант отдаёт 404 на любой
  * маршрут, кроме корня.
+ *
+ * Первый сегмент — фреймворк превью: `/react/button`, `/vue/tests/events`.
+ * Оболочка одна, на Vue, а компонент рисует хост выбранного фреймворка.
  *
  * Левая панель — именованный вид маршрута: у страницы свойств меню
  * компонентов, у страницы тестов меню тем.
@@ -38,42 +22,66 @@ export const propertiesRoute = ref('/')
 export const router = createRouter({
 	history: createWebHashHistory(),
 	routes: [
+		{ path: '/', redirect: DEFAULT_ROUTE },
 		{
-			path: '/',
+			path: '/:framework',
 			name: 'overview',
 			components: { default: OverviewPage, sidebar: AppSidebar },
-		},
-		{
-			path: '/component/:id',
-			name: 'component',
-			components: { default: ComponentPage, sidebar: AppSidebar },
 			props: { default: true },
 		},
 		{
 			// Без темы — первая доступная; тем нет — пустое состояние страницы
-			path: TESTS_ROUTE,
+			path: '/:framework/tests',
 			name: 'tests',
 			components: { default: TestsPage, sidebar: TestsSidebar },
-			beforeEnter: () => testsPath(SCENARIOS) ?? true,
+			props: { default: true },
 		},
 		{
 			// Без компонента — первый в теме; темы нет — страница так и скажет
-			path: `${TESTS_ROUTE}/:topic`,
+			path: '/:framework/tests/:topic',
 			name: 'topic',
 			components: { default: TestsPage, sidebar: TestsSidebar },
 			props: { default: true },
-			beforeEnter: (to) => testsPath(SCENARIOS, String(to.params.topic)) ?? true,
 		},
 		{
-			path: `${TESTS_ROUTE}/:topic/:component`,
+			path: '/:framework/tests/:topic/:component',
 			name: 'scenarios',
 			components: { default: TestsPage, sidebar: TestsSidebar },
+			props: { default: true },
+		},
+		{
+			path: '/:framework/:id',
+			name: 'component',
+			components: { default: ComponentPage, sidebar: AppSidebar },
 			props: { default: true },
 		},
 		{ path: '/:pathMatch(.*)*', redirect: DEFAULT_ROUTE },
 	],
 })
 
-router.afterEach((to) => {
-	if (!to.path.startsWith(TESTS_ROUTE)) propertiesRoute.value = to.fullPath
+/**
+ * Хост фреймворка грузится до входа на страницу: страницы получают его
+ * готовым (`hostOf`). Неизвестный фреймворк — на стенд по умолчанию.
+ *
+ * Здесь же, а не в `beforeEnter` маршрута, — тесты без темы или компонента:
+ * `beforeEnter` не зовётся, когда меняются только параметры, а переход
+ * `/vue/tests` → `/react/tests` — ровно такой.
+ */
+router.beforeEach(async (to) => {
+	const { framework } = to.params
+
+	if (framework === undefined) return true
+	if (!isFramework(framework)) return DEFAULT_ROUTE
+
+	const host = await loadHost(framework)
+
+	if (to.name === 'tests' || to.name === 'topic') {
+		const topic = typeof to.params.topic === 'string' ? to.params.topic : undefined
+
+		return testsPath(framework, scenariosOf(host), topic) ?? true
+	}
+
+	return true
 })
+
+router.afterEach(rememberProperties)

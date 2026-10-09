@@ -15,13 +15,19 @@
     "@soldy-ui/icons-material": "*",
     "@soldy-ui/playground-shared": "*",
     "@soldy-ui/plugins": "*",
+    "@soldy-ui/react": "*",
     "@soldy-ui/setup": "*",
     "@soldy-ui/theme-oren": "*",
     "@soldy-ui/vue": "*",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
     "vue": "^3.5.32",
     "vue-router": "^4.5.1"
   },
   "devDependencies": {
-    "@types/node": "^26.1.1"
+    "@types/node": "^26.1.1",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@vitejs/plugin-react": "^5.2.0"
   }
 }

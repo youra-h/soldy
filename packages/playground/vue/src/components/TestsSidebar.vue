@@ -4,17 +4,22 @@ import { useRoute, useRouter } from 'vue-router'
 import { ListBox } from '@soldy-ui/vue'
 import { componentsOf, testsPath } from '../catalog'
 import { useScenarios } from '../composables/useScenarios'
+import { frameworkOf } from '../navigation'
 
 const route = useRoute()
 const router = useRouter()
 
-const { scenarios, topics } = useScenarios()
+/** Фреймворк из адреса: у каждого свой стенд сценариев. */
+const framework = computed(() => frameworkOf(route))
+const bench = useScenarios(() => framework.value)
 
 /** Тема и компонент — из маршрута, как и пункт меню страницы свойств. */
-const topic = computed(() => (route.params.topic as string) ?? '')
-const component = computed(() => (route.params.component as string) ?? '')
+const topic = computed(() => (typeof route.params.topic === 'string' ? route.params.topic : ''))
+const component = computed(() =>
+	typeof route.params.component === 'string' ? route.params.component : '',
+)
 
-const components = computed(() => componentsOf(scenarios, topic.value))
+const components = computed(() => componentsOf(bench.value.scenarios, topic.value))
 
 function go(path: string | undefined): void {
 	if (path && path !== route.path) router.push(path)
@@ -22,11 +27,11 @@ function go(path: string | undefined): void {
 
 /** Смена темы оставляет компонент, если в новой теме у него есть сценарии. */
 function openTopic(id: unknown): void {
-	go(testsPath(scenarios, String(id ?? ''), component.value))
+	go(testsPath(framework.value, bench.value.scenarios, String(id ?? ''), component.value))
 }
 
 function openComponent(id: unknown): void {
-	go(testsPath(scenarios, topic.value, String(id ?? '')))
+	go(testsPath(framework.value, bench.value.scenarios, topic.value, String(id ?? '')))
 }
 </script>
 
@@ -41,7 +46,7 @@ function openComponent(id: unknown): void {
 			<div class="pg__sidebar-title">Темы</div>
 			<ListBox mode="single" class="pg__menu" :value="topic" @update:value="openTopic">
 				<ListBox.Item
-					v-for="item in topics"
+					v-for="item in bench.topics"
 					:key="item.id"
 					:value="item.id"
 					:text="item.label"

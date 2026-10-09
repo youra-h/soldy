@@ -77,7 +77,7 @@ export type TPropControlGroups = {
 }
 
 export type TComponentEntry = {
-	/** Ключ в маршруте: `/component/button`. */
+	/** Ключ в маршруте — после фреймворка: `/vue/button`. */
 	id: string
 	/** Подпись в меню и заголовке. */
 	label: string

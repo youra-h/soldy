@@ -1,7 +1,6 @@
 import { h, type Component } from 'vue'
 import { Button, CheckBox, Icon, Label, RadioGroup, Switch, useIcon } from '@soldy-ui/vue'
-import type { TScenario } from '@soldy-ui/playground-shared'
-import { PREVIEW_COMPONENTS, toComponents, type TPreview } from '../previews'
+import { toComponents, type TPreview } from './previews'
 
 /**
  * Разметка сценариев, которой нет у превью: содержимое слотов под проверку.
@@ -10,8 +9,8 @@ import { PREVIEW_COMPONENTS, toComponents, type TPreview } from '../previews'
  * превью своего компонента — тем же набором атрибутов: стартовые пропы
  * сценария, `ctrl` с экземпляром и слушатели журнала. Слоты — не свойство,
  * из метаданных их не достать, и разметка у каждого фреймворка своя: поэтому
- * фикстуры живут в адаптере, а сценарии, которые на них смотрят, — в общем
- * пакете.
+ * фикстуры живут в хосте фреймворка, а сценарии, которые на них смотрят, — в
+ * общем пакете. Ключи — те же у всех хостов.
  *
  * Фикстура без сценария и сценарий без фикстуры — ошибка: первую никто не
  * рисует, второй молча пропадает из меню (см. `__tests__/scenarios.spec.ts`).
@@ -51,11 +50,5 @@ export const FIXTURES: Record<string, TPreview> = {
 		),
 }
 
-const FIXTURE_COMPONENTS = toComponents(FIXTURES)
-
-/** Чем рисовать сценарий в этом адаптере; `undefined` — нечем. */
-export function fixtureOf(scenario: TScenario): Component | undefined {
-	return scenario.fixture === undefined
-		? PREVIEW_COMPONENTS[scenario.component]
-		: FIXTURE_COMPONENTS[scenario.fixture]
-}
+/** Фикстуры как компоненты — как и превью (см. `toComponents`). */
+export const FIXTURE_COMPONENTS: Record<string, Component> = toComponents(FIXTURES)
