@@ -13,17 +13,30 @@ export const sel = {
 	selectAll: 'thead .s-table__select input',
 	sort: 'thead .s-table-column__sort',
 }
+const query = new URLSearchParams(location.search)
 // `?mode=none` — таблица без выбора: строка без чекбокса, для сравнения памяти
-const mode = new URLSearchParams(location.search).get('mode') === 'none' ? 'none' : 'multiple'
+const mode = query.get('mode') === 'none' ? 'none' : 'multiple'
+// `?virtual=1` — режим окна: таблица в контейнере высотой 800 px, тело
+// рисует только видимые строки
+const virtual = query.get('virtual') === '1'
 export function mount(el: Element, rows: ShallowRef<TRec[] | null>) {
 	createApp({
-		render: () =>
-			rows.value &&
-			h(Table, {
-				items: rows.value.map((data) => ({ data })),
-				columns,
-				mode,
-				aria_label: 'Бенч',
-			}),
+		render: () => {
+			const table =
+				rows.value &&
+				h(Table, {
+					items: rows.value.map((data) => ({ data })),
+					columns,
+					mode,
+					virtual,
+					aria_label: 'Бенч',
+				})
+
+			return virtual
+				? h('div', { class: 'bench-scroll', style: 'height: 800px; overflow: auto' }, [
+						table,
+					])
+				: table
+		},
 	}).mount(el)
 }

@@ -303,8 +303,7 @@ describe('CheckBox · отметка', () => {
 
 		expect(svg.getAttribute('viewBox')).toBe(material.check.viewBox)
 		expect(svg.innerHTML).toBe(bodyOf(material.check))
-		expect(svg.classList.contains('s-icon')).toBe(true)
-		expect(svg.getAttribute('aria-hidden')).toBe('true')
+		expect(svg.classList.contains('s-check-box__mark')).toBe(true)
 	})
 
 	it('частично выбранный — иконка по роли checkIndeterminate, и поверх значения', () => {
@@ -317,10 +316,22 @@ describe('CheckBox · отметка', () => {
 		expect(mark(mount(<CheckBox />).root()).childNodes).toHaveLength(0)
 	})
 
-	it('размер флажка доходит до иконки', () => {
-		const svg = find(mark(mount(<CheckBox value size="lg" />).root()), 'svg', SVGSVGElement)
+	/**
+	 * Отметка — `svg` роли, а не компонент Icon: тот собирал бы свой контекст и
+	 * плагины на каждую смену отметки, в таблице — тысячами. У Icon корень
+	 * всегда с классом `s-icon`, у отметки его нет; размер ей даёт тема флажка.
+	 */
+	it('отметка — не компонент Icon, и на смену отметки Icon не собирается', () => {
+		const { root, render } = mount(<CheckBox value />)
 
-		expect(svg.classList.contains('s-icon--size-lg')).toBe(true)
+		render(<CheckBox value indeterminate />)
+		render(<CheckBox value={false} />)
+		render(<CheckBox value size="lg" />)
+
+		const svg = find(mark(root()), 'svg', SVGSVGElement)
+
+		expect(svg.classList.contains('s-check-box__mark')).toBe(true)
+		expect(root().querySelector('.s-icon')).toBeNull()
 	})
 
 	/**

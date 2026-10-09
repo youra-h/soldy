@@ -12,10 +12,16 @@ import path from 'node:path'
  *
  *   npm run heap -- 500 multiple        # строк, режим выбора[, сколько групп показать]
  *   npm run heap -- 500 none
+ *   npm run heap -- 5000 multiple 45 scroll
+ *
+ * `scroll` — режим окна (`virtual`): первый снимок — после рендера, второй —
+ * после прохода прокруткой по всем строкам. Разница — то, что прокрученные
+ * строки оставили в памяти, и делится она так же на N.
  */
 const N = Number(process.argv[2] ?? 500)
 const MODE = process.argv[3] ?? 'multiple'
 const TOP = Number(process.argv[4] ?? 45)
+const SCROLL = process.argv[5] === 'scroll'
 process.env.PROF = '1'
 await build({ configFile: path.resolve(import.meta.dirname, 'vite.config.ts'), logLevel: 'warn' })
 const dist = path.resolve(import.meta.dirname, 'dist-prof')
@@ -36,7 +42,9 @@ const server = http
 	.listen(0)
 const browser = await chromium.launch({ args: ['--js-flags=--expose-gc'] })
 const page = await browser.newPage({ viewport: { width: 1600, height: 1000 } })
-await page.goto(`http://127.0.0.1:${server.address().port}/?lib=soldy&mode=${MODE}`)
+await page.goto(
+	`http://127.0.0.1:${server.address().port}/?lib=soldy&mode=${MODE}${SCROLL ? '&virtual=1' : ''}`,
+)
 await page.waitForFunction(() => 'bench' in window)
 const cdp = await page.context().newCDPSession(page)
 
@@ -279,8 +287,12 @@ function group(snap) {
 	return out
 }
 
+if (SCROLL) await page.evaluate((n) => bench.render(n), N)
 const before = await snapshot()
-await page.evaluate((n) => bench.render(n), N)
+await page.evaluate(
+	([n, scroll]) => (scroll ? bench.scrollThrough() : bench.render(n)),
+	[N, SCROLL],
+)
 const after = await snapshot()
 await browser.close()
 server.close()

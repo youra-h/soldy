@@ -94,6 +94,10 @@ export class TCollectionExtension {
 				// Удаление из коллекции эмитит item:removed — реестр bundles
 				// очистит запись по этому событию.
 				if (owned) engine.extensions.plain?.remove(instance)
+				// Элемент из данных остаётся в коллекции, а его монтирование кончилось:
+				// запись реестра живёт одно монтирование, иначе каждая строка, ушедшая
+				// из окна таблицы, держала бы bundle с отсоединённым узлом
+				else if (bundle) bundles?.release(bundle, instance)
 			}
 		})
 	}

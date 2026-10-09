@@ -1,6 +1,11 @@
 import { defineComponent, h, mergeProps, ref, watch, type Component } from 'vue'
 import type { DescriptorSlots, PopoverDescriptor, TooltipDescriptor } from '@soldy-ui/setup'
-import { COLLECTION_ITEMS, TABLE_COLUMNS, TABLE_ROWS } from '@soldy-ui/playground-shared'
+import {
+	COLLECTION_ITEMS,
+	TABLE_COLUMNS,
+	TABLE_MANY_ROWS,
+	TABLE_ROWS,
+} from '@soldy-ui/playground-shared'
 import {
 	Accordion,
 	Button,
@@ -313,12 +318,15 @@ export const PREVIEWS: Record<string, TPreview> = {
 	 *
 	 * Обёртка — граница ширины, как у ленты: таблица встаёт во всю ширину
 	 * места, а сцена ячейки — флексбокс, и таблица держала бы там только свой
-	 * минимум.
+	 * минимум. В режиме окна (`virtual`) строк тысяча, а обёртка — ещё и окно
+	 * прокрутки высотой 320 px: на пяти строках окно таблицы не видно.
+	 * Тысяча строк — данными превью, а не пресетом строки: `items` в редакторе
+	 * пропов нет.
 	 */
 	table: (bind) =>
-		h('div', { style: 'width:100%' }, [
+		h('div', { style: bind.virtual ? 'width:100%;height:320px;overflow:auto' : 'width:100%' }, [
 			h(Table as Component, {
-				items: TABLE_ROWS,
+				items: bind.virtual ? TABLE_MANY_ROWS : TABLE_ROWS,
 				columns: TABLE_COLUMNS,
 				aria_label: 'Сотрудники',
 				...bind,

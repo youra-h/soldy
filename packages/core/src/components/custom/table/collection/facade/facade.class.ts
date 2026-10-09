@@ -8,7 +8,12 @@ import type { TTableColumnSource } from '../../column/collection/types'
 import type { ITableColumn } from '../../column/types'
 import type { ITableRow } from '../../row/types'
 import type { ITable } from '../../types'
-import type { TTableColumnSort, TTableShownSelection, TTableSortMode } from '../extensions'
+import type {
+	TTableBodyEntry,
+	TTableColumnSort,
+	TTableShownSelection,
+	TTableSortMode,
+} from '../extensions'
 import { tableExtensions } from '../factory'
 import type {
 	ITableCollectionProps,
@@ -25,7 +30,7 @@ import type {
  * коллекции: колонки и показанные колонки (`columns`), сколько показанных
  * строк выбрано, команды выбора показанных и чекбокс «выбрать все»
  * (`table`), сортировка строк по колонкам (`sort`), режим сетки и набор её
- * ячеек (`grid`). Своего фасад не делает
+ * ячеек (`grid`), режим окна и что рисует тело (`virtual`). Своего фасад не делает
  * ничего: события расширений он отдаёт наружу `relayAll`, команды остаются у
  * них.
  */
@@ -42,7 +47,7 @@ export class TTableCollectionFacade extends TSelectionCollectionFacade<
 	static override defaultValues: typeof TSelectionCollectionFacade.defaultValues &
 		TDefaultValues<
 			ITableCollectionProps,
-			'sortMode' | 'presorted' | 'grid',
+			'sortMode' | 'presorted' | 'grid' | 'virtual',
 			'sort' | 'columns'
 		> = {
 		...TSelectionCollectionFacade.defaultValues,
@@ -51,6 +56,7 @@ export class TTableCollectionFacade extends TSelectionCollectionFacade<
 		sortMode: 'single',
 		presorted: false,
 		grid: false,
+		virtual: false,
 	}
 
 	constructor(
@@ -77,6 +83,7 @@ export class TTableCollectionFacade extends TSelectionCollectionFacade<
 		this.events.relayAll(this.extensions.table.events)
 		this.events.relayAll(this.extensions.sort.events)
 		this.events.relayAll(this.extensions.grid.events)
+		this.events.relayAll(this.extensions.virtual.events)
 
 		this.applyProps(props)
 	}
@@ -93,6 +100,7 @@ export class TTableCollectionFacade extends TSelectionCollectionFacade<
 		if (props.presorted) this.presorted = props.presorted
 		if (props.sort?.length) this.sort = props.sort
 		if (props.grid) this.grid = props.grid
+		if (props.virtual) this.virtual = props.virtual
 
 		super.applyProps(props)
 	}
@@ -180,6 +188,31 @@ export class TTableCollectionFacade extends TSelectionCollectionFacade<
 	 */
 	get cellAria(): TAriaAttributes {
 		return this.extensions.grid.cellAria
+	}
+
+	/**
+	 * Режим окна: тело рисует только видимые строки с запасом, остальные —
+	 * распорками той же высоты
+	 */
+	get virtual(): boolean {
+		return this.extensions.virtual.virtual
+	}
+
+	set virtual(value: boolean) {
+		this.extensions.virtual.virtual = value
+	}
+
+	/**
+	 * Что рисует тело по порядку: строки и, в режиме окна, распорки на месте
+	 * пропущенных. Без режима — все показанные строки
+	 */
+	get bodyRows(): ReadonlyArray<TTableBodyEntry> {
+		return this.extensions.virtual.bodyRows
+	}
+
+	/** Набор строки шапки: в режиме окна — её номер среди строк таблицы */
+	get headRowAria(): TAriaAttributes {
+		return this.extensions.virtual.headRowAria
 	}
 
 	/** Выбрать все показанные строки, которые можно выбрать */

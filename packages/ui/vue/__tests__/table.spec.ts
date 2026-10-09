@@ -1051,3 +1051,99 @@ describe('вес строки', () => {
 		expect(nodes.length).toBe(cells.length * 2 + 1)
 	})
 })
+
+/**
+ * Окно (`virtual`): тело рисует то, что отдаёт коллекция (`bodyRows`), —
+ * строки окна и распорки на месте пропущенных. Что попадает в окно, решает
+ * ядро (`core/__tests__/table-virtual.spec.ts`), замер — плагин
+ * (`plugins/__tests__/table-virtual.plugin.spec.ts`); раскладки в jsdom нет,
+ * и замер здесь подаётся ядру руками.
+ */
+describe('окно', () => {
+	/** Движок строк над `count` записями в режиме окна. */
+	function virtualEngine(count: number): TTableCollection {
+		const records = Array.from({ length: count }, (_, index) => ({
+			id: index + 1,
+			name: `Строка ${index + 1}`,
+			age: index,
+		}))
+		const engine = engineOf('multiple', records)
+
+		engine.extensions.virtual.virtual = true
+
+		return engine
+	}
+
+	it('до замера — первые 50 строк; у таблицы число строк, у шапки и строк — номера', async () => {
+		const engine = virtualEngine(80)
+
+		await render(() => h(Table, { engine }))
+
+		const rows = findAll('.s-table-row')
+		const table = find('table.s-table')
+
+		expect(rows).toHaveLength(50)
+		expect(table.getAttribute('aria-rowcount')).toBe('81')
+		expect(table.dataset.virtual).toBe('true')
+		expect(find('.s-table__head-row').getAttribute('aria-rowindex')).toBe('1')
+		expect(rows[0].getAttribute('aria-rowindex')).toBe('2')
+	})
+
+	it('по замеру — распорки на месте пропущенных: скрыты, во всю ширину, высотой в строки', async () => {
+		const engine = virtualEngine(80)
+
+		await render(() => h(Table, { engine }))
+
+		engine.extensions.virtual.notifyViewport({ top: 1200, bottom: 1600, step: 40 })
+		await settle()
+
+		const body = find('.s-table__body')
+		const fillers = findAll('.s-table__filler-row', body)
+
+		expect(fillers).toHaveLength(2)
+		expect(body.firstElementChild).toBe(fillers[0])
+		expect(body.lastElementChild).toBe(fillers[1])
+		expect(fillers.map((filler) => filler.getAttribute('aria-hidden'))).toEqual([
+			'true',
+			'true',
+		])
+		// Места 20–49: перед ними 20 строк, за ними 30
+		expect(
+			fillers.map((filler) => filler.style.getPropertyValue('--s-table-filler-height')),
+		).toEqual(['800px', '1200px'])
+		// Колонка выбора и две колонки
+		expect(find('.s-table__filler', fillers[0]).getAttribute('colspan')).toBe('3')
+		expect(findAll('.s-table-row', body)).toHaveLength(30)
+	})
+
+	it('строка, оставшаяся в окне, при сдвиге окна не перемонтируется', async () => {
+		const engine = virtualEngine(80)
+
+		await render(() => h(Table, { engine }))
+
+		engine.extensions.virtual.notifyViewport({ top: 1200, bottom: 1600, step: 40 })
+		await settle()
+
+		const kept = findAll('.s-table-row').find(
+			(row) => row.getAttribute('aria-rowindex') === '40',
+		)
+
+		engine.extensions.virtual.notifyViewport({ top: 1240, bottom: 1640, step: 40 })
+		await settle()
+
+		expect(
+			findAll('.s-table-row').find((row) => row.getAttribute('aria-rowindex') === '40'),
+		).toBe(kept)
+	})
+
+	it('без режима — все строки, без распорок и номеров', async () => {
+		await render(() =>
+			h(Table, { items: [ANNA, BORIS].map((data) => ({ data })), columns: [NAME] }),
+		)
+
+		expect(findAll('.s-table-row')).toHaveLength(2)
+		expect(findAll('.s-table__filler-row')).toEqual([])
+		expect(find('table.s-table').hasAttribute('aria-rowcount')).toBe(false)
+		expect(find('.s-table__head-row').hasAttribute('aria-rowindex')).toBe(false)
+	})
+})

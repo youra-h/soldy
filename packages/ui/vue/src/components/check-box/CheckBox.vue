@@ -1,8 +1,7 @@
 <script lang="ts">
-import { Icon } from '../icon'
 import SetupCheckBox from './setup.component'
 
-export default { ...SetupCheckBox, components: { Icon } }
+export default { ...SetupCheckBox }
 </script>
 
 <template>
@@ -33,6 +32,12 @@ export default { ...SetupCheckBox, components: { Icon } }
 			Коробка с отметкой — декор: состояние скринридеру сообщают
 			нативные `checked` и `indeterminate`. `aria-hidden` не пускает
 			иконки слотов в доступное имя, которое чекбоксу даёт подпись.
+
+			Отметка без слота — `svg` иконки по роли (`check`,
+			`checkIndeterminate`), а не компонент Icon: она появляется и
+			пропадает с каждой сменой отметки, и Icon собирал бы на каждую свой
+			контекст и плагины — в таблице «выбрать все» собирала их тысячами.
+			Размер и цвет отметке даёт тема чекбокса по `s-check-box__mark`.
 		-->
 		<span class="s-check-box__container" aria-hidden="true">
 			<!-- Слот для checked иконки -->
@@ -42,7 +47,7 @@ export default { ...SetupCheckBox, components: { Icon } }
 				:value="value"
 				:indeterminate="indeterminate"
 			>
-				<Icon embedded="check-box.icon" :tag="defaultIconTag" :size="size" />
+				<component :is="defaultIconTag" class="s-check-box__mark" />
 			</slot>
 			<!-- Слот для indeterminate иконки -->
 			<slot
@@ -51,11 +56,7 @@ export default { ...SetupCheckBox, components: { Icon } }
 				:value="value"
 				:indeterminate="indeterminate"
 			>
-				<Icon
-					embedded="check-box.indeterminate-icon"
-					:tag="defaultIndeterminateIconTag"
-					:size="size"
-				/>
+				<component :is="defaultIndeterminateIconTag" class="s-check-box__mark" />
 			</slot>
 		</span>
 	</component>

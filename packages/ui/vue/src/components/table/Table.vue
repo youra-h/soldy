@@ -35,7 +35,11 @@ export default { ...SetupTable, components: { Button, CheckBox, Icon, TableColum
 		-->
 
 		<thead class="s-table__head">
-			<tr class="s-table__head-row">
+			<!--
+				Набор строки шапки (`headRowAria`) — у неё нет экземпляра, и его
+				держит коллекция: в режиме окна это номер шапки среди строк таблицы.
+			-->
+			<tr class="s-table__head-row" v-bind="headRowAria">
 				<!--
 					Заголовок колонки выбора — первая ячейка шапки. Колонка выбора есть,
 					только пока режим выбора строк не `none`: один факт решает и выбор, и
@@ -127,11 +131,18 @@ export default { ...SetupTable, components: { Button, CheckBox, Icon, TableColum
 
 		<tbody class="s-table__body">
 			<!--
-				Строка — Table.Row над элементом коллекции строк, по одной на
-				показанную строку, ключ — строка. Содержимое ячейки — слот `cell` со
-				scope `{ row, column, value }`: колонку выбирают условием по
-				`column.field`, `value` — поле записи под ключом колонки. Без него —
-				`value` текстом.
+				Тело — то, что отдаёт коллекция (`bodyRows`), по порядку, ключ —
+				ключ записи. Без режима окна это все показанные строки. В режиме окна
+				(`virtual`) — строки окна и распорки на месте пропущенных строк:
+				`tr` под `aria-hidden` с одной ячейкой во всю ширину таблицы
+				(`columnCount`), высоту которой тема берёт из её стиля. Одна петля на
+				строки и распорки: петли по блокам перемонтировали бы строку, когда
+				она переходит из блока в блок, и фокус в ней терялся бы.
+
+				Строка — Table.Row над элементом коллекции строк. Содержимое ячейки —
+				слот `cell` со scope `{ row, column, value }`: колонку выбирают
+				условием по `column.field`, `value` — поле записи под ключом колонки.
+				Без него — `value` текстом.
 
 				Строки не перерисовываются вместе с таблицей, только пока их слоты
 				стабильны. Поэтому слот уходит им пробросом как есть — строку в scope
@@ -143,16 +154,36 @@ export default { ...SetupTable, components: { Button, CheckBox, Icon, TableColum
 				динамическими (AGENTS.md, Pitfalls).
 			-->
 			<template v-if="$slots.cell">
-				<TableRow v-for="item in shown" :key="item.uid" :ctrl="item">
-					<template #cell="{ row, column, value }">
-						<slot name="cell" :row="row" :column="column" :value="value">{{
-							value
-						}}</slot>
-					</template>
-				</TableRow>
+				<template v-for="entry in bodyRows" :key="entry.key">
+					<tr
+						v-if="entry.kind === 'filler'"
+						class="s-table__filler-row"
+						aria-hidden="true"
+						:style="entry.style"
+					>
+						<td class="s-table__filler" :colspan="columnCount"></td>
+					</tr>
+					<TableRow v-else :ctrl="entry.row">
+						<template #cell="{ row, column, value }">
+							<slot name="cell" :row="row" :column="column" :value="value">{{
+								value
+							}}</slot>
+						</template>
+					</TableRow>
+				</template>
 			</template>
 			<template v-else>
-				<TableRow v-for="item in shown" :key="item.uid" :ctrl="item" />
+				<template v-for="entry in bodyRows" :key="entry.key">
+					<tr
+						v-if="entry.kind === 'filler'"
+						class="s-table__filler-row"
+						aria-hidden="true"
+						:style="entry.style"
+					>
+						<td class="s-table__filler" :colspan="columnCount"></td>
+					</tr>
+					<TableRow v-else :ctrl="entry.row" />
+				</template>
 			</template>
 
 			<!--

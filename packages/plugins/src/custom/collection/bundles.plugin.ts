@@ -63,6 +63,23 @@ export class TCollectionBundlesPlugin extends TBasePlugin<any, TBundlesEvents> {
 		this.events.emit('bundle:registered', { uid, bundle })
 	}
 
+	/**
+	 * Отпустить bundle элемента, чьё монтирование кончилось: запись снимается,
+	 * только если она всё ещё его. Элемент из данных остаётся в коллекции и
+	 * после размонтирования — отбор или окно таблицы его прячут, — и без этого
+	 * запись держала бы bundle с отсоединённым узлом, пока элемент не удалят.
+	 * Новое монтирование того же элемента регистрирует свой bundle раньше, чем
+	 * прежнее снимается (React пересобирает до очистки), — его запись не
+	 * трогается.
+	 */
+	release(bundle: IPluginBundle, item: unknown): void {
+		const uid = this._uid(item)
+
+		if (uid === undefined || this._bundles.get(uid) !== bundle) return
+
+		this.unregister(uid)
+	}
+
 	/** Снять регистрацию bundle элемента коллекции. */
 	unregister(uid: string | number): void {
 		this._bundles.delete(uid)

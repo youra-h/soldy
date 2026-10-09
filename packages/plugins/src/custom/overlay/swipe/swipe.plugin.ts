@@ -6,7 +6,7 @@ import { TElementPlugin } from '../../element'
 import { TDismissPlugin } from '../../dismiss'
 import { ANCHOR_PLACEMENT_ATTRIBUTE } from '../../frame/anchor'
 import type { IDomEventTarget } from '../../../utils'
-import { closestControl, isMeasurableElement } from '../../../utils'
+import { closestControl, isMeasurableElement, isScrollable } from '../../../utils'
 import { bindOverlayOpen } from '../open-state'
 import type { IOverlayOpenOptions, IOverlayOpenState } from '../types'
 import type {
@@ -95,16 +95,7 @@ function resist(distance: number): number {
  */
 function scrollsAlong(node: Element, panel: Element, axis: TSwipeAxis): boolean {
 	for (let current: Element | null = node; current && current !== panel; ) {
-		if (isMeasurableElement(current)) {
-			const style = getComputedStyle(current)
-			const overflow = axis === 'y' ? style.overflowY : style.overflowX
-			const scrollable =
-				axis === 'y'
-					? current.scrollHeight > current.clientHeight
-					: current.scrollWidth > current.clientWidth
-
-			if ((overflow === 'auto' || overflow === 'scroll') && scrollable) return true
-		}
+		if (isScrollable(current, axis)) return true
 
 		current = current.parentElement
 	}

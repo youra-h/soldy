@@ -30,6 +30,7 @@
 import { describe, it, expect } from 'vitest'
 import { TCollectionItemComponent, TListBoxItem } from '@soldy-ui/core'
 import type { TCollectionEngine } from '@soldy-ui/core'
+import { TCollectionBundlesPlugin } from '@soldy-ui/plugins'
 import {
 	AccordionCollectionDescriptor,
 	AccordionCollectionItemDescriptor,
@@ -92,10 +93,14 @@ const MOUNTS = 3
 /** Состав списка из данных: у элемента из данных `value` есть в любой коллекции. */
 const SOURCES = [{ value: 'a' }, { value: 'b' }]
 
-/** Список, собранный над составом, и лифт, через который его находят элементы. */
+/**
+ * Список, собранный над составом, лифт, через который его находят элементы, и
+ * реестр bundles элементов у его набора.
+ */
 type TMountedList = {
 	readonly engine: TCollectionEngine<any, any>
 	readonly elevator: TElevatorFactory
+	readonly registry: TCollectionBundlesPlugin | undefined
 }
 
 /**
@@ -115,7 +120,11 @@ function mountList<TFacade extends TCollectionOwner, TPlugins extends IPluginsCo
 		{ bundle: owner.bundle },
 	).use(TCollectionExtension, { elevator })
 
-	return { engine: facade.instance.engine, elevator }
+	return {
+		engine: facade.instance.engine,
+		elevator,
+		registry: owner.bundle?.get(TCollectionBundlesPlugin),
+	}
 }
 
 /** Смонтированное: контекст фасада и размонтирование. */
@@ -512,5 +521,43 @@ describe('сторож: панель таба освобождает конте�
 		unmount()
 
 		expect(leftovers(spies)).toEqual([])
+	})
+})
+
+/**
+ * Запись реестра bundles живёт одно монтирование элемента. Элемент из данных
+ * остаётся в коллекции, когда его прячут — отбор или окно таблицы, — и без
+ * снятия реестр держал бы bundle каждого прошлого монтирования с отсоединённым
+ * узлом. Новое монтирование, собранное раньше, чем снято прежнее (React
+ * пересобирает до очистки), своей записи не теряет.
+ */
+describe('реестр bundles: запись живёт одно монтирование элемента', () => {
+	const kits = { ...COLLECTIONS, ...DATA_ONLY }
+
+	describe.each(Object.entries(kits))('%s', (_name, kit) => {
+		it('элемент из данных размонтирован — записи нет', () => {
+			const { engine, elevator, registry } = kit.list(SOURCES)
+			const item = firstOf(engine)
+			const mounted = kit.item(elevator, { ctrl: item })
+
+			expect(registry?.getByItem(item)).toBe(mounted.facade.bundle)
+
+			mounted.unmount()
+
+			expect(registry?.getByItem(item)).toBeUndefined()
+		})
+
+		it('новое монтирование до снятия прежнего — запись нового', () => {
+			const { engine, elevator, registry } = kit.list(SOURCES)
+			const item = firstOf(engine)
+			const previous = kit.item(elevator, { ctrl: item })
+			const next = kit.item(elevator, { ctrl: item })
+
+			previous.unmount()
+
+			expect(registry?.getByItem(item)).toBe(next.facade.bundle)
+
+			next.unmount()
+		})
 	})
 })

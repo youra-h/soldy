@@ -48,7 +48,7 @@ type TStyled = Partial<Pick<IStylable, 'size' | 'variant'>>
  *
  * **Колонка выбора** — пока выбор строк включён (`selecting`: режим не
  * `none`). Её чекбоксы — экземпляры, которые держит таблица: «выбрать все» в
- * шапке (`selectAll`) и по чекбоксу на строку (`checkBoxOf`). Отметка чекбокса
+ * шапке (`selectAll`) и по чекбоксу на строку (`acquireCheckBox`). Отметка чекбокса
  * — не своё состояние, а вид выбора: таблица пишет её от выбора, а запись
  * отметки в чекбокс — просьба пользователя (так её делает клик). Просьбу
  * таблица перехватывает до записи (`change:value:before`), гасит и выполняет
@@ -57,10 +57,18 @@ type TStyled = Partial<Pick<IStylable, 'size' | 'variant'>>
  * остаётся прежней. Своя отметка у чекбокса рядом с выбором была бы второй
  * копией одного факта, и после отменённого выбора они разошлись бы.
  *
- * Выключенность, размер и вариант чекбоксов таблица пишет тоже: чекбокс
- * строки живёт, пока строка в коллекции, и переживает её монтирования, а
- * значение, вернувшееся к умолчанию, пока строки на экране не было, разметка
- * следующего монтирования ему не запишет.
+ * Выключенность, размер и вариант чекбоксов таблица пишет тоже: от выбора и
+ * строки, а не из разметки.
+ *
+ * **Чекбокс строки живёт, пока строка нарисована.** Его берёт item-адаптер
+ * таблицы на монтирование строки (`acquireCheckBox`) и отпускает, когда
+ * монтирование кончилось (`releaseCheckBox`): новое монтирование получает
+ * новый чекбокс с текущим видом выбора. Держать чекбокс, пока строка в
+ * коллекции, значило бы держать по чекбоксу на каждую строку, которую хоть раз
+ * рисовали, — в режиме окна это все прокрученные строки — и писать вид выбора
+ * всем им на каждый выбор. Монтирований одной строки бывает два сразу (React
+ * собирает новое раньше, чем снимает прежнее), поэтому чекбокс один на строку
+ * и считает, сколько монтирований его держит.
  */
 export class TTableExtension<TOwner extends ITable = ITable, TRow extends ITableRow = ITableRow>
 	extends TBaseOwnerItemExtension<
@@ -95,10 +103,11 @@ export class TTableExtension<TOwner extends ITable = ITable, TRow extends ITable
 	private readonly _selectAll: ICheckBox = new TCheckBox()
 
 	/**
-	 * Чекбоксы выбора строк — по строке, пока она в коллекции. Заводятся, когда
-	 * строку рисуют с колонкой выбора: у таблицы без выбора их нет вовсе.
+	 * Чекбоксы выбора нарисованных строк и сколько монтирований каждый держит.
+	 * Заводятся, когда строку рисуют с колонкой выбора: у таблицы без выбора их
+	 * нет вовсе.
 	 */
-	private readonly _checkBoxes = new Map<TRow, ICheckBox>()
+	private readonly _checkBoxes = new Map<TRow, { checkBox: ICheckBox; holders: number }>()
 
 	constructor(options?: IBaseOwnerItemExtensionOptions<TRow, ITableItemExtension<TRow>>) {
 		super(TTableItemExtension, options)
@@ -114,8 +123,9 @@ export class TTableExtension<TOwner extends ITable = ITable, TRow extends ITable
 		ctx.driver.events.on('item:added', (e) => this._inheritOwner(e.item))
 		ctx.driver.events.on('item:updated', (e) => this._inheritOwner(e.item))
 
-		// Строка ушла из коллекции — её чекбокс больше не нужен. Удаление —
-		// всегда команда с `item:removed`, в том числе очистка и сверка `patch`
+		// Строка ушла из коллекции — её чекбокс больше не пишется, даже если
+		// монтирование ещё не отпустило его. Удаление — всегда команда с
+		// `item:removed`, в том числе очистка и сверка `patch`
 		ctx.driver.events.on('item:removed', (e) => this._checkBoxes.delete(e.item))
 
 		// Таблица — опция движка: приходит и уходит после сборки. Подписки на
@@ -207,10 +217,14 @@ export class TTableExtension<TOwner extends ITable = ITable, TRow extends ITable
 		selectionOf(this._ctx)?.deselectMany(this._selectableShown())
 	}
 
-	checkBoxOf(row: TRow): ICheckBox {
-		const existing = this._checkBoxes.get(row)
+	acquireCheckBox(row: TRow): ICheckBox {
+		const held = this._checkBoxes.get(row)
 
-		if (existing) return existing
+		if (held) {
+			held.holders++
+
+			return held.checkBox
+		}
 
 		const checkBox: ICheckBox = new TCheckBox({
 			value: this._isSelected(row),
@@ -220,9 +234,19 @@ export class TTableExtension<TOwner extends ITable = ITable, TRow extends ITable
 		})
 
 		checkBox.events.on('change:value:before', (e) => this._chooseRow(row, e))
-		this._checkBoxes.set(row, checkBox)
+		this._checkBoxes.set(row, { checkBox, holders: 1 })
 
 		return checkBox
+	}
+
+	releaseCheckBox(row: TRow): void {
+		const held = this._checkBoxes.get(row)
+
+		if (!held) return
+
+		held.holders--
+
+		if (held.holders === 0) this._checkBoxes.delete(row)
 	}
 
 	/** Показанные строки, которые пользователь может выбрать, — не выключенные. */
@@ -305,7 +329,7 @@ export class TTableExtension<TOwner extends ITable = ITable, TRow extends ITable
 
 	/** Чекбоксам выбора — размер и вариант таблицы, как строкам. */
 	private _restyleCheckBoxes(owner: TOwner): void {
-		this._checkBoxes.forEach((checkBox) => this._applyStyle(checkBox, owner))
+		this._checkBoxes.forEach(({ checkBox }) => this._applyStyle(checkBox, owner))
 		this._applyStyle(this._selectAll, owner)
 	}
 
@@ -354,7 +378,7 @@ export class TTableExtension<TOwner extends ITable = ITable, TRow extends ITable
 	 * слушает, а показ — тот же пересчёт.
 	 */
 	private _syncCheckBoxes(): void {
-		for (const [row, checkBox] of this._checkBoxes) {
+		for (const [row, { checkBox }] of this._checkBoxes) {
 			checkBox.value = this._isSelected(row)
 			checkBox.disabled = row.disabled
 		}

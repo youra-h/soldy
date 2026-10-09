@@ -1209,7 +1209,7 @@ describe('чекбокс строки', () => {
 	it('вид выбора строки — и когда выбор пришёл не от него', () => {
 		const facade = table('multiple')
 		const anna = rowOf(facade.items, 1)
-		const checkBox = facade.extensions.table.checkBoxOf(anna)
+		const checkBox = facade.extensions.table.acquireCheckBox(anna)
 
 		expect(checkBox.value).toBe(false)
 
@@ -1225,7 +1225,7 @@ describe('чекбокс строки', () => {
 	it('отметка — просьба выбрать строку, снятая — снять выбор', () => {
 		const facade = table('multiple')
 		const anna = rowOf(facade.items, 1)
-		const checkBox = facade.extensions.table.checkBoxOf(anna)
+		const checkBox = facade.extensions.table.acquireCheckBox(anna)
 
 		checkBox.toggle()
 
@@ -1241,8 +1241,8 @@ describe('чекбокс строки', () => {
 	it('single: выбор строки снимает отметку с другой', () => {
 		const facade = table('single')
 		const { table: extension } = facade.extensions
-		const anna = extension.checkBoxOf(rowOf(facade.items, 1))
-		const boris = extension.checkBoxOf(rowOf(facade.items, 2))
+		const anna = extension.acquireCheckBox(rowOf(facade.items, 1))
+		const boris = extension.acquireCheckBox(rowOf(facade.items, 2))
 
 		anna.toggle()
 		boris.toggle()
@@ -1254,7 +1254,7 @@ describe('чекбокс строки', () => {
 	it('отменённый выбор: строка не выбрана, и чекбокс не отмечен', () => {
 		const facade = table('multiple')
 		const anna = rowOf(facade.items, 1)
-		const checkBox = facade.extensions.table.checkBoxOf(anna)
+		const checkBox = facade.extensions.table.acquireCheckBox(anna)
 		const changed = vi.fn()
 
 		facade.extensions.selection.events.on('item:select:before', (e) => e.preventDefault())
@@ -1269,7 +1269,7 @@ describe('чекбокс строки', () => {
 	it('выключенная строка: чекбокс выключен, и просьба её не выбирает', () => {
 		const facade = table('multiple')
 		const anna = rowOf(facade.items, 1)
-		const checkBox = facade.extensions.table.checkBoxOf(anna)
+		const checkBox = facade.extensions.table.acquireCheckBox(anna)
 
 		anna.disabled = true
 
@@ -1285,7 +1285,7 @@ describe('чекбокс строки', () => {
 		expect(checkBox.disabled).toBe(false)
 	})
 
-	it('один на строку, пока она в коллекции; размер и вариант — таблицы', () => {
+	it('размер и вариант — таблицы, и на смену у неё', () => {
 		const owner = new TTable({ size: 'lg' })
 		const facade = new TTableCollectionFacade(
 			{
@@ -1295,28 +1295,78 @@ describe('чекбокс строки', () => {
 			},
 			{ owner },
 		)
-		const anna = rowOf(facade.items, 1)
-		const checkBox = facade.extensions.table.checkBoxOf(anna)
+		const checkBox = facade.extensions.table.acquireCheckBox(rowOf(facade.items, 1))
 
-		expect(facade.extensions.table.checkBoxOf(anna)).toBe(checkBox)
 		expect(checkBox.size).toBe('lg')
 
 		owner.size = 'sm'
 
 		expect(checkBox.size).toBe('sm')
-
-		facade.extensions.plain.remove(anna)
-		facade.extensions.plain.push(anna)
-
-		expect(facade.extensions.table.checkBoxOf(anna)).not.toBe(checkBox)
 	})
 
-	it('чекбокс строки отдаёт item-адаптер таблицы — тот же, что у расширения', () => {
-		const facade = table('multiple')
-		const anna = rowOf(facade.items, 1)
-		const context = new TItemContext(anna, facade.engine.getCore().extensions)
+	/**
+	 * Чекбокс живёт, пока строка нарисована: таблица в режиме окна рисует тысячи
+	 * строк по очереди, и чекбокс каждой прокрученной держался бы до её удаления.
+	 */
+	describe('живёт, пока его держит монтирование', () => {
+		it('два монтирования сразу — один чекбокс; отпустило одно — второй всё ещё пишется', () => {
+			const facade = table('multiple')
+			const anna = rowOf(facade.items, 1)
+			const { table: extension } = facade.extensions
+			const checkBox = extension.acquireCheckBox(anna)
 
-		expect(context.adapters.table.checkBox).toBe(facade.extensions.table.checkBoxOf(anna))
+			expect(extension.acquireCheckBox(anna)).toBe(checkBox)
+
+			extension.releaseCheckBox(anna)
+			facade.selectShown()
+
+			expect(checkBox.value).toBe(true)
+		})
+
+		it('отпустило последнее — чекбокс больше не пишется, следующее берёт новый с видом выбора', () => {
+			const facade = table('multiple')
+			const anna = rowOf(facade.items, 1)
+			const { table: extension } = facade.extensions
+			const checkBox = extension.acquireCheckBox(anna)
+
+			extension.releaseCheckBox(anna)
+			facade.selectShown()
+
+			expect(checkBox.value).toBe(false)
+
+			const next = extension.acquireCheckBox(anna)
+
+			expect(next).not.toBe(checkBox)
+			expect(next.value).toBe(true)
+		})
+
+		it('строку удалили — её чекбокс не пишется, вернули — новый', () => {
+			const facade = table('multiple')
+			const anna = rowOf(facade.items, 1)
+			const { table: extension } = facade.extensions
+			const checkBox = extension.acquireCheckBox(anna)
+
+			facade.extensions.plain.remove(anna)
+			facade.extensions.plain.push(anna)
+
+			expect(extension.acquireCheckBox(anna)).not.toBe(checkBox)
+		})
+
+		it('item-адаптер берёт чекбокс один раз и отпускает со снятием монтирования', () => {
+			const facade = table('multiple')
+			const anna = rowOf(facade.items, 1)
+			const context = new TItemContext(anna, facade.engine.getCore().extensions)
+			const checkBox = context.adapters.table.checkBox
+
+			expect(context.adapters.table.checkBox).toBe(checkBox)
+
+			context.release()
+			facade.selectShown()
+
+			expect(checkBox.value).toBe(false)
+			expect(context.adapters.table.checkBox).not.toBe(checkBox)
+			expect(context.adapters.table.checkBox.value).toBe(true)
+		})
 	})
 })
 
