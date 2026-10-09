@@ -4,16 +4,19 @@
  * Обёртка `Virtual` и подхват её окна коллекцией — без фреймворка.
  *
  * Обёртка опускает по лифту подключение к окну (`TVirtualExtension`), а
- * коллекция внутри подхватывает его своим расширением при сборке
- * (`TVirtualCollectionExtension`): ставит в набор плагин замера и держит в
- * рисовании стратегию окна, пока обёртка включена. Снимает — на `destroy`, и
- * своему поддереву опускает пустое подключение. Лифт здесь — в памяти, без
- * дерева: значение, которое коллекция опустила, видит следующая коллекция, как
+ * коллекция внутри подхватывает его своим расширением
+ * (`TVirtualCollectionExtension`) по фазам своего контекста. Сборка ставит в
+ * набор плагин замера и в рисование стратегию окна по текущему `enabled` —
+ * то, что принадлежит коллекции. Принятая коллекция подписывается на
+ * выключатель обёртки: шина обёртки ей чужая, а собранную коллекцию фреймворк
+ * вправе выбросить, так и не приняв. Снимает — на `destroy`, и своему
+ * поддереву опускает пустое подключение. Лифт здесь — в памяти, без дерева:
+ * значение, которое коллекция опустила, видит следующая коллекция, как
  * вложенная.
  *
  * Что рисует окно, — `core/__tests__/collection.draw.spec.ts`, замер —
- * `plugins/__tests__/virtual.plugin.spec.ts`, разметка — во Vue
- * (`ui/vue/__tests__/virtual.spec.ts`).
+ * `plugins/__tests__/virtual.plugin.spec.ts`, разметка — в тестах адаптеров
+ * (`ui/*\/__tests__/virtual.spec.*`).
  */
 
 import { describe, it, expect } from 'vitest'
@@ -34,7 +37,7 @@ import {
 	createAdapterContext,
 } from '@soldy-ui/setup'
 import type { TElevatorFactory } from '@soldy-ui/setup'
-import { createElevatorFactory, required } from './helpers'
+import { createElevatorFactory, leftovers, required, spyBus } from './helpers'
 
 const ITEMS = Array.from({ length: 100 }, (_, index) => ({
 	value: `v${index + 1}`,
@@ -52,8 +55,12 @@ function wrap(elevator: TElevatorFactory, props: { enabled?: boolean } = {}) {
 	return context
 }
 
-/** ListBox под тем же лифтом: свой контекст и контекст коллекции с подхватом окна. */
-function listBox(elevator: TElevatorFactory, engine?: TCollectionEngine<any, any>) {
+/**
+ * ListBox под тем же лифтом — собранный, но ещё не принятый: свой контекст и
+ * контекст коллекции с подхватом окна. Принимает его `attach`, как рантайм
+ * фреймворка.
+ */
+function assembleListBox(elevator: TElevatorFactory, engine?: TCollectionEngine<any, any>) {
 	const adapter = createAdapterContext(ListBoxDescriptor(), { props: {} })
 	const collection = createAdapterContext(
 		ListBoxCollectionDescriptor(),
@@ -62,22 +69,30 @@ function listBox(elevator: TElevatorFactory, engine?: TCollectionEngine<any, any
 	)
 		.use(TCollectionExtension, { elevator })
 		.use(TVirtualCollectionExtension, { elevator })
-	const draw = collection.instance.engine.extensions.draw
-	/** Окно стоит уже после сборки — до того, как фреймворк принял компонент. */
-	const assembled = draw.virtual
-
-	adapter.attach()
-	collection.attach()
 
 	return {
 		adapter,
-		draw,
-		assembled,
+		draw: collection.instance.engine.extensions.draw,
+		attach: () => {
+			adapter.attach()
+			collection.attach()
+		},
 		destroy: () => {
 			adapter.destroy()
 			collection.destroy()
 		},
 	}
+}
+
+/** ListBox под тем же лифтом, принятый сразу после сборки. */
+function listBox(elevator: TElevatorFactory, engine?: TCollectionEngine<any, any>) {
+	const list = assembleListBox(elevator, engine)
+	/** Окно стоит уже после сборки — до того, как фреймворк принял компонент. */
+	const assembled = list.draw.virtual
+
+	list.attach()
+
+	return { ...list, assembled }
 }
 
 describe('дескриптор', () => {
@@ -202,5 +217,70 @@ describe('подхват окна', () => {
 
 		expect(outer.draw.virtual).toBe(true)
 		expect(inner.draw.virtual).toBe(false)
+	})
+})
+
+/**
+ * Шина обёртки для коллекции чужая: на неё подписывается только принятая
+ * коллекция. Собранную коллекцию фреймворк вправе выбросить, так и не приняв,
+ * и выброшенную сборку списка из `items` освободить некому — у неё нет ни
+ * `ctrl`, ни движка снаружи, по которым узнают выброшенную сборку.
+ */
+describe('фазы контекста коллекции', () => {
+	it('сборка без приёма: окно уже стоит, а на шине обёртки ничего', () => {
+		const { factory } = createElevatorFactory()
+		const virtual = wrap(factory)
+		const bus = spyBus('обёртка', virtual.instance)
+		const { draw } = assembleListBox(factory)
+
+		expect(draw.virtual).toBe(true)
+		expect(draw.drawn).toHaveLength(50)
+		expect(leftovers(bus)).toEqual([])
+	})
+
+	it('приём: подписка на выключатель, и `enabled`, сменённый до приёма, применён', () => {
+		const { factory } = createElevatorFactory()
+		const virtual = wrap(factory)
+		const bus = spyBus('обёртка', virtual.instance)
+		const list = assembleListBox(factory)
+
+		// Выключили между сборкой и приёмом: собранная коллекция этого не слышала
+		virtual.instance.enabled = false
+
+		expect(list.draw.virtual).toBe(true)
+
+		list.attach()
+
+		expect(leftovers(bus)).toEqual(['обёртка: change:enabled'])
+		expect(list.draw.virtual).toBe(false)
+
+		virtual.instance.enabled = true
+
+		expect(list.draw.virtual).toBe(true)
+	})
+
+	it('`destroy` до приёма ничего не оставляет: ни подписки на обёртке, ни окна и плагина на движке снаружи', () => {
+		const { factory } = createElevatorFactory()
+		const virtual = wrap(factory)
+		const engine = createEngineListBox({ items: ITEMS })
+		const buses = [
+			...spyBus('обёртка', virtual.instance),
+			...spyBus('рисование', engine.extensions.draw),
+		]
+		const list = assembleListBox(factory, engine)
+
+		expect(engine.extensions.draw.virtual).toBe(true)
+		expect(list.adapter.bundle?.get(TVirtualPlugin)).toBeInstanceOf(TVirtualPlugin)
+
+		list.destroy()
+
+		expect(engine.extensions.draw.virtual).toBe(false)
+		expect(leftovers(buses)).toEqual([])
+
+		// Выключатель обёртки движок больше не трогает
+		virtual.instance.enabled = false
+		virtual.instance.enabled = true
+
+		expect(engine.extensions.draw.virtual).toBe(false)
 	})
 })

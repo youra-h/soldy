@@ -6,7 +6,10 @@
  * владельца, поэтому пересобираются и уничтожаются они вместе.
  *
  * Расширения коллекции опускают движок и регистратор элементов лифтом
- * компонента; детям его слой (`layer`) отдаёт `Elevate` в разметке.
+ * компонента; детям его слой (`layer`) отдаёт `Elevate` в разметке. Окно
+ * обёртки `Virtual` над списком фасад подхватывает тем же лифтом
+ * (`TVirtualCollectionExtension`), а своему поддереву опускает пустое
+ * подключение: списки в слотах элементов окна не наследуют.
  */
 
 import {
@@ -14,6 +17,7 @@ import {
 	ListBoxDescriptor,
 	TCollectionExtension,
 	TDragAndDropCollectionExtension,
+	TVirtualCollectionExtension,
 } from '@soldy-ui/setup'
 import { useAdapter, useAdapterContext, useCollectionAdapter } from '../../adapter'
 import type { ListBoxProps } from './base.component'
@@ -38,6 +42,9 @@ export function useSetupListBox(props: ListBoxProps) {
 		)
 			.use(TCollectionExtension, { elevator })
 			.use(TDragAndDropCollectionExtension, { elevator })
+			// Окно обёртки `Virtual` над списком: подхват при сборке, подписка на
+			// обёртку — при коммите, снятие — с уничтожением
+			.use(TVirtualCollectionExtension, { elevator })
 
 		return [adapter, collection] as const
 	})
