@@ -1,8 +1,14 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { Button } from '@soldy-ui/vue'
+import type { TSnippetExtension } from '@soldy-ui/playground-shared'
 
-const props = defineProps<{ code: string; name: string }>()
+const props = defineProps<{
+	code: string
+	name: string
+	/** Расширение файла примера — синтаксиса хоста, который написал код. */
+	extension: TSnippetExtension
+}>()
 
 const open = ref(false)
 const status = ref('')
@@ -30,6 +36,7 @@ async function copy(): Promise<void> {
  * Файл пишет dev-сервер: браузер не умеет ни записать его, ни запустить
  * редактор. Сервер кладёт сниппет внутрь воркспейса — только там разрешатся
  * алиасы на `@soldy-ui/*`, то есть в редакторе окажется рабочий код, а не текст.
+ * Расширение файла — хоста: в `.vue` код React для редактора был бы текстом.
  *
  * `code -g` может не найтись (VS Code не в PATH), поэтому ответ всегда несёт
  * путь: тогда открываем через `vscode://`, этим занимается уже система.
@@ -38,7 +45,11 @@ async function openInEditor(): Promise<void> {
 	try {
 		const response = await fetch('/__playground/open', {
 			method: 'POST',
-			body: JSON.stringify({ name: props.name, code: props.code }),
+			body: JSON.stringify({
+				name: props.name,
+				code: props.code,
+				extension: props.extension,
+			}),
 		})
 		const { file } = (await response.json()) as { file: string }
 

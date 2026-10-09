@@ -18,6 +18,7 @@ import {
 	isPreviewHost,
 	isPreviewHostModule,
 	type IPreviewHost,
+	type IPreviewSnippets,
 	type TInstance,
 	type TPreviewMount,
 	type TScenario,
@@ -216,10 +217,16 @@ describe('хост сценариев', () => {
 
 describe('сторож модуля хоста', () => {
 	const { host } = fakeHost()
+	const snippets: IPreviewSnippets = {
+		extension: 'tsx',
+		propSnippet: () => '',
+		instanceSnippet: () => '',
+	}
 
 	it('хост — экспорт по умолчанию', () => {
 		expect(isPreviewHostModule({ default: host })).toBe(true)
 		expect(isPreviewHostModule({ default: { ...host, snippets: undefined } })).toBe(true)
+		expect(isPreviewHostModule({ default: { ...host, snippets } })).toBe(true)
 	})
 
 	it('модуль без хоста или с неполным хостом — не модуль хоста', () => {
@@ -227,6 +234,20 @@ describe('сторож модуля хоста', () => {
 		expect(isPreviewHostModule({ host })).toBe(false)
 		expect(isPreviewHostModule({ default: { ...host, mount: undefined } })).toBe(false)
 		expect(isPreviewHostModule({ default: { ...host, previews: [1] } })).toBe(false)
-		expect(isPreviewHost({ ...host, snippets: { propSnippet: () => '' } })).toBe(false)
+		expect(
+			isPreviewHost({ ...host, snippets: { ...snippets, instanceSnippet: undefined } }),
+		).toBe(false)
+	})
+
+	/**
+	 * Расширение файла примера — часть кода колонок: «Открыть в VS Code» пишет
+	 * код в файл с ним, и эндпоинт стенда берёт только известные.
+	 */
+	it('код колонок без расширения файла или с неизвестным — не хост', () => {
+		expect(isPreviewHost({ ...host, snippets: { ...snippets, extension: undefined } })).toBe(
+			false,
+		)
+		expect(isPreviewHost({ ...host, snippets: { ...snippets, extension: 'jsx' } })).toBe(false)
+		expect(isPreviewHost({ ...host, snippets: { ...snippets, extension: 'vue' } })).toBe(true)
 	})
 })
