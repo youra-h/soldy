@@ -305,27 +305,52 @@ describe('<soldy-button> · события', () => {
 	})
 })
 
+/**
+ * Живые подписки шины внешнего `ctrl` по её публичному API: пары `on` без
+ * своего `off` и слушатели `listen` без своей отписки. Обмен адаптера слушает
+ * шину участника одним слушателем `listen`, подписок `on` на события и
+ * триггеры у него нет.
+ */
+function watchBus(ctrl: TButton): () => number {
+	const { events } = ctrl
+	const on = vi.spyOn(events, 'on')
+	const off = vi.spyOn(events, 'off')
+	const listen = events.listen.bind(events)
+	let listening = 0
+
+	vi.spyOn(events, 'listen').mockImplementation((listener) => {
+		const release = listen(listener)
+
+		listening++
+
+		return () => {
+			listening--
+			release()
+		}
+	})
+
+	return () =>
+		listening +
+		on.mock.calls.filter(
+			([event, handler]) => !off.mock.calls.some(([e, h]) => e === event && h === handler),
+		).length
+}
+
 describe('<soldy-button> · очистка', () => {
 	it('снимает подписки с внешнего ctrl при удалении из DOM', () => {
 		const ctrl = new TButton()
-		// Подписки считаются по публичному API шины: подписались на change:text
-		// минус отписались
-		const on = vi.spyOn(ctrl.events, 'on')
-		const off = vi.spyOn(ctrl.events, 'off')
-		const count = () =>
-			on.mock.calls.filter(([event]) => event === 'change:text').length -
-			off.mock.calls.filter(([event]) => event === 'change:text').length
+		const live = watchBus(ctrl)
 
 		const el = document.createElement('soldy-button')
 
 		el.ctrl = ctrl
 		document.body.appendChild(el)
 
-		expect(count()).toBeGreaterThan(0)
+		expect(live()).toBeGreaterThan(0)
 
 		el.remove()
 
-		expect(count()).toBe(0)
+		expect(live()).toBe(0)
 	})
 })
 

@@ -46,6 +46,19 @@ export type TEventSink<TOwn extends Record<string, (...args: any) => any>> = {
 }
 
 /**
+ * Слушатель всех событий шины — `TEvented.listen`: имя события и его аргументы.
+ *
+ * Шина отдаёт ему событие после обработчиков `on` этого события. Аргументы —
+ * тот же массив, что получили перехватчики: слушатель его не правит.
+ */
+export type TEventListener<TEvents extends Record<string, (...args: any) => any>> = <
+	K extends keyof TEvents,
+>(
+	event: K,
+	args: Parameters<TEvents[K]>,
+) => void
+
+/**
  * Правило проброса одного события из источника в цель — элемент списка
  * `TEvented.relay`.
  *

@@ -2,7 +2,7 @@ import { TEventEmitter } from './event-emitter'
 import type { IEventEmitter } from './event-emitter'
 import type { TEventContext, TEventMiddleware } from './middleware'
 import { TRelays } from './relays'
-import type { TEventSink, TRelayRule, TRelayedEvents } from './types'
+import type { TEventListener, TEventSink, TRelayRule, TRelayedEvents } from './types'
 
 /**
  * Вид эмиттера, через который работает тело {@link TEvented.relay}.
@@ -22,20 +22,46 @@ import type { TEventSink, TRelayRule, TRelayedEvents } from './types'
  */
 type TRelayChannel = Pick<IEventEmitter, 'on' | 'off' | 'emit'>
 
+/**
+ * TEvented — шина событий: подписки {@link on}, перехватчики {@link use},
+ * слушатели всех событий {@link listen} и пробросы из источников
+ * ({@link relay}, {@link relayAll}).
+ *
+ * **Шина платит за подписку, а не за то, что создана.** Эмиттер подписок,
+ * список перехватчиков, список слушателей и пробросы заводятся при первом
+ * использовании, а последняя отписка снимает то, что завела первая: шина без
+ * подписчиков — один объект. Шин много — у каждого экземпляра ядра, плагина и
+ * расширения, — а слушают большинство из них, только пока компонент
+ * смонтирован. Раньше всё это заводил конструктор, и строка таблицы с
+ * чекбоксом держала по 34 шины с эмиттером, картой и пробросами у каждой.
+ *
+ * **Кто когда узнаёт о событии.** Перехватчики — первыми, затем обработчики
+ * этого события, затем слушатели всех событий. Заглушённый эмит
+ * ({@link silent}, {@link pause}) не доходит ни до кого.
+ */
 export class TEvented<TEvents extends Record<string, (...args: any) => any>> {
-	private _items: TEventEmitter<TEvents> = new TEventEmitter()
+	/** Подписки {@link on} — с первой, до последней отписки. */
+	private _items?: TEventEmitter<TEvents>
+
+	/** Сквозные перехватчики {@link use} — с первым, до последнего. */
+	private _middlewares?: TEventMiddleware<TEvents>[]
 
 	/**
-	 * Список зарегистрированных сквозных перехватчиков (middleware).
+	 * Слушатели всех событий {@link listen} — с первым, до последнего. Список не
+	 * правится на месте, а заменяется новым: эмит обходит тот, что застал.
 	 */
-	private _middlewares: TEventMiddleware<TEvents>[] = []
+	private _listeners?: readonly TEventListener<TEvents>[]
 
-	/** Пробросы {@link relay} и {@link relayAll}: подписаны на источники, пока эмиттер слушают. */
-	private readonly _relays = new TRelays()
+	/** Пробросы {@link relay} и {@link relayAll} — с первым: подписаны на источники, пока эмиттер слушают. */
+	private _relays?: TRelays
 
-	/** Слушают ли эмиттер: есть подписчики или перехватчики. */
+	/** Слушают ли эмиттер: есть подписчики, перехватчики или слушатели. */
 	private get _listened(): boolean {
-		return this._items.size > 0 || this._middlewares.length > 0
+		return (
+			this._items !== undefined ||
+			this._middlewares !== undefined ||
+			this._listeners !== undefined
+		)
 	}
 
 	/** Этот же эмиттер без карты событий — для тела {@link relay}, см. `TRelayChannel`. */
@@ -75,30 +101,37 @@ export class TEvented<TEvents extends Record<string, (...args: any) => any>> {
 	 * })
 	 */
 	use(middleware: TEventMiddleware<TEvents>): () => void {
-		this._middlewares.push(middleware)
-		this._relays.subscribe()
+		// Первый — литералом: у массива, собранного по элементу, запас под рост
+		if (this._middlewares) this._middlewares.push(middleware)
+		else this._middlewares = [middleware]
+
+		this._relays?.subscribe()
 
 		return () => {
-			const index = this._middlewares.indexOf(middleware)
+			const middlewares = this._middlewares
+			const index = middlewares?.indexOf(middleware) ?? -1
 
-			if (index !== -1) {
-				this._middlewares.splice(index, 1)
+			if (middlewares === undefined || index === -1) return
 
-				if (!this._listened) this._relays.unsubscribe()
-			}
+			middlewares.splice(index, 1)
+
+			if (middlewares.length === 0) this._middlewares = undefined
+			if (!this._listened) this._relays?.unsubscribe()
 		}
 	}
 
 	/**
 	 * Внутренний метод для оповещения всех перехватчиков.
 	 * Выполняется за O(N) без рекурсии и лишних замыканий.
+	 *
+	 * Обход живой: перехватчик, снятый посреди эмита, дальше не вызывается.
 	 */
 	private _notifyMiddlewares<K extends keyof TEvents>(
 		type: TEventContext['type'],
 		event: K,
 		args: Parameters<TEvents[K]>,
 	): void {
-		if (this._middlewares.length === 0) return
+		if (this._middlewares === undefined) return
 
 		const ctx: TEventContext<TEvents, K> = {
 			event,
@@ -107,12 +140,36 @@ export class TEvented<TEvents extends Record<string, (...args: any) => any>> {
 			timestamp: Date.now(),
 		}
 
-		for (let i = 0; i < this._middlewares.length; i++) {
+		for (let i = 0; ; i++) {
+			const middleware = this._middlewares?.[i]
+
+			if (middleware === undefined) break
+
 			try {
-				this._middlewares[i](ctx)
+				middleware(ctx)
 			} catch (error) {
 				console.error(`Error in TEvented middleware for event "${String(event)}":`, error)
 			}
+		}
+	}
+
+	/**
+	 * Внутренний метод для оповещения слушателей всех событий — после
+	 * обработчиков `on`. Обходит список, который застал: поставленный посреди
+	 * эмита получит следующий, а снятый посреди эмита этот уже не получает.
+	 */
+	private _notifyListeners<K extends keyof TEvents>(
+		event: K,
+		args: Parameters<TEvents[K]>,
+	): void {
+		const listeners = this._listeners
+
+		if (listeners === undefined) return
+
+		for (const listener of listeners) {
+			if (this._listeners !== listeners && !this._listeners?.includes(listener)) continue
+
+			listener(event, args)
 		}
 	}
 
@@ -174,8 +231,9 @@ export class TEvented<TEvents extends Record<string, (...args: any) => any>> {
 	 * @param handler - обработчик события
 	 */
 	on<K extends keyof TEvents>(event: K, handler: TEvents[K]): void {
+		this._items ??= new TEventEmitter()
 		this._items.on(event, handler)
-		this._relays.subscribe()
+		this._relays?.subscribe()
 	}
 
 	/**
@@ -184,14 +242,67 @@ export class TEvented<TEvents extends Record<string, (...args: any) => any>> {
 	 * @param handler - обработчик события
 	 */
 	off<K extends keyof TEvents>(event: K, handler: TEvents[K]): void {
-		this._items.off(event, handler)
+		const items = this._items
 
-		if (!this._listened) this._relays.unsubscribe()
+		if (items === undefined) return
+
+		items.off(event, handler)
+
+		if (items.size === 0) this._items = undefined
+		if (!this._listened) this._relays?.unsubscribe()
+	}
+
+	/**
+	 * Слушать все события шины: имя и аргументы каждого эмита.
+	 *
+	 * Слушатель узнаёт о событии **после** обработчиков `on` этого события —
+	 * и тех, что подписались позже него, — в порядке подписки слушателей.
+	 * Заглушённый эмит его не вызывает. Для пробросов он такой же подписчик, как
+	 * `on` и `use`: первый подписчик цели подключает её к источникам.
+	 *
+	 * Чем отличается от {@link use}: перехватчик срабатывает **до** обработчиков
+	 * и на каждый эмит собирает контекст с меткой времени. Слушателю событие
+	 * отдают последним — так обмен адаптера узнаёт о нём после подписчиков ядра,
+	 * а одного слушателя на шину ему хватает вместо подписки на каждое событие.
+	 *
+	 * Слушатель, снятый посреди эмита, этот эмит уже не получает; поставленный
+	 * посреди эмита получает следующий.
+	 *
+	 * @param listener - слушатель: имя события и его аргументы
+	 * @returns Функция отписки слушателя.
+	 *
+	 * @example
+	 * const unlisten = events.listen((event, args) => {
+	 *     console.log(String(event), args)
+	 * })
+	 */
+	listen(listener: TEventListener<TEvents>): () => void {
+		// Литерал, а не спред в пустой список: у массива, собранного по элементу,
+		// запас под рост, а слушатель у шины обычно один
+		this._listeners = this._listeners ? [...this._listeners, listener] : [listener]
+		this._relays?.subscribe()
+
+		return () => {
+			const listeners = this._listeners
+			const index = listeners?.indexOf(listener) ?? -1
+
+			if (listeners === undefined || index === -1) return
+
+			this._listeners =
+				listeners.length === 1
+					? undefined
+					: [...listeners.slice(0, index), ...listeners.slice(index + 1)]
+
+			if (!this._listened) this._relays?.unsubscribe()
+		}
 	}
 
 	/**
 	 * Вызов события.
 	 * Если эмиттер заглушен (см. {@link isMuted}, {@link silent}) — вызов игнорируется.
+	 *
+	 * Порядок — перехватчики {@link use}, обработчики события {@link on},
+	 * слушатели всех событий {@link listen}.
 	 *
 	 * @param event - имя события
 	 * @param args - аргументы события
@@ -199,7 +310,8 @@ export class TEvented<TEvents extends Record<string, (...args: any) => any>> {
 	emit<K extends keyof TEvents>(event: K, ...args: Parameters<TEvents[K]>): void {
 		if (this.isMuted) return
 		this._notifyMiddlewares('emit', event, args)
-		this._items.emit(event, ...args)
+		this._items?.emit(event, ...args)
+		this._notifyListeners(event, args)
 	}
 
 	/**
@@ -307,7 +419,7 @@ export class TEvented<TEvents extends Record<string, (...args: any) => any>> {
 				tgt.emit(target, ...args)
 			}
 
-			this._relays.add(() => {
+			this._relay(() => {
 				src.on(from, handler)
 
 				return () => src.off(from, handler)
@@ -348,12 +460,15 @@ export class TEvented<TEvents extends Record<string, (...args: any) => any>> {
 	 * только в типах. Поэтому проброс висит на {@link use}: перехватчик
 	 * срабатывает на каждом `emit` источника, включая события, которые тот сам
 	 * получил релеем. Перехватчик стоит, пока цель слушают, как и подписки
-	 * `relay` (см. `TRelays`).
+	 * `relay` (см. `TRelays`): подписками `on`, перехватчиками `use` или
+	 * слушателями {@link listen}.
 	 *
 	 * Порядок при этом иной, чем у `relay`: перехватчик работает **до**
 	 * обработчиков `on` источника, то есть подписчик цели узнаёт о событии
-	 * раньше подписчиков самого источника. Для проброса это безразлично —
-	 * важно, что цель получает событие в том же такте.
+	 * раньше подписчиков самого источника — и слушатель цели тоже: правило
+	 * «слушатель — после обработчиков» действует в пределах одной шины. Для
+	 * проброса это безразлично — важно, что цель получает событие в том же
+	 * такте.
 	 *
 	 * @param source - источник событий (другой `TEvented`)
 	 *
@@ -369,7 +484,7 @@ export class TEvented<TEvents extends Record<string, (...args: any) => any>> {
 		// канал без карты событий — см. TRelayChannel.
 		const tgt = this._channel
 
-		this._relays.add(() =>
+		this._relay(() =>
 			source.use(({ event, args }) => {
 				tgt.emit(String(event), ...args)
 			}),
@@ -378,11 +493,21 @@ export class TEvented<TEvents extends Record<string, (...args: any) => any>> {
 
 	/**
 	 * Полностью очищает эмиттер: отписывается от всех проброшенных событий ({@link relay}),
-	 * снимает middleware и удаляет входящие подписки.
+	 * снимает middleware, слушателей и входящие подписки.
 	 */
 	destroy(): void {
-		this._relays.destroy()
-		this._middlewares = []
-		this._items.remove()
+		this._relays?.destroy()
+		this._relays = undefined
+		this._middlewares = undefined
+		this._listeners = undefined
+		this._items = undefined
+	}
+
+	/** Завести проброс: пробросы заводятся с первым, а эмиттер, который уже слушают, подписывает его сразу. */
+	private _relay(relay: () => () => void): void {
+		this._relays ??= new TRelays()
+		this._relays.add(relay)
+
+		if (this._listened) this._relays.subscribe()
 	}
 }

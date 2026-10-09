@@ -26,6 +26,11 @@ export function isEventSource(value: unknown): value is IEventSource {
 
 /**
  * Обобщённый эмиттер, где Events — словарь событий и их сигнатур.
+ *
+ * Платит за подписку, а не за событие: карта наборов заводится с первой
+ * подпиской и уходит с последней отпиской, а набор события — с его первым и
+ * последним обработчиком.
+ *
  * @example
  * const emitter = new TEventEmitter<{ greet: (msg: string) => void }>()
  * emitter.emit('greet', 123) // Ошибка
@@ -36,7 +41,8 @@ export class TEventEmitter<
 		(...args: any[]) => any
 	>,
 > implements IEventEmitter {
-	private _items: Map<string, Set<TEventHandler>> = new Map()
+	/** Наборы обработчиков по событиям — пока есть хоть одна подписка. */
+	private _items?: Map<string, Set<TEventHandler>>
 
 	private _size = 0
 
@@ -46,10 +52,11 @@ export class TEventEmitter<
 	}
 
 	on<K extends keyof Events>(event: K, handler: Events[K]): void {
-		let handlers = this._items.get(event as string)
+		const items = (this._items ??= new Map())
+		let handlers = items.get(event as string)
 		if (!handlers) {
 			handlers = new Set()
-			this._items.set(event as string, handlers)
+			items.set(event as string, handlers)
 		}
 		if (handlers.has(handler as TEventHandler)) return
 		handlers.add(handler as TEventHandler)
@@ -57,31 +64,39 @@ export class TEventEmitter<
 	}
 
 	/**
-	 * Снять обработчик. Последний ушёл — уходит и набор события: эмиттер
-	 * живёт дольше подписчиков (строка таблицы — дольше своих монтирований), и
-	 * пустые наборы копились бы по одному на каждое событие, которое
-	 * когда-нибудь слушали.
+	 * Снять обработчик. Последний ушёл — уходит и набор события, а с последней
+	 * подпиской — и карта: эмиттер живёт дольше подписчиков (строка таблицы —
+	 * дольше своих монтирований), и пустые наборы копились бы по одному на
+	 * каждое событие, которое когда-нибудь слушали.
 	 */
 	off<K extends keyof Events>(event: K, handler: Events[K]): void {
-		const handlers = this._items.get(event as string)
+		const items = this._items
+		const handlers = items?.get(event as string)
 
-		if (!handlers?.delete(handler as TEventHandler)) return
+		if (!items || !handlers?.delete(handler as TEventHandler)) return
 
 		this._size--
 
-		if (handlers.size === 0) this._items.delete(event as string)
+		if (handlers.size === 0) items.delete(event as string)
+		if (this._size === 0) this._items = undefined
 	}
 
 	emit<K extends keyof Events>(event: K, ...args: Parameters<Events[K]>): void {
-		this._items.get(event as string)?.forEach((handler) => handler(...args))
+		this._items?.get(event as string)?.forEach((handler) => handler(...args))
 	}
 
 	remove(event?: string): void {
 		if (event) {
-			this._size -= this._items.get(event)?.size ?? 0
-			this._items.delete(event)
+			const handlers = this._items?.get(event)
+
+			if (!handlers) return
+
+			this._size -= handlers.size
+			this._items?.delete(event)
+
+			if (this._size === 0) this._items = undefined
 		} else {
-			this._items.clear()
+			this._items = undefined
 			this._size = 0
 		}
 	}

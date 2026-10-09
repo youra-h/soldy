@@ -219,27 +219,52 @@ describe('Button · события через колбэк-пропы', () => {
 	})
 })
 
+/**
+ * Живые подписки шины внешнего `ctrl` по её публичному API: пары `on` без
+ * своего `off` и слушатели `listen` без своей отписки. Обмен адаптера слушает
+ * шину участника одним слушателем `listen`, подписок `on` на события и
+ * триггеры у него нет.
+ */
+function watchBus(ctrl: TButton): () => number {
+	const { events } = ctrl
+	const on = vi.spyOn(events, 'on')
+	const off = vi.spyOn(events, 'off')
+	const listen = events.listen.bind(events)
+	let listening = 0
+
+	vi.spyOn(events, 'listen').mockImplementation((listener) => {
+		const release = listen(listener)
+
+		listening++
+
+		return () => {
+			listening--
+			release()
+		}
+	})
+
+	return () =>
+		listening +
+		on.mock.calls.filter(
+			([event, handler]) => !off.mock.calls.some(([e, h]) => e === event && h === handler),
+		).length
+}
+
 describe('Button · очистка', () => {
 	it('снимает подписки с внешнего ctrl при размонтировании', () => {
 		const ctrl = new TButton()
-		// Подписки считаются по публичному API шины: подписались на change:text
-		// минус отписались
-		const on = vi.spyOn(ctrl.events, 'on')
-		const off = vi.spyOn(ctrl.events, 'off')
-		const count = () =>
-			on.mock.calls.filter(([event]) => event === 'change:text').length -
-			off.mock.calls.filter(([event]) => event === 'change:text').length
+		const live = watchBus(ctrl)
 
 		const target = document.createElement('div')
 		document.body.appendChild(target)
 
 		const dispose = render(() => <Button ctrl={ctrl} />, target)
 
-		expect(count()).toBeGreaterThan(0)
+		expect(live()).toBeGreaterThan(0)
 
 		dispose()
 
-		expect(count()).toBe(0)
+		expect(live()).toBe(0)
 	})
 })
 

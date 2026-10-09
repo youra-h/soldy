@@ -26,8 +26,9 @@ import { TElementPlugin, TPluginBundle } from '@soldy-ui/plugins'
 import type { IPluginBundle } from '@soldy-ui/plugins'
 import { PLUGIN_PROPS } from '../../naming'
 import { resolveRegisteredPlugins } from '../../registry'
-import type { IBundleContext, IComponentDescriptor, TPropSpec } from '../../define'
+import type { IBundleContext, IComponentDescriptor } from '../../define'
 import { TMember } from '../exchange/member.class'
+import type { IMemberSpec } from '../exchange/types'
 import { TExternalPlugins } from './external-plugins.class'
 import type { IBundleTenancy, TBundleMount } from './types'
 
@@ -38,6 +39,33 @@ function hasEmit(value: unknown): value is Pick<IEventEmitter, 'emit'> {
 		'emit' in value &&
 		typeof value.emit === 'function'
 	)
+}
+
+type TBundleDescriptor = Pick<IComponentDescriptor, 'ctor' | 'plugins' | 'props'>
+
+const externalSpecs = new WeakMap<TBundleDescriptor, IMemberSpec>()
+
+/**
+ * Описание участника-связки: `pluginProps` — с умолчанием от класса его
+ * владельца, как у любого другого пропа. Одно на дескриптор, а не пересчёт на
+ * каждое монтирование: по нему обмен находит таблицу маршрутов своего типа.
+ */
+function externalSpecOf(descriptor: TBundleDescriptor): IMemberSpec {
+	let spec = externalSpecs.get(descriptor)
+
+	if (!spec) {
+		spec = Object.freeze({
+			props: Object.freeze(
+				descriptor.props
+					.filter((prop) => prop.name.name === PLUGIN_PROPS)
+					.map((prop) => prop.rebase(TExternalPlugins.defaultValues)),
+			),
+			events: [],
+		})
+		externalSpecs.set(descriptor, spec)
+	}
+
+	return spec
 }
 
 export class TOwnBundle implements IBundleTenancy {
@@ -52,7 +80,7 @@ export class TOwnBundle implements IBundleTenancy {
 	}
 
 	constructor(
-		private readonly _descriptor: Pick<IComponentDescriptor, 'ctor' | 'plugins' | 'props'>,
+		private readonly _descriptor: TBundleDescriptor,
 		private readonly _instance: object,
 		private readonly _context: IBundleContext,
 		mount: TBundleMount = {},
@@ -72,10 +100,11 @@ export class TOwnBundle implements IBundleTenancy {
 			..._descriptor.plugins.flatMap((plugin) => {
 				const owner = bundle.get(plugin.ctor)
 
-				return owner ? [new TMember(owner, plugin.props, plugin.events)] : []
+				// Описание участника-плагина — его определение: одно на тип
+				return owner ? [new TMember(owner, plugin)] : []
 			}),
 			// Связка — такой же участник: её свойство `pluginProps` пишет обычная линия
-			new TMember(this._external, this._externalProps()),
+			new TMember(this._external, externalSpecOf(_descriptor)),
 		]
 	}
 
@@ -101,13 +130,6 @@ export class TOwnBundle implements IBundleTenancy {
 		if (element) element.element = null
 
 		this.bundle.destroy()
-	}
-
-	/** Описание `pluginProps` — с умолчанием от класса его владельца, как у любого другого пропа. */
-	private _externalProps(): TPropSpec[] {
-		return this._descriptor.props
-			.filter((spec) => spec.name.name === PLUGIN_PROPS)
-			.map((spec) => spec.rebase(TExternalPlugins.defaultValues))
 	}
 
 	private _announce(): void {

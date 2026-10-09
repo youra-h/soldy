@@ -11,7 +11,7 @@
  *    сеттерами; участникам набора — если набор свой. Порядок: инстанс, плагины
  *    дескриптора, связка — а плагины снаружи получают своё, когда встают.
  *    Обмен для этого не заводится: записи нужны только линии участников и
- *    пропсы сборки, а состояние, входы и маршруты событий соберёт `connect()`.
+ *    пропсы сборки, а состояние, входы и события соберёт `connect()`.
  * 6. Завершение набора: плагины реестра и объявление наружу на микрозадаче.
  *
  * Имя пропа одно во всех фреймворках, поэтому профиль адаптера сборке не нужен:
@@ -21,8 +21,9 @@
 import { CommonProfile, PLUGIN_PROPS } from '../../naming'
 import type { IComponentDescriptor, IPluginsContract } from '../../define'
 import { TInputPort } from '../exchange/input-port.class'
-import { TLine } from '../exchange/line.class'
 import { TMember } from '../exchange/member.class'
+import { TRouting } from '../exchange/routing.class'
+import type { IMemberSpec } from '../exchange/types'
 import { TSurface } from '../surface'
 import { TAdapterContext } from './adapter-context.class'
 import { TOwnBundle } from './own-bundle.class'
@@ -41,6 +42,29 @@ import type {
  * (`TExternalPlugins`). Это имена опций самого `createAdapterContext`.
  */
 const MOUNT_PROPS: ReadonlySet<string> = new Set(['ctrl', 'embedded', PLUGIN_PROPS])
+
+const instanceSpecs = new WeakMap<IComponentDescriptor, IMemberSpec>()
+
+/**
+ * Описание участника-инстанса: пропсы и события дескриптора без пропсов
+ * связки. Одно на дескриптор, а не фильтр на каждое монтирование: по нему
+ * обмен находит таблицу маршрутов своего типа (`TRouting`).
+ */
+function instanceSpecOf(descriptor: IComponentDescriptor): IMemberSpec {
+	let spec = instanceSpecs.get(descriptor)
+
+	if (!spec) {
+		spec = Object.freeze({
+			props: Object.freeze(
+				descriptor.props.filter((prop) => !MOUNT_PROPS.has(prop.name.name)),
+			),
+			events: descriptor.events,
+		})
+		instanceSpecs.set(descriptor, spec)
+	}
+
+	return spec
+}
 
 /** Не задан опцией — читается из пропсов: проп объявлен у всех компонентов, и помнить отдельный шаг не обязан ни один адаптер. */
 function embeddedOf(options: IAdapterContextOptions): string | undefined {
@@ -78,18 +102,17 @@ export function createAdapterContext<TInstance extends object, TPlugins extends 
 			: new TSharedBundle(descriptor, config.bundle ?? null)
 
 	// 4. Участники
-	const owner = new TMember(
-		instance,
-		descriptor.props.filter((spec) => !MOUNT_PROPS.has(spec.name.name)),
-		descriptor.events,
-	)
+	const owner = new TMember(instance, instanceSpecOf(descriptor))
 	const members = [owner, ...tenancy.members]
 
 	// 5. Начальные значения
 	const seeded = options.ctrl ? [owner, ...tenancy.seeded] : tenancy.seeded
 
 	if (seeded.length > 0) {
-		TInputPort.seed(TLine.of(seeded, TSurface.of(descriptor, CommonProfile)), props)
+		TInputPort.seed(
+			TRouting.of(TSurface.of(descriptor, CommonProfile), seeded).lines(seeded),
+			props,
+		)
 	}
 
 	// 6. Плагины реестра и объявление набора

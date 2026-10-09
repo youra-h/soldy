@@ -13,12 +13,11 @@ function isBus(value: unknown): value is IBus {
 	return (
 		typeof value === 'object' &&
 		value !== null &&
-		typeof Reflect.get(value, 'on') === 'function' &&
-		typeof Reflect.get(value, 'off') === 'function'
+		typeof Reflect.get(value, 'listen') === 'function'
 	)
 }
 
-/** Шина — `owner.events`, а без поля `events` — сам владелец; без `on`/`off` источника событий нет. */
+/** Шина — `owner.events`, а без поля `events` — сам владелец; без `listen` источника событий нет. */
 export function busOf(owner: object): IBus | undefined {
 	const events: unknown = Reflect.get(owner, 'events')
 

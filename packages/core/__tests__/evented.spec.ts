@@ -438,6 +438,246 @@ describe('TEvented', () => {
 })
 
 /**
+ * Семантика эмита, которую ленивые структуры шины не вправе поменять: она
+ * была до них, и тесты ниже проходили и на шине, которая заводила эмиттер,
+ * карту и пробросы в конструкторе.
+ */
+describe('TEvented: семантика эмита', () => {
+	it('обработчики вызываются в порядке подписки', () => {
+		const events = new TEvented<TestEvents>()
+		const order: string[] = []
+
+		events.on('change', () => order.push('a'))
+		events.on('change', () => order.push('b'))
+		events.on('change', () => order.push('c'))
+		events.emit('change', 'x')
+
+		expect(order).toEqual(['a', 'b', 'c'])
+	})
+
+	it('повторная подписка того же обработчика — одна подписка', () => {
+		const events = new TEvented<TestEvents>()
+		const handler = vi.fn()
+
+		events.on('change', handler)
+		events.on('change', handler)
+		events.emit('change', 'x')
+
+		expect(handler).toHaveBeenCalledTimes(1)
+
+		events.off('change', handler)
+		events.emit('change', 'y')
+
+		expect(handler).toHaveBeenCalledTimes(1)
+	})
+
+	it('обработчик, снятый посреди эмита, в этом эмите уже не вызывается', () => {
+		const events = new TEvented<TestEvents>()
+		const second = vi.fn()
+
+		events.on('change', () => events.off('change', second))
+		events.on('change', second)
+		events.emit('change', 'x')
+
+		expect(second).not.toHaveBeenCalled()
+	})
+
+	it('обработчик того же события, поставленный посреди эмита, вызывается в нём же', () => {
+		const events = new TEvented<TestEvents>()
+		const late = vi.fn()
+
+		events.on('change', () => events.on('change', late))
+		events.emit('change', 'x')
+
+		expect(late).toHaveBeenCalledWith('x')
+	})
+
+	it('перехватчик — раньше обработчиков события', () => {
+		const events = new TEvented<TestEvents>()
+		const order: string[] = []
+
+		events.on('change', () => order.push('on'))
+		events.use(() => order.push('use'))
+		events.emit('change', 'x')
+
+		expect(order).toEqual(['use', 'on'])
+	})
+})
+
+/**
+ * Поля шины, которые держат объект: эмиттер, перехватчики, слушатели, пробросы.
+ * Счётчик глушения — число, структурой он не считается.
+ */
+function structuresOf(bus: object): string[] {
+	return Object.entries(bus)
+		.filter(([, value]) => typeof value === 'object' && value !== null)
+		.map(([key]) => key)
+}
+
+/**
+ * Шина платит за подписку, а не за то, что создана: шин много — у каждого
+ * экземпляра ядра, плагина и расширения, — а слушают большинство из них только
+ * пока компонент смонтирован. Раньше каждая шина заводила эмиттер, карту и
+ * пробросы в конструкторе, и строка таблицы держала их по 34 штуки.
+ */
+describe('TEvented: структуры — с первой подпиской', () => {
+	it('у шины без подписчиков структур нет', () => {
+		expect(structuresOf(new TEvented<TestEvents>())).toEqual([])
+	})
+
+	it('последняя отписка снимает всё, что завела первая подписка', () => {
+		const events = new TEvented<TestEvents>()
+		const handler = vi.fn()
+
+		events.on('change', handler)
+		events.on('reset', handler)
+
+		expect(structuresOf(events)).not.toEqual([])
+
+		events.off('change', handler)
+		events.off('reset', handler)
+
+		expect(structuresOf(events)).toEqual([])
+
+		events.use(vi.fn())()
+		events.listen(vi.fn())()
+
+		expect(structuresOf(events)).toEqual([])
+	})
+
+	it('после destroy структур нет, и шина работает дальше', () => {
+		const events = new TEvented<TestEvents>()
+		const source = new TEvented<TestEvents>()
+		const handler = vi.fn()
+
+		events.relayAll(source)
+		events.on('change', vi.fn())
+		events.use(vi.fn())
+		events.listen(vi.fn())
+		events.destroy()
+
+		expect(structuresOf(events)).toEqual([])
+		expect(structuresOf(source)).toEqual([])
+
+		events.on('change', handler)
+		events.emit('change', 'после')
+
+		expect(handler).toHaveBeenCalledWith('после')
+	})
+})
+
+/**
+ * Слушатель всех событий — подписчик, которому шина отдаёт событие последним:
+ * после обработчиков `on` этого события. Так подписчик ядра, пришедший после
+ * обмена адаптера, слышит событие раньше фреймворка, а обмену хватает одного
+ * слушателя на шину вместо подписки на каждое событие.
+ */
+describe('TEvented: listen', () => {
+	it('получает имя и аргументы каждого эмита', () => {
+		const events = new TEvented<TestEvents>()
+		const listener = vi.fn()
+
+		events.listen(listener)
+		events.emit('change', 'a')
+		events.emit('submit', 7)
+		events.emit('reset')
+
+		expect(listener.mock.calls).toEqual([
+			['change', ['a']],
+			['submit', [7]],
+			['reset', []],
+		])
+	})
+
+	it('после обработчиков on — и тех, что подписались позже', () => {
+		const events = new TEvented<TestEvents>()
+		const order: string[] = []
+
+		events.listen(() => order.push('listen'))
+		events.on('change', () => order.push('on'))
+		events.use(() => order.push('use'))
+		events.emit('change', 'x')
+
+		expect(order).toEqual(['use', 'on', 'listen'])
+	})
+
+	it('правило — в пределах одной шины: событие relayAll слушатель цели получает раньше обработчиков источника', () => {
+		// Проброс relayAll висит на перехватчике источника, а перехватчик — раньше обработчиков
+		const source = new TEvented<TestEvents>()
+		const target = new TEvented<TestEvents>()
+		const order: string[] = []
+
+		target.relayAll(source)
+		target.listen(() => order.push('слушатель цели'))
+		source.on('change', () => order.push('обработчик источника'))
+		source.emit('change', 'x')
+
+		expect(order).toEqual(['слушатель цели', 'обработчик источника'])
+	})
+
+	it('слушатели — в порядке подписки', () => {
+		const events = new TEvented<TestEvents>()
+		const order: string[] = []
+
+		events.listen(() => order.push('first'))
+		events.listen(() => order.push('second'))
+		events.emit('reset')
+
+		expect(order).toEqual(['first', 'second'])
+	})
+
+	it('заглушённый эмит слушателя не вызывает', () => {
+		const events = new TEvented<TestEvents>()
+		const listener = vi.fn()
+
+		events.listen(listener)
+		events.silent(() => events.emit('change', 'тихо'))
+
+		expect(listener).not.toHaveBeenCalled()
+	})
+
+	it('снимается своей отпиской и destroy', () => {
+		const events = new TEvented<TestEvents>()
+		const first = vi.fn()
+		const second = vi.fn()
+
+		events.listen(first)()
+		events.listen(second)
+		events.emit('reset')
+		events.destroy()
+		events.emit('reset')
+
+		expect(first).not.toHaveBeenCalled()
+		expect(second).toHaveBeenCalledTimes(1)
+	})
+
+	it('снятый посреди эмита этот эмит не получает, поставленный — получает следующий', () => {
+		const events = new TEvented<TestEvents>()
+		const removed = vi.fn()
+		const late = vi.fn()
+		let release = (): void => {}
+		let first = true
+
+		events.listen(() => {
+			if (!first) return
+
+			first = false
+			release()
+			events.listen(late)
+		})
+		release = events.listen(removed)
+		events.emit('change', 'первый')
+
+		expect(removed).not.toHaveBeenCalled()
+		expect(late).not.toHaveBeenCalled()
+
+		events.emit('change', 'второй')
+
+		expect(late.mock.calls).toEqual([['change', ['второй']]])
+	})
+})
+
+/**
  * Проброс держит источник, только пока цель слушают: первый подписчик цели
  * подписывает её на источник, ушедший последний — отписывает. Так цель, которая
  * живёт меньше источника (фасад коллекции над движком снаружи), не остаётся на
@@ -445,12 +685,13 @@ describe('TEvented', () => {
  * нужно.
  */
 describe('TEvented: проброс держит источник, пока цель слушают', () => {
-	/** Сколько подписок держит шина: `on` без `off` и перехватчики `use`. */
+	/** Сколько подписок держит шина: `on` без `off`, перехватчики `use` и слушатели `listen`. */
 	function heldBy(bus: TEvented<TestEvents>): () => number {
 		let count = 0
 		const on = bus.on.bind(bus)
 		const off = bus.off.bind(bus)
 		const use = bus.use.bind(bus)
+		const listen = bus.listen.bind(bus)
 
 		vi.spyOn(bus, 'on').mockImplementation((event, handler) => {
 			count++
@@ -470,9 +711,44 @@ describe('TEvented: проброс держит источник, пока це�
 				release()
 			}
 		})
+		vi.spyOn(bus, 'listen').mockImplementation((listener) => {
+			const release = listen(listener)
+
+			count++
+
+			return () => {
+				count--
+				release()
+			}
+		})
 
 		return () => count
 	}
+
+	it('слушатель цели — тоже подписчик: relay и relayAll подключаются с ним', () => {
+		const source = new TEvented<TestEvents>()
+		const target = new TEvented<TestEvents>()
+		const other = new TEvented<TestEvents>()
+		const held = heldBy(source)
+		const listener = vi.fn()
+
+		target.relay(source, ['change'])
+		other.relayAll(source)
+
+		const release = target.listen(listener)
+		const releaseOther = other.listen(vi.fn())
+
+		expect(held()).toBe(2)
+
+		source.emit('change', 'x')
+
+		expect(listener).toHaveBeenCalledWith('change', ['x'])
+
+		release()
+		releaseOther()
+
+		expect(held()).toBe(0)
+	})
 
 	it('relay: подписка на источник — с первым подписчиком цели, отписка — с последним', () => {
 		const source = new TEvented<TestEvents>()

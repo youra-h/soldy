@@ -127,15 +127,20 @@ export function observerCount(element: Element): number {
  * Шина под наблюдением: что на неё вешали и что на ней висит сейчас.
  *
  * Живое считается так же, как его держит сама шина: пара «событие,
- * обработчик» — одна подписка, `off` её снимает, перехватчик `use` живёт до
- * своей отписки, `destroy()` шины снимает всё. Перехватчики считаются
- * наравне с подписками: на них висит проброс `relayAll`.
+ * обработчик» — одна подписка, `off` её снимает, перехватчик `use` и
+ * слушатель всех событий `listen` живут до своей отписки, `destroy()` шины
+ * снимает всё. Перехватчики и слушатели считаются наравне с подписками: на
+ * перехватчиках висит проброс `relayAll`, а слушателем шину участника держит
+ * обмен адаптера.
  */
 export interface IBusSpy {
 	readonly name: string
 	/** Подписки `on` по порядку — имена событий. */
 	readonly subscribed: readonly string[]
-	/** Что висит на шине сейчас: события живых подписок и `use` на каждый перехватчик. */
+	/**
+	 * Что висит на шине сейчас: события живых подписок, `use` на каждый
+	 * перехватчик и `listen` на каждого слушателя.
+	 */
 	live(): string[]
 }
 
@@ -149,10 +154,12 @@ export function spyBus(name: string, holder: unknown): IBusSpy[] {
 	const on = bus.on.bind(bus)
 	const off = bus.off.bind(bus)
 	const use = bus.use.bind(bus)
+	const listen = bus.listen.bind(bus)
 	const destroy = bus.destroy.bind(bus)
 	const subscribed: string[] = []
 	const handlers = new Map<unknown, Set<string>>()
 	const middlewares = new Set<object>()
+	const listeners = new Set<object>()
 
 	vi.spyOn(bus, 'on').mockImplementation((event, handler) => {
 		const events = handlers.get(handler) ?? new Set<string>()
@@ -177,9 +184,21 @@ export function spyBus(name: string, holder: unknown): IBusSpy[] {
 			release()
 		}
 	})
+	vi.spyOn(bus, 'listen').mockImplementation((listener) => {
+		const token = {}
+		const release = listen(listener)
+
+		listeners.add(token)
+
+		return () => {
+			listeners.delete(token)
+			release()
+		}
+	})
 	vi.spyOn(bus, 'destroy').mockImplementation(() => {
 		handlers.clear()
 		middlewares.clear()
+		listeners.clear()
 		destroy()
 	})
 
@@ -190,6 +209,7 @@ export function spyBus(name: string, holder: unknown): IBusSpy[] {
 			live: () => [
 				...[...handlers.values()].flatMap((events) => [...events]),
 				...[...middlewares].map(() => 'use'),
+				...[...listeners].map(() => 'listen'),
 			],
 		},
 	]
