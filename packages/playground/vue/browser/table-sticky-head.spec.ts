@@ -24,7 +24,7 @@ import { commands, userEvent } from 'vitest/browser'
 import { defineComponent, h, type VNode } from 'vue'
 import { TTable, createEngineTable } from '@soldy-ui/core'
 import type { TSelectionMode, TTableCollection, TTableColumnSource } from '@soldy-ui/core'
-import { Button, Dialog, Popover, Table } from '@soldy-ui/vue'
+import { Button, Dialog, Popover, Table, Virtual } from '@soldy-ui/vue'
 
 import { find, opacity, pixel, style, systemColor } from './colors'
 import { forcedColors } from './media'
@@ -62,7 +62,6 @@ type TEngineOptions = {
 	columns?: readonly TTableColumnSource[]
 	mode?: TSelectionMode
 	grid?: boolean
-	virtual?: boolean
 }
 
 /** Движок строк: `count` записей по кругу, колонки и режимы — из опций. */
@@ -78,7 +77,6 @@ function engineOf(count = 40, options: TEngineOptions = {}): TTableCollection {
 	engine.extensions.columns.columns = options.columns ?? [NAME, CITY, AGE]
 	engine.extensions.selection.mode = options.mode ?? 'multiple'
 	engine.extensions.grid.grid = options.grid ?? false
-	engine.extensions.virtual.virtual = options.virtual ?? false
 
 	return engine
 }
@@ -709,12 +707,17 @@ describe('высота шапки', () => {
 })
 
 /**
- * Окно (`virtual`) рисует видимые строки с запасом: шапка закрывает верх
+ * Окно (обёртка `Virtual`) рисует видимые строки с запасом: шапка закрывает верх
  * видимой полосы, и под ней — строка, а не пустая распорка.
  */
 describe('окно', () => {
 	it('под шапкой — строки, а не распорка', async () => {
-		await show(() => scrollBox(sticky(engineOf(1000, { virtual: true })), 320))
+		await show(() =>
+			scrollBox(
+				h(Virtual, () => sticky(engineOf(1000))),
+				320,
+			),
+		)
 
 		const scroller = find('.s-test-scroll')
 

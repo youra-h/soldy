@@ -2,6 +2,7 @@ import { defineComponent, h, mergeProps, ref, watch, type Component } from 'vue'
 import type { DescriptorSlots, PopoverDescriptor, TooltipDescriptor } from '@soldy-ui/setup'
 import {
 	COLLECTION_ITEMS,
+	COLLECTION_MANY_ITEMS,
 	TABLE_COLUMNS,
 	TABLE_MANY_ROWS,
 	TABLE_ROWS,
@@ -35,6 +36,7 @@ import {
 	Tabs,
 	Tags,
 	Tooltip,
+	Virtual,
 	useIcon,
 } from '@soldy-ui/vue'
 
@@ -75,18 +77,6 @@ const ITEMS = COLLECTION_ITEMS
  * строится один раз: новый на каждый рендер Vue пересоздавал бы узел.
  */
 const ARROW_DOWN = useIcon('arrowDown')
-
-/**
- * Строки превью Table: в режиме окна (`virtual`) — тысяча, с одной
- * закреплённой шапкой (`stickyHead`) — сорок: тысяча без окна рисовалась бы
- * целиком, а пять не прокручиваются. Иначе — пять.
- */
-function tableRows(bind: Record<string, unknown>) {
-	if (bind.virtual) return TABLE_MANY_ROWS
-	if (bind.stickyHead) return TABLE_SCROLL_ROWS
-
-	return TABLE_ROWS
-}
 
 /**
  * Окно на стенде открывает кнопка: закрытое оно спрятано, а открытое
@@ -331,24 +321,19 @@ export const PREVIEWS: Record<string, TPreview> = {
 	 *
 	 * Обёртка — граница ширины, как у ленты: таблица встаёт во всю ширину
 	 * места, а сцена ячейки — флексбокс, и таблица держала бы там только свой
-	 * минимум. В режиме окна (`virtual`) и с закреплённой шапкой (`stickyHead`)
-	 * обёртка — ещё и окно прокрутки высотой 320 px, а строк больше
-	 * (`tableRows`): на пяти строках не видно ни окна таблицы, ни шапки, под
-	 * которую уходят строки. Строки — данными превью, а не пресетом строки:
-	 * `items` в редакторе пропов нет.
+	 * минимум. С закреплённой шапкой (`stickyHead`) обёртка — ещё и окно
+	 * прокрутки высотой 320 px, а строк сорок (`TABLE_SCROLL_ROWS`): на пяти
+	 * строках не видно шапки, под которую уходят строки. Строки — данными
+	 * превью, а не пресетом строки: `items` в редакторе пропов нет. Окно
+	 * таблицы — на странице Virtual.
 	 */
 	table: (bind) =>
 		h(
 			'div',
-			{
-				style:
-					bind.virtual || bind.stickyHead
-						? 'width:100%;height:320px;overflow:auto'
-						: 'width:100%',
-			},
+			{ style: bind.stickyHead ? 'width:100%;height:320px;overflow:auto' : 'width:100%' },
 			[
 				h(Table as Component, {
-					items: tableRows(bind),
+					items: bind.stickyHead ? TABLE_SCROLL_ROWS : TABLE_ROWS,
 					columns: TABLE_COLUMNS,
 					aria_label: 'Сотрудники',
 					...bind,
@@ -428,6 +413,33 @@ export const PREVIEWS: Record<string, TPreview> = {
 			ITEMS.map((item) =>
 				h('div', { key: item.value, style: 'padding:6px 10px' }, item.text),
 			),
+		),
+
+	/**
+	 * Окно на двух списках по тысяче элементов: на пяти его не видно. ListBox
+	 * с пределом строк прокручивается сам, Table — в обёртке высотой 320 px.
+	 * Строка `enabled` включает и выключает окно у обоих разом. Элементы —
+	 * данными (`items`): элементы разметкой окно не прячет.
+	 *
+	 * Ряд — граница ширины, как у ленты: сцена ячейки — флексбокс, и без неё
+	 * таблица держала бы там только свой минимум.
+	 */
+	virtual: (bind) =>
+		h(Virtual as Component, bind, () =>
+			h('div', { style: 'display:flex; gap:24px; align-items:flex-start; width:100%' }, [
+				h(ListBox as Component, {
+					items: COLLECTION_MANY_ITEMS,
+					maxRows: 8,
+					aria_label: 'Пункты',
+				}),
+				h('div', { style: 'flex:1; min-width:0; height:320px; overflow:auto' }, [
+					h(Table as Component, {
+						items: TABLE_MANY_ROWS,
+						columns: TABLE_COLUMNS,
+						aria_label: 'Сотрудники',
+					}),
+				]),
+			]),
 		),
 
 	frame: (bind) =>

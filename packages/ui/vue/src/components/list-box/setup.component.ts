@@ -1,6 +1,7 @@
 import {
 	TCollectionExtension,
 	TDragAndDropCollectionExtension,
+	TVirtualCollectionExtension,
 	ListBoxDescriptor,
 	ListBoxCollectionDescriptor,
 } from '@soldy-ui/setup'
@@ -37,6 +38,9 @@ export default {
 		)
 			.use(TCollectionExtension, { elevator: VueElevatorFactory })
 			.use(TDragAndDropCollectionExtension, { elevator: VueElevatorFactory })
+			// Окно обёртки `Virtual` над списком: подхват при сборке, снятие — с
+			// уничтожением
+			.use(TVirtualCollectionExtension, { elevator: VueElevatorFactory })
 
 		const refsCollection = useCollectionAdapter(collectionAdapter, props, emit)
 

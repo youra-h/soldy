@@ -1,5 +1,5 @@
-import { frameDebounce } from '@soldy-ui/core'
-import type { IList, TListEvents } from '@soldy-ui/core'
+import { batchOf, frameDebounce } from '@soldy-ui/core'
+import type { IList, TCollectionEngine, TListEvents } from '@soldy-ui/core'
 import { TBasePlugin } from '../../../base'
 import type { IListenable, IPluginContext } from '../../../base'
 import { TElementPlugin } from '../../element'
@@ -35,10 +35,17 @@ interface IListHeightOwner extends Pick<IList, 'maxRows'> {
  * Само свойство лежит на инстансе (`IList`), плагин его читает и подписан на
  * `change:maxRows`. Так устроены и остальные плагины пакета: свойство —
  * ядру, применение — плагину.
+ *
+ * Строки считаются по показанным элементам коллекции (`batch.shown`), а не по
+ * узлам в документе: в окне (обёртка `Virtual`) нарисованы только видимые, и
+ * их число и порядок не говорят ни сколько строк в списке, ни нужна ли
+ * прокрутка. Высоту строки дают нарисованные: показанный, но не нарисованный
+ * элемент — той же высоты, высота строк в окне одна на все.
  */
 export class TListHeightPlugin extends TBasePlugin<any> {
 	private _element: Element | null = null
 	private _list: IListHeightOwner | null = null
+	private _engine: TCollectionEngine<any, any> | null = null
 	private _collectionElements: TCollectionElements | null = null
 	private _rootObserver: ResizeObserver | null = null
 	private readonly _itemObservers = new Map<string | number, ResizeObserver>()
@@ -76,10 +83,10 @@ export class TListHeightPlugin extends TBasePlugin<any> {
 		const bundles = ctx.get(TCollectionBundlesPlugin)
 
 		bundles?.events.on('engine:bound', (engine) => {
-			const update = () => this._scheduleUpdate()
+			this._engine = engine
 
-			this._listenTo(engine.extensions.plain.events, 'change:items', update)
-			this._listenTo(engine.extensions.plain.events, 'item:removed', update)
+			// Показанные сменились — состав, отбор или порядок: сменилось и число строк
+			this._listenTo(batchOf(engine)?.events, 'change:shown', () => this._scheduleUpdate())
 		})
 
 		bundles?.events.on('bundle:registered', ({ uid, bundle }) => {
@@ -106,6 +113,7 @@ export class TListHeightPlugin extends TBasePlugin<any> {
 
 		this._element = null
 		this._list = null
+		this._engine = null
 		this._collectionElements = null
 
 		super.destroy()
@@ -137,8 +145,10 @@ export class TListHeightPlugin extends TBasePlugin<any> {
 	 * `max-height` на поле и схлопывался в полосу.
 	 */
 	private _update(): void {
-		const elements = this._collectionElements?.getAll() ?? []
-		const container = elements[0]?.parentElement ?? this._element
+		const shown: readonly object[] = batchOf<object>(this._engine)?.shown ?? []
+		// Узлы показанных по порядку; не нарисованный окном — `null`
+		const rows = shown.map((item) => this._collectionElements?.getElementByItem(item) ?? null)
+		const container = rows.find((row) => row !== null)?.parentElement ?? this._element
 
 		// Высота пишется инлайновым стилем и считается по `offsetHeight` — у узла
 		// без layout-бокса (например, корень-`svg`) мерить нечего и писать некуда.
@@ -151,8 +161,8 @@ export class TListHeightPlugin extends TBasePlugin<any> {
 		// бы `.s-select__list { max-h-64 }` и заодно снял прокрутку.
 		//
 		// Список пуст или строки ещё не измерены — тот же случай: писать нечего.
-		const visibleCount = maxRows === 0 ? 0 : Math.min(maxRows, elements.length)
-		const totalHeight = this._measure(container, elements, visibleCount)
+		const visibleCount = maxRows === 0 ? 0 : Math.min(maxRows, shown.length)
+		const totalHeight = this._measure(container, rows, visibleCount)
 
 		if (totalHeight === 0) {
 			container.style.maxHeight = ''
@@ -162,11 +172,15 @@ export class TListHeightPlugin extends TBasePlugin<any> {
 		}
 
 		container.style.maxHeight = `${totalHeight}px`
-		container.style.overflowY = visibleCount >= elements.length ? 'hidden' : 'auto'
+		container.style.overflowY = visibleCount >= shown.length ? 'hidden' : 'auto'
 	}
 
 	/**
 	 * Высота первых `count` строк вместе с промежутками между ними.
+	 *
+	 * Строку, которую окно не нарисовало, считаем высотой нарисованной: в окне
+	 * высота строк одна на все. Не нарисовано ни одной — строки ещё не
+	 * измерены, и писать нечего.
 	 *
 	 * `max-height` пишется в контейнер, а не в область строк, поэтому при
 	 * `box-sizing: border-box` в неё нужно добавить вертикальные паддинги и
@@ -174,8 +188,16 @@ export class TListHeightPlugin extends TBasePlugin<any> {
 	 * `content-box` добавлять нечего, поэтому решаем по факту стиля, а не по
 	 * допущению про конкретную тему.
 	 */
-	private _measure(container: HTMLElement, elements: readonly Element[], count: number): number {
+	private _measure(
+		container: HTMLElement,
+		rows: ReadonlyArray<Element | null>,
+		count: number,
+	): number {
 		if (count === 0) return 0
+
+		const drawn = rows.find((row) => row !== null && isMeasurableElement(row))
+
+		if (!isMeasurableElement(drawn)) return 0
 
 		const style = getComputedStyle(container)
 		const gap = parseFloat(style.rowGap) || 0
@@ -183,7 +205,7 @@ export class TListHeightPlugin extends TBasePlugin<any> {
 		let total = 0
 
 		for (let i = 0; i < count; i++) {
-			const row = elements[i]
+			const row = rows[i] ?? drawn
 
 			// Строка без layout-бокса высоты не имеет — она идёт в счёт строк, но
 			// не в сумму.

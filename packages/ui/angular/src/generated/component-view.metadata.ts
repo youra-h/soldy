@@ -39,8 +39,9 @@ export const ComponentViewOutputs = [
 
 /**
  * Поверхность ComponentView в Angular: входы и выходы компонента с типами для
- * строгой проверки шаблона. Значения входов пишет Angular, эмиттеры ставит
- * `TComponentBase` по `ComponentViewOutputs` — поля их только объявляют.
+ * строгой проверки шаблона. Значения входов пишет Angular — поля их только
+ * объявляют. Выход — геттер: эмиттер заводит первое чтение выхода
+ * (`createOutput`), а выход, который никто не читал, его не заводит.
  * Булевы входы проходят `booleanInput`: атрибут без значения включает проп.
  */
 @Directive({
@@ -64,25 +65,67 @@ export abstract class TComponentViewSurface<
 	declare visible: TInputValue<typeof descriptor, 'visible'>
 	declare tag: TInputValue<typeof descriptor, 'tag'>
 	declare direction: TInputValue<typeof descriptor, 'direction'>
-	declare readonly bundleCreate: TOutputEmitter<typeof descriptor, 'bundle:create'>
-	declare readonly pluginEvent: TOutputEmitter<typeof descriptor, 'plugin:event'>
-	declare readonly show: TOutputEmitter<typeof descriptor, 'show'>
-	declare readonly hide: TOutputEmitter<typeof descriptor, 'hide'>
-	declare readonly showBefore: TOutputEmitter<typeof descriptor, 'show:before'>
-	declare readonly showAfter: TOutputEmitter<typeof descriptor, 'show:after'>
-	declare readonly hideBefore: TOutputEmitter<typeof descriptor, 'hide:before'>
-	declare readonly hideAfter: TOutputEmitter<typeof descriptor, 'hide:after'>
-	declare readonly ready: TOutputEmitter<typeof descriptor, 'ready'>
-	declare readonly elementCreate: TOutputEmitter<typeof descriptor, 'element:create'>
-	declare readonly elementReady: TOutputEmitter<typeof descriptor, 'element:ready'>
-	declare readonly elementRemoved: TOutputEmitter<typeof descriptor, 'element:removed'>
-	declare readonly readyCreate: TOutputEmitter<typeof descriptor, 'ready:create'>
-	declare readonly changeRendered: TOutputEmitter<typeof descriptor, 'change:rendered'>
-	declare readonly changeVisible: TOutputEmitter<typeof descriptor, 'change:visible'>
-	declare readonly changeTag: TOutputEmitter<typeof descriptor, 'change:tag'>
-	declare readonly changeDirection: TOutputEmitter<typeof descriptor, 'change:direction'>
-	declare readonly changeClasses: TOutputEmitter<typeof descriptor, 'change:classes'>
-	declare readonly changeAria: TOutputEmitter<typeof descriptor, 'change:aria'>
-	declare readonly changeDataset: TOutputEmitter<typeof descriptor, 'change:dataset'>
-	declare readonly changeAttrs: TOutputEmitter<typeof descriptor, 'change:attrs'>
+	get bundleCreate(): TOutputEmitter<typeof descriptor, 'bundle:create'> {
+		return this.createOutput('bundleCreate')
+	}
+	get pluginEvent(): TOutputEmitter<typeof descriptor, 'plugin:event'> {
+		return this.createOutput('pluginEvent')
+	}
+	get show(): TOutputEmitter<typeof descriptor, 'show'> {
+		return this.createOutput('show')
+	}
+	get hide(): TOutputEmitter<typeof descriptor, 'hide'> {
+		return this.createOutput('hide')
+	}
+	get showBefore(): TOutputEmitter<typeof descriptor, 'show:before'> {
+		return this.createOutput('showBefore')
+	}
+	get showAfter(): TOutputEmitter<typeof descriptor, 'show:after'> {
+		return this.createOutput('showAfter')
+	}
+	get hideBefore(): TOutputEmitter<typeof descriptor, 'hide:before'> {
+		return this.createOutput('hideBefore')
+	}
+	get hideAfter(): TOutputEmitter<typeof descriptor, 'hide:after'> {
+		return this.createOutput('hideAfter')
+	}
+	get ready(): TOutputEmitter<typeof descriptor, 'ready'> {
+		return this.createOutput('ready')
+	}
+	get elementCreate(): TOutputEmitter<typeof descriptor, 'element:create'> {
+		return this.createOutput('elementCreate')
+	}
+	get elementReady(): TOutputEmitter<typeof descriptor, 'element:ready'> {
+		return this.createOutput('elementReady')
+	}
+	get elementRemoved(): TOutputEmitter<typeof descriptor, 'element:removed'> {
+		return this.createOutput('elementRemoved')
+	}
+	get readyCreate(): TOutputEmitter<typeof descriptor, 'ready:create'> {
+		return this.createOutput('readyCreate')
+	}
+	get changeRendered(): TOutputEmitter<typeof descriptor, 'change:rendered'> {
+		return this.createOutput('changeRendered')
+	}
+	get changeVisible(): TOutputEmitter<typeof descriptor, 'change:visible'> {
+		return this.createOutput('changeVisible')
+	}
+	get changeTag(): TOutputEmitter<typeof descriptor, 'change:tag'> {
+		return this.createOutput('changeTag')
+	}
+	get changeDirection(): TOutputEmitter<typeof descriptor, 'change:direction'> {
+		return this.createOutput('changeDirection')
+	}
+	get changeClasses(): TOutputEmitter<typeof descriptor, 'change:classes'> {
+		return this.createOutput('changeClasses')
+	}
+	get changeAria(): TOutputEmitter<typeof descriptor, 'change:aria'> {
+		return this.createOutput('changeAria')
+	}
+	get changeDataset(): TOutputEmitter<typeof descriptor, 'change:dataset'> {
+		return this.createOutput('changeDataset')
+	}
+	get changeAttrs(): TOutputEmitter<typeof descriptor, 'change:attrs'> {
+		return this.createOutput('changeAttrs')
+	}
 }

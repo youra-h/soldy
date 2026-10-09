@@ -183,3 +183,75 @@ describe('наблюдатель корня', () => {
 		expect(observerCount(root)).toBe(1)
 	})
 })
+
+/**
+ * В окне (обёртка `Virtual`) нарисованы только видимые элементы. Число строк
+ * и решение о прокрутке плагин берёт у показанных элементов коллекции, а не у
+ * узлов в документе; высоту строки — у нарисованных: в окне она одна на все.
+ */
+describe('окно: строки — по показанным, высота — по нарисованным', () => {
+	/** Список из `rows` элементов, в документе — только элементы с местами `drawn`. */
+	async function setupWindow(rows: number, maxRows: number, drawn: readonly number[]) {
+		const owner = new TListBox({ maxRows })
+		const facade = new TListBoxCollectionFacade({}, { owner })
+		const items = Array.from(
+			{ length: rows },
+			(_, i) => new TListBoxItem({ value: `i${i}`, text: `Item ${i}` }),
+		)
+
+		facade.items = items as IListBoxItem[]
+
+		const root = document.createElement('div')
+
+		document.body.append(root)
+
+		const rootElement = new TElementPlugin()
+		const bundles = new TCollectionBundlesPlugin()
+		const elements = new TCollectionElements()
+		const height = new TListHeightPlugin()
+		const ctx = createPluginContext(owner, [rootElement, bundles, elements])
+
+		bundles.install(ctx)
+		elements.install(ctx)
+		height.install(ctx)
+		bundles.bindEngine(facade.engine)
+
+		for (const place of drawn) {
+			const bundle = new TPluginBundle(items[place])
+			const element = document.createElement('div')
+
+			bundle.use(TElementPlugin)
+			bundles.register(bundle, items[place])
+			Object.defineProperty(element, 'offsetHeight', { value: ROW_HEIGHT })
+			root.appendChild(element)
+			required(bundle.get(TElementPlugin), 'TElementPlugin').element = element
+		}
+
+		rootElement.element = root
+		await nextFrame()
+		await nextFrame()
+
+		return { root }
+	}
+
+	it('нарисованных меньше предела — предел и прокрутка всё равно по показанным', async () => {
+		// Нарисованы 10 из 100, предел — 20: прокрутка нужна, в окно — 20 строк
+		const { root } = await setupWindow(100, 20, [...Array(10).keys()])
+
+		expect(root.style.maxHeight).toBe(`${20 * ROW_HEIGHT}px`)
+		expect(root.style.overflowY).toBe('auto')
+	})
+
+	it('окно нарисовало не первые — высота строки по нарисованным', async () => {
+		const { root } = await setupWindow(100, 3, [50, 51, 52, 53])
+
+		expect(root.style.maxHeight).toBe(`${3 * ROW_HEIGHT}px`)
+		expect(root.style.overflowY).toBe('auto')
+	})
+
+	it('не нарисовано ни одной строки — писать нечего', async () => {
+		const { root } = await setupWindow(100, 3, [])
+
+		expect(root.style.maxHeight).toBe('')
+	})
+})

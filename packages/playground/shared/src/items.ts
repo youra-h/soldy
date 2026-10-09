@@ -21,6 +21,16 @@ export const COLLECTION_ITEMS = [
 export const COLLECTION_VALUES = COLLECTION_ITEMS.map((item) => item.value)
 
 /**
+ * Тысяча элементов списка — для окна (обёртка `Virtual`), как тысяча строк
+ * таблицы ниже: на пяти элементах окно не видно. Текст — в одну строку: в окне
+ * высота элементов одна на все.
+ */
+export const COLLECTION_MANY_ITEMS = Array.from({ length: 1000 }, (_, index) => ({
+	value: `item-${index + 1}`,
+	text: `Пункт ${index + 1}`,
+}))
+
+/**
  * Записи приложения для таблицы стенда — то, что показывают её строки.
  *
  * Пять, как у остальных коллекций, и с полями, по которым видно сортировку:
@@ -54,7 +64,7 @@ function numberedRows(count: number) {
 }
 
 /**
- * Тысяча строк — для режима окна (`virtual`): на пяти строках окно не видно,
+ * Тысяча строк — для окна (обёртка `Virtual`): на пяти строках окно не видно,
  * а на тысяче видно, что в документе только видимые.
  */
 export const TABLE_MANY_ROWS = numberedRows(1000)

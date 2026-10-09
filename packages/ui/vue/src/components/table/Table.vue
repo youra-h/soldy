@@ -37,7 +37,7 @@ export default { ...SetupTable, components: { Button, CheckBox, Icon, TableColum
 		<thead class="s-table__head">
 			<!--
 				Набор строки шапки (`headRowAria`) — у неё нет экземпляра, и его
-				держит коллекция: в режиме окна это номер шапки среди строк таблицы.
+				держит коллекция: в окне это номер шапки среди строк таблицы.
 			-->
 			<tr class="s-table__head-row" v-bind="headRowAria">
 				<!--
@@ -131,13 +131,13 @@ export default { ...SetupTable, components: { Button, CheckBox, Icon, TableColum
 
 		<tbody class="s-table__body">
 			<!--
-				Тело — то, что отдаёт коллекция (`bodyRows`), по порядку, ключ —
-				ключ записи. Без режима окна это все показанные строки. В режиме окна
-				(`virtual`) — строки окна и распорки на месте пропущенных строк:
-				`tr` под `aria-hidden` с одной ячейкой во всю ширину таблицы
-				(`columnCount`), высоту которой тема берёт из её стиля. Одна петля на
-				строки и распорки: петли по блокам перемонтировали бы строку, когда
-				она переходит из блока в блок, и фокус в ней терялся бы.
+				Тело — то, что рисует коллекция (`drawn`), по порядку, ключ — ключ
+				записи. Без окна это все показанные строки. В окне обёртки `Virtual` —
+				строки окна и распорки на месте пропущенных строк: `tr` под
+				`aria-hidden` с одной ячейкой во всю ширину таблицы (`columnCount`),
+				высоту которой тема берёт из её стиля. Одна петля на строки и
+				распорки: петли по блокам перемонтировали бы строку, когда она
+				переходит из блока в блок, и фокус в ней терялся бы.
 
 				Строка — Table.Row над элементом коллекции строк. Содержимое ячейки —
 				слот `cell` со scope `{ row, column, value }`: колонку выбирают
@@ -154,7 +154,7 @@ export default { ...SetupTable, components: { Button, CheckBox, Icon, TableColum
 				динамическими (AGENTS.md, Pitfalls).
 			-->
 			<template v-if="$slots.cell">
-				<template v-for="entry in bodyRows" :key="entry.key">
+				<template v-for="entry in drawn" :key="entry.key">
 					<tr
 						v-if="entry.kind === 'filler'"
 						class="s-table__filler-row"
@@ -163,7 +163,7 @@ export default { ...SetupTable, components: { Button, CheckBox, Icon, TableColum
 					>
 						<td class="s-table__filler" :colspan="columnCount"></td>
 					</tr>
-					<TableRow v-else :ctrl="entry.row">
+					<TableRow v-else :ctrl="entry.item">
 						<template #cell="{ row, column, value }">
 							<slot name="cell" :row="row" :column="column" :value="value">{{
 								value
@@ -173,7 +173,7 @@ export default { ...SetupTable, components: { Button, CheckBox, Icon, TableColum
 				</template>
 			</template>
 			<template v-else>
-				<template v-for="entry in bodyRows" :key="entry.key">
+				<template v-for="entry in drawn" :key="entry.key">
 					<tr
 						v-if="entry.kind === 'filler'"
 						class="s-table__filler-row"
@@ -182,7 +182,7 @@ export default { ...SetupTable, components: { Button, CheckBox, Icon, TableColum
 					>
 						<td class="s-table__filler" :colspan="columnCount"></td>
 					</tr>
-					<TableRow v-else :ctrl="entry.row" />
+					<TableRow v-else :ctrl="entry.item" />
 				</template>
 			</template>
 

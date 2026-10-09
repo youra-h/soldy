@@ -23,7 +23,7 @@ import {
 	type ComponentOptions,
 	type VNode,
 } from 'vue'
-import { LocaleProvider, Table, TableColumn, TableRow } from '@soldy-ui/vue'
+import { LocaleProvider, Table, TableColumn, TableRow, Virtual } from '@soldy-ui/vue'
 import { TTable, createEngineTable } from '@soldy-ui/core'
 import type {
 	ITableColumn,
@@ -1053,31 +1053,31 @@ describe('вес строки', () => {
 })
 
 /**
- * Окно (`virtual`): тело рисует то, что отдаёт коллекция (`bodyRows`), —
+ * Окно (обёртка `Virtual`): тело рисует то, что отдаёт коллекция (`drawn`), —
  * строки окна и распорки на месте пропущенных. Что попадает в окно, решает
  * ядро (`core/__tests__/table-virtual.spec.ts`), замер — плагин
- * (`plugins/__tests__/table-virtual.plugin.spec.ts`); раскладки в jsdom нет,
- * и замер здесь подаётся ядру руками.
+ * (`plugins/__tests__/virtual.plugin.spec.ts`); раскладки в jsdom нет, и замер
+ * здесь подаётся ядру руками.
  */
 describe('окно', () => {
-	/** Движок строк над `count` записями в режиме окна. */
-	function virtualEngine(count: number): TTableCollection {
+	/** Движок строк над `count` записями. */
+	function manyRows(count: number): TTableCollection {
 		const records = Array.from({ length: count }, (_, index) => ({
 			id: index + 1,
 			name: `Строка ${index + 1}`,
 			age: index,
 		}))
-		const engine = engineOf('multiple', records)
 
-		engine.extensions.virtual.virtual = true
-
-		return engine
+		return engineOf('multiple', records)
 	}
 
-	it('до замера — первые 50 строк; у таблицы число строк, у шапки и строк — номера', async () => {
-		const engine = virtualEngine(80)
+	/** Таблица над движком в обёртке `Virtual`. */
+	const inWindow = (engine: TTableCollection) => () => h(Virtual, () => h(Table, { engine }))
 
-		await render(() => h(Table, { engine }))
+	it('до замера — первые 50 строк; у таблицы число строк, у шапки и строк — номера', async () => {
+		const engine = manyRows(80)
+
+		await render(inWindow(engine))
 
 		const rows = findAll('.s-table-row')
 		const table = find('table.s-table')
@@ -1090,11 +1090,11 @@ describe('окно', () => {
 	})
 
 	it('по замеру — распорки на месте пропущенных: скрыты, во всю ширину, высотой в строки', async () => {
-		const engine = virtualEngine(80)
+		const engine = manyRows(80)
 
-		await render(() => h(Table, { engine }))
+		await render(inWindow(engine))
 
-		engine.extensions.virtual.notifyViewport({ top: 1200, bottom: 1600, step: 40 })
+		engine.extensions.draw.notifyViewport({ top: 1200, bottom: 1600, step: 40 })
 		await settle()
 
 		const body = find('.s-table__body')
@@ -1108,27 +1108,27 @@ describe('окно', () => {
 			'true',
 		])
 		// Места 20–49: перед ними 20 строк, за ними 30
-		expect(
-			fillers.map((filler) => filler.style.getPropertyValue('--s-table-filler-height')),
-		).toEqual(['800px', '1200px'])
+		expect(fillers.map((filler) => filler.style.getPropertyValue('--s-filler-height'))).toEqual(
+			['800px', '1200px'],
+		)
 		// Колонка выбора и две колонки
 		expect(find('.s-table__filler', fillers[0]).getAttribute('colspan')).toBe('3')
 		expect(findAll('.s-table-row', body)).toHaveLength(30)
 	})
 
 	it('строка, оставшаяся в окне, при сдвиге окна не перемонтируется', async () => {
-		const engine = virtualEngine(80)
+		const engine = manyRows(80)
 
-		await render(() => h(Table, { engine }))
+		await render(inWindow(engine))
 
-		engine.extensions.virtual.notifyViewport({ top: 1200, bottom: 1600, step: 40 })
+		engine.extensions.draw.notifyViewport({ top: 1200, bottom: 1600, step: 40 })
 		await settle()
 
 		const kept = findAll('.s-table-row').find(
 			(row) => row.getAttribute('aria-rowindex') === '40',
 		)
 
-		engine.extensions.virtual.notifyViewport({ top: 1240, bottom: 1640, step: 40 })
+		engine.extensions.draw.notifyViewport({ top: 1240, bottom: 1640, step: 40 })
 		await settle()
 
 		expect(
@@ -1136,7 +1136,7 @@ describe('окно', () => {
 		).toBe(kept)
 	})
 
-	it('без режима — все строки, без распорок и номеров', async () => {
+	it('без обёртки — все строки, без распорок и номеров', async () => {
 		await render(() =>
 			h(Table, { items: [ANNA, BORIS].map((data) => ({ data })), columns: [NAME] }),
 		)

@@ -1,7 +1,10 @@
-import type { IBatchExtension, IExtension, ISelectionExtension } from '../../../../base/collection'
+import type { IExtension, ISelectionExtension } from '../../../../base/collection'
 import type { ITableRow } from '../../row/types'
 import type { ITableColumnsExtension } from './columns/types'
 import type { ITableGridExtension } from './grid/types'
+
+/** Состав коллекции — общий с остальными коллекциями: его выборка — показанные строки. */
+export { batchOf } from '../../../../base/collection/engine/extension/neighbours'
 
 /**
  * Соседи по коллекции строк таблицы.
@@ -29,10 +32,6 @@ function isGrid<TRow extends ITableRow>(ext: IExtension<TRow>): ext is ITableGri
 	return 'focusedCell' in ext && 'gridRows' in ext && 'moveFocus' in ext
 }
 
-function isBatch<TRow extends object>(ext: IExtension<TRow>): ext is IBatchExtension<TRow> {
-	return 'shown' in ext && 'items' in ext && 'patch' in ext
-}
-
 function isSelection<TRow extends object>(ext: IExtension<TRow>): ext is ISelectionExtension<TRow> {
 	return 'isSelected' in ext && 'selectMany' in ext && 'deselectMany' in ext && 'multiple' in ext
 }
@@ -44,15 +43,6 @@ export function columnsOf<TRow extends ITableRow>(
 	const ext = ctx?.extensions.columns
 
 	return ext && isColumns(ext) ? ext : undefined
-}
-
-/** Состав коллекции, если он есть: его выборка — показанные строки. */
-export function batchOf<TRow extends object>(
-	ctx: TNeighbours<TRow> | undefined,
-): IBatchExtension<TRow> | undefined {
-	const ext = ctx?.extensions.batch
-
-	return ext && isBatch(ext) ? ext : undefined
 }
 
 /** Выбор строк, если он есть в коллекции. */
