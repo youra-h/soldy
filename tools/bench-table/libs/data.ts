@@ -23,7 +23,9 @@ export function makeRows(count: number, seed = 1): TRec[] {
 		return r
 	})
 }
+// `?cols=5` — показать только первые колонки: цена строки против цены ячейки
+const shownColumns = Number(new URLSearchParams(location.search).get('cols') ?? 20)
 export const COLUMNS = [
 	{ field: 'name', text: 'Имя' },
 	...Array.from({ length: 19 }, (_, i) => ({ field: `c${i + 1}`, text: `Кол ${i + 1}` })),
-]
+].slice(0, shownColumns)

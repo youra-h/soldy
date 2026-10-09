@@ -5,12 +5,15 @@ import path from 'node:path'
 
 const N = Number(process.argv[2] ?? 5000)
 const RUNS = Number(process.argv[3] ?? 5)
-// Библиотека с флагами через «+»: `soldy+virtual` — `?lib=soldy&virtual=1`
-const LIBS = (process.argv[4] ?? 'soldy,naive,prime').split(',')
+// Библиотека с флагами через «+»: `soldy+virtual` — `?lib=soldy&virtual=1`,
+// `soldy+mode=none+cols=5` — `?lib=soldy&mode=none&cols=5`
+const LIBS = (process.argv[4] ?? 'plain,tanstack,reka,soldy,naive,prime').split(',')
 const urlOf = (lib) => {
 	const [name, ...flags] = lib.split('+')
 
-	return '?lib=' + name + flags.map((flag) => `&${flag}=1`).join('')
+	return (
+		'?lib=' + name + flags.map((flag) => `&${flag.includes('=') ? flag : flag + '=1'}`).join('')
+	)
 }
 const dist = path.resolve(import.meta.dirname, 'dist')
 const types = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css' }
@@ -44,9 +47,11 @@ for (const lib of LIBS) {
 		push('Рендер', await b((n) => bench.render(n), N))
 		const i1 = await b(() => bench.info())
 		push('Память, МБ', MB((await heap()) - heap0))
-		push('Выделить все', await b(() => bench.selectAll()))
+		// Без выбора (`mode=none`) чекбокса «выбрать все» нет
+		const selecting = !lib.includes('mode=none')
+		if (selecting) push('Выделить все', await b(() => bench.selectAll()))
 		const i2 = await b(() => bench.info())
-		push('Снять выделение', await b(() => bench.selectAll()))
+		if (selecting) push('Снять выделение', await b(() => bench.selectAll()))
 		const i3 = await b(() => bench.info())
 		push('Сортировка ↑', await b(() => bench.sort()))
 		const i4 = await b(() => bench.info())
@@ -80,5 +85,5 @@ for (const lib of LIBS) {
 }
 await browser.close()
 server.close()
-console.log(`\nN=${N}×20, прогонов ${RUNS}, медиана; время — мс до кадра / до успокоения`)
+console.log(`\nN=${N}, прогонов ${RUNS}, медиана; время — мс до кадра / до успокоения`)
 console.table(table)

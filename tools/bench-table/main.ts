@@ -5,6 +5,10 @@ const libs = {
 	soldy: () => import('./libs/soldy'),
 	naive: () => import('./libs/naive'),
 	prime: () => import('./libs/prime'),
+	plain: () => import('./libs/plain'),
+	tanstack: () => import('./libs/tanstack'),
+	reka: () => import('./libs/reka'),
+	core: () => import('./libs/core'),
 }
 const name = (new URLSearchParams(location.search).get('lib') ?? 'soldy') as keyof typeof libs
 function q(s: string) {
