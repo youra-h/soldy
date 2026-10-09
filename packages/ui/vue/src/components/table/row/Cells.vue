@@ -50,6 +50,13 @@ const BaseTableRowCells = {
  * `td`. Класс один: тема различает их тегом. Содержимое — слот `cell` со scope
  * `{ row, column, value }`, без него — `value` текстом.
  *
+ * Узлов Vue на ячейку — два, сама ячейка и её текст. Тег выбирает
+ * `<component :is>`, а не пара `th`/`td` под `<template v-for>`, и без слота
+ * текст лежит прямо в ячейке, а не в `<slot>` с запасным содержимым. Обёртка
+ * цикла и фрагмент слота — ещё два узла на каждую ячейку строки, которую
+ * таблица размножает тысячами (BENCHMARKS.md, 869fekb4g). Поэтому слот и текст
+ * — разными ветками.
+ *
  * Пояснения — здесь, а не в шаблоне: корень шаблона — цикл, и комментарий
  * рядом с ним сделал бы корнем фрагмент, а внутри цикла повторился бы в каждой
  * ячейке.
@@ -63,26 +70,29 @@ export default {
 </script>
 
 <template>
-	<template v-for="cell in cells" :key="cell.column.uid">
-		<th
-			v-if="cell.rowHeader"
+	<template v-if="$slots.cell">
+		<component
+			:is="cell.rowHeader ? 'th' : 'td'"
+			v-for="cell in cells"
+			:key="cell.column.uid"
 			class="s-table-row__cell"
-			scope="row"
+			:scope="cell.rowHeader ? 'row' : undefined"
 			v-bind="{ ...cell.dataset, ...cellAria, ...cell.aria }"
 		>
 			<slot name="cell" :row="row" :column="cell.column" :value="cell.value">{{
 				cell.value
 			}}</slot>
-		</th>
-
-		<td
-			v-else
+		</component>
+	</template>
+	<template v-else>
+		<component
+			:is="cell.rowHeader ? 'th' : 'td'"
+			v-for="cell in cells"
+			:key="cell.column.uid"
 			class="s-table-row__cell"
+			:scope="cell.rowHeader ? 'row' : undefined"
 			v-bind="{ ...cell.dataset, ...cellAria, ...cell.aria }"
+			>{{ cell.value }}</component
 		>
-			<slot name="cell" :row="row" :column="cell.column" :value="cell.value">{{
-				cell.value
-			}}</slot>
-		</td>
 	</template>
 </template>

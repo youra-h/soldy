@@ -12,7 +12,17 @@
 
 import { describe, it, expect, afterEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
-import { defineComponent, h, nextTick, ref, type ComponentOptions, type VNode } from 'vue'
+import {
+	defineComponent,
+	h,
+	isProxy,
+	isVNode,
+	nextTick,
+	ref,
+	type ComponentInternalInstance,
+	type ComponentOptions,
+	type VNode,
+} from 'vue'
 import { LocaleProvider, Table, TableColumn, TableRow } from '@soldy-ui/vue'
 import { TTable, createEngineTable } from '@soldy-ui/core'
 import type {
@@ -982,5 +992,62 @@ describe('отменённый выбор', () => {
 
 		expect(engine.extensions.selection.selected).toEqual([rowOf(engine, 1)])
 		expect([head.checked, head.indeterminate]).toEqual([false, true])
+	})
+})
+
+/**
+ * Вес строки (BENCHMARKS.md, 869fekb4g): строку размножают тысячи раз, и всё,
+ * что Vue заводит на её значение или на её ячейку, умножается так же.
+ */
+describe('вес строки', () => {
+	/** Экземпляр Vue первой строки или её ячеек — по имени компонента. */
+	function instanceOf(name: string): ComponentInternalInstance {
+		const found = wrapper?.findAllComponents({ name })[0]
+
+		if (!found) throw new Error(`${name}: компонента нет`)
+
+		return found.vm.$
+	}
+
+	it('значения ядра доходят до шаблона строки без реактивных прокси', async () => {
+		await render(() => h(Table, { engine: engineOf('multiple') }))
+
+		// Прокси экземпляра отдаёт значение рефа из `setup()` — то, что видит шаблон
+		const cells: unknown = Reflect.get(instanceOf('_TableRow').proxy ?? {}, 'cells')
+
+		// Глубокий реф обернул бы массив ячеек, каждую ячейку, её `aria` и
+		// `dataset` в прокси с зависимостью на каждый ключ
+		expect(Array.isArray(cells) && cells.length > 0).toBe(true)
+		expect(isProxy(cells)).toBe(false)
+		expect(Array.isArray(cells) && cells.some((cell) => isProxy(cell))).toBe(false)
+	})
+
+	it('без слота ячейка — узел ячейки и её текст, без обёрток цикла и слота', async () => {
+		await render(() => h(Table, { engine: engineOf('multiple') }))
+
+		const { subTree } = instanceOf('_TableRowCells')
+		const nodes: VNode[] = []
+		const walk = (vnode: VNode): void => {
+			nodes.push(vnode)
+
+			if (Array.isArray(vnode.children))
+				for (const child of vnode.children) if (isVNode(child)) walk(child)
+		}
+
+		walk(subTree)
+
+		const cells = nodes.filter((vnode) => vnode.type === 'td' || vnode.type === 'th')
+
+		expect(cells.map((vnode) => vnode.type)).toEqual(['th', 'td'])
+		// Ребёнок ячейки — сам текст, а не фрагмент слота с запасным текстом
+		expect(
+			cells.map((vnode) =>
+				Array.isArray(vnode.children)
+					? vnode.children.map((child) => (isVNode(child) ? child.children : child))
+					: vnode.children,
+			),
+		).toEqual([['Анна'], ['30']])
+		// Сверх ячеек и их текста — один фрагмент цикла на все ячейки строки
+		expect(nodes.length).toBe(cells.length * 2 + 1)
 	})
 })

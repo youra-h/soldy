@@ -13,6 +13,8 @@ export const sel = {
 	selectAll: 'thead .s-table__select input',
 	sort: 'thead .s-table-column__sort',
 }
+// `?mode=none` — таблица без выбора: строка без чекбокса, для сравнения памяти
+const mode = new URLSearchParams(location.search).get('mode') === 'none' ? 'none' : 'multiple'
 export function mount(el: Element, rows: ShallowRef<TRec[] | null>) {
 	createApp({
 		render: () =>
@@ -20,7 +22,7 @@ export function mount(el: Element, rows: ShallowRef<TRec[] | null>) {
 			h(Table, {
 				items: rows.value.map((data) => ({ data })),
 				columns,
-				mode: 'multiple',
+				mode,
 				aria_label: 'Бенч',
 			}),
 	}).mount(el)
