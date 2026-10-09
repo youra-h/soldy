@@ -81,7 +81,7 @@ TEntity (uid, getProps, assign, toJSON)
 ### Key Exports
 
 - `IComponent<TProps, TEvents>` - Component contract
-- `TEvented<T>` - Event emitter
+- `TEvented<T>` - Event bus: `on`, middleware `use`, listener of all events `listen` (called after the event's `on` handlers), relays. Pays per subscription: its structures appear with the first subscriber and go with the last one
 - `TChangeEvent<T>` - property write that a `change:<x>:before` subscriber may edit or cancel
 
 ---
@@ -95,18 +95,18 @@ TEntity (uid, getProps, assign, toJSON)
 ### Key Classes
 
 - **TCell**: the only mutable memory of the layer — a value, an equality rule and listeners. Svelte-store contract: `subscribe` delivers the current value at once, `listen` delivers changes only. «What the framework assigned», the state snapshot and the `pluginProps` bag are cells; there are no «assigned / not assigned» flags
-- **TLine**: one property of one owner for the mount — spec + owner + framework name. Правило записи одно, поэтому оно одно на сборку, обмен и плагины снаружи
-  - `TLine.of(members, surface)` - линии участников в именах поверхности: одно построение для обмена и для начальных значений сборки
+- **TLine**: one property of one owner for the mount — spec + owner + framework name. Правило записи одно, поэтому оно одно на сборку, обмен и плагины снаружи. Подписок у линии нет: за триггерами следит слушатель участника (`TTap`)
   - `read()` - `get` описания, а без него `owner[name]`; составное значение — снимком `valueOf()`
   - `write(value)` - запись; `protected` пропускается, «то же ли значение» решает сеттер владельца
   - `reset()` - вернуть умолчание описания; ключ не объявлен — значение остаётся
   - `accept(value)` - значение от фреймворка: `undefined` — «сняли»
   - `seed(value)` - начальное значение: `undefined` и равное умолчанию ничего не задают
-  - `watch(listener)` - слушать триггеры свойства на шине владельца (`owner.events`, а без поля — сам владелец; без `on`/`off` источника нет)
-- **TMember**: a participant of the mount — an owner and what it declares. The instance, a descriptor plugin, an external plugin and the binding itself (`TExternalPlugins`, the owner of `pluginProps`) are members of the same kind
-- **TStateStore** (core → framework): a cell per property with triggers; `subscribe` / `getSnapshot`; subscribes to the owner bus while there is at least one subscriber
+- **TMember**: a participant of the mount — an owner and its description (`IMemberSpec`: props and events). The owner is the mount's, the description is the type's: a plugin's definition, one description per descriptor for the instance and the binding. The instance, a descriptor plugin, an external plugin and the binding itself (`TExternalPlugins`, the owner of `pluginProps`) are members of the same kind
+- **TRouting**: the route table of a type — one per surface × composition of member descriptions, shared by all mounts. It builds the mount's lines (`routing.lines(members)` — one rule for the exchange and the assembly's initial values) and says what to do with a member's event: which state cells to re-read, which surface event and which models to send. The publisher of an event is the first member that declares it
+- **TTap**: one listener of all events (`TEvented.listen`) on each member's bus, shared by the state and the events of the exchange — set by the first of `state.subscribe` / `events.listen`, removed by the last one to leave. The exchange has no `on` subscriptions at all. The order is one rule for all six adapters: the bus hands the event to the listener after its `on` handlers (the framework hears after the core subscribers), and inside the exchange the state is refreshed before the event and its model go out. Within one bus only: an event a facade got through `relayAll` reaches the framework before the source's own subscribers
+- **TStateStore** (core → framework): a cell per property with triggers; `subscribe` / `getSnapshot`; holds the member listener while there is at least one subscriber and learns about a change from the cell's `set()` answer
 - **TInputPort** (framework → core): a cell per writable prop, seeded with the build props. `full(props)` / `delta(changes)` / `TInput.offer(value)` differ only in what counts as a change: a changed value (`offer`) or the mere presence of the key (`push`, used by `delta`). The initial values are written by the static `TInputPort.seed(lines, buildProps)` — the same props reading, no cells: the assembly (`createAdapterContext`, step 5) and external plugins call it, and the assembly builds no exchange for that
-- **TEventRelay** (events out): one handler per «source, raw name»; the `v-model` event goes out from the same handler right after the core event
+- **TEventRelay** (events out): the surface event of a route and right after it its `v-model` event; holds the member listener while there is at least one sink
 - **TExchange**: lines of the members plus the three ports — everything an adapter sees (`adapter.connect(profile)`)
 
 Names in a framework's notation are computed by the surface — `TSurface.of(descriptor, profile)`, once per descriptor × profile (Layer 5b). The line gets its framework name from the surface entry, found by the identity of the `TName` object — not by a string key.
@@ -114,11 +114,13 @@ Names in a framework's notation are computed by the surface — `TSurface.of(des
 ### Key Files
 
 - [exchange/cell.class.ts](../packages/setup/protected/adapter/exchange/cell.class.ts) - TCell
-- [exchange/line.class.ts](../packages/setup/protected/adapter/exchange/line.class.ts) - TLine: чтение, запись и слежение за одним свойством
+- [exchange/line.class.ts](../packages/setup/protected/adapter/exchange/line.class.ts) - TLine: чтение и запись одного свойства
 - [exchange/member.class.ts](../packages/setup/protected/adapter/exchange/member.class.ts) - TMember
+- [exchange/routing.class.ts](../packages/setup/protected/adapter/exchange/routing.class.ts) - TRouting: таблица маршрутов типа
+- [exchange/tap.class.ts](../packages/setup/protected/adapter/exchange/tap.class.ts) - TTap: слушатель участников и порядок «состояние, потом событие»
 - [exchange/state-store.class.ts](../packages/setup/protected/adapter/exchange/state-store.class.ts), [input-port.class.ts](../packages/setup/protected/adapter/exchange/input-port.class.ts), [event-relay.class.ts](../packages/setup/protected/adapter/exchange/event-relay.class.ts) - the three ports
 - [exchange/exchange.class.ts](../packages/setup/protected/adapter/exchange/exchange.class.ts) - TExchange
-- [exchange/value.ts](../packages/setup/protected/adapter/exchange/value.ts) - `sameValue` (plain objects and arrays by content, the rest by identity), `busOf`
+- [exchange/value.ts](../packages/setup/protected/adapter/exchange/value.ts) - `sameValue` (plain objects and arrays by content, the rest by identity), `busOf` (`owner.events`, а без поля — сам владелец; без `listen` источника нет)
 
 ### Key Exports
 

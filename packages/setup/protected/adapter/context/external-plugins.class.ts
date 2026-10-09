@@ -90,7 +90,8 @@ export class TExternalPlugins {
 		// Плагин без объявленного контракта работает, но значений не получает и событий не шлёт
 		if (!contract) return
 
-		const member = new TMember(plugin, contract.props, contract.events)
+		// Описание участника — контракт класса: таблица маршрутов одна на все его установки
+		const member = new TMember(plugin, contract)
 		// Значения, пришедшие раньше плагина, ждали его в мешке: для него это пропсы сборки
 		const bag = this._bag.value
 		const exchange = new TExchange([member], TSurface.of(contract, CommonProfile), bag)

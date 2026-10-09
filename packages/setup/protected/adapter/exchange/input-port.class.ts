@@ -21,7 +21,9 @@
  *
  * Три способа доставки различаются только тем, что считать изменением: в
  * полном наборе и у одиночного пропа — смену значения (`offer`), в дельте —
- * само наличие ключа (`push`). Что делать с изменением, решает линия.
+ * само наличие ключа (`push`). Что делать с изменением, решает линия. На свою
+ * ячейку вход не подписывается: сменилось ли значение, он узнаёт из ответа
+ * `set()`.
  */
 
 import { TCell } from './cell.class'
@@ -45,7 +47,6 @@ export class TInput {
 		given: unknown,
 	) {
 		this._cell = new TCell<unknown>(given, sameValue)
-		this._cell.listen((value) => line.accept(value))
 	}
 
 	/** Имя пропа во фреймворке. */
@@ -60,7 +61,7 @@ export class TInput {
 
 	/** Значение из полного набора или одиночного пропа: в ядро уходит, только если фреймворк его сменил. */
 	offer(value: unknown): void {
-		this._cell.set(value)
+		if (this._cell.set(value)) this.line.accept(value)
 	}
 
 	/**
@@ -70,7 +71,7 @@ export class TInput {
 	 * командой не является.
 	 */
 	push(value: unknown): void {
-		if (!this._cell.set(value) && value !== undefined) this.line.accept(value)
+		if (this._cell.set(value) || value !== undefined) this.line.accept(value)
 	}
 }
 
@@ -89,11 +90,13 @@ export class TInputPort {
 		}
 	}
 
-	/** Память входов начинается с пропсов сборки. */
+	/**
+	 * Память входов начинается с пропсов сборки.
+	 *
+	 * @param lines записываемые линии обмена — по входу на каждую
+	 */
 	constructor(lines: readonly TLine[], buildProps: object) {
-		this._entries = lines
-			.filter((line) => line.writable)
-			.map((line) => new TInput(line, pick(buildProps, line)))
+		this._entries = lines.map((line) => new TInput(line, pick(buildProps, line)))
 	}
 
 	/** Входы по одному — для фреймворка, который следит за каждым пропом отдельно (Vue): `for (const input of link.inputs)`. */

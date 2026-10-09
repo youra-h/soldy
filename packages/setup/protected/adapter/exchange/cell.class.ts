@@ -10,12 +10,16 @@
  * Контракт подписки — как у стора Svelte и атома nanostores: `subscribe` сразу
  * отдаёт текущее значение («инициализация — это и есть подписка»), `listen` —
  * только изменения.
+ *
+ * Набор подписчиков заводится с первым `listen`: состояние и входы обмена на
+ * свои ячейки не подписываются, а действуют по ответу `set()`, и ячеек без
+ * подписчиков у монтирования — по одной на свойство.
  */
 
 import type { TCellListener, TSame } from './types'
 
 export class TCell<T> {
-	private readonly _listeners = new Set<TCellListener<T>>()
+	private _listeners?: Set<TCellListener<T>>
 
 	constructor(
 		private _value: T,
@@ -32,17 +36,22 @@ export class TCell<T> {
 
 		this._value = next
 
-		for (const listener of [...this._listeners]) listener(next)
+		if (this._listeners) {
+			for (const listener of [...this._listeners]) listener(next)
+		}
 
 		return true
 	}
 
 	/** Слушать только изменения. */
 	listen(listener: TCellListener<T>): () => void {
+		this._listeners ??= new Set()
 		this._listeners.add(listener)
 
 		return () => {
-			this._listeners.delete(listener)
+			this._listeners?.delete(listener)
+
+			if (this._listeners?.size === 0) this._listeners = undefined
 		}
 	}
 

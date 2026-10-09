@@ -1,100 +1,80 @@
 /**
- * TEventRelay — события наружу: один обработчик на пару «источник, сырое имя».
+ * TEventRelay — события наружу: событие поверхности и следом его модели — по маршруту из таблицы типа.
  *
- * Повторов нет по построению: маршрут строится на событие поверхности, а она
- * держит их без повторов (`TSurface.events`). `change:visible`, триггер и у
- * `visible`, и у `present`, уходит наружу один раз. Событие привязки
- * (`update:text`) шлёт тот же обработчик сразу после события ядра, с новым
+ * Своих подписок на шины у порта нет. Шины участников слушает слушатель
+ * участников обмена (`TTap`): порт держит его, пока у порта есть приёмники, а
+ * слушатель отдаёт сюда маршрут сработавшего события из таблицы маршрутов
+ * (`TRouting`) — уже после того, как состояние перечитано.
+ *
+ * Повторов нет по построению: у события поверхности один маршрут, а она
+ * держит события без повторов (`TSurface.events`). `change:visible`, триггер
+ * и у `visible`, и у `present`, уходит наружу один раз. Событие привязки
+ * (`update:text`) уходит тем же вызовом сразу после события ядра, с новым
  * значением — порядок задан кодом, а не очерёдностью подписок на шине, и при
  * монтировании привязка не срабатывает: её вызывает только событие.
  *
  * Событие, у которого нет участника (плагина нет в чужом наборе), маршрута не
  * получает.
- *
- * Участника события находит карта «полное имя → участник», собранная одним
- * проходом по именам участников, как линии — одним проходом по пропсам.
- * Маршруты строятся на каждое монтирование, и раньше участника искали
- * перебором всех пропсов и триггеров на каждое событие: в таблице на тысячи
- * строк это было самым тяжёлым местом монтирования.
  */
 
-import type { TSurface } from '../surface'
 import type { TLine } from './line.class'
-import type { TMember } from './member.class'
-import type { TEventSink } from './types'
-import { busOf } from './value'
+import type { TTap } from './tap.class'
+import type { IRoute, TEventSink } from './types'
 
-interface IModelRoute {
-	readonly line: TLine
-	readonly name: string
-}
+export class TEventRelay {
+	/** Приёмники — пока есть хоть один. Список не правится на месте: событие обходит тот, что застало. */
+	private _sinks?: readonly TEventSink[]
 
-interface IRoute {
-	readonly owner: object
-	readonly raw: string
-	readonly name: string
-	readonly models: readonly IModelRoute[]
-}
+	/**
+	 * @param _lines линии обмена — из них модели читают новое значение
+	 * @param _tap слушатель участников, общий с состоянием обмена
+	 */
+	constructor(
+		private readonly _lines: readonly TLine[],
+		private readonly _tap: TTap,
+	) {}
 
-/**
- * Кто публикует событие — по полному имени. Оно одно в составе компонента; если
- * его всё же публикуют двое, остаётся первый — порядок участников задаёт сборка.
- */
-function publishersOf(members: readonly TMember[]): ReadonlyMap<string, TMember> {
-	const byName = new Map<string, TMember>()
+	listen(sink: TEventSink): () => void {
+		if (this._sinks === undefined) this._tap.hold()
 
-	for (const member of members) {
-		for (const name of member.published()) {
-			const fullName = name.getName()
+		// Литерал, а не спред в пустой список: у массива, собранного по элементу,
+		// запас под рост, а приёмник у обмена обычно один
+		this._sinks = this._sinks ? [...this._sinks, sink] : [sink]
 
-			if (!byName.has(fullName)) byName.set(fullName, member)
+		let listening = true
+
+		return () => {
+			const sinks = this._sinks
+			const index = sinks?.indexOf(sink) ?? -1
+
+			if (!listening || sinks === undefined || index === -1) return
+
+			listening = false
+			this._sinks =
+				sinks.length === 1
+					? undefined
+					: [...sinks.slice(0, index), ...sinks.slice(index + 1)]
+
+			if (this._sinks === undefined) this._tap.release()
 		}
 	}
 
-	return byName
-}
+	/**
+	 * Сработало событие участника: отдать приёмникам событие поверхности и
+	 * следом его модели. Зовёт слушатель участников (`TTap`), а не адаптер.
+	 * Маршрут без события поверхности наружу ничего не шлёт: им участник только
+	 * перечитывает состояние.
+	 */
+	publish(route: IRoute, args: readonly unknown[]): void {
+		const { event, models } = route
+		const sinks = this._sinks
 
-export class TEventRelay {
-	private readonly _routes: readonly IRoute[]
+		if (event === undefined || sinks === undefined) return
 
-	constructor(members: readonly TMember[], lines: readonly TLine[], surface: TSurface) {
-		const lineOf = new Map(lines.map((line) => [line.spec.name, line]))
-		const publishers = publishersOf(members)
+		for (const sink of sinks) {
+			sink(event, args)
 
-		this._routes = surface.events.flatMap((event): IRoute[] => {
-			const member = publishers.get(event.name.getName())
-
-			if (!member) return []
-
-			const models = event.models.flatMap((prop): IModelRoute[] => {
-				const line = lineOf.get(prop.spec.name)
-
-				return line && prop.model !== undefined ? [{ line, name: prop.model }] : []
-			})
-
-			return [{ owner: member.owner, raw: event.name.name, name: event.exportName, models }]
-		})
-	}
-
-	listen(sink: TEventSink): () => void {
-		const offs = this._routes.map((route) => {
-			const bus = busOf(route.owner)
-
-			if (!bus) return () => {}
-
-			const handler = (...args: unknown[]): void => {
-				sink(route.name, args)
-
-				for (const model of route.models) sink(model.name, [model.line.read()])
-			}
-
-			bus.on(route.raw, handler)
-
-			return () => bus.off(route.raw, handler)
-		})
-
-		return () => {
-			for (const off of offs) off()
+			for (const model of models) sink(model.name, [this._lines[model.line].read()])
 		}
 	}
 }

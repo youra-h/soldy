@@ -369,6 +369,130 @@ describe('связка · состояние для фреймворка', () =>
 	})
 })
 
+/**
+ * Порядок — одно правило на шесть адаптеров, и задаёт его обмен, а не
+ * очерёдность подписок: фреймворк узнаёт о событии после всех подписчиков
+ * ядра, а внутри обмена сначала обновляется состояние, потом уходят событие и
+ * модель. Раньше порядок зависел от того, кто подписался раньше: во Vue
+ * состояние обновлялось раньше события, в React — позже, а плагин,
+ * поставленный в `bundle:create`, слышал событие после фреймворка.
+ *
+ * Адаптеры подписываются в разном порядке: Vue — на состояние, потом на
+ * события, React — наоборот (события в `useLayoutEffect`, состояние при
+ * коммите). Поэтому каждый случай — в обоих порядках.
+ */
+describe('связка · порядок', () => {
+	const ORDERS = [
+		['состояние, потом события', true],
+		['события, потом состояние', false],
+	] as const
+
+	/** Связка над внешней кнопкой: подписки фреймворка — в заданном порядке. */
+	function bindInOrder(
+		stateFirst: boolean,
+		onState: TStateListener,
+		onEvent: TEventSink,
+		profile: IAdapterProfile = CallbackProfile,
+	) {
+		const ctrl = new TButton()
+		const binding = createAdapterContext(ButtonDescriptor(), { ctrl }).connect(profile)
+		const subscribe = (): void => {
+			binding.state.subscribe(onState)
+		}
+		const listen = (): void => {
+			binding.events.listen(onEvent)
+		}
+
+		if (stateFirst) {
+			subscribe()
+			listen()
+		} else {
+			listen()
+			subscribe()
+		}
+
+		return { ctrl, binding }
+	}
+
+	it.each(ORDERS)(
+		'подписчик ядра, пришедший после монтирования, слышит событие раньше фреймворка: %s',
+		(_name, stateFirst) => {
+			const order: string[] = []
+			const { ctrl } = bindInOrder(
+				stateFirst,
+				(name) => {
+					if (name === 'text') order.push('состояние')
+				},
+				(name) => {
+					if (name === 'onChangeText') order.push('событие')
+				},
+			)
+
+			order.splice(0)
+			// Так подписывается и плагин, поставленный в `bundle:create`
+			ctrl.events.on('change:text', () => order.push('ядро'))
+			ctrl.text = 'b'
+
+			expect(order).toEqual(['ядро', 'состояние', 'событие'])
+		},
+	)
+
+	it.each(ORDERS)('приёмник события видит уже новое состояние: %s', (_name, stateFirst) => {
+		const seen: unknown[] = []
+		const { ctrl, binding } = bindInOrder(
+			stateFirst,
+			() => {},
+			(name) => {
+				if (name === 'onChangeText') seen.push(binding.state.getSnapshot().text)
+			},
+		)
+
+		ctrl.text = 'b'
+
+		expect(seen).toEqual(['b'])
+	})
+
+	it.each(ORDERS)(
+		'модель — следом за событием, обе — после подписчиков ядра: %s',
+		(_name, stateFirst) => {
+			const order: unknown[] = []
+			const { ctrl } = bindInOrder(
+				stateFirst,
+				() => {},
+				(name, args) => {
+					if (name === 'onChangeText') order.push(name)
+					if (name === 'update:text') order.push(name, args[0])
+				},
+				{ naming: CallbackProfile.naming, model: (name) => `update:${name}` },
+			)
+
+			ctrl.events.on('change:text', () => order.push('ядро'))
+			ctrl.text = 'b'
+
+			expect(order).toEqual(['ядро', 'onChangeText', 'update:text', 'b'])
+		},
+	)
+
+	it('связку слушают только событиями — состояние перечитает подписка, а не событие', () => {
+		// Так у React: рендер по снимку, события — в `useLayoutEffect`, состояние —
+		// при коммите. Так же слушает обмен внешнего плагина: ему состояние не нужно
+		const ctrl = new TButton()
+		const binding = createAdapterContext(ButtonDescriptor(), { ctrl }).connect(CallbackProfile)
+		const rendered = binding.state.getSnapshot()
+		const emit = vi.fn<TEventSink>()
+
+		binding.events.listen(emit)
+		ctrl.text = 'b'
+
+		expect(emit).toHaveBeenCalledWith('onChangeText', [{ newValue: 'b', oldValue: '' }])
+		expect(binding.state.getSnapshot()).toBe(rendered)
+
+		binding.state.subscribe(() => {})
+
+		expect(binding.state.getSnapshot().text).toBe('b')
+	})
+})
+
 /** Связка над внешним инстансом: снаружи видно, что она в него пишет. */
 function bindButton(ctrl = new TButton()) {
 	const context = createAdapterContext(ButtonDescriptor(), { ctrl })

@@ -20,30 +20,16 @@
  *   объявлен `default`).
  *
  * Памяти у линии нет: «что задал фреймворк» помнит ячейка входа (`TInputPort`),
- * «что отдано фреймворку» — ячейка выхода (`TStateStore`).
+ * «что отдано фреймворку» — ячейка выхода (`TStateStore`). Подписок тоже нет:
+ * за триггерами свойства следит слушатель участника (`TTap`) по таблице
+ * маршрутов типа (`TRouting`), а линии строит она же — одним правилом для
+ * обмена и для начальных значений сборки.
  */
 
 import type { TPropSpec } from '../../define'
-import type { TSurface } from '../surface'
-import type { TMember } from './member.class'
-import { busOf, sameValue } from './value'
+import { sameValue } from './value'
 
 export class TLine {
-	/**
-	 * Линии участников в именах поверхности — одно правило для обмена и для
-	 * начальных значений сборки, которой обмен не нужен. Свойство без записи в
-	 * поверхности линии не получает.
-	 */
-	static of(members: readonly TMember[], surface: TSurface): TLine[] {
-		return members.flatMap((member) =>
-			member.props.flatMap((spec): TLine[] => {
-				const entry = surface.entryOf(spec)
-
-				return entry ? [new TLine(spec, member.owner, entry.exportName)] : []
-			}),
-		)
-	}
-
 	constructor(
 		readonly spec: TPropSpec,
 		readonly owner: object,
@@ -82,18 +68,5 @@ export class TLine {
 		if (this.spec.hasDefault && sameValue(value, this.spec.default)) return
 
 		this.write(value)
-	}
-
-	/** Слушать триггеры свойства на шине владельца. */
-	watch(onTrigger: () => void): () => void {
-		const bus = busOf(this.owner)
-
-		if (!bus) return () => {}
-
-		for (const trigger of this.spec.triggers) bus.on(trigger.name, onTrigger)
-
-		return () => {
-			for (const trigger of this.spec.triggers) bus.off(trigger.name, onTrigger)
-		}
 	}
 }

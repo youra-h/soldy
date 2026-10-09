@@ -27,7 +27,8 @@ export class TSharedBundle implements IBundleTenancy {
 		this.members = descriptor.plugins.flatMap((plugin) => {
 			const owner = bundle?.get(plugin.ctor)
 
-			return owner ? [new TMember(owner, plugin.props, plugin.events)] : []
+			// Описание участника-плагина — его определение: одно на тип
+			return owner ? [new TMember(owner, plugin)] : []
 		})
 	}
 

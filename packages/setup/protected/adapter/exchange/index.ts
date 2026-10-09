@@ -4,4 +4,11 @@ export type { TInput, TInputPort } from './input-port.class'
 export type { TStateStore } from './state-store.class'
 export type { TEventRelay } from './event-relay.class'
 export type { TLine } from './line.class'
-export type { TEventSink, TStateListener, TStateSnapshot } from './types'
+export type {
+	IMemberSpec,
+	IModelRoute,
+	IRoute,
+	TEventSink,
+	TStateListener,
+	TStateSnapshot,
+} from './types'
