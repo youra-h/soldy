@@ -72,15 +72,22 @@ export class TInput {
 	push(value: unknown): void {
 		if (!this._cell.set(value) && value !== undefined) this.line.accept(value)
 	}
-
-	/** Начальное значение владельцу — то, с которого началась память входа. */
-	seed(): void {
-		this.line.seed(this._cell.value)
-	}
 }
 
 export class TInputPort {
 	private readonly _entries: readonly TInput[]
+
+	/**
+	 * Начальные значения — записываемым линиям из пропсов сборки, тем же
+	 * чтением, с которого начинается память входов. Чьи это линии, решает
+	 * сборка. Ячейки нужны обмену, а не начальной записи, поэтому порт для неё
+	 * не заводится.
+	 */
+	static seed(lines: readonly TLine[], buildProps: object): void {
+		for (const line of lines) {
+			if (line.writable) line.seed(pick(buildProps, line))
+		}
+	}
 
 	/** Память входов начинается с пропсов сборки. */
 	constructor(lines: readonly TLine[], buildProps: object) {
@@ -103,13 +110,6 @@ export class TInputPort {
 	delta(changes: object): void {
 		for (const input of this._entries) {
 			if (has(changes, input.line)) input.push(input.pick(changes))
-		}
-	}
-
-	/** Начальные значения владельцу `owner`. Кому они нужны, решает сборка. */
-	seed(owner: object): void {
-		for (const input of this._entries) {
-			if (input.line.owner === owner) input.seed()
 		}
 	}
 }

@@ -31,13 +31,7 @@ export class TExchange {
 		readonly surface: TSurface,
 		buildProps: object = {},
 	) {
-		this.lines = members.flatMap((member) =>
-			member.props.flatMap((spec): TLine[] => {
-				const entry = surface.entryOf(spec)
-
-				return entry ? [new TLine(spec, member.owner, entry.exportName)] : []
-			}),
-		)
+		this.lines = TLine.of(members, surface)
 		this.state = new TStateStore(this.lines)
 		this.inputs = new TInputPort(this.lines, buildProps)
 		this.events = new TEventRelay(members, this.lines, surface)
