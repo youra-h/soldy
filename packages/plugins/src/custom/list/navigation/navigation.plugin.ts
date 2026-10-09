@@ -1,3 +1,4 @@
+import { drawOf } from '@soldy-ui/core'
 import type { IControl, IBatchExtension, TCollectionEngine, TEventSink } from '@soldy-ui/core'
 import { TBasePlugin } from '../../../base'
 import type { IPluginContext } from '../../../base'
@@ -13,6 +14,9 @@ import type { TListEdge, TListNavigationPluginEvents } from './types'
  * и выключенный владелец.
  */
 const isNavigable = (item: IControl): boolean => !item.disabled && item.rendered && item.visible
+
+/** Причина закрепления элемента в окне коллекции — на нём подсветка. */
+const HIGHLIGHT = 'highlight'
 
 /**
  * TListNavigationPlugin — общая механика навигации по коллекции с клавиатуры.
@@ -31,6 +35,14 @@ const isNavigable = (item: IControl): boolean => !item.disabled && item.rendered
  *
  * Подсветка — не выбор. Она визуальна, живёт только во время навигации и в
  * значение не попадает; хранится в `TListItemPlugin` каждого элемента.
+ *
+ * **В окне** (обёртка `Virtual`) в документе только видимые элементы, и у
+ * ненарисованного нет ни узла, ни `TListItemPlugin`. Поэтому подсвеченный
+ * элемент навигация закрепляет в рисовании коллекции (`draw.pin`): окно
+ * рисует его на месте, даже когда стрелка увела подсветку за видимую полосу,
+ * и до кадра, в котором его прокручивают к глазу. Отметку заново
+ * смонтированному элементу навигация возвращает при регистрации его набора:
+ * прежний набор ушёл вместе с узлом.
  */
 export abstract class TListNavigationPlugin<
 	TEvents extends TListNavigationPluginEvents = TListNavigationPluginEvents,
@@ -40,11 +52,23 @@ export abstract class TListNavigationPlugin<
 	protected _bundles: TCollectionBundlesPlugin | null = null
 	protected _engine: TCollectionEngine<any, any> | null = null
 	protected _highlightedUid: string | number | null = null
+	/** Подсветка видна: у подсвеченного элемента стоит отметка, а не одна позиция. */
+	private _marked = false
 
 	override install(ctx: IPluginContext, options?: unknown): void {
 		super.install(ctx, options)
 
 		this._bundles = ctx.get(TCollectionBundlesPlugin) ?? null
+
+		// Подсвеченный элемент смонтировали заново — окно вернуло его в документ,
+		// а отметка ушла вместе с прежним набором
+		this._bundles?.events.on('bundle:registered', ({ uid, bundle }) => {
+			if (!this._marked || uid !== this._highlightedUid) return
+
+			const plugin = bundle.get(TListItemPlugin)
+
+			if (plugin) plugin.highlighted = true
+		})
 
 		ctx.get(TElementPlugin)?.events.on('ready', (element: IDomEventTarget) => {
 			this._element = element
@@ -211,7 +235,11 @@ export abstract class TListNavigationPlugin<
 
 		const plugin = this.itemPlugin(uid)
 
+		// Элемента ещё нет в документе (окно рисует его к следующему кадру) —
+		// отметку он получит при регистрации своего набора
 		if (plugin) plugin.highlighted = true
+
+		this._marked = true
 
 		this.onHighlightChanged(uid)
 	}
@@ -228,6 +256,7 @@ export abstract class TListNavigationPlugin<
 		this.unmarkCurrent()
 
 		this._highlightedUid = uid
+		this._pinHighlighted()
 
 		const index = this.indexOf(uid)
 
@@ -240,6 +269,7 @@ export abstract class TListNavigationPlugin<
 		this.unmarkCurrent()
 
 		this._highlightedUid = null
+		this._pinHighlighted()
 
 		this.emitHighlight(null, null, null)
 		this.onHighlightChanged(null)
@@ -251,11 +281,26 @@ export abstract class TListNavigationPlugin<
 
 	/** Снимает визуальную отметку с текущего элемента. */
 	private unmarkCurrent(): void {
+		this._marked = false
+
 		if (this._highlightedUid == null) return
 
 		const plugin = this.itemPlugin(this._highlightedUid)
 
 		if (plugin) plugin.highlighted = false
+	}
+
+	/**
+	 * Закрепить подсвеченный элемент в окне коллекции, если оно есть: окно
+	 * рисует его на месте, и подсветка, уведённая стрелкой за видимую полосу,
+	 * не теряет узел. Подсветки нет — закрепление снять.
+	 */
+	private _pinHighlighted(): void {
+		const uid = this._highlightedUid
+		const item =
+			uid === null ? undefined : this.shown().find((candidate) => candidate.uid === uid)
+
+		drawOf<IControl>(this._engine)?.pin(HIGHLIGHT, item)
 	}
 
 	private emitHighlight(

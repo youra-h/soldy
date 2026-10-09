@@ -46,6 +46,7 @@ import {
 	Tabs,
 	Tags,
 	Tooltip,
+	Virtual,
 } from '@soldy-ui/vue'
 
 const button = new TButton()
@@ -349,4 +350,8 @@ const dragAndDrop = new TDragAndDrop()
 	<!-- @vue-expect-error — режима `name` у подсказки нет: описание или имя -->
 	<Tooltip type="name" />
 	<Tooltip type="label" />
+
+	<!-- @vue-expect-error — окно включают флагом, а не строкой -->
+	<Virtual :enabled="'on'" />
+	<Virtual :enabled="false" />
 </template>

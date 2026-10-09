@@ -5,6 +5,8 @@ import type {
 	ISelectionCollectionProps,
 	TBatchExtension,
 	TCollectionEngine,
+	TDrawEvents,
+	TDrawExtension,
 	TFactoryExtension,
 	TMemoryExtension,
 	TMetaExtension,
@@ -33,8 +35,8 @@ import type {
 	TTableSortEvents,
 	TTableSortExtension,
 	TTableSortMode,
-	TTableVirtualEvents,
-	TTableVirtualExtension,
+	TTableWindowEvents,
+	TTableWindowExtension,
 } from './extensions'
 
 export type TTableCollectionExtensions = {
@@ -53,8 +55,10 @@ export type TTableCollectionExtensions = {
 	sort: TTableSortExtension
 	/** Режим сетки: ячейка под фокусом, выбор строки нажатием, наборы сетки */
 	grid: TTableGridExtension
-	/** Режим окна: тело рисует только видимые строки, остальные — распорками */
-	virtual: TTableVirtualExtension
+	/** Что тело рисует из показанных строк: все или окно с распорками */
+	draw: TDrawExtension<ITableRow>
+	/** Окно таблицы: число и номера строк, набор шапки, строка ячейки сетки в окне */
+	window: TTableWindowExtension
 	/** Память выборки: показанные строки — один раз до записи или смены условий */
 	memory: TMemoryExtension<ITableRow>
 }
@@ -112,12 +116,6 @@ export interface ITableCollectionProps<
 	 * строку выбирают нажатием и пробелом. Без него — простая таблица
 	 */
 	grid?: boolean
-	/**
-	 * Режим окна: тело рисует только видимые строки с запасом, остальные —
-	 * распорками той же высоты. Высота строк — одна на все. Поиск по странице
-	 * и печать видят только нарисованные строки
-	 */
-	virtual?: boolean
 }
 
 /**
@@ -125,18 +123,22 @@ export interface ITableCollectionProps<
  * базе, колонки — расширению колонок, сортировка — расширению сортировки.
  */
 export type TTableCollectionFacadeProps = TSelectionFacadeProps<ITableRow> &
-	Pick<ITableCollectionProps, 'columns' | 'sort' | 'sortMode' | 'presorted' | 'grid' | 'virtual'>
+	Pick<ITableCollectionProps, 'columns' | 'sort' | 'sortMode' | 'presorted' | 'grid'>
 
 /** Пропсы строки от коллекции: выбранность. */
 export interface ITableCollectionItemProps extends ISelectionCollectionItemProps {}
 
-/** События фасада коллекции строк: база выбора плюс карты `columns`, `table`, `sort`, `grid` и `virtual`. */
+/**
+ * События фасада коллекции строк: база выбора плюс карты `columns`, `table`,
+ * `sort`, `grid`, `draw` и `window`.
+ */
 export type TTableCollectionFacadeEvents = TSelectionCollectionFacadeEvents<ITableRow> &
 	TTableColumnsEvents &
 	TTableExtensionEvents &
 	TTableSortEvents &
 	TTableGridEvents &
-	TTableVirtualEvents
+	TDrawEvents<ITableRow> &
+	TTableWindowEvents
 
 /** События фасада строки: порядок и выбор из базы плюс ячейки, включённый выбор строк и набор ячеек сетки. */
 export type TTableRowCollectionFacadeEvents = TSelectionItemFacadeEvents &

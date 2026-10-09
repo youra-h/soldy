@@ -41,6 +41,7 @@ import {
 	TextableDescriptor,
 	TooltipDescriptor,
 	ValueControlDescriptor,
+	VirtualDescriptor,
 } from '@soldy-ui/setup'
 import { arEG, enUS, esES, extendLocale, frFR, ruRU, zhCN } from '@soldy-ui/plugins'
 import type { TLocale, TMotionMode } from '@soldy-ui/plugins'
@@ -275,6 +276,14 @@ export const COMPONENTS: readonly TComponentEntry[] = [
 		showcase: true,
 		span: 2,
 		description: 'Перетаскивание элементов коллекции',
+	},
+	{
+		id: 'virtual',
+		label: 'Virtual',
+		descriptor: VirtualDescriptor,
+		showcase: true,
+		span: 2,
+		description: 'Окно для длинных списков: ListBox и Table внутри рисуют только видимое',
 	},
 	{
 		id: 'frame',

@@ -1,4 +1,9 @@
-import { TCollectionExtension, TableDescriptor, TableCollectionDescriptor } from '@soldy-ui/setup'
+import {
+	TCollectionExtension,
+	TVirtualCollectionExtension,
+	TableDescriptor,
+	TableCollectionDescriptor,
+} from '@soldy-ui/setup'
 import {
 	useAdapter,
 	useCollectionAdapter,
@@ -41,7 +46,11 @@ export default {
 				options: { owner: adapter.instance, engine: props.engine },
 			},
 			{ bundle: adapter.bundle },
-		).use(TCollectionExtension, { elevator: VueElevatorFactory })
+		)
+			.use(TCollectionExtension, { elevator: VueElevatorFactory })
+			// Окно обёртки `Virtual` над таблицей: подхват при сборке, снятие — с
+			// уничтожением
+			.use(TVirtualCollectionExtension, { elevator: VueElevatorFactory })
 
 		const refsCollection = useCollectionAdapter(collectionAdapter, props, emit)
 

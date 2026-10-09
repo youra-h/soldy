@@ -72,6 +72,39 @@ describe('tree-shaking @soldy-ui/setup', () => {
 		expect(modules.filter((file) => file.startsWith('setup/protected/adapter/'))).toEqual([])
 	})
 
+	/**
+	 * Окно (`Virtual`) нужно немногим спискам, и его код — стратегия, плагин
+	 * замера, проводка обёртки — уезжает в сборку приложения только вместе с
+	 * обёрткой. Коллекция подхватывает окно расширением, которое импортирует
+	 * лишь ключ лифта и типы.
+	 */
+	it('бандл ListBox без Virtual не содержит модулей окна', async () => {
+		const listBox =
+			"import { ListBoxDescriptor, ListBoxCollectionDescriptor, TCollectionExtension, TVirtualCollectionExtension } from '@soldy-ui/setup'\n" +
+			'console.log(ListBoxDescriptor().props.length, ListBoxCollectionDescriptor().props.length, TCollectionExtension, TVirtualCollectionExtension)\n'
+		const withVirtual =
+			"import { VirtualDescriptor, TVirtualExtension } from '@soldy-ui/setup'\n" +
+			'console.log(VirtualDescriptor().props.length, TVirtualExtension)\n'
+
+		const window = (modules: string[]): string[] =>
+			modules.filter(
+				(file) =>
+					file.startsWith('plugins/src/custom/virtual/') ||
+					file === 'setup/content/extensions/virtual/virtual.extension.class.ts' ||
+					file === 'setup/content/descriptors/components/virtual.descriptor.ts',
+			)
+
+		const modules = await bundledModules(listBox)
+
+		// Разбор не вхолостую: подхват окна в бандле есть, а у обёртки — весь её код
+		expect(modules).toContain(
+			'setup/content/extensions/virtual/virtual-collection.extension.class.ts',
+		)
+		expect(window(await bundledModules(withVirtual))).toHaveLength(3)
+
+		expect(window(modules)).toEqual([])
+	})
+
 	// Сборка обязана сохранить ту же гранулярность: отбор выше идёт по модулям,
 	// и у склеенного в один файл пакета отбрасывать нечего
 	it('сборка пакета кладёт в dist модуль на модуль, а не один файл', () => {

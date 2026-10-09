@@ -1,5 +1,9 @@
 import { TSelectionCollectionFacade } from '../../../../base/collection'
-import type { TCollectionEngine, TCollectionFacadeOptions } from '../../../../base/collection'
+import type {
+	TCollectionEngine,
+	TCollectionFacadeOptions,
+	TDrawnEntry,
+} from '../../../../base/collection'
 import { completeEngine } from '../../../../base/collection/create/internal'
 import type { TDefaultValues } from '../../../../base/component'
 import type { TAriaAttributes } from '../../../../../common'
@@ -8,12 +12,7 @@ import type { TTableColumnSource } from '../../column/collection/types'
 import type { ITableColumn } from '../../column/types'
 import type { ITableRow } from '../../row/types'
 import type { ITable } from '../../types'
-import type {
-	TTableBodyEntry,
-	TTableColumnSort,
-	TTableShownSelection,
-	TTableSortMode,
-} from '../extensions'
+import type { TTableColumnSort, TTableShownSelection, TTableSortMode } from '../extensions'
 import { tableExtensions } from '../factory'
 import type {
 	ITableCollectionProps,
@@ -30,9 +29,12 @@ import type {
  * коллекции: колонки и показанные колонки (`columns`), сколько показанных
  * строк выбрано, команды выбора показанных и чекбокс «выбрать все»
  * (`table`), сортировка строк по колонкам (`sort`), режим сетки и набор её
- * ячеек (`grid`), режим окна и что рисует тело (`virtual`). Своего фасад не делает
- * ничего: события расширений он отдаёт наружу `relayAll`, команды остаются у
- * них.
+ * ячеек (`grid`), что рисует тело (`draw`) и набор шапки в окне (`window`).
+ * Своего фасад не делает ничего: события расширений он отдаёт наружу
+ * `relayAll`, команды остаются у них.
+ *
+ * Окно — не проп таблицы: его ставит рисованию обёртка `Virtual` вокруг
+ * таблицы, и второго пути к нему нет.
  */
 export class TTableCollectionFacade extends TSelectionCollectionFacade<
 	ITableRow,
@@ -47,7 +49,7 @@ export class TTableCollectionFacade extends TSelectionCollectionFacade<
 	static override defaultValues: typeof TSelectionCollectionFacade.defaultValues &
 		TDefaultValues<
 			ITableCollectionProps,
-			'sortMode' | 'presorted' | 'grid' | 'virtual',
+			'sortMode' | 'presorted' | 'grid',
 			'sort' | 'columns'
 		> = {
 		...TSelectionCollectionFacade.defaultValues,
@@ -56,7 +58,6 @@ export class TTableCollectionFacade extends TSelectionCollectionFacade<
 		sortMode: 'single',
 		presorted: false,
 		grid: false,
-		virtual: false,
 	}
 
 	constructor(
@@ -83,7 +84,8 @@ export class TTableCollectionFacade extends TSelectionCollectionFacade<
 		this.events.relayAll(this.extensions.table.events)
 		this.events.relayAll(this.extensions.sort.events)
 		this.events.relayAll(this.extensions.grid.events)
-		this.events.relayAll(this.extensions.virtual.events)
+		this.events.relayAll(this.extensions.draw.events)
+		this.events.relayAll(this.extensions.window.events)
 
 		this.applyProps(props)
 	}
@@ -100,7 +102,6 @@ export class TTableCollectionFacade extends TSelectionCollectionFacade<
 		if (props.presorted) this.presorted = props.presorted
 		if (props.sort?.length) this.sort = props.sort
 		if (props.grid) this.grid = props.grid
-		if (props.virtual) this.virtual = props.virtual
 
 		super.applyProps(props)
 	}
@@ -191,28 +192,16 @@ export class TTableCollectionFacade extends TSelectionCollectionFacade<
 	}
 
 	/**
-	 * Режим окна: тело рисует только видимые строки с запасом, остальные —
-	 * распорками той же высоты
+	 * Что рисует тело по порядку: строки на своих местах и, в окне, распорки
+	 * на месте пропущенных. Без окна — все показанные строки
 	 */
-	get virtual(): boolean {
-		return this.extensions.virtual.virtual
+	get drawn(): ReadonlyArray<TDrawnEntry<ITableRow>> {
+		return this.extensions.draw.drawn
 	}
 
-	set virtual(value: boolean) {
-		this.extensions.virtual.virtual = value
-	}
-
-	/**
-	 * Что рисует тело по порядку: строки и, в режиме окна, распорки на месте
-	 * пропущенных. Без режима — все показанные строки
-	 */
-	get bodyRows(): ReadonlyArray<TTableBodyEntry> {
-		return this.extensions.virtual.bodyRows
-	}
-
-	/** Набор строки шапки: в режиме окна — её номер среди строк таблицы */
+	/** Набор строки шапки: в окне — её номер среди строк таблицы */
 	get headRowAria(): TAriaAttributes {
-		return this.extensions.virtual.headRowAria
+		return this.extensions.window.headRowAria
 	}
 
 	/** Выбрать все показанные строки, которые можно выбрать */
