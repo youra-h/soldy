@@ -1,5 +1,5 @@
 import type { ReactElement } from 'react'
-import { Elevate, hasSlot, renderSlot, toRootProps } from '../../adapter'
+import { Elevate, hasSlot, renderSlot, toReactStyle, toRootProps } from '../../adapter'
 import { ListBoxItem } from './item'
 import { useSetupListBox } from './setup.component'
 import type { ListBoxProps } from './base.component'
@@ -8,9 +8,14 @@ import type { ListBoxProps } from './base.component'
  * ListBox — список с выбором. Корень — `div` с `tabindex="0"`: список
  * фокусируется сам, и его клавиатура (`TListKeyboardPlugin`) слушает корень.
  *
- * Элементы — дети (`<ListBox.Item>`), а без детей — `shown` коллекции (состав
- * после отбора), по `ListBoxItem` на элемент. Слоты элементов статические и
- * получают элемент через scope: `item`, `item-leading`, `item-trailing`.
+ * Элементы — дети (`<ListBox.Item>`), а без детей — то, что рисует коллекция
+ * (`drawn`), по порядку, ключ — ключ записи. Без окна это все показанные
+ * элементы, по `ListBoxItem` на каждый. В окне обёртки `Virtual` — видимые и
+ * распорки на месте пропущенных: `div` под `aria-hidden`, высоту которого тема
+ * берёт из его стиля, а стиль пишет ядро. Одна петля на элементы и распорки:
+ * петли по блокам перемонтировали бы элемент, когда он переходит из блока в
+ * блок. Слоты элементов статические и получают элемент через scope: `item`,
+ * `item-leading`, `item-trailing`.
  *
  * Всё содержимое — в слое лифта списка (`Elevate`): элемент, смонтированный
  * внутри, прочтёт движок и регистратор этого списка и при коммите войдёт в его
@@ -19,7 +24,7 @@ import type { ListBoxProps } from './base.component'
 export function ListBox(props: ListBoxProps): ReactElement | null {
 	const { ref, forwardProps, state, layer } = useSetupListBox(props)
 
-	const { rendered, shown, attrs, aria, dataset } = state
+	const { rendered, drawn, attrs, aria, dataset } = state
 
 	if (!rendered) return null
 
@@ -29,16 +34,29 @@ export function ListBox(props: ListBoxProps): ReactElement | null {
 				{renderSlot(props.header)}
 				{hasSlot(props.children)
 					? renderSlot(props.children)
-					: shown?.map((item) => (
-							<ListBoxItem
-								key={item.uid}
-								ctrl={item}
-								leading={renderSlot(props['item-leading'], { item })}
-								trailing={renderSlot(props['item-trailing'], { item })}
-							>
-								{renderSlot(props.item, { item })}
-							</ListBoxItem>
-						))}
+					: drawn?.map((entry) =>
+							entry.kind === 'filler' ? (
+								<div
+									key={entry.key}
+									className="s-list-box__filler"
+									aria-hidden="true"
+									style={toReactStyle(entry.style)}
+								/>
+							) : (
+								<ListBoxItem
+									key={entry.key}
+									ctrl={entry.item}
+									leading={renderSlot(props['item-leading'], {
+										item: entry.item,
+									})}
+									trailing={renderSlot(props['item-trailing'], {
+										item: entry.item,
+									})}
+								>
+									{renderSlot(props.item, { item: entry.item })}
+								</ListBoxItem>
+							),
+						)}
 				{renderSlot(props.footer)}
 			</Elevate>
 		</div>

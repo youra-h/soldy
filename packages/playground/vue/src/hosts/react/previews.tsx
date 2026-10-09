@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { COLLECTION_ITEMS } from '@soldy-ui/playground-shared'
+import { COLLECTION_ITEMS, COLLECTION_MANY_ITEMS } from '@soldy-ui/playground-shared'
 import {
 	Accordion,
 	Button,
@@ -13,6 +13,7 @@ import {
 	Skeleton,
 	Switch,
 	Tabs,
+	Virtual,
 	roleIcon,
 } from '@soldy-ui/react'
 
@@ -122,4 +123,14 @@ export const PREVIEWS: Record<string, TPreview> = {
 	'progress-spinner': (bind) => <ProgressSpinner aria_label="Загрузка" {...bind} />,
 
 	skeleton: (bind) => <Skeleton width={160} height={16} {...bind} />,
+
+	// Окно на списке в тысячу элементов: на пяти его не видно. ListBox с
+	// пределом строк прокручивается сам, строка `enabled` включает и выключает
+	// окно. Элементы — данными (`items`): элементы разметкой окно не прячет.
+	// Таблицы в React нет, и окна таблицы рядом, как у Vue, тоже
+	virtual: (bind) => (
+		<Virtual {...bind}>
+			<ListBox items={COLLECTION_MANY_ITEMS} maxRows={8} aria_label="Пункты" />
+		</Virtual>
+	),
 }

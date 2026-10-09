@@ -25,7 +25,8 @@
  * camelCase (`zIndex`): к числу под незнакомым именем он допишет `px`, и слой
  * Frame молча не встанет. Пользовательское свойство (`--*`) React ставит как
  * есть, его имя не меняется. Сами плагины и ядро имён не меняют: вид объекта
- * стиля — дело адаптера, Solid ждёт как раз `z-index`.
+ * стиля — дело адаптера, Solid ждёт как раз `z-index`. Перевод один и для
+ * узлов не на корне — распорке окна ListBox стиль пишет ядро (`toReactStyle`).
  */
 
 import type { CSSProperties } from 'react'
@@ -80,7 +81,13 @@ function toStyleName(name: string): string {
 	return name.replace(/-([a-z])/g, (_, letter: string) => letter.toUpperCase())
 }
 
-function toReactStyle(styles: TRootStyle | undefined): Record<string, string | number> {
+/**
+ * Стиль, как его отдают плагины и ядро, — в объект стиля React: имена по-CSS
+ * переведены в camelCase, пользовательские свойства (`--*`) — как есть. Так
+ * ставит стиль раскладка корня (`toRootLayout`) и разметка узла, чей стиль
+ * пишет ядро, — распорка окна ListBox.
+ */
+export function toReactStyle(styles: TRootStyle | undefined): Record<string, string | number> {
 	const result: Record<string, string | number> = {}
 
 	for (const [name, value] of Object.entries(styles ?? {})) {

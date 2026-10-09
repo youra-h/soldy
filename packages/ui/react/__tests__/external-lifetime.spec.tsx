@@ -38,6 +38,7 @@ import {
 	TSkeleton,
 	TSwitch,
 	TTabs,
+	TVirtual,
 	createEngineAccordion,
 	createEngineListBox,
 	createEngineRadioGroup,
@@ -58,6 +59,7 @@ import {
 	Skeleton,
 	Switch,
 	Tabs,
+	Virtual,
 } from '@soldy-ui/react'
 import { nextFrame, track } from './mount'
 
@@ -361,6 +363,39 @@ const COMPONENTS: Readonly<Record<string, Readonly<Record<string, TCase>>>> = {
 			return {
 				node: <TabsOver engine={engine} />,
 				buses: engineBuses(engine),
+			}
+		},
+	},
+	/**
+	 * Обёртка своей шины коллекции не отдаёт: на выключатель коллекция
+	 * подписывается при коммите. У списка из `items` нет ни `ctrl`, ни движка
+	 * снаружи — выброшенную сборку такого списка освободить некому, и
+	 * подписка на рендере осталась бы на `ctrl` обёртки навсегда.
+	 */
+	Virtual: {
+		'ctrl обёртки и движок списка': () => {
+			const ctrl = new TVirtual()
+			const engine = createEngineListBox({ items: ITEMS })
+
+			return {
+				node: (
+					<Virtual ctrl={ctrl}>
+						<ListBox engine={engine} />
+					</Virtual>
+				),
+				buses: [ctrl.events, ...engineBuses(engine)],
+			}
+		},
+		'ctrl обёртки, список из items': () => {
+			const ctrl = new TVirtual()
+
+			return {
+				node: (
+					<Virtual ctrl={ctrl}>
+						<ListBox items={ITEMS} />
+					</Virtual>
+				),
+				buses: [ctrl.events],
 			}
 		},
 	},
