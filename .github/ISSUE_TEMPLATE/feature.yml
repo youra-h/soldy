@@ -1,0 +1,29 @@
+name: Feature request
+description: Propose a new component, a new prop or a change in behavior.
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What do you want to do that Soldy UI does not let you do today?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+      description: How you would like it to work. For a new component, the WAI-ARIA Authoring Practices pattern it follows, if there is one.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives
+      description: Workarounds you use now, and how other libraries solve it.
+  - type: checkboxes
+    id: contribute
+    attributes:
+      label: Contribution
+      options:
+        - label: I would like to implement this myself, after the approach is agreed in this issue.
