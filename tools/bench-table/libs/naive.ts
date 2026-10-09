@@ -7,9 +7,17 @@ const columns = [
 	...COLUMNS.map((c) => ({ key: c.field, title: c.text, sorter: 'default' as const })),
 ]
 export const sel = { selectAll: 'thead .n-checkbox', sort: 'thead th[data-col-key="name"]' }
+// `?virtual=1` — своя виртуализация строк (`virtual-scroll`) в окне высотой 800 px
+const virtual = new URLSearchParams(location.search).get('virtual') === '1'
 export function mount(el: Element, rows: ShallowRef<TRec[] | null>) {
 	createApp({
 		render: () =>
-			rows.value && h(NDataTable, { columns, data: rows.value, rowKey: (r: TRec) => r.id }),
+			rows.value &&
+			h(NDataTable, {
+				columns,
+				data: rows.value,
+				rowKey: (r: TRec) => r.id,
+				...(virtual ? { virtualScroll: true, maxHeight: 800 } : {}),
+			}),
 	}).mount(el)
 }

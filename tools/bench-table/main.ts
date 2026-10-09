@@ -46,6 +46,39 @@ async function measure(action: () => void) {
 	return { paint: Math.round(paint), settled: Math.round(prev - t0) }
 }
 
+/**
+ * Окно прокрутки таблицы — элемент страницы с самой длинной прокруткой: у
+ * каждой библиотеки он свой, и селектор на каждую не нужен.
+ */
+function scroller(): Element {
+	let best: Element | null = null
+
+	for (const el of document.querySelectorAll('#app *')) {
+		const style = getComputedStyle(el)
+		const scrolls =
+			/(auto|scroll)/.test(style.overflowY) && el.scrollHeight > el.clientHeight + 1
+
+		if (scrolls && (!best || el.scrollHeight > best.scrollHeight)) best = el
+	}
+
+	return best ?? document.documentElement
+}
+
+/** Прокрутить таблицу до конца по экрану за кадр — так листает пользователь. */
+async function scrollThrough() {
+	const el = scroller()
+	const t0 = performance.now()
+
+	while (el.scrollTop + el.clientHeight < el.scrollHeight - 1) {
+		el.scrollTop += el.clientHeight
+		await frame()
+	}
+
+	const done = await measure(() => {})
+
+	return { paint: Math.round(performance.now() - t0), settled: done.settled }
+}
+
 Object.assign(window, {
 	bench: {
 		render: (n: number) => measure(() => (rows.value = makeRows(n))),
@@ -53,15 +86,15 @@ Object.assign(window, {
 		clear: () => measure(() => (rows.value = null)),
 		selectAll: () => measure(() => q(lib.sel.selectAll).click()),
 		sort: () => measure(() => q(lib.sel.sort).click()),
+		scrollThrough,
 		info: () => ({
 			rows: document.querySelectorAll('tbody tr').length,
 			nodes: document.getElementsByTagName('*').length,
 			checked: document.querySelectorAll(
 				'tbody input[type="checkbox"]:checked, tbody [role="checkbox"][aria-checked="true"], tbody .n-checkbox--checked',
 			).length,
-			first: document
-				.querySelector('tbody tr:first-child td:nth-child(2)')
-				?.textContent?.trim(),
+			// Первая ячейка данных: в режиме окна первым в теле стоит распорка
+			first: document.querySelector('tbody tr > td:nth-child(2)')?.textContent?.trim(),
 			heap: heap(),
 		}),
 	},

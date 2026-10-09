@@ -1,6 +1,7 @@
 import type { IBatchExtension, IExtension, ISelectionExtension } from '../../../../base/collection'
 import type { ITableRow } from '../../row/types'
 import type { ITableColumnsExtension } from './columns/types'
+import type { ITableGridExtension } from './grid/types'
 
 /**
  * Соседи по коллекции строк таблицы.
@@ -22,6 +23,10 @@ function isColumns<TRow extends ITableRow>(
 	ext: IExtension<TRow>,
 ): ext is ITableColumnsExtension<TRow> {
 	return 'shownColumns' in ext && 'columns' in ext && 'engine' in ext
+}
+
+function isGrid<TRow extends ITableRow>(ext: IExtension<TRow>): ext is ITableGridExtension<TRow> {
+	return 'focusedCell' in ext && 'gridRows' in ext && 'moveFocus' in ext
 }
 
 function isBatch<TRow extends object>(ext: IExtension<TRow>): ext is IBatchExtension<TRow> {
@@ -57,4 +62,13 @@ export function selectionOf<TRow extends object>(
 	const ext = ctx?.extensions.selection
 
 	return ext && isSelection(ext) ? ext : undefined
+}
+
+/** Сетка строк, если она есть в коллекции: её ячейка под фокусом. */
+export function gridOf<TRow extends ITableRow>(
+	ctx: TNeighbours<TRow> | undefined,
+): ITableGridExtension<TRow> | undefined {
+	const ext = ctx?.extensions.grid
+
+	return ext && isGrid(ext) ? ext : undefined
 }

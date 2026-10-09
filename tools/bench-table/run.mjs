@@ -5,7 +5,13 @@ import path from 'node:path'
 
 const N = Number(process.argv[2] ?? 5000)
 const RUNS = Number(process.argv[3] ?? 5)
+// Библиотека с флагами через «+»: `soldy+virtual` — `?lib=soldy&virtual=1`
 const LIBS = (process.argv[4] ?? 'soldy,naive,prime').split(',')
+const urlOf = (lib) => {
+	const [name, ...flags] = lib.split('+')
+
+	return '?lib=' + name + flags.map((flag) => `&${flag}=1`).join('')
+}
 const dist = path.resolve(import.meta.dirname, 'dist')
 const types = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css' }
 const server = http
@@ -30,7 +36,7 @@ for (const lib of LIBS) {
 	for (let run = 0; run < RUNS; run++) {
 		const page = await browser.newPage({ viewport: { width: 1600, height: 1000 } })
 		page.on('pageerror', (e) => console.error(lib, 'pageerror', e.message))
-		await page.goto(base + '?lib=' + lib)
+		await page.goto(base + urlOf(lib))
 		await page.waitForFunction(() => 'bench' in window)
 		const b = (fn, arg) => page.evaluate(fn, arg)
 		const heap = async () => (await b(() => (gc(), bench.info()))).heap
@@ -46,6 +52,12 @@ for (const lib of LIBS) {
 		const i4 = await b(() => bench.info())
 		push('Сортировка ↓', await b(() => bench.sort()))
 		const i5 = await b(() => bench.info())
+		// В режиме окна — проход по всем строкам и куча после: что прокрученные
+		// строки оставили в памяти. После сортировок: пробы смотрят на верх таблицы
+		if (lib.includes('+virtual')) {
+			push('Прокрутка до конца', await b(() => bench.scrollThrough()))
+			push('Память после прокрутки, МБ', MB((await heap()) - heap0))
+		}
 		push('Замена данных', await b((n) => bench.replace(n, 7), N))
 		push('Размонтирование', await b(() => bench.clear()))
 		push('Память после, МБ', MB((await heap()) - heap0))

@@ -9,6 +9,8 @@ export const sel = {
 	selectAll: 'thead input[type="checkbox"]',
 	sort: 'thead th.p-datatable-sortable-column',
 }
+// `?virtual=1` — свой виртуальный скроллер строк в окне высотой 800 px
+const virtual = new URLSearchParams(location.search).get('virtual') === '1'
 export function mount(el: Element, rows: ShallowRef<TRec[] | null>) {
 	const selection = ref<TRec[]>([])
 	createApp({
@@ -21,6 +23,13 @@ export function mount(el: Element, rows: ShallowRef<TRec[] | null>) {
 					dataKey: 'id',
 					selection: selection.value,
 					'onUpdate:selection': (v: TRec[]) => (selection.value = v),
+					...(virtual
+						? {
+								scrollable: true,
+								scrollHeight: '800px',
+								virtualScrollerOptions: { itemSize: 46 },
+							}
+						: {}),
 				},
 				() => [
 					h(Column, { selectionMode: 'multiple', headerStyle: 'width:3rem' }),

@@ -28,6 +28,7 @@ import {
 	TableColumnReorderPluginDescriptor,
 	TableGridPluginDescriptor,
 	TableNamesPluginDescriptor,
+	TableVirtualPluginDescriptor,
 } from '../../plugins'
 
 export const TableDescriptor = defineDescriptor(() =>
@@ -81,6 +82,9 @@ export const TableDescriptor = defineDescriptor(() =>
 			// Сетка: клавиши, выбор строки нажатием, DOM-фокус за фокусом сетки.
 			// После реестров: движок и узлы строк узнаёт от них
 			TableGridPluginDescriptor,
+			// Окно: замер видимой полосы и шага строк, строка с фокусом. После
+			// реестров: движок и узлы строк узнаёт от них
+			TableVirtualPluginDescriptor,
 		],
 	}),
 )
