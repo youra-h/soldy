@@ -42,7 +42,10 @@ const HIGHLIGHT = 'highlight'
  * рисует его на месте, даже когда стрелка увела подсветку за видимую полосу,
  * и до кадра, в котором его прокручивают к глазу. Отметку заново
  * смонтированному элементу навигация возвращает при регистрации его набора:
- * прежний набор ушёл вместе с узлом.
+ * прежний набор ушёл вместе с узлом. Тогда же наследник узнаёт, что
+ * подсвеченный элемент вошёл в документ (`onHighlightedMounted`): то, что есть
+ * только у смонтированного элемента, — `id` и узел — появилось у него только
+ * сейчас.
  */
 export abstract class TListNavigationPlugin<
 	TEvents extends TListNavigationPluginEvents = TListNavigationPluginEvents,
@@ -68,6 +71,8 @@ export abstract class TListNavigationPlugin<
 			const plugin = bundle.get(TListItemPlugin)
 
 			if (plugin) plugin.highlighted = true
+
+			this.onHighlightedMounted(uid)
 		})
 
 		ctx.get(TElementPlugin)?.events.on('ready', (element: IDomEventTarget) => {
@@ -139,6 +144,15 @@ export abstract class TListNavigationPlugin<
 
 	/** Подсветка переехала. Здесь наследник обновляет ARIA, скроллит и т.п. */
 	protected onHighlightChanged(_uid: string | number | null): void {}
+
+	/**
+	 * Подсвеченный элемент вошёл в документ — его набор зарегистрирован, а
+	 * отметка ему возвращена. Так бывает в окне: подсветка ушла к элементу,
+	 * которого окно не рисовало, и окно дорисовало его уже после
+	 * `onHighlightChanged`. Здесь наследник берёт то, что есть только у
+	 * смонтированного элемента: `id` для ссылки на него и узел для прокрутки.
+	 */
+	protected onHighlightedMounted(_uid: string | number): void {}
 
 	/**
 	 * Показанные элементы — `batch.shown`, а не `batch.items`: ходить

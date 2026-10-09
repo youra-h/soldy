@@ -23,6 +23,8 @@ import { TVirtualPlugin } from '@soldy-ui/plugins'
 import {
 	ListBoxCollectionDescriptor,
 	ListBoxDescriptor,
+	SelectCollectionDescriptor,
+	SelectDescriptor,
 	TableCollectionDescriptor,
 	TableDescriptor,
 	TCollectionExtension,
@@ -133,6 +135,25 @@ describe('подхват окна', () => {
 			.use(TVirtualCollectionExtension, { elevator: factory })
 
 		expect(collection.instance.engine.extensions.draw.virtual).toBe(true)
+		expect(adapter.bundle?.get(TVirtualPlugin)).toBeInstanceOf(TVirtualPlugin)
+	})
+
+	it('Select под обёрткой — окно у списка панели, плагин замера — в наборе Select', () => {
+		const { factory } = createElevatorFactory()
+
+		wrap(factory)
+
+		const adapter = createAdapterContext(SelectDescriptor(), { props: {} })
+		const collection = createAdapterContext(
+			SelectCollectionDescriptor(),
+			{ props: { items: ITEMS }, options: { owner: adapter.instance } },
+			{ bundle: adapter.bundle },
+		)
+			.use(TCollectionExtension, { elevator: factory })
+			.use(TVirtualCollectionExtension, { elevator: factory })
+
+		expect(collection.instance.engine.extensions.draw.virtual).toBe(true)
+		expect(collection.instance.drawn).toHaveLength(50)
 		expect(adapter.bundle?.get(TVirtualPlugin)).toBeInstanceOf(TVirtualPlugin)
 	})
 

@@ -520,12 +520,17 @@ describe('набор по буквам', () => {
  * там прокрутка идёт за выбором, здесь — за подсветкой, которая живёт только
  * пока панель открыта. Общим сделано свойство, а не реализация — иначе Select
  * тащил бы плагин, половина которого ему не нужна.
+ *
+ * Прокручивает клавиатура в следующем кадре: панель, открытую той же клавишей,
+ * и опцию, которую окно дорисовывает к подсветке, адаптер рисует уже после
+ * обработчика (`plugins/__tests__/select-keyboard-window.plugin.spec.ts`).
  */
 describe('прокрутка к подсвеченной опции', () => {
 	it('по умолчанию прокручивает плавно и по ближайшему краю', async () => {
 		const { press, scrolls } = await setup(['Москва', 'Тверь'])
 
 		press('ArrowDown')
+		await nextFrame()
 
 		expect(scrolls).toEqual([{ block: 'nearest', behavior: 'smooth' }])
 	})
@@ -538,6 +543,7 @@ describe('прокрутка к подсвеченной опции', () => {
 		)
 
 		press('ArrowDown')
+		await nextFrame()
 
 		expect(scrolls).toEqual([{ block: 'nearest', behavior: 'instant' }])
 	})
@@ -550,6 +556,7 @@ describe('прокрутка к подсвеченной опции', () => {
 		)
 
 		press('ArrowDown')
+		await nextFrame()
 
 		expect(scrolls).toEqual([])
 		expect(keyboard.highlightedUid).toBe(items[0].uid)
@@ -559,8 +566,10 @@ describe('прокрутка к подсвеченной опции', () => {
 		const { press, scrolls, owner } = await setup(['Москва', 'Тверь', 'Клин'])
 
 		press('ArrowDown')
+		await nextFrame()
 		owner.scrollBehavior = 'none'
 		press('ArrowDown')
+		await nextFrame()
 
 		expect(scrolls).toHaveLength(1)
 	})
@@ -596,6 +605,7 @@ describe('прокрутка к подсвеченной опции', () => {
 			systemReduces(reduce)
 			useMotion(mode)
 			press('ArrowDown')
+			await nextFrame()
 
 			expect(scrolls).toEqual([{ block: 'nearest', behavior }])
 		})

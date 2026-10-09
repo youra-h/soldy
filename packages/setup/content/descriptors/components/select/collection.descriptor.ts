@@ -17,7 +17,8 @@ export const SelectCollectionDescriptor = defineDescriptor(() =>
 		extends: CollectionDescriptor(),
 
 		/**
-		 * Коллекционные props владельца Select (выводятся `TSelectCollectionFacade`).
+		 * Коллекционные props владельца Select (выводятся `TSelectCollectionFacade`):
+		 * режим выбора, сам выбор, теги поля и что рисует список панели.
 		 *
 		 * `mode` служит переключателем множественного выбора: отдельного `multiple`
 		 * нет намеренно — два имени для одного состояния однажды разошлись бы.
@@ -41,6 +42,12 @@ export const SelectCollectionDescriptor = defineDescriptor(() =>
 				 * `wrap` — поведение поля не меняется, пока режим не задали.
 				 */
 				tags_overflow: { type: String, triggers: ['change:overflow'] },
+				/**
+				 * Что рисует список панели по порядку: опции на своих местах и, в окне
+				 * обёртки `Virtual`, распорки на месте пропущенных. Без окна — все
+				 * показанные опции
+				 */
+				drawn: { type: Array, protected: true, triggers: ['change:drawn'] },
 			},
 		},
 	}),
