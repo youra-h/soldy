@@ -7,9 +7,12 @@ import {
 	toControlAttrs,
 	toRootLayout,
 } from '../../adapter'
-import { Icon } from '../icon'
 import { useSetupCheckBox } from './setup.component'
 import type { CheckBoxAttributes, CheckBoxProps } from './base.component'
+
+/** Отметки без слота — иконки по ролям, компонент на роль один на модуль (`roleIcon`). */
+const CheckMark = roleIcon('check')
+const IndeterminateMark = roleIcon('checkIndeterminate')
 
 /**
  * CheckBox — флажок: корень по `tag` и нативный `<input type="checkbox">`
@@ -28,12 +31,16 @@ import type { CheckBoxAttributes, CheckBoxProps } from './base.component'
  * которое флажку даёт подпись. Отметка — слот `icon` у выбранного и
  * `indeterminate-icon` у частично выбранного (scope `{ value, indeterminate }`),
  * без слота — иконка из пакета по ролям `check` и `checkIndeterminate`.
+ *
+ * Отметка без слота — `svg` иконки по роли, а не компонент `Icon`: она
+ * появляется и пропадает с каждой сменой отметки, и `Icon` собирал бы на
+ * каждую свой контекст и плагины — в таблице «выбрать все» собирала их
+ * тысячами. Размер и цвет отметке даёт тема флажка по `s-check-box__mark`.
  */
 export function CheckBox(props: CheckBoxProps): ReactElement | null {
 	const { ref, forwardProps, state } = useSetupCheckBox(props)
 
-	const { rendered, tag, attrs, aria, id, value, indeterminate, name, disabled, required, size } =
-		state
+	const { rendered, tag, attrs, aria, id, value, indeterminate, name, disabled, required } = state
 
 	if (!rendered) return null
 
@@ -46,16 +53,10 @@ export function CheckBox(props: CheckBoxProps): ReactElement | null {
 
 	if (indeterminate) {
 		mark = renderSlot(props['indeterminate-icon'], scope) ?? (
-			<Icon
-				embedded="check-box.indeterminate-icon"
-				tag={roleIcon('checkIndeterminate')}
-				size={size}
-			/>
+			<IndeterminateMark className="s-check-box__mark" />
 		)
 	} else if (value) {
-		mark = renderSlot(props.icon, scope) ?? (
-			<Icon embedded="check-box.icon" tag={roleIcon('check')} size={size} />
-		)
+		mark = renderSlot(props.icon, scope) ?? <CheckMark className="s-check-box__mark" />
 	}
 
 	return (

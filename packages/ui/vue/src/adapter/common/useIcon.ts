@@ -16,19 +16,34 @@ import { getIcon } from '@soldy-ui/setup'
  *
  * Роль резолвится **на отрисовке**, а не при вызове: `setIcons()` может быть
  * вызван после того, как компонент уже создан.
+ *
+ * Компонент на роль один на модуль, как `roleIcon` у React: роль читается на
+ * отрисовке, и определению нечего помнить о вызове. Новое определение на
+ * каждый вызов умножалось бы на экземпляры — у чекбоксов таблицы на 5000
+ * строк это 10 000 одинаковых компонентов.
  */
+const icons = new Map<string, Component>()
+
 export function useIcon(role: string): Component {
-	return markRaw(
+	const known = icons.get(role)
+
+	if (known) return known
+
+	const icon = markRaw(
 		defineComponent({
 			name: `Icon_${role}`,
 			render() {
-				const icon = getIcon(role)
+				const source = getIcon(role)
 
 				return h('svg', {
-					viewBox: icon.viewBox,
-					innerHTML: icon.body,
+					viewBox: source.viewBox,
+					innerHTML: source.body,
 				})
 			},
 		}),
 	)
+
+	icons.set(role, icon)
+
+	return icon
 }
