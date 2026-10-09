@@ -15,6 +15,13 @@ describe('TIcon', () => {
 		expect(b.classes.toArray()).toContain('s-icon--size-lg')
 	})
 
+	it('без tag — span: элемент, который знает HTML', () => {
+		const icon = new TIcon()
+
+		expect(icon.tag).toBe('span')
+		expect(icon.getProps().tag).toBe('span')
+	})
+
 	it('смена size меняет classes (size modifier)', () => {
 		const icon = new TIcon({ size: 'normal' })
 		expect(icon.classes.toArray()).toContain('s-icon--size-normal')

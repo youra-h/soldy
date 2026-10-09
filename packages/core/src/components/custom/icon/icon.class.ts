@@ -20,12 +20,15 @@ export default class TIcon extends TComponentView<IIconProps, TIconEvents> imple
 	 * `width` и `height` объявлены ключами без значения: незаданный размер даёт
 	 * `size`, и снятый из разметки проп обязан вернуть иконку к нему, а не
 	 * оставить прежний (см. AGENTS.md, «Умолчание пропа — в декларации»).
+	 *
+	 * Без `tag` иконка — пустой строчный элемент, который знает HTML: картинку
+	 * рисует тег, а `span`, в отличие от `div`, допустим внутри `button`.
 	 */
 	static defaultValues: typeof TComponentView.defaultValues &
 		TDefaultValues<IIconProps, 'size', 'width' | 'height'> = {
 		...TComponentView.defaultValues,
 		size: 'normal',
-		tag: 'error',
+		tag: 'span',
 		width: undefined,
 		height: undefined,
 	}
