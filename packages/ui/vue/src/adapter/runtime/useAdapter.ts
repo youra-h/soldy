@@ -8,7 +8,7 @@
  * 4. Вызывает adapter.destroy() при анмаунте компонента
  */
 
-import { ref, watch, onUnmounted, type Ref } from 'vue'
+import { ref, shallowRef, watch, onUnmounted, type Ref } from 'vue'
 import { TElementPlugin } from '@soldy-ui/plugins'
 import { type IAdapterContext, type IComponentContract, type TInstanceState } from '@soldy-ui/setup'
 import type { IPluginBundle } from '@soldy-ui/plugins'
@@ -83,7 +83,15 @@ export function useAdapterParts(
 
 	// 1. Core → Vue: реф на каждое свойство с триггерами. Подписка сразу отдаёт
 	// значение каждого — тем же вызовом, что и срабатывание триггера: так рефы
-	// и заводятся
+	// и заводятся.
+	//
+	// Реф мелкий (`shallowRef`): ядро отдаёт значения, а не ручки на живое
+	// состояние, и о смене сообщает новым значением (AGENTS.md, «Контракт
+	// границы core → ui»). Глубокий `ref` оборачивал бы в прокси всё
+	// составное — массив ячеек строки таблицы, каждую ячейку, её `aria` и
+	// `dataset`, элементы коллекции — с зависимостью Vue на каждый прочитанный
+	// ключ, и следить за ними незачем: на месте их никто не меняет. В таблице
+	// это была почти пятая часть памяти строки (BENCHMARKS.md, 869fekb4g)
 	const refs: Record<string, Ref<unknown>> = {}
 
 	offs.push(
@@ -91,21 +99,23 @@ export function useAdapterParts(
 			const target = refs[name]
 
 			if (target) target.value = value
-			else refs[name] = ref(value)
+			else refs[name] = shallowRef(value)
 		}),
 	)
 
-	// 2. Vue → Core: `watch` на каждый входной проп, а не на весь объект — Vue
-	// отдаёт пропсы по одному, когда проп сменился. Начальные значения применила
-	// сборка контекста, здесь — только изменения
-	for (const input of link.inputs) {
-		offs.push(
-			watch(
-				() => input.pick(props),
-				(value) => input.offer(value),
-			),
-		)
-	}
+	// 2. Vue → Core: один `watch` на все входы компонента. Он перечитывает
+	// входы, когда сменился любой из них, и отдаёт каждому его значение. Входы
+	// без изменений ничего не пишут: повтор гасит ячейка входа (`offer`).
+	// Раньше `watch` был на каждый проп — и с ним эффект, планировщик и
+	// пять замыканий Vue; у строки таблицы с чекбоксом их выходило по 26. Начальные
+	// значения применила сборка контекста, здесь — только изменения
+	const inputs = [...link.inputs]
+	offs.push(
+		watch(
+			() => inputs.map((input) => input.pick(props)),
+			(values) => values.forEach((value, i) => inputs[i].offer(value)),
+		),
+	)
 
 	// 3. Эмиты: события ядра и `update:<prop>` для v-model — его обмен шлёт по
 	// профилю, сразу после события ядра
