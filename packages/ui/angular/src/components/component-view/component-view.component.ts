@@ -1,11 +1,7 @@
 import { Component, ChangeDetectionStrategy, HostBinding } from '@angular/core'
 import type { IComponentView } from '@soldy-ui/core'
 import type { TBinding } from '../../adapter'
-import {
-	ComponentViewInputNames,
-	ComponentViewOutputNames,
-	TComponentViewSurface,
-} from './base.component'
+import { ComponentViewInputNames, TComponentViewSurface } from './base.component'
 import { setupComponentView } from './setup.component'
 
 /**
@@ -45,7 +41,7 @@ export class TComponentViewComponent extends TComponentViewSurface<IComponentVie
 	}
 
 	constructor() {
-		super(ComponentViewInputNames, ComponentViewOutputNames, 'host')
+		super(ComponentViewInputNames, 'host')
 	}
 
 	protected createBinding(

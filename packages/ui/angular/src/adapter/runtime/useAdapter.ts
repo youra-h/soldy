@@ -7,12 +7,13 @@
  * - компонент принят (`adapter.attach()`) сразу при создании связки
  * - syncInputs(inputs): Angular → Core, только изменившиеся входы (вызывается из
  *   ngOnChanges)
- * - syncEvents(outputs): подписывает Angular EventEmitter'ы на Core-события
+ * - syncEvents(outputOf): Core → Angular, приёмник событий ядра; событие уходит
+ *   в эмиттер выхода, если выход уже завёл его (`outputOf`)
  * - bindElement(el): DOM-биндинг для TElementPlugin
  * - destroy(): очистка подписок + adapter.destroy()
  *
  * Общее с остальными адаптерами — в обмене `adapter.connect()` из setup; здесь
- * только сигнал состояния и эмиттеры.
+ * только сигнал состояния и отдача событий эмиттерам выходов.
  *
  * Состояние — сигнал, а не поле + markForCheck(): markForCheck помечает путь
  * грязным, но не планирует проверку, поэтому работал только благодаря Zone.js.
@@ -63,13 +64,13 @@ type TOutputValue<THandler> = THandler extends (...args: infer TArgs) => unknown
 /**
  * Выход по событию дескриптора: эмиттер того, что шлёт `syncEvents`.
  *
- * Эмиттеры ставит `TComponentBase` по списку имён, и в типе класса их нет, а
- * строгая проверка шаблона читает выход как поле класса: привязка
- * `(actionPress)` без поля не компилируется, а `$event` берёт тип у поля. Поля
- * объявляет сгенерированный `T<Имя>Surface` (`generated/*.metadata.ts`) —
- * по фабрике дескриптора и полному имени события, которые кодогенератор берёт
- * из той же поверхности, что имена выходов. Событие вне карты дескриптора
- * (`DescriptorAllEvents`) не компилируется.
+ * Строгая проверка шаблона читает выход как свойство класса: привязка
+ * `(actionPress)` без него не компилируется, а `$event` берёт тип у него. Выход
+ * с этим типом — геттер сгенерированного `T<Имя>Surface`
+ * (`generated/*.metadata.ts`) по фабрике дескриптора и полному имени события,
+ * которые кодогенератор берёт из той же поверхности, что имена выходов; эмиттер
+ * геттер заводит при первом чтении (`TComponentBase.createOutput`). Событие вне
+ * карты дескриптора (`DescriptorAllEvents`) не компилируется.
  */
 export type TOutputEmitter<
 	TDescriptorFn extends (...args: any[]) => IComponentDescriptor,
@@ -82,7 +83,12 @@ export type TBinding<TInstance = any> = {
 	readonly ctrl: TInstance
 	readonly plugins: IPluginBundle | null
 	syncInputs(inputs: object): void
-	syncEvents(outputs: Record<string, EventEmitter<unknown>>): () => void
+	/**
+	 * Ставит приёмник событий ядра. `outputOf` — эмиттер выхода по имени, если
+	 * выход его уже завёл, иначе `undefined`; эмиттеров сам поиск не заводит.
+	 * Возвращает отписку приёмника.
+	 */
+	syncEvents(outputOf: (name: string) => EventEmitter<unknown> | undefined): () => void
 	bindElement(el: Element | null): void
 	destroy(): void
 }
@@ -114,11 +120,12 @@ export function useAdapter<C extends IComponentContract>(
 			binding.inputs.delta(inputs)
 		},
 
-		syncEvents(outputs: Record<string, EventEmitter<unknown>>): () => void {
-			// Аутпут объявлен кодогенерацией по той же поверхности: у события
-			// без аутпута некому отдать значение. Отдаётся первый аргумент —
-			// его и обещает тип выхода (`TOutputEmitter`)
-			return binding.events.listen((exportName, args) => outputs[exportName]?.emit(args[0]))
+		syncEvents(outputOf: (name: string) => EventEmitter<unknown> | undefined): () => void {
+			// Эмиттер ищется на каждое событие, а не один раз: его заводит первое
+			// чтение выхода, и подписка из кода после монтирования получает
+			// события с этого момента. Выход никто не читал — отдавать некому.
+			// Отдаётся первый аргумент — его и обещает тип выхода (`TOutputEmitter`)
+			return binding.events.listen((exportName, args) => outputOf(exportName)?.emit(args[0]))
 		},
 
 		bindElement(el: Element | null): void {

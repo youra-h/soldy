@@ -3,7 +3,7 @@ import { NgClass, NgTemplateOutlet } from '@angular/common'
 import type { IButton } from '@soldy-ui/core'
 import type { TBinding } from '../../adapter'
 import { AriaDirective } from '../../adapter'
-import { ButtonInputNames, ButtonOutputNames, TButtonSurface } from './base.component'
+import { ButtonInputNames, TButtonSurface } from './base.component'
 import { setupButton } from './setup.component'
 
 /**
@@ -12,8 +12,9 @@ import { setupButton } from './setup.component'
  * Входы и выходы объявляет сгенерированная база `TButtonSurface`
  * (generated/button.metadata.ts) вместе с их типами для строгого шаблона,
  * поэтому в `@Component` их нет: вход, объявленный здесь ещё раз, строгая
- * проверка шаблона пропускала бы без сверки значения. Имена конструктор
- * передаёт `TComponentBase` — по ним она читает входы и ставит эмиттеры.
+ * проверка шаблона пропускала бы без сверки значения. Имена входов конструктор
+ * передаёт `TComponentBase` — по ним она читает входы. Эмиттер выхода заводит
+ * геттер базы при первом чтении выхода.
  * Разметка вынесена в button.component.html (templateUrl). Корень (`#root`)
  * живёт внутри `@if`/`@else` и меняет ветку вместе с `tag` — привязку к
  * TElementPlugin по умолчанию берёт на себя TComponentBase.
@@ -29,7 +30,7 @@ import { setupButton } from './setup.component'
 })
 export class TButtonComponent extends TButtonSurface<IButton> {
 	constructor() {
-		super(ButtonInputNames, ButtonOutputNames)
+		super(ButtonInputNames)
 	}
 
 	protected createBinding(ctrl: IButton | undefined, inputs: object): TBinding<IButton> {
