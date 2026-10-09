@@ -418,6 +418,41 @@ describe('событие ячеек — одно на смену', () => {
 		expect(cells).not.toHaveBeenCalled()
 	})
 
+	// Выбор пишет строке только `data-selected`: ячейки и их набор те же, и
+	// разметке нечего перечитывать. Иначе «выбрать все» перерисовало бы ячейки
+	// всех строк таблицы
+	it('выбор строки, «выбрать все» и снятие выбора — ни ячеек, ни их набора', () => {
+		const facade = new TTableCollectionFacade({
+			items: [ANNA, BORIS, VERA].map(source),
+			trackBy: (row) => idOf(row.data),
+			columns: [{ ...NAME, rowHeader: true }, AGE],
+			mode: 'multiple',
+		})
+		const [anna] = facade.items
+		const rows = facade.items.map((row) => facadeOf(facade.engine, row))
+		const cells = vi.fn()
+		const cellAria = vi.fn()
+
+		for (const row of rows) {
+			row.events.on('change:cells', cells)
+			row.events.on('change:cellAria', cellAria)
+		}
+
+		rows[0].selected = true
+
+		expect(facade.selected).toEqual([anna])
+
+		facade.selectShown()
+
+		expect(facade.selected).toHaveLength(3)
+
+		facade.deselectShown()
+
+		expect(facade.selected).toEqual([])
+		expect(cells).not.toHaveBeenCalled()
+		expect(cellAria).not.toHaveBeenCalled()
+	})
+
 	it('удалённую и скрытую колонку ячейки больше не слушают', () => {
 		const { cells, columns } = anna()
 		const email = new TTableColumn({ field: 'email' })

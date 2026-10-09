@@ -18,7 +18,7 @@
 
 import { defineComponent, defineDescriptor, defineType } from '../../../../protected/define'
 import { TTableRow } from '@soldy-ui/core'
-import type { ITableColumn } from '@soldy-ui/core'
+import type { ITableColumn, ITableRow } from '@soldy-ui/core'
 import { OWNER_STYLE_PROPS, StylableDescriptor } from '../stylable.descriptor'
 import { TableRowIdsPluginDescriptor } from '../../plugins'
 
@@ -31,11 +31,13 @@ export const TableRowDescriptor = defineDescriptor(() =>
 		contribution: {
 			slots: {
 				/**
-				 * Ячейка строки. Таблица отдаёт в него свой слот `cell`, добавив
-				 * строку.
+				 * Ячейка строки — scope слота `cell` таблицы: строку в него кладёт
+				 * сама строка, и таблица отдаёт в него свой слот как есть, ничего не
+				 * добавляя.
 				 */
 				cell: {
 					scope: {
+						row: defineType<ITableRow>(Object),
 						column: defineType<ITableColumn>(Object),
 						value: defineType<unknown>(Object),
 					},

@@ -132,12 +132,28 @@ export default { ...SetupTable, components: { Button, CheckBox, Icon, TableColum
 				scope `{ row, column, value }`: колонку выбирают условием по
 				`column.field`, `value` — поле записи под ключом колонки. Без него —
 				`value` текстом.
+
+				Строки не перерисовываются вместе с таблицей, пока их слоты
+				стабильны, поэтому слот им уходит пробросом как есть: строку в scope
+				кладёт сама строка. Две ветки — по той же причине: слота у таблицы
+				нет — строкам слотов не передают вовсе, проброс у компонента без
+				слотов Vue считает динамическим. Слот появился или пропал — строки
+				монтируются заново. Переменная цикла — не `row`: компилятор сверяет
+				имена, а не области видимости, и одноимённый параметр слота сделал
+				бы слоты динамическими (AGENTS.md, Pitfalls).
 			-->
-			<TableRow v-for="row in shown" :key="row.uid" :ctrl="row">
-				<template #cell="{ column, value }">
-					<slot name="cell" :row="row" :column="column" :value="value">{{ value }}</slot>
-				</template>
-			</TableRow>
+			<template v-if="$slots.cell">
+				<TableRow v-for="item in shown" :key="item.uid" :ctrl="item">
+					<template #cell="{ row, column, value }">
+						<slot name="cell" :row="row" :column="column" :value="value">{{
+							value
+						}}</slot>
+					</template>
+				</TableRow>
+			</template>
+			<template v-else>
+				<TableRow v-for="item in shown" :key="item.uid" :ctrl="item" />
+			</template>
 
 			<!--
 				Пустое состояние — пока показанных строк нет: строка с одной ячейкой
