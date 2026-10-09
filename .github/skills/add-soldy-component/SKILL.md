@@ -210,11 +210,12 @@ export function setup<Name>(ctrl: I<Name> | undefined, props: object): TBinding<
 - `<name>.component.ts` — оболочка. Наследует сгенерированный `T<Name>Surface`
   (он — `TComponentBase`, `packages/ui/angular/src/adapter/runtime/component.base.ts`),
   состояние читается как `state()` (сигнал). Корень с `TElementPlugin`
-  связывает база: компонент зовёт только `super(<Name>InputNames, <Name>OutputNames)`
-  и реализует `createBinding`. Своих `inputs` и `outputs` в `@Component` нет:
-  их объявляет `T<Name>Surface`, и вход, объявленный здесь ещё раз, строгий
-  шаблон потребителя пропускал бы без сверки значения — это ловит
-  `packages/ui/angular/__tests__/inputs.spec.ts`:
+  связывает база: компонент зовёт только `super(<Name>InputNames)` и
+  реализует `createBinding`. Эмиттеры выходов компонент не заводит: геттер
+  выхода в `T<Name>Surface` заводит эмиттер при первом чтении. Своих `inputs`
+  и `outputs` в `@Component` нет: их объявляет `T<Name>Surface`, и вход,
+  объявленный здесь ещё раз, строгий шаблон потребителя пропускал бы без
+  сверки значения — это ловит `packages/ui/angular/__tests__/inputs.spec.ts`:
 
 ```ts
 import { Component, ChangeDetectionStrategy } from '@angular/core'
@@ -222,7 +223,7 @@ import { NgClass, NgTemplateOutlet } from '@angular/common'
 import type { I<Name> } from '@soldy-ui/core'
 import type { TBinding } from '../../adapter'
 import { AriaDirective } from '../../adapter'
-import { <Name>InputNames, <Name>OutputNames, T<Name>Surface } from './base.component'
+import { <Name>InputNames, T<Name>Surface } from './base.component'
 import { setup<Name> } from './setup.component'
 
 @Component({
@@ -234,7 +235,7 @@ import { setup<Name> } from './setup.component'
 })
 export class T<Name>Component extends T<Name>Surface<I<Name>> {
   constructor() {
-    super(<Name>InputNames, <Name>OutputNames)
+    super(<Name>InputNames)
   }
 
   protected createBinding(ctrl: I<Name> | undefined, inputs: object): TBinding<I<Name>> {
@@ -263,8 +264,8 @@ export class T<Name>Component extends T<Name>Surface<I<Name>> {
   и подставляется через `[ngTemplateOutlet]="content"` — два слота во
   взаимоисключающих ветках теряют содержимое при переключении;
 - если корень — хост-элемент и всегда существует (как у `component-view`),
-  третьим аргументом передаётся стратегия `'host'`:
-  `super(<Name>InputNames, <Name>OutputNames, 'host')`. База берёт узел из
+  вторым аргументом передаётся стратегия `'host'`:
+  `super(<Name>InputNames, 'host')`. База берёт узел из
   `inject(ElementRef)` один раз и сама раскладывает на него `aria`, `attrs` и
   `dataset`; классы и видимость хоста — `@HostBinding`
   (`component-view.component.ts`).

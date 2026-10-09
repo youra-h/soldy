@@ -9,8 +9,9 @@ export const ComponentOutputs = ['bundleCreate', 'pluginEvent'] as const
 
 /**
  * Поверхность Component в Angular: входы и выходы компонента с типами для
- * строгой проверки шаблона. Значения входов пишет Angular, эмиттеры ставит
- * `TComponentBase` по `ComponentOutputs` — поля их только объявляют.
+ * строгой проверки шаблона. Значения входов пишет Angular — поля их только
+ * объявляют. Выход — геттер: эмиттер заводит первое чтение выхода
+ * (`createOutput`), а выход, который никто не читал, его не заводит.
  */
 @Directive({
 	standalone: true,
@@ -22,6 +23,10 @@ export abstract class TComponentSurface<
 > extends TComponentBase<TInstance> {
 	declare embedded: TInputValue<typeof descriptor, 'embedded'>
 	declare pluginProps: TInputValue<typeof descriptor, 'pluginProps'>
-	declare readonly bundleCreate: TOutputEmitter<typeof descriptor, 'bundle:create'>
-	declare readonly pluginEvent: TOutputEmitter<typeof descriptor, 'plugin:event'>
+	get bundleCreate(): TOutputEmitter<typeof descriptor, 'bundle:create'> {
+		return this.createOutput('bundleCreate')
+	}
+	get pluginEvent(): TOutputEmitter<typeof descriptor, 'plugin:event'> {
+		return this.createOutput('pluginEvent')
+	}
 }

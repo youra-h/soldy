@@ -61,8 +61,9 @@ export const TextableOutputs = [
 
 /**
  * Поверхность Textable в Angular: входы и выходы компонента с типами для
- * строгой проверки шаблона. Значения входов пишет Angular, эмиттеры ставит
- * `TComponentBase` по `TextableOutputs` — поля их только объявляют.
+ * строгой проверки шаблона. Значения входов пишет Angular — поля их только
+ * объявляют. Выход — геттер: эмиттер заводит первое чтение выхода
+ * (`createOutput`), а выход, который никто не читал, его не заводит.
  * Булевы входы проходят `booleanInput`: атрибут без значения включает проп.
  */
 @Directive({
@@ -102,45 +103,109 @@ export abstract class TTextableSurface<
 	declare aria_label: TInputValue<typeof descriptor, 'aria_label'>
 	declare aria_labelledBy: TInputValue<typeof descriptor, 'aria_labelledBy'>
 	declare aria_describedBy: TInputValue<typeof descriptor, 'aria_describedBy'>
-	declare readonly bundleCreate: TOutputEmitter<typeof descriptor, 'bundle:create'>
-	declare readonly pluginEvent: TOutputEmitter<typeof descriptor, 'plugin:event'>
-	declare readonly show: TOutputEmitter<typeof descriptor, 'show'>
-	declare readonly hide: TOutputEmitter<typeof descriptor, 'hide'>
-	declare readonly showBefore: TOutputEmitter<typeof descriptor, 'show:before'>
-	declare readonly showAfter: TOutputEmitter<typeof descriptor, 'show:after'>
-	declare readonly hideBefore: TOutputEmitter<typeof descriptor, 'hide:before'>
-	declare readonly hideAfter: TOutputEmitter<typeof descriptor, 'hide:after'>
-	declare readonly ready: TOutputEmitter<typeof descriptor, 'ready'>
-	declare readonly elementCreate: TOutputEmitter<typeof descriptor, 'element:create'>
-	declare readonly elementReady: TOutputEmitter<typeof descriptor, 'element:ready'>
-	declare readonly elementRemoved: TOutputEmitter<typeof descriptor, 'element:removed'>
-	declare readonly readyCreate: TOutputEmitter<typeof descriptor, 'ready:create'>
-	declare readonly actionCreate: TOutputEmitter<typeof descriptor, 'action:create'>
-	declare readonly actionPress: TOutputEmitter<typeof descriptor, 'action:press'>
-	declare readonly actionClick: TOutputEmitter<typeof descriptor, 'action:click'>
-	declare readonly actionFocus: TOutputEmitter<typeof descriptor, 'action:focus'>
-	declare readonly actionBlur: TOutputEmitter<typeof descriptor, 'action:blur'>
-	declare readonly ariaCreate: TOutputEmitter<typeof descriptor, 'aria:create'>
-	declare readonly changeRendered: TOutputEmitter<typeof descriptor, 'change:rendered'>
-	declare readonly changeVisible: TOutputEmitter<typeof descriptor, 'change:visible'>
-	declare readonly changeTag: TOutputEmitter<typeof descriptor, 'change:tag'>
-	declare readonly changeDirection: TOutputEmitter<typeof descriptor, 'change:direction'>
-	declare readonly changeClasses: TOutputEmitter<typeof descriptor, 'change:classes'>
-	declare readonly changeAria: TOutputEmitter<typeof descriptor, 'change:aria'>
-	declare readonly changeDataset: TOutputEmitter<typeof descriptor, 'change:dataset'>
-	declare readonly changeAttrs: TOutputEmitter<typeof descriptor, 'change:attrs'>
-	declare readonly changeSize: TOutputEmitter<typeof descriptor, 'change:size'>
-	declare readonly changeVariant: TOutputEmitter<typeof descriptor, 'change:variant'>
-	declare readonly changeDisabled: TOutputEmitter<typeof descriptor, 'change:disabled'>
-	declare readonly changeFocused: TOutputEmitter<typeof descriptor, 'change:focused'>
-	declare readonly changeText: TOutputEmitter<typeof descriptor, 'change:text'>
-	declare readonly ariaChangeLabel: TOutputEmitter<typeof descriptor, 'aria:change:label'>
-	declare readonly ariaChangeLabelledBy: TOutputEmitter<
-		typeof descriptor,
-		'aria:change:labelledBy'
-	>
-	declare readonly ariaChangeDescribedBy: TOutputEmitter<
-		typeof descriptor,
-		'aria:change:describedBy'
-	>
+	get bundleCreate(): TOutputEmitter<typeof descriptor, 'bundle:create'> {
+		return this.createOutput('bundleCreate')
+	}
+	get pluginEvent(): TOutputEmitter<typeof descriptor, 'plugin:event'> {
+		return this.createOutput('pluginEvent')
+	}
+	get show(): TOutputEmitter<typeof descriptor, 'show'> {
+		return this.createOutput('show')
+	}
+	get hide(): TOutputEmitter<typeof descriptor, 'hide'> {
+		return this.createOutput('hide')
+	}
+	get showBefore(): TOutputEmitter<typeof descriptor, 'show:before'> {
+		return this.createOutput('showBefore')
+	}
+	get showAfter(): TOutputEmitter<typeof descriptor, 'show:after'> {
+		return this.createOutput('showAfter')
+	}
+	get hideBefore(): TOutputEmitter<typeof descriptor, 'hide:before'> {
+		return this.createOutput('hideBefore')
+	}
+	get hideAfter(): TOutputEmitter<typeof descriptor, 'hide:after'> {
+		return this.createOutput('hideAfter')
+	}
+	get ready(): TOutputEmitter<typeof descriptor, 'ready'> {
+		return this.createOutput('ready')
+	}
+	get elementCreate(): TOutputEmitter<typeof descriptor, 'element:create'> {
+		return this.createOutput('elementCreate')
+	}
+	get elementReady(): TOutputEmitter<typeof descriptor, 'element:ready'> {
+		return this.createOutput('elementReady')
+	}
+	get elementRemoved(): TOutputEmitter<typeof descriptor, 'element:removed'> {
+		return this.createOutput('elementRemoved')
+	}
+	get readyCreate(): TOutputEmitter<typeof descriptor, 'ready:create'> {
+		return this.createOutput('readyCreate')
+	}
+	get actionCreate(): TOutputEmitter<typeof descriptor, 'action:create'> {
+		return this.createOutput('actionCreate')
+	}
+	get actionPress(): TOutputEmitter<typeof descriptor, 'action:press'> {
+		return this.createOutput('actionPress')
+	}
+	get actionClick(): TOutputEmitter<typeof descriptor, 'action:click'> {
+		return this.createOutput('actionClick')
+	}
+	get actionFocus(): TOutputEmitter<typeof descriptor, 'action:focus'> {
+		return this.createOutput('actionFocus')
+	}
+	get actionBlur(): TOutputEmitter<typeof descriptor, 'action:blur'> {
+		return this.createOutput('actionBlur')
+	}
+	get ariaCreate(): TOutputEmitter<typeof descriptor, 'aria:create'> {
+		return this.createOutput('ariaCreate')
+	}
+	get changeRendered(): TOutputEmitter<typeof descriptor, 'change:rendered'> {
+		return this.createOutput('changeRendered')
+	}
+	get changeVisible(): TOutputEmitter<typeof descriptor, 'change:visible'> {
+		return this.createOutput('changeVisible')
+	}
+	get changeTag(): TOutputEmitter<typeof descriptor, 'change:tag'> {
+		return this.createOutput('changeTag')
+	}
+	get changeDirection(): TOutputEmitter<typeof descriptor, 'change:direction'> {
+		return this.createOutput('changeDirection')
+	}
+	get changeClasses(): TOutputEmitter<typeof descriptor, 'change:classes'> {
+		return this.createOutput('changeClasses')
+	}
+	get changeAria(): TOutputEmitter<typeof descriptor, 'change:aria'> {
+		return this.createOutput('changeAria')
+	}
+	get changeDataset(): TOutputEmitter<typeof descriptor, 'change:dataset'> {
+		return this.createOutput('changeDataset')
+	}
+	get changeAttrs(): TOutputEmitter<typeof descriptor, 'change:attrs'> {
+		return this.createOutput('changeAttrs')
+	}
+	get changeSize(): TOutputEmitter<typeof descriptor, 'change:size'> {
+		return this.createOutput('changeSize')
+	}
+	get changeVariant(): TOutputEmitter<typeof descriptor, 'change:variant'> {
+		return this.createOutput('changeVariant')
+	}
+	get changeDisabled(): TOutputEmitter<typeof descriptor, 'change:disabled'> {
+		return this.createOutput('changeDisabled')
+	}
+	get changeFocused(): TOutputEmitter<typeof descriptor, 'change:focused'> {
+		return this.createOutput('changeFocused')
+	}
+	get changeText(): TOutputEmitter<typeof descriptor, 'change:text'> {
+		return this.createOutput('changeText')
+	}
+	get ariaChangeLabel(): TOutputEmitter<typeof descriptor, 'aria:change:label'> {
+		return this.createOutput('ariaChangeLabel')
+	}
+	get ariaChangeLabelledBy(): TOutputEmitter<typeof descriptor, 'aria:change:labelledBy'> {
+		return this.createOutput('ariaChangeLabelledBy')
+	}
+	get ariaChangeDescribedBy(): TOutputEmitter<typeof descriptor, 'aria:change:describedBy'> {
+		return this.createOutput('ariaChangeDescribedBy')
+	}
 }

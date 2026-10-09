@@ -1,7 +1,7 @@
 import { Component, ChangeDetectionStrategy } from '@angular/core'
 import type { IComponent } from '@soldy-ui/core'
 import type { TBinding } from '../../adapter'
-import { ComponentInputNames, ComponentOutputNames, TComponentSurface } from './base.component'
+import { ComponentInputNames, TComponentSurface } from './base.component'
 import { setupComponent } from './setup.component'
 
 /**
@@ -21,7 +21,7 @@ import { setupComponent } from './setup.component'
 })
 export class TComponentComponent extends TComponentSurface<IComponent> {
 	constructor() {
-		super(ComponentInputNames, ComponentOutputNames)
+		super(ComponentInputNames)
 	}
 
 	protected createBinding(ctrl: IComponent | undefined, inputs: object): TBinding<IComponent> {
