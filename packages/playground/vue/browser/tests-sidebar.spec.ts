@@ -9,7 +9,6 @@
 import { describe, it, expect } from 'vitest'
 import { render } from 'vitest-browser-vue'
 import { router } from '../src/router'
-import { SCENARIOS, testsPath } from '../src/catalog'
 import TestsSidebar from '../src/components/TestsSidebar.vue'
 
 import '@soldy-ui/theme-oren'
@@ -19,7 +18,8 @@ const nextFrame = () => new Promise((resolve) => requestAnimationFrame(resolve))
 
 describe('меню страницы тестов', () => {
 	it('каждый список лежит в своей колонке, колонки не наезжают друг на друга', async () => {
-		await router.push(testsPath(SCENARIOS) ?? '/tests')
+		// Тесты фреймворка без темы — роутер ведёт на первую тему и её компонент
+		await router.push('/vue/tests')
 		await router.isReady()
 
 		render(TestsSidebar, { global: { plugins: [router] } })

@@ -2,12 +2,12 @@
 import { computed, onBeforeUnmount, onMounted, useTemplateRef } from 'vue'
 import { Button } from '@soldy-ui/vue'
 import type { TScenario, TScenarioState, TScenarioStatus } from '@soldy-ui/playground-shared'
-import { useScenarios } from '../composables/useScenarios'
+import type { TScenarioBench } from '../composables/useScenarios'
 
-const props = defineProps<{ scenario: TScenario }>()
+const props = defineProps<{ scenario: TScenario; bench: TScenarioBench }>()
 
-const bench = useScenarios()
 const scene = useTemplateRef<HTMLElement>('scene')
+const target = useTemplateRef<HTMLElement>('target')
 
 const IDLE: TScenarioState = { status: 'idle', checks: [] }
 
@@ -19,29 +19,34 @@ const STATUS: Record<TScenarioStatus, string> = {
 	failed: 'упал',
 }
 
-const state = computed(() => bench.states.value[props.scenario.id] ?? IDLE)
-const stage = computed(() => bench.stages.get(props.scenario.id))
+const state = computed(() => props.bench.states.value[props.scenario.id] ?? IDLE)
+const staged = computed(() => props.bench.staged.has(props.scenario.id))
 const manual = computed(() => props.scenario.kind === 'manual')
 
 /**
- * Сцену хост находит по идентификатору сценария: блок отдаёт ему свой узел,
- * пока смонтирован. Узел один на всё время жизни блока — перезапуск меняет
- * `key` компонента внутри, а не саму сцену.
+ * Сцену хост находит по идентификатору сценария: блок отдаёт ему свои узлы,
+ * пока смонтирован. Узлы одни на всё время жизни блока — перезапуск
+ * монтирует компонент заново в тот же узел, а не меняет саму сцену.
+ *
+ * Узел монтирования — пустой и `display: contents`: компонент хоста стоит в
+ * раскладке сцены сам, как стоял бы её прямой ребёнок.
  */
 onMounted(() => {
-	if (scene.value) bench.attach(props.scenario.id, scene.value)
+	if (scene.value && target.value) {
+		props.bench.attach(props.scenario.id, { scene: scene.value, target: target.value })
+	}
 })
 
 onBeforeUnmount(() => {
-	if (scene.value) bench.detach(props.scenario.id, scene.value)
+	if (scene.value) props.bench.detach(props.scenario.id, scene.value)
 })
 
 function run(): void {
-	void bench.runner.run(props.scenario.id)
+	void props.bench.runner.run(props.scenario.id)
 }
 
 function mark(passed: boolean): void {
-	bench.runner.mark(props.scenario.id, passed)
+	props.bench.runner.mark(props.scenario.id, passed)
 }
 </script>
 
@@ -108,11 +113,12 @@ function mark(passed: boolean): void {
 
 		<!--
 			Сцену можно тянуть мышью за угол (CSS `resize`) — ширину ей задаёт и
-			сценарий. Слоты и раскладку смотрят именно так.
+			сценарий. Слоты и раскладку смотрят именно так. Компонент в неё
+			монтирует хост фреймворка — в пустой узел, заглушка стоит рядом.
 		-->
 		<div ref="scene" class="pg-scenario__scene">
-			<component :is="stage.component" v-if="stage" :key="stage.key" v-bind="stage.bind" />
-			<span v-else class="pg-scenario__placeholder">Сцена появится при запуске</span>
+			<div ref="target" class="pg-mount" />
+			<span v-if="!staged" class="pg-scenario__placeholder">Сцена появится при запуске</span>
 		</div>
 	</article>
 </template>

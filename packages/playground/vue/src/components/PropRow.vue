@@ -5,37 +5,37 @@ import { TPluginBundle } from '@soldy-ui/plugins'
 import {
 	createInstance,
 	isEmptyField,
+	type IPreviewHost,
 	type TComponentEntry,
 	type TInstance,
+	type TPreviewEventSink,
 	type TPropControl,
 } from '@soldy-ui/playground-shared'
-import { PREVIEW_COMPONENTS } from '../previews'
-import { propSnippet, instanceSnippet } from '../snippet'
 import PropControl from './PropControl.vue'
+import PreviewStage from './PreviewStage.vue'
 import CodeView from './CodeView.vue'
-import type { TEventSource } from '../composables/useEvents'
 
 const props = defineProps<{
 	entry: TComponentEntry
 	control: TPropControl
+	/** Хост фреймворка, выбранного в шапке: он и рисует обе колонки. */
+	host: IPreviewHost
 	/**
-	 * Обработчики событий с пометкой источника. Обе колонки эмитят одинаковые
-	 * имена, и без пометки нельзя понять, чьё событие пришло.
+	 * Куда отдать события колонки. Обе колонки рисуют один компонент и
+	 * отдают одинаковые имена, и без пометки нельзя понять, чьё событие пришло.
 	 */
-	tag: (source: TEventSource) => Record<string, (...args: unknown[]) => void>
-	iconVersion: number
+	sink: (column: 'props' | 'instance') => TPreviewEventSink
 }>()
 
 const value = shallowRef<unknown>(props.control.default)
-
-const preview = computed(() => PREVIEW_COMPONENTS[props.entry.id])
 
 /**
  * Экземпляр ядра для правой колонки.
  *
  * Создаётся один раз на строку: у каждого пропа свой компонент, и общий
  * экземпляр склеил бы соседние строки — правка `size` меняла бы и превью
- * `variant`.
+ * `variant`. Строка переживает смену фреймворка (её ключ от него не зависит),
+ * и экземпляр вместе с ней: хост другого фреймворка получает тот же `ctrl`.
  */
 const instance = shallowRef(createInstance(props.entry))
 
@@ -46,7 +46,7 @@ const isCollectionRow = props.control.scope === 'collection'
  *
  * Раньше стенд ждал его событием `engine:create`: превью создавало движок
  * внутри себя, и до монтирования достать его было нечем. Теперь движок можно
- * собрать снаружи и отдать пропом `:engine` — стенд строит его сам, ещё до
+ * собрать снаружи и отдать пропом `engine` — стенд строит его сам, ещё до
  * первого рендера превью, тем же способом, каким это делает любой потребитель
  * библиотеки.
  *
@@ -64,10 +64,10 @@ const engine = isCollectionRow ? createEngine() : null
  * Фасад коллекции правой колонки — тонкая обёртка над тем же движком.
  *
  * Строится сразу и с тем же владельцем, что получит настоящий компонент:
- * `instance.value` — это и есть тот инстанс, который уйдёт ему пропом
- * `:ctrl="instance"` и станет внутри `adapter.instance`. Один владелец на
- * обе стороны — фасад дополняет движок владельческими расширениями сразу,
- * своим же конструктором, а не ждёт, пока это сделает превью.
+ * `instance.value` — это и есть тот инстанс, который уйдёт ему пропом `ctrl`
+ * и станет внутри `adapter.instance`. Один владелец на обе стороны — фасад
+ * дополняет движок владельческими расширениями сразу, своим же
+ * конструктором, а не ждёт, пока это сделает превью.
  *
  * Без `owner` было бы иначе: `TAccordionCollectionFacade` и соседи трогают
  * владельческое расширение в собственном конструкторе (`this.extensions
@@ -96,11 +96,11 @@ function createFacade(withEngine: unknown): TInstance {
  * Bundle правой колонки — последний, пришедший событием `bundle:create`.
  *
  * Плагины собирает адаптер при монтировании превью, и тому, у кого на руках
- * только инстанс, их отдаёт одно это событие на шине самого инстанса. Своего
- * bundle стенд не собирает: набор плагинов — инвариант компонента, а не его
- * параметр. Перемонтирование колонки (смена пакета иконок меняет `key`)
- * собирает новый bundle со свежими плагинами — поэтому значение пишется при
- * каждом его появлении, а не только при смене.
+ * только инстанс, их отдаёт одно это событие на шине самого инстанса — у
+ * адаптера любого фреймворка. Своего bundle стенд не собирает: набор плагинов
+ * — инвариант компонента, а не его параметр. Перемонтирование колонки (смена
+ * фреймворка или пакета иконок) собирает новый bundle со свежими плагинами —
+ * поэтому значение пишется при каждом его появлении, а не только при смене.
  */
 let bundle: TPluginBundle | null = null
 
@@ -156,12 +156,14 @@ watch(value, write)
 
 onUnmounted(() => instance.value.destroy?.())
 
+/** Приёмники событий колонок — по одному на строку, а не на каждую отрисовку. */
+const propSink = props.sink('props')
+const instanceSink = props.sink('instance')
+
 // Пресет первым: собственное значение строки его перекрывает, а не наоборот
 const propBind = computed(() => ({
 	...props.control.preset,
 	...(isEmptyField(value.value) ? {} : { [props.control.name]: value.value }),
-	...props.tag('props'),
-	key: props.iconVersion,
 }))
 
 const instanceBind = computed(() => ({
@@ -174,8 +176,6 @@ const instanceBind = computed(() => ({
 	// `owner` сам, а `engine:create`, который он при этом эмитит, идёт в общий
 	// журнал событий как обычно, без отдельного перехвата
 	...(engine ? { engine } : {}),
-	...props.tag('instance'),
-	key: props.iconVersion,
 }))
 </script>
 
@@ -199,26 +199,42 @@ const instanceBind = computed(() => ({
 
 		<p class="pg-prop__note">{{ control.description }}</p>
 
+		<!--
+			Колонки рисует хост фреймворка (`PreviewStage`), код под ними — тоже
+			он: нет генератора у хоста — нет и блоков кода.
+		-->
 		<div class="pg-prop__columns">
 			<div class="pg-col">
 				<div class="pg-col__head">Component</div>
 				<div class="pg-col__stage">
-					<component :is="preview" v-if="preview" v-bind="propBind" />
+					<PreviewStage
+						:host="host"
+						:component="entry.id"
+						:bind="propBind"
+						:sink="propSink"
+					/>
 				</div>
 				<CodeView
+					v-if="host.snippets"
 					:name="`${entry.label}-${control.name}`"
-					:code="propSnippet(entry, control.name, value, control.preset)"
+					:code="host.snippets.propSnippet(entry, control.name, value, control.preset)"
 				/>
 			</div>
 
 			<div class="pg-col">
 				<div class="pg-col__head">Component Instance</div>
 				<div class="pg-col__stage">
-					<component :is="preview" v-if="preview" v-bind="instanceBind" />
+					<PreviewStage
+						:host="host"
+						:component="entry.id"
+						:bind="instanceBind"
+						:sink="instanceSink"
+					/>
 				</div>
 				<CodeView
+					v-if="host.snippets"
 					:name="`${entry.label}-${control.name}-instance`"
-					:code="instanceSnippet(entry, control, value)"
+					:code="host.snippets.instanceSnippet(entry, control, value)"
 				/>
 			</div>
 		</div>

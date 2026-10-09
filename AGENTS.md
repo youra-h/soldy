@@ -9,7 +9,7 @@ A headless UI component framework. Core business logic is **framework-agnostic**
 ## Commands
 
 ```bash
-npm run dev:vue      # Vue demo (Vite)
+npm run dev          # стенд: оболочка Vue, превью на фреймворке из шапки (Vite)
 npm run test:core    # Vitest — @soldy-ui/core
 npm run test:setup   # Vitest — @soldy-ui/setup
 npm run test:vue
@@ -30,7 +30,7 @@ npm run build
 # (см. «Версии пакетов»)
 npm run check:published-imports
 
-# Тема отдаёт dist/index.css, который подключает стенд Vue (dist в .gitignore).
+# Тема отдаёт dist/index.css, который подключает стенд (dist в .gitignore).
 # Полный build темы собирает ещё и её поведение (./setup) и потому требует
 # собранных соседей — правишь стили, зови build:css
 npm run build:css --workspace=@soldy-ui/theme-oren
@@ -772,5 +772,6 @@ Proxy над инстансом библиотека не запрещает, н
   «внутренний экземпляр или разметка».
 - `packages/themes/oren/AGENTS.md` — инструкции пакета темы: шкалы, схемы,
   токены. Читать перед правкой стилей; на другие темы не распространяется.
-- `packages/playground/` — стенд разработчика (`npm run dev:vue`). См. раздел
-  ниже.
+- `packages/playground/` — стенд разработчика (`npm run dev`): оболочка на
+  Vue, превью — на фреймворке из шапки. Инструкции —
+  `packages/playground/AGENTS.md`.

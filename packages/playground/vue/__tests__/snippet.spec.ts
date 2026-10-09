@@ -5,13 +5,22 @@
  * существует не на компоненте, а на его коллекции. Вставленный в реальный
  * проект такой код падал бы или молча ничего не менял: у `TAccordion` нет
  * свойства `mode`.
+ *
+ * Код колонок пишет хост фреймворка — здесь хост Vue, полученный загрузчиком,
+ * как его получает оболочка.
  */
 
 import { describe, it, expect } from 'vitest'
 import type { TPropControl, TPropOwner } from '@soldy-ui/playground-shared'
 import { COMPONENTS } from '@soldy-ui/playground-shared'
 import { TAriaPlugin } from '@soldy-ui/plugins'
-import { propSnippet, instanceSnippet } from '../src/snippet'
+import { loadHost } from '../src/hosts'
+
+const { snippets } = await loadHost('vue')
+
+if (!snippets) throw new Error('у хоста Vue нет кода колонок')
+
+const { propSnippet, instanceSnippet } = snippets
 
 /** Запись манифеста по id; без неё проверять нечего. */
 function entryOf(id: string) {

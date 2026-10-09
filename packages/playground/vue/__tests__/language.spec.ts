@@ -1,35 +1,24 @@
 /**
  * Язык библиотеки в шапке стенда.
  *
- * Своего языка у компонента нет — это локаль провайдера вокруг стенда
- * (`LocaleProvider` в `App.vue`), а на стенде её выбирает «Язык» в шапке
- * (`useLanguage`). Проверяется проводка через настоящее нажатие: выбор доходит
- * до компонентов на странице без перемонтирования — и подписи дат, и строки
- * библиотеки — и переживает перезагрузку стенда.
+ * Своего языка у компонента нет — это локаль провайдера, а на стенде её
+ * выбирает «Язык» в шапке (`useLanguage`). Превью рисуют хосты фреймворков в
+ * своих корнях, и контекст провайдера оболочки туда не проходит: язык каждому
+ * корню отдаёт загрузчик хостов (`setLocale`), а у корня свой провайдер.
+ * Проверяется проводка через настоящее нажатие на настоящей странице: выбор
+ * доходит до превью без перемонтирования — и подписи дат, и строки библиотеки
+ * — у каждого фреймворка, и переживает перезагрузку стенда.
  */
 
 import { describe, it, expect, beforeAll, afterEach, vi } from 'vitest'
-import { mount, type VueWrapper } from '@vue/test-utils'
-import { defineComponent, h, nextTick } from 'vue'
-import { Calendar, LocaleProvider } from '@soldy-ui/vue'
+import { mount, type DOMWrapper, type VueWrapper } from '@vue/test-utils'
+import { nextTick } from 'vue'
 import { LOCALES } from '@soldy-ui/playground-shared'
 import { router } from '../src/router'
-import AppHeader from '../src/components/AppHeader.vue'
-import { useLanguage } from '../src/composables/useLanguage'
+import App from '../src/App.vue'
+import PropControl from '../src/components/PropControl.vue'
 
 const nextFrame = () => new Promise((resolve) => requestAnimationFrame(resolve))
-
-/** Шапка и календарь под провайдером языка стенда — как превью в `App.vue`. */
-const Page = defineComponent({
-	setup() {
-		const { locale } = useLanguage()
-
-		return () =>
-			h(LocaleProvider, { locale: locale.value }, () =>
-				h('div', [h(AppHeader), h(Calendar, { months: ['2026-09-01'] })]),
-			)
-	},
-})
 
 /** Подпись языка в списке шапки. */
 function labelOf(tag: string): string {
@@ -40,11 +29,14 @@ function labelOf(tag: string): string {
 	return entry.label
 }
 
-/** Смонтированная страница теста — `afterEach` возвращает через неё язык. */
+/** Смонтированный стенд теста — `afterEach` возвращает через него язык. */
 let page: VueWrapper | undefined
 
-async function mountPage(): Promise<VueWrapper> {
-	page = mount(Page, { global: { plugins: [router] }, attachTo: document.body })
+/** Стенд целиком — шапка и страница по адресу, как его открывает человек. */
+async function open(path: string): Promise<VueWrapper> {
+	await router.push(path)
+
+	page = mount(App, { global: { plugins: [router] }, attachTo: document.body })
 
 	await nextTick()
 	await nextFrame()
@@ -74,11 +66,19 @@ async function choose(wrapper: VueWrapper, label: string): Promise<void> {
 
 	option.click()
 	await nextTick()
+	await nextFrame()
 }
 
-/** Подписи колонок календаря по порядку. */
-const weekdays = () =>
-	[...document.querySelectorAll('.s-calendar__weekday')].map((cell) => cell.textContent?.trim())
+/** Строка страницы по имени пропа. */
+function rowOf(wrapper: VueWrapper, name: string): DOMWrapper<Element> {
+	const found = wrapper
+		.findAll('.pg-prop')
+		.find((row) => row.find('.pg-prop__name').text() === name)
+
+	if (!found) throw new Error(`нет строки ${name}`)
+
+	return found
+}
 
 /**
  * Короткие имена недели языка `locale`, с первого дня `first` (2026-09-20 —
@@ -93,6 +93,8 @@ function week(locale: string, first: number): string[] {
 }
 
 beforeAll(async () => {
+	// Превью пишут события в консоль — в отчёте это шум
+	vi.spyOn(console, 'log').mockImplementation(() => {})
 	router.push('/')
 	await router.isReady()
 })
@@ -110,23 +112,55 @@ afterEach(async () => {
 })
 
 describe('выбор «Язык» в шапке', () => {
-	it('доходит до календаря на странице без перемонтирования', async () => {
-		const wrapper = await mountPage()
-		const grid = document.querySelector('.s-calendar__grid')
-		const prev = document.querySelector('.s-calendar__prev')
+	it('доходит до календаря хоста Vue без перемонтирования', async () => {
+		const wrapper = await open('/vue/calendar')
+		const calendar = wrapper.get('.pg-col__stage .s-calendar')
+		const grid = calendar.get('.s-calendar__grid').element
+		const prev = calendar.get('.s-calendar__prev').element
+		const weekdays = () =>
+			calendar.findAll('.s-calendar__weekday').map((cell) => cell.text().trim())
 
 		expect(weekdays()).toEqual(week('en-US', 0))
-		expect(prev?.getAttribute('aria-label')).toBe('Previous month')
+		expect(prev.getAttribute('aria-label')).toBe('Previous month')
 
 		await choose(wrapper, labelOf('ru-RU'))
 
-		expect(document.querySelector('.s-calendar__grid')).toBe(grid)
+		expect(calendar.get('.s-calendar__grid').element).toBe(grid)
 		expect(weekdays()).toEqual(week('ru-RU', 1))
-		expect(prev?.getAttribute('aria-label')).toBe('Предыдущий месяц')
+		expect(prev.getAttribute('aria-label')).toBe('Предыдущий месяц')
+	})
+
+	/**
+	 * У React своя локаль корня: строка кнопки очистки поля — `field.clear` —
+	 * переводится на лету, а кнопка остаётся тем же узлом. Обе колонки:
+	 * вторую рисует тот же хост с экземпляром ядра.
+	 */
+	it('доходит до имени кнопки очистки Input хоста React без перемонтирования', async () => {
+		const wrapper = await open('/react/input')
+		const row = rowOf(wrapper, 'clearable')
+
+		row.findComponent(PropControl).vm.$emit('update:modelValue', true)
+		await nextTick()
+		await nextFrame()
+
+		const buttons = row
+			.findAll('.pg-col__stage .s-input__clear')
+			.map((button) => button.element)
+		const names = () => buttons.map((button) => button.getAttribute('aria-label'))
+
+		expect(buttons).toHaveLength(2)
+		expect(names()).toEqual(['Clear', 'Clear'])
+
+		await choose(wrapper, labelOf('ru-RU'))
+
+		expect(
+			row.findAll('.pg-col__stage .s-input__clear').map((button) => button.element),
+		).toEqual(buttons)
+		expect(names()).toEqual(['Очистить', 'Очистить'])
 	})
 
 	it('переживает перезагрузку стенда', async () => {
-		await choose(await mountPage(), labelOf('ru-RU'))
+		await choose(await open('/vue'), labelOf('ru-RU'))
 
 		// Новая страница: модули стенда — заново, язык — из хранилища
 		vi.resetModules()

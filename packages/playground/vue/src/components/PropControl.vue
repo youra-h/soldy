@@ -7,9 +7,10 @@ import { parseNumberOrText, type TPropControl } from '@soldy-ui/playground-share
  * Редактор одного пропа.
  *
  * Тип контрола приходит из общего манифеста, а не выбирается здесь: логика
- * «есть список значений — значит Select, иначе по типу» одинакова для всех
- * шести адаптеров и потому живёт в `@soldy-ui/playground-shared`. Здесь остаётся
- * только отрисовка — тем же набором компонентов, который стенд и проверяет.
+ * «есть список значений — значит Select, иначе по типу» — данные стенда, а не
+ * его отрисовка, и живёт в `@soldy-ui/playground-shared`. Здесь остаётся только
+ * отрисовка — компонентами soldy на Vue, оболочкой стенда. Превью на
+ * выбранном фреймворке строка получает от хоста, а редактор у неё один.
  */
 const props = defineProps<{ control: TPropControl; modelValue: unknown }>()
 
@@ -30,7 +31,7 @@ function onNumber(value: unknown): void {
 
 /**
  * Поле «число или текст»: `40` уходит числом (px), `10%` и `auto` — строкой
- * как набраны. Правило общее для стендов всех фреймворков — `parseNumberOrText`.
+ * как набраны. Правило — `parseNumberOrText` в общем пакете.
  */
 function onNumberOrText(value: unknown): void {
 	emit('update:modelValue', parseNumberOrText(String(value ?? '')))

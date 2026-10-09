@@ -1,16 +1,19 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { propControls } from '@soldy-ui/playground-shared'
+import { findComponent, propControls, type TPreviewEventSink } from '@soldy-ui/playground-shared'
 import { findAvailable } from '../catalog'
+import { frameworkLabel, hostOf } from '../hosts'
 import PropRow from '../components/PropRow.vue'
-import { useEvents, type TEventSource } from '../composables/useEvents'
-import { useIconPack } from '../composables/useIconPack'
 
-const props = defineProps<{ id: string }>()
+const props = defineProps<{ framework: string; id: string }>()
 
-const { version } = useIconPack()
+/** Хост фреймворка из адреса — его загрузил роутер до входа на страницу. */
+const host = computed(() => hostOf(props.framework))
 
-const entry = computed(() => findAvailable(props.id))
+const entry = computed(() => findAvailable(host.value, props.id))
+
+/** Компонент есть в библиотеке, но не у этого фреймворка. */
+const elsewhere = computed(() => (entry.value ? undefined : findComponent(props.id)))
 
 /**
  * Свойства разведены по владельцу, а не свалены в один список.
@@ -25,15 +28,10 @@ const entry = computed(() => findAvailable(props.id))
  */
 const groups = computed(() => (entry.value ? propControls(entry.value) : null))
 
-/** События обеих колонок — в консоль, с пометкой колонки. */
-const handlers = computed(() => {
-	if (!entry.value) return () => ({})
-
-	const events = useEvents(entry.value)
-
-	return (source: TEventSource) =>
-		events((name, args) => console.log(`[${source}] ${name}`, ...args))
-})
+/** События колонки — в консоль, с её пометкой. */
+function sink(column: 'props' | 'instance'): TPreviewEventSink {
+	return (name, args) => console.log(`[${column}] ${name}`, ...args)
+}
 </script>
 
 <template>
@@ -46,12 +44,15 @@ const handlers = computed(() => {
 		<!--
 			Ключ с идентификатором компонента, а не одно имя пропа.
 
-			Маршрут `/component/:id` обслуживает один экземпляр страницы: при
+			Маршрут `/:framework/:id` обслуживает один экземпляр страницы: при
 			переходе меняется только `id`. Имена пропов у компонентов
 			пересекаются (`size`, `disabled`, `variant` есть почти у всех), и по
 			одному имени Vue считал строку той же самой — переиспользовал её со
 			всем, что она завела в `setup`. В правой колонке оставался `ctrl`
 			прежнего компонента: ListBox рисовался с корнем от Button.
+
+			Фреймворка в ключе нет: строка держит значение, экземпляр и движок,
+			и при смене фреймворка остаётся — заново рисуется только сцена.
 		-->
 		<h2 class="pg__group">Свойства компонента</h2>
 
@@ -60,8 +61,8 @@ const handlers = computed(() => {
 			:key="`${entry.id}:${control.name}`"
 			:entry="entry"
 			:control="control"
-			:tag="handlers"
-			:icon-version="version"
+			:host="host"
+			:sink="sink"
 		/>
 
 		<!--
@@ -79,8 +80,8 @@ const handlers = computed(() => {
 				:key="`${entry.id}:collection:${control.name}`"
 				:entry="entry"
 				:control="control"
-				:tag="handlers"
-				:icon-version="version"
+				:host="host"
+				:sink="sink"
 			/>
 		</template>
 
@@ -100,11 +101,16 @@ const handlers = computed(() => {
 				:key="`${entry.id}:plugin:${control.name}`"
 				:entry="entry"
 				:control="control"
-				:tag="handlers"
-				:icon-version="version"
+				:host="host"
+				:sink="sink"
 			/>
 		</template>
 	</template>
+
+	<p v-else-if="elsewhere" class="pg-empty">
+		Компонента {{ elsewhere.label }} у {{ frameworkLabel(framework) }} пока нет — что есть, на
+		<RouterLink :to="`/${framework}`" class="pg-empty__link">витрине</RouterLink>
+	</p>
 
 	<p v-else class="pg-empty">Компонент «{{ id }}» не найден.</p>
 </template>

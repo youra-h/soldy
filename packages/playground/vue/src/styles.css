@@ -359,6 +359,16 @@ a {
 	background: var(--s-component-surface);
 }
 
+/*
+ * Узел, в который хост фреймворка монтирует превью или сцену сценария: свой
+ * корень фреймворка. В раскладке его нет — дети стоят в ячейке, колонке или
+ * сцене сами, как стояли бы их прямые дети: флекс ячейки и автоминимум его
+ * элементов (`browser/tags-preview.spec.ts`) работают с ними, а не с узлом.
+ */
+.pg-mount {
+	display: contents;
+}
+
 .pg-col__foot {
 	display: flex;
 	align-items: center;
@@ -592,4 +602,9 @@ a {
 	padding: 40px;
 	text-align: center;
 	color: var(--s-neutral-500);
+}
+
+/* Ссылка в тексте: ссылки стенда без подчёркивания, а здесь её иначе не видно */
+.pg-empty__link {
+	text-decoration: underline;
 }

@@ -1,36 +1,29 @@
 import {
+	computed,
 	inject,
-	nextTick,
 	shallowReactive,
 	shallowRef,
-	type Component,
+	type ComputedRef,
 	type InjectionKey,
 	type ShallowRef,
 } from 'vue'
 import {
+	TScenarioHost,
 	TScenarioRunner,
-	type IScenarioHost,
+	type IPreviewHost,
 	type TScenario,
 	type TScenarioState,
+	type TSceneNodes,
 	type TTopic,
 } from '@soldy-ui/playground-shared'
-import { findAvailable, SCENARIOS, topicsOf } from '../catalog'
-import { fixtureOf } from '../scenarios/fixtures'
-import { useEvents } from './useEvents'
-
-/** Что стоит на сцене блока: компонент и все его атрибуты. */
-export type TStage = {
-	/** Новый на каждый запуск: Vue монтирует компонент заново, а не обновляет прежний. */
-	key: number
-	component: Component
-	bind: Record<string, unknown>
-}
+import { scenariosOf, topicsOf } from '../catalog'
+import { hostOf } from '../hosts'
 
 /**
- * Страница тестов в сборе: сценарии, раннер и хост Vue.
+ * Страница тестов фреймворка в сборе: сценарии, раннер и хост сценариев.
  *
- * Реактивность — только здесь, в обёртке: раннер общий для стендов всех
- * фреймворков и о Vue не знает. Шаблоны читают снимок состояний, который
+ * Реактивность — только здесь, в обёртке: раннер и хост сценариев общие для
+ * всех фреймворков и о Vue не знают. Шаблоны читают снимок состояний, который
  * обновляется по подписке на раннер.
  */
 export type TScenarioBench = {
@@ -39,64 +32,32 @@ export type TScenarioBench = {
 	readonly runner: TScenarioRunner
 	/** Состояния сценариев — новым объектом на каждое изменение. */
 	readonly states: Readonly<ShallowRef<Readonly<Record<string, TScenarioState>>>>
-	/** Что смонтировано на сценах блоков. Реактивно. */
-	readonly stages: ReadonlyMap<string, TStage>
-	/** Блок отдаёт хосту узел своей сцены — туда хост и монтирует. */
-	attach(id: string, scene: HTMLElement): void
+	/** Сценарии, у которых на сцене компонент. Реактивно: без него — заглушка. */
+	readonly staged: ReadonlySet<string>
+	/** Блок отдаёт свои узлы: сцену — сценарию, узел монтирования — хосту. */
+	attach(id: string, nodes: TSceneNodes): void
 	detach(id: string, scene: HTMLElement): void
 }
 
-const nextFrame = () => new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
-
+/**
+ * Стенд сценариев на хосте превью фреймворка.
+ *
+ * Монтирует хост сценариев (`TScenarioHost`): компонент сценария рисует хост
+ * превью — в узел сцены блока, а события пишет в журнал прогона.
+ */
 export function createScenarioBench(
+	host: IPreviewHost,
 	scenarios: readonly TScenario[],
 	options: { timeout?: number } = {},
 ): TScenarioBench {
-	const stages = shallowReactive(new Map<string, TStage>())
-	const scenes = new Map<string, HTMLElement>()
-	let key = 0
-
-	/**
-	 * Хост Vue: кладёт компонент на сцену блока и ждёт, пока тот отрисуется.
-	 *
-	 * Слушатели — все события, объявленные компонентом, и все пишут в журнал
-	 * прогона: сценарий видит ровно то, что получил бы потребитель Vue.
-	 */
-	const host: IScenarioHost = {
-		async mount({ scenario, instance, journal }) {
-			const entry = findAvailable(scenario.component)
-			const component = fixtureOf(scenario)
-
-			if (!entry || !component) {
-				throw new Error(`стенд Vue не умеет рисовать «${scenario.id}»`)
-			}
-
-			const listeners = useEvents(entry)((name, args) => journal.record(name, args))
-
-			stages.set(scenario.id, {
-				key: ++key,
-				component,
-				bind: { ...scenario.props, ctrl: instance, ...listeners },
-			})
-
-			// Кадр, а не только тик: `TElementPlugin` отдаёт узел плагинам через
-			// requestAnimationFrame, и до него компонент нарисован, но DOM ещё
-			// не слушает — клик сценария ушёл бы в пустоту
-			await nextTick()
-			await nextFrame()
-
-			const scene = scenes.get(scenario.id)
-
-			if (!scene) throw new Error(`у сценария «${scenario.id}» нет блока на странице`)
-
-			return scene
+	const staged = shallowReactive(new Set<string>())
+	const scenes = new TScenarioHost(host, {
+		onStage: (id, on) => {
+			if (on) staged.add(id)
+			else staged.delete(id)
 		},
-		async unmount(id) {
-			if (stages.delete(id)) await nextTick()
-		},
-	}
-
-	const runner = new TScenarioRunner({ host, scenarios, timeout: options.timeout })
+	})
+	const runner = new TScenarioRunner({ host: scenes, scenarios, timeout: options.timeout })
 	const states = shallowRef(runner.snapshot())
 
 	runner.subscribe(() => {
@@ -108,32 +69,43 @@ export function createScenarioBench(
 		topics: topicsOf(scenarios),
 		runner,
 		states,
-		stages,
-		attach(id, scene) {
-			scenes.set(id, scene)
-		},
-		detach(id, scene) {
-			if (scenes.get(id) === scene) scenes.delete(id)
-		},
+		staged,
+		attach: (id, nodes) => scenes.attach(id, nodes),
+		detach: (id, scene) => scenes.detach(id, scene),
 	}
 }
 
-/** Ключ, которым тест подкладывает странице свои сценарии. */
+/** Ключ, которым тест подкладывает странице свой стенд сценариев. */
 export const SCENARIO_BENCH: InjectionKey<TScenarioBench> = Symbol('scenario-bench')
 
-let app: TScenarioBench | null = null
+const benches = new Map<string, TScenarioBench>()
 
 /**
- * Один стенд на всё приложение, модульный, а не на страницу: статусы
- * сценариев переживают смену темы и уход на страницу свойств.
+ * Стенд фреймворка — один на всё приложение, модульный, а не на страницу:
+ * статусы сценариев переживают смену темы и уход на страницу свойств. У
+ * каждого фреймворка свой — свои раннер и статусы: прошёл на Vue не значит
+ * прошёл на React.
  */
-function appBench(): TScenarioBench {
-	app ??= createScenarioBench(SCENARIOS)
+function appBench(framework: string): TScenarioBench {
+	let bench = benches.get(framework)
 
-	return app
+	if (!bench) {
+		const host = hostOf(framework)
+
+		bench = createScenarioBench(host, scenariosOf(host))
+		benches.set(framework, bench)
+	}
+
+	return bench
 }
 
-/** Стенд сценариев: подложенный через `provide`, иначе общий для приложения. */
-export function useScenarios(): TScenarioBench {
-	return inject(SCENARIO_BENCH, appBench, true)
+/**
+ * Стенд сценариев фреймворка: подложенный через `provide`, иначе общий для
+ * приложения. Фреймворк страницы меняется без её перемонтирования, поэтому
+ * стенд — вычисляемый.
+ */
+export function useScenarios(framework: () => string): ComputedRef<TScenarioBench> {
+	const provided = inject(SCENARIO_BENCH, null)
+
+	return computed(() => provided ?? appBench(framework()))
 }

@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { Select, Switch } from '@soldy-ui/vue'
 import { useTheme } from '../composables/useTheme'
 import { useIconPack } from '../composables/useIconPack'
 import { useLanguage } from '../composables/useLanguage'
 import { useMotionMode, type TMotionOffReason } from '../composables/useMotionMode'
-import { propertiesRoute, TESTS_ROUTE } from '../router'
+import { FRAMEWORKS, isFramework } from '../hosts'
+import { frameworkOf, isTestsRoute, propertiesPath, withFramework } from '../navigation'
 
 const { theme, dark, themes } = useTheme()
 const { pack, packs, apply } = useIconPack()
@@ -31,15 +32,31 @@ const motionOff = computed(
 )
 
 const route = useRoute()
+const router = useRouter()
+
+/** Фреймворк превью — первый сегмент адреса. */
+const framework = computed(() => frameworkOf(route))
 
 /**
- * Переход между страницей свойств и страницей тестов. Со страницы тестов —
- * обратно на ту страницу свойств, с которой ушли.
+ * Сменить фреймворк: меняется первый сегмент адреса, остаток пути тот же.
+ * Пропсы, выставленные на странице, остаются у оболочки — заново рисуются
+ * только сцены.
+ */
+function chooseFramework(value: unknown): void {
+	if (isFramework(value) && value !== framework.value) {
+		router.push(withFramework(route.path, value))
+	}
+}
+
+/**
+ * Переход между страницей свойств и страницей тестов — в пределах
+ * фреймворка. Со страницы тестов — обратно на ту страницу свойств, с которой
+ * ушли.
  */
 const counterpart = computed(() =>
-	route.path.startsWith(TESTS_ROUTE)
-		? { to: propertiesRoute.value, label: 'Свойства' }
-		: { to: TESTS_ROUTE, label: 'Тесты' },
+	isTestsRoute(route)
+		? { to: propertiesPath(framework.value), label: 'Свойства' }
+		: { to: `/${framework.value}/tests`, label: 'Тесты' },
 )
 </script>
 
@@ -47,6 +64,22 @@ const counterpart = computed(() =>
 	<header class="pg__header">
 		<div class="pg__brand">soldy <span>· playground</span></div>
 		<RouterLink :to="counterpart.to" class="pg__switch">{{ counterpart.label }}</RouterLink>
+
+		<!--
+			Фреймворк — первым из контролов: он решает, чем нарисованы все
+			компоненты страницы. Плашка движения остаётся у своего переключателя
+		-->
+		<div class="pg__control">
+			<span class="pg__control-label">Фреймворк</span>
+			<Select :value="framework" size="sm" @update:value="chooseFramework($event)">
+				<Select.Item
+					v-for="item in FRAMEWORKS"
+					:key="item.id"
+					:value="item.id"
+					:text="item.label"
+				/>
+			</Select>
+		</div>
 
 		<p v-if="motionOff" class="pg__motion-off" :title="motionOff">{{ motionOff }}</p>
 

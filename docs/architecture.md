@@ -1629,7 +1629,7 @@ There is no `adapter/static/`: React takes prop names from the descriptor types,
 - **Tokens**: `:root,[data-theme='oren'] { --s-accent-500: oklch(...) }` + `@theme inline { --color-s-accent-500: var(--s-accent-500) }` — utilities reference vars, so runtime theme switching via `data-theme` works without rebuild.
 - **Colour schemes**: `tokens-dark.css` (`[data-theme='oren-dark']`) redefines the same scales with roles mirrored; imported AFTER `tokens.css` in `base.css` because both selectors have specificity (0,1,0) and source order decides. See «Тёмная схема» above.
 - UI packages (`react`, `vue`) + `core`/`angular`/`solid`/`svelte` dropped `@soldy-ui/foundation` dep. Component styles are no longer in the UI packages: Button styles were removed from React (`button.scss`/`_mixines.scss`), and no Vue component keeps a `<style>` block — the rest (`_fade.scss`/`_required.scss`, CheckBox/Switch/Input) moved to the theme too.
-- The playground (`packages/playground/vue`) imports `@soldy-ui/theme-oren` (aliased to the built `dist/index.css`; `npm run dev:vue` runs the theme build in watch mode alongside); its own chrome (`src/styles.css`) uses `--s-*` tokens without Tailwind.
+- The playground (`packages/playground/vue`) imports `@soldy-ui/theme-oren` (aliased to the built `dist/index.css`; `npm run dev` runs the theme build in watch mode alongside); its own chrome (`src/styles.css`) uses `--s-*` tokens without Tailwind. The shell is Vue; previews are drawn by the host of the framework picked in the header (`src/hosts/<framework>/`), see `packages/playground/AGENTS.md`.
 
 ### React package config
 

@@ -1,7 +1,6 @@
 import { defineConfig } from 'vitest/config'
 import { defineBrowserCommand, playwright } from '@vitest/browser-playwright'
-import vue from '@vitejs/plugin-vue'
-import path from 'node:path'
+import { aliases, plugins } from './vite.base.ts'
 
 /**
  * Кнопка мыши отдельно от движения. `userEvent` жмёт и отпускает её только
@@ -117,10 +116,11 @@ const compose = defineBrowserCommand(async ({ page }, text: string) => {
  * гонять в нём дымовые тесты незачем. Тема здесь, в отличие от jsdom-конфига,
  * подключена — проверяем мы именно её CSS, и берётся он собранным
  * (`dist/index.css`), поэтому перед прогоном тему надо собрать. Корневой
- * `npm run test:layout` делает это сам.
+ * `npm run test:layout` делает это сам. Плагины и алиасы — общие с
+ * остальными конфигами стенда (`vite.base.ts`).
  */
 export default defineConfig({
-	plugins: [vue()],
+	plugins: plugins(),
 	test: {
 		name: 'layout',
 		include: ['browser/**/*.spec.ts'],
@@ -154,28 +154,6 @@ export default defineConfig({
 		},
 	},
 	resolve: {
-		alias: {
-			// Раньше корня пакета: алиас сравнивается префиксом
-			'@soldy-ui/theme-oren/setup': path.resolve(
-				import.meta.dirname,
-				'../../themes/oren/setup/index.ts',
-			),
-			'@soldy-ui/theme-oren': path.resolve(
-				import.meta.dirname,
-				'../../themes/oren/dist/index.css',
-			),
-			'@soldy-ui/core': path.resolve(import.meta.dirname, '../../core/src'),
-			'@soldy-ui/icons-material': path.resolve(
-				import.meta.dirname,
-				'../../icons/material/src',
-			),
-			'@soldy-ui/plugins': path.resolve(import.meta.dirname, '../../plugins/src'),
-			'@soldy-ui/setup': path.resolve(import.meta.dirname, '../../setup/index.ts'),
-			'@soldy-ui/vue': path.resolve(import.meta.dirname, '../../ui/vue/src/index.ts'),
-			'@soldy-ui/playground-shared': path.resolve(
-				import.meta.dirname,
-				'../shared/src/index.ts',
-			),
-		},
+		alias: aliases({ themeCss: true }),
 	},
 })

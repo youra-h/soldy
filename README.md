@@ -229,15 +229,17 @@ Node `^22.12.0 || ^24 || >=26`, npm workspaces.
 
 ```bash
 npm install
-npm run dev:vue     # playground, with the theme rebuilt on change
+npm run dev         # playground, with the theme rebuilt on change
 npm run test:core   # core tests (Vitest)
 npm run test:vue    # Vue adapter tests
 npm run lint        # ESLint
 ```
 
 The playground's overview page shows every component. A component page renders each prop twice —
-from props and from a core instance passed as `ctrl` — with the code for both. The rest of the
-commands are listed in [AGENTS.md → Commands](AGENTS.md#commands).
+from props and from a core instance passed as `ctrl` — with the code for both. Components are drawn
+by the framework picked in the header (Vue, React); the framework is the first segment of the
+address, `#/react/button`. The rest of the commands are listed in
+[AGENTS.md → Commands](AGENTS.md#commands).
 
 ## Roadmap
 

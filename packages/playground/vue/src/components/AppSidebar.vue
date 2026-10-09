@@ -2,13 +2,19 @@
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ListBox } from '@soldy-ui/vue'
-import { SHOWCASE, LAYERS } from '../catalog'
+import { layersOf, showcaseOf } from '../catalog'
+import { hostOf } from '../hosts'
+import { frameworkOf } from '../navigation'
 
 const route = useRoute()
 const router = useRouter()
 
-const showcase = SHOWCASE
-const layers = LAYERS
+/** Фреймворк из адреса: меню — то, что умеет показать его хост. */
+const framework = computed(() => frameworkOf(route))
+const host = computed(() => hostOf(framework.value))
+
+const showcase = computed(() => showcaseOf(host.value))
+const layers = computed(() => layersOf(host.value))
 
 /**
  * Текущий пункт — производная от маршрута, а не отдельное состояние.
@@ -16,18 +22,18 @@ const layers = LAYERS
  * У `ListBox` своё состояние выбора есть, но источником истины остаётся адрес:
  * иначе прямая ссылка или «назад» в браузере рассинхронизировали бы подсветку.
  */
-const current = computed(() => (route.params.id as string) ?? '')
+const current = computed(() => (typeof route.params.id === 'string' ? route.params.id : ''))
 
 function open(id: unknown): void {
 	const next = String(id ?? '')
 
-	if (next && next !== current.value) router.push(`/component/${next}`)
+	if (next && next !== current.value) router.push(`/${framework.value}/${next}`)
 }
 </script>
 
 <template>
 	<nav class="pg__sidebar">
-		<RouterLink to="/">
+		<RouterLink :to="`/${framework}`">
 			<div class="pg__sidebar-title">Витрина</div>
 		</RouterLink>
 
@@ -52,14 +58,16 @@ function open(id: unknown): void {
 			/>
 		</ListBox>
 
-		<div class="pg__sidebar-title">Слои</div>
-		<ListBox mode="single" class="pg__menu" :value="current" @update:value="open">
-			<ListBox.Item
-				v-for="entry in layers"
-				:key="entry.id"
-				:value="entry.id"
-				:text="entry.label"
-			/>
-		</ListBox>
+		<template v-if="layers.length">
+			<div class="pg__sidebar-title">Слои</div>
+			<ListBox mode="single" class="pg__menu" :value="current" @update:value="open">
+				<ListBox.Item
+					v-for="entry in layers"
+					:key="entry.id"
+					:value="entry.id"
+					:text="entry.label"
+				/>
+			</ListBox>
+		</template>
 	</nav>
 </template>
