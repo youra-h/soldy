@@ -112,6 +112,8 @@ export class TStateStore {
 
 		this._snapshot = null
 
-		for (const listener of this._listeners ?? []) listener(line.name, value)
+		const listeners = this._listeners
+
+		if (listeners) for (const listener of listeners) listener(line.name, value)
 	}
 }
