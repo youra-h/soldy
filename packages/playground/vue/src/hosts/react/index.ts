@@ -7,6 +7,7 @@ import { findComponent, type IPreviewHost } from '@soldy-ui/playground-shared'
 import { PREVIEWS, type TPreview } from './previews'
 import { FIXTURES } from './fixtures'
 import { listenersOf } from './events'
+import { instanceSnippet, propSnippet } from './snippet'
 
 /** Язык шапки — один на все корни хоста. */
 let locale: TLocale = enUS
@@ -77,6 +78,8 @@ const host: IPreviewHost = {
 
 		for (const draw of roots) draw()
 	},
+
+	snippets: { extension: 'tsx', propSnippet, instanceSnippet },
 }
 
 export default host

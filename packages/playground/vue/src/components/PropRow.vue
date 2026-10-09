@@ -218,6 +218,7 @@ const instanceBind = computed(() => ({
 					v-if="host.snippets"
 					:name="`${entry.label}-${control.name}`"
 					:code="host.snippets.propSnippet(entry, control.name, value, control.preset)"
+					:extension="host.snippets.extension"
 				/>
 			</div>
 
@@ -235,6 +236,7 @@ const instanceBind = computed(() => ({
 					v-if="host.snippets"
 					:name="`${entry.label}-${control.name}-instance`"
 					:code="host.snippets.instanceSnippet(entry, control, value)"
+					:extension="host.snippets.extension"
 				/>
 			</div>
 		</div>
