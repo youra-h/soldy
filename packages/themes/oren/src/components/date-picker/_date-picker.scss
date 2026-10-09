@@ -2,6 +2,7 @@
 @use '../button/mixins' as button;
 @use '../input/mixins' as input;
 @use '../../mixins/anchored';
+@use '../../mixins/place';
 @use '../../mixins/required' as required;
 
 // DatePicker — поле даты и календарь в панели, как Select — поле и список.
@@ -241,9 +242,10 @@ $empty: ".s-date-picker--range:where(:not(:has(.s-date-input__segment:not([data-
 // панель уходит от поля, пока гаснет (`anchored.panel`).
 .s-date-picker__panel {
 	@apply flex flex-col overflow-hidden rounded-md box-border;
-	@apply bg-s-component-surface text-s-component shadow-md;
+	@apply text-s-component shadow-md;
 	@apply ring-1 ring-s-neutral-300;
 	@apply outline outline-transparent;
+	@include place.surface(var(--s-component-surface));
 	max-width: calc(100vw - 1rem);
 	max-height: calc(100dvh - 1rem);
 

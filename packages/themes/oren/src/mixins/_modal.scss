@@ -1,6 +1,7 @@
 @use 'sass:list';
 @use 'sass:map';
 @use '../components/button/mixins' as button;
+@use './place';
 
 // Модальный слой — общее у модального окна (Dialog) и выезжающей панели
 // (Drawer).
@@ -54,8 +55,9 @@ $button-height: map.get(map.get(button.$sizes, 'normal'), 'h');
 // задаёт компонент: состав кнопок шапки у окна и у панели свой.
 @mixin surface {
 	@apply box-border grid overflow-hidden;
-	@apply bg-s-component-surface text-s-component shadow-xl;
+	@apply text-s-component shadow-xl;
 	@apply ring-1 ring-s-neutral-300;
+	@include place.surface(var(--s-component-surface));
 
 	// Прозрачный контур — вторая половина кромки, как у панелей Popover и
 	// Select: в режиме принудительных цветов браузер убирает кольцо вместе с
@@ -106,6 +108,16 @@ $button-height: map.get(map.get(button.$sizes, 'normal'), 'h');
 		overflow-wrap: break-word;
 	}
 
+	// Таблица прямо в теле: её закреплённая шапка встаёт к краю тела, а не под
+	// отступ (`--s-table-head-offset` — минус отступ сверху). Закреплённое
+	// браузер ставит под отступ контейнера, и в отступе над шапкой проступали
+	// бы строки, которые уходят под неё. Только прямой ребёнок: глубже у
+	// таблицы бывает свой контейнер прокрутки, и сдвиг тела унёс бы её шапку за
+	// его край. Контекст нулевой специфичности — свой сдвиг таблицы сильнее.
+	:where(#{$root}__body > .s-table) {
+		--s-table-head-offset: calc(-1 * #{$space});
+	}
+
 	// Подвал — ряд действий в конце строки, в RTL он сам встаёт слева. Пустой
 	// места не занимает.
 	#{$root}__footer {
@@ -122,6 +134,14 @@ $button-height: map.get(map.get(button.$sizes, 'normal'), 'h');
 	// панели полным отступом, а не промежутком после шапки.
 	#{$root}:not(:has(> #{$root}__title:not(:empty), #{$button-children})) > #{$root}__body {
 		padding-block-start: $pad;
+	}
+
+	:where(
+		#{$root}:not(:has(> #{$root}__title:not(:empty), #{$button-children}))
+			> #{$root}__body
+			> .s-table
+	) {
+		--s-table-head-offset: calc(-1 * #{$pad});
 	}
 
 	// Подвала нет — тело кончается у нижнего края панели полным отступом.
