@@ -7,16 +7,23 @@
  * - `getName()` — полное имя (`aria:label`), уникальное в составе компонента.
  *
  * Имя во фреймворке из него строит стратегия адаптера (`INamingStrategy`).
+ *
+ * Полное имя склеивается один раз, в конструкторе. Имя создаётся на объявление
+ * и живёт, пока жив тип, а полное имя читают на каждом монтировании: по нему
+ * обмен раскладывает события по участникам.
  */
 export class TName {
+	private readonly _fullName: string
+
 	constructor(
 		readonly name: string,
 		readonly namespace?: string,
 	) {
+		this._fullName = namespace ? `${namespace}:${name}` : name
 		Object.freeze(this)
 	}
 
 	getName(): string {
-		return this.namespace ? `${this.namespace}:${this.name}` : this.name
+		return this._fullName
 	}
 }

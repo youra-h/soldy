@@ -10,6 +10,12 @@
  *
  * Событие, у которого нет участника (плагина нет в чужом наборе), маршрута не
  * получает.
+ *
+ * Участника события находит карта «полное имя → участник», собранная одним
+ * проходом по именам участников, как линии — одним проходом по пропсам.
+ * Маршруты строятся на каждое монтирование, и раньше участника искали
+ * перебором всех пропсов и триггеров на каждое событие: в таблице на тысячи
+ * строк это было самым тяжёлым местом монтирования.
  */
 
 import type { TSurface } from '../surface'
@@ -30,14 +36,33 @@ interface IRoute {
 	readonly models: readonly IModelRoute[]
 }
 
+/**
+ * Кто публикует событие — по полному имени. Оно одно в составе компонента; если
+ * его всё же публикуют двое, остаётся первый — порядок участников задаёт сборка.
+ */
+function publishersOf(members: readonly TMember[]): ReadonlyMap<string, TMember> {
+	const byName = new Map<string, TMember>()
+
+	for (const member of members) {
+		for (const name of member.published()) {
+			const fullName = name.getName()
+
+			if (!byName.has(fullName)) byName.set(fullName, member)
+		}
+	}
+
+	return byName
+}
+
 export class TEventRelay {
 	private readonly _routes: readonly IRoute[]
 
 	constructor(members: readonly TMember[], lines: readonly TLine[], surface: TSurface) {
 		const lineOf = new Map(lines.map((line) => [line.spec.name, line]))
+		const publishers = publishersOf(members)
 
 		this._routes = surface.events.flatMap((event): IRoute[] => {
-			const member = members.find((candidate) => candidate.publishes(event.name.getName()))
+			const member = publishers.get(event.name.getName())
 
 			if (!member) return []
 
