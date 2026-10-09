@@ -52,15 +52,28 @@ export const TABLE_RECORDS = [
 export const TABLE_ROWS = TABLE_RECORDS.map((data) => ({ data, disabled: data.id === 4 }))
 
 /**
- * Тысяча строк — для окна (обёртка `Virtual`): на пяти строках окно не видно,
- * а на тысяче видно, что в документе только видимые. Поля — те же, что у
- * записей стенда, по кругу, с номером в имени.
+ * Строки над записями стенда по кругу, с номером в имени и ключе: `count`
+ * строк для таблицы, которую видно в окне прокрутки.
  */
-export const TABLE_MANY_ROWS = Array.from({ length: 1000 }, (_, index) => {
-	const record = TABLE_RECORDS[index % TABLE_RECORDS.length]
+function numberedRows(count: number) {
+	return Array.from({ length: count }, (_, index) => {
+		const record = TABLE_RECORDS[index % TABLE_RECORDS.length]
 
-	return { data: { ...record, id: index + 1, name: `${record.name} ${index + 1}` } }
-})
+		return { data: { ...record, id: index + 1, name: `${record.name} ${index + 1}` } }
+	})
+}
+
+/**
+ * Тысяча строк — для окна (обёртка `Virtual`): на пяти строках окно не видно,
+ * а на тысяче видно, что в документе только видимые.
+ */
+export const TABLE_MANY_ROWS = numberedRows(1000)
+
+/**
+ * Сорок строк — для закреплённой шапки (`stickyHead`) без окна: пять строк
+ * не прокручиваются, а тысяча без окна рисовалась бы целиком.
+ */
+export const TABLE_SCROLL_ROWS = numberedRows(40)
 
 /**
  * Колонки таблицы стенда — данными: имя называет строки (`rowHeader`), все

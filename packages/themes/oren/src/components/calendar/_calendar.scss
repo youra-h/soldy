@@ -2,6 +2,7 @@
 @use '../button/mixins' as button;
 @use '../../mixins/modal';
 @use '../../mixins/motion';
+@use '../../mixins/place';
 @use '../../mixins/swipe';
 @use '../popover/mixins' as popover;
 
@@ -697,9 +698,10 @@ $picker-panel: '.s-calendar__month > .s-calendar__heading > .s-popover__panel[da
 // заголовка у Dialog.
 .s-calendar__picker {
 	@apply box-border flex flex-col rounded-md;
-	@apply bg-s-component-surface text-s-component shadow-md;
+	@apply text-s-component shadow-md;
 	@apply ring-1 ring-s-neutral-300;
 	@apply outline outline-transparent;
+	@include place.surface(var(--s-component-surface));
 	padding: calc(2 * var(--s-calendar-bleed));
 	gap: calc(2 * var(--s-calendar-bleed));
 }

@@ -6,6 +6,7 @@ import {
 	TABLE_COLUMNS,
 	TABLE_MANY_ROWS,
 	TABLE_ROWS,
+	TABLE_SCROLL_ROWS,
 } from '@soldy-ui/playground-shared'
 import {
 	Accordion,
@@ -320,17 +321,25 @@ export const PREVIEWS: Record<string, TPreview> = {
 	 *
 	 * Обёртка — граница ширины, как у ленты: таблица встаёт во всю ширину
 	 * места, а сцена ячейки — флексбокс, и таблица держала бы там только свой
-	 * минимум. Окно таблицы — на странице Virtual.
+	 * минимум. С закреплённой шапкой (`stickyHead`) обёртка — ещё и окно
+	 * прокрутки высотой 320 px, а строк сорок (`TABLE_SCROLL_ROWS`): на пяти
+	 * строках не видно шапки, под которую уходят строки. Строки — данными
+	 * превью, а не пресетом строки: `items` в редакторе пропов нет. Окно
+	 * таблицы — на странице Virtual.
 	 */
 	table: (bind) =>
-		h('div', { style: 'width:100%' }, [
-			h(Table as Component, {
-				items: TABLE_ROWS,
-				columns: TABLE_COLUMNS,
-				aria_label: 'Сотрудники',
-				...bind,
-			}),
-		]),
+		h(
+			'div',
+			{ style: bind.stickyHead ? 'width:100%;height:320px;overflow:auto' : 'width:100%' },
+			[
+				h(Table as Component, {
+					items: bind.stickyHead ? TABLE_SCROLL_ROWS : TABLE_ROWS,
+					columns: TABLE_COLUMNS,
+					aria_label: 'Сотрудники',
+					...bind,
+				}),
+			],
+		),
 
 	tabs: (bind) =>
 		h(Tabs as Component, bind, {

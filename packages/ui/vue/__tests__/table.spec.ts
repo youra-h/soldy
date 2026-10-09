@@ -1147,3 +1147,49 @@ describe('окно', () => {
 		expect(find('.s-table__head-row').hasAttribute('aria-rowindex')).toBe(false)
 	})
 })
+
+/**
+ * Закреплённая шапка (`stickyHead`) — свойство таблицы: ядро пишет его в
+ * набор `dataset`, разметка раскладывает набор на корне. Закрепляет шапку
+ * тема (`playground/vue/browser/table-sticky-head.spec.ts`).
+ */
+describe('закреплённая шапка', () => {
+	it('data-sticky-head на корне — по пропу и вместе с ним', async () => {
+		const sticky = ref(false)
+
+		await render(() =>
+			h(Table, {
+				items: [ANNA, BORIS].map((data) => ({ data })),
+				columns: [NAME],
+				stickyHead: sticky.value,
+			}),
+		)
+
+		const table = find('table.s-table')
+
+		expect(table.dataset.stickyHead).toBe('false')
+
+		sticky.value = true
+		await settle()
+
+		expect(table.dataset.stickyHead).toBe('true')
+
+		sticky.value = false
+		await settle()
+
+		expect(table.dataset.stickyHead).toBe('false')
+	})
+
+	it('с инстанса: шапку закрепили — атрибут на корне', async () => {
+		const owner = new TTable()
+
+		await render(() => h(Table, { ctrl: owner, engine: engineOf('none') }))
+
+		expect(find('table.s-table').dataset.stickyHead).toBe('false')
+
+		owner.stickyHead = true
+		await settle()
+
+		expect(find('table.s-table').dataset.stickyHead).toBe('true')
+	})
+})
