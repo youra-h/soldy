@@ -978,6 +978,217 @@ describe('ручка ширины', () => {
 		})
 	})
 
+	/**
+	 * Колонку без своей ширины тема раскладывает, не глядя на границы, и её
+	 * ширина бывает за своей границей. Ручка пишет только ширину, которую
+	 * колонка примет, — в границах, — и не двигает ширину против действия:
+	 * действие к границам ставит колонку в них, действие от границ ничего не
+	 * делает. Иначе протяжка на пиксель дала бы скачок к границе в обратную
+	 * сторону — шире `maxWidth` колонка сужалась от роста.
+	 */
+	describe('колонка за своей границей', () => {
+		/** Колонка без своей ширины с границами, разложенная темой в `measured` px. */
+		function laidOut(measured: number, props: Partial<ITableColumnProps>) {
+			const { column, commit } = resizable(props)
+			const width = vi.fn()
+
+			column.notifyWidth(measured)
+			column.events.on('change:width', width)
+
+			return { column, commit, width }
+		}
+
+		/** Своё значение ширины — то же, что итог: ручка пишет только то, что колонка примет. */
+		const expectOwnIsResult = (column: ITableColumn) =>
+			expect(column.getProps().width).toBe(column.width)
+
+		describe('шире maxWidth', () => {
+			const BOUNDS = { minWidth: 120, maxWidth: 360 }
+
+			it('поле показывает замер: ход поля шире хода записи', () => {
+				const { column } = laidOut(480, BOUNDS)
+
+				expect(column.width).toBeUndefined()
+				expect(column.resizer).toEqual({ min: 120, max: 480, value: 480 })
+			})
+
+			it('рост, PageUp, End и протяжка вправо ничего не пишут, commit нет', () => {
+				const { column, commit, width } = laidOut(480, BOUNDS)
+
+				column.shift(10)
+				column.shift(100)
+				column.moveToEdge('end')
+
+				column.grab(480)
+				column.drag(1)
+				column.drag(40)
+				column.release()
+
+				expect(column.width).toBeUndefined()
+				expect(column.getProps().width).toBeUndefined()
+				expect(width).not.toHaveBeenCalled()
+				expect(commit).not.toHaveBeenCalled()
+			})
+
+			it('сужение и PageDown — ширина в границах, ближайшая к цели', () => {
+				const narrow = laidOut(480, BOUNDS)
+				const page = laidOut(480, BOUNDS)
+				const far = laidOut(480, BOUNDS)
+
+				narrow.column.shift(-10)
+				page.column.shift(-100)
+				far.column.shift(-1000)
+
+				expect(narrow.column.width).toBe(360)
+				expect(page.column.width).toBe(360)
+				expect(far.column.width).toBe(120)
+				expect(narrow.commit.mock.calls).toEqual([[360]])
+				expectOwnIsResult(narrow.column)
+			})
+
+			it('Home — нижний край хода записи', () => {
+				const { column, commit } = laidOut(480, BOUNDS)
+
+				column.moveToEdge('start')
+
+				expect(column.width).toBe(120)
+				expect(commit.mock.calls).toEqual([[120]])
+			})
+
+			it('протяжка влево — в границах: скачок к границе в сторону протяжки', () => {
+				const { column, commit, width } = laidOut(480, BOUNDS)
+
+				column.grab(480)
+				column.drag(-1)
+
+				expect(column.width).toBe(360)
+				expectOwnIsResult(column)
+
+				column.drag(-200)
+				column.release()
+
+				expect(column.width).toBe(280)
+				expect(width.mock.calls).toEqual([[360], [280]])
+				expect(commit.mock.calls).toEqual([[280]])
+			})
+
+			it('протяжка влево, потом за точку нажатия — снова без своей ширины, отпускание без commit', () => {
+				const { column, commit, width } = laidOut(480, BOUNDS)
+
+				column.grab(480)
+				column.drag(-50)
+
+				expect(column.width).toBe(360)
+
+				column.drag(0)
+
+				expect(column.width).toBeUndefined()
+
+				column.drag(-20)
+				column.drag(30)
+				column.release()
+
+				expect(column.width).toBeUndefined()
+				expect(column.getProps().width).toBeUndefined()
+				expect(width.mock.calls).toEqual([[360], [undefined], [360], [undefined]])
+				expect(commit).not.toHaveBeenCalled()
+			})
+
+			it('жест возвращает своё значение, каким оно было при нажатии', () => {
+				// Своя ширина в границах, а заголовок шире: его раскладку решила тема
+				const { column, commit } = resizable({ ...BOUNDS, width: 300 })
+
+				column.grab(480)
+				column.drag(-200)
+
+				expect(column.width).toBe(280)
+
+				column.drag(10)
+				column.release()
+
+				expect(column.width).toBe(300)
+				expect(commit).not.toHaveBeenCalled()
+			})
+		})
+
+		describe('уже minWidth — зеркально', () => {
+			const BOUNDS = { minWidth: 120 }
+
+			it('поле показывает замер: ход поля шире хода записи', () => {
+				const { column } = laidOut(90, BOUNDS)
+
+				expect(column.resizer.min).toBe(90)
+				expect(column.resizer.value).toBe(90)
+			})
+
+			it('сужение, PageDown, Home и протяжка влево ничего не пишут, commit нет', () => {
+				const { column, commit, width } = laidOut(90, BOUNDS)
+
+				column.shift(-10)
+				column.shift(-100)
+				column.moveToEdge('start')
+
+				column.grab(90)
+				column.drag(-1)
+				column.drag(-40)
+				column.release()
+
+				expect(column.width).toBeUndefined()
+				expect(width).not.toHaveBeenCalled()
+				expect(commit).not.toHaveBeenCalled()
+			})
+
+			it('рост, PageUp и End — в границах', () => {
+				const step = laidOut(90, BOUNDS)
+				const page = laidOut(90, BOUNDS)
+				const end = laidOut(90, BOUNDS)
+				const { max } = end.column.resizer
+
+				step.column.shift(10)
+				page.column.shift(100)
+				end.column.moveToEdge('end')
+
+				expect(step.column.width).toBe(120)
+				expect(page.column.width).toBe(190)
+				expect(end.column.width).toBe(max)
+				expect(step.commit.mock.calls).toEqual([[120]])
+			})
+
+			it('протяжка вправо — в границах; за точку нажатия — снова без своей ширины', () => {
+				const { column, commit } = laidOut(90, BOUNDS)
+
+				column.grab(90)
+				column.drag(1)
+
+				expect(column.width).toBe(120)
+
+				column.drag(60)
+
+				expect(column.width).toBe(150)
+
+				column.drag(-5)
+				column.release()
+
+				expect(column.width).toBeUndefined()
+				expect(commit).not.toHaveBeenCalled()
+			})
+		})
+
+		it('без границ не прижимается: ширина за пределами ядра идёт от себя', () => {
+			const wide = laidOut(100_000, {})
+			const narrow = laidOut(10, {})
+
+			wide.column.grab(100_000)
+			wide.column.drag(-10)
+			wide.column.release()
+			narrow.column.shift(5)
+
+			expect(wide.column.width).toBe(99_990)
+			expect(wide.commit.mock.calls).toEqual([[99_990]])
+			expect(narrow.column.width).toBe(15)
+		})
+	})
+
 	describe('наборы', () => {
 		it('у поля ручки и обёртки содержимого — свои, пустые до плагина связок', () => {
 			const column = new TTableColumn()
