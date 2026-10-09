@@ -13,20 +13,21 @@
  * работают, фокус после ↑, PageUp и Shift+Tab встаёт ниже шапки, а высоту
  * шапки, по которой его ставит тема, пишет плагин темы.
  *
- * Проп включается при монтировании: переключение под наведённым заголовком
- * Chromium дорисовывает не сразу — квирк принят без обхода
- * (`docs/agents/patterns.md`, Table).
+ * Что строки не проступают и в том, что браузер нарисовал, сверяет снимок
+ * шапки (`page.screenshot`): вычисленный стиль и `elementFromPoint` отрисовки
+ * не видят.
  */
 
-import { describe, it, expect, afterEach } from 'vitest'
+import { describe, it, expect, afterAll, afterEach, beforeAll } from 'vitest'
 import { render, cleanup } from 'vitest-browser-vue'
-import { commands, userEvent } from 'vitest/browser'
-import { defineComponent, h, type VNode } from 'vue'
+import { commands, page, userEvent } from 'vitest/browser'
+import { defineComponent, h, ref, type VNode } from 'vue'
 import { TTable, createEngineTable } from '@soldy-ui/core'
 import type { TSelectionMode, TTableCollection, TTableColumnSource } from '@soldy-ui/core'
+import { TABLE_COLUMNS, TABLE_ROWS, TABLE_SCROLL_ROWS } from '@soldy-ui/playground-shared'
 import { Button, Dialog, Popover, Table, Virtual } from '@soldy-ui/vue'
 
-import { find, opacity, pixel, style, systemColor } from './colors'
+import { find, opacity, pixel, settled, style, systemColor } from './colors'
 import { forcedColors } from './media'
 
 import '@soldy-ui/theme-oren'
@@ -124,11 +125,30 @@ const rows = (root: ParentNode = document): HTMLElement[] => [
 	...root.querySelectorAll<HTMLElement>('.s-table-row'),
 ]
 
+/** Заголовки колонок — по порядку. */
+const headers = (): HTMLElement[] => [...document.querySelectorAll<HTMLElement>('.s-table-column')]
+
 /** Прокрутить контейнер так, чтобы верх строки встал вровень с низом шапки. */
 async function rowUnderHead(scroller: HTMLElement, row: Element): Promise<void> {
 	scroller.scrollTop += box(row).top - box(headOf()).bottom
 	await frames(2)
 }
+
+/** Указатель в точку страницы — наводится на `body`: точка бывает между узлами. */
+async function pointAt(x: number, y: number): Promise<void> {
+	const body = box(document.body)
+
+	await userEvent.hover(document.body, { position: { x: x - body.left, y: y - body.top } })
+}
+
+/**
+ * Окно — не больше рамки прогона: окно больше неё браузер масштабирует, края
+ * шапки на снимке сглаживаются, и снимки расходятся сами. Окно у файла одно —
+ * оно и у остальных тестов.
+ */
+beforeAll(async () => {
+	await page.viewport(1000, 700)
+})
 
 afterEach(async () => {
 	cleanup()
@@ -456,6 +476,267 @@ describe('линия под шапкой', () => {
 })
 
 /**
+ * Строки не проступают сквозь шапку и в том, что браузер нарисовал: снимок
+ * шапки, под которую ушли строки, совпадает до пикселя со снимком без
+ * прокрутки, когда строк под ней нет. Вычисленный стиль и `elementFromPoint`
+ * отрисовки не видят, а сквозила шапка именно в ней. Фон группы строк Chromium
+ * кладёт в площадь каждой ячейки: у скруглённых верхних углов заголовка он
+ * срезан, а заголовок, который поменялся посреди перехода своего цвета, —
+ * проп включили под указателем, потянули край колонки, переставили колонку, —
+ * оставался без него и со старой вуалью, пока его не перерисует что-то ещё.
+ * Подложку шапке поэтому рисует её тень (`themes/oren/AGENTS.md`).
+ *
+ * Сцена — превью стенда: окно прокрутки 320 px, сорок строк, колонки стенда —
+ * с сортировкой, ручкой ширины и перестановкой. Ячейки тела — ярко-красные: на
+ * поверхности места строка под углом заголовка видна, только когда под ним
+ * проходит её линия.
+ */
+describe('снимок шапки', () => {
+	const SCHEMES = ['oren', 'oren-dark'] as const
+
+	/** Прокрутки, на которых под углы и середину шапки заходят строки и их линии. */
+	const SCROLLS = [23, 57, 97, 131]
+
+	/** Ячейки тела — ярким цветом стилем спека. */
+	const loud = document.createElement('style')
+
+	loud.textContent = '.s-test-stage .s-table-row > * { background-color: rgb(255 0 0); }'
+
+	beforeAll(() => {
+		document.head.append(loud)
+	})
+
+	afterAll(() => {
+		loud.remove()
+	})
+
+	/**
+	 * Превью таблицы стенда (`previews.ts` хоста Vue): с пропом — окно прокрутки
+	 * 320 px и сорок строк, без него — пять строк в потоке. Проп, окно и строки
+	 * меняет одно обновление, как на стенде.
+	 */
+	const preview = (stickyHead: boolean): VNode =>
+		h(
+			'div',
+			{
+				class: 's-test-scroll',
+				style: stickyHead ? 'width: 100%; height: 320px; overflow: auto' : 'width: 100%',
+			},
+			[
+				h(Table, {
+					items: stickyHead ? TABLE_SCROLL_ROWS : TABLE_ROWS,
+					columns: TABLE_COLUMNS,
+					aria_label: 'Сотрудники',
+					stickyHead,
+				}),
+			],
+		)
+
+	/**
+	 * Превью на странице шириной в колонку стенда, а над ним — полоса, куда
+	 * уводят указатель. Проп — живой: `stickyHead.value` перерисовывает превью.
+	 */
+	async function showPreview(scheme: string, sticky: boolean) {
+		const stickyHead = ref(sticky)
+
+		document.documentElement.dataset.theme = scheme
+		await show(() =>
+			h(
+				'div',
+				{
+					class: 's-test-stage',
+					style: 'width: 640px; padding: 12px; background: var(--s-neutral-50)',
+				},
+				[
+					h('div', { class: 's-test-away', style: 'height: 24px' }),
+					preview(stickyHead.value),
+				],
+			),
+		)
+		await away()
+
+		return stickyHead
+	}
+
+	/** Указатель — в полосу над превью; переходы заголовков доиграли. */
+	async function away(): Promise<void> {
+		await userEvent.hover(find('.s-test-away'))
+		await settled(headOf())
+	}
+
+	/** Снимок узла — пиксели, как их нарисовал браузер. */
+	async function snapshot(element: Element): Promise<ImageData> {
+		const base64 = await page.screenshot({ element, save: false })
+		const blob = await (await fetch(`data:image/png;base64,${base64}`)).blob()
+		const image = await createImageBitmap(blob)
+		const canvas = new OffscreenCanvas(image.width, image.height)
+		const context = canvas.getContext('2d')
+
+		if (!context) throw new Error('канвы нет')
+
+		context.drawImage(image, 0, 0)
+
+		return context.getImageData(0, 0, image.width, image.height)
+	}
+
+	/** Сколько пикселей двух снимков одного размера разошлось. */
+	function mismatch(reference: ImageData, shot: ImageData): number {
+		let count = 0
+
+		for (let index = 0; index < reference.data.length; index += 4) {
+			for (let channel = 0; channel < 4; channel++) {
+				if (reference.data[index + channel] !== shot.data[index + channel]) {
+					count++
+					break
+				}
+			}
+		}
+
+		return count
+	}
+
+	/**
+	 * Цвет заголовка в покое — его пиксель в стороне от подписи, стрелки и
+	 * ручки: у конца заголовка, в верхней трети.
+	 */
+	async function restOf(header: Element): Promise<number[]> {
+		const shot = await snapshot(header)
+		const x = Math.round(shot.width * 0.85)
+		const y = Math.round(shot.height * 0.3)
+		const index = (y * shot.width + x) * 4
+
+		return [...shot.data.slice(index, index + 4)]
+	}
+
+	/**
+	 * Строки уходят под шапку, а её снимок прежний. Эталон — без прокрутки,
+	 * когда строк под шапкой нет.
+	 */
+	async function expectHeadSteady(): Promise<void> {
+		const scroller = find('.s-test-scroll')
+
+		scroller.scrollTop = 0
+		await frames(2)
+
+		const reference = await snapshot(headOf())
+
+		for (const top of SCROLLS) {
+			scroller.scrollTop = top
+			await frames(2)
+
+			const shot = await snapshot(headOf())
+
+			expect([shot.width, shot.height], `прокрутка ${top}: размер снимка`).toEqual([
+				reference.width,
+				reference.height,
+			])
+			expect(mismatch(reference, shot), `прокрутка ${top}: пикселей шапки разошлось`).toBe(0)
+		}
+	}
+
+	/** Строки уже под шапкой — как на стенде, когда берут заголовок прокрученной таблицы. */
+	async function scrollUnderHead(): Promise<void> {
+		find('.s-test-scroll').scrollTop = 57
+		await frames(2)
+	}
+
+	/** Подписи заголовков — по порядку. */
+	const texts = (): Array<string | undefined> =>
+		headers().map((header) => header.textContent?.trim())
+
+	/** Заголовок колонки «Имя» — где бы он ни стоял. */
+	function nameHeader(): HTMLElement {
+		const found = headers().find((header) => header.textContent?.trim() === 'Имя')
+
+		if (!found) throw new Error('заголовка «Имя» нет')
+
+		return found
+	}
+
+	it.each(SCHEMES)('%s: проп с монтирования, указатель вдали', async (scheme) => {
+		await showPreview(scheme, true)
+
+		await expectHeadSteady()
+	})
+
+	it.each(SCHEMES)(
+		'%s: проп включили, пока у заголовка под указателем идёт переход',
+		async (scheme) => {
+			const stickyHead = await showPreview(scheme, false)
+			const rest = await restOf(nameHeader())
+
+			await userEvent.hover(nameHeader())
+			// Кадр — и переход вуали наведения начался: он идёт 150 мс
+			await frames(1)
+			stickyHead.value = true
+			await frames(2)
+			await away()
+
+			expect(await restOf(nameHeader()), 'заголовок после ухода указателя').toEqual(rest)
+
+			await expectHeadSteady()
+		},
+	)
+
+	it.each(SCHEMES)('%s: протяжка ручки, когда строки уже под шапкой', async (scheme) => {
+		await showPreview(scheme, true)
+		await scrollUnderHead()
+
+		const rest = await restOf(nameHeader())
+		const width = box(nameHeader()).width
+		const handle = box(find('.s-table-column__resizer', nameHeader()))
+		const x = handle.left + handle.width / 2
+		const y = handle.top + handle.height / 2
+
+		await pointAt(x, y)
+		await commands.mouseDown()
+
+		try {
+			for (const step of [25, 50, 75]) await pointAt(x - step, y)
+		} finally {
+			await commands.mouseUp()
+		}
+
+		await away()
+
+		expect(Math.abs(box(nameHeader()).width - (width - 75))).toBeLessThanOrEqual(EPSILON)
+		expect(await restOf(nameHeader()), 'заголовок после ухода указателя').toEqual(rest)
+
+		await expectHeadSteady()
+	})
+
+	it.each(SCHEMES)('%s: перестановка заголовка, когда строки уже под шапкой', async (scheme) => {
+		await showPreview(scheme, true)
+		await scrollUnderHead()
+
+		expect(texts()).toEqual(['Имя', 'Город', 'Возраст'])
+
+		const [name, city] = headers()
+		const rest = await restOf(name)
+		const from = box(name)
+		const x = from.left + from.width / 2
+		const y = from.top + from.height / 2
+
+		await pointAt(x, y)
+		await commands.mouseDown()
+
+		try {
+			await pointAt(x + 40, y)
+			await pointAt(box(city).left + box(city).width / 2 + 10, y)
+		} finally {
+			await commands.mouseUp()
+		}
+
+		await away()
+
+		expect(texts()).toEqual(['Город', 'Имя', 'Возраст'])
+		expect(await restOf(nameHeader()), 'заголовок после ухода указателя').toEqual(rest)
+
+		await expectHeadSteady()
+	})
+})
+
+/**
  * Закреплённый элемент — свой слой, и шапка закреплена целиком, а не по
  * ячейкам: полоса ручки ширины лежит половиной на соседнем заголовке, а
  * взятый для перестановки заголовок идёт поверх соседей. В слое на ячейку они
@@ -479,17 +760,6 @@ describe('слои шапки', () => {
 		await frames(2)
 
 		return engine
-	}
-
-	const headers = (): HTMLElement[] => [
-		...document.querySelectorAll<HTMLElement>('.s-table-column'),
-	]
-
-	/** Указатель в точку страницы — наводится на `body`: точка бывает между узлами. */
-	async function pointAt(x: number, y: number): Promise<void> {
-		const body = box(document.body)
-
-		await userEvent.hover(document.body, { position: { x: x - body.left, y: y - body.top } })
 	}
 
 	it('полоса ручки — над соседом; протяжка на Δ — колонка шире на Δ', async () => {
