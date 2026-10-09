@@ -22,6 +22,7 @@ describe('eslint.config.ts: игнорируется то же, что и у git
 		['черновики стенда', 'packages/playground/vue/scratch/869f4kcn6/shot.spec.ts'],
 		['выход сборки', 'packages/themes/oren/dist/index.ts'],
 		['выход сборки пакета', 'packages/core/lib/index.ts'],
+		['выход профиля стенда замера', 'tools/bench-table/dist-prof/assets/index.ts'],
 		['покрытие', 'coverage/lcov-report/block.ts'],
 		['сторонние плагины', 'packages/_plugins/sample/index.ts'],
 		['отчёт браузерного прогона', 'test-results/sample/probe.spec.ts'],
