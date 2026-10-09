@@ -40,6 +40,13 @@ import type { ISelectKeyboardPluginOptions, TSelectKeyboardPluginEvents } from '
  * не «какая», исключений нет: с кнопки очистки не работают ни стрелки, ни
  * `Escape`. Проверка цели — здесь, а не в `TListNavigationPlugin`: база общая
  * с ListBox, у которого фокус на самом списке.
+ *
+ * **В окне** (обёртка `Virtual`) клавиши ходят по всем показанным опциям, а
+ * подсветка, уведённая к опции вне окна, закрепляет её в рисовании (база).
+ * Своего `id` и узла у такой опции нет, пока окно её не нарисует: ссылка
+ * `aria-activedescendant` и прокрутка к ней ждут, когда опция войдёт в
+ * документ (`onHighlightedMounted`), — ссылка в пустоту оставила бы
+ * скринридер немым.
  */
 export class TSelectKeyboardPlugin
 	extends TListNavigationPlugin<TSelectKeyboardPluginEvents>
@@ -54,6 +61,8 @@ export class TSelectKeyboardPlugin
 	private _typeahead = ''
 	private _typeaheadAt = 0
 	private _typeaheadTimeout = 500
+	/** Кадр с отложенной прокруткой к подсветке; `null` — прокручивать нечего. */
+	private _scrollFrame: number | null = null
 
 	override install(ctx: IPluginContext, options?: ISelectKeyboardPluginOptions): void {
 		super.install(ctx, options)
@@ -81,6 +90,10 @@ export class TSelectKeyboardPlugin
 	}
 
 	override destroy(): void {
+		// Отложенная прокрутка уничтоженного плагина узла уже не найдёт — и
+		// искать его незачем
+		this._cancelScroll()
+
 		this._owner = null
 		this._input = null
 		this._elements = null
@@ -130,17 +143,60 @@ export class TSelectKeyboardPlugin
 	/**
 	 * Подсветка для скринридера плюс прокрутка к опции.
 	 *
+	 * Прокрутка — в следующем кадре: опцию, которую окно дорисовывает к
+	 * подсветке, и панель, открытую той же клавишей, адаптер рисует уже после
+	 * обработчика, и узла опции или его места на экране сейчас ещё нет.
+	 */
+	protected override onHighlightChanged(uid: string | number | null): void {
+		this._referTo(uid)
+
+		if (uid == null) this._cancelScroll()
+		else this._scheduleScroll(uid)
+	}
+
+	/**
+	 * Подсвеченная опция вошла в документ: окно дорисовало её уже после
+	 * подсветки. Теперь у неё есть `id` этого монтирования — на него ссылка, —
+	 * и узел, к которому прокрутить: до этого прокручивать было не к чему.
+	 */
+	protected override onHighlightedMounted(uid: string | number): void {
+		this._referTo(uid)
+		this._scheduleScroll(uid)
+	}
+
+	/**
+	 * `aria-activedescendant` поля — на `id` подсвеченной опции, пока она в
+	 * документе: её набор зарегистрирован. Опция вне окна своего `id` не имеет,
+	 * а оставшийся от прошлого монтирования указывал бы в пустоту — тогда
+	 * ссылки нет, пока окно опцию не нарисует (`onHighlightedMounted`).
+	 *
 	 * `id` опции — из её набора `aria`, а не с DOM-узла: узел, который знает
 	 * плагин, — корень элемента, а `id` вместе со всей ARIA опции стоит на её
 	 * строке. В набор его пишет `TSelectItemIdsPlugin` опции, и ссылка берёт
 	 * ровно то, что окажется в разметке.
 	 */
-	protected override onHighlightChanged(uid: string | number | null): void {
-		const id = uid == null ? null : (this.itemByUid(uid)?.aria.get('id') ?? null)
+	private _referTo(uid: string | number | null): void {
+		const mounted = uid != null && this._bundles?.getByUid(uid) !== undefined
+		const id = mounted ? (this.itemByUid(uid)?.aria.get('id') ?? null) : null
 
 		this._owner?.field.aria.add('aria-activedescendant', id)
+	}
 
-		if (uid != null) this._scrollTo(uid)
+	/** Прокрутить к опции в следующем кадре; прежняя отложенная прокрутка отменяется. */
+	private _scheduleScroll(uid: string | number): void {
+		this._cancelScroll()
+
+		this._scrollFrame = requestAnimationFrame(() => {
+			this._scrollFrame = null
+			this._scrollTo(uid)
+		})
+	}
+
+	private _cancelScroll(): void {
+		if (this._scrollFrame === null) return
+
+		cancelAnimationFrame(this._scrollFrame)
+		this._scrollFrame = null
 	}
 
 	/**

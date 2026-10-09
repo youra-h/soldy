@@ -9,6 +9,8 @@ import {
 	TSelectionExtension,
 	TValueSelectionExtension,
 	TFilterExtension,
+	TDrawExtension,
+	TPositionInSetExtension,
 } from '../../../base/collection'
 import type {
 	ICollectionProps,
@@ -25,6 +27,7 @@ import type { ISelectItemExtension } from './extensions/select/item/types'
 import type { ISelect } from '../types'
 import type { ISelectItem, ISelectItemProps } from '../item/types'
 import type {
+	TDrawEvents,
 	TSelectionCollectionFacadeEvents,
 	TSelectionItemFacadeEvents,
 } from '../../../base/collection'
@@ -41,6 +44,10 @@ export type TSelectCollectionExtensions<TItem extends ISelectItem = ISelectItem>
 	batch: TBatchExtension<TItem>
 	/** Отбор опций по тексту — сужает `shown`, хранилище не трогает. */
 	filter: TFilterExtension<TItem>
+	/** Что список панели рисует из показанных опций: все или окно с распорками. */
+	draw: TDrawExtension<TItem>
+	/** Место нарисованной опции в наборе, пока стоит окно. */
+	positionInSet: TPositionInSetExtension<TItem>
 	selection: TSelectionExtension<TItem>
 	/** Связь `value` поля с выбором коллекции — то же расширение, что у ListBox и Tags. */
 	value: TValueSelectionExtension<any, TItem>
@@ -122,9 +129,13 @@ export type TSelectAdapters = {
 	select: ISelectItemExtension<ISelectItem>
 }
 
-/** События фасада коллекции Select: набор `selection`-базы плюс карта расширения `tags`. */
+/**
+ * События фасада коллекции Select: набор `selection`-базы плюс карты расширений
+ * `tags` и рисования (`draw`).
+ */
 export type TSelectCollectionFacadeEvents = TSelectionCollectionFacadeEvents<ISelectItem> &
-	TSelectTagsExtensionEvents
+	TSelectTagsExtensionEvents &
+	TDrawEvents<ISelectItem>
 
 /** События фасада опции: набор базы плюс карта адаптера `select`. */
 export type TSelectItemCollectionFacadeEvents = TSelectionItemFacadeEvents &

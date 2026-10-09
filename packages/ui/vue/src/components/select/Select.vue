@@ -165,23 +165,38 @@ export default { ...SetupSelect, components: { Frame, Input, Icon, Tags, SelectI
 						Слоты опций статические и получают элемент через scope —
 						динамические имена резолвит только Vue (см. Tabs.vue).
 
-						`shown`, а не `items`: это то, что осталось после отбора.
-						Скрытая опция размонтируется, но из коллекции не исчезает —
-						составом владеют данные, а не разметка (см. `owned` в
-						`TCollectionExtension`). Снятие фильтра возвращает её на место
-						вместе с выбором.
+						Опции — то, что рисует коллекция (`drawn`), по порядку, ключ —
+						ключ записи. Без окна это все показанные опции, то есть то,
+						что осталось после отбора. Скрытая опция размонтируется, но из
+						коллекции не исчезает — составом владеют данные, а не разметка
+						(см. `owned` в `TCollectionExtension`). Снятие фильтра
+						возвращает её на место вместе с выбором.
+
+						В окне обёртки `Virtual` — видимые опции и распорки на месте
+						пропущенных: `div` под `aria-hidden`, высоту которого тема
+						берёт из его стиля. Одна петля на опции и распорки, как у
+						ListBox: петли по блокам перемонтировали бы опцию, когда она
+						переходит из блока в блок.
 					-->
-					<SelectItem v-for="item in shown" :key="item.uid" :ctrl="item">
-						<template #leading>
-							<slot name="item-leading" :item="item" />
-						</template>
-						<template #default>
-							<slot name="item" :item="item" />
-						</template>
-						<template #trailing>
-							<slot name="item-trailing" :item="item" />
-						</template>
-					</SelectItem>
+					<template v-for="entry in drawn" :key="entry.key">
+						<div
+							v-if="entry.kind === 'filler'"
+							class="s-select__filler"
+							aria-hidden="true"
+							:style="entry.style"
+						></div>
+						<SelectItem v-else :ctrl="entry.item">
+							<template #leading>
+								<slot name="item-leading" :item="entry.item" />
+							</template>
+							<template #default>
+								<slot name="item" :item="entry.item" />
+							</template>
+							<template #trailing>
+								<slot name="item-trailing" :item="entry.item" />
+							</template>
+						</SelectItem>
+					</template>
 				</slot>
 
 				<slot v-if="shown.length === 0" name="empty" />

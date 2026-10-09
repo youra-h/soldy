@@ -283,7 +283,8 @@ export const COMPONENTS: readonly TComponentEntry[] = [
 		descriptor: VirtualDescriptor,
 		showcase: true,
 		span: 2,
-		description: 'Окно для длинных списков: ListBox и Table внутри рисуют только видимое',
+		description:
+			'Окно для длинных списков: ListBox, Select и Table внутри рисуют только видимое',
 	},
 	{
 		id: 'frame',

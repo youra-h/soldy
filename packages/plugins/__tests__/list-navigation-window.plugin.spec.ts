@@ -7,9 +7,11 @@
  *
  * Поэтому подсвеченный элемент навигация закрепляет в рисовании коллекции
  * (`draw.pin`): окно рисует его на месте, — а когда его набор
- * зарегистрирован заново (элемент смонтирован), возвращает ему отметку.
- * Подсветка снята — закрепление тоже. Как это выглядит в браузере, —
- * `playground/vue/browser/list-box-virtual.spec.ts`.
+ * зарегистрирован заново (элемент смонтирован), возвращает ему отметку и
+ * сообщает наследнику, что подсвеченный элемент вошёл в документ
+ * (`onHighlightedMounted`). Подсветка снята — закрепление тоже. Как это
+ * выглядит в браузере, — `playground/vue/browser/list-box-virtual.spec.ts`;
+ * клавиатура Select в окне — `select-keyboard-window.plugin.spec.ts`.
  */
 
 import { describe, it, expect, afterEach } from 'vitest'
@@ -49,11 +51,23 @@ afterEach(() => {
 	document.body.innerHTML = ''
 })
 
+/** Клавиатура списка, которая помнит, о каких элементах ей сказали «вошёл в документ». */
+class TMountedProbe extends TListKeyboardPlugin {
+	readonly mounted: Array<string | number> = []
+
+	protected override onHighlightedMounted(uid: string | number): void {
+		this.mounted.push(uid)
+	}
+}
+
 /**
  * Список из 200 элементов в окне: видны первые 20 (места 0–9 и запас), узлов
  * у элементов нет — их «монтирует» тест (`mountItem`), как адаптер.
+ * Клавиатура — `TListKeyboardPlugin` или его наследник.
  */
-async function setup() {
+async function setup(
+	Keyboard: IPluginConstructor<any, any, TListKeyboardPlugin> = TListKeyboardPlugin,
+) {
 	const owner = new TListBox()
 	const facade = new TListBoxCollectionFacade(
 		{
@@ -74,12 +88,12 @@ async function setup() {
 		.use(TElementPlugin)
 		.use(TCollectionBundlesPlugin)
 		.use(TCollectionElements)
-		.use(TListKeyboardPlugin)
+		.use(Keyboard)
 
 	bundles.push(bundle)
 
 	const registry = pluginOf(bundle, TCollectionBundlesPlugin)
-	const keyboard = pluginOf(bundle, TListKeyboardPlugin)
+	const keyboard = pluginOf(bundle, Keyboard)
 	const root = document.createElement('div')
 
 	registry.bindEngine(engine)
@@ -171,5 +185,55 @@ describe('подсветка в окне', () => {
 		bundle.destroy()
 
 		expect(drawn(items[199])).toBe(false)
+	})
+})
+
+/**
+ * Наследнику мало отметки: у смонтированного элемента появилось то, чего не
+ * было, когда на него перешла подсветка, — `id` и узел. Об этом навигация
+ * сообщает хуком `onHighlightedMounted` — тогда же, когда возвращает отметку.
+ */
+describe('подсвеченный элемент вошёл в документ', () => {
+	it('смонтировали подсвеченный — наследник узнаёт его', async () => {
+		const { bundle, items, mountItem, press } = await setup(TMountedProbe)
+		const probe = pluginOf(bundle, TMountedProbe)
+
+		press('ArrowUp')
+
+		expect(probe.mounted).toEqual([])
+
+		mountItem(items[199])
+
+		expect(probe.mounted).toEqual([items[199].uid])
+	})
+
+	it('смонтировали другой элемент — хук молчит', async () => {
+		const { bundle, items, mountItem, press } = await setup(TMountedProbe)
+
+		press('ArrowUp')
+		mountItem(items[5])
+
+		expect(pluginOf(bundle, TMountedProbe).mounted).toEqual([])
+	})
+
+	it('позиция без отметки (за выбором) — хук молчит: подсветки не видно', async () => {
+		const { bundle, engine, items, mountItem } = await setup(TMountedProbe)
+
+		engine.extensions.selection.select(items[150])
+		mountItem(items[150])
+
+		expect(pluginOf(bundle, TMountedProbe).mounted).toEqual([])
+	})
+
+	it('подсветка ушла дальше до монтирования — о прежнем элементе хук молчит', async () => {
+		const { bundle, items, mountItem, press } = await setup(TMountedProbe)
+
+		press('ArrowUp')
+		// Навигация зациклена: с последнего ↓ ведёт на первый
+		press('ArrowDown')
+		mountItem(items[199])
+		mountItem(items[0])
+
+		expect(pluginOf(bundle, TMountedProbe).mounted).toEqual([items[0].uid])
 	})
 })
