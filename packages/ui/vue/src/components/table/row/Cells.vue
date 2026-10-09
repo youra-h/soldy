@@ -12,8 +12,9 @@ interface ITableRowCellsProps {
 }
 
 /**
- * Входы для рантайма Vue. Тип им даёт аннотация `setup`, а не эта опция: из
- * `extends` vue-tsc пропсы в тип не переносит (AGENTS.md, Pitfalls).
+ * Входы для рантайма Vue — через `extends`, как `base.component.ts` у
+ * остальных компонентов: оттуда Vue их в тип не переносит, и тип входам даёт
+ * аннотация `setup` (AGENTS.md, Pitfalls).
  */
 const BaseTableRowCells = {
 	props: {
