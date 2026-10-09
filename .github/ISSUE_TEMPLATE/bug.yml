@@ -1,0 +1,63 @@
+name: Bug report
+description: Something in a Soldy UI component does not work as expected.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for the report. For an accessibility problem, please use the **Accessibility barrier** form instead.
+  - type: input
+    id: component
+    attributes:
+      label: Component
+      placeholder: e.g. Select, Tabs.Item, Table
+    validations:
+      required: true
+  - type: dropdown
+    id: adapter
+    attributes:
+      label: Framework adapter
+      description: Where does it happen? Select every adapter you checked.
+      multiple: true
+      options:
+        - Vue (@soldy-ui/vue)
+        - React (@soldy-ui/react)
+        - Angular (@soldy-ui/angular)
+        - Svelte (@soldy-ui/svelte)
+        - Solid (@soldy-ui/solid)
+        - Web Components (@soldy-ui/webc)
+        - Core or plugins, without a framework
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Soldy UI version
+      description: All @soldy-ui/* packages share one version. For an unreleased build, give the commit.
+      placeholder: e.g. 0.1.0
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened
+      description: What you did, what you expected, and what happened instead.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction
+      description: A minimal code sample or a link to a repository or sandbox that shows the problem.
+      render: vue
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Browser and its version, framework version, OS. Server rendering, if it is involved.
+      placeholder: |
+        Browser: Chrome 140
+        Framework: Vue 3.5
+        OS: Windows 11

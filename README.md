@@ -260,6 +260,9 @@ On the way there:
 - [AGENTS.md](AGENTS.md) — project rules and conventions, mostly in Russian.
 - [packages/themes/oren/AGENTS.md](packages/themes/oren/AGENTS.md) — the oren theme: scales, color
   schemes, tokens (in Russian).
+- [ACCESSIBILITY.md](ACCESSIBILITY.md) — accessibility commitment, known limitations and how to
+  report a barrier.
+- [CONTRIBUTING.md](CONTRIBUTING.md) — how to report issues and propose changes.
 
 ## License
 

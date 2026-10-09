@@ -1,0 +1,61 @@
+name: Accessibility barrier
+description: A component cannot be used with a keyboard, a screen reader or another assistive technology, or makes an application inaccessible.
+labels: [accessibility]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Accessibility barriers are treated as bugs. See [ACCESSIBILITY.md](https://github.com/youra-h/soldy/blob/main/ACCESSIBILITY.md) for what the library commits to and its known limitations.
+  - type: input
+    id: component
+    attributes:
+      label: Component
+      placeholder: e.g. DatePicker
+    validations:
+      required: true
+  - type: dropdown
+    id: adapter
+    attributes:
+      label: Framework adapter
+      multiple: true
+      options:
+        - Vue (@soldy-ui/vue)
+        - React (@soldy-ui/react)
+        - Angular (@soldy-ui/angular)
+        - Svelte (@soldy-ui/svelte)
+        - Solid (@soldy-ui/solid)
+        - Web Components (@soldy-ui/webc)
+        - Don't know
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Soldy UI version
+      placeholder: e.g. 0.1.0
+  - type: textarea
+    id: barrier
+    attributes:
+      label: The barrier
+      description: What you tried to do, what you expected, and what happened instead. What a screen reader announced, if it is relevant.
+    validations:
+      required: true
+  - type: textarea
+    id: assistive
+    attributes:
+      label: Assistive technology and browser
+      description: Screen reader, magnifier, voice control, keyboard only, forced colors, reduced motion, and the browser and OS.
+      placeholder: |
+        NVDA 2025.3, Firefox 143, Windows 11
+    validations:
+      required: true
+  - type: textarea
+    id: reference
+    attributes:
+      label: Reference
+      description: The WAI-ARIA Authoring Practices pattern or WCAG success criterion involved, if you know it.
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction
+      description: A minimal code sample or a link, if the problem is not visible in the playground.
