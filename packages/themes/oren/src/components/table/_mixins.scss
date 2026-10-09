@@ -68,6 +68,22 @@ $sizes: (
 	@apply #{map.get($scale, 'text')};
 }
 
+// Непрозрачная подложка закреплённой шапки — поверхность места и линия под
+// шапкой нижним пикселем; в режиме принудительных цветов — системные цвета
+// страницы и текста. Рисует её тень шапки внутрь, во весь `thead`: первая
+// тень — линия, вторая, под ней, — поверхность. Фон тех же цветов лежит под
+// тенью. Почему тенью, а не фоном, — `_table.scss`, закреплённая шапка.
+@mixin sticky-head-surface($surface: var(--s-place-surface), $line: var(--s-neutral-300)) {
+	background-color: $surface;
+	background-image: linear-gradient($line, $line);
+	background-position: bottom;
+	background-size: 100% 1px;
+	background-repeat: no-repeat;
+	box-shadow:
+		inset 0 -1px $line,
+		inset 0 0 0 100vmax $surface;
+}
+
 // Цвет таблицы — переменной на корне, а не селекторами по строкам: строки
 // читают её сами, и матрицы «состояние строки × вариант» нет. Цвет один на
 // таблицу — вариант строкам диктует она.
