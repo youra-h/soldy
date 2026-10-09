@@ -12,7 +12,7 @@
 
 import { describe, it, expect, afterEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
-import { defineComponent, h, nextTick, ref, type VNode } from 'vue'
+import { defineComponent, h, nextTick, ref, type ComponentOptions, type VNode } from 'vue'
 import { LocaleProvider, Table, TableColumn, TableRow } from '@soldy-ui/vue'
 import { TTable, createEngineTable } from '@soldy-ui/core'
 import type {
@@ -25,6 +25,7 @@ import type {
 } from '@soldy-ui/core'
 import { enUS, ruRU } from '@soldy-ui/plugins'
 import type { TLocale } from '@soldy-ui/plugins'
+import Harness from './Table.test.vue'
 
 const nextFrame = () => new Promise((resolve) => requestAnimationFrame(resolve))
 
@@ -719,6 +720,210 @@ describe('сетка', () => {
 
 		expect(engine.extensions.selection.selected).toEqual([rowOf(engine, 1)])
 		expect(find('.s-table-row').getAttribute('aria-selected')).toBe('true')
+	})
+})
+
+/**
+ * Выбор пишет строке `data-selected` (в сетке ещё `aria-selected`), и Vue
+ * рисует строку заново. Ячейки строки — свой внутренний компонент: его входы —
+ * ячейки и их набор — выбор не меняет, и ячейки вместе со слотом `cell` не
+ * перерисовываются. Иначе «выбрать все» перерисовывало бы ячейки всех строк
+ * таблицы. Перерисовывают их новая запись строки и состояние, которое читает
+ * слот.
+ *
+ * В DOM лишняя перерисовка следов не оставляет — значения те же, — поэтому
+ * считаются рендеры: без слота — перерисовки компонентов по имени, со слотом —
+ * вызовы слота. Слот — из харнесса: стабильным Vue считает только
+ * скомпилированный слот (AGENTS.md, Pitfalls).
+ */
+describe('перерисовка ячеек', () => {
+	let harness: ReturnType<typeof mountHarness> | null = null
+
+	afterEach(() => {
+		harness?.unmount()
+		harness = null
+	})
+
+	/**
+	 * Перерисовки строк и их ячеек — по имени компонента, глобальной примесью;
+	 * заодно — сколько компонентов ячеек смонтировано.
+	 */
+	function watchUpdates() {
+		const updates = { rows: 0, cells: 0 }
+		let cellsMounted = 0
+		const mixin: ComponentOptions = {
+			mounted() {
+				if (this.$options.name === '_TableRowCells') cellsMounted++
+			},
+			beforeUpdate() {
+				if (this.$options.name === '_TableRow') updates.rows++
+				if (this.$options.name === '_TableRowCells') updates.cells++
+			},
+		}
+
+		return { updates, mixin, cellsMounted: () => cellsMounted }
+	}
+
+	/** Таблица без слотов — и счётчик перерисовок её строк и ячеек. */
+	async function renderCounted(content: () => VNode) {
+		const { updates, mixin, cellsMounted } = watchUpdates()
+
+		wrapper = mount(defineComponent({ render: content }), {
+			attachTo: document.body,
+			global: { mixins: [mixin] },
+		})
+		await settle()
+
+		// Ячейки каждой строки — свой компонент: иначе их перерисовку не отличить
+		// от перерисовки строки, и счётчик ниже ничего бы не стерёг
+		expect(cellsMounted()).toBe(findAll('.s-table-row').length)
+
+		// Считаются перерисовки после монтирования
+		updates.rows = 0
+		updates.cells = 0
+
+		return updates
+	}
+
+	function mountHarness(engine: TTableCollection, count: (field: string) => void) {
+		return mount(Harness, { props: { engine, count }, attachTo: document.body })
+	}
+
+	/** Таблица со слотом `cell` из харнесса — и вызовы слота после монтирования. */
+	async function renderHarness(engine: TTableCollection) {
+		const count = vi.fn<(field: string) => void>()
+
+		harness = mountHarness(engine, count)
+		await settle()
+
+		// Слот звали на каждую ячейку: три строки по две колонки
+		expect(count).toHaveBeenCalledTimes(6)
+		count.mockClear()
+
+		return count
+	}
+
+	/** Текст ячеек по строкам. */
+	const cellTexts = () =>
+		findAll('.s-table-row').map((row) => findAll('.s-table-row__cell', row).map(text))
+
+	/** Отметка выбора строк. */
+	const rowsSelected = () => findAll('.s-table-row').map((row) => row.dataset.selected)
+
+	it('без слота: «выбрать все» и снятие выбора перерисовывают строки, но не их ячейки', async () => {
+		const engine = engineOf('multiple')
+		const updates = await renderCounted(() => h(Table, { engine }))
+		const head = checkBoxInput('.s-table__select')
+
+		head.click()
+		await settle()
+
+		expect(rowsSelected()).toEqual(['true', 'true', 'true'])
+
+		head.click()
+		await settle()
+
+		expect(rowsSelected()).toEqual(['false', 'false', 'false'])
+		// Строку выбор перерисовывает — на каждый клик по разу
+		expect(updates).toEqual({ rows: 6, cells: 0 })
+	})
+
+	it('со слотом: «выбрать все» и снятие выбора слот ячеек не зовут', async () => {
+		const count = await renderHarness(engineOf('multiple'))
+		const head = checkBoxInput('.s-table__select')
+
+		head.click()
+		await settle()
+
+		expect(rowsSelected()).toEqual(['true', 'true', 'true'])
+
+		head.click()
+		await settle()
+
+		expect(rowsSelected()).toEqual(['false', 'false', 'false'])
+		expect(cellTexts()).toEqual([
+			['Анна', '30'],
+			['Борис', '41'],
+			['Вера', '25'],
+		])
+		expect(count).not.toHaveBeenCalled()
+	})
+
+	it('без слота: таблица перерисована сменой пропа — строки и ячейки нет', async () => {
+		const engine = engineOf('none')
+		const label = ref('Люди')
+		const updates = await renderCounted(() => h(Table, { engine, aria_label: label.value }))
+
+		label.value = 'Сотрудники'
+		await settle()
+
+		expect(find('.s-table').getAttribute('aria-label')).toBe('Сотрудники')
+		expect(updates).toEqual({ rows: 0, cells: 0 })
+	})
+
+	it('со слотом: таблица перерисована сменой пропа — слот ячеек не зван', async () => {
+		const count = await renderHarness(engineOf('none'))
+
+		await harness?.setProps({ label: 'Люди' })
+		await settle()
+
+		expect(find('.s-table').getAttribute('aria-label')).toBe('Люди')
+		expect(count).not.toHaveBeenCalled()
+	})
+
+	it('состояние, которое читает слот, сменилось — ячейки перерисованы', async () => {
+		const count = await renderHarness(engineOf('none'))
+
+		await harness?.setProps({ mark: '!' })
+		await settle()
+
+		expect(cellTexts()).toEqual([
+			['Анна!', '30!'],
+			['Борис!', '41!'],
+			['Вера!', '25!'],
+		])
+		expect(count).toHaveBeenCalledTimes(6)
+	})
+
+	it('запись строки сменилась — перерисованы ячейки этой строки, и только её', async () => {
+		const engine = engineOf('none')
+		const count = await renderHarness(engine)
+
+		rowOf(engine, 2).data = { ...BORIS, age: 42 }
+		await settle()
+
+		expect(cellTexts()).toEqual([
+			['Анна', '30'],
+			['Борис', '42'],
+			['Вера', '25'],
+		])
+		expect(count).toHaveBeenCalledTimes(2)
+	})
+
+	it('в сетке выбор пробелом слот ячеек не зовёт', async () => {
+		const engine = engineOf('multiple')
+
+		engine.extensions.grid.grid = true
+
+		const count = await renderHarness(engine)
+
+		find('.s-table').focus()
+		document.activeElement?.dispatchEvent(
+			new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true, cancelable: true }),
+		)
+
+		const cell = find('.s-table-row th')
+
+		expect(document.activeElement).toBe(cell)
+
+		cell.dispatchEvent(
+			new KeyboardEvent('keydown', { key: ' ', bubbles: true, cancelable: true }),
+		)
+		await settle()
+
+		expect(engine.extensions.selection.selected).toEqual([rowOf(engine, 1)])
+		expect(find('.s-table-row').getAttribute('aria-selected')).toBe('true')
+		expect(count).not.toHaveBeenCalled()
 	})
 })
 

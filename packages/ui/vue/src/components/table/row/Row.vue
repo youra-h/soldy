@@ -1,8 +1,9 @@
 <script lang="ts">
 import { CheckBox } from '../../check-box'
+import TableRowCells from './Cells.vue'
 import SetupTableRow from './setup.component'
 
-export default { ...SetupTableRow, components: { CheckBox } }
+export default { ...SetupTableRow, components: { CheckBox, TableRowCells } }
 </script>
 
 <template>
@@ -47,33 +48,22 @@ export default { ...SetupTableRow, components: { CheckBox } }
 		</td>
 
 		<!--
-			Ячейка — по одной на ячейку строки (`cells`), ключ — колонка. Набор
-			ячейки — `data-align` колонки и, у заголовка строки, его `id`.
+			Ячейки — по одной на ячейку строки (`cells`), своим внутренним
+			компонентом (`_TableRowCells`): его Vue перерисовывает отдельно от
+			строки. Выбор пишет строке `data-selected`, и строка рисуется заново,
+			а ячейки — нет: их входы, ячейки и их набор, выбор не меняет.
 
-			Ячейка колонки `rowHeader` — заголовок строки: `th` с `scope="row"`, на
-			её текст ссылается имя чекбокса строки. Остальные — `td`. Класс один:
-			тема различает их тегом.
-
-			Содержимое — слот `cell` со scope `{ column, value }`, пустой — `value`
-			текстом; таблица отдаёт в него свой слот `cell`, добавив строку.
+			Содержимое ячейки — слот `cell` со scope `{ row, column, value }`; строку
+			в него кладут ячейки, таблица отдаёт свой слот как есть. Слот есть —
+			ячейкам он уходит пробросом, нет — ячейкам слотов не передают вовсе:
+			проброс у строки без слотов Vue считает динамическим и перерисовывал
+			бы ячейки с каждой перерисовкой строки (AGENTS.md, Pitfalls).
 		-->
-		<template v-for="cell in cells" :key="cell.column.uid">
-			<th
-				v-if="cell.rowHeader"
-				class="s-table-row__cell"
-				scope="row"
-				v-bind="{ ...cell.dataset, ...cellAria, ...cell.aria }"
-			>
-				<slot name="cell" :column="cell.column" :value="cell.value">{{ cell.value }}</slot>
-			</th>
-
-			<td
-				v-else
-				class="s-table-row__cell"
-				v-bind="{ ...cell.dataset, ...cellAria, ...cell.aria }"
-			>
-				<slot name="cell" :column="cell.column" :value="cell.value">{{ cell.value }}</slot>
-			</td>
-		</template>
+		<TableRowCells v-if="$slots.cell" :row="ctrl" :cells="cells" :cellAria="cellAria">
+			<template #cell="{ row, column, value }">
+				<slot name="cell" :row="row" :column="column" :value="value">{{ value }}</slot>
+			</template>
+		</TableRowCells>
+		<TableRowCells v-else :row="ctrl" :cells="cells" :cellAria="cellAria" />
 	</component>
 </template>

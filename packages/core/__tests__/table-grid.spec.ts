@@ -384,6 +384,36 @@ describe('выбор строки', () => {
 		expect(anna.aria.has('aria-selected')).toBe(false)
 	})
 
+	// В сетке выбор пишет строке ещё и `aria-selected`, но ячейки и их набор те
+	// же: разметке нечего перечитывать, и «выбрать все» не перерисовывает
+	// ячейки строк
+	it('выбор строки, «выбрать все» и снятие выбора — ни ячеек, ни их набора', () => {
+		const columns = [{ ...NAME, rowHeader: true }, AGE]
+		const { engine, facade, grid: ext, anna } = grid('multiple', columns)
+		const rows = engine.extensions.batch.items.map((row) => rowFacade(engine, row))
+		const cells = vi.fn()
+		const cellAria = vi.fn()
+
+		for (const row of rows) {
+			row.events.on('change:cells', cells)
+			row.events.on('change:cellAria', cellAria)
+		}
+
+		ext.chooseRow(anna)
+
+		expect(anna.aria.get('aria-selected')).toBe('true')
+
+		facade.selectShown()
+
+		expect(engine.extensions.selection.selected).toHaveLength(3)
+
+		facade.deselectShown()
+
+		expect(engine.extensions.selection.selected).toEqual([])
+		expect(cells).not.toHaveBeenCalled()
+		expect(cellAria).not.toHaveBeenCalled()
+	})
+
 	it('без сетки aria-selected нет и у выбранной строки', () => {
 		const owner = new TTable()
 		const engine = createEngineTable({ owner, items: [{ data: ANNA }] })

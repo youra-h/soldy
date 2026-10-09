@@ -106,6 +106,9 @@ const DESCRIPTORS: Readonly<Record<string, () => IComponentDescriptor>> = {
 	'switch/Switch.vue': SwitchDescriptor,
 	'table/Table.vue': TableDescriptor,
 	'table/column/Column.vue': TableColumnDescriptor,
+	// Ячейки строки — её внутренняя часть без дескриптора: слот `cell` строки
+	// рисуют они
+	'table/row/Cells.vue': TableRowDescriptor,
 	'table/row/Row.vue': TableRowDescriptor,
 	'tabs/Tabs.vue': TabsDescriptor,
 	'tabs/content/Content.vue': TabsContentDescriptor,
