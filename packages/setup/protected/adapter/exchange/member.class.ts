@@ -18,13 +18,15 @@ export class TMember {
 		readonly events: readonly TName[] = [],
 	) {}
 
-	/** Публикует ли участник событие с таким полным именем: явно или триггером пропа. */
-	publishes(fullName: string): boolean {
-		return (
-			this.events.some((name) => name.getName() === fullName) ||
-			this.props.some((spec) =>
-				spec.triggers.some((trigger) => trigger.getName() === fullName),
-			)
-		)
+	/**
+	 * Имена событий, которые участник публикует: явные, затем триггеры пропсов.
+	 *
+	 * Перечень, а не хранимое множество: обмену он нужен один раз — разложить
+	 * события по участникам, — а участник живёт столько же, сколько компонент.
+	 */
+	*published(): Generator<TName> {
+		yield* this.events
+
+		for (const spec of this.props) yield* spec.triggers
 	}
 }

@@ -12,7 +12,8 @@
 
 import { describe, it, expect, vi } from 'vitest'
 import { TButton, TFrame, TIcon, TSelect, TSlider, TTabsItem } from '@soldy-ui/core'
-import { TAnchorPlugin, TAriaPlugin, TIconLayoutPlugin } from '@soldy-ui/plugins'
+import { TAnchorPlugin, TAriaPlugin, TBasePlugin, TIconLayoutPlugin } from '@soldy-ui/plugins'
+import type { TPluginEvents } from '@soldy-ui/plugins'
 import {
 	ButtonDescriptor,
 	FrameDescriptor,
@@ -22,6 +23,7 @@ import {
 	TabsItemDescriptor,
 	createAdapterContext,
 	defineComponent,
+	definePlugin,
 	TName,
 	TSurface,
 } from '@soldy-ui/setup'
@@ -206,6 +208,58 @@ describe('связка · ядро ↔ фреймворк', () => {
 
 		expect(label.pick({ aria_label: 'Закрыть' })).toBe('Закрыть')
 		expect(label.pick({ label: 'Закрыть' })).toBe('Закрыть')
+	})
+})
+
+/**
+ * Маршрут события получает участник, который событие публикует. Находит его
+ * карта по полному имени, собранная одним проходом по участникам, а не перебор
+ * их пропсов и триггеров на каждое событие. Полное имя одно в составе
+ * компонента, а дубль — ошибка автора: дескриптор сообщает о нём и работает
+ * дальше, и порядок участников обмен держит, как держал перебор.
+ */
+describe('связка · участник события', () => {
+	type TGoEvents = TPluginEvents & { go: () => void }
+
+	class TFirstPlugin extends TBasePlugin<object, TGoEvents> {}
+	class TSecondPlugin extends TBasePlugin<object, TGoEvents> {}
+
+	it('событие, которое публикуют два участника, слушается у первого', () => {
+		const report = vi.spyOn(console, 'error').mockImplementation(() => {})
+		// Один неймспейс у двух плагинов — одно полное имя `probe:go`
+		const descriptor = defineComponent({
+			ctor: class {},
+			plugins: [
+				definePlugin({
+					ctor: TFirstPlugin,
+					namespace: 'probe',
+					contribution: { events: ['go'] },
+				}),
+				definePlugin({
+					ctor: TSecondPlugin,
+					namespace: 'probe',
+					contribution: { events: ['go'] },
+				}),
+			],
+		})
+
+		expect(report).toHaveBeenCalledTimes(1)
+
+		report.mockRestore()
+
+		const context = createAdapterContext(descriptor, {})
+		const first = required(context.bundle?.get(TFirstPlugin), 'первый плагин')
+		const second = required(context.bundle?.get(TSecondPlugin), 'второй плагин')
+		const emit = vi.fn<TEventSink>()
+
+		context.connect(CallbackProfile).events.listen(emit)
+		second.events.emit('go')
+
+		expect(emit).not.toHaveBeenCalled()
+
+		first.events.emit('go')
+
+		expect(emit.mock.calls).toEqual([['onProbeGo', []]])
 	})
 })
 
