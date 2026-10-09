@@ -91,29 +91,6 @@ function firstLines(): string[] {
 	return warnings.map((text) => text.split('\n')[0])
 }
 
-/**
- * Предупреждения адаптера на настоящем сочетании пропов, на которые заведены
- * задачи: страница фреймворка и начало текста. Решили задачу — строка уходит.
- */
-const KNOWN_WARNINGS: readonly { framework: string; component: string; text: string }[] = [
-	// Временно, до 869feq966: Icon без tag рисует <error>, React предупреждает о
-	// неизвестном теге — строка `tag` с умолчанием ядра
-	{ framework: 'react', component: 'icon', text: 'The tag <%s> is unrecognized in this browser' },
-]
-
-/** Предупреждения страницы, кроме известных — тех, на которые заведены задачи. */
-function unknownWarnings(framework: string, component: string): string[] {
-	return firstLines().filter(
-		(line) =>
-			!KNOWN_WARNINGS.some(
-				(known) =>
-					known.framework === framework &&
-					known.component === component &&
-					line.startsWith(known.text),
-			),
-	)
-}
-
 const mountOptions = { global: { plugins: [router] }, attachTo: document.body }
 
 /**
@@ -278,7 +255,7 @@ describe('страница компонента', () => {
 				componentControls.length + collectionControls.length + pluginControls.length
 
 			expect(wrapper.findAll('.pg-prop')).toHaveLength(rows)
-			expect(unknownWarnings(framework, id)).toEqual([])
+			expect(firstLines()).toEqual([])
 		},
 	)
 
