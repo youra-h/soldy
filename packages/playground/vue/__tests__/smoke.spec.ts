@@ -679,3 +679,50 @@ describe('очищенное поле', () => {
 		},
 	)
 })
+
+/**
+ * Код колонок пишет хост фреймворка — своим синтаксисом, и файл примера для
+ * «Открыть в VS Code» у него того же синтаксиса. Строка на каждый фреймворк
+ * стенда: хост без неё уронит проверку, а не пропустит её.
+ */
+const WIDTH_CODE: Record<string, { number: string; text: string; extension: string }> = {
+	vue: { number: ':width="40"', text: `:width="'10%'"`, extension: 'vue' },
+	react: { number: 'width={40}', text: 'width="10%"', extension: 'tsx' },
+}
+
+/**
+ * Набранное в поле «число или текст» уходит в код тем же значением, что и
+ * компоненту: `40` — числом, `10%` — строкой. По превью их не отличить —
+ * ширину в пикселях заглушка получила бы и от строки `'40'`, — а код учит
+ * задавать пиксели числом. Заглушка — у всех хостов стенда, и проверка идёт
+ * на каждом.
+ */
+describe('код колонок', () => {
+	it.each(drawing('skeleton'))(
+		'%s: набранное в поле — в коде обеих колонок синтаксисом хоста',
+		async (framework) => {
+			const expected = WIDTH_CODE[framework]
+			const wrapper = await openPage(framework, 'skeleton')
+			const field = rowOf(wrapper, 'width').find('.pg-prop__control input')
+			const views = () => rowComponentOf(wrapper, 'width').findAllComponents(CodeView)
+			const codes = () => views().map((view) => view.props('code'))
+
+			expect(views().map((view) => view.props('extension'))).toEqual([
+				expected.extension,
+				expected.extension,
+			])
+
+			await field.setValue('40')
+			await nextTick()
+
+			expect(codes()[0]).toContain(expected.number)
+			expect(codes()[1]).toContain('instance.width = 40')
+
+			await field.setValue('10%')
+			await nextTick()
+
+			expect(codes()[0]).toContain(expected.text)
+			expect(codes()[1]).toContain("instance.width = '10%'")
+		},
+	)
+})

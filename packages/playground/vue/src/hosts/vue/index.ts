@@ -66,7 +66,7 @@ const host: IPreviewHost = {
 		locale.value = next
 	},
 
-	snippets: { propSnippet, instanceSnippet },
+	snippets: { extension: 'vue', propSnippet, instanceSnippet },
 }
 
 export default host

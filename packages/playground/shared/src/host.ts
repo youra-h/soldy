@@ -1,5 +1,6 @@
 import type { TLocale } from '@soldy-ui/plugins'
 import type { TComponentEntry, TPropControl } from './types'
+import { isSnippetExtension, type TSnippetExtension } from './snippet-file'
 
 /**
  * Хост превью — фреймворковая половина стенда.
@@ -48,6 +49,8 @@ export interface IPreviewHandle {
 
 /** Код колонок страницы свойств — в синтаксисе фреймворка хоста. */
 export interface IPreviewSnippets {
+	/** Расширение файла примера: в нём «Открыть в VS Code» пишет код колонок. */
+	readonly extension: TSnippetExtension
 	/** Колонка «Component»: значение приходит пропом. */
 	propSnippet(
 		entry: TComponentEntry,
@@ -101,6 +104,7 @@ function isKeys(value: unknown): value is readonly string[] {
 function isSnippets(value: unknown): value is IPreviewSnippets {
 	return (
 		isObject(value) &&
+		isSnippetExtension(value.extension) &&
 		typeof value.propSnippet === 'function' &&
 		typeof value.instanceSnippet === 'function'
 	)
