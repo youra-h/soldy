@@ -1,10 +1,19 @@
 /**
  * TVirtualCollectionExtension — коллекция подхватывает окно обёртки `Virtual` над собой.
  *
- * Подхват — при сборке: сервер и первый кадр рисуют уже окно, а не весь
- * список. Снятие — на `destroy` контекста: отписка от обёртки и рисование всех
- * элементов, ведь движок мог прийти снаружи и пережить компонент. Обёртки
- * выше нет — коллекция рисует все показанные элементы, как без окна.
+ * Фазы — как у связки панели Tabs (`TTabsContentBindingExtension`):
+ *
+ * - **сборка** — подхват: подключение ставит то, что принадлежит коллекции, —
+ *   плагин замера в её набор и стратегию в её рисование по текущему
+ *   `enabled`. Сервер и первый кадр рисуют уже окно, а не весь список;
+ * - **вход** (`attach` контекста) — подписка на выключатель обёртки. Шина
+ *   обёртки чужая, а собранную коллекцию фреймворк вправе выбросить, так и не
+ *   приняв: подписка сборки осталась бы на живой обёртке;
+ * - **снятие** (`destroy` контекста) — отписка от обёртки, если подписка была,
+ *   и рисование всех элементов, ведь движок мог прийти снаружи и пережить
+ *   компонент. Контекст, собранный, но так и не принятый, снимается тоже.
+ *
+ * Обёртки выше нет — коллекция рисует все показанные элементы, как без окна.
  *
  * Своему поддереву коллекция опускает пустое подключение: списки в слотах её
  * элементов окна не наследуют.
@@ -28,14 +37,15 @@ export class TVirtualCollectionExtension {
 		options: IVirtualCollectionExtensionOptions,
 	) {
 		const elevator = options.elevator(VIRTUAL_ELEVATOR)
-		const attach = elevator.up()
+		const connect = elevator.up()
 
 		elevator.down(null)
 
-		if (!attach) return
+		if (!connect) return
 
-		const detach = attach(context.instance.engine, context.bundle)
+		const connection = connect(context.instance.engine, context.bundle)
 
-		context.events.on('destroy', detach)
+		context.events.on('attach', () => connection.attach())
+		context.events.on('destroy', () => connection.destroy())
 	}
 }

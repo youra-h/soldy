@@ -14,6 +14,7 @@ import type {
 	TBatchExtension,
 	TDrawEvents,
 	TDrawExtension,
+	TPositionInSetExtension,
 	TSelectionCollectionFacadeEvents,
 	TSelectionExtension,
 	TValueSelectionExtension,
@@ -38,6 +39,8 @@ export type TListBoxCollectionExtensions<TItem extends IListBoxItem = IListBoxIt
 	value: TValueSelectionExtension<any, TItem>
 	/** Что список рисует из показанных элементов: все или окно с распорками. */
 	draw: TDrawExtension<TItem>
+	/** Место нарисованного элемента в наборе, пока стоит окно. */
+	positionInSet: TPositionInSetExtension<TItem>
 	list: TListBoxExtension<IListBox, TItem>
 }
 

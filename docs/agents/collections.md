@@ -349,8 +349,8 @@ relay и порядок, который расширения выстраива�
 ### Рисование — механизм коллекции
 
 Что коллекция рисует из показанных элементов, решает расширение `draw`
-(`TDrawExtension`, `base/collection/engine/extension/draw/`) — у ListBox и
-строк таблицы; Select получит его вместе с окном. Выход `drawn` — что рисовать
+(`TDrawExtension`, `base/collection/engine/extension/draw/`) — у ListBox,
+Select и строк таблицы. Выход `drawn` — что рисовать
 по порядку: записи `item` (элемент и его место среди показанных, ключ — `uid`)
 и `filler` (распорка на месте пропущенных: ключ — `uid` элемента за ней с
 минусом, у хвостовой `0`; `style` — высота `--s-filler-height` и место в
@@ -371,23 +371,26 @@ relay и порядок, который расширения выстраива�
   (`pin(reason, item)`, `undefined` снимает только эту причину): DOM-фокус,
   подсветку клавиатурой, ячейку сетки. Закреплённый, которого нет среди
   показанных, не рисуется.
-- **Своё у компонента — подписчиком `change:drawn`.** Номера строк таблицы
-  (`window`), место элемента ListBox в наборе (`list`) пишут расширения
-  компонента по нарисованному: они ставятся после `draw`.
+- **Своё по нарисованному — подписчиком `change:drawn`.** Номера строк таблицы
+  пишет её расширение `window`, место опции в наборе (`aria-setsize`,
+  `aria-posinset`) у ListBox и Select — общее расширение `positionInSet`
+  (`TPositionInSetExtension`, `base/collection/engine/extension/position-in-set/`):
+  у двух списков оно одно, и копии нет. Оба ставятся после `draw`.
 
 Соседа `draw` (и `batch`) расширения, плагины и проводка находят проверкой
 контракта — `drawOf`, `batchOf` (`base/collection/engine/extension/neighbours.ts`),
 а не приведением типа: движок к ним приходит как `TCollectionEngine<any, any>`.
 
 Сторожат `core/__tests__/collection.draw.spec.ts` — рисование на голой
-коллекции, — `core/__tests__/table-virtual.spec.ts` и
-`core/__tests__/list-box-virtual.spec.ts`.
+коллекции, — `core/__tests__/table-virtual.spec.ts`,
+`core/__tests__/list-box-virtual.spec.ts` и
+`core/__tests__/select-virtual.spec.ts`.
 
 ### Когда заводить своё расширение
 
 Стандартный набор лежит в `core/src/components/base/collection/engine/extension/`
 (`plain`, `batch`, `activation`, `selection`, `value`, `order`, `unique`, `meta`,
-`factory`, `filter`, `memory`, `draw`).
+`factory`, `filter`, `memory`, `draw`, `positionInSet`).
 **Своё расширение заводится, когда конкретной коллекции нужна функциональность
 сверх стандартной.** Не для того, чтобы что-то куда-то положить.
 
@@ -726,7 +729,11 @@ get closable() { return !this._item.disabled && (this._item.closable ?? this._pa
 (`TTabsContentBindingExtension`, `setup/content/extensions/tabs/`): сборка
 связывает её с табом, трогая только её фасад и `aria`, — так панель таба из
 данных есть и в серверной разметке, — а подписки на движок и повторный поиск,
-который находит табы разметки, ждут `attach`.
+который находит табы разметки, ждут `attach`. Так же подхватывает окно обёртки
+`Virtual` коллекция (`TVirtualCollectionExtension`,
+`setup/content/extensions/virtual/`): сборка ставит своё — плагин замера в
+набор и стратегию в рисование, — а подписка на выключатель обёртки ждёт
+`attach`.
 
 **Контекст элемента живёт одно монтирование.** Его item-адаптеры подписаны на
 расширения движка, а движок живёт дольше монтирования: элемент из данных

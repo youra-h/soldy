@@ -4,7 +4,7 @@ import type {
 	IExtensionContext,
 	ISelectionExtension,
 } from '../../../../../base/collection'
-import { TBaseOwnerItemExtension, batchOf, drawOf } from '../../../../../base/collection'
+import { TBaseOwnerItemExtension } from '../../../../../base/collection'
 import {
 	LIST_CONTENT_FIT_ATTRIBUTE,
 	LIST_DEFAULTS,
@@ -31,12 +31,9 @@ import { TListBoxItemExtension, type IListBoxItemExtension } from './item'
  * Ещё ставит элементам атрибуты для темы: `data-content-fit` — своё значение
  * элемента поверх списочного, `data-indicator` — значение списка. Сами
  * свойства лежат на инстансе списка по контракту `IList`. Для скринридера —
- * `aria-selected` всем элементам, как у Select и Tags.
- *
- * Пока стоит окно (`draw.virtual`), элементов в документе меньше, чем в
- * списке, и посчитать их скринридер не может: нарисованным расширение пишет
- * размер набора и место в нём (`aria-setsize`, `aria-posinset`, APG Listbox).
- * Ушедшие из окна и все без окна их теряют.
+ * `aria-selected` всем элементам, как у Select и Tags. Место элемента в наборе,
+ * пока список рисует окно, пишет не он, а общее расширение `positionInSet` —
+ * то же у Select.
  *
  * Через него идёт выбор пользователя (`chooseItem`): и клик по строке, и
  * клавиатура списка. Выключенному элементу он отказывает.
@@ -70,9 +67,6 @@ export class TListBoxExtension<
 	 * если движок выбросят, не удалив из него элементы.
 	 */
 	private readonly _contentFitWatchers = new WeakMap<TItem, () => void>()
-
-	/** Элементы, которым окно написало место в наборе: ушедшим из окна его снимают. */
-	private _positioned = new Set<TItem>()
 
 	constructor(options?: IBaseOwnerItemExtensionOptions<TItem, IListBoxItemExtension<TItem>>) {
 		super(TListBoxItemExtension, options)
@@ -176,17 +170,6 @@ export class TListBoxExtension<
 		this._selection?.events.on('change:selection', () => {
 			ctx.driver.valueOf().forEach((item) => this._applySelectedAria(item as TItem))
 		})
-
-		// Место в наборе — нарисованным в окне. Окно сменило, что рисует, или
-		// его поставили и сняли; сменились показанные — сменился и размер набора.
-		// `draw` стоит раньше `list`: на смену показанных он уже пересчитан
-		const draw = drawOf(ctx)
-
-		draw?.events.on('change:drawn', () => this._applyPositions())
-		draw?.events.on('change:virtual', () => this._applyPositions())
-		batchOf(ctx)?.events.on('change:shown', () => this._applyPositions())
-
-		this._applyPositions()
 	}
 
 	/**
@@ -217,41 +200,6 @@ export class TListBoxExtension<
 
 	private get _selection(): ISelectionExtension<TItem> | undefined {
 		return this._ctx?.extensions.selection as ISelectionExtension<TItem> | undefined
-	}
-
-	/**
-	 * Размер набора и место в нём (`aria-setsize`, `aria-posinset`, с единицы)
-	 * — нарисованным элементам, пока стоит окно: скринридер считает их по
-	 * документу, а в документе не все. Ушедшие из окна и все без окна — снять:
-	 * без окна в документе весь набор, и счёт браузера верен.
-	 */
-	private _applyPositions(): void {
-		const draw = drawOf(this._ctx)
-		const places = new Map<TItem, number>()
-
-		if (draw?.virtual) {
-			for (const entry of draw.drawn) {
-				if (entry.kind === 'item') places.set(entry.item, entry.place)
-			}
-		}
-
-		if (places.size > 0) {
-			const size = String(batchOf(this._ctx)?.shown.length ?? 0)
-
-			for (const [item, place] of places) {
-				item.aria.add('aria-setsize', size)
-				item.aria.add('aria-posinset', String(place + 1))
-			}
-		}
-
-		for (const item of this._positioned) {
-			if (places.has(item)) continue
-
-			item.aria.add('aria-setsize', null)
-			item.aria.add('aria-posinset', null)
-		}
-
-		this._positioned = new Set(places.keys())
 	}
 
 	/**

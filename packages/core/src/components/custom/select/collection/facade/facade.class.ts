@@ -1,4 +1,5 @@
 import { TSelectionCollectionFacade } from '../../../../base/collection'
+import type { TDrawnEntry } from '../../../../base/collection'
 
 import { selectExtensions } from '../factory'
 import { completeEngine } from '../../../../base/collection/create/internal'
@@ -18,8 +19,9 @@ import type { TDefaultValues } from '../../../../base/component'
 /**
  * Фасад коллекции Select.
  *
- * Состав, режим и выбранное — из базы. Своё — вычисленный набор для
- * разметки: ARIA списка.
+ * Состав, режим и выбранное — из базы. Своё — теги поля и что рисует список
+ * панели (`drawn`, расширение `draw`): без окна все показанные опции, в окне
+ * обёртки `Virtual` — видимые и распорки на месте пропущенных, как у ListBox.
  */
 export class TSelectCollectionFacade extends TSelectionCollectionFacade<
 	ISelectItem,
@@ -54,6 +56,7 @@ export class TSelectCollectionFacade extends TSelectionCollectionFacade<
 		if (!options.engine) this.bindOwner()
 
 		this.events.relayAll(this._tags.events)
+		this.events.relayAll(this.extensions.draw.events)
 
 		this.applyProps(props)
 	}
@@ -88,6 +91,14 @@ export class TSelectCollectionFacade extends TSelectionCollectionFacade<
 
 	set tags_overflow(value: TTagsOverflow) {
 		this._tags.overflow = value
+	}
+
+	/**
+	 * Что рисует список панели по порядку: опции на своих местах и, в окне,
+	 * распорки на месте пропущенных. Без окна — все показанные опции
+	 */
+	get drawn(): ReadonlyArray<TDrawnEntry<ISelectItem>> {
+		return this.extensions.draw.drawn
 	}
 
 	private get _tags(): TSelectTagsExtension<ISelect, ISelectItem> {
