@@ -18,12 +18,19 @@ export const ListBoxCollectionDescriptor = defineDescriptor(() =>
 
 		/**
 		 * Коллекционные props/events владельца ListBox — то, что выводит фасад
-		 * `TListBoxCollectionFacade`: режим выбора и сам выбор.
+		 * `TListBoxCollectionFacade`: режим выбора, сам выбор и что рисует
+		 * список.
 		 */
 		contribution: {
 			props: {
 				mode: { type: String, triggers: ['change:mode'] },
 				selected: { type: Array, protected: true, triggers: ['change:selection'] },
+				/**
+				 * Что рисует список по порядку: элементы на своих местах и, в окне
+				 * обёртки `Virtual`, распорки на месте пропущенных. Без окна — все
+				 * показанные элементы
+				 */
+				drawn: { type: Array, protected: true, triggers: ['change:drawn'] },
 			},
 			events: [],
 		},

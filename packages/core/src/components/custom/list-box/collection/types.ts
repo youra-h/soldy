@@ -12,6 +12,9 @@ import type {
 	TUniqueExtension,
 	TMetaExtension,
 	TBatchExtension,
+	TDrawEvents,
+	TDrawExtension,
+	TSelectionCollectionFacadeEvents,
 	TSelectionExtension,
 	TValueSelectionExtension,
 } from '../../../base/collection'
@@ -33,6 +36,8 @@ export type TListBoxCollectionExtensions<TItem extends IListBoxItem = IListBoxIt
 	selection: TSelectionExtension<TItem>
 	/** Связь `value` списка с выбором коллекции — в обе стороны. */
 	value: TValueSelectionExtension<any, TItem>
+	/** Что список рисует из показанных элементов: все или окно с распорками. */
+	draw: TDrawExtension<TItem>
 	list: TListBoxExtension<IListBox, TItem>
 }
 
@@ -96,9 +101,10 @@ export type TListBoxAdapters<TItem extends IListBoxItem = IListBoxItem> = {
 
 /**
  * События фасада элемента списка: набор базы плюс карта адаптера `list`.
- *
- * У самого `TListBoxCollectionFacade` карты нет — сверх базы он не релеит
- * ничего, и дефолт `TSelectionCollectionFacade` уже точен.
  */
 export type TListBoxItemCollectionFacadeEvents = TSelectionItemFacadeEvents &
 	TListBoxItemEventsExtension
+
+/** События фасада списка: база выбора плюс карта рисования (`draw`). */
+export type TListBoxCollectionFacadeEvents = TSelectionCollectionFacadeEvents<IListBoxItem> &
+	TDrawEvents<IListBoxItem>

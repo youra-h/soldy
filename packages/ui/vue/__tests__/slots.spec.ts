@@ -62,6 +62,7 @@ import {
 	TagsDescriptor,
 	TagsItemDescriptor,
 	TooltipDescriptor,
+	VirtualDescriptor,
 } from '@soldy-ui/setup'
 import type { IComponentDescriptor } from '@soldy-ui/setup'
 import { Button, ComponentView } from '@soldy-ui/vue'
@@ -116,6 +117,7 @@ const DESCRIPTORS: Readonly<Record<string, () => IComponentDescriptor>> = {
 	'tags/Tags.vue': TagsDescriptor,
 	'tags/item/Item.vue': TagsItemDescriptor,
 	'tooltip/Tooltip.vue': TooltipDescriptor,
+	'virtual/Virtual.vue': VirtualDescriptor,
 }
 
 /** Шаблоны компонентов — путь от `src/components`, через `/`. */

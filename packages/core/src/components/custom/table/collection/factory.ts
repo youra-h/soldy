@@ -1,6 +1,6 @@
 import { selectionExtensions } from '../../../base/collection/create/internal'
 import type { TExtensionSet } from '../../../base/collection/create/internal'
-import { TMemoryExtension, TSelectionExtension } from '../../../base/collection'
+import { TDrawExtension, TMemoryExtension, TSelectionExtension } from '../../../base/collection'
 import TTableRow from '../row/row.class'
 import type { ITableRow } from '../row/types'
 import {
@@ -8,7 +8,7 @@ import {
 	TTableExtension,
 	TTableGridExtension,
 	TTableSortExtension,
-	TTableVirtualExtension,
+	TTableWindowExtension,
 } from './extensions'
 
 /**
@@ -17,12 +17,15 @@ import {
  * Базовые детали с выбором — состав, порядок, жизнь строк и выбор;
  * `factory` строит `TTableRow` из данных. Своё — `columns` (колонки и ячейки
  * строк), `table` (что строки получают от таблицы, выбор показанных и
- * чекбоксы колонки выбора), `sort` (порядок показанных строк по колонкам) и
- * `grid` (режим сетки: ячейка под фокусом и выбор строки нажатием) и
- * `virtual` (режим окна: тело рисует только видимые строки). Порядок значим:
- * `table` в `install` подписывается на выбор и состав, `sort` — на коллекцию
- * колонок, `grid` — на всех троих, `virtual` — на состав и сетку, и ставятся
- * они после них.
+ * чекбоксы колонки выбора), `sort` (порядок показанных строк по колонкам),
+ * `grid` (режим сетки: ячейка под фокусом и выбор строки нажатием) и `window`
+ * (окно таблицы: число и номера строк, строка ячейки сетки в окне). Порядок
+ * значим: `table` в `install` подписывается на выбор и состав, `sort` — на
+ * коллекцию колонок, `grid` — на всех троих, `window` — на состав, сетку и
+ * рисование, и ставятся они после них.
+ *
+ * `draw` — что тело рисует из показанных строк: без окна все, а окно ему
+ * ставит обёртка `Virtual`. Общее с другими коллекциями, перед `window`.
  *
  * `selection.mode` по умолчанию `'none'`, а не `'single'` из
  * `TSelectionExtension`: режим решает и выбор, и колонку выбора, а таблице без
@@ -47,7 +50,8 @@ export function tableExtensions(): TExtensionSet<ITableRow> {
 		table: () => new TTableExtension(),
 		sort: () => new TTableSortExtension(),
 		grid: () => new TTableGridExtension(),
-		virtual: () => new TTableVirtualExtension(),
+		draw: () => new TDrawExtension<ITableRow>(),
+		window: () => new TTableWindowExtension(),
 		memory: () => new TMemoryExtension<ITableRow>(),
 	}
 }

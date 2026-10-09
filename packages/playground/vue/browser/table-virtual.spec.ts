@@ -1,9 +1,9 @@
 /**
- * Окно Table (`virtual`) в настоящем браузере: тело рисует только видимые
- * строки, а на месте остальных стоят распорки той же высоты.
+ * Окно Table (обёртка `Virtual`) в настоящем браузере: тело рисует только
+ * видимые строки, а на месте остальных стоят распорки той же высоты.
  *
  * Что попадает в окно, считает ядро (`core/__tests__/table-virtual.spec.ts`),
- * замер — плагин (`plugins/__tests__/table-virtual.plugin.spec.ts`) над
+ * замер — плагин (`plugins/__tests__/virtual.plugin.spec.ts`) над
  * подменёнными размерами. Здесь то, чего jsdom не считает: настоящая
  * прокрутка контейнера и страницы, шаг строк темы, фокус сетки в строке,
  * которой ещё не было в документе, и колесо, которое не уносит фокус.
@@ -15,7 +15,7 @@ import { userEvent } from 'vitest/browser'
 import { defineComponent, h } from 'vue'
 import { createEngineTable } from '@soldy-ui/core'
 import type { TTableCollection, TTableRecord } from '@soldy-ui/core'
-import { Table } from '@soldy-ui/vue'
+import { Table, Virtual } from '@soldy-ui/vue'
 
 import '@soldy-ui/theme-oren'
 
@@ -31,7 +31,7 @@ async function frames(count = 3): Promise<void> {
 	}
 }
 
-/** Движок строк в режиме окна: `COUNT` записей, две колонки. */
+/** Движок строк: `COUNT` записей, две колонки. */
 function engineOf(options: { grid?: boolean } = {}): TTableCollection {
 	const records: TTableRecord[] = Array.from({ length: COUNT }, (_, index) => ({
 		id: index + 1,
@@ -46,17 +46,16 @@ function engineOf(options: { grid?: boolean } = {}): TTableCollection {
 	]
 	engine.extensions.selection.mode = 'multiple'
 	engine.extensions.grid.grid = options.grid ?? false
-	engine.extensions.virtual.virtual = true
 
 	return engine
 }
 
 /**
- * Таблица в контейнере высотой 400 px с прокруткой, без контейнера — прямо на
- * странице.
+ * Таблица в обёртке `Virtual` — в контейнере высотой 400 px с прокруткой, без
+ * контейнера — прямо на странице.
  */
 async function mount(engine: TTableCollection, container = true): Promise<HTMLElement> {
-	const table = h(Table, { engine, aria_label: 'Строки' })
+	const table = h(Virtual, () => h(Table, { engine, aria_label: 'Строки' }))
 
 	render(
 		defineComponent({
