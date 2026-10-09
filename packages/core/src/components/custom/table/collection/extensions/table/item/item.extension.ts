@@ -25,7 +25,22 @@ export class TTableItemExtension<TRow extends ITableRow = ITableRow>
 		return this._parent.selecting
 	}
 
+	/** Взят у таблицы при первом чтении, отпускается со снятием адаптера. */
+	private _checkBox: ICheckBox | null = null
+
 	get checkBox(): ICheckBox {
-		return this._parent.checkBoxOf(this._item)
+		this._checkBox ??= this._parent.acquireCheckBox(this._item)
+
+		return this._checkBox
+	}
+
+	/** Монтирование кончилось — чекбокс строки отпущен: таблица держит только нарисованные. */
+	override destroy(): void {
+		if (this._checkBox) {
+			this._parent.releaseCheckBox(this._item)
+			this._checkBox = null
+		}
+
+		super.destroy()
 	}
 }

@@ -56,8 +56,20 @@ export class TEventEmitter<
 		this._size++
 	}
 
+	/**
+	 * Снять обработчик. Последний ушёл — уходит и набор события: эмиттер
+	 * живёт дольше подписчиков (строка таблицы — дольше своих монтирований), и
+	 * пустые наборы копились бы по одному на каждое событие, которое
+	 * когда-нибудь слушали.
+	 */
 	off<K extends keyof Events>(event: K, handler: Events[K]): void {
-		if (this._items.get(event as string)?.delete(handler as TEventHandler)) this._size--
+		const handlers = this._items.get(event as string)
+
+		if (!handlers?.delete(handler as TEventHandler)) return
+
+		this._size--
+
+		if (handlers.size === 0) this._items.delete(event as string)
 	}
 
 	emit<K extends keyof Events>(event: K, ...args: Parameters<Events[K]>): void {
