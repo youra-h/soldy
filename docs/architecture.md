@@ -96,6 +96,7 @@ TEntity (uid, getProps, assign, toJSON)
 
 - **TCell**: the only mutable memory of the layer — a value, an equality rule and listeners. Svelte-store contract: `subscribe` delivers the current value at once, `listen` delivers changes only. «What the framework assigned», the state snapshot and the `pluginProps` bag are cells; there are no «assigned / not assigned» flags
 - **TLine**: one property of one owner for the mount — spec + owner + framework name. Правило записи одно, поэтому оно одно на сборку, обмен и плагины снаружи
+  - `TLine.of(members, surface)` - линии участников в именах поверхности: одно построение для обмена и для начальных значений сборки
   - `read()` - `get` описания, а без него `owner[name]`; составное значение — снимком `valueOf()`
   - `write(value)` - запись; `protected` пропускается, «то же ли значение» решает сеттер владельца
   - `reset()` - вернуть умолчание описания; ключ не объявлен — значение остаётся
@@ -104,7 +105,7 @@ TEntity (uid, getProps, assign, toJSON)
   - `watch(listener)` - слушать триггеры свойства на шине владельца (`owner.events`, а без поля — сам владелец; без `on`/`off` источника нет)
 - **TMember**: a participant of the mount — an owner and what it declares. The instance, a descriptor plugin, an external plugin and the binding itself (`TExternalPlugins`, the owner of `pluginProps`) are members of the same kind
 - **TStateStore** (core → framework): a cell per property with triggers; `subscribe` / `getSnapshot`; subscribes to the owner bus while there is at least one subscriber
-- **TInputPort** (framework → core): a cell per writable prop, seeded with the build props. `full(props)` / `delta(changes)` / `TInput.offer(value)` differ only in what counts as a change: a changed value (`offer`) or the mere presence of the key (`push`, used by `delta`)
+- **TInputPort** (framework → core): a cell per writable prop, seeded with the build props. `full(props)` / `delta(changes)` / `TInput.offer(value)` differ only in what counts as a change: a changed value (`offer`) or the mere presence of the key (`push`, used by `delta`). The initial values are written by the static `TInputPort.seed(lines, buildProps)` — the same props reading, no cells: the assembly (`createAdapterContext`, step 5) and external plugins call it, and the assembly builds no exchange for that
 - **TEventRelay** (events out): one handler per «source, raw name»; the `v-model` event goes out from the same handler right after the core event
 - **TExchange**: lines of the members plus the three ports — everything an adapter sees (`adapter.connect(profile)`)
 

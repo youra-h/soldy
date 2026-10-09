@@ -30,8 +30,8 @@ export class TStateStore {
 	constructor(lines: readonly TLine[]) {
 		this._outputs = lines
 			.filter((line) => line.readable)
-			// Значения читаются при первом обращении, а не при создании: сборке, которая
-			// заводит обмен ради начальных значений, состояние не нужно
+			// Значения читаются при первом обращении, а не при создании: обмену плагина,
+			// поставленного снаружи, состояние не нужно — ему хватает входов и событий
 			.map((line) => ({ line, cell: new TCell<unknown>(undefined, sameValue) }))
 
 		for (const { line, cell } of this._outputs) {

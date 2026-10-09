@@ -24,9 +24,26 @@
  */
 
 import type { TPropSpec } from '../../define'
+import type { TSurface } from '../surface'
+import type { TMember } from './member.class'
 import { busOf, sameValue } from './value'
 
 export class TLine {
+	/**
+	 * Линии участников в именах поверхности — одно правило для обмена и для
+	 * начальных значений сборки, которой обмен не нужен. Свойство без записи в
+	 * поверхности линии не получает.
+	 */
+	static of(members: readonly TMember[], surface: TSurface): TLine[] {
+		return members.flatMap((member) =>
+			member.props.flatMap((spec): TLine[] => {
+				const entry = surface.entryOf(spec)
+
+				return entry ? [new TLine(spec, member.owner, entry.exportName)] : []
+			}),
+		)
+	}
+
 	constructor(
 		readonly spec: TPropSpec,
 		readonly owner: object,

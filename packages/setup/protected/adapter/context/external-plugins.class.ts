@@ -30,6 +30,7 @@ import type { TPluginCtor } from '../../define'
 import { CommonProfile } from '../../naming'
 import { TCell } from '../exchange/cell.class'
 import { TExchange } from '../exchange/exchange.class'
+import { TInputPort } from '../exchange/input-port.class'
 import { TMember } from '../exchange/member.class'
 import { sameValue } from '../exchange/value'
 import { TSurface } from '../surface'
@@ -90,15 +91,11 @@ export class TExternalPlugins {
 		if (!contract) return
 
 		const member = new TMember(plugin, contract.props, contract.events)
-
 		// Значения, пришедшие раньше плагина, ждали его в мешке: для него это пропсы сборки
-		const exchange = new TExchange(
-			[member],
-			TSurface.of(contract, CommonProfile),
-			this._bag.value,
-		)
+		const bag = this._bag.value
+		const exchange = new TExchange([member], TSurface.of(contract, CommonProfile), bag)
 
-		exchange.inputs.seed(plugin)
+		TInputPort.seed(exchange.lines, bag)
 
 		const offBag = this._bag.listen((bag) => exchange.inputs.full(bag))
 		const offEvents = exchange.events.listen((name, args) => this._announce({ name, args }))

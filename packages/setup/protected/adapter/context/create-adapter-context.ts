@@ -10,6 +10,8 @@
  *    (сеттер `items` фасада пересоздал бы элементы); внешнему `ctrl` пишутся
  *    сеттерами; участникам набора — если набор свой. Порядок: инстанс, плагины
  *    дескриптора, связка — а плагины снаружи получают своё, когда встают.
+ *    Обмен для этого не заводится: записи нужны только линии участников и
+ *    пропсы сборки, а состояние, входы и маршруты событий соберёт `connect()`.
  * 6. Завершение набора: плагины реестра и объявление наружу на микрозадаче.
  *
  * Имя пропа одно во всех фреймворках, поэтому профиль адаптера сборке не нужен:
@@ -18,7 +20,8 @@
 
 import { CommonProfile, PLUGIN_PROPS } from '../../naming'
 import type { IComponentDescriptor, IPluginsContract } from '../../define'
-import { TExchange } from '../exchange/exchange.class'
+import { TInputPort } from '../exchange/input-port.class'
+import { TLine } from '../exchange/line.class'
 import { TMember } from '../exchange/member.class'
 import { TSurface } from '../surface'
 import { TAdapterContext } from './adapter-context.class'
@@ -86,9 +89,7 @@ export function createAdapterContext<TInstance extends object, TPlugins extends 
 	const seeded = options.ctrl ? [owner, ...tenancy.seeded] : tenancy.seeded
 
 	if (seeded.length > 0) {
-		const { inputs } = new TExchange(seeded, TSurface.of(descriptor, CommonProfile), props)
-
-		for (const member of seeded) inputs.seed(member.owner)
+		TInputPort.seed(TLine.of(seeded, TSurface.of(descriptor, CommonProfile)), props)
 	}
 
 	// 6. Плагины реестра и объявление набора
