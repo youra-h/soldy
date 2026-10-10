@@ -220,6 +220,61 @@ describe('закреплённая шапка', () => {
 	})
 })
 
+/**
+ * Что идёт за жестом перестановки колонки — шапка (`head`) или колонка целиком
+ * (`column`). Модель от него не меняется: колонку переставляет расширение
+ * колонок одной перестановкой в конце жеста. Значение читает расширение
+ * колонок, а не тема: признак `data-reorder-preview` оно ставит таблице только
+ * на время жеста (`table-columns.spec.ts`, «признак тела»), — поэтому своё
+ * свойство набор таблицы не трогает ни при каком значении.
+ */
+describe('что идёт за жестом перестановки', () => {
+	it('по умолчанию шапка; в наборе таблицы — ничего', () => {
+		const owner = new TTable()
+
+		expect(owner.reorderPreview).toBe('head')
+		expect(owner.dataset.has('reorder-preview')).toBe(false)
+		expect(owner.getProps()).toMatchObject({ reorderPreview: 'head' })
+	})
+
+	it('проп конструктора — значение, но не атрибут', () => {
+		const owner = new TTable({ reorderPreview: 'column' })
+
+		expect(owner.reorderPreview).toBe('column')
+		expect(owner.dataset.has('reorder-preview')).toBe(false)
+		expect(owner.getProps()).toMatchObject({ reorderPreview: 'column' })
+	})
+
+	it('change:reorderPreview — только на смену значения; набор таблицы не меняется', () => {
+		const owner = new TTable()
+		const changed = vi.fn()
+		const dataset = vi.fn()
+
+		owner.events.on('change:reorderPreview', changed)
+		owner.events.on('change:dataset', dataset)
+
+		owner.reorderPreview = 'head'
+
+		expect(changed).not.toHaveBeenCalled()
+
+		owner.reorderPreview = 'column'
+
+		expect(changed).toHaveBeenCalledOnce()
+		expect(changed).toHaveBeenLastCalledWith('column')
+
+		owner.reorderPreview = 'column'
+
+		expect(changed).toHaveBeenCalledOnce()
+
+		owner.reorderPreview = 'head'
+
+		expect(changed).toHaveBeenCalledTimes(2)
+		expect(changed).toHaveBeenLastCalledWith('head')
+		expect(owner.dataset.has('reorder-preview')).toBe(false)
+		expect(dataset).not.toHaveBeenCalled()
+	})
+})
+
 describe('строки из данных', () => {
 	it('строки — TTableRow над записями, в порядке данных', () => {
 		const engine = rows([ANNA, BORIS])

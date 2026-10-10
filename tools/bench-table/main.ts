@@ -30,22 +30,29 @@ const lib = await libs[name]()
 lib.mount(q('#app'), rows)
 
 // Время до кадра, где действие отрисовано (rAF + задача после него), и до
-// «успокоения» — три кадра подряд чаще, чем раз в 50 мс
+// «успокоения» — три кадра подряд чаще, чем раз в 50 мс. Действие, которое
+// кончается не сразу (`until` — отпущенная колонка едет на место), успокаивается
+// после своего конца: кадры перехода тоже частые
 function frame() {
 	return new Promise<number>((r) =>
 		requestAnimationFrame(() => setTimeout(() => r(performance.now()), 0)),
 	)
 }
-async function measure(action: () => void) {
+async function measure(action: () => void, until: () => boolean = () => true) {
 	const t0 = performance.now()
 	action()
 	const paint = (await frame()) - t0
 	let prev = performance.now()
 	let calm = 0
-	while (calm < 3) {
+	let done = until()
+	while (calm < 3 || !done) {
 		const t = await frame()
 		calm = t - prev < 50 ? calm + 1 : 0
 		prev = t
+		if (!done && until()) {
+			done = true
+			calm = 0
+		}
 	}
 	return { paint: Math.round(paint), settled: Math.round(prev - t0) }
 }
@@ -83,6 +90,90 @@ async function scrollThrough() {
 	return { paint: Math.round(performance.now() - t0), settled: done.settled }
 }
 
+/** Заголовки колонок данных — у таблицы, которую можно переставлять (`sel.columns`). */
+function headers(): HTMLElement[] {
+	const selector = 'columns' in lib.sel ? lib.sel.columns : undefined
+
+	if (!selector) throw new Error('у таблицы нет заголовков для перестановки')
+
+	return [...document.querySelectorAll<HTMLElement>(selector)]
+}
+
+/** Середина узла на экране. */
+function middle(element: Element) {
+	const box = element.getBoundingClientRect()
+
+	return { x: box.left + box.width / 2, y: box.top + box.height / 2 }
+}
+
+/**
+ * Событие указателя мыши, как его шлёт браузер, только из кода. Плагин
+ * перестановки слушает указатель на корне таблицы — туда событие всплывает с
+ * заголовка.
+ */
+function pointer(type: string, target: Element, x: number, y: number) {
+	target.dispatchEvent(
+		new PointerEvent(type, {
+			bubbles: true,
+			cancelable: true,
+			composed: true,
+			pointerId: 1,
+			pointerType: 'mouse',
+			isPrimary: true,
+			button: 0,
+			buttons: type === 'pointerup' ? 0 : 1,
+			clientX: x,
+			clientY: y,
+		}),
+	)
+}
+
+/** Заголовок, который взяли, — на нём жест до отпускания. */
+let held: HTMLElement | null = null
+
+function heldHeader(): HTMLElement {
+	if (!held) throw new Error('колонку не взяли')
+
+	return held
+}
+
+/**
+ * Перестановка колонки — жест по заголовку второй колонки: взять (нажатие и
+ * протяжка за порог в 6 px), шаг на соседа (указатель за серединой третьей —
+ * она уступает место) и отпустить. Отпущенная колонка едет на место, и
+ * переставляется она, когда доехала: замер идёт, пока взятый заголовок не
+ * перестал быть взятым.
+ */
+const reorder = {
+	take: () => {
+		const header = headers()[1]
+		const { x, y } = middle(header)
+
+		held = header
+
+		return measure(() => {
+			pointer('pointerdown', header, x, y)
+			pointer('pointermove', header, x + 10, y)
+		})
+	},
+	step: () => {
+		const { x, y } = middle(headers()[2])
+
+		return measure(() => pointer('pointermove', heldHeader(), x + 10, y))
+	},
+	release: () => {
+		const header = heldHeader()
+		const { x, y } = middle(header)
+
+		held = null
+
+		return measure(
+			() => pointer('pointerup', header, x, y),
+			() => !document.querySelector('thead [data-dragging]'),
+		)
+	},
+}
+
 Object.assign(window, {
 	bench: {
 		render: (n: number) => measure(() => (rows.value = makeRows(n))),
@@ -91,6 +182,7 @@ Object.assign(window, {
 		selectAll: () => measure(() => q(lib.sel.selectAll).click()),
 		sort: () => measure(() => q(lib.sel.sort).click()),
 		scrollThrough,
+		...reorder,
 		info: () => ({
 			rows: document.querySelectorAll('tbody tr').length,
 			nodes: document.getElementsByTagName('*').length,
@@ -99,6 +191,14 @@ Object.assign(window, {
 			).length,
 			// Первая ячейка данных: в режиме окна первым в теле стоит распорка
 			first: document.querySelector('tbody tr > td:nth-child(2)')?.textContent?.trim(),
+			// Первые заголовки колонок данных — порядок до и после перестановки
+			heads:
+				'columns' in lib.sel
+					? headers()
+							.slice(0, 3)
+							.map((header) => header.textContent?.trim())
+							.join(', ')
+					: undefined,
 			heap: heap(),
 		}),
 	},

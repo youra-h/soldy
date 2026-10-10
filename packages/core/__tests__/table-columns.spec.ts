@@ -5,15 +5,18 @@ import {
 	TEvented,
 	TItemContext,
 	TPlainExtension,
+	TTable,
 	TTableColumn,
 	TTableColumnCollectionFacade,
 	TTableColumnsExtension,
 	TTableRow,
 	createEngine,
+	createEngineTable,
 	createEngineTableColumns,
 } from '@soldy-ui/core'
 import type {
 	IExtension,
+	ITable,
 	ITableColumn,
 	ITableColumnProps,
 	ITableColumnsExtension,
@@ -21,6 +24,7 @@ import type {
 	TNoEvents,
 	TTableColumnSource,
 	TTableColumnsEvents,
+	TTableReorderPreview,
 } from '@soldy-ui/core'
 import { columnsOf } from '../src/components/custom/table/collection/extensions/guards'
 
@@ -1215,12 +1219,14 @@ describe('заголовок', () => {
 
 /**
  * Перестановка колонок пользователем — команда `moveColumn` и жест
- * `dragStart` → `dragOver` → `dragEnd` расширения `columns`.
+ * `dragStart` → `dragOver` → `dragDrop` → `dragEnd` расширения `columns`.
  *
  * Место — среди показанных: скрытые колонки пользователь не видит, и они
- * остаются между своими соседями. Жест коллекцию не трогает, пока колонку не
- * отпустили: перестановка одна, на отпускании, — строк в таблице тысячи, и
- * перестановка на каждом шаге указателя перерисовывала бы их все.
+ * остаются между своими соседями. Жест коллекцию не трогает, пока заголовок не
+ * встал (`dragEnd`): перестановка одна, — строк в таблице тысячи, и
+ * перестановка на каждом шаге указателя перерисовывала бы их все. Пока несут,
+ * метки рассказывают теме, куда колонка встанет и кто уступает ей место;
+ * отпустили (`dragDrop`) — место заморожено, пока заголовок едет туда.
  */
 describe('перестановка колонок', () => {
 	const MOVABLE = [NAME, AGE, ID].map((source) => ({ ...source, reorderable: true }))
@@ -1411,6 +1417,217 @@ describe('перестановка колонок', () => {
 			expect(move).not.toHaveBeenCalled()
 		})
 
+		describe('соседи уступают место', () => {
+			const CITY: TTableColumnSource = { field: 'city', text: 'Город', reorderable: true }
+
+			/** Метки сдвига по порядку колонок: нет метки — `-`. */
+			const shifts = (columns: ITableColumnsExtension) =>
+				columns.columns.map((column) => column.dataset.get('shift') ?? '-')
+
+			it('несут к концу — колонки от места взятой до места включительно уступают к началу', () => {
+				const { columns } = movable([...MOVABLE, CITY])
+				const name = columnOf(columns, 'name')
+
+				columns.dragStart(name)
+
+				expect(shifts(columns)).toEqual(['-', '-', '-', '-'])
+
+				columns.dragOver(1)
+
+				expect(shifts(columns)).toEqual(['-', 'start', '-', '-'])
+
+				columns.dragOver(3)
+
+				expect(shifts(columns)).toEqual(['-', 'start', 'start', 'start'])
+
+				// Назад, но не до своего места — уступает меньше колонок
+				columns.dragOver(2)
+
+				expect(shifts(columns)).toEqual(['-', 'start', 'start', '-'])
+			})
+
+			it('несут к началу — колонки уступают к концу; через своё место — сторона меняется', () => {
+				const { columns } = movable([...MOVABLE, CITY])
+				const id = columnOf(columns, 'id')
+
+				columns.dragStart(id)
+				columns.dragOver(0)
+
+				expect(shifts(columns)).toEqual(['end', 'end', '-', '-'])
+
+				columns.dragOver(3)
+
+				expect(shifts(columns)).toEqual(['-', '-', '-', 'start'])
+			})
+
+			it('вернули на своё место — меток нет', () => {
+				const { columns } = movable([...MOVABLE, CITY])
+
+				columns.dragStart(columnOf(columns, 'age'))
+				columns.dragOver(3)
+				columns.dragOver(1)
+
+				expect(shifts(columns)).toEqual(['-', '-', '-', '-'])
+			})
+
+			it('пишется только то, что сменилось: остальные колонки шаг не трогает', () => {
+				const { columns } = movable([...MOVABLE, CITY])
+				const [name, age, id, city] = columns.columns
+				const changes = new Map(
+					[name, age, id, city].map((column) => {
+						const changed = vi.fn()
+
+						column.events.on('change:dataset', changed)
+
+						return [column, changed] as const
+					}),
+				)
+				const count = (column: ITableColumn) => changes.get(column)?.mock.calls.length
+
+				columns.dragStart(name)
+				columns.dragOver(2)
+				changes.forEach((changed) => changed.mockClear())
+
+				// Шаг вперёд: метка — новой колонке места, у прежних не меняется
+				columns.dragOver(3)
+
+				expect(count(age)).toBe(0)
+				// У `id` снята метка места, а сдвиг тот же
+				expect(count(id)).toBe(1)
+				// У `city` — метка места и сдвиг
+				expect(count(city)).toBe(2)
+
+				changes.forEach((changed) => changed.mockClear())
+
+				// Тот же шаг — ничего
+				columns.dragOver(3)
+
+				expect(
+					[...changes.values()].every((changed) => changed.mock.calls.length === 0),
+				).toBe(true)
+			})
+		})
+
+		describe('приземление', () => {
+			/** Метки жеста, которые стоят на колонках, — по полям. */
+			const marks = (columns: ITableColumnsExtension) =>
+				columns.columns.flatMap((column) =>
+					['dragging', 'landing', 'drop', 'shift']
+						.filter((mark) => column.dataset.has(mark))
+						.map((mark) => `${column.field}:${mark}`),
+				)
+
+			it('dragDrop — взятой data-landing, место заморожено, коллекция не тронута', () => {
+				const { columns, move } = movable()
+				const [name, age, id] = columns.columns
+
+				columns.dragStart(name)
+				columns.dragOver(2)
+				columns.dragDrop()
+
+				expect(name.dataset.get('landing')).toBe('true')
+				expect(columns.dragged).toBe(name)
+
+				// Указатель ещё шлёт места — заморожено
+				columns.dragOver(0)
+
+				expect(id.dataset.get('drop')).toBe('after')
+				expect([age, id].map((column) => column.dataset.get('shift'))).toEqual([
+					'start',
+					'start',
+				])
+				expect(fields(columns.columns)).toEqual(['name', 'age', 'id'])
+				expect(move).not.toHaveBeenCalled()
+			})
+
+			it('dragEnd после него — на замороженное место, одним column:move, меток нет', () => {
+				const { columns, move } = movable()
+				const name = columnOf(columns, 'name')
+				const shown = watchShown(columns)
+
+				columns.dragStart(name)
+				columns.dragOver(2)
+				columns.dragDrop()
+				columns.dragOver(0)
+
+				expect(marks(columns)).toEqual([
+					'name:dragging',
+					'name:landing',
+					'age:shift',
+					'id:drop',
+					'id:shift',
+				])
+
+				columns.dragEnd()
+
+				expect(fields(columns.columns)).toEqual(['age', 'id', 'name'])
+				expect(move).toHaveBeenCalledTimes(1)
+				expect(move).toHaveBeenCalledWith({ column: name, order: ['age', 'id', 'name'] })
+				expect(shown).toHaveBeenCalledTimes(1)
+				expect(columns.dragged).toBeUndefined()
+				expect(marks(columns)).toEqual([])
+			})
+
+			it('dragCancel — колонка на месте, все метки сняты', () => {
+				const { columns, move } = movable()
+
+				columns.dragStart(columnOf(columns, 'name'))
+				columns.dragOver(2)
+				columns.dragDrop()
+				columns.dragCancel()
+
+				expect(fields(columns.columns)).toEqual(['name', 'age', 'id'])
+				expect(move).not.toHaveBeenCalled()
+				expect(marks(columns)).toEqual([])
+			})
+
+			it('вне жеста dragDrop ничего не делает', () => {
+				const { columns } = movable()
+				const name = columnOf(columns, 'name')
+
+				columns.dragDrop()
+
+				expect(name.dataset.has('landing')).toBe(false)
+				expect(columns.dragged).toBeUndefined()
+			})
+
+			it('состав показанных сменился, пока заголовок приземляется, — жест прерван', () => {
+				const { columns, move } = movable()
+				const [name, age] = columns.columns
+
+				columns.dragStart(name)
+				columns.dragOver(2)
+				columns.dragDrop()
+				age.visible = false
+
+				expect(columns.dragged).toBeUndefined()
+				expect(marks(columns)).toEqual([])
+
+				columns.dragEnd()
+
+				expect(fields(columns.columns)).toEqual(['name', 'age', 'id'])
+				expect(move).not.toHaveBeenCalled()
+			})
+
+			it('перемещение отменили в item:move:before — колонка на месте, метки сняты', () => {
+				const { columns, move } = movable()
+
+				columns.engine.extensions.plain.events.on('item:move:before', (e) =>
+					e.preventDefault(),
+				)
+
+				columns.dragStart(columnOf(columns, 'name'))
+				columns.dragOver(2)
+				columns.dragDrop()
+				columns.dragEnd()
+
+				expect(fields(columns.columns)).toEqual(['name', 'age', 'id'])
+				expect(move).not.toHaveBeenCalled()
+				expect(columns.dragged).toBeUndefined()
+				expect(marks(columns)).toEqual([])
+			})
+		})
+
 		it('dragCancel — колонка на месте, метки сняты', () => {
 			const { columns, move } = movable()
 			const [name, , id] = columns.columns
@@ -1489,6 +1706,252 @@ describe('перестановка колонок', () => {
 			expect(id.dataset.has('drop')).toBe(false)
 			expect(columns.dragged).toBe(age)
 			expect(move).not.toHaveBeenCalled()
+		})
+	})
+
+	/**
+	 * Признак тела — `data-reorder-preview` на корне таблицы в `column`: по нему
+	 * тема ведёт за заголовками ячейки строк. Его имя — условие правил тела,
+	 * которые умножаются на каждую нарисованную ячейку, поэтому живёт он ровно
+	 * жест — от `dragStart` до `dragEnd` или `dragCancel`, — а на покое и в
+	 * `head` его нет вовсе.
+	 */
+	describe('признак тела', () => {
+		/** Таблица с движком строк и колонками, которые можно переставлять. */
+		function tableWith(reorderPreview: TTableReorderPreview) {
+			const owner = new TTable({ reorderPreview })
+			const engine = createEngineTable({ owner })
+			const { columns } = engine.extensions
+
+			columns.columns = MOVABLE
+
+			return { owner, engine, columns }
+		}
+
+		const flag = (owner: ITable) => owner.dataset.get('reorder-preview')
+
+		it('column: от взятия до конца приземления; на покое признака нет', () => {
+			const { owner, columns } = tableWith('column')
+			const [name] = columns.columns
+
+			expect(owner.dataset.has('reorder-preview')).toBe(false)
+
+			columns.dragStart(name)
+
+			expect(flag(owner)).toBe('column')
+
+			columns.dragOver(2)
+			columns.dragDrop()
+
+			expect(flag(owner)).toBe('column')
+
+			columns.dragEnd()
+
+			expect(fields(columns.columns)).toEqual(['age', 'id', 'name'])
+			expect(owner.dataset.has('reorder-preview')).toBe(false)
+		})
+
+		it('head: признака нет и в жесте', () => {
+			const { owner, columns } = tableWith('head')
+			const dataset = vi.fn()
+
+			owner.events.on('change:dataset', dataset)
+
+			columns.dragStart(columns.columns[0])
+			columns.dragOver(2)
+			columns.dragDrop()
+
+			expect(owner.dataset.has('reorder-preview')).toBe(false)
+
+			columns.dragEnd()
+
+			expect(owner.dataset.has('reorder-preview')).toBe(false)
+			expect(dataset).not.toHaveBeenCalled()
+		})
+
+		it('dragCancel снимает признак; колонку, которую не взять, — признака нет', () => {
+			const { owner, columns } = tableWith('column')
+			const [name, age] = columns.columns
+
+			columns.dragStart(name)
+			columns.dragOver(2)
+			columns.dragCancel()
+
+			expect(owner.dataset.has('reorder-preview')).toBe(false)
+
+			age.disabled = true
+
+			expect(columns.dragStart(age)).toBe(false)
+			expect(owner.dataset.has('reorder-preview')).toBe(false)
+		})
+
+		it('снимается той же операцией, что перестановка: подписчик column:move его уже не видит', () => {
+			const { owner, columns } = tableWith('column')
+			const seen: Array<string | undefined> = []
+
+			columns.events.on('column:move', () => seen.push(flag(owner)))
+
+			columns.dragStart(columns.columns[0])
+			columns.dragOver(2)
+			columns.dragDrop()
+			columns.dragEnd()
+
+			expect(seen).toEqual([undefined])
+		})
+
+		it('новый жест закрывает незаконченный — признак его, один, до конца нового', () => {
+			const { owner, columns } = tableWith('column')
+			const [name, age] = columns.columns
+			const dataset = vi.fn()
+
+			columns.dragStart(name)
+			owner.events.on('change:dataset', dataset)
+			columns.dragStart(age)
+
+			expect(flag(owner)).toBe('column')
+
+			columns.dragCancel()
+
+			expect(owner.dataset.has('reorder-preview')).toBe(false)
+			// Сняли с прежнего жеста, поставили новому, сняли с него
+			expect(dataset).toHaveBeenCalledTimes(3)
+		})
+
+		it('состав показанных сменился посреди жеста — жест прерван, признак снят', () => {
+			const { owner, columns } = tableWith('column')
+			const [name, , id] = columns.columns
+
+			columns.dragStart(name)
+			columns.dragOver(2)
+			id.visible = false
+
+			expect(columns.dragged).toBeUndefined()
+			expect(owner.dataset.has('reorder-preview')).toBe(false)
+		})
+
+		it('таблица ушла посреди жеста — признак уходит с неё; новой не ставится', () => {
+			const { owner, engine, columns } = tableWith('column')
+			const next = new TTable({ reorderPreview: 'column' })
+
+			columns.dragStart(columns.columns[0])
+			engine.options.set({ owner: next })
+
+			expect(owner.dataset.has('reorder-preview')).toBe(false)
+			expect(next.dataset.has('reorder-preview')).toBe(false)
+
+			columns.dragOver(2)
+			columns.dragDrop()
+			columns.dragEnd()
+
+			expect(owner.dataset.has('reorder-preview')).toBe(false)
+			expect(next.dataset.has('reorder-preview')).toBe(false)
+
+			// Следующий жест — у новой таблицы
+			columns.dragStart(columns.columns[0])
+
+			expect(next.dataset.get('reorder-preview')).toBe('column')
+		})
+
+		it('таблицы нет — признака нет, жест идёт', () => {
+			const engine = createEngineTable()
+			const { columns } = engine.extensions
+
+			columns.columns = MOVABLE
+
+			expect(columns.dragStart(columns.columns[0])).toBe(true)
+
+			columns.dragOver(2)
+			columns.dragEnd()
+
+			expect(fields(columns.columns)).toEqual(['age', 'id', 'name'])
+		})
+
+		it('смена пропа посреди жеста — со следующего жеста', () => {
+			const { owner, columns } = tableWith('column')
+			const name = columnOf(columns, 'name')
+
+			columns.dragStart(name)
+			owner.reorderPreview = 'head'
+
+			expect(flag(owner)).toBe('column')
+
+			columns.dragCancel()
+			columns.dragStart(name)
+
+			expect(owner.dataset.has('reorder-preview')).toBe(false)
+
+			owner.reorderPreview = 'column'
+
+			expect(owner.dataset.has('reorder-preview')).toBe(false)
+
+			columns.dragCancel()
+			columns.dragStart(name)
+
+			expect(flag(owner)).toBe('column')
+		})
+	})
+
+	/**
+	 * Шапка стоит — таблица в `none`: взятой колонке на весь жест `data-still`,
+	 * соседям `data-shift` не пишется, место — только `data-drop`. Признака
+	 * тела на корне нет, а `dragPreview` отдаёт режим жеста плагину.
+	 */
+	describe('шапка стоит (none)', () => {
+		function stillTable() {
+			const owner = new TTable({ reorderPreview: 'none' })
+			const engine = createEngineTable({ owner })
+			const { columns } = engine.extensions
+
+			columns.columns = MOVABLE
+
+			return { owner, columns }
+		}
+
+		it('взятой — data-still на весь жест, соседям сдвигов нет, линия места есть', () => {
+			const { owner, columns } = stillTable()
+			const [name, age, id] = columns.columns
+
+			columns.dragStart(name)
+
+			expect(name.dataset.get('still')).toBe('true')
+			expect(columns.dragPreview).toBe('none')
+
+			columns.dragOver(2)
+
+			expect(id.dataset.get('drop')).toBe('after')
+			expect(age.dataset.has('shift')).toBe(false)
+			expect(id.dataset.has('shift')).toBe(false)
+			expect(owner.dataset.has('reorder-preview')).toBe(false)
+
+			columns.dragEnd()
+
+			expect(fields(columns.columns)).toEqual(['age', 'id', 'name'])
+			expect(name.dataset.has('still')).toBe(false)
+			expect(name.dataset.has('dragging')).toBe(false)
+			expect(id.dataset.has('drop')).toBe(false)
+			expect(columns.dragPreview).toBeUndefined()
+		})
+
+		it('dragCancel снимает data-still; в head и column его нет', () => {
+			const { columns } = stillTable()
+			const [name] = columns.columns
+
+			columns.dragStart(name)
+			columns.dragCancel()
+
+			expect(name.dataset.has('still')).toBe(false)
+
+			for (const reorderPreview of ['head', 'column'] as const) {
+				const owner = new TTable({ reorderPreview })
+				const other = createEngineTable({ owner }).extensions.columns
+
+				other.columns = MOVABLE
+				other.dragStart(other.columns[0])
+				other.dragOver(2)
+
+				expect(other.columns[0].dataset.has('still')).toBe(false)
+				expect(other.dragPreview).toBe(reorderPreview)
+			}
 		})
 	})
 })

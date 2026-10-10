@@ -33,6 +33,7 @@ import type {
 	TTableColumnFit,
 	TTableColumnSource,
 	TTableRecord,
+	TTableReorderPreview,
 } from '@soldy-ui/core'
 import { enUS, ruRU } from '@soldy-ui/plugins'
 import type { TLocale } from '@soldy-ui/plugins'
@@ -798,6 +799,87 @@ describe('перестановка колонок', () => {
 		expect(findAll('.s-table-row__cell').map(text)).toEqual(['30', 'Анна'])
 		expect(move).toHaveBeenCalledTimes(1)
 		expect(move.mock.calls[0][0].order).toEqual(['age', 'name'])
+	})
+
+	/**
+	 * Признак тела — `data-reorder-preview` — ставит корню расширение колонок,
+	 * и только на время жеста в `column`: на покое его нет ни в одном режиме, и
+	 * правила тела темы ячейкам ничего не стоят.
+	 */
+	it('data-reorder-preview — только в жесте column: на покое и в head его нет', async () => {
+		const preview = ref<TTableReorderPreview>('head')
+		const engine = engineOf('none', [ANNA], [...MOVABLE])
+		const { columns } = engine.extensions
+
+		await render(() => h(Table, { engine, reorderPreview: preview.value }))
+
+		const table = find('table.s-table')
+		const [name] = columns.columns
+
+		expect(table.hasAttribute('data-reorder-preview')).toBe(false)
+
+		// head — нет и в жесте
+		columns.dragStart(name)
+		await settle()
+
+		expect(table.hasAttribute('data-reorder-preview')).toBe(false)
+
+		columns.dragCancel()
+		preview.value = 'column'
+		await settle()
+
+		expect(table.hasAttribute('data-reorder-preview')).toBe(false)
+
+		columns.dragStart(name)
+		columns.dragOver(1)
+		columns.dragDrop()
+		await settle()
+
+		expect(table.dataset.reorderPreview).toBe('column')
+
+		// Встала — признак ушёл той же перерисовкой, что и перестановка
+		columns.dragEnd()
+		await settle()
+
+		expect(findAll('.s-table-column').map(text)).toEqual(['Возраст', 'Имя'])
+		expect(table.hasAttribute('data-reorder-preview')).toBe(false)
+	})
+
+	/**
+	 * Метки жеста пишет расширение колонок, рисует их тема; здесь — что они
+	 * доезжают до заголовков и уходят вместе с перестановкой одной
+	 * перерисовкой.
+	 */
+	it('метки жеста — на заголовках: data-shift, data-landing; встала — меток нет', async () => {
+		const ID: TTableColumnSource = { field: 'id', text: '№', reorderable: true }
+		const engine = engineOf('none', [ANNA], [...MOVABLE, ID])
+		const { columns } = engine.extensions
+		const gesture = (header: HTMLElement) =>
+			['dragging', 'landing', 'drop', 'shift']
+				.filter((mark) => header.hasAttribute(`data-${mark}`))
+				.map((mark) => `${mark}=${header.getAttribute(`data-${mark}`)}`)
+
+		await render(() => h(Table, { engine }))
+
+		const [name] = columns.columns
+
+		columns.dragStart(name)
+		columns.dragOver(2)
+		columns.dragDrop()
+		await settle()
+
+		expect(findAll('.s-table-column').map(gesture)).toEqual([
+			['dragging=true', 'landing=true'],
+			['shift=start'],
+			['drop=after', 'shift=start'],
+		])
+
+		columns.dragEnd()
+		await settle()
+
+		expect(findAll('.s-table-column').map(text)).toEqual(['Возраст', '№', 'Имя'])
+		expect(findAll('.s-table-row__cell').map(text)).toEqual(['30', '1', 'Анна'])
+		expect(findAll('.s-table-column').flatMap(gesture)).toEqual([])
 	})
 })
 

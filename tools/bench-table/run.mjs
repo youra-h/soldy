@@ -57,6 +57,15 @@ for (const lib of LIBS) {
 		const i4 = await b(() => bench.info())
 		push('Сортировка ↓', await b(() => bench.sort()))
 		const i5 = await b(() => bench.info())
+		// С перестановкой (`reorder`) — жест по заголовку второй колонки: взять,
+		// шаг на соседа, отпустить. После сортировок: окно — у верха таблицы
+		const reordering = lib.includes('+reorder')
+		if (reordering) {
+			push('Взять колонку', await b(() => bench.take()))
+			push('Смена места', await b(() => bench.step()))
+			push('Отпустить', await b(() => bench.release()))
+		}
+		const i6 = reordering ? await b(() => bench.info()) : undefined
 		// В режиме окна — проход по всем строкам и куча после: что прокрученные
 		// строки оставили в памяти. После сортировок: пробы смотрят на верх таблицы
 		if (lib.includes('+virtual')) {
@@ -69,7 +78,8 @@ for (const lib of LIBS) {
 		if (run === 0)
 			console.log(
 				lib,
-				`строк ${i1.rows}, узлов ${i1.nodes}, отмечено ${i2.checked}→${i3.checked}, ↑ «${i4.first}», ↓ «${i5.first}»`,
+				`строк ${i1.rows}, узлов ${i1.nodes}, отмечено ${i2.checked}→${i3.checked}, ↑ «${i4.first}», ↓ «${i5.first}»` +
+					(i6 ? `, колонки «${i5.heads}» → «${i6.heads}»` : ''),
 			)
 		await page.close()
 	}

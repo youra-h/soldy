@@ -25,6 +25,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { render, cleanup } from 'vitest-browser-vue'
 import { userEvent } from 'vitest/browser'
 import { defineComponent, h, nextTick, ref, type VNode } from 'vue'
+import { createEngineTable } from '@soldy-ui/core'
 import { useMotion } from '@soldy-ui/plugins'
 import type { TMotionMode } from '@soldy-ui/plugins'
 import {
@@ -44,6 +45,7 @@ import {
 	Skeleton,
 	Slider,
 	Switch,
+	Table,
 	Tabs,
 	TabsItem,
 } from '@soldy-ui/vue'
@@ -102,6 +104,34 @@ const tabs = (view?: 'contained') => () =>
 			),
 		),
 	])
+
+/**
+ * Таблица посреди перестановки колонки: первую колонку несут на место
+ * второй — вторая уступает ей место, у неё метка места. `drop` — колонку уже
+ * отпустили, и заголовок едет на место. Жест — командами расширения колонок:
+ * переходы темы висят на метках, указатель им не нужен.
+ */
+const reordering = async (props: Record<string, unknown> = {}, drop = false) => {
+	const engine = createEngineTable({
+		items: [{ data: { name: 'Анна', city: 'Казань' } }],
+	})
+	const { columns } = engine.extensions
+
+	columns.columns = ['name', 'city'].map((field) => ({ field, text: field, reorderable: true }))
+
+	await show(() =>
+		h('div', { style: 'width: 480px' }, [
+			h(Table, { engine, aria_label: 'Сотрудники', ...props }),
+		]),
+	)
+
+	columns.dragStart(columns.columns[0])
+	columns.dragOver(1)
+
+	if (drop) columns.dragDrop()
+
+	await nextTick()
+}
 
 type TCase = {
 	readonly name: string
@@ -318,6 +348,31 @@ const CASES: readonly TCase[] = [
 			),
 		'.s-radio-group-item__control',
 		'border-width',
+	),
+	transition(
+		'Table: сосед уступает место взятому заголовку',
+		() => reordering(),
+		'.s-table-column[data-shift]',
+		'translate',
+	),
+	transition(
+		'Table: отпущенный заголовок едет на место',
+		() => reordering({}, true),
+		'.s-table-column[data-landing]',
+		'translate',
+	),
+	{
+		name: 'Table: место — линией, только без движения',
+		mount: () => reordering(),
+		look: () => getComputedStyle(node('.s-table-column[data-drop]'), '::before').display,
+		moving: 'none',
+		still: 'block',
+	},
+	transition(
+		'Table column: ячейки идут за заголовками',
+		() => reordering({ reorderPreview: 'column' }),
+		'.s-table-row__cell',
+		'translate',
 	),
 	{
 		name: 'Skeleton wave: блик, без движения — пульсация',

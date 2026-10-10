@@ -7,13 +7,14 @@ import { createEngineTableColumns } from '../../../column/collection'
 import type { TTableColumnsCollection, TTableColumnSource } from '../../../column/collection'
 import type { ITableColumn } from '../../../column/types'
 import type { ITableRow } from '../../../row/types'
-import type { ITable } from '../../../types'
+import type { ITable, TTableReorderPreview } from '../../../types'
 import type { TTableEngineOptions } from '../table'
 import { TTableColumnsItemExtension } from './item'
 import { layoutColumns } from './layout'
 import type {
 	ITableColumnsExtension,
 	ITableColumnsItemExtension,
+	TTableColumnShift,
 	TTableColumnsEvents,
 } from './types'
 
@@ -27,13 +28,31 @@ type TColumnWatchers = {
 	commit: (width: number) => void
 }
 
-/** Жест перестановки: какую колонку тащат, куда она встанет и на ком метка. */
+/** Жест перестановки: какую колонку тащат, куда она встанет и на ком метки. */
 type TColumnDrag = {
 	column: ITableColumn
 	/** Место среди показанных, куда колонка встанет, если её отпустить */
 	to: number
 	/** Колонка под меткой — та, что сейчас стоит на месте `to`; на своём месте метки нет */
 	target: ITableColumn | undefined
+	/**
+	 * Колонки, которые уступают место взятой, — от её места до `to`
+	 * включительно, — и куда каждая уступает. На своём месте их нет
+	 */
+	shifted: ReadonlyMap<ITableColumn, TTableColumnShift>
+	/** Колонку отпустили: заголовок приземляется, место заморожено */
+	dropped: boolean
+	/**
+	 * Что идёт за жестом — значение таблицы, когда колонку взяли: смена
+	 * посреди жеста действует со следующего
+	 */
+	mode: TTableReorderPreview
+	/**
+	 * Таблица, которой жест поставил признак `data-reorder-preview` — она была в
+	 * `column`, когда колонку взяли. С неё признак и снимается: таблица может
+	 * смениться посреди жеста
+	 */
+	preview: ITable | undefined
 }
 
 /**
@@ -85,18 +104,47 @@ type TColumnDrag = {
  * слушает.
  *
  * **Перестановка пользователем** — команда `moveColumn` и жест `dragStart` →
- * `dragOver` → `dragEnd`. Место — среди показанных: скрытые колонки
- * пользователь не видит и остаются на своих местах между соседями. Жест
- * перестановкой не является, пока колонку не отпустили: взятой колонке
- * расширение пишет `data-dragging`, колонке на месте, куда её принесли, —
- * `data-drop` со стороной, а коллекцию не трогает. Строк в таблице бывают
- * тысячи, и перестановка на каждом шаге указателя перерисовывала бы их все;
- * так она одна — на отпускании, одним `column:move`. Где указатель и какая
- * колонка под ним, знает плагин, а не расширение. Пользователь берёт только
- * колонку `reorderable` и не выключенную; код переставляет любые —
- * перемещением в коллекции колонок, без `column:move`. Состав показанных
- * сменился посреди жеста — жест прерван: место, куда несли колонку, считалось
- * от прежнего состава.
+ * `dragOver` → `dragDrop` → `dragEnd`. Место — среди показанных: скрытые
+ * колонки пользователь не видит и остаются на своих местах между соседями.
+ * Строк в таблице бывают тысячи, и перестановка на каждом шаге указателя
+ * перерисовывала бы их все, поэтому коллекцию жест не трогает до конца:
+ * перестановка одна, одним `column:move`. Фазы жеста — метки колонок для
+ * темы:
+ *
+ * - несут (`dragStart`, `dragOver`) — взятой колонке `data-dragging`, колонке
+ *   на месте, куда её принесли, — `data-drop` со стороной, а колонкам от
+ *   места взятой до места `to` включительно — `data-shift`: куда каждая
+ *   уступает место. Пишется только то, что сменилось;
+ * - отпустили (`dragDrop`) — взятой `data-landing`: заголовок едет на место,
+ *   а место заморожено — `dragOver` его больше не меняет;
+ * - встала (`dragEnd`) — метки сняты, колонка переставлена, одной операцией:
+ *   тема видит шапку и тело уже в новом порядке и без меток жеста.
+ *
+ * **Шапка стоит** — у таблицы в `none` (`reorderPreview`): взятой колонке
+ * на весь жест ещё и `data-still`, а `data-shift` не пишется никому, — соседи
+ * стоят, место показывает линия (`data-drop`). Признак — на взятом
+ * заголовке, а не на корне: по нему тема решает только за шапку, и ячейкам
+ * тела его смена ничего не стоит. Приземления в `none` нет: плагин зовёт
+ * `dragEnd` на отпускании (`dragPreview`).
+ *
+ * **Тело за жестом** — у таблицы в `column` (`reorderPreview`): на весь жест,
+ * от `dragStart` до `dragEnd` или `dragCancel`, расширение ставит её корню
+ * признак `data-reorder-preview`, и по нему тема ведёт за заголовками ячейки
+ * строк. Признак живёт ровно жест, потому что его имя — условие правил тела,
+ * которые умножаются на каждую нарисованную ячейку: пока имени нет ни у
+ * одного предка ячейки — на покое и в `head`, — стиль ячеек за эти правила не
+ * платит. Значение таблицы расширение читает, когда колонку берут: смена
+ * посреди жеста действует со следующего. Снимается признак той же операцией,
+ * что перестановка, — подписчик `column:move` его уже не видит, — а с
+ * таблицы, которая ушла посреди жеста, — когда она ушла.
+ *
+ * Сколько ждать между отпусканием и концом, решает плагин — пока заголовок
+ * доезжает переходом темы. Где указатель и какая колонка под ним, тоже знает
+ * он, а не расширение. Пользователь берёт только колонку `reorderable` и не
+ * выключенную; код переставляет любые — перемещением в коллекции колонок, без
+ * `column:move`. Состав показанных сменился посреди жеста, и пока заголовок
+ * приземляется тоже, — жест прерван: место, куда несли колонку, считалось от
+ * прежнего состава.
  */
 export class TTableColumnsExtension<
 	TRow extends ITableRow = ITableRow,
@@ -188,6 +236,9 @@ export class TTableColumnsExtension<
 
 			// Признак места — этой таблицы: она ушла, и признак уходит с неё
 			scope.add(() => owner.dataset.add('overflow', null))
+
+			// Признак жеста — тоже: таблица ушла посреди жеста
+			scope.add(() => owner.dataset.add('reorder-preview', null))
 		})
 	}
 
@@ -228,6 +279,10 @@ export class TTableColumnsExtension<
 		return this._drag?.column
 	}
 
+	get dragPreview(): TTableReorderPreview | undefined {
+		return this._drag?.mode
+	}
+
 	notifySpace(width: number): void {
 		const space = width > 0 ? Math.floor(width) : 0
 
@@ -249,8 +304,27 @@ export class TTableColumnsExtension<
 		// Указатель у шапки один: новый жест закрывает незаконченный
 		this.dragCancel()
 
-		this._drag = { column, to: this.shownColumns.indexOf(column), target: undefined }
+		const owner = this._ctx?.options.get('owner')
+		// Без таблицы — её умолчание
+		const mode = owner?.reorderPreview ?? 'head'
+		const preview = mode === 'column' ? owner : undefined
+
+		this._drag = {
+			column,
+			to: this.shownColumns.indexOf(column),
+			target: undefined,
+			shifted: new Map(),
+			dropped: false,
+			mode,
+			preview,
+		}
 		column.dataset.add('dragging', true)
+
+		// Шапка стоит: соседи без сдвигов, место — линия
+		if (mode === 'none') column.dataset.add('still', true)
+
+		// Тело идёт за жестом — признак на время жеста, а не на покое
+		preview?.dataset.add('reorder-preview', 'column')
 
 		return true
 	}
@@ -258,7 +332,8 @@ export class TTableColumnsExtension<
 	dragOver(to: number): void {
 		const drag = this._drag
 
-		if (!drag) return
+		// Отпущенную колонку больше не несут: место заморожено
+		if (!drag || drag.dropped) return
 
 		const shown = this.shownColumns
 		const from = shown.indexOf(drag.column)
@@ -273,6 +348,18 @@ export class TTableColumnsExtension<
 		}
 
 		target?.dataset.add('drop', place > from ? 'after' : 'before')
+
+		// В `none` соседи стоят — уступать место им нечем
+		if (drag.mode !== 'none') this._shift(drag, shown, from, place)
+	}
+
+	dragDrop(): void {
+		const drag = this._drag
+
+		if (!drag) return
+
+		drag.dropped = true
+		drag.column.dataset.add('landing', true)
 	}
 
 	dragEnd(): void {
@@ -293,7 +380,43 @@ export class TTableColumnsExtension<
 
 		this._drag = undefined
 		drag.column.dataset.add('dragging', null)
+		drag.column.dataset.add('landing', null)
+		drag.column.dataset.add('still', null)
 		drag.target?.dataset.add('drop', null)
+		drag.preview?.dataset.add('reorder-preview', null)
+
+		for (const column of drag.shifted.keys()) column.dataset.add('shift', null)
+	}
+
+	/**
+	 * Колонки от места взятой до `place` включительно уступают ей место: несут
+	 * к концу строки — они встают к началу, к началу — к концу. Метка
+	 * пишется только тем, у кого она сменилась, и снимается только с тех, кто
+	 * перестал уступать: на каждом шаге указателя остальные колонки не
+	 * трогаются.
+	 */
+	private _shift(
+		drag: TColumnDrag,
+		shown: ReadonlyArray<ITableColumn>,
+		from: number,
+		place: number,
+	): void {
+		const side: TTableColumnShift = place > from ? 'start' : 'end'
+		const shifted = new Map<ITableColumn, TTableColumnShift>()
+
+		for (let index = Math.min(from, place); index <= Math.max(from, place); index++) {
+			if (index !== from) shifted.set(shown[index], side)
+		}
+
+		for (const column of drag.shifted.keys()) {
+			if (!shifted.has(column)) column.dataset.add('shift', null)
+		}
+
+		for (const [column, value] of shifted) {
+			if (drag.shifted.get(column) !== value) column.dataset.add('shift', value)
+		}
+
+		drag.shifted = shifted
 	}
 
 	/**
