@@ -16,7 +16,9 @@ import { join, resolve, relative, sep } from 'node:path'
  * начинается с имени компонента, в папке которого лежит разметка.
  *
  * Компонентом soldy считается тег с именем папки компонента (`Button`,
- * `so-button`) или с её префиксом (`TagsItem`). Сканируется
+ * `so-button`) или с её префиксом (`TagsItem`), а в Angular — ещё и атрибут
+ * `so-<имя>` на обычном теге: корень там — сам элемент потребителя
+ * (`<button so-button>`), и по имени тега его не узнать. Сканируется
  * `packages/ui/*\/src/components/**` без комментариев.
  */
 
@@ -99,19 +101,34 @@ function readTag(source: string, start: number): string {
 	return source.slice(start)
 }
 
+/**
+ * Чем открывающий тег называет компонент: тегом (`Button`, `so-icon`) или,
+ * у обычного тега, атрибутом Angular (`<button so-button>` — `so-button`).
+ * Значения атрибутов не в счёт: `class="so-button"` — не селектор.
+ */
+function componentOf(name: string, opening: string): string | null {
+	if (name.startsWith('so-') || /^[A-Z]/.test(name)) return name
+
+	const attributes = opening.replace(/(["'`])[\s\S]*?\1/g, '""')
+
+	return /\s(so-[a-z-]+)(?=[\s=/>])/.exec(attributes)?.[1] ?? null
+}
+
 /** Вложенные компоненты soldy без признака: `тег` для отчёта. */
 function findUnmarked(source: string, owner: string, names: readonly string[]): string[] {
 	const code = stripComments(source)
 	const found: string[] = []
 
-	for (const match of code.matchAll(/<(so-[a-z-]+|[A-Z][A-Za-z]*)(?=[\s/>])/g)) {
-		const raw = match[1]
+	for (const match of code.matchAll(/<([A-Za-z][\w-]*)(?=[\s/>])/g)) {
+		const opening = readTag(code, match.index)
+		const raw = componentOf(match[1], opening)
+
+		if (raw === null) continue
+
 		const tag = raw.startsWith('so-') ? pascal(raw.slice('so-'.length)) : raw
 
 		if (!names.some((name) => tag === name || tag.startsWith(name))) continue
 		if (tag.startsWith(owner)) continue
-
-		const opening = readTag(code, match.index)
 
 		if (!/[\s[:]embedded\]?\s*=/.test(opening)) found.push(raw)
 	}
@@ -126,9 +143,12 @@ describe('вложенные компоненты разметки несут п
 		['<Button :size="size" />', 'Tags', ['Button']],
 		['<Button\n\t@click="() => a > b"\n>', 'Tags', ['Button']],
 		['<so-icon [size]="size"></so-icon>', 'Tags', ['so-icon']],
+		['<button so-button [size]="size"></button>', 'Tags', ['so-button']],
 		['<Button embedded="tags.close" />', 'Tags', []],
 		['<Icon embedded={name} />', 'Tags', []],
 		['<so-icon [embedded]="name"></so-icon>', 'Tags', []],
+		['<button so-button embedded="tags.close"></button>', 'Tags', []],
+		['<span class="so-button"></span>', 'Tags', []],
 		['<TagsItem :ctrl="item" />', 'Tags', []],
 		['<!-- <Button /> -->', 'Tags', []],
 	])('%s в %s', (source, owner, expected) => {

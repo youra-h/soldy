@@ -3,23 +3,57 @@
  *
  * Выносит общий жизненный цикл, чтобы убрать дублирование между компонентами:
  *
- * - constructor: связывает корневой DOM-элемент с TElementPlugin (см. `_bindRoot`)
+ * - constructor: связывает корень компонента с TElementPlugin по стратегии
+ *   (`TRootStrategy`), у корня-хоста ещё снимает с элемента атрибуты-входы
  * - state: сигнал состояния Core (шаблон подписывается сам, без ChangeDetectorRef)
- * - ngOnInit: создаёт binding (createBinding) из заданных inputs
- *   и ставит приёмник событий ядра для выходов (syncEvents)
+ * - ngOnInit: создаёт binding (createBinding) из заданных inputs — у корня-хоста
+ *   вместе с его тегом — и ставит приёмник событий ядра для выходов (syncEvents)
  * - ngOnChanges: пробрасывает изменённые inputs в Core (syncInputs)
  * - ngOnDestroy: очищает подписки и adapter.destroy()
  *
  * Подкласс обязан реализовать:
  * - createBinding(ctrl, inputs): создаёт TBinding через setup-функцию
  * - super(inputNames, rootStrategy?) в конструкторе: имена входов и стратегия
- *   привязки корня — `'view'` (по умолчанию), когда корень живёт внутри
- *   `@if`/`@else` и шаблон помечает его `#root`, или `'host'`, когда корень —
- *   сам хост-элемент компонента.
+ *   корня — `'host'`, когда корень — сам элемент потребителя (Button,
+ *   ComponentView), или `'view'` (по умолчанию), когда корень живёт в шаблоне.
  *
  * Стратегия передаётся через конструктор (а не getter), т.к. она нужна уже в
- * конструкторе (`_bindRoot`), а TS запрещает обращение к абстрактному свойству
- * в конструкторе; имена входов — тем же вызовом.
+ * конструкторе, а TS запрещает обращение к абстрактному свойству в
+ * конструкторе; имена входов — тем же вызовом.
+ *
+ * Корень-хост (`'host'`) — элемент, на котором потребитель написал селектор:
+ * `<button so-button>`, `<a so-button href>`, `<div so-button>`. Всё, что
+ * потребитель написал на элементе, относится к корню и работает без проброса,
+ * а то, что пишет на корень ядро, раскладывает сама база — у компонентов нет
+ * ни привязок хоста, ни эффектов:
+ *
+ * - тег — `localName` хоста. Имя тега у живого элемента не меняется, поэтому
+ *   входа `tag` нет (`useInputs`): тег уходит ядру обычным пропом в сборку
+ *   вместе с входами, а внешнему `ctrl` сборка пишет его сеттером;
+ * - статический атрибут с именем входа (`text`, `size`, `disabled`,
+ *   `aria_label`) — запись входа, а не атрибут. Angular ставит его на элемент
+ *   ещё до конструктора, а значение входа берёт из скомпилированного шаблона, а
+ *   не из DOM, поэтому база снимает такие атрибуты с хоста в конструкторе.
+ *   Нативный `disabled` ведут только `attrs` ядра: иначе статический атрибут
+ *   пережил бы включение кнопки;
+ * - скрытие (`rendered` или `visible` равно `false`) — привязка хоста
+ *   `[style.display]` этой директивы, её наследует каждый компонент. Со стилем
+ *   потребителя её сливает Angular: `style`, `[style.x]` и `[style]`
+ *   потребителя ставятся и снимаются сами, а шаблон потребителя главнее
+ *   привязок хоста, поэтому инлайновый `display` потребителя главнее скрытия —
+ *   во Vue и React наоборот. Перекрыть его можно только записью в обход стилей
+ *   Angular, а такая запись спорила бы с его привязками;
+ * - классы ядра и наборы `aria`, `attrs`, `dataset` — эффекты базы, и
+ *   атрибуты и классы потребителя главнее них (`root-attributes.ts`). Классы —
+ *   не привязка хоста `[class]`: статику шаблона потребителя Angular сверяет
+ *   только у первой привязки директивы к классам или стилям (`directiveStylingLast`
+ *   у узла одно на те и другие), а `[class]` компилятор ставит раньше
+ *   `[style.*]`. С ней статический `style="display: …"` потребителя проигрывал
+ *   бы скрытию, а у видимого корня снимался бы вовсе. `class`, `[class.x]` и
+ *   `[ngClass]` потребителя ставят и снимают только свои имена;
+ * - `rendered=false` прячет корень, как `visible=false`: убрать элемент
+ *   потребителя компонент не может. Содержимое остаётся, `TElementPlugin`
+ *   связан с хостом всё время.
  *
  * Эмиттеров заранее база не заводит. Выход — геттер, который кодогенератор
  * пишет в `T<Имя>Surface`, по одному на класс; первое чтение выхода — привязка
@@ -55,24 +89,43 @@ import {
 	signal,
 	viewChild,
 } from '@angular/core'
-import type { IEntity, TAttributesMap } from '@soldy-ui/core'
-import type { TInstanceState } from '@soldy-ui/setup'
-import { applyAttributes } from './aria.directive'
+import type { IEntity } from '@soldy-ui/core'
+import type { TInstanceState, TStateSnapshot } from '@soldy-ui/setup'
+import {
+	applyAttributes,
+	applyClasses,
+	attributesOf,
+	classesOf,
+	type TAppliedAttributes,
+	type TAppliedClasses,
+} from './root-attributes'
 import { SlotDirective } from './slot.directive'
 import type { TBinding } from './useAdapter'
 
 /**
- * Стратегия привязки корневого DOM-элемента к TElementPlugin.
+ * Где корень компонента — элемент, который описывает ядро (тег, классы,
+ * наборы) и который связан с TElementPlugin.
  *
- * - `'view'` — корень существует не всегда (живёт внутри `@if`, может
- *   пересоздаваться при смене `tag`): сигнальный `viewChild('root')`
- *   переустанавливает связь при каждой пересоздании узла.
- * - `'host'` — корень существует всё время жизни компонента: привязка
- *   разовая, через инжектированный `ElementRef` хоста.
+ * - `'host'` — корень — сам хост: элемент, на котором потребитель написал
+ *   селектор (`<button so-button>`). Живёт всё время жизни компонента, поэтому
+ *   привязка разовая, через инжектированный `ElementRef`.
+ * - `'view'` — корень в шаблоне компонента, помечен `#root` и может
+ *   пересоздаваться: сигнальный `viewChild('root')` переустанавливает связь
+ *   при каждом пересоздании узла. Так устроен компонент, чей корень не может
+ *   быть элементом потребителя, — например портал, у которого корень уезжает в
+ *   слой. Шаблон без `#root` — компонент без корня (`so-component`).
  */
 export type TRootStrategy = 'view' | 'host'
 
-@Directive({ standalone: true })
+/** Наборы ядра, которые база раскладывает на корень-хост. */
+const ROOT_SETS = ['aria', 'attrs', 'dataset'] as const
+
+@Directive({
+	standalone: true,
+	host: {
+		'[style.display]': '_rootDisplay()',
+	},
+})
 export abstract class TComponentBase<TInstance extends IEntity>
 	implements OnInit, OnChanges, OnDestroy
 {
@@ -85,6 +138,13 @@ export abstract class TComponentBase<TInstance extends IEntity>
 	): TBinding<TInstance>
 
 	private readonly _inputNames: readonly string[]
+
+	/**
+	 * Хост-элемент, если корень — он (стратегия `'host'`), иначе `null`. Поле:
+	 * по нему же работает привязка хоста, у корня в шаблоне она пуста.
+	 */
+	private readonly _host: Element | null
+
 	private readonly _binding = signal<TBinding<TInstance> | undefined>(undefined)
 	private _eventsCleanup?: () => void
 
@@ -101,17 +161,33 @@ export abstract class TComponentBase<TInstance extends IEntity>
 	readonly state = computed<TInstanceState<TInstance>>(() => this._binding()?.state() ?? {})
 
 	/**
+	 * Скрытие корня-хоста — привязка `[style.display]` декоратора: прячут и
+	 * `visible`, и `rendered`. У корня в шаблоне хосту не достаётся ничего.
+	 *
+	 * Инстанса компонента база не знает (у `so-component` нет ни классов, ни
+	 * наборов), поэтому состояние читает по именам — как запись
+	 * `имя → значение` — и вид значения проверяет на месте.
+	 */
+	protected readonly _rootDisplay = computed(() => {
+		const state: TStateSnapshot = this.state()
+
+		return this._host && (state['rendered'] === false || state['visible'] === false)
+			? 'none'
+			: null
+	})
+
+	/**
 	 * Корень шаблона, помеченный `#root`. Читает его только стратегия `'view'`
-	 * (см. `_bindRoot`): у `'host'` корень — сам хост, и `#root` в шаблоне нет.
+	 * (см. `_bindView`): у `'host'` корень — сам хост, и `#root` в шаблоне нет.
 	 *
 	 * Сигнальный viewChild(), а не @ViewChild: обычный запрос читается
-	 * один раз в ngAfterViewInit и после пересоздания узла (смена `tag`,
-	 * переключение `rendered`) указывает на мёртвый элемент.
+	 * один раз в ngAfterViewInit и после пересоздания узла указывает на
+	 * мёртвый элемент.
 	 *
-	 * Поле, а не вызов в `_bindRoot`: сигнальные запросы компилятор Angular
+	 * Поле, а не вызов в `_bindView`: сигнальные запросы компилятор Angular
 	 * распознаёт только в инициализаторе поля, вызов в методе роняет AOT с
 	 * NG8110. Поле инициализируется до тела конструктора, откуда зовётся
-	 * `_bindRoot`.
+	 * `_bindView`.
 	 *
 	 * Параметры заданы явно: первый — тип локатора, здесь строка, второй —
 	 * то, что отдаёт `read`. Без него `nativeElement` был бы `any`, и
@@ -135,13 +211,24 @@ export abstract class TComponentBase<TInstance extends IEntity>
 	constructor(inputNames: readonly string[], rootStrategy: TRootStrategy = 'view') {
 		this._inputNames = inputNames
 
-		this._bindRoot(rootStrategy)
+		// `ElementRef<Element>`, а не `any` по умолчанию: узел `TElementPlugin` —
+		// `Element`, и без явного параметра несовпадение типов здесь не видно.
+		this._host =
+			rootStrategy === 'host' ? inject<ElementRef<Element>>(ElementRef).nativeElement : null
+
+		if (this._host) this._bindHost(this._host)
+		else this._bindView()
 	}
 
 	ngOnInit(): void {
 		// Первый ngOnChanges пришёл раньше связки и ничего не записал: заданные
 		// при монтировании входы применяет сборка контекста
-		const binding = this.createBinding(this.ctrl, this.collectInputs())
+		const inputs = this.collectInputs()
+
+		// Тег корня-хоста — у самого элемента: входа `tag` нет (`useInputs`)
+		if (this._host) inputs['tag'] = this._host.localName
+
+		const binding = this.createBinding(this.ctrl, inputs)
 
 		this._eventsCleanup = binding.syncEvents((name) => this._createdOutput(name))
 
@@ -197,44 +284,52 @@ export abstract class TComponentBase<TInstance extends IEntity>
 	}
 
 	/**
-	 * Связывает корневой DOM-элемент с TElementPlugin по выбранной стратегии.
-	 * Вызывается из конструктора — обеим стратегиям нужен injection context.
+	 * Корень — сам хост (`'host'`). Элемент потребителя живёт всё время жизни
+	 * компонента: привязка к TElementPlugin разовая, а классы и наборы ядра база
+	 * раскладывает на него сама — шаблона на хост нет. Зовётся из конструктора:
+	 * эффектам нужен injection context.
 	 */
-	private _bindRoot(strategy: TRootStrategy): void {
-		if (strategy === 'host') {
-			// `ElementRef<Element>`, а не `any` по умолчанию: узел `TElementPlugin` —
-			// `Element`, и без явного параметра несовпадение типов здесь не видно.
-			const elementRef = inject<ElementRef<Element>>(ElementRef)
+	private _bindHost(host: Element): void {
+		// Атрибут с именем входа — запись входа, а не атрибут корня (см. шапку)
+		for (const name of ['ctrl', ...this._inputNames]) host.removeAttribute(name)
 
-			let appliedAria: string[] = []
-			let appliedAttrs: string[] = []
-			let appliedDataset: string[] = []
+		effect(() => this._binding()?.bindElement(host))
 
-			effect(() => {
-				this._binding()?.bindElement(elementRef.nativeElement)
+		// Эффект на классы и на каждый набор: перекладывается только сменившееся,
+		// и память «что поставила база» у каждого своя
+		const classes = computed(() => {
+			const state: TStateSnapshot = this.state()
 
-				// Хост существует всё время жизни компонента, шаблона на него нет
-				// (в отличие от Button, где эти же наборы раскладывает `[ariaAttrs]`
-				// в разметке) — поэтому три набора ядра применяются здесь тем же
-				// алгоритмом, что и в `AriaDirective`.
-				const state = this.state() as Record<string, TAttributesMap | undefined>
+			return classesOf(state['classes'])
+		})
 
-				appliedAria = applyAttributes(elementRef.nativeElement, state['aria'], appliedAria)
-				appliedAttrs = applyAttributes(
-					elementRef.nativeElement,
-					state['attrs'],
-					appliedAttrs,
-				)
-				appliedDataset = applyAttributes(
-					elementRef.nativeElement,
-					state['dataset'],
-					appliedDataset,
-				)
+		let appliedClasses: TAppliedClasses = new Set()
+
+		effect(() => {
+			appliedClasses = applyClasses(host, classes(), appliedClasses)
+		})
+
+		for (const name of ROOT_SETS) {
+			const set = computed(() => {
+				const state: TStateSnapshot = this.state()
+
+				return attributesOf(state[name])
 			})
 
-			return
-		}
+			let applied: TAppliedAttributes = new Map()
 
+			effect(() => {
+				applied = applyAttributes(host, set(), applied)
+			})
+		}
+	}
+
+	/**
+	 * Корень в шаблоне (`'view'`): существует не всегда и может пересоздаваться,
+	 * поэтому эффект перечитывает `#root` и переустанавливает связь. Зовётся из
+	 * конструктора: эффекту нужен injection context.
+	 */
+	private _bindView(): void {
 		effect(() => {
 			const binding = this._binding()
 			const ref = this._root()

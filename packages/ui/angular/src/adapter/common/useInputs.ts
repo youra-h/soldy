@@ -17,11 +17,18 @@ import { TSurface, type IComponentDescriptor } from '@soldy-ui/setup'
 import { AngularProfile } from './profile'
 
 /**
- * `ctrl` объявлен в EntityDescriptor и потому попадает в поверхность,
- * но в Angular он приходит из отдельного `@Input() ctrl` в TComponentBase.
- * Без этого фильтра он был бы объявлен дважды.
+ * Пропы поверхности, которые входами не становятся.
+ *
+ * - `ctrl` объявлен в EntityDescriptor и потому попадает в поверхность, но в
+ *   Angular он приходит из отдельного `@Input() ctrl` в TComponentBase. Без
+ *   этого фильтра он был бы объявлен дважды.
+ * - `tag` — тег элемента, который написал потребитель: корень компонента —
+ *   сам этот элемент (`<button so-button>`, `<a so-button href>`), а имя тега
+ *   у живого элемента Angular не меняет. Поэтому тег не задают, а читают:
+ *   `TComponentBase` берёт его у хоста и отдаёт ядру обычным пропом при
+ *   сборке. Вход `tag` расходился бы с элементом молча.
  */
-const SERVICE_INPUTS = new Set(['ctrl'])
+const SERVICE_INPUTS = new Set(['ctrl', 'tag'])
 
 export function useInputs(descriptor: IComponentDescriptor): string[] {
 	return Object.keys(TSurface.of(descriptor, AngularProfile).exportProps).filter(
@@ -32,11 +39,11 @@ export function useInputs(descriptor: IComponentDescriptor): string[] {
 /**
  * Булевы входы — те, чей проп объявлен ровно `Boolean`, в порядке `useInputs`.
  *
- * Атрибут без значения (`<so-button disabled>`) такой вход включает, как в
- * остальных адаптерах. Проп, у которого `Boolean` — один из типов массива, сюда
- * не входит: у `value` полей (`[String, Number, Boolean, Object, Array]`)
- * пустая строка — это значение, а параметр transform отрезал бы остальные
- * типы.
+ * Атрибут без значения (`<button so-button disabled>`) такой вход включает,
+ * как в остальных адаптерах. Проп, у которого `Boolean` — один из типов
+ * массива, сюда не входит: у `value` полей
+ * (`[String, Number, Boolean, Object, Array]`) пустая строка — это значение, а
+ * параметр transform отрезал бы остальные типы.
  */
 export function useBooleanInputs(descriptor: IComponentDescriptor): string[] {
 	const { exportProps } = TSurface.of(descriptor, AngularProfile)

@@ -40,7 +40,7 @@ import {
 @Component({
 	standalone: true,
 	imports: [TButtonComponent],
-	template: `<so-button text="Save" (actionPress)="onPress($event)" />`,
+	template: `<button so-button text="Save" (actionPress)="onPress($event)"></button>`,
 })
 class ButtonHost {
 	readonly presses: (MouseEvent | KeyboardEvent)[] = []
@@ -53,7 +53,7 @@ class ButtonHost {
 @Component({
 	standalone: true,
 	imports: [TComponentViewComponent],
-	template: `<so-component-view [ctrl]="ctrl" (changeVisible)="onVisible($event)" />`,
+	template: `<div so-component-view [ctrl]="ctrl" (changeVisible)="onVisible($event)"></div>`,
 })
 class ComponentViewHost {
 	readonly ctrl = new TComponentView()
@@ -92,7 +92,7 @@ describe('выход в строгом шаблоне · $event — первый
 		await frame()
 
 		const host: HTMLElement = fixture.nativeElement
-		const root = host.querySelector('so-button')?.firstElementChild
+		const root = host.querySelector('[so-button]')
 
 		if (!root) throw new Error('Корень Button не отрисован')
 
@@ -154,7 +154,7 @@ describe('тип выхода · эмиттер первого аргумент�
 @Component({
 	standalone: true,
 	imports: [TButtonComponent],
-	template: `<so-button [ctrl]="ctrl" />`,
+	template: `<button so-button [ctrl]="ctrl"></button>`,
 })
 class BareButtonHost {
 	readonly ctrl = new TButton({ text: 'Save' })
@@ -164,7 +164,7 @@ class BareButtonHost {
 @Component({
 	standalone: true,
 	imports: [TComponentViewComponent],
-	template: `<so-component-view [ctrl]="ctrl" />`,
+	template: `<div so-component-view [ctrl]="ctrl"></div>`,
 })
 class BareComponentViewHost {
 	readonly ctrl = new TComponentView()
@@ -185,7 +185,7 @@ class BareComponentHost {
 @Component({
 	standalone: true,
 	imports: [TButtonComponent],
-	template: `<so-button [ctrl]="ctrl" (changeVisible)="onVisible($event)" />`,
+	template: `<button so-button [ctrl]="ctrl" (changeVisible)="onVisible($event)"></button>`,
 })
 class BoundButtonHost {
 	readonly ctrl = new TButton({ text: 'Save' })

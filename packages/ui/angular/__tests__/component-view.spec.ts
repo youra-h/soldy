@@ -1,29 +1,58 @@
 /**
- * ComponentView — стратегия `'host'` из `TComponentBase`.
+ * ComponentView — стратегия `'host'` из `TComponentBase`, как у Button.
  *
- * У Button корень живёт внутри `@if`, и наборы ядра раскладывает директива
- * `[ariaAttrs]` в разметке. Здесь корень — сам хост-элемент компонента,
- * шаблона на него нет, и всё то же самое делает эффект `_bindRoot`: он же
- * применяет `aria`, `attrs` и `dataset` через `applyAttributes`, он же
- * связывает узел с `TElementPlugin`. Второй, независимый от Button путь —
- * и единственный тест на него.
+ * Корень — сам элемент потребителя (`<section so-component-view>`): тег ядро
+ * берёт у него, классы, скрытие и наборы `aria`, `attrs` и `dataset` база
+ * раскладывает на него же и связывает его с `TElementPlugin`. Шаблона на
+ * корень у компонента нет, поэтому раскладку проверяет только рантайм — `ngc`
+ * её не видит. Атрибуты потребителя главнее наборов ядра.
  */
 
 import { describe, it, expect } from 'vitest'
-import { Component } from '@angular/core'
+import { Component, signal } from '@angular/core'
 import { TestBed, type ComponentFixture } from '@angular/core/testing'
 import { TComponentView } from '@soldy-ui/core'
 import { TComponentViewComponent } from '@soldy-ui/angular'
 import { announced, elementPlugin } from './element-plugin'
 
-/** Форма потребителя: корень компонента — его собственный тег в разметке. */
+/** Форма потребителя: корень — его элемент, роль на нём — тоже его. */
 @Component({
 	standalone: true,
 	imports: [TComponentViewComponent],
-	template: `<so-component-view><b>внутри</b></so-component-view>`,
+	template: `<section so-component-view role="region" [ctrl]="ctrl"><b>внутри</b></section>`,
 })
-class ProjectionHost {}
+class SectionHost {
+	readonly ctrl = new TComponentView({ direction: 'rtl' })
+}
 
+/** Роль потребителя привязкой: появляется уже поверх роли ядра. */
+@Component({
+	standalone: true,
+	imports: [TComponentViewComponent],
+	template: `<div so-component-view [ctrl]="ctrl" [attr.role]="role()"></div>`,
+})
+class BoundRoleHost {
+	readonly ctrl = new TComponentView()
+	readonly role = signal<string | null>(null)
+}
+
+function mountSection(): { fixture: ComponentFixture<SectionHost>; section: HTMLElement } {
+	const fixture = TestBed.createComponent(SectionHost)
+
+	fixture.detectChanges()
+
+	const host: HTMLElement = fixture.nativeElement
+	const section = host.querySelector('section')
+
+	if (!section) throw new Error('<section so-component-view> не отрисован')
+
+	return { fixture, section }
+}
+
+/**
+ * ComponentView, созданный самим TestBed: корень — `<div id="rootN">`, тот же
+ * тег, что Angular берёт для атрибутного селектора, — умолчание ядра.
+ */
 function mount(inputs: Record<string, unknown> = {}): ComponentFixture<TComponentViewComponent> {
 	const fixture = TestBed.createComponent(TComponentViewComponent)
 
@@ -41,14 +70,74 @@ function host(fixture: ComponentFixture<unknown>): HTMLElement {
 	return element
 }
 
-describe('ComponentView · хост-элемент как корень', () => {
-	it('классы ядра лежат на хосте', () => {
-		const el = host(mount())
+describe('ComponentView · элемент потребителя как корень', () => {
+	it('тег у ядра — тег элемента', () => {
+		const { fixture, section } = mountSection()
 
-		expect(Array.from(el.classList)).toContain('s-component-view')
+		expect(fixture.componentInstance.ctrl.tag).toBe('section')
+		expect(section.localName).toBe('section')
 	})
 
-	it('visible=false прячет хост, rendered=false — тоже', () => {
+	it('классы и наборы ядра лежат на элементе, содержимое — внутри', () => {
+		const { fixture, section } = mountSection()
+
+		fixture.componentInstance.ctrl.dataset.add('state', 'open')
+		fixture.detectChanges()
+
+		expect(Array.from(section.classList)).toContain('s-component-view')
+		expect(section.getAttribute('dir')).toBe('rtl')
+		expect(section.getAttribute('data-state')).toBe('open')
+		expect(section.querySelector('b')?.textContent).toBe('внутри')
+	})
+
+	it('role потребителя главнее role ядра', () => {
+		const { fixture, section } = mountSection()
+		const { ctrl } = fixture.componentInstance
+
+		ctrl.aria.add('role', 'group')
+		fixture.detectChanges()
+
+		expect(section.getAttribute('role')).toBe('region')
+
+		// Чужой атрибут база не считает своим и не снимает
+		ctrl.aria.remove('role')
+		fixture.detectChanges()
+
+		expect(section.getAttribute('role')).toBe('region')
+	})
+
+	/**
+	 * `[attr.role]` Angular пишет поверх роли, которую поставила база. Значение
+	 * уже не её — и, когда роль уходит из набора ядра, база его не снимает.
+	 */
+	it('[attr.role] потребителя поверх роли ядра база больше не трогает', () => {
+		const fixture = TestBed.createComponent(BoundRoleHost)
+		const { ctrl } = fixture.componentInstance
+
+		fixture.detectChanges()
+
+		const host: HTMLElement = fixture.nativeElement
+		const view = host.querySelector('[so-component-view]')
+
+		if (!view) throw new Error('ComponentView не отрисован')
+
+		ctrl.aria.add('role', 'group')
+		fixture.detectChanges()
+
+		expect(view.getAttribute('role')).toBe('group')
+
+		fixture.componentInstance.role.set('region')
+		fixture.detectChanges()
+
+		expect(view.getAttribute('role')).toBe('region')
+
+		ctrl.aria.remove('role')
+		fixture.detectChanges()
+
+		expect(view.getAttribute('role')).toBe('region')
+	})
+
+	it('visible=false прячет корень, rendered=false — тоже', () => {
 		const fixture = mount()
 
 		expect(host(fixture).style.display).toBe('')
@@ -62,28 +151,14 @@ describe('ComponentView · хост-элемент как корень', () => {
 		fixture.componentRef.setInput('rendered', false)
 		fixture.detectChanges()
 
-		// Хост-элемент создаёт родитель, убрать себя компонент не может —
+		// Элемент создаёт потребитель, убрать его компонент не может —
 		// поэтому `rendered` здесь тоже прячет, а не удаляет
 		expect(host(fixture).style.display).toBe('none')
 	})
-
-	it('у потребителя корень — сам <so-component-view> с содержимым внутри', () => {
-		const fixture = TestBed.createComponent(ProjectionHost)
-
-		fixture.detectChanges()
-
-		const element: HTMLElement = fixture.nativeElement
-		const view = element.querySelector('so-component-view')
-
-		if (!view) throw new Error('<so-component-view> не отрисован')
-
-		expect(Array.from(view.classList)).toContain('s-component-view')
-		expect(view.querySelector('b')?.textContent).toBe('внутри')
-	})
 })
 
-describe('ComponentView · три набора ядра на хосте', () => {
-	it('attrs, aria и dataset доезжают до хоста', () => {
+describe('ComponentView · три набора ядра на корне', () => {
+	it('attrs, aria и dataset доезжают до корня', () => {
 		const ctrl = new TComponentView({ direction: 'rtl' })
 		const fixture = mount({ ctrl })
 
@@ -98,7 +173,7 @@ describe('ComponentView · три набора ядра на хосте', () => 
 		expect(el.getAttribute('data-state')).toBe('open')
 	})
 
-	it('атрибут, ушедший из набора, снимается с хоста', () => {
+	it('атрибут, ушедший из набора, снимается с корня', () => {
 		const ctrl = new TComponentView({ direction: 'rtl' })
 		const fixture = mount({ ctrl })
 
@@ -117,9 +192,8 @@ describe('ComponentView · три набора ядра на хосте', () => 
 	})
 
 	/**
-	 * Наборы отслеживаются раздельно (`applyAttributes` с тремя списками
-	 * «поставленного в прошлый раз»): снятие записи в одном не должно уносить
-	 * чужие атрибуты.
+	 * Память «что поставила база» у каждого набора своя: снятие записи в
+	 * одном не должно уносить чужие атрибуты.
 	 */
 	it('снятие записи в одном наборе не трогает остальные', () => {
 		const ctrl = new TComponentView({ direction: 'rtl' })
@@ -136,25 +210,10 @@ describe('ComponentView · три набора ядра на хосте', () => 
 		expect(host(fixture).getAttribute('dir')).toBe('rtl')
 		expect(host(fixture).getAttribute('data-state')).toBe('open')
 	})
-
-	/**
-	 * Хост существует всё время жизни компонента, поэтому `tag` его не
-	 * пересоздаёт — в отличие от стратегии `'view'` у Button, где смена тега
-	 * переключает ветку `@if` и даёт новый узел.
-	 */
-	it('смена tag не меняет хост-элемент', () => {
-		const fixture = mount()
-		const before = host(fixture)
-
-		fixture.componentRef.setInput('tag', 'section')
-		fixture.detectChanges()
-
-		expect(host(fixture)).toBe(before)
-	})
 })
 
 describe('ComponentView · плагин узла', () => {
-	it('TElementPlugin связан с самим хостом', async () => {
+	it('TElementPlugin связан с самим корнем', async () => {
 		const fixture = TestBed.createComponent(TComponentViewComponent)
 		const plugin = elementPlugin(fixture)
 

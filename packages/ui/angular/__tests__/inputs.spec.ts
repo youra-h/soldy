@@ -10,9 +10,10 @@
  * декоратор объявил вход.
  *
  * Булев вход декоратор объявляет с `transform: booleanInput`. Атрибут без
- * значения (`<so-button disabled>`) Angular отдаёт входу пустой строкой, а
- * transform превращает её в `true`, как это делают остальные адаптеры. Тип
- * записи такого входа проверка берёт у параметра transform, а не у поля.
+ * значения (`<button so-button disabled>`) Angular отдаёт входу пустой
+ * строкой, а transform превращает её в `true`, как это делают остальные
+ * адаптеры. Тип записи такого входа проверка берёт у параметра transform, а не
+ * у поля.
  *
  * Здесь пять проверок:
  * - хосты с верными значениями, `disabled` без значения тоже: их шаблоны
@@ -28,12 +29,15 @@
  *   сверку незаметно выключил бы даже вход, объявленный ещё раз в `@Component`
  *   компонента: поле в базе на месте, тип у него верный, и верный шаблон
  *   компилируется — выдаёт поломку только неверное значение, которое прошло.
+ *   Там же видно, что входа `tag` нет ни у одного компонента: корень — сам
+ *   элемент потребителя, и тег берётся у него (`TComponentBase`).
  */
 
 import { describe, it, expect, expectTypeOf, beforeAll } from 'vitest'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import * as ts from 'typescript'
+import { CssSelector } from '@angular/compiler'
 import {
 	NodeJSFileSystem,
 	createCompilerHost,
@@ -63,7 +67,13 @@ import {
 @Component({
 	standalone: true,
 	imports: [TButtonComponent],
-	template: `<so-button [text]="text()" [size]="size()" aria_label="Сохранить" disabled />`,
+	template: `<button
+		so-button
+		[text]="text()"
+		[size]="size()"
+		aria_label="Сохранить"
+		disabled
+	></button>`,
 })
 class ButtonHost {
 	readonly text = signal('Save')
@@ -73,16 +83,16 @@ class ButtonHost {
 @Component({
 	standalone: true,
 	imports: [TComponentViewComponent],
-	template: `<so-component-view [visible]="visible()" direction="rtl" />`,
+	template: `<div so-component-view [visible]="visible()" direction="rtl"></div>`,
 })
 class ComponentViewHost {
 	readonly visible = signal(false)
 }
 
-/** Корень Button в хосте — первый элемент внутри `<so-button>`. */
+/** Корень Button в хосте — сам элемент с атрибутом селектора. */
 function buttonRoot(fixture: ComponentFixture<unknown>): Element {
 	const host: HTMLElement = fixture.nativeElement
-	const root = host.querySelector('so-button')?.firstElementChild
+	const root = host.querySelector('[so-button]')
 
 	if (!root) throw new Error('Корень Button не отрисован')
 
@@ -116,9 +126,9 @@ describe('вход в строгом шаблоне · значение дохо
 		fixture.detectChanges()
 
 		const host: HTMLElement = fixture.nativeElement
-		const view = host.querySelector('so-component-view')
+		const view = host.querySelector('[so-component-view]')
 
-		if (!(view instanceof HTMLElement)) throw new Error('<so-component-view> не отрисован')
+		if (!(view instanceof HTMLElement)) throw new Error('ComponentView не отрисован')
 
 		expect(view.style.display).toBe('none')
 		expect(view.getAttribute('dir')).toBe('rtl')
@@ -292,6 +302,29 @@ const BINDINGS: Record<THostKind, (component: TExportedComponent) => readonly st
 	yes: ({ booleans }) => booleans.map((input) => `${input}="yes"`),
 }
 
+/**
+ * Элемент компонента с `bindings` — по первому селектору, как его строит сам
+ * Angular, когда создаёт компонент без разметки: тег селектора, а без него
+ * `div`, и атрибуты селектора (`<button so-button …>`). Закрывающий тег
+ * обязателен: самозакрытие Angular разрешает только кастомным и
+ * void-элементам, и `<button so-button />` не скомпилировался бы.
+ */
+function hostElement(selector: string, bindings: readonly string[]): string {
+	const [first] = CssSelector.parse(selector)
+	const tag = first.element ?? 'div'
+	const attributes: string[] = []
+
+	// Атрибуты селектора идут парами «имя, значение», пустое значение — атрибут без него
+	for (let index = 0; index < first.attrs.length; index += 2) {
+		const name = first.attrs[index]
+		const value = first.attrs[index + 1]
+
+		attributes.push(value === '' ? name : `${name}="${value}"`)
+	}
+
+	return `<${[tag, ...attributes, ...bindings].join(' ')}></${tag}>`
+}
+
 /** Хост потребителя, у которого на элементе компонента стоят `bindings`. */
 function hostSource({ name, selector }: TExportedComponent, bindings: readonly string[]): string {
 	return [
@@ -301,7 +334,7 @@ function hostSource({ name, selector }: TExportedComponent, bindings: readonly s
 		'@Component({',
 		'	standalone: true,',
 		`	imports: [${name}],`,
-		`	template: \`<${selector} ${bindings.join(' ')} />\`,`,
+		`	template: \`${hostElement(selector, bindings)}\`,`,
 		'})',
 		'export class Host {',
 		`	readonly wrong = Symbol('wrong')`,
@@ -425,6 +458,16 @@ describe('вход в строгом шаблоне · хосты компоне
 		const button = components.find(({ name }) => name === 'TButtonComponent')
 
 		expect(button?.booleans).toEqual(useBooleanInputs(ButtonDescriptor()))
+	})
+
+	/**
+	 * Корень — сам элемент потребителя, и тег у него уже есть: ядро получает
+	 * его от элемента. Вход `tag` расходился бы с элементом молча.
+	 */
+	it('входа tag нет ни у одного компонента', () => {
+		expect(
+			components.filter(({ inputs }) => inputs.includes('tag')).map(({ name }) => name),
+		).toEqual([])
 	})
 
 	it('кроме привязок хостов, ошибок в программе нет', () => {
