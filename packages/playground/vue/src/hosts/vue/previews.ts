@@ -425,6 +425,9 @@ export const PREVIEWS: Record<string, TPreview> = {
 	 * Ряд — граница ширины, как у ленты: сцена ячейки — флексбокс, и без неё
 	 * таблица держала бы там только свой минимум. Select — в колонке своей
 	 * ширины: поле во всю ширину места, и в ряду оно забрало бы место таблицы.
+	 *
+	 * Переставленную колонку таблица здесь ведёт целиком, с ячейками строк
+	 * (`reorderPreview: 'column'`): в окне это сотни ячеек, а не тысячи.
 	 */
 	virtual: (bind) =>
 		h(Virtual as Component, bind, () =>
@@ -444,6 +447,7 @@ export const PREVIEWS: Record<string, TPreview> = {
 					h(Table as Component, {
 						items: TABLE_MANY_ROWS,
 						columns: TABLE_COLUMNS,
+						reorderPreview: 'column',
 						aria_label: 'Сотрудники',
 					}),
 				]),

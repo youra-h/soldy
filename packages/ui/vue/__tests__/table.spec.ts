@@ -33,6 +33,7 @@ import type {
 	TTableColumnFit,
 	TTableColumnSource,
 	TTableRecord,
+	TTableReorderPreview,
 } from '@soldy-ui/core'
 import { enUS, ruRU } from '@soldy-ui/plugins'
 import type { TLocale } from '@soldy-ui/plugins'
@@ -798,6 +799,64 @@ describe('перестановка колонок', () => {
 		expect(findAll('.s-table-row__cell').map(text)).toEqual(['30', 'Анна'])
 		expect(move).toHaveBeenCalledTimes(1)
 		expect(move.mock.calls[0][0].order).toEqual(['age', 'name'])
+	})
+
+	it('data-reorder-preview на корне — по пропу и вместе с ним', async () => {
+		const preview = ref<TTableReorderPreview>('head')
+
+		await render(() =>
+			h(Table, {
+				items: [{ data: ANNA }],
+				columns: [...MOVABLE],
+				reorderPreview: preview.value,
+			}),
+		)
+
+		const table = find('table.s-table')
+
+		expect(table.dataset.reorderPreview).toBe('head')
+
+		preview.value = 'column'
+		await settle()
+
+		expect(table.dataset.reorderPreview).toBe('column')
+	})
+
+	/**
+	 * Метки жеста пишет расширение колонок, рисует их тема; здесь — что они
+	 * доезжают до заголовков и уходят вместе с перестановкой одной
+	 * перерисовкой.
+	 */
+	it('метки жеста — на заголовках: data-shift, data-landing; встала — меток нет', async () => {
+		const ID: TTableColumnSource = { field: 'id', text: '№', reorderable: true }
+		const engine = engineOf('none', [ANNA], [...MOVABLE, ID])
+		const { columns } = engine.extensions
+		const gesture = (header: HTMLElement) =>
+			['dragging', 'landing', 'drop', 'shift']
+				.filter((mark) => header.hasAttribute(`data-${mark}`))
+				.map((mark) => `${mark}=${header.getAttribute(`data-${mark}`)}`)
+
+		await render(() => h(Table, { engine }))
+
+		const [name] = columns.columns
+
+		columns.dragStart(name)
+		columns.dragOver(2)
+		columns.dragDrop()
+		await settle()
+
+		expect(findAll('.s-table-column').map(gesture)).toEqual([
+			['dragging=true', 'landing=true'],
+			['shift=start'],
+			['drop=after', 'shift=start'],
+		])
+
+		columns.dragEnd()
+		await settle()
+
+		expect(findAll('.s-table-column').map(text)).toEqual(['Возраст', '№', 'Имя'])
+		expect(findAll('.s-table-row__cell').map(text)).toEqual(['30', '1', 'Анна'])
+		expect(findAll('.s-table-column').flatMap(gesture)).toEqual([])
 	})
 })
 

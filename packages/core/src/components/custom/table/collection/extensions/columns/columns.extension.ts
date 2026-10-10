@@ -14,6 +14,7 @@ import { layoutColumns } from './layout'
 import type {
 	ITableColumnsExtension,
 	ITableColumnsItemExtension,
+	TTableColumnShift,
 	TTableColumnsEvents,
 } from './types'
 
@@ -27,13 +28,20 @@ type TColumnWatchers = {
 	commit: (width: number) => void
 }
 
-/** Жест перестановки: какую колонку тащат, куда она встанет и на ком метка. */
+/** Жест перестановки: какую колонку тащат, куда она встанет и на ком метки. */
 type TColumnDrag = {
 	column: ITableColumn
 	/** Место среди показанных, куда колонка встанет, если её отпустить */
 	to: number
 	/** Колонка под меткой — та, что сейчас стоит на месте `to`; на своём месте метки нет */
 	target: ITableColumn | undefined
+	/**
+	 * Колонки, которые уступают место взятой, — от её места до `to`
+	 * включительно, — и куда каждая уступает. На своём месте их нет
+	 */
+	shifted: ReadonlyMap<ITableColumn, TTableColumnShift>
+	/** Колонку отпустили: заголовок приземляется, место заморожено */
+	dropped: boolean
 }
 
 /**
@@ -85,18 +93,29 @@ type TColumnDrag = {
  * слушает.
  *
  * **Перестановка пользователем** — команда `moveColumn` и жест `dragStart` →
- * `dragOver` → `dragEnd`. Место — среди показанных: скрытые колонки
- * пользователь не видит и остаются на своих местах между соседями. Жест
- * перестановкой не является, пока колонку не отпустили: взятой колонке
- * расширение пишет `data-dragging`, колонке на месте, куда её принесли, —
- * `data-drop` со стороной, а коллекцию не трогает. Строк в таблице бывают
- * тысячи, и перестановка на каждом шаге указателя перерисовывала бы их все;
- * так она одна — на отпускании, одним `column:move`. Где указатель и какая
- * колонка под ним, знает плагин, а не расширение. Пользователь берёт только
- * колонку `reorderable` и не выключенную; код переставляет любые —
- * перемещением в коллекции колонок, без `column:move`. Состав показанных
- * сменился посреди жеста — жест прерван: место, куда несли колонку, считалось
- * от прежнего состава.
+ * `dragOver` → `dragDrop` → `dragEnd`. Место — среди показанных: скрытые
+ * колонки пользователь не видит и остаются на своих местах между соседями.
+ * Строк в таблице бывают тысячи, и перестановка на каждом шаге указателя
+ * перерисовывала бы их все, поэтому коллекцию жест не трогает до конца:
+ * перестановка одна, одним `column:move`. Фазы жеста — метки колонок для
+ * темы:
+ *
+ * - несут (`dragStart`, `dragOver`) — взятой колонке `data-dragging`, колонке
+ *   на месте, куда её принесли, — `data-drop` со стороной, а колонкам от
+ *   места взятой до места `to` включительно — `data-shift`: куда каждая
+ *   уступает место. Пишется только то, что сменилось;
+ * - отпустили (`dragDrop`) — взятой `data-landing`: заголовок едет на место,
+ *   а место заморожено — `dragOver` его больше не меняет;
+ * - встала (`dragEnd`) — метки сняты, колонка переставлена, одной операцией:
+ *   тема видит шапку и тело уже в новом порядке и без меток жеста.
+ *
+ * Сколько ждать между отпусканием и концом, решает плагин — пока заголовок
+ * доезжает переходом темы. Где указатель и какая колонка под ним, тоже знает
+ * он, а не расширение. Пользователь берёт только колонку `reorderable` и не
+ * выключенную; код переставляет любые — перемещением в коллекции колонок, без
+ * `column:move`. Состав показанных сменился посреди жеста, и пока заголовок
+ * приземляется тоже, — жест прерван: место, куда несли колонку, считалось от
+ * прежнего состава.
  */
 export class TTableColumnsExtension<
 	TRow extends ITableRow = ITableRow,
@@ -249,7 +268,13 @@ export class TTableColumnsExtension<
 		// Указатель у шапки один: новый жест закрывает незаконченный
 		this.dragCancel()
 
-		this._drag = { column, to: this.shownColumns.indexOf(column), target: undefined }
+		this._drag = {
+			column,
+			to: this.shownColumns.indexOf(column),
+			target: undefined,
+			shifted: new Map(),
+			dropped: false,
+		}
 		column.dataset.add('dragging', true)
 
 		return true
@@ -258,7 +283,8 @@ export class TTableColumnsExtension<
 	dragOver(to: number): void {
 		const drag = this._drag
 
-		if (!drag) return
+		// Отпущенную колонку больше не несут: место заморожено
+		if (!drag || drag.dropped) return
 
 		const shown = this.shownColumns
 		const from = shown.indexOf(drag.column)
@@ -273,6 +299,17 @@ export class TTableColumnsExtension<
 		}
 
 		target?.dataset.add('drop', place > from ? 'after' : 'before')
+
+		this._shift(drag, shown, from, place)
+	}
+
+	dragDrop(): void {
+		const drag = this._drag
+
+		if (!drag) return
+
+		drag.dropped = true
+		drag.column.dataset.add('landing', true)
 	}
 
 	dragEnd(): void {
@@ -293,7 +330,41 @@ export class TTableColumnsExtension<
 
 		this._drag = undefined
 		drag.column.dataset.add('dragging', null)
+		drag.column.dataset.add('landing', null)
 		drag.target?.dataset.add('drop', null)
+
+		for (const column of drag.shifted.keys()) column.dataset.add('shift', null)
+	}
+
+	/**
+	 * Колонки от места взятой до `place` включительно уступают ей место: несут
+	 * к концу строки — они встают к началу, к началу — к концу. Метка
+	 * пишется только тем, у кого она сменилась, и снимается только с тех, кто
+	 * перестал уступать: на каждом шаге указателя остальные колонки не
+	 * трогаются.
+	 */
+	private _shift(
+		drag: TColumnDrag,
+		shown: ReadonlyArray<ITableColumn>,
+		from: number,
+		place: number,
+	): void {
+		const side: TTableColumnShift = place > from ? 'start' : 'end'
+		const shifted = new Map<ITableColumn, TTableColumnShift>()
+
+		for (let index = Math.min(from, place); index <= Math.max(from, place); index++) {
+			if (index !== from) shifted.set(shown[index], side)
+		}
+
+		for (const column of drag.shifted.keys()) {
+			if (!shifted.has(column)) column.dataset.add('shift', null)
+		}
+
+		for (const [column, value] of shifted) {
+			if (drag.shifted.get(column) !== value) column.dataset.add('shift', value)
+		}
+
+		drag.shifted = shifted
 	}
 
 	/**

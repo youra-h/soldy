@@ -220,6 +220,61 @@ describe('закреплённая шапка', () => {
 	})
 })
 
+/**
+ * Что идёт за жестом перестановки колонки — шапка (`head`) или колонка целиком
+ * (`column`). Модель от него не меняется: колонку переставляет расширение
+ * колонок одной перестановкой в конце жеста, — поэтому ядро только отдаёт
+ * значение теме `data-reorder-preview`, а рисует жест она.
+ */
+describe('что идёт за жестом перестановки', () => {
+	it('по умолчанию шапка — data-reorder-preview="head"', () => {
+		const owner = new TTable()
+
+		expect(owner.reorderPreview).toBe('head')
+		expect(owner.dataset.get('reorder-preview')).toBe('head')
+		expect(owner.getProps()).toMatchObject({ reorderPreview: 'head' })
+	})
+
+	it('проп конструктора — с первой отрисовки', () => {
+		const owner = new TTable({ reorderPreview: 'column' })
+
+		expect(owner.reorderPreview).toBe('column')
+		expect(owner.dataset.get('reorder-preview')).toBe('column')
+		expect(owner.getProps()).toMatchObject({ reorderPreview: 'column' })
+	})
+
+	it('change:reorderPreview и атрибут — только на смену значения', () => {
+		const owner = new TTable()
+		const changed = vi.fn()
+		const dataset = vi.fn()
+
+		owner.events.on('change:reorderPreview', changed)
+		owner.events.on('change:dataset', dataset)
+
+		owner.reorderPreview = 'head'
+
+		expect(changed).not.toHaveBeenCalled()
+		expect(dataset).not.toHaveBeenCalled()
+
+		owner.reorderPreview = 'column'
+
+		expect(changed).toHaveBeenCalledOnce()
+		expect(changed).toHaveBeenLastCalledWith('column')
+		expect(owner.dataset.get('reorder-preview')).toBe('column')
+
+		owner.reorderPreview = 'column'
+
+		expect(changed).toHaveBeenCalledOnce()
+
+		owner.reorderPreview = 'head'
+
+		expect(changed).toHaveBeenCalledTimes(2)
+		expect(changed).toHaveBeenLastCalledWith('head')
+		expect(owner.dataset.get('reorder-preview')).toBe('head')
+		expect(dataset).toHaveBeenCalledTimes(2)
+	})
+})
+
 describe('строки из данных', () => {
 	it('строки — TTableRow над записями, в порядке данных', () => {
 		const engine = rows([ANNA, BORIS])

@@ -32,6 +32,7 @@ import {
 	SLIDE_SNAPS,
 	SLIDER_TOOLTIPS,
 	TABLE_COLUMN_FITS,
+	TABLE_REORDER_PREVIEWS,
 	TABLE_SORT_MODES,
 	TABS_ALIGNMENTS,
 	TABS_ORIENTATIONS,
@@ -277,6 +278,8 @@ const OWN: Record<string, Record<string, string>> = {
 			'Закреплённая шапка: шапка стоит у верхнего края прокрутки — контейнера или страницы, — а строки уходят под неё. Без него шапка уезжает вместе со строками',
 		columnFit:
 			'Как колонки без своей ширины делят место: none — стоят в ширине по умолчанию, auto — растут до maxWidth во всю ширину таблицы, contain — ровно заполняют место, сжимаясь до minWidth. Не влезли и так — таблица прокручивается',
+		reorderPreview:
+			'Что идёт за колонкой, которую переставляют: head — шапка, а строки стоят до отпускания; column — и ячейки строк (тысячи строк — в окне Virtual). Без движения соседи стоят, а место показывает линия',
 	},
 	virtual: {
 		enabled:
@@ -384,7 +387,11 @@ const OPTIONS: Record<string, Record<string, readonly string[]>> = {
 		position: TABS_POSITIONS,
 	},
 	tags: { view: BUTTON_VIEWS, overflow: TAGS_OVERFLOWS },
-	table: { sortMode: TABLE_SORT_MODES, columnFit: TABLE_COLUMN_FITS },
+	table: {
+		sortMode: TABLE_SORT_MODES,
+		columnFit: TABLE_COLUMN_FITS,
+		reorderPreview: TABLE_REORDER_PREVIEWS,
+	},
 	skeleton: { shape: SKELETON_SHAPES, animation: SKELETON_ANIMATIONS },
 	frame: { position: FRAME_POSITIONS },
 }

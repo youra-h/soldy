@@ -727,9 +727,9 @@ describe('снимок шапки', () => {
 			await commands.mouseUp()
 		}
 
+		// Колонка встаёт, когда отпущенный заголовок доехал до места
+		await expect.poll(texts).toEqual(['Город', 'Имя', 'Возраст'])
 		await away()
-
-		expect(texts()).toEqual(['Город', 'Имя', 'Возраст'])
 		expect(await restOf(nameHeader()), 'заголовок после ухода указателя').toEqual(rest)
 
 		await expectHeadSteady()
@@ -813,11 +813,10 @@ describe('слои шапки', () => {
 			await commands.mouseUp()
 		}
 
-		expect(engine.extensions.columns.columns.map((column) => column.field)).toEqual([
-			'city',
-			'name',
-			'age',
-		])
+		// Колонка встаёт, когда отпущенный заголовок доехал до места
+		await expect
+			.poll(() => engine.extensions.columns.columns.map((column) => column.field))
+			.toEqual(['city', 'name', 'age'])
 	})
 })
 

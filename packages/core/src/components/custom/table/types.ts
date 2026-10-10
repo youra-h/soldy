@@ -16,6 +16,24 @@ import type { ITableCollectionProps } from './collection/types'
  */
 export type TTableColumnFit = 'none' | 'auto' | 'contain'
 
+/**
+ * Что идёт за жестом перестановки колонки, пока её несут.
+ *
+ * - `head` — шапка: соседи взятого заголовка расступаются, а тело стоит до
+ *   отпускания, и на время жеста подписи шапки не совпадают с данными под
+ *   ними;
+ * - `column` — шапка и ячейки нарисованных строк: колонка видна в теле
+ *   целиком, ячейки соседей идут за своими заголовками. Цена — стиль каждой
+ *   нарисованной ячейки на каждую смену места: в окне `Virtual` их сотни, без
+ *   окна — по ячейке на колонку каждой строки.
+ *
+ * Модель переставляется одинаково — один раз, когда колонку отпустили. Рисует
+ * значение тема, и только с движением: без него соседи стоят, а место
+ * показывает линия. Значение библиотеки, а не темы: смысл у него один в
+ * любой теме.
+ */
+export type TTableReorderPreview = 'head' | 'column'
+
 export type TTableEvents = TControlEvents & {
 	/** change:locale */
 	'change:locale': (value: string) => void
@@ -23,6 +41,8 @@ export type TTableEvents = TControlEvents & {
 	'change:stickyHead': (value: boolean) => void
 	/** change:columnFit */
 	'change:columnFit': (value: TTableColumnFit) => void
+	/** change:reorderPreview */
+	'change:reorderPreview': (value: TTableReorderPreview) => void
 }
 
 /** Полный набор пропсов таблицы: свои и коллекции строк (`ITableCollectionProps`). */
@@ -45,6 +65,12 @@ export interface ITableProps extends IControlProps, ITableCollectionProps {
 	 * `contain` — ровно заполняют место, сжимаясь до `minWidth`
 	 */
 	columnFit?: TTableColumnFit
+	/**
+	 * Что идёт за жестом перестановки колонки: `head` — шапка, тело стоит до
+	 * отпускания; `column` — шапка и ячейки нарисованных строк. Теме значение
+	 * уходит `data-reorder-preview`
+	 */
+	reorderPreview?: TTableReorderPreview
 }
 
 export interface ITable extends IControl<ITableProps, TTableEvents> {
@@ -54,4 +80,6 @@ export interface ITable extends IControl<ITableProps, TTableEvents> {
 	stickyHead: boolean
 	/** Как колонки без своей ширины делят место таблицы */
 	columnFit: TTableColumnFit
+	/** Что идёт за жестом перестановки колонки: шапка или вся колонка */
+	reorderPreview: TTableReorderPreview
 }

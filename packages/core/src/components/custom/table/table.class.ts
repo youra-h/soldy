@@ -1,7 +1,13 @@
 import { TControl } from '../../base/control'
 import type { TDefaultValues } from '../../base/component'
 import { DEFAULT_LOCALE } from '../../../common'
-import type { ITable, ITableProps, TTableColumnFit, TTableEvents } from './types'
+import type {
+	ITable,
+	ITableProps,
+	TTableColumnFit,
+	TTableEvents,
+	TTableReorderPreview,
+} from './types'
 
 /**
  * Таблица — владелец коллекции строк, как ListBox — владелец опций. Корень —
@@ -27,23 +33,31 @@ import type { ITable, ITableProps, TTableColumnFit, TTableEvents } from './types
  * ширины колонок раскладывает расширение колонок коллекции строк, а теме
  * значение не уходит — она получает готовые ширины колонок и признак
  * «колонки шире места» (`data-overflow`).
+ *
+ * И то, что идёт за жестом перестановки колонки (`reorderPreview`): шапка или
+ * колонка целиком. Модель от него не меняется — колонка встаёт на место одной
+ * перестановкой, когда её отпустили, — поэтому значение уходит теме
+ * `data-reorder-preview`, и рисует жест она.
  */
 export class TTable extends TControl<ITableProps, TTableEvents> implements ITable {
 	static override baseClass = 's-table'
 
 	static defaultValues: typeof TControl.defaultValues &
-		TDefaultValues<ITableProps, 'locale' | 'stickyHead' | 'columnFit'> = {
+		TDefaultValues<ITableProps, 'locale' | 'stickyHead' | 'columnFit' | 'reorderPreview'> = {
 		...TControl.defaultValues,
 		tag: 'table',
 		locale: DEFAULT_LOCALE,
 		stickyHead: false,
 		// Таблица во всю ширину места, как без раскладки ядра
 		columnFit: 'auto',
+		// Шапка: тело тысяч строк на каждую смену места не перерисовывается
+		reorderPreview: 'head',
 	}
 
 	protected _locale: string
 	protected _stickyHead!: boolean
 	protected _columnFit: TTableColumnFit
+	protected _reorderPreview!: TTableReorderPreview
 
 	constructor(props: Partial<ITableProps> = {}) {
 		super(props)
@@ -53,6 +67,7 @@ export class TTable extends TControl<ITableProps, TTableEvents> implements ITabl
 		this._locale = props.locale ?? ctor.defaultValues.locale
 		this._columnFit = props.columnFit ?? ctor.defaultValues.columnFit
 		this._applyStickyHead(props.stickyHead ?? ctor.defaultValues.stickyHead)
+		this._applyReorderPreview(props.reorderPreview ?? ctor.defaultValues.reorderPreview)
 	}
 
 	get locale(): string {
@@ -98,12 +113,29 @@ export class TTable extends TControl<ITableProps, TTableEvents> implements ITabl
 		this.events.emit('change:columnFit', value)
 	}
 
+	/**
+	 * Что идёт за жестом перестановки колонки: `head` — шапка, а тело стоит до
+	 * отпускания; `column` — шапка и ячейки нарисованных строк. Колонка в
+	 * обоих встаёт на место одной перестановкой, когда её отпустили.
+	 */
+	get reorderPreview(): TTableReorderPreview {
+		return this._reorderPreview
+	}
+
+	set reorderPreview(value: TTableReorderPreview) {
+		if (this._reorderPreview === value) return
+
+		this._applyReorderPreview(value)
+		this.events.emit('change:reorderPreview', value)
+	}
+
 	override getProps(): ITableProps {
 		return {
 			...super.getProps(),
 			locale: this._locale,
 			stickyHead: this._stickyHead,
 			columnFit: this._columnFit,
+			reorderPreview: this._reorderPreview,
 		}
 	}
 
@@ -112,5 +144,12 @@ export class TTable extends TControl<ITableProps, TTableEvents> implements ITabl
 
 		// Тема по нему закрепляет шапку
 		this._dataset.add('sticky-head', value)
+	}
+
+	protected _applyReorderPreview(value: TTableReorderPreview): void {
+		this._reorderPreview = value
+
+		// Тема по нему решает, идёт ли за жестом тело
+		this._dataset.add('reorder-preview', value)
 	}
 }

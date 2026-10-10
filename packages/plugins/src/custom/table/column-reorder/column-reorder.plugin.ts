@@ -4,16 +4,32 @@ import type { IPluginContext } from '../../../base'
 import { TElementPlugin } from '../../element'
 import { TCollectionBundlesPlugin } from '../../collection'
 import type { IDomEventTarget } from '../../../utils'
-import { isFocusableElement, isMeasurableElement } from '../../../utils'
+import { afterTransitions, isFocusableElement, isMeasurableElement } from '../../../utils'
 import { arrowStep, slideDirection } from '../../slide/direction'
-import type { TTableColumnReorderPluginEvents, TTableColumnReorderPress } from './types'
+import type {
+	TTableColumnReorderBox,
+	TTableColumnReorderGesture,
+	TTableColumnReorderLanding,
+	TTableColumnReorderPluginEvents,
+	TTableColumnReorderPress,
+} from './types'
 
 /**
  * Переменная сдвига взятого заголовка — контракт с темой. Значение — px по
- * оси окна от места нажатия: тема кладёт её в `translate` заголовка, и он идёт
- * за указателем, а колонка под ним стоит на месте. Без жеста переменной нет.
+ * оси окна от его места: пока колонку несут — от места нажатия, и заголовок
+ * идёт за указателем; когда отпустили — до места, куда колонка встанет, и
+ * тема довозит его туда переходом. Колонка под ним стоит на месте. Без жеста
+ * переменной нет.
  */
 const DRAG_VARIABLE = '--s-table-column-drag'
+
+/**
+ * Переменная сдвига соседей — контракт с темой, на корне таблицы: ширина
+ * взятого заголовка, px. На неё уступают место колонки между взятой и местом,
+ * куда её несут (`data-shift`), — в шапке и, если тема ведёт тело, в теле.
+ * Без жеста переменной нет.
+ */
+const SHIFT_VARIABLE = '--s-table-column-shift'
 
 /**
  * Сколько пройти от точки нажатия, чтобы нажатие стало жестом, px: меньше —
@@ -35,14 +51,33 @@ function childOf(node: Element, className: string): Element | null {
 }
 
 /**
+ * Сдвиг взятого заголовка до места `place`: его край, дальний от исходного
+ * места, встаёт на тот же край заголовка, который там стоит, — там взятый
+ * окажется после перестановки, потому что колонки между ними уступают ему
+ * ровно его ширину. Направление письма считать не нужно: дальний край — тот,
+ * к которому заголовок едет. На своём месте — ноль.
+ */
+function landingOffset(gesture: TTableColumnReorderGesture, place: number): number {
+	const own = gesture.boxes[gesture.from]
+	const target = gesture.boxes[place]
+
+	if (!own || !target) return 0
+
+	return target.left > own.left
+		? target.left + target.width - (own.left + own.width)
+		: target.left - own.left
+}
+
+/**
  * TTableColumnReorderPlugin — перестановка колонок пользователем: заголовок
  * тащат указателем или сдвигают Ctrl+Shift+←/→.
  *
  * Операции над DOM — здесь, место колонки — у расширения `columns` коллекции
  * строк: плагин переводит указатель и клавиши в его команды (`dragStart`,
- * `dragOver`, `dragEnd`, `dragCancel`, `moveColumn`). Какую колонку можно
- * взять, куда она встанет и что сообщить приложению, решает расширение.
- * Движок плагин узнаёт от реестра bundles (`engine:bound`).
+ * `dragOver`, `dragDrop`, `dragEnd`, `dragCancel`, `moveColumn`). Какую
+ * колонку можно взять, куда она встанет, какие метки получат колонки и что
+ * сообщить приложению, решает расширение. Движок плагин узнаёт от реестра
+ * bundles (`engine:bound`).
  *
  * **Заголовки** плагин находит в шапке своей таблицы — прямыми детьми, по
  * классам владельца и колонки: заголовков таблица рисует по одному на
@@ -55,11 +90,31 @@ function childOf(node: Element, className: string): Element | null {
  * до этого оно остаётся нажатием, и кнопка сортировки сортирует. Нажатие,
  * которое уже взяли (ручка ширины гасит своё), не наше. Жест захватывает
  * указатель на корне: протяжка за таблицей и отпускание где угодно приходят
- * сюда, а `click` отпускания до кнопки сортировки не доходит. Взятый заголовок
- * идёт за указателем — переменная сдвига на нём, — а колонка под ним и строки
- * стоят на месте: место, куда колонка встанет, плагин считает по серединам
- * остальных заголовков и сообщает расширению. Отпускание — перестановка,
- * отнятый указатель и Escape — отмена.
+ * сюда, а `click` отпускания до кнопки сортировки не доходит.
+ *
+ * Взяв колонку, плагин снимает коробки заголовков — относительно корня, один
+ * раз — и пишет корню ширину взятого (`--s-table-column-shift`): на неё тема
+ * сдвигает соседей, которым расширение поставило `data-shift`. Место, куда
+ * колонка встанет, плагин считает по серединам остальных заголовков из
+ * снимка, а не из документа: сдвинутые соседи не двигают пороги, и место не
+ * прыгает, а прокрутку посреди жеста учитывает коробка корня. Взятый
+ * заголовок идёт за указателем — переменная сдвига на нём.
+ *
+ * **Отпустили** — колонка не переставляется сразу: расширение замораживает
+ * место (`dragDrop`, `data-landing`), а кадром позже, когда метка уже в
+ * разметке, заголовок получает сдвиг до места, где встанет, и тема довозит
+ * его переходом. Доиграл переход заголовка — `dragEnd`: перестановка и снятие
+ * меток одной операцией, и переменные сняты тут же. К этому времени заголовки
+ * и ячейки стоят там, где их поставит новая раскладка, а переходы тема
+ * выключает вместе с жестом, — ничего не отъезжает. Без движения переходов
+ * нет, и колонка встаёт через кадр. Отнятый указатель и Escape — то же
+ * приземление на своё место и `dragCancel`. Сколько ждать, решает тема —
+ * плагин режима движения не читает.
+ *
+ * Нажатие и Ctrl+Shift+←/→, пришедшие, пока заголовок приземляется,
+ * доводят приземление сразу: следующее действие видит модель и шапку в одном
+ * порядке. Заголовок под ними плагин находит до доводки — после неё модель
+ * уже в новом порядке, а шапка ещё нет.
  *
  * **Клавиши** — Ctrl+Shift+←/→ на заголовке под фокусом (на кнопке
  * сортировки и поле ручки, а в Grid — на самой ячейке): шаг к началу или к
@@ -75,6 +130,7 @@ export class TTableColumnReorderPlugin extends TBasePlugin<
 	private _root: Element | null = null
 	private _engine: TTableCollection | null = null
 	private _press: TTableColumnReorderPress | null = null
+	private _landing: TTableColumnReorderLanding | null = null
 	private _frame: number | null = null
 
 	override install(ctx: IPluginContext): void {
@@ -117,7 +173,7 @@ export class TTableColumnReorderPlugin extends TBasePlugin<
 	}
 
 	private _detach(): void {
-		this._end(false)
+		this._abort()
 		this._cancelFrame()
 
 		const target: IDomEventTarget | null = this._root
@@ -173,19 +229,32 @@ export class TTableColumnReorderPlugin extends TBasePlugin<
 		return index === -1 ? undefined : { column: this._shown[index], cell: headers[index] }
 	}
 
+	/** Коробки заголовков по строке — относительно корня: снимок на старте жеста. */
+	private _boxes(root: Element): TTableColumnReorderBox[] {
+		const origin = root.getBoundingClientRect().left
+
+		return this._headers().map((cell) => {
+			const box = cell.getBoundingClientRect()
+
+			return { left: box.left - origin, width: box.width }
+		})
+	}
+
 	/**
 	 * Место среди показанных, куда встанет взятая колонка, — сколько остальных
-	 * заголовков серединой стоят раньше указателя по строке. Свой заголовок не в
-	 * счёт: он идёт за указателем.
+	 * заголовков серединой стоят раньше указателя по строке. Середины — из
+	 * снимка на старте жеста, от нынешнего края корня: заголовки, которые тема
+	 * сдвинула, порогов не двигают. Свой заголовок не в счёт: он идёт за
+	 * указателем.
 	 */
-	private _placeAt(x: number, root: Element, own: Element): number {
+	private _placeAt(x: number, root: Element, gesture: TTableColumnReorderGesture): number {
 		const ltr = slideDirection(AXIS, root) === 'from-left'
+		const origin = root.getBoundingClientRect().left
 
-		return this._headers().filter((cell) => {
-			if (cell === own) return false
+		return gesture.boxes.filter((box, index) => {
+			if (index === gesture.from) return false
 
-			const box = cell.getBoundingClientRect()
-			const middle = box.left + box.width / 2
+			const middle = origin + box.left + box.width / 2
 
 			return ltr ? x > middle : x < middle
 		}).length
@@ -196,11 +265,17 @@ export class TTableColumnReorderPlugin extends TBasePlugin<
 	/* ------------------------------------------------------------------ */
 
 	private readonly _onPointerDown = (event: PointerEvent): void => {
-		// Основная кнопка; жест уже идёт; нажатие уже взяли — ручка ширины гасит своё
-		if (this._press || event.button !== 0 || event.defaultPrevented) return
+		// Жест уже идёт
+		if (this._press) return
 
+		// Заголовок — до доводки приземления: после неё модель уже в новом
+		// порядке, а шапка ещё нет
 		const hit = this._hit(event.target)
 
+		this._finishLanding()
+
+		// Основная кнопка; нажатие уже взяли — ручка ширины гасит своё
+		if (event.button !== 0 || event.defaultPrevented) return
 		if (!hit || !hit.column.reorderable || hit.column.disabled) return
 
 		this._press = {
@@ -208,7 +283,7 @@ export class TTableColumnReorderPlugin extends TBasePlugin<
 			origin: event.clientX,
 			column: hit.column,
 			cell: hit.cell,
-			dragging: false,
+			gesture: null,
 		}
 	}
 
@@ -221,7 +296,7 @@ export class TTableColumnReorderPlugin extends TBasePlugin<
 
 		const offset = event.clientX - press.origin
 
-		if (!press.dragging) {
+		if (!press.gesture) {
 			// До порога нажатие остаётся нажатием
 			if (Math.abs(offset) < START_DISTANCE) return
 
@@ -231,7 +306,15 @@ export class TTableColumnReorderPlugin extends TBasePlugin<
 				return
 			}
 
-			press.dragging = true
+			press.gesture = this._takeGesture(root, press.column)
+
+			if (!press.gesture) {
+				// Шапка не дорисовала смену колонок: мерить нечего
+				columns.dragCancel()
+				this._press = null
+
+				return
+			}
 
 			// Протяжка за таблицей и отпускание где угодно приходят корню. Среда
 			// без захвата указателя (jsdom) ведёт жест без него
@@ -245,48 +328,153 @@ export class TTableColumnReorderPlugin extends TBasePlugin<
 		if (isMeasurableElement(press.cell))
 			press.cell.style.setProperty(DRAG_VARIABLE, `${offset}px`)
 
-		columns.dragOver(this._placeAt(event.clientX, root, press.cell))
+		press.gesture.place = this._placeAt(event.clientX, root, press.gesture)
+		columns.dragOver(press.gesture.place)
+	}
+
+	/**
+	 * Колонку взяли: снимок заголовков — до сдвига взятого, — и корню ширина
+	 * взятого, на которую тема сдвигает соседей. Заголовков нет — жеста нет.
+	 */
+	private _takeGesture(root: Element, column: ITableColumn): TTableColumnReorderGesture | null {
+		const boxes = this._boxes(root)
+		const from = this._shown.indexOf(column)
+		const own = boxes[from]
+
+		if (!own) return null
+
+		if (isMeasurableElement(root)) root.style.setProperty(SHIFT_VARIABLE, `${own.width}px`)
+
+		return { boxes, from, place: from }
 	}
 
 	private readonly _onPointerUp = (event: PointerEvent): void => {
 		if (this._press?.pointer !== event.pointerId) return
 
-		this._end(true)
+		this._release(true)
 	}
 
-	/** Браузер отнял указатель или корень ушёл — колонка остаётся на месте. */
+	/** Браузер отнял указатель или корень ушёл — колонка возвращается на место. */
 	private readonly _onPointerCancel = (event: PointerEvent): void => {
 		if (this._press?.pointer !== event.pointerId) return
 
-		this._end(false)
+		this._release(false)
 	}
 
 	/** Escape посреди жеста — отмена. Слушается на документе: фокус бывает вне таблицы. */
 	private readonly _onEscape = (event: KeyboardEvent): void => {
-		if (event.key !== 'Escape' || !this._press?.dragging) return
+		if (event.key !== 'Escape' || !this._press?.gesture) return
 
 		event.preventDefault()
-		this._end(false)
+		this._release(false)
 	}
 
-	/** Закончить нажатие: отпустили — колонка встаёт на место, иначе — отмена. */
-	private _end(commit: boolean): void {
+	/**
+	 * Закончить нажатие: отпустили — заголовок приземляется на место, куда
+	 * колонку принесли, отмена — на своё, и соседи возвращаются. Коллекцию
+	 * переставит конец приземления.
+	 */
+	private _release(commit: boolean): void {
 		const press = this._press
-
-		if (!press) return
+		const gesture = press?.gesture
 
 		this._press = null
 
-		if (!press.dragging) return
+		if (!press || !gesture) return
 
 		this._root?.ownerDocument.removeEventListener('keydown', this._onEscape, true)
 
-		if (isMeasurableElement(press.cell)) press.cell.style.removeProperty(DRAG_VARIABLE)
+		const columns = this._engine?.extensions.columns
+		const place = commit ? gesture.place : gesture.from
+
+		if (!commit) columns?.dragOver(gesture.from)
+
+		columns?.dragDrop()
+		this._land(press.cell, landingOffset(gesture, place), commit)
+	}
+
+	/* ------------------------------------------------------------------ */
+	/* Приземление                                                        */
+	/* ------------------------------------------------------------------ */
+
+	/**
+	 * Заголовок — на место: кадром позже, когда `data-landing` уже в разметке
+	 * и тема ведёт его переходом, — так же сдвиг отпущенной панели снимает
+	 * `TSwipePlugin`. Конец — когда заголовок доиграл свои переходы.
+	 */
+	private _land(cell: Element, offset: number, commit: boolean): void {
+		const landing: TTableColumnReorderLanding = { cell, commit, frame: null, wait: null }
+
+		this._landing = landing
+
+		landing.frame = requestAnimationFrame(() => {
+			landing.frame = null
+
+			if (isMeasurableElement(cell)) cell.style.setProperty(DRAG_VARIABLE, `${offset}px`)
+
+			landing.wait = afterTransitions(cell, () => {
+				if (this._landing === landing) this._landed()
+			})
+		})
+	}
+
+	/** Заголовок встал: колонка — на место, метки и переменные сняты. */
+	private _landed(): void {
+		const landing = this._landing
+
+		if (!landing) return
+
+		this._landing = null
 
 		const columns = this._engine?.extensions.columns
 
-		if (commit) columns?.dragEnd()
+		if (landing.commit) columns?.dragEnd()
 		else columns?.dragCancel()
+
+		this._clearVariables(landing.cell)
+	}
+
+	/** Довести приземление сразу — без кадра и без ожидания переходов. */
+	private _finishLanding(): void {
+		const landing = this._landing
+
+		if (!landing) return
+
+		if (landing.frame !== null) cancelAnimationFrame(landing.frame)
+
+		landing.wait?.()
+		this._landed()
+	}
+
+	/**
+	 * Корень ушёл: жест и приземление — прочь без перестановки, ожидания и
+	 * кадры сняты.
+	 */
+	private _abort(): void {
+		const press = this._press
+		const landing = this._landing
+
+		this._press = null
+		this._landing = null
+
+		if (landing) {
+			if (landing.frame !== null) cancelAnimationFrame(landing.frame)
+
+			landing.wait?.()
+		}
+
+		const cell = landing?.cell ?? (press?.gesture ? press.cell : null)
+
+		if (!cell) return
+
+		this._root?.ownerDocument.removeEventListener('keydown', this._onEscape, true)
+		this._engine?.extensions.columns.dragCancel()
+		this._clearVariables(cell)
+	}
+
+	private _clearVariables(cell: Element): void {
+		if (isMeasurableElement(cell)) cell.style.removeProperty(DRAG_VARIABLE)
+		if (isMeasurableElement(this._root)) this._root.style.removeProperty(SHIFT_VARIABLE)
 	}
 
 	/* ------------------------------------------------------------------ */
@@ -295,17 +483,22 @@ export class TTableColumnReorderPlugin extends TBasePlugin<
 
 	private readonly _onKeyDown = (event: KeyboardEvent): void => {
 		if (!event.ctrlKey || !event.shiftKey || event.altKey || event.metaKey) return
-
-		const root = this._root
-		const columns = this._engine?.extensions.columns
-		const step = root ? arrowStep(slideDirection(AXIS, root), event.key) : null
-
-		if (!root || !columns || step === null) return
 		if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return
 
+		const root = this._root
+		const step = root ? arrowStep(slideDirection(AXIS, root), event.key) : null
+
+		if (!root || step === null) return
+
+		// Заголовок — до доводки приземления: после неё модель уже в новом
+		// порядке, а шапка ещё нет
 		const hit = this._hit(event.target)
 
-		if (!hit || !hit.column.reorderable || hit.column.disabled) return
+		this._finishLanding()
+
+		const columns = this._engine?.extensions.columns
+
+		if (!columns || !hit || !hit.column.reorderable || hit.column.disabled) return
 
 		event.preventDefault()
 

@@ -23,7 +23,7 @@
 import { describe, it, expect, afterEach } from 'vitest'
 import { render, cleanup } from 'vitest-browser-vue'
 import { commands, page, userEvent } from 'vitest/browser'
-import { defineComponent, h, ref, type Ref } from 'vue'
+import { defineComponent, h, nextTick, ref, type Ref } from 'vue'
 import { createEngineTable } from '@soldy-ui/core'
 import type {
 	ITableColumn,
@@ -31,10 +31,12 @@ import type {
 	TTableColumnSource,
 	TTableRecord,
 } from '@soldy-ui/core'
+import { useMotion } from '@soldy-ui/plugins'
 import { Button, Table } from '@soldy-ui/vue'
 
 import { find, opacity, pixel, settled, shift, style, systemColor } from './colors'
 import { forcedColors } from './media'
+import { transitionRuns, transitioning } from './transitions'
 
 import '@soldy-ui/theme-oren'
 
@@ -767,10 +769,16 @@ describe('линии строк', () => {
 
 /**
  * Перестановка колонок — заголовком: пока его тащат, за указателем идёт он
- * один, а колонка и строки стоят на месте; на месте вставки — линия. Колонка
- * встаёт на новое место одной перестановкой, когда заголовок отпустили.
- * Нажатие без протяжки остаётся нажатием кнопки сортировки, а протяжка её не
- * нажимает. Клавиши — Ctrl+Shift+←/→ на кнопке, и фокус с неё не уходит.
+ * один, а колонка встаёт на новое место одной перестановкой, когда
+ * отпущенный заголовок доехал до места. С движением соседи уступают ему
+ * место, и линии места нет; тело у `head` стоит, у `column` идёт за
+ * заголовками. Без движения соседи стоят, а место показывает линия. Нажатие
+ * без протяжки остаётся нажатием кнопки сортировки, а протяжка её не нажимает.
+ * Клавиши — Ctrl+Shift+←/→ на кнопке, и фокус с неё не уходит.
+ *
+ * Прогон идёт с движением: система его не убирает, режим приложения —
+ * системы. Колонка встаёт не на отпускании, а когда заголовок доехал, —
+ * порядок после отпускания тест ждёт опросом.
  */
 describe('перестановка колонок', () => {
 	const MOVABLE = [NAME, CITY, AGE].map((column) => ({ ...column, reorderable: true }))
@@ -790,6 +798,23 @@ describe('перестановка колонок', () => {
 		return engine
 	}
 
+	/** Таблица с пропсами в месте `PLACE`. */
+	async function mountWith(
+		engine: TTableCollection,
+		props: Record<string, unknown>,
+	): Promise<void> {
+		render(
+			defineComponent({
+				render: () =>
+					h('div', { style: `width: ${PLACE}px` }, [
+						h(Table, { engine, aria_label: 'Сотрудники', ...props }),
+					]),
+			}),
+		)
+
+		await new Promise((resolve) => requestAnimationFrame(resolve))
+	}
+
 	const fieldsOf = (engine: TTableCollection) =>
 		engine.extensions.columns.columns.map((column) => column.field)
 
@@ -800,52 +825,269 @@ describe('перестановка колонок', () => {
 		return { x: box.left + box.width / 2, y: box.top + box.height / 2 }
 	}
 
-	it('тащат заголовок — колонка и строки на месте; отпустили — колонка на новом месте', async () => {
+	/** Левый край узла. */
+	const left = (element: Element) => element.getBoundingClientRect().left
+
+	/** Края узлов совпали — с допуском на субпиксели. */
+	const near = (actual: readonly number[], expected: readonly number[]): boolean =>
+		actual.length === expected.length &&
+		actual.every((value, index) => Math.abs(value - expected[index]) <= EPSILON)
+
+	/** Ячейки строк — все, по строкам. */
+	const cells = (): HTMLElement[] => [
+		...document.querySelectorAll<HTMLElement>('.s-table-row__cell'),
+	]
+
+	/** Сдвиги, которые идут переходом, — у заголовков и ячеек. */
+	const moving = (): string[] =>
+		[...headers(), ...cells()].flatMap((element) =>
+			transitioning(element).filter((property) => property === 'translate'),
+		)
+
+	/**
+	 * Колонки разложены: место плагин раскладки мерит кадром позже
+	 * монтирования, и до этого ширины колонок, а с ними и края заголовков, ещё
+	 * не те.
+	 */
+	async function laidOut(): Promise<void> {
+		await expect
+			.poll(() => headers().every((header) => header.dataset.sized === 'true'))
+			.toBe(true)
+	}
+
+	/**
+	 * Взять заголовок за середину и нести указатель к точке `x` строки:
+	 * сначала за порог жеста, потом туда. Кнопка остаётся зажатой — отпускает
+	 * тест.
+	 */
+	async function carry(header: Element, x: number): Promise<void> {
+		const from = middleOf(header)
+
+		await pointAt(from.x, from.y)
+		await commands.mouseDown()
+		await pointAt(from.x + 40, from.y)
+		await pointAt(x, from.y)
+	}
+
+	it('тащат заголовок — сосед уступает место, строки на месте; отпустили — колонка на новом месте', async () => {
 		const engine = moveEngine()
 		const moves: string[][] = []
 
 		engine.extensions.columns.events.on('column:move', ({ order }) => moves.push(order))
 		await mount(engine, PLACE)
+		await laidOut()
 
-		const [name, city] = headers()
+		const [name, city, age] = headers()
 		const cell = rows()[0].children[0]
-		const from = middleOf(name)
-		const before = { header: name.getBoundingClientRect(), cell: cell.getBoundingClientRect() }
-
-		await pointAt(from.x, from.y)
-		await commands.mouseDown()
+		const cityCell = rows()[0].children[1]
+		const before = {
+			name: name.getBoundingClientRect(),
+			city: left(city),
+			age: left(age),
+			cells: [left(cell), left(cityCell)],
+		}
+		const runs = transitionRuns(city)
 
 		try {
-			await pointAt(from.x + 40, from.y)
-			await pointAt(middleOf(city).x + 10, from.y)
+			await carry(name, middleOf(city).x + 10)
 
-			// Заголовок идёт за указателем, ячейка его колонки — на месте
-			const dragged = name.getBoundingClientRect()
-
+			// Заголовок идёт за указателем
 			expect(name.dataset.dragging).toBe('true')
-			expect(dragged.left - before.header.left).toBeGreaterThan(100)
-			expect(
-				Math.abs(cell.getBoundingClientRect().left - before.cell.left),
-			).toBeLessThanOrEqual(EPSILON)
-			// Метка — у конца соседа, линия видна
+			expect(left(name) - before.name.left).toBeGreaterThan(100)
+			// Сосед уступает место на ширину взятого — переходом; линии места нет
+			expect(city.dataset.shift).toBe('start')
+			await expect
+				.poll(() => near([left(city)], [before.city - before.name.width]))
+				.toBe(true)
+			expect(runs).toContain('translate')
 			expect(city.dataset.drop).toBe('after')
-			expect(parseFloat(style(city, '::before').width)).toBe(3)
+			expect(style(city, '::before').display).toBe('none')
+			// Дальний сосед и ячейки строк — на месте
+			expect(near([left(age)], [before.age])).toBe(true)
+			expect(near([left(cell), left(cityCell)], before.cells)).toBe(true)
 			expect(fieldsOf(engine)).toEqual(['name', 'city', 'age'])
 		} finally {
 			await commands.mouseUp()
 		}
 
-		expect(fieldsOf(engine)).toEqual(['city', 'name', 'age'])
+		await expect.poll(() => fieldsOf(engine)).toEqual(['city', 'name', 'age'])
 		expect(moves).toEqual([['city', 'name', 'age']])
 
 		await expect
 			.poll(() => headers().map((header) => header.textContent?.trim()))
 			.toEqual(['Город', 'Имя', 'Возраст'])
 
-		// Ячейки строк — в новом порядке, сдвиг заголовка снят
+		// Ячейки строк — в новом порядке, метки и сдвиги сняты
 		expect(rows()[0].children[1].textContent?.trim()).toBe('Анна Смирнова')
 		expect(headers()[1].dataset.dragging).toBeUndefined()
+		expect(headers()[1].dataset.landing).toBeUndefined()
+		expect(headers()[0].dataset.shift).toBeUndefined()
 		expect(headers()[1].style.getPropertyValue('--s-table-column-drag')).toBe('')
+		expect(find('.s-table').style.getPropertyValue('--s-table-column-shift')).toBe('')
+	})
+
+	/**
+	 * Колонка переставляется, когда отпущенный заголовок встал: к этому
+	 * времени он и сдвинутые соседи стоят там, где их поставит новая
+	 * раскладка, а переходы уходят вместе с жестом, — ничего не отъезжает.
+	 * Коробки снимаются в `column:move` — перестановка уже в модели, а Vue
+	 * ещё не перерисовал, — и следом за перерисовкой.
+	 */
+	it.each(['head', 'column'] as const)(
+		'%s: отпустили — заголовок встал на место, потом перестановка; ничего не отъезжает',
+		async (preview) => {
+			const engine = moveEngine()
+
+			await mountWith(engine, { reorderPreview: preview })
+			await laidOut()
+
+			const [name, city, age] = headers()
+			const before = [name, city, age].map(left)
+			const seen: { at: number[]; after: number[]; moving: string[] }[] = []
+
+			engine.extensions.columns.events.on('column:move', () => {
+				const at = [name, city, age].map(left)
+
+				void nextTick(() =>
+					seen.push({ at, after: [name, city, age].map(left), moving: moving() }),
+				)
+			})
+
+			try {
+				await carry(name, middleOf(city).x + 10)
+				await expect.poll(() => near([left(city)], [before[0]])).toBe(true)
+			} finally {
+				await commands.mouseUp()
+			}
+
+			await expect.poll(() => seen.length).toBe(1)
+
+			const [{ at, after }] = seen
+
+			// Взятый — на месте соседа, сосед — на месте взятого, дальний — на своём
+			expect(near(after, [before[1], before[0], before[2]])).toBe(true)
+			// Заголовок доехал до места раньше перестановки, и она его не сдвинула
+			expect(near(at, after)).toBe(true)
+			expect(seen[0].moving).toEqual([])
+			expect(fieldsOf(engine)).toEqual(['city', 'name', 'age'])
+		},
+	)
+
+	it('column: ячейки соседа идут с его заголовком, ячейки взятой спрятаны', async () => {
+		const engine = moveEngine()
+
+		await mountWith(engine, { reorderPreview: 'column' })
+		await laidOut()
+
+		const [name, city] = headers()
+		const [nameCell, cityCell, ageCell] = rows()[0].children
+		const before = [nameCell, cityCell, ageCell].map(left)
+		const width = name.getBoundingClientRect().width
+
+		try {
+			await carry(name, middleOf(city).x + 10)
+
+			await expect.poll(() => near([left(cityCell)], [before[1] - width])).toBe(true)
+			expect(near([left(ageCell)], [before[2]])).toBe(true)
+			// Ячейки взятой — спрятаны во всех строках, на месте
+			expect(rows().map((row) => style(row.children[0]).visibility)).toEqual(
+				rows().map(() => 'hidden'),
+			)
+			expect(near([left(nameCell)], [before[0]])).toBe(true)
+			expect(rows().map((row) => style(row.children[1]).visibility)).toEqual(
+				rows().map(() => 'visible'),
+			)
+		} finally {
+			await commands.mouseUp()
+		}
+
+		await expect.poll(() => fieldsOf(engine)).toEqual(['city', 'name', 'age'])
+		await expect
+			.poll(() => rows().map((row) => style(row.children[1]).visibility))
+			.toEqual(rows().map(() => 'visible'))
+	})
+
+	it('RTL: сосед уступает место к началу строки — вправо', async () => {
+		const engine = moveEngine()
+
+		await mount(engine, PLACE, 'rtl')
+		await laidOut()
+
+		const [name, city] = headers()
+		const before = left(city)
+		const width = name.getBoundingClientRect().width
+
+		try {
+			// Первая колонка справа; к концу строки — влево, за середину соседа
+			await carry(name, middleOf(city).x - 10)
+
+			expect(city.dataset.shift).toBe('start')
+			await expect.poll(() => near([left(city)], [before + width])).toBe(true)
+		} finally {
+			await commands.mouseUp()
+		}
+
+		await expect.poll(() => fieldsOf(engine)).toEqual(['city', 'name', 'age'])
+	})
+
+	it('Escape — соседи возвращаются, заголовок едет на своё место, колонка стоит', async () => {
+		const engine = moveEngine()
+
+		await mount(engine, PLACE)
+		await laidOut()
+
+		const [name, city, age] = headers()
+		const before = [name, city, age].map(left)
+
+		try {
+			await carry(name, middleOf(age).x + 10)
+			await expect.poll(() => age.dataset.shift).toBe('start')
+
+			await userEvent.keyboard('{Escape}')
+
+			expect(city.dataset.shift).toBeUndefined()
+			await expect.poll(() => name.dataset.dragging).toBeUndefined()
+			expect(near([name, city, age].map(left), before)).toBe(true)
+		} finally {
+			await commands.mouseUp()
+		}
+
+		await new Promise((resolve) => requestAnimationFrame(resolve))
+		expect(fieldsOf(engine)).toEqual(['name', 'city', 'age'])
+	})
+
+	it('без движения соседи стоят, место — линия; колонка встаёт после отпускания', async () => {
+		useMotion('reduce')
+
+		try {
+			const engine = moveEngine()
+
+			await mount(engine, PLACE)
+			await laidOut()
+
+			const [name, city] = headers()
+			const before = left(city)
+
+			try {
+				await carry(name, middleOf(city).x + 10)
+
+				expect(city.dataset.shift).toBe('start')
+				// Переход шёл бы двести миллисекунд — пара кадров его бы застала
+				await new Promise((resolve) => requestAnimationFrame(resolve))
+				await new Promise((resolve) => requestAnimationFrame(resolve))
+
+				expect(near([left(city)], [before])).toBe(true)
+				expect(city.dataset.drop).toBe('after')
+				expect(style(city, '::before').display).not.toBe('none')
+				expect(parseFloat(style(city, '::before').width)).toBe(3)
+			} finally {
+				await commands.mouseUp()
+			}
+
+			await expect.poll(() => fieldsOf(engine)).toEqual(['city', 'name', 'age'])
+		} finally {
+			useMotion('system')
+		}
 	})
 
 	it('протяжка кнопку сортировки не нажимает, нажатие без протяжки — сортирует', async () => {
@@ -866,7 +1108,7 @@ describe('перестановка колонок', () => {
 			await commands.mouseUp()
 		}
 
-		expect(fieldsOf(engine)).toEqual(['city', 'name', 'age'])
+		await expect.poll(() => fieldsOf(engine)).toEqual(['city', 'name', 'age'])
 
 		// Нажатие на колонку после протяжки не досталось
 		await new Promise((resolve) => requestAnimationFrame(resolve))
