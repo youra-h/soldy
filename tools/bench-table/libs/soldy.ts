@@ -22,16 +22,24 @@ const reorder = query.get('reorder') === '1'
 const previewFlag = query.get('preview')
 const preview =
 	previewFlag === 'column' || previewFlag === 'none' ? { reorderPreview: previewFlag } : {}
+// `?resize=1` — у колонок ручка ширины (`resizable`): для сценариев протяжки;
+// `?resize=deferred` — и отложенная протяжка (`resizePreview: 'deferred'`)
+const resizeFlag = query.get('resize')
+const resize = resizeFlag === '1' || resizeFlag === 'deferred'
+const resizePreview = resizeFlag === 'deferred' ? { resizePreview: 'deferred' as const } : {}
 const columns = COLUMNS.map((c) => ({
 	...c,
 	sortable: true,
 	...(reorder ? { reorderable: true } : {}),
+	...(resize ? { resizable: true } : {}),
 }))
 export const sel = {
 	selectAll: 'thead .s-table__select input',
 	sort: 'thead .s-table-column__sort',
 	// Заголовки колонок данных — их берут сценарии перестановки
 	columns: 'thead .s-table-column',
+	// Полосы ручек ширины — их тянут сценарии протяжки
+	resizers: 'thead .s-table-column__resizer',
 }
 // `?mode=none` — таблица без выбора: строка без чекбокса, для сравнения памяти
 const mode = query.get('mode') === 'none' ? 'none' : 'multiple'
@@ -49,6 +57,7 @@ export function mount(el: Element, rows: ShallowRef<TRec[] | null>) {
 					mode,
 					aria_label: 'Бенч',
 					...preview,
+					...resizePreview,
 				})
 
 			return virtual

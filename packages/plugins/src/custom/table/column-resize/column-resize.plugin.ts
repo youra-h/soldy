@@ -2,6 +2,7 @@ import type { ITableColumn } from '@soldy-ui/core'
 import { TBasePlugin } from '../../../base'
 import type { IPluginContext } from '../../../base'
 import { TElementPlugin } from '../../element'
+import { isMeasurableElement } from '../../../utils'
 import type { IDomEventTarget } from '../../../utils'
 import { arrowStep, slideDirection } from '../../slide/direction'
 import type {
@@ -22,6 +23,12 @@ const LARGE_STEP = 100
  * (`slideDirection`), как у ползунка: от неё зависят и протяжка, и стрелки.
  */
 const AXIS = { orientation: 'horizontal', inverted: false } as const
+
+/** Сдвиг призрака от края колонки, px по оси окна: плюс — вправо. */
+const GHOST_VARIABLE = '--s-table-column-ghost'
+
+/** Высота призрака, px: от верха заголовка до низа таблицы в видимой части окна. */
+const GHOST_SIZE_VARIABLE = '--s-table-column-ghost-size'
 
 /**
  * Полоса ручки — ребёнок корня с классом `__resizer` владельца, по классу, а не
@@ -63,6 +70,16 @@ function fieldOf(resizer: Element | null): HTMLInputElement | null {
  * своего фокуса браузера. Слушает корень, а не полосу: полосу разметка рисует
  * и убирает, а корень — заголовок — живёт всё монтирование, и захват
  * указателя держится на нём.
+ *
+ * **Отложенный жест** (`resizePreview: 'deferred'` таблицы) ширину до
+ * отпускания не меняет: её будущую границу показывает призрак, которого
+ * рисует тема по `data-resize-ghost` заголовка. Плагин пишет заголовку его
+ * сдвиг от края колонки (`--s-table-column-ghost`, по оси окна, на каждый
+ * шаг, если сменился) и высоту (`--s-table-column-ghost-size`, один раз на
+ * нажатии: от верха заголовка до низа таблицы в окне браузера) и снимает их
+ * в конце жеста. Переменные — на заголовке, а не на корне: запись на корень
+ * пересчитала бы стиль каждой ячейки тела. Escape посреди жеста — отмена в
+ * обоих режимах (`cancel` колонки).
  *
  * **Клавиши и жест скринридера** — у поля ручки, как у поля ползунка
  * (`TSlideKeyboardPlugin`): стрелки — шаг по стороне роста, Shift со стрелкой,
@@ -149,14 +166,19 @@ export class TTableColumnResizePlugin extends TBasePlugin<
 
 		if (!resizer || !(event.target instanceof Node) || !resizer.contains(event.target)) return
 
+		// Чтения — до записей: высоту призрака плагин снимает один раз, на нажатии
+		const sign = slideDirection(AXIS, root) === 'from-left' ? 1 : -1
+		const ghostSize = column.resizePreview === 'deferred' ? this._ghostSize(root) : 0
+
 		if (!column.grab()) return
 
 		event.preventDefault()
 
-		this._gesture = {
-			pointer: event.pointerId,
-			origin: event.clientX,
-			sign: slideDirection(AXIS, root) === 'from-left' ? 1 : -1,
+		this._gesture = { pointer: event.pointerId, origin: event.clientX, sign, ghost: undefined }
+
+		if (column.resizeGhost !== undefined && isMeasurableElement(root)) {
+			root.style.setProperty(GHOST_SIZE_VARIABLE, `${ghostSize}px`)
+			this._moveGhost(column, root)
 		}
 
 		// Протяжка за пределами заголовка и отпускание где угодно приходят
@@ -172,7 +194,57 @@ export class TTableColumnResizePlugin extends TBasePlugin<
 
 		if (!gesture || event.pointerId !== gesture.pointer) return
 
-		this._column?.drag((event.clientX - gesture.origin) * gesture.sign)
+		const column = this._column
+
+		if (!column) return
+
+		column.drag((event.clientX - gesture.origin) * gesture.sign)
+
+		if (this._root) this._moveGhost(column, this._root)
+	}
+
+	/**
+	 * Призрак — на ширину, которую запишет отложенный жест: сдвиг от края
+	 * колонки по оси окна. Ход колонка уже учла, поэтому за границы колонки
+	 * призрак не уходит. Тот же сдвиг не пишется: переменная на заголовке
+	 * пересчитывает его стиль. В живом жесте призрака нет.
+	 */
+	private _moveGhost(column: ITableColumn, root: Element): void {
+		const gesture = this._gesture
+		const ghost = column.resizeGhost
+		const width = column.width
+
+		if (!gesture || ghost === undefined || width === undefined) return
+
+		const offset = (ghost - width) * gesture.sign
+
+		if (offset === gesture.ghost || !isMeasurableElement(root)) return
+
+		gesture.ghost = offset
+		root.style.setProperty(GHOST_VARIABLE, `${offset}px`)
+	}
+
+	/**
+	 * Высота призрака: от верха заголовка до низа таблицы, но не ниже окна
+	 * браузера — таблица в тысячи строк дала бы линию в сотни тысяч px.
+	 */
+	private _ghostSize(root: Element): number {
+		const table = root.closest('table') ?? root
+		const view = root.ownerDocument.defaultView
+		const bottom = table.getBoundingClientRect().bottom
+		const top = root.getBoundingClientRect().top
+
+		return Math.max(0, Math.min(bottom, view?.innerHeight ?? bottom) - top)
+	}
+
+	/** Снять переменные призрака: жест закончен. */
+	private _clearGhost(): void {
+		const root = this._root
+
+		if (!isMeasurableElement(root)) return
+
+		root.style.removeProperty(GHOST_VARIABLE)
+		root.style.removeProperty(GHOST_SIZE_VARIABLE)
 	}
 
 	private readonly _onPointerUp = (event: PointerEvent): void => {
@@ -185,10 +257,31 @@ export class TTableColumnResizePlugin extends TBasePlugin<
 
 	/** Закончить жест: отпустили, браузер отнял указатель или корень ушёл. */
 	private _end(): void {
-		if (!this._gesture) return
+		const gesture = this._gesture
+
+		if (!gesture) return
 
 		this._gesture = null
+		if (gesture.ghost !== undefined) this._clearGhost()
 		this._column?.release()
+	}
+
+	/**
+	 * Escape посреди жеста — отмена: ширина нажатия, без `commit`. Захват
+	 * указателя плагин отпускает сам: протяжка дальше ширину не двигает.
+	 */
+	private _cancel(): void {
+		const gesture = this._gesture
+		const root = this._root
+
+		if (!gesture) return
+
+		this._gesture = null
+		if (gesture.ghost !== undefined) this._clearGhost()
+		this._column?.cancel()
+
+		if (root && 'releasePointerCapture' in root && root.hasPointerCapture(gesture.pointer))
+			root.releasePointerCapture(gesture.pointer)
 	}
 
 	/**
@@ -211,6 +304,14 @@ export class TTableColumnResizePlugin extends TBasePlugin<
 	/* ------------------------------------------------------------------ */
 
 	private readonly _onKeyDown = (event: KeyboardEvent): void => {
+		// Escape отменяет жест, откуда бы ни пришла клавиша: фокус в жесте — на поле
+		if (this._gesture && event.key === 'Escape') {
+			event.preventDefault()
+			this._cancel()
+
+			return
+		}
+
 		// С модификатором — чужой жест: Alt+← у браузера «назад»
 		if (event.altKey || event.ctrlKey || event.metaKey) return
 

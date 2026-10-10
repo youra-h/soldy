@@ -33,6 +33,7 @@ import {
 	SLIDER_TOOLTIPS,
 	TABLE_COLUMN_FITS,
 	TABLE_REORDER_PREVIEWS,
+	TABLE_RESIZE_PREVIEWS,
 	TABLE_SORT_MODES,
 	TABS_ALIGNMENTS,
 	TABS_ORIENTATIONS,
@@ -280,6 +281,8 @@ const OWN: Record<string, Record<string, string>> = {
 			'Как колонки без своей ширины делят место: none — стоят в ширине по умолчанию, auto — растут до maxWidth во всю ширину таблицы, contain — ровно заполняют место, сжимаясь до minWidth. Не влезли и так — таблица прокручивается',
 		reorderPreview:
 			'Что идёт за колонкой, которую переставляют: none — только она сама, соседи стоят, место показывает линия, и колонка встаёт сразу; head — шапка, а строки стоят до отпускания; column — и ячейки строк (тысячи строк — в окне Virtual). Без движения соседи стоят, а место показывает линия',
+		resizePreview:
+			'Что идёт за ручкой ширины колонки: live — сама колонка, таблица перекладывается на каждый шаг указателя; deferred — линия новой границы, а ширина меняется на отпускании (большая таблица без окна Virtual). Escape отменяет протяжку, клавиши меняют ширину сразу',
 	},
 	virtual: {
 		enabled:
@@ -391,6 +394,7 @@ const OPTIONS: Record<string, Record<string, readonly string[]>> = {
 		sortMode: TABLE_SORT_MODES,
 		columnFit: TABLE_COLUMN_FITS,
 		reorderPreview: TABLE_REORDER_PREVIEWS,
+		resizePreview: TABLE_RESIZE_PREVIEWS,
 	},
 	skeleton: { shape: SKELETON_SHAPES, animation: SKELETON_ANIMATIONS },
 	frame: { position: FRAME_POSITIONS },

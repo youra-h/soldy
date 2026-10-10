@@ -107,6 +107,10 @@ type TColumnDrag = {
  * делает AG Grid. В `none` гибкие колонки места не делят, держать нечего;
  * `column:resize` о закреплённых не приходит: их пользователь не правил.
  *
+ * **Что идёт за протяжкой ручки** — `resizePreview` таблицы: расширение
+ * пишет его показанным колонкам — пришедшим и на смену у таблицы, — а
+ * колонка читает его на нажатии. Без таблицы — `live`.
+ *
  * **Ширина, которую задал пользователь**, — `column:resize`: законченная правка
  * ручкой показанной колонки (`commit` колонки), одна на действие. Скрытую
  * колонку пользователь не видит и ручкой не правит, и её расширение не
@@ -242,6 +246,14 @@ export class TTableColumnsExtension<
 			)
 
 			scope.on(owner.events, 'change:columnFit', () => this._notifyLayout())
+
+			// Что идёт за протяжкой ручки — показанным колонкам: пришла таблица и
+			// сменилось у неё; ушла — снова `live`
+			this._sharePreview()
+			scope.on(owner.events, 'change:resizePreview', () => this._sharePreview())
+			scope.add(() => {
+				for (const column of this.shownColumns) column.resizePreview = 'live'
+			})
 
 			// Признак места — этой таблицы: она ушла, и признак уходит с неё
 			scope.add(() => owner.dataset.add('overflow', null))
@@ -601,7 +613,15 @@ export class TTableColumnsExtension<
 			column.events.on('change:maxWidth', watchers.layout)
 			column.events.on('resize:start', watchers.resize)
 			column.events.on('commit', watchers.commit)
+			column.resizePreview = this._ctx?.options.get('owner')?.resizePreview ?? 'live'
 		}
+	}
+
+	/** `resizePreview` таблицы — показанным колонкам; без таблицы — `live`. */
+	private _sharePreview(): void {
+		const preview = this._ctx?.options.get('owner')?.resizePreview ?? 'live'
+
+		for (const column of this.shownColumns) column.resizePreview = preview
 	}
 
 	/**

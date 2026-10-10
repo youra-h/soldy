@@ -12,6 +12,7 @@ import type {
 	TTableColumnResizer,
 	TTableColumnStyle,
 	TTableCompare,
+	TTableResizePreview,
 } from './types'
 import { RESIZE_MAX, RESIZE_MIN, clampWidth } from './width'
 
@@ -57,6 +58,12 @@ import { RESIZE_MAX, RESIZE_MIN, clampWidth } from './width'
  * действие и только на смену итога: по нему приложение сохраняет настройку.
  * `resize:start` — тоже одно на действие, но до первой записи: по нему
  * раскладка держит колонки перед этой, пока ширина меняется.
+ *
+ * Отложенный жест (`resizePreview: 'deferred'` таблицы) ширину до отпускания
+ * не пишет: сдвиг получает призрак (`resizeGhost`, `data-resize-ghost`), а
+ * ширина записывается одна — на `release`, если призрак ушёл с ширины нажатия.
+ * Клавиши пишут сразу в обоих режимах. Escape (`cancel`) возвращает ширину
+ * нажатия без `commit`.
  *
  * Ход ручки (`resizer`) — границы колонки, а на стороне без своей границы —
  * пределы ядра, расширенные до итога. Итог всегда в границах, поэтому лежит и
@@ -123,6 +130,8 @@ export default class TTableColumn<
 	protected _reorderable: boolean
 	protected _disabled: boolean
 	protected _gesture: TTableColumnGesture | undefined = undefined
+	/** Что идёт за протяжкой — значение таблицы, его пишет расширение колонок */
+	protected _resizePreview: TTableResizePreview = 'live'
 	protected _resizerAria: TAria
 	protected _contentAria: TAria
 
@@ -369,6 +378,20 @@ export default class TTableColumn<
 		return { min, max, value: width ?? min }
 	}
 
+	get resizePreview(): TTableResizePreview {
+		return this._resizePreview
+	}
+
+	set resizePreview(value: TTableResizePreview) {
+		this._resizePreview = value
+	}
+
+	get resizeGhost(): number | undefined {
+		const gesture = this._gesture
+
+		return gesture?.deferred ? gesture.ghost : undefined
+	}
+
 	get resizerAria(): TAria {
 		return this._resizerAria
 	}
@@ -394,8 +417,11 @@ export default class TTableColumn<
 			own: this._width,
 			before: width,
 			started: false,
+			deferred: this._resizePreview === 'deferred',
+			ghost: Math.round(width),
 		}
 		this._setResizing(true)
+		this._setGhost(this._gesture.deferred)
 
 		return true
 	}
@@ -407,6 +433,14 @@ export default class TTableColumn<
 
 		const { from, lower, upper, own } = gesture
 		const width = within(Math.round(from + offset), lower, upper)
+
+		// Отложенный жест ширину не трогает: таблица не перекладывается до
+		// отпускания, а новую границу показывает призрак
+		if (gesture.deferred) {
+			gesture.ghost = width
+
+			return
+		}
 
 		if (width !== from && !gesture.started) {
 			gesture.started = true
@@ -426,10 +460,37 @@ export default class TTableColumn<
 
 		this._gesture = undefined
 		this._setResizing(false)
+		this._setGhost(false)
+
+		if (gesture.deferred) {
+			// Призрак на ширине нажатия — писать нечего, и гибкая колонка остаётся
+			// гибкой
+			if (gesture.ghost === gesture.from) return
+
+			this._sink.emit('resize:start')
+			this.width = gesture.ghost
+			this._commit(gesture.before)
+
+			return
+		}
 
 		// Жест, вернувшийся к точке нажатия, своего значения не сменил — сохранять
 		// нечего, даже если итог за жест сдвинула раскладка
 		if (this._width !== gesture.own) this._commit(gesture.before)
+	}
+
+	cancel(): void {
+		const gesture = this._gesture
+
+		if (!gesture) return
+
+		this._gesture = undefined
+		this._setResizing(false)
+		this._setGhost(false)
+
+		// Живой жест ширину уже писал — колонке своё значение нажатия; отложенный
+		// не писал ничего
+		if (!gesture.deferred) this.width = gesture.own
 	}
 
 	shift(delta: number): void {
@@ -504,6 +565,15 @@ export default class TTableColumn<
 	/** `data-resizing` — идёт жест ручки: тема держит курсор ручки на всей таблице. */
 	protected _setResizing(value: boolean): void {
 		this._dataset.add('resizing', value)
+	}
+
+	/**
+	 * `data-resize-ghost` — идёт отложенный жест: тема рисует призрак новой
+	 * границы. Только на время жеста и только на заголовке: на покое атрибута
+	 * нет, и правила призрака ни с чем не сверяются.
+	 */
+	protected _setGhost(value: boolean): void {
+		this._dataset.add('resize-ghost', value || null)
 	}
 
 	/**

@@ -174,6 +174,47 @@ const reorder = {
 	},
 }
 
+/** Полоса ручки, которую тянут, и точка нажатия — на ней жест до отпускания. */
+let grip: { resizer: HTMLElement; x: number; y: number } | null = null
+
+function heldGrip() {
+	if (!grip) throw new Error('ручку не взяли')
+
+	return grip
+}
+
+/**
+ * Протяжка ручки ширины второй колонки: нажать на полосу, шаг указателя на
+ * 20 px и отпустить. В `live` шаг перекладывает таблицу, в `deferred` — двигает
+ * призрак, а ширина пишется на отпускании.
+ */
+const resize = {
+	grab: () => {
+		const selector = 'resizers' in lib.sel ? lib.sel.resizers : undefined
+		const resizer = selector ? document.querySelectorAll<HTMLElement>(selector)[1] : undefined
+
+		if (!resizer) throw new Error('у таблицы нет ручек ширины')
+
+		const { x, y } = middle(resizer)
+
+		grip = { resizer, x, y }
+
+		return measure(() => pointer('pointerdown', resizer, x, y))
+	},
+	drag: (dx: number) => {
+		const { resizer, x, y } = heldGrip()
+
+		return measure(() => pointer('pointermove', resizer, x + dx, y))
+	},
+	drop: (dx: number) => {
+		const { resizer, x, y } = heldGrip()
+
+		grip = null
+
+		return measure(() => pointer('pointerup', resizer, x + dx, y))
+	},
+}
+
 Object.assign(window, {
 	bench: {
 		render: (n: number) => measure(() => (rows.value = makeRows(n))),
@@ -183,6 +224,7 @@ Object.assign(window, {
 		sort: () => measure(() => q(lib.sel.sort).click()),
 		scrollThrough,
 		...reorder,
+		resize,
 		info: () => ({
 			rows: document.querySelectorAll('tbody tr').length,
 			nodes: document.getElementsByTagName('*').length,

@@ -8,6 +8,7 @@ import type {
 	TTableEvents,
 	TTableReorderPreview,
 } from './types'
+import type { TTableResizePreview } from './column/types'
 
 /**
  * Таблица — владелец коллекции строк, как ListBox — владелец опций. Корень —
@@ -41,12 +42,20 @@ import type {
  * `data-reorder-preview` на время жеста, и по нему тема ведёт тело за
  * заголовками. На покое и в `head` признака нет, и таблица не платит за
  * правила тела: тема держит их под ним.
+ *
+ * И то, что идёт за протяжкой ручки ширины (`resizePreview`): сама колонка
+ * или призрак новой границы до отпускания. Значение расширение колонок
+ * отдаёт колонкам, а теме уходит только признак отложенного жеста на
+ * заголовке.
  */
 export class TTable extends TControl<ITableProps, TTableEvents> implements ITable {
 	static override baseClass = 's-table'
 
 	static defaultValues: typeof TControl.defaultValues &
-		TDefaultValues<ITableProps, 'locale' | 'stickyHead' | 'columnFit' | 'reorderPreview'> = {
+		TDefaultValues<
+			ITableProps,
+			'locale' | 'stickyHead' | 'columnFit' | 'reorderPreview' | 'resizePreview'
+		> = {
 		...TControl.defaultValues,
 		tag: 'table',
 		locale: DEFAULT_LOCALE,
@@ -55,12 +64,15 @@ export class TTable extends TControl<ITableProps, TTableEvents> implements ITabl
 		columnFit: 'auto',
 		// Шапка: тело тысяч строк на каждую смену места не перерисовывается
 		reorderPreview: 'head',
+		// Колонка за указателем, как до отложенного жеста
+		resizePreview: 'live',
 	}
 
 	protected _locale: string
 	protected _stickyHead!: boolean
 	protected _columnFit: TTableColumnFit
 	protected _reorderPreview: TTableReorderPreview
+	protected _resizePreview: TTableResizePreview
 
 	constructor(props: Partial<ITableProps> = {}) {
 		super(props)
@@ -70,6 +82,7 @@ export class TTable extends TControl<ITableProps, TTableEvents> implements ITabl
 		this._locale = props.locale ?? ctor.defaultValues.locale
 		this._columnFit = props.columnFit ?? ctor.defaultValues.columnFit
 		this._reorderPreview = props.reorderPreview ?? ctor.defaultValues.reorderPreview
+		this._resizePreview = props.resizePreview ?? ctor.defaultValues.resizePreview
 		this._applyStickyHead(props.stickyHead ?? ctor.defaultValues.stickyHead)
 	}
 
@@ -135,6 +148,23 @@ export class TTable extends TControl<ITableProps, TTableEvents> implements ITabl
 		this.events.emit('change:reorderPreview', value)
 	}
 
+	/**
+	 * Что идёт за протяжкой ручки ширины: `live` — сама колонка, `deferred` —
+	 * призрак новой границы, а ширина пишется на отпускании. Значение
+	 * расширение колонок отдаёт показанным колонкам, а колонка читает его на
+	 * нажатии: смена посреди жеста действует со следующего.
+	 */
+	get resizePreview(): TTableResizePreview {
+		return this._resizePreview
+	}
+
+	set resizePreview(value: TTableResizePreview) {
+		if (this._resizePreview === value) return
+
+		this._resizePreview = value
+		this.events.emit('change:resizePreview', value)
+	}
+
 	override getProps(): ITableProps {
 		return {
 			...super.getProps(),
@@ -142,6 +172,7 @@ export class TTable extends TControl<ITableProps, TTableEvents> implements ITabl
 			stickyHead: this._stickyHead,
 			columnFit: this._columnFit,
 			reorderPreview: this._reorderPreview,
+			resizePreview: this._resizePreview,
 		}
 	}
 

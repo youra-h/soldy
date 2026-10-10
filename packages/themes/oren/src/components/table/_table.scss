@@ -607,9 +607,43 @@ $reorder-columns: 30;
 .s-table-column:last-child > .s-table-column__resizer {
 	inset-inline-end: 0;
 
-	&::before {
+	&::before,
+	&::after {
 		inset-inline-start: auto;
 		inset-inline-end: 0;
+	}
+}
+
+// Призрак — будущая граница колонки в отложенной протяжке
+// (`resizePreview: 'deferred'`): ширина стоит до отпускания, а линия цвета
+// ручки идёт за указателем от верха заголовка до низа таблицы в окне
+// браузера. Признак (`data-resize-ghost`) — на заголовке и только на время
+// жеста: на покое правило ни с чем не сверяется, и ячеек тела оно не
+// касается вовсе. Сдвиг (`--s-table-column-ghost`, по оси окна) и высоту
+// (`--s-table-column-ghost-size`) пишет плагин ручки на заголовок; сдвиг —
+// `translate`, а не отступ: раскладка от призрака не меняется, а слой
+// (`will-change`) двигает композитор. Шапка поднята над телом, поэтому линия
+// идёт поверх строк. Движение — только появление: без него призрак встаёт
+// сразу, а за указателем идёт в любом режиме.
+.s-table-column[data-resize-ghost='true'] > .s-table-column__resizer::after {
+	content: '';
+	@apply pointer-events-none absolute rounded-full;
+	inset-block-start: 0;
+	inset-inline-start: 50%;
+	inline-size: $resizer-line;
+	block-size: var(--s-table-column-ghost-size, 100%);
+	translate: var(--s-table-column-ghost, 0) 0;
+	background-color: var(--s-component-focus-ring);
+	will-change: translate;
+
+	@include motion.allowed {
+		animation: s-table-ghost-in 150ms ease-out;
+	}
+}
+
+@keyframes s-table-ghost-in {
+	from {
+		opacity: 0;
 	}
 }
 
@@ -1157,6 +1191,7 @@ $reorder-columns: 30;
 	}
 
 	.s-table-column__resizer::before,
+	.s-table-column__resizer::after,
 	.s-table-column[data-drop]::before {
 		forced-color-adjust: none;
 		background-color: Highlight;

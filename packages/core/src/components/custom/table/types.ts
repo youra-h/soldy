@@ -1,5 +1,6 @@
 import type { IControl, IControlProps, TControlEvents } from '../../base/control'
 import type { ITableCollectionProps } from './collection/types'
+import type { TTableResizePreview } from './column/types'
 
 /**
  * Как гибкие колонки — колонки без своей ширины — делят место таблицы.
@@ -54,6 +55,8 @@ export type TTableEvents = TControlEvents & {
 	'change:columnFit': (value: TTableColumnFit) => void
 	/** change:reorderPreview */
 	'change:reorderPreview': (value: TTableReorderPreview) => void
+	/** change:resizePreview */
+	'change:resizePreview': (value: TTableResizePreview) => void
 }
 
 /** Полный набор пропсов таблицы: свои и коллекции строк (`ITableCollectionProps`). */
@@ -85,6 +88,14 @@ export interface ITableProps extends IControlProps, ITableCollectionProps {
 	 * — взятой колонке `data-still`
 	 */
 	reorderPreview?: TTableReorderPreview
+	/**
+	 * Что идёт за протяжкой ручки ширины: `live` — сама колонка, ширина
+	 * пишется на каждый шаг указателя; `deferred` — призрак новой границы, а
+	 * ширина пишется на отпускании, и таблица в жесте не перекладывается.
+	 * Клавиши пишут сразу в обоих. Теме значение не уходит: призрак рисуется по
+	 * `data-resize-ghost` заголовка, только на время жеста
+	 */
+	resizePreview?: TTableResizePreview
 }
 
 export interface ITable extends IControl<ITableProps, TTableEvents> {
@@ -96,4 +107,6 @@ export interface ITable extends IControl<ITableProps, TTableEvents> {
 	columnFit: TTableColumnFit
 	/** Что идёт за жестом перестановки колонки: шапка или вся колонка */
 	reorderPreview: TTableReorderPreview
+	/** Что идёт за протяжкой ручки ширины: колонка или призрак */
+	resizePreview: TTableResizePreview
 }

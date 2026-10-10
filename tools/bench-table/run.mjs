@@ -66,6 +66,17 @@ for (const lib of LIBS) {
 			push('Отпустить', await b(() => bench.release()))
 		}
 		const i6 = reordering ? await b(() => bench.info()) : undefined
+		// С ручкой ширины (`resize`) — протяжка второй колонки: нажать, пять шагов
+		// по 20 px (медиана шагов) и отпустить
+		if (lib.includes('+resize')) {
+			push('Взять ручку', await b(() => bench.resize.grab()))
+			const steps = []
+			for (let step = 1; step <= 5; step++)
+				steps.push(await b((dx) => bench.resize.drag(dx), step * 20))
+			const mid = (k) => [...steps.map((s) => s[k])].sort((x, y) => x - y)[2]
+			push('Шаг ручки', { paint: mid('paint'), settled: mid('settled') })
+			push('Отпустить ручку', await b(() => bench.resize.drop(100)))
+		}
 		// В режиме окна — проход по всем строкам и куча после: что прокрученные
 		// строки оставили в памяти. После сортировок: пробы смотрят на верх таблицы
 		if (lib.includes('+virtual')) {

@@ -287,6 +287,146 @@ describe('указатель', () => {
 		expect(column.dataset.get('resizing')).toBe('false')
 		expect(commit.mock.calls).toEqual([[WIDTH + 10]])
 	})
+
+	it('Escape посреди жеста — ширина нажатия, без commit; дальше протяжка ничего не двигает', async () => {
+		const { column, root, resizer, field, commit, pointer, press } = await mount()
+
+		pointer('pointerdown', resizer, 260)
+		pointer('pointermove', resizer, 290)
+
+		expect(column.width).toBe(WIDTH + 30)
+		expect(press(field, 'Escape').defaultPrevented).toBe(true)
+		expect(column.width).toBe(WIDTH)
+
+		pointer('pointermove', root, 320)
+		pointer('pointerup', root, 320)
+
+		expect(column.width).toBe(WIDTH)
+		expect(commit).not.toHaveBeenCalled()
+	})
+
+	it('Escape вне жеста — не наша клавиша', async () => {
+		const { field, press } = await mount()
+
+		expect(press(field, 'Escape').defaultPrevented).toBe(false)
+	})
+})
+
+describe('отложенный жест (deferred)', () => {
+	/** Колонка в отложенном режиме: его пишет расширение колонок от таблицы. */
+	async function mountDeferred(
+		props: Partial<ITableColumnProps> = {},
+		dir: 'ltr' | 'rtl' = 'ltr',
+	) {
+		const mounted = await mount(props, dir)
+
+		mounted.column.resizePreview = 'deferred'
+
+		return mounted
+	}
+
+	const ghostOf = (root: HTMLElement) => root.style.getPropertyValue('--s-table-column-ghost')
+
+	it('ширина не меняется до отпускания; один commit на жест', async () => {
+		const { column, root, resizer, commit, pointer } = await mountDeferred()
+		const width = vi.fn()
+
+		column.events.on('change:width', width)
+
+		pointer('pointerdown', resizer, 260)
+
+		expect(column.dataset.get('resize-ghost')).toBe('true')
+		expect(ghostOf(root)).toBe('0px')
+
+		pointer('pointermove', resizer, 270)
+		pointer('pointermove', resizer, 290)
+
+		expect(column.width).toBe(WIDTH)
+		expect(width).not.toHaveBeenCalled()
+		expect(ghostOf(root)).toBe('30px')
+
+		pointer('pointerup', resizer, 290)
+
+		expect(column.width).toBe(WIDTH + 30)
+		expect(commit.mock.calls).toEqual([[WIDTH + 30]])
+		expect(ghostOf(root)).toBe('')
+		expect(root.style.getPropertyValue('--s-table-column-ghost-size')).toBe('')
+	})
+
+	it('возврат к точке нажатия ничего не пишет', async () => {
+		const { column, resizer, commit, pointer } = await mountDeferred({ width: undefined })
+
+		column.layoutWidth = 150
+		pointer('pointerdown', resizer, 260)
+		pointer('pointermove', resizer, 300)
+		pointer('pointermove', resizer, 260)
+		pointer('pointerup', resizer, 260)
+
+		expect(column.getProps().width).toBeUndefined()
+		expect(commit).not.toHaveBeenCalled()
+	})
+
+	it('призрак — в пределах хода колонки', async () => {
+		const { root, resizer, pointer } = await mountDeferred({ maxWidth: 200 })
+
+		pointer('pointerdown', resizer, 260)
+		pointer('pointermove', resizer, 400)
+
+		expect(ghostOf(root)).toBe('40px')
+	})
+
+	it('RTL: призрак идёт влево, когда колонка растёт', async () => {
+		const { column, root, resizer, pointer } = await mountDeferred({}, 'rtl')
+
+		pointer('pointerdown', resizer, 100)
+		pointer('pointermove', resizer, 80)
+
+		expect(ghostOf(root)).toBe('-20px')
+
+		pointer('pointerup', resizer, 80)
+
+		expect(column.width).toBe(WIDTH + 20)
+	})
+
+	it('высота призрака — один замер на нажатии; шаги указателя не мерят', async () => {
+		const { root, resizer, pointer } = await mountDeferred()
+
+		pointer('pointerdown', resizer, 260)
+
+		expect(root.style.getPropertyValue('--s-table-column-ghost-size')).toMatch(/px$/)
+
+		const measure = vi.spyOn(root, 'getBoundingClientRect')
+
+		pointer('pointermove', resizer, 270)
+		pointer('pointermove', resizer, 280)
+
+		expect(measure).not.toHaveBeenCalled()
+	})
+
+	it('Escape — призрак снят, ширина та же, без commit', async () => {
+		const { column, root, resizer, field, commit, pointer, press } = await mountDeferred()
+
+		pointer('pointerdown', resizer, 260)
+		pointer('pointermove', resizer, 290)
+		press(field, 'Escape')
+
+		expect(column.width).toBe(WIDTH)
+		expect(column.dataset.has('resize-ghost')).toBe(false)
+		expect(ghostOf(root)).toBe('')
+
+		pointer('pointerup', resizer, 290)
+
+		expect(commit).not.toHaveBeenCalled()
+	})
+
+	it('клавиши пишут сразу', async () => {
+		const { column, field, commit, press } = await mountDeferred()
+
+		press(field, 'ArrowRight')
+
+		expect(column.width).toBe(WIDTH + 10)
+		expect(commit.mock.calls).toEqual([[WIDTH + 10]])
+	})
 })
 
 describe('клавиши', () => {

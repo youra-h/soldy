@@ -635,3 +635,60 @@ describe('расширение: колонки перед тянутой дер�
 		expect(a.width).toBe(160)
 	})
 })
+
+describe('расширение: что идёт за протяжкой ручки', () => {
+	it('resizePreview таблицы — показанным колонкам: по умолчанию live, смена — всем', () => {
+		const { owner, engine } = tableWith()
+		const name = columnOf(engine, 'name')
+
+		expect(owner.resizePreview).toBe('live')
+		expect(name.resizePreview).toBe('live')
+
+		owner.resizePreview = 'deferred'
+
+		expect(engine.extensions.columns.shownColumns.map((each) => each.resizePreview)).toEqual([
+			'deferred',
+			'deferred',
+			'deferred',
+		])
+
+		// Пришедшая колонка — тоже
+		engine.extensions.columns.columns = [NAME, CITY, AGE, { field: 'extra' }]
+
+		expect(columnOf(engine, 'extra').resizePreview).toBe('deferred')
+	})
+
+	it('таблица ушла — колонки снова live', () => {
+		const owner = new TTable({ resizePreview: 'deferred' })
+		const engine = createEngineTable({ owner })
+
+		engine.extensions.columns.columns = [CITY]
+
+		expect(columnOf(engine, 'city').resizePreview).toBe('deferred')
+
+		engine.options.set({ owner: undefined })
+
+		expect(columnOf(engine, 'city').resizePreview).toBe('live')
+	})
+
+	it('deferred: колонки перед тянутой держат ширину, место отдаёт следующая — на отпускании', () => {
+		const { owner, engine } = tableWith([
+			{ field: 'a', resizable: true },
+			{ field: 'b', resizable: true },
+			{ field: 'c', resizable: true },
+		])
+		const b = columnOf(engine, 'b')
+
+		owner.resizePreview = 'deferred'
+		engine.extensions.columns.notifySpace(900)
+		b.grab()
+		b.drag(50)
+
+		expect(widthsOf(engine)).toEqual([300, 300, 300])
+
+		b.release()
+
+		expect(widthsOf(engine)).toEqual([300, 350, 250])
+		expect(columnOf(engine, 'a').getProps().width).toBe(300)
+	})
+})
