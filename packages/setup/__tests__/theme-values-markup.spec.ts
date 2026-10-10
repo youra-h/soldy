@@ -101,7 +101,7 @@ describe('разметка компонентов не передаёт знач
 		`<Button :view="'plain'" />`,
 		`<Button v-bind:variant="'accent'" />`,
 		`<Button view={'plain'} />`,
-		`<soldy-button [shape]="'rounded'"></soldy-button>`,
+		`<so-button [shape]="'rounded'"></so-button>`,
 		`h(Button, { animation: 'pulse' })`,
 	])('ловит литерал: %s', (sample) => {
 		expect(findLiterals(sample)).not.toEqual([])
@@ -110,7 +110,7 @@ describe('разметка компонентов не передаёт знач
 	it.each([
 		'<Button :view="view" :variant="variant" />',
 		'<Button view={view} />',
-		'<soldy-button [view]="view"></soldy-button>',
+		'<so-button [view]="view"></so-button>',
 		'<div data-view="x" />',
 		'this.view = value',
 		'<!-- view="plain" в комментарии -->\n// view: \'plain\'',

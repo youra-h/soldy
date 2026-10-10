@@ -9,7 +9,7 @@ Web Components.
 The adapter is wiring, not behavior: it connects a core model to Angular's signals and renders the
 markup — BEM classes `s-*` and `data-*` state attributes. Props, events and slots come from the
 component descriptor, so they match the other five adapters; only the spelling is Angular's:
-selectors are prefixed (`<soldy-button>`), events are camelCase outputs (`element:ready` →
+selectors are prefixed (`<so-button>`), events are camelCase outputs (`element:ready` →
 `elementReady`), and slots are filled through the `slot` attribute.
 
 The components are standalone and zoneless — state is a signal, so Zone.js is not required.
@@ -36,7 +36,7 @@ import { TButtonComponent } from '@soldy-ui/angular'
   selector: 'app-toolbar',
   standalone: true,
   imports: [TButtonComponent],
-  template: `<soldy-button text="Save" (actionPress)="onPress()" />`,
+  template: `<so-button text="Save" (actionPress)="onPress()" />`,
 })
 export class ToolbarComponent {
   onPress(): void {
@@ -49,7 +49,7 @@ The same component can be driven from code — pass a core instance as `ctrl`, a
 same state and events:
 
 ```ts
-template: `<soldy-button [ctrl]="btn" (actionPress)="btn.disabled = true" />`
+template: `<so-button [ctrl]="btn" (actionPress)="btn.disabled = true" />`
 ```
 
 The application plugs in a theme and an icon pack once, in its entry point:

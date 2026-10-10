@@ -20,7 +20,7 @@ import { announced, elementPlugin } from './element-plugin'
 @Component({
 	standalone: true,
 	imports: [TComponentViewComponent],
-	template: `<soldy-component-view><b>внутри</b></soldy-component-view>`,
+	template: `<so-component-view><b>внутри</b></so-component-view>`,
 })
 class ProjectionHost {}
 
@@ -67,15 +67,15 @@ describe('ComponentView · хост-элемент как корень', () => {
 		expect(host(fixture).style.display).toBe('none')
 	})
 
-	it('у потребителя корень — сам <soldy-component-view> с содержимым внутри', () => {
+	it('у потребителя корень — сам <so-component-view> с содержимым внутри', () => {
 		const fixture = TestBed.createComponent(ProjectionHost)
 
 		fixture.detectChanges()
 
 		const element: HTMLElement = fixture.nativeElement
-		const view = element.querySelector('soldy-component-view')
+		const view = element.querySelector('so-component-view')
 
-		if (!view) throw new Error('<soldy-component-view> не отрисован')
+		if (!view) throw new Error('<so-component-view> не отрисован')
 
 		expect(Array.from(view.classList)).toContain('s-component-view')
 		expect(view.querySelector('b')?.textContent).toBe('внутри')

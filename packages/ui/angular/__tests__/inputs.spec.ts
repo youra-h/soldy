@@ -10,7 +10,7 @@
  * декоратор объявил вход.
  *
  * Булев вход декоратор объявляет с `transform: booleanInput`. Атрибут без
- * значения (`<soldy-button disabled>`) Angular отдаёт входу пустой строкой, а
+ * значения (`<so-button disabled>`) Angular отдаёт входу пустой строкой, а
  * transform превращает её в `true`, как это делают остальные адаптеры. Тип
  * записи такого входа проверка берёт у параметра transform, а не у поля.
  *
@@ -63,7 +63,7 @@ import {
 @Component({
 	standalone: true,
 	imports: [TButtonComponent],
-	template: `<soldy-button [text]="text()" [size]="size()" aria_label="Сохранить" disabled />`,
+	template: `<so-button [text]="text()" [size]="size()" aria_label="Сохранить" disabled />`,
 })
 class ButtonHost {
 	readonly text = signal('Save')
@@ -73,16 +73,16 @@ class ButtonHost {
 @Component({
 	standalone: true,
 	imports: [TComponentViewComponent],
-	template: `<soldy-component-view [visible]="visible()" direction="rtl" />`,
+	template: `<so-component-view [visible]="visible()" direction="rtl" />`,
 })
 class ComponentViewHost {
 	readonly visible = signal(false)
 }
 
-/** Корень Button в хосте — первый элемент внутри `<soldy-button>`. */
+/** Корень Button в хосте — первый элемент внутри `<so-button>`. */
 function buttonRoot(fixture: ComponentFixture<unknown>): Element {
 	const host: HTMLElement = fixture.nativeElement
-	const root = host.querySelector('soldy-button')?.firstElementChild
+	const root = host.querySelector('so-button')?.firstElementChild
 
 	if (!root) throw new Error('Корень Button не отрисован')
 
@@ -116,9 +116,9 @@ describe('вход в строгом шаблоне · значение дохо
 		fixture.detectChanges()
 
 		const host: HTMLElement = fixture.nativeElement
-		const view = host.querySelector('soldy-component-view')
+		const view = host.querySelector('so-component-view')
 
-		if (!(view instanceof HTMLElement)) throw new Error('<soldy-component-view> не отрисован')
+		if (!(view instanceof HTMLElement)) throw new Error('<so-component-view> не отрисован')
 
 		expect(view.style.display).toBe('none')
 		expect(view.getAttribute('dir')).toBe('rtl')

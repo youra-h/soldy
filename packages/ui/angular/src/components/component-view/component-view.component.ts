@@ -21,10 +21,10 @@ import { setupComponentView } from './setup.component'
  * `AriaDirective`) — здесь для них нет ни `@HostBinding`, ни директивы,
  * потому что шаблона с элементом-целью у хост-компонента нет.
  *
- * Selector: <soldy-component-view>
+ * Selector: <so-component-view>
  */
 @Component({
-	selector: 'soldy-component-view',
+	selector: 'so-component-view',
 	standalone: true,
 	changeDetection: ChangeDetectionStrategy.OnPush,
 	template: `<ng-content></ng-content>`,

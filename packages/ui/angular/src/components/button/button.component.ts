@@ -19,10 +19,10 @@ import { setupButton } from './setup.component'
  * живёт внутри `@if`/`@else` и меняет ветку вместе с `tag` — привязку к
  * TElementPlugin по умолчанию берёт на себя TComponentBase.
  *
- * Selector: <soldy-button>
+ * Selector: <so-button>
  */
 @Component({
-	selector: 'soldy-button',
+	selector: 'so-button',
 	standalone: true,
 	imports: [NgClass, NgTemplateOutlet, AriaDirective],
 	changeDetection: ChangeDetectionStrategy.OnPush,

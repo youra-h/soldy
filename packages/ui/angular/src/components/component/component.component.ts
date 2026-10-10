@@ -11,10 +11,10 @@ import { setupComponent } from './setup.component'
  * `TComponentSurface` (generated/component.metadata.ts), в `@Component` их
  * нет — как у Button.
  *
- * Selector: <soldy-component>
+ * Selector: <so-component>
  */
 @Component({
-	selector: 'soldy-component',
+	selector: 'so-component',
 	standalone: true,
 	changeDetection: ChangeDetectionStrategy.OnPush,
 	template: `<ng-content></ng-content>`,

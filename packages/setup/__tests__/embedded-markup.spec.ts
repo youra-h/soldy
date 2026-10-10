@@ -16,7 +16,7 @@ import { join, resolve, relative, sep } from 'node:path'
  * начинается с имени компонента, в папке которого лежит разметка.
  *
  * Компонентом soldy считается тег с именем папки компонента (`Button`,
- * `soldy-button`) или с её префиксом (`TagsItem`). Сканируется
+ * `so-button`) или с её префиксом (`TagsItem`). Сканируется
  * `packages/ui/*\/src/components/**` без комментариев.
  */
 
@@ -104,9 +104,9 @@ function findUnmarked(source: string, owner: string, names: readonly string[]): 
 	const code = stripComments(source)
 	const found: string[] = []
 
-	for (const match of code.matchAll(/<(soldy-[a-z-]+|[A-Z][A-Za-z]*)(?=[\s/>])/g)) {
+	for (const match of code.matchAll(/<(so-[a-z-]+|[A-Z][A-Za-z]*)(?=[\s/>])/g)) {
 		const raw = match[1]
-		const tag = raw.startsWith('soldy-') ? pascal(raw.slice('soldy-'.length)) : raw
+		const tag = raw.startsWith('so-') ? pascal(raw.slice('so-'.length)) : raw
 
 		if (!names.some((name) => tag === name || tag.startsWith(name))) continue
 		if (tag.startsWith(owner)) continue
@@ -125,10 +125,10 @@ describe('вложенные компоненты разметки несут п
 	it.each([
 		['<Button :size="size" />', 'Tags', ['Button']],
 		['<Button\n\t@click="() => a > b"\n>', 'Tags', ['Button']],
-		['<soldy-icon [size]="size"></soldy-icon>', 'Tags', ['soldy-icon']],
+		['<so-icon [size]="size"></so-icon>', 'Tags', ['so-icon']],
 		['<Button embedded="tags.close" />', 'Tags', []],
 		['<Icon embedded={name} />', 'Tags', []],
-		['<soldy-icon [embedded]="name"></soldy-icon>', 'Tags', []],
+		['<so-icon [embedded]="name"></so-icon>', 'Tags', []],
 		['<TagsItem :ctrl="item" />', 'Tags', []],
 		['<!-- <Button /> -->', 'Tags', []],
 	])('%s в %s', (source, owner, expected) => {
