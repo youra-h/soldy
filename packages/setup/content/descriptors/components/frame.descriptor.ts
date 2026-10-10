@@ -8,8 +8,8 @@
  * считался приносящим size/variant — те объявлены ниже по цепочке, в
  * StylableDescriptor.
  *
- * Добавляет x, y, width, height, position, contained + плагины раскладки, якоря
- * и имени.
+ * Добавляет слот `default`, x, y, width, height, position, contained + плагины
+ * раскладки, якоря и имени.
  */
 
 import { defineComponent, defineDescriptor } from '../../../protected/define'
@@ -28,6 +28,9 @@ export const FrameDescriptor = defineDescriptor(() =>
 		extends: LayerDescriptor(),
 
 		contribution: {
+			slots: {
+				default: { description: 'Содержимое панели' },
+			},
 			props: {
 				x: { type: Number, triggers: ['change:x'] },
 				y: { type: Number, triggers: ['change:y'] },

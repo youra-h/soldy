@@ -71,7 +71,10 @@ describe('первая отрисовка', () => {
 	})
 
 	it('внутри — один рисунок под aria-hidden: дорожка и две дуги без привязок, слотов нет', () => {
-		const node = mount(<ProgressSpinner value={40}>текст</ProgressSpinner>).root()
+		const node = mount(
+			// @ts-expect-error — слота нет: содержимое тип не принимает, а разметка не рисует
+			<ProgressSpinner value={40}>текст</ProgressSpinner>,
+		).root()
 
 		const children = [...node.children]
 

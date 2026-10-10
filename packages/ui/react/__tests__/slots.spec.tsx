@@ -10,7 +10,14 @@ import { describe, it, expect, expectTypeOf, afterEach } from 'vitest'
 import { act, type ReactNode } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { ButtonDescriptor, type TabsDescriptor } from '@soldy-ui/setup'
-import { Button, type ButtonProps, type UseDomProps } from '@soldy-ui/react'
+import {
+	Button,
+	type ButtonProps,
+	type CheckBoxProps,
+	type FrameProps,
+	type InputProps,
+	type UseDomProps,
+} from '@soldy-ui/react'
 
 const roots: Root[] = []
 
@@ -143,5 +150,25 @@ describe('слот важнее одноимённого атрибута HTML',
 	 */
 	it('content по TabsDescriptor принимает ReactNode, а не строку атрибута', () => {
 		expectTypeOf<UseDomProps<typeof TabsDescriptor>['content']>().toEqualTypeOf<ReactNode>()
+	})
+})
+
+describe('содержимое — только слот default', () => {
+	/**
+	 * `children` в React — это слот `default`, и ничего больше. Компонент, чья
+	 * разметка содержимого не рисует, слота не объявляет, и `children` в его
+	 * пропсах нет — ни из слотов, ни из атрибутов DOM: `TDomAttributes`
+	 * вычитает его всегда. Пока `default` доставался всем визуальным
+	 * компонентам наследованием от ComponentView, `<CheckBox>подпись</CheckBox>`
+	 * компилировался, а подпись молча пропадала. Подпись контрола — `Label`
+	 * вложением.
+	 *
+	 * Тип проверяет не vitest, а шаг CI «Типы — React».
+	 */
+	it('у CheckBox и Input children нет, у Frame — есть: его разметка содержимое рисует', () => {
+		expectTypeOf<CheckBoxProps>().not.toHaveProperty('children')
+		expectTypeOf<InputProps>().not.toHaveProperty('children')
+		expectTypeOf<FrameProps>().toHaveProperty('children')
+		expectTypeOf<FrameProps['children']>().toEqualTypeOf<ReactNode>()
 	})
 })
