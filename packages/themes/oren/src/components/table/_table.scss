@@ -604,16 +604,6 @@ $reorder-columns: 30;
 	transition-delay: 0s;
 }
 
-.s-table-column:last-child > .s-table-column__resizer {
-	inset-inline-end: 0;
-
-	&::before,
-	&::after {
-		inset-inline-start: auto;
-		inset-inline-end: 0;
-	}
-}
-
 // Призрак — будущая граница колонки в отложенной протяжке
 // (`resizePreview: 'deferred'`): ширина стоит до отпускания, а линия цвета
 // ручки идёт за указателем от верха заголовка до низа таблицы в окне
@@ -644,6 +634,20 @@ $reorder-columns: 30;
 @keyframes s-table-ghost-in {
 	from {
 		opacity: 0;
+	}
+}
+
+// У последней колонки полоса и линия — у края таблицы (см. выше), и призрак
+// встаёт на ту же линию. Правило — ниже призрака: вес у них один
+// (`:last-child` и `[data-resize-ghost]` весят поровну), и выше его сторону
+// перебивал бы призрак — он вставал на несколько px раньше линии.
+.s-table-column:last-child > .s-table-column__resizer {
+	inset-inline-end: 0;
+
+	&::before,
+	&::after {
+		inset-inline-start: auto;
+		inset-inline-end: 0;
 	}
 }
 
