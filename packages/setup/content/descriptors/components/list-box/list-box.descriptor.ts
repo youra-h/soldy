@@ -70,7 +70,9 @@ export const ListBoxDescriptor = defineDescriptor(() =>
 			CollectionBundlesPluginDescriptor,
 			CollectionElementsPluginDescriptor,
 			// Высота по `maxRows` — единственное списочное свойство, которому
-			// нужен плагин: остальные ядро применяет само
+			// нужен плагин: остальные ядро применяет само. Стоит раньше
+			// прокрутки: предел строк ставится на `ready` корня, и начальная
+			// прокрутка к выбранному на том же `ready` видит список уже в нём
 			ListHeightPluginDescriptor,
 			// Клавиатура и прокрутка (последняя читает `scrollBehavior`)
 			ListKeyboardPluginDescriptor,

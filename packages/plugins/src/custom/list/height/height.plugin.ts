@@ -71,7 +71,10 @@ export class TListHeightPlugin extends TBasePlugin<any> {
 			this._rootObserver?.disconnect()
 			this._rootObserver = new ResizeObserver(() => this._scheduleUpdate())
 			this._rootObserver.observe(element, { box: 'border-box' })
-			this._scheduleUpdate()
+			// Предел — сразу, а не кадром позже: прокрутка списка к выбранному
+			// (`TListScrollPlugin`) идёт на том же `ready` и видит список уже в
+			// пределе строк
+			this._update()
 		})
 
 		elementPlugin?.events.on('removed', () => {

@@ -8,9 +8,11 @@
  * jsdom `matchMedia` нет вовсе: система там о движении не просит, а её просьбу
  * тест задаёт заглушкой у окна документа.
  *
- * Плавная прокрутка — движение: листание Scroller и прокрутка ListBox к
- * выбранному идут плавно, только пока режим движение не убрал. Как тема
- * исполняет режим в CSS, сторожат `themes/oren/__tests__/motion.spec.ts` и
+ * Плавная прокрутка — движение: листание Scroller и прокрутка ListBox за
+ * выбором идут плавно, только пока режим движение не убрал. Начальная
+ * прокрутка ListBox к выбранному — сразу при любом режиме: показывать на
+ * монтировании нечего. Как тема исполняет режим в CSS, сторожат
+ * `themes/oren/__tests__/motion.spec.ts` и
  * `playground/vue/browser/motion-mode.spec.ts`.
  */
 
@@ -198,14 +200,21 @@ describe('листание Scroller', () => {
 	})
 })
 
+/** Что плагин прокрутки получает первым: движок или узел корня. */
+type TBindOrder = 'engine-first' | 'root-first'
+
 /**
- * ListBox с выбранным элементом за краем видимой части: при привязке движка
- * плагин прокручивает список к выбранному. Раскладки в jsdom нет — коробки
- * задаёт тест: список высотой 100 px, выбранный элемент ниже.
+ * ListBox с выбранным элементом за краем видимой части. Раскладки в jsdom нет
+ * — коробки задаёт тест: список высотой 100 px, выбранный `b` и соседний `c`
+ * ниже. Движок и узел корня плагин получает в порядке `order`: в жизни движок
+ * привязывают при сборке, а узел корня объявляют кадром после монтирования.
  */
-async function mountListBox(scrollBehavior: TScrollBehavior) {
+async function mountListBox(scrollBehavior: TScrollBehavior, order: TBindOrder = 'engine-first') {
 	const owner = new TListBox({ value: 'b', scrollBehavior })
-	const engine = createEngineListBox({ owner, items: [{ value: 'a' }, { value: 'b' }] })
+	const engine = createEngineListBox({
+		owner,
+		items: [{ value: 'a' }, { value: 'b' }, { value: 'c' }],
+	})
 
 	const root = document.body.appendChild(document.createElement('div'))
 	const scrollTo = vi.fn()
@@ -219,9 +228,6 @@ async function mountListBox(scrollBehavior: TScrollBehavior) {
 		.use(TCollectionElements)
 		.use(TListScrollPlugin)
 
-	pluginOf(bundle, TElementPlugin).element = root
-	await nextFrame()
-
 	const bundles = pluginOf(bundle, TCollectionBundlesPlugin)
 
 	engine.extensions.batch.items.forEach((item, index) => {
@@ -234,32 +240,78 @@ async function mountListBox(scrollBehavior: TScrollBehavior) {
 		pluginOf(itemBundle, TElementPlugin).element = node
 	})
 
-	return { bind: () => bundles.bindEngine(engine), scrollTo }
+	const bindRoot = async () => {
+		pluginOf(bundle, TElementPlugin).element = root
+		await nextFrame()
+	}
+
+	if (order === 'engine-first') {
+		bundles.bindEngine(engine)
+		await bindRoot()
+	} else {
+		await bindRoot()
+		bundles.bindEngine(engine)
+	}
+
+	return { owner, scrollTo }
 }
 
-describe('прокрутка ListBox к выбранному', () => {
+/**
+ * Начальная прокрутка — список открывается на выбранном. Она мгновенная и при
+ * `smooth`, при любом режиме движения: показывать на монтировании нечего. Ей
+ * нужны и движок, и узел корня — срабатывает то, что пришло вторым.
+ */
+describe('начальная прокрутка ListBox к выбранному', () => {
+	it.each<[string, TBindOrder]>([
+		['движок, потом узел корня', 'engine-first'],
+		['узел корня, потом движок', 'root-first'],
+	])('smooth — сразу и при full: %s', async (_name, order) => {
+		useMotion('full')
+
+		const { scrollTo } = await mountListBox('smooth', order)
+
+		expect(scrollTo).toHaveBeenCalledOnce()
+		expect(scrollTo).toHaveBeenCalledWith(expect.objectContaining({ behavior: 'instant' }))
+	})
+
+	it('none — начальной прокрутки нет', async () => {
+		const { scrollTo } = await mountListBox('none')
+
+		await nextFrame()
+
+		expect(scrollTo).not.toHaveBeenCalled()
+	})
+})
+
+/** Выбор сменился после монтирования — прокрутка к новому выбранному по режиму. */
+describe('прокрутка ListBox за выбором', () => {
 	it.each<[string, TMotionMode, boolean, ScrollBehavior]>([
 		['по умолчанию — плавно', 'system', false, 'smooth'],
 		['система просит меньше движения — сразу', 'system', true, 'instant'],
 		['full поверх просьбы системы — плавно', 'full', true, 'smooth'],
 		['reduce — сразу', 'reduce', false, 'instant'],
 	])('smooth: %s', async (_name, mode, reduce, behavior) => {
-		const { bind, scrollTo } = await mountListBox('smooth')
+		const { owner, scrollTo } = await mountListBox('smooth')
 
+		scrollTo.mockClear()
 		systemReduces(reduce)
 		useMotion(mode)
-		bind()
+		owner.value = 'c'
+		await nextFrame()
 
 		expect(scrollTo).toHaveBeenCalledOnce()
 		expect(scrollTo).toHaveBeenCalledWith(expect.objectContaining({ behavior }))
 	})
 
 	it('instant — сразу при любом режиме', async () => {
-		const { bind, scrollTo } = await mountListBox('instant')
+		const { owner, scrollTo } = await mountListBox('instant')
 
+		scrollTo.mockClear()
 		useMotion('full')
-		bind()
+		owner.value = 'c'
+		await nextFrame()
 
+		expect(scrollTo).toHaveBeenCalledOnce()
 		expect(scrollTo).toHaveBeenCalledWith(expect.objectContaining({ behavior: 'instant' }))
 	})
 })
