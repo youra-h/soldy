@@ -14,6 +14,10 @@
  *
  * Имена кнопок — от локали поддерева: их пишет в наборы (`closeAria`, у окна —
  * `maximizeAria`) плагин имён наследника, как связки — его плагин `ids`.
+ *
+ * Слотов у базы нет: своей разметки у неё нет ни в одном адаптере, а слоты не
+ * наследуются. Заголовок, содержимое, подвал и иконку крестика окно и панель
+ * объявляют сами — по своим шаблонам.
  */
 
 import { defineComponent, defineDescriptor } from '../../../protected/define'
@@ -33,15 +37,6 @@ export const ModalLayerDescriptor = defineDescriptor(() =>
 		extends: LayerDescriptor(),
 
 		contribution: {
-			slots: {
-				title: {
-					description:
-						'Заголовок. Он же доступное имя: панель ссылается на него aria-labelledby',
-				},
-				default: { description: 'Содержимое. Длинное прокручивается внутри' },
-				footer: { description: 'Подвал — ряд действий' },
-				'close-icon': { description: 'Иконка кнопки закрытия' },
-			},
 			props: {
 				width: { type: [Number, String], triggers: ['change:width'] },
 				height: { type: [Number, String], triggers: ['change:height'] },

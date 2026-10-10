@@ -38,13 +38,19 @@ export type UseProps<
  * HTML-атрибуты DOM-компонента без пропсов, событий и слотов дескриптора.
  *
  * Вход дескриптора важнее одноимённого атрибута: пересечение сузило бы его до
- * типа атрибута. `children` из HTMLAttributes объявлен `ReactNode` и убил бы
- * форму-функцию scoped-слота (`ReactNode | ((scope) => ReactNode)`),
- * `content` — атрибут RDFa со строкой — не пустил бы разметку в слот
- * `content` у Label, а `onInput` DOM свёл бы колбэк события `input` у полей с
- * обработчиком `FormEvent` в функцию, которой не написать. В рантайме этих
- * имён в атрибутах и нет: `forward` связки съедает пропсы, события и слоты
- * дескриптора.
+ * типа атрибута. `content` — атрибут RDFa со строкой — не пустил бы разметку в
+ * слот `content` у Label, а `onInput` DOM свёл бы колбэк события `input` у
+ * полей с обработчиком `FormEvent` в функцию, которой не написать. В рантайме
+ * этих имён в атрибутах и нет: `forward` связки съедает пропсы, события и
+ * слоты дескриптора.
+ *
+ * `children` вычитается всегда, а не только у компонента со слотом `default`:
+ * содержимое — это только слот `default`. `DOMAttributes.children` вернул бы
+ * его компоненту, чья разметка содержимого не рисует:
+ * `<CheckBox>подпись</CheckBox>` компилировался бы, а `forward` связки молча
+ * съедал бы подпись. Компоненту со слотом `children` даёт `SlotProps`, и
+ * атрибут `ReactNode` не сужает форму-функцию scoped-слота
+ * (`ReactNode | ((scope) => ReactNode)`). Так же вычитают Solid и Svelte.
  *
  * Защищённые пропсы — тоже: `forward` съедает и их, хотя входа у разметки нет
  * (`DescriptorAllProps` их вычитает). Без вычета атрибут с тем же именем
@@ -64,6 +70,7 @@ export type TDomAttributes<
 	TEvents extends object = EventProps<TDescriptorFn>,
 > = Omit<
 	TAttributes,
+	| 'children'
 	| keyof DescriptorAllProps<TDescriptorFn>
 	| TContractOf<TDescriptorFn>['protectedName']
 	| keyof SlotProps<TDescriptorFn>

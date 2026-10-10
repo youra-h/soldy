@@ -1,10 +1,10 @@
 /**
  * Дескриптор Input (TInput).
  *
- * Наследует FieldDescriptor (кнопка очистки — clearable, clearAria, слот
- * `clear` — поверх readonly, required, value, name, disabled, focused, size,
- * variant, ...) и добавляет placeholder, слоты `leading` и `trailing` +
- * плагины имён, input-control, input.
+ * Наследует FieldDescriptor (кнопка очистки — clearable, clearAria — поверх
+ * readonly, required, value, name, disabled, focused, size, variant, ...) и
+ * добавляет placeholder, слоты `leading`, `clear` и `trailing` + плагины имён,
+ * input-control, input.
  */
 
 import { defineComponent, defineDescriptor, defineType } from '../../../protected/define'
@@ -29,11 +29,19 @@ export const InputDescriptor = defineDescriptor(() =>
 			 * имеет. Содержимое получает сам инстанс поля — кнопке рядом с
 			 * полем нужны его значение и методы. Кнопка очистки стоит в обёртке
 			 * `trailing` перед его содержимым.
+			 *
+			 * Своя кнопка очистки (`clear`) заменяет встроенную целиком и
+			 * рисуется, когда задана, без `clearable`. Scope — команда поля
+			 * `clear`, привязанная к инстансу: кнопка зовёт её голой функцией.
 			 */
 			slots: {
 				leading: {
 					scope: { ctrl: defineType<IInput>(Object) },
 					description: 'Перед полем ввода',
+				},
+				clear: {
+					scope: { clear: defineType<() => void>(Function) },
+					description: 'Кнопка очистки значения',
 				},
 				trailing: {
 					scope: { ctrl: defineType<IInput>(Object) },

@@ -194,12 +194,14 @@ export type TPluginContractFrom<TInstance, N extends string | undefined, TContri
 /* Вывод в defineComponent: контракт компонента из его опций                   */
 /* -------------------------------------------------------------------------- */
 
-/** Контракт дескриптора без `extends`: ни инстанса, ни имён, ни слотов, ни плагинов. */
+/**
+ * Что наследник берёт у дескриптора без `extends`: ни инстанса, ни имён, ни
+ * плагинов. Слотов здесь нет — у родителя их не берут (`TContractFrom`).
+ */
 type TRootContract = {
 	instance: object
 	eventName: never
 	protectedName: never
-	slots: object
 	plugins: { props: object; events: object; outputs: object }
 }
 
@@ -228,23 +230,10 @@ type TSlotScope<TSlot> = TSlot extends {
 	? { -readonly [K in keyof TScope]: TScope[K] extends TPropType<infer T> ? T : never }
 	: TEmptySlotScope
 
-/** Слоты из объявления `contribution.slots`: имя слота → его scope. */
+/** Слоты из объявления `contribution.slots`: имя слота → его scope; объявления нет — слотов нет. */
 type TDeclaredSlots<TContribution> = TContribution extends { readonly slots: infer S }
 	? { -readonly [K in keyof S]: TSlotScope<S[K]> }
 	: object
-
-/**
- * Слоты наследника: родительские, перекрытые одноимёнными своими, — как в
- * рантайме (`TComponentDescriptor`). Так Button уточняет `default`,
- * объявленный у ComponentView: добавляет scope `text`.
- */
-type TMergeSlots<TParent extends object, TOwn extends object> = {
-	[K in keyof TParent | keyof TOwn]: K extends keyof TOwn
-		? TOwn[K]
-		: K extends keyof TParent
-			? TParent[K]
-			: never
-}
 
 /** Объединение → пересечение: сумма частей контрактов всех плагинов списка. */
 type TIntersection<TUnion> = (TUnion extends unknown ? (part: TUnion) => void : never) extends (
@@ -271,7 +260,13 @@ type TOptionsPlugins<TOptions> = TOptions extends { readonly plugins: readonly (
 		}
 	: { props: object; events: object; outputs: object }
 
-/** Контракт дескриптора из опций `defineComponent`: своё поверх родительского. */
+/**
+ * Контракт дескриптора из опций `defineComponent`: своё поверх родительского.
+ *
+ * Слоты — только свои, как и в рантайме (`TComponentDescriptor`): они
+ * описывают разметку, а разметка у наследника своя, и слоты `extends` ей
+ * ничего не обещают.
+ */
 export type TContractFrom<TOptions> = {
 	instance: TOptionsInstance<TOptions>
 	eventName:
@@ -283,10 +278,7 @@ export type TContractFrom<TOptions> = {
 				TInputKey<TDeclaredProps<TOptionsContribution<TOptions>>>
 		  >
 		| TProtectedKey<TDeclaredProps<TOptionsContribution<TOptions>>>
-	slots: TMergeSlots<
-		TParentContract<TOptions>['slots'],
-		TDeclaredSlots<TOptionsContribution<TOptions>>
-	>
+	slots: TDeclaredSlots<TOptionsContribution<TOptions>>
 	plugins: {
 		props: TParentContract<TOptions>['plugins']['props'] & TOptionsPlugins<TOptions>['props']
 		events: TParentContract<TOptions>['plugins']['events'] & TOptionsPlugins<TOptions>['events']
@@ -384,7 +376,7 @@ export type DescriptorAllProps<T> = DescriptorProps<T> & TContractOf<T>['plugins
 export type DescriptorPluginOutputs<T> = TContractOf<T>['plugins']['outputs']
 
 /**
- * Слоты дескриптора, имя → scope:
+ * Слоты дескриптора, имя → scope, — только объявленные им самим, без слотов `extends`:
  * DescriptorSlots<typeof ButtonDescriptor> → { leading: TEmptySlotScope; default: { text: string }; trailing: TEmptySlotScope }
  */
 export type DescriptorSlots<T> = TContractOf<T>['slots']

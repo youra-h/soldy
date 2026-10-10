@@ -5,17 +5,16 @@
  * дескрипторе, и все адаптеры обязаны реализовать ровно их. Здесь проверяется
  * Vue; остальные адаптеры проверяют себя в своих пакетах.
  *
- * Сверяется разметка каждого компонента: её слот объявлен в дескрипторе, и
- * ключи scope те же. Необъявленный слот жил бы только во Vue: React, Solid и
- * Svelte берут имена из дескриптора, и при переносе компонента такой слот не
- * попал бы в тип пропсов, а уехал бы в DOM атрибутом. Так было у Input,
- * CheckBox, Switch, Tabs.Item, Accordion.Item и DragAndDrop.
- *
- * Обратной сверки у всех нет: `default` объявлен у ComponentView и достаётся
- * каждому визуальному компоненту, в том числе тем, у кого в разметке его нет
- * (Icon, Input, CheckBox, Switch, Slider), а снять унаследованный слот
- * объявлением наследника нельзя. Ровно слоты дескриптора сверяются у
- * компонентов блока «соответствие контракту».
+ * Разметка каждого компонента сверяется с дескриптором в обе стороны. Её слот
+ * объявлен в дескрипторе, и ключи scope те же: необъявленный слот жил бы только
+ * во Vue — React, Solid и Svelte берут имена из дескриптора, и при переносе
+ * компонента такой слот не попал бы в тип пропсов, а уехал бы в DOM атрибутом.
+ * Так было у Input, CheckBox, Switch, Tabs.Item, Accordion.Item и DragAndDrop.
+ * И обратно: каждый слот дескриптора разметка рисует. Слот без места тип
+ * адаптеров принимает, а содержимое молча пропадает: так было у Icon, Input,
+ * CheckBox, Switch и Slider, которым `default` доставался наследованием от
+ * ComponentView. Поэтому слоты не наследуются — дескриптор объявляет ровно те,
+ * что рисует его шаблон, и исключений у сверки нет.
  */
 
 import { describe, it, expect } from 'vitest'
@@ -236,99 +235,39 @@ describe('разбор разметки', () => {
 	})
 })
 
-describe('соответствие контракту', () => {
-	it('Button: разметка объявляет ровно слоты дескриптора', () => {
-		expect(templateSlots('button/Button.vue')).toEqual(
-			ButtonDescriptor()
-				.slots.map((slot) => slot.name)
-				.sort(),
-		)
-	})
+/** Объявленные слоты шаблона, имя → ключи scope по порядку; шаблон без строки в таблице роняет тест. */
+function declaredSlots(file: string): Map<string, string[]> {
+	const descriptor = DESCRIPTORS[file]
 
-	it('Calendar.Item: один слот по умолчанию с текстом дня', () => {
-		expect(templateSlots('calendar/item/Item.vue')).toEqual(
-			CalendarItemDescriptor()
-				.slots.map((slot) => slot.name)
-				.sort(),
-		)
-	})
+	if (!descriptor) throw new Error(`${file}: нет строки в таблице «шаблон → дескриптор»`)
 
-	it('ComponentView: то же для одного слота по умолчанию', () => {
-		expect(templateSlots('component-view/ComponentView.vue')).toEqual(
-			ComponentViewDescriptor()
-				.slots.map((slot) => slot.name)
-				.sort(),
-		)
-	})
+	return new Map(
+		descriptor().slots.map((slot) => [slot.name, Object.keys(slot.scope ?? {}).sort()]),
+	)
+}
 
-	it('Dialog: заголовок, содержимое, подвал и иконки кнопок шапки', () => {
-		expect(templateSlots('dialog/Dialog.vue')).toEqual(
-			DialogDescriptor()
-				.slots.map((slot) => slot.name)
-				.sort(),
-		)
-	})
-
-	it('Drawer: заголовок, содержимое, подвал и иконка крестика', () => {
-		expect(templateSlots('drawer/Drawer.vue')).toEqual(
-			DrawerDescriptor()
-				.slots.map((slot) => slot.name)
-				.sort(),
-		)
-	})
-
-	it('Label: контрол в default и текст в content', () => {
-		expect(templateSlots('label/Label.vue')).toEqual(
-			LabelDescriptor()
-				.slots.map((slot) => slot.name)
-				.sort(),
-		)
-	})
-
-	it('Popover: триггер, содержимое панели и иконка крестика', () => {
-		expect(templateSlots('popover/Popover.vue')).toEqual(
-			PopoverDescriptor()
-				.slots.map((slot) => slot.name)
-				.sort(),
-		)
-	})
-
-	it('Tags: слоты тегов', () => {
-		expect(templateSlots('tags/Tags.vue')).toEqual(
-			TagsDescriptor()
-				.slots.map((slot) => slot.name)
-				.sort(),
-		)
-	})
-
-	it('Tooltip: триггер и текст подсказки', () => {
-		expect(templateSlots('tooltip/Tooltip.vue')).toEqual(
-			TooltipDescriptor()
-				.slots.map((slot) => slot.name)
-				.sort(),
-		)
-	})
-})
-
-describe('каждый слот разметки объявлен в дескрипторе', () => {
+describe('разметка рисует ровно слоты своего дескриптора', () => {
 	it('у каждого шаблона компонента есть дескриптор, и лишних строк нет', () => {
 		expect(Object.keys(DESCRIPTORS).sort()).toEqual(templates)
 	})
 
-	it.each(templates)('%s', (file) => {
-		const descriptor = DESCRIPTORS[file]
+	describe('место слота объявлено, и scope тот же', () => {
+		it.each(templates)('%s', (file) => {
+			const declared = declaredSlots(file)
+			const outlets = templateOutlets(file)
 
-		if (!descriptor) throw new Error(`${file}: нет строки в таблице «шаблон → дескриптор»`)
+			// Каждое место слота — с его именем: необъявленный слот даёт `undefined`
+			expect(outlets.map(({ name }) => [name, declared.get(name)])).toEqual(
+				outlets.map(({ name, scope }) => [name, scope]),
+			)
+		})
+	})
 
-		const declared = new Map(
-			descriptor().slots.map((slot) => [slot.name, Object.keys(slot.scope ?? {}).sort()]),
-		)
-		const outlets = templateOutlets(file)
-
-		// Каждое место слота — с его именем: необъявленный слот даёт `undefined`
-		expect(outlets.map(({ name }) => [name, declared.get(name)])).toEqual(
-			outlets.map(({ name, scope }) => [name, scope]),
-		)
+	describe('объявленный слот разметка рисует', () => {
+		it.each(templates)('%s', (file) => {
+			// Слот без места тип адаптеров принимает, а содержимое пропадает молча
+			expect([...declaredSlots(file).keys()].sort()).toEqual(templateSlots(file))
+		})
 	})
 })
 

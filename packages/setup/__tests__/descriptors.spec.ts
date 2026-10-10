@@ -415,10 +415,11 @@ describe('поле: кнопка очистки', () => {
 		['Input', InputDescriptor],
 		['DateInput', DateInputDescriptor],
 		['DatePicker', DatePickerDescriptor],
-	])('%s наследует кнопку очистки и слот clear', (_name, factory) => {
+	])('%s наследует кнопку очистки, а слот clear объявляет сам', (_name, factory) => {
 		const d = factory()
 
 		expect(propNames(d)).toEqual(expect.arrayContaining(['clearable', 'clearAria']))
+		// Слоты не наследуются: кнопку рисует разметка формы, и слот — её
 		expect(d.slots.map((slot) => slot.name)).toContain('clear')
 	})
 

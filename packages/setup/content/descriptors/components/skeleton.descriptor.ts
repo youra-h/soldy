@@ -2,7 +2,7 @@
  * Дескриптор Skeleton (TSkeleton).
  *
  * Наследует ComponentViewDescriptor (rendered, visible, present, tag, classes, element, instance)
- * и добавляет variant, shape, animation, width, height + плагин SkeletonLayout.
+ * и добавляет слот `default`, variant, shape, animation, width, height + плагин SkeletonLayout.
  * `variant` объявлен здесь, а не взят у Stylable: `TSkeleton` наследует
  * `TComponentView`, и `size` у него нет.
  */
@@ -19,6 +19,9 @@ export const SkeletonDescriptor = defineDescriptor(() =>
 		extends: ComponentViewDescriptor(),
 
 		contribution: {
+			slots: {
+				default: { description: 'Настоящее содержимое: скрыто, пока видна заглушка' },
+			},
 			props: {
 				variant: { type: String, triggers: ['change:variant'] },
 				shape: { type: String, triggers: ['change:shape'] },

@@ -1,0 +1,6 @@
+---
+'@soldy-ui/setup': minor
+'@soldy-ui/react': minor
+---
+
+Слоты больше не наследуются через `extends`: дескриптор объявляет ровно те, что рисует разметка его компонента, — и в рантайме (`slots`), и в типе (`DescriptorSlots`); пропсы, события и плагины наследуются как прежде. Поэтому `default` от ComponentView больше не достаётся компонентам без содержимого — Icon, Input, CheckBox, Switch, Slider, ProgressLinear, ProgressSpinner, Calendar, Table, Table.Row, DateInput, DatePicker: раньше React принимал у них `children` по типу, а содержимое молча пропадало. В React `children` больше не приходит и из атрибутов DOM (`TDomAttributes`), как в Solid и Svelte: содержимое — только слот `default`. Ломающее: дескриптор-наследник теряет слоты родителя — объявите в его `slots` всё, что рисует его шаблон, включая `default`. У баз без своей разметки (`ModalLayerDescriptor`, `FieldDescriptor`, `ControlDescriptor`, `StylableDescriptor`, `TextableDescriptor`) слотов нет, и `ControlProps`, `StylableProps`, `TextableProps` адаптеров `children` не принимают; `clear` объявляют Input, DateInput и DatePicker, `close-icon` — Dialog и Drawer. У `TSlotDeclaration` больше нет `key` и `inheritFrom`. Подпись контрола — `Label` вложением, а не содержимое CheckBox или Switch.
