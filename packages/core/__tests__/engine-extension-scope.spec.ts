@@ -9,10 +9,14 @@ import * as ts from 'typescript'
  * коллекций; понятие отдельного расширения не должно проникать туда ни флагом
  * команды, ни событием драйвера.
  *
- * Имена расширений собираются из `readonly name = '...'`, поэтому новое
- * расширение попадает под проверку само. Ищутся они словами в идентификаторах
- * и строках кода ядра движка (`orderChanged`, `'change:order'`); комментарии —
- * не код, в них ссылаться на расширения можно.
+ * Имя расширения — строка, которой класс инициализирует свойство `name`
+ * (`'order' as const`, `name: string = 'list'`). Имена собираются по
+ * синтаксическому дереву, поэтому новое расширение попадает под проверку само,
+ * а инициализатор, из которого строку не достать, роняет тест: имени, которого
+ * сторож не прочёл, он бы и не проверил. Ищется имя своими словами подряд
+ * внутри идентификатора или строки кода ядра движка (`orderChanged`,
+ * `'change:order'`, `positionInSetFlag`); комментарии — не код, в них
+ * ссылаться на расширения можно.
  *
  * Ловится имя, а не смысл: переименованный флаг сторож пропустит.
  */
@@ -24,9 +28,11 @@ const ENGINE_DIR = join(COMPONENTS_DIR, 'base/collection/engine')
 /** Стандартные расширения — в движке, свои — у коллекций компонентов. */
 const EXTENSION_DIR = /[\\/](engine[\\/]extension|collection[\\/]extensions)[\\/]/
 
-const EXTENSION_NAME = /readonly name = '([a-z]+)' as const/g
-
-/** Слова, которыми ядро пользуется само — совпадение с именем расширения случайно. */
+/**
+ * Слова, которыми ядро пользуется само, — расширение с таким именем совпадает
+ * с ядром случайно. Сверяется имя целиком: имя из нескольких слов, где есть
+ * такое слово, проверяется.
+ */
 const ENGINE_OWN_WORDS = new Set([
 	// `driver.batch()` — операция драйвера, расширение `batch` названо по ней.
 	'batch',
@@ -42,6 +48,12 @@ const BUILTIN_MEMBERS = new Set(
 		(proto) => Object.getOwnPropertyNames(proto),
 	),
 )
+
+/** Объявление имени; `name` пуст, если строку из инициализатора не достать. */
+type TDeclaredName = { name: string | undefined; line: number }
+
+/** Имя расширения внутри идентификатора или строки кода. */
+type TMention = { name: string; text: string; line: number }
 
 function collectSourceFiles(dir: string, files: string[] = []): string[] {
 	for (const name of readdirSync(dir)) {
@@ -61,18 +73,55 @@ function toRelative(file: string): string {
 	return relative(ROOT, file).split('\\').join('/')
 }
 
-function collectExtensionNames(): Set<string> {
-	const names = new Set<string>()
+function parse(file: string): ts.SourceFile {
+	return ts.createSourceFile(file, readFileSync(file, 'utf-8'), ts.ScriptTarget.Latest)
+}
 
-	for (const file of collectSourceFiles(COMPONENTS_DIR)) {
-		if (!EXTENSION_DIR.test(file)) continue
+function lineOf(source: ts.SourceFile, node: ts.Node): number {
+	return source.getLineAndCharacterOfPosition(node.getStart(source)).line + 1
+}
 
-		for (const match of readFileSync(file, 'utf-8').matchAll(EXTENSION_NAME)) {
-			names.add(match[1])
+/** Строка литерала, в том числе под `as const`. */
+function literalText(expression: ts.Expression): string | undefined {
+	if (ts.isStringLiteralLike(expression)) return expression.text
+	if (ts.isAsExpression(expression)) return literalText(expression.expression)
+
+	return undefined
+}
+
+/**
+ * Имена, которыми классы файла инициализируют свойство `name`: литерал, под
+ * `as const`, с аннотацией типа, с `readonly` и без. Объявление без
+ * инициализатора (`abstract` у базы) имени не даёт и пропускается.
+ */
+function declaredNames(source: ts.SourceFile): TDeclaredName[] {
+	const declared: TDeclaredName[] = []
+
+	const visit = (node: ts.Node): void => {
+		if (
+			ts.isPropertyDeclaration(node) &&
+			ts.isIdentifier(node.name) &&
+			node.name.text === 'name' &&
+			node.initializer
+		) {
+			declared.push({ name: literalText(node.initializer), line: lineOf(source, node) })
 		}
+
+		ts.forEachChild(node, visit)
 	}
 
-	return names
+	visit(source)
+
+	return declared
+}
+
+/** Объявления имён во всех файлах расширений, с файлом для места `файл:строка`. */
+function collectDeclaredNames(): (TDeclaredName & { file: string })[] {
+	return collectSourceFiles(COMPONENTS_DIR)
+		.filter((file) => EXTENSION_DIR.test(file))
+		.flatMap((file) =>
+			declaredNames(parse(file)).map((declared) => ({ ...declared, file: toRelative(file) })),
+		)
 }
 
 /** `TOrderExtension` → `t order extension`, `'change:order'` → `change order`. */
@@ -86,8 +135,7 @@ function splitWords(text: string): string[] {
 }
 
 /** Идентификаторы и строки кода. Комментарии и JSDoc в AST узлами не бывают. */
-function codeTexts(file: string): { text: string; line: number }[] {
-	const source = ts.createSourceFile(file, readFileSync(file, 'utf-8'), ts.ScriptTarget.Latest)
+function codeTexts(source: ts.SourceFile): { text: string; line: number }[] {
 	const texts: { text: string; line: number }[] = []
 
 	const visit = (node: ts.Node): void => {
@@ -97,9 +145,7 @@ function codeTexts(file: string): { text: string; line: number }[] {
 			ts.isStringLiteralLike(node) ||
 			ts.isTemplateLiteralToken(node)
 		) {
-			const line = source.getLineAndCharacterOfPosition(node.getStart(source)).line + 1
-
-			texts.push({ text: node.text, line })
+			texts.push({ text: node.text, line: lineOf(source, node) })
 		}
 
 		ts.forEachChild(node, visit)
@@ -110,24 +156,60 @@ function codeTexts(file: string): { text: string; line: number }[] {
 	return texts
 }
 
+/** Стоят ли слова `run` подряд среди `words`. */
+function containsRun(words: readonly string[], run: readonly string[]): boolean {
+	return words.some((_, start) => run.every((word, offset) => words[start + offset] === word))
+}
+
+/**
+ * Имена в коде файла: имя своими словами подряд внутри идентификатора или
+ * строки — `positionInSet` в `positionInSetFlag`, но не в соседних `position`
+ * и `'in set'`.
+ */
+function mentions(source: ts.SourceFile, names: readonly string[]): TMention[] {
+	const runs = names.map((name) => ({ name, words: splitWords(name) }))
+
+	return codeTexts(source)
+		.filter(({ text }) => !BUILTIN_MEMBERS.has(text))
+		.flatMap(({ text, line }) => {
+			const words = splitWords(text)
+
+			return runs
+				.filter((run) => containsRun(words, run.words))
+				.map(({ name }) => ({ name, text, line }))
+		})
+}
+
 describe('engine extension scope guard', () => {
+	it('имя каждого расширения прочитано', () => {
+		const declared = collectDeclaredNames()
+		const unread = declared
+			.filter(({ name }) => name === undefined)
+			.map(({ file, line }) => `${file}:${line}`)
+
+		expect(declared.length, 'не найдено ни одного расширения — сломан поиск').toBeGreaterThan(0)
+		expect(
+			unread,
+			`Имя расширения — не строка в инициализаторе \`name\`, сторож его не проверит:\n` +
+				unread.join('\n'),
+		).toEqual([])
+	})
+
 	it('в коде ядра движка нет имён расширений', () => {
-		const names = collectExtensionNames()
+		const extensionNames = new Set(
+			collectDeclaredNames().flatMap(({ name }) => (name === undefined ? [] : [name])),
+		)
+		const names = [...extensionNames].filter((name) => !ENGINE_OWN_WORDS.has(name))
 		const engineFiles = collectSourceFiles(ENGINE_DIR).filter(
 			(file) => !EXTENSION_DIR.test(file),
 		)
 
-		expect(names.size, 'не найдено ни одного расширения — сломан поиск').toBeGreaterThan(0)
 		expect(engineFiles.length, 'не найдено ни одного файла ядра движка').toBeGreaterThan(0)
 
 		const violations = engineFiles.flatMap((file) =>
-			codeTexts(file)
-				.filter(({ text }) => !BUILTIN_MEMBERS.has(text))
-				.flatMap(({ text, line }) =>
-					splitWords(text)
-						.filter((word) => names.has(word) && !ENGINE_OWN_WORDS.has(word))
-						.map((word) => `${toRelative(file)}:${line} — «${word}» в \`${text}\``),
-				),
+			mentions(parse(file), names).map(
+				({ name, text, line }) => `${toRelative(file)}:${line} — «${name}» в \`${text}\``,
+			),
 		)
 
 		expect(
@@ -135,5 +217,39 @@ describe('engine extension scope guard', () => {
 			`Понятие расширения в ядре движка (см. AGENTS.md,` +
 				` "Движок не знает о конкретных расширениях"):\n${violations.join('\n')}`,
 		).toEqual([])
+	})
+
+	describe('поиск', () => {
+		const fixture = (lines: string[]): ts.SourceFile =>
+			ts.createSourceFile('fixture.ts', lines.join('\n'), ts.ScriptTarget.Latest)
+
+		it('имя — строка инициализатора name', () => {
+			const source = fixture([
+				'abstract class TBase { abstract readonly name: string }',
+				"class TPosition extends TBase { readonly name = 'positionInSet' as const }",
+				"class TList extends TBase { readonly name: string = 'list' }",
+				"class TPlain extends TBase { name = 'plain' }",
+				'class TNamed extends TBase { readonly name = NAME }',
+			])
+
+			expect(declaredNames(source)).toEqual([
+				{ name: 'positionInSet', line: 2 },
+				{ name: 'list', line: 3 },
+				{ name: 'plain', line: 4 },
+				{ name: undefined, line: 5 },
+			])
+		})
+
+		it('имя из нескольких слов — подряд внутри идентификатора или строки', () => {
+			const source = fixture([
+				'// positionInSet — в комментарии можно',
+				'const positionInSetFlag = true',
+				"const position = 'in set'",
+			])
+
+			expect(mentions(source, ['positionInSet'])).toEqual([
+				{ name: 'positionInSet', text: 'positionInSetFlag', line: 2 },
+			])
+		})
 	})
 })
