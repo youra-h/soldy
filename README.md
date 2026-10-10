@@ -239,8 +239,9 @@ npm run lint        # ESLint
 The playground's overview page shows every component. A component page renders each prop twice —
 from props and from a core instance passed as `ctrl` — with the code for both. Components are drawn
 by the framework picked in the header (Vue, React); the framework is the first segment of the
-address, `#/react/button`. The rest of the commands are listed in
-[AGENTS.md → Commands](AGENTS.md#commands).
+address, `#/react/button`. The playground's pages, layout and tests are described in
+[packages/playground/README.md](packages/playground/README.md). The rest of the commands are listed
+in [AGENTS.md → Commands](AGENTS.md#commands).
 
 ## Roadmap
 
@@ -260,6 +261,8 @@ On the way there:
 - [AGENTS.md](AGENTS.md) — project rules and conventions, mostly in Russian.
 - [packages/themes/oren/AGENTS.md](packages/themes/oren/AGENTS.md) — the oren theme: scales, color
   schemes, tokens (in Russian).
+- [packages/playground/README.md](packages/playground/README.md) — the playground: hosts of the
+  frameworks, pages, layout, tests.
 - [ACCESSIBILITY.md](ACCESSIBILITY.md) — accessibility commitment, known limitations and how to
   report a barrier.
 - [CONTRIBUTING.md](CONTRIBUTING.md) — how to report issues and propose changes.
