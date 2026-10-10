@@ -227,7 +227,7 @@ import { <Name>InputNames, T<Name>Surface } from './base.component'
 import { setup<Name> } from './setup.component'
 
 @Component({
-  selector: 'soldy-<name>',
+  selector: 'so-<name>',
   standalone: true,
   imports: [NgClass, NgTemplateOutlet, AriaDirective],
   changeDetection: ChangeDetectionStrategy.OnPush,

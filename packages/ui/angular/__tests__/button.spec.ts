@@ -230,8 +230,8 @@ describe('Button · внешний ctrl', () => {
 @Component({
 	standalone: true,
 	imports: [TButtonComponent],
-	template: `<soldy-button [text]="text"
-		><i slot="leading">L</i><i slot="trailing">T</i></soldy-button
+	template: `<so-button [text]="text"
+		><i slot="leading">L</i><i slot="trailing">T</i></so-button
 	>`,
 })
 class NamedSlotsHost {
@@ -241,18 +241,18 @@ class NamedSlotsHost {
 @Component({
 	standalone: true,
 	imports: [TButtonComponent],
-	template: `<soldy-button text="ignored"><b>Custom</b></soldy-button>`,
+	template: `<so-button text="ignored"><b>Custom</b></so-button>`,
 })
 class DefaultSlotHost {}
 
 @Component({
 	standalone: true,
 	imports: [TButtonComponent, SlotDirective],
-	template: `<soldy-button [text]="text">
+	template: `<so-button [text]="text">
 		<ng-template slot="default" let-scope="text"
 			><b>{{ scope }}!</b></ng-template
 		>
-	</soldy-button>`,
+	</so-button>`,
 })
 class ScopedSlotHost {
 	text = 'Scoped'
@@ -265,7 +265,7 @@ function mountHost<T>(host: Type<T>): Element {
 	fixture.detectChanges()
 
 	const element: HTMLElement = fixture.nativeElement
-	const button = element.querySelector('soldy-button')?.firstElementChild
+	const button = element.querySelector('so-button')?.firstElementChild
 
 	if (!button) throw new Error('Корень Button не отрисован')
 

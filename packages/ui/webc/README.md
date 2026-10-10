@@ -9,7 +9,7 @@ Web Components.
 The adapter is wiring, not behavior: it defines a Custom Element per component and renders the
 markup — BEM classes `s-*` and `data-*` state attributes. Props, events and slots come from the
 component descriptor, so they match the other five adapters; only the spelling is the platform's:
-tags are prefixed (`<soldy-button>`), props are attributes or element properties, and events are
+tags are prefixed (`<so-button>`), props are attributes or element properties, and events are
 DOM events with the core names (`action:press`).
 
 Shadow DOM is not used — a theme styles global BEM classes, so light DOM is distributed by the
@@ -35,7 +35,7 @@ import '@soldy-ui/webc'
 ```
 
 ```html
-<soldy-button text="Save"><i slot="leading">★</i></soldy-button>
+<so-button text="Save"><i slot="leading">★</i></so-button>
 ```
 
 From JavaScript the element is the component: props are its properties, events are DOM events, and
@@ -44,7 +44,7 @@ a core instance can be handed over as `ctrl`:
 ```ts
 import { TButton } from '@soldy-ui/core'
 
-const el = document.querySelector('soldy-button')
+const el = document.querySelector('so-button')
 
 el.ctrl = new TButton({ text: 'Save' })
 el.disabled = false

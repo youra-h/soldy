@@ -52,7 +52,7 @@ const ATTRIBUTE_MAPS = new WeakMap<IComponentDescriptor, Map<string, IAttributeB
  *
  * Признак — атрибут `slot` на элементе, как в стандарте. Текстовые узлы
  * атрибутов не имеют и всегда попадают в слот по умолчанию, поэтому
- * `<soldy-button>Текст</soldy-button>` работает как раньше.
+ * `<so-button>Текст</so-button>` работает как раньше.
  */
 function groupBySlot(nodes: readonly ChildNode[]): Map<string, ChildNode[]> {
 	const groups = new Map<string, ChildNode[]>()
