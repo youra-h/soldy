@@ -1,5 +1,5 @@
 import type { ReactElement } from 'react'
-import { Elevate, hasSlot, renderSlot, toAriaProps, toRootProps } from '../../adapter'
+import { Elevate, hasSlot, relaySlot, renderSlot, toAriaProps, toRootProps } from '../../adapter'
 import { TabsItem } from './item'
 import { useSetupTabs } from './setup.component'
 import type { TabsProps } from './base.component'
@@ -13,10 +13,12 @@ import type { TabsProps } from './base.component'
  * как у Vue.
  *
  * Табы — дети (`<Tabs.Item>`), а без детей — `shown` коллекции, по `TabsItem`
- * на элемент. Слоты элементов статические и получают элемент через scope:
- * `item`, `item-leading`, `item-trailing`. Панели (`<Tabs.Content>`) — слот
- * `content`, вне списка: дети лежат внутри `[role=tablist]`, и панель там
- * оказалась бы в списке табов.
+ * на элемент. Слоты элементов статические и получают элемент через scope.
+ * Проброс целиком: у каждого слота таба есть `item-<слот>` (`default` —
+ * `item`), и scope у него — scope слота таба плюс сам таб; слот со scope таб
+ * получает функцией (`relaySlot`), а не готовым узлом. Панели
+ * (`<Tabs.Content>`) — слот `content`, вне списка: дети лежат внутри
+ * `[role=tablist]`, и панель там оказалась бы в списке табов.
  *
  * Список и панели — в слое лифта набора (`Elevate`): таб, смонтированный
  * внутри, при коммите войдёт в его коллекцию, а панель найдёт свой таб в его
@@ -44,8 +46,9 @@ export function Tabs(props: TabsProps): ReactElement | null {
 									ctrl={item}
 									leading={renderSlot(props['item-leading'], { item })}
 									trailing={renderSlot(props['item-trailing'], { item })}
+									close-icon={renderSlot(props['item-close-icon'], { item })}
 								>
-									{renderSlot(props.item, { item })}
+									{relaySlot(props.item, { item })}
 								</TabsItem>
 							))}
 					{hasSlot(props.trailing) ? (

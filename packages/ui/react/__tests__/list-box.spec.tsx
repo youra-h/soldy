@@ -406,6 +406,93 @@ describe('отметка выбранного и слоты', () => {
 		expect(document.querySelector('.head')?.textContent).toBe('шапка')
 		expect(document.querySelector('.foot')?.textContent).toBe('подвал')
 	})
+
+	/**
+	 * Проброс целиком: scope `item` — scope слота элемента плюс сам элемент.
+	 * Узел, который нарисовал бы список, scope элемента терял бы: `text` и
+	 * `selected` держит элемент.
+	 */
+	it('item получает text и selected элемента, selected следует за выбором', () => {
+		mount(
+			<ListBox
+				items={ITEMS.slice(0, 2)}
+				item={({ item, text, selected }) =>
+					`${String(item.value)}:${text}:${String(selected)}`
+				}
+			/>,
+		)
+
+		expect(rows().map((row) => row.textContent?.trim())).toEqual([
+			'a:Первый:false',
+			'b:Второй:false',
+		])
+
+		click(rowOf('b:Второй:false'))
+
+		expect(rows().map((row) => row.textContent?.trim())).toEqual([
+			'a:Первый:false',
+			'b:Второй:true',
+		])
+	})
+
+	it('item-indicator-icon подменяет отметку одному элементу, у остальных — своя', () => {
+		mount(
+			<ListBox
+				items={ITEMS.slice(0, 2)}
+				mode="multiple"
+				indicator="start"
+				item-indicator-icon={({ item, selected }) =>
+					item.value === 'a' ? <b className="probe">{String(selected)}</b> : null
+				}
+			/>,
+		)
+		const marks = () =>
+			[...document.querySelectorAll('.s-list-box-item__indicator')].map((indicator) =>
+				indicator.querySelector('.probe')
+					? `slot:${indicator.textContent ?? ''}`
+					: indicator.querySelector('svg')
+						? 'icon'
+						: 'empty',
+			)
+		// Текст отметки входит в текст строки — строки берём по месту
+		const rowAt = (index: number) => find(listItems()[index], '.s-button', HTMLElement)
+
+		expect(marks()).toEqual(['slot:false', 'empty'])
+
+		click(rowAt(0))
+		click(rowAt(1))
+
+		expect(marks()).toEqual(['slot:true', 'icon'])
+	})
+
+	it('empty — пока элементов нет: после шапки, перед подвалом; появились — пропал', () => {
+		const { root, render } = mount(
+			<ListBox
+				items={[]}
+				header={<i className="head" />}
+				empty={<p className="probe">Пусто</p>}
+				footer={<i className="foot" />}
+			/>,
+		)
+
+		expect([...root().children].map((child) => child.className)).toEqual([
+			'head',
+			'probe',
+			'foot',
+		])
+
+		render(
+			<ListBox
+				items={ITEMS.slice(0, 2)}
+				header={<i className="head" />}
+				empty={<p className="probe">Пусто</p>}
+				footer={<i className="foot" />}
+			/>,
+		)
+
+		expect(document.querySelector('.probe')).toBeNull()
+		expect(listItems()).toHaveLength(2)
+	})
 })
 
 describe('типы', () => {
@@ -419,7 +506,12 @@ describe('типы', () => {
 		type TChildren = NonNullable<ListBoxItemProps['children']>
 		type TIndicator = NonNullable<ListBoxItemProps['indicator-icon']>
 
-		expectTypeOf<(scope: { item: IListBoxItem }) => ReactNode>().toExtend<TItemSlot>()
+		expectTypeOf<
+			(scope: { item: IListBoxItem; text: string; selected: boolean }) => ReactNode
+		>().toExtend<TItemSlot>()
+		expectTypeOf<(scope: { item: IListBoxItem; selected: boolean }) => ReactNode>().toExtend<
+			NonNullable<ListBoxProps['item-indicator-icon']>
+		>()
 		expectTypeOf<
 			(scope: { text: string; selected: boolean }) => ReactNode
 		>().toExtend<TChildren>()

@@ -210,6 +210,21 @@ describe('разметка', () => {
 		expect(dayCell('2026-09-05').querySelector('.s-test-day')?.textContent).toBe('5·09-05')
 	})
 
+	/**
+	 * Слот `item` — проброс слота дня: рядом с днём в scope и то, что отдаёт
+	 * слот самого дня, — номер в цифрах локали.
+	 */
+	it('слот item получает и номер дня — scope слота самого дня', async () => {
+		await render(() =>
+			h(Calendar, null, {
+				item: ({ text }: { text: string }) =>
+					h('span', { class: 's-test-day' }, `«${text}»`),
+			}),
+		)
+
+		expect(dayCell('2026-09-05').querySelector('.s-test-day')?.textContent).toBe('«5»')
+	})
+
 	it('без слота день рисует свой номер в плитке', async () => {
 		await render(() => h(Calendar))
 

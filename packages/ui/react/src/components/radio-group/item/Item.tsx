@@ -36,7 +36,8 @@ import type { RadioGroupItemAttributes, RadioGroupItemProps } from './base.compo
  * него, а само поле скрывает. Кольцо и точка — декор без текста: отметку
  * скринридеру сообщает `checked`. Подпись — только слот, своего текста у
  * радио нет; её может не быть, и пустую обёртку тема прячет по `:empty`,
- * поэтому вокруг слота нет ни пробела, ни узла.
+ * поэтому вокруг слота нет ни пробела, ни узла. Scope подписи — отметка радио
+ * (`active`), как у содержимого таба.
  */
 export function RadioGroupItem(props: RadioGroupItemProps): ReactElement | null {
 	const { ref, forwardProps, state, context } = useSetupRadioGroupItem(props)
@@ -67,7 +68,9 @@ export function RadioGroupItem(props: RadioGroupItemProps): ReactElement | null 
 			<span className="s-radio-group-item__control">
 				<span className="s-radio-group-item__indicator" />
 			</span>
-			<span className="s-radio-group-item__text">{renderSlot(props.children)}</span>
+			<span className="s-radio-group-item__text">
+				{renderSlot(props.children, { active: active ?? false })}
+			</span>
 		</Tag>
 	)
 }

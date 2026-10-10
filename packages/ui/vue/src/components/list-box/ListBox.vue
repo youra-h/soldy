@@ -25,7 +25,12 @@ export default { ...SetupListBox, components: { ListBoxItem } }
 				когда он переходит из блока в блок.
 
 				Слоты элементов статические и получают элемент через scope —
-				динамические имена резолвит только Vue (см. Tabs.vue).
+				динамические имена резолвит только Vue (см. Tabs.vue). Проброс
+				целиком: у каждого слота элемента есть `item-<слот>`, и его scope —
+				scope слота элемента плюс сам элемент.
+
+				Отметку элемент рисует сам, пока слот не задан, — поэтому слот
+				отметки отдаётся ему, только когда задан списку.
 			-->
 			<template v-for="entry in drawn" :key="entry.key">
 				<div
@@ -38,15 +43,24 @@ export default { ...SetupListBox, components: { ListBoxItem } }
 					<template #leading>
 						<slot name="item-leading" :item="entry.item" />
 					</template>
-					<template #default>
-						<slot name="item" :item="entry.item" />
+					<template #default="{ text, selected }">
+						<slot name="item" :item="entry.item" :text="text" :selected="selected" />
 					</template>
 					<template #trailing>
 						<slot name="item-trailing" :item="entry.item" />
 					</template>
+					<template v-if="$slots['item-indicator-icon']" #indicator-icon="{ selected }">
+						<slot name="item-indicator-icon" :item="entry.item" :selected="selected" />
+					</template>
 				</ListBoxItem>
 			</template>
 		</slot>
+		<!--
+			Пустой список — как у Select: пока показанных элементов нет, на их
+			месте слот `empty`. Пустой `listbox` для скринридера — тупик, а
+			сообщение объясняет, что происходит.
+		-->
+		<slot v-if="shown.length === 0" name="empty" />
 		<slot name="footer" />
 	</div>
 </template>

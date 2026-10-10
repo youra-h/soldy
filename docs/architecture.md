@@ -786,11 +786,12 @@ ARIA-связка при этом нужна обеим. У Tabs её потре
 #### Слоты элементов: статические имена со scope
 
 Когда элементы заданы пропом `items`, владелец рендерит их сам, а содержимое
-берёт из слотов `item-<что>`, передавая элемент через scope:
+берёт из слотов `item-<что>`, передавая элемент через scope — вместе со scope
+слота самого элемента:
 
 ```html
 <slot name="item-leading" :item="item" />
-<slot name="item" :item="item" />
+<slot name="item" :item="item" :text="text" :selected="selected" />
 <slot name="item-trailing" :item="item" />
 <slot name="item-content" :item="item" />
 <!-- Accordion: панель -->
@@ -798,7 +799,9 @@ ARIA-связка при этом нужна обеим. У Tabs её потре
 
 Динамических имён (`item:${item.value}:leading`, `panel:${value}`) быть не
 должно: их резолвит только Vue. Адресация конкретного элемента — условием
-внутри слота по `item.value`.
+внутри слота по `item.value`. Проброс целиком — каждый слот элемента есть у
+владельца — сторожит `packages/setup/__tests__/item-slots.spec.ts` (AGENTS.md,
+«Слоты элементов: статические имена со scope»).
 
 ### Коллекции: три слоя и расширения
 

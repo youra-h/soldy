@@ -39,11 +39,15 @@ export const CalendarDescriptor = defineDescriptor(() =>
 			 * Состав дней — не слот: их кладёт в коллекцию вид по месяцам сеток,
 			 * и день из разметки попал бы в неё мимо вида. Поэтому `default`
 			 * календарь не рисует, а содержимое дня — статический слот `item`,
-			 * который получает день через scope (см. «Слоты элементов»).
+			 * который получает день через scope (см. «Слоты элементов»), а с ним
+			 * — scope слота дня: номер дня в цифрах локали (`text`).
 			 */
 			slots: {
 				item: {
-					scope: { item: defineType<ICalendarItem>(Object) },
+					scope: {
+						item: defineType<ICalendarItem>(Object),
+						text: defineType<string>(String),
+					},
 					description: 'Содержимое дня: цена, точка события. Без него — номер дня',
 				},
 				// Подмена значков кнопок листания в одном месте; по умолчанию —

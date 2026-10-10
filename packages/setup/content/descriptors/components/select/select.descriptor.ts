@@ -87,8 +87,17 @@ export const SelectDescriptor = defineDescriptor(() =>
 				trailing: { description: 'После стрелки' },
 				default: { description: 'Опции — элементы коллекции' },
 				empty: { description: 'Когда опций нет' },
+				/**
+				 * Слоты опций при работе через проп `items` — проброс слотов опции:
+				 * `item-<слот>` (`default` — `item`), scope — scope слота опции плюс
+				 * сама опция.
+				 */
 				item: {
-					scope: { item: defineType<ISelectItem>(Object) },
+					scope: {
+						item: defineType<ISelectItem>(Object),
+						text: defineType<string>(String),
+						selected: defineType<boolean>(Boolean),
+					},
 					description: 'Содержимое опции при работе через проп items',
 				},
 				'item-leading': {
@@ -98,6 +107,13 @@ export const SelectDescriptor = defineDescriptor(() =>
 				'item-trailing': {
 					scope: { item: defineType<ISelectItem>(Object) },
 					description: 'После содержимого опции',
+				},
+				'item-indicator-icon': {
+					scope: {
+						item: defineType<ISelectItem>(Object),
+						selected: defineType<boolean>(Boolean),
+					},
+					description: 'Отметка выбранной опции',
 				},
 			},
 			props: {

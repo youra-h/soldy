@@ -590,6 +590,49 @@ describe('подпись', () => {
 		expect(checked()).toEqual(['b'])
 	})
 
+	/** Подпись получает отметку радио (`active`), как содержимое таба. */
+	it('подпись получает active радио', () => {
+		mount(
+			<RadioGroup value="b">
+				<RadioGroup.Item value="a">{({ active }) => String(active)}</RadioGroup.Item>
+				<RadioGroup.Item value="b">{({ active }) => String(active)}</RadioGroup.Item>
+			</RadioGroup>,
+		)
+
+		expect(
+			[...document.querySelectorAll('.s-radio-group-item__text')].map(
+				(text) => text.textContent,
+			),
+		).toEqual(['false', 'true'])
+	})
+
+	/**
+	 * Слот `item` группы — проброс подписи: scope подписи плюс само радио.
+	 * Узел, который нарисовала бы группа, отметку радио терял бы.
+	 */
+	it('item получает радио и его active, active следует за значением', () => {
+		// Один массив на оба прохода: новый литерал — новый состав
+		const items = [{ value: 'a' }, { value: 'b' }]
+		const group = (value: string) => (
+			<RadioGroup
+				value={value}
+				items={items}
+				item={({ item, active }) => `${String(item.value)}:${String(active)}`}
+			/>
+		)
+		const labels = () =>
+			[...document.querySelectorAll('.s-radio-group-item__text')].map(
+				(text) => text.textContent,
+			)
+		const { render } = mount(group('b'))
+
+		expect(labels()).toEqual(['a:false', 'b:true'])
+
+		render(group('a'))
+
+		expect(labels()).toEqual(['a:true', 'b:false'])
+	})
+
 	it('плоский RadioGroupItem — то же, что RadioGroup.Item', () => {
 		mount(
 			<RadioGroup value="a">

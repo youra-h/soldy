@@ -30,6 +30,14 @@ export default { ...SetupAccordionItem, components: { Icon, Button } }
 			Оба набора приходят готовыми из ядра — `dataset` на обёртку,
 			`aria` на заголовок. В шаблоне не осталось ни одного вычисления
 			состояния: иначе его пришлось бы повторить в пяти других адаптерах.
+
+			Стрелка — в обёртке, и класс стрелки на обёртке, а не на иконке:
+			тема поворачивает стрелку раскрытой секции по
+			`.s-accordion-item__arrow`, и иконка, подменённая слотом
+			`leading-icon` или `trailing-icon`, поворачивается так же. Поставь
+			класс на `Icon` — и подменённая стрелка перестала бы поворачиваться,
+			причём молча (как `s-select__arrow` у Select). Обёртка стоит, пока на
+			её стороне стрелка по умолчанию или задан слот.
 		-->
 		<Button
 			embedded="accordion.header"
@@ -42,15 +50,19 @@ export default { ...SetupAccordionItem, components: { Icon, Button } }
 			v-bind="{ ...aria, ...controlAttrs }"
 		>
 			<template #leading>
-				<slot name="leading-icon">
-					<Icon
-						embedded="accordion.arrow"
-						v-if="arrowPlacement === 'start'"
-						:tag="arrowIconTag"
-						:size="size"
-						class="s-accordion-item__arrow"
-					/>
-				</slot>
+				<span
+					v-if="arrowPlacement === 'start' || $slots['leading-icon']"
+					class="s-accordion-item__arrow"
+				>
+					<slot name="leading-icon">
+						<Icon
+							embedded="accordion.arrow"
+							v-if="arrowPlacement === 'start'"
+							:tag="arrowIconTag"
+							:size="size"
+						/>
+					</slot>
+				</span>
 				<slot name="leading" />
 			</template>
 
@@ -60,15 +72,19 @@ export default { ...SetupAccordionItem, components: { Icon, Button } }
 
 			<template #trailing>
 				<slot name="trailing" />
-				<slot name="trailing-icon">
-					<Icon
-						embedded="accordion.arrow"
-						v-if="arrowPlacement === 'end'"
-						:tag="arrowIconTag"
-						:size="size"
-						class="s-accordion-item__arrow"
-					/>
-				</slot>
+				<span
+					v-if="arrowPlacement === 'end' || $slots['trailing-icon']"
+					class="s-accordion-item__arrow"
+				>
+					<slot name="trailing-icon">
+						<Icon
+							embedded="accordion.arrow"
+							v-if="arrowPlacement === 'end'"
+							:tag="arrowIconTag"
+							:size="size"
+						/>
+					</slot>
+				</span>
 			</template>
 		</Button>
 

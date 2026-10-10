@@ -313,6 +313,35 @@ describe('слоты', () => {
 		expect(text(find('.s-table-column__sort'))).toBe('age:Возраст')
 	})
 
+	/**
+	 * `header` — проброс слота заголовка колонки: рядом с колонкой в scope то,
+	 * что отдаёт слот самого заголовка, — текст и сортируемость.
+	 */
+	it('header получает текст и сортируемость колонки — scope слота заголовка', async () => {
+		await render(() =>
+			h(
+				Table,
+				{ items: [{ data: ANNA }], columns: [NAME, AGE] },
+				{
+					header: ({
+						column,
+						text: caption,
+						sortable,
+					}: {
+						column: ITableColumn
+						text: string
+						sortable: boolean
+					}) => h('b', `${column.field}:${caption}:${String(sortable)}`),
+				},
+			),
+		)
+
+		expect(findAll('.s-table-column b').map(text)).toEqual([
+			'name:Имя:false',
+			'age:Возраст:true',
+		])
+	})
+
 	it('cell — содержимое ячейки по строке, колонке и значению', async () => {
 		await render(() =>
 			h(

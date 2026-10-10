@@ -1,5 +1,5 @@
 import type { ElementType, ReactElement } from 'react'
-import { Elevate, hasSlot, renderSlot, toRootProps } from '../../adapter'
+import { Elevate, hasSlot, relaySlot, renderSlot, toRootProps } from '../../adapter'
 import { RadioGroupItem } from './item'
 import { useSetupRadioGroup } from './setup.component'
 import type { RadioGroupProps } from './base.component'
@@ -15,7 +15,9 @@ import type { RadioGroupProps } from './base.component'
  *
  * Радио — дети (`<RadioGroup.Item>`), а без детей — `shown` коллекции, по
  * `RadioGroupItem` на элемент. Слот подписи статический и получает радио
- * через scope (`item`), как у остальных коллекций.
+ * через scope (`item`), как у остальных коллекций, — вместе со scope подписи
+ * самого радио (`active`): радио получает его функцией (`relaySlot`), а не
+ * готовым узлом.
  *
  * Всё содержимое — в слое лифта группы (`Elevate`): радио, смонтированное
  * внутри, прочтёт движок и регистратор этой группы и при коммите войдёт в её
@@ -37,7 +39,7 @@ export function RadioGroup(props: RadioGroupProps): ReactElement | null {
 					? renderSlot(props.children)
 					: shown?.map((item) => (
 							<RadioGroupItem key={item.uid} ctrl={item}>
-								{renderSlot(props.item, { item })}
+								{relaySlot(props.item, { item })}
 							</RadioGroupItem>
 						))}
 			</Elevate>

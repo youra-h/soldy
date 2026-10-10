@@ -427,6 +427,50 @@ describe('таб из разметки', () => {
 		expect(document.querySelector('.s-tabs__list--trailing .tail')?.textContent).toBe('после')
 	})
 
+	/**
+	 * Проброс целиком: scope `item` — scope слота таба плюс сам таб. Узел,
+	 * который нарисовал бы набор, scope таба терял бы: `text` и `active`
+	 * держит таб.
+	 */
+	it('item получает text и active таба, active следует за активацией', () => {
+		mount(
+			<Tabs
+				items={ITEMS.slice(0, 2)}
+				item={({ item: tabItem, text, active }) =>
+					`${String(tabItem.value)}:${text}:${String(active)}`
+				}
+			/>,
+		)
+
+		expect(tabs().map((row) => row.textContent?.trim())).toEqual(['a:A:true', 'b:B:false'])
+
+		click(tab('b:B:false'))
+
+		expect(tabs().map((row) => row.textContent?.trim())).toEqual(['a:A:false', 'b:B:true'])
+	})
+
+	it('item-close-icon подменяет иконку крестика одному табу, у остальных — своя', () => {
+		mount(
+			<Tabs
+				closable
+				items={ITEMS.slice(0, 2)}
+				item-close-icon={({ item: tabItem }) =>
+					tabItem.value === 'a' ? <b className="probe">×</b> : null
+				}
+			/>,
+		)
+
+		expect(
+			[...document.querySelectorAll('.s-tabs-item__close')].map((close) =>
+				close.querySelector('.probe')
+					? 'slot'
+					: close.querySelector('svg')
+						? 'icon'
+						: 'empty',
+			),
+		).toEqual(['slot', 'icon'])
+	})
+
 	it('без leading и trailing обёрток краёв списка нет', () => {
 		mount(<Tabs items={ITEMS} />)
 
@@ -726,8 +770,13 @@ describe('типы', () => {
 		type TItemLeading = NonNullable<TabsProps['item-leading']>
 		type TChildren = NonNullable<TabsItemProps['children']>
 
-		expectTypeOf<(scope: { item: ITabsItem }) => ReactNode>().toExtend<TItemSlot>()
+		expectTypeOf<
+			(scope: { item: ITabsItem; text: string; active: boolean }) => ReactNode
+		>().toExtend<TItemSlot>()
 		expectTypeOf<(scope: { item: ITabsItem }) => ReactNode>().toExtend<TItemLeading>()
+		expectTypeOf<(scope: { item: ITabsItem }) => ReactNode>().toExtend<
+			NonNullable<TabsProps['item-close-icon']>
+		>()
 		expectTypeOf<
 			(scope: { text: string; active: boolean }) => ReactNode
 		>().toExtend<TChildren>()
