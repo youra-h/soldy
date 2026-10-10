@@ -10,15 +10,20 @@ import type { ITableRow } from '../../../row/types'
 import type { ITable } from '../../../types'
 import type { TTableEngineOptions } from '../table'
 import { TTableColumnsItemExtension } from './item'
+import { layoutColumns } from './layout'
 import type {
 	ITableColumnsExtension,
 	ITableColumnsItemExtension,
 	TTableColumnsEvents,
 } from './types'
 
-/** Обработчики показанной колонки: её ячейки и законченная правка ширины. */
+/**
+ * Обработчики показанной колонки: её ячейки, раскладка — от ширины и границ —
+ * и законченная правка ширины.
+ */
 type TColumnWatchers = {
 	cells: () => void
+	layout: () => void
 	commit: (width: number) => void
 }
 
@@ -64,6 +69,16 @@ type TColumnDrag = {
  * и поверх патча. Таблица — опция движка строк (`owner`): она приходит и
  * уходит после сборки, и расширение её наблюдает.
  *
+ * **Раскладка** — ширины гибких показанных колонок, колонок без своей ширины:
+ * из места таблицы (`notifySpace` — его мерит плагин) и её `columnFit`, по
+ * правилам `layoutColumns`. Ширину раскладки расширение пишет колонке
+ * (`layoutWidth`), а таблице — `data-overflow`, колонки шире места: по нему
+ * тема включает прокрутку окна таблицы. Пока места нет, признака нет. Без
+ * таблицы раскладки нет: гибкие колонки без ширины, и их ширину решает тема.
+ * Пересчёт — на смену показанных колонок, места, `columnFit` и своей ширины
+ * или границ показанной колонки; своя запись ширин пересчёта не будит. Запись
+ * состава сводит всё, что задела, в один пересчёт — в её конце.
+ *
  * **Ширина, которую задал пользователь**, — `column:resize`: законченная правка
  * ручкой показанной колонки (`commit` колонки), одна на действие. Скрытую
  * колонку пользователь не видит и ручкой не правит, и её расширение не
@@ -108,11 +123,21 @@ export class TTableColumnsExtension<
 	/** Ячейки устарели во время записи: событие уйдёт в её конце. */
 	private _staleCells = false
 
+	/** Раскладка устарела во время записи: пересчёт — в её конце. */
+	private _staleLayout = false
+
+	/** Расширение само пишет колонкам ширины раскладки: их смена пересчёт не будит. */
+	private _laying = false
+
+	/** Место под колонки, px; ноль — неизвестно. */
+	private _space = 0
+
 	/**
 	 * Обработчики показанной колонки — поля, выравнивания и признака заголовка
-	 * строки (ячейки) и её законченной правки ширины. Скрытая и удалённая
-	 * колонки ячеек не дают и ручкой не правятся, и их расширение не слушает:
-	 * подписка удерживала бы коллекцию, пока жива сама колонка.
+	 * строки (ячейки), ширины и границ (раскладка) и её законченной правки
+	 * ширины. Скрытая и удалённая колонки ячеек не дают, в раскладке не стоят и
+	 * ручкой не правятся, и их расширение не слушает: подписка удерживала бы
+	 * коллекцию, пока жива сама колонка.
 	 */
 	private readonly _watchers = new Map<ITableColumn, TColumnWatchers>()
 
@@ -144,6 +169,9 @@ export class TTableColumnsExtension<
 		// Таблица — опция движка: приходит и уходит после сборки. Подписка на
 		// неё живёт в области наблюдателя — сменилась таблица, прежняя снята
 		ctx.options.watch('owner', (owner, scope) => {
+			// Раскладка — по таблице: пришла — колонкам её ширины, ушла — раскладки нет
+			this._notifyLayout()
+
 			if (!owner) return
 
 			// Догон: колонки, пришедшие до таблицы
@@ -155,6 +183,11 @@ export class TTableColumnsExtension<
 					column.disabled = value
 				}),
 			)
+
+			scope.on(owner.events, 'change:columnFit', () => this._notifyLayout())
+
+			// Признак места — этой таблицы: она ушла, и признак уходит с неё
+			scope.add(() => owner.dataset.add('overflow', null))
 		})
 	}
 
@@ -193,6 +226,15 @@ export class TTableColumnsExtension<
 
 	get dragged(): ITableColumn | undefined {
 		return this._drag?.column
+	}
+
+	notifySpace(width: number): void {
+		const space = width > 0 ? Math.floor(width) : 0
+
+		if (this._space === space) return
+
+		this._space = space
+		this._notifyLayout()
 	}
 
 	moveColumn(column: ITableColumn, to: number): boolean {
@@ -311,29 +353,81 @@ export class TTableColumnsExtension<
 		this._flush()
 	}
 
-	/** Отдать накопленное: вне записи — сразу, в записи — в её конце. */
+	/** Место, `columnFit`, таблица или ширина и границы показанной колонки сменились — пересчёт. */
+	private _notifyLayout(): void {
+		this._staleLayout = true
+		this._flush()
+	}
+
+	/**
+	 * Отдать накопленное: вне записи — сразу, в записи — в её конце. Раскладка
+	 * — раньше события показанных: кто его слушает, видит колонки уже в своих
+	 * ширинах.
+	 */
 	private _flush(): void {
 		if (this._writing > 0) return
 
 		const shown = this._staleShown
+		const layout = shown || this._staleLayout
 		const cells = shown || this._staleCells
 
 		this._staleShown = false
+		this._staleLayout = false
 		this._staleCells = false
 
 		if (shown) {
 			// Место, куда несли колонку, считалось от прежнего состава
 			this.dragCancel()
 			this._watchShown()
-			this.events.emit('change:shownColumns')
 		}
 
+		if (layout) this._layout()
+		if (shown) this.events.emit('change:shownColumns')
 		if (cells) this.events.emit('change:cells')
 	}
 
 	/**
-	 * Слушать показанные колонки — поле, выравнивание, признак заголовка строки
-	 * и законченную правку ширины, — а ушедшие из показанных больше не слушать.
+	 * Раскладка показанных колонок: гибким — ширина раскладки или её снятие,
+	 * таблице — `data-overflow`. Колонкам со своей шириной ширина раскладки
+	 * снимается: её у них нет. Своя запись ширин пересчёта не будит.
+	 */
+	private _layout(): void {
+		const owner = this._ctx?.options.get('owner')
+		const shown = this.shownColumns
+
+		this._laying = true
+
+		try {
+			if (!owner) {
+				for (const column of shown) column.layoutWidth = undefined
+
+				return
+			}
+
+			const { widths, overflow } = layoutColumns(
+				this._space > 0 ? this._space : undefined,
+				owner.columnFit,
+				shown.map((column) => {
+					const { width, minWidth, maxWidth } = column.getProps()
+
+					return { width, minWidth, maxWidth }
+				}),
+			)
+
+			shown.forEach((column, index) => {
+				column.layoutWidth = widths[index]
+			})
+			owner.dataset.add('overflow', overflow)
+		} finally {
+			this._laying = false
+		}
+	}
+
+	/**
+	 * Слушать показанные колонки — поле, выравнивание, признак заголовка
+	 * строки, ширину и границы и законченную правку ширины, — а ушедшие из
+	 * показанных больше не слушать: в раскладке они не стоят, и ширина
+	 * раскладки с них снимается.
 	 */
 	private _watchShown(): void {
 		const shown = new Set(this.shownColumns)
@@ -344,8 +438,13 @@ export class TTableColumnsExtension<
 			column.events.off('change:field', watchers.cells)
 			column.events.off('change:align', watchers.cells)
 			column.events.off('change:rowHeader', watchers.cells)
+			column.events.off('change:width', watchers.layout)
+			column.events.off('change:minWidth', watchers.layout)
+			column.events.off('change:maxWidth', watchers.layout)
 			column.events.off('commit', watchers.commit)
 			this._watchers.delete(column)
+
+			column.layoutWidth = undefined
 		}
 
 		for (const column of shown) {
@@ -353,6 +452,9 @@ export class TTableColumnsExtension<
 
 			const watchers: TColumnWatchers = {
 				cells: () => this._notifyCells(),
+				layout: () => {
+					if (!this._laying) this._notifyLayout()
+				},
 				commit: (width) => this.events.emit('column:resize', { column, width }),
 			}
 
@@ -360,6 +462,9 @@ export class TTableColumnsExtension<
 			column.events.on('change:field', watchers.cells)
 			column.events.on('change:align', watchers.cells)
 			column.events.on('change:rowHeader', watchers.cells)
+			column.events.on('change:width', watchers.layout)
+			column.events.on('change:minWidth', watchers.layout)
+			column.events.on('change:maxWidth', watchers.layout)
 			column.events.on('commit', watchers.commit)
 		}
 	}

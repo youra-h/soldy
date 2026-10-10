@@ -997,7 +997,7 @@ describe('ширина колонки от пользователя', () => {
 
 		facade.events.on('column:resize', resize)
 
-		name.grab(150)
+		name.grab()
 		name.drag(10)
 		name.drag(30)
 

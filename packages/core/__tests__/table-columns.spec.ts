@@ -420,10 +420,65 @@ describe('показанные колонки', () => {
 })
 
 describe('ширина', () => {
-	it('не задана — итог undefined: ширину решает тема, границы ни при чём', () => {
+	it('ни своей, ни раскладки — итог undefined: ширину решает тема, границы ни при чём', () => {
 		const column = new TTableColumn({ minWidth: 100, maxWidth: 200 })
 
 		expect(column.width).toBeUndefined()
+		expect(column.layoutWidth).toBeUndefined()
+	})
+
+	it('без своей — итог от раскладки, прижатый к границам', () => {
+		const column = new TTableColumn({ minWidth: 100, maxWidth: 200 })
+
+		column.layoutWidth = 150
+
+		expect(column.width).toBe(150)
+
+		column.layoutWidth = 480
+
+		expect(column.width).toBe(200)
+
+		column.layoutWidth = 40
+
+		expect(column.width).toBe(100)
+	})
+
+	it('своя сильнее раскладки; сняли свою — итог снова от раскладки', () => {
+		const column = new TTableColumn({ width: 120 })
+
+		column.layoutWidth = 300
+
+		expect(column.width).toBe(120)
+
+		column.width = undefined
+
+		expect(column.width).toBe(300)
+	})
+
+	it('change:width — на смену итога от раскладки; у колонки со своей шириной раскладка его не меняет', () => {
+		const flexible = new TTableColumn()
+		const fixed = new TTableColumn({ width: 120 })
+		const changed = vi.fn()
+		const unchanged = vi.fn()
+
+		flexible.events.on('change:width', changed)
+		fixed.events.on('change:width', unchanged)
+
+		flexible.layoutWidth = 150
+		flexible.layoutWidth = 150
+		flexible.layoutWidth = undefined
+		fixed.layoutWidth = 300
+
+		expect(changed.mock.calls).toEqual([[150], [undefined]])
+		expect(unchanged).not.toHaveBeenCalled()
+	})
+
+	it('в пропсах ширины раскладки нет — только своя', () => {
+		const column = new TTableColumn()
+
+		column.layoutWidth = 150
+
+		expect(column.getProps().width).toBeUndefined()
 	})
 
 	it('итог прижат к границам; нижняя граница сильнее верхней', () => {
@@ -557,7 +612,7 @@ describe('ширина', () => {
 		expect(column.widthStyle).toEqual(first)
 	})
 
-	it('data-sized — своя ширина, с первой отрисовки; границы его не меняют', () => {
+	it('data-sized — ширина известна, своя или раскладки, с первой отрисовки; границы его не меняют', () => {
 		const column = new TTableColumn({ maxWidth: 200 })
 
 		expect(column.dataset.get('sized')).toBe('false')
@@ -569,6 +624,15 @@ describe('ширина', () => {
 
 		column.minWidth = 400
 		column.width = undefined
+
+		expect(column.dataset.get('sized')).toBe('false')
+
+		column.layoutWidth = 160
+
+		expect(column.dataset.get('sized')).toBe('true')
+		expect(column.widthStyle).toEqual({ '--s-table-column-width': '400px' })
+
+		column.layoutWidth = undefined
 
 		expect(column.dataset.get('sized')).toBe('false')
 	})
@@ -601,23 +665,23 @@ describe('ручка ширины', () => {
 			expect(columns.columns.map((column) => column.resizable)).toEqual([true, false])
 		})
 
-		it('ручка — у колонки с известной шириной: своей или по замеру', () => {
+		it('ручка — у колонки с известной шириной: своей или раскладки', () => {
 			const { column } = resizable()
 
-			// Ширину решает тема, и до замера полю нечего показать
+			// Ширину решает тема, и до раскладки полю нечего показать
 			expect(column.resizerRendered).toBe(false)
 
-			column.notifyWidth(150)
+			column.layoutWidth = 150
 
 			expect(column.resizerRendered).toBe(true)
 			expect(resizable({ width: 120 }).column.resizerRendered).toBe(true)
 		})
 
-		it('замер ноль — колонка не разложена, ширина снова неизвестна', () => {
+		it('раскладку сняли — ширина снова неизвестна, ручки нет', () => {
 			const { column } = resizable()
 
-			column.notifyWidth(150)
-			column.notifyWidth(0)
+			column.layoutWidth = 150
+			column.layoutWidth = undefined
 
 			expect(column.resizerRendered).toBe(false)
 		})
@@ -639,8 +703,8 @@ describe('ручка ширины', () => {
 			column.events.on('change:resizerRendered', rendered)
 
 			column.resizable = true
-			column.notifyWidth(150)
-			column.notifyWidth(160)
+			column.layoutWidth = 150
+			column.layoutWidth = 160
 			column.width = 200
 			column.disabled = true
 			column.disabled = true
@@ -711,12 +775,17 @@ describe('ручка ширины', () => {
 			})
 		})
 
-		it('без своей ширины — замер', () => {
-			const { column } = resizable({ minWidth: 100 })
+		it('без своей ширины — ширина раскладки, в границах; ход полю — тот же', () => {
+			const { column } = resizable({ minWidth: 100, maxWidth: 360 })
 
-			column.notifyWidth(180.4)
+			column.layoutWidth = 180
 
-			expect(column.resizer.value).toBe(180)
+			expect(column.resizer).toEqual({ min: 100, max: 360, value: 180 })
+
+			// Раскладка шире границы — поле показывает итог, в ходе
+			column.layoutWidth = 480
+
+			expect(column.resizer).toEqual({ min: 100, max: 360, value: 360 })
 		})
 
 		it('поле — значение: каждое чтение собирает его заново', () => {
@@ -733,8 +802,8 @@ describe('ручка ширины', () => {
 
 			column.events.on('change:resizer', changed)
 
-			// Замер колонке со своей шириной поля не меняет
-			column.notifyWidth(170)
+			// Раскладка колонке со своей шириной поля не меняет
+			column.layoutWidth = 170
 			column.width = 150
 			column.maxWidth = 300
 			column.maxWidth = 300
@@ -748,30 +817,31 @@ describe('ручка ширины', () => {
 	})
 
 	describe('жест указателя', () => {
-		it('нажатие без движения ширину не задаёт и commit не шлёт', () => {
+		it('нажатие без движения ширину не задаёт и commit не шлёт: гибкая остаётся гибкой', () => {
 			const { column, commit } = resizable()
 			const width = vi.fn()
 
-			column.notifyWidth(150)
+			column.layoutWidth = 150
 			column.events.on('change:width', width)
 
-			expect(column.grab(150)).toBe(true)
+			expect(column.grab()).toBe(true)
 
 			column.drag(0)
 			column.release()
 
-			expect(column.width).toBeUndefined()
+			expect(column.width).toBe(150)
+			expect(column.getProps().width).toBeUndefined()
 			expect(width).not.toHaveBeenCalled()
 			expect(commit).not.toHaveBeenCalled()
 		})
 
-		it('протяжка — ширина при нажатии плюс сдвиг; commit — один, на отпускание', () => {
+		it('протяжка — итог при нажатии плюс сдвиг; commit — один, на отпускание', () => {
 			const { column, commit } = resizable({ width: 150 })
 			const width = vi.fn()
 
 			column.events.on('change:width', width)
 
-			column.grab(150)
+			column.grab()
 			column.drag(10)
 			column.drag(25)
 			column.drag(-5)
@@ -785,20 +855,27 @@ describe('ручка ширины', () => {
 			expect(commit.mock.calls).toEqual([[145]])
 		})
 
-		it('ширина нажатия — замер, а не своя: сдвиг идёт от того, что видно', () => {
-			const { column } = resizable({ width: 150 })
+		it('ширина нажатия — итог, а не своё значение: сдвиг идёт от того, что видно', () => {
+			const { column } = resizable({ width: 300, maxWidth: 200 })
 
-			column.grab(170)
-			column.drag(10)
+			column.grab()
+			column.drag(-10)
 
-			expect(column.width).toBe(180)
+			expect(column.width).toBe(190)
 		})
 
-		it('колонка без своей ширины: протяжка задаёт её, commit — с итогом', () => {
+		it('без ширины жеста нет: гибкой колонке без раскладки тянуть нечего', () => {
+			const { column } = resizable()
+
+			expect(column.grab()).toBe(false)
+			expect(column.dataset.get('resizing')).toBe('false')
+		})
+
+		it('гибкая колонка: протяжка задаёт свою ширину, commit — с итогом', () => {
 			const { column, commit } = resizable()
 
-			column.notifyWidth(200)
-			column.grab(200)
+			column.layoutWidth = 200
+			column.grab()
 			column.drag(-40)
 			column.release()
 
@@ -810,7 +887,7 @@ describe('ручка ширины', () => {
 		it('туда и обратно — ширина та же, commit нет', () => {
 			const { column, commit } = resizable({ width: 150 })
 
-			column.grab(150)
+			column.grab()
 			column.drag(30)
 			column.drag(0)
 			column.release()
@@ -819,10 +896,46 @@ describe('ручка ширины', () => {
 			expect(commit).not.toHaveBeenCalled()
 		})
 
+		it('гибкая колонка: жест, вернувшийся к точке нажатия, оставляет её гибкой', () => {
+			const { column, commit } = resizable()
+
+			column.layoutWidth = 200
+			column.grab()
+			column.drag(-40)
+
+			expect(column.getProps().width).toBe(160)
+
+			column.drag(0)
+
+			expect(column.getProps().width).toBeUndefined()
+
+			// Раскладка сменилась посреди жеста — колонка от неё, пока она гибкая
+			column.layoutWidth = 210
+
+			expect(column.width).toBe(210)
+
+			column.release()
+
+			expect(commit).not.toHaveBeenCalled()
+		})
+
+		it('протяжка за край хода от его края — гибкая остаётся гибкой', () => {
+			const { column, commit } = resizable({ maxWidth: 200 })
+
+			column.layoutWidth = 200
+			column.grab()
+			column.drag(40)
+			column.release()
+
+			expect(column.width).toBe(200)
+			expect(column.getProps().width).toBeUndefined()
+			expect(commit).not.toHaveBeenCalled()
+		})
+
 		it('протяжка — в ходе ручки; ход считан при нажатии, на весь жест', () => {
 			const { column } = resizable({ width: 150, minWidth: 100, maxWidth: 200 })
 
-			column.grab(150)
+			column.grab()
 			column.drag(500)
 
 			expect(column.width).toBe(200)
@@ -833,9 +946,9 @@ describe('ручка ширины', () => {
 		})
 
 		it('ширина — целые px', () => {
-			const { column, commit } = resizable({ width: 150 })
+			const { column, commit } = resizable({ width: 150.4 })
 
-			column.grab(150.4)
+			column.grab()
 			column.drag(10.3)
 			column.release()
 
@@ -848,7 +961,7 @@ describe('ручка ширины', () => {
 
 			expect(column.dataset.get('resizing')).toBe('false')
 
-			column.grab(150)
+			column.grab()
 
 			expect(column.dataset.get('resizing')).toBe('true')
 
@@ -861,8 +974,8 @@ describe('ручка ширины', () => {
 			const fixed = new TTableColumn({ width: 150 })
 			const { column } = resizable({ width: 150, disabled: true })
 
-			expect(fixed.grab(150)).toBe(false)
-			expect(column.grab(150)).toBe(false)
+			expect(fixed.grab()).toBe(false)
+			expect(column.grab()).toBe(false)
 
 			fixed.drag(20)
 			column.drag(20)
@@ -885,7 +998,7 @@ describe('ручка ширины', () => {
 		it('выключили посреди жеста — протяжка стоит, отпускание отдаёт сделанное', () => {
 			const { column, commit } = resizable({ width: 150 })
 
-			column.grab(150)
+			column.grab()
 			column.drag(20)
 			column.disabled = true
 			column.drag(40)
@@ -898,9 +1011,9 @@ describe('ручка ширины', () => {
 		it('новое нажатие закрывает незаконченный жест', () => {
 			const { column, commit } = resizable({ width: 150 })
 
-			column.grab(150)
+			column.grab()
 			column.drag(20)
-			column.grab(170)
+			column.grab()
 
 			expect(commit.mock.calls).toEqual([[170]])
 
@@ -949,7 +1062,7 @@ describe('ручка ширины', () => {
 			expect(commit.mock.calls).toEqual([[300], [100]])
 		})
 
-		it('без своей ширины — от замера; без замера клавиши ничего не делают', () => {
+		it('без своей ширины — от раскладки; без раскладки клавиши ничего не делают', () => {
 			const { column, commit } = resizable()
 
 			column.shift(10)
@@ -957,11 +1070,39 @@ describe('ручка ширины', () => {
 
 			expect(column.width).toBeUndefined()
 
-			column.notifyWidth(150)
+			column.layoutWidth = 150
 			column.shift(10)
 
 			expect(column.width).toBe(160)
+			expect(column.getProps().width).toBe(160)
 			expect(commit.mock.calls).toEqual([[160]])
+		})
+
+		it('у края хода своё значение не пишется: гибкая колонка остаётся гибкой', () => {
+			const { column, commit } = resizable({ minWidth: 120, maxWidth: 360 })
+
+			column.layoutWidth = 360
+			column.shift(10)
+			column.moveToEdge('end')
+
+			expect(column.getProps().width).toBeUndefined()
+
+			column.layoutWidth = 120
+			column.shift(-10)
+			column.moveToEdge('start')
+
+			expect(column.getProps().width).toBeUndefined()
+			expect(commit).not.toHaveBeenCalled()
+		})
+
+		it('раскладка в границах — первая клавиша двигает ширину ровно на шаг', () => {
+			const { column, commit } = resizable({ minWidth: 120, maxWidth: 360 })
+
+			column.layoutWidth = 360
+			column.shift(-10)
+
+			expect(column.width).toBe(350)
+			expect(commit.mock.calls).toEqual([[350]])
 		})
 
 		it('без ручки клавиши ничего не делают', () => {
@@ -975,217 +1116,6 @@ describe('ручка ширины', () => {
 
 			expect(fixed.width).toBe(150)
 			expect(column.width).toBe(150)
-		})
-	})
-
-	/**
-	 * Колонку без своей ширины тема раскладывает, не глядя на границы, и её
-	 * ширина бывает за своей границей. Ручка пишет только ширину, которую
-	 * колонка примет, — в границах, — и не двигает ширину против действия:
-	 * действие к границам ставит колонку в них, действие от границ ничего не
-	 * делает. Иначе протяжка на пиксель дала бы скачок к границе в обратную
-	 * сторону — шире `maxWidth` колонка сужалась от роста.
-	 */
-	describe('колонка за своей границей', () => {
-		/** Колонка без своей ширины с границами, разложенная темой в `measured` px. */
-		function laidOut(measured: number, props: Partial<ITableColumnProps>) {
-			const { column, commit } = resizable(props)
-			const width = vi.fn()
-
-			column.notifyWidth(measured)
-			column.events.on('change:width', width)
-
-			return { column, commit, width }
-		}
-
-		/** Своё значение ширины — то же, что итог: ручка пишет только то, что колонка примет. */
-		const expectOwnIsResult = (column: ITableColumn) =>
-			expect(column.getProps().width).toBe(column.width)
-
-		describe('шире maxWidth', () => {
-			const BOUNDS = { minWidth: 120, maxWidth: 360 }
-
-			it('поле показывает замер: ход поля шире хода записи', () => {
-				const { column } = laidOut(480, BOUNDS)
-
-				expect(column.width).toBeUndefined()
-				expect(column.resizer).toEqual({ min: 120, max: 480, value: 480 })
-			})
-
-			it('рост, PageUp, End и протяжка вправо ничего не пишут, commit нет', () => {
-				const { column, commit, width } = laidOut(480, BOUNDS)
-
-				column.shift(10)
-				column.shift(100)
-				column.moveToEdge('end')
-
-				column.grab(480)
-				column.drag(1)
-				column.drag(40)
-				column.release()
-
-				expect(column.width).toBeUndefined()
-				expect(column.getProps().width).toBeUndefined()
-				expect(width).not.toHaveBeenCalled()
-				expect(commit).not.toHaveBeenCalled()
-			})
-
-			it('сужение и PageDown — ширина в границах, ближайшая к цели', () => {
-				const narrow = laidOut(480, BOUNDS)
-				const page = laidOut(480, BOUNDS)
-				const far = laidOut(480, BOUNDS)
-
-				narrow.column.shift(-10)
-				page.column.shift(-100)
-				far.column.shift(-1000)
-
-				expect(narrow.column.width).toBe(360)
-				expect(page.column.width).toBe(360)
-				expect(far.column.width).toBe(120)
-				expect(narrow.commit.mock.calls).toEqual([[360]])
-				expectOwnIsResult(narrow.column)
-			})
-
-			it('Home — нижний край хода записи', () => {
-				const { column, commit } = laidOut(480, BOUNDS)
-
-				column.moveToEdge('start')
-
-				expect(column.width).toBe(120)
-				expect(commit.mock.calls).toEqual([[120]])
-			})
-
-			it('протяжка влево — в границах: скачок к границе в сторону протяжки', () => {
-				const { column, commit, width } = laidOut(480, BOUNDS)
-
-				column.grab(480)
-				column.drag(-1)
-
-				expect(column.width).toBe(360)
-				expectOwnIsResult(column)
-
-				column.drag(-200)
-				column.release()
-
-				expect(column.width).toBe(280)
-				expect(width.mock.calls).toEqual([[360], [280]])
-				expect(commit.mock.calls).toEqual([[280]])
-			})
-
-			it('протяжка влево, потом за точку нажатия — снова без своей ширины, отпускание без commit', () => {
-				const { column, commit, width } = laidOut(480, BOUNDS)
-
-				column.grab(480)
-				column.drag(-50)
-
-				expect(column.width).toBe(360)
-
-				column.drag(0)
-
-				expect(column.width).toBeUndefined()
-
-				column.drag(-20)
-				column.drag(30)
-				column.release()
-
-				expect(column.width).toBeUndefined()
-				expect(column.getProps().width).toBeUndefined()
-				expect(width.mock.calls).toEqual([[360], [undefined], [360], [undefined]])
-				expect(commit).not.toHaveBeenCalled()
-			})
-
-			it('жест возвращает своё значение, каким оно было при нажатии', () => {
-				// Своя ширина в границах, а заголовок шире: его раскладку решила тема
-				const { column, commit } = resizable({ ...BOUNDS, width: 300 })
-
-				column.grab(480)
-				column.drag(-200)
-
-				expect(column.width).toBe(280)
-
-				column.drag(10)
-				column.release()
-
-				expect(column.width).toBe(300)
-				expect(commit).not.toHaveBeenCalled()
-			})
-		})
-
-		describe('уже minWidth — зеркально', () => {
-			const BOUNDS = { minWidth: 120 }
-
-			it('поле показывает замер: ход поля шире хода записи', () => {
-				const { column } = laidOut(90, BOUNDS)
-
-				expect(column.resizer.min).toBe(90)
-				expect(column.resizer.value).toBe(90)
-			})
-
-			it('сужение, PageDown, Home и протяжка влево ничего не пишут, commit нет', () => {
-				const { column, commit, width } = laidOut(90, BOUNDS)
-
-				column.shift(-10)
-				column.shift(-100)
-				column.moveToEdge('start')
-
-				column.grab(90)
-				column.drag(-1)
-				column.drag(-40)
-				column.release()
-
-				expect(column.width).toBeUndefined()
-				expect(width).not.toHaveBeenCalled()
-				expect(commit).not.toHaveBeenCalled()
-			})
-
-			it('рост, PageUp и End — в границах', () => {
-				const step = laidOut(90, BOUNDS)
-				const page = laidOut(90, BOUNDS)
-				const end = laidOut(90, BOUNDS)
-				const { max } = end.column.resizer
-
-				step.column.shift(10)
-				page.column.shift(100)
-				end.column.moveToEdge('end')
-
-				expect(step.column.width).toBe(120)
-				expect(page.column.width).toBe(190)
-				expect(end.column.width).toBe(max)
-				expect(step.commit.mock.calls).toEqual([[120]])
-			})
-
-			it('протяжка вправо — в границах; за точку нажатия — снова без своей ширины', () => {
-				const { column, commit } = laidOut(90, BOUNDS)
-
-				column.grab(90)
-				column.drag(1)
-
-				expect(column.width).toBe(120)
-
-				column.drag(60)
-
-				expect(column.width).toBe(150)
-
-				column.drag(-5)
-				column.release()
-
-				expect(column.width).toBeUndefined()
-				expect(commit).not.toHaveBeenCalled()
-			})
-		})
-
-		it('без границ не прижимается: ширина за пределами ядра идёт от себя', () => {
-			const wide = laidOut(100_000, {})
-			const narrow = laidOut(10, {})
-
-			wide.column.grab(100_000)
-			wide.column.drag(-10)
-			wide.column.release()
-			narrow.column.shift(5)
-
-			expect(wide.column.width).toBe(99_990)
-			expect(wide.commit.mock.calls).toEqual([[99_990]])
-			expect(narrow.column.width).toBe(15)
 		})
 	})
 

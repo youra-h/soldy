@@ -1,20 +1,18 @@
 // @vitest-environment jsdom
 
 /**
- * TTableColumnResizePlugin — ручка ширины колонки: указатель, клавиши, жест
- * скринридера и замер.
+ * TTableColumnResizePlugin — ручка ширины колонки: указатель, клавиши и жест
+ * скринридера.
  *
  * Разметку тест строит сам — заголовок, обёртку содержимого с кнопкой и
  * полосу ручки с полем, как их рисует Vue, — а плагин собран настоящим
- * набором с настоящей `TTableColumn`. Коробку заголовка задаёт тест: jsdom
- * раскладку не считает. Захвата указателя в jsdom нет, поэтому события тест
- * шлёт прямо в узлы; `ResizeObserver` тоже нет — его заменяет заглушка, которую
- * тест срабатывает сам. Настоящий ввод и раскладка —
+ * набором с настоящей `TTableColumn`. Захвата указателя в jsdom нет, поэтому
+ * события тест шлёт прямо в узлы. Настоящий ввод и раскладка —
  * `playground/vue/browser/table.spec.ts`; какой станет ширина, —
  * `core/__tests__/table-columns.spec.ts`.
  */
 
-import { describe, it, expect, afterEach, beforeAll, afterAll, vi } from 'vitest'
+import { describe, it, expect, afterEach, vi } from 'vitest'
 import { TTableColumn } from '@soldy-ui/core'
 import type { ITableColumnProps } from '@soldy-ui/core'
 import { TElementPlugin, TPluginBundle, TTableColumnResizePlugin } from '../src'
@@ -34,54 +32,15 @@ function pluginOf<P extends IPlugin<any, any>>(
 	return plugin
 }
 
-/**
- * Заглушка `ResizeObserver`: помнит колбэк и наблюдаемые узлы, а срабатывает,
- * когда велит тест.
- */
-class ResizeObserverStub {
-	readonly observed = new Set<Element>()
-
-	constructor(private readonly _callback: () => void) {
-		observers.push(this)
-	}
-
-	observe(element: Element): void {
-		this.observed.add(element)
-	}
-
-	unobserve(element: Element): void {
-		this.observed.delete(element)
-	}
-
-	disconnect(): void {
-		this.observed.clear()
-	}
-
-	trigger(element: Element): void {
-		if (this.observed.has(element)) this._callback()
-	}
-}
-
-let observers: ResizeObserverStub[] = []
-
-beforeAll(() => {
-	vi.stubGlobal('ResizeObserver', ResizeObserverStub)
-})
-
-afterAll(() => {
-	vi.unstubAllGlobals()
-})
-
 const bundles: TPluginBundle[] = []
 
 afterEach(() => {
 	for (const bundle of bundles.splice(0)) bundle.destroy()
 
-	observers = []
 	document.body.innerHTML = ''
 })
 
-/** Ширина заголовка, которую «разложил» тест, px. */
+/** Ширина колонки, px. */
 const WIDTH = 160
 
 /**
@@ -119,8 +78,6 @@ async function mount(
 	resizer.append(field)
 	root.append(content, resizer)
 	document.body.append(root)
-
-	vi.spyOn(root, 'getBoundingClientRect').mockReturnValue(new DOMRect(100, 0, WIDTH, 40))
 
 	pluginOf(bundle, TElementPlugin).element = root
 	await nextFrame()
@@ -189,13 +146,15 @@ describe('указатель', () => {
 		expect(commit.mock.calls).toEqual([[WIDTH + 30]])
 	})
 
-	it('протяжка — от замеренной ширины заголовка, а не от своей', async () => {
-		const { column, resizer, pointer } = await mount({ width: 120 })
+	it('протяжка — от итога ширины колонки: заголовок плагин не мерит', async () => {
+		const { column, root, resizer, pointer } = await mount({ width: 300, maxWidth: 200 })
+		const measure = vi.spyOn(root, 'getBoundingClientRect')
 
 		pointer('pointerdown', resizer, 260)
 		pointer('pointermove', resizer, 250)
 
-		expect(column.width).toBe(WIDTH - 10)
+		expect(column.width).toBe(190)
+		expect(measure).not.toHaveBeenCalled()
 	})
 
 	it('RTL: ручка у левого края — колонку расширяет движение влево', async () => {
@@ -211,16 +170,42 @@ describe('указатель', () => {
 		expect(column.width).toBe(WIDTH - 30)
 	})
 
-	it('нажатие без движения ширину не задаёт', async () => {
+	it('нажатие без движения ширину не задаёт: гибкая колонка остаётся гибкой', async () => {
 		const { column, resizer, commit, pointer } = await mount({ width: undefined })
 
-		column.notifyWidth(WIDTH)
+		column.layoutWidth = WIDTH
 		pointer('pointerdown', resizer, 260)
 		pointer('pointermove', resizer, 260)
 		pointer('pointerup', resizer, 260)
 
-		expect(column.width).toBeUndefined()
+		expect(column.width).toBe(WIDTH)
+		expect(column.getProps().width).toBeUndefined()
 		expect(commit).not.toHaveBeenCalled()
+	})
+
+	it('гибкая колонка: протяжка — от ширины раскладки и задаёт свою', async () => {
+		const { column, resizer, commit, pointer } = await mount({ width: undefined })
+
+		column.layoutWidth = 200
+		pointer('pointerdown', resizer, 260)
+		pointer('pointermove', resizer, 220)
+		pointer('pointerup', resizer, 220)
+
+		expect(column.width).toBe(160)
+		expect(column.getProps().width).toBe(160)
+		expect(commit.mock.calls).toEqual([[160]])
+	})
+
+	it('гибкая колонка без раскладки — жеста нет, нажатие не гасится', async () => {
+		const { column, resizer, pointer } = await mount({ width: undefined })
+
+		const down = pointer('pointerdown', resizer, 260)
+
+		pointer('pointermove', resizer, 280)
+
+		expect(down.defaultPrevented).toBe(false)
+		expect(column.width).toBeUndefined()
+		expect(column.dataset.get('resizing')).toBe('false')
 	})
 
 	it('нажатие мимо полосы — не жест: кнопка в заголовке остаётся своей', async () => {
@@ -448,96 +433,28 @@ describe('жест скринридера', () => {
 	})
 })
 
-describe('замер', () => {
-	/** Наблюдатель срабатывает на узел, замер идёт кадром позже. */
-	async function resize(root: Element): Promise<void> {
-		for (const observer of observers) observer.trigger(root)
-
-		await nextFrame()
-	}
-
-	const observing = (root: Element) => observers.some((observer) => observer.observed.has(root))
-
-	it('ширину колонки без своей ширины ядро узнаёт от плагина — и ручка появляется', async () => {
-		const { column, root } = await mount({ width: undefined })
-
-		expect(column.resizerRendered).toBe(false)
-
-		await resize(root)
-
-		expect(column.resizer.value).toBe(WIDTH)
-		expect(column.resizerRendered).toBe(true)
-	})
-
-	it('подряд идущие уведомления — один замер', async () => {
-		const { column, root } = await mount({ width: undefined })
-		const notify = vi.spyOn(column, 'notifyWidth')
-
-		for (const observer of observers) {
-			observer.trigger(root)
-			observer.trigger(root)
-		}
-
-		await nextFrame()
-
-		expect(notify).toHaveBeenCalledTimes(1)
-	})
-
-	it('наблюдает, только пока у колонки есть ручка', async () => {
-		const { column, root } = await mount({ resizable: false })
-
-		expect(observing(root)).toBe(false)
-
-		column.resizable = true
-
-		expect(observing(root)).toBe(true)
-
-		column.resizable = false
-
-		expect(observing(root)).toBe(false)
-	})
-
-	it('корень ушёл — наблюдение снято', async () => {
-		const { bundle, root } = await mount()
-
-		expect(observing(root)).toBe(true)
-
-		pluginOf(bundle, TElementPlugin).element = null
-
-		expect(observing(root)).toBe(false)
-	})
-})
-
 describe('уничтожение', () => {
-	it('destroy снимает подписку с колонки: она живёт дольше монтирования', async () => {
+	it('на колонку плагин не подписан: ширину и ручку он не наблюдает', async () => {
 		const column = new TTableColumn({ resizable: true })
 		const on = vi.spyOn(column.events, 'on')
-		const off = vi.spyOn(column.events, 'off')
 		const bundle = new TPluginBundle(column).use(TElementPlugin).use(TTableColumnResizePlugin)
 
 		bundle.destroy()
 
-		/** Подписки на `resizable` — та, что ведёт наблюдение замера. */
-		const pairs = (calls: ReadonlyArray<readonly unknown[]>) =>
-			calls
-				.filter(([event]) => event === 'change:resizable')
-				.map(([event, handler]) => [event, handler])
-
-		expect(pairs(on.mock.calls)).toHaveLength(1)
-		expect(pairs(off.mock.calls)).toEqual(pairs(on.mock.calls))
+		expect(on).not.toHaveBeenCalled()
 	})
 
-	it('после destroy замер и клавиши ничего не трогают', async () => {
-		const { column, bundle, root, field, press } = await mount({ width: undefined })
+	it('после destroy указатель и клавиши ничего не трогают', async () => {
+		const { column, bundle, resizer, field, press, pointer } = await mount()
 
 		bundles.splice(bundles.indexOf(bundle), 1)
 		bundle.destroy()
 
-		for (const observer of observers) observer.trigger(root)
-		await nextFrame()
 		press(field, 'ArrowRight')
+		pointer('pointerdown', resizer, 260)
+		pointer('pointermove', resizer, 280)
 
-		expect(column.resizerRendered).toBe(false)
-		expect(column.width).toBeUndefined()
+		expect(column.width).toBe(WIDTH)
+		expect(column.dataset.get('resizing')).toBe('false')
 	})
 })

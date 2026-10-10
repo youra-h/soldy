@@ -30,6 +30,7 @@ import type {
 	ITableRow,
 	TSelectionMode,
 	TTableCollection,
+	TTableColumnFit,
 	TTableColumnSource,
 	TTableRecord,
 } from '@soldy-ui/core'
@@ -179,6 +180,119 @@ describe('разметка', () => {
 	it('Table.Column и Table.Row — части таблицы', () => {
 		expect(Table.Column).toBe(TableColumn)
 		expect(Table.Row).toBe(TableRow)
+	})
+
+	it('окно вокруг таблицы: корень, классы и наборы — у table, а не у окна', async () => {
+		await render(() =>
+			h(Table, {
+				items: [{ data: ANNA }],
+				columns: [NAME],
+				stickyHead: true,
+				aria_label: 'Сотрудники',
+			}),
+		)
+
+		const table = find('table.s-table')
+		const viewport = find('.s-table__viewport')
+
+		expect(table.parentElement).toBe(viewport)
+		expect(viewport.tagName).toBe('DIV')
+		expect(table.dataset.stickyHead).toBe('true')
+		expect(table.getAttribute('aria-label')).toBe('Сотрудники')
+		// У окна — только свой класс: ни наборов, ни имени
+		expect(viewport.className).toBe('s-table__viewport')
+		expect(
+			viewport.getAttributeNames().filter((name) => name !== 'class' && name !== 'style'),
+		).toEqual([])
+	})
+
+	it('атрибуты потребителя — окну: оно внешний узел компонента', async () => {
+		await render(() =>
+			h(Table, {
+				items: [{ data: ANNA }],
+				columns: [NAME],
+				class: 'staff',
+				'data-testid': 'staff',
+			}),
+		)
+
+		const viewport = find('.s-table__viewport')
+
+		expect(viewport.classList.contains('staff')).toBe(true)
+		expect(viewport.dataset.testid).toBe('staff')
+		expect(find('table.s-table').hasAttribute('data-testid')).toBe(false)
+	})
+
+	it('скрытая таблица прячет окно: v-show — на окне', async () => {
+		await render(() => h(Table, { items: [{ data: ANNA }], columns: [NAME], visible: false }))
+
+		expect(find('.s-table__viewport').style.display).toBe('none')
+	})
+})
+
+/**
+ * Ширины колонок без своей ширины раскладывает ядро по месту таблицы и её
+ * `columnFit` (`core/__tests__/table-layout.spec.ts`), место мерит плагин
+ * (`plugins/__tests__/table-layout.plugin.spec.ts`), раскладку в браузере —
+ * `playground/vue/browser/table.spec.ts`. Здесь — что проп доходит до
+ * таблицы, а ширины раскладки и `data-overflow` — до разметки.
+ */
+describe('раскладка колонок', () => {
+	/** Колонки заголовков — переменные ширины по порядку. */
+	const widths = () =>
+		findAll('.s-table-column').map((header) =>
+			header.style.getPropertyValue('--s-table-column-width'),
+		)
+
+	it('columnFit none — ширины по умолчанию сразу, без места; признака места нет', async () => {
+		await render(() =>
+			h(Table, { items: [{ data: ANNA }], columns: [NAME, AGE], columnFit: 'none' }),
+		)
+
+		expect(widths()).toEqual(['160px', '160px'])
+		expect(findAll('.s-table-column').map((header) => header.dataset.sized)).toEqual([
+			'true',
+			'true',
+		])
+		expect(find('table.s-table').hasAttribute('data-overflow')).toBe(false)
+	})
+
+	it('по умолчанию auto — до места ширин нет, с местом — делят его', async () => {
+		const engine = engineOf('none', [ANNA])
+
+		await render(() => h(Table, { engine }))
+
+		expect(widths()).toEqual(['', ''])
+
+		engine.extensions.columns.notifySpace(500)
+		await settle()
+
+		expect(widths()).toEqual(['250px', '250px'])
+		expect(find('table.s-table').dataset.overflow).toBe('false')
+	})
+
+	it('смена columnFit пропом — новая раскладка; шире места — data-overflow', async () => {
+		const engine = engineOf('none', [ANNA])
+		const fit = ref<TTableColumnFit>('none')
+
+		await render(() => h(Table, { engine, columnFit: fit.value }))
+
+		engine.extensions.columns.notifySpace(600)
+		await settle()
+
+		expect(widths()).toEqual(['160px', '160px'])
+		expect(find('table.s-table').dataset.overflow).toBe('false')
+
+		fit.value = 'auto'
+		await settle()
+
+		expect(widths()).toEqual(['300px', '300px'])
+
+		engine.extensions.columns.notifySpace(300)
+		await settle()
+
+		expect(widths()).toEqual(['160px', '160px'])
+		expect(find('table.s-table').dataset.overflow).toBe('true')
 	})
 })
 
@@ -546,19 +660,23 @@ describe('ручка ширины', () => {
 		expect(findAll('.s-table-column__resizer', age)).toEqual([])
 	})
 
-	it('колонка без своей ширины — полоса появляется с замером ширины', async () => {
+	it('колонка без своей ширины — полоса появляется с местом таблицы, ширина — раскладки', async () => {
 		const engine = engineOf('none', [ANNA], [{ ...NAME, resizable: true }])
 
 		await render(() => h(Table, { engine }))
 
+		// Места нет — ширину решает тема, и ручке нечего показать
 		expect(findAll('.s-table-column__resizer')).toEqual([])
 
-		columnOf(engine, 'name').notifyWidth(180)
+		engine.extensions.columns.notifySpace(180)
 		await settle()
 
 		expect(resizerField().value).toBe('180')
-		// Замер — не своя ширина: ширину колонки по-прежнему решает тема
-		expect(find('.s-table-column').style.getPropertyValue('--s-table-column-width')).toBe('')
+		expect(find('.s-table-column').style.getPropertyValue('--s-table-column-width')).toBe(
+			'180px',
+		)
+		// Ширина раскладки — не своя: колонка остаётся гибкой
+		expect(columnOf(engine, 'name').getProps().width).toBeUndefined()
 	})
 
 	it('у выключенной таблицы ручек нет', async () => {

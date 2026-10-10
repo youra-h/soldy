@@ -114,9 +114,10 @@
 	overflow-wrap: break-word;
 }
 
-// Таблица прямо в содержимом: её закреплённая шапка встаёт к краю, а не под
-// отступ (минус `p-2`), — как в теле окна Dialog (`mixins/_modal.scss`).
-:where(.s-popover__content > .s-table) {
+// Таблица прямо в содержимом — её окно прямой ребёнок содержимого: её
+// закреплённая шапка встаёт к краю, а не под отступ (минус `p-2`), — как в
+// теле окна Dialog (`mixins/_modal.scss`).
+:where(.s-popover__content > .s-table__viewport) {
 	--s-table-head-offset: calc(var(--spacing) * -2);
 }
 

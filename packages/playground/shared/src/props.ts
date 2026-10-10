@@ -31,6 +31,7 @@ import {
 	SLIDE_ORIENTATIONS,
 	SLIDE_SNAPS,
 	SLIDER_TOOLTIPS,
+	TABLE_COLUMN_FITS,
 	TABLE_SORT_MODES,
 	TABS_ALIGNMENTS,
 	TABS_ORIENTATIONS,
@@ -274,6 +275,8 @@ const OWN: Record<string, Record<string, string>> = {
 		grid: 'Режим сетки (APG Data Grid): одна остановка Tab, стрелки по ячейкам, строку выбирают нажатием и пробелом',
 		stickyHead:
 			'Закреплённая шапка: шапка стоит у верхнего края прокрутки — контейнера или страницы, — а строки уходят под неё. Без него шапка уезжает вместе со строками',
+		columnFit:
+			'Как колонки без своей ширины делят место: none — стоят в ширине по умолчанию, auto — растут до maxWidth во всю ширину таблицы, contain — ровно заполняют место, сжимаясь до minWidth. Не влезли и так — таблица прокручивается',
 	},
 	virtual: {
 		enabled:
@@ -381,7 +384,7 @@ const OPTIONS: Record<string, Record<string, readonly string[]>> = {
 		position: TABS_POSITIONS,
 	},
 	tags: { view: BUTTON_VIEWS, overflow: TAGS_OVERFLOWS },
-	table: { sortMode: TABLE_SORT_MODES },
+	table: { sortMode: TABLE_SORT_MODES, columnFit: TABLE_COLUMN_FITS },
 	skeleton: { shape: SKELETON_SHAPES, animation: SKELETON_ANIMATIONS },
 	frame: { position: FRAME_POSITIONS },
 }

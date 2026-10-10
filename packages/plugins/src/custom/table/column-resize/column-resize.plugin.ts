@@ -46,22 +46,23 @@ function fieldOf(resizer: Element | null): HTMLInputElement | null {
 }
 
 /**
- * TTableColumnResizePlugin — ручка ширины колонки: указатель, клавиши, жест
- * скринридера и замер.
+ * TTableColumnResizePlugin — ручка ширины колонки: указатель, клавиши и жест
+ * скринридера.
  *
  * Операции над DOM — здесь, ширина — у колонки: плагин переводит указатель и
  * клавиши в px и зовёт её команды (`grab`, `drag`, `release`, `shift`,
  * `moveToEdge`). Какой станет ширина, в каких пределах и когда слать `commit`,
- * решает колонка. Сторону, куда колонка растёт, плагин берёт у вычисленного
- * направления письма (`slideDirection`): ручка стоит у конца строки, и в RTL
- * колонку расширяет движение влево.
+ * решает колонка, и жест она ведёт от своего итога ширины: ширины колонок
+ * раскладывает ядро, и итог — та ширина, что видна. Сторону, куда колонка
+ * растёт, плагин берёт у вычисленного направления письма (`slideDirection`):
+ * ручка стоит у конца строки, и в RTL колонку расширяет движение влево.
  *
- * **Указатель** — на полосе ручки: нажатие с её захватом начинает жест с
- * замеренной ширины заголовка, протяжка двигает край, отпускание или отнятый
- * указатель жест заканчивают. Своих действий у нажатия нет (`preventDefault`):
- * ни выделения текста, ни своего фокуса браузера. Слушает корень, а не
- * полосу: полосу разметка рисует и убирает, а корень — заголовок — живёт всё
- * монтирование, и захват указателя держится на нём.
+ * **Указатель** — на полосе ручки: нажатие с её захватом начинает жест,
+ * протяжка двигает край, отпускание или отнятый указатель жест заканчивают.
+ * Своих действий у нажатия нет (`preventDefault`): ни выделения текста, ни
+ * своего фокуса браузера. Слушает корень, а не полосу: полосу разметка рисует
+ * и убирает, а корень — заголовок — живёт всё монтирование, и захват
+ * указателя держится на нём.
  *
  * **Клавиши и жест скринридера** — у поля ручки, как у поля ползунка
  * (`TSlideKeyboardPlugin`): стрелки — шаг по стороне роста, Shift со стрелкой,
@@ -70,13 +71,6 @@ function fieldOf(resizer: Element | null): HTMLInputElement | null {
  * клавиш не шлёт: свайп двигает поле и сообщает событием `input`, а плагин
  * переводит направление правки в шаг колонки и возвращает полю её ширину.
  * Шаги — опции установки.
- *
- * **Замер.** Ширину колонки без своей ширины решает тема, и ручке её не
- * показать, пока её не сообщат колонке (`notifyWidth`). Мерит плагин —
- * `ResizeObserver` заголовка, раз в кадр: подряд идущие уведомления
- * схлопываются в один замер, и запись по нему не успевает свернуться в петлю
- * наблюдателя. Наблюдает он, только пока у колонки есть ручка (`resizable`):
- * режим выражен подпиской, а не проверкой в обработчике.
  */
 export class TTableColumnResizePlugin extends TBasePlugin<
 	ITableColumn,
@@ -85,8 +79,6 @@ export class TTableColumnResizePlugin extends TBasePlugin<
 	private _column: ITableColumn | null = null
 	private _root: Element | null = null
 	private _gesture: TTableColumnResizeGesture | null = null
-	private _observer: ResizeObserver | null = null
-	private _frame: number | null = null
 	private _step = STEP
 	private _largeStep = LARGE_STEP
 
@@ -101,22 +93,14 @@ export class TTableColumnResizePlugin extends TBasePlugin<
 
 		element?.events.on('ready', (node) => this._attach(node))
 		element?.events.on('removed', () => this._detach())
-
-		// Колонка живёт дольше монтирования — свой `ctrl` таблицы и колонки из
-		// данных переживают перерисовку, — поэтому подписка через базу: её
-		// снимет `destroy()`
-		this._listenTo(this._column?.events, 'change:resizable', this._onResizable)
 	}
 
 	override destroy(): void {
 		this._detach()
-		this._observer = null
 		this._column = null
 
 		super.destroy()
 	}
-
-	private readonly _onResizable = (): void => this._observe()
 
 	private _attach(root: Element): void {
 		this._detach()
@@ -132,14 +116,10 @@ export class TTableColumnResizePlugin extends TBasePlugin<
 		target.addEventListener('lostpointercapture', this._onPointerUp)
 		target.addEventListener('keydown', this._onKeyDown)
 		target.addEventListener('input', this._onInput)
-
-		this._observe()
 	}
 
 	private _detach(): void {
 		this._end()
-		this._observer?.disconnect()
-		this._cancel()
 
 		const target: IDomEventTarget | null = this._root
 
@@ -169,7 +149,7 @@ export class TTableColumnResizePlugin extends TBasePlugin<
 
 		if (!resizer || !(event.target instanceof Node) || !resizer.contains(event.target)) return
 
-		if (!column.grab(root.getBoundingClientRect().width)) return
+		if (!column.grab()) return
 
 		event.preventDefault()
 
@@ -299,46 +279,5 @@ export class TTableColumnResizePlugin extends TBasePlugin<
 		const value = String(column.resizer.value)
 
 		if (field.value !== value) field.value = value
-	}
-
-	/* ------------------------------------------------------------------ */
-	/* Замер                                                              */
-	/* ------------------------------------------------------------------ */
-
-	/** Наблюдать ширину заголовка — пока у колонки есть ручка. */
-	private _observe(): void {
-		this._observer?.disconnect()
-		this._cancel()
-
-		const root = this._root
-
-		if (!root || !this._column?.resizable) return
-
-		const observer = (this._observer ??= new ResizeObserver(this._schedule))
-
-		observer.observe(root)
-	}
-
-	/** Замер — раз в кадр: подряд идущие уведомления схлопываются в один. */
-	private readonly _schedule = (): void => {
-		if (this._frame !== null) return
-
-		this._frame = requestAnimationFrame(() => {
-			this._frame = null
-			this._measure()
-		})
-	}
-
-	private _cancel(): void {
-		if (this._frame === null) return
-
-		cancelAnimationFrame(this._frame)
-		this._frame = null
-	}
-
-	private _measure(): void {
-		const root = this._root
-
-		if (root) this._column?.notifyWidth(root.getBoundingClientRect().width)
 	}
 }
