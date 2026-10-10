@@ -1,8 +1,10 @@
 import { describe, it, expect } from 'vitest'
 import {
 	ButtonDescriptor,
+	CheckBoxDescriptor,
 	FrameDescriptor,
 	SliderDescriptor,
+	SwitchDescriptor,
 	ValueControlDescriptor,
 	defineComponent,
 	type IComponentDescriptor,
@@ -38,6 +40,18 @@ describe('атрибут · Boolean первым — HTML-семантика', (
 		expect(coerce(SliderDescriptor(), 'marks', '')).toBe(true)
 		expect(coerce(SliderDescriptor(), 'marks', '[0, 50, 100]')).toBe(true)
 		expect(coerce(SliderDescriptor(), 'marks', null)).toBe(false)
+	})
+
+	/**
+	 * Тип `value` у них сужен до `Boolean`. С унаследованным типом полей атрибут
+	 * без значения оставался пустой строкой и не отмечал контрол.
+	 */
+	it.each([
+		['CheckBox', CheckBoxDescriptor],
+		['Switch', SwitchDescriptor],
+	])('value у %s — наличие: атрибут есть — отмечен, снят — нет', (_name, descriptor) => {
+		expect(coerce(descriptor(), 'value', '')).toBe(true)
+		expect(coerce(descriptor(), 'value', null)).toBe(false)
 	})
 })
 

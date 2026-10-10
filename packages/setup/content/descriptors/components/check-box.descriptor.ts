@@ -1,8 +1,9 @@
 /**
  * Дескриптор CheckBox (TCheckBox).
  *
- * Наследует InputControlDescriptor (readonly, required, value, name, disabled, focused, size, variant, ...)
- * и добавляет indeterminate, view, слоты отметки `icon` и `indeterminate-icon` + плагин InputBool.
+ * Наследует InputControlDescriptor (readonly, required, value, name, disabled, focused, size, variant, ...),
+ * сужает value до булева и добавляет indeterminate, view, слоты отметки `icon` и
+ * `indeterminate-icon` + плагин InputBool.
  */
 
 import { defineComponent, defineDescriptor, defineType } from '../../../protected/define'
@@ -40,6 +41,13 @@ export const CheckBoxDescriptor = defineDescriptor(() =>
 				},
 			},
 			props: {
+				/**
+				 * Значение переобъявлено типом: отмечен или нет, как у ядра. Тип
+				 * полей (ValueControl) начинается со строки, и с ним атрибут
+				 * `value` без значения оставался пустой строкой, а не отмечал
+				 * чекбокс. Триггер остаётся у ValueControl.
+				 */
+				value: { type: Boolean },
 				indeterminate: { type: Boolean, triggers: ['change:indeterminate'] },
 				view: { type: String, triggers: ['change:view'] },
 			},

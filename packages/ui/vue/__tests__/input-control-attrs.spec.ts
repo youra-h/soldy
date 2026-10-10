@@ -143,6 +143,15 @@ describe.each(CHECKABLES)('%s', (_name, render, decor) => {
 		expect(input.element.checked).toBe(value)
 		expect(input.attributes('aria-checked')).toBeUndefined()
 	})
+
+	/**
+	 * Атрибут `value` без значения шаблон отдаёт пустой строкой, и булев проп Vue
+	 * приводит её к `true`. С унаследованным типом полей, где первым стоит
+	 * `String`, строка оставалась строкой и контрол не отмечала.
+	 */
+	it('value без значения — отмечен', () => {
+		expect(render({ value: '' }).find('input').element.checked).toBe(true)
+	})
 })
 
 describe('CheckBox · indeterminate', () => {
