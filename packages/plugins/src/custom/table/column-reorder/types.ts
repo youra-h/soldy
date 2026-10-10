@@ -1,5 +1,6 @@
 import type { ITableColumn } from '@soldy-ui/core'
 import type { TPluginEvents } from '../../../base'
+import type { TSlideDirection } from '../../slide/types'
 
 /**
  * Своих событий у плагина нет: что колонку взяли, куда несут и куда она
@@ -25,7 +26,11 @@ export type TTableColumnReorderPress = {
 	gesture: TTableColumnReorderGesture | null
 }
 
-/** Взятая колонка: где стояли заголовки, когда её взяли, и куда её несут. */
+/**
+ * Взятая колонка: где стояли заголовки, когда её взяли, и куда её несут.
+ * Коробки и направление строки плагин читает у документа один раз, на старте
+ * жеста, до первой записи: дальше место считается по ним, без чтения стиля.
+ */
 export type TTableColumnReorderGesture = {
 	/**
 	 * Заголовки показанных колонок на старте жеста, по их порядку. По ним
@@ -38,10 +43,21 @@ export type TTableColumnReorderGesture = {
 	/** Место, куда колонку несут сейчас; на своём месте — `from` */
 	place: number
 	/**
-	 * Шапка стоит — таблица в `none`: ширины корню нет, и колонка встаёт на
-	 * отпускании, без приземления
+	 * Куда растёт строка — вычисленное направление письма корня на старте
+	 * жеста (`slideDirection`): `from-left` слева направо, `from-right` в RTL
+	 */
+	direction: TSlideDirection
+	/**
+	 * Шапка стоит — таблица в `none`: ширины взятого нет нигде, и колонка
+	 * встаёт на отпускании, без приземления
 	 */
 	still: boolean
+	/**
+	 * Узел, которому записана ширина взятого (`--s-table-column-shift`), —
+	 * там, где её читает тема: шапка в `head`, корень в `column`; в `none` —
+	 * `null`. С него ширину и снимают
+	 */
+	shiftHolder: Element | null
 }
 
 /**
@@ -59,6 +75,8 @@ export type TTableColumnReorderBox = {
 export type TTableColumnReorderLanding = {
 	/** Заголовок взятой колонки */
 	cell: Element
+	/** Узел с шириной взятого — `shiftHolder` жеста: снять её, когда колонка встала */
+	shiftHolder: Element | null
 	/** Отпустили на месте — `dragEnd`; отмена — `dragCancel` */
 	commit: boolean
 	/** Кадр, в котором заголовок получит место: к нему `data-landing` уже в разметке */

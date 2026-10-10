@@ -1,6 +1,7 @@
 import { createApp, h, type ShallowRef } from 'vue'
 import { setIcons, useTheme } from '@soldy-ui/setup'
 import * as material from '@soldy-ui/icons-material'
+import { useMotion } from '@soldy-ui/plugins'
 import { Table, Virtual } from '@soldy-ui/vue'
 import '@soldy-ui/theme-oren'
 import oren from '@soldy-ui/theme-oren/setup'
@@ -9,6 +10,9 @@ import { COLUMNS, type TRec } from './data'
 setIcons(material)
 useTheme(oren)
 const query = new URLSearchParams(location.search)
+// `?motion=reduce` — без движения (`useMotion('reduce')`): соседи взятого
+// заголовка стоят, место — линия. Без флага — режим системы
+if (query.get('motion') === 'reduce') useMotion('reduce')
 // `?reorder=1` — колонки можно переставлять (`reorderable`): для сценариев
 // перестановки. Без флага колонки те же, что всегда
 const reorder = query.get('reorder') === '1'
