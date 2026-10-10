@@ -32,6 +32,7 @@ import type {
 	TSelectPlacement,
 	TTableColumnFit,
 	TTableReorderPreview,
+	TTableResizePreview,
 	TTableSortMode,
 	TTagsOverflow,
 	TPopoverEdge,
@@ -186,6 +187,9 @@ export const TABLE_COLUMN_FITS = enumOf<TTableColumnFit>()(['none', 'auto', 'con
 
 /** Что идёт за жестом перестановки колонки: шапка или колонка целиком. */
 export const TABLE_REORDER_PREVIEWS = enumOf<TTableReorderPreview>()(['none', 'head', 'column'])
+
+/** Что идёт за протяжкой ручки ширины колонки: сама колонка или призрак границы. */
+export const TABLE_RESIZE_PREVIEWS = enumOf<TTableResizePreview>()(['live', 'deferred'])
 
 /** Что делает ввод текста в поле Select при `editable: true`. */
 export const SELECT_EDITABLE_MODES = enumOf<TSelectEditableMode>()(['none', 'search', 'filter'])

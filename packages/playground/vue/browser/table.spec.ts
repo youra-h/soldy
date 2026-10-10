@@ -76,12 +76,13 @@ async function mount(
 	engine: TTableCollection,
 	width = 600,
 	dir: 'ltr' | 'rtl' = 'ltr',
+	props: Record<string, unknown> = {},
 ): Promise<void> {
 	render(
 		defineComponent({
 			render: () =>
 				h('div', { dir, style: `width: ${width}px` }, [
-					h(Table, { engine, aria_label: 'Сотрудники' }),
+					h(Table, { engine, aria_label: 'Сотрудники', ...props }),
 				]),
 		}),
 	)
@@ -1522,6 +1523,166 @@ describe('ручка ширины', () => {
 
 		expect(Math.abs(width(header) - (before - 30))).toBeLessThanOrEqual(EPSILON)
 		expect(header.dataset.sized).toBe('true')
+	})
+
+	/**
+	 * Отложенная протяжка: таблица в жесте не перекладывается — ширины стоят до
+	 * отпускания, а новую границу показывает призрак — линия на полосе ручки
+	 * (`::after`), сдвинутая на ширину будущей правки.
+	 */
+	describe('отложенная протяжка (deferred)', () => {
+		const DEFERRED = { resizePreview: 'deferred' }
+
+		/** Нажать на полосу и сдвинуть указатель на `dx`, не отпуская. */
+		async function hold(header: Element, dx: number): Promise<void> {
+			const box = resizerOf(header).getBoundingClientRect()
+			const x = box.left + box.width / 2
+			const y = box.top + box.height / 2
+
+			await pointAt(x, y)
+			await commands.mouseDown()
+			await pointAt(x + dx / 2, y)
+			await pointAt(x + dx, y)
+		}
+
+		/** Призрак ручки: виден ли и на сколько сдвинут. */
+		function ghostOf(header: Element): { shown: boolean; shift: string; height: number } {
+			const style = getComputedStyle(resizerOf(header), '::after')
+
+			return {
+				shown: style.content !== 'none',
+				shift: style.translate,
+				height: parseFloat(style.blockSize),
+			}
+		}
+
+		it('призрак идёт за указателем, ширины стоят; отпускание — ширина и один commit', async () => {
+			const engine = resizeEngine(ALL)
+			const commits: number[] = []
+
+			columnOf(engine, 'name').events.on('commit', (value) => commits.push(value))
+			await mount(engine, PLACE, 'ltr', DEFERRED)
+
+			const [name, city, age] = headers()
+			const before = [name, city, age].map(width)
+
+			expect(ghostOf(name).shown).toBe(false)
+
+			try {
+				await hold(name, 40)
+
+				await expect.poll(() => ghostOf(name).shift).toBe('40px')
+				expect(ghostOf(name).shown).toBe(true)
+				// От верха заголовка до низа таблицы
+				const table = find('.s-table').getBoundingClientRect()
+
+				expect(
+					Math.abs(
+						ghostOf(name).height - (table.bottom - name.getBoundingClientRect().top),
+					),
+				).toBeLessThanOrEqual(EPSILON)
+				expect([name, city, age].map(width)).toEqual(before)
+				expect(commits).toEqual([])
+			} finally {
+				await commands.mouseUp()
+			}
+
+			await expect.poll(() => width(name)).toBeCloseTo(before[0] + 40, 0)
+			expect(commits).toEqual([160])
+			expect(ghostOf(name).shown).toBe(false)
+		})
+
+		it('RTL: призрак уходит влево, когда колонка растёт', async () => {
+			const engine = resizeEngine(ALL)
+
+			await mount(engine, PLACE, 'rtl', DEFERRED)
+
+			const [name] = headers()
+
+			try {
+				await hold(name, -40)
+
+				await expect.poll(() => ghostOf(name).shift).toBe('-40px')
+				expect(Math.abs(width(name) - 120)).toBeLessThanOrEqual(EPSILON)
+			} finally {
+				await commands.mouseUp()
+			}
+
+			expect(columnOf(engine, 'name').width).toBe(160)
+		})
+
+		it('призрак — в границах колонки, и записано то же', async () => {
+			const engine = resizeEngine(ALL)
+
+			await mount(engine, PLACE, 'ltr', DEFERRED)
+
+			const [name] = headers()
+
+			try {
+				await hold(name, 240)
+
+				// maxWidth 300 от ширины 120
+				await expect.poll(() => ghostOf(name).shift).toBe('180px')
+			} finally {
+				await commands.mouseUp()
+			}
+
+			expect(columnOf(engine, 'name').width).toBe(300)
+		})
+
+		it('Escape — призрак снят, ширина та же', async () => {
+			const engine = resizeEngine(ALL)
+
+			await mount(engine, PLACE, 'ltr', DEFERRED)
+
+			const [name] = headers()
+
+			try {
+				await hold(name, 40)
+				await expect.poll(() => ghostOf(name).shown).toBe(true)
+				await userEvent.keyboard('{Escape}')
+				await expect.poll(() => ghostOf(name).shown).toBe(false)
+			} finally {
+				await commands.mouseUp()
+			}
+
+			expect(columnOf(engine, 'name').width).toBe(120)
+		})
+	})
+
+	/**
+	 * Сторож задачи. Гибкие колонки перед тянутой перераскладывались вместе с
+	 * остальными, и край шёл за указателем вполовину или стоял, а колонка росла
+	 * в обратную сторону. Колонки перед тянутой держат ширину, место отдаёт
+	 * колонка после неё.
+	 */
+	it('auto, гибкие колонки: край идёт за указателем, левый край стоит', async () => {
+		const FLEX = { resizable: true }
+
+		// Гибкие делят 400 − 60: по 170. Без правила первая сжалась бы к 160, и
+		// край второй ушёл бы на 30, а не на 40
+		await mount(
+			resizeEngine([
+				{ ...NAME, ...FLEX },
+				{ ...CITY, ...FLEX },
+				{ ...AGE, ...FLEX, width: 60 },
+			]),
+			PLACE,
+		)
+
+		const [first, second] = headers()
+
+		await expect.poll(() => second.querySelector('.s-table-column__resizer')).not.toBeNull()
+
+		const before = second.getBoundingClientRect()
+
+		await drag(second, 40)
+
+		const after = second.getBoundingClientRect()
+
+		expect(Math.abs(after.left - before.left)).toBeLessThanOrEqual(EPSILON)
+		expect(Math.abs(after.right - (before.right + 40))).toBeLessThanOrEqual(EPSILON)
+		expect(Math.abs(width(first) - 170)).toBeLessThanOrEqual(EPSILON)
 	})
 
 	/**

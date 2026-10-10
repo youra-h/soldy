@@ -1026,6 +1026,168 @@ describe('ручка ширины', () => {
 
 			expect(commit.mock.calls).toEqual([[170], [180]])
 		})
+
+		it('Escape (cancel) — ширина нажатия со своим значением, без commit', () => {
+			const { column, commit } = resizable()
+
+			column.layoutWidth = 150
+			column.grab()
+			column.drag(40)
+
+			expect(column.width).toBe(190)
+
+			column.cancel()
+
+			expect(column.width).toBe(150)
+			expect(column.getProps().width).toBeUndefined()
+			expect(column.dataset.get('resizing')).toBe('false')
+			expect(commit).not.toHaveBeenCalled()
+
+			// Отпускание после отмены — уже не жест
+			column.release()
+
+			expect(commit).not.toHaveBeenCalled()
+		})
+	})
+
+	describe('отложенный жест (deferred)', () => {
+		function deferred(props: Partial<ITableColumnProps> = {}) {
+			const made = resizable({ width: 150, ...props })
+
+			made.column.resizePreview = 'deferred'
+
+			return made
+		}
+
+		it('ширина не меняется до отпускания — сдвиг получает призрак', () => {
+			const { column, commit } = deferred()
+			const width = vi.fn()
+
+			column.events.on('change:width', width)
+
+			expect(column.resizeGhost).toBeUndefined()
+
+			column.grab()
+
+			expect(column.resizeGhost).toBe(150)
+			expect(column.dataset.get('resize-ghost')).toBe('true')
+
+			column.drag(30)
+			column.drag(50)
+
+			expect(column.width).toBe(150)
+			expect(column.resizeGhost).toBe(200)
+			expect(width).not.toHaveBeenCalled()
+			expect(commit).not.toHaveBeenCalled()
+
+			column.release()
+
+			expect(column.width).toBe(200)
+			expect(width.mock.calls).toEqual([[200]])
+			expect(commit.mock.calls).toEqual([[200]])
+			expect(column.resizeGhost).toBeUndefined()
+			expect(column.dataset.has('resize-ghost')).toBe(false)
+		})
+
+		it('призрак — в ходе: за границы колонки он не уходит, и записано то же', () => {
+			const { column, commit } = deferred({ minWidth: 100, maxWidth: 240 })
+
+			column.grab()
+			column.drag(500)
+
+			expect(column.resizeGhost).toBe(240)
+
+			column.drag(-500)
+
+			expect(column.resizeGhost).toBe(100)
+
+			column.release()
+
+			expect(column.width).toBe(100)
+			expect(commit.mock.calls).toEqual([[100]])
+		})
+
+		it('возврат к точке нажатия ничего не пишет: гибкая остаётся гибкой', () => {
+			const { column, commit } = resizable()
+			const start = vi.fn()
+
+			column.resizePreview = 'deferred'
+			column.layoutWidth = 150
+			column.events.on('resize:start', start)
+			column.grab()
+			column.drag(40)
+			column.drag(0)
+			column.release()
+
+			expect(column.getProps().width).toBeUndefined()
+			expect(start).not.toHaveBeenCalled()
+			expect(commit).not.toHaveBeenCalled()
+		})
+
+		it('resize:start — на отпускании, до записи', () => {
+			const { column } = deferred()
+			const order: string[] = []
+
+			column.events.on('resize:start', () => order.push(`start ${column.width}`))
+			column.events.on('change:width', (value) => order.push(`width ${value}`))
+			column.grab()
+			column.drag(20)
+
+			expect(order).toEqual([])
+
+			column.release()
+
+			expect(order).toEqual(['start 150', 'width 170'])
+		})
+
+		it('Escape — призрак снят, ширина та же, без commit', () => {
+			const { column, commit } = deferred()
+
+			column.grab()
+			column.drag(40)
+			column.cancel()
+
+			expect(column.width).toBe(150)
+			expect(column.resizeGhost).toBeUndefined()
+			expect(column.dataset.has('resize-ghost')).toBe(false)
+			expect(commit).not.toHaveBeenCalled()
+		})
+
+		it('клавиши пишут сразу', () => {
+			const { column, commit } = deferred()
+
+			column.shift(10)
+
+			expect(column.width).toBe(160)
+
+			column.moveToEdge('start')
+
+			expect(commit.mock.calls).toEqual([[160], [column.width]])
+		})
+
+		it('режим читается на нажатии: смена посреди жеста — со следующего', () => {
+			const { column } = deferred()
+
+			column.grab()
+			column.resizePreview = 'live'
+			column.drag(20)
+
+			expect(column.width).toBe(150)
+
+			column.release()
+			column.grab()
+			column.drag(20)
+
+			expect(column.width).toBe(190)
+
+			column.release()
+		})
+
+		it('на покое признака призрака нет', () => {
+			const { column } = deferred()
+
+			expect(column.dataset.has('resize-ghost')).toBe(false)
+		})
 	})
 
 	describe('клавиши', () => {

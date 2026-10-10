@@ -101,6 +101,13 @@ export const TableDescriptor = defineDescriptor(() =>
 				 * по этому признаку — на покое таблица за режим не платит.
 				 */
 				reorderPreview: { type: String, triggers: ['change:reorderPreview'] },
+				/**
+				 * Что идёт за протяжкой ручки ширины: по умолчанию `live` — сама
+				 * колонка; `deferred` — призрак новой границы, а ширина пишется
+				 * на отпускании. Значение читает ядро колонки, а теме уходит
+				 * только признак отложенного жеста на заголовке.
+				 */
+				resizePreview: { type: String, triggers: ['change:resizePreview'] },
 			},
 		},
 
