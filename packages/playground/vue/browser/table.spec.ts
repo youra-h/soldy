@@ -1167,6 +1167,107 @@ describe('перестановка колонок', () => {
 		}
 	})
 
+	/**
+	 * Линия места нарисована у каждого невзятого заголовка весь жест,
+	 * прозрачной, а метка места только красит её и ставит к краю: линия,
+	 * которая появлялась и пропадала вместе с меткой, перекладывала всю
+	 * таблицу на каждую смену места (`BENCHMARKS.md`). С движением соседи
+	 * расступаются, и линии нет вовсе — ни у одного заголовка.
+	 */
+	describe('линия места', () => {
+		/** Линии невзятых заголовков — вычисленный стиль их `::before`. */
+		const lines = (): CSSStyleDeclaration[] =>
+			headers()
+				.filter((header) => header.dataset.dragging !== 'true')
+				.map((header) => style(header, '::before'))
+
+		/** Линия нарисована: псевдоэлемент есть в раскладке. */
+		const drawn = (line: CSSStyleDeclaration): boolean =>
+			line.content !== 'none' && line.display !== 'none'
+
+		/** Линия видна: у неё цвет. */
+		const shown = (header: Element): boolean =>
+			opacity(style(header, '::before').backgroundColor) > 0
+
+		it.each([
+			{ name: 'без движения', props: {}, motion: 'reduce' },
+			{ name: 'none', props: { reorderPreview: 'none' }, motion: 'system' },
+		] as const)(
+			'$name: у каждого невзятого заголовка весь жест, метка только красит её',
+			async ({ props, motion }) => {
+				useMotion(motion)
+
+				try {
+					const engine = moveEngine()
+
+					await mountWith(engine, props)
+					await laidOut()
+
+					const [name, city, age] = headers()
+
+					try {
+						await carry(name, middleOf(city).x + 10)
+
+						expect(city.dataset.drop).toBe('after')
+						expect(lines().every(drawn)).toBe(true)
+						expect([shown(city), shown(age)]).toEqual([true, false])
+
+						// Место уходит дальше: линия соседа остаётся в раскладке и гаснет
+						await pointAt(middleOf(age).x + 10, middleOf(age).y)
+						await expect.poll(() => age.dataset.drop).toBe('after')
+
+						expect(lines().every(drawn)).toBe(true)
+						expect([shown(city), shown(age)]).toEqual([false, true])
+					} finally {
+						await commands.mouseUp()
+					}
+
+					await expect.poll(() => fieldsOf(engine)).toEqual(['city', 'age', 'name'])
+					expect(lines().some(drawn)).toBe(false)
+				} finally {
+					useMotion('system')
+				}
+			},
+		)
+
+		it('с движением соседи расступаются — линии нет ни у одного заголовка', async () => {
+			const engine = moveEngine()
+
+			await mount(engine, PLACE)
+			await laidOut()
+
+			const [name, city] = headers()
+
+			try {
+				await carry(name, middleOf(city).x + 10)
+
+				expect(city.dataset.drop).toBe('after')
+				expect(lines().some(drawn)).toBe(false)
+			} finally {
+				await commands.mouseUp()
+			}
+
+			await expect.poll(() => fieldsOf(engine)).toEqual(['city', 'name', 'age'])
+		})
+	})
+
+	/**
+	 * Шапка поднята над телом и рисуется после него, и без закрепления. Поле
+	 * чекбокса строки поднято (`z-10`), и без подъёма шапки браузер рисовал бы
+	 * его после заголовков: заголовок, ставший в жесте своим слоем, сверялся бы
+	 * с полем каждой строки на каждой перестройке слоёв — на 5000 строк
+	 * ~350 мс на взятии и на каждой смене места (`BENCHMARKS.md`).
+	 */
+	it('шапка поднята над полем чекбокса строки', async () => {
+		await mount(engineOf(), PLACE)
+
+		const head = find('.s-table__head')
+		const field = find('.s-table-row__select input')
+
+		expect(style(head).position).not.toBe('static')
+		expect(Number(style(head).zIndex)).toBeGreaterThan(Number(style(field).zIndex))
+	})
+
 	it('протяжка кнопку сортировки не нажимает, нажатие без протяжки — сортирует', async () => {
 		const engine = moveEngine()
 

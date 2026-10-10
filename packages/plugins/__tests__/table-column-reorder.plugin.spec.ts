@@ -164,7 +164,7 @@ async function mount(
 		return button
 	}
 
-	return { bundle, owner, engine, root, cells, move, pointer, key, sortOf }
+	return { bundle, owner, engine, root, head, cells, move, pointer, key, sortOf }
 }
 
 /** Коробка заголовка, которую «разложил» тест: левый край по строке. */
@@ -177,13 +177,13 @@ const variable = (element: HTMLElement, name: string) => element.style.getProper
 
 describe('указатель', () => {
 	it('нажатие без протяжки дальше порога — не жест: колонку не берут', async () => {
-		const { engine, root, cells, move, pointer, sortOf } = await mount()
+		const { engine, root, head, cells, move, pointer, sortOf } = await mount()
 
 		pointer('pointerdown', sortOf(cells[0]), 50)
 		pointer('pointermove', cells[0], 54)
 
 		expect(engine.extensions.columns.dragged).toBeUndefined()
-		expect(variable(root, SHIFT)).toBe('')
+		expect([variable(head, SHIFT), variable(root, SHIFT)]).toEqual(['', ''])
 
 		pointer('pointerup', cells[0], 54)
 		await frames(2)
@@ -193,7 +193,7 @@ describe('указатель', () => {
 	})
 
 	it('протяжка — заголовок идёт за указателем, соседи уступают место на его ширину', async () => {
-		const { engine, root, cells, pointer, sortOf } = await mount()
+		const { engine, root, head, cells, pointer, sortOf } = await mount()
 		const [name, city, age] = engine.extensions.columns.columns
 
 		pointer('pointerdown', sortOf(cells[0]), 50)
@@ -201,8 +201,10 @@ describe('указатель', () => {
 
 		expect(engine.extensions.columns.dragged).toBe(name)
 		expect(variable(cells[0], DRAG)).toBe('90px')
-		// Сдвиг соседей — ширина взятого, на корне
-		expect(variable(root, SHIFT)).toBe(`${WIDTH}px`)
+		// Сдвиг соседей — ширина взятого, на шапке: тело в `head` стоит, и
+		// переменная корня переписала бы стиль каждой его ячейке
+		expect(variable(head, SHIFT)).toBe(`${WIDTH}px`)
+		expect(variable(root, SHIFT)).toBe('')
 		// Середина второго заголовка (150) ещё впереди: место — своё
 		expect(city.dataset.has('drop')).toBe(false)
 		expect(city.dataset.has('shift')).toBe(false)
@@ -222,7 +224,7 @@ describe('указатель', () => {
 	})
 
 	it('отпустили — заголовок кадром позже едет на место, колонка встаёт, когда он доехал', async () => {
-		const { engine, root, cells, move, pointer, sortOf } = await mount()
+		const { engine, head, cells, move, pointer, sortOf } = await mount()
 		const [name] = engine.extensions.columns.columns
 
 		pointer('pointerdown', sortOf(cells[0]), 50)
@@ -248,11 +250,51 @@ describe('указатель', () => {
 		expect(engine.extensions.columns.dragged).toBeUndefined()
 		expect(name.dataset.has('landing')).toBe(false)
 		expect(variable(cells[0], DRAG)).toBe('')
+		expect(variable(head, SHIFT)).toBe('')
+	})
+
+	it('column: ширина взятого — на корне, её наследуют шапка и тело; встала — снята', async () => {
+		const { engine, root, head, cells, move, pointer, sortOf } = await mount(
+			MOVABLE,
+			'ltr',
+			'column',
+		)
+
+		pointer('pointerdown', sortOf(cells[0]), 50)
+		pointer('pointermove', cells[0], 160)
+
+		expect(variable(root, SHIFT)).toBe(`${WIDTH}px`)
+		expect(variable(head, SHIFT)).toBe('')
+
+		pointer('pointerup', cells[0], 160)
+		await frames(2)
+
+		expect(fields(engine)).toEqual(['city', 'name', 'age'])
+		expect(move).toHaveBeenCalledTimes(1)
 		expect(variable(root, SHIFT)).toBe('')
 	})
 
-	it('none: шапка стоит — ширины корню нет, колонка встаёт на отпускании, без кадров', async () => {
-		const { engine, root, cells, move, pointer, sortOf } = await mount(MOVABLE, 'ltr', 'none')
+	it('column: отнятый указатель — ширина снята с корня, когда заголовок вернулся', async () => {
+		const { engine, root, cells, pointer, sortOf } = await mount(MOVABLE, 'ltr', 'column')
+
+		pointer('pointerdown', sortOf(cells[0]), 50)
+		pointer('pointermove', cells[0], 160)
+		pointer('pointercancel', cells[0], 160)
+
+		expect(variable(root, SHIFT)).toBe(`${WIDTH}px`)
+
+		await frames(2)
+
+		expect(fields(engine)).toEqual(['name', 'city', 'age'])
+		expect(variable(root, SHIFT)).toBe('')
+	})
+
+	it('none: шапка стоит — ширины нет нигде, колонка встаёт на отпускании, без кадров', async () => {
+		const { engine, root, head, cells, move, pointer, sortOf } = await mount(
+			MOVABLE,
+			'ltr',
+			'none',
+		)
 		const [name, city, age] = engine.extensions.columns.columns
 
 		pointer('pointerdown', sortOf(cells[0]), 50)
@@ -261,7 +303,7 @@ describe('указатель', () => {
 		// Заголовок идёт за указателем, соседи стоят, место — линия
 		expect(name.dataset.get('still')).toBe('true')
 		expect(variable(cells[0], DRAG)).toBe('210px')
-		expect(variable(root, SHIFT)).toBe('')
+		expect([variable(head, SHIFT), variable(root, SHIFT)]).toEqual(['', ''])
 		expect(age.dataset.get('drop')).toBe('after')
 		expect(city.dataset.has('shift')).toBe(false)
 
@@ -360,7 +402,7 @@ describe('указатель', () => {
 	})
 
 	it('отнятый указатель — заголовок едет на своё место, колонка на месте', async () => {
-		const { engine, root, cells, move, pointer } = await mount()
+		const { engine, head, cells, move, pointer } = await mount()
 		const [name, city, age] = engine.extensions.columns.columns
 
 		pointer('pointerdown', cells[0], 50)
@@ -382,8 +424,64 @@ describe('указатель', () => {
 		expect(engine.extensions.columns.dragged).toBeUndefined()
 		expect(name.dataset.has('landing')).toBe(false)
 		expect(variable(cells[0], DRAG)).toBe('')
-		expect(variable(root, SHIFT)).toBe('')
+		expect(variable(head, SHIFT)).toBe('')
 		expect(move).not.toHaveBeenCalled()
+	})
+
+	/**
+	 * Запись стиля, после которой обработчик читает коробку или вычисленный
+	 * стиль, заставляет браузер пересчитать стиль синхронно, прямо в
+	 * обработчике, а в кадре — ещё раз. Поэтому в обработчике указателя
+	 * сначала чтения, потом записи, а направление строки читается один раз, на
+	 * взятии.
+	 */
+	it('чтения — до записей: и на взятии, и на шаге; стиль на шаге не читается', async () => {
+		const { root, head, cells, pointer, sortOf } = await mount()
+		const log: string[] = []
+		const computed = globalThis.getComputedStyle.bind(globalThis)
+
+		vi.spyOn(globalThis, 'getComputedStyle').mockImplementation((element, pseudo) => {
+			log.push('стиль')
+
+			return computed(element, pseudo)
+		})
+
+		for (const node of [root, ...cells]) {
+			const box = node.getBoundingClientRect()
+
+			vi.spyOn(node, 'getBoundingClientRect').mockImplementation(() => {
+				log.push('коробка')
+
+				return box
+			})
+		}
+
+		for (const node of [root, head, ...cells]) {
+			const setProperty = node.style.setProperty.bind(node.style)
+
+			vi.spyOn(node.style, 'setProperty').mockImplementation((name, value, priority) => {
+				log.push('запись')
+				setProperty(name, value, priority)
+			})
+		}
+
+		/** Чтения шага — все до первой записи, и записи были. */
+		const readsFirst = (): boolean =>
+			log.includes('запись') &&
+			log.slice(log.indexOf('запись')).every((entry) => entry === 'запись')
+
+		pointer('pointerdown', sortOf(cells[0]), 50)
+		pointer('pointermove', cells[0], 140)
+
+		expect(log).toContain('стиль')
+		expect(readsFirst()).toBe(true)
+
+		log.length = 0
+		pointer('pointermove', cells[0], 160)
+
+		expect(log).toContain('коробка')
+		expect(log).not.toContain('стиль')
+		expect(readsFirst()).toBe(true)
 	})
 
 	it('Escape посреди жеста — отмена, клавиша погашена; отпускание после неё — не перестановка', async () => {
@@ -473,7 +571,7 @@ describe('приземление', () => {
 	}
 
 	it('нажатие доводит приземление сразу; жест — у колонки, которую нажали', async () => {
-		const { engine, root, cells, move, pointer, sortOf } = await landing()
+		const { engine, head, cells, move, pointer, sortOf } = await landing()
 		const [, city] = engine.extensions.columns.columns
 
 		// Второй заголовок шапки — `city`: шапка ещё в прежнем порядке
@@ -482,7 +580,7 @@ describe('приземление', () => {
 		expect(fields(engine)).toEqual(['city', 'name', 'age'])
 		expect(move).toHaveBeenCalledTimes(1)
 		expect(variable(cells[0], DRAG)).toBe('')
-		expect(variable(root, SHIFT)).toBe('')
+		expect(variable(head, SHIFT)).toBe('')
 
 		pointer('pointermove', cells[1], 220, { pointerId: 2 })
 
@@ -522,7 +620,7 @@ describe('приземление', () => {
 	})
 
 	it('destroy — без перестановки: метки и переменные сняты, кадры ничего не делают', async () => {
-		const { bundle, engine, root, cells, move } = await landing()
+		const { bundle, engine, head, cells, move } = await landing()
 		const [name] = engine.extensions.columns.columns
 
 		bundle.destroy()
@@ -530,7 +628,7 @@ describe('приземление', () => {
 		expect(engine.extensions.columns.dragged).toBeUndefined()
 		expect(name.dataset.has('landing')).toBe(false)
 		expect(variable(cells[0], DRAG)).toBe('')
-		expect(variable(root, SHIFT)).toBe('')
+		expect(variable(head, SHIFT)).toBe('')
 
 		await frames(2)
 
@@ -538,22 +636,29 @@ describe('приземление', () => {
 		expect(move).not.toHaveBeenCalled()
 	})
 
-	it('destroy посреди жеста — то же: колонка на месте, переменные сняты', async () => {
-		const { bundle, engine, root, cells, move, pointer } = await mount()
+	it.each(['head', 'column'] as const)(
+		'destroy посреди жеста в %s — то же: колонка на месте, переменные сняты',
+		async (preview) => {
+			const { bundle, engine, root, head, cells, move, pointer } = await mount(
+				MOVABLE,
+				'ltr',
+				preview,
+			)
 
-		pointer('pointerdown', cells[0], 50)
-		pointer('pointermove', cells[0], 260)
-		bundle.destroy()
+			pointer('pointerdown', cells[0], 50)
+			pointer('pointermove', cells[0], 260)
+			bundle.destroy()
 
-		expect(engine.extensions.columns.dragged).toBeUndefined()
-		expect(variable(cells[0], DRAG)).toBe('')
-		expect(variable(root, SHIFT)).toBe('')
+			expect(engine.extensions.columns.dragged).toBeUndefined()
+			expect(variable(cells[0], DRAG)).toBe('')
+			expect([variable(head, SHIFT), variable(root, SHIFT)]).toEqual(['', ''])
 
-		await frames(2)
+			await frames(2)
 
-		expect(fields(engine)).toEqual(['name', 'city', 'age'])
-		expect(move).not.toHaveBeenCalled()
-	})
+			expect(fields(engine)).toEqual(['name', 'city', 'age'])
+			expect(move).not.toHaveBeenCalled()
+		},
+	)
 })
 
 describe('клавиши', () => {
