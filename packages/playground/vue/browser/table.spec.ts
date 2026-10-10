@@ -1525,6 +1525,41 @@ describe('ручка ширины', () => {
 	})
 
 	/**
+	 * Сторож задачи. Гибкие колонки перед тянутой перераскладывались вместе с
+	 * остальными, и край шёл за указателем вполовину или стоял, а колонка росла
+	 * в обратную сторону. Колонки перед тянутой держат ширину, место отдаёт
+	 * колонка после неё.
+	 */
+	it('auto, гибкие колонки: край идёт за указателем, левый край стоит', async () => {
+		const FLEX = { resizable: true }
+
+		// Гибкие делят 400 − 60: по 170. Без правила первая сжалась бы к 160, и
+		// край второй ушёл бы на 30, а не на 40
+		await mount(
+			resizeEngine([
+				{ ...NAME, ...FLEX },
+				{ ...CITY, ...FLEX },
+				{ ...AGE, ...FLEX, width: 60 },
+			]),
+			PLACE,
+		)
+
+		const [first, second] = headers()
+
+		await expect.poll(() => second.querySelector('.s-table-column__resizer')).not.toBeNull()
+
+		const before = second.getBoundingClientRect()
+
+		await drag(second, 40)
+
+		const after = second.getBoundingClientRect()
+
+		expect(Math.abs(after.left - before.left)).toBeLessThanOrEqual(EPSILON)
+		expect(Math.abs(after.right - (before.right + 40))).toBeLessThanOrEqual(EPSILON)
+		expect(Math.abs(width(first) - 170)).toBeLessThanOrEqual(EPSILON)
+	})
+
+	/**
 	 * Сторож задачи. Колонку без своей ширины тема раскладывала, не глядя на
 	 * границы: колонка с границами 120–360 вставала шире места, которое ей
 	 * давала раскладка, — во всю таблицу, — и первая же протяжка или клавиша

@@ -25,6 +25,7 @@ import type {
 type TColumnWatchers = {
 	cells: () => void
 	layout: () => void
+	resize: () => void
 	commit: (width: number) => void
 }
 
@@ -97,6 +98,14 @@ type TColumnDrag = {
  * Пересчёт — на смену показанных колонок, места, `columnFit` и своей ширины
  * или границ показанной колонки; своя запись ширин пересчёта не будит. Запись
  * состава сводит всё, что задела, в один пересчёт — в её конце.
+ *
+ * **Колонки перед тянутой держат ширину.** Ручка показанной колонки начала
+ * менять ширину (`resize:start` колонки) — гибким показанным колонкам перед
+ * ней расширение пишет своё значение, равное ширине раскладки, в `auto` и
+ * `contain`: итог от этого не меняется, событий нет. Место отдают и берут
+ * гибкие колонки после неё, и край идёт за указателем, а не вполовину. Так
+ * делает AG Grid. В `none` гибкие колонки места не делят, держать нечего;
+ * `column:resize` о закреплённых не приходит: их пользователь не правил.
  *
  * **Ширина, которую задал пользователь**, — `column:resize`: законченная правка
  * ручкой показанной колонки (`commit` колонки), одна на действие. Скрытую
@@ -564,6 +573,7 @@ export class TTableColumnsExtension<
 			column.events.off('change:width', watchers.layout)
 			column.events.off('change:minWidth', watchers.layout)
 			column.events.off('change:maxWidth', watchers.layout)
+			column.events.off('resize:start', watchers.resize)
 			column.events.off('commit', watchers.commit)
 			this._watchers.delete(column)
 
@@ -578,6 +588,7 @@ export class TTableColumnsExtension<
 				layout: () => {
 					if (!this._laying) this._notifyLayout()
 				},
+				resize: () => this._holdBefore(column),
 				commit: (width) => this.events.emit('column:resize', { column, width }),
 			}
 
@@ -588,7 +599,27 @@ export class TTableColumnsExtension<
 			column.events.on('change:width', watchers.layout)
 			column.events.on('change:minWidth', watchers.layout)
 			column.events.on('change:maxWidth', watchers.layout)
+			column.events.on('resize:start', watchers.resize)
 			column.events.on('commit', watchers.commit)
+		}
+	}
+
+	/**
+	 * Гибким показанным колонкам перед `column` — своё значение, равное итогу:
+	 * пока ручка меняет ширину, место отдают и берут колонки после неё. В
+	 * `none` гибкие места не делят, и держать нечего. Итог не меняется,
+	 * поэтому ни `change:width`, ни пересчёта.
+	 */
+	private _holdBefore(column: ITableColumn): void {
+		const owner = this._ctx?.options.get('owner')
+
+		if (!owner || owner.columnFit === 'none') return
+
+		const shown = this.shownColumns
+
+		for (const each of shown.slice(0, shown.indexOf(column))) {
+			if (each.getProps().width === undefined && each.width !== undefined)
+				each.width = each.width
 		}
 	}
 }

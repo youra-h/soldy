@@ -77,6 +77,8 @@ export type TTableColumnGesture = {
 	own: number | undefined
 	/** Итог ширины до жеста — для `commit` */
 	before: number
+	/** Жест уже начал менять ширину: `resize:start` пришёл, второго нет */
+	started: boolean
 }
 
 export type TTableColumnEvents = TComponentViewEvents & {
@@ -125,6 +127,13 @@ export type TTableColumnEvents = TComponentViewEvents & {
 	 * Аргумент — итог ширины
 	 */
 	commit: (width: number) => void
+	/**
+	 * Действие ручки сейчас впервые сменит ширину: первый сдвиг жеста с точки
+	 * нажатия, шаг клавишей, край хода. Приходит до записи, одно на действие;
+	 * нажатие без движения и клавиша у края хода его не шлют. По нему
+	 * раскладка закрепляет гибкие колонки перед этой: край идёт за указателем
+	 */
+	'resize:start': () => void
 }
 
 export interface ITableColumnProps extends IComponentViewProps {

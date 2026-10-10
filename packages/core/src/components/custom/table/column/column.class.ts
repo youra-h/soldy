@@ -55,6 +55,8 @@ import { RESIZE_MAX, RESIZE_MIN, clampWidth } from './width'
  * указатель и какая клавиша, знает плагин, а какой станет ширина — колонка.
  * Ручка работает от итога: пока его нет, ручки нет. `commit` — одно событие на
  * действие и только на смену итога: по нему приложение сохраняет настройку.
+ * `resize:start` — тоже одно на действие, но до первой записи: по нему
+ * раскладка держит колонки перед этой, пока ширина меняется.
  *
  * Ход ручки (`resizer`) — границы колонки, а на стороне без своей границы —
  * пределы ядра, расширенные до итога. Итог всегда в границах, поэтому лежит и
@@ -385,7 +387,14 @@ export default class TTableColumn<
 
 		const [lower, upper] = this._travel(width)
 
-		this._gesture = { from: Math.round(width), lower, upper, own: this._width, before: width }
+		this._gesture = {
+			from: Math.round(width),
+			lower,
+			upper,
+			own: this._width,
+			before: width,
+			started: false,
+		}
 		this._setResizing(true)
 
 		return true
@@ -398,6 +407,11 @@ export default class TTableColumn<
 
 		const { from, lower, upper, own } = gesture
 		const width = within(Math.round(from + offset), lower, upper)
+
+		if (width !== from && !gesture.started) {
+			gesture.started = true
+			this._sink.emit('resize:start')
+		}
 
 		// Указатель на ширине нажатия — колонка такая, какой была при нажатии, со
 		// своим значением: нажатие без движения ширину не задаёт, и гибкая
@@ -473,6 +487,7 @@ export default class TTableColumn<
 
 		if (next === width) return
 
+		this._sink.emit('resize:start')
 		this.width = next
 		this._commit(width)
 	}

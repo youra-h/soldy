@@ -500,3 +500,138 @@ describe('расширение: раскладка', () => {
 		})
 	})
 })
+
+describe('расширение: колонки перед тянутой держат ширину', () => {
+	const A: TTableColumnSource = { field: 'a', resizable: true }
+	const B: TTableColumnSource = { field: 'b', resizable: true }
+	const C: TTableColumnSource = { field: 'c', resizable: true }
+
+	/** Три гибкие колонки в месте 900: по 300. */
+	function laid(columnFit: TTableColumnFit = 'auto') {
+		const { engine } = tableWith([A, B, C], columnFit)
+
+		engine.extensions.columns.notifySpace(900)
+
+		return {
+			engine,
+			a: columnOf(engine, 'a'),
+			b: columnOf(engine, 'b'),
+			c: columnOf(engine, 'c'),
+		}
+	}
+
+	it.each<TTableColumnFit>(['auto', 'contain'])(
+		'%s: протяжка второй — первая стоит, место отдаёт третья',
+		(fit) => {
+			const { engine, a, b } = laid(fit)
+
+			expect(widthsOf(engine)).toEqual([300, 300, 300])
+
+			b.grab()
+			b.drag(50)
+
+			expect(widthsOf(engine)).toEqual([300, 350, 250])
+			expect(a.getProps().width).toBe(300)
+
+			b.drag(-50)
+
+			expect(widthsOf(engine)).toEqual([300, 250, 350])
+
+			b.release()
+		},
+	)
+
+	it('колонки после тянутой и колонки со своей шириной не трогаются', () => {
+		const { engine } = tableWith([{ ...A, width: 200 }, B, C])
+		const b = columnOf(engine, 'b')
+		const c = columnOf(engine, 'c')
+
+		engine.extensions.columns.notifySpace(900)
+		b.grab()
+		b.drag(20)
+		b.release()
+
+		expect(columnOf(engine, 'a').getProps().width).toBe(200)
+		expect(c.getProps().width).toBeUndefined()
+	})
+
+	it('у закреплённой — ни change:width, ни column:resize', () => {
+		const { engine, a, b } = laid()
+		const width = vi.fn()
+		const resize = vi.fn()
+
+		a.events.on('change:width', width)
+		engine.extensions.columns.events.on('column:resize', resize)
+
+		b.grab()
+		b.drag(30)
+		b.release()
+
+		expect(width).not.toHaveBeenCalled()
+		expect(resize.mock.calls.map(([e]) => e.column)).toEqual([b])
+	})
+
+	it('клавиша и край хода тоже держат колонки перед', () => {
+		const { engine, a, b } = laid()
+
+		b.shift(10)
+
+		expect(a.getProps().width).toBe(300)
+		expect(widthsOf(engine)).toEqual([300, 310, 290])
+
+		const { a: a2, b: b2 } = laid()
+
+		b2.moveToEdge('end')
+
+		expect(a2.getProps().width).toBe(300)
+	})
+
+	it('нажатие без движения и клавиша у края хода ничего не закрепляют', () => {
+		const { a, b } = laid()
+		const start = vi.fn()
+
+		b.events.on('resize:start', start)
+
+		b.grab()
+		b.drag(0)
+		b.release()
+
+		expect(start).not.toHaveBeenCalled()
+		expect(a.getProps().width).toBeUndefined()
+
+		b.width = 40
+		start.mockClear()
+		b.moveToEdge('start')
+
+		expect(start).not.toHaveBeenCalled()
+		expect(a.getProps().width).toBeUndefined()
+	})
+
+	it('resize:start — одно на жест, до первой записи', () => {
+		const { b } = laid()
+		const order: string[] = []
+
+		b.events.on('resize:start', () => order.push(`start ${b.width}`))
+		b.events.on('change:width', (value) => order.push(`width ${value}`))
+
+		b.grab()
+		b.drag(10)
+		b.drag(0)
+		b.drag(20)
+		b.release()
+
+		expect(order[0]).toBe('start 300')
+		expect(order.filter((each) => each.startsWith('start'))).toHaveLength(1)
+	})
+
+	it('none: колонки перед тянутой гибкими и остаются', () => {
+		const { a, b } = laid('none')
+
+		b.grab()
+		b.drag(40)
+		b.release()
+
+		expect(a.getProps().width).toBeUndefined()
+		expect(a.width).toBe(160)
+	})
+})
