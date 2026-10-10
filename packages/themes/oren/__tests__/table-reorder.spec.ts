@@ -21,7 +21,9 @@ import { buildCss } from './build-css'
  *   предков у него ровно «корень с признаком > тело > строка»: фильтр помнит
  *   из селектора лишь несколько ближайших имён, и в длинной цепочке признак
  *   выпал бы из них;
- * - переход сдвига ячеек — тоже под признаком;
+ * - переход сдвига ячеек — тоже под признаком, а что идёт переходом, ячейка
+ *   берёт из переменной тела: её тело получает от шапки, пока в шапке есть
+ *   взятый заголовок;
  * - условие по шапке на номер колонки (`:has()` с `:nth-child(`) — у самой
  *   шапки, а не у корня: у корня обход на глубину три шёл бы по всем строкам и
  *   ячейкам тела.
@@ -38,6 +40,9 @@ const CELL_CHAIN = '.s-table[data-reorder-preview=column]>.s-table__body>.s-tabl
 
 /** Признак корня в собранном CSS. */
 const FLAG = '[data-reorder-preview=column]'
+
+/** Переменная тела: что у ячеек идёт переходом, пока в шапке взятый заголовок. */
+const BODY_TRANSITION = '--s-table-body-transition'
 
 /** Комбинатор селектора: потомок, ребёнок, соседи. */
 const COMBINATOR = /[\s>~+]/
@@ -150,21 +155,65 @@ describe('перестановка колонок Table: правила тела
 		expect(misses).toEqual([])
 	})
 
-	it('переход сдвига ячеек тела — под признаком корня', () => {
-		const transitions = rules.filter(
-			({ selector, decls }) =>
-				subjectOf(selector).startsWith('.s-table-row__cell') &&
-				decls.some(
-					({ prop, value }) =>
-						prop.startsWith('transition') && value.includes('translate'),
-				),
-		)
-		const misses = transitions
+	/** Правила ячейки тела с переходом. */
+	const cellTransitions = rules.filter(
+		({ selector, decls }) =>
+			subjectOf(selector).startsWith('.s-table-row__cell') &&
+			decls.some(({ prop }) => prop.startsWith('transition')),
+	)
+
+	it('переход ячеек тела — под признаком корня', () => {
+		const misses = cellTransitions
 			.filter(({ selector }) => !selector.includes(CELL_CHAIN))
 			.map(({ selector }) => selector)
 
-		expect(transitions.length).toBeGreaterThan(0)
+		expect(cellTransitions.length).toBeGreaterThan(0)
 		expect(misses).toEqual([])
+	})
+
+	/**
+	 * Переход ячеек тело получает от шапки, пока в ней есть взятый заголовок, —
+	 * а не от одного признака корня. Колонка встаёт одной перерисовкой, но
+	 * браузер может пересчитать стиль посреди неё — при переносе взятого
+	 * заголовка с кнопкой под фокусом, — и к этому пересчёту меток на
+	 * заголовках уже нет, а признак корня ещё есть. Переход, объявленный прямо
+	 * под признаком, вёл в этом пересчёте ячейки соседей от сдвига к нулю, и
+	 * покой его не гасил (`playground/vue/browser/table.spec.ts`, «ничего не
+	 * отъезжает»).
+	 *
+	 * Поэтому список переходов ячейки — только переменная тела, без неё —
+	 * `none`, а ставит переменную тело по `:has()` шапки со взятым заголовком,
+	 * под признаком корня.
+	 */
+	it('что идёт переходом, ячейка берёт у тела, а тело — у взятого заголовка', () => {
+		const fromBody = new RegExp(`^var\\(${BODY_TRANSITION}\\s*,\\s*none\\)$`)
+		const lists = cellTransitions.flatMap(({ selector, decls }) =>
+			decls
+				.filter(({ prop }) => prop === 'transition' || prop === 'transition-property')
+				.map(({ value }) => ({ selector, value })),
+		)
+		const literal = lists
+			.filter(({ value }) => !fromBody.test(value))
+			.map(({ selector, value }) => `${selector} { ${value} }`)
+		const setters = rules.filter(({ decls }) =>
+			decls.some(({ prop }) => prop === BODY_TRANSITION),
+		)
+		const strays = setters
+			.filter(
+				({ selector }) =>
+					!selector.includes(FLAG) ||
+					subjectOf(selector) !== '.s-table__body' ||
+					!hasesOf(selector).some(
+						({ argument, anchor }) =>
+							isHead(anchor) && argument.includes('[data-dragging=true]'),
+					),
+			)
+			.map(({ selector }) => selector)
+
+		expect(lists.length).toBeGreaterThan(0)
+		expect(literal).toEqual([])
+		expect(setters.length).toBeGreaterThan(0)
+		expect(strays).toEqual([])
 	})
 
 	it(':has() с :nth-child( — только у шапки', () => {
