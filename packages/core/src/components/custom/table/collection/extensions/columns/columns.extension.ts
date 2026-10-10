@@ -42,6 +42,12 @@ type TColumnDrag = {
 	shifted: ReadonlyMap<ITableColumn, TTableColumnShift>
 	/** Колонку отпустили: заголовок приземляется, место заморожено */
 	dropped: boolean
+	/**
+	 * Таблица, которой жест поставил признак `data-reorder-preview` — она была в
+	 * `column`, когда колонку взяли. С неё признак и снимается: таблица может
+	 * смениться посреди жеста
+	 */
+	preview: ITable | undefined
 }
 
 /**
@@ -108,6 +114,17 @@ type TColumnDrag = {
  *   а место заморожено — `dragOver` его больше не меняет;
  * - встала (`dragEnd`) — метки сняты, колонка переставлена, одной операцией:
  *   тема видит шапку и тело уже в новом порядке и без меток жеста.
+ *
+ * **Тело за жестом** — у таблицы в `column` (`reorderPreview`): на весь жест,
+ * от `dragStart` до `dragEnd` или `dragCancel`, расширение ставит её корню
+ * признак `data-reorder-preview`, и по нему тема ведёт за заголовками ячейки
+ * строк. Признак живёт ровно жест, потому что его имя — условие правил тела,
+ * которые умножаются на каждую нарисованную ячейку: пока имени нет ни у
+ * одного предка ячейки — на покое и в `head`, — стиль ячеек за эти правила не
+ * платит. Значение таблицы расширение читает, когда колонку берут: смена
+ * посреди жеста действует со следующего. Снимается признак той же операцией,
+ * что перестановка, — подписчик `column:move` его уже не видит, — а с
+ * таблицы, которая ушла посреди жеста, — когда она ушла.
  *
  * Сколько ждать между отпусканием и концом, решает плагин — пока заголовок
  * доезжает переходом темы. Где указатель и какая колонка под ним, тоже знает
@@ -207,6 +224,9 @@ export class TTableColumnsExtension<
 
 			// Признак места — этой таблицы: она ушла, и признак уходит с неё
 			scope.add(() => owner.dataset.add('overflow', null))
+
+			// Признак жеста — тоже: таблица ушла посреди жеста
+			scope.add(() => owner.dataset.add('reorder-preview', null))
 		})
 	}
 
@@ -268,14 +288,21 @@ export class TTableColumnsExtension<
 		// Указатель у шапки один: новый жест закрывает незаконченный
 		this.dragCancel()
 
+		const owner = this._ctx?.options.get('owner')
+		const preview = owner?.reorderPreview === 'column' ? owner : undefined
+
 		this._drag = {
 			column,
 			to: this.shownColumns.indexOf(column),
 			target: undefined,
 			shifted: new Map(),
 			dropped: false,
+			preview,
 		}
 		column.dataset.add('dragging', true)
+
+		// Тело идёт за жестом — признак на время жеста, а не на покое
+		preview?.dataset.add('reorder-preview', 'column')
 
 		return true
 	}
@@ -332,6 +359,7 @@ export class TTableColumnsExtension<
 		drag.column.dataset.add('dragging', null)
 		drag.column.dataset.add('landing', null)
 		drag.target?.dataset.add('drop', null)
+		drag.preview?.dataset.add('reorder-preview', null)
 
 		for (const column of drag.shifted.keys()) column.dataset.add('shift', null)
 	}

@@ -8,12 +8,24 @@ import { COLUMNS, type TRec } from './data'
 
 setIcons(material)
 useTheme(oren)
-const columns = COLUMNS.map((c) => ({ ...c, sortable: true }))
+const query = new URLSearchParams(location.search)
+// `?reorder=1` — колонки можно переставлять (`reorderable`): для сценариев
+// перестановки. Без флага колонки те же, что всегда
+const reorder = query.get('reorder') === '1'
+// `?preview=column` — за жестом перестановки идут и ячейки строк
+// (`reorderPreview: 'column'`). Без флага проп не задан
+const preview = query.get('preview') === 'column' ? { reorderPreview: 'column' as const } : {}
+const columns = COLUMNS.map((c) => ({
+	...c,
+	sortable: true,
+	...(reorder ? { reorderable: true } : {}),
+}))
 export const sel = {
 	selectAll: 'thead .s-table__select input',
 	sort: 'thead .s-table-column__sort',
+	// Заголовки колонок данных — их берут сценарии перестановки
+	columns: 'thead .s-table-column',
 }
-const query = new URLSearchParams(location.search)
 // `?mode=none` — таблица без выбора: строка без чекбокса, для сравнения памяти
 const mode = query.get('mode') === 'none' ? 'none' : 'multiple'
 // `?virtual=1` — окно: таблица в обёртке `Virtual` в контейнере высотой 800 px,
@@ -29,6 +41,7 @@ export function mount(el: Element, rows: ShallowRef<TRec[] | null>) {
 					columns,
 					mode,
 					aria_label: 'Бенч',
+					...preview,
 				})
 
 			return virtual

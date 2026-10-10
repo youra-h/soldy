@@ -801,25 +801,48 @@ describe('перестановка колонок', () => {
 		expect(move.mock.calls[0][0].order).toEqual(['age', 'name'])
 	})
 
-	it('data-reorder-preview на корне — по пропу и вместе с ним', async () => {
+	/**
+	 * Признак тела — `data-reorder-preview` — ставит корню расширение колонок,
+	 * и только на время жеста в `column`: на покое его нет ни в одном режиме, и
+	 * правила тела темы ячейкам ничего не стоят.
+	 */
+	it('data-reorder-preview — только в жесте column: на покое и в head его нет', async () => {
 		const preview = ref<TTableReorderPreview>('head')
+		const engine = engineOf('none', [ANNA], [...MOVABLE])
+		const { columns } = engine.extensions
 
-		await render(() =>
-			h(Table, {
-				items: [{ data: ANNA }],
-				columns: [...MOVABLE],
-				reorderPreview: preview.value,
-			}),
-		)
+		await render(() => h(Table, { engine, reorderPreview: preview.value }))
 
 		const table = find('table.s-table')
+		const [name] = columns.columns
 
-		expect(table.dataset.reorderPreview).toBe('head')
+		expect(table.hasAttribute('data-reorder-preview')).toBe(false)
 
+		// head — нет и в жесте
+		columns.dragStart(name)
+		await settle()
+
+		expect(table.hasAttribute('data-reorder-preview')).toBe(false)
+
+		columns.dragCancel()
 		preview.value = 'column'
 		await settle()
 
+		expect(table.hasAttribute('data-reorder-preview')).toBe(false)
+
+		columns.dragStart(name)
+		columns.dragOver(1)
+		columns.dragDrop()
+		await settle()
+
 		expect(table.dataset.reorderPreview).toBe('column')
+
+		// Встала — признак ушёл той же перерисовкой, что и перестановка
+		columns.dragEnd()
+		await settle()
+
+		expect(findAll('.s-table-column').map(text)).toEqual(['Возраст', 'Имя'])
+		expect(table.hasAttribute('data-reorder-preview')).toBe(false)
 	})
 
 	/**

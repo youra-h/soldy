@@ -1007,6 +1007,45 @@ describe('перестановка колонок', () => {
 			.toEqual(rows().map(() => 'visible'))
 	})
 
+	/**
+	 * Правила тела темы стоят под признаком корня `data-reorder-preview`, и
+	 * есть он только в жесте: на покое таблица в `column` ячейкам ничего не
+	 * стоит — у них нет ни перехода, ни сдвига, как в `head`.
+	 */
+	it('column на покое: у корня нет признака, у ячеек — ни перехода, ни сдвига', async () => {
+		const engine = moveEngine()
+
+		await mountWith(engine, { reorderPreview: 'column' })
+		await laidOut()
+
+		const root = find('.s-table')
+		// Ни сдвига, ни объявленного перехода сдвига, ни идущего перехода
+		const still = () =>
+			moving().length === 0 &&
+			cells().every((cell) => {
+				const { translate, transitionProperty } = style(cell)
+				const declared = transitionProperty.split(',').map((each) => each.trim())
+
+				return translate === 'none' && !declared.includes('translate')
+			})
+		const [name, city] = headers()
+
+		expect(root.hasAttribute('data-reorder-preview')).toBe(false)
+		expect(still()).toBe(true)
+
+		try {
+			await carry(name, middleOf(city).x + 10)
+
+			expect(root.dataset.reorderPreview).toBe('column')
+		} finally {
+			await commands.mouseUp()
+		}
+
+		await expect.poll(() => fieldsOf(engine)).toEqual(['city', 'name', 'age'])
+		await expect.poll(() => root.hasAttribute('data-reorder-preview')).toBe(false)
+		expect(still()).toBe(true)
+	})
+
 	it('RTL: сосед уступает место к началу строки — вправо', async () => {
 		const engine = moveEngine()
 

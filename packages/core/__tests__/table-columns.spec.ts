@@ -5,15 +5,18 @@ import {
 	TEvented,
 	TItemContext,
 	TPlainExtension,
+	TTable,
 	TTableColumn,
 	TTableColumnCollectionFacade,
 	TTableColumnsExtension,
 	TTableRow,
 	createEngine,
+	createEngineTable,
 	createEngineTableColumns,
 } from '@soldy-ui/core'
 import type {
 	IExtension,
+	ITable,
 	ITableColumn,
 	ITableColumnProps,
 	ITableColumnsExtension,
@@ -21,6 +24,7 @@ import type {
 	TNoEvents,
 	TTableColumnSource,
 	TTableColumnsEvents,
+	TTableReorderPreview,
 } from '@soldy-ui/core'
 import { columnsOf } from '../src/components/custom/table/collection/extensions/guards'
 
@@ -1702,6 +1706,188 @@ describe('перестановка колонок', () => {
 			expect(id.dataset.has('drop')).toBe(false)
 			expect(columns.dragged).toBe(age)
 			expect(move).not.toHaveBeenCalled()
+		})
+	})
+
+	/**
+	 * Признак тела — `data-reorder-preview` на корне таблицы в `column`: по нему
+	 * тема ведёт за заголовками ячейки строк. Его имя — условие правил тела,
+	 * которые умножаются на каждую нарисованную ячейку, поэтому живёт он ровно
+	 * жест — от `dragStart` до `dragEnd` или `dragCancel`, — а на покое и в
+	 * `head` его нет вовсе.
+	 */
+	describe('признак тела', () => {
+		/** Таблица с движком строк и колонками, которые можно переставлять. */
+		function tableWith(reorderPreview: TTableReorderPreview) {
+			const owner = new TTable({ reorderPreview })
+			const engine = createEngineTable({ owner })
+			const { columns } = engine.extensions
+
+			columns.columns = MOVABLE
+
+			return { owner, engine, columns }
+		}
+
+		const flag = (owner: ITable) => owner.dataset.get('reorder-preview')
+
+		it('column: от взятия до конца приземления; на покое признака нет', () => {
+			const { owner, columns } = tableWith('column')
+			const [name] = columns.columns
+
+			expect(owner.dataset.has('reorder-preview')).toBe(false)
+
+			columns.dragStart(name)
+
+			expect(flag(owner)).toBe('column')
+
+			columns.dragOver(2)
+			columns.dragDrop()
+
+			expect(flag(owner)).toBe('column')
+
+			columns.dragEnd()
+
+			expect(fields(columns.columns)).toEqual(['age', 'id', 'name'])
+			expect(owner.dataset.has('reorder-preview')).toBe(false)
+		})
+
+		it('head: признака нет и в жесте', () => {
+			const { owner, columns } = tableWith('head')
+			const dataset = vi.fn()
+
+			owner.events.on('change:dataset', dataset)
+
+			columns.dragStart(columns.columns[0])
+			columns.dragOver(2)
+			columns.dragDrop()
+
+			expect(owner.dataset.has('reorder-preview')).toBe(false)
+
+			columns.dragEnd()
+
+			expect(owner.dataset.has('reorder-preview')).toBe(false)
+			expect(dataset).not.toHaveBeenCalled()
+		})
+
+		it('dragCancel снимает признак; колонку, которую не взять, — признака нет', () => {
+			const { owner, columns } = tableWith('column')
+			const [name, age] = columns.columns
+
+			columns.dragStart(name)
+			columns.dragOver(2)
+			columns.dragCancel()
+
+			expect(owner.dataset.has('reorder-preview')).toBe(false)
+
+			age.disabled = true
+
+			expect(columns.dragStart(age)).toBe(false)
+			expect(owner.dataset.has('reorder-preview')).toBe(false)
+		})
+
+		it('снимается той же операцией, что перестановка: подписчик column:move его уже не видит', () => {
+			const { owner, columns } = tableWith('column')
+			const seen: Array<string | undefined> = []
+
+			columns.events.on('column:move', () => seen.push(flag(owner)))
+
+			columns.dragStart(columns.columns[0])
+			columns.dragOver(2)
+			columns.dragDrop()
+			columns.dragEnd()
+
+			expect(seen).toEqual([undefined])
+		})
+
+		it('новый жест закрывает незаконченный — признак его, один, до конца нового', () => {
+			const { owner, columns } = tableWith('column')
+			const [name, age] = columns.columns
+			const dataset = vi.fn()
+
+			columns.dragStart(name)
+			owner.events.on('change:dataset', dataset)
+			columns.dragStart(age)
+
+			expect(flag(owner)).toBe('column')
+
+			columns.dragCancel()
+
+			expect(owner.dataset.has('reorder-preview')).toBe(false)
+			// Сняли с прежнего жеста, поставили новому, сняли с него
+			expect(dataset).toHaveBeenCalledTimes(3)
+		})
+
+		it('состав показанных сменился посреди жеста — жест прерван, признак снят', () => {
+			const { owner, columns } = tableWith('column')
+			const [name, , id] = columns.columns
+
+			columns.dragStart(name)
+			columns.dragOver(2)
+			id.visible = false
+
+			expect(columns.dragged).toBeUndefined()
+			expect(owner.dataset.has('reorder-preview')).toBe(false)
+		})
+
+		it('таблица ушла посреди жеста — признак уходит с неё; новой не ставится', () => {
+			const { owner, engine, columns } = tableWith('column')
+			const next = new TTable({ reorderPreview: 'column' })
+
+			columns.dragStart(columns.columns[0])
+			engine.options.set({ owner: next })
+
+			expect(owner.dataset.has('reorder-preview')).toBe(false)
+			expect(next.dataset.has('reorder-preview')).toBe(false)
+
+			columns.dragOver(2)
+			columns.dragDrop()
+			columns.dragEnd()
+
+			expect(owner.dataset.has('reorder-preview')).toBe(false)
+			expect(next.dataset.has('reorder-preview')).toBe(false)
+
+			// Следующий жест — у новой таблицы
+			columns.dragStart(columns.columns[0])
+
+			expect(next.dataset.get('reorder-preview')).toBe('column')
+		})
+
+		it('таблицы нет — признака нет, жест идёт', () => {
+			const engine = createEngineTable()
+			const { columns } = engine.extensions
+
+			columns.columns = MOVABLE
+
+			expect(columns.dragStart(columns.columns[0])).toBe(true)
+
+			columns.dragOver(2)
+			columns.dragEnd()
+
+			expect(fields(columns.columns)).toEqual(['age', 'id', 'name'])
+		})
+
+		it('смена пропа посреди жеста — со следующего жеста', () => {
+			const { owner, columns } = tableWith('column')
+			const name = columnOf(columns, 'name')
+
+			columns.dragStart(name)
+			owner.reorderPreview = 'head'
+
+			expect(flag(owner)).toBe('column')
+
+			columns.dragCancel()
+			columns.dragStart(name)
+
+			expect(owner.dataset.has('reorder-preview')).toBe(false)
+
+			owner.reorderPreview = 'column'
+
+			expect(owner.dataset.has('reorder-preview')).toBe(false)
+
+			columns.dragCancel()
+			columns.dragStart(name)
+
+			expect(flag(owner)).toBe('column')
 		})
 	})
 })

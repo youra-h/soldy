@@ -36,8 +36,11 @@ import type {
  *
  * И то, что идёт за жестом перестановки колонки (`reorderPreview`): шапка или
  * колонка целиком. Модель от него не меняется — колонка встаёт на место одной
- * перестановкой, когда её отпустили, — поэтому значение уходит теме
- * `data-reorder-preview`, и рисует жест она.
+ * перестановкой, когда её отпустили. Значение читает расширение колонок, как
+ * `columnFit`, а не тема: в `column` оно ставит корню признак
+ * `data-reorder-preview` на время жеста, и по нему тема ведёт тело за
+ * заголовками. На покое и в `head` признака нет, и таблица не платит за
+ * правила тела: тема держит их под ним.
  */
 export class TTable extends TControl<ITableProps, TTableEvents> implements ITable {
 	static override baseClass = 's-table'
@@ -57,7 +60,7 @@ export class TTable extends TControl<ITableProps, TTableEvents> implements ITabl
 	protected _locale: string
 	protected _stickyHead!: boolean
 	protected _columnFit: TTableColumnFit
-	protected _reorderPreview!: TTableReorderPreview
+	protected _reorderPreview: TTableReorderPreview
 
 	constructor(props: Partial<ITableProps> = {}) {
 		super(props)
@@ -66,8 +69,8 @@ export class TTable extends TControl<ITableProps, TTableEvents> implements ITabl
 
 		this._locale = props.locale ?? ctor.defaultValues.locale
 		this._columnFit = props.columnFit ?? ctor.defaultValues.columnFit
+		this._reorderPreview = props.reorderPreview ?? ctor.defaultValues.reorderPreview
 		this._applyStickyHead(props.stickyHead ?? ctor.defaultValues.stickyHead)
-		this._applyReorderPreview(props.reorderPreview ?? ctor.defaultValues.reorderPreview)
 	}
 
 	get locale(): string {
@@ -116,7 +119,9 @@ export class TTable extends TControl<ITableProps, TTableEvents> implements ITabl
 	/**
 	 * Что идёт за жестом перестановки колонки: `head` — шапка, а тело стоит до
 	 * отпускания; `column` — шапка и ячейки нарисованных строк. Колонка в
-	 * обоих встаёт на место одной перестановкой, когда её отпустили.
+	 * обоих встаёт на место одной перестановкой, когда её отпустили. Значение
+	 * расширение колонок читает, когда колонку берут: смена посреди жеста
+	 * действует со следующего.
 	 */
 	get reorderPreview(): TTableReorderPreview {
 		return this._reorderPreview
@@ -125,7 +130,7 @@ export class TTable extends TControl<ITableProps, TTableEvents> implements ITabl
 	set reorderPreview(value: TTableReorderPreview) {
 		if (this._reorderPreview === value) return
 
-		this._applyReorderPreview(value)
+		this._reorderPreview = value
 		this.events.emit('change:reorderPreview', value)
 	}
 
@@ -144,12 +149,5 @@ export class TTable extends TControl<ITableProps, TTableEvents> implements ITabl
 
 		// Тема по нему закрепляет шапку
 		this._dataset.add('sticky-head', value)
-	}
-
-	protected _applyReorderPreview(value: TTableReorderPreview): void {
-		this._reorderPreview = value
-
-		// Тема по нему решает, идёт ли за жестом тело
-		this._dataset.add('reorder-preview', value)
 	}
 }
