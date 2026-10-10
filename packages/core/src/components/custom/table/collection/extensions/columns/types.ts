@@ -8,6 +8,7 @@ import type { TAriaAttributes, TDatasetAttributes } from '../../../../../../comm
 import type { TTableColumnsCollection, TTableColumnSource } from '../../../column/collection/types'
 import type { ITableColumn } from '../../../column/types'
 import type { ITableRow } from '../../../row/types'
+import type { TTableReorderPreview } from '../../../types'
 
 /**
  * Ширина, которую пользователь задал колонке ручкой, — то, что приложению
@@ -166,6 +167,13 @@ export interface ITableColumnsExtension<
 	readonly dragged: ITableColumn | undefined
 
 	/**
+	 * Что идёт за жестом, который сейчас идёт, — `reorderPreview` таблицы на
+	 * момент `dragStart`; вне жеста — `undefined`. По нему плагин жеста решает,
+	 * ждать ли приземления: в `none` колонка встаёт на отпускании
+	 */
+	readonly dragPreview: TTableReorderPreview | undefined
+
+	/**
 	 * Место под колонки, px, — ширина окна таблицы без колонки выбора: её мерит
 	 * плагин раскладки. По нему и `columnFit` таблицы расширение раскладывает
 	 * гибкие показанные колонки и пишет таблице `data-overflow`. Ноль — место
@@ -187,7 +195,8 @@ export interface ITableColumnsExtension<
 
 	/**
 	 * Колонку взяли за заголовок: жест перестановки. Колонка пока стоит на
-	 * месте, тема рисует её взятой (`data-dragging`). Таблица в `column`
+	 * месте, тема рисует её взятой (`data-dragging`), в `none` — и
+	 * `data-still`: шапка стоит. Таблица в `column`
 	 * (`reorderPreview`) получает на весь жест признак `data-reorder-preview`:
 	 * по нему тема ведёт за заголовками тело, а на покое его нет. Новый жест
 	 * закрывает незаконченный без перестановки.
@@ -201,7 +210,8 @@ export interface ITableColumnsExtension<
 	 * Взятую колонку принесли на место `to` среди показанных: метка
 	 * (`data-drop`) встаёт на колонку, которая сейчас там, — у края, к которому
 	 * колонка встанет, а колонки от места взятой до места `to` включительно
-	 * уступают ей место (`data-shift`, `TTableColumnShift`). На своём месте
+	 * уступают ей место (`data-shift`, `TTableColumnShift`) — кроме `none`,
+	 * где соседи стоят. На своём месте
 	 * меток нет. Пишется только то, что сменилось. Вне жеста и после
 	 * `dragDrop` ничего не делает
 	 */

@@ -7,7 +7,7 @@ import { createEngineTableColumns } from '../../../column/collection'
 import type { TTableColumnsCollection, TTableColumnSource } from '../../../column/collection'
 import type { ITableColumn } from '../../../column/types'
 import type { ITableRow } from '../../../row/types'
-import type { ITable } from '../../../types'
+import type { ITable, TTableReorderPreview } from '../../../types'
 import type { TTableEngineOptions } from '../table'
 import { TTableColumnsItemExtension } from './item'
 import { layoutColumns } from './layout'
@@ -42,6 +42,11 @@ type TColumnDrag = {
 	shifted: ReadonlyMap<ITableColumn, TTableColumnShift>
 	/** Колонку отпустили: заголовок приземляется, место заморожено */
 	dropped: boolean
+	/**
+	 * Что идёт за жестом — значение таблицы, когда колонку взяли: смена
+	 * посреди жеста действует со следующего
+	 */
+	mode: TTableReorderPreview
 	/**
 	 * Таблица, которой жест поставил признак `data-reorder-preview` — она была в
 	 * `column`, когда колонку взяли. С неё признак и снимается: таблица может
@@ -114,6 +119,13 @@ type TColumnDrag = {
  *   а место заморожено — `dragOver` его больше не меняет;
  * - встала (`dragEnd`) — метки сняты, колонка переставлена, одной операцией:
  *   тема видит шапку и тело уже в новом порядке и без меток жеста.
+ *
+ * **Шапка стоит** — у таблицы в `none` (`reorderPreview`): взятой колонке
+ * на весь жест ещё и `data-still`, а `data-shift` не пишется никому, — соседи
+ * стоят, место показывает линия (`data-drop`). Признак — на взятом
+ * заголовке, а не на корне: по нему тема решает только за шапку, и ячейкам
+ * тела его смена ничего не стоит. Приземления в `none` нет: плагин зовёт
+ * `dragEnd` на отпускании (`dragPreview`).
  *
  * **Тело за жестом** — у таблицы в `column` (`reorderPreview`): на весь жест,
  * от `dragStart` до `dragEnd` или `dragCancel`, расширение ставит её корню
@@ -267,6 +279,10 @@ export class TTableColumnsExtension<
 		return this._drag?.column
 	}
 
+	get dragPreview(): TTableReorderPreview | undefined {
+		return this._drag?.mode
+	}
+
 	notifySpace(width: number): void {
 		const space = width > 0 ? Math.floor(width) : 0
 
@@ -289,7 +305,9 @@ export class TTableColumnsExtension<
 		this.dragCancel()
 
 		const owner = this._ctx?.options.get('owner')
-		const preview = owner?.reorderPreview === 'column' ? owner : undefined
+		// Без таблицы — её умолчание
+		const mode = owner?.reorderPreview ?? 'head'
+		const preview = mode === 'column' ? owner : undefined
 
 		this._drag = {
 			column,
@@ -297,9 +315,13 @@ export class TTableColumnsExtension<
 			target: undefined,
 			shifted: new Map(),
 			dropped: false,
+			mode,
 			preview,
 		}
 		column.dataset.add('dragging', true)
+
+		// Шапка стоит: соседи без сдвигов, место — линия
+		if (mode === 'none') column.dataset.add('still', true)
 
 		// Тело идёт за жестом — признак на время жеста, а не на покое
 		preview?.dataset.add('reorder-preview', 'column')
@@ -327,7 +349,8 @@ export class TTableColumnsExtension<
 
 		target?.dataset.add('drop', place > from ? 'after' : 'before')
 
-		this._shift(drag, shown, from, place)
+		// В `none` соседи стоят — уступать место им нечем
+		if (drag.mode !== 'none') this._shift(drag, shown, from, place)
 	}
 
 	dragDrop(): void {
@@ -358,6 +381,7 @@ export class TTableColumnsExtension<
 		this._drag = undefined
 		drag.column.dataset.add('dragging', null)
 		drag.column.dataset.add('landing', null)
+		drag.column.dataset.add('still', null)
 		drag.target?.dataset.add('drop', null)
 		drag.preview?.dataset.add('reorder-preview', null)
 

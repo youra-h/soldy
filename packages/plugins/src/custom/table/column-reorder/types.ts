@@ -37,6 +37,11 @@ export type TTableColumnReorderGesture = {
 	from: number
 	/** Место, куда колонку несут сейчас; на своём месте — `from` */
 	place: number
+	/**
+	 * Шапка стоит — таблица в `none`: ширины корню нет, и колонка встаёт на
+	 * отпускании, без приземления
+	 */
+	still: boolean
 }
 
 /**

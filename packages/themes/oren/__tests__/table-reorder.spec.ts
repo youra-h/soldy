@@ -189,4 +189,30 @@ describe('перестановка колонок Table: правила тела
 
 		expect(misses).toEqual([])
 	})
+
+	/**
+	 * Шапка стоит (`reorderPreview: 'none'`, у взятого `data-still`): соседи
+	 * без нулевого сдвига и перехода — слоёв у заголовков нет, — а линия места
+	 * видна и с движением. Правила шапки, которые по взятому заголовку дают
+	 * соседям сдвиг, переход или прячут линию, взятого с `data-still` не видят.
+	 */
+	it('сдвиг, переход и скрытие линии по взятому — не при data-still', () => {
+		const moving = rules.filter(
+			({ selector, decls }) =>
+				selector.includes('.s-table__head-row:has(') &&
+				selector.includes('[data-dragging=true]') &&
+				decls.some(
+					({ prop, value }) =>
+						prop === 'translate' ||
+						prop.startsWith('transition') ||
+						(prop === 'display' && value === 'none'),
+				),
+		)
+		const misses = moving
+			.filter(({ selector }) => !selector.includes(':not([data-still=true])'))
+			.map(({ selector }) => selector)
+
+		expect(moving.length).toBeGreaterThan(0)
+		expect(misses).toEqual([])
+	})
 })

@@ -973,6 +973,44 @@ describe('перестановка колонок', () => {
 		},
 	)
 
+	/**
+	 * Шапка стоит (`none`): и с движением соседи без сдвига и перехода, место
+	 * — линия, а колонка встаёт на отпускании, без приземления.
+	 */
+	it('none: соседи стоят, линия видна, колонка встаёт на отпускании', async () => {
+		const engine = moveEngine()
+
+		await mountWith(engine, { reorderPreview: 'none' })
+		await laidOut()
+
+		const [name, city, age] = headers()
+		const before = [city, age].map(left)
+		const runs = transitionRuns(city)
+
+		try {
+			await carry(name, middleOf(city).x + 10)
+
+			expect(name.dataset.still).toBe('true')
+			expect(city.dataset.drop).toBe('after')
+			expect(city.dataset.shift).toBeUndefined()
+			expect(style(city, '::before').display).not.toBe('none')
+			expect(near([left(city), left(age)], before)).toBe(true)
+			expect(style(city).translate).toBe('none')
+			expect(runs).not.toContain('translate')
+			expect(find('.s-table').style.getPropertyValue('--s-table-column-shift')).toBe('')
+		} finally {
+			await commands.mouseUp()
+		}
+
+		// Без приземления — сразу после отпускания, `plugins/__tests__` проверяет
+		// это без кадров; здесь — что колонка встала и метки сняты
+		await expect.poll(() => fieldsOf(engine)).toEqual(['city', 'name', 'age'])
+		await expect
+			.poll(() => headers().map((header) => header.textContent?.trim()))
+			.toEqual(['Город', 'Имя', 'Возраст'])
+		expect(headers()[1].dataset.still).toBeUndefined()
+	})
+
 	it('column: ячейки соседа идут с его заголовком, ячейки взятой спрятаны', async () => {
 		const engine = moveEngine()
 

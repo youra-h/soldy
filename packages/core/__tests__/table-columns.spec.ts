@@ -1890,6 +1890,70 @@ describe('перестановка колонок', () => {
 			expect(flag(owner)).toBe('column')
 		})
 	})
+
+	/**
+	 * Шапка стоит — таблица в `none`: взятой колонке на весь жест `data-still`,
+	 * соседям `data-shift` не пишется, место — только `data-drop`. Признака
+	 * тела на корне нет, а `dragPreview` отдаёт режим жеста плагину.
+	 */
+	describe('шапка стоит (none)', () => {
+		function stillTable() {
+			const owner = new TTable({ reorderPreview: 'none' })
+			const engine = createEngineTable({ owner })
+			const { columns } = engine.extensions
+
+			columns.columns = MOVABLE
+
+			return { owner, columns }
+		}
+
+		it('взятой — data-still на весь жест, соседям сдвигов нет, линия места есть', () => {
+			const { owner, columns } = stillTable()
+			const [name, age, id] = columns.columns
+
+			columns.dragStart(name)
+
+			expect(name.dataset.get('still')).toBe('true')
+			expect(columns.dragPreview).toBe('none')
+
+			columns.dragOver(2)
+
+			expect(id.dataset.get('drop')).toBe('after')
+			expect(age.dataset.has('shift')).toBe(false)
+			expect(id.dataset.has('shift')).toBe(false)
+			expect(owner.dataset.has('reorder-preview')).toBe(false)
+
+			columns.dragEnd()
+
+			expect(fields(columns.columns)).toEqual(['age', 'id', 'name'])
+			expect(name.dataset.has('still')).toBe(false)
+			expect(name.dataset.has('dragging')).toBe(false)
+			expect(id.dataset.has('drop')).toBe(false)
+			expect(columns.dragPreview).toBeUndefined()
+		})
+
+		it('dragCancel снимает data-still; в head и column его нет', () => {
+			const { columns } = stillTable()
+			const [name] = columns.columns
+
+			columns.dragStart(name)
+			columns.dragCancel()
+
+			expect(name.dataset.has('still')).toBe(false)
+
+			for (const reorderPreview of ['head', 'column'] as const) {
+				const owner = new TTable({ reorderPreview })
+				const other = createEngineTable({ owner }).extensions.columns
+
+				other.columns = MOVABLE
+				other.dragStart(other.columns[0])
+				other.dragOver(2)
+
+				expect(other.columns[0].dataset.has('still')).toBe(false)
+				expect(other.dragPreview).toBe(reorderPreview)
+			}
+		})
+	})
 })
 
 describe('фасад колонки', () => {

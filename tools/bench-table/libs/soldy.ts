@@ -13,8 +13,11 @@ const query = new URLSearchParams(location.search)
 // перестановки. Без флага колонки те же, что всегда
 const reorder = query.get('reorder') === '1'
 // `?preview=column` — за жестом перестановки идут и ячейки строк
-// (`reorderPreview: 'column'`). Без флага проп не задан
-const preview = query.get('preview') === 'column' ? { reorderPreview: 'column' as const } : {}
+// (`reorderPreview: 'column'`), `?preview=none` — шапка стоит
+// (`reorderPreview: 'none'`). Без флага проп не задан
+const previewFlag = query.get('preview')
+const preview =
+	previewFlag === 'column' || previewFlag === 'none' ? { reorderPreview: previewFlag } : {}
 const columns = COLUMNS.map((c) => ({
 	...c,
 	sortable: true,

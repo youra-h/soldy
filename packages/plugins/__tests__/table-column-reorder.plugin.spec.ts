@@ -19,7 +19,7 @@
 
 import { describe, it, expect, afterEach, vi } from 'vitest'
 import { TTable, createEngineTable } from '@soldy-ui/core'
-import type { TTableCollection, TTableColumnSource } from '@soldy-ui/core'
+import type { TTableCollection, TTableColumnSource, TTableReorderPreview } from '@soldy-ui/core'
 import {
 	TCollectionBundlesPlugin,
 	TElementPlugin,
@@ -75,8 +75,12 @@ const fields = (engine: TTableCollection) =>
  * показанных колонок, в каждом — кнопка сортировки. Коробки заголовков — по
  * `WIDTH` вплотную, в RTL — справа налево.
  */
-async function mount(columns: readonly TTableColumnSource[] = MOVABLE, dir: 'ltr' | 'rtl' = 'ltr') {
-	const owner = new TTable()
+async function mount(
+	columns: readonly TTableColumnSource[] = MOVABLE,
+	dir: 'ltr' | 'rtl' = 'ltr',
+	reorderPreview: TTableReorderPreview = 'head',
+) {
+	const owner = new TTable({ reorderPreview })
 	const engine = createEngineTable({ owner })
 
 	engine.extensions.columns.columns = columns
@@ -245,6 +249,46 @@ describe('указатель', () => {
 		expect(name.dataset.has('landing')).toBe(false)
 		expect(variable(cells[0], DRAG)).toBe('')
 		expect(variable(root, SHIFT)).toBe('')
+	})
+
+	it('none: шапка стоит — ширины корню нет, колонка встаёт на отпускании, без кадров', async () => {
+		const { engine, root, cells, move, pointer, sortOf } = await mount(MOVABLE, 'ltr', 'none')
+		const [name, city, age] = engine.extensions.columns.columns
+
+		pointer('pointerdown', sortOf(cells[0]), 50)
+		pointer('pointermove', cells[0], 260)
+
+		// Заголовок идёт за указателем, соседи стоят, место — линия
+		expect(name.dataset.get('still')).toBe('true')
+		expect(variable(cells[0], DRAG)).toBe('210px')
+		expect(variable(root, SHIFT)).toBe('')
+		expect(age.dataset.get('drop')).toBe('after')
+		expect(city.dataset.has('shift')).toBe(false)
+
+		pointer('pointerup', cells[0], 260)
+
+		// Сразу, а не после приземления
+		expect(fields(engine)).toEqual(['city', 'age', 'name'])
+		expect(move).toHaveBeenCalledTimes(1)
+		expect(name.dataset.has('landing')).toBe(false)
+		expect(name.dataset.has('still')).toBe(false)
+		expect(variable(cells[0], DRAG)).toBe('')
+	})
+
+	it('none: отнятый указатель — колонка на месте сразу, метки сняты', async () => {
+		const { engine, cells, move, pointer, sortOf } = await mount(MOVABLE, 'ltr', 'none')
+		const [name, , age] = engine.extensions.columns.columns
+
+		pointer('pointerdown', sortOf(cells[0]), 50)
+		pointer('pointermove', cells[0], 260)
+		pointer('pointercancel', cells[0], 260)
+
+		expect(fields(engine)).toEqual(['name', 'city', 'age'])
+		expect(move).not.toHaveBeenCalled()
+		expect(engine.extensions.columns.dragged).toBeUndefined()
+		expect(name.dataset.has('still')).toBe(false)
+		expect(age.dataset.has('drop')).toBe(false)
+		expect(variable(cells[0], DRAG)).toBe('')
 	})
 
 	it('назад — метка у начала колонки места, заголовок едет к её левому краю', async () => {

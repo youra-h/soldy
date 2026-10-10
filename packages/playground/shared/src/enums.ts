@@ -185,7 +185,7 @@ export const TABLE_SORT_MODES = enumOf<TTableSortMode>()(['single', 'multiple'])
 export const TABLE_COLUMN_FITS = enumOf<TTableColumnFit>()(['none', 'auto', 'contain'])
 
 /** Что идёт за жестом перестановки колонки: шапка или колонка целиком. */
-export const TABLE_REORDER_PREVIEWS = enumOf<TTableReorderPreview>()(['head', 'column'])
+export const TABLE_REORDER_PREVIEWS = enumOf<TTableReorderPreview>()(['none', 'head', 'column'])
 
 /** Что делает ввод текста в поле Select при `editable: true`. */
 export const SELECT_EDITABLE_MODES = enumOf<TSelectEditableMode>()(['none', 'search', 'filter'])

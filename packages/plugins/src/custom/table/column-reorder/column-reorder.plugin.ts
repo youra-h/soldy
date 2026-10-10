@@ -100,6 +100,11 @@ function landingOffset(gesture: TTableColumnReorderGesture, place: number): numb
  * прыгает, а прокрутку посреди жеста учитывает коробка корня. Взятый
  * заголовок идёт за указателем — переменная сдвига на нём.
  *
+ * **Шапка стоит** — таблица в `none` (`dragPreview` расширения на старте
+ * жеста): ширину взятого плагин корню не пишет, а отпускание переставляет
+ * колонку сразу, `dragEnd` (отмена — `dragCancel`), без приземления — как
+ * до живого жеста. Остальное то же: снимок, место, заголовок за указателем.
+ *
  * **Отпустили** — колонка не переставляется сразу: расширение замораживает
  * место (`dragDrop`, `data-landing`), а кадром позже, когда метка уже в
  * разметке, заголовок получает сдвиг до места, где встанет, и тема довозит
@@ -306,7 +311,7 @@ export class TTableColumnReorderPlugin extends TBasePlugin<
 				return
 			}
 
-			press.gesture = this._takeGesture(root, press.column)
+			press.gesture = this._takeGesture(root, press.column, columns.dragPreview === 'none')
 
 			if (!press.gesture) {
 				// Шапка не дорисовала смену колонок: мерить нечего
@@ -334,18 +339,25 @@ export class TTableColumnReorderPlugin extends TBasePlugin<
 
 	/**
 	 * Колонку взяли: снимок заголовков — до сдвига взятого, — и корню ширина
-	 * взятого, на которую тема сдвигает соседей. Заголовков нет — жеста нет.
+	 * взятого, на которую тема сдвигает соседей. Шапка стоит (`still`, таблица
+	 * в `none`) — ширины нет: соседям сдвигаться не на что, а переменная корня
+	 * переписала бы стиль всем ячейкам таблицы. Заголовков нет — жеста нет.
 	 */
-	private _takeGesture(root: Element, column: ITableColumn): TTableColumnReorderGesture | null {
+	private _takeGesture(
+		root: Element,
+		column: ITableColumn,
+		still: boolean,
+	): TTableColumnReorderGesture | null {
 		const boxes = this._boxes(root)
 		const from = this._shown.indexOf(column)
 		const own = boxes[from]
 
 		if (!own) return null
 
-		if (isMeasurableElement(root)) root.style.setProperty(SHIFT_VARIABLE, `${own.width}px`)
+		if (!still && isMeasurableElement(root))
+			root.style.setProperty(SHIFT_VARIABLE, `${own.width}px`)
 
-		return { boxes, from, place: from }
+		return { boxes, from, place: from, still }
 	}
 
 	private readonly _onPointerUp = (event: PointerEvent): void => {
@@ -386,6 +398,16 @@ export class TTableColumnReorderPlugin extends TBasePlugin<
 
 		const columns = this._engine?.extensions.columns
 		const place = commit ? gesture.place : gesture.from
+
+		// Шапка стоит — приземления нет: колонка встаёт на отпускании
+		if (gesture.still) {
+			if (commit) columns?.dragEnd()
+			else columns?.dragCancel()
+
+			this._clearVariables(press.cell)
+
+			return
+		}
 
 		if (!commit) columns?.dragOver(gesture.from)
 
