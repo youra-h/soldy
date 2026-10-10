@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
 	ButtonDescriptor,
 	CheckBoxDescriptor,
+	ComponentViewDescriptor,
 	FrameDescriptor,
 	SliderDescriptor,
 	SwitchDescriptor,
@@ -9,7 +10,7 @@ import {
 	defineComponent,
 	type IComponentDescriptor,
 } from '@soldy-ui/setup'
-import { buildAttributeMap, coerceAttribute } from '@soldy-ui/webc'
+import { buildAttributeMap, coerceAttribute, useAttributes } from '@soldy-ui/webc'
 
 /**
  * Значение пропа из строки атрибута — тем же путём, что у элемента: карта
@@ -115,5 +116,22 @@ describe('атрибут · проп без типа', () => {
 		expect(coerce(HintDescriptor, 'hint', 'abc')).toBe('abc')
 		expect(coerce(HintDescriptor, 'hint', '')).toBe('')
 		expect(coerce(HintDescriptor, 'hint', null)).toBeUndefined()
+	})
+})
+
+/**
+ * Корень — сам хост, и тег у него свой: ядру его отдаёт база при сборке.
+ * Атрибут `tag` расходился бы с элементом молча, поэтому его нет ни в карте,
+ * ни в `observedAttributes`.
+ */
+describe('атрибут · tag', () => {
+	it.each([
+		['Button', ButtonDescriptor],
+		['ComponentView', ComponentViewDescriptor],
+	])('у %s атрибута tag нет', (_name, descriptor) => {
+		expect(buildAttributeMap(descriptor()).has('tag')).toBe(false)
+		expect(useAttributes(descriptor())).not.toContain('tag')
+		// Соседние пропы на месте: из карты выпал только tag
+		expect(buildAttributeMap(descriptor()).has('direction')).toBe(true)
 	})
 })

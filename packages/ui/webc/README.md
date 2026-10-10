@@ -12,6 +12,11 @@ component descriptor, so they match the other five adapters; only the spelling i
 tags are prefixed (`<so-button>`), props are attributes or element properties, and events are
 DOM events with the core names (`action:press`).
 
+There is no wrapper: `<so-button>` is the button itself and the root of the component. `class`,
+`style`, attributes and listeners on it take effect directly, and an attribute you set
+(`tabindex="-1"`, `role="link"`) wins over what the component writes. There is no `tag` prop —
+the root is always the element you wrote.
+
 Shadow DOM is not used — a theme styles global BEM classes, so light DOM is distributed by the
 `slot` attribute by hand.
 
@@ -35,20 +40,34 @@ import '@soldy-ui/webc'
 ```
 
 ```html
-<so-button text="Save"><i slot="leading">★</i></so-button>
+<so-button text="Save" class="toolbar-action"><i slot="leading">★</i></so-button>
+```
+
+`<so-button>` takes part in forms like `<button>`: inside a form, or tied to one with
+`form="id"`, it submits it when pressed; `type="reset"` resets the form and `type="button"` does
+nothing. `disabled` turns it off natively — no focus, no clicks.
+
+```html
+<form>
+  <input name="q" />
+  <so-button text="Search"></so-button>
+  <so-button type="reset" text="Clear"></so-button>
+</form>
 ```
 
 From JavaScript the element is the component: props are its properties, events are DOM events, and
-a core instance can be handed over as `ctrl`:
+a core instance can be handed over as `ctrl` before the element is connected:
 
 ```ts
 import { TButton } from '@soldy-ui/core'
 
-const el = document.querySelector('so-button')
+const el = document.createElement('so-button')
 
 el.ctrl = new TButton({ text: 'Save' })
-el.disabled = false
 el.addEventListener('action:press', () => console.log('pressed'))
+document.body.append(el)
+
+el.disabled = true
 ```
 
 The application plugs in a theme and an icon pack once, in its entry point:

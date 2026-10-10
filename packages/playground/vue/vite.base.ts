@@ -56,6 +56,7 @@ export function aliases({ themeCss }: { themeCss: boolean }): Record<string, str
 		'@soldy-ui/setup': resolve('../../setup/index.ts'),
 		'@soldy-ui/vue': resolve('../../ui/vue/src/index.ts'),
 		'@soldy-ui/react': resolve('../../ui/react/src/index.ts'),
+		'@soldy-ui/webc': resolve('../../ui/webc/src/index.ts'),
 		'@soldy-ui/playground-shared': resolve('../shared/src/index.ts'),
 	}
 }

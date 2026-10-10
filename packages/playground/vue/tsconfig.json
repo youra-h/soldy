@@ -14,6 +14,7 @@
       "@soldy-ui/plugins": ["../../plugins/src"],
       "@soldy-ui/setup": ["../../setup/index.ts"],
       "@soldy-ui/vue": ["../../ui/vue/src/index.ts"],
+      "@soldy-ui/webc": ["../../ui/webc/src/index.ts"],
       "@soldy-ui/playground-shared": ["../shared/src/index.ts"]
     }
   },
