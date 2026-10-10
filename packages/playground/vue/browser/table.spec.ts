@@ -1630,6 +1630,38 @@ describe('ручка ширины', () => {
 			expect(columnOf(engine, 'name').width).toBe(300)
 		})
 
+		/**
+		 * Сторож задачи. У последней колонки линия ручки стоит у края таблицы, а
+		 * не посередине полосы, и правило призрака, равное по весу и стоящее
+		 * ниже, перебивало это: призрак вставал на несколько px раньше линии.
+		 */
+		it.each([
+			['средней', 0],
+			['последней', 2],
+		])('у %s колонки призрак на нажатии — ровно на линии ручки', async (_, index) => {
+			const engine = resizeEngine(ALL)
+
+			await mount(engine, PLACE, 'ltr', DEFERRED)
+
+			const header = headers()[index]
+			const resizer = resizerOf(header)
+			const edgeOf = (pseudo: string) => {
+				const style = getComputedStyle(resizer, pseudo)
+
+				return { left: style.left, right: style.right }
+			}
+
+			try {
+				await hold(header, 0)
+				await expect.poll(() => ghostOf(header).shown).toBe(true)
+
+				expect(ghostOf(header).shift).toBe('0px')
+				expect(edgeOf('::after')).toEqual(edgeOf('::before'))
+			} finally {
+				await commands.mouseUp()
+			}
+		})
+
 		it('Escape — призрак снят, ширина та же', async () => {
 			const engine = resizeEngine(ALL)
 
