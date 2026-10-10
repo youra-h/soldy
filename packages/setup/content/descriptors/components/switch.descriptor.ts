@@ -1,8 +1,8 @@
 /**
  * Дескриптор Switch (TSwitch).
  *
- * Наследует InputControlDescriptor (readonly, required, value, name, disabled, focused, size, variant, ...)
- * и добавляет слоты ручки `on` и `off` + плагин InputBool.
+ * Наследует InputControlDescriptor (readonly, required, value, name, disabled, focused, size, variant, ...),
+ * сужает value до булева и добавляет слоты ручки `on` и `off` + плагин InputBool.
  */
 
 import { defineComponent, defineDescriptor, defineType } from '../../../protected/define'
@@ -38,6 +38,15 @@ export const SwitchDescriptor = defineDescriptor(() =>
 					},
 					description: 'Содержимое ручки выключенного переключателя',
 				},
+			},
+			props: {
+				/**
+				 * Значение переобъявлено типом: включён или нет, как у ядра. Тип
+				 * полей (ValueControl) начинается со строки, и с ним атрибут
+				 * `value` без значения оставался пустой строкой, а не включал
+				 * переключатель. Триггер остаётся у ValueControl.
+				 */
+				value: { type: Boolean },
 			},
 		},
 

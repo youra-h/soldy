@@ -46,6 +46,8 @@ import { TestBed, type ComponentFixture } from '@angular/core/testing'
 import type { TButtonView, TComponentSize } from '@soldy-ui/core'
 import {
 	ButtonDescriptor,
+	CheckBoxDescriptor,
+	SwitchDescriptor,
 	ValueControlDescriptor,
 	type TExternalPluginProps,
 } from '@soldy-ui/setup'
@@ -215,6 +217,14 @@ describe('булев вход · критерий генератора', () => {
 	it('Boolean среди типов пропа — не булев вход', () => {
 		expect(useInputs(ValueControlDescriptor())).toContain('value')
 		expect(useBooleanInputs(ValueControlDescriptor())).not.toContain('value')
+	})
+
+	/** `value` у них переобъявлен ровно `Boolean`, как значение ядра, вместо типа полей. */
+	it.each([
+		['CheckBox', CheckBoxDescriptor],
+		['Switch', SwitchDescriptor],
+	])('value у %s — булев вход', (_name, descriptor) => {
+		expect(useBooleanInputs(descriptor())).toContain('value')
 	})
 })
 

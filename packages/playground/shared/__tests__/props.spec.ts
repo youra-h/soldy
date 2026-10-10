@@ -93,6 +93,17 @@ function entryOf(id: string) {
 	return entry
 }
 
+/** Вид строки по имени — из любой группы страницы. */
+function kindOf(id: string, name: string) {
+	const row = Object.values(propControls(entryOf(id)))
+		.flat()
+		.find((control) => control.name === name)
+
+	if (!row) throw new Error(`нет строки ${name} у ${id}`)
+
+	return row.kind
+}
+
 /**
  * Пропы плагинов — третья группа строк.
  *
@@ -149,17 +160,6 @@ describe('propControls: пропы плагинов', () => {
  * многих, — текстовым.
  */
 describe('controlKind: число или текст', () => {
-	/** Вид строки по имени — из любой группы страницы. */
-	function kindOf(id: string, name: string) {
-		const row = Object.values(propControls(entryOf(id)))
-			.flat()
-			.find((control) => control.name === name)
-
-		if (!row) throw new Error(`нет строки ${name} у ${id}`)
-
-		return row.kind
-	}
-
 	it.each([
 		['dialog', 'offset'],
 		['dialog', 'width'],
@@ -176,6 +176,19 @@ describe('controlKind: число или текст', () => {
 
 	it('строка среди многих типов остаётся текстом: value у Input', () => {
 		expect(kindOf('input', 'value')).toBe('text')
+	})
+})
+
+/**
+ * `value` контролы наследуют с типом полей — первым в нём стоит `String`, — и
+ * у CheckBox и Switch строка была текстовым полем: набранное уходило компоненту
+ * строкой, хотя значение у них да или нет, а код под колонками не проходил
+ * проверку типов. Их дескрипторы сужают тип до `Boolean`, как у ядра; у Input
+ * поле остаётся текстовым (блок выше).
+ */
+describe('controlKind: булево значение контрола', () => {
+	it.each(['check-box', 'switch'])('%s.value — переключатель', (id) => {
+		expect(kindOf(id, 'value')).toBe('switch')
 	})
 })
 
