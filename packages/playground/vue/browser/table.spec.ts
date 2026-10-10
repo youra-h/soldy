@@ -858,15 +858,16 @@ describe('перестановка колонок', () => {
 
 	/**
 	 * Взять заголовок за середину и нести указатель к точке `x` строки:
-	 * сначала за порог жеста, потом туда. Кнопка остаётся зажатой — отпускает
-	 * тест.
+	 * сначала за порог жеста в её сторону, потом туда. Кнопка остаётся зажатой
+	 * — отпускает тест. В сторону точки, а не всегда вправо: у последней
+	 * колонки шаг вправо выходил бы за край окна прогона.
 	 */
 	async function carry(header: Element, x: number): Promise<void> {
 		const from = middleOf(header)
 
 		await pointAt(from.x, from.y)
 		await commands.mouseDown()
-		await pointAt(from.x + 40, from.y)
+		await pointAt(from.x + Math.sign(x - from.x) * 40, from.y)
 		await pointAt(x, from.y)
 	}
 
@@ -931,48 +932,140 @@ describe('перестановка колонок', () => {
 	 * Колонка переставляется, когда отпущенный заголовок встал: к этому
 	 * времени он и сдвинутые соседи стоят там, где их поставит новая
 	 * раскладка, а переходы уходят вместе с жестом, — ничего не отъезжает.
-	 * Коробки снимаются в `column:move` — перестановка уже в модели, а Vue
-	 * ещё не перерисовал, — и следом за перерисовкой.
+	 * Коробки заголовков снимаются в `column:move` — перестановка уже в
+	 * модели, а Vue ещё не перерисовал, — а заголовков и ячеек первой строки
+	 * — следом за перерисовкой и ещё раз, когда переход сдвига, начнись он, уже
+	 * доиграл бы. С `column:move` корень таблицы слушает и `transitionrun`
+	 * сдвига: событие всплывает до него от заголовков и ячеек.
+	 *
+	 * Направлений три, и первое — взятая на место соседа — одно слепо. Vue
+	 * переносит в документе узлы вне наибольшей возрастающей
+	 * последовательности ключей: здесь это сдвинутый сосед, а взятый заголовок
+	 * остаётся на месте. Последнюю колонку в начало и первую через две в конец
+	 * Vue переносит взятой, а сдвинутые соседи с их ячейками остаются в
+	 * документе на своих местах. Со взятым заголовком уезжает и кнопка
+	 * сортировки, которую нажатие сфокусировало, и Chromium, теряя фокус,
+	 * пересчитывает стиль посреди перерисовки: меток на заголовках к этому
+	 * пересчёту уже нет, а признак корня ещё есть. Переход, который держался
+	 * на признаке корня, а не на взятом заголовке, вёл в этом пересчёте ячейки
+	 * соседей от сдвига к нулю (`themes/oren/src/components/table/_table.scss`,
+	 * колонка целиком). В первом направлении взятый не переносится, пересчёта
+	 * посреди перерисовки нет, и перестановка встаёт одним пересчётом.
 	 */
-	it.each(['head', 'column'] as const)(
-		'%s: отпустили — заголовок встал на место, потом перестановка; ничего не отъезжает',
-		async (preview) => {
+	describe('отпустили — заголовок встал на место, потом перестановка; ничего не отъезжает', () => {
+		/** Метки жеста у заголовка: после перестановки их нет ни у кого. */
+		const MARKS = ['dragging', 'landing', 'drop', 'shift', 'still']
+
+		/** Дольше перехода сдвига темы (`$reorder-duration`, 200 мс): начнись он — доиграл бы. */
+		const SETTLE = 300
+
+		/** Текст заголовка колонки по полю. */
+		const textOf = (field: string) => MOVABLE.find((column) => column.field === field)?.text
+
+		it.each(
+			(['head', 'column'] as const).flatMap((preview) => [
+				{ preview, name: 'взятая — на место соседа', take: 0, past: 1 },
+				{ preview, name: 'последняя — в начало', take: 2, past: 0 },
+				{ preview, name: 'первая — через две в конец', take: 0, past: 2 },
+			]),
+		)('$preview: $name', async ({ preview, take, past }) => {
 			const engine = moveEngine()
 
 			await mountWith(engine, { reorderPreview: preview })
 			await laidOut()
 
-			const [name, city, age] = headers()
-			const before = [name, city, age].map(left)
-			const seen: { at: number[]; after: number[]; moving: string[] }[] = []
+			const root = find('.s-table')
+			const nodes = headers()
+			const before = nodes.map(left)
+			const widths = nodes.map(width)
+			const order = fieldsOf(engine)
+			const forward = past > take
+
+			order.splice(past, 0, ...order.splice(take, 1))
+
+			// Соседи от взятой до места уступают ей место — на её ширину
+			const shifted = nodes.filter(
+				(_, index) =>
+					index !== take &&
+					index >= Math.min(take, past) &&
+					index <= Math.max(take, past),
+			)
+			const shiftedTo = shifted.map(
+				(node) => left(node) + (forward ? -widths[take] : widths[take]),
+			)
+			const runs: string[] = []
+			const seen: {
+				at: number[]
+				heads: number[]
+				cells: Element[]
+				boxes: number[]
+				moving: string[]
+			}[] = []
 
 			engine.extensions.columns.events.on('column:move', () => {
-				const at = [name, city, age].map(left)
+				const at = nodes.map(left)
 
-				void nextTick(() =>
-					seen.push({ at, after: [name, city, age].map(left), moving: moving() }),
-				)
+				root.addEventListener('transitionrun', (event) => {
+					const { target } = event
+
+					if (event.propertyName !== 'translate' || !(target instanceof Element)) return
+					if (!target.matches('.s-table-column, .s-table-row__cell')) return
+
+					runs.push(`${target.className} «${target.textContent?.trim()}»`)
+				})
+
+				void nextTick(() => {
+					const cells = [...rows()[0].children]
+
+					seen.push({
+						at,
+						heads: nodes.map(left),
+						cells,
+						boxes: cells.map(left),
+						moving: moving(),
+					})
+				})
 			})
 
 			try {
-				await carry(name, middleOf(city).x + 10)
-				await expect.poll(() => near([left(city)], [before[0]])).toBe(true)
+				await carry(nodes[take], middleOf(nodes[past]).x + (forward ? 10 : -10))
+				await expect.poll(() => near(shifted.map(left), shiftedTo)).toBe(true)
 			} finally {
 				await commands.mouseUp()
 			}
 
 			await expect.poll(() => seen.length).toBe(1)
+			await new Promise((resolve) => setTimeout(resolve, SETTLE))
 
-			const [{ at, after }] = seen
+			const [{ at, heads, cells, boxes }] = seen
+			const placed = headers()
+			let edge = before[0]
+			// Новая раскладка — заголовки подряд в новом порядке, ширины прежние
+			const laid = placed.map((header) => {
+				const start = edge
 
-			// Взятый — на месте соседа, сосед — на месте взятого, дальний — на своём
-			expect(near(after, [before[1], before[0], before[2]])).toBe(true)
-			// Заголовок доехал до места раньше перестановки, и она его не сдвинула
-			expect(near(at, after)).toBe(true)
-			expect(seen[0].moving).toEqual([])
-			expect(fieldsOf(engine)).toEqual(['city', 'name', 'age'])
-		},
-	)
+				edge += widths[nodes.indexOf(header)]
+
+				return start
+			})
+
+			expect(fieldsOf(engine)).toEqual(order)
+			expect(placed.map((header) => header.textContent?.trim())).toEqual(order.map(textOf))
+			expect(near(placed.map(left), laid), 'заголовки — в новой раскладке').toBe(true)
+			// Заголовки доехали до места раньше перестановки, и она их не сдвинула
+			expect(near(heads, at), `в перерисовку: ${heads} — ${at}`).toBe(true)
+			// После перерисовки никто не поехал
+			expect(seen[0].moving, 'переходы сдвига после перерисовки').toEqual([])
+			expect(runs, 'начатые переходы сдвига').toEqual([])
+			expect(near(nodes.map(left), heads), 'заголовки стоят').toBe(true)
+			expect(near(cells.map(left), boxes), 'ячейки стоят').toBe(true)
+			// Жеста нет
+			expect(root.hasAttribute('data-reorder-preview')).toBe(false)
+			expect(
+				placed.flatMap((header) => MARKS.filter((mark) => mark in header.dataset)),
+			).toEqual([])
+		})
+	})
 
 	/**
 	 * Шапка стоит (`none`): и с движением соседи без сдвига и перехода, место
