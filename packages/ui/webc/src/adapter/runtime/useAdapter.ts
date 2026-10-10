@@ -12,7 +12,11 @@
  * Общее с остальными адаптерами — в обмене `adapter.connect()` из setup. Своё
  * здесь: реактивности у платформы нет, поэтому состояние — обычный объект, об
  * изменении сообщает колбэк onUpdate (перерисовку планирует базовый класс
- * элемента), а события уходят `CustomEvent` на хосте.
+ * элемента), а события уходят `CustomEvent` на хосте. О событии связка
+ * сообщает элементу тем же способом, что о пропе, — колбэком onEvent, сразу
+ * после `CustomEvent`: на событие у элемента бывает своё действие (реакции
+ * шаблона, `ITemplate.reactions`), и идёт оно после того, как событие получил
+ * потребитель.
  */
 
 import { toInstanceState } from '@soldy-ui/setup'
@@ -30,10 +34,17 @@ export type TBinding<TInstance = object> = {
 	destroy(): void
 }
 
+/** Сменился проп в ядре: имя в поверхности и новое значение. */
+export type TUpdateListener = (name: string, value: unknown) => void
+
+/** Ядро сообщило о событии: имя в поверхности — то же, что у `CustomEvent`. */
+export type TEventListener = (name: string) => void
+
 export function useAdapter<C extends IComponentContract>(
 	adapter: IAdapterContext<C>,
 	host: HTMLElement,
-	onUpdate: (name: string, value: unknown) => void,
+	onUpdate: TUpdateListener,
+	onEvent: TEventListener,
 ): TBinding<C['instance']> {
 	const binding = adapter.connect(WebcProfile)
 	const state: Record<string, unknown> = {}
@@ -53,6 +64,8 @@ export function useAdapter<C extends IComponentContract>(
 				composed: true,
 			}),
 		)
+
+		onEvent(exportName)
 	})
 
 	// Компонент принят: связку заводит `connectedCallback`, отброшенных

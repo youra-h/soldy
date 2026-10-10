@@ -19,6 +19,7 @@
     "@soldy-ui/setup": "*",
     "@soldy-ui/theme-oren": "*",
     "@soldy-ui/vue": "*",
+    "@soldy-ui/webc": "*",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "vue": "^3.5.32",

@@ -18,6 +18,28 @@ export interface IAttributeBinding {
 	isBoolean: boolean
 }
 
+/**
+ * Пропы поверхности, которых у элемента нет — ни атрибутом, ни свойством.
+ * Список один на оба канала: по нему строятся и карта атрибутов (она же
+ * `observedAttributes`), и свойства на прототипе (`TSoldyElement.defineProps`).
+ *
+ * - `tag` — тег корня, а корень — сам хост (`<so-button>`, см.
+ *   `TSoldyElement`), и имя тега у живого элемента не меняется. Поэтому тег не
+ *   задают, а читают: база отдаёт ядру `localName` хоста пропом при каждой
+ *   сборке. Атрибут или свойство `tag` расходились бы с элементом молча.
+ */
+export const HOST_PROPS = ['tag'] as const
+
+/** Проп, которого у элемента нет (`HOST_PROPS`). */
+export type THostProp = (typeof HOST_PROPS)[number]
+
+const HOST_PROP_NAMES: ReadonlySet<string> = new Set(HOST_PROPS)
+
+/** Проп из `HOST_PROPS`: ни атрибута, ни свойства у элемента для него нет. */
+export function isHostProp(prop: string): boolean {
+	return HOST_PROP_NAMES.has(prop)
+}
+
 /** camelCase → kebab-case: `borderWidth` → `border-width` */
 export function toAttributeName(propName: string): string {
 	return propName.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase()
@@ -88,7 +110,8 @@ function acceptAs(type: unknown, raw: string): unknown {
  * Карта «имя атрибута → как писать в проп».
  *
  * Строится один раз на класс: дескриптор доступен на уровне модуля, поэтому,
- * в отличие от Angular, кодогенерация не нужна.
+ * в отличие от Angular, кодогенерация не нужна. Пропов из `HOST_PROPS` в ней
+ * нет.
  */
 export function buildAttributeMap(
 	descriptor: IComponentDescriptor,
@@ -98,6 +121,8 @@ export function buildAttributeMap(
 	for (const [prop, { type }] of Object.entries(
 		TSurface.of(descriptor, WebcProfile).exportProps,
 	)) {
+		if (isHostProp(prop)) continue
+
 		map.set(toAttributeName(prop), {
 			prop,
 			type,

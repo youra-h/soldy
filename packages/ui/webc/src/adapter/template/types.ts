@@ -2,16 +2,19 @@
  * Контракт шаблона Web Components.
  *
  * Фреймворка нет, поэтому шаблон — это не разметка, а описание структуры плюс
- * привязки «проп → DOM-операция». Такое описание даёт то же, что даёт шаблон в
- * остальных адаптерах: вынесено в отдельный файл и не смешано с классом.
+ * привязки «проп → DOM-операция» и реакции «событие ядра → действие». Такое
+ * описание даёт то же, что даёт шаблон в остальных адаптерах: вынесено в
+ * отдельный файл и не смешано с классом.
  *
  * Точечность обновлений берётся отсюда: подписка на связку (`subscribe`) уже сообщает,
  * КАКОЙ проп изменился, а привязка знает, за какие пропы она отвечает. Значит
  * при смене `text` не нужно трогать `className`.
  *
- * Структурные props (`rendered`, `tag`, `classes`, `visible`, `attrs`)
- * применяет сам базовый класс: они одинаковы у всех визуальных компонентов
- * soldy.
+ * Корень — сам хост (`<so-button>`): шаблон строит структуру прямо в нём. То,
+ * что ядро пишет на корень, — классы, наборы `aria`, `attrs`, `dataset`,
+ * скрытие по `rendered` и `visible` — раскладывает базовый класс
+ * (`TSoldyElement`): это одинаково у всех визуальных компонентов soldy, и
+ * шаблону остаётся только своё.
  */
 
 import type { TInstanceState } from '@soldy-ui/setup'
@@ -30,7 +33,7 @@ export type TSlotTarget = { mode: 'append'; node: HTMLElement } | { mode: 'befor
 export type TSlotTargets = Record<string, TSlotTarget>
 
 export interface ITemplateContext<TInstance = object> {
-	/** Корневой элемент внутри хоста */
+	/** Корень — сам хост */
 	root: HTMLElement
 	/** Узел слота по умолчанию — там же, куда перенесён свет без атрибута slot */
 	content: HTMLElement
@@ -43,8 +46,8 @@ export interface ITemplateContext<TInstance = object> {
 /**
  * Привязка «проп → DOM-операция».
  *
- * `apply` — метод: общая привязка, объявленная для части инстанса (`ariaBinding`
- * для `{ aria }`), подходит шаблону любого компонента, у которого эта часть есть.
+ * `apply` — метод: общая привязка, объявленная для части инстанса (`{ text }`),
+ * подходит шаблону любого компонента, у которого эта часть есть.
  */
 export interface ITemplateBinding<TInstance = object> {
 	/** Пропы, при изменении которых привязку надо применить */
@@ -52,18 +55,42 @@ export interface ITemplateBinding<TInstance = object> {
 	apply(ctx: ITemplateContext<TInstance>): void
 }
 
-export interface ITemplate<TInstance = object> {
-	/** Имя тега корня из состояния */
-	tag(state: TInstanceState<TInstance>): string
-
+/** Контекст реакции: контекст шаблона и форма элемента. */
+export interface ITemplateReactionContext<TInstance = object> extends ITemplateContext<TInstance> {
 	/**
-	 * Строит внутреннюю структуру корня и возвращает точки распределения света.
-	 * Ключи обязаны совпадать с именами слотов из дескриптора — это проверяет
-	 * conformance-тест.
+	 * Форма, с которой связан элемент (`ElementInternals.form`): форма-предок
+	 * или форма из атрибута `form`. `null` — формы нет или элемент с формой не
+	 * связан вовсе (`formAssociated` у класса не объявлен).
+	 */
+	form: HTMLFormElement | null
+}
+
+/**
+ * Реакция «событие ядра → действие» — то, что элемент делает сам, когда ядро
+ * сообщило о событии: у Button — действие формы на `action:press`.
+ *
+ * Объявляется шаблоном рядом с привязками пропсов. Срабатывает после
+ * `CustomEvent` с тем же именем: сначала событие уходит потребителю, потом
+ * действие.
+ */
+export interface ITemplateReaction<TInstance = object> {
+	/** Имя события в поверхности — то же, что у `CustomEvent` (`action:press`) */
+	event: string
+	apply(ctx: ITemplateReactionContext<TInstance>): void
+}
+
+export interface ITemplate<TInstance = object> {
+	/**
+	 * Строит структуру в корне — в самом хосте — и возвращает точки
+	 * распределения света. Зовётся один раз, при первом подключении: перестановка
+	 * элемента в DOM структуру не пересоздаёт. Ключи обязаны совпадать с именами
+	 * слотов из дескриптора — это проверяет conformance-тест.
 	 */
 	create(root: HTMLElement): TSlotTargets
 
 	bindings: readonly ITemplateBinding<TInstance>[]
+
+	reactions: readonly ITemplateReaction<TInstance>[]
 }
 
 /** Объявление привязки: bind('text', ctx => ...) или bind(['a','b'], ...) */
@@ -75,4 +102,12 @@ export function bind<TInstance>(
 		props: typeof props === 'string' ? [props] : props,
 		apply,
 	}
+}
+
+/** Объявление реакции: on('action:press', formAction) */
+export function on<TInstance>(
+	event: string,
+	apply: (ctx: ITemplateReactionContext<TInstance>) => void,
+): ITemplateReaction<TInstance> {
+	return { event, apply }
 }
