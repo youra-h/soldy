@@ -979,6 +979,10 @@ ListBox, список Select, Popover и будущий Menu выглядят о
   `aria-posinset` (APG Listbox, общее расширение коллекции `positionInSet`),
   ушедшие из окна и все без окна их теряют; предел строк (`maxRows`) плагин
   высоты считает по показанным элементам, а высоту строки — по нарисованным.
+  ListBox открывается прокрученным к выбранному и тогда, когда тот дальше
+  первых 50: окно дорисует его после первого замера — навигация закрепила его
+  подсветкой, — и начальная прокрутка (`TListScrollPlugin`) ждёт регистрации
+  его набора.
   **Select в окне**: `<Virtual><Select :items /></Virtual>`, окно — у списка
   панели, он и прокручивается. Панель до первого открытия скрыта, замерить
   её нечем, и окно в ней — первые 50 опций, без закреплений: на чьём месте
@@ -1010,6 +1014,7 @@ ListBox, список Select, Popover и будущий Menu выглядят о
   `core/__tests__/select-virtual.spec.ts`,
   `plugins/__tests__/virtual.plugin.spec.ts`,
   `plugins/__tests__/list-navigation-window.plugin.spec.ts`,
+  `plugins/__tests__/list-scroll.plugin.spec.ts`,
   `plugins/__tests__/select-keyboard-window.plugin.spec.ts`,
   `setup/__tests__/virtual.spec.ts` (и фазы: подписка на обёртку — только у
   принятой коллекции), «окно» в `setup/__tests__/list-height.spec.ts`,

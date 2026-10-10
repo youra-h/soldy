@@ -33,13 +33,13 @@ afterEach(() => {
 })
 
 /**
- * Собирает список без адаптера фреймворка.
+ * Собирает список без адаптера фреймворка — до объявления корня.
  *
  * Корень компонента и панель со списком — **разные узлы и не вложены**: так
  * устроен Select, у которого корень это поле, а список лежит в
  * телепортированной панели.
  */
-async function setup(rows: number, maxRows: number, panelStyle?: Partial<CSSStyleDeclaration>) {
+function assemble(rows: number, maxRows: number, panelStyle?: Partial<CSSStyleDeclaration>) {
 	const owner = new TListBox({ maxRows })
 	const facade = new TListBoxCollectionFacade({}, { owner })
 	const items = Array.from(
@@ -85,14 +85,40 @@ async function setup(rows: number, maxRows: number, panelStyle?: Partial<CSSStyl
 
 	bundles.bindEngine(facade.engine)
 
-	rootElement.element = root
-	await nextFrame()
-	await nextFrame()
-
 	return { root, panel, owner, rootElement }
 }
 
+/** Собранный список с объявленным корнем: плагин успел и пересчитать. */
+async function setup(rows: number, maxRows: number, panelStyle?: Partial<CSSStyleDeclaration>) {
+	const list = assemble(rows, maxRows, panelStyle)
+
+	list.rootElement.element = list.root
+	await nextFrame()
+	await nextFrame()
+
+	return list
+}
+
 describe('высота контейнера по maxRows', () => {
+	/**
+	 * Предел — на том же `ready` корня, а не кадром позже: начальная прокрутка
+	 * списка к выбранному (`TListScrollPlugin`) стоит в наборе после этого
+	 * плагина, идёт на том же `ready` и должна видеть список уже в пределе
+	 * строк, иначе выбранный в нём «виден» и прокручивать некуда.
+	 */
+	it('предел стоит уже на объявлении корня', async () => {
+		const { root, panel, rootElement } = assemble(4, 2)
+		let seen: string | null = null
+
+		rootElement.events.on('ready', () => {
+			seen = panel.style.maxHeight
+		})
+		rootElement.element = root
+		await nextFrame()
+
+		expect(seen).toBe(`${2 * ROW_HEIGHT}px`)
+	})
+
 	/**
 	 * Ограничивается **родитель элементов**, а не корень компонента. Для ListBox
 	 * это одно и то же, для Select — нет; пока плагин писал в корень, поле
