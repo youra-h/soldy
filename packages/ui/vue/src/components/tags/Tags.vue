@@ -26,7 +26,11 @@ export default { ...SetupTags, components: { TagsItem } }
 		<slot :shown="shown">
 			<!--
 				Слоты элементов статические и получают элемент через scope —
-				динамические имена резолвит только Vue (см. ListBox/Tabs).
+				динамические имена резолвит только Vue (см. ListBox/Tabs). Проброс
+				целиком: у каждого слота тега есть `item-<слот>`, и его scope —
+				scope слота тега плюс сам тег. Иконку крестика тег рисует сам,
+				пока слот не задан, — поэтому её слот отдаётся тегу, только когда
+				задан набору.
 
 				`shown`, а не `items`: это то, что осталось после отбора.
 				Скрытый элемент размонтируется, но из коллекции не исчезает —
@@ -37,11 +41,14 @@ export default { ...SetupTags, components: { TagsItem } }
 				<template #leading>
 					<slot name="item-leading" :item="item" />
 				</template>
-				<template #default>
-					<slot name="item" :item="item" />
+				<template #default="{ text, selected }">
+					<slot name="item" :item="item" :text="text" :selected="selected" />
 				</template>
 				<template #trailing>
 					<slot name="item-trailing" :item="item" />
+				</template>
+				<template v-if="$slots['item-close-icon']" #close-icon>
+					<slot name="item-close-icon" :item="item" />
 				</template>
 			</TagsItem>
 		</slot>

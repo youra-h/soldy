@@ -55,8 +55,9 @@ export default { ...SetupRadioGroupItem }
 			Подпись — только слот: текста у радио нет, оно голый контрол, как
 			CheckBox. Подписи может не быть — тогда она лежит в соседнем
 			элементе, а пустую обёртку тема прячет сама (`:empty`), поэтому
-			вокруг слота нет пробельного текста.
+			вокруг слота нет пробельного текста. Scope — отметка радио
+			(`active`), как у содержимого таба.
 		-->
-		<span class="s-radio-group-item__text"><slot /></span>
+		<span class="s-radio-group-item__text"><slot :active="active" /></span>
 	</component>
 </template>

@@ -40,13 +40,27 @@ export const ListBoxDescriptor = defineDescriptor(() =>
 			 * части `Content` здесь не существует — в отличие от Tabs и от слота
 			 * `item-content` у Accordion. Слоты элементов статические и получают
 			 * элемент через scope (см. Accordion).
+			 *
+			 * Каждый слот элемента есть у списка как `item-<слот>` (`default` —
+			 * `item`), и scope у него — scope слота элемента плюс сам элемент:
+			 * слот, перенесённый из разметки элемента в `items`, не теряет ни
+			 * места, ни данных.
+			 *
+			 * `empty` показывается, пока элементов нет, — как у Select: пустой
+			 * `listbox` для скринридера — тупик, а сообщение объясняет, что
+			 * происходит.
 			 */
 			slots: {
 				default: { description: 'Элементы коллекции' },
 				header: { description: 'Над списком' },
 				footer: { description: 'Под списком' },
+				empty: { description: 'Когда элементов нет' },
 				item: {
-					scope: { item: defineType<IListBoxItem>(Object) },
+					scope: {
+						item: defineType<IListBoxItem>(Object),
+						text: defineType<string>(String),
+						selected: defineType<boolean>(Boolean),
+					},
 					description: 'Содержимое элемента при работе через проп items',
 				},
 				'item-leading': {
@@ -56,6 +70,13 @@ export const ListBoxDescriptor = defineDescriptor(() =>
 				'item-trailing': {
 					scope: { item: defineType<IListBoxItem>(Object) },
 					description: 'После содержимого элемента',
+				},
+				'item-indicator-icon': {
+					scope: {
+						item: defineType<IListBoxItem>(Object),
+						selected: defineType<boolean>(Boolean),
+					},
+					description: 'Отметка выбранного элемента',
 				},
 			},
 			props: {

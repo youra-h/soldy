@@ -39,6 +39,10 @@ export const TagsDescriptor = defineDescriptor(() =>
 			 * в ряд с хвостом в `Popover` за кнопкой. Своего замера и панели у
 			 * набора нет, и раскладка сверх `wrap` и `scroll` — дело того, кто
 			 * заполняет слот.
+			 *
+			 * Слоты тегов при работе через проп `items` — проброс слотов тега:
+			 * `item-<слот>` (`default` — `item`), scope — scope слота тега плюс
+			 * сам тег.
 			 */
 			slots: {
 				default: {
@@ -46,7 +50,11 @@ export const TagsDescriptor = defineDescriptor(() =>
 					description: 'Теги — элементы коллекции; scope — показанные теги',
 				},
 				item: {
-					scope: { item: defineType<ITagsItem>(Object) },
+					scope: {
+						item: defineType<ITagsItem>(Object),
+						text: defineType<string>(String),
+						selected: defineType<boolean>(Boolean),
+					},
 					description: 'Содержимое тега при работе через проп items',
 				},
 				'item-leading': {
@@ -56,6 +64,10 @@ export const TagsDescriptor = defineDescriptor(() =>
 				'item-trailing': {
 					scope: { item: defineType<ITagsItem>(Object) },
 					description: 'После содержимого тега',
+				},
+				'item-close-icon': {
+					scope: { item: defineType<ITagsItem>(Object) },
+					description: 'Иконка кнопки закрытия тега',
 				},
 			},
 			props: {

@@ -12,6 +12,6 @@ export {
 	type TRootLayout,
 	type TRootProps,
 } from './root'
-export { renderSlot, hasSlot, type TSlotContent } from './slots'
+export { renderSlot, hasSlot, relaySlot, type TSlotContent } from './slots'
 export { roleIcon, type TRoleIconProps } from './icon'
 export { ReactNaming } from './naming'

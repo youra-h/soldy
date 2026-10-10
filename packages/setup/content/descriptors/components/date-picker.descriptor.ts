@@ -51,10 +51,14 @@ export const DatePickerDescriptor = defineDescriptor(() =>
 				'trigger-icon': { description: 'Значок кнопки календаря' },
 				/**
 				 * Содержимое дня календаря — проброс слота `item` Calendar под тем
-				 * же именем: заводить своё было бы вторым способом делать то же.
+				 * же именем и с тем же scope: заводить своё было бы вторым способом
+				 * делать то же.
 				 */
 				item: {
-					scope: { item: defineType<ICalendarItem>(Object) },
+					scope: {
+						item: defineType<ICalendarItem>(Object),
+						text: defineType<string>(String),
+					},
 					description:
 						'Содержимое дня календаря: цена, точка события. Без него — номер дня',
 				},

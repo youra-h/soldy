@@ -33,6 +33,10 @@ export const TabsDescriptor = defineDescriptor(() =>
 			 * списке табов. Раньше панели уходили в динамический слот
 			 * `panel:${value}`, который резолвил только Vue; теперь это статический
 			 * слот с компонентами `TabsContent`.
+			 *
+			 * Слоты табов при работе через проп `items` — проброс слотов таба:
+			 * `item-<слот>` (`default` — `item`), scope — scope слота таба плюс
+			 * сам таб.
 			 */
 			slots: {
 				leading: { description: 'Перед списком табов' },
@@ -40,7 +44,11 @@ export const TabsDescriptor = defineDescriptor(() =>
 				trailing: { description: 'После списка табов' },
 				content: { description: 'Панели табов — компоненты TabsContent' },
 				item: {
-					scope: { item: defineType<ITabsItem>(Object) },
+					scope: {
+						item: defineType<ITabsItem>(Object),
+						text: defineType<string>(String),
+						active: defineType<boolean>(Boolean),
+					},
 					description: 'Содержимое таба при работе через проп items',
 				},
 				'item-leading': {
@@ -50,6 +58,10 @@ export const TabsDescriptor = defineDescriptor(() =>
 				'item-trailing': {
 					scope: { item: defineType<ITabsItem>(Object) },
 					description: 'После содержимого таба',
+				},
+				'item-close-icon': {
+					scope: { item: defineType<ITabsItem>(Object) },
+					description: 'Иконка кнопки закрытия таба',
 				},
 			},
 			props: {

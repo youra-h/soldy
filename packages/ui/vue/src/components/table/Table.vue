@@ -73,8 +73,9 @@ export default { ...SetupTable, components: { Button, CheckBox, Icon, TableColum
 				<!--
 					Заголовок колонки — Table.Column над экземпляром колонки, по одному на
 					показанную колонку, ключ — колонка. Его содержимое — одно из двух,
-					по `sortable` колонки; текст — слот `header` со scope `{ column }`,
-					колонку выбирают условием по `column.field`. Без него — текст колонки.
+					по `sortable` колонки; текст — слот `header` со scope слота колонки
+					(`text`, `sortable`) и самой колонкой (`column`), колонку выбирают
+					условием по `column.field`. Без него — текст колонки.
 				-->
 				<TableColumn v-for="column in shownColumns" :key="column.uid" :ctrl="column">
 					<template #default="{ text, sortable }">
@@ -103,7 +104,13 @@ export default { ...SetupTable, components: { Button, CheckBox, Icon, TableColum
 							:disabled="disabled"
 							@action:press="facade.toggleSort(column.field)"
 						>
-							<slot name="header" :column="column">{{ text }}</slot>
+							<slot
+								name="header"
+								:column="column"
+								:text="text"
+								:sortable="sortable"
+								>{{ text }}</slot
+							>
 
 							<template #trailing>
 								<span class="s-table-column__sort-icon" aria-hidden="true">
@@ -122,7 +129,13 @@ export default { ...SetupTable, components: { Button, CheckBox, Icon, TableColum
 							кнопка.
 						-->
 						<span v-else class="s-table-column__text">
-							<slot name="header" :column="column">{{ text }}</slot>
+							<slot
+								name="header"
+								:column="column"
+								:text="text"
+								:sortable="sortable"
+								>{{ text }}</slot
+							>
 						</span>
 					</template>
 				</TableColumn>

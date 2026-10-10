@@ -270,12 +270,13 @@ export default { ...SetupCalendar, components: { Button, Icon, ListBox, Popover,
 								<!--
 									День — `Calendar.Item` над элементом коллекции
 									`cell.item`. Содержимое дня — слот `item` со scope
-									`{ item }` (цена, точка события); без него день рисует
-									свой номер.
+									`{ item, text }` (цена, точка события): день и scope
+									его слота — номер дня в цифрах локали. Без него день
+									рисует свой номер.
 								-->
 								<CalendarItem v-if="cell.item" :ctrl="cell.item">
-									<template #default>
-										<slot name="item" :item="cell.item" />
+									<template #default="{ text }">
+										<slot name="item" :item="cell.item" :text="text" />
 									</template>
 								</CalendarItem>
 

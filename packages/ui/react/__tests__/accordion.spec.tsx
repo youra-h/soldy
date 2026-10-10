@@ -223,7 +223,9 @@ describe('секция из разметки', () => {
 
 	/**
 	 * Стрелка — по краю заголовка со стороны `arrowPlacement`; слоты
-	 * `leading-icon` и `trailing-icon` её подменяют.
+	 * `leading-icon` и `trailing-icon` её подменяют. Подменённая стоит в той же
+	 * обёртке `.s-accordion-item__arrow`: по ней тема поворачивает стрелку
+	 * раскрытой секции, и подменённая поворачивается так же.
 	 */
 	it('стрелка стоит со стороны arrowPlacement, слот её подменяет', () => {
 		const { render } = mount(
@@ -261,8 +263,32 @@ describe('секция из разметки', () => {
 			</Accordion>,
 		)
 
-		expect(document.querySelector('.s-accordion-item__arrow')).toBeNull()
-		expect(document.querySelector('.s-accordion-item__header .custom')).not.toBeNull()
+		expect(arrowSide()).toBe('end')
+		expect(document.querySelectorAll('.s-accordion-item__arrow')).toHaveLength(1)
+		expect(document.querySelector('.s-accordion-item__arrow .custom')).not.toBeNull()
+		expect(document.querySelector('.s-accordion-item__arrow svg')).toBeNull()
+
+		// Слот на стороне без стрелки по умолчанию — своя обёртка, стрелка остаётся
+		render(
+			<Accordion>
+				<Accordion.Item
+					text="A"
+					value="a"
+					arrowPlacement="end"
+					leading-icon={<b className="custom">•</b>}
+				/>
+			</Accordion>,
+		)
+
+		expect(
+			[...document.querySelectorAll('.s-accordion-item__arrow')].map((arrow) =>
+				arrow.querySelector('.custom')
+					? 'slot'
+					: arrow.querySelector('svg')
+						? 'icon'
+						: 'empty',
+			),
+		).toEqual(['slot', 'icon'])
 	})
 
 	it('слоты секций из items получают элемент через scope', () => {
@@ -294,14 +320,100 @@ describe('секция из разметки', () => {
 	})
 })
 
+/**
+ * Проброс слотов секции аккордеоном: у каждого слота секции есть
+ * `item-<слот>`, scope — scope слота секции плюс сама секция. Состав сверяет
+ * `setup/__tests__/item-slots.spec.ts`.
+ */
+describe('проброс слотов секций из items', () => {
+	const ITEMS = [
+		{ value: 'a', text: 'Первый' },
+		{ value: 'b', text: 'Второй' },
+	]
+
+	/** Стрелки секций по порядку: что лежит в каждой обёртке. */
+	const arrows = () =>
+		sections().map((section) =>
+			[...section.querySelectorAll('.s-accordion-item__arrow')].map((arrow) =>
+				arrow.querySelector('.probe')
+					? 'slot'
+					: arrow.querySelector('svg')
+						? 'icon'
+						: 'empty',
+			),
+		)
+
+	it('item получает text и selected секции, selected следует за раскрытием', () => {
+		mount(
+			<Accordion
+				items={ITEMS}
+				item={({ item, text, selected }) =>
+					`${String(item.value)}:${text}:${String(selected)}`
+				}
+			/>,
+		)
+
+		expect(headers().map((node) => node.textContent?.trim())).toEqual([
+			'a:Первый:false',
+			'b:Второй:false',
+		])
+
+		click(header('b:Второй:false'))
+
+		expect(headers().map((node) => node.textContent?.trim())).toEqual([
+			'a:Первый:false',
+			'b:Второй:true',
+		])
+	})
+
+	it('item-leading-icon подменяет стрелку одной секции, в той же обёртке', () => {
+		mount(
+			<Accordion
+				items={ITEMS}
+				item-leading-icon={({ item }) =>
+					item.value === 'a' ? <b className="probe">›</b> : null
+				}
+			/>,
+		)
+
+		expect(arrows()).toEqual([['slot'], ['icon']])
+	})
+
+	/**
+	 * Стрелка по умолчанию — в начале, поэтому секции, которой слот в конце
+	 * ничего не нарисовал, второй обёртки не достаётся: пустое содержимое
+	 * React слотом не считает.
+	 */
+	it('item-trailing-icon: у секции без подмены — только стрелка по умолчанию', () => {
+		mount(
+			<Accordion
+				items={ITEMS}
+				item-trailing-icon={({ item }) =>
+					item.value === 'b' ? <b className="probe">›</b> : null
+				}
+			/>,
+		)
+
+		expect(arrows()).toEqual([['icon'], ['icon', 'slot']])
+	})
+})
+
 describe('типы', () => {
 	it('слоты несут scope из дескрипторов', () => {
 		type TItemSlot = NonNullable<AccordionProps['item']>
 		type TItemContent = NonNullable<AccordionProps['item-content']>
 		type THeader = NonNullable<AccordionItemProps['header']>
 
-		expectTypeOf<(scope: { item: IAccordionItem }) => ReactNode>().toExtend<TItemSlot>()
+		expectTypeOf<
+			(scope: { item: IAccordionItem; text: string; selected: boolean }) => ReactNode
+		>().toExtend<TItemSlot>()
 		expectTypeOf<(scope: { item: IAccordionItem }) => ReactNode>().toExtend<TItemContent>()
+		expectTypeOf<(scope: { item: IAccordionItem }) => ReactNode>().toExtend<
+			NonNullable<AccordionProps['item-leading-icon']>
+		>()
+		expectTypeOf<(scope: { item: IAccordionItem }) => ReactNode>().toExtend<
+			NonNullable<AccordionProps['item-trailing-icon']>
+		>()
 		expectTypeOf<
 			(scope: { text: string; selected: boolean }) => ReactNode
 		>().toExtend<THeader>()

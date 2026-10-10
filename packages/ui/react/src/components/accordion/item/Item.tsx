@@ -1,5 +1,6 @@
-import type { ElementType, ReactElement } from 'react'
+import type { ElementType, ReactElement, ReactNode } from 'react'
 import {
+	hasSlot,
 	renderSlot,
 	roleIcon,
 	toAriaProps,
@@ -29,7 +30,10 @@ import type { AccordionItemAttributes, AccordionItemProps } from './base.compone
  *
  * Стрелка — по краю заголовка со стороны `arrowPlacement`. Слоты
  * `leading-icon` и `trailing-icon` подменяют её, по умолчанию она — иконка
- * пакета по роли `arrowRight`.
+ * пакета по роли `arrowRight`. Стрелка — в обёртке, и класс стрелки на
+ * обёртке, а не на иконке: тема поворачивает стрелку раскрытой секции по
+ * `.s-accordion-item__arrow`, и подменённая иконка поворачивается так же.
+ * Обёртка стоит, пока на её стороне стрелка по умолчанию или задан слот.
  */
 export function AccordionItem(props: AccordionItemProps): ReactElement | null {
 	const { ref, forwardProps, state, context } = useSetupAccordionItem(props)
@@ -55,14 +59,17 @@ export function AccordionItem(props: AccordionItemProps): ReactElement | null {
 	const Tag = tag as ElementType
 	const { onClick, ...header } = toControlAttrs<AccordionItemAttributes>(forwardProps)
 
-	const arrow = (
-		<Icon
-			embedded="accordion.arrow"
-			className="s-accordion-item__arrow"
-			tag={roleIcon('arrowRight')}
-			size={size}
-		/>
-	)
+	/** Стрелка стороны: слот, а без него — иконка, если стрелка на этой стороне. */
+	const arrowAt = (side: 'start' | 'end', slot: ReactNode) =>
+		hasSlot(slot) || arrowPlacement === side ? (
+			<span className="s-accordion-item__arrow">
+				{hasSlot(slot) ? (
+					renderSlot(slot)
+				) : (
+					<Icon embedded="accordion.arrow" tag={roleIcon('arrowRight')} size={size} />
+				)}
+			</span>
+		) : null
 
 	return (
 		<Tag {...toRootProps(ref, state, [dataset, attrs], toRootForward(forwardProps))}>
@@ -81,16 +88,14 @@ export function AccordionItem(props: AccordionItemProps): ReactElement | null {
 				}}
 				leading={
 					<>
-						{renderSlot(props['leading-icon']) ??
-							(arrowPlacement === 'start' ? arrow : null)}
+						{arrowAt('start', props['leading-icon'])}
 						{renderSlot(props.leading)}
 					</>
 				}
 				trailing={
 					<>
 						{renderSlot(props.trailing)}
-						{renderSlot(props['trailing-icon']) ??
-							(arrowPlacement === 'end' ? arrow : null)}
+						{arrowAt('end', props['trailing-icon'])}
 					</>
 				}
 			>

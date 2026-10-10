@@ -212,7 +212,7 @@ export default { ...SetupDatePicker, components: { Button, Calendar, DateInput, 
 				Календарь — готовый Calendar над экземпляром и движком ядра
 				DatePicker. Своей поверхности у него нет, её даёт панель. Содержимое
 				дня — слот `item` DatePicker, отданный календарю под тем же именем,
-				со scope `{ item }`.
+				с его scope `{ item, text }`.
 			-->
 			<div class="s-date-picker__content">
 				<Calendar
@@ -221,8 +221,8 @@ export default { ...SetupDatePicker, components: { Button, Calendar, DateInput, 
 					:ctrl="calendar"
 					:engine="engine"
 				>
-					<template #item="{ item }">
-						<slot name="item" :item="item" />
+					<template #item="{ item, text }">
+						<slot name="item" :item="item" :text="text" />
 					</template>
 
 					<!--

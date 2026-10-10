@@ -710,6 +710,17 @@ describe('слоты', () => {
 		expect(dayCell('2026-09-10').querySelector('.s-test-day')?.textContent).toBe('«10»')
 	})
 
+	it('item получает и номер дня — scope слота календаря целиком', async () => {
+		await render(() =>
+			h(DatePicker, null, {
+				item: ({ item, text }: { item: ICalendarItem; text: string }) =>
+					h('span', { class: 's-test-day' }, `${text}·${item.date.slice(5)}`),
+			}),
+		)
+
+		expect(dayCell('2026-09-10').querySelector('.s-test-day')?.textContent).toBe('10·09-10')
+	})
+
 	it('без слота item день рисует свой номер', async () => {
 		await render(() => h(DatePicker))
 

@@ -94,10 +94,8 @@ const turn = (mark: string) => {
 const height = (mark: string) =>
 	find(`.s-test-${mark} > .s-accordion-item__body`).getBoundingClientRect().height
 
-beforeEach(async () => {
+beforeEach(() => {
 	document.documentElement.dataset.theme = 'oren'
-
-	await show(scene)
 })
 
 afterEach(() => {
@@ -105,6 +103,10 @@ afterEach(() => {
 })
 
 describe('Accordion в раскрытой секции: правила раскрытой — только её собственные', () => {
+	beforeEach(async () => {
+		await show(scene)
+	})
+
 	it('стрелка свёрнутой вложенной секции — как у свёрнутой, а не у раскрытой', () => {
 		expect(turn('nested-closed')).toEqual(turn('closed'))
 		expect(turn('nested-closed')).not.toEqual(turn('open'))
@@ -115,5 +117,95 @@ describe('Accordion в раскрытой секции: правила раск�
 		expect(height('closed')).toBe(0)
 		expect(height('nested-closed')).toBe(0)
 		expect(height('nested-open')).toBeGreaterThan(0)
+	})
+})
+
+/**
+ * Стрелку, подменённую слотом, тема поворачивает так же, как стрелку по
+ * умолчанию: класс стрелки стоит на обёртке слота, а не на иконке. Пока он
+ * стоял на `Icon`, иконка из `leading-icon` у раскрытой секции оставалась
+ * неповёрнутой. Обёртка — `inline-flex`: к строчной коробке поворот не
+ * применяется.
+ */
+describe('подменённая стрелка', () => {
+	/** Своя стрелка секции — та же метка, что у секции, с приставкой. */
+	const custom = (mark: string, selected: boolean) =>
+		h(
+			AccordionItem,
+			{ key: mark, value: mark, text: mark, selected, class: `s-test-${mark}` },
+			{
+				'leading-icon': () => h('span', { class: 's-test-icon' }, '›'),
+				default: () => 'Содержимое',
+			},
+		)
+
+	it('поворачивается у раскрытой секции, как стрелка по умолчанию', async () => {
+		await show(
+			defineComponent({
+				render: () =>
+					h('div', { style: 'width: 320px' }, [
+						h(Accordion, { mode: 'multiple' }, () => [
+							section('open', true, () => 'Содержимое'),
+							section('closed', false, () => 'Содержимое'),
+							custom('custom-open', true),
+							custom('custom-closed', false),
+						]),
+					]),
+			}),
+		)
+
+		expect(find('.s-test-custom-open .s-accordion-item__arrow .s-test-icon')).toBeTruthy()
+		expect(turn('custom-open')).toEqual(turn('open'))
+		expect(turn('custom-closed')).toEqual(turn('closed'))
+		expect(turn('custom-open')).not.toEqual(turn('custom-closed'))
+	})
+
+	/**
+	 * Аккордеон подменяет стрелку одной секции условием по `item.value`, а
+	 * стрелка по умолчанию — на другой стороне. У остальных секций слот задан,
+	 * но пуст, и пустая обёртка места в ряду заголовка не занимает: отступ
+	 * ряда сдвинул бы текст. Сверка — с такой же секцией без слота.
+	 */
+	it('пустая обёртка слота не сдвигает текст заголовка', async () => {
+		const items = [
+			{ value: 'a', text: 'Первый', arrowPlacement: 'end' as const },
+			{ value: 'b', text: 'Второй', arrowPlacement: 'end' as const },
+		]
+
+		await show(
+			defineComponent({
+				render: () =>
+					h('div', { style: 'width: 320px' }, [
+						h(
+							Accordion,
+							{ class: 's-test-relayed', items },
+							{
+								'item-leading-icon': ({ item }: { item: { value: unknown } }) =>
+									item.value === 'b'
+										? h('span', { class: 's-test-icon' }, '›')
+										: null,
+							},
+						),
+						h(Accordion, { class: 's-test-plain', items }),
+					]),
+			}),
+		)
+
+		/** Начало текста первой секции аккордеона. */
+		const textOf = (accordion: string) =>
+			find(`.s-test-${accordion} .s-accordion-item .s-button__text`).getBoundingClientRect()
+				.left
+		/** Обёртки стрелок первой секции: что в каждой и видна ли она. */
+		const arrows = [
+			...find('.s-test-relayed .s-accordion-item').querySelectorAll(
+				'.s-accordion-item__arrow',
+			),
+		].map(
+			(arrow) =>
+				`${arrow.querySelector('svg') ? 'icon' : 'empty'}:${getComputedStyle(arrow).display}`,
+		)
+
+		expect(arrows).toEqual(['empty:none', 'icon:flex'])
+		expect(textOf('relayed')).toBe(textOf('plain'))
 	})
 })

@@ -33,12 +33,26 @@ export const AccordionDescriptor = defineDescriptor(() =>
 			 * отдельно от него не существует, поэтому осталась слотом `item-content`.
 			 * Сравни с Tabs, где панель — сосед списка, пишется отдельно и
 			 * связывается по `value`.
+			 *
+			 * Каждый слот элемента есть здесь как `item-<слот>`, и scope у него —
+			 * scope слота элемента плюс сам элемент. Имена — по смыслу у владельца:
+			 * заголовок элемента (`header`) — `item`, панель (`default`) —
+			 * `item-content`.
 			 */
 			slots: {
 				default: { description: 'Элементы коллекции' },
 				item: {
-					scope: { item: defineType<IAccordionItem>(Object) },
+					scope: {
+						item: defineType<IAccordionItem>(Object),
+						text: defineType<string>(String),
+						selected: defineType<boolean>(Boolean),
+					},
 					description: 'Заголовок элемента при работе через проп items',
+				},
+				'item-leading-icon': {
+					scope: { item: defineType<IAccordionItem>(Object) },
+					description:
+						'Стрелка перед заголовком элемента. По умолчанию — при arrowPlacement="start"',
 				},
 				'item-leading': {
 					scope: { item: defineType<IAccordionItem>(Object) },
@@ -47,6 +61,11 @@ export const AccordionDescriptor = defineDescriptor(() =>
 				'item-trailing': {
 					scope: { item: defineType<IAccordionItem>(Object) },
 					description: 'После заголовка элемента',
+				},
+				'item-trailing-icon': {
+					scope: { item: defineType<IAccordionItem>(Object) },
+					description:
+						'Стрелка после заголовка элемента. По умолчанию — при arrowPlacement="end"',
 				},
 				'item-content': {
 					scope: { item: defineType<IAccordionItem>(Object) },

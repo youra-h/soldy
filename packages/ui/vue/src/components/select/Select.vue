@@ -163,7 +163,11 @@ export default { ...SetupSelect, components: { Frame, Input, Icon, Tags, SelectI
 				<slot>
 					<!--
 						Слоты опций статические и получают элемент через scope —
-						динамические имена резолвит только Vue (см. Tabs.vue).
+						динамические имена резолвит только Vue (см. Tabs.vue). Проброс
+						целиком: у каждого слота опции есть `item-<слот>`, и его scope —
+						scope слота опции плюс сама опция. Отметку опция рисует сама,
+						пока слот не задан, — поэтому слот отметки отдаётся ей, только
+						когда задан Select'у.
 
 						Опции — то, что рисует коллекция (`drawn`), по порядку, ключ —
 						ключ записи. Без окна это все показанные опции, то есть то,
@@ -189,11 +193,26 @@ export default { ...SetupSelect, components: { Frame, Input, Icon, Tags, SelectI
 							<template #leading>
 								<slot name="item-leading" :item="entry.item" />
 							</template>
-							<template #default>
-								<slot name="item" :item="entry.item" />
+							<template #default="{ text, selected }">
+								<slot
+									name="item"
+									:item="entry.item"
+									:text="text"
+									:selected="selected"
+								/>
 							</template>
 							<template #trailing>
 								<slot name="item-trailing" :item="entry.item" />
+							</template>
+							<template
+								v-if="$slots['item-indicator-icon']"
+								#indicator-icon="{ selected }"
+							>
+								<slot
+									name="item-indicator-icon"
+									:item="entry.item"
+									:selected="selected"
+								/>
 							</template>
 						</SelectItem>
 					</template>

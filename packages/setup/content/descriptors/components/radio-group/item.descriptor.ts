@@ -14,7 +14,7 @@
  * одна остановка Tab работают по общему имени.
  */
 
-import { defineComponent, defineDescriptor } from '../../../../protected/define'
+import { defineComponent, defineDescriptor, defineType } from '../../../../protected/define'
 import { TRadioGroupItem } from '@soldy-ui/core'
 import { ValueControlDescriptor } from '../value-control.descriptor'
 import { OWNER_STYLE_PROPS } from '../stylable.descriptor'
@@ -27,9 +27,13 @@ export const RadioGroupItemDescriptor = defineDescriptor(() =>
 
 		contribution: {
 			// Слот один — подпись: она лежит внутри корня-`label`, поэтому клик по
-			// ней выбирает радио, а текст становится его доступным именем
+			// ней выбирает радио, а текст становится его доступным именем. Scope —
+			// отметка радио, как `active` у содержимого таба
 			slots: {
-				default: { description: 'Подпись радио' },
+				default: {
+					scope: { active: defineType<boolean>(Boolean) },
+					description: 'Подпись радио',
+				},
 			},
 			props: {
 				...OWNER_STYLE_PROPS,

@@ -39,8 +39,16 @@ export const TableDescriptor = defineDescriptor(() =>
 
 		contribution: {
 			slots: {
+				/**
+				 * Проброс слота заголовка колонки (`Table.Column`): его scope — текст
+				 * и сортируемость колонки — плюс сама колонка.
+				 */
 				header: {
-					scope: { column: defineType<ITableColumn>(Object) },
+					scope: {
+						column: defineType<ITableColumn>(Object),
+						text: defineType<string>(String),
+						sortable: defineType<boolean>(Boolean),
+					},
 					description: 'Содержимое заголовка колонки. Без него — текст колонки',
 				},
 				/**

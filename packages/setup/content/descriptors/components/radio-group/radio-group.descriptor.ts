@@ -38,12 +38,16 @@ export const RadioGroupDescriptor = defineDescriptor(() =>
 			/**
 			 * `default` — радио группы: `RadioGroup.Item` где угодно внутри, хоть в
 			 * строках чужого списка. `item` — подпись радио, когда их задали пропом
-			 * `items`; слот статический и получает радио через scope.
+			 * `items`; слот статический и получает радио через scope — вместе со
+			 * scope подписи радио (`active`).
 			 */
 			slots: {
 				default: { description: 'Радио группы — компоненты RadioGroup.Item' },
 				item: {
-					scope: { item: defineType<IRadioGroupItem>(Object) },
+					scope: {
+						item: defineType<IRadioGroupItem>(Object),
+						active: defineType<boolean>(Boolean),
+					},
 					description: 'Подпись радио при работе через проп items',
 				},
 			},

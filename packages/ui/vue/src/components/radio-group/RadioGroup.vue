@@ -27,10 +27,13 @@ export default { ...SetupRadioGroup, components: { RadioGroupItem } }
 				Запасное содержимое — радио из пропа `items`, по одному на
 				элемент (перебор `shown`, как в ListBox.vue). Слот подписи
 				статический и получает радио через scope (`item`), как у
-				остальных коллекций: динамические имена резолвит только Vue.
+				остальных коллекций: динамические имена резолвит только Vue. Рядом
+				с радио — scope подписи самого радио (`active`).
 			-->
 			<RadioGroupItem v-for="item in shown" :key="item.uid" :ctrl="item">
-				<slot name="item" :item="item" />
+				<template #default="{ active }">
+					<slot name="item" :item="item" :active="active" />
+				</template>
 			</RadioGroupItem>
 		</slot>
 	</component>
