@@ -32,7 +32,7 @@ export function useInputs(descriptor: IComponentDescriptor): string[] {
 /**
  * Булевы входы — те, чей проп объявлен ровно `Boolean`, в порядке `useInputs`.
  *
- * Атрибут без значения (`<soldy-button disabled>`) такой вход включает, как в
+ * Атрибут без значения (`<so-button disabled>`) такой вход включает, как в
  * остальных адаптерах. Проп, у которого `Boolean` — один из типов массива, сюда
  * не входит: у `value` полей (`[String, Number, Boolean, Object, Array]`)
  * пустая строка — это значение, а параметр transform отрезал бы остальные

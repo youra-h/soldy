@@ -1,7 +1,7 @@
 import { TControl } from '../../base/control'
 import type { TDefaultValues } from '../../base/component'
 import { DEFAULT_LOCALE } from '../../../common'
-import type { ITable, ITableProps, TTableEvents } from './types'
+import type { ITable, ITableProps, TTableColumnFit, TTableEvents } from './types'
 
 /**
  * Таблица — владелец коллекции строк, как ListBox — владелец опций. Корень —
@@ -22,20 +22,28 @@ import type { ITable, ITableProps, TTableEvents } from './types'
  * И закреплённая шапка (`stickyHead`) — свойство вида таблицы, а не
  * коллекции: строки и колонки от него не меняются. Ядро отдаёт его теме
  * `data-sticky-head`, а как закрепить шапку, решает тема.
+ *
+ * И то, как колонки без своей ширины делят место (`columnFit`): по нему
+ * ширины колонок раскладывает расширение колонок коллекции строк, а теме
+ * значение не уходит — она получает готовые ширины колонок и признак
+ * «колонки шире места» (`data-overflow`).
  */
 export class TTable extends TControl<ITableProps, TTableEvents> implements ITable {
 	static override baseClass = 's-table'
 
 	static defaultValues: typeof TControl.defaultValues &
-		TDefaultValues<ITableProps, 'locale' | 'stickyHead'> = {
+		TDefaultValues<ITableProps, 'locale' | 'stickyHead' | 'columnFit'> = {
 		...TControl.defaultValues,
 		tag: 'table',
 		locale: DEFAULT_LOCALE,
 		stickyHead: false,
+		// Таблица во всю ширину места, как без раскладки ядра
+		columnFit: 'auto',
 	}
 
 	protected _locale: string
 	protected _stickyHead!: boolean
+	protected _columnFit: TTableColumnFit
 
 	constructor(props: Partial<ITableProps> = {}) {
 		super(props)
@@ -43,6 +51,7 @@ export class TTable extends TControl<ITableProps, TTableEvents> implements ITabl
 		const ctor = new.target as typeof TTable
 
 		this._locale = props.locale ?? ctor.defaultValues.locale
+		this._columnFit = props.columnFit ?? ctor.defaultValues.columnFit
 		this._applyStickyHead(props.stickyHead ?? ctor.defaultValues.stickyHead)
 	}
 
@@ -72,11 +81,29 @@ export class TTable extends TControl<ITableProps, TTableEvents> implements ITabl
 		this.events.emit('change:stickyHead', value)
 	}
 
+	/**
+	 * Как колонки без своей ширины делят место: `none` — стоят в ширине по
+	 * умолчанию, `auto` — растут до `maxWidth` во всю ширину места, `contain` —
+	 * ровно заполняют место, сжимаясь до `minWidth`. Колонки шире места даже
+	 * так — таблица прокручивается.
+	 */
+	get columnFit(): TTableColumnFit {
+		return this._columnFit
+	}
+
+	set columnFit(value: TTableColumnFit) {
+		if (this._columnFit === value) return
+
+		this._columnFit = value
+		this.events.emit('change:columnFit', value)
+	}
+
 	override getProps(): ITableProps {
 		return {
 			...super.getProps(),
 			locale: this._locale,
 			stickyHead: this._stickyHead,
+			columnFit: this._columnFit,
 		}
 	}
 

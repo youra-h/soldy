@@ -10,17 +10,19 @@
  *
  * Корень — ячейка шапки (`th`), на ней наборы колонки (`aria-sort`,
  * `aria-labelledby`, `data-sort`, `data-sort-priority`, `data-align`,
- * `data-sized`, `data-resizing`, `data-reorderable`, а в жесте перестановки —
- * `data-dragging` и `data-drop`) и ширина переменной (`widthStyle`).
- * Перестановку ведёт плагин таблицы, а не колонки: место колонки знает
- * коллекция колонок.
+ * `data-sized` — ширина известна, своя или раскладки, — `data-resizing`,
+ * `data-reorderable`, а в жесте перестановки — `data-dragging` и `data-drop`)
+ * и ширина переменной (`widthStyle`). Ширину колонки без своей ширины
+ * раскладывает таблица — расширение колонок по месту, которое мерит плагин
+ * раскладки таблицы. Перестановку ведёт плагин таблицы, а не колонки: место
+ * колонки знает коллекция колонок.
  * Содержимое — слот по умолчанию в обёртке с набором `contentAria`: его
  * наполняет таблица — кнопкой сортировки или текстом. За обёрткой — ручка
  * ширины (`resizerRendered`): поле с ходом и шириной (`resizer`) и набором
  * `resizerAria`.
  *
  * Плагин связок называет заголовок и поле ручки обёрткой содержимого, плагин
- * ручки ведёт указатель, клавиши и замер.
+ * ручки ведёт указатель и клавиши.
  */
 
 import { defineComponent, defineDescriptor, defineType } from '../../../../protected/define'
@@ -64,8 +66,8 @@ export const TableColumnDescriptor = defineDescriptor(() =>
 				widthStyle: { type: Object, protected: true, triggers: ['change:width'] },
 				/**
 				 * Рисовать ли ручку ширины: колонка `resizable`, не выключена, и
-				 * ширина известна. Формулу считает ядро — разметка без экземпляра её
-				 * не повторяет.
+				 * ширина известна — своя или раскладки. Формулу считает ядро —
+				 * разметка без экземпляра её не повторяет.
 				 */
 				resizerRendered: {
 					type: Boolean,
@@ -89,7 +91,7 @@ export const TableColumnDescriptor = defineDescriptor(() =>
 		plugins: [
 			// Имя заголовка и поля ручки — обёртка содержимого заголовка
 			TableColumnIdsPluginDescriptor,
-			// Ручка ширины: указатель, клавиши, жест скринридера и замер
+			// Ручка ширины: указатель, клавиши и жест скринридера
 			TableColumnResizePluginDescriptor,
 		],
 	}),

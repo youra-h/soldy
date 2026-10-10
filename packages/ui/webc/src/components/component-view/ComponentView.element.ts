@@ -1,5 +1,5 @@
 /**
- * <soldy-component-view> — слой ComponentView.
+ * <so-component-view> — слой ComponentView.
  *
  * Light DOM: классы из ядра — обычные глобальные BEM-классы, тема работает
  * как есть. Внутри хоста рендерится элемент с тегом из `tag`.
@@ -40,14 +40,14 @@ export class TComponentViewElement extends TSoldyElement<IComponentView> {
 }
 
 defineProps(TComponentViewElement, DESCRIPTOR)
-defineElement('soldy-component-view', TComponentViewElement)
+defineElement('so-component-view', TComponentViewElement)
 
-/** `<soldy-component-view>` из JS: класс элемента плюс props дескриптора. */
+/** `<so-component-view>` из JS: класс элемента плюс props дескриптора. */
 export type TComponentViewElementProps = TComponentViewElement &
 	Omit<IComponentViewProps, keyof HTMLElement>
 
 declare global {
 	interface HTMLElementTagNameMap {
-		'soldy-component-view': TComponentViewElementProps
+		'so-component-view': TComponentViewElementProps
 	}
 }

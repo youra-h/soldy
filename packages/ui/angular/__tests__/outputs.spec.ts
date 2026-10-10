@@ -40,7 +40,7 @@ import {
 @Component({
 	standalone: true,
 	imports: [TButtonComponent],
-	template: `<soldy-button text="Save" (actionPress)="onPress($event)" />`,
+	template: `<so-button text="Save" (actionPress)="onPress($event)" />`,
 })
 class ButtonHost {
 	readonly presses: (MouseEvent | KeyboardEvent)[] = []
@@ -53,7 +53,7 @@ class ButtonHost {
 @Component({
 	standalone: true,
 	imports: [TComponentViewComponent],
-	template: `<soldy-component-view [ctrl]="ctrl" (changeVisible)="onVisible($event)" />`,
+	template: `<so-component-view [ctrl]="ctrl" (changeVisible)="onVisible($event)" />`,
 })
 class ComponentViewHost {
 	readonly ctrl = new TComponentView()
@@ -67,7 +67,7 @@ class ComponentViewHost {
 @Component({
 	standalone: true,
 	imports: [TComponentComponent],
-	template: `<soldy-component [ctrl]="ctrl" (pluginEvent)="onPluginEvent($event)" />`,
+	template: `<so-component [ctrl]="ctrl" (pluginEvent)="onPluginEvent($event)" />`,
 })
 class ComponentHost {
 	readonly ctrl = new TComponent()
@@ -92,7 +92,7 @@ describe('выход в строгом шаблоне · $event — первый
 		await frame()
 
 		const host: HTMLElement = fixture.nativeElement
-		const root = host.querySelector('soldy-button')?.firstElementChild
+		const root = host.querySelector('so-button')?.firstElementChild
 
 		if (!root) throw new Error('Корень Button не отрисован')
 
@@ -154,7 +154,7 @@ describe('тип выхода · эмиттер первого аргумент�
 @Component({
 	standalone: true,
 	imports: [TButtonComponent],
-	template: `<soldy-button [ctrl]="ctrl" />`,
+	template: `<so-button [ctrl]="ctrl" />`,
 })
 class BareButtonHost {
 	readonly ctrl = new TButton({ text: 'Save' })
@@ -164,7 +164,7 @@ class BareButtonHost {
 @Component({
 	standalone: true,
 	imports: [TComponentViewComponent],
-	template: `<soldy-component-view [ctrl]="ctrl" />`,
+	template: `<so-component-view [ctrl]="ctrl" />`,
 })
 class BareComponentViewHost {
 	readonly ctrl = new TComponentView()
@@ -174,7 +174,7 @@ class BareComponentViewHost {
 @Component({
 	standalone: true,
 	imports: [TComponentComponent],
-	template: `<soldy-component [ctrl]="ctrl" />`,
+	template: `<so-component [ctrl]="ctrl" />`,
 })
 class BareComponentHost {
 	readonly ctrl = new TComponent()
@@ -185,7 +185,7 @@ class BareComponentHost {
 @Component({
 	standalone: true,
 	imports: [TButtonComponent],
-	template: `<soldy-button [ctrl]="ctrl" (changeVisible)="onVisible($event)" />`,
+	template: `<so-button [ctrl]="ctrl" (changeVisible)="onVisible($event)" />`,
 })
 class BoundButtonHost {
 	readonly ctrl = new TButton({ text: 'Save' })

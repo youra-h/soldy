@@ -1,5 +1,5 @@
 /**
- * <soldy-button> — слой Button.
+ * <so-button> — слой Button.
  *
  * Light DOM с настоящим внутренним `<button>`: сохраняются клавиатура, фокус
  * и участие в форме, которых у кастомного элемента самого по себе нет.
@@ -40,13 +40,13 @@ export class TButtonElement extends TSoldyElement<IButton> {
 }
 
 defineProps(TButtonElement, DESCRIPTOR)
-defineElement('soldy-button', TButtonElement)
+defineElement('so-button', TButtonElement)
 
-/** `<soldy-button>` из JS: класс элемента плюс props дескриптора, которые вешает defineProps. */
+/** `<so-button>` из JS: класс элемента плюс props дескриптора, которые вешает defineProps. */
 export type TButtonElementProps = TButtonElement & Omit<IButtonProps, keyof HTMLElement>
 
 declare global {
 	interface HTMLElementTagNameMap {
-		'soldy-button': TButtonElementProps
+		'so-button': TButtonElementProps
 	}
 }

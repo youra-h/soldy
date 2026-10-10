@@ -13,18 +13,7 @@ import type {
 	TTableColumnStyle,
 	TTableCompare,
 } from './types'
-
-/**
- * Пределы ручки ширины, px, — когда своих границ у колонки нет.
- *
- * Ручке нужен ход: её поле — `input type="range"` с `min` и `max`, а Home и End
- * ведут к его краям. Уже нижнего предела колонка перестаёт быть колонкой: в
- * ней не остаётся места ни подписи, ни ручке у её края. Верхний — заведомо
- * шире любой осмысленной колонки, но конечный: End не уводит ширину в
- * бесконечность. Своё место у колонки потребитель задаёт границами.
- */
-const RESIZE_MIN = 48
-const RESIZE_MAX = 1600
+import { RESIZE_MAX, RESIZE_MIN, clampWidth } from './width'
 
 /**
  * Колонка таблицы — элемент коллекции колонок: ось, по которой строки
@@ -42,11 +31,17 @@ const RESIZE_MAX = 1600
  * колонки показаны — коллекция, а отсортированы ли строки по колонке —
  * расширение сортировки коллекции строк, оно же пишет это в её наборы.
  *
- * **Ширина хранится как задана**, итог отдаёт геттер — своё значение, прижатое
- * к `minWidth` и `maxWidth`. Поэтому порядок записи не важен, и своё значение
- * возвращается, когда границы снова его пускают. `change:width` — о смене
- * итога: и от своего значения, и от границ. Теме итог уходит переменной
- * заголовка (`widthStyle`): формула одна, а не в каждой разметке.
+ * **Ширин у колонки две, итог — одна.** Своя (`width` в пропсах: из данных,
+ * от ручки, из кода) делает колонку фиксированной. Без своей колонка гибкая,
+ * и её ширину пишет раскладка (`layoutWidth`) — расширение колонок коллекции
+ * строк, по месту таблицы и её `columnFit`. Итог отдаёт геттер: своё
+ * значение, а без него — ширина раскладки, прижатые к `minWidth` и
+ * `maxWidth`. Хранятся обе как заданы, поэтому порядок записи не важен, и
+ * своё значение возвращается, когда границы снова его пускают. `change:width`
+ * — о смене итога от любого входа: своего значения, раскладки и границ. Нет
+ * ни своей ширины, ни раскладки — итога нет: ширину решает тема. Теме итог
+ * уходит переменной заголовка (`widthStyle`): формула одна, а не в каждой
+ * разметке.
  *
  * **Перестановка** (`reorderable`) — колонку берут за заголовок и переносят на
  * другое место среди показанных. Место колонки знает коллекция колонок, а не
@@ -58,23 +53,15 @@ const RESIZE_MAX = 1600
  * что у Slider: **значение — здесь, операция — в плагине.** Жест и клавиши
  * приходят командами (`grab`, `drag`, `release`, `shift`, `moveToEdge`): где
  * указатель и какая клавиша, знает плагин, а какой станет ширина — колонка.
- * Ширину колонки без своей ширины решает тема, и её колонке сообщает замер
- * плагина (`notifyWidth`): замеров в ядре нет. `commit` — одно событие на
+ * Ручка работает от итога: пока его нет, ручки нет. `commit` — одно событие на
  * действие и только на смену итога: по нему приложение сохраняет настройку.
  *
- * Ходов у ручки два. **Ход записи** — в нём ручка пишет своё значение ширины:
- * границы колонки, а на стороне без своей границы — пределы ядра, расширенные
- * до известной ширины. Ширину за границами колонка не примет, поэтому
- * записанное ручкой всегда равно итогу. **Ход поля** (`resizer`) — ход
- * записи, расширенный до известной ширины: нативное поле прижало бы значение
- * к своему ходу и показало бы не ту ширину.
- *
- * Колонку без своей ширины тема раскладывает, не глядя на границы, и её
- * ширина бывает вне хода записи — за своей границей. **Ручка не двигает
- * ширину против действия**: действие к ходу пишет ширину в нём, ближайшую к
- * цели, — скачок к границе идёт в сторону действия, — а действие от хода
- * ничего не пишет. В жесте указатель на точке нажатия или дальше неё от хода
- * возвращает колонке своё значение, каким оно было при нажатии.
+ * Ход ручки (`resizer`) — границы колонки, а на стороне без своей границы —
+ * пределы ядра, расширенные до итога. Итог всегда в границах, поэтому лежит и
+ * в ходе: нативное поле не прижимает значение к своему ходу, а записанное
+ * ручкой всегда равно итогу. Действие, которое итог не меняет, — клавиша у
+ * края хода, жест, вернувшийся к точке нажатия, — своего значения не пишет:
+ * гибкая колонка остаётся гибкой.
  */
 export default class TTableColumn<
 	TProps extends ITableColumnProps = ITableColumnProps,
@@ -122,6 +109,8 @@ export default class TTableColumn<
 	protected _text: string
 	/** Своя ширина — как задана; итог считает геттер `width` */
 	protected _width: number | undefined
+	/** Ширина раскладки — пишет расширение колонок; итог считает геттер `width` */
+	protected _layoutWidth: number | undefined = undefined
 	protected _minWidth: number | undefined
 	protected _maxWidth: number | undefined
 	protected _align: TTableColumnAlign
@@ -131,8 +120,6 @@ export default class TTableColumn<
 	protected _resizable: boolean
 	protected _reorderable: boolean
 	protected _disabled: boolean
-	/** Последний замер плагина — ширина колонки, которую решила тема */
-	protected _measuredWidth: number | undefined = undefined
 	protected _gesture: TTableColumnGesture | undefined = undefined
 	protected _resizerAria: TAria
 	protected _contentAria: TAria
@@ -208,11 +195,11 @@ export default class TTableColumn<
 	}
 
 	/**
-	 * Итог: своё значение, прижатое к границам. Своего нет — `undefined`, и
-	 * границы ни на что не влияют: ширину решает тема.
+	 * Итог: своё значение, а без него — ширина раскладки, прижатые к границам.
+	 * Нет ни того, ни другого — `undefined`: ширину решает тема.
 	 */
 	get width(): number | undefined {
-		return clamp(this._width, this._minWidth, this._maxWidth)
+		return clampWidth(this._width ?? this._layoutWidth, this._minWidth, this._maxWidth)
 	}
 
 	/**
@@ -225,6 +212,22 @@ export default class TTableColumn<
 
 		this._update(() => {
 			this._width = value
+		})
+	}
+
+	get layoutWidth(): number | undefined {
+		return this._layoutWidth
+	}
+
+	/**
+	 * Пишет ширину раскладки. Наружу о ней сообщает итог: сменился он —
+	 * `change:width`, у колонки со своей шириной итог от раскладки не зависит.
+	 */
+	set layoutWidth(value: number | undefined) {
+		if (this._layoutWidth === value) return
+
+		this._update(() => {
+			this._layoutWidth = value
 		})
 	}
 
@@ -354,14 +357,14 @@ export default class TTableColumn<
 	/* ------------------------------------------------------------------ */
 
 	get resizerRendered(): boolean {
-		return this._canResize() && this._knownWidth !== undefined
+		return this._canResize() && this.width !== undefined
 	}
 
 	get resizer(): TTableColumnResizer {
-		const known = this._knownWidth
-		const [min, max] = this._fieldTravel(known)
+		const width = this.width
+		const [min, max] = this._travel(width)
 
-		return { min, max, value: known ?? min }
+		return { min, max, value: width ?? min }
 	}
 
 	get resizerAria(): TAria {
@@ -372,16 +375,17 @@ export default class TTableColumn<
 		return this._contentAria
 	}
 
-	grab(width: number): boolean {
-		if (!this._canResize()) return false
+	grab(): boolean {
+		const width = this.width
+
+		if (!this._canResize() || width === undefined) return false
 
 		// Указатель у ручки один: новый жест закрывает незаконченный
 		this.release()
 
-		const from = Math.round(width)
-		const [lower, upper] = this._travel(from)
+		const [lower, upper] = this._travel(width)
 
-		this._gesture = { from, lower, upper, own: this._width, before: this.width, moved: false }
+		this._gesture = { from: Math.round(width), lower, upper, own: this._width, before: width }
 		this._setResizing(true)
 
 		return true
@@ -392,17 +396,13 @@ export default class TTableColumn<
 
 		if (!gesture || !this._canResize()) return
 
-		// До первого сдвига жест — ещё нажатие: ширину оно не задаёт, и колонка
-		// без своей ширины остаётся за темой
-		if (!gesture.moved && offset === 0) return
+		const { from, lower, upper, own } = gesture
+		const width = within(Math.round(from + offset), lower, upper)
 
-		gesture.moved = true
-
-		const { from, lower, upper } = gesture
-
-		// Ширина нажатия за своей границей, а указатель на точке нажатия или
-		// дальше неё от хода — колонка такая, какой была при нажатии
-		this.width = reach(from, Math.round(from + offset), lower, upper) ?? gesture.own
+		// Указатель на ширине нажатия — колонка такая, какой была при нажатии, со
+		// своим значением: нажатие без движения ширину не задаёт, и гибкая
+		// колонка остаётся гибкой
+		this.width = width === from ? own : width
 	}
 
 	release(): void {
@@ -412,34 +412,27 @@ export default class TTableColumn<
 
 		this._gesture = undefined
 		this._setResizing(false)
-		this._commit(gesture.before)
+
+		// Жест, вернувшийся к точке нажатия, своего значения не сменил — сохранять
+		// нечего, даже если итог за жест сдвинула раскладка
+		if (this._width !== gesture.own) this._commit(gesture.before)
 	}
 
 	shift(delta: number): void {
-		const known = this._knownWidth
+		const width = this.width
 
-		if (!this._canResize() || known === undefined) return
+		if (!this._canResize() || width === undefined) return
 
-		this._resizeToward(known, Math.round(known + delta))
+		this._resizeToward(width, Math.round(width + delta))
 	}
 
 	moveToEdge(edge: TSlideEdge): void {
-		const known = this._knownWidth
+		const width = this.width
 
-		if (!this._canResize() || known === undefined) return
+		if (!this._canResize() || width === undefined) return
 
 		// Цель — бесконечно далеко в сторону края: ближе всего к ней край хода
-		this._resizeToward(known, edge === 'start' ? -Infinity : Infinity)
-	}
-
-	notifyWidth(width: number): void {
-		const measured = width > 0 ? Math.round(width) : undefined
-
-		if (this._measuredWidth === measured) return
-
-		this._update(() => {
-			this._measuredWidth = measured
-		})
+		this._resizeToward(width, edge === 'start' ? -Infinity : Infinity)
 	}
 
 	/* ------------------------------------------------------------------ */
@@ -451,59 +444,37 @@ export default class TTableColumn<
 		return this._resizable && !this._disabled
 	}
 
-	/** Ширина, которую показывает поле ручки: итог, а без своей — замер. */
-	protected get _knownWidth(): number | undefined {
-		return this.width ?? this._measuredWidth
-	}
-
 	/**
-	 * Ход записи — ширины, которые ручка пишет от известной ширины `known`:
-	 * границы колонки, а на стороне без своей границы — пределы ядра, не шире
-	 * границ и расширенные до `known`: там колонка примет любую. Своя граница
-	 * не расширяется — ширину за ней итог прижал бы, — поэтому записанное
-	 * ручкой всегда равно итогу, а `known` вне хода бывает только за своей
-	 * границей. Нижняя граница сильнее верхней, как у итога.
+	 * Ход ручки от ширины `width` — границы колонки, а на стороне без своей
+	 * границы — пределы ядра, не шире границ и расширенные до `width`: там
+	 * колонка примет любую. Итог всегда в границах, поэтому лежит и в ходе:
+	 * нативное поле не прижимает значение к своему ходу, а записанное ручкой
+	 * равно итогу. Нижняя граница сильнее верхней, как у итога.
 	 */
-	protected _travel(known: number | undefined): [number, number] {
+	protected _travel(width: number | undefined): [number, number] {
 		const min = this._minWidth
 		const max = this._maxWidth
 		const floor = Math.min(RESIZE_MIN, max ?? RESIZE_MIN)
-		const lower = min ?? Math.min(floor, known ?? floor)
+		const lower = min ?? Math.min(floor, width ?? floor)
 		const ceiling = Math.max(RESIZE_MAX, lower)
-		const upper = max === undefined ? Math.max(ceiling, known ?? ceiling) : Math.max(max, lower)
+		const upper = max === undefined ? Math.max(ceiling, width ?? ceiling) : Math.max(max, lower)
 
 		return [lower, upper]
 	}
 
 	/**
-	 * Ход поля ручки — ход записи, расширенный до известной ширины `known`:
-	 * ширина лежит в ходе поля всегда, иначе нативное поле прижало бы `value` к
-	 * своему ходу и показало бы не ту ширину. У колонки, которую тема разложила
-	 * за её границей, ход поля шире хода записи.
+	 * Законченное действие клавиши от ширины `width` к цели `target`: ширина в
+	 * ходе, ближайшая к цели, и `commit`. У края хода ширина та же, и писать
+	 * нечего: своё значение не пишется, и гибкая колонка остаётся гибкой.
 	 */
-	protected _fieldTravel(known: number | undefined): [number, number] {
-		const [lower, upper] = this._travel(known)
+	protected _resizeToward(width: number, target: number): void {
+		const [lower, upper] = this._travel(width)
+		const next = within(target, lower, upper)
 
-		if (known === undefined) return [lower, upper]
+		if (next === width) return
 
-		return [Math.min(lower, known), Math.max(upper, known)]
-	}
-
-	/**
-	 * Законченное действие клавиши от ширины `known` к цели `target`: ширина в
-	 * ходе записи, ближайшая к цели, и `commit`, если итог сменился. Против
-	 * действия ручка ширину не двигает: действие от хода ничего не пишет.
-	 */
-	protected _resizeToward(known: number, target: number): void {
-		const [lower, upper] = this._travel(known)
-		const width = reach(known, target, lower, upper)
-
-		if (width === undefined) return
-
-		const before = this.width
-
-		this.width = width
-		this._commit(before)
+		this.width = next
+		this._commit(width)
 	}
 
 	/** `commit` — только на смену итога. */
@@ -521,8 +492,8 @@ export default class TTableColumn<
 	}
 
 	/**
-	 * Сменить то, от чего зависят итог ширины и ручка: своё значение, границу,
-	 * замер, `resizable` или `disabled`. Хранимое не прижимается —
+	 * Сменить то, от чего зависят итог ширины и ручка: своё значение, ширину
+	 * раскладки, границу, `resizable` или `disabled`. Хранимое не прижимается —
 	 * пересчитываются итог и выходы ручки, и каждое событие приходит, только
 	 * если его значение сменилось.
 	 */
@@ -568,12 +539,13 @@ export default class TTableColumn<
 	}
 
 	/**
-	 * `data-sized` — у колонки своя ширина, с первой отрисовки. Когда она есть у
-	 * всех показанных колонок, тема кладёт таблицу шириной в их сумму: иначе
-	 * раскладка раздала бы излишек места всем, и ручка не держала бы колонку.
+	 * `data-sized` — ширина колонки известна: своя или раскладки, с первой
+	 * отрисовки. Когда она известна у всех показанных колонок, тема кладёт
+	 * таблицу шириной в их сумму: иначе раскладка браузера раздала бы излишек
+	 * места всем, и ширины колонок разошлись бы с итогом.
 	 */
 	protected _syncSized(): void {
-		this._dataset.add('sized', this._width !== undefined)
+		this._dataset.add('sized', this.width !== undefined)
 	}
 
 	/** Пропсы — свои значения, как заданы: ширина в них своя, а не итог. */
@@ -596,40 +568,9 @@ export default class TTableColumn<
 	}
 }
 
-/**
- * Ширина в границах. Нижняя граница сильнее верхней, как `min-width` в CSS:
- * при `minWidth` больше `maxWidth` итог — `minWidth`.
- */
-function clamp(
-	width: number | undefined,
-	min: number | undefined,
-	max: number | undefined,
-): number | undefined {
-	if (width === undefined) return undefined
-
-	const capped = max === undefined ? width : Math.min(width, max)
-
-	return min === undefined ? capped : Math.max(capped, min)
-}
-
 /** Число в отрезке. */
 function within(value: number, low: number, high: number): number {
 	return Math.min(Math.max(value, low), high)
-}
-
-/**
- * Ширина, которую ручка пишет на действие от ширины `from` к цели `target`, —
- * ближайшая к цели в ходе записи `[low, high]`, если она не против действия:
- * ширина сдвигается в сторону цели или остаётся на месте. Ширина в ходе так
- * пишется всегда. Ширина вне хода лежит за своей границей, и ход — по одну
- * сторону от неё: действие к ходу пишет ширину в нём, а действие от хода и
- * действие без сдвига — `undefined`, писать нечего.
- */
-function reach(from: number, target: number, low: number, high: number): number | undefined {
-	const width = within(target, low, high)
-	const step = Math.sign(width - from)
-
-	return step === 0 || step === Math.sign(target - from) ? width : undefined
 }
 
 /** Поле ручки то же: ход и ширина совпали. */

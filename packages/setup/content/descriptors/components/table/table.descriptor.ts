@@ -4,9 +4,12 @@
  * Наследует `ControlDescriptor` (disabled, focused, size, variant, имя
  * `aria_label` / `aria_labelledBy`, ...) и добавляет язык сортировки — тег
  * локали поддерева, его пишет плагин языка, — имя чекбокса «выбрать все» —
- * выход плагина имён (`names_selectAll`) — и закреплённую шапку
+ * выход плагина имён (`names_selectAll`), — закреплённую шапку
  * (`stickyHead`): свойство вида таблицы, теме оно уходит `data-sticky-head`
- * в наборе `dataset` корня. Строки, колонки, ячейки, выбор и сортировка —
+ * в наборе `dataset` корня, — и то, как колонки без своей ширины делят место
+ * (`columnFit`): его читает раскладка колонок, а не тема. Место мерит плагин
+ * раскладки — ширину окна таблицы, — и тема получает от ядра готовые ширины
+ * колонок и `data-overflow`. Строки, колонки, ячейки, выбор и сортировка —
  * коллекция и её расширения (`TableCollectionDescriptor`): разметка только
  * раскладывает то, что они отдали.
  *
@@ -28,6 +31,7 @@ import {
 	LocalePluginDescriptor,
 	TableColumnReorderPluginDescriptor,
 	TableGridPluginDescriptor,
+	TableLayoutPluginDescriptor,
 	TableNamesPluginDescriptor,
 } from '../../plugins'
 
@@ -78,6 +82,12 @@ export const TableDescriptor = defineDescriptor(() =>
 				 * меняются, а закрепляет шапку тема по `data-sticky-head`.
 				 */
 				stickyHead: { type: Boolean, triggers: ['change:stickyHead'] },
+				/**
+				 * Как колонки без своей ширины делят место, по умолчанию `auto` —
+				 * во всю ширину места. Значение библиотеки: его читает раскладка
+				 * колонок, а теме оно не уходит.
+				 */
+				columnFit: { type: String, triggers: ['change:columnFit'] },
 			},
 		},
 
@@ -90,6 +100,9 @@ export const TableDescriptor = defineDescriptor(() =>
 			// доступ к узлам строк
 			CollectionBundlesPluginDescriptor,
 			CollectionElementsPluginDescriptor,
+			// Место под колонки — ширина окна таблицы. После реестра bundles:
+			// движок узнаёт от него
+			TableLayoutPluginDescriptor,
 			// Перестановка колонок указателем и клавишами. После реестра bundles:
 			// движок узнаёт от него
 			TableColumnReorderPluginDescriptor,
