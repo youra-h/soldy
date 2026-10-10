@@ -10,7 +10,6 @@ export const ControlInputs = [
 	'pluginProps',
 	'rendered',
 	'visible',
-	'tag',
 	'direction',
 	'size',
 	'variant',
@@ -71,7 +70,6 @@ export const ControlOutputs = [
 		'pluginProps',
 		{ name: 'rendered', transform: booleanInput },
 		{ name: 'visible', transform: booleanInput },
-		'tag',
 		'direction',
 		'size',
 		'variant',
@@ -88,7 +86,6 @@ export abstract class TControlSurface<TInstance extends IEntity> extends TCompon
 	declare pluginProps: TInputValue<typeof descriptor, 'pluginProps'>
 	declare rendered: TInputValue<typeof descriptor, 'rendered'>
 	declare visible: TInputValue<typeof descriptor, 'visible'>
-	declare tag: TInputValue<typeof descriptor, 'tag'>
 	declare direction: TInputValue<typeof descriptor, 'direction'>
 	declare size: TInputValue<typeof descriptor, 'size'>
 	declare variant: TInputValue<typeof descriptor, 'variant'>

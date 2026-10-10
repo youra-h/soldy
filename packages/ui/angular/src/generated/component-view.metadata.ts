@@ -10,7 +10,6 @@ export const ComponentViewInputs = [
 	'pluginProps',
 	'rendered',
 	'visible',
-	'tag',
 	'direction',
 ] as const
 export const ComponentViewOutputs = [
@@ -51,7 +50,6 @@ export const ComponentViewOutputs = [
 		'pluginProps',
 		{ name: 'rendered', transform: booleanInput },
 		{ name: 'visible', transform: booleanInput },
-		'tag',
 		'direction',
 	],
 	outputs: [...ComponentViewOutputs],
@@ -63,7 +61,6 @@ export abstract class TComponentViewSurface<
 	declare pluginProps: TInputValue<typeof descriptor, 'pluginProps'>
 	declare rendered: TInputValue<typeof descriptor, 'rendered'>
 	declare visible: TInputValue<typeof descriptor, 'visible'>
-	declare tag: TInputValue<typeof descriptor, 'tag'>
 	declare direction: TInputValue<typeof descriptor, 'direction'>
 	get bundleCreate(): TOutputEmitter<typeof descriptor, 'bundle:create'> {
 		return this.createOutput('bundleCreate')

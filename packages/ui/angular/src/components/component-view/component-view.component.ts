@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, HostBinding } from '@angular/core'
+import { Component, ChangeDetectionStrategy } from '@angular/core'
 import type { IComponentView } from '@soldy-ui/core'
 import type { TBinding } from '../../adapter'
 import { ComponentViewInputNames, TComponentViewSurface } from './base.component'
@@ -10,36 +10,22 @@ import { setupComponentView } from './setup.component'
  * Входы и выходы с их типами объявляет сгенерированная база
  * `TComponentViewSurface` (generated/component-view.metadata.ts), в
  * `@Component` их нет — как у Button.
- * Классы и видимость применяются к хост-элементу через @HostBinding.
  *
- * Хост существует всё время жизни компонента, поэтому привязку к
- * TElementPlugin берёт на себя TComponentBase со стратегией `'host'` —
- * в отличие от Button, где корень живёт внутри @if и пересоздаётся.
+ * Корень — сам элемент потребителя, как у Button: `<section so-component-view>`.
+ * Тег ядро получает от элемента, классы, скрытие и наборы ядра раскладывает на
+ * него `TComponentBase` со стратегией `'host'`. Селектор — один атрибут, без
+ * тега: создаёт компонент сам (`createComponent`) — Angular берёт `div`,
+ * умолчание ядра.
  *
- * `dir`/`aria`/`dataset`/`attrs` на хост-элемент раскладывает та же
- * стратегия `'host'` в `TComponentBase` (переиспользует `applyAttributes` из
- * `AriaDirective`) — здесь для них нет ни `@HostBinding`, ни директивы,
- * потому что шаблона с элементом-целью у хост-компонента нет.
- *
- * Selector: <so-component-view>
+ * Selector: [so-component-view]
  */
 @Component({
-	selector: 'so-component-view',
+	selector: '[so-component-view]',
 	standalone: true,
 	changeDetection: ChangeDetectionStrategy.OnPush,
 	template: `<ng-content></ng-content>`,
 })
 export class TComponentViewComponent extends TComponentViewSurface<IComponentView> {
-	@HostBinding('class') get hostClass(): string {
-		return this.state().classes?.join(' ') ?? ''
-	}
-
-	@HostBinding('style.display') get hostDisplay(): string | null {
-		const state = this.state()
-
-		return state['rendered'] === false || state['visible'] === false ? 'none' : null
-	}
-
 	constructor() {
 		super(ComponentViewInputNames, 'host')
 	}

@@ -209,33 +209,33 @@ export function setup<Name>(ctrl: I<Name> | undefined, props: object): TBinding<
 
 - `<name>.component.ts` — оболочка. Наследует сгенерированный `T<Name>Surface`
   (он — `TComponentBase`, `packages/ui/angular/src/adapter/runtime/component.base.ts`),
-  состояние читается как `state()` (сигнал). Корень с `TElementPlugin`
-  связывает база: компонент зовёт только `super(<Name>InputNames)` и
-  реализует `createBinding`. Эмиттеры выходов компонент не заводит: геттер
-  выхода в `T<Name>Surface` заводит эмиттер при первом чтении. Своих `inputs`
-  и `outputs` в `@Component` нет: их объявляет `T<Name>Surface`, и вход,
+  состояние читается как `state()` (сигнал). Корень ведёт база: компонент
+  зовёт только `super(<Name>InputNames, 'host')` и реализует
+  `createBinding`. Эмиттеры выходов компонент не заводит: геттер выхода в
+  `T<Name>Surface` заводит эмиттер при первом чтении. Своих `inputs` и
+  `outputs` в `@Component` нет: их объявляет `T<Name>Surface`, и вход,
   объявленный здесь ещё раз, строгий шаблон потребителя пропускал бы без
   сверки значения — это ловит `packages/ui/angular/__tests__/inputs.spec.ts`:
 
 ```ts
 import { Component, ChangeDetectionStrategy } from '@angular/core'
-import { NgClass, NgTemplateOutlet } from '@angular/common'
+import { NgTemplateOutlet } from '@angular/common'
 import type { I<Name> } from '@soldy-ui/core'
 import type { TBinding } from '../../adapter'
-import { AriaDirective } from '../../adapter'
 import { <Name>InputNames, T<Name>Surface } from './base.component'
 import { setup<Name> } from './setup.component'
 
 @Component({
-  selector: 'so-<name>',
+  // Первым — селектор с тегом умолчания ядра: его берёт createComponent
+  selector: '<tag>[so-<name>], [so-<name>]',
   standalone: true,
-  imports: [NgClass, NgTemplateOutlet, AriaDirective],
+  imports: [NgTemplateOutlet],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './<name>.component.html',
 })
 export class T<Name>Component extends T<Name>Surface<I<Name>> {
   constructor() {
-    super(<Name>InputNames)
+    super(<Name>InputNames, 'host')
   }
 
   protected createBinding(ctrl: I<Name> | undefined, inputs: object): TBinding<I<Name>> {
@@ -244,31 +244,38 @@ export class T<Name>Component extends T<Name>Surface<I<Name>> {
 }
 ```
 
-Хуков жизненного цикла, `signal`, `computed` и `effect` в компоненте нет: они
-живут в адаптерном слое (AGENTS.md, «Механизмы фреймворка — только в адаптерном
-слое»), в `components/**` их ловит
+Хуков жизненного цикла, `signal`, `computed`, `effect`, `@HostBinding` и
+`host:` в компоненте нет: они живут в адаптерном слое (AGENTS.md, «Механизмы
+фреймворка — только в адаптерном слое»). Хуки, `signal`, `computed` и
+`effect` в `components/**` ловит
 `packages/setup/__tests__/framework-mechanisms-components.spec.ts`.
 
 Правила разметки:
 
-- корень помечается `#root` и живёт внутри `@if (state()['rendered'])`: при
-  пересоздании узла связь переустанавливает `TComponentBase` (сигнальный запрос
+- **обёртки нет**: селектор — атрибут, и корень — элемент, который написал
+  потребитель (`<button so-button>`, `<a so-button href>`, `<div so-button>`).
+  Первым стоит селектор с тегом умолчания ядра (`button[so-button]`): по нему
+  Angular выбирает тег хоста, когда создаёт компонент сам, а для `[…]` берёт
+  `div`. Элементный селектор (`so-<name>`) — только у компонента без такого
+  корня: у поля атрибуты потребителя делятся между корнем и вложенным
+  `<input>`, у портала корень уезжает в слой, у `so-component` корня нет;
+- шаблон — только содержимое корня: ни корня, ни `@if`, ни `#root` в нём нет.
+  Тег (входа `tag` нет — база берёт `localName` элемента), классы, скрытие и
+  наборы ядра на элемент раскладывает база со стратегией `'host'`; атрибуты
+  и классы потребителя главнее её наборов (`packages/ui/angular/AGENTS.md`);
+- корень в шаблоне (стратегия `'view'`, по умолчанию) — только там, где корень
+  не может быть элементом потребителя. Он помечается `#root`, и при
+  пересоздании узла связь переустанавливает база (сигнальный запрос
   `viewChild('root')` — поле базы, `effect` только читает его). Сигнальные
   инициализаторы `@angular/core` (`viewChild`, `contentChildren`, `input`…)
   пишутся только в инициализаторе поля: вызов в методе роняет AOT с NG8110 —
   его ловит `ngc` из «Validate» (в CI — «Типы — Angular»);
-- наборы ядра раскладываются на корень директивой `AriaDirective`:
-  `[ariaAttrs]="state()['aria']"`, `[attrs]="state()['attrs']"`,
-  `[dataset]="state()['dataset']"`;
-- `<ng-content>` объявляется **ровно один раз** внутри `<ng-template #content>`
-  и подставляется через `[ngTemplateOutlet]="content"` — два слота во
-  взаимоисключающих ветках теряют содержимое при переключении;
-- если корень — хост-элемент и всегда существует (как у `component-view`),
-  вторым аргументом передаётся стратегия `'host'`:
-  `super(<Name>InputNames, 'host')`. База берёт узел из
-  `inject(ElementRef)` один раз и сама раскладывает на него `aria`, `attrs` и
-  `dataset`; классы и видимость хоста — `@HostBinding`
-  (`component-view.component.ts`).
+- в шаблоне с ветками `<ng-content>` объявляется **ровно один раз** внутри
+  `<ng-template #content>` и подставляется через `[ngTemplateOutlet]="content"`
+  — два слота во взаимоисключающих ветках теряют содержимое при переключении;
+- вложенный компонент soldy в разметке несёт `embedded` и в атрибутной форме:
+  `<button so-button embedded="tags.close">` — сторож
+  `packages/setup/__tests__/embedded-markup.spec.ts` узнаёт его по атрибуту.
 
 ### 6. Register barrel exports
 
