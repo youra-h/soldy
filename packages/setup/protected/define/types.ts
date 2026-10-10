@@ -38,20 +38,22 @@ export type TComponentCtor<TInstance extends object = object> = (new (
 export type TPluginCtor = IPluginConstructor<any, any, any>
 
 /**
- * Объявление, которое наследуется: проп, слот и определение плагина.
+ * Объявление, которое наследуется: проп и определение плагина.
  *
- * Наследование у всех трёх одно: своё объявление ложится на одноимённое
+ * Наследование у обоих одно: своё объявление ложится на одноимённое
  * родительское и остаётся на его месте (`inheritDeclarations`). Различается
  * только смысл слова «поверх», и знает его само объявление, а не тот, кто
  * складывает списки: проп переобъявляет написанные факты
- * (`TPropSpec.inheritFrom`), слот и плагин встают целиком — scope объявляют
- * одним местом, опции задаёт место установки.
+ * (`TPropSpec.inheritFrom`), плагин встаёт целиком — опции задаёт место
+ * установки.
  *
  * Поэтому у дескриптора нет ни ветки на категорию, ни функции извлечения
- * ключа: новая категория объявлений приносит своё правило с собой.
+ * ключа: новая категория объявлений приносит своё правило с собой. Слот
+ * такого контракта не имеет: он описывает разметку, а она не наследуется
+ * (`TComponentDescriptor`).
  */
 export interface IDeclaration<T> {
-	/** Одно объявление на ключ: полное имя пропа, имя слота, класс плагина. */
+	/** Одно объявление на ключ: полное имя пропа, класс плагина. */
 	readonly key: unknown
 	/** Своё поверх родительского. Результат — новое объявление; оба исходных не меняются. */
 	inheritFrom(base: T): T
@@ -156,13 +158,14 @@ export interface IComponentContribution extends IContribution {
  *
  * Тип опций `defineComponent` запоминает целиком, литералом, и выводит из него
  * контракт дескриптора (`TContractFrom`): инстанс — из `ctor`, а без него из
- * `extends`; имена событий — из `events` и триггеров пропсов; слоты — из их
- * объявления; плагины — из `plugins`; всё родительское — из `extends`.
+ * `extends`; имена событий — из `events` и триггеров пропсов; слоты — только
+ * из своего объявления; плагины — из `plugins`; родительские пропсы, события
+ * и плагины — из `extends`.
  */
 export interface IComponentOptions {
 	/** Конструктор core-компонента. Без него инстанс наследуется от `extends`. */
 	readonly ctor?: TComponentCtor
-	/** Родительский дескриптор (наследование props, events, slots, plugins) */
+	/** Родительский дескриптор: наследуются props, events и plugins, слоты — нет */
 	readonly extends?: IComponentDescriptor
 	/** Собственная контрибуция компонента */
 	readonly contribution?: IComponentContribution
@@ -202,7 +205,7 @@ export interface IComponentContract {
 	 * вычисляет владелец, входа у разметки нет.
 	 */
 	protectedName: string
-	/** Слоты, имя → scope: свои поверх `extends`. */
+	/** Слоты, имя → scope: только свои, слоты `extends` сюда не входят. */
 	slots: object
 	/** Сумма контрактов плагинов — своих и `extends`. */
 	plugins: IPluginsContract
@@ -224,7 +227,8 @@ export interface IComponentDescriptor<C extends IComponentContract = IComponentC
 	/** Own component events (excluding plugin events). */
 	readonly events: readonly TName[]
 	/**
-	 * Слоты: свои + унаследованные. Плагины слотов не имеют, поэтому отдельного
+	 * Слоты — только свои: они описывают разметку, а она не наследуется (см.
+	 * `TComponentDescriptor`). Плагины слотов не имеют, поэтому отдельного
 	 * «полного» списка, как у пропсов и событий, у слотов нет.
 	 */
 	readonly slots: readonly TSlotDeclaration[]

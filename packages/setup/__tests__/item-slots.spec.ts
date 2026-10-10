@@ -129,16 +129,6 @@ const ITEMS = [
 	'Table.Row',
 ]
 
-/**
- * Слоты, которых элемент не рисует, — проброса у них нет. Объявлены они
- * унаследованным `default`, а снять унаследованный слот без механики
- * `protected/define` нельзя.
- */
-const UNRENDERED: readonly (readonly [part: string, slot: string])[] = [
-	// временно, до 869ffa5ya
-	['Table.Row', 'default'],
-]
-
 function descriptorOf(part: string): IComponentDescriptor {
 	const factory = DESCRIPTORS[part]
 
@@ -173,12 +163,7 @@ describe('сторож: слот элемента владелец пробра�
 			const relayed = RELAYS.filter(([, , source]) => source === part).map(
 				([, , , from]) => from,
 			)
-			const unrendered = UNRENDERED.filter(([candidate]) => candidate === part).map(
-				([, slot]) => slot,
-			)
-			const slots = descriptorOf(part)
-				.slots.map((slot) => slot.name)
-				.filter((slot) => !unrendered.includes(slot))
+			const slots = descriptorOf(part).slots.map((slot) => slot.name)
 
 			expect(slots.filter((slot) => !relayed.includes(slot))).toEqual([])
 		})
@@ -188,14 +173,6 @@ describe('сторож: слот элемента владелец пробра�
 		for (const [owner, slot, source, from] of RELAYS) {
 			expect(() => scopeOf(owner, slot)).not.toThrow()
 			expect(() => scopeOf(source, from)).not.toThrow()
-		}
-	})
-
-	it('исключение — только у объявленного слота: снятый слот снимает и строку', () => {
-		// Снимет унаследованный `default` задача 869ffa5ya — тест упадёт здесь,
-		// и строка исключения уйдёт вместе со слотом
-		for (const [part, slot] of UNRENDERED) {
-			expect(descriptorOf(part).slots.map(({ name }) => name)).toContain(slot)
 		}
 	})
 })

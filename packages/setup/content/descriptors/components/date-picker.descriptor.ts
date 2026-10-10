@@ -2,8 +2,8 @@
  * Дескриптор DatePicker (TDatePicker).
  *
  * Наследует `FieldDescriptor` — DatePicker сам поле: кнопка очистки
- * (`clearable`, набор `clearAria`, слот `clear`) поверх value, name, readonly,
- * required, id, disabled, size, variant, ... Добавляет режим, открытость
+ * (`clearable`, набор `clearAria`) поверх value, name, readonly, required, id,
+ * disabled, size, variant, ... Добавляет слоты, режим, открытость
  * панели, выбор с подтверждением и то, что DatePicker отдаёт полям и
  * календарю: границы, недоступные дни, первый день недели, пояс «сегодня» — и
  * имена концов в форме. Язык, имена кнопок и концов диапазона и текст кнопок
@@ -48,6 +48,15 @@ export const DatePickerDescriptor = defineDescriptor(() =>
 
 		contribution: {
 			slots: {
+				/**
+				 * Своя кнопка очистки вместо встроенной — целиком, и рисуется, когда
+				 * задана, без `clearable`. Scope — команда DatePicker `clear`,
+				 * привязанная к инстансу: кнопка зовёт её голой функцией.
+				 */
+				clear: {
+					scope: { clear: defineType<() => void>(Function) },
+					description: 'Кнопка очистки значения',
+				},
 				'trigger-icon': { description: 'Значок кнопки календаря' },
 				/**
 				 * Содержимое дня календаря — проброс слота `item` Calendar под тем

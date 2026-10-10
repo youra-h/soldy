@@ -8,7 +8,7 @@
  * в дескрипторе, и не у родителя: у самого `Stylable` `size` законный вход.
  *
  * Механика одна на оба случая и на все будущие: своё объявление ложится на
- * одноимённое родительское — тем же правилом, что слот и плагин
+ * одноимённое родительское — тем же правилом, что плагин
  * (`inheritDeclarations`), — и переобъявляет ровно написанные факты
  * (`TPropSpec.inheritFrom`), а имена, объявленные защищёнными, вычитаются из
  * типа пропсов (`DescriptorProps`). Рантайм и тип поэтому меняются одним
@@ -100,7 +100,7 @@ const HeirDescriptor = defineComponent({
 	contribution: { props: { size: { protected: true } } },
 })
 
-describe('правило наследования одно на все категории объявлений', () => {
+describe('правило наследования одно на пропсы и плагины', () => {
 	/** Объявление стенда: «поверх» для него — запомнить, на чём оно лежит. */
 	class TCounted implements IDeclaration<TCounted> {
 		constructor(
@@ -124,27 +124,13 @@ describe('правило наследования одно на все кате�
 		expect(result.map((declaration) => declaration.depth)).toEqual([0, 1, 0])
 	})
 
-	it('ключ у трёх категорий свой: полное имя, имя слота, класс плагина', () => {
+	it('ключ у категорий свой: у пропа полное имя, у плагина класс', () => {
 		const descriptor = ButtonDescriptor()
 		const prop = propOf(descriptor, 'text')
-		const slot = required(
-			descriptor.slots.find((declaration) => declaration.name === 'default'),
-			'слот default',
-		)
 		const plugin = required(descriptor.plugins[0], 'плагин дескриптора')
 
 		expect(prop.key).toBe(prop.name.getName())
-		expect(slot.key).toBe('default')
 		expect(plugin.key).toBe(plugin.ctor)
-	})
-
-	it('слот наследника заменяет родительский целиком', () => {
-		const slot = required(
-			ButtonDescriptor().slots.find((declaration) => declaration.name === 'default'),
-			'слот default',
-		)
-
-		expect(slot.inheritFrom()).toBe(slot)
 	})
 })
 

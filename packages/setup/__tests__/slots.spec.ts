@@ -27,7 +27,6 @@ import {
 	slotNames,
 } from '@soldy-ui/setup'
 import type { DescriptorSlots, TEmptySlotScope } from '@soldy-ui/setup'
-import { required } from './helpers'
 
 describe('normalizeContribution · slots', () => {
 	it('переносит имя из ключа словаря в декларацию', () => {
@@ -54,39 +53,43 @@ describe('normalizeContribution · slots', () => {
 	})
 })
 
-describe('наследование слотов', () => {
-	it('наследник получает слоты родителя', () => {
-		expect(slotNames(ComponentViewDescriptor())).toEqual(['default'])
-		// Button добавляет leading/trailing к унаследованному default
-		expect(slotNames(ButtonDescriptor())).toEqual(['default', 'leading', 'trailing'])
-	})
+/**
+ * Слоты описывают разметку, а она не наследуется: у каждого компонента в
+ * каждом адаптере шаблон свой. Пропсы, события и плагины наследник получает от
+ * `extends`, слоты — нет: дескриптор объявляет ровно те, что рисует его
+ * шаблон. Унаследованный `default` ComponentView обещал содержимое Icon, Input
+ * и CheckBox, а их разметка его не рисует.
+ */
+describe('слоты не наследуются', () => {
+	/** Родитель стенда со слотами: наследники ниже объявляют свои или ничего. */
+	const parent = defineComponent({ contribution: { slots: { default: {}, leading: {} } } })
 
-	it('одноимённый слот наследника перекрывает родительский, не дублируя', () => {
-		const parent = defineComponent({ contribution: { slots: { default: {} } } })
-
+	it('наследник получает ровно свои слоты: одноимённый — свой, прочих родителя нет', () => {
 		const child = defineComponent({
 			extends: parent,
 			contribution: { slots: { default: { scope: { text: defineType<string>(String) } } } },
 		})
 
-		expect(child.slots).toHaveLength(1)
+		expect(slotNames(child)).toEqual(['default'])
 		expect(child.slots[0].scope).toEqual({ text: defineType<string>(String) })
-		// В типе — так же: scope наследника вместо пустого родительского
+		// В типе — так же: свой default, без leading родителя
 		expectTypeOf<DescriptorSlots<() => typeof child>>().toEqualTypeOf<{
 			default: { text: string }
 		}>()
 	})
 
-	it('Button уточняет унаследованный default, добавляя scope', () => {
-		const inherited = ComponentViewDescriptor().slots[0]
-		const refined = required(
-			ButtonDescriptor().slots.find((slot) => slot.name === 'default'),
-			'слот default у Button',
-		)
+	it('наследник без своего объявления слотов не имеет — ни в рантайме, ни в типе', () => {
+		const child = defineComponent({ extends: parent })
 
-		expect(isScopedSlot(inherited.scope)).toBe(false)
-		expect(isScopedSlot(refined.scope)).toBe(true)
-		expect(Object.keys(required(refined.scope, 'scope слота default'))).toEqual(['text'])
+		expect(child.slots).toEqual([])
+		expectTypeOf<keyof DescriptorSlots<() => typeof child>>().toEqualTypeOf<never>()
+	})
+
+	it('Button — свои слоты в порядке объявления, у его предка Control — ни одного', () => {
+		expect(slotNames(ComponentViewDescriptor())).toEqual(['default'])
+		expect(slotNames(ButtonDescriptor())).toEqual(['leading', 'default', 'trailing'])
+		expect(ControlDescriptor().slots).toEqual([])
+		expectTypeOf<keyof DescriptorSlots<typeof ControlDescriptor>>().toEqualTypeOf<never>()
 	})
 
 	it('невизуальный слой слотов не имеет', () => {
@@ -108,13 +111,6 @@ describe('тип слотов выводится из объявления', () 
 			leading: TEmptySlotScope
 			default: { text: string }
 			trailing: TEmptySlotScope
-		}>()
-	})
-
-	it('дескриптор без своих слотов получает унаследованные: default у Control', () => {
-		expect(slotNames(ControlDescriptor())).toEqual(['default'])
-		expectTypeOf<DescriptorSlots<typeof ControlDescriptor>>().toEqualTypeOf<{
-			default: TEmptySlotScope
 		}>()
 	})
 
@@ -159,8 +155,8 @@ describe('имена слотов', () => {
 
 	it('slotNames подставляет имя по умолчанию адаптера', () => {
 		expect(slotNames(ButtonDescriptor(), 'children')).toEqual([
-			'children',
 			'leading',
+			'children',
 			'trailing',
 		])
 	})
