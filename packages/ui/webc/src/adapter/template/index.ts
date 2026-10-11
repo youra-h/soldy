@@ -1,5 +1,5 @@
 export { bind, on } from './types'
-export { formAction } from './form'
+export { formAction, implicitSubmission, submitKind, type TSubmitKind } from './form'
 export type {
 	ITemplate,
 	ITemplateBinding,

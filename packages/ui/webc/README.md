@@ -45,7 +45,11 @@ import '@soldy-ui/webc'
 
 `<so-button>` takes part in forms like `<button>`: inside a form, or tied to one with
 `form="id"`, it submits it when pressed; `type="reset"` resets the form and `type="button"` does
-nothing. `disabled` turns it off natively — no focus, no clicks.
+nothing. `disabled` turns it off natively — no focus, no clicks. As with `<button>`, Enter in a
+form field presses it when it is the form's first submit button, `preventDefault()` on `click`
+cancels the submission, the pressed button's `name`/`value` go into the form data and it becomes
+the `submitter` of the `submit` event. `form`, `labels`, `name`, `value` and `type` are
+available as properties. `formaction` and the other `form*` attributes are not supported.
 
 ```html
 <form>

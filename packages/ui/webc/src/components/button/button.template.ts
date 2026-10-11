@@ -10,12 +10,13 @@
  * корень (то есть после него). Узлов-обёрток нет: в остальных пяти адаптерах их
  * тоже нет, а лишний span сломал бы селекторы темы.
  *
- * Реакция — действие формы на нажатие (`formAction`): корень не нативная
- * кнопка, и отправить или сбросить форму браузер за него не может.
+ * Корень не нативная кнопка, и с формой браузер за него ничего не сделает.
+ * Поэтому реакция — действие формы на нажатие (`formAction`), а связь с формой
+ * — неявная отправка: Enter в её поле (`implicitSubmission`).
  */
 
 import type { IButton } from '@soldy-ui/core'
-import { bind, formAction, on, type ITemplate } from '../../adapter'
+import { bind, formAction, implicitSubmission, on, type ITemplate } from '../../adapter'
 
 export const buttonTemplate: ITemplate<IButton> = {
 	create: (root) => {
@@ -41,4 +42,6 @@ export const buttonTemplate: ITemplate<IButton> = {
 	],
 
 	reactions: [on('action:press', formAction)],
+
+	associate: implicitSubmission,
 }

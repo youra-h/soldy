@@ -266,8 +266,8 @@ export const ElementPluginDescriptor = definePlugin({
 
 - `TElementPlugin` - Stores DOM element reference, emits 'ready'
 - `TActionPlugin` (`custom/action/`, namespace `action`, на `ControlDescriptor`) - взаимодействие
-  с пользователем: `press` (нормализованная активация: клик или Enter/Space, с гейтом по
-  `disabled`), сырой `click`, `focus`/`blur` и двусторонняя связь `focused` с DOM-фокусом.
+  с пользователем: `press` (нормализованная активация: клик, с гейтом по `disabled`; из
+  Enter/Space на не-нативном корне клик делает сам плагин, как браузер у `<button>`), сырой `click`, `focus`/`blur` и двусторонняя связь `focused` с DOM-фокусом.
   Элемент берёт у `TElementPlugin` через `ctx.get(...)` — композиция, а не наследование
 - `TReadyPlugin` - Syncs `IComponentView.ready` with `TElementPlugin` (`ready` / `removed`)
 - `TDragPlugin` (`custom/drag-and-drop/`) - DnD handler
@@ -2040,7 +2040,7 @@ Shadow DOM, куда её пришлось бы вносить через `adopt
   сборке; атрибута и свойства `tag` нет (`HOST_PROPS`): имя тега у живого
   элемента не меняется. Для ядра `so-button` — не нативный тег: `role`,
   `tabindex` и `aria-disabled` оно пишет само, а Enter и пробел превращает в
-  `press` `TActionPlugin`.
+  клик `TActionPlugin`, как браузер у `<button>`.
 - **Классы и наборы** раскладывает база (`root-attributes.ts`), и атрибуты
   потребителя главнее наборов ядра, как во Vue и React: по каждому имени база
   помнит, что поставила сама, своё пишет и снимает, а чужое значение не трогает
@@ -2060,7 +2060,17 @@ Shadow DOM, куда её пришлось бы вносить через `adopt
   реакция `formAction` на `action:press` — по атрибуту `type` хоста без учёта
   регистра, как у `<button>`: `reset` сбрасывает форму, `button` ничего не
   делает, остальное вызывает `requestSubmit()`. По умолчанию — отправка, как у
-  `<Button>` во Vue и React. Нативный `disabled` такого элемента — настоящее
+  `<Button>` во Vue и React. Как у `<button>`, действие ждёт конца рассылки
+  клика и отменяется его `preventDefault`, где бы ни стоял обработчик; клик из
+  Enter и пробела делает `TActionPlugin`, и клавиатура отменяется так же. На
+  время отправки `name` и `value` хоста лежат в данных формы
+  (`ElementInternals.setFormValue`), а хост — в `submitter` события `submit`
+  (свойство ставит окно в фазе перехвата). Неявную отправку — Enter в поле
+  формы — браузер отдаёт только нативной кнопке, поэтому связь шаблона с формой
+  (`ITemplate.associate`, по `formAssociatedCallback`) слушает Enter сама:
+  если первая кнопка отправки формы — этот хост, он отменяет действие браузера
+  и нажимает себя. Свойства `form`, `labels`, `name`, `value`, `type` — как у
+  `<button>`. Нативный `disabled` такого элемента — настоящее
   выключение, без фокуса и кликов. Ядро для `so-button` его в `attrs` не пишет
   (тег не из `NATIVE_DISABLED_TAGS`), и атрибут ведёт база по `disabled` ядра,
   рядом с его `aria-disabled`: иначе `<so-button disabled>` после
@@ -2088,11 +2098,17 @@ Shadow DOM, куда её пришлось бы вносить через `adopt
 - `rendered=false` прячет хост, а не удаляет: элемент написал потребитель.
 - Атрибут потребителя ровно с тем значением, что у ядра, база от своего не
   отличит: сняв своё, она снимет и его. То же с классом.
-- Enter в поле формы `<so-button>` не нажмёт: неявная отправка ищет нативную
-  кнопку отправки, и `press` не будет.
-- `name`, `value` и отправитель (`submitter`) в отправку не передаются:
-  `requestSubmit` принимает отправителем только нативную кнопку. Отменить
-  отправку можно в `submit` формы — `preventDefault` у `click` её не отменяет.
+- Отправка и сброс приходят задачей позже клика (`setTimeout`): иначе не
+  увидеть отмену клика обработчиком, который слушает после плагина.
+- `new FormData(form, event.submitter)` с `<so-button>` бросает `TypeError`:
+  отправителем браузер принимает только нативную кнопку, а `submitter` здесь —
+  подставленный хост. Пара `name=value` нажатой кнопки и так лежит в
+  `new FormData(form)` на время отправки.
+- Атрибуты `formaction`, `formmethod`, `formenctype`, `formtarget` и
+  `formnovalidate` не действуют; в `<form method="dialog">` диалог
+  закрывается, но `returnValue` не получает `value` кнопки; `popovertarget` и
+  `commandfor` не работают; псевдокласс `:default` хост не получает. Всё это
+  браузер делает только для нативной кнопки.
 - `ctrl`, присвоенный подключённому элементу, достаётся следующей связке — после
   перестановки: связка заводится на подключение, как и во всех остальных
   адаптерах.

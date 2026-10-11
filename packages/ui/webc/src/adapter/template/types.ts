@@ -55,14 +55,16 @@ export interface ITemplateBinding<TInstance = object> {
 	apply(ctx: ITemplateContext<TInstance>): void
 }
 
-/** Контекст реакции: контекст шаблона и форма элемента. */
+/** Контекст реакции: контекст шаблона, аргументы события и связь с формой. */
 export interface ITemplateReactionContext<TInstance = object> extends ITemplateContext<TInstance> {
+	/** Аргументы события ядра — те же, что в `detail` его `CustomEvent`. */
+	args: readonly unknown[]
 	/**
-	 * Форма, с которой связан элемент (`ElementInternals.form`): форма-предок
-	 * или форма из атрибута `form`. `null` — формы нет или элемент с формой не
-	 * связан вовсе (`formAssociated` у класса не объявлен).
+	 * Связь элемента с формой. Форма — `internals.form`: форма-предок или форма
+	 * из атрибута `form`. `null` — элемент с формой не связан вовсе
+	 * (`formAssociated` у класса не объявлен).
 	 */
-	form: HTMLFormElement | null
+	internals: ElementInternals | null
 }
 
 /**
@@ -91,6 +93,15 @@ export interface ITemplate<TInstance = object> {
 	bindings: readonly ITemplateBinding<TInstance>[]
 
 	reactions: readonly ITemplateReaction<TInstance>[]
+
+	/**
+	 * Что элемент делает со своей формой, пока связан с ней, — у Button это
+	 * неявная отправка (`implicitSubmission`). Зовётся, когда элемент
+	 * связывается с формой (`formAssociatedCallback`), и возвращает отвязку:
+	 * её база зовёт, когда форма сменилась или связь пропала. Только у
+	 * элемента, связанного с формой (`formAssociated`).
+	 */
+	associate?(root: HTMLElement, form: HTMLFormElement): () => void
 }
 
 /** Объявление привязки: bind('text', ctx => ...) или bind(['a','b'], ...) */

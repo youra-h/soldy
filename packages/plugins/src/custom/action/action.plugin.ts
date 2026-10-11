@@ -18,11 +18,14 @@ const NATIVE_ACTIVATION = new Set(['button', 'input', 'select', 'textarea'])
  *
  * Делает три вещи:
  *
- * 1. Нормализует активацию. `press` приходит и на клик, и на Enter/Space,
- *    и не приходит на disabled — независимо от того, `<button>` под
- *    компонентом или `<div>`. Enter/Space нормализуются, только когда фокус
- *    на самом корне: вложенные поле, чекбокс или кнопка знают, что с ними
- *    делать, сами, а их клик всплывёт в корень и даст `press`, как клик
+ * 1. Нормализует активацию. `press` — клик, не пришедший на disabled, —
+ *    независимо от того, `<button>` под компонентом или `<div>`. Из Enter и
+ *    пробела на корне, где браузер клика не делает, клик делает плагин, как
+ *    браузер у `<button>`: Enter — на keydown, пробел — на keyup. Поэтому на
+ *    клавишу приходит и `click` потребителя, а отмена клика (`preventDefault`)
+ *    одинакова для мыши и клавиатуры. Enter/Space нормализуются, только когда
+ *    фокус на самом корне: вложенные поле, чекбокс или кнопка знают, что с
+ *    ними делать, сами, а их клик всплывёт в корень и даст `press`, как клик
  *    мышью. Отмени корень их keydown — в Input не напечатается пробел,
  *    чекбокс не переключится, кнопка не нажмётся.
  *
@@ -40,6 +43,8 @@ export class TActionPlugin extends TBasePlugin<any, TActionPluginEvents> {
 	private _instance: IControl | null = null
 	private _keys: readonly string[] = ['Enter', ' ']
 	private _syncingFocus = false
+	/** Пробел нажат на корне: клик — когда его отпустят, как у `<button>`. */
+	private _spaceDown = false
 
 	override install(ctx: IPluginContext, options?: IActionPluginOptions): void {
 		super.install(ctx, options)
@@ -96,6 +101,7 @@ export class TActionPlugin extends TBasePlugin<any, TActionPluginEvents> {
 
 		target.addEventListener('click', this._onClick)
 		target.addEventListener('keydown', this._onKeyDown)
+		target.addEventListener('keyup', this._onKeyUp)
 		target.addEventListener('focusin', this._onFocusIn)
 		target.addEventListener('focusout', this._onFocusOut)
 
@@ -110,10 +116,12 @@ export class TActionPlugin extends TBasePlugin<any, TActionPluginEvents> {
 
 		target.removeEventListener('click', this._onClick)
 		target.removeEventListener('keydown', this._onKeyDown)
+		target.removeEventListener('keyup', this._onKeyUp)
 		target.removeEventListener('focusin', this._onFocusIn)
 		target.removeEventListener('focusout', this._onFocusOut)
 
 		this._element = null
+		this._spaceDown = false
 	}
 
 	private get _disabled(): boolean {
@@ -149,21 +157,72 @@ export class TActionPlugin extends TBasePlugin<any, TActionPluginEvents> {
 		this.events.emit('press', event)
 	}
 
+	/**
+	 * Клавиша активации на корне, который браузер в клик не превращает.
+	 *
+	 * Клик, а не сразу `press`: так у `<button>`, и клавиша проходит тот же
+	 * путь, что мышь, — `click` потребителя, его отмена, `press`. Пробел
+	 * кликает, когда его отпустят, Enter — сразу.
+	 *
+	 * Нажатие для `<button>` — действие клавиши по умолчанию: его отменяет
+	 * `preventDefault` любого обработчика на пути клавиши, и на предке тоже.
+	 * Поэтому решение — в конце рассылки, а не здесь, на корне, где обработчики
+	 * предков ещё не прошли: так клавиша, которую взял себе предок (Enter со
+	 * строки ListBox выбирает подсвеченный элемент), строку не нажмёт. Конец
+	 * рассылки — окно: дальше событие не всплывает. Клавишу, всплытие которой
+	 * остановили, корень тоже не нажимает — её взял себе тот, кто остановил.
+	 */
 	private readonly _onKeyDown = (event: KeyboardEvent): void => {
-		if (!this._keys.includes(event.key)) return
+		if (!this._ownKey(event)) return
+
+		const view = this._element?.ownerDocument.defaultView
+
+		if (!view) return
+
+		view.addEventListener(
+			'keydown',
+			(passed) => {
+				if (passed !== event || event.defaultPrevented) return
+
+				// Пробел без этого прокручивает страницу; действие браузера ещё впереди
+				event.preventDefault()
+
+				if (event.key === ' ') {
+					this._spaceDown = true
+				} else {
+					this._click()
+				}
+			},
+			{ once: true },
+		)
+	}
+
+	private readonly _onKeyUp = (event: KeyboardEvent): void => {
+		if (event.key !== ' ' || !this._spaceDown) return
+
+		this._spaceDown = false
+
+		if (this._ownKey(event)) this._click()
+	}
+
+	/** Клавиша активации — на самом корне не-нативного тега, не на disabled. */
+	private _ownKey(event: KeyboardEvent): boolean {
+		if (!this._keys.includes(event.key)) return false
 
 		// Клавиша всплыла из вложенного элемента: он обработает её сам
-		if (event.target !== this._element) return
+		if (event.target !== this._element) return false
 
-		// Иначе на <button> press придёт дважды: от keydown и от порождённого click
-		if (this._nativeActivation) return
+		// Иначе на <button> клик придёт дважды: наш и браузера
+		if (this._nativeActivation) return false
 
-		if (this._disabled) return
+		return !this._disabled
+	}
 
-		// Space без этого прокручивает страницу
-		event.preventDefault()
-
-		this.events.emit('press', event)
+	/** Клик по корню — тот, что браузер делает из клавиши у `<button>`. */
+	private _click(): void {
+		this._element?.dispatchEvent(
+			new MouseEvent('click', { bubbles: true, cancelable: true, composed: true }),
+		)
 	}
 
 	private readonly _onFocusIn = (event: FocusEvent): void => {
@@ -172,6 +231,9 @@ export class TActionPlugin extends TBasePlugin<any, TActionPluginEvents> {
 	}
 
 	private readonly _onFocusOut = (event: FocusEvent): void => {
+		// Пробел, отпущенный после ухода фокуса, корень не нажимает
+		if (event.target === this._element) this._spaceDown = false
+
 		this.events.emit('blur', event)
 		this._writeFocused(false)
 	}

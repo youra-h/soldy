@@ -77,8 +77,10 @@ const close = (text: string, root?: ParentNode): HTMLElement => {
 const rowTabindex = (texts: string[], root?: ParentNode) =>
 	texts.map((text) => row(text, root).getAttribute('tabindex'))
 
-const press = (target: Element, key: string) =>
+const press = (target: Element, key: string) => {
 	target.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true }))
+	target.dispatchEvent(new KeyboardEvent('keyup', { key, bubbles: true, cancelable: true }))
+}
 
 describe('с выбором — одна остановка Tab на весь набор', () => {
 	it('tabindex="0" ровно у одной строки — у выбранной', async () => {

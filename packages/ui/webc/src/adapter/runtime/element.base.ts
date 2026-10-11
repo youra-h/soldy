@@ -44,8 +44,10 @@
  * Элемент, связанный с формой (FACE, `static formAssociated = true` — так у
  * Button), получает `ElementInternals` в конструкторе. Его форма —
  * `internals.form`: форма-предок или форма из атрибута `form`, а что с ней
- * делать, объявляет шаблон реакцией на событие ядра (`ITemplate.reactions`) —
- * у Button это `formAction` на `action:press`. Нативный `disabled` у такого
+ * делать, объявляет шаблон: реакцией на событие ядра (`ITemplate.reactions`) —
+ * у Button это `formAction` на `action:press` — и связью с формой, пока она
+ * есть (`ITemplate.associate`, по `formAssociatedCallback`) — у Button это
+ * неявная отправка Enter из поля (`implicitSubmission`). Нативный `disabled` у такого
  * элемента — настоящее выключение: ни фокуса, ни кликов. Ядро для `so-button`
  * его в `attrs` не пишет (тег не из `NATIVE_DISABLED_TAGS`), поэтому атрибут
  * ведёт база по `disabled` ядра — иначе `<so-button disabled>` после
@@ -112,11 +114,28 @@ const ROOT_SETS = ['aria', 'attrs', 'dataset'] as const
 type TRootSet = (typeof ROOT_SETS)[number]
 
 /**
+ * Содержимое ли узел: элемент или текст не из одних пробелов. Пробелы между
+ * тегами — след переносов строк в разметке, а комментарий не рисуется.
+ */
+function isContent(node: ChildNode): boolean {
+	if (node instanceof Element) return true
+
+	return node instanceof Text && node.data.trim() !== ''
+}
+
+/**
  * Раскладывает свет по слотам и вынимает его из хоста.
  *
  * Признак — атрибут `slot` на элементе, как в стандарте. Текстовые узлы
  * атрибутов не имеют и всегда попадают в слот по умолчанию, поэтому
  * `<so-button>Текст</so-button>` работает как раньше.
+ *
+ * Слот, в котором нет содержимого (`isContent`), — не задан, и его узлы
+ * отбрасываются. Иначе пробелы вокруг `<svg slot="leading">` на своей строке
+ * стали бы слотом по умолчанию и заглушили бы проп `text` — компилятор Vue
+ * такие пробелы и комментарии выбрасывает, и одна разметка вела бы себя
+ * по-разному. Пробелы внутри содержимого (`<b>Сохранить</b> <i>файл</i>`)
+ * остаются.
  */
 function groupBySlot(nodes: readonly ChildNode[]): Map<string, ChildNode[]> {
 	const groups = new Map<string, ChildNode[]>()
@@ -134,6 +153,10 @@ function groupBySlot(nodes: readonly ChildNode[]): Map<string, ChildNode[]> {
 		}
 
 		node.remove()
+	}
+
+	for (const [name, group] of groups) {
+		if (!group.some(isContent)) groups.delete(name)
 	}
 
 	return groups
@@ -208,9 +231,12 @@ export abstract class TSoldyElement<
 
 	/**
 	 * Связь с формой — только у элемента, связанного с формой: у остальных
-	 * `internals.form` бросает исключение, и читать его нельзя.
+	 * `internals.form` бросает исключение, и читать его нельзя. Свойства формы
+	 * (`form`, `labels`) класс элемента берёт отсюда.
 	 */
-	private readonly _internals: ElementInternals | null
+	protected readonly internals: ElementInternals | null
+	/** Отвязка шаблона от формы (`ITemplate.associate`); нет связи — `undefined`. */
+	private _dissociate?: () => void
 
 	/**
 	 * Последнее значение каждого пропа, какое видел элемент: записанное
@@ -246,7 +272,7 @@ export abstract class TSoldyElement<
 		super()
 
 		// Класс элемента, а не базы: `formAssociated` объявляет он
-		this._internals = new.target.formAssociated ? this.attachInternals() : null
+		this.internals = new.target.formAssociated ? this.attachInternals() : null
 	}
 
 	get state(): TInstanceState<TInstance> {
@@ -282,6 +308,16 @@ export abstract class TSoldyElement<
 		this._connected = false
 		this.binding?.destroy()
 		this.binding = undefined
+	}
+
+	/**
+	 * Форма элемента, связанного с формой, сменилась: браузер зовёт это при
+	 * вставке, удалении и смене атрибута `form`. Прежняя связь шаблона с формой
+	 * (`ITemplate.associate`) снимается, с новой — заводится.
+	 */
+	formAssociatedCallback(form: HTMLFormElement | null): void {
+		this._dissociate?.()
+		this._dissociate = form ? this.template.associate?.(this, form) : undefined
 	}
 
 	attributeChangedCallback(name: string, _old: string | null, value: string | null): void {
@@ -356,7 +392,7 @@ export abstract class TSoldyElement<
 			this._ctrl,
 			props,
 			(name, value) => this._onUpdate(name, value),
-			(name) => this._onEvent(name),
+			(name, args) => this._onEvent(name, args),
 		)
 
 		this.binding = binding
@@ -413,14 +449,15 @@ export abstract class TSoldyElement<
 	}
 
 	/** Ядро сообщило о событии — после `CustomEvent` идут реакции шаблона на него. */
-	private _onEvent(name: string): void {
+	private _onEvent(name: string, args: readonly unknown[]): void {
 		const reactions = this.template.reactions.filter((reaction) => reaction.event === name)
 
 		if (reactions.length === 0) return
 
 		const context: ITemplateReactionContext<TInstance> = {
 			...this._context(),
-			form: this._internals?.form ?? null,
+			args,
+			internals: this.internals,
 		}
 
 		for (const reaction of reactions) reaction.apply(context)
@@ -481,7 +518,7 @@ export abstract class TSoldyElement<
 			)
 		}
 
-		if (this._internals && changed('disabled')) this._syncDisabled()
+		if (this.internals && changed('disabled')) this._syncDisabled()
 
 		const context = this._context()
 

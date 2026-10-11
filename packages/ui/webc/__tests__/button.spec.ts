@@ -469,18 +469,25 @@ describe('<so-button> · события', () => {
  * плагин вешает по `ready` узла — через кадр после подключения.
  */
 describe('<so-button> · клавиатура', () => {
-	const keydown = (el: Element, key: string) =>
+	/** Нажатие клавиши, как его шлёт браузер: keydown и keyup. */
+	const keydown = (el: Element, key: string) => {
 		el.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true }))
+		el.dispatchEvent(new KeyboardEvent('keyup', { key, bubbles: true, cancelable: true }))
+	}
 
-	it('Enter и пробел на хосте дают action:press', async () => {
+	/** Как `<button>`: клавиша даёт клик, и `action:press` приходит из него. */
+	it('Enter и пробел на хосте дают click и action:press', async () => {
 		const el = mountButton('<so-button></so-button>')
 		const presses = collect(el, 'action:press')
+		const clicks: Event[] = []
 
+		el.addEventListener('click', (event) => clicks.push(event))
 		await nextFrame()
 
 		keydown(el, 'Enter')
 		keydown(el, ' ')
 
+		expect(clicks).toHaveLength(2)
 		expect(presses).toHaveLength(2)
 	})
 
@@ -690,5 +697,30 @@ describe('<so-button> · слоты', () => {
 
 		// Только содержимое слота default переопределяет text
 		expect(text(el)).toBe('Hello')
+	})
+
+	/**
+	 * Пробелы и комментарии вокруг именованных слотов — не содержимое: так
+	 * разметку пишут с переносами строк, а компилятор Vue их выбрасывает. Раньше
+	 * они становились слотом по умолчанию, и вместо `text` кнопка рисовала пустую
+	 * строку из пробелов.
+	 */
+	it('пробелы и комментарии вокруг слотов не подавляют текст из props', () => {
+		const el = mountButton(`<so-button text="Сохранить">
+			<!-- иконка -->
+			<i slot="leading">L</i>
+			<i slot="trailing">T</i>
+		</so-button>`)
+
+		expect(text(el)).toBe('Сохранить')
+		expect(children(el)).toEqual(['L', 'Сохранить', 'T'])
+	})
+
+	it('пробелы внутри содержимого слота по умолчанию остаются', () => {
+		const el = mountButton(`<so-button text="ignored">
+			<b>Сохранить</b> <i>файл</i>
+		</so-button>`)
+
+		expect(text(el)?.trim()).toBe('Сохранить файл')
 	})
 })

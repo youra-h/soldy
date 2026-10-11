@@ -35,6 +35,11 @@ const keydown = (target: Element, key: string): KeyboardEvent => {
 	return event
 }
 
+/** keyup — им браузер нажимает `<button>` пробелом. */
+const keyup = (target: Element, key: string): void => {
+	target.dispatchEvent(new KeyboardEvent('keyup', { key, bubbles: true, cancelable: true }))
+}
+
 describe('press · нормализованная активация', () => {
 	it('приходит на клик мышью', async () => {
 		const press = vi.fn()
@@ -65,23 +70,90 @@ describe('press · нормализованная активация', () => {
 
 	/**
 	 * Фокус на самом корне-`div` (`role="button"`, `tabindex="0"`): клик из
-	 * клавиши браузер тут не сделает, его заменяет `press`. Действие браузера
-	 * отменено — пробел иначе прокрутил бы страницу.
+	 * клавиши браузер тут не сделает, его делает плагин — как браузер у
+	 * `<button>`, — и `press` приходит из него. Действие браузера отменено —
+	 * пробел иначе прокрутил бы страницу.
+	 *
+	 * Корень — в документе: решение плагин принимает в конце рассылки клавиши, на
+	 * окне.
 	 */
 	it.each(KEYS)(
-		'%s на корне не-нативного тега — press, действие браузера отменено',
+		'%s на корне не-нативного тега — click и press, действие браузера отменено',
 		async (_name, key) => {
 			const press = vi.fn()
-			const wrapper = mount(Button, { props: { tag: 'div', 'onAction:press': press } })
+			const click = vi.fn()
+			const wrapper = mount(Button, {
+				props: { tag: 'div', 'onAction:press': press, onClick: click },
+				attachTo: document.body,
+			})
 
 			await mounted()
 
 			const event = keydown(wrapper.element, key)
 
+			keyup(wrapper.element, key)
+
+			expect(click).toHaveBeenCalledTimes(1)
 			expect(press).toHaveBeenCalledTimes(1)
 			expect(event.defaultPrevented).toBe(true)
+
+			wrapper.unmount()
 		},
 	)
+
+	/** Как у `<button>`: пробел нажимает, когда его отпускают, Enter — сразу. */
+	it('пробел нажимает на keyup, Enter — на keydown', async () => {
+		const press = vi.fn()
+		const wrapper = mount(Button, {
+			props: { tag: 'div', 'onAction:press': press },
+			attachTo: document.body,
+		})
+
+		await mounted()
+
+		keydown(wrapper.element, ' ')
+
+		expect(press).not.toHaveBeenCalled()
+
+		keyup(wrapper.element, ' ')
+
+		expect(press).toHaveBeenCalledTimes(1)
+
+		keydown(wrapper.element, 'Enter')
+
+		expect(press).toHaveBeenCalledTimes(2)
+
+		wrapper.unmount()
+	})
+
+	/**
+	 * Нажатие — действие клавиши по умолчанию, как у `<button>`: его отменяет
+	 * `preventDefault` любого обработчика на пути клавиши, и на предке тоже —
+	 * хоть он и слушает после корня. Так клавишу берёт себе список, у которого
+	 * строка — кнопка.
+	 */
+	it.each(KEYS)('%s, отменённый на предке, корень не нажимает', async (_name, key) => {
+		const press = vi.fn()
+		const parent = document.createElement('div')
+
+		document.body.appendChild(parent)
+		parent.addEventListener('keydown', (event) => event.preventDefault())
+
+		const wrapper = mount(Button, {
+			props: { tag: 'div', 'onAction:press': press },
+			attachTo: parent,
+		})
+
+		await mounted()
+
+		keydown(wrapper.element, key)
+		keyup(wrapper.element, key)
+
+		expect(press).not.toHaveBeenCalled()
+
+		wrapper.unmount()
+		parent.remove()
+	})
 
 	it('на нативной кнопке Enter не даёт второго press', async () => {
 		const press = vi.fn()

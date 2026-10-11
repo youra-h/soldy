@@ -37,8 +37,11 @@ export type TBinding<TInstance = object> = {
 /** Сменился проп в ядре: имя в поверхности и новое значение. */
 export type TUpdateListener = (name: string, value: unknown) => void
 
-/** Ядро сообщило о событии: имя в поверхности — то же, что у `CustomEvent`. */
-export type TEventListener = (name: string) => void
+/**
+ * Ядро сообщило о событии: имя в поверхности — то же, что у `CustomEvent`, — и
+ * аргументы события, те же, что ушли в `detail`.
+ */
+export type TEventListener = (name: string, args: readonly unknown[]) => void
 
 export function useAdapter<C extends IComponentContract>(
 	adapter: IAdapterContext<C>,
@@ -65,7 +68,7 @@ export function useAdapter<C extends IComponentContract>(
 			}),
 		)
 
-		onEvent(exportName)
+		onEvent(exportName, args)
 	})
 
 	// Компонент принят: связку заводит `connectedCallback`, отброшенных
