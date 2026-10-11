@@ -189,7 +189,18 @@ ListBox, список Select, Popover и будущий Menu выглядят о
   консоль. Сторожат `ui/react/__tests__/input.spec.tsx`,
   `ui/react/__tests__/checkable.spec.tsx` и
   `ui/react/__tests__/radio-group.spec.tsx` («радио, с которого отметку сняло
-  значение снаружи, выбирается снова»).
+  значение снаружи, выбирается снова»). У Svelte своего поля нет: `checked` и
+  `indeterminate` он пишет свойствами узла сам, а на сервере — атрибутами (HTML
+  из них знает только `checked`, «выбрано частично» встаёт с гидратацией).
+  Текст — тоже свойством, но не спредом: наборы ядра и атрибуты потребителя
+  ложатся на `<input>` спредом, а в спреде Svelte писал бы `value` на каждую
+  смену значения, с узлом не сверяя, — набор возвращал бы узлу его же текст, и
+  браузер переставал бы проверять `minlength`. Текст ставит attachment поля
+  `fieldText` (`ui/svelte/src/adapter/runtime/`): пишет, только когда текст
+  разошёлся с узлом, а на сервере текст уходит атрибутом `value`. Сторожат
+  `ui/svelte/__tests__/input.spec.ts` («набор не переписывает поле»),
+  `checkable.spec.ts` и серверные `input.server.spec.ts` и
+  `checkable.server.spec.ts`.
 - **Radio Group** — Radio Group pattern, вариант на нативных
   `input[type="radio"]`: `role="radiogroup"` на контейнере, имя группы —
   `aria_label` / `aria_labelledBy`. Радио собирает в группу общий `name`: его
