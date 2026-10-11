@@ -265,13 +265,13 @@ dismiss.events.on('dismiss', () => {
 
 В компоненте **нельзя** заводить свои механизмы фреймворка:
 
-| Фреймворк | Чего нет в компоненте                                                                                           |
-| --------- | --------------------------------------------------------------------------------------------------------------- |
-| Vue       | `ref`, `shallowRef`, `reactive`, `computed`, `watch`, `watchEffect`, `on*`-хуки, `nextTick`, `provide`/`inject` |
-| React     | `useState`, `useEffect`, `useLayoutEffect`, `useMemo`, `useCallback`, `useRef`, `useContext`                    |
-| Solid     | `createSignal`, `createMemo`, `createEffect`, `onMount`, `onCleanup`, `useContext`                              |
-| Svelte    | `$state`, `$derived`, `$effect`, `onMount`, `onDestroy`, `getContext`/`setContext`                              |
-| Angular   | `signal`, `computed`, `effect`, `ngOnChanges`/`ngAfterViewInit` и прочие хуки                                   |
+| Фреймворк | Чего нет в компоненте                                                                                            |
+| --------- | ---------------------------------------------------------------------------------------------------------------- |
+| Vue       | `ref`, `shallowRef`, `reactive`, `computed`, `watch`, `watchEffect`, `on*`-хуки, `nextTick`, `provide`/`inject`  |
+| React     | `useState`, `useEffect`, `useLayoutEffect`, `useMemo`, `useCallback`, `useRef`, `useContext`                     |
+| Solid     | `createSignal`, `createMemo`, `createEffect`, `onMount`, `onCleanup`, `useContext`, `children`, `createUniqueId` |
+| Svelte    | `$state`, `$derived`, `$effect`, `onMount`, `onDestroy`, `getContext`/`setContext`                               |
+| Angular   | `signal`, `computed`, `effect`, `ngOnChanges`/`ngAfterViewInit` и прочие хуки                                    |
 
 Если компоненту понадобился такой механизм, значит адаптер не справляется, а
 обход в компоненте это прячет и расходится между шестью фреймворками. Реальный
@@ -313,6 +313,16 @@ Svelte-компоненты собирают контекст через `create
 компоненте по-прежнему нет. Забытый id ловят типы (`mountId` у обёртки
 обязателен), сборку мимо обёртки — тот же сторож:
 `createAdapterContext` из `@soldy-ui/setup` в компонентах Svelte запрещён.
+
+Solid-компоненты собирают контекст через `createSolidAdapterContext`
+(`packages/ui/solid/src/adapter/common/`): она берёт локаль поддерева и id
+монтирования — `createUniqueId()`. Он совпадает на сервере и при гидратации и
+зовётся из любой функции тела компонента, поэтому его берёт обёртка, а не
+компонент. Чего тело компонента Solid само не может, дают помощники адаптера:
+атрибуты корня — мемо `createRootProps`, слот, по которому разметка выбирает
+запасное (текст Button), — `resolveSlot` поверх `children()`. Сборку мимо
+обёртки ловит тот же сторож: `createAdapterContext` из `@soldy-ui/setup` в
+компонентах Solid запрещён.
 
 React-компоненты держат adapter-context между рендерами не сами: вместо
 своего `useRef` они зовут `useAdapterContext` (`packages/ui/react/src/adapter/runtime/`)
