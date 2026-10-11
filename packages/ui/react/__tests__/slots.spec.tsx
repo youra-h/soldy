@@ -71,6 +71,21 @@ describe('поведение слотов Button', () => {
 		expect(el.querySelector('.s-button__text')?.textContent?.trim()).toBe('Custom')
 	})
 
+	/**
+	 * Пустое по правилам React — `null` и булево — не содержимое: текст на месте,
+	 * как у шаблона Vue. `{cond && <Icon />}` при ложном условии — `false`, и он
+	 * глушил `text`. Так же функция слота, вернувшая пустое.
+	 */
+	it.each([
+		['false', false],
+		['null', null],
+		['функция, вернувшая null', () => null],
+	])('children — %s: рисуется text', (_name, children) => {
+		const el = root(mount({ text: 'Сохранить', children }))
+
+		expect(el.querySelector('.s-button__text')?.textContent).toBe('Сохранить')
+	})
+
 	it('слот children получает scope с text', () => {
 		const el = root(
 			mount({

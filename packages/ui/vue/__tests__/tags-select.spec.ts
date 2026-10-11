@@ -44,9 +44,13 @@ const KEYS = [
 	['пробел', ' '],
 ] as const
 
-/** keydown, как его шлёт браузер: всплывает и отменяется. */
+/**
+ * Нажатие клавиши, как его шлёт браузер: keydown и keyup, всплывают и
+ * отменяются. Пробел нажимает строку, когда его отпускают, — как `<button>`.
+ */
 const keydown = (target: Element, key: string): void => {
 	target.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true }))
+	target.dispatchEvent(new KeyboardEvent('keyup', { key, bubbles: true, cancelable: true }))
 }
 
 /** Строка тега — носитель его роли и `aria-selected`. */

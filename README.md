@@ -191,7 +191,7 @@ What each adapter implements so far:
 | Angular        | `@soldy-ui/angular` | Button (`<button so-button>`)                                                                                                        |
 | Svelte         | `@soldy-ui/svelte`  | Button                                                                                                                               |
 | Solid          | `@soldy-ui/solid`   | Button                                                                                                                               |
-| Web Components | `@soldy-ui/webc`    | Button (`<so-button>`)                                                                                                               |
+| Web Components | `@soldy-ui/webc`    | Button (`<button is="so-button">`)                                                                                                   |
 
 A new component comes to Vue first and moves to the other adapters after that.
 

@@ -43,7 +43,8 @@
   "dependencies": {
     "@soldy-ui/core": "^0.1.0",
     "@soldy-ui/plugins": "^0.1.0",
-    "@soldy-ui/setup": "^0.1.0"
+    "@soldy-ui/setup": "^0.1.0",
+    "@ungap/custom-elements": "^1.3.0"
   },
   "devDependencies": {
     "@soldy-ui/icons-material": "^0.1.0",

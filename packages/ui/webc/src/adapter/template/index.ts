@@ -1,11 +1,8 @@
-export { bind, on } from './types'
-export { formAction } from './form'
+export { bind } from './types'
 export type {
 	ITemplate,
 	ITemplateBinding,
 	ITemplateContext,
-	ITemplateReaction,
-	ITemplateReactionContext,
 	TSlotTarget,
 	TSlotTargets,
 } from './types'

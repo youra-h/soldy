@@ -236,7 +236,7 @@ describe('разметка', () => {
  * `columnFit` (`core/__tests__/table-layout.spec.ts`), место мерит плагин
  * (`plugins/__tests__/table-layout.plugin.spec.ts`), раскладку в браузере —
  * `playground/vue/browser/table.spec.ts`. Здесь — что проп доходит до
- * таблицы, а ширины раскладки и `data-overflow` — до разметки.
+ * таблицы, а ширины раскладки, `data-overflow` и `data-sized` — до разметки.
  */
 describe('раскладка колонок', () => {
 	/** Колонки заголовков — переменные ширины по порядку. */
@@ -256,6 +256,8 @@ describe('раскладка колонок', () => {
 			'true',
 		])
 		expect(find('table.s-table').hasAttribute('data-overflow')).toBe(false)
+		// Ширины известны и до места — таблица шириной в их сумму
+		expect(find('table.s-table').dataset.sized).toBe('true')
 	})
 
 	it('по умолчанию auto — до места ширин нет, с местом — делят его', async () => {
@@ -264,12 +266,14 @@ describe('раскладка колонок', () => {
 		await render(() => h(Table, { engine }))
 
 		expect(widths()).toEqual(['', ''])
+		expect(find('table.s-table').hasAttribute('data-sized')).toBe(false)
 
 		engine.extensions.columns.notifySpace(500)
 		await settle()
 
 		expect(widths()).toEqual(['250px', '250px'])
 		expect(find('table.s-table').dataset.overflow).toBe('false')
+		expect(find('table.s-table').dataset.sized).toBe('true')
 	})
 
 	it('смена columnFit пропом — новая раскладка; шире места — data-overflow', async () => {
