@@ -3,18 +3,21 @@ import http from 'node:http'
 import fs from 'node:fs'
 import path from 'node:path'
 
-// Трасса жеста перестановки колонки: что делает главный поток браузера —
+// Трасса сценариев стенда: что делает главный поток браузера — скрипт,
 // пересчёт стилей, раскладка, обход перед отрисовкой, отрисовка и перестройка
-// слоёв. Таблица на N строк, жест — те же сценарии стенда, что у `run.mjs`
-// (`bench.take`, `bench.step`, `bench.release`), каждый под своей трассой.
+// слоёв. Таблица на N строк, сценарии — те же, что у `run.mjs`, каждый под
+// своей трассой.
 //
-//   node trace.mjs <строк> [библиотеки через запятую] [прогонов]
+//   node trace.mjs <строк> [библиотеки через запятую] [прогонов] [набор]
 //
 // Библиотека с флагами через «+», как у `run.mjs`: `soldy+reorder+preview=none`.
-// Флаг `reorder` нужен всегда: без него колонку не взять.
+// Набор сценариев (`SETS` ниже) — `reorder` по умолчанию: жест перестановки, ему
+// нужен флаг `reorder`; `resize` — протяжка ручки ширины, флаг `resize`;
+// `rest` — таблица на покое: выбор и сортировки.
 const N = Number(process.argv[2] ?? 5000)
 const LIBS = (process.argv[3] ?? 'soldy+reorder').split(',')
 const RUNS = Number(process.argv[4] ?? 3)
+const SET = process.argv[5] ?? 'reorder'
 const urlOf = (lib) => {
 	const [name, ...flags] = lib.split('+')
 
@@ -22,6 +25,39 @@ const urlOf = (lib) => {
 		'?lib=' + name + flags.map((flag) => `&${flag.includes('=') ? flag : flag + '=1'}`).join('')
 	)
 }
+
+/**
+ * Наборы сценариев — по порядку, как у `run.mjs`: подпись, путь к сценарию в
+ * `window.bench` и его аргумент.
+ */
+const SETS = {
+	// Таблица на покое: выделить все и снять, отсортировать по возрастанию и по
+	// убыванию
+	rest: [
+		['Выделить все', ['selectAll']],
+		['Снять выделение', ['selectAll']],
+		['Сортировка ↑', ['sort']],
+		['Сортировка ↓', ['sort']],
+	],
+	// Протяжка ручки ширины второй колонки: нажать, шаг указателя на 20 px и
+	// отпустить там же
+	resize: [
+		['Взять ручку', ['resize', 'grab']],
+		['Шаг ручки', ['resize', 'drag'], 20],
+		['Отпустить ручку', ['resize', 'drop'], 20],
+	],
+	// Жест перестановки колонки: взять, шаг на соседа, отпустить
+	reorder: [
+		['Взять колонку', ['take']],
+		['Смена места', ['step']],
+		['Отпустить', ['release']],
+	],
+}
+
+const SCENARIOS = SETS[SET]
+
+if (!SCENARIOS) throw new Error(`набора «${SET}» нет: ${Object.keys(SETS).join(', ')}`)
+
 const dist = path.resolve(import.meta.dirname, 'dist')
 const types = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css' }
 const server = http
@@ -39,12 +75,24 @@ const browser = await chromium.launch()
 /** Фазы кадра, которые суммирует трасса, — имена событий главного потока. */
 const PHASES = ['UpdateLayoutTree', 'Layout', 'PrePaint', 'Paint', 'Layerize']
 
-/** Сценарии жеста — по порядку, как у `run.mjs`. */
-const SCENARIOS = [
-	['Взять колонку', 'take'],
-	['Смена места', 'step'],
-	['Отпустить', 'release'],
-]
+/**
+ * События скрипта главного потока: обработчики событий DOM, вызовы функций из
+ * браузера (колбэки кадра, таймеры, наблюдатели), микрозадачи — в них
+ * перерисовывает фреймворк, — разбор и компиляция.
+ */
+const SCRIPT = new Set([
+	'EventDispatch',
+	'FunctionCall',
+	'TimerFire',
+	'FireAnimationFrame',
+	'FireIdleCallback',
+	'RunMicrotasks',
+	'EvaluateScript',
+	'v8.evaluateModule',
+	'v8.compile',
+	'v8.compileModule',
+	'v8.run',
+])
 
 /** События указателя, внутри которых пересчёт стилей — синхронный, в обработчике. */
 const POINTER = new Set(['pointerdown', 'pointermove', 'pointerup'])
@@ -95,8 +143,54 @@ function spansOf(events) {
 }
 
 /**
- * Сводка трассы: сумма каждой фазы, пересчёт стилей внутри обработчиков
- * указателя и наибольшее число элементов, чей стиль пересчитан за раз.
+ * Отрезки событий, слитые в непересекающиеся: вложенное и перекрытое событие
+ * считается один раз. По возрастанию начала.
+ */
+function merged(spans) {
+	const sorted = spans.map(({ start, end }) => [start, end]).sort((a, b) => a[0] - b[0])
+	const result = []
+
+	for (const [start, end] of sorted) {
+		const last = result.at(-1)
+
+		if (last && start <= last[1]) last[1] = Math.max(last[1], end)
+		else result.push([start, end])
+	}
+
+	return result
+}
+
+/** Пересечение двух наборов слитых отрезков. */
+function intersect(a, b) {
+	const result = []
+	let i = 0
+	let j = 0
+
+	while (i < a.length && j < b.length) {
+		const start = Math.max(a[i][0], b[j][0])
+		const end = Math.min(a[i][1], b[j][1])
+
+		if (start < end) result.push([start, end])
+		if (a[i][1] < b[j][1]) i++
+		else j++
+	}
+
+	return result
+}
+
+/** Сумма длин отрезков, мс. */
+const lengthOf = (intervals) =>
+	intervals.reduce((total, [start, end]) => total + end - start, 0) / 1000
+
+/**
+ * Сводка трассы: скрипт, сумма каждой фазы, пересчёт стилей внутри
+ * обработчиков указателя и наибольшее число элементов, чей стиль пересчитан за
+ * раз.
+ *
+ * Скрипт — время, которое главный поток провёл в событиях скрипта, без
+ * двойного счёта: обработчик, вызвавший функцию, и микрозадачи внутри него —
+ * одно время, а фазы кадра, вызванные из скрипта (стиль после записи, раскладка
+ * от чтения коробки), — в своих столбцах, а не в нём.
  */
 function summarize(trace) {
 	const spans = spansOf(JSON.parse(trace.toString()).traceEvents)
@@ -108,8 +202,11 @@ function summarize(trace) {
 	)
 	const inHandler = (s) => handlers.some((h) => s.start >= h.start && s.end <= h.end)
 	const styles = spans.filter((s) => s.name === 'UpdateLayoutTree')
+	const script = merged(spans.filter((s) => SCRIPT.has(s.name)))
+	const phases = merged(spans.filter((s) => PHASES.includes(s.name)))
 
 	return {
+		Скрипт: lengthOf(script) - lengthOf(intersect(script, phases)),
 		...Object.fromEntries(PHASES.map((name) => [name, sum(name)])),
 		'Стиль в обработчике':
 			styles.filter(inHandler).reduce((total, s) => total + (s.end - s.start), 0) / 1000,
@@ -129,18 +226,32 @@ for (const lib of LIBS) {
 		await page.waitForFunction(() => 'bench' in window)
 		await page.evaluate((n) => bench.render(n), N)
 
-		for (const [label, action] of SCENARIOS) {
+		for (const [label, scenario, arg] of SCENARIOS) {
 			await browser.startTracing(page, {
-				categories: ['devtools.timeline', 'disabled-by-default-devtools.timeline'],
+				// `v8.execute` — ради микрозадач (`RunMicrotasks`): без него скрипт
+				// перерисовки фреймворка в трассу не попадает
+				categories: [
+					'devtools.timeline',
+					'disabled-by-default-devtools.timeline',
+					'v8.execute',
+				],
 			})
-			await page.evaluate((name) => bench[name](), action)
+			// Сценарий зовётся методом своего объекта: `bench.resize.drag(20)`
+			await page.evaluate(
+				([keys, value]) => {
+					const owner = keys.slice(0, -1).reduce((object, key) => object[key], bench)
+
+					return owner[keys.at(-1)](value)
+				},
+				[scenario, arg],
+			)
 			runs[label].push(summarize(await browser.stopTracing()))
 		}
 
 		await page.close()
 	}
 
-	console.log(`\n${lib}, N=${N}, прогонов ${RUNS}, медиана; мс главного потока`)
+	console.log(`\n${lib}, ${SET}, N=${N}, прогонов ${RUNS}, медиана; мс главного потока`)
 	console.table(
 		Object.fromEntries(
 			Object.entries(runs).map(([label, summaries]) => [

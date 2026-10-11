@@ -92,8 +92,14 @@ type TColumnDrag = {
  * **Раскладка** — ширины гибких показанных колонок, колонок без своей ширины:
  * из места таблицы (`notifySpace` — его мерит плагин) и её `columnFit`, по
  * правилам `layoutColumns`. Ширину раскладки расширение пишет колонке
- * (`layoutWidth`), а таблице — `data-overflow`, колонки шире места: по нему
- * тема включает прокрутку окна таблицы. Пока места нет, признака нет. Без
+ * (`layoutWidth`), а таблице — признаки для темы: `data-overflow` — колонки
+ * шире места, по нему тема включает прокрутку окна таблицы (пока места нет,
+ * признака нет), и `data-sized` — у каждой показанной колонки известна
+ * ширина, своя или раскладки, по нему тема кладёт таблицу шириной в их сумму
+ * (колонок нет или ширины нет хотя бы у одной — признака нет). Из
+ * `data-overflow` он не выводится: в `none` ширины известны и до замера.
+ * Признак — у корня, а не условие темы по заголовкам: `:has()` у корня
+ * браузер проверяет обходом всего тела на каждом пересчёте стиля корня. Без
  * таблицы раскладки нет: гибкие колонки без ширины, и их ширину решает тема.
  * Пересчёт — на смену показанных колонок, места, `columnFit` и своей ширины
  * или границ показанной колонки; своя запись ширин пересчёта не будит. Запись
@@ -255,8 +261,11 @@ export class TTableColumnsExtension<
 				for (const column of this.shownColumns) column.resizePreview = 'live'
 			})
 
-			// Признак места — этой таблицы: она ушла, и признак уходит с неё
-			scope.add(() => owner.dataset.add('overflow', null))
+			// Признаки раскладки — этой таблицы: она ушла, и признаки уходят с неё
+			scope.add(() => {
+				owner.dataset.add('overflow', null)
+				owner.dataset.add('sized', null)
+			})
 
 			// Признак жеста — тоже: таблица ушла посреди жеста
 			scope.add(() => owner.dataset.add('reorder-preview', null))
@@ -532,8 +541,9 @@ export class TTableColumnsExtension<
 
 	/**
 	 * Раскладка показанных колонок: гибким — ширина раскладки или её снятие,
-	 * таблице — `data-overflow`. Колонкам со своей шириной ширина раскладки
-	 * снимается: её у них нет. Своя запись ширин пересчёта не будит.
+	 * таблице — `data-overflow` и `data-sized`. Колонкам со своей шириной
+	 * ширина раскладки снимается: её у них нет. Своя запись ширин пересчёта не
+	 * будит.
 	 */
 	private _layout(): void {
 		const owner = this._ctx?.options.get('owner')
@@ -562,6 +572,7 @@ export class TTableColumnsExtension<
 				column.layoutWidth = widths[index]
 			})
 			owner.dataset.add('overflow', overflow)
+			owner.dataset.add('sized', sizedOf(shown) || null)
 		} finally {
 			this._laying = false
 		}
@@ -647,4 +658,9 @@ export class TTableColumnsExtension<
 /** Место в отрезке показанных. */
 function within(value: number, low: number, high: number): number {
 	return Math.min(Math.max(Math.round(value), low), high)
+}
+
+/** Показанные колонки есть, и у каждой известен итог ширины — своя или раскладки. */
+function sizedOf(shown: ReadonlyArray<ITableColumn>): boolean {
+	return shown.length > 0 && shown.every((column) => column.width !== undefined)
 }
