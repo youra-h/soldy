@@ -1,0 +1,134 @@
+/**
+ * Skeleton под Angular: заглушка поверх содержимого.
+ *
+ * Корень есть всегда — в нём лежит содержимое, — а `rendered` и `visible`
+ * решают только, показана ли заглушка. База поэтому видимостью корень не
+ * прячет (`hides: false`): `display: none` спрятал бы и содержимое.
+ *
+ * `variant` — вход, а не атрибут корня (тот же сценарий, что у Vue,
+ * `skeleton-variant.spec.ts`, и React). Значения — условные имена из фикстуры
+ * темы (`__tests__/theme.d.ts`), не имена oren.
+ */
+
+import { describe, it, expect } from 'vitest'
+import { Component, signal } from '@angular/core'
+import type { ComponentFixture } from '@angular/core/testing'
+import type { TComponentVariant } from '@soldy-ui/core'
+import { TSkeletonComponent } from '@soldy-ui/angular'
+import { findIn, mountHost } from './mount'
+
+const variantClasses = (el: HTMLElement) =>
+	[...el.classList].filter((name) => name.includes('--variant-'))
+
+@Component({
+	standalone: true,
+	imports: [TSkeletonComponent],
+	template: `<div so-skeleton [variant]="variant()"></div>`,
+})
+class VariantHost {
+	readonly variant = signal<TComponentVariant | undefined>('brand')
+}
+
+@Component({
+	standalone: true,
+	imports: [TSkeletonComponent],
+	template: `<div so-skeleton [visible]="visible()" [rendered]="rendered()"><b>Данные</b></div>`,
+})
+class ContentHost {
+	readonly visible = signal<boolean | undefined>(undefined)
+	readonly rendered = signal<boolean | undefined>(undefined)
+}
+
+@Component({
+	standalone: true,
+	imports: [TSkeletonComponent],
+	template: `<div so-skeleton [width]="120" height="1em"></div>`,
+})
+class SizedHost {}
+
+/** Корень Skeleton в разметке хоста. */
+const skeleton = (fixture: ComponentFixture<unknown>) =>
+	findIn(fixture, '[so-skeleton]', HTMLElement)
+
+describe('Skeleton · variant', () => {
+	it('доходит до инстанса: у корня класс варианта, атрибута variant нет', () => {
+		const el = skeleton(mountHost(VariantHost))
+
+		expect(variantClasses(el)).toEqual(['s-skeleton--variant-brand'])
+		expect(el.hasAttribute('variant')).toBe(false)
+	})
+
+	it('смена входа меняет класс', () => {
+		const fixture = mountHost(VariantHost)
+
+		fixture.componentInstance.variant.set('danger')
+		fixture.detectChanges()
+
+		expect(variantClasses(skeleton(fixture))).toEqual(['s-skeleton--variant-danger'])
+	})
+})
+
+describe('Skeleton · заглушка и содержимое', () => {
+	it('показанная заглушка — перед содержимым, скрыта от скринридера', () => {
+		const el = skeleton(mountHost(ContentHost))
+
+		expect([...el.children].map((child) => child.localName)).toEqual(['div', 'b'])
+		expect(el.firstElementChild?.className).toBe('s-skeleton__placeholder')
+		expect(el.firstElementChild?.getAttribute('aria-hidden')).toBe('true')
+		// Пока заглушка показана, область занята
+		expect(el.getAttribute('aria-busy')).toBe('true')
+	})
+
+	it('visible=false: заглушки нет, содержимое на месте, корень не скрыт', () => {
+		const fixture = mountHost(ContentHost)
+
+		fixture.componentInstance.visible.set(false)
+		fixture.detectChanges()
+
+		const el = skeleton(fixture)
+
+		expect(el.querySelector('.s-skeleton__placeholder')).toBeNull()
+		expect(el.querySelector('b')?.textContent).toBe('Данные')
+		expect(el.style.display).toBe('')
+		expect(el.hasAttribute('aria-busy')).toBe(false)
+	})
+
+	it('rendered=false: то же — корень остаётся с содержимым', () => {
+		const fixture = mountHost(ContentHost)
+
+		fixture.componentInstance.rendered.set(false)
+		fixture.detectChanges()
+
+		const el = skeleton(fixture)
+
+		expect(el.querySelector('.s-skeleton__placeholder')).toBeNull()
+		expect(el.querySelector('b')?.textContent).toBe('Данные')
+		expect(el.style.display).toBe('')
+	})
+
+	/** Содержимое проецируется вне ветки заглушки: смена ветки его не теряет. */
+	it('заглушка уходит и возвращается со сменой visible, содержимое остаётся', () => {
+		const fixture = mountHost(ContentHost)
+		const content = skeleton(fixture).querySelector('b')
+
+		fixture.componentInstance.visible.set(false)
+		fixture.detectChanges()
+
+		expect(skeleton(fixture).querySelector('.s-skeleton__placeholder')).toBeNull()
+
+		fixture.componentInstance.visible.set(true)
+		fixture.detectChanges()
+
+		expect(skeleton(fixture).querySelector('.s-skeleton__placeholder')).not.toBeNull()
+		expect(skeleton(fixture).querySelector('b')).toBe(content)
+	})
+})
+
+describe('Skeleton · размер', () => {
+	it('width и height — стилем корня', () => {
+		const el = skeleton(mountHost(SizedHost))
+
+		expect(el.style.width).toBe('120px')
+		expect(el.style.height).toBe('1em')
+	})
+})

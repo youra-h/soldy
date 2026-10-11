@@ -1,3 +1,4 @@
 export * from './common'
 export * from './runtime'
+export * from './locale'
 export * from './elevator'

@@ -1659,9 +1659,9 @@ There is no `adapter/static/`: React takes prop names from the descriptor types,
 
 ## Layer 8: Angular Adapter (`packages/ui/angular/src`)
 
-### ✅ IMPLEMENTED (ComponentView + Button, как в React)
+### ✅ IMPLEMENTED (Component / ComponentView / Stylable / Control / Textable / Button / Icon / ProgressSpinner / Skeleton)
 
-**Структура** зеркалит Vue/React: `adapter/{common,runtime,elevator}` + `components/*`.
+**Структура** зеркалит Vue/React: `adapter/{common,runtime,locale,elevator}` + `components/*`.
 
 - `adapter/common/` — `AngularProfile` (`naming: AngularNaming`), `AngularNaming`
   (события → camelCase без `on`-префикса, т.к. имя `@Output` обязано быть
@@ -1669,7 +1669,10 @@ There is no `adapter/static/`: React takes prop names from the descriptor types,
   (**только для кодогенератора**: имена берутся из поверхности
   `TSurface.of(descriptor, AngularProfile)`; `useBooleanInputs` — входы, чей
   проп объявлен ровно `Boolean`; `useOutputs` отдаёт выход в паре с полным
-  именем события ядра — `actionPress` и `action:press`).
+  именем события ядра — `actionPress` и `action:press`);
+  `createAngularAdapterContext` — сборка с локалью поддерева из DI, в
+  контексте инъекции компонента; `RoleIconDirective` (`svg[so-role-icon]`) —
+  рисунок иконки по роли на `<svg>` Icon: `viewBox` и содержимое из реестра.
 - `adapter/runtime/` — `useAdapter(adapter)` → `TBinding` поверх связки
   `adapter.connect(AngularProfile)`: `state` (сигнал), `syncInputs`
   (`inputs.delta` связки: `ngOnChanges` отдаёт только изменившиеся входы, а
@@ -1679,11 +1682,14 @@ There is no `adapter/static/`: React takes prop names from the descriptor types,
   `bindElement`,
   `destroy`; `TInputValue` (тип входа: тип пропа дескриптора по имени входа) и
   `TOutputEmitter` (тип выхода: эмиттер первого аргумента события
-  дескриптора); `TComponentBase` (общий жизненный цикл и корень компонента —
-  см. «DOM-биндинг»), `SlotDirective` (`<ng-template slot>`); в бочку не
-  входят `booleanInput` — transform булева входа, его импортируют
-  сгенерированные метаданные, — и `root-attributes.ts`: `applyAttributes` и
-  `applyClasses` раскладывают наборы и классы ядра на корень-хост.
+  дескриптора); `TComponentBase` (общий жизненный цикл и корень компонента по
+  описанию корня `TRootSpec` — см. «DOM-биндинг»), `SlotDirective`
+  (`<ng-template slot>`); в бочку не входят `booleanInput` — transform
+  булева входа, его импортируют сгенерированные метаданные, — и
+  `root-attributes.ts`: `applyAttributes`, `applyClasses` и `applyStyles`
+  раскладывают наборы, классы и стиль ядра на корень-хост.
+- `adapter/locale/` — `LocaleProviderDirective` (`[so-locale-provider]`): свой
+  `TLocaleSource` поддереву через `providers`, вход пишется в тот же источник.
 - `adapter/elevator/` — `TAngularElevator` + `AngularElevatorFactory`.
 - `codegen/` — `collect-manifests` + `generate` → `src/generated/*.metadata.ts`:
   массивы имён и поверхность `T<Имя>Surface` — абстрактная директива, которая
@@ -1785,7 +1791,9 @@ Zone.js и молча ломалось бы под `provideZonelessChangeDetecti
 Обёртки у компонента нет. Компонент, у которого корень — один элемент на месте
 компонента и всё, что потребитель пишет на элемент, относится к нему, получает
 атрибутный селектор: `button[so-button], [so-button]` у Button,
-`[so-component-view]` у ComponentView. Потребитель пишет `<button so-button>`,
+`[so-component-view]` у ComponentView, `span[so-icon], [so-icon]` у Icon,
+`span[so-progress-spinner], [so-progress-spinner]` у ProgressSpinner,
+`[so-skeleton]` у Skeleton. Потребитель пишет `<button so-button>`,
 `<a so-button href>`, `<div so-button>`, и этот элемент — корень: какой тег
 написан, так он себя и ведёт, а класс, стиль, атрибуты и события на нём
 работают без проброса. Раньше `<so-button>` был обёрткой с кнопкой внутри, и
@@ -1793,9 +1801,10 @@ Zone.js и молча ломалось бы под `provideZonelessChangeDetecti
 тегом умолчания ядра: по первому селектору Angular выбирает тег хоста, когда
 создаёт компонент сам (`createComponent`), а для `[…]` берёт `div`.
 
-Корень ведёт базовый `TComponentBase` по стратегии, которую компонент передаёт
-в конструктор, — своих привязок хоста и эффектов у компонента нет. Стратегия
-`'host'` — корень сам хост:
+Корень ведёт базовый `TComponentBase` по описанию корня (`TRootSpec`), которое
+компонент передаёт в конструктор, — своих привязок хоста и эффектов у
+компонента нет. Стратегия `'host'` — корень сам хост
+(`super(ButtonInputNames, { strategy: 'host' })`):
 
 - тег — `localName` элемента: база отдаёт его ядру пропом при сборке, внешнему
   `ctrl` — сеттером. Входа `tag` нет: имя тега у живого элемента не меняется,
@@ -1819,7 +1828,32 @@ Zone.js и молча ломалось бы под `provideZonelessChangeDetecti
   сверяет только у первой привязки директивы к классам или стилям (поле
   `directiveStylingLast` у узла одно на те и другие), а `[class]` компилятор
   ставит раньше `[style.*]`. С ней статический `style="display: …"`
-  потребителя проигрывал бы скрытию, а у видимого корня снимался бы вовсе.
+  потребителя проигрывал бы скрытию, а у видимого корня снимался бы вовсе;
+- стиль — тоже эффект базы, по свойствам и тем же правилом памяти: снизу
+  выход плагина раскладки (`layout_styles`), поверх стиль-выход компонента —
+  его имя компонент называет в описании корня
+  (`{ strategy: 'host', style: 'fractionStyle' }` у ProgressSpinner). Имена —
+  как в CSS, запись и снятие — `style.setProperty` / `removeProperty`. Свойство
+  с чужим значением — потребителя или плагина, записавшего его в узел сам, —
+  база не трогает, поэтому `[style.width]` потребителя главнее размера от
+  плагина, а сдвиг смахиваемой панели переживает смену раскладки. Не привязка
+  хоста `[style]` — по той же причине, что классы;
+- `hides: false` в описании корня снимает скрытие: у Skeleton `visible` и
+  `rendered` убирают только заглушку, а содержимое в корне остаётся на виду.
+
+Иконку из пакета иконок на `<svg>` Icon кладёт директива адаптера
+`RoleIconDirective` — `<svg so-icon so-role-icon="close">`: `viewBox` и
+содержимое из реестра при отрисовке, привязками хоста, содержимое — мимо
+санитайзера (`bypassSecurityTrustHtml`: санитайзер вычищает SVG, а источник
+доверенный). Остальное у этого `<svg>` — класс, стиль, ARIA, `TElementPlugin` —
+ведёт база Icon, как у любого корня.
+
+Сборка — `createAngularAdapterContext` в контексте инъекции компонента:
+`ngOnInit` базы зовёт `createBinding` внутри `runInInjectionContext`, и
+обёртка берёт из DI источник локали ближайшего `LocaleProviderDirective`.
+Директива отдаёт свой `TLocaleSource` поддереву через свои `providers` и пишет
+в него вход сеттером — раньше, чем Angular зовёт `ngOnInit` детей, поэтому
+дети того же прохода собираются уже с локалью из входа.
 
 Стратегия `'view'` — корень в шаблоне, помечен `#root`. Сигнальный запрос
 `viewChild('root', { read: ElementRef })` объявлен полем базы, а `effect`
@@ -1837,9 +1871,11 @@ Zone.js и молча ломалось бы под `provideZonelessChangeDetecti
 метода проходит `tsc`, но роняет AOT с NG8110 — поэтому «Типы — Angular» в CI
 гоняет `ngc`, а не `tsc`.
 
-Сторожат `packages/ui/angular/__tests__/button.spec.ts` и
-`component-view.spec.ts`: тег у ядра, наборы, классы и стиль ядра рядом с
-разметкой потребителя, атрибутов-входов на корне нет, скрытие.
+Сторожат `packages/ui/angular/__tests__/button.spec.ts`,
+`component-view.spec.ts` и `root-attributes.spec.ts`: тег у ядра, наборы,
+классы и стиль ядра рядом с разметкой потребителя, атрибутов-входов на корне
+нет, скрытие; `icon.spec.ts` — иконка по роли, `locale.spec.ts` — локаль
+поддерева.
 
 ### Известные ограничения
 
@@ -1850,7 +1886,12 @@ Zone.js и молча ломалось бы под `provideZonelessChangeDetecti
 - Инлайновый `display` потребителя главнее скрытия: шаблон потребителя главнее
   привязок хоста. Во Vue и React наоборот.
 - Атрибут потребителя ровно с тем значением, что у ядра, база от своего не
-  отличит: сняв своё, она снимет и его.
+  отличит: сняв своё, она снимет и его. То же со свойством стиля.
+- Свой рисунок иконки приложение регистрирует ролью (`setIcons`) и рисует
+  `<svg so-icon so-role-icon>`: шаблон Icon пуст, и написанное внутри элемента
+  не выводится.
+- Id монтирования адаптер не передаёт: id места в дереве, который совпадал бы
+  на сервере и в браузере, Angular не даёт, и набор берёт свой счётчик.
 - Нет двусторонней привязки: `[(text)]` требует аутпут `textChange`, а стратегия
   именования даёт `changeText`.
 - Elevator (`TAngularElevator`) реализован, но никуда не подключён и передаёт
@@ -2372,7 +2413,7 @@ Framework-agnostic dependency injection:
 | @soldy-ui/plugins        | `TBasePlugin`, `TPluginBundle`, `PLUGIN_EVENTS`, `IPlugin`, `IPluginContext`, `IPluginBundle`; plugin classes (`TElementPlugin`, `TReadyPlugin`, `TActionPlugin`, `TAriaPlugin`, `TAnchorPlugin`, `TDismissPlugin`, list, select, tabs and collection plugins, …); `toCssValue`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | @soldy-ui/vue            | Vue components (`Button`, `CheckBox`, …; collections with parts — `Tabs` with `Tabs.Item` / `Tabs.Content` and flat `TabsItem` / `TabsContent`; `Base*` declarations) + adapter (`createVueAdapterContext`, `useAdapter`, `useCollectionAdapter`, `useProps`, `useEmits`, `VueProfile`, `VueNaming`, `useIcon`, `useSplitAttrs`, `TVueElevator`, `VueElevatorFactory`)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 | @soldy-ui/react          | Components (`Button`, `ComponentView`, …; collections with parts — `ListBox` with `ListBox.Item`, `Tabs` with `Tabs.Item` / `Tabs.Content`, `Accordion` with `Accordion.Item`, `RadioGroup` with `RadioGroup.Item`, `Table` with `Table.Column` / `Table.Row`, and flat `ListBoxItem`, `TabsItem`, `TabsContent`, `AccordionItem`, `RadioGroupItem`, `TableColumn`, `TableRow`), `useSetupXxx` hooks, `useAdapterContext`, `useAdapter`, `useCollectionAdapter`, `ReactProfile`, `ReactNaming`, `TReactElevator`, `Elevate`, `renderSlot`, `toAriaProps`, `toRootProps`, `toWrappedRootProps`, `toText`, prop types (`UseProps`, `UseDomProps`, `EventProps`, `SlotProps`)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
-| @soldy-ui/angular        | `TButtonComponent`, `TComponentViewComponent`, `TComponentComponent`, `setupXxx`, generated names and surfaces (`ButtonInputNames` / `ButtonOutputNames` / `TButtonSurface`, …), `useAdapter`, `TInputValue` / `TOutputEmitter`, `TComponentBase`, `SlotDirective`, `AngularProfile`, `AngularNaming`, `useInputs` / `useOutputs`, `TAngularElevator`, `AngularElevatorFactory`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| @soldy-ui/angular        | `TButtonComponent`, `TComponentViewComponent`, `TComponentComponent`, `TIconComponent`, `TProgressSpinnerComponent`, `TSkeletonComponent`, `setupXxx`, generated names and surfaces (`ButtonInputNames` / `ButtonOutputNames` / `TButtonSurface`, …), `createAngularAdapterContext`, `useAdapter`, `TInputValue` / `TOutputEmitter`, `TComponentBase`, `TRootSpec`, `SlotDirective`, `RoleIconDirective`, `LocaleProviderDirective`, `AngularProfile`, `AngularNaming`, `useInputs` / `useOutputs`, `TAngularElevator`, `AngularElevatorFactory`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | @soldy-ui/svelte         | `Button`, `ComponentView`, `setupXxx`, `useAdapter`, `SvelteProfile`, `SvelteNaming`, `TSvelteElevator`, `SvelteElevatorFactory`, prop types (`UseProps`, `UseDomProps`, `EventProps`, `SlotProps`, `TSnippetSlots`)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | @soldy-ui/solid          | `Button`, `ComponentView`, `Icon`, `Frame`, `ProgressSpinner`, `Skeleton`, `setupXxx`, `createSolidAdapterContext`, `useAdapter`, `LocaleProvider`, `Teleport`, `roleIcon`, `createRootProps`, `toRootProps`, `rootTag`, `SolidProfile`, `SolidNaming`, `TSolidElevator`, `SolidElevatorFactory`, `renderSlot`, `resolveSlot`, prop types (`UseProps`, `UseDomProps`, `EventProps`, `SlotProps`)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | @soldy-ui/webc           | `<button is="so-button">` (`TButtonElement`), `<div is="so-component-view">` (`TComponentViewElement`), `setupXxx`, templates (`buttonTemplate`, `componentViewTemplate`), `SoldyElement`, `defineElement`, `useAdapter`, `useAttributes`, `HOST_PROPS`, `bind`, `WebcProfile`, `WebcNaming`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |

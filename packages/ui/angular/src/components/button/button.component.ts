@@ -11,9 +11,9 @@ import { setupButton } from './setup.component'
  * Обёртки нет: корень — сам элемент, на котором потребитель написал селектор,
  * `<button so-button>`, `<a so-button href>`, `<div so-button>`. Какой тег
  * написан, так элемент себя и ведёт, а всё, что потребитель написал на нём,
- * относится к корню. Тег ядро получает от элемента, классы, скрытие и наборы
- * ядра раскладывает на него `TComponentBase` (стратегия `'host'`), поэтому
- * шаблон — только содержимое кнопки.
+ * относится к корню. Тег ядро получает от элемента, классы, скрытие, наборы
+ * и стиль ядра раскладывает на него `TComponentBase` (стратегия `'host'`),
+ * поэтому шаблон — только содержимое кнопки.
  *
  * `button[so-button]` стоит первым: по первому селектору Angular выбирает тег
  * хоста, когда создаёт компонент сам (`createComponent`), — это тег ядра по
@@ -37,7 +37,7 @@ import { setupButton } from './setup.component'
 })
 export class TButtonComponent extends TButtonSurface<IButton> {
 	constructor() {
-		super(ButtonInputNames, 'host')
+		super(ButtonInputNames, { strategy: 'host' })
 	}
 
 	protected createBinding(ctrl: IButton | undefined, inputs: object): TBinding<IButton> {

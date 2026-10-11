@@ -350,6 +350,9 @@ describe('выходы компонентов экспорта · геттер �
 				'TButtonComponent',
 				'TComponentViewComponent',
 				'TComponentComponent',
+				'TIconComponent',
+				'TProgressSpinnerComponent',
+				'TSkeletonComponent',
 			]),
 		)
 	})

@@ -45,7 +45,8 @@
   },
   "peerDependencies": {
     "@angular/common": "^22.1.5",
-    "@angular/core": "^22.1.5"
+    "@angular/core": "^22.1.5",
+    "@angular/platform-browser": "^22.1.5"
   },
   "devDependencies": {
     "@angular/build": "^22.2.1",

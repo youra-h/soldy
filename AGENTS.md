@@ -273,7 +273,7 @@ dismiss.events.on('dismiss', () => {
 | React     | `useState`, `useEffect`, `useLayoutEffect`, `useMemo`, `useCallback`, `useRef`, `useContext`                     |
 | Solid     | `createSignal`, `createMemo`, `createEffect`, `onMount`, `onCleanup`, `useContext`, `children`, `createUniqueId` |
 | Svelte    | `$state`, `$derived`, `$effect`, `onMount`, `onDestroy`, `getContext`/`setContext`                               |
-| Angular   | `signal`, `computed`, `effect`, `ngOnChanges`/`ngAfterViewInit` и прочие хуки                                    |
+| Angular   | `signal`, `computed`, `effect`, `inject`, `ngOnChanges`/`ngAfterViewInit` и прочие хуки                          |
 
 Если компоненту понадобился такой механизм, значит адаптер не справляется, а
 обход в компоненте это прячет и расходится между шестью фреймворками. Реальный
@@ -325,6 +325,17 @@ Solid-компоненты собирают контекст через `createS
 запасное (текст Button), — `resolveSlot` поверх `children()`. Сборку мимо
 обёртки ловит тот же сторож: `createAdapterContext` из `@soldy-ui/setup` в
 компонентах Solid запрещён.
+
+Angular-компоненты собирают контекст через `createAngularAdapterContext`
+(`packages/ui/angular/src/adapter/common/`): она берёт локаль поддерева —
+источник ближайшего `LocaleProviderDirective` из DI (`inject`). DI Angular
+разрешает `inject` только в контексте инъекции, и его даёт сборке база
+компонента (`TComponentBase`): `ngOnInit` собирает компонент внутри
+`runInInjectionContext` своего инжектора, — поэтому в самом компоненте
+`inject` нет. Id монтирования обёртка не передаёт: id места в дереве, который
+совпадал бы на сервере и в браузере, Angular не даёт. Сборку мимо обёртки
+ловит тот же сторож: `createAdapterContext` из `@soldy-ui/setup` в компонентах
+Angular запрещён, как и `inject` из `@angular/core`.
 
 React-компоненты держат adapter-context между рендерами не сами: вместо
 своего `useRef` они зовут `useAdapterContext` (`packages/ui/react/src/adapter/runtime/`)

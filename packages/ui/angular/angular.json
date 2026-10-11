@@ -22,7 +22,8 @@
           "options": {
             "buildTarget": "ui-angular:build",
             "runner": "vitest",
-            "include": ["__tests__/**/*.spec.ts"]
+            "include": ["__tests__/**/*.spec.ts"],
+            "setupFiles": ["__tests__/setup.ts"]
           }
         }
       }
