@@ -8,11 +8,17 @@ const RUNS = Number(process.argv[3] ?? 5)
 // Библиотека с флагами через «+»: `soldy+virtual` — `?lib=soldy&virtual=1`,
 // `soldy+mode=none+cols=5` — `?lib=soldy&mode=none&cols=5`
 const LIBS = (process.argv[4] ?? 'plain,tanstack,reka,soldy,naive,prime').split(',')
+// Участник на React — с префиксом «react:»: `react:soldy+fit=none` —
+// `react.html?lib=soldy&fit=none`
 const urlOf = (lib) => {
-	const [name, ...flags] = lib.split('+')
+	const react = lib.startsWith('react:')
+	const [name, ...flags] = (react ? lib.slice('react:'.length) : lib).split('+')
 
 	return (
-		'?lib=' + name + flags.map((flag) => `&${flag.includes('=') ? flag : flag + '=1'}`).join('')
+		(react ? 'react.html' : '') +
+		'?lib=' +
+		name +
+		flags.map((flag) => `&${flag.includes('=') ? flag : flag + '=1'}`).join('')
 	)
 }
 const dist = path.resolve(import.meta.dirname, 'dist')
@@ -103,6 +109,8 @@ for (const lib of LIBS) {
 				: `${med(v.map((x) => x.paint))} / ${med(v.map((x) => x.settled))}`,
 		]),
 	)
+	// Строка участника — сразу: зависший следующий не съест уже снятые цифры
+	console.log(lib, JSON.stringify(table[lib]))
 }
 await browser.close()
 server.close()
