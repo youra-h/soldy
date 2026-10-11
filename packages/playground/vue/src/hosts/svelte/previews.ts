@@ -1,8 +1,12 @@
 import type { Component } from 'svelte'
 import ButtonPreview from './ButtonPreview.svelte'
+import CheckBoxPreview from './CheckBoxPreview.svelte'
 import IconPreview from './IconPreview.svelte'
+import InputPreview from './InputPreview.svelte'
+import LabelPreview from './LabelPreview.svelte'
 import ProgressSpinnerPreview from './ProgressSpinnerPreview.svelte'
 import SkeletonPreview from './SkeletonPreview.svelte'
+import SwitchPreview from './SwitchPreview.svelte'
 
 /** Пропсы превью: пропы строки, `ctrl` с экземпляром ядра и колбэки событий хоста. */
 export type TPreviewProps = Record<string, unknown>
@@ -25,6 +29,10 @@ export type TPreview = Component<TPreviewProps>
 
 export const PREVIEWS: Record<string, TPreview> = {
 	button: ButtonPreview,
+	input: InputPreview,
+	'check-box': CheckBoxPreview,
+	switch: SwitchPreview,
+	label: LabelPreview,
 	icon: IconPreview,
 	'progress-spinner': ProgressSpinnerPreview,
 	skeleton: SkeletonPreview,
