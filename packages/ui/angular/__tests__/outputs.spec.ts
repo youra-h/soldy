@@ -133,9 +133,7 @@ describe('выход в строгом шаблоне · $event — первый
  */
 describe('тип выхода · эмиттер первого аргумента события ядра', () => {
 	it('у события с аргументом — его тип', () => {
-		expectTypeOf<TButtonComponent['actionPress']>().toEqualTypeOf<
-			EventEmitter<MouseEvent | KeyboardEvent>
-		>()
+		expectTypeOf<TButtonComponent['actionPress']>().toEqualTypeOf<EventEmitter<MouseEvent>>()
 		expectTypeOf<TComponentViewComponent['changeVisible']>().toEqualTypeOf<
 			EventEmitter<boolean>
 		>()

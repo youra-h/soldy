@@ -7,6 +7,12 @@
  * как есть.
  *
  * React-элементы это объекты, а не функции, поэтому проверка однозначна.
+ *
+ * Пустое содержимое — то, что React не рисует (`null`, булево), — отдаётся как
+ * `undefined`, и запасное содержимое компонента (`renderSlot(…) ?? text`)
+ * встаёт на его место. Иначе `{cond && <Icon />}` при ложном условии — это
+ * `false` — глушил бы проп `text` кнопки, как непустой слот, а шаблон Vue в том
+ * же случае рисует текст.
  */
 
 import type { ReactNode } from 'react'
@@ -19,9 +25,9 @@ export function renderSlot<TScope extends object = object>(
 	content: TSlotContent<TScope> | undefined,
 	scope?: TScope,
 ): ReactNode {
-	if (typeof content === 'function') return content((scope ?? {}) as TScope)
+	const node = typeof content === 'function' ? content((scope ?? {}) as TScope) : content
 
-	return content
+	return hasSlot(node) ? node : undefined
 }
 
 /**

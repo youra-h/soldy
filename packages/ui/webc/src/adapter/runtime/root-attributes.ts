@@ -3,13 +3,18 @@
  * `dataset` (`applyAttributes`), классы (`applyClasses`) и скрытие
  * (`applyHidden`).
  *
- * Корень компонента — сам хост (`<so-button>`, см. `TSoldyElement`), и
- * атрибуты на нём ставит не только база: `class`, `style`, `title`, `id`,
- * `data-*`, `tabindex`, `role` — всё, что потребитель написал в разметке или
- * поставил из кода. Атрибуты потребителя главнее наборов ядра, как во Vue и
- * React (`docs/agents/a11y.md`, «Атрибуты снаружи — поверх наборов»):
- * `tabindex="-1"` переживает смену `disabled`, `role="link"` — роль кнопки,
- * которую пишет ядро.
+ * Корень компонента — сам элемент (`<button is="so-button">`, см.
+ * `SoldyElement`), и атрибуты на нём ставит не только база: `class`, `style`,
+ * `title`, `id`, `data-*`, `tabindex`, `aria-*` — всё, что потребитель написал
+ * в разметке или поставил из кода. Атрибуты потребителя главнее наборов ядра,
+ * как во Vue и React (`docs/agents/a11y.md`, «Атрибуты снаружи — поверх
+ * наборов»): `aria-label` потребителя переживает перерисовку.
+ *
+ * Исключение — атрибуты-входы пропов (`inputs`): атрибут, через который
+ * потребитель задаёт проп (`disabled`), и значение ядра для него — одно
+ * состояние. Ядро его уже приняло, поэтому значение из набора верно всегда, и
+ * база ведёт такой атрибут сама, чей бы он ни был: иначе `<button is="so-button"
+ * disabled>` после `ctrl.disabled = false` осталась бы выключенной.
  *
  * Правило то же, что у корня-хоста Angular, копия своя: адаптеры друг друга не
  * импортируют. Чей атрибут, база узнаёт по значению: по каждому имени она
@@ -48,12 +53,14 @@ export type THiddenDisplay = string | undefined
 
 /**
  * Раскладывает набор на элемент и возвращает новую память базы. `null` в
- * наборе ядра — «атрибута нет».
+ * наборе ядра — «атрибута нет». `inputs` — атрибуты-входы пропов: их база
+ * ведёт по набору всегда (см. шапку).
  */
 export function applyAttributes(
 	element: Element,
 	set: TAttributesMap,
 	applied: TAppliedAttributes,
+	inputs: ReadonlySet<string> = new Set(),
 ): TAppliedAttributes {
 	const next = new Map<string, string>()
 
@@ -63,7 +70,7 @@ export function applyAttributes(
 		const current = element.getAttribute(name)
 
 		// Чужое значение — атрибут потребителя
-		if (current !== null && current !== applied.get(name)) continue
+		if (current !== null && current !== applied.get(name) && !inputs.has(name)) continue
 
 		if (current !== value) element.setAttribute(name, value)
 
@@ -71,9 +78,12 @@ export function applyAttributes(
 	}
 
 	// Ушло из набора — снимается, если на элементе ещё своё значение: у
-	// выключенной кнопки из набора пропадает `tabindex`
+	// выключенной кнопки из набора пропадает `disabled`. Вход пропа снимается
+	// при любом значении: ядро его уже приняло
 	for (const [name, value] of applied) {
-		if (!next.has(name) && element.getAttribute(name) === value) element.removeAttribute(name)
+		if (next.has(name)) continue
+
+		if (inputs.has(name) || element.getAttribute(name) === value) element.removeAttribute(name)
 	}
 
 	return next

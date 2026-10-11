@@ -1,4 +1,9 @@
-export { useAdapter, type TBinding, type TEventListener, type TUpdateListener } from './useAdapter'
-export { TSoldyElement } from './element.base'
-export { defineProps } from './defineProps'
+export { useAdapter, type TBinding, type TUpdateListener } from './useAdapter'
+export {
+	SoldyElement,
+	type ISoldyElement,
+	type ISoldyElementSpec,
+	type TNativeElementClass,
+	type TSoldyElementClass,
+} from './element.base'
 export { defineElement } from './defineElement'

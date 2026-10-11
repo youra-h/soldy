@@ -1,59 +1,33 @@
 /**
- * <so-component-view> — слой ComponentView.
+ * `<div is="so-component-view">` — слой ComponentView.
  *
- * Light DOM: классы из ядра — обычные глобальные BEM-классы, тема работает
- * как есть. Обёртки нет: корень — сам `<so-component-view>`, содержимое
- * остаётся в нём, а классы и наборы ядра база раскладывает на него же, рядом с
- * атрибутами потребителя.
+ * Элемент — настоящий `<div>`, расширенный классом soldy (customized built-in,
+ * см. `SoldyElement`). Light DOM: классы из ядра — обычные глобальные
+ * BEM-классы, тема работает как есть. Содержимое остаётся в элементе, а классы
+ * и наборы ядра база раскладывает на него же, рядом с атрибутами потребителя.
  *
- * Разметка вынесена в component-view.template.ts, жизненный цикл — в TSoldyElement.
+ * Разметка вынесена в component-view.template.ts, жизненный цикл — в SoldyElement.
  */
 
 import { ComponentViewDescriptor } from '@soldy-ui/setup'
-import type { IComponentDescriptor } from '@soldy-ui/setup'
 import type { IComponentView, IComponentViewProps } from '@soldy-ui/core'
-import { TSoldyElement, defineProps, defineElement, useAttributes } from '../../adapter'
-import type { ITemplate, TBinding, TEventListener, THostProp, TUpdateListener } from '../../adapter'
+import { SoldyElement, defineElement } from '../../adapter'
+import type { ISoldyElement, THostProp } from '../../adapter'
 import { componentViewTemplate } from './component-view.template'
 import { setupComponentView } from './setup.component'
 
-const DESCRIPTOR = ComponentViewDescriptor()
+export const TComponentViewElement = SoldyElement(HTMLDivElement, {
+	descriptor: ComponentViewDescriptor(),
+	template: componentViewTemplate,
+	setup: setupComponentView,
+})
 
-export class TComponentViewElement extends TSoldyElement<IComponentView> {
-	static get observedAttributes(): string[] {
-		return useAttributes(DESCRIPTOR)
-	}
-
-	protected get descriptor(): IComponentDescriptor {
-		return DESCRIPTOR
-	}
-
-	protected get template(): ITemplate<IComponentView> {
-		return componentViewTemplate
-	}
-
-	protected setup(
-		ctrl: IComponentView | undefined,
-		props: Record<string, unknown>,
-		onUpdate: TUpdateListener,
-		onEvent: TEventListener,
-	): TBinding<IComponentView> {
-		return setupComponentView(this, ctrl, props, onUpdate, onEvent)
-	}
-}
-
-defineProps(TComponentViewElement, DESCRIPTOR)
-defineElement('so-component-view', TComponentViewElement)
+defineElement('so-component-view', TComponentViewElement, 'div')
 
 /**
- * `<so-component-view>` из JS: класс элемента плюс props дескриптора — без
- * тех, которых у элемента нет (`HOST_PROPS`).
+ * `<div is="so-component-view">` из JS: нативный `div`, своё элемента soldy и
+ * props дескриптора — без тех, что у `div` уже есть, и без `HOST_PROPS`.
  */
-export type TComponentViewElementProps = TComponentViewElement &
-	Omit<IComponentViewProps, keyof HTMLElement | THostProp>
-
-declare global {
-	interface HTMLElementTagNameMap {
-		'so-component-view': TComponentViewElementProps
-	}
-}
+export type TComponentViewElementProps = HTMLDivElement &
+	ISoldyElement<IComponentView> &
+	Omit<IComponentViewProps, keyof HTMLDivElement | THostProp>
