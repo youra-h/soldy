@@ -1272,8 +1272,8 @@ ARIA. Обёртка теперь отдаёт то же состояние ка
 `toAriaProps(aria)` (React — он ждёт `tabIndex`, а не `tabindex`). У Angular и
 Web Components спреда атрибутов нет, а корень — элемент потребителя, и набор
 на него раскладывает база компонента: эффект `TComponentBase` (Angular,
-`<button so-button>`) и раскладка `TSoldyElement` на хост (Web Components,
-`<so-button>`).
+`<button so-button>`) и раскладка `SoldyElement` на элемент (Web Components,
+`<button is="so-button">`).
 
 ### `direction` / `dir` — тот же приём для направления письма
 
@@ -1946,24 +1946,34 @@ Svelte 5 на рунах. Структура зеркалит React, потом�
   проп» по поверхности + коэрция; `HOST_PROPS` — пропы, которых у элемента нет
   ни атрибутом, ни свойством: `tag`).
 - `adapter/runtime/` — `useAdapter` поверх связки
-  `adapter.connect(WebcProfile)` (о пропе и о событии ядра она сообщает
-  элементу колбэками `onUpdate` и `onEvent`), `TSoldyElement` (базовый класс:
-  корень-хост и жизненный цикл, см. «Решения по DOM»), `defineProps`,
-  `defineElement`; в бочку не входит `root-attributes.ts`: `applyClasses`,
-  `applyAttributes` и `applyHidden` раскладывают на корень-хост классы, наборы
-  ядра и скрытие.
-- `adapter/template/` — `ITemplate`, `bind` (привязка пропа), `on` (реакция на
-  событие ядра), `formAction` (действие формы: отправка или сброс по `type`).
+  `adapter.connect(WebcProfile)` (о пропе ядра она сообщает элементу колбэком
+  `onUpdate`), `SoldyElement` (фабрика класса элемента поверх нативного класса
+  тега: жизненный цикл, см. «Решения по DOM»), `defineElement` (регистрация с
+  `extends`); в бочку не входит `root-attributes.ts`: `applyClasses`,
+  `applyAttributes` и `applyHidden` раскладывают на элемент классы, наборы ядра
+  и скрытие.
+- `adapter/template/` — `ITemplate`, `bind` (привязка пропа).
+- Вход пакета (`index.ts`) первым импортирует полифил `@ungap/custom-elements`
+  (см. «Решения по DOM»).
+
+Компонент — это вызов фабрики и регистрация:
+
+```ts
+export const TButtonElement = SoldyElement(HTMLButtonElement, {
+  descriptor: ButtonDescriptor(),
+  template: buttonTemplate,
+  setup: setupButton,
+})
+
+defineElement('so-button', TButtonElement, 'button')
+```
 
 ### Чем Web Components проще Angular
 
 `observedAttributes` — статический геттер, вычисляемый в рантайме при
 регистрации класса, а не декоратор, который анализирует компилятор. Дескриптор
-доступен на уровне модуля, поэтому **кодогенерация не нужна**:
-
-```ts
-static get observedAttributes() { return useAttributes(ButtonDescriptor()) }
-```
+доступен на уровне модуля, поэтому **кодогенерация не нужна**: карту атрибутов
+и свойства пропов фабрика строит по дескриптору сама.
 
 ### Чем сложнее всех остальных
 
@@ -1979,32 +1989,23 @@ static get observedAttributes() { return useAttributes(ButtonDescriptor()) }
 ```ts
 // button.template.ts
 export const buttonTemplate: ITemplate<IButton> = {
-	create: (root) => { /* строит span в хосте, возвращает точки слотов leading/default/trailing */ },
+	create: (root) => { /* строит span в кнопке, возвращает точки слотов leading/default/trailing */ },
 	bindings: [
 		bind('text', ({ content, state, hasSlot }) => { ... }),
 	],
-	reactions: [on('action:press', formAction)],
 }
 ```
 
-`TSoldyElement` копит имена изменившихся props в `_dirty`, откладывает флаш в
-микротаску (одно изменение в ядре часто даёт несколько триггеров) и применяет
-только те привязки, чьи props изменились. Смена `text` не трогает классы.
+База копит имена изменившихся props в `_dirty`, откладывает флаш в микротаску
+(одно изменение в ядре часто даёт несколько триггеров) и применяет только те
+привязки, чьи props изменились. Смена `text` не трогает классы.
 
 То, что ядро пишет на корень, — `classes`, наборы `aria`, `attrs` (в нём и
-`dir`) и `dataset`, скрытие по `rendered` и `visible`, а у элемента, связанного
-с формой, ещё нативный `disabled` — раскладывает сама база: это одинаково у
-всех визуальных компонентов. Поэтому у шаблона ComponentView нет ни привязок,
-ни реакций, а класс элемента состоит только из дескриптора, setup и ссылки на
-шаблон. Тег — не проп элемента: это `localName` хоста, и ядру его отдаёт база
-(см. «Решения по DOM»).
-
-**Реакции.** Кроме привязок пропсов шаблон объявляет то, что элемент делает
-сам на событие ядра: `on('action:press', formAction)` у Button. О событии
-связка сообщает элементу колбэком `onEvent` — тем же способом, что `onUpdate`
-о пропе, — сразу после `CustomEvent`, и база вызывает реакции шаблона на это
-имя: потребитель получает событие раньше действия. Контекст реакции — контекст
-шаблона и форма элемента (`ElementInternals.form`).
+`dir`, и нативный `disabled` кнопки) и `dataset`, скрытие по `rendered` и
+`visible` — раскладывает сама база: это одинаково у всех визуальных
+компонентов. Поэтому у шаблона ComponentView нет привязок, а компонент состоит
+только из дескриптора, setup и шаблона. Тег — не проп элемента: это
+`localName` элемента, и ядру его отдаёт база (см. «Решения по DOM»).
 
 **Два входных канала.** Атрибуты (строки, для HTML) и свойства (любые значения,
 для JS) — оба кормят `syncProps` адаптера, а тот — `inputs.delta` связки:
@@ -2020,61 +2021,86 @@ export const buttonTemplate: ITemplate<IButton> = {
 поэтому `disabled="false"` это `true`, а снять флаг можно только его удалением.
 Снятый атрибут остальных пропсов, как и строка, которую не принял ни один тип,
 приходит `undefined`, и связка возвращает заданный раньше проп к умолчанию
-декларации.
+декларации. Свойство, которое у элемента уже есть по тегу (`disabled`
+кнопки), фабрика не перекрывает: оно остаётся нативным, отражённым в атрибут,
+и до ядра доходит через атрибут.
 
 ### Решения по DOM
 
-**Light DOM, корень — сам хост.** Классы из ядра остаются обычными
-глобальными BEM-классами, поэтому тема работает без изменений — в отличие от
-Shadow DOM, куда её пришлось бы вносить через `adoptedStyleSheets`, ломая
-контракт «UI отдаёт классы, тема отдаёт CSS».
+**Элемент soldy — нативный элемент своего тега (customized built-in).**
+`<button is="so-button">` — это настоящая `<button>`, класс которой наследует
+`HTMLButtonElement`, а `<div is="so-component-view">` — настоящий `<div>`.
+Всё, что браузер делает для тега, он делает и для элемента soldy. У кнопки это
+форма: отправка и сброс по `type`, `submitter` — сама кнопка,
+`new FormData(form, submitter)`, Enter в поле формы, `formaction` и прочие
+`form*`, `<fieldset disabled>`, `<label for>`, `:default`, `popovertarget`, а
+ещё фокус, клик из Enter и пробела, роль и доступное имя.
 
-Обёртки нет: `<so-button>` сам и есть кнопка и корень компонента, и всё, что
-потребитель написал на элементе, — класс, стиль, атрибуты, слушатели —
-действует сразу. Прежнее решение — настоящий `<button>` внутри хоста —
-отменено: написанное на `<so-button>` до той кнопки не доходило.
-`<button is="so-button">` не используется: Safari не расширяет встроенные
-элементы и не собирается.
+Почему так, а не иначе. Перебраны все варианты, каждый — в Chromium, Firefox и
+WebKit:
 
-- **Тег** — `localName` хоста. База отдаёт его ядру пропом `tag` при каждой
-  сборке; атрибута и свойства `tag` нет (`HOST_PROPS`): имя тега у живого
-  элемента не меняется. Для ядра `so-button` — не нативный тег: `role`,
-  `tabindex` и `aria-disabled` оно пишет само, а Enter и пробел превращает в
-  клик `TActionPlugin`, как браузер у `<button>`.
+- **Автономный `<so-button>` с внутренней `<button>`** (как шаблон Vue):
+  `el.click()` и `el.focus()` по элементу не работают ни при какой схеме
+  переноса атрибутов; `<label for>` и `aria-*` потребителя работают, только
+  если перенести на внутреннюю кнопку и `id`, но тогда `getElementById` отдаёт
+  её, а не компонент; во Firefox — две остановки Tab. Во Vue этой беды нет:
+  там компонента в DOM нет вовсе, и атрибуты компилятор кладёт на кнопку.
+- **Автономный `<so-button>`, связанный с формой (FACE)** — был до этого
+  решения. Отправку, сброс, неявную отправку Enter, `name`/`value` и
+  `submitter` пришлось бы повторять руками, и всё равно часть недостижима:
+  `new FormData(form, submitter)` принимает отправителем только нативную кнопку
+  отправки и с подставленным `submitter` бросает `TypeError`, `form*`-атрибуты,
+  `returnValue` диалога, `popovertarget` и `:default` браузер даёт только
+  своей кнопке.
+- **Скрытая нативная кнопка внутри** (временная или постоянная): форма
+  работает, но `submitter` — не компонент, а постоянная кнопка ещё и лишний
+  элемент в `form.elements`.
+
+Нативный элемент своего тега — единственный вариант, где браузер не отличает
+элемент soldy от своего.
+
+**Safari и полифил.** Safari встроенные элементы не расширяет и не собирается:
+`customElements.define` с `extends` он принимает молча, но элемент остаётся
+обычной кнопкой. Вход пакета первым импортирует полифил
+`@ungap/custom-elements` (3 КБ gzip): там, где браузер умеет сам, он ничего не
+делает. С полифилом элементы оживают через `MutationObserver` — микрозадачей
+позже вставки, — и колбэки у них в другом порядке: `connectedCallback` раньше
+`attributeChangedCallback` начальных атрибутов. Поэтому при первом подключении
+база читает атрибуты сама: иначе ядро собралось бы без них, и атрибуты разметки
+дошли бы до потребителя событиями `change:*`. Колбэк, пришедший потом, приносит
+то же значение, и сеттер его гасит.
+
+**Light DOM.** Классы из ядра остаются обычными глобальными BEM-классами,
+поэтому тема работает без изменений — в отличие от Shadow DOM, куда её пришлось
+бы вносить через `adoptedStyleSheets`, ломая контракт «UI отдаёт классы, тема
+отдаёт CSS». Всё, что потребитель написал на элементе, — класс, стиль,
+атрибуты, слушатели — действует сразу: элемент и есть корень.
+
+- **Тег** — `localName` элемента (`button`, `div`). База отдаёт его ядру
+  пропом `tag` при каждой сборке; атрибута и свойства `tag` нет
+  (`HOST_PROPS`): тег задан разметкой. Для ядра это нативный тег, как у
+  `<Button>` во Vue: `role` и `tabindex` оно кнопке не пишет, а `disabled`
+  пишет нативным атрибутом.
 - **Классы и наборы** раскладывает база (`root-attributes.ts`), и атрибуты
   потребителя главнее наборов ядра, как во Vue и React: по каждому имени база
   помнит, что поставила сама, своё пишет и снимает, а чужое значение не трогает
-  и своим больше не считает — `tabindex="-1"` переживает смену `disabled`,
-  `role="link"` остаётся. Классы — тем же правилом, отдельными токенами: класс
-  потребителя переживает смену модификаторов ядра.
+  и своим больше не считает — `aria-label` потребителя переживает перерисовку.
+  Классы — тем же правилом, отдельными токенами: класс потребителя переживает
+  смену модификаторов ядра. Исключение — атрибуты-входы пропов (`disabled`):
+  атрибут, через который задаётся проп, и значение ядра для него — одно
+  состояние, ядро его уже приняло, и база ведёт такой атрибут по ядру, чей бы
+  он ни был. Иначе `<button is="so-button" disabled>` после
+  `ctrl.disabled = false` осталась бы выключенной.
 - **Скрытие** (`rendered` или `visible` равно `false`) — `display: none` на
-  хосте поверх инлайнового `display` потребителя, как `v-show`; при показе база
-  возвращает прежнее значение, если на хосте ещё стоит её `none`. Хост
-  потребителя компонент убрать не может, поэтому `rendered=false` прячет, как
-  `visible=false`: содержимое на месте, `TElementPlugin` связан с хостом всё
-  время.
-- **Форма.** Button — элемент, связанный с формой (form-associated custom
-  element, `static formAssociated = true`): `ElementInternals` ему берёт база в
-  конструкторе, форма — `internals.form`, форма-предок или из атрибута `form`, а
-  клик по `<label for>` доходит до него, как до поля. Отправку и сброс делает
-  реакция `formAction` на `action:press` — по атрибуту `type` хоста без учёта
-  регистра, как у `<button>`: `reset` сбрасывает форму, `button` ничего не
-  делает, остальное вызывает `requestSubmit()`. По умолчанию — отправка, как у
-  `<Button>` во Vue и React. Как у `<button>`, действие ждёт конца рассылки
-  клика и отменяется его `preventDefault`, где бы ни стоял обработчик; клик из
-  Enter и пробела делает `TActionPlugin`, и клавиатура отменяется так же. На
-  время отправки `name` и `value` хоста лежат в данных формы
-  (`ElementInternals.setFormValue`), а хост — в `submitter` события `submit`
-  (свойство ставит окно в фазе перехвата). Неявную отправку — Enter в поле
-  формы — браузер отдаёт только нативной кнопке, поэтому связь шаблона с формой
-  (`ITemplate.associate`, по `formAssociatedCallback`) слушает Enter сама:
-  если первая кнопка отправки формы — этот хост, он отменяет действие браузера
-  и нажимает себя. Свойства `form`, `labels`, `name`, `value`, `type` — как у
-  `<button>`. Нативный `disabled` такого элемента — настоящее
-  выключение, без фокуса и кликов. Ядро для `so-button` его в `attrs` не пишет
-  (тег не из `NATIVE_DISABLED_TAGS`), и атрибут ведёт база по `disabled` ядра,
-  рядом с его `aria-disabled`: иначе `<so-button disabled>` после
-  `el.disabled = false` осталась бы нерабочей.
+  элементе поверх инлайнового `display` потребителя, как `v-show`; при показе
+  база возвращает прежнее значение, если на элементе ещё стоит её `none`.
+  Элемент потребителя компонент убрать не может, поэтому `rendered=false`
+  прячет, как `visible=false`: содержимое на месте, `TElementPlugin` связан с
+  элементом всё время.
+- **Разбор документа.** Скрипт в `<head>` определяет элемент до разбора
+  разметки, и парсер подключает элемент раньше, чем дописал его детей. Первое
+  подключение, пока документ разбирается, поэтому ждёт `DOMContentLoaded`:
+  иначе свет был бы пуст, а `slot="leading"` встал бы после текста.
 - **Перестановка в DOM** — отключение и подключение — элемент не ломает. Свет
   и структура создаются один раз, а каждое подключение — новая связка над тем
   же инстансом: инстанс первой сборки следующая получает как `ctrl`, и
@@ -2085,30 +2111,37 @@ Shadow DOM, куда её пришлось бы вносить через `adopt
   элемента, а не у связки: со свежей памятью своё значение после перестановки
   база сочла бы чужим.
 
+**Типы.** Класс элемента собирает фабрика `SoldyElement(Native, spec)`: база
+одна, а нативный класс у каждого тега свой. Тип результата объявлен явно —
+нативный класс плюс `ISoldyElement` (`ctrl`, `state`, колбэки): класс,
+выведенный из выражения, TypeScript в декларации не выпустит, у него
+приватные члены. Свойства пропов потребитель видит через тип элемента
+компонента (`TButtonElementProps`): карты тегов у `is=` нет, и
+`querySelector('button[is="so-button"]')` — просто `HTMLButtonElement`.
+
 Плата за light DOM: `<slot>` недоступен, поэтому пользовательское содержимое
-снимается с хоста при первом подключении и раскладывается вручную — по
-атрибуту `slot` в точки, которые `create()` шаблона объявляет в самом хосте.
+снимается с элемента при первом подключении и раскладывается вручную — по
+атрибуту `slot` в точки, которые `create()` шаблона объявляет в самом элементе.
+Слот, в котором только пробелы и комментарии, не задан: пробелы вокруг
+`<i slot="leading">` на своей строке не глушат `text`.
 
 ### Известные ограничения
 
-- Тег всегда `so-*`: кнопок-ссылок нет. С темой `<so-button>` — блочный
-  flex-контейнер, как `.s-button` у любого тега, и занимает строку, как `div`:
-  ширины, которую нативной кнопке даёт браузер, у хоста нет, а тема под это не
-  правится.
-- `rendered=false` прячет хост, а не удаляет: элемент написал потребитель.
+- Тег корня задан регистрацией: одно имя расширяет один тег. Кнопки-ссылки нет
+  — ей понадобилось бы своё имя (`<a is="so-link">`).
+- `is`, выставленный атрибутом после `createElement`, элемент не оживляет —
+  так по стандарту в Chrome и Firefox (с полифилом в Safari — оживляет). Так
+  создаёт элементы Angular: в его шаблоне `<button is="so-button">` останется
+  обычной кнопкой; для Angular есть свой адаптер. React, Vue, Svelte, Solid и
+  разметка страницы создают элемент сразу с `is`.
+- В Safari (полифил) элемент оживает микрозадачей позже вставки: после
+  `innerHTML` свойство `el.ctrl` появляется не сразу; `cloneNode` и
+  `importNode` оживают при вставке в документ.
+- Пока документ разбирается, первое подключение ждёт `DOMContentLoaded`:
+  элемент, созданный скриптом до конца разбора, получает `ctrl` после него.
+- `rendered=false` прячет элемент, а не удаляет: элемент написал потребитель.
 - Атрибут потребителя ровно с тем значением, что у ядра, база от своего не
   отличит: сняв своё, она снимет и его. То же с классом.
-- Отправка и сброс приходят задачей позже клика (`setTimeout`): иначе не
-  увидеть отмену клика обработчиком, который слушает после плагина.
-- `new FormData(form, event.submitter)` с `<so-button>` бросает `TypeError`:
-  отправителем браузер принимает только нативную кнопку, а `submitter` здесь —
-  подставленный хост. Пара `name=value` нажатой кнопки и так лежит в
-  `new FormData(form)` на время отправки.
-- Атрибуты `formaction`, `formmethod`, `formenctype`, `formtarget` и
-  `formnovalidate` не действуют; в `<form method="dialog">` диалог
-  закрывается, но `returnValue` не получает `value` кнопки; `popovertarget` и
-  `commandfor` не работают; псевдокласс `:default` хост не получает. Всё это
-  браузер делает только для нативной кнопки.
 - `ctrl`, присвоенный подключённому элементу, достаётся следующей связке — после
   перестановки: связка заводится на подключение, как и во всех остальных
   адаптерах.
@@ -2279,7 +2312,7 @@ Framework-agnostic dependency injection:
 | @soldy-ui/angular        | `TButtonComponent`, `TComponentViewComponent`, `TComponentComponent`, `setupXxx`, generated names and surfaces (`ButtonInputNames` / `ButtonOutputNames` / `TButtonSurface`, …), `useAdapter`, `TInputValue` / `TOutputEmitter`, `TComponentBase`, `SlotDirective`, `AngularProfile`, `AngularNaming`, `useInputs` / `useOutputs`, `TAngularElevator`, `AngularElevatorFactory`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | @soldy-ui/svelte         | `Button`, `ComponentView`, `setupXxx`, `useAdapter`, `SvelteProfile`, `SvelteNaming`, `TSvelteElevator`, `SvelteElevatorFactory`, prop types (`UseProps`, `UseDomProps`, `EventProps`, `SlotProps`, `TSnippetSlots`)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | @soldy-ui/solid          | `Button`, `ComponentView`, `setupXxx`, `useAdapter`, `SolidProfile`, `SolidNaming`, `TSolidElevator`, `SolidElevatorFactory`, `renderSlot`, prop types (`UseProps`, `UseDomProps`, `EventProps`, `SlotProps`)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
-| @soldy-ui/webc           | `<so-button>` (`TButtonElement`), `<so-component-view>` (`TComponentViewElement`), `setupXxx`, templates (`buttonTemplate`, `componentViewTemplate`), `TSoldyElement`, `defineElement`, `defineProps`, `useAdapter`, `useAttributes`, `HOST_PROPS`, `bind` / `on` / `formAction`, `WebcProfile`, `WebcNaming`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| @soldy-ui/webc           | `<button is="so-button">` (`TButtonElement`), `<div is="so-component-view">` (`TComponentViewElement`), `setupXxx`, templates (`buttonTemplate`, `componentViewTemplate`), `SoldyElement`, `defineElement`, `useAdapter`, `useAttributes`, `HOST_PROPS`, `bind`, `WebcProfile`, `WebcNaming`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | @soldy-ui/theme-oren     | CSS: `dist/index.css` (built by `npm run build --workspace=@soldy-ui/theme-oren`); types: `index.d.ts` — theme values of the appearance registries; `@soldy-ui/theme-oren/setup` — the theme object for `useTheme` and `TTabsViewPlugin`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | @soldy-ui/icons-material | Icons as data (`TIconSource`), a named export per icon — every role of `ICON_ROLES` and more; the app registers them via `setIcons`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 

@@ -9,13 +9,22 @@ Web Components.
 The adapter is wiring, not behavior: it defines a Custom Element per component and renders the
 markup — BEM classes `s-*` and `data-*` state attributes. Props, events and slots come from the
 component descriptor, so they match the other five adapters; only the spelling is the platform's:
-tags are prefixed (`<so-button>`), props are attributes or element properties, and events are
-DOM events with the core names (`action:press`).
+props are attributes or element properties, and events are DOM events with the core names
+(`action:press`).
 
-There is no wrapper: `<so-button>` is the button itself and the root of the component. `class`,
-`style`, attributes and listeners on it take effect directly, and an attribute you set
-(`tabindex="-1"`, `role="link"`) wins over what the component writes. There is no `tag` prop —
-the root is always the element you wrote.
+Each component is a native element of its tag extended by Soldy (a customized built-in):
+`<button is="so-button">` is a real `<button>`, `<div is="so-component-view">` a real `<div>`.
+Whatever the browser does for the tag it does for the component — a button submits and resets its
+form, is the event's `submitter`, works with `new FormData(form, submitter)`, Enter in a form
+field, `formaction`, `<fieldset disabled>`, `<label for>` and `popovertarget`. `class`, `style`,
+attributes and listeners on it take effect directly, and an attribute you set (`aria-label`,
+`tabindex`) wins over what the component writes. There is no `tag` prop — the root is always the
+element you wrote.
+
+Safari does not support customized built-ins, so the package imports the
+[`@ungap/custom-elements`](https://github.com/ungap/custom-elements) polyfill (3 KB gzipped); it
+does nothing where the browser supports them natively. With the polyfill an element comes to life a
+microtask after it is inserted, so right after `innerHTML` its `ctrl` is not there yet.
 
 Shadow DOM is not used — a theme styles global BEM classes, so light DOM is distributed by the
 `slot` attribute by hand.
@@ -40,22 +49,17 @@ import '@soldy-ui/webc'
 ```
 
 ```html
-<so-button text="Save" class="toolbar-action"><i slot="leading">★</i></so-button>
+<button is="so-button" text="Save" class="toolbar-action"><i slot="leading">★</i></button>
+<button is="so-button"><i slot="leading">★</i> Save</button>
 ```
 
-`<so-button>` takes part in forms like `<button>`: inside a form, or tied to one with
-`form="id"`, it submits it when pressed; `type="reset"` resets the form and `type="button"` does
-nothing. `disabled` turns it off natively — no focus, no clicks. As with `<button>`, Enter in a
-form field presses it when it is the form's first submit button, `preventDefault()` on `click`
-cancels the submission, the pressed button's `name`/`value` go into the form data and it becomes
-the `submitter` of the `submit` event. `form`, `labels`, `name`, `value` and `type` are
-available as properties. `formaction` and the other `form*` attributes are not supported.
+In a form it is simply a button:
 
 ```html
 <form>
   <input name="q" />
-  <so-button text="Search"></so-button>
-  <so-button type="reset" text="Clear"></so-button>
+  <button is="so-button" name="action" value="search" text="Search"></button>
+  <button is="so-button" type="reset" text="Clear"></button>
 </form>
 ```
 
@@ -64,14 +68,15 @@ a core instance can be handed over as `ctrl` before the element is connected:
 
 ```ts
 import { TButton } from '@soldy-ui/core'
+import { TButtonElement } from '@soldy-ui/webc'
 
-const el = document.createElement('so-button')
+const el = document.createElement('button', { is: 'so-button' })
 
-el.ctrl = new TButton({ text: 'Save' })
-el.addEventListener('action:press', () => console.log('pressed'))
-document.body.append(el)
-
-el.disabled = true
+if (el instanceof TButtonElement) {
+  el.ctrl = new TButton({ text: 'Save' })
+  el.addEventListener('action:press', () => console.log('pressed'))
+  document.body.append(el)
+}
 ```
 
 The application plugs in a theme and an icon pack once, in its entry point:

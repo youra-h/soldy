@@ -1,11 +1,12 @@
 /**
- * `<so-button>` — корень компонента сам хост: обёртки и внутреннего
- * `<button>` нет. Классы, наборы ядра и скрытие лежат на самом элементе, рядом
- * с тем, что написал потребитель, а атрибуты и классы потребителя главнее.
+ * `<button is="so-button">` — нативная `<button>`, расширенная классом soldy
+ * (customized built-in). Классы, наборы ядра и скрытие лежат на самой кнопке,
+ * рядом с тем, что написал потребитель, а атрибуты и классы потребителя
+ * главнее — кроме атрибутов-входов пропов (`disabled`).
  *
- * Поведение формы (отправка, сброс, `disabled` без кликов) — в браузере,
- * `playground/vue/browser/webc-button.spec.ts`: в jsdom у `ElementInternals`
- * нет `form`.
+ * Поведение кнопки в форме и с клавиатуры — браузерное, его проверяет
+ * `playground/vue/browser/webc-button.spec.ts`: jsdom не отправляет форму и не
+ * делает клика из Enter и пробела.
  */
 
 import { describe, it, expect, afterEach, vi } from 'vitest'
@@ -13,10 +14,8 @@ import { TButton } from '@soldy-ui/core'
 import { TElementPlugin, TPluginBundle } from '@soldy-ui/plugins'
 import { ButtonDescriptor } from '@soldy-ui/setup'
 import type { IButton } from '@soldy-ui/core'
+import { TButtonElement, type TButtonElementProps } from '@soldy-ui/webc'
 import { buttonTemplate } from '../src/components/button/button.template'
-import '@soldy-ui/webc'
-
-type TButtonElement = HTMLElementTagNameMap['so-button']
 
 /** Рендер коалесцируется в микротаске — ждём её перед проверкой. */
 const flush = () => new Promise<void>((resolve) => queueMicrotask(() => resolve()))
@@ -24,23 +23,35 @@ const flush = () => new Promise<void>((resolve) => queueMicrotask(() => resolve(
 /** `TElementPlugin` объявляет узел через кадр — после него встают слушатели плагинов. */
 const nextFrame = () => new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
 
-/** `<so-button>` из разметки — с props дескриптора (тип из HTMLElementTagNameMap). */
-function mountButton(html: string): TButtonElement {
+/** Кнопка soldy — с props дескриптора; узел другой — тест падает здесь. */
+function asButton(node: Element | null): TButtonElementProps {
+	if (!isSoldyButton(node)) throw new Error('<button is="so-button"> нет')
+
+	return node
+}
+
+function isSoldyButton(node: Element | null): node is TButtonElementProps {
+	return node instanceof TButtonElement
+}
+
+/** Кнопка soldy из разметки. */
+function mountButton(html: string): TButtonElementProps {
 	const host = document.createElement('div')
 
 	host.innerHTML = html
 	document.body.appendChild(host)
 
-	const el = host.querySelector('so-button')
-
-	if (!el) throw new Error('<so-button> не смонтирован')
-
-	return el
+	return asButton(host.querySelector('button'))
 }
 
-/** `<so-button>` над готовым инстансом: `ctrl` выставлен до подключения. */
-function mountCtrl(ctrl: TButton): TButtonElement {
-	const el = document.createElement('so-button')
+/** Кнопка soldy из JS, ещё не подключённая. */
+function createButton(): TButtonElementProps {
+	return asButton(document.createElement('button', { is: 'so-button' }))
+}
+
+/** Кнопка soldy над готовым инстансом: `ctrl` выставлен до подключения. */
+function mountCtrl(ctrl: TButton): TButtonElementProps {
+	const el = createButton()
 
 	el.ctrl = ctrl
 	document.body.appendChild(el)
@@ -49,10 +60,10 @@ function mountCtrl(ctrl: TButton): TButtonElement {
 }
 
 /** Инстанс элемента; его нет — тест падает здесь, а не на чтении свойства. */
-function ctrlOf(el: TButtonElement): IButton {
+function ctrlOf(el: TButtonElementProps): IButton {
 	const { ctrl } = el
 
-	if (!ctrl) throw new Error('у <so-button> нет инстанса')
+	if (!ctrl) throw new Error('у кнопки нет инстанса')
 
 	return ctrl
 }
@@ -75,23 +86,25 @@ function collect(el: Element, name: string): unknown[] {
 
 const text = (el: Element) => el.querySelector('.s-button__text')?.textContent
 
-/** Тексты детей хоста — так видны слоты и их порядок. */
+/** Тексты детей кнопки — так видны слоты и их порядок. */
 const children = (el: Element) => Array.from(el.children).map((node) => node.textContent)
 
 afterEach(() => {
 	document.body.innerHTML = ''
 })
 
-describe('<so-button> · корень — сам хост', () => {
-	it('классы и наборы ядра на хосте, внутри один .s-button__text', () => {
-		const el = mountButton('<so-button></so-button>')
+describe('<button is="so-button"> · нативная кнопка', () => {
+	it('элемент — настоящая <button> с классами ядра, внутри один .s-button__text', () => {
+		const el = mountButton('<button is="so-button"></button>')
 
+		expect(el).toBeInstanceOf(HTMLButtonElement)
+		expect(el.type).toBe('submit')
 		expect(el.classList).toContain('s-button')
 		// variant и view — значения темы: без них модификаторов нет вовсе
 		expect(el.className).not.toMatch(/--(variant|view)-/)
-		// Для ядра so-button — не нативная кнопка: роль и фокус из `aria`
-		expect(el.getAttribute('role')).toBe('button')
-		expect(el.getAttribute('tabindex')).toBe('0')
+		// Для ядра это нативная кнопка: роль и фокус у неё свои
+		expect(el.hasAttribute('role')).toBe(false)
+		expect(el.hasAttribute('tabindex')).toBe(false)
 		expect(el.hasAttribute('aria-disabled')).toBe(false)
 		/** Тема смотрит `[data-disabled='true']`: «выключено» — строка, а не пропавший атрибут */
 		expect(el.getAttribute('data-disabled')).toBe('false')
@@ -101,7 +114,7 @@ describe('<so-button> · корень — сам хост', () => {
 
 	it('атрибуты пропсов дают классы и текст', () => {
 		const el = mountButton(
-			'<so-button text="Hello" variant="brand" size="xl" view="ghost"></so-button>',
+			'<button is="so-button" text="Hello" variant="brand" size="xl" view="ghost"></button>',
 		)
 
 		expect(text(el)).toBe('Hello')
@@ -115,73 +128,113 @@ describe('<so-button> · корень — сам хост', () => {
 		)
 	})
 
-	it('direction ставит атрибут dir на хост, без него dir нет (наследуется)', () => {
-		expect(mountButton('<so-button direction="rtl"></so-button>').getAttribute('dir')).toBe(
-			'rtl',
-		)
-		expect(mountButton('<so-button></so-button>').hasAttribute('dir')).toBe(false)
+	it('direction ставит атрибут dir на кнопку, без него dir нет (наследуется)', () => {
+		expect(
+			mountButton('<button is="so-button" direction="rtl"></button>').getAttribute('dir'),
+		).toBe('rtl')
+		expect(mountButton('<button is="so-button"></button>').hasAttribute('dir')).toBe(false)
 	})
 
 	it('содержимое тега переопределяет text', () => {
-		const el = mountButton('<so-button text="ignored"><b>Custom</b></so-button>')
+		const el = mountButton('<button is="so-button" text="ignored"><b>Custom</b></button>')
 
 		expect(text(el)).toBe('Custom')
 	})
 
-	/**
-	 * Тег — у элемента: атрибута и свойства `tag` нет, и записать его нечем.
-	 * Ядро получает `so-button` — не нативный тег.
-	 */
-	it('tag="a" ни на что не влияет, тег у ядра и у внешнего ctrl — so-button', () => {
-		const el = mountButton('<so-button tag="a"></so-button>')
+	/** Тег задан разметкой: атрибута и свойства `tag` нет, ядро получает `button`. */
+	it('tag="a" ни на что не влияет, тег у ядра и у внешнего ctrl — button', () => {
+		const el = mountButton('<button is="so-button" tag="a"></button>')
 		const ctrl = new TButton()
 
 		mountCtrl(ctrl)
 
-		expect('tag' in el).toBe(false)
-		expect(ctrlOf(el).tag).toBe('so-button')
-		expect(el.getAttribute('role')).toBe('button')
-		expect(ctrl.tag).toBe('so-button')
+		expect(ctrlOf(el).tag).toBe('button')
+		expect(ctrl.tag).toBe('button')
+	})
+
+	/**
+	 * Свойство, которое у кнопки есть по тегу, остаётся нативным: `disabled`
+	 * отражён в атрибут, и до ядра доходит через него. Свои свойства пропов —
+	 * только у того, чего у кнопки нет.
+	 */
+	it('нативные свойства кнопки не перекрыты, свои — на прототипе', () => {
+		const { prototype } = TButtonElement
+
+		expect(Object.getOwnPropertyDescriptor(prototype, 'disabled')).toBeUndefined()
+		expect(Object.getOwnPropertyDescriptor(prototype, 'hidden')).toBeUndefined()
+		expect(Object.getOwnPropertyDescriptor(prototype, 'text')?.set).toBeTypeOf('function')
+		expect(Object.getOwnPropertyDescriptor(prototype, 'tag')).toBeUndefined()
 	})
 })
 
-describe('<so-button> · disabled', () => {
+describe('<button is="so-button"> · disabled', () => {
 	/**
-	 * `so-button` связан с формой, и выключает его только нативный атрибут:
-	 * ядро для такого тега пишет `aria-disabled`, а атрибут ведёт база по
-	 * `disabled` ядра. Обратная запись атрибута гаснет в сеттере — событие одно.
+	 * `disabled` кнопки — нативный: ядро пишет атрибут в `attrs`, а атрибут
+	 * потребителя доходит до ядра. Это один атрибут, и база ведёт его по ядру,
+	 * даже если он пришёл из разметки. Обратная запись гаснет в сеттере —
+	 * событие одно.
 	 */
-	it('атрибут disabled следует за ядром, change:disabled — по одному разу', async () => {
-		const el = mountButton('<so-button disabled></so-button>')
+	it('атрибут из разметки следует за ядром, change:disabled — по одному разу', async () => {
+		const el = mountButton('<button is="so-button" disabled></button>')
 		const changes = collect(el, 'change:disabled')
 
-		expect(el.hasAttribute('disabled')).toBe(true)
-		expect(el.getAttribute('aria-disabled')).toBe('true')
-		expect(el.hasAttribute('tabindex')).toBe(false)
+		expect(el.disabled).toBe(true)
+		expect(ctrlOf(el).disabled).toBe(true)
 		expect(el.getAttribute('data-disabled')).toBe('true')
 
-		el.disabled = false
+		ctrlOf(el).disabled = false
 		await flush()
 
 		expect(el.hasAttribute('disabled')).toBe(false)
-		expect(el.hasAttribute('aria-disabled')).toBe(false)
-		expect(el.getAttribute('tabindex')).toBe('0')
+		expect(el.disabled).toBe(false)
 		expect(el.getAttribute('data-disabled')).toBe('false')
 		expect(changes).toEqual([false])
 
 		ctrlOf(el).disabled = true
 		await flush()
 
-		expect(el.hasAttribute('disabled')).toBe(true)
 		expect(el.disabled).toBe(true)
 		expect(changes).toEqual([false, true])
 	})
+
+	it('нативное свойство disabled доходит до ядра сразу', async () => {
+		const el = mountButton('<button is="so-button"></button>')
+		const changes = collect(el, 'change:disabled')
+
+		el.disabled = true
+
+		expect(ctrlOf(el).disabled).toBe(true)
+		expect(el.matches(':disabled')).toBe(true)
+
+		el.disabled = false
+		await flush()
+
+		expect(ctrlOf(el).disabled).toBe(false)
+		expect(el.getAttribute('data-disabled')).toBe('false')
+		expect(changes).toEqual([true, false])
+	})
+
+	it('клик даёт action:press, у выключенной кнопки — нет', async () => {
+		const el = mountButton('<button is="so-button"></button>')
+		const presses = collect(el, 'action:press')
+
+		await nextFrame()
+
+		el.click()
+
+		expect(presses).toHaveLength(1)
+
+		el.disabled = true
+		el.click()
+
+		expect(presses).toHaveLength(1)
+	})
 })
 
-describe('<so-button> · разметка потребителя на хосте', () => {
+describe('<button is="so-button"> · разметка потребителя', () => {
 	it('class, style, title, id и data-* стоят рядом с классами и наборами ядра', () => {
 		const el = mountButton(
-			'<so-button class="own" style="margin-top: 4px" title="Сохранить" id="save" data-test="x" size="xl"></so-button>',
+			'<button is="so-button" class="own" style="margin-top: 4px" title="Сохранить" id="save" data-test="x" size="xl"></button>',
 		)
 
 		expect(Array.from(el.classList)).toEqual(
@@ -200,7 +253,7 @@ describe('<so-button> · разметка потребителя на хосте
 	 * класс пропадал.
 	 */
 	it('класс, добавленный после монтирования, переживает смену variant', async () => {
-		const el = mountButton('<so-button variant="danger"></so-button>')
+		const el = mountButton('<button is="so-button" variant="danger"></button>')
 
 		el.classList.add('marker')
 
@@ -213,7 +266,7 @@ describe('<so-button> · разметка потребителя на хосте
 	})
 
 	it('класс потребителя с именем класса ядра ядро не снимает', async () => {
-		const el = mountButton('<so-button class="s-button--size-normal"></so-button>')
+		const el = mountButton('<button is="so-button" class="s-button--size-normal"></button>')
 
 		el.size = 'xl'
 		await flush()
@@ -222,40 +275,28 @@ describe('<so-button> · разметка потребителя на хосте
 		expect(el.classList).toContain('s-button--size-normal')
 	})
 
-	/**
-	 * Атрибут потребителя главнее набора ядра: ядро пишет кнопке
-	 * `tabindex="0"`, снимает его с выключенной и возвращает включённой — и ни
-	 * разу не трогает чужое значение. Роль — так же.
-	 */
-	it('tabindex="-1" переживает смену disabled, role="link" остаётся', async () => {
-		const el = mountButton('<so-button tabindex="-1" role="link"></so-button>')
-
-		expect(el.getAttribute('tabindex')).toBe('-1')
-		expect(el.getAttribute('role')).toBe('link')
+	it('tabindex и aria-label потребителя переживают смену disabled', async () => {
+		const el = mountButton(
+			'<button is="so-button" tabindex="-1" aria-label="Сохранить"></button>',
+		)
 
 		el.disabled = true
 		await flush()
-
-		expect(el.getAttribute('tabindex')).toBe('-1')
-		expect(el.getAttribute('role')).toBe('link')
-		expect(el.getAttribute('aria-disabled')).toBe('true')
-
 		el.disabled = false
 		await flush()
 
 		expect(el.getAttribute('tabindex')).toBe('-1')
-		expect(el.getAttribute('role')).toBe('link')
-		expect(el.hasAttribute('aria-disabled')).toBe(false)
+		expect(el.getAttribute('aria-label')).toBe('Сохранить')
 	})
 
 	/**
 	 * Скрытие — `display: none` поверх инлайнового `display` потребителя, как
-	 * `v-show`; при показе возвращается прежнее значение. Хост потребителя
+	 * `v-show`; при показе возвращается прежнее значение. Кнопку потребителя
 	 * компонент убрать не может, поэтому `rendered` прячет, как `visible`:
-	 * содержимое на месте, и `TElementPlugin` связан с хостом всё время.
+	 * содержимое на месте, и `TElementPlugin` связан с кнопкой всё время.
 	 */
-	it('visible=false и rendered=false прячут хост, при показе display прежний', async () => {
-		const el = document.createElement('so-button')
+	it('visible=false и rendered=false прячут кнопку, при показе display прежний', async () => {
+		const el = createButton()
 		let bundle: unknown
 
 		el.addEventListener('bundle:create', (event) => {
@@ -295,9 +336,9 @@ describe('<so-button> · разметка потребителя на хосте
 		expect(el.style.display).toBe('inline-flex')
 	})
 
-	/** `display`, поменянный потребителем у скрытого хоста, база при показе не трогает. */
-	it('display, сменённый потребителем у скрытого хоста, при показе остаётся', async () => {
-		const el = mountButton('<so-button></so-button>')
+	/** `display`, поменянный потребителем у скрытой кнопки, база при показе не трогает. */
+	it('display, сменённый потребителем у скрытой кнопки, при показе остаётся', async () => {
+		const el = mountButton('<button is="so-button"></button>')
 
 		el.visible = false
 		await flush()
@@ -311,9 +352,9 @@ describe('<so-button> · разметка потребителя на хосте
 	})
 })
 
-describe('<so-button> · свойства из JS', () => {
+describe('<button is="so-button"> · свойства из JS', () => {
 	it('смена свойства перерисовывает', async () => {
-		const el = mountButton('<so-button text="A"></so-button>')
+		const el = mountButton('<button is="so-button" text="A"></button>')
 
 		el.text = 'B'
 		await flush()
@@ -322,7 +363,7 @@ describe('<so-button> · свойства из JS', () => {
 	})
 
 	it('свойство, выставленное до подключения, доходит до ядра и читается', () => {
-		const el = document.createElement('so-button')
+		const el = createButton()
 
 		el.text = 'Before'
 
@@ -335,7 +376,7 @@ describe('<so-button> · свойства из JS', () => {
 	})
 
 	it('смена direction обновляет и снимает атрибут dir', async () => {
-		const el = mountButton('<so-button></so-button>')
+		const el = mountButton('<button is="so-button"></button>')
 
 		el.direction = 'rtl'
 		await flush()
@@ -356,9 +397,9 @@ describe('<so-button> · свойства из JS', () => {
  * Элемент отдаёт связке не полный набор пропсов, а то, что поменялось: смена
  * одного атрибута остальные не трогает.
  */
-describe('<so-button> · снятый проп', () => {
+describe('<button is="so-button"> · снятый проп', () => {
 	it('снятый атрибут возвращает умолчание', async () => {
-		const el = mountButton('<so-button text="A" variant="brand"></so-button>')
+		const el = mountButton('<button is="so-button" text="A" variant="brand"></button>')
 
 		el.removeAttribute('text')
 		el.removeAttribute('variant')
@@ -370,7 +411,7 @@ describe('<so-button> · снятый проп', () => {
 	})
 
 	it('свойство, выставленное в undefined, возвращает умолчание', async () => {
-		const el = mountButton('<so-button text="A"></so-button>')
+		const el = mountButton('<button is="so-button" text="A"></button>')
 
 		el.text = undefined
 		await flush()
@@ -379,7 +420,7 @@ describe('<so-button> · снятый проп', () => {
 	})
 
 	it('смена одного атрибута не сбрасывает остальные', async () => {
-		const el = mountButton('<so-button text="A" variant="brand"></so-button>')
+		const el = mountButton('<button is="so-button" text="A" variant="brand"></button>')
 
 		el.setAttribute('size', 'xl')
 		await flush()
@@ -390,13 +431,13 @@ describe('<so-button> · снятый проп', () => {
 	})
 })
 
-describe('<so-button> · точечные обновления', () => {
+describe('<button is="so-button"> · точечные обновления', () => {
 	/**
-	 * Проверка через побочный маркер: модификатор ядра, снятый с хоста руками,
+	 * Проверка через побочный маркер: модификатор ядра, снятый с кнопки руками,
 	 * возвращается только раскладкой классов. Раз его нет, раскладка не шла.
 	 */
 	it('смена text не перекладывает классы', async () => {
-		const el = mountButton('<so-button text="A"></so-button>')
+		const el = mountButton('<button is="so-button" text="A"></button>')
 
 		el.classList.remove('s-button--size-normal')
 
@@ -408,7 +449,7 @@ describe('<so-button> · точечные обновления', () => {
 	})
 })
 
-describe('<so-button> · внешний ctrl', () => {
+describe('<button is="so-button"> · внешний ctrl', () => {
 	it('отражает состояние инстанса и реагирует на его мутации', async () => {
 		const ctrl = new TButton({ text: 'FromCtrl', variant: 'brand' })
 		const el = mountCtrl(ctrl)
@@ -423,10 +464,10 @@ describe('<so-button> · внешний ctrl', () => {
 	})
 })
 
-describe('<so-button> · события', () => {
+describe('<button is="so-button"> · события', () => {
 	it('диспатчит CustomEvent с именем как в ядре', () => {
 		const ctrl = new TButton({ view: 'solid' })
-		const el = document.createElement('so-button')
+		const el = createButton()
 		const seen = collect(el, 'change:view')
 
 		el.ctrl = ctrl
@@ -439,7 +480,7 @@ describe('<so-button> · события', () => {
 
 	it('change:visible не дублируется (дедупликация триггеров)', () => {
 		const ctrl = new TButton()
-		const el = document.createElement('so-button')
+		const el = createButton()
 		const seen = collect(el, 'change:visible')
 
 		el.ctrl = ctrl
@@ -461,47 +502,34 @@ describe('<so-button> · события', () => {
 
 		expect(heard).toBe(true)
 	})
-})
 
-/**
- * Enter и пробел на самом хосте — `press` от `TActionPlugin`: для ядра
- * `so-button` не нативный тег, и клика из клавиши браузер не делает. Слушатели
- * плагин вешает по `ready` узла — через кадр после подключения.
- */
-describe('<so-button> · клавиатура', () => {
-	/** Нажатие клавиши, как его шлёт браузер: keydown и keyup. */
-	const keydown = (el: Element, key: string) => {
-		el.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true }))
-		el.dispatchEvent(new KeyboardEvent('keyup', { key, bubbles: true, cancelable: true }))
-	}
+	/**
+	 * Атрибуты разметки — пропсы первой сборки, а не её изменения: событий
+	 * `change:*` подключение не шлёт. С полифилом (Safari)
+	 * `attributeChangedCallback` начальных атрибутов приходит после
+	 * подключения, поэтому база читает атрибуты при подключении сама; колбэк
+	 * потом приносит то же значение, и сеттер его гасит.
+	 *
+	 * Здесь — вторая половина: запоздавший колбэк. Порядок полифила jsdom не
+	 * воспроизводит: колбэки он берёт из определения элемента, а встроенные
+	 * элементы умеет сам, и полифил в нём не включается. Чтение атрибутов при
+	 * подключении проверено в WebKit с полифилом.
+	 */
+	it('запоздавший колбэк начального атрибута не шлёт change:*', () => {
+		const el = createButton()
+		const changes = [collect(el, 'change:text'), collect(el, 'change:variant')]
 
-	/** Как `<button>`: клавиша даёт клик, и `action:press` приходит из него. */
-	it('Enter и пробел на хосте дают click и action:press', async () => {
-		const el = mountButton('<so-button></so-button>')
-		const presses = collect(el, 'action:press')
-		const clicks: Event[] = []
+		el.setAttribute('text', 'A')
+		el.setAttribute('variant', 'brand')
+		document.body.appendChild(el)
 
-		el.addEventListener('click', (event) => clicks.push(event))
-		await nextFrame()
+		expect(text(el)).toBe('A')
+		expect(el.classList).toContain('s-button--variant-brand')
 
-		keydown(el, 'Enter')
-		keydown(el, ' ')
+		el.attributeChangedCallback('text', null, 'A')
+		el.attributeChangedCallback('variant', null, 'brand')
 
-		expect(clicks).toHaveLength(2)
-		expect(presses).toHaveLength(2)
-	})
-
-	it('у выключенной кнопки press нет', async () => {
-		const el = mountButton('<so-button disabled></so-button>')
-		const presses = collect(el, 'action:press')
-
-		await nextFrame()
-
-		keydown(el, 'Enter')
-		keydown(el, ' ')
-		el.click()
-
-		expect(presses).toHaveLength(0)
+		expect(changes).toEqual([[], []])
 	})
 })
 
@@ -536,7 +564,7 @@ function watchBus(ctrl: TButton): () => number {
 		).length
 }
 
-describe('<so-button> · очистка', () => {
+describe('<button is="so-button"> · очистка', () => {
 	it('снимает подписки с внешнего ctrl при удалении из DOM', () => {
 		const ctrl = new TButton()
 		const live = watchBus(ctrl)
@@ -556,10 +584,10 @@ describe('<so-button> · очистка', () => {
  * инстанс тот же, а связка новая. Раньше повторное подключение снимало
  * «свет» заново — вместе с собственной разметкой — и собирало новый инстанс.
  */
-describe('<so-button> · перестановка в DOM', () => {
+describe('<button is="so-button"> · перестановка в DOM', () => {
 	it('структура одна, слоты на местах, el.ctrl тот же', async () => {
 		const el = mountButton(
-			'<so-button text="Mid"><i slot="leading">L</i><i slot="trailing">T</i></so-button>',
+			'<button is="so-button" text="Mid"><i slot="leading">L</i><i slot="trailing">T</i></button>',
 		)
 		const ctrl = el.ctrl
 
@@ -570,7 +598,6 @@ describe('<so-button> · перестановка в DOM', () => {
 		expect(children(el)).toEqual(['L', 'Mid', 'T'])
 		expect(el.ctrl).toBe(ctrl)
 		expect(el.classList).toContain('s-button')
-		expect(el.getAttribute('role')).toBe('button')
 	})
 
 	it('смена внешнего ctrl доходит одним CustomEvent', () => {
@@ -586,7 +613,7 @@ describe('<so-button> · перестановка в DOM', () => {
 	})
 
 	it('element:ready приходит снова', async () => {
-		const el = document.createElement('so-button')
+		const el = createButton()
 		const ready = collect(el, 'element:ready')
 
 		document.body.appendChild(el)
@@ -616,7 +643,7 @@ describe('<so-button> · перестановка в DOM', () => {
 	})
 
 	it('атрибут, сменённый вне DOM, применяется, снятый — возвращает умолчание', async () => {
-		const el = mountButton('<so-button text="A" variant="brand"></so-button>')
+		const el = mountButton('<button is="so-button" text="A" variant="brand"></button>')
 
 		el.remove()
 		el.setAttribute('text', 'B')
@@ -634,7 +661,7 @@ describe('<so-button> · перестановка в DOM', () => {
 
 	/** Пропсы сборки — последнее значение, которое видел элемент, а не то, что задавал атрибут. */
 	it('перестановка не откатывает то, что с тех пор поменяло ядро', async () => {
-		const el = mountButton('<so-button text="A"></so-button>')
+		const el = mountButton('<button is="so-button" text="A"></button>')
 
 		ctrlOf(el).text = 'B'
 		await flush()
@@ -646,8 +673,8 @@ describe('<so-button> · перестановка в DOM', () => {
 		expect(ctrlOf(el).text).toBe('B')
 	})
 
-	it('скрытый хост после перестановки остаётся скрытым и показывается с прежним display', async () => {
-		const el = mountButton('<so-button style="display: inline-flex"></so-button>')
+	it('скрытая кнопка после перестановки остаётся скрытой и показывается с прежним display', async () => {
+		const el = mountButton('<button is="so-button" style="display: inline-flex"></button>')
 
 		el.visible = false
 		await flush()
@@ -664,9 +691,9 @@ describe('<so-button> · перестановка в DOM', () => {
 	})
 })
 
-describe('<so-button> · слоты', () => {
+describe('<button is="so-button"> · слоты', () => {
 	it('шаблон объявляет ровно те слоты, что и дескриптор', () => {
-		const targets = buttonTemplate.create(document.createElement('so-button'))
+		const targets = buttonTemplate.create(document.createElement('button'))
 
 		// Contract conformance: имена в шаблоне и в дескрипторе обязаны совпадать
 		expect(Object.keys(targets).sort()).toEqual(
@@ -677,7 +704,7 @@ describe('<so-button> · слоты', () => {
 	})
 
 	it('содержимое без атрибута slot попадает в слот по умолчанию', () => {
-		const el = mountButton('<so-button text="ignored"><b>Custom</b></so-button>')
+		const el = mountButton('<button is="so-button" text="ignored"><b>Custom</b></button>')
 
 		expect(text(el)).toBe('Custom')
 		expect(el.querySelector('.s-button__text > b')?.textContent).toBe('Custom')
@@ -685,7 +712,7 @@ describe('<so-button> · слоты', () => {
 
 	it('slot="leading" ставится перед текстом, slot="trailing" — после', () => {
 		const el = mountButton(
-			'<so-button text="Mid"><i slot="leading">L</i><i slot="trailing">T</i></so-button>',
+			'<button is="so-button" text="Mid"><i slot="leading">L</i><i slot="trailing">T</i></button>',
 		)
 
 		// Порядок в DOM важнее наличия: иконка «до» обязана быть до текста
@@ -693,7 +720,9 @@ describe('<so-button> · слоты', () => {
 	})
 
 	it('именованные слоты не подавляют текст из props', () => {
-		const el = mountButton('<so-button text="Hello"><i slot="leading">L</i></so-button>')
+		const el = mountButton(
+			'<button is="so-button" text="Hello"><i slot="leading">L</i></button>',
+		)
 
 		// Только содержимое слота default переопределяет text
 		expect(text(el)).toBe('Hello')
@@ -706,21 +735,45 @@ describe('<so-button> · слоты', () => {
 	 * строку из пробелов.
 	 */
 	it('пробелы и комментарии вокруг слотов не подавляют текст из props', () => {
-		const el = mountButton(`<so-button text="Сохранить">
+		const el = mountButton(`<button is="so-button" text="Сохранить">
 			<!-- иконка -->
 			<i slot="leading">L</i>
 			<i slot="trailing">T</i>
-		</so-button>`)
+		</button>`)
 
 		expect(text(el)).toBe('Сохранить')
 		expect(children(el)).toEqual(['L', 'Сохранить', 'T'])
 	})
 
 	it('пробелы внутри содержимого слота по умолчанию остаются', () => {
-		const el = mountButton(`<so-button text="ignored">
+		const el = mountButton(`<button is="so-button" text="ignored">
 			<b>Сохранить</b> <i>файл</i>
-		</so-button>`)
+		</button>`)
 
 		expect(text(el)?.trim()).toBe('Сохранить файл')
+	})
+
+	/**
+	 * Скрипт в `<head>` определяет элемент до разбора разметки: парсер создаёт
+	 * кнопку уже живой и подключает её раньше, чем дописал её детей. Первое
+	 * подключение поэтому ждёт `DOMContentLoaded` — иначе свет был бы пуст, а
+	 * `slot="leading"` парсер дописал бы после текста.
+	 */
+	it('пока документ разбирается, свет собирается после DOMContentLoaded', () => {
+		const readyState = vi.spyOn(document, 'readyState', 'get').mockReturnValue('loading')
+		const el = createButton()
+
+		el.setAttribute('text', 'Mid')
+		document.body.appendChild(el)
+		// Дети, которые парсер дописывает после подключения
+		el.insertAdjacentHTML('beforeend', '<i slot="leading">L</i>')
+
+		expect(el.ctrl).toBeUndefined()
+
+		readyState.mockRestore()
+		document.dispatchEvent(new Event('DOMContentLoaded'))
+
+		expect(children(el)).toEqual(['L', 'Mid'])
+		expect(el.ctrl).toBeDefined()
 	})
 })

@@ -1,22 +1,18 @@
 /**
  * Шаблон Button.
  *
- * Корень — сам `<so-button>`: классы, наборы `aria`, `attrs` и `dataset`
- * (`data-disabled` для темы) и скрытие на него раскладывает база
- * (`TSoldyElement`), здесь остаётся своё.
+ * Корень — сама `<button is="so-button">`: классы, наборы `aria`, `attrs` и
+ * `dataset` (`data-disabled` для темы) и скрытие на неё раскладывает база
+ * (`SoldyElement`), здесь остаётся своё.
  *
  * Слоты контракта: `leading`, `default`, `trailing`. В корне создаётся только
  * span для текста — `leading` кладётся перед ним, `trailing` дописывается в
  * корень (то есть после него). Узлов-обёрток нет: в остальных пяти адаптерах их
  * тоже нет, а лишний span сломал бы селекторы темы.
- *
- * Корень не нативная кнопка, и с формой браузер за него ничего не сделает.
- * Поэтому реакция — действие формы на нажатие (`formAction`), а связь с формой
- * — неявная отправка: Enter в её поле (`implicitSubmission`).
  */
 
 import type { IButton } from '@soldy-ui/core'
-import { bind, formAction, implicitSubmission, on, type ITemplate } from '../../adapter'
+import { bind, type ITemplate } from '../../adapter'
 
 export const buttonTemplate: ITemplate<IButton> = {
 	create: (root) => {
@@ -40,8 +36,4 @@ export const buttonTemplate: ITemplate<IButton> = {
 			content.textContent = String(state.text ?? '')
 		}),
 	],
-
-	reactions: [on('action:press', formAction)],
-
-	associate: implicitSubmission,
 }
