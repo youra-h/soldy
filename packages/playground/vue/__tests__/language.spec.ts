@@ -131,12 +131,15 @@ describe('выбор «Язык» в шапке', () => {
 	})
 
 	/**
-	 * У React своя локаль корня: строка кнопки очистки поля — `field.clear` —
-	 * переводится на лету, а кнопка остаётся тем же узлом. Обе колонки:
-	 * вторую рисует тот же хост с экземпляром ядра.
+	 * У React и Svelte своя локаль корня: строка кнопки очистки поля —
+	 * `field.clear` — переводится на лету, а кнопка остаётся тем же узлом. Обе
+	 * колонки: вторую рисует тот же хост с экземпляром ядра.
 	 */
-	it('доходит до имени кнопки очистки Input хоста React без перемонтирования', async () => {
-		const wrapper = await open('/react/input')
+	it.each([
+		['React', 'react'],
+		['Svelte', 'svelte'],
+	])('доходит до имени кнопки очистки Input хоста %s без перемонтирования', async (_name, id) => {
+		const wrapper = await open(`/${id}/input`)
 		const row = rowOf(wrapper, 'clearable')
 
 		row.findComponent(PropControl).vm.$emit('update:modelValue', true)

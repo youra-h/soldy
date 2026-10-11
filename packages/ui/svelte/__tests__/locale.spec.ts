@@ -4,17 +4,28 @@
  * Своего языка и своих строк у компонента нет: их даёт ближайший
  * `LocaleProvider` выше по дереву. Сборка компонента отдаёт источник
  * провайдера своему набору плагинов (`bundle.locale`), а плагины языка и имён
- * пишут компоненту тег и имена. Компонентов со строками у Svelte пока нет,
- * поэтому проверяется то, на чём они встанут: источник в наборе, смена на лету
- * без перемонтирования и вложенный провайдер. Без провайдера — английский.
+ * пишут компоненту тег и имена. Проверяется и сама проводка — источник в
+ * наборе, — и строка на разметке: имя кнопки очистки Input собирается из
+ * шаблона локали и имени поля. Смена локали доезжает до разметки без
+ * перемонтирования, вложенный провайдер даёт поддереву свою, без провайдера —
+ * английский. Параллельные серверные рендеры — `locale.server.spec.ts`.
  */
 
 import { describe, it, expect } from 'vitest'
 import { flushSync } from 'svelte'
-import { enUS, ruRU, zhCN, TPluginBundle, type ILocaleSource } from '@soldy-ui/plugins'
-import { Button, type ButtonProps } from '@soldy-ui/svelte'
+import { TInput } from '@soldy-ui/core'
+import {
+	enUS,
+	extendLocale,
+	ruRU,
+	zhCN,
+	TPluginBundle,
+	type ILocaleSource,
+} from '@soldy-ui/plugins'
+import { Button, Input, type ButtonProps } from '@soldy-ui/svelte'
 import Harness from './Locale.test.svelte'
-import { mount } from './mount'
+import LocaleInput from './LocaleInput.test.svelte'
+import { find, mount } from './mount'
 import { reactiveProps } from './reactive-props.svelte'
 
 /** Наборы, которые объявили кнопки, — по порядку объявления. */
@@ -98,5 +109,55 @@ describe('LocaleProvider', () => {
 		expect(tagOf(outer.list[0].locale)).toBe(ruRU.tag)
 		expect(tagOf(inner.list[0].locale)).toBe(enUS.tag)
 		expect(inner.list[0].locale).not.toBe(outer.list[0].locale)
+	})
+})
+
+/**
+ * Строка на разметке — те же сценарии, что у React (`locale.spec.tsx`): имя
+ * кнопки очистки поля пишет плагин имён по шаблону локали (`field.clear`).
+ */
+describe('LocaleProvider · строки на разметке', () => {
+	/** Кнопка очистки поля внутри узла. */
+	const clearOf = (scope: ParentNode) => find(scope, '.s-input__clear', HTMLButtonElement)
+
+	it('без провайдера — английские строки', () => {
+		const { container } = mount(Input, { clearable: true, name: 'Город' })
+
+		expect(clearOf(container).getAttribute('aria-label')).toBe('Clear Город')
+	})
+
+	it('локаль провайдера — с первой отрисовки', () => {
+		const { container } = mount(LocaleInput, { locale: ruRU })
+
+		expect(clearOf(container).getAttribute('aria-label')).toBe('Очистить Город')
+	})
+
+	it('смена локали — новое имя без пересборки: инстанс и узел те же', () => {
+		const ctrl = new TInput()
+		const props = reactiveProps({ locale: enUS, ctrl })
+		const { container } = mount(LocaleInput, props)
+		const button = clearOf(container)
+
+		props.locale = ruRU
+		flushSync()
+
+		expect(clearOf(container)).toBe(button)
+		expect(button.getAttribute('aria-label')).toBe('Очистить Город')
+
+		props.locale = extendLocale(zhCN, { translations: { field: { clear: '清空{name}' } } })
+		flushSync()
+
+		expect(button.getAttribute('aria-label')).toBe('清空Город')
+	})
+
+	it('вложенный провайдер даёт поддереву свою локаль', () => {
+		const { container } = mount(LocaleInput, { locale: ruRU, inner: enUS })
+
+		expect(
+			clearOf(find(container, '.s-test-outer', HTMLElement)).getAttribute('aria-label'),
+		).toBe('Очистить Город')
+		expect(
+			clearOf(find(container, '.s-test-inner', HTMLElement)).getAttribute('aria-label'),
+		).toBe('Clear Город')
 	})
 })

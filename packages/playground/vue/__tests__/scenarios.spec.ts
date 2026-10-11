@@ -12,7 +12,7 @@ import { describe, it, expect, beforeAll, beforeEach, vi } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 import { nextTick } from 'vue'
 import { SCENARIOS as SCENARIO_REGISTRY, type TScenario } from '@soldy-ui/playground-shared'
-import { componentsOf, scenariosOf, testsPath, topicsOf } from '../src/catalog'
+import { componentsOf, coversScenario, scenariosOf, testsPath, topicsOf } from '../src/catalog'
 import { FRAMEWORKS, hostOf, loadHost } from '../src/hosts'
 import { createScenarioBench, SCENARIO_BENCH } from '../src/composables/useScenarios'
 import { router } from '../src/router'
@@ -68,12 +68,13 @@ describe.each(IDS)('каталог сценариев %s', (framework) => {
 
 	/**
 	 * Сценарий без фикстуры не падает — он молча пропадает со страницы:
-	 * каталог строится пересечением. Поэтому пропажа ловится здесь.
+	 * каталог строится пересечением. Поэтому пропажа ловится здесь. Сценарий,
+	 * которому нужен компонент, ещё не перенесённый в адаптер (`requires`:
+	 * радио в подписи), сиротой не считается: хосту его нечем нарисовать.
 	 */
 	it('у каждого сценария компонента хоста есть чем его нарисовать', () => {
 		const orphans = SCENARIO_REGISTRY.filter(
-			(scenario) =>
-				host.previews.includes(scenario.component) && !scenarios.includes(scenario),
+			(scenario) => coversScenario(host, scenario) && !scenarios.includes(scenario),
 		).map((scenario) => scenario.id)
 
 		expect(orphans).toEqual([])

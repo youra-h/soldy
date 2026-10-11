@@ -1859,7 +1859,7 @@ Zone.js и молча ломалось бы под `provideZonelessChangeDetecti
 
 ## Layer 8b: Svelte Adapter (`packages/ui/svelte/src`)
 
-### ✅ IMPLEMENTED (Component / ComponentView / Stylable / Control / Textable / Button / Icon / Frame / ProgressSpinner / Skeleton)
+### ✅ IMPLEMENTED (Component / ComponentView / Stylable / Control / Textable / Button / Icon / Label / Frame / ProgressSpinner / Skeleton / Input / CheckBox / Switch)
 
 Svelte 5 на рунах. Структура зеркалит React, потому что механика событий та же —
 колбэк-пропы:
@@ -1869,13 +1869,18 @@ Svelte 5 на рунах. Структура зеркалит React, потом�
   `event` = `callbackEventNaming` — обе стратегии общие с React);
   `createSvelteAdapterContext` — сборка с id монтирования от `$props.id()`
   компонента и локалью поддерева; раскладка корня `toRootProps` (наборы ядра,
-  поверх атрибуты потребителя, класс, стиль слоями); `roleIcon(role)` — метка
-  иконки по роли для `tag` у Icon и `RoleIcon`, который рисует её `<svg>`.
+  поверх атрибуты потребителя, класс, стиль слоями) и делёж атрибутов
+  потребителя у поля — `toRootForward` (класс и стиль корню) и
+  `toControlAttrs` (остальное `<input>`); `roleIcon(role)` — метка иконки по
+  роли для `tag` у Icon и `RoleIcon`, который рисует её `<svg>`, — он же
+  рисует отметку CheckBox без слота.
 - `adapter/runtime/` — `useAdapter.svelte.ts`: `useAdapter` поверх связки
   `adapter.connect(SvelteProfile)`. Расширение `.svelte.ts` обязательно
   там, где используются руны (`$state`, `$effect`, `$derived`). Там же
   `Dynamic` — корень по `tag` (строка, компонент Svelte, метка роли);
   `rootStyle` (`root-style.svelte.ts`) — attachment стиля корня по свойствам;
+  `fieldText` — attachment текста поля, который пишет текст в узел, только
+  когда он разошёлся с узлом;
   `Teleport` — содержимое в цели отдельным корнем `mount` с контекстами места.
 - `adapter/locale/` — `LocaleProvider`: свой `TLocaleSource` детям через
   `setContext`, смена пропа — в тот же источник.
@@ -1898,6 +1903,13 @@ Svelte 5 на рунах. Структура зеркалит React, потом�
   Svelte пишет целиком и стирал бы то, что плагины ставят на узел сами. В
   браузере attachment едет в атрибутах узла под своим ключом, на сервере стиль
   уходит строкой атрибута (`BROWSER` из `esm-env`).
+- **Текст поля — attachment-ом `fieldText`**: наборы ядра и атрибуты
+  потребителя ложатся на `<input>` спредом, а в спреде Svelte пишет `value`
+  на каждую смену значения, не сверяя с узлом, — набор возвращал бы узлу его
+  же текст. Attachment пишет текст, только когда он разошёлся с узлом; на
+  сервере текст уходит атрибутом `value`. Отметку и «выбрано частично»
+  (`checked`, `indeterminate`) Svelte пишет свойствами сам, своего поля, как
+  `NativeInput` у React, у адаптера нет.
 - **Слоты — сниппеты**: `children` рендерится через `{@render children?.()}`,
   именованные области layout'а передаются сниппет-пропами.
 - **Атрибуты идут одним объектом** — `toRootProps`: у `<svelte:element>` тип
@@ -1911,7 +1923,8 @@ Svelte 5 на рунах. Структура зеркалит React, потом�
 
 - `tag` — строка, компонент Svelte или метка `roleIcon`. Другой объект
   (компонент чужого фреймворка) Svelte нарисовать не может, и корня нет.
-- Коллекции не портированы (elevator готов, но не подключён).
+- Коллекции не портированы (elevator готов, но не подключён), а с ними и
+  RadioGroup: радио в подписи `Label` ждёт его.
 
 ## Layer 8c: Solid Adapter (`packages/ui/solid/src`)
 

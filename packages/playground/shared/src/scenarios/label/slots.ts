@@ -58,7 +58,8 @@ async function checkLabel(ctx: IScenarioContext): Promise<void> {
 /**
  * Подпись вокруг трёх контролов: CheckBox, Switch и радио. Разметку кладут
  * фикстуры адаптера (`label-*`); радио в них — с `tag="span"`, потому что его
- * собственный корень — тоже `label`.
+ * собственный корень — тоже `label`. Контрол сценарий проверяет вместе с
+ * подписью (`requires`): адаптер без него сценарий не покажет.
  */
 export const LABEL_SLOTS: readonly TScenario[] = [
 	{
@@ -70,6 +71,7 @@ export const LABEL_SLOTS: readonly TScenario[] = [
 		description:
 			'Чекбокс в слоте default лежит в .s-label__control, текст — после него; клик по тексту отмечает чекбокс одним change',
 		fixture: 'label-check-box',
+		requires: ['check-box'],
 		props: { text: TEXT },
 		run: checkLabel,
 	},
@@ -82,6 +84,7 @@ export const LABEL_SLOTS: readonly TScenario[] = [
 		description:
 			'Переключатель в слоте default лежит в .s-label__control, текст — после него; клик по тексту включает его одним change',
 		fixture: 'label-switch',
+		requires: ['switch'],
 		props: { text: TEXT },
 		run: checkLabel,
 	},
@@ -94,6 +97,7 @@ export const LABEL_SLOTS: readonly TScenario[] = [
 		description:
 			'RadioGroup.Item с tag="span" в слоте default: вложенного label нет, клик по тексту отмечает радио одним change',
 		fixture: 'label-radio',
+		requires: ['radio-group'],
 		props: { text: TEXT },
 		run: checkLabel,
 	},
