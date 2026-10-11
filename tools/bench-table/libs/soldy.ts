@@ -28,9 +28,11 @@ const resizeFlag = query.get('resize')
 const resize = resizeFlag === '1' || resizeFlag === 'deferred'
 const resizePreview = resizeFlag === 'deferred' ? { resizePreview: 'deferred' as const } : {}
 // `?fit=contain` — гибкие колонки ровно заполняют место (`columnFit: 'contain'`):
-// таблица не шире места, и окно не прокручивается вбок. Без флага проп не задан
-// (`auto`): колонки растут от 160 px, и 20 колонок шире окна стенда
-const columnFit = query.get('fit') === 'contain' ? { columnFit: 'contain' as const } : {}
+// таблица не шире места, и окно не прокручивается вбок; `?fit=none` — колонки
+// шириной по умолчанию, место они не делят (`columnFit: 'none'`). Без флага
+// проп не задан (`auto`): колонки растут от 160 px, и 20 колонок шире окна стенда
+const fitFlag = query.get('fit')
+const columnFit = fitFlag === 'contain' || fitFlag === 'none' ? { columnFit: fitFlag } : {}
 const columns = COLUMNS.map((c) => ({
 	...c,
 	sortable: true,
@@ -50,6 +52,10 @@ const mode = query.get('mode') === 'none' ? 'none' : 'multiple'
 // `?virtual=1` — окно: таблица в обёртке `Virtual` в контейнере высотой 800 px,
 // тело рисует только видимые строки
 const virtual = query.get('virtual') === '1'
+// `?width=3248` — таблица в обёртке такой ширины, px: место таблицы шире окна
+// стенда. 3248 — сумма 20 колонок по 160 px и колонки выбора: колонки влезают,
+// и окно таблицы вбок не прокручивается — в любом `columnFit`
+const width = Number(query.get('width')) || undefined
 export function mount(el: Element, rows: ShallowRef<TRec[] | null>) {
 	createApp({
 		render: () => {
@@ -65,11 +71,13 @@ export function mount(el: Element, rows: ShallowRef<TRec[] | null>) {
 					...columnFit,
 				})
 
-			return virtual
+			const body = virtual
 				? h('div', { class: 'bench-scroll', style: 'height: 800px; overflow: auto' }, [
 						h(Virtual, () => table),
 					])
 				: table
+
+			return width ? h('div', { style: `width: ${width}px` }, [body]) : body
 		},
 	}).mount(el)
 }
