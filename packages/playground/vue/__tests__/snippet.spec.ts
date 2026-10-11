@@ -6,8 +6,9 @@
  * проект такой код падал бы или молча ничего не менял: у `TAccordion` нет
  * свойства `mode`.
  *
- * Код колонок пишет хост фреймворка — хосты Vue, React и Svelte, полученные
- * загрузчиком, как их получает оболочка. Случаи у них одни, синтаксис свой.
+ * Код колонок пишет хост фреймворка — хосты Vue, React, Svelte и Solid,
+ * полученные загрузчиком, как их получает оболочка. Случаи у них одни,
+ * синтаксис свой.
  */
 
 import { describe, it, expect } from 'vitest'
@@ -25,10 +26,11 @@ async function snippetsOf(framework: string): Promise<IPreviewSnippets> {
 	return snippets
 }
 
-const [vue, react, svelte] = await Promise.all([
+const [vue, react, svelte, solid] = await Promise.all([
 	snippetsOf('vue'),
 	snippetsOf('react'),
 	snippetsOf('svelte'),
+	snippetsOf('solid'),
 ])
 
 const { propSnippet, instanceSnippet } = vue
@@ -715,12 +717,243 @@ describe.each([
 })
 
 /**
+ * Код Solid — те же случаи синтаксисом JSX, как у React: пример —
+ * функциональный компонент, строка в кавычках, остальное в `{}`. Но тело
+ * компонента Solid выполняется один раз на монтирование, поэтому экземпляр и
+ * движок — обычные константы в теле, без хука, и запись свойства — там же, до
+ * первой отрисовки.
+ */
+describe('Solid: instanceSnippet', () => {
+	it('свойство компонента пишет в инстанс — константой в теле компонента', () => {
+		const code = solid.instanceSnippet(
+			accordion,
+			control({ name: 'view', scope: 'component' }),
+			'plain',
+		)
+
+		expect(code).toBe(
+			[
+				"import { Accordion } from '@soldy-ui/solid'",
+				"import { TAccordion } from '@soldy-ui/core'",
+				'',
+				'export function Example() {',
+				'\tconst instance = new TAccordion()',
+				'',
+				"\tinstance.view = 'plain'",
+				'',
+				'\treturn <Accordion ctrl={instance} />',
+				'}',
+			].join('\n'),
+		)
+		expect(code).not.toContain('useState')
+	})
+
+	it('коллекционное свойство пишет в движок, а не в компонент', () => {
+		const code = solid.instanceSnippet(
+			accordion,
+			control({ name: 'mode', scope: 'collection' }),
+			'multiple',
+		)
+
+		expect(code).toContain('\tconst engine = createEngineAccordion()')
+		expect(code).toContain("\tengine.extensions.selection.mode = 'multiple'")
+		expect(code).toContain('<Accordion engine={engine} />')
+		expect(code).not.toContain('instance.mode')
+		expect(code).not.toContain('ctrl={instance}')
+	})
+
+	it('у календаря — его сборщик движка', () => {
+		const code = solid.instanceSnippet(
+			entryOf('calendar'),
+			control({ name: 'mode', scope: 'collection' }),
+			'range',
+		)
+
+		expect(code).toContain("import { createEngineCalendar } from '@soldy-ui/core'")
+		expect(code).toContain('\tconst engine = createEngineCalendar()')
+		expect(code).toContain("\tengine.extensions.selection.mode = 'range'")
+		expect(code).toContain('<Calendar engine={engine} />')
+		expect(code).not.toContain('createEngineSelection')
+	})
+
+	it('свойство плагина пишет в плагин из bundle', () => {
+		const code = solid.instanceSnippet(
+			entryOf('button'),
+			control({
+				name: 'aria_label',
+				scope: 'plugin',
+				plugin: { ctor: TAriaPlugin, name: 'label' },
+			}),
+			'Закрыть',
+		)
+
+		expect(code).toContain('\tconst instance = new TButton()')
+		expect(code).toContain("import { TPluginBundle, TAriaPlugin } from '@soldy-ui/plugins'")
+		expect(code).toContain("\tinstance.events.on('bundle:create', (bundle: unknown) => {")
+		expect(code).toContain('\t\tconst plugin = bundle.get(TAriaPlugin)')
+		expect(code).toContain("\t\tif (plugin) plugin.label = 'Закрыть'")
+		expect(code).toContain('<Button ctrl={instance} />')
+		expect(code).not.toContain('instance.aria_label')
+		expect(code).not.toContain('instance.label')
+	})
+
+	it('строка в коде — в одинарных кавычках, с экранированием', () => {
+		const code = solid.instanceSnippet(
+			entryOf('button'),
+			control({ name: 'text', scope: 'component' }),
+			"It's",
+		)
+
+		expect(code).toContain("instance.text = 'It\\'s'")
+	})
+})
+
+describe('Solid: propSnippet', () => {
+	it('пример — компонент с JSX: импорт из адаптера, проп атрибутом', () => {
+		expect(solid.propSnippet(entryOf('button'), 'view', 'plain')).toBe(
+			[
+				"import { Button } from '@soldy-ui/solid'",
+				'',
+				'export function Example() {',
+				'\treturn <Button view="plain" />',
+				'}',
+			].join('\n'),
+		)
+	})
+
+	it('коллекционное свойство передаётся обычным пропом', () => {
+		expect(solid.propSnippet(accordion, 'mode', 'multiple')).toContain(
+			'<Accordion mode="multiple" />',
+		)
+	})
+
+	it('число и булево — выражением в {}', () => {
+		const progressLinear = entryOf('progress-linear')
+
+		expect(solid.propSnippet(progressLinear, 'max', 50)).toContain(
+			'<ProgressLinear max={50} />',
+		)
+		expect(solid.propSnippet(progressLinear, 'indeterminate', true)).toContain(
+			'<ProgressLinear indeterminate={true} />',
+		)
+	})
+
+	/**
+	 * Строка JSX не знает экранирования: кавычка оборвала бы её, а `&amp;`
+	 * JSX прочёл бы как `&`. Такая строка уходит выражением.
+	 */
+	it('строка с кавычкой или & — выражением', () => {
+		const button = entryOf('button')
+
+		expect(solid.propSnippet(button, 'text', 'Он сказал "да"')).toContain(
+			`<Button text={'Он сказал "да"'} />`,
+		)
+		expect(solid.propSnippet(button, 'text', 'A &amp; B')).toContain(
+			`<Button text={'A &amp; B'} />`,
+		)
+	})
+})
+
+describe('Solid: пресет строки', () => {
+	const select = entryOf('select')
+	const preset = { editable: true, mode: 'multiple' }
+
+	it('propSnippet пишет пресет рядом с самим пропом', () => {
+		const code = solid.propSnippet(select, 'removeOnBackspace', true, preset)
+
+		expect(code).toContain(
+			'<Select editable={true} mode="multiple" removeOnBackspace={true} />',
+		)
+	})
+
+	it('instanceSnippet пишет пресет разметкой рядом с ctrl', () => {
+		const code = solid.instanceSnippet(
+			select,
+			control({ name: 'removeOnBackspace', scope: 'component', preset }),
+			true,
+		)
+
+		expect(code).toContain('instance.removeOnBackspace = true')
+		expect(code).toContain('<Select editable={true} mode="multiple" ctrl={instance} />')
+	})
+})
+
+describe.each([
+	['стёртое текстовое поле', ''],
+	['стёртое числовое поле или снятый выбор', undefined],
+])('Solid: пустое поле — %s', (_name, value) => {
+	const progressLinear = entryOf('progress-linear')
+	const preset = { value: 40 }
+
+	it('propSnippet не пишет атрибут пропа, пресет на месте', () => {
+		const code = solid.propSnippet(progressLinear, 'max', value, preset)
+
+		expect(code).toContain('\treturn <ProgressLinear value={40} />')
+		expect(code).not.toContain('max')
+	})
+
+	it('свойство компонента: экземпляр без присваивания, пресет рядом с ctrl', () => {
+		const code = solid.instanceSnippet(
+			progressLinear,
+			control({ name: 'max', scope: 'component', preset }),
+			value,
+		)
+
+		expect(code).toContain('\tconst instance = new TProgressLinear()\n\n\treturn')
+		expect(code).not.toContain('max')
+		expect(code).toContain('\treturn <ProgressLinear value={40} ctrl={instance} />')
+	})
+
+	it('коллекционное свойство: движок без присваивания', () => {
+		const code = solid.instanceSnippet(
+			accordion,
+			control({ name: 'mode', scope: 'collection' }),
+			value,
+		)
+
+		expect(code).toContain('\tconst engine = createEngineAccordion()\n\n\treturn')
+		expect(code).not.toContain('mode')
+		expect(code).toContain('\treturn <Accordion engine={engine} />')
+	})
+
+	it('свойство плагина: ни подписки на bundle, ни импорта плагина', () => {
+		const code = solid.instanceSnippet(
+			entryOf('button'),
+			control({
+				name: 'aria_label',
+				scope: 'plugin',
+				plugin: { ctor: TAriaPlugin, name: 'label' },
+			}),
+			value,
+		)
+
+		expect(code).toBe(
+			[
+				"import { Button } from '@soldy-ui/solid'",
+				"import { TButton } from '@soldy-ui/core'",
+				'',
+				'export function Example() {',
+				'\tconst instance = new TButton()',
+				'',
+				'\treturn <Button ctrl={instance} />',
+				'}',
+			].join('\n'),
+		)
+	})
+})
+
+/**
  * Файл примера — синтаксиса хоста: «Открыть в VS Code» пишет код Vue в `.vue`,
- * код React — в `.tsx`, код Svelte — в `.svelte`, иначе редактор не прочёл бы
- * его как код.
+ * код React и Solid — в `.tsx`, код Svelte — в `.svelte`, иначе редактор не
+ * прочёл бы его как код.
  */
 describe('файл примера', () => {
 	it('расширение — синтаксиса хоста', () => {
-		expect([vue.extension, react.extension, svelte.extension]).toEqual(['vue', 'tsx', 'svelte'])
+		expect([vue.extension, react.extension, svelte.extension, solid.extension]).toEqual([
+			'vue',
+			'tsx',
+			'svelte',
+			'tsx',
+		])
 	})
 })

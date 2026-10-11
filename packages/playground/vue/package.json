@@ -17,12 +17,14 @@
     "@soldy-ui/plugins": "*",
     "@soldy-ui/react": "*",
     "@soldy-ui/setup": "*",
+    "@soldy-ui/solid": "*",
     "@soldy-ui/svelte": "*",
     "@soldy-ui/theme-oren": "*",
     "@soldy-ui/vue": "*",
     "@soldy-ui/webc": "*",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
+    "solid-js": "^1.9.17",
     "svelte": "^5.29.0",
     "vue": "^3.5.32",
     "vue-router": "^4.5.1"
@@ -33,6 +35,7 @@
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "@vitejs/plugin-react": "^5.2.0",
-    "svelte-check": "^4.7.6"
+    "svelte-check": "^4.7.6",
+    "vite-plugin-solid": "^2.11.14"
   }
 }

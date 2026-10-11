@@ -107,6 +107,7 @@ jobs:
           npx vue-tsc --noEmit -p packages/playground/vue/tsconfig.json
           npx tsc --noEmit -p packages/playground/vue/src/hosts/react/tsconfig.json
           npx svelte-check --tsconfig packages/playground/vue/src/hosts/svelte/tsconfig.json
+          npx tsc --noEmit -p packages/playground/vue/src/hosts/solid/tsconfig.json
 
       - name: Типы — React
         run: npx tsc --noEmit -p packages/ui/react/tsconfig.json
