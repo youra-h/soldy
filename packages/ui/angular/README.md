@@ -14,8 +14,9 @@ outputs (`element:ready` → `elementReady`), and slots are filled through the `
 
 The components are standalone and zoneless — state is a signal, so Zone.js is not required.
 
-> **Status:** the Angular adapter is in progress — Button is ported, the rest of the set is on its
-> way. See [the adapter table](https://github.com/youra-h/soldy#components).
+> **Status:** the Angular adapter is in progress — Button, Icon, ProgressSpinner and Skeleton are
+> ported, the rest of the set is on its way. `so-locale-provider` gives a subtree its language and
+> library strings. See [the adapter table](https://github.com/youra-h/soldy#components).
 
 ## Install
 
@@ -23,8 +24,8 @@ The components are standalone and zoneless — state is a signal, so Zone.js is 
 npm install @soldy-ui/angular @soldy-ui/theme-oren @soldy-ui/icons-material
 ```
 
-`@angular/core` and `@angular/common` `^22.1` are peer dependencies. A theme and an icon pack are
-separate packages — pick the ones you want.
+`@angular/core`, `@angular/common` and `@angular/platform-browser` `^22.1` are peer dependencies. A
+theme and an icon pack are separate packages — pick the ones you want.
 
 ## Usage
 
@@ -61,6 +62,22 @@ same state and events:
 
 ```ts
 template: `<button so-button [ctrl]="btn" (actionPress)="btn.disabled = true"></button>`
+```
+
+An icon from the registered pack is an `<svg>` with the icon's role — import `RoleIconDirective`
+next to `TIconComponent`. Your own drawing is registered as a role too (`setIcons`): the icon renders
+nothing written inside it.
+
+```ts
+template: `<svg so-icon so-role-icon="close" aria_label="Close"></svg>`
+```
+
+The language and the strings the library renders itself come from the nearest
+`LocaleProviderDirective` above — it can sit on an `ng-container`, and changing `locale` updates
+the components without re-creating them:
+
+```ts
+template: `<ng-container so-locale-provider [locale]="locale()"><router-outlet /></ng-container>`
 ```
 
 The application plugs in a theme and an icon pack once, in its entry point:

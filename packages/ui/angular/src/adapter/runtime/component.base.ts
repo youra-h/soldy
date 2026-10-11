@@ -3,21 +3,24 @@
  *
  * Выносит общий жизненный цикл, чтобы убрать дублирование между компонентами:
  *
- * - constructor: связывает корень компонента с TElementPlugin по стратегии
- *   (`TRootStrategy`), у корня-хоста ещё снимает с элемента атрибуты-входы
+ * - constructor: связывает корень компонента с TElementPlugin по описанию
+ *   корня (`TRootSpec`), у корня-хоста ещё снимает с элемента атрибуты-входы
  * - state: сигнал состояния Core (шаблон подписывается сам, без ChangeDetectorRef)
  * - ngOnInit: создаёт binding (createBinding) из заданных inputs — у корня-хоста
- *   вместе с его тегом — и ставит приёмник событий ядра для выходов (syncEvents)
+ *   вместе с его тегом — в контексте инъекции компонента и ставит приёмник
+ *   событий ядра для выходов (syncEvents)
  * - ngOnChanges: пробрасывает изменённые inputs в Core (syncInputs)
  * - ngOnDestroy: очищает подписки и adapter.destroy()
  *
  * Подкласс обязан реализовать:
  * - createBinding(ctrl, inputs): создаёт TBinding через setup-функцию
- * - super(inputNames, rootStrategy?) в конструкторе: имена входов и стратегия
- *   корня — `'host'`, когда корень — сам элемент потребителя (Button,
- *   ComponentView), или `'view'` (по умолчанию), когда корень живёт в шаблоне.
+ * - super(inputNames, root?) в конструкторе: имена входов и описание корня —
+ *   `{ strategy: 'host' }`, когда корень — сам элемент потребителя (Button,
+ *   ComponentView, Icon), или `{ strategy: 'view' }` (по умолчанию), когда
+ *   корень живёт в шаблоне. У корня-хоста там же — имя стиль-выхода
+ *   компонента и прячет ли корень его видимость (см. `TRootSpec`).
  *
- * Стратегия передаётся через конструктор (а не getter), т.к. она нужна уже в
+ * Описание передаётся через конструктор (а не getter), т.к. оно нужно уже в
  * конструкторе, а TS запрещает обращение к абстрактному свойству в
  * конструкторе; имена входов — тем же вызовом.
  *
@@ -42,7 +45,8 @@
  *   потребителя ставятся и снимаются сами, а шаблон потребителя главнее
  *   привязок хоста, поэтому инлайновый `display` потребителя главнее скрытия —
  *   во Vue и React наоборот. Перекрыть его можно только записью в обход стилей
- *   Angular, а такая запись спорила бы с его привязками;
+ *   Angular, а такая запись спорила бы с его привязками. Корень, который
+ *   видимость не прячет (`hides: false` — Skeleton), привязка не трогает;
  * - классы ядра и наборы `aria`, `attrs`, `dataset` — эффекты базы, и
  *   атрибуты и классы потребителя главнее них (`root-attributes.ts`). Классы —
  *   не привязка хоста `[class]`: статику шаблона потребителя Angular сверяет
@@ -51,9 +55,21 @@
  *   `[style.*]`. С ней статический `style="display: …"` потребителя проигрывал
  *   бы скрытию, а у видимого корня снимался бы вовсе. `class`, `[class.x]` и
  *   `[ngClass]` потребителя ставят и снимают только свои имена;
+ * - стиль — тоже эффект базы, по свойствам: снизу выход плагина раскладки
+ *   (`layout_styles`), поверх него стиль-выход компонента (`fractionStyle` у
+ *   ProgressSpinner), а свойство с чужим значением — потребителя или плагина,
+ *   записавшего его в узел сам, — база не трогает (`root-attributes.ts`). Не
+ *   привязка хоста `[style]` — по той же причине, что классы: она стала бы
+ *   первой привязкой стилей директивы. `[style.display]` скрытия остаётся
+ *   привязкой;
  * - `rendered=false` прячет корень, как `visible=false`: убрать элемент
  *   потребителя компонент не может. Содержимое остаётся, `TElementPlugin`
  *   связан с хостом всё время.
+ *
+ * Сборка (`createBinding`) идёт в контексте инъекции компонента
+ * (`runInInjectionContext`): обёртка сборки
+ * (`createAngularAdapterContext`) берёт из него локаль ближайшего
+ * `LocaleProviderDirective`. Сам `ngOnInit` в контексте не выполняется.
  *
  * Эмиттеров заранее база не заводит. Выход — геттер, который кодогенератор
  * пишет в `T<Имя>Surface`, по одному на класс; первое чтение выхода — привязка
@@ -94,28 +110,53 @@ import type { TInstanceState, TStateSnapshot } from '@soldy-ui/setup'
 import {
 	applyAttributes,
 	applyClasses,
+	applyStyles,
 	attributesOf,
 	classesOf,
+	stylesOf,
 	type TAppliedAttributes,
 	type TAppliedClasses,
+	type TAppliedStyles,
 } from './root-attributes'
 import { SlotDirective } from './slot.directive'
 import type { TBinding } from './useAdapter'
 
 /**
- * Где корень компонента — элемент, который описывает ядро (тег, классы,
- * наборы) и который связан с TElementPlugin.
+ * Описание корня компонента — элемента, который описывает ядро (тег, классы,
+ * наборы, стиль) и который связан с TElementPlugin. Второй параметр
+ * конструктора базы.
+ *
+ * `strategy` — где корень:
  *
  * - `'host'` — корень — сам хост: элемент, на котором потребитель написал
  *   селектор (`<button so-button>`). Живёт всё время жизни компонента, поэтому
- *   привязка разовая, через инжектированный `ElementRef`.
+ *   привязка разовая, через инжектированный `ElementRef`;
  * - `'view'` — корень в шаблоне компонента, помечен `#root` и может
  *   пересоздаваться: сигнальный `viewChild('root')` переустанавливает связь
  *   при каждом пересоздании узла. Так устроен компонент, чей корень не может
  *   быть элементом потребителя, — например портал, у которого корень уезжает в
  *   слой. Шаблон без `#root` — компонент без корня (`so-component`).
+ *
+ * Корню-хосту база раскладывает ещё стиль и скрытие, и у него две настройки:
+ *
+ * - `style` — имя стиль-выхода компонента в состоянии: стиль, который считает
+ *   ядро (`fractionStyle` у ProgressSpinner). Имя у каждого компонента своё,
+ *   поэтому его называет компонент, как наборы ядра во Vue называет разметка.
+ *   Нет — своего стиля у компонента нет, и на корне только выход плагина
+ *   раскладки;
+ * - `hides` — прячут ли `visible` и `rendered` корень, по умолчанию да. У
+ *   Skeleton нет: они убирают только заглушку, а содержимое в корне остаётся
+ *   на виду.
  */
-export type TRootStrategy = 'view' | 'host'
+export type TRootSpec =
+	| { readonly strategy: 'view' }
+	| { readonly strategy: 'host'; readonly style?: string; readonly hides?: boolean }
+
+/** Где корень компонента — см. `TRootSpec`. */
+export type TRootStrategy = TRootSpec['strategy']
+
+/** Корня-хоста нет: корень в шаблоне или его нет вовсе. */
+const VIEW_ROOT: TRootSpec = { strategy: 'view' }
 
 /** Наборы ядра, которые база раскладывает на корень-хост. */
 const ROOT_SETS = ['aria', 'attrs', 'dataset'] as const
@@ -145,15 +186,19 @@ export abstract class TComponentBase<TInstance extends IEntity>
 	 */
 	private readonly _host: Element | null
 
+	/** Прячет ли видимость корень-хост (`TRootSpec.hides`); у корня в шаблоне — нет. */
+	private readonly _hides: boolean
+
 	private readonly _binding = signal<TBinding<TInstance> | undefined>(undefined)
 	private _eventsCleanup?: () => void
 
 	/**
-	 * Инжектор компонента: в его контексте `createOutput` заводит эмиттер.
-	 * Эмиттер берёт из контекста `DestroyRef` компонента, и `outputToObservable`
-	 * по выходу завершается вместе с компонентом, как у эмиттера, заведённого
-	 * в конструкторе. Первое чтение выхода идёт уже вне контекста — из шаблона
-	 * потребителя или кода.
+	 * Инжектор компонента. В его контексте `createOutput` заводит эмиттер, а
+	 * `ngOnInit` собирает компонент. Эмиттер берёт из контекста `DestroyRef`
+	 * компонента, и `outputToObservable` по выходу завершается вместе с
+	 * компонентом, как у эмиттера, заведённого в конструкторе; сборка — локаль
+	 * ближайшего провайдера. Первое чтение выхода идёт уже вне контекста — из
+	 * шаблона потребителя или кода, — и `ngOnInit` тоже.
 	 */
 	private readonly _injector = inject(Injector)
 
@@ -162,7 +207,8 @@ export abstract class TComponentBase<TInstance extends IEntity>
 
 	/**
 	 * Скрытие корня-хоста — привязка `[style.display]` декоратора: прячут и
-	 * `visible`, и `rendered`. У корня в шаблоне хосту не достаётся ничего.
+	 * `visible`, и `rendered`. У корня в шаблоне и у корня, который видимость
+	 * не прячет (`hides: false`), хосту не достаётся ничего.
 	 *
 	 * Инстанса компонента база не знает (у `so-component` нет ни классов, ни
 	 * наборов), поэтому состояние читает по именам — как запись
@@ -171,7 +217,7 @@ export abstract class TComponentBase<TInstance extends IEntity>
 	protected readonly _rootDisplay = computed(() => {
 		const state: TStateSnapshot = this.state()
 
-		return this._host && (state['rendered'] === false || state['visible'] === false)
+		return this._hides && (state['rendered'] === false || state['visible'] === false)
 			? 'none'
 			: null
 	})
@@ -208,16 +254,22 @@ export abstract class TComponentBase<TInstance extends IEntity>
 		return this._slots().find((slot) => slot.name === name)?.template ?? null
 	}
 
-	constructor(inputNames: readonly string[], rootStrategy: TRootStrategy = 'view') {
+	constructor(inputNames: readonly string[], root: TRootSpec = VIEW_ROOT) {
 		this._inputNames = inputNames
 
-		// `ElementRef<Element>`, а не `any` по умолчанию: узел `TElementPlugin` —
-		// `Element`, и без явного параметра несовпадение типов здесь не видно.
-		this._host =
-			rootStrategy === 'host' ? inject<ElementRef<Element>>(ElementRef).nativeElement : null
+		if (root.strategy === 'host') {
+			// `ElementRef<Element>`, а не `any` по умолчанию: узел `TElementPlugin` —
+			// `Element`, и без явного параметра несовпадение типов здесь не видно.
+			const host = inject<ElementRef<Element>>(ElementRef).nativeElement
 
-		if (this._host) this._bindHost(this._host)
-		else this._bindView()
+			this._host = host
+			this._hides = root.hides ?? true
+			this._bindHost(host, root.style)
+		} else {
+			this._host = null
+			this._hides = false
+			this._bindView()
+		}
 	}
 
 	ngOnInit(): void {
@@ -228,7 +280,11 @@ export abstract class TComponentBase<TInstance extends IEntity>
 		// Тег корня-хоста — у самого элемента: входа `tag` нет (`useInputs`)
 		if (this._host) inputs['tag'] = this._host.localName
 
-		const binding = this.createBinding(this.ctrl, inputs)
+		// Сборка — в контексте инъекции компонента: локаль поддерева обёртка
+		// сборки берёт у ближайшего провайдера (`createAngularAdapterContext`)
+		const binding = runInInjectionContext(this._injector, () =>
+			this.createBinding(this.ctrl, inputs),
+		)
 
 		this._eventsCleanup = binding.syncEvents((name) => this._createdOutput(name))
 
@@ -285,18 +341,20 @@ export abstract class TComponentBase<TInstance extends IEntity>
 
 	/**
 	 * Корень — сам хост (`'host'`). Элемент потребителя живёт всё время жизни
-	 * компонента: привязка к TElementPlugin разовая, а классы и наборы ядра база
-	 * раскладывает на него сама — шаблона на хост нет. Зовётся из конструктора:
-	 * эффектам нужен injection context.
+	 * компонента: привязка к TElementPlugin разовая, а классы, наборы и стиль
+	 * ядра база раскладывает на него сама — шаблона на хост нет. Зовётся из
+	 * конструктора: эффектам нужен injection context.
+	 *
+	 * `styleName` — имя стиль-выхода компонента в состоянии (`TRootSpec.style`).
 	 */
-	private _bindHost(host: Element): void {
+	private _bindHost(host: Element, styleName: string | undefined): void {
 		// Атрибут с именем входа — запись входа, а не атрибут корня (см. шапку)
 		for (const name of ['ctrl', ...this._inputNames]) host.removeAttribute(name)
 
 		effect(() => this._binding()?.bindElement(host))
 
-		// Эффект на классы и на каждый набор: перекладывается только сменившееся,
-		// и память «что поставила база» у каждого своя
+		// Эффект на классы, на каждый набор и на стиль: перекладывается только
+		// сменившееся, и память «что поставила база» у каждого своя
 		const classes = computed(() => {
 			const state: TStateSnapshot = this.state()
 
@@ -322,6 +380,26 @@ export abstract class TComponentBase<TInstance extends IEntity>
 				applied = applyAttributes(host, set(), applied)
 			})
 		}
+
+		// Слои стиля — значения состояния как есть: связка заменяет их только
+		// на смену содержимого, и эффект не будит смена чужих свойств
+		const layout = computed(() => {
+			const state: TStateSnapshot = this.state()
+
+			return state['layout_styles']
+		})
+		const own = computed(() => {
+			const state: TStateSnapshot = this.state()
+
+			return styleName === undefined ? undefined : state[styleName]
+		})
+
+		let appliedStyles: TAppliedStyles = new Map()
+
+		// Снизу выход плагина раскладки, поверх — стиль-выход компонента
+		effect(() => {
+			appliedStyles = applyStyles(host, stylesOf(layout(), own()), appliedStyles)
+		})
 	}
 
 	/**

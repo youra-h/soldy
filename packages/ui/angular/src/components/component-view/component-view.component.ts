@@ -27,7 +27,7 @@ import { setupComponentView } from './setup.component'
 })
 export class TComponentViewComponent extends TComponentViewSurface<IComponentView> {
 	constructor() {
-		super(ComponentViewInputNames, 'host')
+		super(ComponentViewInputNames, { strategy: 'host' })
 	}
 
 	protected createBinding(

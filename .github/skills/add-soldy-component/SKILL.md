@@ -192,16 +192,20 @@ export {
 } from '../../generated/<name>.metadata'
 ```
 
-- `setup.component.ts`:
+- `setup.component.ts` — сборка через обёртку адаптера
+  `createAngularAdapterContext`, а не `createAdapterContext` из `@soldy-ui/setup`:
+  обёртка берёт локаль поддерева из DI. Зовёт её база компонента в своём
+  контексте инъекции (`runInInjectionContext` в `ngOnInit`), поэтому `inject` в
+  компоненте не нужен и запрещён:
 
 ```ts
-import { createAdapterContext, <Name>Descriptor } from '@soldy-ui/setup'
+import { <Name>Descriptor } from '@soldy-ui/setup'
 import type { I<Name> } from '@soldy-ui/core'
-import { useAdapter } from '../../adapter'
+import { createAngularAdapterContext, useAdapter } from '../../adapter'
 import type { TBinding } from '../../adapter'
 
 export function setup<Name>(ctrl: I<Name> | undefined, props: object): TBinding<I<Name>> {
-  const adapter = createAdapterContext(<Name>Descriptor(), { ctrl, props })
+  const adapter = createAngularAdapterContext(<Name>Descriptor(), { ctrl, props })
 
   return useAdapter(adapter)
 }
@@ -210,8 +214,11 @@ export function setup<Name>(ctrl: I<Name> | undefined, props: object): TBinding<
 - `<name>.component.ts` — оболочка. Наследует сгенерированный `T<Name>Surface`
   (он — `TComponentBase`, `packages/ui/angular/src/adapter/runtime/component.base.ts`),
   состояние читается как `state()` (сигнал). Корень ведёт база: компонент
-  зовёт только `super(<Name>InputNames, 'host')` и реализует
-  `createBinding`. Эмиттеры выходов компонент не заводит: геттер выхода в
+  зовёт только `super(<Name>InputNames, { strategy: 'host' })` — описание
+  корня (`TRootSpec`) — и реализует `createBinding`. Своему стилю, который
+  считает ядро, компонент называет имя выхода (`style: 'fractionStyle'` у
+  ProgressSpinner), а корень, который видимость не прячет, — `hides: false`
+  (Skeleton). Эмиттеры выходов компонент не заводит: геттер выхода в
   `T<Name>Surface` заводит эмиттер при первом чтении. Своих `inputs` и
   `outputs` в `@Component` нет: их объявляет `T<Name>Surface`, и вход,
   объявленный здесь ещё раз, строгий шаблон потребителя пропускал бы без
@@ -235,7 +242,7 @@ import { setup<Name> } from './setup.component'
 })
 export class T<Name>Component extends T<Name>Surface<I<Name>> {
   constructor() {
-    super(<Name>InputNames, 'host')
+    super(<Name>InputNames, { strategy: 'host' })
   }
 
   protected createBinding(ctrl: I<Name> | undefined, inputs: object): TBinding<I<Name>> {
@@ -244,10 +251,11 @@ export class T<Name>Component extends T<Name>Surface<I<Name>> {
 }
 ```
 
-Хуков жизненного цикла, `signal`, `computed`, `effect`, `@HostBinding` и
-`host:` в компоненте нет: они живут в адаптерном слое (AGENTS.md, «Механизмы
-фреймворка — только в адаптерном слое»). Хуки, `signal`, `computed` и
-`effect` в `components/**` ловит
+Хуков жизненного цикла, `signal`, `computed`, `effect`, `inject`,
+`@HostBinding` и `host:` в компоненте нет: они живут в адаптерном слое
+(AGENTS.md, «Механизмы фреймворка — только в адаптерном слое»). Хуки,
+`signal`, `computed`, `effect`, `inject` и сборку мимо
+`createAngularAdapterContext` в `components/**` ловит
 `packages/setup/__tests__/framework-mechanisms-components.spec.ts`.
 
 Правила разметки:
@@ -259,10 +267,11 @@ export class T<Name>Component extends T<Name>Surface<I<Name>> {
   `div`. Элементный селектор (`so-<name>`) — только у компонента без такого
   корня: у поля атрибуты потребителя делятся между корнем и вложенным
   `<input>`, у портала корень уезжает в слой, у `so-component` корня нет;
-- шаблон — только содержимое корня: ни корня, ни `@if`, ни `#root` в нём нет.
-  Тег (входа `tag` нет — база берёт `localName` элемента), классы, скрытие и
-  наборы ядра на элемент раскладывает база со стратегией `'host'`; атрибуты
-  и классы потребителя главнее её наборов (`packages/ui/angular/AGENTS.md`);
+- шаблон — только содержимое корня: ни корня, ни `@if` вокруг него, ни
+  `#root` в нём нет. Тег (входа `tag` нет — база берёт `localName` элемента),
+  классы, скрытие, наборы и стиль ядра на элемент раскладывает база со
+  стратегией `'host'`; атрибуты, классы и стиль потребителя главнее её
+  (`packages/ui/angular/AGENTS.md`);
 - корень в шаблоне (стратегия `'view'`, по умолчанию) — только там, где корень
   не может быть элементом потребителя. Он помечается `#root`, и при
   пересоздании узла связь переустанавливает база (сигнальный запрос

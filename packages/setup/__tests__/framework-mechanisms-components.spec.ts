@@ -15,14 +15,17 @@ import { join, resolve, relative } from 'node:path'
  * `driver-access.spec.ts`) — переименованный импорт под тем же alias всё
  * равно распознаётся по оригинальному имени в списке специфаеров импорта.
  *
- * У Svelte и Solid тот же сторож держит и сборку: контекст компонента
- * собирает обёртка адаптера — `createSvelteAdapterContext` и
- * `createSolidAdapterContext` (id монтирования и локаль поддерева), а не
+ * У Svelte, Solid и Angular тот же сторож держит и сборку: контекст
+ * компонента собирает обёртка адаптера — `createSvelteAdapterContext`,
+ * `createSolidAdapterContext` (id монтирования и локаль поддерева) и
+ * `createAngularAdapterContext` (локаль поддерева), а не
  * `createAdapterContext` напрямую — как eslint-блок у Vue. `$props.id()`
  * механизмом здесь не считается: это id монтирования, который компилятор
  * пускает только в компонент (AGENTS.md, там же). У Solid id монтирования
  * (`createUniqueId`) берёт сама обёртка, а слот разворачивает помощник
- * адаптера поверх `children`, — в компонентах их нет.
+ * адаптера поверх `children`, — в компонентах их нет. У Angular локаль
+ * обёртка берёт из DI (`inject`) в контексте инъекции, который даёт сборке
+ * база компонента, — `inject` в компонентах нет.
  */
 
 const ROOT = resolve(__dirname, '../../..')
@@ -82,7 +85,7 @@ const SOLID_FORBIDDEN = [
 const SVELTE_IMPORT_FORBIDDEN = ['onMount', 'onDestroy', 'getContext', 'setContext']
 const SVELTE_RUNE_RE = /\$state\(|\$derived\b|\$effect\(/g
 
-const ANGULAR_CALL_FORBIDDEN = ['signal', 'computed', 'effect']
+const ANGULAR_CALL_FORBIDDEN = ['signal', 'computed', 'effect', 'inject']
 const ANGULAR_HOOK_RE =
 	/\bng(OnChanges|OnInit|DoCheck|AfterContentInit|AfterContentChecked|AfterViewInit|AfterViewChecked|OnDestroy)\b/g
 
@@ -135,6 +138,12 @@ const GUARDS: TGuard[] = [
 			const found = ANGULAR_CALL_FORBIDDEN.filter((name) => names.has(name))
 
 			if (ANGULAR_HOOK_RE.test(source)) found.push('ngOn*/ngAfter*/ngDoCheck хуки')
+
+			// Сборка мимо `createAngularAdapterContext` теряет локаль поддерева — как
+			// мимо `createVueAdapterContext` у Vue
+			if (importedNames(source, /^@soldy-ui\/setup$/).has('createAdapterContext')) {
+				found.push('createAdapterContext (сборка — createAngularAdapterContext)')
+			}
 
 			return found
 		},
