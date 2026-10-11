@@ -32,7 +32,9 @@ import { buildCss } from './build-css'
  * таблицы браузер проверяет обходом всего тела на каждом пересчёте стиля
  * корня, и совпадение в шапке обход не сокращает. Поэтому у корня `:has()`
  * нет вовсе: то, что тема узнала бы условием по заголовкам, ядро отдаёт
- * признаком корня (`data-sized`).
+ * признаком корня — ширины (`data-sized`), а курсор жеста — признаками,
+ * которые есть только в жесте: тянут ручку (`data-resizing`), несут колонку
+ * (`data-dragging`).
  *
  * Читается собранный CSS: вложенность раскрыта, `@apply` развёрнут, кавычки и
  * пробелы вокруг `>` сборка снимает.
@@ -291,33 +293,19 @@ describe('перестановка колонок Table: правила тела
 	})
 })
 
-/**
- * Условия `:has()` у корня, которые ещё стоят: курсор жеста на всей таблице,
- * пока тянут ручку ширины и пока несут колонку. Временно, до
- * https://app.clickup.com/t/869ffetk2.
- */
-const ROOT_HAS_PENDING = [
-	'.s-table:has(>.s-table__head>.s-table__head-row>.s-table-column[data-resizing=true])',
-	'.s-table:has(>.s-table__head>.s-table__head-row>.s-table-column[data-dragging=true])',
-]
-
 describe('Table: у корня нет :has()', () => {
-	/** Селекторы, в которых условие `:has()` привязано к корню таблицы. */
-	const anchored = rules
-		.filter(({ selector }) => hasesOf(selector).some(({ anchor }) => isRoot(anchor)))
-		.map(({ selector }) => selector)
-
 	/**
 	 * Условие на детей корня браузер проверяет обходом на глубину три — по всем
 	 * строкам и ячейкам тела — на каждом пересчёте стиля корня, и совпадение в
 	 * шапке обход не сокращает. Окно (`.s-table__viewport:has(> .s-table…)`) —
-	 * не корень: под ним одна таблица.
+	 * не корень: под ним одна таблица. Курсор жеста — тоже признак корня
+	 * (`data-resizing`, `data-dragging`), а не условие по заголовкам.
 	 */
 	it('условие на детей — не у корня таблицы', () => {
-		expect(anchored.filter((selector) => !ROOT_HAS_PENDING.includes(selector))).toEqual([])
-	})
+		const anchored = rules
+			.filter(({ selector }) => hasesOf(selector).some(({ anchor }) => isRoot(anchor)))
+			.map(({ selector }) => selector)
 
-	it('временные исключения ещё стоят: снятое правило уходит и из списка', () => {
-		expect(anchored).toEqual(expect.arrayContaining(ROOT_HAS_PENDING))
+		expect(anchored).toEqual([])
 	})
 })

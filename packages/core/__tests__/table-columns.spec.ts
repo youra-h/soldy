@@ -25,6 +25,7 @@ import type {
 	TTableColumnSource,
 	TTableColumnsEvents,
 	TTableReorderPreview,
+	TTableResizePreview,
 } from '@soldy-ui/core'
 import { columnsOf } from '../src/components/custom/table/collection/extensions/guards'
 
@@ -974,6 +975,74 @@ describe('ручка ширины', () => {
 			expect(column.dataset.get('resizing')).toBe('false')
 		})
 
+		it('resizing и change:resizing — с нажатия, а не с первого сдвига; до отпускания и до Escape', () => {
+			const { column } = resizable({ width: 150 })
+			// Значение события и геттер в эту минуту — подписчик видит уже новое
+			const seen: Array<[boolean, boolean]> = []
+
+			column.events.on('change:resizing', (value) => seen.push([value, column.resizing]))
+
+			expect(column.resizing).toBe(false)
+
+			column.grab()
+
+			expect(column.resizing).toBe(true)
+			expect(seen).toEqual([[true, true]])
+
+			// Протяжка жест не начинает заново
+			column.drag(20)
+			column.drag(30)
+			column.release()
+
+			expect(column.resizing).toBe(false)
+			expect(seen).toEqual([
+				[true, true],
+				[false, false],
+			])
+
+			column.grab()
+			column.cancel()
+
+			expect(column.resizing).toBe(false)
+			expect(seen).toEqual([
+				[true, true],
+				[false, false],
+				[true, true],
+				[false, false],
+			])
+		})
+
+		it('change:resizing — только на смену: вне жеста release и cancel молчат', () => {
+			const { column } = resizable({ width: 150 })
+			const resizing = vi.fn<(value: boolean) => void>()
+
+			column.events.on('change:resizing', resizing)
+
+			column.release()
+			column.cancel()
+
+			expect(resizing).not.toHaveBeenCalled()
+
+			// Без ручки жеста нет — и события тоже
+			column.disabled = true
+
+			expect(column.grab()).toBe(false)
+			expect(column.resizing).toBe(false)
+			expect(resizing).not.toHaveBeenCalled()
+		})
+
+		it('новое нажатие закрывает незаконченный жест — change:resizing на конец и на начало', () => {
+			const { column } = resizable({ width: 150 })
+			const resizing = vi.fn<(value: boolean) => void>()
+
+			column.grab()
+			column.events.on('change:resizing', resizing)
+			column.grab()
+
+			expect(column.resizing).toBe(true)
+			expect(resizing.mock.calls).toEqual([[false], [true]])
+		})
+
 		it('без ручки жеста нет: не resizable или выключена', () => {
 			const fixed = new TTableColumn({ width: 150 })
 			const { column } = resizable({ width: 150, disabled: true })
@@ -1188,6 +1257,26 @@ describe('ручка ширины', () => {
 
 			expect(column.dataset.has('resize-ghost')).toBe(false)
 		})
+
+		it('resizing — с нажатия, и без движения; change:resizing — на нажатие и на конец', () => {
+			const { column } = deferred()
+			const resizing = vi.fn<(value: boolean) => void>()
+
+			column.events.on('change:resizing', resizing)
+			column.grab()
+
+			expect(column.resizing).toBe(true)
+
+			column.release()
+
+			expect(column.resizing).toBe(false)
+
+			column.grab()
+			column.drag(40)
+			column.cancel()
+
+			expect(resizing.mock.calls).toEqual([[true], [false], [true], [false]])
+		})
 	})
 
 	describe('клавиши', () => {
@@ -1310,6 +1399,153 @@ describe('ручка ширины', () => {
 			expect(content.mock.calls).toEqual([[{ id: 'x' }]])
 		})
 	})
+
+	/**
+	 * Признак протяжки — `data-resizing` на корне таблицы, пока тянут ручку хоть
+	 * у одной показанной колонки: по нему тема держит курсор ручки и снимает
+	 * выделение на всей таблице, а не условием по заголовкам у корня. Ставит
+	 * его расширение колонок по `change:resizing` колонки — с нажатия, а не с
+	 * первого сдвига, — и только на время жеста: на покое имени нет вовсе, а не
+	 * `"false"`, как у метки заголовка.
+	 */
+	describe('признак протяжки у таблицы', () => {
+		const NAME_RESIZE: TTableColumnSource = { ...NAME, resizable: true, width: 150 }
+		const AGE_RESIZE: TTableColumnSource = { ...AGE, resizable: true, width: 100 }
+
+		/** Таблица с движком строк и колонками с ручкой. */
+		function tableWith(resizePreview: TTableResizePreview = 'live') {
+			const owner = new TTable({ resizePreview })
+			const engine = createEngineTable({ owner })
+			const { columns } = engine.extensions
+
+			columns.columns = [NAME_RESIZE, AGE_RESIZE]
+
+			return {
+				owner,
+				engine,
+				name: columnOf(columns, 'name'),
+				age: columnOf(columns, 'age'),
+			}
+		}
+
+		const flag = (owner: ITable) => owner.dataset.get('resizing')
+
+		it('с нажатия до отпускания; на покое признака нет вовсе, у заголовка — своя метка', () => {
+			const { owner, name } = tableWith()
+
+			expect(owner.dataset.has('resizing')).toBe(false)
+
+			name.grab()
+
+			expect(flag(owner)).toBe('true')
+
+			name.drag(20)
+			name.drag(30)
+
+			expect(flag(owner)).toBe('true')
+
+			name.release()
+
+			expect(owner.dataset.has('resizing')).toBe(false)
+			expect(name.dataset.get('resizing')).toBe('false')
+		})
+
+		it('deferred: с нажатия, и без движения', () => {
+			const { owner, name } = tableWith('deferred')
+
+			name.grab()
+
+			expect(flag(owner)).toBe('true')
+
+			name.release()
+
+			expect(owner.dataset.has('resizing')).toBe(false)
+		})
+
+		it('Escape (cancel) снимает признак', () => {
+			const { owner, name } = tableWith()
+
+			name.grab()
+			name.drag(20)
+			name.cancel()
+
+			expect(owner.dataset.has('resizing')).toBe(false)
+		})
+
+		it('признак — на нажатие и отпускание, а не на каждый шаг протяжки', () => {
+			const { owner, name } = tableWith()
+			const changes: boolean[] = []
+
+			owner.events.on('change:dataset', () => changes.push(owner.dataset.has('resizing')))
+			name.grab()
+			name.drag(20)
+			name.drag(30)
+			name.release()
+
+			expect(changes).toEqual([true, false])
+		})
+
+		it('колонку скрыли посреди жеста — признак снят', () => {
+			const { owner, name } = tableWith()
+
+			name.grab()
+			name.hide()
+
+			expect(owner.dataset.has('resizing')).toBe(false)
+
+			// Показали снова, а жест у неё ещё идёт
+			name.show()
+
+			expect(flag(owner)).toBe('true')
+
+			name.release()
+
+			expect(owner.dataset.has('resizing')).toBe(false)
+		})
+
+		it('две колонки — признак, пока тянут хоть одну', () => {
+			const { owner, name, age } = tableWith()
+
+			name.grab()
+			age.grab()
+			name.release()
+
+			expect(flag(owner)).toBe('true')
+
+			age.release()
+
+			expect(owner.dataset.has('resizing')).toBe(false)
+		})
+
+		it('таблица ушла посреди жеста — признак уходит с неё; пришедшей — сразу', () => {
+			const { owner, engine, name } = tableWith()
+			const next = new TTable()
+
+			name.grab()
+			engine.options.set({ owner: next })
+
+			expect(owner.dataset.has('resizing')).toBe(false)
+			expect(flag(next)).toBe('true')
+
+			engine.options.set({ owner: undefined })
+
+			expect(next.dataset.has('resizing')).toBe(false)
+
+			name.release()
+
+			expect(owner.dataset.has('resizing')).toBe(false)
+			expect(next.dataset.has('resizing')).toBe(false)
+		})
+
+		it('колонку без ручки не взять — признака нет', () => {
+			const { owner, age } = tableWith()
+
+			age.resizable = false
+
+			expect(age.grab()).toBe(false)
+			expect(owner.dataset.has('resizing')).toBe(false)
+		})
+	})
 })
 
 describe('заголовок строки', () => {
@@ -1401,6 +1637,17 @@ describe('перестановка колонок', () => {
 		columns.events.on('column:move', move)
 
 		return { columns, move }
+	}
+
+	/** Таблица с движком строк и колонками, которые можно переставлять. */
+	function tableWith(reorderPreview: TTableReorderPreview) {
+		const owner = new TTable({ reorderPreview })
+		const engine = createEngineTable({ owner })
+		const { columns } = engine.extensions
+
+		columns.columns = MOVABLE
+
+		return { owner, engine, columns }
 	}
 
 	describe('reorderable', () => {
@@ -1879,18 +2126,26 @@ describe('перестановка колонок', () => {
 	 * `head` его нет вовсе.
 	 */
 	describe('признак тела', () => {
-		/** Таблица с движком строк и колонками, которые можно переставлять. */
-		function tableWith(reorderPreview: TTableReorderPreview) {
-			const owner = new TTable({ reorderPreview })
-			const engine = createEngineTable({ owner })
-			const { columns } = engine.extensions
-
-			columns.columns = MOVABLE
-
-			return { owner, engine, columns }
-		}
-
 		const flag = (owner: ITable) => owner.dataset.get('reorder-preview')
+
+		/**
+		 * Смены признака тела — по порядку, с этой минуты. Набор таблицы в жесте
+		 * меняет и курсор жеста (`data-dragging`), поэтому считаются смены самого
+		 * признака, а не набора.
+		 */
+		function watchFlag(owner: ITable): Array<string | undefined> {
+			const changes: Array<string | undefined> = []
+			let last = flag(owner)
+
+			owner.events.on('change:dataset', () => {
+				const now = flag(owner)
+
+				if (now !== last) changes.push(now)
+				last = now
+			})
+
+			return changes
+		}
 
 		it('column: от взятия до конца приземления; на покое признака нет', () => {
 			const { owner, columns } = tableWith('column')
@@ -1915,9 +2170,7 @@ describe('перестановка колонок', () => {
 
 		it('head: признака нет и в жесте', () => {
 			const { owner, columns } = tableWith('head')
-			const dataset = vi.fn()
-
-			owner.events.on('change:dataset', dataset)
+			const changes = watchFlag(owner)
 
 			columns.dragStart(columns.columns[0])
 			columns.dragOver(2)
@@ -1928,7 +2181,7 @@ describe('перестановка колонок', () => {
 			columns.dragEnd()
 
 			expect(owner.dataset.has('reorder-preview')).toBe(false)
-			expect(dataset).not.toHaveBeenCalled()
+			expect(changes).toEqual([])
 		})
 
 		it('dragCancel снимает признак; колонку, которую не взять, — признака нет', () => {
@@ -1964,10 +2217,11 @@ describe('перестановка колонок', () => {
 		it('новый жест закрывает незаконченный — признак его, один, до конца нового', () => {
 			const { owner, columns } = tableWith('column')
 			const [name, age] = columns.columns
-			const dataset = vi.fn()
 
 			columns.dragStart(name)
-			owner.events.on('change:dataset', dataset)
+
+			const changes = watchFlag(owner)
+
 			columns.dragStart(age)
 
 			expect(flag(owner)).toBe('column')
@@ -1976,7 +2230,7 @@ describe('перестановка колонок', () => {
 
 			expect(owner.dataset.has('reorder-preview')).toBe(false)
 			// Сняли с прежнего жеста, поставили новому, сняли с него
-			expect(dataset).toHaveBeenCalledTimes(3)
+			expect(changes).toEqual([undefined, 'column', undefined])
 		})
 
 		it('состав показанных сменился посреди жеста — жест прерван, признак снят', () => {
@@ -2050,6 +2304,121 @@ describe('перестановка колонок', () => {
 			columns.dragStart(name)
 
 			expect(flag(owner)).toBe('column')
+		})
+	})
+
+	/**
+	 * Курсор жеста — `data-dragging` на корне таблицы при любом `reorderPreview`:
+	 * по нему тема держит курсор «тащу» и снимает выделение на всей таблице, а
+	 * не условием по шапке у корня. Живёт он столько же, сколько метка взятой
+	 * колонки, — от `dragStart` до `dragEnd` или `dragCancel`, с приземлением,
+	 * — а на покое имени нет вовсе: фильтр предков видит имя, а не значение.
+	 */
+	describe('курсор жеста у таблицы', () => {
+		const cursor = (owner: ITable) => owner.dataset.get('dragging')
+
+		it.each<TTableReorderPreview>(['none', 'head', 'column'])(
+			'%s: от взятия до конца приземления; на покое признака нет вовсе',
+			(reorderPreview) => {
+				const { owner, columns } = tableWith(reorderPreview)
+				const [name] = columns.columns
+
+				expect(owner.dataset.has('dragging')).toBe(false)
+
+				columns.dragStart(name)
+
+				expect(cursor(owner)).toBe('true')
+
+				columns.dragOver(2)
+				columns.dragDrop()
+
+				expect(cursor(owner)).toBe('true')
+
+				columns.dragEnd()
+
+				expect(fields(columns.columns)).toEqual(['age', 'id', 'name'])
+				expect(owner.dataset.has('dragging')).toBe(false)
+			},
+		)
+
+		it('снимается той же операцией, что перестановка: подписчик column:move его уже не видит', () => {
+			const { owner, columns } = tableWith('head')
+			const seen: Array<string | undefined> = []
+
+			columns.events.on('column:move', () => seen.push(cursor(owner)))
+
+			columns.dragStart(columns.columns[0])
+			columns.dragOver(2)
+			columns.dragDrop()
+			columns.dragEnd()
+
+			expect(seen).toEqual([undefined])
+		})
+
+		it('dragCancel снимает признак; колонку, которую не взять, — признака нет', () => {
+			const { owner, columns } = tableWith('head')
+			const [name, age] = columns.columns
+
+			columns.dragStart(name)
+			columns.dragOver(2)
+			columns.dragDrop()
+			columns.dragCancel()
+
+			expect(owner.dataset.has('dragging')).toBe(false)
+
+			age.disabled = true
+
+			expect(columns.dragStart(age)).toBe(false)
+			expect(owner.dataset.has('dragging')).toBe(false)
+		})
+
+		it('состав показанных сменился посреди жеста — жест прерван, признак снят', () => {
+			const { owner, columns } = tableWith('head')
+			const [name, , id] = columns.columns
+
+			columns.dragStart(name)
+			columns.dragOver(2)
+			id.visible = false
+
+			expect(columns.dragged).toBeUndefined()
+			expect(owner.dataset.has('dragging')).toBe(false)
+		})
+
+		it('таблица сменилась посреди жеста — признак снят с прежней, новой не ставится', () => {
+			const { owner, engine, columns } = tableWith('head')
+			const next = new TTable()
+
+			columns.dragStart(columns.columns[0])
+			engine.options.set({ owner: next })
+
+			expect(owner.dataset.has('dragging')).toBe(false)
+			expect(next.dataset.has('dragging')).toBe(false)
+
+			columns.dragOver(2)
+			columns.dragDrop()
+			columns.dragEnd()
+
+			expect(owner.dataset.has('dragging')).toBe(false)
+			expect(next.dataset.has('dragging')).toBe(false)
+
+			// Следующий жест — у новой таблицы
+			columns.dragStart(columns.columns[0])
+
+			expect(cursor(next)).toBe('true')
+		})
+
+		it('новый жест закрывает незаконченный — признак остаётся до конца нового', () => {
+			const { owner, columns } = tableWith('head')
+			const [name, age] = columns.columns
+
+			columns.dragStart(name)
+			columns.dragStart(age)
+
+			expect(cursor(owner)).toBe('true')
+
+			columns.dragCancel()
+
+			expect(owner.dataset.has('dragging')).toBe(false)
 		})
 	})
 
