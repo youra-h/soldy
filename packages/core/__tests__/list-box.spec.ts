@@ -34,12 +34,12 @@ import type {
 
 function createListBox(texts: string[], props: Partial<IListBoxProps> = {}) {
 	const owner = new TListBox(props)
-	const collection = new TListBoxCollectionFacade({}, { owner })
+	const facade = new TListBoxCollectionFacade({}, { owner })
 	const items = texts.map((text) => new TListBoxItem({ value: text, text }))
 
-	collection.items = items as IListBoxItem[]
+	facade.items = items as IListBoxItem[]
 
-	const registry = new TItemContextRegistry(collection.engine.getCore())
+	const registry = new TItemContextRegistry(facade.engine.getCore())
 
 	/** Фасад элемента — через него разметка читает членство в коллекции. */
 	const facadeFor = (index: number) => {
@@ -50,7 +50,7 @@ function createListBox(texts: string[], props: Partial<IListBoxProps> = {}) {
 		return facade
 	}
 
-	return { owner, collection, items, facadeFor, registry }
+	return { owner, facade, items, facadeFor, registry }
 }
 
 describe('view пробрасывается со списка на элемент', () => {
@@ -107,36 +107,36 @@ describe('view пробрасывается со списка на элемен�
  */
 describe('value ↔ выбор', () => {
 	it('значение выбирает элемент', () => {
-		const { owner, collection, items } = createListBox(['a', 'b', 'c'])
+		const { owner, facade, items } = createListBox(['a', 'b', 'c'])
 
 		owner.value = 'b'
 
-		expect(collection.selected).toEqual([items[1]])
+		expect(facade.selected).toEqual([items[1]])
 	})
 
 	it('выбор элемента пишет значение', () => {
-		const { owner, collection, items } = createListBox(['a', 'b', 'c'])
+		const { owner, facade, items } = createListBox(['a', 'b', 'c'])
 
-		collection.engine.extensions.selection.select(items[2])
+		facade.engine.extensions.selection.select(items[2])
 
 		expect(owner.value).toBe('c')
 	})
 
 	it('в multiple значение — массив', () => {
-		const { owner, collection, items } = createListBox(['a', 'b', 'c'])
+		const { owner, facade, items } = createListBox(['a', 'b', 'c'])
 
-		collection.mode = 'multiple'
-		collection.engine.extensions.selection.select(items[0])
-		collection.engine.extensions.selection.select(items[2])
+		facade.mode = 'multiple'
+		facade.engine.extensions.selection.select(items[0])
+		facade.engine.extensions.selection.select(items[2])
 
 		expect(owner.value).toEqual(['a', 'c'])
 	})
 
 	it('снятие выбора обнуляет значение', () => {
-		const { owner, collection } = createListBox(['a', 'b'])
+		const { owner, facade } = createListBox(['a', 'b'])
 
 		owner.value = 'a'
-		collection.engine.extensions.selection.resetSelection()
+		facade.engine.extensions.selection.resetSelection()
 
 		expect(owner.value).toBeUndefined()
 	})
@@ -148,25 +148,25 @@ describe('value ↔ выбор', () => {
 	 */
 	it('значение, заданное до появления элементов, применяется при их добавлении', () => {
 		const owner = new TListBox({ value: 'b' })
-		const collection = new TListBoxCollectionFacade({}, { owner })
+		const facade = new TListBoxCollectionFacade({}, { owner })
 
 		expect(owner.value).toBe('b')
 
-		collection.items = [
+		facade.items = [
 			new TListBoxItem({ value: 'a', text: 'a' }),
 			new TListBoxItem({ value: 'b', text: 'b' }),
 		] as IListBoxItem[]
 
-		expect(collection.selected.map((item) => item.value)).toEqual(['b'])
+		expect(facade.selected.map((item) => item.value)).toEqual(['b'])
 	})
 
 	/** Синхронизация в обе стороны — самое место для бесконечного цикла. */
 	it('не зацикливается', () => {
-		const { owner, collection, items } = createListBox(['a', 'b'])
+		const { owner, facade, items } = createListBox(['a', 'b'])
 		let changes = 0
 
 		owner.events.on('change:value', () => changes++)
-		collection.engine.extensions.selection.select(items[1])
+		facade.engine.extensions.selection.select(items[1])
 
 		expect(owner.value).toBe('b')
 		expect(changes).toBeLessThan(5)
@@ -184,16 +184,16 @@ describe('value ↔ выбор', () => {
  */
 describe('выбор пользователя: выключенный элемент не выбирается', () => {
 	it('переключает выбор доступного элемента', () => {
-		const { collection, items } = createListBox(['a', 'b'])
-		const list = collection.engine.extensions.list
+		const { facade, items } = createListBox(['a', 'b'])
+		const list = facade.engine.extensions.list
 
-		collection.mode = 'multiple'
-
-		expect(list.chooseItem(items[1])).toBe(true)
-		expect(collection.selected).toEqual([items[1]])
+		facade.mode = 'multiple'
 
 		expect(list.chooseItem(items[1])).toBe(true)
-		expect(collection.selected).toEqual([])
+		expect(facade.selected).toEqual([items[1]])
+
+		expect(list.chooseItem(items[1])).toBe(true)
+		expect(facade.selected).toEqual([])
 	})
 
 	/** Как выключить элемент и как включить обратно. */
@@ -216,33 +216,33 @@ describe('выбор пользователя: выключенный элеме
 
 	describe.each(WAYS)('%s', (_way, switchOff) => {
 		it('chooseItem отказывает, после включения — выбирает', () => {
-			const { owner, collection, items } = createListBox(['a', 'b'])
-			const list = collection.engine.extensions.list
+			const { owner, facade, items } = createListBox(['a', 'b'])
+			const list = facade.engine.extensions.list
 
 			switchOff(owner, items[1], true)
 
 			expect(list.chooseItem(items[1])).toBe(false)
-			expect(collection.selected).toEqual([])
+			expect(facade.selected).toEqual([])
 
 			switchOff(owner, items[1], false)
 
 			expect(list.chooseItem(items[1])).toBe(true)
-			expect(collection.selected).toEqual([items[1]])
+			expect(facade.selected).toEqual([items[1]])
 		})
 
 		it('choose item-адаптера идёт тем же путём', () => {
-			const { owner, collection, items, registry } = createListBox(['a', 'b'])
+			const { owner, facade, items, registry } = createListBox(['a', 'b'])
 			const adapter = registry.get(items[1]).adapters.list
 
 			switchOff(owner, items[1], true)
 			adapter.choose()
 
-			expect(collection.selected).toEqual([])
+			expect(facade.selected).toEqual([])
 
 			switchOff(owner, items[1], false)
 			adapter.choose()
 
-			expect(collection.selected).toEqual([items[1]])
+			expect(facade.selected).toEqual([items[1]])
 		})
 	})
 
@@ -252,8 +252,8 @@ describe('выбор пользователя: выключенный элеме
 	 * `change:selection` его не отличить ни от снятия, ни от записи `value`.
 	 */
 	it('choose — на каждый принятый выбор, после переключения; на отказ и на код — нет', () => {
-		const { owner, collection, items } = createListBox(['a', 'b'])
-		const list = collection.engine.extensions.list
+		const { owner, facade, items } = createListBox(['a', 'b'])
+		const list = facade.engine.extensions.list
 		const chosen: string[] = []
 
 		list.events.on('choose', (item) => chosen.push(`${item.value}:${String(owner.value)}`))
@@ -266,19 +266,19 @@ describe('выбор пользователя: выключенный элеме
 		items[0].disabled = true
 		list.chooseItem(items[0])
 		owner.value = 'b'
-		collection.engine.extensions.selection.toggle(items[1])
+		facade.engine.extensions.selection.toggle(items[1])
 
 		expect(chosen).toHaveLength(2)
 	})
 
 	/** Отказ — только выбору пользователя: из кода выбрать выключенный вправе приложение. */
 	it('selection.select выключенный элемент выбирает', () => {
-		const { collection, items } = createListBox(['a', 'b'])
+		const { facade, items } = createListBox(['a', 'b'])
 
 		items[1].disabled = true
-		collection.engine.extensions.selection.select(items[1])
+		facade.engine.extensions.selection.select(items[1])
 
-		expect(collection.selected).toEqual([items[1]])
+		expect(facade.selected).toEqual([items[1]])
 	})
 })
 
@@ -331,13 +331,13 @@ describe('indicator пробрасывается со списка на элем
 	})
 
 	it('элемент, добавленный позже, получает текущую сторону', () => {
-		const { owner, collection, items } = createListBox(['a'], { indicator: 'start' })
+		const { owner, facade, items } = createListBox(['a'], { indicator: 'start' })
 
 		owner.indicator = 'end'
 
 		const late = new TListBoxItem({ value: 'z', text: 'z' })
 
-		collection.items = [...items, late] as IListBoxItem[]
+		facade.items = [...items, late] as IListBoxItem[]
 
 		expect(late.dataset.get('indicator')).toBe('end')
 	})
@@ -359,14 +359,14 @@ describe('data-content-fit элемента: своё значение пове�
 		contentFit: TListContentFit = 'truncate',
 	) => {
 		const owner = new TListBox({ contentFit })
-		const collection = new TListBoxCollectionFacade({}, { owner })
+		const facade = new TListBoxCollectionFacade({}, { owner })
 		const items = own.map(
 			(fit, index) => new TListBoxItem({ value: String(index), contentFit: fit }),
 		)
 
-		collection.items = items as IListBoxItem[]
+		facade.items = items as IListBoxItem[]
 
-		return { owner, collection, items }
+		return { owner, facade, items }
 	}
 
 	const fits = (items: IListBoxItem[]) => items.map((item) => item.dataset.get('content-fit'))
@@ -411,9 +411,9 @@ describe('data-content-fit элемента: своё значение пове�
 	 * возвращаются теми же инстансами. Вернувшийся элемент слушается снова.
 	 */
 	it('элемент, вернувшийся в список, слушается снова', () => {
-		const { collection, items } = createFitted([undefined, undefined])
+		const { facade, items } = createFitted([undefined, undefined])
 
-		collection.items = [...items] as IListBoxItem[]
+		facade.items = [...items] as IListBoxItem[]
 		items[1].contentFit = 'wrap'
 
 		expect(fits(items)).toEqual(['truncate', 'wrap'])
@@ -424,18 +424,18 @@ describe('data-content-fit элемента: своё значение пове�
 	 * подписка не удерживает список, пока жив элемент.
 	 */
 	it('удалённый элемент список больше не слушает', () => {
-		const { collection, items } = createFitted([undefined, undefined])
+		const { facade, items } = createFitted([undefined, undefined])
 
-		collection.engine.extensions.batch.remove([items[0]])
+		facade.engine.extensions.batch.remove([items[0]])
 		items[0].contentFit = 'wrap'
 
 		expect(items[0].dataset.get('content-fit')).toBe('truncate')
 	})
 
 	it('после очистки списка элементы тоже не слушаются', () => {
-		const { collection, items } = createFitted([undefined, undefined])
+		const { facade, items } = createFitted([undefined, undefined])
 
-		collection.engine.extensions.batch.clear()
+		facade.engine.extensions.batch.clear()
 		items.forEach((item) => {
 			item.contentFit = 'wrap'
 		})
@@ -457,10 +457,10 @@ describe('tabindex у элементов', () => {
 	})
 
 	it('элемент, добавленный позже, тоже получает tabindex="-1"', () => {
-		const { collection, items } = createListBox(['a'])
+		const { facade, items } = createListBox(['a'])
 		const late = new TListBoxItem({ value: 'z', text: 'z' })
 
-		collection.items = [...items, late] as IListBoxItem[]
+		facade.items = [...items, late] as IListBoxItem[]
 
 		expect(late.aria.get('tabindex')).toBe('-1')
 	})
@@ -484,8 +484,8 @@ describe('aria-selected у элементов', () => {
 	})
 
 	it('следует за выбором и его снятием', () => {
-		const { collection, items } = createListBox(['a', 'b', 'c'])
-		const { selection } = collection.engine.extensions
+		const { facade, items } = createListBox(['a', 'b', 'c'])
+		const { selection } = facade.engine.extensions
 
 		selection.select(items[1])
 
@@ -502,34 +502,34 @@ describe('aria-selected у элементов', () => {
 	})
 
 	it('в multiple стоит у каждого выбранного', () => {
-		const { collection, items } = createListBox(['a', 'b', 'c'])
+		const { facade, items } = createListBox(['a', 'b', 'c'])
 
-		collection.mode = 'multiple'
-		collection.engine.extensions.selection.select(items[0])
-		collection.engine.extensions.selection.select(items[2])
+		facade.mode = 'multiple'
+		facade.engine.extensions.selection.select(items[0])
+		facade.engine.extensions.selection.select(items[2])
 
 		expect(ariaSelected(items)).toEqual(['true', 'false', 'true'])
 	})
 
 	it('значение списка, заданное до элементов, выбирает их с атрибутом', () => {
 		const owner = new TListBox({ value: 'b' })
-		const collection = new TListBoxCollectionFacade({}, { owner })
+		const facade = new TListBoxCollectionFacade({}, { owner })
 		const items = [
 			new TListBoxItem({ value: 'a', text: 'a' }),
 			new TListBoxItem({ value: 'b', text: 'b' }),
 		]
 
-		collection.items = items as IListBoxItem[]
+		facade.items = items as IListBoxItem[]
 
 		expect(ariaSelected(items)).toEqual(['false', 'true'])
 	})
 
 	it('элемент, добавленный позже, получает атрибут по текущему выбору', () => {
-		const { owner, collection, items } = createListBox(['a'])
+		const { owner, facade, items } = createListBox(['a'])
 		const late = new TListBoxItem({ value: 'z', text: 'z' })
 
 		owner.value = 'z'
-		collection.items = [...items, late] as IListBoxItem[]
+		facade.items = [...items, late] as IListBoxItem[]
 
 		expect(ariaSelected([...items, late])).toEqual(['false', 'true'])
 	})

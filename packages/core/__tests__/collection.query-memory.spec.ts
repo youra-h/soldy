@@ -29,7 +29,7 @@ const items = (): Item[] => [
 const ids = (list: ReadonlyArray<Item>): number[] => list.map((item) => item.id)
 
 /** Движок из трёх элементов с подписчиком выборки и, если не сказано иначе, памятью. */
-function collection({ memory = true } = {}) {
+function engineKit({ memory = true } = {}) {
 	const engine = new TCollectionEngine<
 		Item,
 		{ plain: TPlainExtension<Item>; batch: TBatchExtension<Item> }
@@ -51,11 +51,11 @@ function collection({ memory = true } = {}) {
 	return { engine, driver, hidden, queries, ...engine.extensions }
 }
 
-type TCollection = ReturnType<typeof collection>
+type TCollection = ReturnType<typeof engineKit>
 
 describe('память выборки', () => {
 	it('повторное чтение shown и length — одна выборка, тот же массив', () => {
-		const { batch, queries } = collection()
+		const { batch, queries } = engineKit()
 		const shown = batch.shown
 
 		expect(ids(shown)).toEqual([1, 2, 3])
@@ -65,14 +65,14 @@ describe('память выборки', () => {
 	})
 
 	it('без памяти — выборка на каждое чтение, как прежде', () => {
-		const { batch, queries } = collection({ memory: false })
+		const { batch, queries } = engineKit({ memory: false })
 
 		expect(batch.shown).not.toBe(batch.shown)
 		expect(batch.length).toBe(3)
 		expect(queries).toHaveBeenCalledTimes(3)
 	})
 
-	const WRITES: [string, (collection: TCollection) => void, number[]][] = [
+	const WRITES: [string, (target: TCollection) => void, number[]][] = [
 		['insert', ({ plain }) => plain.insert({ id: 4, name: 'delta' }, 1), [1, 4, 2, 3]],
 		['remove', ({ plain, batch }) => plain.remove(batch.items[0]), [2, 3]],
 		['move', ({ plain, batch }) => plain.move(batch.items[0], 2), [2, 3, 1]],
@@ -101,7 +101,7 @@ describe('память выборки', () => {
 	]
 
 	it.each(WRITES)('%s — выборка заново, одна на следующие чтения', (_, write, expected) => {
-		const target = collection()
+		const target = engineKit()
 		const before = target.batch.shown
 
 		write(target)
@@ -114,7 +114,7 @@ describe('память выборки', () => {
 		expect(target.queries).toHaveBeenCalledTimes(2)
 	})
 
-	const CANCELLED: [string, (collection: TCollection) => void][] = [
+	const CANCELLED: [string, (target: TCollection) => void][] = [
 		[
 			'insert',
 			({ plain }) => {
@@ -155,7 +155,7 @@ describe('память выборки', () => {
 	]
 
 	it.each(CANCELLED)('отменённая запись (%s) хранилище не меняла — память та же', (_, write) => {
-		const target = collection()
+		const target = engineKit()
 		const before = target.batch.shown
 
 		write(target)
@@ -165,7 +165,7 @@ describe('память выборки', () => {
 	})
 
 	it('подписчик item:added читает уже новый состав', () => {
-		const { batch, plain } = collection()
+		const { batch, plain } = engineKit()
 		const seen: number[][] = []
 
 		void batch.shown
@@ -176,7 +176,7 @@ describe('память выборки', () => {
 	})
 
 	it('внутри engine.batch() чтение видит каждую запись, отложенные уведомления — итог', () => {
-		const { engine, batch, plain } = collection()
+		const { engine, batch, plain } = engineKit()
 		const inside: number[][] = []
 		const notified: number[][] = []
 
@@ -201,7 +201,7 @@ describe('память выборки', () => {
 	})
 
 	it('invalidateQuery: память сброшена до items:query:invalidated — его подписчик читает новую выборку', () => {
-		const { batch, driver, hidden } = collection()
+		const { batch, driver, hidden } = engineKit()
 		const seen: number[][] = []
 
 		void batch.shown
@@ -218,7 +218,7 @@ describe('память выборки', () => {
 	})
 
 	it('чтение из хука шага patch — хранилище как есть, мимо памяти', () => {
-		const { batch, plain, queries } = collection()
+		const { batch, plain, queries } = engineKit()
 		const seen: number[][] = []
 
 		batch.trackBy = (item) => item.id
@@ -242,7 +242,7 @@ describe('память выборки', () => {
 	})
 
 	it('предел: правку элемента на месте, мимо команд, выборка не видит до сброса', () => {
-		const { batch, driver } = collection()
+		const { batch, driver } = engineKit()
 		const [, beta] = batch.items
 
 		expect(ids(batch.shown)).toEqual([1, 2, 3])
@@ -257,7 +257,7 @@ describe('память выборки', () => {
 	})
 
 	it('поставленная в наполненный движок — первое чтение исполняет выборку', () => {
-		const { engine, batch, queries } = collection({ memory: false })
+		const { engine, batch, queries } = engineKit({ memory: false })
 
 		void batch.shown
 		engine.use(new TMemoryExtension<Item>())
@@ -273,7 +273,7 @@ describe('память выборки', () => {
 
 describe('стратегия чтения драйвера', () => {
 	it('о записи — сразу после применения, до уведомлений; об invalidateQuery — до items:query:invalidated', () => {
-		const { driver, plain } = collection({ memory: false })
+		const { driver, plain } = engineKit({ memory: false })
 		const log: string[] = []
 
 		driver.useQueryStrategy({
@@ -301,7 +301,7 @@ describe('стратегия чтения драйвера', () => {
 	})
 
 	it('исполнение чтения стратегия получает функцией — её результат и есть выборка', () => {
-		const { driver, batch } = collection({ memory: false })
+		const { driver, batch } = engineKit({ memory: false })
 		const read = vi.fn((run: () => readonly Item[]) => run().slice(1))
 
 		driver.useQueryStrategy({ read, stale: () => {} })

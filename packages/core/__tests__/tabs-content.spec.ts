@@ -23,12 +23,12 @@ import type { ITabsItem } from '@soldy-ui/core'
 
 function createTabs(values: string[]) {
 	const owner = new TTabs()
-	const collection = new TTabsCollectionFacade({}, { owner })
+	const tabsFacade = new TTabsCollectionFacade({}, { owner })
 	const items = values.map((value) => new TTabsItem({ value, text: value }))
 
-	collection.items = items as ITabsItem[]
+	tabsFacade.items = items as ITabsItem[]
 
-	const registry = new TItemContextRegistry(collection.engine.getCore())
+	const registry = new TItemContextRegistry(tabsFacade.engine.getCore())
 	const find = (value: string) => items.find((candidate) => candidate.value === value)
 
 	/** Фасад панели, привязанный к табу с таким значением. */
@@ -50,7 +50,7 @@ function createTabs(values: string[]) {
 		return registry.get(item)
 	}
 
-	return { owner, collection, items, facadeFor, contextOf }
+	return { owner, tabsFacade, items, facadeFor, contextOf }
 }
 
 describe('TTabsContent — собственные props', () => {
@@ -89,15 +89,15 @@ describe('фасад панели — активность', () => {
 	})
 
 	it('active следует за активным табом', () => {
-		const { collection, items, facadeFor } = createTabs(['a', 'b'])
+		const { tabsFacade, items, facadeFor } = createTabs(['a', 'b'])
 		const facade = facadeFor('b')
 
 		expect(facade.active).toBe(false)
 
-		collection.activate(items[1])
+		tabsFacade.activate(items[1])
 		expect(facade.active).toBe(true)
 
-		collection.activate(items[0])
+		tabsFacade.activate(items[0])
 		expect(facade.active).toBe(false)
 	})
 
@@ -108,12 +108,12 @@ describe('фасад панели — активность', () => {
 	})
 
 	it('релеит change:active наружу', () => {
-		const { collection, items, facadeFor } = createTabs(['a', 'b'])
+		const { tabsFacade, items, facadeFor } = createTabs(['a', 'b'])
 		const facade = facadeFor('b')
 		const handler = vi.fn()
 
 		facade.events.on('change:active', handler)
-		collection.activate(items[1])
+		tabsFacade.activate(items[1])
 
 		expect(handler).toHaveBeenCalled()
 	})
@@ -127,9 +127,9 @@ describe('фасад панели — активность', () => {
 describe('фасад панели — смена контекста', () => {
 	/** Табы `a`, `b`, `c`, активен `a`; фасад панели — у таба `value`, без него — ни у какого. */
 	function bound(value?: string) {
-		const { collection, items, facadeFor, contextOf } = createTabs(['a', 'b', 'c'])
+		const { tabsFacade, items, facadeFor, contextOf } = createTabs(['a', 'b', 'c'])
 
-		collection.activate(items[0])
+		tabsFacade.activate(items[0])
 
 		const facade = value ? facadeFor(value) : new TTabsContentCollectionFacade()
 		const handler = vi.fn()
@@ -227,17 +227,17 @@ describe('aria-selected на табах', () => {
 	it('стоит на всех табах набора, а не только на активном', () => {
 		// Скринридер объявляет «1 из 2, не выбрана» — для этого атрибут
 		// должен быть и у невыбранных
-		const { collection, items } = createTabs(['a', 'b'])
+		const { tabsFacade, items } = createTabs(['a', 'b'])
 
-		collection.engine.extensions.activation.activate(items[0])
+		tabsFacade.engine.extensions.activation.activate(items[0])
 
 		expect(items[0].aria.get('aria-selected')).toBe('true')
 		expect(items[1].aria.get('aria-selected')).toBe('false')
 	})
 
 	it('следует за переключением активного таба', () => {
-		const { collection, items } = createTabs(['a', 'b'])
-		const activation = collection.engine.extensions.activation
+		const { tabsFacade, items } = createTabs(['a', 'b'])
+		const activation = tabsFacade.engine.extensions.activation
 
 		activation.activate(items[0])
 		activation.activate(items[1])
@@ -247,10 +247,10 @@ describe('aria-selected на табах', () => {
 	})
 
 	it('появляется у таба, добавленного позже', () => {
-		const { collection, items } = createTabs(['a'])
+		const { tabsFacade, items } = createTabs(['a'])
 		const added = new TTabsItem({ value: 'b', text: 'b' })
 
-		collection.items = [...items, added] as ITabsItem[]
+		tabsFacade.items = [...items, added] as ITabsItem[]
 
 		expect(added.aria.get('aria-selected')).toBe('false')
 	})

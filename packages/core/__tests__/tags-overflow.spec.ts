@@ -43,9 +43,9 @@ describe('свойство overflow', () => {
 	 */
 	it('смена режима не трогает роль набора', () => {
 		const owner = new TTags({ overflow: 'scroll' })
-		const collection = new TTagsCollectionFacade({ mode: 'multiple' }, { owner })
+		const facade = new TTagsCollectionFacade({ mode: 'multiple' }, { owner })
 
-		collection.items = ['Москва', 'Тверь'].map(
+		facade.items = ['Москва', 'Тверь'].map(
 			(text) => new TTagsItem({ value: text, text }),
 		) as ITagsItem[]
 
@@ -59,43 +59,43 @@ describe('свойство overflow', () => {
 describe('Select передаёт режим своим тегам', () => {
 	const createSelect = () => {
 		const owner = new TSelect()
-		const collection = new TSelectCollectionFacade({ mode: 'multiple' }, { owner })
+		const facade = new TSelectCollectionFacade({ mode: 'multiple' }, { owner })
 
-		return { owner, collection }
+		return { owner, facade }
 	}
 
 	it('по умолчанию wrap — поле ведёт себя как прежде', () => {
-		const { collection } = createSelect()
+		const { facade } = createSelect()
 
-		expect(collection.tags_overflow).toBe('wrap')
-		expect(collection.tags?.overflow).toBe('wrap')
+		expect(facade.tags_overflow).toBe('wrap')
+		expect(facade.tags?.overflow).toBe('wrap')
 	})
 
 	it('заданный режим доезжает до инстанса тегов', () => {
-		const { collection } = createSelect()
+		const { facade } = createSelect()
 
-		collection.tags_overflow = 'scroll'
+		facade.tags_overflow = 'scroll'
 
-		expect(collection.tags?.overflow).toBe('scroll')
+		expect(facade.tags?.overflow).toBe('scroll')
 	})
 
 	it('режим переживает пересоздание тегов при смене mode', () => {
-		const { collection } = createSelect()
+		const { facade } = createSelect()
 
-		collection.tags_overflow = 'scroll'
-		collection.mode = 'single'
-		collection.mode = 'multiple'
+		facade.tags_overflow = 'scroll'
+		facade.mode = 'single'
+		facade.mode = 'multiple'
 
-		expect(collection.tags?.overflow).toBe('scroll')
+		expect(facade.tags?.overflow).toBe('scroll')
 	})
 
 	it('задан пропом — доезжает и до свежего инстанса', () => {
 		const owner = new TSelect()
-		const collection = new TSelectCollectionFacade(
+		const facade = new TSelectCollectionFacade(
 			{ mode: 'multiple', tags_overflow: 'scroll' },
 			{ owner },
 		)
 
-		expect(collection.tags?.overflow).toBe('scroll')
+		expect(facade.tags?.overflow).toBe('scroll')
 	})
 })
