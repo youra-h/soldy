@@ -57,7 +57,9 @@ import { RESIZE_MAX, RESIZE_MIN, clampWidth } from './width'
  * Ручка работает от итога: пока его нет, ручки нет. `commit` — одно событие на
  * действие и только на смену итога: по нему приложение сохраняет настройку.
  * `resize:start` — тоже одно на действие, но до первой записи: по нему
- * раскладка держит колонки перед этой, пока ширина меняется.
+ * раскладка держит колонки перед этой, пока ширина меняется. Идёт ли жест —
+ * `resizing`, с нажатия до отпускания или отмены: по его смене
+ * (`change:resizing`) расширение колонок ставит таблице признак протяжки.
  *
  * Отложенный жест (`resizePreview: 'deferred'` таблицы) ширину до отпускания
  * не пишет: сдвиг получает призрак (`resizeGhost`, `data-resize-ghost`), а
@@ -392,6 +394,11 @@ export default class TTableColumn<
 		return gesture?.deferred ? gesture.ghost : undefined
 	}
 
+	/** Идёт жест ручки: от `grab` до `release` или `cancel`. */
+	get resizing(): boolean {
+		return this._gesture !== undefined
+	}
+
 	get resizerAria(): TAria {
 		return this._resizerAria
 	}
@@ -410,7 +417,7 @@ export default class TTableColumn<
 
 		const [lower, upper] = this._travel(width)
 
-		this._gesture = {
+		this._setGesture({
 			from: Math.round(width),
 			lower,
 			upper,
@@ -419,9 +426,7 @@ export default class TTableColumn<
 			started: false,
 			deferred: this._resizePreview === 'deferred',
 			ghost: Math.round(width),
-		}
-		this._setResizing(true)
-		this._setGhost(this._gesture.deferred)
+		})
 
 		return true
 	}
@@ -458,9 +463,7 @@ export default class TTableColumn<
 
 		if (!gesture) return
 
-		this._gesture = undefined
-		this._setResizing(false)
-		this._setGhost(false)
+		this._setGesture(undefined)
 
 		if (gesture.deferred) {
 			// Призрак на ширине нажатия — писать нечего, и гибкая колонка остаётся
@@ -484,9 +487,7 @@ export default class TTableColumn<
 
 		if (!gesture) return
 
-		this._gesture = undefined
-		this._setResizing(false)
-		this._setGhost(false)
+		this._setGesture(undefined)
 
 		// Живой жест ширину уже писал — колонке своё значение нажатия; отложенный
 		// не писал ничего
@@ -562,9 +563,30 @@ export default class TTableColumn<
 		this._sink.emit('commit', after)
 	}
 
-	/** `data-resizing` — идёт жест ручки: тема держит курсор ручки на всей таблице. */
+	/**
+	 * Начать жест ручки (`gesture`) или закончить его (`undefined`): здесь, и
+	 * только здесь, меняется то, что от жеста видно снаружи, — призрак и
+	 * `resizing`. Идёт ли жест, сверяется до записи и после неё, поэтому
+	 * `_setResizing` приходит только на смену.
+	 */
+	protected _setGesture(gesture: TTableColumnGesture | undefined): void {
+		const resizing = this.resizing
+
+		this._gesture = gesture
+		this._setGhost(gesture?.deferred ?? false)
+
+		if (this.resizing !== resizing) this._setResizing(this.resizing)
+	}
+
+	/**
+	 * Жест ручки начался или кончился: `data-resizing` заголовка — по нему тема
+	 * подсвечивает заголовок и держит линию ручки — и `change:resizing`: по нему
+	 * расширение колонок ставит признак протяжки таблице, под курсор ручки на
+	 * всей таблице. Зовёт его `_setGesture`, только на смену.
+	 */
 	protected _setResizing(value: boolean): void {
 		this._dataset.add('resizing', value)
+		this._sink.emit('change:resizing', value)
 	}
 
 	/**

@@ -70,8 +70,9 @@ export type TTableColumnResizer = {
 }
 
 /**
- * Жест ручки — состояние колонки от `grab` до `release`. Наружу не отдаётся:
- * это память между командами плагина указателя.
+ * Жест ручки — состояние колонки от `grab` до `release`. Наружу не отдаётся,
+ * только то, что он идёт (`resizing`): это память между командами плагина
+ * указателя.
  */
 export type TTableColumnGesture = {
 	/** Итог ширины при нажатии, в целых px: от него идёт сдвиг */
@@ -153,6 +154,14 @@ export type TTableColumnEvents = TComponentViewEvents & {
 	 * раскладка закрепляет гибкие колонки перед этой: край идёт за указателем
 	 */
 	'resize:start': () => void
+	/**
+	 * Жест ручки начался или кончился — `resizing`: с нажатия, а не с первого
+	 * сдвига, до отпускания или отмены. Только на смену: `release` и `cancel`
+	 * вне жеста его не шлют. По нему расширение колонок держит признак
+	 * протяжки у таблицы — курсор ручки нужен с нажатия, а `resize:start`
+	 * приходит только с первым сдвигом
+	 */
+	'change:resizing': (value: boolean) => void
 }
 
 export interface ITableColumnProps extends IComponentViewProps {
@@ -281,6 +290,12 @@ export interface ITableColumn<
 	 * ручки ставит призрак
 	 */
 	readonly resizeGhost: number | undefined
+	/**
+	 * Идёт жест ручки — от `grab` до `release` или `cancel`, и в отложенном
+	 * жесте тоже: с нажатия, а не с первого сдвига. Теме — `data-resizing`
+	 * заголовка, на покое `"false"`; смену сообщает `change:resizing`
+	 */
+	readonly resizing: boolean
 	/**
 	 * Нажали на ручку: жест с итога ширины. Ширина не меняется: нажатие без
 	 * движения её не задаёт. Ход и своё значение ширины колонка запоминает на

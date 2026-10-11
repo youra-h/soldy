@@ -929,6 +929,43 @@ describe('перестановка колонок', () => {
 	})
 
 	/**
+	 * Пока несут заголовок — курсор «тащу» и запрет выделения на всей таблице:
+	 * указатель уходит со своего заголовка. Тема ставит их по признаку корня
+	 * (`data-dragging`), который ядро держит только в жесте, с приземлением, —
+	 * когда колонка встала, ячейка тела такая же, как до жеста.
+	 */
+	it('несут заголовок — курсор «тащу» и без выделения на всей таблице; встал — как было', async () => {
+		const engine = moveEngine()
+
+		await mount(engine, PLACE)
+		await laidOut()
+
+		const [name, city] = headers()
+		const table = find('.s-table')
+		const cell = () => find('.s-table-row__cell')
+		const rest = { cursor: style(cell()).cursor, select: style(cell()).userSelect }
+
+		expect(rest.cursor).not.toBe('grabbing')
+		expect(rest.select).not.toBe('none')
+		expect(table.hasAttribute('data-dragging')).toBe(false)
+
+		try {
+			await carry(name, middleOf(city).x + 10)
+
+			expect(name.dataset.dragging).toBe('true')
+			await expect.poll(() => style(cell()).cursor).toBe('grabbing')
+			expect(style(cell()).userSelect).toBe('none')
+		} finally {
+			await commands.mouseUp()
+		}
+
+		await expect.poll(() => fieldsOf(engine)).toEqual(['city', 'name', 'age'])
+		await expect.poll(() => table.hasAttribute('data-dragging')).toBe(false)
+		expect(style(cell()).cursor).toBe(rest.cursor)
+		expect(style(cell()).userSelect).toBe(rest.select)
+	})
+
+	/**
 	 * Колонка переставляется, когда отпущенный заголовок встал: к этому
 	 * времени он и сдвинутые соседи стоят там, где их поставит новая
 	 * раскладка, а переходы уходят вместе с жестом, — ничего не отъезжает.
@@ -2097,5 +2134,39 @@ describe('ручка ширины', () => {
 		} finally {
 			await commands.mouseUp()
 		}
+	})
+
+	/**
+	 * Пока держат ручку — с нажатия, ещё без движения, — курсор ручки и запрет
+	 * выделения на всей таблице: указатель уходит с полосы, а край колонки идёт
+	 * за ним. Тема ставит их по признаку корня (`data-resizing`), который ядро
+	 * держит только в жесте, — после отпускания ячейка тела такая же, как до
+	 * нажатия.
+	 */
+	it('держат ручку — курсор ручки и без выделения на всей таблице; отпустили — как было', async () => {
+		await mount(resizeEngine(ALL), PLACE)
+
+		const table = find('.s-table')
+		const cell = () => find('.s-table-row__cell')
+		const rest = { cursor: style(cell()).cursor, select: style(cell()).userSelect }
+		const box = resizerOf(headers()[0]).getBoundingClientRect()
+
+		expect(rest.cursor).not.toBe('col-resize')
+		expect(rest.select).not.toBe('none')
+		expect(table.hasAttribute('data-resizing')).toBe(false)
+
+		await pointAt(box.left + box.width / 2, box.top + box.height / 2)
+		await commands.mouseDown()
+
+		try {
+			await expect.poll(() => style(cell()).cursor).toBe('col-resize')
+			expect(style(cell()).userSelect).toBe('none')
+		} finally {
+			await commands.mouseUp()
+		}
+
+		await expect.poll(() => table.hasAttribute('data-resizing')).toBe(false)
+		expect(style(cell()).cursor).toBe(rest.cursor)
+		expect(style(cell()).userSelect).toBe(rest.select)
 	})
 })
