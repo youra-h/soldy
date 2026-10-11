@@ -29,6 +29,13 @@
  *
  * Привязки корня к `TElementPlugin` здесь нет: её ставит attachment адаптера
  * (`{@attach}` корня в `Dynamic`), и атрибуты потребителя её не перекрывают.
+ *
+ * Attachment потребителя (`<Button {@attach tooltip}>`) едет на корень вместе
+ * с его атрибутами: Svelte передаёт его компоненту пропом с ключом-символом, и
+ * `forwardProps` несёт такие ключи рядом со строковыми (`useAdapter`). Спред
+ * атрибутов переносит их на корень — элемент, `<svg>` иконки по роли или
+ * компонент из `tag`, — и attachment Svelte ставит сам. С привязкой корня
+ * адаптера он не пересекается: ключ у каждого attachment-а свой.
  */
 
 import type { ClassValue } from 'svelte/elements'
@@ -114,7 +121,8 @@ export function toRootLayout(
  * стиль-выход компонента `style`).
  *
  * `forward` — то, что компонент кладёт на корень из не съеденного им: пропсы,
- * которые не съела связка (`forwardProps`).
+ * которые не съела связка, и attachment-ы потребителя (`forwardProps`).
+ * Символьные ключи спред копирует наравне со строковыми.
  */
 export function toRootProps(
 	state: TRootState,
