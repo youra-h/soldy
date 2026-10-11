@@ -58,6 +58,13 @@ export const virtual = query.get('virtual') === '1'
 // стенда. 3248 — сумма 20 колонок по 160 px и колонки выбора: колонки влезают,
 // и окно таблицы вбок не прокручивается — в любом `columnFit`
 export const width = Number(query.get('width')) || undefined
+// `?track=1` — состав сверяется по ключу записи (`trackBy`): замена данных
+// обновляет строки, а не пересобирает их. Без флага ключа нет — замена это
+// очистка и новый состав
+const trackBy =
+	query.get('track') === '1'
+		? { trackBy: (item: { data?: Record<string, unknown> }) => item.data?.id }
+		: {}
 /** Пропсы таблицы из флагов — кроме колонок и строк. */
 export const tableProps = {
 	mode,
@@ -65,4 +72,5 @@ export const tableProps = {
 	...preview,
 	...resizePreview,
 	...columnFit,
+	...trackBy,
 }
