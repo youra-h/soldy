@@ -27,6 +27,11 @@
  * есть, его имя не меняется. Сами плагины и ядро имён не меняют: вид объекта
  * стиля — дело адаптера, Solid ждёт как раз `z-index`. Перевод один и для
  * узлов не на корне — распорке окна ListBox стиль пишет ядро (`toReactStyle`).
+ *
+ * Корень бывает и не внешним узлом компонента: окно таблицы
+ * (`div.s-table__viewport`) обёрнуто вокруг её корня `table`. Тогда атрибуты
+ * потребителя и скрытие достаются обёртке, а корню — только своё
+ * (`toWrappedRootProps`).
  */
 
 import type { CSSProperties } from 'react'
@@ -71,6 +76,14 @@ export type TRootProps = Record<string, unknown> &
 	TRootLayout & {
 		ref: (element: Element | null) => void
 	}
+
+/** Обёртка корня и сам корень внутри неё — см. `toWrappedRootProps`. */
+export type TWrappedRootProps = {
+	/** Внешний узел компонента: свой класс, атрибуты потребителя и скрытие. */
+	readonly wrapper: Record<string, unknown> & TRootLayout
+	/** Корень внутри обёртки: классы ядра, наборы и `ref` адаптера. */
+	readonly root: TRootProps
+}
 
 const HIDDEN: CSSProperties = { display: 'none' }
 
@@ -167,4 +180,36 @@ export function toControlAttrs<TAttributes extends TRootForward>(
 /** Класс и стиль потребителя — то, что из его атрибутов остаётся корню. */
 export function toRootForward(forward: TRootForward): TRootForward {
 	return { className: forward.className, style: forward.style }
+}
+
+/**
+ * Корень внутри своей обёртки — у компонента, чей внешний узел не корень:
+ * окно таблицы (`div.s-table__viewport`) вокруг `table`. Корень — узел,
+ * который видят плагины и тема, обёртка — разметка вокруг него. Во Vue
+ * атрибуты потребителя сами достаются внешнему узлу шаблона, и `v-show` стоит
+ * на нём же; здесь то же разведение:
+ *
+ * - обёртке — её класс `className` и поверх него класс потребителя, стиль
+ *   потребителя и `display: none` скрытого компонента, остальные атрибуты
+ *   потребителя — как есть;
+ * - корню — `toRootProps` без атрибутов потребителя и без своего скрытия:
+ *   спрятана обёртка — спрятан и корень внутри неё.
+ */
+export function toWrappedRootProps(
+	ref: (element: Element | null) => void,
+	state: TRootState,
+	sets: readonly (TAttributesMap | undefined)[],
+	forward: TRootForward,
+	className: string,
+): TWrappedRootProps {
+	const { visible, ...root } = state
+
+	return {
+		wrapper: {
+			...forward,
+			className: [className, forward.className].filter(Boolean).join(' '),
+			style: { ...forward.style, ...(visible === false ? HIDDEN : undefined) },
+		},
+		root: toRootProps(ref, root, sets, {}),
+	}
 }

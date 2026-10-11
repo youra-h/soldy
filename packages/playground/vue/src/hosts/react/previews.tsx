@@ -1,5 +1,12 @@
 import type { ReactNode } from 'react'
-import { COLLECTION_ITEMS, COLLECTION_MANY_ITEMS } from '@soldy-ui/playground-shared'
+import {
+	COLLECTION_ITEMS,
+	COLLECTION_MANY_ITEMS,
+	TABLE_COLUMNS,
+	TABLE_MANY_ROWS,
+	TABLE_ROWS,
+	TABLE_SCROLL_ROWS,
+} from '@soldy-ui/playground-shared'
 import {
 	Accordion,
 	Button,
@@ -12,6 +19,7 @@ import {
 	RadioGroup,
 	Skeleton,
 	Switch,
+	Table,
 	Tabs,
 	Virtual,
 	roleIcon,
@@ -88,6 +96,27 @@ export const PREVIEWS: Record<string, TPreview> = {
 		</ListBox>
 	),
 
+	// Строки и колонки — данными, как у Vue: частей разметкой у таблицы нет.
+	// Имя — пропом. Обёртка — граница ширины, а с закреплённой шапкой — ещё и
+	// окно прокрутки высотой 320 px на сорок строк. Окно таблицы — на странице
+	// Virtual
+	table: (bind) => (
+		<div
+			style={
+				bind.stickyHead
+					? { width: '100%', height: 320, overflow: 'auto' }
+					: { width: '100%' }
+			}
+		>
+			<Table
+				items={bind.stickyHead ? TABLE_SCROLL_ROWS : TABLE_ROWS}
+				columns={TABLE_COLUMNS}
+				aria_label="Сотрудники"
+				{...bind}
+			/>
+		</div>
+	),
+
 	// Первый таб активен сразу — иначе ни одна панель не смонтируется. Панели —
 	// слотом `content`, вне списка табов
 	tabs: (bind) => (
@@ -124,13 +153,26 @@ export const PREVIEWS: Record<string, TPreview> = {
 
 	skeleton: (bind) => <Skeleton width={160} height={16} {...bind} />,
 
-	// Окно на списке в тысячу элементов: на пяти его не видно. ListBox с
-	// пределом строк прокручивается сам, строка `enabled` включает и выключает
-	// окно. Элементы — данными (`items`): элементы разметкой окно не прячет.
-	// Таблицы в React нет, и окна таблицы рядом, как у Vue, тоже
+	// Окно на списке и таблице по тысяче элементов: на пяти его не видно.
+	// ListBox с пределом строк прокручивается сам, таблица — в обёртке высотой
+	// 320 px; строка `enabled` включает и выключает окно у обоих. Элементы —
+	// данными (`items`): элементы разметкой окно не прячет. Ряд — граница
+	// ширины, как у Vue. Select в React нет, и его окна рядом тоже.
+	// Переставленную колонку таблица ведёт целиком, с ячейками строк
+	// (`reorderPreview: 'column'`): в окне это сотни ячеек, а не тысячи
 	virtual: (bind) => (
 		<Virtual {...bind}>
-			<ListBox items={COLLECTION_MANY_ITEMS} maxRows={8} aria_label="Пункты" />
+			<div style={{ display: 'flex', gap: 24, alignItems: 'flex-start', width: '100%' }}>
+				<ListBox items={COLLECTION_MANY_ITEMS} maxRows={8} aria_label="Пункты" />
+				<div style={{ flex: 1, minWidth: 0, height: 320, overflow: 'auto' }}>
+					<Table
+						items={TABLE_MANY_ROWS}
+						columns={TABLE_COLUMNS}
+						reorderPreview="column"
+						aria_label="Сотрудники"
+					/>
+				</div>
+			</div>
 		</Virtual>
 	),
 }
