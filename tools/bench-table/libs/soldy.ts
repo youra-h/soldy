@@ -27,6 +27,10 @@ const preview =
 const resizeFlag = query.get('resize')
 const resize = resizeFlag === '1' || resizeFlag === 'deferred'
 const resizePreview = resizeFlag === 'deferred' ? { resizePreview: 'deferred' as const } : {}
+// `?fit=contain` — гибкие колонки ровно заполняют место (`columnFit: 'contain'`):
+// таблица не шире места, и окно не прокручивается вбок. Без флага проп не задан
+// (`auto`): колонки растут от 160 px, и 20 колонок шире окна стенда
+const columnFit = query.get('fit') === 'contain' ? { columnFit: 'contain' as const } : {}
 const columns = COLUMNS.map((c) => ({
 	...c,
 	sortable: true,
@@ -58,6 +62,7 @@ export function mount(el: Element, rows: ShallowRef<TRec[] | null>) {
 					aria_label: 'Бенч',
 					...preview,
 					...resizePreview,
+					...columnFit,
 				})
 
 			return virtual
