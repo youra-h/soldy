@@ -8,6 +8,11 @@ import { libConfig } from '../../../tools/vite/lib.config.ts'
  * Плагин обязателен: JSX Solid компилируется в вызовы его рантайма, а не в
  * `createElement`, и без плагина сборка встала бы на первом `.tsx`. Декларации
  * собирает `tsc -p tsconfig.build.json` вторым шагом скрипта `build`.
+ *
+ * Этот бандл собран под браузер и уезжает условием `default`. Серверный рендер
+ * и гидратацию приложение получает из исходника с JSX — его выпускает третий
+ * шаг, `tsc -p tsconfig.source.json`, под условием `solid` (docs/agents/build.md,
+ * «Сборка пакетов»).
  */
 export default libConfig({
 	name: '@soldy-ui/solid',

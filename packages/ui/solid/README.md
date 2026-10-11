@@ -24,8 +24,9 @@ arrive as callback props (`element:ready` → `onElementReady`), and the default
 npm install @soldy-ui/solid @soldy-ui/theme-oren @soldy-ui/icons-material
 ```
 
-Solid `^1.9` is a peer dependency. A theme and an icon pack are separate packages — pick the ones
-you want.
+Solid `^1.9` is a peer dependency. The package ships its components as source with JSX under the
+`solid` export condition, so your app's bundler compiles them with its Solid plugin (for Vite,
+`vite-plugin-solid`). A theme and an icon pack are separate packages — pick the ones you want.
 
 ## Usage
 
@@ -73,6 +74,14 @@ import '@soldy-ui/theme-oren'
 setIcons(material)
 useTheme(oren)
 ```
+
+## Server rendering
+
+Server rendering and hydration — SolidStart, or Vite SSR with `vite-plugin-solid({ ssr: true })` —
+need nothing extra: the Solid plugin finds the package by its `solid` export condition and compiles
+its components together with your app, for the server and for the browser. A bundler without the
+Solid plugin gets the `default` export instead — a build for the browser, which does not render on
+the server.
 
 ## Documentation
 
