@@ -10,10 +10,16 @@
  *
  * Привязку корня к `TElementPlugin` ставит не атрибут, а attachment корня
  * (`Dynamic`): `element:ready` приходит с корнем у каждого компонента.
+ *
+ * Attachment потребителя (`<Button {@attach tooltip}>`) Svelte передаёт
+ * компоненту пропом с ключом-символом, и на корень он едет вместе с
+ * атрибутами потребителя. У привязки корня адаптера ключ свой: одно другого
+ * не перекрывает.
  */
 
 import { describe, it, expect } from 'vitest'
 import { flushSync, type Component } from 'svelte'
+import { createAttachmentKey, type Attachment } from 'svelte/attachments'
 import { TButton } from '@soldy-ui/core'
 import {
 	Button,
@@ -22,6 +28,7 @@ import {
 	Icon,
 	ProgressSpinner,
 	Skeleton,
+	roleIcon,
 	toRootLayout,
 	toRootProps,
 	type ButtonProps,
@@ -31,7 +38,10 @@ import {
 	type ProgressSpinnerProps,
 	type SkeletonProps,
 } from '@soldy-ui/svelte'
+import Attach from './Attach.test.svelte'
+import Link from './Link.test.svelte'
 import { find, mount, nextFrame, readyProbe } from './mount'
+import { reactiveProps } from './reactive-props.svelte'
 
 /** Общие пропсы строки таблицы: направление, атрибуты и колбэк готовности есть у всех. */
 type TProbeProps = ButtonProps &
@@ -132,6 +142,170 @@ describe('привязка корня к TElementPlugin', () => {
 		expect(root()).not.toBe(first)
 		expect(root().localName).toBe('span')
 		expect(ready.elements.at(-1)).toBe(root())
+	})
+})
+
+/** Узлы, на которые встал attachment потребителя и с которых он снят. */
+type TAttachmentProbe = {
+	readonly attach: Attachment<Element>
+	readonly attached: readonly Element[]
+	readonly detached: readonly Element[]
+}
+
+/** Пробник attachment-а: узлы сверяют по ссылке (`toBe`), как у `readyProbe`, а не моком. */
+function attachmentProbe(): TAttachmentProbe {
+	const attached: Element[] = []
+	const detached: Element[] = []
+
+	return {
+		attached,
+		detached,
+		attach: (node) => {
+			attached.push(node)
+
+			return () => {
+				detached.push(node)
+			}
+		},
+	}
+}
+
+describe('attachment потребителя — на корне', () => {
+	it.each(COMPONENTS)(
+		'%s: attachment получает корень, element:ready — тот же корень',
+		async (_name, component, selector, own) => {
+			const consumer = attachmentProbe()
+			const ready = readyProbe()
+
+			mount(component, {
+				...own,
+				onElementReady: ready.onElementReady,
+				[createAttachmentKey()]: consumer.attach,
+			})
+			await nextFrame()
+
+			const root = find(document, selector, HTMLElement)
+
+			expect(consumer.attached).toHaveLength(1)
+			expect(consumer.attached[0]).toBe(root)
+			expect(ready.elements).toHaveLength(1)
+			expect(ready.elements[0]).toBe(root)
+		},
+	)
+
+	/** Так его вешает потребитель: `{@attach}` прямо на компоненте в своей разметке. */
+	it('{@attach} на компоненте в разметке — на корне', () => {
+		const consumer = attachmentProbe()
+		const { root } = mount(Attach, { attach: consumer.attach })
+
+		expect(consumer.attached).toHaveLength(1)
+		expect(consumer.attached[0]).toBe(root())
+	})
+
+	it('Frame: на узле в цели телепорта, а не на месте компонента', () => {
+		const target = document.createElement('section')
+
+		target.id = 'layer'
+		document.body.append(target)
+
+		const consumer = attachmentProbe()
+		const { container } = mount(Frame, {
+			target: '#layer',
+			visible: true,
+			[createAttachmentKey()]: consumer.attach,
+		})
+
+		expect(consumer.attached).toHaveLength(1)
+		expect(consumer.attached[0]?.parentElement).toBe(target)
+		expect(container.querySelector('.s-frame')).toBeNull()
+	})
+
+	it('Icon по роли: на <svg> иконки', () => {
+		const consumer = attachmentProbe()
+		const { container } = mount(Icon, {
+			tag: roleIcon('check'),
+			[createAttachmentKey()]: consumer.attach,
+		})
+
+		expect(consumer.attached).toHaveLength(1)
+		expect(consumer.attached[0]).toBe(find(container, ':scope > svg', SVGSVGElement))
+	})
+
+	it('компонент в tag: на его корне', () => {
+		const consumer = attachmentProbe()
+		const { container } = mount(Button, {
+			tag: Link,
+			[createAttachmentKey()]: consumer.attach,
+		})
+
+		expect(consumer.attached).toHaveLength(1)
+		expect(consumer.attached[0]).toBe(find(container, ':scope > a', HTMLAnchorElement))
+	})
+
+	/** Смена тега пересоздаёт узел: attachment отпускает прежний и встаёт на новый. */
+	it('смена тега — снят с прежнего корня и встал на новый', async () => {
+		const ctrl = new TButton()
+		const consumer = attachmentProbe()
+		const ready = readyProbe()
+		const { root } = mount(Button, {
+			ctrl,
+			onElementReady: ready.onElementReady,
+			[createAttachmentKey()]: consumer.attach,
+		})
+
+		await nextFrame()
+
+		const first = root()
+
+		ctrl.tag = 'span'
+		flushSync()
+		await nextFrame()
+
+		expect(consumer.detached).toHaveLength(1)
+		expect(consumer.detached[0]).toBe(first)
+		expect(consumer.attached).toHaveLength(2)
+		expect(consumer.attached[1]).toBe(root())
+		expect(ready.elements.at(-1)).toBe(root())
+	})
+
+	/**
+	 * Атрибуты корня собираются заново на каждую смену пропа, а attachment —
+	 * та же функция: Svelte его не переставляет, и подсказка потребителя не
+	 * пересоздаётся от смены класса.
+	 */
+	it('смена другого атрибута потребителя attachment не переставляет', () => {
+		const consumer = attachmentProbe()
+		const props = reactiveProps<ButtonProps>({
+			class: 'before',
+			[createAttachmentKey()]: consumer.attach,
+		})
+		const { root } = mount(Button, props)
+
+		props.class = 'after'
+		flushSync()
+
+		expect(root().classList.contains('after')).toBe(true)
+		expect(consumer.attached).toHaveLength(1)
+		expect(consumer.detached).toHaveLength(0)
+	})
+
+	it('переданный после монтирования встаёт на корень, снятый — снимается', () => {
+		const consumer = attachmentProbe()
+		const key = createAttachmentKey()
+		const props = reactiveProps<ButtonProps>({})
+		const { root } = mount(Button, props)
+
+		props[key] = consumer.attach
+		flushSync()
+
+		expect(consumer.attached).toHaveLength(1)
+		expect(consumer.attached[0]).toBe(root())
+
+		delete props[key]
+		flushSync()
+
+		expect(consumer.detached).toHaveLength(1)
+		expect(consumer.detached[0]).toBe(root())
 	})
 })
 

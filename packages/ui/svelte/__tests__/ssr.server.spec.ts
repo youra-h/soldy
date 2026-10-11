@@ -14,6 +14,7 @@
 
 import { describe, it, expect } from 'vitest'
 import { createRawSnippet } from 'svelte'
+import { createAttachmentKey } from 'svelte/attachments'
 import { render } from 'svelte/server'
 import { Button, Frame, Icon, ProgressSpinner, Skeleton, roleIcon } from '@soldy-ui/svelte'
 
@@ -77,6 +78,21 @@ describe('Button · серверный рендер', () => {
 		const body = markup(render(Button, { props: { visible: false } }).body)
 
 		expect(body).toMatch(/^<button [^>]*style="display: none"/)
+	})
+
+	/** Attachment едет в атрибутах корня и на сервере, но узла там нет: он ждёт браузера. */
+	it('attachment потребителя не выполняется и разметку не меняет', () => {
+		const nodes: Element[] = []
+		const attach = (node: Element) => {
+			nodes.push(node)
+		}
+		const plain = markup(render(Button, { props: { text: 'Сохранить' } }).body)
+		const attached = markup(
+			render(Button, { props: { text: 'Сохранить', [createAttachmentKey()]: attach } }).body,
+		)
+
+		expect(attached).toBe(plain)
+		expect(nodes).toHaveLength(0)
 	})
 })
 

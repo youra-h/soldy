@@ -37,6 +37,10 @@ export type TBinding<
 	readonly plugins: IPluginBundle | null
 	/** Свойства инстанса и выходы плагинов со снимком через `valueOf()` — см. `TAdapterState`. */
 	readonly state: TAdapterState<C>
+	/**
+	 * Атрибуты корня от потребителя: пропсы, которые не съела связка, и
+	 * attachment-ы потребителя — пропсы с ключом-символом.
+	 */
 	readonly forwardProps: TForwardProps<TProps>
 	/** Svelte-attachment: `<div {@attach binding.attachElement}>` */
 	attachElement: (node: Element) => (() => void) | void
@@ -84,7 +88,22 @@ export function useAdapter<C extends IComponentContract, TProps extends object>(
 	// 5. Очистка контекста
 	$effect(() => () => adapter.destroy())
 
-	const forwardProps = $derived(binding.forward(getProps()))
+	// Атрибуты корня от потребителя. Связка отдаёт пропсы по строковым ключам,
+	// а attachment потребителя (`<Button {@attach tooltip}>`) Svelte передаёт
+	// пропом с ключом-символом — его связка не видит. Поэтому собственные
+	// символьные ключи пропсов добавляются здесь, все: attachment среди них при
+	// спреде на корень отбирает сам Svelte. С привязкой корня адаптера ключ не
+	// совпадёт — её attachment `Dynamic` ставит под своим ключом
+	const forwardProps = $derived.by(() => {
+		const props = getProps()
+		const forward = binding.forward(props)
+
+		for (const key of Object.getOwnPropertySymbols(props)) {
+			Reflect.set(forward, key, Reflect.get(props, key))
+		}
+
+		return forward
+	})
 
 	return {
 		ctrl: adapter.instance,
