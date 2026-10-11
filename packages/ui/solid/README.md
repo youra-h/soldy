@@ -11,8 +11,12 @@ markup — BEM classes `s-*` and `data-*` state attributes. Props, events and sl
 component descriptor, so they match the other five adapters; only the spelling is Solid's: events
 arrive as callback props (`element:ready` → `onElementReady`), and the default slot is `children`.
 
-> **Status:** the Solid adapter is in progress — Button is ported, the rest of the set is on its
-> way. See [the adapter table](https://github.com/youra-h/soldy#components).
+> **Status:** the Solid adapter is in progress — Button, Icon, Frame, ProgressSpinner and Skeleton
+> are ported, the rest of the set is on its way. Icon renders the `tag` it is given: an element
+> name, a Solid component, or `roleIcon(role)` — the icon of that role from the registered icon
+> pack. Frame teleports its panel into `target` (`body` by default) on the client; with `contained`
+> it stays in place. `LocaleProvider` gives a subtree its language and library strings. See
+> [the adapter table](https://github.com/youra-h/soldy#components).
 
 ## Install
 
@@ -44,6 +48,16 @@ const btn = new TButton({ text: 'Save' })
 
 export function Toolbar() {
   return <Button ctrl={btn} onActionPress={() => (btn.disabled = true)} />
+}
+```
+
+An icon from the registered pack — the root of `Icon` is an `<svg>` of that role:
+
+```tsx
+import { Icon, roleIcon } from '@soldy-ui/solid'
+
+export function CloseIcon() {
+  return <Icon tag={roleIcon('close')} aria_label="Close" />
 }
 ```
 

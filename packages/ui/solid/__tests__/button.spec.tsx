@@ -186,9 +186,9 @@ describe('Button · внешний ctrl', () => {
 describe('Button · события через колбэк-пропы', () => {
 	it('onChangeView отдаёт значение', () => {
 		const ctrl = new TButton({ view: 'solid' })
-		const seen: string[] = []
+		const seen: (string | undefined)[] = []
 
-		mount({ ctrl, onChangeView: (v: string) => seen.push(v) })
+		mount({ ctrl, onChangeView: (v) => seen.push(v) })
 
 		ctrl.view = 'ghost'
 

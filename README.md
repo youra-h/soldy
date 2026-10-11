@@ -190,7 +190,7 @@ What each adapter implements so far:
 | React          | `@soldy-ui/react`   | Button, Icon, Label, Frame, Skeleton, ProgressSpinner, Input, CheckBox, Switch, RadioGroup, ListBox, Tabs, Accordion, Table, Virtual |
 | Angular        | `@soldy-ui/angular` | Button (`<button so-button>`)                                                                                                        |
 | Svelte         | `@soldy-ui/svelte`  | Button, Icon, Frame, Skeleton, ProgressSpinner                                                                                       |
-| Solid          | `@soldy-ui/solid`   | Button                                                                                                                               |
+| Solid          | `@soldy-ui/solid`   | Button, Icon, Frame, Skeleton, ProgressSpinner                                                                                       |
 | Web Components | `@soldy-ui/webc`    | Button (`<button is="so-button">`)                                                                                                   |
 
 A new component comes to Vue first and moves to the other adapters after that.
@@ -238,8 +238,8 @@ npm run lint        # ESLint
 
 The playground's overview page shows every component. A component page renders each prop twice —
 from props and from a core instance passed as `ctrl` — with the code for both. Components are drawn
-by the framework picked in the header (Vue, React, Svelte); the framework is the first segment of
-the address, `#/react/button`. The playground's pages, layout and tests are described in
+by the framework picked in the header (Vue, React, Svelte, Solid); the framework is the first
+segment of the address, `#/react/button`. The playground's pages, layout and tests are described in
 [packages/playground/README.md](packages/playground/README.md). The rest of the commands are listed
 in [AGENTS.md → Commands](AGENTS.md#commands).
 

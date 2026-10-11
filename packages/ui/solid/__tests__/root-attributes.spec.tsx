@@ -1,0 +1,294 @@
+/**
+ * Порядок атрибутов корня — один у всех компонентов (`createRootProps`).
+ *
+ * Наборы ядра (`attrs`, `aria`, `dataset`) ложатся первыми, атрибуты снаружи —
+ * поверх них, как у Vue, где атрибуты снаружи падают на корень последними.
+ * Раньше компоненты Solid разворачивали наборы ядра после атрибутов
+ * потребителя, и набор ядра их перекрывал: `tabindex="-1"` строки списка
+ * проиграл бы `tabindex="0"`, который кнопка на `div` ставит себе сама, —
+ * строки списка стали бы остановками Tab.
+ *
+ * `ref` адаптера — последним: `ref` потребителя из его атрибутов выбил бы
+ * привязку корня к `TElementPlugin` — не было бы `element:ready`.
+ *
+ * Стиль Solid ставит объектом по свойству и не трогает того, что плагины
+ * пишут в узел сами: сдвиг смахиваемой панели (`--s-swipe-offset`) переживает
+ * смену раскладки и видимости.
+ */
+
+import { describe, it, expect, vi } from 'vitest'
+import { createSignal, type Component, type JSX } from 'solid-js'
+import { TButton } from '@soldy-ui/core'
+import {
+	Button,
+	ComponentView,
+	Frame,
+	Icon,
+	ProgressSpinner,
+	Skeleton,
+	toRootLayout,
+	toRootProps,
+	type ButtonProps,
+	type ComponentViewProps,
+	type FrameProps,
+	type IconProps,
+	type ProgressSpinnerProps,
+	type SkeletonProps,
+} from '@soldy-ui/solid'
+import { find, mount, nextFrame } from './mount'
+
+/** Общие пропсы строки таблицы: направление, атрибуты и колбэк готовности есть у всех. */
+type TProbeProps = ButtonProps &
+	ComponentViewProps &
+	FrameProps &
+	IconProps &
+	ProgressSpinnerProps &
+	SkeletonProps
+
+/**
+ * Компонент, класс его корня и пропсы, без которых его корень не виден: Frame
+ * по умолчанию скрыт и уходит телепортом в `body` — корень ищется по документу.
+ */
+const COMPONENTS: ReadonlyArray<
+	readonly [string, Component<TProbeProps>, string, Partial<TProbeProps>]
+> = [
+	['Button', Button, '.s-button', {}],
+	['ComponentView', ComponentView, '.s-component-view', {}],
+	['Frame', Frame, '.s-frame', { visible: true }],
+	['Icon', Icon, '.s-icon', { tag: 'i' }],
+	['ProgressSpinner', ProgressSpinner, '.s-progress-spinner', {}],
+	['Skeleton', Skeleton, '.s-skeleton', {}],
+]
+
+describe('атрибут снаружи перекрывает набор ядра', () => {
+	/** `dir` ядро пишет в `attrs` по `direction`, а `dir` снаружи — атрибут потребителя. */
+	it.each(COMPONENTS)('%s: dir потребителя — поверх dir ядра', (_name, Probe, selector, own) => {
+		mount(() => <Probe {...own} direction="rtl" dir="ltr" />)
+
+		expect(find(document, selector, HTMLElement).getAttribute('dir')).toBe('ltr')
+	})
+
+	/** Класс ядра — первым, класс потребителя — за ним, оба на корне. */
+	it.each(COMPONENTS)(
+		'%s: класс потребителя — после классов ядра',
+		(_name, Probe, selector, own) => {
+			mount(() => <Probe {...own} class="mine" />)
+
+			const classes = [...find(document, selector, HTMLElement).classList]
+
+			expect(classes.at(-1)).toBe('mine')
+			expect(classes[0]).toBe(selector.slice(1))
+		},
+	)
+
+	it('Button на div: tabindex потребителя — поверх tabindex="0" ядра', () => {
+		const { root } = mount(() => <Button tag="div" tabindex={-1} />)
+
+		expect(root().getAttribute('role')).toBe('button')
+		expect(root().getAttribute('tabindex')).toBe('-1')
+	})
+
+	it('Button на div: role потребителя — поверх role="button" ядра', () => {
+		const { root } = mount(() => <Button tag="div" role="link" />)
+
+		expect(root().getAttribute('role')).toBe('link')
+	})
+
+	it('без атрибута снаружи остаётся набор ядра', () => {
+		const { root } = mount(() => <Button tag="div" direction="rtl" />)
+
+		expect(root().getAttribute('tabindex')).toBe('0')
+		expect(root().getAttribute('dir')).toBe('rtl')
+	})
+
+	/** Атрибут потребителя переживает смену набора ядра: кнопку выключили и включили. */
+	it('Button на div: tabindex потребителя переживает смену disabled', () => {
+		const ctrl = new TButton({ tag: 'div' })
+		const { root } = mount(() => <Button ctrl={ctrl} tabindex={-1} />)
+
+		ctrl.disabled = true
+		ctrl.disabled = false
+
+		expect(root().getAttribute('tabindex')).toBe('-1')
+	})
+})
+
+describe('ref потребителя не выбивает привязку корня к TElementPlugin', () => {
+	it.each(COMPONENTS)(
+		'%s: element:ready приходит с корнем',
+		async (_name, Probe, selector, own) => {
+			const onElementReady = vi.fn()
+			const consumer = vi.fn()
+
+			mount(() => <Probe {...own} ref={consumer} onElementReady={onElementReady} />)
+			await nextFrame()
+
+			expect(onElementReady).toHaveBeenCalledTimes(1)
+			expect(onElementReady).toHaveBeenCalledWith(find(document, selector, HTMLElement))
+		},
+	)
+
+	/** Смена тега пересоздаёт узел: привязка отпускает прежний и берёт новый. */
+	it('смена тега — ready с новым корнем', async () => {
+		const ctrl = new TButton()
+		const onElementReady = vi.fn()
+		const { root } = mount(() => <Button ctrl={ctrl} onElementReady={onElementReady} />)
+
+		await nextFrame()
+
+		const first = root()
+
+		ctrl.tag = 'span'
+		await nextFrame()
+
+		expect(root()).not.toBe(first)
+		expect(root().localName).toBe('span')
+		expect(onElementReady).toHaveBeenLastCalledWith(root())
+	})
+
+	/**
+	 * Атрибуты корня — мемо, и смена любого из них не трогает привязку: узел
+	 * тот же, и `TElementPlugin` не объявляет его заново.
+	 */
+	it('смена атрибута не перепривязывает корень', async () => {
+		const onElementReady = vi.fn()
+		const [title, setTitle] = createSignal('a')
+
+		mount(() => <Button title={title()} onElementReady={onElementReady} />)
+		await nextFrame()
+
+		setTitle('b')
+		await nextFrame()
+
+		expect(onElementReady).toHaveBeenCalledTimes(1)
+	})
+})
+
+/**
+ * Плагины пишут в узел и сами — мимо разметки: сдвиг смахиваемой панели,
+ * предел высоты списка. Стиль объектом Solid ставит по свойству и чужого не
+ * трогает: такое свойство переживает смену раскладки, видимости и стиля
+ * потребителя.
+ */
+describe('свойство, записанное в узел мимо разметки', () => {
+	it('переживает смену layout_styles, видимости и стиля потребителя', () => {
+		const ctrl = new TButton()
+		const [style, setStyle] = createSignal<JSX.CSSProperties>({ color: 'red' })
+		const [width, setWidth] = createSignal(10)
+		const { container } = mount(() => (
+			<>
+				<Button ctrl={ctrl} style={style()} />
+				<Icon tag="i" width={width()} />
+			</>
+		))
+		const button = find(container, '.s-button', HTMLElement)
+		const icon = find(container, '.s-icon', HTMLElement)
+
+		button.style.setProperty('--s-swipe-offset', '12px')
+		icon.style.setProperty('--s-swipe-offset', '7px')
+
+		ctrl.hide()
+		ctrl.show()
+		setStyle({ color: 'blue' })
+		setWidth(20)
+
+		expect(button.style.getPropertyValue('--s-swipe-offset')).toBe('12px')
+		expect(button.style.color).toBe('blue')
+		expect(icon.style.getPropertyValue('--s-swipe-offset')).toBe('7px')
+		expect(icon.style.width).toBe('20px')
+	})
+
+	it('снятый стиль потребителя снимает своё, а чужого не трогает', () => {
+		const [style, setStyle] = createSignal<JSX.CSSProperties | undefined>({ color: 'red' })
+		const { root } = mount(() => <Button style={style()} />)
+
+		root().style.setProperty('--s-swipe-offset', '12px')
+		setStyle(undefined)
+
+		expect(root().style.color).toBe('')
+		expect(root().style.getPropertyValue('--s-swipe-offset')).toBe('12px')
+	})
+})
+
+/**
+ * Стиль Solid ставит объектом с именами как в CSS — так их и пишут плагины и
+ * ядро: пользовательское свойство остаётся под своим именем, `z-index` — тоже.
+ * Так размер отдают плагины раскладки окна и выезжающей панели, но этих
+ * компонентов в Solid пока нет, и правило проверяется на самой раскладке
+ * корня.
+ */
+describe('раскладка корня: имена стиля — как в CSS', () => {
+	it('--* из layout_styles доходит до узла как есть', () => {
+		const layout = toRootLayout({ layout_styles: { '--dialog-width': '320px' } }, {})
+
+		expect(layout.style).toEqual({ '--dialog-width': '320px' })
+	})
+
+	it('пустое значение свойства не задаёт, пустой стиль — пустой объект', () => {
+		expect(toRootLayout({ layout_styles: { width: '', height: '' } }, {}).style).toEqual({})
+		expect(toRootLayout({ layout_styles: { width: '', height: '2em' } }, {}).style).toEqual({
+			height: '2em',
+		})
+	})
+
+	it('стиль потребителя строкой — слои склеены текстом, скрытие — последним', () => {
+		const layout = toRootLayout(
+			{ layout_styles: { 'z-index': 3 }, visible: false },
+			{ style: 'display: flex' },
+		)
+
+		expect(layout.style).toBe('z-index: 3; display: flex; display: none')
+	})
+
+	it('наборы ядра — первыми, атрибуты потребителя — поверх', () => {
+		const props = toRootProps(
+			{ classes: ['s-x'] },
+			[{ role: 'button', tabindex: '0' }, { 'data-open': 'true' }],
+			{ class: 'mine', style: { color: 'red' } },
+		)
+		// Пропсы, которые компонент не съел, — всё, что пришло от потребителя
+		const forward: Record<string, unknown> = { tabindex: -1, class: 'mine' }
+
+		expect(props).toMatchObject({ role: 'button', tabindex: '0', 'data-open': 'true' })
+		expect(toRootProps({}, [{ tabindex: '0' }], forward).tabindex).toBe(-1)
+		expect(props.class).toBe('s-x mine')
+		expect(props.style).toEqual({ color: 'red' })
+	})
+})
+
+/**
+ * Стиль-выход компонента — стиль, который считает ядро: доля кольца
+ * (`fractionStyle`). Раскладка корня кладёт его поверх стиля плагина, под
+ * стилем потребителя — как во Vue, где атрибуты снаружи ложатся на корень
+ * последними, — и под `display: none` скрытого корня, как у `v-show`.
+ */
+describe('раскладка корня: стиль-выход компонента', () => {
+	it('ProgressSpinner: стиль потребителя — поверх доли', () => {
+		const { root } = mount(() => (
+			<ProgressSpinner value={40} style={{ '--s-progress-spinner-fraction': '0.9' }} />
+		))
+
+		expect(root().style.getPropertyValue('--s-progress-spinner-fraction')).toBe('0.9')
+	})
+
+	it('ProgressSpinner: display: none скрытого корня — поверх стиля потребителя и доли', () => {
+		const { root } = mount(() => (
+			<ProgressSpinner value={40} visible={false} style={{ display: 'inline-block' }} />
+		))
+
+		expect(root().style.display).toBe('none')
+		// Скрытие трогает только `display`: доля остаётся на корне
+		expect(root().style.getPropertyValue('--s-progress-spinner-fraction')).toBe('0.4')
+	})
+
+	/** Плагина раскладки у кольца нет — правило проверяется на самой раскладке корня. */
+	it('стиль-выход — поверх стиля плагина, имена по-CSS — как у плагина', () => {
+		const layout = toRootLayout(
+			{ layout_styles: { '--ring': 'plugin' } },
+			{},
+			{ '--ring': 'own', 'z-index': 3 },
+		)
+
+		expect(layout.style).toEqual({ '--ring': 'own', 'z-index': 3 })
+	})
+})

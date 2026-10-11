@@ -1,6 +1,6 @@
-import { Show, children, type JSX } from 'solid-js'
+import { Show, type JSX } from 'solid-js'
 import { Dynamic } from 'solid-js/web'
-import { renderSlot } from '../../adapter'
+import { createRootProps, renderSlot, resolveSlot, rootTag } from '../../adapter'
 import { setupButton } from './setup.component'
 import type { ButtonProps } from './base.component'
 
@@ -8,47 +8,39 @@ import type { ButtonProps } from './base.component'
  * Button — рендерит кнопку с текстом из Core.
  *
  * - `tag` по умолчанию `button` (из TButton.defaultValues)
- * - `children` переопределяет `text`
  * - disabled → нативный атрибут `disabled` там, где тег его поддерживает
- *   (`attrs`), иначе `aria-disabled` (`aria`) — оба набора считает ядро
+ *   (`attrs`), иначе `aria-disabled` (`aria`) — оба набора считает ядро;
+ *   `data-disabled` для темы (`dataset`) стоит на любом теге
+ *
+ * Наборы ядра, поверх — атрибуты снаружи (`createRootProps`), `ref` адаптера
+ * последним: `tabindex="-1"` строки списка перекрывает `tabindex="0"`, который
+ * кнопка на `div` ставит себе сама.
+ *
+ * Слоты объявлены в контракте (ButtonDescriptor) и одинаковы во всех
+ * адаптерах: `leading`, `default` (здесь — `children`, со scope `{ text }`),
+ * `trailing`. Незаданный `children` уступает место тексту: по нему разметка
+ * выбирает, что рисовать, поэтому слот разворачивает адаптер, один раз
+ * (`resolveSlot`).
  */
 export function Button(props: ButtonProps): JSX.Element {
 	const binding = setupButton(props)
 	const state = binding.state
-
-	// Слоты контракта: leading, default (scope { text }), trailing
-	const leading = children(() => renderSlot(props.leading))
-	const resolved = children(() => renderSlot(props.children, { text: state.text ?? '' }))
-	const trailing = children(() => renderSlot(props.trailing))
+	const root = createRootProps(() => ({
+		state,
+		sets: [state.attrs, state.aria, state.dataset],
+		forward: binding.forwardProps(),
+	}))
+	const content = resolveSlot(
+		() => props.children,
+		() => ({ text: state.text ?? '' }),
+	)
 
 	return (
 		<Show when={state.rendered}>
-			<Dynamic
-				component={state.tag as string}
-				{...binding.forwardProps()}
-				class={[state.classes?.join(' '), binding.forwardProps().class]
-					.filter(Boolean)
-					.join(' ')}
-				style={{
-					...(binding.forwardProps().style as object),
-					display: state.visible ? undefined : 'none',
-				}}
-				// attrs — нативный disabled там, где у тега он есть, и dir по
-				// direction; aria вычисляет ядро: role, tabindex, aria-disabled на
-				// остальных тегах; dataset — data-disabled для темы, на любом теге.
-				// null в значении Solid понимает как «атрибут не ставить».
-				{...state.attrs}
-				{...state.aria}
-				{...state.dataset}
-				ref={binding.ref}
-			>
-				{leading()}
-				<span class="s-button__text">
-					<Show when={resolved()} fallback={state.text}>
-						{resolved()}
-					</Show>
-				</span>
-				{trailing()}
+			<Dynamic {...root()} component={rootTag(state.tag)} ref={binding.ref}>
+				{renderSlot(props.leading)}
+				<span class="s-button__text">{content() ?? state.text}</span>
+				{renderSlot(props.trailing)}
 			</Dynamic>
 		</Show>
 	)

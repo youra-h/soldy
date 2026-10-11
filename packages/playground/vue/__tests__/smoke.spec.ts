@@ -689,6 +689,7 @@ const WIDTH_CODE: Record<string, { number: string; text: string; extension: stri
 	vue: { number: ':width="40"', text: `:width="'10%'"`, extension: 'vue' },
 	react: { number: 'width={40}', text: 'width="10%"', extension: 'tsx' },
 	svelte: { number: 'width={40}', text: 'width="10%"', extension: 'svelte' },
+	solid: { number: 'width={40}', text: 'width="10%"', extension: 'tsx' },
 }
 
 /**

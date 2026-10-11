@@ -15,11 +15,14 @@ import { join, resolve, relative } from 'node:path'
  * `driver-access.spec.ts`) — переименованный импорт под тем же alias всё
  * равно распознаётся по оригинальному имени в списке специфаеров импорта.
  *
- * У Svelte тот же сторож держит и сборку: контекст компонента собирает
- * `createSvelteAdapterContext` (id монтирования и локаль поддерева), а не
+ * У Svelte и Solid тот же сторож держит и сборку: контекст компонента
+ * собирает обёртка адаптера — `createSvelteAdapterContext` и
+ * `createSolidAdapterContext` (id монтирования и локаль поддерева), а не
  * `createAdapterContext` напрямую — как eslint-блок у Vue. `$props.id()`
  * механизмом здесь не считается: это id монтирования, который компилятор
- * пускает только в компонент (AGENTS.md, там же).
+ * пускает только в компонент (AGENTS.md, там же). У Solid id монтирования
+ * (`createUniqueId`) берёт сама обёртка, а слот разворачивает помощник
+ * адаптера поверх `children`, — в компонентах их нет.
  */
 
 const ROOT = resolve(__dirname, '../../..')
@@ -72,6 +75,8 @@ const SOLID_FORBIDDEN = [
 	'onMount',
 	'onCleanup',
 	'useContext',
+	'children',
+	'createUniqueId',
 ]
 
 const SVELTE_IMPORT_FORBIDDEN = ['onMount', 'onDestroy', 'getContext', 'setContext']
@@ -88,8 +93,16 @@ const GUARDS: TGuard[] = [
 		extensions: /\.tsx?$/,
 		test(source) {
 			const names = importedNames(source, /^solid-js/)
+			const found = SOLID_FORBIDDEN.filter((name) => names.has(name))
 
-			return SOLID_FORBIDDEN.filter((name) => names.has(name))
+			// Сборка мимо `createSolidAdapterContext` теряет id монтирования
+			// (`createUniqueId`) и локаль поддерева — как мимо
+			// `createVueAdapterContext` у Vue
+			if (importedNames(source, /^@soldy-ui\/setup$/).has('createAdapterContext')) {
+				found.push('createAdapterContext (сборка — createSolidAdapterContext)')
+			}
+
+			return found
 		},
 	},
 	{
