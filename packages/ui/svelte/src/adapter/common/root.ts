@@ -39,6 +39,13 @@
  * атрибутов переносит их на корень — элемент, `<svg>` иконки по роли или
  * компонент из `tag`, — и attachment Svelte ставит сам. С привязкой корня
  * адаптера он не пересекается: ключ у каждого attachment-а свой.
+ *
+ * У поля (Input, CheckBox, Switch) атрибуты потребителя делятся между двумя
+ * элементами, как `useSplitAttrs` у Vue и `toControlAttrs` у React: класс и
+ * стиль — корню (`toRootForward`), всё остальное — его `<input>`
+ * (`toControlAttrs`), поверх `aria` поля. Остальное — это и обработчики
+ * событий, и `aria-*`, и `data-*`, и attachment потребителя: поведение, которое
+ * он вешает на поле, — подсказка, автофокус — встаёт на сам `<input>`.
  */
 
 import type { ClassValue } from 'svelte/elements'
@@ -190,4 +197,30 @@ export function toRootProps(
 	for (const set of sets) Object.assign(attributes, set)
 
 	return { ...attributes, ...forward, ...toRootLayout(state, forward, style) }
+}
+
+/** Класс и стиль потребителя — то, что из его атрибутов остаётся корню поля. */
+export function toRootForward(forward: TRootForward): TRootForward {
+	return { class: forward.class, style: forward.style }
+}
+
+/**
+ * Атрибуты вложенного контрола: пропсы, которые компонент не съел, без класса
+ * и стиля — те сливаются на корне (`toRootForward`). Так поле раздаёт атрибуты
+ * потребителя двум элементам: обёртке — вид, `<input>` — всё остальное,
+ * события, `aria-*`, `data-*` и attachment-ы потребителя (символьные ключи
+ * остаток копирует наравне со строковыми). Аналог `useSplitAttrs` у Vue и
+ * `toControlAttrs` у React.
+ *
+ * Параметр типа — атрибуты компонента (`TDomAttributes` с `TFieldAttributes`),
+ * а не весь его набор пропсов: `forwardProps` типизирован пропсами целиком, а
+ * входов дескриптора в нём нет — их съела связка. Остаток ложится на `<input>`
+ * спредом, и его тип сверяется с атрибутами `<input>`.
+ */
+export function toControlAttrs<TAttributes extends TRootForward>(
+	forward: Partial<TAttributes>,
+): Omit<Partial<TAttributes>, keyof TRootForward> {
+	const { class: _class, style: _style, ...control } = forward
+
+	return control
 }

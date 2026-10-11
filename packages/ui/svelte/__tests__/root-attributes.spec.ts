@@ -23,20 +23,30 @@ import { createAttachmentKey, type Attachment } from 'svelte/attachments'
 import { TButton } from '@soldy-ui/core'
 import {
 	Button,
+	CheckBox,
 	ComponentView,
 	Frame,
 	Icon,
+	Input,
+	Label,
 	ProgressSpinner,
 	Skeleton,
+	Switch,
 	roleIcon,
+	toControlAttrs,
+	toRootForward,
 	toRootLayout,
 	toRootProps,
 	type ButtonProps,
+	type CheckBoxProps,
 	type ComponentViewProps,
 	type FrameProps,
 	type IconProps,
+	type InputProps,
+	type LabelProps,
 	type ProgressSpinnerProps,
 	type SkeletonProps,
+	type SwitchProps,
 } from '@soldy-ui/svelte'
 import Attach from './Attach.test.svelte'
 import Link from './Link.test.svelte'
@@ -49,6 +59,7 @@ type TProbeProps = ButtonProps &
 	ComponentViewProps &
 	FrameProps &
 	IconProps &
+	LabelProps &
 	ProgressSpinnerProps &
 	SkeletonProps
 
@@ -63,8 +74,23 @@ const COMPONENTS: ReadonlyArray<
 	['ComponentView', ComponentView, '.s-component-view', {}],
 	['Frame', Frame, '.s-frame', { visible: true }],
 	['Icon', Icon, '.s-icon', { tag: 'i' }],
+	['Label', Label, '.s-label', {}],
 	['ProgressSpinner', ProgressSpinner, '.s-progress-spinner', {}],
 	['Skeleton', Skeleton, '.s-skeleton', {}],
+]
+
+/** Общие пропсы полей в таблице. */
+type TFieldProbeProps = CheckBoxProps & SwitchProps & InputProps
+
+/**
+ * Поле и класс его корня. Атрибуты потребителя поле делит, как у Vue: класс и
+ * стиль — корню, остальное — `<input>`, поверх его набора `aria`. Корень
+ * остаётся за адаптером и у него.
+ */
+const FIELDS: ReadonlyArray<readonly [string, Component<TFieldProbeProps>, string]> = [
+	['CheckBox', CheckBox, '.s-check-box'],
+	['Switch', Switch, '.s-switch'],
+	['Input', Input, '.s-input'],
 ]
 
 describe('атрибут снаружи перекрывает набор ядра', () => {
@@ -109,6 +135,68 @@ describe('атрибут снаружи перекрывает набор ядр
 
 		expect(root().getAttribute('tabindex')).toBe('0')
 		expect(root().getAttribute('dir')).toBe('rtl')
+	})
+})
+
+describe('поле: атрибуты снаружи — <input>, поверх его aria', () => {
+	/** Имя полю пишет плагин доступного имени в `aria`, а `aria-label` снаружи — атрибут потребителя. */
+	it.each(FIELDS)(
+		'%s: aria-label потребителя — поверх имени поля',
+		(_name, component, selector) => {
+			mount(component, { aria_label: 'Ядро', 'aria-label': 'Своё' })
+
+			const field = find(document, `${selector} input`, HTMLInputElement)
+
+			expect(field.getAttribute('aria-label')).toBe('Своё')
+			expect(find(document, selector, HTMLElement).hasAttribute('aria-label')).toBe(false)
+		},
+	)
+
+	it.each(FIELDS)('%s: класс и стиль — корню, а не полю', (_name, component, selector) => {
+		mount(component, { class: 'mine', style: 'color: red' })
+
+		const root = find(document, selector, HTMLElement)
+		const field = find(root, 'input', HTMLInputElement)
+
+		expect([...root.classList].at(-1)).toBe('mine')
+		expect(root.style.color).toBe('red')
+		expect(field.hasAttribute('class')).toBe(false)
+		expect(field.hasAttribute('style')).toBe(false)
+	})
+
+	/**
+	 * Attachment потребителя — тоже «остальное»: поведение, которое он вешает
+	 * на поле, встаёт на `<input>`. Привязка корня к `TElementPlugin` — за
+	 * адаптером: `element:ready` приходит с корнем.
+	 */
+	it.each(FIELDS)(
+		'%s: attachment потребителя — на <input>, element:ready — с корнем',
+		async (_name, component, selector) => {
+			const consumer = attachmentProbe()
+			const ready = readyProbe()
+
+			mount(component, {
+				onElementReady: ready.onElementReady,
+				[createAttachmentKey()]: consumer.attach,
+			})
+			await nextFrame()
+
+			const root = find(document, selector, HTMLElement)
+
+			expect(consumer.attached).toHaveLength(1)
+			expect(consumer.attached[0]).toBe(find(root, 'input', HTMLInputElement))
+			expect(ready.elements).toHaveLength(1)
+			expect(ready.elements[0]).toBe(root)
+		},
+	)
+
+	it('делёж атрибутов: класс и стиль — корню, остальное — полю', () => {
+		const key = createAttachmentKey()
+		const attach = () => {}
+		const forward = { class: 'mine', style: 'color: red', title: 'Подсказка', [key]: attach }
+
+		expect(toRootForward(forward)).toEqual({ class: 'mine', style: 'color: red' })
+		expect(toControlAttrs(forward)).toEqual({ title: 'Подсказка', [key]: attach })
 	})
 })
 

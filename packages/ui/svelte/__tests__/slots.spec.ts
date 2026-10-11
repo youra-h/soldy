@@ -22,7 +22,15 @@ import {
 	type InputDescriptor,
 	type TabsDescriptor,
 } from '@soldy-ui/setup'
-import { Button, type FrameProps, type UseDomProps } from '@soldy-ui/svelte'
+import {
+	Button,
+	type CheckBoxProps,
+	type FrameProps,
+	type InputProps,
+	type LabelProps,
+	type SwitchProps,
+	type UseDomProps,
+} from '@soldy-ui/svelte'
 import Harness from './Slots.test.svelte'
 import { mount as mountComponent } from './mount'
 
@@ -154,5 +162,36 @@ describe('содержимое — только слот default', () => {
 		expectTypeOf<UseDomProps<typeof InputDescriptor>>().not.toHaveProperty('children')
 		expectTypeOf<FrameProps>().toHaveProperty('children')
 		expectTypeOf<FrameProps['children']>().toEqualTypeOf<Snippet | undefined>()
+	})
+
+	/**
+	 * То же у самих полей: их атрибуты — атрибуты `<input>` (`TFieldAttributes`),
+	 * и `children` нет и там. Подпись поля — `Label`, а её `children` — сам
+	 * контрол.
+	 */
+	it('у CheckBox, Switch и Input children нет, у Label — есть: в нём контрол', () => {
+		expectTypeOf<CheckBoxProps>().not.toHaveProperty('children')
+		expectTypeOf<SwitchProps>().not.toHaveProperty('children')
+		expectTypeOf<InputProps>().not.toHaveProperty('children')
+		expectTypeOf<LabelProps>().toHaveProperty('children')
+		expectTypeOf<LabelProps['children']>().toEqualTypeOf<Snippet | undefined>()
+	})
+})
+
+describe('атрибуты поля — атрибуты его <input>', () => {
+	/**
+	 * Текст, отметку и «выбрано частично» поле берёт из ядра, и атрибутов для
+	 * них и их умолчаний у него нет: это был бы второй путь к тому же
+	 * состоянию. Обычные атрибуты `<input>` есть — они ложатся на поле.
+	 *
+	 * Тип проверяет не vitest, а шаг CI «Типы — Svelte».
+	 */
+	it('checked, indeterminate и умолчания — не атрибуты; autocomplete и minlength — атрибуты', () => {
+		expectTypeOf<CheckBoxProps>().not.toHaveProperty('checked')
+		expectTypeOf<SwitchProps>().not.toHaveProperty('indeterminate')
+		expectTypeOf<InputProps>().not.toHaveProperty('defaultValue')
+		expectTypeOf<CheckBoxProps>().not.toHaveProperty('defaultChecked')
+		expectTypeOf<InputProps>().toHaveProperty('autocomplete')
+		expectTypeOf<InputProps>().toHaveProperty('minlength')
 	})
 })
