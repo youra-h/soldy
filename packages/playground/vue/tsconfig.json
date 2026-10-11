@@ -28,7 +28,8 @@
     "vitest.config.ts",
     "vitest.browser.config.ts"
   ],
-  // Хост React — своя программа типов (`src/hosts/react/tsconfig.json`, JSX
-  // React). Оболочка его не импортирует: грузит загрузчик, ленивым glob.
-  "exclude": ["src/hosts/react/**"]
+  // Хосты React и Svelte — свои программы типов (`src/hosts/<id>/tsconfig.json`:
+  // JSX React, `.svelte` проверяет svelte-check). Оболочка их не импортирует:
+  // грузит загрузчик, ленивым glob.
+  "exclude": ["src/hosts/react/**", "src/hosts/svelte/**"]
 }

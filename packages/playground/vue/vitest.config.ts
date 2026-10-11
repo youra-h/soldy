@@ -27,6 +27,10 @@ export default defineConfig({
 		testTimeout: 15_000,
 	},
 	resolve: {
+		// Сборки фреймворков — браузерные, как в стенде: без условия `browser`
+		// `svelte` в jsdom разрешается в серверную сборку, где `mount` нет, и
+		// хост Svelte не смонтировал бы ни одного превью
+		conditions: ['browser'],
 		alias: aliases({ themeCss: false }),
 	},
 })

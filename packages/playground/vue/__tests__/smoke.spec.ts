@@ -688,6 +688,7 @@ describe('очищенное поле', () => {
 const WIDTH_CODE: Record<string, { number: string; text: string; extension: string }> = {
 	vue: { number: ':width="40"', text: `:width="'10%'"`, extension: 'vue' },
 	react: { number: 'width={40}', text: 'width="10%"', extension: 'tsx' },
+	svelte: { number: 'width={40}', text: 'width="10%"', extension: 'svelte' },
 }
 
 /**

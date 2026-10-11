@@ -6,7 +6,7 @@
  * проект такой код падал бы или молча ничего не менял: у `TAccordion` нет
  * свойства `mode`.
  *
- * Код колонок пишет хост фреймворка — хосты Vue и React, полученные
+ * Код колонок пишет хост фреймворка — хосты Vue, React и Svelte, полученные
  * загрузчиком, как их получает оболочка. Случаи у них одни, синтаксис свой.
  */
 
@@ -25,7 +25,11 @@ async function snippetsOf(framework: string): Promise<IPreviewSnippets> {
 	return snippets
 }
 
-const [vue, react] = await Promise.all([snippetsOf('vue'), snippetsOf('react')])
+const [vue, react, svelte] = await Promise.all([
+	snippetsOf('vue'),
+	snippetsOf('react'),
+	snippetsOf('svelte'),
+])
 
 const { propSnippet, instanceSnippet } = vue
 
@@ -486,11 +490,237 @@ describe.each([
 })
 
 /**
+ * Код Svelte — те же случаи синтаксисом компонента `.svelte`: скрипт с
+ * импортами и телом, под ним разметка. Скрипт выполняется один раз на
+ * монтирование, поэтому экземпляр и движок — обычные константы, и запись
+ * свойства — там же, до первой отрисовки.
+ */
+describe('Svelte: instanceSnippet', () => {
+	it('свойство компонента пишет в инстанс — в скрипте компонента', () => {
+		const code = svelte.instanceSnippet(
+			accordion,
+			control({ name: 'view', scope: 'component' }),
+			'plain',
+		)
+
+		expect(code).toBe(
+			[
+				'<script lang="ts">',
+				"\timport { Accordion } from '@soldy-ui/svelte'",
+				"\timport { TAccordion } from '@soldy-ui/core'",
+				'',
+				'\tconst instance = new TAccordion()',
+				'',
+				"\tinstance.view = 'plain'",
+				'</script>',
+				'',
+				'<Accordion ctrl={instance} />',
+			].join('\n'),
+		)
+	})
+
+	it('коллекционное свойство пишет в движок, а не в компонент', () => {
+		const code = svelte.instanceSnippet(
+			accordion,
+			control({ name: 'mode', scope: 'collection' }),
+			'multiple',
+		)
+
+		expect(code).toContain('\tconst engine = createEngineAccordion()')
+		expect(code).toContain("\tengine.extensions.selection.mode = 'multiple'")
+		expect(code).toContain('<Accordion engine={engine} />')
+		expect(code).not.toContain('instance.mode')
+		expect(code).not.toContain('ctrl={instance}')
+	})
+
+	it('у календаря — его сборщик движка', () => {
+		const code = svelte.instanceSnippet(
+			entryOf('calendar'),
+			control({ name: 'mode', scope: 'collection' }),
+			'range',
+		)
+
+		expect(code).toContain("\timport { createEngineCalendar } from '@soldy-ui/core'")
+		expect(code).toContain('\tconst engine = createEngineCalendar()')
+		expect(code).toContain("\tengine.extensions.selection.mode = 'range'")
+		expect(code).toContain('<Calendar engine={engine} />')
+		expect(code).not.toContain('createEngineSelection')
+	})
+
+	it('свойство плагина пишет в плагин из bundle', () => {
+		const code = svelte.instanceSnippet(
+			entryOf('button'),
+			control({
+				name: 'aria_label',
+				scope: 'plugin',
+				plugin: { ctor: TAriaPlugin, name: 'label' },
+			}),
+			'Закрыть',
+		)
+
+		expect(code).toContain('\tconst instance = new TButton()')
+		expect(code).toContain("\timport { TPluginBundle, TAriaPlugin } from '@soldy-ui/plugins'")
+		expect(code).toContain("\tinstance.events.on('bundle:create', (bundle: unknown) => {")
+		expect(code).toContain('\t\tconst plugin = bundle.get(TAriaPlugin)')
+		expect(code).toContain("\t\tif (plugin) plugin.label = 'Закрыть'")
+		expect(code).toContain('<Button ctrl={instance} />')
+		expect(code).not.toContain('instance.aria_label')
+		expect(code).not.toContain('instance.label')
+	})
+
+	it('строка в коде — в одинарных кавычках, с экранированием', () => {
+		const code = svelte.instanceSnippet(
+			entryOf('button'),
+			control({ name: 'text', scope: 'component' }),
+			"It's",
+		)
+
+		expect(code).toContain("instance.text = 'It\\'s'")
+	})
+})
+
+describe('Svelte: propSnippet', () => {
+	it('пример — компонент .svelte: импорт из адаптера, проп атрибутом', () => {
+		expect(svelte.propSnippet(entryOf('button'), 'view', 'plain')).toBe(
+			[
+				'<script lang="ts">',
+				"\timport { Button } from '@soldy-ui/svelte'",
+				'</script>',
+				'',
+				'<Button view="plain" />',
+			].join('\n'),
+		)
+	})
+
+	it('коллекционное свойство передаётся обычным пропом', () => {
+		expect(svelte.propSnippet(accordion, 'mode', 'multiple')).toContain(
+			'<Accordion mode="multiple" />',
+		)
+	})
+
+	it('число и булево — выражением в {}', () => {
+		const progressLinear = entryOf('progress-linear')
+
+		expect(svelte.propSnippet(progressLinear, 'max', 50)).toContain(
+			'<ProgressLinear max={50} />',
+		)
+		expect(svelte.propSnippet(progressLinear, 'indeterminate', true)).toContain(
+			'<ProgressLinear indeterminate={true} />',
+		)
+	})
+
+	/**
+	 * В кавычках Svelte читает `{…}` выражением, а `&` — началом сущности, и
+	 * кавычка оборвала бы строку. Такая строка уходит выражением.
+	 */
+	it('строка с кавычкой, & или фигурной скобкой — выражением', () => {
+		const button = entryOf('button')
+
+		expect(svelte.propSnippet(button, 'text', 'Он сказал "да"')).toContain(
+			`<Button text={'Он сказал "да"'} />`,
+		)
+		expect(svelte.propSnippet(button, 'text', 'A &amp; B')).toContain(
+			`<Button text={'A &amp; B'} />`,
+		)
+		expect(svelte.propSnippet(button, 'text', '{name}')).toContain(`<Button text={'{name}'} />`)
+	})
+})
+
+describe('Svelte: пресет строки', () => {
+	const select = entryOf('select')
+	const preset = { editable: true, mode: 'multiple' }
+
+	it('propSnippet пишет пресет рядом с самим пропом', () => {
+		const code = svelte.propSnippet(select, 'removeOnBackspace', true, preset)
+
+		expect(code).toContain(
+			'<Select editable={true} mode="multiple" removeOnBackspace={true} />',
+		)
+	})
+
+	it('instanceSnippet пишет пресет разметкой рядом с ctrl', () => {
+		const code = svelte.instanceSnippet(
+			select,
+			control({ name: 'removeOnBackspace', scope: 'component', preset }),
+			true,
+		)
+
+		expect(code).toContain('instance.removeOnBackspace = true')
+		expect(code).toContain('<Select editable={true} mode="multiple" ctrl={instance} />')
+	})
+})
+
+describe.each([
+	['стёртое текстовое поле', ''],
+	['стёртое числовое поле или снятый выбор', undefined],
+])('Svelte: пустое поле — %s', (_name, value) => {
+	const progressLinear = entryOf('progress-linear')
+	const preset = { value: 40 }
+
+	it('propSnippet не пишет атрибут пропа, пресет на месте', () => {
+		const code = svelte.propSnippet(progressLinear, 'max', value, preset)
+
+		expect(code).toContain('<ProgressLinear value={40} />')
+		expect(code).not.toContain('max')
+	})
+
+	it('свойство компонента: экземпляр без присваивания, пресет рядом с ctrl', () => {
+		const code = svelte.instanceSnippet(
+			progressLinear,
+			control({ name: 'max', scope: 'component', preset }),
+			value,
+		)
+
+		expect(code).toContain('\tconst instance = new TProgressLinear()\n</script>')
+		expect(code).not.toContain('max')
+		expect(code).toContain('<ProgressLinear value={40} ctrl={instance} />')
+	})
+
+	it('коллекционное свойство: движок без присваивания', () => {
+		const code = svelte.instanceSnippet(
+			accordion,
+			control({ name: 'mode', scope: 'collection' }),
+			value,
+		)
+
+		expect(code).toContain('\tconst engine = createEngineAccordion()\n</script>')
+		expect(code).not.toContain('mode')
+		expect(code).toContain('<Accordion engine={engine} />')
+	})
+
+	it('свойство плагина: ни подписки на bundle, ни импорта плагина', () => {
+		const code = svelte.instanceSnippet(
+			entryOf('button'),
+			control({
+				name: 'aria_label',
+				scope: 'plugin',
+				plugin: { ctor: TAriaPlugin, name: 'label' },
+			}),
+			value,
+		)
+
+		expect(code).toBe(
+			[
+				'<script lang="ts">',
+				"\timport { Button } from '@soldy-ui/svelte'",
+				"\timport { TButton } from '@soldy-ui/core'",
+				'',
+				'\tconst instance = new TButton()',
+				'</script>',
+				'',
+				'<Button ctrl={instance} />',
+			].join('\n'),
+		)
+	})
+})
+
+/**
  * Файл примера — синтаксиса хоста: «Открыть в VS Code» пишет код Vue в `.vue`,
- * а код React — в `.tsx`, иначе редактор не прочёл бы его как код.
+ * код React — в `.tsx`, код Svelte — в `.svelte`, иначе редактор не прочёл бы
+ * его как код.
  */
 describe('файл примера', () => {
 	it('расширение — синтаксиса хоста', () => {
-		expect([vue.extension, react.extension]).toEqual(['vue', 'tsx'])
+		expect([vue.extension, react.extension, svelte.extension]).toEqual(['vue', 'tsx', 'svelte'])
 	})
 })

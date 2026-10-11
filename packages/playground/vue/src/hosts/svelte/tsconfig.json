@@ -1,0 +1,19 @@
+{
+  // Хост Svelte — своя программа типов: оболочка стенда — Vue, и `.svelte`
+  // в программе vue-tsc ей не место (её `tsconfig.json` хост исключает).
+  // Проверяет её svelte-check. Соседей хост, как и оболочка, читает
+  // исходниками.
+  "extends": "../../../../../../tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "types": [],
+    "paths": {
+      "@soldy-ui/core": ["../../../../../core/src"],
+      "@soldy-ui/plugins": ["../../../../../plugins/src"],
+      "@soldy-ui/setup": ["../../../../../setup/index.ts"],
+      "@soldy-ui/svelte": ["../../../../../ui/svelte/src/index.ts"],
+      "@soldy-ui/playground-shared": ["../../../../shared/src/index.ts"]
+    }
+  },
+  "include": ["./**/*"]
+}

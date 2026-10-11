@@ -14,6 +14,12 @@ import { join, resolve, relative } from 'node:path'
  * слова из таблицы AGENTS.md. Ловится имя, а не смысл (как и в
  * `driver-access.spec.ts`) — переименованный импорт под тем же alias всё
  * равно распознаётся по оригинальному имени в списке специфаеров импорта.
+ *
+ * У Svelte тот же сторож держит и сборку: контекст компонента собирает
+ * `createSvelteAdapterContext` (id монтирования и локаль поддерева), а не
+ * `createAdapterContext` напрямую — как eslint-блок у Vue. `$props.id()`
+ * механизмом здесь не считается: это id монтирования, который компилятор
+ * пускает только в компонент (AGENTS.md, там же).
  */
 
 const ROOT = resolve(__dirname, '../../..')
@@ -89,12 +95,20 @@ const GUARDS: TGuard[] = [
 	{
 		framework: 'Svelte',
 		dir: 'packages/ui/svelte/src/components',
-		extensions: /\.svelte(\.ts)?$/,
+		// `.ts` — и setup-функции компонентов: сборку контекста зовут они
+		extensions: /\.(svelte|ts)$/,
 		test(source) {
 			const names = importedNames(source, /^svelte$/)
 			const found = SVELTE_IMPORT_FORBIDDEN.filter((name) => names.has(name))
 
 			if (SVELTE_RUNE_RE.test(source)) found.push('$state/$derived/$effect')
+
+			// Сборка мимо `createSvelteAdapterContext` теряет id монтирования
+			// (`$props.id()`) и локаль поддерева — как мимо
+			// `createVueAdapterContext` у Vue
+			if (importedNames(source, /^@soldy-ui\/setup$/).has('createAdapterContext')) {
+				found.push('createAdapterContext (сборка — createSvelteAdapterContext)')
+			}
 
 			return found
 		},

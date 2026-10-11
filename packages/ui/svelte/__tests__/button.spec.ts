@@ -21,7 +21,7 @@ function render(props: ComponentProps<typeof Button> = {}) {
 }
 
 afterEach(() => {
-	while (mounted.length) unmount(mounted.pop())
+	for (const app of mounted.splice(0).reverse()) void unmount(app)
 	document.body.innerHTML = ''
 })
 
@@ -206,9 +206,9 @@ describe('Button · события через колбэк-пропы', () => {
 
 	it('onChangeView отдаёт значение', () => {
 		const ctrl = new TButton({ view: 'solid' })
-		const seen: string[] = []
+		const seen: (string | undefined)[] = []
 
-		render({ ctrl, onChangeView: (v: string) => seen.push(v) })
+		render({ ctrl, onChangeView: (v) => seen.push(v) })
 
 		ctrl.view = 'ghost'
 		flushSync()
