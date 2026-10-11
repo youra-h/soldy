@@ -499,6 +499,107 @@ describe('расширение: раскладка', () => {
 			expect(owner.classes.valueOf().join(' ')).not.toContain('contain')
 		})
 	})
+
+	/**
+	 * `data-sized` таблицы — ширина известна у каждой показанной колонки, своя
+	 * или раскладки: по нему тема кладёт таблицу шириной в их сумму. Признак
+	 * корня, а не условие темы по заголовкам: `:has()` у корня браузер проверял
+	 * бы обходом всего тела.
+	 */
+	describe('data-sized', () => {
+		it('auto: до места признака нет, место пришло — есть', () => {
+			const { owner, engine } = tableWith()
+
+			expect(owner.dataset.has('sized')).toBe(false)
+
+			engine.extensions.columns.notifySpace(720)
+
+			expect(owner.dataset.get('sized')).toBe('true')
+		})
+
+		it('none: признак и без места — его не выводят из data-overflow', () => {
+			const { owner } = tableWith([NAME, CITY, AGE], 'none')
+
+			expect(owner.dataset.get('sized')).toBe('true')
+			expect(owner.dataset.has('overflow')).toBe(false)
+		})
+
+		it('место ушло — у гибких снова нет ширины, и признака нет', () => {
+			const { owner, engine } = tableWith()
+
+			engine.extensions.columns.notifySpace(720)
+			engine.extensions.columns.notifySpace(0)
+
+			expect(owner.dataset.has('sized')).toBe(false)
+		})
+
+		it('без показанных колонок признака нет', () => {
+			const { owner, engine } = tableWith([], 'none')
+
+			expect(owner.dataset.has('sized')).toBe(false)
+
+			engine.extensions.columns.columns = [CITY]
+
+			expect(owner.dataset.get('sized')).toBe('true')
+
+			columnOf(engine, 'city').hide()
+
+			expect(owner.dataset.has('sized')).toBe(false)
+		})
+
+		it('пересчёт — от своей ширины и скрытия колонки', () => {
+			const { owner, engine } = tableWith([AGE, CITY])
+			const city = columnOf(engine, 'city')
+
+			// До места у гибкого города ширины нет
+			expect(owner.dataset.has('sized')).toBe(false)
+
+			city.width = 200
+
+			expect(owner.dataset.get('sized')).toBe('true')
+
+			city.width = undefined
+
+			expect(owner.dataset.has('sized')).toBe(false)
+
+			// Показан один возраст со своей шириной
+			city.hide()
+
+			expect(owner.dataset.get('sized')).toBe('true')
+
+			city.show()
+
+			expect(owner.dataset.has('sized')).toBe(false)
+		})
+
+		it('без таблицы признака нет; таблица ушла — признак снят, перешёл — у новой свой', () => {
+			const engine = createEngineTable()
+			const owner = new TTable({ columnFit: 'none' })
+			const next = new TTable()
+
+			engine.extensions.columns.columns = [NAME, CITY]
+
+			expect(owner.dataset.has('sized')).toBe(false)
+
+			engine.options.set({ owner })
+
+			expect(owner.dataset.get('sized')).toBe('true')
+
+			engine.options.set({ owner: next })
+
+			// `auto` без места: у гибких ширины нет
+			expect(owner.dataset.has('sized')).toBe(false)
+			expect(next.dataset.has('sized')).toBe(false)
+
+			engine.extensions.columns.notifySpace(600)
+
+			expect(next.dataset.get('sized')).toBe('true')
+
+			engine.options.set({ owner: undefined })
+
+			expect(next.dataset.has('sized')).toBe(false)
+		})
+	})
 })
 
 describe('расширение: колонки перед тянутой держат ширину', () => {

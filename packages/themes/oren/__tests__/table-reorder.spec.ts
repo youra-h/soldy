@@ -28,6 +28,12 @@ import { buildCss } from './build-css'
  *   шапки, а не у корня: у корня обход на глубину три шёл бы по всем строкам и
  *   ячейкам тела.
  *
+ * То же правило обхода — и на покое, без жеста: условие `:has()` у корня
+ * таблицы браузер проверяет обходом всего тела на каждом пересчёте стиля
+ * корня, и совпадение в шапке обход не сокращает. Поэтому у корня `:has()`
+ * нет вовсе: то, что тема узнала бы условием по заголовкам, ядро отдаёт
+ * признаком корня (`data-sized`).
+ *
  * Читается собранный CSS: вложенность раскрыта, `@apply` развёрнут, кавычки и
  * пробелы вокруг `>` сборка снимает.
  */
@@ -118,28 +124,47 @@ function hasesOf(selector: string): { argument: string; anchor: string }[] {
 /** Субъект селектора — его последний компаунд. */
 const subjectOf = (selector: string): string => compoundAt(selector, selector.length - 1)
 
-/** Компаунд — корень таблицы или её шапка, а не другой блок с тем же началом имени. */
-const isRoot = (compound: string) => /^\.s-table(?![\w-])/.test(compound)
+/**
+ * Компаунд без аргументов своих `:has()`: то, что в них, — потомки, а не сам
+ * компаунд.
+ */
+function withoutHas(compound: string): string {
+	let result = ''
+
+	for (let at = 0; at < compound.length; ) {
+		if (compound.startsWith(':has(', at)) {
+			at += ':has()'.length + argumentAt(compound, at + ':has'.length).length
+		} else {
+			result += compound[at++]
+		}
+	}
+
+	return result
+}
+
+/**
+ * Компаунд — корень таблицы: её класс в нём самом, в том числе в `:where()` и
+ * `:is()`, — или её шапка, а не другой блок с тем же началом имени.
+ */
+const isRoot = (compound: string) => /\.s-table(?![\w-])/.test(withoutHas(compound))
 const isHead = (compound: string) => /^\.s-table__head(?![\w-])/.test(compound)
 
 type TDecl = { prop: string; value: string }
 
-describe('перестановка колонок Table: правила тела — только под признаком жеста', async () => {
-	const css = postcss.parse(await buildCss())
+/** Селекторы правил Table — каждый со своими объявлениями. */
+const rules: { selector: string; decls: TDecl[] }[] = []
 
-	/** Селекторы правил Table — каждый со своими объявлениями. */
-	const rules: { selector: string; decls: TDecl[] }[] = []
+postcss.parse(await buildCss()).walkRules((rule) => {
+	const decls = rule.nodes.flatMap((node) =>
+		node.type === 'decl' ? [{ prop: node.prop, value: node.value }] : [],
+	)
 
-	css.walkRules((rule) => {
-		const decls = rule.nodes.flatMap((node) =>
-			node.type === 'decl' ? [{ prop: node.prop, value: node.value }] : [],
-		)
+	for (const selector of rule.selectors) {
+		if (selector.includes('.s-table')) rules.push({ selector, decls })
+	}
+})
 
-		for (const selector of rule.selectors) {
-			if (selector.includes('.s-table')) rules.push({ selector, decls })
-		}
-	})
-
+describe('перестановка колонок Table: правила тела — только под признаком жеста', () => {
 	it('правила ячеек на номер колонки есть — по одному на номер', () => {
 		const numbered = rules.filter(({ selector }) => selector.includes(CELL_NTH))
 
@@ -263,5 +288,36 @@ describe('перестановка колонок Table: правила тела
 
 		expect(moving.length).toBeGreaterThan(0)
 		expect(misses).toEqual([])
+	})
+})
+
+/**
+ * Условия `:has()` у корня, которые ещё стоят: курсор жеста на всей таблице,
+ * пока тянут ручку ширины и пока несут колонку. Временно, до
+ * https://app.clickup.com/t/869ffetk2.
+ */
+const ROOT_HAS_PENDING = [
+	'.s-table:has(>.s-table__head>.s-table__head-row>.s-table-column[data-resizing=true])',
+	'.s-table:has(>.s-table__head>.s-table__head-row>.s-table-column[data-dragging=true])',
+]
+
+describe('Table: у корня нет :has()', () => {
+	/** Селекторы, в которых условие `:has()` привязано к корню таблицы. */
+	const anchored = rules
+		.filter(({ selector }) => hasesOf(selector).some(({ anchor }) => isRoot(anchor)))
+		.map(({ selector }) => selector)
+
+	/**
+	 * Условие на детей корня браузер проверяет обходом на глубину три — по всем
+	 * строкам и ячейкам тела — на каждом пересчёте стиля корня, и совпадение в
+	 * шапке обход не сокращает. Окно (`.s-table__viewport:has(> .s-table…)`) —
+	 * не корень: под ним одна таблица.
+	 */
+	it('условие на детей — не у корня таблицы', () => {
+		expect(anchored.filter((selector) => !ROOT_HAS_PENDING.includes(selector))).toEqual([])
+	})
+
+	it('временные исключения ещё стоят: снятое правило уходит и из списка', () => {
+		expect(anchored).toEqual(expect.arrayContaining(ROOT_HAS_PENDING))
 	})
 })
