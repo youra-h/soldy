@@ -219,21 +219,21 @@ describe('коллекции', () => {
 
 	it('Calendar: сетку называет заголовок её места, и листание его не меняет', () => {
 		const owner = new TCalendar({ months: ['2026-01-01', '2026-02-01'] })
-		const collection = new TCalendarCollectionFacade({}, { owner })
+		const facade = new TCalendarCollectionFacade({}, { owner })
 		const bundle = new TPluginBundle(owner, 'm1')
 			.use(TCollectionBundlesPlugin)
 			.use(TCalendarIdsPlugin)
-		const titles = () => collection.grids.map(({ titleAria }) => titleAria.id)
+		const titles = () => facade.grids.map(({ titleAria }) => titleAria.id)
 
-		bundle.get(TCollectionBundlesPlugin)?.bindEngine(collection.engine)
+		bundle.get(TCollectionBundlesPlugin)?.bindEngine(facade.engine)
 
 		expect(titles()).toEqual(['m1-title-0', 'm1-title-1'])
-		expect(collection.grids.map(({ gridAria }) => gridAria['aria-labelledby'])).toEqual([
+		expect(facade.grids.map(({ gridAria }) => gridAria['aria-labelledby'])).toEqual([
 			'm1-title-0',
 			'm1-title-1',
 		])
 
-		collection.extensions.view.showNext()
+		facade.extensions.view.showNext()
 
 		expect(titles()).toEqual(['m1-title-0', 'm1-title-1'])
 
@@ -245,16 +245,16 @@ describe('коллекции', () => {
 
 	it('Calendar: панель выбора месяца и года называет её шапка — на каждом месте', () => {
 		const owner = new TCalendar({ months: ['2026-01-01', '2026-02-01'] })
-		const collection = new TCalendarCollectionFacade({}, { owner })
+		const facade = new TCalendarCollectionFacade({}, { owner })
 		const bundle = new TPluginBundle(owner, 'm1')
 			.use(TCollectionBundlesPlugin)
 			.use(TCalendarIdsPlugin)
-		const headings = () => collection.pickers.map(({ labelledBy }) => labelledBy)
+		const headings = () => facade.pickers.map(({ labelledBy }) => labelledBy)
 
-		bundle.get(TCollectionBundlesPlugin)?.bindEngine(collection.engine)
+		bundle.get(TCollectionBundlesPlugin)?.bindEngine(facade.engine)
 
 		expect(headings()).toEqual(['m1-picker-0', 'm1-picker-1'])
-		expect(collection.pickers.map(({ headingAria }) => headingAria.id)).toEqual([
+		expect(facade.pickers.map(({ headingAria }) => headingAria.id)).toEqual([
 			'm1-picker-0',
 			'm1-picker-1',
 		])
@@ -296,20 +296,20 @@ describe('поле даты', () => {
 describe('общий name радио', () => {
 	function group(name?: string) {
 		const owner = new TRadioGroup(name === undefined ? {} : { name })
-		const collection = new TRadioGroupCollectionFacade({}, { owner })
+		const facade = new TRadioGroupCollectionFacade({}, { owner })
 		const bundle = new TPluginBundle(owner, 'm1')
 			.use(TCollectionBundlesPlugin)
 			.use(TRadioGroupNamePlugin)
 
-		collection.items = [
+		facade.items = [
 			new TRadioGroupItem({ value: 'a' }),
 			new TRadioGroupItem({ value: 'b' }),
 		] as IRadioGroupItem[]
-		bundle.get(TCollectionBundlesPlugin)?.bindEngine(collection.engine)
+		bundle.get(TCollectionBundlesPlugin)?.bindEngine(facade.engine)
 
-		const names = () => collection.items.map((item) => item.name)
+		const names = () => facade.items.map((item) => item.name)
 
-		return { owner, collection, names }
+		return { owner, facade, names }
 	}
 
 	it('безымянная группа — id монтирования: две такие группы не сольются', () => {
@@ -331,9 +331,9 @@ describe('общий name радио', () => {
 	})
 
 	it('радио, вставленное позже, получает то же имя', () => {
-		const { collection, names } = group('city')
+		const { facade, names } = group('city')
 
-		collection.extensions.plain.push(new TRadioGroupItem({ value: 'c' }))
+		facade.extensions.plain.push(new TRadioGroupItem({ value: 'c' }))
 
 		expect(names()).toEqual(['city', 'city', 'city'])
 	})

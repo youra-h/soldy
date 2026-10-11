@@ -26,46 +26,46 @@ import type { ITagsItem, ITagsItemProps, ITagsProps } from '@soldy-ui/core'
 
 function createTags(texts: string[], props: Partial<ITagsProps> = {}) {
 	const owner = new TTags(props)
-	const collection = new TTagsCollectionFacade({}, { owner })
+	const facade = new TTagsCollectionFacade({}, { owner })
 	const items = texts.map((text) => new TTagsItem({ value: text, text }))
 
-	collection.items = items as ITagsItem[]
+	facade.items = items as ITagsItem[]
 
-	const registry = new TItemContextRegistry(collection.engine.getCore())
+	const registry = new TItemContextRegistry(facade.engine.getCore())
 
-	return { owner, collection, items, registry }
+	return { owner, facade, items, registry }
 }
 
 describe('добавление тегов', () => {
 	it('через проп items элемент появляется в коллекции', () => {
-		const { collection, items } = createTags(['a', 'b'])
+		const { facade, items } = createTags(['a', 'b'])
 
-		expect([...collection.items]).toEqual(items)
+		expect([...facade.items]).toEqual(items)
 	})
 
 	it('через движок, собранный снаружи (createEngineTags)', () => {
 		const owner = new TTags()
 		const engine = createEngineTags({ owner, items: [{ value: 'a', text: 'a' }] })
-		const collection = new TTagsCollectionFacade({}, { owner, engine })
+		const facade = new TTagsCollectionFacade({}, { owner, engine })
 
-		expect(collection.items.map((item) => item.value)).toEqual(['a'])
-		expect(collection.items[0]).toBeInstanceOf(TTagsItem)
+		expect(facade.items.map((item) => item.value)).toEqual(['a'])
+		expect(facade.items[0]).toBeInstanceOf(TTagsItem)
 	})
 })
 
 describe('режим выбора по умолчанию — none', () => {
 	it('mode коллекции по умолчанию none', () => {
-		const { collection } = createTags(['a'])
+		const { facade } = createTags(['a'])
 
-		expect(collection.mode).toBe('none')
+		expect(facade.mode).toBe('none')
 	})
 
 	it('в none выбор не выделяет тег', () => {
-		const { collection, items } = createTags(['a', 'b'])
+		const { facade, items } = createTags(['a', 'b'])
 
-		collection.engine.extensions.selection.select(items[0])
+		facade.engine.extensions.selection.select(items[0])
 
-		expect(collection.selected).toEqual([])
+		expect(facade.selected).toEqual([])
 	})
 
 	it('роль набора — list, тега — listitem, aria-selected не проставлен', () => {
@@ -79,12 +79,12 @@ describe('режим выбора по умолчанию — none', () => {
 
 describe('value ↔ выбор', () => {
 	it('single: значение выбирает тег, роли переключаются на listbox/option', () => {
-		const { owner, collection, items } = createTags(['a', 'b', 'c'])
+		const { owner, facade, items } = createTags(['a', 'b', 'c'])
 
-		collection.mode = 'single'
+		facade.mode = 'single'
 		owner.value = 'b'
 
-		expect(collection.selected).toEqual([items[1]])
+		expect(facade.selected).toEqual([items[1]])
 		expect(owner.aria.get('role')).toBe('listbox')
 		expect(items[1].aria.get('role')).toBe('option')
 		expect(items[1].aria.get('aria-selected')).toBe('true')
@@ -92,21 +92,21 @@ describe('value ↔ выбор', () => {
 	})
 
 	it('multiple: значение — массив', () => {
-		const { owner, collection, items } = createTags(['a', 'b', 'c'])
+		const { owner, facade, items } = createTags(['a', 'b', 'c'])
 
-		collection.mode = 'multiple'
-		collection.engine.extensions.selection.select(items[0])
-		collection.engine.extensions.selection.select(items[2])
+		facade.mode = 'multiple'
+		facade.engine.extensions.selection.select(items[0])
+		facade.engine.extensions.selection.select(items[2])
 
 		expect(owner.value).toEqual(['a', 'c'])
 	})
 
 	it('выбор снова становится none — роли возвращаются к list/listitem', () => {
-		const { owner, collection, items } = createTags(['a', 'b'])
+		const { owner, facade, items } = createTags(['a', 'b'])
 
-		collection.mode = 'single'
+		facade.mode = 'single'
 		owner.value = 'a'
-		collection.mode = 'none'
+		facade.mode = 'none'
 
 		expect(owner.aria.get('role')).toBe('list')
 		expect(items[0].aria.get('role')).toBe('listitem')
@@ -116,37 +116,37 @@ describe('value ↔ выбор', () => {
 
 describe('закрытие тега', () => {
 	it('close() удаляет closable тег и эмитит item:close', () => {
-		const { collection, items, registry } = createTags(['a', 'b'], { closable: true })
+		const { facade, items, registry } = createTags(['a', 'b'], { closable: true })
 		const onClose = vi.fn()
 
-		collection.engine.extensions.tags.events.on('item:close', onClose)
+		facade.engine.extensions.tags.events.on('item:close', onClose)
 
 		registry.get(items[0]).adapters.tags.close()
 
 		expect(onClose).toHaveBeenCalledWith(items[0])
-		expect([...collection.items]).toEqual([items[1]])
+		expect([...facade.items]).toEqual([items[1]])
 	})
 
 	it('не закрывает тег, если он не closable', () => {
-		const { collection, items, registry } = createTags(['a'], { closable: false })
+		const { facade, items, registry } = createTags(['a'], { closable: false })
 		const onClose = vi.fn()
 
-		collection.engine.extensions.tags.events.on('item:close', onClose)
+		facade.engine.extensions.tags.events.on('item:close', onClose)
 
 		registry.get(items[0]).adapters.tags.close()
 
 		expect(onClose).not.toHaveBeenCalled()
-		expect([...collection.items]).toEqual([items[0]])
+		expect([...facade.items]).toEqual([items[0]])
 	})
 
 	it('closeTag резолвит closable: явное значение элемента приоритетнее владельца', () => {
-		const { collection, items } = createTags(['a', 'b'], { closable: true })
+		const { facade, items } = createTags(['a', 'b'], { closable: true })
 
 		items[0].closable = false
 
-		expect(collection.engine.extensions.tags.closeTag(items[0])).toBe(false)
-		expect(collection.engine.extensions.tags.closeTag(items[1])).toBe(true)
-		expect([...collection.items]).toEqual([items[0]])
+		expect(facade.engine.extensions.tags.closeTag(items[0])).toBe(false)
+		expect(facade.engine.extensions.tags.closeTag(items[1])).toBe(true)
+		expect([...facade.items]).toEqual([items[0]])
 	})
 })
 
@@ -400,31 +400,31 @@ describe('closeAria', () => {
 		})
 
 		it.each(['single', 'multiple'] as const)('в %s — -1', (mode) => {
-			const { collection, items } = createTags(['a', 'b'], { closable: true })
+			const { facade, items } = createTags(['a', 'b'], { closable: true })
 
-			collection.mode = mode
+			facade.mode = mode
 
 			expect(tabindexes(items)).toEqual(['-1', '-1'])
 		})
 
 		it('выбор снова none — снят, набор сообщает об этом', () => {
-			const { collection, items } = createTags(['a'], { closable: true })
+			const { facade, items } = createTags(['a'], { closable: true })
 			const seen: unknown[] = []
 
-			collection.mode = 'multiple'
+			facade.mode = 'multiple'
 			items[0].events.on('change:closeAria', (value) => seen.push(value))
-			collection.mode = 'none'
+			facade.mode = 'none'
 
 			expect(tabindexes(items)).toEqual([undefined])
 			expect(seen).toEqual([{}])
 		})
 
 		it('тег, добавленный в режиме выбора, получает -1 сразу', () => {
-			const { collection } = createTags(['a'])
+			const { facade } = createTags(['a'])
 
-			collection.mode = 'single'
+			facade.mode = 'single'
 
-			const added = collection.engine.extensions.plain.push(
+			const added = facade.engine.extensions.plain.push(
 				new TTagsItem({ value: 'b', text: 'b' }),
 			)
 
@@ -450,30 +450,30 @@ describe('ARIA набора по режиму', () => {
 	})
 
 	it('в single — горизонтальный listbox без множественного выбора', () => {
-		const { owner, collection } = createTags(['a'])
+		const { owner, facade } = createTags(['a'])
 
-		collection.mode = 'single'
+		facade.mode = 'single'
 
 		expect(attributes(owner)).toEqual({ orientation: 'horizontal', multiselectable: undefined })
 	})
 
 	it('в multiple — aria-multiselectable', () => {
-		const { owner, collection } = createTags(['a'])
+		const { owner, facade } = createTags(['a'])
 
-		collection.mode = 'multiple'
+		facade.mode = 'multiple'
 
 		expect(attributes(owner)).toEqual({ orientation: 'horizontal', multiselectable: 'true' })
 	})
 
 	it('multiple → single снимает множественный выбор, → none — и ориентацию', () => {
-		const { owner, collection } = createTags(['a'])
+		const { owner, facade } = createTags(['a'])
 
-		collection.mode = 'multiple'
-		collection.mode = 'single'
+		facade.mode = 'multiple'
+		facade.mode = 'single'
 
 		expect(attributes(owner).multiselectable).toBeUndefined()
 
-		collection.mode = 'none'
+		facade.mode = 'none'
 
 		expect(attributes(owner)).toEqual({ orientation: undefined, multiselectable: undefined })
 	})

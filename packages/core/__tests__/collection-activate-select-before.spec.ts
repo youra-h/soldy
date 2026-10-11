@@ -141,17 +141,17 @@ describe('значение владельца откатывается к выб
 
 	it('RadioGroup: отменённое значение возвращается к отмеченному радио', () => {
 		const owner = new TRadioGroup({ value: 'a' })
-		const collection = new TRadioGroupCollectionFacade({}, { owner })
+		const facade = new TRadioGroupCollectionFacade({}, { owner })
 
-		ABC.forEach((props) => collection.extensions.plain.push(new TRadioGroupItem(props)))
-		collection.extensions.activation.events.on('item:activate:before', (e) => {
+		ABC.forEach((props) => facade.extensions.plain.push(new TRadioGroupItem(props)))
+		facade.extensions.activation.events.on('item:activate:before', (e) => {
 			if (e.item.value === 'c') e.preventDefault()
 		})
 
 		owner.value = 'c'
 
 		expect(owner.value).toBe('a')
-		expect(collection.activeItem?.value).toBe('a')
+		expect(facade.activeItem?.value).toBe('a')
 	})
 })
 
@@ -178,19 +178,19 @@ describe('Tabs: закрыли активный таб', () => {
 describe('Select: отменённый выбор — не выбор пользователя', () => {
 	it('chooseItem отказывает, поле и панель остаются как были', () => {
 		const owner = new TSelect({ value: 'a' })
-		const collection = new TSelectCollectionFacade({}, { owner })
+		const facade = new TSelectCollectionFacade({}, { owner })
 
-		collection.items = ABC.map(
+		facade.items = ABC.map(
 			(props) => new TSelectItem({ ...props, text: props.value.toUpperCase() }),
 		) as ISelectItem[]
 		owner.open = true
 
 		const choose = vi.fn()
-		const select = collection.engine.extensions.select
-		const option = collection.items[2]
+		const select = facade.engine.extensions.select
+		const option = facade.items[2]
 
 		select.events.on('choose', choose)
-		collection.engine.extensions.selection.events.on('item:select:before', (e) => {
+		facade.engine.extensions.selection.events.on('item:select:before', (e) => {
 			if (e.item === option) e.preventDefault()
 		})
 

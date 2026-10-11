@@ -25,17 +25,17 @@ afterEach(() => {
 /** Календарь и его коллекция — так их собирает адаптер. */
 function calendar(props: Partial<ICalendarProps> = {}) {
 	const owner = new TCalendar(props)
-	const collection = new TCalendarCollectionFacade({}, { owner })
-	const { view, picker } = collection.extensions
+	const facade = new TCalendarCollectionFacade({}, { owner })
+	const { view, picker } = facade.extensions
 
-	return { owner, collection, view, picker }
+	return { owner, facade, view, picker }
 }
 
 type TCalendarSetup = ReturnType<typeof calendar>
 
 /** Панель места `index`; места нет — тест падает здесь. */
-function panel({ collection }: TCalendarSetup, index = 0): TCalendarPicker {
-	const found = collection.pickers[index]
+function panel({ facade }: TCalendarSetup, index = 0): TCalendarPicker {
+	const found = facade.pickers[index]
 
 	if (!found) throw new Error(`панели на месте ${index} нет`)
 
@@ -90,9 +90,9 @@ const MONTHS_2026 = Array.from(
 describe('места', () => {
 	it('панель на каждую сетку; экземпляры места переживают листание', () => {
 		const setup = calendar({ months: ['2026-01-01', '2026-09-01'] })
-		const [first, second] = setup.collection.pickers
+		const [first, second] = setup.facade.pickers
 
-		expect(setup.collection.pickers).toHaveLength(2)
+		expect(setup.facade.pickers).toHaveLength(2)
 		expect(first.popover).not.toBe(second.popover)
 		expect(first.list).not.toBe(second.list)
 
@@ -125,13 +125,13 @@ describe('места', () => {
 		setup.owner.months = ['2026-01-01']
 
 		expect(second.popover.open).toBe(false)
-		expect(setup.collection.pickers).toHaveLength(1)
+		expect(setup.facade.pickers).toHaveLength(1)
 	})
 
 	it('без календаря панелей нет', () => {
-		const collection = new TCalendarCollectionFacade()
+		const facade = new TCalendarCollectionFacade()
 
-		expect(collection.pickers).toEqual([])
+		expect(facade.pickers).toEqual([])
 	})
 })
 
@@ -365,7 +365,7 @@ describe('стрелки', () => {
 		const changes = vi.fn()
 
 		open(setup)
-		setup.collection.events.on('change:pickers', changes)
+		setup.facade.events.on('change:pickers', changes)
 		setup.picker.pickerSets(0).prev.add('aria-label', 'Предыдущий год')
 
 		expect(changes).toHaveBeenCalledTimes(1)
@@ -457,11 +457,11 @@ describe('закрытие', () => {
 		const picker = open(setup)
 		const changes = vi.fn()
 
-		setup.collection.events.on('change:pickers', changes)
+		setup.facade.events.on('change:pickers', changes)
 		setup.picker.close(1)
 
 		expect(picker.popover.open).toBe(true)
-		expect(setup.collection.pickers).toHaveLength(1)
+		expect(setup.facade.pickers).toHaveLength(1)
 		expect(changes).not.toHaveBeenCalled()
 	})
 })
@@ -489,7 +489,7 @@ describe('шапка', () => {
 
 		expect(panel(setup).labelledBy).toBeUndefined()
 
-		setup.collection.events.on('change:pickers', changes)
+		setup.facade.events.on('change:pickers', changes)
 		setup.picker.pickerSets(0).heading.add('id', 'heading-0')
 
 		expect(changes).toHaveBeenCalledTimes(1)

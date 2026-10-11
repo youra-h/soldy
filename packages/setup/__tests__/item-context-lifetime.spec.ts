@@ -109,13 +109,13 @@ type TMountedList = {
  */
 function mountList<TFacade extends TCollectionOwner, TPlugins extends IPluginsContract>(
 	own: IComponentDescriptor,
-	collection: IComponentDescriptor<TContextContract<TFacade, TPlugins>>,
+	collectionDescriptor: IComponentDescriptor<TContextContract<TFacade, TPlugins>>,
 	items: readonly object[],
 ): TMountedList {
 	const { factory: elevator } = createElevatorFactory()
 	const owner = createAdapterContext(own, {})
 	const facade = createAdapterContext(
-		collection,
+		collectionDescriptor,
 		{ props: { items: [...items] }, options: { owner: owner.instance } },
 		{ bundle: owner.bundle },
 	).use(TCollectionExtension, { elevator })
@@ -183,16 +183,17 @@ type TItemSource = { readonly ctrl: object } | { readonly props: object }
  */
 function mountItem<TFacade extends TCollectionItemFacade, TPlugins extends IPluginsContract>(
 	own: IComponentDescriptor,
-	collection: IComponentDescriptor<TContextContract<TFacade, TPlugins>>,
+	collectionItemDescriptor: IComponentDescriptor<TContextContract<TFacade, TPlugins>>,
 	elevator: TElevatorFactory,
 	source: TItemSource,
 ): TMountedItem {
 	const props = 'props' in source ? source.props : {}
 	const adapter = createAdapterContext(own, { ...source, props })
-	const facade = createAdapterContext(collection, { props }, { bundle: adapter.bundle }).use(
-		TCollectionItemExtension,
-		{ item: adapter.instance, elevator },
-	)
+	const facade = createAdapterContext(
+		collectionItemDescriptor,
+		{ props },
+		{ bundle: adapter.bundle },
+	).use(TCollectionItemExtension, { item: adapter.instance, elevator })
 
 	return { instance: adapter.instance, facade, unmount: accept([facade, adapter]) }
 }

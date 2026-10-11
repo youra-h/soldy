@@ -197,7 +197,7 @@ type TabsExtensions = {
 function createTabsCollection(tabs?: TTabs) {
 	const owner = tabs ?? new TTabs()
 
-	const collection = new TCollectionEngine<ITabsItem, TabsExtensions>({
+	const engine = new TCollectionEngine<ITabsItem, TabsExtensions>({
 		extensions: {
 			plain: new TPlainExtension<ITabsItem>(),
 			activation: new TActivationExtension<ITabsItem>(),
@@ -206,9 +206,9 @@ function createTabsCollection(tabs?: TTabs) {
 	})
 
 	// Владелец — опция движка
-	collection.options.set({ owner })
+	engine.options.set({ owner })
 
-	return { owner, collection }
+	return { owner, engine }
 }
 
 function createTab(text: string, value?: string): TTabsItem {
@@ -219,24 +219,24 @@ describe('Коллекция табов с TTabsExtension + TActivationExtension
 	// --- Базовые операции ---
 
 	it('добавление табов через коллекцию', () => {
-		const { collection } = createTabsCollection()
+		const { engine } = createTabsCollection()
 		const tab1 = createTab('Tab 1')
 		const tab2 = createTab('Tab 2')
 
-		collection.extensions.plain.insert(tab1)
-		collection.extensions.plain.insert(tab2)
+		engine.extensions.plain.insert(tab1)
+		engine.extensions.plain.insert(tab2)
 
-		expect(collection.getCore().driver.valueOf().length).toBe(2)
-		expect(collection.getCore().driver.valueOf().includes(tab1)).toBe(true)
-		expect(collection.getCore().driver.valueOf().includes(tab2)).toBe(true)
+		expect(engine.getCore().driver.valueOf().length).toBe(2)
+		expect(engine.getCore().driver.valueOf().includes(tab1)).toBe(true)
+		expect(engine.getCore().driver.valueOf().includes(tab2)).toBe(true)
 	})
 
 	it('TTabsExtension пробрасывает свойства владельца при добавлении элемента', () => {
 		const tabs = new TTabs({ disabled: true, size: 'lg', variant: 'brand' })
-		const { collection } = createTabsCollection(tabs)
+		const { engine } = createTabsCollection(tabs)
 
 		const tab = createTab('Tab')
-		collection.extensions.plain.insert(tab)
+		engine.extensions.plain.insert(tab)
 
 		expect(tab.disabled).toBe(true)
 		expect(tab.size).toBe('lg')
@@ -245,13 +245,13 @@ describe('Коллекция табов с TTabsExtension + TActivationExtension
 
 	it('TTabsExtension пробрасывает изменение disabled на все элементы', () => {
 		const tabs = new TTabs()
-		const { collection } = createTabsCollection(tabs)
+		const { engine } = createTabsCollection(tabs)
 
 		const tab1 = createTab('Tab 1')
 		const tab2 = createTab('Tab 2')
 
-		collection.extensions.plain.insert(tab1)
-		collection.extensions.plain.insert(tab2)
+		engine.extensions.plain.insert(tab1)
+		engine.extensions.plain.insert(tab2)
 
 		tabs.disabled = true
 
@@ -262,116 +262,116 @@ describe('Коллекция табов с TTabsExtension + TActivationExtension
 	// --- Активация ---
 
 	it('активация табов через TActivationExtension', () => {
-		const { collection } = createTabsCollection()
+		const { engine } = createTabsCollection()
 		const tab1 = createTab('Tab 1')
 		const tab2 = createTab('Tab 2')
 
-		collection.extensions.plain.insert(tab1)
-		collection.extensions.plain.insert(tab2)
+		engine.extensions.plain.insert(tab1)
+		engine.extensions.plain.insert(tab2)
 
-		collection.extensions.activation.activate(tab1)
+		engine.extensions.activation.activate(tab1)
 
-		expect(collection.extensions.activation.activeItem).toBe(tab1)
-		expect(collection.extensions.activation.isActive(tab1)).toBe(true)
-		expect(collection.extensions.activation.isActive(tab2)).toBe(false)
+		expect(engine.extensions.activation.activeItem).toBe(tab1)
+		expect(engine.extensions.activation.isActive(tab1)).toBe(true)
+		expect(engine.extensions.activation.isActive(tab2)).toBe(false)
 
 		// Переключение на tab2
-		collection.extensions.activation.activate(tab2)
+		engine.extensions.activation.activate(tab2)
 
-		expect(collection.extensions.activation.activeItem).toBe(tab2)
-		expect(collection.extensions.activation.isActive(tab1)).toBe(false)
-		expect(collection.extensions.activation.isActive(tab2)).toBe(true)
+		expect(engine.extensions.activation.activeItem).toBe(tab2)
+		expect(engine.extensions.activation.isActive(tab1)).toBe(false)
+		expect(engine.extensions.activation.isActive(tab2)).toBe(true)
 	})
 
 	it('события активации эмитятся корректно', () => {
-		const { collection } = createTabsCollection()
+		const { engine } = createTabsCollection()
 		const tab = createTab('Tab')
 
-		collection.extensions.plain.insert(tab)
+		engine.extensions.plain.insert(tab)
 
 		const onActivated = vi.fn()
 		const onChange = vi.fn()
 
-		collection.extensions.activation.events.on('item:activated', onActivated)
-		collection.extensions.activation.events.on('change:activation', onChange)
+		engine.extensions.activation.events.on('item:activated', onActivated)
+		engine.extensions.activation.events.on('change:activation', onChange)
 
-		collection.extensions.activation.activate(tab)
+		engine.extensions.activation.activate(tab)
 
 		expect(onActivated).toHaveBeenCalledWith(tab)
 		expect(onChange).toHaveBeenCalledWith(tab)
 	})
 
 	it('деактивация при удалении активного элемента', () => {
-		const { collection } = createTabsCollection()
+		const { engine } = createTabsCollection()
 		const tab = createTab('Tab')
 
-		collection.extensions.plain.insert(tab)
-		collection.extensions.activation.activate(tab)
+		engine.extensions.plain.insert(tab)
+		engine.extensions.activation.activate(tab)
 
-		expect(collection.extensions.activation.isActive(tab)).toBe(true)
+		expect(engine.extensions.activation.isActive(tab)).toBe(true)
 
 		// Удаляем через driver
-		collection.extensions.plain.remove(tab)
+		engine.extensions.plain.remove(tab)
 
-		expect(collection.extensions.activation.activeItem).toBeUndefined()
+		expect(engine.extensions.activation.activeItem).toBeUndefined()
 	})
 
 	// --- closeTab ---
 
 	it('closeTab удаляет closable элемент и эмитит item:close', () => {
-		const { collection } = createTabsCollection()
+		const { engine } = createTabsCollection()
 		const tab1 = createTab('Tab 1')
 		const tab2 = createTab('Tab 2')
 
-		collection.extensions.plain.insert(tab1)
-		collection.extensions.plain.insert(tab2)
+		engine.extensions.plain.insert(tab1)
+		engine.extensions.plain.insert(tab2)
 
 		tab2.closable = true
 
 		const onClose = vi.fn()
 
-		collection.extensions.tabs.events.on('item:close', onClose)
+		engine.extensions.tabs.events.on('item:close', onClose)
 
-		const result = collection.extensions.tabs.closeTab(tab2)
+		const result = engine.extensions.tabs.closeTab(tab2)
 
 		expect(result).toBe(true)
 		expect(onClose).toHaveBeenCalledWith(tab2)
-		expect(collection.getCore().driver.valueOf().length).toBe(1)
-		expect(collection.getCore().driver.valueOf().includes(tab1)).toBe(true)
-		expect(collection.getCore().driver.valueOf().includes(tab2)).toBe(false)
+		expect(engine.getCore().driver.valueOf().length).toBe(1)
+		expect(engine.getCore().driver.valueOf().includes(tab1)).toBe(true)
+		expect(engine.getCore().driver.valueOf().includes(tab2)).toBe(false)
 	})
 
 	it('closeTab не удаляет не-closable таб', () => {
 		const tabs = new TTabs({ closable: false })
-		const { collection } = createTabsCollection(tabs)
+		const { engine } = createTabsCollection(tabs)
 
 		const tab = createTab('Tab')
-		collection.extensions.plain.insert(tab)
+		engine.extensions.plain.insert(tab)
 
 		const onClose = vi.fn()
 
-		collection.extensions.tabs.events.on('item:close', onClose)
+		engine.extensions.tabs.events.on('item:close', onClose)
 
-		const result = collection.extensions.tabs.closeTab(tab)
+		const result = engine.extensions.tabs.closeTab(tab)
 
 		expect(result).toBe(false)
 		expect(onClose).not.toHaveBeenCalled()
-		expect(collection.getCore().driver.valueOf().length).toBe(1)
+		expect(engine.getCore().driver.valueOf().length).toBe(1)
 	})
 
 	it('движок генерит item:removed после closeTab', () => {
-		const { collection } = createTabsCollection()
+		const { engine } = createTabsCollection()
 		const tab = createTab('Tab')
 
-		collection.extensions.plain.insert(tab)
+		engine.extensions.plain.insert(tab)
 
 		tab.closable = true
 
 		const onRemoved = vi.fn()
 
-		collection.extensions.plain.events.on('item:removed', onRemoved)
+		engine.extensions.plain.events.on('item:removed', onRemoved)
 
-		collection.extensions.tabs.closeTab(tab)
+		engine.extensions.tabs.closeTab(tab)
 
 		expect(onRemoved).toHaveBeenCalledTimes(1)
 		expect(onRemoved.mock.calls[0][0].item).toBe(tab)
@@ -380,14 +380,14 @@ describe('Коллекция табов с TTabsExtension + TActivationExtension
 	// --- hasEnabledTabs ---
 
 	it('hasEnabledTabs: проверяет наличие enabled табов', () => {
-		const { collection } = createTabsCollection()
+		const { engine } = createTabsCollection()
 		const tab1 = createTab('Tab 1')
 		const tab2 = createTab('Tab 2')
 
-		collection.extensions.plain.insert(tab1)
-		collection.extensions.plain.insert(tab2)
+		engine.extensions.plain.insert(tab1)
+		engine.extensions.plain.insert(tab2)
 
-		const result = collection.extensions.tabs.hasEnabledTabs()
+		const result = engine.extensions.tabs.hasEnabledTabs()
 
 		// Оба таба не disabled — должно быть true
 		expect(typeof result).toBe('boolean')
@@ -397,21 +397,21 @@ describe('Коллекция табов с TTabsExtension + TActivationExtension
 
 	it('TTabsItemExtension.closable через контекст: резолв item > parent', () => {
 		const tabs = new TTabs({ closable: true })
-		const { collection } = createTabsCollection(tabs)
+		const { engine } = createTabsCollection(tabs)
 
 		const tab1 = createTab('Tab 1')
 		const tab2 = createTab('Tab 2')
 		const tab3 = createTab('Tab 3')
 
-		collection.extensions.plain.insert(tab1, 0)
-		collection.extensions.plain.insert(tab2, 1)
-		collection.extensions.plain.insert(tab3, 2)
+		engine.extensions.plain.insert(tab1, 0)
+		engine.extensions.plain.insert(tab2, 1)
+		engine.extensions.plain.insert(tab3, 2)
 
 		// tab1 — явно НЕ closable (переопределяет глобальный)
 		tab1.closable = false
 		// tab2, tab3 — наследуют tabs.closable = true
 
-		const registry = new TItemContextRegistry(collection.getCore())
+		const registry = new TItemContextRegistry(engine.getCore())
 
 		const ctx1 = registry.get(tab1)
 		// Явный false у элемента — приоритет
@@ -428,66 +428,66 @@ describe('Коллекция табов с TTabsExtension + TActivationExtension
 
 	it('closeTab учитывает резолв closable: tab1 не закрывается, tab2 закрывается', () => {
 		const tabs = new TTabs({ closable: true })
-		const { collection } = createTabsCollection(tabs)
+		const { engine } = createTabsCollection(tabs)
 
 		const tab1 = createTab('Tab 1')
 		const tab2 = createTab('Tab 2')
 		const tab3 = createTab('Tab 3')
 
-		collection.extensions.plain.insert(tab1, 0)
-		collection.extensions.plain.insert(tab2, 1)
-		collection.extensions.plain.insert(tab3, 2)
+		engine.extensions.plain.insert(tab1, 0)
+		engine.extensions.plain.insert(tab2, 1)
+		engine.extensions.plain.insert(tab3, 2)
 
 		tab1.closable = false // явный запрет
 
 		// tab1 не должен закрыться
-		const r1 = collection.extensions.tabs.closeTab(tab1)
+		const r1 = engine.extensions.tabs.closeTab(tab1)
 
 		expect(r1).toBe(false)
-		expect(collection.getCore().driver.valueOf().length).toBe(3)
+		expect(engine.getCore().driver.valueOf().length).toBe(3)
 
 		// tab2 должен закрыться (наследует closable = true)
-		const r2 = collection.extensions.tabs.closeTab(tab2)
+		const r2 = engine.extensions.tabs.closeTab(tab2)
 
 		expect(r2).toBe(true)
-		expect(collection.getCore().driver.valueOf().length).toBe(2)
-		expect(collection.getCore().driver.valueOf().includes(tab1)).toBe(true)
-		expect(collection.getCore().driver.valueOf().includes(tab3)).toBe(true)
+		expect(engine.getCore().driver.valueOf().length).toBe(2)
+		expect(engine.getCore().driver.valueOf().includes(tab1)).toBe(true)
+		expect(engine.getCore().driver.valueOf().includes(tab3)).toBe(true)
 	})
 
 	it('после closeTab всех closable — остаётся только не-closable', () => {
 		const tabs = new TTabs({ closable: true })
-		const { collection } = createTabsCollection(tabs)
+		const { engine } = createTabsCollection(tabs)
 
 		const tab1 = createTab('Tab 1')
 		const tab2 = createTab('Tab 2')
 
-		collection.extensions.plain.insert(tab1)
-		collection.extensions.plain.insert(tab2)
+		engine.extensions.plain.insert(tab1)
+		engine.extensions.plain.insert(tab2)
 
 		tab1.closable = false
 
-		collection.extensions.tabs.closeTab(tab2)
+		engine.extensions.tabs.closeTab(tab2)
 
-		expect(collection.getCore().driver.valueOf().length).toBe(1)
-		expect(collection.getCore().driver.valueOf().includes(tab1)).toBe(true)
+		expect(engine.getCore().driver.valueOf().length).toBe(1)
+		expect(engine.getCore().driver.valueOf().includes(tab1)).toBe(true)
 
 		// Попытка закрыть tab1 не должна сработать
-		const r = collection.extensions.tabs.closeTab(tab1)
+		const r = engine.extensions.tabs.closeTab(tab1)
 
 		expect(r).toBe(false)
-		expect(collection.getCore().driver.valueOf().length).toBe(1)
+		expect(engine.getCore().driver.valueOf().length).toBe(1)
 	})
 
 	// --- Адаптеры через контекст ---
 
 	it('адаптер activation доступен через TItemContext', () => {
-		const { collection } = createTabsCollection()
+		const { engine } = createTabsCollection()
 		const tab = createTab('Tab')
 
-		collection.extensions.plain.insert(tab)
+		engine.extensions.plain.insert(tab)
 
-		const registry = new TItemContextRegistry(collection.getCore())
+		const registry = new TItemContextRegistry(engine.getCore())
 		const ctx = registry.get(tab)
 
 		expect(ctx.adapters.activation).toBeDefined()
@@ -496,53 +496,53 @@ describe('Коллекция табов с TTabsExtension + TActivationExtension
 		ctx.adapters.activation.active = true
 
 		expect(ctx.adapters.activation.active).toBe(true)
-		expect(collection.extensions.activation.isActive(tab)).toBe(true)
+		expect(engine.extensions.activation.isActive(tab)).toBe(true)
 	})
 
 	// --- TTabsItemExtension.close() через контекст ---
 
 	it('TTabsItemExtension.close() удаляет таб и эмитит item:close', () => {
 		const tabs = new TTabs({ closable: true })
-		const { collection } = createTabsCollection(tabs)
+		const { engine } = createTabsCollection(tabs)
 
 		const tab1 = createTab('Tab 1')
 		const tab2 = createTab('Tab 2')
 
-		collection.extensions.plain.insert(tab1)
-		collection.extensions.plain.insert(tab2)
+		engine.extensions.plain.insert(tab1)
+		engine.extensions.plain.insert(tab2)
 
 		const onClose = vi.fn()
-		collection.extensions.tabs.events.on('item:close', onClose)
+		engine.extensions.tabs.events.on('item:close', onClose)
 
-		const registry = new TItemContextRegistry(collection.getCore())
+		const registry = new TItemContextRegistry(engine.getCore())
 
 		// Получаем адаптер и вызываем close()
 		const ctx = registry.get(tab1)
 		ctx.adapters.tabs.close()
 
 		expect(onClose).toHaveBeenCalledWith(tab1)
-		expect(collection.getCore().driver.valueOf().length).toBe(1)
-		expect(collection.getCore().driver.valueOf().includes(tab1)).toBe(false)
-		expect(collection.getCore().driver.valueOf().includes(tab2)).toBe(true)
+		expect(engine.getCore().driver.valueOf().length).toBe(1)
+		expect(engine.getCore().driver.valueOf().includes(tab1)).toBe(false)
+		expect(engine.getCore().driver.valueOf().includes(tab2)).toBe(true)
 	})
 
 	it('TTabsItemExtension.close() не удаляет не-closable таб', () => {
 		const tabs = new TTabs({ closable: false })
-		const { collection } = createTabsCollection(tabs)
+		const { engine } = createTabsCollection(tabs)
 
 		const tab = createTab('Tab')
-		collection.extensions.plain.insert(tab)
+		engine.extensions.plain.insert(tab)
 
 		const onClose = vi.fn()
-		collection.extensions.tabs.events.on('item:close', onClose)
+		engine.extensions.tabs.events.on('item:close', onClose)
 
-		const registry = new TItemContextRegistry(collection.getCore())
+		const registry = new TItemContextRegistry(engine.getCore())
 		const ctx = registry.get(tab)
 
 		ctx.adapters.tabs.close()
 
 		expect(onClose).not.toHaveBeenCalled()
-		expect(collection.getCore().driver.valueOf().length).toBe(1)
+		expect(engine.getCore().driver.valueOf().length).toBe(1)
 	})
 })
 

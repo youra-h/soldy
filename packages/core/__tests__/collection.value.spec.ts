@@ -9,19 +9,19 @@ import type { IListBoxItem, IListBoxProps, TSelectionMode } from '@soldy-ui/core
  */
 function createListBox(values: string[], mode: TSelectionMode, props: Partial<IListBoxProps> = {}) {
 	const owner = new TListBox(props)
-	const collection = new TListBoxCollectionFacade({ mode }, { owner })
+	const facade = new TListBoxCollectionFacade({ mode }, { owner })
 	const items = values.map((value) => new TListBoxItem({ value, text: value }))
 
-	collection.items = items as IListBoxItem[]
+	facade.items = items as IListBoxItem[]
 
-	const { batch, selection } = collection.engine.extensions
+	const { batch, selection } = facade.engine.extensions
 	const selectionChanges = vi.fn()
 	const valueChanges = vi.fn()
 
 	selection.events.on('change:selection', selectionChanges)
 	owner.events.on('change:value', valueChanges)
 
-	return { owner, collection, items, batch, selection, selectionChanges, valueChanges }
+	return { owner, facade, items, batch, selection, selectionChanges, valueChanges }
 }
 
 describe('ключи вне коллекции', () => {
@@ -110,7 +110,7 @@ describe('значение → выбор одной заменой', () => {
 	 * пропадает и возвращается.
 	 */
 	it('запись состава без смены выбора — ни одного change:selection', () => {
-		const { collection, items, batch, selectionChanges } = createListBox(
+		const { facade, items, batch, selectionChanges } = createListBox(
 			['a', 'b', 'c'],
 			'multiple',
 			{ value: ['a', 'c'] },
@@ -118,7 +118,7 @@ describe('значение → выбор одной заменой', () => {
 
 		batch.trackBy = (item) => item.value
 		selectionChanges.mockClear()
-		collection.items = [...items, new TListBoxItem({ value: 'd', text: 'd' })] as IListBoxItem[]
+		facade.items = [...items, new TListBoxItem({ value: 'd', text: 'd' })] as IListBoxItem[]
 
 		expect(selectionChanges).not.toHaveBeenCalled()
 	})

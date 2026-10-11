@@ -13,12 +13,12 @@ import type { IAccordionItem } from '@soldy-ui/core'
 
 function createAccordion(values: string[]) {
 	const owner = new TAccordion({ mode: 'multiple' })
-	const collection = new TAccordionCollectionFacade({}, { owner })
+	const facade = new TAccordionCollectionFacade({}, { owner })
 	const items = values.map((value) => new TAccordionItem({ value, text: value }))
 
-	collection.items = items as IAccordionItem[]
+	facade.items = items as IAccordionItem[]
 
-	return { owner, collection, items }
+	return { owner, facade, items }
 }
 
 describe('панель секции', () => {
@@ -46,17 +46,17 @@ describe('панель секции', () => {
 
 describe('aria-expanded', () => {
 	it('стоит на всех заголовках, а не только на раскрытых', () => {
-		const { collection, items } = createAccordion(['a', 'b'])
+		const { facade, items } = createAccordion(['a', 'b'])
 
-		collection.engine.extensions.selection.select(items[0])
+		facade.engine.extensions.selection.select(items[0])
 
 		expect(items[0].aria.get('aria-expanded')).toBe('true')
 		expect(items[1].aria.get('aria-expanded')).toBe('false')
 	})
 
 	it('следует за раскрытием и сворачиванием', () => {
-		const { collection, items } = createAccordion(['a'])
-		const selection = collection.engine.extensions.selection
+		const { facade, items } = createAccordion(['a'])
+		const selection = facade.engine.extensions.selection
 
 		selection.select(items[0])
 		expect(items[0].aria.get('aria-expanded')).toBe('true')
@@ -66,10 +66,10 @@ describe('aria-expanded', () => {
 	})
 
 	it('появляется у элемента, добавленного позже', () => {
-		const { collection, items } = createAccordion(['a'])
+		const { facade, items } = createAccordion(['a'])
 		const added = new TAccordionItem({ value: 'b', text: 'b' })
 
-		collection.items = [...items, added] as IAccordionItem[]
+		facade.items = [...items, added] as IAccordionItem[]
 
 		expect(added.aria.get('aria-expanded')).toBe('false')
 	})
