@@ -184,14 +184,14 @@ The component set, as the playground shows it:
 
 What each adapter implements so far:
 
-| Adapter        | Package             | Ready                                                                                                                         |
-| -------------- | ------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| Vue            | `@soldy-ui/vue`     | all of the above                                                                                                              |
-| React          | `@soldy-ui/react`   | Button, Icon, Label, Frame, Skeleton, ProgressSpinner, Input, CheckBox, Switch, RadioGroup, ListBox, Tabs, Accordion, Virtual |
-| Angular        | `@soldy-ui/angular` | Button (`<button so-button>`)                                                                                                 |
-| Svelte         | `@soldy-ui/svelte`  | Button                                                                                                                        |
-| Solid          | `@soldy-ui/solid`   | Button                                                                                                                        |
-| Web Components | `@soldy-ui/webc`    | Button (`<so-button>`)                                                                                                        |
+| Adapter        | Package             | Ready                                                                                                                                |
+| -------------- | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| Vue            | `@soldy-ui/vue`     | all of the above                                                                                                                     |
+| React          | `@soldy-ui/react`   | Button, Icon, Label, Frame, Skeleton, ProgressSpinner, Input, CheckBox, Switch, RadioGroup, ListBox, Tabs, Accordion, Table, Virtual |
+| Angular        | `@soldy-ui/angular` | Button (`<button so-button>`)                                                                                                        |
+| Svelte         | `@soldy-ui/svelte`  | Button                                                                                                                               |
+| Solid          | `@soldy-ui/solid`   | Button                                                                                                                               |
+| Web Components | `@soldy-ui/webc`    | Button (`<so-button>`)                                                                                                               |
 
 A new component comes to Vue first and moves to the other adapters after that.
 

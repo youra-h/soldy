@@ -811,9 +811,11 @@ ListBox, список Select, Popover и будущий Menu выглядят о
   раскладке не стоит. Режим теме не уходит — его читает только ядро. **Окно**
   — разметка `div.s-table__viewport` вокруг `table`, а не корень: корень,
   роль, классы и наборы — у `table`, плагины и тема видят корнем её, а
-  атрибуты потребителя во Vue достаются окну. Прокрутку окну включает тема по
-  `data-overflow` таблицы — его пишет расширение `columns`, колонки шире
-  места: признака нет (места ещё нет) — окно ничего не обрезает, `false` —
+  атрибуты потребителя и скрытие достаются окну — внешнему узлу компонента:
+  во Vue сами, в React их разводит помощник адаптера `toWrappedRootProps`.
+  Прокрутку окну включает тема по `data-overflow` таблицы — его пишет
+  расширение `columns`, колонки шире места: признака нет (места ещё нет) —
+  окно ничего не обрезает, `false` —
   `overflow-x: clip` (кадр, на который замер отстаёт от сужения окна, не
   мигает полосой прокрутки, а контейнером прокрутки `clip` окно не делает),
   `true` — прокрутка вбок, кроме `stickyHead` (ниже). **Ручка ширины** — у
@@ -1052,7 +1054,8 @@ ListBox, список Select, Popover и будущий Menu выглядят о
   нарисованным строкам — свой `aria-rowindex` с двух, ушедшие из окна его
   теряют. Окно таблицы сторожат `core/__tests__/table-virtual.spec.ts`,
   `playground/vue/browser/table-virtual.spec.ts` и «окно» в
-  `ui/vue/__tests__/table.spec.ts`. **Закреплённая шапка** (`stickyHead`, по
+  `ui/vue/__tests__/table.spec.ts` и `ui/react/__tests__/table.spec.tsx`.
+  **Закреплённая шапка** (`stickyHead`, по
   умолчанию нет — решение владельца: кому-то шапка в потоке как раз нужна) —
   шапка стоит у верхнего края ближайшей прокрутки, контейнера или страницы, а
   строки уходят под неё. Свойство таблицы, а не коллекции: строки и колонки от
@@ -1082,7 +1085,9 @@ ListBox, список Select, Popover и будущий Menu выглядят о
   `core/__tests__/table-grid.spec.ts`,
   `plugins/__tests__/table-grid.plugin.spec.ts`,
   `ui/vue/__tests__/table.spec.ts`, `ui/vue/__tests__/input-bool.spec.ts`,
-  `ui/vue/__tests__/ssr-ids.spec.ts` и `playground/vue/browser/table.spec.ts`.
+  `ui/vue/__tests__/ssr-ids.spec.ts`, `ui/react/__tests__/table.spec.tsx`
+  (сверх сценариев Vue — StrictMode и сервер с гидратацией) и
+  `playground/vue/browser/table.spec.ts`.
 - **Окно** (`Virtual`) — длинный список рисует только видимые элементы, а на
   месте остальных — распорки той же высоты. Невизуальная обёртка, как
   DragAndDrop: `<Virtual><ListBox :items /></Virtual>`, так же Select и Table;
@@ -1163,8 +1168,8 @@ ListBox, список Select, Popover и будущий Menu выглядят о
   пересобранная обёртка (StrictMode, `<Activity>`) опускает новое
   подключение, и список пересобирается вслед за ней — сменилось прочитанное
   через лифт. Стиль распорки ядро пишет по-CSS, объект стиля React из него
-  делает перевод адаптера (`toReactStyle`). Таблицы и Select в React нет —
-  окно у них пока только во Vue. Сторожат
+  делает перевод адаптера (`toReactStyle`). Select в React нет — окно у него
+  пока только во Vue. Сторожат
   `core/__tests__/collection.draw.spec.ts`,
   `core/__tests__/list-box-virtual.spec.ts`,
   `core/__tests__/select-virtual.spec.ts`,

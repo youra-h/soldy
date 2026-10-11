@@ -37,13 +37,16 @@ import {
 	TRadioGroup,
 	TSkeleton,
 	TSwitch,
+	TTable,
 	TTabs,
 	TVirtual,
 	createEngineAccordion,
 	createEngineListBox,
 	createEngineRadioGroup,
+	createEngineTable,
 	createEngineTabs,
 } from '@soldy-ui/core'
+import type { TTableCollection } from '@soldy-ui/core'
 import {
 	Accordion,
 	Button,
@@ -58,6 +61,7 @@ import {
 	RadioGroup,
 	Skeleton,
 	Switch,
+	Table,
 	Tabs,
 	Virtual,
 } from '@soldy-ui/react'
@@ -128,6 +132,42 @@ function engineBuses(engine: TEngine): TEvented<any>[] {
 	}
 
 	return buses
+}
+
+/**
+ * Движок строк таблицы снаружи: две строки из данных, колонка с заголовком
+ * строки и выбор нескольких — так таблица рисует и колонку выбора.
+ */
+function tableEngine(): TTableCollection {
+	const engine = createEngineTable({
+		items: [{ data: { id: 1, name: 'A' } }, { data: { id: 2, name: 'B' } }],
+	})
+
+	engine.extensions.columns.columns = [
+		{
+			field: 'name',
+			text: 'Имя',
+			rowHeader: true,
+			sortable: true,
+			resizable: true,
+			width: 150,
+		},
+	]
+	engine.extensions.selection.mode = 'multiple'
+
+	return engine
+}
+
+/**
+ * Шины, которые таблица держит на движке сверх его расширений и строк:
+ * экземпляры колонок — над ними рисуются заголовки — и чекбокс «выбрать все».
+ * Оба живут на движке дольше монтирования.
+ */
+function tableBuses(engine: TTableCollection): TEvented<any>[] {
+	return [
+		...engine.extensions.columns.columns.map((column) => column.events),
+		engine.extensions.table.selectAll.events,
+	]
 }
 
 /** Ждёт обещания на рендере — так сосед ждёт данных. */
@@ -347,6 +387,22 @@ const COMPONENTS: Readonly<Record<string, Readonly<Record<string, TCase>>>> = {
 			(ctrl) => <Switch ctrl={ctrl} />,
 		),
 	},
+	/**
+	 * Строки таблица рисует только данными, поэтому случай один. Сверх шин
+	 * движка — колонки и чекбокс «выбрать все»: заголовки и CheckBox шапки
+	 * собираются над ними, как над `ctrl` снаружи.
+	 */
+	Table: {
+		'ctrl и движок, строки из данных': () => {
+			const ctrl = new TTable()
+			const engine = tableEngine()
+
+			return {
+				node: <Table ctrl={ctrl} engine={engine} />,
+				buses: [ctrl.events, ...engineBuses(engine), ...tableBuses(engine)],
+			}
+		},
+	},
 	Tabs: {
 		'ctrl и движок, элементы из данных': () => {
 			const ctrl = new TTabs()
@@ -396,6 +452,19 @@ const COMPONENTS: Readonly<Record<string, Readonly<Record<string, TCase>>>> = {
 					</Virtual>
 				),
 				buses: [ctrl.events],
+			}
+		},
+		'ctrl обёртки и движок таблицы': () => {
+			const ctrl = new TVirtual()
+			const engine = tableEngine()
+
+			return {
+				node: (
+					<Virtual ctrl={ctrl}>
+						<Table engine={engine} />
+					</Virtual>
+				),
+				buses: [ctrl.events, ...engineBuses(engine), ...tableBuses(engine)],
 			}
 		},
 	},
