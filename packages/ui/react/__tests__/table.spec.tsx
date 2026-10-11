@@ -1004,6 +1004,19 @@ describe('перерисовка ячеек', () => {
 	const cellTexts = () =>
 		findAll('.s-table-row').map((row) => findAll('.s-table-row__cell', row).map(text))
 
+	it('монтирование зовёт слот по разу на ячейку', async () => {
+		const slot = cellSlot()
+
+		await render(<Table engine={engineOf('none')} cell={slot} />)
+
+		expect(cellTexts()).toEqual([
+			['Анна', '30'],
+			['Борис', '41'],
+			['Вера', '25'],
+		])
+		expect(slot).toHaveBeenCalledTimes(6)
+	})
+
 	it('«выбрать все» и снятие выбора слот ячеек не зовут', async () => {
 		const { slot } = await renderCounted(engineOf('multiple'))
 		const head = checkBoxInput('.s-table__select')

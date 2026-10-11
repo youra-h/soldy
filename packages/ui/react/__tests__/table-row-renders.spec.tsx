@@ -95,6 +95,15 @@ async function renderCounted(element: ReactElement): Promise<TMounted> {
 }
 
 describe('перерисовка строк', () => {
+	it('монтирование — каждая строка по разу', async () => {
+		rowRenders.mockClear()
+		mount(<Table engine={engineOf('none')} />)
+
+		await nextFrame()
+
+		expect(renderedRows()).toEqual([1, 2, 3])
+	})
+
 	it('таблица перерисована сменой пропа — строки нет', async () => {
 		const engine = engineOf('none')
 		const view = (label: string) => <Table engine={engine} aria_label={label} />
