@@ -277,7 +277,10 @@ React-компоненты держат adapter-context между рендер�
 «Элемент входит в коллекцию при монтировании»). Собирает фабрика функцией `create`,
 которую ей отдаёт хук, — `(create) => create(XDescriptor(), { ctrl, props })`:
 это `createAdapterContext` с id монтирования от `useId` (см. «`id` в разметке —
-от монтирования, в плагинах»). Сторож — блок eslint
+от монтирования, в плагинах»). Границу перерисовки компонент тоже ставит не
+сам, `memo`, а обёрткой адаптера `withRenderBoundary` (там же): под ней строки
+`Table` и их ячейки — таблица перерисовывается на каждый выбор, а их
+перерисовывают только своё состояние и смена входов. Сторож — блок eslint
 `soldy/react-components-no-framework` (`eslint.config.ts`): запрещает
 значения из `'react'` (в том числе `React.useRef` через namespace-импорт) и
 `createAdapterContext` из `@soldy-ui/setup` в
