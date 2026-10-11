@@ -10,7 +10,10 @@ export {
 	type TRootAttributes,
 	type TRootForward,
 	type TRootLayout,
+	type TRootNodeAttributes,
 	type TRootState,
 	type TRootStyle,
+	type TRootStyleLayers,
+	type TStyleProperties,
 } from './root'
 export { roleIcon, TRoleIcon } from './icon'

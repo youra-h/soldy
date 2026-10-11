@@ -21,11 +21,14 @@
  *   них стиль потребителя, поверх всего `display: none` скрытого корня:
  *   скрытие не перекрывают ни раскладка, ни потребитель — как у `v-show`.
  *
- * Стиль у Svelte — строка атрибута, поэтому слои склеиваются текстом: из
- * одноимённых свойств браузер берёт последнее. Имена плагины и ядро пишут
- * по-CSS (`z-index`, `--*`), и в строке они остаются как есть. Пустое значение
- * (`width: ''` у иконки без размера) свойства не задаёт, а пустая строка
- * стиля — атрибута: его нет вовсе.
+ * Стиль раскладка отдаёт слоями (`TRootStyleLayers`): свойства ядра и
+ * плагинов — объектом, имена — как в CSS (`z-index`, `--*`), пустое значение
+ * (`width: ''` у иконки без размера) свойства не задаёт; стиль потребителя —
+ * его строкой. На узел стиль ложится по свойствам, как у Vue и React:
+ * атрибут `style` Svelte пишет целиком, и вместе со стилем корня стиралось бы
+ * то, что плагины ставят на узел сами. Поэтому в браузере стиль ставит
+ * attachment корня (`rootStyle` в `Dynamic`), а строкой атрибута
+ * (`toStyleAttribute`) он уходит только в серверную разметку.
  *
  * Привязки корня к `TElementPlugin` здесь нет: её ставит attachment адаптера
  * (`{@attach}` корня в `Dynamic`), и атрибуты потребителя её не перекрывают.
@@ -43,6 +46,23 @@ import type { TAttributesMap } from '@soldy-ui/core'
 
 /** Стиль, как его отдают плагины и ядро: имена — как в CSS (`z-index`, `--*`). */
 export type TRootStyle = Readonly<Record<string, string | number>>
+
+/** Свойства стиля: имена — как в CSS, значения — строкой, пустых значений нет. */
+export type TStyleProperties = Readonly<Record<string, string>>
+
+/**
+ * Стиль корня по слоям, снизу вверх: из одноимённых свойств действует верхнее.
+ * Слои ядра и плагинов — свойствами, стиль потребителя — строкой, как он её
+ * написал: в браузере её разбирает браузер, на сервере она уходит в атрибут.
+ */
+export type TRootStyleLayers = {
+	/** Под стилем потребителя: раскладка, стиль-выход компонента, место элемента. */
+	readonly below: TStyleProperties
+	/** Стиль потребителя. Нет его — `undefined`. */
+	readonly forward: string | undefined
+	/** Поверх стиля потребителя: `display: none` скрытого корня. */
+	readonly above: TStyleProperties
+}
 
 /** Что корню нужно из состояния компонента. */
 export type TRootState = {
@@ -71,20 +91,40 @@ export type TRootForward = {
 
 export type TRootLayout = {
 	class: ClassValue
-	/** Нет ни одного свойства — `undefined`: атрибута `style` у корня нет. */
-	style: string | undefined
+	style: TRootStyleLayers
 }
 
 /** Атрибуты корня целиком: наборы ядра, атрибуты потребителя и раскладка. */
 export type TRootAttributes = Record<string, unknown> & TRootLayout
 
-const HIDDEN: TRootStyle = { display: 'none' }
+/**
+ * Атрибуты, которые ложатся на узел корня, — они же пропсы компонента в `tag`.
+ * Стиль в них — строка атрибута, и только в серверной разметке: в браузере его
+ * ставит attachment корня, по свойствам.
+ */
+export type TRootNodeAttributes = Record<string, unknown> & {
+	class: ClassValue
+	style?: string
+}
 
-/** Свойства стиля — в текст атрибута; пустое значение свойства не задаёт. */
-function toDeclarations(styles: TRootStyle | undefined): string[] {
-	return Object.entries(styles ?? {})
-		.filter(([, value]) => value !== '')
-		.map(([name, value]) => `${name}: ${value}`)
+const HIDDEN: TStyleProperties = { display: 'none' }
+
+const NONE: TStyleProperties = {}
+
+/** Выход ядра или плагина — свойствами: значение строкой, пустое свойства не задаёт. */
+function toProperties(styles: TRootStyle | undefined): Record<string, string> {
+	const properties: Record<string, string> = {}
+
+	for (const [name, value] of Object.entries(styles ?? {})) {
+		if (value !== '') properties[name] = String(value)
+	}
+
+	return properties
+}
+
+/** Свойства — в текст атрибута. */
+function toDeclarations(properties: TStyleProperties): string[] {
+	return Object.entries(properties).map(([name, value]) => `${name}: ${value}`)
 }
 
 /**
@@ -100,18 +140,33 @@ export function toRootLayout(
 	forward: TRootForward,
 	style?: TRootStyle,
 ): TRootLayout {
-	const declarations = [
-		...toDeclarations(state.layout_styles),
-		...toDeclarations(style),
-		...toDeclarations(state.order !== undefined ? { order: state.order } : undefined),
-		...(forward.style ? [forward.style] : []),
-		...toDeclarations(state.visible === false ? HIDDEN : undefined),
-	]
-
 	return {
 		class: [...(state.classes ?? []), forward.class],
-		style: declarations.length > 0 ? declarations.join('; ') : undefined,
+		style: {
+			below: {
+				...toProperties(state.layout_styles),
+				...toProperties(style),
+				...toProperties(state.order !== undefined ? { order: state.order } : undefined),
+			},
+			forward: forward.style || undefined,
+			above: state.visible === false ? HIDDEN : NONE,
+		},
 	}
+}
+
+/**
+ * Стиль корня строкой атрибута — для серверной разметки: слои в том же
+ * порядке, и из одноимённых свойств браузер возьмёт последнее. Нет ни одного
+ * свойства — `undefined`: атрибута `style` у корня нет.
+ */
+export function toStyleAttribute(style: TRootStyleLayers): string | undefined {
+	const declarations = [
+		...toDeclarations(style.below),
+		...(style.forward ? [style.forward] : []),
+		...toDeclarations(style.above),
+	]
+
+	return declarations.length > 0 ? declarations.join('; ') : undefined
 }
 
 /**
