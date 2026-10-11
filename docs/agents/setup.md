@@ -945,9 +945,10 @@ scope задаётся через `defineType<T>` — из него берётс
 имена, слоты и события дескриптора: в его `HTMLAttributes` атрибута
 `content` нет, зато есть `title`, и слот заголовка окна свёлся бы к строке.
 Сторожат `expectTypeOf` в `ui/svelte/__tests__/slots.spec.ts`, их ловит
-«Типы — Svelte». У Solid `UseDomProps` пока вычитает только пропсы и
-`children` — правило приходит к нему вместе с переносом Label
-([869f5806t](https://app.clickup.com/t/869f5806t)).
+«Типы — Svelte». У Solid то же правило — `TDomAttributes` в
+`packages/ui/solid/src/types.ts`: в его `HTMLAttributes` тоже есть `title`, а
+`onInput` — обработчик DOM. Сторожат `expectTypeOf` в
+`ui/solid/__tests__/slots.spec.tsx`, их ловит «Типы — Solid».
 
 `children` атрибуты вычитают всегда, а не по слоту, во всех трёх адаптерах:
 содержимое — только слот `default`. `DOMAttributes.children` вернул бы его
@@ -955,8 +956,8 @@ scope задаётся через `defineType<T>` — из него берётс
 `<CheckBox>подпись</CheckBox>`, а `forward` связки подпись молча съедал.
 Компоненту со слотом `children` даёт тип слотов, и атрибут `ReactNode` не
 сужает форму-функцию scoped-слота. Сторожат `expectTypeOf` в
-`ui/react/__tests__/slots.spec.tsx` и `ui/svelte/__tests__/slots.spec.ts`,
-«содержимое — только слот default».
+`ui/react/__tests__/slots.spec.tsx`, `ui/svelte/__tests__/slots.spec.ts` и
+`ui/solid/__tests__/slots.spec.tsx`, «содержимое — только слот default».
 
 Особенности, о которые легко споткнуться:
 
@@ -969,6 +970,13 @@ scope задаётся через `defineType<T>` — из него берётс
   нет в остальных адаптерах.
 - **Solid**: `renderSlot` отличает функцию слота от ленивого мемо по арности
   (`content.length > 0`) — `JSX.Element` тоже бывает функцией, но без аргументов.
+  Слот, по которому разметка выбирает запасное содержимое (текст Button),
+  разворачивает помощник адаптера `resolveSlot` — один раз, поверх
+  `children()`: геттер слота в пропсах Solid на каждое чтение заново создаёт
+  его узлы, и проверка «задан ли слот» нарисовала бы второй экземпляр.
+  Пустое по правилам JSX — `null`, `undefined` и булево — слотом не считается
+  (`hasSlot`): `{cond() && <Icon />}` при ложном условии текст не глушит.
+  Сторожит `ui/solid/__tests__/slots.spec.tsx`.
 
 Расхождение разметки и контракта ловят conformance-тесты.
 `packages/ui/webc/__tests__/button.spec.ts` сверяет ключи `template.create()`.

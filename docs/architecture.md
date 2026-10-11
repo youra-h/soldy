@@ -1915,16 +1915,27 @@ Svelte 5 на рунах. Структура зеркалит React, потом�
 
 ## Layer 8c: Solid Adapter (`packages/ui/solid/src`)
 
-### ✅ IMPLEMENTED (Component / ComponentView / Stylable / Control / Textable / Button)
+### ✅ IMPLEMENTED (Component / ComponentView / Stylable / Control / Textable / Button / Icon / Frame / ProgressSpinner / Skeleton)
 
-Структура зеркалит React — JSX и колбэк-пропы делают их почти близнецами:
+Структура зеркалит React — JSX и колбэк-пропы делают их почти близнецами, —
+а механика ближе к Vue и Svelte: тело компонента выполняется один раз, и
+контекст читается при его выполнении.
 
 - `adapter/common/` — `SolidProfile` (`naming: SolidNaming`,
   `defaultSlot: 'children'`), `SolidNaming` целиком собран из общих стратегий
   (`prop: underscorePropNaming`, `event: callbackEventNaming` — **третий**
-  потребитель после React и Svelte), `renderSlot`.
+  потребитель после React и Svelte); `createSolidAdapterContext` — сборка с id
+  монтирования от `createUniqueId()` и локалью поддерева; раскладка корня
+  `toRootProps` / `toRootLayout` (наборы ядра, поверх атрибуты потребителя,
+  класс, стиль объектом по-CSS) и её мемо `createRootProps`; `roleIcon(role)`
+  — компонент иконки по роли для `tag` у Icon, один на роль; `renderSlot`,
+  `hasSlot` и `resolveSlot` — слот, развёрнутый один раз поверх `children()`.
 - `adapter/runtime/` — `useAdapter` поверх связки
-  `adapter.connect(SolidProfile)`.
+  `adapter.connect(SolidProfile)`; `rootTag` — корень по `tag` для `Dynamic`
+  (строка или компонент Solid); `Teleport` — поверх `Portal` из
+  `solid-js/web` со своей целью.
+- `adapter/locale/` — `LocaleProvider`: свой `TLocaleSource` детям контекстом,
+  создан с локалью первой отрисовки, смена пропа — в тот же источник.
 - `adapter/elevator/` — `TSolidElevator` через `createContext`/`useContext`.
 
 ### Solid-специфика
@@ -1939,14 +1950,32 @@ Svelte 5 на рунах. Структура зеркалит React, потом�
   вроде `propsRef` из React: колбэк читается из `props` в момент события.
 - **Жизненный цикл — `onCleanup`**, подписки снимаются при уничтожении
   реактивного владельца.
-- **DOM-биндинг — callback-ref** (`ref={binding.ref}`), как в React.
-- **Динамический тег** — `<Dynamic component={tag}>` из `solid-js/web`.
-- **children резолвятся через `children()`** — прямое чтение `props.children`
-  в нескольких местах создавало бы узлы заново.
+- **Атрибуты корня — мемо `createRootProps`**: спред читает их по одному, и
+  мемо считает раскладку раз на смену. Имена HTML и `null` Solid понимает сам,
+  стиль ставит по свойствам и не стирает того, что плагины пишут в узел сами.
+- **DOM-биндинг — callback-ref** (`ref={binding.ref}`), как в React, —
+  последним, после спреда раскладки: `ref` потребителя из атрибутов не выбьет
+  привязку корня.
+- **Динамический тег** — `<Dynamic component={rootTag(tag)}>` из
+  `solid-js/web`: строка — элемент, функция — компонент Solid, он получает
+  атрибуты корня, `ref` и содержимое пропсами.
+- **Слот с запасным содержимым — `resolveSlot`**: геттер слота в пропсах Solid
+  на каждое чтение создаёт узлы заново, и проверка «задан ли слот» нарисовала
+  бы второй экземпляр. Остальные слоты разметка рисует `renderSlot` прямо.
+- **Id монтирования — `createUniqueId()`**: на сервере и при гидратации — от
+  места компонента в дереве, и звать его можно из любой функции тела
+  компонента, поэтому его берёт обёртка сборки, а не компонент.
+- **Серверный рендер** проверяет отдельный проект тестов
+  (`*.server.spec.tsx`, `solid({ ssr: true })`, `renderToString`).
 
 ### Известные ограничения
 
-- `tag` поддерживается только строковый.
+- `tag` — строка или компонент Solid. Другой объект (компонент чужого
+  фреймворка) Solid нарисовать не может, и корня нет.
+- Гидратацию пакет не проверяет: в одном прогоне компоненты собраны под одно
+  окружение, а гидратации нужны обе сборки сразу. Сам пакет пока уезжает
+  собранным под браузер, и серверный рендер у приложения невозможен —
+  задача [869ffh8ze](https://app.clickup.com/t/869ffh8ze).
 - Коллекции не портированы; elevator, как и в React, не может отдать значение
   императивно — контекст в Solid выставляется только через `<Provider>` в JSX.
   React решил это слоем значений и `Elevate` (Layer 7) — отдельная задача
@@ -2330,7 +2359,7 @@ Framework-agnostic dependency injection:
 | @soldy-ui/react          | Components (`Button`, `ComponentView`, …; collections with parts — `ListBox` with `ListBox.Item`, `Tabs` with `Tabs.Item` / `Tabs.Content`, `Accordion` with `Accordion.Item`, `RadioGroup` with `RadioGroup.Item`, `Table` with `Table.Column` / `Table.Row`, and flat `ListBoxItem`, `TabsItem`, `TabsContent`, `AccordionItem`, `RadioGroupItem`, `TableColumn`, `TableRow`), `useSetupXxx` hooks, `useAdapterContext`, `useAdapter`, `useCollectionAdapter`, `ReactProfile`, `ReactNaming`, `TReactElevator`, `Elevate`, `renderSlot`, `toAriaProps`, `toRootProps`, `toWrappedRootProps`, `toText`, prop types (`UseProps`, `UseDomProps`, `EventProps`, `SlotProps`)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | @soldy-ui/angular        | `TButtonComponent`, `TComponentViewComponent`, `TComponentComponent`, `setupXxx`, generated names and surfaces (`ButtonInputNames` / `ButtonOutputNames` / `TButtonSurface`, …), `useAdapter`, `TInputValue` / `TOutputEmitter`, `TComponentBase`, `SlotDirective`, `AngularProfile`, `AngularNaming`, `useInputs` / `useOutputs`, `TAngularElevator`, `AngularElevatorFactory`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | @soldy-ui/svelte         | `Button`, `ComponentView`, `setupXxx`, `useAdapter`, `SvelteProfile`, `SvelteNaming`, `TSvelteElevator`, `SvelteElevatorFactory`, prop types (`UseProps`, `UseDomProps`, `EventProps`, `SlotProps`, `TSnippetSlots`)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
-| @soldy-ui/solid          | `Button`, `ComponentView`, `setupXxx`, `useAdapter`, `SolidProfile`, `SolidNaming`, `TSolidElevator`, `SolidElevatorFactory`, `renderSlot`, prop types (`UseProps`, `UseDomProps`, `EventProps`, `SlotProps`)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| @soldy-ui/solid          | `Button`, `ComponentView`, `Icon`, `Frame`, `ProgressSpinner`, `Skeleton`, `setupXxx`, `createSolidAdapterContext`, `useAdapter`, `LocaleProvider`, `Teleport`, `roleIcon`, `createRootProps`, `toRootProps`, `rootTag`, `SolidProfile`, `SolidNaming`, `TSolidElevator`, `SolidElevatorFactory`, `renderSlot`, `resolveSlot`, prop types (`UseProps`, `UseDomProps`, `EventProps`, `SlotProps`)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | @soldy-ui/webc           | `<button is="so-button">` (`TButtonElement`), `<div is="so-component-view">` (`TComponentViewElement`), `setupXxx`, templates (`buttonTemplate`, `componentViewTemplate`), `SoldyElement`, `defineElement`, `useAdapter`, `useAttributes`, `HOST_PROPS`, `bind`, `WebcProfile`, `WebcNaming`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | @soldy-ui/theme-oren     | CSS: `dist/index.css` (built by `npm run build --workspace=@soldy-ui/theme-oren`); types: `index.d.ts` — theme values of the appearance registries; `@soldy-ui/theme-oren/setup` — the theme object for `useTheme` and `TTabsViewPlugin`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | @soldy-ui/icons-material | Icons as data (`TIconSource`), a named export per icon — every role of `ICON_ROLES` and more; the app registers them via `setIcons`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |

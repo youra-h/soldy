@@ -70,17 +70,19 @@ Solid», «Типы — Web Components», «Типы — Angular», провер
 `.prettierrc.json` их не дублировать.
 
 Тесты `packages/core/__tests__`, `packages/plugins/__tests__`,
-`packages/ui/vue/__tests__` и `packages/ui/react/__tests__` тоже проверяются
-типами: «Типы — Core» гоняет `tsc --noEmit` по `packages/core/tsconfig.json`
-(include `src` + `__tests__`), «Типы — Plugins» — `tsc --noEmit` по
-`packages/plugins/tsconfig.json` (include `src` + `__tests__`), «Типы — Vue»
-гоняет `vue-tsc` по `packages/ui/vue/tsconfig.json` (включает `__tests__/**/*`),
-а не только по `tsconfig.build.json`, как раньше, «Типы — React» —
-`tsc --noEmit` по `packages/ui/react/tsconfig.json` (include `src` +
-`__tests__`). Свой пакет, который тесты импортируют по имени, проверка типов
-находит в исходниках, как соседей (см. «Сборка пакетов», «Локальная разработка
-сборки не требует»). Приведение вроде `as never` там больше не спрячет
-несовпавший контракт компонента или плагина.
+`packages/ui/vue/__tests__`, `packages/ui/react/__tests__` и
+`packages/ui/solid/__tests__` тоже проверяются типами: «Типы — Core» гоняет
+`tsc --noEmit` по `packages/core/tsconfig.json` (include `src` + `__tests__`),
+«Типы — Plugins» — `tsc --noEmit` по `packages/plugins/tsconfig.json`
+(include `src` + `__tests__`), «Типы — Vue» гоняет `vue-tsc` по
+`packages/ui/vue/tsconfig.json` (включает `__tests__/**/*`), а не только по
+`tsconfig.build.json`, как раньше, «Типы — React» и «Типы — Solid» —
+`tsc --noEmit` по `packages/ui/react/tsconfig.json` и
+`packages/ui/solid/tsconfig.json` (include `src` + `__tests__`). Свой пакет,
+который тесты импортируют по имени, проверка типов находит в исходниках, как
+соседей (см. «Сборка пакетов», «Локальная разработка сборки не требует»).
+Приведение вроде `as never` там больше не спрячет несовпавший контракт
+компонента или плагина.
 
 **Ошибка или предупреждение в консоли роняет тест адаптера React.** Общий файл
 настройки прогона (`packages/ui/react/__tests__/setup.ts`, `setupFiles` в

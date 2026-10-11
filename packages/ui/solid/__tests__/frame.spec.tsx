@@ -19,7 +19,8 @@
 import { describe, it, expect } from 'vitest'
 import { createSignal, type JSX } from 'solid-js'
 import { TFrame } from '@soldy-ui/core'
-import { Frame } from '@soldy-ui/solid'
+import { TPluginBundle, ruRU } from '@soldy-ui/plugins'
+import { Button, Frame, LocaleProvider } from '@soldy-ui/solid'
 import { find, mount } from './mount'
 
 /** Узел Frame — там, куда его увёл телепорт. */
@@ -102,6 +103,32 @@ describe('Frame · телепорт', () => {
 		destroy()
 
 		expect(document.querySelector('.s-frame')).toBeNull()
+	})
+
+	/**
+	 * Портал Solid рисует содержимое под владельцем места, где стоит Frame, и
+	 * контексты места доходят до телепортированной панели: компонент в ней
+	 * собирается с локалью провайдера вокруг Frame, а не с английской.
+	 */
+	it('содержимое панели — в контексте места: локаль провайдера вокруг Frame', async () => {
+		const bundles: TPluginBundle[] = []
+
+		mount(() => (
+			<LocaleProvider locale={ruRU}>
+				<Frame visible>
+					<Button
+						onBundleCreate={(bundle: unknown) => {
+							if (bundle instanceof TPluginBundle) bundles.push(bundle)
+						}}
+					/>
+				</Frame>
+			</LocaleProvider>
+		))
+		// Набор объявляется на микрозадаче после сборки
+		await Promise.resolve()
+
+		expect(frame().querySelector('.s-button')).not.toBeNull()
+		expect(bundles.map((bundle) => bundle.locale.locale.tag)).toEqual([ruRU.tag])
 	})
 })
 

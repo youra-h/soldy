@@ -35,7 +35,7 @@
   выезжающей панели Drawer: панель не телепортируется, а остаётся в разметке
   на месте и встаёт в ближайшем позиционированном предке. Frame пишет
   `data-contained`, разметка выключает телепорт (`:disabled` у `<teleport>`
-  Vue, `disabled` у `Teleport` React и Svelte), `TFrameLayoutPlugin` ставит панель
+  Vue, `disabled` у `Teleport` React, Svelte и Solid), `TFrameLayoutPlugin` ставит панель
   `absolute` без `left`/`top`, а `TAnchorPlugin` её не двигает и
   `data-placement` снимает: место в контейнере решает тема. Popover отдаёт
   значение своему Frame, а его панель прижата к краю контейнера — `edge`
@@ -53,20 +53,27 @@
   корне. Сторожат
   `setup/__tests__/overlay.spec.ts` (якорь и раскладка),
   `plugins/__tests__/popover-focus.plugin.spec.ts` («панель внутри корня»),
-  `ui/vue/__tests__/popover.spec.ts`, `ui/react/__tests__/frame.spec.tsx` и
-  `ui/svelte/__tests__/frame.spec.ts`.
+  `ui/vue/__tests__/popover.spec.ts`, `ui/react/__tests__/frame.spec.tsx`,
+  `ui/svelte/__tests__/frame.spec.ts` и `ui/solid/__tests__/frame.spec.tsx`.
 - **Телепорт — у каждого адаптера свой, поведение одно.** Цель — по
   селектору `target`; её нет — панели нет. На сервере панели нет (портал
-  React серверный рендер роняет, у Svelte эффектов на сервере нет), и
-  появляется она после гидратации; с `contained` панель на месте — и на
-  сервере. Своего портала у Svelte нет, и `Teleport`
+  React серверный рендер роняет, у Svelte эффектов на сервере нет, у Solid —
+  документа), и появляется она после гидратации; с `contained` панель на
+  месте — и на сервере. Своего портала у Svelte нет, и `Teleport`
   (`ui/svelte/src/adapter/runtime/`) монтирует содержимое в цель отдельным
   корнем (`mount`) со всеми контекстами места, где стоит (`getAllContexts`):
   локаль поддерева и лифт коллекции в панели те же, что у триггера. Узлы,
   уже нарисованные на месте, он не переносит — Svelte сам вставляет и
-  убирает узлы блоков, и перенесённые разошлись бы с ним. Сторожат
-  `ui/react/__tests__/frame.spec.tsx`, `ui/svelte/__tests__/frame.spec.ts` и
-  `ui/svelte/__tests__/ssr.server.spec.ts`.
+  убирает узлы блоков, и перенесённые разошлись бы с ним. У Solid `Teleport`
+  (`ui/solid/src/adapter/runtime/`) стоит на `Portal` из `solid-js/web` со
+  своей целью: `Portal` без цели ушёл бы в `body`. Портал рисует содержимое
+  под владельцем места, где стоит, и контексты места — локаль поддерева — в
+  панели те же, что у триггера. В цель он кладёт свою обёртку (`div`) и
+  рисует панель в ней — плагинам оверлея она не мешает: панель они находят
+  по пометке владельца (`data-owner`), слой — по `closest`, а не по родителю.
+  Сторожат `ui/react/__tests__/frame.spec.tsx`,
+  `ui/svelte/__tests__/frame.spec.ts`, `ui/svelte/__tests__/ssr.server.spec.ts`,
+  `ui/solid/__tests__/frame.spec.tsx` и `ui/solid/__tests__/ssr.server.spec.tsx`.
 - **`TModalLayer`** (`core/src/components/base/modal-layer/`) — общая база
   модального окна **`TDialog`** и выезжающей панели **`TDrawer`**: всё, что
   следует из модальности, один раз — `role="dialog"`, `aria-modal`, имя от
