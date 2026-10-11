@@ -940,17 +940,23 @@ scope задаётся через `defineType<T>` — из него берётс
 дескриптора вычитает `TDomAttributes` (`packages/ui/react/src/types.ts`) — на
 нём стоит `UseDomProps`; в рантайме их и так съедает `forward` связки.
 Сторожат `expectTypeOf` в `ui/react/__tests__/slots.spec.tsx` и
-`input.spec.tsx`, их ловит «Типы — React». У Solid и Svelte `UseDomProps` пока
-вычитает только пропсы и `children` — правило приходит к ним вместе с
-переносом Label ([869f5806t](https://app.clickup.com/t/869f5806t)).
+`input.spec.tsx`, их ловит «Типы — React». У Svelte то же правило —
+`TDomAttributes` в `packages/ui/svelte/src/types.ts` вычитает защищённые
+имена, слоты и события дескриптора: в его `HTMLAttributes` атрибута
+`content` нет, зато есть `title`, и слот заголовка окна свёлся бы к строке.
+Сторожат `expectTypeOf` в `ui/svelte/__tests__/slots.spec.ts`, их ловит
+«Типы — Svelte». У Solid `UseDomProps` пока вычитает только пропсы и
+`children` — правило приходит к нему вместе с переносом Label
+([869f5806t](https://app.clickup.com/t/869f5806t)).
 
 `children` атрибуты вычитают всегда, а не по слоту, во всех трёх адаптерах:
 содержимое — только слот `default`. `DOMAttributes.children` вернул бы его
 компоненту, чья разметка содержимого не рисует: в React компилировался
 `<CheckBox>подпись</CheckBox>`, а `forward` связки подпись молча съедал.
 Компоненту со слотом `children` даёт тип слотов, и атрибут `ReactNode` не
-сужает форму-функцию scoped-слота. Сторожит `expectTypeOf` в
-`ui/react/__tests__/slots.spec.tsx`, «содержимое — только слот default».
+сужает форму-функцию scoped-слота. Сторожат `expectTypeOf` в
+`ui/react/__tests__/slots.spec.tsx` и `ui/svelte/__tests__/slots.spec.ts`,
+«содержимое — только слот default».
 
 Особенности, о которые легко споткнуться:
 

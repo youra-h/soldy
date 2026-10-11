@@ -1,14 +1,30 @@
 /**
  * Слоты Svelte — snippet-пропы.
  *
- * Сниппеты нельзя объявить из тестового кода без .svelte-файла, поэтому
- * содержимое задаётся через тестовую обёртку Slots.test.svelte.
+ * Сниппеты слотов разметкой объявляются только в .svelte-файле — тестовой
+ * обёртке Slots.test.svelte. Произвольное содержимое из кода теста даёт
+ * `createRawSnippet`.
  */
 
-import { describe, it, expect, afterEach } from 'vitest'
-import { mount, unmount, flushSync, type ComponentProps } from 'svelte'
-import { ButtonDescriptor } from '@soldy-ui/setup'
+import { describe, it, expect, expectTypeOf, afterEach } from 'vitest'
+import {
+	createRawSnippet,
+	mount,
+	unmount,
+	flushSync,
+	type ComponentProps,
+	type Snippet,
+} from 'svelte'
+import {
+	ButtonDescriptor,
+	type CheckBoxDescriptor,
+	type DialogDescriptor,
+	type InputDescriptor,
+	type TabsDescriptor,
+} from '@soldy-ui/setup'
+import { Button, type FrameProps, type UseDomProps } from '@soldy-ui/svelte'
 import Harness from './Slots.test.svelte'
+import { mount as mountComponent } from './mount'
 
 const mounted: ReturnType<typeof mount>[] = []
 
@@ -23,7 +39,7 @@ function render(props: ComponentProps<typeof Harness> = {}): HTMLElement {
 }
 
 afterEach(() => {
-	while (mounted.length) unmount(mounted.pop())
+	for (const app of mounted.splice(0).reverse()) void unmount(app)
 	document.body.innerHTML = ''
 })
 
@@ -67,11 +83,76 @@ describe('поведение слотов Button', () => {
 	})
 })
 
+describe('слот не ограничивает содержимое', () => {
+	/**
+	 * `scope` в объявлении слота — данные, которые компонент передаёт ВНУТРЬ,
+	 * а не тип содержимого. Положить можно что угодно.
+	 */
+	it('в children можно положить целую таблицу', () => {
+		const el = mountComponent(Button, {
+			text: 'ignored',
+			children: createRawSnippet(() => ({
+				render: () => '<table><tbody><tr><td>ячейка</td></tr></tbody></table>',
+			})),
+		}).root()
+
+		expect(el.querySelector('.s-button__text table td')?.textContent).toBe('ячейка')
+		expect(el.tagName.toLowerCase()).toBe('button')
+	})
+
+	it('scope доступен и при произвольной разметке', () => {
+		const el = mountComponent(Button, {
+			text: 'Заголовок',
+			children: createRawSnippet((scope: () => { text: string }) => ({
+				render: () => `<ul><li>${scope().text}</li></ul>`,
+			})),
+		}).root()
+
+		expect(el.querySelector('.s-button__text li')?.textContent).toBe('Заголовок')
+	})
+})
+
 describe('слоты не уходят в атрибуты корня', () => {
 	it('leading и trailing не становятся атрибутами', () => {
 		const el = root(render({ text: 'Mid', withLeading: true, withTrailing: true }))
 
 		expect(el.hasAttribute('leading')).toBe(false)
 		expect(el.hasAttribute('trailing')).toBe(false)
+	})
+})
+
+describe('слот важнее одноимённого атрибута HTML', () => {
+	/**
+	 * В Svelte слот — проп компонента, и его имя встречается с атрибутами
+	 * `HTMLAttributes`. `title` там — строка: пересечение свело бы слот
+	 * заголовка окна к строке, и сниппет в него было бы не передать.
+	 * `UseDomProps` вычитает из атрибутов имена слотов, как и пропсов.
+	 *
+	 * Тип проверяет не vitest, а шаг CI «Типы — Svelte».
+	 */
+	it('title по DialogDescriptor и content по TabsDescriptor — сниппеты, а не строки атрибута', () => {
+		expectTypeOf<UseDomProps<typeof DialogDescriptor>['title']>().toEqualTypeOf<
+			Snippet | undefined
+		>()
+		expectTypeOf<UseDomProps<typeof TabsDescriptor>['content']>().toEqualTypeOf<
+			Snippet | undefined
+		>()
+	})
+})
+
+describe('содержимое — только слот default', () => {
+	/**
+	 * `children` в Svelte — это слот `default`, и ничего больше. Компонент, чья
+	 * разметка содержимого не рисует, слота не объявляет, и `children` в его
+	 * пропсах нет — ни из слотов, ни из атрибутов DOM: `UseDomProps` вычитает
+	 * его всегда. Подпись контрола — `Label` вложением.
+	 *
+	 * Тип проверяет не vitest, а шаг CI «Типы — Svelte».
+	 */
+	it('у CheckBox и Input children нет, у Frame — есть: его разметка содержимое рисует', () => {
+		expectTypeOf<UseDomProps<typeof CheckBoxDescriptor>>().not.toHaveProperty('children')
+		expectTypeOf<UseDomProps<typeof InputDescriptor>>().not.toHaveProperty('children')
+		expectTypeOf<FrameProps>().toHaveProperty('children')
+		expectTypeOf<FrameProps['children']>().toEqualTypeOf<Snippet | undefined>()
 	})
 })

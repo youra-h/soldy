@@ -4,5 +4,6 @@
     "declarationMap": false,
     "sourceMap": false,
     "paths": {}
-  }
+  },
+  "include": ["env.d.ts", "src/**/*"]
 }

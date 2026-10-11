@@ -17,18 +17,22 @@
     "@soldy-ui/plugins": "*",
     "@soldy-ui/react": "*",
     "@soldy-ui/setup": "*",
+    "@soldy-ui/svelte": "*",
     "@soldy-ui/theme-oren": "*",
     "@soldy-ui/vue": "*",
     "@soldy-ui/webc": "*",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
+    "svelte": "^5.29.0",
     "vue": "^3.5.32",
     "vue-router": "^4.5.1"
   },
   "devDependencies": {
+    "@sveltejs/vite-plugin-svelte": "^7.3.0",
     "@types/node": "^26.1.1",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
-    "@vitejs/plugin-react": "^5.2.0"
+    "@vitejs/plugin-react": "^5.2.0",
+    "svelte-check": "^4.7.6"
   }
 }

@@ -21,6 +21,7 @@ export type TFramework = {
 export const FRAMEWORKS: readonly TFramework[] = [
 	{ id: 'vue', label: 'Vue' },
 	{ id: 'react', label: 'React' },
+	{ id: 'svelte', label: 'Svelte' },
 ]
 
 /** Фреймворк, на котором стенд открывается. */

@@ -163,8 +163,8 @@ npm run build --workspace=@soldy-ui/angular      # ng-packagr: частична�
   `.svelte.js`, компилирует приложение потребителя. Отсюда `svelte` в
   `peerDependencies` — от 5.29, где появился `{@attach}`, — и условие `svelte`
   в `exports`: по нему плагин Svelte узнаёт библиотеку. Препроцессора и
-  `svelte.config.*` у пакета нет: TS и в `<script lang="ts">`, и в разметке
-  (`this={state.tag as string}`) Svelte 5 разбирает сам, поэтому `.svelte`
+  `svelte.config.*` у пакета нет: TS и в `<script lang="ts">`, и в выражениях
+  разметки Svelte 5 разбирает сам, поэтому `.svelte`
   уезжают теми же, что компилируют тесты пакета, а конфиг подхватили бы разом
   сборка, плагин Svelte в тестах и `svelte-check`. Черновик сборки
   (`.svelte-kit/`) — в `.gitignore`: перенести его можно только конфигом.

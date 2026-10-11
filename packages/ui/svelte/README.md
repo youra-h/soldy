@@ -12,8 +12,12 @@ component descriptor, so they match the other five adapters; only the spelling i
 are snippets, events arrive as callback props (`element:ready` → `onElementReady`), and the default
 slot is `children`.
 
-> **Status:** the Svelte adapter is in progress — Button is ported, the rest of the set is on its
-> way. See [the adapter table](https://github.com/youra-h/soldy#components).
+> **Status:** the Svelte adapter is in progress — Button, Icon, Frame, ProgressSpinner and Skeleton
+> are ported, the rest of the set is on its way. Icon renders the `tag` it is given: an element
+> name, a Svelte component, or `roleIcon(role)` — the icon of that role from the registered icon
+> pack. Frame teleports its panel into `target` (`body` by default) on the client; with `contained`
+> it stays in place, on the server too. `LocaleProvider` gives a subtree its language and library
+> strings. See [the adapter table](https://github.com/youra-h/soldy#components).
 
 ## Install
 
@@ -47,6 +51,16 @@ same state and events:
 </script>
 
 <Button ctrl={btn} onActionPress={() => (btn.disabled = true)} />
+```
+
+An icon from the registered pack — the root of `Icon` is an `<svg>` of that role:
+
+```svelte
+<script lang="ts">
+  import { Icon, roleIcon } from '@soldy-ui/svelte'
+</script>
+
+<Icon tag={roleIcon('close')} aria_label="Close" />
 ```
 
 The application plugs in a theme and an icon pack once, in its entry point:

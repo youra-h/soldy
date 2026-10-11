@@ -98,15 +98,15 @@ notifications`. Фильтра по тексту в стороже нет и б�
   реестра и ключи фикстур — одни на все хосты);
 - `mount(узел, { component, fixture?, props, onEvent })` →
   `{ update(props), unmount() }`. Синхронно: к возврату компонент в DOM (React
-  — `flushSync`), кадр для `TElementPlugin` ждёт вызывающий. Пропсы — именами
-  разметки, с `ctrl` и `engine`. Слушатели всех объявленных событий (своих и
-  фасада коллекции) вешает хост, а в `onEvent` отдаёт полное имя ядра;
+  и Svelte — `flushSync`), кадр для `TElementPlugin` ждёт вызывающий. Пропсы —
+  именами разметки, с `ctrl` и `engine`. Слушатели всех объявленных событий
+  (своих и фасада коллекции) вешает хост, а в `onEvent` отдаёт полное имя ядра;
 - `setLocale(locale)` — язык шапки всем корням хоста без перемонтирования:
   контекст провайдера оболочки в чужой корень не проходит, поэтому у корня
   свой `LocaleProvider`, а локаль ему даёт хост;
 - `snippets` — необязательный генератор кода колонок (`propSnippet`,
-  `instanceSnippet`) с расширением файла примера (`extension`: `vue`, `tsx` —
-  список `SNIPPET_EXTENSIONS` в `shared/src/snippet-file.ts`). В файле с ним
+  `instanceSnippet`) с расширением файла примера (`extension`: `vue`, `tsx`,
+  `svelte` — список `SNIPPET_EXTENSIONS` в `shared/src/snippet-file.ts`). В файле с ним
   «Открыть в VS Code» пишет код, других эндпоинт стенда не пишет; нет
   генератора — у колонок нет блоков кода.
 
@@ -131,12 +131,27 @@ notifications`. Фильтра по тексту в стороже нет и б�
    (`exclude`).
 3. Плагин Vite фреймворка — в `vite.base.ts` (один модуль на три конфига:
    dev-сервер, jsdom и браузерный прогон) с `include` на папку хоста и
-   исходники адаптера: у React и Solid одинаковые `.tsx`. Там же алиас
-   адаптера. Зависимости фреймворка — в `package.json` стенда.
+   исходники адаптера: у React и Solid одинаковые `.tsx`. Плагину Svelte
+   `include` не нужен: `.svelte` и `.svelte.ts` нет ни у кого, кроме хоста
+   Svelte и его адаптера. Там же алиас адаптера. Зависимости фреймворка — в
+   `package.json` стенда.
 4. Строка в `FRAMEWORKS` загрузчика: папка без строки недостижима из шапки, и
    `__tests__/navigation.spec.ts` сверяет одно с другим.
 5. Шаг CI: `npx tsc --noEmit -p packages/playground/vue/src/hosts/<id>/tsconfig.json`
-   в «Типы — Playground». Сборка стенда собирает хост сама — ленивым куском.
+   в «Типы — Playground» (у Svelte — `npx svelte-check --tsconfig …`: `.svelte`
+   `tsc` не читает). Сборка стенда собирает хост сама — ленивым куском.
+
+**Хост Svelte** (`src/hosts/svelte/`) устроен как у React, с поправкой на
+Svelte. Разметка Svelte живёт только в `.svelte`, поэтому превью и фикстуры —
+файлы (`ButtonPreview.svelte`, `ButtonSlotLabels.svelte`), а карты — ссылки на
+них. Корень — `Root.svelte` с `LocaleProvider`, монтирует его `mount` с
+`flushSync`. Пропсы корня и язык шапки — ячейки `$state.raw` в модуле
+`live.svelte.ts`: смена — новая отрисовка того же корня, без прокси вокруг
+экземпляра ядра, движка и замороженной локали. Прогону в jsdom нужно условие
+`browser` (`resolve.conditions` в `vitest.config.ts`): без него `svelte`
+разрешается в серверную сборку, где `mount` нет; хосты Vue и React его
+переносят. svelte-check хоста берёт конфиг Svelte из `vite.config.ts` стенда —
+отсюда плагин Svelte в `vite.base.ts` и для неё.
 
 **Правило, которое дважды нарушалось при первой же реализации:**
 

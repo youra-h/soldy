@@ -1859,17 +1859,25 @@ Zone.js и молча ломалось бы под `provideZonelessChangeDetecti
 
 ## Layer 8b: Svelte Adapter (`packages/ui/svelte/src`)
 
-### ✅ IMPLEMENTED (Component / ComponentView / Stylable / Control / Textable / Button)
+### ✅ IMPLEMENTED (Component / ComponentView / Stylable / Control / Textable / Button / Icon / Frame / ProgressSpinner / Skeleton)
 
 Svelte 5 на рунах. Структура зеркалит React, потому что механика событий та же —
 колбэк-пропы:
 
 - `adapter/common/` — `SvelteProfile` (`naming: SvelteNaming`,
   `defaultSlot: 'children'`), `SvelteNaming` (`prop` = `underscorePropNaming`,
-  `event` = `callbackEventNaming` — обе стратегии общие с React).
+  `event` = `callbackEventNaming` — обе стратегии общие с React);
+  `createSvelteAdapterContext` — сборка с id монтирования от `$props.id()`
+  компонента и локалью поддерева; раскладка корня `toRootProps` (наборы ядра,
+  поверх атрибуты потребителя, класс, стиль строкой); `roleIcon(role)` — метка
+  иконки по роли для `tag` у Icon и `RoleIcon`, который рисует её `<svg>`.
 - `adapter/runtime/` — `useAdapter.svelte.ts`: `useAdapter` поверх связки
   `adapter.connect(SvelteProfile)`. Расширение `.svelte.ts` обязательно
-  там, где используются руны (`$state`, `$effect`, `$derived`).
+  там, где используются руны (`$state`, `$effect`, `$derived`). Там же
+  `Dynamic` — корень по `tag` (строка, компонент Svelte, метка роли) — и
+  `Teleport`: содержимое в цели отдельным корнем `mount` с контекстами места.
+- `adapter/locale/` — `LocaleProvider`: свой `TLocaleSource` детям через
+  `setContext`, смена пропа — в тот же источник.
 - `adapter/elevator/` — `TSvelteElevator` через `setContext`/`getContext`
   (ограничение то же, что у Vue: только во время инициализации компонента).
 
@@ -1880,18 +1888,24 @@ Svelte 5 на рунах. Структура зеркалит React, потом�
 - **props передаются геттером** (`() => props`): в Svelte 5 захват `$props()`
   в переменную рвёт реактивность, читать нужно лениво. Компилятор ловит это
   предупреждением `state_referenced_locally`.
-- **DOM-биндинг — attachment** (`{@attach binding.attachElement}`), прямой аналог
-  callback-ref из React: вызывается при появлении узла и умеет вернуть cleanup,
-  поэтому пересоздание элемента при смене `tag` обрабатывается само.
+- **DOM-биндинг — attachment** (`attach={binding.attachElement}` у
+  `Dynamic`, внутри — `{@attach}`), прямой аналог callback-ref из React:
+  вызывается при появлении узла и умеет вернуть cleanup, поэтому пересоздание
+  элемента при смене `tag` обрабатывается само. Компонент в `tag` получает
+  attachment пропом с ключом-символом и кладёт на свой корень спредом.
 - **Слоты — сниппеты**: `children` рендерится через `{@render children?.()}`,
   именованные области layout'а передаются сниппет-пропами.
-- **Атрибуты идут одним объектом**: у `<svelte:element>` тип атрибутов обобщённый,
-  поэтому `disabled` нельзя поставить отдельным атрибутом — он уходит через спред.
+- **Атрибуты идут одним объектом** — `toRootProps`: у `<svelte:element>` тип
+  атрибутов обобщённый, поэтому `disabled` нельзя поставить отдельным
+  атрибутом — он уходит через спред.
+- **Id монтирования — `$props.id()`**: компилятор пускает его только в
+  `<script>` компонента, поэтому компонент читает его рядом с `$props()` и
+  отдаёт setup-функции.
 
 ### Известные ограничения
 
-- `tag` поддерживается только строковый: `<svelte:element>` не принимает
-  компонент. Объектные теги (как в Vue) потребуют отдельной ветки.
+- `tag` — строка, компонент Svelte или метка `roleIcon`. Другой объект
+  (компонент чужого фреймворка) Svelte нарисовать не может, и корня нет.
 - Коллекции не портированы (elevator готов, но не подключён).
 
 ## Layer 8c: Solid Adapter (`packages/ui/solid/src`)

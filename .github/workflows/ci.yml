@@ -99,12 +99,14 @@ jobs:
       # и в двух режимах (проп и экземпляр ядра). Молча сломавшаяся страница
       # обесценивает его целиком, поэтому типы проверяются наравне с адаптерами.
       # Оболочка — Vue (vue-tsc), а хост превью фреймворка — своя программа
-      # типов со своим JSX: строка на хост.
+      # типов со своей разметкой: строка на хост. `.svelte` хоста Svelte
+      # проверяет svelte-check, а не tsc.
       - name: Типы — Playground
         run: |
           npx tsc --noEmit -p packages/playground/shared/tsconfig.json
           npx vue-tsc --noEmit -p packages/playground/vue/tsconfig.json
           npx tsc --noEmit -p packages/playground/vue/src/hosts/react/tsconfig.json
+          npx svelte-check --tsconfig packages/playground/vue/src/hosts/svelte/tsconfig.json
 
       - name: Типы — React
         run: npx tsc --noEmit -p packages/ui/react/tsconfig.json

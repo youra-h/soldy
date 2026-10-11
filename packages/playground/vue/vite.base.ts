@@ -1,5 +1,6 @@
 import vue from '@vitejs/plugin-vue'
 import react from '@vitejs/plugin-react'
+import { svelte } from '@sveltejs/vite-plugin-svelte'
 import path from 'node:path'
 import type { PluginOption } from 'vite'
 
@@ -23,6 +24,11 @@ const resolve = (to: string) => path.resolve(import.meta.dirname, to)
  * React и (дальше) Solid одинаковые: плагин фреймворка берёт только папку
  * своего хоста и исходники своего адаптера (`include`), иначе соседний
  * компилировал бы чужой JSX. Пути модулей Vite отдаёт с прямыми слешами.
+ *
+ * У Svelte файлы свои — `.svelte` и модули с рунами `.svelte.ts`, — и они
+ * есть только в хосте Svelte и исходниках его адаптера: плагину Svelte делить
+ * нечего, и `include` ему не нужен. Конфиг Svelte он берёт отсюда же — им
+ * пользуется и svelte-check хоста.
  */
 export function plugins(): PluginOption[] {
 	return [
@@ -33,6 +39,7 @@ export function plugins(): PluginOption[] {
 				/\/ui\/react\/src\/.+\.[jt]sx?$/,
 			],
 		}),
+		svelte(),
 	]
 }
 
@@ -56,6 +63,7 @@ export function aliases({ themeCss }: { themeCss: boolean }): Record<string, str
 		'@soldy-ui/setup': resolve('../../setup/index.ts'),
 		'@soldy-ui/vue': resolve('../../ui/vue/src/index.ts'),
 		'@soldy-ui/react': resolve('../../ui/react/src/index.ts'),
+		'@soldy-ui/svelte': resolve('../../ui/svelte/src/index.ts'),
 		'@soldy-ui/webc': resolve('../../ui/webc/src/index.ts'),
 		'@soldy-ui/playground-shared': resolve('../shared/src/index.ts'),
 	}
