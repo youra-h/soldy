@@ -2,13 +2,13 @@
 	import { getIcon } from '@soldy-ui/setup'
 	import type { Attachment } from 'svelte/attachments'
 	import type { TRoleIcon } from './icon'
-	import type { TRootAttributes } from './root'
+	import type { TRootNodeAttributes } from './root'
 
 	type TRoleIconProps = {
 		/** Метка роли из `roleIcon`. */
 		icon: TRoleIcon
-		/** Атрибуты корня иконки — `toRootProps` компонента. */
-		attributes: TRootAttributes
+		/** Атрибуты корня иконки — `toRootProps` компонента, разложенные на узел. */
+		attributes: TRootNodeAttributes
 		/** Привязка корня к `TElementPlugin` компонента. */
 		attach: Attachment<Element>
 	}
@@ -28,7 +28,8 @@
 	адаптер: атрибуты корня `Icon` — классы, стиль размера, ARIA — и привязка к
 	`TElementPlugin` ложатся на `<svg>`. Без привязки не придёт `element:ready`,
 	без класса и стиля — размер, без ARIA иконка перестанет быть скрытой от
-	скринридера.
+	скринридера. Стиль в браузере ставит attachment из тех же атрибутов
+	(`Dynamic`).
 
 	`body` — через `{@html}`, а не разбором на узлы: содержимое иконки
 	произвольно — группы, маски, несколько путей. Источник доверенный (пакет из

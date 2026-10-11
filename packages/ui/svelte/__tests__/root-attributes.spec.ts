@@ -42,6 +42,7 @@ import Attach from './Attach.test.svelte'
 import Link from './Link.test.svelte'
 import { find, mount, nextFrame, readyProbe } from './mount'
 import { reactiveProps } from './reactive-props.svelte'
+import { attachRootStyle } from './root-style.svelte'
 
 /** Общие пропсы строки таблицы: направление, атрибуты и колбэк готовности есть у всех. */
 type TProbeProps = ButtonProps &
@@ -310,27 +311,43 @@ describe('attachment потребителя — на корне', () => {
 })
 
 /**
- * Стиль у Svelte — строка атрибута, и имена плагины и ядро пишут по-CSS:
- * пользовательское свойство остаётся под своим именем, `z-index` — тоже.
- * Так размер отдают плагины раскладки окна и выезжающей панели, но этих
+ * Стиль раскладка отдаёт слоями: свойства ядра и плагинов — объектом, стиль
+ * потребителя — его строкой. Имена плагины и ядро пишут по-CSS:
+ * пользовательское свойство остаётся под своим именем, `z-index` — тоже. Так
+ * размер отдают плагины раскладки окна и выезжающей панели, но этих
  * компонентов в Svelte пока нет, и правило проверяется на самой раскладке
- * корня.
+ * корня и на узле, куда её ставит attachment стиля.
  */
 describe('раскладка корня: имена стиля — как в CSS', () => {
-	it('--* из layout_styles доходит до узла как есть', () => {
-		const layout = toRootLayout({ layout_styles: { '--dialog-width': '320px' } }, {})
-		const node = document.createElement('div')
+	it('--* и z-index из layout_styles — под своими именами, значения строкой', () => {
+		const { style } = toRootLayout(
+			{ layout_styles: { '--dialog-width': '320px', 'z-index': 3 } },
+			{},
+		)
 
-		node.setAttribute('style', layout.style ?? '')
-
-		expect(node.style.getPropertyValue('--dialog-width')).toBe('320px')
+		expect(style.below).toEqual({ '--dialog-width': '320px', 'z-index': '3' })
 	})
 
-	it('пустое значение свойства не задаёт, пустой стиль — атрибута', () => {
-		expect(toRootLayout({ layout_styles: { width: '', height: '' } }, {}).style).toBe(undefined)
-		expect(toRootLayout({ layout_styles: { width: '', height: '2em' } }, {}).style).toBe(
-			'height: 2em',
+	it('--* и z-index доходят до узла как есть', () => {
+		const node = document.createElement('div')
+		const attached = attachRootStyle(
+			node,
+			toRootLayout({ layout_styles: { '--dialog-width': '320px', 'z-index': 3 } }, {}).style,
 		)
+
+		expect(node.style.getPropertyValue('--dialog-width')).toBe('320px')
+		expect(node.style.zIndex).toBe('3')
+
+		attached.detach()
+	})
+
+	it('пустое значение свойства не задаёт', () => {
+		expect(toRootLayout({ layout_styles: { width: '', height: '' } }, {}).style.below).toEqual(
+			{},
+		)
+		expect(
+			toRootLayout({ layout_styles: { width: '', height: '2em' } }, {}).style.below,
+		).toEqual({ height: '2em' })
 	})
 
 	it('наборы ядра — первыми, атрибуты потребителя — поверх', () => {
@@ -345,7 +362,7 @@ describe('раскладка корня: имена стиля — как в CSS
 		expect(props).toMatchObject({ role: 'button', tabindex: '0', 'data-open': 'true' })
 		expect(toRootProps({}, [{ tabindex: '0' }], forward).tabindex).toBe(-1)
 		expect(props.class).toEqual(['s-x', 'mine'])
-		expect(props.style).toBe('color: red')
+		expect(props.style).toEqual({ below: {}, forward: 'color: red', above: {} })
 	})
 })
 
@@ -378,17 +395,53 @@ describe('раскладка корня: стиль-выход компонен�
 	})
 
 	/** Плагина раскладки у кольца нет — правило проверяется на самой раскладке корня. */
-	it('стиль-выход — поверх стиля плагина, имена по-CSS — как у плагина', () => {
-		const layout = toRootLayout(
-			{ layout_styles: { '--ring': 'plugin' } },
+	it('стиль-выход — поверх стиля плагина, место элемента — поверх обоих', () => {
+		const { style } = toRootLayout(
+			{ layout_styles: { '--ring': 'plugin', order: 9 }, order: 2 },
 			{},
 			{ '--ring': 'own', 'z-index': 3 },
 		)
+
+		expect(style.below).toEqual({ '--ring': 'own', order: '2', 'z-index': '3' })
+	})
+})
+
+/**
+ * Слои стиля на узле — в том же порядке: стиль потребителя поверх свойств
+ * ядра и плагинов, `display: none` скрытого корня поверх всего. Из
+ * одноимённых действует верхний слой, со своим приоритетом: скрытие главнее
+ * и `!important` потребителя, как у `v-show`.
+ */
+describe('раскладка корня: слои стиля на узле', () => {
+	it('потребитель — поверх раскладки, скрытие — поверх всего', () => {
 		const node = document.createElement('div')
+		const attached = attachRootStyle(
+			node,
+			toRootLayout(
+				{ layout_styles: { left: '10px', top: '20px' }, visible: false },
+				{ style: 'left: 1px; color: red; display: flex !important' },
+			).style,
+		)
 
-		node.setAttribute('style', layout.style ?? '')
+		expect(node.style.left).toBe('1px')
+		expect(node.style.top).toBe('20px')
+		expect(node.style.color).toBe('red')
+		expect(node.style.display).toBe('none')
+		expect(node.style.getPropertyPriority('display')).toBe('')
 
-		expect(node.style.getPropertyValue('--ring')).toBe('own')
-		expect(node.style.zIndex).toBe('3')
+		attached.detach()
+	})
+
+	it('!important потребителя доходит до узла', () => {
+		const node = document.createElement('div')
+		const attached = attachRootStyle(
+			node,
+			toRootLayout({}, { style: 'color: red !important' }).style,
+		)
+
+		expect(node.style.color).toBe('red')
+		expect(node.style.getPropertyPriority('color')).toBe('important')
+
+		attached.detach()
 	})
 })

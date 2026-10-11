@@ -44,7 +44,8 @@
   "dependencies": {
     "@soldy-ui/core": "^0.1.0",
     "@soldy-ui/plugins": "^0.1.0",
-    "@soldy-ui/setup": "^0.1.0"
+    "@soldy-ui/setup": "^0.1.0",
+    "esm-env": "^1.2.2"
   },
   "peerDependencies": {
     "svelte": "^5.29.0"

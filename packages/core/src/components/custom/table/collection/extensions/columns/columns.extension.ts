@@ -19,13 +19,14 @@ import type {
 } from './types'
 
 /**
- * Обработчики показанной колонки: её ячейки, раскладка — от ширины и границ —
- * и законченная правка ширины.
+ * Обработчики показанной колонки: её ячейки, раскладка — от ширины и границ,
+ * — жест её ручки и законченная правка ширины.
  */
 type TColumnWatchers = {
 	cells: () => void
 	layout: () => void
 	resize: () => void
+	resizing: () => void
 	commit: (width: number) => void
 }
 
@@ -49,11 +50,11 @@ type TColumnDrag = {
 	 */
 	mode: TTableReorderPreview
 	/**
-	 * Таблица, которой жест поставил признак `data-reorder-preview` — она была в
-	 * `column`, когда колонку взяли. С неё признак и снимается: таблица может
-	 * смениться посреди жеста
+	 * Таблица, которой жест поставил свои признаки, — та, что была, когда
+	 * колонку взяли: `data-dragging`, а в `column` и `data-reorder-preview`. С
+	 * неё признаки и снимаются: таблица может смениться посреди жеста
 	 */
-	preview: ITable | undefined
+	owner: ITable | undefined
 }
 
 /**
@@ -99,8 +100,9 @@ type TColumnDrag = {
  * (колонок нет или ширины нет хотя бы у одной — признака нет). Из
  * `data-overflow` он не выводится: в `none` ширины известны и до замера.
  * Признак — у корня, а не условие темы по заголовкам: `:has()` у корня
- * браузер проверяет обходом всего тела на каждом пересчёте стиля корня. Без
- * таблицы раскладки нет: гибкие колонки без ширины, и их ширину решает тема.
+ * браузер проверяет обходом всего тела на каждом пересчёте стиля корня (так
+ * же — признаки жеста, ниже). Без таблицы раскладки нет: гибкие колонки без
+ * ширины, и их ширину решает тема.
  * Пересчёт — на смену показанных колонок, места, `columnFit` и своей ширины
  * или границ показанной колонки; своя запись ширин пересчёта не будит. Запись
  * состава сводит всё, что задела, в один пересчёт — в её конце.
@@ -116,6 +118,15 @@ type TColumnDrag = {
  * **Что идёт за протяжкой ручки** — `resizePreview` таблицы: расширение
  * пишет его показанным колонкам — пришедшим и на смену у таблицы, — а
  * колонка читает его на нажатии. Без таблицы — `live`.
+ *
+ * **Протяжка на таблице** — признак `data-resizing`, пока тянут ручку хоть у
+ * одной показанной колонки (`resizing` колонки — с нажатия, а не с первого
+ * сдвига): по нему тема держит курсор ручки и снимает выделение текста на
+ * всей таблице — указатель уходит с полосы, а край колонки идёт за ним. Это
+ * свод по колонкам, как `data-sized`: у заголовка своя метка, а у таблицы
+ * признак есть только в жесте — на покое имени нет вовсе, не `false`.
+ * Пересчёт — на смену `resizing` показанной колонки, показанных колонок и
+ * таблицы; с ушедшей таблицы признак снимается.
  *
  * **Ширина, которую задал пользователь**, — `column:resize`: законченная правка
  * ручкой показанной колонки (`commit` колонки), одна на действие. Скрытую
@@ -138,6 +149,14 @@ type TColumnDrag = {
  *   а место заморожено — `dragOver` его больше не меняет;
  * - встала (`dragEnd`) — метки сняты, колонка переставлена, одной операцией:
  *   тема видит шапку и тело уже в новом порядке и без меток жеста.
+ *
+ * **Курсор жеста** — признак таблицы `data-dragging` при любом
+ * `reorderPreview`: на весь жест, от `dragStart` до `dragEnd` или
+ * `dragCancel`, вместе с приземлением, — столько же, сколько метка взятой.
+ * По нему тема держит курсор «тащу» и снимает выделение текста на всей
+ * таблице; на покое имени нет. Таблицу, которой признак поставлен, жест
+ * помнит и снимает его с неё же, а с таблицы, ушедшей посреди жеста, — когда
+ * она ушла; новой не ставится.
  *
  * **Шапка стоит** — у таблицы в `none` (`reorderPreview`): взятой колонке
  * на весь жест ещё и `data-still`, а `data-shift` не пишется никому, — соседи
@@ -267,8 +286,14 @@ export class TTableColumnsExtension<
 				owner.dataset.add('sized', null)
 			})
 
-			// Признак жеста — тоже: таблица ушла посреди жеста
-			scope.add(() => owner.dataset.add('reorder-preview', null))
+			// Признаки жеста — тоже. Тянут ручку — признак протяжки пришедшей
+			// таблице сразу; таблица ушла посреди жеста — признаки уходят с неё
+			this._syncResizing()
+			scope.add(() => {
+				owner.dataset.add('resizing', null)
+				owner.dataset.add('dragging', null)
+				owner.dataset.add('reorder-preview', null)
+			})
 		})
 	}
 
@@ -337,7 +362,6 @@ export class TTableColumnsExtension<
 		const owner = this._ctx?.options.get('owner')
 		// Без таблицы — её умолчание
 		const mode = owner?.reorderPreview ?? 'head'
-		const preview = mode === 'column' ? owner : undefined
 
 		this._drag = {
 			column,
@@ -346,15 +370,17 @@ export class TTableColumnsExtension<
 			shifted: new Map(),
 			dropped: false,
 			mode,
-			preview,
+			owner,
 		}
 		column.dataset.add('dragging', true)
 
 		// Шапка стоит: соседи без сдвигов, место — линия
 		if (mode === 'none') column.dataset.add('still', true)
 
-		// Тело идёт за жестом — признак на время жеста, а не на покое
-		preview?.dataset.add('reorder-preview', 'column')
+		// Курсор жеста на всей таблице и тело за жестом — признаки на время
+		// жеста, а не на покое
+		owner?.dataset.add('dragging', true)
+		if (mode === 'column') owner?.dataset.add('reorder-preview', 'column')
 
 		return true
 	}
@@ -413,7 +439,8 @@ export class TTableColumnsExtension<
 		drag.column.dataset.add('landing', null)
 		drag.column.dataset.add('still', null)
 		drag.target?.dataset.add('drop', null)
-		drag.preview?.dataset.add('reorder-preview', null)
+		drag.owner?.dataset.add('dragging', null)
+		if (drag.mode === 'column') drag.owner?.dataset.add('reorder-preview', null)
 
 		for (const column of drag.shifted.keys()) column.dataset.add('shift', null)
 	}
@@ -532,6 +559,8 @@ export class TTableColumnsExtension<
 			// Место, куда несли колонку, считалось от прежнего состава
 			this.dragCancel()
 			this._watchShown()
+			// Колонку, у которой тянут ручку, могли скрыть или убрать
+			this._syncResizing()
 		}
 
 		if (layout) this._layout()
@@ -580,9 +609,9 @@ export class TTableColumnsExtension<
 
 	/**
 	 * Слушать показанные колонки — поле, выравнивание, признак заголовка
-	 * строки, ширину и границы и законченную правку ширины, — а ушедшие из
-	 * показанных больше не слушать: в раскладке они не стоят, и ширина
-	 * раскладки с них снимается.
+	 * строки, ширину и границы, жест ручки и законченную правку ширины, — а
+	 * ушедшие из показанных больше не слушать: в раскладке они не стоят, и
+	 * ширина раскладки с них снимается.
 	 */
 	private _watchShown(): void {
 		const shown = new Set(this.shownColumns)
@@ -597,6 +626,7 @@ export class TTableColumnsExtension<
 			column.events.off('change:minWidth', watchers.layout)
 			column.events.off('change:maxWidth', watchers.layout)
 			column.events.off('resize:start', watchers.resize)
+			column.events.off('change:resizing', watchers.resizing)
 			column.events.off('commit', watchers.commit)
 			this._watchers.delete(column)
 
@@ -612,6 +642,7 @@ export class TTableColumnsExtension<
 					if (!this._laying) this._notifyLayout()
 				},
 				resize: () => this._holdBefore(column),
+				resizing: () => this._syncResizing(),
 				commit: (width) => this.events.emit('column:resize', { column, width }),
 			}
 
@@ -623,6 +654,7 @@ export class TTableColumnsExtension<
 			column.events.on('change:minWidth', watchers.layout)
 			column.events.on('change:maxWidth', watchers.layout)
 			column.events.on('resize:start', watchers.resize)
+			column.events.on('change:resizing', watchers.resizing)
 			column.events.on('commit', watchers.commit)
 			column.resizePreview = this._ctx?.options.get('owner')?.resizePreview ?? 'live'
 		}
@@ -633,6 +665,17 @@ export class TTableColumnsExtension<
 		const preview = this._ctx?.options.get('owner')?.resizePreview ?? 'live'
 
 		for (const column of this.shownColumns) column.resizePreview = preview
+	}
+
+	/**
+	 * `data-resizing` таблицы — тянут ручку хоть у одной показанной колонки.
+	 * Не тянут — признака нет вовсе, а не `false`: фильтр предков видит имя
+	 * атрибута, а не значение.
+	 */
+	private _syncResizing(): void {
+		const owner = this._ctx?.options.get('owner')
+
+		owner?.dataset.add('resizing', this.shownColumns.some((column) => column.resizing) || null)
 	}
 
 	/**
