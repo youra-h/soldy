@@ -1869,13 +1869,14 @@ Svelte 5 на рунах. Структура зеркалит React, потом�
   `event` = `callbackEventNaming` — обе стратегии общие с React);
   `createSvelteAdapterContext` — сборка с id монтирования от `$props.id()`
   компонента и локалью поддерева; раскладка корня `toRootProps` (наборы ядра,
-  поверх атрибуты потребителя, класс, стиль строкой); `roleIcon(role)` — метка
+  поверх атрибуты потребителя, класс, стиль слоями); `roleIcon(role)` — метка
   иконки по роли для `tag` у Icon и `RoleIcon`, который рисует её `<svg>`.
 - `adapter/runtime/` — `useAdapter.svelte.ts`: `useAdapter` поверх связки
   `adapter.connect(SvelteProfile)`. Расширение `.svelte.ts` обязательно
   там, где используются руны (`$state`, `$effect`, `$derived`). Там же
-  `Dynamic` — корень по `tag` (строка, компонент Svelte, метка роли) — и
-  `Teleport`: содержимое в цели отдельным корнем `mount` с контекстами места.
+  `Dynamic` — корень по `tag` (строка, компонент Svelte, метка роли);
+  `rootStyle` (`root-style.svelte.ts`) — attachment стиля корня по свойствам;
+  `Teleport` — содержимое в цели отдельным корнем `mount` с контекстами места.
 - `adapter/locale/` — `LocaleProvider`: свой `TLocaleSource` детям через
   `setContext`, смена пропа — в тот же источник.
 - `adapter/elevator/` — `TSvelteElevator` через `setContext`/`getContext`
@@ -1893,6 +1894,10 @@ Svelte 5 на рунах. Структура зеркалит React, потом�
   вызывается при появлении узла и умеет вернуть cleanup, поэтому пересоздание
   элемента при смене `tag` обрабатывается само. Компонент в `tag` получает
   attachment пропом с ключом-символом и кладёт на свой корень спредом.
+- **Стиль корня — по свойствам**, attachment-ом `rootStyle`: атрибут `style`
+  Svelte пишет целиком и стирал бы то, что плагины ставят на узел сами. В
+  браузере attachment едет в атрибутах узла под своим ключом, на сервере стиль
+  уходит строкой атрибута (`BROWSER` из `esm-env`).
 - **Слоты — сниппеты**: `children` рендерится через `{@render children?.()}`,
   именованные области layout'а передаются сниппет-пропами.
 - **Атрибуты идут одним объектом** — `toRootProps`: у `<svelte:element>` тип

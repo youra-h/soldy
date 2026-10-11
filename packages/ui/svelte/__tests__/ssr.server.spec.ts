@@ -80,6 +80,16 @@ describe('Button · серверный рендер', () => {
 		expect(body).toMatch(/^<button [^>]*style="display: none"/)
 	})
 
+	/**
+	 * В браузере стиль корня ставит attachment по свойствам, а на сервере
+	 * attachment-ов нет: стиль уходит строкой атрибута, слои — в том же порядке.
+	 */
+	it('стиль потребителя — строкой, поверх него display: none скрытой', () => {
+		const body = markup(render(Button, { props: { visible: false, style: 'color: red' } }).body)
+
+		expect(body).toMatch(/^<button [^>]*style="color: red; display: none"/)
+	})
+
 	/** Attachment едет в атрибутах корня и на сервере, но узла там нет: он ждёт браузера. */
 	it('attachment потребителя не выполняется и разметку не меняет', () => {
 		const nodes: Element[] = []
@@ -112,6 +122,14 @@ describe('стиль и наборы на сервере', () => {
 		expect(body).toMatch(/^<span [^>]*role="progressbar"/)
 		expect(body).toContain('aria-valuenow="40"')
 		expect(body).toContain('style="--s-progress-spinner-fraction: 0.4"')
+	})
+
+	it('ProgressSpinner — стиль потребителя поверх доли', () => {
+		const body = markup(
+			render(ProgressSpinner, { props: { value: 40, style: 'color: red' } }).body,
+		)
+
+		expect(body).toContain('style="--s-progress-spinner-fraction: 0.4; color: red"')
 	})
 
 	it('Skeleton — заглушка и содержимое, корень не скрыт', () => {

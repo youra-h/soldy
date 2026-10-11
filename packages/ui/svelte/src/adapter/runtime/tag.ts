@@ -1,14 +1,15 @@
 import type { Component, Snippet } from 'svelte'
-import type { TRootAttributes } from '../common/root'
+import type { TRootNodeAttributes } from '../common/root'
 
 /**
  * Компонент в `tag`: его пропсы — атрибуты корня и содержимое.
  *
- * Атрибуты он кладёт на свой корень спредом — вместе с ними туда же уходит и
- * привязка корня (attachment приходит пропом с ключом-символом), — а
- * содержимое рисует внутри (`children`).
+ * Атрибуты он кладёт на свой корень спредом — вместе с ними туда же уходят и
+ * attachment-ы адаптера (они приходят пропами с ключом-символом): привязка
+ * корня и, в браузере, стиль корня по свойствам; строкой `style` приходит
+ * только при серверном рендере. Содержимое он рисует внутри (`children`).
  */
-export type TTagComponent = Component<TRootAttributes & { children?: Snippet }>
+export type TTagComponent = Component<TRootNodeAttributes & { children?: Snippet }>
 
 /**
  * Компонент ли Svelte в `tag`. Компонент Svelte 5 — функция, и других функций

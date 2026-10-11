@@ -1,9 +1,10 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte'
-	import type { Attachment } from 'svelte/attachments'
+	import { createAttachmentKey, type Attachment } from 'svelte/attachments'
 	import { TRoleIcon } from '../common/icon'
 	import RoleIcon from '../common/RoleIcon.svelte'
 	import type { TRootAttributes } from '../common/root'
+	import { rootStyle, toNodeAttributes } from './root-style.svelte'
 	import { isTagComponent } from './tag'
 
 	type TDynamicProps = {
@@ -17,6 +18,13 @@
 	}
 
 	const { tag, attributes, attach, children }: TDynamicProps = $props()
+
+	// Стиль корня: в браузере его ставит attachment по свойствам, на сервере он
+	// уходит в атрибуты узла строкой (`toNodeAttributes`). Attachment заводится
+	// один раз — новый на том же узле принял бы за свои свойства, которые
+	// плагины поставили сами
+	const style = { [createAttachmentKey()]: rootStyle(() => attributes.style) }
+	const node = $derived(toNodeAttributes(attributes, style))
 </script>
 
 <!--
@@ -35,14 +43,18 @@
 	Другого объекта Svelte нарисовать не может, и корня у такого компонента
 	нет. Атрибуты и привязка — на узел, содержимое — `children`. Смена тега
 	пересоздаёт узел, а привязка отвязывает прежний и привязывает новый.
+
+	Стиль корня в браузере — тоже attachment, и едет он в атрибутах узла, как
+	attachment-ы потребителя: так он доходит до `<svg>` иконки и до корня
+	компонента из `tag` без своего пропа.
 -->
 {#if typeof tag === 'string'}
-	<svelte:element this={tag} {...attributes} {@attach attach}>
+	<svelte:element this={tag} {...node} {@attach attach}>
 		{@render children?.()}
 	</svelte:element>
 {:else if tag instanceof TRoleIcon}
-	<RoleIcon icon={tag} {attributes} {attach} />
+	<RoleIcon icon={tag} attributes={node} {attach} />
 {:else if isTagComponent(tag)}
 	{@const Tag = tag}
-	<Tag {...attributes} {@attach attach}>{@render children?.()}</Tag>
+	<Tag {...node} {@attach attach}>{@render children?.()}</Tag>
 {/if}
