@@ -70,6 +70,29 @@ export function find<T extends Element>(
 }
 
 /**
+ * Содержимое узла так, как его видит `:empty` темы: элементы и непустой текст,
+ * по строке на узел (`b`, `#text «…»`), — строки, а не узлы: сообщение
+ * упавшей проверки собирается без инспектора узлов (см. `readyProbe`).
+ *
+ * Метки блоков Svelte — комментарии — и пустой текстовый узел, который
+ * Svelte оставляет на месте пустого `{@render}`, `:empty` не видит: узел без
+ * них пуст.
+ */
+export function contentOf(node: Node): string[] {
+	return [...node.childNodes].flatMap((child) => {
+		if (child instanceof Element) return [child.localName]
+		if (child instanceof Text && child.data.length > 0) return [`#text «${child.data}»`]
+
+		return []
+	})
+}
+
+/** Разметка внутри узла без меток блоков Svelte — комментариев. */
+export function htmlOf(node: Element): string {
+	return node.innerHTML.replace(/<!--[\s\S]*?-->/g, '')
+}
+
+/**
  * Кадр: `TElementPlugin` объявляет узел через `requestAnimationFrame`, а
  * слушатели плагинов встают по его `ready`.
  */

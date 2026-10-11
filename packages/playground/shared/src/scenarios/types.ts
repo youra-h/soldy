@@ -100,6 +100,13 @@ type TScenarioBase = {
 	 * рисуется превью со страницы свойств.
 	 */
 	fixture?: string
+	/**
+	 * Другие компоненты реестра, которые сценарий проверяет вместе со своим:
+	 * контрол в подписи — `check-box`, `switch`, `radio-group`. Хост, у
+	 * которого их нет, сценарий не показывает: нарисовать его нечем, и это не
+	 * забытая фикстура.
+	 */
+	requires?: readonly string[]
 }
 
 export type TAutoScenario = TScenarioBase & {

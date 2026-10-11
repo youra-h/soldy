@@ -60,15 +60,30 @@ function drawable(host: IPreviewHost, scenario: TScenario): boolean {
 }
 
 /**
+ * Есть ли у хоста всё, что сценарий проверяет: свой компонент и те, что
+ * фикстура рисует вместе с ним (`requires`). Чего-то нет — сценарий
+ * нарисовать нечем, и хост его не показывает: это не забытая фикстура.
+ */
+export function coversScenario(host: IPreviewHost, scenario: TScenario): boolean {
+	return [scenario.component, ...(scenario.requires ?? [])].every((id) =>
+		host.previews.includes(id),
+	)
+}
+
+/**
  * Сценарии страницы тестов, которые хост может нарисовать.
  *
  * То же пересечение, что у меню: реестр сценариев — каталог всей библиотеки,
- * а показывается только то, для чего у хоста есть и компонент, и фикстура.
- * Хост без ProgressLinear покажет сценарии кольца, а не пустые блоки линии.
+ * а показывается только то, для чего у хоста есть и компоненты, и фикстура.
+ * Хост без ProgressLinear покажет сценарии кольца, а не пустые блоки линии;
+ * хост без RadioGroup — подпись вокруг флажка, но не вокруг радио.
  */
 export function scenariosOf(host: IPreviewHost): readonly TScenario[] {
 	return SCENARIO_REGISTRY.filter(
-		(scenario) => findAvailable(host, scenario.component) && drawable(host, scenario),
+		(scenario) =>
+			findAvailable(host, scenario.component) &&
+			coversScenario(host, scenario) &&
+			drawable(host, scenario),
 	)
 }
 

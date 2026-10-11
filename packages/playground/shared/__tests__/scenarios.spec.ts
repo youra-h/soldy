@@ -25,6 +25,19 @@ describe('реестр сценариев', () => {
 		expect(SCENARIOS.filter((scenario) => !known.has(scenario.component))).toEqual([])
 	})
 
+	/**
+	 * Компонент, которого сценарий требует вместе со своим, — тоже из реестра:
+	 * с опечаткой в `requires` сценарий не показал бы ни один хост.
+	 */
+	it('компоненты из requires есть в реестре и не повторяют свой', () => {
+		const known = new Set(COMPONENTS.map((entry) => entry.id))
+		const broken = SCENARIOS.filter((scenario) =>
+			(scenario.requires ?? []).some((id) => !known.has(id) || id === scenario.component),
+		).map((scenario) => scenario.id)
+
+		expect(broken).toEqual([])
+	})
+
 	it('тема каждого сценария известна', () => {
 		const known = new Set(TOPICS.map((topic) => topic.id))
 

@@ -12,12 +12,15 @@ component descriptor, so they match the other five adapters; only the spelling i
 are snippets, events arrive as callback props (`element:ready` → `onElementReady`), and the default
 slot is `children`.
 
-> **Status:** the Svelte adapter is in progress — Button, Icon, Frame, ProgressSpinner and Skeleton
-> are ported, the rest of the set is on its way. Icon renders the `tag` it is given: an element
-> name, a Svelte component, or `roleIcon(role)` — the icon of that role from the registered icon
-> pack. Frame teleports its panel into `target` (`body` by default) on the client; with `contained`
-> it stays in place, on the server too. `LocaleProvider` gives a subtree its language and library
-> strings. See [the adapter table](https://github.com/youra-h/soldy#components).
+> **Status:** the Svelte adapter is in progress — Button, Icon, Label, Frame, ProgressSpinner,
+> Skeleton and the fields Input, CheckBox and Switch are ported, the rest of the set is on its way.
+> Icon renders the `tag` it is given: an element name, a Svelte component, or `roleIcon(role)` —
+> the icon of that role from the registered icon pack. Frame teleports its panel into `target`
+> (`body` by default) on the client; with `contained` it stays in place, on the server too. A field
+> gives its class and style to the root and every other attribute to its `<input>`. `Label` names
+> the control it wraps; `LocaleProvider` gives a subtree its language and library strings, such as
+> the name of the clear button of `Input`. See
+> [the adapter table](https://github.com/youra-h/soldy#components).
 
 ## Install
 
@@ -61,6 +64,18 @@ An icon from the registered pack — the root of `Icon` is an `<svg>` of that ro
 </script>
 
 <Icon tag={roleIcon('close')} aria_label="Close" />
+```
+
+A check box has no text of its own — its visible name is the `Label` around it:
+
+```svelte
+<script lang="ts">
+  import { CheckBox, Label } from '@soldy-ui/svelte'
+</script>
+
+<Label text="I agree">
+  <CheckBox onChangeValue={({ newValue }) => console.log(newValue)} />
+</Label>
 ```
 
 The application plugs in a theme and an icon pack once, in its entry point:

@@ -1,0 +1,14 @@
+{
+  // Исходник для плагина Solid у приложения: TypeScript снят, JSX сохранён —
+  // компоненты компилирует сборка приложения под сервер, браузер и гидратацию
+  // (docs/agents/build.md, «Сборка пакетов»). Без карт кода: `src` в тарболл
+  // не уезжает, и карта вела бы в файл, которого у потребителя нет
+  "extends": "./tsconfig.build.json",
+  "compilerOptions": {
+    "emitDeclarationOnly": false,
+    "declaration": false,
+    "sourceMap": false,
+    "jsx": "preserve",
+    "outDir": "dist/source"
+  }
+}

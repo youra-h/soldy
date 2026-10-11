@@ -5,6 +5,8 @@ export {
 	type TSvelteAdapterContextOptions,
 } from './createSvelteAdapterContext'
 export {
+	toControlAttrs,
+	toRootForward,
 	toRootLayout,
 	toRootProps,
 	type TRootAttributes,
@@ -17,3 +19,4 @@ export {
 	type TStyleProperties,
 } from './root'
 export { roleIcon, TRoleIcon } from './icon'
+export { default as RoleIcon } from './RoleIcon.svelte'

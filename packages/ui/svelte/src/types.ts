@@ -3,7 +3,7 @@
  */
 
 import type { Snippet } from 'svelte'
-import type { HTMLAttributes } from 'svelte/elements'
+import type { HTMLAttributes, HTMLInputAttributes } from 'svelte/elements'
 import type { IEntity } from '@soldy-ui/core'
 import type {
 	IComponentDescriptor,
@@ -66,12 +66,18 @@ export type UseProps<
  *
  * События — те, что компонент принимает (`TEvents`): у коллекции это ещё и
  * события фасада.
+ *
+ * Это ровно то, что компонент не съел: его `forwardProps` без входов
+ * дескриптора. Атрибуты — корня (`HTMLAttributes`), у поля — его `<input>`
+ * (`TFieldAttributes`): поле раздаёт их двум элементам, класс и стиль — корню,
+ * остальное — `<input>` (`toControlAttrs`).
  */
 export type TDomAttributes<
 	TDescriptorFn extends (...args: any[]) => IComponentDescriptor,
 	TEvents extends object = EventProps<TDescriptorFn>,
+	TAttributes extends object = HTMLAttributes<HTMLElement>,
 > = Omit<
-	HTMLAttributes<HTMLElement>,
+	TAttributes,
 	| 'children'
 	| keyof DescriptorAllProps<TDescriptorFn>
 	| TContractOf<TDescriptorFn>['protectedName']
@@ -80,11 +86,37 @@ export type TDomAttributes<
 >
 
 /**
+ * Атрибуты `<input>` полей (Input, CheckBox, Switch): всё, кроме того, что
+ * поле ведёт само, — как `TFieldAttributes` у React. Текст, отметку и
+ * «выбрано частично» разметка берёт из состояния ядра, и атрибут потребителя
+ * рядом с ними был бы вторым путём к тому же состоянию, а умолчания
+ * (`defaultValue`, `defaultChecked` — в обоих регистрах, как их объявляет
+ * Svelte) переписали бы то, что поле показывает из ядра. `readonly` — вход
+ * дескриптора: имя у пропа и атрибута одно, и `TDomAttributes` вычитает его и
+ * так, но поле без такого входа атрибута всё равно не получит.
+ */
+export type TFieldAttributes = Omit<
+	HTMLInputAttributes,
+	| 'checked'
+	| 'indeterminate'
+	| 'defaultChecked'
+	| 'defaultchecked'
+	| 'defaultValue'
+	| 'defaultvalue'
+	| 'readonly'
+>
+
+/**
  * Props DOM-компонента: UseProps + HTML-атрибуты без конфликтов с пропсами,
  * событиями и слотами дескриптора (см. `TDomAttributes`).
+ *
+ * Атрибуты по умолчанию — `HTMLAttributes` корня; поля берут
+ * `TFieldAttributes`: всё, кроме класса и стиля, у них уходит на `<input>`.
  */
 export type UseDomProps<
 	TDescriptorFn extends (...args: any[]) => IComponentDescriptor,
 	TInstance extends IEntity = IEntity,
 	TEvents extends object = EventProps<TDescriptorFn>,
-> = UseProps<TDescriptorFn, TInstance, TEvents> & TDomAttributes<TDescriptorFn, TEvents>
+	TAttributes extends object = HTMLAttributes<HTMLElement>,
+> = UseProps<TDescriptorFn, TInstance, TEvents> &
+	TDomAttributes<TDescriptorFn, TEvents, TAttributes>

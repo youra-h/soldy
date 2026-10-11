@@ -29,6 +29,7 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
+      "solid": "./dist/source/index.js",
       "default": "./dist/index.js"
     }
   },
@@ -36,7 +37,7 @@
     "dist"
   ],
   "scripts": {
-    "build": "vite build -c vite.lib.config.ts && tsc -p tsconfig.build.json",
+    "build": "vite build -c vite.lib.config.ts && tsc -p tsconfig.build.json && tsc -p tsconfig.source.json",
     "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
