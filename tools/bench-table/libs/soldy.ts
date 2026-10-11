@@ -1,61 +1,9 @@
 import { createApp, h, type ShallowRef } from 'vue'
-import { setIcons, useTheme } from '@soldy-ui/setup'
-import * as material from '@soldy-ui/icons-material'
-import { useMotion } from '@soldy-ui/plugins'
 import { Table, Virtual } from '@soldy-ui/vue'
-import '@soldy-ui/theme-oren'
-import oren from '@soldy-ui/theme-oren/setup'
-import { COLUMNS, type TRec } from './data'
+import type { TRec } from './data'
+import { columns, tableProps, virtual, width } from './soldy-setup'
 
-setIcons(material)
-useTheme(oren)
-const query = new URLSearchParams(location.search)
-// `?motion=reduce` — без движения (`useMotion('reduce')`): соседи взятого
-// заголовка стоят, место — линия. Без флага — режим системы
-if (query.get('motion') === 'reduce') useMotion('reduce')
-// `?reorder=1` — колонки можно переставлять (`reorderable`): для сценариев
-// перестановки. Без флага колонки те же, что всегда
-const reorder = query.get('reorder') === '1'
-// `?preview=column` — за жестом перестановки идут и ячейки строк
-// (`reorderPreview: 'column'`), `?preview=none` — шапка стоит
-// (`reorderPreview: 'none'`). Без флага проп не задан
-const previewFlag = query.get('preview')
-const preview =
-	previewFlag === 'column' || previewFlag === 'none' ? { reorderPreview: previewFlag } : {}
-// `?resize=1` — у колонок ручка ширины (`resizable`): для сценариев протяжки;
-// `?resize=deferred` — и отложенная протяжка (`resizePreview: 'deferred'`)
-const resizeFlag = query.get('resize')
-const resize = resizeFlag === '1' || resizeFlag === 'deferred'
-const resizePreview = resizeFlag === 'deferred' ? { resizePreview: 'deferred' as const } : {}
-// `?fit=contain` — гибкие колонки ровно заполняют место (`columnFit: 'contain'`):
-// таблица не шире места, и окно не прокручивается вбок; `?fit=none` — колонки
-// шириной по умолчанию, место они не делят (`columnFit: 'none'`). Без флага
-// проп не задан (`auto`): колонки растут от 160 px, и 20 колонок шире окна стенда
-const fitFlag = query.get('fit')
-const columnFit = fitFlag === 'contain' || fitFlag === 'none' ? { columnFit: fitFlag } : {}
-const columns = COLUMNS.map((c) => ({
-	...c,
-	sortable: true,
-	...(reorder ? { reorderable: true } : {}),
-	...(resize ? { resizable: true } : {}),
-}))
-export const sel = {
-	selectAll: 'thead .s-table__select input',
-	sort: 'thead .s-table-column__sort',
-	// Заголовки колонок данных — их берут сценарии перестановки
-	columns: 'thead .s-table-column',
-	// Полосы ручек ширины — их тянут сценарии протяжки
-	resizers: 'thead .s-table-column__resizer',
-}
-// `?mode=none` — таблица без выбора: строка без чекбокса, для сравнения памяти
-const mode = query.get('mode') === 'none' ? 'none' : 'multiple'
-// `?virtual=1` — окно: таблица в обёртке `Virtual` в контейнере высотой 800 px,
-// тело рисует только видимые строки
-const virtual = query.get('virtual') === '1'
-// `?width=3248` — таблица в обёртке такой ширины, px: место таблицы шире окна
-// стенда. 3248 — сумма 20 колонок по 160 px и колонки выбора: колонки влезают,
-// и окно таблицы вбок не прокручивается — в любом `columnFit`
-const width = Number(query.get('width')) || undefined
+export { sel } from './soldy-setup'
 export function mount(el: Element, rows: ShallowRef<TRec[] | null>) {
 	createApp({
 		render: () => {
@@ -64,11 +12,7 @@ export function mount(el: Element, rows: ShallowRef<TRec[] | null>) {
 				h(Table, {
 					items: rows.value.map((data) => ({ data })),
 					columns,
-					mode,
-					aria_label: 'Бенч',
-					...preview,
-					...resizePreview,
-					...columnFit,
+					...tableProps,
 				})
 
 			const body = virtual

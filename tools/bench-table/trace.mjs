@@ -18,11 +18,17 @@ const N = Number(process.argv[2] ?? 5000)
 const LIBS = (process.argv[3] ?? 'soldy+reorder').split(',')
 const RUNS = Number(process.argv[4] ?? 3)
 const SET = process.argv[5] ?? 'reorder'
+// Участник на React — с префиксом «react:»: `react:soldy+fit=none` —
+// `react.html?lib=soldy&fit=none`
 const urlOf = (lib) => {
-	const [name, ...flags] = lib.split('+')
+	const react = lib.startsWith('react:')
+	const [name, ...flags] = (react ? lib.slice('react:'.length) : lib).split('+')
 
 	return (
-		'?lib=' + name + flags.map((flag) => `&${flag.includes('=') ? flag : flag + '=1'}`).join('')
+		(react ? 'react.html' : '') +
+		'?lib=' +
+		name +
+		flags.map((flag) => `&${flag.includes('=') ? flag : flag + '=1'}`).join('')
 	)
 }
 
