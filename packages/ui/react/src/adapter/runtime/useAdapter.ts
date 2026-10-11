@@ -44,6 +44,7 @@ import type {
 } from '@soldy-ui/setup'
 import type { IPluginBundle } from '@soldy-ui/plugins'
 import { ReactProfile } from '../common'
+import { TStableSnapshot } from './stable-snapshot.class'
 
 export type TBinding<
 	C extends IComponentContract = IComponentContract,
@@ -73,14 +74,17 @@ export type TCollectionBinding<
 	state: TAdapterState<C>
 }
 
-/** Связка своего контекста: контекст пересобран — связка новая. */
+/** Связка своего контекста и её снимок для React: контекст пересобран — обе новые. */
 type TStore = Readonly<{
 	adapter: IAdapterContext
 	binding: TExchange
+	snapshot: TStableSnapshot
 }>
 
 function bind(adapter: IAdapterContext): TStore {
-	return { adapter, binding: adapter.connect(ReactProfile) }
+	const binding = adapter.connect(ReactProfile)
+
+	return { adapter, binding, snapshot: new TStableSnapshot(binding.state.getSnapshot) }
 }
 
 function rebind(_: TStore, adapter: IAdapterContext): TStore {
@@ -102,15 +106,17 @@ function useExchange(
 	// связка. Обновление во время рендера React применяет сразу, не отрисовав прошлое
 	if (store.adapter !== adapter) dispatch(adapter)
 
-	const { binding } = store
+	const { binding, snapshot } = store
 
 	// 1. Core → React. Рендер идёт по снимку, подписка — при коммите, и React
 	// сам сверяет снимок после подписки: изменение ядра между ними не теряется.
-	// Подписка перечитывает каждое свойство тем же путём, что и триггер
+	// Подписка перечитывает каждое свойство тем же путём, что и триггер, а
+	// перечитанное, но то же по содержимому, `TStableSnapshot` отдаёт прежним
+	// объектом — иначе каждое монтирование перерисовывалось бы второй раз
 	const state = useSyncExternalStore(
 		binding.state.subscribe,
-		binding.state.getSnapshot,
-		binding.state.getSnapshot,
+		snapshot.getSnapshot,
+		snapshot.getSnapshot,
 	)
 
 	// 2. React → Core: эффект получает все props на каждом рендере родителя, а

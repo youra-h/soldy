@@ -1,6 +1,7 @@
 import type { ElementType, ReactElement } from 'react'
-import { renderSlot, toAriaProps, toRootProps, toText } from '../../../adapter'
+import { toAriaProps, toRootProps, withRenderBoundary } from '../../../adapter'
 import { CheckBox } from '../../check-box'
+import { TableRowCells } from './Cells'
 import { useSetupTableRow } from './setup.component'
 import type { TableRowProps } from './base.component'
 
@@ -11,6 +12,11 @@ import type { TableRowProps } from './base.component'
  * `data-disabled`, а в сетке — `aria-selected`. Нажатие по строке ловит
  * плагин сетки таблицы: в сетке оно выбирает строку, в роли `table` не делает
  * ничего — выбирают чекбоксом.
+ *
+ * Строка — под границей перерисовки (`withRenderBoundary`): таблица
+ * перерисовывается на каждый выбор и смену своего пропа, а строку
+ * перерисовывают только её собственное состояние и смена её входов —
+ * экземпляра и слота `cell`.
  *
  * Ячейка колонки выбора — только пока выбор строк включён (`selecting`: режим
  * не `none`), как её заголовок в шапке. Чекбокс строки — CheckBox
@@ -27,19 +33,14 @@ import type { TableRowProps } from './base.component'
  * прежний и получает новый — и CheckBox над новым монтируется заново, а не
  * остаётся над отпущенным, которому таблица отметку больше не пишет.
  *
- * Ячейки — по одной на ячейку строки (`cells`), ключ — колонка, без обёртки:
- * ячейки — дети `tr`. Набор ячейки — `data-align` колонки, набор ячеек строки
- * (`cellAria`: в сетке ячейка принимает фокус) и, у заголовка строки, его
- * `id`. Ячейка колонки `rowHeader` — заголовок строки: `th` с `scope="row"`,
- * на её текст ссылается имя чекбокса строки. Остальные — `td`. Класс один:
- * тема различает их тегом.
- *
- * Содержимое ячейки — слот `cell` со scope `{ row, column, value }`: строку в
- * scope кладёт сама строка, таблица отдаёт ей свой слот как есть. Без слота —
- * значение текстом (`toText`): тип поля записи таблица не знает, и React его,
- * в отличие от интерполяции Vue, как есть не нарисует.
+ * Ячейки колонок — своя внутренняя часть (`TableRowCells`) под своей
+ * границей: выбор перерисовывает строку, а ячейки — нет. Ячейки (`cells`) и
+ * их набор (`cellAria`) уходят ей из состояния как есть, слот `cell` — каким
+ * его отдала таблица: новый объект на каждый рендер строки снял бы границу.
  */
-export function TableRow(props: TableRowProps): ReactElement | null {
+export const TableRow = withRenderBoundary(function TableRow(
+	props: TableRowProps,
+): ReactElement | null {
 	const { ctrl, ref, forwardProps, state, context } = useSetupTableRow(props)
 
 	const { rendered, tag, selecting, cells, cellAria, rowHeaderId, attrs, aria, dataset } = state
@@ -62,26 +63,7 @@ export function TableRow(props: TableRowProps): ReactElement | null {
 					/>
 				</td>
 			) : null}
-			{cells?.map((cell) => {
-				const Cell = cell.rowHeader ? 'th' : 'td'
-
-				return (
-					<Cell
-						key={cell.column.uid}
-						className="s-table-row__cell"
-						scope={cell.rowHeader ? 'row' : undefined}
-						{...toAriaProps(cell.dataset)}
-						{...toAriaProps(cellAria)}
-						{...toAriaProps(cell.aria)}
-					>
-						{renderSlot(props.cell, {
-							row: ctrl,
-							column: cell.column,
-							value: cell.value,
-						}) ?? toText(cell.value)}
-					</Cell>
-				)
-			})}
+			<TableRowCells row={ctrl} cells={cells} cellAria={cellAria} cell={props.cell} />
 		</Tag>
 	)
-}
+})

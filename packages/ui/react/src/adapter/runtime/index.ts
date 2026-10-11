@@ -1,5 +1,6 @@
 export { useAdapter, useCollectionAdapter } from './useAdapter'
 export { useAdapterContext } from './useAdapterContext'
+export { withRenderBoundary } from './withRenderBoundary'
 export { Teleport } from './Teleport'
 export { NativeInput } from './NativeInput'
 export type { TBinding, TCollectionBinding } from './useAdapter'

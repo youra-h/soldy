@@ -8,8 +8,10 @@
  * туда, куда должны: колонки — в заголовки, строки — в `tbody` в порядке
  * сортировки, ячейки — в строки, а нажатия по кнопкам сортировки и чекбоксам
  * доходят до модели и возвращаются в разметку — и тогда, когда модель выбор
- * отменила. Групп Vue про единицы перерисовки («перерисовка ячеек», «вес
- * строки») здесь нет: границы перерисовки строк у React пока нет.
+ * отменила. «Перерисовка ячеек» — как у Vue: выбор не перерисовывает ячейки
+ * строк; перерисовки самих строк считает `table-row-renders.spec.tsx`. Группы
+ * Vue «вес строки» здесь нет: она про реактивные прокси и узлы Vue, а у React
+ * их нет.
  *
  * Своё у React — сборка на рендере и приём при коммите: лишний цикл эффектов
  * StrictMode пересобирает таблицу и строки, и чекбоксы колонки выбора обязаны
@@ -952,6 +954,152 @@ describe('сетка', () => {
 
 		expect(engine.extensions.selection.selected).toEqual([rowOf(engine, 1)])
 		expect(find('.s-table-row').getAttribute('aria-selected')).toBe('true')
+	})
+})
+
+/**
+ * Выбор пишет строке `data-selected` (в сетке ещё `aria-selected`), и строка
+ * рисуется заново по своей подписке. Ячейки строки — своя внутренняя часть под
+ * границей перерисовки адаптера: её входы — ячейки, их набор и слот `cell` —
+ * выбор не меняет, и ячейки вместе со слотом не перерисовываются. Иначе
+ * «выбрать все» перерисовывало бы ячейки всех строк таблицы. Перерисовывают
+ * их новая запись строки и новый слот.
+ *
+ * В DOM лишняя перерисовка следов не оставляет — значения те же, — поэтому
+ * считаются вызовы слота: слот `cell` — шпион, один и тот же объект между
+ * рендерами потребителя. Сколько раз его зовут при монтировании, здесь не
+ * проверяется: шпион сбрасывается после монтирования. Перерисовки самих строк
+ * считает `table-row-renders.spec.tsx`.
+ */
+describe('перерисовка ячеек', () => {
+	/** Scope слота `cell`. */
+	type TCellScope = { row: ITableRow; column: ITableColumn; value: unknown }
+
+	/** Слот `cell` под шпионом: значение текстом, по `format`. */
+	const cellSlot = (format: (value: unknown) => string = String) =>
+		vi.fn(({ value }: TCellScope) => format(value))
+
+	/** Что потребитель меняет между своими рендерами: слот и имя таблицы. */
+	type TConsumerProps = { cell?: ReturnType<typeof cellSlot>; label?: string }
+
+	/**
+	 * Таблица над движком со слотом-шпионом; шпион сброшен после монтирования.
+	 * `rerender` — следующий рендер потребителя: слот тот же, пока не задан новый.
+	 */
+	async function renderCounted(engine: TTableCollection) {
+		const slot = cellSlot()
+		const view = ({ cell = slot, label }: TConsumerProps = {}) => (
+			<Table engine={engine} cell={cell} aria_label={label} />
+		)
+		const { render: rerender } = await render(view())
+
+		// Ячейки нарисованы слотом: иначе счётчик ниже ничего бы не стерёг
+		expect(slot).toHaveBeenCalled()
+		slot.mockClear()
+
+		return { slot, rerender: (props: TConsumerProps) => rerender(view(props)) }
+	}
+
+	/** Текст ячеек по строкам. */
+	const cellTexts = () =>
+		findAll('.s-table-row').map((row) => findAll('.s-table-row__cell', row).map(text))
+
+	it('монтирование зовёт слот по разу на ячейку', async () => {
+		const slot = cellSlot()
+
+		await render(<Table engine={engineOf('none')} cell={slot} />)
+
+		expect(cellTexts()).toEqual([
+			['Анна', '30'],
+			['Борис', '41'],
+			['Вера', '25'],
+		])
+		expect(slot).toHaveBeenCalledTimes(6)
+	})
+
+	it('«выбрать все» и снятие выбора слот ячеек не зовут', async () => {
+		const { slot } = await renderCounted(engineOf('multiple'))
+		const head = checkBoxInput('.s-table__select')
+
+		click(head)
+
+		expect(rowsSelected()).toEqual(['true', 'true', 'true'])
+
+		click(head)
+
+		expect(rowsSelected()).toEqual(['false', 'false', 'false'])
+		expect(cellTexts()).toEqual([
+			['Анна', '30'],
+			['Борис', '41'],
+			['Вера', '25'],
+		])
+		expect(slot).not.toHaveBeenCalled()
+	})
+
+	it('таблица перерисована сменой пропа — слот ячеек не зван', async () => {
+		const { slot, rerender } = await renderCounted(engineOf('none'))
+
+		rerender({ label: 'Сотрудники' })
+
+		expect(find('.s-table').getAttribute('aria-label')).toBe('Сотрудники')
+		expect(slot).not.toHaveBeenCalled()
+	})
+
+	it('запись строки сменилась — перерисованы ячейки этой строки, и только её', async () => {
+		const engine = engineOf('none')
+		const { slot } = await renderCounted(engine)
+
+		act(() => {
+			rowOf(engine, 2).data = { ...BORIS, age: 42 }
+		})
+
+		expect(cellTexts()).toEqual([
+			['Анна', '30'],
+			['Борис', '42'],
+			['Вера', '25'],
+		])
+		expect(slot.mock.calls.map(([scope]) => idOf(scope.row.data))).toEqual([2, 2])
+	})
+
+	it('в сетке выбор пробелом слот ячеек не зовёт', async () => {
+		const engine = engineOf('multiple')
+
+		engine.extensions.grid.grid = true
+
+		const { slot } = await renderCounted(engine)
+
+		act(() => find('.s-table').focus())
+
+		const active = document.activeElement
+
+		if (!active) throw new Error('фокуса нет')
+
+		press(active, 'ArrowDown')
+
+		const cell = find('.s-table-row th')
+
+		expect(document.activeElement).toBe(cell)
+
+		press(cell, ' ')
+
+		expect(engine.extensions.selection.selected).toEqual([rowOf(engine, 1)])
+		expect(find('.s-table-row').getAttribute('aria-selected')).toBe('true')
+		expect(slot).not.toHaveBeenCalled()
+	})
+
+	it('новый слот — ячейки всех строк перерисованы им', async () => {
+		const { slot, rerender } = await renderCounted(engineOf('none'))
+		const next = cellSlot((value) => `${String(value)}!`)
+
+		rerender({ cell: next })
+
+		expect(cellTexts()).toEqual([
+			['Анна!', '30!'],
+			['Борис!', '41!'],
+			['Вера!', '25!'],
+		])
+		expect(next).toHaveBeenCalledTimes(6)
+		expect(slot).not.toHaveBeenCalled()
 	})
 })
 
