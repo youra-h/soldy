@@ -31,6 +31,18 @@ import * as ts from 'typescript'
  * бандла Vite к нему неприменимы. У рецепта свои: выход `dist` записан в
  * конфиге `-p`, частичная форма — в `tsconfig.build.json`.
  *
+ * Рецепт Solid — общий рецепт и третий шаг, исходник. Бандл собран под браузер:
+ * JSX в нём уже скомпилирован в вызовы `solid-js/web`, а серверная сборка
+ * `solid-js/web` отдаёт под этими именами заглушку, которая бросает исключение.
+ * Серверу, браузеру и гидратации нужна каждому своя компиляция одного JSX,
+ * поэтому компоненты Solid, как и Svelte, компилирует приложение: проход
+ * `tsc -p tsconfig.source.json` после бандла снимает TypeScript и сохраняет JSX
+ * в каталог внутри `dist`, а условие `solid` в `exports["."]` ведёт туда плагин
+ * Solid приложения. Узнаётся рецепт не по инструменту — инструменты у него те
+ * же, что у общего, — а по пакету: исходник обязан отдать каждый пакет, который
+ * рисует Solid (`solid-js` в `peerDependencies`). Бандл и декларации судят
+ * проверки общего рецепта, исходник и условие — свои.
+ *
  * Общее у рецептов — `tsconfig.build.json`. Соседей в его `paths` нет (ссылка
  * пакета на самого себя допустима), `preserveSymlinks` нет: сосед резолвится
  * как пакет, по своему собранному `dist`. Пока это было иначе, сборка читала
@@ -185,19 +197,11 @@ function parseTsconfig(file: string, host: ts.ParseConfigHost): TParsedTsconfig 
 }
 
 /**
- * Нарушения `tsconfig.build.json`; пустой список — конфиг в порядке.
- *
- * Опции судятся действующие — с учётом `extends`: чего конфиг сборки не
- * перекрыл, то пришло из пакетного, а у него `paths` ведут соседей в исходники.
+ * Нарушения опций конфига сборки, которые решают, как он видит соседа;
+ * пустой список — сосед резолвится как пакет.
  */
-function checkBuildTsconfig(name: string, file: string, host: ts.ParseConfigHost): string[] {
-	const { parsed, violations } = parseTsconfig(file, host)
-
-	if (parsed === undefined) {
-		return violations
-	}
-
-	const { options } = parsed
+function checkNeighbours(name: string, options: ts.CompilerOptions): string[] {
+	const violations: string[] = []
 
 	// Ссылка пакета на самого себя допустима, соседа в paths быть не может:
 	// по ней сборка прочитала бы его исходники и увела бы туда декларации
@@ -213,6 +217,22 @@ function checkBuildTsconfig(name: string, file: string, host: ts.ParseConfigHost
 	}
 
 	return violations
+}
+
+/**
+ * Нарушения `tsconfig.build.json`; пустой список — конфиг в порядке.
+ *
+ * Опции судятся действующие — с учётом `extends`: чего конфиг сборки не
+ * перекрыл, то пришло из пакетного, а у него `paths` ведут соседей в исходники.
+ */
+function checkBuildTsconfig(name: string, file: string, host: ts.ParseConfigHost): string[] {
+	const { parsed, violations } = parseTsconfig(file, host)
+
+	if (parsed === undefined) {
+		return violations
+	}
+
+	return [...violations, ...checkNeighbours(name, parsed.options)]
 }
 
 /** Файлы для разбора конфига и разрешения модулей: `ts.sys` или каталог в памяти. */
@@ -342,12 +362,17 @@ function optionOf(command: string, ...names: readonly string[]): string | undefi
 	return undefined
 }
 
-/** Условие `svelte` в `exports["."]`; нет его — `undefined`. */
-function svelteConditionOf(manifest: TManifest): unknown {
+/** Условия `exports["."]` в порядке записи; нет их — пустой объект. */
+function rootExportOf(manifest: TManifest): TManifest {
 	const { exports } = manifest
 	const root = isRecord(exports) ? exports['.'] : undefined
 
-	return isRecord(root) ? root.svelte : undefined
+	return isRecord(root) ? root : {}
+}
+
+/** Условие `svelte` в `exports["."]`; нет его — `undefined`. */
+function svelteConditionOf(manifest: TManifest): unknown {
+	return rootExportOf(manifest).svelte
 }
 
 /**
@@ -463,6 +488,128 @@ function checkNgPackagrRecipe(pkg: TBuiltPackage, read: TReadConfig): string[] {
 	return violations
 }
 
+/** Конфиг прохода исходника у рецепта Solid — в каталоге пакета. */
+const SOURCE_TSCONFIG = 'tsconfig.source.json'
+
+/**
+ * Пакет рисует Solid: `solid-js` ставит приложение, рядом со своим. Такому
+ * пакету рецепт Solid обязателен, каким бы инструментом он ни собирался.
+ */
+function rendersSolid({ peerDependencies }: TManifest): boolean {
+	return isRecord(peerDependencies) && Object.hasOwn(peerDependencies, 'solid-js')
+}
+
+/**
+ * Где в скрипте `build` проход исходника — `tsc` с конфигом
+ * `tsconfig.source.json`; прохода нет — `-1`.
+ */
+function sourcePassAt(build: string): number {
+	for (const { 0: command, index } of build.matchAll(/\btsc\b[^&|;]*/g)) {
+		const project = optionOf(command, '-p', '--project')
+
+		if (project !== undefined && normalizePath(project) === SOURCE_TSCONFIG) {
+			return index
+		}
+	}
+
+	return -1
+}
+
+/**
+ * Путь от каталога пакета через `/`. TypeScript пишет пути через `/`, а
+ * каталог пакета на Windows приходит через `\`.
+ */
+function packagePathOf(dir: string, path: string): string {
+	return relative(dir, path).split(/[\\/]/).join('/')
+}
+
+/**
+ * Нарушения рецепта Solid сверх общего; пустой список — пакет в порядке.
+ * `file` — конфиг исходника в каталоге пакета. Бандл и декларации у рецепта
+ * те же, что у общего, и судят их проверки общего рецепта; здесь — третий
+ * шаг, исходник, и условие `solid`, которое ведёт в него.
+ *
+ * Опции конфига судятся действующие — с учётом `extends`: конфиг исходника
+ * наследует конфиг сборки, а тот выпускает одни декларации.
+ */
+function checkSolidRecipe(pkg: TBuiltPackage, file: string, host: ts.ParseConfigHost): string[] {
+	const violations: string[] = []
+	const pass = sourcePassAt(pkg.build)
+
+	if (pass < 0) {
+		violations.push(`нет прохода исходника, ожидается tsc -p ${SOURCE_TSCONFIG}`)
+	} else if (pass < pkg.build.search(LIB_RECIPE.tool)) {
+		// У Vite стоит emptyOutDir: бандл, собранный после, стёр бы исходник
+		violations.push('исходник собирается раньше бандла — emptyOutDir бандла его сотрёт')
+	}
+
+	const { parsed, violations: unparsed } = parseTsconfig(file, host)
+	let output: string | undefined
+
+	violations.push(...unparsed)
+
+	if (parsed !== undefined) {
+		const { options } = parsed
+
+		violations.push(...checkNeighbours(pkg.name, options))
+
+		// Скомпилированный JSX привязан к одному окружению: под сервер, браузер
+		// и гидратацию его компилирует плагин Solid приложения
+		if (options.jsx !== ts.JsxEmit.Preserve) {
+			const jsx = options.jsx === undefined ? 'не задан' : ts.JsxEmit[options.jsx]
+
+			violations.push(`jsx ${jsx}, ожидается preserve — JSX компилирует приложение`)
+		}
+
+		for (const option of ['noEmit', 'emitDeclarationOnly'] as const) {
+			if (options[option] === true) {
+				violations.push(`${option} true — JS исходника не выходит`)
+			}
+		}
+
+		output =
+			options.outDir === undefined ? undefined : packagePathOf(dirname(file), options.outDir)
+
+		// В самом dist `index.js` исходника заменил бы бандл: `src/index.ts`
+		// выходит тем же именем, что и вход бандла
+		if (output === 'dist') {
+			violations.push(
+				'outDir "dist" — index.js исходника заменит бандл, ожидается каталог внутри dist',
+			)
+		} else if (output === undefined || !output.startsWith('dist/')) {
+			violations.push(`outDir ${JSON.stringify(output)} — мимо выхода сборки dist`)
+		}
+	}
+
+	const entry = rootExportOf(pkg.manifest)
+	const condition = entry.solid
+	const keys = Object.keys(entry)
+	// Условия выбираются по порядку записи: подходящее, что стоит раньше,
+	// сборщик возьмёт вместо исходника. Раньше допустим только `types`: его
+	// читает TypeScript, а сборщик кода не выбирает
+	const earlier = keys.slice(0, keys.indexOf('solid')).filter((key) => key !== 'types')
+
+	// По условию `solid` плагин Solid у приложения узнаёт библиотеку и сам
+	// компилирует её компоненты
+	if (typeof condition !== 'string') {
+		violations.push(
+			'exports["."] без условия solid — плагин Solid не узнает библиотеку и возьмёт бандл под браузер',
+		)
+	} else if (output !== undefined && !normalizePath(condition).startsWith(`${output}/`)) {
+		violations.push(
+			`exports["."]["solid"] ${JSON.stringify(condition)} — мимо выхода исходника ${output}`,
+		)
+	}
+
+	if (typeof condition === 'string' && earlier.length > 0) {
+		violations.push(
+			`exports["."]: solid после ${earlier.join(', ')} — сборщик выберет первое подходящее условие, а не исходник`,
+		)
+	}
+
+	return violations
+}
+
 const PACKAGES = builtPackages()
 
 /** Пакеты очереди с конфигом проверки типов: без `tsconfig.json` проверять нечего. */
@@ -472,6 +619,9 @@ const TYPECHECKED = PACKAGES.filter(({ dir }) => existsSync(join(dir, 'tsconfig.
 function packagesOf(recipe: TRecipe): TBuiltPackage[] {
 	return PACKAGES.filter(({ build }) => recipe.tool.test(build))
 }
+
+/** Пакеты очереди, которые рисуют Solid, — их собирает рецепт Solid. */
+const SOLID = PACKAGES.filter(({ manifest }) => rendersSolid(manifest))
 
 describe('сборка пакетов', () => {
 	// Разбор не вхолостую: очередь непуста, адаптеры в ней есть, и у каждого
@@ -484,6 +634,8 @@ describe('сборка пакетов', () => {
 		for (const recipe of RECIPES) {
 			expect(packagesOf(recipe), recipe.name).not.toEqual([])
 		}
+
+		expect(SOLID.map(({ name }) => name)).toEqual(expect.arrayContaining(['@soldy-ui/solid']))
 	})
 
 	// Тоже не вхолостую: у пакетов, где тесты в программе проверки типов точно
@@ -592,6 +744,18 @@ describe('сборка пакетов', () => {
 			expect(
 				violations,
 				'Сборка разошлась с рецептом Angular (AGENTS.md, «Сборка пакетов»):\n' +
+					violations.join('\n'),
+			).toEqual([])
+		})
+	})
+
+	describe.each(SOLID)('рецепт Solid · $name', (pkg) => {
+		it('исходник с JSX — после бандла, внутри dist, и условие solid ведёт в него', () => {
+			const violations = checkSolidRecipe(pkg, join(pkg.dir, SOURCE_TSCONFIG), ts.sys)
+
+			expect(
+				violations,
+				'Сборка разошлась с рецептом Solid (AGENTS.md, «Сборка пакетов»):\n' +
 					violations.join('\n'),
 			).toEqual([])
 		})
@@ -1008,6 +1172,163 @@ describe('сторож рецептов', () => {
 			expect(checkNgPackagrRecipe(angular(chained), files())).toEqual([
 				'конфиг пакета не назван, ожидается -p ng-package.json',
 				'конфиг сборки undefined, ожидается -c tsconfig.build.json',
+			])
+		})
+	})
+
+	describe('рецепт Solid', () => {
+		const BUILD =
+			'vite build -c vite.lib.config.ts && tsc -p tsconfig.build.json && tsc -p tsconfig.source.json'
+		const SOURCE = '/example/tsconfig.source.json'
+
+		const ENTRY: TManifest = {
+			types: './dist/index.d.ts',
+			solid: './dist/source/index.js',
+			default: './dist/index.js',
+		}
+
+		/** Опции конфига исходника по рецепту — поверх конфига сборки. */
+		const OPTIONS = {
+			emitDeclarationOnly: false,
+			declaration: false,
+			jsx: 'preserve',
+			outDir: 'dist/source',
+		}
+
+		/**
+		 * Цепочка конфигов, как у адаптера: база → пакет → сборка. Пакетный
+		 * ведёт соседей в исходники, сборка выпускает одни декларации — конфиг
+		 * исходника обязан перекрыть второе и не вернуть первое.
+		 */
+		const chain = (jsx = 'preserve'): Record<string, string> => ({
+			'/tsconfig.base.json': text({
+				compilerOptions: { module: 'esnext', moduleResolution: 'bundler', noEmit: true },
+			}),
+			'/example/tsconfig.json': text({
+				extends: '../tsconfig.base.json',
+				compilerOptions: { jsx, paths: { '@soldy-ui/core': ['../core/src'] } },
+			}),
+			'/example/tsconfig.build.json': text({
+				extends: './tsconfig.json',
+				compilerOptions: {
+					noEmit: false,
+					emitDeclarationOnly: true,
+					declaration: true,
+					outDir: 'dist',
+					rootDir: 'src',
+					paths: {},
+				},
+			}),
+			'/example/src/index.ts': '',
+		})
+
+		const solid = (build = BUILD, entry: TManifest = ENTRY): TBuiltPackage => ({
+			name: NAME,
+			dir: '/example',
+			manifest: { name: NAME, exports: { '.': entry } },
+			build,
+		})
+
+		/** Пакет и опции конфига исходника поверх конфига сборки. */
+		const check = (
+			pkg: TBuiltPackage,
+			options: Readonly<Record<string, unknown>> = OPTIONS,
+			files: Record<string, string> = chain(),
+		): string[] =>
+			checkSolidRecipe(
+				pkg,
+				SOURCE,
+				memoryHost({
+					...files,
+					[SOURCE]: text({ extends: './tsconfig.build.json', compilerOptions: options }),
+				}),
+			)
+
+		it('пакет по рецепту — без нарушений, как ни запиши проход', () => {
+			const spelled =
+				'vite build -c vite.lib.config.ts && tsc -p tsconfig.build.json && tsc --project ./tsconfig.source.json'
+
+			expect(check(solid())).toEqual([])
+			expect(check(solid(spelled))).toEqual([])
+		})
+
+		it('прохода исходника нет или он раньше бандла — нарушение', () => {
+			const lib = 'vite build -c vite.lib.config.ts && tsc -p tsconfig.build.json'
+			const early =
+				'tsc -p tsconfig.source.json && vite build -c vite.lib.config.ts && tsc -p tsconfig.build.json'
+
+			expect(check(solid(lib))).toEqual([
+				'нет прохода исходника, ожидается tsc -p tsconfig.source.json',
+			])
+			expect(check(solid(early))).toEqual([
+				'исходник собирается раньше бандла — emptyOutDir бандла его сотрёт',
+			])
+		})
+
+		// Опции действующие: jsx пакетного конфига доходит до исходника по extends
+		it('JSX скомпилирован — нарушение, свой jsx или пришёл по extends', () => {
+			const { jsx: _jsx, ...inherited } = OPTIONS
+			const why = 'ожидается preserve — JSX компилирует приложение'
+
+			expect(check(solid(), inherited)).toEqual([])
+			expect(check(solid(), { ...OPTIONS, jsx: 'react-jsx' })).toEqual([
+				`jsx ReactJSX, ${why}`,
+			])
+			expect(check(solid(), inherited, chain('react-jsx'))).toEqual([`jsx ReactJSX, ${why}`])
+		})
+
+		// Конфиг сборки выпускает одни декларации, и без перекрытия исходник — тоже
+		it('JS не выходит — нарушение', () => {
+			const { emitDeclarationOnly: _declarations, ...inherited } = OPTIONS
+
+			expect(check(solid(), inherited)).toEqual([
+				'emitDeclarationOnly true — JS исходника не выходит',
+			])
+			expect(check(solid(), { ...OPTIONS, noEmit: true })).toEqual([
+				'noEmit true — JS исходника не выходит',
+			])
+		})
+
+		it('выход — сам dist или мимо него — нарушение', () => {
+			const { outDir: _outDir, ...inherited } = OPTIONS
+			const replaced =
+				'outDir "dist" — index.js исходника заменит бандл, ожидается каталог внутри dist'
+
+			expect(check(solid(), inherited)).toEqual([replaced])
+			expect(check(solid(), { ...OPTIONS, outDir: 'dist' })).toEqual([replaced])
+			expect(check(solid(), { ...OPTIONS, outDir: 'source' })).toEqual([
+				'outDir "source" — мимо выхода сборки dist',
+				'exports["."]["solid"] "./dist/source/index.js" — мимо выхода исходника source',
+			])
+		})
+
+		it('без условия solid, с ним мимо исходника или после default — нарушение', () => {
+			const { solid: _condition, ...withoutCondition } = ENTRY
+			const late = { ...withoutCondition, solid: ENTRY.solid }
+
+			expect(check(solid(BUILD, withoutCondition))).toEqual([
+				'exports["."] без условия solid — плагин Solid не узнает библиотеку и возьмёт бандл под браузер',
+			])
+			expect(check(solid(BUILD, { ...ENTRY, solid: './dist/index.js' }))).toEqual([
+				'exports["."]["solid"] "./dist/index.js" — мимо выхода исходника dist/source',
+			])
+			expect(check(solid(BUILD, late))).toEqual([
+				'exports["."]: solid после default — сборщик выберет первое подходящее условие, а не исходник',
+			])
+		})
+
+		// Пакетный конфиг ведёт соседей в исходники, и extends принёс бы их paths
+		it('сосед в paths — нарушение, как у конфига сборки', () => {
+			const paths = { '@soldy-ui/core': ['../core/src'] }
+
+			expect(check(solid(), { ...OPTIONS, paths })).toEqual([
+				'paths знает соседа @soldy-ui/core — сосед резолвится как пакет, по своему dist',
+			])
+		})
+
+		it('конфиг, который TypeScript не разобрал, — нарушение', () => {
+			expect(checkSolidRecipe(solid(), SOURCE, memoryHost(chain()))).toEqual([
+				expect.stringMatching(/^не разобран: .*\/example\/tsconfig\.source\.json/),
 			])
 		})
 	})
