@@ -28,12 +28,12 @@ import type {
 
 function createSelect(values: string[], props: Partial<ISelectProps> = {}) {
 	const owner = new TSelect(props)
-	const collection = new TSelectCollectionFacade({}, { owner })
+	const facade = new TSelectCollectionFacade({}, { owner })
 	const items = values.map((value) => new TSelectItem({ value, text: value.toUpperCase() }))
 
-	collection.items = items as ISelectItem[]
+	facade.items = items as ISelectItem[]
 
-	const registry = new TItemContextRegistry(collection.engine.getCore())
+	const registry = new TItemContextRegistry(facade.engine.getCore())
 
 	/** Фасад опции — через него разметка выбирает элемент. */
 	const facadeFor = (index: number) => {
@@ -44,12 +44,12 @@ function createSelect(values: string[], props: Partial<ISelectProps> = {}) {
 		return facade
 	}
 
-	return { owner, collection, items, facadeFor, select: collection.engine.extensions.select }
+	return { owner, facade, items, facadeFor, select: facade.engine.extensions.select }
 }
 
 /** Движок тегов: есть только в multiple, без него проверять нечего. */
-function tagsEngine(collection: TSelectCollectionFacade) {
-	const engine = collection.tags_engine
+function tagsEngine(facade: TSelectCollectionFacade) {
+	const engine = facade.tags_engine
 
 	if (!engine) throw new Error('движка тегов нет')
 
@@ -57,11 +57,8 @@ function tagsEngine(collection: TSelectCollectionFacade) {
 }
 
 /** Новая выдача вместо прежней — так приложение отдаёт результат поиска. */
-function patchOptions(
-	collection: TSelectCollectionFacade,
-	sources: { value: string; text: string }[],
-) {
-	const batch = collection.extensions.batch
+function patchOptions(facade: TSelectCollectionFacade, sources: { value: string; text: string }[]) {
+	const batch = facade.extensions.batch
 
 	batch.trackBy = (item) => item.value
 	batch.patch(sources)
@@ -74,17 +71,14 @@ function patchOptions(
  */
 const REMOVE_FIRST_OPTION: [
 	string,
-	(collection: TSelectCollectionFacade, items: ISelectItem[]) => void,
+	(facade: TSelectCollectionFacade, items: ISelectItem[]) => void,
 ][] = [
-	['удалением', (collection, items) => collection.extensions.batch.remove([items[0]])],
-	[
-		'патчем без новых опций',
-		(collection) => patchOptions(collection, [{ value: 'b', text: 'B' }]),
-	],
+	['удалением', (facade, items) => facade.extensions.batch.remove([items[0]])],
+	['патчем без новых опций', (facade) => patchOptions(facade, [{ value: 'b', text: 'B' }])],
 	[
 		'патчем с новой опцией',
-		(collection) =>
-			patchOptions(collection, [
+		(facade) =>
+			patchOptions(facade, [
 				{ value: 'b', text: 'B' },
 				{ value: 'c', text: 'C' },
 			]),
@@ -202,30 +196,30 @@ describe('value и выбор — одно и то же', () => {
 	})
 
 	it('value выбирает опцию', () => {
-		const { owner, collection, items } = createSelect(['a', 'b'])
+		const { owner, facade, items } = createSelect(['a', 'b'])
 
 		owner.value = 'b'
 
-		expect(collection.selected).toEqual([items[1]])
+		expect(facade.selected).toEqual([items[1]])
 	})
 
 	it('value, заданный до появления опций, применяется при их добавлении', () => {
 		const owner = new TSelect({ value: 'b' })
-		const collection = new TSelectCollectionFacade({}, { owner })
+		const facade = new TSelectCollectionFacade({}, { owner })
 
-		collection.items = [
+		facade.items = [
 			new TSelectItem({ value: 'a', text: 'A' }),
 			new TSelectItem({ value: 'b', text: 'B' }),
 		] as ISelectItem[]
 
-		expect(collection.selected).toHaveLength(1)
-		expect(collection.selected[0].value).toBe('b')
+		expect(facade.selected).toHaveLength(1)
+		expect(facade.selected[0].value).toBe('b')
 	})
 
 	it('в multiple value — массив', () => {
-		const { owner, collection, facadeFor } = createSelect(['a', 'b', 'c'])
+		const { owner, facade, facadeFor } = createSelect(['a', 'b', 'c'])
 
-		collection.mode = 'multiple'
+		facade.mode = 'multiple'
 		facadeFor(0).choose()
 		facadeFor(2).choose()
 
@@ -233,9 +227,9 @@ describe('value и выбор — одно и то же', () => {
 	})
 
 	it('в multiple повторный выбор снимает', () => {
-		const { owner, collection, facadeFor } = createSelect(['a', 'b'])
+		const { owner, facade, facadeFor } = createSelect(['a', 'b'])
 
-		collection.mode = 'multiple'
+		facade.mode = 'multiple'
 		facadeFor(0).choose()
 		facadeFor(0).choose()
 
@@ -243,13 +237,13 @@ describe('value и выбор — одно и то же', () => {
 	})
 
 	it('в single выбор заменяет прежний', () => {
-		const { owner, collection, facadeFor } = createSelect(['a', 'b'])
+		const { owner, facade, facadeFor } = createSelect(['a', 'b'])
 
 		facadeFor(0).choose()
 		facadeFor(1).choose()
 
 		expect(owner.value).toBe('b')
-		expect(collection.selected).toHaveLength(1)
+		expect(facade.selected).toHaveLength(1)
 	})
 
 	it('disabled-опция не выбирается', () => {
@@ -267,12 +261,12 @@ describe('value и выбор — одно и то же', () => {
 	 * путь один и у встроенной кнопки, и у своей в слоте.
 	 */
 	it('очистка поля снимает выбор и обнуляет value', () => {
-		const { owner, collection, facadeFor } = createSelect(['a', 'b'])
+		const { owner, facade, facadeFor } = createSelect(['a', 'b'])
 
 		facadeFor(0).choose()
 		owner.field.clear()
 
-		expect(collection.selected).toEqual([])
+		expect(facade.selected).toEqual([])
 		expect(owner.value).toBeUndefined()
 		expect(owner.field.value).toBe('')
 	})
@@ -282,9 +276,9 @@ describe('value и выбор — одно и то же', () => {
 	 * не меняет, а событие `clear` приходит всё равно — и снимает теги.
 	 */
 	it('в multiple очистка пустого поля снимает весь выбор', () => {
-		const { owner, collection, facadeFor } = createSelect(['a', 'b'])
+		const { owner, facade, facadeFor } = createSelect(['a', 'b'])
 
-		collection.mode = 'multiple'
+		facade.mode = 'multiple'
 		facadeFor(0).choose()
 		facadeFor(1).choose()
 
@@ -292,9 +286,9 @@ describe('value и выбор — одно и то же', () => {
 
 		owner.field.clear()
 
-		expect(collection.selected).toEqual([])
+		expect(facade.selected).toEqual([])
 		expect(owner.value).toEqual([])
-		expect(collection.tags_engine?.extensions.batch.items).toEqual([])
+		expect(facade.tags_engine?.extensions.batch.items).toEqual([])
 	})
 
 	/**
@@ -303,20 +297,20 @@ describe('value и выбор — одно и то же', () => {
 	 * падал с TypeError, и своя кнопка очистки выбора не снимала.
 	 */
 	it('clear, взятый у поля без инстанса, тоже снимает выбор', () => {
-		const { owner, collection, facadeFor } = createSelect(['a', 'b'])
+		const { owner, facade, facadeFor } = createSelect(['a', 'b'])
 		const { clear } = owner.field
 
 		facadeFor(0).choose()
 		clear()
 
-		expect(collection.selected).toEqual([])
+		expect(facade.selected).toEqual([])
 		expect(owner.value).toBeUndefined()
 	})
 
 	it('своей команды очистки у фасада нет', () => {
-		const { collection } = createSelect(['a'])
+		const { facade } = createSelect(['a'])
 
-		expect('clear' in collection).toBe(false)
+		expect('clear' in facade).toBe(false)
 	})
 
 	it('синхронизация не зацикливается', () => {
@@ -341,30 +335,30 @@ describe('панель после выбора', () => {
 	})
 
 	it('без closeOnSelect остаётся открытой — так нужно для multiple', () => {
-		const { owner, collection, facadeFor } = createSelect(['a', 'b'], {
+		const { owner, facade, facadeFor } = createSelect(['a', 'b'], {
 			open: true,
 			closeOnSelect: false,
 		})
 
-		collection.mode = 'multiple'
+		facade.mode = 'multiple'
 		facadeFor(0).choose()
 
 		expect(owner.open).toBe(true)
 	})
 
 	it('в multiple выбор не закрывает панель даже с closeOnSelect по умолчанию', () => {
-		const { owner, collection, facadeFor } = createSelect(['a', 'b'], { open: true })
+		const { owner, facade, facadeFor } = createSelect(['a', 'b'], { open: true })
 
-		collection.mode = 'multiple'
+		facade.mode = 'multiple'
 		facadeFor(0).choose()
 
 		expect(owner.open).toBe(true)
 	})
 
 	it('в multiple повторный выбор той же опции тоже не закрывает', () => {
-		const { owner, collection, facadeFor } = createSelect(['a'], { open: true })
+		const { owner, facade, facadeFor } = createSelect(['a'], { open: true })
 
-		collection.mode = 'multiple'
+		facade.mode = 'multiple'
 		facadeFor(0).choose()
 		facadeFor(0).choose()
 
@@ -411,25 +405,25 @@ describe('ARIA поля, списка и опций', () => {
 	})
 
 	it('aria-multiselectable появляется только в multiple', () => {
-		const { owner, collection } = createSelect(['a'])
+		const { owner, facade } = createSelect(['a'])
 
 		expect(owner.listAria.has('aria-multiselectable')).toBe(false)
 
-		collection.mode = 'multiple'
+		facade.mode = 'multiple'
 
 		expect(owner.listAria.get('aria-multiselectable')).toBe('true')
 
-		collection.mode = 'single'
+		facade.mode = 'single'
 
 		expect(owner.listAria.has('aria-multiselectable')).toBe(false)
 	})
 
 	it('change:listAria — на смену набора списка', () => {
-		const { owner, collection } = createSelect(['a'])
+		const { owner, facade } = createSelect(['a'])
 		const changes = vi.fn()
 
 		owner.events.on('change:listAria', changes)
-		collection.mode = 'multiple'
+		facade.mode = 'multiple'
 
 		expect(changes).toHaveBeenCalledWith({ role: 'listbox', 'aria-multiselectable': 'true' })
 	})
@@ -452,9 +446,9 @@ describe('text — что показывает поле', () => {
 		// До тегов (см. describe('теги в multiple')) поле показывало список
 		// текстом («A, C»); теперь то же самое показывают теги в поле, и
 		// повторять текстом было бы дублем
-		const { owner, collection, facadeFor } = createSelect(['a', 'b', 'c'])
+		const { owner, facade, facadeFor } = createSelect(['a', 'b', 'c'])
 
-		collection.mode = 'multiple'
+		facade.mode = 'multiple'
 		facadeFor(0).choose()
 		facadeFor(2).choose()
 
@@ -519,26 +513,26 @@ describe('переименование опции', () => {
 	})
 
 	it('удалённую опцию Select больше не слушает', () => {
-		const { collection, items } = createSelect(['a'])
+		const { facade, items } = createSelect(['a'])
 		const late = new TSelectItem({ value: 'z', text: 'Z' })
 		const listeners = watchTextListeners(late)
 
-		collection.items = [...items, late]
+		facade.items = [...items, late]
 
 		expect(listeners()).toBe(1)
 
-		collection.engine.extensions.batch.remove([late])
+		facade.engine.extensions.batch.remove([late])
 
 		expect(listeners()).toBe(0)
 	})
 
 	it('после очистки списка опции не слушаются', () => {
-		const { collection, items } = createSelect(['a'])
+		const { facade, items } = createSelect(['a'])
 		const late = new TSelectItem({ value: 'z', text: 'Z' })
 		const listeners = watchTextListeners(late)
 
-		collection.items = [...items, late]
-		collection.engine.extensions.batch.clear()
+		facade.items = [...items, late]
+		facade.engine.extensions.batch.clear()
 
 		expect(listeners()).toBe(0)
 	})
@@ -549,23 +543,23 @@ describe('переименование опции', () => {
 	 * опции ещё одну подписку.
 	 */
 	it('возврат в список второй подписки не заводит', () => {
-		const { collection, items } = createSelect(['a'])
+		const { facade, items } = createSelect(['a'])
 		const late = new TSelectItem({ value: 'z', text: 'Z' })
 		const listeners = watchTextListeners(late)
 		const all = [...items, late]
 
-		collection.items = all
-		collection.items = [...all]
-		collection.items = [...all]
+		facade.items = all
+		facade.items = [...all]
+		facade.items = [...all]
 
 		expect(listeners()).toBe(1)
 	})
 
 	it('выбранная опция, вернувшаяся в список, слушается снова', () => {
-		const { owner, collection, items, facadeFor } = createSelect(['a', 'b'])
+		const { owner, facade, items, facadeFor } = createSelect(['a', 'b'])
 
 		facadeFor(0).choose()
-		collection.items = [...items]
+		facade.items = [...items]
 		items[0].text = 'Другое'
 
 		expect(owner.field.value).toBe('Другое')
@@ -596,18 +590,18 @@ describe('набранное в поле и смена списка', () => {
 
 	describe('набранное остаётся, text свежий', () => {
 		it('удалили невыбранную опцию', () => {
-			const { owner, collection, items, select } = typedOverSelected()
+			const { owner, facade, items, select } = typedOverSelected()
 
-			collection.engine.extensions.batch.remove([items[1]])
+			facade.engine.extensions.batch.remove([items[1]])
 
 			expect(owner.field.value).toBe('typed')
 			expect(select.text).toBe('A')
 		})
 
 		it('удалили выбранную опцию', () => {
-			const { owner, collection, items, select } = typedOverSelected()
+			const { owner, facade, items, select } = typedOverSelected()
 
-			collection.engine.extensions.batch.remove([items[0]])
+			facade.engine.extensions.batch.remove([items[0]])
 
 			expect(owner.field.value).toBe('typed')
 			expect(select.text).toBe('')
@@ -619,9 +613,9 @@ describe('набранное в поле и смена списка', () => {
 		 * на выбор пользователя.
 		 */
 		it('пересобрали items без trackBy при выставленном value', () => {
-			const { owner, collection, items, select } = typedOverSelected()
+			const { owner, facade, items, select } = typedOverSelected()
 
-			collection.items = [...items]
+			facade.items = [...items]
 
 			expect(owner.value).toBe('a')
 			expect(owner.field.value).toBe('typed')
@@ -685,23 +679,23 @@ describe('набранное в поле и смена списка', () => {
 	/** Когда в поле не печатают, оно следует за выбранным, как и прежде. */
 	describe('без набора поле показывает свежий текст выбранного', () => {
 		it('удалили выбранную опцию — поле пусто', () => {
-			const { owner, collection, items, facadeFor } = createSelect(['a', 'b'], {
+			const { owner, facade, items, facadeFor } = createSelect(['a', 'b'], {
 				editable: true,
 			})
 
 			facadeFor(0).choose()
-			collection.engine.extensions.batch.remove([items[0]])
+			facade.engine.extensions.batch.remove([items[0]])
 
 			expect(owner.field.value).toBe('')
 		})
 
 		it('пересобрали items без trackBy — текст выбранного на месте', () => {
-			const { owner, collection, items, facadeFor } = createSelect(['a', 'b'], {
+			const { owner, facade, items, facadeFor } = createSelect(['a', 'b'], {
 				editable: true,
 			})
 
 			facadeFor(0).choose()
-			collection.items = [...items]
+			facade.items = [...items]
 
 			expect(owner.field.value).toBe('A')
 		})
@@ -718,28 +712,28 @@ describe('набранное в поле и смена списка', () => {
 
 	describe('multiple', () => {
 		it('набранное переживает закрытие тега', () => {
-			const { owner, collection, items, facadeFor, select } = createSelect(['a', 'b'], {
+			const { owner, facade, items, facadeFor, select } = createSelect(['a', 'b'], {
 				editable: true,
 			})
 
-			collection.mode = 'multiple'
+			facade.mode = 'multiple'
 			facadeFor(0).choose()
 			facadeFor(1).choose()
 			owner.field.value = 'typed'
 
-			const engine = tagsEngine(collection)
+			const engine = tagsEngine(facade)
 
 			engine.extensions.tags.closeTag([...engine.extensions.batch.items][0])
 
-			expect(collection.selected).toEqual([items[1]])
+			expect(facade.selected).toEqual([items[1]])
 			expect(owner.field.value).toBe('typed')
 			expect(select.text).toBe('B')
 		})
 
 		it('chooseItem набранное стирает', () => {
-			const { owner, collection, facadeFor } = createSelect(['a', 'b'], { editable: true })
+			const { owner, facade, facadeFor } = createSelect(['a', 'b'], { editable: true })
 
-			collection.mode = 'multiple'
+			facade.mode = 'multiple'
 			owner.field.value = 'typed'
 			facadeFor(0).choose()
 
@@ -748,18 +742,18 @@ describe('набранное в поле и смена списка', () => {
 
 		/** Выбранное в `multiple` показывают теги, поэтому переименование идёт в них, а не в поле. */
 		it('переименование выбранной опции набранное оставляет, а тег обновляет', () => {
-			const { owner, collection, items, facadeFor, select } = createSelect(['a', 'b'], {
+			const { owner, facade, items, facadeFor, select } = createSelect(['a', 'b'], {
 				editable: true,
 			})
 
-			collection.mode = 'multiple'
+			facade.mode = 'multiple'
 			facadeFor(0).choose()
 			owner.field.value = 'typed'
 			items[0].text = 'Другое'
 
 			expect(owner.field.value).toBe('typed')
 			expect(select.text).toBe('Другое')
-			expect(tagsEngine(collection).extensions.batch.items.map((item) => item.text)).toEqual([
+			expect(tagsEngine(facade).extensions.batch.items.map((item) => item.text)).toEqual([
 				'Другое',
 			])
 		})
@@ -788,7 +782,7 @@ describe('набранное в поле и смена списка', () => {
 		})
 
 		it('disabled-опция, смена value и состава, переименование его не шлют', () => {
-			const { owner, collection, items, facadeFor, select } = createSelect(['a', 'b', 'c'], {
+			const { owner, facade, items, facadeFor, select } = createSelect(['a', 'b', 'c'], {
 				editable: true,
 			})
 			const choose = vi.fn()
@@ -799,8 +793,8 @@ describe('набранное в поле и смена списка', () => {
 			facadeFor(2).choose()
 			owner.value = 'a'
 			items[0].text = 'Другое'
-			collection.engine.extensions.batch.remove([items[1]])
-			collection.items = [items[0], items[2]]
+			facade.engine.extensions.batch.remove([items[1]])
+			facade.items = [items[0], items[2]]
 
 			expect(owner.value).toBe('a')
 			expect(choose).not.toHaveBeenCalled()
@@ -854,9 +848,9 @@ describe('field — экземпляр TInput, которым владеет Sel
 	})
 
 	it('value в multiple всегда пуст', () => {
-		const { owner, collection, facadeFor } = createSelect(['a', 'b'])
+		const { owner, facade, facadeFor } = createSelect(['a', 'b'])
 
-		collection.mode = 'multiple'
+		facade.mode = 'multiple'
 		facadeFor(0).choose()
 		facadeFor(1).choose()
 
@@ -993,16 +987,16 @@ describe('indicator пробрасывается с поля на опцию', (
  */
 describe('теги в multiple', () => {
 	it('в single тегов нет', () => {
-		expect(createSelect(['a', 'b']).collection.tags).toBeNull()
+		expect(createSelect(['a', 'b']).facade.tags).toBeNull()
 	})
 
 	it('появляются, как только режим переключён на multiple', () => {
-		const { collection } = createSelect(['a', 'b'])
+		const { facade } = createSelect(['a', 'b'])
 
-		collection.mode = 'multiple'
+		facade.mode = 'multiple'
 
-		expect(collection.tags).not.toBeNull()
-		expect(collection.tags_engine).not.toBeNull()
+		expect(facade.tags).not.toBeNull()
+		expect(facade.tags_engine).not.toBeNull()
 	})
 
 	/**
@@ -1011,11 +1005,11 @@ describe('теги в multiple', () => {
 	 * проверка по нему гасила подсказку у пустого поля.
 	 */
 	it('плейсхолдер гаснет только когда тег реально появился', () => {
-		const { owner, collection, facadeFor } = createSelect(['a', 'b'], {
+		const { owner, facade, facadeFor } = createSelect(['a', 'b'], {
 			placeholder: 'Выберите',
 		})
 
-		collection.mode = 'multiple'
+		facade.mode = 'multiple'
 
 		expect(owner.field.placeholder).toBe('Выберите')
 
@@ -1025,15 +1019,16 @@ describe('теги в multiple', () => {
 	})
 
 	it('выбор опции даёт тег с её текстом', () => {
-		const { collection, facadeFor } = createSelect(['a', 'b'])
+		const { facade, facadeFor } = createSelect(['a', 'b'])
 
-		collection.mode = 'multiple'
+		facade.mode = 'multiple'
 		facadeFor(0).choose()
 		facadeFor(1).choose()
 
-		expect([...tagsEngine(collection).extensions.batch.items].map((item) => item.text)).toEqual(
-			['A', 'B'],
-		)
+		expect([...tagsEngine(facade).extensions.batch.items].map((item) => item.text)).toEqual([
+			'A',
+			'B',
+		])
 	})
 
 	/**
@@ -1042,13 +1037,13 @@ describe('теги в multiple', () => {
 	 * с `trackBy`. Тег обновляется на месте, а не пересоздаётся.
 	 */
 	it('переименовали выбранную опцию — текст её тега сменился на месте', () => {
-		const { collection, items, facadeFor } = createSelect(['a', 'b'])
+		const { facade, items, facadeFor } = createSelect(['a', 'b'])
 
-		collection.mode = 'multiple'
+		facade.mode = 'multiple'
 		facadeFor(0).choose()
 		facadeFor(1).choose()
 
-		const batch = tagsEngine(collection).extensions.batch
+		const batch = tagsEngine(facade).extensions.batch
 		const tag = batch.items[0]
 
 		items[0].text = 'Другое'
@@ -1058,12 +1053,12 @@ describe('теги в multiple', () => {
 	})
 
 	it('переименование невыбранной опции теги не трогает', () => {
-		const { collection, items, facadeFor } = createSelect(['a', 'b'])
+		const { facade, items, facadeFor } = createSelect(['a', 'b'])
 
-		collection.mode = 'multiple'
+		facade.mode = 'multiple'
 		facadeFor(0).choose()
 
-		const engine = tagsEngine(collection)
+		const engine = tagsEngine(facade)
 		const changed = vi.fn()
 
 		engine.extensions.plain.events.on('change:items', changed)
@@ -1074,28 +1069,28 @@ describe('теги в multiple', () => {
 	})
 
 	it('снятие выбора убирает тег', () => {
-		const { collection, facadeFor } = createSelect(['a', 'b'])
+		const { facade, facadeFor } = createSelect(['a', 'b'])
 
-		collection.mode = 'multiple'
+		facade.mode = 'multiple'
 		facadeFor(0).choose()
 		facadeFor(0).choose() // повторный выбор в multiple снимает
 
-		expect([...tagsEngine(collection).extensions.batch.items]).toHaveLength(0)
+		expect([...tagsEngine(facade).extensions.batch.items]).toHaveLength(0)
 	})
 
 	it('закрытие тега снимает выбор с опции по value', () => {
-		const { collection, items, facadeFor } = createSelect(['a', 'b'])
+		const { facade, items, facadeFor } = createSelect(['a', 'b'])
 
-		collection.mode = 'multiple'
+		facade.mode = 'multiple'
 		facadeFor(0).choose()
 		facadeFor(1).choose()
 
-		const engine = tagsEngine(collection)
+		const engine = tagsEngine(facade)
 		const tag = [...engine.extensions.batch.items][0]
 
 		engine.extensions.tags.closeTag(tag)
 
-		expect(collection.selected).toEqual([items[1]])
+		expect(facade.selected).toEqual([items[1]])
 	})
 
 	/**
@@ -1104,13 +1099,13 @@ describe('теги в multiple', () => {
 	 * «выключенный тег не закрывается»).
 	 */
 	it('disabled поля гасит closable тегов', () => {
-		const { owner, collection, facadeFor } = createSelect(['a'])
+		const { owner, facade, facadeFor } = createSelect(['a'])
 
-		collection.mode = 'multiple'
+		facade.mode = 'multiple'
 		facadeFor(0).choose()
 		owner.disabled = true
 
-		const engine = tagsEngine(collection)
+		const engine = tagsEngine(facade)
 		const tag = [...engine.extensions.batch.items][0]
 		const registry = new TItemContextRegistry(engine.getCore())
 
@@ -1119,9 +1114,9 @@ describe('теги в multiple', () => {
 	})
 
 	it('field.value пуст, пока теги есть, — текст рисуют они', () => {
-		const { owner, collection, facadeFor } = createSelect(['a', 'b'])
+		const { owner, facade, facadeFor } = createSelect(['a', 'b'])
 
-		collection.mode = 'multiple'
+		facade.mode = 'multiple'
 		facadeFor(0).choose()
 
 		expect(owner.field.value).toBe('')
@@ -1138,51 +1133,51 @@ describe('теги в multiple', () => {
 	 */
 	describe.each(REMOVE_FIRST_OPTION)('опцию убрали из списка %s', (_name, removeFirst) => {
 		it('выбрана была она одна — тега нет, плейсхолдер вернулся, value её помнит', () => {
-			const { owner, collection, items, facadeFor } = createSelect(['a', 'b'], {
+			const { owner, facade, items, facadeFor } = createSelect(['a', 'b'], {
 				placeholder: 'Выберите',
 			})
 
-			collection.mode = 'multiple'
+			facade.mode = 'multiple'
 			facadeFor(0).choose()
 
-			removeFirst(collection, items)
+			removeFirst(facade, items)
 
-			expect(tagsEngine(collection).extensions.batch.items).toHaveLength(0)
+			expect(tagsEngine(facade).extensions.batch.items).toHaveLength(0)
 			expect(owner.field.placeholder).toBe('Выберите')
 			expect(owner.value).toEqual(['a'])
 		})
 
 		it('выбраны были две — остаётся тег оставшейся', () => {
-			const { owner, collection, items, facadeFor } = createSelect(['a', 'b'])
+			const { owner, facade, items, facadeFor } = createSelect(['a', 'b'])
 
-			collection.mode = 'multiple'
+			facade.mode = 'multiple'
 			facadeFor(0).choose()
 			facadeFor(1).choose()
 
-			removeFirst(collection, items)
+			removeFirst(facade, items)
 
-			expect(tagsEngine(collection).extensions.batch.items.map((item) => item.text)).toEqual([
+			expect(tagsEngine(facade).extensions.batch.items.map((item) => item.text)).toEqual([
 				'B',
 			])
 			expect(owner.value).toEqual(['a', 'b'])
 		})
 
 		it('опция вернулась в выдачу — вернулись и выбор, и её тег', () => {
-			const { collection, items, facadeFor } = createSelect(['a', 'b'])
+			const { facade, items, facadeFor } = createSelect(['a', 'b'])
 
-			collection.mode = 'multiple'
+			facade.mode = 'multiple'
 			facadeFor(0).choose()
 
-			removeFirst(collection, items)
-			patchOptions(collection, [
+			removeFirst(facade, items)
+			patchOptions(facade, [
 				{ value: 'a', text: 'A' },
 				{ value: 'b', text: 'B' },
 			])
 
-			expect(tagsEngine(collection).extensions.batch.items.map((item) => item.text)).toEqual([
+			expect(tagsEngine(facade).extensions.batch.items.map((item) => item.text)).toEqual([
 				'A',
 			])
-			expect(collection.selected.map((item) => item.value)).toEqual(['a'])
+			expect(facade.selected.map((item) => item.value)).toEqual(['a'])
 		})
 	})
 })
@@ -1466,41 +1461,41 @@ describe('placement — сторона панели', () => {
  */
 describe('смена mode на лету', () => {
 	it('multiple -> single при двух выбранных сбрасывает выбор целиком', () => {
-		const { owner, collection, items, facadeFor } = createSelect(['a', 'b'])
+		const { owner, facade, items, facadeFor } = createSelect(['a', 'b'])
 
-		collection.mode = 'multiple'
+		facade.mode = 'multiple'
 		facadeFor(0).choose()
 		facadeFor(1).choose()
 
-		collection.mode = 'single'
+		facade.mode = 'single'
 
-		expect(collection.selected).toEqual([])
+		expect(facade.selected).toEqual([])
 		expect(owner.value).toBeUndefined()
 		expect(owner.field.value).toBe('')
 		items.forEach((item) => expect(item.aria.get('aria-selected')).toBe('false'))
 	})
 
 	it('multiple -> single при одном выбранном тоже сбрасывает', () => {
-		const { owner, collection, facadeFor } = createSelect(['a', 'b'])
+		const { owner, facade, facadeFor } = createSelect(['a', 'b'])
 
-		collection.mode = 'multiple'
+		facade.mode = 'multiple'
 		facadeFor(0).choose()
 
-		collection.mode = 'single'
+		facade.mode = 'single'
 
-		expect(collection.selected).toEqual([])
+		expect(facade.selected).toEqual([])
 		expect(owner.value).toBeUndefined()
 	})
 
 	it('single -> multiple выбор оставляет', () => {
-		const { collection, facadeFor } = createSelect(['a', 'b'])
+		const { facade, facadeFor } = createSelect(['a', 'b'])
 
 		facadeFor(0).choose()
 
-		collection.mode = 'multiple'
+		facade.mode = 'multiple'
 
-		expect(collection.selected).toHaveLength(1)
-		expect(collection.selected[0].value).toBe('a')
+		expect(facade.selected).toHaveLength(1)
+		expect(facade.selected[0].value).toBe('a')
 	})
 
 	/**
@@ -1509,26 +1504,24 @@ describe('смена mode на лету', () => {
 	 * выбранного рядом с его тегом, пока не сменится выбор.
 	 */
 	it('single -> multiple с выбором — поле пусто, выбранное показывает тег', () => {
-		const { owner, collection, facadeFor } = createSelect(['a', 'b'])
+		const { owner, facade, facadeFor } = createSelect(['a', 'b'])
 
 		facadeFor(0).choose()
 
-		collection.mode = 'multiple'
+		facade.mode = 'multiple'
 
 		expect(owner.field.value).toBe('')
-		expect(tagsEngine(collection).extensions.batch.items.map((item) => item.text)).toEqual([
-			'A',
-		])
+		expect(tagsEngine(facade).extensions.batch.items.map((item) => item.text)).toEqual(['A'])
 	})
 
 	/** Смена режима — не выбор пользователя: поле пишется мягко. */
 	it('single -> multiple с набранным текстом — набранное на месте', () => {
-		const { owner, collection, facadeFor } = createSelect(['a', 'b'], { editable: true })
+		const { owner, facade, facadeFor } = createSelect(['a', 'b'], { editable: true })
 
 		facadeFor(0).choose()
 		owner.field.value = 'typed'
 
-		collection.mode = 'multiple'
+		facade.mode = 'multiple'
 
 		expect(owner.field.value).toBe('typed')
 	})
@@ -1539,16 +1532,16 @@ describe('смена mode на лету', () => {
 	 * или возвратом поля.
 	 */
 	it('после single -> multiple закрытие тега не оставляет в поле текст выбранного', () => {
-		const { owner, collection, facadeFor } = createSelect(['a', 'b'])
+		const { owner, facade, facadeFor } = createSelect(['a', 'b'])
 
 		facadeFor(0).choose()
-		collection.mode = 'multiple'
+		facade.mode = 'multiple'
 
-		const engine = tagsEngine(collection)
+		const engine = tagsEngine(facade)
 
 		engine.extensions.tags.closeTag(engine.extensions.batch.items[0])
 
-		expect(collection.selected).toEqual([])
+		expect(facade.selected).toEqual([])
 		expect(owner.field.value).toBe('')
 	})
 })

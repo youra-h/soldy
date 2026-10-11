@@ -24,12 +24,12 @@ import type { ListBoxProps } from './base.component'
 
 export function useSetupListBox(props: ListBoxProps) {
 	const {
-		contexts: [adapter, collection],
+		contexts: [adapter, collectionAdapter],
 		layer,
 	} = useAdapterContext((create, elevator) => {
 		const adapter = create(ListBoxDescriptor(), { ctrl: props.ctrl, props })
 
-		const collection = create(
+		const collectionAdapter = create(
 			ListBoxCollectionDescriptor(),
 			{
 				props,
@@ -46,16 +46,16 @@ export function useSetupListBox(props: ListBoxProps) {
 			// обёртку — при коммите, снятие — с уничтожением
 			.use(TVirtualCollectionExtension, { elevator })
 
-		return [adapter, collection] as const
+		return [adapter, collectionAdapter] as const
 	})
 
 	const owner = useAdapter(adapter, props)
-	const facade = useCollectionAdapter(collection, props, owner.forwardProps)
+	const collectionBinding = useCollectionAdapter(collectionAdapter, props, owner.forwardProps)
 
 	return {
 		...owner,
-		forwardProps: facade.forwardProps,
-		state: { ...owner.state, ...facade.state },
+		forwardProps: collectionBinding.forwardProps,
+		state: { ...owner.state, ...collectionBinding.state },
 		layer,
 	}
 }

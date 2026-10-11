@@ -20,12 +20,12 @@ import type { AccordionProps } from './base.component'
 
 export function useSetupAccordion(props: AccordionProps) {
 	const {
-		contexts: [adapter, collection],
+		contexts: [adapter, collectionAdapter],
 		layer,
 	} = useAdapterContext((create, elevator) => {
 		const adapter = create(AccordionDescriptor(), { ctrl: props.ctrl, props })
 
-		const collection = create(
+		const collectionAdapter = create(
 			AccordionCollectionDescriptor(),
 			{
 				props,
@@ -39,16 +39,16 @@ export function useSetupAccordion(props: AccordionProps) {
 			.use(TCollectionExtension, { elevator })
 			.use(TDragAndDropCollectionExtension, { elevator })
 
-		return [adapter, collection] as const
+		return [adapter, collectionAdapter] as const
 	})
 
 	const owner = useAdapter(adapter, props)
-	const facade = useCollectionAdapter(collection, props, owner.forwardProps)
+	const collectionBinding = useCollectionAdapter(collectionAdapter, props, owner.forwardProps)
 
 	return {
 		...owner,
-		forwardProps: facade.forwardProps,
-		state: { ...owner.state, ...facade.state },
+		forwardProps: collectionBinding.forwardProps,
+		state: { ...owner.state, ...collectionBinding.state },
 		layer,
 	}
 }

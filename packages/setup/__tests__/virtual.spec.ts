@@ -62,7 +62,7 @@ function wrap(elevator: TElevatorFactory, props: { enabled?: boolean } = {}) {
  */
 function assembleListBox(elevator: TElevatorFactory, engine?: TCollectionEngine<any, any>) {
 	const adapter = createAdapterContext(ListBoxDescriptor(), { props: {} })
-	const collection = createAdapterContext(
+	const collectionAdapter = createAdapterContext(
 		ListBoxCollectionDescriptor(),
 		{ props: { items: ITEMS }, options: { owner: adapter.instance, engine } },
 		{ bundle: adapter.bundle },
@@ -72,14 +72,14 @@ function assembleListBox(elevator: TElevatorFactory, engine?: TCollectionEngine<
 
 	return {
 		adapter,
-		draw: collection.instance.engine.extensions.draw,
+		draw: collectionAdapter.instance.engine.extensions.draw,
 		attach: () => {
 			adapter.attach()
-			collection.attach()
+			collectionAdapter.attach()
 		},
 		destroy: () => {
 			adapter.destroy()
-			collection.destroy()
+			collectionAdapter.destroy()
 		},
 	}
 }
@@ -138,7 +138,7 @@ describe('подхват окна', () => {
 		wrap(factory)
 
 		const adapter = createAdapterContext(TableDescriptor(), { props: {} })
-		const collection = createAdapterContext(
+		const collectionAdapter = createAdapterContext(
 			TableCollectionDescriptor(),
 			{
 				props: { items: ITEMS.map((data) => ({ data })) },
@@ -149,7 +149,7 @@ describe('подхват окна', () => {
 			.use(TCollectionExtension, { elevator: factory })
 			.use(TVirtualCollectionExtension, { elevator: factory })
 
-		expect(collection.instance.engine.extensions.draw.virtual).toBe(true)
+		expect(collectionAdapter.instance.engine.extensions.draw.virtual).toBe(true)
 		expect(adapter.bundle?.get(TVirtualPlugin)).toBeInstanceOf(TVirtualPlugin)
 	})
 
@@ -159,7 +159,7 @@ describe('подхват окна', () => {
 		wrap(factory)
 
 		const adapter = createAdapterContext(SelectDescriptor(), { props: {} })
-		const collection = createAdapterContext(
+		const collectionAdapter = createAdapterContext(
 			SelectCollectionDescriptor(),
 			{ props: { items: ITEMS }, options: { owner: adapter.instance } },
 			{ bundle: adapter.bundle },
@@ -167,8 +167,8 @@ describe('подхват окна', () => {
 			.use(TCollectionExtension, { elevator: factory })
 			.use(TVirtualCollectionExtension, { elevator: factory })
 
-		expect(collection.instance.engine.extensions.draw.virtual).toBe(true)
-		expect(collection.instance.drawn).toHaveLength(50)
+		expect(collectionAdapter.instance.engine.extensions.draw.virtual).toBe(true)
+		expect(collectionAdapter.instance.drawn).toHaveLength(50)
 		expect(adapter.bundle?.get(TVirtualPlugin)).toBeInstanceOf(TVirtualPlugin)
 	})
 

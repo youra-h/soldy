@@ -23,12 +23,12 @@ import type { IRadioGroupItem, IRadioGroupItemProps, IRadioGroupProps } from '@s
 /** Группа с радио по значениям — так их регистрирует разметка, по одному. */
 function createGroup(values: string[], props: Partial<IRadioGroupProps> = {}) {
 	const owner = new TRadioGroup(props)
-	const collection = new TRadioGroupCollectionFacade({}, { owner })
+	const facade = new TRadioGroupCollectionFacade({}, { owner })
 	const items = values.map((value) => new TRadioGroupItem({ value }))
 
-	items.forEach((item) => collection.extensions.plain.push(item))
+	items.forEach((item) => facade.extensions.plain.push(item))
 
-	const registry = new TItemContextRegistry(collection.engine.getCore())
+	const registry = new TItemContextRegistry(facade.engine.getCore())
 
 	/** Фасад радио — через него разметка читает и пишет отметку. */
 	const facadeFor = (index: number) => {
@@ -39,7 +39,7 @@ function createGroup(values: string[], props: Partial<IRadioGroupProps> = {}) {
 		return facade
 	}
 
-	return { owner, collection, items, facadeFor }
+	return { owner, facade, items, facadeFor }
 }
 
 /** Значения отмеченных радио — по `data-selected`, как их видит тема. */
@@ -153,31 +153,31 @@ describe('свойства группы на радио', () => {
 	it('радио из движка, собранного снаружи, догоняются при привязке', () => {
 		const owner = new TRadioGroup({ view: 'halo', name: 'city' })
 		const engine = createEngine({ items: [{ value: 'a' }, { value: 'b' }] })
-		const collection = new TRadioGroupCollectionFacade({}, { owner, engine })
+		const facade = new TRadioGroupCollectionFacade({}, { owner, engine })
 
 		// Чужой движок фасад привязывает при принятии компонента — без адаптера
 		// это делает код
-		collection.bindOwner()
+		facade.bindOwner()
 
-		expect(collection.items.every((item) => item instanceof TRadioGroupItem)).toBe(true)
-		expect(collection.items.map((item) => item.view)).toEqual(['halo', 'halo'])
+		expect(facade.items.every((item) => item instanceof TRadioGroupItem)).toBe(true)
+		expect(facade.items.map((item) => item.view)).toEqual(['halo', 'halo'])
 	})
 })
 
 describe('value ↔ отмеченное радио', () => {
 	it('значение отмечает радио', () => {
-		const { owner, collection, items } = createGroup(['a', 'b', 'c'])
+		const { owner, facade, items } = createGroup(['a', 'b', 'c'])
 
 		owner.value = 'b'
 
-		expect(collection.activeItem).toBe(items[1])
+		expect(facade.activeItem).toBe(items[1])
 		expect(selectedValues(items)).toEqual(['b'])
 	})
 
 	it('отметка радио пишет значение', () => {
-		const { owner, collection, items } = createGroup(['a', 'b', 'c'])
+		const { owner, facade, items } = createGroup(['a', 'b', 'c'])
 
-		collection.activate(items[2])
+		facade.activate(items[2])
 
 		expect(owner.value).toBe('c')
 	})
@@ -201,48 +201,48 @@ describe('value ↔ отмеченное радио', () => {
 	 * — позже. Без повтора на `item:added` заданное значение терялось бы.
 	 */
 	it('значение, заданное до регистрации радио, отмечает его при добавлении', () => {
-		const { owner, collection, items } = createGroup(['a', 'b'], { value: 'b' })
+		const { owner, facade, items } = createGroup(['a', 'b'], { value: 'b' })
 
 		expect(owner.value).toBe('b')
-		expect(collection.activeItem).toBe(items[1])
+		expect(facade.activeItem).toBe(items[1])
 	})
 
 	it('значение без радио снимает отметку, но остаётся ждать своё радио', () => {
-		const { owner, collection } = createGroup(['a', 'b'], { value: 'a' })
+		const { owner, facade } = createGroup(['a', 'b'], { value: 'a' })
 
 		owner.value = 'z'
 
-		expect(collection.activeItem).toBeUndefined()
+		expect(facade.activeItem).toBeUndefined()
 		expect(owner.value).toBe('z')
 
 		const late = new TRadioGroupItem({ value: 'z' })
 
-		collection.extensions.plain.push(late)
+		facade.extensions.plain.push(late)
 
-		expect(collection.activeItem).toBe(late)
+		expect(facade.activeItem).toBe(late)
 	})
 
 	it('пустая строка и undefined — «не отмечено ничего»', () => {
-		const { owner, collection } = createGroup(['a', ''], { value: 'a' })
+		const { owner, facade } = createGroup(['a', ''], { value: 'a' })
 
 		owner.value = ''
 
-		expect(collection.activeItem).toBeUndefined()
+		expect(facade.activeItem).toBeUndefined()
 
 		owner.value = 'a'
 		owner.value = undefined
 
-		expect(collection.activeItem).toBeUndefined()
+		expect(facade.activeItem).toBeUndefined()
 	})
 
 	it('meta.active из данных пишет значение группы', () => {
 		const owner = new TRadioGroup()
-		const collection = new TRadioGroupCollectionFacade(
+		const facade = new TRadioGroupCollectionFacade(
 			{ items: [{ value: 'a' }, { value: 'b', _: { active: true } }] },
 			{ owner },
 		)
 
-		expect(collection.activeItem?.value).toBe('b')
+		expect(facade.activeItem?.value).toBe('b')
 		expect(owner.value).toBe('b')
 	})
 
@@ -273,16 +273,16 @@ describe('value ↔ отмеченное радио', () => {
 	 * размонтирование группы целиком, — и `v-model` стирался бы вместе с ним.
 	 */
 	it('удаление отмеченного радио снимает отметку, но не значение', () => {
-		const { owner, collection, items } = createGroup(['a', 'b', 'c'], { value: 'b' })
+		const { owner, facade, items } = createGroup(['a', 'b', 'c'], { value: 'b' })
 
-		collection.extensions.plain.remove(items[1])
+		facade.extensions.plain.remove(items[1])
 
-		expect(collection.activeItem).toBeUndefined()
+		expect(facade.activeItem).toBeUndefined()
 		expect(owner.value).toBe('b')
 
-		collection.extensions.plain.push(items[1])
+		facade.extensions.plain.push(items[1])
 
-		expect(collection.activeItem).toBe(items[1])
+		expect(facade.activeItem).toBe(items[1])
 	})
 
 	/**
@@ -292,16 +292,16 @@ describe('value ↔ отмеченное радио', () => {
 	 */
 	it('повторная запись состава сохраняет значение', () => {
 		const owner = new TRadioGroup({ value: 'b' })
-		const collection = new TRadioGroupCollectionFacade(
+		const facade = new TRadioGroupCollectionFacade(
 			{ items: [{ value: 'a' }, { value: 'b' }] },
 			{ owner },
 		)
 
-		collection.items = [{ value: 'a' }, { value: 'b' }]
+		facade.items = [{ value: 'a' }, { value: 'b' }]
 
 		expect(owner.value).toBe('b')
-		expect(collection.activeItem?.value).toBe('b')
-		expect(collection.activeItem).toBe(collection.items[1])
+		expect(facade.activeItem?.value).toBe('b')
+		expect(facade.activeItem).toBe(facade.items[1])
 	})
 
 	/** Снять отметку с радио, оставшегося в группе, — это выбор «ничего». */
@@ -315,35 +315,35 @@ describe('value ↔ отмеченное радио', () => {
 
 	/** Удаление соседа отметку не трогает — активация не ищет замену сама. */
 	it('удаление неотмеченного радио значение не меняет', () => {
-		const { owner, collection, items } = createGroup(['a', 'b', 'c'], { value: 'b' })
+		const { owner, facade, items } = createGroup(['a', 'b', 'c'], { value: 'b' })
 
-		collection.extensions.plain.remove(items[0])
+		facade.extensions.plain.remove(items[0])
 
-		expect(collection.activeItem).toBe(items[1])
+		expect(facade.activeItem).toBe(items[1])
 		expect(owner.value).toBe('b')
 	})
 
 	/** Отмечать выключенное из кода — право приложения, как `select` у списка. */
 	it('значение отмечает и выключенное радио', () => {
-		const { owner, collection, items } = createGroup(['a', 'b'])
+		const { owner, facade, items } = createGroup(['a', 'b'])
 
 		items[1].disabled = true
 		owner.value = 'b'
 
-		expect(collection.activeItem).toBe(items[1])
+		expect(facade.activeItem).toBe(items[1])
 	})
 
 	/** Синхронизация в обе стороны — самое место для бесконечного цикла. */
 	it('не зацикливается: одна смена — одно change:value', () => {
-		const { owner, collection, items } = createGroup(['a', 'b'])
+		const { owner, facade, items } = createGroup(['a', 'b'])
 		const onValue = vi.fn()
 
 		owner.events.on('change:value', onValue)
-		collection.activate(items[1])
+		facade.activate(items[1])
 		owner.value = 'a'
 
 		expect(onValue).toHaveBeenCalledTimes(2)
-		expect(collection.activeItem).toBe(items[0])
+		expect(facade.activeItem).toBe(items[0])
 	})
 
 	it('data-selected — только у отмеченного радио, у остальных "false"', () => {

@@ -21,12 +21,12 @@ import type { RadioGroupProps } from './base.component'
 
 export function useSetupRadioGroup(props: RadioGroupProps) {
 	const {
-		contexts: [adapter, collection],
+		contexts: [adapter, collectionAdapter],
 		layer,
 	} = useAdapterContext((create, elevator) => {
 		const adapter = create(RadioGroupDescriptor(), { ctrl: props.ctrl, props })
 
-		const collection = create(
+		const collectionAdapter = create(
 			RadioGroupCollectionDescriptor(),
 			{
 				props,
@@ -38,16 +38,16 @@ export function useSetupRadioGroup(props: RadioGroupProps) {
 			{ bundle: adapter.bundle },
 		).use(TCollectionExtension, { elevator })
 
-		return [adapter, collection] as const
+		return [adapter, collectionAdapter] as const
 	})
 
 	const owner = useAdapter(adapter, props)
-	const facade = useCollectionAdapter(collection, props, owner.forwardProps)
+	const collectionBinding = useCollectionAdapter(collectionAdapter, props, owner.forwardProps)
 
 	return {
 		...owner,
-		forwardProps: facade.forwardProps,
-		state: { ...owner.state, ...facade.state },
+		forwardProps: collectionBinding.forwardProps,
+		state: { ...owner.state, ...collectionBinding.state },
 		layer,
 	}
 }

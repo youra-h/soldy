@@ -106,12 +106,12 @@ describe('TComponentView · набор на компоненте', () => {
 
 describe('Выбор → data-selected', () => {
 	const createSelect = (values: string[]) => {
-		const collection = new TSelectCollectionFacade({}, { owner: new TSelect() })
+		const facade = new TSelectCollectionFacade({}, { owner: new TSelect() })
 		const items = values.map((value) => new TSelectItem({ value, text: value }))
 
-		collection.items = items as ISelectItem[]
+		facade.items = items as ISelectItem[]
 
-		return { collection, items }
+		return { facade, items }
 	}
 
 	it('проставляется всем элементам сразу при добавлении', () => {
@@ -121,9 +121,9 @@ describe('Выбор → data-selected', () => {
 	})
 
 	it('следует за выбором', () => {
-		const { collection, items } = createSelect(['a', 'b'])
+		const { facade, items } = createSelect(['a', 'b'])
 
-		collection.engine.extensions.selection.select(items[1])
+		facade.engine.extensions.selection.select(items[1])
 
 		expect(items[0].dataset.get('selected')).toBe('false')
 		expect(items[1].dataset.get('selected')).toBe('true')
@@ -135,9 +135,9 @@ describe('Выбор → data-selected', () => {
 	 * своя, и связать их значило бы чинить доступность ценой вида.
 	 */
 	it('ARIA остаётся отдельным набором', () => {
-		const { collection, items } = createSelect(['a', 'b'])
+		const { facade, items } = createSelect(['a', 'b'])
 
-		collection.engine.extensions.selection.select(items[0])
+		facade.engine.extensions.selection.select(items[0])
 
 		expect(items[0].aria.get('aria-selected')).toBe('true')
 		expect(items[0].aria.has('data-selected')).toBe(false)
@@ -152,14 +152,14 @@ describe('Активность → data-selected', () => {
 	 * с темой.
 	 */
 	it('активный таб помечен, остальные — нет', () => {
-		const collection = new TTabsCollectionFacade({}, { owner: new TTabs() })
+		const facade = new TTabsCollectionFacade({}, { owner: new TTabs() })
 		const items = [
 			new TTabsItem({ value: 'a', text: 'A' }),
 			new TTabsItem({ value: 'b', text: 'B' }),
 		]
 
-		collection.items = items as ITabsItem[]
-		collection.engine.extensions.activation.activate(items[1])
+		facade.items = items as ITabsItem[]
+		facade.engine.extensions.activation.activate(items[1])
 
 		expect(items.map((item) => item.dataset.get('selected'))).toEqual(['false', 'true'])
 	})

@@ -118,14 +118,14 @@ function accept(contexts: readonly IAdapterContext[]): () => void {
  */
 function mountOver<TFacade extends TCollectionOwner, TPlugins extends IPluginsContract>(
 	own: IComponentDescriptor,
-	collection: IComponentDescriptor<TContextContract<TFacade, TPlugins>>,
+	collectionDescriptor: IComponentDescriptor<TContextContract<TFacade, TPlugins>>,
 	ctrl: object,
 	engine: TCollectionEngine<any, any>,
 ): () => void {
 	const { factory: elevator } = createElevatorFactory()
 	const adapter = createAdapterContext(own, { ctrl })
 	const facade = createAdapterContext(
-		collection,
+		collectionDescriptor,
 		{ props: {}, options: { owner: adapter.instance, engine } },
 		{ bundle: adapter.bundle },
 	).use(TCollectionExtension, { elevator })

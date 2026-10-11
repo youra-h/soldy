@@ -71,13 +71,13 @@ describe('ядро id в разметку не пишет', () => {
 
 	it('Select: поле, список и опции', () => {
 		const owner = new TSelect()
-		const collection = new TSelectCollectionFacade({}, { owner })
+		const facade = new TSelectCollectionFacade({}, { owner })
 
-		collection.items = [new TSelectItem({ value: 'a', text: 'A' })] as ISelectItem[]
+		facade.items = [new TSelectItem({ value: 'a', text: 'A' })] as ISelectItem[]
 
 		expect(idAttributes(owner.field.aria.toObject())).toEqual([])
 		expect(idAttributes(owner.listAria.toObject())).toEqual([])
-		expect(idAttributes(collection.items[0].aria.toObject())).toEqual([])
+		expect(idAttributes(facade.items[0].aria.toObject())).toEqual([])
 	})
 
 	it('Tabs и Accordion: элементы из данных', () => {
@@ -94,20 +94,20 @@ describe('ядро id в разметку не пишет', () => {
 
 	it('Calendar: заголовки и сетки', () => {
 		const owner = new TCalendar({ months: ['2026-01-01', '2026-02-01'] })
-		const collection = new TCalendarCollectionFacade({}, { owner })
+		const facade = new TCalendarCollectionFacade({}, { owner })
 
-		for (const { titleAria, gridAria } of collection.grids) {
+		for (const { titleAria, gridAria } of facade.grids) {
 			expect(idAttributes(titleAria)).toEqual([])
 			expect(idAttributes(gridAria)).toEqual([])
 		}
 	})
 
 	it('RadioGroup: общий name радио раздаёт не ядро', () => {
-		const collection = new TRadioGroupCollectionFacade({}, { owner: new TRadioGroup() })
+		const facade = new TRadioGroupCollectionFacade({}, { owner: new TRadioGroup() })
 
-		collection.items = [new TRadioGroupItem({ value: 'a' })] as IRadioGroupItem[]
+		facade.items = [new TRadioGroupItem({ value: 'a' })] as IRadioGroupItem[]
 
-		expect(collection.items[0].name).toBe('')
+		expect(facade.items[0].name).toBe('')
 	})
 })
 

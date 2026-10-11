@@ -356,7 +356,7 @@ export class TEvented<TEvents extends Record<string, (...args: any) => any>> {
 	 *
 	 * @example
 	 * // Простой проброс нескольких событий без изменений:
-	 * this.events.relay(this._collection.events, [
+	 * this.events.relay(this._engine.events, [
 	 *   'item:beforeDelete',
 	 *   'item:deleted',
 	 *   'cleared',
@@ -364,13 +364,13 @@ export class TEvented<TEvents extends Record<string, (...args: any) => any>> {
 	 *
 	 * @example
 	 * // Переименование события:
-	 * this.events.relay(this._collection.events, [
+	 * this.events.relay(this._engine.events, [
 	 *   { from: 'item:added', as: 'tab:added' },
 	 * ])
 	 *
 	 * @example
 	 * // Хук then — подписаться на события нового элемента до его появления снаружи:
-	 * this.events.relay(this._collection.events, [
+	 * this.events.relay(this._engine.events, [
 	 *   {
 	 *     from: 'item:added',
 	 *     then: ({ item }) => {
@@ -383,7 +383,7 @@ export class TEvented<TEvents extends Record<string, (...args: any) => any>> {
 	 *
 	 * @example
 	 * // Комбинация: переименование + хук:
-	 * this.events.relay(this._collection.events, [
+	 * this.events.relay(this._engine.events, [
 	 *   {
 	 *     from: 'item:added',
 	 *     as: 'tab:added',

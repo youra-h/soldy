@@ -32,7 +32,7 @@ const items = (count: number): Item[] =>
 	Array.from({ length: count }, (_, index) => ({ uid: next++, name: `item ${index + 1}` }))
 
 /** Голая коллекция из `count` элементов с рисованием и подписчиком выборки. */
-function collection(count: number) {
+function engineKit(count: number) {
 	const engine = new TCollectionEngine<
 		Item,
 		{ plain: TPlainExtension<Item>; batch: TBatchExtension<Item>; draw: TDrawExtension<Item> }
@@ -74,7 +74,7 @@ const viewport = (top: number, bottom: number, step = STEP) => ({ top, bottom, s
 
 describe('без окна', () => {
 	it('рисуются все показанные, каждый на своём месте, ключ — uid', () => {
-		const { draw, batch } = collection(3)
+		const { draw, batch } = engineKit(3)
 
 		expect(draw.virtual).toBe(false)
 		expect(drawn(draw.drawn)).toEqual(['item 1@0', 'item 2@1', 'item 3@2'])
@@ -82,7 +82,7 @@ describe('без окна', () => {
 	})
 
 	it('отбор — рисуются только показанные, места — среди показанных', () => {
-		const { draw, driver, hidden } = collection(3)
+		const { draw, driver, hidden } = engineKit(3)
 
 		hidden.add('item 2')
 		driver.invalidateQuery()
@@ -91,7 +91,7 @@ describe('без окна', () => {
 	})
 
 	it('закрепление и замер ничего не меняют и событий не шлют', () => {
-		const { draw, batch } = collection(3)
+		const { draw, batch } = engineKit(3)
 		const changed = vi.fn()
 
 		draw.events.on('change:drawn', changed)
@@ -105,7 +105,7 @@ describe('без окна', () => {
 
 describe('окно', () => {
 	it('до замера — первые 50, без распорок', () => {
-		const { draw } = collection(80)
+		const { draw } = engineKit(80)
 
 		draw.useStrategy(new TWindowStrategy())
 
@@ -115,7 +115,7 @@ describe('окно', () => {
 	})
 
 	it('по замеру — видимые с запасом в 10, распорки высотой в пропущенные', () => {
-		const { draw, batch } = collection(100)
+		const { draw, batch } = engineKit(100)
 
 		draw.useStrategy(new TWindowStrategy())
 		// Видны места 40–49: с запасом — 30–59
@@ -132,7 +132,7 @@ describe('окно', () => {
 	})
 
 	it('распорке — место в составе: индекс элемента за ней, у хвостовой — число элементов', () => {
-		const { draw, driver, hidden } = collection(100)
+		const { draw, driver, hidden } = engineKit(100)
 
 		// Отбор спрятал первые десять: места среди показанных и в составе разошлись
 		for (let index = 1; index <= 10; index++) hidden.add(`item ${index}`)
@@ -149,7 +149,7 @@ describe('окно', () => {
 	})
 
 	it('полоса за краем списка — окно рисует ближайший элемент, а не одни распорки', () => {
-		const { draw } = collection(100)
+		const { draw } = engineKit(100)
 
 		draw.useStrategy(new TWindowStrategy())
 
@@ -163,7 +163,7 @@ describe('окно', () => {
 	})
 
 	it('закреплённый вне полосы — на своём месте между распорками', () => {
-		const { draw, batch } = collection(100)
+		const { draw, batch } = engineKit(100)
 
 		draw.useStrategy(new TWindowStrategy())
 		draw.notifyViewport(viewport(0, 200))
@@ -177,7 +177,7 @@ describe('окно', () => {
 	})
 
 	it('закрепление по причине: снимает только своя', () => {
-		const { draw, batch } = collection(100)
+		const { draw, batch } = engineKit(100)
 		const far = batch.items[80]
 
 		draw.useStrategy(new TWindowStrategy())
@@ -194,7 +194,7 @@ describe('окно', () => {
 	})
 
 	it('закреплённый, которого отбор спрятал, не рисуется', () => {
-		const { draw, batch, driver, hidden } = collection(100)
+		const { draw, batch, driver, hidden } = engineKit(100)
 
 		draw.useStrategy(new TWindowStrategy())
 		draw.notifyViewport(viewport(0, 200))
@@ -206,7 +206,7 @@ describe('окно', () => {
 	})
 
 	it('показанные сменились — окно по новым, места сдвинулись', () => {
-		const { draw, plain } = collection(100)
+		const { draw, plain } = engineKit(100)
 
 		draw.useStrategy(new TWindowStrategy())
 		draw.notifyViewport(viewport(0, 200))
@@ -216,7 +216,7 @@ describe('окно', () => {
 	})
 
 	it('окно читает показанные, а не подменяет их', () => {
-		const { draw, batch } = collection(100)
+		const { draw, batch } = engineKit(100)
 
 		draw.useStrategy(new TWindowStrategy())
 		draw.notifyViewport(viewport(0, 200))
@@ -225,7 +225,7 @@ describe('окно', () => {
 	})
 
 	it('нулевой шаг — не замер: окно прежнее', () => {
-		const { draw } = collection(100)
+		const { draw } = engineKit(100)
 
 		draw.useStrategy(new TWindowStrategy())
 		draw.notifyViewport(viewport(800, 1000))
@@ -238,7 +238,7 @@ describe('окно', () => {
 	})
 
 	it('окно сняли — снова все показанные', () => {
-		const { draw } = collection(100)
+		const { draw } = engineKit(100)
 
 		draw.useStrategy(new TWindowStrategy())
 		draw.notifyViewport(viewport(0, 200))
@@ -251,7 +251,7 @@ describe('окно', () => {
 
 describe('события — только на смену', () => {
 	it('change:virtual — на постановку и снятие окна, не на повтор', () => {
-		const { draw } = collection(3)
+		const { draw } = engineKit(3)
 		const strategy = new TWindowStrategy()
 		const changed = vi.fn()
 
@@ -265,7 +265,7 @@ describe('события — только на смену', () => {
 	})
 
 	it('change:drawn — не шлётся, когда окно рисует то же самое', () => {
-		const { draw } = collection(100)
+		const { draw } = engineKit(100)
 		const changed = vi.fn()
 
 		draw.useStrategy(new TWindowStrategy())
@@ -278,7 +278,7 @@ describe('события — только на смену', () => {
 	})
 
 	it('окно на коротком списке рисует то же, что без окна: change:drawn нет, change:virtual есть', () => {
-		const { draw } = collection(3)
+		const { draw } = engineKit(3)
 		const drawnChanged = vi.fn()
 		const virtualChanged = vi.fn()
 

@@ -136,6 +136,21 @@ export default defineConfigWithVueTs(
 		},
 	},
 
+	// Держите движок — `engine`, фасад — `facade`, контекст фасада —
+	// `collectionAdapter` (AGENTS.md, «Переменная — `engine`, а не `collection`»).
+	// `id-denylist` ловит имя у объявления, параметра, поля (и `#collection`),
+	// ключа объекта и члена типа и запись `x.collection = …`. Чтение чужого
+	// свойства, имена, где слово лишь часть (`TCollectionEngine`,
+	// `collectionAdapter`), строки и пути он пропускает. Что блок включён на
+	// путях пакетов, проверяет tools/eslint/__tests__.
+	{
+		name: 'soldy/no-collection-name',
+		files: ['**/*.{ts,mts,tsx,vue,svelte}'],
+		rules: {
+			'id-denylist': ['error', 'collection', '_collection'],
+		},
+	},
+
 	// В тестах ядра `any` запрещён в любой позиции: инвариантных карт событий в
 	// констрейнтах там нет, а любой `any` глушит проверку, ради которой тест.
 	{

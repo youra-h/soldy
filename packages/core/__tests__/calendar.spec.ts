@@ -33,17 +33,17 @@ afterEach(() => {
 /** Календарь и его коллекция — так их собирает адаптер. */
 function calendar(props: Partial<ICalendarProps> = {}, mode?: TCalendarMode) {
 	const owner = new TCalendar(props)
-	const collection = new TCalendarCollectionFacade(mode ? { mode } : {}, { owner })
-	const { view, selection, focus } = collection.extensions
+	const facade = new TCalendarCollectionFacade(mode ? { mode } : {}, { owner })
+	const { view, selection, focus } = facade.extensions
 
-	return { owner, collection, view, selection, focus }
+	return { owner, facade, view, selection, focus }
 }
 
 type TCalendarSetup = ReturnType<typeof calendar>
 
 /** День в коллекции по дате. */
-function day({ collection }: TCalendarSetup, date: string): ICalendarItem {
-	const item = collection.items.find((candidate) => candidate.date === date)
+function day({ facade }: TCalendarSetup, date: string): ICalendarItem {
+	const item = facade.items.find((candidate) => candidate.date === date)
 
 	if (!item) throw new Error(`${date} не в коллекции`)
 
@@ -51,8 +51,8 @@ function day({ collection }: TCalendarSetup, date: string): ICalendarItem {
 }
 
 /** Даты дней коллекции, у которых флаг `data-*` — `"true"`, по возрастанию. */
-function flagged({ collection }: TCalendarSetup, name: string): string[] {
-	return collection.items
+function flagged({ facade }: TCalendarSetup, name: string): string[] {
+	return facade.items
 		.filter((item) => item.dataset.get(name) === 'true')
 		.map((item) => item.date)
 		.sort(compareDates)
@@ -102,13 +102,13 @@ describe('без аргументов', () => {
 	it('коллекция: одна сетка на сегодняшнем месяце, в ней дни месяца, фокус — сегодня', () => {
 		const setup = calendar()
 
-		expect(setup.collection.mode).toBe('single')
-		expect(keys(setup.collection.grids)).toEqual(['2026-09-01'])
+		expect(setup.facade.mode).toBe('single')
+		expect(keys(setup.facade.grids)).toEqual(['2026-09-01'])
 		expect(setup.owner.months).toEqual(['2026-09-01'])
-		expect(setup.collection.items.map((item) => item.date)).toEqual(
+		expect(setup.facade.items.map((item) => item.date)).toEqual(
 			datesFrom('2026-09-01', '2026-09-30'),
 		)
-		expect(setup.collection.focusedDate).toBe('2026-09-26')
+		expect(setup.facade.focusedDate).toBe('2026-09-26')
 	})
 
 	it('день — Calendar.Item: корень td, дата и номер в цифрах локали', () => {
@@ -141,14 +141,14 @@ describe('вид: месяцы сеток', () => {
 	it('сетки независимы: январь рядом с сентябрём; в коллекции — дни обоих месяцев', () => {
 		const setup = calendar({ months: ['2026-01-15', '2026-09-01'] })
 
-		expect(keys(setup.collection.grids)).toEqual(['2026-01-01', '2026-09-01'])
-		expect(setup.collection.items).toHaveLength(31 + 30)
+		expect(keys(setup.facade.grids)).toEqual(['2026-01-01', '2026-09-01'])
+		expect(setup.facade.items).toHaveLength(31 + 30)
 		expect(setup.owner.months).toEqual(['2026-01-01', '2026-09-01'])
 	})
 
 	it('заполнители соседних месяцев — не элементы: у ячейки нет дня, она скрыта от скринридера', () => {
 		const setup = calendar({ months: ['2026-09-01'] })
-		const [grid] = setup.collection.grids
+		const [grid] = setup.facade.grids
 		const cells = grid.weeks.flat()
 		const fillers = cells.filter((cell) => cell.item === undefined)
 
@@ -168,7 +168,7 @@ describe('вид: месяцы сеток', () => {
 
 	it('при двух сетках подряд хвост одной — заполнитель, а день — в своей сетке', () => {
 		const setup = calendar({ months: ['2026-09-01', '2026-10-01'] })
-		const [september, october] = setup.collection.grids
+		const [september, october] = setup.facade.grids
 		const inSeptember = september.weeks.flat().find((cell) => cell.date === '2026-10-01')
 		const inOctober = october.weeks.flat().find((cell) => cell.date === '2026-10-01')
 
@@ -179,43 +179,43 @@ describe('вид: месяцы сеток', () => {
 	it('один месяц — одна сетка: повтор отбрасывается', () => {
 		const setup = calendar({ months: ['2026-09-01', '2026-09-20', '2026-10-01'] })
 
-		expect(keys(setup.collection.grids)).toEqual(['2026-09-01', '2026-10-01'])
+		expect(keys(setup.facade.grids)).toEqual(['2026-09-01', '2026-10-01'])
 	})
 
 	it('месяцы не заданы — сетка на месяце первой выбранной даты', () => {
-		expect(keys(calendar({ value: '2027-03-10' }).collection.grids)).toEqual(['2027-03-01'])
+		expect(keys(calendar({ value: '2027-03-10' }).facade.grids)).toEqual(['2027-03-01'])
 	})
 
 	it('листание сдвигает все сетки; оставшиеся на экране дни — те же экземпляры', () => {
 		const setup = calendar({ months: ['2026-09-01', '2026-10-01'] })
 		const october5 = day(setup, '2026-10-05')
 
-		setup.collection.extensions.view.showNext()
+		setup.facade.extensions.view.showNext()
 
-		expect(keys(setup.collection.grids)).toEqual(['2026-10-01', '2026-11-01'])
+		expect(keys(setup.facade.grids)).toEqual(['2026-10-01', '2026-11-01'])
 		expect(setup.owner.months).toEqual(['2026-10-01', '2026-11-01'])
 		expect(day(setup, '2026-10-05')).toBe(october5)
-		expect(setup.collection.items.some((item) => item.date === '2026-09-05')).toBe(false)
+		expect(setup.facade.items.some((item) => item.date === '2026-09-05')).toBe(false)
 	})
 
 	it('выбор месяца в сетке; месяц уже в другой сетке — сетки меняются местами', () => {
 		const setup = calendar({ months: ['2026-01-01', '2026-09-01'] })
 
 		setup.view.showMonth(1, '2026-05-17')
-		expect(keys(setup.collection.grids)).toEqual(['2026-01-01', '2026-05-01'])
+		expect(keys(setup.facade.grids)).toEqual(['2026-01-01', '2026-05-01'])
 
 		setup.view.showMonth(0, '2026-05-01')
-		expect(keys(setup.collection.grids)).toEqual(['2026-05-01', '2026-01-01'])
+		expect(keys(setup.facade.grids)).toEqual(['2026-05-01', '2026-01-01'])
 	})
 
 	it('запись months снаружи перестраивает сетки; тот же список — не смена', () => {
 		const setup = calendar()
 		const changes = vi.fn()
 
-		setup.collection.events.on('change:months', changes)
+		setup.facade.events.on('change:months', changes)
 		setup.owner.months = ['2026-01-01', '2026-02-01']
 
-		expect(keys(setup.collection.grids)).toEqual(['2026-01-01', '2026-02-01'])
+		expect(keys(setup.facade.grids)).toEqual(['2026-01-01', '2026-02-01'])
 		expect(changes).toHaveBeenCalledTimes(1)
 
 		setup.owner.months = ['2026-01-01', '2026-02-01']
@@ -225,14 +225,11 @@ describe('вид: месяцы сеток', () => {
 	it('сетки — role="grid"; имя от заголовка — из наборов места сетки', () => {
 		const setup = calendar({ months: ['2026-01-01', '2026-09-01'] })
 
-		expect(setup.collection.grids.map(({ gridAria }) => gridAria.role)).toEqual([
-			'grid',
-			'grid',
-		])
+		expect(setup.facade.grids.map(({ gridAria }) => gridAria.role)).toEqual(['grid', 'grid'])
 
 		// `id` заголовка и ссылку на него ядро не пишет — это плагин связок
 		// (`TCalendarIdsPlugin`). Вид раскладывает то, что записано в наборы места
-		expect(setup.collection.grids.map(({ titleAria }) => titleAria.id)).toEqual([
+		expect(setup.facade.grids.map(({ titleAria }) => titleAria.id)).toEqual([
 			undefined,
 			undefined,
 		])
@@ -242,7 +239,7 @@ describe('вид: месяцы сеток', () => {
 		sets.title.add('id', 'title-1')
 		sets.grid.add('aria-labelledby', 'title-1')
 
-		const [, second] = setup.collection.grids
+		const [, second] = setup.facade.grids
 
 		expect(second.titleAria).toEqual({ id: 'title-1', 'aria-live': 'polite' })
 		expect(second.gridAria['aria-labelledby']).toBe('title-1')
@@ -259,20 +256,20 @@ describe('вид: месяцы сеток', () => {
 
 		setup.view.showNext()
 
-		expect(setup.collection.grids[0].titleAria.id).toBe('title-0')
+		expect(setup.facade.grids[0].titleAria.id).toBe('title-0')
 	})
 
 	it('заголовок — вежливая живая область: смену месяца скринридер объявляет сам', () => {
 		const setup = calendar({ months: ['2026-01-01', '2026-09-01'] })
 
-		expect(setup.collection.grids.map(({ titleAria }) => titleAria['aria-live'])).toEqual([
+		expect(setup.facade.grids.map(({ titleAria }) => titleAria['aria-live'])).toEqual([
 			'polite',
 			'polite',
 		])
 	})
 
 	it('ячейка — дата, день и набор; у заполнителя ни текста, ни состояний', () => {
-		const [grid] = calendar({ months: ['2026-09-01'] }).collection.grids
+		const [grid] = calendar({ months: ['2026-09-01'] }).facade.grids
 		const cells = grid.weeks.flat()
 
 		expect(cells.every((cell) => Object.keys(cell).sort().join() === 'aria,date,item')).toBe(
@@ -284,13 +281,13 @@ describe('вид: месяцы сеток', () => {
 	it('aria-multiselectable — в multiple и range', () => {
 		const setup = calendar()
 
-		expect(setup.collection.grids[0].gridAria['aria-multiselectable']).toBeNull()
+		expect(setup.facade.grids[0].gridAria['aria-multiselectable']).toBeNull()
 
-		setup.collection.mode = 'multiple'
-		expect(setup.collection.grids[0].gridAria['aria-multiselectable']).toBe('true')
+		setup.facade.mode = 'multiple'
+		expect(setup.facade.grids[0].gridAria['aria-multiselectable']).toBe('true')
 
-		setup.collection.mode = 'range'
-		expect(setup.collection.grids[0].gridAria['aria-multiselectable']).toBe('true')
+		setup.facade.mode = 'range'
+		expect(setup.facade.grids[0].gridAria['aria-multiselectable']).toBe('true')
 	})
 })
 
@@ -298,16 +295,16 @@ describe('вид у границ', () => {
 	it('сетки не выходят за месяцы min и max; листать туда нельзя', () => {
 		const setup = calendar({ min: '2026-09-10', max: '2026-10-20', months: ['2026-01-01'] })
 
-		expect(keys(setup.collection.grids)).toEqual(['2026-09-01'])
-		expect(setup.collection.prevDisabled).toBe(true)
-		expect(setup.collection.nextDisabled).toBe(false)
+		expect(keys(setup.facade.grids)).toEqual(['2026-09-01'])
+		expect(setup.facade.prevDisabled).toBe(true)
+		expect(setup.facade.nextDisabled).toBe(false)
 
 		setup.view.showNext()
-		expect(keys(setup.collection.grids)).toEqual(['2026-10-01'])
-		expect(setup.collection.nextDisabled).toBe(true)
+		expect(keys(setup.facade.grids)).toEqual(['2026-10-01'])
+		expect(setup.facade.nextDisabled).toBe(true)
 
 		setup.view.showNext()
-		expect(keys(setup.collection.grids)).toEqual(['2026-10-01'])
+		expect(keys(setup.facade.grids)).toEqual(['2026-10-01'])
 	})
 
 	it('день вне границ выключен: ни фокуса, ни выбора; data-out-of-bounds', () => {
@@ -343,9 +340,9 @@ describe('вид у границ', () => {
 	it('выключенный календарь: дни выключены, остановки Tab нет, листать и выбирать нельзя', () => {
 		const setup = calendar({ disabled: true })
 
-		expect(setup.collection.items.every((item) => item.disabled)).toBe(true)
-		expect(setup.collection.items.some((item) => item.aria.has('tabindex'))).toBe(false)
-		expect(setup.collection.prevDisabled).toBe(true)
+		expect(setup.facade.items.every((item) => item.disabled)).toBe(true)
+		expect(setup.facade.items.some((item) => item.aria.has('tabindex'))).toBe(false)
+		expect(setup.facade.prevDisabled).toBe(true)
 		expect(setup.selection.chooseDate('2026-09-10')).toBe(false)
 
 		setup.owner.disabled = false
@@ -379,7 +376,7 @@ describe('кнопки листания', () => {
 		const setup = calendar()
 		const paging = vi.fn()
 
-		setup.collection.events.on('change:paging', paging)
+		setup.facade.events.on('change:paging', paging)
 		setup.view.showNext()
 
 		expect(paging).toHaveBeenCalledTimes(1)
@@ -389,11 +386,11 @@ describe('кнопки листания', () => {
 		const setup = calendar({ months: ['2026-09-01'] })
 		const paging = vi.fn()
 
-		setup.collection.events.on('change:paging', paging)
+		setup.facade.events.on('change:paging', paging)
 		setup.owner.min = '2026-09-10'
 
-		expect(keys(setup.collection.grids)).toEqual(['2026-09-01'])
-		expect(setup.collection.prevDisabled).toBe(true)
+		expect(keys(setup.facade.grids)).toEqual(['2026-09-01'])
+		expect(setup.facade.prevDisabled).toBe(true)
 		expect(paging).toHaveBeenCalledTimes(1)
 	})
 
@@ -401,10 +398,10 @@ describe('кнопки листания', () => {
 		const setup = calendar({ months: ['2026-09-01'] })
 		const paging = vi.fn()
 
-		setup.collection.events.on('change:paging', paging)
+		setup.facade.events.on('change:paging', paging)
 		setup.owner.min = '2026-11-10'
 
-		expect(keys(setup.collection.grids)).toEqual(['2026-11-01'])
+		expect(keys(setup.facade.grids)).toEqual(['2026-11-01'])
 		expect(paging).toHaveBeenCalledTimes(1)
 	})
 
@@ -412,16 +409,16 @@ describe('кнопки листания', () => {
 		const setup = calendar()
 		const paging = vi.fn()
 
-		setup.collection.events.on('change:paging', paging)
+		setup.facade.events.on('change:paging', paging)
 		setup.owner.disabled = true
 
 		expect(paging).toHaveBeenCalledTimes(1)
-		expect(setup.collection.prevDisabled).toBe(true)
-		expect(setup.collection.nextDisabled).toBe(true)
+		expect(setup.facade.prevDisabled).toBe(true)
+		expect(setup.facade.nextDisabled).toBe(true)
 
 		setup.owner.disabled = false
 		expect(paging).toHaveBeenCalledTimes(2)
-		expect(setup.collection.nextDisabled).toBe(false)
+		expect(setup.facade.nextDisabled).toBe(false)
 	})
 })
 
@@ -456,11 +453,11 @@ describe('выбор', () => {
 		setup.owner.events.on('change:value', ({ newValue }) => values.push(newValue))
 
 		setup.selection.chooseDate('2026-09-20')
-		expect(setup.collection.anchor).toBe('2026-09-20')
+		expect(setup.facade.anchor).toBe('2026-09-20')
 		expect(values).toEqual([])
 
 		setup.selection.chooseDate('2026-09-12')
-		expect(setup.collection.anchor).toBeUndefined()
+		expect(setup.facade.anchor).toBeUndefined()
 		expect(setup.owner.value).toEqual(['2026-09-12', '2026-09-20'])
 		expect(flagged(setup, 'range-start')).toEqual(['2026-09-12'])
 		expect(flagged(setup, 'range-end')).toEqual(['2026-09-20'])
@@ -537,15 +534,15 @@ describe('выбор', () => {
 	it('смена режима пишет значение в форме нового режима и снимает якорь', () => {
 		const setup = calendar({ value: ['2026-09-20', '2026-09-10'] }, 'multiple')
 
-		setup.collection.mode = 'single'
+		setup.facade.mode = 'single'
 		expect(setup.owner.value).toBe('2026-09-10')
 
-		setup.collection.mode = 'range'
+		setup.facade.mode = 'range'
 		setup.selection.chooseDate('2026-09-12')
-		expect(setup.collection.anchor).toBe('2026-09-12')
+		expect(setup.facade.anchor).toBe('2026-09-12')
 
-		setup.collection.mode = 'multiple'
-		expect(setup.collection.anchor).toBeUndefined()
+		setup.facade.mode = 'multiple'
+		expect(setup.facade.anchor).toBeUndefined()
 	})
 
 	it('choose: выбор пользователя — когда значение и якорь на месте', () => {
@@ -553,7 +550,7 @@ describe('выбор', () => {
 		const chosen: Array<[string, string | undefined, TCalendarValue]> = []
 
 		setup.selection.events.on('choose', (date) =>
-			chosen.push([date, setup.collection.anchor, setup.owner.value]),
+			chosen.push([date, setup.facade.anchor, setup.owner.value]),
 		)
 
 		setup.selection.chooseDate('2026-09-20')
@@ -569,7 +566,7 @@ describe('выбор', () => {
 		const setup = calendar({ unavailable: (date) => date === '2026-09-15' })
 		const chosen = vi.fn()
 
-		setup.collection.events.on('choose', chosen)
+		setup.facade.events.on('choose', chosen)
 
 		setup.selection.chooseDate('2026-09-15')
 		setup.owner.value = '2026-09-10'
@@ -583,9 +580,9 @@ describe('выбор', () => {
 		setup.selection.chooseDate('2026-09-10')
 		setup.owner.value = ['2026-11-03', '2026-11-08']
 
-		expect(setup.collection.anchor).toBeUndefined()
-		expect(setup.collection.focusedDate).toBe('2026-11-03')
-		expect(keys(setup.collection.grids)).toEqual(['2026-11-01'])
+		expect(setup.facade.anchor).toBeUndefined()
+		expect(setup.facade.focusedDate).toBe('2026-11-03')
+		expect(keys(setup.facade.grids)).toEqual(['2026-11-01'])
 		expect(flagged(setup, 'range-start')).toEqual(['2026-11-03'])
 	})
 })
@@ -593,7 +590,7 @@ describe('выбор', () => {
 describe('фокус', () => {
 	it('одна остановка Tab на все сетки — у дня с фокусом; прочие дни — -1', () => {
 		const setup = calendar({ months: ['2026-09-01', '2026-10-01'] })
-		const stops = setup.collection.items.filter((item) => item.aria.get('tabindex') === '0')
+		const stops = setup.facade.items.filter((item) => item.aria.get('tabindex') === '0')
 
 		expect(stops.map((item) => item.date)).toEqual(['2026-09-26'])
 		expect(day(setup, '2026-10-05').aria.get('tabindex')).toBe('-1')
@@ -603,13 +600,13 @@ describe('фокус', () => {
 		const setup = calendar({ value: '2026-01-31' })
 
 		setup.focus.shiftFocus('month', 1)
-		expect(setup.collection.focusedDate).toBe('2026-02-28')
+		expect(setup.facade.focusedDate).toBe('2026-02-28')
 
 		setup.focus.shiftFocus('week', 1)
-		expect(setup.collection.focusedDate).toBe('2026-03-07')
+		expect(setup.facade.focusedDate).toBe('2026-03-07')
 
 		setup.focus.shiftFocus('year', -1)
-		expect(setup.collection.focusedDate).toBe('2025-03-07')
+		expect(setup.facade.focusedDate).toBe('2025-03-07')
 	})
 
 	it('фокус ушёл из показанного месяца — сетки сдвигаются на столько же', () => {
@@ -617,8 +614,8 @@ describe('фокус', () => {
 
 		setup.focus.shiftFocus('day', 1)
 
-		expect(setup.collection.focusedDate).toBe('2026-02-01')
-		expect(keys(setup.collection.grids)).toEqual(['2026-02-01', '2026-10-01'])
+		expect(setup.facade.focusedDate).toBe('2026-02-01')
+		expect(keys(setup.facade.grids)).toEqual(['2026-02-01', '2026-10-01'])
 	})
 
 	it('фокус внутри показанных месяцев сетки не двигает', () => {
@@ -626,7 +623,7 @@ describe('фокус', () => {
 
 		setup.focus.focusDate('2026-10-15')
 
-		expect(keys(setup.collection.grids)).toEqual(['2026-09-01', '2026-10-01'])
+		expect(keys(setup.facade.grids)).toEqual(['2026-09-01', '2026-10-01'])
 	})
 
 	it('сдвиг вывел бы сетку за границы — месяц фокуса встаёт только в его сетку', () => {
@@ -638,7 +635,7 @@ describe('фокус', () => {
 
 		setup.focus.shiftFocus('day', 1)
 
-		expect(keys(setup.collection.grids)).toEqual(['2026-02-01', '2026-09-01'])
+		expect(keys(setup.facade.grids)).toEqual(['2026-02-01', '2026-09-01'])
 	})
 
 	it('листание: фокус едет со своей сеткой на месяц', () => {
@@ -646,39 +643,39 @@ describe('фокус', () => {
 
 		setup.view.showNext()
 
-		expect(setup.collection.focusedDate).toBe('2026-11-30')
+		expect(setup.facade.focusedDate).toBe('2026-11-30')
 	})
 
 	it('края недели — от первого дня недели', () => {
 		const setup = calendar({ value: '2026-09-16', weekStart: 1 })
 
 		setup.focus.moveFocusToEdge('start')
-		expect(setup.collection.focusedDate).toBe('2026-09-14')
+		expect(setup.facade.focusedDate).toBe('2026-09-14')
 
 		setup.focus.moveFocusToEdge('end')
-		expect(setup.collection.focusedDate).toBe('2026-09-20')
+		expect(setup.facade.focusedDate).toBe('2026-09-20')
 	})
 
 	it('за границей — граница', () => {
 		const setup = calendar({ min: '2026-09-10', max: '2026-09-20', value: '2026-09-15' })
 
 		setup.focus.shiftFocus('week', 2)
-		expect(setup.collection.focusedDate).toBe('2026-09-20')
+		expect(setup.facade.focusedDate).toBe('2026-09-20')
 
 		setup.focus.focusDate('2025-01-01')
-		expect(setup.collection.focusedDate).toBe('2026-09-10')
+		expect(setup.facade.focusedDate).toBe('2026-09-10')
 	})
 
 	it('resetFocus — на выбранную дату, и её месяц показан', () => {
 		const setup = calendar({ value: '2026-03-10' })
 
 		setup.focus.focusDate('2026-07-04')
-		expect(keys(setup.collection.grids)).toEqual(['2026-07-01'])
+		expect(keys(setup.facade.grids)).toEqual(['2026-07-01'])
 
 		setup.focus.resetFocus()
 
-		expect(setup.collection.focusedDate).toBe('2026-03-10')
-		expect(keys(setup.collection.grids)).toEqual(['2026-03-01'])
+		expect(setup.facade.focusedDate).toBe('2026-03-10')
+		expect(keys(setup.facade.grids)).toEqual(['2026-03-01'])
 	})
 
 	it('resetFocus без значения — на сегодня в границах; выключенный — не трогает', () => {
@@ -686,12 +683,12 @@ describe('фокус', () => {
 
 		setup.focus.focusDate('2026-08-04')
 		setup.focus.resetFocus()
-		expect(setup.collection.focusedDate).toBe('2026-09-20')
+		expect(setup.facade.focusedDate).toBe('2026-09-20')
 
 		setup.focus.focusDate('2026-08-04')
 		setup.owner.disabled = true
 		setup.focus.resetFocus()
-		expect(setup.collection.focusedDate).toBe('2026-08-04')
+		expect(setup.facade.focusedDate).toBe('2026-08-04')
 	})
 
 	it('адаптеры дня: selected и focused со своими событиями', () => {
@@ -817,7 +814,7 @@ describe('запомненное не отстаёт от данных', () => {
 		expect(setup.selection.isSelected('2026-09-10')).toBe(false)
 		expect(setup.selection.isSelected('2026-09-11')).toBe(true)
 
-		setup.collection.mode = 'range'
+		setup.facade.mode = 'range'
 		setup.selection.chooseDate('2026-09-05')
 		setup.selection.notifyHover('2026-09-07')
 		expect(setup.selection.isSelected('2026-09-06')).toBe(true)
@@ -834,11 +831,11 @@ describe('запомненное не отстаёт от данных', () => {
 
 	it('каркас сеток идёт за локалью и первым днём недели', () => {
 		const setup = calendar({ locale: 'en-US' })
-		const title = setup.collection.grids[0].title
+		const title = setup.facade.grids[0].title
 
 		setup.owner.locale = 'ru-RU'
-		expect(setup.collection.grids[0].title).not.toBe(title)
-		expect(setup.collection.grids[0].title).toBe(
+		expect(setup.facade.grids[0].title).not.toBe(title)
+		expect(setup.facade.grids[0].title).toBe(
 			new Intl.DateTimeFormat('ru-RU', {
 				month: 'long',
 				year: 'numeric',
@@ -848,10 +845,10 @@ describe('запомненное не отстаёт от данных', () => {
 
 		// Сентябрь 2026 начинается во вторник
 		setup.owner.weekStart = 2
-		expect(setup.collection.grids[0].weeks[0][0].date).toBe('2026-09-01')
+		expect(setup.facade.grids[0].weeks[0][0].date).toBe('2026-09-01')
 
 		setup.owner.weekStart = 0
-		expect(setup.collection.grids[0].weeks[0][0].date).toBe('2026-08-30')
+		expect(setup.facade.grids[0].weeks[0][0].date).toBe('2026-08-30')
 	})
 
 	it('имя дня идёт за локалью, «сегодня» — за поясом', () => {
@@ -880,10 +877,10 @@ describe('запомненное не отстаёт от данных', () => {
 		setup.owner.disabled = true
 		setup.view.showNext()
 
-		expect(setup.collection.items.every((item) => item.disabled)).toBe(true)
+		expect(setup.facade.items.every((item) => item.disabled)).toBe(true)
 
 		setup.owner.disabled = false
-		expect(setup.collection.items.some((item) => item.disabled)).toBe(false)
+		expect(setup.facade.items.some((item) => item.disabled)).toBe(false)
 	})
 })
 
