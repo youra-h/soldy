@@ -4,16 +4,27 @@
  * Своего языка и своих строк у компонента нет: их даёт ближайший
  * `LocaleProvider` выше по дереву. Сборка компонента отдаёт источник
  * провайдера своему набору плагинов (`bundle.locale`), а плагины языка и имён
- * пишут компоненту тег и имена. Компонентов со строками у Solid пока нет,
- * поэтому проверяется то, на чём они встанут: источник в наборе, смена на лету
- * без перемонтирования и вложенный провайдер. Без провайдера — английский.
+ * пишут компоненту тег и имена. Проверяется и сама проводка — источник в
+ * наборе, — и строка на разметке: имя кнопки очистки Input собирается из
+ * шаблона локали и имени поля. Смена локали доезжает до разметки без
+ * перемонтирования, вложенный провайдер даёт поддереву свою, без провайдера —
+ * английский. Параллельные серверные рендеры — `locale.server.spec.tsx`.
  */
 
 import { describe, it, expect } from 'vitest'
 import { createSignal } from 'solid-js'
-import { enUS, ruRU, zhCN, TPluginBundle, type ILocaleSource } from '@soldy-ui/plugins'
-import { Button, LocaleProvider } from '@soldy-ui/solid'
-import { mount } from './mount'
+import { TInput } from '@soldy-ui/core'
+import {
+	enUS,
+	extendLocale,
+	ruRU,
+	zhCN,
+	TPluginBundle,
+	type ILocaleSource,
+	type TLocale,
+} from '@soldy-ui/plugins'
+import { Button, Input, LocaleProvider } from '@soldy-ui/solid'
+import { find, mount } from './mount'
 
 /** Наборы, которые объявили кнопки, — по порядку объявления. */
 function bundles(): { list: TPluginBundle[]; collect: (bundle: unknown) => void } {
@@ -105,5 +116,68 @@ describe('LocaleProvider', () => {
 		expect(tagOf(outer.list[0].locale)).toBe(ruRU.tag)
 		expect(tagOf(inner.list[0].locale)).toBe(enUS.tag)
 		expect(inner.list[0].locale).not.toBe(outer.list[0].locale)
+	})
+})
+
+/**
+ * Строка на разметке — те же сценарии, что у React (`locale.spec.tsx`): имя
+ * кнопки очистки поля пишет плагин имён по шаблону локали (`field.clear`).
+ */
+describe('LocaleProvider · строки на разметке', () => {
+	/** Имя кнопки очистки поля внутри узла. */
+	const clearName = (scope: ParentNode) =>
+		find(scope, '.s-input__clear', HTMLButtonElement).getAttribute('aria-label')
+
+	/** Поле под провайдером локали — сигнала `locale`. */
+	const field = (locale: () => TLocale, ctrl?: TInput) => (
+		<LocaleProvider locale={locale()}>
+			<Input ctrl={ctrl} clearable name="Город" />
+		</LocaleProvider>
+	)
+
+	it('без провайдера — английские строки', () => {
+		const { container } = mount(() => <Input clearable name="Город" />)
+
+		expect(clearName(container)).toBe('Clear Город')
+	})
+
+	it('локаль провайдера — с первой отрисовки', () => {
+		const { container } = mount(() => field(() => ruRU))
+
+		expect(clearName(container)).toBe('Очистить Город')
+	})
+
+	it('смена локали — новое имя без пересборки: инстанс и узел те же', () => {
+		const ctrl = new TInput()
+		const [locale, setLocale] = createSignal<TLocale>(enUS)
+		const { container } = mount(() => field(locale, ctrl))
+		const button = find(container, '.s-input__clear', HTMLButtonElement)
+
+		setLocale(ruRU)
+
+		expect(find(container, '.s-input__clear', HTMLButtonElement)).toBe(button)
+		expect(button.getAttribute('aria-label')).toBe('Очистить Город')
+
+		setLocale(extendLocale(zhCN, { translations: { field: { clear: '清空{name}' } } }))
+
+		expect(button.getAttribute('aria-label')).toBe('清空Город')
+	})
+
+	it('вложенный провайдер даёт поддереву свою локаль', () => {
+		const { container } = mount(() => (
+			<LocaleProvider locale={ruRU}>
+				<div class="s-test-outer">
+					<Input clearable name="Город" />
+				</div>
+				<LocaleProvider locale={enUS}>
+					<div class="s-test-inner">
+						<Input clearable name="Город" />
+					</div>
+				</LocaleProvider>
+			</LocaleProvider>
+		))
+
+		expect(clearName(find(container, '.s-test-outer', HTMLElement))).toBe('Очистить Город')
+		expect(clearName(find(container, '.s-test-inner', HTMLElement))).toBe('Clear Город')
 	})
 })

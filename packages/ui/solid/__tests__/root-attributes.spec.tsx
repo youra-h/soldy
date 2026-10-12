@@ -11,6 +11,10 @@
  * `ref` адаптера — последним: `ref` потребителя из его атрибутов выбил бы
  * привязку корня к `TElementPlugin` — не было бы `element:ready`.
  *
+ * У поля атрибуты потребителя делятся, как у Vue: класс и стиль — корню,
+ * остальное — `<input>`, поверх его `aria`; туда же уходит и `ref`
+ * потребителя, а корень остаётся за адаптером.
+ *
  * Стиль Solid ставит объектом по свойству и не трогает того, что плагины
  * пишут в узел сами: сдвиг смахиваемой панели (`--s-swipe-offset`) переживает
  * смену раскладки и видимости.
@@ -21,19 +25,29 @@ import { createSignal, type Component, type JSX } from 'solid-js'
 import { TButton } from '@soldy-ui/core'
 import {
 	Button,
+	CheckBox,
 	ComponentView,
 	Frame,
 	Icon,
+	Input,
+	Label,
 	ProgressSpinner,
 	Skeleton,
+	Switch,
+	toControlAttrs,
+	toRootForward,
 	toRootLayout,
 	toRootProps,
 	type ButtonProps,
+	type CheckBoxProps,
 	type ComponentViewProps,
 	type FrameProps,
 	type IconProps,
+	type InputProps,
+	type LabelProps,
 	type ProgressSpinnerProps,
 	type SkeletonProps,
+	type SwitchProps,
 } from '@soldy-ui/solid'
 import { find, mount, nextFrame } from './mount'
 
@@ -42,6 +56,7 @@ type TProbeProps = ButtonProps &
 	ComponentViewProps &
 	FrameProps &
 	IconProps &
+	LabelProps &
 	ProgressSpinnerProps &
 	SkeletonProps
 
@@ -56,8 +71,23 @@ const COMPONENTS: ReadonlyArray<
 	['ComponentView', ComponentView, '.s-component-view', {}],
 	['Frame', Frame, '.s-frame', { visible: true }],
 	['Icon', Icon, '.s-icon', { tag: 'i' }],
+	['Label', Label, '.s-label', {}],
 	['ProgressSpinner', ProgressSpinner, '.s-progress-spinner', {}],
 	['Skeleton', Skeleton, '.s-skeleton', {}],
+]
+
+/** Общие пропсы полей в таблице. */
+type TFieldProbeProps = CheckBoxProps & SwitchProps & InputProps
+
+/**
+ * Поле и класс его корня. Атрибуты потребителя поле делит, как у Vue: класс и
+ * стиль — корню, остальное — `<input>`, поверх его набора `aria`. Корень
+ * остаётся за адаптером и у него.
+ */
+const FIELDS: ReadonlyArray<readonly [string, Component<TFieldProbeProps>, string]> = [
+	['CheckBox', CheckBox, '.s-check-box'],
+	['Switch', Switch, '.s-switch'],
+	['Input', Input, '.s-input'],
 ]
 
 describe('атрибут снаружи перекрывает набор ядра', () => {
@@ -110,6 +140,62 @@ describe('атрибут снаружи перекрывает набор ядр
 		ctrl.disabled = false
 
 		expect(root().getAttribute('tabindex')).toBe('-1')
+	})
+})
+
+describe('поле: атрибуты снаружи — <input>, поверх его aria', () => {
+	/** Имя полю пишет плагин доступного имени в `aria`, а `aria-label` снаружи — атрибут потребителя. */
+	it.each(FIELDS)('%s: aria-label потребителя — поверх имени поля', (_name, Probe, selector) => {
+		mount(() => <Probe aria_label="Ядро" aria-label="Своё" />)
+
+		const field = find(document, `${selector} input`, HTMLInputElement)
+
+		expect(field.getAttribute('aria-label')).toBe('Своё')
+		expect(find(document, selector, HTMLElement).hasAttribute('aria-label')).toBe(false)
+	})
+
+	it.each(FIELDS)('%s: класс и стиль — корню, а не полю', (_name, Probe, selector) => {
+		mount(() => <Probe class="mine" style={{ color: 'red' }} />)
+
+		const root = find(document, selector, HTMLElement)
+		const field = find(root, 'input', HTMLInputElement)
+
+		expect([...root.classList].at(-1)).toBe('mine')
+		expect(root.style.color).toBe('red')
+		expect(field.hasAttribute('class')).toBe(false)
+		expect(field.hasAttribute('style')).toBe(false)
+	})
+
+	/**
+	 * `ref` потребителя — тоже «остальное»: поведение, которое он вешает на
+	 * поле, встаёт на `<input>`. Привязка корня к `TElementPlugin` — за
+	 * адаптером: `element:ready` приходит с корнем.
+	 */
+	it.each(FIELDS)(
+		'%s: ref потребителя — на <input>, element:ready — с корнем',
+		async (_name, Probe, selector) => {
+			const consumer = vi.fn()
+			const onElementReady = vi.fn()
+
+			mount(() => <Probe ref={consumer} onElementReady={onElementReady} />)
+			await nextFrame()
+
+			const root = find(document, selector, HTMLElement)
+
+			expect(consumer.mock.calls.map(([node]) => node)).toEqual([
+				find(root, 'input', HTMLInputElement),
+			])
+			expect(onElementReady).toHaveBeenCalledTimes(1)
+			expect(onElementReady).toHaveBeenCalledWith(root)
+		},
+	)
+
+	it('делёж атрибутов: класс и стиль — корню, остальное — полю', () => {
+		const ref = () => {}
+		const forward = { class: 'mine', style: 'color: red', title: 'Подсказка', ref }
+
+		expect(toRootForward(forward)).toEqual({ class: 'mine', style: 'color: red' })
+		expect(toControlAttrs(forward)).toEqual({ title: 'Подсказка', ref })
 	})
 })
 

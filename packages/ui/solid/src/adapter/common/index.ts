@@ -4,6 +4,8 @@ export { createSolidAdapterContext } from './createSolidAdapterContext'
 export { renderSlot, hasSlot, resolveSlot, type TSlotContent } from './slots'
 export {
 	createRootProps,
+	toControlAttrs,
+	toRootForward,
 	toRootLayout,
 	toRootProps,
 	type TRootForward,

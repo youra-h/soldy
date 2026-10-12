@@ -200,7 +200,22 @@ ListBox, список Select, Popover и будущий Menu выглядят о
   разошёлся с узлом, а на сервере текст уходит атрибутом `value`. Сторожат
   `ui/svelte/__tests__/input.spec.ts` («набор не переписывает поле»),
   `checkable.spec.ts` и серверные `input.server.spec.ts` и
-  `checkable.server.spec.ts`.
+  `checkable.server.spec.ts`. У Solid своего поля тоже нет: `checked` он
+  пишет свойством узла сам, на смену значения ядра, а на сервере — атрибутом.
+  `indeterminate` — тоже свойством, но явным (`prop:indeterminate`): в типах
+  атрибутов `<input>` у JSX Solid его нет, и тип записи разметка берёт из
+  `JSX.ExplicitProperties`, которое дополняет адаптер
+  (`ui/solid/src/types.ts`); на сервер запись `prop:` не уходит. Текст — не
+  привязкой `value`: её Solid пишет в узел на каждую смену значения, с узлом
+  не сверяя, — набор возвращал бы узлу его же текст, и браузер переставал бы
+  проверять `minlength`. Каретку такая запись не двигает: HTML уводит её в
+  конец, только когда текст другой. Текст ставит свой `ref` поля — `fieldText`
+  (`ui/solid/src/adapter/runtime/`): эффект отрисовки пишет текст, только
+  когда он разошёлся с узлом, а на сервере текст уходит атрибутом `value`.
+  `ref` потребителя этот `ref` зовёт тем же узлом. Сторожат
+  `ui/solid/__tests__/input.spec.tsx` («набор не переписывает поле», «ввод в
+  середину текста — каретка на месте»), `checkable.spec.tsx` и серверные
+  `input.server.spec.tsx` и `checkable.server.spec.tsx`.
 - **Radio Group** — Radio Group pattern, вариант на нативных
   `input[type="radio"]`: `role="radiogroup"` на контейнере, имя группы —
   `aria_label` / `aria_labelledBy`. Радио собирает в группу общий `name`: его

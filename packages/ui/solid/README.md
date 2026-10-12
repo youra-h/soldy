@@ -11,11 +11,14 @@ markup — BEM classes `s-*` and `data-*` state attributes. Props, events and sl
 component descriptor, so they match the other five adapters; only the spelling is Solid's: events
 arrive as callback props (`element:ready` → `onElementReady`), and the default slot is `children`.
 
-> **Status:** the Solid adapter is in progress — Button, Icon, Frame, ProgressSpinner and Skeleton
-> are ported, the rest of the set is on its way. Icon renders the `tag` it is given: an element
-> name, a Solid component, or `roleIcon(role)` — the icon of that role from the registered icon
-> pack. Frame teleports its panel into `target` (`body` by default) on the client; with `contained`
-> it stays in place. `LocaleProvider` gives a subtree its language and library strings. See
+> **Status:** the Solid adapter is in progress — Button, Icon, Label, Frame, ProgressSpinner,
+> Skeleton and the fields Input, CheckBox and Switch are ported, the rest of the set is on its way.
+> Icon renders the `tag` it is given: an element name, a Solid component, or `roleIcon(role)` — the
+> icon of that role from the registered icon pack. Frame teleports its panel into `target` (`body`
+> by default) on the client; with `contained` it stays in place. A field gives its class and style
+> to the root and every other attribute, `ref` included, to its `<input>`. `Label` names the
+> control it wraps; `LocaleProvider` gives a subtree its language and library strings, such as the
+> name of the clear button of `Input`. See
 > [the adapter table](https://github.com/youra-h/soldy#components).
 
 ## Install
