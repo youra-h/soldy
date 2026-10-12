@@ -74,6 +74,13 @@ export interface IPreviewHost {
 	 */
 	readonly fixtures: readonly string[]
 	/**
+	 * Отдают ли слоты содержимому данные компонента — scope. `false` — нет: у
+	 * Web Components содержимое слота — свет элемента, и данных ему не передать.
+	 * Сценарии, которые проверяют scope (`TScenario.slotScope`), такой хост не
+	 * показывает. Не задан — scope у слотов есть.
+	 */
+	readonly slotScope?: boolean
+	/**
 	 * Смонтировать компонент в узел — в свой корень фреймворка.
 	 *
 	 * Синхронно: к возврату компонент в DOM. Кадр, к которому `TElementPlugin`
@@ -116,6 +123,7 @@ export function isPreviewHost(value: unknown): value is IPreviewHost {
 		isObject(value) &&
 		isKeys(value.previews) &&
 		isKeys(value.fixtures) &&
+		(value.slotScope === undefined || typeof value.slotScope === 'boolean') &&
 		typeof value.mount === 'function' &&
 		typeof value.setLocale === 'function' &&
 		(value.snippets === undefined || isSnippets(value.snippets))

@@ -1,14 +1,16 @@
 /**
  * setupComponentView — setup-слой ComponentView.
  *
- * Создаёт adapter-context и связывает его с кастомным элементом через
- * useAdapter. Хост нужен адаптеру, чтобы диспатчить CustomEvent; о пропах
- * ядра связка сообщает элементу колбэком onUpdate.
+ * Собирает компонент (`createWebcAdapterContext` — с локалью ближайшего
+ * `<so-locale-provider>` вверх от элемента) и связывает его с элементом через
+ * useAdapter. Хост нужен сборке, чтобы найти провайдер, и адаптеру, чтобы
+ * диспатчить CustomEvent; о пропах ядра связка сообщает элементу колбэком
+ * onUpdate.
  */
 
-import { createAdapterContext, ComponentViewDescriptor } from '@soldy-ui/setup'
+import { ComponentViewDescriptor } from '@soldy-ui/setup'
 import type { IComponentView } from '@soldy-ui/core'
-import { useAdapter } from '../../adapter'
+import { createWebcAdapterContext, useAdapter } from '../../adapter'
 import type { TBinding, TUpdateListener } from '../../adapter'
 
 export function setupComponentView(
@@ -17,7 +19,7 @@ export function setupComponentView(
 	props: Record<string, unknown>,
 	onUpdate: TUpdateListener,
 ): TBinding<IComponentView> {
-	const adapter = createAdapterContext(ComponentViewDescriptor(), { ctrl, props })
+	const adapter = createWebcAdapterContext(host, ComponentViewDescriptor(), { ctrl, props })
 
 	return useAdapter(adapter, host, onUpdate)
 }

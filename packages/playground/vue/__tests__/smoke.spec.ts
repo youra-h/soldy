@@ -690,6 +690,9 @@ const WIDTH_CODE: Record<string, { number: string; text: string; extension: stri
 	react: { number: 'width={40}', text: 'width="10%"', extension: 'tsx' },
 	svelte: { number: 'width={40}', text: 'width="10%"', extension: 'svelte' },
 	solid: { number: 'width={40}', text: 'width="10%"', extension: 'tsx' },
+	// Атрибутом, а тип пропа (`[Number, String]`) читает `40` числом, `10%` —
+	// строкой: в коде то же значение, что у компонента
+	webc: { number: 'width="40"', text: 'width="10%"', extension: 'html' },
 }
 
 /**

@@ -14,6 +14,7 @@ import { describe, it, expect, beforeAll, afterEach, vi } from 'vitest'
 import { mount, type DOMWrapper, type VueWrapper } from '@vue/test-utils'
 import { nextTick } from 'vue'
 import { LOCALES } from '@soldy-ui/playground-shared'
+import { TLocaleProviderElement } from '@soldy-ui/webc'
 import { router } from '../src/router'
 import App from '../src/App.vue'
 import PropControl from '../src/components/PropControl.vue'
@@ -161,6 +162,32 @@ describe('выбор «Язык» в шапке', () => {
 			row.findAll('.pg-col__stage .s-input__clear').map((button) => button.element),
 		).toEqual(buttons)
 		expect(names()).toEqual(['Очистить', 'Очистить'])
+	})
+
+	/**
+	 * У Web Components корень хоста — `<so-locale-provider>`, и язык шапки хост
+	 * пишет ему в источник. Компонентов со строками у адаптера ещё нет, поэтому
+	 * видна сама локаль корня — у обеих колонок, — а кнопка остаётся тем же
+	 * узлом: элемент не пересобран.
+	 */
+	it('доходит до корня хоста Web Components без перемонтирования', async () => {
+		const wrapper = await open('/webc/button')
+		const row = rowOf(wrapper, 'text')
+		const roots = row.findAll('.pg-col__stage so-locale-provider').map((root) => root.element)
+		const buttons = () =>
+			row.findAll('.pg-col__stage .s-button').map((button) => button.element)
+		const before = buttons()
+		const tags = () =>
+			roots.map((root) => (root instanceof TLocaleProviderElement ? root.locale.tag : null))
+
+		expect(roots).toHaveLength(2)
+		expect(before).toHaveLength(2)
+		expect(tags()).toEqual(['en-US', 'en-US'])
+
+		await choose(wrapper, labelOf('ru-RU'))
+
+		expect(buttons()).toEqual(before)
+		expect(tags()).toEqual(['ru-RU', 'ru-RU'])
 	})
 
 	it('переживает перезагрузку стенда', async () => {

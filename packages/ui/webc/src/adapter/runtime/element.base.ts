@@ -48,17 +48,30 @@
  *   classes              → классы, отдельными токенами
  *   aria, attrs, dataset → атрибуты (в `attrs` и `dir`: ядро уже перевело
  *                          'inherit' в null, а null снимает атрибут)
+ *   layout_styles и      → стиль, по свойствам: снизу выход плагина
+ *   стиль-выход            раскладки, поверх него стиль-выход компонента,
+ *                          имена — как в CSS (`--*`, `z-index`)
  *   rendered, visible    → `display: none` поверх инлайнового `display`
  *                          потребителя, как `v-show`; при показе — прежнее
  *                          значение. Элемент потребителя компонент убрать не
  *                          может, поэтому `rendered=false` прячет, как
  *                          `visible=false`: содержимое остаётся на месте, а
  *                          `TElementPlugin` связан с элементом всё время
- * Атрибуты и классы потребителя главнее того, что пишет ядро: по каждому имени
- * база помнит, что поставила сама, своё пишет и снимает, а чужое не трогает.
- * Кроме атрибутов-входов пропов (`disabled`): они и есть проп, и значение ядра
- * для них верно всегда. Память — у элемента, а не у связки: связка новая на
- * каждое подключение.
+ * Что у компонентов разное, называет описание корня (`TRootSpec`): имя
+ * стиль-выхода (`fractionStyle` у ProgressSpinner) и прячет ли видимость корень
+ * (у Skeleton нет — она убирает только заглушку).
+ *
+ * Атрибуты, классы и свойства стиля потребителя главнее того, что пишет ядро:
+ * по каждому имени база помнит, что поставила сама, своё пишет и снимает, а
+ * чужое не трогает — `style.width` потребителя главнее размера от плагина, а
+ * записанное в узел мимо раскладки переживает её смену. Кроме атрибутов-входов
+ * пропов (`disabled`): они и есть проп, и значение ядра для них верно всегда.
+ * Память — у элемента, а не у связки: связка новая на каждое подключение.
+ *
+ * Сборка — `createWebcAdapterContext` в setup-слое компонента: локаль
+ * поддерева она берёт у ближайшего `<so-locale-provider>` вверх от элемента.
+ * Связка заводится на подключение, поэтому элемент, переставленный под другой
+ * провайдер, собирается уже с его локалью.
  *
  * Свойства пропов (`el.text = 'Click'`) база вешает на прототип, кроме тех, что
  * у элемента уже есть по тегу: `disabled` кнопки остаётся нативным свойством,
@@ -80,7 +93,10 @@
  * Слоты распределяются по атрибуту `slot` — это нативная HTML-семантика, а
  * не выдумка soldy. Shadow DOM для этого не используется: тема раскладывается
  * глобальными BEM-классами и через теневую границу не проходит, поэтому свет
- * переносится вручную в точки, объявленные шаблоном.
+ * переносится вручную в точки, объявленные шаблоном. Содержимое слота, которого
+ * шаблон не объявил, не выводится: места для него в разметке компонента нет —
+ * так же его не рисуют остальные адаптеры, и так же теневое дерево не рисует
+ * свет, не попавший ни в один `<slot>`.
  */
 
 import type { IComponentView, IComponentViewProps } from '@soldy-ui/core'
@@ -89,6 +105,7 @@ import {
 	TSurface,
 	type IComponentDescriptor,
 	type TInstanceState,
+	type TStateSnapshot,
 } from '@soldy-ui/setup'
 import {
 	buildAttributeMap,
@@ -102,8 +119,11 @@ import {
 	applyAttributes,
 	applyClasses,
 	applyHidden,
+	applyStyles,
+	stylesOf,
 	type TAppliedAttributes,
 	type TAppliedClasses,
+	type TAppliedStyles,
 	type THiddenDisplay,
 } from './root-attributes'
 import type { TBinding, TUpdateListener } from './useAdapter'
@@ -178,12 +198,32 @@ export interface ISoldyElement<TInstance> {
 	attributeChangedCallback(name: string, old: string | null, value: string | null): void
 }
 
+/**
+ * Описание корня — то, что база раскладывает на элемент по-разному у разных
+ * компонентов. Нет его — корень как у всех: стиль только от плагина
+ * раскладки, видимость прячет корень.
+ *
+ * - `style` — имя стиль-выхода компонента в состоянии: стиль, который считает
+ *   ядро (`fractionStyle` у ProgressSpinner). Имя у каждого компонента своё,
+ *   поэтому его называет компонент, как наборы ядра во Vue называет разметка.
+ *   Ложится поверх выхода плагина раскладки;
+ * - `hides` — прячут ли `visible` и `rendered` корень, по умолчанию да. У
+ *   Skeleton нет: они убирают только заглушку, а содержимое в корне остаётся
+ *   на виду.
+ */
+export type TRootSpec = {
+	readonly style?: string
+	readonly hides?: boolean
+}
+
 /** Всё, чем элементы soldy отличаются друг от друга. */
 export interface ISoldyElementSpec<TInstance> {
 	/** Дескриптор компонента: по нему строятся атрибуты и свойства пропов. */
 	readonly descriptor: IComponentDescriptor
 	/** Шаблон: структура в корне и привязки пропов. */
 	readonly template: ITemplate<TInstance>
+	/** Описание корня — см. `TRootSpec`. */
+	readonly root?: TRootSpec
 	/** setup-слой компонента: связка над готовым инстансом или новым. */
 	setup(
 		host: HTMLElement,
@@ -219,6 +259,10 @@ export function SoldyElement<
 	const attributes: ReadonlyMap<string, IAttributeBinding> = buildAttributeMap(spec.descriptor)
 	/** Атрибуты-входы пропов: их значение в наборе ядра верно всегда. */
 	const inputs: ReadonlySet<string> = new Set(attributes.keys())
+	/** Имя стиль-выхода компонента (`TRootSpec.style`); нет — стиль только от плагина. */
+	const styleOutput = spec.root?.style
+	/** Прячет ли видимость корень (`TRootSpec.hides`). */
+	const hides = spec.root?.hides ?? true
 
 	class TSoldyElement extends Native implements ISoldyElement<TInstance> {
 		static get observedAttributes(): string[] {
@@ -257,6 +301,7 @@ export function SoldyElement<
 			attrs: new Map(),
 			dataset: new Map(),
 		}
+		private _appliedStyles: TAppliedStyles = new Map()
 		private _hiddenDisplay: THiddenDisplay = undefined
 
 		get state(): TInstanceState<TInstance> {
@@ -412,8 +457,8 @@ export function SoldyElement<
 			const light = groupBySlot(Array.from(this.childNodes))
 			const targets = spec.template.create(this)
 
-			// Слот по умолчанию объявлен у любого визуального слоя, но шаблон вправе
-			// не иметь других: тогда содержимое просто ляжет в корень.
+			// Слоты не наследуются: слота по умолчанию может не быть вовсе
+			// (ProgressSpinner), и узлом содержимого тогда остаётся корень
 			const fallback = targets[DEFAULT_SLOT]
 
 			this._content = fallback?.mode === 'append' ? fallback.node : this
@@ -421,16 +466,20 @@ export function SoldyElement<
 			this._distribute(light, targets)
 		}
 
-		/** Раскладывает свет по точкам, объявленным шаблоном. */
+		/**
+		 * Раскладывает свет по точкам, объявленным шаблоном. Слот, которого шаблон
+		 * не объявил, места в разметке не имеет, и его содержимое не выводится (см.
+		 * шапку): в корне оно оказалось бы там, где компонент его не ждёт, — текст
+		 * внутри кольца ProgressSpinner вошёл бы в узел с ролью `progressbar`.
+		 */
 		private _distribute(light: ReadonlyMap<string, ChildNode[]>, targets: TSlotTargets): void {
 			for (const [name, nodes] of light) {
 				const target = targets[name]
 
+				if (!target) continue
+
 				for (const node of nodes) {
-					if (!target) {
-						// Слот не объявлен шаблоном — содержимое не теряем, кладём в корень
-						this.appendChild(node)
-					} else if (target.mode === 'append') {
+					if (target.mode === 'append') {
 						target.node.appendChild(node)
 					} else {
 						target.node.parentNode?.insertBefore(node, target.node)
@@ -494,7 +543,24 @@ export function SoldyElement<
 				}
 			}
 
-			if (changed('rendered') || changed('visible')) {
+			// Снизу выход плагина раскладки, поверх — стиль-выход компонента. Их
+			// имена — не свойства инстанса, поэтому состояние читается по именам
+			if (changed('layout_styles') || (styleOutput !== undefined && changed(styleOutput))) {
+				const snapshot: TStateSnapshot = state
+
+				this._appliedStyles = applyStyles(
+					this,
+					stylesOf(
+						snapshot['layout_styles'],
+						styleOutput === undefined ? undefined : snapshot[styleOutput],
+					),
+					this._appliedStyles,
+				)
+			}
+
+			// Скрытие — поверх стиля: `display: none` не перекрывает ни раскладка,
+			// ни потребитель
+			if (hides && (changed('rendered') || changed('visible'))) {
 				this._hiddenDisplay = applyHidden(
 					this,
 					state.rendered === false || state.visible === false,

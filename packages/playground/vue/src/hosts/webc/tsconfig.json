@@ -1,0 +1,19 @@
+{
+  // Хост Web Components — своя программа типов, как у остальных хостов:
+  // оболочка его не импортирует (её `tsconfig.json` хост исключает), его грузит
+  // загрузчик ленивым glob. JSX у хоста нет — элементы строит код. Соседей
+  // хост, как и оболочка, читает исходниками.
+  "extends": "../../../../../../tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "types": [],
+    "paths": {
+      "@soldy-ui/core": ["../../../../../core/src"],
+      "@soldy-ui/plugins": ["../../../../../plugins/src"],
+      "@soldy-ui/setup": ["../../../../../setup/index.ts"],
+      "@soldy-ui/webc": ["../../../../../ui/webc/src/index.ts"],
+      "@soldy-ui/playground-shared": ["../../../../shared/src/index.ts"]
+    }
+  },
+  "include": ["./**/*"]
+}

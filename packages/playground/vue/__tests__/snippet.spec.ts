@@ -6,9 +6,9 @@
  * проект такой код падал бы или молча ничего не менял: у `TAccordion` нет
  * свойства `mode`.
  *
- * Код колонок пишет хост фреймворка — хосты Vue, React, Svelte и Solid,
- * полученные загрузчиком, как их получает оболочка. Случаи у них одни,
- * синтаксис свой.
+ * Код колонок пишет хост фреймворка — хосты Vue, React, Svelte, Solid и Web
+ * Components, полученные загрузчиком, как их получает оболочка. Случаи у них
+ * одни, синтаксис свой.
  */
 
 import { describe, it, expect } from 'vitest'
@@ -26,11 +26,12 @@ async function snippetsOf(framework: string): Promise<IPreviewSnippets> {
 	return snippets
 }
 
-const [vue, react, svelte, solid] = await Promise.all([
+const [vue, react, svelte, solid, webc] = await Promise.all([
 	snippetsOf('vue'),
 	snippetsOf('react'),
 	snippetsOf('svelte'),
 	snippetsOf('solid'),
+	snippetsOf('webc'),
 ])
 
 const { propSnippet, instanceSnippet } = vue
@@ -943,17 +944,233 @@ describe.each([
 })
 
 /**
+ * Код Web Components — те же случаи страницей HTML: модуль регистрирует
+ * элементы, компонент — элемент своего тега с `is`. Колонка пропа —
+ * разметка, значение уходит атрибутом, а чего атрибут не передаст, модуль
+ * пишет свойством. Колонка экземпляра — элемент строит код, и `ctrl`
+ * ставится до вставки.
+ */
+describe('Web Components: propSnippet', () => {
+	it('пример — страница: модуль регистрирует элементы, проп — атрибутом', () => {
+		expect(webc.propSnippet(entryOf('button'), 'view', 'plain')).toBe(
+			[
+				'<script type="module">',
+				"\timport '@soldy-ui/webc'",
+				'</script>',
+				'',
+				'<button is="so-button" view="plain"></button>',
+			].join('\n'),
+		)
+	})
+
+	/**
+	 * Атрибут элемент приводит по типу пропа: у Skeleton `width` —
+	 * `[Number, String]`, и `40` атрибут отдаёт числом, `10%` — строкой. Строку
+	 * `'40'` атрибут отдал бы числом — она уходит свойством.
+	 */
+	it('число и строка — атрибутом, если тип пропа прочтёт их тем же значением', () => {
+		const skeleton = entryOf('skeleton')
+
+		expect(webc.propSnippet(skeleton, 'width', 40)).toContain(
+			'<div is="so-skeleton" width="40"></div>',
+		)
+		expect(webc.propSnippet(skeleton, 'width', '10%')).toContain(
+			'<div is="so-skeleton" width="10%"></div>',
+		)
+		expect(webc.propSnippet(skeleton, 'width', '40')).toContain("\telement.width = '40'")
+	})
+
+	/** У флага значимо наличие атрибута: `false` атрибутом не задать, только свойством. */
+	it('флаг: true — атрибут без значения, false — свойством из модуля', () => {
+		const spinner = entryOf('progress-spinner')
+
+		expect(webc.propSnippet(spinner, 'indeterminate', true)).toContain(
+			'<span is="so-progress-spinner" indeterminate></span>',
+		)
+		expect(webc.propSnippet(spinner, 'indeterminate', false)).toBe(
+			[
+				'<script type="module">',
+				"\timport '@soldy-ui/webc'",
+				'',
+				'\tconst element = document.querySelector(\'span[is="so-progress-spinner"]\')',
+				'',
+				'\telement.indeterminate = false',
+				'</script>',
+				'',
+				'<span is="so-progress-spinner"></span>',
+			].join('\n'),
+		)
+	})
+
+	it('имя атрибута — как у элемента: camelCase пропа — через дефис', () => {
+		expect(webc.propSnippet(entryOf('button'), 'aria_labelledBy', 'caption')).toContain(
+			'<button is="so-button" aria_labelled-by="caption"></button>',
+		)
+	})
+
+	it('кавычка и & в значении атрибута — сущностями HTML', () => {
+		const button = entryOf('button')
+
+		expect(webc.propSnippet(button, 'text', 'Он сказал "да"')).toContain(
+			'<button is="so-button" text="Он сказал &quot;да&quot;"></button>',
+		)
+		expect(webc.propSnippet(button, 'text', 'A & B')).toContain(
+			'<button is="so-button" text="A &amp; B"></button>',
+		)
+	})
+
+	/** Тег — сам элемент: ни атрибута, ни свойства `tag` у него нет. */
+	it('тега в коде нет', () => {
+		expect(webc.propSnippet(entryOf('button'), 'tag', 'a')).toContain(
+			'<button is="so-button"></button>',
+		)
+	})
+
+	it('пресет — атрибутами рядом с самим пропом', () => {
+		const code = webc.propSnippet(entryOf('progress-spinner'), 'max', 50, { value: 40 })
+
+		expect(code).toContain('<span is="so-progress-spinner" value="40" max="50"></span>')
+	})
+})
+
+describe('Web Components: instanceSnippet', () => {
+	it('свойство компонента пишет в инстанс, ctrl — до вставки элемента', () => {
+		const code = webc.instanceSnippet(
+			entryOf('button'),
+			control({ name: 'view', scope: 'component' }),
+			'plain',
+		)
+
+		expect(code).toBe(
+			[
+				'<script type="module">',
+				"\timport '@soldy-ui/webc'",
+				"\timport { TButton } from '@soldy-ui/core'",
+				'',
+				'\tconst instance = new TButton()',
+				'',
+				"\tinstance.view = 'plain'",
+				'',
+				"\tconst element = document.createElement('button', { is: 'so-button' })",
+				'',
+				'\telement.ctrl = instance',
+				'\tdocument.body.append(element)',
+				'</script>',
+			].join('\n'),
+		)
+	})
+
+	it('свойство плагина пишет в плагин из bundle', () => {
+		const code = webc.instanceSnippet(
+			entryOf('button'),
+			control({
+				name: 'aria_label',
+				scope: 'plugin',
+				plugin: { ctor: TAriaPlugin, name: 'label' },
+			}),
+			'Закрыть',
+		)
+
+		expect(code).toContain('\tconst instance = new TButton()')
+		expect(code).toContain("\timport { TPluginBundle, TAriaPlugin } from '@soldy-ui/plugins'")
+		expect(code).toContain("\tinstance.events.on('bundle:create', (bundle) => {")
+		expect(code).toContain('\t\tconst plugin = bundle.get(TAriaPlugin)')
+		expect(code).toContain("\t\tif (plugin) plugin.label = 'Закрыть'")
+		expect(code).toContain('\telement.ctrl = instance')
+		expect(code).not.toContain('instance.aria_label')
+		expect(code).not.toContain('instance.label')
+	})
+
+	it('строка в коде — в одинарных кавычках, с экранированием', () => {
+		const code = webc.instanceSnippet(
+			entryOf('button'),
+			control({ name: 'text', scope: 'component' }),
+			"It's",
+		)
+
+		expect(code).toContain("instance.text = 'It\\'s'")
+	})
+
+	it('пресет — свойствами элемента рядом с ctrl', () => {
+		const code = webc.instanceSnippet(
+			entryOf('progress-spinner'),
+			control({ name: 'max', scope: 'component', preset: { value: 40 } }),
+			50,
+		)
+
+		expect(code).toContain('\tinstance.max = 50')
+		expect(code).toContain(
+			'\telement.ctrl = instance\n\telement.value = 40\n\tdocument.body.append(element)',
+		)
+	})
+
+	/** Коллекции адаптер ещё не перенёс: коллекционной строки у страницы хоста нет. */
+	it('коллекционной строки у хоста нет', () => {
+		expect(() =>
+			webc.instanceSnippet(
+				entryOf('button'),
+				control({ name: 'mode', scope: 'collection' }),
+				'multiple',
+			),
+		).toThrow('нет коллекций')
+	})
+})
+
+describe.each([
+	['стёртое текстовое поле', ''],
+	['стёртое числовое поле или снятый выбор', undefined],
+])('Web Components: пустое поле — %s', (_name, value) => {
+	const spinner = entryOf('progress-spinner')
+	const preset = { value: 40 }
+
+	it('propSnippet не пишет атрибут пропа, пресет на месте', () => {
+		const code = webc.propSnippet(spinner, 'max', value, preset)
+
+		expect(code).toContain('<span is="so-progress-spinner" value="40"></span>')
+		expect(code).not.toContain('max')
+	})
+
+	it('свойство компонента: экземпляр без присваивания', () => {
+		const code = webc.instanceSnippet(
+			spinner,
+			control({ name: 'max', scope: 'component', preset }),
+			value,
+		)
+
+		expect(code).toContain('\tconst instance = new TProgressSpinner()\n\n\tconst element')
+		expect(code).not.toContain('max')
+	})
+
+	it('свойство плагина: ни подписки на bundle, ни импорта плагина', () => {
+		const code = webc.instanceSnippet(
+			entryOf('button'),
+			control({
+				name: 'aria_label',
+				scope: 'plugin',
+				plugin: { ctor: TAriaPlugin, name: 'label' },
+			}),
+			value,
+		)
+
+		expect(code).not.toContain('bundle')
+		expect(code).not.toContain('@soldy-ui/plugins')
+		expect(code).toContain('\telement.ctrl = instance')
+	})
+})
+
+/**
  * Файл примера — синтаксиса хоста: «Открыть в VS Code» пишет код Vue в `.vue`,
- * код React и Solid — в `.tsx`, код Svelte — в `.svelte`, иначе редактор не
- * прочёл бы его как код.
+ * код React и Solid — в `.tsx`, код Svelte — в `.svelte`, код Web Components —
+ * в `.html`, иначе редактор не прочёл бы его как код.
  */
 describe('файл примера', () => {
 	it('расширение — синтаксиса хоста', () => {
-		expect([vue.extension, react.extension, svelte.extension, solid.extension]).toEqual([
-			'vue',
-			'tsx',
-			'svelte',
-			'tsx',
-		])
+		expect([
+			vue.extension,
+			react.extension,
+			svelte.extension,
+			solid.extension,
+			webc.extension,
+		]).toEqual(['vue', 'tsx', 'svelte', 'tsx', 'html'])
 	})
 })

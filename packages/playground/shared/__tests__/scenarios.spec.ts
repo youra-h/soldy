@@ -38,6 +38,18 @@ describe('реестр сценариев', () => {
 		expect(broken).toEqual([])
 	})
 
+	/**
+	 * Scope слоту отдаёт компонент, а в слот содержимое кладёт фикстура: у
+	 * превью слотов нет, и сценарий scope без фикстуры проверял бы пустоту.
+	 */
+	it('у сценария scope слота есть фикстура', () => {
+		const broken = SCENARIOS.filter(
+			(scenario) => scenario.slotScope && scenario.fixture === undefined,
+		).map((scenario) => scenario.id)
+
+		expect(broken).toEqual([])
+	})
+
 	it('тема каждого сценария известна', () => {
 		const known = new Set(TOPICS.map((topic) => topic.id))
 

@@ -249,5 +249,13 @@ describe('сторож модуля хоста', () => {
 		)
 		expect(isPreviewHost({ ...host, snippets: { ...snippets, extension: 'jsx' } })).toBe(false)
 		expect(isPreviewHost({ ...host, snippets: { ...snippets, extension: 'vue' } })).toBe(true)
+		expect(isPreviewHost({ ...host, snippets: { ...snippets, extension: 'html' } })).toBe(true)
+	})
+
+	/** Scope слотов — признак хоста: нет его — scope есть, задан — только флагом. */
+	it('scope слотов — флаг или ничего', () => {
+		expect(isPreviewHost({ ...host, slotScope: false })).toBe(true)
+		expect(isPreviewHost({ ...host, slotScope: true })).toBe(true)
+		expect(isPreviewHost({ ...host, slotScope: 'нет' })).toBe(false)
 	})
 })
