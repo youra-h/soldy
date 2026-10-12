@@ -11,9 +11,29 @@
  * такое случается при HMR и в тестах, где модуль подгружается несколько раз.
  */
 
-export function defineElement(name: string, ctor: CustomElementConstructor, tag: string): void {
+/** Регистрация с защитой от повторной — одна на оба вида элементов адаптера. */
+function register(
+	name: string,
+	ctor: CustomElementConstructor,
+	options?: ElementDefinitionOptions,
+): void {
 	if (typeof customElements === 'undefined') return
 	if (customElements.get(name)) return
 
-	customElements.define(name, ctor, { extends: tag })
+	customElements.define(name, ctor, options)
+}
+
+export function defineElement(name: string, ctor: CustomElementConstructor, tag: string): void {
+	register(name, ctor, { extends: tag })
+}
+
+/**
+ * Автономный элемент адаптера — механизм, а не компонент: провайдер локали
+ * `<so-locale-provider>`. Нативного поведения, которое стоило бы сохранить, у
+ * него нет, расширять нечего, и пишется он своим тегом, без `is`.
+ *
+ * В бочку адаптера не входит: компонентов так не регистрируют.
+ */
+export function defineAutonomousElement(name: string, ctor: CustomElementConstructor): void {
+	register(name, ctor)
 }

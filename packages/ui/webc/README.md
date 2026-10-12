@@ -27,10 +27,13 @@ does nothing where the browser supports them natively. With the polyfill an elem
 microtask after it is inserted, so right after `innerHTML` its `ctrl` is not there yet.
 
 Shadow DOM is not used — a theme styles global BEM classes, so light DOM is distributed by the
-`slot` attribute by hand.
+`slot` attribute by hand. Content for a slot the component does not have is not rendered, and slots
+get no scope: slot content is the element's own light DOM, so component data (the `text` of
+Button's `default` slot) cannot be passed into it.
 
-> **Status:** the Web Components adapter is in progress — Button is ported, the rest of the set is
-> on its way. See [the adapter table](https://github.com/youra-h/soldy#components).
+> **Status:** the Web Components adapter is in progress — Button, ProgressSpinner and Skeleton are
+> ported, the rest of the set is on its way. See
+> [the adapter table](https://github.com/youra-h/soldy#components).
 
 ## Install
 
@@ -51,7 +54,13 @@ import '@soldy-ui/webc'
 ```html
 <button is="so-button" text="Save" class="toolbar-action"><i slot="leading">★</i></button>
 <button is="so-button"><i slot="leading">★</i> Save</button>
+<span is="so-progress-spinner" value="40" aria_label="Uploading"></span>
+<div is="so-skeleton" width="160" height="16"><p>Loaded content</p></div>
 ```
+
+Attributes, classes and inline styles you write on an element win over what the component writes
+there itself: `style="width: 40px"` on a skeleton beats the width it computes, and a property a
+script sets on the element directly survives the component's updates.
 
 In a form it is simply a button:
 
@@ -77,6 +86,24 @@ if (el instanceof TButtonElement) {
   el.addEventListener('action:press', () => console.log('pressed'))
   document.body.append(el)
 }
+```
+
+The language of the strings the library renders itself and the locale for `Intl` come from the
+nearest `<so-locale-provider>` above an element; without one, components are in English. The
+provider has no box of its own (its children lay out as if it were not there), and its `locale` is a
+property — a locale is an object, so there is no attribute. Changing it updates the components in
+place, and a nested provider gives its subtree a language of its own:
+
+```html
+<so-locale-provider>
+  <button is="so-button" text="Save"></button>
+</so-locale-provider>
+
+<script type="module">
+  import { ruRU } from '@soldy-ui/plugins'
+
+  document.querySelector('so-locale-provider').locale = ruRU
+</script>
 ```
 
 The application plugs in a theme and an icon pack once, in its entry point:

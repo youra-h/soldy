@@ -9,7 +9,7 @@
  */
 
 import { describe, it, expect, beforeAll, beforeEach, vi } from 'vitest'
-import { mount, flushPromises } from '@vue/test-utils'
+import { mount, flushPromises, type VueWrapper } from '@vue/test-utils'
 import { nextTick } from 'vue'
 import { SCENARIOS as SCENARIO_REGISTRY, type TScenario } from '@soldy-ui/playground-shared'
 import { componentsOf, coversScenario, scenariosOf, testsPath, topicsOf } from '../src/catalog'
@@ -70,7 +70,8 @@ describe.each(IDS)('каталог сценариев %s', (framework) => {
 	 * Сценарий без фикстуры не падает — он молча пропадает со страницы:
 	 * каталог строится пересечением. Поэтому пропажа ловится здесь. Сценарий,
 	 * которому нужен компонент, ещё не перенесённый в адаптер (`requires`:
-	 * радио в подписи), сиротой не считается: хосту его нечем нарисовать.
+	 * радио в подписи), сиротой не считается: хосту его нечем нарисовать. Как и
+	 * сценарий scope слота у хоста, слоты которого scope не отдают (`slotScope`).
 	 */
 	it('у каждого сценария компонента хоста есть чем его нарисовать', () => {
 		const orphans = SCENARIO_REGISTRY.filter(
@@ -78,6 +79,22 @@ describe.each(IDS)('каталог сценариев %s', (framework) => {
 		).map((scenario) => scenario.id)
 
 		expect(orphans).toEqual([])
+	})
+
+	/**
+	 * Сценарий, который проверяет scope слота, — на странице хоста ровно тогда,
+	 * когда слоты хоста scope отдают: у Web Components его нет, у остальных он
+	 * есть, и сценарий там не пропадает молча.
+	 */
+	it('сценарии scope слота — только у хоста со scope', () => {
+		const scoped = SCENARIO_REGISTRY.filter(
+			(scenario) => scenario.slotScope && host.previews.includes(scenario.component),
+		)
+
+		expect(scoped.length).toBeGreaterThan(0)
+		expect(scoped.filter((scenario) => scenarios.includes(scenario)).length).toBe(
+			host.slotScope === false ? 0 : scoped.length,
+		)
 	})
 
 	it('нет фикстур, на которые не ссылается ни один сценарий', () => {
@@ -367,27 +384,64 @@ describe('меню страницы тестов', () => {
 		},
 	)
 
-	/** Проверял Button в Events — в Slots открывается тоже Button, а не первый в списке. */
-	it.each(IDS)(
+	/** Первые две темы фреймворка и компонент, общий для них, — если он есть. */
+	function firstTopics(framework: string) {
+		const scenarios = scenariosOf(hostOf(framework))
+		const [from, to] = topicsOf(scenarios)
+		const shared = componentsOf(scenarios, from.id).find((entry) =>
+			componentsOf(scenarios, to.id).some((candidate) => candidate.id === entry.id),
+		)
+
+		return { scenarios, from, to, shared }
+	}
+
+	/**
+	 * Открыть первую тему на компоненте `component` и нажать в меню вторую.
+	 * Меню снимает вызывающий — после проверки адреса.
+	 */
+	async function switchTopic(framework: string, component: string): Promise<VueWrapper> {
+		const { from } = firstTopics(framework)
+
+		await router.push(`/${framework}/tests/${from.id}/${component}`)
+
+		const wrapper = mount(TestsSidebar, mountOptions)
+
+		await rendered()
+		await lists(wrapper)[0].findAll('.s-list-box-item .s-button')[1].trigger('click')
+		await flushPromises()
+
+		return wrapper
+	}
+
+	/**
+	 * Проверял Button в Events — в Slots открывается тоже Button, а не первый в
+	 * списке. Проверка — у фреймворков, где первые две темы делят компонент:
+	 * у Web Components не делят (Button проверяется событиями, кольцо —
+	 * движением), и там смена темы открывает первый компонент новой (ниже).
+	 */
+	it.each(IDS.filter((framework) => firstTopics(framework).shared))(
 		'%s: смена темы оставляет компонент, если в новой теме он есть',
 		async (framework) => {
-			const scenarios = scenariosOf(hostOf(framework))
-			const [from, to] = topicsOf(scenarios)
-			const shared = componentsOf(scenarios, from.id).find((entry) =>
-				componentsOf(scenarios, to.id).some((candidate) => candidate.id === entry.id),
-			)
+			const { to, shared } = firstTopics(framework)
 
 			if (!shared) throw new Error('нет компонента, общего для двух тем')
 
-			await router.push(`/${framework}/tests/${from.id}/${shared.id}`)
-
-			const wrapper = mount(TestsSidebar, mountOptions)
-
-			await rendered()
-			await lists(wrapper)[0].findAll('.s-list-box-item .s-button')[1].trigger('click')
-			await flushPromises()
+			const wrapper = await switchTopic(framework, shared.id)
 
 			expect(router.currentRoute.value.path).toBe(`/${framework}/tests/${to.id}/${shared.id}`)
+
+			wrapper.unmount()
+		},
+	)
+
+	it.each(IDS.filter((framework) => !firstTopics(framework).shared))(
+		'%s: смена темы без общего компонента открывает первый компонент новой',
+		async (framework) => {
+			const { scenarios, from, to } = firstTopics(framework)
+			const [first] = componentsOf(scenarios, from.id)
+			const wrapper = await switchTopic(framework, first.id)
+
+			expect(router.currentRoute.value.path).toBe(testsPath(framework, scenarios, to.id))
 
 			wrapper.unmount()
 		},

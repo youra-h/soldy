@@ -28,8 +28,13 @@
     "vitest.config.ts",
     "vitest.browser.config.ts"
   ],
-  // Хосты React, Svelte и Solid — свои программы типов
+  // Хосты React, Svelte, Solid и Web Components — свои программы типов
   // (`src/hosts/<id>/tsconfig.json`: JSX React и Solid, `.svelte` проверяет
   // svelte-check). Оболочка их не импортирует: грузит загрузчик, ленивым glob.
-  "exclude": ["src/hosts/react/**", "src/hosts/svelte/**", "src/hosts/solid/**"]
+  "exclude": [
+    "src/hosts/react/**",
+    "src/hosts/svelte/**",
+    "src/hosts/solid/**",
+    "src/hosts/webc/**"
+  ]
 }

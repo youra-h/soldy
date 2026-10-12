@@ -29,6 +29,8 @@ export const BUTTON_SLOTS: readonly TScenario[] = [
 		description:
 			'leading, default и trailing лежат внутри кнопки в этом порядке; scope text слота default совпадает с пропом text и следует за его сменой',
 		fixture: 'button-slot-labels',
+		// Метка слота default печатает `text` из scope
+		slotScope: true,
 		props: { text: 'Метка' },
 		run: async (ctx) => {
 			const probe = (slot: string) =>
@@ -77,6 +79,8 @@ export const BUTTON_SLOTS: readonly TScenario[] = [
 		description:
 			'Кнопка с иконками в leading и trailing и длинной подписью в узкой, средней и широкой сцене',
 		fixture: 'button-slot-icons',
+		// Иконки в слотах — Icon: сценарий смотрит, как они уживаются с текстом
+		requires: ['icon'],
 		steps: [
 			`Сцена по кругу меняет ширину: ${WIDTHS.join(', ')} px, по ${HOLD / 1000} с на каждую`,
 			'Иконки не сжимаются и не наезжают на текст',

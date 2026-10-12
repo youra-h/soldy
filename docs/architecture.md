@@ -1083,7 +1083,8 @@ scope**, а спеллинг остаётся родным:
   BEM-классами и через теневую границу не проходит), поэтому свет
   распределяется вручную по атрибуту `slot`. Шаблон объявляет точки в
   `create()`; режим `before` позволяет обойтись без узлов-обёрток, которых нет
-  в остальных пяти адаптерах и которые сломали бы селекторы темы.
+  в остальных пяти адаптерах и которые сломали бы селекторы темы. Содержимое
+  слота, которого шаблон не объявил, не выводится — как в остальных адаптерах.
 
 Заодно у React появились первые тесты — без них conformance-гарантия на него
 не распространялась.
@@ -2095,7 +2096,7 @@ Svelte 5 на рунах. Структура зеркалит React, потом�
 
 ## Layer 8d: Web Components Adapter (`packages/ui/webc/src`)
 
-### ✅ IMPLEMENTED (Component / ComponentView / Stylable / Control / Textable / Button)
+### ✅ IMPLEMENTED (Component / ComponentView / Stylable / Control / Textable / Button / ProgressSpinner / Skeleton)
 
 Единственный таргет без фреймворка — и потому самый показательный тест
 архитектуры: ядро уже событийное, а `CustomEvent` это родная модель DOM.
@@ -2104,14 +2105,23 @@ Svelte 5 на рунах. Структура зеркалит React, потом�
   (`prop` = общий `underscorePropNaming`, `event` = имя как в ядре: двоеточия в
   CustomEvent легальны, так же как во Vue), `attributes` (карта «атрибут →
   проп» по поверхности + коэрция; `HOST_PROPS` — пропы, которых у элемента нет
-  ни атрибутом, ни свойством: `tag`).
+  ни атрибутом, ни свойством: `tag`); `createWebcAdapterContext` — сборка с
+  локалью ближайшего `<so-locale-provider>` вверх от хоста.
 - `adapter/runtime/` — `useAdapter` поверх связки
   `adapter.connect(WebcProfile)` (о пропе ядра она сообщает элементу колбэком
   `onUpdate`), `SoldyElement` (фабрика класса элемента поверх нативного класса
-  тега: жизненный цикл, см. «Решения по DOM»), `defineElement` (регистрация с
-  `extends`); в бочку не входит `root-attributes.ts`: `applyClasses`,
-  `applyAttributes` и `applyHidden` раскладывают на элемент классы, наборы ядра
-  и скрытие.
+  тега: жизненный цикл и корень по описанию `TRootSpec`, см. «Решения по
+  DOM»), `defineElement` (регистрация с `extends`); в бочку не входят
+  `root-attributes.ts`: `applyClasses`, `applyAttributes`, `applyStyles` со
+  `stylesOf` и `applyHidden` раскладывают на элемент классы, наборы ядра, стиль
+  и скрытие, — и `defineAutonomousElement` — регистрация провайдера локали без
+  `extends`.
+- `adapter/context/` — `TPlaceContext`, контекст места: значение, привязанное
+  к элементу, и поиск ближайшего вверх от узла — по `parentNode`, из теневого
+  корня к его хосту. Наружу пакета не выходит.
+- `adapter/locale/` — `TLocaleProviderElement`, `<so-locale-provider>`:
+  свой `TLocaleSource` поддереву контекстом места, свойство `locale` — в тот же
+  источник (см. «Решения по DOM»).
 - `adapter/template/` — `ITemplate`, `bind` (привязка пропа).
 - Вход пакета (`index.ts`) первым импортирует полифил `@ungap/custom-elements`
   (см. «Решения по DOM»).
@@ -2127,6 +2137,11 @@ export const TButtonElement = SoldyElement(HTMLButtonElement, {
 
 defineElement('so-button', TButtonElement, 'button')
 ```
+
+Что у компонентов на корне разное, называет описание корня (`root` в
+описании элемента): имя стиль-выхода — `{ style: 'fractionStyle' }` у
+ProgressSpinner — и прячет ли видимость корень — `{ hides: false }` у
+Skeleton.
 
 ### Чем Web Components проще Angular
 
@@ -2161,11 +2176,13 @@ export const buttonTemplate: ITemplate<IButton> = {
 привязки, чьи props изменились. Смена `text` не трогает классы.
 
 То, что ядро пишет на корень, — `classes`, наборы `aria`, `attrs` (в нём и
-`dir`, и нативный `disabled` кнопки) и `dataset`, скрытие по `rendered` и
+`dir`, и нативный `disabled` кнопки) и `dataset`, стиль (выход плагина
+раскладки `layout_styles` и стиль-выход компонента), скрытие по `rendered` и
 `visible` — раскладывает сама база: это одинаково у всех визуальных
-компонентов. Поэтому у шаблона ComponentView нет привязок, а компонент состоит
-только из дескриптора, setup и шаблона. Тег — не проп элемента: это
-`localName` элемента, и ядру его отдаёт база (см. «Решения по DOM»).
+компонентов. Поэтому у шаблона ComponentView нет привязок, у шаблона
+ProgressSpinner — тоже (только рисунок кольца), а компонент состоит только из
+дескриптора, setup и шаблона. Тег — не проп элемента: это `localName`
+элемента, и ядру его отдаёт база (см. «Решения по DOM»).
 
 **Два входных канала.** Атрибуты (строки, для HTML) и свойства (любые значения,
 для JS) — оба кормят `syncProps` адаптера, а тот — `inputs.delta` связки:
@@ -2251,12 +2268,37 @@ WebKit:
   состояние, ядро его уже приняло, и база ведёт такой атрибут по ядру, чей бы
   он ни был. Иначе `<button is="so-button" disabled>` после
   `ctrl.disabled = false` осталась бы выключенной.
+- **Стиль** — тем же правилом, по свойствам (`style.setProperty` /
+  `removeProperty`): снизу выход плагина раскладки, поверх стиль-выход
+  компонента, имена — как в CSS (`--*`, `z-index`). Свойство с чужим значением
+  — потребителя или плагина, записавшего его в узел сам, — база не трогает,
+  поэтому `style.width` потребителя главнее размера от плагина, а сдвиг
+  смахиваемой панели переживает смену раскладки, видимости и стиля
+  потребителя. Атрибут `style` целиком база не пишет: он стёр бы и то, и
+  другое.
 - **Скрытие** (`rendered` или `visible` равно `false`) — `display: none` на
   элементе поверх инлайнового `display` потребителя, как `v-show`; при показе
   база возвращает прежнее значение, если на элементе ещё стоит её `none`.
   Элемент потребителя компонент убрать не может, поэтому `rendered=false`
   прячет, как `visible=false`: содержимое на месте, `TElementPlugin` связан с
-  элементом всё время.
+  элементом всё время. У Skeleton (`hides: false`) видимость корень не прячет:
+  она убирает только заглушку, а содержимое в корне остаётся на виду.
+- **Локаль поддерева** — `<so-locale-provider>`, автономный элемент: своего
+  нативного поведения у него нет, расширять нечего. Контекста у платформы нет,
+  поэтому источник (`TLocaleSource`) провайдер отдаёт контекстом места своему
+  элементу, а сборка элемента soldy (`createWebcAdapterContext`) ищет
+  ближайший вверх от хоста — синхронно, при подключении. Событие-запрос
+  (context protocol) отвергнуто: ответ на всплывающее событие — тот же обход
+  вверх, только через диспетчер и подписку у каждого провайдера. Локаль —
+  свойство `locale`, только из кода (объект атрибутом не передать), в тот же
+  источник: компоненты не пересобираются. Записанное до регистрации элемента
+  подхватывается при апгрейде. Своей коробки у провайдера нет: теневой корень
+  несёт только `<slot>` и `:host { display: contents }`, и `display`
+  потребителя главнее (сторожит `browser/webc-locale-provider.spec.ts`
+  стенда). Регистрирует его модуль адаптера раньше компонентов:
+  разметка, написанная до загрузки модуля, оживает провайдером вперёд, и дети
+  собираются уже под ним. Связка заводится на подключение, поэтому элемент,
+  переставленный под другой провайдер, собирается с его локалью.
 - **Разбор документа.** Скрипт в `<head>` определяет элемент до разбора
   разметки, и парсер подключает элемент раньше, чем дописал его детей. Первое
   подключение, пока документ разбирается, поэтому ждёт `DOMContentLoaded`:
@@ -2283,7 +2325,10 @@ WebKit:
 снимается с элемента при первом подключении и раскладывается вручную — по
 атрибуту `slot` в точки, которые `create()` шаблона объявляет в самом элементе.
 Слот, в котором только пробелы и комментарии, не задан: пробелы вокруг
-`<i slot="leading">` на своей строке не глушат `text`.
+`<i slot="leading">` на своей строке не глушат `text`. Содержимое слота,
+которого шаблон не объявил, не выводится, как у остальных адаптеров: у
+ProgressSpinner слотов нет вовсе, и текст внутри элемента вошёл бы в узел с
+ролью `progressbar`.
 
 ### Известные ограничения
 
@@ -2301,16 +2346,18 @@ WebKit:
   элемент, созданный скриптом до конца разбора, получает `ctrl` после него.
 - `rendered=false` прячет элемент, а не удаляет: элемент написал потребитель.
 - Атрибут потребителя ровно с тем значением, что у ядра, база от своего не
-  отличит: сняв своё, она снимет и его. То же с классом.
+  отличит: сняв своё, она снимет и его. То же с классом и свойством стиля.
 - `ctrl`, присвоенный подключённому элементу, достаётся следующей связке — после
   перестановки: связка заводится на подключение, как и во всех остальных
   адаптерах.
 - Вне DOM элемент за ядром не следит: изменение заданного потребителем пропа
   через `ctrl`, сделанное в это время, следующая сборка перекроет последним
   значением, которое видел элемент.
+- У слотов нет scope: содержимое слота — свет элемента, и данных компонента
+  (`text` слота `default` у Button) ему не передать.
 - Элеватор не написан: коллекции не портированы, а плодить мёртвый код
-  (как вышло с React/Svelte/Solid) незачем. Для WC понадобится context protocol
-  через всплывающее событие-запрос.
+  (как вышло с React/Svelte/Solid) незачем. Встанет он на контекст места
+  (`adapter/context/`), как локаль поддерева.
 
 ---
 
@@ -2472,7 +2519,7 @@ Framework-agnostic dependency injection:
 | @soldy-ui/angular        | `TButtonComponent`, `TComponentViewComponent`, `TComponentComponent`, `TIconComponent`, `TProgressSpinnerComponent`, `TSkeletonComponent`, `setupXxx`, generated names and surfaces (`ButtonInputNames` / `ButtonOutputNames` / `TButtonSurface`, …), `createAngularAdapterContext`, `useAdapter`, `TInputValue` / `TOutputEmitter`, `TComponentBase`, `TRootSpec`, `SlotDirective`, `RoleIconDirective`, `LocaleProviderDirective`, `AngularProfile`, `AngularNaming`, `useInputs` / `useOutputs`, `TAngularElevator`, `AngularElevatorFactory`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | @soldy-ui/svelte         | `Button`, `ComponentView`, `setupXxx`, `useAdapter`, `SvelteProfile`, `SvelteNaming`, `TSvelteElevator`, `SvelteElevatorFactory`, prop types (`UseProps`, `UseDomProps`, `EventProps`, `SlotProps`, `TSnippetSlots`)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | @soldy-ui/solid          | `Button`, `ComponentView`, `Icon`, `Frame`, `ProgressSpinner`, `Skeleton`, `setupXxx`, `createSolidAdapterContext`, `useAdapter`, `LocaleProvider`, `Teleport`, `roleIcon`, `createRootProps`, `toRootProps`, `rootTag`, `SolidProfile`, `SolidNaming`, `TSolidElevator`, `SolidElevatorFactory`, `renderSlot`, `resolveSlot`, prop types (`UseProps`, `UseDomProps`, `EventProps`, `SlotProps`)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
-| @soldy-ui/webc           | `<button is="so-button">` (`TButtonElement`), `<div is="so-component-view">` (`TComponentViewElement`), `setupXxx`, templates (`buttonTemplate`, `componentViewTemplate`), `SoldyElement`, `defineElement`, `useAdapter`, `useAttributes`, `HOST_PROPS`, `bind`, `WebcProfile`, `WebcNaming`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| @soldy-ui/webc           | `<button is="so-button">` (`TButtonElement`), `<div is="so-component-view">` (`TComponentViewElement`), `<span is="so-progress-spinner">` (`TProgressSpinnerElement`), `<div is="so-skeleton">` (`TSkeletonElement`), `<so-locale-provider>` (`TLocaleProviderElement`), `setupXxx`, templates (`buttonTemplate`, `componentViewTemplate`, `progressSpinnerTemplate`, `skeletonTemplate`), `SoldyElement`, `TRootSpec`, `defineElement`, `createWebcAdapterContext`, `useAdapter`, `useAttributes`, `HOST_PROPS`, `bind`, `WebcProfile`, `WebcNaming`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 | @soldy-ui/theme-oren     | CSS: `dist/index.css` (built by `npm run build --workspace=@soldy-ui/theme-oren`); types: `index.d.ts` — theme values of the appearance registries; `@soldy-ui/theme-oren/setup` — the theme object for `useTheme` and `TTabsViewPlugin`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | @soldy-ui/icons-material | Icons as data (`TIconSource`), a named export per icon — every role of `ICON_ROLES` and more; the app registers them via `setIcons`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 

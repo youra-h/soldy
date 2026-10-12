@@ -60,13 +60,16 @@ function drawable(host: IPreviewHost, scenario: TScenario): boolean {
 }
 
 /**
- * Есть ли у хоста всё, что сценарий проверяет: свой компонент и те, что
- * фикстура рисует вместе с ним (`requires`). Чего-то нет — сценарий
- * нарисовать нечем, и хост его не показывает: это не забытая фикстура.
+ * Есть ли у хоста всё, что сценарий проверяет: свой компонент, те, что
+ * фикстура рисует вместе с ним (`requires`), и scope у слотов, если сценарий
+ * его проверяет (`slotScope`). Чего-то нет — сценарий нарисовать нечем, и хост
+ * его не показывает: это не забытая фикстура.
  */
 export function coversScenario(host: IPreviewHost, scenario: TScenario): boolean {
-	return [scenario.component, ...(scenario.requires ?? [])].every((id) =>
-		host.previews.includes(id),
+	return (
+		[scenario.component, ...(scenario.requires ?? [])].every((id) =>
+			host.previews.includes(id),
+		) && !(scenario.slotScope && host.slotScope === false)
 	)
 }
 

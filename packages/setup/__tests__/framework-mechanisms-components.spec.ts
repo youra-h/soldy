@@ -7,8 +7,8 @@ import { join, resolve, relative } from 'node:path'
  * (см. AGENTS.md). В `packages/ui/<fw>/src/components/**` не должно быть
  * внутренних механизмов реактивности/жизненного цикла фреймворка — они живут
  * только в `src/adapter/**`. Vue стережёт eslint-блок
- * `soldy/vue-components-no-framework`; здесь — Solid, Svelte и Angular,
- * для которых такого блока нет.
+ * `soldy/vue-components-no-framework`; здесь — Solid, Svelte, Angular и Web
+ * Components, для которых такого блока нет.
  *
  * Сканируется исходный текст файлов `src/components/**` каждого пакета на
  * слова из таблицы AGENTS.md. Ловится имя, а не смысл (как и в
@@ -26,6 +26,11 @@ import { join, resolve, relative } from 'node:path'
  * адаптера поверх `children`, — в компонентах их нет. У Angular локаль
  * обёртка берёт из DI (`inject`) в контексте инъекции, который даёт сборке
  * база компонента, — `inject` в компонентах нет.
+ *
+ * У Web Components фреймворка нет, и механизмов, которые компонент мог бы
+ * завести сам, тоже: сторож держит только сборку. Контекст собирает
+ * `createWebcAdapterContext` — с локалью ближайшего `<so-locale-provider>`
+ * вверх от элемента.
  */
 
 const ROOT = resolve(__dirname, '../../..')
@@ -146,6 +151,18 @@ const GUARDS: TGuard[] = [
 			}
 
 			return found
+		},
+	},
+	{
+		framework: 'Web Components',
+		dir: 'packages/ui/webc/src/components',
+		extensions: /\.ts$/,
+		test(source) {
+			// Сборка мимо `createWebcAdapterContext` теряет локаль поддерева — как
+			// мимо `createVueAdapterContext` у Vue
+			return importedNames(source, /^@soldy-ui\/setup$/).has('createAdapterContext')
+				? ['createAdapterContext (сборка — createWebcAdapterContext)']
+				: []
 		},
 	},
 ]

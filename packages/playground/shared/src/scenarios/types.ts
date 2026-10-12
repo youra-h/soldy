@@ -107,6 +107,13 @@ type TScenarioBase = {
 	 * забытая фикстура.
 	 */
 	requires?: readonly string[]
+	/**
+	 * Фикстура отдаёт содержимому слота данные компонента — scope (`text` слота
+	 * `default` у Button), и сценарий их проверяет. Хост, у слотов которого
+	 * scope нет (`IPreviewHost.slotScope` — `false` у Web Components), сценарий
+	 * не показывает: нарисовать его нечем, и это не забытая фикстура.
+	 */
+	slotScope?: true
 }
 
 export type TAutoScenario = TScenarioBase & {
