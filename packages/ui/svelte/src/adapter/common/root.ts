@@ -45,7 +45,9 @@
  * стиль — корню (`toRootForward`), всё остальное — его `<input>`
  * (`toControlAttrs`), поверх `aria` поля. Остальное — это и обработчики
  * событий, и `aria-*`, и `data-*`, и attachment потребителя: поведение, которое
- * он вешает на поле, — подсказка, автофокус — встаёт на сам `<input>`.
+ * он вешает на поле, — подсказка, автофокус — встаёт на сам `<input>`. Так же
+ * делится элемент коллекции (`Tabs.Item`, `ListBox.Item`, `Accordion.Item`):
+ * остальное у него — строке, поверх её `aria`, а у радио — его `<input>`.
  */
 
 import type { ClassValue } from 'svelte/elements'
@@ -172,6 +174,18 @@ export function toStyleAttribute(style: TRootStyleLayers): string | undefined {
 		...(style.forward ? [style.forward] : []),
 		...toDeclarations(style.above),
 	]
+
+	return declarations.length > 0 ? declarations.join('; ') : undefined
+}
+
+/**
+ * Стиль узла не на корне, который целиком пишет ядро, — строкой атрибута:
+ * распорка окна ListBox (`drawn`). Чужого на таком узле ничего нет, и
+ * свойствами его ставить незачем. Имена — как их пишет ядро (`--*`, `order`),
+ * пустое значение свойства не задаёт; нет свойств — `undefined`.
+ */
+export function toStyleText(styles: TRootStyle | undefined): string | undefined {
+	const declarations = toDeclarations(toProperties(styles))
 
 	return declarations.length > 0 ? declarations.join('; ') : undefined
 }

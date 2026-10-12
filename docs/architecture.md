@@ -1919,7 +1919,7 @@ Zone.js и молча ломалось бы под `provideZonelessChangeDetecti
 
 ## Layer 8b: Svelte Adapter (`packages/ui/svelte/src`)
 
-### ✅ IMPLEMENTED (Component / ComponentView / Stylable / Control / Textable / Button / Icon / Label / Frame / ProgressSpinner / Skeleton / Input / CheckBox / Switch)
+### ✅ IMPLEMENTED (Component / ComponentView / Stylable / Control / Textable / Button / Icon / Label / Frame / ProgressSpinner / Skeleton / Input / CheckBox / Switch / RadioGroup / ListBox / Tabs / Accordion)
 
 Svelte 5 на рунах. Структура зеркалит React, потому что механика событий та же —
 колбэк-пропы:
@@ -1935,8 +1935,12 @@ Svelte 5 на рунах. Структура зеркалит React, потом�
   роли для `tag` у Icon и `RoleIcon`, который рисует её `<svg>`, — он же
   рисует отметку CheckBox без слота.
 - `adapter/runtime/` — `useAdapter.svelte.ts`: `useAdapter` поверх связки
-  `adapter.connect(SvelteProfile)`. Расширение `.svelte.ts` обязательно
-  там, где используются руны (`$state`, `$effect`, `$derived`). Там же
+  `adapter.connect(SvelteProfile)` и `useCollectionAdapter` — связка фасада
+  коллекции: те же состояние, входы, события, приём и уничтожение, но без
+  `ctrl` и привязки узла, а атрибуты — из того, что не съел компонент.
+  Расширение `.svelte.ts` обязательно там, где используются руны (`$state`,
+  `$effect`, `$derived`). `joinState` — состояние двух контекстов компонента
+  (свой и фасада) одним видом, геттерами поверх обоих. Там же
   `Dynamic` — корень по `tag` (строка, компонент Svelte, метка роли);
   `rootStyle` (`root-style.svelte.ts`) — attachment стиля корня по свойствам;
   `fieldText` — attachment текста поля, который пишет текст в узел, только
@@ -1946,11 +1950,23 @@ Svelte 5 на рунах. Структура зеркалит React, потом�
   `setContext`, смена пропа — в тот же источник.
 - `adapter/elevator/` — `TSvelteElevator` через `setContext`/`getContext`
   (ограничение то же, что у Vue: только во время инициализации компонента).
+  Владелец коллекции опускает движок и регистратор в сборке, элемент читает их
+  в своей.
 
 ### Svelte-специфика
 
 - **Состояние** — `$state`-объект. Глубокая реактивность прокси покрывает и
   скалярные props, и составные, поэтому отдельного механизма уведомления не нужно.
+  Значения, которые подписка на связку отдаёт сразу, ложатся в обычный объект,
+  и руна заводится над ним с полным составом: свойство, которого у руны ещё
+  нет, Svelte в разработке считает ростом состава и с шестой такой записи за
+  такт снимает стек вызовов.
+- **Коллекции — как у Vue**: компонент собирается один раз, контекстов у
+  коллекции два (свой и фасада), лифт — контекст Svelte, и элемент входит в
+  коллекцию при инициализации, на сервере тоже. Слоя `Elevate`, `TDrafts` и
+  пересборки, как у React, нет. Элементы из данных — петля `{#each}` по `shown`
+  (у ListBox — по `drawn`, с распорками окна), проброс слота элемента —
+  сниппет, объявленный в петле рядом с элементом.
 - **props передаются геттером** (`() => props`): в Svelte 5 захват `$props()`
   в переменную рвёт реактивность, читать нужно лениво. Компилятор ловит это
   предупреждением `state_referenced_locally`.
@@ -1983,8 +1999,12 @@ Svelte 5 на рунах. Структура зеркалит React, потом�
 
 - `tag` — строка, компонент Svelte или метка `roleIcon`. Другой объект
   (компонент чужого фреймворка) Svelte нарисовать не может, и корня нет.
-- Коллекции не портированы (elevator готов, но не подключён), а с ними и
-  RadioGroup: радио в подписи `Label` ждёт его.
+- Сниппет непрозрачен: заданный владельцу слот элемента (`item-close-icon`,
+  `item-indicator-icon`) рисуется у каждого элемента вместо своего, и где у
+  Vue и React пустой слот уступает место иконке, у Svelte остаётся пусто.
+- ListBox на сервере без `requestAnimationFrame` (чистый Node) падает: плагины
+  списка планируют кадр уже при сборке — задача 869ffnvvn, касается всех
+  адаптеров.
 
 ## Layer 8c: Solid Adapter (`packages/ui/solid/src`)
 

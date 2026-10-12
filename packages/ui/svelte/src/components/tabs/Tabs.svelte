@@ -1,0 +1,75 @@
+<script lang="ts">
+	import { Dynamic, toRootProps } from '../../adapter'
+	import { TabsItem } from './item'
+	import { setupTabs } from './setup.component'
+	import type { TabsProps } from './base.component'
+
+	const props: TabsProps = $props()
+	const mountId = $props.id()
+
+	const binding = setupTabs(() => props, mountId)
+	const state = binding.state
+</script>
+
+<!--
+	Tabs — набор табов: список (`s-tabs__list`) и панели рядом с ним.
+
+	Набор `aria` владельца — это список табов: `role="tablist"` и
+	`aria-orientation` пишет ядро, имя из `aria_label` — `TAriaPlugin`. Корень
+	его не получает: рядом со списком там лежат панели. На корне — `attrs`,
+	как у Vue.
+
+	Табы — содержимое (`<Tabs.Item>`), а без него — `shown` коллекции, по
+	`TabsItem` на элемент. Слоты элементов статические и получают элемент
+	через scope. Проброс целиком: у каждого слота таба есть `item-<слот>`
+	(`default` — `item`), и scope у него — scope слота таба плюс сам таб.
+	Проброс — сниппет, который таб зовёт со своим scope, и отдаётся он табу,
+	только когда слот задан набору: сниппет непрозрачен, и без `item-close-icon`
+	таб рисует свою иконку крестика, без `item` — текст.
+
+	Панели (`<Tabs.Content>`) — слот `content`, вне списка: содержимое лежит
+	внутри `[role=tablist]`, и панель там оказалась бы в списке табов. Тема
+	рисует вид набора от его корня дочерними комбинаторами: список и панели —
+	дети корня, табы — дети списка.
+
+	Таб, смонтированный внутри, входит в коллекцию набора при своей
+	инициализации, а панель находит свой таб в её движке.
+
+	Части стоят вплотную: пробел между блоками Svelte оставил бы в списке и
+	корне текстом.
+-->
+{#if state.rendered}
+	<Dynamic
+		tag="div"
+		attributes={toRootProps(state, [state.attrs], binding.forwardProps)}
+		attach={binding.attachElement}
+	>
+		<div class="s-tabs__list" {...state.aria}>
+			{#if props.leading}
+				<div class="s-tabs__list--leading">{@render props.leading()}</div>
+			{/if}{#if props.children}
+				{@render props.children()}
+			{:else}
+				{#each state.shown ?? [] as tab (tab.uid)}
+					{#snippet leading()}{@render props['item-leading']?.({ item: tab })}{/snippet}
+					{#snippet content(scope: { text: string; active: boolean })}
+						{@render props.item?.({ ...scope, item: tab })}
+					{/snippet}
+					{#snippet trailing()}{@render props['item-trailing']?.({ item: tab })}{/snippet}
+					{#snippet closeIcon()}
+						{@render props['item-close-icon']?.({ item: tab })}
+					{/snippet}
+					<TabsItem
+						ctrl={tab}
+						leading={props['item-leading'] ? leading : undefined}
+						trailing={props['item-trailing'] ? trailing : undefined}
+						close-icon={props['item-close-icon'] ? closeIcon : undefined}
+						children={props.item ? content : undefined}
+					/>
+				{/each}
+			{/if}{#if props.trailing}
+				<div class="s-tabs__list--trailing">{@render props.trailing()}</div>
+			{/if}
+		</div>{@render props.content?.()}
+	</Dynamic>
+{/if}
