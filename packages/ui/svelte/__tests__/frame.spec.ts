@@ -7,15 +7,17 @@
  * Номер слоя один на два места — `z-index` и `data-layer`, по нему плагины
  * оверлея узнают вложенность.
  *
- * Сценарии — те же, что у React (`frame.spec.tsx`), без гидратации: в одном
- * прогоне компоненты собраны под одно окружение. Серверный рендер —
- * `frame.server.spec.ts`.
+ * Сценарии — те же, что у React (`frame.spec.tsx`), и контексты места в
+ * панели, как у Solid, — без гидратации: в одном прогоне компоненты собраны
+ * под одно окружение. Серверный рендер — `ssr.server.spec.ts`.
  */
 
 import { describe, it, expect } from 'vitest'
 import { createRawSnippet, flushSync } from 'svelte'
 import { TFrame } from '@soldy-ui/core'
+import { TPluginBundle, ruRU } from '@soldy-ui/plugins'
 import { Frame, type FrameProps } from '@soldy-ui/svelte'
+import FrameLocale from './FrameLocale.test.svelte'
 import { find, mount } from './mount'
 import { reactiveProps } from './reactive-props.svelte'
 
@@ -97,6 +99,35 @@ describe('Frame · телепорт', () => {
 		destroy()
 
 		expect(document.querySelector('.s-frame')).toBeNull()
+	})
+
+	/**
+	 * Своего портала у Svelte нет: телепорт монтирует панель в цель отдельным
+	 * корнем и отдаёт ему контексты места, где стоит Frame (`getAllContexts`).
+	 * Компонент в панели собирается с локалью провайдера вокруг Frame, а не с
+	 * английской.
+	 *
+	 * Сторожится поведение, а не строка: `mount` из эффекта Svelte и сам
+	 * наследует контекст компонента, где эффект заведён, и без опции `context`
+	 * тест сейчас тоже зелёный. Опция — объявленный путь Svelte: на это
+	 * наследование телепорт не полагается.
+	 */
+	it('содержимое панели — в контексте места: локаль провайдера вокруг Frame', async () => {
+		const bundles: TPluginBundle[] = []
+		const { container } = mount(FrameLocale, {
+			locale: ruRU,
+			onBundleCreate: (bundle) => {
+				if (bundle instanceof TPluginBundle) bundles.push(bundle)
+			},
+		})
+
+		// Набор объявляется на микрозадаче после сборки
+		await Promise.resolve()
+
+		// Панель ушла из места: на месте контекст дошёл бы и без переноса
+		expect(container.contains(frame())).toBe(false)
+		expect(frame().querySelector('.s-button')).not.toBeNull()
+		expect(bundles.map((bundle) => bundle.locale.locale.tag)).toEqual([ruRU.tag])
 	})
 })
 
