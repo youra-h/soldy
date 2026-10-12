@@ -80,11 +80,18 @@ export const queueOrder = (a, b) =>
 export async function tasksByStatus(status) {
 	const filter = `statuses%5B%5D=${encodeURIComponent(status)}&subtasks=true`
 
-	const { tasks = [] } = config.spaceId
-		? await api(
-				`/team/${requireConfig('teamId')}/task?space_ids%5B%5D=${config.spaceId}&${filter}`,
-			)
-		: await api(`/list/${requireConfig('listId')}/task?${filter}`)
+	const path = config.spaceId
+		? `/team/${requireConfig('teamId')}/task?space_ids%5B%5D=${config.spaceId}&${filter}`
+		: `/list/${requireConfig('listId')}/task?${filter}`
+
+	// ClickUp отдаёт задачи страницами по 100: без обхода страниц статус с
+	// сотнями задач (закрытые) обрезался до первой страницы.
+	const tasks = []
+	for (let page = 0; ; page++) {
+		const { tasks: chunk = [], last_page } = await api(`${path}&page=${page}`)
+		tasks.push(...chunk)
+		if (last_page !== false || chunk.length === 0) break
+	}
 
 	// Роль без явного ID берёт первую свободную задачу из очереди, и без
 	// сортировки «первая» означала бы «как сегодня отдал ClickUp».
