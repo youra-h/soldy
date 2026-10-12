@@ -330,14 +330,17 @@ Solid-компоненты собирают контекст через `createS
 
 Angular-компоненты собирают контекст через `createAngularAdapterContext`
 (`packages/ui/angular/src/adapter/common/`): она берёт локаль поддерева —
-источник ближайшего `LocaleProviderDirective` из DI (`inject`). DI Angular
-разрешает `inject` только в контексте инъекции, и его даёт сборке база
-компонента (`TComponentBase`): `ngOnInit` собирает компонент внутри
-`runInInjectionContext` своего инжектора, — поэтому в самом компоненте
-`inject` нет. Id монтирования обёртка не передаёт: id места в дереве, который
-совпадал бы на сервере и в браузере, Angular не даёт. Сборку мимо обёртки
-ловит тот же сторож: `createAdapterContext` из `@soldy-ui/setup` в компонентах
-Angular запрещён, как и `inject` из `@angular/core`.
+источник ближайшего `LocaleProviderDirective` из DI (`inject`) — и id
+монтирования — номер сборки компонента в его приложении с префиксом
+`APP_ID`. DI Angular разрешает `inject` только в контексте инъекции, и его
+даёт сборке база компонента (`TComponentBase`): `ngOnInit` собирает компонент
+внутри `runInInjectionContext` своего инжектора, — поэтому в самом компоненте
+`inject` нет. Id места в дереве Angular не даёт, но полная гидратация
+собирает компоненты в том же порядке, что и сервер, поэтому номер у сервера и
+браузера один, а счётчик у каждого приложения — и у каждого запроса сервера —
+свой. Сборку мимо обёртки ловит тот же сторож: `createAdapterContext` из
+`@soldy-ui/setup` в компонентах Angular запрещён, как и `inject` из
+`@angular/core`.
 
 Web Components-компоненты собирают контекст через `createWebcAdapterContext`
 (`packages/ui/webc/src/adapter/common/`): она берёт локаль поддерева —
