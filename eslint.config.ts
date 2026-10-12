@@ -86,6 +86,20 @@ export default defineConfigWithVueTs(
 		},
 	},
 
+	// Пространство имён — только в объявлении типов. Типы JSX у Solid — namespace
+	// (`JSX` из `solid-js`), и дополнить его иначе, чем
+	// `declare module 'solid-js' { namespace JSX { … } }`, нельзя: так адаптер
+	// Solid объявляет свойство узла, которого нет в его типах
+	// (`ExplicitProperties`, `packages/ui/solid/src/types.ts`). Рантайм-namespace
+	// по-прежнему запрещён: опция пропускает его только внутри `declare`.
+	{
+		name: 'soldy/namespace-declarations',
+		files: ['**/*.{ts,mts,tsx,vue,svelte}'],
+		rules: {
+			'@typescript-eslint/no-namespace': ['error', { allowDeclarations: true }],
+		},
+	},
+
 	// `any` пропускается только там, где он стирает инвариантность, а не прячет
 	// тип. Встроенное правило этих позиций не различает (см. AGENTS.md,
 	// «`any`: где он честный»).

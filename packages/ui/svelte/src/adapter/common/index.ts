@@ -9,6 +9,7 @@ export {
 	toRootForward,
 	toRootLayout,
 	toRootProps,
+	toStyleText,
 	type TRootAttributes,
 	type TRootForward,
 	type TRootLayout,

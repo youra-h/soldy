@@ -1,4 +1,4 @@
-import { Button, Icon, roleIcon } from '@soldy-ui/solid'
+import { Button, CheckBox, Icon, Label, Switch, roleIcon } from '@soldy-ui/solid'
 import type { TPreview } from './previews'
 
 /**
@@ -8,8 +8,9 @@ import type { TPreview } from './previews'
  * Ключи и разметка — те же, что у хостов Vue, React и Svelte: сценарии в общем
  * пакете ищут в сцене одно и то же, на каком бы фреймворке её ни нарисовали.
  * Слот по умолчанию в Solid — `children`, остальные слоты — пропы с теми же
- * именами. Пропсы — вызовом сигнала (`{...bind()}`), как у превью. Подписи
- * нет: Label в Solid ещё не перенесён, и её сценарии стенд не показывает.
+ * именами. Пропсы — вызовом сигнала (`{...bind()}`), как у превью. Радио в
+ * подписи нет: RadioGroup в Solid ещё не перенесён, и его сценарий стенд не
+ * показывает.
  */
 
 /** Глифы — компонентом на роль, один раз: `tag` у Icon — корень, а не роль. */
@@ -32,5 +33,19 @@ export const FIXTURES: Record<string, TPreview> = {
 	// Иконки по краям — подпись длинная, из пропа `text` сценария
 	'button-slot-icons': (bind) => (
 		<Button {...bind()} leading={<Icon tag={CHECK} />} trailing={<Icon tag={ARROW_RIGHT} />} />
+	),
+
+	// Подпись вокруг контрола: текст — из пропа `text` сценария, контрол — в
+	// слоте по умолчанию
+	'label-check-box': (bind) => (
+		<Label {...bind()}>
+			<CheckBox />
+		</Label>
+	),
+
+	'label-switch': (bind) => (
+		<Label {...bind()}>
+			<Switch />
+		</Label>
 	),
 }

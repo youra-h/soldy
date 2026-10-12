@@ -200,7 +200,22 @@ ListBox, список Select, Popover и будущий Menu выглядят о
   разошёлся с узлом, а на сервере текст уходит атрибутом `value`. Сторожат
   `ui/svelte/__tests__/input.spec.ts` («набор не переписывает поле»),
   `checkable.spec.ts` и серверные `input.server.spec.ts` и
-  `checkable.server.spec.ts`.
+  `checkable.server.spec.ts`. У Solid своего поля тоже нет: `checked` он
+  пишет свойством узла сам, на смену значения ядра, а на сервере — атрибутом.
+  `indeterminate` — тоже свойством, но явным (`prop:indeterminate`): в типах
+  атрибутов `<input>` у JSX Solid его нет, и тип записи разметка берёт из
+  `JSX.ExplicitProperties`, которое дополняет адаптер
+  (`ui/solid/src/types.ts`); на сервер запись `prop:` не уходит. Текст — не
+  привязкой `value`: её Solid пишет в узел на каждую смену значения, с узлом
+  не сверяя, — набор возвращал бы узлу его же текст, и браузер переставал бы
+  проверять `minlength`. Каретку такая запись не двигает: HTML уводит её в
+  конец, только когда текст другой. Текст ставит свой `ref` поля — `fieldText`
+  (`ui/solid/src/adapter/runtime/`): эффект отрисовки пишет текст, только
+  когда он разошёлся с узлом, а на сервере текст уходит атрибутом `value`.
+  `ref` потребителя этот `ref` зовёт тем же узлом. Сторожат
+  `ui/solid/__tests__/input.spec.tsx` («набор не переписывает поле», «ввод в
+  середину текста — каретка на месте»), `checkable.spec.tsx` и серверные
+  `input.server.spec.tsx` и `checkable.server.spec.tsx`.
 - **Radio Group** — Radio Group pattern, вариант на нативных
   `input[type="radio"]`: `role="radiogroup"` на контейнере, имя группы —
   `aria_label` / `aria_labelledBy`. Радио собирает в группу общий `name`: его
@@ -214,14 +229,19 @@ ListBox, список Select, Popover и будущий Menu выглядят о
   группы могут стоять где угодно в разметке, чего roving tabindex, как у Tabs,
   не выдержал бы. `role`, `aria-checked` и `aria-disabled` ядро радио не пишет:
   у нативного радио это `checked` и `disabled`. Выбор пользователя разметка
-  отдаёт коллекции сама — `@change` у Vue, `onChange` поля у React: плагина
-  ввода у радио нет, и это единственный путь, а не второй. Выбор, отменённый в
-  `item:activate:before`, браузер к тому времени уже отметил, а модель не
-  сменилась, и разметка поля не перерисует, — поэтому после каждого `change`
-  поля группы к модели возвращает её плагин `TRadioGroupCheckedPlugin`. Сторожат
+  отдаёт коллекции сама — `@change` у Vue, `onChange` поля у React, `onchange`
+  поля у Svelte: плагина ввода у радио нет, и это единственный путь, а не
+  второй. Выбор, отменённый в `item:activate:before`, браузер к тому времени
+  уже отметил, а модель не сменилась, и разметка поля не перерисует, — поэтому
+  после каждого `change` поля группы к модели возвращает её плагин
+  `TRadioGroupCheckedPlugin`. У Svelte обработчик `change` делегирован корню
+  приложения, и плагин на корне группы слышит событие раньше, чем модель
+  решила: поля он возвращает к прежнему выбору, а сменившуюся в модели отметку
+  Svelte следом пишет сам. Сторожат
   `plugins/__tests__/radio-group-checked.plugin.spec.ts`,
   `ui/vue/__tests__/radio-group.spec.ts`,
-  `ui/react/__tests__/radio-group.spec.tsx` и
+  `ui/react/__tests__/radio-group.spec.tsx`,
+  `ui/svelte/__tests__/radio-group.spec.ts` и
   `playground/vue/browser/radio-group.spec.ts`.
 - **Popover** — немодальный Dialog: `role="dialog"` на панели, имя —
   `aria_label` или `aria_labelledBy` (`TAriaPlugin`). Триггер — слот
