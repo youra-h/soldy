@@ -35,7 +35,8 @@
   выезжающей панели Drawer: панель не телепортируется, а остаётся в разметке
   на месте и встаёт в ближайшем позиционированном предке. Frame пишет
   `data-contained`, разметка выключает телепорт (`:disabled` у `<teleport>`
-  Vue, `disabled` у `Teleport` React, Svelte и Solid), `TFrameLayoutPlugin` ставит панель
+  Vue, `disabled` у `Teleport` React, Svelte и Solid, у Angular корень
+  оставляет на месте база компонента), `TFrameLayoutPlugin` ставит панель
   `absolute` без `left`/`top`, а `TAnchorPlugin` её не двигает и
   `data-placement` снимает: место в контейнере решает тема. Popover отдаёт
   значение своему Frame, а его панель прижата к краю контейнера — `edge`
@@ -54,12 +55,21 @@
   `setup/__tests__/overlay.spec.ts` (якорь и раскладка),
   `plugins/__tests__/popover-focus.plugin.spec.ts` («панель внутри корня»),
   `ui/vue/__tests__/popover.spec.ts`, `ui/react/__tests__/frame.spec.tsx`,
-  `ui/svelte/__tests__/frame.spec.ts` и `ui/solid/__tests__/frame.spec.tsx`.
+  `ui/svelte/__tests__/frame.spec.ts`, `ui/solid/__tests__/frame.spec.tsx` и
+  `ui/angular/__tests__/frame.spec.ts`.
 - **Телепорт — у каждого адаптера свой, поведение одно.** Цель — по
   селектору `target`; её нет — панели нет. На сервере панели нет (портал
   React серверный рендер роняет, у Svelte эффектов на сервере нет, у Solid —
   документа), и появляется она после гидратации; с `contained` панель на
-  месте — и на сервере. Своего портала у Svelte нет, и `Teleport`
+  месте — и на сервере. Исключение — Angular: корень там — элемент, который
+  написал потребитель, и в цель уезжает он сам (`teleportRoot`,
+  `ui/angular/src/adapter/runtime/`), с классом, атрибутами и обработчиками
+  потребителя. Убрать этот элемент компонент не может, поэтому на сервере и
+  без цели панель стоит на месте скрытой, а в цель уезжает в браузере после
+  отрисовки — после гидратации; на месте остаётся якорь-комментарий, к нему
+  панель возвращается с `contained` и без цели. Контексты места переносить не
+  нужно: DI Angular идёт по дереву объявлений, а не по DOM, и локаль поддерева
+  в панели та же, что у триггера. Своего портала у Svelte нет, и `Teleport`
   (`ui/svelte/src/adapter/runtime/`) монтирует содержимое в цель отдельным
   корнем (`mount`) со всеми контекстами места, где стоит (`getAllContexts`):
   локаль поддерева и лифт коллекции в панели те же, что у триггера. Узлы,
@@ -73,7 +83,10 @@
   по пометке владельца (`data-owner`), слой — по `closest`, а не по родителю.
   Сторожат `ui/react/__tests__/frame.spec.tsx`,
   `ui/svelte/__tests__/frame.spec.ts`, `ui/svelte/__tests__/ssr.server.spec.ts`,
-  `ui/solid/__tests__/frame.spec.tsx` и `ui/solid/__tests__/ssr.server.spec.tsx`.
+  `ui/solid/__tests__/frame.spec.tsx`, `ui/solid/__tests__/ssr.server.spec.tsx`
+  и `ui/angular/__tests__/frame.spec.ts`; контексты места — «содержимое панели
+  — в контексте места» в `frame.spec.ts` Svelte и `frame.spec.tsx` Solid:
+  кнопка в панели собрана с локалью провайдера вокруг Frame, а не с английской.
 - **`TModalLayer`** (`core/src/components/base/modal-layer/`) — общая база
   модального окна **`TDialog`** и выезжающей панели **`TDrawer`**: всё, что
   следует из модальности, один раз — `role="dialog"`, `aria-modal`, имя от
