@@ -775,10 +775,12 @@ get closable() { return !this._item.disabled && (this._item.closable ?? this._pa
 монтирование, и чужой `ctrl`, смонтированный снова, рисуется. Сторожат
 `setup/__tests__/item-context-lifetime.spec.ts` — по всем фасадам элементов,
 с чтением фасада после снятия, и перепривязку панели, —
-`ui/vue/__tests__/collection-item-lifetime.spec.ts` (фильтр прячет и
+`ui/vue/__tests__/collection-item-lifetime.spec.ts` и
+`ui/svelte/__tests__/collection-item-lifetime.spec.ts` (фильтр прячет и
 показывает элемент), `ui/react/__tests__/collection-item-lifetime.spec.tsx`
 (StrictMode над движком снаружи) и смена `value` у панели в
-`ui/vue/__tests__/tabs-content.spec.ts` и `ui/react/__tests__/tabs.spec.tsx`.
+`ui/vue/__tests__/tabs-content.spec.ts`, `ui/react/__tests__/tabs.spec.tsx` и
+`ui/svelte/__tests__/tabs.spec.ts`.
 
 `attach()`, как `destroy()` и `bindElement`, зовёт рантайм адаптера, а не
 компонент: Vue — `useAdapterParts` в `setup()` (она идёт и на сервере),
@@ -843,6 +845,10 @@ Solid, Svelte — в `useAdapter` при инициализации, Angular —
 что пишет ему коллекция (`data-selected`, `tabindex`, размер от списка).
 Гидратация сходится, после коммита всё на месте. Список из данных (`items`,
 `engine`) сервер рисует полностью: его элементы в коллекции с самой сборки.
+Vue и Svelte этой цены не платят: элемент разметки у них входит в коллекцию
+при инициализации, и на сервере тоже, — сервер рисует его с тем, что пишет
+коллекция, и панель таба находит свой таб к своей инициализации (сторожит
+`ui/svelte/__tests__/collections.server.spec.ts`).
 
 Сторожат `setup/__tests__/adapter.spec.ts` («сборка и вход»),
 `ui/react/__tests__/list-box-elevator.spec.tsx` — лифт, StrictMode,

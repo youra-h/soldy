@@ -5,8 +5,8 @@
  * текст (слот `content`, без него — проп `text`). Связи через `for` и `id`
  * нет: контрол — первый labelable-потомок `label`, поэтому клик по тексту
  * переключает его, а текст становится его доступным именем. Сценарии — те
- * же, что у React (`label.spec.tsx`) и Vue (`label.spec.ts`); радио в подписи
- * придёт с RadioGroup — в Svelte его пока нет.
+ * же, что у React (`label.spec.tsx`) и Vue (`label.spec.ts`), в том числе
+ * радио в подписи.
  *
  * Слот `content` назван не `text`: в Svelte слот — это проп, и одноимённый с
  * пропом `text` слился бы с ним.
@@ -16,6 +16,7 @@ import { describe, it, expect, vi, afterEach } from 'vitest'
 import { createRawSnippet, flushSync } from 'svelte'
 import { Label, type LabelProps, type SwitchProps } from '@soldy-ui/svelte'
 import LabelControl from './LabelControl.test.svelte'
+import LabelRadio from './LabelRadio.test.svelte'
 import { contentOf, find, htmlOf, mount, nextFrame } from './mount'
 import { reactiveProps } from './reactive-props.svelte'
 
@@ -150,5 +151,45 @@ describe.each(CHECKABLES)('Label · %s в подписи', (control) => {
 
 		expect(find(el, 'input', HTMLInputElement).checked).toBe(true)
 		expect(onChangeValue.mock.calls).toEqual([[{ newValue: true, oldValue: false }]])
+	})
+})
+
+describe('Label · радио в подписи', () => {
+	/** Тексты предупреждений подписи о вложенном `label`. */
+	const nestedWarnings = (calls: readonly unknown[][]): string[] =>
+		calls.map(([message]) => String(message)).filter((text) => text.includes('[soldy] Label'))
+
+	it('без tag="span" — предупреждение о вложенном label', async () => {
+		const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+		mount(LabelRadio, {})
+
+		// Плагин смотрит узел по `ready`, то есть кадром позже
+		await nextFrame()
+
+		const warnings = nestedWarnings(warn.mock.calls)
+
+		expect(warnings).toHaveLength(1)
+		expect(warnings[0]).toContain('tag="span"')
+	})
+
+	it('с tag="span" — тишина, у радио одна подпись, клик по тексту его отмечает', async () => {
+		const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+		const onChangeValue = vi.fn()
+		const el = mount(LabelRadio, { tag: 'span', onChangeValue }).root()
+
+		await nextFrame()
+
+		const label = find(el, '.s-label', HTMLLabelElement)
+		const input = find(label, 'input', HTMLInputElement)
+
+		expect(nestedWarnings(warn.mock.calls)).toEqual([])
+		expect([...(input.labels ?? [])]).toEqual([label])
+
+		find(label, '.s-label__text', HTMLElement).click()
+		flushSync()
+
+		expect(input.checked).toBe(true)
+		expect(onChangeValue).toHaveBeenLastCalledWith({ newValue: 'a', oldValue: undefined })
 	})
 })
