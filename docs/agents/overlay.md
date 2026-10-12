@@ -84,7 +84,9 @@
   Сторожат `ui/react/__tests__/frame.spec.tsx`,
   `ui/svelte/__tests__/frame.spec.ts`, `ui/svelte/__tests__/ssr.server.spec.ts`,
   `ui/solid/__tests__/frame.spec.tsx`, `ui/solid/__tests__/ssr.server.spec.tsx`
-  и `ui/angular/__tests__/frame.spec.ts`.
+  и `ui/angular/__tests__/frame.spec.ts`; контексты места — «содержимое панели
+  — в контексте места» в `frame.spec.ts` Svelte и `frame.spec.tsx` Solid:
+  кнопка в панели собрана с локалью провайдера вокруг Frame, а не с английской.
 - **`TModalLayer`** (`core/src/components/base/modal-layer/`) — общая база
   модального окна **`TDialog`** и выезжающей панели **`TDrawer`**: всё, что
   следует из модальности, один раз — `role="dialog"`, `aria-modal`, имя от
