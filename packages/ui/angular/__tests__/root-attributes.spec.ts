@@ -4,12 +4,12 @@
  * компонентов.
  *
  * Атрибуты, классы и стиль потребителя стоят на элементе рядом с наборами,
- * классами и стилем ядра. Порядка, в котором можно положить одно поверх
- * другого, у базы нет, поэтому чьё значение, она узнаёт по памяти: своё пишет
- * и снимает, чужое не трогает. Так атрибут снаружи перекрывает набор ядра,
- * `[style.width]` потребителя — размер от плагина раскладки, а свойство,
- * которое плагин записал в узел сам, мимо разметки, переживает смену
- * раскладки, видимости и стиля потребителя.
+ * классами и стилем ядра. Что называет ядро — имя атрибута в наборе, класс,
+ * свойство стиля, — база считает своим всегда, как привязку хоста
+ * `[attr.x]`, и пишет поверх того, что стоит на элементе. Чего ядро не
+ * называет, она не трогает: атрибут, класс и свойство стиля потребителя под
+ * другим именем остаются, а свойство, которое плагин записал в узел сам, мимо
+ * разметки, переживает смену раскладки, видимости и стиля потребителя.
  *
  * Стиль корня — слоями снизу вверх: выход плагина раскладки (`layout_styles`),
  * поверх него стиль-выход компонента (`fractionStyle` у ProgressSpinner).
@@ -20,7 +20,7 @@
 import { describe, it, expect } from 'vitest'
 import { Component, signal, type Type } from '@angular/core'
 import type { ComponentFixture } from '@angular/core/testing'
-import { TButton } from '@soldy-ui/core'
+import { TButton, type TDirection } from '@soldy-ui/core'
 import {
 	TButtonComponent,
 	TComponentViewComponent,
@@ -28,7 +28,12 @@ import {
 	TProgressSpinnerComponent,
 	TSkeletonComponent,
 } from '@soldy-ui/angular'
-import { applyStyles, stylesOf } from '../src/adapter/runtime/root-attributes'
+import {
+	applyAttributes,
+	applyClasses,
+	applyStyles,
+	stylesOf,
+} from '../src/adapter/runtime/root-attributes'
 import { findIn, mountHost, nextFrame } from './mount'
 
 /** Хост пробы: корни, о которых сообщил `(elementReady)`. */
@@ -37,8 +42,8 @@ abstract class TProbeHost {
 }
 
 /**
- * Проба на каждый компонент: `direction` ядра против `dir` потребителя, класс
- * потребителя и `(elementReady)`.
+ * Проба на каждый компонент: `direction` ядра против `dir` потребителя,
+ * атрибут и класс потребителя под своими именами и `(elementReady)`.
  */
 @Component({
 	standalone: true,
@@ -47,6 +52,7 @@ abstract class TProbeHost {
 		so-button
 		direction="rtl"
 		dir="ltr"
+		title="probe"
 		class="mine"
 		(elementReady)="ready.push($event)"
 	></button>`,
@@ -60,6 +66,7 @@ class ButtonProbe extends TProbeHost {}
 		so-component-view
 		direction="rtl"
 		dir="ltr"
+		title="probe"
 		class="mine"
 		(elementReady)="ready.push($event)"
 	></div>`,
@@ -73,6 +80,7 @@ class ComponentViewProbe extends TProbeHost {}
 		so-icon
 		direction="rtl"
 		dir="ltr"
+		title="probe"
 		class="mine"
 		(elementReady)="ready.push($event)"
 	></i>`,
@@ -86,6 +94,7 @@ class IconProbe extends TProbeHost {}
 		so-progress-spinner
 		direction="rtl"
 		dir="ltr"
+		title="probe"
 		class="mine"
 		(elementReady)="ready.push($event)"
 	></span>`,
@@ -99,6 +108,7 @@ class ProgressSpinnerProbe extends TProbeHost {}
 		so-skeleton
 		direction="rtl"
 		dir="ltr"
+		title="probe"
 		class="mine"
 		(elementReady)="ready.push($event)"
 	></div>`,
@@ -114,23 +124,60 @@ const COMPONENTS: ReadonlyArray<readonly [string, Type<TProbeHost>, string, stri
 	['Skeleton', SkeletonProbe, '[so-skeleton]', 's-skeleton'],
 ]
 
-describe('атрибут снаружи перекрывает набор ядра', () => {
-	/** `dir` ядро пишет в `attrs` по `direction`, а `dir` снаружи — атрибут потребителя. */
-	it.each(COMPONENTS)('%s: dir потребителя — поверх dir ядра', (_name, host, selector) => {
+describe('что называет ядро, — за базой, остальное — потребителя', () => {
+	/**
+	 * `dir` ядро пишет в `attrs` по `direction`, и имя `dir` у него — за базой,
+	 * как привязка хоста `[attr.dir]`: значение потребителя она перепишет.
+	 */
+	it.each(COMPONENTS)('%s: dir ядра — поверх dir потребителя', (_name, host, selector) => {
 		const el = findIn(mountHost(host), selector, HTMLElement)
 
-		expect(el.getAttribute('dir')).toBe('ltr')
+		expect(el.getAttribute('dir')).toBe('rtl')
 	})
 
 	it.each(COMPONENTS)(
-		'%s: класс потребителя — рядом с классами ядра',
+		'%s: атрибут и класс потребителя под своими именами — рядом с ядром',
 		(_name, host, selector, own) => {
 			const el = findIn(mountHost(host), selector, HTMLElement)
 
+			expect(el.getAttribute('title')).toBe('probe')
 			expect(el.classList.contains('mine')).toBe(true)
 			expect(el.classList.contains(own)).toBe(true)
 		},
 	)
+})
+
+@Component({
+	standalone: true,
+	imports: [TButtonComponent],
+	template: `<button so-button dir="ltr" [direction]="direction()"></button>`,
+})
+class DirectionHost {
+	readonly direction = signal<TDirection>('inherit')
+}
+
+describe('имя, которое ядро называет не всегда', () => {
+	/**
+	 * С `direction="inherit"` ядро `dir` не пишет, и атрибут на элементе —
+	 * потребителя. Назвало — `dir` за базой, а когда перестало называть, база
+	 * его снимает: имя её, что бы на нём ни стояло.
+	 */
+	it('dir потребителя стоит, пока ядро dir не называет', () => {
+		const fixture = mountHost(DirectionHost)
+		const el = findIn(fixture, '[so-button]', HTMLElement)
+
+		expect(el.getAttribute('dir')).toBe('ltr')
+
+		fixture.componentInstance.direction.set('rtl')
+		fixture.detectChanges()
+
+		expect(el.getAttribute('dir')).toBe('rtl')
+
+		fixture.componentInstance.direction.set('inherit')
+		fixture.detectChanges()
+
+		expect(el.hasAttribute('dir')).toBe(false)
+	})
 })
 
 describe('корень связан с TElementPlugin', () => {
@@ -153,28 +200,52 @@ class ConsumerWidthHost {
 	readonly consumer = signal<string | null>('40px')
 }
 
+/** Размера иконки ядро не называет: ширина — только потребителя. */
+@Component({
+	standalone: true,
+	imports: [TIconComponent],
+	template: `<i so-icon [style.width]="'40px'" [height]="height()"></i>`,
+})
+class ConsumerOnlyWidthHost {
+	readonly height = signal(12)
+}
+
 /** Корень иконки в хосте. */
 const icon = (fixture: ComponentFixture<unknown>) => findIn(fixture, '[so-icon]', HTMLElement)
 
-describe('стиль потребителя главнее стиля ядра', () => {
-	it('[style.width] потребителя перекрывает размер от плагина раскладки и его смену', () => {
+describe('стиль: что называет ядро, — за базой', () => {
+	/**
+	 * Ширину называет плагин раскладки, и свойство за базой, как привязка хоста
+	 * `[style.width]`: своё сменившееся значение она пишет поверх потребителя.
+	 */
+	it('смена размера от плагина раскладки пишет ширину поверх [style.width] потребителя', () => {
 		const fixture = mountHost(ConsumerWidthHost)
-
-		expect(icon(fixture).style.width).toBe('40px')
-		// Чужого свойства база не трогает, своё — ставит
-		expect(icon(fixture).style.height).toBe('12px')
 
 		fixture.componentInstance.width.set(32)
 		fixture.detectChanges()
 
+		expect(icon(fixture).style.width).toBe('32px')
+		expect(icon(fixture).style.height).toBe('12px')
+	})
+
+	it('свойство, которого ядро не называет, — потребителя', () => {
+		const fixture = mountHost(ConsumerOnlyWidthHost)
+
 		expect(icon(fixture).style.width).toBe('40px')
+		expect(icon(fixture).style.height).toBe('12px')
+
+		fixture.componentInstance.height.set(20)
+		fixture.detectChanges()
+
+		expect(icon(fixture).style.width).toBe('40px')
+		expect(icon(fixture).style.height).toBe('20px')
 	})
 
 	/**
-	 * Сняв своё значение, потребитель возвращает место базе — со следующей её
-	 * раскладкой: узел база не перечитывает.
+	 * Узел база не читает: свойство, которое снял потребитель, она вернёт со
+	 * следующей своей сменой, а не сразу.
 	 */
-	it('снятый [style.width] потребителя — место базе со следующей раскладкой', () => {
+	it('снятый [style.width] потребителя база вернёт со своей следующей сменой', () => {
 		const fixture = mountHost(ConsumerWidthHost)
 
 		fixture.componentInstance.consumer.set(null)
@@ -195,22 +266,26 @@ describe('стиль потребителя главнее стиля ядра',
 	template: `<span
 			so-progress-spinner
 			class="bound"
-			[value]="40"
-			[style.--s-progress-spinner-fraction]="consumer()"
+			[value]="value()"
+			[style.--s-progress-spinner-fraction]="'0.9'"
 		></span>
 		<span so-progress-spinner class="plain" [value]="value()" [visible]="visible()"></span>`,
 })
 class FractionHost {
-	readonly consumer = signal<string | null>('0.9')
 	readonly value = signal(40)
 	readonly visible = signal(true)
 }
 
 describe('стиль-выход компонента', () => {
-	it('ProgressSpinner: стиль потребителя — поверх доли', () => {
-		const el = findIn(mountHost(FractionHost), '.bound', HTMLElement)
+	/** Долю называет ядро — свойство за базой, как и у стиля плагина раскладки. */
+	it('ProgressSpinner: смена доли пишет её поверх стиля потребителя', () => {
+		const fixture = mountHost(FractionHost)
+		const el = findIn(fixture, '.bound', HTMLElement)
 
-		expect(el.style.getPropertyValue('--s-progress-spinner-fraction')).toBe('0.9')
+		fixture.componentInstance.value.set(60)
+		fixture.detectChanges()
+
+		expect(el.style.getPropertyValue('--s-progress-spinner-fraction')).toBe('0.6')
 	})
 
 	it('ProgressSpinner: --* доходит до узла под своим именем, смена доли — тоже', () => {
@@ -272,7 +347,11 @@ describe('раскладка стиля', () => {
 		expect(node.style.zIndex).toBe('3')
 	})
 
-	it('свойство с чужим значением база не трогает и своим больше не считает', () => {
+	/**
+	 * Свойство, которое называет ядро, — за базой: своё сменившееся значение она
+	 * пишет поверх чужого, а ушедшее из стиля снимает, что бы на узле ни стояло.
+	 */
+	it('свойство, которое называет ядро, база пишет поверх чужого значения и снимает', () => {
 		const node = document.createElement('div')
 
 		let applied = applyStyles(node, stylesOf({ width: '10px' }), new Map())
@@ -282,11 +361,79 @@ describe('раскладка стиля', () => {
 
 		applied = applyStyles(node, stylesOf({ width: '20px' }), applied)
 
-		expect(node.style.width).toBe('50px')
+		expect(node.style.width).toBe('20px')
+
+		node.style.setProperty('width', '50px')
+		applyStyles(node, stylesOf({}), applied)
+
+		expect(node.style.width).toBe('')
+	})
+
+	/** Так после гидратации база берёт своим стиль, который напечатал сервер. */
+	it('первая раскладка пишет поверх того, что уже стоит на узле', () => {
+		const node = document.createElement('div')
+
+		node.style.setProperty('width', '10px')
+		node.style.setProperty('color', 'red')
+
+		let applied = applyStyles(node, stylesOf({ width: '10px' }), new Map())
+
+		applied = applyStyles(node, stylesOf({ width: '20px' }), applied)
+
+		expect(node.style.width).toBe('20px')
 
 		applyStyles(node, stylesOf({}), applied)
 
-		expect(node.style.width).toBe('50px')
+		expect(node.style.width).toBe('')
+		// Чего ядро не называет, база не трогает
+		expect(node.style.color).toBe('red')
+	})
+})
+
+describe('раскладка наборов и классов', () => {
+	/**
+	 * Так же, как стиль: на узле уже стоит то, что напечатал сервер или написал
+	 * потребитель, а память базы пуста. Что называет ядро, база пишет своим и
+	 * снимает, когда ядро его больше не называет; остальное не трогает.
+	 */
+	it('атрибут, который называет ядро, — за базой с первой раскладки', () => {
+		const node = document.createElement('div')
+
+		node.setAttribute('tabindex', '-1')
+		node.setAttribute('aria-disabled', 'true')
+		node.setAttribute('title', 'Сохранить')
+
+		let applied = applyAttributes(node, { tabindex: '0', 'aria-disabled': null }, new Map())
+
+		expect(node.getAttribute('tabindex')).toBe('0')
+		// `null` ядро имени не называет: атрибут не его, база его не трогает
+		expect(node.getAttribute('aria-disabled')).toBe('true')
+
+		applied = applyAttributes(node, { 'aria-disabled': 'true' }, applied)
+
+		expect(node.hasAttribute('tabindex')).toBe(false)
+		expect(node.getAttribute('aria-disabled')).toBe('true')
+
+		applyAttributes(node, {}, applied)
+
+		expect(node.hasAttribute('aria-disabled')).toBe(false)
+		expect(node.getAttribute('title')).toBe('Сохранить')
+	})
+
+	it('класс, который называет ядро, — за базой с первой раскладки', () => {
+		const node = document.createElement('div')
+
+		node.className = 'own s-button s-button--size-normal'
+
+		let applied = applyClasses(node, ['s-button', 's-button--size-normal'], new Set())
+
+		applied = applyClasses(node, ['s-button', 's-button--size-xl'], applied)
+
+		expect([...node.classList]).toEqual(['own', 's-button', 's-button--size-xl'])
+
+		applyClasses(node, [], applied)
+
+		expect([...node.classList]).toEqual(['own'])
 	})
 })
 

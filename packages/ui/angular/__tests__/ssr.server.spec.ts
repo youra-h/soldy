@@ -5,17 +5,21 @@
  * приложении, браузер — `bootstrapApplication` с `provideClientHydration` над
  * разметкой сервера (`server.ts`). Эффекты базы компонента выполняются и на
  * сервере, поэтому разметка сервера несёт классы, наборы и стиль ядра на теге,
- * который написал потребитель. Эффектов после отрисовки на сервере нет, и
- * слой (Frame) стоит там на месте скрытым: в цель он уезжает в браузере, после
- * гидратации.
+ * который написал потребитель. Слой (Frame) есть только в браузере, как
+ * оверлей CDK: эффектов после отрисовки на сервере нет, и от него в разметке
+ * сервера — только пустой скрытый элемент потребителя.
+ *
+ * После гидратации всё, что называет ядро, база берёт своим поверх разметки
+ * сервера (`root-attributes.ts`): смена входа меняет классы, наборы и стиль, а
+ * не копит их рядом с напечатанными.
  *
  * Разметка сервера проверяется разобранной документом, как её получил бы
  * браузер: порядок атрибутов у сервера свой, а важно, что на каком узле стоит.
  */
 
 import { describe, it, expect, afterEach, vi } from 'vitest'
-import { Component, type Type } from '@angular/core'
-import { TButton } from '@soldy-ui/core'
+import { Component, signal, type ApplicationRef, type Type } from '@angular/core'
+import { TButton, type TComponentSize } from '@soldy-ui/core'
 import { TBasePlugin, type IPluginContext } from '@soldy-ui/plugins'
 import { getIcon, usePlugins } from '@soldy-ui/setup'
 import {
@@ -164,30 +168,33 @@ describe('серверный рендер', () => {
 		expect(skeleton.style.display).toBe('')
 	})
 
-	/** Убрать элемент потребителя компонент не может: на сервере слой стоит на месте скрытым. */
-	it('Frame без contained — на месте и скрыт: в цель он уезжает в браузере', async () => {
-		const page = await serverPage(FramePage)
-		const layer = find(page, '.layer', HTMLDivElement)
+	/**
+	 * Слой есть только в браузере, как оверлей CDK. Убрать элемент потребителя
+	 * компонент не может, поэтому на сервере от панели остаётся сам этот
+	 * элемент — на месте, скрытый и без содержимого, — а от ядра на нём нет
+	 * ничего: ни классов, ни наборов, ни раскладки.
+	 */
+	it.each([
+		['без contained', '.layer'],
+		['с contained', '.inside'],
+	])(
+		'Frame %s на сервере не рисуется: пустой скрытый элемент потребителя',
+		async (_case, selector) => {
+			const page = await serverPage(FramePage)
+			const frame = find(page, selector, HTMLDivElement)
 
-		expect(layer.parentElement?.className).toBe('place')
-		expect(layer.style.display).toBe('none')
-		expect(layer.getAttribute('data-open')).toBe('true')
-		expect(layer.textContent).toBe('Слой')
-	})
-
-	it('Frame с contained — на месте, вместе с содержимым и раскладкой', async () => {
-		const page = await serverPage(FramePage)
-		const inside = find(page, '.inside', HTMLDivElement)
-
-		expect(inside.parentElement?.className).toBe('place')
-		expect(inside.getAttribute('data-contained')).toBe('true')
-		// Внутри контейнера — `absolute` без координат: место решает тема
-		expect(inside.style.position).toBe('absolute')
-		expect(inside.style.left).toBe('')
-		expect(inside.style.top).toBe('')
-		expect(inside.style.display).toBe('')
-		expect(inside.querySelector('span')?.textContent).toBe('Внутри')
-	})
+			expect(frame.parentElement?.className).toBe('place')
+			expect(frame.style.display).toBe('none')
+			expect(frame.textContent).toBe('')
+			expect(frame.children).toHaveLength(0)
+			expect([...frame.classList]).toEqual([selector.slice(1)])
+			expect(frame.hasAttribute('data-open')).toBe(false)
+			expect(frame.hasAttribute('data-layer')).toBe(false)
+			expect(frame.hasAttribute('data-contained')).toBe(false)
+			expect(frame.style.position).toBe('')
+			expect(frame.style.zIndex).toBe('')
+		},
+	)
 })
 
 @Component({
@@ -203,7 +210,11 @@ describe('серверный рендер', () => {
 	template: `<button so-button text="Сохранить"></button>
 		<svg so-icon so-role-icon="check"></svg>
 		<div so-skeleton><span>Панель</span></div>
-		<section class="place"><div so-frame visible class="layer">Слой</div></section>`,
+		<section class="place">
+			<div so-frame visible class="layer">
+				<button so-button text="Слой" class="inner"></button>
+			</div>
+		</section>`,
 })
 class HydrationPage {}
 
@@ -217,7 +228,9 @@ describe('гидратация', () => {
 	 * Гидратация берёт узлы, которые напечатал сервер, а не рисует свои: тот же
 	 * узел до и после — признак того, что она прошла, а не откатилась к
 	 * отрисовке с нуля. О расхождении разметки Angular сообщает ошибкой или
-	 * предупреждением в консоль.
+	 * предупреждением в консоль. Содержимого панели в разметке сервера нет, и
+	 * его Angular создаёт заново: узлы проекции, которых сервер не вставил,
+	 * гидратация не ищет.
 	 */
 	it('узлы сервера переиспользуются, ошибок и предупреждений нет', async () => {
 		const error = vi.spyOn(console, 'error')
@@ -239,20 +252,165 @@ describe('гидратация', () => {
 		expect(find(document, '.layer', HTMLDivElement)).toBe(layer)
 		expect(button.querySelector('.s-button__text')?.textContent).toBe('Сохранить')
 		expect(svg.getAttribute('viewBox')).toBe(getIcon('check').viewBox)
+		expect(layer.querySelector('.inner .s-button__text')?.textContent).toBe('Слой')
 		expect(error).not.toHaveBeenCalled()
 		expect(warn).not.toHaveBeenCalled()
 	})
+})
 
-	it('Frame после гидратации уезжает в цель тем же узлом и показывается', async () => {
-		loadPage(await renderOnServer(HydrationPage))
+/** Страница, которая меняет входы после гидратации. */
+@Component({
+	selector: 'app-root',
+	standalone: true,
+	imports: [TButtonComponent, TProgressSpinnerComponent, TFrameComponent],
+	template: `<button so-button text="Сохранить" [size]="size()"></button>
+		<div so-button class="app-div" [disabled]="disabled()"></div>
+		<span so-progress-spinner [value]="value()"></span>
+		<section class="place">
+			<div so-frame visible class="layer" [x]="x()" [y]="20"><b>Слой</b></div>
+			<div so-frame class="menu" [visible]="open()" [x]="30" [y]="40">Меню</div>
+		</section>`,
+})
+class ChangesPage {
+	readonly size = signal<TComponentSize>('normal')
+	readonly disabled = signal(true)
+	readonly value = signal(40)
+	readonly x = signal(10)
+	readonly open = signal(false)
+}
+
+/** Разметка сервера в документе и гидратация над ней: приложение браузера и его страница. */
+async function hydrated(): Promise<{ app: ApplicationRef; page: ChangesPage }> {
+	loadPage(await renderOnServer(ChangesPage))
+
+	const app = await hydrate(ChangesPage)
+
+	await app.whenStable()
+
+	const page: unknown = app.components[0]?.instance
+
+	if (!(page instanceof ChangesPage)) throw new Error('Корень приложения — не ChangesPage')
+
+	return { app, page }
+}
+
+/**
+ * После гидратации на корне стоит всё, что напечатал сервер, а память базы
+ * пуста. Всё, что называет ядро, база берёт своим поверх разметки сервера,
+ * поэтому смена входа меняет классы, наборы и стиль, а не оставляет
+ * напечатанное рядом с новым.
+ */
+describe('после гидратации', () => {
+	afterEach(() => {
+		leavePage()
+	})
+
+	/**
+	 * Без статического `class` в разметке потребителя гидратация оставляет на
+	 * узле классы, которые напечатал сервер: свою статику Angular пишет на узел
+	 * заново, только когда она есть.
+	 */
+	it('Button: смена size меняет модификатор, а не добавляет второй', async () => {
+		const { app, page } = await hydrated()
+		const button = find(document, 'button[so-button]', HTMLButtonElement)
+
+		expect(button.classList).toContain('s-button--size-normal')
+
+		page.size.set('xl')
+		await app.whenStable()
+
+		expect([...button.classList]).toEqual(['s-button', 's-button--size-xl'])
+	})
+
+	it('Button: включение <div so-button disabled> снимает aria-disabled и возвращает tabindex', async () => {
+		const { app, page } = await hydrated()
+		const div = find(document, '.app-div', HTMLDivElement)
+
+		expect(div.getAttribute('aria-disabled')).toBe('true')
+		expect(div.getAttribute('data-disabled')).toBe('true')
+		expect(div.hasAttribute('tabindex')).toBe(false)
+
+		page.disabled.set(false)
+		await app.whenStable()
+
+		expect(div.hasAttribute('aria-disabled')).toBe(false)
+		expect(div.getAttribute('data-disabled')).toBe('false')
+		expect(div.getAttribute('tabindex')).toBe('0')
+		expect(div.getAttribute('role')).toBe('button')
+		// Чего ядро не называет, база не трогает
+		expect(div.classList).toContain('app-div')
+	})
+
+	it('ProgressSpinner: доля в стиле корня идёт за значением', async () => {
+		const { app, page } = await hydrated()
+		const spinner = find(document, '[so-progress-spinner]', HTMLSpanElement)
+
+		expect(spinner.style.getPropertyValue('--s-progress-spinner-fraction')).toBe('0.4')
+
+		page.value.set(60)
+		await app.whenStable()
+
+		expect(spinner.style.getPropertyValue('--s-progress-spinner-fraction')).toBe('0.6')
+		expect(spinner.getAttribute('aria-valuenow')).toBe('60')
+	})
+
+	/**
+	 * На сервере слоя нет, и номер слоя у браузера свой: `z-index` и
+	 * `data-layer` — от слоя браузера, без следов сервера.
+	 */
+	it('Frame: в цели тем же узлом, с содержимым, слоем и раскладкой браузера', async () => {
+		loadPage(await renderOnServer(ChangesPage))
 
 		const layer = find(document, '.layer', HTMLDivElement)
-		const app = await hydrate(HydrationPage)
+		const app = await hydrate(ChangesPage)
 
 		await app.whenStable()
 
+		expect(find(document, '.layer', HTMLDivElement)).toBe(layer)
 		expect(layer.parentElement).toBe(document.body)
 		expect(layer.style.display).toBe('')
+		expect(layer.querySelector('b')?.textContent).toBe('Слой')
+		expect(layer.classList).toContain('s-frame')
+		expect(layer.getAttribute('data-open')).toBe('true')
+		expect(layer.getAttribute('data-layer')).not.toBeNull()
+		expect(layer.style.zIndex).toBe(layer.getAttribute('data-layer'))
+		expect(layer.style.position).toBe('fixed')
+		expect(layer.style.left).toBe('10px')
+		expect(layer.style.top).toBe('20px')
+	})
+
+	it('Frame: смена координат после гидратации доходит до узла', async () => {
+		const { app, page } = await hydrated()
+		const layer = find(document, '.layer', HTMLDivElement)
+
+		page.x.set(40)
+		await app.whenStable()
+
+		expect(layer.style.left).toBe('40px')
+		expect(layer.style.top).toBe('20px')
+	})
+
+	/** Показ после гидратации поднимает слой браузера в обоих местах. */
+	it('Frame: показ после гидратации — открытость, слой и раскладка на узле', async () => {
+		const { app, page } = await hydrated()
+		const menu = find(document, '.menu', HTMLDivElement)
+
+		expect(menu.parentElement).toBe(document.body)
+		expect(menu.style.display).toBe('none')
+		expect(menu.getAttribute('data-open')).toBe('false')
+
+		page.open.set(true)
+		await app.whenStable()
+
+		const layer = menu.getAttribute('data-layer')
+
+		expect(menu.style.display).toBe('')
+		expect(menu.getAttribute('data-open')).toBe('true')
+		expect(layer).not.toBeNull()
+		expect(menu.style.zIndex).toBe(layer)
+		expect(menu.style.left).toBe('30px')
+		expect(menu.style.top).toBe('40px')
+		expect(menu.textContent).toBe('Меню')
 	})
 })
 
@@ -275,6 +433,20 @@ class TMountIdProbePlugin extends TBasePlugin<TButton> {
 	template: `<button so-button></button><button so-button></button>`,
 })
 class IdsPage {}
+
+/**
+ * Кнопка в панели Frame: на сервере панели нет, и её содержимое не попадает в
+ * разметку, но собирается — проекцию создаёт шаблон страницы, а не Frame.
+ */
+@Component({
+	selector: 'app-root',
+	standalone: true,
+	imports: [TButtonComponent, TFrameComponent],
+	template: `<button so-button></button>
+		<div so-frame visible><button so-button></button></div>
+		<button so-button></button>`,
+})
+class FrameIdsPage {}
 
 describe('id монтирования', () => {
 	let dispose: (() => void) | undefined
@@ -303,6 +475,26 @@ describe('id монтирования', () => {
 		await hydrate(IdsPage)
 
 		expect(server).toEqual(['ng-1-probe', 'ng-2-probe'])
+		expect(mountIds).toEqual(server)
+	})
+
+	/**
+	 * Содержимое панели на сервере собирается, хотя в разметку не попадает, а
+	 * в браузере Angular создаёт его заново: номера тех, кто после панели, у
+	 * сервера и браузера всё равно одни.
+	 */
+	it('кнопка в панели Frame и после неё — те же id у сервера и браузера', async () => {
+		dispose = usePlugins(TButton, [TMountIdProbePlugin])
+
+		loadPage(await renderOnServer(FrameIdsPage))
+
+		const server = mountIds.splice(0)
+		const app = await hydrate(FrameIdsPage)
+
+		await app.whenStable()
+
+		// Номер 2 — у самой панели
+		expect(server).toEqual(['ng-1-probe', 'ng-3-probe', 'ng-4-probe'])
 		expect(mountIds).toEqual(server)
 	})
 

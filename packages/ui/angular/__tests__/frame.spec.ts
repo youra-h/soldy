@@ -9,9 +9,10 @@
  * `z-index` и `data-layer`, по нему плагины оверлея узнают вложенность.
  *
  * Переносит корень база (`teleportRoot`) — после отрисовки, а на месте
- * оставляет якорь-комментарий. Своего у Angular здесь два: на месте и без
- * цели узел стоит скрытым, а не отсутствует — элемент написал потребитель, —
- * и `rendered=false` его прячет, а не убирает.
+ * оставляет якорь-комментарий. Своего у Angular здесь два: без цели панели
+ * нет, но узел остаётся на месте — пустым, скрытым и без классов, наборов и
+ * стиля ядра: элемент написал потребитель, — и `rendered=false` его прячет, а
+ * не убирает.
  *
  * Сценарии — те же, что у React и Solid (`frame.spec.tsx`), без серверных:
  * Frame на сервере и после гидратации — в `ssr.server.spec.ts`.
@@ -27,6 +28,20 @@ import { find, mountHost, nextFrame } from './mount'
 
 /** Узел Frame — там, куда его увёл телепорт. */
 const frame = () => find(document, '.s-frame', HTMLElement)
+
+/** Узел Frame, которого нет: классов ядра на нём нет, искать его — по селектору. */
+const bareFrame = () => find(document, '[so-frame]', HTMLElement)
+
+/** Ни содержимого, ни классов, наборов и стиля ядра: от слоя — только узел потребителя. */
+function expectNoPanel(node: HTMLElement): void {
+	expect(node.style.display).toBe('none')
+	expect(node.textContent).toBe('')
+	expect(node.classList.contains('s-frame')).toBe(false)
+	expect(node.hasAttribute('data-open')).toBe(false)
+	expect(node.hasAttribute('data-layer')).toBe(false)
+	expect(node.style.position).toBe('')
+	expect(node.style.zIndex).toBe('')
+}
 
 /** Якоря телепорта в поддереве — комментарии на месте увезённых корней. */
 const anchors = (scope: Node): Comment[] => {
@@ -70,7 +85,7 @@ class PanelHost {}
 @Component({
 	standalone: true,
 	imports: [TFrameComponent],
-	template: `<div so-frame visible [target]="target()"></div>`,
+	template: `<div so-frame visible [target]="target()">Панель</div>`,
 })
 class TargetHost {
 	readonly target = signal('#first')
@@ -90,7 +105,7 @@ class ContainedHost {
 @Component({
 	standalone: true,
 	imports: [TFrameComponent],
-	template: `<div so-frame visible target="#missing"></div>`,
+	template: `<div so-frame visible target="#missing" class="app-panel">Панель</div>`,
 })
 class MissingHost {}
 
@@ -250,27 +265,44 @@ describe('Frame · телепорт', () => {
 		expect(document.querySelectorAll('.s-frame')).toHaveLength(1)
 	})
 
-	/** Убрать элемент потребителя компонент не может: без цели он стоит на месте скрытым. */
-	it('цели нет — узел на месте и скрыт', () => {
+	/**
+	 * Цели нет — панели нет. Убрать элемент потребителя компонент не может:
+	 * он стоит на месте пустым и скрытым, с тем, что написал потребитель.
+	 */
+	it('цели нет — панели нет: узел на месте, пустой и скрытый', () => {
 		const fixture = mountHost(MissingHost)
 		const place: HTMLElement = fixture.nativeElement
+		const node = bareFrame()
 
-		expect(frame().parentElement).toBe(place)
-		expect(frame().style.display).toBe('none')
+		expect(node.parentElement).toBe(place)
+		expectNoPanel(node)
+		expect(node.classList.contains('app-panel')).toBe(true)
 	})
 
-	it('цель пропала — узел возвращается на место и скрывается', () => {
+	it('цель пропала — узел возвращается на место, панели больше нет', () => {
 		addTarget('first')
 
 		const fixture = mountHost(TargetHost)
 		const place: HTMLElement = fixture.nativeElement
+		const node = frame()
+
+		expect(node.textContent).toBe('Панель')
 
 		fixture.componentInstance.target.set('#missing')
 		fixture.detectChanges()
 
-		expect(frame().parentElement).toBe(place)
-		expect(frame().style.display).toBe('none')
+		expect(bareFrame()).toBe(node)
+		expect(node.parentElement).toBe(place)
+		expectNoPanel(node)
 		expect(anchors(place)).toHaveLength(0)
+
+		// Цель вернулась — панель снова есть, тем же узлом
+		fixture.componentInstance.target.set('#first')
+		fixture.detectChanges()
+
+		expect(frame()).toBe(node)
+		expect(node.style.display).toBe('')
+		expect(node.textContent).toBe('Панель')
 	})
 
 	it('снятие убирает узел из цели и якорь с места', () => {
@@ -437,17 +469,21 @@ describe('Frame · разметка потребителя', () => {
 		expect(fixture.componentInstance.clicks).toHaveLength(1)
 	})
 
-	it('[style.x] и style потребителя — поверх раскладки и её смены', () => {
+	/**
+	 * Координату называет раскладка — свойство за базой: смена `x` пишет `left`
+	 * поверх `[style.left]` потребителя. Стиль потребителя под своим именем
+	 * база не трогает.
+	 */
+	it('смена x пишет left поверх [style.left] потребителя, style потребителя остаётся', () => {
 		const fixture = mountHost(ConsumerStyleHost)
 
-		expect(frame().style.left).toBe('1px')
 		expect(frame().style.color).toBe('red')
 
 		fixture.componentInstance.x.set(40)
 		fixture.detectChanges()
 
-		expect(frame().style.left).toBe('1px')
-		// Чужого свойства база не трогает, своё ставит
+		expect(frame().style.left).toBe('40px')
 		expect(frame().style.position).toBe('fixed')
+		expect(frame().style.color).toBe('red')
 	})
 })

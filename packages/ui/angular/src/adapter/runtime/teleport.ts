@@ -11,10 +11,11 @@
  * элемент по ссылке, где бы тот ни стоял: привязки, содержимое, контексты DI
  * места (локаль провайдера вокруг Frame).
  *
- * - Переносит только в браузере и после отрисовки — эффектом после отрисовки
- *   (`afterRenderEffect`), которого на сервере нет. Гидратация ищет узел там,
- *   где его нарисовал сервер, поэтому до неё узел на месте. Первый прогон
- *   эффекта — после первой отрисовки, следующие — смена цели или «на месте».
+ * - Слой есть только в браузере, как оверлей CDK: переносит корень и решает,
+ *   на своём ли он месте, эффект после отрисовки (`afterRenderEffect`),
+ *   которого на сервере нет. Гидратация ищет узел там, где его нарисовал
+ *   сервер, поэтому до неё узел на месте. Первый прогон эффекта — после первой
+ *   отрисовки, следующие — смена цели или «на месте».
  * - Пока узел в цели, на его месте стоит якорь-комментарий: узел меняется с
  *   ним местами, и соседи на месте считают те же узлы, что нарисовал сервер.
  *   «На месте» (`contained` у Frame) или без цели узел возвращается к якорю, и
@@ -25,12 +26,13 @@
  *   `el.remove()`), но узел, вложенный в снятый элемент, он не трогает: тот
  *   остался бы в цели.
  *
- * Отдаёт сигнал «корень там, где ему место»: на месте, если так задано, или в
- * цели. Пока он ложь — на сервере, до переноса, без цели, — база корень
- * прячет: панель, которой место в слое, на месте не показывается.
+ * Отдаёт сигнал «корень на своём месте»: в цели или, если так задано, на
+ * месте — и только в браузере, после отрисовки. Пока он ложь — на сервере, до
+ * первой отрисовки, без цели, — слоя нет: база корень прячет и ничего от ядра
+ * на нём не рисует, а шаблон слоя не рисует содержимое.
  */
 
-import { DestroyRef, afterRenderEffect, computed, inject, signal, type Signal } from '@angular/core'
+import { DestroyRef, afterRenderEffect, inject, signal, type Signal } from '@angular/core'
 
 /** Куда корню: селектор цели и «на месте» — значения состояния компонента. */
 export type TTeleportPlace = {
@@ -48,8 +50,12 @@ export const TELEPORT_ANCHOR = 'so-teleport'
  * компонента: эффекту после отрисовки и снятию нужен его инжектор.
  */
 export function teleportRoot(root: Element, place: TTeleportPlace): Signal<boolean> {
-	/** Корень в цели. Пишет его только перенос — в браузере, после отрисовки. */
-	const moved = signal(false)
+	/**
+	 * Корень на своём месте. Пишет его только перенос — в браузере, после
+	 * отрисовки: на сервере и до первой отрисовки слоя нет, и с `contained`
+	 * тоже.
+	 */
+	const placed = signal(false)
 
 	/** Якорь на месте корня, пока корень в цели; корень на месте — якоря нет. */
 	let anchor: Comment | null = null
@@ -79,13 +85,14 @@ export function teleportRoot(root: Element, place: TTeleportPlace): Signal<boole
 	// Фаза записи: эффект меняет DOM, а раскладку не читает
 	afterRenderEffect({
 		write: () => {
-			const selector = place.contained() ? null : place.target()
+			const contained = place.contained()
+			const selector = contained ? null : place.target()
 			const target = selector === null ? null : root.ownerDocument.querySelector(selector)
 
 			if (target) moveTo(target)
 			else moveHome()
 
-			moved.set(target !== null)
+			placed.set(contained || target !== null)
 		},
 	})
 
@@ -97,5 +104,5 @@ export function teleportRoot(root: Element, place: TTeleportPlace): Signal<boole
 		anchor = null
 	})
 
-	return computed(() => place.contained() || moved())
+	return placed.asReadonly()
 }

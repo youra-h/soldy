@@ -6,9 +6,10 @@
  * Угол зрения здесь свой. Обёртки нет: корень — сам элемент, на котором
  * потребитель написал селектор (`<button so-button>`, `<div so-button>`). Тег
  * ядро берёт у него, а классы, скрытие и наборы ядра `TComponentBase`
- * раскладывает на него же, рядом с тем, что написал потребитель. Атрибут
- * потребителя, который перебило ядро, или вход, оставшийся атрибутом корня,
- * ловятся только отсюда: `ngc` шаблон компилирует, но не исполняет.
+ * раскладывает на него же, рядом с тем, что написал потребитель: что называет
+ * ядро, — за базой, остальное — потребителя. Атрибут потребителя, который
+ * база задела, или вход, оставшийся атрибутом корня, ловятся только отсюда:
+ * `ngc` шаблон компилирует, но не исполняет.
  *
  * Входы задаются привязкой в разметке хоста или `componentRef.setInput()`, а
  * не полями: поля входов сгенерированный `TButtonSurface` только объявляет, и
@@ -297,16 +298,17 @@ class InlineDisplayHost {
 @Component({
 	standalone: true,
 	imports: [TButtonComponent],
-	template: `<button so-button class="s-button--size-normal" [size]="size()"></button>`,
+	template: `<button so-button class="own s-button--size-normal" [size]="size()"></button>`,
 })
 class SameClassHost {
 	readonly size = signal<TComponentSize>('normal')
 }
 
+/** Атрибуты потребителя под именами, которые называет ядро, и под своими. */
 @Component({
 	standalone: true,
 	imports: [TButtonComponent],
-	template: `<div so-button tabindex="-1" [disabled]="disabled()"></div>
+	template: `<div so-button tabindex="-1" title="Сохранить" [disabled]="disabled()"></div>
 		<a so-button href="/next" role="link" [disabled]="disabled()"></a>`,
 })
 class ConsumerAttributesHost {
@@ -394,7 +396,12 @@ describe('Button · разметка потребителя на корне', ()
 		expect(el.style.display).toBe('inline-flex')
 	})
 
-	it('класс потребителя с именем класса ядра ядро не снимает', () => {
+	/**
+	 * Что называет ядро, база считает своим всегда, как привязку хоста
+	 * `[class.x]`: класс потребителя с тем же именем она снимает вместе со
+	 * своим, когда ядро его больше не называет. Класс под своим именем остаётся.
+	 */
+	it('класс с именем, которое называет ядро, — за базой: смена size его снимает', () => {
 		const fixture = mountHost(SameClassHost)
 		const el = firstRoot(fixture)
 
@@ -402,44 +409,48 @@ describe('Button · разметка потребителя на корне', ()
 		fixture.detectChanges()
 
 		expect(el.classList).toContain('s-button--size-xl')
-		expect(el.classList).toContain('s-button--size-normal')
+		expect(el.classList).not.toContain('s-button--size-normal')
+		expect(el.classList).toContain('own')
 	})
 
 	/**
-	 * Атрибут потребителя главнее набора ядра: ядро пишет кнопке на `div`
-	 * `tabindex="0"`, снимает его с выключенной и возвращает включённой — и ни
-	 * разу не трогает чужое значение.
+	 * Атрибут, который называет ядро, — за базой, как привязка хоста
+	 * `[attr.x]`: кнопке на `div` она пишет `tabindex="0"` поверх значения
+	 * потребителя, снимает его с выключенной и возвращает включённой.
 	 */
-	it('tabindex="-1" на <div so-button> переживает смену disabled', () => {
+	it('tabindex на <div so-button> ведёт ядро, title потребителя остаётся', () => {
 		const fixture = mountHost(ConsumerAttributesHost)
 		const [div] = roots(fixture)
 
-		expect(div.getAttribute('tabindex')).toBe('-1')
+		expect(div.getAttribute('tabindex')).toBe('0')
 
 		fixture.componentInstance.disabled.set(true)
 		fixture.detectChanges()
 
-		expect(div.getAttribute('tabindex')).toBe('-1')
+		expect(div.hasAttribute('tabindex')).toBe(false)
 		expect(div.getAttribute('aria-disabled')).toBe('true')
 
 		fixture.componentInstance.disabled.set(false)
 		fixture.detectChanges()
 
-		expect(div.getAttribute('tabindex')).toBe('-1')
+		expect(div.getAttribute('tabindex')).toBe('0')
 		expect(div.hasAttribute('aria-disabled')).toBe(false)
+		// Чего ядро не называет, база не трогает
+		expect(div.getAttribute('title')).toBe('Сохранить')
 	})
 
-	it('role="link" на <a so-button> остаётся', () => {
+	it('role на <a so-button> ведёт ядро, href потребителя остаётся', () => {
 		const fixture = mountHost(ConsumerAttributesHost)
 		const [, link] = roots(fixture)
 
-		expect(link.getAttribute('role')).toBe('link')
+		expect(link.getAttribute('role')).toBe('button')
 
 		fixture.componentInstance.disabled.set(true)
 		fixture.detectChanges()
 
-		expect(link.getAttribute('role')).toBe('link')
+		expect(link.getAttribute('role')).toBe('button')
 		expect(link.getAttribute('aria-disabled')).toBe('true')
+		expect(link.getAttribute('href')).toBe('/next')
 	})
 
 	/**
