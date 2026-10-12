@@ -18,7 +18,8 @@
  *   `{ strategy: 'host' }`, когда корень — сам элемент потребителя (Button,
  *   ComponentView, Icon), или `{ strategy: 'view' }` (по умолчанию), когда
  *   корень живёт в шаблоне. У корня-хоста там же — имя стиль-выхода
- *   компонента и прячет ли корень его видимость (см. `TRootSpec`).
+ *   компонента, прячет ли корень его видимость и уезжает ли он в слой (см.
+ *   `TRootSpec`).
  *
  * Описание передаётся через конструктор (а не getter), т.к. оно нужно уже в
  * конструкторе, а TS запрещает обращение к абстрактному свойству в
@@ -64,7 +65,11 @@
  *   привязкой;
  * - `rendered=false` прячет корень, как `visible=false`: убрать элемент
  *   потребителя компонент не может. Содержимое остаётся, `TElementPlugin`
- *   связан с хостом всё время.
+ *   связан с хостом всё время;
+ * - слой (`TRootSpec.teleport` — Frame) уезжает в цель сам: элемент
+ *   потребителя, со всем, что на нём написано, переносит `teleportRoot`
+ *   (`teleport.ts`) — в браузере и после отрисовки. Пока корень не в цели и
+ *   не на месте — на сервере, до переноса, без цели, — скрытие его прячет.
  *
  * Сборка (`createBinding`) идёт в контексте инъекции компонента
  * (`runInInjectionContext`): обёртка сборки
@@ -104,6 +109,7 @@ import {
 	runInInjectionContext,
 	signal,
 	viewChild,
+	type Signal,
 } from '@angular/core'
 import type { IEntity } from '@soldy-ui/core'
 import type { TInstanceState, TStateSnapshot } from '@soldy-ui/setup'
@@ -119,6 +125,7 @@ import {
 	type TAppliedStyles,
 } from './root-attributes'
 import { SlotDirective } from './slot.directive'
+import { teleportRoot } from './teleport'
 import type { TBinding } from './useAdapter'
 
 /**
@@ -134,10 +141,11 @@ import type { TBinding } from './useAdapter'
  * - `'view'` — корень в шаблоне компонента, помечен `#root` и может
  *   пересоздаваться: сигнальный `viewChild('root')` переустанавливает связь
  *   при каждом пересоздании узла. Так устроен компонент, чей корень не может
- *   быть элементом потребителя, — например портал, у которого корень уезжает в
- *   слой. Шаблон без `#root` — компонент без корня (`so-component`).
+ *   быть элементом потребителя, — например поле, у которого атрибуты
+ *   потребителя делятся между корнем и вложенным `<input>`. Шаблон без
+ *   `#root` — компонент без корня (`so-component`).
  *
- * Корню-хосту база раскладывает ещё стиль и скрытие, и у него две настройки:
+ * Корню-хосту база раскладывает ещё стиль и скрытие, и у него три настройки:
  *
  * - `style` — имя стиль-выхода компонента в состоянии: стиль, который считает
  *   ядро (`fractionStyle` у ProgressSpinner). Имя у каждого компонента своё,
@@ -146,17 +154,39 @@ import type { TBinding } from './useAdapter'
  *   раскладки;
  * - `hides` — прячут ли `visible` и `rendered` корень, по умолчанию да. У
  *   Skeleton нет: они убирают только заглушку, а содержимое в корне остаётся
- *   на виду.
+ *   на виду;
+ * - `teleport` — корень уезжает в слой: имена выходов состояния с селектором
+ *   цели и с признаком «на месте» (`{ target: 'target', contained: 'contained' }`
+ *   у Frame), их называет компонент. Переносит корень `teleportRoot`
+ *   (`teleport.ts`) — сам элемент потребителя. Пока корень не в цели и не на
+ *   месте — на сервере, до переноса, без цели, — база его прячет. Нет —
+ *   корень стоит, где его написали.
  */
 export type TRootSpec =
 	| { readonly strategy: 'view' }
-	| { readonly strategy: 'host'; readonly style?: string; readonly hides?: boolean }
+	| {
+			readonly strategy: 'host'
+			readonly style?: string
+			readonly hides?: boolean
+			readonly teleport?: TRootTeleport
+	  }
+
+/** Слой в описании корня (`TRootSpec.teleport`): имена выходов состояния. */
+export type TRootTeleport = {
+	/** Выход с селектором цели: `target` у Frame. */
+	readonly target: string
+	/** Выход «корень на месте, без переноса»: `contained` у Frame. */
+	readonly contained: string
+}
 
 /** Где корень компонента — см. `TRootSpec`. */
 export type TRootStrategy = TRootSpec['strategy']
 
 /** Корня-хоста нет: корень в шаблоне или его нет вовсе. */
 const VIEW_ROOT: TRootSpec = { strategy: 'view' }
+
+/** Корень, который в слой не уезжает, всегда на своём месте. */
+const IN_PLACE = (): boolean => true
 
 /** Наборы ядра, которые база раскладывает на корень-хост. */
 const ROOT_SETS = ['aria', 'attrs', 'dataset'] as const
@@ -189,6 +219,12 @@ export abstract class TComponentBase<TInstance extends IEntity>
 	/** Прячет ли видимость корень-хост (`TRootSpec.hides`); у корня в шаблоне — нет. */
 	private readonly _hides: boolean
 
+	/**
+	 * Корень там, где ему место: у слоя (`TRootSpec.teleport`) — в цели или на
+	 * месте, если так задано (`teleportRoot`); у остальных — всегда.
+	 */
+	private readonly _placed: () => boolean
+
 	private readonly _binding = signal<TBinding<TInstance> | undefined>(undefined)
 	private _eventsCleanup?: () => void
 
@@ -208,7 +244,9 @@ export abstract class TComponentBase<TInstance extends IEntity>
 	/**
 	 * Скрытие корня-хоста — привязка `[style.display]` декоратора: прячут и
 	 * `visible`, и `rendered`. У корня в шаблоне и у корня, который видимость
-	 * не прячет (`hides: false`), хосту не достаётся ничего.
+	 * не прячет (`hides: false`), хосту не достаётся ничего. Слой прячется ещё
+	 * и не на своём месте — на сервере, до переноса в цель, без цели
+	 * (`_placed`).
 	 *
 	 * Инстанса компонента база не знает (у `so-component` нет ни классов, ни
 	 * наборов), поэтому состояние читает по именам — как запись
@@ -216,10 +254,9 @@ export abstract class TComponentBase<TInstance extends IEntity>
 	 */
 	protected readonly _rootDisplay = computed(() => {
 		const state: TStateSnapshot = this.state()
+		const hidden = this._hides && (state['rendered'] === false || state['visible'] === false)
 
-		return this._hides && (state['rendered'] === false || state['visible'] === false)
-			? 'none'
-			: null
+		return hidden || !this._placed() ? 'none' : null
 	})
 
 	/**
@@ -264,10 +301,12 @@ export abstract class TComponentBase<TInstance extends IEntity>
 
 			this._host = host
 			this._hides = root.hides ?? true
+			this._placed = root.teleport ? this._teleportHost(host, root.teleport) : IN_PLACE
 			this._bindHost(host, root.style)
 		} else {
 			this._host = null
 			this._hides = false
+			this._placed = IN_PLACE
 			this._bindView()
 		}
 	}
@@ -399,6 +438,31 @@ export abstract class TComponentBase<TInstance extends IEntity>
 		// Снизу выход плагина раскладки, поверх — стиль-выход компонента
 		effect(() => {
 			appliedStyles = applyStyles(host, stylesOf(layout(), own()), appliedStyles)
+		})
+	}
+
+	/**
+	 * Слой (`TRootSpec.teleport`): корень-хост уезжает в цель. Цель и «на
+	 * месте» база читает из состояния по именам выходов, которые назвал
+	 * компонент, а переносит корень `teleportRoot`. Зовётся из конструктора:
+	 * эффекту после отрисовки нужен injection context.
+	 *
+	 * Отдаёт сигнал «корень на своём месте» — по нему корень прячет скрытие.
+	 */
+	private _teleportHost(host: Element, names: TRootTeleport): Signal<boolean> {
+		return teleportRoot(host, {
+			// Селектор — непустая строка, всё остальное — цели нет
+			target: computed(() => {
+				const state: TStateSnapshot = this.state()
+				const value = state[names.target]
+
+				return typeof value === 'string' && value !== '' ? value : null
+			}),
+			contained: computed(() => {
+				const state: TStateSnapshot = this.state()
+
+				return state[names.contained] === true
+			}),
 		})
 	}
 

@@ -1,0 +1,453 @@
+/**
+ * Frame в Angular: слой поверх страницы.
+ *
+ * Обёртки нет: корень — сам элемент потребителя (`<div so-frame>`), и в цель
+ * (`body` по умолчанию) уезжает он же — как `<teleport>` у Vue и портал у
+ * React. На нём сходится всё: наборы ядра, раскладка плагина (`position`,
+ * координаты, `z-index` слоя) и то, что потребитель написал на элементе, —
+ * класс, атрибуты, обработчики, стиль. Номер слоя один на два места —
+ * `z-index` и `data-layer`, по нему плагины оверлея узнают вложенность.
+ *
+ * Переносит корень база (`teleportRoot`) — после отрисовки, а на месте
+ * оставляет якорь-комментарий. Своего у Angular здесь два: на месте и без
+ * цели узел стоит скрытым, а не отсутствует — элемент написал потребитель, —
+ * и `rendered=false` его прячет, а не убирает.
+ *
+ * Сценарии — те же, что у React и Solid (`frame.spec.tsx`), без серверных:
+ * серверного рендера Angular спеки пакета не гоняют.
+ */
+
+import { describe, it, expect, afterEach } from 'vitest'
+import { Component, signal } from '@angular/core'
+import { TFrame } from '@soldy-ui/core'
+import { TPluginBundle, ruRU } from '@soldy-ui/plugins'
+import { LocaleProviderDirective, TButtonComponent, TFrameComponent } from '@soldy-ui/angular'
+import { TELEPORT_ANCHOR } from '../src/adapter/runtime/teleport'
+import { find, mountHost, nextFrame } from './mount'
+
+/** Узел Frame — там, куда его увёл телепорт. */
+const frame = () => find(document, '.s-frame', HTMLElement)
+
+/** Якоря телепорта в поддереве — комментарии на месте увезённых корней. */
+const anchors = (scope: Node): Comment[] => {
+	const walker = document.createTreeWalker(scope, NodeFilter.SHOW_COMMENT)
+	const found: Comment[] = []
+
+	while (walker.nextNode()) {
+		const node = walker.currentNode
+
+		if (node instanceof Comment && node.data === TELEPORT_ANCHOR) found.push(node)
+	}
+
+	return found
+}
+
+/** Цели, которые тест положил в документ, — убираются после него. */
+const targets: Element[] = []
+
+/** Цель с `id` в конце `body`. */
+function addTarget(id: string): HTMLElement {
+	const target = document.createElement('section')
+
+	target.id = id
+	document.body.append(target)
+	targets.push(target)
+
+	return target
+}
+
+afterEach(() => {
+	for (const target of targets.splice(0)) target.remove()
+})
+
+@Component({
+	standalone: true,
+	imports: [TFrameComponent],
+	template: `<div so-frame visible>Панель</div>`,
+})
+class PanelHost {}
+
+@Component({
+	standalone: true,
+	imports: [TFrameComponent],
+	template: `<div so-frame visible [target]="target()"></div>`,
+})
+class TargetHost {
+	readonly target = signal('#first')
+}
+
+@Component({
+	standalone: true,
+	imports: [TFrameComponent],
+	template: `<span class="before"></span>
+		<div so-frame visible [contained]="contained()">Панель</div>
+		<span class="after"></span>`,
+})
+class ContainedHost {
+	readonly contained = signal(true)
+}
+
+@Component({
+	standalone: true,
+	imports: [TFrameComponent],
+	template: `<div so-frame visible target="#missing"></div>`,
+})
+class MissingHost {}
+
+@Component({
+	standalone: true,
+	imports: [TFrameComponent],
+	template: `<section class="place">
+		@if (shown()) {
+			<div so-frame visible class="root"></div>
+		}
+		@if (wrapped()) {
+			<div class="wrap"><div so-frame visible class="nested"></div></div>
+		}
+	</section>`,
+})
+class RemovalHost {
+	readonly shown = signal(true)
+	readonly wrapped = signal(true)
+}
+
+@Component({
+	standalone: true,
+	imports: [TFrameComponent],
+	template: `<div so-frame [visible]="visible()" [rendered]="rendered()"></div>`,
+})
+class VisibilityHost {
+	readonly visible = signal<boolean | undefined>(undefined)
+	readonly rendered = signal<boolean | undefined>(undefined)
+}
+
+@Component({
+	standalone: true,
+	imports: [TFrameComponent],
+	template: `<div so-frame [ctrl]="ctrl" (elementReady)="ready.push($event)"></div>`,
+})
+class CtrlHost {
+	readonly ctrl = new TFrame()
+	readonly ready: Element[] = []
+}
+
+@Component({
+	standalone: true,
+	imports: [TFrameComponent],
+	template: `<div so-frame visible [x]="10" [y]="20" [width]="300"></div>`,
+})
+class LayoutHost {}
+
+@Component({
+	standalone: true,
+	imports: [TFrameComponent],
+	template: `<div
+		so-frame
+		visible
+		class="app-panel"
+		data-testid="panel"
+		(click)="clicks.push($event)"
+	></div>`,
+})
+class ConsumerHost {
+	readonly clicks: Event[] = []
+}
+
+@Component({
+	standalone: true,
+	imports: [TFrameComponent],
+	template: `<div so-frame visible [x]="x()" [style.left]="'1px'" style="color: red"></div>`,
+})
+class ConsumerStyleHost {
+	readonly x = signal(10)
+}
+
+@Component({
+	standalone: true,
+	imports: [TFrameComponent, TButtonComponent, LocaleProviderDirective],
+	template: `<div so-locale-provider [locale]="locale">
+		<div so-frame visible>
+			<button so-button (bundleCreate)="collect($event)"></button>
+		</div>
+	</div>`,
+})
+class LocaleHost {
+	readonly locale = ruRU
+	readonly bundles: TPluginBundle[] = []
+
+	collect(bundle: unknown): void {
+		if (bundle instanceof TPluginBundle) this.bundles.push(bundle)
+	}
+}
+
+describe('Frame · телепорт', () => {
+	it('узел — в body, а не на месте, на месте — якорь', () => {
+		const fixture = mountHost(PanelHost)
+		const place: HTMLElement = fixture.nativeElement
+
+		expect(frame().parentElement).toBe(document.body)
+		expect(place.contains(frame())).toBe(false)
+		expect(frame().textContent).toBe('Панель')
+		expect(anchors(place)).toHaveLength(1)
+	})
+
+	it('target уводит узел в свою цель, смена target — в новую тем же узлом', () => {
+		const first = addTarget('first')
+		const second = addTarget('second')
+		const fixture = mountHost(TargetHost)
+		const node = frame()
+
+		expect(node.parentElement).toBe(first)
+
+		fixture.componentInstance.target.set('#second')
+		fixture.detectChanges()
+
+		expect(frame()).toBe(node)
+		expect(node.parentElement).toBe(second)
+		expect(first.children).toHaveLength(0)
+		expect(node.style.display).toBe('')
+	})
+
+	it('contained — без телепорта: узел на месте, якоря нет', () => {
+		const fixture = mountHost(ContainedHost)
+		const place: HTMLElement = fixture.nativeElement
+
+		expect(frame().parentElement).toBe(place)
+		expect(frame().dataset.contained).toBe('true')
+		expect(frame().style.position).toBe('absolute')
+		expect(frame().style.left).toBe('')
+		expect(frame().style.display).toBe('')
+		expect(anchors(place)).toHaveLength(0)
+	})
+
+	it('contained на лету: узел возвращается на своё место и уходит обратно', () => {
+		const fixture = mountHost(ContainedHost)
+		const place: HTMLElement = fixture.nativeElement
+		const node = frame()
+
+		fixture.componentInstance.contained.set(false)
+		fixture.detectChanges()
+
+		expect(node.parentElement).toBe(document.body)
+		expect(node.style.display).toBe('')
+		expect(anchors(place)).toHaveLength(1)
+
+		fixture.componentInstance.contained.set(true)
+		fixture.detectChanges()
+
+		// Между теми же соседями, что в разметке
+		expect(node.parentElement).toBe(place)
+		expect(node.previousElementSibling?.className).toBe('before')
+		expect(node.nextElementSibling?.className).toBe('after')
+		expect(anchors(place)).toHaveLength(0)
+		expect(document.querySelectorAll('.s-frame')).toHaveLength(1)
+
+		fixture.componentInstance.contained.set(false)
+		fixture.detectChanges()
+
+		expect(frame()).toBe(node)
+		expect(node.parentElement).toBe(document.body)
+		expect(document.querySelectorAll('.s-frame')).toHaveLength(1)
+	})
+
+	/** Убрать элемент потребителя компонент не может: без цели он стоит на месте скрытым. */
+	it('цели нет — узел на месте и скрыт', () => {
+		const fixture = mountHost(MissingHost)
+		const place: HTMLElement = fixture.nativeElement
+
+		expect(frame().parentElement).toBe(place)
+		expect(frame().style.display).toBe('none')
+	})
+
+	it('цель пропала — узел возвращается на место и скрывается', () => {
+		addTarget('first')
+
+		const fixture = mountHost(TargetHost)
+		const place: HTMLElement = fixture.nativeElement
+
+		fixture.componentInstance.target.set('#missing')
+		fixture.detectChanges()
+
+		expect(frame().parentElement).toBe(place)
+		expect(frame().style.display).toBe('none')
+		expect(anchors(place)).toHaveLength(0)
+	})
+
+	it('снятие убирает узел из цели и якорь с места', () => {
+		const fixture = mountHost(RemovalHost)
+		const host: HTMLElement = fixture.nativeElement
+		const place = find(host, '.place', HTMLElement)
+
+		expect(document.body.querySelector(':scope > .root')).not.toBeNull()
+
+		fixture.componentInstance.shown.set(false)
+		fixture.detectChanges()
+
+		expect(document.querySelector('.root')).toBeNull()
+		expect(anchors(place)).toHaveLength(1)
+	})
+
+	/**
+	 * Корень представления Angular снимает сам, откуда угодно, а узел, вложенный
+	 * в снятый элемент, не трогает: из цели его убирает база.
+	 */
+	it('снятие элемента вокруг Frame убирает узел из цели', () => {
+		const fixture = mountHost(RemovalHost)
+
+		expect(document.body.querySelector(':scope > .nested')).not.toBeNull()
+
+		fixture.componentInstance.wrapped.set(false)
+		fixture.detectChanges()
+
+		expect(document.querySelector('.nested')).toBeNull()
+	})
+
+	it('снятый хост не оставляет ни узлов, ни якорей', () => {
+		const fixture = mountHost(RemovalHost)
+		const place: HTMLElement = fixture.nativeElement
+
+		fixture.destroy()
+
+		expect(document.querySelector('.s-frame')).toBeNull()
+		expect(anchors(place)).toHaveLength(0)
+	})
+
+	/**
+	 * DI Angular идёт по дереву объявлений, а не по DOM: компонент в
+	 * увезённой панели собирается с локалью провайдера вокруг Frame, а не с
+	 * английской.
+	 */
+	it('содержимое панели — в контексте места: локаль провайдера вокруг Frame', async () => {
+		const fixture = mountHost(LocaleHost)
+		// Набор объявляется на микрозадаче после сборки
+		await Promise.resolve()
+
+		expect(frame().parentElement).toBe(document.body)
+		expect(frame().querySelector('.s-button')).not.toBeNull()
+		expect(fixture.componentInstance.bundles.map((bundle) => bundle.locale.locale.tag)).toEqual(
+			[ruRU.tag],
+		)
+	})
+})
+
+describe('Frame · rendered и visible', () => {
+	it('по умолчанию скрыт: узел есть, display: none', () => {
+		mountHost(VisibilityHost)
+
+		expect(frame().style.display).toBe('none')
+	})
+
+	it('visible показывает узел', () => {
+		const fixture = mountHost(VisibilityHost)
+
+		fixture.componentInstance.visible.set(true)
+		fixture.detectChanges()
+
+		expect(frame().style.display).toBe('')
+	})
+
+	/** Элемент написал потребитель: `rendered=false` его прячет, как у всех корней-хостов. */
+	it('rendered=false прячет узел, а не убирает', () => {
+		const fixture = mountHost(VisibilityHost)
+
+		fixture.componentInstance.visible.set(true)
+		fixture.componentInstance.rendered.set(false)
+		fixture.detectChanges()
+
+		expect(frame().parentElement).toBe(document.body)
+		expect(frame().style.display).toBe('none')
+
+		fixture.componentInstance.rendered.set(true)
+		fixture.detectChanges()
+
+		expect(frame().style.display).toBe('')
+	})
+
+	// Открытость для темы пишет слой: по `data-open` она проявляет и гасит
+	// панель переходом
+	it('data-open идёт за видимостью', () => {
+		const fixture = mountHost(CtrlHost)
+		const { ctrl } = fixture.componentInstance
+
+		expect(frame().dataset.open).toBe('false')
+
+		ctrl.show()
+		fixture.detectChanges()
+
+		expect(frame().dataset.open).toBe('true')
+
+		ctrl.hide()
+		fixture.detectChanges()
+
+		expect(frame().dataset.open).toBe('false')
+	})
+
+	it('корень в цели связан с TElementPlugin', async () => {
+		const fixture = mountHost(CtrlHost)
+
+		await nextFrame()
+
+		expect(fixture.componentInstance.ready).toEqual([frame()])
+	})
+})
+
+describe('Frame · слой и раскладка', () => {
+	it('у показанного style.zIndex равен data-layer', () => {
+		mountHost(PanelHost)
+
+		const layer = frame().getAttribute('data-layer')
+
+		expect(layer).not.toBeNull()
+		expect(frame().style.zIndex).toBe(layer)
+	})
+
+	it('показ через ctrl поднимает слой в обоих местах', () => {
+		const fixture = mountHost(CtrlHost)
+		const { ctrl } = fixture.componentInstance
+
+		ctrl.show()
+		fixture.detectChanges()
+
+		expect(frame().style.display).toBe('')
+		expect(frame().style.zIndex).toBe(String(ctrl.zIndex))
+		expect(frame().getAttribute('data-layer')).toBe(String(ctrl.zIndex))
+	})
+
+	it('position и координаты — из раскладки', () => {
+		mountHost(LayoutHost)
+
+		expect(frame().style.position).toBe('fixed')
+		expect(frame().style.left).toBe('10px')
+		expect(frame().style.top).toBe('20px')
+		expect(frame().style.width).toBe('300px')
+	})
+})
+
+describe('Frame · разметка потребителя', () => {
+	it('класс, data-* и (click) — на узле в цели', () => {
+		const fixture = mountHost(ConsumerHost)
+
+		expect(frame().parentElement).toBe(document.body)
+		expect(frame().classList.contains('s-frame')).toBe(true)
+		expect(frame().classList.contains('app-panel')).toBe(true)
+		expect(frame().getAttribute('data-testid')).toBe('panel')
+
+		frame().dispatchEvent(new MouseEvent('click', { bubbles: true }))
+
+		expect(fixture.componentInstance.clicks).toHaveLength(1)
+	})
+
+	it('[style.x] и style потребителя — поверх раскладки и её смены', () => {
+		const fixture = mountHost(ConsumerStyleHost)
+
+		expect(frame().style.left).toBe('1px')
+		expect(frame().style.color).toBe('red')
+
+		fixture.componentInstance.x.set(40)
+		fixture.detectChanges()
+
+		expect(frame().style.left).toBe('1px')
+		// Чужого свойства база не трогает, своё ставит
+		expect(frame().style.position).toBe('fixed')
+	})
+})
