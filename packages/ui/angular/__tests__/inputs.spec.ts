@@ -449,6 +449,7 @@ describe('вход в строгом шаблоне · хосты компоне
 				'TIconComponent',
 				'TProgressSpinnerComponent',
 				'TSkeletonComponent',
+				'TFrameComponent',
 			]),
 		)
 	})

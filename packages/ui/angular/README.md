@@ -14,9 +14,11 @@ outputs (`element:ready` → `elementReady`), and slots are filled through the `
 
 The components are standalone and zoneless — state is a signal, so Zone.js is not required.
 
-> **Status:** the Angular adapter is in progress — Button, Icon, ProgressSpinner and Skeleton are
-> ported, the rest of the set is on its way. `so-locale-provider` gives a subtree its language and
-> library strings. See [the adapter table](https://github.com/youra-h/soldy#components).
+> **Status:** the Angular adapter is in progress — Button, Icon, Frame, ProgressSpinner and Skeleton
+> are ported, the rest of the set is on its way. Frame moves the element you wrote into `target`
+> (`body` by default) in the browser; with `contained` it stays in place. `so-locale-provider` gives
+> a subtree its language and library strings. See
+> [the adapter table](https://github.com/youra-h/soldy#components).
 
 ## Install
 
@@ -71,6 +73,24 @@ nothing written inside it.
 ```ts
 template: `<svg so-icon so-role-icon="close" aria_label="Close"></svg>`
 ```
+
+A panel over the page is a Frame. The element you write is the panel, and it is that element which
+moves into `target` (`body` by default) once the page has rendered in the browser — with your
+`class`, attributes and event listeners on it. Its content keeps the context of the place it is
+written in, such as the language of the surrounding `so-locale-provider`. On the server, and while
+`target` matches nothing, the panel stays in place hidden; `contained` keeps it in place and shown,
+positioned in its nearest positioned ancestor.
+
+```ts
+template: `<div so-frame [visible]="open()" [x]="10" [y]="20" class="app-menu">…</div>`
+```
+
+Angular inserts and moves nodes relative to the ones it rendered, so a Frame must not be the first
+node of an `@for` item that gets items inserted before it or reordered — Angular fails with
+NG05106. Wrap it in an element: `@for (item of items; track item.id) { <section><div so-frame>…`.
+Angular also does not tell a component that its place left the page while the component lives on,
+so a Frame projected through a conditional `<ng-content>` of another component does not follow that
+content: it stays in `target` or comes back in place. Put the condition around the Frame itself.
 
 The language and the strings the library renders itself come from the nearest
 `LocaleProviderDirective` above — it can sit on an `ng-container`, and changing `locale` updates

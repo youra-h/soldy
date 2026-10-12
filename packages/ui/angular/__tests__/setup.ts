@@ -14,3 +14,20 @@ import * as material from '@soldy-ui/icons-material'
  */
 
 setIcons(material)
+
+/**
+ * Заглушка `ResizeObserver`: jsdom его не реализует, а Frame следит им за
+ * размером панели и якоря (`TAnchorPlugin`). Без заглушки узел, объявленный
+ * `element:ready`, валит необработанную ошибку. Та же заглушка — в настройке
+ * тестов Vue, React, Svelte и Solid.
+ */
+
+if (!('ResizeObserver' in globalThis)) {
+	class ResizeObserverStub {
+		observe(): void {}
+		unobserve(): void {}
+		disconnect(): void {}
+	}
+
+	globalThis.ResizeObserver = ResizeObserverStub
+}
