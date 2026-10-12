@@ -2008,7 +2008,7 @@ Svelte 5 на рунах. Структура зеркалит React, потом�
 
 ## Layer 8c: Solid Adapter (`packages/ui/solid/src`)
 
-### ✅ IMPLEMENTED (Component / ComponentView / Stylable / Control / Textable / Button / Icon / Frame / ProgressSpinner / Skeleton)
+### ✅ IMPLEMENTED (Component / ComponentView / Stylable / Control / Textable / Button / Icon / Label / Frame / ProgressSpinner / Skeleton / Input / CheckBox / Switch)
 
 Структура зеркалит React — JSX и колбэк-пропы делают их почти близнецами, —
 а механика ближе к Vue и Svelte: тело компонента выполняется один раз, и
@@ -2020,13 +2020,20 @@ Svelte 5 на рунах. Структура зеркалит React, потом�
   потребитель после React и Svelte); `createSolidAdapterContext` — сборка с id
   монтирования от `createUniqueId()` и локалью поддерева; раскладка корня
   `toRootProps` / `toRootLayout` (наборы ядра, поверх атрибуты потребителя,
-  класс, стиль объектом по-CSS) и её мемо `createRootProps`; `roleIcon(role)`
-  — компонент иконки по роли для `tag` у Icon, один на роль; `renderSlot`,
-  `hasSlot` и `resolveSlot` — слот, развёрнутый один раз поверх `children()`.
+  класс, стиль объектом по-CSS) и её мемо `createRootProps`; делёж атрибутов
+  потребителя у поля — `toRootForward` (класс и стиль корню) и
+  `toControlAttrs` (остальное `<input>`, `ref` тоже); `roleIcon(role)` —
+  компонент иконки по роли для `tag` у Icon, один на роль, — он же рисует
+  отметку CheckBox без слота; `renderSlot`, `hasSlot` и `resolveSlot` — слот,
+  развёрнутый один раз поверх `children()`.
 - `adapter/runtime/` — `useAdapter` поверх связки
   `adapter.connect(SolidProfile)`; `rootTag` — корень по `tag` для `Dynamic`
-  (строка или компонент Solid); `Teleport` — поверх `Portal` из
-  `solid-js/web` со своей целью.
+  (строка или компонент Solid); `fieldText` — свой `ref` поля, который пишет
+  текст в узел, только когда он разошёлся с узлом; `Teleport` — поверх
+  `Portal` из `solid-js/web` со своей целью.
+- `src/types.ts` — кроме типов пропсов, дополнение `JSX.ExplicitProperties`
+  свойством `indeterminate`: в типах атрибутов `<input>` у JSX Solid его нет,
+  а разметка CheckBox пишет его свойством узла (`prop:indeterminate`).
 - `adapter/locale/` — `LocaleProvider`: свой `TLocaleSource` детям контекстом,
   создан с локалью первой отрисовки, смена пропа — в тот же источник.
 - `adapter/elevator/` — `TSolidElevator` через `createContext`/`useContext`.
@@ -2054,7 +2061,16 @@ Svelte 5 на рунах. Структура зеркалит React, потом�
   атрибуты корня, `ref` и содержимое пропсами.
 - **Слот с запасным содержимым — `resolveSlot`**: геттер слота в пропсах Solid
   на каждое чтение создаёт узлы заново, и проверка «задан ли слот» нарисовала
-  бы второй экземпляр. Остальные слоты разметка рисует `renderSlot` прямо.
+  бы второй экземпляр. Так же — слот, по которому разметка решает про обёртку
+  (`leading` и `trailing` у Input) или про запасное (отметка CheckBox, текст
+  Label). Остальные слоты разметка рисует `renderSlot` прямо.
+- **Текст поля — `ref` поля `fieldText`**: привязку `value` Solid пишет в
+  узел на каждую смену значения, не сверяя с узлом, — набор возвращал бы узлу
+  его же текст, и браузер переставал бы проверять `minlength`. Эффект
+  отрисовки в `ref` поля пишет текст, только когда он разошёлся с узлом; на
+  сервере текст уходит атрибутом `value`. Отметку и «выбрано частично»
+  (`checked`, `prop:indeterminate`) Solid пишет свойствами сам, своего поля,
+  как `NativeInput` у React, у адаптера нет.
 - **Id монтирования — `createUniqueId()`**: на сервере и при гидратации — от
   места компонента в дереве, и звать его можно из любой функции тела
   компонента, поэтому его берёт обёртка сборки, а не компонент.
@@ -2074,7 +2090,8 @@ Svelte 5 на рунах. Структура зеркалит React, потом�
 - Коллекции не портированы; elevator, как и в React, не может отдать значение
   императивно — контекст в Solid выставляется только через `<Provider>` в JSX.
   React решил это слоем значений и `Elevate` (Layer 7) — отдельная задача
-  для Solid.
+  для Solid. С коллекциями ждёт и RadioGroup: радио в подписи `Label` придёт
+  с ним.
 
 ## Layer 8d: Web Components Adapter (`packages/ui/webc/src`)
 

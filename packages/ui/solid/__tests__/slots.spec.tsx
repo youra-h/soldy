@@ -12,7 +12,16 @@ import {
 	type TabsDescriptor,
 } from '@soldy-ui/setup'
 import { TButton } from '@soldy-ui/core'
-import { Button, type ButtonProps, type FrameProps, type UseDomProps } from '@soldy-ui/solid'
+import {
+	Button,
+	type ButtonProps,
+	type CheckBoxProps,
+	type FrameProps,
+	type InputProps,
+	type LabelProps,
+	type SwitchProps,
+	type UseDomProps,
+} from '@soldy-ui/solid'
 import { mount } from './mount'
 
 /** Корень кнопки с пропсами `props`. */
@@ -195,5 +204,18 @@ describe('содержимое — только слот default', () => {
 		expectTypeOf<UseDomProps<typeof InputDescriptor>>().not.toHaveProperty('children')
 		expectTypeOf<FrameProps>().toHaveProperty('children')
 		expectTypeOf<FrameProps['children']>().toEqualTypeOf<JSX.Element>()
+	})
+
+	/**
+	 * Поля берут атрибуты `<input>` (`TFieldAttributes`), а `children` есть и
+	 * там: вычитается он и у них. Подпись поля — `Label` вокруг, контрол — её
+	 * слот `default`.
+	 */
+	it('у полей CheckBox, Switch и Input children нет, у Label — есть: это её контрол', () => {
+		expectTypeOf<CheckBoxProps>().not.toHaveProperty('children')
+		expectTypeOf<SwitchProps>().not.toHaveProperty('children')
+		expectTypeOf<InputProps>().not.toHaveProperty('children')
+		expectTypeOf<LabelProps>().toHaveProperty('children')
+		expectTypeOf<LabelProps['children']>().toEqualTypeOf<JSX.Element>()
 	})
 })

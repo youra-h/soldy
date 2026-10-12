@@ -1,5 +1,15 @@
 import type { Accessor, JSX } from 'solid-js'
-import { Button, Icon, ProgressSpinner, Skeleton, roleIcon } from '@soldy-ui/solid'
+import {
+	Button,
+	CheckBox,
+	Icon,
+	Input,
+	Label,
+	ProgressSpinner,
+	Skeleton,
+	Switch,
+	roleIcon,
+} from '@soldy-ui/solid'
 
 /** Пропсы превью: пропы строки, `ctrl` с экземпляром ядра и колбэки событий хоста. */
 export type TPreviewProps = Record<string, unknown>
@@ -31,6 +41,30 @@ export const PREVIEWS: Record<string, TPreview> = {
 	// Подпись — пропом `text`, а не слотом: заданный слот перекрывает проп, и
 	// строка `text` на странице свойств не меняла бы ничего видимого
 	button: (bind) => <Button text="Кнопка" {...bind()} />,
+
+	input: (bind) => <Input placeholder="Введите текст" {...bind()} />,
+
+	// Текста у чекбокса и переключателя нет, оба — голый контрол: подпись даёт
+	// обёртка Label. Её пропы задаёт превью, строки страницы правят контрол
+	'check-box': (bind) => (
+		<Label text="Согласен">
+			<CheckBox {...bind()} />
+		</Label>
+	),
+
+	switch: (bind) => (
+		<Label text="Включено">
+			<Switch {...bind()} />
+		</Label>
+	),
+
+	// Подпись — пропом `text`, контрол — слотом. Строки страницы правят саму
+	// подпись: сторону, размер текста, вариант
+	label: (bind) => (
+		<Label text="Согласен" {...bind()}>
+			<CheckBox />
+		</Label>
+	),
 
 	icon: (bind) => <Icon tag={ARROW_DOWN} {...bind()} />,
 

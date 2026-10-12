@@ -41,6 +41,13 @@
  * Последним он стоит по той же причине, что у React: `ref` потребителя из его
  * атрибутов (`forward`) не должен выбить привязку корня — не было бы
  * `element:ready`.
+ *
+ * У поля (Input, CheckBox, Switch) атрибуты потребителя делятся между двумя
+ * элементами, как `useSplitAttrs` у Vue и `toControlAttrs` у React и Svelte:
+ * класс и стиль — корню (`toRootForward`), всё остальное — его `<input>`
+ * (`toControlAttrs`), поверх `aria` поля. Остальное — это и обработчики
+ * событий, и `aria-*`, и `data-*`, и `ref` потребителя: поведение, которое он
+ * вешает на поле, — подсказка, фокус по `ref` — встаёт на сам `<input>`.
  */
 
 import { createMemo, type Accessor, type JSX } from 'solid-js'
@@ -196,4 +203,29 @@ export function createRootProps(read: () => TRootSource): Accessor<TRootProps> {
 
 		return toRootProps(state, sets, forward, style)
 	})
+}
+
+/** Класс и стиль потребителя — то, что из его атрибутов остаётся корню поля. */
+export function toRootForward(forward: TRootForward): TRootForward {
+	return { class: forward.class, style: forward.style }
+}
+
+/**
+ * Атрибуты вложенного контрола: пропсы, которые компонент не съел, без класса
+ * и стиля — те сливаются на корне (`toRootForward`). Так поле раздаёт атрибуты
+ * потребителя двум элементам: обёртке — вид, `<input>` — всё остальное,
+ * события, `aria-*`, `data-*` и `ref`. Аналог `useSplitAttrs` у Vue и
+ * `toControlAttrs` у React и Svelte.
+ *
+ * Параметр типа — атрибуты компонента (`TDomAttributes` с `TFieldAttributes`),
+ * а не весь его набор пропсов: `forwardProps` типизирован пропсами целиком, а
+ * входов дескриптора в нём нет — их съела связка. Остаток ложится на `<input>`
+ * спредом, и его тип сверяется с атрибутами `<input>`.
+ */
+export function toControlAttrs<TAttributes extends TRootForward>(
+	forward: Partial<TAttributes>,
+): Omit<Partial<TAttributes>, keyof TRootForward> {
+	const { class: _class, style: _style, ...control } = forward
+
+	return control
 }

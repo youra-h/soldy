@@ -14,7 +14,16 @@
 
 import { describe, it, expect } from 'vitest'
 import { renderToString } from 'solid-js/web'
-import { Button, Frame, Icon, ProgressSpinner, Skeleton, roleIcon } from '@soldy-ui/solid'
+import {
+	Button,
+	CheckBox,
+	Frame,
+	Icon,
+	Label,
+	ProgressSpinner,
+	Skeleton,
+	roleIcon,
+} from '@soldy-ui/solid'
 
 /**
  * Разметка сервера без меток гидратации: ключи узлов (`data-hk`) и
@@ -113,5 +122,36 @@ describe('стиль и наборы на сервере', () => {
 		expect(body).toContain('aria-busy="true"')
 		expect(body).toContain('<span>Панель</span>')
 		expect(body).not.toContain('display:none')
+	})
+})
+
+describe('Label · серверный рендер', () => {
+	/**
+	 * Подпись — корень `label`, контрол внутри, потом текст: связка с полем —
+	 * вложение, и она есть с первой отрисовки, без `for` и `id`.
+	 */
+	it('корень label, контрол, потом текст', () => {
+		const body = markup(
+			renderToString(() => (
+				<Label text="Согласен">
+					<CheckBox value />
+				</Label>
+			)),
+		)
+
+		expect(body).toMatch(
+			/^<label [^>]*class="s-label s-label--size-normal s-label--position-end ?"/,
+		)
+		expect(body).toMatch(
+			/<span class="s-label__control"><span [^>]*class="s-check-box[^"]*"[^>]*><input [^>]*type="checkbox"[^>]*checked/,
+		)
+		expect(body).toContain('<span class="s-label__text">Согласен</span>')
+		expect(body).not.toMatch(/\sfor=/)
+	})
+
+	it('без текста обёртка текста пуста', () => {
+		const body = markup(renderToString(() => <Label />))
+
+		expect(body).toContain('<span class="s-label__text"></span>')
 	})
 })

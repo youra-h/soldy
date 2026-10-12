@@ -55,12 +55,18 @@ export type UseProps<
  *
  * События — те, что компонент принимает (`TEvents`): у коллекции это ещё и
  * события фасада.
+ *
+ * Это ровно то, что компонент не съел: его `forwardProps` без входов
+ * дескриптора. Атрибуты — корня (`HTMLAttributes`), у поля — его `<input>`
+ * (`TFieldAttributes`): поле раздаёт их двум элементам, класс и стиль — корню,
+ * остальное — `<input>` (`toControlAttrs`).
  */
 export type TDomAttributes<
 	TDescriptorFn extends (...args: any[]) => IComponentDescriptor,
 	TEvents extends object = EventProps<TDescriptorFn>,
+	TAttributes extends object = JSX.HTMLAttributes<HTMLElement>,
 > = Omit<
-	JSX.HTMLAttributes<HTMLElement>,
+	TAttributes,
 	| 'children'
 	| keyof DescriptorAllProps<TDescriptorFn>
 	| TContractOf<TDescriptorFn>['protectedName']
@@ -69,11 +75,48 @@ export type TDomAttributes<
 >
 
 /**
+ * Атрибуты `<input>` полей (Input, CheckBox, Switch): всё, кроме того, что
+ * поле ведёт само, — как `TFieldAttributes` у React и Svelte. Отметку и
+ * «выбрано частично» разметка берёт из состояния ядра, и атрибут потребителя
+ * рядом с ними был бы вторым путём к тому же состоянию. `readonly` — вход
+ * дескриптора: `TDomAttributes` вычитает его и так, а `readOnly` — то же
+ * свойство узла под именем DOM. Текст поля — вход `value`, его вычитает
+ * `TDomAttributes`.
+ */
+export type TFieldAttributes = Omit<
+	JSX.InputHTMLAttributes<HTMLInputElement>,
+	'checked' | 'prop:indeterminate' | 'readonly' | 'readOnly'
+>
+
+/**
  * Props DOM-компонента: UseProps + HTML-атрибуты без конфликтов с пропсами,
  * событиями и слотами дескриптора (см. `TDomAttributes`).
+ *
+ * Атрибуты по умолчанию — `HTMLAttributes` корня; поля берут
+ * `TFieldAttributes`: всё, кроме класса и стиля, у них уходит на `<input>`.
  */
 export type UseDomProps<
 	TDescriptorFn extends (...args: any[]) => IComponentDescriptor,
 	TInstance extends IEntity = IEntity,
 	TEvents extends object = EventProps<TDescriptorFn>,
-> = UseProps<TDescriptorFn, TInstance, TEvents> & TDomAttributes<TDescriptorFn, TEvents>
+	TAttributes extends object = JSX.HTMLAttributes<HTMLElement>,
+> = UseProps<TDescriptorFn, TInstance, TEvents> &
+	TDomAttributes<TDescriptorFn, TEvents, TAttributes>
+
+/**
+ * «Выбрано частично» флажка — свойство узла `<input>` (`indeterminate`), и
+ * атрибута у него нет. Solid пишет его свойством — имя в его списке свойств
+ * узла, — но в атрибутах `<input>` его типов JSX нет. Разметка CheckBox пишет
+ * его явно свойством — `prop:indeterminate`, — а тип такой записи Solid берёт
+ * из `JSX.ExplicitProperties`: это и есть его точка расширения для свойств
+ * узла, которых нет среди атрибутов. На сервере запись `prop:` в разметку не
+ * уходит: атрибута `indeterminate` у HTML нет, и «выбрано частично» поле
+ * покажет после гидратации.
+ */
+declare module 'solid-js' {
+	namespace JSX {
+		interface ExplicitProperties {
+			indeterminate: boolean
+		}
+	}
+}
