@@ -14,7 +14,7 @@
  * и `rendered=false` его прячет, а не убирает.
  *
  * Сценарии — те же, что у React и Solid (`frame.spec.tsx`), без серверных:
- * серверного рендера Angular спеки пакета не гоняют.
+ * Frame на сервере и после гидратации — в `ssr.server.spec.ts`.
  */
 
 import { describe, it, expect, afterEach } from 'vitest'

@@ -1670,8 +1670,9 @@ There is no `adapter/static/`: React takes prop names from the descriptor types,
   `TSurface.of(descriptor, AngularProfile)`; `useBooleanInputs` — входы, чей
   проп объявлен ровно `Boolean`; `useOutputs` отдаёт выход в паре с полным
   именем события ядра — `actionPress` и `action:press`);
-  `createAngularAdapterContext` — сборка с локалью поддерева из DI, в
-  контексте инъекции компонента; `RoleIconDirective` (`svg[so-role-icon]`) —
+  `createAngularAdapterContext` — сборка с локалью поддерева из DI и id
+  монтирования приложения (`nextMountId`), в контексте инъекции компонента;
+  `RoleIconDirective` (`svg[so-role-icon]`) —
   рисунок иконки по роли на `<svg>` Icon: `viewBox` и содержимое из реестра.
 - `adapter/runtime/` — `useAdapter(adapter)` → `TBinding` поверх связки
   `adapter.connect(AngularProfile)`: `state` (сигнал), `syncInputs`
@@ -1855,15 +1856,21 @@ Zone.js и молча ломалось бы под `provideZonelessChangeDetecti
   вложенный в снятый элемент, остался бы в цели.
 
 Иконку из пакета иконок на `<svg>` Icon кладёт директива адаптера
-`RoleIconDirective` — `<svg so-icon so-role-icon="close">`: `viewBox` и
-содержимое из реестра при отрисовке, привязками хоста, содержимое — мимо
-санитайзера (`bypassSecurityTrustHtml`: санитайзер вычищает SVG, а источник
-доверенный). Остальное у этого `<svg>` — класс, стиль, ARIA, `TElementPlugin` —
-ведёт база Icon, как у любого корня.
+`RoleIconDirective` — `<svg so-icon so-role-icon="close">`: `viewBox` из
+реестра — привязкой хоста, содержимое — эффектом, который отдаёт разметку
+иконки на разбор документу (`insertAdjacentHTML` внутри `<svg>`), без
+санитайзера, как у остальных адаптеров. Не привязка `[innerHTML]`:
+DOM-эмуляция серверного рендера Angular запись `innerHTML` у элементов SVG не
+реализует, и ошибка обрывала отрисовку страницы на сервере. Остальное у этого
+`<svg>` — класс, стиль, ARIA, `TElementPlugin` — ведёт база Icon, как у любого
+корня.
 
 Сборка — `createAngularAdapterContext` в контексте инъекции компонента:
 `ngOnInit` базы зовёт `createBinding` внутри `runInInjectionContext`, и
-обёртка берёт из DI источник локали ближайшего `LocaleProviderDirective`.
+обёртка берёт из DI источник локали ближайшего `LocaleProviderDirective` и id
+монтирования — номер сборки компонента в его приложении с префиксом `APP_ID`:
+полная гидратация собирает компоненты в том же порядке, что и сервер, и номер
+у них один.
 Директива отдаёт свой `TLocaleSource` поддереву через свои `providers` и пишет
 в него вход сеттером — раньше, чем Angular зовёт `ngOnInit` детей, поэтому
 дети того же прохода собираются уже с локалью из входа.

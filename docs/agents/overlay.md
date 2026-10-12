@@ -83,8 +83,10 @@
   по пометке владельца (`data-owner`), слой — по `closest`, а не по родителю.
   Сторожат `ui/react/__tests__/frame.spec.tsx`,
   `ui/svelte/__tests__/frame.spec.ts`, `ui/svelte/__tests__/ssr.server.spec.ts`,
-  `ui/solid/__tests__/frame.spec.tsx`, `ui/solid/__tests__/ssr.server.spec.tsx`
-  и `ui/angular/__tests__/frame.spec.ts`; контексты места — «содержимое панели
+  `ui/solid/__tests__/frame.spec.tsx`, `ui/solid/__tests__/ssr.server.spec.tsx`,
+  `ui/angular/__tests__/frame.spec.ts` и `ui/angular/__tests__/ssr.server.spec.ts`
+  (на сервере — на месте и скрыта, с `contained` — на месте и видна, после
+  гидратации — в цели тем же узлом); контексты места — «содержимое панели
   — в контексте места» в `frame.spec.ts` Svelte и `frame.spec.tsx` Solid:
   кнопка в панели собрана с локалью провайдера вокруг Frame, а не с английской.
 - **`TModalLayer`** (`core/src/components/base/modal-layer/`) — общая база

@@ -45,8 +45,7 @@
   },
   "peerDependencies": {
     "@angular/common": "^22.1.5",
-    "@angular/core": "^22.1.5",
-    "@angular/platform-browser": "^22.1.5"
+    "@angular/core": "^22.1.5"
   },
   "devDependencies": {
     "@angular/build": "^22.2.1",
@@ -56,6 +55,7 @@
     "@angular/compiler-cli": "^22.1.5",
     "@angular/core": "^22.1.5",
     "@angular/platform-browser": "^22.1.5",
+    "@angular/platform-server": "^22.1.5",
     "@soldy-ui/icons-material": "^0.1.0",
     "@soldy-ui/theme-oren": "^0.1.0",
     "@types/node": "^22.0.0",
