@@ -15,6 +15,11 @@
  * компоненту пропом с ключом-символом, и на корень он едет вместе с
  * атрибутами потребителя. У привязки корня адаптера ключ свой: одно другого
  * не перекрывает.
+ *
+ * Элемент коллекции (`Tabs.Item`, `Accordion.Item`, `RadioGroup.Item`) делит
+ * атрибуты потребителя, как у Vue: класс и стиль — корню, остальное — строке
+ * (у радио — полю), поверх её набора `aria`. Корень остаётся за адаптером и у
+ * него.
  */
 
 import { describe, it, expect } from 'vitest'
@@ -22,6 +27,7 @@ import { flushSync, type Component } from 'svelte'
 import { createAttachmentKey, type Attachment } from 'svelte/attachments'
 import { TButton } from '@soldy-ui/core'
 import {
+	Accordion,
 	Button,
 	CheckBox,
 	ComponentView,
@@ -30,13 +36,16 @@ import {
 	Input,
 	Label,
 	ProgressSpinner,
+	RadioGroup,
 	Skeleton,
 	Switch,
+	Tabs,
 	roleIcon,
 	toControlAttrs,
 	toRootForward,
 	toRootLayout,
 	toRootProps,
+	type AccordionProps,
 	type ButtonProps,
 	type CheckBoxProps,
 	type ComponentViewProps,
@@ -45,12 +54,16 @@ import {
 	type InputProps,
 	type LabelProps,
 	type ProgressSpinnerProps,
+	type RadioGroupProps,
 	type SkeletonProps,
 	type SwitchProps,
+	type TabsContentProps,
+	type TabsProps,
 } from '@soldy-ui/svelte'
 import Attach from './Attach.test.svelte'
+import ItemProbe from './ItemProbe.test.svelte'
 import Link from './Link.test.svelte'
-import { find, mount, nextFrame, readyProbe } from './mount'
+import { find, mount, nextFrame, readyProbe, type TMounted } from './mount'
 import { reactiveProps } from './reactive-props.svelte'
 import { attachRootStyle } from './root-style.svelte'
 
@@ -61,22 +74,30 @@ type TProbeProps = ButtonProps &
 	IconProps &
 	LabelProps &
 	ProgressSpinnerProps &
-	SkeletonProps
+	SkeletonProps &
+	TabsProps &
+	AccordionProps &
+	RadioGroupProps &
+	TabsContentProps
 
 /**
- * Компонент, класс его корня и пропсы, без которых его корень не виден: Frame
- * по умолчанию скрыт и уходит телепортом в `body` — корень ищется по документу.
+ * Компонент, как его рисовать, и класс его корня. Пропсы, без которых корень
+ * не виден, рисование добавляет само: Frame по умолчанию скрыт и уходит
+ * телепортом в `body` — корень ищется по документу; у Icon тега по умолчанию
+ * нет; панель рисуется, пока активен её таб, — и только внутри набора.
  */
-const COMPONENTS: ReadonlyArray<
-	readonly [string, Component<TProbeProps>, string, Partial<TProbeProps>]
-> = [
-	['Button', Button, '.s-button', {}],
-	['ComponentView', ComponentView, '.s-component-view', {}],
-	['Frame', Frame, '.s-frame', { visible: true }],
-	['Icon', Icon, '.s-icon', { tag: 'i' }],
-	['Label', Label, '.s-label', {}],
-	['ProgressSpinner', ProgressSpinner, '.s-progress-spinner', {}],
-	['Skeleton', Skeleton, '.s-skeleton', {}],
+const COMPONENTS: ReadonlyArray<readonly [string, (props: TProbeProps) => TMounted, string]> = [
+	['Button', (props) => mount(Button, props), '.s-button'],
+	['ComponentView', (props) => mount(ComponentView, props), '.s-component-view'],
+	['Frame', (props) => mount(Frame, { visible: true, ...props }), '.s-frame'],
+	['Icon', (props) => mount(Icon, { tag: 'i', ...props }), '.s-icon'],
+	['Label', (props) => mount(Label, props), '.s-label'],
+	['ProgressSpinner', (props) => mount(ProgressSpinner, props), '.s-progress-spinner'],
+	['Skeleton', (props) => mount(Skeleton, props), '.s-skeleton'],
+	['Tabs', (props) => mount(Tabs, props), '.s-tabs'],
+	['Tabs.Content', (props) => mount(ItemProbe, { kind: 'content', ...props }), '.s-tabs__panel'],
+	['Accordion', (props) => mount(Accordion, props), '.s-accordion'],
+	['RadioGroup', (props) => mount(RadioGroup, props), '.s-radio-group'],
 ]
 
 /** Общие пропсы полей в таблице. */
@@ -93,29 +114,52 @@ const FIELDS: ReadonlyArray<readonly [string, Component<TFieldProbeProps>, strin
 	['Input', Input, '.s-input'],
 ]
 
+/** Рисование элемента коллекции в своём владельце — пропсами самого элемента. */
+type TItemDraw = (props: Record<string | symbol, unknown>) => TMounted
+
+/**
+ * Элемент коллекции, как его рисовать, класс его корня и строка, которой уходят
+ * атрибуты потребителя: у радио строки нет, и атрибуты уходят полю. Элемент —
+ * в своём владельце: `id` строке пишет коллекция.
+ */
+const ITEMS: ReadonlyArray<readonly [string, TItemDraw, string, string]> = [
+	[
+		'Tabs.Item',
+		(props) => mount(ItemProbe, { kind: 'tabs', ...props }),
+		'.s-tabs-item',
+		'.s-tabs-item [role="tab"]',
+	],
+	[
+		'Accordion.Item',
+		(props) => mount(ItemProbe, { kind: 'accordion', ...props }),
+		'.s-accordion-item',
+		'.s-accordion-item__header',
+	],
+	[
+		'RadioGroup.Item',
+		(props) => mount(ItemProbe, { kind: 'radio', ...props }),
+		'.s-radio-group-item',
+		'.s-radio-group-item__input',
+	],
+]
+
 describe('атрибут снаружи перекрывает набор ядра', () => {
 	/** `dir` ядро пишет в `attrs` по `direction`, а `dir` снаружи — атрибут потребителя. */
-	it.each(COMPONENTS)(
-		'%s: dir потребителя — поверх dir ядра',
-		(_name, component, selector, own) => {
-			mount(component, { ...own, direction: 'rtl', dir: 'ltr' })
+	it.each(COMPONENTS)('%s: dir потребителя — поверх dir ядра', (_name, draw, selector) => {
+		draw({ direction: 'rtl', dir: 'ltr' })
 
-			expect(find(document, selector, HTMLElement).getAttribute('dir')).toBe('ltr')
-		},
-	)
+		expect(find(document, selector, HTMLElement).getAttribute('dir')).toBe('ltr')
+	})
 
 	/** Класс ядра — первым, класс потребителя — за ним, оба на корне. */
-	it.each(COMPONENTS)(
-		'%s: класс потребителя — после классов ядра',
-		(_name, component, selector, own) => {
-			mount(component, { ...own, class: 'mine' })
+	it.each(COMPONENTS)('%s: класс потребителя — после классов ядра', (_name, draw, selector) => {
+		draw({ class: 'mine' })
 
-			const classes = [...find(document, selector, HTMLElement).classList]
+		const classes = [...find(document, selector, HTMLElement).classList]
 
-			expect(classes.at(-1)).toBe('mine')
-			expect(classes[0]).toBe(selector.slice(1))
-		},
-	)
+		expect(classes.at(-1)).toBe('mine')
+		expect(classes[0]).toBe(selector.slice(1))
+	})
 
 	it('Button на div: tabindex потребителя — поверх tabindex="0" ядра', () => {
 		const { root } = mount(Button, { tag: 'div', tabindex: -1 })
@@ -200,19 +244,54 @@ describe('поле: атрибуты снаружи — <input>, поверх е
 	})
 })
 
-describe('привязка корня к TElementPlugin', () => {
-	it.each(COMPONENTS)(
-		'%s: element:ready приходит с корнем',
-		async (_name, component, selector, own) => {
+describe('элемент коллекции: атрибуты снаружи — строке, поверх её aria', () => {
+	/** `id` строке пишет коллекция при входе элемента — связка с панелью. */
+	it.each(ITEMS)('%s: id потребителя — поверх id коллекции', (_name, draw, _root, row) => {
+		draw({ id: 'mine' })
+
+		expect(find(document, row, HTMLElement).id).toBe('mine')
+	})
+
+	it.each(ITEMS)('%s: класс и стиль — корню, а не строке', (_name, draw, root, row) => {
+		draw({ class: 'mine', style: 'color: red' })
+
+		expect(find(document, root, HTMLElement).classList.contains('mine')).toBe(true)
+		expect(find(document, root, HTMLElement).style.color).toBe('red')
+		expect(find(document, row, HTMLElement).classList.contains('mine')).toBe(false)
+	})
+
+	/**
+	 * Attachment потребителя — тоже «остальное»: поведение, которое он вешает
+	 * на элемент, встаёт на строку, у радио — на поле. Привязка корня к
+	 * `TElementPlugin` — за адаптером: `element:ready` приходит с корнем элемента.
+	 */
+	it.each(ITEMS)(
+		'%s: attachment потребителя — на строке, element:ready — с корнем',
+		async (_name, draw, root, row) => {
+			const consumer = attachmentProbe()
 			const ready = readyProbe()
 
-			mount(component, { ...own, onElementReady: ready.onElementReady })
+			draw({ onElementReady: ready.onElementReady, [createAttachmentKey()]: consumer.attach })
 			await nextFrame()
 
+			expect(consumer.attached).toHaveLength(1)
+			expect(consumer.attached[0]).toBe(find(document, row, HTMLElement))
 			expect(ready.elements).toHaveLength(1)
-			expect(ready.elements[0]).toBe(find(document, selector, HTMLElement))
+			expect(ready.elements[0]).toBe(find(document, root, HTMLElement))
 		},
 	)
+})
+
+describe('привязка корня к TElementPlugin', () => {
+	it.each(COMPONENTS)('%s: element:ready приходит с корнем', async (_name, draw, selector) => {
+		const ready = readyProbe()
+
+		draw({ onElementReady: ready.onElementReady })
+		await nextFrame()
+
+		expect(ready.elements).toHaveLength(1)
+		expect(ready.elements[0]).toBe(find(document, selector, HTMLElement))
+	})
 
 	/** Смена тега пересоздаёт узел: привязка отпускает прежний и берёт новый. */
 	it('смена тега — ready с новым корнем', async () => {
@@ -262,12 +341,11 @@ function attachmentProbe(): TAttachmentProbe {
 describe('attachment потребителя — на корне', () => {
 	it.each(COMPONENTS)(
 		'%s: attachment получает корень, element:ready — тот же корень',
-		async (_name, component, selector, own) => {
+		async (_name, draw, selector) => {
 			const consumer = attachmentProbe()
 			const ready = readyProbe()
 
-			mount(component, {
-				...own,
+			draw({
 				onElementReady: ready.onElementReady,
 				[createAttachmentKey()]: consumer.attach,
 			})

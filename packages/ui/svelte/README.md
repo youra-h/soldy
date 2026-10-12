@@ -13,13 +13,15 @@ are snippets, events arrive as callback props (`element:ready` → `onElementRea
 slot is `children`.
 
 > **Status:** the Svelte adapter is in progress — Button, Icon, Label, Frame, ProgressSpinner,
-> Skeleton and the fields Input, CheckBox and Switch are ported, the rest of the set is on its way.
-> Icon renders the `tag` it is given: an element name, a Svelte component, or `roleIcon(role)` —
-> the icon of that role from the registered icon pack. Frame teleports its panel into `target`
-> (`body` by default) on the client; with `contained` it stays in place, on the server too. A field
-> gives its class and style to the root and every other attribute to its `<input>`. `Label` names
-> the control it wraps; `LocaleProvider` gives a subtree its language and library strings, such as
-> the name of the clear button of `Input`. See
+> Skeleton, the fields Input, CheckBox and Switch and the collections ListBox, Tabs, Accordion and
+> RadioGroup (`<ListBox.Item>`, `<Tabs.Item>` with `<Tabs.Content>`, `<Accordion.Item>`,
+> `<RadioGroup.Item>` or `items`) are ported, the rest of the set is on its way. Icon renders the
+> `tag` it is given: an element name, a Svelte component, or `roleIcon(role)` — the icon of that
+> role from the registered icon pack. Frame teleports its panel into `target` (`body` by default) on
+> the client; with `contained` it stays in place, on the server too. A field gives its class and
+> style to the root and every other attribute to its `<input>`; an item of a collection gives them
+> to its row. `Label` names the control it wraps; `LocaleProvider` gives a subtree its language and
+> library strings, such as the name of the clear button of `Input`. See
 > [the adapter table](https://github.com/youra-h/soldy#components).
 
 ## Install
@@ -77,6 +79,29 @@ A check box has no text of its own — its visible name is the `Label` around it
   <CheckBox onChangeValue={({ newValue }) => console.log(newValue)} />
 </Label>
 ```
+
+A collection takes its items as markup parts or as data (`items`). Tabs keep their panels in the
+`content` snippet, next to the list of tabs rather than inside it:
+
+```svelte
+<script lang="ts">
+  import { Tabs } from '@soldy-ui/svelte'
+</script>
+
+<Tabs aria_label="Settings">
+  <Tabs.Item value="general" text="General" active />
+  <Tabs.Item value="privacy" text="Privacy" />
+  {#snippet content()}
+    <Tabs.Content value="general">General settings</Tabs.Content>
+    <Tabs.Content value="privacy">Privacy settings</Tabs.Content>
+  {/snippet}
+</Tabs>
+```
+
+Items given as data are drawn by the owner, and their slots are the owner's `item-<slot>` snippets,
+with the item in the scope. A snippet is opaque: an item cannot tell that it drew nothing, so a
+snippet given to the owner replaces the item's own content for every item — draw the default
+yourself where you need it.
 
 The application plugs in a theme and an icon pack once, in its entry point:
 
