@@ -2,6 +2,7 @@
  * Настройка soldy и флаги участника — общие для страниц Vue (`soldy.ts`) и
  * React (`react/soldy.tsx`): одна тема, одни колонки и пропсы таблицы.
  */
+import type { TTableColumnFit } from '@soldy-ui/core'
 import { setIcons, useTheme } from '@soldy-ui/setup'
 import * as material from '@soldy-ui/icons-material'
 import { useMotion } from '@soldy-ui/plugins'
@@ -29,12 +30,14 @@ const preview =
 const resizeFlag = query.get('resize')
 const resize = resizeFlag === '1' || resizeFlag === 'deferred'
 const resizePreview = resizeFlag === 'deferred' ? { resizePreview: 'deferred' as const } : {}
-// `?fit=contain` — гибкие колонки ровно заполняют место (`columnFit: 'contain'`):
-// таблица не шире места, и окно не прокручивается вбок; `?fit=none` — колонки
-// шириной по умолчанию, место они не делят (`columnFit: 'none'`). Без флага
-// проп не задан (`auto`): колонки растут от 160 px, и 20 колонок шире окна стенда
-const fitFlag = query.get('fit')
-const columnFit = fitFlag === 'contain' || fitFlag === 'none' ? { columnFit: fitFlag } : {}
+// `?fit=<значение>` — `columnFit` таблицы, любое значение `TTableColumnFit`:
+// `contain` — гибкие колонки ровно заполняют место, таблица не шире места, и
+// окно не прокручивается вбок; `none` — колонки шириной по умолчанию, место они
+// не делят; `auto` — как без флага. Без флага проп не задан (`auto`): колонки
+// растут от 160 px, и 20 колонок шире окна стенда
+const FITS: readonly TTableColumnFit[] = ['none', 'auto', 'contain']
+const fitFlag = FITS.find((fit) => fit === query.get('fit'))
+const columnFit = fitFlag ? { columnFit: fitFlag } : {}
 export const columns = COLUMNS.map((c) => ({
 	...c,
 	sortable: true,
