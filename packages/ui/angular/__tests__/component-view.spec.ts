@@ -5,7 +5,8 @@
  * берёт у него, классы, скрытие и наборы `aria`, `attrs` и `dataset` база
  * раскладывает на него же и связывает его с `TElementPlugin`. Шаблона на
  * корень у компонента нет, поэтому раскладку проверяет только рантайм — `ngc`
- * её не видит. Атрибуты потребителя главнее наборов ядра.
+ * её не видит. Что называет ядро, — за базой, как привязка хоста `[attr.x]`;
+ * чего не называет, — потребителя.
  */
 
 import { describe, it, expect } from 'vitest'
@@ -25,7 +26,7 @@ class SectionHost {
 	readonly ctrl = new TComponentView({ direction: 'rtl' })
 }
 
-/** Роль потребителя привязкой: появляется уже поверх роли ядра. */
+/** Роль потребителя привязкой: Angular пишет её поверх роли ядра. */
 @Component({
 	standalone: true,
 	imports: [TComponentViewComponent],
@@ -90,27 +91,35 @@ describe('ComponentView · элемент потребителя как коре
 		expect(section.querySelector('b')?.textContent).toBe('внутри')
 	})
 
-	it('role потребителя главнее role ядра', () => {
+	/**
+	 * Пока ядро роли не называет, роль на элементе — потребителя. Назвало —
+	 * роль за базой: она пишет свою поверх и, когда роль уходит из набора,
+	 * снимает атрибут, что бы на нём ни стояло.
+	 */
+	it('role потребителя стоит, пока ядро роли не называет', () => {
 		const { fixture, section } = mountSection()
 		const { ctrl } = fixture.componentInstance
+
+		expect(section.getAttribute('role')).toBe('region')
 
 		ctrl.aria.add('role', 'group')
 		fixture.detectChanges()
 
-		expect(section.getAttribute('role')).toBe('region')
+		expect(section.getAttribute('role')).toBe('group')
 
-		// Чужой атрибут база не считает своим и не снимает
 		ctrl.aria.remove('role')
 		fixture.detectChanges()
 
-		expect(section.getAttribute('role')).toBe('region')
+		expect(section.hasAttribute('role')).toBe(false)
 	})
 
 	/**
-	 * `[attr.role]` Angular пишет поверх роли, которую поставила база. Значение
-	 * уже не её — и, когда роль уходит из набора ядра, база его не снимает.
+	 * `[attr.role]` Angular пишет поверх роли, которую поставила база, — как
+	 * две привязки одного атрибута: последней пишет та, чьё значение сменилось.
+	 * Имя роли называет ядро, поэтому, когда роль уходит из набора, база
+	 * снимает атрибут, чьё бы значение на нём ни стояло.
 	 */
-	it('[attr.role] потребителя поверх роли ядра база больше не трогает', () => {
+	it('[attr.role] потребителя: роль, ушедшую из набора ядра, база снимает', () => {
 		const fixture = TestBed.createComponent(BoundRoleHost)
 		const { ctrl } = fixture.componentInstance
 
@@ -134,7 +143,7 @@ describe('ComponentView · элемент потребителя как коре
 		ctrl.aria.remove('role')
 		fixture.detectChanges()
 
-		expect(view.getAttribute('role')).toBe('region')
+		expect(view.hasAttribute('role')).toBe(false)
 	})
 
 	it('visible=false прячет корень, rendered=false — тоже', () => {

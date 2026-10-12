@@ -48,28 +48,32 @@
  *   во Vue и React наоборот. Перекрыть его можно только записью в обход стилей
  *   Angular, а такая запись спорила бы с его привязками. Корень, который
  *   видимость не прячет (`hides: false` — Skeleton), привязка не трогает;
- * - классы ядра и наборы `aria`, `attrs`, `dataset` — эффекты базы, и
- *   атрибуты и классы потребителя главнее них (`root-attributes.ts`). Классы —
- *   не привязка хоста `[class]`: статику шаблона потребителя Angular сверяет
- *   только у первой привязки директивы к классам или стилям (`directiveStylingLast`
- *   у узла одно на те и другие), а `[class]` компилятор ставит раньше
- *   `[style.*]`. С ней статический `style="display: …"` потребителя проигрывал
- *   бы скрытию, а у видимого корня снимался бы вовсе. `class`, `[class.x]` и
- *   `[ngClass]` потребителя ставят и снимают только свои имена;
- * - стиль — тоже эффект базы, по свойствам: снизу выход плагина раскладки
- *   (`layout_styles`), поверх него стиль-выход компонента (`fractionStyle` у
- *   ProgressSpinner), а свойство с чужим значением — потребителя или плагина,
- *   записавшего его в узел сам, — база не трогает (`root-attributes.ts`). Не
+ * - классы ядра и наборы `aria`, `attrs`, `dataset` — эффекты базы
+ *   (`root-attributes.ts`). Всё, что называет ядро, база считает своим всегда,
+ *   как привязку хоста `[attr.x]` или `[class.x]`, и пишет поверх того, что
+ *   стоит на элементе, — статики потребителя, разметки сервера после
+ *   гидратации; чего ядро не называет, не трогает. Классы — не привязка хоста
+ *   `[class]`: статику шаблона потребителя Angular сверяет только у первой
+ *   привязки директивы к классам или стилям (`directiveStylingLast` у узла
+ *   одно на те и другие), а `[class]` компилятор ставит раньше `[style.*]`. С
+ *   ней статический `style="display: …"` потребителя проигрывал бы скрытию, а
+ *   у видимого корня снимался бы вовсе. `class`, `[class.x]` и `[ngClass]`
+ *   потребителя ставят и снимают только свои имена;
+ * - стиль — тоже эффект базы, по свойствам и тем же правилом: снизу выход
+ *   плагина раскладки (`layout_styles`), поверх него стиль-выход компонента
+ *   (`fractionStyle` у ProgressSpinner). Свойства, которых ядро не называет, —
+ *   потребителя или плагина, записавшего его в узел сам, — база не трогает. Не
  *   привязка хоста `[style]` — по той же причине, что классы: она стала бы
  *   первой привязкой стилей директивы. `[style.display]` скрытия остаётся
  *   привязкой;
  * - `rendered=false` прячет корень, как `visible=false`: убрать элемент
  *   потребителя компонент не может. Содержимое остаётся, `TElementPlugin`
  *   связан с хостом всё время;
- * - слой (`TRootSpec.teleport` — Frame) уезжает в цель сам: элемент
- *   потребителя, со всем, что на нём написано, переносит `teleportRoot`
- *   (`teleport.ts`) — в браузере и после отрисовки. Пока корень не в цели и
- *   не на месте — на сервере, до переноса, без цели, — скрытие его прячет.
+ * - слой (`TRootSpec.teleport` — Frame) есть только в браузере, как оверлей
+ *   CDK: элемент потребителя, со всем, что на нём написано, переносит в цель
+ *   `teleportRoot` (`teleport.ts`) после отрисовки. Пока корень не в цели и не
+ *   на месте — на сервере, до переноса, без цели, — слоя нет (`placed`): база
+ *   корень прячет и классов, наборов и стиля ядра на нём не рисует.
  *
  * Сборка (`createBinding`) идёт в контексте инъекции компонента
  * (`runInInjectionContext`): обёртка сборки
@@ -159,7 +163,7 @@ import type { TBinding } from './useAdapter'
  *   цели и с признаком «на месте» (`{ target: 'target', contained: 'contained' }`
  *   у Frame), их называет компонент. Переносит корень `teleportRoot`
  *   (`teleport.ts`) — сам элемент потребителя. Пока корень не в цели и не на
- *   месте — на сервере, до переноса, без цели, — база его прячет. Нет —
+ *   месте — на сервере, до переноса, без цели, — слоя нет (`placed`). Нет —
  *   корень стоит, где его написали.
  */
 export type TRootSpec =
@@ -186,7 +190,10 @@ export type TRootStrategy = TRootSpec['strategy']
 const VIEW_ROOT: TRootSpec = { strategy: 'view' }
 
 /** Корень, который в слой не уезжает, всегда на своём месте. */
-const IN_PLACE = (): boolean => true
+const IN_PLACE: Signal<boolean> = signal(true).asReadonly()
+
+/** Пустое состояние — его база рисует на корне слоя, которого нет. */
+const NO_STATE: TStateSnapshot = Object.freeze({})
 
 /** Наборы ядра, которые база раскладывает на корень-хост. */
 const ROOT_SETS = ['aria', 'attrs', 'dataset'] as const
@@ -220,10 +227,14 @@ export abstract class TComponentBase<TInstance extends IEntity>
 	private readonly _hides: boolean
 
 	/**
-	 * Корень там, где ему место: у слоя (`TRootSpec.teleport`) — в цели или на
-	 * месте, если так задано (`teleportRoot`); у остальных — всегда.
+	 * Корень там, где ему место: у слоя (`TRootSpec.teleport`) — в цели или,
+	 * если так задано, на месте, и только в браузере, после отрисовки
+	 * (`teleportRoot`); у остальных — всегда. Пока слой не на своём месте — на
+	 * сервере, до переноса, без цели, — его нет: база корень прячет и ничего от
+	 * ядра на нём не рисует, а шаблон слоя по этому же сигналу не рисует
+	 * содержимое (`@if (placed())` у Frame).
 	 */
-	private readonly _placed: () => boolean
+	protected readonly placed: Signal<boolean>
 
 	private readonly _binding = signal<TBinding<TInstance> | undefined>(undefined)
 	private _eventsCleanup?: () => void
@@ -242,11 +253,20 @@ export abstract class TComponentBase<TInstance extends IEntity>
 	readonly state = computed<TInstanceState<TInstance>>(() => this._binding()?.state() ?? {})
 
 	/**
+	 * Состояние, которое база рисует на корне-хосте: классы, наборы, стиль. У
+	 * слоя не на своём месте оно пустое: такого слоя нет, и на элементе
+	 * потребителя остаётся только написанное им самим (`placed`).
+	 */
+	private readonly _drawn = computed<TStateSnapshot>(() =>
+		this.placed() ? this.state() : NO_STATE,
+	)
+
+	/**
 	 * Скрытие корня-хоста — привязка `[style.display]` декоратора: прячут и
 	 * `visible`, и `rendered`. У корня в шаблоне и у корня, который видимость
 	 * не прячет (`hides: false`), хосту не достаётся ничего. Слой прячется ещё
 	 * и не на своём месте — на сервере, до переноса в цель, без цели
-	 * (`_placed`).
+	 * (`placed`): от элемента потребителя остаётся пустой скрытый узел.
 	 *
 	 * Инстанса компонента база не знает (у `so-component` нет ни классов, ни
 	 * наборов), поэтому состояние читает по именам — как запись
@@ -256,7 +276,7 @@ export abstract class TComponentBase<TInstance extends IEntity>
 		const state: TStateSnapshot = this.state()
 		const hidden = this._hides && (state['rendered'] === false || state['visible'] === false)
 
-		return hidden || !this._placed() ? 'none' : null
+		return hidden || !this.placed() ? 'none' : null
 	})
 
 	/**
@@ -301,12 +321,12 @@ export abstract class TComponentBase<TInstance extends IEntity>
 
 			this._host = host
 			this._hides = root.hides ?? true
-			this._placed = root.teleport ? this._teleportHost(host, root.teleport) : IN_PLACE
+			this.placed = root.teleport ? this._teleportHost(host, root.teleport) : IN_PLACE
 			this._bindHost(host, root.style)
 		} else {
 			this._host = null
 			this._hides = false
-			this._placed = IN_PLACE
+			this.placed = IN_PLACE
 			this._bindView()
 		}
 	}
@@ -393,12 +413,10 @@ export abstract class TComponentBase<TInstance extends IEntity>
 		effect(() => this._binding()?.bindElement(host))
 
 		// Эффект на классы, на каждый набор и на стиль: перекладывается только
-		// сменившееся, и память «что поставила база» у каждого своя
-		const classes = computed(() => {
-			const state: TStateSnapshot = this.state()
-
-			return classesOf(state['classes'])
-		})
+		// сменившееся, и память «что поставила база» у каждого своя. Память
+		// начинается пустой и на гидратации: первая раскладка в браузере пишет
+		// всё, что называет ядро, поверх напечатанного сервером
+		const classes = computed(() => classesOf(this._drawn()['classes']))
 
 		let appliedClasses: TAppliedClasses = new Set()
 
@@ -407,11 +425,7 @@ export abstract class TComponentBase<TInstance extends IEntity>
 		})
 
 		for (const name of ROOT_SETS) {
-			const set = computed(() => {
-				const state: TStateSnapshot = this.state()
-
-				return attributesOf(state[name])
-			})
+			const set = computed(() => attributesOf(this._drawn()[name]))
 
 			let applied: TAppliedAttributes = new Map()
 
@@ -422,16 +436,8 @@ export abstract class TComponentBase<TInstance extends IEntity>
 
 		// Слои стиля — значения состояния как есть: связка заменяет их только
 		// на смену содержимого, и эффект не будит смена чужих свойств
-		const layout = computed(() => {
-			const state: TStateSnapshot = this.state()
-
-			return state['layout_styles']
-		})
-		const own = computed(() => {
-			const state: TStateSnapshot = this.state()
-
-			return styleName === undefined ? undefined : state[styleName]
-		})
+		const layout = computed(() => this._drawn()['layout_styles'])
+		const own = computed(() => (styleName === undefined ? undefined : this._drawn()[styleName]))
 
 		let appliedStyles: TAppliedStyles = new Map()
 
@@ -447,7 +453,7 @@ export abstract class TComponentBase<TInstance extends IEntity>
 	 * компонент, а переносит корень `teleportRoot`. Зовётся из конструктора:
 	 * эффекту после отрисовки нужен injection context.
 	 *
-	 * Отдаёт сигнал «корень на своём месте» — по нему корень прячет скрытие.
+	 * Отдаёт сигнал «корень на своём месте» (`placed`): пока он ложь, слоя нет.
 	 */
 	private _teleportHost(host: Element, names: TRootTeleport): Signal<boolean> {
 		return teleportRoot(host, {

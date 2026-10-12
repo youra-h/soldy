@@ -1,5 +1,4 @@
-import { Directive, computed, inject, input } from '@angular/core'
-import { DomSanitizer, type SafeHtml } from '@angular/platform-browser'
+import { Directive, ElementRef, computed, effect, inject, input } from '@angular/core'
 import { getIcon } from '@soldy-ui/setup'
 
 /**
@@ -20,12 +19,23 @@ import { getIcon } from '@soldy-ui/setup'
  * прийти после импорта. Смена роли (`[so-role-icon]="role()"`) меняет рисунок
  * на том же узле.
  *
- * Содержимое ставится мимо санитайзера (`bypassSecurityTrustHtml`): санитайзер
- * Angular вычищает разметку SVG, а источник доверенный — пакет иконок из
- * зависимостей приложения, пользовательский ввод сюда не попадает; так же
- * `dangerouslySetInnerHTML` у React. Узел — `<svg>`, и разметку иконки
- * документ разбирает в пространстве имён SVG. Содержимое и `viewBox` —
- * привязки хоста, а не запись в узел: их рисует и серверный рендер.
+ * `viewBox` — привязка хоста. Содержимое — эффект, который разметку иконки
+ * отдаёт на разбор самому документу (`insertAdjacentHTML`) внутри `<svg>`, и
+ * документ разбирает её в пространстве имён SVG. Не привязка `[innerHTML]`:
+ * DOM-эмуляция серверного рендера Angular (domino) запись `innerHTML` у
+ * элементов SVG не реализует — запись бросала `NotYetImplemented`, и ошибка
+ * обрывала отрисовку всего представления на сервере. `insertAdjacentHTML`
+ * она разбирает, поэтому эффект рисует иконку и на сервере. Своего разбора
+ * разметки на узлы нет: содержимое иконки произвольно, и разбирает его
+ * документ, как `innerHTML` у Vue и Solid, `dangerouslySetInnerHTML` у React
+ * и `{@html}` у Svelte. Санитайзера Angular здесь нет, как и у них: он вычищал
+ * бы разметку SVG, а источник доверенный — пакет иконок из зависимостей
+ * приложения, пользовательский ввод сюда не попадает.
+ *
+ * Содержимое `<svg>` — целиком за директивой: шаблон Icon пуст, и
+ * написанное внутри элемента не выводится. Поэтому эффект сначала снимает
+ * всё, что в узле, — и рисунок прошлой роли, и рисунок, который напечатал
+ * сервер, — а потом ставит рисунок роли.
  *
  * Импортирует директиву потребитель вместе с Icon, как `SlotDirective`.
  *
@@ -36,20 +46,24 @@ import { getIcon } from '@soldy-ui/setup'
 	standalone: true,
 	host: {
 		'[attr.viewBox]': '_icon().viewBox',
-		'[innerHTML]': '_body()',
 	},
 })
 export class RoleIconDirective {
 	/** Роль иконки — ключ реестра (`check`, `close`, …, своя роль приложения). */
 	readonly role = input.required<string>({ alias: 'so-role-icon' })
 
-	private readonly _sanitizer = inject(DomSanitizer)
-
 	/** Иконка роли: заглушка, если роли нет в реестре (`getIcon` предупредит). */
 	protected readonly _icon = computed(() => getIcon(this.role()))
 
-	/** Содержимое `<svg>` — доверенная разметка иконки. */
-	protected readonly _body = computed(
-		(): SafeHtml => this._sanitizer.bypassSecurityTrustHtml(this._icon().body),
-	)
+	constructor() {
+		const svg = inject<ElementRef<Element>>(ElementRef).nativeElement
+
+		// Эффект, а не эффект после отрисовки: тот на сервере не выполняется
+		effect(() => {
+			const { body } = this._icon()
+
+			svg.textContent = ''
+			svg.insertAdjacentHTML('afterbegin', body)
+		})
+	}
 }
