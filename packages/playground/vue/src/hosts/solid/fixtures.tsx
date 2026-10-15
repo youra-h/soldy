@@ -1,4 +1,4 @@
-import { Button, CheckBox, Icon, Label, Switch, roleIcon } from '@soldy-ui/solid'
+import { Button, CheckBox, Icon, Label, RadioGroup, Switch, roleIcon } from '@soldy-ui/solid'
 import type { TPreview } from './previews'
 
 /**
@@ -8,9 +8,7 @@ import type { TPreview } from './previews'
  * Ключи и разметка — те же, что у хостов Vue, React и Svelte: сценарии в общем
  * пакете ищут в сцене одно и то же, на каком бы фреймворке её ни нарисовали.
  * Слот по умолчанию в Solid — `children`, остальные слоты — пропы с теми же
- * именами. Пропсы — вызовом сигнала (`{...bind()}`), как у превью. Радио в
- * подписи нет: RadioGroup в Solid ещё не перенесён, и его сценарий стенд не
- * показывает.
+ * именами. Пропсы — вызовом сигнала (`{...bind()}`), как у превью.
  */
 
 /** Глифы — компонентом на роль, один раз: `tag` у Icon — корень, а не роль. */
@@ -47,5 +45,15 @@ export const FIXTURES: Record<string, TPreview> = {
 		<Label {...bind()}>
 			<Switch />
 		</Label>
+	),
+
+	// Корень радио — `label`, а `label` в `label` HTML запрещает: внутри
+	// подписи радио рисуется с `tag="span"`. Группа вокруг — ради общего `name`
+	'label-radio': (bind) => (
+		<RadioGroup>
+			<Label {...bind()}>
+				<RadioGroup.Item value="a" tag="span" />
+			</Label>
+		</RadioGroup>
 	),
 }
