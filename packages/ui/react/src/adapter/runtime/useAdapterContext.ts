@@ -55,6 +55,18 @@
  * Отброшенный рендер React ничем не объявляет, и сборку, которую он выбросил,
  * освобождает `TDrafts`: хук отдаёт ему каждую сборку, пока её не приняли.
  *
+ * Очистку эффекта отдаёт сама сборка (`TBuilt.destroy`) — стрелка в поле
+ * объекта класса, а не функция, созданная в эффекте. Зависимости у эффекта
+ * устойчивые, и очистку его установки React хранит, пока они не сменятся, —
+ * обычно всё монтирование: `inst` эффекта у React общий для всех рендеров.
+ * Функция из тела хука держала бы всю его область — V8 заводит одну область
+ * на все замыкания вызова, — а в ней фабрику первого рендера и через неё
+ * пропсы компонента: у таблицы — прежний список строк со всеми записями.
+ * Функция модуля, которая собирает очистку, не годится тоже: минификатор
+ * потребителя вправе встроить её, вызванную один раз, обратно в тело хука
+ * (см. шапку `TEventCallbacks`). Сторож —
+ * `ui/react/__tests__/first-render-props.spec.tsx`.
+ *
  * Выходы плагинов из типа контекста хук сохраняет: по ним `useAdapter` типизирует
  * `state`, и потерянные здесь они не дошли бы до разметки.
  */
@@ -81,14 +93,6 @@ export type TAssembly<T extends TAdapterContexts> = {
 	readonly layer: TElevatorLayer
 }
 
-/** Сборка на руках у хука: контексты, лифт, на котором они собраны, и что они взяли снаружи. */
-type TBuilt<T extends TAdapterContexts> = {
-	readonly contexts: T
-	readonly scope: TReactElevatorScope
-	/** `ctrl` и движок коллекции, пришедшие снаружи: их держит одно монтирование. */
-	readonly held: readonly object[]
-}
-
 /** Счётчик версий: его смена перерисовывает компонент с новыми контекстами. */
 const nextVersion = (version: number) => version + 1
 
@@ -113,6 +117,43 @@ function destroyAll(contexts: TAdapterContexts): void {
 	for (const context of [...listOf(contexts)].reverse()) context.destroy()
 }
 
+/**
+ * Сборка на руках у хука: контексты, лифт, на котором они собраны, и что они
+ * взяли снаружи. Сама помнит, что уничтожена, и сама отдаёт очистку эффекта —
+ * стрелку `destroy` (см. шапку файла).
+ */
+class TBuilt<T extends TAdapterContexts> {
+	/** Контексты уничтожены: компонент жив — повторная установка эффекта соберёт его заново. */
+	private _destroyed = false
+
+	/**
+	 * @param contexts ровно то, что вернула фабрика
+	 * @param scope лифт, на котором собраны контексты
+	 * @param held `ctrl` и движок коллекции, пришедшие снаружи: их держит одно монтирование
+	 */
+	constructor(
+		readonly contexts: T,
+		readonly scope: TReactElevatorScope,
+		readonly held: readonly object[],
+	) {}
+
+	get destroyed(): boolean {
+		return this._destroyed
+	}
+
+	/** Сборку принял коммит: она больше не черновик, контексты приняты. */
+	accept(): void {
+		drafts.accept(this.held)
+		attachAll(this.contexts)
+	}
+
+	/** Уничтожить контексты: очистка эффекта и черновик, отброшенный React. */
+	readonly destroy = (): void => {
+		destroyAll(this.contexts)
+		this._destroyed = true
+	}
+}
+
 export function useAdapterContext<T extends TAdapterContexts>(
 	factory: (create: TCreateAdapterContext, elevator: TElevatorFactory) => T,
 ): TAssembly<T> {
@@ -121,8 +162,6 @@ export function useAdapterContext<T extends TAdapterContexts>(
 	// Слой, который компонент увидел на рендере: из него сборка читает `up()`
 	const parent = useContext(ElevatorContext)
 	const ref = useRef<TBuilt<T> | null>(null)
-	// Контексты в `ref` уничтожены очисткой эффекта; признак — хука, не контекста
-	const destroyed = useRef(false)
 	// С чем прошла последняя установка эффекта: сменить его может только
 	// устаревшее прочитанное
 	const settled = useRef<TElevatorLayer | null>(null)
@@ -137,11 +176,13 @@ export function useAdapterContext<T extends TAdapterContexts>(
 
 			return createAdapterContext(descriptor, { mountId, locale, ...options }, config)
 		}
-		const contexts = factory(create, scope.elevator)
+		const built = new TBuilt(factory(create, scope.elevator), scope, held)
 
-		drafts.add(held, () => destroyAll(contexts))
+		// Черновик уничтожает та же стрелка сборки: стрелка отсюда держала бы
+		// область хука, пока черновик не приняли
+		drafts.add(held, built.destroy)
 
-		return { contexts, scope, held }
+		return built
 	}
 	// Эффект зовёт фабрику последнего рендера, а не той, что застал при установке
 	const rebuild = useEffectEvent(() => assemble(parent))
@@ -161,24 +202,20 @@ export function useAdapterContext<T extends TAdapterContexts>(
 
 		// Повторная установка: после очистки (StrictMode, `<Activity>`) или
 		// из-за устаревшего прочитанного. Компонент жив, а его контекстов нет
-		if (destroyed.current) {
+		if (ref.current?.destroyed) {
 			ref.current = rebuild()
-			destroyed.current = false
 			rerender()
 		}
 
 		const current = ref.current
 
-		if (current) {
-			drafts.accept(current.held)
-			attachAll(current.contexts)
-		}
+		if (!current) return
 
-		return () => {
-			if (current) destroyAll(current.contexts)
+		current.accept()
 
-			destroyed.current = true
-		}
+		// Очистка — стрелка сборки, а не функция отсюда: её React хранит всё
+		// монтирование, а функция отсюда держала бы область хука (см. шапку)
+		return current.destroy
 	}, [source])
 
 	const layer = useMemo(() => built.scope.layerOver(parent), [built, parent])
