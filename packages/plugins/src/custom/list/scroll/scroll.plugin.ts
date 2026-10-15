@@ -21,7 +21,10 @@ type TScrollMode = 'center' | 'nearest'
  *
  * Прокрутка за выбором и подсветкой откладывается на кадр: узел элемента,
  * который окно дорисовывает к ним, адаптер рисует после обработчика.
- * Отложенная прокрутка всегда одна — последняя.
+ * Отложенная прокрутка всегда одна — последняя. Кадр она планирует, только
+ * пока у плагина есть узел корня (`ready` … `removed`): сборка вместе с
+ * подписками идёт и на сервере, где нет ни узла, ни `requestAnimationFrame`.
+ * До `ready` прокрутка не планируется — к выбранному доведёт начальная.
  *
  * **Начальная прокрутка** — список открывается на выбранном элементе. Ей нужны
  * и узел корня, и движок, а приходят они порознь: движок привязывают при
@@ -49,8 +52,8 @@ export class TListScrollPlugin extends TBasePlugin<any, TListScrollPluginEvents>
 	private _collectionElements: TCollectionElements | null = null
 	/** Выбранный элемент, чей узел ждёт начальная прокрутка; `null` — не ждёт. */
 	private _awaitedUid: string | number | null = null
-	/** Отложить прокрутку на кадр; прежняя отложенная отменяется. */
-	private readonly _schedule = frameDebounce((scroll: () => void) => scroll())
+	/** Прокрутка в следующем кадре; прежняя отложенная отменяется. */
+	private readonly _scrollNextFrame = frameDebounce((scroll: () => void) => scroll())
 
 	override install(ctx: IPluginContext): void {
 		super.install(ctx)
@@ -114,6 +117,14 @@ export class TListScrollPlugin extends TBasePlugin<any, TListScrollPluginEvents>
 				}
 			},
 		)
+	}
+
+	/**
+	 * Отложить прокрутку на кадр — пока у плагина есть узел корня. Без узла
+	 * крутить нечего: к выбранному доведёт начальная прокрутка на `ready`.
+	 */
+	private _schedule(scroll: () => void): void {
+		if (this._element) this._scrollNextFrame(scroll)
 	}
 
 	/**
