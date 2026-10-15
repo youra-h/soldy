@@ -174,9 +174,9 @@ describe('<button is="so-button"> · disabled', () => {
 	 * даже если он пришёл из разметки. Обратная запись гаснет в сеттере —
 	 * событие одно.
 	 */
-	it('атрибут из разметки следует за ядром, change:disabled — по одному разу', async () => {
+	it('атрибут из разметки следует за ядром, so:change:disabled — по одному разу', async () => {
 		const el = mountButton('<button is="so-button" disabled></button>')
-		const changes = collect(el, 'change:disabled')
+		const changes = collect(el, 'so:change:disabled')
 
 		expect(el.disabled).toBe(true)
 		expect(ctrlOf(el).disabled).toBe(true)
@@ -199,7 +199,7 @@ describe('<button is="so-button"> · disabled', () => {
 
 	it('нативное свойство disabled доходит до ядра сразу', async () => {
 		const el = mountButton('<button is="so-button"></button>')
-		const changes = collect(el, 'change:disabled')
+		const changes = collect(el, 'so:change:disabled')
 
 		el.disabled = true
 
@@ -214,9 +214,9 @@ describe('<button is="so-button"> · disabled', () => {
 		expect(changes).toEqual([true, false])
 	})
 
-	it('клик даёт action:press, у выключенной кнопки — нет', async () => {
+	it('клик даёт so:action:press, у выключенной кнопки — нет', async () => {
 		const el = mountButton('<button is="so-button"></button>')
-		const presses = collect(el, 'action:press')
+		const presses = collect(el, 'so:action:press')
 
 		await nextFrame()
 
@@ -299,7 +299,7 @@ describe('<button is="so-button"> · разметка потребителя', (
 		const el = createButton()
 		let bundle: unknown
 
-		el.addEventListener('bundle:create', (event) => {
+		el.addEventListener('so:bundle:create', (event) => {
 			if (event instanceof CustomEvent) bundle = event.detail
 		})
 		el.setAttribute('text', 'Сохранить')
@@ -307,7 +307,7 @@ describe('<button is="so-button"> · разметка потребителя', (
 		document.body.appendChild(el)
 		await flush()
 
-		if (!(bundle instanceof TPluginBundle)) throw new Error('bundle:create не пришёл')
+		if (!(bundle instanceof TPluginBundle)) throw new Error('so:bundle:create не пришёл')
 
 		const plugin = bundle.get(TElementPlugin)
 
@@ -465,10 +465,10 @@ describe('<button is="so-button"> · внешний ctrl', () => {
 })
 
 describe('<button is="so-button"> · события', () => {
-	it('диспатчит CustomEvent с именем как в ядре', () => {
+	it('диспатчит CustomEvent с именем so: и именем ядра', () => {
 		const ctrl = new TButton({ view: 'solid' })
 		const el = createButton()
-		const seen = collect(el, 'change:view')
+		const seen = collect(el, 'so:change:view')
 
 		el.ctrl = ctrl
 		document.body.appendChild(el)
@@ -478,10 +478,10 @@ describe('<button is="so-button"> · события', () => {
 		expect(seen).toEqual(['ghost'])
 	})
 
-	it('change:visible не дублируется (дедупликация триггеров)', () => {
+	it('so:change:visible не дублируется (дедупликация триггеров)', () => {
 		const ctrl = new TButton()
 		const el = createButton()
-		const seen = collect(el, 'change:visible')
+		const seen = collect(el, 'so:change:visible')
 
 		el.ctrl = ctrl
 		document.body.appendChild(el)
@@ -495,7 +495,7 @@ describe('<button is="so-button"> · события', () => {
 		const ctrl = new TButton()
 		let heard = false
 
-		document.body.addEventListener('change:visible', () => (heard = true), { once: true })
+		document.body.addEventListener('so:change:visible', () => (heard = true), { once: true })
 		mountCtrl(ctrl)
 
 		ctrl.hide()
@@ -505,7 +505,7 @@ describe('<button is="so-button"> · события', () => {
 
 	/**
 	 * Атрибуты разметки — пропсы первой сборки, а не её изменения: событий
-	 * `change:*` подключение не шлёт. С полифилом (Safari)
+	 * `so:change:*` подключение не шлёт. С полифилом (Safari)
 	 * `attributeChangedCallback` начальных атрибутов приходит после
 	 * подключения, поэтому база читает атрибуты при подключении сама; колбэк
 	 * потом приносит то же значение, и сеттер его гасит.
@@ -515,9 +515,9 @@ describe('<button is="so-button"> · события', () => {
 	 * элементы умеет сам, и полифил в нём не включается. Чтение атрибутов при
 	 * подключении проверено в WebKit с полифилом.
 	 */
-	it('запоздавший колбэк начального атрибута не шлёт change:*', () => {
+	it('запоздавший колбэк начального атрибута не шлёт so:change:*', () => {
 		const el = createButton()
-		const changes = [collect(el, 'change:text'), collect(el, 'change:variant')]
+		const changes = [collect(el, 'so:change:text'), collect(el, 'so:change:variant')]
 
 		el.setAttribute('text', 'A')
 		el.setAttribute('variant', 'brand')
@@ -603,7 +603,7 @@ describe('<button is="so-button"> · перестановка в DOM', () => {
 	it('смена внешнего ctrl доходит одним CustomEvent', () => {
 		const ctrl = new TButton()
 		const el = mountCtrl(ctrl)
-		const seen = collect(el, 'change:view')
+		const seen = collect(el, 'so:change:view')
 
 		move(el)
 
@@ -612,9 +612,9 @@ describe('<button is="so-button"> · перестановка в DOM', () => {
 		expect(seen).toEqual(['ghost'])
 	})
 
-	it('element:ready приходит снова', async () => {
+	it('so:element:ready приходит снова', async () => {
 		const el = createButton()
-		const ready = collect(el, 'element:ready')
+		const ready = collect(el, 'so:element:ready')
 
 		document.body.appendChild(el)
 		await nextFrame()

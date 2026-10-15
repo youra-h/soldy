@@ -95,11 +95,11 @@ function button(root: ParentNode, selector = 'button'): TButtonElementProps {
 	return node
 }
 
-/** Наборы, которые элемент объявил событием `bundle:create`, — по одному на сборку. */
+/** Наборы, которые элемент объявил событием `so:bundle:create`, — по одному на сборку. */
 function bundlesOf(el: Element): TPluginBundle[] {
 	const bundles: TPluginBundle[] = []
 
-	el.addEventListener('bundle:create', (event) => {
+	el.addEventListener('so:bundle:create', (event) => {
 		if (event instanceof CustomEvent && event.detail instanceof TPluginBundle) {
 			bundles.push(event.detail)
 		}

@@ -160,7 +160,7 @@ describe('Label · текст: проп и слот', () => {
 	standalone: true,
 	imports: [TLabelComponent, TCheckBoxComponent],
 	template: `<label so-label text="Согласен"
-		><so-check-box (changeValue)="changes.push($event)"
+		><so-check-box (soChangeValue)="changes.push($event)"
 	/></label>`,
 })
 class CheckBoxChangeHost {
@@ -171,7 +171,7 @@ class CheckBoxChangeHost {
 	standalone: true,
 	imports: [TLabelComponent, TSwitchComponent],
 	template: `<label so-label text="Согласен"
-		><so-switch (changeValue)="changes.push($event)"
+		><so-switch (soChangeValue)="changes.push($event)"
 	/></label>`,
 })
 class SwitchChangeHost {

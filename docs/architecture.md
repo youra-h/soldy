@@ -128,7 +128,7 @@ Names in a framework's notation are computed by the surface — `TSurface.of(des
 - `TName` - Qualified name: raw name + optional namespace (`protected/define/name.class.ts`)
 - `TPropSpec` - Immutable property spec with `read(owner)` / `assign(owner, value)`, `hasDefault`, `rebase`, `withDefault` (`protected/define/prop-spec.class.ts`)
 - `IContribution`, `IPropDefinition`, `ISlotDefinition` / `ISlotDeclaration` - What a descriptor declares (`protected/define/contribution.types.ts`)
-- `INamingStrategy`, `IAdapterProfile`, `CommonProfile` - Prop/event naming rules (`protected/naming/`). Props are `ns_name` everywhere (`underscorePropNaming`); events: `element:ready` in Vue and Web Components (a one-word event gets the `so-` prefix in Web Components: `input` → `so-input`), `onElementReady` in React/Svelte/Solid (`callbackEventNaming`), `elementReady` in Angular (a one-word event gets the `so` prefix there: `input` → `soInput`)
+- `INamingStrategy`, `IAdapterProfile`, `CommonProfile` - Prop/event naming rules (`protected/naming/`). Props are `ns_name` everywhere (`underscorePropNaming`); events: `element:ready` in Vue, `onElementReady` in React/Svelte/Solid (`callbackEventNaming`); where events share a channel with the DOM, every event gets the `so` prefix with the adapter's own separator — `so:element:ready` in Web Components (events bubble from the consumer's element), `soElementReady` in Angular (an output shares `(x)` with the DOM event `x`)
 
 ---
 
@@ -678,8 +678,9 @@ setup/vue/svelte/solid.
 Публичное имя компонента не префиксуется (`Button`, `Tabs`, `TabsItem`):
 пространство имён уже даёт npm-скоуп. Префикс `s-`/`so-` стоит ровно там,
 где пространство имён глобальное и другого способа нет — CSS-классы, теги
-Custom Elements, селекторы Angular. `SButton` в стиле PrimeVue дублировал бы
-импорт.
+Custom Elements, селекторы Angular, — а события, которые делят канал с DOM,
+получают `so` все до одного: `so:show` в Web Components, `soShow` у выходов
+Angular. `SButton` в стиле PrimeVue дублировал бы импорт.
 
 Для составных компонентов действует критерий:
 
@@ -1665,15 +1666,16 @@ There is no `adapter/static/`: React takes prop names from the descriptor types,
 **Структура** зеркалит Vue/React: `adapter/{common,runtime,locale,elevator}` + `components/*`.
 
 - `adapter/common/` — `AngularProfile` (`naming: AngularNaming`), `AngularNaming`
-  (события → camelCase без `on`-префикса, т.к. имя `@Output` обязано быть
-  валидным TS-идентификатором; событие из одного слова — с префиксом `so`,
-  `input` → `soInput`: на `(x)` у элемента Angular слушает и выход `x`, и
-  событие DOM `x`, а совпасть с событием DOM может только имя из одного
-  слова), `useInputs`/`useBooleanInputs`/`useOutputs`
+  (событие → `so` и полное имя ядра в camelCase, у каждого события:
+  `input` → `soInput`, `element:ready` → `soElementReady`; camelCase — т.к.
+  имя `@Output` обязано быть валидным TS-идентификатором, `on`-префикса нет —
+  его запрещает руководство Angular; префикс — т.к. на `(x)` у элемента
+  Angular слушает и выход `x`, и событие DOM `x`, и он говорит, чьё событие, у
+  всей категории сразу), `useInputs`/`useBooleanInputs`/`useOutputs`
   (**только для кодогенератора**: имена берутся из поверхности
   `TSurface.of(descriptor, AngularProfile)`; `useBooleanInputs` — входы, чей
   проп объявлен ровно `Boolean`; `useOutputs` отдаёт выход в паре с полным
-  именем события ядра — `actionPress` и `action:press`);
+  именем события ядра — `soActionPress` и `action:press`);
   `createAngularAdapterContext` — сборка с локалью поддерева из DI и id
   монтирования приложения (`nextMountId`), в контексте инъекции компонента;
   `RoleIconDirective` (`svg[so-role-icon]`) —
@@ -1720,8 +1722,8 @@ Angular AOT статически анализирует декоратор: `inp
 правки дескриптора; CI проверяет дрейф.
 
 Имён мало для строгого шаблона потребителя. `strictTemplates` — умолчание
-новых приложений Angular — проверяет привязку `(actionPress)="…"` обращением к
-свойству класса (`_t1["actionPress"].subscribe(($event) => …)`), а у базы,
+новых приложений Angular — проверяет привязку `(soActionPress)="…"` обращением к
+свойству класса (`_t1["soActionPress"].subscribe(($event) => …)`), а у базы,
 которая работает по массивам имён, такого свойства в типе нет: привязка не
 компилировалась (TS7053). Значение привязки входа (`_t1.text = 42`) она
 сверяет с полем входа, а вход без поля пропускает молча, с любым значением.
@@ -2000,7 +2002,7 @@ DOM-эмуляция серверного рендера Angular запись `i
   собирает компоненты в том же порядке, что сервер, — так собирает полная
   гидратация.
 - Нет двусторонней привязки: `[(text)]` требует аутпут `textChange`, а стратегия
-  именования даёт `changeText`.
+  именования даёт `soChangeText`.
 - Elevator (`TAngularElevator`) реализован, но никуда не подключён и передаёт
   значение через приватное поле, а не через DI — понадобится доработка, когда
   дойдёт до коллекций.
@@ -2193,10 +2195,11 @@ Svelte 5 на рунах. Структура зеркалит React, потом�
 архитектуры: ядро уже событийное, а `CustomEvent` это родная модель DOM.
 
 - `adapter/common/` — `WebcProfile` (`naming: WebcNaming`), `WebcNaming`
-  (`prop` = общий `underscorePropNaming`, `event` = имя как в ядре: двоеточия в
-  CustomEvent легальны, так же как во Vue; событие из одного слова — с
-  префиксом `so-`, `input` → `so-input`: событие всплывает с элемента
-  потребителя, а совпасть с событием DOM может только имя без двоеточия),
+  (`prop` = общий `underscorePropNaming`, `event` = `so:` и полное имя ядра у
+  каждого события: `show` → `so:show`, `element:ready` → `so:element:ready`;
+  событие всплывает с элемента потребителя в общий канал DOM, и префикс
+  говорит, чьё оно, у всей категории сразу, а разделитель — `:`, как в имени
+  ядра: двоеточия в CustomEvent легальны),
   `attributes` (карта «атрибут → проп» по поверхности + коэрция; `HOST_PROPS` —
   пропы, которых у элемента нет ни атрибутом, ни свойством: `tag`);
   `createWebcAdapterContext` — сборка с локалью ближайшего
@@ -2338,7 +2341,7 @@ WebKit:
 позже вставки, — и колбэки у них в другом порядке: `connectedCallback` раньше
 `attributeChangedCallback` начальных атрибутов. Поэтому при первом подключении
 база читает атрибуты сама: иначе ядро собралось бы без них, и атрибуты разметки
-дошли бы до потребителя событиями `change:*`. Колбэк, пришедший потом, приносит
+дошли бы до потребителя событиями `so:change:*`. Колбэк, пришедший потом, приносит
 то же значение, и сеттер его гасит.
 
 **Light DOM.** Классы из ядра остаются обычными глобальными BEM-классами,

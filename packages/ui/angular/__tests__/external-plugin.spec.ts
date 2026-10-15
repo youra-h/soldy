@@ -1,6 +1,6 @@
 /**
  * Плагин, поставленный снаружи: пропсы через вход `pluginProps`, события через
- * выход `pluginEvent`.
+ * выход `soPluginEvent`.
  *
  * Тот же канал, что во Vue (`:plugin-props`, `@plugin:event`), React, Solid и
  * Web Components: поверхность компонента одна на тип — у Angular её объявляет
@@ -66,8 +66,8 @@ definePlugin({
 		so-button
 		text="Ok"
 		[pluginProps]="pluginProps()"
-		(bundleCreate)="onBundle($event)"
-		(pluginEvent)="events.push($event)"
+		(soBundleCreate)="onBundle($event)"
+		(soPluginEvent)="events.push($event)"
 	></button>`,
 })
 class Host {
@@ -75,7 +75,7 @@ class Host {
 	readonly events: TPluginEvent[] = []
 	bundle?: TPluginBundle
 
-	/** Плагин из `(bundleCreate)` — его ставит тест, если задал `use`. */
+	/** Плагин из `(soBundleCreate)` — его ставит тест, если задал `use`. */
 	use?: (bundle: TPluginBundle) => void
 
 	onBundle(value: unknown): void {
@@ -93,7 +93,7 @@ afterEach(() => {
 	dispose = undefined
 })
 
-describe('плагин снаружи · pluginProps и pluginEvent', () => {
+describe('плагин снаружи · pluginProps и soPluginEvent', () => {
 	it('плагин реестра получает значение и его смену; снятый ключ — умолчание', async () => {
 		dispose = usePlugins(TButton, [TStepPlugin])
 
@@ -116,7 +116,7 @@ describe('плагин снаружи · pluginProps и pluginEvent', () => {
 		expect(plugin()?.size).toBe(1)
 	})
 
-	it('плагин из (bundleCreate) получает ждавшее его значение, события — конвертом', async () => {
+	it('плагин из (soBundleCreate) получает ждавшее его значение, события — конвертом', async () => {
 		const fixture = TestBed.createComponent(Host)
 
 		fixture.componentInstance.use = (bundle) => bundle.use(TStepPlugin)

@@ -399,13 +399,15 @@ Builder добавил бы изменяемое состояние, pipeline �
 - `callbackEventNaming` (`protected/naming/`) — `element:ready` → `onElementReady`; общая стратегия
   для React, Svelte и Solid, где события это колбэк-пропы. Тип-зеркало —
   `TCallbackEventProps`. Остальные адаптеры именуют события в своём
-  `adapter/common/naming.ts`: Vue отдаёт имя ядра как есть (`element:ready`);
-  Web Components — тоже, а событие из одного слова — с префиксом `so-`
-  (`so-input`): оно всплывает с элемента потребителя, и под своим именем
-  слушатель `input` на поле и форма над ним приняли бы его за событие браузера;
-  Angular — camelCase (`elementReady`), а событие из одного слова — с префиксом
-  `so` (`soInput`): на `(input)` у элемента Angular слушает и выход, и событие
-  DOM (см. «Angular-специфика»).
+  `adapter/common/naming.ts`: Vue отдаёт имя ядра как есть (`element:ready`).
+  Там, где события делят канал с DOM, префикс `so` получает **каждое** событие
+  адаптера, с разделителем его схемы имён: Web Components — `so:` и имя ядра
+  (`so:show`, `so:show:before`, `so:element:ready`): событие всплывает с
+  элемента потребителя; Angular — `so` и имя ядра в camelCase (`soInput`,
+  `soShowBefore`, `soElementReady`): на `(input)` у элемента Angular слушает и
+  выход, и событие DOM (см. «Angular-специфика»). Префикс — признак библиотеки,
+  а не метка совпавших с DOM имён (AGENTS.md, «Префикс — только в глобальном
+  пространстве имён»).
 - **Профиль фреймворка** (`IAdapterProfile`) — стратегия имён и слот по
   умолчанию, одна константа на адаптер (`VueProfile`, `ReactProfile`, …).
 - **Поверхность** — `TSurface.of(descriptor, profile)`: публичный API компонента
@@ -807,8 +809,8 @@ usePlugins(TButton, [TTimerPlugin])
 
 <Button :plugin-props="{ timer_ms: 500 }" @plugin:event="({ name, args }) => …" />   // Vue
 <Button pluginProps={{ timer_ms: 500 }} onPluginEvent={({ name, args }) => …} />    // React, Solid, Svelte
-<s-button [pluginProps]="{ timer_ms: 500 }" (pluginEvent)="…" />                     // Angular
-el.pluginProps = { timer_ms: 500 }; el.addEventListener('plugin:event', …)          // Web Components
+<button so-button [pluginProps]="{ timer_ms: 500 }" (soPluginEvent)="…"></button>    // Angular
+el.pluginProps = { timer_ms: 500 }; el.addEventListener('so:plugin:event', …)       // Web Components
 ```
 
 - **Контракт — свойство класса плагина** (`pluginContractOf`), а не места,

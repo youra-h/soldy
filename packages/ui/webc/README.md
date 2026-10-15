@@ -9,10 +9,10 @@ Web Components.
 The adapter is wiring, not behavior: it defines a Custom Element per component and renders the
 markup — BEM classes `s-*` and `data-*` state attributes. Props, events and slots come from the
 component descriptor, so they match the other five adapters; only the spelling is the platform's:
-props are attributes or element properties, and events are DOM events with the core names
-(`action:press`). A one-word event gets the `so-` prefix (`show` → `so-show`, `ready` →
-`so-ready`): events bubble from your element, and under its own name a component's `input` or
-`reset` would mix with the browser's events of that name on the element and its ancestors.
+props are attributes or element properties, and events are DOM events named `so:` + the core name
+(`so:show`, `so:show:before`, `so:action:press`, `so:change:disabled`). Every event has the prefix:
+events bubble from your element through the DOM, and the prefix tells a component's event from the
+browser's and your own.
 
 Each component is a native element of its tag extended by Soldy (a customized built-in):
 `<button is="so-button">` is a real `<button>`, `<div is="so-component-view">` a real `<div>`.
@@ -85,7 +85,7 @@ const el = document.createElement('button', { is: 'so-button' })
 
 if (el instanceof TButtonElement) {
   el.ctrl = new TButton({ text: 'Save' })
-  el.addEventListener('action:press', () => console.log('pressed'))
+  el.addEventListener('so:action:press', () => console.log('pressed'))
   document.body.append(el)
 }
 ```
