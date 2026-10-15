@@ -1,0 +1,71 @@
+<!--
+	Корень — сам хост (`<so-accordion-item>`), заголовок — `Button`, помечен
+	`#control`: на него база переносит статические атрибуты потребителя, а
+	директива набора кладёт `aria` секции. Слоты контракта: leading-icon,
+	leading, header (scope { text, selected }), trailing, trailing-icon,
+	default — панель.
+-->
+<button
+	so-button
+	#control
+	embedded="accordion.header"
+	class="s-accordion-item__header"
+	[view]="state()['view']"
+	[disabled]="state()['disabled']"
+	[size]="state()['size']"
+	[variant]="state()['variant']"
+	[so-attributes]="state()['aria']"
+	(click)="toggle()"
+>
+	<ng-container ngProjectAs="[slot=leading]">
+		@if (state()['arrowPlacement'] === 'start' || slot('leading-icon')) {
+			<span class="s-accordion-item__arrow">
+				@if (slot('leading-icon'); as icon) {
+					<ng-container [ngTemplateOutlet]="icon" />
+				} @else {
+					<svg
+						so-icon
+						embedded="accordion.arrow"
+						so-role-icon="arrowRight"
+						[size]="state()['size']"
+					></svg>
+				}
+			</span>
+		}
+		<ng-content select="[slot=leading]" />
+	</ng-container>
+	@if (slot('header'); as header) {
+		<ng-container
+			[ngTemplateOutlet]="header"
+			[ngTemplateOutletContext]="{
+				text: state()['text'] ?? '',
+				selected: state()['selected'] ?? false,
+			}"
+		/>
+	} @else {
+		<ng-content select="[slot=header]">{{ state()['text'] }}</ng-content>
+	}
+	<ng-container ngProjectAs="[slot=trailing]">
+		<ng-content select="[slot=trailing]" />
+		@if (state()['arrowPlacement'] === 'end' || slot('trailing-icon')) {
+			<span class="s-accordion-item__arrow">
+				@if (slot('trailing-icon'); as icon) {
+					<ng-container [ngTemplateOutlet]="icon" />
+				} @else {
+					<svg
+						so-icon
+						embedded="accordion.arrow"
+						so-role-icon="arrowRight"
+						[size]="state()['size']"
+					></svg>
+				}
+			</span>
+		}
+	</ng-container>
+</button>
+<div class="s-accordion-item__body">
+	<div class="s-accordion-item__content" [so-attributes]="state()['contentAria']">
+		<ng-content />
+	</div>
+</div>
+<ng-content select="ng-template[slot]" />

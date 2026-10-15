@@ -66,24 +66,30 @@
  *   ставят и снимают только свои имена;
  * - стиль — тоже эффект базы, по свойствам и тем же правилом: снизу выход
  *   плагина раскладки (`layout_styles`), поверх него стиль-выход компонента
- *   (`fractionStyle` у ProgressSpinner). Свойства, которых ядро не называет, —
- *   потребителя или плагина, записавшего его в узел сам, — база не трогает. Не
- *   привязка хоста `[style]` — по той же причине, что классы: она стала бы
- *   первой привязкой стилей директивы. `[style.display]` скрытия остаётся
- *   привязкой;
+ *   (`fractionStyle` у ProgressSpinner) и место элемента коллекции (`order`
+ *   фасада): ряд коллекции — флексбокс, и элемент встаёт по номеру в
+ *   коллекции, а не по месту в разметке, как у Svelte. Свойства, которых ядро
+ *   не называет, — потребителя или плагина, записавшего его в узел сам, — база
+ *   не трогает. Не привязка хоста `[style]` — по той же причине, что классы:
+ *   она стала бы первой привязкой стилей директивы. `[style.display]` скрытия
+ *   остаётся привязкой;
  * - `rendered=false` прячет корень, как `visible=false`: убрать элемент
  *   потребителя компонент не может. Содержимое остаётся, `TElementPlugin`
- *   связан с хостом всё время;
+ *   связан с хостом всё время. Так же корень прячет выход, который называет
+ *   описание корня (`TRootSpec.shownBy` — `active` у панели таба), пока он не
+ *   `true`;
  * - слой (`TRootSpec.teleport` — Frame) есть только в браузере, как оверлей
  *   CDK: элемент потребителя, со всем, что на нём написано, переносит в цель
  *   `teleportRoot` (`teleport.ts`) после отрисовки. Пока корень не в цели и не
  *   на месте — на сервере, до переноса, без цели, — слоя нет (`placed`): база
  *   корень прячет и классов, наборов и стиля ядра на нём не рисует;
- * - у поля (`TRootSpec.control` — Input, CheckBox, Switch) атрибуты
+ * - у поля (`TRootSpec.control` — Input, CheckBox, Switch, радио) атрибуты
  *   потребителя делятся между корнем и вложенным `<input>` (`#control` в
- *   шаблоне), как у Vue и React: статические атрибуты, которые потребитель
- *   записал на поле в разметке, кроме `class`, `style` и входов, база
- *   переносит с корня на `<input>`. Привязки `[attr.x]` и слушатели
+ *   шаблоне), как у Vue и React, а у элемента коллекции (ListBox, Tabs,
+ *   Accordion) — между корнем и строкой: статические атрибуты, которые
+ *   потребитель записал на компонент в разметке, кроме `class`, `style`,
+ *   входов и меток soldy (`so-*` — селектор радио), база переносит с корня на
+ *   `#control`. Привязки `[attr.x]` и слушатели
  *   потребителя остаются на корне: их Angular ставит на элемент, который
  *   написан в разметке, и перенести их нечем. Всплывающие события поля
  *   (`input`, `keydown`) доходят до корня сами, а `focus` и `blur` не
@@ -92,7 +98,14 @@
  * Сборка (`createBinding`) идёт в контексте инъекции компонента
  * (`runInInjectionContext`): обёртка сборки
  * (`createAngularAdapterContext`) берёт из него локаль ближайшего
- * `LocaleProviderDirective`. Сам `ngOnInit` в контексте не выполняется.
+ * `LocaleProviderDirective`, а лифт коллекции (`TAngularElevator`) — слой
+ * владельца. Сам `ngOnInit` в контексте не выполняется.
+ *
+ * У коллекционного компонента — владельца коллекции, её элемента, панели таба
+ * — контекстов два, свой и фасада, и `createBinding` отдаёт их одной связкой
+ * (`joinBindings`). Второй параметр типа базы — фасад: его свойства шаблон
+ * читает из того же `state()`, а сам фасад база отдаёт шаблону сигналом
+ * `facade()`, как инстанс — `instance()`.
  *
  * Эмиттеров заранее база не заводит. Выход — геттер, который кодогенератор
  * пишет в `T<Имя>Surface`, по одному на класс; первое чтение выхода — привязка
@@ -131,20 +144,21 @@ import {
 	type Signal,
 } from '@angular/core'
 import type { IEntity } from '@soldy-ui/core'
-import type { TInstanceState, TStateSnapshot } from '@soldy-ui/setup'
+import type { TStateSnapshot } from '@soldy-ui/setup'
 import {
 	TElementAttributes,
 	applyClasses,
 	applyStyles,
 	attributesOf,
 	classesOf,
+	orderOf,
 	stylesOf,
 	type TAppliedClasses,
 	type TAppliedStyles,
 } from './root-attributes'
 import { SlotDirective } from './slot.directive'
 import { teleportRoot } from './teleport'
-import type { TBinding } from './useAdapter'
+import type { TBinding, TBindingState } from './useAdapter'
 
 /**
  * Описание корня компонента — элемента, который описывает ядро (тег, классы,
@@ -173,6 +187,11 @@ import type { TBinding } from './useAdapter'
  * - `hides` — прячут ли `visible` и `rendered` корень, по умолчанию да. У
  *   Skeleton нет: они убирают только заглушку, а содержимое в корне остаётся
  *   на виду;
+ * - `shownBy` — выход состояния, без которого корень скрыт: пока он не
+ *   `true`, корень прячется, как при `visible=false`. У панели таба это
+ *   `active` фасада — панель видна, только пока активен её таб. Имя выхода
+ *   называет компонент, как имена выходов слоя. Нет — корень прячут только
+ *   `visible` и `rendered`;
  * - `teleport` — корень уезжает в слой: имена выходов состояния с селектором
  *   цели и с признаком «на месте» (`{ target: 'target', contained: 'contained' }`
  *   у Frame), их называет компонент. Переносит корень `teleportRoot`
@@ -184,8 +203,9 @@ import type { TBinding } from './useAdapter'
  *   (`AttributesDirective` в шаблоне), а `dataset` разметка поля не выводит,
  *   как и у остальных адаптеров;
  * - `control` — у корня есть вложенное поле, элемент шаблона `#control`
- *   (`<input>` у Input, CheckBox и Switch), и статические атрибуты, которые
- *   потребитель записал на компонент, кроме `class`, `style` и входов,
+ *   (`<input>` у Input, CheckBox, Switch и радио, строка — у элемента
+ *   коллекции), и статические атрибуты, которые потребитель записал на
+ *   компонент, кроме `class`, `style`, входов и меток soldy (`so-*`),
  *   переезжают на него.
  */
 export type TRootSpec =
@@ -194,6 +214,7 @@ export type TRootSpec =
 			readonly strategy: 'host'
 			readonly style?: string
 			readonly hides?: boolean
+			readonly shownBy?: string
 			readonly teleport?: TRootTeleport
 			readonly sets?: readonly TRootSet[]
 			readonly control?: boolean
@@ -235,13 +256,21 @@ const ROOT_SETS: readonly TRootSet[] = ['attrs', 'aria', 'dataset']
  */
 const ROOT_ATTRIBUTES: ReadonlySet<string> = new Set(['class', 'style', 'ng-version'])
 
+/**
+ * Метки soldy — атрибуты с префиксом `so-`: селектор компонента
+ * (`<label so-radio-group-item>`) и директивы адаптера. Они метят элемент для
+ * Angular, полю они ни к чему, и на поле не переезжают: у радио селектор
+ * атрибутный, а атрибуты потребителя делятся, как у поля.
+ */
+const MARKER_PREFIX = 'so-'
+
 @Directive({
 	standalone: true,
 	host: {
 		'[style.display]': '_rootDisplay()',
 	},
 })
-export abstract class TComponentBase<TInstance extends IEntity>
+export abstract class TComponentBase<TInstance extends IEntity, TFacade = unknown>
 	implements OnInit, OnChanges, OnDestroy
 {
 	/** Готовый core-инстанс (если не передан, создаётся из ctor дескриптора). */
@@ -250,7 +279,7 @@ export abstract class TComponentBase<TInstance extends IEntity>
 	protected abstract createBinding(
 		ctrl: TInstance | undefined,
 		inputs: object,
-	): TBinding<TInstance>
+	): TBinding<TInstance, TFacade>
 
 	private readonly _inputNames: readonly string[]
 
@@ -263,6 +292,9 @@ export abstract class TComponentBase<TInstance extends IEntity>
 	/** Прячет ли видимость корень-хост (`TRootSpec.hides`); у корня в шаблоне — нет. */
 	private readonly _hides: boolean
 
+	/** Выход, без которого корень-хост скрыт (`TRootSpec.shownBy`); нет — не прячет. */
+	private readonly _shownBy: string | undefined
+
 	/**
 	 * Корень там, где ему место: у слоя (`TRootSpec.teleport`) — в цели или,
 	 * если так задано, на месте, и только в браузере, после отрисовки
@@ -273,7 +305,7 @@ export abstract class TComponentBase<TInstance extends IEntity>
 	 */
 	protected readonly placed: Signal<boolean>
 
-	private readonly _binding = signal<TBinding<TInstance> | undefined>(undefined)
+	private readonly _binding = signal<TBinding<TInstance, TFacade> | undefined>(undefined)
 	private _eventsCleanup?: () => void
 
 	/**
@@ -286,8 +318,13 @@ export abstract class TComponentBase<TInstance extends IEntity>
 	 */
 	private readonly _injector = inject(Injector)
 
-	/** Состояние Core. Сигнал, т.к. binding появляется только в ngOnInit. */
-	readonly state = computed<TInstanceState<TInstance>>(() => this._binding()?.state() ?? {})
+	/**
+	 * Состояние Core — у коллекционного компонента вместе со свойствами фасада.
+	 * Сигнал, т.к. binding появляется только в ngOnInit.
+	 */
+	readonly state = computed<TBindingState<TInstance, TFacade>>(
+		() => this._binding()?.state() ?? {},
+	)
 
 	/**
 	 * Инстанс ядра — внешний `ctrl` или собранный в `ngOnInit`; до сборки его
@@ -295,6 +332,14 @@ export abstract class TComponentBase<TInstance extends IEntity>
 	 * зовёт его команды (`clear` кнопки очистки), как `ctrl` в шаблоне Vue.
 	 */
 	protected readonly instance = computed<TInstance | undefined>(() => this._binding()?.ctrl)
+
+	/**
+	 * Фасад коллекции — у компонента с двумя контекстами; до сборки и у
+	 * остальных его нет. Через его контекст шаблон элемента зовёт команды
+	 * коллекции: выбрать (`choose`), раскрыть (`toggle`), активировать, закрыть
+	 * таб, — как `context` в шаблоне Vue.
+	 */
+	protected readonly facade = computed<TFacade | undefined>(() => this._binding()?.facade)
 
 	/**
 	 * Состояние, которое база рисует на корне-хосте: классы, наборы, стиль. У
@@ -319,8 +364,10 @@ export abstract class TComponentBase<TInstance extends IEntity>
 	protected readonly _rootDisplay = computed(() => {
 		const state: TStateSnapshot = this.state()
 		const hidden = this._hides && (state['rendered'] === false || state['visible'] === false)
+		// Выход, без которого корня нет: у панели таба — активен ли её таб
+		const absent = this._shownBy !== undefined && state[this._shownBy] !== true
 
-		return hidden || !this.placed() ? 'none' : null
+		return hidden || absent || !this.placed() ? 'none' : null
 	})
 
 	/**
@@ -375,6 +422,7 @@ export abstract class TComponentBase<TInstance extends IEntity>
 
 			this._host = host
 			this._hides = root.hides ?? true
+			this._shownBy = root.shownBy
 			this.placed = root.teleport ? this._teleportHost(host, root.teleport) : IN_PLACE
 			this._bindHost(host, root.style, root.sets ?? ROOT_SETS)
 
@@ -382,6 +430,7 @@ export abstract class TComponentBase<TInstance extends IEntity>
 		} else {
 			this._host = null
 			this._hides = false
+			this._shownBy = undefined
 			this.placed = IN_PLACE
 			this._bindView()
 		}
@@ -499,12 +548,18 @@ export abstract class TComponentBase<TInstance extends IEntity>
 		// на смену содержимого, и эффект не будит смена чужих свойств
 		const layout = computed(() => this._drawn()['layout_styles'])
 		const own = computed(() => (styleName === undefined ? undefined : this._drawn()[styleName]))
+		const order = computed(() => this._drawn()['order'])
 
 		let appliedStyles: TAppliedStyles = new Map()
 
-		// Снизу выход плагина раскладки, поверх — стиль-выход компонента
+		// Снизу выход плагина раскладки, поверх — стиль-выход компонента и место
+		// элемента коллекции
 		effect(() => {
-			appliedStyles = applyStyles(host, stylesOf(layout(), own()), appliedStyles)
+			appliedStyles = applyStyles(
+				host,
+				stylesOf(layout(), own(), orderOf(order())),
+				appliedStyles,
+			)
 		})
 	}
 
@@ -512,8 +567,9 @@ export abstract class TComponentBase<TInstance extends IEntity>
 	 * Поле (`TRootSpec.control`): статические атрибуты, которые потребитель
 	 * записал на компонент, переезжают с корня на вложенное поле `#control`, как
 	 * атрибуты снаружи у Vue и React. На корне остаются класс и стиль — вид
-	 * корня — и пометки Angular (`ROOT_ATTRIBUTES`); атрибуты-входы база уже
-	 * сняла (`_bindHost`).
+	 * корня, — пометки Angular (`ROOT_ATTRIBUTES`) и метки soldy с префиксом
+	 * `so-` — селектор радио (`<label so-radio-group-item>`) и директивы
+	 * адаптера; атрибуты-входы база уже сняла (`_bindHost`).
 	 *
 	 * Чей атрибут, база узнаёт не по узлу, а по скомпилированной разметке
 	 * потребителя (`HostAttributeToken`): на узле стоит и то, чего потребитель
@@ -534,7 +590,7 @@ export abstract class TComponentBase<TInstance extends IEntity>
 		const moved = new Map<string, string>()
 
 		for (const name of host.getAttributeNames()) {
-			if (ROOT_ATTRIBUTES.has(name)) continue
+			if (ROOT_ATTRIBUTES.has(name) || name.startsWith(MARKER_PREFIX)) continue
 
 			const value = inject(new HostAttributeToken(name), { optional: true })
 

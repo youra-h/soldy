@@ -18,6 +18,12 @@
  * Состояние — сигнал, а не поле + markForCheck(): markForCheck помечает путь
  * грязным, но не планирует проверку, поэтому работал только благодаря Zone.js.
  * Сигнал уведомляет шаблон сам и одинаково работает в zone- и zoneless-режиме.
+ *
+ * У коллекционного компонента контекстов два — свой и фасада коллекции, — и
+ * фасад связывает `useCollectionAdapter`: всё то же, кроме `ctrl` и привязки
+ * узла, они принадлежат компоненту. Базе компонента (`TComponentBase`) нужна
+ * одна связка, поэтому две сводит `joinBindings`: состояние — одним видом,
+ * входы, события и уничтожение — в обе, узел — только в свою.
  */
 
 import { computed, signal, type EventEmitter, type Signal } from '@angular/core'
@@ -28,6 +34,7 @@ import type {
 	IAdapterContext,
 	IComponentContract,
 	IComponentDescriptor,
+	TAdapterState,
 	TStateSnapshot,
 	TInstanceState,
 } from '@soldy-ui/setup'
@@ -45,6 +52,10 @@ import { AngularProfile } from '../common/profile'
  * (`aria_label`) или служебный адаптера (`embedded`, `pluginProps`), как их
  * сводит `DescriptorComponentProps`. Имя вне пропсов дескриптора не
  * компилируется.
+ *
+ * Входы фасада коллекции (`items`, `mode`, `selected` элемента) — тоже по
+ * дескриптору компонента: класс фасада объявляет пропсами `IComponentProps`, а
+ * их типы несёт интерфейс пропсов ядра компонента (`IListBoxProps`).
  */
 export type TInputValue<
 	TDescriptorFn extends (...args: any[]) => IComponentDescriptor,
@@ -70,17 +81,35 @@ type TOutputValue<THandler> = THandler extends (...args: infer TArgs) => unknown
  * (`generated/*.metadata.ts`) по фабрике дескриптора и полному имени события,
  * которые кодогенератор берёт из той же поверхности, что имена выходов; эмиттер
  * геттер заводит при первом чтении (`TComponentBase.createOutput`). Событие вне
- * карты дескриптора (`DescriptorAllEvents`) не компилируется.
+ * карты дескриптора (`DescriptorAllEvents`) не компилируется. Выход фасада
+ * коллекции — по дескриптору фасада: карту событий несёт он.
  */
 export type TOutputEmitter<
 	TDescriptorFn extends (...args: any[]) => IComponentDescriptor,
 	TEvent extends keyof DescriptorAllEvents<TDescriptorFn>,
 > = EventEmitter<TOutputValue<DescriptorAllEvents<TDescriptorFn>[TEvent]>>
 
-export type TBinding<TInstance = any> = {
-	/** Свойства инстанса со снимком через `valueOf()` — см. `TInstanceState`. */
-	readonly state: Signal<TInstanceState<TInstance>>
+/**
+ * Состояние компонента, как его читает шаблон: свойства инстанса и, у
+ * коллекционного компонента, свойства фасада. Одноимённых у них нет: имена
+ * пропсов фасада префиксуются (`tab_closable`).
+ */
+export type TBindingState<TInstance, TFacade = unknown> = TInstanceState<TInstance> &
+	TInstanceState<TFacade>
+
+/** Поиск эмиттера выхода по имени: заведённый — эмиттер, иначе `undefined`. */
+export type TOutputOf = (name: string) => EventEmitter<unknown> | undefined
+
+/**
+ * Связка компонента для базы (`TComponentBase`). `TFacade` — фасад коллекции у
+ * компонента с двумя контекстами (`joinBindings`); у остальных его нет.
+ */
+export type TBinding<TInstance = any, TFacade = unknown> = {
+	/** Свойства инстанса и фасада со снимком через `valueOf()` — см. `TInstanceState`. */
+	readonly state: Signal<TBindingState<TInstance, TFacade>>
 	readonly ctrl: TInstance
+	/** Фасад коллекции: шаблон зовёт через его контекст команды коллекции. */
+	readonly facade: TFacade
 	readonly plugins: IPluginBundle | null
 	syncInputs(inputs: object): void
 	/**
@@ -88,14 +117,39 @@ export type TBinding<TInstance = any> = {
 	 * выход его уже завёл, иначе `undefined`; эмиттеров сам поиск не заводит.
 	 * Возвращает отписку приёмника.
 	 */
-	syncEvents(outputOf: (name: string) => EventEmitter<unknown> | undefined): () => void
+	syncEvents(outputOf: TOutputOf): () => void
 	bindElement(el: Element | null): void
 	destroy(): void
 }
 
-export function useAdapter<C extends IComponentContract>(
+/**
+ * То же, что `TBinding`, но без `ctrl` и привязки узла: они принадлежат
+ * компоненту, а не фасаду его коллекции (см. `useCollectionAdapter`).
+ */
+export type TCollectionBinding<TFacade = any> = {
+	/** Свойства фасада со снимком через `valueOf()`. */
+	readonly state: Signal<TInstanceState<TFacade>>
+	readonly facade: TFacade
+	syncInputs(inputs: object): void
+	syncEvents(outputOf: TOutputOf): () => void
+	destroy(): void
+}
+
+/** Общая часть связок контекста — свой он или фасада. */
+type TExchangeBinding<C extends IComponentContract> = {
+	readonly state: Signal<TAdapterState<C>>
+	syncInputs(inputs: object): void
+	syncEvents(outputOf: TOutputOf): () => void
+	destroy(): void
+}
+
+/**
+ * Общая часть `useAdapter` и `useCollectionAdapter`: связка контекста,
+ * состояние, входы, события, приём и уничтожение.
+ */
+function useExchange<C extends IComponentContract>(
 	adapter: IAdapterContext<C>,
-): TBinding<C['instance']> {
+): TExchangeBinding<C> {
 	const binding = adapter.connect(AngularProfile)
 	const values = signal<TStateSnapshot>({})
 
@@ -105,22 +159,23 @@ export function useAdapter<C extends IComponentContract>(
 	const unsubscribe = binding.state.subscribe(() => values.set(binding.state.getSnapshot()))
 
 	// Компонент принят: связку заводит `ngOnInit`, отброшенных сборок у
-	// Angular нет
+	// Angular нет. `ngOnInit` идёт и на сервере, и элемент коллекции входит в
+	// неё к серверной разметке. Владелец собирается раньше своих элементов —
+	// хуки `ngOnInit` Angular зовёт в порядке шаблона, — и элементы разметки
+	// входят в коллекцию в порядке DOM
 	adapter.attach()
 
 	return {
 		state: computed(() => toInstanceState<C>(values())),
 
-		ctrl: adapter.instance,
-		plugins: adapter.bundle,
-
 		// ngOnChanges отдаёт дельту — только изменившиеся входы, поэтому
-		// `inputs.delta`: `inputs.full` сбросил бы к умолчанию все остальные
+		// `inputs.delta`: `inputs.full` сбросил бы к умолчанию все остальные.
+		// Чужих имён дельта не трогает: входы компонента и фасада идут обоим
 		syncInputs(inputs: object): void {
 			binding.inputs.delta(inputs)
 		},
 
-		syncEvents(outputOf: (name: string) => EventEmitter<unknown> | undefined): () => void {
+		syncEvents(outputOf: TOutputOf): () => void {
 			// Эмиттер ищется на каждое событие, а не один раз: его заводит первое
 			// чтение выхода, и подписка из кода после монтирования получает
 			// события с этого момента. Выход никто не читал — отдавать некому.
@@ -128,13 +183,90 @@ export function useAdapter<C extends IComponentContract>(
 			return binding.events.listen((exportName, args) => outputOf(exportName)?.emit(args[0]))
 		},
 
-		bindElement(el: Element | null): void {
-			adapter.bindElement(el)
-		},
-
 		destroy(): void {
 			unsubscribe()
 			adapter.destroy()
+		},
+	}
+}
+
+export function useAdapter<C extends IComponentContract>(
+	adapter: IAdapterContext<C>,
+): TBinding<C['instance']> {
+	return {
+		...useExchange(adapter),
+
+		ctrl: adapter.instance,
+		facade: undefined,
+		plugins: adapter.bundle,
+
+		bindElement(el: Element | null): void {
+			adapter.bindElement(el)
+		},
+	}
+}
+
+/**
+ * Адаптер фасада коллекции — всё то же, кроме того, что принадлежит компоненту.
+ *
+ * У коллекционного компонента контекстов два: свой и фасада. Состояние, входы,
+ * события, приём и уничтожение у фасада те же, что у компонента, а `ctrl` и
+ * привязки узла — нет:
+ *
+ * - `ctrl` у фасада это `T*CollectionFacade`, тогда как снаружи под этим именем
+ *   ждут сам компонент;
+ * - своего узла у фасада нет: он делит набор компонента, и корень к
+ *   `TElementPlugin` привязывает связка компонента.
+ *
+ * Сам фасад связка отдаёт: элемент коллекции зовёт через его контекст команды
+ * коллекции (`choose`, `toggle`, `close`).
+ */
+export function useCollectionAdapter<C extends IComponentContract>(
+	adapter: IAdapterContext<C>,
+): TCollectionBinding<C['instance']> {
+	return { ...useExchange(adapter), facade: adapter.instance }
+}
+
+/**
+ * Связка компонента с двумя контекстами — для базы, которой нужна одна:
+ *
+ * - состояние — одним видом, свойства компонента и фасада (`TBindingState`);
+ * - входы — обоим: дельта Angular несёт входы обоих, и каждый берёт свои;
+ * - события — от обоих, в выходы одного компонента;
+ * - узел — только свой: у фасада его нет;
+ * - уничтожение — фасад раньше компонента, в порядке, обратном приёму, как у
+ *   React: элемент выходит из коллекции, пока его набор плагинов цел.
+ */
+export function joinBindings<TInstance, TFacade>(
+	owner: TBinding<TInstance>,
+	facade: TCollectionBinding<TFacade>,
+): TBinding<TInstance, TFacade> {
+	return {
+		state: computed(() => ({ ...facade.state(), ...owner.state() })),
+		ctrl: owner.ctrl,
+		facade: facade.facade,
+		plugins: owner.plugins,
+
+		syncInputs(inputs: object): void {
+			owner.syncInputs(inputs)
+			facade.syncInputs(inputs)
+		},
+
+		syncEvents(outputOf: TOutputOf): () => void {
+			const stops = [owner.syncEvents(outputOf), facade.syncEvents(outputOf)]
+
+			return () => {
+				for (const stop of stops) stop()
+			}
+		},
+
+		bindElement(el: Element | null): void {
+			owner.bindElement(el)
+		},
+
+		destroy(): void {
+			facade.destroy()
+			owner.destroy()
 		},
 	}
 }

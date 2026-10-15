@@ -76,8 +76,8 @@ export function classesOf(value: unknown): readonly string[] {
 /**
  * Стиль корня из слоёв состояния — снизу вверх: выход плагина раскладки
  * (`layout_styles`), поверх него стиль-выход самого компонента
- * (`fractionStyle` у ProgressSpinner). Из одноимённых свойств действует
- * верхний слой.
+ * (`fractionStyle` у ProgressSpinner) и место элемента коллекции (`orderOf`).
+ * Из одноимённых свойств действует верхний слой.
  *
  * Слой — объект `имя → значение` с именами, как в CSS: так их пишут плагины и
  * ядро. Число уходит строкой как есть (`z-index: 3`). Пустая строка и всё, что
@@ -99,6 +99,15 @@ export function stylesOf(...layers: readonly unknown[]): TRootStyles {
 	}
 
 	return styles
+}
+
+/**
+ * Слой стиля с местом элемента коллекции — `order` фасада: ряд коллекции —
+ * флексбокс, и элемент встаёт по номеру в коллекции, а не по месту в разметке.
+ * Номера нет — слоя нет: у компонента своего места нет.
+ */
+export function orderOf(value: unknown): object | undefined {
+	return typeof value === 'number' ? { order: value } : undefined
 }
 
 /**

@@ -1,0 +1,77 @@
+<!--
+	Корень — сам хост (`<div so-tabs>`), поэтому шаблон — список табов и место
+	панелей. Слоты контракта: leading и trailing — по краям списка, default —
+	табы, content — панели; item, item-leading, item-trailing и
+	item-close-icon — слоты табов из данных.
+
+	Обёртки краёв списка стоят, только когда их слот задан, поэтому `leading` и
+	`trailing` — шаблоны (`<ng-template slot="leading">`): есть ли что-то в
+	`<ng-content>`, Angular не сообщает.
+
+	Табы из данных — запасное содержимое `<ng-content>`, по `shown`. Проброс
+	слотов таба — целиком и только заданных, как у ListBox: слот без scope
+	(`leading`, `trailing`) таб проецирует, и проброс — `ng-container` с
+	`ngProjectAs`; слот, по которому таб решает, рисовать ли своё
+	(`default` — текст, `close-icon` — иконку крестика), он берёт шаблоном, и
+	проброс — `<ng-template slot>`, уведённый в слив шаблонов таба.
+
+	Шаблоны слотов, которые потребитель написал в наборе, уходят в слив в конце:
+	в основной проекции они сняли бы запасное содержимое — табы из данных.
+-->
+<div class="s-tabs__list" [so-attributes]="state()['aria']">
+	@if (slot('leading'); as leading) {
+		<div class="s-tabs__list--leading">
+			<ng-container [ngTemplateOutlet]="leading" />
+		</div>
+	}
+	<ng-content>
+		@for (item of state()['shown'] ?? []; track item.uid) {
+			<so-tabs-item [ctrl]="item">
+				@if (slot('item-leading'); as leading) {
+					<ng-container ngProjectAs="[slot=leading]">
+						<ng-container
+							[ngTemplateOutlet]="leading"
+							[ngTemplateOutletContext]="{ item }"
+						/>
+					</ng-container>
+				}
+				@if (slot('item'); as content) {
+					<ng-template
+						slot="default"
+						ngProjectAs="ng-template[slot]"
+						let-text="text"
+						let-active="active"
+					>
+						<ng-container
+							[ngTemplateOutlet]="content"
+							[ngTemplateOutletContext]="{ item, text, active }"
+						/>
+					</ng-template>
+				}
+				@if (slot('item-trailing'); as trailing) {
+					<ng-container ngProjectAs="[slot=trailing]">
+						<ng-container
+							[ngTemplateOutlet]="trailing"
+							[ngTemplateOutletContext]="{ item }"
+						/>
+					</ng-container>
+				}
+				@if (slot('item-close-icon'); as icon) {
+					<ng-template slot="close-icon" ngProjectAs="ng-template[slot]">
+						<ng-container
+							[ngTemplateOutlet]="icon"
+							[ngTemplateOutletContext]="{ item }"
+						/>
+					</ng-template>
+				}
+			</so-tabs-item>
+		}
+	</ng-content>
+	@if (slot('trailing'); as trailing) {
+		<div class="s-tabs__list--trailing">
+			<ng-container [ngTemplateOutlet]="trailing" />
+		</div>
+	}
+</div>
+<ng-content select="[slot=content]" />
+<ng-content select="ng-template[slot]" />

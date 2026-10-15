@@ -1,0 +1,67 @@
+<!--
+	Корень — сам хост (`<div so-accordion>`), поэтому шаблон — только секции.
+	Слоты контракта: default — секции; item, item-leading-icon, item-leading,
+	item-trailing, item-trailing-icon и item-content — слоты секций из данных.
+
+	Секции из данных — запасное содержимое `<ng-content>`, по `shown`. Проброс
+	слотов секции — целиком и только заданных, как у ListBox. Слот без scope
+	секция проецирует, и проброс — `ng-container`: с `ngProjectAs` у
+	`leading` и `trailing`, а у `item-content` без него — это основная
+	проекция секции, её панель. Слот, по которому секция решает, рисовать ли
+	своё (`header` — текст, `leading-icon` и `trailing-icon` — стрелку и её
+	обёртку), она берёт шаблоном, и проброс — `<ng-template slot>`, уведённый
+	в слив шаблонов секции. Заголовок секции (`header`) — `item`.
+
+	Шаблоны слотов, которые потребитель написал в аккордеоне, уходят в слив в
+	конце: в основной проекции они сняли бы запасное содержимое — секции из
+	данных.
+-->
+<ng-content>
+	@for (item of state()['shown'] ?? []; track item.uid) {
+		<so-accordion-item [ctrl]="item">
+			@if (slot('item-leading-icon'); as icon) {
+				<ng-template slot="leading-icon" ngProjectAs="ng-template[slot]">
+					<ng-container [ngTemplateOutlet]="icon" [ngTemplateOutletContext]="{ item }" />
+				</ng-template>
+			}
+			@if (slot('item-leading'); as leading) {
+				<ng-container ngProjectAs="[slot=leading]">
+					<ng-container
+						[ngTemplateOutlet]="leading"
+						[ngTemplateOutletContext]="{ item }"
+					/>
+				</ng-container>
+			}
+			@if (slot('item'); as header) {
+				<ng-template
+					slot="header"
+					ngProjectAs="ng-template[slot]"
+					let-text="text"
+					let-selected="selected"
+				>
+					<ng-container
+						[ngTemplateOutlet]="header"
+						[ngTemplateOutletContext]="{ item, text, selected }"
+					/>
+				</ng-template>
+			}
+			@if (slot('item-trailing'); as trailing) {
+				<ng-container ngProjectAs="[slot=trailing]">
+					<ng-container
+						[ngTemplateOutlet]="trailing"
+						[ngTemplateOutletContext]="{ item }"
+					/>
+				</ng-container>
+			}
+			@if (slot('item-trailing-icon'); as icon) {
+				<ng-template slot="trailing-icon" ngProjectAs="ng-template[slot]">
+					<ng-container [ngTemplateOutlet]="icon" [ngTemplateOutletContext]="{ item }" />
+				</ng-template>
+			}
+			@if (slot('item-content'); as content) {
+				<ng-container [ngTemplateOutlet]="content" [ngTemplateOutletContext]="{ item }" />
+			}
+		</so-accordion-item>
+	}
+</ng-content>
+<ng-content select="ng-template[slot]" />
