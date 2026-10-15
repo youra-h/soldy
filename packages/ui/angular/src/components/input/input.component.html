@@ -1,0 +1,70 @@
+<!--
+	Корень — сам хост (`<so-input>`), поэтому шаблон — поле и слоты по его
+	сторонам. Слоты контракта: leading и trailing (scope { ctrl }), clear
+	(scope { clear }).
+
+	Поле помечено `#control`: на него база переносит статические атрибуты
+	потребителя, а директива набора кладёт `aria` ядра.
+-->
+@if (slot('leading'); as leading) {
+	<div class="s-input__leading">
+		<ng-container
+			[ngTemplateOutlet]="leading"
+			[ngTemplateOutletContext]="{ ctrl: instance() }"
+		/>
+	</div>
+}
+<input
+	#control
+	type="text"
+	[so-field-text]="state()['value']"
+	[attr.id]="state()['id'] ?? null"
+	[attr.name]="state()['name'] ?? null"
+	[attr.placeholder]="state()['placeholder'] ?? null"
+	[disabled]="state()['disabled'] === true"
+	[readOnly]="state()['readonly'] === true"
+	[required]="state()['required'] === true"
+	[so-attributes]="state()['aria']"
+/>
+<!--
+	Обёртка у конца поля — по кнопке очистки, по своей кнопке в слоте `clear`
+	или по слоту `trailing`. Кнопка очистки стоит в ней первой, перед
+	содержимым `trailing`.
+-->
+@if (state()['clearable'] || slot('clear') || slot('trailing')) {
+	<div class="s-input__trailing">
+		<!--
+			Своя кнопка — слот `clear`: заменяет встроенную целиком и рисуется,
+			когда задана. Команду очистки получает в scope.
+		-->
+		@if (slot('clear'); as clear) {
+			<ng-container
+				[ngTemplateOutlet]="clear"
+				[ngTemplateOutletContext]="{ clear: instance()?.clear }"
+			/>
+		} @else if (state()['clearable']) {
+			<button
+				so-button
+				embedded="input.clear"
+				class="s-input__clear"
+				[size]="state()['size']"
+				[disabled]="state()['disabled']"
+				[so-attributes]="state()['clearAria']"
+				(click)="clearClick($event)"
+			>
+				<svg
+					so-icon
+					embedded="input.clear-icon"
+					so-role-icon="close"
+					[size]="state()['size']"
+				></svg>
+			</button>
+		}
+		@if (slot('trailing'); as trailing) {
+			<ng-container
+				[ngTemplateOutlet]="trailing"
+				[ngTemplateOutletContext]="{ ctrl: instance() }"
+			/>
+		}
+	</div>
+}

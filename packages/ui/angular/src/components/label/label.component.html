@@ -1,0 +1,17 @@
+<!--
+	Корень — сам хост (`<label so-label>`), поэтому шаблон — только части
+	подписи. Слоты контракта: default — контрол, content — текст.
+
+	Контрол — слот default: CheckBox, Switch или RadioGroup.Item с
+	`tag="span"` (его корень — `label`, а `label` в `label` запрещён; забытый
+	тег ловит плагин подписи). Обёртка выравнивает контрол по первой строке
+	текста.
+
+	Текст — слот content (`<span slot="content">`), без него — проп `text`.
+	Вокруг слота и запасного текста нет пробелов: пустую обёртку тема прячет по
+	`:empty`.
+-->
+<span class="s-label__control"><ng-content /></span>
+<span class="s-label__text"
+	><ng-content select="[slot=content]">{{ state()['text'] }}</ng-content></span
+>

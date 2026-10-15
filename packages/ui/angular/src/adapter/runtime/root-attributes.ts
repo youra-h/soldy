@@ -1,7 +1,7 @@
 /**
  * Раскладка того, что ядро пишет на корень-хост: наборы `aria`, `attrs`,
- * `dataset` (`applyAttributes`), классы (`applyClasses`) и стиль
- * (`applyStyles`).
+ * `dataset` (`applyAttributes` — раскладчиком элемента `TElementAttributes`),
+ * классы (`applyClasses`) и стиль (`applyStyles`).
  *
  * Корень компонента в Angular — элемент, который написал потребитель
  * (`<button so-button>`, см. `TComponentBase`), и на нём стоит не только то,
@@ -29,9 +29,11 @@
  * `dir` потребителя переживёт ядро только с `direction="inherit"`, при
  * котором ядро `dir` не пишет.
  *
- * Память — своя у каждого набора, у классов и у стиля: `aria`, `attrs` и
- * `dataset` по именам не пересекаются, и раздельная память не даёт одному
- * набору снять атрибут, поставленный другим.
+ * Память — своя у классов и у стиля, а у атрибутов одна на элемент — у
+ * раскладчика элемента (`TElementAttributes`): атрибуты на него пишут
+ * несколько писателей — наборы ядра корня и набор, который на тот же элемент
+ * кладёт разметка владельца (`AttributesDirective`), — и общая память не даёт
+ * одному снять атрибут, поставленный другим.
  */
 
 /** Что поставила база в прошлый раз: имя → значение. */
@@ -127,6 +129,80 @@ export function applyAttributes(
 	}
 
 	return next
+}
+
+/**
+ * Слои атрибутов элемента — кто их пишет, снизу вверх:
+ *
+ * - `attrs`, `aria`, `dataset` — наборы ядра компонента, чей корень этот
+ *   элемент (база, `TComponentBase`), в порядке шаблона Vue;
+ * - `markup` — набор, который на элемент кладёт разметка компонента-владельца
+ *   (`AttributesDirective`): `aria` поля — на `<input>`, `clearAria` поля — на
+ *   вложенную кнопку очистки.
+ */
+export const ATTRIBUTE_LAYERS = ['attrs', 'aria', 'dataset', 'markup'] as const
+
+/** Слой атрибутов элемента — см. `ATTRIBUTE_LAYERS`. */
+export type TAttributeLayer = (typeof ATTRIBUTE_LAYERS)[number]
+
+/** Раскладчики по элементам: один на элемент, кто бы на него ни писал. */
+const LAID_OUT = new WeakMap<Element, TElementAttributes>()
+
+/**
+ * Атрибуты элемента от всех, кто их на него пишет, — слоями
+ * (`ATTRIBUTE_LAYERS`), одной раскладкой и одной памятью.
+ *
+ * На элемент пишут двое, когда он корень вложенного компонента: база этого
+ * компонента — его наборы ядра — и разметка владельца — свой набор поверх
+ * (`<button so-button [so-attributes]="state()['clearAria']">`). Набор
+ * владельца главнее на общем имени, как атрибут снаружи у Vue и React:
+ * `role="option"` строки перекрывает `role="button"`, который кнопка на `div`
+ * пишет себе сама. Порядок, в каком они пишут, не задан — разметка владельца
+ * пишет в проходе своего шаблона, база вложенного — эффектом, — поэтому каждый
+ * пишет только свой слой, а на элемент раскладчик кладёт их сумму, верхний
+ * поверх нижних. Две раскладки со своей памятью спорили бы за общее имя:
+ * снимая своё, одна снимала бы и значение другой.
+ *
+ * Правило раскладки — `applyAttributes`: что называет хоть один слой, —
+ * раскладчика, остальное на элементе он не трогает. Значение не строкой
+ * (`null` у наборов ядра) имя не называет и нижний слой не перекрывает.
+ */
+export class TElementAttributes {
+	/** Раскладчик элемента: тот же у всех, кто на него пишет. */
+	static of(element: Element): TElementAttributes {
+		let attributes = LAID_OUT.get(element)
+
+		if (!attributes) {
+			attributes = new TElementAttributes(element)
+			LAID_OUT.set(element, attributes)
+		}
+
+		return attributes
+	}
+
+	private readonly _layers = new Map<TAttributeLayer, object>()
+	private _applied: TAppliedAttributes = new Map()
+
+	private constructor(private readonly _element: Element) {}
+
+	/** Слой `layer` теперь — `set`; на элементе — сумма слоёв. */
+	set(layer: TAttributeLayer, set: object): void {
+		this._layers.set(layer, set)
+		this._applied = applyAttributes(this._element, this._sum(), this._applied)
+	}
+
+	/** Слои снизу вверх: из одноимённых действует верхний, `null` не перекрывает. */
+	private _sum(): Record<string, string> {
+		const sum: Record<string, string> = {}
+
+		for (const layer of ATTRIBUTE_LAYERS) {
+			for (const [name, value] of Object.entries(this._layers.get(layer) ?? NO_ATTRIBUTES)) {
+				if (typeof value === 'string') sum[name] = value
+			}
+		}
+
+		return sum
+	}
 }
 
 /** Раскладывает классы ядра на элемент и возвращает новую память базы. */

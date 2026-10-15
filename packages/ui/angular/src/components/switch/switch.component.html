@@ -1,0 +1,40 @@
+<!--
+	Корень — сам хост (`<so-switch>`), поэтому шаблон — поле и дорожка. Слоты
+	контракта: on и off, scope { value, ctrl }.
+
+	Поле помечено `#control`: на него база переносит статические атрибуты
+	потребителя, а директива набора кладёт `aria` ядра с `role="switch"`.
+-->
+<input
+	#control
+	type="checkbox"
+	[checked]="state()['value'] === true"
+	[attr.id]="state()['id'] ?? null"
+	[attr.name]="state()['name'] ?? null"
+	[disabled]="state()['disabled'] === true"
+	[required]="state()['required'] === true"
+	[so-attributes]="state()['aria']"
+/>
+<!--
+	Дорожка с ручкой — декор: состояние скринридеру сообщает нативный
+	`checked`. Запасного содержимого у слотов нет: без слота ручка пуста.
+-->
+<span class="s-switch__track" aria-hidden="true">
+	<span class="s-switch__track--thumb">
+		@if (state()['value']) {
+			@if (slot('on'); as on) {
+				<ng-container
+					[ngTemplateOutlet]="on"
+					[ngTemplateOutletContext]="{ value: state()['value'], ctrl: instance() }"
+				/>
+			}
+		} @else {
+			@if (slot('off'); as off) {
+				<ng-container
+					[ngTemplateOutlet]="off"
+					[ngTemplateOutletContext]="{ value: state()['value'], ctrl: instance() }"
+				/>
+			}
+		}
+	</span>
+</span>

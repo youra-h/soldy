@@ -23,10 +23,14 @@ import type { ComponentFixture } from '@angular/core/testing'
 import { TButton, type TDirection } from '@soldy-ui/core'
 import {
 	TButtonComponent,
+	TCheckBoxComponent,
 	TComponentViewComponent,
 	TIconComponent,
+	TInputComponent,
+	TLabelComponent,
 	TProgressSpinnerComponent,
 	TSkeletonComponent,
+	TSwitchComponent,
 } from '@soldy-ui/angular'
 import {
 	applyAttributes,
@@ -115,6 +119,20 @@ class ProgressSpinnerProbe extends TProbeHost {}
 })
 class SkeletonProbe extends TProbeHost {}
 
+@Component({
+	standalone: true,
+	imports: [TLabelComponent],
+	template: `<label
+		so-label
+		direction="rtl"
+		dir="ltr"
+		title="probe"
+		class="mine"
+		(elementReady)="ready.push($event)"
+	></label>`,
+})
+class LabelProbe extends TProbeHost {}
+
 /** Компонент, хост его пробы, селектор корня и класс ядра на нём. */
 const COMPONENTS: ReadonlyArray<readonly [string, Type<TProbeHost>, string, string]> = [
 	['Button', ButtonProbe, '[so-button]', 's-button'],
@@ -122,6 +140,61 @@ const COMPONENTS: ReadonlyArray<readonly [string, Type<TProbeHost>, string, stri
 	['Icon', IconProbe, '[so-icon]', 's-icon'],
 	['ProgressSpinner', ProgressSpinnerProbe, '[so-progress-spinner]', 's-progress-spinner'],
 	['Skeleton', SkeletonProbe, '[so-skeleton]', 's-skeleton'],
+	['Label', LabelProbe, '[so-label]', 's-label'],
+]
+
+/**
+ * Проба поля: у него атрибуты потребителя делятся между корнем и `<input>`.
+ * `dir` потребителя — атрибут из разметки, и он уезжает на поле, а `dir` ядра
+ * по `direction` стоит на корне.
+ */
+@Component({
+	standalone: true,
+	imports: [TCheckBoxComponent],
+	template: `<so-check-box
+		direction="rtl"
+		dir="ltr"
+		title="probe"
+		class="mine"
+		style="color: red"
+		(elementReady)="ready.push($event)"
+	/>`,
+})
+class CheckBoxProbe extends TProbeHost {}
+
+@Component({
+	standalone: true,
+	imports: [TSwitchComponent],
+	template: `<so-switch
+		direction="rtl"
+		dir="ltr"
+		title="probe"
+		class="mine"
+		style="color: red"
+		(elementReady)="ready.push($event)"
+	/>`,
+})
+class SwitchProbe extends TProbeHost {}
+
+@Component({
+	standalone: true,
+	imports: [TInputComponent],
+	template: `<so-input
+		direction="rtl"
+		dir="ltr"
+		title="probe"
+		class="mine"
+		style="color: red"
+		(elementReady)="ready.push($event)"
+	/>`,
+})
+class InputProbe extends TProbeHost {}
+
+/** Поле, хост его пробы, селектор корня и класс ядра на нём. */
+const FIELDS: ReadonlyArray<readonly [string, Type<TProbeHost>, string, string]> = [
+	['CheckBox', CheckBoxProbe, 'so-check-box', 's-check-box'],
+	['Switch', SwitchProbe, 'so-switch', 's-switch'],
+	['Input', InputProbe, 'so-input', 's-input'],
 ]
 
 describe('что называет ядро, — за базой, остальное — потребителя', () => {
@@ -181,13 +254,64 @@ describe('имя, которое ядро называет не всегда', (
 })
 
 describe('корень связан с TElementPlugin', () => {
-	it.each(COMPONENTS)('%s: element:ready приходит с корнем', async (_name, host, selector) => {
-		const fixture = mountHost(host)
+	it.each([...COMPONENTS, ...FIELDS])(
+		'%s: element:ready приходит с корнем',
+		async (_name, host, selector) => {
+			const fixture = mountHost(host)
 
-		await nextFrame()
+			await nextFrame()
 
-		expect(fixture.componentInstance.ready).toEqual([findIn(fixture, selector, HTMLElement)])
-	})
+			expect(fixture.componentInstance.ready).toEqual([
+				findIn(fixture, selector, HTMLElement),
+			])
+		},
+	)
+})
+
+/**
+ * У поля атрибуты потребителя делятся, как у Vue и React: класс и стиль —
+ * корню, атрибуты из разметки — вложенному `<input>`, куда их переносит база
+ * (`TRootSpec.control`). Наборы ядра — каждый на своём элементе: `attrs`
+ * (`dir`) — на корне, `aria` — на поле.
+ */
+describe('поле: атрибуты потребителя делятся между корнем и <input>', () => {
+	it.each(FIELDS)(
+		'%s: класс и стиль — на корне рядом с классом ядра',
+		(_name, host, selector, own) => {
+			const el = findIn(mountHost(host), selector, HTMLElement)
+
+			expect(el.classList.contains('mine')).toBe(true)
+			expect(el.classList.contains(own)).toBe(true)
+			expect(el.style.color).toBe('red')
+		},
+	)
+
+	it.each(FIELDS)(
+		'%s: атрибуты из разметки — на <input>, не на корне',
+		(_name, host, selector) => {
+			const fixture = mountHost(host)
+			const el = findIn(fixture, selector, HTMLElement)
+			const input = findIn(fixture, `${selector} input`, HTMLInputElement)
+
+			expect(el.hasAttribute('title')).toBe(false)
+			expect(input.getAttribute('title')).toBe('probe')
+			expect(input.hasAttribute('class')).toBe(false)
+			expect(input.hasAttribute('style')).toBe(false)
+		},
+	)
+
+	it.each(FIELDS)(
+		'%s: dir ядра — на корне, dir потребителя — на <input>',
+		(_name, host, selector) => {
+			const fixture = mountHost(host)
+			const el = findIn(fixture, selector, HTMLElement)
+
+			expect(el.getAttribute('dir')).toBe('rtl')
+			expect(findIn(fixture, `${selector} input`, HTMLInputElement).getAttribute('dir')).toBe(
+				'ltr',
+			)
+		},
+	)
 })
 
 @Component({

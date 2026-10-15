@@ -1,5 +1,7 @@
 export { useAdapter } from './useAdapter'
 export type { TBinding, TInputValue, TOutputEmitter } from './useAdapter'
 export { TComponentBase } from './component.base'
-export type { TRootSpec, TRootTeleport } from './component.base'
+export type { TRootSet, TRootSpec, TRootTeleport } from './component.base'
 export { SlotDirective } from './slot.directive'
+export { AttributesDirective } from './attributes.directive'
+export { FieldTextDirective } from './field-text.directive'
