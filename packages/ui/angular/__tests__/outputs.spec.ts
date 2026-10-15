@@ -20,13 +20,21 @@
  *
  * Хост — на каждый компонент экспорта: выход типизирован, только если
  * компонент наследует свой `T<Имя>Surface`, а не `TComponentBase` напрямую.
+ *
+ * Имя выхода не совпадает с событием DOM: на `(x)` у элемента Angular слушает
+ * и выход `x`, и событие DOM `x`, поэтому событие ядра из одного слова выходит
+ * с префиксом `so` (`soInput`). Сверка — по всем дескрипторам экспорта setup
+ * со схемой событий компилятора Angular.
  */
 
 import { describe, it, expect, expectTypeOf } from 'vitest'
+import { DomElementSchemaRegistry } from '@angular/compiler'
 import { Component, EventEmitter, reflectComponentType, viewChild, type Type } from '@angular/core'
 import { outputToObservable } from '@angular/core/rxjs-interop'
 import { TestBed } from '@angular/core/testing'
 import { TButton, TComponent, TComponentView, type TPluginEvent } from '@soldy-ui/core'
+import * as setup from '@soldy-ui/setup'
+import { InputDescriptor, type IComponentDescriptor } from '@soldy-ui/setup'
 import * as angular from '@soldy-ui/angular'
 import {
 	ButtonOutputNames,
@@ -35,6 +43,7 @@ import {
 	TButtonComponent,
 	TComponentComponent,
 	TComponentViewComponent,
+	useOutputs,
 } from '@soldy-ui/angular'
 
 @Component({
@@ -143,7 +152,7 @@ describe('тип выхода · эмиттер первого аргумент�
 	})
 
 	it('у события без аргументов — undefined', () => {
-		expectTypeOf<TComponentViewComponent['show']>().toEqualTypeOf<EventEmitter<undefined>>()
+		expectTypeOf<TComponentViewComponent['soShow']>().toEqualTypeOf<EventEmitter<undefined>>()
 		expectTypeOf<TButtonComponent['elementRemoved']>().toEqualTypeOf<EventEmitter<undefined>>()
 	})
 })
@@ -385,4 +394,74 @@ describe('выходы компонентов экспорта · геттер �
 			})
 		},
 	)
+})
+
+function isComponentDescriptor(value: unknown): value is IComponentDescriptor {
+	return typeof value === 'object' && value !== null && 'getProps' in value && 'plugins' in value
+}
+
+/**
+ * Дескрипторы компонентов из экспорта `@soldy-ui/setup` — не ручным списком,
+ * как в спеках setup: новый попадёт под проверку сам. Фабрика дескриптора —
+ * `<Имя>Descriptor` с заглавной (`defineDescriptor` механики её строит, а не
+ * отдаёт дескриптор); определения плагинов отсеиваются — у них нет `getProps`.
+ */
+function exportedDescriptors(): (readonly [name: string, descriptor: IComponentDescriptor])[] {
+	const entries: Record<string, unknown> = setup
+	const result: (readonly [string, IComponentDescriptor])[] = []
+
+	for (const [name, factory] of Object.entries(entries)) {
+		if (!/^[A-Z]\w*Descriptor$/.test(name) || typeof factory !== 'function') continue
+
+		const value: unknown = factory()
+
+		if (isComponentDescriptor(value)) result.push([name, value])
+	}
+
+	return result
+}
+
+/** События DOM, которые знает компилятор Angular, — по всем элементам его схемы. */
+function domEvents(): ReadonlySet<string> {
+	const schema = new DomElementSchemaRegistry()
+
+	return new Set(
+		schema.allKnownElementNames().flatMap((element) => schema.allKnownEventsOfElement(element)),
+	)
+}
+
+/**
+ * На `(x)` у элемента Angular ставит и подписку на выход `x`, и слушатель
+ * события DOM `x`: выход с именем события DOM получал бы обработчик дважды —
+ * от ядра и от браузера. Поэтому событие ядра из одного слова выходит с
+ * префиксом `so` (`soInput`), а составное — camelCase, с заглавной
+ * (`inputValue`).
+ *
+ * Перебираются дескрипторы, а не компоненты Angular: под проверку сразу
+ * попадают и непортированные — Select с `close`, коллекции с `reset`. Имена
+ * выходов — те же, что пишет кодоген (`useOutputs`), события — из схемы
+ * компилятора Angular. Сверка по точному имени: `addEventListener` различает
+ * регистр.
+ */
+describe('имя выхода · не событие DOM', () => {
+	const events = domEvents()
+	const descriptors = exportedDescriptors()
+
+	it('сверка не впустую: input в схеме, дескрипторы найдены, у Input выход soInput', () => {
+		expect(events.has('input')).toBe(true)
+		expect(descriptors.map(([name]) => name)).toEqual(
+			expect.arrayContaining(['InputDescriptor', 'SelectDescriptor', 'ListBoxDescriptor']),
+		)
+		expect(useOutputs(InputDescriptor()).map(([output]) => output)).toContain('soInput')
+	})
+
+	it('ни один выход ни одного дескриптора не совпадает с событием DOM', () => {
+		const clashes = descriptors.flatMap(([name, descriptor]) =>
+			useOutputs(descriptor)
+				.filter(([output]) => events.has(output))
+				.map(([output, event]) => `${name}: ${output} ← ${event}`),
+		)
+
+		expect(clashes).toEqual([])
+	})
 })

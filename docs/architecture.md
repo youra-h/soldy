@@ -128,7 +128,7 @@ Names in a framework's notation are computed by the surface — `TSurface.of(des
 - `TName` - Qualified name: raw name + optional namespace (`protected/define/name.class.ts`)
 - `TPropSpec` - Immutable property spec with `read(owner)` / `assign(owner, value)`, `hasDefault`, `rebase`, `withDefault` (`protected/define/prop-spec.class.ts`)
 - `IContribution`, `IPropDefinition`, `ISlotDefinition` / `ISlotDeclaration` - What a descriptor declares (`protected/define/contribution.types.ts`)
-- `INamingStrategy`, `IAdapterProfile`, `CommonProfile` - Prop/event naming rules (`protected/naming/`). Props are `ns_name` everywhere (`underscorePropNaming`); events: `element:ready` in Vue and Web Components, `onElementReady` in React/Svelte/Solid (`callbackEventNaming`), `elementReady` in Angular
+- `INamingStrategy`, `IAdapterProfile`, `CommonProfile` - Prop/event naming rules (`protected/naming/`). Props are `ns_name` everywhere (`underscorePropNaming`); events: `element:ready` in Vue and Web Components, `onElementReady` in React/Svelte/Solid (`callbackEventNaming`), `elementReady` in Angular (a one-word event gets the `so` prefix there: `input` → `soInput`)
 
 ---
 
@@ -1666,7 +1666,10 @@ There is no `adapter/static/`: React takes prop names from the descriptor types,
 
 - `adapter/common/` — `AngularProfile` (`naming: AngularNaming`), `AngularNaming`
   (события → camelCase без `on`-префикса, т.к. имя `@Output` обязано быть
-  валидным TS-идентификатором), `useInputs`/`useBooleanInputs`/`useOutputs`
+  валидным TS-идентификатором; событие из одного слова — с префиксом `so`,
+  `input` → `soInput`: на `(x)` у элемента Angular слушает и выход `x`, и
+  событие DOM `x`, а совпасть с событием DOM может только имя из одного
+  слова), `useInputs`/`useBooleanInputs`/`useOutputs`
   (**только для кодогенератора**: имена берутся из поверхности
   `TSurface.of(descriptor, AngularProfile)`; `useBooleanInputs` — входы, чей
   проп объявлен ровно `Boolean`; `useOutputs` отдаёт выход в паре с полным

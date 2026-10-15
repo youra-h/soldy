@@ -24,13 +24,13 @@ export const ButtonInputs = [
 export const ButtonOutputs = [
 	'bundleCreate',
 	'pluginEvent',
-	'show',
-	'hide',
+	'soShow',
+	'soHide',
 	'showBefore',
 	'showAfter',
 	'hideBefore',
 	'hideAfter',
-	'ready',
+	'soReady',
 	'elementCreate',
 	'elementReady',
 	'elementRemoved',
@@ -108,11 +108,11 @@ export abstract class TButtonSurface<TInstance extends IEntity> extends TCompone
 	get pluginEvent(): TOutputEmitter<typeof descriptor, 'plugin:event'> {
 		return this.createOutput('pluginEvent')
 	}
-	get show(): TOutputEmitter<typeof descriptor, 'show'> {
-		return this.createOutput('show')
+	get soShow(): TOutputEmitter<typeof descriptor, 'show'> {
+		return this.createOutput('soShow')
 	}
-	get hide(): TOutputEmitter<typeof descriptor, 'hide'> {
-		return this.createOutput('hide')
+	get soHide(): TOutputEmitter<typeof descriptor, 'hide'> {
+		return this.createOutput('soHide')
 	}
 	get showBefore(): TOutputEmitter<typeof descriptor, 'show:before'> {
 		return this.createOutput('showBefore')
@@ -126,8 +126,8 @@ export abstract class TButtonSurface<TInstance extends IEntity> extends TCompone
 	get hideAfter(): TOutputEmitter<typeof descriptor, 'hide:after'> {
 		return this.createOutput('hideAfter')
 	}
-	get ready(): TOutputEmitter<typeof descriptor, 'ready'> {
-		return this.createOutput('ready')
+	get soReady(): TOutputEmitter<typeof descriptor, 'ready'> {
+		return this.createOutput('soReady')
 	}
 	get elementCreate(): TOutputEmitter<typeof descriptor, 'element:create'> {
 		return this.createOutput('elementCreate')
