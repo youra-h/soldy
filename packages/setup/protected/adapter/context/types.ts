@@ -123,7 +123,13 @@ export interface IAdapterContext<C extends IComponentContract = IComponentContra
 	readonly instance: C['instance']
 	readonly bundle: IPluginBundle | null
 	readonly descriptor: IComponentDescriptor
-	readonly props: object
+	/**
+	 * Пропсы сборки — до первого `connect()`: их читают расширения в
+	 * конструкторе, а обмен заводит из них память входов. После `connect()` —
+	 * `undefined`: память входов живёт своими ячейками, и контекст пропсы
+	 * отпускает.
+	 */
+	readonly props: object | undefined
 	/** Имя места, если компонент — деталь чужой разметки (`IAdapterContextOptions.embedded`). */
 	readonly embedded: string | undefined
 	readonly events: TEvented<TAdapterEvents>
@@ -149,6 +155,9 @@ export interface IAdapterContext<C extends IComponentContract = IComponentContra
 	 * Обмен значениями с фреймворком в именах его профиля: состояние, входы,
 	 * события. Память входов начинается с пропсов сборки; начальные значения уже
 	 * применила сборка.
+	 *
+	 * Обмен один на монтирование: первый вызов его заводит и отпускает пропсы
+	 * сборки, повторный с тем же профилем отдаёт его же, с другим — ошибка.
 	 */
 	connect(profile: IAdapterProfile): TExchange
 

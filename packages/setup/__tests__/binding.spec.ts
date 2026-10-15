@@ -16,6 +16,7 @@ import { TAnchorPlugin, TAriaPlugin, TBasePlugin, TIconLayoutPlugin } from '@sol
 import type { TPluginEvents } from '@soldy-ui/plugins'
 import {
 	ButtonDescriptor,
+	CommonProfile,
 	FrameDescriptor,
 	IconDescriptor,
 	SelectDescriptor,
@@ -967,6 +968,50 @@ describe('сборка · начальные значения пропсов', (
 
 		// Незаданная высота стиля не ставит: её даёт `size`
 		expect(layout.styles).toEqual({ width: '24px', height: '' })
+	})
+})
+
+/**
+ * Пропсы сборки нужны до первого `connect()`: из них обмен заводит память
+ * входов, а расширения читают их в конструкторе. Раньше контекст держал их до
+ * размонтирования, а пропсы сборки бывают снимком одного прохода фреймворка —
+ * у таблицы это прежний список строк со всеми записями, который жил, пока
+ * таблица смонтирована. Обмен при этом один на монтирование: второго
+ * начинать не с чего.
+ */
+describe('сборка · пропсы сборки живут до connect()', () => {
+	it('после connect() пропсов сборки у контекста нет, а память входов начата с них', () => {
+		const ctrl = new TButton()
+		const props = { text: 'из разметки' }
+		const context = createAdapterContext(ButtonDescriptor(), { ctrl, props })
+
+		expect(context.props).toBe(props)
+
+		const binding = context.connect(CallbackProfile)
+
+		expect(context.props).toBeUndefined()
+
+		ctrl.text = 'из кода'
+		// Повтор пропсов сборки — не смена: то, что ядро сменило после сборки, остаётся
+		binding.inputs.full({ text: 'из разметки' })
+
+		expect(ctrl.text).toBe('из кода')
+
+		binding.inputs.full({ text: 'новое' })
+
+		expect(ctrl.text).toBe('новое')
+	})
+
+	it('обмен один на монтирование: повторный connect() с тем же профилем отдаёт его же, с другим — ошибка', () => {
+		const context = createAdapterContext(ButtonDescriptor(), { props: { text: 'a' } })
+		const binding = context.connect(CallbackProfile)
+
+		// Инициализатор связки, позванный дважды, получает тот же обмен — с той же памятью входов
+		expect(context.connect(CallbackProfile)).toBe(binding)
+		expect(() => context.connect(CommonProfile)).toThrow(
+			'Обмен TButton уже заведён в другом профиле: одно монтирование — один фреймворк',
+		)
+		expect(context.connect(CallbackProfile)).toBe(binding)
 	})
 })
 
