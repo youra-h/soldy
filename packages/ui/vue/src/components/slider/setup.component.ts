@@ -1,5 +1,5 @@
 import { SliderDescriptor } from '@soldy-ui/setup'
-import { useAdapter, createVueAdapterContext, type SetupContext } from '../../adapter'
+import { useAdapter, useExpose, createVueAdapterContext, type SetupContext } from '../../adapter'
 import BaseSlider, { type SliderProps } from './base.component'
 
 /**
@@ -16,6 +16,7 @@ import BaseSlider, { type SliderProps } from './base.component'
 export default {
 	name: '_Slider',
 	extends: BaseSlider,
+	expose: useExpose(),
 	setup(props: SliderProps, { emit }: SetupContext) {
 		const adapter = createVueAdapterContext(SliderDescriptor(), {
 			ctrl: props.ctrl,

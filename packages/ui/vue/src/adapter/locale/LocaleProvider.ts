@@ -1,6 +1,7 @@
 import { defineComponent, provide, watch } from 'vue'
 import { TLocaleSource } from '@soldy-ui/plugins'
 import type { TLocale } from '@soldy-ui/plugins'
+import { useExpose, type TClosedComponent } from '../static'
 import { LOCALE_KEY } from './key'
 
 /** Пропсы провайдера: локаль поддерева. */
@@ -8,6 +9,32 @@ export type LocaleProviderProps = {
 	/** Локаль поддерева: тег для Intl и строки библиотеки (`ruRU`, `extendLocale(...)`) */
 	locale: TLocale
 }
+
+/**
+ * Объектом опций, а не функцией `setup`: опции `expose` форма с функцией не
+ * принимает, а она у провайдера та же, что у компонентов (`useExpose`). Тип
+ * пропсов — аргументом `defineComponent`: опция `props` — список имён, и тип
+ * из неё был бы `any`.
+ */
+const LocaleProviderComponent = defineComponent<LocaleProviderProps>({
+	name: 'LocaleProvider',
+	props: ['locale'],
+	expose: useExpose(),
+	setup(props, { slots }) {
+		const source = new TLocaleSource(props.locale)
+
+		provide(LOCALE_KEY, source)
+
+		watch(
+			() => props.locale,
+			(locale) => {
+				source.locale = locale
+			},
+		)
+
+		return () => slots.default?.()
+	},
+})
 
 /**
  * LocaleProvider — локаль поддерева: язык и строки библиотеки компонентам
@@ -29,22 +56,7 @@ export type LocaleProviderProps = {
  *
  * Провайдер — механизм фреймворка (`provide`, `watch`), поэтому он в
  * адаптерном слое, а не среди компонентов. Своей разметки у него нет:
- * рисует он только содержимое.
+ * рисует он только содержимое. Экземпляр снаружи закрыт, как у компонентов.
  */
-export const LocaleProvider = defineComponent(
-	(props: LocaleProviderProps, { slots }) => {
-		const source = new TLocaleSource(props.locale)
-
-		provide(LOCALE_KEY, source)
-
-		watch(
-			() => props.locale,
-			(locale) => {
-				source.locale = locale
-			},
-		)
-
-		return () => slots.default?.()
-	},
-	{ name: 'LocaleProvider', props: ['locale'] },
-)
+export const LocaleProvider: TClosedComponent<typeof LocaleProviderComponent> =
+	LocaleProviderComponent

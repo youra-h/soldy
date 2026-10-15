@@ -1,6 +1,7 @@
 import { InputDescriptor } from '@soldy-ui/setup'
 import {
 	useAdapter,
+	useExpose,
 	useIcon,
 	useSplitAttrs,
 	createVueAdapterContext,
@@ -12,6 +13,7 @@ export default {
 	name: '_Input',
 	inheritAttrs: false,
 	extends: BaseInput,
+	expose: useExpose(),
 	setup(props: InputProps, { emit }: SetupContext) {
 		const adapter = createVueAdapterContext(InputDescriptor(), {
 			ctrl: props.ctrl,

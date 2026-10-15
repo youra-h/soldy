@@ -1,5 +1,11 @@
 import { DateInputDescriptor } from '@soldy-ui/setup'
-import { useAdapter, useIcon, createVueAdapterContext, type SetupContext } from '../../adapter'
+import {
+	useAdapter,
+	useExpose,
+	useIcon,
+	createVueAdapterContext,
+	type SetupContext,
+} from '../../adapter'
 import BaseDateInput, { type DateInputProps } from './base.component'
 
 /**
@@ -11,6 +17,7 @@ import BaseDateInput, { type DateInputProps } from './base.component'
 export default {
 	name: '_DateInput',
 	extends: BaseDateInput,
+	expose: useExpose(),
 	setup(props: DateInputProps, { emit }: SetupContext) {
 		const adapter = createVueAdapterContext(DateInputDescriptor(), {
 			ctrl: props.ctrl,

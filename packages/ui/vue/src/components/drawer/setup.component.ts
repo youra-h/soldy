@@ -1,5 +1,12 @@
 import { DrawerDescriptor } from '@soldy-ui/setup'
-import { useAdapter, useIcon, createVueAdapterContext, type SetupContext } from '../../adapter'
+import {
+	exposeRoot,
+	useAdapter,
+	useExpose,
+	useIcon,
+	createVueAdapterContext,
+	type SetupContext,
+} from '../../adapter'
 import BaseDrawer, { type DrawerProps } from './base.component'
 
 /**
@@ -11,16 +18,22 @@ import BaseDrawer, { type DrawerProps } from './base.component'
 export default {
 	name: '_Drawer',
 	extends: BaseDrawer,
-	setup(props: DrawerProps, { emit }: SetupContext) {
+	expose: useExpose(),
+	setup(props: DrawerProps, { emit, expose }: SetupContext) {
 		const adapter = createVueAdapterContext(DrawerDescriptor(), {
 			ctrl: props.ctrl,
 			props,
 		})
 
+		// Выходы `layout_styles`, `layout_backdropStyles` и
+		// `dismiss_ownerAttribute` шаблон раскладывает на панель и подложку
+		const binding = useAdapter(adapter, props, emit)
+
+		// Корень шаблона — телепорт: `$el` потребителю — панель, а не его якорь
+		exposeRoot(expose, binding.rootElement)
+
 		return {
-			// Выходы `layout_styles`, `layout_backdropStyles` и
-			// `dismiss_ownerAttribute` шаблон раскладывает на панель и подложку
-			...useAdapter(adapter, props, emit),
+			...binding,
 			/**
 			 * Инстанс — для кнопки закрытия: она просит панель закрыться
 			 * (`requestClose`). Возврат фокуса — забота плагина, разметка о нём

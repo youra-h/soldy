@@ -1,3 +1,6 @@
+import type { TClosedComponent } from '../../adapter'
+import SkeletonComponent from './Skeleton.vue'
+
 export { default as BaseSkeleton, emitsSkeleton, propsSkeleton } from './base.component'
-import Skeleton from './Skeleton.vue'
-export { Skeleton }
+
+export const Skeleton: TClosedComponent<typeof SkeletonComponent> = SkeletonComponent

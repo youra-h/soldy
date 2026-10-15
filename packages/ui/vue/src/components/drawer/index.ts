@@ -1,3 +1,6 @@
+import type { TClosedComponent } from '../../adapter'
+import DrawerComponent from './Drawer.vue'
+
 export { default as BaseDrawer, emitsDrawer, propsDrawer } from './base.component'
-import Drawer from './Drawer.vue'
-export { Drawer }
+
+export const Drawer: TClosedComponent<typeof DrawerComponent> = DrawerComponent

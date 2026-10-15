@@ -1,5 +1,11 @@
 import { DatePickerDescriptor } from '@soldy-ui/setup'
-import { useAdapter, useIcon, createVueAdapterContext, type SetupContext } from '../../adapter'
+import {
+	useAdapter,
+	useExpose,
+	useIcon,
+	createVueAdapterContext,
+	type SetupContext,
+} from '../../adapter'
 import BaseDatePicker, { type DatePickerProps } from './base.component'
 
 /**
@@ -16,6 +22,7 @@ import BaseDatePicker, { type DatePickerProps } from './base.component'
 export default {
 	name: '_DatePicker',
 	extends: BaseDatePicker,
+	expose: useExpose(),
 	setup(props: DatePickerProps, { emit }: SetupContext) {
 		const adapter = createVueAdapterContext(DatePickerDescriptor(), {
 			ctrl: props.ctrl,

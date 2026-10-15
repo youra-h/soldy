@@ -1,5 +1,11 @@
 import { ScrollerDescriptor } from '@soldy-ui/setup'
-import { useAdapter, useIcon, createVueAdapterContext, type SetupContext } from '../../adapter'
+import {
+	useAdapter,
+	useExpose,
+	useIcon,
+	createVueAdapterContext,
+	type SetupContext,
+} from '../../adapter'
 import BaseScroller, { type ScrollerProps } from './base.component'
 
 /**
@@ -13,6 +19,7 @@ import BaseScroller, { type ScrollerProps } from './base.component'
 export default {
 	name: '_Scroller',
 	extends: BaseScroller,
+	expose: useExpose(),
 	setup(props: ScrollerProps, { emit }: SetupContext) {
 		const adapter = createVueAdapterContext(ScrollerDescriptor(), {
 			ctrl: props.ctrl,

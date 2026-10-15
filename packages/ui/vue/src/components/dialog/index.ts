@@ -1,3 +1,6 @@
+import type { TClosedComponent } from '../../adapter'
+import DialogComponent from './Dialog.vue'
+
 export { default as BaseDialog, emitsDialog, propsDialog } from './base.component'
-import Dialog from './Dialog.vue'
-export { Dialog }
+
+export const Dialog: TClosedComponent<typeof DialogComponent> = DialogComponent

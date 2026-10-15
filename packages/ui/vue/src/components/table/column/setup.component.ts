@@ -1,5 +1,5 @@
 import { TableColumnDescriptor } from '@soldy-ui/setup'
-import { useAdapter, createVueAdapterContext, type SetupContext } from '../../../adapter'
+import { useAdapter, useExpose, createVueAdapterContext, type SetupContext } from '../../../adapter'
 import BaseTableColumn, { type TableColumnProps } from './base.component'
 
 /**
@@ -11,6 +11,7 @@ import BaseTableColumn, { type TableColumnProps } from './base.component'
 export default {
 	name: '_TableColumn',
 	extends: BaseTableColumn,
+	expose: useExpose(),
 	setup(props: TableColumnProps, { emit }: SetupContext) {
 		const adapter = createVueAdapterContext(TableColumnDescriptor(), {
 			ctrl: props.ctrl,

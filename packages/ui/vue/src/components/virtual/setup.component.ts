@@ -1,6 +1,7 @@
 import { TVirtualExtension, VirtualDescriptor } from '@soldy-ui/setup'
 import {
 	useAdapter,
+	useExpose,
 	VueElevatorFactory,
 	createVueAdapterContext,
 	type SetupContext,
@@ -15,6 +16,7 @@ import BaseVirtual, { type VirtualProps } from './base.component'
 export default {
 	name: '_Virtual',
 	extends: BaseVirtual,
+	expose: useExpose(),
 	setup(props: VirtualProps, { emit }: SetupContext) {
 		const adapter = createVueAdapterContext(VirtualDescriptor(), {
 			ctrl: props.ctrl,

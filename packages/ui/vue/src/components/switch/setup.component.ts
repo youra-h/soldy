@@ -1,6 +1,7 @@
 import { SwitchDescriptor } from '@soldy-ui/setup'
 import {
 	useAdapter,
+	useExpose,
 	useSplitAttrs,
 	createVueAdapterContext,
 	type SetupContext,
@@ -11,6 +12,7 @@ export default {
 	name: '_Switch',
 	inheritAttrs: false,
 	extends: BaseSwitch,
+	expose: useExpose(),
 	setup(props: SwitchProps, { emit }: SetupContext) {
 		const adapter = createVueAdapterContext(SwitchDescriptor(), {
 			ctrl: props.ctrl,

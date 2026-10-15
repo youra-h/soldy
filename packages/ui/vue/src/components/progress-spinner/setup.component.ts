@@ -1,5 +1,5 @@
 import { ProgressSpinnerDescriptor } from '@soldy-ui/setup'
-import { useAdapter, createVueAdapterContext, type SetupContext } from '../../adapter'
+import { useAdapter, useExpose, createVueAdapterContext, type SetupContext } from '../../adapter'
 import BaseProgressSpinner, { type ProgressSpinnerProps } from './base.component'
 
 /**
@@ -9,6 +9,7 @@ import BaseProgressSpinner, { type ProgressSpinnerProps } from './base.component
 export default {
 	name: '_ProgressSpinner',
 	extends: BaseProgressSpinner,
+	expose: useExpose(),
 	setup(props: ProgressSpinnerProps, { emit }: SetupContext) {
 		const adapter = createVueAdapterContext(ProgressSpinnerDescriptor(), {
 			ctrl: props.ctrl,

@@ -1,5 +1,5 @@
 import { TooltipDescriptor } from '@soldy-ui/setup'
-import { useAdapter, createVueAdapterContext, type SetupContext } from '../../adapter'
+import { useAdapter, useExpose, createVueAdapterContext, type SetupContext } from '../../adapter'
 import BaseTooltip, { type TooltipProps } from './base.component'
 
 /**
@@ -10,6 +10,7 @@ import BaseTooltip, { type TooltipProps } from './base.component'
 export default {
 	name: '_Tooltip',
 	extends: BaseTooltip,
+	expose: useExpose(),
 	setup(props: TooltipProps, { emit }: SetupContext) {
 		const adapter = createVueAdapterContext(TooltipDescriptor(), {
 			ctrl: props.ctrl,

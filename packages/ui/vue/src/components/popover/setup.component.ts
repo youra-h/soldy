@@ -1,5 +1,11 @@
 import { PopoverDescriptor } from '@soldy-ui/setup'
-import { useAdapter, useIcon, createVueAdapterContext, type SetupContext } from '../../adapter'
+import {
+	useAdapter,
+	useExpose,
+	useIcon,
+	createVueAdapterContext,
+	type SetupContext,
+} from '../../adapter'
 import BasePopover, { type PopoverProps } from './base.component'
 
 /**
@@ -10,6 +16,7 @@ import BasePopover, { type PopoverProps } from './base.component'
 export default {
 	name: '_Popover',
 	extends: BasePopover,
+	expose: useExpose(),
 	setup(props: PopoverProps, { emit }: SetupContext) {
 		const adapter = createVueAdapterContext(PopoverDescriptor(), {
 			ctrl: props.ctrl,

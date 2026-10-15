@@ -5,6 +5,7 @@ import {
 } from '@soldy-ui/setup'
 import {
 	useAdapter,
+	useExpose,
 	VueElevatorFactory,
 	createVueAdapterContext,
 	type SetupContext,
@@ -20,6 +21,7 @@ import BaseCalendarItem, { type CalendarItemProps } from './base.component'
 export default {
 	name: '_CalendarItem',
 	extends: BaseCalendarItem,
+	expose: useExpose(),
 	setup(props: CalendarItemProps, { emit }: SetupContext) {
 		const adapter = createVueAdapterContext(CalendarItemDescriptor(), {
 			ctrl: props.ctrl,

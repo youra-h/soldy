@@ -6,6 +6,7 @@ import {
 } from '@soldy-ui/setup'
 import {
 	useAdapter,
+	useExpose,
 	useCollectionAdapter,
 	VueElevatorFactory,
 	useIcon,
@@ -32,6 +33,7 @@ export default {
 	name: '_Select',
 	inheritAttrs: false,
 	extends: BaseSelect,
+	expose: useExpose(),
 	setup(props: SelectProps, { emit }: SetupContext) {
 		const adapter = createVueAdapterContext(SelectDescriptor(), {
 			ctrl: props.ctrl,

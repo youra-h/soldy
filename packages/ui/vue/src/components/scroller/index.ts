@@ -1,3 +1,6 @@
+import type { TClosedComponent } from '../../adapter'
+import ScrollerComponent from './Scroller.vue'
+
 export { default as BaseScroller, emitsScroller, propsScroller } from './base.component'
-import Scroller from './Scroller.vue'
-export { Scroller }
+
+export const Scroller: TClosedComponent<typeof ScrollerComponent> = ScrollerComponent
