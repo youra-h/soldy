@@ -19,7 +19,7 @@ import { find, mount } from './mount'
 
 /** Кнопка очистки поля — её имя собирается из шаблона локали и имени поля. */
 const clearName = (scope: ParentNode) =>
-	find(scope, '.s-input__clear', HTMLButtonElement).getAttribute('aria-label')
+	find(scope, '.so-input__clear', HTMLButtonElement).getAttribute('aria-label')
 
 /** Поле под провайдером локали. */
 const field = (locale: TLocale, ctrl?: TInput) => (
@@ -44,11 +44,11 @@ describe('LocaleProvider', () => {
 	it('смена локали — новое имя без пересборки: инстанс и узел те же', () => {
 		const ctrl = new TInput()
 		const view = mount(field(enUS, ctrl))
-		const button = find(view.container, '.s-input__clear', HTMLButtonElement)
+		const button = find(view.container, '.so-input__clear', HTMLButtonElement)
 
 		view.render(field(ruRU, ctrl))
 
-		expect(find(view.container, '.s-input__clear', HTMLButtonElement)).toBe(button)
+		expect(find(view.container, '.so-input__clear', HTMLButtonElement)).toBe(button)
 		expect(button.getAttribute('aria-label')).toBe('Очистить Город')
 
 		view.render(
@@ -71,19 +71,21 @@ describe('LocaleProvider', () => {
 	it('вложенный провайдер даёт поддереву свою локаль', () => {
 		const view = mount(
 			<LocaleProvider locale={ruRU}>
-				<div className="s-test-outer">
+				<div className="so-test-outer">
 					<Input clearable name="Город" />
 				</div>
 				<LocaleProvider locale={enUS}>
-					<div className="s-test-inner">
+					<div className="so-test-inner">
 						<Input clearable name="Город" />
 					</div>
 				</LocaleProvider>
 			</LocaleProvider>,
 		)
 
-		expect(clearName(find(view.container, '.s-test-outer', HTMLElement))).toBe('Очистить Город')
-		expect(clearName(find(view.container, '.s-test-inner', HTMLElement))).toBe('Clear Город')
+		expect(clearName(find(view.container, '.so-test-outer', HTMLElement))).toBe(
+			'Очистить Город',
+		)
+		expect(clearName(find(view.container, '.so-test-inner', HTMLElement))).toBe('Clear Город')
 	})
 })
 

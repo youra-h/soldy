@@ -46,7 +46,7 @@ const valuesOf = (engine: TEngineView | undefined) => {
 /** Микрозадачи: `engine:create` движок объявляет на них. */
 const flush = (): Promise<void> => Promise.resolve()
 
-const rows = () => [...document.querySelectorAll('.s-list-box-item .s-button')]
+const rows = () => [...document.querySelectorAll('.so-list-box-item .so-button')]
 
 function rowOf(text: string): HTMLElement {
 	const row = rows().find((candidate) => candidate.textContent?.trim() === text)
@@ -334,11 +334,11 @@ describe('элементы разметки в движке владельца',
 
 	/** Тексты показанных панелей: неактивная панель скрыта и пуста. */
 	const panels = () =>
-		[...document.querySelectorAll('.s-tabs__panel')]
+		[...document.querySelectorAll('.so-tabs__panel')]
 			.filter((panel) => panel instanceof HTMLElement && panel.style.display !== 'none')
 			.map((panel) => panel.textContent?.trim())
 
-	const headers = () => [...document.querySelectorAll('.s-accordion-item__header')]
+	const headers = () => [...document.querySelectorAll('.so-accordion-item__header')]
 
 	function header(text: string): HTMLElement {
 		const found = headers().find((candidate) => candidate.textContent?.trim() === text)

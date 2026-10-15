@@ -28,16 +28,16 @@ describe('Label · разметка', () => {
 
 		expect(el.localName).toBe('label')
 		expect([...el.classList]).toEqual([
-			's-label',
-			's-label--size-normal',
-			's-label--position-end',
+			'so-label',
+			'so-label--size-normal',
+			'so-label--position-end',
 		])
 		expect([...el.children].map((part) => part.className)).toEqual([
-			's-label__control',
-			's-label__text',
+			'so-label__control',
+			'so-label__text',
 		])
-		expect(el.querySelector('.s-label__control > .s-check-box input')).not.toBeNull()
-		expect(find(el, '.s-label__text', HTMLElement).textContent).toBe('Согласен')
+		expect(el.querySelector('.so-label__control > .so-check-box input')).not.toBeNull()
+		expect(find(el, '.so-label__text', HTMLElement).textContent).toBe('Согласен')
 	})
 
 	it('tag рисует корень другим тегом', () => {
@@ -48,12 +48,12 @@ describe('Label · разметка', () => {
 		const [position, setPosition] = createSignal<TLabelPosition>('start')
 		const { root } = mount(() => <Label position={position()} />)
 
-		expect(root().classList.contains('s-label--position-start')).toBe(true)
+		expect(root().classList.contains('so-label--position-start')).toBe(true)
 
 		setPosition('top')
 
-		expect(root().classList.contains('s-label--position-top')).toBe(true)
-		expect(root().classList.contains('s-label--position-start')).toBe(false)
+		expect(root().classList.contains('so-label--position-top')).toBe(true)
+		expect(root().classList.contains('so-label--position-start')).toBe(false)
 	})
 
 	it('direction: rtl — dir на корне подписи', () => {
@@ -64,7 +64,7 @@ describe('Label · разметка', () => {
 })
 
 describe('Label · текст: проп и слот', () => {
-	const textOf = (root: HTMLElement) => find(root, '.s-label__text', HTMLElement)
+	const textOf = (root: HTMLElement) => find(root, '.so-label__text', HTMLElement)
 
 	it('без слота — проп text', () => {
 		expect(textOf(mount(() => <Label text="Проп" />).root()).textContent).toBe('Проп')
@@ -118,13 +118,13 @@ describe('Label · текст: проп и слот', () => {
 	it('слот content — один экземпляр, смена текста его не пересоздаёт', () => {
 		const [text, setText] = createSignal('a')
 		const el = mount(() => <Label text={text()} content={<b>Слот</b>} />).root()
-		const node = el.querySelector('.s-label__text b')
+		const node = el.querySelector('.so-label__text b')
 
 		expect(el.querySelectorAll('b')).toHaveLength(1)
 
 		setText('b')
 
-		expect(el.querySelector('.s-label__text b')).toBe(node)
+		expect(el.querySelector('.so-label__text b')).toBe(node)
 	})
 })
 
@@ -152,7 +152,7 @@ describe.each(CHECKABLES)('Label · %s в подписи', (_name, control) => {
 		// Слушатель поля плагин вешает кадром позже, по `ready` узла
 		await nextFrame()
 
-		find(el, '.s-label__text', HTMLElement).click()
+		find(el, '.so-label__text', HTMLElement).click()
 
 		expect(find(el, 'input', HTMLInputElement).checked).toBe(true)
 		expect(onChangeValue.mock.calls).toEqual([[{ newValue: true, oldValue: false }]])

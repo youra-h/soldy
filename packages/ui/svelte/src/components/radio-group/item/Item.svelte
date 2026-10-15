@@ -68,7 +68,7 @@
 		attach={binding.attachElement}
 	>
 		<input
-			class="s-radio-group-item__input"
+			class="so-radio-group-item__input"
 			type="radio"
 			name={state.name}
 			value={state.value}
@@ -76,9 +76,9 @@
 			{...state.aria}
 			{...controlAttributes()}
 			checked={state.active}
-		/><span class="s-radio-group-item__control"
-			><span class="s-radio-group-item__indicator"></span></span
-		><span class="s-radio-group-item__text"
+		/><span class="so-radio-group-item__control"
+			><span class="so-radio-group-item__indicator"></span></span
+		><span class="so-radio-group-item__text"
 			>{@render props.children?.({ active: state.active ?? false })}</span
 		>
 	</Dynamic>

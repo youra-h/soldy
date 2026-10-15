@@ -2,7 +2,7 @@
  * `variant` у Skeleton — проп, а не атрибут разметки.
  *
  * У `TSkeleton` есть состояние `variant`, событие `change:variant` и
- * модификатор `s-skeleton--variant-<variant>`, а contribution пропа не
+ * модификатор `so-skeleton--variant-<variant>`, а contribution пропа не
  * объявлял. Поэтому `<Skeleton variant="…">` компилировался (проп есть в
  * `ISkeletonProps`), но до инстанса не доходил: Vue отдавал его в разметку
  * атрибутом, и модификатора у заглушки не было.
@@ -20,7 +20,7 @@ describe('Skeleton: variant', () => {
 	it('доходит до инстанса: у корня класс варианта, атрибута variant нет', () => {
 		const wrapper = mount(Skeleton, { props: { variant: 'brand' } })
 
-		expect(variantClasses(wrapper.classes())).toEqual(['s-skeleton--variant-brand'])
+		expect(variantClasses(wrapper.classes())).toEqual(['so-skeleton--variant-brand'])
 		expect(wrapper.attributes('variant')).toBeUndefined()
 
 		wrapper.unmount()
@@ -31,7 +31,7 @@ describe('Skeleton: variant', () => {
 
 		await wrapper.setProps({ variant: 'danger' })
 
-		expect(variantClasses(wrapper.classes())).toEqual(['s-skeleton--variant-danger'])
+		expect(variantClasses(wrapper.classes())).toEqual(['so-skeleton--variant-danger'])
 
 		wrapper.unmount()
 	})

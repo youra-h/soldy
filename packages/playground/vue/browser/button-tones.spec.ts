@@ -69,20 +69,25 @@ describe('Button: выбор под подсветкой', () => {
 				defineComponent({
 					render: () =>
 						h('div', [
-							h(Button, { text: 'Выбрано', class: 's-test-both', ...props, ...BOTH }),
-							h(Button, { text: 'Покой', class: 's-test-idle', ...props }),
+							h(Button, {
+								text: 'Выбрано',
+								class: 'so-test-both',
+								...props,
+								...BOTH,
+							}),
+							h(Button, { text: 'Покой', class: 'so-test-idle', ...props }),
 						]),
 				}),
 			)
 			await nextTick()
 
-			const button = find('.s-test-both')
+			const button = find('.so-test-both')
 
 			await settled(button)
 
 			expect(style(button).backgroundImage !== 'none', 'слой').toBe(layered)
 			expect(style(button, '::after').content, 'псевдоэлемента нет').toBe('none')
-			expect(layoutOf(button)).toEqual(layoutOf(find('.s-test-idle')))
+			expect(layoutOf(button)).toEqual(layoutOf(find('.so-test-idle')))
 		},
 	)
 })
@@ -105,12 +110,12 @@ describe('строка ListBox с вариантом: выбор под подс
 			}),
 		)
 
-		const selected = () => find('.s-list-box-item > .s-button[data-selected="true"]')
+		const selected = () => find('.so-list-box-item > .so-button[data-selected="true"]')
 
 		await expect.poll(() => selected()).toBeTruthy()
 
 		const row = selected()
-		const idle = find('.s-list-box-item > .s-button:not([data-selected="true"])')
+		const idle = find('.so-list-box-item > .so-button:not([data-selected="true"])')
 
 		// Подсветку строке пишет плагин клавиатуры; здесь важен только вид
 		row.setAttribute('data-highlighted', 'true')

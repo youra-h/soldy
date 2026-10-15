@@ -50,10 +50,10 @@
 		)}
 		attach={binding.attachElement}
 	>
-		<svg class="s-progress-spinner__ring" viewBox="0 0 16 16" aria-hidden="true">
-			<circle class="s-progress-spinner__track" cx="8" cy="8" r="7" />
-			<circle class="s-progress-spinner__range" cx="8" cy="8" r="7" pathLength="1" />
-			<circle class="s-progress-spinner__runner" cx="8" cy="8" r="7" pathLength="1" />
+		<svg class="so-progress-spinner__ring" viewBox="0 0 16 16" aria-hidden="true">
+			<circle class="so-progress-spinner__track" cx="8" cy="8" r="7" />
+			<circle class="so-progress-spinner__range" cx="8" cy="8" r="7" pathLength="1" />
+			<circle class="so-progress-spinner__runner" cx="8" cy="8" r="7" pathLength="1" />
 		</svg>
 	</Dynamic>
 {/if}

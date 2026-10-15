@@ -12,7 +12,7 @@
 </script>
 
 <!--
-	Tabs — набор табов: список (`s-tabs__list`) и панели рядом с ним.
+	Tabs — набор табов: список (`so-tabs__list`) и панели рядом с ним.
 
 	Набор `aria` владельца — это список табов: `role="tablist"` и
 	`aria-orientation` пишет ядро, имя из `aria_label` — `TAriaPlugin`. Корень
@@ -44,9 +44,9 @@
 		attributes={toRootProps(state, [state.attrs], binding.forwardProps)}
 		attach={binding.attachElement}
 	>
-		<div class="s-tabs__list" {...state.aria}>
+		<div class="so-tabs__list" {...state.aria}>
 			{#if props.leading}
-				<div class="s-tabs__list--leading">{@render props.leading()}</div>
+				<div class="so-tabs__list--leading">{@render props.leading()}</div>
 			{/if}{#if props.children}
 				{@render props.children()}
 			{:else}
@@ -68,7 +68,7 @@
 					/>
 				{/each}
 			{/if}{#if props.trailing}
-				<div class="s-tabs__list--trailing">{@render props.trailing()}</div>
+				<div class="so-tabs__list--trailing">{@render props.trailing()}</div>
 			{/if}
 		</div>{@render props.content?.()}
 	</Dynamic>

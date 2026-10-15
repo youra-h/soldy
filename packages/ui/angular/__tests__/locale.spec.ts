@@ -239,7 +239,7 @@ class BareClearNameHost {}
 
 describe('Input · имя кнопки очистки', () => {
 	/** Кнопка очистки в разметке хоста. */
-	const clearOf = (host: HTMLElement) => find(host, '.s-input__clear', HTMLButtonElement)
+	const clearOf = (host: HTMLElement) => find(host, '.so-input__clear', HTMLButtonElement)
 
 	it('строку имени задаёт локаль поддерева, без провайдера — английская', () => {
 		const provided: HTMLElement = mountHost(ClearNameHost).nativeElement

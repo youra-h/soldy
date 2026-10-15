@@ -18,9 +18,9 @@
 	Шаблоны слотов, которые потребитель написал в наборе, уходят в слив в конце:
 	в основной проекции они сняли бы запасное содержимое — табы из данных.
 -->
-<div class="s-tabs__list" [so-attributes]="state()['aria']">
+<div class="so-tabs__list" [so-attributes]="state()['aria']">
 	@if (slot('leading'); as leading) {
-		<div class="s-tabs__list--leading">
+		<div class="so-tabs__list--leading">
 			<ng-container [ngTemplateOutlet]="leading" />
 		</div>
 	}
@@ -68,7 +68,7 @@
 		}
 	</ng-content>
 	@if (slot('trailing'); as trailing) {
-		<div class="s-tabs__list--trailing">
+		<div class="so-tabs__list--trailing">
 			<ng-container [ngTemplateOutlet]="trailing" />
 		</div>
 	}

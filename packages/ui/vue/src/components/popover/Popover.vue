@@ -62,7 +62,7 @@ export default { ...SetupPopover, components: { Frame, Button, Icon } }
 		-->
 		<Frame
 			embedded="popover.frame"
-			class="s-popover__panel"
+			class="so-popover__panel"
 			tabindex="-1"
 			:visible="open"
 			:contained="contained"
@@ -81,7 +81,7 @@ export default { ...SetupPopover, components: { Frame, Button, Icon } }
 				противоположного её краю (`data-edge`). Ставит её тема. Закрыть без
 				перетаскивания — Escape, нажатие мимо и крестик.
 			-->
-			<div v-if="handleRendered" class="s-popover__handle" aria-hidden="true" />
+			<div v-if="handleRendered" class="so-popover__handle" aria-hidden="true" />
 
 			<!--
 				Содержимое в DOM раньше кнопки закрытия — в том же порядке, в
@@ -93,14 +93,14 @@ export default { ...SetupPopover, components: { Frame, Button, Icon } }
 				`lazyMount` действует только на слот: обёртка остаётся, панель
 				не размонтируется никогда.
 			-->
-			<div class="s-popover__content">
+			<div class="so-popover__content">
 				<slot v-if="contentRendered" />
 			</div>
 
 			<!--
 				Кнопка закрытия — в верхнем углу со стороны конца строки. Вида
 				у неё нет: значения вида объявляет тема, и красит кнопку она по
-				контексту (`.s-popover__close`). `size` не передаётся: тема
+				контексту (`.so-popover__close`). `size` не передаётся: тема
 				держит квадрат по размеру Button.
 
 				Кнопка только закрывает поповер. Куда вернуть фокус, решает
@@ -108,7 +108,7 @@ export default { ...SetupPopover, components: { Frame, Button, Icon } }
 			-->
 			<Button
 				embedded="popover.close"
-				class="s-popover__close"
+				class="so-popover__close"
 				:rendered="closable"
 				@click="popover.open = false"
 				v-bind="closeAria"

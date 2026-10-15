@@ -2,7 +2,7 @@
  * Раскладка строки Button в настоящем браузере: слоты у краёв, содержимое
  * области текста — по её выравниванию.
  *
- * Строка — флекс из трёх мест: `leading`, область текста (`.s-button__text`),
+ * Строка — флекс из трёх мест: `leading`, область текста (`.so-button__text`),
  * `trailing`. Область растёт на всё свободное место, поэтому слоты стоят у
  * краёв кнопки, а содержимое выравнивается внутри самой области. Текст двигает
  * `text-align`, иконку — нет: Preflight делает `svg` блочным, и в кнопке шире
@@ -41,7 +41,7 @@ const DIRECTIONS = ['ltr', 'rtl'] as const
 type TSlots = Partial<Record<'leading' | 'default' | 'trailing', () => VNodeChild>>
 
 /** Иконка с меткой — по метке её и находят. */
-const icon = (mark: string) => h(Icon, { tag: CLOSE, class: `s-test-${mark}` })
+const icon = (mark: string) => h(Icon, { tag: CLOSE, class: `so-test-${mark}` })
 
 /**
  * Кнопка заданной ширины. Ширина — инлайном: утилит Tailwind в `dist` темы
@@ -52,7 +52,7 @@ const buttonHarness = (props: Record<string, unknown>, slots: TSlots) =>
 	defineComponent({
 		render() {
 			return h('div', { style: 'padding: 16px' }, [
-				h(Button, { class: 's-test-button', ...props }, slots),
+				h(Button, { class: 'so-test-button', ...props }, slots),
 			])
 		},
 	})
@@ -132,8 +132,8 @@ describe('кнопка: содержимое области текста — п�
 				buttonHarness({ size, style: 'width: 96px' }, { default: () => icon('glyph') }),
 			)
 
-			const button = box(find('.s-test-button'))
-			const glyph = box(find('.s-test-glyph'))
+			const button = box(find('.so-test-button'))
+			const glyph = box(find('.so-test-glyph'))
 
 			expect(glyph.width).toBeLessThan(button.width)
 			expect(middle(glyph).x).toBeCloseTo(middle(button).x, 0)
@@ -146,8 +146,8 @@ describe('кнопка: содержимое области текста — п�
 
 		await show(buttonHarness({ style: 'width: 96px' }, { default: () => icon('glyph') }))
 
-		expect(middle(box(find('.s-test-glyph'))).x).toBeCloseTo(
-			middle(box(find('.s-test-button'))).x,
+		expect(middle(box(find('.so-test-glyph'))).x).toBeCloseTo(
+			middle(box(find('.so-test-button'))).x,
 			0,
 		)
 	})
@@ -155,10 +155,10 @@ describe('кнопка: содержимое области текста — п�
 	it('текст — по центру кнопки', async () => {
 		await show(buttonHarness({ text: 'Ок', style: 'width: 160px' }, {}))
 
-		const text = textBox(find('.s-test-button .s-button__text'))
+		const text = textBox(find('.so-test-button .so-button__text'))
 
-		expect(text.width).toBeLessThan(box(find('.s-test-button')).width)
-		expect(middle(text).x).toBeCloseTo(middle(box(find('.s-test-button'))).x, 0)
+		expect(text.width).toBeLessThan(box(find('.so-test-button')).width)
+		expect(middle(text).x).toBeCloseTo(middle(box(find('.so-test-button'))).x, 0)
 	})
 })
 
@@ -176,10 +176,10 @@ describe('кнопка: слоты у краёв, середина — всё м
 
 			await show(buttonHarness({ style: 'width: 240px' }, slots))
 
-			const edges = contentEdges(find('.s-test-button'))
-			const leading = box(find('.s-test-leading'))
-			const trailing = box(find('.s-test-trailing'))
-			const area = find('.s-test-button .s-button__text')
+			const edges = contentEdges(find('.so-test-button'))
+			const leading = box(find('.so-test-leading'))
+			const trailing = box(find('.so-test-trailing'))
+			const area = find('.so-test-button .so-button__text')
 			const [start, end]: [DOMRect, DOMRect] =
 				dir === 'ltr' ? [leading, trailing] : [trailing, leading]
 
@@ -207,11 +207,11 @@ describe('кнопка: длинный текст', () => {
 			),
 		)
 
-		const button = find('.s-test-button')
-		const area = find('.s-test-button .s-button__text')
+		const button = find('.so-test-button')
+		const area = find('.so-test-button .so-button__text')
 		const style = getComputedStyle(area)
 		const edges = contentEdges(button)
-		const trailing = box(find('.s-test-trailing'))
+		const trailing = box(find('.so-test-trailing'))
 
 		// Многоточие рисует только блочный контейнер: у флекс-контейнера текст —
 		// анонимный флекс-элемент, и `text-overflow` к нему не относится.
@@ -220,7 +220,7 @@ describe('кнопка: длинный текст', () => {
 		expect(area.scrollWidth).toBeGreaterThan(area.clientWidth)
 
 		expect(box(button).width).toBeCloseTo(160, 1)
-		expect(box(find('.s-test-leading')).left).toBeCloseTo(edges.left, 1)
+		expect(box(find('.so-test-leading')).left).toBeCloseTo(edges.left, 1)
 		expect(trailing.right).toBeCloseTo(edges.right, 1)
 		expect(box(area).right).toBeLessThanOrEqual(trailing.left)
 	})
@@ -240,7 +240,7 @@ const ROWS: Record<string, { list: () => VNodeChild; area: string }> = {
 				h(ListBoxItem, { key: 'icon', value: 'icon' }, { default: () => icon('glyph') }),
 				h(ListBoxItem, { key: 'long', value: 'long', text: 'Санкт-Петербург и область' }),
 			]),
-		area: '.s-list-box-item .s-button__text',
+		area: '.so-list-box-item .so-button__text',
 	},
 	Select: {
 		list: () =>
@@ -249,7 +249,7 @@ const ROWS: Record<string, { list: () => VNodeChild; area: string }> = {
 				h(SelectItem, { key: 'icon', value: 'icon' }, { default: () => icon('glyph') }),
 				h(SelectItem, { key: 'long', value: 'long', text: 'Санкт-Петербург и область' }),
 			]),
-		area: '.s-select-item .s-button__text',
+		area: '.so-select-item .so-button__text',
 	},
 	Accordion: {
 		list: () =>
@@ -258,7 +258,7 @@ const ROWS: Record<string, { list: () => VNodeChild; area: string }> = {
 				h(AccordionItem, { key: 'icon', value: 'icon' }, { header: () => icon('glyph') }),
 				h(AccordionItem, { key: 'long', value: 'long', text: 'Санкт-Петербург и область' }),
 			]),
-		area: '.s-accordion-item__header .s-button__text',
+		area: '.so-accordion-item__header .so-button__text',
 	},
 }
 
@@ -277,7 +277,7 @@ describe.each(Object.entries(ROWS))('%s: содержимое строки — �
 		if (!textArea || !iconArea) throw new Error(`${name}: строк нет`)
 
 		const text = textBox(textArea)
-		const glyph = box(find('.s-test-glyph'))
+		const glyph = box(find('.so-test-glyph'))
 		const side = dir === 'ltr' ? 'left' : 'right'
 
 		expect(text.width).toBeLessThan(box(textArea).width)
@@ -292,7 +292,7 @@ describe.each(Object.entries(ROWS))('%s: содержимое строки — �
  * было бы нечего. Ширина — инлайном, как у `buttonHarness`.
  */
 const nested = (mark: string, content: () => VNodeChild) =>
-	h(Button, { class: `s-test-${mark}`, style: 'width: 120px' }, { default: content })
+	h(Button, { class: `so-test-${mark}`, style: 'width: 120px' }, { default: content })
 
 /**
  * Кнопка потребителя внутри элемента: в слоте строки ListBox и Select, в
@@ -357,12 +357,12 @@ describe.each(Object.entries(NESTED))('%s: кнопка внутри элеме�
 			}),
 		)
 
-		const textButton = find('.s-test-text')
-		const iconButton = find('.s-test-icon')
-		const textArea = find('.s-test-text > .s-button__text')
-		const iconArea = find('.s-test-icon > .s-button__text')
+		const textButton = find('.so-test-text')
+		const iconButton = find('.so-test-icon')
+		const textArea = find('.so-test-text > .so-button__text')
+		const iconArea = find('.so-test-icon > .so-button__text')
 		const text = textBox(textArea)
-		const glyph = box(find('.s-test-glyph'))
+		const glyph = box(find('.so-test-glyph'))
 
 		expect(text.width).toBeLessThan(box(textArea).width)
 		expect(glyph.width).toBeLessThan(box(iconArea).width)
@@ -384,7 +384,7 @@ const WRAPPED: Record<string, () => VNodeChild> = {
 			h(
 				ListBoxItem,
 				{
-					class: 's-test-row',
+					class: 'so-test-row',
 					value: 'row',
 					text: 'Санкт-Петербург и Ленинградская область',
 				},
@@ -396,7 +396,7 @@ const WRAPPED: Record<string, () => VNodeChild> = {
 			h(
 				SelectItem,
 				{
-					class: 's-test-row',
+					class: 'so-test-row',
 					value: 'row',
 					text: 'Санкт-Петербург и Ленинградская область',
 				},
@@ -415,8 +415,8 @@ describe.each(Object.entries(WRAPPED))(
 				}),
 			)
 
-			const rowArea = find('.s-test-row > .s-button > .s-button__text')
-			const area = find('.s-test-text > .s-button__text')
+			const rowArea = find('.so-test-row > .so-button > .so-button__text')
+			const area = find('.so-test-text > .so-button__text')
 
 			// Текст строки занял больше строк, чем текст кнопки: строка перенеслась
 			expect(textBox(rowArea).height).toBeGreaterThan(textBox(area).height)

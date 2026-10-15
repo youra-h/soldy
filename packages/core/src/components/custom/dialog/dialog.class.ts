@@ -23,7 +23,7 @@ import type { IDialog, IDialogProps, TDialogEvents, TDialogPlacement } from './t
  * раскладки (`TDialogLayoutPlugin`). Координат и замеров у окна нет.
  */
 export default class TDialog extends TModalLayer<IDialogProps, TDialogEvents> implements IDialog {
-	static override baseClass = 's-dialog'
+	static override baseClass = 'so-dialog'
 
 	static defaultValues: typeof TModalLayer.defaultValues &
 		TDefaultValues<

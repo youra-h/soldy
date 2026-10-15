@@ -39,6 +39,6 @@ describe('Icon: размер из разметки', () => {
 		wrapper = mount(Icon)
 
 		expect(wrapper.attributes('style')).toBeUndefined()
-		expect(wrapper.classes()).toContain('s-icon--size-normal')
+		expect(wrapper.classes()).toContain('so-icon--size-normal')
 	})
 })

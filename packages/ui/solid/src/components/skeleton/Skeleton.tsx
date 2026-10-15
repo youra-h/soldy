@@ -29,7 +29,7 @@ export function Skeleton(props: SkeletonProps): JSX.Element {
 	return (
 		<Dynamic {...root()} component={rootTag(state.tag)} ref={binding.ref}>
 			<Show when={state.present}>
-				<div class="s-skeleton__placeholder" aria-hidden="true" />
+				<div class="so-skeleton__placeholder" aria-hidden="true" />
 			</Show>
 			{renderSlot(props.children)}
 		</Dynamic>

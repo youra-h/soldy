@@ -2,7 +2,7 @@
 @use '../button/mixins' as button;
 @use './mixins' as tags;
 
-.s-tags {
+.so-tags {
 	// Зазор между тегами — переменной, а не утилитой на месте: своя раскладка
 	// в слоте `default` (лента, ряд с хвостом в панели) ставит теги не прямыми
 	// детьми набора, и то же число нужно уже ей. В поле Select оно своё (ниже).
@@ -79,7 +79,7 @@
 		// по строке нет, и отступ там свой (ниже).
 		scroll-padding-inline: var(--s-tags-bleed);
 
-		> .s-tags-item {
+		> .so-tags-item {
 			@apply shrink-0;
 		}
 	}
@@ -87,14 +87,14 @@
 
 // Строка тега — всё в обёртке элемента, кроме кнопки закрытия: она стоит
 // рядом со строкой, а не внутри неё.
-$row: ':not(.s-tags-item__close)';
+$row: ':not(.so-tags-item__close)';
 
 // Фокус пилюли — фокус её строки: сама обёртка не фокусируется. У кнопки
 // закрытия своё кольцо, пилюлю её фокус не трогает. Один селектор — тоже
 // список для миксинов вида.
 $focused: '&:has(> #{$row}:focus)';
 
-.s-tags-item {
+.so-tags-item {
 	$this: &;
 
 	// Строка тега и кнопка закрытия — соседи в одну линию. Внутри строки
@@ -107,7 +107,7 @@ $focused: '&:has(> #{$row}:focus)';
 	@apply flex items-center;
 
 	// Высота пилюли — переменной: её задают ступень (ниже) и строка слота в поле
-	// Select (`.s-input__leading` в конце файла), а по ней же держит себя в
+	// Select (`.so-input__leading` в конце файла), а по ней же держит себя в
 	// пилюле зона нажатия крестика.
 	height: var(--s-tags-item-height);
 
@@ -123,7 +123,7 @@ $focused: '&:has(> #{$row}:focus)';
 
 	// Кольцо рисует набор, поэтому путь до тега у правила тот же, что у матрицы
 	// видов: потомок, а не ребёнок набора (ниже).
-	.s-tags:not(.s-tags--view-none) &:has(> #{$row}:focus-visible) {
+	.so-tags:not(.so-tags--view-none) &:has(> #{$row}:focus-visible) {
 		@include button.button-focus-ring;
 	}
 
@@ -158,7 +158,7 @@ $focused: '&:has(> #{$row}:focus)';
 		@apply shrink-0 self-stretch h-auto;
 		@apply #{'px-' + tags.$close-padding};
 
-		.s-icon {
+		.so-icon {
 			@apply w-[1em] h-[1em];
 		}
 
@@ -204,7 +204,7 @@ $focused: '&:has(> #{$row}:focus)';
 
 			--s-tags-item-height: #{$height};
 
-			> .s-button {
+			> .so-button {
 				@apply #{map.get($scale, 'text')};
 			}
 
@@ -229,7 +229,7 @@ $focused: '&:has(> #{$row}:focus)';
 	// у каждого свой); внутри погасшей пилюли это погасило бы их второй раз.
 	@include button.button-disabled;
 
-	&[data-disabled='true'] > .s-button {
+	&[data-disabled='true'] > .so-button {
 		@apply opacity-100;
 	}
 }
@@ -254,10 +254,10 @@ $focused: '&:has(> #{$row}:focus)';
 // вариант набора доходят до тега на любой глубине, и разметке слота не нужно
 // повторять матрицу видов под свой путь. Вложенных наборов тегов не бывает:
 // панель с хвостом телепортирована и потомком набора не является.
-@include button.button-tones('s-tags-item');
+@include button.button-tones('so-tags-item');
 
 @each $variant in button.$variants {
-	:where(.s-tags--variant-#{$variant} .s-tags-item) {
+	:where(.so-tags--variant-#{$variant} .so-tags-item) {
 		@include button.button-variant-tones($variant);
 	}
 }
@@ -266,16 +266,16 @@ $focused: '&:has(> #{$row}:focus)';
 // правила не требует: без модификатора кнопка и есть нейтраль. Тег без
 // модификатора берёт вариант набора, и нейтраль ему возвращает только это
 // правило — иначе тег `normal` в наборе `accent` остался бы `accent`.
-.s-tags-item--variant-normal {
+.so-tags-item--variant-normal {
 	@include button.button-neutral-tones;
 }
 
-:where(.s-tags-item) {
+:where(.so-tags-item) {
 	@include button.button-view('filled', $focused);
 }
 
 @each $view in button.$views {
-	.s-tags--view-#{$view} .s-tags-item {
+	.so-tags--view-#{$view} .so-tags-item {
 		@include button.button-view($view, $focused);
 	}
 }
@@ -284,11 +284,11 @@ $focused: '&:has(> #{$row}:focus)';
 // разметка больше не передаёт. Строка — `none`: пилюлю рисует обёртка, и
 // строка сама не красит ничего. Крестик — `plain`. Нулевая специфичность, как
 // у базового вида Button.
-:where(.s-tags-item > #{$row}) {
+:where(.so-tags-item > #{$row}) {
 	@include button.button-view('none');
 }
 
-:where(.s-tags-item__close) {
+:where(.so-tags-item__close) {
 	@include button.button-view('plain');
 }
 
@@ -298,7 +298,7 @@ $focused: '&:has(> #{$row}:focus)';
 // выше), а у крестика цвет свой, вида `plain`: на подсветке он остался бы
 // ступенью темы.
 @media (forced-colors: active) {
-	.s-tags-item[data-selected='true']:not([data-disabled='true']) > .s-tags-item__close {
+	.so-tags-item[data-selected='true']:not([data-disabled='true']) > .so-tags-item__close {
 		color: inherit;
 	}
 }
@@ -342,19 +342,19 @@ $focused: '&:has(> #{$row}:focus)';
 // сжимается. Поле под него не раздвигается: правило, которое считает теги,
 // неверно по построению, поэтому в поле на своём минимуме лишнее обрезает
 // слот (`select/_select.scss`).
-.s-input__leading,
-.s-input__trailing {
-	> .s-tags {
+.so-input__leading,
+.so-input__trailing {
+	> .so-tags {
 		// Зазор в поле уже: строка поля коротка, и полтора шага съедали бы
 		// ширину, которой не хватает вводу. Переменной — тем же числом её берёт
-		// своя раскладка ряда в слоте (`.s-tags` выше).
+		// своя раскладка ряда в слоте (`.so-tags` выше).
 		--s-tags-gap: calc(var(--spacing) * 1);
 
 		@apply min-w-0;
 
 		// Крестик в строке слота — тот же квадрат, что в пилюле своей ступени:
 		// отступ от верха и низа считается от строки слота той же формулой.
-		.s-tags-item {
+		.so-tags-item {
 			$inset: tags.close-inset(var(--s-input-slot-row));
 
 			--s-tags-item-height: var(--s-input-slot-row);
@@ -365,7 +365,7 @@ $focused: '&:has(> #{$row}:focus)';
 				padding-block: $inset;
 			}
 
-			> .s-tags-item__close {
+			> .so-tags-item__close {
 				margin-block: $inset;
 			}
 		}
@@ -447,7 +447,7 @@ $focused: '&:has(> #{$row}:focus)';
 				// Ряд, который помещается, прокручивать нечего: у такой
 				// прокрутки нет хода, анимации не действуют, ширины остаются
 				// нулевыми — и маска не гасит ничего.
-				animation-name: s-tags-fade-start, s-tags-fade-end;
+				animation-name: so-tags-fade-start, so-tags-fade-end;
 				animation-duration: auto;
 				animation-timing-function: linear;
 				animation-fill-mode: both;
@@ -485,7 +485,7 @@ $focused: '&:has(> #{$row}:focus)';
 	initial-value: 0px;
 }
 
-@keyframes s-tags-fade-start {
+@keyframes so-tags-fade-start {
 	from {
 		--s-tags-fade-start: 0px;
 	}
@@ -495,7 +495,7 @@ $focused: '&:has(> #{$row}:focus)';
 	}
 }
 
-@keyframes s-tags-fade-end {
+@keyframes so-tags-fade-end {
 	from {
 		--s-tags-fade-end: var(--s-tags-fade);
 	}

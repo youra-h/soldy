@@ -30,7 +30,7 @@ export function Button(props: ButtonProps): ReactElement | null {
 	return (
 		<Tag {...toRootProps(ref, state, [attrs, aria, dataset], forwardProps)}>
 			{renderSlot(props.leading)}
-			<span className="s-button__text">
+			<span className="so-button__text">
 				{renderSlot(props.children, { text: text ?? '' }) ?? text}
 			</span>
 			{renderSlot(props.trailing)}

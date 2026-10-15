@@ -36,7 +36,7 @@
 		attach={binding.attachElement}
 	>
 		{#if props.leading}{@render props.leading()}{/if}
-		<span class="s-button__text">
+		<span class="so-button__text">
 			{#if props.children}{@render props.children({ text: state.text ?? '' })}{:else}{state.text}{/if}
 		</span>
 		{#if props.trailing}{@render props.trailing()}{/if}

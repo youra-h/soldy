@@ -1,6 +1,6 @@
 @use './mixins' as mixines;
 @use '../../mixins/required' as required;
-.s-check-box {
+.so-check-box {
 	$this: &;
 
 	// Блочный при любом теге: корень рисуется по `tag`, и у строчного `span`
@@ -136,6 +136,6 @@
 // отметка цветом варианта. Здесь его цвет без варианта — нейтраль.
 // Модификаторам `outlined` и `normal` правила не нужны, они совпадают с базой.
 // Нулевая специфичность — вариант перекрывает базу, не споря с ней.
-:where(.s-check-box) {
-	@include mixines.checkbox-variant('.s-check-box', $color: 'neutral');
+:where(.so-check-box) {
+	@include mixines.checkbox-variant('.so-check-box', $color: 'neutral');
 }

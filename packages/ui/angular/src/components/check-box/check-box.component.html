@@ -21,7 +21,7 @@
 	`checked` и `indeterminate`. «Выбрано частично» рисуется поверх значения,
 	как у Vue: его снимает клик (`toggle` ядра), а не смена `value`.
 -->
-<span class="s-check-box__container" aria-hidden="true">
+<span class="so-check-box__container" aria-hidden="true">
 	@if (state()['indeterminate']) {
 		@if (slot('indeterminate-icon'); as mark) {
 			<ng-container
@@ -32,7 +32,7 @@
 				}"
 			/>
 		} @else {
-			<svg class="s-check-box__mark" so-role-icon="checkIndeterminate"></svg>
+			<svg class="so-check-box__mark" so-role-icon="checkIndeterminate"></svg>
 		}
 	} @else if (state()['value']) {
 		@if (slot('icon'); as mark) {
@@ -41,7 +41,7 @@
 				[ngTemplateOutletContext]="{ value: state()['value'], indeterminate: false }"
 			/>
 		} @else {
-			<svg class="s-check-box__mark" so-role-icon="check"></svg>
+			<svg class="so-check-box__mark" so-role-icon="check"></svg>
 		}
 	}
 </span>

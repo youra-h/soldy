@@ -33,7 +33,7 @@ afterEach(() => {
 
 /** Радио на странице по порядку. */
 const radios = (): HTMLInputElement[] =>
-	[...document.querySelectorAll('.s-radio-group-item__input')].filter(
+	[...document.querySelectorAll('.so-radio-group-item__input')].filter(
 		(element): element is HTMLInputElement => element instanceof HTMLInputElement,
 	)
 
@@ -48,7 +48,7 @@ const radioOf = (value: string): HTMLInputElement => {
 
 /** Корень радио — `label`, на нём состояние для темы. */
 const rootOf = (value: string): HTMLElement => {
-	const root = radioOf(value).closest('.s-radio-group-item')
+	const root = radioOf(value).closest('.so-radio-group-item')
 
 	if (!(root instanceof HTMLElement)) throw new Error(`корня радио «${value}» нет`)
 
@@ -119,7 +119,7 @@ describe('группа для браузера', () => {
 	it('корень — role="radiogroup", радио — нативные input[type=radio]', async () => {
 		await render()
 
-		expect(document.querySelector('.s-radio-group')?.getAttribute('role')).toBe('radiogroup')
+		expect(document.querySelector('.so-radio-group')?.getAttribute('role')).toBe('radiogroup')
 		expect(radios().map((radio) => radio.type)).toEqual(['radio', 'radio', 'radio'])
 	})
 
@@ -414,8 +414,8 @@ describe('состояние для темы — на корне радио', ()
 		)
 		await nextTick()
 
-		expect(rootOf('a').classList).toContain('s-radio-group-item--view-halo')
-		expect(rootOf('a').classList).toContain('s-radio-group-item--size-lg')
+		expect(rootOf('a').classList).toContain('so-radio-group-item--view-halo')
+		expect(rootOf('a').classList).toContain('so-radio-group-item--size-lg')
 	})
 })
 
@@ -424,7 +424,7 @@ describe('подпись', () => {
 	it('текст слота лежит внутри корня-label', async () => {
 		await render()
 
-		const text = rootOf('a').querySelector('.s-radio-group-item__text')
+		const text = rootOf('a').querySelector('.so-radio-group-item__text')
 
 		expect(text?.textContent).toBe('Первый')
 	})
@@ -443,7 +443,7 @@ describe('подпись', () => {
 		)
 		await nextTick()
 
-		const text = rootOf('a').querySelector('.s-radio-group-item__text')
+		const text = rootOf('a').querySelector('.so-radio-group-item__text')
 
 		expect(text?.textContent).toBe('')
 		expect(text?.children).toHaveLength(0)
@@ -480,7 +480,7 @@ describe('подпись', () => {
 		await nextTick()
 
 		expect(
-			[...document.querySelectorAll('.s-radio-group-item__text')].map(
+			[...document.querySelectorAll('.so-radio-group-item__text')].map(
 				(text) => text.textContent,
 			),
 		).toEqual(['Вариант a', 'Вариант b'])

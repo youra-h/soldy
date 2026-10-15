@@ -33,8 +33,8 @@ const Harness = {
 
 /** Модификаторы размера на корне строки: их должно быть ровно по одному. */
 const sizeModifiers = () =>
-	[...(document.querySelector('.s-list-box-item')?.classList ?? [])].filter((cls) =>
-		cls.startsWith('s-list-box-item--size-'),
+	[...(document.querySelector('.so-list-box-item')?.classList ?? [])].filter((cls) =>
+		cls.startsWith('so-list-box-item--size-'),
 	)
 
 describe('ListBox.Item: размер приходит от списка', () => {
@@ -44,11 +44,11 @@ describe('ListBox.Item: размер приходит от списка', () => 
 		wrapper = mounted
 		await nextTick()
 
-		expect(sizeModifiers()).toEqual(['s-list-box-item--size-lg'])
+		expect(sizeModifiers()).toEqual(['so-list-box-item--size-lg'])
 
 		await mounted.setProps({ size: 'xl' })
 		await nextTick()
 
-		expect(sizeModifiers()).toEqual(['s-list-box-item--size-xl'])
+		expect(sizeModifiers()).toEqual(['so-list-box-item--size-xl'])
 	})
 })

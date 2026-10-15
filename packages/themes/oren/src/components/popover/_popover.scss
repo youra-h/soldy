@@ -9,7 +9,7 @@
 // Корень — обёртка триггера (слот `trigger`). Панель телепортирована в `body`,
 // в корне её нет, поэтому прямоугольник корня — это прямоугольник триггера, и
 // корень служит панели якорем.
-.s-popover {
+.so-popover {
 	// Строчный флекс: в строке текста корень встаёт как строчный элемент и не
 	// рвёт её, во флекс-ряду (ряд тегов) — как обычный элемент ряда.
 	//
@@ -20,7 +20,7 @@
 }
 
 // Панель — Frame, телепортированный в `body`, поэтому вложенным селектором её
-// не достать. Та же семья оверлеев, что `.s-select__panel`: поверхность
+// не достать. Та же семья оверлеев, что `.so-select__panel`: поверхность
 // контрола, цвет текста, тень, скругление. Поверхность — она же поверхность
 // места для содержимого (`place.surface`).
 //
@@ -33,14 +33,14 @@
 // Кольцо — тоже тень, и в режиме принудительных цветов (высокий контраст
 // Windows) браузер убирает его вместе с тенью, а фон панели заменяет фоном
 // страницы. Поэтому у кромки вторая половина — прозрачный контур, тот же,
-// что у `.s-tooltip__panel`: цвет контура браузер в этом режиме заменяет
+// что у `.so-tooltip__panel`: цвет контура браузер в этом режиме заменяет
 // системным, и контур становится рамкой. В обычном режиме его не видно, и
 // места, как и кольцо, он не занимает.
 //
 // Раскладка — ряд из двух колонок: содержимое и кнопка закрытия. У кнопки
 // своя колонка, поэтому содержимое под неё не заходит, и признак
 // «закрываемая» теме не нужен: без кнопки колонки просто нет.
-.s-popover__panel {
+.so-popover__panel {
 	@apply flex items-start overflow-hidden rounded-md box-border;
 	@apply text-s-component shadow-md;
 	@apply ring-1 ring-s-neutral-300;
@@ -73,7 +73,7 @@
 // вдоль края — во всю его длину, поперёк — по содержимому, но не больше
 // контейнера. Потолков окна у неё нет: её мера — контейнер, и длинное
 // содержимое прокручивается в нём.
-.s-popover__panel[data-contained='true'] {
+.so-popover__panel[data-contained='true'] {
 	max-width: 100%;
 	max-height: 100%;
 
@@ -96,7 +96,7 @@
 	}
 }
 
-.s-popover__content {
+.so-popover__content {
 	// `w-max` — чтобы ширина панели не зависела от её места. Панель
 	// позиционирована с `left`, и у неё с шириной по содержимому место под
 	// текст — от `left` до края окна: у якоря справа длинный текст
@@ -117,7 +117,7 @@
 // Таблица прямо в содержимом — её окно прямой ребёнок содержимого: её
 // закреплённая шапка встаёт к краю, а не под отступ (минус `p-2`), — как в
 // теле окна Dialog (`mixins/_modal.scss`).
-:where(.s-popover__content > .s-table__viewport) {
+:where(.so-popover__content > .so-table__viewport) {
 	--s-table-head-offset: calc(var(--spacing) * -2);
 }
 
@@ -126,14 +126,14 @@
 // отступа содержимого: крестик встаёт по центру первой строки текста, а
 // кольцо фокуса не упирается в край панели, где его обрезал бы
 // `overflow-hidden`.
-.s-popover__close {
+.so-popover__close {
 	@apply shrink-0 aspect-square px-0 mt-2 me-2;
 }
 
 // Вид кнопки закрытия — `plain`, как у крестиков Tabs и Tags. Значения вида
 // разметка не передаёт, вид даёт контекст. Нулевая специфичность, как у
 // базового вида Button.
-:where(.s-popover__close) {
+:where(.so-popover__close) {
 	@include button.button-view('plain');
 }
 
@@ -145,8 +145,8 @@
 //
 // Своё у поповера — панель внутри контейнера (ниже): у неё сторона своя, край
 // (`data-edge`), и по нему она и движется, и смахивается.
-.s-popover__panel {
-	@include anchored.panel('.s-popover__handle');
+.so-popover__panel {
+	@include anchored.panel('.so-popover__handle');
 }
 
 // Жест панели внутри контейнера — к своему краю (`data-edge`). Полоса стоит
@@ -154,7 +154,7 @@
 // — полоса снизу, у начала строки — у конца). Зона захвата — поле панели с
 // этой стороны, поэтому содержимое и кнопку закрытия она не накрывает, а
 // раскладка ряда «содержимое и кнопка» остаётся прежней.
-.s-popover__panel:has(> .s-popover__handle) {
+.so-popover__panel:has(> .so-popover__handle) {
 	&[data-edge='top'] {
 		padding-block-start: 0;
 		padding-block-end: swipe.$handle;
@@ -176,13 +176,13 @@
 	}
 }
 
-.s-popover__panel[data-edge='top'] > .s-popover__handle {
+.so-popover__panel[data-edge='top'] > .so-popover__handle {
 	@apply top-auto bottom-0;
 }
 
 // У бокового края полоса — во всю высоту панели у противоположного края
 // строки, штрих поперёк строки
-.s-popover__panel:is([data-edge='start'], [data-edge='end']) > .s-popover__handle {
+.so-popover__panel:is([data-edge='start'], [data-edge='end']) > .so-popover__handle {
 	@apply inset-y-0;
 	inset-inline: auto;
 	inline-size: swipe.$handle;
@@ -190,11 +190,11 @@
 	@include swipe.grip(block);
 }
 
-.s-popover__panel[data-edge='start'] > .s-popover__handle {
+.so-popover__panel[data-edge='start'] > .so-popover__handle {
 	inset-inline-end: 0;
 }
 
-.s-popover__panel[data-edge='end'] > .s-popover__handle {
+.so-popover__panel[data-edge='end'] > .so-popover__handle {
 	inset-inline-start: 0;
 }
 
@@ -208,7 +208,7 @@
 // Движение — въезд, возврат и уход — идёт, только когда режим движения его
 // разрешает (`motion.allowed`). Без движения панель только проявляется и
 // гаснет на месте, а отпущенная встаёт на место сразу.
-.s-popover__panel {
+.so-popover__panel {
 	&[data-edge='bottom'] {
 		--s-popover-away: 0 100%;
 	}
@@ -229,7 +229,7 @@
 // Уход к своему краю — движение: без него закрытая панель гаснет на месте.
 // После правил сдвига жеста: вес у них равный, и закрытая панель берёт свой
 // `translate` порядком.
-.s-popover__panel[data-open='false'][data-contained='true'] {
+.so-popover__panel[data-open='false'][data-contained='true'] {
 	@include motion.allowed {
 		translate: var(--s-popover-away);
 	}
@@ -238,7 +238,7 @@
 // Въезд от края в контейнере — движение поверх проявления: начальную
 // прозрачность даёт `anchored.fade`, здесь только место за краем.
 @starting-style {
-	.s-popover__panel[data-open='true'][data-contained='true'] {
+	.so-popover__panel[data-open='true'][data-contained='true'] {
 		translate: var(--s-popover-away);
 	}
 }

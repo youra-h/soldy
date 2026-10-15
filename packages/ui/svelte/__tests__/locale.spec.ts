@@ -78,7 +78,7 @@ describe('LocaleProvider', () => {
 
 		const [bundle] = outer.list
 		const source = bundle.locale
-		const button = container.querySelector('.s-button')
+		const button = container.querySelector('.so-button')
 		const changes: string[] = []
 
 		source.events.on('change', (locale) => changes.push(locale.tag))
@@ -91,7 +91,7 @@ describe('LocaleProvider', () => {
 		expect(bundle.locale).toBe(source)
 		expect(tagOf(source)).toBe(zhCN.tag)
 		expect(changes).toEqual([zhCN.tag])
-		expect(container.querySelector('.s-button')).toBe(button)
+		expect(container.querySelector('.so-button')).toBe(button)
 	})
 
 	it('вложенный провайдер даёт поддереву свою локаль', async () => {
@@ -118,7 +118,7 @@ describe('LocaleProvider', () => {
  */
 describe('LocaleProvider · строки на разметке', () => {
 	/** Кнопка очистки поля внутри узла. */
-	const clearOf = (scope: ParentNode) => find(scope, '.s-input__clear', HTMLButtonElement)
+	const clearOf = (scope: ParentNode) => find(scope, '.so-input__clear', HTMLButtonElement)
 
 	it('без провайдера — английские строки', () => {
 		const { container } = mount(Input, { clearable: true, name: 'Город' })
@@ -154,10 +154,10 @@ describe('LocaleProvider · строки на разметке', () => {
 		const { container } = mount(LocaleInput, { locale: ruRU, inner: enUS })
 
 		expect(
-			clearOf(find(container, '.s-test-outer', HTMLElement)).getAttribute('aria-label'),
+			clearOf(find(container, '.so-test-outer', HTMLElement)).getAttribute('aria-label'),
 		).toBe('Очистить Город')
 		expect(
-			clearOf(find(container, '.s-test-inner', HTMLElement)).getAttribute('aria-label'),
+			clearOf(find(container, '.so-test-inner', HTMLElement)).getAttribute('aria-label'),
 		).toBe('Clear Город')
 	})
 })

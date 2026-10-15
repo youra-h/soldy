@@ -10,7 +10,7 @@ export default { ...SetupTable, components: { Button, CheckBox, Icon, TableColum
 </script>
 
 <template>
-	<div v-if="rendered" v-show="visible" class="s-table__viewport">
+	<div v-if="rendered" v-show="visible" class="so-table__viewport">
 		<!--
 			Окно таблицы — разметка вокруг неё, а не корень: корень, классы и
 			наборы — у самой `table`, плагины и тема видят корнем её. В окне
@@ -40,12 +40,12 @@ export default { ...SetupTable, components: { Button, CheckBox, Icon, TableColum
 			:class="classes"
 			v-bind="{ ...attrs, ...aria, ...dataset }"
 		>
-			<thead class="s-table__head">
+			<thead class="so-table__head">
 				<!--
 					Набор строки шапки (`headRowAria`) — у неё нет экземпляра, и его
 					держит коллекция: в окне это номер шапки среди строк таблицы.
 				-->
-				<tr class="s-table__head-row" v-bind="headRowAria">
+				<tr class="so-table__head-row" v-bind="headRowAria">
 					<!--
 						Заголовок колонки выбора — первая ячейка шапки. Колонка выбора есть,
 						только пока режим выбора строк не `none`: один факт решает и выбор, и
@@ -67,7 +67,7 @@ export default { ...SetupTable, components: { Button, CheckBox, Icon, TableColum
 						Экземпляра у ячейки нет, и её набор держит коллекция (`cellAria`):
 						в сетке ячейка принимает фокус.
 					-->
-					<th v-if="mode === 'multiple'" class="s-table__select" v-bind="cellAria">
+					<th v-if="mode === 'multiple'" class="so-table__select" v-bind="cellAria">
 						<CheckBox
 							embedded="table.select-all"
 							:ctrl="selectAll"
@@ -76,7 +76,7 @@ export default { ...SetupTable, components: { Button, CheckBox, Icon, TableColum
 					</th>
 					<td
 						v-else-if="mode === 'single'"
-						class="s-table__select"
+						class="so-table__select"
 						v-bind="cellAria"
 					></td>
 
@@ -93,7 +93,7 @@ export default { ...SetupTable, components: { Button, CheckBox, Icon, TableColum
 								Сортируемая колонка — кнопка в заголовке, как в APG Sortable
 								Table: Button (`embedded: 'table.sort'`), нажатие — команда
 								коллекции `toggleSort(field)`. Вида разметка ей не передаёт:
-								красит её тема по контексту (`:where(.s-table-column__sort)`).
+								красит её тема по контексту (`:where(.so-table-column__sort)`).
 								Выключена вместе с таблицей: сортировать её строки нельзя.
 								Текст — внутри кнопки: её имя — текст заголовка.
 
@@ -109,7 +109,7 @@ export default { ...SetupTable, components: { Button, CheckBox, Icon, TableColum
 							<Button
 								v-if="sortable"
 								embedded="table.sort"
-								class="s-table-column__sort"
+								class="so-table-column__sort"
 								:size="size"
 								:disabled="disabled"
 								@action:press="facade.toggleSort(column.field)"
@@ -123,7 +123,7 @@ export default { ...SetupTable, components: { Button, CheckBox, Icon, TableColum
 								>
 
 								<template #trailing>
-									<span class="s-table-column__sort-icon" aria-hidden="true">
+									<span class="so-table-column__sort-icon" aria-hidden="true">
 										<Icon
 											embedded="table.sort-icon"
 											:tag="sortIconTag"
@@ -138,7 +138,7 @@ export default { ...SetupTable, components: { Button, CheckBox, Icon, TableColum
 								темы: выключенная таблица гасит текст, а кнопку гасит сама
 								кнопка.
 							-->
-							<span v-else class="s-table-column__text">
+							<span v-else class="so-table-column__text">
 								<slot
 									name="header"
 									:column="column"
@@ -152,7 +152,7 @@ export default { ...SetupTable, components: { Button, CheckBox, Icon, TableColum
 				</tr>
 			</thead>
 
-			<tbody class="s-table__body">
+			<tbody class="so-table__body">
 				<!--
 					Тело — то, что рисует коллекция (`drawn`), по порядку, ключ — ключ
 					записи. Без окна это все показанные строки. В окне обёртки `Virtual` —
@@ -180,11 +180,11 @@ export default { ...SetupTable, components: { Button, CheckBox, Icon, TableColum
 					<template v-for="entry in drawn" :key="entry.key">
 						<tr
 							v-if="entry.kind === 'filler'"
-							class="s-table__filler-row"
+							class="so-table__filler-row"
 							aria-hidden="true"
 							:style="entry.style"
 						>
-							<td class="s-table__filler" :colspan="columnCount"></td>
+							<td class="so-table__filler" :colspan="columnCount"></td>
 						</tr>
 						<TableRow v-else :ctrl="entry.item">
 							<template #cell="{ row, column, value }">
@@ -199,11 +199,11 @@ export default { ...SetupTable, components: { Button, CheckBox, Icon, TableColum
 					<template v-for="entry in drawn" :key="entry.key">
 						<tr
 							v-if="entry.kind === 'filler'"
-							class="s-table__filler-row"
+							class="so-table__filler-row"
 							aria-hidden="true"
 							:style="entry.style"
 						>
-							<td class="s-table__filler" :colspan="columnCount"></td>
+							<td class="so-table__filler" :colspan="columnCount"></td>
 						</tr>
 						<TableRow v-else :ctrl="entry.item" />
 					</template>
@@ -217,8 +217,8 @@ export default { ...SetupTable, components: { Button, CheckBox, Icon, TableColum
 					`empty`; без него ячейка пуста, и под шапкой остаётся пустая полоса —
 					таблица без строк не схлопывается в одну шапку.
 				-->
-				<tr v-if="shown.length === 0" class="s-table__empty-row">
-					<td class="s-table__empty" :colspan="columnCount">
+				<tr v-if="shown.length === 0" class="so-table__empty-row">
+					<td class="so-table__empty" :colspan="columnCount">
 						<slot name="empty" />
 					</td>
 				</tr>

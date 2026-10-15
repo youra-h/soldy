@@ -57,14 +57,14 @@ export function TableColumn(props: TableColumnProps): ReactElement | null {
 
 	return (
 		<Tag {...toRootProps(ref, state, [attrs, aria, dataset], forwardProps, widthStyle)}>
-			<span className="s-table-column__content" {...toAriaProps(contentAria)}>
+			<span className="so-table-column__content" {...toAriaProps(contentAria)}>
 				{renderSlot(props.children, { text: text ?? '', sortable: sortable ?? false }) ??
 					text}
 			</span>
 			{resizerRendered && resizer ? (
-				<span className="s-table-column__resizer">
+				<span className="so-table-column__resizer">
 					<NativeInput
-						className="s-table-column__input"
+						className="so-table-column__input"
 						type="range"
 						min={resizer.min}
 						max={resizer.max}

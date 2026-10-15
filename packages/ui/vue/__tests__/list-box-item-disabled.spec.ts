@@ -35,10 +35,10 @@ const ListBoxHarness = {
 }
 
 /** Корень элемента: на нём `data-disabled` для темы. */
-const itemRoot = (): Element | null => document.querySelector('.s-list-box-item')
+const itemRoot = (): Element | null => document.querySelector('.so-list-box-item')
 
 /** Строка элемента — вложенный `Button`: на ней ARIA элемента. */
-const itemRow = (): Element | null => document.querySelector('.s-list-box-item .s-button')
+const itemRow = (): Element | null => document.querySelector('.so-list-box-item .so-button')
 
 describe('ListBox.Item: disabled списка в разметке', () => {
 	it('включение списка включает и элемент, выключенный разметкой', async () => {
@@ -98,7 +98,7 @@ describe('Tabs.Item: строку выключает выключенный на
 
 		await nextTick()
 
-		const row = document.querySelector('.s-tabs-item > button')
+		const row = document.querySelector('.so-tabs-item > button')
 
 		expect(row).not.toBeNull()
 		expect(row?.hasAttribute('disabled')).toBe(true)

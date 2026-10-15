@@ -14,7 +14,7 @@ function isIconProps(value: object | string): value is IIconProps {
 }
 
 export default class TIcon extends TComponentView<IIconProps, TIconEvents> implements IIcon {
-	static override baseClass = 's-icon'
+	static override baseClass = 'so-icon'
 
 	/**
 	 * `width` и `height` объявлены ключами без значения: незаданный размер даёт

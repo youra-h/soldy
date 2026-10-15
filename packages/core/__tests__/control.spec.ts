@@ -25,9 +25,9 @@ describe('TControl', () => {
 		ctrl.variant = 'brand'
 		const classes = ctrl.classes.toArray()
 
-		expect(classes).toContain('s-component-view')
-		expect(classes).toContain('s-component-view--size-xl')
-		expect(classes).toContain('s-component-view--variant-brand')
+		expect(classes).toContain('so-component-view')
+		expect(classes).toContain('so-component-view--size-xl')
+		expect(classes).toContain('so-component-view--variant-brand')
 	})
 
 	it('getProps возвращает variant/size/disabled/focused', () => {

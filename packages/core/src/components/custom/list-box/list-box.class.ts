@@ -31,7 +31,7 @@ export class TListBox
 	extends TValueControl<TListBoxValue, IListBoxProps, TListBoxEvents>
 	implements IListBox
 {
-	static override baseClass = 's-list-box'
+	static override baseClass = 'so-list-box'
 
 	static defaultValues: typeof TValueControl.defaultValues &
 		TDefaultValues<IListBoxProps, keyof IListProps, 'view'> = {

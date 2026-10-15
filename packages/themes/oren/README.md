@@ -7,7 +7,7 @@ Part of [Soldy UI](https://github.com/youra-h/soldy) — UI components with the 
 framework-agnostic core and thin adapters that render it in Vue, React, Angular, Svelte, Solid and
 Web Components.
 
-The library emits `s-*` classes and `data-*` state attributes; a theme styles them. It never styles
+The library emits `so-*` classes and `data-*` state attributes; a theme styles them. It never styles
 `aria-*`, so an accessibility fix cannot break the look. A theme also declares the set of values
 its design offers — `variant`, `view`, `shape`, `animation` — and the library takes those names
 from it, not the other way round.

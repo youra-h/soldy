@@ -35,9 +35,9 @@ const ITEMS: TItem[] = [
 
 /** Элементы рисуются владельцем, когда состав пришёл коллекцией, а не слотами. */
 const ITEM_SELECTOR: Record<string, string> = {
-	ListBox: '.s-list-box-item',
-	Tabs: '.s-tabs-item',
-	Accordion: '.s-accordion-item',
+	ListBox: '.so-list-box-item',
+	Tabs: '.so-tabs-item',
+	Accordion: '.so-accordion-item',
 }
 
 describe.each([

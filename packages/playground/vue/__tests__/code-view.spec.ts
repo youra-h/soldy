@@ -18,7 +18,7 @@ afterEach(() => {
 
 /** Кнопка блока по подписи; без неё проверять нечего. */
 function buttonOf(wrapper: VueWrapper, text: string) {
-	const found = wrapper.findAll('.s-button').find((button) => button.text() === text)
+	const found = wrapper.findAll('.so-button').find((button) => button.text() === text)
 
 	if (!found) throw new Error(`нет кнопки «${text}»`)
 

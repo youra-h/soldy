@@ -48,7 +48,7 @@ const propRow = (name: string): HTMLElement => {
 
 /** Выбрать значение в контроле строки — так же, как это делает человек. */
 const pick = async (row: HTMLElement, value: string) => {
-	const trigger = row.querySelector('.pg-prop__control .s-select')
+	const trigger = row.querySelector('.pg-prop__control .so-select')
 
 	if (!(trigger instanceof HTMLElement)) throw new Error('контрола-селекта в строке нет')
 
@@ -67,7 +67,7 @@ const pick = async (row: HTMLElement, value: string) => {
 
 /** Ряд тегов первой колонки строки — той, что правится пропами. */
 const rowOf = (prop: HTMLElement): HTMLElement => {
-	const element = prop.querySelector('.pg-col .s-tags')
+	const element = prop.querySelector('.pg-col .so-tags')
 
 	if (!(element instanceof HTMLElement)) throw new Error('ряда тегов в колонке нет')
 
@@ -134,7 +134,7 @@ describe('строка overflow на странице компонента', () 
 		await page(NARROW[2])
 
 		const row = rowOf(prop)
-		const tops = [...row.querySelectorAll('.s-tags-item')].map((item) =>
+		const tops = [...row.querySelectorAll('.so-tags-item')].map((item) =>
 			Math.round(item.getBoundingClientRect().top),
 		)
 

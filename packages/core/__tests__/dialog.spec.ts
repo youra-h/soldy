@@ -51,11 +51,11 @@ describe('умолчания', () => {
 		expect(dialog.getProps()).toHaveProperty('offset', undefined)
 	})
 
-	it('базовый класс s-dialog, корень — div', () => {
+	it('базовый класс so-dialog, корень — div', () => {
 		const dialog = new TDialog()
 
 		expect(dialog.tag).toBe('div')
-		expect(dialog.classes.toArray()).toContain('s-dialog')
+		expect(dialog.classes.toArray()).toContain('so-dialog')
 	})
 
 	it('пропсы конструктора перекрывают умолчания', () => {
@@ -154,9 +154,9 @@ describe('кнопки', () => {
 
 describe('место', () => {
 	it('модификатор стоит всегда, и у центра', () => {
-		expect(new TDialog().classes.toArray()).toContain('s-dialog--placement-center')
+		expect(new TDialog().classes.toArray()).toContain('so-dialog--placement-center')
 		expect(new TDialog({ placement: 'top' }).classes.toArray()).toContain(
-			's-dialog--placement-top',
+			'so-dialog--placement-top',
 		)
 	})
 
@@ -171,7 +171,7 @@ describe('место', () => {
 
 		const placements = dialog.classes.toArray().filter((cls) => cls.includes('--placement-'))
 
-		expect(placements).toEqual(['s-dialog--placement-start'])
+		expect(placements).toEqual(['so-dialog--placement-start'])
 		expect(changes).toEqual(['start'])
 	})
 })

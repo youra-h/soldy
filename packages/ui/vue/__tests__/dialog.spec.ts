@@ -40,10 +40,10 @@ function find(selector: string, scope: ParentNode = document): HTMLElement {
 	return element
 }
 
-const panel = (scope: ParentNode = document) => find('.s-dialog', scope)
-const backdrop = (scope: ParentNode = document) => find('.s-dialog__backdrop', scope)
+const panel = (scope: ParentNode = document) => find('.so-dialog', scope)
+const backdrop = (scope: ParentNode = document) => find('.so-dialog__backdrop', scope)
 const isOpen = (element: HTMLElement = panel()) => element.style.display !== 'none'
-const opener = () => find('.s-test-opener')
+const opener = () => find('.so-test-opener')
 
 /** Нажатие мимо — `pointerdown`, как его слушает плагин оверлея. */
 const pointerDown = (target: Element) =>
@@ -60,8 +60,8 @@ function press(key: string, options: KeyboardEventInit = {}): KeyboardEvent {
 
 /** Содержимое окна с двумя остановками Tab. */
 const inside = () => [
-	h('button', { class: 's-test-first' }, 'Первая'),
-	h('button', { class: 's-test-second' }, 'Вторая'),
+	h('button', { class: 'so-test-first' }, 'Первая'),
+	h('button', { class: 'so-test-second' }, 'Вторая'),
 ]
 
 type TPageOptions = {
@@ -83,7 +83,7 @@ async function render({ props = {}, content = inside, slots = {} }: TPageOptions
 		defineComponent({
 			render: () =>
 				h('div', [
-					h('button', { class: 's-test-opener' }, 'Открыть'),
+					h('button', { class: 'so-test-opener' }, 'Открыть'),
 					h(
 						Dialog,
 						{
@@ -134,13 +134,13 @@ describe('разметка', () => {
 
 		expect(isOpen()).toBe(false)
 		expect(isOpen(backdrop())).toBe(false)
-		expect(document.querySelector('.s-test-first')).not.toBeNull()
+		expect(document.querySelector('.so-test-first')).not.toBeNull()
 	})
 
 	it('панель — модальный диалог, имя — заголовок', async () => {
 		await render()
 
-		const title = find('.s-dialog__title')
+		const title = find('.so-dialog__title')
 
 		expect(panel().getAttribute('role')).toBe('dialog')
 		expect(panel().getAttribute('aria-modal')).toBe('true')
@@ -153,25 +153,25 @@ describe('разметка', () => {
 	it('предупреждение — alertdialog, описание — тело окна', async () => {
 		await render({ props: { alert: true } })
 
-		const body = find('.s-dialog__body')
+		const body = find('.so-dialog__body')
 
 		expect(panel().getAttribute('role')).toBe('alertdialog')
 		expect(panel().getAttribute('aria-describedby')).toBe(body.id)
-		expect(body.contains(find('.s-test-first'))).toBe(true)
+		expect(body.contains(find('.so-test-first'))).toBe(true)
 	})
 
 	it('слоты — по местам: заголовок, тело, подвал', async () => {
-		await render({ slots: { footer: () => h('button', { class: 's-test-ok' }, 'Готово') } })
+		await render({ slots: { footer: () => h('button', { class: 'so-test-ok' }, 'Готово') } })
 
-		expect(find('.s-dialog__title').textContent).toBe('Настройки')
-		expect(find('.s-dialog__body').contains(find('.s-test-first'))).toBe(true)
-		expect(find('.s-dialog__footer').contains(find('.s-test-ok'))).toBe(true)
+		expect(find('.so-dialog__title').textContent).toBe('Настройки')
+		expect(find('.so-dialog__body').contains(find('.so-test-first'))).toBe(true)
+		expect(find('.so-dialog__footer').contains(find('.so-test-ok'))).toBe(true)
 	})
 
 	it('место — модификатором, по умолчанию центр; развёрнутость — data-maximized', async () => {
 		await render({ props: { placement: 'end' } })
 
-		expect(panel().classList).toContain('s-dialog--placement-end')
+		expect(panel().classList).toContain('so-dialog--placement-end')
 		expect(panel().dataset.maximized).toBe('false')
 	})
 
@@ -233,10 +233,10 @@ describe('разметка', () => {
 	it('атрибуты и события потребителя — на панели, а не в телепорте', async () => {
 		const onClick = vi.fn()
 
-		await render({ props: { class: 's-test-mine', 'data-test': 'x', onClick } })
+		await render({ props: { class: 'so-test-mine', 'data-test': 'x', onClick } })
 
-		expect(panel().classList).toContain('s-test-mine')
-		expect(panel().classList).toContain('s-dialog')
+		expect(panel().classList).toContain('so-test-mine')
+		expect(panel().classList).toContain('so-dialog')
 		expect(panel().dataset.test).toBe('x')
 
 		panel().click()
@@ -247,10 +247,10 @@ describe('разметка', () => {
 	it('target меняет место телепорта', async () => {
 		const host = document.createElement('div')
 
-		host.id = 's-test-host'
+		host.id = 'so-test-host'
 		document.body.appendChild(host)
 
-		await render({ props: { target: '#s-test-host' } })
+		await render({ props: { target: '#so-test-host' } })
 
 		expect(panel().parentElement).toBe(host)
 		expect(backdrop().parentElement).toBe(host)
@@ -345,27 +345,27 @@ describe('кнопки шапки', () => {
 	it('крестик назван локалью — без провайдера английской, closable: false его убирает из DOM', async () => {
 		await render()
 
-		expect(find('.s-dialog__close').getAttribute('aria-label')).toBe('Close')
+		expect(find('.so-dialog__close').getAttribute('aria-label')).toBe('Close')
 
 		wrapper?.unmount()
 		document.body.innerHTML = ''
 
 		await render({ props: { closable: false } })
 
-		expect(document.querySelector('.s-dialog__close')).toBeNull()
+		expect(document.querySelector('.so-dialog__close')).toBeNull()
 	})
 
 	it('кнопки разворота по умолчанию нет, maximizable её рисует', async () => {
 		await render()
 
-		expect(document.querySelector('.s-dialog__maximize')).toBeNull()
+		expect(document.querySelector('.so-dialog__maximize')).toBeNull()
 
 		wrapper?.unmount()
 		document.body.innerHTML = ''
 
 		await render({ props: { maximizable: true } })
 
-		const button = find('.s-dialog__maximize')
+		const button = find('.so-dialog__maximize')
 
 		expect(button.getAttribute('aria-label')).toBe('Maximize')
 		expect(button.getAttribute('aria-pressed')).toBe('false')
@@ -377,7 +377,7 @@ describe('кнопки шапки', () => {
 
 		await open(shown)
 
-		const button = find('.s-dialog__maximize')
+		const button = find('.so-dialog__maximize')
 		/** Контур значка кнопки — сравнивается с контуром роли в пакете. */
 		const iconPath = () => button.querySelector('svg path')?.getAttribute('d')
 		const pathOf = (body: string) => /d="([^"]+)"/.exec(body)?.[1]
@@ -404,7 +404,7 @@ describe('кнопки шапки', () => {
 
 		await open(shown)
 
-		find('.s-dialog__maximize').click()
+		find('.so-dialog__maximize').click()
 		await nextTick()
 
 		expect(wrapper?.findComponent(Dialog).emitted('update:maximized')).toEqual([[true]])
@@ -430,9 +430,9 @@ describe('закрытие пользователем', () => {
 
 		await open(shown)
 
-		expect(document.activeElement).toBe(find('.s-test-first'))
+		expect(document.activeElement).toBe(find('.so-test-first'))
 
-		find('.s-dialog__close').click()
+		find('.so-dialog__close').click()
 		await nextTick()
 
 		expect(reasons).toEqual(['button'])
@@ -476,7 +476,7 @@ describe('закрытие пользователем', () => {
 
 		await open(shown)
 
-		pointerDown(find('.s-test-second'))
+		pointerDown(find('.so-test-second'))
 		await nextTick()
 
 		expect(isOpen()).toBe(true)
@@ -489,7 +489,7 @@ describe('закрытие пользователем', () => {
 
 		await open(shown)
 
-		find('.s-dialog__close').click()
+		find('.so-dialog__close').click()
 		press('Escape')
 		pointerDown(backdrop())
 		await nextTick()
@@ -518,7 +518,7 @@ describe('закрытие пользователем', () => {
 
 			await open(shown)
 
-			find('.s-dialog__close').click()
+			find('.so-dialog__close').click()
 			await nextTick()
 
 			expect(isOpen()).toBe(false)
@@ -535,7 +535,7 @@ describe('открытость — visible и v-model', () => {
 
 		expect(isOpen()).toBe(true)
 		expect(isOpen(backdrop())).toBe(true)
-		expect(document.activeElement).toBe(find('.s-test-first'))
+		expect(document.activeElement).toBe(find('.so-test-first'))
 
 		shown.value = false
 		await settle()
@@ -572,7 +572,7 @@ describe('открытость — visible и v-model', () => {
 		await settle()
 
 		expect(isOpen()).toBe(true)
-		expect(document.activeElement).toBe(find('.s-test-first'))
+		expect(document.activeElement).toBe(find('.so-test-first'))
 	})
 })
 
@@ -586,28 +586,28 @@ describe('окно поверх окна', () => {
 			defineComponent({
 				render: () =>
 					h('div', [
-						h('button', { class: 's-test-opener' }, 'Открыть'),
+						h('button', { class: 'so-test-opener' }, 'Открыть'),
 						h(
 							Dialog,
 							{
-								class: 's-test-lower',
+								class: 'so-test-lower',
 								visible: lower.value,
 								'onUpdate:visible': (value: boolean) => {
 									lower.value = value
 								},
 							},
 							() => [
-								h('button', { class: 's-test-lower-first' }, 'Внизу'),
+								h('button', { class: 'so-test-lower-first' }, 'Внизу'),
 								h(
 									Dialog,
 									{
-										class: 's-test-upper',
+										class: 'so-test-upper',
 										visible: upper.value,
 										'onUpdate:visible': (value: boolean) => {
 											upper.value = value
 										},
 									},
-									() => h('button', { class: 's-test-upper-first' }, 'Наверху'),
+									() => h('button', { class: 'so-test-upper-first' }, 'Наверху'),
 								),
 							],
 						),
@@ -639,23 +639,23 @@ describe('окно поверх окна', () => {
 	it('верхнее окно — слоем выше нижнего, его подложка — тоже', async () => {
 		await renderNested()
 
-		const lower = Number(find('.s-test-lower').dataset.layer)
-		const upper = Number(find('.s-test-upper').dataset.layer)
+		const lower = Number(find('.so-test-lower').dataset.layer)
+		const upper = Number(find('.so-test-upper').dataset.layer)
 
 		expect(upper).toBeGreaterThan(lower)
-		expect(backdropOf(find('.s-test-upper')).dataset.layer).toBe(String(upper))
-		expect(document.activeElement).toBe(find('.s-test-upper-first'))
+		expect(backdropOf(find('.so-test-upper')).dataset.layer).toBe(String(upper))
+		expect(document.activeElement).toBe(find('.so-test-upper-first'))
 	})
 
 	it('нажатие по подложке верхнего закрывает только его', async () => {
 		const { lower, upper } = await renderNested()
 
-		pointerDown(backdropOf(find('.s-test-upper')))
+		pointerDown(backdropOf(find('.so-test-upper')))
 		await nextTick()
 
 		expect(upper.value).toBe(false)
 		expect(lower.value).toBe(true)
-		expect(document.activeElement).toBe(find('.s-test-lower-first'))
+		expect(document.activeElement).toBe(find('.so-test-lower-first'))
 	})
 
 	it('Escape в верхнем закрывает только его', async () => {
@@ -671,26 +671,26 @@ describe('окно поверх окна', () => {
 	it('нижнее окно для скринридера спрятано, пока открыто верхнее', async () => {
 		const { upper } = await renderNested()
 
-		expect(find('.s-test-lower').getAttribute('aria-hidden')).toBe('true')
-		expect(find('.s-test-upper').closest('[aria-hidden="true"]')).toBeNull()
+		expect(find('.so-test-lower').getAttribute('aria-hidden')).toBe('true')
+		expect(find('.so-test-upper').closest('[aria-hidden="true"]')).toBeNull()
 
 		upper.value = false
 		await settle()
 
-		expect(find('.s-test-lower').hasAttribute('aria-hidden')).toBe(false)
+		expect(find('.so-test-lower').hasAttribute('aria-hidden')).toBe(false)
 	})
 })
 
 describe('Select внутри', () => {
 	const withSelect = () => [
-		h(Select, { class: 's-test-select' }, () => [
+		h(Select, { class: 'so-test-select' }, () => [
 			h(SelectItem, { key: 'a', value: 'a', text: 'Первый' }),
 			h(SelectItem, { key: 'b', value: 'b', text: 'Второй' }),
 		]),
 	]
 
-	const field = () => find('.s-test-select input')
-	const selectPanel = () => find('.s-select__panel')
+	const field = () => find('.so-test-select input')
+	const selectPanel = () => find('.so-select__panel')
 
 	/** Клик мышью целиком: нажатие, фокус от `mousedown`, клик. */
 	async function click(target: HTMLElement): Promise<void> {
@@ -711,7 +711,7 @@ describe('Select внутри', () => {
 		expect(isOpen(selectPanel())).toBe(true)
 		expect(Number(selectPanel().dataset.layer)).toBeGreaterThan(Number(panel().dataset.layer))
 
-		const option = find('.s-select__panel [role="option"]')
+		const option = find('.so-select__panel [role="option"]')
 
 		pointerDown(option)
 		option.click()

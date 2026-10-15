@@ -39,7 +39,7 @@ export default class TTooltip
 	extends TComponentView<ITooltipProps, TTooltipEvents>
 	implements ITooltip
 {
-	static override baseClass = 's-tooltip'
+	static override baseClass = 'so-tooltip'
 
 	static defaultValues: typeof TComponentView.defaultValues &
 		TDefaultValues<ITooltipProps, 'open' | 'placement' | 'openDelay' | 'closeDelay' | 'type'> =

@@ -36,7 +36,7 @@ import type { IDrawer, IDrawerProps, TDrawerEvents, TDrawerPlacement } from './t
  * производным значением `locksScroll`, а не флагом в плагине.
  */
 export default class TDrawer extends TModalLayer<IDrawerProps, TDrawerEvents> implements IDrawer {
-	static override baseClass = 's-drawer'
+	static override baseClass = 'so-drawer'
 
 	static defaultValues: typeof TModalLayer.defaultValues &
 		TDefaultValues<IDrawerProps, 'placement' | 'swipe' | 'contained'> = {

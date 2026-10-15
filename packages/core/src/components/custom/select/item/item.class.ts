@@ -22,7 +22,7 @@ export default class TSelectItem<
 	extends TValueControl<string | number, TProps, TEvents>
 	implements ISelectItem<TProps, TEvents>
 {
-	static override baseClass = 's-select-item'
+	static override baseClass = 'so-select-item'
 
 	static defaultValues: typeof TValueControl.defaultValues &
 		TDefaultValues<ISelectItemProps, 'text'> = {

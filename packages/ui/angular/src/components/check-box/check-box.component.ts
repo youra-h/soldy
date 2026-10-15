@@ -33,7 +33,7 @@ import { setupCheckBox } from './setup.component'
  * (`RoleIconDirective`), а не компонент Icon: она появляется и пропадает с
  * каждой сменой отметки, и Icon собирал бы на каждую свой контекст и плагины —
  * в таблице «выбрать все» собирала их тысячами. Размер и цвет отметке даёт
- * тема флажка по `s-check-box__mark`.
+ * тема флажка по `so-check-box__mark`.
  *
  * Selector: so-check-box
  */

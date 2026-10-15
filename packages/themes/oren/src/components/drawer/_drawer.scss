@@ -51,7 +51,7 @@ $backdrop-easing: linear;
 
 // Подложка — на весь экран, а внутри контейнера — на контейнер (см.
 // `modal.backdrop`). Закрытая гаснет: `data-open` у неё тот же, что у панели.
-.s-drawer__backdrop {
+.so-drawer__backdrop {
 	@apply fixed inset-0;
 	@include modal.backdrop;
 
@@ -66,7 +66,7 @@ $backdrop-easing: linear;
 
 // Панель — поверхность модального слоя (`modal.surface`), прижатая к своему
 // краю. Скруглены только углы со стороны страницы: у края экрана углов нет.
-.s-drawer {
+.so-drawer {
 	@apply fixed;
 	@include modal.surface;
 
@@ -145,35 +145,35 @@ $backdrop-easing: linear;
 // есть ближайшего `dir`: `start` в RTL справа и уезжает вправо. Селектор по
 // атрибуту у предка ближайшего не видит, и панель с `direction="ltr"` на
 // RTL-странице въезжала бы не со своего края.
-.s-drawer--placement-start,
-.s-drawer--placement-end {
+.so-drawer--placement-start,
+.so-drawer--placement-end {
 	translate: var(--s-swipe-offset, 0px) 0;
 }
 
-.s-drawer--placement-top,
-.s-drawer--placement-bottom {
+.so-drawer--placement-top,
+.so-drawer--placement-bottom {
 	translate: 0 var(--s-swipe-offset, 0px);
 }
 
-.s-drawer--placement-start {
+.so-drawer--placement-start {
 	--drawer-away: calc(-100% * var(--s-dir-sign)) 0;
 }
 
-.s-drawer--placement-end {
+.so-drawer--placement-end {
 	--drawer-away: calc(100% * var(--s-dir-sign)) 0;
 }
 
-.s-drawer--placement-top {
+.so-drawer--placement-top {
 	--drawer-away: 0 -100%;
 }
 
-.s-drawer--placement-bottom {
+.so-drawer--placement-bottom {
 	--drawer-away: 0 100%;
 }
 
 // С движением закрытая панель не гаснет, а уезжает: прозрачность у неё —
 // только без движения.
-.s-drawer[data-open='false'] {
+.so-drawer[data-open='false'] {
 	@apply opacity-0;
 
 	@include motion.allowed {
@@ -200,7 +200,7 @@ $backdrop-easing: linear;
 // разрешает (`motion.allowed`). Без движения панель проявляется и гаснет на
 // месте прозрачностью — тем же временем, что подложка, — а отпущенная после
 // жеста встаёт на место сразу.
-.s-drawer:not([data-swiping='true']) {
+.so-drawer:not([data-swiping='true']) {
 	transition-property: opacity, display;
 	transition-behavior: allow-discrete;
 
@@ -219,7 +219,7 @@ $backdrop-easing: linear;
 	}
 }
 
-.s-drawer__backdrop {
+.so-drawer__backdrop {
 	transition-property: opacity, display;
 	transition-timing-function: $backdrop-easing;
 	transition-behavior: allow-discrete;
@@ -234,12 +234,12 @@ $backdrop-easing: linear;
 }
 
 @starting-style {
-	.s-drawer[data-open='true'] {
+	.so-drawer[data-open='true'] {
 		@apply opacity-0;
 		translate: var(--drawer-away);
 	}
 
-	.s-drawer__backdrop[data-open='true'] {
+	.so-drawer__backdrop[data-open='true'] {
 		@apply opacity-0;
 	}
 }
@@ -248,19 +248,19 @@ $backdrop-easing: linear;
 // страницы. Своя дорожка сетки, а не наложение: зона захвата не накрывает
 // заголовок и кнопку закрытия. Вид полосы — общий с поповером
 // (`swipe.handle`).
-.s-drawer__handle {
+.so-drawer__handle {
 	grid-area: handle;
 	@include swipe.handle;
 }
 
-.s-drawer--placement-top > .s-drawer__handle,
-.s-drawer--placement-bottom > .s-drawer__handle {
+.so-drawer--placement-top > .so-drawer__handle,
+.so-drawer--placement-bottom > .so-drawer__handle {
 	block-size: swipe.$handle;
 	@include swipe.grip(inline);
 }
 
-.s-drawer--placement-start > .s-drawer__handle,
-.s-drawer--placement-end > .s-drawer__handle {
+.so-drawer--placement-start > .so-drawer__handle,
+.so-drawer--placement-end > .so-drawer__handle {
 	inline-size: swipe.$handle;
 	@include swipe.grip(block);
 }
@@ -268,7 +268,7 @@ $backdrop-easing: linear;
 // Дорожка полосы — у края со стороны страницы. Отступ содержимого с её
 // стороны держит сама зона: он шире обычного, и второй отступ сверх неё
 // отодвинул бы содержимое дальше, чем у панели без полосы.
-.s-drawer--placement-bottom:has(> .s-drawer__handle) {
+.so-drawer--placement-bottom:has(> .so-drawer__handle) {
 	grid-template-rows: auto auto minmax(0, 1fr) auto;
 	grid-template-areas:
 		'handle handle'
@@ -276,18 +276,18 @@ $backdrop-easing: linear;
 		'body body'
 		'footer footer';
 
-	> .s-drawer__title {
+	> .so-drawer__title {
 		padding-block-start: 0;
 	}
 
-	> .s-drawer__close {
+	> .so-drawer__close {
 		margin-block-start: calc(
 			var(--spacing) * (#{modal.$title-line} - #{modal.$button-height}) / 2
 		);
 	}
 }
 
-.s-drawer--placement-top:has(> .s-drawer__handle) {
+.so-drawer--placement-top:has(> .so-drawer__handle) {
 	grid-template-rows: auto minmax(0, 1fr) auto auto;
 	grid-template-areas:
 		'title close'
@@ -295,34 +295,34 @@ $backdrop-easing: linear;
 		'footer footer'
 		'handle handle';
 
-	> .s-drawer__footer {
+	> .so-drawer__footer {
 		padding-block-end: 0;
 	}
 }
 
-.s-drawer--placement-end:has(> .s-drawer__handle) {
+.so-drawer--placement-end:has(> .so-drawer__handle) {
 	grid-template-columns: auto minmax(0, 1fr) auto;
 	grid-template-areas:
 		'handle title close'
 		'handle body body'
 		'handle footer footer';
 
-	> :is(.s-drawer__title, .s-drawer__body, .s-drawer__footer) {
+	> :is(.so-drawer__title, .so-drawer__body, .so-drawer__footer) {
 		padding-inline-start: 0;
 	}
 }
 
-.s-drawer--placement-start:has(> .s-drawer__handle) {
+.so-drawer--placement-start:has(> .so-drawer__handle) {
 	grid-template-columns: minmax(0, 1fr) auto auto;
 	grid-template-areas:
 		'title close handle'
 		'body body handle'
 		'footer footer handle';
 
-	> :is(.s-drawer__title, .s-drawer__body, .s-drawer__footer) {
+	> :is(.so-drawer__title, .so-drawer__body, .so-drawer__footer) {
 		padding-inline-end: 0;
 	}
 }
 
 // Заголовок, тело, подвал и кнопка закрытия — как у окна.
-@include modal.parts('s-drawer', ('close'));
+@include modal.parts('so-drawer', ('close'));

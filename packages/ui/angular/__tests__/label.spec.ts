@@ -35,7 +35,7 @@ const labelOf = (fixture: Parameters<typeof findIn>[0]) =>
 	findIn(fixture, '[so-label]', HTMLLabelElement)
 
 /** Обёртка текста подписи. */
-const textOf = (root: Element) => find(root, '.s-label__text', HTMLElement)
+const textOf = (root: Element) => find(root, '.so-label__text', HTMLElement)
 
 @Component({
 	standalone: true,
@@ -88,15 +88,15 @@ describe('Label · разметка', () => {
 		const el = labelOf(mountHost(CheckBoxLabelHost))
 
 		expect([...el.classList]).toEqual([
-			's-label',
-			's-label--size-normal',
-			's-label--position-end',
+			'so-label',
+			'so-label--size-normal',
+			'so-label--position-end',
 		])
 		expect([...el.children].map((part) => part.className)).toEqual([
-			's-label__control',
-			's-label__text',
+			'so-label__control',
+			'so-label__text',
 		])
-		expect(el.querySelector('.s-label__control > .s-check-box > input')).not.toBeNull()
+		expect(el.querySelector('.so-label__control > .so-check-box > input')).not.toBeNull()
 		expect(textOf(el).textContent).toBe('Согласен')
 	})
 
@@ -105,7 +105,7 @@ describe('Label · разметка', () => {
 		const fixture = mountHost(SpanLabelHost)
 		const el = findIn(fixture, '[so-label]', HTMLSpanElement)
 
-		expect(el.classList.contains('s-label')).toBe(true)
+		expect(el.classList.contains('so-label')).toBe(true)
 		expect(textOf(el).textContent).toBe('Подпись')
 	})
 
@@ -113,14 +113,14 @@ describe('Label · разметка', () => {
 		const fixture = mountHost(PositionHost)
 		const el = labelOf(fixture)
 
-		expect(el.classList.contains('s-label--position-start')).toBe(true)
+		expect(el.classList.contains('so-label--position-start')).toBe(true)
 		expect(el.getAttribute('dir')).toBe('rtl')
 
 		fixture.componentInstance.position.set('top')
 		fixture.detectChanges()
 
-		expect(el.classList.contains('s-label--position-top')).toBe(true)
-		expect(el.classList.contains('s-label--position-start')).toBe(false)
+		expect(el.classList.contains('so-label--position-top')).toBe(true)
+		expect(el.classList.contains('so-label--position-start')).toBe(false)
 	})
 
 	/** Атрибут-вход — запись входа, а не атрибут корня. */
@@ -149,7 +149,7 @@ describe('Label · текст: проп и слот', () => {
 
 		expect(textOf(el).querySelector('b')?.textContent).toBe('Слот')
 		expect(textOf(el).textContent).toBe('Слот')
-		expect(el.querySelector('.s-label__control b')).toBeNull()
+		expect(el.querySelector('.so-label__control b')).toBeNull()
 	})
 
 	/**
@@ -278,7 +278,7 @@ describe('Label · радио в подписи', () => {
 
 		expect(nestedWarnings(warn.mock.calls)).toEqual([])
 		expect([...(input.labels ?? [])]).toEqual([label])
-		expect(find(label, '.s-radio-group-item', HTMLSpanElement).tagName).toBe('SPAN')
+		expect(find(label, '.so-radio-group-item', HTMLSpanElement).tagName).toBe('SPAN')
 
 		textOf(label).click()
 		fixture.detectChanges()

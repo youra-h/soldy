@@ -42,8 +42,8 @@ export function Label(props: LabelProps): JSX.Element {
 	return (
 		<Show when={state.rendered}>
 			<Dynamic {...root()} component={rootTag(state.tag)} ref={binding.ref}>
-				<span class="s-label__control">{renderSlot(props.children)}</span>
-				<span class="s-label__text">{content() ?? (state.text || undefined)}</span>
+				<span class="so-label__control">{renderSlot(props.children)}</span>
+				<span class="so-label__text">{content() ?? (state.text || undefined)}</span>
 			</Dynamic>
 		</Show>
 	)

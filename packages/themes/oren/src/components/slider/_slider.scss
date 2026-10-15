@@ -22,7 +22,7 @@
 // 100 % — её края по оси, мерить надо её. На краю хода ручка выступает за
 // коробку на полстороны; рельс лежит и там, но псевдоэлементом — коробку он не
 // сдвигает, а место под полстороны корень держит отступом.
-.s-slider {
+.so-slider {
 	$this: &;
 
 	// Размер без модификатора — `normal`. Ядро пишет `--size-*` всегда, но блок
@@ -453,7 +453,7 @@
 // Вид блока без варианта — нейтраль. Модификатору `normal` правило не нужно,
 // он совпадает с базой. Нулевая специфичность — вариант перекрывает базу, не
 // споря с ней.
-:where(.s-slider) {
+:where(.so-slider) {
 	@include mixines.slider-colors('neutral');
 }
 
@@ -465,11 +465,11 @@
 // внутри позиционировано, — и там, где ширину берут по содержимому (строчный
 // флекс, обёртка контрола в подписи `Label`), он схлопнулся бы в одну ручку.
 // У вертикального длины по содержимому нет вовсе, высота своя.
-:where(.s-slider--horizontal) {
+:where(.so-slider--horizontal) {
 	@apply min-w-40;
 }
 
-:where(.s-slider--vertical) {
+:where(.so-slider--vertical) {
 	@apply h-40;
 }
 
@@ -478,14 +478,14 @@
 // правила частей их не анимируют, — поэтому во время перетаскивания ручка и
 // заливка идут за указателем без задержки, а без движения встают на новое
 // значение сразу.
-.s-slider:not([data-dragging='true']) > .s-slider__track {
-	> .s-slider__thumb {
+.so-slider:not([data-dragging='true']) > .so-slider__track {
+	> .so-slider__thumb {
 		@include motion.allowed {
 			transition-property: box-shadow, inset-inline-start, inset-block-end;
 		}
 	}
 
-	> .s-slider__range {
+	> .so-slider__range {
 		@include motion.allowed {
 			transition-property:
 				inset-inline-start, inset-inline-end, inset-block-start, inset-block-end;
@@ -497,13 +497,13 @@
 // и гаснет. Только при перетаскивании: клавиша и так ходит по шагу, а на
 // первой отрисовке кольцо вспыхнуло бы у каждой занятой метки. Кольцо растёт
 // — это движение, и без него отклика нет.
-.s-slider[data-dragging='true'] .s-slider__mark[data-current='true']::after {
+.so-slider[data-dragging='true'] .so-slider__mark[data-current='true']::after {
 	@include motion.allowed {
-		animation: s-slider-detent 400ms ease-out;
+		animation: so-slider-detent 400ms ease-out;
 	}
 }
 
-@keyframes s-slider-detent {
+@keyframes so-slider-detent {
 	from {
 		opacity: 0.6;
 		scale: 1;
@@ -523,17 +523,17 @@
 //
 // Растяжка поперёк — только в столбце: в ряду обёртка стоит по базовой линии
 // первой строки текста, и растяжка её бы сбила.
-.s-label:is(.s-label--position-top, .s-label--position-bottom)
-	> .s-label__control:has(> .s-slider--horizontal) {
+.so-label:is(.so-label--position-top, .so-label--position-bottom)
+	> .so-label__control:has(> .so-slider--horizontal) {
 	align-self: stretch;
 }
 
-.s-label:not(.s-label--position-top, .s-label--position-bottom)
-	> .s-label__control:has(> .s-slider--horizontal) {
+.so-label:not(.so-label--position-top, .so-label--position-bottom)
+	> .so-label__control:has(> .so-slider--horizontal) {
 	flex-grow: 1;
 }
 
-.s-label__control > .s-slider--horizontal {
+.so-label__control > .so-slider--horizontal {
 	flex: 1 1 auto;
 }
 
@@ -541,17 +541,17 @@
 // системным цветом поверхности, и рельс, заливка и точки меток пропали бы
 // вместе с ними — от ползунка остались бы одни кольца ручек.
 @media (forced-colors: active) {
-	.s-slider__track::before {
+	.so-slider__track::before {
 		forced-color-adjust: none;
 		background-color: GrayText;
 	}
 
-	.s-slider__range {
+	.so-slider__range {
 		forced-color-adjust: none;
 		background-color: Highlight;
 	}
 
-	.s-slider__mark::before {
+	.so-slider__mark::before {
 		forced-color-adjust: none;
 		background-color: CanvasText;
 	}

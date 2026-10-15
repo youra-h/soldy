@@ -62,8 +62,8 @@ function mount(props: Partial<IProgressLinearProps> = {}, dir?: TLine) {
 	return ctrl
 }
 
-const root = () => find('.s-progress-linear')
-const range = () => find('.s-progress-linear__range')
+const root = () => find('.so-progress-linear')
+const range = () => find('.so-progress-linear__range')
 
 /** Бегущий отрезок: его вычисленный стиль — у псевдоэлемента корня. */
 const segment = () => getComputedStyle(root(), '::after')

@@ -91,7 +91,7 @@ afterEach(async () => {
 const PANELS = [
 	{
 		name: 'Popover',
-		panel: '.s-popover__panel',
+		panel: '.so-popover__panel',
 		markup: () =>
 			h(
 				Popover,
@@ -104,7 +104,7 @@ const PANELS = [
 	},
 	{
 		name: 'Select',
-		panel: '.s-select__panel',
+		panel: '.so-select__panel',
 		markup: () =>
 			h(
 				Select,
@@ -114,7 +114,7 @@ const PANELS = [
 	},
 	{
 		name: 'Dialog',
-		panel: '.s-dialog',
+		panel: '.so-dialog',
 		markup: () =>
 			h(
 				Dialog,
@@ -124,7 +124,7 @@ const PANELS = [
 	},
 	{
 		name: 'Drawer',
-		panel: '.s-drawer',
+		panel: '.so-drawer',
 		markup: () =>
 			h(
 				Drawer,
@@ -134,7 +134,7 @@ const PANELS = [
 	},
 	{
 		name: 'Tooltip',
-		panel: '.s-tooltip__panel',
+		panel: '.so-tooltip__panel',
 		markup: () =>
 			h(
 				Tooltip,
@@ -147,7 +147,7 @@ const PANELS = [
 	},
 	{
 		name: 'DatePicker',
-		panel: '.s-date-picker__panel',
+		panel: '.so-date-picker__panel',
 		markup: () => h(DatePicker, { open: true, aria_label: 'Дата' }),
 	},
 ]
@@ -187,7 +187,7 @@ describe('Popover: панель под фокусом', () => {
 	 */
 	const markup = () =>
 		h('div', [
-			h('button', { class: 's-test-before' }, 'До'),
+			h('button', { class: 'so-test-before' }, 'До'),
 			h(
 				Popover,
 				{ aria_label: 'Проверка', closable: false },
@@ -201,11 +201,11 @@ describe('Popover: панель под фокусом', () => {
 
 	/** Открыть с клавиатуры: фокус от неё видимый, и браузер нарисовал бы кольцо. */
 	const openByKeyboard = async (): Promise<HTMLElement> => {
-		find('.s-test-before').focus()
+		find('.so-test-before').focus()
 		await userEvent.keyboard('{Tab}')
 		await userEvent.keyboard('{Enter}')
 
-		const panel = find('.s-popover__panel')
+		const panel = find('.so-popover__panel')
 
 		await expect.poll(() => document.activeElement).toBe(panel)
 		expect(panel.matches(':focus-visible')).toBe(true)
@@ -239,14 +239,14 @@ describe('Popover: панель под фокусом', () => {
 const FIELDS = [
 	{
 		name: 'Input',
-		field: '.s-input',
-		target: '.s-input input',
+		field: '.so-input',
+		target: '.so-input input',
 		markup: () => h(Input, { aria_label: 'Имя' }),
 	},
 	{
 		name: 'DateInput',
-		field: '.s-date-input',
-		target: '.s-date-input__segment',
+		field: '.so-date-input',
+		target: '.so-date-input__segment',
 		markup: () => h(DateInput, { aria_label: 'Дата' }),
 	},
 ]
@@ -309,7 +309,7 @@ const expectHighlight = (element: Element): void => {
 const TRIGGERS = [
 	{
 		name: 'Popover',
-		trigger: '.s-popover > .s-button',
+		trigger: '.so-popover > .so-button',
 		markup: () =>
 			h(
 				Popover,
@@ -323,12 +323,12 @@ const TRIGGERS = [
 	},
 	{
 		name: 'Calendar',
-		trigger: '.s-calendar__title',
+		trigger: '.so-calendar__title',
 		markup: () => h(Calendar, { months: ['2026-09-01'] }),
 	},
 	{
 		name: 'DatePicker',
-		trigger: '.s-date-picker__trigger',
+		trigger: '.so-date-picker__trigger',
 		markup: () => h(DatePicker, { aria_label: 'Дата' }),
 	},
 ]
@@ -368,7 +368,7 @@ describe.each(VIEWS)('Button, $name: выбранная кнопка', ({ props 
 		await forcedColors('active')
 		await show(scheme, () => h(Button, { text: 'Выбрано', 'data-selected': 'true', ...props }))
 
-		const button = find('.s-button')
+		const button = find('.so-button')
 
 		await settled(button)
 
@@ -387,7 +387,7 @@ describe('Button: выбор в режиме принудительных цве
 			h(Button, { text: 'Выбрано', view: 'outlined', 'data-selected': 'true' }),
 		)
 
-		const button = find('.s-button')
+		const button = find('.so-button')
 
 		await settled(button)
 
@@ -402,17 +402,17 @@ describe('Button: выбор в режиме принудительных цве
 		await forcedColors('active')
 		await show(scheme, () =>
 			h('div', [
-				h('button', { class: 's-test-before' }, 'До'),
+				h('button', { class: 'so-test-before' }, 'До'),
 				h(Tags, { view: 'outlined', mode: 'multiple' }, () => [
 					h(TagsItem, { key: 'a', value: 'a', text: 'Почта', selected: true }),
 				]),
 			]),
 		)
 
-		find('.s-test-before').focus()
+		find('.so-test-before').focus()
 		await userEvent.keyboard('{Tab}')
 
-		const pill = find('.s-tags-item')
+		const pill = find('.so-tags-item')
 
 		expect(pill.contains(document.activeElement)).toBe(true)
 		await settled(pill)
@@ -428,15 +428,15 @@ describe('Button: выбор в режиме принудительных цве
 		await forcedColors('active')
 		await show(scheme, () =>
 			h('div', [
-				h('button', { class: 's-test-before' }, 'До'),
+				h('button', { class: 'so-test-before' }, 'До'),
 				h(Button, { text: 'Выбрано', 'data-selected': 'true' }),
 			]),
 		)
 
-		find('.s-test-before').focus()
+		find('.so-test-before').focus()
 		await userEvent.keyboard('{Tab}')
 
-		const button = find('.s-button')
+		const button = find('.so-button')
 
 		expect(document.activeElement).toBe(button)
 		await settled(button)
@@ -458,14 +458,14 @@ describe('Button: выбор в режиме принудительных цве
 					text: 'Выбрано',
 					view: 'none',
 					'data-selected': 'true',
-					class: 's-test-selected',
+					class: 'so-test-selected',
 				}),
-				h(Button, { text: 'Не выбрано', view: 'none', class: 's-test-idle' }),
+				h(Button, { text: 'Не выбрано', view: 'none', class: 'so-test-idle' }),
 			]),
 		)
 
-		const selected = find('.s-test-selected')
-		const idle = find('.s-test-idle')
+		const selected = find('.so-test-selected')
+		const idle = find('.so-test-idle')
 
 		await settled(selected)
 
@@ -494,7 +494,7 @@ describe('строки и теги: выбор', () => {
 				]),
 			)
 
-			const row = find('.s-list-box-item[data-selected="true"] > .s-button')
+			const row = find('.so-list-box-item[data-selected="true"] > .so-button')
 
 			await settled(row)
 
@@ -511,7 +511,7 @@ describe('строки и теги: выбор', () => {
 			]),
 		)
 
-		const option = find('.s-select-item[data-selected="true"] > .s-button')
+		const option = find('.so-select-item[data-selected="true"] > .so-button')
 
 		await settled(option)
 
@@ -527,12 +527,12 @@ describe('строки и теги: выбор', () => {
 			]),
 		)
 
-		const pill = find('.s-tags-item[data-selected="true"]')
+		const pill = find('.so-tags-item[data-selected="true"]')
 
 		await settled(pill)
 
 		expectHighlight(pill)
-		expect(pixel([style(find('.s-tags-item__close', pill)).color])).toEqual(
+		expect(pixel([style(find('.so-tags-item__close', pill)).color])).toEqual(
 			pixel([systemColor('HighlightText')]),
 		)
 	})
@@ -572,7 +572,7 @@ describe.each(VIEWS)('Button, $name: подсветка без выбора', ({
 			h(Button, { text: 'Подсвечено', 'data-highlighted': 'true', ...props }),
 		)
 
-		const button = find('.s-button')
+		const button = find('.so-button')
 
 		await settled(button)
 
@@ -600,7 +600,7 @@ describe.each(VIEWS)('Button, $name: выбор под подсветкой', ({
 			}),
 		)
 
-		const button = find('.s-button')
+		const button = find('.so-button')
 
 		await settled(button)
 
@@ -622,15 +622,15 @@ describe('Button: выбор под подсветкой и под фокусо�
 		await forcedColors('active')
 		await show(scheme, () =>
 			h('div', [
-				h('button', { class: 's-test-before' }, 'До'),
+				h('button', { class: 'so-test-before' }, 'До'),
 				h(Button, { text: 'Выбрано', 'data-selected': 'true', 'data-highlighted': 'true' }),
 			]),
 		)
 
-		find('.s-test-before').focus()
+		find('.so-test-before').focus()
 		await userEvent.keyboard('{Tab}')
 
-		const button = find('.s-button')
+		const button = find('.so-button')
 
 		expect(document.activeElement).toBe(button)
 		expect(button.matches(':focus-visible')).toBe(true)
@@ -667,10 +667,10 @@ describe.each(FRAMED)('Button, $name: рамка', ({ props }) => {
 		await forcedColors('active')
 		await show(scheme, () =>
 			h('div', [
-				h(Button, { text: 'Покой', class: 's-test-idle', ...props }),
+				h(Button, { text: 'Покой', class: 'so-test-idle', ...props }),
 				h(Button, {
 					text: 'Выбрано',
-					class: 's-test-selected',
+					class: 'so-test-selected',
 					'data-selected': 'true',
 					...props,
 				}),
@@ -680,14 +680,14 @@ describe.each(FRAMED)('Button, $name: рамка', ({ props }) => {
 		const frame = (keyword: 'ButtonText' | 'Highlight') =>
 			SIDES.map(() => ['1px', 'solid', pixel([systemColor(keyword)]).join()])
 
-		expect(frameOf(find('.s-test-idle')), 'покой').toEqual(frame('ButtonText'))
-		expect(frameOf(find('.s-test-selected')), 'выбрано').toEqual(frame('Highlight'))
+		expect(frameOf(find('.so-test-idle')), 'покой').toEqual(frame('ButtonText'))
+		expect(frameOf(find('.so-test-selected')), 'выбрано').toEqual(frame('Highlight'))
 	})
 
 	it.each(SCHEMES)('%s: в обычном режиме рамки нет', async (scheme) => {
 		await show(scheme, () => h(Button, { text: 'Покой', ...props }))
 
-		expect(style(find('.s-button')).borderTopWidth).toBe('0px')
+		expect(style(find('.so-button')).borderTopWidth).toBe('0px')
 	})
 })
 
@@ -701,7 +701,7 @@ describe('строка ListBox: рамки нет', () => {
 			]),
 		)
 
-		const rows = [...document.querySelectorAll('.s-list-box-item > .s-button')]
+		const rows = [...document.querySelectorAll('.so-list-box-item > .so-button')]
 
 		expect(rows).toHaveLength(2)
 		expect(rows.map((row) => style(row).borderTopWidth)).toEqual(['0px', '0px'])
@@ -719,7 +719,7 @@ describe.each(VIEWS)('Button, $name: выбор без перехода', ({ pro
 		await forcedColors('active')
 		await show(scheme, () => h(Button, { text: 'Кнопка', ...props }))
 
-		const button = find('.s-button')
+		const button = find('.so-button')
 
 		button.setAttribute('data-selected', 'true')
 
@@ -779,8 +779,8 @@ describe('Switch', () => {
 			await forcedColors('active')
 			await show(scheme, () => h(Switch, props))
 
-			const rail = find('.s-switch__track')
-			const thumb = find('.s-switch__track--thumb')
+			const rail = find('.so-switch__track')
+			const thumb = find('.so-switch__track--thumb')
 
 			const { outlineStyle, outlineWidth, outlineColor, backgroundColor } = style(rail)
 
@@ -800,7 +800,7 @@ describe('Switch', () => {
 	it.each(SCHEMES)('%s: в обычном режиме контура у дорожки нет', async (scheme) => {
 		await show(scheme, () => h(Switch, {}))
 
-		expect(style(find('.s-switch__track')).outlineStyle).toBe('none')
+		expect(style(find('.so-switch__track')).outlineStyle).toBe('none')
 	})
 
 	/**
@@ -812,9 +812,9 @@ describe('Switch', () => {
 		await forcedColors('active')
 		await show(scheme, () => h(Switch, { variant: 'accent' }))
 
-		await userEvent.click(find('.s-switch input'))
+		await userEvent.click(find('.so-switch input'))
 
-		const rail = find('.s-switch__track')
+		const rail = find('.so-switch__track')
 
 		expect(rail.getAnimations(), 'переходы').toEqual([])
 		expect(pixel([style(rail).backgroundColor])).toEqual(pixel([systemColor('Highlight')]))
@@ -847,7 +847,7 @@ describe('Skeleton', () => {
 			await forcedColors('active')
 			await show(scheme, () => h(Skeleton, { width: 120, height: 20, ...props }))
 
-			const placeholder = find('.s-skeleton__placeholder')
+			const placeholder = find('.so-skeleton__placeholder')
 
 			expect(pixel([style(placeholder).backgroundColor])).toEqual(
 				pixel([systemColor('GrayText')]),
@@ -862,14 +862,14 @@ describe('Calendar: выбор дня', () => {
 		await forcedColors('active')
 		await show(scheme, () => h(Calendar, { months: ['2026-09-01'], variant: 'accent' }))
 
-		const days = [...document.querySelectorAll<HTMLElement>('.s-calendar-item')]
+		const days = [...document.querySelectorAll<HTMLElement>('.so-calendar-item')]
 		const target = days[14]
 
 		if (!target) throw new Error('дня нет')
 
 		await userEvent.click(target)
 
-		const day = find('.s-calendar-item[data-selected="true"] > .s-calendar-item__day')
+		const day = find('.so-calendar-item[data-selected="true"] > .so-calendar-item__day')
 
 		expect(day.getAnimations(), 'переходы').toEqual([])
 		expect(pixel([style(day).backgroundColor])).toEqual(pixel([systemColor('Highlight')]))
@@ -885,12 +885,12 @@ describe('Button: подсвеченная под фокусом', () => {
 			h('div', [
 				h(Button, {
 					text: 'Нейтраль',
-					class: 's-test-neutral',
+					class: 'so-test-neutral',
 					'data-highlighted': 'true',
 				}),
 				h(Button, {
 					text: 'Вариант',
-					class: 's-test-variant',
+					class: 'so-test-variant',
 					variant: 'accent',
 					'data-highlighted': 'true',
 				}),
@@ -907,7 +907,7 @@ describe('Button: подсвеченная под фокусом', () => {
 			return OUTLINE.map((property) => style(button).getPropertyValue(property))
 		}
 
-		expect(await outlineOf('.s-test-variant')).toEqual(await outlineOf('.s-test-neutral'))
+		expect(await outlineOf('.so-test-variant')).toEqual(await outlineOf('.so-test-neutral'))
 	})
 })
 
@@ -929,13 +929,13 @@ describe.each(NONE_HIGHLIGHTED)('Button, none, $name', ({ props }) => {
 		await forcedColors('active')
 		await show(scheme, () =>
 			h('div', [
-				h(Button, { text: 'Кнопка', view: 'none', class: 's-test-state', ...props }),
-				h(Button, { text: 'Кнопка', view: 'none', class: 's-test-idle' }),
+				h(Button, { text: 'Кнопка', view: 'none', class: 'so-test-state', ...props }),
+				h(Button, { text: 'Кнопка', view: 'none', class: 'so-test-idle' }),
 			]),
 		)
 
-		const button = find('.s-test-state')
-		const idle = find('.s-test-idle')
+		const button = find('.so-test-state')
+		const idle = find('.so-test-idle')
 
 		await settled(button)
 
@@ -957,8 +957,8 @@ describe.each(NONE_HIGHLIGHTED)('Button, none, $name', ({ props }) => {
 const LISTS = [
 	{
 		name: 'ListBox',
-		rows: '.s-list-box-item > .s-button',
-		focus: '.s-list-box',
+		rows: '.so-list-box-item > .so-button',
+		focus: '.so-list-box',
 		toLast: '{ArrowDown}',
 		markup: () =>
 			h(ListBox, { value: 'b' }, () => [
@@ -969,8 +969,8 @@ const LISTS = [
 	},
 	{
 		name: 'Select',
-		rows: '.s-select-item > .s-button',
-		focus: '.s-select__field input',
+		rows: '.so-select-item > .so-button',
+		focus: '.so-select__field input',
 		toLast: '{ArrowDown}{ArrowDown}',
 		markup: () =>
 			h(Select, { open: true, value: 'b' }, () => [
@@ -1052,9 +1052,9 @@ describe('Tabs: активный таб', () => {
 			),
 		)
 
-	const list = () => find('.s-tabs__list')
-	const active = () => find('.s-tabs-item[data-selected="true"]')
-	const idle = () => find('.s-tabs-item:not([data-selected="true"])')
+	const list = () => find('.so-tabs__list')
+	const active = () => find('.so-tabs-item[data-selected="true"]')
+	const idle = () => find('.so-tabs-item:not([data-selected="true"])')
 	const highlight = () => pixel([systemColor('Highlight')])
 
 	/**
@@ -1115,13 +1115,13 @@ describe('Tabs: активный таб', () => {
 			expect(outlined(idle()), 'до замера, соседняя обёртка').toBe(false)
 
 			await expect
-				.poll(() => find('.s-tabs').classList.contains('s-tabs--ready-animation'))
+				.poll(() => find('.so-tabs').classList.contains('so-tabs--ready-animation'))
 				.toBe(true)
 
 			expect(outlined(list(), '::before'), 'после замера, карточка').toBe(true)
 			expect(pixel([style(list(), '::before').outlineColor])).toEqual(highlight())
 
-			for (const item of document.querySelectorAll('.s-tabs-item')) {
+			for (const item of document.querySelectorAll('.so-tabs-item')) {
 				expect(outlined(item), 'после замера, обёртка').toBe(false)
 			}
 		},

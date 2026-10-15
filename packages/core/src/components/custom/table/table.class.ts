@@ -50,7 +50,7 @@ import type { TTableResizePreview } from './column/types'
  * заголовке.
  */
 export class TTable extends TControl<ITableProps, TTableEvents> implements ITable {
-	static override baseClass = 's-table'
+	static override baseClass = 'so-table'
 
 	static defaultValues: typeof TControl.defaultValues &
 		TDefaultValues<

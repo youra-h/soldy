@@ -37,14 +37,14 @@ const WIDE = 900
 const harness = (width: number, dir?: TLine, props: Record<string, unknown> = {}) =>
 	defineComponent({
 		render() {
-			return h('div', { class: 's-host', dir, style: `width: ${width}px` }, [
+			return h('div', { class: 'so-host', dir, style: `width: ${width}px` }, [
 				h(Scroller, props, () =>
 					ITEMS.map((text) =>
 						h(
 							'span',
 							{
 								key: text,
-								class: 's-test-item',
+								class: 'so-test-item',
 								style: 'padding: 4px 12px; white-space: nowrap',
 							},
 							text,
@@ -64,10 +64,10 @@ const find = (selector: string): HTMLElement => {
 	return element
 }
 
-const root = () => find('.s-scroller')
-const viewport = () => find('.s-scroller__viewport')
-const prev = () => find('.s-scroller__prev')
-const next = () => find('.s-scroller__next')
+const root = () => find('.so-scroller')
+const viewport = () => find('.so-scroller__viewport')
+const prev = () => find('.so-scroller__prev')
+const next = () => find('.so-scroller__next')
 
 /** Признаки для темы — они же то, что намерил плагин. */
 const canPrev = () => root().dataset.canPrev
@@ -208,8 +208,8 @@ describe.each(DIRECTION_CASES)('зеркало темы по ближайшем�
 	it('«назад» смотрит в начало строки, «вперёд» — в конец', async () => {
 		await show()
 
-		expect(pointing('.s-scroller__prev'), '«назад»').toBe(start)
-		expect(pointing('.s-scroller__next'), '«вперёд»').toBe(end)
+		expect(pointing('.so-scroller__prev'), '«назад»').toBe(start)
+		expect(pointing('.so-scroller__next'), '«вперёд»').toBe(end)
 	})
 
 	it('в начале строки гаснет только её конец', async () => {
@@ -288,12 +288,16 @@ describe('прокручиваемая область достижима с кл
 		render(
 			defineComponent({
 				render() {
-					return h('div', { class: 's-host', style: `width: ${NARROW}px` }, [
+					return h('div', { class: 'so-host', style: `width: ${NARROW}px` }, [
 						h(Scroller, null, () =>
 							ITEMS.map((text) =>
 								h(
 									'button',
-									{ key: text, class: 's-test-item', style: 'padding: 4px 12px' },
+									{
+										key: text,
+										class: 'so-test-item',
+										style: 'padding: 4px 12px',
+									},
 									text,
 								),
 							),
@@ -332,14 +336,14 @@ describe('элемент под фокусом не остаётся под по
 	const stops = (dir: 'ltr' | 'rtl') =>
 		defineComponent({
 			render() {
-				return h('div', { class: 's-host', dir, style: `width: ${NARROW}px` }, [
+				return h('div', { class: 'so-host', dir, style: `width: ${NARROW}px` }, [
 					h(Scroller, null, () =>
 						STOPS.map((text) =>
 							h(
 								'button',
 								{
 									key: text,
-									class: 's-test-item',
+									class: 'so-test-item',
 									style: 'padding: 4px 12px; white-space: nowrap',
 								},
 								text,

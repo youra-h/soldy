@@ -30,11 +30,11 @@ export default { ...SetupListBoxItem, components: { Icon, Button } }
 		<!--
 			`dataset` биндится дважды, и это не описка. Тема читает
 			`data-content-fit` с обёртки, а `data-selected` / `data-highlighted`
-			— с `.s-button`: у ListBox состояние размазано по двум элементам,
+			— с `.so-button`: у ListBox состояние размазано по двум элементам,
 			в отличие от Select и Accordion, где всё на обёртке.
 
 			Разложить набор в обе точки дешевле, чем переносить состояние: у
-			`.s-button` подсветка и выбор раскрашены по вариантам, а у элемента
+			`.so-button` подсветка и выбор раскрашены по вариантам, а у элемента
 			списка своих таких правил нет. Приводить разметку к одному носителю
 			— часть задачи про доступность ListBox, там же, где ему добавят
 			`role="option"`. `aria-selected` приходит набором `aria`: его всем
@@ -65,7 +65,7 @@ export default { ...SetupListBoxItem, components: { Icon, Button } }
 			<template #leading>
 				<span
 					v-if="indicator === 'start'"
-					class="s-list-box-item__indicator"
+					class="so-list-box-item__indicator"
 					aria-hidden="true"
 				>
 					<slot name="indicator-icon" :selected="selected">
@@ -88,7 +88,7 @@ export default { ...SetupListBoxItem, components: { Icon, Button } }
 				<slot name="trailing" />
 				<span
 					v-if="indicator === 'end'"
-					class="s-list-box-item__indicator"
+					class="so-list-box-item__indicator"
 					aria-hidden="true"
 				>
 					<slot name="indicator-icon" :selected="selected">

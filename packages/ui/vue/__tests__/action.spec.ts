@@ -189,7 +189,7 @@ describe('press · Enter и пробел из вложенного элемен�
 					<AccordionItem value="a" text="A" @action:press="press" />
 				</Accordion>
 			`,
-			target: '.s-accordion-item__header',
+			target: '.so-accordion-item__header',
 		},
 		'неактивного таба': {
 			template: `

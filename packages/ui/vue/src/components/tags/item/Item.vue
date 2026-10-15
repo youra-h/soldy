@@ -20,7 +20,7 @@ import SetupTagsItem from './setup.component'
  * и выбор обязаны покрывать и кнопку закрытия, а она стоит рядом со строкой.
  * Тема читает вид с класса набора. Строке и крестику вид в разметке не
  * передаётся — значения вида объявляет тема, и части тега она красит по
- * контексту (`.s-tags-item`).
+ * контексту (`.so-tags-item`).
  *
  * `direction` — своё направление письма тега; на корне уже стоит `dir`, но
  * Button — интерактивный элемент со своим DOM-узлом, и для него направление
@@ -103,12 +103,12 @@ export default { ...SetupTagsItem, components: { Icon, Button } }
 			`size` и `disabled` — явно: от строки кнопка их больше не наследует.
 			От размера зависит кегль, от кегля — иконка; выключенный тег
 			выключает и свою кнопку. Место рядом со строкой держит тема
-			(`.s-tags-item`).
+			(`.so-tags-item`).
 		-->
 		<Button
 			embedded="tags.close"
 			:rendered="!!tag_closable"
-			class="s-tags-item__close"
+			class="so-tags-item__close"
 			:disabled="disabled"
 			:size="size"
 			@click.stop="context?.adapters?.tags?.close()"

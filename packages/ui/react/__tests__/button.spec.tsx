@@ -127,7 +127,7 @@ describe('Button · disabled', () => {
 describe('Button · снятый проп', () => {
 	it('снятый text возвращает умолчание — пустую строку', () => {
 		const { target, render } = mountRoot({ text: 'a' })
-		const text = () => root(target).querySelector('.s-button__text')?.textContent
+		const text = () => root(target).querySelector('.so-button__text')?.textContent
 
 		expect(text()).toBe('a')
 
@@ -146,7 +146,7 @@ describe('Button · перерисовка родителя', () => {
 	it('text, сменённый через инстанс, переживает смену другого пропа', () => {
 		const ctrl = new TButton()
 		const { target, render } = mountRoot({ ctrl, text: 'a' })
-		const text = () => root(target).querySelector('.s-button__text')?.textContent
+		const text = () => root(target).querySelector('.so-button__text')?.textContent
 
 		expect(text()).toBe('a')
 

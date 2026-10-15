@@ -6,7 +6,7 @@ import { buildCss } from './build-css'
 /**
  * Колонка целиком в перестановке колонок Table (`reorderPreview: 'column'`,
  * `src/components/table/_table.scss`): тело идёт за заголовками по номеру
- * колонки — правилом на каждый номер, `:nth-child(k of .s-table-row__cell)`.
+ * колонки — правилом на каждый номер, `:nth-child(k of .so-table-row__cell)`.
  *
  * Такое правило умножается на каждую ячейку тела, а браузер сверяет селектор
  * справа налево: с ячейки, и до корня доходит последним. Признак, который
@@ -41,10 +41,10 @@ import { buildCss } from './build-css'
  */
 
 /** Ячейка по номеру колонки — субъект правил тела. */
-const CELL_NTH = '.s-table-row__cell:nth-child('
+const CELL_NTH = '.so-table-row__cell:nth-child('
 
 /** Корень с признаком жеста, тело и строка — вся цепочка предков ячейки. */
-const CELL_CHAIN = '.s-table[data-reorder-preview=column]>.s-table__body>.s-table-row>'
+const CELL_CHAIN = '.so-table[data-reorder-preview=column]>.so-table__body>.so-table-row>'
 
 /** Признак корня в собранном CSS. */
 const FLAG = '[data-reorder-preview=column]'
@@ -148,8 +148,8 @@ function withoutHas(compound: string): string {
  * Компаунд — корень таблицы: её класс в нём самом, в том числе в `:where()` и
  * `:is()`, — или её шапка, а не другой блок с тем же началом имени.
  */
-const isRoot = (compound: string) => /\.s-table(?![\w-])/.test(withoutHas(compound))
-const isHead = (compound: string) => /^\.s-table__head(?![\w-])/.test(compound)
+const isRoot = (compound: string) => /\.so-table(?![\w-])/.test(withoutHas(compound))
+const isHead = (compound: string) => /^\.so-table__head(?![\w-])/.test(compound)
 
 type TDecl = { prop: string; value: string }
 
@@ -162,7 +162,7 @@ postcss.parse(await buildCss()).walkRules((rule) => {
 	)
 
 	for (const selector of rule.selectors) {
-		if (selector.includes('.s-table')) rules.push({ selector, decls })
+		if (selector.includes('.so-table')) rules.push({ selector, decls })
 	}
 })
 
@@ -185,7 +185,7 @@ describe('перестановка колонок Table: правила тела
 	/** Правила ячейки тела с переходом. */
 	const cellTransitions = rules.filter(
 		({ selector, decls }) =>
-			subjectOf(selector).startsWith('.s-table-row__cell') &&
+			subjectOf(selector).startsWith('.so-table-row__cell') &&
 			decls.some(({ prop }) => prop.startsWith('transition')),
 	)
 
@@ -229,7 +229,7 @@ describe('перестановка колонок Table: правила тела
 			.filter(
 				({ selector }) =>
 					!selector.includes(FLAG) ||
-					subjectOf(selector) !== '.s-table__body' ||
+					subjectOf(selector) !== '.so-table__body' ||
 					!hasesOf(selector).some(
 						({ argument, anchor }) =>
 							isHead(anchor) && argument.includes('[data-dragging=true]'),
@@ -275,7 +275,7 @@ describe('перестановка колонок Table: правила тела
 	it('сдвиг, переход и скрытие линии по взятому — не при data-still', () => {
 		const moving = rules.filter(
 			({ selector, decls }) =>
-				selector.includes('.s-table__head-row:has(') &&
+				selector.includes('.so-table__head-row:has(') &&
 				selector.includes('[data-dragging=true]') &&
 				decls.some(
 					({ prop, value }) =>
@@ -297,7 +297,7 @@ describe('Table: у корня нет :has()', () => {
 	/**
 	 * Условие на детей корня браузер проверяет обходом на глубину три — по всем
 	 * строкам и ячейкам тела — на каждом пересчёте стиля корня, и совпадение в
-	 * шапке обход не сокращает. Окно (`.s-table__viewport:has(> .s-table…)`) —
+	 * шапке обход не сокращает. Окно (`.so-table__viewport:has(> .so-table…)`) —
 	 * не корень: под ним одна таблица. Курсор жеста — тоже признак корня
 	 * (`data-resizing`, `data-dragging`), а не условие по заголовкам.
 	 */

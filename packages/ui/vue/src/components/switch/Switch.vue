@@ -32,8 +32,8 @@ export default { ...SetupSwitch }
 			`checked`. `aria-hidden` не пускает содержимое слотов `on` и `off`
 			в доступное имя, которое переключателю даёт подпись.
 		-->
-		<span class="s-switch__track" aria-hidden="true">
-			<span class="s-switch__track--thumb">
+		<span class="so-switch__track" aria-hidden="true">
+			<span class="so-switch__track--thumb">
 				<transition name="fade" mode="out-in">
 					<slot v-if="!value" name="off" :value="value" :ctrl="ctrl"> </slot>
 					<slot v-else name="on" :value="value" :ctrl="ctrl"> </slot>

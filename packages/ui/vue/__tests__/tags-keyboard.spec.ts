@@ -47,7 +47,7 @@ const ABC = `
 
 /** Элемент тега по тексту строки; нет его — тест падает здесь. */
 const item = (text: string, root: ParentNode = document): Element => {
-	const found = [...root.querySelectorAll('.s-tags-item')].find(
+	const found = [...root.querySelectorAll('.so-tags-item')].find(
 		(candidate) => candidate.firstElementChild?.textContent?.trim() === text,
 	)
 
@@ -66,7 +66,7 @@ const row = (text: string, root?: ParentNode): HTMLElement => {
 }
 
 const close = (text: string, root?: ParentNode): HTMLElement => {
-	const found = item(text, root).querySelector('.s-tags-item__close')
+	const found = item(text, root).querySelector('.so-tags-item__close')
 
 	if (!(found instanceof HTMLElement)) throw new Error(`у тега «${text}» нет кнопки закрытия`)
 
@@ -117,7 +117,7 @@ describe('с выбором — одна остановка Tab на весь н
 	it('набор объявляет горизонтальный listbox с множественным выбором', async () => {
 		await render(`<Tags mode="multiple">${ABC}</Tags>`)
 
-		const set = document.querySelector('.s-tags')
+		const set = document.querySelector('.so-tags')
 
 		expect(set?.getAttribute('role')).toBe('listbox')
 		expect(set?.getAttribute('aria-orientation')).toBe('horizontal')
@@ -139,7 +139,7 @@ describe('без выбора строки Tab не ловят, крестик �
 			false,
 			false,
 		])
-		expect(document.querySelector('.s-tags')?.hasAttribute('aria-orientation')).toBe(false)
+		expect(document.querySelector('.so-tags')?.hasAttribute('aria-orientation')).toBe(false)
 	})
 
 	it('теги в поле Select — так же', async () => {
@@ -155,7 +155,7 @@ describe('без выбора строки Tab не ловят, крестик �
 		await nextTick()
 		await nextFrame()
 
-		const field = document.querySelector('.s-select__tags')
+		const field = document.querySelector('.so-select__tags')
 
 		if (!field) throw new Error('тегов в поле нет')
 
@@ -245,7 +245,7 @@ describe('клавиатура', () => {
 		press(row('B'), 'Delete')
 		await nextTick()
 
-		expect([...document.querySelectorAll('.s-tags-item')]).toHaveLength(2)
+		expect([...document.querySelectorAll('.so-tags-item')]).toHaveLength(2)
 		expect(document.activeElement).toBe(row('C'))
 		expect(rowTabindex(['A', 'C'])).toEqual(['-1', '0'])
 	})

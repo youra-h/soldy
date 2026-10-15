@@ -16,7 +16,7 @@ import { compile } from 'sass'
  * модификатора (`filled`, `line`, `rounded`, `pulse`), правило не нужно.
  *
  * Модификаторы берутся из собранного Sass, а не из исходников: часть правил
- * порождают циклы и миксины (`.s-button--view-#{$view}`), и в тексте файла
+ * порождают циклы и миксины (`.so-button--view-#{$view}`), и в тексте файла
  * имени целиком нет. `@apply` Sass пропускает как есть — Tailwind здесь не
  * нужен.
  */
@@ -31,12 +31,15 @@ const INDEX_DTS = fileURLToPath(new URL('../index.d.ts', import.meta.url))
  */
 const REGISTRIES: Record<string, { modifier: string; blocks: readonly string[] | null }> = {
 	IComponentVariants: { modifier: 'variant', blocks: null },
-	IButtonViews: { modifier: 'view', blocks: ['s-button', 's-list-box', 's-accordion', 's-tags'] },
-	ITabsViews: { modifier: 'view', blocks: ['s-tabs'] },
-	ICheckBoxViews: { modifier: 'view', blocks: ['s-check-box'] },
-	IRadioGroupViews: { modifier: 'view', blocks: ['s-radio-group-item'] },
-	ISkeletonShapes: { modifier: 'shape', blocks: ['s-skeleton'] },
-	ISkeletonAnimations: { modifier: 'animation', blocks: ['s-skeleton'] },
+	IButtonViews: {
+		modifier: 'view',
+		blocks: ['so-button', 'so-list-box', 'so-accordion', 'so-tags'],
+	},
+	ITabsViews: { modifier: 'view', blocks: ['so-tabs'] },
+	ICheckBoxViews: { modifier: 'view', blocks: ['so-check-box'] },
+	IRadioGroupViews: { modifier: 'view', blocks: ['so-radio-group-item'] },
+	ISkeletonShapes: { modifier: 'shape', blocks: ['so-skeleton'] },
+	ISkeletonAnimations: { modifier: 'animation', blocks: ['so-skeleton'] },
 }
 
 /** Реестры из `index.d.ts`: имя интерфейса → объявленные значения. */
@@ -55,7 +58,7 @@ function declaredRegistries(): Map<string, Set<string>> {
 function usedModifiers(): { selector: string; block: string; modifier: string; value: string }[] {
 	const css = compile(INDEX_SCSS).css.replace(/\/\*[\s\S]*?\*\//g, '')
 	const pattern =
-		/\.(s-[a-z0-9]+(?:-[a-z0-9]+)*)--(variant|view|shape|animation)-([a-z0-9]+(?:-[a-z0-9]+)*)/g
+		/\.(so-[a-z0-9]+(?:-[a-z0-9]+)*)--(variant|view|shape|animation)-([a-z0-9]+(?:-[a-z0-9]+)*)/g
 	const unique = new Map<string, { block: string; modifier: string; value: string }>()
 
 	for (const [selector, block, modifier, value] of css.matchAll(pattern)) {

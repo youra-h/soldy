@@ -34,13 +34,13 @@ export const BUTTON_SLOTS: readonly TScenario[] = [
 		props: { text: 'Метка' },
 		run: async (ctx) => {
 			const probe = (slot: string) =>
-				ctx.scene.querySelector(`.s-button [data-probe="${slot}"]`)
+				ctx.scene.querySelector(`.so-button [data-probe="${slot}"]`)
 			const [leading, main, trailing] = SLOTS.map(probe)
 			const missing = SLOTS.filter((slot) => !probe(slot))
 
 			ctx.check(
 				!missing.length,
-				`все три слота внутри .s-button (нет: ${missing.join(', ') || '—'})`,
+				`все три слота внутри .so-button (нет: ${missing.join(', ') || '—'})`,
 			)
 
 			if (leading && main && trailing) {
@@ -51,8 +51,8 @@ export const BUTTON_SLOTS: readonly TScenario[] = [
 			}
 
 			ctx.check(
-				Boolean(main?.closest('.s-button__text')),
-				'default — внутри .s-button__text, иконочные слоты — снаружи',
+				Boolean(main?.closest('.so-button__text')),
+				'default — внутри .so-button__text, иконочные слоты — снаружи',
 			)
 			ctx.check(
 				main?.textContent === 'Метка',

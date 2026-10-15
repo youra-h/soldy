@@ -322,16 +322,16 @@ describe('плагин: фокус в ленте', () => {
 	async function mount(style = 'scroll-padding-left: 20px; scroll-padding-right: 20px') {
 		document.body.insertAdjacentHTML(
 			'beforeend',
-			`<div class="s-scroller">
-				<div class="s-scroller__viewport" style="${style}">
+			`<div class="so-scroller">
+				<div class="so-scroller__viewport" style="${style}">
 					<button class="first">Первый</button>
 					<span class="item"><button class="inner">Второй</button></span>
 				</div>
 			</div>`,
 		)
 
-		const root = nodeOf('.s-scroller')
-		const viewport = nodeOf('.s-scroller__viewport')
+		const root = nodeOf('.so-scroller')
+		const viewport = nodeOf('.so-scroller__viewport')
 		const scrollBy = vi.fn()
 
 		place(viewport, 0, 200)

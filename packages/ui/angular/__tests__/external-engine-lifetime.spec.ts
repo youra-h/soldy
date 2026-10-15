@@ -117,7 +117,7 @@ describe('ListBox над движком и владельцем снаружи',
 			const host: HTMLElement = fixture.nativeElement
 
 			// Смонтирован по-настоящему: элементы на месте
-			expect(host.querySelectorAll('.s-list-box-item')).toHaveLength(ITEMS.length)
+			expect(host.querySelectorAll('.so-list-box-item')).toHaveLength(ITEMS.length)
 
 			fixture.destroy()
 		}

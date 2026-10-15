@@ -44,7 +44,7 @@ const TopStartHarness = defineComponent({
 				'button',
 				{
 					ref: 'anchor',
-					class: 's-test-anchor',
+					class: 'so-test-anchor',
 					style: 'width: 80px; height: 32px',
 					onClick: () => {
 						this.open = true
@@ -60,7 +60,7 @@ const TopStartHarness = defineComponent({
 							position: 'fixed',
 							anchor_anchor: this.anchorEl,
 							anchor_placement: 'top-start',
-							class: 's-test-panel',
+							class: 'so-test-panel',
 						},
 						{
 							default: () =>
@@ -86,7 +86,7 @@ const ResizableAnchorHarness = defineComponent({
 				'button',
 				{
 					ref: 'anchor',
-					class: 's-test-anchor',
+					class: 'so-test-anchor',
 					style: `width: ${this.wide ? 260 : 120}px; height: 32px`,
 					onClick: () => {
 						this.wide = !this.wide
@@ -103,7 +103,7 @@ const ResizableAnchorHarness = defineComponent({
 							anchor_anchor: this.anchorEl,
 							anchor_placement: 'bottom-start',
 							anchor_matchWidth: true,
-							class: 's-test-panel',
+							class: 'so-test-panel',
 						},
 						{ default: () => h('div', { style: 'height: 40px' }, 'panel') },
 					)
@@ -133,7 +133,7 @@ const PaddedAnchorHarness = defineComponent({
 				'button',
 				{
 					ref: 'anchor',
-					class: 's-test-anchor',
+					class: 'so-test-anchor',
 					style: [
 						'box-sizing: content-box; width: 120px; height: 32px',
 						`padding: ${this.thick ? 20 : 0}px`,
@@ -154,7 +154,7 @@ const PaddedAnchorHarness = defineComponent({
 							anchor_anchor: this.anchorEl,
 							anchor_placement: 'bottom-start',
 							anchor_matchWidth: true,
-							class: 's-test-panel',
+							class: 'so-test-panel',
 						},
 						{ default: () => h('div', { style: 'height: 40px' }, 'panel') },
 					)
@@ -180,7 +180,7 @@ const WrappingPanelHarness = defineComponent({
 				'button',
 				{
 					ref: 'anchor',
-					class: 's-test-anchor',
+					class: 'so-test-anchor',
 					style: `width: ${this.narrow ? 120 : 360}px; height: 32px`,
 					onClick: () => {
 						this.narrow = true
@@ -197,7 +197,7 @@ const WrappingPanelHarness = defineComponent({
 							anchor_anchor: this.anchorEl,
 							anchor_placement: 'top-start',
 							anchor_matchWidth: true,
-							class: 's-test-panel',
+							class: 'so-test-panel',
 						},
 						{ default: () => h('div', 'один два три четыре пять шесть семь') },
 					)
@@ -221,7 +221,7 @@ const RtlHarness = defineComponent({
 			[
 				h(
 					'button',
-					{ ref: 'anchor', class: 's-test-anchor', style: 'width: 200px; height: 32px' },
+					{ ref: 'anchor', class: 'so-test-anchor', style: 'width: 200px; height: 32px' },
 					'anchor',
 				),
 				this.anchorEl
@@ -232,7 +232,7 @@ const RtlHarness = defineComponent({
 								position: 'fixed',
 								anchor_anchor: this.anchorEl,
 								anchor_placement: 'bottom-start',
-								class: 's-test-panel',
+								class: 'so-test-panel',
 							},
 							{
 								default: () =>
@@ -266,7 +266,7 @@ const centerHarness = (dir: 'ltr' | 'rtl') =>
 						'button',
 						{
 							ref: 'anchor',
-							class: 's-test-anchor',
+							class: 'so-test-anchor',
 							style: 'width: 200px; height: 32px',
 						},
 						'anchor',
@@ -279,7 +279,7 @@ const centerHarness = (dir: 'ltr' | 'rtl') =>
 									position: 'fixed',
 									anchor_anchor: this.anchorEl,
 									anchor_placement: 'top',
-									class: 's-test-panel',
+									class: 'so-test-panel',
 								},
 								{
 									default: () =>
@@ -313,7 +313,7 @@ const RightEdgeHarness = defineComponent({
 			h('div', { style: 'display: flex; justify-content: flex-end; padding-top: 100px' }, [
 				h(
 					'button',
-					{ ref: 'anchor', class: 's-test-anchor', style: 'width: 80px; height: 32px' },
+					{ ref: 'anchor', class: 'so-test-anchor', style: 'width: 80px; height: 32px' },
 					'anchor',
 				),
 			]),
@@ -326,7 +326,7 @@ const RightEdgeHarness = defineComponent({
 							position: 'fixed',
 							anchor_anchor: this.anchorEl,
 							anchor_placement: 'bottom-start',
-							class: 's-test-panel',
+							class: 'so-test-panel',
 						},
 						{
 							default: () =>
@@ -365,8 +365,8 @@ const selectAtTop = (placement?: TSelectPlacement) => ({
 	render: () => h('div', { style: 'width: 320px' }, [selectWith(placement)]),
 })
 
-const panel = () => document.querySelector('.s-test-panel') as HTMLElement
-const anchor = () => document.querySelector('.s-test-anchor') as HTMLElement
+const panel = () => document.querySelector('.so-test-panel') as HTMLElement
+const anchor = () => document.querySelector('.so-test-anchor') as HTMLElement
 
 beforeEach(() => {
 	// Тема читается с корня документа — тот же атрибут, что в `index.html`.
@@ -405,9 +405,9 @@ describe('измерение панели', () => {
 })
 
 describe('flip', () => {
-	const arrow = () => document.querySelector('.s-select__arrow') as HTMLElement
-	const field = () => document.querySelector('.s-select__field input') as HTMLElement
-	const selectPanel = () => document.querySelector('.s-select__panel') as HTMLElement
+	const arrow = () => document.querySelector('.so-select__arrow') as HTMLElement
+	const field = () => document.querySelector('.so-select__field input') as HTMLElement
+	const selectPanel = () => document.querySelector('.so-select__panel') as HTMLElement
 
 	it('Select у низа окна открывается вверх', async () => {
 		render(selectAtBottom())

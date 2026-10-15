@@ -42,7 +42,7 @@ const mountHarness = async (fit?: string) => {
 }
 
 const contentFit = () =>
-	document.querySelector('.s-list-box-item')?.getAttribute('data-content-fit')
+	document.querySelector('.so-list-box-item')?.getAttribute('data-content-fit')
 
 describe('ListBox.Item: снятый content-fit возвращает значение списка', () => {
 	it('задан после монтирования, потом снят', async () => {

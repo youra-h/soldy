@@ -12,12 +12,12 @@ describe('TStylable', () => {
 
 		stylable.size = 'xl'
 		expect(sizeHandler).toHaveBeenCalledWith({ newValue: 'xl', oldValue: 'normal' })
-		expect(stylable.classes.toArray()).toContain('s-component-view--size-xl')
+		expect(stylable.classes.toArray()).toContain('so-component-view--size-xl')
 
 		stylable.variant = 'brand'
 		expect(variantHandler).toHaveBeenCalledWith({ newValue: 'brand', oldValue: 'danger' })
-		expect(stylable.classes.toArray()).toContain('s-component-view--variant-brand')
-		expect(stylable.classes.toArray()).not.toContain('s-component-view--variant-danger')
+		expect(stylable.classes.toArray()).toContain('so-component-view--variant-brand')
+		expect(stylable.classes.toArray()).not.toContain('so-component-view--variant-danger')
 	})
 
 	/**
@@ -34,7 +34,7 @@ describe('TStylable', () => {
 		expect(variantClasses()).toEqual([])
 
 		stylable.variant = 'brand'
-		expect(variantClasses()).toEqual(['s-component-view--variant-brand'])
+		expect(variantClasses()).toEqual(['so-component-view--variant-brand'])
 
 		stylable.variant = undefined
 		expect(variantClasses()).toEqual([])
@@ -55,7 +55,7 @@ describe('TStylable', () => {
 		stylable.size = '2xl'
 
 		expect(stylable.size).toBe('xl')
-		expect(stylable.classes.toArray()).toContain('s-component-view--size-xl')
-		expect(stylable.classes.toArray()).not.toContain('s-component-view--size-normal')
+		expect(stylable.classes.toArray()).toContain('so-component-view--size-xl')
+		expect(stylable.classes.toArray()).not.toContain('so-component-view--size-normal')
 	})
 })

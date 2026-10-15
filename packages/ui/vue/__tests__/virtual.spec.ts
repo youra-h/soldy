@@ -54,14 +54,14 @@ function engineOf(count: number): TListBoxCollection {
 	return createEngineListBox({ items: items(count) })
 }
 
-const options = (root: ParentNode = document) => [...root.querySelectorAll('.s-list-box-item')]
+const options = (root: ParentNode = document) => [...root.querySelectorAll('.so-list-box-item')]
 const fillers = (root: ParentNode = document) => [
-	...root.querySelectorAll<HTMLElement>('.s-list-box__filler'),
+	...root.querySelectorAll<HTMLElement>('.so-list-box__filler'),
 ]
 
 /** Строка элемента: на ней набор `aria` элемента. */
 function optionRow(text: string): HTMLElement {
-	const row = [...document.querySelectorAll<HTMLElement>('.s-list-box-item > .s-button')].find(
+	const row = [...document.querySelectorAll<HTMLElement>('.so-list-box-item > .so-button')].find(
 		(node) => node.textContent?.trim() === text,
 	)
 
@@ -94,7 +94,7 @@ describe('ListBox в окне', () => {
 		engine.extensions.draw.notifyViewport({ top: 3000, bottom: 3300, step: 30 })
 		await settle()
 
-		const root = document.querySelector('.s-list-box')
+		const root = document.querySelector('.so-list-box')
 
 		if (!root) throw new Error('списка нет')
 
@@ -173,14 +173,14 @@ describe('ListBox в окне', () => {
  * `display`, и опции в ней смонтированы с первой отрисовки.
  */
 describe('Select в окне', () => {
-	const selectOptions = () => [...document.querySelectorAll('.s-select__list .s-select-item')]
-	const selectFillers = () => [...document.querySelectorAll<HTMLElement>('.s-select__filler')]
+	const selectOptions = () => [...document.querySelectorAll('.so-select__list .so-select-item')]
+	const selectFillers = () => [...document.querySelectorAll<HTMLElement>('.so-select__filler')]
 
 	/** Строка опции: на ней набор `aria` опции. */
 	function selectRow(text: string): HTMLElement {
-		const row = [...document.querySelectorAll<HTMLElement>('.s-select-item > .s-button')].find(
-			(node) => node.textContent?.trim() === text,
-		)
+		const row = [
+			...document.querySelectorAll<HTMLElement>('.so-select-item > .so-button'),
+		].find((node) => node.textContent?.trim() === text)
 
 		if (!row) throw new Error(`${text}: строки нет`)
 
@@ -216,7 +216,7 @@ describe('Select в окне', () => {
 		engine.extensions.draw.notifyViewport({ top: 3000, bottom: 3300, step: 30 })
 		await settle()
 
-		const list = document.querySelector('.s-select__list')
+		const list = document.querySelector('.so-select__list')
 
 		if (!list) throw new Error('списка нет')
 

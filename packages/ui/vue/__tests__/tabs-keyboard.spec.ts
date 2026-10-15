@@ -70,7 +70,7 @@ describe('одна остановка Tab на весь список', () => {
 	it('кнопка закрытия — не остановка Tab', async () => {
 		await render(`<Tabs closable>${ABC}</Tabs>`)
 
-		const closes = [...document.querySelectorAll('.s-tabs-item__close')]
+		const closes = [...document.querySelectorAll('.so-tabs-item__close')]
 
 		expect(closes).toHaveLength(3)
 		expect(closes.every((close) => close.getAttribute('tabindex') === '-1')).toBe(true)
@@ -81,7 +81,7 @@ describe('список табов', () => {
 	it('tablist объявляет ориентацию и имя из aria_label', async () => {
 		await render(`<Tabs orientation="vertical" aria_label="Разделы">${ABC}</Tabs>`)
 
-		const list = document.querySelector('.s-tabs__list')
+		const list = document.querySelector('.so-tabs__list')
 
 		expect(list?.getAttribute('role')).toBe('tablist')
 		expect(list?.getAttribute('aria-orientation')).toBe('vertical')
@@ -91,7 +91,7 @@ describe('список табов', () => {
 	it('корень ARIA списка не получает — рядом со списком лежат панели', async () => {
 		await render(`<Tabs aria_label="Разделы">${ABC}</Tabs>`)
 
-		const root = document.querySelector('.s-tabs')
+		const root = document.querySelector('.so-tabs')
 
 		expect(root?.hasAttribute('role')).toBe(false)
 		expect(root?.hasAttribute('aria-label')).toBe(false)

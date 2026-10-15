@@ -62,12 +62,12 @@ async function mountCalendar(props: Partial<ICalendarProps> = {}, mode?: TCalend
 	const title = document.createElement('div')
 	const filler = document.createElement('div')
 
-	prev.className = 's-calendar__prev'
-	next.className = 's-calendar__next'
-	prev.innerHTML = '<svg class="s-test-icon"></svg>'
-	next.innerHTML = '<svg class="s-test-icon"></svg>'
+	prev.className = 'so-calendar__prev'
+	next.className = 'so-calendar__next'
+	prev.innerHTML = '<svg class="so-test-icon"></svg>'
+	next.innerHTML = '<svg class="so-test-icon"></svg>'
 	title.textContent = 'September 2026'
-	filler.className = 's-calendar__filler'
+	filler.className = 'so-calendar__filler'
 	root.append(prev, next, title, filler)
 	document.body.appendChild(root)
 
@@ -87,7 +87,7 @@ async function mountCalendar(props: Partial<ICalendarProps> = {}, mode?: TCalend
 		const tile = document.createElement('div')
 
 		cell.dataset.date = item.date
-		tile.className = 's-test-tile'
+		tile.className = 'so-test-tile'
 		tile.textContent = item.text
 		cell.appendChild(tile)
 		root.appendChild(cell)
@@ -103,7 +103,7 @@ async function mountCalendar(props: Partial<ICalendarProps> = {}, mode?: TCalend
 
 	/** Плитка дня по дате — самый глубокий узел ячейки, куда и попадает указатель. */
 	const tileOf = (date: string): HTMLElement => {
-		const node = root.querySelector(`[data-date="${date}"] .s-test-tile`)
+		const node = root.querySelector(`[data-date="${date}"] .so-test-tile`)
 
 		if (!(node instanceof HTMLElement)) throw new Error(`дня ${date} нет`)
 
@@ -147,17 +147,17 @@ function pickerPanel(root: Element, heading: string) {
 	const title = document.createElement('button')
 	const next = document.createElement('button')
 
-	backdrop.className = 's-popover__panel'
-	handle.className = 's-popover__handle'
-	content.className = 's-popover__content'
-	card.className = 's-calendar__picker'
-	list.className = 's-calendar__picker-list'
-	header.className = 's-calendar__picker-header'
-	prev.className = 's-calendar__picker-prev'
-	prev.innerHTML = '<svg class="s-test-icon"></svg>'
-	title.className = 's-calendar__picker-heading'
+	backdrop.className = 'so-popover__panel'
+	handle.className = 'so-popover__handle'
+	content.className = 'so-popover__content'
+	card.className = 'so-calendar__picker'
+	list.className = 'so-calendar__picker-list'
+	header.className = 'so-calendar__picker-header'
+	prev.className = 'so-calendar__picker-prev'
+	prev.innerHTML = '<svg class="so-test-icon"></svg>'
+	title.className = 'so-calendar__picker-heading'
 	title.id = heading
-	next.className = 's-calendar__picker-next'
+	next.className = 'so-calendar__picker-next'
 	header.append(prev, title, next)
 	card.append(list, header)
 	content.appendChild(card)
@@ -201,7 +201,7 @@ describe('нажатие', () => {
 		const setup = await mountCalendar()
 
 		setup.next
-			.querySelector('.s-test-icon')
+			.querySelector('.so-test-icon')
 			?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
 		expect(setup.view.months).toEqual(['2026-10-01'])
 
@@ -262,7 +262,7 @@ describe('панель выбора месяца и года', () => {
 		expect(heading(setup)).toBe('2027')
 
 		setup.prev
-			.querySelector('.s-test-icon')
+			.querySelector('.so-test-icon')
 			?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
 
 		expect(heading(setup)).toBe('2026')

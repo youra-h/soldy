@@ -108,12 +108,12 @@ describe('ref корня после размонтирования не держ
 
 		await nextFrame()
 
-		const rows = [...container.querySelectorAll('.s-table-row')]
+		const rows = [...container.querySelectorAll('.so-table-row')]
 
 		// Замена по ключу: строки те же и получают новые записи
 		render(view(40))
 
-		const replaced = [...container.querySelectorAll('.s-table-row')]
+		const replaced = [...container.querySelectorAll('.so-table-row')]
 
 		expect(replaced).toHaveLength(2)
 		replaced.forEach((row, index) => expect(row).toBe(rows[index]))

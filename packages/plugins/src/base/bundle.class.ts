@@ -25,7 +25,7 @@ export class TPluginBundle implements IPluginBundle {
 		mountId?: string,
 		locale?: ILocaleSource,
 	) {
-		this._mountId = mountId || `s-${++unnamedMounts}`
+		this._mountId = mountId || `so-${++unnamedMounts}`
 		// Без провайдера — своя английская: источник у набора свой, а не общий
 		// на процесс, и сменить её некому
 		this.locale = locale ?? new TLocaleSource(enUS)

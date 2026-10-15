@@ -3,8 +3,8 @@
  * варианта набора, свой вариант тега — поверх набора.
  *
  * Вариант набора тегу не доставляется (`core/__tests__/collection-style-inherit.spec.ts`):
- * тема красит им тег по классу набора (`s-tags--variant-<v>`), а свой
- * модификатор тега (`s-tags-item--variant-<v>`) сильнее. Переменные цвета
+ * тема красит им тег по классу набора (`so-tags--variant-<v>`), а свой
+ * модификатор тега (`so-tags-item--variant-<v>`) сильнее. Переменные цвета
  * стоят на самом теге (`button-tones`), а правило набора достаёт до тега на
  * любой глубине: в `wrap` и `scroll` тег — ребёнок набора, а своя раскладка в
  * слоте `default` ставит его глубже, в свою обёртку. Свой `normal` у тега —
@@ -41,7 +41,7 @@ const TAGS: ReadonlyArray<{ text: string; variant?: TVariant }> = [
 ]
 
 /** Класс эталонной кнопки варианта. */
-const referenceOf = (variant: TVariant) => `s-test-reference-${variant ?? 'none'}`
+const referenceOf = (variant: TVariant) => `so-test-reference-${variant ?? 'none'}`
 
 /**
  * Своя раскладка в слоте `default`: теги не прямыми детьми набора, а в своей
@@ -50,7 +50,7 @@ const referenceOf = (variant: TVariant) => `s-test-reference-${variant ?? 'none'
 const ownRow = ({ shown }: { shown: ITagsItem[] }) =>
 	h(
 		'div',
-		{ class: 's-test-own', style: 'display: flex; gap: 4px' },
+		{ class: 'so-test-own', style: 'display: flex; gap: 4px' },
 		shown.map((item) => h(TagsItem, { key: item.uid, ctrl: item })),
 	)
 
@@ -67,7 +67,7 @@ const harness = (
 	defineComponent({
 		render() {
 			return h('div', [
-				h('div', { class: 's-test-away', style: 'height: 24px' }),
+				h('div', { class: 'so-test-away', style: 'height: 24px' }),
 				h(
 					'div',
 					VARIANTS.map((variant) =>
@@ -111,9 +111,9 @@ const ownOf = (item: Element): TVariant => {
 
 /** Каждый тег документа — цвета кнопки своего варианта, а без своего — варианта набора. */
 const expectTagsLikeReferences = async (set: TVariant) => {
-	await userEvent.hover(find('.s-test-away'))
+	await userEvent.hover(find('.so-test-away'))
 
-	const items = [...document.querySelectorAll('.s-tags-item')]
+	const items = [...document.querySelectorAll('.so-tags-item')]
 
 	expect(items).toHaveLength(TAGS.length)
 
@@ -139,7 +139,7 @@ it('эталонные кнопки вариантов разного цвета
 	render(harness(640, {}))
 
 	const fills = [undefined, 'accent', 'negative'].map(
-		(variant) => style(find(`.s-test-reference-${variant ?? 'none'}`)).backgroundColor,
+		(variant) => style(find(`.so-test-reference-${variant ?? 'none'}`)).backgroundColor,
 	)
 
 	expect(new Set(fills).size).toBe(fills.length)
@@ -173,11 +173,11 @@ describe('своя раскладка в слоте', () => {
 	it('теги в своей обёртке — тех же цветов, что прямо в наборе', async () => {
 		render(harness(640, { variant: 'accent' }, { default: ownRow }))
 
-		const own = [...find('.s-test-own').children]
+		const own = [...find('.so-test-own').children]
 
 		// Теги — в обёртке, а не детьми набора: иначе сверка ниже пуста
 		expect(own).toHaveLength(TAGS.length)
-		expect(own.every((item) => item.classList.contains('s-tags-item'))).toBe(true)
+		expect(own.every((item) => item.classList.contains('so-tags-item'))).toBe(true)
 
 		await expectTagsLikeReferences('accent')
 	})

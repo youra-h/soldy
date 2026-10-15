@@ -78,9 +78,9 @@ beforeEach(async () => {
 
 describe('хост Angular', () => {
 	it.each([
-		['button', '.s-button'],
-		['icon', '.s-icon'],
-		['skeleton', '.s-skeleton'],
+		['button', '.so-button'],
+		['icon', '.so-icon'],
+		['skeleton', '.so-skeleton'],
 	])('%s стоит в ячейке так же, как у Vue', async (component, selector) => {
 		const vue = await boxOf('vue', component, selector)
 		const angular = await boxOf('angular', component, selector)

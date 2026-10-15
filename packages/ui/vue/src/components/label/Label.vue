@@ -15,8 +15,8 @@ export default { ...SetupLabel }
 	>
 		<!--
 			Подпись контрола. Корень рисуется по `tag`, по умолчанию `label`.
-			Модификаторы `s-label--position-*`, `s-label--size-*` и
-			`s-label--variant-*` — на корне: тема читает всё отсюда.
+			Модификаторы `so-label--position-*`, `so-label--size-*` и
+			`so-label--variant-*` — на корне: тема читает всё отсюда.
 
 			Связки через `for` и `id` нет: контрол — первый labelable-потомок
 			`label`, поэтому клик по тексту переключает его, а текст становится
@@ -35,13 +35,13 @@ export default { ...SetupLabel }
 			забытый тег ловит плагин подписи). Обёртка выравнивает контрол по
 			первой строке текста.
 		-->
-		<span class="s-label__control"><slot /></span>
+		<span class="so-label__control"><slot /></span>
 		<!--
 			Текст — слот `content`, запасное содержимое — проп `text`. Вокруг
 			слота и запасного текста нет пробелов: пустую обёртку тема прячет
 			по `:empty`.
 		-->
-		<span class="s-label__text"
+		<span class="so-label__text"
 			><slot name="content">{{ text }}</slot></span
 		>
 	</component>

@@ -22,7 +22,7 @@ const variantClasses = (el: HTMLElement) =>
 	[...el.classList].filter((name) => name.includes('--variant-'))
 
 /** Заглушка корня, если она в нём есть. */
-const placeholder = (el: HTMLElement) => el.querySelector(':scope > .s-skeleton__placeholder')
+const placeholder = (el: HTMLElement) => el.querySelector(':scope > .so-skeleton__placeholder')
 
 function isSkeleton(node: Element | null): node is TSkeletonElementProps {
 	return node instanceof TSkeletonElement
@@ -62,7 +62,7 @@ describe('Skeleton · variant', () => {
 		el.variant = 'brand'
 		document.body.appendChild(el)
 
-		expect(variantClasses(el)).toEqual(['s-skeleton--variant-brand'])
+		expect(variantClasses(el)).toEqual(['so-skeleton--variant-brand'])
 		expect(el.hasAttribute('variant')).toBe(false)
 	})
 
@@ -72,7 +72,7 @@ describe('Skeleton · variant', () => {
 		el.variant = 'danger'
 		await flush()
 
-		expect(variantClasses(el)).toEqual(['s-skeleton--variant-danger'])
+		expect(variantClasses(el)).toEqual(['so-skeleton--variant-danger'])
 	})
 })
 
@@ -81,7 +81,7 @@ describe('Skeleton · заглушка и содержимое', () => {
 		const el = mount('<div is="so-skeleton"><b>Данные</b></div>')
 
 		expect([...el.children].map((child) => child.localName)).toEqual(['div', 'b'])
-		expect(el.firstElementChild?.className).toBe('s-skeleton__placeholder')
+		expect(el.firstElementChild?.className).toBe('so-skeleton__placeholder')
 		expect(el.firstElementChild?.getAttribute('aria-hidden')).toBe('true')
 		// Пока заглушка показана, область занята
 		expect(el.getAttribute('aria-busy')).toBe('true')

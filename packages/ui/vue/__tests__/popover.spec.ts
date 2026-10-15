@@ -56,15 +56,15 @@ const triggerOf =
 /** Поповер между двумя кнопками страницы — чтобы было откуда прийти и куда уйти по Tab. */
 const page = (props: Partial<IPopoverProps> & Record<string, unknown> = {}, content = inside) =>
 	h('div', [
-		h('button', { class: 's-test-before' }, 'До'),
-		h(Popover, props, { trigger: triggerOf('Открыть', 's-test-trigger'), default: content }),
-		h('button', { class: 's-test-after' }, 'После'),
+		h('button', { class: 'so-test-before' }, 'До'),
+		h(Popover, props, { trigger: triggerOf('Открыть', 'so-test-trigger'), default: content }),
+		h('button', { class: 'so-test-after' }, 'После'),
 	])
 
 /** Содержимое с двумя остановками Tab. */
 const inside = () => [
-	h('button', { class: 's-test-first' }, 'Первая'),
-	h('button', { class: 's-test-second' }, 'Вторая'),
+	h('button', { class: 'so-test-first' }, 'Первая'),
+	h('button', { class: 'so-test-second' }, 'Вторая'),
 ]
 
 /** Узел по селектору; нет его — тест падает здесь, а не на чтении свойства. */
@@ -76,8 +76,8 @@ function find(selector: string, scope: ParentNode = document): HTMLElement {
 	return element
 }
 
-const trigger = () => find('.s-test-trigger')
-const panel = (scope: ParentNode = document) => find('.s-popover__panel', scope)
+const trigger = () => find('.so-test-trigger')
+const panel = (scope: ParentNode = document) => find('.so-popover__panel', scope)
 const isOpen = (element: HTMLElement = panel()) => element.style.display !== 'none'
 
 /** Нажатие мышью — `pointerdown`, как его слушает плагин оверлея. */
@@ -112,7 +112,7 @@ describe('разметка', () => {
 	it('корень — span с триггером, панель телепортирована в body и скрыта', async () => {
 		await render(() => page())
 
-		const root = find('.s-popover')
+		const root = find('.so-popover')
 
 		expect(root.localName).toBe('span')
 		expect(root.contains(trigger())).toBe(true)
@@ -129,7 +129,7 @@ describe('разметка', () => {
 	it('contained: панель в корне, без телепорта и координат; нажатие в ней не закрывает', async () => {
 		await render(() => page({ contained: true }))
 
-		const root = find('.s-popover')
+		const root = find('.so-popover')
 
 		expect(root.contains(panel())).toBe(true)
 		expect(panel().dataset.contained).toBe('true')
@@ -140,9 +140,9 @@ describe('разметка', () => {
 		await open()
 
 		expect(isOpen()).toBe(true)
-		expect(document.activeElement).toBe(find('.s-test-first'))
+		expect(document.activeElement).toBe(find('.so-test-first'))
 
-		await click(find('.s-test-first'))
+		await click(find('.so-test-first'))
 
 		expect(isOpen()).toBe(true)
 	})
@@ -161,7 +161,7 @@ describe('разметка', () => {
 		await render(() => page())
 		await open()
 
-		const root = find('.s-popover')
+		const root = find('.so-popover')
 
 		expect(root.dataset.open).toBe('true')
 		expect(trigger().dataset.selected).toBe('true')
@@ -201,7 +201,7 @@ describe('разметка', () => {
 
 		expect(panel().dataset.open).toBe('true')
 
-		await click(find('.s-popover__close'))
+		await click(find('.so-popover__close'))
 
 		expect(popover.open).toBe(false)
 		expect(panel().dataset.open).toBe('false')
@@ -218,15 +218,17 @@ describe('разметка', () => {
 			h(LocaleProvider, { locale: ruRU }, () =>
 				h('div', [
 					h(Popover, null, { default: inside }),
-					h(Popover, { closable: false, class: 's-test-bare' }, { default: inside }),
+					h(Popover, { closable: false, class: 'so-test-bare' }, { default: inside }),
 				]),
 			),
 		)
 
-		const [named, bare] = [...document.querySelectorAll('.s-popover__panel')]
+		const [named, bare] = [...document.querySelectorAll('.so-popover__panel')]
 
-		expect(named.querySelector('.s-popover__close')?.getAttribute('aria-label')).toBe('Закрыть')
-		expect(bare.querySelector('.s-popover__close')).toBeNull()
+		expect(named.querySelector('.so-popover__close')?.getAttribute('aria-label')).toBe(
+			'Закрыть',
+		)
+		expect(bare.querySelector('.so-popover__close')).toBeNull()
 	})
 })
 
@@ -241,7 +243,7 @@ describe('открытие и закрытие', () => {
 	it('клик в панель не закрывает', async () => {
 		await render(() => page())
 		await open()
-		await click(find('.s-test-first'))
+		await click(find('.so-test-first'))
 
 		expect(isOpen()).toBe(true)
 	})
@@ -266,7 +268,7 @@ describe('открытие и закрытие', () => {
 		await render(() => page())
 		await open()
 
-		pointerDown(find('.s-test-after'))
+		pointerDown(find('.so-test-after'))
 		await nextTick()
 
 		expect(isOpen()).toBe(false)
@@ -281,7 +283,7 @@ describe('открытие и закрытие', () => {
 		await nextFrame()
 
 		expect(isOpen()).toBe(true)
-		expect(document.activeElement).toBe(find('.s-test-first'))
+		expect(document.activeElement).toBe(find('.so-test-first'))
 
 		await click(trigger())
 
@@ -292,7 +294,7 @@ describe('открытие и закрытие', () => {
 	it('open из шаблона открывает и закрывает', async () => {
 		const mounted = mount(Popover, {
 			props: { open: false },
-			slots: { trigger: triggerOf('Открыть', 's-test-trigger'), default: inside },
+			slots: { trigger: triggerOf('Открыть', 'so-test-trigger'), default: inside },
 			attachTo: document.body,
 		})
 
@@ -302,7 +304,7 @@ describe('открытие и закрытие', () => {
 		await nextFrame()
 
 		expect(isOpen()).toBe(true)
-		expect(document.activeElement).toBe(find('.s-test-first'))
+		expect(document.activeElement).toBe(find('.so-test-first'))
 
 		await mounted.setProps({ open: false })
 
@@ -320,7 +322,7 @@ describe('фокус', () => {
 
 		await nextFrame()
 
-		expect(document.activeElement).toBe(find('.s-test-first'))
+		expect(document.activeElement).toBe(find('.so-test-first'))
 	})
 
 	it('без остановок в панели — на саму панель', async () => {
@@ -358,7 +360,7 @@ describe('фокус', () => {
 	it('крестик закрывает и возвращает фокус на триггер', async () => {
 		await render(() => page())
 		await open()
-		await click(find('.s-popover__close'))
+		await click(find('.so-popover__close'))
 
 		expect(isOpen()).toBe(false)
 		expect(document.activeElement).toBe(trigger())
@@ -368,7 +370,7 @@ describe('фокус', () => {
 		await render(() => page())
 		await open()
 
-		pointerDown(find('.s-test-after'))
+		pointerDown(find('.so-test-after'))
 		await nextTick()
 
 		expect(isOpen()).toBe(false)
@@ -379,18 +381,18 @@ describe('фокус', () => {
 		await render(() => page())
 		await open()
 
-		find('.s-test-after').focus()
+		find('.so-test-after').focus()
 		await nextTick()
 
 		expect(isOpen()).toBe(false)
-		expect(document.activeElement).toBe(find('.s-test-after'))
+		expect(document.activeElement).toBe(find('.so-test-after'))
 	})
 
 	it('открытый со старта уводит фокус в панель, закрытие возвращает его на триггер', async () => {
 		await render(() => page({ open: true }))
 		await nextFrame()
 
-		expect(document.activeElement).toBe(find('.s-test-first'))
+		expect(document.activeElement).toBe(find('.so-test-first'))
 
 		press('Escape')
 		await nextTick()
@@ -429,7 +431,7 @@ describe('Tab', () => {
 		const event = press('Tab')
 
 		expect(event.defaultPrevented).toBe(true)
-		expect(document.activeElement).toBe(find('.s-test-first'))
+		expect(document.activeElement).toBe(find('.so-test-first'))
 	})
 
 	it('Shift+Tab с первой остановки панели — на триггер, панель остаётся открытой', async () => {
@@ -458,7 +460,7 @@ describe('Tab', () => {
 		await render(() => page())
 		await open()
 
-		find('.s-popover__close').focus()
+		find('.so-popover__close').focus()
 
 		const event = press('Tab')
 
@@ -466,7 +468,7 @@ describe('Tab', () => {
 
 		expect(event.defaultPrevented).toBe(true)
 		expect(isOpen()).toBe(false)
-		expect(document.activeElement).toBe(find('.s-test-after'))
+		expect(document.activeElement).toBe(find('.so-test-after'))
 	})
 
 	it('Tab с самой панели без остановок — к остановке после поповера', async () => {
@@ -481,7 +483,7 @@ describe('Tab', () => {
 
 		expect(event.defaultPrevented).toBe(true)
 		expect(isOpen()).toBe(false)
-		expect(document.activeElement).toBe(find('.s-test-after'))
+		expect(document.activeElement).toBe(find('.so-test-after'))
 	})
 
 	it('Tab с середины панели не трогает: порядок ведёт браузер', async () => {
@@ -498,14 +500,14 @@ describe('Tab', () => {
 		await render(() =>
 			h('div', [
 				h(Popover, null, {
-					trigger: triggerOf('Открыть', 's-test-trigger'),
+					trigger: triggerOf('Открыть', 'so-test-trigger'),
 					default: inside,
 				}),
 			]),
 		)
 		await open()
 
-		find('.s-popover__close').focus()
+		find('.so-popover__close').focus()
 
 		const event = press('Tab')
 
@@ -519,14 +521,14 @@ describe('Tab', () => {
 describe('вложенные слои', () => {
 	/** Внешний поповер, в панели которого — внутренний. */
 	const nested = () =>
-		page({ class: 's-test-outer' }, () => [
-			h('button', { class: 's-test-first' }, 'Первая'),
+		page({ class: 'so-test-outer' }, () => [
+			h('button', { class: 'so-test-first' }, 'Первая'),
 			h(
 				Popover,
-				{ class: 's-test-inner' },
+				{ class: 'so-test-inner' },
 				{
-					trigger: triggerOf('Ещё', 's-test-inner-trigger'),
-					default: () => h('button', { class: 's-test-inner-first' }, 'Внутри'),
+					trigger: triggerOf('Ещё', 'so-test-inner-trigger'),
+					default: () => h('button', { class: 'so-test-inner-first' }, 'Внутри'),
 				},
 			),
 		])
@@ -538,35 +540,35 @@ describe('вложенные слои', () => {
 	it('Escape во вложенном закрывает только его, фокус — на его триггер', async () => {
 		await render(nested)
 		await open()
-		await open(find('.s-test-inner-trigger'))
+		await open(find('.so-test-inner-trigger'))
 
-		expect(document.activeElement).toBe(find('.s-test-inner-first'))
+		expect(document.activeElement).toBe(find('.so-test-inner-first'))
 
 		press('Escape')
 		await nextTick()
 
-		expect(isOpen(panelOf(find('.s-test-inner-trigger')))).toBe(false)
+		expect(isOpen(panelOf(find('.so-test-inner-trigger')))).toBe(false)
 		expect(isOpen(panelOf(trigger()))).toBe(true)
-		expect(document.activeElement).toBe(find('.s-test-inner-trigger'))
+		expect(document.activeElement).toBe(find('.so-test-inner-trigger'))
 	})
 
 	it('клик во вложенную панель внешний не закрывает', async () => {
 		await render(nested)
 		await open()
-		await open(find('.s-test-inner-trigger'))
-		await click(find('.s-test-inner-first'))
+		await open(find('.so-test-inner-trigger'))
+		await click(find('.so-test-inner-first'))
 
-		expect(isOpen(panelOf(find('.s-test-inner-trigger')))).toBe(true)
+		expect(isOpen(panelOf(find('.so-test-inner-trigger')))).toBe(true)
 		expect(isOpen(panelOf(trigger()))).toBe(true)
 	})
 
 	it('клик во внешнюю панель закрывает вложенный, внешний остаётся', async () => {
 		await render(nested)
 		await open()
-		await open(find('.s-test-inner-trigger'))
-		await click(find('.s-test-first'))
+		await open(find('.so-test-inner-trigger'))
+		await click(find('.so-test-first'))
 
-		expect(isOpen(panelOf(find('.s-test-inner-trigger')))).toBe(false)
+		expect(isOpen(panelOf(find('.so-test-inner-trigger')))).toBe(false)
 		expect(isOpen(panelOf(trigger()))).toBe(true)
 	})
 })
@@ -574,14 +576,14 @@ describe('вложенные слои', () => {
 describe('Select внутри', () => {
 	const withSelect = () =>
 		page({}, () => [
-			h(Select, { class: 's-test-select' }, () => [
+			h(Select, { class: 'so-test-select' }, () => [
 				h(SelectItem, { key: 'a', value: 'a', text: 'Первый' }),
 				h(SelectItem, { key: 'b', value: 'b', text: 'Второй' }),
 			]),
 		])
 
-	const field = () => find('.s-test-select input')
-	const selectPanel = () => find('.s-select__panel')
+	const field = () => find('.so-test-select input')
+	const selectPanel = () => find('.so-select__panel')
 
 	it('Escape в открытом Select закрывает только Select', async () => {
 		await render(withSelect)
@@ -608,7 +610,7 @@ describe('Select внутри', () => {
 		await open()
 		await click(field())
 
-		const option = find('.s-select__panel [role="option"]')
+		const option = find('.so-select__panel [role="option"]')
 
 		pointerDown(option)
 		option.click()
@@ -623,28 +625,28 @@ describe('lazyMount', () => {
 	it('содержимое монтируется при первом открытии и остаётся после закрытия', async () => {
 		await render(() => page({ lazyMount: true }))
 
-		expect(document.querySelector('.s-test-first')).toBeNull()
-		expect(document.querySelector('.s-popover__content')).not.toBeNull()
+		expect(document.querySelector('.so-test-first')).toBeNull()
+		expect(document.querySelector('.so-popover__content')).not.toBeNull()
 
 		await open()
 
-		expect(document.activeElement).toBe(find('.s-test-first'))
+		expect(document.activeElement).toBe(find('.so-test-first'))
 
 		press('Escape')
 		await nextTick()
 
-		expect(document.querySelector('.s-test-first')).not.toBeNull()
+		expect(document.querySelector('.so-test-first')).not.toBeNull()
 	})
 
 	it('без lazyMount содержимое в документе с самого начала', async () => {
 		await render(() => page())
 
-		expect(document.querySelector('.s-test-first')).not.toBeNull()
+		expect(document.querySelector('.so-test-first')).not.toBeNull()
 	})
 })
 
 describe('жест', () => {
-	const handle = () => document.querySelector('.s-popover__handle')
+	const handle = () => document.querySelector('.so-popover__handle')
 
 	/** Указатель мышью в точке по вертикали — как его слушает плагин жеста. */
 	const pointer = (type: string, target: Element, y: number) =>
@@ -695,7 +697,7 @@ describe('жест', () => {
 
 		vi.spyOn(panel(), 'getBoundingClientRect').mockReturnValue(new DOMRect(0, 8, 300, 200))
 
-		const grip = find('.s-popover__handle')
+		const grip = find('.so-popover__handle')
 
 		pointer('pointerdown', grip, 13)
 		pointer('pointermove', panel(), 108)

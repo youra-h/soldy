@@ -40,7 +40,7 @@ export default { ...SetupCalendar, components: { Button, Icon, ListBox, Popover,
 			месяцами расширил бы его своей шириной, и кнопки листания у конца
 			корня повисли бы за последней колонкой.
 		-->
-		<div class="s-calendar__months">
+		<div class="so-calendar__months">
 			<!--
 				Месяц — по одному на сетку (`grids`), ключ — место сетки, а не её
 				месяц. Заголовок и его панель выбора — у места: листание меняет
@@ -52,7 +52,7 @@ export default { ...SetupCalendar, components: { Button, Icon, ListBox, Popover,
 				— их ключ дата. Месяцы стоят в ряд; высоту под шесть недель держит
 				тема, и соседние сетки стоят вровень по строкам.
 			-->
-			<div v-for="(grid, index) in grids" :key="index" class="s-calendar__month">
+			<div v-for="(grid, index) in grids" :key="index" class="so-calendar__month">
 				<!--
 					Заголовок месяца — кнопка, которая открывает панель выбора месяца и
 					года. Панель — Popover места (`pickers[index]`): экземпляры поповера и
@@ -63,7 +63,7 @@ export default { ...SetupCalendar, components: { Button, Icon, ListBox, Popover,
 					не встаёт под заголовком, а выезжает сверху календаря — его
 					ближайшего позиционированного предка (`edge="top"`). Тема
 					растягивает панель на весь календарь подложкой, а выбирают в
-					карточке у её верхнего края (`.s-calendar__picker`): нажатие по
+					карточке у её верхнего края (`.so-calendar__picker`): нажатие по
 					подложке закрывает панель, его ловит плагин указателя. Жест за
 					полосу включает расширение (`swipe` поповера места); карточку
 					смахивают вверх, к её краю, а полоса — у её низа. Рисует полосу
@@ -74,7 +74,7 @@ export default { ...SetupCalendar, components: { Button, Icon, ListBox, Popover,
 					Связку с панелью (`aria-haspopup`, `aria-expanded`, `aria-controls`) и
 					вид «нажат» кнопка получает из scope слота триггера. Вида у неё нет:
 					значения вида объявляет тема, и красит она кнопку по контексту
-					(`.s-calendar__title`).
+					(`.so-calendar__title`).
 
 					Текст — во вложенном `span` с набором `grid.titleAria`: `id`, по
 					которому сетку называет `aria-labelledby`, и `aria-live` — смену
@@ -88,7 +88,7 @@ export default { ...SetupCalendar, components: { Button, Icon, ListBox, Popover,
 				<Popover
 					v-if="pickers[index]"
 					embedded="calendar.picker"
-					class="s-calendar__heading"
+					class="so-calendar__heading"
 					tag="div"
 					contained
 					edge="top"
@@ -98,12 +98,12 @@ export default { ...SetupCalendar, components: { Button, Icon, ListBox, Popover,
 					<template #trigger="{ triggerAria, triggerDataset }">
 						<Button
 							embedded="calendar.title"
-							class="s-calendar__title"
+							class="so-calendar__title"
 							:size="size"
 							:disabled="disabled"
 							v-bind="{ ...triggerAria, ...triggerDataset }"
 						>
-							<span class="s-calendar__title-text" v-bind="grid.titleAria">{{
+							<span class="so-calendar__title-text" v-bind="grid.titleAria">{{
 								grid.title
 							}}</span>
 						</Button>
@@ -123,10 +123,10 @@ export default { ...SetupCalendar, components: { Button, Icon, ListBox, Popover,
 						остановку панели — на список с выбранным месяцем, а не на кнопку
 						года. Наверх шапку ставит тема, как кнопки в ряд заголовка Dialog.
 					-->
-					<div class="s-calendar__picker">
+					<div class="so-calendar__picker">
 						<ListBox
 							embedded="calendar.picker-list"
-							class="s-calendar__picker-list"
+							class="so-calendar__picker-list"
 							:ctrl="pickers[index].list"
 							:engine="pickers[index].engine"
 							:size="size"
@@ -145,10 +145,10 @@ export default { ...SetupCalendar, components: { Button, Icon, ListBox, Popover,
 							по уровню, из выхода панели; значок — та же роль `arrowRight`,
 							что у кнопок листания, «назад» зеркалит тема.
 						-->
-						<div class="s-calendar__picker-header">
+						<div class="so-calendar__picker-header">
 							<Button
 								embedded="calendar.picker-heading"
-								class="s-calendar__picker-heading"
+								class="so-calendar__picker-heading"
 								:size="size"
 								v-bind="pickers[index].headingAria"
 							>
@@ -157,7 +157,7 @@ export default { ...SetupCalendar, components: { Button, Icon, ListBox, Popover,
 
 							<Button
 								embedded="calendar.picker-prev"
-								class="s-calendar__picker-prev"
+								class="so-calendar__picker-prev"
 								:size="size"
 								:disabled="pickers[index].prevDisabled"
 								v-bind="pickers[index].prevAria"
@@ -171,7 +171,7 @@ export default { ...SetupCalendar, components: { Button, Icon, ListBox, Popover,
 
 							<Button
 								embedded="calendar.picker-next"
-								class="s-calendar__picker-next"
+								class="so-calendar__picker-next"
 								:size="size"
 								:disabled="pickers[index].nextDisabled"
 								v-bind="pickers[index].nextAria"
@@ -198,7 +198,7 @@ export default { ...SetupCalendar, components: { Button, Icon, ListBox, Popover,
 					корня календаря, а не от блока месяца.
 
 					Вида разметка кнопкам не передаёт: красит их тема по контексту
-					(`:where(.s-calendar__prev)`), как кнопки ленты Scroller.
+					(`:where(.so-calendar__prev)`), как кнопки ленты Scroller.
 					Выключенность считает вид коллекции — «календарь выключен или
 					сетки дошли до месяца границы». Значок — иконка роли `arrowRight` у
 					обеих: своей роли «влево» в контракте иконок нет, стрелку «назад»
@@ -207,7 +207,7 @@ export default { ...SetupCalendar, components: { Button, Icon, ListBox, Popover,
 				<template v-if="index === 0">
 					<Button
 						embedded="calendar.prev"
-						class="s-calendar__prev"
+						class="so-calendar__prev"
 						:size="size"
 						:disabled="prevDisabled"
 						v-bind="prevAria"
@@ -219,7 +219,7 @@ export default { ...SetupCalendar, components: { Button, Icon, ListBox, Popover,
 
 					<Button
 						embedded="calendar.next"
-						class="s-calendar__next"
+						class="so-calendar__next"
 						:size="size"
 						:disabled="nextDisabled"
 						v-bind="nextAria"
@@ -234,7 +234,7 @@ export default { ...SetupCalendar, components: { Button, Icon, ListBox, Popover,
 					Сетка — `table` с набором `grid.gridAria` (`role="grid"`, имя от
 					заголовка, `aria-multiselectable`).
 				-->
-				<table class="s-calendar__grid" v-bind="grid.gridAria">
+				<table class="so-calendar__grid" v-bind="grid.gridAria">
 					<!--
 						Дни недели — подписи из `weekdays`, по `th` на день: короткое
 						имя или узкое, какое выбрало ядро по локали.
@@ -245,11 +245,11 @@ export default { ...SetupCalendar, components: { Button, Icon, ListBox, Popover,
 						и `abbr` у `th` не нужен.
 					-->
 					<thead aria-hidden="true">
-						<tr class="s-calendar__weekdays">
+						<tr class="so-calendar__weekdays">
 							<th
 								v-for="(weekday, index) in weekdays"
 								:key="index"
-								class="s-calendar__weekday"
+								class="so-calendar__weekday"
 							>
 								{{ weekday.label }}
 							</th>
@@ -261,7 +261,11 @@ export default { ...SetupCalendar, components: { Button, Icon, ListBox, Popover,
 							Неделя — семь ячеек, от первого дня недели; ключ — её
 							первая дата.
 						-->
-						<tr v-for="week in grid.weeks" :key="week[0].date" class="s-calendar__week">
+						<tr
+							v-for="week in grid.weeks"
+							:key="week[0].date"
+							class="so-calendar__week"
+						>
 							<!--
 								Ячейка — ключ по дате: день, оставшийся на экране при
 								листании, не пересобирается и не теряет фокус.
@@ -287,7 +291,7 @@ export default { ...SetupCalendar, components: { Button, Icon, ListBox, Popover,
 									сетке. Пустая ячейка держит место в неделе и получает
 									набор ячейки (`cell.aria` — скрыта от скринридера).
 								-->
-								<td v-else class="s-calendar__filler" v-bind="cell.aria"></td>
+								<td v-else class="so-calendar__filler" v-bind="cell.aria"></td>
 							</template>
 						</tr>
 					</tbody>
@@ -302,7 +306,7 @@ export default { ...SetupCalendar, components: { Button, Icon, ListBox, Popover,
 			рисуется, только когда слот передан, — пустая строка держала бы место
 			под сетками.
 		-->
-		<div v-if="$slots.footer" class="s-calendar__footer">
+		<div v-if="$slots.footer" class="so-calendar__footer">
 			<slot name="footer" />
 		</div>
 	</component>

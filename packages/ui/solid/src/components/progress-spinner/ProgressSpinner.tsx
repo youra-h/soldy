@@ -46,20 +46,26 @@ export function ProgressSpinner(props: ProgressSpinnerProps): JSX.Element {
 					Длину дуг SVG меряет в долях окружности (`pathLength="1"`): доля
 					готового из переменной корня ложится в штрих как есть.
 				*/}
-				<svg class="s-progress-spinner__ring" viewBox="0 0 16 16" aria-hidden="true">
+				<svg class="so-progress-spinner__ring" viewBox="0 0 16 16" aria-hidden="true">
 					{/* Дорожка — полное кольцо под дугами */}
-					<circle class="s-progress-spinner__track" cx="8" cy="8" r="7" />
+					<circle class="so-progress-spinner__track" cx="8" cy="8" r="7" />
 					{/*
 						Дуга доли — от начала кольца на долю готового. Пока кольцо
 						бежит, тема её прячет, и дуга, вернувшаяся после бега, растёт
 						от нуля.
 					*/}
-					<circle class="s-progress-spinner__range" cx="8" cy="8" r="7" pathLength="1" />
+					<circle class="so-progress-spinner__range" cx="8" cy="8" r="7" pathLength="1" />
 					{/*
 						Бегущая дуга — видна, только пока кольцо бежит. Своего движения
 						у неё нет: бег — поворот всего рисунка.
 					*/}
-					<circle class="s-progress-spinner__runner" cx="8" cy="8" r="7" pathLength="1" />
+					<circle
+						class="so-progress-spinner__runner"
+						cx="8"
+						cy="8"
+						r="7"
+						pathLength="1"
+					/>
 				</svg>
 			</Dynamic>
 		</Show>

@@ -47,7 +47,7 @@ const IndeterminateMark = roleIcon('checkIndeterminate')
  * `Icon`: она появляется и пропадает с каждой сменой отметки, и `Icon`
  * собирал бы на каждую свой контекст и плагины — в таблице «выбрать все»
  * собирала их тысячами. Размер и цвет отметке даёт тема флажка по
- * `s-check-box__mark`.
+ * `so-check-box__mark`.
  */
 export function CheckBox(props: CheckBoxProps): JSX.Element {
 	const binding = setupCheckBox(props)
@@ -76,16 +76,16 @@ export function CheckBox(props: CheckBoxProps): JSX.Element {
 					checked={state.value}
 					prop:indeterminate={state.indeterminate}
 				/>
-				<span class="s-check-box__container" aria-hidden="true">
+				<span class="so-check-box__container" aria-hidden="true">
 					<Show
 						when={state.indeterminate}
 						fallback={
 							<Show when={state.value}>
-								{icon() ?? <CheckMark class="s-check-box__mark" />}
+								{icon() ?? <CheckMark class="so-check-box__mark" />}
 							</Show>
 						}
 					>
-						{indeterminateIcon() ?? <IndeterminateMark class="s-check-box__mark" />}
+						{indeterminateIcon() ?? <IndeterminateMark class="so-check-box__mark" />}
 					</Show>
 				</span>
 			</Dynamic>

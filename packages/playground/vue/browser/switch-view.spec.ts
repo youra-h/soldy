@@ -72,7 +72,7 @@ type TSwitch = keyof typeof SWITCHES
 const scene = defineComponent({
 	render: () =>
 		h('div', [
-			h('div', { class: 's-test-away', style: 'height: 24px' }),
+			h('div', { class: 'so-test-away', style: 'height: 24px' }),
 			...Object.entries(BACKDROPS).map(([name, color]) =>
 				h(
 					'div',
@@ -99,7 +99,7 @@ function backdropOf(name: TBackdrop): { root: HTMLElement; color: string; toward
 
 /** Переключатель сцены: его дорожка и ручка. */
 const trackOf = (root: ParentNode, role: TSwitch) =>
-	find(`[data-switch="${role}"] .s-switch__track`, root)
+	find(`[data-switch="${role}"] .so-switch__track`, root)
 
 /**
  * Насколько дорожка ушла от подложки в сторону текста. Направление даёт текст,
@@ -123,7 +123,7 @@ function knob(name: TBackdrop, role: TSwitch = 'off'): number {
 	const { root, color } = backdropOf(name)
 	const element = trackOf(root, role)
 	const rail = style(element).backgroundColor
-	const thumb = style(find('.s-switch__track--thumb', element)).backgroundColor
+	const thumb = style(find('.so-switch__track--thumb', element)).backgroundColor
 
 	return Math.abs(lightness([color, rail, thumb]) - lightness([color, rail]))
 }
@@ -133,7 +133,7 @@ async function show(scheme: (typeof SCHEMES)[number]): Promise<void> {
 	document.documentElement.dataset.theme = scheme
 	render(scene)
 
-	await userEvent.hover(find('.s-test-away'))
+	await userEvent.hover(find('.so-test-away'))
 	await settled(document.body)
 }
 
@@ -143,7 +143,7 @@ async function hover(name: TBackdrop, role: TSwitch = 'off'): Promise<void> {
 
 	// На сам переключатель, а не на дорожку: поле лежит поверх неё, и на
 	// перекрытый узел указатель не встанет.
-	await userEvent.hover(find(`[data-switch="${role}"] .s-switch`, root))
+	await userEvent.hover(find(`[data-switch="${role}"] .so-switch`, root))
 	await settled(document.body)
 }
 

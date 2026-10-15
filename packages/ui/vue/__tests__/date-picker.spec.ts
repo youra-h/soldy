@@ -69,12 +69,12 @@ function dayCell(date: string): HTMLElement {
 		Date.UTC(Number(date.slice(0, 4)), Number(date.slice(5, 7)) - 1, Number(date.slice(8))),
 	)
 
-	return find(`.s-calendar-item[aria-label="${label}"]`)
+	return find(`.so-calendar-item[aria-label="${label}"]`)
 }
 
-const root = () => find('.s-date-picker')
-const trigger = () => find('.s-date-picker__trigger')
-const panel = () => find('.s-date-picker__panel')
+const root = () => find('.so-date-picker')
+const trigger = () => find('.so-date-picker__trigger')
+const panel = () => find('.so-date-picker__panel')
 const isOpen = () => panel().style.display !== 'none'
 
 /** Нажатие клавиши с узла, как у пользователя: событие всплывает до корня. */
@@ -102,15 +102,15 @@ describe('одна дата', () => {
 	it('поле с кнопкой календаря в слоте, панель — диалог в body', async () => {
 		await render(() => h(DatePicker, { id: 'when', aria_label: 'Дата заезда' }))
 
-		const field = find('.s-date-picker__field')
+		const field = find('.so-date-picker__field')
 
-		expect(root().classList.contains('s-date-picker--single')).toBe(true)
+		expect(root().classList.contains('so-date-picker--single')).toBe(true)
 		expect(root().id).toBe('when')
 		expect(root().hasAttribute('role')).toBe(false)
 		// Группа частей — само поле: имя DatePicker уходит ему
 		expect(field.getAttribute('role')).toBe('group')
 		expect(field.getAttribute('aria-label')).toBe('Дата заезда')
-		expect(field.querySelector('.s-date-input__trailing .s-date-picker__trigger')).toBe(
+		expect(field.querySelector('.so-date-input__trailing .so-date-picker__trigger')).toBe(
 			trigger(),
 		)
 		expect(panel().parentElement).toBe(document.body)
@@ -166,7 +166,7 @@ describe('одна дата', () => {
 		expect(value.value).toBe('2026-09-10')
 		expect(open.value).toBe(false)
 		expect(isOpen()).toBe(false)
-		expect(find('.s-date-picker__field input[type="hidden"]').getAttribute('value')).toBe(
+		expect(find('.so-date-picker__field input[type="hidden"]').getAttribute('value')).toBe(
 			'2026-09-10',
 		)
 	})
@@ -184,7 +184,7 @@ describe('одна дата', () => {
 		)
 
 		// en-US: месяц, день, год
-		find('.s-date-input__segment[data-type="month"]').focus()
+		find('.so-date-input__segment[data-type="month"]').focus()
 		await type('09122026')
 		await settle()
 
@@ -196,7 +196,7 @@ describe('одна дата', () => {
 		await render(() => h(DatePicker, { disabled: true }))
 
 		expect(trigger().hasAttribute('disabled')).toBe(true)
-		expect(find('.s-date-picker__field').dataset.disabled).toBe('true')
+		expect(find('.so-date-picker__field').dataset.disabled).toBe('true')
 	})
 })
 
@@ -204,18 +204,18 @@ describe('диапазон', () => {
 	it('корень — группа с именем, поля концов названы, тире немое', async () => {
 		await render(() => h(DatePicker, { mode: 'range', aria_label: 'Поездка' }))
 
-		const start = find('.s-date-picker__start')
-		const end = find('.s-date-picker__end')
+		const start = find('.so-date-picker__start')
+		const end = find('.so-date-picker__end')
 
-		expect(root().classList.contains('s-date-picker--range')).toBe(true)
+		expect(root().classList.contains('so-date-picker--range')).toBe(true)
 		expect(root().getAttribute('role')).toBe('group')
 		expect(root().getAttribute('aria-label')).toBe('Поездка')
 		expect(start.getAttribute('aria-label')).toBe('Start date')
 		expect(end.getAttribute('aria-label')).toBe('End date')
-		expect(find('.s-date-picker__dash').getAttribute('aria-hidden')).toBe('true')
+		expect(find('.so-date-picker__dash').getAttribute('aria-hidden')).toBe('true')
 		// Кнопка — после поля конца, не в его слоте
 		expect(end.nextElementSibling).toBe(trigger())
-		expect(findAll('.s-date-picker__field')).toHaveLength(0)
+		expect(findAll('.so-date-picker__field')).toHaveLength(0)
 	})
 
 	it('два дня в календаре — пара в v-model и в поля, панель — до второго дня', async () => {
@@ -246,7 +246,7 @@ describe('диапазон', () => {
 		expect(value.value).toEqual(['2026-09-10', '2026-09-14'])
 		expect(isOpen()).toBe(false)
 
-		const hidden = findAll('.s-date-picker input[type="hidden"]').map((input) =>
+		const hidden = findAll('.so-date-picker input[type="hidden"]').map((input) =>
 			input.getAttribute('value'),
 		)
 
@@ -261,8 +261,8 @@ describe('диапазон', () => {
 		mode.value = 'range'
 		await settle()
 
-		expect(findAll('.s-date-picker__field')).toHaveLength(0)
-		expect(find('.s-date-picker__start input[type="hidden"]').getAttribute('value')).toBe(
+		expect(findAll('.so-date-picker__field')).toHaveLength(0)
+		expect(find('.so-date-picker__start input[type="hidden"]').getAttribute('value')).toBe(
 			'2026-09-10',
 		)
 	})
@@ -275,9 +275,9 @@ describe('диапазон', () => {
  * гаснет посреди диапазона, а нажатия доходят до `v-model`.
  */
 describe('выбор с подтверждением', () => {
-	const footer = () => document.querySelector('.s-date-picker__panel .s-calendar__footer')
-	const cancel = () => find('.s-date-picker__cancel')
-	const confirm = () => find('.s-date-picker__confirm')
+	const footer = () => document.querySelector('.so-date-picker__panel .so-calendar__footer')
+	const cancel = () => find('.so-date-picker__cancel')
+	const confirm = () => find('.so-date-picker__confirm')
 
 	/** DatePicker с `v-model:value` и `v-model:open` — значения в ссылках. */
 	async function bound(initial: TDatePickerValue, props: Record<string, unknown> = {}) {
@@ -346,7 +346,7 @@ describe('выбор с подтверждением', () => {
 		expect(value.value).toBe('2026-09-10')
 		expect(open.value).toBe(true)
 		expect(dayCell('2026-09-12').dataset.selected).toBe('true')
-		expect(find('.s-date-picker__field input[type="hidden"]').getAttribute('value')).toBe(
+		expect(find('.so-date-picker__field input[type="hidden"]').getAttribute('value')).toBe(
 			'2026-09-10',
 		)
 
@@ -356,7 +356,7 @@ describe('выбор с подтверждением', () => {
 		expect(value.value).toBe('2026-09-12')
 		expect(open.value).toBe(false)
 		expect(isOpen()).toBe(false)
-		expect(find('.s-date-picker__field input[type="hidden"]').getAttribute('value')).toBe(
+		expect(find('.so-date-picker__field input[type="hidden"]').getAttribute('value')).toBe(
 			'2026-09-12',
 		)
 	})
@@ -406,8 +406,8 @@ describe('выбор с подтверждением', () => {
  * (`core/__tests__/date-picker.spec.ts`), форму кнопки — браузерный прогон.
  */
 describe('кнопка очистки', () => {
-	const clearButtons = () => findAll('.s-date-picker__clear')
-	const clearButton = () => find('.s-date-picker__clear')
+	const clearButtons = () => findAll('.so-date-picker__clear')
+	const clearButton = () => find('.so-date-picker__clear')
 
 	/** Своя кнопка в слоте `clear`: зовёт команду из scope голой функцией. */
 	const probe = ({ clear }: { clear: () => void }) =>
@@ -424,32 +424,32 @@ describe('кнопка очистки', () => {
 		await settle()
 
 		expect(clearButtons()).toHaveLength(0)
-		expect(findAll('.s-date-input__clear')).toHaveLength(0)
+		expect(findAll('.so-date-input__clear')).toHaveLength(0)
 	})
 
 	it('одна дата: первой в слоте у конца поля, перед кнопкой календаря; у поля своей нет', async () => {
 		await render(() => h(DatePicker, { clearable: true, name: 'Заезд' }))
 
-		const slot = find('.s-date-picker__field .s-date-input__trailing')
+		const slot = find('.so-date-picker__field .so-date-input__trailing')
 
 		expect([...slot.children]).toEqual([clearButton(), trigger()])
 		expect(clearButton().getAttribute('aria-label')).toBe('Clear Заезд')
-		expect(root().classList.contains('s-date-picker--clearable')).toBe(true)
-		expect(find('.s-date-picker__field').classList.contains('s-date-input--clearable')).toBe(
+		expect(root().classList.contains('so-date-picker--clearable')).toBe(true)
+		expect(find('.so-date-picker__field').classList.contains('so-date-input--clearable')).toBe(
 			false,
 		)
-		expect(findAll('.s-date-input__clear')).toHaveLength(0)
+		expect(findAll('.so-date-input__clear')).toHaveLength(0)
 	})
 
 	it('диапазон: одна на период — после поля конца, перед кнопкой календаря', async () => {
 		await render(() => h(DatePicker, { mode: 'range', clearable: true }))
 
 		expect(clearButtons()).toHaveLength(1)
-		expect(find('.s-date-picker__end').nextElementSibling).toBe(clearButton())
+		expect(find('.so-date-picker__end').nextElementSibling).toBe(clearButton())
 		expect(clearButton().nextElementSibling).toBe(trigger())
 		expect(clearButton().getAttribute('aria-label')).toBe('Clear')
 		// У полей концов своих кнопок нет: `clearable` им не уходит
-		expect(findAll('.s-date-input__clear')).toHaveLength(0)
+		expect(findAll('.so-date-input__clear')).toHaveLength(0)
 	})
 
 	it('диапазон: клик очищает оба конца — v-model видит пустое, клик не всплывает', async () => {
@@ -474,7 +474,7 @@ describe('кнопка очистки', () => {
 
 		expect(value.value).toBeUndefined()
 		expect(
-			findAll('.s-date-picker input[type="hidden"]').map((input) =>
+			findAll('.so-date-picker input[type="hidden"]').map((input) =>
 				input instanceof HTMLInputElement ? input.value : null,
 			),
 		).toEqual(['', ''])
@@ -518,7 +518,7 @@ describe('кнопка очистки', () => {
 			}),
 		)
 
-		expect(clearButton().classList.contains('s-button--size-lg')).toBe(true)
+		expect(clearButton().classList.contains('so-button--size-lg')).toBe(true)
 		expect(clearButton().hasAttribute('disabled')).toBe(false)
 
 		disabled.value = true
@@ -535,7 +535,7 @@ describe('кнопка очистки', () => {
 
 		await render(() => h(DatePicker, { ctrl }, { clear: probe }))
 
-		expect(find('.s-date-picker__field .s-date-input__trailing > .probe-clear')).toBeTruthy()
+		expect(find('.so-date-picker__field .so-date-input__trailing > .probe-clear')).toBeTruthy()
 		expect(clearButtons()).toHaveLength(0)
 
 		find('.probe-clear').click()
@@ -548,7 +548,7 @@ describe('кнопка очистки', () => {
 	it('своя кнопка у диапазона — после поля конца, вместо встроенной', async () => {
 		await render(() => h(DatePicker, { mode: 'range', clearable: true }, { clear: probe }))
 
-		expect(find('.s-date-picker__end').nextElementSibling).toBe(find('.probe-clear'))
+		expect(find('.so-date-picker__end').nextElementSibling).toBe(find('.probe-clear'))
 		expect(clearButtons()).toHaveLength(0)
 	})
 })
@@ -564,8 +564,8 @@ describe('ошибка в поле', () => {
 
 		await render(() => h(DatePicker, { ctrl }))
 
-		const field = find('.s-date-picker__field')
-		const parts = () => findAll('.s-date-picker__field .s-date-input__segment')
+		const field = find('.so-date-picker__field')
+		const parts = () => findAll('.so-date-picker__field .so-date-input__segment')
 
 		expect(field.dataset.invalid).toBe('false')
 		expect(parts().some((part) => part.hasAttribute('aria-invalid'))).toBe(false)
@@ -580,8 +580,8 @@ describe('ошибка в поле', () => {
 	it('конец раньше начала — ошибка у поля конца, у начала её нет', async () => {
 		await render(() => h(DatePicker, { mode: 'range', value: ['2026-09-20', '2026-09-10'] }))
 
-		expect(find('.s-date-picker__end').dataset.invalid).toBe('true')
-		expect(find('.s-date-picker__start').dataset.invalid).toBe('false')
+		expect(find('.so-date-picker__end').dataset.invalid).toBe('true')
+		expect(find('.so-date-picker__start').dataset.invalid).toBe('false')
 	})
 })
 
@@ -682,7 +682,7 @@ describe('экземпляры ядра', () => {
 		await settle()
 
 		expect(ctrl.value).toBe('2026-09-20')
-		expect(find('.s-date-picker__field input[type="hidden"]').getAttribute('value')).toBe(
+		expect(find('.so-date-picker__field input[type="hidden"]').getAttribute('value')).toBe(
 			'2026-09-20',
 		)
 	})
@@ -692,33 +692,33 @@ describe('слоты', () => {
 	it('trigger-icon подменяет значок кнопки', async () => {
 		await render(() =>
 			h(DatePicker, null, {
-				'trigger-icon': () => h('span', { class: 's-test-icon' }, '📅'),
+				'trigger-icon': () => h('span', { class: 'so-test-icon' }, '📅'),
 			}),
 		)
 
-		expect(trigger().querySelector('.s-test-icon')).not.toBeNull()
+		expect(trigger().querySelector('.so-test-icon')).not.toBeNull()
 	})
 
 	it('item уходит в дни календаря со scope { item }', async () => {
 		await render(() =>
 			h(DatePicker, null, {
 				item: ({ item }: { item: ICalendarItem }) =>
-					h('span', { class: 's-test-day' }, `«${item.text}»`),
+					h('span', { class: 'so-test-day' }, `«${item.text}»`),
 			}),
 		)
 
-		expect(dayCell('2026-09-10').querySelector('.s-test-day')?.textContent).toBe('«10»')
+		expect(dayCell('2026-09-10').querySelector('.so-test-day')?.textContent).toBe('«10»')
 	})
 
 	it('item получает и номер дня — scope слота календаря целиком', async () => {
 		await render(() =>
 			h(DatePicker, null, {
 				item: ({ item, text }: { item: ICalendarItem; text: string }) =>
-					h('span', { class: 's-test-day' }, `${text}·${item.date.slice(5)}`),
+					h('span', { class: 'so-test-day' }, `${text}·${item.date.slice(5)}`),
 			}),
 		)
 
-		expect(dayCell('2026-09-10').querySelector('.s-test-day')?.textContent).toBe('10·09-10')
+		expect(dayCell('2026-09-10').querySelector('.so-test-day')?.textContent).toBe('10·09-10')
 	})
 
 	it('без слота item день рисует свой номер', async () => {
@@ -736,7 +736,7 @@ describe('слоты', () => {
  * своём содержимом, а закрытие жестом доходит до `v-model`.
  */
 describe('жест', () => {
-	const handle = () => document.querySelector('.s-date-picker__handle')
+	const handle = () => document.querySelector('.so-date-picker__handle')
 
 	/** Указатель мышью в точке по вертикали — как его слушает плагин жеста. */
 	const pointer = (type: string, target: Element, y: number) =>
@@ -760,8 +760,10 @@ describe('жест', () => {
 
 		expect(handle()).toBeNull()
 		expect(panel().dataset.swiping).toBe('false')
-		expect(find('.s-date-picker__content').parentElement).toBe(panel())
-		expect(find('.s-date-picker__calendar').parentElement).toBe(find('.s-date-picker__content'))
+		expect(find('.so-date-picker__content').parentElement).toBe(panel())
+		expect(find('.so-date-picker__calendar').parentElement).toBe(
+			find('.so-date-picker__content'),
+		)
 
 		ctrl.swipe = 'handle'
 		await settle()

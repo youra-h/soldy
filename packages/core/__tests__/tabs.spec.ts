@@ -26,7 +26,7 @@ describe('TTabs (чистый класс)', () => {
 		expect(tabs.view).toBeUndefined()
 		expect(tabs.closable).toBe(false)
 		expect(tabs.variant).toBeUndefined()
-		expect(tabs.classes.toArray()).toContain('s-tabs')
+		expect(tabs.classes.toArray()).toContain('so-tabs')
 	})
 
 	it('принимает props через plain-объект', () => {
@@ -81,10 +81,10 @@ describe('TTabs (чистый класс)', () => {
 		const tabs = new TTabs()
 
 		tabs.orientation = 'vertical'
-		expect(tabs.classes.toArray()).toContain('s-tabs--vertical')
+		expect(tabs.classes.toArray()).toContain('so-tabs--vertical')
 
 		tabs.view = 'cards'
-		expect(tabs.classes.toArray()).toContain('s-tabs--view-cards')
+		expect(tabs.classes.toArray()).toContain('so-tabs--view-cards')
 	})
 
 	it('getProps возвращает актуальные значения', () => {
@@ -111,7 +111,7 @@ describe('TTabsItem (чистый класс)', () => {
 		expect(tab.text).toBe('')
 		expect(tab.value).toBe('')
 		expect(tab.closable).toBeUndefined()
-		expect(tab.classes.toArray()).toContain('s-tabs-item')
+		expect(tab.classes.toArray()).toContain('so-tabs-item')
 		expect(tab.tag).toBe('div')
 	})
 
@@ -180,7 +180,7 @@ describe('TTabsItem (чистый класс)', () => {
 
 		tab.closable = true
 
-		expect(tab.classes.toArray()).toContain('s-tabs-item--closable')
+		expect(tab.classes.toArray()).toContain('so-tabs-item--closable')
 	})
 })
 

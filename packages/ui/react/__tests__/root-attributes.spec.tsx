@@ -92,17 +92,17 @@ function TabsContentProbe(props: TabsContentProps): ReactNode {
 const COMPONENTS: ReadonlyArray<
 	readonly [string, ComponentType<TProbeProps>, string, Partial<TProbeProps>]
 > = [
-	['Button', Button, '.s-button', {}],
-	['ComponentView', ComponentView, '.s-component-view', {}],
-	['Frame', Frame, '.s-frame', {}],
-	['Icon', Icon, '.s-icon', { tag: 'i' }],
-	['Label', Label, '.s-label', {}],
-	['ProgressSpinner', ProgressSpinner, '.s-progress-spinner', {}],
-	['Skeleton', Skeleton, '.s-skeleton', {}],
-	['Tabs', Tabs, '.s-tabs', {}],
-	['Tabs.Content', TabsContentProbe, '.s-tabs__panel', {}],
-	['Accordion', Accordion, '.s-accordion', {}],
-	['RadioGroup', RadioGroup, '.s-radio-group', {}],
+	['Button', Button, '.so-button', {}],
+	['ComponentView', ComponentView, '.so-component-view', {}],
+	['Frame', Frame, '.so-frame', {}],
+	['Icon', Icon, '.so-icon', { tag: 'i' }],
+	['Label', Label, '.so-label', {}],
+	['ProgressSpinner', ProgressSpinner, '.so-progress-spinner', {}],
+	['Skeleton', Skeleton, '.so-skeleton', {}],
+	['Tabs', Tabs, '.so-tabs', {}],
+	['Tabs.Content', TabsContentProbe, '.so-tabs__panel', {}],
+	['Accordion', Accordion, '.so-accordion', {}],
+	['RadioGroup', RadioGroup, '.so-radio-group', {}],
 ]
 
 /** Общие пропсы элементов коллекций в таблице. */
@@ -137,9 +137,9 @@ function RadioGroupItemProbe(props: RadioGroupItemProps): ReactNode {
 
 /** Элемент коллекции, класс его корня и строка, которой уходят атрибуты потребителя. */
 const ITEMS: ReadonlyArray<readonly [string, ComponentType<TItemProbeProps>, string, string]> = [
-	['Tabs.Item', TabsItemProbe, '.s-tabs-item', '.s-tabs-item [role="tab"]'],
-	['Accordion.Item', AccordionItemProbe, '.s-accordion-item', '.s-accordion-item__header'],
-	['RadioGroup.Item', RadioGroupItemProbe, '.s-radio-group-item', '.s-radio-group-item__input'],
+	['Tabs.Item', TabsItemProbe, '.so-tabs-item', '.so-tabs-item [role="tab"]'],
+	['Accordion.Item', AccordionItemProbe, '.so-accordion-item', '.so-accordion-item__header'],
+	['RadioGroup.Item', RadioGroupItemProbe, '.so-radio-group-item', '.so-radio-group-item__input'],
 ]
 
 describe('атрибут снаружи перекрывает набор ядра', () => {
@@ -219,62 +219,62 @@ function ListBoxItemProbe(props: ListBoxItemProps): ReactNode {
 const ROOTS: ReadonlyArray<
 	readonly [string, (props: TRefProbeProps) => ReactNode, string, string]
 > = [
-	['Button', (props) => <Button {...props} />, '.s-button', '.s-button'],
+	['Button', (props) => <Button {...props} />, '.so-button', '.so-button'],
 	[
 		'ComponentView',
 		(props) => <ComponentView {...props} />,
-		'.s-component-view',
-		'.s-component-view',
+		'.so-component-view',
+		'.so-component-view',
 	],
-	['Frame', (props) => <Frame {...props} />, '.s-frame', '.s-frame'],
-	['Icon', (props) => <Icon tag="i" {...props} />, '.s-icon', '.s-icon'],
-	['Label', (props) => <Label {...props} />, '.s-label', '.s-label'],
+	['Frame', (props) => <Frame {...props} />, '.so-frame', '.so-frame'],
+	['Icon', (props) => <Icon tag="i" {...props} />, '.so-icon', '.so-icon'],
+	['Label', (props) => <Label {...props} />, '.so-label', '.so-label'],
 	[
 		'ProgressSpinner',
 		(props) => <ProgressSpinner {...props} />,
-		'.s-progress-spinner',
-		'.s-progress-spinner',
+		'.so-progress-spinner',
+		'.so-progress-spinner',
 	],
-	['Skeleton', (props) => <Skeleton {...props} />, '.s-skeleton', '.s-skeleton'],
-	['Input', (props) => <Input {...props} />, '.s-input', '.s-input'],
-	['CheckBox', (props) => <CheckBox {...props} />, '.s-check-box', '.s-check-box'],
-	['Switch', (props) => <Switch {...props} />, '.s-switch', '.s-switch'],
-	['Tabs', (props) => <Tabs {...props} />, '.s-tabs', '.s-tabs'],
-	['Tabs.Item', (props) => <TabsItemProbe {...props} />, '.s-tabs-item', '.s-tabs-item'],
+	['Skeleton', (props) => <Skeleton {...props} />, '.so-skeleton', '.so-skeleton'],
+	['Input', (props) => <Input {...props} />, '.so-input', '.so-input'],
+	['CheckBox', (props) => <CheckBox {...props} />, '.so-check-box', '.so-check-box'],
+	['Switch', (props) => <Switch {...props} />, '.so-switch', '.so-switch'],
+	['Tabs', (props) => <Tabs {...props} />, '.so-tabs', '.so-tabs'],
+	['Tabs.Item', (props) => <TabsItemProbe {...props} />, '.so-tabs-item', '.so-tabs-item'],
 	[
 		'Tabs.Content',
 		(props) => <TabsContentProbe {...props} />,
-		'.s-tabs__panel',
-		'.s-tabs__panel',
+		'.so-tabs__panel',
+		'.so-tabs__panel',
 	],
-	['Accordion', (props) => <Accordion {...props} />, '.s-accordion', '.s-accordion'],
+	['Accordion', (props) => <Accordion {...props} />, '.so-accordion', '.so-accordion'],
 	[
 		'Accordion.Item',
 		(props) => <AccordionItemProbe {...props} />,
-		'.s-accordion-item',
-		'.s-accordion-item',
+		'.so-accordion-item',
+		'.so-accordion-item',
 	],
-	['RadioGroup', (props) => <RadioGroup {...props} />, '.s-radio-group', '.s-radio-group'],
+	['RadioGroup', (props) => <RadioGroup {...props} />, '.so-radio-group', '.so-radio-group'],
 	[
 		'RadioGroup.Item',
 		(props) => <RadioGroupItemProbe {...props} />,
-		'.s-radio-group-item',
-		'.s-radio-group-item',
+		'.so-radio-group-item',
+		'.so-radio-group-item',
 	],
-	['ListBox', (props) => <ListBox {...props} />, '.s-list-box', '.s-list-box'],
+	['ListBox', (props) => <ListBox {...props} />, '.so-list-box', '.so-list-box'],
 	[
 		'ListBox.Item',
 		(props) => <ListBoxItemProbe {...props} />,
-		'.s-list-box-item',
-		'.s-list-box-item',
+		'.so-list-box-item',
+		'.so-list-box-item',
 	],
 	[
 		'Table',
 		(props) => (
 			<Table columns={COLUMNS} items={[{ data: { id: 1, name: 'Анна' } }]} {...props} />
 		),
-		'.s-table__viewport',
-		'table.s-table',
+		'.so-table__viewport',
+		'table.so-table',
 	],
 ]
 

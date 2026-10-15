@@ -33,8 +33,8 @@ export function Label(props: LabelProps): ReactElement | null {
 	// Наборы ядра, поверх — атрибуты снаружи, `ref` адаптера последним (`toRootProps`)
 	return (
 		<Tag {...toRootProps(ref, state, [attrs, aria, dataset], forwardProps)}>
-			<span className="s-label__control">{renderSlot(props.children)}</span>
-			<span className="s-label__text">{renderSlot(props.content) ?? text}</span>
+			<span className="so-label__control">{renderSlot(props.children)}</span>
+			<span className="so-label__text">{renderSlot(props.content) ?? text}</span>
 		</Tag>
 	)
 }

@@ -12,8 +12,8 @@ export default { ...SetupTabs, components: { TabsItem } }
 			`aria-orientation` пишет ядро, имя из `aria_label` — TAriaPlugin.
 			Корень его не получает: там рядом со списком лежат панели.
 		-->
-		<div class="s-tabs__list" v-bind="aria">
-			<div class="s-tabs__list--leading" v-if="$slots.leading">
+		<div class="so-tabs__list" v-bind="aria">
+			<div class="so-tabs__list--leading" v-if="$slots.leading">
 				<slot name="leading"></slot>
 			</div>
 			<slot>
@@ -43,7 +43,7 @@ export default { ...SetupTabs, components: { TabsItem } }
 					</template>
 				</TabsItem>
 			</slot>
-			<div class="s-tabs__list--trailing" v-if="$slots.trailing">
+			<div class="so-tabs__list--trailing" v-if="$slots.trailing">
 				<slot name="trailing"></slot>
 			</div>
 		</div>

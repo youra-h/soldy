@@ -29,14 +29,14 @@ describe('разметка корня', () => {
 		const instance = slider()
 
 		expect(instance.tag).toBe('span')
-		expect(instance.classes.toArray()).toContain('s-slider')
-		expect(instance.classes.toArray()).toContain('s-slider--horizontal')
+		expect(instance.classes.toArray()).toContain('so-slider')
+		expect(instance.classes.toArray()).toContain('so-slider--horizontal')
 		expect(instance.aria.get('aria-orientation')).toBe('horizontal')
 
 		instance.orientation = 'vertical'
 
-		expect(instance.classes.toArray()).toContain('s-slider--vertical')
-		expect(instance.classes.toArray()).not.toContain('s-slider--horizontal')
+		expect(instance.classes.toArray()).toContain('so-slider--vertical')
+		expect(instance.classes.toArray()).not.toContain('so-slider--horizontal')
 		expect(instance.aria.get('aria-orientation')).toBe('vertical')
 	})
 
@@ -695,21 +695,21 @@ describe('settle — жест закончен доводкой', () => {
 describe('подсказка', () => {
 	/** Модификаторы режима подсказки на корне. */
 	const tooltipClasses = (instance: TSlider) =>
-		instance.classes.toArray().filter((name) => name.startsWith('s-slider--tooltip-'))
+		instance.classes.toArray().filter((name) => name.startsWith('so-slider--tooltip-'))
 
 	it('по умолчанию нет: модификатор --tooltip-none, рисовать нечего', () => {
 		const instance = slider()
 
 		expect(instance.tooltip).toBe('none')
 		expect(instance.tooltipRendered).toBe(false)
-		expect(tooltipClasses(instance)).toEqual(['s-slider--tooltip-none'])
+		expect(tooltipClasses(instance)).toEqual(['so-slider--tooltip-none'])
 	})
 
 	it('режим из пропсов — модификатором с первой отрисовки', () => {
 		const instance = slider({ tooltip: 'always' })
 
 		expect(instance.tooltipRendered).toBe(true)
-		expect(tooltipClasses(instance)).toEqual(['s-slider--tooltip-always'])
+		expect(tooltipClasses(instance)).toEqual(['so-slider--tooltip-always'])
 	})
 
 	it('смена режима — одно change:tooltip, повтор молчит; модификатор и tooltipRendered — за режимом', () => {
@@ -723,17 +723,17 @@ describe('подсказка', () => {
 
 		expect(changes.mock.calls).toEqual([['auto']])
 		expect(instance.tooltipRendered).toBe(true)
-		expect(tooltipClasses(instance)).toEqual(['s-slider--tooltip-auto'])
+		expect(tooltipClasses(instance)).toEqual(['so-slider--tooltip-auto'])
 
 		instance.tooltip = 'always'
 
-		expect(tooltipClasses(instance)).toEqual(['s-slider--tooltip-always'])
+		expect(tooltipClasses(instance)).toEqual(['so-slider--tooltip-always'])
 
 		instance.tooltip = 'none'
 
 		expect(changes.mock.calls).toEqual([['auto'], ['always'], ['none']])
 		expect(instance.tooltipRendered).toBe(false)
-		expect(tooltipClasses(instance)).toEqual(['s-slider--tooltip-none'])
+		expect(tooltipClasses(instance)).toEqual(['so-slider--tooltip-none'])
 	})
 })
 

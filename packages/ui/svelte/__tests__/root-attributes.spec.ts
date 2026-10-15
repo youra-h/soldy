@@ -89,17 +89,17 @@ type TProbeProps = ButtonProps &
  * нет; панель рисуется, пока активен её таб, — и только внутри набора.
  */
 const COMPONENTS: ReadonlyArray<readonly [string, (props: TProbeProps) => TMounted, string]> = [
-	['Button', (props) => mount(Button, props), '.s-button'],
-	['ComponentView', (props) => mount(ComponentView, props), '.s-component-view'],
-	['Frame', (props) => mount(Frame, { visible: true, ...props }), '.s-frame'],
-	['Icon', (props) => mount(Icon, { tag: 'i', ...props }), '.s-icon'],
-	['Label', (props) => mount(Label, props), '.s-label'],
-	['ProgressSpinner', (props) => mount(ProgressSpinner, props), '.s-progress-spinner'],
-	['Skeleton', (props) => mount(Skeleton, props), '.s-skeleton'],
-	['Tabs', (props) => mount(Tabs, props), '.s-tabs'],
-	['Tabs.Content', (props) => mount(ItemProbe, { kind: 'content', ...props }), '.s-tabs__panel'],
-	['Accordion', (props) => mount(Accordion, props), '.s-accordion'],
-	['RadioGroup', (props) => mount(RadioGroup, props), '.s-radio-group'],
+	['Button', (props) => mount(Button, props), '.so-button'],
+	['ComponentView', (props) => mount(ComponentView, props), '.so-component-view'],
+	['Frame', (props) => mount(Frame, { visible: true, ...props }), '.so-frame'],
+	['Icon', (props) => mount(Icon, { tag: 'i', ...props }), '.so-icon'],
+	['Label', (props) => mount(Label, props), '.so-label'],
+	['ProgressSpinner', (props) => mount(ProgressSpinner, props), '.so-progress-spinner'],
+	['Skeleton', (props) => mount(Skeleton, props), '.so-skeleton'],
+	['Tabs', (props) => mount(Tabs, props), '.so-tabs'],
+	['Tabs.Content', (props) => mount(ItemProbe, { kind: 'content', ...props }), '.so-tabs__panel'],
+	['Accordion', (props) => mount(Accordion, props), '.so-accordion'],
+	['RadioGroup', (props) => mount(RadioGroup, props), '.so-radio-group'],
 ]
 
 /** Общие пропсы полей в таблице. */
@@ -111,9 +111,9 @@ type TFieldProbeProps = CheckBoxProps & SwitchProps & InputProps
  * остаётся за адаптером и у него.
  */
 const FIELDS: ReadonlyArray<readonly [string, Component<TFieldProbeProps>, string]> = [
-	['CheckBox', CheckBox, '.s-check-box'],
-	['Switch', Switch, '.s-switch'],
-	['Input', Input, '.s-input'],
+	['CheckBox', CheckBox, '.so-check-box'],
+	['Switch', Switch, '.so-switch'],
+	['Input', Input, '.so-input'],
 ]
 
 /** Рисование элемента коллекции в своём владельце — пропсами самого элемента. */
@@ -128,20 +128,20 @@ const ITEMS: ReadonlyArray<readonly [string, TItemDraw, string, string]> = [
 	[
 		'Tabs.Item',
 		(props) => mount(ItemProbe, { kind: 'tabs', ...props }),
-		'.s-tabs-item',
-		'.s-tabs-item [role="tab"]',
+		'.so-tabs-item',
+		'.so-tabs-item [role="tab"]',
 	],
 	[
 		'Accordion.Item',
 		(props) => mount(ItemProbe, { kind: 'accordion', ...props }),
-		'.s-accordion-item',
-		'.s-accordion-item__header',
+		'.so-accordion-item',
+		'.so-accordion-item__header',
 	],
 	[
 		'RadioGroup.Item',
 		(props) => mount(ItemProbe, { kind: 'radio', ...props }),
-		'.s-radio-group-item',
-		'.s-radio-group-item__input',
+		'.so-radio-group-item',
+		'.so-radio-group-item__input',
 	],
 ]
 
@@ -321,25 +321,25 @@ describe('привязка корня к TElementPlugin', () => {
  * корень, а не `<input>` и не строку.
  */
 const ROOTS: ReadonlyArray<readonly [TRootKind, string]> = [
-	['Button', '.s-button'],
-	['ComponentView', '.s-component-view'],
-	['Frame', '.s-frame'],
-	['Icon', '.s-icon'],
-	['Label', '.s-label'],
-	['ProgressSpinner', '.s-progress-spinner'],
-	['Skeleton', '.s-skeleton'],
-	['Input', '.s-input'],
-	['CheckBox', '.s-check-box'],
-	['Switch', '.s-switch'],
-	['Tabs', '.s-tabs'],
-	['Tabs.Item', '.s-tabs-item'],
-	['Tabs.Content', '.s-tabs__panel'],
-	['Accordion', '.s-accordion'],
-	['Accordion.Item', '.s-accordion-item'],
-	['RadioGroup', '.s-radio-group'],
-	['RadioGroup.Item', '.s-radio-group-item'],
-	['ListBox', '.s-list-box'],
-	['ListBox.Item', '.s-list-box-item'],
+	['Button', '.so-button'],
+	['ComponentView', '.so-component-view'],
+	['Frame', '.so-frame'],
+	['Icon', '.so-icon'],
+	['Label', '.so-label'],
+	['ProgressSpinner', '.so-progress-spinner'],
+	['Skeleton', '.so-skeleton'],
+	['Input', '.so-input'],
+	['CheckBox', '.so-check-box'],
+	['Switch', '.so-switch'],
+	['Tabs', '.so-tabs'],
+	['Tabs.Item', '.so-tabs-item'],
+	['Tabs.Content', '.so-tabs__panel'],
+	['Accordion', '.so-accordion'],
+	['Accordion.Item', '.so-accordion-item'],
+	['RadioGroup', '.so-radio-group'],
+	['RadioGroup.Item', '.so-radio-group-item'],
+	['ListBox', '.so-list-box'],
+	['ListBox.Item', '.so-list-box-item'],
 ]
 
 /** Поля: `ref` — корень, а не `<input>`. */
@@ -461,8 +461,8 @@ describe('ref потребителя — корень компонента', () 
 		})
 		const [button, input] = refs.at(-1) ?? [null, null]
 
-		expect(button).toBe(find(container, '.s-button', HTMLButtonElement))
-		expect(input).toBe(find(container, '.s-input', HTMLElement))
+		expect(button).toBe(find(container, '.so-button', HTMLButtonElement))
+		expect(input).toBe(find(container, '.so-input', HTMLElement))
 	})
 
 	/**
@@ -571,7 +571,7 @@ describe('attachment потребителя — на корне', () => {
 
 		expect(consumer.attached).toHaveLength(1)
 		expect(consumer.attached[0]?.parentElement).toBe(target)
-		expect(container.querySelector('.s-frame')).toBeNull()
+		expect(container.querySelector('.so-frame')).toBeNull()
 	})
 
 	it('Icon по роли: на <svg> иконки', () => {
@@ -705,7 +705,7 @@ describe('раскладка корня: имена стиля — как в CSS
 
 	it('наборы ядра — первыми, атрибуты потребителя — поверх', () => {
 		const props = toRootProps(
-			{ classes: ['s-x'] },
+			{ classes: ['so-x'] },
 			[{ role: 'button', tabindex: '0' }, { 'data-open': 'true' }],
 			{ class: 'mine', style: 'color: red' },
 		)
@@ -714,7 +714,7 @@ describe('раскладка корня: имена стиля — как в CSS
 
 		expect(props).toMatchObject({ role: 'button', tabindex: '0', 'data-open': 'true' })
 		expect(toRootProps({}, [{ tabindex: '0' }], forward).tabindex).toBe(-1)
-		expect(props.class).toEqual(['s-x', 'mine'])
+		expect(props.class).toEqual(['so-x', 'mine'])
 		expect(props.style).toEqual({ below: {}, forward: 'color: red', above: {} })
 	})
 })

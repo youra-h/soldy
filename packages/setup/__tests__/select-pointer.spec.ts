@@ -4,7 +4,7 @@
  * Клик по полю Select — `TSelectPointerPlugin`.
  *
  * Два режима, два обработчика: select-only тумблит панель кликом по всему
- * полю, `editable` — только кликом по `.s-select__arrow`. Выбор между ними —
+ * полю, `editable` — только кликом по `.so-select__arrow`. Выбор между ними —
  * подписка на `change:editable`, поэтому проверяется и переключение на лету.
  */
 
@@ -23,7 +23,7 @@ async function setup(props: Partial<ISelectProps> = {}) {
 	const field = document.createElement('input')
 	const arrow = document.createElement('span')
 
-	arrow.className = 's-select__arrow'
+	arrow.className = 'so-select__arrow'
 	root.appendChild(field)
 	root.appendChild(arrow)
 	document.body.appendChild(root)

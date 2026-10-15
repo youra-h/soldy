@@ -84,7 +84,7 @@ describe('LocaleProvider', () => {
 
 		const [bundle] = outer.list
 		const source = bundle.locale
-		const button = container.querySelector('.s-button')
+		const button = container.querySelector('.so-button')
 		const changes: string[] = []
 
 		source.events.on('change', (next) => changes.push(next.tag))
@@ -96,7 +96,7 @@ describe('LocaleProvider', () => {
 		expect(bundle.locale).toBe(source)
 		expect(tagOf(source)).toBe(zhCN.tag)
 		expect(changes).toEqual([zhCN.tag])
-		expect(container.querySelector('.s-button')).toBe(button)
+		expect(container.querySelector('.so-button')).toBe(button)
 	})
 
 	it('вложенный провайдер даёт поддереву свою локаль', async () => {
@@ -126,7 +126,7 @@ describe('LocaleProvider', () => {
 describe('LocaleProvider · строки на разметке', () => {
 	/** Имя кнопки очистки поля внутри узла. */
 	const clearName = (scope: ParentNode) =>
-		find(scope, '.s-input__clear', HTMLButtonElement).getAttribute('aria-label')
+		find(scope, '.so-input__clear', HTMLButtonElement).getAttribute('aria-label')
 
 	/** Поле под провайдером локали — сигнала `locale`. */
 	const field = (locale: () => TLocale, ctrl?: TInput) => (
@@ -151,11 +151,11 @@ describe('LocaleProvider · строки на разметке', () => {
 		const ctrl = new TInput()
 		const [locale, setLocale] = createSignal<TLocale>(enUS)
 		const { container } = mount(() => field(locale, ctrl))
-		const button = find(container, '.s-input__clear', HTMLButtonElement)
+		const button = find(container, '.so-input__clear', HTMLButtonElement)
 
 		setLocale(ruRU)
 
-		expect(find(container, '.s-input__clear', HTMLButtonElement)).toBe(button)
+		expect(find(container, '.so-input__clear', HTMLButtonElement)).toBe(button)
 		expect(button.getAttribute('aria-label')).toBe('Очистить Город')
 
 		setLocale(extendLocale(zhCN, { translations: { field: { clear: '清空{name}' } } }))
@@ -166,18 +166,18 @@ describe('LocaleProvider · строки на разметке', () => {
 	it('вложенный провайдер даёт поддереву свою локаль', () => {
 		const { container } = mount(() => (
 			<LocaleProvider locale={ruRU}>
-				<div class="s-test-outer">
+				<div class="so-test-outer">
 					<Input clearable name="Город" />
 				</div>
 				<LocaleProvider locale={enUS}>
-					<div class="s-test-inner">
+					<div class="so-test-inner">
 						<Input clearable name="Город" />
 					</div>
 				</LocaleProvider>
 			</LocaleProvider>
 		))
 
-		expect(clearName(find(container, '.s-test-outer', HTMLElement))).toBe('Очистить Город')
-		expect(clearName(find(container, '.s-test-inner', HTMLElement))).toBe('Clear Город')
+		expect(clearName(find(container, '.so-test-outer', HTMLElement))).toBe('Очистить Город')
+		expect(clearName(find(container, '.so-test-inner', HTMLElement))).toBe('Clear Город')
 	})
 })

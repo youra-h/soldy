@@ -76,7 +76,7 @@ describe('TTabsContent — собственные props', () => {
 	})
 
 	it('несёт класс панели', () => {
-		expect(new TTabsContent().classes.toArray()).toContain('s-tabs__panel')
+		expect(new TTabsContent().classes.toArray()).toContain('so-tabs__panel')
 	})
 })
 

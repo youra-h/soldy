@@ -22,7 +22,7 @@ export default class TListBoxItem<
 	extends TValueControl<string | number, TProps, TEvents>
 	implements IListBoxItem<TProps, TEvents>
 {
-	static override baseClass = 's-list-box-item'
+	static override baseClass = 'so-list-box-item'
 
 	static defaultValues: typeof TValueControl.defaultValues &
 		TDefaultValues<IListBoxItemProps, 'text', 'contentFit'> = {

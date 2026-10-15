@@ -59,7 +59,7 @@ const SAME = 0.02
 const scene = defineComponent({
 	render: () =>
 		h('div', [
-			h('div', { class: 's-test-away', style: 'height: 24px' }),
+			h('div', { class: 'so-test-away', style: 'height: 24px' }),
 			...Object.entries(BACKDROPS).map(([name, color]) =>
 				h(
 					'div',
@@ -106,7 +106,7 @@ async function show(scheme: (typeof SCHEMES)[number]): Promise<void> {
 	document.documentElement.dataset.theme = scheme
 	render(scene)
 
-	await userEvent.hover(find('.s-test-away'))
+	await userEvent.hover(find('.so-test-away'))
 	await settled(document.body)
 }
 
@@ -123,8 +123,8 @@ const CASES = SCHEMES.flatMap((scheme) =>
 	(Object.keys(BACKDROPS) as TBackdrop[]).map((backdrop) => ({ scheme, backdrop })),
 )
 
-const FILLED = '.s-button--view-filled'
-const OUTLINED = '.s-button--view-outlined'
+const FILLED = '.so-button--view-filled'
+const OUTLINED = '.so-button--view-outlined'
 
 beforeEach(() => {
 	document.documentElement.dataset.theme = 'oren'
@@ -176,7 +176,7 @@ describe('filled: нейтральная заливка отходит от св
 	it.each(CASES)('$scheme, $backdrop: пилюля тега залита как кнопка', async (scenario) => {
 		await show(scenario.scheme)
 
-		expect(look(scenario.backdrop, '.s-tags-item').background).toBeCloseTo(
+		expect(look(scenario.backdrop, '.so-tags-item').background).toBeCloseTo(
 			look(scenario.backdrop, FILLED).background,
 			5,
 		)

@@ -88,7 +88,7 @@ async function show(scene: Record<string, TProps>): Promise<void> {
 		defineComponent({
 			render: () =>
 				h('div', [
-					h('div', { class: 's-test-away', style: 'height: 24px' }),
+					h('div', { class: 'so-test-away', style: 'height: 24px' }),
 					...Object.entries(scene).map(([name, props]) =>
 						h('span', { key: name, 'data-case': name }, [h(CheckBox, props)]),
 					),
@@ -96,13 +96,13 @@ async function show(scene: Record<string, TProps>): Promise<void> {
 		}),
 	)
 
-	await userEvent.hover(find('.s-test-away'))
+	await userEvent.hover(find('.so-test-away'))
 	await settled(document.body)
 }
 
 /** Как выглядит коробка случая. */
 function look(name: string): TLook {
-	const box = find(`[data-case="${name}"] .s-check-box__container`)
+	const box = find(`[data-case="${name}"] .so-check-box__container`)
 	const mark = box.querySelector('svg')
 
 	return {
@@ -149,8 +149,8 @@ describe('outlined — вид блока без модификатора', () =>
 				...cases('outlined', { variant, view: 'outlined' }),
 			})
 
-			expect(find('[data-case="outlined:off"] .s-check-box').classList).toContain(
-				's-check-box--view-outlined',
+			expect(find('[data-case="outlined:off"] .so-check-box').classList).toContain(
+				'so-check-box--view-outlined',
 			)
 			expect(looks('outlined')).toEqual(looks('none'))
 		},

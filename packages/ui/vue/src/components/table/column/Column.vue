@@ -41,7 +41,7 @@ export default { ...SetupTableColumn }
 			всю ячейку: по ней тема раскладывает кнопку и текст, и ею названы
 			заголовок и поле ручки (`contentAria`).
 		-->
-		<span class="s-table-column__content" v-bind="contentAria">
+		<span class="so-table-column__content" v-bind="contentAria">
 			<slot :text="text" :sortable="sortable">{{ text }}</slot>
 		</span>
 
@@ -57,9 +57,9 @@ export default { ...SetupTableColumn }
 			Тема делает поле прозрачным во всю полосу и не пускает к нему
 			указатель: тянет плагин, а не браузер.
 		-->
-		<span v-if="resizerRendered" class="s-table-column__resizer">
+		<span v-if="resizerRendered" class="so-table-column__resizer">
 			<input
-				class="s-table-column__input"
+				class="so-table-column__input"
 				type="range"
 				:min="resizer.min"
 				:max="resizer.max"

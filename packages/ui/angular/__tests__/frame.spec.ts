@@ -30,7 +30,7 @@ import { TELEPORT_ANCHOR } from '../src/adapter/runtime/teleport'
 import { find, mountHost, nextFrame } from './mount'
 
 /** Узел Frame — там, куда его увёл телепорт. */
-const frame = () => find(document, '.s-frame', HTMLElement)
+const frame = () => find(document, '.so-frame', HTMLElement)
 
 /** Узел Frame, которого нет: классов ядра на нём нет, искать его — по селектору. */
 const bareFrame = () => find(document, '[so-frame]', HTMLElement)
@@ -39,7 +39,7 @@ const bareFrame = () => find(document, '[so-frame]', HTMLElement)
 function expectNoPanel(node: HTMLElement): void {
 	expect(node.style.display).toBe('none')
 	expect(node.textContent).toBe('')
-	expect(node.classList.contains('s-frame')).toBe(false)
+	expect(node.classList.contains('so-frame')).toBe(false)
 	expect(node.hasAttribute('data-open')).toBe(false)
 	expect(node.hasAttribute('data-layer')).toBe(false)
 	expect(node.style.position).toBe('')
@@ -333,14 +333,14 @@ describe('Frame · телепорт', () => {
 		expect(node.previousElementSibling?.className).toBe('before')
 		expect(node.nextElementSibling?.className).toBe('after')
 		expect(anchors(place)).toHaveLength(0)
-		expect(document.querySelectorAll('.s-frame')).toHaveLength(1)
+		expect(document.querySelectorAll('.so-frame')).toHaveLength(1)
 
 		fixture.componentInstance.contained.set(false)
 		fixture.detectChanges()
 
 		expect(frame()).toBe(node)
 		expect(node.parentElement).toBe(document.body)
-		expect(document.querySelectorAll('.s-frame')).toHaveLength(1)
+		expect(document.querySelectorAll('.so-frame')).toHaveLength(1)
 	})
 
 	/**
@@ -418,7 +418,7 @@ describe('Frame · телепорт', () => {
 
 		fixture.destroy()
 
-		expect(document.querySelector('.s-frame')).toBeNull()
+		expect(document.querySelector('.so-frame')).toBeNull()
 		expect(anchors(place)).toHaveLength(0)
 	})
 
@@ -450,7 +450,7 @@ describe('Frame · телепорт', () => {
 			expect(node.style.display, round).toBe('')
 			expect(anchors(find(host, '.card', HTMLElement)), round).toHaveLength(1)
 			expect(anchors(document.body), round).toHaveLength(1)
-			expect(document.querySelectorAll('.s-frame'), round).toHaveLength(1)
+			expect(document.querySelectorAll('.so-frame'), round).toHaveLength(1)
 		}
 	})
 
@@ -588,7 +588,7 @@ describe('Frame · телепорт', () => {
 		fixture.detectChanges()
 
 		const wraps = Array.from(host.querySelectorAll('.item'))
-		const panels = Array.from(document.body.querySelectorAll(':scope > .s-frame'))
+		const panels = Array.from(document.body.querySelectorAll(':scope > .so-frame'))
 
 		expect(wraps.map((wrap) => wrap.getAttribute('data-item'))).toEqual(['b', 'c', 'a'])
 		expect(wraps.map((wrap) => anchors(wrap).length)).toEqual([1, 1, 1])
@@ -606,7 +606,7 @@ describe('Frame · телепорт', () => {
 		await Promise.resolve()
 
 		expect(frame().parentElement).toBe(document.body)
-		expect(frame().querySelector('.s-button')).not.toBeNull()
+		expect(frame().querySelector('.so-button')).not.toBeNull()
 		expect(fixture.componentInstance.bundles.map((bundle) => bundle.locale.locale.tag)).toEqual(
 			[ruRU.tag],
 		)
@@ -711,7 +711,7 @@ describe('Frame · разметка потребителя', () => {
 		const fixture = mountHost(ConsumerHost)
 
 		expect(frame().parentElement).toBe(document.body)
-		expect(frame().classList.contains('s-frame')).toBe(true)
+		expect(frame().classList.contains('so-frame')).toBe(true)
 		expect(frame().classList.contains('app-panel')).toBe(true)
 		expect(frame().getAttribute('data-testid')).toBe('panel')
 

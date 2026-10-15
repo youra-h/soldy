@@ -128,14 +128,14 @@ describe('таблица и строка', () => {
 		const owner = new TTable()
 
 		expect(owner.tag).toBe('table')
-		expect(owner.classes.base).toBe('s-table')
+		expect(owner.classes.base).toBe('so-table')
 	})
 
 	it('строка — запись приложения, корень — tr', () => {
 		const row = new TTableRow({ data: ANNA })
 
 		expect(row.tag).toBe('tr')
-		expect(row.classes.base).toBe('s-table-row')
+		expect(row.classes.base).toBe('so-table-row')
 		expect(row.data).toBe(ANNA)
 		expect(row.getProps()).toMatchObject({ data: ANNA })
 		expect(new TTableRow().data).toBeUndefined()

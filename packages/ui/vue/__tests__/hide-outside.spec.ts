@@ -46,16 +46,16 @@ async function render(): Promise<Ref<boolean>> {
 		defineComponent({
 			render: () =>
 				h('div', [
-					h('button', { class: 's-test-page' }, 'Страница'),
+					h('button', { class: 'so-test-page' }, 'Страница'),
 					h(
 						Frame,
 						{
-							class: 's-test-dialog',
+							class: 'so-test-dialog',
 							visible: shown.value,
 							'onBundle:create': hideOutside,
 						},
 						() => [
-							h(Select, { class: 's-test-select' }, () => [
+							h(Select, { class: 'so-test-select' }, () => [
 								h(SelectItem, { key: 'a', value: 'a', text: 'Первый' }),
 								h(SelectItem, { key: 'b', value: 'b', text: 'Второй' }),
 							]),
@@ -98,8 +98,8 @@ const ariaHiddenNodes = () =>
 		]),
 	)
 
-const field = () => find('.s-test-select input')
-const list = () => find('.s-select__panel')
+const field = () => find('.so-test-select input')
+const list = () => find('.so-select__panel')
 
 describe('модальный слой с Select внутри', () => {
 	it('окно показано — страница под aria-hidden, окно и его содержимое доступны', async () => {
@@ -108,8 +108,8 @@ describe('модальный слой с Select внутри', () => {
 		shown.value = true
 		await settle()
 
-		expect(muted(find('.s-test-page'))).toBe(true)
-		expect(muted(find('.s-test-dialog'))).toBe(false)
+		expect(muted(find('.so-test-page'))).toBe(true)
+		expect(muted(find('.so-test-dialog'))).toBe(false)
 		expect(muted(field())).toBe(false)
 	})
 
@@ -127,7 +127,7 @@ describe('модальный слой с Select внутри', () => {
 
 		expect(field().getAttribute('aria-expanded')).toBe('true')
 		expect(muted(list())).toBe(false)
-		expect(muted(find('.s-select__panel [role="option"]'))).toBe(false)
+		expect(muted(find('.so-select__panel [role="option"]'))).toBe(false)
 	})
 
 	it('окно скрыто — всё как было, в том числе чужие aria-hidden', async () => {
@@ -144,7 +144,7 @@ describe('модальный слой с Select внутри', () => {
 		await settle()
 
 		expect(ariaHiddenNodes()).toEqual(before)
-		expect(muted(find('.s-test-page'))).toBe(false)
+		expect(muted(find('.so-test-page'))).toBe(false)
 		expect(muted(list())).toBe(false)
 	})
 })

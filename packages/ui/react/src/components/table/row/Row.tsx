@@ -54,7 +54,7 @@ export const TableRow = withRenderBoundary(function TableRow(
 	return (
 		<Tag {...toRootProps(ref, state, [attrs, aria, dataset], forwardProps)}>
 			{selecting ? (
-				<td className="s-table-row__select" {...toAriaProps(cellAria)}>
+				<td className="so-table-row__select" {...toAriaProps(cellAria)}>
 					<CheckBox
 						key={checkBox?.uid}
 						embedded="table.select"

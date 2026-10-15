@@ -81,6 +81,6 @@ describe('TComponent — невизуальная база', () => {
 
 		expect(frame).toBeInstanceOf(TComponentView)
 		expect(frame.visible).toBe(false) // TFrame.defaultValues
-		expect(frame.classes.toArray()).toContain('s-frame')
+		expect(frame.classes.toArray()).toContain('so-frame')
 	})
 })

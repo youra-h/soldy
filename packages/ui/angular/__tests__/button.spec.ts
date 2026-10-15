@@ -71,7 +71,7 @@ function firstRoot(fixture: ComponentFixture<unknown>): HTMLElement {
 	return element
 }
 
-const text = (element: Element) => element.querySelector('.s-button__text')?.textContent?.trim()
+const text = (element: Element) => element.querySelector('.so-button__text')?.textContent?.trim()
 
 @Component({
 	standalone: true,
@@ -181,7 +181,7 @@ describe('Button · входы', () => {
 
 		expect(el.localName).toBe('button')
 		expect(Array.from(el.classList)).toEqual(
-			expect.arrayContaining(['s-button', 's-button--size-normal']),
+			expect.arrayContaining(['so-button', 'so-button--size-normal']),
 		)
 		// variant и view — значения темы: без них модификаторов нет вовсе
 		expect(el.className).not.toMatch(/--(variant|view)-/)
@@ -193,14 +193,14 @@ describe('Button · входы', () => {
 		expect(text(root(fixture))).toBe('Hello')
 		expect(Array.from(root(fixture).classList)).toEqual(
 			expect.arrayContaining([
-				's-button',
-				's-button--size-xl',
-				's-button--variant-brand',
-				's-button--view-ghost',
+				'so-button',
+				'so-button--size-xl',
+				'so-button--variant-brand',
+				'so-button--view-ghost',
 			]),
 		)
 		// Старые классы заменены, а не накоплены
-		expect(root(fixture).className).not.toContain('s-button--size-normal')
+		expect(root(fixture).className).not.toContain('so-button--size-normal')
 	})
 
 	/**
@@ -249,7 +249,7 @@ describe('Button · внешний ctrl', () => {
 		const fixture = mount({ ctrl })
 
 		expect(text(root(fixture))).toBe('FromCtrl')
-		expect(root(fixture).className).toContain('s-button--variant-brand')
+		expect(root(fixture).className).toContain('so-button--variant-brand')
 
 		ctrl.text = 'Changed'
 		fixture.detectChanges()
@@ -298,7 +298,7 @@ class InlineDisplayHost {
 @Component({
 	standalone: true,
 	imports: [TButtonComponent],
-	template: `<button so-button class="own s-button--size-normal" [size]="size()"></button>`,
+	template: `<button so-button class="own so-button--size-normal" [size]="size()"></button>`,
 })
 class SameClassHost {
 	readonly size = signal<TComponentSize>('normal')
@@ -342,8 +342,8 @@ describe('Button · разметка потребителя на корне', ()
 				'own',
 				'marked',
 				'picked',
-				's-button',
-				's-button--size-normal',
+				'so-button',
+				'so-button--size-normal',
 			]),
 		)
 		expect(flex).not.toBe('')
@@ -353,9 +353,9 @@ describe('Button · разметка потребителя на корне', ()
 		fixture.detectChanges()
 
 		expect(Array.from(el.classList)).toEqual(
-			expect.arrayContaining(['own', 'marked', 'picked', 's-button', 's-button--size-xl']),
+			expect.arrayContaining(['own', 'marked', 'picked', 'so-button', 'so-button--size-xl']),
 		)
-		expect(el.classList).not.toContain('s-button--size-normal')
+		expect(el.classList).not.toContain('so-button--size-normal')
 		expect(el.style.flex).toBe(flex)
 		expect(el.getAttribute('title')).toBe('Сохранить')
 
@@ -366,7 +366,7 @@ describe('Button · разметка потребителя на корне', ()
 		fixture.detectChanges()
 
 		expect(Array.from(el.classList)).toEqual(
-			expect.arrayContaining(['own', 's-button', 's-button--size-xl']),
+			expect.arrayContaining(['own', 'so-button', 'so-button--size-xl']),
 		)
 		expect(el.classList).not.toContain('marked')
 		expect(el.classList).not.toContain('picked')
@@ -408,8 +408,8 @@ describe('Button · разметка потребителя на корне', ()
 		fixture.componentInstance.size.set('xl')
 		fixture.detectChanges()
 
-		expect(el.classList).toContain('s-button--size-xl')
-		expect(el.classList).not.toContain('s-button--size-normal')
+		expect(el.classList).toContain('so-button--size-xl')
+		expect(el.classList).not.toContain('so-button--size-normal')
 		expect(el.classList).toContain('own')
 	})
 
@@ -465,7 +465,7 @@ describe('Button · разметка потребителя на корне', ()
 		expect(el.hasAttribute('aria_label')).toBe(false)
 
 		expect(text(el)).toBe('Сохранить')
-		expect(el.classList).toContain('s-button--size-xl')
+		expect(el.classList).toContain('so-button--size-xl')
 		expect(el.getAttribute('aria-label')).toBe('Сохранить файл')
 	})
 
@@ -534,14 +534,14 @@ describe('Button · слоты', () => {
 	it('содержимое по умолчанию переопределяет text', () => {
 		const el = firstRoot(mountHost(DefaultSlotHost))
 
-		expect(el.querySelector('.s-button__text b')?.textContent).toBe('Custom')
+		expect(el.querySelector('.so-button__text b')?.textContent).toBe('Custom')
 		expect(text(el)).toBe('Custom')
 	})
 
 	it('<ng-template slot="default"> получает scope с text', () => {
 		const el = firstRoot(mountHost(ScopedSlotHost))
 
-		expect(el.querySelector('.s-button__text b')?.textContent).toBe('Scoped!')
+		expect(el.querySelector('.so-button__text b')?.textContent).toBe('Scoped!')
 	})
 
 	it('слоты не становятся атрибутами корня', () => {

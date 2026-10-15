@@ -40,10 +40,10 @@ describe('id монтирования', () => {
 		const first = (await bundleOf()).createId('part')
 		const second = (await bundleOf()).createId('part')
 
-		// Свой счётчик набора даёт `s-<n>`: им набор берёт, когда адаптер id
+		// Свой счётчик набора даёт `so-<n>`: им набор берёт, когда адаптер id
 		// монтирования не передал
-		expect(first).not.toMatch(/^s-\d+-part$/)
-		expect(second).not.toMatch(/^s-\d+-part$/)
+		expect(first).not.toMatch(/^so-\d+-part$/)
+		expect(second).not.toMatch(/^so-\d+-part$/)
 		expect(first).toMatch(/-part$/)
 		expect(first).not.toBe(second)
 	})
@@ -65,10 +65,10 @@ describe('компонент в tag', () => {
 
 		const link = find(container, ':scope > a', HTMLAnchorElement)
 
-		expect([...link.classList]).toEqual(expect.arrayContaining(['s-button', 'app-link']))
+		expect([...link.classList]).toEqual(expect.arrayContaining(['so-button', 'app-link']))
 		expect(link.getAttribute('href')).toBe('/target')
 		expect(link.getAttribute('data-disabled')).toBe('false')
-		expect(link.querySelector('.s-button__text')?.textContent).toBe('Перейти')
+		expect(link.querySelector('.so-button__text')?.textContent).toBe('Перейти')
 		expect(onElementReady).toHaveBeenCalledTimes(1)
 		expect(onElementReady).toHaveBeenCalledWith(link)
 	})

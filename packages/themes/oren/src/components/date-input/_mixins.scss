@@ -16,7 +16,7 @@
 	@include input.field-height('date-input', $size);
 	--s-date-input-indent: calc(var(--spacing) * #{map.get($scale, 'indent')});
 
-	.s-date-input__segments {
+	.so-date-input__segments {
 		@if map.get($scale, 'text') {
 			@apply #{map.get($scale, 'text')};
 		}

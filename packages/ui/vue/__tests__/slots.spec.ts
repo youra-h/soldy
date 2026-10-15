@@ -287,7 +287,7 @@ describe('поведение слотов Button', () => {
 			slots: { default: '<b>Custom</b>' },
 		})
 
-		expect(wrapper.find('.s-button__text').text()).toBe('Custom')
+		expect(wrapper.find('.so-button__text').text()).toBe('Custom')
 	})
 
 	it('слот default получает scope с text', () => {
@@ -296,13 +296,13 @@ describe('поведение слотов Button', () => {
 			slots: { default: '<template #default="{ text }"><b>{{ text }}!</b></template>' },
 		})
 
-		expect(wrapper.find('.s-button__text').text()).toBe('Scoped!')
+		expect(wrapper.find('.so-button__text').text()).toBe('Scoped!')
 	})
 
 	it('без слота показывается text из props', () => {
 		const wrapper = mount(Button, { props: { text: 'Fallback' } })
 
-		expect(wrapper.find('.s-button__text').text()).toBe('Fallback')
+		expect(wrapper.find('.so-button__text').text()).toBe('Fallback')
 	})
 })
 
@@ -328,7 +328,7 @@ describe('слот не ограничивает содержимое', () => {
 			},
 		})
 
-		expect(wrapper.find('.s-button__text table td').text()).toBe('ячейка')
+		expect(wrapper.find('.so-button__text table td').text()).toBe('ячейка')
 		// Компонент не перестал быть кнопкой
 		expect(wrapper.element.tagName.toLowerCase()).toBe('button')
 	})
@@ -341,7 +341,7 @@ describe('слот не ограничивает содержимое', () => {
 			},
 		})
 
-		expect(wrapper.find('.s-button__text li').text()).toBe('Заголовок')
+		expect(wrapper.find('.so-button__text li').text()).toBe('Заголовок')
 	})
 
 	it('в leading и trailing тоже произвольная разметка', () => {

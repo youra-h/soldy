@@ -31,7 +31,7 @@ export default { ...SetupCalendarItem }
 			фокуса, рамка «сегодня». Стоит поверх полосы диапазона. `div`, а не
 			`span`: в слот кладут и блочное содержимое.
 		-->
-		<div class="s-calendar-item__day">
+		<div class="so-calendar-item__day">
 			<!-- Слот по умолчанию со scope `{ text }`; пустой — номер дня `text`. -->
 			<slot :text="text">{{ text }}</slot>
 		</div>

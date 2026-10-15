@@ -45,14 +45,14 @@ export const progressSpinnerTemplate: ITemplate<IProgressSpinner> = {
 		const { ownerDocument } = root
 		const ring = ownerDocument.createElementNS(SVG, 'svg')
 
-		ring.setAttribute('class', 's-progress-spinner__ring')
+		ring.setAttribute('class', 'so-progress-spinner__ring')
 		ring.setAttribute('viewBox', '0 0 16 16')
 		ring.setAttribute('aria-hidden', 'true')
 
 		for (const { part, fraction } of CIRCLES) {
 			const circle = ownerDocument.createElementNS(SVG, 'circle')
 
-			circle.setAttribute('class', `s-progress-spinner__${part}`)
+			circle.setAttribute('class', `so-progress-spinner__${part}`)
 			circle.setAttribute('cx', '8')
 			circle.setAttribute('cy', '8')
 			circle.setAttribute('r', '7')

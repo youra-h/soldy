@@ -38,7 +38,7 @@
 
 	Наборы ядра стоят на двух элементах. Корень несёт `dataset`, `attrs` и место
 	в коллекции (`order`): тема читает `data-content-fit` с него. Строка несёт
-	`aria` и тот же `dataset` — выбор и подсветку тема красит на `.s-button`.
+	`aria` и тот же `dataset` — выбор и подсветку тема красит на `.so-button`.
 	Атрибуты потребителя делятся так же, как у Vue: класс и стиль — корню,
 	остальное — строке, поверх её наборов: `tabindex="-1"` элемента перекрывает
 	`tabindex="0"`, который кнопка на `div` ставит себе сама.
@@ -56,7 +56,7 @@
 	объявление.
 -->
 {#snippet mark()}
-	<span class="s-list-box-item__indicator" aria-hidden="true">
+	<span class="so-list-box-item__indicator" aria-hidden="true">
 		{#if props['indicator-icon']}
 			{@render props['indicator-icon']({ selected: state.selected ?? false })}
 		{:else if state.selected}

@@ -50,7 +50,7 @@ const CloseGlyph = roleIcon('close')
  * корни предков, а select-only Select открывает панель кликом по корню.
  *
  * У кнопки нет `view`: значения вида объявляет тема, и разметка библиотеки их
- * не знает. Кнопку тема красит по контексту (`.s-input__clear`).
+ * не знает. Кнопку тема красит по контексту (`.so-input__clear`).
  */
 export function Input(props: InputProps): JSX.Element {
 	const binding = setupInput(props)
@@ -86,7 +86,7 @@ export function Input(props: InputProps): JSX.Element {
 		<Show when={state.rendered}>
 			<Dynamic {...root()} component={rootTag(state.tag)} ref={binding.ref}>
 				<Show when={leadingSlot()}>
-					<div class="s-input__leading">{leadingSlot()}</div>
+					<div class="so-input__leading">{leadingSlot()}</div>
 				</Show>
 				<input
 					type="text"
@@ -107,14 +107,14 @@ export function Input(props: InputProps): JSX.Element {
 						trailingSlot() !== undefined
 					}
 				>
-					<div class="s-input__trailing">
+					<div class="so-input__trailing">
 						<Show
 							when={clearSlot()}
 							fallback={
 								<Show when={state.clearable}>
 									<Button
 										embedded="input.clear"
-										class="s-input__clear"
+										class="so-input__clear"
 										size={state.size}
 										disabled={state.disabled}
 										{...state.clearAria}

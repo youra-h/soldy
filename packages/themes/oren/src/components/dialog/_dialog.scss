@@ -52,14 +52,14 @@ $exit-duration: 150ms;
 $easing: linear;
 
 // Подложка — на весь экран, под панелью (см. `modal.backdrop`).
-.s-dialog__backdrop {
+.so-dialog__backdrop {
 	@apply fixed inset-0;
 	@include modal.backdrop;
 }
 
 // Панель — поверхность модального слоя (`modal.surface`) со скруглением со
 // всех сторон: окно стоит поодаль от краёв экрана.
-.s-dialog {
+.so-dialog {
 	// Место — полями, как у нативного `<dialog>`. Панель растянута по области
 	// — экрану без отступов, — а `auto`-поля по обе стороны оси ставят её по
 	// центру области: так и размер, и место считает браузер, без замеров.
@@ -157,8 +157,8 @@ $easing: linear;
 // Надстройки движения (`mixins/_motion.scss`) здесь нет, и она не нужна:
 // прозрачность — не движение, окно стоит на месте, и переход один в любом
 // режиме движения.
-.s-dialog,
-.s-dialog__backdrop {
+.so-dialog,
+.so-dialog__backdrop {
 	transition-property: opacity, display;
 	transition-timing-function: $easing;
 	transition-behavior: allow-discrete;
@@ -174,11 +174,11 @@ $easing: linear;
 }
 
 @starting-style {
-	.s-dialog[data-open='true'],
-	.s-dialog__backdrop[data-open='true'] {
+	.so-dialog[data-open='true'],
+	.so-dialog__backdrop[data-open='true'] {
 		@apply opacity-0;
 	}
 }
 
 // Заголовок, тело, подвал и две кнопки шапки: разворот, потом крестик.
-@include modal.parts('s-dialog', ('maximize', 'close'));
+@include modal.parts('so-dialog', ('maximize', 'close'));

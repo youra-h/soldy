@@ -57,16 +57,16 @@ const buttonOf = (scope: ParentNode, selector: string): HTMLButtonElement => {
 async function mount(content = '<button class="item">Первый</button>') {
 	document.body.insertAdjacentHTML(
 		'beforeend',
-		`<div class="s-scroller">
-			<button class="s-scroller__prev" disabled>Назад</button>
-			<div class="s-scroller__viewport">${content}</div>
-			<button class="s-scroller__next" disabled>Вперёд</button>
+		`<div class="so-scroller">
+			<button class="so-scroller__prev" disabled>Назад</button>
+			<div class="so-scroller__viewport">${content}</div>
+			<button class="so-scroller__next" disabled>Вперёд</button>
 		</div>
 		<button class="elsewhere">Мимо</button>`,
 	)
 
-	const root = document.querySelector('.s-scroller')
-	const viewport = document.querySelector('.s-scroller__viewport')
+	const root = document.querySelector('.so-scroller')
+	const viewport = document.querySelector('.so-scroller__viewport')
 
 	if (!root || !viewport) throw new Error('разметки ленты нет')
 
@@ -86,8 +86,8 @@ async function mount(content = '<button class="item">Первый</button>') {
 	await nextFrame()
 
 	// Свои кнопки — прямые дети корня: у вложенной ленты классы те же
-	const prev = buttonOf(root, ':scope > .s-scroller__prev')
-	const next = buttonOf(root, ':scope > .s-scroller__next')
+	const prev = buttonOf(root, ':scope > .so-scroller__prev')
+	const next = buttonOf(root, ':scope > .so-scroller__next')
 
 	/**
 	 * Перерисовка, как у адаптера: кнопки выключает правило ядра. Кнопку,
@@ -160,7 +160,10 @@ describe('плагин фокус не трогает', () => {
 	it.each([
 		{ name: 'фокус на содержимом ленты', selector: '.item' },
 		{ name: 'фокус снаружи ленты', selector: '.elsewhere' },
-		{ name: 'фокус на кнопке напротив', selector: ':scope > .s-scroller > .s-scroller__prev' },
+		{
+			name: 'фокус на кнопке напротив',
+			selector: ':scope > .so-scroller > .so-scroller__prev',
+		},
 	])('$name — край закрылся, фокус на месте', async ({ selector }) => {
 		const { edges } = await mount()
 		const focused = buttonOf(document.body, selector)
@@ -256,10 +259,10 @@ describe('отдать фокус некому', () => {
  * нашем вьюпорте. Её кнопки плагин не считает своими — как и нажатия по ним.
  */
 describe('вложенная лента', () => {
-	const NESTED = `<div class="s-scroller">
-		<button class="s-scroller__prev">Назад</button>
-		<div class="s-scroller__viewport"></div>
-		<button class="s-scroller__next">Вперёд</button>
+	const NESTED = `<div class="so-scroller">
+		<button class="so-scroller__prev">Назад</button>
+		<div class="so-scroller__viewport"></div>
+		<button class="so-scroller__next">Вперёд</button>
 	</div>`
 
 	it('фокус получает кнопка этой ленты, а не вложенной', async () => {
@@ -276,7 +279,7 @@ describe('вложенная лента', () => {
 
 	it('фокус на кнопке вложенной ленты — край этой ленты его не трогает', async () => {
 		const { edges } = await mount(NESTED)
-		const nested = buttonOf(document, '.s-scroller__viewport .s-scroller__next')
+		const nested = buttonOf(document, '.so-scroller__viewport .so-scroller__next')
 
 		edges(true, true)
 		nested.focus()

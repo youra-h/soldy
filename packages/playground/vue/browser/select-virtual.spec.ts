@@ -71,13 +71,13 @@ function find(selector: string): HTMLElement {
 	return element
 }
 
-const field = () => find('.s-select__field input')
-const panel = () => find('.s-select__panel')
-const list = () => find('.s-select__list')
+const field = () => find('.so-select__field input')
+const panel = () => find('.so-select__panel')
+const list = () => find('.so-select__list')
 
 /** Нарисованные опции. */
 const drawn = (): HTMLElement[] => [
-	...document.querySelectorAll<HTMLElement>('.s-select__list .s-select-item'),
+	...document.querySelectorAll<HTMLElement>('.so-select__list .so-select-item'),
 ]
 
 /** Опция по тексту, если она в документе. */
@@ -86,7 +86,7 @@ const optionOf = (text: string): HTMLElement | undefined =>
 
 /** Строка опции — на ней набор `aria` опции: `id`, `aria-selected`, место в наборе. */
 function rowOf(text: string): HTMLElement {
-	const row = optionOf(text)?.querySelector(':scope > .s-button')
+	const row = optionOf(text)?.querySelector(':scope > .so-button')
 
 	if (!(row instanceof HTMLElement)) throw new Error(`${text}: строки нет`)
 
@@ -282,7 +282,7 @@ describe('отбор в `editable`', () => {
 		]
 
 		expect(drawn().map((option) => option.textContent?.trim())).toEqual(texts)
-		expect(document.querySelectorAll('.s-select__filler')).toHaveLength(0)
+		expect(document.querySelectorAll('.so-select__filler')).toHaveLength(0)
 		expect(rowOf('Пункт 99').getAttribute('aria-setsize')).toBe('11')
 		expect(rowOf('Пункт 999').getAttribute('aria-posinset')).toBe('11')
 		expectHighlighted('Пункт 99')
@@ -301,7 +301,7 @@ describe('выбор вне окна', () => {
 		await mount({ mode: 'multiple', value: ['v2', 'v900'] })
 
 		const tags = () =>
-			[...document.querySelectorAll<HTMLElement>('.s-select__field .s-tags-item')]
+			[...document.querySelectorAll<HTMLElement>('.so-select__field .so-tags-item')]
 				.map((tag) => tag.textContent?.trim())
 				.sort()
 
@@ -309,9 +309,9 @@ describe('выбор вне окна', () => {
 		expect(tags()).toEqual(['Пункт 2', 'Пункт 900'])
 
 		const tag = [
-			...document.querySelectorAll<HTMLElement>('.s-select__field .s-tags-item'),
+			...document.querySelectorAll<HTMLElement>('.so-select__field .so-tags-item'),
 		].find((node) => node.textContent?.trim() === 'Пункт 900')
-		const close = tag?.querySelector(':scope > .s-tags-item__close')
+		const close = tag?.querySelector(':scope > .so-tags-item__close')
 
 		if (!(close instanceof HTMLElement)) throw new Error('крестика тега нет')
 
@@ -321,7 +321,7 @@ describe('выбор вне окна', () => {
 		expect(tags()).toEqual(['Пункт 2'])
 
 		// Открытая панель: прокрутка к опции — она не выбрана
-		await userEvent.click(find('.s-select__arrow'))
+		await userEvent.click(find('.so-select__arrow'))
 		await frames()
 
 		list().scrollTop = 899 * step()

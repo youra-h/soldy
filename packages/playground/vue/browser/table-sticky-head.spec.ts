@@ -90,7 +90,10 @@ const sticky = (engine: TTableCollection, stickyHead = true): VNode =>
 const scrollBox = (content: VNode, height = 240, width = 400): VNode =>
 	h(
 		'div',
-		{ class: 's-test-scroll', style: `width: ${width}px; height: ${height}px; overflow: auto` },
+		{
+			class: 'so-test-scroll',
+			style: `width: ${width}px; height: ${height}px; overflow: auto`,
+		},
 		[content],
 	)
 
@@ -118,15 +121,15 @@ function scrollingElement(): HTMLElement {
 const box = (element: Element): DOMRect => element.getBoundingClientRect()
 
 /** Шапка — `thead` таблицы в узле. */
-const headOf = (root: ParentNode = document): HTMLElement => find('.s-table__head', root)
+const headOf = (root: ParentNode = document): HTMLElement => find('.so-table__head', root)
 
 /** Строки тела — по порядку. */
 const rows = (root: ParentNode = document): HTMLElement[] => [
-	...root.querySelectorAll<HTMLElement>('.s-table-row'),
+	...root.querySelectorAll<HTMLElement>('.so-table-row'),
 ]
 
 /** Заголовки колонок — по порядку. */
-const headers = (): HTMLElement[] => [...document.querySelectorAll<HTMLElement>('.s-table-column')]
+const headers = (): HTMLElement[] => [...document.querySelectorAll<HTMLElement>('.so-table-column')]
 
 /** Прокрутить контейнер так, чтобы верх строки встал вровень с низом шапки. */
 async function rowUnderHead(scroller: HTMLElement, row: Element): Promise<void> {
@@ -161,22 +164,22 @@ describe('место шапки', () => {
 	it('без пропа шапка уезжает вместе со строками, и вид её прежний', async () => {
 		await show(() => scrollBox(sticky(engineOf(), false)))
 
-		const scroller = find('.s-test-scroll')
+		const scroller = find('.so-test-scroll')
 
 		scroller.scrollTop = 300
 		await frames(2)
 
-		expect(find('table.s-table').dataset.stickyHead).toBe('false')
+		expect(find('table.so-table').dataset.stickyHead).toBe('false')
 		expect(box(headOf()).bottom).toBeLessThan(box(scroller).top)
 		// Фона у шапки нет, линия — рамка строки шапки
 		expect(opacity(style(headOf()).backgroundColor)).toBe(0)
-		expect(style(find('.s-table__head-row')).borderBottomWidth).toBe('1px')
+		expect(style(find('.so-table__head-row')).borderBottomWidth).toBe('1px')
 	})
 
 	it('в контейнере — у верха окна прокрутки', async () => {
 		await show(() => scrollBox(sticky(engineOf())))
 
-		const scroller = find('.s-test-scroll')
+		const scroller = find('.so-test-scroll')
 
 		scroller.scrollTop = 300
 		await frames(2)
@@ -192,7 +195,7 @@ describe('место шапки', () => {
 		await show(() =>
 			h('div', { style: '--s-table-head-offset: 48px' }, [
 				h('div', {
-					class: 's-test-bar',
+					class: 'so-test-bar',
 					style: 'position: sticky; top: 0; z-index: 40; height: 48px; background: var(--s-neutral-50)',
 				}),
 				sticky(engineOf(60)),
@@ -204,7 +207,7 @@ describe('место шапки', () => {
 
 		const head = box(headOf())
 
-		expect(box(find('.s-test-bar')).top).toBe(0)
+		expect(box(find('.so-test-bar')).top).toBe(0)
 		expect(Math.abs(head.top - 48)).toBeLessThanOrEqual(EPSILON)
 		// Под полосой — шапка, а не строки
 		expect(headOf().contains(document.elementFromPoint(head.left + 40, 50))).toBe(true)
@@ -229,7 +232,7 @@ describe('место шапки', () => {
 			),
 		)
 
-		const body = find('.s-dialog__body')
+		const body = find('.so-dialog__body')
 
 		expect(body.scrollHeight - body.clientHeight).toBeGreaterThan(300)
 
@@ -252,7 +255,7 @@ describe('место шапки', () => {
 			),
 		)
 
-		const content = find('.s-popover__content')
+		const content = find('.so-popover__content')
 
 		expect(content.scrollHeight - content.clientHeight).toBeGreaterThan(200)
 
@@ -279,7 +282,7 @@ describe('место шапки', () => {
 			),
 		)
 
-		const scroller = find('.s-test-scroll')
+		const scroller = find('.so-test-scroll')
 
 		scroller.scrollTop = 200
 		await frames(2)
@@ -300,8 +303,8 @@ describe('над строками — шапка', () => {
 	it('нажатие над строкой, ушедшей под шапку, — шапке', async () => {
 		await show(() => scrollBox(sticky(engineOf(40, { columns: FITTING }))))
 
-		const scroller = find('.s-test-scroll')
-		const field = rows()[10].querySelector('.s-table-row__select input')
+		const scroller = find('.so-test-scroll')
+		const field = rows()[10].querySelector('.so-table-row__select input')
 
 		if (!(field instanceof HTMLInputElement)) throw new Error('чекбокса строки нет')
 
@@ -346,10 +349,10 @@ describe('фон — поверхность места', () => {
 		{
 			name: 'страница',
 			markup: (table: VNode) =>
-				h('div', { class: 's-test-place', style: 'background: var(--s-neutral-50)' }, [
+				h('div', { class: 'so-test-place', style: 'background: var(--s-neutral-50)' }, [
 					table,
 				]),
-			place: () => find('.s-test-place'),
+			place: () => find('.so-test-place'),
 		},
 		{
 			name: 'карточка своего цвета',
@@ -357,12 +360,12 @@ describe('фон — поверхность места', () => {
 				h(
 					'div',
 					{
-						class: 's-test-place',
+						class: 'so-test-place',
 						style: 'padding: 12px; background: var(--s-neutral-100); --s-place-surface: var(--s-neutral-100)',
 					},
 					[table],
 				),
-			place: () => find('.s-test-place'),
+			place: () => find('.so-test-place'),
 		},
 		{
 			name: 'Popover',
@@ -372,13 +375,13 @@ describe('фон — поверхность места', () => {
 					{ open: true, aria_label: 'Строки' },
 					{ trigger: () => h(Button, { text: 'Открыть' }), default: () => table },
 				),
-			place: () => find('.s-popover__panel'),
+			place: () => find('.so-popover__panel'),
 		},
 		{
 			name: 'Dialog',
 			markup: (table: VNode) =>
 				h(Dialog, { visible: true }, { title: () => 'Строки', default: () => table }),
-			place: () => find('.s-dialog'),
+			place: () => find('.so-dialog'),
 		},
 	]
 
@@ -434,24 +437,24 @@ describe('линия под шапкой', () => {
 					style: `padding: 8px; background: ${scenario.color}; --s-place-surface: ${scenario.color}`,
 				},
 				[
-					h('div', { class: 's-test-away', style: 'height: 24px' }),
+					h('div', { class: 'so-test-away', style: 'height: 24px' }),
 					scrollBox(sticky(engineOf())),
 					h(Button, { view: 'outlined', text: 'Рамка' }),
 				],
 			),
 		)
-		await userEvent.hover(find('.s-test-away'))
+		await userEvent.hover(find('.so-test-away'))
 
-		const scroller = find('.s-test-scroll')
+		const scroller = find('.so-test-scroll')
 
 		scroller.scrollTop = 300
 		await frames(2)
 
 		const head = headOf()
 
-		expect(style(find('.s-table__head-row')).borderBottomWidth).toBe('0px')
+		expect(style(find('.so-table__head-row')).borderBottomWidth).toBe('0px')
 		expect(pixel([lineColor(head)])).toEqual(
-			pixel([style(find('.s-button--view-outlined')).borderTopColor]),
+			pixel([style(find('.so-button--view-outlined')).borderTopColor]),
 		)
 	})
 
@@ -500,7 +503,7 @@ describe('снимок шапки', () => {
 	/** Ячейки тела — ярким цветом стилем спека. */
 	const loud = document.createElement('style')
 
-	loud.textContent = '.s-test-stage .s-table-row > * { background-color: rgb(255 0 0); }'
+	loud.textContent = '.so-test-stage .so-table-row > * { background-color: rgb(255 0 0); }'
 
 	beforeAll(() => {
 		document.head.append(loud)
@@ -519,7 +522,7 @@ describe('снимок шапки', () => {
 		h(
 			'div',
 			{
-				class: 's-test-scroll',
+				class: 'so-test-scroll',
 				style: stickyHead ? 'width: 100%; height: 320px; overflow: auto' : 'width: 100%',
 			},
 			[
@@ -544,11 +547,11 @@ describe('снимок шапки', () => {
 			h(
 				'div',
 				{
-					class: 's-test-stage',
+					class: 'so-test-stage',
 					style: 'width: 640px; padding: 12px; background: var(--s-neutral-50)',
 				},
 				[
-					h('div', { class: 's-test-away', style: 'height: 24px' }),
+					h('div', { class: 'so-test-away', style: 'height: 24px' }),
 					preview(stickyHead.value),
 				],
 			),
@@ -560,7 +563,7 @@ describe('снимок шапки', () => {
 
 	/** Указатель — в полосу над превью; переходы заголовков доиграли. */
 	async function away(): Promise<void> {
-		await userEvent.hover(find('.s-test-away'))
+		await userEvent.hover(find('.so-test-away'))
 		await settled(headOf())
 	}
 
@@ -613,7 +616,7 @@ describe('снимок шапки', () => {
 	 * когда строк под шапкой нет.
 	 */
 	async function expectHeadSteady(): Promise<void> {
-		const scroller = find('.s-test-scroll')
+		const scroller = find('.so-test-scroll')
 
 		scroller.scrollTop = 0
 		await frames(2)
@@ -636,7 +639,7 @@ describe('снимок шапки', () => {
 
 	/** Строки уже под шапкой — как на стенде, когда берут заголовок прокрученной таблицы. */
 	async function scrollUnderHead(): Promise<void> {
-		find('.s-test-scroll').scrollTop = 57
+		find('.so-test-scroll').scrollTop = 57
 		await frames(2)
 	}
 
@@ -684,7 +687,7 @@ describe('снимок шапки', () => {
 
 		const rest = await restOf(nameHeader())
 		const width = box(nameHeader()).width
-		const handle = box(find('.s-table-column__resizer', nameHeader()))
+		const handle = box(find('.so-table-column__resizer', nameHeader()))
 		const x = handle.left + handle.width / 2
 		const y = handle.top + handle.height / 2
 
@@ -756,7 +759,7 @@ describe('слои шапки', () => {
 
 		await show(() => scrollBox(sticky(engine), 240, 400))
 
-		find('.s-test-scroll').scrollTop = 300
+		find('.so-test-scroll').scrollTop = 300
 		await frames(2)
 
 		return engine
@@ -767,7 +770,7 @@ describe('слои шапки', () => {
 		const [name] = headers()
 		const edge = box(name)
 		const y = edge.top + edge.height / 2
-		const resizer = find('.s-table-column__resizer', name)
+		const resizer = find('.so-table-column__resizer', name)
 
 		expect(resizer.contains(document.elementFromPoint(edge.right + 4, y))).toBe(true)
 		expect(resizer.contains(document.elementFromPoint(edge.right - 4, y))).toBe(true)
@@ -844,7 +847,7 @@ describe('фокус ниже шапки', () => {
 
 	/** Поле чекбокса строки — по номеру строки тела с нуля. */
 	const fieldOf = (index: number): HTMLInputElement => {
-		const input = rows()[index]?.querySelector('.s-table-row__select input')
+		const input = rows()[index]?.querySelector('.so-table-row__select input')
 
 		if (!(input instanceof HTMLInputElement)) throw new Error(`чекбокса строки ${index} нет`)
 
@@ -881,7 +884,7 @@ describe('фокус ниже шапки', () => {
 
 		expectHeadHeight(tall)
 
-		await rowUnderHead(find('.s-test-scroll'), rows()[20])
+		await rowUnderHead(find('.so-test-scroll'), rows()[20])
 		await userEvent.click(cellOf(20))
 
 		expect(document.activeElement).toBe(cellOf(20))
@@ -900,7 +903,7 @@ describe('фокус ниже шапки', () => {
 		expectHeadHeight(tall)
 
 		// Строка на страницу выше — под шапкой, а та, с которой листают, видна
-		const scroller = find('.s-test-scroll')
+		const scroller = find('.so-test-scroll')
 
 		scroller.scrollTop += box(rows()[20]).top - box(headOf()).top
 		await frames(2)
@@ -921,7 +924,7 @@ describe('фокус ниже шапки', () => {
 
 		expectHeadHeight(tall)
 
-		await rowUnderHead(find('.s-test-scroll'), rows()[20])
+		await rowUnderHead(find('.so-test-scroll'), rows()[20])
 		fieldOf(20).focus()
 
 		expect(document.activeElement).toBe(fieldOf(20))
@@ -949,7 +952,7 @@ describe('высота шапки', () => {
 			]),
 		)
 
-		const table = find('table.s-table')
+		const table = find('table.so-table')
 		const height = () => table.style.getPropertyValue('--s-table-head-height')
 		const drift = () => Math.abs(parseFloat(height()) - box(headOf()).height)
 
@@ -971,7 +974,7 @@ describe('высота шапки', () => {
 	it('без пропа переменной нет', async () => {
 		await show(() => sticky(engineOf(5), false))
 
-		expect(find('table.s-table').style.getPropertyValue('--s-table-head-height')).toBe('')
+		expect(find('table.so-table').style.getPropertyValue('--s-table-head-height')).toBe('')
 	})
 })
 
@@ -988,13 +991,13 @@ describe('окно', () => {
 			),
 		)
 
-		const scroller = find('.s-test-scroll')
+		const scroller = find('.so-test-scroll')
 
 		scroller.scrollTop = 12000
 		await frames(4)
 
 		const head = box(headOf())
-		const body = find('.s-table__body')
+		const body = find('.so-table__body')
 		const childAt = (y: number) =>
 			[...body.children].find((child) => box(child).top <= y && box(child).bottom > y)
 
@@ -1008,7 +1011,7 @@ describe('окно', () => {
 			head.bottom - 1,
 			head.bottom + 1,
 		]) {
-			expect(childAt(y)?.classList.contains('s-table-row')).toBe(true)
+			expect(childAt(y)?.classList.contains('so-table-row')).toBe(true)
 		}
 	})
 })

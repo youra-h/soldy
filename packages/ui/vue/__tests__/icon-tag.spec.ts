@@ -22,6 +22,6 @@ describe('Icon: без tag', () => {
 		wrapper = mount(Icon)
 
 		expect(wrapper.element.localName).toBe('span')
-		expect(wrapper.classes()).toContain('s-icon')
+		expect(wrapper.classes()).toContain('so-icon')
 	})
 })

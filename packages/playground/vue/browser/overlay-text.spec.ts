@@ -43,14 +43,14 @@ const scene = defineComponent({
 			h(
 				Select,
 				{ open: true },
-				{ empty: () => h('span', { class: 's-test-empty' }, 'Ничего не найдено') },
+				{ empty: () => h('span', { class: 'so-test-empty' }, 'Ничего не найдено') },
 			),
 			h(
 				Popover,
 				{ open: true, aria_label: 'Проверка' },
 				{
 					trigger: () => h(Button, { text: 'Открыть' }),
-					default: () => h('span', { class: 's-test-popover' }, 'Содержимое панели'),
+					default: () => h('span', { class: 'so-test-popover' }, 'Содержимое панели'),
 				},
 			),
 			h(DatePicker, { open: true, aria_label: 'Дата' }),
@@ -87,8 +87,8 @@ describe('DatePicker: текст панели', () => {
 	it.each(SCHEMES)('%s: панель отходит текстом от фона, как Popover', async (scheme) => {
 		await show(scheme)
 
-		const popover = away('.s-test-popover', '.s-popover__panel')
-		const picker = away('.s-date-picker__panel', '.s-date-picker__panel')
+		const popover = away('.so-test-popover', '.so-popover__panel')
+		const picker = away('.so-date-picker__panel', '.so-date-picker__panel')
 
 		expect(Math.sign(picker), 'в ту же сторону').toBe(Math.sign(popover))
 		expect(picker, 'на столько же').toBeCloseTo(popover, 3)
@@ -99,8 +99,8 @@ describe('Select: текст в панели помимо опций', () => {
 	it.each(SCHEMES)('%s: пустой список отходит от панели, как текст Popover', async (scheme) => {
 		await show(scheme)
 
-		const popover = away('.s-test-popover', '.s-popover__panel')
-		const empty = away('.s-test-empty', '.s-select__panel')
+		const popover = away('.so-test-popover', '.so-popover__panel')
+		const empty = away('.so-test-empty', '.so-select__panel')
 
 		expect(Math.sign(empty), 'в ту же сторону').toBe(Math.sign(popover))
 		expect(empty, 'на столько же').toBeCloseTo(popover, 3)

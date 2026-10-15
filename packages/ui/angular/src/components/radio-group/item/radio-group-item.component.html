@@ -14,7 +14,7 @@
 -->
 <input
 	#control
-	class="s-radio-group-item__input"
+	class="so-radio-group-item__input"
 	type="radio"
 	[attr.name]="state()['name'] ?? null"
 	[attr.value]="state()['value'] ?? null"
@@ -23,8 +23,10 @@
 	[so-attributes]="state()['aria']"
 	(change)="activate()"
 />
-<span class="s-radio-group-item__control"><span class="s-radio-group-item__indicator"></span></span>
-<span class="s-radio-group-item__text">
+<span class="so-radio-group-item__control"
+	><span class="so-radio-group-item__indicator"></span
+></span>
+<span class="so-radio-group-item__text">
 	@if (slot('default'); as text) {
 		<ng-container
 			[ngTemplateOutlet]="text"

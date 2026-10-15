@@ -48,7 +48,7 @@ export default class TPopover
 	extends TComponentView<IPopoverProps, TPopoverEvents>
 	implements IPopover
 {
-	static override baseClass = 's-popover'
+	static override baseClass = 'so-popover'
 
 	static defaultValues: typeof TComponentView.defaultValues &
 		TDefaultValues<

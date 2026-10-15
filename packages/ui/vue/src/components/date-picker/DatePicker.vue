@@ -48,7 +48,7 @@ export default { ...SetupDatePicker, components: { Button, Calendar, DateInput, 
 		<DateInput
 			v-if="mode === 'single'"
 			embedded="date-picker.field"
-			class="s-date-picker__field"
+			class="so-date-picker__field"
 			:ctrl="field"
 			:aria_label="aria_label"
 			:aria_labelledBy="aria_labelledBy"
@@ -66,14 +66,14 @@ export default { ...SetupDatePicker, components: { Button, Calendar, DateInput, 
 				DatePicker (`clearAria`), очищает его команда `clear`. Клик не
 				всплывает до корня. Своя кнопка — слот `clear` DatePicker'а с его
 				командой в scope: заменяет встроенную целиком. Вида у кнопки нет —
-				тема красит её по контексту (`.s-date-picker__clear`).
+				тема красит её по контексту (`.so-date-picker__clear`).
 			-->
 			<template #clear>
 				<slot name="clear" :clear="ctrl.clear">
 					<Button
 						embedded="date-picker.clear"
 						v-if="clearable"
-						class="s-date-picker__clear"
+						class="so-date-picker__clear"
 						:size="size"
 						:disabled="disabled"
 						@click.stop="ctrl.clear()"
@@ -97,7 +97,7 @@ export default { ...SetupDatePicker, components: { Button, Calendar, DateInput, 
 				-->
 				<Button
 					embedded="date-picker.trigger"
-					class="s-date-picker__trigger"
+					class="so-date-picker__trigger"
 					:size="size"
 					:disabled="!openable"
 					v-bind="{ ...triggerAria, ...triggerDataset }"
@@ -120,14 +120,14 @@ export default { ...SetupDatePicker, components: { Button, Calendar, DateInput, 
 		<template v-else>
 			<DateInput
 				embedded="date-picker.start"
-				class="s-date-picker__start"
+				class="so-date-picker__start"
 				:ctrl="start"
 				:aria_label="names_start"
 			/>
-			<span class="s-date-picker__dash" aria-hidden="true">–</span>
+			<span class="so-date-picker__dash" aria-hidden="true">–</span>
 			<DateInput
 				embedded="date-picker.end"
-				class="s-date-picker__end"
+				class="so-date-picker__end"
 				:ctrl="end"
 				:aria_label="names_end"
 			/>
@@ -140,7 +140,7 @@ export default { ...SetupDatePicker, components: { Button, Calendar, DateInput, 
 				<Button
 					embedded="date-picker.clear"
 					v-if="clearable"
-					class="s-date-picker__clear"
+					class="so-date-picker__clear"
 					:size="size"
 					:disabled="disabled"
 					@click.stop="ctrl.clear()"
@@ -151,7 +151,7 @@ export default { ...SetupDatePicker, components: { Button, Calendar, DateInput, 
 			</slot>
 			<Button
 				embedded="date-picker.trigger"
-				class="s-date-picker__trigger"
+				class="so-date-picker__trigger"
 				:size="size"
 				:disabled="!openable"
 				v-bind="{ ...triggerAria, ...triggerDataset }"
@@ -186,7 +186,7 @@ export default { ...SetupDatePicker, components: { Button, Calendar, DateInput, 
 		-->
 		<Frame
 			embedded="date-picker.frame"
-			class="s-date-picker__panel"
+			class="so-date-picker__panel"
 			tabindex="-1"
 			:visible="open"
 			position="fixed"
@@ -201,7 +201,7 @@ export default { ...SetupDatePicker, components: { Button, Calendar, DateInput, 
 				края со стороны поля (`data-placement`), ставит её тема. Закрыть без
 				перетаскивания — Escape, выбор и нажатие мимо.
 			-->
-			<div v-if="handleRendered" class="s-date-picker__handle" aria-hidden="true" />
+			<div v-if="handleRendered" class="so-date-picker__handle" aria-hidden="true" />
 
 			<!--
 				Содержимое — обёртка календаря, и прокручивается она, а не панель:
@@ -214,10 +214,10 @@ export default { ...SetupDatePicker, components: { Button, Calendar, DateInput, 
 				дня — слот `item` DatePicker, отданный календарю под тем же именем,
 				с его scope `{ item, text }`.
 			-->
-			<div class="s-date-picker__content">
+			<div class="so-date-picker__content">
 				<Calendar
 					embedded="date-picker.calendar"
-					class="s-date-picker__calendar"
+					class="so-date-picker__calendar"
 					:ctrl="calendar"
 					:engine="engine"
 				>
@@ -240,14 +240,14 @@ export default { ...SetupDatePicker, components: { Button, Calendar, DateInput, 
 					<template v-if="confirmable" #footer>
 						<Button
 							embedded="date-picker.cancel"
-							class="s-date-picker__cancel"
+							class="so-date-picker__cancel"
 							:size="size"
 							:text="names_cancel"
 							@click="picker.open = false"
 						/>
 						<Button
 							embedded="date-picker.confirm"
-							class="s-date-picker__confirm"
+							class="so-date-picker__confirm"
 							:size="size"
 							:disabled="confirmDisabled"
 							:text="names_confirm"

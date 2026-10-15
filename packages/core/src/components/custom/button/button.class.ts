@@ -4,7 +4,7 @@ import type { TDefaultValues } from '../../base/component'
 import { NATIVE_BUTTON_TAGS } from '../../../common'
 
 export default class TButton extends TTextable<IButtonProps, TButtonEvents> implements IButton {
-	static override baseClass = 's-button'
+	static override baseClass = 'so-button'
 
 	static defaultValues: typeof TTextable.defaultValues &
 		TDefaultValues<IButtonProps, never, 'view'> = {

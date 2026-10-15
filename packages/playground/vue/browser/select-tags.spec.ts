@@ -38,7 +38,7 @@ import '@soldy-ui/theme-oren'
 const MIN_INPUT_WIDTH = 64
 
 /**
- * Ширина поля фиксирована: `.s-select` — `w-full`, и без явной рамки замеры
+ * Ширина поля фиксирована: `.so-select` — `w-full`, и без явной рамки замеры
  * зависели бы от размера окна, в котором запущен прогон.
  */
 const FIELD_WIDTH = 420
@@ -69,7 +69,7 @@ const Harness = {
 }
 
 /**
- * Контейнер уже любого минимума поля: `.s-select` — `w-full`, и поле встаёт
+ * Контейнер уже любого минимума поля: `.so-select` — `w-full`, и поле встаёт
  * на свой `min-width`, каким бы он ни был.
  */
 const NARROW_WIDTH = 0
@@ -149,14 +149,14 @@ const pairHarness = (options: {
 		},
 	})
 
-const input = () => document.querySelector('.s-select__field input') as HTMLInputElement
-const arrow = () => document.querySelector('.s-select__arrow') as HTMLElement
-const tags = () => [...document.querySelectorAll('.s-tags-item')]
+const input = () => document.querySelector('.so-select__field input') as HTMLInputElement
+const arrow = () => document.querySelector('.so-select__arrow') as HTMLElement
+const tags = () => [...document.querySelectorAll('.so-tags-item')]
 const options = () => [...document.querySelectorAll('[role="option"]')] as HTMLElement[]
 
 /** Теги в поле — внутри корня, когда полей на странице два. */
 const fieldTags = (root: ParentNode = document) => [
-	...root.querySelectorAll('.s-select__field .s-tags-item'),
+	...root.querySelectorAll('.so-select__field .so-tags-item'),
 ]
 
 /** Узел по селектору внутри корня; нет его — тест падает здесь, а не на чтении свойства. */
@@ -269,7 +269,7 @@ describe('поле с тегами', () => {
 		const all = tags().map(box)
 		const first = all[0]
 		const last = all[all.length - 1]
-		const field = box(find('.s-select__field'))
+		const field = box(find('.so-select__field'))
 
 		// Без переноса проверять нечего: строк должно быть несколько
 		expect(last.top, 'последний тег — ниже первой строки').toBeGreaterThan(first.bottom)
@@ -310,7 +310,7 @@ describe('поле с тегами', () => {
 
 /**
  * Очистка, стрелка и пилюля тега растут с размером, а общий минимум ширины
- * `.s-select` — нет: на `2xl` стрелка выходила за правый край поля и без
+ * `.so-select` — нет: на `2xl` стрелка выходила за правый край поля и без
  * выбора. Поэтому минимум поля растёт с размером; в `multiple` он держит ещё
  * и пилюлю тега — это проверяет блок ниже.
  *
@@ -327,11 +327,11 @@ describe.each(COMPONENT_SIZES)('размер %s: минимальная шири
 		// регистрируется в коллекции. Минимум поля считается вместе с тегом.
 		await expect.poll(() => tags().length).toBe(mode === 'multiple' ? 1 : 0)
 
-		const field = find('.s-select__field')
-		const slot = find('.s-input__trailing', field)
+		const field = find('.so-select__field')
+		const slot = find('.so-input__trailing', field)
 
 		// Худший случай для минимума — в слоте и очистка, и стрелка.
-		expect(slot.querySelectorAll('.s-input__clear, .s-select__arrow')).toHaveLength(2)
+		expect(slot.querySelectorAll('.so-input__clear, .so-select__arrow')).toHaveLength(2)
 		expectWithin(box(slot), insideBorder(field), 'очистка и стрелка с отступом')
 	})
 })
@@ -352,13 +352,13 @@ describe.each(COMPONENT_SIZES)('размер %s: тег, которому не �
 
 		await expect.poll(() => tags().length).toBe(1)
 
-		const item = find('.s-tags-item')
+		const item = find('.so-tags-item')
 
 		return {
-			field: find('.s-select__field'),
+			field: find('.so-select__field'),
 			item,
-			text: find(':scope > .s-button:not(.s-tags-item__close) .s-button__text', item),
-			close: find(':scope > .s-tags-item__close', item),
+			text: find(':scope > .so-button:not(.so-tags-item__close) .so-button__text', item),
+			close: find(':scope > .so-tags-item__close', item),
 		}
 	}
 
@@ -372,7 +372,7 @@ describe.each(COMPONENT_SIZES)('размер %s: тег, которому не �
 	it('на минимальной ширине поля ряд обрезает слот, а не выносит за поле', async () => {
 		const { field, text } = await renderTag(NARROW_WIDTH)
 
-		expectWithin(box(find('.s-input__leading', field)), insideBorder(field), 'слот тегов')
+		expectWithin(box(find('.so-input__leading', field)), insideBorder(field), 'слот тегов')
 		expect(text.scrollWidth).toBeGreaterThan(text.clientWidth)
 	})
 
@@ -384,13 +384,13 @@ describe.each(COMPONENT_SIZES)('размер %s: тег, которому не �
 	it('минимум поля не зависит от того, есть ли в нём теги', async () => {
 		await render(sizedHarness(size, 'single', NARROW_WIDTH))
 
-		const single = box(find('.s-select')).width
+		const single = box(find('.so-select')).width
 
 		cleanup()
 		await render(sizedHarness(size, 'multiple', NARROW_WIDTH))
 		await expect.poll(() => tags().length).toBe(1)
 
-		expect(box(find('.s-select')).width).toBeCloseTo(single, 1)
+		expect(box(find('.so-select')).width).toBeCloseTo(single, 1)
 	})
 
 	it('в широком поле текст тега не обрезан', async () => {
@@ -413,13 +413,13 @@ describe.each(COMPONENT_SIZES)('размер %s: высота поля с одн
 
 		await expect.poll(() => tags().length).toBe(1)
 
-		const roots = [...document.querySelectorAll('.s-select')]
+		const roots = [...document.querySelectorAll('.so-select')]
 
 		expect(roots).toHaveLength(2)
 
 		const [tagged, empty] = roots.map((root) => ({
 			root: box(root),
-			field: box(find('.s-select__field', root)),
+			field: box(find('.so-select__field', root)),
 		}))
 
 		expect(tagged.field.height, 'поле с тегом').toBeCloseTo(empty.field.height, 1)
@@ -440,7 +440,7 @@ const scrolls = (element: Element) => element.scrollWidth > element.clientWidth
  * которому места хватает, не сжимается и при сломанном правиле.
  */
 const settled = () => fieldTags().length === OPTIONS.length
-const crowded = (root: ParentNode) => scrolls(find('.s-select__field .s-tags', root))
+const crowded = (root: ParentNode) => scrolls(find('.so-select__field .so-tags', root))
 
 /**
  * Рост поля привязан к `wrap` — умолчанию, в котором ряд переносится по
@@ -457,12 +457,12 @@ describe('tags_overflow: scroll', () => {
 
 		await expect.poll(settled).toBe(true)
 
-		const roots = [...document.querySelectorAll('.s-select')]
+		const roots = [...document.querySelectorAll('.so-select')]
 
 		expect(roots).toHaveLength(2)
 
 		const [tagged, empty] = roots
-		const field = box(find('.s-select__field', tagged))
+		const field = box(find('.so-select__field', tagged))
 		const parts = fieldTags(tagged).map(box)
 
 		expect(parts.length, 'тегов в поле').toBeGreaterThan(0)
@@ -474,7 +474,7 @@ describe('tags_overflow: scroll', () => {
 		})
 
 		expect(field.height, 'поле с тегами').toBeCloseTo(
-			box(find('.s-select__field', empty)).height,
+			box(find('.so-select__field', empty)).height,
 			1,
 		)
 	})
@@ -495,9 +495,9 @@ describe('tags_overflow: scroll', () => {
 
 		await expect.poll(settled).toBe(true)
 
-		const [tagged] = [...document.querySelectorAll('.s-select')]
-		const field = find('.s-select__field', tagged)
-		const row = box(find('.s-select__field .s-tags', tagged))
+		const [tagged] = [...document.querySelectorAll('.so-select')]
+		const field = find('.so-select__field', tagged)
+		const row = box(find('.so-select__field .so-tags', tagged))
 
 		expect(crowded(tagged), 'ряду тесно').toBe(true)
 		expect(row.bottom, 'низ ряда').toBeLessThanOrEqual(
@@ -515,9 +515,9 @@ describe('tags_overflow: scroll', () => {
 
 		await expect.poll(settled).toBe(true)
 
-		const [tagged, empty] = [...document.querySelectorAll('.s-select')]
-		const taggedSlot = box(find('.s-input__leading', tagged)).width
-		const emptySlot = box(find('.s-input__leading', empty)).width
+		const [tagged, empty] = [...document.querySelectorAll('.so-select')]
+		const taggedSlot = box(find('.so-input__leading', tagged)).width
+		const emptySlot = box(find('.so-input__leading', empty)).width
 
 		// С тегами слот — до половины поля; без тегов он не должен быть даже
 		// четвертью этого, иначе правило включилось по пустому ряду
@@ -534,9 +534,9 @@ describe('tags_overflow: scroll', () => {
 
 		await expect.poll(settled).toBe(true)
 
-		const [tagged] = [...document.querySelectorAll('.s-select')]
-		const field = find('.s-select__field', tagged)
-		const slot = box(find('.s-input__leading', tagged)).width
+		const [tagged] = [...document.querySelectorAll('.so-select')]
+		const field = find('.so-select__field', tagged)
+		const slot = box(find('.so-input__leading', tagged)).width
 
 		expect(crowded(tagged), 'ряду тесно').toBe(true)
 		expect(slot, 'слот тегов').toBeLessThanOrEqual(field.clientWidth / 2 + 0.5)
@@ -554,7 +554,7 @@ describe('tags_overflow: scroll', () => {
 
 		await expect.poll(() => fieldTags().length).toBe(1)
 
-		const [tagged] = [...document.querySelectorAll('.s-select')]
+		const [tagged] = [...document.querySelectorAll('.so-select')]
 		const [tag] = fieldTags(tagged)
 
 		expect(crowded(tagged), 'ряду тесно').toBe(false)
@@ -576,12 +576,12 @@ describe('tags_overflow: scroll', () => {
 
 		await expect.poll(settled).toBe(true)
 
-		const [tagged] = [...document.querySelectorAll('.s-select')]
+		const [tagged] = [...document.querySelectorAll('.so-select')]
 
 		expect(crowded(tagged), 'ряду тесно').toBe(true)
 
 		const texts = fieldTags(tagged).map((item) =>
-			find(':scope > .s-button:not(.s-tags-item__close) .s-button__text', item),
+			find(':scope > .so-button:not(.so-tags-item__close) .so-button__text', item),
 		)
 
 		expect(texts.length, 'тегов в поле').toBeGreaterThan(0)
@@ -605,7 +605,7 @@ describe('tags_overflow: scroll', () => {
  */
 describe('tags_overflow: scroll — подсказка у края вместо полосы', () => {
 	/** Ряд первого поля — того, где выбор есть. */
-	const row = () => find('.s-select__field .s-tags')
+	const row = () => find('.so-select__field .so-tags')
 
 	/**
 	 * Поле со всеми тегами; ряду в нём тесно, и он прокручивается. `direction`
@@ -626,7 +626,7 @@ describe('tags_overflow: scroll — подсказка у края вместо 
 	}
 
 	/** Крестики ряда по порядку — остановки Tab тегов в поле. */
-	const closes = () => [...row().querySelectorAll('.s-tags-item__close')]
+	const closes = () => [...row().querySelectorAll('.so-tags-item__close')]
 
 	/** Крестик по порядку; нет его или он не HTML — тест падает здесь. */
 	const close = (index: number): HTMLElement => {
@@ -834,7 +834,7 @@ describe('tags_overflow: scroll — кольцо фокуса крестика',
 
 		await expect.poll(() => fieldTags().length).toBe(OPTIONS.length)
 
-		const close = find('.s-select__field .s-tags-item__close')
+		const close = find('.so-select__field .so-tags-item__close')
 
 		// С клавиатуры: кольцо рисует `:focus-visible`. У строк тегов в поле
 		// остановки Tab нет, и первая остановка — крестик первого тега
@@ -842,7 +842,7 @@ describe('tags_overflow: scroll — кольцо фокуса крестика',
 
 		expect(document.activeElement, 'фокус на крестике').toBe(close)
 
-		expectRingInsideVertically(close, find('.s-select__field .s-tags'), 'крестик')
+		expectRingInsideVertically(close, find('.so-select__field .so-tags'), 'крестик')
 	})
 
 	/**
@@ -854,7 +854,7 @@ describe('tags_overflow: scroll — кольцо фокуса крестика',
 
 		await expect.poll(() => fieldTags().length).toBe(OPTIONS.length)
 
-		const row = find('.s-select__field .s-tags')
+		const row = find('.so-select__field .so-tags')
 
 		expect(row.scrollLeft, 'ряд в начале прокрутки').toBe(0)
 		expect(box(fieldTags()[0]).left - box(row).left, 'от начала ряда до тега').toBeCloseTo(0, 1)

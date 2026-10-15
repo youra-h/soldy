@@ -1,14 +1,14 @@
 @use '../button/mixins' as button;
 @use '../../mixins/motion';
 
-.s-accordion {
+.so-accordion {
 	@apply flex flex-col gap-1;
 }
 
 // Раскрытие секции и поворот стрелки — движение: идут переходом, только когда
 // режим движения его разрешает (`motion.allowed`), а без движения секция
 // раскрывается и стрелка поворачивается сразу.
-.s-accordion-item {
+.so-accordion-item {
 	$this: &;
 
 	@apply flex flex-col w-full;
@@ -18,16 +18,16 @@
 		@apply py-2;
 
 		// Заголовок — по началу строки, в RTL это правый край. Только своя
-		// область: правило по любой `.s-button` в секции доставало и кнопки в
+		// область: правило по любой `.so-button` в секции доставало и кнопки в
 		// её содержимом.
-		> .s-button__text {
+		> .so-button__text {
 			@include button.button-text-align('start');
 		}
 	}
 
 	// Стрелка — обёртка слота, а не сама иконка: подменишь иконку через
 	// `leading-icon` или `trailing-icon` — поворот всё равно работает, как у
-	// `s-select__arrow`. `inline-flex`: к строчной коробке поворот не
+	// `so-select__arrow`. `inline-flex`: к строчной коробке поворот не
 	// применяется.
 	&__arrow {
 		@apply inline-flex shrink-0;
@@ -82,6 +82,6 @@
 
 // Заголовок секции без `view` — вид `plain`, как строка ListBox: умолчания у
 // Accordion нет, заданный `view` доходит до заголовка модификатором.
-:where(.s-accordion-item__header) {
+:where(.so-accordion-item__header) {
 	@include button.button-view('plain');
 }

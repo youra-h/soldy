@@ -54,8 +54,8 @@ const nextFrame = () => new Promise<void>((resolve) => requestAnimationFrame(() 
 
 /** Содержимое с двумя остановками Tab. */
 const inside = (): VNode[] => [
-	h('button', { class: 's-test-first' }, 'Первая'),
-	h('button', { class: 's-test-second' }, 'Вторая'),
+	h('button', { class: 'so-test-first' }, 'Первая'),
+	h('button', { class: 'so-test-second' }, 'Вторая'),
 ]
 
 type TShowOptions = {
@@ -106,7 +106,7 @@ const show = async (
 					h(
 						'button',
 						{
-							class: 's-test-opener',
+							class: 'so-test-opener',
 							onClick: () => {
 								shown.value = true
 							},
@@ -117,7 +117,7 @@ const show = async (
 						? h(
 								'div',
 								{
-									class: 's-test-host',
+									class: 'so-test-host',
 									dir,
 									style: 'position: relative; width: 600px; height: 300px; margin-top: 20px',
 								},
@@ -144,10 +144,10 @@ const find = (selector: string): HTMLElement => {
 	return element
 }
 
-const panel = () => find('.s-drawer')
-const backdrop = () => find('.s-drawer__backdrop')
-const handle = () => find('.s-drawer__handle')
-const opener = () => find('.s-test-opener')
+const panel = () => find('.so-drawer')
+const backdrop = () => find('.so-drawer__backdrop')
+const handle = () => find('.so-drawer__handle')
+const opener = () => find('.so-test-opener')
 const active = () => document.activeElement
 const isOpen = () => getComputedStyle(panel()).display !== 'none'
 
@@ -171,7 +171,7 @@ const escapeInPage = async () => {
 /** Открыть кнопкой страницы, дождаться фокуса в панели и конца въезда. */
 const open = async () => {
 	await userEvent.click(opener())
-	await expect.poll(active).toBe(find('.s-test-first'))
+	await expect.poll(active).toBe(find('.so-test-first'))
 	await settled(panel())
 }
 
@@ -292,11 +292,13 @@ describe('размер', () => {
 		await open()
 
 		const box = panel().getBoundingClientRect()
-		const body = find('.s-drawer__body')
+		const body = find('.so-drawer__body')
 
 		expect(Math.abs(box.height - (viewport().height - GAP))).toBeLessThan(EPSILON)
 		expect(body.scrollHeight).toBeGreaterThan(body.clientHeight)
-		expect(find('.s-drawer__title').getBoundingClientRect().top).toBeGreaterThanOrEqual(box.top)
+		expect(find('.so-drawer__title').getBoundingClientRect().top).toBeGreaterThanOrEqual(
+			box.top,
+		)
 	})
 })
 
@@ -317,7 +319,7 @@ describe('внутри контейнера', () => {
 		await show({}, { contained: true })
 		await open()
 
-		const host = find('.s-test-host').getBoundingClientRect()
+		const host = find('.so-test-host').getBoundingClientRect()
 		const box = gaps(panel().getBoundingClientRect(), host)
 		const cover = backdrop().getBoundingClientRect()
 
@@ -346,7 +348,7 @@ describe('въезд и выезд', () => {
 
 		expect(transitioning(panel())).toContain('translate')
 
-		await expect.poll(active).toBe(find('.s-test-first'))
+		await expect.poll(active).toBe(find('.so-test-first'))
 		await settled(panel())
 		await escapeInPage()
 
@@ -418,7 +420,7 @@ describe('въезд и выезд', () => {
 
 		const entering = durations()
 
-		await expect.poll(active).toBe(find('.s-test-first'))
+		await expect.poll(active).toBe(find('.so-test-first'))
 		await settled(panel())
 		await settled(backdrop())
 		await escapeInPage()
@@ -465,7 +467,7 @@ describe('въезд и выезд', () => {
 
 		expect(panel().getBoundingClientRect().left).toBe(start.left)
 
-		await expect.poll(active).toBe(find('.s-test-first'))
+		await expect.poll(active).toBe(find('.so-test-first'))
 		await settled(panel())
 
 		const place = panel().getBoundingClientRect().left
@@ -517,7 +519,7 @@ describe.each(DIRECTION_CASES)('выезд по ближайшему dir: $name'
 
 			const edge = placement === 'start' ? sides.start : sides.end
 			const area = contained
-				? find('.s-test-host').getBoundingClientRect()
+				? find('.so-test-host').getBoundingClientRect()
 				: { left: 0, right: viewport().width }
 			const entry = transitionOf(panel(), 'translate')
 
@@ -584,7 +586,7 @@ describe('жест', () => {
 	it('полосы нет без жеста; с жестом зона захвата — не меньше 24px поперёк края', async () => {
 		await show()
 
-		expect(document.querySelector('.s-drawer__handle')).toBeNull()
+		expect(document.querySelector('.so-drawer__handle')).toBeNull()
 
 		cleanup()
 
@@ -621,7 +623,7 @@ describe('жест', () => {
 
 		await userEvent.click(handle())
 
-		expect(active()).toBe(find('.s-test-first'))
+		expect(active()).toBe(find('.so-test-first'))
 	})
 
 	it('смахнули к краю за полосу — закрытие с причиной swipe, фокус возвращается', async () => {
@@ -701,7 +703,7 @@ describe('жест', () => {
 			const { reasons } = await show({ swipe: 'panel' })
 
 			await open()
-			await drag(find('.s-drawer__title'), 200, 0)
+			await drag(find('.so-drawer__title'), 200, 0)
 
 			await expect.poll(isOpen).toBe(false)
 			expect(reasons).toEqual(['swipe'])
@@ -713,13 +715,13 @@ describe('жест', () => {
 				{
 					content: () => [
 						...inside(),
-						h(Input, { class: 's-test-input', placeholder: 'Поиск' }),
+						h(Input, { class: 'so-test-input', placeholder: 'Поиск' }),
 					],
 				},
 			)
 
 			await open()
-			await drag(find('.s-test-input input'), 200, 0)
+			await drag(find('.so-test-input input'), 200, 0)
 
 			expect(isOpen()).toBe(true)
 			expect(reasons).toEqual([])
@@ -742,7 +744,7 @@ describe('закрытие', () => {
 		const { reasons } = await show()
 
 		await open()
-		await userEvent.click(find('.s-drawer__close'))
+		await userEvent.click(find('.so-drawer__close'))
 
 		await expect.poll(isOpen).toBe(false)
 		expect(reasons).toEqual(['button'])

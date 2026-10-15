@@ -31,13 +31,18 @@ const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, 
  */
 const page = (props: Partial<ITooltipProps> = {}, disabled = false) =>
 	h('div', { style: 'padding: 80px 40px' }, [
-		h('button', { class: 's-test-before' }, 'До'),
+		h('button', { class: 'so-test-before' }, 'До'),
 		h(Tooltip, props, {
 			trigger: ({ triggerAria }: TTriggerScope) =>
-				h(Button, { text: 'Сохранить', class: 's-test-trigger', disabled, ...triggerAria }),
+				h(Button, {
+					text: 'Сохранить',
+					class: 'so-test-trigger',
+					disabled,
+					...triggerAria,
+				}),
 			default: () => 'Сохранить черновик',
 		}),
-		h('button', { class: 's-test-after' }, 'После'),
+		h('button', { class: 'so-test-after' }, 'После'),
 	])
 
 /** Разметка на странице, корень объявлен плагинам: `TElementPlugin` ждёт кадр. */
@@ -58,9 +63,9 @@ const find = (selector: string): HTMLElement => {
 	return element
 }
 
-const root = () => find('.s-tooltip')
-const trigger = () => find('.s-test-trigger')
-const panel = () => find('.s-tooltip__panel')
+const root = () => find('.so-tooltip')
+const trigger = () => find('.so-test-trigger')
+const panel = () => find('.so-tooltip__panel')
 const isOpen = () => getComputedStyle(panel()).display !== 'none'
 
 beforeEach(async () => {
@@ -84,7 +89,7 @@ describe('фокус', () => {
 	it('Tab на триггер показывает подсказку сразу', async () => {
 		await show(LONG)
 
-		find('.s-test-before').focus()
+		find('.so-test-before').focus()
 		await userEvent.keyboard('{Tab}')
 
 		expect(document.activeElement).toBe(trigger())
@@ -107,13 +112,13 @@ describe('фокус', () => {
 	it('Tab с триггера дальше прячет подсказку сразу', async () => {
 		await show(LONG)
 
-		find('.s-test-before').focus()
+		find('.so-test-before').focus()
 		await userEvent.keyboard('{Tab}')
 		await expect.poll(isOpen, { timeout: 500 }).toBe(true)
 
 		await userEvent.keyboard('{Tab}')
 
-		expect(document.activeElement).toBe(find('.s-test-after'))
+		expect(document.activeElement).toBe(find('.so-test-after'))
 		await expect.poll(isOpen, { timeout: 100 }).toBe(false)
 	})
 })

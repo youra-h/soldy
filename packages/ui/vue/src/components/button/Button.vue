@@ -14,7 +14,7 @@ export default { ...SetupButton }
 		v-bind="{ ...attrs, ...aria, ...dataset }"
 	>
 		<slot name="leading"> </slot>
-		<span class="s-button__text">
+		<span class="so-button__text">
 			<slot :text="text">{{ text }}</slot>
 		</span>
 		<slot name="trailing"> </slot>

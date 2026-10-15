@@ -77,7 +77,7 @@ export default {
 			:is="cell.rowHeader ? 'th' : 'td'"
 			v-for="cell in cells"
 			:key="cell.column.uid"
-			class="s-table-row__cell"
+			class="so-table-row__cell"
 			:scope="cell.rowHeader ? 'row' : undefined"
 			v-bind="{ ...cell.dataset, ...cellAria, ...cell.aria }"
 		>
@@ -91,7 +91,7 @@ export default {
 			:is="cell.rowHeader ? 'th' : 'td'"
 			v-for="cell in cells"
 			:key="cell.column.uid"
-			class="s-table-row__cell"
+			class="so-table-row__cell"
 			:scope="cell.rowHeader ? 'row' : undefined"
 			v-bind="{ ...cell.dataset, ...cellAria, ...cell.aria }"
 			>{{ cell.value }}</component

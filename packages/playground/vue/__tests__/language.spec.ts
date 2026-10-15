@@ -118,18 +118,18 @@ afterEach(async () => {
 describe('выбор «Язык» в шапке', () => {
 	it('доходит до календаря хоста Vue без перемонтирования', async () => {
 		const wrapper = await open('/vue/calendar')
-		const calendar = wrapper.get('.pg-col__stage .s-calendar')
-		const grid = calendar.get('.s-calendar__grid').element
-		const prev = calendar.get('.s-calendar__prev').element
+		const calendar = wrapper.get('.pg-col__stage .so-calendar')
+		const grid = calendar.get('.so-calendar__grid').element
+		const prev = calendar.get('.so-calendar__prev').element
 		const weekdays = () =>
-			calendar.findAll('.s-calendar__weekday').map((cell) => cell.text().trim())
+			calendar.findAll('.so-calendar__weekday').map((cell) => cell.text().trim())
 
 		expect(weekdays()).toEqual(week('en-US', 0))
 		expect(prev.getAttribute('aria-label')).toBe('Previous month')
 
 		await choose(wrapper, labelOf('ru-RU'))
 
-		expect(calendar.get('.s-calendar__grid').element).toBe(grid)
+		expect(calendar.get('.so-calendar__grid').element).toBe(grid)
 		expect(weekdays()).toEqual(week('ru-RU', 1))
 		expect(prev.getAttribute('aria-label')).toBe('Предыдущий месяц')
 	})
@@ -152,7 +152,7 @@ describe('выбор «Язык» в шапке', () => {
 		await nextFrame()
 
 		const buttons = row
-			.findAll('.pg-col__stage .s-input__clear')
+			.findAll('.pg-col__stage .so-input__clear')
 			.map((button) => button.element)
 		const names = () => buttons.map((button) => button.getAttribute('aria-label'))
 
@@ -162,7 +162,7 @@ describe('выбор «Язык» в шапке', () => {
 		await choose(wrapper, labelOf('ru-RU'))
 
 		expect(
-			row.findAll('.pg-col__stage .s-input__clear').map((button) => button.element),
+			row.findAll('.pg-col__stage .so-input__clear').map((button) => button.element),
 		).toEqual(buttons)
 		expect(names()).toEqual(['Очистить', 'Очистить'])
 	})
@@ -178,7 +178,7 @@ describe('выбор «Язык» в шапке', () => {
 		const row = rowOf(wrapper, 'text')
 		const roots = row.findAll('.pg-col__stage so-locale-provider').map((root) => root.element)
 		const buttons = () =>
-			row.findAll('.pg-col__stage .s-button').map((button) => button.element)
+			row.findAll('.pg-col__stage .so-button').map((button) => button.element)
 		const before = buttons()
 		const tags = () =>
 			roots.map((root) => (root instanceof TLocaleProviderElement ? root.locale.tag : null))
@@ -222,7 +222,7 @@ describe('выбор «Язык» в шапке', () => {
 			const wrapper = await open('/angular/button')
 			const row = rowOf(wrapper, 'text')
 			const buttons = () =>
-				row.findAll('.pg-col__stage .s-button').map((button) => button.element)
+				row.findAll('.pg-col__stage .so-button').map((button) => button.element)
 			const before = buttons()
 			const tags = () => new Set(bundles.map((bundle) => bundle.locale.locale.tag))
 

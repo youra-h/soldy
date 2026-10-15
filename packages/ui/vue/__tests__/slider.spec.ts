@@ -59,7 +59,7 @@ function find(selector: string, scope: ParentNode = document): HTMLElement {
 }
 
 const all = (selector: string) => [...document.querySelectorAll<HTMLElement>(selector)]
-const fields = () => all('.s-slider__input').filter((node) => node instanceof HTMLInputElement)
+const fields = () => all('.so-slider__input').filter((node) => node instanceof HTMLInputElement)
 const field = (index = 0) => {
 	const node = fields()[index]
 
@@ -80,29 +80,29 @@ describe('разметка', () => {
 	it('корень — span с классами, состояниями и направлением; всё внутри — span', async () => {
 		await render({ direction: 'rtl', size: 'lg' })
 
-		const root = find('.s-slider')
+		const root = find('.so-slider')
 
 		expect(root.localName).toBe('span')
-		expect(root.classList.contains('s-slider--horizontal')).toBe(true)
-		expect(root.classList.contains('s-slider--size-lg')).toBe(true)
+		expect(root.classList.contains('so-slider--horizontal')).toBe(true)
+		expect(root.classList.contains('so-slider--size-lg')).toBe(true)
 		expect(root.dataset.dragging).toBe('false')
 		expect(root.dataset.disabled).toBe('false')
 		expect(root.getAttribute('dir')).toBe('rtl')
 		// Набор ARIA — полям, не корню
 		expect(root.hasAttribute('aria-orientation')).toBe(false)
 		expect(
-			all('.s-slider *').filter((node) => !['span', 'input'].includes(node.localName)),
+			all('.so-slider *').filter((node) => !['span', 'input'].includes(node.localName)),
 		).toEqual([])
 	})
 
 	it('число — одна ручка, массив — по ручке на элемент', async () => {
 		const mounted = await render({ value: 30 })
 
-		expect(all('.s-slider__thumb')).toHaveLength(1)
+		expect(all('.so-slider__thumb')).toHaveLength(1)
 
 		await mounted.setProps({ value: [10, 50, 90] })
 
-		expect(all('.s-slider__thumb')).toHaveLength(3)
+		expect(all('.so-slider__thumb')).toHaveLength(3)
 		expect(fields().map((node) => node.value)).toEqual(['10', '50', '90'])
 	})
 
@@ -136,7 +136,7 @@ describe('разметка', () => {
 
 		expect(fields().map((node) => node.getAttribute('aria-label'))).toEqual(['Цена', 'Цена'])
 		expect(fields().every((node) => node.disabled)).toBe(true)
-		expect(find('.s-slider').dataset.disabled).toBe('true')
+		expect(find('.so-slider').dataset.disabled).toBe('true')
 	})
 
 	it('у шага списком поле без шага: step="any"', async () => {
@@ -148,12 +148,12 @@ describe('разметка', () => {
 	it('позиции — CSS-переменными: ручка, заливка, метки', async () => {
 		await render({ value: [20, 70], marks: [{ value: 50 }] })
 
-		expect(position(find('.s-slider__thumb'))).toBe('20%')
-		expect(find('.s-slider__range').style.getPropertyValue('--s-slider-range-start')).toBe(
+		expect(position(find('.so-slider__thumb'))).toBe('20%')
+		expect(find('.so-slider__range').style.getPropertyValue('--s-slider-range-start')).toBe(
 			'20%',
 		)
-		expect(find('.s-slider__range').style.getPropertyValue('--s-slider-range-end')).toBe('70%')
-		expect(position(find('.s-slider__mark'))).toBe('50%')
+		expect(find('.so-slider__range').style.getPropertyValue('--s-slider-range-end')).toBe('70%')
+		expect(position(find('.so-slider__mark'))).toBe('50%')
 	})
 })
 
@@ -161,7 +161,7 @@ describe('метки', () => {
 	it('не заданы — контейнера меток нет', async () => {
 		await render()
 
-		expect(document.querySelector('.s-slider__marks')).toBeNull()
+		expect(document.querySelector('.so-slider__marks')).toBeNull()
 	})
 
 	/**
@@ -176,7 +176,7 @@ describe('метки', () => {
 			marks: [{ value: 0, label: 'Мин' }, { value: 20 }, { value: 100, label: 'Макс' }],
 		})
 
-		const labels = all('.s-slider__mark-label')
+		const labels = all('.so-slider__mark-label')
 		const empty = [...labels[1].childNodes].every(
 			(node) => node.nodeType === Node.TEXT_NODE && node.textContent === '',
 		)
@@ -188,12 +188,12 @@ describe('метки', () => {
 	it('состояния: внутри заливки и под ручкой', async () => {
 		await render({ value: 20, marks: [{ value: 0 }, { value: 20 }, { value: 100 }] })
 
-		expect(all('.s-slider__mark').map((node) => node.dataset.inRange)).toEqual([
+		expect(all('.so-slider__mark').map((node) => node.dataset.inRange)).toEqual([
 			'true',
 			'true',
 			'false',
 		])
-		expect(all('.s-slider__mark').map((node) => node.dataset.current)).toEqual([
+		expect(all('.so-slider__mark').map((node) => node.dataset.current)).toEqual([
 			'false',
 			'true',
 			'false',
@@ -203,7 +203,7 @@ describe('метки', () => {
 	it('true — точки шкалы', async () => {
 		await render({ step: 25, marks: true })
 
-		expect(all('.s-slider__mark').map(position)).toEqual(['0%', '25%', '50%', '75%', '100%'])
+		expect(all('.so-slider__mark').map(position)).toEqual(['0%', '25%', '50%', '75%', '100%'])
 	})
 
 	/**
@@ -214,7 +214,7 @@ describe('метки', () => {
 	it('блок меток — под aria-hidden', async () => {
 		await render({ value: 20, marks: [{ value: 0, label: 'Мин' }, { value: 100 }] })
 
-		expect(find('.s-slider__marks').getAttribute('aria-hidden')).toBe('true')
+		expect(find('.so-slider__marks').getAttribute('aria-hidden')).toBe('true')
 	})
 })
 
@@ -254,7 +254,7 @@ describe('v-model сохраняет форму значения', () => {
 		await nextTick()
 
 		expect(field().value).toBe('40')
-		expect(position(find('.s-slider__thumb'))).toBe('40%')
+		expect(position(find('.so-slider__thumb'))).toBe('40%')
 	})
 })
 
@@ -269,7 +269,7 @@ describe('слоты со scope', () => {
 		})
 		await nextTick()
 
-		expect(all('.s-slider__mark-label').map((node) => node.textContent)).toEqual([
+		expect(all('.so-slider__mark-label').map((node) => node.textContent)).toEqual([
 			'Мин:0',
 			'—:100',
 		])
@@ -280,18 +280,18 @@ describe('слоты со scope', () => {
 			props: { value: [20, 80], tooltip: 'always' },
 			slots: {
 				thumb: ({ value, index }: TThumbScope) =>
-					h('b', { class: 's-test-thumb' }, `${index}:${value}`),
+					h('b', { class: 'so-test-thumb' }, `${index}:${value}`),
 			},
 			attachTo: document.body,
 		})
 		await nextTick()
 
-		const probes = all('.s-test-thumb')
+		const probes = all('.so-test-thumb')
 
 		expect(probes.map((node) => node.textContent)).toEqual(['0:20', '1:80'])
 		expect(probes.map((node) => node.parentElement?.className)).toEqual([
-			's-slider__tooltip',
-			's-slider__tooltip',
+			'so-slider__tooltip',
+			'so-slider__tooltip',
 		])
 	})
 })
@@ -303,25 +303,25 @@ describe('слоты со scope', () => {
  * (`playground/vue/browser/slider.spec.ts`).
  */
 describe('подсказка со значением', () => {
-	const tooltips = () => all('.s-slider__tooltip')
+	const tooltips = () => all('.so-slider__tooltip')
 
 	it('без режима подсказки нет, и слот thumb не рисуется', async () => {
 		wrapper = mount(Slider, {
 			props: { value: [20, 80] },
-			slots: { thumb: () => h('b', { class: 's-test-thumb' }, '?') },
+			slots: { thumb: () => h('b', { class: 'so-test-thumb' }, '?') },
 			attachTo: document.body,
 		})
 		await nextTick()
 
-		expect(find('.s-slider').classList.contains('s-slider--tooltip-none')).toBe(true)
+		expect(find('.so-slider').classList.contains('so-slider--tooltip-none')).toBe(true)
 		expect(tooltips()).toEqual([])
-		expect(all('.s-test-thumb')).toEqual([])
+		expect(all('.so-test-thumb')).toEqual([])
 	})
 
 	it('auto — по подсказке на ручку сразу после поля, под aria-hidden', async () => {
 		await render({ value: [20, 80], tooltip: 'auto' })
 
-		expect(find('.s-slider').classList.contains('s-slider--tooltip-auto')).toBe(true)
+		expect(find('.so-slider').classList.contains('so-slider--tooltip-auto')).toBe(true)
 		expect(tooltips().map((node) => node.localName)).toEqual(['span', 'span'])
 		expect(tooltips().map((node) => node.previousElementSibling?.localName)).toEqual([
 			'input',
@@ -350,7 +350,7 @@ describe('подсказка со значением', () => {
 		ctrl.tooltip = 'always'
 		await nextTick()
 
-		expect(find('.s-slider').classList.contains('s-slider--tooltip-always')).toBe(true)
+		expect(find('.so-slider').classList.contains('so-slider--tooltip-always')).toBe(true)
 		expect(tooltips().map((node) => node.textContent)).toEqual(['30'])
 
 		ctrl.tooltip = 'none'

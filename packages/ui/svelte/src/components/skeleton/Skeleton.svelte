@@ -31,7 +31,7 @@
 	attach={binding.attachElement}
 >
 	{#if state.present}
-		<div class="s-skeleton__placeholder" aria-hidden="true"></div>
+		<div class="so-skeleton__placeholder" aria-hidden="true"></div>
 	{/if}
 	{@render props.children?.()}
 </Dynamic>

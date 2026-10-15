@@ -1,19 +1,19 @@
 @use '../button/mixins' as button;
 
-.s-list-box {
+.so-list-box {
 	@apply flex flex-col gap-1;
 	@apply rounded-md border box-border;
 	@apply bg-transparent;
 	@apply min-w-40 max-w-80;
 	@apply text-s-component;
 	// Внутренний отступ от границы контейнера до первого/последнего элемента —
-	// то же значение стоит у `.s-select__list`, чтобы отступы совпадали.
+	// то же значение стоит у `.so-select__list`, чтобы отступы совпадали.
 	// Вертикальный отступ учитывает `TListHeightPlugin` при расчёте
 	// `max-height` (border-box) — поменяешь `py-1`, высота списка пересчитается
 	// сама, руками ничего подгонять не нужно.
 	@apply px-1 py-1;
 	// Прокрутка при `maxRows` меньше числа элементов — то же устройство, что у
-	// `.s-select__list`.
+	// `.so-select__list`.
 	@apply overflow-y-auto;
 	// Обычное объявление, не `@apply border-s-…` — почему, см. input/_mixins.scss
 	border-color: var(--s-neutral-300);
@@ -54,21 +54,21 @@
 	}
 }
 
-.s-list-box-item {
+.so-list-box-item {
 	@apply min-h-fit;
 
 	// Строка — прямой ребёнок элемента, и её правила пишутся ребёнком, а не
 	// потомком: кнопка, которую потребитель положил в слот строки, тоже
-	// `.s-button` внутри элемента, и потомковое правило доставало её.
+	// `.so-button` внутри элемента, и потомковое правило доставало её.
 	//
-	// .s-button даёт cursor-pointer по умолчанию — элемент списка не кнопка
-	// действия, глушим курсор здесь же, как у .s-select-item.
-	> .s-button {
+	// .so-button даёт cursor-pointer по умолчанию — элемент списка не кнопка
+	// действия, глушим курсор здесь же, как у .so-select-item.
+	> .so-button {
 		@apply cursor-default;
 
 		// Область целиком, а не `&__text`: суффикс лёг бы на последний класс и
-		// дал бы `.s-list-box-item > .s-button__text`.
-		> .s-button__text {
+		// дал бы `.so-list-box-item > .so-button__text`.
+		> .so-button__text {
 			@apply min-w-0;
 			@include button.button-text-align('start');
 		}
@@ -84,13 +84,13 @@
 
 	// Перенос читается с самого элемента. Списочное значение доезжает сюда же:
 	// `TListBoxExtension` разрешает пару «элемент поверх списка» и ставит
-	// каждому свой `data-content-fit`. Парного правила на `.s-list-box` нет
+	// каждому свой `data-content-fit`. Парного правила на `.so-list-box` нет
 	// намеренно — оно перекрывало бы элемент, отказавшийся от переноса.
 	&[data-content-fit='wrap'] {
-		> .s-button {
+		> .so-button {
 			@apply min-h-fit;
 
-			> .s-button__text {
+			> .so-button__text {
 				@apply whitespace-normal overflow-visible;
 			}
 		}
@@ -105,6 +105,6 @@
 // сам вид (`button-state-forced`), с отметкой и без, а строку под стрелками
 // (`data-highlighted`) он же обводит изнутри контуром системного цвета: своих
 // правил у списка нет.
-:where(.s-list-box-item > .s-button) {
+:where(.so-list-box-item > .so-button) {
 	@include button.button-view('plain');
 }

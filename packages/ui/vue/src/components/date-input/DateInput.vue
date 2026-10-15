@@ -37,7 +37,7 @@ export default { ...SetupDateInput, components: { Button, Icon } }
 			Слот `leading` — перед датой, со scope `{ ctrl }`, как у Input. Обёртка
 			рисуется, только когда слот задан.
 		-->
-		<div v-if="$slots.leading" class="s-date-input__leading">
+		<div v-if="$slots.leading" class="so-date-input__leading">
 			<slot name="leading" :ctrl="ctrl" />
 		</div>
 
@@ -74,17 +74,17 @@ export default { ...SetupDateInput, components: { Button, Icon } }
 			(`ko-KR` — «. ») и метками направления (`ar-EG` — RLM). Скрыт от
 			скринридера (`aria-hidden` в его наборе): дату объявляют части.
 		-->
-		<span class="s-date-input__segments" v-bind="segmentsAttrs">
+		<span class="so-date-input__segments" v-bind="segmentsAttrs">
 			<template v-for="segment in segments" :key="segment.key">
 				<span
 					v-if="segment.type === 'literal'"
-					class="s-date-input__literal"
+					class="so-date-input__literal"
 					v-bind="segment.aria"
 					>{{ segment.text }}</span
 				>
 				<span
 					v-else
-					class="s-date-input__segment"
+					class="so-date-input__segment"
 					v-bind="{ ...segment.attrs, ...segment.aria, ...segment.dataset }"
 					>{{ segment.text }}</span
 				>
@@ -96,7 +96,7 @@ export default { ...SetupDateInput, components: { Button, Icon } }
 			`clear` или по слоту `trailing`; тема ставит её у конца поля. Кнопка
 			очистки стоит в ней первой, перед содержимым `trailing`.
 		-->
-		<div v-if="clearable || $slots.clear || $slots.trailing" class="s-date-input__trailing">
+		<div v-if="clearable || $slots.clear || $slots.trailing" class="so-date-input__trailing">
 			<!--
 				Кнопка очистки — та же, что у Input: по `clearable`, выключена
 				вместе с полем, `readonly` её не гасит. Имя ядро собирает с именем
@@ -106,13 +106,13 @@ export default { ...SetupDateInput, components: { Button, Icon } }
 
 				У кнопки нет `view`: значения вида объявляет тема, и разметка
 				библиотеки их не знает. Кнопку тема красит по контексту
-				(`.s-date-input__clear`).
+				(`.so-date-input__clear`).
 			-->
 			<slot name="clear" :clear="ctrl.clear">
 				<Button
 					embedded="date-input.clear"
 					v-if="clearable"
-					class="s-date-input__clear"
+					class="so-date-input__clear"
 					:size="size"
 					:disabled="disabled"
 					@click.stop="ctrl.clear()"

@@ -37,6 +37,6 @@ export default { ...SetupProgressLinear }
 			полоса бежит, заливку тема прячет, а бег рисует псевдоэлементом корня:
 			своего узла у бегущего отрезка нет.
 		-->
-		<span class="s-progress-linear__range"></span>
+		<span class="so-progress-linear__range"></span>
 	</component>
 </template>

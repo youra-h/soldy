@@ -84,7 +84,7 @@ function collect(el: Element, name: string): unknown[] {
 	return seen
 }
 
-const text = (el: Element) => el.querySelector('.s-button__text')?.textContent
+const text = (el: Element) => el.querySelector('.so-button__text')?.textContent
 
 /** Тексты детей кнопки — так видны слоты и их порядок. */
 const children = (el: Element) => Array.from(el.children).map((node) => node.textContent)
@@ -94,12 +94,12 @@ afterEach(() => {
 })
 
 describe('<button is="so-button"> · нативная кнопка', () => {
-	it('элемент — настоящая <button> с классами ядра, внутри один .s-button__text', () => {
+	it('элемент — настоящая <button> с классами ядра, внутри один .so-button__text', () => {
 		const el = mountButton('<button is="so-button"></button>')
 
 		expect(el).toBeInstanceOf(HTMLButtonElement)
 		expect(el.type).toBe('submit')
-		expect(el.classList).toContain('s-button')
+		expect(el.classList).toContain('so-button')
 		// variant и view — значения темы: без них модификаторов нет вовсе
 		expect(el.className).not.toMatch(/--(variant|view)-/)
 		// Для ядра это нативная кнопка: роль и фокус у неё свои
@@ -108,7 +108,7 @@ describe('<button is="so-button"> · нативная кнопка', () => {
 		expect(el.hasAttribute('aria-disabled')).toBe(false)
 		/** Тема смотрит `[data-disabled='true']`: «выключено» — строка, а не пропавший атрибут */
 		expect(el.getAttribute('data-disabled')).toBe('false')
-		expect(el.querySelectorAll('.s-button__text')).toHaveLength(1)
+		expect(el.querySelectorAll('.so-button__text')).toHaveLength(1)
 		expect(el.children).toHaveLength(1)
 	})
 
@@ -120,10 +120,10 @@ describe('<button is="so-button"> · нативная кнопка', () => {
 		expect(text(el)).toBe('Hello')
 		expect(Array.from(el.classList)).toEqual(
 			expect.arrayContaining([
-				's-button',
-				's-button--size-xl',
-				's-button--variant-brand',
-				's-button--view-ghost',
+				'so-button',
+				'so-button--size-xl',
+				'so-button--variant-brand',
+				'so-button--view-ghost',
 			]),
 		)
 	})
@@ -238,7 +238,7 @@ describe('<button is="so-button"> · разметка потребителя', (
 		)
 
 		expect(Array.from(el.classList)).toEqual(
-			expect.arrayContaining(['own', 's-button', 's-button--size-xl']),
+			expect.arrayContaining(['own', 'so-button', 'so-button--size-xl']),
 		)
 		expect(el.style.marginTop).toBe('4px')
 		expect(el.getAttribute('title')).toBe('Сохранить')
@@ -260,19 +260,19 @@ describe('<button is="so-button"> · разметка потребителя', (
 		el.variant = 'brand'
 		await flush()
 
-		expect(el.classList).toContain('s-button--variant-brand')
-		expect(el.classList).not.toContain('s-button--variant-danger')
+		expect(el.classList).toContain('so-button--variant-brand')
+		expect(el.classList).not.toContain('so-button--variant-danger')
 		expect(el.classList).toContain('marker')
 	})
 
 	it('класс потребителя с именем класса ядра ядро не снимает', async () => {
-		const el = mountButton('<button is="so-button" class="s-button--size-normal"></button>')
+		const el = mountButton('<button is="so-button" class="so-button--size-normal"></button>')
 
 		el.size = 'xl'
 		await flush()
 
-		expect(el.classList).toContain('s-button--size-xl')
-		expect(el.classList).toContain('s-button--size-normal')
+		expect(el.classList).toContain('so-button--size-xl')
+		expect(el.classList).toContain('so-button--size-normal')
 	})
 
 	it('tabindex и aria-label потребителя переживают смену disabled', async () => {
@@ -426,8 +426,8 @@ describe('<button is="so-button"> · снятый проп', () => {
 		await flush()
 
 		expect(text(el)).toBe('A')
-		expect(el.className).toContain('s-button--variant-brand')
-		expect(el.className).toContain('s-button--size-xl')
+		expect(el.className).toContain('so-button--variant-brand')
+		expect(el.className).toContain('so-button--size-xl')
 	})
 })
 
@@ -439,13 +439,13 @@ describe('<button is="so-button"> · точечные обновления', () 
 	it('смена text не перекладывает классы', async () => {
 		const el = mountButton('<button is="so-button" text="A"></button>')
 
-		el.classList.remove('s-button--size-normal')
+		el.classList.remove('so-button--size-normal')
 
 		el.text = 'B'
 		await flush()
 
 		expect(text(el)).toBe('B')
-		expect(el.classList).not.toContain('s-button--size-normal')
+		expect(el.classList).not.toContain('so-button--size-normal')
 	})
 })
 
@@ -455,7 +455,7 @@ describe('<button is="so-button"> · внешний ctrl', () => {
 		const el = mountCtrl(ctrl)
 
 		expect(text(el)).toBe('FromCtrl')
-		expect(el.className).toContain('s-button--variant-brand')
+		expect(el.className).toContain('so-button--variant-brand')
 
 		ctrl.text = 'Changed'
 		await flush()
@@ -524,7 +524,7 @@ describe('<button is="so-button"> · события', () => {
 		document.body.appendChild(el)
 
 		expect(text(el)).toBe('A')
-		expect(el.classList).toContain('s-button--variant-brand')
+		expect(el.classList).toContain('so-button--variant-brand')
 
 		el.attributeChangedCallback('text', null, 'A')
 		el.attributeChangedCallback('variant', null, 'brand')
@@ -594,10 +594,10 @@ describe('<button is="so-button"> · перестановка в DOM', () => {
 		move(el)
 		await flush()
 
-		expect(el.querySelectorAll('.s-button__text')).toHaveLength(1)
+		expect(el.querySelectorAll('.so-button__text')).toHaveLength(1)
 		expect(children(el)).toEqual(['L', 'Mid', 'T'])
 		expect(el.ctrl).toBe(ctrl)
-		expect(el.classList).toContain('s-button')
+		expect(el.classList).toContain('so-button')
 	})
 
 	it('смена внешнего ctrl доходит одним CustomEvent', () => {
@@ -707,7 +707,7 @@ describe('<button is="so-button"> · слоты', () => {
 		const el = mountButton('<button is="so-button" text="ignored"><b>Custom</b></button>')
 
 		expect(text(el)).toBe('Custom')
-		expect(el.querySelector('.s-button__text > b')?.textContent).toBe('Custom')
+		expect(el.querySelector('.so-button__text > b')?.textContent).toBe('Custom')
 	})
 
 	it('slot="leading" ставится перед текстом, slot="trailing" — после', () => {

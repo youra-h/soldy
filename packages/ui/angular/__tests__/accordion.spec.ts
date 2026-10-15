@@ -20,11 +20,11 @@ import type { TAccordionArrowPlacement, TSelectionMode } from '@soldy-ui/core'
 import { SlotDirective, TAccordionComponent, TAccordionItemComponent } from '@soldy-ui/angular'
 import { find, mountHost } from './mount'
 
-const headers = () => [...document.querySelectorAll('.s-accordion-item__header')]
+const headers = () => [...document.querySelectorAll('.so-accordion-item__header')]
 
-const contents = () => [...document.querySelectorAll('.s-accordion-item__content')]
+const contents = () => [...document.querySelectorAll('.so-accordion-item__content')]
 
-const sections = () => [...document.querySelectorAll('.s-accordion-item')]
+const sections = () => [...document.querySelectorAll('.so-accordion-item')]
 
 /** Заголовок секции по тексту; нет его — тест падает здесь. */
 function header(text: string): HTMLElement {
@@ -194,7 +194,7 @@ describe('секция из разметки', () => {
 
 		mountHost(SplitHost)
 
-		const section = find(document, '.s-accordion-item', HTMLElement)
+		const section = find(document, '.so-accordion-item', HTMLElement)
 
 		expect(section.classList.contains('mine')).toBe(true)
 		expect(section.style.color).toBe('red')
@@ -232,7 +232,7 @@ describe('секция из разметки', () => {
 	/**
 	 * Стрелка — по краю заголовка со стороны `arrowPlacement`; слоты
 	 * `leading-icon` и `trailing-icon` её подменяют. Подменённая стоит в той же
-	 * обёртке `.s-accordion-item__arrow`: по ней тема поворачивает стрелку
+	 * обёртке `.so-accordion-item__arrow`: по ней тема поворачивает стрелку
 	 * раскрытой секции, и подменённая поворачивается так же.
 	 */
 	it('стрелка стоит со стороны arrowPlacement, шаблон её подменяет', () => {
@@ -264,8 +264,8 @@ describe('секция из разметки', () => {
 
 		const fixture = mountHost(ArrowHost)
 		const arrowSide = () => {
-			const arrow = find(document, '.s-accordion-item__arrow', Element)
-			const text = find(document, '.s-accordion-item__header .s-button__text', HTMLElement)
+			const arrow = find(document, '.so-accordion-item__arrow', Element)
+			const text = find(document, '.so-accordion-item__header .so-button__text', HTMLElement)
 
 			return arrow.compareDocumentPosition(text) & Node.DOCUMENT_POSITION_FOLLOWING
 				? 'start'
@@ -283,16 +283,16 @@ describe('секция из разметки', () => {
 		fixture.detectChanges()
 
 		expect(arrowSide()).toBe('end')
-		expect(document.querySelectorAll('.s-accordion-item__arrow')).toHaveLength(1)
-		expect(document.querySelector('.s-accordion-item__arrow .custom')).not.toBeNull()
-		expect(document.querySelector('.s-accordion-item__arrow svg')).toBeNull()
+		expect(document.querySelectorAll('.so-accordion-item__arrow')).toHaveLength(1)
+		expect(document.querySelector('.so-accordion-item__arrow .custom')).not.toBeNull()
+		expect(document.querySelector('.so-accordion-item__arrow svg')).toBeNull()
 
 		// Слот на стороне без стрелки по умолчанию — своя обёртка, стрелка остаётся
 		fixture.componentInstance.variant.set('leading-icon')
 		fixture.detectChanges()
 
 		expect(
-			[...document.querySelectorAll('.s-accordion-item__arrow')].map((arrow) =>
+			[...document.querySelectorAll('.so-accordion-item__arrow')].map((arrow) =>
 				arrow.querySelector('.custom')
 					? 'slot'
 					: arrow.querySelector('svg')
@@ -328,9 +328,9 @@ describe('секция из разметки', () => {
 
 		mountHost(RelayHost)
 
-		expect(headers().map((node) => node.querySelector('.s-button__text')?.textContent)).toEqual(
-			['[Первый]', '[Второй]'],
-		)
+		expect(
+			headers().map((node) => node.querySelector('.so-button__text')?.textContent),
+		).toEqual(['[Первый]', '[Второй]'])
 		expect([...document.querySelectorAll('.lead')].map((node) => node.textContent)).toEqual([
 			'a',
 			'b',
@@ -357,7 +357,7 @@ describe('проброс слотов секций из items', () => {
 	/** Стрелки секций по порядку: что лежит в каждой обёртке. */
 	const arrows = () =>
 		sections().map((section) =>
-			[...section.querySelectorAll('.s-accordion-item__arrow')].map((arrow) =>
+			[...section.querySelectorAll('.so-accordion-item__arrow')].map((arrow) =>
 				arrow.querySelector('.probe')
 					? 'slot'
 					: arrow.querySelector('svg')
@@ -449,7 +449,7 @@ describe('проброс слотов секций из items', () => {
 			['icon', 'slot'],
 		])
 
-		const empty = [...document.querySelectorAll('.s-accordion-item__arrow')].filter(
+		const empty = [...document.querySelectorAll('.so-accordion-item__arrow')].filter(
 			(arrow) => !arrow.querySelector('.probe, svg'),
 		)
 

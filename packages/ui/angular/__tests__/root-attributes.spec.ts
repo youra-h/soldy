@@ -135,12 +135,12 @@ class LabelProbe extends TProbeHost {}
 
 /** Компонент, хост его пробы, селектор корня и класс ядра на нём. */
 const COMPONENTS: ReadonlyArray<readonly [string, Type<TProbeHost>, string, string]> = [
-	['Button', ButtonProbe, '[so-button]', 's-button'],
-	['ComponentView', ComponentViewProbe, '[so-component-view]', 's-component-view'],
-	['Icon', IconProbe, '[so-icon]', 's-icon'],
-	['ProgressSpinner', ProgressSpinnerProbe, '[so-progress-spinner]', 's-progress-spinner'],
-	['Skeleton', SkeletonProbe, '[so-skeleton]', 's-skeleton'],
-	['Label', LabelProbe, '[so-label]', 's-label'],
+	['Button', ButtonProbe, '[so-button]', 'so-button'],
+	['ComponentView', ComponentViewProbe, '[so-component-view]', 'so-component-view'],
+	['Icon', IconProbe, '[so-icon]', 'so-icon'],
+	['ProgressSpinner', ProgressSpinnerProbe, '[so-progress-spinner]', 'so-progress-spinner'],
+	['Skeleton', SkeletonProbe, '[so-skeleton]', 'so-skeleton'],
+	['Label', LabelProbe, '[so-label]', 'so-label'],
 ]
 
 /**
@@ -192,9 +192,9 @@ class InputProbe extends TProbeHost {}
 
 /** Поле, хост его пробы, селектор корня и класс ядра на нём. */
 const FIELDS: ReadonlyArray<readonly [string, Type<TProbeHost>, string, string]> = [
-	['CheckBox', CheckBoxProbe, 'so-check-box', 's-check-box'],
-	['Switch', SwitchProbe, 'so-switch', 's-switch'],
-	['Input', InputProbe, 'so-input', 's-input'],
+	['CheckBox', CheckBoxProbe, 'so-check-box', 'so-check-box'],
+	['Switch', SwitchProbe, 'so-switch', 'so-switch'],
+	['Input', InputProbe, 'so-input', 'so-input'],
 ]
 
 describe('что называет ядро, — за базой, остальное — потребителя', () => {
@@ -547,13 +547,13 @@ describe('раскладка наборов и классов', () => {
 	it('класс, который называет ядро, — за базой с первой раскладки', () => {
 		const node = document.createElement('div')
 
-		node.className = 'own s-button s-button--size-normal'
+		node.className = 'own so-button so-button--size-normal'
 
-		let applied = applyClasses(node, ['s-button', 's-button--size-normal'], new Set())
+		let applied = applyClasses(node, ['so-button', 'so-button--size-normal'], new Set())
 
-		applied = applyClasses(node, ['s-button', 's-button--size-xl'], applied)
+		applied = applyClasses(node, ['so-button', 'so-button--size-xl'], applied)
 
-		expect([...node.classList]).toEqual(['own', 's-button', 's-button--size-xl'])
+		expect([...node.classList]).toEqual(['own', 'so-button', 'so-button--size-xl'])
 
 		applyClasses(node, [], applied)
 

@@ -59,7 +59,7 @@
 			{#each state.drawn ?? [] as entry (entry.key)}
 				{#if entry.kind === 'filler'}
 					<div
-						class="s-list-box__filler"
+						class="so-list-box__filler"
 						aria-hidden="true"
 						style={toStyleText(entry.style)}
 					></div>

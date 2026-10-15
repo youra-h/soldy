@@ -1,8 +1,8 @@
 @use '../../mixins/motion';
 
 // Строка таба — всё в обёртке элемента, кроме кнопки закрытия: она стоит рядом
-// со строкой, а не внутри неё (`_tabs.scss`, `.s-tabs-item`).
-$row: ':not(.s-tabs-item__close)';
+// со строкой, а не внутри неё (`_tabs.scss`, `.so-tabs-item`).
+$row: ':not(.so-tabs-item__close)';
 
 // Переезд геометрии активного таба — время и кривая, одни у полосы `line` и
 // карточки `contained`.
@@ -79,7 +79,7 @@ $move-easing: ease;
 // под списком — рамку — браузер красит системным текстом сам.
 @mixin tabs-line-variant($color, $text: 800, $border: 300, $indicator: 600) {
 	// Цвет разделительной линии и индикатора
-	> .s-tabs__list {
+	> .so-tabs__list {
 		// Обычное объявление, не `@apply border-s-…` — почему, см. input/_mixins.scss
 		border-color: var(--s-#{$color}-#{$border});
 
@@ -88,7 +88,7 @@ $move-easing: ease;
 		}
 
 		// Цвет текста при hover и у активного таба
-		> .s-tabs-item {
+		> .so-tabs-item {
 			&:hover:not([data-disabled='true']) > #{$row} {
 				@apply #{'text-s-' + $color + '-' + $text};
 			}
@@ -100,7 +100,7 @@ $move-easing: ease;
 	}
 
 	@media (forced-colors: active) {
-		> .s-tabs__list::after {
+		> .so-tabs__list::after {
 			forced-color-adjust: none;
 			background-color: Highlight;
 		}
@@ -112,11 +112,11 @@ $move-easing: ease;
 // тенью внутри контейнера; её вид от варианта не зависит (`tabs-contained-card`),
 // от варианта — цвет контейнера и текста.
 @mixin tabs-contained-variant($color, $text: 800, $container-bg: 100) {
-	> .s-tabs__list {
+	> .so-tabs__list {
 		@apply #{'bg-s-' + $color + '-' + $container-bg};
 	}
 
-	> .s-tabs__list > .s-tabs-item {
+	> .so-tabs__list > .so-tabs-item {
 		&:hover:not([data-disabled='true']) > #{$row} {
 			@apply #{'text-s-' + $color + '-' + $text};
 		}
@@ -150,14 +150,14 @@ $move-easing: ease;
 // нет: системный цвет рамки браузер и так оставляет, а подмену унаследовал бы
 // текст таба.
 @mixin tabs-outline-variant($color, $text: 800, $border: 300) {
-	> .s-tabs__list {
+	> .so-tabs__list {
 		&::before,
 		&::after {
 			@apply #{'bg-s-' + $color + '-' + $border};
 		}
 	}
 
-	> .s-tabs__list > .s-tabs-item {
+	> .so-tabs__list > .so-tabs-item {
 		border-color: var(--s-#{$color}-#{$border});
 
 		// @apply border-b-transparent;
@@ -171,7 +171,7 @@ $move-easing: ease;
 	}
 
 	@media (forced-colors: active) {
-		> .s-tabs__list {
+		> .so-tabs__list {
 			&::before,
 			&::after {
 				forced-color-adjust: none;
@@ -179,7 +179,7 @@ $move-easing: ease;
 			}
 		}
 
-		> .s-tabs__list > .s-tabs-item[data-selected='true'] {
+		> .so-tabs__list > .so-tabs-item[data-selected='true'] {
 			border-color: Highlight;
 		}
 	}

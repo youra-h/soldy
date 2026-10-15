@@ -12,7 +12,7 @@ import { setupTabs } from './setup.component'
  * Обёртки нет: корень — сам элемент потребителя, `<div so-tabs>`. Классы,
  * `attrs` и скрытие раскладывает на него `TComponentBase` (стратегия
  * `'host'`); набор `aria` владельца — это список табов (`role="tablist"`,
- * `aria-orientation`, имя из `aria_label`), и на `.s-tabs__list` его кладёт
+ * `aria-orientation`, имя из `aria_label`), и на `.so-tabs__list` его кладёт
  * директива набора: на корне рядом со списком лежат панели.
  *
  * Контекстов два — свой и фасада коллекции (`setupTabs`), и входы фасада

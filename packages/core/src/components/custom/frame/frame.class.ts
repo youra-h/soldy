@@ -17,7 +17,7 @@ import type { IFrame, IFrameProps, TFrameEvents, TFramePosition } from './types'
  * frame.hide() // скрывается
  */
 export default class TFrame extends TLayer<IFrameProps, TFrameEvents> implements IFrame {
-	static baseClass = 's-frame'
+	static baseClass = 'so-frame'
 
 	static defaultValues: typeof TLayer.defaultValues &
 		TDefaultValues<IFrameProps, 'x' | 'y' | 'width' | 'height' | 'position' | 'contained'> = {

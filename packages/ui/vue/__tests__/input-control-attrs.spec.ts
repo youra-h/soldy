@@ -75,9 +75,9 @@ const CHECKABLES = [
 	[
 		'CheckBox',
 		(props: Record<string, unknown>) => mount(CheckBox, { props }),
-		'.s-check-box__container',
+		'.so-check-box__container',
 	],
-	['Switch', (props: Record<string, unknown>) => mount(Switch, { props }), '.s-switch__track'],
+	['Switch', (props: Record<string, unknown>) => mount(Switch, { props }), '.so-switch__track'],
 ] as const
 
 describe.each(CHECKABLES)('%s', (_name, render, decor) => {

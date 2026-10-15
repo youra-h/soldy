@@ -24,7 +24,7 @@ import type { ILabel, ILabelProps, TLabelEvents, TLabelPosition } from './types'
  * модификатору `--position-<v>`. Модификатор стоит всегда, как `--size-*`.
  */
 export default class TLabel extends TStylable<ILabelProps, TLabelEvents> implements ILabel {
-	static override baseClass = 's-label'
+	static override baseClass = 'so-label'
 
 	static defaultValues: typeof TStylable.defaultValues &
 		TDefaultValues<ILabelProps, 'text' | 'position'> = {

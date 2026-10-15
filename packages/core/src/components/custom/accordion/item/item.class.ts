@@ -21,7 +21,7 @@ export default class TAccordionItem<
 	extends TValueControl<string | number, TProps, TEvents>
 	implements IAccordionItem<TProps, TEvents>
 {
-	static override baseClass = 's-accordion-item'
+	static override baseClass = 'so-accordion-item'
 
 	static defaultValues: typeof TValueControl.defaultValues &
 		TDefaultValues<IAccordionItemProps, 'text' | 'arrowPlacement'> = {
@@ -70,7 +70,7 @@ export default class TAccordionItem<
 	}
 
 	/**
-	 * `aria` секции стоит на заголовке `.s-accordion-item__header` — вложенном
+	 * `aria` секции стоит на заголовке `.so-accordion-item__header` — вложенном
 	 * `<button>`, который раскрывает панель. Корень элемента только оборачивает
 	 * заголовок и панель и держит `data-*` для темы.
 	 *

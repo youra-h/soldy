@@ -119,61 +119,71 @@ const COLUMNS: TTableColumnSource[] = [{ field: 'name', text: 'Имя', rowHeade
  * рисуется в своём владельце: без него у элемента нет коллекции.
  */
 const ROOTS: ReadonlyArray<readonly [string, (props: TProbeProps) => VNode, string, string]> = [
-	['Button', (props) => h(Button, props), '.s-button', '.s-button'],
-	['ComponentView', (props) => h(ComponentView, props), '.s-component-view', '.s-component-view'],
-	['Frame', (props) => h(Frame, props), '.s-frame', '.s-frame'],
-	['Frame contained', (props) => h(Frame, { contained: true, ...props }), '.s-frame', '.s-frame'],
-	['Dialog', (props) => h(Dialog, props), '.s-dialog', '.s-dialog'],
-	['Drawer', (props) => h(Drawer, props), '.s-drawer', '.s-drawer'],
+	['Button', (props) => h(Button, props), '.so-button', '.so-button'],
+	[
+		'ComponentView',
+		(props) => h(ComponentView, props),
+		'.so-component-view',
+		'.so-component-view',
+	],
+	['Frame', (props) => h(Frame, props), '.so-frame', '.so-frame'],
+	[
+		'Frame contained',
+		(props) => h(Frame, { contained: true, ...props }),
+		'.so-frame',
+		'.so-frame',
+	],
+	['Dialog', (props) => h(Dialog, props), '.so-dialog', '.so-dialog'],
+	['Drawer', (props) => h(Drawer, props), '.so-drawer', '.so-drawer'],
 	[
 		'Drawer contained',
 		(props) => h(Drawer, { contained: true, ...props }),
-		'.s-drawer',
-		'.s-drawer',
+		'.so-drawer',
+		'.so-drawer',
 	],
-	['Popover', (props) => h(Popover, props), '.s-popover', '.s-popover'],
-	['Tooltip', (props) => h(Tooltip, props), '.s-tooltip', '.s-tooltip'],
-	['Icon', (props) => h(Icon, { tag: 'i', ...props }), '.s-icon', '.s-icon'],
-	['Label', (props) => h(Label, props), '.s-label', '.s-label'],
+	['Popover', (props) => h(Popover, props), '.so-popover', '.so-popover'],
+	['Tooltip', (props) => h(Tooltip, props), '.so-tooltip', '.so-tooltip'],
+	['Icon', (props) => h(Icon, { tag: 'i', ...props }), '.so-icon', '.so-icon'],
+	['Label', (props) => h(Label, props), '.so-label', '.so-label'],
 	[
 		'ProgressLinear',
 		(props) => h(ProgressLinear, props),
-		'.s-progress-linear',
-		'.s-progress-linear',
+		'.so-progress-linear',
+		'.so-progress-linear',
 	],
 	[
 		'ProgressSpinner',
 		(props) => h(ProgressSpinner, props),
-		'.s-progress-spinner',
-		'.s-progress-spinner',
+		'.so-progress-spinner',
+		'.so-progress-spinner',
 	],
-	['Skeleton', (props) => h(Skeleton, props), '.s-skeleton', '.s-skeleton'],
-	['Slider', (props) => h(Slider, props), '.s-slider', '.s-slider'],
-	['Scroller', (props) => h(Scroller, props), '.s-scroller', '.s-scroller'],
-	['Input', (props) => h(Input, props), '.s-input', '.s-input'],
-	['CheckBox', (props) => h(CheckBox, props), '.s-check-box', '.s-check-box'],
-	['Switch', (props) => h(Switch, props), '.s-switch', '.s-switch'],
-	['Select', (props) => h(Select, props), '.s-select', '.s-select'],
+	['Skeleton', (props) => h(Skeleton, props), '.so-skeleton', '.so-skeleton'],
+	['Slider', (props) => h(Slider, props), '.so-slider', '.so-slider'],
+	['Scroller', (props) => h(Scroller, props), '.so-scroller', '.so-scroller'],
+	['Input', (props) => h(Input, props), '.so-input', '.so-input'],
+	['CheckBox', (props) => h(CheckBox, props), '.so-check-box', '.so-check-box'],
+	['Switch', (props) => h(Switch, props), '.so-switch', '.so-switch'],
+	['Select', (props) => h(Select, props), '.so-select', '.so-select'],
 	[
 		'Select.Item',
 		(props) => h(Select, null, () => h(SelectItem, { value: 'a', text: 'A', ...props })),
-		'.s-select-item',
-		'.s-select-item',
+		'.so-select-item',
+		'.so-select-item',
 	],
-	['Tags', (props) => h(Tags, props), '.s-tags', '.s-tags'],
+	['Tags', (props) => h(Tags, props), '.so-tags', '.so-tags'],
 	[
 		'Tags.Item',
 		(props) => h(Tags, null, () => h(TagsItem, { value: 'a', text: 'A', ...props })),
-		'.s-tags-item',
-		'.s-tags-item',
+		'.so-tags-item',
+		'.so-tags-item',
 	],
-	['Tabs', (props) => h(Tabs, props), '.s-tabs', '.s-tabs'],
+	['Tabs', (props) => h(Tabs, props), '.so-tabs', '.so-tabs'],
 	[
 		'Tabs.Item',
 		(props) =>
 			h(Tabs, null, () => h(TabsItem, { value: 'a', text: 'A', active: true, ...props })),
-		'.s-tabs-item',
-		'.s-tabs-item',
+		'.so-tabs-item',
+		'.so-tabs-item',
 	],
 	[
 		'Tabs.Content',
@@ -182,36 +192,36 @@ const ROOTS: ReadonlyArray<readonly [string, (props: TProbeProps) => VNode, stri
 				default: () => h(TabsItem, { value: 'a', text: 'A', active: true }),
 				content: () => h(TabsContent, { value: 'a', ...props }),
 			}),
-		'.s-tabs__panel',
-		'.s-tabs__panel',
+		'.so-tabs__panel',
+		'.so-tabs__panel',
 	],
-	['Accordion', (props) => h(Accordion, props), '.s-accordion', '.s-accordion'],
+	['Accordion', (props) => h(Accordion, props), '.so-accordion', '.so-accordion'],
 	[
 		'Accordion.Item',
 		(props) => h(Accordion, null, () => h(AccordionItem, { value: 'a', text: 'A', ...props })),
-		'.s-accordion-item',
-		'.s-accordion-item',
+		'.so-accordion-item',
+		'.so-accordion-item',
 	],
-	['RadioGroup', (props) => h(RadioGroup, props), '.s-radio-group', '.s-radio-group'],
+	['RadioGroup', (props) => h(RadioGroup, props), '.so-radio-group', '.so-radio-group'],
 	[
 		'RadioGroup.Item',
 		(props) => h(RadioGroup, null, () => h(RadioGroupItem, { value: 'a', ...props })),
-		'.s-radio-group-item',
-		'.s-radio-group-item',
+		'.so-radio-group-item',
+		'.so-radio-group-item',
 	],
-	['ListBox', (props) => h(ListBox, props), '.s-list-box', '.s-list-box'],
+	['ListBox', (props) => h(ListBox, props), '.so-list-box', '.so-list-box'],
 	[
 		'ListBox.Item',
 		(props) => h(ListBox, null, () => h(ListBoxItem, { value: 'a', text: 'A', ...props })),
-		'.s-list-box-item',
-		'.s-list-box-item',
+		'.so-list-box-item',
+		'.so-list-box-item',
 	],
 	[
 		'Table',
 		(props) =>
 			h(Table, { columns: COLUMNS, items: [{ data: { id: 1, name: 'Анна' } }], ...props }),
-		'.s-table__viewport',
-		'table.s-table',
+		'.so-table__viewport',
+		'table.so-table',
 	],
 ]
 
@@ -226,10 +236,10 @@ const FIELD_ROOTS = ROOTS.filter(([name]) =>
 /** Строка элемента коллекции — вложенный узел, который `$el` не отдаёт. */
 const ITEM_ROWS: Readonly<Record<string, string>> = {
 	'Tabs.Item': '[role="tab"]',
-	'Accordion.Item': '.s-accordion-item__header',
-	'ListBox.Item': '.s-button',
-	'Select.Item': '.s-button',
-	'Tags.Item': '.s-button',
+	'Accordion.Item': '.so-accordion-item__header',
+	'ListBox.Item': '.so-button',
+	'Select.Item': '.so-button',
+	'Tags.Item': '.so-button',
 }
 
 const ITEM_ROOTS = ROOTS.filter(([name]) => name in ITEM_ROWS)
@@ -305,7 +315,7 @@ const TELEPORTED: ReadonlyArray<readonly [string, () => TTeleported, string]> = 
 
 			return { ctrl, draw: (props) => h(Frame, { ctrl, ...props }) }
 		},
-		'.s-frame',
+		'.so-frame',
 	],
 	[
 		'Frame contained',
@@ -314,7 +324,7 @@ const TELEPORTED: ReadonlyArray<readonly [string, () => TTeleported, string]> = 
 
 			return { ctrl, draw: (props) => h(Frame, { ctrl, contained: true, ...props }) }
 		},
-		'.s-frame',
+		'.so-frame',
 	],
 	[
 		'Dialog',
@@ -323,7 +333,7 @@ const TELEPORTED: ReadonlyArray<readonly [string, () => TTeleported, string]> = 
 
 			return { ctrl, draw: (props) => h(Dialog, { ctrl, ...props }) }
 		},
-		'.s-dialog',
+		'.so-dialog',
 	],
 	[
 		'Drawer',
@@ -332,7 +342,7 @@ const TELEPORTED: ReadonlyArray<readonly [string, () => TTeleported, string]> = 
 
 			return { ctrl, draw: (props) => h(Drawer, { ctrl, ...props }) }
 		},
-		'.s-drawer',
+		'.so-drawer',
 	],
 	[
 		'Drawer contained',
@@ -341,7 +351,7 @@ const TELEPORTED: ReadonlyArray<readonly [string, () => TTeleported, string]> = 
 
 			return { ctrl, draw: (props) => h(Drawer, { ctrl, contained: true, ...props }) }
 		},
-		'.s-drawer',
+		'.so-drawer',
 	],
 ]
 

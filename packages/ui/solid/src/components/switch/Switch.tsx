@@ -48,8 +48,8 @@ export function Switch(props: SwitchProps): JSX.Element {
 					{...toControlAttrs<SwitchAttributes>(binding.forwardProps())}
 					checked={state.value}
 				/>
-				<span class="s-switch__track" aria-hidden="true">
-					<span class="s-switch__track--thumb">
+				<span class="so-switch__track" aria-hidden="true">
+					<span class="so-switch__track--thumb">
 						<Show when={state.value} fallback={renderSlot(props.off, scope())}>
 							{renderSlot(props.on, scope())}
 						</Show>

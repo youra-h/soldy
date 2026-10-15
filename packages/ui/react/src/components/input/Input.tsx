@@ -70,7 +70,7 @@ export function Input(props: InputProps): ReactElement | null {
 	return (
 		<Tag ref={ref} {...toRootLayout(state, forwardProps)} {...toAriaProps(attrs)}>
 			{hasSlot(props.leading) ? (
-				<div className="s-input__leading">{renderSlot(props.leading, { ctrl })}</div>
+				<div className="so-input__leading">{renderSlot(props.leading, { ctrl })}</div>
 			) : null}
 			<NativeInput
 				type="text"
@@ -85,12 +85,12 @@ export function Input(props: InputProps): ReactElement | null {
 				live={{ value }}
 			/>
 			{trailing ? (
-				<div className="s-input__trailing">
+				<div className="so-input__trailing">
 					{renderSlot(props.clear, { clear: ctrl.clear }) ??
 						(clearable === true ? (
 							<Button
 								embedded="input.clear"
-								className="s-input__clear"
+								className="so-input__clear"
 								size={size}
 								disabled={disabled}
 								{...toAriaProps(clearAria)}

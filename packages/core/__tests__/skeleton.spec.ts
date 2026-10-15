@@ -88,7 +88,7 @@ describe('TSkeleton', () => {
 
 	it('should have base class', () => {
 		const skeleton = new TSkeleton()
-		expect(skeleton.classes.base).toBe('s-skeleton')
+		expect(skeleton.classes.base).toBe('so-skeleton')
 	})
 
 	it('should have shape class', () => {

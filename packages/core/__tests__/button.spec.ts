@@ -5,26 +5,26 @@ describe('TButton', () => {
 	it('создаётся через { props } и через plain props', () => {
 		const a = new TButton({ text: 'button 1' })
 		expect(a.text).toBe('button 1')
-		expect(a.classes.toArray()).toContain('s-button')
+		expect(a.classes.toArray()).toContain('so-button')
 
 		const b = new TButton({ text: 'button 2' })
 		expect(b.text).toBe('button 2')
 
 		const c = new TButton({ text: 'x' })
-		expect(c.classes.toArray()).toContain('s-button')
+		expect(c.classes.toArray()).toContain('so-button')
 	})
 
 	it('classes меняются при смене variant/size/view', () => {
 		const btn = new TButton()
 
 		btn.variant = 'brand'
-		expect(btn.classes.toArray()).toContain('s-button--variant-brand')
+		expect(btn.classes.toArray()).toContain('so-button--variant-brand')
 
 		btn.size = 'xl'
-		expect(btn.classes.toArray()).toContain('s-button--size-xl')
+		expect(btn.classes.toArray()).toContain('so-button--size-xl')
 
 		btn.view = 'ghost'
-		expect(btn.classes.toArray()).toContain('s-button--view-ghost')
+		expect(btn.classes.toArray()).toContain('so-button--view-ghost')
 	})
 
 	it('getProps/toJSON отражают ключевые props', () => {

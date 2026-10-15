@@ -15,7 +15,7 @@ import type {
  * Управляет коллекцией табов на базе TCollectionEngine с расширениями (Plain, Batch, Selection).
  */
 export class TTabs extends TControl<ITabsProps, TTabsEvents> implements ITabs {
-	static override baseClass = 's-tabs'
+	static override baseClass = 'so-tabs'
 
 	static defaultValues: typeof TControl.defaultValues &
 		TDefaultValues<ITabsProps, 'orientation' | 'alignment' | 'position' | 'closable', 'view'> =
@@ -40,7 +40,7 @@ export class TTabs extends TControl<ITabsProps, TTabsEvents> implements ITabs {
 		const ctor = new.target as typeof TTabs
 
 		// Набор `aria` владельца — это список табов: разметка биндит его на
-		// `.s-tabs__list`, а не на корень, где рядом со списком лежат панели.
+		// `.so-tabs__list`, а не на корень, где рядом со списком лежат панели.
 		// Туда же доходят имя из `aria_label` и `aria-disabled`.
 		this._aria.add('role', 'tablist')
 

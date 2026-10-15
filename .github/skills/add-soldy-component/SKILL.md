@@ -33,7 +33,7 @@ Do the layers in order. Replace `<Name>`/`<name>` with the component name.
   - An appearance prop — its value describes only the look and the set of values is a design decision (`view`, `shape`) — is **not** a union: its values are declared by the theme. Declare an empty registry `interface I<Name>Views extends TThemeRegistry {}` with `type T<Name>View = Extract<keyof I<Name>Views, string>`, default `undefined` (third argument of `TDefaultValues`), class via `this._classes.swap({ prefix: '--view-', oldValue, newValue })`, and no theme value in any adapter markup. A row drawn by `Button` reuses `TButtonView` instead of its own registry. See AGENTS.md, «Оформление: значения объявляет тема».
 - `<name>.class.ts`:
   - `export default class T<Name> extends TBase<...> implements I<Name>`
-  - `static override baseClass = 's-<name>'`, `static defaultValues`, getters/setters that update `_classes` and `events.emit('change:…', value)`, and `getProps()`.
+  - `static override baseClass = 'so-<name>'`, `static defaultValues`, getters/setters that update `_classes` and `events.emit('change:…', value)`, and `getProps()`.
   - `static defaultValues` is typed `typeof TBase.defaultValues & TDefaultValues<I<Name>Props, 'ownKeyA' | 'ownKeyB'>` (own keys only; keys declared as `undefined` go to the third argument), never `Partial<I<Name>Props>`. The constructor then reads `props.x ?? ctor.defaultValues.x` without `!` — `x!` fails `lint:ci`. See AGENTS.md, «Умолчание пропа — в декларации».
 - `index.ts`: `export * from './types'` + `export { default as T<Name> } from './<name>.class'`.
 

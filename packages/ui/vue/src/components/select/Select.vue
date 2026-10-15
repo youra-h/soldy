@@ -54,7 +54,7 @@ export default { ...SetupSelect, components: { Frame, Input, Icon, Tags, SelectI
 		<slot name="field" :field="field">
 			<Input
 				embedded="select.field"
-				class="s-select__field"
+				class="so-select__field"
 				:ctrl="field"
 				v-bind="controlAttrs"
 			>
@@ -72,7 +72,7 @@ export default { ...SetupSelect, components: { Frame, Input, Icon, Tags, SelectI
 					<slot v-if="tags" name="tags" :tags="tags" :engine="tags_engine">
 						<Tags
 							embedded="select.tags"
-							class="s-select__tags"
+							class="so-select__tags"
 							:ctrl="tags"
 							:engine="tags_engine ?? undefined"
 						/>
@@ -97,11 +97,11 @@ export default { ...SetupSelect, components: { Frame, Input, Icon, Tags, SelectI
 						Icon скрыт от скринридера по умолчанию.
 
 						Класс на обёртке, а не на иконке: тема разворачивает
-						стрелку селектором `.s-select[data-open] .s-select__arrow`.
+						стрелку селектором `.so-select[data-open] .so-select__arrow`.
 						Поставь его на `Icon` — и подменённая через слот иконка
 						перестала бы поворачиваться, причём молча.
 					-->
-					<span class="s-select__arrow">
+					<span class="so-select__arrow">
 						<slot name="arrow-icon">
 							<Icon embedded="select.arrow" :tag="arrowIconTag" :size="size" />
 						</slot>
@@ -145,7 +145,7 @@ export default { ...SetupSelect, components: { Frame, Input, Icon, Tags, SelectI
 			:anchor_flip="panelFlip"
 			:anchor_matchWidth="autoFitWidth"
 			:anchor_offset="4"
-			class="s-select__panel"
+			class="so-select__panel"
 			v-bind="{ ...panelDataset, ...dismiss_ownerAttribute }"
 		>
 			<!--
@@ -157,9 +157,9 @@ export default { ...SetupSelect, components: { Frame, Input, Icon, Tags, SelectI
 				её опцией, а плагин жеста узнаёт полосу только у самой панели.
 				Закрыть без перетаскивания — Escape и нажатие мимо.
 			-->
-			<div v-if="handleRendered" class="s-select__handle" aria-hidden="true" />
+			<div v-if="handleRendered" class="so-select__handle" aria-hidden="true" />
 
-			<div class="s-select__list" v-bind="listAria">
+			<div class="so-select__list" v-bind="listAria">
 				<slot>
 					<!--
 						Слоты опций статические и получают элемент через scope —
@@ -185,7 +185,7 @@ export default { ...SetupSelect, components: { Frame, Input, Icon, Tags, SelectI
 					<template v-for="entry in drawn" :key="entry.key">
 						<div
 							v-if="entry.kind === 'filler'"
-							class="s-select__filler"
+							class="so-select__filler"
 							aria-hidden="true"
 							:style="entry.style"
 						></div>

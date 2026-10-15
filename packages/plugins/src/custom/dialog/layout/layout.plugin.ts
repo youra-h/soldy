@@ -6,7 +6,7 @@ import type { TModalLayoutVariables } from '../../overlay/modal-layout'
 import { TDialogOffsetEvent } from './offset-event'
 import type { TDialogLayoutPluginEvents } from './types'
 
-/** Сторона отступа → переменная, которую читает CSS блока `s-dialog`. */
+/** Сторона отступа → переменная, которую читает CSS блока `so-dialog`. */
 const OFFSET_VARIABLES = [
 	['top', '--dialog-offset-top'],
 	['bottom', '--dialog-offset-bottom'],

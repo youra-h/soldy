@@ -35,7 +35,7 @@ import '@soldy-ui/theme-oren'
 const EPSILON = 0.5
 
 /** Имя кадров бега в теме. */
-const RUN = 's-progress-spinner-run'
+const RUN = 'so-progress-spinner-run'
 
 /** Схемы темы: палитру принудительных цветов выбирает браузер, но проверяем обе. */
 const SCHEMES = ['oren', 'oren-dark'] as const
@@ -65,11 +65,11 @@ function part(selector: string): SVGElement {
 	return element
 }
 
-const root = () => find('.s-progress-spinner')
-const ring = () => part('.s-progress-spinner__ring')
-const track = () => part('.s-progress-spinner__track')
-const range = () => part('.s-progress-spinner__range')
-const runner = () => part('.s-progress-spinner__runner')
+const root = () => find('.so-progress-spinner')
+const ring = () => part('.so-progress-spinner__ring')
+const track = () => part('.so-progress-spinner__track')
+const range = () => part('.so-progress-spinner__range')
+const runner = () => part('.so-progress-spinner__runner')
 
 /**
  * Длина штриха в долях окружности — первое число `stroke-dasharray`, как его
@@ -182,7 +182,7 @@ describe('диаметр', () => {
 		await transitionEvents()
 
 		const widths = COMPONENT_SIZES.map(
-			(size) => find(`.s-progress-spinner--size-${size}`).offsetWidth,
+			(size) => find(`.so-progress-spinner--size-${size}`).offsetWidth,
 		)
 
 		widths.slice(1).forEach((width, index) => {

@@ -24,10 +24,10 @@ import { compile } from 'sass'
 const INDEX_SCSS = fileURLToPath(new URL('../src/index.scss', import.meta.url))
 
 /** Контролы, которые подписывает `Label`. */
-const CONTROLS = ['s-check-box', 's-switch', 's-radio-group-item']
+const CONTROLS = ['so-check-box', 'so-switch', 'so-radio-group-item']
 
 /** Контекст: контрол под наведённой подписью. `:where` — нулевая специфичность. */
-const CONTEXT = ':where(.s-label:hover>.s-label__control *)'
+const CONTEXT = ':where(.so-label:hover>.so-label__control *)'
 
 /**
  * Контекст стоит альтернативой `:hover` в том же `:is(…)`. Так специфичность

@@ -64,10 +64,10 @@ function mount(look: TLook, direction?: TLine, ancestor?: TLine): void {
 	)
 }
 
-const root = () => find('.s-tabs')
-const list = () => find('.s-tabs__list')
-const panel = () => find('.s-tabs__panel')
-const items = () => [...list().querySelectorAll<HTMLElement>(':scope > .s-tabs-item')]
+const root = () => find('.so-tabs')
+const list = () => find('.so-tabs__list')
+const panel = () => find('.so-tabs__panel')
+const items = () => [...list().querySelectorAll<HTMLElement>(':scope > .so-tabs-item')]
 
 /** Середина коробки по горизонтали. */
 const middle = (box: DOMRect): number => box.left + box.width / 2
@@ -107,7 +107,7 @@ describe.each(DIRECTION_CASES)('вертикальные табы по ближ�
 		setDir(document.documentElement, scenario.page)
 		mount(look, scenario.direction, scenario.ancestor)
 
-		await expect.poll(() => root().classList.contains('s-tabs--ready-animation')).toBe(true)
+		await expect.poll(() => root().classList.contains('so-tabs--ready-animation')).toBe(true)
 	}
 
 	it.each(POSITIONS)('line, position %s: линия и полоса — у края к панели', async (position) => {

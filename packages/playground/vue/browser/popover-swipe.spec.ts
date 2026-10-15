@@ -75,13 +75,13 @@ const show = async (
 				trigger: ({ triggerAria, triggerDataset }: TTriggerScope) =>
 					h(Button, {
 						text: 'Открыть',
-						class: 's-test-trigger',
+						class: 'so-test-trigger',
 						...triggerAria,
 						...triggerDataset,
 					}),
 				default: () => [
-					h('button', { class: 's-test-first' }, 'Первая'),
-					h('button', { class: 's-test-second' }, 'Вторая'),
+					h('button', { class: 'so-test-first' }, 'Первая'),
+					h('button', { class: 'so-test-second' }, 'Вторая'),
 				],
 			},
 		)
@@ -94,7 +94,7 @@ const show = async (
 						? h(
 								'div',
 								{
-									class: 's-test-host',
+									class: 'so-test-host',
 									dir,
 									style: 'position: relative; width: 400px; height: 300px',
 								},
@@ -121,16 +121,16 @@ const find = (selector: string): HTMLElement => {
 	return element
 }
 
-const trigger = () => find('.s-test-trigger')
-const panel = () => find('.s-popover__panel')
-const handle = () => find('.s-popover__handle')
+const trigger = () => find('.so-test-trigger')
+const panel = () => find('.so-popover__panel')
+const handle = () => find('.so-popover__handle')
 const active = () => document.activeElement
 const isOpen = () => getComputedStyle(panel()).display !== 'none'
 
 /** Открыть кликом и дождаться, пока фокус уйдёт в панель, а панель встанет на место. */
 const open = async () => {
 	await userEvent.click(trigger())
-	await expect.poll(active).toBe(find('.s-test-first'))
+	await expect.poll(active).toBe(find('.so-test-first'))
 	// Панель в контейнере въезжает от своего края: геометрия — после перехода
 	await Promise.all(
 		panel()
@@ -173,7 +173,7 @@ describe('полоса', () => {
 		await show()
 		await open()
 
-		expect(document.querySelector('.s-popover__handle')).toBeNull()
+		expect(document.querySelector('.so-popover__handle')).toBeNull()
 		expect(getComputedStyle(panel()).translate).toBe('none')
 	})
 
@@ -207,10 +207,10 @@ describe('полоса', () => {
 
 		const grip = handle().getBoundingClientRect()
 
-		expect(find('.s-popover__content').getBoundingClientRect().top).toBeGreaterThanOrEqual(
+		expect(find('.so-popover__content').getBoundingClientRect().top).toBeGreaterThanOrEqual(
 			grip.bottom - EPSILON,
 		)
-		expect(find('.s-popover__close').getBoundingClientRect().top).toBeGreaterThanOrEqual(
+		expect(find('.so-popover__close').getBoundingClientRect().top).toBeGreaterThanOrEqual(
 			grip.bottom - EPSILON,
 		)
 	})
@@ -228,7 +228,7 @@ describe('полоса', () => {
 
 		await userEvent.click(handle())
 
-		expect(active()).toBe(find('.s-test-first'))
+		expect(active()).toBe(find('.so-test-first'))
 		expect(isOpen()).toBe(true)
 	})
 })
@@ -311,10 +311,10 @@ describe('жест', () => {
 
 				await open()
 
-				const host = find('.s-test-host').getBoundingClientRect()
+				const host = find('.so-test-host').getBoundingClientRect()
 				const box = panel().getBoundingClientRect()
 
-				expect(find('.s-test-host').contains(panel())).toBe(true)
+				expect(find('.so-test-host').contains(panel())).toBe(true)
 				expect(Math.abs(box[side] - host[side])).toBeLessThan(EPSILON)
 				expect(
 					Math.abs(
@@ -341,7 +341,7 @@ describe('жест', () => {
 		const { opened } = await show({ swipe: 'panel' })
 
 		await open()
-		await drag(find('.s-test-first'), 150)
+		await drag(find('.so-test-first'), 150)
 
 		expect(isOpen()).toBe(true)
 

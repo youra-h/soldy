@@ -58,11 +58,11 @@ const find = (selector: string, root: ParentNode = document): HTMLElement => {
 	return element
 }
 
-const row = () => find('.s-tags')
+const row = () => find('.so-tags')
 
 /** Все теги в ряду: отрисовка идёт кадрами, поэтому через poll. */
 const settled = (count: number) =>
-	expect.poll(() => row().querySelectorAll('.s-tags-item').length).toBe(count)
+	expect.poll(() => row().querySelectorAll('.so-tags-item').length).toBe(count)
 
 /**
  * Стрелка переводит фокус на тег у края прокрутки, видимый частично, — и тег
@@ -83,7 +83,7 @@ const settled = (count: number) =>
  * докручивать нечего, и проверка кольца прошла бы вхолостую.
  */
 const arrowOntoCutTag = async (area: () => HTMLElement, side: 'start' | 'end') => {
-	const items = [...area().querySelectorAll('.s-tags-item')]
+	const items = [...area().querySelectorAll('.so-tags-item')]
 	const forward = side === 'end'
 	const key = forward ? '{ArrowRight}' : '{ArrowLeft}'
 
@@ -162,7 +162,7 @@ describe('режим scroll: кольцо фокуса у краёв ряда', 
 	const toEnd = () => row().scrollWidth - row().clientWidth - row().scrollLeft
 
 	it('ряд не срезает кольцо первого тега', async () => {
-		const item = find('.s-tags-item')
+		const item = find('.so-tags-item')
 
 		// С клавиатуры: кольцо рисует `:focus-visible`. Выбора нет, и вход в
 		// набор — на первый тег
@@ -182,7 +182,7 @@ describe('режим scroll: кольцо фокуса у краёв ряда', 
 	 * начала.
 	 */
 	it('ряд, докрученный до конца, не срезает кольцо последнего тега', async () => {
-		const items = [...row().querySelectorAll('.s-tags-item')]
+		const items = [...row().querySelectorAll('.so-tags-item')]
 		const last = items.at(-1)
 
 		if (!(last instanceof HTMLElement)) throw new Error('последнего тега нет')
@@ -239,7 +239,7 @@ describe('режим scroll: элемент под фокусом у края р
 	}
 
 	/** Теги ряда по порядку — пилюли, прямые дети ряда. */
-	const items = () => [...row().querySelectorAll(':scope > .s-tags-item')]
+	const items = () => [...row().querySelectorAll(':scope > .so-tags-item')]
 
 	/**
 	 * Край обрезки ряда по строке — его паддинг-бокс: прокручиваемая область
@@ -289,7 +289,7 @@ describe('режим scroll: элемент под фокусом у края р
 			expect(row().getAttribute('dir'), 'направление ряда').toBe(direction)
 
 			const tags = items()
-			const closes = tags.map((item) => find(':scope > .s-tags-item__close', item))
+			const closes = tags.map((item) => find(':scope > .so-tags-item__close', item))
 			const forth = [...tags.keys()]
 			const back = [...forth].reverse().slice(1)
 
@@ -392,7 +392,7 @@ describe('режим scroll: элемент под фокусом у края р
 
 		if (!(item instanceof HTMLElement)) throw new Error('у края ряда нет тега')
 
-		const line = find(':scope > .s-button:first-child', item)
+		const line = find(':scope > .so-button:first-child', item)
 		const box = line.getBoundingClientRect()
 
 		await userEvent.click(line, { position: { x: edge - box.left - 8, y: box.height / 2 } })

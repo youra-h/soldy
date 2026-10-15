@@ -60,10 +60,10 @@ describe('серверный рендер', () => {
 		const label = find(page, '.agree', HTMLLabelElement)
 
 		expect([...label.classList]).toEqual(
-			expect.arrayContaining(['agree', 's-label', 's-label--position-end']),
+			expect.arrayContaining(['agree', 'so-label', 'so-label--position-end']),
 		)
-		expect(label.querySelector('.s-label__text')?.textContent).toBe('Согласен')
-		expect(label.querySelector('.s-label__control so-check-box input')).not.toBeNull()
+		expect(label.querySelector('.so-label__text')?.textContent).toBe('Согласен')
+		expect(label.querySelector('.so-label__control so-check-box input')).not.toBeNull()
 	})
 
 	it('CheckBox и Switch — отметка атрибутом checked, атрибут потребителя на поле', async () => {
@@ -91,9 +91,9 @@ describe('серверный рендер', () => {
 		expect(input.getAttribute('name')).toBe('Город')
 		expect(root.hasAttribute('autocomplete')).toBe(false)
 		expect(root.hasAttribute('name')).toBe(false)
-		expect([...root.classList]).toEqual(expect.arrayContaining(['email', 's-input']))
+		expect([...root.classList]).toEqual(expect.arrayContaining(['email', 'so-input']))
 		expect(root.getAttribute('dir')).toBe('rtl')
-		expect(find(root, '.s-input__clear', HTMLButtonElement).getAttribute('aria-label')).toBe(
+		expect(find(root, '.so-input__clear', HTMLButtonElement).getAttribute('aria-label')).toBe(
 			'Clear Город',
 		)
 	})
@@ -128,14 +128,14 @@ describe('гидратация', () => {
 
 		const input = find(document, 'so-input input', HTMLInputElement)
 		const box = find(document, 'so-check-box input', HTMLInputElement)
-		const clear = find(document, '.s-input__clear', HTMLButtonElement)
+		const clear = find(document, '.so-input__clear', HTMLButtonElement)
 		const app = await hydrate(FieldsPage)
 
 		await app.whenStable()
 
 		expect(find(document, 'so-input input', HTMLInputElement)).toBe(input)
 		expect(find(document, 'so-check-box input', HTMLInputElement)).toBe(box)
-		expect(find(document, '.s-input__clear', HTMLButtonElement)).toBe(clear)
+		expect(find(document, '.so-input__clear', HTMLButtonElement)).toBe(clear)
 		expect(error).not.toHaveBeenCalled()
 		expect(warn).not.toHaveBeenCalled()
 	})

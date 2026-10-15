@@ -49,7 +49,7 @@ describe('Frame · серверный рендер', () => {
 			render(Frame, { props: { contained: true, visible: true, children: content } }).body,
 		)
 
-		expect(body).toMatch(/^<div [^>]*class="s-frame"/)
+		expect(body).toMatch(/^<div [^>]*class="so-frame"/)
 		expect(body).toContain('data-contained="true"')
 		// Внутри контейнера — `absolute` без координат: место решает тема
 		expect(body).toMatch(/style="position: absolute; [^"]*z-index: \d+"/)
@@ -68,10 +68,10 @@ describe('Button · серверный рендер', () => {
 
 		expect(body).toMatch(/^<button /)
 		expect(body).toContain(
-			'class="s-button s-button--size-lg s-button--variant-brand app-save"',
+			'class="so-button so-button--size-lg so-button--variant-brand app-save"',
 		)
 		expect(body).toContain('data-disabled="false"')
-		expect(body).toContain('<span class="s-button__text">Сохранить</span>')
+		expect(body).toContain('<span class="so-button__text">Сохранить</span>')
 	})
 
 	it('выключенная: нативный disabled на <button>, aria-disabled — на другом теге', () => {
@@ -120,7 +120,7 @@ describe('стиль и наборы на сервере', () => {
 	it('Icon по роли — <svg> иконки с размером и скрытием от скринридера', () => {
 		const body = markup(render(Icon, { props: { tag: roleIcon('check'), width: 20 } }).body)
 
-		expect(body).toMatch(/^<svg [^>]*class="s-icon s-icon--size-normal"/)
+		expect(body).toMatch(/^<svg [^>]*class="so-icon so-icon--size-normal"/)
 		expect(body).toContain('aria-hidden="true"')
 		expect(body).toContain('style="width: 20px"')
 		expect(body).toContain('<path')
@@ -145,7 +145,7 @@ describe('стиль и наборы на сервере', () => {
 	it('Skeleton — заглушка и содержимое, корень не скрыт', () => {
 		const body = markup(render(Skeleton, { props: { children: content } }).body)
 
-		expect(body).toContain('<div class="s-skeleton__placeholder" aria-hidden="true"></div>')
+		expect(body).toContain('<div class="so-skeleton__placeholder" aria-hidden="true"></div>')
 		expect(body).toContain('aria-busy="true"')
 		expect(body).toContain('<span>Панель</span>')
 		expect(body).not.toContain('display: none')

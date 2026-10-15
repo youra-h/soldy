@@ -37,9 +37,9 @@ export default { ...SetupCheckBox }
 			`checkIndeterminate`), а не компонент Icon: она появляется и
 			пропадает с каждой сменой отметки, и Icon собирал бы на каждую свой
 			контекст и плагины — в таблице «выбрать все» собирала их тысячами.
-			Размер и цвет отметке даёт тема чекбокса по `s-check-box__mark`.
+			Размер и цвет отметке даёт тема чекбокса по `so-check-box__mark`.
 		-->
-		<span class="s-check-box__container" aria-hidden="true">
+		<span class="so-check-box__container" aria-hidden="true">
 			<!-- Слот для checked иконки -->
 			<slot
 				v-if="value && !indeterminate"
@@ -47,7 +47,7 @@ export default { ...SetupCheckBox }
 				:value="value"
 				:indeterminate="indeterminate"
 			>
-				<component :is="defaultIconTag" class="s-check-box__mark" />
+				<component :is="defaultIconTag" class="so-check-box__mark" />
 			</slot>
 			<!-- Слот для indeterminate иконки -->
 			<slot
@@ -56,7 +56,7 @@ export default { ...SetupCheckBox }
 				:value="value"
 				:indeterminate="indeterminate"
 			>
-				<component :is="defaultIndeterminateIconTag" class="s-check-box__mark" />
+				<component :is="defaultIndeterminateIconTag" class="so-check-box__mark" />
 			</slot>
 		</span>
 	</component>

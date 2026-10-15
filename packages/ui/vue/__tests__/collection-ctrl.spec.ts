@@ -30,10 +30,10 @@ afterEach(() => {
 
 /** Компонент, его экземпляр ядра и класс корня. */
 const CASES: ReadonlyArray<readonly [string, Component, () => { hide(): void }, string]> = [
-	['ListBox', ListBox, () => new TListBox(), '.s-list-box'],
-	['Select', Select, () => new TSelect(), '.s-select'],
-	['Tabs', Tabs, () => new TTabs(), '.s-tabs'],
-	['Accordion', Accordion, () => new TAccordion(), '.s-accordion'],
+	['ListBox', ListBox, () => new TListBox(), '.so-list-box'],
+	['Select', Select, () => new TSelect(), '.so-select'],
+	['Tabs', Tabs, () => new TTabs(), '.so-tabs'],
+	['Accordion', Accordion, () => new TAccordion(), '.so-accordion'],
 ]
 
 describe('коллекционные компоненты: внешний ctrl — экземпляр компонента', () => {

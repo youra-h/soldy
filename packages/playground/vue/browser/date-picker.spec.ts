@@ -48,8 +48,8 @@ const show = async (
 	render(
 		defineComponent({
 			render: () =>
-				h('div', { class: 's-host', style }, [
-					h('input', { class: 's-test-outside', 'aria-label': 'Рядом' }),
+				h('div', { class: 'so-host', style }, [
+					h('input', { class: 'so-test-outside', 'aria-label': 'Рядом' }),
 					h(DatePicker, { ctrl, aria_label: 'Дата заезда' }),
 				]),
 		}),
@@ -77,16 +77,16 @@ const day = (date: string): HTMLElement => {
 		Date.UTC(Number(date.slice(0, 4)), Number(date.slice(5, 7)) - 1, Number(date.slice(8))),
 	)
 
-	return find(`.s-calendar-item[aria-label="${label}"]`)
+	return find(`.so-calendar-item[aria-label="${label}"]`)
 }
 
-const root = () => find('.s-date-picker')
-const trigger = () => find('.s-date-picker__trigger')
-const panel = () => find('.s-date-picker__panel')
+const root = () => find('.so-date-picker')
+const trigger = () => find('.so-date-picker__trigger')
+const panel = () => find('.so-date-picker__panel')
 const isOpen = () => getComputedStyle(panel()).display !== 'none'
 const active = () => document.activeElement
-const segment = (type: string, scope = '.s-date-picker') =>
-	find(`${scope} .s-date-input__segment[data-type="${type}"]`)
+const segment = (type: string, scope = '.so-date-picker') =>
+	find(`${scope} .so-date-input__segment[data-type="${type}"]`)
 
 const tab = () => userEvent.keyboard('{Tab}')
 const shiftTab = () => userEvent.keyboard('{Shift>}{Tab}{/Shift}')
@@ -167,10 +167,10 @@ describe('закрытие', () => {
 		await userEvent.click(trigger())
 		await expect.poll(active).toBe(day('2026-05-12'))
 
-		await userEvent.click(find('.s-test-outside'))
+		await userEvent.click(find('.so-test-outside'))
 
 		await expect.poll(isOpen).toBe(false)
-		expect(active()).toBe(find('.s-test-outside'))
+		expect(active()).toBe(find('.so-test-outside'))
 	})
 })
 
@@ -210,13 +210,13 @@ describe('Tab в панели', () => {
 		await expect.poll(active).toBe(day('2026-05-12'))
 
 		await tab()
-		expect(active()).toBe(find('.s-calendar__title'))
+		expect(active()).toBe(find('.so-calendar__title'))
 
 		await tab()
-		expect(active()).toBe(find('.s-calendar__prev'))
+		expect(active()).toBe(find('.so-calendar__prev'))
 
 		await tab()
-		expect(active()).toBe(find('.s-calendar__next'))
+		expect(active()).toBe(find('.so-calendar__next'))
 
 		await shiftTab()
 		await shiftTab()
@@ -234,8 +234,8 @@ describe('Tab в панели', () => {
  * открыли.
  */
 describe('выбор с подтверждением', () => {
-	const cancel = () => find('.s-date-picker__cancel')
-	const confirm = () => find('.s-date-picker__confirm')
+	const cancel = () => find('.so-date-picker__cancel')
+	const confirm = () => find('.so-date-picker__confirm')
 
 	/** Открыть панель Alt+↓ с поля: фокус вернётся на часть месяца. */
 	const openFromField = async () => {
@@ -263,7 +263,7 @@ describe('выбор с подтверждением', () => {
 
 		// «OK» — последняя остановка: дальше Tab по кругу, на заголовок
 		await tab()
-		expect(active()).toBe(find('.s-calendar__title'))
+		expect(active()).toBe(find('.so-calendar__title'))
 
 		await shiftTab()
 		expect(active()).toBe(confirm())
@@ -339,7 +339,7 @@ describe('диапазон', () => {
 
 		await expect.poll(isOpen).toBe(false)
 		expect(ctrl.value).toEqual(['2026-05-12', '2026-05-14'])
-		expect(segment('day', '.s-date-picker__end').textContent).toBe('14')
+		expect(segment('day', '.so-date-picker__end').textContent).toBe('14')
 	})
 
 	/**
@@ -353,7 +353,7 @@ describe('диапазон', () => {
 		const width = () => root().getBoundingClientRect().width
 		const empty = width()
 
-		await userEvent.click(segment('month', '.s-date-picker__start'))
+		await userEvent.click(segment('month', '.so-date-picker__start'))
 
 		for (const key of '05122026') {
 			await userEvent.keyboard(key)
@@ -361,7 +361,7 @@ describe('диапазон', () => {
 			expect(width(), `начало, после «${key}»`).toBeCloseTo(empty, 0)
 		}
 
-		await userEvent.click(segment('month', '.s-date-picker__end'))
+		await userEvent.click(segment('month', '.so-date-picker__end'))
 
 		for (const key of '05202026') {
 			await userEvent.keyboard(key)
@@ -381,16 +381,16 @@ describe('диапазон', () => {
  * её нажатия не трогает.
  */
 describe('кнопка очистки', () => {
-	const clear = () => find('.s-date-picker__clear')
+	const clear = () => find('.so-date-picker__clear')
 	const placeholders = () =>
-		[...document.querySelectorAll<HTMLElement>('.s-date-input__segment')].map(
+		[...document.querySelectorAll<HTMLElement>('.so-date-input__segment')].map(
 			(part) => part.dataset.placeholder,
 		)
 
 	it.each(COMPONENT_SIZES)('%s, одна дата: квадрат в строку слота поля', async (size) => {
 		await show({ size, clearable: true })
 
-		expectClearSquare(clear(), find('.s-date-picker__field .s-date-input__trailing'), size)
+		expectClearSquare(clear(), find('.so-date-picker__field .so-date-input__trailing'), size)
 	})
 
 	it.each(COMPONENT_SIZES)(
@@ -406,7 +406,7 @@ describe('кнопка очистки', () => {
 			expect(own.right, 'перед кнопкой календаря').toBeLessThanOrEqual(next.left)
 			expect(own.top, 'в строку с кнопкой календаря').toBeCloseTo(next.top, 0)
 			expect(own.left, 'после дат').toBeGreaterThan(
-				find('.s-date-picker__end .s-date-input__segments').getBoundingClientRect().left,
+				find('.so-date-picker__end .so-date-input__segments').getBoundingClientRect().left,
 			)
 			expect(own.top, 'внутри коробки сверху').toBeGreaterThanOrEqual(box.top)
 			expect(own.bottom, 'внутри коробки снизу').toBeLessThanOrEqual(box.bottom)
@@ -417,9 +417,9 @@ describe('кнопка очистки', () => {
 		const ctrl = await show({ mode: 'range', clearable: true })
 
 		// en-US: месяц, день, год — начало целиком, у конца только месяц
-		await userEvent.click(segment('month', '.s-date-picker__start'))
+		await userEvent.click(segment('month', '.so-date-picker__start'))
 		await userEvent.keyboard('05122026')
-		await userEvent.click(segment('month', '.s-date-picker__end'))
+		await userEvent.click(segment('month', '.so-date-picker__end'))
 		await userEvent.keyboard('05')
 
 		expect(ctrl.start.value).toBe('2026-05-12')
@@ -443,7 +443,7 @@ describe('кнопка очистки', () => {
  */
 describe('ошибка', () => {
 	const border = async (): Promise<string> => {
-		await userEvent.hover(find('.s-test-outside'))
+		await userEvent.hover(find('.so-test-outside'))
 		await nextFrame()
 		await settled(root())
 
@@ -455,13 +455,13 @@ describe('ошибка', () => {
 		const valid = await border()
 
 		// en-US: месяц, день, год — день конца 05 вместо 20
-		await userEvent.click(segment('day', '.s-date-picker__end'))
+		await userEvent.click(segment('day', '.so-date-picker__end'))
 		await userEvent.keyboard('05')
 
 		// Набранное не прижимается: значение — как набрано, ошибка — у конца
 		expect(ctrl.value).toEqual(['2026-05-12', '2026-05-05'])
-		expect(find('.s-date-picker__end').dataset.invalid).toBe('true')
-		expect(find('.s-date-picker__start').dataset.invalid).toBe('false')
+		expect(find('.so-date-picker__end').dataset.invalid).toBe('true')
+		expect(find('.so-date-picker__start').dataset.invalid).toBe('false')
 
 		const invalid = await border()
 

@@ -90,20 +90,20 @@ function part(root: Element, selector: string): Element {
 const INDICATORS: readonly IIndicator[] = [
 	{
 		name: 'ProgressSpinner',
-		block: '.s-progress-spinner',
+		block: '.so-progress-spinner',
 		render: (variant) => h(ProgressSpinner, { variant, value: 40 }),
 		colors: (root) => ({
-			fill: style(part(root, '.s-progress-spinner__range')).stroke,
-			track: style(part(root, '.s-progress-spinner__track')).stroke,
+			fill: style(part(root, '.so-progress-spinner__range')).stroke,
+			track: style(part(root, '.so-progress-spinner__track')).stroke,
 		}),
 	},
 	{
 		name: 'ProgressLinear',
-		block: '.s-progress-linear',
+		block: '.so-progress-linear',
 		render: (variant) => h(ProgressLinear, { variant, value: 40 }),
 		// Корень и есть дорожка
 		colors: (root) => ({
-			fill: style(part(root, '.s-progress-linear__range')).backgroundColor,
+			fill: style(part(root, '.so-progress-linear__range')).backgroundColor,
 			track: style(root).backgroundColor,
 		}),
 	},
@@ -155,7 +155,7 @@ async function showCases(scheme: TScheme, indicator: IIndicator): Promise<void> 
 		defineComponent({
 			render: () =>
 				h('div', [
-					h('div', { class: 's-test-away', style: 'height: 24px' }),
+					h('div', { class: 'so-test-away', style: 'height: 24px' }),
 					...(Object.keys(BACKDROPS) as TBackdrop[]).map((backdrop) =>
 						backdropRow(backdrop, indicator),
 					),
@@ -163,7 +163,7 @@ async function showCases(scheme: TScheme, indicator: IIndicator): Promise<void> 
 		}),
 	)
 
-	await userEvent.hover(find('.s-test-away'))
+	await userEvent.hover(find('.so-test-away'))
 	await transitionEvents()
 }
 
@@ -175,7 +175,7 @@ async function showCases(scheme: TScheme, indicator: IIndicator): Promise<void> 
  */
 function faultsOf(scenario: ICase, indicator: IIndicator): string[] {
 	const backdrop = find(`[data-backdrop="${scenario.backdrop}"]`)
-	const button = find('.s-button', find(`[data-case="${caseName(scenario)}"]`, backdrop))
+	const button = find('.so-button', find(`[data-case="${caseName(scenario)}"]`, backdrop))
 	const under = [style(backdrop).backgroundColor, style(button).backgroundColor]
 	const { fill, track } = indicator.colors(find(indicator.block, button))
 	const base = lightness(under)

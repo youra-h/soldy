@@ -41,7 +41,7 @@ const PaddedTabHarness = defineComponent({
 			h(
 				'button',
 				{
-					class: 's-test-toggle',
+					class: 'so-test-toggle',
 					onClick: () => {
 						this.padded = true
 					},
@@ -80,10 +80,10 @@ const find = (selector: string): HTMLElement => {
 	return element
 }
 
-const root = () => find('.s-tabs')
-const list = () => find('.s-tabs__list')
-const activeTab = () => find('.s-tabs-item[data-selected="true"]')
-const toggle = () => find('.s-test-toggle')
+const root = () => find('.so-tabs')
+const list = () => find('.so-tabs__list')
+const activeTab = () => find('.so-tabs-item[data-selected="true"]')
+const toggle = () => find('.so-test-toggle')
 
 const underlineSize = () => parseFloat(list().style.getPropertyValue('--active-tab-size'))
 

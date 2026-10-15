@@ -56,7 +56,7 @@ const tooltip = (props: Partial<ITooltipProps> & Record<string, unknown> = {}) =
 		{ openDelay: 0, closeDelay: 0, ...props },
 		{
 			trigger: ({ triggerAria }: TTriggerScope) =>
-				h(Button, { text: 'Сохранить', class: 's-test-trigger', ...triggerAria }),
+				h(Button, { text: 'Сохранить', class: 'so-test-trigger', ...triggerAria }),
 			default: () => 'Сохранить черновик',
 		},
 	)
@@ -70,9 +70,9 @@ function find(selector: string, scope: ParentNode = document): HTMLElement {
 	return element
 }
 
-const root = () => find('.s-tooltip')
-const trigger = () => find('.s-test-trigger')
-const panel = () => find('.s-tooltip__panel')
+const root = () => find('.so-tooltip')
+const trigger = () => find('.so-test-trigger')
+const panel = () => find('.so-tooltip__panel')
 const isOpen = (element: HTMLElement = panel()) => element.style.display !== 'none'
 
 const enter = (target: Element) =>
@@ -113,7 +113,7 @@ describe('разметка', () => {
 		expect(panel().hasAttribute('aria-hidden')).toBe(false)
 		// Пометка — от id монтирования подсказки (`useId`), а не от счётчика процесса
 		expect(panel().dataset.owner).toBeTruthy()
-		expect(find('.s-tooltip__content', panel()).textContent).toBe('Сохранить черновик')
+		expect(find('.so-tooltip__content', panel()).textContent).toBe('Сохранить черновик')
 	})
 
 	it('aria-describedby триггера ведёт на панель — и у закрытой подсказки', async () => {
@@ -145,7 +145,7 @@ describe('подсказка-имя', () => {
 			props,
 			slots: {
 				trigger: ({ triggerAria }: TTriggerScope) =>
-					h(Button, { text: 'Сохранить', class: 's-test-trigger', ...triggerAria }),
+					h(Button, { text: 'Сохранить', class: 'so-test-trigger', ...triggerAria }),
 				default: () => 'Сохранить черновик',
 			},
 			attachTo: document.body,
@@ -280,7 +280,7 @@ describe('показ и скрытие', () => {
 			props: { open: false },
 			slots: {
 				trigger: ({ triggerAria }: TTriggerScope) =>
-					h(Button, { text: 'Сохранить', class: 's-test-trigger', ...triggerAria }),
+					h(Button, { text: 'Сохранить', class: 'so-test-trigger', ...triggerAria }),
 				default: () => 'Сохранить черновик',
 			},
 			attachTo: document.body,
@@ -323,7 +323,7 @@ describe('в открытом поповере', () => {
 					trigger: ({ triggerAria, triggerDataset }: TPopoverTriggerScope) =>
 						h(Button, {
 							text: 'Открыть',
-							class: 's-test-popover-trigger',
+							class: 'so-test-popover-trigger',
 							...triggerAria,
 							...triggerDataset,
 						}),
@@ -332,11 +332,11 @@ describe('в открытом поповере', () => {
 			),
 		])
 
-	const popoverPanel = () => find('.s-popover__panel')
+	const popoverPanel = () => find('.so-popover__panel')
 
 	/** Открыть поповер кликом и дождаться, пока фокус уйдёт в панель. */
 	async function openPopover(): Promise<void> {
-		const target = find('.s-test-popover-trigger')
+		const target = find('.so-test-popover-trigger')
 
 		pointerDown(target)
 		target.focus()

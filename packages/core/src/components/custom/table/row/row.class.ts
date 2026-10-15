@@ -28,7 +28,7 @@ export default class TTableRow<
 	extends TControl<TProps, TEvents>
 	implements ITableRow<TProps, TEvents>
 {
-	static override baseClass = 's-table-row'
+	static override baseClass = 'so-table-row'
 
 	static defaultValues: typeof TControl.defaultValues &
 		TDefaultValues<ITableRowProps, never, 'data'> = {

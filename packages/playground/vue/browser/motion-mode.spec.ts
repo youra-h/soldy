@@ -92,7 +92,7 @@ const animationOf = (selector: string, pseudo?: string) => (): string =>
 /** Плагин темы замерил табы: геометрия активного таба записана. */
 const tabsMeasured = async () => {
 	await expect
-		.poll(() => node('.s-tabs').classList.contains('s-tabs--ready-animation'))
+		.poll(() => node('.so-tabs').classList.contains('so-tabs--ready-animation'))
 		.toBe(true)
 }
 
@@ -166,7 +166,7 @@ const CASES: readonly TCase[] = [
 			await show(tabs())
 			await tabsMeasured()
 		},
-		'.s-tabs__list',
+		'.so-tabs__list',
 		'transform',
 		'::after',
 	),
@@ -176,54 +176,54 @@ const CASES: readonly TCase[] = [
 			await show(tabs('contained'))
 			await tabsMeasured()
 		},
-		'.s-tabs__list',
+		'.so-tabs__list',
 		'transform',
 		'::before',
 	),
 	transition(
 		'Slider: ход ручки',
 		() => show(() => h('div', { style: 'width: 320px' }, [h(Slider, { value: 40 })])),
-		'.s-slider__thumb',
+		'.so-slider__thumb',
 		'inset-inline-start',
 	),
 	transition(
 		'Slider: ход заливки',
 		() => show(() => h('div', { style: 'width: 320px' }, [h(Slider, { value: 40 })])),
-		'.s-slider__range',
+		'.so-slider__range',
 		'inset-inline-start',
 	),
 	transition(
 		'ProgressLinear: переход доли',
 		() => show(() => h(ProgressLinear, { value: 40 })),
-		'.s-progress-linear__range',
+		'.so-progress-linear__range',
 		'inline-size',
 	),
 	{
 		name: 'ProgressLinear: бег, без движения — мерцание',
 		mount: () => show(() => h(ProgressLinear, { indeterminate: true })),
-		look: animationOf('.s-progress-linear', '::after'),
-		moving: 's-progress-linear-run',
-		still: 's-progress-pulse',
+		look: animationOf('.so-progress-linear', '::after'),
+		moving: 'so-progress-linear-run',
+		still: 'so-progress-pulse',
 	},
 	transition(
 		'ProgressSpinner: переход доли',
 		() => show(() => h(ProgressSpinner, { value: 40 })),
-		'.s-progress-spinner__range',
+		'.so-progress-spinner__range',
 		'stroke-dasharray',
 	),
 	{
 		name: 'ProgressSpinner: бег рисунка',
 		mount: () => show(() => h(ProgressSpinner, { indeterminate: true })),
-		look: animationOf('.s-progress-spinner__ring'),
-		moving: 's-progress-spinner-run',
+		look: animationOf('.so-progress-spinner__ring'),
+		moving: 'so-progress-spinner-run',
 		still: 'none',
 	},
 	{
 		name: 'ProgressSpinner: без движения мерцает бегущая дуга',
 		mount: () => show(() => h(ProgressSpinner, { indeterminate: true })),
-		look: animationOf('.s-progress-spinner__runner'),
+		look: animationOf('.so-progress-spinner__runner'),
 		moving: 'none',
-		still: 's-progress-pulse',
+		still: 'so-progress-pulse',
 	},
 	transition(
 		'Popover: въезд и уход панели',
@@ -235,7 +235,7 @@ const CASES: readonly TCase[] = [
 					{ trigger: () => h('button', 'Открыть'), default: () => 'Содержимое' },
 				),
 			),
-		'.s-popover__panel',
+		'.so-popover__panel',
 		'translate',
 	),
 	transition(
@@ -246,29 +246,29 @@ const CASES: readonly TCase[] = [
 					h(SelectItem, { value: 'a', text: 'Москва' }),
 				]),
 			),
-		'.s-select__panel',
+		'.so-select__panel',
 		'translate',
 	),
 	transition(
 		'DatePicker: уход смахнутой панели от поля',
 		() => show(() => h(DatePicker, { open: true, swipe: 'handle', value: '2026-05-12' })),
-		'.s-date-picker__panel',
+		'.so-date-picker__panel',
 		'translate',
 	),
 	transition(
 		'Calendar: въезд карточки выбора месяца',
 		async () => {
 			await show(() => h(Calendar, { months: ['2026-09-01'] }))
-			await userEvent.click(node('.s-calendar__title'))
+			await userEvent.click(node('.so-calendar__title'))
 			await expect
 				.poll(
 					() =>
-						document.querySelectorAll('.s-calendar__picker-list .s-list-box-item')
+						document.querySelectorAll('.so-calendar__picker-list .so-list-box-item')
 							.length,
 				)
 				.toBe(12)
 		},
-		'.s-calendar__heading > .s-popover__panel > .s-popover__content',
+		'.so-calendar__heading > .so-popover__panel > .so-popover__content',
 		'translate',
 	),
 	{
@@ -281,7 +281,7 @@ const CASES: readonly TCase[] = [
 					{ title: () => 'Фильтры', default: () => 'Содержимое' },
 				),
 			),
-		look: () => transitions('.s-drawer'),
+		look: () => transitions('.so-drawer'),
 		moving: ['translate', 'display'],
 		still: ['opacity', 'display'],
 	},
@@ -297,7 +297,7 @@ const CASES: readonly TCase[] = [
 					),
 				]),
 			),
-		'.s-accordion-item__arrow',
+		'.so-accordion-item__arrow',
 		'rotate',
 	),
 	transition(
@@ -312,19 +312,19 @@ const CASES: readonly TCase[] = [
 					),
 				]),
 			),
-		'.s-accordion-item__body',
+		'.so-accordion-item__body',
 		'grid-template-rows',
 	),
 	transition(
 		'Select: поворот стрелки',
 		() => show(() => h(Select, null, () => [h(SelectItem, { value: 'a', text: 'Москва' })])),
-		'.s-select__arrow',
+		'.so-select__arrow',
 		'rotate',
 	),
 	transition(
 		'Switch: ход ручки',
 		() => show(() => h(Switch)),
-		'.s-switch__track--thumb',
+		'.so-switch__track--thumb',
 		'inset-inline-start',
 	),
 	transition(
@@ -335,7 +335,7 @@ const CASES: readonly TCase[] = [
 					h(RadioGroupItem, { value: 'a' }, () => 'Первый'),
 				]),
 			),
-		'.s-radio-group-item__indicator',
+		'.so-radio-group-item__indicator',
 		'scale',
 	),
 	transition(
@@ -346,40 +346,40 @@ const CASES: readonly TCase[] = [
 					h(RadioGroupItem, { value: 'a' }, () => 'Первый'),
 				]),
 			),
-		'.s-radio-group-item__control',
+		'.so-radio-group-item__control',
 		'border-width',
 	),
 	transition(
 		'Table: сосед уступает место взятому заголовку',
 		() => reordering(),
-		'.s-table-column[data-shift]',
+		'.so-table-column[data-shift]',
 		'translate',
 	),
 	transition(
 		'Table: отпущенный заголовок едет на место',
 		() => reordering({}, true),
-		'.s-table-column[data-landing]',
+		'.so-table-column[data-landing]',
 		'translate',
 	),
 	{
 		name: 'Table: место — линией, только без движения',
 		mount: () => reordering(),
-		look: () => getComputedStyle(node('.s-table-column[data-drop]'), '::before').display,
+		look: () => getComputedStyle(node('.so-table-column[data-drop]'), '::before').display,
 		moving: 'none',
 		still: 'block',
 	},
 	transition(
 		'Table column: ячейки идут за заголовками',
 		() => reordering({ reorderPreview: 'column' }),
-		'.s-table-row__cell',
+		'.so-table-row__cell',
 		'translate',
 	),
 	{
 		name: 'Skeleton wave: блик, без движения — пульсация',
 		mount: () => show(() => h(Skeleton, { animation: 'wave' })),
 		look: () => [
-			animationOf('.s-skeleton__placeholder')(),
-			animationOf('.s-skeleton__placeholder', '::after')(),
+			animationOf('.so-skeleton__placeholder')(),
+			animationOf('.so-skeleton__placeholder', '::after')(),
 		],
 		moving: ['none', 'skeleton-wave'],
 		still: ['skeleton-pulse', 'none'],
@@ -445,17 +445,17 @@ describe.each(STATES)('$name', ({ system, mode, moves }) => {
 				),
 			]),
 		)
-		await expect.poll(() => node('.s-scroller').getAttribute('data-can-next')).toBe('true')
+		await expect.poll(() => node('.so-scroller').getAttribute('data-can-next')).toBe('true')
 
 		// Поведение листания — то, что плагин отдал прокрутке
 		const behaviors: (ScrollBehavior | undefined)[] = []
 
-		Object.defineProperty(node('.s-scroller__viewport'), 'scrollBy', {
+		Object.defineProperty(node('.so-scroller__viewport'), 'scrollBy', {
 			configurable: true,
 			value: (options: ScrollToOptions) => behaviors.push(options.behavior),
 		})
 
-		await userEvent.click(node('.s-scroller__next'))
+		await userEvent.click(node('.so-scroller__next'))
 
 		expect(behaviors).toEqual([moves ? 'smooth' : 'instant'])
 	})
@@ -468,7 +468,7 @@ describe.each(STATES)('$name', ({ system, mode, moves }) => {
 	it('Drawer: закрытая панель исчезает, прокрутка страницы возвращается', async () => {
 		const shown = ref(false)
 		const locked = () => getComputedStyle(document.documentElement).overflow === 'hidden'
-		const panel = () => node('.s-drawer')
+		const panel = () => node('.so-drawer')
 
 		await show(() =>
 			h('div', { style: 'height: 3000px' }, [

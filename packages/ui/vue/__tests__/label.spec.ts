@@ -57,16 +57,16 @@ describe('разметка', () => {
 
 		expect(label.element.localName).toBe('label')
 		expect(label.classes()).toEqual([
-			's-label',
-			's-label--size-normal',
-			's-label--position-end',
+			'so-label',
+			'so-label--size-normal',
+			'so-label--position-end',
 		])
 		expect([...label.element.children].map((part) => part.className)).toEqual([
-			's-label__control',
-			's-label__text',
+			'so-label__control',
+			'so-label__text',
 		])
-		expect(label.find('.s-label__control > .s-check-box input').exists()).toBe(true)
-		expect(label.find('.s-label__text').text()).toBe('Согласен')
+		expect(label.find('.so-label__control > .so-check-box input').exists()).toBe(true)
+		expect(label.find('.so-label__text').text()).toBe('Согласен')
 	})
 
 	it('tag рисует корень другим тегом', () => {
@@ -76,12 +76,12 @@ describe('разметка', () => {
 	it('смена position меняет модификатор стороны', async () => {
 		const label = mount(Label, { props: { position: 'start' } })
 
-		expect(label.classes()).toContain('s-label--position-start')
+		expect(label.classes()).toContain('so-label--position-start')
 
 		await label.setProps({ position: 'top' })
 
-		expect(label.classes()).toContain('s-label--position-top')
-		expect(label.classes()).not.toContain('s-label--position-start')
+		expect(label.classes()).toContain('so-label--position-top')
+		expect(label.classes()).not.toContain('so-label--position-start')
 	})
 
 	it('direction: rtl — dir на корне подписи', () => {
@@ -93,7 +93,7 @@ describe('текст: проп и слот', () => {
 	it('без слота — проп text', () => {
 		const label = mount(Label, { props: { text: 'Проп' } })
 
-		expect(label.find('.s-label__text').text()).toBe('Проп')
+		expect(label.find('.so-label__text').text()).toBe('Проп')
 	})
 
 	it('слот content переопределяет проп', () => {
@@ -102,8 +102,8 @@ describe('текст: проп и слот', () => {
 			slots: { content: () => h('b', 'Слот') },
 		})
 
-		expect(label.find('.s-label__text').html()).toBe(
-			'<span class="s-label__text"><b>Слот</b></span>',
+		expect(label.find('.so-label__text').html()).toBe(
+			'<span class="so-label__text"><b>Слот</b></span>',
 		)
 	})
 
@@ -112,7 +112,7 @@ describe('текст: проп и слот', () => {
 
 		await label.setProps({ text: 'После' })
 
-		expect(label.find('.s-label__text').text()).toBe('После')
+		expect(label.find('.so-label__text').text()).toBe('После')
 	})
 
 	/**
@@ -121,7 +121,7 @@ describe('текст: проп и слот', () => {
 	 * остался бы зазор.
 	 */
 	it('без текста обёртка пуста — ни пробела, ни элемента', () => {
-		const text = mount(Label).find('.s-label__text').element
+		const text = mount(Label).find('.so-label__text').element
 
 		expect(text.textContent).toBe('')
 		expect(text.children).toHaveLength(0)
@@ -141,9 +141,9 @@ describe.each(CHECKABLES)('%s в подписи', (_name, control) => {
 	it('у поля одна подпись — сама Label', async () => {
 		await render(() => h(Label, { text: 'Согласен' }, () => control()))
 
-		const input = find('.s-label input', HTMLInputElement)
+		const input = find('.so-label input', HTMLInputElement)
 
-		expect([...(input.labels ?? [])]).toEqual([find('.s-label', HTMLLabelElement)])
+		expect([...(input.labels ?? [])]).toEqual([find('.so-label', HTMLLabelElement)])
 	})
 
 	it('клик по тексту переключает контрол один раз', async () => {
@@ -153,10 +153,10 @@ describe.each(CHECKABLES)('%s в подписи', (_name, control) => {
 			h(Label, { text: 'Согласен' }, () => control((value) => updates.push(value))),
 		)
 
-		find('.s-label__text', HTMLElement).click()
+		find('.so-label__text', HTMLElement).click()
 		await nextTick()
 
-		expect(find('.s-label input', HTMLInputElement).checked).toBe(true)
+		expect(find('.so-label input', HTMLInputElement).checked).toBe(true)
 		expect(updates).toEqual([true])
 	})
 })
@@ -190,12 +190,12 @@ describe('радио в подписи', () => {
 
 		await render(radioIn('span'))
 
-		const input = find('.s-label input', HTMLInputElement)
+		const input = find('.so-label input', HTMLInputElement)
 
 		expect(nestedWarnings(warn.mock.calls)).toEqual([])
-		expect([...(input.labels ?? [])]).toEqual([find('.s-label', HTMLLabelElement)])
+		expect([...(input.labels ?? [])]).toEqual([find('.so-label', HTMLLabelElement)])
 
-		find('.s-label__text', HTMLElement).click()
+		find('.so-label__text', HTMLElement).click()
 		await nextTick()
 
 		expect(input.checked).toBe(true)

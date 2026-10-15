@@ -178,7 +178,7 @@ export class TListHeightPlugin extends TBasePlugin<any> {
 
 		// `0` — «предела нет»: плагин не пишет ничего и отдаёт потолок теме.
 		// Не то же самое, что «предел по содержимому»: инлайновый стиль перебил
-		// бы `.s-select__list { max-h-64 }` и заодно снял прокрутку.
+		// бы `.so-select__list { max-h-64 }` и заодно снял прокрутку.
 		//
 		// Список пуст или строки ещё не измерены — тот же случай: писать нечего.
 		const visibleCount = maxRows === 0 ? 0 : Math.min(maxRows, shown.length)

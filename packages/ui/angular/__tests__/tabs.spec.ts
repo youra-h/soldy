@@ -42,7 +42,7 @@ afterEach(() => {
  */
 const tabs = () =>
 	[...document.querySelectorAll('[role="tab"]')].filter((row) => {
-		const root = row.closest('.s-tabs-item')
+		const root = row.closest('.so-tabs-item')
 
 		return !(root instanceof HTMLElement) || root.style.display !== 'none'
 	})
@@ -58,7 +58,7 @@ function tab(text: string): HTMLElement {
 
 /** Элемент таба по тексту строки; нет его — тест падает здесь. */
 function item(text: string): HTMLElement {
-	const found = [...document.querySelectorAll('.s-tabs-item')].find(
+	const found = [...document.querySelectorAll('.so-tabs-item')].find(
 		(candidate) => candidate.querySelector('[role="tab"]')?.textContent?.trim() === text,
 	)
 
@@ -69,12 +69,12 @@ function item(text: string): HTMLElement {
 
 /** Кнопка закрытия таба; нет её — тест падает здесь. */
 function closeOf(text: string): HTMLElement {
-	return find(item(text), '.s-tabs-item__close', HTMLElement)
+	return find(item(text), '.so-tabs-item__close', HTMLElement)
 }
 
 /** Показанные панели: неактивная панель — скрытый элемент потребителя. */
 const panels = () =>
-	[...document.querySelectorAll('.s-tabs__panel')].filter(
+	[...document.querySelectorAll('.so-tabs__panel')].filter(
 		(panel): panel is HTMLElement =>
 			panel instanceof HTMLElement && panel.style.display !== 'none',
 	)
@@ -146,7 +146,7 @@ describe('показ панели по активному табу', () => {
 	it('скрытая панель — без содержимого', () => {
 		mountHost(Harness)
 
-		const hidden = [...document.querySelectorAll('.s-tabs__panel')].filter(
+		const hidden = [...document.querySelectorAll('.so-tabs__panel')].filter(
 			(node) => node instanceof HTMLElement && node.style.display === 'none',
 		)
 
@@ -157,7 +157,7 @@ describe('показ панели по активному табу', () => {
 		mountHost(Harness)
 
 		// Попади она в основную проекцию, оказалась бы внутри [role=tablist]
-		expect(document.querySelector('[role="tablist"] .s-tabs__panel')).toBeNull()
+		expect(document.querySelector('[role="tablist"] .so-tabs__panel')).toBeNull()
 		expect(panels()).toHaveLength(1)
 	})
 
@@ -253,8 +253,8 @@ describe('показ панели по активному табу', () => {
 describe('разметка, на которую опирается тема', () => {
 	/** Табы набора — дети списка, список и показанная панель — дети корня. */
 	function expectOwnParts(root: HTMLElement, count: number): void {
-		const list = find(root, ':scope > .s-tabs__list', HTMLElement)
-		const tabItems = [...document.querySelectorAll('.s-tabs-item')]
+		const list = find(root, ':scope > .so-tabs__list', HTMLElement)
+		const tabItems = [...document.querySelectorAll('.so-tabs-item')]
 
 		expect(panel().parentElement).toBe(root)
 		expect(tabItems).toHaveLength(count)
@@ -497,7 +497,7 @@ describe('таб из разметки', () => {
 
 		mountHost(RelayHost)
 
-		expect(tabs().map((row) => row.querySelector('.s-button__text')?.textContent)).toEqual([
+		expect(tabs().map((row) => row.querySelector('.so-button__text')?.textContent)).toEqual([
 			'[A]',
 			'[B]',
 		])
@@ -509,8 +509,8 @@ describe('таб из разметки', () => {
 			'a',
 			'b',
 		])
-		expect(document.querySelector('.s-tabs__list--leading .head')?.textContent).toBe('до')
-		expect(document.querySelector('.s-tabs__list--trailing .tail')?.textContent).toBe('после')
+		expect(document.querySelector('.so-tabs__list--leading .head')?.textContent).toBe('до')
+		expect(document.querySelector('.so-tabs__list--trailing .tail')?.textContent).toBe('после')
 	})
 
 	/**
@@ -563,7 +563,7 @@ describe('таб из разметки', () => {
 		mountHost(CloseIconHost)
 
 		expect(
-			[...document.querySelectorAll('.s-tabs-item__close')].map((close) =>
+			[...document.querySelectorAll('.so-tabs-item__close')].map((close) =>
 				close.querySelector('.probe')
 					? 'slot'
 					: close.querySelector('svg')
@@ -585,8 +585,8 @@ describe('таб из разметки', () => {
 
 		mountHost(BareHost)
 
-		expect(document.querySelector('.s-tabs__list--leading')).toBeNull()
-		expect(document.querySelector('.s-tabs__list--trailing')).toBeNull()
+		expect(document.querySelector('.so-tabs__list--leading')).toBeNull()
+		expect(document.querySelector('.so-tabs__list--trailing')).toBeNull()
 	})
 
 	it('входы фасада — не атрибуты, атрибуты потребителя — атрибуты', () => {
@@ -636,7 +636,7 @@ describe('кнопка закрытия: разметка', () => {
 
 		expect(row.getAttribute('role')).toBe('tab')
 		expect(close.tagName).toBe('BUTTON')
-		expect(close.classList.contains('s-tabs-item__close')).toBe(true)
+		expect(close.classList.contains('so-tabs-item__close')).toBe(true)
 		expect(rest).toHaveLength(0)
 	})
 
@@ -662,7 +662,7 @@ describe('кнопка закрытия: разметка', () => {
 		mountHost(ItemsHost)
 
 		expect(
-			[...document.querySelectorAll('.s-tabs-item__close')].map(
+			[...document.querySelectorAll('.so-tabs-item__close')].map(
 				(close) => close.querySelector('svg[so-icon]') !== null,
 			),
 		).toEqual([true, true, true])
@@ -678,7 +678,7 @@ describe('кнопка закрытия: разметка', () => {
 
 		mountHost(PlainHost)
 
-		expect(document.querySelector('.s-tabs-item__close')).toBeNull()
+		expect(document.querySelector('.so-tabs-item__close')).toBeNull()
 		expect(item('A').children).toHaveLength(1)
 	})
 
@@ -775,7 +775,7 @@ describe('кнопка закрытия: поведение', () => {
 
 		mountHost(SizeHost)
 
-		expect(closeOf('A').classList.contains('s-button--size-lg')).toBe(true)
+		expect(closeOf('A').classList.contains('so-button--size-lg')).toBe(true)
 	})
 
 	/**
@@ -796,12 +796,12 @@ describe('кнопка закрытия: поведение', () => {
 
 		const fixture = mountHost(OwnHost)
 
-		expect(item('A').querySelector('.s-tabs-item__close')).toBeNull()
+		expect(item('A').querySelector('.so-tabs-item__close')).toBeNull()
 
 		fixture.componentInstance.own.set(undefined)
 		fixture.detectChanges()
 
-		expect(item('A').querySelector('.s-tabs-item__close')).not.toBeNull()
+		expect(item('A').querySelector('.so-tabs-item__close')).not.toBeNull()
 	})
 })
 
@@ -827,7 +827,7 @@ describe('у выключенного таба кнопки закрытия н�
 
 	/** Табы, у которых есть кнопка закрытия, — по тексту строки. */
 	const withClose = () =>
-		['A', 'B', 'C'].filter((text) => item(text).querySelector('.s-tabs-item__close'))
+		['A', 'B', 'C'].filter((text) => item(text).querySelector('.so-tabs-item__close'))
 
 	it('выключенный со старта', () => {
 		mountHost(DisabledHost)
@@ -903,7 +903,7 @@ describe('клавиатура', () => {
 		fixture.componentInstance.closable.set(true)
 		fixture.detectChanges()
 
-		const closes = [...document.querySelectorAll('.s-tabs-item__close')]
+		const closes = [...document.querySelectorAll('.so-tabs-item__close')]
 
 		expect(closes).toHaveLength(3)
 		expect(closes.every((close) => close.getAttribute('tabindex') === '-1')).toBe(true)
@@ -915,7 +915,7 @@ describe('клавиатура', () => {
 		fixture.componentInstance.orientation.set('vertical')
 		fixture.detectChanges()
 
-		const list = document.querySelector('.s-tabs__list')
+		const list = document.querySelector('.so-tabs__list')
 
 		expect(list?.getAttribute('role')).toBe('tablist')
 		expect(list?.getAttribute('aria-orientation')).toBe('vertical')

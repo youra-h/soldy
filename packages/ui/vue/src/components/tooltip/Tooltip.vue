@@ -45,7 +45,7 @@ export default { ...SetupTooltip, components: { Frame } }
 		-->
 		<Frame
 			embedded="tooltip.frame"
-			class="s-tooltip__panel"
+			class="so-tooltip__panel"
 			:visible="open"
 			position="fixed"
 			:anchor_anchor="rootElement"
@@ -57,7 +57,7 @@ export default { ...SetupTooltip, components: { Frame } }
 				Обёртка держит ширину панели: по тексту, до потолка темы,
 				где бы у края окна панель ни стояла.
 			-->
-			<div class="s-tooltip__content">
+			<div class="so-tooltip__content">
 				<slot />
 			</div>
 		</Frame>

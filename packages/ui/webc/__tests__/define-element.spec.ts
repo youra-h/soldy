@@ -71,7 +71,7 @@ function button(selector: string): TButtonElementProps {
 	return node
 }
 
-const text = (el: Element) => el.querySelector('.s-button__text')?.textContent
+const text = (el: Element) => el.querySelector('.so-button__text')?.textContent
 
 describe('defineElement · первая сборка элемента разметки', () => {
 	/**

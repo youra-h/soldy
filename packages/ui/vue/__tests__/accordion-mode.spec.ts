@@ -16,11 +16,11 @@ describe('Accordion mode="multiple"', () => {
 	it('держит две секции раскрытыми одновременно', async () => {
 		const wrapper = mount(Harness, { attachTo: document.body })
 
-		await wrapper.findAll('.s-accordion-item__header')[1].trigger('click')
+		await wrapper.findAll('.so-accordion-item__header')[1].trigger('click')
 		await nextTick()
 
 		const open = wrapper
-			.findAll('.s-accordion-item')
+			.findAll('.so-accordion-item')
 			.filter((item) => item.attributes('data-selected') === 'true')
 
 		expect(open).toHaveLength(2)

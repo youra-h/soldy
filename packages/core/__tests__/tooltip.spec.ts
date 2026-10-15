@@ -23,11 +23,11 @@ describe('умолчания', () => {
 		expect(new TTooltip().type).toBe('description')
 	})
 
-	it('корень строчный — span, базовый класс s-tooltip', () => {
+	it('корень строчный — span, базовый класс so-tooltip', () => {
 		const tooltip = new TTooltip()
 
 		expect(tooltip.tag).toBe('span')
-		expect(tooltip.classes.toArray()).toContain('s-tooltip')
+		expect(tooltip.classes.toArray()).toContain('so-tooltip')
 	})
 
 	it('пропсы конструктора перекрывают умолчания', () => {

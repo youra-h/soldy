@@ -66,7 +66,7 @@ describe('чужое свойство на корне переживает см�
 
 		mount(Frame, props)
 
-		const frame = find(document, '.s-frame', HTMLElement)
+		const frame = find(document, '.so-frame', HTMLElement)
 
 		frame.style.setProperty(OUTSIDE, '1')
 

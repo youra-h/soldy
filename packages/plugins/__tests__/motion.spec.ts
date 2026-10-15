@@ -151,15 +151,15 @@ describe('плавная прокрутка по режиму', () => {
 async function mountScroller() {
 	document.body.insertAdjacentHTML(
 		'beforeend',
-		`<div class="s-scroller">
-			<button class="s-scroller__prev">Назад</button>
-			<div class="s-scroller__viewport"><span>Первый</span></div>
-			<button class="s-scroller__next">Вперёд</button>
+		`<div class="so-scroller">
+			<button class="so-scroller__prev">Назад</button>
+			<div class="so-scroller__viewport"><span>Первый</span></div>
+			<button class="so-scroller__next">Вперёд</button>
 		</div>`,
 	)
 
-	const root = document.querySelector('.s-scroller')
-	const viewport = document.querySelector('.s-scroller__viewport')
+	const root = document.querySelector('.so-scroller')
+	const viewport = document.querySelector('.so-scroller__viewport')
 
 	if (!root || !viewport) throw new Error('разметки ленты нет')
 

@@ -60,7 +60,7 @@ const CASES: readonly TCase[] = [
 	{
 		name: 'CheckBox',
 		role: 'checkbox',
-		box: '.s-check-box',
+		box: '.so-check-box',
 		picked: true,
 		// Текст в слоте отметки: в имя его не пускает `aria-hidden` коробки
 		tree: (label, control) => h(Label, label, () => h(CheckBox, control, { icon: () => 'V' })),
@@ -68,7 +68,7 @@ const CASES: readonly TCase[] = [
 	{
 		name: 'Switch',
 		role: 'switch',
-		box: '.s-switch__track',
+		box: '.so-switch__track',
 		picked: true,
 		// Текст в слотах ручки: в имя его не пускает `aria-hidden` дорожки
 		tree: (label, control) =>
@@ -77,7 +77,7 @@ const CASES: readonly TCase[] = [
 	{
 		name: 'RadioGroup.Item',
 		role: 'radio',
-		box: '.s-radio-group-item__control',
+		box: '.so-radio-group-item__control',
 		picked: 'a',
 		// Группа раздаёт радио `size` и собирает v-model
 		tree: (label, control) =>
@@ -88,7 +88,7 @@ const CASES: readonly TCase[] = [
 ]
 
 /** Место, куда уводится указатель: наведение красит контрол, и сцены монтируются на одном месте. */
-const AWAY = '.s-test-away'
+const AWAY = '.so-test-away'
 
 /**
  * Смонтировать разметку и дождаться кадра: слушатели поля плагины вешают по
@@ -100,7 +100,7 @@ async function show(content: () => VNode, width?: number): Promise<void> {
 		defineComponent({
 			render: () =>
 				h('div', { style: width ? `width: ${width}px` : undefined }, [
-					h('div', { class: 's-test-away', style: 'height: 24px' }),
+					h('div', { class: 'so-test-away', style: 'height: 24px' }),
 					content(),
 				]),
 		}),
@@ -161,7 +161,7 @@ function cursorAt(selector: string): string {
 
 /** Поле контрола в подписи. */
 function input(): HTMLInputElement {
-	const element = find('.s-label input')
+	const element = find('.so-label input')
 
 	if (!(element instanceof HTMLInputElement)) throw new Error('поля в подписи нет')
 
@@ -175,7 +175,7 @@ function input(): HTMLInputElement {
  * пустые узлы-якоря фрагмента, и у них прямоугольников нет.
  */
 function lines(): DOMRect[] {
-	const text = [...find('.s-label__text').childNodes].find(
+	const text = [...find('.so-label__text').childNodes].find(
 		(node) => node instanceof Text && node.data.trim() !== '',
 	)
 
@@ -214,7 +214,7 @@ describe.each(CASES)('$name в подписи', ({ role, box, picked, tree }) =>
 
 		input().addEventListener('change', () => changes++)
 
-		await userEvent.click(find('.s-label__text'))
+		await userEvent.click(find('.so-label__text'))
 
 		expect(input().checked).toBe(true)
 		expect(changes).toBe(1)
@@ -233,7 +233,7 @@ describe.each(CASES)('$name в подписи', ({ role, box, picked, tree }) =>
 
 		expect(named()).toBe(input())
 
-		await userEvent.click(find('.s-label__text'))
+		await userEvent.click(find('.so-label__text'))
 		await nextFrame()
 
 		expect(input().checked).toBe(true)
@@ -296,8 +296,8 @@ describe.each(CASES)('$name в подписи', ({ role, box, picked, tree }) =>
 		async (direction, position, side) => {
 			await show(() => tree({ text: TEXT, position, direction }, {}))
 
-			const text = find('.s-label__text').getBoundingClientRect()
-			const control = find('.s-label__control').getBoundingClientRect()
+			const text = find('.so-label__text').getBoundingClientRect()
+			const control = find('.so-label__control').getBoundingClientRect()
 
 			const placed: Record<TSide, boolean> = {
 				left: text.right <= control.left,
@@ -329,33 +329,33 @@ const checkBox = (control: TProps): VNode => h(Label, { text: TEXT }, () => h(Ch
  * Switch лежит поверх коробки и дорожки, и на перекрытый узел указатель не
  * встанет.
  */
-const CONTROL = '.s-label__control > *'
+const CONTROL = '.so-label__control > *'
 
 const HOVER: readonly THoverCase[] = [
-	{ name: 'CheckBox', paint: '.s-check-box__container', props: {}, tree: checkBox },
+	{ name: 'CheckBox', paint: '.so-check-box__container', props: {}, tree: checkBox },
 	{
 		name: 'CheckBox filled',
-		paint: '.s-check-box__container',
+		paint: '.so-check-box__container',
 		props: { view: 'filled' },
 		tree: checkBox,
 	},
 	{
 		// Отмеченную коробку `filled` красит своё правило, а не то же самое
 		name: 'CheckBox filled отмеченный',
-		paint: '.s-check-box__container',
+		paint: '.so-check-box__container',
 		props: { view: 'filled', value: true },
 		tree: checkBox,
 	},
 	{
 		name: 'Switch',
-		paint: '.s-switch__track',
+		paint: '.so-switch__track',
 		props: {},
 		tree: (control) => h(Label, { text: TEXT }, () => h(Switch, control)),
 	},
 	{
 		// Выключает радио и группа: `disabled` случая уходит на неё
 		name: 'RadioGroup.Item',
-		paint: '.s-radio-group-item__control',
+		paint: '.so-radio-group-item__control',
 		props: {},
 		tree: (control) =>
 			h(RadioGroup as Component, control, () =>
@@ -390,7 +390,7 @@ describe.each(HOVER)('$name в подписи: наведение', ({ paint, pr
 
 		expect(paintOf(paint), 'без указателя цвет возвращается').toEqual(rest)
 
-		await hover('.s-label__text')
+		await hover('.so-label__text')
 
 		expect(paintOf(paint)).toEqual(hovered)
 	})
@@ -401,7 +401,7 @@ describe.each(HOVER)('$name в подписи: наведение', ({ paint, pr
 
 		const rest = paintOf(paint)
 
-		await hover('.s-label__text')
+		await hover('.so-label__text')
 
 		expect(paintOf(paint)).toEqual(rest)
 	})
@@ -432,7 +432,7 @@ describe.each(READONLY)('$name только для чтения', ({ paint, prop
 
 		expect(paintOf(paint), 'наведение на контрол').toEqual(rest)
 
-		await hover('.s-label__text')
+		await hover('.so-label__text')
 
 		expect(paintOf(paint), 'наведение на текст подписи').toEqual(rest)
 	})
@@ -441,12 +441,12 @@ describe.each(READONLY)('$name только для чтения', ({ paint, prop
 		await show(() => tree(props))
 
 		expect(cursorAt(CONTROL), 'изменяемый контрол — рука').toBe('pointer')
-		expect(cursorAt('.s-label__text'), 'его подпись — рука').toBe('pointer')
+		expect(cursorAt('.so-label__text'), 'его подпись — рука').toBe('pointer')
 
 		cleanup()
 		await show(() => tree({ ...props, readonly: true }))
 
 		expect(cursorAt(CONTROL), 'readonly-контрол').toBe('default')
-		expect(cursorAt('.s-label__text'), 'подпись readonly-контрола').toBe('default')
+		expect(cursorAt('.so-label__text'), 'подпись readonly-контрола').toBe('default')
 	})
 })

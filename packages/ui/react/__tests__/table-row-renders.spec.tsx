@@ -76,7 +76,7 @@ function click(element: HTMLElement): void {
 
 /** Отметка выбора строк. */
 const rowsSelected = () =>
-	[...document.querySelectorAll<HTMLElement>('.s-table-row')].map((row) => row.dataset.selected)
+	[...document.querySelectorAll<HTMLElement>('.so-table-row')].map((row) => row.dataset.selected)
 
 /** Ключи записей отрисованных строк — по рендеру, в порядке ключей. */
 const renderedRows = () => rowRenders.mock.calls.map(([props]) => idOf(props.ctrl?.data)).sort()
@@ -111,16 +111,16 @@ describe('перерисовка строк', () => {
 
 		rerender(view('Сотрудники'))
 
-		expect(find('.s-table').getAttribute('aria-label')).toBe('Сотрудники')
+		expect(find('.so-table').getAttribute('aria-label')).toBe('Сотрудники')
 		expect(renderedRows()).toEqual([])
 	})
 
 	it('выбор строки — перерисована она одна', async () => {
 		await renderCounted(<Table engine={engineOf('multiple')} />)
 
-		const vera = [...document.querySelectorAll<HTMLElement>('.s-table-row')][2]
+		const vera = [...document.querySelectorAll<HTMLElement>('.so-table-row')][2]
 
-		click(checkBoxInput('.s-table-row__select', vera))
+		click(checkBoxInput('.so-table-row__select', vera))
 
 		expect(rowsSelected()).toEqual(['false', 'false', 'true'])
 		expect(renderedRows()).toEqual([3])
@@ -129,7 +129,7 @@ describe('перерисовка строк', () => {
 	it('«выбрать все» и снятие выбора — каждая строка по разу на клик', async () => {
 		await renderCounted(<Table engine={engineOf('multiple')} />)
 
-		const head = checkBoxInput('.s-table__select')
+		const head = checkBoxInput('.so-table__select')
 
 		click(head)
 

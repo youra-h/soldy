@@ -29,11 +29,11 @@ const renderListBox = (props: Record<string, unknown> = {}) => {
 	return wrapper
 }
 
-const listItems = () => [...document.querySelectorAll('.s-list-box-item')]
+const listItems = () => [...document.querySelectorAll('.so-list-box-item')]
 
 /** Выбор элемента ListBox — клик по строке. */
 const clickItem = async (index: number) => {
-	;(listItems()[index].querySelector('.s-button') as HTMLElement).click()
+	;(listItems()[index].querySelector('.so-button') as HTMLElement).click()
 
 	await nextTick()
 }
@@ -46,7 +46,7 @@ const clickItem = async (index: number) => {
  */
 const sideOf = (root: Element, indicatorClass: string): 'start' | 'end' | null => {
 	const indicator = root.querySelector(indicatorClass)
-	const text = root.querySelector('.s-button__text')
+	const text = root.querySelector('.so-button__text')
 
 	if (!indicator || !text) return null
 
@@ -61,7 +61,7 @@ describe('ListBox: отметка выбранного', () => {
 
 		await clickItem(0)
 
-		expect(document.querySelectorAll('.s-list-box-item__indicator')).toHaveLength(0)
+		expect(document.querySelectorAll('.so-list-box-item__indicator')).toHaveLength(0)
 	})
 
 	/**
@@ -71,13 +71,13 @@ describe('ListBox: отметка выбранного', () => {
 	it('обёртка резервирует место у каждого элемента, иконка — только у выбранного', async () => {
 		renderListBox({ indicator: 'start' })
 
-		expect(document.querySelectorAll('.s-list-box-item__indicator')).toHaveLength(3)
-		expect(document.querySelectorAll('.s-list-box-item__indicator svg')).toHaveLength(0)
+		expect(document.querySelectorAll('.so-list-box-item__indicator')).toHaveLength(3)
+		expect(document.querySelectorAll('.so-list-box-item__indicator svg')).toHaveLength(0)
 
 		await clickItem(1)
 
 		const icons = listItems().map(
-			(item) => !!item.querySelector('.s-list-box-item__indicator svg'),
+			(item) => !!item.querySelector('.so-list-box-item__indicator svg'),
 		)
 
 		expect(icons).toEqual([false, true, false])
@@ -87,12 +87,12 @@ describe('ListBox: отметка выбранного', () => {
 		renderListBox({ indicator: 'start' })
 		await clickItem(0)
 
-		expect(sideOf(listItems()[0], '.s-list-box-item__indicator')).toBe('start')
+		expect(sideOf(listItems()[0], '.so-list-box-item__indicator')).toBe('start')
 
 		await wrapper?.setProps({ indicator: 'end' })
 		await nextTick()
 
-		expect(sideOf(listItems()[0], '.s-list-box-item__indicator')).toBe('end')
+		expect(sideOf(listItems()[0], '.so-list-box-item__indicator')).toBe('end')
 	})
 
 	/**
@@ -104,7 +104,7 @@ describe('ListBox: отметка выбранного', () => {
 		await clickItem(0)
 
 		expect(
-			document.querySelector('.s-list-box-item__indicator')?.getAttribute('aria-hidden'),
+			document.querySelector('.so-list-box-item__indicator')?.getAttribute('aria-hidden'),
 		).toBe('true')
 	})
 
@@ -115,7 +115,7 @@ describe('ListBox: отметка выбранного', () => {
 		await clickItem(2)
 
 		expect(
-			listItems().map((item) => !!item.querySelector('.s-list-box-item__indicator svg')),
+			listItems().map((item) => !!item.querySelector('.so-list-box-item__indicator svg')),
 		).toEqual([true, false, true])
 	})
 
@@ -138,8 +138,8 @@ describe('ListBox: отметка выбранного', () => {
 
 		await clickItem(0)
 
-		expect(document.querySelector('.s-list-box-item__indicator .custom')).toBeTruthy()
-		expect(document.querySelector('.s-list-box-item__indicator svg')).toBeNull()
+		expect(document.querySelector('.so-list-box-item__indicator .custom')).toBeTruthy()
+		expect(document.querySelector('.so-list-box-item__indicator svg')).toBeNull()
 	})
 
 	/**
@@ -151,9 +151,9 @@ describe('ListBox: отметка выбранного', () => {
 		renderListBox({ indicator: 'start', direction: 'rtl' })
 		await clickItem(0)
 
-		expect(document.querySelector('.s-list-box')?.getAttribute('dir')).toBe('rtl')
+		expect(document.querySelector('.so-list-box')?.getAttribute('dir')).toBe('rtl')
 		// Разметка не переставлена: порядок узлов тот же, край меняет `dir`
-		expect(sideOf(listItems()[0], '.s-list-box-item__indicator')).toBe('start')
+		expect(sideOf(listItems()[0], '.so-list-box-item__indicator')).toBe('start')
 	})
 })
 
@@ -172,19 +172,19 @@ describe('Select: отметка выбранной опции', () => {
 	it('без indicator обёртки нет', async () => {
 		await renderSelect()
 
-		expect(document.querySelectorAll('.s-select-item__indicator')).toHaveLength(0)
+		expect(document.querySelectorAll('.so-select-item__indicator')).toHaveLength(0)
 	})
 
 	it('обёртка у каждой опции, иконка — у выбранной', async () => {
 		await renderSelect({ indicator: 'start' })
 
-		expect(document.querySelectorAll('.s-select-item__indicator')).toHaveLength(3)
-		expect(document.querySelectorAll('.s-select-item__indicator svg')).toHaveLength(0)
+		expect(document.querySelectorAll('.so-select-item__indicator')).toHaveLength(3)
+		expect(document.querySelectorAll('.so-select-item__indicator svg')).toHaveLength(0)
 		;(options()[1] as HTMLElement).click()
 		await nextTick()
 
 		expect(
-			options().map((option) => !!option.querySelector('.s-select-item__indicator svg')),
+			options().map((option) => !!option.querySelector('.so-select-item__indicator svg')),
 		).toEqual([false, true, false])
 	})
 
@@ -193,14 +193,14 @@ describe('Select: отметка выбранной опции', () => {
 		;(options()[0] as HTMLElement).click()
 		await nextTick()
 
-		expect(sideOf(options()[0], '.s-select-item__indicator')).toBe('end')
+		expect(sideOf(options()[0], '.so-select-item__indicator')).toBe('end')
 	})
 
 	it('отметка не попадает в дерево доступности', async () => {
 		await renderSelect({ indicator: 'start' })
 
 		expect(
-			document.querySelector('.s-select-item__indicator')?.getAttribute('aria-hidden'),
+			document.querySelector('.so-select-item__indicator')?.getAttribute('aria-hidden'),
 		).toBe('true')
 	})
 })

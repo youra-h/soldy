@@ -56,11 +56,11 @@ const find = (selector: string): HTMLElement => {
 	return element
 }
 
-const field = () => find('.s-select__field input')
-const panel = () => find('.s-select__panel')
+const field = () => find('.so-select__field input')
+const panel = () => find('.so-select__panel')
 
 /** Опции панели — по тексту. */
-const options = (): HTMLElement[] => [...panel().querySelectorAll<HTMLElement>('.s-select-item')]
+const options = (): HTMLElement[] => [...panel().querySelectorAll<HTMLElement>('.so-select-item')]
 
 /**
  * Тексты опций, которые не спрятал отбор. Опцию из разметки отбор прячет её
@@ -158,7 +158,7 @@ describe('отбор: гаснущая панель держит отобран�
 			// показывает весь список
 			await expect.poll(shownOptions).toEqual(CITIES)
 
-			await userEvent.click(find('.s-select__arrow'))
+			await userEvent.click(find('.so-select__arrow'))
 			await expect.poll(() => panel().dataset.open).toBe('true')
 
 			expect(shownOptions()).toEqual(CITIES)
@@ -203,8 +203,8 @@ describe('кнопка очистки', () => {
 		await showClearable(size)
 
 		expectClearSquare(
-			find('.s-select__field .s-input__clear'),
-			find('.s-select__field .s-input__trailing'),
+			find('.so-select__field .so-input__clear'),
+			find('.so-select__field .so-input__trailing'),
 			size,
 		)
 	})
@@ -218,9 +218,9 @@ describe('кнопка очистки', () => {
 
 		await expect.poll(() => input.value).toBe('Москва')
 
-		await userEvent.click(find('.s-select__field .s-input__clear'))
+		await userEvent.click(find('.so-select__field .so-input__clear'))
 
 		await expect.poll(() => input.value).toBe('')
-		expect(find('.s-select').dataset.open).not.toBe('true')
+		expect(find('.so-select').dataset.open).not.toBe('true')
 	})
 })

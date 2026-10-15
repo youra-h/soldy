@@ -64,7 +64,7 @@ export const setDir = (element: HTMLElement, line?: TLine): void => {
  */
 export const pointing = (button: string): TSide => {
 	// Иконка — `svg`, а не HTML-узел
-	const icon = document.querySelector(`${button} .s-icon`)
+	const icon = document.querySelector(`${button} .so-icon`)
 
 	if (!icon) throw new Error(`${button}: иконки нет`)
 

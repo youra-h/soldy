@@ -20,12 +20,12 @@
 </script>
 
 <LocaleProvider locale={props.locale}>
-	<div class="s-test-outer">
+	<div class="so-test-outer">
 		<Input ctrl={props.ctrl} clearable name="Город" />
 	</div>
 	{#if props.inner}
 		<LocaleProvider locale={props.inner}>
-			<div class="s-test-inner">
+			<div class="so-test-inner">
 				<Input clearable name="Город" />
 			</div>
 		</LocaleProvider>

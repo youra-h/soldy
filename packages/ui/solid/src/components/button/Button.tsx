@@ -39,7 +39,7 @@ export function Button(props: ButtonProps): JSX.Element {
 		<Show when={state.rendered}>
 			<Dynamic {...root()} component={rootTag(state.tag)} ref={binding.ref}>
 				{renderSlot(props.leading)}
-				<span class="s-button__text">{content() ?? state.text}</span>
+				<span class="so-button__text">{content() ?? state.text}</span>
 				{renderSlot(props.trailing)}
 			</Dynamic>
 		</Show>

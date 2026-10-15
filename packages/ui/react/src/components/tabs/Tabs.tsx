@@ -5,7 +5,7 @@ import { useSetupTabs } from './setup.component'
 import type { TabsProps } from './base.component'
 
 /**
- * Tabs — набор табов: список (`s-tabs__list`) и панели рядом с ним.
+ * Tabs — набор табов: список (`so-tabs__list`) и панели рядом с ним.
  *
  * Набор `aria` владельца — это список табов: `role="tablist"` и
  * `aria-orientation` пишет ядро, имя из `aria_label` — `TAriaPlugin`. Корень
@@ -34,9 +34,9 @@ export function Tabs(props: TabsProps): ReactElement | null {
 	return (
 		<div {...toRootProps(ref, state, [attrs], forwardProps)}>
 			<Elevate layer={layer}>
-				<div className="s-tabs__list" {...toAriaProps(aria)}>
+				<div className="so-tabs__list" {...toAriaProps(aria)}>
 					{hasSlot(props.leading) ? (
-						<div className="s-tabs__list--leading">{renderSlot(props.leading)}</div>
+						<div className="so-tabs__list--leading">{renderSlot(props.leading)}</div>
 					) : null}
 					{hasSlot(props.children)
 						? renderSlot(props.children)
@@ -52,7 +52,7 @@ export function Tabs(props: TabsProps): ReactElement | null {
 								</TabsItem>
 							))}
 					{hasSlot(props.trailing) ? (
-						<div className="s-tabs__list--trailing">{renderSlot(props.trailing)}</div>
+						<div className="so-tabs__list--trailing">{renderSlot(props.trailing)}</div>
 					) : null}
 				</div>
 				{renderSlot(props.content)}

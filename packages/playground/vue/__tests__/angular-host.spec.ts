@@ -34,10 +34,10 @@ afterEach(() => {
 })
 
 /** Кнопки превью в узле. */
-const buttons = (node: HTMLElement) => [...node.querySelectorAll('.s-button')]
+const buttons = (node: HTMLElement) => [...node.querySelectorAll('.so-button')]
 
 /** Текст кнопки превью. */
-const label = (node: HTMLElement) => node.querySelector('.s-button__text')?.textContent?.trim()
+const label = (node: HTMLElement) => node.querySelector('.so-button__text')?.textContent?.trim()
 
 describe('хост Angular', () => {
 	/**

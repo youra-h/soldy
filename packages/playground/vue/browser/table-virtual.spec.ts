@@ -88,7 +88,7 @@ function scrollingElement(): HTMLElement {
 }
 
 /** Строки тела в документе. */
-const rows = (): HTMLElement[] => [...document.querySelectorAll<HTMLElement>('.s-table-row')]
+const rows = (): HTMLElement[] => [...document.querySelectorAll<HTMLElement>('.so-table-row')]
 
 /** Шаг строк — расстояние между верхами двух соседних нарисованных строк. */
 function step(): number {
@@ -99,7 +99,7 @@ function step(): number {
 
 /** Номер строки, которая стоит в точке `y` окна браузера. */
 function rowAt(y: number): string | null {
-	const x = find('.s-table__body').getBoundingClientRect().left + 100
+	const x = find('.so-table__body').getBoundingClientRect().left + 100
 
 	return document.elementFromPoint(x, y)?.closest('tr')?.getAttribute('aria-rowindex') ?? null
 }
@@ -117,17 +117,17 @@ describe.each([
 		await mount(engineOf(), container)
 
 		const drawn = rows().length
-		const body = find('.s-table__body').getBoundingClientRect()
+		const body = find('.so-table__body').getBoundingClientRect()
 
 		expect(drawn).toBeGreaterThan(0)
 		expect(drawn).toBeLessThan(80)
 		expect(Math.abs(body.height - COUNT * step())).toBeLessThanOrEqual(EPSILON)
-		expect(find('table.s-table').getAttribute('aria-rowcount')).toBe(String(COUNT + 1))
+		expect(find('table.so-table').getAttribute('aria-rowcount')).toBe(String(COUNT + 1))
 	})
 
 	it('прокрутка: у края — строка своего места, и окно её не сдвигает', async () => {
 		const scroller = await mount(engineOf(), container)
-		const body = find('.s-table__body')
+		const body = find('.so-table__body')
 		const rowStep = step()
 
 		// Верх тела у верха окна прокрутки — плюс полстроки, на строку 500
@@ -154,7 +154,7 @@ describe.each([
 describe('сетка', () => {
 	/** Ячейка заголовка строки — по номеру строки. */
 	function cellOf(rowIndex: number): HTMLElement {
-		return find(`.s-table-row[aria-rowindex="${rowIndex}"] > th`)
+		return find(`.so-table-row[aria-rowindex="${rowIndex}"] > th`)
 	}
 
 	it('Ctrl+End — фокус в последней строке, которой не было в документе', async () => {
@@ -209,15 +209,15 @@ describe('выбор и сортировка видят все строки', ()
 		const engine = engineOf()
 
 		await mount(engine)
-		await userEvent.click(find('.s-table__select input'))
+		await userEvent.click(find('.so-table__select input'))
 
 		expect(engine.extensions.selection.selected).toHaveLength(COUNT)
 	})
 
 	it('сортировка по убыванию — первой в окне идёт последняя строка', async () => {
 		await mount(engineOf())
-		await userEvent.click(find('.s-table-column__sort'))
-		await userEvent.click(find('.s-table-column__sort'))
+		await userEvent.click(find('.so-table-column__sort'))
+		await userEvent.click(find('.so-table-column__sort'))
 		await frames()
 
 		const [first] = rows()

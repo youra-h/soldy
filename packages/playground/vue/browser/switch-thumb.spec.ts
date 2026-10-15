@@ -58,7 +58,7 @@ const CASES: readonly TCase[] = [
 
 const nextFrame = () => new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
 
-const thumb = () => find('.s-switch__track--thumb')
+const thumb = () => find('.so-switch__track--thumb')
 
 /** Выключенный переключатель в сцене. Включает его тест через экземпляр ядра. */
 async function show(size: TComponentSize, { ancestor, direction }: TCase): Promise<TSwitch> {
@@ -81,7 +81,7 @@ async function show(size: TComponentSize, { ancestor, direction }: TCase): Promi
 
 /** Зазоры между ручкой и левым и правым краем дорожки, px. */
 function gaps(): Record<TEdge, number> {
-	const track = find('.s-switch__track').getBoundingClientRect()
+	const track = find('.so-switch__track').getBoundingClientRect()
 	const knob = thumb().getBoundingClientRect()
 
 	return { left: knob.left - track.left, right: track.right - knob.right }

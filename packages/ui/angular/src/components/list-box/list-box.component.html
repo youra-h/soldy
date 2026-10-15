@@ -35,7 +35,7 @@
 <ng-content>
 	@for (entry of state()['drawn'] ?? []; track entry.key) {
 		@if (entry.kind === 'filler') {
-			<div class="s-list-box__filler" aria-hidden="true" [style]="entry.style"></div>
+			<div class="so-list-box__filler" aria-hidden="true" [style]="entry.style"></div>
 		} @else {
 			<so-list-box-item [ctrl]="entry.item">
 				@if (slot('item-leading'); as leading) {

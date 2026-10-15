@@ -35,7 +35,7 @@ const IndeterminateMark = roleIcon('checkIndeterminate')
  * Отметка без слота — `svg` иконки по роли, а не компонент `Icon`: она
  * появляется и пропадает с каждой сменой отметки, и `Icon` собирал бы на
  * каждую свой контекст и плагины — в таблице «выбрать все» собирала их
- * тысячами. Размер и цвет отметке даёт тема флажка по `s-check-box__mark`.
+ * тысячами. Размер и цвет отметке даёт тема флажка по `so-check-box__mark`.
  */
 export function CheckBox(props: CheckBoxProps): ReactElement | null {
 	const { ref, forwardProps, state } = useSetupCheckBox(props)
@@ -53,10 +53,10 @@ export function CheckBox(props: CheckBoxProps): ReactElement | null {
 
 	if (indeterminate) {
 		mark = renderSlot(props['indeterminate-icon'], scope) ?? (
-			<IndeterminateMark className="s-check-box__mark" />
+			<IndeterminateMark className="so-check-box__mark" />
 		)
 	} else if (value) {
-		mark = renderSlot(props.icon, scope) ?? <CheckMark className="s-check-box__mark" />
+		mark = renderSlot(props.icon, scope) ?? <CheckMark className="so-check-box__mark" />
 	}
 
 	return (
@@ -71,7 +71,7 @@ export function CheckBox(props: CheckBoxProps): ReactElement | null {
 				{...toControlAttrs<CheckBoxAttributes>(forwardProps)}
 				live={{ checked: value, indeterminate }}
 			/>
-			<span className="s-check-box__container" aria-hidden="true">
+			<span className="so-check-box__container" aria-hidden="true">
 				{mark}
 			</span>
 		</Tag>

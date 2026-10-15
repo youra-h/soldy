@@ -42,40 +42,40 @@ function find(selector: string): HTMLElement {
 	return element
 }
 
-const root = () => find('.s-scroller')
-const viewport = () => find('.s-scroller__viewport')
+const root = () => find('.so-scroller')
+const viewport = () => find('.so-scroller__viewport')
 
 /** Содержимое ленты — произвольная разметка: коллекции у неё нет. */
-const content = () => [h('span', { class: 's-test-item' }, 'Первый')]
+const content = () => [h('span', { class: 'so-test-item' }, 'Первый')]
 
 describe('состав', () => {
 	it('корень — ряд из кнопки, вьюпорта и кнопки, в этом порядке', async () => {
 		await render(() => h(Scroller, null, { default: content }))
 
 		expect([...root().children].map((node) => node.className)).toEqual([
-			's-button s-button--size-normal s-scroller__prev',
-			's-scroller__viewport',
-			's-button s-button--size-normal s-scroller__next',
+			'so-button so-button--size-normal so-scroller__prev',
+			'so-scroller__viewport',
+			'so-button so-button--size-normal so-scroller__next',
 		])
 	})
 
 	it('содержимое лежит прямо во вьюпорте — обёртки между ними нет', async () => {
 		await render(() => h(Scroller, null, { default: content }))
 
-		expect(viewport().children[0]?.className).toBe('s-test-item')
+		expect(viewport().children[0]?.className).toBe('so-test-item')
 	})
 
 	it('значок кнопки переопределяется своим слотом', async () => {
 		await render(() =>
 			h(Scroller, null, {
 				default: content,
-				'prev-icon': () => h('i', { class: 's-test-prev' }),
-				'next-icon': () => h('i', { class: 's-test-next' }),
+				'prev-icon': () => h('i', { class: 'so-test-prev' }),
+				'next-icon': () => h('i', { class: 'so-test-next' }),
 			}),
 		)
 
-		expect(find('.s-scroller__prev .s-test-prev')).toBeTruthy()
-		expect(find('.s-scroller__next .s-test-next')).toBeTruthy()
+		expect(find('.so-scroller__prev .so-test-prev')).toBeTruthy()
+		expect(find('.so-scroller__next .so-test-next')).toBeTruthy()
 	})
 })
 
@@ -101,8 +101,8 @@ describe('состояние на корне', () => {
 
 		expect(root().dataset.canPrev).toBe('false')
 		expect(root().dataset.canNext).toBe('true')
-		expect(find('.s-scroller__prev').hasAttribute('disabled')).toBe(true)
-		expect(find('.s-scroller__next').hasAttribute('disabled')).toBe(false)
+		expect(find('.so-scroller__prev').hasAttribute('disabled')).toBe(true)
+		expect(find('.so-scroller__next').hasAttribute('disabled')).toBe(false)
 	})
 
 	it('выключенная лента гасит обе кнопки', async () => {
@@ -113,8 +113,8 @@ describe('состояние на корне', () => {
 		ctrl.notifyViewport({ canPrev: true, canNext: true, hasTabStops: false })
 		await nextTick()
 
-		expect(find('.s-scroller__prev').hasAttribute('disabled')).toBe(true)
-		expect(find('.s-scroller__next').hasAttribute('disabled')).toBe(true)
+		expect(find('.so-scroller__prev').hasAttribute('disabled')).toBe(true)
+		expect(find('.so-scroller__next').hasAttribute('disabled')).toBe(true)
 	})
 })
 
@@ -175,12 +175,12 @@ describe('имена кнопок', () => {
 			),
 		)
 
-		expect(find('.s-scroller__prev').getAttribute('aria-label')).toBe('Прокрутить назад')
-		expect(find('.s-scroller__next').getAttribute('aria-label')).toBe('Прокрутить вперёд')
+		expect(find('.so-scroller__prev').getAttribute('aria-label')).toBe('Прокрутить назад')
+		expect(find('.so-scroller__next').getAttribute('aria-label')).toBe('Прокрутить вперёд')
 
 		locale.value = extendLocale(enUS, { translations: { scroller: { prev: 'К началу' } } })
 		await nextTick()
 
-		expect(find('.s-scroller__prev').getAttribute('aria-label')).toBe('К началу')
+		expect(find('.so-scroller__prev').getAttribute('aria-label')).toBe('К началу')
 	})
 })

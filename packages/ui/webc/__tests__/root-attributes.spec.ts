@@ -78,10 +78,10 @@ function mount<T extends HTMLElement>(html: string, guard: TElementGuard<T>): T 
 const COMPONENTS: ReadonlyArray<
 	readonly [string, string, string, TElementGuard<HTMLElement>, string]
 > = [
-	['Button', 'button', 'so-button', isButton, 's-button'],
-	['ComponentView', 'div', 'so-component-view', isView, 's-component-view'],
-	['ProgressSpinner', 'span', 'so-progress-spinner', isSpinner, 's-progress-spinner'],
-	['Skeleton', 'div', 'so-skeleton', isSkeleton, 's-skeleton'],
+	['Button', 'button', 'so-button', isButton, 'so-button'],
+	['ComponentView', 'div', 'so-component-view', isView, 'so-component-view'],
+	['ProgressSpinner', 'span', 'so-progress-spinner', isSpinner, 'so-progress-spinner'],
+	['Skeleton', 'div', 'so-skeleton', isSkeleton, 'so-skeleton'],
 ]
 
 /** Разметка пробы: `direction` ядра против `dir` потребителя и класс потребителя. */
