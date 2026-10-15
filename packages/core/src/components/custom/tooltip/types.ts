@@ -15,12 +15,7 @@ import type { TAria, TAriaAttributes } from '../../../common'
  * выбора потребителя.
  */
 export type TTooltipPlacement =
-	| 'bottom-start'
-	| 'bottom'
-	| 'bottom-end'
-	| 'top-start'
-	| 'top'
-	| 'top-end'
+	'bottom-start' | 'bottom' | 'bottom-end' | 'top-start' | 'top' | 'top-end'
 
 /**
  * Чем подсказка служит триггеру — как `type` у Tooltip GitHub Primer.

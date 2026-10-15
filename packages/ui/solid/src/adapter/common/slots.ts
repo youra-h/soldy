@@ -13,8 +13,7 @@
 import { children, type Accessor, type JSX } from 'solid-js'
 
 export type TSlotContent<TScope extends object = object> =
-	| JSX.Element
-	| ((scope: TScope) => JSX.Element)
+	JSX.Element | ((scope: TScope) => JSX.Element)
 
 /** Функция слота со scope; у ленивого мемо компилятора параметров нет. */
 function isSlotFunction<TScope extends object>(

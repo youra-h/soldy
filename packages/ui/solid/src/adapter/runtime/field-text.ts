@@ -39,8 +39,7 @@ import { isServer } from 'solid-js/web'
  * `ref` поля, на сервере — `value`.
  */
 export type TFieldText =
-	| { readonly ref: (node: HTMLInputElement) => void }
-	| { readonly value: string | undefined }
+	{ readonly ref: (node: HTMLInputElement) => void } | { readonly value: string | undefined }
 
 /** Текст поля по геттеру `getText` — один раз на компонент. */
 export function fieldText(getText: () => string | undefined): TFieldText {

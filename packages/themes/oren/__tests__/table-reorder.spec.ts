@@ -133,7 +133,7 @@ const subjectOf = (selector: string): string => compoundAt(selector, selector.le
 function withoutHas(compound: string): string {
 	let result = ''
 
-	for (let at = 0; at < compound.length; ) {
+	for (let at = 0; at < compound.length;) {
 		if (compound.startsWith(':has(', at)) {
 			at += ':has()'.length + argumentAt(compound, at + ':has'.length).length
 		} else {

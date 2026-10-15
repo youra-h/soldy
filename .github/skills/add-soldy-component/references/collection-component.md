@@ -261,9 +261,7 @@ export const TabsDescriptor = defineDescriptor(() =>
     ctor: TTabs,
     extends: ControlDescriptor(),
     contribution: {
-      props: {
-        /* orientation, alignment, position, view, closable */
-      },
+      props: {/* orientation, alignment, position, view, closable */},
     },
     plugins: [
       CollectionBundlesPluginDescriptor(),

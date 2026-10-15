@@ -13,12 +13,7 @@ import type { TPluginEvents } from '../../../base'
  * (shift) плагин делает сам поверх этого выбора — см. `TAnchorPlugin`.
  */
 export type TFramePlacement =
-	| 'bottom-start'
-	| 'bottom'
-	| 'bottom-end'
-	| 'top-start'
-	| 'top'
-	| 'top-end'
+	'bottom-start' | 'bottom' | 'bottom-end' | 'top-start' | 'top' | 'top-end'
 
 export interface IAnchorPluginOptions {
 	/** Сторона и выравнивание относительно якоря. По умолчанию `bottom-start`. */

@@ -442,7 +442,7 @@ function group(snap) {
 		}
 		return a
 	}
-	for (let changed = true; changed; ) {
+	for (let changed = true; changed;) {
 		changed = false
 		for (let i = reached.length - 1; i >= 0; i--) {
 			const v = reached[i]

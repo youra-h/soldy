@@ -164,10 +164,12 @@ export type TPluginContractFrom<TInstance, N extends string | undefined, TContri
 	options: TPluginOptions<TInstance>
 	props: TNamespacedProps<
 		{
-			-readonly [K in Exclude<
-				keyof TDeclaredProps<TContribution>,
-				TProtectedKey<TDeclaredProps<TContribution>>
-			>]?: TPluginPropValue<TInstance, TDeclaredProps<TContribution>[K], K>
+			-readonly [
+				K in Exclude<
+					keyof TDeclaredProps<TContribution>,
+					TProtectedKey<TDeclaredProps<TContribution>>
+				>
+			]?: TPluginPropValue<TInstance, TDeclaredProps<TContribution>[K], K>
 		},
 		N
 	>
@@ -270,8 +272,7 @@ type TOptionsPlugins<TOptions> = TOptions extends { readonly plugins: readonly (
 export type TContractFrom<TOptions> = {
 	instance: TOptionsInstance<TOptions>
 	eventName:
-		| TParentContract<TOptions>['eventName']
-		| TDeclaredEventName<TOptionsContribution<TOptions>>
+		TParentContract<TOptions>['eventName'] | TDeclaredEventName<TOptionsContribution<TOptions>>
 	protectedName:
 		| Exclude<
 				TParentContract<TOptions>['protectedName'],

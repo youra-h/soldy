@@ -130,13 +130,17 @@ async function generate(): Promise<void> {
 		])
 		const outputs = unique<TOutput>(
 			[
-				...useOutputs(descriptor).map(
-					([output, event]): TOutput => [output, event, 'descriptor'],
-				),
+				...useOutputs(descriptor).map(([output, event]): TOutput => [
+					output,
+					event,
+					'descriptor',
+				]),
 				...(facade
-					? useOutputs(facade).map(
-							([output, event]): TOutput => [output, event, 'facade'],
-						)
+					? useOutputs(facade).map(([output, event]): TOutput => [
+							output,
+							event,
+							'facade',
+						])
 					: []),
 			],
 			([output]) => output,

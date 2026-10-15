@@ -107,17 +107,15 @@ function createGroup(
 		}),
 	}
 	// Минута и секунда — одно правило: ход 0–59 по кругу, соседей не трогают
-	const afterHour = clock.map(
-		(type): TFieldPart => ({
-			type,
-			rule: numberRule(2, digits, {
-				...AS_IS,
-				placeholder: PLACEHOLDER,
-				limits: () => SIXTY,
-				step: wrap,
-			}),
+	const afterHour = clock.map((type): TFieldPart => ({
+		type,
+		rule: numberRule(2, digits, {
+			...AS_IS,
+			placeholder: PLACEHOLDER,
+			limits: () => SIXTY,
+			step: wrap,
 		}),
-	)
+	}))
 	const dayPeriod: TFieldPart = {
 		type: 'dayPeriod',
 		rule: {

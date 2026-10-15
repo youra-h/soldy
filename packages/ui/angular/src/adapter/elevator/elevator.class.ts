@@ -40,7 +40,6 @@ export class TAngularElevator<T = unknown> extends TElevator<T> {
 	up(): T | undefined {
 		// Тип значения задаёт ключ лифта: под этим ключом кладут только `T`
 		return inject(ELEVATOR_LAYER, { skipSelf: true, optional: true })?.read(this._key) as
-			| T
-			| undefined
+			T | undefined
 	}
 }

@@ -94,7 +94,7 @@ function resist(distance: number): number {
  * Прокрутку поперёк оси жест не трогает: тянут вдоль.
  */
 function scrollsAlong(node: Element, panel: Element, axis: TSwipeAxis): boolean {
-	for (let current: Element | null = node; current && current !== panel; ) {
+	for (let current: Element | null = node; current && current !== panel;) {
 		if (isScrollable(current, axis)) return true
 
 		current = current.parentElement
