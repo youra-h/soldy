@@ -1,6 +1,6 @@
 /**
  * Плагин, поставленный снаружи: пропсы через `pluginProps`, события через
- * `plugin:event`.
+ * `so:plugin:event`.
  *
  * Тот же канал, что во Vue (`:plugin-props`, `@plugin:event`), React
  * (`pluginProps`, `onPluginEvent`) и Angular: поверхность компонента одна на

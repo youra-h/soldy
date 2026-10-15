@@ -23,7 +23,7 @@ export interface ISurfaceProp {
 export interface ISurfaceEvent {
 	/** Имя у владельца: `name.name` — на что подписываться, `name.namespace` — у кого. */
 	readonly name: TName
-	/** Имя события во фреймворке: `change:text`, `onChangeText`, `changeText`. */
+	/** Имя события во фреймворке: `change:text`, `so:change:text`, `onChangeText`, `soChangeText`. */
 	readonly exportName: string
 	/** Пропсы с привязкой, для которых это событие — триггер: их `update:<проп>` уходит следом. */
 	readonly models: readonly ISurfaceProp[]

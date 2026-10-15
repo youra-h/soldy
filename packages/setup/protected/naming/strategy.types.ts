@@ -13,7 +13,7 @@ import type { TName } from '../define/name.class'
 export interface INamingStrategy {
 	/** Имя пропа: одно во всех фреймворках — `text`, `aria_label` (`underscorePropNaming`). */
 	prop(name: TName): string
-	/** Имя события: `change:text` у Vue, `onChangeText` у React, `changeText` у Angular. */
+	/** Имя события: `change:text` у Vue, `onChangeText` у React, `soChangeText` у Angular. */
 	event(name: TName): string
 }
 

@@ -1,5 +1,5 @@
 /**
- * Плагин узла в тестах — только через выход `element:create`.
+ * Плагин узла в тестах — только через выход `soElementCreate`.
  *
  * Выход `soElementCreate` — геттер сгенерированного `T<Имя>Surface`, от которого
  * наследуется компонент: он даёт выходу тип, а первое чтение заводит эмиттер.
@@ -26,7 +26,7 @@ export function elementPlugin(fixture: ComponentFixture<TWithElementCreate>): ()
 	})
 
 	return () => {
-		if (!plugin) throw new Error('element:create не пришёл')
+		if (!plugin) throw new Error('soElementCreate не пришёл')
 
 		return plugin
 	}

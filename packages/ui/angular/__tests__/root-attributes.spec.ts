@@ -255,7 +255,7 @@ describe('имя, которое ядро называет не всегда', (
 
 describe('корень связан с TElementPlugin', () => {
 	it.each([...COMPONENTS, ...FIELDS])(
-		'%s: element:ready приходит с корнем',
+		'%s: soElementReady приходит с корнем',
 		async (_name, host, selector) => {
 			const fixture = mountHost(host)
 
