@@ -243,8 +243,9 @@ ListBox, список Select, Popover и будущий Menu выглядят о
   не выдержал бы. `role`, `aria-checked` и `aria-disabled` ядро радио не пишет:
   у нативного радио это `checked` и `disabled`. Выбор пользователя разметка
   отдаёт коллекции сама — `@change` у Vue, `onChange` поля у React, `onchange`
-  поля у Svelte: плагина ввода у радио нет, и это единственный путь, а не
-  второй. Выбор, отменённый в `item:activate:before`, браузер к тому времени
+  поля у Svelte, `(change)` поля у Angular: плагина ввода у радио нет, и это
+  единственный путь, а не второй. Выбор, отменённый в `item:activate:before`,
+  браузер к тому времени
   уже отметил, а модель не сменилась, и разметка поля не перерисует, — поэтому
   после каждого `change` поля группы к модели возвращает её плагин
   `TRadioGroupCheckedPlugin`. У Svelte обработчик `change` делегирован корню
@@ -254,7 +255,8 @@ ListBox, список Select, Popover и будущий Menu выглядят о
   `plugins/__tests__/radio-group-checked.plugin.spec.ts`,
   `ui/vue/__tests__/radio-group.spec.ts`,
   `ui/react/__tests__/radio-group.spec.tsx`,
-  `ui/svelte/__tests__/radio-group.spec.ts` и
+  `ui/svelte/__tests__/radio-group.spec.ts`,
+  `ui/angular/__tests__/radio-group.spec.ts` и
   `playground/vue/browser/radio-group.spec.ts`.
 - **Popover** — немодальный Dialog: `role="dialog"` на панели, имя —
   `aria_label` или `aria_labelledBy` (`TAriaPlugin`). Триггер — слот

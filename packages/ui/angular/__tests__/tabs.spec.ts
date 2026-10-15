@@ -648,6 +648,26 @@ describe('кнопка закрытия: разметка', () => {
 		expect(closeOf('Настройки').getAttribute('aria-label')).toBe('Close Настройки')
 	})
 
+	/** Без шаблона `item-close-icon` таб из данных рисует свою иконку крестика. */
+	it('табы из items без item-close-icon — своя иконка у каждого', () => {
+		@Component({
+			standalone: true,
+			imports: [TTabsComponent],
+			template: `<div so-tabs closable [items]="items"></div>`,
+		})
+		class ItemsHost {
+			readonly items = ITEMS
+		}
+
+		mountHost(ItemsHost)
+
+		expect(
+			[...document.querySelectorAll('.s-tabs-item__close')].map(
+				(close) => close.querySelector('svg[so-icon]') !== null,
+			),
+		).toEqual([true, true, true])
+	})
+
 	it('без closable кнопки нет, в элементе одна строка', () => {
 		@Component({
 			standalone: true,
