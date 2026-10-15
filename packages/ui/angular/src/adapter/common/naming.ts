@@ -23,7 +23,7 @@
  *
  * Имя строится из `TName.getName()`: своей копии формата `namespace:name`
  * здесь нет — её пришлось бы менять вместе с `getName()`. Базу имени так же
- * берут Vue и Web Components, только отдают её как есть.
+ * берут Vue и Web Components, только в camelCase её не переводят.
  */
 
 import type { INamingStrategy } from '@soldy-ui/setup'

@@ -10,7 +10,9 @@ The adapter is wiring, not behavior: it defines a Custom Element per component a
 markup — BEM classes `s-*` and `data-*` state attributes. Props, events and slots come from the
 component descriptor, so they match the other five adapters; only the spelling is the platform's:
 props are attributes or element properties, and events are DOM events with the core names
-(`action:press`).
+(`action:press`). A one-word event gets the `so-` prefix (`show` → `so-show`, `ready` →
+`so-ready`): events bubble from your element, and under its own name a component's `input` or
+`reset` would mix with the browser's events of that name on the element and its ancestors.
 
 Each component is a native element of its tag extended by Soldy (a customized built-in):
 `<button is="so-button">` is a real `<button>`, `<div is="so-component-view">` a real `<div>`.

@@ -128,7 +128,7 @@ Names in a framework's notation are computed by the surface — `TSurface.of(des
 - `TName` - Qualified name: raw name + optional namespace (`protected/define/name.class.ts`)
 - `TPropSpec` - Immutable property spec with `read(owner)` / `assign(owner, value)`, `hasDefault`, `rebase`, `withDefault` (`protected/define/prop-spec.class.ts`)
 - `IContribution`, `IPropDefinition`, `ISlotDefinition` / `ISlotDeclaration` - What a descriptor declares (`protected/define/contribution.types.ts`)
-- `INamingStrategy`, `IAdapterProfile`, `CommonProfile` - Prop/event naming rules (`protected/naming/`). Props are `ns_name` everywhere (`underscorePropNaming`); events: `element:ready` in Vue and Web Components, `onElementReady` in React/Svelte/Solid (`callbackEventNaming`), `elementReady` in Angular (a one-word event gets the `so` prefix there: `input` → `soInput`)
+- `INamingStrategy`, `IAdapterProfile`, `CommonProfile` - Prop/event naming rules (`protected/naming/`). Props are `ns_name` everywhere (`underscorePropNaming`); events: `element:ready` in Vue and Web Components (a one-word event gets the `so-` prefix in Web Components: `input` → `so-input`), `onElementReady` in React/Svelte/Solid (`callbackEventNaming`), `elementReady` in Angular (a one-word event gets the `so` prefix there: `input` → `soInput`)
 
 ---
 
@@ -2186,10 +2186,13 @@ Svelte 5 на рунах. Структура зеркалит React, потом�
 
 - `adapter/common/` — `WebcProfile` (`naming: WebcNaming`), `WebcNaming`
   (`prop` = общий `underscorePropNaming`, `event` = имя как в ядре: двоеточия в
-  CustomEvent легальны, так же как во Vue), `attributes` (карта «атрибут →
-  проп» по поверхности + коэрция; `HOST_PROPS` — пропы, которых у элемента нет
-  ни атрибутом, ни свойством: `tag`); `createWebcAdapterContext` — сборка с
-  локалью ближайшего `<so-locale-provider>` вверх от хоста.
+  CustomEvent легальны, так же как во Vue; событие из одного слова — с
+  префиксом `so-`, `input` → `so-input`: событие всплывает с элемента
+  потребителя, а совпасть с событием DOM может только имя без двоеточия),
+  `attributes` (карта «атрибут → проп» по поверхности + коэрция; `HOST_PROPS` —
+  пропы, которых у элемента нет ни атрибутом, ни свойством: `tag`);
+  `createWebcAdapterContext` — сборка с локалью ближайшего
+  `<so-locale-provider>` вверх от хоста.
 - `adapter/runtime/` — `useAdapter` поверх связки
   `adapter.connect(WebcProfile)` (о пропе ядра она сообщает элементу колбэком
   `onUpdate`), `SoldyElement` (фабрика класса элемента поверх нативного класса
