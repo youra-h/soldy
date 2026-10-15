@@ -21,8 +21,8 @@ import { mountHost } from './mount'
 @Component({
 	standalone: true,
 	imports: [TButtonComponent],
-	template: `<button so-button (bundleCreate)="collect($event)"></button>
-		<button so-button (bundleCreate)="collect($event)"></button>`,
+	template: `<button so-button (soBundleCreate)="collect($event)"></button>
+		<button so-button (soBundleCreate)="collect($event)"></button>`,
 })
 class TwoButtonsHost {
 	readonly bundles: TPluginBundle[] = []

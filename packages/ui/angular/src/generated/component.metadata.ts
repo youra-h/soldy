@@ -5,7 +5,7 @@ import { TComponentBase, type TInputValue, type TOutputEmitter } from '../adapte
 import type { descriptor } from '../components/component/manifest'
 
 export const ComponentInputs = ['embedded', 'pluginProps'] as const
-export const ComponentOutputs = ['bundleCreate', 'pluginEvent'] as const
+export const ComponentOutputs = ['soBundleCreate', 'soPluginEvent'] as const
 
 /**
  * Поверхность Component в Angular: входы и выходы компонента с типами для
@@ -23,10 +23,10 @@ export abstract class TComponentSurface<
 > extends TComponentBase<TInstance> {
 	declare embedded: TInputValue<typeof descriptor, 'embedded'>
 	declare pluginProps: TInputValue<typeof descriptor, 'pluginProps'>
-	get bundleCreate(): TOutputEmitter<typeof descriptor, 'bundle:create'> {
-		return this.createOutput('bundleCreate')
+	get soBundleCreate(): TOutputEmitter<typeof descriptor, 'bundle:create'> {
+		return this.createOutput('soBundleCreate')
 	}
-	get pluginEvent(): TOutputEmitter<typeof descriptor, 'plugin:event'> {
-		return this.createOutput('pluginEvent')
+	get soPluginEvent(): TOutputEmitter<typeof descriptor, 'plugin:event'> {
+		return this.createOutput('soPluginEvent')
 	}
 }

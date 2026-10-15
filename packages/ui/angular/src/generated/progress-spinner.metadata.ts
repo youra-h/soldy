@@ -22,37 +22,37 @@ export const ProgressSpinnerInputs = [
 	'aria_describedBy',
 ] as const
 export const ProgressSpinnerOutputs = [
-	'bundleCreate',
-	'pluginEvent',
+	'soBundleCreate',
+	'soPluginEvent',
 	'soShow',
 	'soHide',
-	'showBefore',
-	'showAfter',
-	'hideBefore',
-	'hideAfter',
+	'soShowBefore',
+	'soShowAfter',
+	'soHideBefore',
+	'soHideAfter',
 	'soReady',
-	'elementCreate',
-	'elementReady',
-	'elementRemoved',
-	'readyCreate',
-	'ariaCreate',
-	'changeRendered',
-	'changeVisible',
-	'changeTag',
-	'changeDirection',
-	'changeClasses',
-	'changeAria',
-	'changeDataset',
-	'changeAttrs',
-	'changeSize',
-	'changeVariant',
-	'changeValue',
-	'changeMin',
-	'changeMax',
-	'changeIndeterminate',
-	'ariaChangeLabel',
-	'ariaChangeLabelledBy',
-	'ariaChangeDescribedBy',
+	'soElementCreate',
+	'soElementReady',
+	'soElementRemoved',
+	'soReadyCreate',
+	'soAriaCreate',
+	'soChangeRendered',
+	'soChangeVisible',
+	'soChangeTag',
+	'soChangeDirection',
+	'soChangeClasses',
+	'soChangeAria',
+	'soChangeDataset',
+	'soChangeAttrs',
+	'soChangeSize',
+	'soChangeVariant',
+	'soChangeValue',
+	'soChangeMin',
+	'soChangeMax',
+	'soChangeIndeterminate',
+	'soAriaChangeLabel',
+	'soAriaChangeLabelledBy',
+	'soAriaChangeDescribedBy',
 ] as const
 
 /**
@@ -99,11 +99,11 @@ export abstract class TProgressSpinnerSurface<
 	declare aria_label: TInputValue<typeof descriptor, 'aria_label'>
 	declare aria_labelledBy: TInputValue<typeof descriptor, 'aria_labelledBy'>
 	declare aria_describedBy: TInputValue<typeof descriptor, 'aria_describedBy'>
-	get bundleCreate(): TOutputEmitter<typeof descriptor, 'bundle:create'> {
-		return this.createOutput('bundleCreate')
+	get soBundleCreate(): TOutputEmitter<typeof descriptor, 'bundle:create'> {
+		return this.createOutput('soBundleCreate')
 	}
-	get pluginEvent(): TOutputEmitter<typeof descriptor, 'plugin:event'> {
-		return this.createOutput('pluginEvent')
+	get soPluginEvent(): TOutputEmitter<typeof descriptor, 'plugin:event'> {
+		return this.createOutput('soPluginEvent')
 	}
 	get soShow(): TOutputEmitter<typeof descriptor, 'show'> {
 		return this.createOutput('soShow')
@@ -111,85 +111,85 @@ export abstract class TProgressSpinnerSurface<
 	get soHide(): TOutputEmitter<typeof descriptor, 'hide'> {
 		return this.createOutput('soHide')
 	}
-	get showBefore(): TOutputEmitter<typeof descriptor, 'show:before'> {
-		return this.createOutput('showBefore')
+	get soShowBefore(): TOutputEmitter<typeof descriptor, 'show:before'> {
+		return this.createOutput('soShowBefore')
 	}
-	get showAfter(): TOutputEmitter<typeof descriptor, 'show:after'> {
-		return this.createOutput('showAfter')
+	get soShowAfter(): TOutputEmitter<typeof descriptor, 'show:after'> {
+		return this.createOutput('soShowAfter')
 	}
-	get hideBefore(): TOutputEmitter<typeof descriptor, 'hide:before'> {
-		return this.createOutput('hideBefore')
+	get soHideBefore(): TOutputEmitter<typeof descriptor, 'hide:before'> {
+		return this.createOutput('soHideBefore')
 	}
-	get hideAfter(): TOutputEmitter<typeof descriptor, 'hide:after'> {
-		return this.createOutput('hideAfter')
+	get soHideAfter(): TOutputEmitter<typeof descriptor, 'hide:after'> {
+		return this.createOutput('soHideAfter')
 	}
 	get soReady(): TOutputEmitter<typeof descriptor, 'ready'> {
 		return this.createOutput('soReady')
 	}
-	get elementCreate(): TOutputEmitter<typeof descriptor, 'element:create'> {
-		return this.createOutput('elementCreate')
+	get soElementCreate(): TOutputEmitter<typeof descriptor, 'element:create'> {
+		return this.createOutput('soElementCreate')
 	}
-	get elementReady(): TOutputEmitter<typeof descriptor, 'element:ready'> {
-		return this.createOutput('elementReady')
+	get soElementReady(): TOutputEmitter<typeof descriptor, 'element:ready'> {
+		return this.createOutput('soElementReady')
 	}
-	get elementRemoved(): TOutputEmitter<typeof descriptor, 'element:removed'> {
-		return this.createOutput('elementRemoved')
+	get soElementRemoved(): TOutputEmitter<typeof descriptor, 'element:removed'> {
+		return this.createOutput('soElementRemoved')
 	}
-	get readyCreate(): TOutputEmitter<typeof descriptor, 'ready:create'> {
-		return this.createOutput('readyCreate')
+	get soReadyCreate(): TOutputEmitter<typeof descriptor, 'ready:create'> {
+		return this.createOutput('soReadyCreate')
 	}
-	get ariaCreate(): TOutputEmitter<typeof descriptor, 'aria:create'> {
-		return this.createOutput('ariaCreate')
+	get soAriaCreate(): TOutputEmitter<typeof descriptor, 'aria:create'> {
+		return this.createOutput('soAriaCreate')
 	}
-	get changeRendered(): TOutputEmitter<typeof descriptor, 'change:rendered'> {
-		return this.createOutput('changeRendered')
+	get soChangeRendered(): TOutputEmitter<typeof descriptor, 'change:rendered'> {
+		return this.createOutput('soChangeRendered')
 	}
-	get changeVisible(): TOutputEmitter<typeof descriptor, 'change:visible'> {
-		return this.createOutput('changeVisible')
+	get soChangeVisible(): TOutputEmitter<typeof descriptor, 'change:visible'> {
+		return this.createOutput('soChangeVisible')
 	}
-	get changeTag(): TOutputEmitter<typeof descriptor, 'change:tag'> {
-		return this.createOutput('changeTag')
+	get soChangeTag(): TOutputEmitter<typeof descriptor, 'change:tag'> {
+		return this.createOutput('soChangeTag')
 	}
-	get changeDirection(): TOutputEmitter<typeof descriptor, 'change:direction'> {
-		return this.createOutput('changeDirection')
+	get soChangeDirection(): TOutputEmitter<typeof descriptor, 'change:direction'> {
+		return this.createOutput('soChangeDirection')
 	}
-	get changeClasses(): TOutputEmitter<typeof descriptor, 'change:classes'> {
-		return this.createOutput('changeClasses')
+	get soChangeClasses(): TOutputEmitter<typeof descriptor, 'change:classes'> {
+		return this.createOutput('soChangeClasses')
 	}
-	get changeAria(): TOutputEmitter<typeof descriptor, 'change:aria'> {
-		return this.createOutput('changeAria')
+	get soChangeAria(): TOutputEmitter<typeof descriptor, 'change:aria'> {
+		return this.createOutput('soChangeAria')
 	}
-	get changeDataset(): TOutputEmitter<typeof descriptor, 'change:dataset'> {
-		return this.createOutput('changeDataset')
+	get soChangeDataset(): TOutputEmitter<typeof descriptor, 'change:dataset'> {
+		return this.createOutput('soChangeDataset')
 	}
-	get changeAttrs(): TOutputEmitter<typeof descriptor, 'change:attrs'> {
-		return this.createOutput('changeAttrs')
+	get soChangeAttrs(): TOutputEmitter<typeof descriptor, 'change:attrs'> {
+		return this.createOutput('soChangeAttrs')
 	}
-	get changeSize(): TOutputEmitter<typeof descriptor, 'change:size'> {
-		return this.createOutput('changeSize')
+	get soChangeSize(): TOutputEmitter<typeof descriptor, 'change:size'> {
+		return this.createOutput('soChangeSize')
 	}
-	get changeVariant(): TOutputEmitter<typeof descriptor, 'change:variant'> {
-		return this.createOutput('changeVariant')
+	get soChangeVariant(): TOutputEmitter<typeof descriptor, 'change:variant'> {
+		return this.createOutput('soChangeVariant')
 	}
-	get changeValue(): TOutputEmitter<typeof descriptor, 'change:value'> {
-		return this.createOutput('changeValue')
+	get soChangeValue(): TOutputEmitter<typeof descriptor, 'change:value'> {
+		return this.createOutput('soChangeValue')
 	}
-	get changeMin(): TOutputEmitter<typeof descriptor, 'change:min'> {
-		return this.createOutput('changeMin')
+	get soChangeMin(): TOutputEmitter<typeof descriptor, 'change:min'> {
+		return this.createOutput('soChangeMin')
 	}
-	get changeMax(): TOutputEmitter<typeof descriptor, 'change:max'> {
-		return this.createOutput('changeMax')
+	get soChangeMax(): TOutputEmitter<typeof descriptor, 'change:max'> {
+		return this.createOutput('soChangeMax')
 	}
-	get changeIndeterminate(): TOutputEmitter<typeof descriptor, 'change:indeterminate'> {
-		return this.createOutput('changeIndeterminate')
+	get soChangeIndeterminate(): TOutputEmitter<typeof descriptor, 'change:indeterminate'> {
+		return this.createOutput('soChangeIndeterminate')
 	}
-	get ariaChangeLabel(): TOutputEmitter<typeof descriptor, 'aria:change:label'> {
-		return this.createOutput('ariaChangeLabel')
+	get soAriaChangeLabel(): TOutputEmitter<typeof descriptor, 'aria:change:label'> {
+		return this.createOutput('soAriaChangeLabel')
 	}
-	get ariaChangeLabelledBy(): TOutputEmitter<typeof descriptor, 'aria:change:labelledBy'> {
-		return this.createOutput('ariaChangeLabelledBy')
+	get soAriaChangeLabelledBy(): TOutputEmitter<typeof descriptor, 'aria:change:labelledBy'> {
+		return this.createOutput('soAriaChangeLabelledBy')
 	}
-	get ariaChangeDescribedBy(): TOutputEmitter<typeof descriptor, 'aria:change:describedBy'> {
-		return this.createOutput('ariaChangeDescribedBy')
+	get soAriaChangeDescribedBy(): TOutputEmitter<typeof descriptor, 'aria:change:describedBy'> {
+		return this.createOutput('soAriaChangeDescribedBy')
 	}
 }

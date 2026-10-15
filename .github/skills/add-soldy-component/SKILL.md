@@ -355,10 +355,11 @@ Button is the canonical minimal component. Copy its shape:
 Адаптер задаёт **только** профиль, куда писать значение, как отдать событие и в
 какой момент своего цикла это делать; своих циклов по свойствам у него нет.
 Своя стратегия имён событий тоже не у каждого: React, Svelte и Solid берут общую
-`callbackEventNaming`, своя стратегия у Vue и Web Components (`element:ready`) и
-у Angular (`elementReady`, событие из одного слова — `soInput`). Если пишешь
-что-то в `packages/ui/*/adapter/common/`, сначала проверь, не место ли этому в
-общем слое. Починил баг в одном адаптере — проверь остальные адаптеры.
+`callbackEventNaming`, своя стратегия у Vue (`element:ready`), у Web Components
+(`so:element:ready` — префикс `so:` у каждого события) и у Angular
+(`soElementReady` — префикс `so` у каждого выхода). Если пишешь что-то в
+`packages/ui/*/adapter/common/`, сначала проверь, не место ли этому в общем
+слое. Починил баг в одном адаптере — проверь остальные адаптеры.
 
 ## Collection components (Vue only for now)
 

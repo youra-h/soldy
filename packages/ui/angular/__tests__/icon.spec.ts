@@ -134,7 +134,7 @@ describe('Icon · доступное имя', () => {
 		so-icon
 		[so-role-icon]="role()"
 		[width]="20"
-		(elementReady)="ready.push($event)"
+		(soElementReady)="ready.push($event)"
 	>
 		<text>внутри</text>
 	</svg>`,

@@ -40,14 +40,14 @@ import {
 } from '../src/adapter/runtime/root-attributes'
 import { findIn, mountHost, nextFrame } from './mount'
 
-/** Хост пробы: корни, о которых сообщил `(elementReady)`. */
+/** Хост пробы: корни, о которых сообщил `(soElementReady)`. */
 abstract class TProbeHost {
 	readonly ready: Element[] = []
 }
 
 /**
  * Проба на каждый компонент: `direction` ядра против `dir` потребителя,
- * атрибут и класс потребителя под своими именами и `(elementReady)`.
+ * атрибут и класс потребителя под своими именами и `(soElementReady)`.
  */
 @Component({
 	standalone: true,
@@ -58,7 +58,7 @@ abstract class TProbeHost {
 		dir="ltr"
 		title="probe"
 		class="mine"
-		(elementReady)="ready.push($event)"
+		(soElementReady)="ready.push($event)"
 	></button>`,
 })
 class ButtonProbe extends TProbeHost {}
@@ -72,7 +72,7 @@ class ButtonProbe extends TProbeHost {}
 		dir="ltr"
 		title="probe"
 		class="mine"
-		(elementReady)="ready.push($event)"
+		(soElementReady)="ready.push($event)"
 	></div>`,
 })
 class ComponentViewProbe extends TProbeHost {}
@@ -86,7 +86,7 @@ class ComponentViewProbe extends TProbeHost {}
 		dir="ltr"
 		title="probe"
 		class="mine"
-		(elementReady)="ready.push($event)"
+		(soElementReady)="ready.push($event)"
 	></i>`,
 })
 class IconProbe extends TProbeHost {}
@@ -100,7 +100,7 @@ class IconProbe extends TProbeHost {}
 		dir="ltr"
 		title="probe"
 		class="mine"
-		(elementReady)="ready.push($event)"
+		(soElementReady)="ready.push($event)"
 	></span>`,
 })
 class ProgressSpinnerProbe extends TProbeHost {}
@@ -114,7 +114,7 @@ class ProgressSpinnerProbe extends TProbeHost {}
 		dir="ltr"
 		title="probe"
 		class="mine"
-		(elementReady)="ready.push($event)"
+		(soElementReady)="ready.push($event)"
 	></div>`,
 })
 class SkeletonProbe extends TProbeHost {}
@@ -128,7 +128,7 @@ class SkeletonProbe extends TProbeHost {}
 		dir="ltr"
 		title="probe"
 		class="mine"
-		(elementReady)="ready.push($event)"
+		(soElementReady)="ready.push($event)"
 	></label>`,
 })
 class LabelProbe extends TProbeHost {}
@@ -157,7 +157,7 @@ const COMPONENTS: ReadonlyArray<readonly [string, Type<TProbeHost>, string, stri
 		title="probe"
 		class="mine"
 		style="color: red"
-		(elementReady)="ready.push($event)"
+		(soElementReady)="ready.push($event)"
 	/>`,
 })
 class CheckBoxProbe extends TProbeHost {}
@@ -171,7 +171,7 @@ class CheckBoxProbe extends TProbeHost {}
 		title="probe"
 		class="mine"
 		style="color: red"
-		(elementReady)="ready.push($event)"
+		(soElementReady)="ready.push($event)"
 	/>`,
 })
 class SwitchProbe extends TProbeHost {}
@@ -185,7 +185,7 @@ class SwitchProbe extends TProbeHost {}
 		title="probe"
 		class="mine"
 		style="color: red"
-		(elementReady)="ready.push($event)"
+		(soElementReady)="ready.push($event)"
 	/>`,
 })
 class InputProbe extends TProbeHost {}
@@ -255,7 +255,7 @@ describe('имя, которое ядро называет не всегда', (
 
 describe('корень связан с TElementPlugin', () => {
 	it.each([...COMPONENTS, ...FIELDS])(
-		'%s: element:ready приходит с корнем',
+		'%s: soElementReady приходит с корнем',
 		async (_name, host, selector) => {
 			const fixture = mountHost(host)
 

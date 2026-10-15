@@ -1,0 +1,10 @@
+---
+'@soldy-ui/webc': minor
+'@soldy-ui/angular': minor
+---
+
+Префикс `so` — у каждого события, которое адаптер отдаёт туда, где его слышит и DOM: у событий Web Components и у выходов Angular, без исключений. Префикс говорит, чьё это событие, поэтому стоит у всей категории, а не у имён, что совпали бы с событием браузера: угадывать, у каких событий он есть, не нужно. Разделитель — тот, что в схеме имён адаптера: `:` у Web Components, camelCase у Angular.
+
+Web Components: событие элемента — `so:` и полное имя ядра: `so:show`, `so:hide`, `so:ready`, `so:show:before`, `so:element:ready`, `so:action:press`, `so:change:disabled`, `so:bundle:create`, `so:plugin:event`, а с портом полей, Select и коллекций — `so:input`, `so:open`, `so:close`, `so:reset`. Ломающее: слушатели на элементах soldy переименуйте — `addEventListener('action:press', …)` → `addEventListener('so:action:press', …)`, `show` → `so:show`; под прежним именем событие больше не приходит, и ошибки об этом нет.
+
+Angular: выход — `so` и полное имя ядра в camelCase: `input` → `soInput`, `show` → `soShow`, `hide` → `soHide`, `ready` → `soReady`, `elementReady` → `soElementReady`, `actionPress` → `soActionPress`, `changeValue` → `soChangeValue`, `inputValue` → `soInputValue`, `showBefore` → `soShowBefore`, `bundleCreate` → `soBundleCreate`, `pluginEvent` → `soPluginEvent`. На `(x)` у элемента Angular слушает и выход `x`, и событие DOM `x`, поэтому `(input)` на поле получал два вызова на нажатие — событие ядра и всплывшее событие браузера. Теперь `(input)` на `<so-input>`, `<so-check-box>` и `<so-switch>` — только событие браузера, как на нативном `<input>`, а событие ядра — `(soInput)` (или `(soInputValue)`, `(soChangeValue)`). Ломающее: привязки переименуйте — `(actionPress)` → `(soActionPress)`, `(changeValue)` → `(soChangeValue)`, `(show)` → `(soShow)` и т. д. Старую привязку шаблон не отвергнет: Angular примет её за событие DOM, и обработчик молча перестанет вызываться; подписка из кода (`button.actionPress.subscribe(…)`) перестанет компилироваться.

@@ -9,11 +9,12 @@ Web Components.
 The adapter is wiring, not behavior: it connects a core model to Angular's signals and renders the
 markup — BEM classes `s-*` and `data-*` state attributes. Props, events and slots come from the
 component descriptor, so they match the other five adapters; only the spelling is Angular's: a
-component is a prefixed attribute on your own element (`<button so-button>`), events are camelCase
-outputs (`element:ready` → `elementReady`), and slots are filled through the `slot` attribute. A
-one-word event gets the `so` prefix (`input` → `soInput`, `show` → `soShow`): Angular binds
-`(input)` both to an output and to the DOM event of that name, so `(input)` on a field is the
-browser's event, as on a native `<input>`, and the component's own is `(soInput)`.
+component is a prefixed attribute on your own element (`<button so-button>`), events are outputs
+named `so` + the core name in camelCase (`show` → `soShow`, `show:before` → `soShowBefore`,
+`element:ready` → `soElementReady`), and slots are filled through the `slot` attribute. Every
+output has the prefix: Angular binds `(x)` both to an output and to the DOM event of that name, so
+`(input)` on a field is the browser's event, as on a native `<input>`, and the component's own is
+`(soInput)`.
 
 The components are standalone and zoneless — state is a signal, so Zone.js is not required. They
 render on the server (`@angular/platform-server`) and hydrate in the browser
@@ -44,7 +45,7 @@ import { TButtonComponent } from '@soldy-ui/angular'
   selector: 'app-toolbar',
   standalone: true,
   imports: [TButtonComponent],
-  template: `<button so-button text="Save" (actionPress)="onPress()"></button>`,
+  template: `<button so-button text="Save" (soActionPress)="onPress()"></button>`,
 })
 export class ToolbarComponent {
   onPress(): void {
@@ -70,7 +71,7 @@ The same component can be driven from code — pass a core instance as `ctrl`, a
 same state and events:
 
 ```ts
-template: `<button so-button [ctrl]="btn" (actionPress)="btn.disabled = true"></button>`
+template: `<button so-button [ctrl]="btn" (soActionPress)="btn.disabled = true"></button>`
 ```
 
 An icon from the registered pack is an `<svg>` with the icon's role — import `RoleIconDirective`
@@ -90,7 +91,7 @@ bubble from the `<input>` (`keydown`) reach them, `focus` and `blur` do not. A f
 visible name from a Label around it:
 
 ```ts
-template: `<label so-label text="Remember me"><so-check-box (changeValue)="remember($event)" /></label>
+template: `<label so-label text="Remember me"><so-check-box (soChangeValue)="remember($event)" /></label>
   <so-input clearable name="City" autocomplete="address-level2" />`
 ```
 

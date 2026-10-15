@@ -29,7 +29,7 @@ import type { TAnyEvents } from '../../../common'
  * снаружи (`usePlugins` или `bundle.use` в `bundle:create`), наружу компонента
  * не объявлено — дескриптор этого плагина не знает. Setup пересылает такие
  * события одним конвертом на шину инстанса: `@plugin:event`,
- * `onPluginEvent`, `(pluginEvent)` — одинаково во всех адаптерах.
+ * `onPluginEvent`, `(soPluginEvent)` — одинаково во всех адаптерах.
  */
 export type TComponentEvents = {
 	/** Плагины компонента созданы при монтировании; аргумент — их bundle. */
