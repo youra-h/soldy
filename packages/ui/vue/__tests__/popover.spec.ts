@@ -702,7 +702,7 @@ describe('жест', () => {
 		pointer('pointerdown', grip, 13)
 		pointer('pointermove', panel(), 108)
 
-		expect(panel().style.getPropertyValue('--s-swipe-offset')).toBe('95px')
+		expect(panel().style.getPropertyValue('--so-swipe-offset')).toBe('95px')
 
 		await nextTick()
 

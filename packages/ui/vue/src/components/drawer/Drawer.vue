@@ -44,9 +44,9 @@ export default { ...SetupDrawer, inheritAttrs: false, components: { Button, Icon
 			<!--
 				Корень — сама панель: на ней слой (`data-layer`), пометка
 				владельцем, край (`so-drawer--placement-*`), размер
-				(`--drawer-width`, `--drawer-height`), `data-open`,
+				(`--so-drawer-width`, `--so-drawer-height`), `data-open`,
 				`data-swiping` и `data-contained`. Сдвиг во время жеста
-				(`--s-swipe-offset`) плагин жеста пишет в неё сам. `tabindex="-1"`
+				(`--so-swipe-offset`) плагин жеста пишет в неё сам. `tabindex="-1"`
 				— фокус встаёт на саму панель, когда внутри нечего фокусировать.
 
 				Порядок в DOM — полоса, заголовок, тело, подвал, потом кнопка

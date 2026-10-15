@@ -6,8 +6,8 @@ import type { TModalLayoutVariables } from '../../overlay/modal-layout'
  *
  * Расчёт общий с модальным окном — `TModalLayoutPlugin`: `styles` панели
  * (`z-index` слоя и размер переменными) и `backdropStyles` подложки. Своё у
- * панели — имена переменных, которые читает тема: `--drawer-width` у панели у
- * бокового края и `--drawer-height` у верхнего и нижнего. Край, анимацию и
+ * панели — имена переменных, которые читает тема: `--so-drawer-width` у панели у
+ * бокового края и `--so-drawer-height` у верхнего и нижнего. Край, анимацию и
  * место в контейнере раскладывает тема по модификатору и `data-*`.
  *
  * Сдвига во время жеста здесь нет: его пишет в узел `TSwipePlugin`, и
@@ -15,7 +15,7 @@ import type { TModalLayoutVariables } from '../../overlay/modal-layout'
  */
 export class TDrawerLayoutPlugin extends TModalLayoutPlugin {
 	protected readonly _variables: TModalLayoutVariables = {
-		width: '--drawer-width',
-		height: '--drawer-height',
+		width: '--so-drawer-width',
+		height: '--so-drawer-height',
 	}
 }

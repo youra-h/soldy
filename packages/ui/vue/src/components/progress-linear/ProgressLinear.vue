@@ -22,7 +22,7 @@ export default { ...SetupProgressLinear }
 
 			Разметка статическая: размер, вариант и ось (`--size-*`, `--variant-*`,
 			`--horizontal` или `--vertical`), доля (переменная
-			`--s-progress-linear-percent` в `style`), бег (`data-indeterminate`),
+			`--so-progress-linear-percent` в `style`), бег (`data-indeterminate`),
 			роль, значения и имя для скринридера и `dir` приходят кодом, здесь
 			только состав и имена классов.
 

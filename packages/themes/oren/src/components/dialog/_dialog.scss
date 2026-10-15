@@ -24,10 +24,10 @@ $gap: calc(var(--spacing) * 4);
 // `layout:offset:before`, — и только заданные: у незаданной стороны отступ
 // темы. Стороны логические, как место: `start` и `end` в RTL меняются местами
 // сами.
-$top: var(--dialog-offset-top, #{$gap});
-$bottom: var(--dialog-offset-bottom, #{$gap});
-$start: var(--dialog-offset-start, #{$gap});
-$end: var(--dialog-offset-end, #{$gap});
+$top: var(--so-dialog-offset-top, #{$gap});
+$bottom: var(--so-dialog-offset-bottom, #{$gap});
+$start: var(--so-dialog-offset-start, #{$gap});
+$end: var(--so-dialog-offset-end, #{$gap});
 
 // Ширина, пока `width` не задан. Постоянная, а не по содержимому: форма с
 // полями на всю строку иначе сжалась бы до их собственной ширины, а строка
@@ -89,8 +89,8 @@ $easing: linear;
 	// Значения — ширина и высота панели, растянутой по области, поэтому
 	// `auto` здесь значит «по экрану с отступом», как у блока, а не «по
 	// содержимому». По содержимому — `fit-content`.
-	width: var(--dialog-width, #{$width});
-	height: var(--dialog-height, fit-content);
+	width: var(--so-dialog-width, #{$width});
+	height: var(--so-dialog-height, fit-content);
 
 	// Потолок — область, экран без отступов своей оси, какой бы размер ни
 	// задали: на узком экране окно сжимается само, но не разворачивается —

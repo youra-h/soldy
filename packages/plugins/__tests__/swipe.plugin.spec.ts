@@ -40,7 +40,7 @@ import type { IListenable, IPlugin, IPluginConstructor, ISwipeOwner } from '../s
 const nextFrame = () => new Promise((resolve) => requestAnimationFrame(resolve))
 
 /** Переменная сдвига панели во время жеста — контракт плагина с темой. */
-const SWIPE_VARIABLE = '--s-swipe-offset'
+const SWIPE_VARIABLE = '--so-swipe-offset'
 
 /**
  * Указатель: событие с точкой и временем, всплывает до панели. Отдаёт

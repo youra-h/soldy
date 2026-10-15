@@ -355,14 +355,14 @@ export default class TTableColumn<
 	}
 
 	/**
-	 * `--s-table-column-width` — итог ширины в px. Без ширины переменной нет:
+	 * `--so-table-column-width` — итог ширины в px. Без ширины переменной нет:
 	 * ширину колонки решает тема. Считает ядро, а не разметка: в шести
 	 * адаптерах одна формула была бы шесть раз.
 	 */
 	get widthStyle(): TTableColumnStyle {
 		const width = this.width
 
-		return width === undefined ? {} : { '--s-table-column-width': `${width}px` }
+		return width === undefined ? {} : { '--so-table-column-width': `${width}px` }
 	}
 
 	/* ------------------------------------------------------------------ */

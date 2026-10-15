@@ -41,13 +41,13 @@ export default { ...SetupSlider }
 			<!--
 				Заливка — одна на ползунок: от начала или от `origin` до ручки, у
 				нескольких ручек — между крайними. Края приходят переменными
-				(`--s-slider-range-start`, `--s-slider-range-end`).
+				(`--so-slider-range-start`, `--so-slider-range-end`).
 			-->
 			<span class="so-slider__range" :style="rangeStyle"></span>
 
 			<!--
 				Метки — только если они заданы: точками шкалы или списком. Каждая
-				метка — позиция в `style` (`--s-slider-position`) и состояния
+				метка — позиция в `style` (`--so-slider-position`) и состояния
 				`data-in-range` и `data-current`. Блок — под `aria-hidden`, как
 				подсказка: подписи меток — зрительная шкала, значение и границы
 				объявляет поле, а в подписи `Label` их текст вошёл бы в имя поля.
@@ -76,7 +76,7 @@ export default { ...SetupSlider }
 
 			<!--
 				Ручка — по одной на значение: позиция в `style`
-				(`--s-slider-position`), состояние `data-dragging`. Подсказка со
+				(`--so-slider-position`), состояние `data-dragging`. Подсказка со
 				значением — внутри ручки, поэтому едет за ней сама.
 			-->
 			<span

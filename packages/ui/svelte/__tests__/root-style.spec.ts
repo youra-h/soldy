@@ -126,7 +126,7 @@ describe('чужое свойство на корне переживает см�
 		props.value = 60
 		flushSync()
 
-		expect(root().style.getPropertyValue('--s-progress-spinner-fraction')).toBe('0.6')
+		expect(root().style.getPropertyValue('--so-progress-spinner-fraction')).toBe('0.6')
 		expect(outside(root())).toBe('1')
 	})
 

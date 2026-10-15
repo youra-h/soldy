@@ -31,7 +31,7 @@ function root(): HTMLElement {
 }
 
 /** Доля готового на корне; пустая строка — переменной нет. */
-const percent = () => root().style.getPropertyValue('--s-progress-linear-percent')
+const percent = () => root().style.getPropertyValue('--so-progress-linear-percent')
 
 describe('первая отрисовка', () => {
 	it('по умолчанию полоса пуста: доля 0, aria-valuenow="0", бега нет, ось горизонтальная', () => {

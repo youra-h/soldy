@@ -121,7 +121,7 @@ describe('ListBox в окне', () => {
 			'true',
 		])
 		expect(
-			fillers(root).map((filler) => filler.style.getPropertyValue('--s-filler-height')),
+			fillers(root).map((filler) => filler.style.getPropertyValue('--so-filler-height')),
 		).toEqual(['2700px', '2400px'])
 		// Место в составе — перед элементом 91 и за последним
 		expect(fillers(root).map((filler) => filler.style.order)).toEqual(['90', '200'])
@@ -319,7 +319,7 @@ describe('ListBox в окне — цикл React', () => {
 		expect(optionRow('Пункт 1').getAttribute('data-highlighted')).toBe('false')
 		// Между окном и последним — распорка на пропущенные
 		expect(
-			fillers().map((filler) => filler.style.getPropertyValue('--s-filler-height')),
+			fillers().map((filler) => filler.style.getPropertyValue('--so-filler-height')),
 		).toEqual([`${179 * 30}px`])
 	})
 })

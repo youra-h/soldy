@@ -271,7 +271,7 @@ describe('жест', () => {
 
 		expect(isOpen()).toBe(true)
 		expect(opened.value).toBe(true)
-		expect(panel().style.getPropertyValue('--s-swipe-offset')).toBe('')
+		expect(panel().style.getPropertyValue('--so-swipe-offset')).toBe('')
 	})
 
 	/**
@@ -325,7 +325,9 @@ describe('жест', () => {
 				const [dx, dy] = toward[opposite[side]]
 
 				await dragBy(handle(), dx, dy)
-				await expect.poll(() => panel().style.getPropertyValue('--s-swipe-offset')).toBe('')
+				await expect
+					.poll(() => panel().style.getPropertyValue('--so-swipe-offset'))
+					.toBe('')
 
 				expect(isOpen()).toBe(true)
 

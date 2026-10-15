@@ -153,7 +153,7 @@ describe('серверный рендер', () => {
 
 		expect(spinner.getAttribute('role')).toBe('progressbar')
 		expect(spinner.getAttribute('aria-valuenow')).toBe('40')
-		expect(spinner.style.getPropertyValue('--s-progress-spinner-fraction')).toBe('0.4')
+		expect(spinner.style.getPropertyValue('--so-progress-spinner-fraction')).toBe('0.4')
 	})
 
 	it('Skeleton — заглушка и содержимое, корень не скрыт', async () => {
@@ -364,12 +364,12 @@ describe('после гидратации', () => {
 		const { app, page } = await hydrated()
 		const spinner = find(document, '[so-progress-spinner]', HTMLSpanElement)
 
-		expect(spinner.style.getPropertyValue('--s-progress-spinner-fraction')).toBe('0.4')
+		expect(spinner.style.getPropertyValue('--so-progress-spinner-fraction')).toBe('0.4')
 
 		page.value.set(60)
 		await app.whenStable()
 
-		expect(spinner.style.getPropertyValue('--s-progress-spinner-fraction')).toBe('0.6')
+		expect(spinner.style.getPropertyValue('--so-progress-spinner-fraction')).toBe('0.6')
 		expect(spinner.getAttribute('aria-valuenow')).toBe('60')
 	})
 

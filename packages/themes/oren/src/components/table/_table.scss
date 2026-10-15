@@ -68,14 +68,14 @@ $reorder-columns: 30;
 // раскладки ядра), `data-resizing` (тянут её ручку), `data-reorderable` и
 // метки жеста перестановки — `data-dragging`, `data-landing`, `data-drop` и
 // `data-shift` (ниже, у перестановки), а ширина — переменной
-// `--s-table-column-width`; у строки — `data-selected` и `data-disabled`; у
+// `--so-table-column-width`; у строки — `data-selected` и `data-disabled`; у
 // ячейки — `data-align` колонки.
 // У корня в окне обёртки `Virtual` — `data-virtual`, у распорки — высота
-// пропущенных строк общей с другими списками переменной `--s-filler-height`.
+// пропущенных строк общей с другими списками переменной `--so-filler-height`.
 // У корня с закреплённой шапкой — `data-sticky-head` и высота шапки
 // переменной `--s-table-head-height`. Сдвиги жеста перестановки пишет его
-// плагин: взятому заголовку — `--s-table-column-drag`, а ширину взятого
-// `--s-table-column-shift` — туда, где её читают: шапке в `head`, корню в
+// плагин: взятому заголовку — `--so-table-column-drag`, а ширину взятого
+// `--so-table-column-shift` — туда, где её читают: шапке в `head`, корню в
 // `column` (её читает и тело).
 //
 // От места приходит его поверхность (`--s-place-surface`, `tokens.css`), от
@@ -337,7 +337,7 @@ $reorder-columns: 30;
 .so-table-column {
 	@apply relative;
 	@apply transition-colors duration-150;
-	inline-size: var(--s-table-column-width, auto);
+	inline-size: var(--so-table-column-width, auto);
 	border-start-start-radius: $head-radius;
 	border-start-end-radius: $head-radius;
 
@@ -621,8 +621,8 @@ $reorder-columns: 30;
 // ручки идёт за указателем от верха заголовка до низа таблицы в окне
 // браузера. Признак (`data-resize-ghost`) — на заголовке и только на время
 // жеста: на покое правило ни с чем не сверяется, и ячеек тела оно не
-// касается вовсе. Сдвиг (`--s-table-column-ghost`, по оси окна) и высоту
-// (`--s-table-column-ghost-size`) пишет плагин ручки на заголовок; сдвиг —
+// касается вовсе. Сдвиг (`--so-table-column-ghost`, по оси окна) и высоту
+// (`--so-table-column-ghost-size`) пишет плагин ручки на заголовок; сдвиг —
 // `translate`, а не отступ: раскладка от призрака не меняется, а слой
 // (`will-change`) двигает композитор. Шапка поднята над телом, поэтому линия
 // идёт поверх строк. Движение — только появление: без него призрак встаёт
@@ -633,8 +633,8 @@ $reorder-columns: 30;
 	inset-block-start: 0;
 	inset-inline-start: 50%;
 	inline-size: $resizer-line;
-	block-size: var(--s-table-column-ghost-size, 100%);
-	translate: var(--s-table-column-ghost, 0) 0;
+	block-size: var(--so-table-column-ghost-size, 100%);
+	translate: var(--so-table-column-ghost, 0) 0;
 	background-color: var(--s-component-focus-ring);
 	will-change: translate;
 
@@ -689,7 +689,7 @@ $reorder-columns: 30;
 // заголовка с меткой к этому пересчёту в шапке уже нет.
 //
 // Взятый заголовок (`data-dragging`) идёт за указателем — сдвигом из
-// переменной, которую пишет плагин жеста (`--s-table-column-drag`), — и поднят
+// переменной, которую пишет плагин жеста (`--so-table-column-drag`), — и поднят
 // над соседями и их ручками. Сдвиг за указателем — не переход: заголовок стоит
 // там, где указатель, в любом режиме движения. Поверхность у него своя,
 // контрола, с тенью и вуалью нажатия: он лежит над чужими заголовками, и без
@@ -714,7 +714,7 @@ $reorder-columns: 30;
 
 .so-table-column[data-dragging='true'] {
 	@apply z-3 shadow-md;
-	translate: var(--s-table-column-drag, 0) 0;
+	translate: var(--so-table-column-drag, 0) 0;
 	transition-property: none;
 	background-image:
 		linear-gradient(var(--s-table-active), var(--s-table-active)),
@@ -734,7 +734,7 @@ $reorder-columns: 30;
 }
 
 // Соседи уступают место взятому (`data-shift`) — на его ширину
-// (`--s-table-column-shift`): к началу строки или к концу. Ширину плагин жеста
+// (`--so-table-column-shift`): к началу строки или к концу. Ширину плагин жеста
 // пишет туда, где её читают: в `head` — шапке, в `column` — корню, от которого
 // её наследует и тело (ниже). Переменная наследуется, и запись на корень
 // пересчитала бы стиль каждой ячейке тела, а в `head` тело стоит. Сдвиг — не
@@ -765,13 +765,13 @@ $reorder-columns: 30;
 
 	&[data-shift='start'] {
 		@include motion.allowed {
-			translate: calc(-1 * var(--s-table-column-shift, 0px) * var(--s-dir-sign)) 0;
+			translate: calc(-1 * var(--so-table-column-shift, 0px) * var(--s-dir-sign)) 0;
 		}
 	}
 
 	&[data-shift='end'] {
 		@include motion.allowed {
-			translate: calc(var(--s-table-column-shift, 0px) * var(--s-dir-sign)) 0;
+			translate: calc(var(--so-table-column-shift, 0px) * var(--s-dir-sign)) 0;
 		}
 	}
 }
@@ -853,13 +853,13 @@ $reorder-columns: 30;
 	) {
 	&:has(> .so-table__head-row > .so-table-column[data-shift='start']) ~ .so-table__body {
 		@include motion.allowed {
-			--s-table-body-shift: calc(-1 * var(--s-table-column-shift, 0px) * var(--s-dir-sign));
+			--s-table-body-shift: calc(-1 * var(--so-table-column-shift, 0px) * var(--s-dir-sign));
 		}
 	}
 
 	&:has(> .so-table__head-row > .so-table-column[data-shift='end']) ~ .so-table__body {
 		@include motion.allowed {
-			--s-table-body-shift: calc(var(--s-table-column-shift, 0px) * var(--s-dir-sign));
+			--s-table-body-shift: calc(var(--so-table-column-shift, 0px) * var(--s-dir-sign));
 		}
 	}
 
@@ -1106,7 +1106,7 @@ $reorder-columns: 30;
 
 .so-table__filler {
 	@apply p-0 border-0;
-	block-size: var(--s-filler-height, 0);
+	block-size: var(--so-filler-height, 0);
 }
 
 // Закреплённая шапка (`data-sticky-head`): шапка стоит у верхнего края

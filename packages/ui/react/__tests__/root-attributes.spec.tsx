@@ -507,10 +507,10 @@ describe('ref потребителя · серверный рендер', () => 
  */
 describe('раскладка корня: пользовательское свойство — под своим именем', () => {
 	it('--* из layout_styles доходит до узла как есть', () => {
-		const layout = toRootLayout({ layout_styles: { '--dialog-width': '320px' } }, {})
+		const layout = toRootLayout({ layout_styles: { '--so-dialog-width': '320px' } }, {})
 		const { root } = mount(<div {...layout} />)
 
-		expect(root().style.getPropertyValue('--dialog-width')).toBe('320px')
+		expect(root().style.getPropertyValue('--so-dialog-width')).toBe('320px')
 	})
 })
 
@@ -525,12 +525,12 @@ describe('раскладка корня: стиль-выход компонен�
 	 * Стиль потребителя с долей кольца. Пользовательских свойств в
 	 * `CSSProperties` React нет, а словарь строк ему подходит.
 	 */
-	const consumer: Record<string, string> = { '--s-progress-spinner-fraction': '0.9' }
+	const consumer: Record<string, string> = { '--so-progress-spinner-fraction': '0.9' }
 
 	it('ProgressSpinner: стиль потребителя — поверх доли', () => {
 		const { root } = mount(<ProgressSpinner value={40} style={consumer} />)
 
-		expect(root().style.getPropertyValue('--s-progress-spinner-fraction')).toBe('0.9')
+		expect(root().style.getPropertyValue('--so-progress-spinner-fraction')).toBe('0.9')
 	})
 
 	it('ProgressSpinner: display: none скрытого корня — поверх стиля потребителя и доли', () => {
@@ -540,7 +540,7 @@ describe('раскладка корня: стиль-выход компонен�
 
 		expect(root().style.display).toBe('none')
 		// Скрытие трогает только `display`: доля остаётся на корне
-		expect(root().style.getPropertyValue('--s-progress-spinner-fraction')).toBe('0.4')
+		expect(root().style.getPropertyValue('--so-progress-spinner-fraction')).toBe('0.4')
 	})
 
 	/** Плагина раскладки у кольца нет — правило проверяется на самой раскладке корня. */

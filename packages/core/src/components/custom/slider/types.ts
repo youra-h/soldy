@@ -77,7 +77,7 @@ export type TSliderThumb = {
 	max: number
 	/** `step` поля: шаг сетки или `any` у списка — неравного шага поле не знает */
 	step: number | 'any'
-	/** `--s-slider-position` — где центр ручки */
+	/** `--so-slider-position` — где центр ручки */
 	style: TSliderStyle
 	/** `data-dragging` — тянут эту ручку */
 	dataset: TDatasetAttributes
@@ -91,7 +91,7 @@ export type TSliderShownMark = {
 	value: number
 	/** Подпись; у точки шкалы и метки без подписи — `undefined` */
 	label: string | undefined
-	/** `--s-slider-position` — где метка */
+	/** `--so-slider-position` — где метка */
 	style: TSliderStyle
 	/**
 	 * `data-in-range` — метка внутри заливки, края включительно;
@@ -245,7 +245,7 @@ export interface ISlider
 	readonly dragging: boolean
 	/** Ручки — выход для разметки */
 	readonly thumbs: TSliderThumb[]
-	/** Края заливки — `--s-slider-range-start` и `--s-slider-range-end` */
+	/** Края заливки — `--so-slider-range-start` и `--so-slider-range-end` */
 	readonly rangeStyle: TSliderStyle
 	/** Метки на рельсе — выход для разметки; меток нет — пусто */
 	readonly shownMarks: TSliderShownMark[]

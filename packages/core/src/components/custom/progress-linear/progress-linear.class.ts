@@ -68,7 +68,7 @@ export default class TProgressLinear
 	/* ------------------------------------------------------------------ */
 
 	/**
-	 * `--s-progress-linear-percent` — доля готового процентом: вне шкалы —
+	 * `--so-progress-linear-percent` — доля готового процентом: вне шкалы —
 	 * край, у пустой шкалы (`max` не больше `min`) — `0%`. Пока полоса бежит,
 	 * переменной нет: заливка уходит к нулю, и долю, вернувшуюся после бега,
 	 * тема ведёт от начала дорожки, а не с того места, где её оставили.
@@ -78,7 +78,7 @@ export default class TProgressLinear
 
 		if (fraction === null) return {}
 
-		return { '--s-progress-linear-percent': percent(fraction) }
+		return { '--so-progress-linear-percent': percent(fraction) }
 	}
 
 	/* ------------------------------------------------------------------ */

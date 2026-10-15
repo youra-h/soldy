@@ -94,7 +94,7 @@ export const SliderDescriptor = defineDescriptor(() =>
 						'change:dragging',
 					],
 				},
-				/** Края заливки: `--s-slider-range-start` и `--s-slider-range-end`. */
+				/** Края заливки: `--so-slider-range-start` и `--so-slider-range-end`. */
 				rangeStyle: {
 					type: Object,
 					protected: true,

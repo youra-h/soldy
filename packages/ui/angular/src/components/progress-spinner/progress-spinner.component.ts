@@ -15,7 +15,7 @@ import { setupProgressSpinner } from './setup.component'
  * Размер и вариант (`--size-*`, `--variant-*`), бег (`data-indeterminate`),
  * роль, значения и имя для скринридера и `dir` раскладывает на элемент
  * `TComponentBase` (стратегия `'host'`). Долю готового — переменную
- * `--s-progress-spinner-fraction` выхода `fractionStyle` — тоже она: это
+ * `--so-progress-spinner-fraction` выхода `fractionStyle` — тоже она: это
  * стиль-выход компонента, и его имя компонент называет базе. Стиль
  * потребителя главнее доли.
  *

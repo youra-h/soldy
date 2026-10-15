@@ -21,7 +21,7 @@ export default { ...SetupProgressSpinner }
 			разметку.
 
 			Разметка статическая: размер и вариант (`--size-*`, `--variant-*`),
-			доля (переменная `--s-progress-spinner-fraction` в `style`), бег
+			доля (переменная `--so-progress-spinner-fraction` в `style`), бег
 			(`data-indeterminate`), роль, значения и имя для скринридера и `dir`
 			приходят кодом, здесь только состав, имена классов и геометрия
 			рисунка.

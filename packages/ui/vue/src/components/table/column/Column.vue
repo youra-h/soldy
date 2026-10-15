@@ -21,7 +21,7 @@ export default { ...SetupTableColumn }
 			`data-sort` и `data-sort-priority` (пишет расширение сортировки),
 			`data-align`, `data-sized` (ширина известна: своя или раскладки) и
 			`data-resizing` (тянут ручку), — и ширина переменной
-			`--s-table-column-width` (`widthStyle`, считает ядро): тема кладёт её в
+			`--so-table-column-width` (`widthStyle`, считает ядро): тема кладёт её в
 			ширину ячейки шапки, и по ней раскладка таблицы режет колонку.
 
 			Имя заголовка — ссылка на обёртку содержимого (`aria-labelledby` в

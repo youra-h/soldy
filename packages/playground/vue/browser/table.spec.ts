@@ -924,8 +924,8 @@ describe('перестановка колонок', () => {
 		expect(headers()[1].dataset.dragging).toBeUndefined()
 		expect(headers()[1].dataset.landing).toBeUndefined()
 		expect(headers()[0].dataset.shift).toBeUndefined()
-		expect(headers()[1].style.getPropertyValue('--s-table-column-drag')).toBe('')
-		expect(find('.so-table').style.getPropertyValue('--s-table-column-shift')).toBe('')
+		expect(headers()[1].style.getPropertyValue('--so-table-column-drag')).toBe('')
+		expect(find('.so-table').style.getPropertyValue('--so-table-column-shift')).toBe('')
 	})
 
 	/**
@@ -1128,7 +1128,7 @@ describe('перестановка колонок', () => {
 			expect(near([left(city), left(age)], before)).toBe(true)
 			expect(style(city).translate).toBe('none')
 			expect(runs).not.toContain('translate')
-			expect(find('.so-table').style.getPropertyValue('--s-table-column-shift')).toBe('')
+			expect(find('.so-table').style.getPropertyValue('--so-table-column-shift')).toBe('')
 		} finally {
 			await commands.mouseUp()
 		}

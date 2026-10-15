@@ -674,7 +674,7 @@ describe('жест', () => {
 
 		expect(isOpen()).toBe(true)
 		expect(reasons).toEqual([])
-		expect(panel().style.getPropertyValue('--s-swipe-offset')).toBe('')
+		expect(panel().style.getPropertyValue('--so-swipe-offset')).toBe('')
 	})
 
 	it('отменённое close:before — панель остаётся и возвращается на место', async () => {
@@ -695,7 +695,7 @@ describe('жест', () => {
 
 		expect(reasons).toEqual(['swipe'])
 		expect(isOpen()).toBe(true)
-		expect(panel().style.getPropertyValue('--s-swipe-offset')).toBe('')
+		expect(panel().style.getPropertyValue('--so-swipe-offset')).toBe('')
 	})
 
 	describe('за всю панель', () => {

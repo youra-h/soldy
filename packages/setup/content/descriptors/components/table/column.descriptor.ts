@@ -60,7 +60,7 @@ export const TableColumnDescriptor = defineDescriptor(() =>
 				reorderable: { type: Boolean, protected: true, triggers: ['change:reorderable'] },
 				disabled: { type: Boolean, protected: true, triggers: ['change:disabled'] },
 				/**
-				 * Ширина колонки — `--s-table-column-width`. Считает ядро: в шести
+				 * Ширина колонки — `--so-table-column-width`. Считает ядро: в шести
 				 * адаптерах одна формула была бы шесть раз.
 				 */
 				widthStyle: { type: Object, protected: true, triggers: ['change:width'] },

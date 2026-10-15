@@ -36,10 +36,10 @@ describe('раскладка панели', () => {
 		const { layout } = setup({ width: 360, height: '40vh' })
 
 		expect(layout.styles).toMatchObject({
-			'--drawer-width': '360px',
-			'--drawer-height': '40vh',
+			'--so-drawer-width': '360px',
+			'--so-drawer-height': '40vh',
 		})
-		expect(layout.styles).not.toHaveProperty('--dialog-width')
+		expect(layout.styles).not.toHaveProperty('--so-dialog-width')
 	})
 
 	it('смена размера пересчитывает стили, снятый убирает переменную', () => {
@@ -47,11 +47,11 @@ describe('раскладка панели', () => {
 
 		drawer.width = '24rem'
 
-		expect(layout.styles['--drawer-width']).toBe('24rem')
+		expect(layout.styles['--so-drawer-width']).toBe('24rem')
 
 		drawer.width = undefined
 
-		expect(layout.styles).not.toHaveProperty('--drawer-width')
+		expect(layout.styles).not.toHaveProperty('--so-drawer-width')
 	})
 
 	it('показ даёт панели и подложке один z-index — номер её слоя', () => {

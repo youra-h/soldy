@@ -39,16 +39,16 @@ describe('размер', () => {
 		const { layout } = setup({ width: 480, height: '60vh' })
 
 		expect(layout.styles).toMatchObject({
-			'--dialog-width': '480px',
-			'--dialog-height': '60vh',
+			'--so-dialog-width': '480px',
+			'--so-dialog-height': '60vh',
 		})
 	})
 
 	it('auto и fit-content уходят теме как есть: что они значат, решает она', () => {
 		const { layout } = setup({ width: 'auto', height: 'fit-content' })
 
-		expect(layout.styles['--dialog-width']).toBe('auto')
-		expect(layout.styles['--dialog-height']).toBe('fit-content')
+		expect(layout.styles['--so-dialog-width']).toBe('auto')
+		expect(layout.styles['--so-dialog-height']).toBe('fit-content')
 	})
 
 	it('смена размера пересчитывает стили, снятый размер убирает переменную', () => {
@@ -56,11 +56,11 @@ describe('размер', () => {
 
 		dialog.width = '40rem'
 
-		expect(layout.styles['--dialog-width']).toBe('40rem')
+		expect(layout.styles['--so-dialog-width']).toBe('40rem')
 
 		dialog.width = undefined
 
-		expect(layout.styles).not.toHaveProperty('--dialog-width')
+		expect(layout.styles).not.toHaveProperty('--so-dialog-width')
 	})
 
 	it('размер инлайном не пишется — только переменной', () => {
@@ -92,10 +92,10 @@ describe('слой', () => {
 
 /** Переменные отступа в стилях панели — по стороне. */
 const offsets = (styles: Record<string, string | number>) => ({
-	top: styles['--dialog-offset-top'],
-	bottom: styles['--dialog-offset-bottom'],
-	start: styles['--dialog-offset-start'],
-	end: styles['--dialog-offset-end'],
+	top: styles['--so-dialog-offset-top'],
+	bottom: styles['--so-dialog-offset-bottom'],
+	start: styles['--so-dialog-offset-start'],
+	end: styles['--so-dialog-offset-end'],
 })
 
 describe('отступ', () => {
@@ -137,7 +137,7 @@ describe('отступ', () => {
 		const { layout } = setup({ offset: 24 })
 
 		for (const key of Object.keys(layout.styles)) {
-			expect(key === 'z-index' || key.startsWith('--dialog-')).toBe(true)
+			expect(key === 'z-index' || key.startsWith('--so-dialog-')).toBe(true)
 		}
 	})
 
@@ -146,7 +146,7 @@ describe('отступ', () => {
 
 		dialog.offset = '2rem'
 
-		expect(layout.styles['--dialog-offset-top']).toBe('2rem')
+		expect(layout.styles['--so-dialog-offset-top']).toBe('2rem')
 
 		dialog.offset = undefined
 
@@ -211,8 +211,8 @@ describe('отступ', () => {
 			})
 			layout.created()
 
-			expect(layout.styles).not.toHaveProperty('--dialog-offset-bottom')
-			expect(layout.styles['--dialog-offset-top']).toBe('24px')
+			expect(layout.styles).not.toHaveProperty('--so-dialog-offset-bottom')
+			expect(layout.styles['--so-dialog-offset-top']).toBe('24px')
 		})
 
 		it('подписчик задаёт сторону и без пропа', () => {
@@ -253,12 +253,12 @@ describe('отступ', () => {
 
 			dialog.show()
 
-			expect(layout.styles['--dialog-offset-top']).toBe('80px')
+			expect(layout.styles['--so-dialog-offset-top']).toBe('80px')
 
 			dialog.width = 480
 
-			expect(layout.styles['--dialog-offset-top']).toBe('80px')
-			expect(layout.styles['--dialog-width']).toBe('480px')
+			expect(layout.styles['--so-dialog-offset-top']).toBe('80px')
+			expect(layout.styles['--so-dialog-width']).toBe('480px')
 		})
 
 		it.each<[string, (dialog: TDialog) => void]>([
@@ -285,11 +285,11 @@ describe('отступ', () => {
 
 			dialog.placement = 'top'
 
-			expect(layout.styles['--dialog-offset-top']).toBe('0px')
+			expect(layout.styles['--so-dialog-offset-top']).toBe('0px')
 
 			dialog.placement = 'center'
 
-			expect(layout.styles['--dialog-offset-top']).toBe('24px')
+			expect(layout.styles['--so-dialog-offset-top']).toBe('24px')
 		})
 	})
 
@@ -307,7 +307,7 @@ describe('отступ', () => {
 			expect(change).toHaveBeenCalledOnce()
 			expect(layout.styles).toMatchObject({
 				'z-index': dialog.zIndex,
-				'--dialog-offset-top': '80px',
+				'--so-dialog-offset-top': '80px',
 			})
 		})
 
@@ -333,14 +333,14 @@ describe('отступ', () => {
 			})
 			layout.created()
 
-			expect(layout.styles['--dialog-offset-end']).toBe('0px')
+			expect(layout.styles['--so-dialog-offset-end']).toBe('0px')
 		})
 	})
 
 	it('отступ — в стилях с установки: с первого расчёта, до created()', () => {
 		const { layout } = setup({ offset: 16 })
 
-		expect(layout.styles['--dialog-offset-start']).toBe('16px')
+		expect(layout.styles['--so-dialog-offset-start']).toBe('16px')
 	})
 
 	it('после destroy отступ больше не пересчитывается и событие не шлётся', () => {

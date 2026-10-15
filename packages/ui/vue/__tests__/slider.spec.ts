@@ -68,7 +68,7 @@ const field = (index = 0) => {
 	return node
 }
 
-const position = (node: HTMLElement) => node.style.getPropertyValue('--s-slider-position')
+const position = (node: HTMLElement) => node.style.getPropertyValue('--so-slider-position')
 
 /** Клавиша на поле, как у пользователя: всплывает до корня. */
 async function press(target: HTMLElement, key: string): Promise<void> {
@@ -149,10 +149,12 @@ describe('разметка', () => {
 		await render({ value: [20, 70], marks: [{ value: 50 }] })
 
 		expect(position(find('.so-slider__thumb'))).toBe('20%')
-		expect(find('.so-slider__range').style.getPropertyValue('--s-slider-range-start')).toBe(
+		expect(find('.so-slider__range').style.getPropertyValue('--so-slider-range-start')).toBe(
 			'20%',
 		)
-		expect(find('.so-slider__range').style.getPropertyValue('--s-slider-range-end')).toBe('70%')
+		expect(find('.so-slider__range').style.getPropertyValue('--so-slider-range-end')).toBe(
+			'70%',
+		)
 		expect(position(find('.so-slider__mark'))).toBe('50%')
 	})
 })

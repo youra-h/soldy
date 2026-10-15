@@ -569,8 +569,8 @@ describe('пресет строки', () => {
 
 			const sizes = async (name: string) =>
 				(await dialogPanels(rowOf(wrapper, name))).map((panel) => [
-					panel.style.getPropertyValue('--dialog-width'),
-					panel.style.getPropertyValue('--dialog-height'),
+					panel.style.getPropertyValue('--so-dialog-width'),
+					panel.style.getPropertyValue('--so-dialog-height'),
 				])
 
 			expect(await sizes('offset')).toEqual([
@@ -597,7 +597,7 @@ describe('пресет строки', () => {
 			const field = row.find('.pg-prop__control input')
 			const tops = async () =>
 				(await dialogPanels(row)).map((panel) =>
-					panel.style.getPropertyValue('--dialog-offset-top'),
+					panel.style.getPropertyValue('--so-dialog-offset-top'),
 				)
 
 			await field.setValue('10%')

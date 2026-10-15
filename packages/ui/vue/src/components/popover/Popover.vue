@@ -58,7 +58,7 @@ export default { ...SetupPopover, components: { Frame, Button, Icon } }
 			Открытость (`data-open`), по которой тема проявляет и гасит панель
 			переходом, Frame пишет сам: это видимость его слоя, а `data-open`
 			корня до телепортированной панели не доходит. Сдвиг во время жеста
-			(`--s-swipe-offset`) плагин жеста пишет в панель сам.
+			(`--so-swipe-offset`) плагин жеста пишет в панель сам.
 		-->
 		<Frame
 			embedded="popover.frame"

@@ -160,22 +160,22 @@ describe('стиль потребителя главнее стиля ядра',
 describe('стиль-выход компонента', () => {
 	it('ProgressSpinner: стиль потребителя — поверх доли', () => {
 		const el = mount(
-			'<span is="so-progress-spinner" value="40" style="--s-progress-spinner-fraction: 0.9"></span>',
+			'<span is="so-progress-spinner" value="40" style="--so-progress-spinner-fraction: 0.9"></span>',
 			isSpinner,
 		)
 
-		expect(el.style.getPropertyValue('--s-progress-spinner-fraction')).toBe('0.9')
+		expect(el.style.getPropertyValue('--so-progress-spinner-fraction')).toBe('0.9')
 	})
 
 	it('ProgressSpinner: --* доходит до узла под своим именем, смена доли — тоже', async () => {
 		const el = mount('<span is="so-progress-spinner" value="40"></span>', isSpinner)
 
-		expect(el.style.getPropertyValue('--s-progress-spinner-fraction')).toBe('0.4')
+		expect(el.style.getPropertyValue('--so-progress-spinner-fraction')).toBe('0.4')
 
 		el.value = 60
 		await flush()
 
-		expect(el.style.getPropertyValue('--s-progress-spinner-fraction')).toBe('0.6')
+		expect(el.style.getPropertyValue('--so-progress-spinner-fraction')).toBe('0.6')
 	})
 
 	it('ProgressSpinner: скрытие — поверх стиля потребителя, трогает только display', async () => {
@@ -188,7 +188,7 @@ describe('стиль-выход компонента', () => {
 		await flush()
 
 		expect(el.style.display).toBe('none')
-		expect(el.style.getPropertyValue('--s-progress-spinner-fraction')).toBe('0.4')
+		expect(el.style.getPropertyValue('--so-progress-spinner-fraction')).toBe('0.4')
 
 		el.visible = true
 		await flush()
@@ -219,16 +219,16 @@ describe('раскладка стиля', () => {
 		const node = document.createElement('div')
 		const applied = applyStyles(
 			node,
-			stylesOf({ '--dialog-width': '320px', 'z-index': 3 }),
+			stylesOf({ '--so-dialog-width': '320px', 'z-index': 3 }),
 			new Map(),
 		)
 
-		expect(node.style.getPropertyValue('--dialog-width')).toBe('320px')
+		expect(node.style.getPropertyValue('--so-dialog-width')).toBe('320px')
 		expect(node.style.zIndex).toBe('3')
 
 		applyStyles(node, stylesOf({ 'z-index': 3 }), applied)
 
-		expect(node.style.getPropertyValue('--dialog-width')).toBe('')
+		expect(node.style.getPropertyValue('--so-dialog-width')).toBe('')
 		expect(node.style.zIndex).toBe('3')
 	})
 
@@ -267,8 +267,8 @@ describe('свойство, записанное в узел мимо разме
 
 		const skeleton = mount('<div is="so-skeleton" width="10"></div>', isSkeleton)
 
-		button.style.setProperty('--s-swipe-offset', '12px')
-		skeleton.style.setProperty('--s-swipe-offset', '7px')
+		button.style.setProperty('--so-swipe-offset', '12px')
+		skeleton.style.setProperty('--so-swipe-offset', '7px')
 
 		ctrl.hide()
 		await flush()
@@ -277,10 +277,10 @@ describe('свойство, записанное в узел мимо разме
 		skeleton.width = 20
 		await flush()
 
-		expect(button.style.getPropertyValue('--s-swipe-offset')).toBe('12px')
+		expect(button.style.getPropertyValue('--so-swipe-offset')).toBe('12px')
 		expect(button.style.color).toBe('blue')
 		expect(button.style.display).toBe('')
-		expect(skeleton.style.getPropertyValue('--s-swipe-offset')).toBe('7px')
+		expect(skeleton.style.getPropertyValue('--so-swipe-offset')).toBe('7px')
 		expect(skeleton.style.width).toBe('20px')
 	})
 
@@ -288,14 +288,14 @@ describe('свойство, записанное в узел мимо разме
 	it('переживает перестановку элемента', async () => {
 		const el = mount('<div is="so-skeleton" width="10"></div>', isSkeleton)
 
-		el.style.setProperty('--s-swipe-offset', '7px')
+		el.style.setProperty('--so-swipe-offset', '7px')
 		document.body.appendChild(document.createElement('section')).appendChild(el)
 		await flush()
 
 		el.width = 30
 		await flush()
 
-		expect(el.style.getPropertyValue('--s-swipe-offset')).toBe('7px')
+		expect(el.style.getPropertyValue('--so-swipe-offset')).toBe('7px')
 		expect(el.style.width).toBe('30px')
 	})
 })

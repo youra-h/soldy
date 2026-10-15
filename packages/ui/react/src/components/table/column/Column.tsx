@@ -8,7 +8,7 @@ import type { TableColumnProps } from './base.component'
  * шапки, рисуется по `tag` колонки (по умолчанию `th`). На ней наборы колонки:
  * `aria-sort` (только у первой по приоритету), `data-sort` и
  * `data-sort-priority`, `data-align`, `data-sized`, `data-resizing`, — и
- * ширина переменной `--s-table-column-width` (`widthStyle`, считает ядро) —
+ * ширина переменной `--so-table-column-width` (`widthStyle`, считает ядро) —
  * стиль-выходом компонента, под стилем потребителя (`toRootProps`).
  *
  * Имя заголовка — ссылка на обёртку содержимого (`aria-labelledby` в `aria`):

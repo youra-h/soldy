@@ -21,7 +21,7 @@ export const ProgressSpinnerDescriptor = defineDescriptor(() =>
 		contribution: {
 			props: {
 				/**
-				 * Доля готового — `--s-progress-spinner-fraction`, числом от 0
+				 * Доля готового — `--so-progress-spinner-fraction`, числом от 0
 				 * до 1. Считает ядро, как `percentStyle` у линии. Пока кольцо
 				 * бежит, переменной нет — отсюда триггер флага.
 				 */
