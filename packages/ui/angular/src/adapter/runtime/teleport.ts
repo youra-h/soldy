@@ -15,24 +15,57 @@
  *   на своём ли он месте, эффект после отрисовки (`afterRenderEffect`),
  *   которого на сервере нет. Гидратация ищет узел там, где его нарисовал
  *   сервер, поэтому до неё узел на месте. Первый прогон эффекта — после первой
- *   отрисовки, следующие — смена цели или «на месте».
+ *   отрисовки, следующие — смена цели или «на месте»; цель по селектору ищет
+ *   только он.
  * - Пока узел в цели, на его месте стоит якорь-комментарий: узел меняется с
  *   ним местами, и соседи на месте считают те же узлы, что нарисовал сервер.
  *   «На месте» (`contained` у Frame) или без цели узел возвращается к якорю, и
  *   якорь уходит из разметки; снова в цель — снова с якорем.
  * - Смена цели переносит тот же узел в новую цель.
+ * - Панель идёт за местом. Место узла ведёт Angular и о переносе не знает: он
+ *   вынимает и вставляет узлы своих представлений, не снимая компонента, —
+ *   условная проекция чужого компонента, отсоединённое представление,
+ *   перестановка `@for`. Поэтому после каждой отрисовки (`afterEveryRender`)
+ *   перенос сверяет, где узел на самом деле, с тем, куда его увёл:
+ *   - узла нет в цели — Angular его вынул или вставил обратно: старый якорь
+ *     уходит из разметки;
+ *   - узел в цели, а якорь ушёл из документа вместе с предком — узел уходит с
+ *     местом: к якорю, а если у якоря нет родителя, просто из цели;
+ *   - узлу нужно в цель, а он не там: в документе — уезжает, и новый якорь
+ *     встаёт там, где узел поставил Angular; вне документа места у него нет,
+ *     и он ждёт — уедет на первой отрисовке после того, как его вставят
+ *     (проекция, закрытая с самого начала, узел `createComponent` без хоста).
+ *
+ *   Сверка и смена цели зовут одно приведение к месту. С `contained` и без
+ *   цели сверять нечего: узел на месте, и ведёт его Angular. Сверка идёт после
+ *   отрисовки, а не на каждую мутацию документа: наблюдатель за документом
+ *   (`MutationObserver`) ловил бы каждую мутацию страницы.
  * - Снят компонент — убираются якорь и узел из цели. Узел — корень
  *   представления Angular снимает сам и из цели (`removeChild` рендерера — это
  *   `el.remove()`), но узел, вложенный в снятый элемент, он не трогает: тот
  *   остался бы в цели.
  *
+ * Чего сверка не снимает: узлы `@for` Angular вставляет перед первым узлом
+ * следующего представления, и если это увезённый корень, рендерер бросает
+ * NG05106 раньше любого хука. Обход — у потребителя: обёртка-элемент вокруг
+ * Frame, тогда первый узел — она, а якорь ездит внутри.
+ *
  * Отдаёт сигнал «корень на своём месте»: в цели или, если так задано, на
  * месте — и только в браузере, после отрисовки. Пока он ложь — на сервере, до
  * первой отрисовки, без цели, — слоя нет: база корень прячет и ничего от ядра
- * на нём не рисует, а шаблон слоя не рисует содержимое.
+ * на нём не рисует, а шаблон слоя не рисует содержимое. Уход места его не
+ * меняет: узел и так вне документа, а снятые классы и содержимое пришлось бы
+ * рисовать заново.
  */
 
-import { DestroyRef, afterRenderEffect, inject, signal, type Signal } from '@angular/core'
+import {
+	DestroyRef,
+	afterEveryRender,
+	afterRenderEffect,
+	inject,
+	signal,
+	type Signal,
+} from '@angular/core'
 
 /** Куда корню: селектор цели и «на месте» — значения состояния компонента. */
 export type TTeleportPlace = {
@@ -45,9 +78,15 @@ export type TTeleportPlace = {
 /** Текст якоря, который стоит на месте корня, пока корень в цели. */
 export const TELEPORT_ANCHOR = 'so-teleport'
 
+/** Корень увезён: якорь на его месте и цель, в которую его увёл перенос. */
+type TAway = {
+	readonly anchor: Comment
+	readonly target: Element
+}
+
 /**
  * Переносит корень `root` по `place`. Зовётся в контексте инъекции
- * компонента: эффекту после отрисовки и снятию нужен его инжектор.
+ * компонента: хукам после отрисовки и снятию нужен его инжектор.
  */
 export function teleportRoot(root: Element, place: TTeleportPlace): Signal<boolean> {
 	/**
@@ -57,51 +96,89 @@ export function teleportRoot(root: Element, place: TTeleportPlace): Signal<boole
 	 */
 	const placed = signal(false)
 
-	/** Якорь на месте корня, пока корень в цели; корень на месте — якоря нет. */
-	let anchor: Comment | null = null
+	/**
+	 * Цель, в которой корню место, — найдена по селектору на смену цели или «на
+	 * месте». `null` — корню место на месте: с `contained`, без цели и до
+	 * первой отрисовки.
+	 */
+	let wanted: Element | null = null
 
-	/** Корень уходит в цель, на его место встаёт якорь. */
+	/** Корень в цели — якорь и цель; корень на месте — `null`. */
+	let away: TAway | null = null
+
+	/**
+	 * Корень уходит в цель; там, где его поставил Angular, встаёт якорь. Корень
+	 * уже увезён (сменилась цель) — якорь прежний. Зовётся только для корня в
+	 * документе: у него есть родитель, и якорю есть где встать.
+	 */
 	const moveTo = (target: Element): void => {
-		if (anchor === null) {
+		let anchor = away?.anchor
+
+		if (anchor === undefined) {
 			anchor = root.ownerDocument.createComment(TELEPORT_ANCHOR)
-			// Места нет (корень вне документа) — якорь остаётся вне документа
 			root.replaceWith(anchor)
 		}
 
-		if (root.parentNode !== target) target.appendChild(root)
+		target.appendChild(root)
+		away = { anchor, target }
 	}
 
 	/** Корень возвращается к якорю, якорь уходит. */
 	const moveHome = (): void => {
-		if (anchor === null) return
+		if (away === null) return
 
-		// Места у корня не было — на месте ему быть негде
-		if (anchor.parentNode) anchor.replaceWith(root)
-		else root.remove()
-
-		anchor = null
+		away.anchor.replaceWith(root)
+		away = null
 	}
 
-	// Фаза записи: эффект меняет DOM, а раскладку не читает
+	/**
+	 * Приводит корень к его месту — в цель `wanted` или на место. Сначала
+	 * сверяет, где корень на самом деле, с тем, куда его увёл перенос: после
+	 * сверки корень либо там, где его поставил Angular, и якоря нет, либо в
+	 * цели, а якорь — в документе.
+	 */
+	const settle = (): void => {
+		if (away !== null && root.parentNode !== away.target) {
+			// Angular вынул корень из цели или вставил обратно на место: старый
+			// якорь больше ничего не держит
+			away.anchor.remove()
+			away = null
+		} else if (away !== null && !away.anchor.isConnected) {
+			// Место ушло из документа вместе с предком — корень уходит с ним
+			if (away.anchor.parentNode) away.anchor.replaceWith(root)
+			else root.remove()
+
+			away = null
+		}
+
+		if (wanted === null) moveHome()
+		// Корень вне документа — места у него нет: ждёт, пока Angular его вставит
+		else if (root.parentNode !== wanted && root.isConnected) moveTo(wanted)
+	}
+
+	// Фаза записи: хуки меняют DOM, а раскладку не читают. Эффект — на смену
+	// цели или «на месте»: только здесь цель ищется по селектору
 	afterRenderEffect({
 		write: () => {
 			const contained = place.contained()
 			const selector = contained ? null : place.target()
-			const target = selector === null ? null : root.ownerDocument.querySelector(selector)
 
-			if (target) moveTo(target)
-			else moveHome()
-
-			placed.set(contained || target !== null)
+			wanted = selector === null ? null : root.ownerDocument.querySelector(selector)
+			placed.set(contained || wanted !== null)
+			settle()
 		},
 	})
 
-	inject(DestroyRef).onDestroy(() => {
-		if (anchor === null) return
+	// Сверка — после каждой отрисовки, а не только своей: место узла Angular
+	// меняет из чужого представления (проекция, `@for` вокруг Frame)
+	afterEveryRender({ write: settle })
 
-		anchor.remove()
+	inject(DestroyRef).onDestroy(() => {
+		if (away === null) return
+
+		away.anchor.remove()
 		root.remove()
-		anchor = null
+		away = null
 	})
 
 	return placed.asReadonly()
