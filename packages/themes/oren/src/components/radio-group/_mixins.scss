@@ -53,7 +53,7 @@ $sizes: (
 
 	@apply #{'gap-' + map.get($scale, 'gap')};
 
-	--radio-control-size: calc(var(--spacing) * #{map.get($scale, 'control')});
+	--s-radio-control-size: calc(var(--spacing) * #{map.get($scale, 'control')});
 }
 
 // Цвет варианта.

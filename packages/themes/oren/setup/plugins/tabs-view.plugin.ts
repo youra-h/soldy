@@ -9,23 +9,25 @@ import type { IPluginContext, TActiveTabOffset } from '@soldy-ui/plugins'
 import { afterPseudoTransitions } from './transitions'
 
 /** Признак переезда на списке: пока он стоит, тема ведёт геометрию переходом. */
-const MOVING = '--active-tab-moving'
+const MOVING = '--s-tabs-active-moving'
 
 /**
  * TTabsViewPlugin — геометрия активного таба для темы.
  *
  * Слушает TTabsActiveTabPlugin (change:active-tab) и пишет на список табов
- * CSS-переменные: `--active-tab-pos`/`--active-tab-size` — место и длина
+ * CSS-переменные: `--s-tabs-active-pos`/`--s-tabs-active-size` — место и длина
  * активного таба по главной оси (по ним тема рисует полосу `line` и карточку
- * `contained`), `--gap-pos`/`--gap-size` — разрыв линии списка под ним. Когда
- * узел готов, ставит модификатор `--ready-animation` — знак теме, что
- * геометрия меряется: замер монтирования к этому времени уже записан. До
- * модификатора тема рисует карточку фоном самого выбранного таба: переменных
- * ещё нет. Полосе модификатор не нужен: первая запись идёт без признака
- * переезда (ниже), и к первому активному табу полоса из угла не выезжает.
+ * `contained`), `--s-tabs-gap-pos`/`--s-tabs-gap-size` — разрыв линии списка
+ * под ним. Имена — схемы темы `--s-*`: без префикса до первого замера список
+ * брал бы одноимённую переменную приложения у предка. Когда узел готов,
+ * ставит модификатор `--ready-animation` — знак теме, что геометрия
+ * меряется: замер монтирования к этому времени уже записан. До модификатора
+ * тема рисует карточку фоном самого выбранного таба: переменных ещё нет.
+ * Полосе модификатор не нужен: первая запись идёт без признака переезда
+ * (ниже), и к первому активному табу полоса из угла не выезжает.
  *
  * **Признак переезда.** Сменился активный таб между двумя записанными —
- * плагин ставит на список `--active-tab-moving: 1` в той же записи, что и
+ * плагин ставит на список `--s-tabs-active-moving: 1` в той же записи, что и
  * новое место, и тема ведёт его переходом. Без признака идут первая запись,
  * нули при отсутствии активного таба и пересчёт того же таба — ресайз, сдвиг
  * от закрытия соседа, смена вида: геометрия встаёт на место сразу и не
@@ -108,11 +110,11 @@ export class TTabsViewPlugin extends TBasePlugin<ITabs> {
 		this._drawn = active
 
 		if (tabs.orientation === 'vertical') {
-			listEl.style.setProperty('--active-tab-pos', `${offsetTop}px`)
-			listEl.style.setProperty('--active-tab-size', `${offsetHeight}px`)
+			listEl.style.setProperty('--s-tabs-active-pos', `${offsetTop}px`)
+			listEl.style.setProperty('--s-tabs-active-size', `${offsetHeight}px`)
 		} else {
-			listEl.style.setProperty('--active-tab-pos', `${offsetLeft}px`)
-			listEl.style.setProperty('--active-tab-size', `${offsetWidth}px`)
+			listEl.style.setProperty('--s-tabs-active-pos', `${offsetLeft}px`)
+			listEl.style.setProperty('--s-tabs-active-size', `${offsetWidth}px`)
 		}
 
 		// Пока признак стоит, конец переезда ждётся от последней записи
@@ -131,11 +133,11 @@ export class TTabsViewPlugin extends TBasePlugin<ITabs> {
 		const { listEl, offsetLeft, offsetWidth, offsetTop, offsetHeight } = offset
 
 		if (tabs.orientation === 'vertical') {
-			listEl.style.setProperty('--gap-pos', `${offsetTop + 1}px`)
-			listEl.style.setProperty('--gap-size', `${offsetHeight - 1}px`)
+			listEl.style.setProperty('--s-tabs-gap-pos', `${offsetTop + 1}px`)
+			listEl.style.setProperty('--s-tabs-gap-size', `${offsetHeight - 1}px`)
 		} else {
-			listEl.style.setProperty('--gap-pos', `${offsetLeft + 1}px`)
-			listEl.style.setProperty('--gap-size', `${offsetWidth - 1}px`)
+			listEl.style.setProperty('--s-tabs-gap-pos', `${offsetLeft + 1}px`)
+			listEl.style.setProperty('--s-tabs-gap-size', `${offsetWidth - 1}px`)
 		}
 	}
 

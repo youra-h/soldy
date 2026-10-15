@@ -17,7 +17,7 @@
 	// строке формы рядом с чужим текстом подпись встаёт с ним на одну линию.
 	@apply inline-flex items-baseline;
 	@apply cursor-pointer select-none;
-	gap: var(--label-gap);
+	gap: var(--s-label-gap);
 
 	// Размер — кегль текста и зазор до контрола. Шкала та же, что у текста
 	// радио (`radio-group/_mixins.scss`): радио со своим текстом и радио в
@@ -28,7 +28,7 @@
 	// иконки в ручке Switch. Зазор — переменной: в столбце от него половина.
 	@each $size, $scale in radio.$sizes {
 		&--size-#{$size} {
-			--label-gap: calc(var(--spacing) * #{map.get($scale, 'gap')});
+			--s-label-gap: calc(var(--spacing) * #{map.get($scale, 'gap')});
 
 			@if map.get($scale, 'text') {
 				> #{$this}__text,
@@ -82,7 +82,7 @@
 	&--position-top,
 	&--position-bottom {
 		@apply flex-col items-start;
-		gap: calc(var(--label-gap) / 2);
+		gap: calc(var(--s-label-gap) / 2);
 
 		> #{$this}__control::before {
 			content: none;

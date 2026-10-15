@@ -4,6 +4,7 @@ import { join, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const SRC = fileURLToPath(new URL('../src', import.meta.url))
+const SETUP = fileURLToPath(new URL('../setup', import.meta.url))
 
 /**
  * Комментарии выкусываются ДО разбора, иначе объяснения в шапках файлов
@@ -73,14 +74,14 @@ function scaleOf(tokens: Map<string, string>, family: string): number[] {
 	)
 }
 
-/** Исходники стилей — `.scss` и `.css`, рекурсивно. */
-function styleFiles(dir: string): string[] {
+/** Файлы с расширением из `extension`, рекурсивно. */
+function filesOf(dir: string, extension: RegExp): string[] {
 	return readdirSync(dir).flatMap((entry) => {
 		const path = join(dir, entry)
 
-		if (statSync(path).isDirectory()) return styleFiles(path)
+		if (statSync(path).isDirectory()) return filesOf(path, extension)
 
-		return /\.s?css$/.test(path) ? [path] : []
+		return extension.test(path) ? [path] : []
 	})
 }
 
@@ -94,7 +95,7 @@ function styleFiles(dir: string): string[] {
  * сканера Tailwind, который читает комментарии и генерирует утилиты по
  * упомянутым в них именам.
  */
-const sources = styleFiles(SRC).map((file) => ({
+const sources = filesOf(SRC, /\.s?css$/).map((file) => ({
 	name: relative(SRC, file),
 	code: readFileSync(file, 'utf8')
 		.replace(/\/\*[\s\S]*?\*\//g, '')
@@ -305,5 +306,155 @@ describe('направление письма — знаком строки, а 
 		expect(sign(':root')).toEqual(['1'])
 		expect(sign("[dir='ltr']")).toEqual(['1'])
 		expect(sign("[dir='rtl']")).toEqual(['-1'])
+	})
+})
+
+/**
+ * Свои переменные тема называет одной схемой — `--s-*` (`AGENTS.md` пакета,
+ * «Тесты»). Переменная наследуется по DOM, и одноимённая переменная
+ * приложения у предка подменяет ту, которую тема на узле ещё не объявила.
+ * Так было у геометрии Tabs: её пишет поведение темы, и только после замера,
+ * а до него — в серверной разметке, в первом кадре, без `useTheme` — список
+ * брал `--gap-size` и `--active-tab-size` приложения: линия `outline` рвалась
+ * у начала списка, а под табами вставала полоса. Префикс поэтому у всей
+ * категории, а не у имён, которые уже протекли.
+ *
+ * Кроме своих, в стилях стоят имена библиотеки `--so-*` — их пишут ядро и
+ * плагины, а тема читает, это контракт с ней, — и Tailwind: шаг `--spacing`,
+ * скругления `--radius-*`, кегли `--text-*` и цвета `--color-*`, в которых
+ * `@theme inline` регистрирует токены темы. Новое пространство имён Tailwind
+ * вносится в список явно.
+ */
+const TAILWIND_NAMES = /^--(?:spacing$|radius-|text-|color-)/
+
+/** Имя своей схемы, схемы библиотеки или из пространства имён Tailwind. */
+function inScheme(name: string): boolean {
+	return name.startsWith('--s-') || name.startsWith('--so-') || TAILWIND_NAMES.test(name)
+}
+
+/** Где стоит имя: три места в стилях и строка в поведении темы. */
+type TPlace = 'чтение' | 'объявление' | 'регистрация' | 'поведение'
+
+type TVariable = { readonly file: string; readonly place: TPlace; readonly name: string }
+
+/**
+ * Имя переменной в стилях — вместе с интерполяцией Sass: у
+ * `--s-#{$block}-height` схему видно по началу, а имя, которое начинается
+ * интерполяцией, схемы не показывает, и сторож его не пропустит.
+ */
+const NAME = String.raw`--(?:[\w-]|#\{[^}]*\})+`
+
+/**
+ * Места имени переменной в стилях. Модификатор класса пишется так же
+ * (`.so-drawer--placement-bottom:has(…)`, `&--size-#{$size}`), но стоит в
+ * селекторе, а не в этих местах, и переменной сторож его не считает.
+ */
+const STYLE_PLACES: ReadonlyArray<{ readonly place: TPlace; readonly pattern: RegExp }> = [
+	// `var(--x)` и запись Tailwind в `@apply`: `ring-(--x)`, `ring-(length:--x)`
+	{
+		place: 'чтение',
+		pattern: new RegExp(String.raw`(?:\bvar\(\s*|-\((?:[a-z-]+:)?)(${NAME})`, 'g'),
+	},
+	// Начало инструкции — с новой строки или после `;` и скобки блока, а не
+	// интерполяции Sass: за `#{$this}` в `#{$this}--shape-rect` идёт
+	// модификатор, — и произвольное свойство Tailwind в `@apply`: `[--x:…]`
+	{
+		place: 'объявление',
+		pattern: new RegExp(String.raw`(?:^|[;[]|(?<!#)\{|(?<!#\{[^{}]*)\})\s*(${NAME})`, 'gm'),
+	},
+	{ place: 'регистрация', pattern: new RegExp(String.raw`@property\s+(${NAME})`, 'g') },
+]
+
+/**
+ * Поведение темы (`setup/`) пишет переменные строкой — константой имени или
+ * аргументом `setProperty`. Код — без комментариев; `//` после `:` — адрес в
+ * строке, а не комментарий.
+ */
+const behaviour = filesOf(SETUP, /\.ts$/).map((file) => ({
+	name: relative(SETUP, file),
+	code: readFileSync(file, 'utf8')
+		.replace(/\/\*[\s\S]*?\*\//g, ' ')
+		.replace(/(^|[^:])\/\/.*$/gm, '$1'),
+}))
+
+/** Строка, которая начинается с `--` и буквы: переменная или модификатор класса. */
+const QUOTED = /['"`](--[a-zA-Z][\w-]*)/g
+
+/**
+ * Место модификатора класса — сразу перед строкой: первый аргумент метода
+ * `TClasses` (`classes.add('--ready-animation')`) или значение ключа его
+ * `swap` и `swapClass`. Так же различает их сторож переменных библиотеки
+ * (`packages/setup/__tests__/css-variable-prefix.spec.ts`).
+ */
+const CLASS_MODIFIER_PLACE =
+	/(?:\b_?classes\.(?:add|remove|toggle|has|get|resolve)\(|\b(?:prefix|oldClass|newClass)\s*:)\s*$/
+
+const variables: TVariable[] = [
+	...sources.flatMap(({ name: file, code }) =>
+		STYLE_PLACES.flatMap(({ place, pattern }) =>
+			[...code.matchAll(pattern)].map(
+				(match): TVariable => ({ file, place, name: match[1] }),
+			),
+		),
+	),
+	...behaviour.flatMap(({ name, code }) =>
+		[...code.matchAll(QUOTED)]
+			.filter((match) => !CLASS_MODIFIER_PLACE.test(code.slice(0, match.index)))
+			.map(
+				(match): TVariable => ({
+					file: join('setup', name),
+					place: 'поведение',
+					name: match[1],
+				}),
+			),
+	),
+]
+
+describe('переменные темы — своей схемой', () => {
+	const namesAt = (place: TPlace) =>
+		new Set(variables.filter((variable) => variable.place === place).map(({ name }) => name))
+
+	it('сканер видит стили и поведение темы и имя в каждом месте', () => {
+		// Пустой список прошёл бы проверку ниже на любом коде
+		expect(sources.length).toBeGreaterThan(50)
+		expect(behaviour.length).toBeGreaterThan(3)
+
+		// Чтение — `var()` и запись Tailwind в `@apply`
+		expect(namesAt('чтение')).toContain('--spacing')
+		expect(namesAt('чтение')).toContain('--s-slider-halo-color')
+		// Объявление — в `.css` и в Sass, а имя с интерполяцией — целиком:
+		// обрывай его регулярка на `#{`, имя, которое интерполяцией начинается,
+		// сторож не увидел бы вовсе
+		expect(namesAt('объявление')).toContain('--s-dir-sign')
+		expect(namesAt('объявление')).toContain('--s-#{$block}-height')
+		expect(namesAt('регистрация')).toContain('--so-swipe-offset')
+		// Константа имени и аргумент `setProperty`: место модификатора, которое
+		// их глотает, стерегло бы пустоту
+		expect(namesAt('поведение')).toContain('--s-table-head-height')
+		expect(namesAt('поведение')).toContain('--s-tabs-active-pos')
+	})
+
+	it('модификатор класса — не переменная: ни в селекторе, ни у метода TClasses', () => {
+		const names = new Set(variables.map(({ name }) => name))
+
+		// `.so-drawer--placement-bottom:has(…)` в стилях
+		expect(names).not.toContain('--placement-bottom')
+		// `#{$this}--shape-rect &` в стилях: скобка интерполяции — не конец блока
+		expect(names).not.toContain('--shape-rect')
+		// `.so-tabs--ready-animation` в стилях, `classes.add('--ready-animation')` в поведении
+		expect(names).not.toContain('--ready-animation')
+	})
+
+	it('имя каждой переменной — своё --s-*, библиотеки --so-* или Tailwind', () => {
+		const violations = variables
+			.filter(({ name }) => !inScheme(name))
+			.map(({ file, place, name }) => `${file} (${place}): ${name}`)
+
+		expect(
+			violations,
+			'Своя переменная темы начинается с --s- (AGENTS.md пакета, «Тесты»): одноимённая ' +
+				'переменная приложения у предка подменила бы её. Чужие — библиотеки --so- и ' +
+				'Tailwind из списка TAILWIND_NAMES',
+		).toEqual([])
 	})
 })

@@ -3,7 +3,7 @@
  *
  * `TTabsViewPlugin` — плагин темы oren (`@soldy-ui/theme-oren/setup`, ставит его
  * `useTheme` в `__tests__/setup.ts`). Он пишет на список переменные места и
- * длины активного таба (`--active-tab-*`) и разрыва линии (`--gap-*`), а после
+ * длины активного таба (`--s-tabs-active-*`) и разрыва линии (`--s-tabs-gap-*`), а после
  * монтирования ставит `--ready-animation`. Раньше он делал это только для видов
  * `line` и `outline`, то есть знал имена видов. Значения вида теперь объявляет
  * тема, и у табов без `view` модификатора нет вовсе — а полоса нужна именно им:
@@ -79,16 +79,16 @@ describe('геометрия активного таба без знания о 
 
 		const style = list().style
 
-		expect(style.getPropertyValue('--active-tab-pos')).not.toBe('')
-		expect(style.getPropertyValue('--active-tab-size')).not.toBe('')
-		expect(style.getPropertyValue('--gap-pos')).not.toBe('')
-		expect(style.getPropertyValue('--gap-size')).not.toBe('')
+		expect(style.getPropertyValue('--s-tabs-active-pos')).not.toBe('')
+		expect(style.getPropertyValue('--s-tabs-active-size')).not.toBe('')
+		expect(style.getPropertyValue('--s-tabs-gap-pos')).not.toBe('')
+		expect(style.getPropertyValue('--s-tabs-gap-size')).not.toBe('')
 		expect(document.querySelector('.so-tabs')?.classList).toContain('so-tabs--ready-animation')
 	})
 })
 
 /**
- * Признак переезда (`--active-tab-moving`) — по каждой записи геометрии: тест
+ * Признак переезда (`--s-tabs-active-moving`) — по каждой записи геометрии: тест
  * слушает тот же `change:active-tab`, что и плагин темы, и подписан позже
  * него (`bundle:create` приходит после сборки набора), поэтому застаёт список
  * сразу после записи. Переходов в jsdom нет, и признак снимается кадром позже.
@@ -102,7 +102,8 @@ describe('признак переезда', () => {
 			if (!(bundle instanceof TPluginBundle)) return
 
 			bundle.get(TTabsActiveTabPlugin)?.events.on('change:active-tab', (offset) => {
-				if (offset) writes.push(offset.listEl.style.getPropertyValue('--active-tab-moving'))
+				if (offset)
+					writes.push(offset.listEl.style.getPropertyValue('--s-tabs-active-moving'))
 			})
 		})
 
@@ -114,11 +115,11 @@ describe('признак переезда', () => {
 		row(1).click()
 
 		expect(writes).toEqual(['', '1'])
-		expect(list().style.getPropertyValue('--active-tab-moving')).toBe('1')
+		expect(list().style.getPropertyValue('--s-tabs-active-moving')).toBe('1')
 
 		await nextFrame()
 
-		expect(list().style.getPropertyValue('--active-tab-moving')).toBe('')
+		expect(list().style.getPropertyValue('--s-tabs-active-moving')).toBe('')
 
 		// Тот же таб, другой вид — пересчёт без признака
 		tabs.view = 'outline'

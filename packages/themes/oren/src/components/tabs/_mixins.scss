@@ -9,12 +9,12 @@ $row: ':not(.so-tabs-item__close)';
 $move-duration: 0.2s;
 $move-easing: ease;
 
-// Переезд отметки активного таба — псевдоэлемента списка по `--active-tab-*`:
+// Переезд отметки активного таба — псевдоэлемента списка по `--s-tabs-active-*`:
 // сдвиг по главной оси и длина вдоль неё — `width` у горизонтальных табов,
 // `height` у вертикальных ($size). Так едут полоса `line` и карточка
 // `contained` (`_tabs.scss`).
 //
-// Идёт, только пока на списке стоит признак `--active-tab-moving`: его ставит
+// Идёт, только пока на списке стоит признак `--s-tabs-active-moving`: его ставит
 // `TTabsViewPlugin` на смену активного таба и снимает, когда переход доиграл.
 // Без признака длительность нулевая — ресайз, сдвиг от закрытия соседа и
 // первая отрисовка ставят отметку на место сразу: переедь она за 200 мс, она
@@ -28,7 +28,7 @@ $move-easing: ease;
 @mixin active-tab-move($size) {
 	@include motion.allowed {
 		transition-property: transform, $size;
-		transition-duration: calc(var(--active-tab-moving, 0) * #{$move-duration});
+		transition-duration: calc(var(--s-tabs-active-moving, 0) * #{$move-duration});
 		transition-timing-function: $move-easing;
 	}
 }

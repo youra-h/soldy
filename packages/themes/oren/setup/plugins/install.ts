@@ -11,7 +11,7 @@ import { TTableHeadPlugin } from './table-head.plugin'
 import { TTabsViewPlugin } from './tabs-view.plugin'
 
 export const plugins: readonly IThemePlugins[] = [
-	// Геометрия активного таба (`--active-tab-*`, `--gap-*`) и признак её
+	// Геометрия активного таба (`--s-tabs-active-*`, `--s-tabs-gap-*`) и признак её
 	// переезда: полоса `line`, карточка `contained`, разрыв линии `outline`
 	{ type: TTabs, plugins: [TTabsViewPlugin] },
 	// Высота закреплённой шапки (`--s-table-head-height`): фокус в теле

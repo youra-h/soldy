@@ -149,10 +149,10 @@ describe('таб покрывает крестик', () => {
 		// сверяется в тех же единицах — полоса лежит под всем табом, а не под
 		// строкой. Что крестик внутри таба — по боксам, дробные с дробными.
 		await expect
-			.poll(() => px(list.style.getPropertyValue('--active-tab-size')))
+			.poll(() => px(list.style.getPropertyValue('--s-tabs-active-size')))
 			.toBe(item.offsetWidth)
 
-		expect(px(list.style.getPropertyValue('--active-tab-pos'))).toBe(item.offsetLeft)
+		expect(px(list.style.getPropertyValue('--s-tabs-active-pos'))).toBe(item.offsetLeft)
 
 		const itemBox = box(item)
 		const closeBox = box(close)

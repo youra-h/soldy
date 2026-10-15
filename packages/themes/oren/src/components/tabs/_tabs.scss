@@ -99,7 +99,7 @@
 // список и панели — дети корня, табы — дети списка.
 $line: ':where(.so-tabs:not(.so-tabs--view-contained, .so-tabs--view-outline))';
 
-// Полоса под активным табом — `::after` списка по `--active-tab-*`. К новому
+// Полоса под активным табом — `::after` списка по `--s-tabs-active-*`. К новому
 // табу она переезжает так же, как карточка `contained` (`active-tab-move`):
 // место и длина вместе, длина — по главной оси, у вертикальных табов это
 // высота, и табы разной высоты полоса проходит без скачка длины. Едет она
@@ -108,7 +108,7 @@ $line: ':where(.so-tabs:not(.so-tabs--view-contained, .so-tabs--view-outline))';
 // замера переменных нет и полоса нулевой длины, а первую запись плагин темы
 // делает без признака переезда.
 #{$line} {
-	// Horizontal list: separator + indicator via ::after (uses --active-tab-pos and --active-tab-size)
+	// Horizontal list: separator + indicator via ::after (--s-tabs-active-pos, --s-tabs-active-size)
 	&.so-tabs--horizontal {
 		> .so-tabs__list {
 			@apply relative border-b;
@@ -118,8 +118,8 @@ $line: ':where(.so-tabs:not(.so-tabs--view-contained, .so-tabs--view-outline))';
 				@apply absolute left-0 h-0.5;
 				@apply -bottom-px;
 				@apply rounded-full;
-				width: var(--active-tab-size, 0px);
-				transform: translateX(var(--active-tab-pos, 0px));
+				width: var(--s-tabs-active-size, 0px);
+				transform: translateX(var(--s-tabs-active-pos, 0px));
 
 				@include mixines.active-tab-move(width);
 			}
@@ -139,8 +139,8 @@ $line: ':where(.so-tabs:not(.so-tabs--view-contained, .so-tabs--view-outline))';
 				@apply absolute top-0 w-0.5;
 				@apply -inset-e-px;
 				@apply rounded-full;
-				height: var(--active-tab-size, 0px);
-				transform: translateY(var(--active-tab-pos, 0px));
+				height: var(--s-tabs-active-size, 0px);
+				transform: translateY(var(--s-tabs-active-pos, 0px));
 
 				@include mixines.active-tab-move(height);
 			}
@@ -183,7 +183,7 @@ $line: ':where(.so-tabs:not(.so-tabs--view-contained, .so-tabs--view-outline))';
 // Рисуется она двумя путями. До замера — в серверной разметке, до первого
 // кадра и в приложении без `useTheme` — это фон самой выбранной обёртки:
 // переменных геометрии ещё нет. Когда `TTabsViewPlugin` записал их и поставил
-// `--ready-animation`, карточка — `::before` списка по `--active-tab-*`, и к
+// `--ready-animation`, карточка — `::before` списка по `--s-tabs-active-*`, и к
 // новому табу она переезжает переходом (`active-tab-move`), как полоса `line`.
 // Именно `::before`: он стоит в дереве раньше табов, и позиционированные табы
 // ложатся поверх него без `z-index`.
@@ -234,8 +234,8 @@ $line: ':where(.so-tabs:not(.so-tabs--view-contained, .so-tabs--view-outline))';
 		top: $inset;
 		bottom: $inset;
 		left: 0;
-		width: var(--active-tab-size, 0px);
-		transform: translateX(var(--active-tab-pos, 0px));
+		width: var(--s-tabs-active-size, 0px);
+		transform: translateX(var(--s-tabs-active-pos, 0px));
 
 		@include mixines.active-tab-move(width);
 	}
@@ -244,8 +244,8 @@ $line: ':where(.so-tabs:not(.so-tabs--view-contained, .so-tabs--view-outline))';
 		top: 0;
 		left: $inset;
 		right: $inset;
-		height: var(--active-tab-size, 0px);
-		transform: translateY(var(--active-tab-pos, 0px));
+		height: var(--s-tabs-active-size, 0px);
+		transform: translateY(var(--s-tabs-active-pos, 0px));
 
 		@include mixines.active-tab-move(height);
 	}
@@ -315,12 +315,12 @@ $line: ':where(.so-tabs:not(.so-tabs--view-contained, .so-tabs--view-outline))';
 			// Левая часть бордера (до активного таба)
 			&::before {
 				left: 0;
-				width: var(--gap-pos, 0px);
+				width: var(--s-tabs-gap-pos, 0px);
 			}
 
 			// Правая часть бордера (после активного таба)
 			&::after {
-				left: calc(var(--gap-pos, 0px) + var(--gap-size, 0px));
+				left: calc(var(--s-tabs-gap-pos, 0px) + var(--s-tabs-gap-size, 0px));
 				right: 0;
 			}
 		}
@@ -342,12 +342,12 @@ $line: ':where(.so-tabs:not(.so-tabs--view-contained, .so-tabs--view-outline))';
 			// Левая часть бордера (до активного таба)
 			&::before {
 				top: 0;
-				height: var(--gap-pos, 0px);
+				height: var(--s-tabs-gap-pos, 0px);
 			}
 
 			// Правая часть бордера (после активного таба)
 			&::after {
-				top: calc(var(--gap-pos, 0px) + var(--gap-size, 0px));
+				top: calc(var(--s-tabs-gap-pos, 0px) + var(--s-tabs-gap-size, 0px));
 				bottom: 0;
 			}
 		}

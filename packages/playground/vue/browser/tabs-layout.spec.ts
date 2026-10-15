@@ -2,7 +2,7 @@
  * `TTabsLayoutPlugin` в настоящем браузере: индикатор активного таба
  * пересчитывается, когда у таба меняется только паддинг.
  *
- * Подчёркивание (`view: line`) — переменные `--active-tab-pos`/`--active-tab-size`
+ * Подчёркивание (`view: line`) — переменные `--s-tabs-active-pos`/`--s-tabs-active-size`
  * на списке, посчитанные `TTabsActiveTabPlugin` по `offsetLeft`/`offsetWidth`
  * активного таба, то есть по border-box. Пересчёт запускает `change:layout` от
  * наблюдателей `TTabsLayoutPlugin`. Какой бокс они смотрят, видно только здесь:
@@ -85,7 +85,7 @@ const list = () => find('.so-tabs__list')
 const activeTab = () => find('.so-tabs-item[data-selected="true"]')
 const toggle = () => find('.so-test-toggle')
 
-const underlineSize = () => parseFloat(list().style.getPropertyValue('--active-tab-size'))
+const underlineSize = () => parseFloat(list().style.getPropertyValue('--s-tabs-active-size'))
 
 /** Ширина content-box: `clientWidth` — паддинг-бокс, рамки в него не входят. */
 const contentWidth = (element: HTMLElement) => {
@@ -110,7 +110,7 @@ describe('пересчёт без смены содержимого', () => {
 	 * меняет: с умолчанием `content-box` уведомления не было бы ни от таба, ни
 	 * от корня, и подчёркивание держалось бы по старой ширине.
 	 */
-	it('у активного таба вырос только горизонтальный паддинг — --active-tab-size пересчитан', async () => {
+	it('у активного таба вырос только горизонтальный паддинг — --s-tabs-active-size пересчитан', async () => {
 		render(PaddedTabHarness)
 
 		await expect.poll(() => underlineSize()).toBe(activeTab().offsetWidth)
