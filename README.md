@@ -150,37 +150,56 @@ a ready locale: `extendLocale(enUS, { tag: 'mn-MN', translations: { modal: { clo
 
 ## Components
 
-The component set, as the playground shows it:
+The component set, as the playground shows it. Components marked
+![in development](https://img.shields.io/badge/in%20development-orange) are not ready yet and are
+queued for development:
 
-| Component       | What it is                                                                                     |
-| --------------- | ---------------------------------------------------------------------------------------------- |
-| Button          | Button: text, icons in slots, four views                                                       |
-| Input           | Text field with slots for icons and buttons                                                    |
-| CheckBox        | Checkbox with a third, indeterminate state                                                     |
-| Switch          | Switch: the same value as a checkbox, a different metaphor                                     |
-| Label           | Control label: clicking the text toggles the control, and the text is its accessible name      |
-| Slider          | Slider: a number or a range, set by dragging, with keys or with a screen reader gesture        |
-| RadioGroup      | One option out of several: native radio buttons sharing a `name`                               |
-| Select          | Select field: an input plus a list in an overlay, the Combobox pattern                         |
-| Calendar        | Month grids: pick a single date, several dates or a range                                      |
-| DateInput       | Date and time field typed in parts in the locale's format, selected and copied as a whole      |
-| DatePicker      | Date field and a calendar in a panel: a single date or a range                                 |
-| Popover         | Panel at a trigger with any content: a non-modal dialog                                        |
-| Tooltip         | Hint for an element, shown on hover and on keyboard focus                                      |
-| Dialog          | Modal window: centered or at an edge of the screen, can be maximized to full screen            |
-| Drawer          | Panel that slides in at an edge of the screen or a container, can be swiped away               |
-| Scroller        | Single-row strip of any content, paged with two buttons                                        |
-| ListBox         | List with single or multiple selection                                                         |
-| Table           | Table: columns as data, sorting by column headers, row selection with checkboxes               |
-| Tabs            | Tabs: a tab list and panels linked by value                                                    |
-| Tags            | Tag set: close buttons, optional selection                                                     |
-| Accordion       | Sections that expand one at a time or several at once                                          |
-| Icon            | Icon from the registered pack, by role                                                         |
-| ProgressLinear  | Linear progress indicator: the share done, or an indeterminate animation while it is unknown   |
-| ProgressSpinner | Circular progress indicator: the share done, or an indeterminate animation while it is unknown |
-| Skeleton        | Placeholder while content loads                                                                |
-| DragAndDrop     | Drag and drop of collection items                                                              |
-| Virtual         | Window for long lists: ListBox and Table inside render only the visible items                  |
+| Component                                                                           | What it is                                                                                     |
+| ----------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| Button                                                                              | Button: text, icons in slots, four views                                                       |
+| Input                                                                               | Text field with slots for icons and buttons                                                    |
+| CheckBox                                                                            | Checkbox with a third, indeterminate state                                                     |
+| Switch                                                                              | Switch: the same value as a checkbox, a different metaphor                                     |
+| Label                                                                               | Control label: clicking the text toggles the control, and the text is its accessible name      |
+| Slider                                                                              | Slider: a number or a range, set by dragging, with keys or with a screen reader gesture        |
+| RadioGroup                                                                          | One option out of several: native radio buttons sharing a `name`                               |
+| Select                                                                              | Select field: an input plus a list in an overlay, the Combobox pattern                         |
+| Calendar                                                                            | Month grids: pick a single date, several dates or a range                                      |
+| DateInput                                                                           | Date and time field typed in parts in the locale's format, selected and copied as a whole      |
+| DatePicker                                                                          | Date field and a calendar in a panel: a single date or a range                                 |
+| Popover                                                                             | Panel at a trigger with any content: a non-modal dialog                                        |
+| Tooltip                                                                             | Hint for an element, shown on hover and on keyboard focus                                      |
+| Dialog                                                                              | Modal window: centered or at an edge of the screen, can be maximized to full screen            |
+| Drawer                                                                              | Panel that slides in at an edge of the screen or a container, can be swiped away               |
+| Scroller                                                                            | Single-row strip of any content, paged with two buttons                                        |
+| ListBox                                                                             | List with single or multiple selection                                                         |
+| Table                                                                               | Table: columns as data, sorting by column headers, row selection with checkboxes               |
+| Tabs                                                                                | Tabs: a tab list and panels linked by value                                                    |
+| Tags                                                                                | Tag set: close buttons, optional selection                                                     |
+| Accordion                                                                           | Sections that expand one at a time or several at once                                          |
+| Icon                                                                                | Icon from the registered pack, by role                                                         |
+| ProgressLinear                                                                      | Linear progress indicator: the share done, or an indeterminate animation while it is unknown   |
+| ProgressSpinner                                                                     | Circular progress indicator: the share done, or an indeterminate animation while it is unknown |
+| Skeleton                                                                            | Placeholder while content loads                                                                |
+| DragAndDrop                                                                         | Drag and drop of collection items                                                              |
+| Virtual                                                                             | Window for long lists: ListBox and Table inside render only the visible items                  |
+| Rating ![in development](https://img.shields.io/badge/in%20development-orange)      | Rating with stars: set by click or arrow keys, halves, read-only display                       |
+| Toast ![in development](https://img.shields.io/badge/in%20development-orange)       | Pop-up notifications: a queue, auto-dismiss with a pause on hover and focus, swipe to close    |
+| Pagination ![in development](https://img.shields.io/badge/in%20development-orange)  | Page navigation: page numbers with gaps, previous and next, first and last                     |
+| Menu ![in development](https://img.shields.io/badge/in%20development-orange)        | Action menu at a button or on right click: submenus, checkbox and radio items                  |
+| Textarea ![in development](https://img.shields.io/badge/in%20development-orange)    | Multi-line text field that grows with its content                                              |
+| NumberInput ![in development](https://img.shields.io/badge/in%20development-orange) | Number field: step, bounds, increment buttons, the locale's number format                      |
+| Field ![in development](https://img.shields.io/badge/in%20development-orange)       | Field wrapper: description, error message and invalid state linked to the control              |
+| Alert ![in development](https://img.shields.io/badge/in%20development-orange)       | Inline message by severity: info, success, warning, error                                      |
+| Badge ![in development](https://img.shields.io/badge/in%20development-orange)       | Counter or status mark, on its own or over another element                                     |
+| Avatar ![in development](https://img.shields.io/badge/in%20development-orange)      | User picture with a fallback to initials or an icon                                            |
+| Breadcrumbs ![in development](https://img.shields.io/badge/in%20development-orange) | Path to the current page, collapsing a long trail                                              |
+| Separator ![in development](https://img.shields.io/badge/in%20development-orange)   | Horizontal or vertical divider, semantic or decorative                                         |
+| ToggleGroup ![in development](https://img.shields.io/badge/in%20development-orange) | Toggle button and a group of them with single or multiple selection                            |
+| Tree ![in development](https://img.shields.io/badge/in%20development-orange)        | Hierarchy with expandable branches, selection and keyboard navigation by level                 |
+| Stepper ![in development](https://img.shields.io/badge/in%20development-orange)     | Steps of a multi-step form: done, current, with an error; linear or free order                 |
+| FileUpload ![in development](https://img.shields.io/badge/in%20development-orange)  | File picker and drop zone with type, size and count limits                                     |
+| Splitter ![in development](https://img.shields.io/badge/in%20development-orange)    | Panels with a draggable border: size limits, keyboard, collapsing                              |
 
 What each adapter implements so far:
 
