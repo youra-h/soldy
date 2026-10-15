@@ -7,12 +7,15 @@
  *   общий для всех запросов и при гидратации разошёлся бы.
  * - Компонент Solid в `tag` получает атрибуты корня и `ref` адаптера и кладёт
  *   их на свой корень, содержимое рисует внутри.
+ * - Состояние двух контекстов коллекции — один вид (`joinState`), и он идёт за
+ *   обоими сторами, в том числе за свойством, которого к сборке не было.
  */
 
-import { describe, it, expect, vi } from 'vitest'
-import type { JSX } from 'solid-js'
+import { describe, it, expect, vi, onTestFinished } from 'vitest'
+import { createRenderEffect, createRoot, type JSX } from 'solid-js'
+import { createStore } from 'solid-js/store'
 import { TPluginBundle } from '@soldy-ui/plugins'
-import { Button, isTagComponent, roleIcon, rootTag } from '@soldy-ui/solid'
+import { Button, isTagComponent, joinState, roleIcon, rootTag } from '@soldy-ui/solid'
 import { find, mount, nextFrame } from './mount'
 
 /** Набор кнопки — из `onBundleCreate`, на микрозадаче после сборки. */
@@ -88,5 +91,50 @@ describe('компонент в tag', () => {
 		expect(isTagComponent(Link)).toBe(true)
 		expect(isTagComponent('a')).toBe(false)
 		expect(isTagComponent({})).toBe(false)
+	})
+})
+
+/**
+ * Вид двух сторов — свой и фасада. Ключа со значением `undefined` в сторе
+ * Solid нет вовсе, и вид геттерами по ключам, собранный при сборке, не увидел
+ * бы свойства, которое появилось позже (`closable` таба, имя из `aria_label`).
+ */
+describe('joinState', () => {
+	type TState = { own?: string; facade?: string; shared?: string }
+
+	/** Значения, которые увидел эффект, читающий `key` вида; эффект снимается с тестом. */
+	function watch(key: keyof TState, view: TState): Array<string | undefined> {
+		const seen: Array<string | undefined> = []
+
+		createRoot((dispose) => {
+			createRenderEffect(() => {
+				seen.push(view[key])
+			})
+
+			onTestFinished(dispose)
+		})
+
+		return seen
+	}
+
+	it('свойство, которого к сборке не было, вид видит, когда оно появилось', () => {
+		const [own] = createStore<TState>({ own: 'a' })
+		const [facade, setFacade] = createStore<TState>({})
+		const seen = watch('facade', joinState(own, facade))
+
+		setFacade({ facade: 'b' })
+
+		expect(seen).toEqual([undefined, 'b'])
+	})
+
+	it('верхнее перекрывает нижнее, снятое верхнее — снова нижнее', () => {
+		const [below] = createStore<TState>({ shared: 'снизу' })
+		const [above, setAbove] = createStore<TState>({})
+		const seen = watch('shared', joinState(below, above))
+
+		setAbove({ shared: 'сверху' })
+		setAbove({ shared: undefined })
+
+		expect(seen).toEqual(['снизу', 'сверху', 'снизу'])
 	})
 })

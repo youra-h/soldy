@@ -155,6 +155,10 @@ const stagesOf = (row: DOMWrapper<Element>) => row.findAll('.pg-col__stage')
  * в проверке строки `mode`. Результат — число выбранных по колонкам, а не общий
  * счёт по строке: упавшая проверка сразу показывает, в какой колонке режим не
  * доехал. Два выбранных — признак `multiple`: у ListBox режим в DOM не выведен.
+ *
+ * Выбор после клика рисует фреймворк превью на своём такте: Vue — к
+ * `nextTick`, а Angular без Zone.js проверяет приложение по своему
+ * планировщику, к кадру.
  */
 async function selectedAfterTwoClicks(row: DOMWrapper<Element>): Promise<number[]> {
 	const stages = stagesOf(row)
@@ -167,6 +171,7 @@ async function selectedAfterTwoClicks(row: DOMWrapper<Element>): Promise<number[
 	}
 
 	await nextTick()
+	await nextFrame()
 
 	return stages.map((stage) => stage.findAll('.so-list-box-item[data-selected="true"]').length)
 }
@@ -323,6 +328,22 @@ describe('превью tabs', () => {
  * списочные.
  */
 describe('переход между компонентами', () => {
+	/**
+	 * Корни превью в сценах страницы — элементы, которые стоят в раскладке
+	 * ячейки. Свой корень хоста (`pg-angular-root` у Angular) в раскладке не
+	 * участвует (`display: contents`), и корни превью — его дети.
+	 */
+	function previewRoots(wrapper: VueWrapper): Element[] {
+		const inLayout = (element: Element): Element[] =>
+			getComputedStyle(element).display === 'contents'
+				? [...element.children].flatMap(inLayout)
+				: [element]
+
+		return wrapper
+			.findAll('.pg-col__stage > .pg-mount')
+			.flatMap((mount) => [...mount.element.children].flatMap(inLayout))
+	}
+
 	it.each(drawing('button', 'list-box'))(
 		'%s: колонки показывают новый компонент, а не прежний',
 		async (framework) => {
@@ -332,10 +353,10 @@ describe('переход между компонентами', () => {
 			await nextTick()
 			await nextFrame()
 
-			const roots = wrapper.findAll('.pg-col__stage > .pg-mount > *')
+			const roots = previewRoots(wrapper)
 
 			expect(roots.length).toBeGreaterThan(0)
-			expect(roots.every((root) => root.classes('so-list-box'))).toBe(true)
+			expect(roots.every((root) => root.classList.contains('so-list-box'))).toBe(true)
 		},
 	)
 })

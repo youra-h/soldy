@@ -124,9 +124,10 @@ type TFacadeEvents = Pick<TBatchEvents<TItem>, 'items:added' | 'items:removed'>
   (`spyBus`) видит и перехватчики `use`, и слушателей `listen`: на первых висит
   `relayAll`, вторым шину участника держит обмен адаптера, а прежний шпион,
   следивший только за `on` и `off`, утечку фасада не замечал;
-- `ui/vue/__tests__/external-engine-lifetime.spec.ts` и
-  `ui/angular/__tests__/external-engine-lifetime.spec.ts` — то же в настоящем
-  цикле Vue и Angular, на ListBox;
+- `ui/vue/__tests__/external-engine-lifetime.spec.ts`,
+  `ui/angular/__tests__/external-engine-lifetime.spec.ts` и
+  `ui/solid/__tests__/external-engine-lifetime.spec.tsx` — то же в настоящем
+  цикле Vue, Angular и Solid, на ListBox;
 - `ui/react/__tests__/external-lifetime.spec.tsx` — в настоящем цикле React,
   по всем компонентам адаптера (см. «Отброшенный рендер React»).
 
@@ -360,7 +361,11 @@ Select и строк таблицы. Выход `drawn` — что рисова�
 и `filler` (распорка на месте пропущенных: ключ — `uid` элемента за ней с
 минусом, у хвостовой `0`; `style` — высота `--s-filler-height` и место в
 составе `order`, как у элемента: разметка ставит элементы флексом по их месту
-в составе). Разметка — одна петля по `drawn`.
+в составе). Разметка — одна петля по `drawn`, и узел записи держит её ключ:
+записи `drawn` новые на каждую смену, и петля, сравнивающая их по ссылке
+(`<For>` Solid), пересоздавала бы все элементы вместе с узлами и фокусом. У
+Solid петля по ключу — `KeyedFor` адаптера (сторожит «петля по drawn» в
+`ui/solid/__tests__/list-box.spec.tsx`).
 
 - **Стратегия, а не флаг.** По умолчанию рисуются все показанные. Окно
   (`TWindowStrategy`, отдельным модулем) ставит тот, кто его включает
@@ -777,12 +782,14 @@ get closable() { return !this._item.disabled && (this._item.closable ?? this._pa
 `setup/__tests__/item-context-lifetime.spec.ts` — по всем фасадам элементов,
 с чтением фасада после снятия, и перепривязку панели, —
 `ui/vue/__tests__/collection-item-lifetime.spec.ts`,
-`ui/svelte/__tests__/collection-item-lifetime.spec.ts` и
+`ui/svelte/__tests__/collection-item-lifetime.spec.ts`,
+`ui/solid/__tests__/collection-item-lifetime.spec.tsx` и
 `ui/angular/__tests__/collection-item-lifetime.spec.ts` (фильтр прячет и
 показывает элемент), `ui/react/__tests__/collection-item-lifetime.spec.tsx`
 (StrictMode над движком снаружи) и смена `value` у панели в
 `ui/vue/__tests__/tabs-content.spec.ts`, `ui/react/__tests__/tabs.spec.tsx`,
-`ui/svelte/__tests__/tabs.spec.ts` и `ui/angular/__tests__/tabs.spec.ts`.
+`ui/svelte/__tests__/tabs.spec.ts`, `ui/solid/__tests__/tabs.spec.tsx` и
+`ui/angular/__tests__/tabs.spec.ts`.
 
 `attach()`, как `destroy()` и `bindElement`, зовёт рантайм адаптера, а не
 компонент: Vue — `useAdapterParts` в `setup()` (она идёт и на сервере),
@@ -843,15 +850,34 @@ Solid, Svelte — в `useAdapter` при инициализации, Angular —
 новый движок: у элемента сменилось прочитанное, и он пересобирается тем же
 путём, что при повторной установке эффекта.
 
+**Лифт Solid — тоже один контекст со слоем значений, детям его отдаёт
+`Elevate`** (`ui/solid/src/adapter/elevator/`). Значение контекста Solid
+отдаёт только через `Provider`, а своего владельца у компонента в продакшене
+и на сервере нет — `createComponent` зовёт его функцию под владельцем
+родителя, — и значение, записанное в `getOwner()`, увидели бы соседи
+владельца. Сборка одна, поэтому слой — как у Angular, а не неизменяемая
+карта React: своё поверх слоя предка, ключа нет — читается у предка,
+опущенный `null` — тоже значение (`TVirtualCollectionExtension`). Сборка
+берёт `useElevator()`: слой предка читается там же, `up()` — из него,
+`down()` — в слой компонента; помнить прочитанное, как React, незачем.
+Узлы детей Solid создаёт там, где развернули слот, поэтому владелец
+разворачивает своё содержимое внутри `Elevate` (`ResolvedSlot`): развёрнутое
+в теле владельца, оно собрало бы элементы вне его слоя. Сторожат
+`ui/solid/__tests__/collection-elevator.spec.tsx` и
+`collections.server.spec.tsx` — запись мимо `Provider` видна только в
+серверном прогоне: в браузерной сборке разработки у компонента свой владелец.
+
 **Цена.** Серверная разметка и первый кадр элемента из разметки — без того,
 что пишет ему коллекция (`data-selected`, `tabindex`, размер от списка).
 Гидратация сходится, после коммита всё на месте. Список из данных (`items`,
 `engine`) сервер рисует полностью: его элементы в коллекции с самой сборки.
-Vue, Svelte и Angular этой цены не платят: элемент разметки у них входит в
-коллекцию при инициализации (у Angular — в `ngOnInit`), и на сервере тоже, —
-сервер рисует его с тем, что пишет коллекция, и панель таба находит свой таб
-к своей инициализации (сторожат `ui/svelte/__tests__/collections.server.spec.ts`
-и `ui/angular/__tests__/collections.server.spec.ts`).
+Vue, Svelte, Solid и Angular этой цены не платят: элемент разметки у них
+входит в коллекцию при инициализации (у Angular — в `ngOnInit`, у Solid — при
+выполнении тела компонента), и на сервере тоже, — сервер рисует его с тем,
+что пишет коллекция, и панель таба находит свой таб к своей инициализации
+(сторожат `ui/svelte/__tests__/collections.server.spec.ts`,
+`ui/solid/__tests__/collections.server.spec.tsx` и
+`ui/angular/__tests__/collections.server.spec.ts`).
 
 Сторожат `setup/__tests__/adapter.spec.ts` («сборка и вход»),
 `ui/react/__tests__/list-box-elevator.spec.tsx` — лифт, StrictMode,

@@ -14,6 +14,9 @@
  * 5. DOM-биндинг через callback-ref, и тот же узел — `ref` потребителя
  * 6. Очистка при уничтожении компонента (onCleanup)
  *
+ * Фасад коллекции связывает `useCollectionAdapter` — те же шаги, кроме
+ * привязки узла: она принадлежит компоненту.
+ *
  * Props передаются как есть: в Solid это объект геттеров, деструктурировать
  * его нельзя, но читать напрямую — можно и нужно.
  *
@@ -32,7 +35,7 @@
 import { createEffect, createMemo, onCleanup } from 'solid-js'
 import { createStore } from 'solid-js/store'
 import { toInstanceState } from '@soldy-ui/setup'
-import type { IAdapterContext, IComponentContract, TAdapterState } from '@soldy-ui/setup'
+import type { IAdapterContext, IComponentContract, TAdapterState, TExchange } from '@soldy-ui/setup'
 import type { IPluginBundle } from '@soldy-ui/plugins'
 import { SolidProfile } from '../common'
 
@@ -58,11 +61,30 @@ export type TBinding<
 	ref: (el: Element) => void
 }
 
-/** Инстанс и выходы плагинов берутся из контракта в типе контекста — его выводит `createAdapterContext`. */
-export function useAdapter<C extends IComponentContract, TProps extends object>(
-	adapter: IAdapterContext<C>,
-	props: TProps,
-): TBinding<C, TProps> {
+/**
+ * То же, что `TBinding`, но без `ctrl` и привязки узла: они принадлежат
+ * компоненту, а не фасаду его коллекции (см. `useCollectionAdapter`).
+ */
+export type TCollectionBinding<
+	C extends IComponentContract = IComponentContract,
+	TProps extends object = object,
+> = {
+	readonly plugins: IPluginBundle | null
+	/** Свойства фасада и выходы плагинов его дескриптора — как у `TBinding`. */
+	readonly state: TAdapterState<C>
+	/** Мемо: атрибуты, которые не съели ни компонент, ни фасад */
+	forwardProps: () => Partial<TProps>
+}
+
+/**
+ * Общая часть `useAdapter` и `useCollectionAdapter`: связка контекста,
+ * состояние, входы, события, приём и уничтожение. Отдаёт то, из чего каждый
+ * хук собирает свой результат.
+ */
+function useExchange(
+	adapter: IAdapterContext,
+	props: object,
+): { binding: TExchange; state: Readonly<Record<string, unknown>> } {
 	const binding = adapter.connect(SolidProfile)
 	const [state, setState] = createStore<Record<string, unknown>>({})
 
@@ -86,12 +108,23 @@ export function useAdapter<C extends IComponentContract, TProps extends object>(
 	)
 
 	// 4. Компонент принят: тело компонента Solid выполняется один раз, и на
-	// сервере тоже, — это и есть его монтирование
+	// сервере тоже, — это и есть его монтирование. Дети выполняются в порядке
+	// документа, и элементы разметки входят в коллекцию в порядке DOM
 	adapter.attach()
 
-	// 5. Очистка контекста
+	// 6. Очистка контекста. Очистки Solid зовёт в обратном порядке: фасад,
+	// собранный после компонента, уходит раньше него
 	onCleanup(() => adapter.destroy())
 
+	return { binding, state }
+}
+
+/** Инстанс и выходы плагинов берутся из контракта в типе контекста — его выводит `createAdapterContext`. */
+export function useAdapter<C extends IComponentContract, TProps extends object>(
+	adapter: IAdapterContext<C>,
+	props: TProps,
+): TBinding<C, TProps> {
+	const { binding, state } = useExchange(adapter, props)
 	const forwardProps = createMemo(() => binding.forward(props))
 
 	return {
@@ -100,6 +133,7 @@ export function useAdapter<C extends IComponentContract, TProps extends object>(
 		state: toInstanceState<C>(state),
 		forwardProps,
 
+		// 5. DOM-биндинг: контекст сам знает, есть ли у набора `TElementPlugin`
 		ref(el: Element) {
 			adapter.bindElement(el)
 
@@ -111,5 +145,37 @@ export function useAdapter<C extends IComponentContract, TProps extends object>(
 
 			if (typeof consumer === 'function') consumer(el)
 		},
+	}
+}
+
+/**
+ * Адаптер фасада коллекции — всё то же, кроме того, что принадлежит компоненту.
+ *
+ * У коллекционного компонента контекстов два: свой и фасада. Состояние, входы,
+ * события, приём и уничтожение у фасада те же, что у компонента, а `ctrl` и
+ * привязки узла — нет:
+ *
+ * - `ctrl` у фасада это `T*CollectionFacade`, тогда как снаружи под этим именем
+ *   ждут сам компонент;
+ * - своего узла у фасада нет: он делит набор компонента, и корень к
+ *   `TElementPlugin` привязывает `useAdapter` компонента.
+ *
+ * `props` — все пропсы компонента: фасад берёт из них свои входы и колбэки
+ * своих событий. `forward` — то, что не съел компонент (`forwardProps` его
+ * `useAdapter`): фасад отбирает из них свои имена, и на корень уходит только
+ * то, что не съели ни компонент, ни фасад.
+ */
+export function useCollectionAdapter<C extends IComponentContract, TProps extends object>(
+	adapter: IAdapterContext<C>,
+	props: TProps,
+	forward: () => Partial<TProps>,
+): TCollectionBinding<C, TProps> {
+	const { binding, state } = useExchange(adapter, props)
+	const forwardProps = createMemo(() => binding.forward(forward()))
+
+	return {
+		plugins: adapter.bundle,
+		state: toInstanceState<C>(state),
+		forwardProps,
 	}
 }

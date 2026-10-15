@@ -20,6 +20,12 @@ import { nearestLocale } from '../locale/context'
  * английская. Локаль, заданная опцией явно, тоже остаётся за тем, кто её
  * задал.
  *
+ * Id монтирования и локаль уходят своему набору плагинов. Контекст на чужом
+ * наборе (`config.bundle`) — фасад коллекции на наборе компонента — их не
+ * берёт: id монтирования и локаль у того, кто набор собрал, как у
+ * `createAngularAdapterContext`. Id на фасад не тратится, и у компонента с
+ * двумя контекстами он один.
+ *
  * Зовётся при выполнении тела компонента: оно выполняется один раз, и
  * контекст Solid читается только тогда. Сигнатура — сама
  * `createAdapterContext`: контракт контекста выводится из дескриптора там же,
@@ -29,8 +35,11 @@ export const createSolidAdapterContext: typeof createAdapterContext = (
 	descriptor,
 	options,
 	config,
-) =>
-	createAdapterContext(
+) => {
+	// Набор не свой — id монтирования и локаль у того, кто его собрал
+	if (config?.bundle !== undefined) return createAdapterContext(descriptor, options, config)
+
+	return createAdapterContext(
 		descriptor,
 		{
 			...options,
@@ -39,3 +48,4 @@ export const createSolidAdapterContext: typeof createAdapterContext = (
 		},
 		config,
 	)
+}

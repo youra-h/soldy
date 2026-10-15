@@ -242,20 +242,24 @@ ListBox, список Select, Popover и будущий Menu выглядят о
   группы могут стоять где угодно в разметке, чего roving tabindex, как у Tabs,
   не выдержал бы. `role`, `aria-checked` и `aria-disabled` ядро радио не пишет:
   у нативного радио это `checked` и `disabled`. Выбор пользователя разметка
-  отдаёт коллекции сама — `@change` у Vue, `onChange` поля у React, `onchange`
-  поля у Svelte, `(change)` поля у Angular: плагина ввода у радио нет, и это
-  единственный путь, а не второй. Выбор, отменённый в `item:activate:before`,
-  браузер к тому времени
+  отдаёт коллекции сама — `@change` у Vue, `onChange` поля у React и Solid,
+  `onchange` поля у Svelte, `(change)` поля у Angular: плагина ввода у радио
+  нет, и это единственный путь, а не второй. Выбор, отменённый в
+  `item:activate:before`, браузер к тому времени
   уже отметил, а модель не сменилась, и разметка поля не перерисует, — поэтому
   после каждого `change` поля группы к модели возвращает её плагин
   `TRadioGroupCheckedPlugin`. У Svelte обработчик `change` делегирован корню
   приложения, и плагин на корне группы слышит событие раньше, чем модель
   решила: поля он возвращает к прежнему выбору, а сменившуюся в модели отметку
-  Svelte следом пишет сам. Сторожат
+  Svelte следом пишет сам. Solid `change` не делегирует: обработчик стоит на
+  самом поле, и модель решает раньше, чем событие дойдёт до плагина на корне
+  группы, — как у Vue. `onChange` потребителя разметка Solid зовёт после
+  своего (`chainHandler`), и в форме пары `[handler, data]` тоже. Сторожат
   `plugins/__tests__/radio-group-checked.plugin.spec.ts`,
   `ui/vue/__tests__/radio-group.spec.ts`,
   `ui/react/__tests__/radio-group.spec.tsx`,
   `ui/svelte/__tests__/radio-group.spec.ts`,
+  `ui/solid/__tests__/radio-group.spec.tsx`,
   `ui/angular/__tests__/radio-group.spec.ts` и
   `playground/vue/browser/radio-group.spec.ts`.
 - **Popover** — немодальный Dialog: `role="dialog"` на панели, имя —

@@ -10,7 +10,8 @@
  * Здесь же — раскладка, которой jsdom не считает. Корень хоста
  * (`pg-angular-root`) в раскладке не участвует (`display: contents`), и
  * компонент стоит в ячейке так же, как компонент хоста Vue, — то же место и
- * тот же размер.
+ * тот же размер. У превью с обёрткой и содержимым так же стоят и обёртка, и
+ * части: подпись вокруг флажка, элементы коллекций, панель активного таба.
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
@@ -41,27 +42,37 @@ const propRow = (name: string): HTMLElement => {
 }
 
 /**
- * Рамка компонента первой колонки строки — от угла сцены колонки: по ней
- * видно и место компонента в ячейке, и его размер.
+ * Рамки компонента и его нарисованных частей в первой колонке строки — от угла
+ * сцены колонки, в порядке документа: по ним видно и место каждой части в
+ * ячейке, и её размер. Скрытая часть рамок не имеет и не считается: панель
+ * неактивного таба Angular держит в разметке скрытой — это элемент
+ * потребителя, — а Vue её не рисует.
  */
-async function boxOf(framework: string, component: string, selector: string) {
+async function boxesOf(framework: string, component: string, selector: string) {
 	await router.push(`/${framework}/${component}`)
 	await settle()
 
 	const stage = propRow('visible').querySelector('.pg-col__stage')
-	const root = stage?.querySelector(selector)
+	const parts = [...(stage?.querySelectorAll(selector) ?? [])].filter(
+		(part) => part.getClientRects().length > 0,
+	)
 
-	if (!stage || !root) throw new Error(`${framework}/${component}: в сцене нет ${selector}`)
+	if (!stage || parts.length === 0) {
+		throw new Error(`${framework}/${component}: в сцене нет ${selector}`)
+	}
 
 	const outer = stage.getBoundingClientRect()
-	const inner = root.getBoundingClientRect()
 
-	return {
-		x: Math.round(inner.left - outer.left),
-		y: Math.round(inner.top - outer.top),
-		width: Math.round(inner.width),
-		height: Math.round(inner.height),
-	}
+	return parts.map((part) => {
+		const inner = part.getBoundingClientRect()
+
+		return {
+			x: Math.round(inner.left - outer.left),
+			y: Math.round(inner.top - outer.top),
+			width: Math.round(inner.width),
+			height: Math.round(inner.height),
+		}
+	})
 }
 
 beforeEach(async () => {
@@ -77,15 +88,24 @@ beforeEach(async () => {
 })
 
 describe('хост Angular', () => {
+	// Селектор — компонент и его части: обёртка, элементы коллекций, панели
 	it.each([
 		['button', '.so-button'],
 		['icon', '.so-icon'],
 		['skeleton', '.so-skeleton'],
+		['input', '.so-input'],
+		['check-box', '.so-label, .so-check-box'],
+		['switch', '.so-label, .so-switch'],
+		['label', '.so-label, .so-check-box'],
+		['radio-group', '.so-radio-group, .so-radio-group-item'],
+		['list-box', '.so-list-box, .so-list-box-item'],
+		['tabs', '.so-tabs, .so-tabs-item, .so-tabs__panel'],
+		['accordion', '.so-accordion, .so-accordion-item'],
 	])('%s стоит в ячейке так же, как у Vue', async (component, selector) => {
-		const vue = await boxOf('vue', component, selector)
-		const angular = await boxOf('angular', component, selector)
+		const vue = await boxesOf('vue', component, selector)
+		const angular = await boxesOf('angular', component, selector)
 
-		expect(angular.width).toBeGreaterThan(0)
+		expect(angular[0].width).toBeGreaterThan(0)
 		expect(angular).toEqual(vue)
 	})
 })

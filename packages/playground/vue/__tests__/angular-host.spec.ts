@@ -6,11 +6,14 @@
  * компоненты стенд собирает компилятором Angular, а пакеты Angular — линкером,
  * и компилятора Angular в рантайме нет; пропсы уходят входам по имени, и
  * пропа без входа хост не глушит; экземпляр ядра адаптер берёт при сборке, и
- * смена `ctrl` ставит компонент заново.
+ * смена `ctrl` ставит компонент заново; обёртку и содержимое превью хост
+ * собирает сам — части на своих элементах в проекциях, после владельца и с
+ * его инжектором.
  */
 
 import { describe, it, expect, afterEach } from 'vitest'
-import { TButton } from '@soldy-ui/core'
+import { TButton, TListBox, createEngine } from '@soldy-ui/core'
+import { COLLECTION_ITEMS } from '@soldy-ui/playground-shared'
 import { loadHost } from '../src/hosts'
 
 const host = await loadHost('angular')
@@ -110,6 +113,169 @@ describe('хост Angular', () => {
 		expect(() => host.mount(node, { component: 'button', props: { nothing: true } })).toThrow(
 			'нет входов: nothing',
 		)
+		expect(node.childNodes).toHaveLength(0)
+	})
+})
+
+/** Подписи элементов коллекций превью — из общего манифеста. */
+const TEXTS = COLLECTION_ITEMS.map((item) => item.text)
+
+/** Элементы узла по селектору — с типом HTML-элемента. */
+const all = (node: ParentNode, selector: string): HTMLElement[] =>
+	[...node.querySelectorAll(selector)].filter((element) => element instanceof HTMLElement)
+
+/** Текст элементов по селектору, без пробелов по краям. */
+const textsOf = (node: ParentNode, selector: string): string[] =>
+	all(node, selector).map((element) => element.textContent?.trim() ?? '')
+
+describe('хост Angular · обёртка и содержимое', () => {
+	/**
+	 * Элементы списка — свои компоненты на своих элементах в основной проекции
+	 * владельца. Элемент читает лифт владельца при своей сборке, поэтому хост
+	 * собирает его после владельца и с его инжектором: вошёл в коллекцию —
+	 * встал на своё место в ней (`order`) и выбирается кликом. Снятое превью
+	 * уносит и части.
+	 */
+	it('элементы списка входят в коллекцию владельца в порядке разметки', async () => {
+		const node = stage()
+		const handle = host.mount(node, { component: 'list-box', props: {} })
+		const items = all(node, '.so-list-box > .so-list-box-item')
+
+		expect(textsOf(node, '.so-list-box-item')).toEqual(TEXTS)
+		expect(items.map((item) => item.style.order)).toEqual(['0', '1', '2', '3', '4'])
+
+		all(items[1], '.so-button')[0]?.click()
+		await nextFrame()
+
+		expect(items.map((item) => item.dataset.selected)).toEqual([
+			'false',
+			'true',
+			'false',
+			'false',
+			'false',
+		])
+
+		handle.unmount()
+
+		expect(node.childNodes).toHaveLength(0)
+	})
+
+	/**
+	 * Части со слотом ложатся в его проекцию: панели — в `[slot=content]`,
+	 * рядом со списком табов, а не в нём. Видна панель активного таба, и в ней
+	 * её содержимое.
+	 */
+	it('панели табов — в слоте content, вне списка табов', () => {
+		const node = stage()
+		const handle = host.mount(node, { component: 'tabs', props: {} })
+		const list = node.querySelector('.so-tabs > .so-tabs__list')
+		const panels = all(node, '.so-tabs > .so-tabs__panel')
+
+		expect(list && textsOf(list, '.so-tabs-item')).toEqual(TEXTS)
+		expect(list?.querySelectorAll('.so-tabs__panel')).toHaveLength(0)
+		expect(panels.map((panel) => panel.style.display !== 'none')).toEqual([
+			true,
+			false,
+			false,
+			false,
+			false,
+		])
+		expect(panels[0].textContent?.trim()).toBe('Панель «Первый»')
+
+		handle.unmount()
+	})
+
+	/**
+	 * Радио — одна группа: общее имя полям даёт коллекция группы, а не разметка.
+	 * Подпись радио — текст в его проекции.
+	 */
+	it('радио — одной группой, с подписью содержимым', () => {
+		const node = stage()
+		const handle = host.mount(node, { component: 'radio-group', props: {} })
+		const names = all(node, '.so-radio-group-item input').map((input) =>
+			input.getAttribute('name'),
+		)
+
+		expect(textsOf(node, '.so-radio-group > .so-radio-group-item')).toEqual(TEXTS)
+		expect(names).toHaveLength(TEXTS.length)
+		expect(new Set(names).size).toBe(1)
+		expect(names[0]).toBeTruthy()
+
+		handle.unmount()
+	})
+
+	/**
+	 * Обёртка — подпись вокруг флажка: флажок стоит в её проекции, а пропсы
+	 * строки и выходы — его, а не её. Входа `text` у флажка нет, и строка с ним
+	 * — ошибка, хотя у подписи такой вход есть.
+	 */
+	it('обёртка: компонент в её проекции, пропсы строки и выходы — его', () => {
+		const node = stage()
+		const events: string[] = []
+		const handle = host.mount(node, {
+			component: 'check-box',
+			props: {},
+			onEvent: (name) => events.push(name),
+		})
+		const input = node.querySelector('.so-label > .so-label__control > .so-check-box > input')
+
+		expect(textsOf(node, '.so-label__text')).toEqual(['Согласен'])
+		expect(input instanceof HTMLInputElement && input.checked).toBe(false)
+
+		handle.update({ value: true })
+
+		expect(input instanceof HTMLInputElement && input.checked).toBe(true)
+		expect(events).toContain('change:value')
+		expect(() => handle.update({ text: 'Подпись' })).toThrow('нет входов: text')
+
+		handle.unmount()
+	})
+
+	/**
+	 * Без обёртки содержимое — у самого компонента: флажок в основной проекции
+	 * подписи, а строка правит саму подпись — её проп поверх пропа превью.
+	 */
+	it('содержимое подписи — флажок в её проекции, пропсы строки — подписи', () => {
+		const node = stage()
+		const handle = host.mount(node, { component: 'label', props: { text: 'Подпись' } })
+
+		expect(
+			node.querySelector('.so-label > .so-label__control > .so-check-box > input'),
+		).not.toBe(null)
+		expect(textsOf(node, '.so-label__text')).toEqual(['Подпись'])
+
+		handle.unmount()
+	})
+
+	/**
+	 * Новый `ctrl` — новое превью целиком: владелец с новым экземпляром и его
+	 * части, вошедшие уже в его коллекцию. Движок у каждого владельца свой, как
+	 * у строки страницы.
+	 */
+	it('смена ctrl ставит владельца заново, с частями', () => {
+		const node = stage()
+		const handle = host.mount(node, {
+			component: 'list-box',
+			props: { ctrl: new TListBox(), engine: createEngine() },
+		})
+		const [before] = all(node, '.so-list-box')
+
+		handle.update({ ctrl: new TListBox(), engine: createEngine() })
+
+		const lists = all(node, '.so-list-box')
+
+		expect(lists).toHaveLength(1)
+		expect(lists[0]).not.toBe(before)
+		expect(all(lists[0], '.so-list-box-item').map((item) => item.style.order)).toEqual([
+			'0',
+			'1',
+			'2',
+			'3',
+			'4',
+		])
+
+		handle.unmount()
+
 		expect(node.childNodes).toHaveLength(0)
 	})
 })

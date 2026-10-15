@@ -1,60 +1,45 @@
 /**
- * TSolidElevator — реализация IContextElevator через Solid Context.
+ * TSolidElevator — лифт одного ключа поверх слоёв сборки (`TElevatorLayer`).
  *
- * Наследует TElevator из @soldy-ui/setup (кэширование ключей в уникальные символы).
+ * Наследует TElevator из @soldy-ui/setup: ключ лифта — символ, один на имя.
  *
- * Ограничение то же, что у React: контекст в Solid нельзя положить императивно —
- * значение отдаётся только через `<Context.Provider>` в JSX. Поэтому `down()`
- * кэширует значение локально, а готовый `Context` выставлен наружу, чтобы
- * компонент-владелец мог отрендерить Provider.
+ * Контекст Solid детям отдаёт только `Provider`, и императивно его не
+ * выставить: своего владельца у компонента Solid в продакшене нет
+ * (`createComponent` зовёт функцию компонента под владельцем родителя), и
+ * значение, записанное в контекст `getOwner()`, увидели бы соседи владельца.
+ * Поэтому лифт работает со слоями, которые сборка получила от `useElevator`:
  *
- * Пока не подключён: коллекции в Solid не портированы. Когда дойдёт до них,
- * `down()` должен будет уйти в Provider, иначе значение не пересечёт границу
- * компонентов.
+ * - `up()` читает слой предка — тот, что компонент увидел при сборке. Своё
+ *   опущенное компонент не видит, как `inject` у Vue;
+ * - `down(value)` пишет в слой компонента — детям его отдаёт `Elevate`.
+ *
+ * Значения в поле лифта нет: лифт создаётся на каждый вызов фабрики, а слой у
+ * каждого владельца свой, поэтому соседние владельцы не видят движков друг
+ * друга.
  */
 
-import { createContext, useContext } from 'solid-js'
-import type { Context } from 'solid-js'
 import { TElevator } from '@soldy-ui/setup'
-
-/**
- * Один Context на ключ: провайдер и потребитель обязаны получить один и тот же
- * объект. Значения разных ключей разного типа, поэтому кэш хранит `unknown`, а
- * тип значения задаёт ключ elevator'а.
- */
-const CONTEXT_CACHE = new Map<symbol, Context<unknown>>()
-
-function resolveContext(key: symbol): Context<unknown> {
-	let context = CONTEXT_CACHE.get(key)
-
-	if (!context) {
-		context = createContext<unknown>(undefined)
-		CONTEXT_CACHE.set(key, context)
-	}
-
-	return context
-}
+import type { TElevatorLayer } from './layer'
 
 export class TSolidElevator<T = unknown> extends TElevator<T> {
-	/** Готовый Context — прокинуть значение можно через <el.Context.Provider>. */
-	readonly Context: Context<unknown>
-
-	private _value: T | undefined
-
-	constructor(key: string | symbol) {
+	/**
+	 * @param _parent слой предка; вне владельцев — `undefined`
+	 * @param _own слой компонента
+	 */
+	constructor(
+		key: string | symbol,
+		private readonly _parent: TElevatorLayer | undefined,
+		private readonly _own: TElevatorLayer,
+	) {
 		super(key)
-
-		this.Context = resolveContext(this._key)
 	}
 
 	down(value: T): void {
-		this._value = value
+		this._own.write(this._key, value)
 	}
 
 	up(): T | undefined {
-		// Тип значения задаёт ключ elevator'а: под этим ключом кладут только `T`
-		const fromContext = useContext(this.Context) as T | undefined
-
-		return fromContext ?? this._value
+		// Тип значения задаёт ключ лифта: под этим ключом кладут только `T`
+		return this._parent?.read(this._key) as T | undefined
 	}
 }
