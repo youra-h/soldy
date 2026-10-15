@@ -214,6 +214,18 @@ describe('Input · атрибуты потребителя', () => {
 		expect(field(el).name).toBe('email')
 	})
 
+	/**
+	 * Пометку `ng-version` на хост корневого компонента Angular пишет сам, и
+	 * разметке хоста она выглядит его атрибутом. Поле бывает корневым — у
+	 * `createComponent` и TestBed, — и пометка остаётся на корне.
+	 */
+	it('пометка корневого компонента ng-version остаётся на корне', () => {
+		const el = root(mount())
+
+		expect(el.hasAttribute('ng-version')).toBe(true)
+		expect(field(el).hasAttribute('ng-version')).toBe(false)
+	})
+
 	it('атрибут инкапсуляции стилей хоста остаётся на корне', () => {
 		const el = findIn(mountHost(ForwardHost), 'so-input', HTMLElement)
 		const scoped = (element: Element) =>

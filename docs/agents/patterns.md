@@ -215,7 +215,19 @@ ListBox, список Select, Popover и будущий Menu выглядят о
   `ref` потребителя этот `ref` зовёт тем же узлом. Сторожат
   `ui/solid/__tests__/input.spec.tsx` («набор не переписывает поле», «ввод в
   середину текста — каретка на месте»), `checkable.spec.tsx` и серверные
-  `input.server.spec.tsx` и `checkable.server.spec.tsx`.
+  `input.server.spec.tsx` и `checkable.server.spec.tsx`. У Angular своего поля
+  тоже нет: `checked` и `indeterminate` шаблон пишет привязками свойств
+  `[checked]` и `[indeterminate]` — Angular пишет их на смену значения ядра, а
+  на сервере эмуляция DOM отдаёт `checked` атрибутом («выбрано частично»
+  встаёт с гидратацией). Текст — не привязкой `[value]`: её Angular сверяет с
+  прошлым значением привязки, а не с узлом, и набор возвращал бы узлу его же
+  текст, — браузер переставал бы проверять `minlength`. Текст пишет директива
+  адаптера `[so-field-text]` (`ui/angular/src/adapter/runtime/`) сеттером
+  входа, только когда он разошёлся с узлом; на сервере тот же сеттер пишет его
+  в узел эмуляции, и она отдаёт его атрибутом `value`. Сторожат
+  `ui/angular/__tests__/input.spec.ts` («набор не переписывает поле», «ввод в
+  середину текста — каретка на месте»), `checkable.spec.ts` и серверный
+  `fields.server.spec.ts`.
 - **Radio Group** — Radio Group pattern, вариант на нативных
   `input[type="radio"]`: `role="radiogroup"` на контейнере, имя группы —
   `aria_label` / `aria_labelledBy`. Радио собирает в группу общий `name`: его
