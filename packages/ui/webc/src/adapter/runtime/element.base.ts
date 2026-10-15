@@ -30,13 +30,28 @@
  *
  * - connectedCallback: при первом подключении снимает свет и строит структуру
  *   шаблона в самом элементе; при каждом — новая связка над тем же инстансом,
- *   `bindElement(this)` и полная отрисовка. Пока документ разбирается, первое
- *   подключение ждёт `DOMContentLoaded`: элемент из разметки, определённый до
- *   неё (скрипт в `<head>`), подключается раньше, чем парсер дописал его детей,
- *   и свет оказался бы пустым
+ *   `bindElement(this)` и полная отрисовка. Первое подключение бывает
+ *   отложено — см. ниже
  * - attributeChangedCallback: приводит атрибут к типу и пишет в Core
  * - disconnectedCallback: снимает подписки и уничтожает adapter-context;
  *   структура, свет и инстанс остаются у элемента
+ *
+ * Первая сборка — сразу при подключении: `el.ctrl` есть уже после вставки, на
+ * это опираются приложения. Откладывается она в двух случаях, и оба раза
+ * ждёт то, без чего собираться рано:
+ * - пока документ разбирается — до `DOMContentLoaded`: элемент из разметки,
+ *   определённый до неё (скрипт в `<head>`), подключается раньше, чем парсер
+ *   дописал его детей, и свет оказался бы пустым;
+ * - во время регистрации — на микрозадачу. Элемент, который уже стоит в
+ *   документе, браузер оживляет внутри `customElements.define`
+ *   (`defineElement`): синхронно, ещё при импорте пакета — раньше строк точки
+ *   входа, где приложение подключает тему, иконки и свои плагины, а реестр
+ *   действует только на компоненты, собранные после регистрации. Микрозадача
+ *   приходит после синхронной части графа модулей. Тогда же такие элементы
+ *   оживляет полифил в Safari, и момент для разметки страницы один во всех
+ *   браузерах.
+ * Элемент, которого к этому времени в документе нет, не собирается — его
+ * соберёт следующее подключение.
  *
  * Тег — `localName` элемента (`button`): база отдаёт его ядру пропом `tag` при
  * каждой сборке. Атрибута и свойства `tag` нет (`HOST_PROPS`): тег элемента
@@ -115,6 +130,7 @@ import {
 	WebcProfile,
 } from '../common'
 import type { ITemplate, ITemplateContext, TSlotTargets } from '../template'
+import { isDefining } from './defineElement'
 import {
 	applyAttributes,
 	applyClasses,
@@ -291,8 +307,8 @@ export function SoldyElement<
 		private readonly _dirty = new Set<string>()
 		private _flushQueued = false
 		private _connected = false
-		/** Первое подключение ждёт конца разбора документа (см. шапку). */
-		private _awaitingParse = false
+		/** Первое подключение отложено (см. шапку). */
+		private _deferred = false
 
 		/** Память раскладки корня: что поставила база (см. `root-attributes.ts`). */
 		private _appliedClasses: TAppliedClasses = new Set()
@@ -317,17 +333,28 @@ export function SoldyElement<
 		}
 
 		connectedCallback(): void {
-			if (this._connected || this._awaitingParse) return
+			if (this._connected || this._deferred) return
 
-			// Первое подключение, пока документ разбирается, — после разбора: детей
-			// элемента парсер ещё не дописал
-			if (!this._light && this.ownerDocument.readyState === 'loading') {
-				this._awaitingParse = true
-				this.ownerDocument.addEventListener('DOMContentLoaded', this._onParsed, {
-					once: true,
-				})
+			if (!this._light) {
+				// Первое подключение, пока документ разбирается, — после разбора:
+				// детей элемента парсер ещё не дописал
+				if (this.ownerDocument.readyState === 'loading') {
+					this._deferred = true
+					this.ownerDocument.addEventListener('DOMContentLoaded', this._resume, {
+						once: true,
+					})
 
-				return
+					return
+				}
+
+				// Ожил при регистрации — микрозадачей позже: следующими строками
+				// точки входа приложение подключает тему, иконки и плагины
+				if (isDefining()) {
+					this._deferred = true
+					queueMicrotask(this._resume)
+
+					return
+				}
 			}
 
 			this._connected = true
@@ -358,9 +385,12 @@ export function SoldyElement<
 			this._write(attribute.prop, coerceAttribute(value, attribute))
 		}
 
-		/** Документ разобран: отложенное первое подключение, если элемент ещё в нём. */
-		private readonly _onParsed = (): void => {
-			this._awaitingParse = false
+		/**
+		 * Отложенное первое подключение — после разбора документа или микрозадачей
+		 * позже регистрации, если элемент ещё в документе.
+		 */
+		private readonly _resume = (): void => {
+			this._deferred = false
 
 			if (this.isConnected) this.connectedCallback()
 		}
