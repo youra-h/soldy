@@ -391,7 +391,7 @@ describe('стиль: что называет ядро, — за базой', ()
 			so-progress-spinner
 			class="bound"
 			[value]="value()"
-			[style.--s-progress-spinner-fraction]="'0.9'"
+			[style.--so-progress-spinner-fraction]="'0.9'"
 		></span>
 		<span so-progress-spinner class="plain" [value]="value()" [visible]="visible()"></span>`,
 })
@@ -409,19 +409,19 @@ describe('стиль-выход компонента', () => {
 		fixture.componentInstance.value.set(60)
 		fixture.detectChanges()
 
-		expect(el.style.getPropertyValue('--s-progress-spinner-fraction')).toBe('0.6')
+		expect(el.style.getPropertyValue('--so-progress-spinner-fraction')).toBe('0.6')
 	})
 
 	it('ProgressSpinner: --* доходит до узла под своим именем, смена доли — тоже', () => {
 		const fixture = mountHost(FractionHost)
 		const el = findIn(fixture, '.plain', HTMLElement)
 
-		expect(el.style.getPropertyValue('--s-progress-spinner-fraction')).toBe('0.4')
+		expect(el.style.getPropertyValue('--so-progress-spinner-fraction')).toBe('0.4')
 
 		fixture.componentInstance.value.set(60)
 		fixture.detectChanges()
 
-		expect(el.style.getPropertyValue('--s-progress-spinner-fraction')).toBe('0.6')
+		expect(el.style.getPropertyValue('--so-progress-spinner-fraction')).toBe('0.6')
 	})
 
 	it('ProgressSpinner: скрытие трогает только display, доля остаётся', () => {
@@ -432,7 +432,7 @@ describe('стиль-выход компонента', () => {
 		fixture.detectChanges()
 
 		expect(el.style.display).toBe('none')
-		expect(el.style.getPropertyValue('--s-progress-spinner-fraction')).toBe('0.4')
+		expect(el.style.getPropertyValue('--so-progress-spinner-fraction')).toBe('0.4')
 	})
 })
 
@@ -458,16 +458,16 @@ describe('раскладка стиля', () => {
 		const node = document.createElement('div')
 		const applied = applyStyles(
 			node,
-			stylesOf({ '--dialog-width': '320px', 'z-index': 3 }),
+			stylesOf({ '--so-dialog-width': '320px', 'z-index': 3 }),
 			new Map(),
 		)
 
-		expect(node.style.getPropertyValue('--dialog-width')).toBe('320px')
+		expect(node.style.getPropertyValue('--so-dialog-width')).toBe('320px')
 		expect(node.style.zIndex).toBe('3')
 
 		applyStyles(node, stylesOf({ 'z-index': 3 }), applied)
 
-		expect(node.style.getPropertyValue('--dialog-width')).toBe('')
+		expect(node.style.getPropertyValue('--so-dialog-width')).toBe('')
 		expect(node.style.zIndex).toBe('3')
 	})
 
@@ -583,8 +583,8 @@ describe('свойство, записанное в узел мимо разме
 		const button = findIn(fixture, '[so-button]', HTMLElement)
 		const el = icon(fixture)
 
-		button.style.setProperty('--s-swipe-offset', '12px')
-		el.style.setProperty('--s-swipe-offset', '7px')
+		button.style.setProperty('--so-swipe-offset', '12px')
+		el.style.setProperty('--so-swipe-offset', '7px')
 
 		fixture.componentInstance.ctrl.hide()
 		fixture.detectChanges()
@@ -593,10 +593,10 @@ describe('свойство, записанное в узел мимо разме
 		fixture.componentInstance.width.set(20)
 		fixture.detectChanges()
 
-		expect(button.style.getPropertyValue('--s-swipe-offset')).toBe('12px')
+		expect(button.style.getPropertyValue('--so-swipe-offset')).toBe('12px')
 		expect(button.style.color).toBe('blue')
 		expect(button.style.display).toBe('')
-		expect(el.style.getPropertyValue('--s-swipe-offset')).toBe('7px')
+		expect(el.style.getPropertyValue('--so-swipe-offset')).toBe('7px')
 		expect(el.style.width).toBe('20px')
 	})
 })

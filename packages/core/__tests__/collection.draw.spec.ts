@@ -60,7 +60,7 @@ function drawn(entries: ReadonlyArray<TDrawnEntry<Item>>): string[] {
 	return entries.map((entry) =>
 		entry.kind === 'item'
 			? `${entry.item.name}@${entry.place}`
-			: `${entry.key}:${entry.style['--s-filler-height']}`,
+			: `${entry.key}:${entry.style['--so-filler-height']}`,
 	)
 }
 

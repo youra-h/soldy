@@ -7,8 +7,8 @@ export type TModalLayoutPluginEvents = TPluginEvents & {
 
 /** Имена переменных размера панели: их читает CSS блока компонента. */
 export type TModalLayoutVariables = {
-	/** Переменная ширины — `--dialog-width` у окна */
+	/** Переменная ширины — `--so-dialog-width` у окна */
 	readonly width: string
-	/** Переменная высоты — `--dialog-height` у окна */
+	/** Переменная высоты — `--so-dialog-height` у окна */
 	readonly height: string
 }

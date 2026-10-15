@@ -8,10 +8,10 @@ import type { TDialogLayoutPluginEvents } from './types'
 
 /** Сторона отступа → переменная, которую читает CSS блока `so-dialog`. */
 const OFFSET_VARIABLES = [
-	['top', '--dialog-offset-top'],
-	['bottom', '--dialog-offset-bottom'],
-	['start', '--dialog-offset-start'],
-	['end', '--dialog-offset-end'],
+	['top', '--so-dialog-offset-top'],
+	['bottom', '--so-dialog-offset-bottom'],
+	['start', '--so-dialog-offset-start'],
+	['end', '--so-dialog-offset-end'],
 ] as const
 
 /**
@@ -20,9 +20,9 @@ const OFFSET_VARIABLES = [
  *
  * Расчёт общий с выезжающей панелью — `TModalLayoutPlugin`: `styles` панели
  * (`z-index` слоя и размер переменными) и `backdropStyles` подложки. Своё у
- * окна — имена переменных, которые читает тема (`--dialog-width`,
- * `--dialog-height`), и отступ: по стороне на переменную
- * (`--dialog-offset-top`, `-bottom`, `-start`, `-end`). Место и разворот
+ * окна — имена переменных, которые читает тема (`--so-dialog-width`,
+ * `--so-dialog-height`), и отступ: по стороне на переменную
+ * (`--so-dialog-offset-top`, `-bottom`, `-start`, `-end`). Место и разворот
  * раскладывает тема по модификатору и `data-maximized`.
  *
  * **Отступ** — проп окна `offset`, один на все стороны. Стороны по
@@ -33,13 +33,13 @@ const OFFSET_VARIABLES = [
  * ни одной.
  *
  * @example
- * // dialog.width = 480 → styles: { 'z-index': 1001, '--dialog-width': '480px' }
- * // dialog.offset = 24 → и '--dialog-offset-top': '24px' — так на все стороны
+ * // dialog.width = 480 → styles: { 'z-index': 1001, '--so-dialog-width': '480px' }
+ * // dialog.offset = 24 → и '--so-dialog-offset-top': '24px' — так на все стороны
  */
 export class TDialogLayoutPlugin extends TModalLayoutPlugin<TDialogLayoutPluginEvents> {
 	protected readonly _variables: TModalLayoutVariables = {
-		width: '--dialog-width',
-		height: '--dialog-height',
+		width: '--so-dialog-width',
+		height: '--so-dialog-height',
 	}
 
 	private _dialog: IDialog | null = null

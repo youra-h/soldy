@@ -25,10 +25,10 @@ const LARGE_STEP = 100
 const AXIS = { orientation: 'horizontal', inverted: false } as const
 
 /** Сдвиг призрака от края колонки, px по оси окна: плюс — вправо. */
-const GHOST_VARIABLE = '--s-table-column-ghost'
+const GHOST_VARIABLE = '--so-table-column-ghost'
 
 /** Высота призрака, px: от верха заголовка до низа таблицы в видимой части окна. */
-const GHOST_SIZE_VARIABLE = '--s-table-column-ghost-size'
+const GHOST_SIZE_VARIABLE = '--so-table-column-ghost-size'
 
 /**
  * Полоса ручки — ребёнок корня с классом `__resizer` владельца, по классу, а не
@@ -74,8 +74,8 @@ function fieldOf(resizer: Element | null): HTMLInputElement | null {
  * **Отложенный жест** (`resizePreview: 'deferred'` таблицы) ширину до
  * отпускания не меняет: её будущую границу показывает призрак, которого
  * рисует тема по `data-resize-ghost` заголовка. Плагин пишет заголовку его
- * сдвиг от края колонки (`--s-table-column-ghost`, по оси окна, на каждый
- * шаг, если сменился) и высоту (`--s-table-column-ghost-size`, один раз на
+ * сдвиг от края колонки (`--so-table-column-ghost`, по оси окна, на каждый
+ * шаг, если сменился) и высоту (`--so-table-column-ghost-size`, один раз на
  * нажатии: от верха заголовка до низа таблицы в окне браузера) и снимает их
  * в конце жеста. Переменные — на заголовке, а не на корне: запись на корень
  * пересчитала бы стиль каждой ячейки тела. Escape посреди жеста — отмена в

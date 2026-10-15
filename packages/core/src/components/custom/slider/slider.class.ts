@@ -492,7 +492,7 @@ export default class TSlider
 				min,
 				max,
 				step,
-				style: { '--s-slider-position': this._position(value) },
+				style: { '--so-slider-position': this._position(value) },
 				dataset: { 'data-dragging': String(index === dragged) },
 				aria,
 			}
@@ -506,8 +506,8 @@ export default class TSlider
 		const end = this._axis(to)
 
 		return {
-			'--s-slider-range-start': percent(Math.min(start, end)),
-			'--s-slider-range-end': percent(Math.max(start, end)),
+			'--so-slider-range-start': percent(Math.min(start, end)),
+			'--so-slider-range-end': percent(Math.max(start, end)),
 		}
 	}
 
@@ -522,7 +522,7 @@ export default class TSlider
 		return this._markList().map(({ value, label }) => ({
 			value,
 			label,
-			style: { '--s-slider-position': this._position(value) },
+			style: { '--so-slider-position': this._position(value) },
 			dataset: {
 				'data-in-range': String(value >= from && value <= to),
 				'data-current': String(values.includes(value)),

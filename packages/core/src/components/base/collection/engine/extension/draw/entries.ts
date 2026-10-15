@@ -7,5 +7,5 @@ export function drawnItem<TItem extends TDrawable>(item: TItem, place: number): 
 
 /** Распорка на `count` пропущенных элементов по `step` пикселей. */
 export function drawnFiller(key: number, count: number, step: number): TDrawnFiller {
-	return { kind: 'filler', key, style: { '--s-filler-height': `${count * step}px` } }
+	return { kind: 'filler', key, style: { '--so-filler-height': `${count * step}px` } }
 }

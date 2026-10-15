@@ -9,7 +9,7 @@ import type { ProgressSpinnerProps } from './base.component'
  * `Button` и `Label`, а внутри них HTML разрешает только строчную разметку.
  *
  * Разметка статическая: размер и вариант (`--size-*`, `--variant-*`), доля
- * (переменная `--s-progress-spinner-fraction` из выхода `fractionStyle`), бег
+ * (переменная `--so-progress-spinner-fraction` из выхода `fractionStyle`), бег
  * (`data-indeterminate`), роль, значения и имя для скринридера и `dir`
  * приходят кодом, здесь только состав, имена классов и геометрия рисунка.
  * Долю раскладка корня кладёт под стилем потребителя (`toRootProps`), как во

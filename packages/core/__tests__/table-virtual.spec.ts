@@ -65,7 +65,7 @@ function body(entries: ReadonlyArray<TDrawnEntry<ITableRow>>): string[] {
 	return entries.map((entry) =>
 		entry.kind === 'item'
 			? String(idOf(entry.item.data))
-			: `${entry.key}:${entry.style['--s-filler-height']}`,
+			: `${entry.key}:${entry.style['--so-filler-height']}`,
 	)
 }
 

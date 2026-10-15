@@ -8,7 +8,7 @@
 //
 // От ядра на корне приходят:
 //
-// - `--s-progress-spinner-fraction` в `style` — доля готового числом от 0 до
+// - `--so-progress-spinner-fraction` в `style` — доля готового числом от 0 до
 //   1, без единиц. Процент линии (`40%`) кольцу не годится: длину дуги SVG
 //   меряет в долях окружности (`pathLength="1"` в разметке), и доля ложится в
 //   штрих как есть. Пока кольцо бежит, переменной нет;
@@ -97,8 +97,8 @@
 	// двенадцати, и в Chromium на стыке оставался светлый шов.
 	&__range {
 		stroke: var(--s-progress-spinner-fill);
-		stroke-dasharray: var(--s-progress-spinner-fraction, 0)
-			calc(1 - var(--s-progress-spinner-fraction, 0));
+		stroke-dasharray: var(--so-progress-spinner-fraction, 0)
+			calc(1 - var(--so-progress-spinner-fraction, 0));
 
 		@include motion.allowed {
 			transition-property: stroke, stroke-dasharray;

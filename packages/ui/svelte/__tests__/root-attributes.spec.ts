@@ -674,21 +674,22 @@ describe('attachment потребителя — на корне', () => {
 describe('раскладка корня: имена стиля — как в CSS', () => {
 	it('--* и z-index из layout_styles — под своими именами, значения строкой', () => {
 		const { style } = toRootLayout(
-			{ layout_styles: { '--dialog-width': '320px', 'z-index': 3 } },
+			{ layout_styles: { '--so-dialog-width': '320px', 'z-index': 3 } },
 			{},
 		)
 
-		expect(style.below).toEqual({ '--dialog-width': '320px', 'z-index': '3' })
+		expect(style.below).toEqual({ '--so-dialog-width': '320px', 'z-index': '3' })
 	})
 
 	it('--* и z-index доходят до узла как есть', () => {
 		const node = document.createElement('div')
 		const attached = attachRootStyle(
 			node,
-			toRootLayout({ layout_styles: { '--dialog-width': '320px', 'z-index': 3 } }, {}).style,
+			toRootLayout({ layout_styles: { '--so-dialog-width': '320px', 'z-index': 3 } }, {})
+				.style,
 		)
 
-		expect(node.style.getPropertyValue('--dialog-width')).toBe('320px')
+		expect(node.style.getPropertyValue('--so-dialog-width')).toBe('320px')
 		expect(node.style.zIndex).toBe('3')
 
 		attached.detach()
@@ -729,10 +730,10 @@ describe('раскладка корня: стиль-выход компонен�
 	it('ProgressSpinner: стиль потребителя — поверх доли', () => {
 		const { root } = mount(ProgressSpinner, {
 			value: 40,
-			style: '--s-progress-spinner-fraction: 0.9',
+			style: '--so-progress-spinner-fraction: 0.9',
 		})
 
-		expect(root().style.getPropertyValue('--s-progress-spinner-fraction')).toBe('0.9')
+		expect(root().style.getPropertyValue('--so-progress-spinner-fraction')).toBe('0.9')
 	})
 
 	it('ProgressSpinner: display: none скрытого корня — поверх стиля потребителя и доли', () => {
@@ -744,7 +745,7 @@ describe('раскладка корня: стиль-выход компонен�
 
 		expect(root().style.display).toBe('none')
 		// Скрытие трогает только `display`: доля остаётся на корне
-		expect(root().style.getPropertyValue('--s-progress-spinner-fraction')).toBe('0.4')
+		expect(root().style.getPropertyValue('--so-progress-spinner-fraction')).toBe('0.4')
 	})
 
 	/** Плагина раскладки у кольца нет — правило проверяется на самой раскладке корня. */

@@ -779,7 +779,7 @@ $picker-panel: '.so-calendar__month > .so-calendar__heading > .so-popover__panel
 // у подложки оно снято (выше). Время и кривая въезда — те же, что у общей
 // панели (`popover/_mixins.scss`).
 //
-// Сдвиг плагин пишет в саму панель (`--s-swipe-offset`), а свойство
+// Сдвиг плагин пишет в саму панель (`--so-swipe-offset`), а свойство
 // зарегистрировано без наследования (`mixins/_swipe.scss`): панель отдаёт его
 // детям своей переменной, незарегистрированной, — она наследуется.
 //
@@ -799,7 +799,7 @@ $picker-panel: '.so-calendar__month > .so-calendar__heading > .so-popover__panel
 // разрешает (`motion.allowed`). Без движения карточка проявляется вместе с
 // подложкой на своём месте, а отпущенная встаёт на место сразу.
 #{$picker-panel} {
-	--s-calendar-swipe: var(--s-swipe-offset, 0px);
+	--s-calendar-swipe: var(--so-swipe-offset, 0px);
 
 	> .so-popover__content,
 	> .so-popover__handle {

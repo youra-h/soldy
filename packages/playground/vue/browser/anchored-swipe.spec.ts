@@ -284,7 +284,7 @@ describe.each([SELECT, DATE_PICKER])('$name', ({ show, open, ...selectors }) => 
 
 			expect(isOpen()).toBe(true)
 			expect(opened.value).toBe(true)
-			expect(panel().style.getPropertyValue('--s-swipe-offset')).toBe('')
+			expect(panel().style.getPropertyValue('--so-swipe-offset')).toBe('')
 		})
 	})
 
@@ -416,6 +416,6 @@ describe('DatePicker', () => {
 		expect(isOpen()).toBe(true)
 		expect(opened.value).toBe(true)
 		expect(panel().dataset.swiping).toBe('false')
-		expect(panel().style.getPropertyValue('--s-swipe-offset')).toBe('')
+		expect(panel().style.getPropertyValue('--so-swipe-offset')).toBe('')
 	})
 })

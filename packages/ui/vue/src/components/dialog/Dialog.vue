@@ -46,7 +46,7 @@ export default { ...SetupDialog, inheritAttrs: false, components: { Button, Icon
 			<!--
 				Корень — сама панель: на ней слой (`data-layer`), пометка
 				владельцем, место (`so-dialog--placement-*`), размер
-				(`--dialog-width`, `--dialog-height`), `data-open` и
+				(`--so-dialog-width`, `--so-dialog-height`), `data-open` и
 				`data-maximized`.
 				Без пометки плагины не нашли бы слой окна, и нажатие в список
 				Select внутри закрыло бы окно. `tabindex="-1"` — фокус встаёт

@@ -58,8 +58,8 @@ afterEach(() => {
 /** Ширина заголовка, которую «разложил» тест, px: заголовки идут вплотную от нуля. */
 const WIDTH = 100
 
-const DRAG = '--s-table-column-drag'
-const SHIFT = '--s-table-column-shift'
+const DRAG = '--so-table-column-drag'
+const SHIFT = '--so-table-column-shift'
 
 const MOVABLE: readonly TTableColumnSource[] = ['name', 'city', 'age'].map((field) => ({
 	field,

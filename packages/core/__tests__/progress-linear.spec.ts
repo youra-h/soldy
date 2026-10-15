@@ -18,7 +18,7 @@ const progress = (props: Partial<IProgressLinearProps> = {}) => new TProgressLin
 
 /** Доля готового, как её получает разметка. */
 const percentOf = (instance: TProgressLinear) =>
-	instance.percentStyle['--s-progress-linear-percent']
+	instance.percentStyle['--so-progress-linear-percent']
 
 describe('умолчания', () => {
 	it('доля — 0 на шкале 0–100, бега нет, ось горизонтальная, корень — span с классом блока', () => {
@@ -95,7 +95,7 @@ describe('наборы: скринридеру и теме', () => {
 			'aria-valuenow': '40',
 		})
 		expect(instance.dataset.get('data-indeterminate')).toBe('false')
-		expect(instance.percentStyle).toEqual({ '--s-progress-linear-percent': '40%' })
+		expect(instance.percentStyle).toEqual({ '--so-progress-linear-percent': '40%' })
 	})
 
 	it('смена шкалы переписывает aria-valuemin и aria-valuemax', () => {

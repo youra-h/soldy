@@ -182,7 +182,7 @@ export default { ...SetupDatePicker, components: { Button, Calendar, DateInput, 
 			которому тема снимает переход, пока панель идёт за пальцем. Набор
 			отдельный от `panelAria`: ARIA и `data-*` не смешиваются. Открытость
 			(`data-open`) Frame пишет сам, сторону после flip (`data-placement`) —
-			плагин якоря, сдвиг во время жеста (`--s-swipe-offset`) — плагин жеста.
+			плагин якоря, сдвиг во время жеста (`--so-swipe-offset`) — плагин жеста.
 		-->
 		<Frame
 			embedded="date-picker.frame"

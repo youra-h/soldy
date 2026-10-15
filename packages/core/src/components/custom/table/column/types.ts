@@ -40,7 +40,7 @@ export type TTableCompare = (a: TTableRecord, b: TTableRecord) => number
 
 /**
  * CSS-переменные заголовка колонки — и только они: итог ширины с единицей
- * (`--s-table-column-width`). Ширину ячейки шапки ставит тема, а по шапке
+ * (`--so-table-column-width`). Ширину ячейки шапки ставит тема, а по шапке
  * раскладка таблицы режет колонку.
  */
 export type TTableColumnStyle = Record<`--${string}`, string>
@@ -236,7 +236,7 @@ export interface ITableColumn<
 	 */
 	rowHeader: boolean
 	/**
-	 * `--s-table-column-width` — итог ширины в px. Ширины нет — переменной нет,
+	 * `--so-table-column-width` — итог ширины в px. Ширины нет — переменной нет,
 	 * и ширину колонки решает тема
 	 */
 	readonly widthStyle: TTableColumnStyle

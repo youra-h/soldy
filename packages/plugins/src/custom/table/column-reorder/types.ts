@@ -53,7 +53,7 @@ export type TTableColumnReorderGesture = {
 	 */
 	still: boolean
 	/**
-	 * Узел, которому записана ширина взятого (`--s-table-column-shift`), —
+	 * Узел, которому записана ширина взятого (`--so-table-column-shift`), —
 	 * там, где её читает тема: шапка в `head`, корень в `column`; в `none` —
 	 * `null`. С него ширину и снимают
 	 */

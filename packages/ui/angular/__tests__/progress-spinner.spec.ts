@@ -50,7 +50,8 @@ function root(fixture: ComponentFixture<unknown>): HTMLElement {
 }
 
 /** Доля готового на корне; пустая строка — переменной нет. */
-const fraction = (node: HTMLElement) => node.style.getPropertyValue('--s-progress-spinner-fraction')
+const fraction = (node: HTMLElement) =>
+	node.style.getPropertyValue('--so-progress-spinner-fraction')
 
 @Component({
 	standalone: true,

@@ -21,7 +21,7 @@ export const ProgressLinearDescriptor = defineDescriptor(() =>
 				/** Ось: `horizontal` (по умолчанию) или `vertical` — снизу вверх */
 				orientation: { type: String, triggers: ['change:orientation'] },
 				/**
-				 * Доля готового — `--s-progress-linear-percent`. Считает ядро:
+				 * Доля готового — `--so-progress-linear-percent`. Считает ядро:
 				 * в шести адаптерах одна формула была бы шесть раз. Пока полоса
 				 * бежит, переменной нет — отсюда триггер флага.
 				 */

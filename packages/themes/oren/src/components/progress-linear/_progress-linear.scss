@@ -7,7 +7,7 @@
 //
 // От ядра на корне приходят:
 //
-// - `--s-progress-linear-percent` в `style` — доля готового процентом от
+// - `--so-progress-linear-percent` в `style` — доля готового процентом от
 //   `min` до `max`, с `%`. Пока полоса бежит, переменной нет;
 // - `data-indeterminate` — `true`, пока полоса бежит;
 // - модификатор оси — `--horizontal` или `--vertical`: ядро пишет его всегда.
@@ -74,7 +74,7 @@
 	&--horizontal > #{$this}__range {
 		inset-block: 0;
 		inset-inline-start: 0;
-		inline-size: var(--s-progress-linear-percent, 0%);
+		inline-size: var(--so-progress-linear-percent, 0%);
 
 		@include motion.allowed {
 			transition-property: background-color, inline-size;
@@ -84,7 +84,7 @@
 	&--vertical > #{$this}__range {
 		inset-inline: 0;
 		inset-block-end: 0;
-		block-size: var(--s-progress-linear-percent, 0%);
+		block-size: var(--so-progress-linear-percent, 0%);
 
 		@include motion.allowed {
 			transition-property: background-color, block-size;

@@ -133,7 +133,7 @@ export default { ...SetupSelect, components: { Frame, Input, Icon, Tags, SelectI
 			(`data-swiping`), по которому тема снимает переход, пока панель идёт
 			за пальцем. Открытость (`data-open`) Frame пишет сам — это видимость
 			его слоя, — а сторону после flip (`data-placement`) пишет плагин
-			якоря. Сдвиг во время жеста (`--s-swipe-offset`) плагин жеста пишет
+			якоря. Сдвиг во время жеста (`--so-swipe-offset`) плагин жеста пишет
 			в панель сам.
 		-->
 		<Frame

@@ -22,7 +22,7 @@ export default class TProgressSpinner extends TProgress implements IProgressSpin
 	static override baseClass = 'so-progress-spinner'
 
 	/**
-	 * `--s-progress-spinner-fraction` — доля готового числом от 0 до 1: вне
+	 * `--so-progress-spinner-fraction` — доля готового числом от 0 до 1: вне
 	 * шкалы — край, у пустой шкалы (`max` не больше `min`) — `0`. Пока кольцо
 	 * бежит, переменной нет: дуга уходит к нулю, и долю, вернувшуюся после
 	 * бега, тема ведёт от начала кольца, а не с того места, где её оставили.
@@ -32,6 +32,6 @@ export default class TProgressSpinner extends TProgress implements IProgressSpin
 
 		if (fraction === null) return {}
 
-		return { '--s-progress-spinner-fraction': decimal(fraction) }
+		return { '--so-progress-spinner-fraction': decimal(fraction) }
 	}
 }

@@ -597,11 +597,11 @@ describe('ширина', () => {
 	it('теме — итог переменной заголовка, в px; без ширины переменной нет', () => {
 		const column = new TTableColumn({ width: 300, maxWidth: 200 })
 
-		expect(column.widthStyle).toEqual({ '--s-table-column-width': '200px' })
+		expect(column.widthStyle).toEqual({ '--so-table-column-width': '200px' })
 
 		column.maxWidth = undefined
 
-		expect(column.widthStyle).toEqual({ '--s-table-column-width': '300px' })
+		expect(column.widthStyle).toEqual({ '--so-table-column-width': '300px' })
 
 		column.width = undefined
 
@@ -635,7 +635,7 @@ describe('ширина', () => {
 		column.layoutWidth = 160
 
 		expect(column.dataset.get('sized')).toBe('true')
-		expect(column.widthStyle).toEqual({ '--s-table-column-width': '400px' })
+		expect(column.widthStyle).toEqual({ '--so-table-column-width': '400px' })
 
 		column.layoutWidth = undefined
 

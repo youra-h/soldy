@@ -110,7 +110,7 @@ describe('стиль и наборы на сервере', () => {
 
 		expect(body).toMatch(/^<span [^>]*role="progressbar"/)
 		expect(body).toContain('aria-valuenow="40"')
-		expect(body).toContain('style="--s-progress-spinner-fraction:0.4"')
+		expect(body).toContain('style="--so-progress-spinner-fraction:0.4"')
 	})
 
 	it('Skeleton — заглушка и содержимое, корень не скрыт', () => {

@@ -24,7 +24,8 @@ import { progressSpinnerTemplate } from '../src/components/progress-spinner/prog
 const flush = () => new Promise<void>((resolve) => queueMicrotask(() => resolve()))
 
 /** Доля готового на корне; пустая строка — переменной нет. */
-const fraction = (root: HTMLElement) => root.style.getPropertyValue('--s-progress-spinner-fraction')
+const fraction = (root: HTMLElement) =>
+	root.style.getPropertyValue('--so-progress-spinner-fraction')
 
 function isSpinner(node: Element | null): node is TProgressSpinnerElementProps {
 	return node instanceof TProgressSpinnerElement

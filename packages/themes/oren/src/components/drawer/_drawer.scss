@@ -11,8 +11,8 @@
 //
 // Своё у панели — край, размер по оси края, полоса жеста, въезд и выезд и
 // место в контейнере. Всё это раскладка темы, без замеров: код отдаёт
-// значения модификатором (`--placement-*`), переменными (`--drawer-width`,
-// `--drawer-height`, сдвиг жеста `--s-swipe-offset`) и `data-*`
+// значения модификатором (`--placement-*`), переменными (`--so-drawer-width`,
+// `--so-drawer-height`, сдвиг жеста `--so-swipe-offset`) и `data-*`
 // (`data-open`, `data-swiping`, `data-contained`). Полоса и сдвиг жеста —
 // общие с поповером (`mixins/_swipe.scss`).
 
@@ -91,14 +91,14 @@ $backdrop-easing: linear;
 	&--placement-start,
 	&--placement-end {
 		@apply inset-y-0;
-		width: var(--drawer-width, #{$width});
+		width: var(--so-drawer-width, #{$width});
 		max-width: calc(100% - #{$gap});
 	}
 
 	&--placement-top,
 	&--placement-bottom {
 		@apply inset-x-0;
-		height: var(--drawer-height, auto);
+		height: var(--so-drawer-height, auto);
 		max-height: calc(100% - #{$gap});
 	}
 
@@ -133,7 +133,7 @@ $backdrop-easing: linear;
 }
 
 // Где стоит панель. Открытая — на месте, а во время жеста — со сдвигом к
-// краю, который пишет плагин жеста (`--s-swipe-offset`, px со знаком оси
+// краю, который пишет плагин жеста (`--so-swipe-offset`, px со знаком оси
 // окна). Закрытая с движением — за своим краем (`--drawer-away`, своя
 // переменная темы): туда она уезжает при закрытии и оттуда въезжает при
 // открытии. Без движения закрытая стоит, где стояла, и прозрачна: проявляется
@@ -147,12 +147,12 @@ $backdrop-easing: linear;
 // RTL-странице въезжала бы не со своего края.
 .so-drawer--placement-start,
 .so-drawer--placement-end {
-	translate: var(--s-swipe-offset, 0px) 0;
+	translate: var(--so-swipe-offset, 0px) 0;
 }
 
 .so-drawer--placement-top,
 .so-drawer--placement-bottom {
-	translate: 0 var(--s-swipe-offset, 0px);
+	translate: 0 var(--so-swipe-offset, 0px);
 }
 
 .so-drawer--placement-start {

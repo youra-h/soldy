@@ -19,7 +19,7 @@
  * `RadioGroup.Item`) делит их так же: остальное — строке, у радио — полю.
  *
  * Стиль Solid ставит объектом по свойству и не трогает того, что плагины
- * пишут в узел сами: сдвиг смахиваемой панели (`--s-swipe-offset`) переживает
+ * пишут в узел сами: сдвиг смахиваемой панели (`--so-swipe-offset`) переживает
  * смену раскладки и видимости.
  */
 
@@ -489,17 +489,17 @@ describe('свойство, записанное в узел мимо разме
 		const button = find(container, '.so-button', HTMLElement)
 		const icon = find(container, '.so-icon', HTMLElement)
 
-		button.style.setProperty('--s-swipe-offset', '12px')
-		icon.style.setProperty('--s-swipe-offset', '7px')
+		button.style.setProperty('--so-swipe-offset', '12px')
+		icon.style.setProperty('--so-swipe-offset', '7px')
 
 		ctrl.hide()
 		ctrl.show()
 		setStyle({ color: 'blue' })
 		setWidth(20)
 
-		expect(button.style.getPropertyValue('--s-swipe-offset')).toBe('12px')
+		expect(button.style.getPropertyValue('--so-swipe-offset')).toBe('12px')
 		expect(button.style.color).toBe('blue')
-		expect(icon.style.getPropertyValue('--s-swipe-offset')).toBe('7px')
+		expect(icon.style.getPropertyValue('--so-swipe-offset')).toBe('7px')
 		expect(icon.style.width).toBe('20px')
 	})
 
@@ -507,11 +507,11 @@ describe('свойство, записанное в узел мимо разме
 		const [style, setStyle] = createSignal<JSX.CSSProperties | undefined>({ color: 'red' })
 		const { root } = mount(() => <Button style={style()} />)
 
-		root().style.setProperty('--s-swipe-offset', '12px')
+		root().style.setProperty('--so-swipe-offset', '12px')
 		setStyle(undefined)
 
 		expect(root().style.color).toBe('')
-		expect(root().style.getPropertyValue('--s-swipe-offset')).toBe('12px')
+		expect(root().style.getPropertyValue('--so-swipe-offset')).toBe('12px')
 	})
 })
 
@@ -524,9 +524,9 @@ describe('свойство, записанное в узел мимо разме
  */
 describe('раскладка корня: имена стиля — как в CSS', () => {
 	it('--* из layout_styles доходит до узла как есть', () => {
-		const layout = toRootLayout({ layout_styles: { '--dialog-width': '320px' } }, {})
+		const layout = toRootLayout({ layout_styles: { '--so-dialog-width': '320px' } }, {})
 
-		expect(layout.style).toEqual({ '--dialog-width': '320px' })
+		expect(layout.style).toEqual({ '--so-dialog-width': '320px' })
 	})
 
 	it('пустое значение свойства не задаёт, пустой стиль — пустой объект', () => {
@@ -570,10 +570,10 @@ describe('раскладка корня: имена стиля — как в CSS
 describe('раскладка корня: стиль-выход компонента', () => {
 	it('ProgressSpinner: стиль потребителя — поверх доли', () => {
 		const { root } = mount(() => (
-			<ProgressSpinner value={40} style={{ '--s-progress-spinner-fraction': '0.9' }} />
+			<ProgressSpinner value={40} style={{ '--so-progress-spinner-fraction': '0.9' }} />
 		))
 
-		expect(root().style.getPropertyValue('--s-progress-spinner-fraction')).toBe('0.9')
+		expect(root().style.getPropertyValue('--so-progress-spinner-fraction')).toBe('0.9')
 	})
 
 	it('ProgressSpinner: display: none скрытого корня — поверх стиля потребителя и доли', () => {
@@ -583,7 +583,7 @@ describe('раскладка корня: стиль-выход компонен�
 
 		expect(root().style.display).toBe('none')
 		// Скрытие трогает только `display`: доля остаётся на корне
-		expect(root().style.getPropertyValue('--s-progress-spinner-fraction')).toBe('0.4')
+		expect(root().style.getPropertyValue('--so-progress-spinner-fraction')).toBe('0.4')
 	})
 
 	/** Плагина раскладки у кольца нет — правило проверяется на самой раскладке корня. */

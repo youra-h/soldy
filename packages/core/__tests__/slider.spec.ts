@@ -407,7 +407,7 @@ describe('выходы для разметки', () => {
 				min: 0,
 				max: 55,
 				step: 1,
-				style: { '--s-slider-position': '20%' },
+				style: { '--so-slider-position': '20%' },
 				dataset: { 'data-dragging': 'false' },
 				aria: { 'aria-label': 'Минимум' },
 			},
@@ -416,7 +416,7 @@ describe('выходы для разметки', () => {
 				min: 25,
 				max: 100,
 				step: 1,
-				style: { '--s-slider-position': '60%' },
+				style: { '--so-slider-position': '60%' },
 				dataset: { 'data-dragging': 'false' },
 				aria: { 'aria-label': 'Максимум' },
 			},
@@ -440,17 +440,17 @@ describe('выходы для разметки', () => {
 	it('позиции с шагом дробным — без хвоста плавающей точки', () => {
 		const instance = slider({ value: 0.3, min: 0, max: 1, step: 0.1 })
 
-		expect(instance.thumbs[0].style).toEqual({ '--s-slider-position': '30%' })
+		expect(instance.thumbs[0].style).toEqual({ '--so-slider-position': '30%' })
 	})
 
 	it('заливка одной ручки — от min, двух — между ними', () => {
 		expect(slider({ value: 30 }).rangeStyle).toEqual({
-			'--s-slider-range-start': '0%',
-			'--s-slider-range-end': '30%',
+			'--so-slider-range-start': '0%',
+			'--so-slider-range-end': '30%',
 		})
 		expect(slider({ value: [20, 70] }).rangeStyle).toEqual({
-			'--s-slider-range-start': '20%',
-			'--s-slider-range-end': '70%',
+			'--so-slider-range-start': '20%',
+			'--so-slider-range-end': '70%',
 		})
 	})
 
@@ -458,15 +458,15 @@ describe('выходы для разметки', () => {
 		const instance = slider({ min: -50, max: 50, origin: 0, value: 25 })
 
 		expect(instance.rangeStyle).toEqual({
-			'--s-slider-range-start': '50%',
-			'--s-slider-range-end': '75%',
+			'--so-slider-range-start': '50%',
+			'--so-slider-range-end': '75%',
 		})
 
 		instance.value = -25
 
 		expect(instance.rangeStyle).toEqual({
-			'--s-slider-range-start': '25%',
-			'--s-slider-range-end': '50%',
+			'--so-slider-range-start': '25%',
+			'--so-slider-range-end': '50%',
 		})
 	})
 
@@ -474,12 +474,12 @@ describe('выходы для разметки', () => {
 		const instance = slider({ value: [20, 70], inverted: true })
 
 		expect(instance.thumbs.map((thumb) => thumb.style)).toEqual([
-			{ '--s-slider-position': '80%' },
-			{ '--s-slider-position': '30%' },
+			{ '--so-slider-position': '80%' },
+			{ '--so-slider-position': '30%' },
 		])
 		expect(instance.rangeStyle).toEqual({
-			'--s-slider-range-start': '30%',
-			'--s-slider-range-end': '80%',
+			'--so-slider-range-start': '30%',
+			'--so-slider-range-end': '80%',
 		})
 	})
 
@@ -519,25 +519,25 @@ describe('выходы для разметки', () => {
 			{
 				value: 0,
 				label: 'Ноль',
-				style: { '--s-slider-position': '0%' },
+				style: { '--so-slider-position': '0%' },
 				dataset: { 'data-in-range': 'false', 'data-current': 'false' },
 			},
 			{
 				value: 20,
 				label: undefined,
-				style: { '--s-slider-position': '20%' },
+				style: { '--so-slider-position': '20%' },
 				dataset: { 'data-in-range': 'true', 'data-current': 'true' },
 			},
 			{
 				value: 50,
 				label: 'Половина',
-				style: { '--s-slider-position': '50%' },
+				style: { '--so-slider-position': '50%' },
 				dataset: { 'data-in-range': 'true', 'data-current': 'true' },
 			},
 			{
 				value: 80,
 				label: 'Много',
-				style: { '--s-slider-position': '80%' },
+				style: { '--so-slider-position': '80%' },
 				dataset: { 'data-in-range': 'false', 'data-current': 'false' },
 			},
 		])
@@ -613,7 +613,7 @@ describe('щелчок', () => {
 
 		expect(instance.snapPoints).toEqual([0.2])
 		expect(instance.fractions).toEqual([0.2, 0.7])
-		expect(instance.shownMarks[0].style).toEqual({ '--s-slider-position': '80%' })
+		expect(instance.shownMarks[0].style).toEqual({ '--so-slider-position': '80%' })
 	})
 
 	it('доли ручек — по порядку ручек, у одной ручки — одна', () => {

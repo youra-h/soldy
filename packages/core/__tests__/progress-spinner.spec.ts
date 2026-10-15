@@ -19,7 +19,7 @@ const progressSpinner = (props: Partial<IProgressProps> = {}) => new TProgressSp
 
 /** Доля готового, как её получает разметка. */
 const fractionOf = (instance: TProgressSpinner) =>
-	instance.fractionStyle['--s-progress-spinner-fraction']
+	instance.fractionStyle['--so-progress-spinner-fraction']
 
 describe('умолчания', () => {
 	it('доля — 0 на шкале 0–100, бега нет, корень — span с классом блока', () => {
@@ -52,7 +52,7 @@ describe('умолчания', () => {
 			'aria-valuenow': '0',
 		})
 		expect(instance.dataset.get('data-indeterminate')).toBe('false')
-		expect(instance.fractionStyle).toEqual({ '--s-progress-spinner-fraction': '0' })
+		expect(instance.fractionStyle).toEqual({ '--so-progress-spinner-fraction': '0' })
 	})
 
 	it('имени по умолчанию нет: его даёт плагин, а не ядро', () => {

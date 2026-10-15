@@ -7,8 +7,8 @@
 // Всё, что зависит от значения, — позиции — приходит от ядра переменными в
 // `style` узла, процентом от начала оси и уже с учётом `inverted`:
 //
-// - `--s-slider-position` — у ручки и у метки: где её центр;
-// - `--s-slider-range-start`, `--s-slider-range-end` — у заливки: её края,
+// - `--so-slider-position` — у ручки и у метки: где её центр;
+// - `--so-slider-range-start`, `--so-slider-range-end` — у заливки: её края,
 //   начало не дальше конца.
 //
 // Ось раскладывает тема, и только логическими свойствами: горизонталь — от
@@ -125,7 +125,7 @@
 		background-color: var(--s-slider-rail-hover);
 	}
 
-	// Заливка — от `--s-slider-range-start` до `--s-slider-range-end`, тем же
+	// Заливка — от `--so-slider-range-start` до `--so-slider-range-end`, тем же
 	// цветом, что кромка ручки: ручка читается концом заливки.
 	&__range {
 		@apply absolute rounded-full;
@@ -142,11 +142,11 @@
 		inset-block-start: calc((var(--s-slider-thumb-size) - var(--s-slider-rail-size)) / 2);
 		block-size: var(--s-slider-rail-size);
 		inset-inline-start: calc(
-			var(--s-slider-range-start, 0%) - #{mixines.reach(var(--s-slider-range-start, 0%))}
+			var(--so-slider-range-start, 0%) - #{mixines.reach(var(--so-slider-range-start, 0%))}
 		);
 		inset-inline-end: calc(
-			100% - var(--s-slider-range-end, 0%) -
-				#{mixines.reach(calc(100% - var(--s-slider-range-end, 0%)))}
+			100% - var(--so-slider-range-end, 0%) -
+				#{mixines.reach(calc(100% - var(--so-slider-range-end, 0%)))}
 		);
 	}
 
@@ -154,11 +154,11 @@
 		inset-inline-start: calc((var(--s-slider-thumb-size) - var(--s-slider-rail-size)) / 2);
 		inline-size: var(--s-slider-rail-size);
 		inset-block-end: calc(
-			var(--s-slider-range-start, 0%) - #{mixines.reach(var(--s-slider-range-start, 0%))}
+			var(--so-slider-range-start, 0%) - #{mixines.reach(var(--so-slider-range-start, 0%))}
 		);
 		inset-block-start: calc(
-			100% - var(--s-slider-range-end, 0%) -
-				#{mixines.reach(calc(100% - var(--s-slider-range-end, 0%)))}
+			100% - var(--so-slider-range-end, 0%) -
+				#{mixines.reach(calc(100% - var(--so-slider-range-end, 0%)))}
 		);
 	}
 
@@ -191,13 +191,13 @@
 
 	&--horizontal #{$this}__thumb {
 		inset-block-start: 0;
-		inset-inline-start: var(--s-slider-position, 0%);
+		inset-inline-start: var(--so-slider-position, 0%);
 		margin-inline-start: calc(var(--s-slider-thumb-size) / -2);
 	}
 
 	&--vertical #{$this}__thumb {
 		inset-inline-start: 0;
-		inset-block-end: var(--s-slider-position, 0%);
+		inset-block-end: var(--so-slider-position, 0%);
 		margin-block-end: calc(var(--s-slider-thumb-size) / -2);
 	}
 
@@ -361,7 +361,7 @@
 		@apply flex-col items-center;
 		justify-self: start;
 		inline-size: 0;
-		inset-inline-start: var(--s-slider-position, 0%);
+		inset-inline-start: var(--so-slider-position, 0%);
 
 		&::before {
 			margin-block: calc((var(--s-slider-thumb-size) - var(--s-slider-tick-size)) / 2);
@@ -377,7 +377,7 @@
 		@apply flex-row items-center;
 		align-self: end;
 		block-size: 0;
-		inset-block-end: var(--s-slider-position, 0%);
+		inset-block-end: var(--so-slider-position, 0%);
 
 		&::before {
 			margin-inline: calc((var(--s-slider-thumb-size) - var(--s-slider-tick-size)) / 2);

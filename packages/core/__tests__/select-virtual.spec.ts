@@ -37,7 +37,7 @@ function select(count: number) {
 /** Что нарисовано коротко: опции — текстом, распорки — `…высота`. */
 const brief = (entries: ReadonlyArray<TDrawnEntry<ISelectItem>>): string[] =>
 	entries.map((entry) =>
-		entry.kind === 'item' ? entry.item.text : `…${entry.style['--s-filler-height']}`,
+		entry.kind === 'item' ? entry.item.text : `…${entry.style['--so-filler-height']}`,
 	)
 
 /** Место опции в наборе: `размер/место` или `-`, если его нет. */

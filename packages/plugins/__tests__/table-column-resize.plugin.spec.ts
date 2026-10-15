@@ -325,7 +325,7 @@ describe('отложенный жест (deferred)', () => {
 		return mounted
 	}
 
-	const ghostOf = (root: HTMLElement) => root.style.getPropertyValue('--s-table-column-ghost')
+	const ghostOf = (root: HTMLElement) => root.style.getPropertyValue('--so-table-column-ghost')
 
 	it('ширина не меняется до отпускания; один commit на жест', async () => {
 		const { column, root, resizer, commit, pointer } = await mountDeferred()
@@ -350,7 +350,7 @@ describe('отложенный жест (deferred)', () => {
 		expect(column.width).toBe(WIDTH + 30)
 		expect(commit.mock.calls).toEqual([[WIDTH + 30]])
 		expect(ghostOf(root)).toBe('')
-		expect(root.style.getPropertyValue('--s-table-column-ghost-size')).toBe('')
+		expect(root.style.getPropertyValue('--so-table-column-ghost-size')).toBe('')
 	})
 
 	it('возврат к точке нажатия ничего не пишет', async () => {
@@ -393,7 +393,7 @@ describe('отложенный жест (deferred)', () => {
 
 		pointer('pointerdown', resizer, 260)
 
-		expect(root.style.getPropertyValue('--s-table-column-ghost-size')).toMatch(/px$/)
+		expect(root.style.getPropertyValue('--so-table-column-ghost-size')).toMatch(/px$/)
 
 		const measure = vi.spyOn(root, 'getBoundingClientRect')
 

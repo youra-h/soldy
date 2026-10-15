@@ -163,7 +163,7 @@
 	// Панель у бокового края уходит вбок: сдвиг — по горизонтали, поле полосы
 	// — у противоположного края строки
 	&:is([data-edge='start'], [data-edge='end']) {
-		translate: var(--s-swipe-offset, 0px) 0;
+		translate: var(--so-swipe-offset, 0px) 0;
 		padding-block-start: 0;
 	}
 

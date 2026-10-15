@@ -188,8 +188,8 @@ describe('разметка', () => {
 	it('размер — переменными темы, не инлайном', async () => {
 		await render({ props: { width: 360, height: '40vh' } })
 
-		expect(panel().style.getPropertyValue('--drawer-width')).toBe('360px')
-		expect(panel().style.getPropertyValue('--drawer-height')).toBe('40vh')
+		expect(panel().style.getPropertyValue('--so-drawer-width')).toBe('360px')
+		expect(panel().style.getPropertyValue('--so-drawer-height')).toBe('40vh')
 		expect(panel().style.width).toBe('')
 	})
 
@@ -348,7 +348,7 @@ describe('закрытие пользователем', () => {
 		pointer('pointerdown', find('.so-drawer__handle'), 705)
 		pointer('pointermove', panel(), 800)
 
-		expect(panel().style.getPropertyValue('--s-swipe-offset')).toBe('95px')
+		expect(panel().style.getPropertyValue('--so-swipe-offset')).toBe('95px')
 
 		await nextTick()
 

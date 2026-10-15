@@ -61,7 +61,7 @@
 // выезжающей панелью (`swipe.handle`).
 //
 // Сдвиг во время жеста — `translate` по переменной плагина
-// (`--s-swipe-offset`), и только у панели с жестом: `translate`, даже
+// (`--so-swipe-offset`), и только у панели с жестом: `translate`, даже
 // нулевой, делает панель контейнером для `position: fixed` внутри неё.
 //
 // Пока панель тянут (`data-swiping`), перехода нет: она идёт за указателем без
@@ -91,7 +91,7 @@
 // срабатывало бы позже.
 @mixin panel($handle) {
 	&:has(> #{$handle}) {
-		translate: 0 var(--s-swipe-offset, 0px);
+		translate: 0 var(--so-swipe-offset, 0px);
 		padding-block-start: swipe.$handle;
 
 		&[data-placement^='top'] {

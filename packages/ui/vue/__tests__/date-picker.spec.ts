@@ -806,7 +806,7 @@ describe('жест', () => {
 		pointer('pointermove', panel(), 145)
 		await nextTick()
 
-		expect(panel().style.getPropertyValue('--s-swipe-offset')).toBe('100px')
+		expect(panel().style.getPropertyValue('--so-swipe-offset')).toBe('100px')
 		expect(panel().dataset.swiping).toBe('true')
 
 		pointer('pointerup', panel(), 150)

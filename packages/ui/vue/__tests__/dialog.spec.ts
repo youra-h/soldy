@@ -197,16 +197,16 @@ describe('разметка', () => {
 	it('размер — переменными темы, не инлайном', async () => {
 		await render({ props: { width: 480, height: '60vh' } })
 
-		expect(panel().style.getPropertyValue('--dialog-width')).toBe('480px')
-		expect(panel().style.getPropertyValue('--dialog-height')).toBe('60vh')
+		expect(panel().style.getPropertyValue('--so-dialog-width')).toBe('480px')
+		expect(panel().style.getPropertyValue('--so-dialog-height')).toBe('60vh')
 		expect(panel().style.width).toBe('')
 	})
 
 	it('незаданный размер переменной не даёт: умолчание — у темы', async () => {
 		await render()
 
-		expect(panel().style.getPropertyValue('--dialog-width')).toBe('')
-		expect(panel().style.getPropertyValue('--dialog-height')).toBe('')
+		expect(panel().style.getPropertyValue('--so-dialog-width')).toBe('')
+		expect(panel().style.getPropertyValue('--so-dialog-height')).toBe('')
 	})
 
 	it('открытое: панель и подложка в одном слое — z-index и data-layer одни', async () => {
@@ -260,10 +260,10 @@ describe('разметка', () => {
 describe('отступ', () => {
 	/** Переменные отступа панели — по стороне. */
 	const offsets = () => ({
-		top: panel().style.getPropertyValue('--dialog-offset-top'),
-		bottom: panel().style.getPropertyValue('--dialog-offset-bottom'),
-		start: panel().style.getPropertyValue('--dialog-offset-start'),
-		end: panel().style.getPropertyValue('--dialog-offset-end'),
+		top: panel().style.getPropertyValue('--so-dialog-offset-top'),
+		bottom: panel().style.getPropertyValue('--so-dialog-offset-bottom'),
+		start: panel().style.getPropertyValue('--so-dialog-offset-start'),
+		end: panel().style.getPropertyValue('--so-dialog-offset-end'),
 	})
 
 	it('offset — переменными темы по сторонам, не инлайном', async () => {

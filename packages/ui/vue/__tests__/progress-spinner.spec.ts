@@ -31,7 +31,7 @@ function root(): HTMLElement {
 }
 
 /** Доля готового на корне; пустая строка — переменной нет. */
-const fraction = () => root().style.getPropertyValue('--s-progress-spinner-fraction')
+const fraction = () => root().style.getPropertyValue('--so-progress-spinner-fraction')
 
 describe('первая отрисовка', () => {
 	it('по умолчанию кольцо пусто: доля 0, aria-valuenow="0", бега нет', () => {

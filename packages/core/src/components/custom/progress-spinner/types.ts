@@ -8,7 +8,7 @@ export type TProgressSpinnerStyle = Record<`--${string}`, string>
 
 export interface IProgressSpinner extends IProgress {
 	/**
-	 * `--s-progress-spinner-fraction` — доля готового числом, прижатая к 0–1.
+	 * `--so-progress-spinner-fraction` — доля готового числом, прижатая к 0–1.
 	 * Пока кольцо бежит, переменной нет
 	 */
 	readonly fractionStyle: TProgressSpinnerStyle

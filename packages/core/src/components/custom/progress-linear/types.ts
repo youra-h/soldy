@@ -27,7 +27,7 @@ export interface IProgressLinear extends IProgress<IProgressLinearProps, TProgre
 	/** Ось полосы */
 	orientation: TProgressLinearOrientation
 	/**
-	 * `--s-progress-linear-percent` — доля готового, прижатая к 0–100 %. Пока
+	 * `--so-progress-linear-percent` — доля готового, прижатая к 0–100 %. Пока
 	 * полоса бежит, переменной нет
 	 */
 	readonly percentStyle: TProgressLinearStyle

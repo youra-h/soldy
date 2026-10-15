@@ -162,8 +162,8 @@ describe('разметка', () => {
 
 		expect(age.tagName).toBe('TH')
 		expect(age.dataset.align).toBe('end')
-		expect(age.style.getPropertyValue('--s-table-column-width')).toBe('120px')
-		expect(name.style.getPropertyValue('--s-table-column-width')).toBe('')
+		expect(age.style.getPropertyValue('--so-table-column-width')).toBe('120px')
+		expect(name.style.getPropertyValue('--so-table-column-width')).toBe('')
 	})
 
 	it('ячейка колонки rowHeader — th scope="row" с id, остальные — td', async () => {
@@ -242,7 +242,7 @@ describe('раскладка колонок', () => {
 	/** Колонки заголовков — переменные ширины по порядку. */
 	const widths = () =>
 		findAll('.so-table-column').map((header) =>
-			header.style.getPropertyValue('--s-table-column-width'),
+			header.style.getPropertyValue('--so-table-column-width'),
 		)
 
 	it('columnFit none — ширины по умолчанию сразу, без места; признака места нет', async () => {
@@ -708,7 +708,7 @@ describe('ручка ширины', () => {
 		await settle()
 
 		expect(resizerField().value).toBe('180')
-		expect(find('.so-table-column').style.getPropertyValue('--s-table-column-width')).toBe(
+		expect(find('.so-table-column').style.getPropertyValue('--so-table-column-width')).toBe(
 			'180px',
 		)
 		// Ширина раскладки — не своя: колонка остаётся гибкой
@@ -754,7 +754,7 @@ describe('ручка ширины', () => {
 		)
 		await settle()
 
-		expect(header.style.getPropertyValue('--s-table-column-width')).toBe('160px')
+		expect(header.style.getPropertyValue('--so-table-column-width')).toBe('160px')
 		expect(header.dataset.sized).toBe('true')
 		expect(resizerField().value).toBe('160')
 		expect(resize.mock.calls).toEqual([[{ column: columnOf(engine, 'name'), width: 160 }]])
@@ -1343,9 +1343,9 @@ describe('окно', () => {
 			'true',
 		])
 		// Места 20–49: перед ними 20 строк, за ними 30
-		expect(fillers.map((filler) => filler.style.getPropertyValue('--s-filler-height'))).toEqual(
-			['800px', '1200px'],
-		)
+		expect(
+			fillers.map((filler) => filler.style.getPropertyValue('--so-filler-height')),
+		).toEqual(['800px', '1200px'])
 		// Колонка выбора и две колонки
 		expect(find('.so-table__filler', fillers[0]).getAttribute('colspan')).toBe('3')
 		expect(findAll('.so-table-row', body)).toHaveLength(30)

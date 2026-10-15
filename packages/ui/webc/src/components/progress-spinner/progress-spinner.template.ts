@@ -4,7 +4,7 @@
  * Корень — сам `<span is="so-progress-spinner">`: классы (размер и вариант —
  * `--size-*`, `--variant-*`), наборы (роль, значения и имя для скринридера,
  * бег `data-indeterminate`, `dir`) и долю готового — переменную
- * `--s-progress-spinner-fraction` стиль-выхода `fractionStyle` —
+ * `--so-progress-spinner-fraction` стиль-выхода `fractionStyle` —
  * раскладывает на него база (`SoldyElement`). Здесь только рисунок: состав,
  * имена классов и геометрия, без привязок.
  *

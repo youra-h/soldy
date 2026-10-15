@@ -103,7 +103,7 @@ describe('ListBox в окне', () => {
 			'true',
 		])
 		expect(
-			fillers(root).map((filler) => filler.style.getPropertyValue('--s-filler-height')),
+			fillers(root).map((filler) => filler.style.getPropertyValue('--so-filler-height')),
 		).toEqual(['2700px', '2400px'])
 		expect(root.firstElementChild).toBe(fillers(root)[0])
 		expect(root.lastElementChild).toBe(fillers(root)[1])
@@ -225,7 +225,7 @@ describe('Select в окне', () => {
 			'true',
 		])
 		expect(
-			selectFillers().map((filler) => filler.style.getPropertyValue('--s-filler-height')),
+			selectFillers().map((filler) => filler.style.getPropertyValue('--so-filler-height')),
 		).toEqual(['2700px', '2400px'])
 		expect(list.firstElementChild).toBe(selectFillers()[0])
 		expect(list.lastElementChild).toBe(selectFillers()[1])
