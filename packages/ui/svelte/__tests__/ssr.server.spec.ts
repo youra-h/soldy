@@ -177,8 +177,7 @@ describe('ref потребителя · серверный рендер', () => 
 		'RadioGroup',
 		'RadioGroup.Item',
 		'ListBox',
-		// ListBox.Item — временно, до 869ffnvvn: элемент списка в Node не рисуется
-		// (`requestAnimationFrame`), см. `collections.server.spec.ts`
+		'ListBox.Item',
 	]
 
 	it.each(KINDS)('%s: bind:ref не пишется, ref в разметке нет', (kind) => {
