@@ -20,6 +20,11 @@
  * же монтирование: пропсы применяет сборка, у нового контекста своя связка, и
  * состояние заполняется заново из неё.
  *
+ * Функции, которые отданы React или связке и живут дольше рендера, — стрелки
+ * в полях объектов классов (`TStableSnapshot`, `TEventCallbacks`, `TRootRef`),
+ * а не замыкания в теле хука: замыкание держит всю область вызова с пропсами
+ * своего рендера (см. шапку `TEventCallbacks`).
+ *
  * Возвращает ctrl, plugins, ref и bindRef, forwardProps и state
  * (экспортированные props).
  *
@@ -33,7 +38,6 @@ import {
 	useLayoutEffect,
 	useMemo,
 	useReducer,
-	useRef,
 	useSyncExternalStore,
 } from 'react'
 import { toInstanceState } from '@soldy-ui/setup'
@@ -46,6 +50,7 @@ import type {
 } from '@soldy-ui/setup'
 import type { IPluginBundle } from '@soldy-ui/plugins'
 import { ReactProfile } from '../common'
+import { TEventCallbacks } from './event-callbacks.class'
 import { TRootRef, consumerRefOf } from './root-ref.class'
 import { TStableSnapshot } from './stable-snapshot.class'
 
@@ -83,17 +88,26 @@ export type TCollectionBinding<
 	state: TAdapterState<C>
 }
 
-/** Связка своего контекста и её снимок для React: контекст пересобран — обе новые. */
+/**
+ * Связка своего контекста, её снимок для React и приёмник её событий:
+ * контекст пересобран — все новые.
+ */
 type TStore = Readonly<{
 	adapter: IAdapterContext
 	binding: TExchange
 	snapshot: TStableSnapshot
+	callbacks: TEventCallbacks
 }>
 
 function bind(adapter: IAdapterContext): TStore {
 	const binding = adapter.connect(ReactProfile)
 
-	return { adapter, binding, snapshot: new TStableSnapshot(binding.state.getSnapshot) }
+	return {
+		adapter,
+		binding,
+		snapshot: new TStableSnapshot(binding.state.getSnapshot),
+		callbacks: new TEventCallbacks(),
+	}
 }
 
 function rebind(_: TStore, adapter: IAdapterContext): TStore {
@@ -115,7 +129,7 @@ function useExchange(
 	// связка. Обновление во время рендера React применяет сразу, не отрисовав прошлое
 	if (store.adapter !== adapter) dispatch(adapter)
 
-	const { binding, snapshot } = store
+	const { binding, snapshot, callbacks } = store
 
 	// 1. Core → React. Рендер идёт по снимку, подписка — при коммите, и React
 	// сам сверяет снимок после подписки: изменение ядра между ними не теряется.
@@ -135,20 +149,14 @@ function useExchange(
 		binding.inputs.full(props)
 	}, [props, binding])
 
-	// 3. События. useLayoutEffect: подписка до первой отрисовки, чтобы не
-	// пропустить события, привязанные к DOM (`ready` из TElementPlugin через rAF)
-	const propsRef = useRef(props)
-	propsRef.current = props
+	// 3. События — колбэкам из пропсов последнего рендера. useLayoutEffect:
+	// подписка до первой отрисовки, чтобы не пропустить события, привязанные к
+	// DOM (`ready` из TElementPlugin через rAF). Приёмник — стрелка объекта, а
+	// не замыкание здесь: его держит очистка первого коммита, а замыкание
+	// держало бы с собой пропсы этого рендера (см. `TEventCallbacks`)
+	callbacks.update(props)
 
-	useLayoutEffect(
-		() =>
-			binding.events.listen((exportName, args) => {
-				const callback: unknown = Reflect.get(propsRef.current, exportName)
-
-				if (typeof callback === 'function') callback(...args)
-			}),
-		[binding],
-	)
+	useLayoutEffect(() => binding.events.listen(callbacks.sink), [binding, callbacks])
 
 	return { binding, state }
 }
