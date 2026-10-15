@@ -5,18 +5,17 @@ import {
 	signal,
 	type ComponentRef,
 	type DirectiveWithBindings,
+	type Injector,
 	type Type,
 	type ViewContainerRef,
+	type ViewRef,
 } from '@angular/core'
 import { createApplication } from '@angular/platform-browser'
 import { findComponent, type IPreviewHost } from '@soldy-ui/playground-shared'
-import { PREVIEWS } from './previews'
+import { PREVIEWS, type TContent, type TPart, type TProps } from './previews'
 import { FIXTURES } from './fixtures'
 import { listen, listenersOf, type TOutputListener } from './events'
 import { PreviewRootComponent, language } from './root.component'
-
-/** Пропсы компонента — именами разметки, с `ctrl`. */
-type TProps = Readonly<Record<string, unknown>>
 
 /** Компонент в корне: новые пропсы и снятие. */
 type TDrawn = {
@@ -24,11 +23,32 @@ type TDrawn = {
 	destroy(): void
 }
 
-/** Корень компонента, когда его задаёт превью: свой элемент и директивы на нём. */
-type THostOptions = {
-	readonly element?: () => Element
-	readonly directives?: readonly DirectiveWithBindings<unknown>[]
+/**
+ * Где собрать компонент: чей инжектор у сборки, на каком элементе и куда
+ * встаёт его представление.
+ */
+type TPlace = {
+	/**
+	 * Инжектор места. Через него сборка видит провайдер локали корня, а часть
+	 * коллекции — ещё и слой лифта своего владельца.
+	 */
+	readonly injector: Injector
+	/** Готовый элемент компонента; нет — элемент строит Angular по селектору. */
+	readonly element?: Element
+	/** Поставить представление компонента туда, где его проверяет приложение. */
+	readonly attach: (view: ViewRef) => void
 }
+
+/** Как собрать компонент: директивы на корне и узлы его проекций. */
+type TInsertOptions = {
+	readonly directives?: readonly DirectiveWithBindings<unknown>[]
+	readonly projected?: Node[][]
+}
+
+/** Узел содержимого: элемент части, на котором она соберётся, или разметка. */
+type TContentNode =
+	| { readonly node: Node; readonly part?: undefined }
+	| { readonly node: Element; readonly part: TPart }
 
 /**
  * Пропсы, которым у компонента Angular нет входа: тег корня — у самого
@@ -45,8 +65,24 @@ const ELEMENT_PROPS: ReadonlySet<string> = new Set(['tag'])
  */
 const app = await createApplication()
 
+/** Место корня: компонент — его представлением в месте, с инжектором места. */
+function outletPlace(outlet: ViewContainerRef, element?: Element): TPlace {
+	return { injector: outlet.injector, element, attach: (view) => outlet.insert(view) }
+}
+
 /**
- * Компонент — в место корня, со связками входов, как его ставит шаблон.
+ * Место в проекции владельца: элемент уже стоит в его разметке, и
+ * представление компонента проверяет приложение, а не место корня — вставка в
+ * место перенесла бы элемент из проекции. Инжектор — владельца: DI шаблона
+ * идёт по дереву объявлений, и часть, написанная внутри владельца, видит его
+ * провайдеры — слой лифта коллекции (`provideElevator()`).
+ */
+function projectionPlace(owner: ComponentRef<unknown>, element: Element): TPlace {
+	return { injector: owner.injector, element, attach: (view) => app.attachView(view) }
+}
+
+/**
+ * Компонент — в место, со связками входов, как его ставит шаблон.
  *
  * Связка (`inputBinding`) стоит на каждом входе компонента и читает пропсы из
  * сигнала: смена пропсов — новое значение сигнала, а снятый проп связка отдаёт
@@ -56,10 +92,10 @@ const app = await createApplication()
  * расхождение адаптера с дескриптором, и хост его не глушит.
  */
 function insert<T extends object>(
-	outlet: ViewContainerRef,
+	place: TPlace,
 	component: Type<T>,
 	props: TProps,
-	host: THostOptions = {},
+	options: TInsertOptions = {},
 ): { ref: ComponentRef<T>; write: (props: TProps) => void } {
 	const inputs = new Set(
 		(reflectComponentType(component)?.inputs ?? []).map(({ templateName }) => templateName),
@@ -78,18 +114,92 @@ function insert<T extends object>(
 	const current = signal(checked(props))
 	const ref = createComponent(component, {
 		environmentInjector: app.injector,
-		elementInjector: outlet.injector,
-		hostElement: host.element?.(),
-		directives: [...(host.directives ?? [])],
+		elementInjector: place.injector,
+		hostElement: place.element,
+		directives: [...(options.directives ?? [])],
+		projectableNodes: options.projected,
 		bindings: [...inputs].map((name) => inputBinding(name, () => current()[name])),
 	})
 
-	outlet.insert(ref.hostView)
+	place.attach(ref.hostView)
 
 	return { ref, write: (next) => current.set(checked(next)) }
 }
 
-/** Превью: компонент адаптера по описанию карты; слушают его выходы. */
+/**
+ * Узлы содержимого — до сборки компонента: компонент получает их проекцией при
+ * создании, а части соберутся на своих элементах позже (`assembleParts`).
+ */
+function nodesOf(content: readonly TContent[] = []): TContentNode[] {
+	return content.map((entry) =>
+		typeof entry === 'function' ? { node: entry() } : { node: entry.element(), part: entry },
+	)
+}
+
+/**
+ * Узлы содержимого — по проекциям компонента, как их раздал бы шаблон: часть
+ * со слотом — в `<ng-content select="[slot=…]">`, остальное — в основную.
+ * Проекции у компонента нет — ошибка описания, а не пропавшее содержимое.
+ */
+function project(component: Type<object>, nodes: readonly TContentNode[]): Node[][] {
+	const selectors = reflectComponentType(component)?.ngContentSelectors ?? []
+	const projected: Node[][] = selectors.map(() => [])
+
+	for (const { node, part } of nodes) {
+		const selector = part?.slot === undefined ? '*' : `[slot=${part.slot}]`
+		const index = selectors.indexOf(selector)
+
+		if (index < 0) throw new Error(`[playground] у ${component.name} нет проекции ${selector}`)
+
+		projected[index].push(node)
+	}
+
+	return projected
+}
+
+/**
+ * Собрать компонент сразу — проверкой его представления: хуки идут по порядку
+ * разметки, как в шаблоне. Элемент коллекции читает лифт владельца при своей
+ * сборке (`ngOnInit`), а владелец кладёт туда свой движок в своей, — поэтому
+ * владелец собирается раньше своих частей, а части — по порядку и входят в
+ * коллекцию в порядке разметки.
+ */
+function assemble(ref: ComponentRef<unknown>): void {
+	ref.changeDetectorRef.detectChanges()
+}
+
+/**
+ * Части содержимого — каждая на свой элемент в проекции владельца, с его
+ * инжектором, после его сборки и по порядку; у части — свои части. Собранное
+ * копится в `built`: снимается вместе с превью.
+ */
+function assembleParts(
+	owner: ComponentRef<unknown>,
+	nodes: readonly TContentNode[],
+	built: ComponentRef<unknown>[],
+): void {
+	for (const { node, part } of nodes) {
+		if (!part) continue
+
+		const content = nodesOf(part.content)
+		const { ref } = insert(projectionPlace(owner, node), part.component, part.props ?? {}, {
+			projected: project(part.component, content),
+		})
+
+		built.push(ref)
+		assemble(ref)
+		assembleParts(ref, content, built)
+	}
+}
+
+/**
+ * Превью: компонент адаптера по описанию карты — в обёртке и с содержимым;
+ * пропсы строки уходят его входам, его выходы и слушают.
+ *
+ * Обёртка — в месте корня, компонент — на своём элементе в её проекции,
+ * части — на своих в проекциях компонента. Собирается всё снаружи внутрь
+ * (`assemble`): обёртка раньше компонента, компонент раньше частей.
+ */
 function drawPreview(
 	outlet: ViewContainerRef,
 	component: string,
@@ -100,21 +210,56 @@ function drawPreview(
 
 	if (!preview) throw new Error(`[playground] хост Angular не умеет рисовать «${component}»`)
 
-	// Пропсы превью — под пропсами строки
-	const { ref, write } = insert(
-		outlet,
-		preview.component,
-		{ ...preview.props, ...props },
-		preview,
-	)
-	const unlisten = listen(ref.instance, listeners)
+	const built: ComponentRef<unknown>[] = []
+	let unlisten = (): void => {}
 
-	return {
-		write: (next) => write({ ...preview.props, ...next }),
-		destroy() {
-			unlisten()
-			ref.destroy()
-		},
+	// Снимается в порядке сборки, как представление шаблона: владелец раньше
+	// частей
+	const destroy = (): void => {
+		unlisten()
+
+		for (const ref of built) ref.destroy()
+	}
+
+	try {
+		let place: TPlace
+
+		if (preview.wrapper) {
+			const element = preview.element()
+			const { ref: wrapper } = insert(
+				outletPlace(outlet),
+				preview.wrapper.component,
+				preview.wrapper.props ?? {},
+				{ projected: project(preview.wrapper.component, [{ node: element }]) },
+			)
+
+			built.push(wrapper)
+			assemble(wrapper)
+			place = projectionPlace(wrapper, element)
+		} else {
+			place = outletPlace(outlet, preview.element?.())
+		}
+
+		const content = nodesOf(preview.content)
+		// Пропсы превью — под пропсами строки
+		const { ref, write } = insert(
+			place,
+			preview.component,
+			{ ...preview.props, ...props },
+			{ directives: preview.directives, projected: project(preview.component, content) },
+		)
+
+		built.push(ref)
+		// Слушатели — раньше сборки, как подписки на выходы в шаблоне: события
+		// частей, которые входят в коллекцию, уже есть кому принять
+		unlisten = listen(ref.instance, listeners)
+		assemble(ref)
+		assembleParts(ref, content, built)
+
+		return { write: (next) => write({ ...preview.props, ...next }), destroy }
+	} catch (error) {
+		destroy()
+		throw error
 	}
 }
 
@@ -129,7 +274,7 @@ function drawFixture(
 
 	if (!type) throw new Error(`[playground] хост Angular не умеет рисовать «${fixture}»`)
 
-	const { ref, write } = insert(outlet, type, props)
+	const { ref, write } = insert(outletPlace(outlet), type, props)
 	const unlisten = listen(ref.instance.target(), listeners)
 
 	return {
@@ -156,8 +301,13 @@ function drawFixture(
  * возврату, а пропсы и язык оболочка меняет из своих наблюдателей, вне такта
  * Angular.
  *
- * Смена `ctrl` ставит компонент заново: экземпляр ядра адаптер берёт при
- * сборке, а не на лету.
+ * Корень приложение проверяет раньше, чем в нём соберётся компонент: провайдер
+ * уже держит язык шапки, и сборка видит его, а не английский, с которым создан
+ * источник локали, — как в шаблоне, где Angular пишет вход провайдера раньше
+ * хуков его детей.
+ *
+ * Смена `ctrl` ставит превью заново, с обёрткой и частями: экземпляр ядра
+ * адаптер берёт при сборке, а не на лету.
  */
 const host: IPreviewHost = {
 	previews: Object.keys(PREVIEWS),
@@ -177,8 +327,12 @@ const host: IPreviewHost = {
 		let bind = props
 		let drawn: TDrawn
 
-		// Корень — в документ и в приложение, когда в нём есть что рисовать:
-		// превью нет или проп без входа — узел оболочки остаётся пустым
+		// Корень проверен раньше сборки компонента: провайдер уже держит язык шапки
+		app.attachView(root.hostView)
+		app.tick()
+
+		// Корень — в документ, когда в нём есть что рисовать: превью нет или
+		// проп без входа — узел оболочки остаётся пустым
 		try {
 			drawn = draw(bind)
 		} catch (error) {
@@ -187,7 +341,6 @@ const host: IPreviewHost = {
 		}
 
 		node.appendChild(element)
-		app.attachView(root.hostView)
 		app.tick()
 
 		return {
