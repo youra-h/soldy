@@ -159,7 +159,7 @@ const dragBy = (from: HTMLElement, dx: number, dy: number, steps = 10) => {
 const drag = (from: HTMLElement, dy: number, steps = 10) => dragBy(from, 0, dy, steps)
 
 beforeEach(async () => {
-	document.documentElement.dataset.theme = 'oren'
+	document.documentElement.dataset.soTheme = 'oren'
 	await page.viewport(1000, 700)
 })
 

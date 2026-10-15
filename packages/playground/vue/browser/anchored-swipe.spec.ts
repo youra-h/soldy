@@ -174,7 +174,7 @@ const drag = (from: HTMLElement, dy: number, steps = 10) => {
 }
 
 beforeEach(async () => {
-	document.documentElement.dataset.theme = 'oren'
+	document.documentElement.dataset.soTheme = 'oren'
 	await page.viewport(1000, 700)
 })
 

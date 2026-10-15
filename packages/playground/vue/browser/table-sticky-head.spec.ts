@@ -156,7 +156,7 @@ beforeAll(async () => {
 afterEach(async () => {
 	cleanup()
 	scrollingElement().scrollTop = 0
-	delete document.documentElement.dataset.theme
+	delete document.documentElement.dataset.soTheme
 	await forcedColors('none')
 })
 
@@ -189,14 +189,14 @@ describe('место шапки', () => {
 
 	/**
 	 * Приложение со своей закреплённой полосой сдвигает шапку под неё
-	 * переменной `--s-table-head-offset` у обёртки таблицы.
+	 * переменной `--so-table-head-offset` у обёртки таблицы.
 	 */
 	it('на странице — под закреплённой полосой приложения в 48 px', async () => {
 		await show(() =>
-			h('div', { style: '--s-table-head-offset: 48px' }, [
+			h('div', { style: '--so-table-head-offset: 48px' }, [
 				h('div', {
 					class: 'so-test-bar',
-					style: 'position: sticky; top: 0; z-index: 40; height: 48px; background: var(--s-neutral-50)',
+					style: 'position: sticky; top: 0; z-index: 40; height: 48px; background: var(--so-neutral-50)',
 				}),
 				sticky(engineOf(60)),
 			]),
@@ -337,7 +337,7 @@ describe('над строками — шапка', () => {
 })
 
 /**
- * Фон шапки — поверхность места, на котором стоит таблица (`--s-place-surface`):
+ * Фон шапки — поверхность места, на котором стоит таблица (`--so-place-surface`):
  * страница, карточка приложения со своим цветом, панели Popover и Dialog.
  * Шапка непрозрачна, и уходящие строки под ней не проступают.
  */
@@ -349,7 +349,7 @@ describe('фон — поверхность места', () => {
 		{
 			name: 'страница',
 			markup: (table: VNode) =>
-				h('div', { class: 'so-test-place', style: 'background: var(--s-neutral-50)' }, [
+				h('div', { class: 'so-test-place', style: 'background: var(--so-neutral-50)' }, [
 					table,
 				]),
 			place: () => find('.so-test-place'),
@@ -361,7 +361,7 @@ describe('фон — поверхность места', () => {
 					'div',
 					{
 						class: 'so-test-place',
-						style: 'padding: 12px; background: var(--s-neutral-100); --s-place-surface: var(--s-neutral-100)',
+						style: 'padding: 12px; background: var(--so-neutral-100); --so-place-surface: var(--so-neutral-100)',
 					},
 					[table],
 				),
@@ -388,7 +388,7 @@ describe('фон — поверхность места', () => {
 	const CASES = SCHEMES.flatMap((scheme) => PLACES.map((place) => ({ scheme, ...place })))
 
 	it.each(CASES)('$scheme, $name: фон шапки — фон места, непрозрачный', async (scenario) => {
-		document.documentElement.dataset.theme = scenario.scheme
+		document.documentElement.dataset.soTheme = scenario.scheme
 		await show(() => scenario.markup(sticky(engineOf(5))))
 
 		const place = scenario.place()
@@ -420,8 +420,8 @@ describe('линия под шапкой', () => {
 
 	/** Таблица и кнопка `outlined` рядом — на странице и на поверхности контрола. */
 	const BACKDROPS = {
-		страница: 'var(--s-neutral-50)',
-		'поверхность контрола': 'var(--s-component-surface)',
+		страница: 'var(--so-neutral-50)',
+		'поверхность контрола': 'var(--so-component-surface)',
 	} as const
 
 	const CASES = SCHEMES.flatMap((scheme) =>
@@ -429,12 +429,12 @@ describe('линия под шапкой', () => {
 	)
 
 	it.each(CASES)('$scheme, $backdrop: линия — цвета рамки outlined', async (scenario) => {
-		document.documentElement.dataset.theme = scenario.scheme
+		document.documentElement.dataset.soTheme = scenario.scheme
 		await show(() =>
 			h(
 				'div',
 				{
-					style: `padding: 8px; background: ${scenario.color}; --s-place-surface: ${scenario.color}`,
+					style: `padding: 8px; background: ${scenario.color}; --so-place-surface: ${scenario.color}`,
 				},
 				[
 					h('div', { class: 'so-test-away', style: 'height: 24px' }),
@@ -466,7 +466,7 @@ describe('линия под шапкой', () => {
 	it.each(SCHEMES)(
 		'%s, принудительные цвета: фон — Canvas, линия — CanvasText',
 		async (scheme) => {
-			document.documentElement.dataset.theme = scheme
+			document.documentElement.dataset.soTheme = scheme
 			await forcedColors('active')
 			await show(() => scrollBox(sticky(engineOf())))
 
@@ -542,13 +542,13 @@ describe('снимок шапки', () => {
 	async function showPreview(scheme: string, sticky: boolean) {
 		const stickyHead = ref(sticky)
 
-		document.documentElement.dataset.theme = scheme
+		document.documentElement.dataset.soTheme = scheme
 		await show(() =>
 			h(
 				'div',
 				{
 					class: 'so-test-stage',
-					style: 'width: 640px; padding: 12px; background: var(--s-neutral-50)',
+					style: 'width: 640px; padding: 12px; background: var(--so-neutral-50)',
 				},
 				[
 					h('div', { class: 'so-test-away', style: 'height: 24px' }),
@@ -939,7 +939,7 @@ describe('фокус ниже шапки', () => {
 
 /**
  * Высоту шапки пишет плагин темы (`TTableHeadPlugin`) — переменной
- * `--s-table-head-height` на корне, пока шапка закреплена.
+ * `--so-table-head-height` на корне, пока шапка закреплена.
  */
 describe('высота шапки', () => {
 	it('равна высоте шапки, следует за ней и снимается вместе с пропом', async () => {
@@ -953,7 +953,7 @@ describe('высота шапки', () => {
 		)
 
 		const table = find('table.so-table')
-		const height = () => table.style.getPropertyValue('--s-table-head-height')
+		const height = () => table.style.getPropertyValue('--so-table-head-height')
 		const drift = () => Math.abs(parseFloat(height()) - box(headOf()).height)
 
 		await expect.poll(drift).toBeLessThan(0.5)
@@ -974,7 +974,7 @@ describe('высота шапки', () => {
 	it('без пропа переменной нет', async () => {
 		await show(() => sticky(engineOf(5), false))
 
-		expect(find('table.so-table').style.getPropertyValue('--s-table-head-height')).toBe('')
+		expect(find('table.so-table').style.getPropertyValue('--so-table-head-height')).toBe('')
 	})
 })
 

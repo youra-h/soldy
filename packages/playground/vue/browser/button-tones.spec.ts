@@ -53,7 +53,7 @@ const CASES = SCHEMES.flatMap((scheme) =>
 )
 
 beforeEach(() => {
-	document.documentElement.dataset.theme = 'oren'
+	document.documentElement.dataset.soTheme = 'oren'
 })
 
 afterEach(() => {
@@ -64,7 +64,7 @@ describe('Button: выбор под подсветкой', () => {
 	it.each(CASES)(
 		'$scheme, $view, $variant: слой — только у насыщенной заливки, раскладка — как в покое',
 		async ({ scheme, props, layered }) => {
-			document.documentElement.dataset.theme = scheme
+			document.documentElement.dataset.soTheme = scheme
 			render(
 				defineComponent({
 					render: () =>
@@ -99,7 +99,7 @@ describe('Button: выбор под подсветкой', () => {
  */
 describe('строка ListBox с вариантом: выбор под подсветкой', () => {
 	it.each(SCHEMES)('%s: слоя заливки нет, раскладка — как в покое', async (scheme) => {
-		document.documentElement.dataset.theme = scheme
+		document.documentElement.dataset.soTheme = scheme
 		render(
 			defineComponent({
 				render: () =>

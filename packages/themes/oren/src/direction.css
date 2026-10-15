@@ -21,9 +21,9 @@
 
 :root,
 [dir='ltr'] {
-	--s-dir-sign: 1;
+	--so-dir-sign: 1;
 }
 
 [dir='rtl'] {
-	--s-dir-sign: -1;
+	--so-dir-sign: -1;
 }

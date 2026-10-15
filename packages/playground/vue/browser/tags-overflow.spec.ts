@@ -126,7 +126,7 @@ const arrowOntoCutTag = async (area: () => HTMLElement, side: 'start' | 'end') =
 
 beforeEach(() => {
 	// Тема читается с корня документа — тот же атрибут, что в `index.html`.
-	document.documentElement.dataset.theme = 'oren'
+	document.documentElement.dataset.soTheme = 'oren'
 })
 
 /**

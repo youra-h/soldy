@@ -78,7 +78,7 @@ async function boxesOf(framework: string, component: string, selector: string) {
 beforeEach(async () => {
 	// Колонки пишут события компонентов в консоль — в отчёте прогона это шум
 	vi.spyOn(console, 'log').mockImplementation(() => {})
-	document.documentElement.dataset.theme = 'oren'
+	document.documentElement.dataset.soTheme = 'oren'
 
 	await router.push('/vue')
 

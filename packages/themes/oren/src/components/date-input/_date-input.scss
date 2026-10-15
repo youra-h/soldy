@@ -47,9 +47,9 @@
 	// текст Input, а не вразрядку. Шире не взять ещё и из-за выделения в RTL:
 	// у флекс-элемента Chrome красит выделением текст, а не поля, и в ряду
 	// справа налево поле каждой части осталось бы просветом в выделенной дате.
-	--s-date-input-pad: 0.0625em;
+	--so-date-input-pad: 0.0625em;
 
-	@include mixines.date-input-highlight('accent', var(--s-accent-800));
+	@include mixines.date-input-highlight('accent', var(--so-accent-800));
 
 	// Кольцо фокуса — пока фокус на любой части, мышью или клавиатурой, как у
 	// ввода Input: тот ловит `:focus-visible`, а у поля ввода он горит и от
@@ -70,7 +70,7 @@
 	// прочесть и скопировать), но ввода нет. Подсветка части — нейтраль: место
 	// фокуса видно, а ввода она не обещает. Кольцо поля — то же: это фокус.
 	&--readonly {
-		@include mixines.date-input-highlight('neutral', var(--s-component-text));
+		@include mixines.date-input-highlight('neutral', var(--so-component-text));
 	}
 
 	@each $variant in input.$variants {
@@ -119,7 +119,7 @@
 .so-date-input__trailing {
 	@apply flex shrink-0 items-center justify-center gap-1;
 	@apply cursor-default;
-	height: var(--s-date-input-slot-row);
+	height: var(--so-date-input-slot-row);
 }
 
 .so-date-input__leading {
@@ -176,7 +176,7 @@
 .so-date-input__segments {
 	@apply inline-flex shrink-0 items-center;
 	@apply whitespace-pre select-text outline-none;
-	padding-inline: calc(var(--s-date-input-indent) - var(--s-date-input-pad));
+	padding-inline: calc(var(--so-date-input-indent) - var(--so-date-input-pad));
 	caret-color: transparent;
 
 	// Цифры одной ширины: ↑/↓ и набор поверх набранной части её ширину не
@@ -201,14 +201,18 @@
 	// тема не заводит: ширина таких цифр — от шрифтов машины, число, снятое на
 	// одной, на другую не переносится, а список языков пришлось бы вести
 	// руками.
-	min-inline-size: calc(15ch + 2 * (var(--s-date-input-indent) - var(--s-date-input-pad)));
+	min-inline-size: calc(15ch + 2 * (var(--so-date-input-indent) - var(--so-date-input-pad)));
 
 	&:has(> [data-type='hour']) {
-		min-inline-size: calc(23.5ch + 2 * (var(--s-date-input-indent) - var(--s-date-input-pad)));
+		min-inline-size: calc(
+			23.5ch + 2 * (var(--so-date-input-indent) - var(--so-date-input-pad))
+		);
 	}
 
 	&:has(> [data-type='second']) {
-		min-inline-size: calc(26.5ch + 2 * (var(--s-date-input-indent) - var(--s-date-input-pad)));
+		min-inline-size: calc(
+			26.5ch + 2 * (var(--so-date-input-indent) - var(--so-date-input-pad))
+		);
 	}
 }
 
@@ -221,7 +225,7 @@
 // высотой в строку слота (интерлиньяж ряда).
 .so-date-input__segment {
 	@apply rounded-sm outline-none;
-	padding-inline: var(--s-date-input-pad);
+	padding-inline: var(--so-date-input-pad);
 
 	// Год держит место под все свои четыре цифры. Ядро пишет его как есть —
 	// «2», «20», «2026», как `formatToParts`, — и без места поле росло бы с
@@ -250,7 +254,7 @@
 	// под подсказку у набранной части нет: подсказка бывает шире цифр, и такое
 	// место разорвало бы набранную дату пробелами.
 	&[data-type='year'] {
-		min-inline-size: calc(4ch + 2 * var(--s-date-input-pad));
+		min-inline-size: calc(4ch + 2 * var(--so-date-input-pad));
 	}
 
 	// Подсказка пустой части — приглушённый текст темы (ступень 500), а не
@@ -264,8 +268,8 @@
 	// Под фокусом — подсветка: туда пойдёт ввод. Пустая часть под фокусом —
 	// тоже текстом подсветки, а не подсказки: часть одна, и вид у фокуса один.
 	&:focus {
-		background-color: var(--s-date-input-highlight);
-		color: var(--s-date-input-highlight-text);
+		background-color: var(--so-date-input-highlight);
+		color: var(--so-date-input-highlight-text);
 	}
 }
 
@@ -276,8 +280,8 @@
 .so-date-input__segment,
 .so-date-input__literal {
 	&::selection {
-		background-color: var(--s-date-input-highlight);
-		color: var(--s-date-input-highlight-text);
+		background-color: var(--so-date-input-highlight);
+		color: var(--so-date-input-highlight-text);
 	}
 }
 

@@ -47,8 +47,8 @@ type TScheme = (typeof SCHEMES)[number]
  * у подложки, поэтому проверяются обе.
  */
 const BACKDROPS = {
-	страница: 'var(--s-neutral-50)',
-	'поверхность контрола': 'var(--s-component-surface)',
+	страница: 'var(--so-neutral-50)',
+	'поверхность контрола': 'var(--so-component-surface)',
 } as const
 
 type TBackdrop = keyof typeof BACKDROPS
@@ -149,7 +149,7 @@ const backdropRow = (backdrop: TBackdrop, indicator: IIndicator): VNode =>
 
 /** Все случаи в схеме, указатель уведён со всех кнопок: наведение меняет их фон. */
 async function showCases(scheme: TScheme, indicator: IIndicator): Promise<void> {
-	document.documentElement.dataset.theme = scheme
+	document.documentElement.dataset.soTheme = scheme
 
 	render(
 		defineComponent({
@@ -218,7 +218,7 @@ async function showPlaces(
 			render: () =>
 				h(
 					'div',
-					{ style: 'background: var(--s-neutral-50); padding: 8px' },
+					{ style: 'background: var(--so-neutral-50); padding: 8px' },
 					Object.entries(places).map(([place, markup]) =>
 						h('div', { key: place, 'data-place': place }, [markup()]),
 					),
@@ -237,7 +237,7 @@ async function showPlaces(
 }
 
 beforeEach(() => {
-	document.documentElement.dataset.theme = 'oren'
+	document.documentElement.dataset.soTheme = 'oren'
 })
 
 afterEach(async () => {
@@ -269,7 +269,7 @@ describe.each(SCHEMES)('%s: индикатор без варианта крас�
 describe('заданный вариант индикатора — выбор потребителя', () => {
 	it.each(INDICATORS)('$name: в кнопке тех же цветов, что вне её', async (indicator) => {
 		for (const scheme of SCHEMES) {
-			document.documentElement.dataset.theme = scheme
+			document.documentElement.dataset.soTheme = scheme
 
 			for (const variant of COMPONENT_VARIANTS) {
 				const colorsAt = await showPlaces(indicator, {
@@ -287,7 +287,7 @@ describe('заданный вариант индикатора — выбор п
 
 	it.each(INDICATORS)('$name: без варианта вне кнопки — `accent`', async (indicator) => {
 		for (const scheme of SCHEMES) {
-			document.documentElement.dataset.theme = scheme
+			document.documentElement.dataset.soTheme = scheme
 
 			const colorsAt = await showPlaces(indicator, {
 				'без варианта': () => indicator.render(),
@@ -314,7 +314,7 @@ describe('принудительные цвета', () => {
 		expect(matchMedia('(forced-colors: active)').matches).toBe(true)
 
 		for (const scheme of SCHEMES) {
-			document.documentElement.dataset.theme = scheme
+			document.documentElement.dataset.soTheme = scheme
 
 			const colorsAt = await showPlaces(indicator, {
 				'в кнопке': () => inButton(indicator, { variant: 'accent' }),

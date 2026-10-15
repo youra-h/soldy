@@ -4,7 +4,7 @@
  *
  * Цвета вида решает дизайн, и тест их не знает (`themes/oren/AGENTS.md`,
  * «Что тестом не проверяется»). Здесь — отношение, которое ломалось молча:
- * ступень шкалы отсчитывается от страницы, а `--s-component-surface` в тёмной
+ * ступень шкалы отсчитывается от страницы, а `--so-component-surface` в тёмной
  * схеме сама равна ступени 200. Поэтому на панели Select и Popover рамка
  * нейтрального `outlined` была ровно цвета панели, заливка нейтрального
  * `filled` — темнее панели, то есть ЗА ней, а её наведение с панелью
@@ -37,8 +37,8 @@ const SCHEMES = ['oren', 'oren-dark'] as const
  * токенов, поэтому в каждой схеме он свой, а тест один.
  */
 const BACKDROPS = {
-	страница: 'var(--s-neutral-50)',
-	'поверхность контрола': 'var(--s-component-surface)',
+	страница: 'var(--so-neutral-50)',
+	'поверхность контрола': 'var(--so-component-surface)',
 } as const
 
 type TBackdrop = keyof typeof BACKDROPS
@@ -103,7 +103,7 @@ function look(name: TBackdrop, selector: string): { background: number; border: 
 
 /** Сцена в заданной схеме, указатель уведён со всех кнопок. */
 async function show(scheme: (typeof SCHEMES)[number]): Promise<void> {
-	document.documentElement.dataset.theme = scheme
+	document.documentElement.dataset.soTheme = scheme
 	render(scene)
 
 	await userEvent.hover(find('.so-test-away'))
@@ -127,7 +127,7 @@ const FILLED = '.so-button--view-filled'
 const OUTLINED = '.so-button--view-outlined'
 
 beforeEach(() => {
-	document.documentElement.dataset.theme = 'oren'
+	document.documentElement.dataset.soTheme = 'oren'
 })
 
 afterEach(() => {

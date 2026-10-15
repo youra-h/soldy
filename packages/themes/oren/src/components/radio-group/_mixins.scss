@@ -53,7 +53,7 @@ $sizes: (
 
 	@apply #{'gap-' + map.get($scale, 'gap')};
 
-	--radio-control-size: calc(var(--spacing) * #{map.get($scale, 'control')});
+	--so-radio-control-size: calc(var(--spacing) * #{map.get($scale, 'control')});
 }
 
 // Цвет варианта.
@@ -68,8 +68,8 @@ $sizes: (
 
 	> #{$this}__control {
 		// Обычное объявление, не `@apply border-s-…` — почему, см. input/_mixins.scss
-		border-color: var(--s-#{$color}-#{$ring});
-		color: var(--s-#{$color}-#{$mark});
+		border-color: var(--so-#{$color}-#{$ring});
+		color: var(--so-#{$color}-#{$mark});
 	}
 
 	// Наведение — только там, где клик что-то сделает: выбранное радио
@@ -87,7 +87,7 @@ $sizes: (
 			[data-disabled='true']
 		)
 		> #{$this}__control {
-		border-color: var(--s-#{$color}-#{$ring-hover});
+		border-color: var(--so-#{$color}-#{$ring-hover});
 	}
 
 	&[data-disabled='true'] > #{$this}__control {

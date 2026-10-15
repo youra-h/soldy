@@ -32,10 +32,10 @@
 	// слой ступени 500 поверх того, что под дорожкой (`mixins/_veil.scss`).
 	//
 	// Два шага заливки, а не один: ручка обязана контрастировать с серой
-	// дорожкой (`--s-component-knob`), а на одном шаге (плотность заливки
+	// дорожкой (`--so-component-knob`), а на одном шаге (плотность заливки
 	// `filled` у Button) белая ручка на ней пропадает. По величине это та же
 	// ступень 200, с которой дорожка и начинала.
-	$track: veil.density(var(--s-component-fill), var(--s-component-fill));
+	$track: veil.density(var(--so-component-fill), var(--so-component-fill));
 
 	input {
 		&:checked + #{$this}__track {
@@ -54,7 +54,7 @@
 			// Состояние прибавляется к заливке дорожки: обе плотности
 			// считаются от одной подложки, и наведение уводит дальше ровно на
 			// свой шаг — та же лесенка, что была ступенями 200 → 300.
-			@include veil.veil($color, veil.density(var(--s-component-state-hover), $track));
+			@include veil.veil($color, veil.density(var(--so-component-state-hover), $track));
 		}
 	}
 

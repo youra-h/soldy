@@ -4,8 +4,8 @@
 //
 // Индикатор без варианта красится так, как велит место, где он стоит. Место,
 // которому свой цвет индикатора нужен, объявляет его двумя переменными:
-// `--s-indicator-fill` — то, что сообщает: дуга, заливка доли, бегущий
-// отрезок, — и `--s-indicator-track` — дорожка под ней. Переменные
+// `--so-indicator-fill` — то, что сообщает: дуга, заливка доли, бегущий
+// отрезок, — и `--so-indicator-track` — дорожка под ней. Переменные
 // наследуются, и их читает любой индикатор внутри места. Вне такого места
 // индикатор берёт свой вид без варианта — `accent`.
 //
@@ -34,15 +34,15 @@
 // `currentColor` в переменной вычисляется там, где её читают, — у индикатора,
 // а цвет текста он наследует от места.
 @mixin text-colored {
-	--s-indicator-fill: currentColor;
-	--s-indicator-track: #{veil.layer(currentColor, calc(3 * var(--s-component-fill)))};
+	--so-indicator-fill: currentColor;
+	--so-indicator-track: #{veil.layer(currentColor, calc(3 * var(--so-component-fill)))};
 }
 
 // Цвета индикатора без варианта: цвет места, а вне места — свой (`$own`).
 @function fill($own) {
-	@return var(--s-indicator-fill, #{$own});
+	@return var(--so-indicator-fill, #{$own});
 }
 
 @function track($own) {
-	@return var(--s-indicator-track, #{$own});
+	@return var(--so-indicator-track, #{$own});
 }

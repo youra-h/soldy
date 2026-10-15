@@ -43,27 +43,27 @@ $sizes: (
 // высота строки, поля ячеек, ширина колонки выбора, место кнопки сортировки.
 // Одно число на размер вместо правила на каждую часть.
 //
-// - `--s-table-button`, `--s-table-button-inline` — высота и поле Button того
+// - `--so-table-button`, `--so-table-button-inline` — высота и поле Button того
 //   же размера;
-// - `--s-table-row` — высота строки: кнопка и запас под кольцо фокуса сверху
-//   и снизу (`--s-table-bleed`);
-// - `--s-table-head-row` — высота строки шапки: на 2px ниже строки тела —
+// - `--so-table-row` — высота строки: кнопка и запас под кольцо фокуса сверху
+//   и снизу (`--so-table-bleed`);
+// - `--so-table-head-row` — высота строки шапки: на 2px ниже строки тела —
 //   подписи колонок плотнее данных. Кольцо фокуса кнопки сортировки лежит
 //   внутри ячейки, и запас ему в шапке не нужен;
-// - `--s-table-cell-inline` — поле ячейки: поле кнопки и тот же запас. Текст
+// - `--so-table-cell-inline` — поле ячейки: поле кнопки и тот же запас. Текст
 //   ячейки стоит там же, где текст кнопки сортировки над ним, а кольцо фокуса
 //   кнопки — в своей ячейке, не на соседней и не за краем таблицы;
-// - `--s-table-check` — сторона коробки чекбокса.
+// - `--so-table-check` — сторона коробки чекбокса.
 @mixin table-size($size) {
 	$button: map.get(button.$sizes, $size);
 	$scale: map.get($sizes, $size);
 
-	--s-table-button: calc(var(--spacing) * #{map.get($button, 'h')});
-	--s-table-button-inline: calc(var(--spacing) * #{map.get($button, 'px')});
-	--s-table-row: calc(var(--s-table-button) + 2 * var(--s-table-bleed));
-	--s-table-head-row: calc(var(--s-table-row) - 2px);
-	--s-table-cell-inline: calc(var(--s-table-button-inline) + var(--s-table-bleed));
-	--s-table-check: calc(var(--spacing) * #{map.get($scale, 'check')});
+	--so-table-button: calc(var(--spacing) * #{map.get($button, 'h')});
+	--so-table-button-inline: calc(var(--spacing) * #{map.get($button, 'px')});
+	--so-table-row: calc(var(--so-table-button) + 2 * var(--so-table-bleed));
+	--so-table-head-row: calc(var(--so-table-row) - 2px);
+	--so-table-cell-inline: calc(var(--so-table-button-inline) + var(--so-table-bleed));
+	--so-table-check: calc(var(--spacing) * #{map.get($scale, 'check')});
 
 	@apply #{map.get($scale, 'text')};
 }
@@ -73,7 +73,7 @@ $sizes: (
 // страницы и текста. Рисует её тень шапки внутрь, во весь `thead`: первая
 // тень — линия, вторая, под ней, — поверхность. Фон тех же цветов лежит под
 // тенью. Почему тенью, а не фоном, — `_table.scss`, закреплённая шапка.
-@mixin sticky-head-surface($surface: var(--s-place-surface), $line: var(--s-neutral-300)) {
+@mixin sticky-head-surface($surface: var(--so-place-surface), $line: var(--so-neutral-300)) {
 	background-color: $surface;
 	background-image: linear-gradient($line, $line);
 	background-position: bottom;
@@ -92,18 +92,18 @@ $sizes: (
 // странице, и на панели, и ступень, отсчитанная от страницы, на панели
 // пропала бы. Плотности — те же, что у Button (`button-state-veil`):
 //
-// - `--s-table-hover` — наведение: заголовок колонки под указателем, строка
+// - `--so-table-hover` — наведение: заголовок колонки под указателем, строка
 //   сетки под указателем и под фокусом;
-// - `--s-table-active` — нажатие и выбор: нажатый заголовок, заголовок,
+// - `--so-table-active` — нажатие и выбор: нажатый заголовок, заголовок,
 //   у которого тянут ручку, и выбранная строка. У Button нажатие и выбор
 //   тоже одной плотности;
-// - `--s-table-active-hover` — выбранная строка сетки под указателем или
+// - `--so-table-active-hover` — выбранная строка сетки под указателем или
 //   фокусом: два состояния сразу, плотнее обоих.
 //
 // Текст ячеек не меняется: на выбранной строке данные читаются так же, как на
 // соседних.
 @mixin table-colors($color) {
-	--s-table-hover: #{veil.tint($color, var(--s-component-state-hover))};
-	--s-table-active: #{veil.tint($color, var(--s-component-state-active))};
-	--s-table-active-hover: #{veil.tint($color, var(--s-component-state-active-hover))};
+	--so-table-hover: #{veil.tint($color, var(--so-component-state-hover))};
+	--so-table-active: #{veil.tint($color, var(--so-component-state-active))};
+	--so-table-active-hover: #{veil.tint($color, var(--so-component-state-active-hover))};
 }

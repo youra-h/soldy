@@ -95,7 +95,7 @@ const height = (mark: string) =>
 	find(`.so-test-${mark} > .so-accordion-item__body`).getBoundingClientRect().height
 
 beforeEach(() => {
-	document.documentElement.dataset.theme = 'oren'
+	document.documentElement.dataset.soTheme = 'oren'
 })
 
 afterEach(() => {

@@ -47,7 +47,7 @@ $enabled: ':not(:has(> input:disabled))';
 	&__leading,
 	&__trailing {
 		@apply flex items-center justify-center gap-1;
-		height: var(--s-input-slot-row);
+		height: var(--so-input-slot-row);
 	}
 
 	// Отступ слота — у края поля, и сторона логическая: в RTL `leading` стоит

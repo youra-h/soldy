@@ -16,11 +16,11 @@
 	// `.so-select__list`.
 	@apply overflow-y-auto;
 	// Обычное объявление, не `@apply border-s-…` — почему, см. input/_mixins.scss
-	border-color: var(--s-neutral-300);
+	border-color: var(--so-neutral-300);
 
 	&:hover {
 		&:not([data-disabled='true']) {
-			border-color: var(--s-neutral-400);
+			border-color: var(--so-neutral-400);
 		}
 	}
 

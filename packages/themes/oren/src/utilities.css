@@ -1,14 +1,14 @@
 @utility text-s-component {
-	color: var(--s-component-text);
+	color: var(--so-component-text);
 }
 
 @utility text-s-component-placeholder {
-	color: var(--s-component-text);
+	color: var(--so-component-text);
 	opacity: 0.35;
 }
 
 @utility outline-s-component {
-	outline-color: var(--s-component-focus-ring);
+	outline-color: var(--so-component-focus-ring);
 }
 
 @utility opacity-s-component-disabled {
@@ -18,13 +18,13 @@
 /* Фоны из семантических токенов. Нужны потому, что Tailwind умеет делать
  * утилиту из шкалы (bg-s-neutral-200), но не из отдельного токена. */
 @utility bg-s-component-surface {
-	background-color: var(--s-component-surface);
+	background-color: var(--so-component-surface);
 }
 
 @utility bg-s-component-knob {
-	background-color: var(--s-component-knob);
+	background-color: var(--so-component-knob);
 }
 
 @utility bg-s-component-veil {
-	background-color: var(--s-component-veil);
+	background-color: var(--so-component-veil);
 }

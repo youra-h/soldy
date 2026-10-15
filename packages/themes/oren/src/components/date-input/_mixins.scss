@@ -14,14 +14,14 @@
 	$scale: map.get(input.$sizes, $size);
 
 	@include input.field-height('date-input', $size);
-	--s-date-input-indent: calc(var(--spacing) * #{map.get($scale, 'indent')});
+	--so-date-input-indent: calc(var(--spacing) * #{map.get($scale, 'indent')});
 
 	.so-date-input__segments {
 		@if map.get($scale, 'text') {
 			@apply #{map.get($scale, 'text')};
 		}
 
-		line-height: var(--s-date-input-slot-row);
+		line-height: var(--so-date-input-slot-row);
 	}
 }
 
@@ -33,7 +33,7 @@
 // браузера — один цвет: Ctrl/Cmd+A выделяет дату, и вся дата выглядит так же,
 // как часть под фокусом, а фокус остаётся на своей части.
 //
-// Цвет — вуаль выбора (`--s-component-state-active`), как у выбранной строки
+// Цвет — вуаль выбора (`--so-component-state-active`), как у выбранной строки
 // `plain`, и текст ступени 800 того же семейства. Семейство — `accent`, цвет
 // фокуса темы, а не вариант поля: вариант красит рамку, а подсветка говорит,
 // куда пойдёт ввод, как и кольцо.
@@ -42,12 +42,12 @@
 // то есть ровно так, как браузер наложил бы полупрозрачный слой. Иначе
 // выделение легло бы поверх подсветки части под фокусом вторым слоем, и она
 // потемнела бы внутри выделения на тексте, но не на полях. Поверхность у поля
-// всегда своя, `--s-component-surface`, поэтому смешивать есть с чем.
+// всегда своя, `--so-component-surface`, поэтому смешивать есть с чем.
 @mixin date-input-highlight($color, $text) {
-	--s-date-input-highlight: color-mix(
+	--so-date-input-highlight: color-mix(
 		in srgb,
-		var(--s-#{$color}-500) var(--s-component-state-active),
-		var(--s-component-surface)
+		var(--so-#{$color}-500) var(--so-component-state-active),
+		var(--so-component-surface)
 	);
-	--s-date-input-highlight-text: #{$text};
+	--so-date-input-highlight-text: #{$text};
 }

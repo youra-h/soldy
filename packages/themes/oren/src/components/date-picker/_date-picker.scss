@@ -46,7 +46,7 @@
 	@apply grow;
 
 	// Сторона кнопок — строка слота поля.
-	--s-date-picker-button: var(--s-date-input-slot-row);
+	--so-date-picker-button: var(--so-date-input-slot-row);
 }
 
 // Кнопки очистки и календаря — квадрат со стороной в строку слота: в коробке
@@ -60,8 +60,8 @@
 .so-date-picker__clear,
 .so-date-picker__trigger {
 	@apply shrink-0 px-0;
-	inline-size: var(--s-date-picker-button);
-	block-size: var(--s-date-picker-button);
+	inline-size: var(--so-date-picker-button);
+	block-size: var(--so-date-picker-button);
 }
 
 // Вид кнопок — `plain` по контексту, как у очистки полей: значения вида
@@ -85,7 +85,7 @@
 			@apply #{map.get($scale, 'text')};
 		}
 
-		line-height: var(--s-date-picker-slot-row);
+		line-height: var(--so-date-picker-slot-row);
 	}
 }
 
@@ -115,7 +115,7 @@
 	grid-template-columns: 1fr auto 1fr auto auto;
 
 	// Сторона кнопок — строка слота коробки.
-	--s-date-picker-button: var(--s-date-picker-slot-row);
+	--so-date-picker-button: var(--so-date-picker-slot-row);
 
 	&:has(.so-date-input__segment:focus) {
 		@include input.field-focus;
@@ -245,7 +245,7 @@ $empty: ".so-date-picker--range:where(:not(:has(.so-date-input__segment:not([dat
 	@apply text-s-component shadow-md;
 	@apply ring-1 ring-s-neutral-300;
 	@apply outline outline-transparent;
-	@include place.surface(var(--s-component-surface));
+	@include place.surface(var(--so-component-surface));
 	max-width: calc(100vw - 1rem);
 	max-height: calc(100dvh - 1rem);
 

@@ -5,11 +5,11 @@
  * сразу.
  *
  * Полосу рисует тема (`themes/oren/src/components/tabs/_tabs.scss`) —
- * псевдоэлементом `::after` списка по переменным `--active-tab-*` и тем же
+ * псевдоэлементом `::after` списка по переменным `--so-tabs-active-*` и тем же
  * переездом, что карточку `contained` (`tabs-contained.spec.ts`). Пишет
  * переменные плагин темы `TTabsViewPlugin`
  * (`themes/oren/setup/plugins/tabs-view.plugin.ts`), он же ставит на список
- * признак переезда `--active-tab-moving` при смене активного таба и снимает
+ * признак переезда `--so-tabs-active-moving` при смене активного таба и снимает
  * его, когда переход доиграл; без признака переход нулевой.
  *
  * Раньше полоса ехала своим правилом: переходом на любой пересчёт — первую
@@ -121,7 +121,7 @@ const lengthOf = (value: TValue, axis: TAxis): number => {
 }
 
 /** Признак переезда на списке; пустая строка — его нет. */
-const moving = () => list().style.getPropertyValue('--active-tab-moving')
+const moving = () => list().style.getPropertyValue('--so-tabs-active-moving')
 
 /** Переходы полосы: только `::after` списка. */
 const stripRuns = () => pseudoTransitionRuns(list(), '::after')
@@ -154,7 +154,7 @@ const expectStripOn = async (value: TValue, axis: TAxis = 'horizontal') => {
 }
 
 beforeEach(() => {
-	document.documentElement.dataset.theme = 'oren'
+	document.documentElement.dataset.soTheme = 'oren'
 })
 
 afterEach(async () => {

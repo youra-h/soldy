@@ -191,7 +191,7 @@ function lines(): DOMRect[] {
 const middle = (rect: DOMRect): number => rect.top + rect.height / 2
 
 beforeEach(() => {
-	document.documentElement.dataset.theme = 'oren'
+	document.documentElement.dataset.soTheme = 'oren'
 })
 
 afterEach(() => {

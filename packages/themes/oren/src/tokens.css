@@ -1,9 +1,12 @@
 /* ─── Тема oren, светлая схема (default) ────────────────────
  * Палитра + семантические токены.
  *
- * Цвета объявлены как CSS-переменные (--s-*) и прокидываются в Tailwind
+ * Цвета объявлены как CSS-переменные (--so-*) и прокидываются в Tailwind
  * через @theme inline, чтобы утилиты (bg-s-accent-500 и т.д.) ссылались
- * на переменные — так темы переключаются в рантайме через [data-theme].
+ * на переменные — так темы переключаются в рантайме через [data-so-theme].
+ * Переменная — глобальное имя, у неё префикс so-, как у библиотеки; имя
+ * утилиты в собранный CSS не попадает, и префикс у неё свой, s- (AGENTS.md
+ * пакета, «Открытые вопросы»).
  *
  * Тёмная схема — в tokens-dark.css: там переопределены только значения,
  * регистрация в @theme inline ниже общая на обе. Номер ступени в этом
@@ -12,76 +15,76 @@
  */
 
 :root,
-[data-theme='oren'] {
+[data-so-theme='oren'] {
 	/* Схема для самого браузера. То, что он рисует сам, — полосы
 	 * прокрутки, нативные поля, системные цвета по умолчанию — токены не
 	 * красят, их цвет браузер берёт отсюда. Пара — `dark` в tokens-dark.css. */
 	color-scheme: light;
 
 	/* ─── Accent (brand / primary action) ── blue ─────────────── */
-	--s-accent-50: oklch(0.977 0.013 236.62);
-	--s-accent-100: oklch(0.951 0.026 236.824);
-	--s-accent-200: oklch(0.901 0.058 230.902);
-	--s-accent-300: oklch(0.828 0.111 230.318);
-	--s-accent-400: oklch(0.746 0.16 232.661);
-	--s-accent-500: oklch(0.685 0.169 237.323);
-	--s-accent-600: oklch(0.588 0.158 241.966);
-	--s-accent-700: oklch(0.5 0.134 242.749);
-	--s-accent-800: oklch(0.443 0.11 240.79);
-	--s-accent-900: oklch(0.391 0.09 240.876);
-	--s-accent-950: oklch(0.293 0.066 243.157);
+	--so-accent-50: oklch(0.977 0.013 236.62);
+	--so-accent-100: oklch(0.951 0.026 236.824);
+	--so-accent-200: oklch(0.901 0.058 230.902);
+	--so-accent-300: oklch(0.828 0.111 230.318);
+	--so-accent-400: oklch(0.746 0.16 232.661);
+	--so-accent-500: oklch(0.685 0.169 237.323);
+	--so-accent-600: oklch(0.588 0.158 241.966);
+	--so-accent-700: oklch(0.5 0.134 242.749);
+	--so-accent-800: oklch(0.443 0.11 240.79);
+	--so-accent-900: oklch(0.391 0.09 240.876);
+	--so-accent-950: oklch(0.293 0.066 243.157);
 
 	/* ─── Positive (success / confirm) ── green ───────────── */
-	--s-positive-50: oklch(0.979 0.021 166.113);
-	--s-positive-100: oklch(0.95 0.052 163.051);
-	--s-positive-200: oklch(0.905 0.093 164.15);
-	--s-positive-300: oklch(0.845 0.143 164.978);
-	--s-positive-400: oklch(0.765 0.177 163.223);
-	--s-positive-500: oklch(0.696 0.17 162.48);
-	--s-positive-600: oklch(0.596 0.145 163.225);
-	--s-positive-700: oklch(0.508 0.118 165.612);
-	--s-positive-800: oklch(0.432 0.095 166.913);
-	--s-positive-900: oklch(0.378 0.077 168.94);
-	--s-positive-950: oklch(0.262 0.051 172.552);
+	--so-positive-50: oklch(0.979 0.021 166.113);
+	--so-positive-100: oklch(0.95 0.052 163.051);
+	--so-positive-200: oklch(0.905 0.093 164.15);
+	--so-positive-300: oklch(0.845 0.143 164.978);
+	--so-positive-400: oklch(0.765 0.177 163.223);
+	--so-positive-500: oklch(0.696 0.17 162.48);
+	--so-positive-600: oklch(0.596 0.145 163.225);
+	--so-positive-700: oklch(0.508 0.118 165.612);
+	--so-positive-800: oklch(0.432 0.095 166.913);
+	--so-positive-900: oklch(0.378 0.077 168.94);
+	--so-positive-950: oklch(0.262 0.051 172.552);
 
 	/* ─── Negative (error / danger / destructive) ── red ──────── */
-	--s-negative-50: oklch(0.969 0.015 12.422);
-	--s-negative-100: oklch(0.941 0.03 12.58);
-	--s-negative-200: oklch(0.892 0.058 10.001);
-	--s-negative-300: oklch(0.81 0.117 11.638);
-	--s-negative-400: oklch(0.712 0.194 13.428);
-	--s-negative-500: oklch(0.645 0.246 16.439);
-	--s-negative-600: oklch(0.586 0.253 17.585);
-	--s-negative-700: oklch(0.514 0.222 16.935);
-	--s-negative-800: oklch(0.455 0.188 13.697);
-	--s-negative-900: oklch(0.41 0.159 10.272);
-	--s-negative-950: oklch(0.271 0.105 12.094);
+	--so-negative-50: oklch(0.969 0.015 12.422);
+	--so-negative-100: oklch(0.941 0.03 12.58);
+	--so-negative-200: oklch(0.892 0.058 10.001);
+	--so-negative-300: oklch(0.81 0.117 11.638);
+	--so-negative-400: oklch(0.712 0.194 13.428);
+	--so-negative-500: oklch(0.645 0.246 16.439);
+	--so-negative-600: oklch(0.586 0.253 17.585);
+	--so-negative-700: oklch(0.514 0.222 16.935);
+	--so-negative-800: oklch(0.455 0.188 13.697);
+	--so-negative-900: oklch(0.41 0.159 10.272);
+	--so-negative-950: oklch(0.271 0.105 12.094);
 
 	/* ─── Caution (warning) ── orange ────────────────────────── */
-	--s-caution-50: oklch(0.987 0.022 95.277);
-	--s-caution-100: oklch(0.962 0.059 95.617);
-	--s-caution-200: oklch(0.924 0.12 95.746);
-	--s-caution-300: oklch(0.879 0.169 91.605);
-	--s-caution-400: oklch(0.828 0.189 84.429);
-	--s-caution-500: oklch(0.769 0.188 70.08);
-	--s-caution-600: oklch(0.666 0.179 58.318);
-	--s-caution-700: oklch(0.555 0.163 48.998);
-	--s-caution-800: oklch(0.473 0.137 46.201);
-	--s-caution-900: oklch(0.414 0.112 45.904);
-	--s-caution-950: oklch(0.279 0.077 45.635);
+	--so-caution-50: oklch(0.987 0.022 95.277);
+	--so-caution-100: oklch(0.962 0.059 95.617);
+	--so-caution-200: oklch(0.924 0.12 95.746);
+	--so-caution-300: oklch(0.879 0.169 91.605);
+	--so-caution-400: oklch(0.828 0.189 84.429);
+	--so-caution-500: oklch(0.769 0.188 70.08);
+	--so-caution-600: oklch(0.666 0.179 58.318);
+	--so-caution-700: oklch(0.555 0.163 48.998);
+	--so-caution-800: oklch(0.473 0.137 46.201);
+	--so-caution-900: oklch(0.414 0.112 45.904);
+	--so-caution-950: oklch(0.279 0.077 45.635);
 
 	/* ─── Neutral (secondary / muted) ── gray ───────────────── */
-	--s-neutral-50: oklch(0.985 0.002 247.839);
-	--s-neutral-100: oklch(0.967 0.003 264.542);
-	--s-neutral-200: oklch(0.928 0.006 264.531);
-	--s-neutral-300: oklch(0.872 0.01 258.338);
-	--s-neutral-400: oklch(0.707 0.022 261.325);
-	--s-neutral-500: oklch(0.551 0.018 264.364);
-	--s-neutral-600: oklch(0.446 0.03 256.802);
-	--s-neutral-700: oklch(0.373 0.034 259.733);
-	--s-neutral-800: oklch(0.278 0.033 256.848);
-	--s-neutral-900: oklch(0.21 0.034 264.665);
-	--s-neutral-950: oklch(0.13 0.028 261.692);
+	--so-neutral-50: oklch(0.985 0.002 247.839);
+	--so-neutral-100: oklch(0.967 0.003 264.542);
+	--so-neutral-200: oklch(0.928 0.006 264.531);
+	--so-neutral-300: oklch(0.872 0.01 258.338);
+	--so-neutral-400: oklch(0.707 0.022 261.325);
+	--so-neutral-500: oklch(0.551 0.018 264.364);
+	--so-neutral-600: oklch(0.446 0.03 256.802);
+	--so-neutral-700: oklch(0.373 0.034 259.733);
+	--so-neutral-800: oklch(0.278 0.033 256.848);
+	--so-neutral-900: oklch(0.21 0.034 264.665);
+	--so-neutral-950: oklch(0.13 0.028 261.692);
 
 	/* ─── Semantic component tokens ─────────────────────────────
 	 * Здесь живёт всё, что нельзя выразить одной ступенью шкалы,
@@ -90,12 +93,12 @@
 	 * `bg-white`: белый не инвертируется вместе со шкалой и в тёмной
 	 * схеме остался бы белым.
 	 */
-	--s-component-text: var(--s-neutral-800);
-	--s-component-focus-ring: var(--s-accent-300);
+	--so-component-text: var(--so-neutral-800);
+	--so-component-focus-ring: var(--so-accent-300);
 	/* Поверхность контрола: поле ввода, коробка чекбокса, активная
 	 * «таблетка» Tabs. Литерал, а не ступень: в светлой схеме контрол
 	 * приподнят над страницей ровно тем, что он белее её. */
-	--s-component-surface: #fff;
+	--so-component-surface: #fff;
 	/* Поверхность места — то, на чём стоят компоненты: страница, карточка,
 	 * панель. Это не цвет компонента, а сообщение места: объявляет её тот,
 	 * кто красит фон, — здесь страница (ступень 50), панели темы — миксином
@@ -103,12 +106,12 @@
 	 * Читает её тот, кому нужен непрозрачный фон «как под ним», —
 	 * закреплённая шапка Table: вуаль не годится, сквозь неё видно строки,
 	 * которые уходят под шапку. В тёмной схеме не переопределяется, как
-	 * `--s-component-text`: выбор ступени тот же. */
-	--s-place-surface: var(--s-neutral-50);
+	 * `--so-component-text`: выбор ступени тот же. */
+	--so-place-surface: var(--so-neutral-50);
 	/* Ручка Switch — см. tokens-dark.css, там роли расходятся */
-	--s-component-knob: #fff;
+	--so-component-knob: #fff;
 	/* Вуаль для утопленных элементов (неактивные вкладки Tabs--outline) */
-	--s-component-veil: var(--s-neutral-400);
+	--so-component-veil: var(--so-neutral-400);
 
 	/* ─── Плотность вуали состояний ─────────────────────────────
 	 * Наведение, нажатие и выбор у вида `plain` — не ступень шкалы, а
@@ -129,9 +132,9 @@
 	 * белой поверхности дают ровно ступень 100, 16 % — ступень 200, то
 	 * есть в светлой схеме вид состояний не изменился.
 	 */
-	--s-component-state-hover: 8%;
-	--s-component-state-active: 16%;
-	--s-component-state-active-hover: 24%;
+	--so-component-state-hover: 8%;
+	--so-component-state-active: 16%;
+	--so-component-state-active-hover: 24%;
 
 	/* ─── Плотность вуали нейтральной заливки ───────────────────
 	 * Насыщенная заливка `filled` стоит на шкале сама (ступень 500), а
@@ -149,68 +152,68 @@
 	 * дорожка Switch стоит на два (8+8 = прежняя ступень 200), иначе на ней
 	 * пропадает ручка (`components/switch/_mixins.scss`).
 	 */
-	--s-component-fill: 8%;
+	--so-component-fill: 8%;
 }
 
 /* Регистрируем токены как tailwind-цвета (утилиты ссылаются на var) */
 @theme inline {
-	--color-s-accent-50: var(--s-accent-50);
-	--color-s-accent-100: var(--s-accent-100);
-	--color-s-accent-200: var(--s-accent-200);
-	--color-s-accent-300: var(--s-accent-300);
-	--color-s-accent-400: var(--s-accent-400);
-	--color-s-accent-500: var(--s-accent-500);
-	--color-s-accent-600: var(--s-accent-600);
-	--color-s-accent-700: var(--s-accent-700);
-	--color-s-accent-800: var(--s-accent-800);
-	--color-s-accent-900: var(--s-accent-900);
-	--color-s-accent-950: var(--s-accent-950);
+	--color-s-accent-50: var(--so-accent-50);
+	--color-s-accent-100: var(--so-accent-100);
+	--color-s-accent-200: var(--so-accent-200);
+	--color-s-accent-300: var(--so-accent-300);
+	--color-s-accent-400: var(--so-accent-400);
+	--color-s-accent-500: var(--so-accent-500);
+	--color-s-accent-600: var(--so-accent-600);
+	--color-s-accent-700: var(--so-accent-700);
+	--color-s-accent-800: var(--so-accent-800);
+	--color-s-accent-900: var(--so-accent-900);
+	--color-s-accent-950: var(--so-accent-950);
 
-	--color-s-positive-50: var(--s-positive-50);
-	--color-s-positive-100: var(--s-positive-100);
-	--color-s-positive-200: var(--s-positive-200);
-	--color-s-positive-300: var(--s-positive-300);
-	--color-s-positive-400: var(--s-positive-400);
-	--color-s-positive-500: var(--s-positive-500);
-	--color-s-positive-600: var(--s-positive-600);
-	--color-s-positive-700: var(--s-positive-700);
-	--color-s-positive-800: var(--s-positive-800);
-	--color-s-positive-900: var(--s-positive-900);
-	--color-s-positive-950: var(--s-positive-950);
+	--color-s-positive-50: var(--so-positive-50);
+	--color-s-positive-100: var(--so-positive-100);
+	--color-s-positive-200: var(--so-positive-200);
+	--color-s-positive-300: var(--so-positive-300);
+	--color-s-positive-400: var(--so-positive-400);
+	--color-s-positive-500: var(--so-positive-500);
+	--color-s-positive-600: var(--so-positive-600);
+	--color-s-positive-700: var(--so-positive-700);
+	--color-s-positive-800: var(--so-positive-800);
+	--color-s-positive-900: var(--so-positive-900);
+	--color-s-positive-950: var(--so-positive-950);
 
-	--color-s-negative-50: var(--s-negative-50);
-	--color-s-negative-100: var(--s-negative-100);
-	--color-s-negative-200: var(--s-negative-200);
-	--color-s-negative-300: var(--s-negative-300);
-	--color-s-negative-400: var(--s-negative-400);
-	--color-s-negative-500: var(--s-negative-500);
-	--color-s-negative-600: var(--s-negative-600);
-	--color-s-negative-700: var(--s-negative-700);
-	--color-s-negative-800: var(--s-negative-800);
-	--color-s-negative-900: var(--s-negative-900);
-	--color-s-negative-950: var(--s-negative-950);
+	--color-s-negative-50: var(--so-negative-50);
+	--color-s-negative-100: var(--so-negative-100);
+	--color-s-negative-200: var(--so-negative-200);
+	--color-s-negative-300: var(--so-negative-300);
+	--color-s-negative-400: var(--so-negative-400);
+	--color-s-negative-500: var(--so-negative-500);
+	--color-s-negative-600: var(--so-negative-600);
+	--color-s-negative-700: var(--so-negative-700);
+	--color-s-negative-800: var(--so-negative-800);
+	--color-s-negative-900: var(--so-negative-900);
+	--color-s-negative-950: var(--so-negative-950);
 
-	--color-s-caution-50: var(--s-caution-50);
-	--color-s-caution-100: var(--s-caution-100);
-	--color-s-caution-200: var(--s-caution-200);
-	--color-s-caution-300: var(--s-caution-300);
-	--color-s-caution-400: var(--s-caution-400);
-	--color-s-caution-500: var(--s-caution-500);
-	--color-s-caution-600: var(--s-caution-600);
-	--color-s-caution-700: var(--s-caution-700);
-	--color-s-caution-800: var(--s-caution-800);
-	--color-s-caution-900: var(--s-caution-900);
-	--color-s-caution-950: var(--s-caution-950);
+	--color-s-caution-50: var(--so-caution-50);
+	--color-s-caution-100: var(--so-caution-100);
+	--color-s-caution-200: var(--so-caution-200);
+	--color-s-caution-300: var(--so-caution-300);
+	--color-s-caution-400: var(--so-caution-400);
+	--color-s-caution-500: var(--so-caution-500);
+	--color-s-caution-600: var(--so-caution-600);
+	--color-s-caution-700: var(--so-caution-700);
+	--color-s-caution-800: var(--so-caution-800);
+	--color-s-caution-900: var(--so-caution-900);
+	--color-s-caution-950: var(--so-caution-950);
 
-	--color-s-neutral-50: var(--s-neutral-50);
-	--color-s-neutral-100: var(--s-neutral-100);
-	--color-s-neutral-200: var(--s-neutral-200);
-	--color-s-neutral-300: var(--s-neutral-300);
-	--color-s-neutral-400: var(--s-neutral-400);
-	--color-s-neutral-500: var(--s-neutral-500);
-	--color-s-neutral-600: var(--s-neutral-600);
-	--color-s-neutral-700: var(--s-neutral-700);
-	--color-s-neutral-800: var(--s-neutral-800);
-	--color-s-neutral-900: var(--s-neutral-900);
-	--color-s-neutral-950: var(--s-neutral-950);
+	--color-s-neutral-50: var(--so-neutral-50);
+	--color-s-neutral-100: var(--so-neutral-100);
+	--color-s-neutral-200: var(--so-neutral-200);
+	--color-s-neutral-300: var(--so-neutral-300);
+	--color-s-neutral-400: var(--so-neutral-400);
+	--color-s-neutral-500: var(--so-neutral-500);
+	--color-s-neutral-600: var(--so-neutral-600);
+	--color-s-neutral-700: var(--so-neutral-700);
+	--color-s-neutral-800: var(--so-neutral-800);
+	--color-s-neutral-900: var(--so-neutral-900);
+	--color-s-neutral-950: var(--so-neutral-950);
 }

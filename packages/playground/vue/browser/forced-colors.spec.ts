@@ -74,7 +74,7 @@ const SCHEMES = ['oren', 'oren-dark'] as const
 
 /** Разметка в схеме темы, корень объявлен плагинам: `TElementPlugin` ждёт кадр. */
 const show = async (scheme: (typeof SCHEMES)[number], markup: () => VNode) => {
-	document.documentElement.dataset.theme = scheme
+	document.documentElement.dataset.soTheme = scheme
 	render(defineComponent({ render: () => h('div', { style: 'padding: 80px 40px' }, [markup()]) }))
 
 	await nextTick()
@@ -1104,7 +1104,7 @@ describe('Tabs: активный таб', () => {
 		'%s: contained — карточка обведена подсветкой до замера и после',
 		async (scheme) => {
 			await forcedColors('active')
-			document.documentElement.dataset.theme = scheme
+			document.documentElement.dataset.soTheme = scheme
 			render(defineComponent({ render: () => tabs('contained') }))
 
 			// Микрозадача, а не кадр: адаптер отрисовал, плагин темы ещё не мерил

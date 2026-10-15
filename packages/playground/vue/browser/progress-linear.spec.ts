@@ -166,7 +166,7 @@ function shiftsAt(progress: readonly number[], axis: 'x' | 'y' = 'x'): number[] 
 const backgroundOf = (style: CSSStyleDeclaration) => pixel([style.backgroundColor])
 
 beforeEach(() => {
-	document.documentElement.dataset.theme = 'oren'
+	document.documentElement.dataset.soTheme = 'oren'
 })
 
 afterEach(async () => {
@@ -459,7 +459,7 @@ describe('принудительные цвета', () => {
 
 	it.each(SCHEMES)('%s: дорожка и заливка — системными цветами', async (scheme) => {
 		await forcedColors('active')
-		document.documentElement.dataset.theme = scheme
+		document.documentElement.dataset.soTheme = scheme
 
 		mount({ value: 40, variant: 'positive' })
 		await transitionEvents()
@@ -473,7 +473,7 @@ describe('принудительные цвета', () => {
 
 	it.each(SCHEMES)('%s: на бегу — бегущий отрезок системным цветом', async (scheme) => {
 		await forcedColors('active')
-		document.documentElement.dataset.theme = scheme
+		document.documentElement.dataset.soTheme = scheme
 
 		mount({ indeterminate: true, variant: 'positive' })
 		await transitionEvents()

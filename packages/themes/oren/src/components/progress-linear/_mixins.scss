@@ -19,15 +19,15 @@ $sizes: (
 // поэтому и не пишет измерение сам: иначе модификатор размера перебил бы
 // высоту вертикальной полосы, которую тема задаёт с нулевой специфичностью.
 @mixin progress-linear-size($size) {
-	--s-progress-linear-thickness: calc(var(--spacing) * #{map.get($sizes, $size)});
+	--so-progress-linear-thickness: calc(var(--spacing) * #{map.get($sizes, $size)});
 }
 
 // Варианты — общие у индикаторов выполнения (`mixins/_progress.scss`): линия и
 // кольцо одного варианта одного цвета.
 $variants: progress.$variants;
 
-// Цвет варианта — переменными на корне (`--s-progress-linear-track`,
-// `--s-progress-linear-fill`): дорожку красит сам корень, заливку и бегущий
+// Цвет варианта — переменными на корне (`--so-progress-linear-track`,
+// `--so-progress-linear-fill`): дорожку красит сам корень, заливку и бегущий
 // отрезок — заливка и псевдоэлемент корня. Выбор ступеней и его причины —
 // общие с кольцом, там же.
 @mixin progress-linear-colors($color) {

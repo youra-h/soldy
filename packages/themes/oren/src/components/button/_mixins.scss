@@ -165,7 +165,7 @@ $self-focus: ('&:focus', '&:focus-visible');
 // Ступени цвета, которые читает вид (`button-tones`).
 $tone-steps: 300, 400, 500, 800;
 
-// Цвет вида — переменные `--s-tone-*` на самом узле: ступени цвета (300 —
+// Цвет вида — переменные `--so-tone-*` на самом узле: ступени цвета (300 —
 // рамка, 400 — рамка под наведением и фокусом, 500 — основа вуали, 800 —
 // текст) и заливка `filled` с её состояниями. Нейтраль задаёт их корень
 // блока, вариант — его модификатор, и больше вариант ничего не пишет: вид и
@@ -197,7 +197,7 @@ $tone-steps: 300, 400, 500, 800;
 // схемах значит одно и то же — «отойти дальше от поверхности».
 //
 // Выбор под подсветкой у насыщенной — ступень выбора под слоем вуали
-// ступени 50 (`--s-tone-filled-layer`): у заливки слой поверх фона —
+// ступени 50 (`--so-tone-filled-layer`): у заливки слой поверх фона —
 // единственный способ его изменить. Слой — фоновым изображением на самом
 // узле, а не псевдоэлементом: тот требовал `position` и `overflow` узла и
 // вместе с ними протекал в вид по контексту — строка ListBox с вариантом
@@ -225,39 +225,39 @@ $tone-steps: 300, 400, 500, 800;
 // Переменные цвета нейтрали — вуаль своей плотности (`button-tones`).
 @mixin button-neutral-tones {
 	@each $step in $tone-steps {
-		--s-tone-#{$step}: var(--s-neutral-#{$step});
+		--so-tone-#{$step}: var(--so-neutral-#{$step});
 	}
 
-	--s-tone-filled: #{veil.tint('neutral', var(--s-component-fill))};
-	--s-tone-filled-hover: #{veil.tint(
+	--so-tone-filled: #{veil.tint('neutral', var(--so-component-fill))};
+	--so-tone-filled-hover: #{veil.tint(
 			'neutral',
-			veil.density(var(--s-component-state-hover), var(--s-component-fill))
+			veil.density(var(--so-component-state-hover), var(--so-component-fill))
 		)};
-	--s-tone-filled-active: #{veil.tint(
+	--so-tone-filled-active: #{veil.tint(
 			'neutral',
-			veil.density(var(--s-component-state-active), var(--s-component-fill))
+			veil.density(var(--so-component-state-active), var(--so-component-fill))
 		)};
-	--s-tone-filled-both: #{veil.tint(
+	--so-tone-filled-both: #{veil.tint(
 			'neutral',
-			veil.density(var(--s-component-state-active-hover), var(--s-component-fill))
+			veil.density(var(--so-component-state-active-hover), var(--so-component-fill))
 		)};
-	--s-tone-filled-layer: none;
-	--s-tone-filled-text: var(--s-component-text);
+	--so-tone-filled-layer: none;
+	--so-tone-filled-text: var(--so-component-text);
 }
 
 // Переменные цвета варианта `$variant` — ступени шкалы и насыщенная заливка
 // (`button-tones`).
 @mixin button-variant-tones($variant) {
 	@each $step in $tone-steps {
-		--s-tone-#{$step}: var(--s-#{$variant}-#{$step});
+		--so-tone-#{$step}: var(--so-#{$variant}-#{$step});
 	}
 
-	--s-tone-filled: var(--s-#{$variant}-500);
-	--s-tone-filled-hover: var(--s-#{$variant}-600);
-	--s-tone-filled-active: var(--s-#{$variant}-700);
-	--s-tone-filled-both: var(--s-#{$variant}-700);
-	--s-tone-filled-layer: linear-gradient(#{veil.layer(var(--s-neutral-50), 20%)} 0 0);
-	--s-tone-filled-text: var(--color-white);
+	--so-tone-filled: var(--so-#{$variant}-500);
+	--so-tone-filled-hover: var(--so-#{$variant}-600);
+	--so-tone-filled-active: var(--so-#{$variant}-700);
+	--so-tone-filled-both: var(--so-#{$variant}-700);
+	--so-tone-filled-layer: linear-gradient(#{veil.layer(var(--so-neutral-50), 20%)} 0 0);
+	--so-tone-filled-text: var(--color-white);
 }
 
 // Выбор в режиме принудительных цветов (высокий контраст Windows) — хвост
@@ -337,19 +337,19 @@ $tone-steps: 300, 400, 500, 800;
 @mixin button-state-veil {
 	&:hover:not([data-disabled='true']),
 	&[data-highlighted='true']:not([data-disabled='true']) {
-		@include veil.veil('tone', var(--s-component-state-hover));
+		@include veil.veil('tone', var(--so-component-state-hover));
 	}
 
 	&:active:not([data-disabled='true']),
 	&[data-selected='true']:not([data-disabled='true']) {
-		@include veil.veil('tone', var(--s-component-state-active));
+		@include veil.veil('tone', var(--so-component-state-active));
 	}
 
 	// Выбор под клавиатурной подсветкой — два состояния сразу, и вуаль у него
 	// плотнее обоих. Слоя поверх, как у насыщенной заливки, здесь нет: у вуали
 	// фон и есть слой. Слой вида под ним гасится — вид перекрывает вид целиком.
 	&[data-selected='true'][data-highlighted='true']:not([data-disabled='true']) {
-		@include veil.veil('tone', var(--s-component-state-active-hover));
+		@include veil.veil('tone', var(--so-component-state-active-hover));
 		background-image: none;
 	}
 
@@ -448,24 +448,24 @@ $tone-steps: 300, 400, 500, 800;
 // фокусируется.
 @mixin button-view($view, $focused: $self-focus) {
 	@if $view == 'filled' {
-		background-color: var(--s-tone-filled);
-		color: var(--s-tone-filled-text);
+		background-color: var(--so-tone-filled);
+		color: var(--so-tone-filled-text);
 
 		&:hover:not([data-disabled='true']),
 		&[data-highlighted='true']:not([data-disabled='true']) {
-			background-color: var(--s-tone-filled-hover);
+			background-color: var(--so-tone-filled-hover);
 		}
 
 		&:active:not([data-disabled='true']),
 		&[data-selected='true']:not([data-disabled='true']) {
-			background-color: var(--s-tone-filled-active);
+			background-color: var(--so-tone-filled-active);
 		}
 
 		// Фон объявлен и здесь: этот селектор сильнее выбранного на атрибут, и
 		// фон, объявленный им у другого вида, перебивал бы заливку этого.
 		&[data-selected='true'][data-highlighted='true']:not([data-disabled='true']) {
-			background-color: var(--s-tone-filled-both);
-			background-image: var(--s-tone-filled-layer);
+			background-color: var(--so-tone-filled-both);
+			background-image: var(--so-tone-filled-layer);
 		}
 
 		@include button-state-forced;
@@ -483,7 +483,7 @@ $tone-steps: 300, 400, 500, 800;
 		// ступенью: под ним и страница, и поверхность контрола, и подложка
 		// 100 — от всех трёх вуаль отходит одинаково (`button-state-veil`).
 		@apply bg-transparent;
-		color: var(--s-tone-800);
+		color: var(--so-tone-800);
 		@include button-state-veil;
 		@include button-frame-none-forced;
 	} @else if $view == 'outlined' {
@@ -493,8 +493,8 @@ $tone-steps: 300, 400, 500, 800;
 		// поверхность, и в тёмной схеме поверхность контрола это она и есть:
 		// рамка на панели Select и Popover совпадала с самой панелью.
 		@apply bg-transparent border;
-		color: var(--s-tone-800);
-		border-color: var(--s-tone-300);
+		color: var(--so-tone-800);
+		border-color: var(--so-tone-300);
 
 		// Своего фона у `outlined` нет, значит состояния он берёт вуалью — по
 		// той же причине, что и `plain`: ступенями они отсчитывались от
@@ -503,7 +503,7 @@ $tone-steps: 300, 400, 500, 800;
 
 		#{list.join(('&:hover',), $focused)} {
 			&:not([data-disabled='true']) {
-				border-color: var(--s-tone-400);
+				border-color: var(--so-tone-400);
 			}
 		}
 

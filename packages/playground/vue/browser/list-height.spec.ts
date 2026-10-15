@@ -89,7 +89,7 @@ const contentHeight = (element: HTMLElement) => {
 
 beforeEach(() => {
 	// Тема читается с корня документа — тот же атрибут, что в `index.html`.
-	document.documentElement.dataset.theme = 'oren'
+	document.documentElement.dataset.soTheme = 'oren'
 })
 
 afterEach(() => {

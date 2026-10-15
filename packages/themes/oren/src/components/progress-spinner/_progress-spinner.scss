@@ -79,7 +79,7 @@
 	}
 
 	&__track {
-		stroke: var(--s-progress-spinner-track);
+		stroke: var(--so-progress-spinner-track);
 	}
 
 	// Дуга доли — от начала кольца на долю готового. Переход длины добавляет
@@ -96,7 +96,7 @@
 	// окружность целая дуга — это штрих, который начинается и кончается на
 	// двенадцати, и в Chromium на стыке оставался светлый шов.
 	&__range {
-		stroke: var(--s-progress-spinner-fill);
+		stroke: var(--so-progress-spinner-fill);
 		stroke-dasharray: var(--so-progress-spinner-fraction, 0)
 			calc(1 - var(--so-progress-spinner-fraction, 0));
 
@@ -110,7 +110,7 @@
 	// четверть кольца.
 	&__runner {
 		@apply invisible;
-		stroke: var(--s-progress-spinner-fill);
+		stroke: var(--so-progress-spinner-fill);
 		stroke-dasharray: 1 0;
 
 		@include motion.allowed {
@@ -178,8 +178,8 @@
 :where(.so-progress-spinner) {
 	@include mixines.progress-spinner-base-colors('accent');
 
-	inline-size: var(--s-progress-spinner-size);
-	block-size: var(--s-progress-spinner-size);
+	inline-size: var(--so-progress-spinner-size);
+	block-size: var(--so-progress-spinner-size);
 }
 
 // Бег — полный круг рисунка. Отсчёт — от начала дуг сверху: поворот из кадров
@@ -208,8 +208,8 @@
 @media (forced-colors: active) {
 	.so-progress-spinner {
 		forced-color-adjust: none;
-		--s-progress-spinner-track: CanvasText;
-		--s-progress-spinner-fill: Highlight;
+		--so-progress-spinner-track: CanvasText;
+		--so-progress-spinner-fill: Highlight;
 	}
 
 	.so-progress-spinner__track {

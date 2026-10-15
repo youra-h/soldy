@@ -245,7 +245,7 @@ const FORCED_CASES = TABS_VIEWS.flatMap((outerView) =>
 )
 
 beforeEach(() => {
-	document.documentElement.dataset.theme = 'oren'
+	document.documentElement.dataset.soTheme = 'oren'
 })
 
 afterEach(async () => {

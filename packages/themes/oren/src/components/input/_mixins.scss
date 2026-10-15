@@ -44,7 +44,7 @@ $variants: 'accent', 'positive', 'negative', 'caution';
 // Высота размера по шкале `$sizes` — переменной блока, от неё считается
 // строка слота.
 @mixin field-height($block, $size) {
-	--s-#{$block}-height: calc(var(--spacing) * #{map.get(map.get($sizes, $size), 'h')});
+	--so-#{$block}-height: calc(var(--spacing) * #{map.get(map.get($sizes, $size), 'h')});
 }
 
 // Коробка поля: строка с рамкой на поверхности контрола, высотой размера и
@@ -53,7 +53,7 @@ $variants: 'accent', 'positive', 'negative', 'caution';
 // кольцо, решает блок.
 //
 // Геометрия поля — значениями, а не процентами: высота размера
-// (`--s-<блок>-height`, правила размера блока), рамка, просвет слота от рамки
+// (`--so-<блок>-height`, правила размера блока), рамка, просвет слота от рамки
 // и строка слота — высота размера без рамки и двух просветов. В строку встают
 // слоты и теги в них (`tags/_tags.scss`).
 //
@@ -70,14 +70,15 @@ $variants: 'accent', 'positive', 'negative', 'caution';
 	@apply inline-flex items-center;
 	@apply relative;
 
-	--s-#{$block}-border: 1px;
-	--s-#{$block}-slot-gap: 3px;
-	--s-#{$block}-slot-row: calc(
-		var(--s-#{$block}-height) - 2 * var(--s-#{$block}-border) - 2 * var(--s-#{$block}-slot-gap)
+	--so-#{$block}-border: 1px;
+	--so-#{$block}-slot-gap: 3px;
+	--so-#{$block}-slot-row: calc(
+		var(--so-#{$block}-height) - 2 * var(--so-#{$block}-border) - 2 *
+			var(--so-#{$block}-slot-gap)
 	);
-	height: var(--s-#{$block}-height);
+	height: var(--so-#{$block}-height);
 
-	@apply rounded-md #{'border-(length:--s-' + $block + '-border)'};
+	@apply rounded-md #{'border-(length:--so-' + $block + '-border)'};
 	@apply bg-s-component-surface;
 	@apply text-s-component;
 	@apply transition-colors duration-150;
@@ -101,7 +102,7 @@ $variants: 'accent', 'positive', 'negative', 'caution';
 }
 
 // Кнопка очистки поля — квадрат со стороной в строку слота блока
-// (`--s-<блок>-slot-row`, см. `field`): в коробке поля она стоит на том же
+// (`--so-<блок>-slot-row`, см. `field`): в коробке поля она стоит на том же
 // просвете от рамки, что и содержимое слотов, и на любом размере не выше
 // строки. Паддинга шкалы Button у неё нет: раньше ширину давал он, а высоту
 // резал `max-h-full` кнопки, и очистка выходила низкой и широкой. Так же
@@ -112,8 +113,8 @@ $variants: 'accent', 'positive', 'negative', 'caution';
 // Вид кнопки — по контексту, у блока (`plain`): здесь только геометрия.
 @mixin field-clear($block) {
 	@apply shrink-0 px-0;
-	inline-size: var(--s-#{$block}-slot-row);
-	block-size: var(--s-#{$block}-slot-row);
+	inline-size: var(--so-#{$block}-slot-row);
+	block-size: var(--so-#{$block}-slot-row);
 }
 
 // Кольцо коробки поля под фокусом. Когда оно горит, решает блок — у Input
@@ -150,9 +151,9 @@ $variants: 'accent', 'positive', 'negative', 'caution';
 @mixin input-variant($color, $enabled, $border: 300) {
 	$border-hover: $border + 100;
 
-	border-color: var(--s-#{$color}-#{$border});
+	border-color: var(--so-#{$color}-#{$border});
 
 	&:hover#{$enabled} {
-		border-color: var(--s-#{$color}-#{$border-hover});
+		border-color: var(--so-#{$color}-#{$border-hover});
 	}
 }

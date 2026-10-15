@@ -3,7 +3,7 @@ import { TBasePlugin, TElementPlugin } from '@soldy-ui/plugins'
 import type { IPluginContext } from '@soldy-ui/plugins'
 
 /** Высота шапки на корне таблицы: по ней тема держит фокус в теле ниже шапки. */
-const HEAD_HEIGHT = '--s-table-head-height'
+const HEAD_HEIGHT = '--so-table-head-height'
 
 /**
  * TTableHeadPlugin — высота закреплённой шапки Table для темы.
@@ -14,7 +14,7 @@ const HEAD_HEIGHT = '--s-table-head-height'
  * держит ниже шапки отступом прокрутки (`scroll-margin-block-start`) на её
  * высоту. Высоту одной переменной CSS не знает: подписи заголовков
  * переносятся, в слоте заголовка бывает что угодно, и шапка бывает выше
- * строки шапки. Её и пишет плагин — переменной `--s-table-head-height` на
+ * строки шапки. Её и пишет плагин — переменной `--so-table-head-height` на
  * корне таблицы, в px; без переменной тема берёт высоту строки шапки.
  *
  * Пока у таблицы есть корень и шапка закреплена, `ResizeObserver` следит за

@@ -106,7 +106,7 @@ export type TComponentEntry = {
 export type TThemeEntry = {
 	id: string
 	label: string
-	/** Значение `data-theme` для светлой схемы; тёмная — `${value}-dark`. */
+	/** Значение `data-so-theme` для светлой схемы; тёмная — `${value}-dark`. */
 	value: string
 }
 

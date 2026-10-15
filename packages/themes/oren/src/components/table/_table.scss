@@ -73,13 +73,13 @@ $reorder-columns: 30;
 // У корня в окне обёртки `Virtual` — `data-virtual`, у распорки — высота
 // пропущенных строк общей с другими списками переменной `--so-filler-height`.
 // У корня с закреплённой шапкой — `data-sticky-head` и высота шапки
-// переменной `--s-table-head-height`. Сдвиги жеста перестановки пишет его
+// переменной `--so-table-head-height`. Сдвиги жеста перестановки пишет его
 // плагин: взятому заголовку — `--so-table-column-drag`, а ширину взятого
 // `--so-table-column-shift` — туда, где её читают: шапке в `head`, корню в
 // `column` (её читает и тело).
 //
-// От места приходит его поверхность (`--s-place-surface`, `tokens.css`), от
-// приложения и контекста — сдвиг закреплённой шапки (`--s-table-head-offset`,
+// От места приходит его поверхность (`--so-place-surface`, `tokens.css`), от
+// приложения и контекста — сдвиг закреплённой шапки (`--so-table-head-offset`,
 // ниже).
 //
 // Своей поверхности у таблицы нет — ни фона, ни рамки, ни скругления. Она
@@ -139,7 +139,7 @@ $reorder-columns: 30;
 	// соседнюю колонку и не за край таблицы, где его срезал бы контейнер с
 	// прокруткой. Кнопка сортировки занимает ячейку шапки целиком, и кольцо у
 	// неё внутри (ниже).
-	--s-table-bleed: 0.25rem;
+	--so-table-bleed: 0.25rem;
 
 	// Размер без модификатора — `normal`. Ядро пишет `--size-*` всегда, но блок и
 	// без него обязан выглядеть умолчанием.
@@ -236,7 +236,7 @@ $reorder-columns: 30;
 // вертикали.
 //
 // Поле сверху и снизу — тот же запас под кольцо фокуса, а высоту строки держит
-// сама строка (`--s-table-row`): кнопка размера таблицы, положенная в ячейку,
+// сама строка (`--so-table-row`): кнопка размера таблицы, положенная в ячейку,
 // встаёт в строку ровно, а строка текста стоит посередине. Текст в несколько
 // строк раздвигает строку таблицы — поле от линии у него то же, что у кнопки.
 //
@@ -250,8 +250,8 @@ $reorder-columns: 30;
 .so-table-row__select,
 .so-table__empty {
 	@apply font-normal text-start align-middle;
-	padding-inline: var(--s-table-cell-inline);
-	padding-block: var(--s-table-bleed);
+	padding-inline: var(--so-table-cell-inline);
+	padding-block: var(--so-table-bleed);
 
 	// Длинное слово (адрес, почта, номер) переносится по ширине колонки, а не
 	// уходит под соседнюю: раскладка фиксированная, и ширину колонки
@@ -267,7 +267,7 @@ $reorder-columns: 30;
 	}
 }
 
-// Шапка — строка на 2px ниже строки тела (`--s-table-head-row`). Заголовки —
+// Шапка — строка на 2px ниже строки тела (`--so-table-head-row`). Заголовки —
 // приглушённым текстом и средним начертанием: это подписи колонок, а не данные.
 //
 // Шапка отделена от данных сильнее, чем строки друг от друга. Линия под шапкой —
@@ -279,7 +279,7 @@ $reorder-columns: 30;
 // Линия под строкой тела — тише шапки, а тише слабой границы места на шкале
 // нет: ниже 300 — ступени поверхностей, и 200 на панели тёмной схемы — сама
 // панель, как было у линий Tabs. Поэтому она — вуаль нейтрали плотности
-// заливки (`--s-component-fill`), цвета нейтрального `filled` у Button: на шаг
+// заливки (`--so-component-fill`), цвета нейтрального `filled` у Button: на шаг
 // от того, на чём таблица стоит, — на странице, в карточке и в панели
 // (`mixins/_veil.scss`). Вуаль плотности выбора на панели тёмной схемы почти
 // равна линии шапки. Под последней строкой линия тоже есть — она закрывает
@@ -289,13 +289,13 @@ $reorder-columns: 30;
 // слоем: у стыка ячеек линия не темнеет, а под выбранной строкой лежит поверх
 // её вуали.
 .so-table__head-row {
-	block-size: var(--s-table-head-row);
-	border-block-end: 1px solid var(--s-neutral-300);
+	block-size: var(--so-table-head-row);
+	border-block-end: 1px solid var(--so-neutral-300);
 }
 
 .so-table-row,
 .so-table__empty-row {
-	border-block-end: 1px solid #{veil.tint('neutral', var(--s-component-fill))};
+	border-block-end: 1px solid #{veil.tint('neutral', var(--so-component-fill))};
 }
 
 // Шапка поднята над телом (`z-30`) — и закреплённая, и в потоке: рисуется
@@ -382,13 +382,13 @@ $reorder-columns: 30;
 	) {
 	@media (hover: hover) {
 		&:hover {
-			background-color: var(--s-table-hover);
+			background-color: var(--so-table-hover);
 		}
 	}
 
 	&:has(> .so-table-column__content > .so-table-column__sort:active),
 	&[data-resizing='true'] {
-		background-color: var(--s-table-active);
+		background-color: var(--so-table-active);
 	}
 }
 
@@ -425,15 +425,15 @@ $reorder-columns: 30;
 	@apply justify-start rounded-none;
 	border-start-start-radius: $head-radius;
 	border-start-end-radius: $head-radius;
-	inline-size: calc(100% + 2 * var(--s-table-cell-inline));
+	inline-size: calc(100% + 2 * var(--so-table-cell-inline));
 	max-inline-size: none;
 	block-size: auto;
-	min-block-size: var(--s-table-head-row);
+	min-block-size: var(--so-table-head-row);
 	max-block-size: none;
-	padding-inline: var(--s-table-cell-inline);
-	padding-block: var(--s-table-bleed);
-	margin-inline: calc(-1 * var(--s-table-cell-inline));
-	margin-block: calc(-1 * var(--s-table-bleed));
+	padding-inline: var(--so-table-cell-inline);
+	padding-block: var(--so-table-bleed);
+	margin-inline: calc(-1 * var(--so-table-cell-inline));
+	margin-block: calc(-1 * var(--so-table-bleed));
 	font: inherit;
 	color: inherit;
 
@@ -535,7 +535,7 @@ $reorder-columns: 30;
 // номера не будет, стрелка останется.
 @for $priority from 1 through 9 {
 	.so-table-column[data-sort-priority='#{$priority}'] {
-		--s-table-sort-priority: '#{$priority}';
+		--so-table-sort-priority: '#{$priority}';
 	}
 }
 
@@ -544,7 +544,7 @@ $reorder-columns: 30;
 	> .so-table-column__content
 	> .so-table-column__sort
 	> .so-table-column__sort-icon::after {
-	content: var(--s-table-sort-priority);
+	content: var(--so-table-sort-priority);
 	@apply font-semibold leading-none;
 	font-size: 0.75em;
 	margin-inline-start: 0.125em;
@@ -592,7 +592,7 @@ $reorder-columns: 30;
 		inset-block: 10%;
 		inline-size: $resizer-line;
 		inset-inline-start: 50%;
-		background-color: var(--s-component-focus-ring);
+		background-color: var(--so-component-focus-ring);
 	}
 
 	// Наведение — только там, где оно есть: после касания `:hover` залипает на
@@ -635,7 +635,7 @@ $reorder-columns: 30;
 	inline-size: $resizer-line;
 	block-size: var(--so-table-column-ghost-size, 100%);
 	translate: var(--so-table-column-ghost, 0) 0;
-	background-color: var(--s-component-focus-ring);
+	background-color: var(--so-component-focus-ring);
 	will-change: translate;
 
 	@include motion.allowed {
@@ -717,8 +717,8 @@ $reorder-columns: 30;
 	translate: var(--so-table-column-drag, 0) 0;
 	transition-property: none;
 	background-image:
-		linear-gradient(var(--s-table-active), var(--s-table-active)),
-		linear-gradient(var(--s-component-surface), var(--s-component-surface));
+		linear-gradient(var(--so-table-active), var(--so-table-active)),
+		linear-gradient(var(--so-component-surface), var(--so-component-surface));
 
 	> .so-table-column__resizer {
 		@apply invisible;
@@ -739,7 +739,7 @@ $reorder-columns: 30;
 // её наследует и тело (ниже). Переменная наследуется, и запись на корень
 // пересчитала бы стиль каждой ячейке тела, а в `head` тело стоит. Сдвиг — не
 // по стороне экрана, а по строке, и в RTL его зеркалит знак направления
-// (`--s-dir-sign`). Это движение, и есть оно только в надстройке: без движения
+// (`--so-dir-sign`). Это движение, и есть оно только в надстройке: без движения
 // соседи стоят, а место показывает линия (ниже).
 //
 // Пока на шапке есть взятый заголовок, невзятые — с нулевым сдвигом, а не без
@@ -765,13 +765,13 @@ $reorder-columns: 30;
 
 	&[data-shift='start'] {
 		@include motion.allowed {
-			translate: calc(-1 * var(--so-table-column-shift, 0px) * var(--s-dir-sign)) 0;
+			translate: calc(-1 * var(--so-table-column-shift, 0px) * var(--so-dir-sign)) 0;
 		}
 	}
 
 	&[data-shift='end'] {
 		@include motion.allowed {
-			translate: calc(var(--so-table-column-shift, 0px) * var(--s-dir-sign)) 0;
+			translate: calc(var(--so-table-column-shift, 0px) * var(--so-dir-sign)) 0;
 		}
 	}
 }
@@ -805,7 +805,7 @@ $reorder-columns: 30;
 // селектора лишь несколько ближайших имён, и признак корня выпал бы из них.
 //
 // Шапку тело читает селектором `:has()` у самой шапки, а переменные — что с
-// каждой колонкой (`--s-table-shift-k`, `--s-table-hidden-k`) — получает
+// каждой колонкой (`--so-table-shift-k`, `--so-table-hidden-k`) — получает
 // тело, сосед шапки (`~ .so-table__body`); ячейки только читают их. Условие у
 // корня обходило бы на глубину три всё тело, все его строки и ячейки, — у
 // шапки обход — два десятка её узлов. Условие у ячейки ещё дороже: его
@@ -814,10 +814,10 @@ $reorder-columns: 30;
 // стилей, на 1000 строк — 2,6 с, а через переменные — ~27 и ~90 мс.
 //
 // Сдвинуть и спрятать ячейки решает надстройка: переменные, которые она
-// ставит телу, — на сколько сдвинуть ячейки соседей (`--s-table-body-shift`:
+// ставит телу, — на сколько сдвинуть ячейки соседей (`--so-table-body-shift`:
 // все уступают в одну сторону), что с ячейками взятой
-// (`--s-table-body-dragged`) и что у ячеек идёт переходом
-// (`--s-table-body-transition`). Правила на номер колонки только передают
+// (`--so-table-body-dragged`) и что у ячеек идёт переходом
+// (`--so-table-body-transition`). Правила на номер колонки только передают
 // переменные ячейкам и без надстройки ничего не меняют: без переменной
 // объявление недействительно, и ячейка остаётся как была — без сдвига, с
 // видимостью строки. Так условие движения и предел числа колонок записаны по
@@ -853,25 +853,27 @@ $reorder-columns: 30;
 	) {
 	&:has(> .so-table__head-row > .so-table-column[data-shift='start']) ~ .so-table__body {
 		@include motion.allowed {
-			--s-table-body-shift: calc(-1 * var(--so-table-column-shift, 0px) * var(--s-dir-sign));
+			--so-table-body-shift: calc(
+				-1 * var(--so-table-column-shift, 0px) * var(--so-dir-sign)
+			);
 		}
 	}
 
 	&:has(> .so-table__head-row > .so-table-column[data-shift='end']) ~ .so-table__body {
 		@include motion.allowed {
-			--s-table-body-shift: calc(var(--so-table-column-shift, 0px) * var(--s-dir-sign));
+			--so-table-body-shift: calc(var(--so-table-column-shift, 0px) * var(--so-dir-sign));
 		}
 	}
 
 	&:has(> .so-table__head-row > .so-table-column[data-dragging='true']) ~ .so-table__body {
 		@include motion.allowed {
-			--s-table-body-transition: translate;
+			--so-table-body-transition: translate;
 		}
 	}
 
 	~ .so-table__body {
 		@include motion.allowed {
-			--s-table-body-dragged: hidden;
+			--so-table-body-dragged: hidden;
 		}
 	}
 }
@@ -881,7 +883,7 @@ $reorder-columns: 30;
 // переходом всё, что у неё меняется.
 .so-table[data-reorder-preview='column'] > .so-table__body > .so-table-row > .so-table-row__cell {
 	@include motion.allowed {
-		transition-property: var(--s-table-body-transition, none);
+		transition-property: var(--so-table-body-transition, none);
 		transition-duration: $reorder-duration;
 		transition-timing-function: $reorder-easing;
 	}
@@ -893,21 +895,21 @@ $reorder-columns: 30;
 	.so-table[data-reorder-preview='column']
 		> .so-table__head:has(#{$header}[data-shift])
 		~ .so-table__body {
-		--s-table-shift-#{$k}: var(--s-table-body-shift);
+		--so-table-shift-#{$k}: var(--so-table-body-shift);
 	}
 
 	.so-table[data-reorder-preview='column']
 		> .so-table__head:has(#{$header}[data-dragging='true'])
 		~ .so-table__body {
-		--s-table-hidden-#{$k}: var(--s-table-body-dragged);
+		--so-table-hidden-#{$k}: var(--so-table-body-dragged);
 	}
 
 	.so-table[data-reorder-preview='column']
 		> .so-table__body
 		> .so-table-row
 		> .so-table-row__cell:nth-child(#{$k} of .so-table-row__cell) {
-		translate: var(--s-table-shift-#{$k}) 0;
-		visibility: var(--s-table-hidden-#{$k});
+		translate: var(--so-table-shift-#{$k}) 0;
+		visibility: var(--so-table-hidden-#{$k});
 	}
 }
 
@@ -961,7 +963,7 @@ $reorder-columns: 30;
 }
 
 .so-table-column[data-drop]::before {
-	background-color: var(--s-component-focus-ring);
+	background-color: var(--so-component-focus-ring);
 }
 
 .so-table-column[data-drop='before']::before {
@@ -995,25 +997,25 @@ $reorder-columns: 30;
 // совпал с размером таблицы.
 .so-table__select,
 .so-table-row__select {
-	inline-size: calc(var(--s-table-check) + 2 * var(--s-table-cell-inline));
+	inline-size: calc(var(--so-table-check) + 2 * var(--so-table-cell-inline));
 
 	> .so-check-box {
 		@apply mx-auto;
 	}
 }
 
-// Строка — высотой в кнопку и запасы (`--s-table-row`): ниже строка не бывает,
+// Строка — высотой в кнопку и запасы (`--so-table-row`): ниже строка не бывает,
 // выше — если содержимое ячейки выше.
 //
 // Наведения у строки простой таблицы нет: в роли `table` нажатие по строке
 // ничего не делает — выбирают чекбоксом, — а подсветка обещала бы отклик,
 // которого не будет. У сетки — есть (ниже).
 .so-table-row {
-	block-size: var(--s-table-row);
+	block-size: var(--so-table-row);
 
 	// Выбранная — вуалью цвета таблицы во всю строку, с ячейкой выбора.
 	&[data-selected='true'] {
-		background-color: var(--s-table-active);
+		background-color: var(--so-table-active);
 	}
 
 	// Выключенная — гаснут ячейки с данными. Чекбокс выключен вместе со строкой
@@ -1034,22 +1036,22 @@ $reorder-columns: 30;
 // где оно есть: после касания `:hover` залипает на строке.
 .so-table[data-grid='true']:not([data-disabled='true']) > .so-table__body > .so-table-row {
 	&:focus-within {
-		background-color: var(--s-table-hover);
+		background-color: var(--so-table-hover);
 	}
 
 	@media (hover: hover) {
 		&:not([data-disabled='true']):hover {
-			background-color: var(--s-table-hover);
+			background-color: var(--so-table-hover);
 		}
 	}
 
 	&[data-selected='true']:focus-within {
-		background-color: var(--s-table-active-hover);
+		background-color: var(--so-table-active-hover);
 	}
 
 	@media (hover: hover) {
 		&[data-selected='true']:not([data-disabled='true']):hover {
-			background-color: var(--s-table-active-hover);
+			background-color: var(--so-table-active-hover);
 		}
 	}
 }
@@ -1083,7 +1085,7 @@ $reorder-columns: 30;
 // шапку, а пустая полоса читается местом под данные.
 .so-table__empty {
 	@apply text-center text-s-neutral-500;
-	padding-block: var(--s-table-row);
+	padding-block: var(--so-table-row);
 }
 
 // Окно (`data-virtual`, обёртка `Virtual`): тело рисует только видимые строки,
@@ -1123,7 +1125,7 @@ $reorder-columns: 30;
 // неё, и поле чекбокса строки, метка `required` у Switch из-под шапки ловили
 // бы нажатия по ней.
 //
-// Сдвиг от верхнего края прокрутки — переменная `--s-table-head-offset`, без
+// Сдвиг от верхнего края прокрутки — переменная `--so-table-head-offset`, без
 // неё ноль. Плюс — под закреплённую полосу приложения: его задают таблице или
 // её обёртке, которая прокручивается со страницей, а не корню документа —
 // иначе тот же сдвиг взял бы и вложенный контейнер прокрутки. Минус — на
@@ -1132,7 +1134,7 @@ $reorder-columns: 30;
 // прямо в теле Dialog и Drawer или в содержимом Popover, его дают они сами —
 // контекстом на окне, а таблица его наследует.
 //
-// Подложка — поверхность места (`--s-place-surface`): шапка закрывает строки,
+// Подложка — поверхность места (`--so-place-surface`): шапка закрывает строки,
 // и вуаль, сквозь которую их видно, не годится, а своей поверхности у таблицы
 // нет. Поверхность объявляет место — страница, панель темы, карточка
 // приложения (`tokens.css`). Состояния заголовков остаются вуалью у ячеек,
@@ -1163,8 +1165,8 @@ $reorder-columns: 30;
 // к самому узлу фокуса, а он бывает и в глубине ячейки. Отступ — высота шапки
 // и сдвиг, если он плюс: минус только возвращает шапку к краю, от которого
 // браузер и меряет. У содержимого ячейки к нему прибавлен запас ячейки
-// (`--s-table-bleed`): кольцо фокуса контрола лежит снаружи, а у ячейки
-// сетки — внутри. Высоту пишет код (`--s-table-head-height`): подписи
+// (`--so-table-bleed`): кольцо фокуса контрола лежит снаружи, а у ячейки
+// сетки — внутри. Высоту пишет код (`--so-table-head-height`): подписи
 // переносятся, в слоте заголовка бывает что угодно, и шапка бывает выше строки
 // шапки. Пока высоты нет — строка шапки.
 //
@@ -1178,7 +1180,7 @@ $reorder-columns: 30;
 .so-table[data-sticky-head='true'] {
 	> .so-table__head {
 		@apply sticky;
-		inset-block-start: var(--s-table-head-offset, 0px);
+		inset-block-start: var(--so-table-head-offset, 0px);
 		@include mixines.sticky-head-surface;
 
 		> .so-table__head-row {
@@ -1189,16 +1191,16 @@ $reorder-columns: 30;
 	// Ячейка — кольцо фокуса сетки у неё внутри
 	> .so-table__body > * > * {
 		scroll-margin-block-start: calc(
-			max(0px, var(--s-table-head-offset, 0px)) +
-				var(--s-table-head-height, var(--s-table-head-row))
+			max(0px, var(--so-table-head-offset, 0px)) +
+				var(--so-table-head-height, var(--so-table-head-row))
 		);
 	}
 
 	// Содержимое ячейки — кольцо фокуса снаружи, на запас ячейки
 	> .so-table__body > * > * * {
 		scroll-margin-block-start: calc(
-			max(0px, var(--s-table-head-offset, 0px)) +
-				var(--s-table-head-height, var(--s-table-head-row)) + var(--s-table-bleed)
+			max(0px, var(--so-table-head-offset, 0px)) +
+				var(--so-table-head-height, var(--so-table-head-row)) + var(--so-table-bleed)
 		);
 	}
 }

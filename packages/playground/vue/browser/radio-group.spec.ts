@@ -92,7 +92,7 @@ const focusedRadio = (): string | null => {
 const focusedText = (): string | undefined => document.activeElement?.textContent?.trim()
 
 beforeEach(() => {
-	document.documentElement.dataset.theme = 'oren'
+	document.documentElement.dataset.soTheme = 'oren'
 })
 
 afterEach(() => {

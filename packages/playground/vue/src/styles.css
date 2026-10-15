@@ -1,7 +1,7 @@
 /**
  * Оформление стенда.
  *
- * Цвета берутся из токенов темы (`--s-*`), а не пишутся значениями. Следствие
+ * Цвета берутся из токенов темы (`--so-*`), а не пишутся значениями. Следствие
  * важнее экономии: переключил тёмную схему — перекрасился и сам стенд, без
  * единой строчки про dark. Заодно это проверка, что токенов хватает на обычный
  * интерфейс, а не только на кнопки.
@@ -26,8 +26,8 @@ body {
 		sans-serif;
 	font-size: 14px;
 	line-height: 1.5;
-	color: var(--s-component-text);
-	background: var(--s-neutral-50);
+	color: var(--so-component-text);
+	background: var(--so-neutral-50);
 }
 
 a {
@@ -57,8 +57,8 @@ a {
 	align-items: center;
 	gap: 8px 16px;
 	padding: 10px 20px;
-	border-bottom: 1px solid var(--s-neutral-200);
-	background: var(--s-component-surface);
+	border-bottom: 1px solid var(--so-neutral-200);
+	background: var(--so-component-surface);
 }
 
 .pg__brand {
@@ -70,19 +70,19 @@ a {
 .pg__switch {
 	margin-right: auto;
 	padding: 2px 10px;
-	border: 1px solid var(--s-neutral-200);
+	border: 1px solid var(--so-neutral-200);
 	border-radius: 999px;
 	font-size: 12px;
-	color: var(--s-neutral-600);
+	color: var(--so-neutral-600);
 }
 
 .pg__switch:hover {
-	border-color: var(--s-accent-400);
-	color: var(--s-component-text);
+	border-color: var(--so-accent-400);
+	color: var(--so-component-text);
 }
 
 .pg__brand span {
-	color: var(--s-neutral-500);
+	color: var(--so-neutral-500);
 	font-weight: 400;
 }
 
@@ -105,7 +105,7 @@ a {
 }
 
 .pg__control-label {
-	color: var(--s-neutral-500);
+	color: var(--so-neutral-500);
 	font-size: 12px;
 }
 
@@ -126,8 +126,8 @@ a {
 	font-size: 12px;
 	white-space: nowrap;
 	text-overflow: ellipsis;
-	color: var(--s-caution-700);
-	background: var(--s-caution-100);
+	color: var(--so-caution-700);
+	background: var(--so-caution-100);
 }
 
 .pg__sidebar {
@@ -135,8 +135,8 @@ a {
 	width: 260px;
 	overflow-y: auto;
 	padding: 12px;
-	border-right: 1px solid var(--s-neutral-200);
-	background: var(--s-neutral-50);
+	border-right: 1px solid var(--so-neutral-200);
+	background: var(--so-neutral-50);
 }
 
 /* Меню занимает колонку целиком — ровно её: у темы `.so-list-box` есть и
@@ -173,7 +173,7 @@ a {
 	font-size: 11px;
 	text-transform: uppercase;
 	letter-spacing: 0.08em;
-	color: var(--s-neutral-500);
+	color: var(--so-neutral-500);
 	margin: 12px 8px 6px;
 }
 
@@ -193,7 +193,7 @@ a {
 
 .pg__page-lead {
 	margin: 4px 0 24px;
-	color: var(--s-neutral-500);
+	color: var(--so-neutral-500);
 }
 
 /*
@@ -205,12 +205,12 @@ a {
 .pg__group {
 	margin: 32px 0 12px;
 	padding-top: 16px;
-	border-top: 1px solid var(--s-neutral-200);
+	border-top: 1px solid var(--so-neutral-200);
 	font-size: 13px;
 	font-weight: 600;
 	text-transform: uppercase;
 	letter-spacing: 0.04em;
-	color: var(--s-neutral-500);
+	color: var(--so-neutral-500);
 }
 
 .pg__group:first-of-type {
@@ -229,7 +229,7 @@ a {
 
 /*
  * Ячейка витрины, её сцена и сцена колонки страницы — карточки стенда своего
- * цвета. Карточка объявляет свою поверхность места (`--s-place-surface`) рядом
+ * цвета. Карточка объявляет свою поверхность места (`--so-place-surface`) рядом
  * с фоном, как карточка приложения: по ней тема красит закреплённую шапку
  * Table, и без объявления шапка встала бы над строками пятном цвета страницы
  * (`themes/oren/AGENTS.md`, «Поверхность места»).
@@ -239,17 +239,17 @@ a {
 	flex-direction: column;
 	gap: 12px;
 	padding: 16px;
-	border: 1px solid var(--s-neutral-200);
+	border: 1px solid var(--so-neutral-200);
 	border-radius: 8px;
-	background: var(--s-component-surface);
-	--s-place-surface: var(--s-component-surface);
+	background: var(--so-component-surface);
+	--so-place-surface: var(--so-component-surface);
 	transition:
 		border-color 150ms,
 		transform 150ms;
 }
 
 .pg-cell:hover {
-	border-color: var(--s-accent-400);
+	border-color: var(--so-accent-400);
 	transform: translateY(-1px);
 }
 
@@ -262,7 +262,7 @@ a {
 }
 
 .pg-cell__note {
-	color: var(--s-neutral-500);
+	color: var(--so-neutral-500);
 	font-size: 12px;
 	min-height: 2.5em;
 }
@@ -276,15 +276,15 @@ a {
 	min-height: 84px;
 	padding: 12px;
 	border-radius: 6px;
-	background: var(--s-neutral-100);
-	--s-place-surface: var(--s-neutral-100);
+	background: var(--so-neutral-100);
+	--so-place-surface: var(--so-neutral-100);
 }
 
 /* ─── Строка свойства ────────────────────────────────────── */
 
 .pg-prop {
 	padding: 18px 0;
-	border-top: 1px solid var(--s-neutral-200);
+	border-top: 1px solid var(--so-neutral-200);
 }
 
 /**
@@ -322,7 +322,7 @@ a {
 .pg-prop__note {
 	margin: 6px 0 14px;
 	font-size: 12px;
-	color: var(--s-neutral-500);
+	color: var(--so-neutral-500);
 }
 
 .pg-prop__columns {
@@ -334,7 +334,7 @@ a {
 .pg-col {
 	display: flex;
 	flex-direction: column;
-	border: 1px solid var(--s-neutral-200);
+	border: 1px solid var(--so-neutral-200);
 	border-radius: 8px;
 	overflow: hidden;
 }
@@ -347,9 +347,9 @@ a {
 	font-size: 11px;
 	text-transform: uppercase;
 	letter-spacing: 0.06em;
-	color: var(--s-neutral-500);
-	background: var(--s-neutral-100);
-	border-bottom: 1px solid var(--s-neutral-200);
+	color: var(--so-neutral-500);
+	background: var(--so-neutral-100);
+	border-bottom: 1px solid var(--so-neutral-200);
 }
 
 .pg-col__actions {
@@ -366,8 +366,8 @@ a {
 	padding: 18px 12px;
 	min-height: 78px;
 	/* Поверхность места — рядом с фоном, см. `.pg-cell` */
-	background: var(--s-component-surface);
-	--s-place-surface: var(--s-component-surface);
+	background: var(--so-component-surface);
+	--so-place-surface: var(--so-component-surface);
 }
 
 /*
@@ -385,13 +385,13 @@ a {
 	align-items: center;
 	gap: 4px;
 	padding: 4px 8px;
-	border-top: 1px solid var(--s-neutral-200);
-	background: var(--s-neutral-100);
+	border-top: 1px solid var(--so-neutral-200);
+	background: var(--so-neutral-100);
 }
 
 .pg-col__status {
 	font-size: 12px;
-	color: var(--s-neutral-500);
+	color: var(--so-neutral-500);
 }
 
 /* ─── Страница тестов ────────────────────────────────────── */
@@ -400,7 +400,7 @@ a {
 .pg-tests__section + .pg-tests__section {
 	margin-top: 32px;
 	padding-top: 16px;
-	border-top: 1px solid var(--s-neutral-200);
+	border-top: 1px solid var(--so-neutral-200);
 }
 
 /* Заголовок раздела, запуск и сводка — одной строкой над блоками */
@@ -418,12 +418,12 @@ a {
 	font-weight: 600;
 	text-transform: uppercase;
 	letter-spacing: 0.04em;
-	color: var(--s-neutral-500);
+	color: var(--so-neutral-500);
 }
 
 .pg-tests__count {
 	font-size: 12px;
-	color: var(--s-neutral-500);
+	color: var(--so-neutral-500);
 }
 
 .pg-badge {
@@ -434,35 +434,35 @@ a {
 }
 
 .pg-badge--passed {
-	color: var(--s-positive-700);
-	background: var(--s-positive-100);
+	color: var(--so-positive-700);
+	background: var(--so-positive-100);
 }
 
 .pg-badge--failed {
-	color: var(--s-negative-700);
-	background: var(--s-negative-100);
+	color: var(--so-negative-700);
+	background: var(--so-negative-100);
 }
 
 .pg-scenario {
 	margin-bottom: 16px;
 	padding: 14px 16px;
-	border: 1px solid var(--s-neutral-200);
+	border: 1px solid var(--so-neutral-200);
 	border-left-width: 3px;
 	border-radius: 8px;
-	background: var(--s-component-surface);
+	background: var(--so-component-surface);
 }
 
 /* Итог виден краем блока — пролистывая тему, глазами ищут красное */
 .pg-scenario[data-status='passed'] {
-	border-left-color: var(--s-positive-500);
+	border-left-color: var(--so-positive-500);
 }
 
 .pg-scenario[data-status='failed'] {
-	border-left-color: var(--s-negative-500);
+	border-left-color: var(--so-negative-500);
 }
 
 .pg-scenario[data-status='waiting'] {
-	border-left-color: var(--s-caution-500);
+	border-left-color: var(--so-caution-500);
 }
 
 .pg-scenario__head {
@@ -486,33 +486,33 @@ a {
 
 .pg-chip {
 	padding: 0 6px;
-	border: 1px solid var(--s-neutral-300);
+	border: 1px solid var(--so-neutral-300);
 	border-radius: 4px;
 	font-size: 11px;
-	color: var(--s-neutral-500);
+	color: var(--so-neutral-500);
 }
 
 .pg-status {
 	font-size: 12px;
-	color: var(--s-neutral-500);
+	color: var(--so-neutral-500);
 }
 
 .pg-status--passed {
-	color: var(--s-positive-700);
+	color: var(--so-positive-700);
 }
 
 .pg-status--failed {
-	color: var(--s-negative-700);
+	color: var(--so-negative-700);
 }
 
 .pg-status--waiting {
-	color: var(--s-caution-700);
+	color: var(--so-caution-700);
 }
 
 .pg-scenario__note {
 	margin: 6px 0 8px;
 	font-size: 12px;
-	color: var(--s-neutral-500);
+	color: var(--so-neutral-500);
 }
 
 /* Номера шагов — явно: preflight темы снимает маркеры списков */
@@ -532,18 +532,18 @@ a {
 }
 
 .pg-checks__item {
-	color: var(--s-positive-700);
+	color: var(--so-positive-700);
 }
 
 .pg-checks__item--failed {
-	color: var(--s-negative-700);
+	color: var(--so-negative-700);
 }
 
 .pg-scenario__error {
 	margin: 0 0 8px;
 	font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
 	font-size: 12px;
-	color: var(--s-negative-700);
+	color: var(--so-negative-700);
 }
 
 /*
@@ -561,14 +561,14 @@ a {
 	padding: 12px;
 	overflow: auto;
 	resize: horizontal;
-	border: 1px dashed var(--s-neutral-300);
+	border: 1px dashed var(--so-neutral-300);
 	border-radius: 6px;
-	background: var(--s-neutral-50);
+	background: var(--so-neutral-50);
 }
 
 .pg-scenario__placeholder {
 	font-size: 12px;
-	color: var(--s-neutral-400);
+	color: var(--so-neutral-400);
 }
 
 /* ─── Код ────────────────────────────────────────────────── */
@@ -580,9 +580,9 @@ a {
 	font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
 	font-size: 12px;
 	line-height: 1.6;
-	color: var(--s-component-text);
-	background: var(--s-neutral-100);
-	border-top: 1px solid var(--s-neutral-200);
+	color: var(--so-component-text);
+	background: var(--so-neutral-100);
+	border-top: 1px solid var(--so-neutral-200);
 }
 
 /* ─── Мелочи ─────────────────────────────────────────────── */
@@ -593,14 +593,14 @@ a {
 	gap: 4px 12px;
 	padding: 14px;
 	margin-top: 8px;
-	border: 1px dashed var(--s-neutral-300);
+	border: 1px dashed var(--so-neutral-300);
 	border-radius: 8px;
 	font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
 	font-size: 12px;
 }
 
 .pg-readonly__key {
-	color: var(--s-neutral-500);
+	color: var(--so-neutral-500);
 }
 
 .pg-readonly__value {
@@ -612,7 +612,7 @@ a {
 .pg-empty {
 	padding: 40px;
 	text-align: center;
-	color: var(--s-neutral-500);
+	color: var(--so-neutral-500);
 }
 
 /* Ссылка в тексте: ссылки стенда без подчёркивания, а здесь её иначе не видно */

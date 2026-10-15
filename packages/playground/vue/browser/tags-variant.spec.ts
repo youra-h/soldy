@@ -127,7 +127,7 @@ const expectTagsLikeReferences = async (set: TVariant) => {
 }
 
 beforeEach(() => {
-	document.documentElement.dataset.theme = 'oren'
+	document.documentElement.dataset.soTheme = 'oren'
 })
 
 afterEach(() => {

@@ -39,7 +39,7 @@ active tab.
 The dark scheme is switched on with an attribute on the root element:
 
 ```html
-<html data-theme="oren-dark"></html>
+<html data-so-theme="oren-dark"></html>
 ```
 
 ## Documentation

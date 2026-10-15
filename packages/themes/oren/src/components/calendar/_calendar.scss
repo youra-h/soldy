@@ -57,7 +57,7 @@
 // вокруг календаря ставит тот, кто его туда кладёт.
 //
 // Геометрия — одна переменная на размер, сторона плитки дня
-// (`--s-calendar-day`). Ячейка шире плитки на запас под кольцо фокуса с каждой
+// (`--so-calendar-day`). Ячейка шире плитки на запас под кольцо фокуса с каждой
 // стороны, и от ячейки считается всё остальное: ряд заголовков, высота
 // месяца, место кнопок листания, края подвала.
 .so-calendar {
@@ -71,18 +71,18 @@
 	// `outline-offset-2`), то же число, что у ленты Scroller. Кольцо дня поэтому
 	// умещается в своей ячейке и не ложится на соседей, а кольцо кнопки листания
 	// — в коробке календаря: прокручиваемая панель вокруг его не срежет.
-	--s-calendar-bleed: 0.25rem;
-	--s-calendar-cell: calc(var(--s-calendar-day) + 2 * var(--s-calendar-bleed));
+	--so-calendar-bleed: 0.25rem;
+	--so-calendar-cell: calc(var(--so-calendar-day) + 2 * var(--so-calendar-bleed));
 
 	// Строка дней недели — ниже недели: подписи колонок мельче номеров, и полная
 	// ячейка развела бы их с сеткой.
-	--s-calendar-head: var(--s-calendar-day);
+	--so-calendar-head: var(--so-calendar-day);
 
 	// Зазор между месяцами — полъячейки. Соседние дни месяца стоят на двух
 	// запасах друг от друга, а плитки соседних месяцев — ещё и на зазоре, в
 	// несколько раз дальше: сетки читаются отдельными, а ряд из трёх месяцев не
 	// расползается.
-	--s-calendar-gap: calc(var(--s-calendar-cell) / 2);
+	--so-calendar-gap: calc(var(--so-calendar-cell) / 2);
 
 	// Корень — столбец: ряд месяцев, под ним подвал. Ширина календаря — по
 	// месяцам, а не по контейнеру: кнопки листания стоят у конца корня и обязаны
@@ -92,7 +92,7 @@
 	@apply relative flex flex-col;
 	@apply w-fit max-w-full;
 	@apply text-s-component;
-	gap: calc(2 * var(--s-calendar-bleed));
+	gap: calc(2 * var(--so-calendar-bleed));
 
 	@include mixines.calendar-text('normal');
 
@@ -132,14 +132,14 @@
 // ширина контейнера, и первая строка месяцев разносится по краям
 // (`justify-between`): стрелки остаются над последними колонками последнего
 // месяца строки, а не повисают за ними. Пока месяцы помещаются, свободного
-// места нет, и зазор между ними — ровно `--s-calendar-gap`.
+// места нет, и зазор между ними — ровно `--so-calendar-gap`.
 //
 // Ряд — свой узел, а не корень: подвал в одном ряду с месяцами прибавил бы к
 // ширине ряда свою ширину и зазор, и кнопки листания у конца корня повисли бы
 // за последней колонкой.
 .so-calendar__months {
 	@apply flex flex-wrap justify-between;
-	gap: var(--s-calendar-gap);
+	gap: var(--so-calendar-gap);
 }
 
 // Кнопки листания — одна пара на весь календарь, в ряду заголовков, как в
@@ -158,18 +158,18 @@
 .so-calendar__prev,
 .so-calendar__next {
 	@apply absolute;
-	inset-block-start: var(--s-calendar-bleed);
-	inline-size: var(--s-calendar-day);
-	block-size: var(--s-calendar-day);
+	inset-block-start: var(--so-calendar-bleed);
+	inline-size: var(--so-calendar-day);
+	block-size: var(--so-calendar-day);
 	padding-inline: 0;
 }
 
 .so-calendar__prev {
-	inset-inline-end: calc(var(--s-calendar-cell) + var(--s-calendar-bleed));
+	inset-inline-end: calc(var(--so-calendar-cell) + var(--so-calendar-bleed));
 }
 
 .so-calendar__next {
-	inset-inline-end: var(--s-calendar-bleed);
+	inset-inline-end: var(--so-calendar-bleed);
 }
 
 // Вид кнопок — `plain` по контексту: значения вида разметка не передаёт (их
@@ -183,15 +183,15 @@
 // Стрелка смотрит в свою сторону. Роль в контракте иконок одна — `arrowRight`,
 // и ту, что показывает в начало строки, зеркалит тема: в LTR это «назад», в
 // RTL — «вперёд». Так же, как у ленты Scroller: знак `scaleX` — знак строки
-// `--s-dir-sign` (`direction.css`), то есть ближайшего `dir`, и календарь с
+// `--so-dir-sign` (`direction.css`), то есть ближайшего `dir`, и календарь с
 // `direction="ltr"` в RTL-предке остаётся календарём LTR. Раскладке знак не
 // нужен — она логическая и считается по направленности сама.
 .so-calendar__prev .so-icon {
-	transform: scaleX(calc(-1 * var(--s-dir-sign)));
+	transform: scaleX(calc(-1 * var(--so-dir-sign)));
 }
 
 .so-calendar__next .so-icon {
-	transform: scaleX(var(--s-dir-sign));
+	transform: scaleX(var(--so-dir-sign));
 }
 
 // Месяц — заголовок над сеткой.
@@ -203,7 +203,7 @@
 .so-calendar__month {
 	@apply flex flex-col;
 	min-block-size: calc(
-		var(--s-calendar-cell) + var(--s-calendar-head) + 6 * var(--s-calendar-cell)
+		var(--so-calendar-cell) + var(--so-calendar-head) + 6 * var(--so-calendar-cell)
 	);
 }
 
@@ -216,9 +216,9 @@
 // нельзя: от корня календаря стоят кнопки листания и панель выбора.
 .so-calendar__month > .so-calendar__heading {
 	@apply flex items-center justify-start;
-	block-size: var(--s-calendar-cell);
-	padding-inline-start: var(--s-calendar-bleed);
-	padding-inline-end: calc(2 * var(--s-calendar-cell));
+	block-size: var(--so-calendar-cell);
+	padding-inline-start: var(--so-calendar-bleed);
+	padding-inline-end: calc(2 * var(--so-calendar-cell));
 }
 
 // Заголовок месяца — кнопка высотой с плитку дня, текст полужирный. Название
@@ -228,7 +228,7 @@
 // не страдает — это полный текст узла.
 .so-calendar__title {
 	@apply min-w-0 max-w-full font-semibold;
-	block-size: var(--s-calendar-day);
+	block-size: var(--so-calendar-day);
 }
 
 .so-calendar__title-text {
@@ -247,12 +247,12 @@
 // строкой (`table-fixed`), и содержимое дня её не раздвигает.
 .so-calendar__grid {
 	@apply table-fixed border-collapse;
-	inline-size: calc(7 * var(--s-calendar-cell));
+	inline-size: calc(7 * var(--so-calendar-cell));
 }
 
 // Строка дней недели.
 .so-calendar__weekdays {
-	block-size: var(--s-calendar-head);
+	block-size: var(--so-calendar-head);
 }
 
 // День недели — подпись колонки, приглушённым текстом: это справка над
@@ -270,13 +270,13 @@
 .so-calendar__weekday {
 	@apply p-0 text-center align-middle font-medium text-s-neutral-500;
 	@apply overflow-hidden whitespace-nowrap;
-	inline-size: var(--s-calendar-cell);
+	inline-size: var(--so-calendar-cell);
 }
 
 // Неделя — ряд ячеек одной высоты. Высота задана рядом: у заполнителя
 // содержимого нет, и ряд без неё сжался бы до дней в нём.
 .so-calendar__week {
-	block-size: var(--s-calendar-cell);
+	block-size: var(--so-calendar-cell);
 }
 
 // Заполнитель — день соседнего месяца. Элемента коллекции у него нет, и
@@ -298,8 +298,8 @@
 .so-calendar__footer {
 	@apply flex flex-wrap items-center justify-end;
 	contain: inline-size;
-	gap: calc(2 * var(--s-calendar-bleed));
-	padding-inline: var(--s-calendar-bleed);
+	gap: calc(2 * var(--so-calendar-bleed));
+	padding-inline: var(--so-calendar-bleed);
 }
 
 // День — ячейка сетки, Calendar.Item.
@@ -313,8 +313,8 @@
 	$this: &;
 
 	@apply relative p-0 text-center align-middle select-none;
-	inline-size: var(--s-calendar-cell);
-	block-size: var(--s-calendar-cell);
+	inline-size: var(--so-calendar-cell);
+	block-size: var(--so-calendar-cell);
 
 	// Цифры одной ширины: номера в колонке стоят ровно, и «11» не уже «18».
 	font-variant-numeric: tabular-nums;
@@ -327,14 +327,14 @@
 	// центру: номер или то, что потребитель положил в слот (номер и цена,
 	// номер и точка события). Не уже плитки и не ниже её; содержимое крупнее
 	// плитку раздвигает — такому содержимому потребитель задаёт размер сам,
-	// переменной `--s-calendar-day` на календаре.
+	// переменной `--so-calendar-day` на календаре.
 	&__day {
 		@apply relative mx-auto flex flex-col items-center justify-center;
 		@apply rounded-md;
 		@apply transition-colors duration-150;
 		inline-size: fit-content;
-		min-inline-size: var(--s-calendar-day);
-		min-block-size: var(--s-calendar-day);
+		min-inline-size: var(--so-calendar-day);
+		min-block-size: var(--so-calendar-day);
 	}
 
 	// Выбрать можно — указатель руки. Недоступный день фокус получает, но не
@@ -348,13 +348,13 @@
 	// вторым слоем, и наведённый день на полосе темнее соседей. Рамку «сегодня»
 	// на вуали правило переводит на ступень сильнее (ниже).
 	&:hover:not([data-disabled='true'], [data-unavailable='true']) > #{$this}__day {
-		--s-calendar-today: var(--s-calendar-today-veiled);
-		background-color: var(--s-calendar-hover);
+		--so-calendar-today: var(--so-calendar-today-veiled);
+		background-color: var(--so-calendar-hover);
 	}
 
 	&:active:not([data-disabled='true'], [data-unavailable='true']) > #{$this}__day {
-		--s-calendar-today: var(--s-calendar-today-veiled);
-		background-color: var(--s-calendar-press);
+		--so-calendar-today: var(--so-calendar-today-veiled);
+		background-color: var(--so-calendar-press);
 	}
 
 	// Кольцо фокуса — на плитке, тем же кольцом, что у Button. Снаружи плитки с
@@ -379,13 +379,13 @@
 	// Кромка ленты — переменной: у выбранного диапазона её нет, у предпросмотра
 	// она пунктирная (ниже). На концах ленты кромку ставят те же правила, что
 	// её скругляют, — края ленты описаны один раз для обоих видов.
-	--s-calendar-band-edge: none;
+	--so-calendar-band-edge: none;
 
 	&::before {
 		@apply absolute pointer-events-none;
-		inset-block: var(--s-calendar-bleed);
+		inset-block: var(--so-calendar-bleed);
 		inset-inline: 0;
-		background-color: var(--s-calendar-band);
+		background-color: var(--so-calendar-band);
 	}
 
 	&:is(
@@ -417,23 +417,23 @@
 	// отметки не говорят, и тема их не различает: второй конец и так виден по
 	// указателю или по кольцу фокуса.
 	&[data-preview='true'] {
-		--s-calendar-band-edge: 1px dashed var(--s-calendar-preview-edge);
+		--so-calendar-band-edge: 1px dashed var(--so-calendar-preview-edge);
 
 		&::before {
-			background-color: var(--s-calendar-preview);
-			border-block: var(--s-calendar-band-edge);
+			background-color: var(--so-calendar-preview);
+			border-block: var(--so-calendar-band-edge);
 		}
 
 		&[data-range-start='true']::before {
-			inset-inline-start: var(--s-calendar-bleed);
-			border-inline-start: var(--s-calendar-band-edge);
+			inset-inline-start: var(--so-calendar-bleed);
+			border-inline-start: var(--so-calendar-band-edge);
 			border-start-start-radius: var(--radius-md);
 			border-end-start-radius: var(--radius-md);
 		}
 
 		&[data-range-end='true']::before {
-			inset-inline-end: var(--s-calendar-bleed);
-			border-inline-end: var(--s-calendar-band-edge);
+			inset-inline-end: var(--so-calendar-bleed);
+			border-inline-end: var(--so-calendar-band-edge);
 			border-start-end-radius: var(--radius-md);
 			border-end-end-radius: var(--radius-md);
 		}
@@ -452,8 +452,8 @@
 			:first-child,
 			.so-calendar__filler + *
 		)::before {
-		inset-inline-start: var(--s-calendar-bleed);
-		border-inline-start: var(--s-calendar-band-edge);
+		inset-inline-start: var(--so-calendar-bleed);
+		border-inline-start: var(--so-calendar-band-edge);
 		border-start-start-radius: var(--radius-md);
 		border-end-start-radius: var(--radius-md);
 	}
@@ -462,8 +462,8 @@
 			:last-child,
 			:has(+ .so-calendar__filler)
 		)::before {
-		inset-inline-end: var(--s-calendar-bleed);
-		border-inline-end: var(--s-calendar-band-edge);
+		inset-inline-end: var(--so-calendar-bleed);
+		border-inline-end: var(--so-calendar-band-edge);
 		border-start-end-radius: var(--radius-md);
 		border-end-end-radius: var(--radius-md);
 	}
@@ -472,14 +472,14 @@
 	// текст, у цветного варианта — текст его цвета, как у Button `plain`. Лента
 	// — тоже вуаль, и рамка «сегодня» на ней на ступень сильнее (ниже).
 	&:is([data-range-middle='true'], [data-preview='true']) > #{$this}__day {
-		--s-calendar-today: var(--s-calendar-today-veiled);
-		color: var(--s-calendar-band-text);
+		--so-calendar-today: var(--so-calendar-today-veiled);
+		color: var(--so-calendar-band-text);
 	}
 
 	// Сегодня — рамка плитки, пара ступеней рамки Button `outlined`
-	// (`calendar-colors`): в покое — `--s-calendar-today`, на вуали правила
+	// (`calendar-colors`): в покое — `--so-calendar-today`, на вуали правила
 	// самой вуали — наведения, нажатия и ленты (выше) — подменяют её на
-	// `--s-calendar-today-veiled`. Подменяют переменную, а не `border-color`:
+	// `--so-calendar-today-veiled`. Подменяют переменную, а не `border-color`:
 	// своё правило рамки на вуали было бы сильнее правила режима
 	// принудительных цветов и перебило бы его рамку (ниже).
 	//
@@ -488,7 +488,7 @@
 	// (`box-sizing: border-box`).
 	&[data-today='true'] > #{$this}__day {
 		@apply border;
-		border-color: var(--s-calendar-today);
+		border-color: var(--so-calendar-today);
 	}
 
 	// Недоступный день — фокус на него встаёт, выбрать нельзя: номер зачёркнут и
@@ -506,7 +506,7 @@
 	// вуаль и приглушённый текст той же специфичностью.
 	&[data-selected='true']:not([data-range-middle='true'], [data-preview='true']) > #{$this}__day {
 		@apply text-white;
-		background-color: var(--s-calendar-fill);
+		background-color: var(--so-calendar-fill);
 	}
 
 	&[data-selected='true']:not([data-range-middle='true'], [data-preview='true']):not(
@@ -514,11 +514,11 @@
 			[data-unavailable='true']
 		) {
 		&:hover > #{$this}__day {
-			background-color: var(--s-calendar-fill-hover);
+			background-color: var(--so-calendar-fill-hover);
 		}
 
 		&:active > #{$this}__day {
-			background-color: var(--s-calendar-fill-active);
+			background-color: var(--so-calendar-fill-active);
 		}
 	}
 
@@ -573,9 +573,9 @@
 	// проигрывало правилу выбранного дня под указателем, и день, на котором
 	// после клика остался курсор, стоял цветом темы.
 	.so-calendar {
-		--s-calendar-fill: Highlight;
-		--s-calendar-fill-hover: Highlight;
-		--s-calendar-fill-active: Highlight;
+		--so-calendar-fill: Highlight;
+		--so-calendar-fill-hover: Highlight;
+		--so-calendar-fill-active: Highlight;
 	}
 
 	.so-calendar-item::before {
@@ -590,7 +590,7 @@
 	}
 
 	.so-calendar-item[data-preview='true'] {
-		--s-calendar-preview-edge: Highlight;
+		--so-calendar-preview-edge: Highlight;
 
 		&::before {
 			background-color: transparent;
@@ -701,9 +701,9 @@ $picker-panel: '.so-calendar__month > .so-calendar__heading > .so-popover__panel
 	@apply text-s-component shadow-md;
 	@apply ring-1 ring-s-neutral-300;
 	@apply outline outline-transparent;
-	@include place.surface(var(--s-component-surface));
-	padding: calc(2 * var(--s-calendar-bleed));
-	gap: calc(2 * var(--s-calendar-bleed));
+	@include place.surface(var(--so-component-surface));
+	padding: calc(2 * var(--so-calendar-bleed));
+	gap: calc(2 * var(--so-calendar-bleed));
 }
 
 // Шапка — первая строка карточки, высотой с плитку дня, и устроена как ряд
@@ -714,13 +714,13 @@ $picker-panel: '.so-calendar__month > .so-calendar__heading > .so-popover__panel
 // логический, и в RTL год встаёт справа, а стрелки слева.
 .so-calendar__picker-header {
 	@apply order-first flex shrink-0 items-center;
-	gap: calc(2 * var(--s-calendar-bleed));
-	block-size: var(--s-calendar-day);
+	gap: calc(2 * var(--so-calendar-bleed));
+	block-size: var(--so-calendar-day);
 }
 
 .so-calendar__picker-heading {
 	@apply min-w-0 font-semibold;
-	block-size: var(--s-calendar-day);
+	block-size: var(--so-calendar-day);
 	margin-inline-end: auto;
 }
 
@@ -729,8 +729,8 @@ $picker-panel: '.so-calendar__month > .so-calendar__heading > .so-popover__panel
 .so-calendar__picker-prev,
 .so-calendar__picker-next {
 	@apply shrink-0;
-	inline-size: var(--s-calendar-day);
-	block-size: var(--s-calendar-day);
+	inline-size: var(--so-calendar-day);
+	block-size: var(--so-calendar-day);
 	padding-inline: 0;
 }
 
@@ -748,8 +748,8 @@ $picker-panel: '.so-calendar__month > .so-calendar__heading > .so-popover__panel
 // строку.
 .so-calendar__picker > .so-calendar__picker-list {
 	@apply grid min-w-0 max-w-none grid-cols-4 border-0 p-0;
-	grid-template-rows: repeat(3, calc(1.25 * var(--s-calendar-cell)));
-	gap: calc(2 * var(--s-calendar-bleed));
+	grid-template-rows: repeat(3, calc(1.25 * var(--so-calendar-cell)));
+	gap: calc(2 * var(--so-calendar-bleed));
 }
 
 // Полоса жеста — у нижнего края карточки, когда жест включён (`swipe`): панель
@@ -799,11 +799,11 @@ $picker-panel: '.so-calendar__month > .so-calendar__heading > .so-popover__panel
 // разрешает (`motion.allowed`). Без движения карточка проявляется вместе с
 // подложкой на своём месте, а отпущенная встаёт на место сразу.
 #{$picker-panel} {
-	--s-calendar-swipe: var(--so-swipe-offset, 0px);
+	--so-calendar-swipe: var(--so-swipe-offset, 0px);
 
 	> .so-popover__content,
 	> .so-popover__handle {
-		translate: 0 var(--s-calendar-swipe);
+		translate: 0 var(--so-calendar-swipe);
 	}
 
 	&[data-open='true']:not([data-swiping='true'])
@@ -871,9 +871,9 @@ $picker-panel: '.so-calendar__month > .so-calendar__heading > .so-popover__panel
 // Стрелка «назад» смотрит в начало строки, как у кнопок листания: панель
 // внутри календаря, и знак строки она наследует от него.
 .so-calendar__picker-prev .so-icon {
-	transform: scaleX(calc(-1 * var(--s-dir-sign)));
+	transform: scaleX(calc(-1 * var(--so-dir-sign)));
 }
 
 .so-calendar__picker-next .so-icon {
-	transform: scaleX(var(--s-dir-sign));
+	transform: scaleX(var(--so-dir-sign));
 }

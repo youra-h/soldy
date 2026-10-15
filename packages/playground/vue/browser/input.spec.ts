@@ -75,7 +75,7 @@ async function show(content: () => VNode, dir: 'ltr' | 'rtl' = 'ltr'): Promise<v
 const border = (): string => style(find('.so-input')).borderTopColor
 
 beforeEach(() => {
-	document.documentElement.dataset.theme = 'oren'
+	document.documentElement.dataset.soTheme = 'oren'
 })
 
 afterEach(() => {

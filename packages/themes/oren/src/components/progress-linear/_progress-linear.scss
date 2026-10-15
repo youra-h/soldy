@@ -19,7 +19,7 @@
 // (`translate`): сдвиг браузер анимирует вне главного потока, и отрезок
 // бежит, даже пока страница занята той самой длинной операцией, ради которой
 // индикатор показан. Но у сдвига нет логических направлений, поэтому
-// горизонтальный бег берёт знак строки `--s-dir-sign` (кадры ниже).
+// горизонтальный бег берёт знак строки `--so-dir-sign` (кадры ниже).
 // Вертикальному направление письма не нужно: снизу вверх он идёт в любом.
 //
 // Бег и переход доли — движение, и идут они, только когда режим движения их
@@ -36,21 +36,21 @@
 	// Скругление и обрезка — у дорожки: заливка у начала и бегущий отрезок у
 	// краёв уходят под её скругление.
 	@apply relative overflow-hidden rounded-full;
-	background-color: var(--s-progress-linear-track);
+	background-color: var(--so-progress-linear-track);
 	transition: background-color 250ms linear;
 
 	// Горизонтальная — блочная при любом теге, во всю ширину контейнера: полосу
 	// меряют длиной, а не содержимым. Толщина — её высота.
 	&--horizontal {
 		@apply block;
-		block-size: var(--s-progress-linear-thickness);
+		block-size: var(--so-progress-linear-thickness);
 	}
 
 	// Вертикальная — строчный блок: несколько полос встают в ряд, как столбики
 	// или вертикальные ползунки. Толщина — её ширина, высота своя (ниже).
 	&--vertical {
 		@apply inline-block;
-		inline-size: var(--s-progress-linear-thickness);
+		inline-size: var(--so-progress-linear-thickness);
 	}
 
 	// Заливка — от начала дорожки на долю готового, у вертикальной — снизу.
@@ -65,7 +65,7 @@
 	// ширина у горизонтальной, высота у вертикальной.
 	&__range {
 		@apply absolute rounded-full;
-		background-color: var(--s-progress-linear-fill);
+		background-color: var(--so-progress-linear-fill);
 		transition-property: background-color;
 		transition-duration: 250ms;
 		transition-timing-function: linear;
@@ -110,7 +110,7 @@
 		&::after {
 			content: '';
 			@apply absolute inset-0 rounded-full;
-			background-color: var(--s-progress-linear-fill);
+			background-color: var(--so-progress-linear-fill);
 			@include progress.pulse;
 		}
 	}
@@ -181,17 +181,17 @@
 
 // Горизонтальный бег: отрезок стоит у начала строки, выходит из-за него и
 // уходит за конец. Путь — к концу строки, а знак сдвига — знак строки
-// `--s-dir-sign` (`direction.css`), то есть ближайшего `dir`: в RTL отрезок
+// `--so-dir-sign` (`direction.css`), то есть ближайшего `dir`: в RTL отрезок
 // стоит справа и идёт влево. Отдельных кадров под RTL нет — их выбирал
 // селектор по атрибуту у предка, и полоса с `direction="ltr"` в RTL-предке
 // бежала в обратную сторону.
 @keyframes so-progress-linear-run {
 	from {
-		translate: calc(-100% * var(--s-dir-sign));
+		translate: calc(-100% * var(--so-dir-sign));
 	}
 
 	to {
-		translate: calc(250% * var(--s-dir-sign));
+		translate: calc(250% * var(--so-dir-sign));
 	}
 }
 
@@ -225,8 +225,8 @@
 @media (forced-colors: active) {
 	.so-progress-linear {
 		forced-color-adjust: none;
-		--s-progress-linear-track: Canvas;
-		--s-progress-linear-fill: Highlight;
+		--so-progress-linear-track: Canvas;
+		--so-progress-linear-fill: Highlight;
 		outline: 1px solid CanvasText;
 		outline-offset: -1px;
 	}
