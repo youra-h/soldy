@@ -6,7 +6,7 @@ import { join, resolve, relative } from 'node:path'
  * Сторож правила «режим движения читается в одном месте» (корневой
  * `AGENTS.md`, «Движение: один режим на библиотеку»).
  *
- * Режим — атрибут `data-s-motion` на корне документа, без него — настройка
+ * Режим — атрибут `data-so-motion` на корне документа, без него — настройка
  * системы `prefers-reduced-motion`. В коде их знает только модуль движения
  * плагинов (`packages/plugins/src/motion/`): он ставит атрибут (`useMotion`)
  * и отвечает плагинам, как им прокручивать. Свой опрос среды у плагина —
@@ -81,7 +81,7 @@ type TRule = {
 
 const RULES: readonly TRule[] = [
 	{ name: 'prefers-reduced-motion', pattern: /prefers-reduced-motion/ },
-	{ name: 'data-s-motion', pattern: /data-s-motion/ },
+	{ name: 'data-so-motion', pattern: /data-so-motion/ },
 	{ name: 'литерал smooth', pattern: /(['"`])smooth\1/, allowed: CORE },
 	{ name: 'вызов .animate()', pattern: /\.animate\(/ },
 ]
@@ -109,7 +109,7 @@ describe('режим движения — в одном модуле', () => {
 		// Иначе сторож стерёг бы слова, которых нет нигде, — и пропустил бы
 		// модуль, переехавший в другое место
 		expect(module).toMatch(/prefers-reduced-motion/)
-		expect(module).toMatch(/data-s-motion/)
+		expect(module).toMatch(/data-so-motion/)
 	})
 
 	it.each(RULES)('$name — только в модуле движения', ({ pattern, allowed }) => {

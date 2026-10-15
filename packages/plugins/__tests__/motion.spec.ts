@@ -94,7 +94,7 @@ afterEach(() => {
 })
 
 /** Атрибут режима на корне документа. */
-const attribute = () => document.documentElement.getAttribute('data-s-motion')
+const attribute = () => document.documentElement.getAttribute('data-so-motion')
 
 describe('useMotion', () => {
 	it.each<[TMotionMode, string | null]>([

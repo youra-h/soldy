@@ -11,7 +11,7 @@ import { buildCss } from './build-css'
  *
  * Режим движения у библиотеки один (корневой `AGENTS.md`, «Движение: один
  * режим на библиотеку»): по умолчанию — настройка системы
- * `prefers-reduced-motion`, а приложение задаёт свой атрибутом `data-s-motion`
+ * `prefers-reduced-motion`, а приложение задаёт свой атрибутом `data-so-motion`
  * на корне документа. Тема исполняет его одним миксином `motion.allowed`:
  * покой — база, движение — надстройка, и правило движения мимо неё не слушало
  * бы ни систему, ни приложение. Так ехала полоса Tabs `line`, пока карточка
@@ -44,8 +44,8 @@ const MOTION_MIXIN = 'mixins/_motion.scss'
  * движении не просила (только внутри медиазапроса), при `full` — всегда.
  * Кавычки и пробелы сборка снимает, поэтому селектор сверяется без них.
  */
-const SYSTEM_ROOT = ':where(:root:not([data-s-motion=reduce]))'
-const FULL_ROOT = ':where(:root[data-s-motion=full])'
+const SYSTEM_ROOT = ':where(:root:not([data-so-motion=reduce]))'
+const FULL_ROOT = ':where(:root[data-so-motion=full])'
 const NO_PREFERENCE = '(prefers-reduced-motion:no-preference)'
 
 /** Свойства, переход и анимация которых — не движение. */
@@ -182,7 +182,7 @@ const sources = styleFiles(SRC).map((file) => ({
 }))
 
 describe('движение — исходники', () => {
-	it.each(['prefers-reduced-motion', 'data-s-motion'])(
+	it.each(['prefers-reduced-motion', 'data-so-motion'])(
 		'%s — только в миксине надстройки',
 		(word) => {
 			const found = sources.filter(({ code }) => code.includes(word)).map(({ name }) => name)
@@ -308,7 +308,7 @@ describe('движение — собранный CSS', async () => {
 
 		css.walkRules((rule) => {
 			const conditioned =
-				rule.selector.includes('data-s-motion') ||
+				rule.selector.includes('data-so-motion') ||
 				mediaOf(rule).some((media) => media.includes('prefers-reduced-motion'))
 
 			if (conditioned && !isMotionRule(rule)) wrong.push(rule.selector)

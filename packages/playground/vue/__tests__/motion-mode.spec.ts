@@ -18,7 +18,7 @@ import { router } from '../src/router'
 import AppHeader from '../src/components/AppHeader.vue'
 
 /** Атрибут режима на корне документа — контракт библиотеки с темой. */
-const ATTRIBUTE = 'data-s-motion'
+const ATTRIBUTE = 'data-so-motion'
 
 const SYSTEM_REDUCE = '(prefers-reduced-motion: reduce)'
 

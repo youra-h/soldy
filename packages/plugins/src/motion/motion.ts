@@ -7,7 +7,7 @@ import type { TMotionMode } from './types'
  * `system`. Без атрибута идут и серверная разметка, и кадры до старта
  * приложения: и CSS, и плагины берут тогда настройку системы.
  */
-const ATTRIBUTE = 'data-s-motion'
+const ATTRIBUTE = 'data-so-motion'
 
 /** Медиазапрос настройки системы: пользователь просит меньше движения. */
 const SYSTEM_REDUCE = '(prefers-reduced-motion: reduce)'
@@ -29,13 +29,13 @@ const FORCED: ReadonlyMap<string, boolean> = new Map([
  * useMotion('full') // движение и тогда, когда система просит его убрать
  * ```
  *
- * Режим пишется атрибутом `data-s-motion` на корень документа: `full` и
+ * Режим пишется атрибутом `data-so-motion` на корень документа: `full` и
  * `reduce` — как есть, `system` атрибут снимает. Сменить режим можно в любой
  * момент: CSS видит атрибут сам, плагины читают его в момент операции.
  *
  * Без документа (серверная отрисовка) вызов ничего не делает. Серверной
  * разметке, которой нужен свой режим до старта приложения, атрибут ставит
- * само приложение — в шаблоне страницы.
+ * само приложение — в шаблоне страницы: `<html data-so-motion="reduce">`.
  */
 export function useMotion(mode: TMotionMode): void {
 	if (typeof document === 'undefined') return

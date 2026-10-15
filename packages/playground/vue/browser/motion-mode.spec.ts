@@ -381,8 +381,8 @@ const CASES: readonly TCase[] = [
 			animationOf('.so-skeleton__placeholder')(),
 			animationOf('.so-skeleton__placeholder', '::after')(),
 		],
-		moving: ['none', 'skeleton-wave'],
-		still: ['skeleton-pulse', 'none'],
+		moving: ['none', 'so-skeleton-wave'],
+		still: ['so-skeleton-pulse', 'none'],
 	},
 ]
 
