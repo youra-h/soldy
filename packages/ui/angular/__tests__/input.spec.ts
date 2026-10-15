@@ -16,7 +16,7 @@
 import { describe, it, expect, afterEach, vi } from 'vitest'
 import { Component, signal } from '@angular/core'
 import { TestBed, type ComponentFixture } from '@angular/core/testing'
-import { TInput, type IInput } from '@soldy-ui/core'
+import { TInput, type IInput, type TValuePayload } from '@soldy-ui/core'
 import { SlotDirective, TInputComponent } from '@soldy-ui/angular'
 import { find, findIn, markupOf, mountHost, nextFrame } from './mount'
 
@@ -360,6 +360,49 @@ describe('Input · значение', () => {
 		fixture.detectChanges()
 
 		expect(input.value).toBe('')
+	})
+})
+
+/**
+ * Событие ядра `input` — выход `soInput`, а `(input)` на поле — событие
+ * браузера, как на нативном `<input>`. На `(x)` у элемента Angular ставит и
+ * подписку на выход `x`, и слушатель события DOM `x`: пока выход назывался
+ * `input`, обработчик получал на каждое нажатие два вызова — событие ядра и
+ * всплывшее от `<input>` событие браузера, хотя строгий шаблон обещал ему
+ * только первое. Обработчики здесь точного типа, их сверяет «Типы — Angular»:
+ * с выходом `input` у `(input)` был бы `$event` события ядра, а не `Event`.
+ */
+@Component({
+	standalone: true,
+	imports: [TInputComponent],
+	template: `<so-input (input)="onDomInput($event)" (soInput)="onInput($event)" />`,
+})
+class InputEventsHost {
+	readonly domInputs: Event[] = []
+	readonly inputs: TValuePayload<string>[] = []
+
+	onDomInput(event: Event): void {
+		this.domInputs.push(event)
+	}
+
+	onInput(payload: TValuePayload<string>): void {
+		this.inputs.push(payload)
+	}
+}
+
+describe('Input · события', () => {
+	it('(input) — событие браузера, (soInput) — событие ядра: по одному на нажатие', async () => {
+		const fixture = mountHost(InputEventsHost)
+		const input = field(findIn(fixture, 'so-input', HTMLElement))
+
+		await nextFrame()
+		type(fixture, input, 'a')
+
+		const { domInputs, inputs } = fixture.componentInstance
+
+		expect(domInputs).toHaveLength(1)
+		expect(domInputs[0].target).toBe(input)
+		expect(inputs).toEqual([{ newValue: 'a', oldValue: undefined }])
 	})
 })
 

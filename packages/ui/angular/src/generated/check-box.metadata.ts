@@ -29,14 +29,14 @@ export const CheckBoxInputs = [
 export const CheckBoxOutputs = [
 	'bundleCreate',
 	'pluginEvent',
-	'show',
-	'hide',
+	'soShow',
+	'soHide',
 	'showBefore',
 	'showAfter',
 	'hideBefore',
 	'hideAfter',
-	'ready',
-	'input',
+	'soReady',
+	'soInput',
 	'inputValue',
 	'elementCreate',
 	'elementReady',
@@ -133,11 +133,11 @@ export abstract class TCheckBoxSurface<
 	get pluginEvent(): TOutputEmitter<typeof descriptor, 'plugin:event'> {
 		return this.createOutput('pluginEvent')
 	}
-	get show(): TOutputEmitter<typeof descriptor, 'show'> {
-		return this.createOutput('show')
+	get soShow(): TOutputEmitter<typeof descriptor, 'show'> {
+		return this.createOutput('soShow')
 	}
-	get hide(): TOutputEmitter<typeof descriptor, 'hide'> {
-		return this.createOutput('hide')
+	get soHide(): TOutputEmitter<typeof descriptor, 'hide'> {
+		return this.createOutput('soHide')
 	}
 	get showBefore(): TOutputEmitter<typeof descriptor, 'show:before'> {
 		return this.createOutput('showBefore')
@@ -151,11 +151,11 @@ export abstract class TCheckBoxSurface<
 	get hideAfter(): TOutputEmitter<typeof descriptor, 'hide:after'> {
 		return this.createOutput('hideAfter')
 	}
-	get ready(): TOutputEmitter<typeof descriptor, 'ready'> {
-		return this.createOutput('ready')
+	get soReady(): TOutputEmitter<typeof descriptor, 'ready'> {
+		return this.createOutput('soReady')
 	}
-	get input(): TOutputEmitter<typeof descriptor, 'input'> {
-		return this.createOutput('input')
+	get soInput(): TOutputEmitter<typeof descriptor, 'input'> {
+		return this.createOutput('soInput')
 	}
 	get inputValue(): TOutputEmitter<typeof descriptor, 'input:value'> {
 		return this.createOutput('inputValue')

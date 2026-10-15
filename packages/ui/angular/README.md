@@ -10,7 +10,10 @@ The adapter is wiring, not behavior: it connects a core model to Angular's signa
 markup — BEM classes `s-*` and `data-*` state attributes. Props, events and slots come from the
 component descriptor, so they match the other five adapters; only the spelling is Angular's: a
 component is a prefixed attribute on your own element (`<button so-button>`), events are camelCase
-outputs (`element:ready` → `elementReady`), and slots are filled through the `slot` attribute.
+outputs (`element:ready` → `elementReady`), and slots are filled through the `slot` attribute. A
+one-word event gets the `so` prefix (`input` → `soInput`, `show` → `soShow`): Angular binds
+`(input)` both to an output and to the DOM event of that name, so `(input)` on a field is the
+browser's event, as on a native `<input>`, and the component's own is `(soInput)`.
 
 The components are standalone and zoneless — state is a signal, so Zone.js is not required. They
 render on the server (`@angular/platform-server`) and hydrate in the browser

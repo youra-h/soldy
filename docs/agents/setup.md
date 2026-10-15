@@ -400,7 +400,9 @@ Builder добавил бы изменяемое состояние, pipeline �
   для React, Svelte и Solid, где события это колбэк-пропы. Тип-зеркало —
   `TCallbackEventProps`. Остальные адаптеры именуют события в своём
   `adapter/common/naming.ts`: Vue и Web Components отдают имя ядра как есть
-  (`element:ready`), Angular — camelCase (`elementReady`).
+  (`element:ready`), Angular — camelCase (`elementReady`), а событие из одного
+  слова — с префиксом `so` (`soInput`): на `(input)` у элемента Angular слушает
+  и выход, и событие DOM (см. «Angular-специфика»).
 - **Профиль фреймворка** (`IAdapterProfile`) — стратегия имён и слот по
   умолчанию, одна константа на адаптер (`VueProfile`, `ReactProfile`, …).
 - **Поверхность** — `TSurface.of(descriptor, profile)`: публичный API компонента
