@@ -6,12 +6,17 @@ import {
 	type Signal,
 	type Type,
 } from '@angular/core'
-import type { IButton } from '@soldy-ui/core'
+import type { IButton, ILabel } from '@soldy-ui/core'
 import {
 	RoleIconDirective,
 	SlotDirective,
 	TButtonComponent,
+	TCheckBoxComponent,
 	TIconComponent,
+	TLabelComponent,
+	TRadioGroupComponent,
+	TRadioGroupItemComponent,
+	TSwitchComponent,
 } from '@soldy-ui/angular'
 
 /**
@@ -26,9 +31,10 @@ import {
  * Фикстура — компонент со своим шаблоном: содержимое слотов разметкой
  * разложить по имени нельзя, и scope слоту отдаёт только шаблон. Поэтому
  * пропсы сценария фикстура принимает своими входами — теми, что пишут её
- * сценарии (`text` и `ctrl`), — и передаёт кнопке привязками. Проп, которого
- * у фикстуры нет, хост назовёт ошибкой, как и у превью. Компонент сценария
- * фикстура отдаёт хосту (`target`): его выходы хост слушает, как у превью.
+ * сценарии (`text` и `ctrl`), — и передаёт компоненту сценария привязками.
+ * Проп, которого у фикстуры нет, хост назовёт ошибкой, как и у превью.
+ * Компонент сценария фикстура отдаёт хосту (`target`): его выходы хост
+ * слушает, как у превью.
  */
 export type TFixture = {
 	/** Компонент сценария в разметке фикстуры. */
@@ -77,7 +83,67 @@ class ButtonSlotIcons implements TFixture {
 	readonly target = viewChild.required(TButtonComponent)
 }
 
+@Component({
+	selector: 'pg-label-check-box',
+	imports: [TLabelComponent, TCheckBoxComponent],
+	changeDetection: ChangeDetectionStrategy.OnPush,
+	host: { style: 'display: contents' },
+	// Подпись вокруг контрола: текст — из пропа `text` сценария, контрол — в
+	// основной проекции
+	template: `
+		<label so-label [ctrl]="ctrl()" [text]="text()">
+			<so-check-box />
+		</label>
+	`,
+})
+class LabelCheckBox implements TFixture {
+	readonly ctrl = input<ILabel>()
+	readonly text = input<string>()
+	readonly target = viewChild.required(TLabelComponent)
+}
+
+@Component({
+	selector: 'pg-label-switch',
+	imports: [TLabelComponent, TSwitchComponent],
+	changeDetection: ChangeDetectionStrategy.OnPush,
+	host: { style: 'display: contents' },
+	template: `
+		<label so-label [ctrl]="ctrl()" [text]="text()">
+			<so-switch />
+		</label>
+	`,
+})
+class LabelSwitch implements TFixture {
+	readonly ctrl = input<ILabel>()
+	readonly text = input<string>()
+	readonly target = viewChild.required(TLabelComponent)
+}
+
+@Component({
+	selector: 'pg-label-radio',
+	imports: [TLabelComponent, TRadioGroupComponent, TRadioGroupItemComponent],
+	changeDetection: ChangeDetectionStrategy.OnPush,
+	host: { style: 'display: contents' },
+	// Корень радио — `label`, а `label` в `label` HTML запрещает: внутри
+	// подписи радио пишут на строчном теге. Группа вокруг — ради общего `name`
+	template: `
+		<div so-radio-group>
+			<label so-label [ctrl]="ctrl()" [text]="text()">
+				<span so-radio-group-item value="a"></span>
+			</label>
+		</div>
+	`,
+})
+class LabelRadio implements TFixture {
+	readonly ctrl = input<ILabel>()
+	readonly text = input<string>()
+	readonly target = viewChild.required(TLabelComponent)
+}
+
 export const FIXTURES: Record<string, Type<TFixture>> = {
 	'button-slot-labels': ButtonSlotLabels,
 	'button-slot-icons': ButtonSlotIcons,
+	'label-check-box': LabelCheckBox,
+	'label-switch': LabelSwitch,
+	'label-radio': LabelRadio,
 }
