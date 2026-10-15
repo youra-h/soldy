@@ -20,7 +20,7 @@
 import { describe, it, expect, afterEach, vi } from 'vitest'
 import { Component, signal, type ApplicationRef, type Type } from '@angular/core'
 import { TButton, type TComponentSize } from '@soldy-ui/core'
-import { TBasePlugin, type IPluginContext } from '@soldy-ui/plugins'
+import { TBasePlugin, TElementPlugin, type IPluginContext } from '@soldy-ui/plugins'
 import { getIcon, usePlugins } from '@soldy-ui/setup'
 import {
 	RoleIconDirective,
@@ -195,6 +195,25 @@ describe('серверный рендер', () => {
 			expect(frame.style.zIndex).toBe('')
 		},
 	)
+
+	/**
+	 * Узел плагинам — только в браузере, как у остальных адаптеров: на сервере
+	 * ни рефы, ни attachment-ы не зовутся. Узел эмуляции DOM сервера плагинам
+	 * ни к чему — мерить его и слушать на нём нечего, — а без
+	 * `requestAnimationFrame` в Node `TElementPlugin` не объявил бы его вовсе.
+	 */
+	it('на сервере TElementPlugin узла не получает', async () => {
+		const bind = vi.spyOn(TElementPlugin.prototype, 'element', 'set')
+
+		try {
+			await renderOnServer(ButtonPage)
+
+			// Уничтожение приложения сервера узел снимает — `null`, но не отдаёт
+			expect(bind.mock.calls.filter(([el]) => el !== null)).toEqual([])
+		} finally {
+			bind.mockRestore()
+		}
+	})
 })
 
 @Component({

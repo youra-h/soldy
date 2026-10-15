@@ -1,0 +1,55 @@
+import { Component, ChangeDetectionStrategy } from '@angular/core'
+import { NgTemplateOutlet } from '@angular/common'
+import type { IListBox, TListBoxCollectionFacade } from '@soldy-ui/core'
+import { SlotDirective, provideElevator, type TBinding } from '../../adapter'
+import { TListBoxItemComponent } from './item'
+import { ListBoxInputNames, TListBoxSurface } from './base.component'
+import { setupListBox } from './setup.component'
+
+/**
+ * TListBoxComponent — список с выбором.
+ *
+ * Обёртки нет: корень — сам элемент потребителя, `<div so-list-box>`, как у
+ * Button. Классы, наборы ядра и скрытие раскладывает на него `TComponentBase`
+ * (стратегия `'host'`). Список — сам остановка Tab: по элементам ходят
+ * стрелки его клавиатуры (`TListKeyboardPlugin` слушает корень), поэтому
+ * `tabindex="0"` стоит статикой `host` декоратора. Статику из разметки
+ * потребителя Angular ставит поверх неё, как атрибут снаружи у Vue и Svelte, —
+ * слой базы её переписал бы.
+ *
+ * Контекстов два — свой и фасада коллекции (`setupListBox`), и входы фасада
+ * (`items`, `mode`, `engine`, `trackBy`) — входы того же элемента. Свой слой
+ * лифта список отдаёт поддереву провайдером (`provideElevator()`): элементы
+ * разметки — его содержимое — и элементы из данных в его шаблоне прочтут из
+ * слоя движок и регистратор этого списка, а соседний список — свои.
+ *
+ * Элементы разметки — `<so-list-box-item>` в содержимом. Без них список рисует
+ * то, что рисует коллекция (`drawn`), — запасным содержимым `<ng-content>`.
+ *
+ * `div[so-list-box]` стоит первым: по первому селектору Angular выбирает тег
+ * хоста, когда создаёт компонент сам (`createComponent`), — это тег ядра по
+ * умолчанию.
+ *
+ * Selector: div[so-list-box], [so-list-box]
+ */
+@Component({
+	selector: 'div[so-list-box], [so-list-box]',
+	standalone: true,
+	imports: [NgTemplateOutlet, SlotDirective, TListBoxItemComponent],
+	providers: [provideElevator()],
+	host: { tabindex: '0' },
+	changeDetection: ChangeDetectionStrategy.OnPush,
+	templateUrl: './list-box.component.html',
+})
+export class TListBoxComponent extends TListBoxSurface<IListBox> {
+	constructor() {
+		super(ListBoxInputNames, { strategy: 'host' })
+	}
+
+	protected createBinding(
+		ctrl: IListBox | undefined,
+		inputs: object,
+	): TBinding<IListBox, TListBoxCollectionFacade> {
+		return setupListBox(ctrl, inputs, this.engine)
+	}
+}

@@ -1,0 +1,65 @@
+<!--
+	Корень — сам хост (`<so-tabs-item>`), строка — `Button`, помечена
+	`#control`: на неё база переносит статические атрибуты потребителя, а
+	директива набора кладёт `aria` таба. Слоты контракта: leading, default
+	(scope { text, active }), trailing, close-icon.
+
+	Строка и кнопка закрытия — соседи: `view` нет ни у одной, значения вида
+	объявляет тема, и разметка библиотеки их не знает — обе части тема красит по
+	контексту.
+
+	Кнопка закрытия есть, только пока таб можно закрыть (`tab_closable`
+	фасада). Не `rendered` кнопки, как у Vue: у Angular он прячет корень, а не
+	удаляет, и скрытая кнопка со своими плагинами стояла бы у каждого таба.
+-->
+<button
+	so-button
+	#control
+	embedded="tabs.row"
+	[disabled]="state()['disabled']"
+	[size]="state()['size']"
+	[variant]="state()['variant']"
+	[so-attributes]="state()['aria']"
+	(click)="activate()"
+>
+	<ng-container ngProjectAs="[slot=leading]">
+		<ng-content select="[slot=leading]" />
+	</ng-container>
+	@if (slot('default'); as content) {
+		<ng-container
+			[ngTemplateOutlet]="content"
+			[ngTemplateOutletContext]="{
+				text: state()['text'] ?? '',
+				active: state()['active'] ?? false,
+			}"
+		/>
+	} @else {
+		<ng-content>{{ state()['text'] }}</ng-content>
+	}
+	<ng-container ngProjectAs="[slot=trailing]">
+		<ng-content select="[slot=trailing]" />
+	</ng-container>
+</button>
+@if (state()['tab_closable']) {
+	<button
+		so-button
+		embedded="tabs.close"
+		class="s-tabs-item__close"
+		[disabled]="state()['disabled']"
+		[size]="state()['size']"
+		[so-attributes]="state()['closeAria']"
+		(click)="close($event)"
+	>
+		@if (slot('close-icon'); as icon) {
+			<ng-container [ngTemplateOutlet]="icon" />
+		} @else {
+			<svg
+				so-icon
+				embedded="tabs.close-icon"
+				so-role-icon="close"
+				[size]="state()['size']"
+			></svg>
+		}
+	</button>
+}
+<ng-content select="ng-template[slot]" />

@@ -1,0 +1,90 @@
+<!--
+	Корень — сам хост (`<div so-list-box>`), поэтому шаблон — только содержимое
+	списка. Слоты контракта: default — элементы, header и footer — над и под
+	списком, empty — пока элементов нет; item, item-leading, item-trailing и
+	item-indicator-icon — слоты элементов из данных.
+
+	Элементы — содержимое (`<so-list-box-item>`), а без него — то, что рисует
+	коллекция (`drawn`), запасным содержимым `<ng-content>`, ключ — ключ записи.
+	Без окна это все показанные элементы. В окне обёртки `Virtual` — видимые и
+	распорки на месте пропущенных: `div` под `aria-hidden`, высоту и место
+	которого тема берёт из его стиля, а стиль пишет ядро. Одна петля на
+	элементы и распорки: петли по блокам пересоздавали бы элемент, когда он
+	переходит из блока в блок.
+
+	Слоты элементов статические и получают элемент через scope. Проброс
+	целиком: у каждого слота элемента есть `item-<слот>` (`default` — `item`),
+	и scope у него — scope слота элемента плюс сам элемент. Пробрасываются
+	только заданные слоты: пустой шаблон Angular от заданного не отличает.
+	Слот без scope (`leading`, `trailing`) элемент проецирует, и проброс —
+	`ng-container` с `ngProjectAs`. Слот со scope элемент берёт шаблоном, и
+	проброс — `<ng-template slot>`: запрос слотов элемента видит корень ветки
+	`@if`, лежащей прямо в элементе, как своего ребёнка. Ветку с таким корнем
+	`ngProjectAs` уводит в слив шаблонов элемента: иначе она легла бы в его
+	основную проекцию, и элемент из данных потерял бы свой текст.
+
+	Шаблоны слотов, которые потребитель написал в списке
+	(`<ng-template slot="item">`), уходят в слив в конце: Angular считает их
+	содержимым, и в основной проекции они сняли бы запасное содержимое —
+	список из данных не нарисовался бы.
+
+	Пока показанных элементов нет, на их месте слот `empty` — как у Select:
+	пустой `listbox` для скринридера — тупик.
+-->
+<ng-content select="[slot=header]" />
+<ng-content>
+	@for (entry of state()['drawn'] ?? []; track entry.key) {
+		@if (entry.kind === 'filler') {
+			<div class="s-list-box__filler" aria-hidden="true" [style]="entry.style"></div>
+		} @else {
+			<so-list-box-item [ctrl]="entry.item">
+				@if (slot('item-leading'); as leading) {
+					<ng-container ngProjectAs="[slot=leading]">
+						<ng-container
+							[ngTemplateOutlet]="leading"
+							[ngTemplateOutletContext]="{ item: entry.item }"
+						/>
+					</ng-container>
+				}
+				@if (slot('item'); as content) {
+					<ng-template
+						slot="default"
+						ngProjectAs="ng-template[slot]"
+						let-text="text"
+						let-selected="selected"
+					>
+						<ng-container
+							[ngTemplateOutlet]="content"
+							[ngTemplateOutletContext]="{ item: entry.item, text, selected }"
+						/>
+					</ng-template>
+				}
+				@if (slot('item-trailing'); as trailing) {
+					<ng-container ngProjectAs="[slot=trailing]">
+						<ng-container
+							[ngTemplateOutlet]="trailing"
+							[ngTemplateOutletContext]="{ item: entry.item }"
+						/>
+					</ng-container>
+				}
+				@if (slot('item-indicator-icon'); as indicator) {
+					<ng-template
+						slot="indicator-icon"
+						ngProjectAs="ng-template[slot]"
+						let-selected="selected"
+					>
+						<ng-container
+							[ngTemplateOutlet]="indicator"
+							[ngTemplateOutletContext]="{ item: entry.item, selected }"
+						/>
+					</ng-template>
+				}
+			</so-list-box-item>
+		}
+	}
+</ng-content>
+@if (state()['shown']?.length === 0) {
+	<ng-content select="[slot=empty]" />
+}
+<ng-content select="[slot=footer]" />
+<ng-content select="ng-template[slot]" />

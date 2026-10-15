@@ -10,14 +10,25 @@
  * Угол зрения здесь свой. Обёртки нет: корень — элемент, который написал
  * потребитель (`<label so-label>`), классы и наборы ядра на него кладёт база
  * компонента, а слот `content` — элемент с атрибутом `slot`, как у Button.
- * Радио в подписи появится с RadioGroup: у Angular коллекций пока нет.
+ * Корень радио — тоже элемент потребителя: внутри подписи радио пишут на
+ * строчном теге, `<span so-radio-group-item>`.
  */
 
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi, afterEach } from 'vitest'
 import { Component, signal } from '@angular/core'
-import type { TLabelPosition } from '@soldy-ui/core'
-import { TCheckBoxComponent, TLabelComponent, TSwitchComponent } from '@soldy-ui/angular'
+import type { TLabelPosition, TRadioGroupValue, TValuePayload } from '@soldy-ui/core'
+import {
+	TCheckBoxComponent,
+	TLabelComponent,
+	TRadioGroupComponent,
+	TRadioGroupItemComponent,
+	TSwitchComponent,
+} from '@soldy-ui/angular'
 import { find, findIn, mountHost, nextFrame } from './mount'
+
+afterEach(() => {
+	vi.restoreAllMocks()
+})
 
 /** Корень подписи в разметке хоста. */
 const labelOf = (fixture: Parameters<typeof findIn>[0]) =>
@@ -204,5 +215,76 @@ describe.each(CHECKABLES)('Label · %s в подписи', (_name, host) => {
 
 		expect(find(el, 'input', HTMLInputElement).checked).toBe(true)
 		expect(fixture.componentInstance.changes).toEqual([{ newValue: true, oldValue: false }])
+	})
+})
+
+/** Группа с одним радио внутри подписи: корень радио — `label` или `span`. */
+@Component({
+	standalone: true,
+	imports: [TLabelComponent, TRadioGroupComponent, TRadioGroupItemComponent],
+	template: `<div so-radio-group (soChangeValue)="changes.push($event)">
+		<label so-label text="Курьер"><label so-radio-group-item value="a"></label></label>
+	</div>`,
+})
+class LabelRadioHost {
+	readonly changes: TValuePayload<TRadioGroupValue>[] = []
+}
+
+@Component({
+	standalone: true,
+	imports: [TLabelComponent, TRadioGroupComponent, TRadioGroupItemComponent],
+	template: `<div so-radio-group (soChangeValue)="changes.push($event)">
+		<label so-label text="Курьер"
+			><span so-radio-group-item value="a" (change)="fieldChanges = fieldChanges + 1"></span
+		></label>
+	</div>`,
+})
+class LabelSpanRadioHost {
+	readonly changes: TValuePayload<TRadioGroupValue>[] = []
+	fieldChanges = 0
+}
+
+describe('Label · радио в подписи', () => {
+	/** Тексты предупреждений подписи о вложенном `label`. */
+	const nestedWarnings = (calls: readonly unknown[][]): string[] =>
+		calls.map(([message]) => String(message)).filter((text) => text.includes('[soldy] Label'))
+
+	it('радио на label — предупреждение о вложенном label', async () => {
+		const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+		mountHost(LabelRadioHost)
+
+		// Плагин смотрит узел по `ready`, то есть кадром позже
+		await nextFrame()
+
+		const warnings = nestedWarnings(warn.mock.calls)
+
+		expect(warnings).toHaveLength(1)
+		expect(warnings[0]).toContain('tag="span"')
+	})
+
+	/**
+	 * Клик по тексту подписи браузер доводит до её первого поля — радио, и
+	 * `change` поле получает один, как у любого `label`.
+	 */
+	it('радио на span — тишина, у радио одна подпись, клик по тексту даёт один change', async () => {
+		const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+		const fixture = mountHost(LabelSpanRadioHost)
+
+		await nextFrame()
+
+		const label = labelOf(fixture)
+		const input = find(label, 'input', HTMLInputElement)
+
+		expect(nestedWarnings(warn.mock.calls)).toEqual([])
+		expect([...(input.labels ?? [])]).toEqual([label])
+		expect(find(label, '.s-radio-group-item', HTMLSpanElement).tagName).toBe('SPAN')
+
+		textOf(label).click()
+		fixture.detectChanges()
+
+		expect(input.checked).toBe(true)
+		expect(fixture.componentInstance.fieldChanges).toBe(1)
+		expect(fixture.componentInstance.changes).toEqual([{ newValue: 'a', oldValue: undefined }])
 	})
 })

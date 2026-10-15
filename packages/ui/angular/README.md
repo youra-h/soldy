@@ -21,7 +21,8 @@ render on the server (`@angular/platform-server`) and hydrate in the browser
 (`provideClientHydration`); component ids match on both sides.
 
 > **Status:** the Angular adapter is in progress — Button, Icon, Label, Frame, ProgressSpinner,
-> Skeleton, Input, CheckBox and Switch are ported, the rest of the set is on its way. Frame moves
+> Skeleton, Input, CheckBox, Switch, RadioGroup, ListBox, Tabs and Accordion are ported, the rest
+> of the set is on its way. Frame moves
 > the element you wrote into `target` (`body` by default) in the browser; with `contained` it stays
 > in place. `so-locale-provider` gives a subtree its language and library strings. See
 > [the adapter table](https://github.com/youra-h/soldy#components).
@@ -103,6 +104,44 @@ template: `<so-input>
   <ng-template slot="trailing" let-ctrl="ctrl">{{ ctrl.value?.length ?? 0 }}/40</ng-template>
 </so-input>`
 ```
+
+A collection — RadioGroup, ListBox, Tabs, Accordion — is your element with its items inside. The
+parts are components of their own, written as separate tags, since Angular has no dot syntax:
+`<so-list-box-item>`, `<so-tabs-item>`, `<so-accordion-item>`, `<label so-radio-group-item>` and
+the tab panel `<div so-tabs-content>`. Items written in the markup join the collection in document
+order, on the server too; without them the owner renders its `items`. Inputs of the collection —
+`items`, `engine`, `mode`, an item's `selected` or `active` — are inputs of the same element:
+
+```ts
+template: `<div so-list-box mode="multiple" (soChangeValue)="pick($event.newValue)">
+  <so-list-box-item value="a" text="Moscow" />
+  <so-list-box-item value="b" text="Kazan" selected />
+</div>
+<div so-tabs>
+  <so-tabs-item value="a" text="General" active />
+  <so-tabs-item value="b" text="Mail" />
+  <div so-tabs-content slot="content" value="a">…</div>
+  <div so-tabs-content slot="content" value="b">…</div>
+</div>`
+```
+
+An item splits your markup like a field: `class` and `style` stay on the item, the static
+attributes you write on it (`title`, `id`) move to its row — or to the `<input>` of a radio. Inside
+a Label, write the radio on an inline tag, `<span so-radio-group-item>`: a `label` inside a `label`
+is not allowed. Items rendered from `items` get their slots from the owner — `item`, `item-leading`
+and the rest receive the item along with their scope:
+
+```ts
+template: `<div so-radio-group [items]="options">
+  <ng-template slot="item" let-item="item" let-active="active">{{ item.value }}</ng-template>
+</div>`
+```
+
+A slot by which a part decides whether to render its own default — the close icon of a tab, the
+arrows of an accordion section, the edges of the tab list — is an `<ng-template slot>` only, and a
+template given to the owner renders in every item in place of its own. A tab panel that is not
+active stays in place hidden, its content not inserted; a markup tab closed with its close button
+is hidden the same way — the element is yours.
 
 A panel over the page is a Frame. The element you write is the panel, and it is that element which
 moves into `target` (`body` by default) once the page has rendered in the browser — with your

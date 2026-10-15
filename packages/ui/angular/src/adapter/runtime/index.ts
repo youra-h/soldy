@@ -1,5 +1,12 @@
-export { useAdapter } from './useAdapter'
-export type { TBinding, TInputValue, TOutputEmitter } from './useAdapter'
+export { useAdapter, useCollectionAdapter, joinBindings } from './useAdapter'
+export type {
+	TBinding,
+	TBindingState,
+	TCollectionBinding,
+	TInputValue,
+	TOutputEmitter,
+	TOutputOf,
+} from './useAdapter'
 export { TComponentBase } from './component.base'
 export type { TRootSet, TRootSpec, TRootTeleport } from './component.base'
 export { SlotDirective } from './slot.directive'

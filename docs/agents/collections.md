@@ -124,8 +124,9 @@ type TFacadeEvents = Pick<TBatchEvents<TItem>, 'items:added' | 'items:removed'>
   (`spyBus`) видит и перехватчики `use`, и слушателей `listen`: на первых висит
   `relayAll`, вторым шину участника держит обмен адаптера, а прежний шпион,
   следивший только за `on` и `off`, утечку фасада не замечал;
-- `ui/vue/__tests__/external-engine-lifetime.spec.ts` — то же в настоящем
-  цикле Vue, на ListBox;
+- `ui/vue/__tests__/external-engine-lifetime.spec.ts` и
+  `ui/angular/__tests__/external-engine-lifetime.spec.ts` — то же в настоящем
+  цикле Vue и Angular, на ListBox;
 - `ui/react/__tests__/external-lifetime.spec.tsx` — в настоящем цикле React,
   по всем компонентам адаптера (см. «Отброшенный рендер React»).
 
@@ -775,12 +776,13 @@ get closable() { return !this._item.disabled && (this._item.closable ?? this._pa
 монтирование, и чужой `ctrl`, смонтированный снова, рисуется. Сторожат
 `setup/__tests__/item-context-lifetime.spec.ts` — по всем фасадам элементов,
 с чтением фасада после снятия, и перепривязку панели, —
-`ui/vue/__tests__/collection-item-lifetime.spec.ts` и
-`ui/svelte/__tests__/collection-item-lifetime.spec.ts` (фильтр прячет и
+`ui/vue/__tests__/collection-item-lifetime.spec.ts`,
+`ui/svelte/__tests__/collection-item-lifetime.spec.ts` и
+`ui/angular/__tests__/collection-item-lifetime.spec.ts` (фильтр прячет и
 показывает элемент), `ui/react/__tests__/collection-item-lifetime.spec.tsx`
 (StrictMode над движком снаружи) и смена `value` у панели в
-`ui/vue/__tests__/tabs-content.spec.ts`, `ui/react/__tests__/tabs.spec.tsx` и
-`ui/svelte/__tests__/tabs.spec.ts`.
+`ui/vue/__tests__/tabs-content.spec.ts`, `ui/react/__tests__/tabs.spec.tsx`,
+`ui/svelte/__tests__/tabs.spec.ts` и `ui/angular/__tests__/tabs.spec.ts`.
 
 `attach()`, как `destroy()` и `bindElement`, зовёт рантайм адаптера, а не
 компонент: Vue — `useAdapterParts` в `setup()` (она идёт и на сервере),
@@ -845,10 +847,11 @@ Solid, Svelte — в `useAdapter` при инициализации, Angular —
 что пишет ему коллекция (`data-selected`, `tabindex`, размер от списка).
 Гидратация сходится, после коммита всё на месте. Список из данных (`items`,
 `engine`) сервер рисует полностью: его элементы в коллекции с самой сборки.
-Vue и Svelte этой цены не платят: элемент разметки у них входит в коллекцию
-при инициализации, и на сервере тоже, — сервер рисует его с тем, что пишет
-коллекция, и панель таба находит свой таб к своей инициализации (сторожит
-`ui/svelte/__tests__/collections.server.spec.ts`).
+Vue, Svelte и Angular этой цены не платят: элемент разметки у них входит в
+коллекцию при инициализации (у Angular — в `ngOnInit`), и на сервере тоже, —
+сервер рисует его с тем, что пишет коллекция, и панель таба находит свой таб
+к своей инициализации (сторожат `ui/svelte/__tests__/collections.server.spec.ts`
+и `ui/angular/__tests__/collections.server.spec.ts`).
 
 Сторожат `setup/__tests__/adapter.spec.ts` («сборка и вход»),
 `ui/react/__tests__/list-box-elevator.spec.tsx` — лифт, StrictMode,
