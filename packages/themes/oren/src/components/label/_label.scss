@@ -17,7 +17,7 @@
 	// строке формы рядом с чужим текстом подпись встаёт с ним на одну линию.
 	@apply inline-flex items-baseline;
 	@apply cursor-pointer select-none;
-	gap: var(--label-gap);
+	gap: var(--so-label-gap);
 
 	// Размер — кегль текста и зазор до контрола. Шкала та же, что у текста
 	// радио (`radio-group/_mixins.scss`): радио со своим текстом и радио в
@@ -28,7 +28,7 @@
 	// иконки в ручке Switch. Зазор — переменной: в столбце от него половина.
 	@each $size, $scale in radio.$sizes {
 		&--size-#{$size} {
-			--label-gap: calc(var(--spacing) * #{map.get($scale, 'gap')});
+			--so-label-gap: calc(var(--spacing) * #{map.get($scale, 'gap')});
 
 			@if map.get($scale, 'text') {
 				> #{$this}__text,
@@ -62,7 +62,7 @@
 	// Текст. Пустая обёртка места не занимает, иначе зазор остался бы рядом с
 	// одиноким контролом.
 	&__text {
-		@apply text-s-component;
+		@apply text-so-component;
 
 		&:empty {
 			@apply hidden;
@@ -82,7 +82,7 @@
 	&--position-top,
 	&--position-bottom {
 		@apply flex-col items-start;
-		gap: calc(var(--label-gap) / 2);
+		gap: calc(var(--so-label-gap) / 2);
 
 		> #{$this}__control::before {
 			content: none;
@@ -100,7 +100,7 @@
 		@apply cursor-default;
 
 		> #{$this}__text {
-			@apply opacity-s-component-disabled;
+			@apply opacity-so-component-disabled;
 		}
 	}
 
@@ -122,7 +122,7 @@
 	// вариант подписи не касается: у контрола свой.
 	@each $color in 'accent', 'positive', 'negative', 'caution' {
 		&--variant-#{$color} > #{$this}__text {
-			@apply #{'text-s-' + $color + '-800'};
+			@apply #{'text-so-' + $color + '-800'};
 		}
 	}
 }

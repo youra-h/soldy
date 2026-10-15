@@ -92,7 +92,7 @@ const tab = () => userEvent.keyboard('{Tab}')
 const shiftTab = () => userEvent.keyboard('{Shift>}{Tab}{/Shift}')
 
 beforeEach(() => {
-	document.documentElement.dataset.theme = 'oren'
+	document.documentElement.dataset.soTheme = 'oren'
 })
 
 afterEach(() => {

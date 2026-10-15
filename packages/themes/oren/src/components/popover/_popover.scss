@@ -42,9 +42,9 @@
 // «закрываемая» теме не нужен: без кнопки колонки просто нет.
 .so-popover__panel {
 	@apply flex items-start overflow-hidden rounded-md box-border;
-	@apply text-s-component shadow-md;
-	@apply ring-1 ring-s-neutral-300;
-	@include place.surface(var(--s-component-surface));
+	@apply text-so-component shadow-md;
+	@apply ring-1 ring-so-neutral-300;
+	@include place.surface(var(--so-component-surface));
 
 	// Прозрачный контур — вторая половина кромки (см. выше). Он же гасит
 	// кольцо фокуса браузера. Фокус панель получает, только когда внутри
@@ -118,7 +118,7 @@
 // закреплённая шапка встаёт к краю, а не под отступ (минус `p-2`), — как в
 // теле окна Dialog (`mixins/_modal.scss`).
 :where(.so-popover__content > .so-table__viewport) {
-	--s-table-head-offset: calc(var(--spacing) * -2);
+	--so-table-head-offset: calc(var(--spacing) * -2);
 }
 
 // Кнопка закрытия — квадрат высоты своего размера (у Button по умолчанию
@@ -210,19 +210,19 @@
 // гаснет на месте, а отпущенная встаёт на место сразу.
 .so-popover__panel {
 	&[data-edge='bottom'] {
-		--s-popover-away: 0 100%;
+		--so-popover-away: 0 100%;
 	}
 
 	&[data-edge='top'] {
-		--s-popover-away: 0 -100%;
+		--so-popover-away: 0 -100%;
 	}
 
 	&[data-edge='start'] {
-		--s-popover-away: calc(-100% * var(--s-dir-sign)) 0;
+		--so-popover-away: calc(-100% * var(--so-dir-sign)) 0;
 	}
 
 	&[data-edge='end'] {
-		--s-popover-away: calc(100% * var(--s-dir-sign)) 0;
+		--so-popover-away: calc(100% * var(--so-dir-sign)) 0;
 	}
 }
 
@@ -231,7 +231,7 @@
 // `translate` порядком.
 .so-popover__panel[data-open='false'][data-contained='true'] {
 	@include motion.allowed {
-		translate: var(--s-popover-away);
+		translate: var(--so-popover-away);
 	}
 }
 
@@ -239,6 +239,6 @@
 // прозрачность даёт `anchored.fade`, здесь только место за краем.
 @starting-style {
 	.so-popover__panel[data-open='true'][data-contained='true'] {
-		translate: var(--s-popover-away);
+		translate: var(--so-popover-away);
 	}
 }

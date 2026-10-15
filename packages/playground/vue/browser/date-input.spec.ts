@@ -151,7 +151,7 @@ const clipboardOf = async (keys: string): Promise<{ text: string; prevented: boo
 }
 
 beforeEach(() => {
-	document.documentElement.dataset.theme = 'oren'
+	document.documentElement.dataset.soTheme = 'oren'
 })
 
 afterEach(() => {

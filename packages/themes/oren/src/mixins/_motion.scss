@@ -3,7 +3,7 @@
 // Режим движения у библиотеки один на приложение (корневой `AGENTS.md`,
 // «Движение: один режим на библиотеку»). По умолчанию — как просит система
 // (`prefers-reduced-motion`), а приложение может его задать: `useMotion` из
-// `@soldy-ui/plugins` ставит корню документа `data-s-motion` — `full`
+// `@soldy-ui/plugins` ставит корню документа `data-so-motion` — `full`
 // (движение всегда) или `reduce` (никогда). Нет атрибута — решает система:
 // так идут и серверная разметка, и кадры до старта приложения.
 //
@@ -29,12 +29,12 @@
 // требует, чтобы объявления шли раньше вложенных правил).
 @mixin allowed {
 	@media (prefers-reduced-motion: no-preference) {
-		:where(:root:not([data-s-motion='reduce'])) & {
+		:where(:root:not([data-so-motion='reduce'])) & {
 			@content;
 		}
 	}
 
-	:where(:root[data-s-motion='full']) & {
+	:where(:root[data-so-motion='full']) & {
 		@content;
 	}
 }

@@ -9,7 +9,7 @@
 // каждого вызова, и в RTL съезжал к концу у Input, CheckBox и Switch.
 @mixin required-indicator(
 	$size: '1',
-	$color: 's-negative',
+	$color: 'so-negative',
 	$shade: '500',
 	$top: '-top-1',
 	$start: '-start-1'

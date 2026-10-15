@@ -140,7 +140,7 @@ function anglesAt(progress: readonly number[]): number[] {
 const strokeOf = (element: SVGElement) => pixel([getComputedStyle(element).stroke])
 
 beforeEach(() => {
-	document.documentElement.dataset.theme = 'oren'
+	document.documentElement.dataset.soTheme = 'oren'
 })
 
 afterEach(async () => {
@@ -398,7 +398,7 @@ describe('принудительные цвета', () => {
 
 	it.each(SCHEMES)('%s: дорожка и дуга доли — системными цветами', async (scheme) => {
 		await forcedColors('active')
-		document.documentElement.dataset.theme = scheme
+		document.documentElement.dataset.soTheme = scheme
 
 		mount({ value: 40, variant: 'positive' })
 		await transitionEvents()
@@ -412,7 +412,7 @@ describe('принудительные цвета', () => {
 
 	it.each(SCHEMES)('%s: на бегу — бегущая дуга системным цветом', async (scheme) => {
 		await forcedColors('active')
-		document.documentElement.dataset.theme = scheme
+		document.documentElement.dataset.soTheme = scheme
 
 		mount({ indeterminate: true })
 		await transitionEvents()

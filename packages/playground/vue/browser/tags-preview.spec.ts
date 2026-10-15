@@ -100,7 +100,7 @@ const page = async (width: number) => {
 let prop: HTMLElement
 
 beforeEach(async () => {
-	document.documentElement.dataset.theme = 'oren'
+	document.documentElement.dataset.soTheme = 'oren'
 
 	await router.push('/vue/tags')
 

@@ -451,7 +451,7 @@ setIcons({ close: myCloseIcon }) // точечно, поверх
 Рабочая инструкция — `packages/themes/oren/AGENTS.md`.
 
 Наивный подход к тёмной теме — дописать в каждый компонент блок
-`[data-theme='dark'] &` с другими значениями. В трёх миксинах `themes/oren`
+`[data-so-theme='dark'] &` с другими значениями. В трёх миксинах `themes/oren`
 такой TODO и лежал: «то же самое, но ступень −100 вместо +100». Это одна мысль,
 размазанная по пяти файлам, — ровно то, против чего правило про адаптеры.
 
@@ -485,18 +485,18 @@ hover: в тёмной схеме заливка светлеет.
 
 **Что не выражается ступенью — семантический токен.** Их пять; в тёмной схеме
 переопределяются только те, у кого меняется сам выбор ступени.
-`--s-component-text` не переопределяется вовсе: подстановка `var()` происходит
-в месте использования, поэтому `var(--s-neutral-800)` сам возьмёт тёмную
+`--so-component-text` не переопределяется вовсе: подстановка `var()` происходит
+в месте использования, поэтому `var(--so-neutral-800)` сам возьмёт тёмную
 ступень. Три новых появились там, где стоял литеральный `bg-white` — он не
 инвертируется вместе со шкалой:
 
-- `--s-component-surface` — поверхность контрола (поле, коробка чекбокса,
+- `--so-component-surface` — поверхность контрола (поле, коробка чекбокса,
   «таблетка» Tabs). В светлой схеме белый: ниже страницы уйти нельзя,
   приподняться можно только в белое. В тёмной наоборот — две ступени вверх.
   Асимметрия не небрежность, а то, как работает высота в тёмном интерфейсе;
-- `--s-component-knob` — ручка Switch. Отдельно от поверхности, потому что
+- `--so-component-knob` — ручка Switch. Отдельно от поверхности, потому что
   обязана контрастировать и с серой дорожкой, и с включённой цветной;
-- `--s-component-veil` — вуаль для утопленных вкладок. Единственное, что
+- `--so-component-veil` — вуаль для утопленных вкладок. Единственное, что
   ступенью не выражается вообще: «утопить» значит увести ЗА поверхность, а за
   поверхностью ступеней нет. В тёмной схеме это чистый чёрный.
 
@@ -509,7 +509,7 @@ hover: в тёмной схеме заливка светлеет.
 
 ```css
 .so-input--normal {
-  border-color: var(--s-neutral-400);
+  border-color: var(--so-neutral-400);
   border-inline-start-color: var(--color-neutral-400); /* палитра Tailwind */
 }
 ```
@@ -1648,10 +1648,10 @@ There is no `adapter/static/`: React takes prop names from the descriptor types,
 - `@soldy-ui/theme-oren` = standalone theme package: `src/{index.scss, base.css, tokens.css, tokens-dark.css, utilities.css}`, `src/mixins/` (`_fade.scss`, `_required.scss`), `src/components/<component>/_<component>.scss` (+ `_mixins.scss`) → built to `dist/index.css` (`main`/`style` and the `default` condition of `exports` point to `dist/index.css`, `types` — to `index.d.ts`).
 - Theme CSS build = plain Vite build, not lib mode (`build.rollupOptions.input: src/index.scss`, `assetFileNames: 'index.css'`; Vite drops the empty JS chunk of a CSS-only entry itself, while lib mode needs a JS entry — with `.scss` it fails in `vite:css-post` — whose empty chunk used to ship in the package as `dist/theme-oren.js`) + `postcss.config.mjs` (`@tailwindcss/postcss`) + SCSS `additionalData` injecting `@import ".../src/base.css"` (base.css = `@import 'tailwindcss'` + tokens + tokens-dark + utilities). `@apply` resolves because tailwind context is injected.
 - **Contract = BEM classes and `data-*`** (`.so-button`, `.so-button--size-*`, `.so-button--view-*`, `[data-selected='true']`). UI packages emit only classes and `data-*`; theme ships their CSS. Values of appearance modifiers (`--view-*`, `--variant-*`, `--shape-*`, `--animation-*`) are declared by the theme in `index.d.ts`, not by the library (AGENTS.md, «Оформление: значения объявляет тема»). Tailwind/SCSS live ONLY in the theme package. Theme rules — `packages/themes/oren/AGENTS.md`.
-- **Tokens**: `:root,[data-theme='oren'] { --s-accent-500: oklch(...) }` + `@theme inline { --color-s-accent-500: var(--s-accent-500) }` — utilities reference vars, so runtime theme switching via `data-theme` works without rebuild.
-- **Colour schemes**: `tokens-dark.css` (`[data-theme='oren-dark']`) redefines the same scales with roles mirrored; imported AFTER `tokens.css` in `base.css` because both selectors have specificity (0,1,0) and source order decides. See «Тёмная схема» above.
+- **Tokens**: `:root,[data-so-theme='oren'] { --so-accent-500: oklch(...) }` + `@theme inline { --color-so-accent-500: var(--so-accent-500) }` — utilities reference vars, so runtime theme switching via `data-so-theme` works without rebuild.
+- **Colour schemes**: `tokens-dark.css` (`[data-so-theme='oren-dark']`) redefines the same scales with roles mirrored; imported AFTER `tokens.css` in `base.css` because both selectors have specificity (0,1,0) and source order decides. See «Тёмная схема» above.
 - UI packages (`react`, `vue`) + `core`/`angular`/`solid`/`svelte` dropped `@soldy-ui/foundation` dep. Component styles are no longer in the UI packages: Button styles were removed from React (`button.scss`/`_mixines.scss`), and no Vue component keeps a `<style>` block — the rest (`_fade.scss`/`_required.scss`, CheckBox/Switch/Input) moved to the theme too.
-- The playground (`packages/playground/vue`) imports `@soldy-ui/theme-oren` (aliased to the built `dist/index.css`; `npm run dev` runs the theme build in watch mode alongside); its own chrome (`src/styles.css`) uses `--s-*` tokens without Tailwind. The shell is Vue; previews are drawn by the host of the framework picked in the header (`src/hosts/<framework>/`), see `packages/playground/AGENTS.md`.
+- The playground (`packages/playground/vue`) imports `@soldy-ui/theme-oren` (aliased to the built `dist/index.css`; `npm run dev` runs the theme build in watch mode alongside); its own chrome (`src/styles.css`) uses `--so-*` tokens without Tailwind. The shell is Vue; previews are drawn by the host of the framework picked in the header (`src/hosts/<framework>/`), see `packages/playground/AGENTS.md`.
 
 ### React package config
 

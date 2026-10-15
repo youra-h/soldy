@@ -109,7 +109,7 @@ const titles = () => findAll('.so-calendar__title').map((title) => title.textCon
 const tab = () => userEvent.keyboard('{Tab}')
 
 beforeEach(async () => {
-	document.documentElement.dataset.theme = 'oren'
+	document.documentElement.dataset.soTheme = 'oren'
 	// Три месяца в ряд: на узком окне они переносятся
 	await page.viewport(1000, 700)
 })
@@ -517,8 +517,8 @@ describe('рамка «сегодня»', () => {
 	 * поверхность контрола, как у панелей Select и Popover.
 	 */
 	const BACKDROPS = {
-		страница: 'var(--s-neutral-50)',
-		'панель DatePicker': 'var(--s-component-surface)',
+		страница: 'var(--so-neutral-50)',
+		'панель DatePicker': 'var(--so-component-surface)',
 	} as const
 
 	type TBackdrop = keyof typeof BACKDROPS
@@ -562,7 +562,7 @@ describe('рамка «сегодня»', () => {
 	const showToday = async (scheme: TScheme, props: TProps = () => ({})) => {
 		const today = todayInUtc()
 
-		document.documentElement.dataset.theme = scheme
+		document.documentElement.dataset.soTheme = scheme
 		render(
 			defineComponent({
 				render: () =>

@@ -175,7 +175,7 @@ const gaps = () => {
 }
 
 beforeEach(async () => {
-	document.documentElement.dataset.theme = 'oren'
+	document.documentElement.dataset.soTheme = 'oren'
 	// Шире окна по умолчанию с отступами: иначе окно упёрлось бы в потолок по
 	// ширине, и центр со сторонами выглядели бы одинаково
 	await page.viewport(1000, 700)

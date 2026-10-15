@@ -129,7 +129,7 @@ const inEveryState = (value: string) =>
 	Object.fromEntries(Object.keys(STATES).map((state) => [state, value]))
 
 beforeEach(() => {
-	document.documentElement.dataset.theme = 'oren'
+	document.documentElement.dataset.soTheme = 'oren'
 })
 
 afterEach(() => {

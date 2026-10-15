@@ -31,11 +31,11 @@
 
 	// Точка метки — половина рельса и пиксель сверху: видна на тонком рельсе и
 	// не касается его краёв на толстом.
-	--s-slider-tick-size: calc(var(--s-slider-rail-size) / 2 + 1px);
+	--so-slider-tick-size: calc(var(--so-slider-rail-size) / 2 + 1px);
 
 	// Ореол ручки — треть её стороны. Без наведения и перетаскивания ореола нет:
 	// кольцо нулевой ширины.
-	--s-slider-halo-size: calc(var(--s-slider-thumb-size) / 3);
+	--so-slider-halo-size: calc(var(--so-slider-thumb-size) / 3);
 
 	// Свой слой: ручки подняты над заливкой и метками (`z-index`), но поверх
 	// соседей по странице этот подъём не выходит.
@@ -61,8 +61,8 @@
 	// а ручку плагин ведёт только вдоль.
 	&--horizontal {
 		@apply flex;
-		padding-inline: calc(var(--s-slider-thumb-size) / 2);
-		padding-block: var(--s-slider-halo-size);
+		padding-inline: calc(var(--so-slider-thumb-size) / 2);
+		padding-block: var(--so-slider-halo-size);
 		touch-action: pan-y;
 	}
 
@@ -71,8 +71,8 @@
 	// подписям меток. Отступы — те же, что у горизонтального, повёрнутые.
 	&--vertical {
 		@apply inline-flex flex-col;
-		padding-block: calc(var(--s-slider-thumb-size) / 2);
-		padding-inline: var(--s-slider-halo-size);
+		padding-block: calc(var(--so-slider-thumb-size) / 2);
+		padding-inline: var(--so-slider-halo-size);
 		touch-action: pan-x;
 	}
 
@@ -92,29 +92,31 @@
 		content: '';
 		@apply absolute rounded-full;
 		@apply transition-colors duration-150;
-		background-color: var(--s-slider-rail);
+		background-color: var(--so-slider-rail);
 	}
 
 	&--horizontal > #{$this}__track {
 		min-inline-size: 0;
 		// Полоса ручек: рельс, точки меток и ручки лежат по её центру.
-		min-block-size: var(--s-slider-thumb-size);
+		min-block-size: var(--so-slider-thumb-size);
 
 		&::before {
-			inset-inline: calc(var(--s-slider-thumb-size) / -2);
-			inset-block-start: calc((var(--s-slider-thumb-size) - var(--s-slider-rail-size)) / 2);
-			block-size: var(--s-slider-rail-size);
+			inset-inline: calc(var(--so-slider-thumb-size) / -2);
+			inset-block-start: calc((var(--so-slider-thumb-size) - var(--so-slider-rail-size)) / 2);
+			block-size: var(--so-slider-rail-size);
 		}
 	}
 
 	&--vertical > #{$this}__track {
 		min-block-size: 0;
-		min-inline-size: var(--s-slider-thumb-size);
+		min-inline-size: var(--so-slider-thumb-size);
 
 		&::before {
-			inset-block: calc(var(--s-slider-thumb-size) / -2);
-			inset-inline-start: calc((var(--s-slider-thumb-size) - var(--s-slider-rail-size)) / 2);
-			inline-size: var(--s-slider-rail-size);
+			inset-block: calc(var(--so-slider-thumb-size) / -2);
+			inset-inline-start: calc(
+				(var(--so-slider-thumb-size) - var(--so-slider-rail-size)) / 2
+			);
+			inline-size: var(--so-slider-rail-size);
 		}
 	}
 
@@ -122,14 +124,14 @@
 	// любом его месте двигает ручку. Выключенный нажатие не меняет — его не
 	// красим.
 	&:hover:not([data-disabled='true']) > #{$this}__track::before {
-		background-color: var(--s-slider-rail-hover);
+		background-color: var(--so-slider-rail-hover);
 	}
 
 	// Заливка — от `--so-slider-range-start` до `--so-slider-range-end`, тем же
 	// цветом, что кромка ручки: ручка читается концом заливки.
 	&__range {
 		@apply absolute rounded-full;
-		background-color: var(--s-slider-fill);
+		background-color: var(--so-slider-fill);
 		// Список переходов — явно, как у ручки: с умолчанием `all` края ехали
 		// переходом и при протяжке, и без движения, и заливка догоняла ручку.
 		// Края в список добавляет только надстройка движения ниже.
@@ -139,8 +141,8 @@
 	}
 
 	&--horizontal #{$this}__range {
-		inset-block-start: calc((var(--s-slider-thumb-size) - var(--s-slider-rail-size)) / 2);
-		block-size: var(--s-slider-rail-size);
+		inset-block-start: calc((var(--so-slider-thumb-size) - var(--so-slider-rail-size)) / 2);
+		block-size: var(--so-slider-rail-size);
 		inset-inline-start: calc(
 			var(--so-slider-range-start, 0%) - #{mixines.reach(var(--so-slider-range-start, 0%))}
 		);
@@ -151,8 +153,8 @@
 	}
 
 	&--vertical #{$this}__range {
-		inset-inline-start: calc((var(--s-slider-thumb-size) - var(--s-slider-rail-size)) / 2);
-		inline-size: var(--s-slider-rail-size);
+		inset-inline-start: calc((var(--so-slider-thumb-size) - var(--so-slider-rail-size)) / 2);
+		inline-size: var(--so-slider-rail-size);
 		inset-block-end: calc(
 			var(--so-slider-range-start, 0%) - #{mixines.reach(var(--so-slider-range-start, 0%))}
 		);
@@ -165,7 +167,7 @@
 	// Ручка — центром на своей позиции: полстороны назад логическим полем, в RTL
 	// оно само встаёт с другой стороны.
 	//
-	// Поверхность — цвет ручки Switch (`--s-component-knob`), кромка — цвет
+	// Поверхность — цвет ручки Switch (`--so-component-knob`), кромка — цвет
 	// заливки. Ореол — вуаль вокруг кромки: кольцо `ring` ложится в одну тень с
 	// `shadow-sm` и её не перебивает.
 	//
@@ -174,16 +176,16 @@
 	&__thumb {
 		@apply absolute flex items-center justify-center;
 		@apply rounded-full border-solid;
-		@apply bg-s-component-knob shadow-sm;
+		@apply bg-so-component-knob shadow-sm;
 		@apply cursor-grab;
-		@apply ring-(length:--s-slider-halo) ring-(--s-slider-halo-color);
-		--s-slider-halo: 0px;
-		--s-slider-halo-color: transparent;
+		@apply ring-(length:--so-slider-halo) ring-(--so-slider-halo-color);
+		--so-slider-halo: 0px;
+		--so-slider-halo-color: transparent;
 		z-index: 1;
-		inline-size: var(--s-slider-thumb-size);
-		block-size: var(--s-slider-thumb-size);
-		border-width: var(--s-slider-thumb-border);
-		border-color: var(--s-slider-fill);
+		inline-size: var(--so-slider-thumb-size);
+		block-size: var(--so-slider-thumb-size);
+		border-width: var(--so-slider-thumb-border);
+		border-color: var(--so-slider-fill);
 		transition-property: box-shadow;
 		transition-duration: 150ms;
 		transition-timing-function: ease-out;
@@ -192,27 +194,27 @@
 	&--horizontal #{$this}__thumb {
 		inset-block-start: 0;
 		inset-inline-start: var(--so-slider-position, 0%);
-		margin-inline-start: calc(var(--s-slider-thumb-size) / -2);
+		margin-inline-start: calc(var(--so-slider-thumb-size) / -2);
 	}
 
 	&--vertical #{$this}__thumb {
 		inset-inline-start: 0;
 		inset-block-end: var(--so-slider-position, 0%);
-		margin-block-end: calc(var(--s-slider-thumb-size) / -2);
+		margin-block-end: calc(var(--so-slider-thumb-size) / -2);
 	}
 
 	// Наведение на ручку — ореол. Только там, где нажатие что-то сделает.
 	&:not([data-disabled='true']) #{$this}__thumb:hover {
-		--s-slider-halo: var(--s-slider-halo-size);
-		--s-slider-halo-color: var(--s-slider-halo-hover);
+		--so-slider-halo: var(--so-slider-halo-size);
+		--so-slider-halo-color: var(--so-slider-halo-hover);
 	}
 
 	// Тянут эту ручку — ореол плотнее. Две ручки на одном значении лежат друг
 	// на друге, и сверху та, что тянут или в фокусе: её и видно, её и
 	// двигают клавиши.
 	&__thumb[data-dragging='true'] {
-		--s-slider-halo: var(--s-slider-halo-size);
-		--s-slider-halo-color: var(--s-slider-halo-active);
+		--so-slider-halo: var(--so-slider-halo-size);
+		--so-slider-halo-color: var(--so-slider-halo-active);
 	}
 
 	&__thumb:is([data-dragging='true'], :focus-within) {
@@ -221,7 +223,7 @@
 
 	// Кольцо фокуса — на ручке: фокус у поля внутри неё, а поле невидимо.
 	&__thumb:has(> #{$this}__input:focus-visible) {
-		@apply outline-2 outline-offset-2 outline-s-component;
+		@apply outline-2 outline-offset-2 outline-so-component;
 	}
 
 	// Поле — во всю ручку и прозрачное: остаётся в дереве доступности и в
@@ -259,7 +261,7 @@
 	// кромки: `100%` — сторона ручки без кромок.
 	&--horizontal #{$this}__tooltip {
 		inset-block-end: calc(
-			100% + var(--s-slider-thumb-border) + var(--s-slider-halo-size) + var(--s-slider-gap)
+			100% + var(--so-slider-thumb-border) + var(--so-slider-halo-size) + var(--so-slider-gap)
 		);
 	}
 
@@ -267,7 +269,7 @@
 	// меток. Сторона логическая, и в RTL подсказка сама встаёт справа.
 	&--vertical #{$this}__tooltip {
 		inset-inline-end: calc(
-			100% + var(--s-slider-thumb-border) + var(--s-slider-halo-size) + var(--s-slider-gap)
+			100% + var(--so-slider-thumb-border) + var(--so-slider-halo-size) + var(--so-slider-gap)
 		);
 	}
 
@@ -310,7 +312,7 @@
 	// место не держим: подсказка у него сбоку, а её ширины тема не знает.
 	&--horizontal#{$this}--tooltip-always {
 		padding-block-start: calc(
-			var(--s-slider-halo-size) + var(--s-slider-gap) + #{tooltip.$height}
+			var(--so-slider-halo-size) + var(--so-slider-gap) + #{tooltip.$height}
 		);
 	}
 
@@ -334,13 +336,13 @@
 			content: '';
 			@apply shrink-0 rounded-full;
 			@apply transition-colors duration-150;
-			inline-size: var(--s-slider-tick-size);
-			block-size: var(--s-slider-tick-size);
-			background-color: var(--s-slider-tick);
+			inline-size: var(--so-slider-tick-size);
+			block-size: var(--so-slider-tick-size);
+			background-color: var(--so-slider-tick);
 		}
 
 		&[data-in-range='true']::before {
-			background-color: color-mix(in oklab, var(--s-component-knob) 80%, transparent);
+			background-color: color-mix(in oklab, var(--so-component-knob) 80%, transparent);
 		}
 
 		// Щелчок: кольцо цвета заливки расходится от ручки, которая встала на
@@ -349,11 +351,11 @@
 		&::after {
 			content: '';
 			@apply absolute rounded-full pointer-events-none opacity-0;
-			inline-size: var(--s-slider-thumb-size);
-			block-size: var(--s-slider-thumb-size);
-			margin-inline-start: calc(var(--s-slider-thumb-size) / -2);
-			margin-block-start: calc(var(--s-slider-thumb-size) / -2);
-			border: var(--s-slider-thumb-border) solid var(--s-slider-fill);
+			inline-size: var(--so-slider-thumb-size);
+			block-size: var(--so-slider-thumb-size);
+			margin-inline-start: calc(var(--so-slider-thumb-size) / -2);
+			margin-block-start: calc(var(--so-slider-thumb-size) / -2);
+			border: var(--so-slider-thumb-border) solid var(--so-slider-fill);
 		}
 	}
 
@@ -364,12 +366,12 @@
 		inset-inline-start: var(--so-slider-position, 0%);
 
 		&::before {
-			margin-block: calc((var(--s-slider-thumb-size) - var(--s-slider-tick-size)) / 2);
+			margin-block: calc((var(--so-slider-thumb-size) - var(--so-slider-tick-size)) / 2);
 		}
 
 		&::after {
 			inset-inline-start: 0;
-			inset-block-start: calc(var(--s-slider-thumb-size) / 2);
+			inset-block-start: calc(var(--so-slider-thumb-size) / 2);
 		}
 	}
 
@@ -380,11 +382,11 @@
 		inset-block-end: var(--so-slider-position, 0%);
 
 		&::before {
-			margin-inline: calc((var(--s-slider-thumb-size) - var(--s-slider-tick-size)) / 2);
+			margin-inline: calc((var(--so-slider-thumb-size) - var(--so-slider-tick-size)) / 2);
 		}
 
 		&::after {
-			inset-inline-start: calc(var(--s-slider-thumb-size) / 2);
+			inset-inline-start: calc(var(--so-slider-thumb-size) / 2);
 			inset-block-start: 0;
 		}
 	}
@@ -395,7 +397,7 @@
 	//
 	// Пустая подпись места не занимает: метка без подписи — одна точка.
 	&__mark-label {
-		@apply whitespace-nowrap text-s-neutral-500;
+		@apply whitespace-nowrap text-so-neutral-500;
 		@apply transition-colors duration-150;
 		@include mixines.slider-mark-text('normal');
 
@@ -405,20 +407,20 @@
 	}
 
 	&__mark[data-in-range='true'] > #{$this}__mark-label {
-		@apply text-s-component;
+		@apply text-so-component;
 	}
 
 	&__mark[data-current='true'] > #{$this}__mark-label {
 		@apply font-semibold;
-		color: var(--s-slider-current-text);
+		color: var(--so-slider-current-text);
 	}
 
 	&--horizontal #{$this}__mark-label {
-		margin-block-start: var(--s-slider-gap);
+		margin-block-start: var(--so-slider-gap);
 	}
 
 	&--vertical #{$this}__mark-label {
-		margin-inline-start: var(--s-slider-gap);
+		margin-inline-start: var(--so-slider-gap);
 	}
 
 	// Идёт перетаскивание — рука сжата, где бы над ползунком ни был указатель.
@@ -430,7 +432,7 @@
 	// Disabled читается из `data-disabled`: ядро пишет его на корне при любом
 	// теге. Гаснет ползунок целиком.
 	&[data-disabled='true'] {
-		@apply opacity-s-component-disabled cursor-default pointer-events-none;
+		@apply opacity-so-component-disabled cursor-default pointer-events-none;
 	}
 
 	@each $size, $_ in mixines.$sizes {

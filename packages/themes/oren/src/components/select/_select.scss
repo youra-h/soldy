@@ -61,7 +61,7 @@
 
 		// Теги — второй компонент внутри `.so-input__leading`, а не разметка
 		// поля, и в режиме `wrap` переносятся по строкам сами (`.so-tags` —
-		// `flex-wrap`). `.so-input` держит высоту размера (`--s-input-height` в
+		// `flex-wrap`). `.so-input` держит высоту размера (`--so-input-height` в
 		// `_input.scss`) — пока тегов нет, это верно, а как только они
 		// переносятся на вторую строку, постоянная высота выпускает перенос
 		// под поле. Поэтому с тегами поле растёт по строкам: высота авто, а
@@ -98,14 +98,14 @@
 		// сжимаемый flex-элемент и уступает ширину тегам.
 		&:has(.so-tags[data-overflow='wrap'] .so-tags-item) {
 			@apply h-auto items-start;
-			padding-block: var(--s-input-slot-gap);
+			padding-block: var(--so-input-slot-gap);
 
 			// Размерный `leading-*` из `_input.scss` равен высоте всего поля. В
 			// поле постоянной высоты это ввод центрует, а в растущем раздул бы
 			// первую строку на рамку и оба просвета. Высота ввода — строка
 			// слота, как у тега рядом.
 			input {
-				line-height: var(--s-input-slot-row);
+				line-height: var(--so-input-slot-row);
 			}
 
 			// Слот растёт вместе со строками тегов, а не держит одну строку
@@ -222,10 +222,10 @@
 // под ним: опции она не накрывает, а прокрутка остаётся у списка.
 .so-select__panel {
 	@apply overflow-hidden rounded-md box-border;
-	@apply text-s-component shadow-md;
-	@apply ring-1 ring-s-neutral-300;
+	@apply text-so-component shadow-md;
+	@apply ring-1 ring-so-neutral-300;
 	@apply outline outline-transparent;
-	@include place.surface(var(--s-component-surface));
+	@include place.surface(var(--so-component-surface));
 
 	@include anchored.panel('.so-select__handle');
 }

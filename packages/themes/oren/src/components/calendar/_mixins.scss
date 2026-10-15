@@ -46,7 +46,7 @@ $sizes: (
 // заголовков, кнопки листания и высота месяца. Одно число на размер вместо
 // правила на каждую часть.
 @mixin calendar-size($size) {
-	--s-calendar-day: calc(var(--spacing) * #{map.get(map.get(button.$sizes, $size), 'h')});
+	--so-calendar-day: calc(var(--spacing) * #{map.get(map.get(button.$sizes, $size), 'h')});
 }
 
 // Кегли частей по шкале. Отдельно от переменной: утилита ставит кегль вместе с
@@ -65,7 +65,7 @@ $sizes: (
 			@apply #{$title};
 		}
 
-		line-height: var(--s-calendar-cell);
+		line-height: var(--so-calendar-cell);
 	}
 
 	.so-calendar__weekday {
@@ -94,7 +94,7 @@ $variants: 'accent', 'positive', 'negative', 'caution';
 //   Наведение и нажатие — ступени 600 и 700, как у Button `filled` с
 //   вариантом: вуаль той же ступени на такой заливке невидима;
 // - наведение и нажатие у остальных дней — вуаль состояний Button
-//   (`--s-component-state-*`): календарь стоит и на странице, и на панели
+//   (`--so-component-state-*`): календарь стоит и на странице, и на панели
 //   DatePicker, и ступень, отсчитанная от страницы, на панели пропала бы;
 // - полоса выбранного диапазона — та же вуаль плотностью выбора, как
 //   выбранная строка `plain` у ListBox. Текст дней на ней — ступень 800
@@ -111,15 +111,15 @@ $variants: 'accent', 'positive', 'negative', 'caution';
 //   рядом, а 300 на вуали мало: в тёмной схеме на панели DatePicker лента
 //   почти ровно ступени 300, и рамка в ней пропадала.
 @mixin calendar-colors($color) {
-	--s-calendar-fill: var(--s-#{$color}-500);
-	--s-calendar-fill-hover: var(--s-#{$color}-600);
-	--s-calendar-fill-active: var(--s-#{$color}-700);
-	--s-calendar-hover: #{veil.tint($color, var(--s-component-state-hover))};
-	--s-calendar-press: #{veil.tint($color, var(--s-component-state-active))};
-	--s-calendar-band: #{veil.tint($color, var(--s-component-state-active))};
-	--s-calendar-preview: #{veil.tint($color, var(--s-component-state-hover))};
-	--s-calendar-preview-edge: var(--s-#{$color}-400);
-	--s-calendar-band-text: var(--s-#{$color}-800);
-	--s-calendar-today: var(--s-#{$color}-300);
-	--s-calendar-today-veiled: var(--s-#{$color}-400);
+	--so-calendar-fill: var(--so-#{$color}-500);
+	--so-calendar-fill-hover: var(--so-#{$color}-600);
+	--so-calendar-fill-active: var(--so-#{$color}-700);
+	--so-calendar-hover: #{veil.tint($color, var(--so-component-state-hover))};
+	--so-calendar-press: #{veil.tint($color, var(--so-component-state-active))};
+	--so-calendar-band: #{veil.tint($color, var(--so-component-state-active))};
+	--so-calendar-preview: #{veil.tint($color, var(--so-component-state-hover))};
+	--so-calendar-preview-edge: var(--so-#{$color}-400);
+	--so-calendar-band-text: var(--so-#{$color}-800);
+	--so-calendar-today: var(--so-#{$color}-300);
+	--so-calendar-today-veiled: var(--so-#{$color}-400);
 }

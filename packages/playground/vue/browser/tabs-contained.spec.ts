@@ -5,9 +5,9 @@
  *
  * Карточку рисует тема (`themes/oren/src/components/tabs/_tabs.scss`): до
  * замера — фоном выбранной обёртки, после — псевдоэлементом `::before` списка
- * по переменным `--active-tab-*`. Пишет их плагин темы `TTabsViewPlugin`
+ * по переменным `--so-tabs-active-*`. Пишет их плагин темы `TTabsViewPlugin`
  * (`themes/oren/setup/plugins/tabs-view.plugin.ts`), он же ставит на список
- * признак переезда `--active-tab-moving` при смене активного таба и снимает
+ * признак переезда `--so-tabs-active-moving` при смене активного таба и снимает
  * его, когда переход доиграл; без признака переход нулевой. jsdom не считает
  * ни стилей, ни раскладки и переходов не заводит: там проверяется только
  * признак (`playground/vue/__tests__/tabs-view.spec.ts`).
@@ -112,7 +112,7 @@ const rowOf = (value: TValue) => find('[role="tab"]', tabOf(value))
 const closeOf = (value: TValue) => find('.so-tabs-item__close', tabOf(value))
 
 /** Признак переезда на списке; пустая строка — его нет. */
-const moving = () => list().style.getPropertyValue('--active-tab-moving')
+const moving = () => list().style.getPropertyValue('--so-tabs-active-moving')
 
 /**
  * Видна ли карточка-псевдоэлемент. После замера он есть всегда, а виден —
@@ -155,7 +155,7 @@ const expectCardOn = async (value: TValue) => {
 }
 
 beforeEach(() => {
-	document.documentElement.dataset.theme = 'oren'
+	document.documentElement.dataset.soTheme = 'oren'
 })
 
 afterEach(async () => {

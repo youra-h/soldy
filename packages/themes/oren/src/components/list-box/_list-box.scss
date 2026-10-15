@@ -5,7 +5,7 @@
 	@apply rounded-md border box-border;
 	@apply bg-transparent;
 	@apply min-w-40 max-w-80;
-	@apply text-s-component;
+	@apply text-so-component;
 	// Внутренний отступ от границы контейнера до первого/последнего элемента —
 	// то же значение стоит у `.so-select__list`, чтобы отступы совпадали.
 	// Вертикальный отступ учитывает `TListHeightPlugin` при расчёте
@@ -16,17 +16,17 @@
 	// `.so-select__list`.
 	@apply overflow-y-auto;
 	// Обычное объявление, не `@apply border-s-…` — почему, см. input/_mixins.scss
-	border-color: var(--s-neutral-300);
+	border-color: var(--so-neutral-300);
 
 	&:hover {
 		&:not([data-disabled='true']) {
-			border-color: var(--s-neutral-400);
+			border-color: var(--so-neutral-400);
 		}
 	}
 
 	&:focus-visible {
 		&:not([data-disabled='true']) {
-			@apply outline-2 outline-offset-2 outline-s-component;
+			@apply outline-2 outline-offset-2 outline-so-component;
 		}
 	}
 

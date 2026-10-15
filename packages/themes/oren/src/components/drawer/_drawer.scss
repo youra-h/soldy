@@ -134,14 +134,14 @@ $backdrop-easing: linear;
 
 // Где стоит панель. Открытая — на месте, а во время жеста — со сдвигом к
 // краю, который пишет плагин жеста (`--so-swipe-offset`, px со знаком оси
-// окна). Закрытая с движением — за своим краем (`--drawer-away`, своя
+// окна). Закрытая с движением — за своим краем (`--so-drawer-away`, своя
 // переменная темы): туда она уезжает при закрытии и оттуда въезжает при
 // открытии. Без движения закрытая стоит, где стояла, и прозрачна: проявляется
 // и гаснет на месте, как окно Dialog.
 //
 // Сдвиг — `translate`, а не отступ: он от размера самой панели и ничего не
 // раскладывает заново. Логических направлений у сдвига нет, поэтому у
-// боковых краёв его знак — знак строки `--s-dir-sign` (`direction.css`), то
+// боковых краёв его знак — знак строки `--so-dir-sign` (`direction.css`), то
 // есть ближайшего `dir`: `start` в RTL справа и уезжает вправо. Селектор по
 // атрибуту у предка ближайшего не видит, и панель с `direction="ltr"` на
 // RTL-странице въезжала бы не со своего края.
@@ -156,19 +156,19 @@ $backdrop-easing: linear;
 }
 
 .so-drawer--placement-start {
-	--drawer-away: calc(-100% * var(--s-dir-sign)) 0;
+	--so-drawer-away: calc(-100% * var(--so-dir-sign)) 0;
 }
 
 .so-drawer--placement-end {
-	--drawer-away: calc(100% * var(--s-dir-sign)) 0;
+	--so-drawer-away: calc(100% * var(--so-dir-sign)) 0;
 }
 
 .so-drawer--placement-top {
-	--drawer-away: 0 -100%;
+	--so-drawer-away: 0 -100%;
 }
 
 .so-drawer--placement-bottom {
-	--drawer-away: 0 100%;
+	--so-drawer-away: 0 100%;
 }
 
 // С движением закрытая панель не гаснет, а уезжает: прозрачность у неё —
@@ -178,7 +178,7 @@ $backdrop-easing: linear;
 
 	@include motion.allowed {
 		@apply opacity-100;
-		translate: var(--drawer-away);
+		translate: var(--so-drawer-away);
 	}
 }
 
@@ -236,7 +236,7 @@ $backdrop-easing: linear;
 @starting-style {
 	.so-drawer[data-open='true'] {
 		@apply opacity-0;
-		translate: var(--drawer-away);
+		translate: var(--so-drawer-away);
 	}
 
 	.so-drawer__backdrop[data-open='true'] {

@@ -12,7 +12,7 @@
 	// Ни одного `left`/`right` — только `gap` и логические отступы, поэтому в
 	// RTL контрол сам встаёт справа: `dir` приходит на корень.
 	@apply relative inline-flex items-start;
-	@apply text-s-component;
+	@apply text-so-component;
 	@apply cursor-pointer select-none;
 
 	@each $size, $_ in mixines.$sizes {
@@ -34,10 +34,10 @@
 	&__control {
 		@apply inline-flex shrink-0 items-center justify-center;
 		@apply rounded-full border;
-		@apply bg-s-component-surface;
+		@apply bg-so-component-surface;
 		@apply transition-[border-color,background-color] duration-150;
-		width: var(--radio-control-size);
-		height: var(--radio-control-size);
+		width: var(--so-radio-control-size);
+		height: var(--so-radio-control-size);
 
 		@include motion.allowed {
 			transition-property: border-color, border-width, background-color;
@@ -50,8 +50,8 @@
 	&__indicator {
 		@apply rounded-full bg-current;
 		@apply scale-0;
-		width: calc(var(--radio-control-size) / 2);
-		height: calc(var(--radio-control-size) / 2);
+		width: calc(var(--so-radio-control-size) / 2);
+		height: calc(var(--so-radio-control-size) / 2);
 
 		@include motion.allowed {
 			@apply transition-transform duration-150;
@@ -69,7 +69,7 @@
 		@apply self-baseline;
 		// Контрол выше строки (крупный размер при плотном интерлиньяже) —
 		// подпись опускается к его середине.
-		margin-block-start: max(0px, (var(--radio-control-size) - 1lh) / 2);
+		margin-block-start: max(0px, (var(--so-radio-control-size) - 1lh) / 2);
 
 		&:empty {
 			@apply hidden;
@@ -80,12 +80,12 @@
 	// всего текста — опускается к середине строки высотой `1lh`. Без подписи
 	// сдвига нет: одинокое радио ровно в размер коробки CheckBox.
 	&:has(> #{$this}__text:not(:empty)) > #{$this}__control {
-		margin-block-start: max(0px, (1lh - var(--radio-control-size)) / 2);
+		margin-block-start: max(0px, (1lh - var(--so-radio-control-size)) / 2);
 	}
 
 	// Фокус — на скрытом нативном радио, кольцо фокуса рисует контрол рядом.
 	&__input:focus-visible + #{$this}__control {
-		@apply outline-2 outline-offset-2 outline-s-component;
+		@apply outline-2 outline-offset-2 outline-so-component;
 	}
 
 	// Выбранное — `data-selected` корня: его пишет расширение активации, как у
@@ -106,14 +106,14 @@
 
 		&[data-selected='true'] > #{$this}__control {
 			border-color: currentColor;
-			border-width: calc(var(--radio-control-size) / 4);
+			border-width: calc(var(--so-radio-control-size) / 4);
 		}
 	}
 
 	// Disabled читается из `data-disabled`: ядро пишет его на корне при любом
 	// теге. Гаснет элемент целиком — и контрол, и подпись.
 	&[data-disabled='true'] {
-		@apply opacity-s-component-disabled cursor-default;
+		@apply opacity-so-component-disabled cursor-default;
 	}
 
 	&--variant-accent {

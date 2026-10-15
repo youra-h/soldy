@@ -5,7 +5,7 @@
  * Цвета решает дизайн, и тест их не знает (`themes/oren/AGENTS.md`, «Что
  * тестом не проверяется»). Здесь — отношение, которое ломалось молча: дорожка
  * бралась ступенью 200, ступень отсчитывается от страницы, а
- * `--s-component-surface` в тёмной схеме сама равна ступени 200. На панели
+ * `--so-component-surface` в тёмной схеме сама равна ступени 200. На панели
  * Select и Popover выключенная дорожка совпадала с панелью, а рамки у неё
  * нет — от переключателя оставалась одна ручка.
  *
@@ -36,8 +36,8 @@ const SCHEMES = ['oren', 'oren-dark'] as const
  * узнаёт, в какую сторону от поверхности уходить.
  */
 const BACKDROPS = {
-	страница: 'var(--s-neutral-50)',
-	'поверхность контрола': 'var(--s-component-surface)',
+	страница: 'var(--so-neutral-50)',
+	'поверхность контрола': 'var(--so-component-surface)',
 } as const
 
 type TBackdrop = keyof typeof BACKDROPS
@@ -79,7 +79,7 @@ const scene = defineComponent({
 					{
 						key: name,
 						'data-backdrop': name,
-						style: `background: ${color}; color: var(--s-component-text); padding: 8px; display: flex; gap: 8px`,
+						style: `background: ${color}; color: var(--so-component-text); padding: 8px; display: flex; gap: 8px`,
 					},
 					Object.entries(SWITCHES).map(([role, props]) =>
 						h('span', { key: role, 'data-switch': role }, [h(Switch, props)]),
@@ -130,7 +130,7 @@ function knob(name: TBackdrop, role: TSwitch = 'off'): number {
 
 /** Сцена в заданной схеме, указатель уведён со всех переключателей. */
 async function show(scheme: (typeof SCHEMES)[number]): Promise<void> {
-	document.documentElement.dataset.theme = scheme
+	document.documentElement.dataset.soTheme = scheme
 	render(scene)
 
 	await userEvent.hover(find('.so-test-away'))
@@ -153,7 +153,7 @@ const CASES = SCHEMES.flatMap((scheme) =>
 )
 
 beforeEach(() => {
-	document.documentElement.dataset.theme = 'oren'
+	document.documentElement.dataset.soTheme = 'oren'
 })
 
 afterEach(() => {
@@ -197,7 +197,7 @@ describe('выключенная дорожка отходит от своей �
 
 	/**
 	 * Зачем дорожке вообще расстояние до поверхности: на ней стоит ручка, и
-	 * она обязана быть отличима (`--s-component-knob`). Уведи дорожку ближе к
+	 * она обязана быть отличима (`--so-component-knob`). Уведи дорожку ближе к
 	 * подложке — пропадёт ручка, а не только сама дорожка.
 	 */
 	it.each(CASES)('$scheme, $backdrop: ручка отличима от дорожки', async (scenario) => {

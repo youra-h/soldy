@@ -21,7 +21,7 @@ try {
  * Тема и цветовая схема.
  *
  * Схема — не отдельная тема, а суффикс: `oren` и `oren-dark` — два значения
- * одного атрибута `data-theme`, светлые токены объявлены на `:root`, тёмные
+ * одного атрибута `data-so-theme`, светлые токены объявлены на `:root`, тёмные
  * перекрывают их ниже по файлу. Поэтому переключатель один, а не два списка.
  *
  * Состояние общее на всё приложение (модульный `ref`, а не `provide`): тему
@@ -29,7 +29,7 @@ try {
  */
 export function useTheme() {
 	watchEffect(() => {
-		document.documentElement.dataset.theme = dark.value ? `${theme.value}-dark` : theme.value
+		document.documentElement.dataset.soTheme = dark.value ? `${theme.value}-dark` : theme.value
 
 		try {
 			localStorage.setItem(

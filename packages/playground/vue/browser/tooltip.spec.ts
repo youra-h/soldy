@@ -69,7 +69,7 @@ const panel = () => find('.so-tooltip__panel')
 const isOpen = () => getComputedStyle(panel()).display !== 'none'
 
 beforeEach(async () => {
-	document.documentElement.dataset.theme = 'oren'
+	document.documentElement.dataset.soTheme = 'oren'
 	// Курсор с прошлого теста остался там, где его оставили, а разметка
 	// встанет на то же место: уводим его, чтобы заход курсора был заходом
 	await userEvent.unhover(document.body)

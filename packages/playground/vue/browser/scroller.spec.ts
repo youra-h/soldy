@@ -80,7 +80,7 @@ const nextFrame = () => new Promise<void>((resolve) => requestAnimationFrame(() 
 
 beforeEach(() => {
 	// Тема читается с корня документа — тот же атрибут, что в `index.html`
-	document.documentElement.dataset.theme = 'oren'
+	document.documentElement.dataset.soTheme = 'oren'
 })
 
 afterEach(() => {

@@ -643,8 +643,8 @@ describe('линии строк', () => {
 		 * в панели Popover и Dialog.
 		 */
 		const BACKDROPS = {
-			страница: 'var(--s-neutral-50)',
-			'поверхность контрола': 'var(--s-component-surface)',
+			страница: 'var(--so-neutral-50)',
+			'поверхность контрола': 'var(--so-component-surface)',
 		} as const
 
 		type TBackdrop = keyof typeof BACKDROPS
@@ -660,7 +660,7 @@ describe('линии строк', () => {
 		const VISIBLE_LINE = 0.02
 
 		afterEach(() => {
-			delete document.documentElement.dataset.theme
+			delete document.documentElement.dataset.soTheme
 		})
 
 		/**
@@ -668,7 +668,7 @@ describe('линии строк', () => {
 		 * Указатель уведён: под ним рамка кнопки сильнее.
 		 */
 		async function showLines(scheme: TScheme): Promise<void> {
-			document.documentElement.dataset.theme = scheme
+			document.documentElement.dataset.soTheme = scheme
 			render(
 				defineComponent({
 					render: () =>

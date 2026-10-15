@@ -50,7 +50,7 @@ const CELL_CHAIN = '.so-table[data-reorder-preview=column]>.so-table__body>.so-t
 const FLAG = '[data-reorder-preview=column]'
 
 /** Переменная тела: что у ячеек идёт переходом, пока в шапке взятый заголовок. */
-const BODY_TRANSITION = '--s-table-body-transition'
+const BODY_TRANSITION = '--so-table-body-transition'
 
 /** Комбинатор селектора: потомок, ребёнок, соседи. */
 const COMBINATOR = /[\s>~+]/

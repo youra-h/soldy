@@ -175,7 +175,7 @@ BEM-классы и `data-*`, тема отдаёт под них CSS. Ты от
    (`data-*`, `so-…--…`) проставь в спеке руками на смонтированных узлах.
    Template не монтируется — отрисуй в спеке ту же разметку статическим HTML. Для каждой
    схемы: светлая — атрибута нет, тёмная —
-   `document.documentElement.dataset.theme = 'oren-dark'`; затем
+   `document.documentElement.dataset.soTheme = 'oren-dark'`; затем
    `await page.screenshot({ path: '<имя>.png' })` (`page` из `vitest/browser`,
    путь считается от файла спеки). Снимай и состояния: hover, выбранное,
    отключённое.

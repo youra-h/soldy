@@ -91,7 +91,7 @@ const borderWidth = (element: HTMLElement, side: TSide): string =>
 const POSITIONS: readonly TTabsPosition[] = ['start', 'end']
 
 beforeEach(() => {
-	document.documentElement.dataset.theme = 'oren'
+	document.documentElement.dataset.soTheme = 'oren'
 })
 
 afterEach(() => {

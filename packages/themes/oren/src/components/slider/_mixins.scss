@@ -57,10 +57,10 @@ $sizes: (
 @mixin slider-size($size) {
 	$scale: map.get($sizes, $size);
 
-	--s-slider-thumb-size: calc(var(--spacing) * #{map.get($scale, 'thumb')});
-	--s-slider-rail-size: calc(var(--spacing) * #{map.get($scale, 'rail')});
-	--s-slider-thumb-border: #{map.get($scale, 'border')};
-	--s-slider-gap: calc(var(--spacing) * #{map.get($scale, 'gap')});
+	--so-slider-thumb-size: calc(var(--spacing) * #{map.get($scale, 'thumb')});
+	--so-slider-rail-size: calc(var(--spacing) * #{map.get($scale, 'rail')});
+	--so-slider-thumb-border: #{map.get($scale, 'border')};
+	--so-slider-gap: calc(var(--spacing) * #{map.get($scale, 'gap')});
 }
 
 // Кегль подписей меток по шкале `$sizes`. Отдельно от переменных: утилита
@@ -87,7 +87,7 @@ $variants: 'accent', 'positive', 'negative', 'caution';
 //   неё есть, в обеих схемах она одна и та же. Заливка и кромка одного цвета —
 //   ручка читается концом заливки;
 // - ореол ручки — вуаль состояний, наведение и перетаскивание, но вдвое
-//   плотнее, чем у Button (`--s-component-state-*`): у кнопки вуаль — весь её
+//   плотнее, чем у Button (`--so-component-state-*`): у кнопки вуаль — весь её
 //   фон, а ореол — кольцо в треть ручки, и плотностью фона оно в тёмной схеме
 //   пропадало;
 // - точка метки на рельсе — вуаль поверх вуали рельса, на заливке — цвет
@@ -95,15 +95,18 @@ $variants: 'accent', 'positive', 'negative', 'caution';
 // - подпись метки, на которой стоит ручка, — текст варианта, ступень 800, как
 //   текст видов `plain` и `outlined` у Button.
 @mixin slider-colors($color) {
-	$rail: calc(3 * var(--s-component-fill));
+	$rail: calc(3 * var(--so-component-fill));
 
-	--s-slider-rail: #{veil.tint($color, $rail)};
-	--s-slider-rail-hover: #{veil.tint($color, veil.density(var(--s-component-state-hover), $rail))};
-	--s-slider-fill: var(--s-#{$color}-500);
-	--s-slider-halo-hover: #{veil.tint($color, calc(2 * var(--s-component-state-hover)))};
-	--s-slider-halo-active: #{veil.tint($color, calc(2 * var(--s-component-state-active)))};
-	--s-slider-tick: #{veil.tint($color, 45%)};
-	--s-slider-current-text: var(--s-#{$color}-800);
+	--so-slider-rail: #{veil.tint($color, $rail)};
+	--so-slider-rail-hover: #{veil.tint(
+			$color,
+			veil.density(var(--so-component-state-hover), $rail)
+		)};
+	--so-slider-fill: var(--so-#{$color}-500);
+	--so-slider-halo-hover: #{veil.tint($color, calc(2 * var(--so-component-state-hover)))};
+	--so-slider-halo-active: #{veil.tint($color, calc(2 * var(--so-component-state-active)))};
+	--so-slider-tick: #{veil.tint($color, 45%)};
+	--so-slider-current-text: var(--so-#{$color}-800);
 }
 
 // Вынос края заливки под скругление рельса.
@@ -119,7 +122,7 @@ $variants: 'accent', 'positive', 'negative', 'caution';
 @function reach($gap) {
 	@return clamp(
 		0px,
-		calc(var(--s-slider-thumb-size) / 2 - #{$gap} * 1000),
-		calc(var(--s-slider-thumb-size) / 2)
+		calc(var(--so-slider-thumb-size) / 2 - #{$gap} * 1000),
+		calc(var(--so-slider-thumb-size) / 2)
 	);
 }

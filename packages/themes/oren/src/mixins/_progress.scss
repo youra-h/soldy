@@ -32,19 +32,19 @@ $variants: (
 //   около 2:1; 700 держит везде, но `caution` у неё в светлой схеме уходит в
 //   бурый.
 @function track($color) {
-	@return veil.tint($color, calc(3 * var(--s-component-fill)));
+	@return veil.tint($color, calc(3 * var(--so-component-fill)));
 }
 
 @function fill($color) {
-	@return var(--s-#{$color}-600);
+	@return var(--so-#{$color}-600);
 }
 
-// Цвета — переменными на корне блока `$block`: `--s-<блок>-track` и
-// `--s-<блок>-fill`. Части блока читают их сами, матрицы «часть × вариант»
+// Цвета — переменными на корне блока `$block`: `--so-<блок>-track` и
+// `--so-<блок>-fill`. Части блока читают их сами, матрицы «часть × вариант»
 // нет, вариант перекрывает базу одним модификатором.
 @mixin paint($block, $track, $fill) {
-	--s-#{$block}-track: #{$track};
-	--s-#{$block}-fill: #{$fill};
+	--so-#{$block}-track: #{$track};
+	--so-#{$block}-fill: #{$fill};
 }
 
 // Цвета заданного варианта.

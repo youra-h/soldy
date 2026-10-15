@@ -5,7 +5,7 @@
  * Цвета вида решает дизайн, и тест их не знает (`themes/oren/AGENTS.md`, «Что
  * тестом не проверяется»). Здесь — отношение, которое ломалось молча: рамка
  * таба и линия под списком брались ступенью 200, а роль ступени 200 —
- * поверхность, не граница. В тёмной схеме `--s-component-surface` равна ей же,
+ * поверхность, не граница. В тёмной схеме `--so-component-surface` равна ей же,
  * и на панели Select и Popover рамка у `view="outline"` совпадала с подложкой:
  * от «папочных вкладок» не оставалось ни одной линии.
  *
@@ -36,8 +36,8 @@ const SCHEMES = ['oren', 'oren-dark'] as const
  * он свой, а тест один.
  */
 const BACKDROPS = {
-	страница: 'var(--s-neutral-50)',
-	'поверхность контрола': 'var(--s-component-surface)',
+	страница: 'var(--so-neutral-50)',
+	'поверхность контрола': 'var(--so-component-surface)',
 } as const
 
 type TBackdrop = keyof typeof BACKDROPS
@@ -89,7 +89,7 @@ const scene = defineComponent({
 					{
 						key: name,
 						'data-backdrop': name,
-						style: `background: ${color}; color: var(--s-component-text); padding: 8px; display: flex; flex-direction: column; gap: 16px`,
+						style: `background: ${color}; color: var(--so-component-text); padding: 8px; display: flex; flex-direction: column; gap: 16px`,
 					},
 					Object.entries(VIEWS).map(([role, view]) =>
 						h('div', { key: role, 'data-view': role }, [tabs(view)]),
@@ -151,7 +151,7 @@ function indicator(name: TBackdrop): number {
 
 /** Сцена в заданной схеме, указатель уведён со всех табов. */
 async function show(scheme: (typeof SCHEMES)[number]): Promise<void> {
-	document.documentElement.dataset.theme = scheme
+	document.documentElement.dataset.soTheme = scheme
 	render(scene)
 
 	await userEvent.hover(find('.so-test-away'))
@@ -169,7 +169,7 @@ const VIEW_CASES = CASES.flatMap((scenario) =>
 )
 
 beforeEach(() => {
-	document.documentElement.dataset.theme = 'oren'
+	document.documentElement.dataset.soTheme = 'oren'
 })
 
 afterEach(() => {

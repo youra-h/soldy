@@ -6,7 +6,7 @@ import { buildCss } from './build-css'
 
 /**
  * Вариант Button и пилюли тега — только цвет: правило модификатора варианта
- * задаёт переменные `--s-tone-*` (`button-tones` в
+ * задаёт переменные `--so-tone-*` (`button-tones` в
  * `src/components/button/_mixins.scss`), а вид и его состояния объявлены один
  * раз на все цвета.
  *

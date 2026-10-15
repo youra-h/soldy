@@ -114,7 +114,7 @@ useTheme(oren)
 createApp(App).mount('#app')
 ```
 
-The dark scheme is switched on with `<html data-theme="oren-dark">`.
+The dark scheme is switched on with `<html data-so-theme="oren-dark">`.
 
 Motion — panels sliding in, thumbs travelling, indicators running — follows the system's
 reduced-motion setting by default. An application that wants motion regardless, or never, sets one

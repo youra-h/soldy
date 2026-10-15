@@ -32,7 +32,7 @@ function block(css: string, selector: string): string {
 function declarations(body: string): Map<string, string> {
 	const map = new Map<string, string>()
 
-	for (const [, name, value] of body.matchAll(/(--s-[\w-]+)\s*:\s*([^;]+);/g)) {
+	for (const [, name, value] of body.matchAll(/(--so-[\w-]+)\s*:\s*([^;]+);/g)) {
 		map.set(name, value.trim())
 	}
 
@@ -69,7 +69,7 @@ function lightness(value: string): number {
 
 function scaleOf(tokens: Map<string, string>, family: string): number[] {
 	return [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950].map((step) =>
-		lightness(tokenOf(tokens, `--s-${family}-${step}`)),
+		lightness(tokenOf(tokens, `--so-${family}-${step}`)),
 	)
 }
 
@@ -112,7 +112,7 @@ const FAMILIES = ['accent', 'positive', 'negative', 'caution', 'neutral']
 const lightBlock = block(stripComments(readFileSync(join(SRC, 'tokens.css'), 'utf8')), ':root,')
 const darkBlock = block(
 	stripComments(readFileSync(join(SRC, 'tokens-dark.css'), 'utf8')),
-	"[data-theme='oren-dark']",
+	"[data-so-theme='oren-dark']",
 )
 
 const light = declarations(lightBlock)
@@ -121,7 +121,7 @@ const dark = declarations(darkBlock)
 describe('токены цветовых схем', () => {
 	it('тёмная схема покрывает все ступени светлой', () => {
 		const scaleTokens = (tokens: Map<string, string>) =>
-			[...tokens.keys()].filter((name) => /^--s-\w+-\d+$/.test(name)).sort()
+			[...tokens.keys()].filter((name) => /^--so-\w+-\d+$/.test(name)).sort()
 
 		expect(scaleTokens(dark)).toEqual(scaleTokens(light))
 	})
@@ -132,7 +132,7 @@ describe('токены цветовых схем', () => {
 	 */
 	it('семантические токены тёмной схемы существуют в светлой', () => {
 		const semantic = (tokens: Map<string, string>) =>
-			[...tokens.keys()].filter((name) => name.startsWith('--s-component-'))
+			[...tokens.keys()].filter((name) => name.startsWith('--so-component-'))
 
 		for (const name of semantic(dark)) {
 			expect(semantic(light), `${name} не объявлен в светлой схеме`).toContain(name)
@@ -163,8 +163,8 @@ describe('токены цветовых схем', () => {
 
 	/** Поверхность обязана быть тёмной, текст — светлым, иначе схема не тёмная. */
 	it('в тёмной схеме поверхность темнее текста', () => {
-		expect(lightness(tokenOf(dark, '--s-neutral-50'))).toBeLessThan(0.3)
-		expect(lightness(tokenOf(dark, '--s-neutral-800'))).toBeGreaterThan(0.7)
+		expect(lightness(tokenOf(dark, '--so-neutral-50'))).toBeLessThan(0.3)
+		expect(lightness(tokenOf(dark, '--so-neutral-800'))).toBeGreaterThan(0.7)
 	})
 
 	/**
@@ -182,12 +182,57 @@ describe('токены цветовых схем', () => {
 	})
 })
 
+/**
+ * Схему включает атрибут на корне документа или у области — его ставит
+ * приложение: `<html data-so-theme="oren-dark">`. Корень документа общий с
+ * приложением и другими библиотеками, и атрибут темы без префикса там часто
+ * занят, поэтому он с префиксом `so-`, как атрибут режима движения (корневой
+ * `AGENTS.md`, «Префикс — только в глобальном пространстве имён»).
+ *
+ * Объявляют схемы только файлы токенов: блок схемы в файле компонента — то,
+ * что запрещает правило «В компонентных стилях не бывает блоков схемы»
+ * (`AGENTS.md` пакета, «Номер ступени — это роль»).
+ */
+describe('схема — атрибутом с префиксом so-', () => {
+	const TOKEN_FILES = ['tokens-dark.css', 'tokens.css']
+
+	/** Селекторы блоков схем — тех, что объявляют браузеру `color-scheme`. */
+	const schemeSelectors = sources
+		.filter(({ name }) => TOKEN_FILES.includes(name))
+		.flatMap(({ code }) =>
+			[...code.matchAll(/([^{};]+)\{[^{}]*?(?<![\w-])color-scheme\s*:/g)].map(
+				([, selector]) => selector.trim(),
+			),
+		)
+
+	it('атрибут каждой схемы — с префиксом so-', () => {
+		const attributes = schemeSelectors.flatMap((selector) =>
+			[...selector.matchAll(/\[\s*([\w-]+)/g)].map(([, name]) => name),
+		)
+
+		// Схем две, и каждую включает атрибут: на пустом списке проверка ниже
+		// прошла бы на любых стилях
+		expect(schemeSelectors).toHaveLength(2)
+		expect(attributes).toHaveLength(2)
+		expect(attributes.filter((name) => !name.startsWith('data-so-'))).toEqual([])
+	})
+
+	it('атрибут схемы — только в файлах токенов', () => {
+		const found = sources
+			.filter(({ code }) => code.includes('data-so-theme'))
+			.map(({ name }) => name)
+			.sort()
+
+		expect(found).toEqual(TOKEN_FILES)
+	})
+})
+
 describe('компоненты не берут цвет мимо темы', () => {
 	const TAILWIND_PALETTE =
 		'red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose|slate|gray|zinc|neutral|stone'
 
 	/**
-	 * Палитра Tailwind живёт мимо `--s-*`, значит пакет темы её не видит:
+	 * Палитра Tailwind живёт мимо `--so-*`, значит пакет темы её не видит:
 	 * такой цвет одинаков во всех темах и во всех цветовых схемах.
 	 */
 	it('не используют палитру Tailwind вместо шкалы темы', () => {
@@ -217,7 +262,7 @@ describe('компоненты не берут цвет мимо темы', () =
 
 	/**
 	 * Белый фон не инвертируется вместе со шкалой и в тёмной схеме остался бы
-	 * белым. Для этого есть `--s-component-surface` / `--s-component-knob`.
+	 * белым. Для этого есть `--so-component-surface` / `--so-component-knob`.
 	 *
 	 * `text-white` при этом законен: он лежит на насыщенной заливке
 	 * (вид `filled` у Button), а середина хроматических шкал в обеих схемах
@@ -276,7 +321,7 @@ describe('тема не стилизуется по нативному disabled'
 })
 
 /**
- * Направление письма тема читает знаком строки — переменной `--s-dir-sign`,
+ * Направление письма тема читает знаком строки — переменной `--so-dir-sign`,
  * которую задают правила `direction.css`, а наследование доносит до блока от
  * ближайшего `dir` (`AGENTS.md` пакета, «Ловушка сборки»). Селектор по атрибуту
  * у предка ближайшего `dir` не видит: блок с `direction="ltr"` в RTL-предке
@@ -300,7 +345,7 @@ describe('направление письма — знаком строки, а 
 	/** Без правил знака переменная пуста, и каждое зеркало темы — тоже. */
 	it('знак задан странице без dir и обоим направлениям', () => {
 		const rules = stripComments(readFileSync(join(SRC, 'direction.css'), 'utf8'))
-		const sign = (selector: string) => propertyValues(block(rules, selector), '--s-dir-sign')
+		const sign = (selector: string) => propertyValues(block(rules, selector), '--so-dir-sign')
 
 		expect(sign(':root')).toEqual(['1'])
 		expect(sign("[dir='ltr']")).toEqual(['1'])

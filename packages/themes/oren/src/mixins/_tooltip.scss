@@ -31,6 +31,6 @@ $height: calc(
 
 @mixin plate {
 	@apply box-border rounded-md px-2 py-#{$pad-block};
-	@apply bg-s-neutral-800 text-s-neutral-50 text-#{$text};
+	@apply bg-so-neutral-800 text-so-neutral-50 text-#{$text};
 	@apply outline outline-transparent;
 }

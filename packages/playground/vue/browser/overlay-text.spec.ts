@@ -59,7 +59,7 @@ const scene = defineComponent({
 
 /** Сцена в схеме темы, корни объявлены плагинам: `TElementPlugin` ждёт кадр. */
 async function show(scheme: (typeof SCHEMES)[number]): Promise<void> {
-	document.documentElement.dataset.theme = scheme
+	document.documentElement.dataset.soTheme = scheme
 	render(scene)
 
 	await nextTick()
