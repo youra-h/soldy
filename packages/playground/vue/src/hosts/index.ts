@@ -24,6 +24,7 @@ export const FRAMEWORKS: readonly TFramework[] = [
 	{ id: 'svelte', label: 'Svelte' },
 	{ id: 'solid', label: 'Solid' },
 	{ id: 'webc', label: 'Web Components' },
+	{ id: 'angular', label: 'Angular' },
 ]
 
 /** Фреймворк, на котором стенд открывается. */
