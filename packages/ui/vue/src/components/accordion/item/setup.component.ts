@@ -5,6 +5,7 @@ import {
 } from '@soldy-ui/setup'
 import {
 	useAdapter,
+	useExpose,
 	VueElevatorFactory,
 	useIcon,
 	useSplitAttrs,
@@ -17,6 +18,7 @@ export default {
 	name: '_AccordionItem',
 	inheritAttrs: false,
 	extends: BaseAccordionItem,
+	expose: useExpose(),
 	setup(props: AccordionItemProps, { emit }: SetupContext) {
 		const adapter = createVueAdapterContext(AccordionItemDescriptor(), {
 			ctrl: props.ctrl,

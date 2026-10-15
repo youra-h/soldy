@@ -1,10 +1,11 @@
 import { SkeletonDescriptor } from '@soldy-ui/setup'
-import { useAdapter, createVueAdapterContext, type SetupContext } from '../../adapter'
+import { useAdapter, useExpose, createVueAdapterContext, type SetupContext } from '../../adapter'
 import BaseSkeleton, { type SkeletonProps } from './base.component'
 
 export default {
 	name: '_Skeleton',
 	extends: BaseSkeleton,
+	expose: useExpose(),
 	setup(props: SkeletonProps, { emit }: SetupContext) {
 		const adapter = createVueAdapterContext(SkeletonDescriptor(), {
 			ctrl: props.ctrl,

@@ -1,3 +1,6 @@
+import type { TClosedComponent } from '../../adapter'
+import DateInputComponent from './DateInput.vue'
+
 export { default as BaseDateInput, emitsDateInput, propsDateInput } from './base.component'
-import DateInput from './DateInput.vue'
-export { DateInput }
+
+export const DateInput: TClosedComponent<typeof DateInputComponent> = DateInputComponent

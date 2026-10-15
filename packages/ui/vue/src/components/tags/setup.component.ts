@@ -1,6 +1,7 @@
 import { TCollectionExtension, TagsDescriptor, TagsCollectionDescriptor } from '@soldy-ui/setup'
 import {
 	useAdapter,
+	useExpose,
 	useCollectionAdapter,
 	VueElevatorFactory,
 	createVueAdapterContext,
@@ -11,6 +12,7 @@ import BaseTags, { type TagsProps } from './base.component'
 export default {
 	name: '_Tags',
 	extends: BaseTags,
+	expose: useExpose(),
 	setup(props: TagsProps, { emit }: SetupContext) {
 		const adapter = createVueAdapterContext(TagsDescriptor(), {
 			ctrl: props.ctrl,

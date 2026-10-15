@@ -5,6 +5,7 @@ import {
 } from '@soldy-ui/setup'
 import {
 	useAdapter,
+	useExpose,
 	VueElevatorFactory,
 	useIcon,
 	useSplitAttrs,
@@ -17,6 +18,7 @@ export default {
 	name: '_ListBoxItem',
 	inheritAttrs: false,
 	extends: BaseListBoxItem,
+	expose: useExpose(),
 	setup(props: ListBoxItemProps, { emit }: SetupContext) {
 		const adapter = createVueAdapterContext(ListBoxItemDescriptor(), {
 			ctrl: props.ctrl,

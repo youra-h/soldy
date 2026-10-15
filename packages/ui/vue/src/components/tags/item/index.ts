@@ -1,3 +1,7 @@
+import type { TClosedComponent } from '../../../adapter'
+import TagsItemComponent from './Item.vue'
+
 export * from './base.component'
 export { default as BaseTagsItem } from './base.component'
-export { default as TagsItem } from './Item.vue'
+
+export const TagsItem: TClosedComponent<typeof TagsItemComponent> = TagsItemComponent

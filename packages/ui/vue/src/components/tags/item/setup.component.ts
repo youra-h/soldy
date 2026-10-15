@@ -5,6 +5,7 @@ import {
 } from '@soldy-ui/setup'
 import {
 	useAdapter,
+	useExpose,
 	VueElevatorFactory,
 	useIcon,
 	useSplitAttrs,
@@ -17,6 +18,7 @@ export default {
 	name: '_TagsItem',
 	inheritAttrs: false,
 	extends: BaseTagsItem,
+	expose: useExpose(),
 	setup(props: TagsItemProps, { emit }: SetupContext) {
 		const adapter = createVueAdapterContext(TagsItemDescriptor(), {
 			ctrl: props.ctrl,

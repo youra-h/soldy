@@ -1,5 +1,12 @@
 import { DialogDescriptor } from '@soldy-ui/setup'
-import { useAdapter, useIcon, createVueAdapterContext, type SetupContext } from '../../adapter'
+import {
+	exposeRoot,
+	useAdapter,
+	useExpose,
+	useIcon,
+	createVueAdapterContext,
+	type SetupContext,
+} from '../../adapter'
 import BaseDialog, { type DialogProps } from './base.component'
 
 /**
@@ -11,16 +18,22 @@ import BaseDialog, { type DialogProps } from './base.component'
 export default {
 	name: '_Dialog',
 	extends: BaseDialog,
-	setup(props: DialogProps, { emit }: SetupContext) {
+	expose: useExpose(),
+	setup(props: DialogProps, { emit, expose }: SetupContext) {
 		const adapter = createVueAdapterContext(DialogDescriptor(), {
 			ctrl: props.ctrl,
 			props,
 		})
 
+		// Выходы `layout_styles`, `layout_backdropStyles` и
+		// `dismiss_ownerAttribute` шаблон раскладывает на панель и подложку
+		const binding = useAdapter(adapter, props, emit)
+
+		// Корень шаблона — телепорт: `$el` потребителю — панель, а не его якорь
+		exposeRoot(expose, binding.rootElement)
+
 		return {
-			// Выходы `layout_styles`, `layout_backdropStyles` и
-			// `dismiss_ownerAttribute` шаблон раскладывает на панель и подложку
-			...useAdapter(adapter, props, emit),
+			...binding,
 			/**
 			 * Инстанс — для кнопок шапки: крестик просит окно закрыться
 			 * (`requestClose`), разворот переключает `maximized`. Возврат фокуса

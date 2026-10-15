@@ -6,6 +6,7 @@ import {
 } from '@soldy-ui/setup'
 import {
 	useAdapter,
+	useExpose,
 	useCollectionAdapter,
 	useIcon,
 	VueElevatorFactory,
@@ -28,6 +29,7 @@ import BaseTable, { type TableProps } from './base.component'
 export default {
 	name: '_Table',
 	extends: BaseTable,
+	expose: useExpose(),
 	setup(props: TableProps, { emit }: SetupContext) {
 		const adapter = createVueAdapterContext(TableDescriptor(), {
 			ctrl: props.ctrl,

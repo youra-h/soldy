@@ -6,6 +6,7 @@ import {
 } from '@soldy-ui/setup'
 import {
 	useAdapter,
+	useExpose,
 	useCollectionAdapter,
 	VueElevatorFactory,
 	createVueAdapterContext,
@@ -16,6 +17,7 @@ import BaseAccordion, { type AccordionProps } from './base.component'
 export default {
 	name: '_Accordion',
 	extends: BaseAccordion,
+	expose: useExpose(),
 	setup(props: AccordionProps, { emit }: SetupContext) {
 		const adapter = createVueAdapterContext(AccordionDescriptor(), {
 			ctrl: props.ctrl,

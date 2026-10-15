@@ -1,2 +1,6 @@
+import type { TClosedComponent } from '../../adapter'
+import SwitchComponent from './Switch.vue'
+
 export { default as BaseSwitch, emitsSwitch, propsSwitch } from './base.component'
-export { default as Switch } from './Switch.vue'
+
+export const Switch: TClosedComponent<typeof SwitchComponent> = SwitchComponent

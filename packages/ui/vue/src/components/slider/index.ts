@@ -1,2 +1,6 @@
+import type { TClosedComponent } from '../../adapter'
+import SliderComponent from './Slider.vue'
+
 export { default as BaseSlider, emitsSlider, propsSlider } from './base.component'
-export { default as Slider } from './Slider.vue'
+
+export const Slider: TClosedComponent<typeof SliderComponent> = SliderComponent

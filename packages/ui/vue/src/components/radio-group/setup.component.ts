@@ -5,6 +5,7 @@ import {
 } from '@soldy-ui/setup'
 import {
 	useAdapter,
+	useExpose,
 	useCollectionAdapter,
 	VueElevatorFactory,
 	createVueAdapterContext,
@@ -20,6 +21,7 @@ import BaseRadioGroup, { type RadioGroupProps } from './base.component'
 export default {
 	name: '_RadioGroup',
 	extends: BaseRadioGroup,
+	expose: useExpose(),
 	setup(props: RadioGroupProps, { emit }: SetupContext) {
 		const adapter = createVueAdapterContext(RadioGroupDescriptor(), {
 			ctrl: props.ctrl,

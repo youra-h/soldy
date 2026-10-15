@@ -1,3 +1,6 @@
+import type { TClosedComponent } from '../../adapter'
+import InputComponent from './Input.vue'
+
 export { default as BaseInput, emitsInput, propsInput } from './base.component'
-import Input from './Input.vue'
-export { Input }
+
+export const Input: TClosedComponent<typeof InputComponent> = InputComponent

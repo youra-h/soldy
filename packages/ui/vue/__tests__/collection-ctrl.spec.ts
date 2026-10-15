@@ -1,28 +1,25 @@
 /**
  * `ctrl` снаружи — это экземпляр компонента, а не фасад коллекции.
  *
- * У коллекционных компонентов `useAdapter` зовётся дважды: для самого
- * компонента и для фасада коллекции. Оба кладут в результат `ctrl`, `plugins` и
- * `rootElement`, и то, что окажется наверху, решал порядок спредов в `setup`.
+ * У коллекционных компонентов контекстов два: свой и фасада коллекции, и оба
+ * собирают привязки шаблона. Раньше оба клали в результат `ctrl`, и то, что
+ * окажется наверху, решал порядок спредов в `setup`: потребитель с `ref` на
+ * компонент молча получал вместо `TListBox` фасад `TListBoxCollectionFacade`,
+ * у которого нет ни `view`, ни `maxRows`. Select на это наступил первым.
  *
- * В шаблонах это не всплывает — они `ctrl` не используют. А вот потребителю с
- * `ref` на компонент подменённый `ctrl` достаётся молча: вместо `TListBox` он
- * получает `TListBoxCollectionFacade`, у которого нет ни `view`, ни `maxRows`.
- *
- * Select на это уже наступил и был починен перестановкой спредов — у себя
- * одного. Тест проверяет все четыре: чинить надо там, где можно ошибиться, а
- * порядок спредов ошибку допускает.
+ * Теперь `ctrl` фасада в привязки не попадает (`useCollectionAdapter`), а
+ * экземпляр из `ref` закрыт и привязок не отдаёт вовсе — ни компонента, ни
+ * фасада (`root-ref.spec.ts`). Здесь — на своих данных: внешний `ctrl` ведёт
+ * сам компонент, его состояние доходит до корня, а `ref` его не отдаёт.
+ * Проверяются все четыре: ошибиться в порядке мог каждый.
  */
 
 import { describe, it, expect, afterEach } from 'vitest'
 import { mount } from '@vue/test-utils'
-import { TListBox, TSelect, TTabs, TAccordion } from '@soldy-ui/core'
-import { ListBox, Select, Tabs, Accordion } from '@soldy-ui/vue'
+import { defineComponent, h, nextTick, shallowRef, type Component } from 'vue'
+import { TAccordion, TListBox, TSelect, TTabs } from '@soldy-ui/core'
+import { Accordion, ListBox, Select, Tabs } from '@soldy-ui/vue'
 
-// Не `ReturnType<typeof mount>`: `mount` перегружен, и утилита `ReturnType`
-// берёт только последнюю (самую общую) перегрузку — без `ctrl` в результате.
-// Для очистки после теста хватает структурного `unmount()`, а сам wrapper с
-// точным типом живёт локально в каждом тесте.
 let wrapper: { unmount(): void } | null = null
 
 afterEach(() => {
@@ -31,19 +28,42 @@ afterEach(() => {
 	document.body.innerHTML = ''
 })
 
-const CASES = [
-	['ListBox', () => mount(ListBox, { attachTo: document.body }), TListBox],
-	['Select', () => mount(Select, { attachTo: document.body }), TSelect],
-	['Tabs', () => mount(Tabs, { attachTo: document.body }), TTabs],
-	['Accordion', () => mount(Accordion, { attachTo: document.body }), TAccordion],
-] as const
+/** Компонент, его экземпляр ядра и класс корня. */
+const CASES: ReadonlyArray<readonly [string, Component, () => { hide(): void }, string]> = [
+	['ListBox', ListBox, () => new TListBox(), '.s-list-box'],
+	['Select', Select, () => new TSelect(), '.s-select'],
+	['Tabs', Tabs, () => new TTabs(), '.s-tabs'],
+	['Accordion', Accordion, () => new TAccordion(), '.s-accordion'],
+]
 
-describe('коллекционные компоненты отдают наружу свой инстанс', () => {
-	it.each(CASES)('%s: ctrl — экземпляр компонента', (_name, mountComponent, Ctor) => {
-		const w = mountComponent()
+describe('коллекционные компоненты: внешний ctrl — экземпляр компонента', () => {
+	it.each(CASES)('%s: состояние ctrl доходит до корня', async (_name, view, create, selector) => {
+		const ctrl = create()
 
-		wrapper = w
+		wrapper = mount(defineComponent({ render: () => h(view, { ctrl }) }), {
+			attachTo: document.body,
+		})
 
-		expect(w.vm.ctrl).toBeInstanceOf(Ctor)
+		const root = document.querySelector(selector)
+
+		if (!(root instanceof HTMLElement)) throw new Error(`${selector}: корня нет`)
+
+		expect(root.style.display).not.toBe('none')
+
+		ctrl.hide()
+		await nextTick()
+
+		expect(root.style.display).toBe('none')
+	})
+
+	it.each(CASES)('%s: ref ctrl не отдаёт', (_name, view, create) => {
+		const host = shallowRef<object | null>(null)
+
+		wrapper = mount(defineComponent({ render: () => h(view, { ctrl: create(), ref: host }) }), {
+			attachTo: document.body,
+		})
+
+		expect(host.value).not.toBeNull()
+		expect('ctrl' in (host.value ?? {})).toBe(false)
 	})
 })

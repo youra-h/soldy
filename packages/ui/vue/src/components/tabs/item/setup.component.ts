@@ -5,6 +5,7 @@ import {
 } from '@soldy-ui/setup'
 import {
 	useAdapter,
+	useExpose,
 	VueElevatorFactory,
 	useIcon,
 	useSplitAttrs,
@@ -17,6 +18,7 @@ export default {
 	name: '_TabsItem',
 	inheritAttrs: false,
 	extends: BaseTabsItem,
+	expose: useExpose(),
 	setup(props: TabsItemProps, { emit }: SetupContext) {
 		const adapter = createVueAdapterContext(TabsItemDescriptor(), {
 			ctrl: props.ctrl,

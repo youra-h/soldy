@@ -1,5 +1,5 @@
 import { ProgressLinearDescriptor } from '@soldy-ui/setup'
-import { useAdapter, createVueAdapterContext, type SetupContext } from '../../adapter'
+import { useAdapter, useExpose, createVueAdapterContext, type SetupContext } from '../../adapter'
 import BaseProgressLinear, { type ProgressLinearProps } from './base.component'
 
 /**
@@ -10,6 +10,7 @@ import BaseProgressLinear, { type ProgressLinearProps } from './base.component'
 export default {
 	name: '_ProgressLinear',
 	extends: BaseProgressLinear,
+	expose: useExpose(),
 	setup(props: ProgressLinearProps, { emit }: SetupContext) {
 		const adapter = createVueAdapterContext(ProgressLinearDescriptor(), {
 			ctrl: props.ctrl,

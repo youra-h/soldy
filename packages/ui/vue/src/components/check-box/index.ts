@@ -1,2 +1,6 @@
+import type { TClosedComponent } from '../../adapter'
+import CheckBoxComponent from './CheckBox.vue'
+
 export { default as BaseCheckBox, emitsCheckBox, propsCheckBox } from './base.component'
-export { default as CheckBox } from './CheckBox.vue'
+
+export const CheckBox: TClosedComponent<typeof CheckBoxComponent> = CheckBoxComponent

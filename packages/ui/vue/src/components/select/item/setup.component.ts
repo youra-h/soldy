@@ -5,6 +5,7 @@ import {
 } from '@soldy-ui/setup'
 import {
 	useAdapter,
+	useExpose,
 	VueElevatorFactory,
 	useIcon,
 	useSplitAttrs,
@@ -24,6 +25,7 @@ export default {
 	name: '_SelectItem',
 	inheritAttrs: false,
 	extends: BaseSelectItem,
+	expose: useExpose(),
 	setup(props: SelectItemProps, { emit }: SetupContext) {
 		const adapter = createVueAdapterContext(SelectItemDescriptor(), {
 			ctrl: props.ctrl,

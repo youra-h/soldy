@@ -664,16 +664,27 @@ describe('списочные свойства', () => {
 	 * `expand` снимает подгонку панели под ширину поля: ширину держит плагин
 	 * якоря, а не CSS, и выражение `contentFit !== 'expand'` вычисляет ядро.
 	 */
-	it('expand отвязывает ширину панели от поля', () => {
-		const autoFit = (contentFit?: string) =>
-			render(contentFit ? { contentFit } : {}).findComponent(Select).vm.autoFitWidth
+	it('expand отвязывает ширину панели от поля', async () => {
+		/** Подгоняет ли плагин якоря панели её ширину под поле. */
+		const matchWidth = async (contentFit?: string) => {
+			const select = render(contentFit ? { contentFit } : {})
 
-		expect(autoFit('expand')).toBe(false)
+			// `anchor:create` отложен на микрозадачу
+			await nextTick()
+
+			const [plugin] = select.findComponent(Frame).emitted('anchor:create')?.[0] ?? []
+
+			if (!(plugin instanceof TAnchorPlugin)) throw new Error('плагина якоря нет')
+
+			return plugin.matchWidth
+		}
+
+		expect(await matchWidth('expand')).toBe(false)
 
 		wrapper?.unmount()
 		document.body.innerHTML = ''
 
-		expect(autoFit()).toBe(true)
+		expect(await matchWidth()).toBe(true)
 	})
 
 	/**

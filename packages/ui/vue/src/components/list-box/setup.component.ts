@@ -7,6 +7,7 @@ import {
 } from '@soldy-ui/setup'
 import {
 	useAdapter,
+	useExpose,
 	useCollectionAdapter,
 	VueElevatorFactory,
 	createVueAdapterContext,
@@ -17,6 +18,7 @@ import BaseListBox, { type ListBoxProps } from './base.component'
 export default {
 	name: '_ListBox',
 	extends: BaseListBox,
+	expose: useExpose(),
 	setup(props: ListBoxProps, { emit }: SetupContext) {
 		const adapter = createVueAdapterContext(ListBoxDescriptor(), {
 			ctrl: props.ctrl,

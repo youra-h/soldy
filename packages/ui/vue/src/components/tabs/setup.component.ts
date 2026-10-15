@@ -6,6 +6,7 @@ import {
 } from '@soldy-ui/setup'
 import {
 	useAdapter,
+	useExpose,
 	useCollectionAdapter,
 	VueElevatorFactory,
 	createVueAdapterContext,
@@ -16,6 +17,7 @@ import BaseTabs, { type TabsProps } from './base.component'
 export default {
 	name: '_Tabs',
 	extends: BaseTabs,
+	expose: useExpose(),
 	setup(props: TabsProps, { emit }: SetupContext) {
 		const adapter = createVueAdapterContext(TabsDescriptor(), {
 			ctrl: props.ctrl,

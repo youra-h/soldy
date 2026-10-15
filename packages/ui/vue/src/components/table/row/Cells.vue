@@ -1,5 +1,6 @@
 <script lang="ts">
 import type { ITableRow, TAriaAttributes, TTableCell } from '@soldy-ui/core'
+import { useExpose } from '../../../adapter'
 
 /** Входы ячеек — то, что строка уже получила, и сама строка для scope слота. */
 interface ITableRowCellsProps {
@@ -64,6 +65,7 @@ const BaseTableRowCells = {
 export default {
 	name: '_TableRowCells',
 	extends: BaseTableRowCells,
+	expose: useExpose(),
 	/** Своего у ячеек нет: шаблон читает входы как есть, `setup` даёт им тип. */
 	setup(_props: ITableRowCellsProps): void {},
 }
