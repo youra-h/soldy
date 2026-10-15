@@ -89,7 +89,7 @@ describe('Icon · размер из разметки', () => {
 		const el = findIn(mountHost(NameHost), '[so-icon]', HTMLElement)
 
 		expect(el.hasAttribute('style')).toBe(false)
-		expect(el.classList.contains('s-icon--size-normal')).toBe(true)
+		expect(el.classList.contains('so-icon--size-normal')).toBe(true)
 	})
 
 	it('смена размера доходит до style, снятый размер его убирает', () => {
@@ -161,7 +161,7 @@ describe('Icon · иконка по роли', () => {
 		const svg = findIn(mountHost(RoleIconHost), 'svg', SVGSVGElement)
 		const source = getIcon('arrowDown')
 
-		expect(svg.getAttribute('class')).toBe('s-icon s-icon--size-normal')
+		expect(svg.getAttribute('class')).toBe('so-icon so-icon--size-normal')
 		expect(svg.getAttribute('aria-hidden')).toBe('true')
 		expect(svg.style.width).toBe('20px')
 		expect(svg.getAttribute('viewBox')).toBe(source.viewBox)
@@ -234,6 +234,6 @@ describe('Icon · элемент, созданный самим Angular', () => 
 		const el: HTMLElement = fixture.nativeElement
 
 		expect(el.localName).toBe('span')
-		expect(el.classList.contains('s-icon')).toBe(true)
+		expect(el.classList.contains('so-icon')).toBe(true)
 	})
 })

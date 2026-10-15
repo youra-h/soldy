@@ -26,7 +26,7 @@ const SortIcon = roleIcon('arrowUpward')
  * а клавиши и фокус ячеек ведёт плагин сетки на корне. Имя таблице —
  * `aria_label` или `aria_labelledBy`.
  *
- * Окно таблицы — разметка `div.s-table__viewport` вокруг корня: в окне
+ * Окно таблицы — разметка `div.so-table__viewport` вокруг корня: в окне
  * таблица прокручивается вбок, когда колонки шире места, — прокрутку включает
  * тема по `data-overflow` таблицы. Окно — внешний узел компонента, и
  * атрибуты потребителя, его `ref` и скрытие достаются ему, а классы, наборы и
@@ -106,7 +106,7 @@ export function Table(props: TableProps): ReactElement | null {
 		state,
 		[attrs, aria, dataset],
 		forwardProps,
-		's-table__viewport',
+		'so-table__viewport',
 	)
 	const { selectAll } = facade
 
@@ -114,10 +114,10 @@ export function Table(props: TableProps): ReactElement | null {
 		<div {...wrapper}>
 			<Tag {...root}>
 				<Elevate layer={layer}>
-					<thead className="s-table__head">
-						<tr className="s-table__head-row" {...toAriaProps(headRowAria)}>
+					<thead className="so-table__head">
+						<tr className="so-table__head-row" {...toAriaProps(headRowAria)}>
 							{mode === 'multiple' ? (
-								<th className="s-table__select" {...toAriaProps(cellAria)}>
+								<th className="so-table__select" {...toAriaProps(cellAria)}>
 									<CheckBox
 										key={selectAll.uid}
 										embedded="table.select-all"
@@ -126,7 +126,7 @@ export function Table(props: TableProps): ReactElement | null {
 									/>
 								</th>
 							) : mode === 'single' ? (
-								<td className="s-table__select" {...toAriaProps(cellAria)} />
+								<td className="so-table__select" {...toAriaProps(cellAria)} />
 							) : null}
 							{shownColumns?.map((column) => (
 								<TableColumn key={column.uid} ctrl={column}>
@@ -138,7 +138,7 @@ export function Table(props: TableProps): ReactElement | null {
 										return sortable ? (
 											<Button
 												embedded="table.sort"
-												className="s-table-column__sort"
+												className="so-table-column__sort"
 												size={size}
 												disabled={disabled}
 												onActionPress={() =>
@@ -146,7 +146,7 @@ export function Table(props: TableProps): ReactElement | null {
 												}
 												trailing={
 													<span
-														className="s-table-column__sort-icon"
+														className="so-table-column__sort-icon"
 														aria-hidden="true"
 													>
 														<Icon
@@ -160,31 +160,31 @@ export function Table(props: TableProps): ReactElement | null {
 												{caption}
 											</Button>
 										) : (
-											<span className="s-table-column__text">{caption}</span>
+											<span className="so-table-column__text">{caption}</span>
 										)
 									}}
 								</TableColumn>
 							))}
 						</tr>
 					</thead>
-					<tbody className="s-table__body">
+					<tbody className="so-table__body">
 						{drawn?.map((entry) =>
 							entry.kind === 'filler' ? (
 								<tr
 									key={entry.key}
-									className="s-table__filler-row"
+									className="so-table__filler-row"
 									aria-hidden="true"
 									style={toReactStyle(entry.style)}
 								>
-									<td className="s-table__filler" colSpan={columnCount} />
+									<td className="so-table__filler" colSpan={columnCount} />
 								</tr>
 							) : (
 								<TableRow key={entry.key} ctrl={entry.item} cell={props.cell} />
 							),
 						)}
 						{shown?.length === 0 ? (
-							<tr className="s-table__empty-row">
-								<td className="s-table__empty" colSpan={columnCount}>
+							<tr className="so-table__empty-row">
+								<td className="so-table__empty" colSpan={columnCount}>
 									{renderSlot(props.empty)}
 								</td>
 							</tr>

@@ -61,7 +61,7 @@ const CHECKABLES = [
 	[
 		'CheckBox',
 		{
-			decor: '.s-check-box__container',
+			decor: '.so-check-box__container',
 			render: (props: TCheckableProps = {}) => <CheckBox {...props} />,
 			withCtrl: (readonly = false) => {
 				const ctrl = new TCheckBox({ readonly })
@@ -73,7 +73,7 @@ const CHECKABLES = [
 	[
 		'Switch',
 		{
-			decor: '.s-switch__track',
+			decor: '.so-switch__track',
 			render: (props: TCheckableProps = {}) => <Switch {...props} />,
 			withCtrl: (readonly = false) => {
 				const ctrl = new TSwitch({ readonly })
@@ -296,14 +296,14 @@ function bodyOf(source: TIconSource): string {
 
 describe('CheckBox · отметка', () => {
 	/** Отметка — в коробке: иконка или содержимое слота. */
-	const mark = (root: HTMLElement) => find(root, '.s-check-box__container', HTMLElement)
+	const mark = (root: HTMLElement) => find(root, '.so-check-box__container', HTMLElement)
 
 	it('выбранный — иконка из пакета по роли check', () => {
 		const svg = find(mark(mount(<CheckBox value />).root()), 'svg', SVGSVGElement)
 
 		expect(svg.getAttribute('viewBox')).toBe(material.check.viewBox)
 		expect(svg.innerHTML).toBe(bodyOf(material.check))
-		expect(svg.classList.contains('s-check-box__mark')).toBe(true)
+		expect(svg.classList.contains('so-check-box__mark')).toBe(true)
 	})
 
 	it('частично выбранный — иконка по роли checkIndeterminate, и поверх значения', () => {
@@ -319,7 +319,7 @@ describe('CheckBox · отметка', () => {
 	/**
 	 * Отметка — `svg` роли, а не компонент Icon: тот собирал бы свой контекст и
 	 * плагины на каждую смену отметки, в таблице — тысячами. У Icon корень
-	 * всегда с классом `s-icon`, у отметки его нет; размер ей даёт тема флажка.
+	 * всегда с классом `so-icon`, у отметки его нет; размер ей даёт тема флажка.
 	 */
 	it('отметка — не компонент Icon, и на смену отметки Icon не собирается', () => {
 		const { root, render } = mount(<CheckBox value />)
@@ -330,8 +330,8 @@ describe('CheckBox · отметка', () => {
 
 		const svg = find(mark(root()), 'svg', SVGSVGElement)
 
-		expect(svg.classList.contains('s-check-box__mark')).toBe(true)
-		expect(root().querySelector('.s-icon')).toBeNull()
+		expect(svg.classList.contains('so-check-box__mark')).toBe(true)
+		expect(root().querySelector('.so-icon')).toBeNull()
 	})
 
 	/**
@@ -399,7 +399,7 @@ describe('CheckBox · отметка', () => {
 
 describe('Switch · роль и ручка', () => {
 	/** Содержимое ручки. */
-	const thumb = (root: HTMLElement) => find(root, '.s-switch__track--thumb', HTMLElement)
+	const thumb = (root: HTMLElement) => find(root, '.so-switch__track--thumb', HTMLElement)
 
 	it('role="switch" на <input>, а не на корне', () => {
 		const el = mount(<Switch />).root()

@@ -84,7 +84,7 @@ describe('набор владельца на корне вложенного к�
 		expect(el.getAttribute('tabindex')).toBe('-1')
 		// Своё у кнопки остаётся рядом
 		expect(el.getAttribute('data-disabled')).toBe('false')
-		expect(el.classList.contains('s-button')).toBe(true)
+		expect(el.classList.contains('so-button')).toBe(true)
 	})
 
 	/**

@@ -37,7 +37,7 @@ export default { ...SetupDialog, inheritAttrs: false, components: { Button, Icon
 				нет — для своего окна она мимо.
 			-->
 			<div
-				class="s-dialog__backdrop"
+				class="so-dialog__backdrop"
 				v-show="visible"
 				:style="layout_backdropStyles"
 				v-bind="backdropDataset"
@@ -45,7 +45,7 @@ export default { ...SetupDialog, inheritAttrs: false, components: { Button, Icon
 
 			<!--
 				Корень — сама панель: на ней слой (`data-layer`), пометка
-				владельцем, место (`s-dialog--placement-*`), размер
+				владельцем, место (`so-dialog--placement-*`), размер
 				(`--dialog-width`, `--dialog-height`), `data-open` и
 				`data-maximized`.
 				Без пометки плагины не нашли бы слой окна, и нажатие в список
@@ -74,18 +74,18 @@ export default { ...SetupDialog, inheritAttrs: false, components: { Button, Icon
 					`titleAria`. Вокруг слота нет пробелов: пустой заголовок
 					тема сворачивает по `:empty`.
 				-->
-				<h2 class="s-dialog__title" v-bind="titleAria"><slot name="title" /></h2>
+				<h2 class="so-dialog__title" v-bind="titleAria"><slot name="title" /></h2>
 
 				<!--
 					Тело — прокручивается оно, шапка и подвал остаются на месте.
 					`id` — для `aria-describedby` предупреждения.
 				-->
-				<div class="s-dialog__body" v-bind="bodyAria">
+				<div class="so-dialog__body" v-bind="bodyAria">
 					<slot />
 				</div>
 
 				<!-- Подвал — ряд действий. Пустой тема сворачивает по `:empty` -->
-				<div class="s-dialog__footer"><slot name="footer" /></div>
+				<div class="so-dialog__footer"><slot name="footer" /></div>
 
 				<!--
 					Кнопка разворота — переключатель: имя одно, состояние в
@@ -99,7 +99,7 @@ export default { ...SetupDialog, inheritAttrs: false, components: { Button, Icon
 				-->
 				<Button
 					embedded="dialog.maximize"
-					class="s-dialog__maximize"
+					class="so-dialog__maximize"
 					:rendered="maximizable"
 					@click="dialog.toggleMaximized()"
 					v-bind="maximizeAria"
@@ -119,7 +119,7 @@ export default { ...SetupDialog, inheritAttrs: false, components: { Button, Icon
 				-->
 				<Button
 					embedded="dialog.close"
-					class="s-dialog__close"
+					class="so-dialog__close"
 					:rendered="closable"
 					@click="dialog.requestClose('button')"
 					v-bind="closeAria"

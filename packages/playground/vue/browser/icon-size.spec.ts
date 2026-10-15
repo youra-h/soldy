@@ -39,7 +39,7 @@ const harness = (sizes: readonly (typeof COMPONENT_SIZES)[number][]) =>
 
 /** Бокс иконки размера; нет её — тест падает здесь, а не на чтении свойства. */
 const iconBox = (size: string) => {
-	const icon = document.querySelector(`svg.s-icon--size-${size}`)
+	const icon = document.querySelector(`svg.so-icon--size-${size}`)
 
 	if (!icon) throw new Error(`иконки размера ${size} нет`)
 

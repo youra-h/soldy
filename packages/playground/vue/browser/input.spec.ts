@@ -31,7 +31,7 @@ import '@soldy-ui/theme-oren'
 const nextFrame = () => new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
 
 /** Место, куда уводится указатель: он остаётся там, где его бросил прошлый тест. */
-const AWAY = '.s-test-away'
+const AWAY = '.so-test-away'
 
 /** Допуск на субпиксельное округление координат. */
 const EPSILON = 0.5
@@ -60,7 +60,7 @@ async function show(content: () => VNode, dir: 'ltr' | 'rtl' = 'ltr'): Promise<v
 		defineComponent({
 			render: () =>
 				h('div', { dir, style: 'padding: 16px' }, [
-					h('div', { class: 's-test-away', style: 'height: 24px' }),
+					h('div', { class: 'so-test-away', style: 'height: 24px' }),
 					content(),
 				]),
 		}),
@@ -72,7 +72,7 @@ async function show(content: () => VNode, dir: 'ltr' | 'rtl' = 'ltr'): Promise<v
 }
 
 /** Цвет рамки поля. */
-const border = (): string => style(find('.s-input')).borderTopColor
+const border = (): string => style(find('.so-input')).borderTopColor
 
 beforeEach(() => {
 	document.documentElement.dataset.theme = 'oren'
@@ -92,7 +92,7 @@ describe.each(COLORS)('$name: рамка под курсором', ({ variant })
 
 		const rest = border()
 
-		await hover('.s-input')
+		await hover('.so-input')
 
 		expect(border()).not.toBe(rest)
 	})
@@ -103,7 +103,7 @@ describe.each(COLORS)('$name: рамка под курсором', ({ variant })
 
 		const rest = border()
 
-		await hover('.s-input')
+		await hover('.so-input')
 
 		expect(border()).toBe(rest)
 	})
@@ -116,8 +116,8 @@ describe('стороны слотов', () => {
 			Input,
 			{},
 			{
-				leading: () => h('span', { class: 's-test-leading' }, 'A'),
-				trailing: () => h('span', { class: 's-test-trailing' }, 'B'),
+				leading: () => h('span', { class: 'so-test-leading' }, 'A'),
+				trailing: () => h('span', { class: 'so-test-trailing' }, 'B'),
 			},
 		)
 
@@ -127,9 +127,9 @@ describe('стороны слотов', () => {
 	 * внешний край рамки поля.
 	 */
 	const insets = (dir: 'ltr' | 'rtl'): { start: number; end: number } => {
-		const box = find('.s-input').getBoundingClientRect()
-		const leading = find('.s-test-leading').getBoundingClientRect()
-		const trailing = find('.s-test-trailing').getBoundingClientRect()
+		const box = find('.so-input').getBoundingClientRect()
+		const leading = find('.so-test-leading').getBoundingClientRect()
+		const trailing = find('.so-test-trailing').getBoundingClientRect()
 
 		return dir === 'ltr'
 			? { start: leading.left - box.left, end: box.right - trailing.right }
@@ -154,9 +154,9 @@ describe('стороны слотов', () => {
 
 		// Слоты в RTL — у своих краёв: `leading` справа, `trailing` слева
 		expect(
-			find('.s-test-leading').getBoundingClientRect().left,
+			find('.so-test-leading').getBoundingClientRect().left,
 			'leading правее trailing',
-		).toBeGreaterThan(find('.s-test-trailing').getBoundingClientRect().right)
+		).toBeGreaterThan(find('.so-test-trailing').getBoundingClientRect().right)
 
 		expect(Math.abs(rtl.start - ltr.start), 'отступ leading').toBeLessThanOrEqual(EPSILON)
 		expect(Math.abs(rtl.end - ltr.end), 'отступ trailing').toBeLessThanOrEqual(EPSILON)
@@ -172,6 +172,6 @@ describe.each(COMPONENT_SIZES)('размер %s: кнопка очистки', (
 	it('квадрат высотой в строку слота, иконка внутри', async () => {
 		await show(() => h(Input, { clearable: true, size }))
 
-		expectClearSquare(find('.s-input__clear'), find('.s-input__trailing'), size)
+		expectClearSquare(find('.so-input__clear'), find('.so-input__trailing'), size)
 	})
 })

@@ -60,7 +60,7 @@ export const TableRowCells = withRenderBoundary(function TableRowCells({
 				return (
 					<Cell
 						key={cell.column.uid}
-						className="s-table-row__cell"
+						className="so-table-row__cell"
 						scope={cell.rowHeader ? 'row' : undefined}
 						{...toAriaProps(cell.dataset)}
 						{...toAriaProps(cellAria)}

@@ -18,7 +18,7 @@ export default { ...SetupRadioGroup, components: { RadioGroupItem } }
 			Контейнер группы. Набор `aria` владельца — здесь: `role="radiogroup"`
 			пишет ядро, имя из `aria_label` / `aria_labelledBy` — TAriaPlugin.
 
-			В теме oren стилей у `.s-radio-group` нет (решение владельца): радио
+			В теме oren стилей у `.so-radio-group` нет (решение владельца): радио
 			одной группы стоят где угодно внутри контейнера — в строках списка, в
 			ячейках таблицы, — и раскладку задаёт потребитель.
 		-->

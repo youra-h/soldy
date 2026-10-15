@@ -37,7 +37,7 @@ import type { ITagsProps, TTagsEvents, ITags, TTagsValue, TTagsView, TTagsOverfl
  * ядру тут знать нечего.
  */
 export class TTags extends TValueControl<TTagsValue, ITagsProps, TTagsEvents> implements ITags {
-	static override baseClass = 's-tags'
+	static override baseClass = 'so-tags'
 
 	static defaultValues: typeof TValueControl.defaultValues &
 		TDefaultValues<ITagsProps, 'closable' | 'overflow', 'view'> = {

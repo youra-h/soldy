@@ -25,7 +25,7 @@ import type { TDragPluginEvents } from './types'
  */
 export class TDragPlugin extends TBasePlugin<any, TDragPluginEvents> {
 	/** CSS-класс визуального состояния перетаскиваемого элемента. */
-	private static readonly DRAGGING_CLASS = 's-drag-and-drop__item'
+	private static readonly DRAGGING_CLASS = 'so-drag-and-drop__item'
 
 	/** Флаг: плагин активирован и ожидает/обрабатывает перетаскивание. */
 	private _active = false

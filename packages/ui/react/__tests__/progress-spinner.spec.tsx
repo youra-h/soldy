@@ -25,8 +25,8 @@ describe('первая отрисовка', () => {
 
 		expect(node.localName).toBe('span')
 		expect([...node.classList]).toEqual([
-			's-progress-spinner',
-			's-progress-spinner--size-normal',
+			'so-progress-spinner',
+			'so-progress-spinner--size-normal',
 		])
 		expect(node.getAttribute('role')).toBe('progressbar')
 		expect(node.getAttribute('aria-valuemin')).toBe('0')
@@ -64,9 +64,9 @@ describe('первая отрисовка', () => {
 		const node = mount(<ProgressSpinner size="lg" variant="brand" />).root()
 
 		expect([...node.classList]).toEqual([
-			's-progress-spinner',
-			's-progress-spinner--size-lg',
-			's-progress-spinner--variant-brand',
+			'so-progress-spinner',
+			'so-progress-spinner--size-lg',
+			'so-progress-spinner--variant-brand',
 		])
 	})
 
@@ -83,13 +83,13 @@ describe('первая отрисовка', () => {
 		const [ring] = children
 
 		expect(ring.localName).toBe('svg')
-		expect(ring.getAttribute('class')).toBe('s-progress-spinner__ring')
+		expect(ring.getAttribute('class')).toBe('so-progress-spinner__ring')
 		expect(ring.getAttribute('aria-hidden')).toBe('true')
 		expect(ring.getAttributeNames().sort()).toEqual(['aria-hidden', 'class', 'viewBox'])
 		expect([...ring.children].map((circle) => circle.getAttribute('class'))).toEqual([
-			's-progress-spinner__track',
-			's-progress-spinner__range',
-			's-progress-spinner__runner',
+			'so-progress-spinner__track',
+			'so-progress-spinner__range',
+			'so-progress-spinner__runner',
 		])
 		// Геометрия статична: доля уходит в штрих из переменной корня, а не
 		// привязкой на дуге

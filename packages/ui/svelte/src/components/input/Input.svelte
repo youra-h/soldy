@@ -63,7 +63,7 @@
 	рисуется, когда задана.
 
 	У кнопки нет `view`: значения вида объявляет тема, и разметка библиотеки их
-	не знает. Кнопку тема красит по контексту (`.s-input__clear`).
+	не знает. Кнопку тема красит по контексту (`.so-input__clear`).
 -->
 {#if state.rendered}
 	<Dynamic
@@ -72,7 +72,7 @@
 		attach={binding.attachElement}
 	>
 		{#if props.leading}
-			<div class="s-input__leading">{@render props.leading({ ctrl })}</div>
+			<div class="so-input__leading">{@render props.leading({ ctrl })}</div>
 		{/if}
 		<input
 			type="text"
@@ -91,13 +91,13 @@
 				Кнопка очистки и `trailing` стоят вплотную: пробел между блоками
 				Svelte оставил бы в обёртке текстом.
 			-->
-			<div class="s-input__trailing">
+			<div class="so-input__trailing">
 				{#if props.clear}
 					{@render props.clear({ clear: ctrl.clear })}
 				{:else if state.clearable}
 					<Button
 						embedded="input.clear"
-						class="s-input__clear"
+						class="so-input__clear"
 						size={state.size}
 						disabled={state.disabled}
 						{...state.clearAria}

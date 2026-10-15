@@ -6,7 +6,7 @@ import type { IDomEventTarget } from '../../../utils'
 import type { TSelectPointerPluginEvents } from './types'
 
 /** Класс стрелки — единственное место клика, которое открывает/закрывает панель в `editable`. */
-const ARROW_SELECTOR = '.s-select__arrow'
+const ARROW_SELECTOR = '.so-select__arrow'
 
 /**
  * TSelectPointerPlugin — клик по полю Select.
@@ -17,7 +17,7 @@ const ARROW_SELECTOR = '.s-select__arrow'
  * - **select-only** — клик по всему полю тумблит панель
  *   (`ISelect.toggleOpen()`), как и было в разметке раньше.
  * - **editable** — клик по тексту поля ставит курсор и ничего не открывает;
- *   тумблит панель только клик по стрелке (`.s-select__arrow`). `mousedown`
+ *   тумблит панель только клик по стрелке (`.so-select__arrow`). `mousedown`
  *   по стрелке гасится (`preventDefault`), чтобы не увести фокус с `<input>`,
  *   куда его в этом режиме печатает пользователь.
  *

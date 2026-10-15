@@ -154,7 +154,7 @@ describe('меню', () => {
 		// ней (`@click="context?.adapters.list.choose()"` в ListBoxItem.vue).
 		// Визуально кнопка занимает строку целиком, поэтому для пользователя это
 		// одно и то же место.
-		const items = wrapper.findAll('.s-list-box-item .s-button')
+		const items = wrapper.findAll('.so-list-box-item .so-button')
 
 		await items[index].trigger('click')
 		// router.push резолвится не в этом тике — без ожидания проверка успевала
@@ -172,7 +172,7 @@ describe('меню', () => {
 			const wrapper = await mountSidebar()
 			const host = hostOf(framework)
 
-			expect(wrapper.findAll('.s-list-box-item')).toHaveLength(
+			expect(wrapper.findAll('.so-list-box-item')).toHaveLength(
 				showcaseOf(host).length + layersOf(host).length,
 			)
 

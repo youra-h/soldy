@@ -25,7 +25,7 @@ export function Skeleton(props: SkeletonProps): ReactElement {
 	// (`toRootProps`). Видимость в раскладку корня не идёт: она прячет заглушку
 	return (
 		<Tag {...toRootProps(ref, { classes, layout_styles }, [attrs, aria], forwardProps)}>
-			{present ? <div className="s-skeleton__placeholder" aria-hidden="true" /> : null}
+			{present ? <div className="so-skeleton__placeholder" aria-hidden="true" /> : null}
 			{renderSlot(props.children)}
 		</Tag>
 	)

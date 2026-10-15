@@ -64,8 +64,8 @@ async function mountCalendar(props: Partial<ICalendarProps> = {}, mode?: TCalend
 	const next = document.createElement('button')
 	const cells = document.createElement('div')
 
-	prev.className = 's-calendar__prev'
-	next.className = 's-calendar__next'
+	prev.className = 'so-calendar__prev'
+	next.className = 'so-calendar__next'
 	root.append(prev, next, cells)
 	document.body.appendChild(root)
 
@@ -448,11 +448,11 @@ describe('стрелки панели выбора месяца и года', ()
 		const title = document.createElement('button')
 		const next = document.createElement('button')
 
-		panel.className = 's-calendar__picker'
-		list.className = 's-calendar__picker-list'
+		panel.className = 'so-calendar__picker'
+		list.className = 'so-calendar__picker-list'
 		list.tabIndex = 0
-		prev.className = 's-calendar__picker-prev'
-		next.className = 's-calendar__picker-next'
+		prev.className = 'so-calendar__picker-prev'
+		next.className = 'so-calendar__picker-next'
 		title.id = heading
 		header.append(prev, title, next)
 		panel.append(list, header)

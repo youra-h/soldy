@@ -20,7 +20,7 @@ export default { ...SetupInput, components: { Button, Icon } }
 			корня, и по нему же ядро решает, есть ли у корня нативный
 			`disabled`.
 		-->
-		<div v-if="$slots.leading" class="s-input__leading">
+		<div v-if="$slots.leading" class="so-input__leading">
 			<slot name="leading" :ctrl="ctrl"> </slot>
 		</div>
 		<input
@@ -39,7 +39,7 @@ export default { ...SetupInput, components: { Button, Icon } }
 			`clear` или по слоту `trailing`. Кнопка очистки стоит в ней первой,
 			перед содержимым `trailing`.
 		-->
-		<div v-if="clearable || $slots.clear || $slots.trailing" class="s-input__trailing">
+		<div v-if="clearable || $slots.clear || $slots.trailing" class="so-input__trailing">
 			<!--
 				Кнопка очистки — по `clearable`, выключена вместе с полем.
 				`readonly` её не гасит: select-only Select и есть `readonly`, а
@@ -53,13 +53,13 @@ export default { ...SetupInput, components: { Button, Icon } }
 
 				У кнопки нет `view`: значения вида объявляет тема, и разметка
 				библиотеки их не знает. Кнопку тема красит по контексту
-				(`.s-input__clear`).
+				(`.so-input__clear`).
 			-->
 			<slot name="clear" :clear="ctrl.clear">
 				<Button
 					embedded="input.clear"
 					v-if="clearable"
-					class="s-input__clear"
+					class="so-input__clear"
 					:size="size"
 					:disabled="disabled"
 					@click.stop="ctrl.clear()"

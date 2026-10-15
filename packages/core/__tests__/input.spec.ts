@@ -7,7 +7,7 @@ describe('TInput', () => {
 		expect(a.value).toBe('hello')
 		expect(a.readonly).toBe(true)
 		expect(a.required).toBe(true)
-		expect(a.classes.toArray()).toContain('s-input')
+		expect(a.classes.toArray()).toContain('so-input')
 
 		const b = new TInput({ value: 'world', readonly: false })
 		expect(b.value).toBe('world')
@@ -17,19 +17,19 @@ describe('TInput', () => {
 	it('baseClass и модификаторы классов', () => {
 		const input = new TInput()
 
-		expect(input.classes.toArray()).toContain('s-input')
+		expect(input.classes.toArray()).toContain('so-input')
 
 		input.variant = 'brand'
-		expect(input.classes.toArray()).toContain('s-input--variant-brand')
+		expect(input.classes.toArray()).toContain('so-input--variant-brand')
 
 		input.size = 'lg'
-		expect(input.classes.toArray()).toContain('s-input--size-lg')
+		expect(input.classes.toArray()).toContain('so-input--size-lg')
 
 		input.readonly = true
-		expect(input.classes.toArray()).toContain('s-input--readonly')
+		expect(input.classes.toArray()).toContain('so-input--readonly')
 
 		input.required = true
-		expect(input.classes.toArray()).toContain('s-input--required')
+		expect(input.classes.toArray()).toContain('so-input--required')
 	})
 
 	it('value setter эмитит change:value и input:value', () => {
@@ -142,12 +142,12 @@ describe('TInput · очистка', () => {
 		const handler = vi.fn()
 
 		expect(input.clearable).toBe(false)
-		expect(input.classes.toArray()).not.toContain('s-input--clearable')
+		expect(input.classes.toArray()).not.toContain('so-input--clearable')
 
 		input.events.on('change:clearable', handler)
 		input.clearable = true
 
-		expect(input.classes.toArray()).toContain('s-input--clearable')
+		expect(input.classes.toArray()).toContain('so-input--clearable')
 		expect(handler).toHaveBeenCalledWith(true)
 
 		input.clearable = true

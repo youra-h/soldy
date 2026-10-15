@@ -51,8 +51,8 @@ async function mount(props: Partial<ISliderProps> = {}, dir: 'ltr' | 'rtl' = 'lt
 	const track = document.createElement('span')
 
 	root.dir = dir
-	root.className = 's-slider'
-	track.className = 's-slider__track'
+	root.className = 'so-slider'
+	track.className = 'so-slider__track'
 	root.append(track)
 
 	const fields = owner.thumbs.map((thumb) => {
@@ -60,7 +60,7 @@ async function mount(props: Partial<ISliderProps> = {}, dir: 'ltr' | 'rtl' = 'lt
 		const field = document.createElement('input')
 		const slot = document.createElement('button')
 
-		node.className = 's-slider__thumb'
+		node.className = 'so-slider__thumb'
 		field.type = 'range'
 		field.min = String(thumb.min)
 		field.max = String(thumb.max)

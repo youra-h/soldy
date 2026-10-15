@@ -15,7 +15,7 @@
 // `scroll-behavior` здесь не объявляется намеренно: плавность — свойство
 // компонента, его задаёт ядро и применяет плагин, и правило темы с ним бы
 // спорило.
-.s-scroller {
+.so-scroller {
 	$this: &;
 
 	// Ширина подсказки у края — сколько содержимого растворяется, когда в ту
@@ -99,7 +99,7 @@
 //
 // Приём не новый: кольцо таба точно так же рисует обёртка, а фокус живёт на
 // строке внутри неё (`tabs/_tabs.scss`).
-.s-scroller:has(> .s-scroller__viewport:focus-visible) {
+.so-scroller:has(> .so-scroller__viewport:focus-visible) {
 	@apply outline-2 outline-offset-2 outline-s-component;
 }
 
@@ -113,16 +113,16 @@
 //
 // Ширина остаётся размерной: горизонтальный паддинг приходит с классом
 // `--size-*` самой кнопки.
-.s-scroller__prev,
-.s-scroller__next {
+.so-scroller__prev,
+.so-scroller__next {
 	@apply shrink-0 self-stretch h-auto;
 }
 
 // Вид кнопок — `plain` по контексту: значения вида разметка не передаёт (их
 // объявляет тема), а стрелка не должна спорить с содержимым ленты. Нулевая
 // специфичность, как у базового вида Button.
-:where(.s-scroller__prev),
-:where(.s-scroller__next) {
+:where(.so-scroller__prev),
+:where(.so-scroller__next) {
 	@include button.button-view('plain');
 }
 
@@ -135,16 +135,16 @@
 // есть ближайшего `dir`. Селектор по атрибуту у предка ближайшего не видит, и
 // лента с `direction="ltr"` в RTL-предке получала бы зеркало RTL. Раскладке
 // ряда знак не нужен — она логическая и считается по направленности сама.
-.s-scroller__prev .s-icon {
+.so-scroller__prev .so-icon {
 	transform: scaleX(calc(-1 * var(--s-dir-sign)));
 }
 
-.s-scroller__next .s-icon {
+.so-scroller__next .so-icon {
 	transform: scaleX(var(--s-dir-sign));
 }
 
 // Вьюпорт — прокручиваемый контейнер и строка содержимого сразу.
-.s-scroller__viewport {
+.so-scroller__viewport {
 	// Строка: содержимое стоит в линию и не сжимается. Ширина элемента —
 	// натуральная, иначе флексбокс ужал бы ряд по месту, и листать стало бы
 	// нечего (тот же приём, что у ряда тегов `scroll`).

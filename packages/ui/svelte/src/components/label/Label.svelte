@@ -41,8 +41,8 @@
 		)}
 		attach={binding.attachElement}
 	>
-		<span class="s-label__control">{@render props.children?.()}</span><span
-			class="s-label__text"
+		<span class="so-label__control">{@render props.children?.()}</span><span
+			class="so-label__text"
 		>
 			{#if props.content}
 				{@render props.content()}

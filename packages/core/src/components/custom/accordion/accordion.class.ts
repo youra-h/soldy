@@ -8,7 +8,7 @@ import type { IAccordion, IAccordionProps, TAccordionEvents, TAccordionView } fr
  * или через TCollectionExtension в adapter-слое.
  */
 export class TAccordion extends TControl<IAccordionProps, TAccordionEvents> implements IAccordion {
-	static override baseClass = 's-accordion'
+	static override baseClass = 'so-accordion'
 
 	static defaultValues: typeof TControl.defaultValues &
 		TDefaultValues<IAccordionProps, never, 'view'> = {

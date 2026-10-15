@@ -31,7 +31,7 @@ export default class TTagsItem<
 	extends TValueControl<string | number, TProps, TEvents>
 	implements ITagsItem<TProps, TEvents>
 {
-	static override baseClass = 's-tags-item'
+	static override baseClass = 'so-tags-item'
 
 	static defaultValues: typeof TValueControl.defaultValues &
 		TDefaultValues<ITagsItemProps, 'text', 'closable'> = {

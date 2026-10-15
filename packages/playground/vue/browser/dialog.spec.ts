@@ -56,8 +56,8 @@ const nextFrame = () => new Promise<void>((resolve) => requestAnimationFrame(() 
 
 /** Содержимое с двумя остановками Tab. */
 const inside = (): VNode[] => [
-	h('button', { class: 's-test-first' }, 'Первая'),
-	h('button', { class: 's-test-second' }, 'Вторая'),
+	h('button', { class: 'so-test-first' }, 'Первая'),
+	h('button', { class: 'so-test-second' }, 'Вторая'),
 ]
 
 type TPageOptions = {
@@ -84,7 +84,7 @@ const show = async (
 					h(
 						'button',
 						{
-							class: 's-test-opener',
+							class: 'so-test-opener',
 							onClick: () => {
 								shown.value = true
 							},
@@ -103,7 +103,7 @@ const show = async (
 						{
 							title: () => 'Настройки',
 							default: content,
-							footer: () => h(Button, { text: 'Готово', class: 's-test-ok' }),
+							footer: () => h(Button, { text: 'Готово', class: 'so-test-ok' }),
 						},
 					),
 				]),
@@ -126,16 +126,16 @@ const find = (selector: string): HTMLElement => {
 	return element
 }
 
-const panel = () => find('.s-dialog')
-const backdrop = () => find('.s-dialog__backdrop')
-const opener = () => find('.s-test-opener')
+const panel = () => find('.so-dialog')
+const backdrop = () => find('.so-dialog__backdrop')
+const opener = () => find('.so-test-opener')
 const isOpen = () => getComputedStyle(panel()).display !== 'none'
 const active = () => document.activeElement
 
 /** Открыть кнопкой страницы и дождаться, пока фокус уйдёт в окно. */
 const open = async () => {
 	await userEvent.click(opener())
-	await expect.poll(active).toBe(find('.s-test-first'))
+	await expect.poll(active).toBe(find('.so-test-first'))
 }
 
 /**
@@ -267,13 +267,13 @@ describe('размер', () => {
 		await show({ maximizable: true })
 		await open()
 
-		await userEvent.click(find('.s-dialog__maximize'))
+		await userEvent.click(find('.so-dialog__maximize'))
 
 		await expect
 			.poll(() => Math.round(panel().getBoundingClientRect().width))
 			.toBe(viewport().width)
 
-		await userEvent.click(find('.s-dialog__maximize'))
+		await userEvent.click(find('.so-dialog__maximize'))
 
 		await expect
 			.poll(() => Math.round(panel().getBoundingClientRect().width))
@@ -285,9 +285,9 @@ describe('размер', () => {
 		await open()
 
 		const box = panel().getBoundingClientRect()
-		const body = find('.s-dialog__body')
-		const title = find('.s-dialog__title').getBoundingClientRect()
-		const footer = find('.s-dialog__footer').getBoundingClientRect()
+		const body = find('.so-dialog__body')
+		const title = find('.so-dialog__title').getBoundingClientRect()
+		const footer = find('.so-dialog__footer').getBoundingClientRect()
 
 		expect(Math.abs(box.height - (viewport().height - 2 * GAP))).toBeLessThan(EPSILON)
 		expect(body.scrollHeight).toBeGreaterThan(body.clientHeight)
@@ -450,7 +450,7 @@ describe('появление и исчезание', () => {
 		expect(transitioning(panel())).toContain('opacity')
 		expect(transitioning(backdrop())).toContain('opacity')
 
-		await expect.poll(active).toBe(find('.s-test-first'))
+		await expect.poll(active).toBe(find('.so-test-first'))
 		await settled(panel())
 		await settled(backdrop())
 		await escapeInPage()
@@ -477,10 +477,10 @@ describe('появление и исчезание', () => {
 		expect(moving(panel())).toEqual(['opacity'])
 		expect(moving(backdrop())).toEqual(['opacity'])
 
-		await expect.poll(active).toBe(find('.s-test-first'))
+		await expect.poll(active).toBe(find('.so-test-first'))
 		await settled(panel())
 
-		find('.s-dialog__maximize').click()
+		find('.so-dialog__maximize').click()
 		await nextTick()
 
 		expect(panel().dataset.maximized).toBe('true')
@@ -499,7 +499,7 @@ describe('появление и исчезание', () => {
 
 		const entering = timings()
 
-		await expect.poll(active).toBe(find('.s-test-first'))
+		await expect.poll(active).toBe(find('.so-test-first'))
 		await settled(panel())
 		await settled(backdrop())
 		await escapeInPage()
@@ -528,7 +528,7 @@ describe('появление и исчезание', () => {
 		expect(transitioning(panel())).toContain('opacity')
 		expect(transitioning(backdrop())).toContain('opacity')
 
-		await expect.poll(active).toBe(find('.s-test-first'))
+		await expect.poll(active).toBe(find('.so-test-first'))
 		await settled(panel())
 		await escapeInPage()
 
@@ -600,7 +600,7 @@ describe('прокрутка страницы', () => {
 		expect(transitioning(panel())).toContain('opacity')
 
 		await openInPage()
-		await expect.poll(active).toBe(find('.s-test-first'))
+		await expect.poll(active).toBe(find('.so-test-first'))
 		await settled(panel())
 
 		// Перебитый переход отменён, а замок так и лежит
@@ -618,7 +618,7 @@ describe('фокус', () => {
 		await show({ maximizable: true })
 		await open()
 
-		expect(active()).toBe(find('.s-test-first'))
+		expect(active()).toBe(find('.so-test-first'))
 	})
 
 	it('Tab ходит по кругу: с крестика — снова на первую остановку', async () => {
@@ -626,19 +626,19 @@ describe('фокус', () => {
 		await open()
 
 		await userEvent.keyboard('{Tab}')
-		expect(active()).toBe(find('.s-test-second'))
+		expect(active()).toBe(find('.so-test-second'))
 
 		await userEvent.keyboard('{Tab}')
-		expect(active()).toBe(find('.s-test-ok'))
+		expect(active()).toBe(find('.so-test-ok'))
 
 		await userEvent.keyboard('{Tab}')
-		expect(active()).toBe(find('.s-dialog__close'))
+		expect(active()).toBe(find('.so-dialog__close'))
 
 		await userEvent.keyboard('{Tab}')
-		expect(active()).toBe(find('.s-test-first'))
+		expect(active()).toBe(find('.so-test-first'))
 
 		await userEvent.keyboard('{Shift>}{Tab}{/Shift}')
-		expect(active()).toBe(find('.s-dialog__close'))
+		expect(active()).toBe(find('.so-dialog__close'))
 	})
 
 	it('Escape закрывает и возвращает фокус на кнопку, с которой открыли', async () => {
@@ -655,7 +655,7 @@ describe('фокус', () => {
 		await show()
 		await open()
 
-		await userEvent.click(find('.s-dialog__close'))
+		await userEvent.click(find('.so-dialog__close'))
 
 		await expect.poll(isOpen).toBe(false)
 		expect(active()).toBe(opener())
@@ -688,10 +688,10 @@ describe('фокус', () => {
 		await userEvent.click(backdrop(), { position: { x: 4, y: 4 } })
 
 		expect(isOpen()).toBe(true)
-		expect(active()).toBe(find('.s-test-first'))
+		expect(active()).toBe(find('.so-test-first'))
 
 		await userEvent.keyboard('{Tab}')
 
-		expect(active()).toBe(find('.s-test-second'))
+		expect(active()).toBe(find('.so-test-second'))
 	})
 })

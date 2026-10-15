@@ -66,7 +66,7 @@ TEntity (uid, getProps, assign, toJSON)
 фасады коллекций) получали свойства отображения, которые им не нужны.
 
 Правильное решение — поднять `TFrame` до `TComponentView`: он и так рендерит
-элемент, биндит его через `TElementPlugin`, а `class="s-frame"` и тег `<div>`
+элемент, биндит его через `TElementPlugin`, а `class="so-frame"` и тег `<div>`
 были захардкожены в шаблоне вместо наследуемых `classes`/`tag`. Заодно
 `FrameDescriptor` перестал дублировать `ElementPluginDescriptor` и
 `ReadyPluginDescriptor`.
@@ -508,7 +508,7 @@ hover: в тёмной схеме заливка светлеет.
 лишняя строка, перекрывающая наш цвет слева:
 
 ```css
-.s-input--normal {
+.so-input--normal {
   border-color: var(--s-neutral-400);
   border-inline-start-color: var(--color-neutral-400); /* палитра Tailwind */
 }
@@ -676,7 +676,7 @@ setup/vue/svelte/solid.
 ### Нейминг компонентов: часть или слот
 
 Публичное имя компонента не префиксуется (`Button`, `Tabs`, `TabsItem`):
-пространство имён уже даёт npm-скоуп. Префикс `s-`/`so-` стоит ровно там,
+пространство имён уже даёт npm-скоуп. Префикс `so` стоит ровно там,
 где пространство имён глобальное и другого способа нет — CSS-классы, теги
 Custom Elements, селекторы Angular, — а события, которые делят канал с DOM,
 получают `so` все до одного: `so:show` в Web Components, `soShow` у выходов
@@ -1208,13 +1208,13 @@ ListBox, Tabs и Select копий стало бы сорок.
 
 **Наборы биндятся к разным элементам.** У Select `aria` уходит на поле с
 `role="combobox"`, а `dataset` — на корень, потому что тема разворачивает
-стрелку селектором `.s-select[data-open='true']`. Пишутся оба рядом, в одном месте;
+стрелку селектором `.so-select[data-open='true']`. Пишутся оба рядом, в одном месте;
 совпадение точки привязки — не требование.
 
 Исключение одно и оно помечено в разметке: `ListBoxItem` раскладывает набор
-**дважды** — на обёртку и на `.s-button`, потому что тема читает
+**дважды** — на обёртку и на `.so-button`, потому что тема читает
 `data-content-fit` с первой, а `data-selected` / `data-highlighted` со второй.
-Свести к одному носителю мешает то, что подсветка и выбор у `.s-button`
+Свести к одному носителю мешает то, что подсветка и выбор у `.so-button`
 раскрашены по вариантам, а у элемента списка своих таких правил нет. Чинится
 вместе с доступностью ListBox, где ему добавят `role="option"`.
 
@@ -1266,7 +1266,7 @@ ListBox, Tabs и Select копий стало бы сорок.
 ARIA — контракт со скринридером, `data-*` — с темой. Повод для правила —
 реальная регрессия: `aria-selected` перенесли с обёртки на элемент с ролью, а
 тема раскрывала панель Accordion селектором
-`.s-accordion-item[aria-selected='true']`. Доступность починили — панели
+`.so-accordion-item[aria-selected='true']`. Доступность починили — панели
 перестали открываться, и ни один тест не заметил, потому что все проверяли
 ARIA. Обёртка теперь отдаёт то же состояние как `data-selected`.
 
@@ -1647,7 +1647,7 @@ There is no `adapter/static/`: React takes prop names from the descriptor types,
 - `packages/foundation` deleted. Themes live in `packages/themes/*` (workspace glob `packages/themes/*` added to root).
 - `@soldy-ui/theme-oren` = standalone theme package: `src/{index.scss, base.css, tokens.css, tokens-dark.css, utilities.css}`, `src/mixins/` (`_fade.scss`, `_required.scss`), `src/components/<component>/_<component>.scss` (+ `_mixins.scss`) → built to `dist/index.css` (`main`/`style` and the `default` condition of `exports` point to `dist/index.css`, `types` — to `index.d.ts`).
 - Theme CSS build = plain Vite build, not lib mode (`build.rollupOptions.input: src/index.scss`, `assetFileNames: 'index.css'`; Vite drops the empty JS chunk of a CSS-only entry itself, while lib mode needs a JS entry — with `.scss` it fails in `vite:css-post` — whose empty chunk used to ship in the package as `dist/theme-oren.js`) + `postcss.config.mjs` (`@tailwindcss/postcss`) + SCSS `additionalData` injecting `@import ".../src/base.css"` (base.css = `@import 'tailwindcss'` + tokens + tokens-dark + utilities). `@apply` resolves because tailwind context is injected.
-- **Contract = BEM classes and `data-*`** (`.s-button`, `.s-button--size-*`, `.s-button--view-*`, `[data-selected='true']`). UI packages emit only classes and `data-*`; theme ships their CSS. Values of appearance modifiers (`--view-*`, `--variant-*`, `--shape-*`, `--animation-*`) are declared by the theme in `index.d.ts`, not by the library (AGENTS.md, «Оформление: значения объявляет тема»). Tailwind/SCSS live ONLY in the theme package. Theme rules — `packages/themes/oren/AGENTS.md`.
+- **Contract = BEM classes and `data-*`** (`.so-button`, `.so-button--size-*`, `.so-button--view-*`, `[data-selected='true']`). UI packages emit only classes and `data-*`; theme ships their CSS. Values of appearance modifiers (`--view-*`, `--variant-*`, `--shape-*`, `--animation-*`) are declared by the theme in `index.d.ts`, not by the library (AGENTS.md, «Оформление: значения объявляет тема»). Tailwind/SCSS live ONLY in the theme package. Theme rules — `packages/themes/oren/AGENTS.md`.
 - **Tokens**: `:root,[data-theme='oren'] { --s-accent-500: oklch(...) }` + `@theme inline { --color-s-accent-500: var(--s-accent-500) }` — utilities reference vars, so runtime theme switching via `data-theme` works without rebuild.
 - **Colour schemes**: `tokens-dark.css` (`[data-theme='oren-dark']`) redefines the same scales with roles mirrored; imported AFTER `tokens.css` in `base.css` because both selectors have specificity (0,1,0) and source order decides. See «Тёмная схема» above.
 - UI packages (`react`, `vue`) + `core`/`angular`/`solid`/`svelte` dropped `@soldy-ui/foundation` dep. Component styles are no longer in the UI packages: Button styles were removed from React (`button.scss`/`_mixines.scss`), and no Vue component keeps a `<style>` block — the rest (`_fade.scss`/`_required.scss`, CheckBox/Switch/Input) moved to the theme too.

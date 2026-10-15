@@ -12,7 +12,7 @@ export default class TCheckBox
 	extends TInputControl<boolean | undefined, ICheckBoxProps, TCheckBoxEvents>
 	implements ICheckBox
 {
-	static override baseClass = 's-check-box'
+	static override baseClass = 'so-check-box'
 
 	static defaultValues: typeof TInputControl.defaultValues &
 		TDefaultValues<ICheckBoxProps, 'indeterminate', 'view'> = {

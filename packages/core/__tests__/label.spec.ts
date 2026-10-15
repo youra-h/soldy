@@ -16,9 +16,9 @@ describe('TLabel', () => {
 		expect(label.text).toBe('')
 		expect(label.position).toBe('end')
 		expect(label.classes.toArray()).toEqual([
-			's-label',
-			's-label--size-normal',
-			's-label--position-end',
+			'so-label',
+			'so-label--size-normal',
+			'so-label--position-end',
 		])
 	})
 
@@ -32,9 +32,9 @@ describe('TLabel', () => {
 
 		expect(label.text).toBe('Согласен')
 		expect(label.position).toBe('top')
-		expect(label.classes.toArray()).toContain('s-label--position-top')
-		expect(label.classes.toArray()).toContain('s-label--size-lg')
-		expect(label.classes.toArray()).toContain('s-label--variant-brand')
+		expect(label.classes.toArray()).toContain('so-label--position-top')
+		expect(label.classes.toArray()).toContain('so-label--size-lg')
+		expect(label.classes.toArray()).toContain('so-label--variant-brand')
 	})
 
 	it.each(['start', 'end', 'top', 'bottom'] as const)(
@@ -42,9 +42,9 @@ describe('TLabel', () => {
 		(position) => {
 			const modifiers = new TLabel({ position }).classes
 				.toArray()
-				.filter((cls) => cls.startsWith('s-label--position-'))
+				.filter((cls) => cls.startsWith('so-label--position-'))
 
-			expect(modifiers).toEqual([`s-label--position-${position}`])
+			expect(modifiers).toEqual([`so-label--position-${position}`])
 		},
 	)
 
@@ -59,8 +59,8 @@ describe('TLabel', () => {
 
 		expect(changed).toHaveBeenCalledTimes(1)
 		expect(changed).toHaveBeenCalledWith('start')
-		expect(label.classes.toArray()).toContain('s-label--position-start')
-		expect(label.classes.toArray()).not.toContain('s-label--position-end')
+		expect(label.classes.toArray()).toContain('so-label--position-start')
+		expect(label.classes.toArray()).not.toContain('so-label--position-end')
 	})
 
 	it('смена текста шлёт change:text только на смену', () => {

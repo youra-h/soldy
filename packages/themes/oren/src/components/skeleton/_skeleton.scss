@@ -1,12 +1,12 @@
 @use './mixins' as mixins;
 @use '../../mixins/motion';
-.s-skeleton {
+.so-skeleton {
 	$this: &;
 
 	@apply relative block;
 
 	// скрываем всё содержимое slot, пока показывается placeholder
-	&:has(.s-skeleton__placeholder) > :not(.s-skeleton__placeholder) {
+	&:has(.so-skeleton__placeholder) > :not(.so-skeleton__placeholder) {
 		@apply opacity-0;
 	}
 
@@ -118,7 +118,7 @@
 // совпадают с базой. У блока нулевая специфичность — модификатор перекрывает
 // базу, не споря с ней. Анимацию модификатор объявляет всегда, и `none` тоже:
 // иначе под ним осталась бы пульсация базы.
-:where(.s-skeleton) .s-skeleton__placeholder {
+:where(.so-skeleton) .so-skeleton__placeholder {
 	@apply rounded-md;
 	@include mixins.skeleton-pulse;
 
@@ -134,7 +134,7 @@
 // Селектор — от корня, той же специфичности, что правило варианта: оно
 // объявлено выше и иначе оставило бы заглушке цвет темы.
 @media (forced-colors: active) {
-	.s-skeleton .s-skeleton__placeholder {
+	.so-skeleton .so-skeleton__placeholder {
 		forced-color-adjust: none;
 		background-color: GrayText;
 

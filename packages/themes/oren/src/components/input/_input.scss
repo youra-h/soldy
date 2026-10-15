@@ -11,7 +11,7 @@
 // (разметка потребителя) выключенность поля не решает.
 $enabled: ':not(:has(> input:disabled))';
 
-.s-input {
+.so-input {
 	$this: &;
 
 	// Коробка поля — рамка, поверхность, геометрия строки слота и кольцо
@@ -20,7 +20,7 @@ $enabled: ':not(:has(> input:disabled))';
 	@include mixines.field('input');
 
 	// Минимум против схлопывания: `inline-flex` сжимается по содержимому, и в
-	// узком контейнере поле уходило в полосу. У `.s-list-box` то же самое.
+	// узком контейнере поле уходило в полосу. У `.so-list-box` то же самое.
 	@apply min-w-40;
 
 	&:has(input:focus-visible:not(:disabled)) {
@@ -100,13 +100,13 @@ $enabled: ':not(:has(> input:disabled))';
 // Вид блока без варианта — нейтраль. Модификатору `normal` правило не нужно,
 // он совпадает с базой. Нулевая специфичность — вариант перекрывает базу, не
 // споря с ней.
-:where(.s-input) {
+:where(.so-input) {
 	@include mixines.input-variant('neutral', $enabled);
 }
 
 // Вид кнопки очистки — `plain`, как у крестиков Dialog, Drawer и Popover:
 // значения вида разметка не передаёт, вид даёт контекст, и кнопка в поле не
 // спорит с текстом. Нулевая специфичность, как у базового вида Button.
-:where(.s-input__clear) {
+:where(.so-input__clear) {
 	@include button.button-view('plain');
 }

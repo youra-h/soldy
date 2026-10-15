@@ -27,7 +27,7 @@ describe('Button · декларативные props', () => {
 		const el = mount().firstElementChild as HTMLElement
 
 		expect(el.tagName.toLowerCase()).toBe('button')
-		expect(el.className).toContain('s-button')
+		expect(el.className).toContain('so-button')
 		// variant и view — значения темы: без них модификаторов нет вовсе
 		expect(el.className).not.toMatch(/--(variant|view)-/)
 	})
@@ -36,10 +36,10 @@ describe('Button · декларативные props', () => {
 		const el = mount({ text: 'Hello', variant: 'brand', size: 'xl', view: 'ghost' })
 			.firstElementChild as HTMLElement
 
-		expect(el.querySelector('.s-button__text')?.textContent?.trim()).toBe('Hello')
-		expect(el.className).toContain('s-button--size-xl')
-		expect(el.className).toContain('s-button--variant-brand')
-		expect(el.className).toContain('s-button--view-ghost')
+		expect(el.querySelector('.so-button__text')?.textContent?.trim()).toBe('Hello')
+		expect(el.className).toContain('so-button--size-xl')
+		expect(el.className).toContain('so-button--variant-brand')
+		expect(el.className).toContain('so-button--view-ghost')
 	})
 
 	it('меняет корневой тег через prop tag', () => {
@@ -95,7 +95,7 @@ describe('Button · снятый проп', () => {
 		document.body.appendChild(target)
 		disposers.push(render(() => <Button text={text()} />, target))
 
-		const content = () => target.querySelector('.s-button__text')?.textContent
+		const content = () => target.querySelector('.so-button__text')?.textContent
 
 		expect(content()).toBe('a')
 
@@ -120,7 +120,7 @@ describe('Button · перерисовка родителя', () => {
 		disposers.push(render(() => <Button ctrl={ctrl} text="a" disabled={disabled()} />, target))
 
 		const el = () => target.firstElementChild as HTMLElement
-		const content = () => target.querySelector('.s-button__text')?.textContent
+		const content = () => target.querySelector('.so-button__text')?.textContent
 
 		expect(content()).toBe('a')
 
@@ -137,9 +137,9 @@ describe('Button · внешний ctrl', () => {
 		const ctrl = new TButton({ text: 'FromCtrl', variant: 'brand', view: 'solid' })
 		const el = mount({ ctrl }).firstElementChild as HTMLElement
 
-		expect(el.querySelector('.s-button__text')?.textContent?.trim()).toBe('FromCtrl')
-		expect(el.className).toContain('s-button--variant-brand')
-		expect(el.className).toContain('s-button--view-solid')
+		expect(el.querySelector('.so-button__text')?.textContent?.trim()).toBe('FromCtrl')
+		expect(el.className).toContain('so-button--variant-brand')
+		expect(el.className).toContain('so-button--view-solid')
 	})
 
 	it('мутации инстанса обновляют DOM', () => {
@@ -150,8 +150,8 @@ describe('Button · внешний ctrl', () => {
 		ctrl.variant = 'brand'
 
 		const el = root.firstElementChild as HTMLElement
-		expect(el.querySelector('.s-button__text')?.textContent?.trim()).toBe('Y')
-		expect(el.className).toContain('s-button--variant-brand')
+		expect(el.querySelector('.so-button__text')?.textContent?.trim()).toBe('Y')
+		expect(el.className).toContain('so-button--variant-brand')
 	})
 
 	it('смена tag через инстанс меняет корневой элемент', () => {

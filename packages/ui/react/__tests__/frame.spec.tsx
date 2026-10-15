@@ -20,7 +20,7 @@ import { Frame } from '@soldy-ui/react'
 import { find, mount, track } from './mount'
 
 /** Узел Frame — там, куда его увёл телепорт. */
-const frame = () => find(document, '.s-frame', HTMLElement)
+const frame = () => find(document, '.so-frame', HTMLElement)
 
 describe('Frame · телепорт', () => {
 	it('узел — в body, а не в контейнере компонента', () => {
@@ -65,7 +65,7 @@ describe('Frame · телепорт', () => {
 	it('цели нет — узла нет', () => {
 		mount(<Frame target="#missing" visible />)
 
-		expect(document.querySelector('.s-frame')).toBeNull()
+		expect(document.querySelector('.so-frame')).toBeNull()
 	})
 
 	it('размонтирование убирает узел из цели', () => {
@@ -73,7 +73,7 @@ describe('Frame · телепорт', () => {
 
 		render(<></>)
 
-		expect(document.querySelector('.s-frame')).toBeNull()
+		expect(document.querySelector('.so-frame')).toBeNull()
 	})
 })
 
@@ -93,7 +93,7 @@ describe('Frame · rendered и visible', () => {
 	it('rendered={false} — узла нет', () => {
 		mount(<Frame rendered={false} visible />)
 
-		expect(document.querySelector('.s-frame')).toBeNull()
+		expect(document.querySelector('.so-frame')).toBeNull()
 	})
 
 	// Открытость для темы пишет слой: по `data-open` она проявляет и гасит
@@ -151,7 +151,7 @@ describe('Frame · пропсы потребителя', () => {
 	it('className и data-* — на узле внутри телепорта', () => {
 		mount(<Frame visible className="app-panel" data-testid="panel" />)
 
-		expect(frame().classList.contains('s-frame')).toBe(true)
+		expect(frame().classList.contains('so-frame')).toBe(true)
 		expect(frame().classList.contains('app-panel')).toBe(true)
 		expect(frame().getAttribute('data-testid')).toBe('panel')
 	})

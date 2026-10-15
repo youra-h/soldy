@@ -60,7 +60,7 @@ $sizes: (
 	$scale: map.get($sizes, $size);
 	$title: map.get(map.get(button.$sizes, $size), 'text');
 
-	.s-calendar__title {
+	.so-calendar__title {
 		@if $title {
 			@apply #{$title};
 		}
@@ -68,12 +68,12 @@ $sizes: (
 		line-height: var(--s-calendar-cell);
 	}
 
-	.s-calendar__weekday {
+	.so-calendar__weekday {
 		@apply #{map.get($scale, 'weekday')};
 	}
 
-	.s-calendar-item,
-	.s-calendar__picker-list > .s-list-box-item > .s-button {
+	.so-calendar-item,
+	.so-calendar__picker-list > .so-list-box-item > .so-button {
 		@apply #{map.get($scale, 'day')};
 	}
 }

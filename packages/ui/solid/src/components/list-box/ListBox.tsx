@@ -87,7 +87,11 @@ export function ListBox(props: ListBoxProps): JSX.Element {
 			when={itemOf(entry())}
 			keyed
 			fallback={
-				<div class="s-list-box__filler" aria-hidden="true" style={fillerStyleOf(entry())} />
+				<div
+					class="so-list-box__filler"
+					aria-hidden="true"
+					style={fillerStyleOf(entry())}
+				/>
 			}
 		>
 			{drawItem}

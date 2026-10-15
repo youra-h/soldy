@@ -51,7 +51,7 @@ describe('TRadioGroup (чистый класс)', () => {
 		const owner = new TRadioGroup()
 
 		expect(owner.aria.get('role')).toBe('radiogroup')
-		expect(owner.classes.toArray()).toContain('s-radio-group')
+		expect(owner.classes.toArray()).toContain('so-radio-group')
 		expect(owner.value).toBeUndefined()
 		expect(owner.view).toBeUndefined()
 	})
@@ -63,8 +63,8 @@ describe('TRadioGroup (чистый класс)', () => {
 		owner.events.on('change:view', onView)
 		owner.view = 'halo'
 
-		expect(owner.classes.toArray()).toContain('s-radio-group--view-halo')
-		expect(owner.classes.toArray()).not.toContain('s-radio-group--view-pip')
+		expect(owner.classes.toArray()).toContain('so-radio-group--view-halo')
+		expect(owner.classes.toArray()).not.toContain('so-radio-group--view-pip')
 		expect(onView).toHaveBeenCalledWith('halo')
 		expect(owner.getProps()).toMatchObject({ view: 'halo' })
 	})
@@ -76,7 +76,7 @@ describe('TRadioGroupItem (чистый класс)', () => {
 
 		expect(item.tag).toBe('label')
 		expect(item.value).toBe('')
-		expect(item.classes.toArray()).toContain('s-radio-group-item')
+		expect(item.classes.toArray()).toContain('so-radio-group-item')
 	})
 
 	/**
@@ -97,7 +97,7 @@ describe('TRadioGroupItem (чистый класс)', () => {
 	it('вид — модификатор корня', () => {
 		const item = new TRadioGroupItem({ view: 'pip' })
 
-		expect(item.classes.toArray()).toContain('s-radio-group-item--view-pip')
+		expect(item.classes.toArray()).toContain('so-radio-group-item--view-pip')
 
 		item.view = undefined
 
@@ -126,7 +126,7 @@ describe('свойства группы на радио', () => {
 			expect(item.size).toBe('lg')
 			expect(item.variant).toBe('brand')
 			expect(item.view).toBe('halo')
-			expect(item.classes.toArray()).toContain('s-radio-group-item--view-halo')
+			expect(item.classes.toArray()).toContain('so-radio-group-item--view-halo')
 		}
 	})
 

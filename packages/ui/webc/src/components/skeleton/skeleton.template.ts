@@ -30,7 +30,7 @@ export const skeletonTemplate: ITemplate<ISkeleton> = {
 	create: (root) => {
 		const placeholder = root.ownerDocument.createElement('div')
 
-		placeholder.className = 's-skeleton__placeholder'
+		placeholder.className = 'so-skeleton__placeholder'
 		placeholder.setAttribute('aria-hidden', 'true')
 		placeholders.set(root, placeholder)
 

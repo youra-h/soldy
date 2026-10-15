@@ -32,7 +32,7 @@ const harness = (tags: Record<string, unknown>, dir: 'ltr' | 'rtl' = 'ltr') =>
 	defineComponent({
 		render() {
 			return h('div', { dir }, [
-				h('div', { class: 's-test-away', style: 'height: 24px' }),
+				h('div', { class: 'so-test-away', style: 'height: 24px' }),
 				h('div', { style: 'width: 640px' }, [
 					h(Tags, { closable: true, mode: 'multiple', ...tags }, () => [
 						h(TagsItem, { key: 'a', value: 'a', text: 'Настройки' }),
@@ -75,7 +75,7 @@ const find = (selector: string, root: ParentNode = document): HTMLElement => {
 
 /** Элемент тега по месту в наборе. */
 const itemOf = (value: 'a' | 'b' | 'c'): HTMLElement => {
-	const item = [...document.querySelectorAll('.s-tags-item')][['a', 'b', 'c'].indexOf(value)]
+	const item = [...document.querySelectorAll('.so-tags-item')][['a', 'b', 'c'].indexOf(value)]
 
 	if (!(item instanceof HTMLElement)) throw new Error(`тега ${value} нет`)
 
@@ -83,7 +83,7 @@ const itemOf = (value: 'a' | 'b' | 'c'): HTMLElement => {
 }
 
 /** Строка тега — соседка крестика в элементе. */
-const rowOf = (item: HTMLElement) => find(':scope > .s-button:not(.s-tags-item__close)', item)
+const rowOf = (item: HTMLElement) => find(':scope > .so-button:not(.so-tags-item__close)', item)
 
 /** Закрываемый тег и его части. У выключенного «c» крестика нет. */
 const tag = (value: 'a' | 'b') => {
@@ -92,8 +92,8 @@ const tag = (value: 'a' | 'b') => {
 	return {
 		item,
 		row: rowOf(item),
-		text: find('.s-button__text', item),
-		close: find(':scope > .s-tags-item__close', item),
+		text: find('.so-button__text', item),
+		close: find(':scope > .so-tags-item__close', item),
 	}
 }
 
@@ -112,7 +112,7 @@ const settled = (element: Element) =>
 	Promise.all(element.getAnimations({ subtree: true }).map((animation) => animation.finished))
 
 /** Увести указатель с тегов: тесты монтируют разметку на одном месте. */
-const away = () => userEvent.hover(find('.s-test-away'))
+const away = () => userEvent.hover(find('.so-test-away'))
 
 /**
  * Прозрачность, с которой узел виден на странице: своя, умноженная на
@@ -123,7 +123,7 @@ const visibleOpacity = (element: Element) => {
 
 	for (
 		let node: Element | null = element;
-		node && !node.classList.contains('s-tags');
+		node && !node.classList.contains('so-tags');
 		node = node.parentElement
 	) {
 		opacity *= px(style(node).opacity)
@@ -299,7 +299,7 @@ describe('выключенный тег гаснет целиком', () => {
 	it('крестика у него нет', () => {
 		render(harness({}))
 
-		expect(itemOf('c').querySelector('.s-tags-item__close')).toBeNull()
+		expect(itemOf('c').querySelector('.so-tags-item__close')).toBeNull()
 	})
 })
 
@@ -307,12 +307,12 @@ describe.each(COMPONENT_SIZES)('теги в поле Select, размер %s', (
 	it('крестик на месте последней части строки, по высоте — контент строки', async () => {
 		render(selectHarness(size))
 
-		await expect.poll(() => document.querySelectorAll('.s-tags-item').length).toBe(1)
+		await expect.poll(() => document.querySelectorAll('.so-tags-item').length).toBe(1)
 
-		const item = find('.s-tags-item')
-		const row = find(':scope > .s-button:not(.s-tags-item__close)', item)
-		const text = find('.s-button__text', row)
-		const close = find(':scope > .s-tags-item__close', item)
+		const item = find('.so-tags-item')
+		const row = find(':scope > .so-button:not(.so-tags-item__close)', item)
+		const text = find('.so-button__text', row)
+		const close = find(':scope > .so-tags-item__close', item)
 		const rowBox = box(row)
 		const closeBox = box(close)
 
@@ -376,7 +376,7 @@ describe('зона нажатия крестика', () => {
 	 * перед зоной со стороны строки — строке.
 	 */
 	const expectZone = (item: HTMLElement) => {
-		const close = find(':scope > .s-tags-item__close', item)
+		const close = find(':scope > .so-tags-item__close', item)
 		const row = rowOf(item)
 		const pill = box(item)
 		const { x, y } = center(close)
@@ -431,7 +431,7 @@ describe('зона нажатия крестика', () => {
 				render(harness({ size, view, mode, overflow: 'scroll' }))
 
 				expectZone(itemOf('a'))
-				expectNoBlockScroll(find('.s-tags'))
+				expectNoBlockScroll(find('.so-tags'))
 			})
 		})
 
@@ -439,18 +439,18 @@ describe('зона нажатия крестика', () => {
 			it('в ряду wrap — в углах крестик, за пилюлей нет', async () => {
 				render(selectHarness(size))
 
-				await expect.poll(() => document.querySelectorAll('.s-tags-item').length).toBe(1)
+				await expect.poll(() => document.querySelectorAll('.so-tags-item').length).toBe(1)
 
-				expectZone(find('.s-tags-item'))
+				expectZone(find('.so-tags-item'))
 			})
 
 			it('в ряду scroll — так же, и прокрутки по вертикали у ряда нет', async () => {
 				render(selectHarness(size, 'scroll'))
 
-				await expect.poll(() => document.querySelectorAll('.s-tags-item').length).toBe(1)
+				await expect.poll(() => document.querySelectorAll('.so-tags-item').length).toBe(1)
 
-				expectZone(find('.s-tags-item'))
-				expectNoBlockScroll(find('.s-tags'))
+				expectZone(find('.so-tags-item'))
+				expectNoBlockScroll(find('.so-tags'))
 			})
 		})
 	})

@@ -46,9 +46,9 @@ describe('id монтирования', () => {
 	it('createId набора — не со своего счётчика и у двух монтирований разный', async () => {
 		const ids = await partIds()
 
-		// Свой счётчик набора даёт `s-<n>`: им набор берёт, когда адаптер id
+		// Свой счётчик набора даёт `so-<n>`: им набор берёт, когда адаптер id
 		// монтирования не передал
-		for (const id of ids) expect(id).not.toMatch(/^s-\d+-part$/)
+		for (const id of ids) expect(id).not.toMatch(/^so-\d+-part$/)
 
 		expect(new Set(ids).size).toBe(2)
 	})

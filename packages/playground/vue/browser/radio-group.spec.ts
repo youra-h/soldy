@@ -74,7 +74,7 @@ const find = (selector: string): HTMLElement => {
 
 /** Радио по значению. */
 const radio = (value: string): HTMLInputElement => {
-	const element = document.querySelector(`.s-radio-group-item__input[value="${value}"]`)
+	const element = document.querySelector(`.so-radio-group-item__input[value="${value}"]`)
 
 	if (!(element instanceof HTMLInputElement)) throw new Error(`радио «${value}» нет`)
 
@@ -103,7 +103,7 @@ describe('одна остановка Tab на группу', () => {
 	it('без отметки Tab заходит на первое радио и следующим уходит из группы', async () => {
 		await show()
 
-		find('.s-button').focus()
+		find('.so-button').focus()
 		await userEvent.tab()
 
 		expect(focusedRadio()).toBe('a')
@@ -116,7 +116,7 @@ describe('одна остановка Tab на группу', () => {
 	it('с отметкой Tab заходит на отмеченное радио', async () => {
 		await show({ value: 'b' })
 
-		find('.s-button').focus()
+		find('.so-button').focus()
 		await userEvent.tab()
 
 		expect(focusedRadio()).toBe('b')
@@ -193,7 +193,7 @@ describe('пробел и клик по подписи', () => {
 	it('пробел отмечает радио в фокусе', async () => {
 		await show()
 
-		find('.s-button').focus()
+		find('.so-button').focus()
 		await userEvent.tab()
 		await userEvent.keyboard(' ')
 
@@ -205,7 +205,7 @@ describe('пробел и клик по подписи', () => {
 	it('клик по подписи отмечает радио', async () => {
 		await show({ value: 'a' })
 
-		await userEvent.click(find('.s-radio-group-item:nth-child(3) .s-radio-group-item__text'))
+		await userEvent.click(find('.so-radio-group-item:nth-child(3) .so-radio-group-item__text'))
 
 		expect(radio('c').checked).toBe(true)
 		await expect.poll(() => picked.value).toBe('c')
@@ -234,8 +234,8 @@ describe('пустая подпись места не занимает', () => {
 
 		const text = (value: string) => {
 			const element = radio(value)
-				.closest('.s-radio-group-item')
-				?.querySelector('.s-radio-group-item__text')
+				.closest('.so-radio-group-item')
+				?.querySelector('.so-radio-group-item__text')
 
 			if (!(element instanceof HTMLElement)) throw new Error(`подписи «${value}» нет`)
 

@@ -241,12 +241,12 @@ describe('плагин: фокус в ряду', () => {
 	async function mount(overflow: TTagsOverflow = 'scroll') {
 		document.body.insertAdjacentHTML(
 			'beforeend',
-			`<div class="s-tags" style="scroll-padding-left: 10px; scroll-padding-right: 10px">
-				<div class="s-tags-item first">
+			`<div class="so-tags" style="scroll-padding-left: 10px; scroll-padding-right: 10px">
+				<div class="so-tags-item first">
 					<div class="first-row" tabindex="0">Москва</div>
 					<button class="first-close">×</button>
 				</div>
-				<div class="s-tags-item second">
+				<div class="so-tags-item second">
 					<div class="second-row" tabindex="-1">Тверь</div>
 					<button class="second-close">×</button>
 				</div>
@@ -254,7 +254,7 @@ describe('плагин: фокус в ряду', () => {
 		)
 
 		const owner = new TTags({ overflow })
-		const root = nodeOf('.s-tags')
+		const root = nodeOf('.so-tags')
 		const scrollBy = vi.fn()
 
 		place(root, 0, 300)

@@ -15,7 +15,7 @@ The behavior of a Soldy UI component lives in a headless core with no framework 
 models in plain TypeScript that own their state, events, collections and ARIA. Behavior that needs
 the DOM — focus, keyboard, overlay — comes as plugins, and the component contract (props, events,
 slots) is declared once, in a descriptor. Thin adapters for Vue, React, Angular, Svelte, Solid and
-Web Components connect that model to a framework and render the markup: BEM classes `s-*` and
+Web Components connect that model to a framework and render the markup: BEM classes `so-*` and
 `data-*` state attributes. The look comes from a theme, shipped as a separate package.
 
 ## Why Soldy UI
@@ -40,7 +40,7 @@ Web Components connect that model to a framework and render the markup: BEM clas
   role. Select implements the Combobox keyboard model, and Tabs the Tabs one: arrow keys and
   Home/End with automatic activation, and a single Tab stop. ARIA is computed outside the
   framework and rendered with the markup, so it is in place from the first render.
-- **Themes and icon packs are pluggable contracts.** A theme styles `s-*` classes and `data-*`
+- **Themes and icon packs are pluggable contracts.** A theme styles `so-*` classes and `data-*`
   attributes, never `aria-*`, so an accessibility fix does not break the look. An icon pack is
   plain data for a fixed set of roles, with no bundler-specific imports.
 - **Rules are enforced, not just written down.** TypeScript runs in `strict` mode with no escape

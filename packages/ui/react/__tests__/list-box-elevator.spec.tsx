@@ -55,7 +55,7 @@ async function flush(): Promise<void> {
 	await act(async () => {})
 }
 
-const rows = () => [...document.querySelectorAll('.s-list-box-item .s-button')]
+const rows = () => [...document.querySelectorAll('.so-list-box-item .so-button')]
 
 const selection = () => rows().map((row) => row.getAttribute('aria-selected'))
 
@@ -230,8 +230,8 @@ describe('сервер', () => {
 
 		container.innerHTML = renderToString(<ListBox items={ITEMS} value="b" />)
 
-		const selected = [...container.querySelectorAll('.s-list-box-item .s-button')].map((row) =>
-			row.getAttribute('aria-selected'),
+		const selected = [...container.querySelectorAll('.so-list-box-item .so-button')].map(
+			(row) => row.getAttribute('aria-selected'),
 		)
 
 		expect(selected).toEqual(['false', 'true', 'false'])

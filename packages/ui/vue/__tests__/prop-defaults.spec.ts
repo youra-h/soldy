@@ -43,7 +43,7 @@ describe('ключ default без значения', () => {
 		)
 		await nextTick()
 
-		expect(wrapper.find('.s-tabs-item__close').exists()).toBe(true)
+		expect(wrapper.find('.so-tabs-item__close').exists()).toBe(true)
 	})
 
 	/** В типе `value` есть Boolean — без ключа Vue отдал бы пустому полю `false`. */

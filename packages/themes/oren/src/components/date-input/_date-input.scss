@@ -5,13 +5,13 @@
 
 // DateInput — поле даты из частей по формату локали.
 //
-//   .s-date-input                 корень — коробка поля семьи Input
-//     .s-date-input__leading      слот перед датой
-//     .s-date-input__segments     ряд частей — `inline-flex`, свой `dir`
-//       .s-date-input__segment    часть даты или времени
-//       .s-date-input__literal    разделитель — литерал формата
-//     .s-date-input__trailing     слот после даты: кнопка календаря DatePicker
-//       .s-date-input__clear      кнопка очистки, первой в слоте — Button
+//   .so-date-input                 корень — коробка поля семьи Input
+//     .so-date-input__leading      слот перед датой
+//     .so-date-input__segments     ряд частей — `inline-flex`, свой `dir`
+//       .so-date-input__segment    часть даты или времени
+//       .so-date-input__literal    разделитель — литерал формата
+//     .so-date-input__trailing     слот после даты: кнопка календаря DatePicker
+//       .so-date-input__clear      кнопка очистки, первой в слоте — Button
 //
 // От ядра приходят: у корня — модификаторы `--size-*`, `--variant-*`,
 // `--readonly`, `--required` и `--clearable`, `data-disabled` и
@@ -27,7 +27,7 @@
 // пустое место за ней читалось бы недописанным полем. Длина известна и пока
 // дату набирают: день, месяц, час, минуту и секунду ядро дописывает нулём до
 // двух цифр, а место под четыре цифры года держит его часть (см. часть ниже).
-.s-date-input {
+.so-date-input {
 	$this: &;
 
 	@include input.field('date-input');
@@ -107,7 +107,7 @@
 // Вид блока без варианта — нейтраль. Модификатору `normal` правило не нужно,
 // он совпадает с базой. Нулевая специфичность — вариант перекрывает базу, не
 // споря с ней.
-:where(.s-date-input) {
+:where(.so-date-input) {
 	@include input.input-variant('neutral', $enabled: ":not([data-disabled='true'])");
 }
 
@@ -115,31 +115,31 @@
 // RTL `leading` стоит справа, и отступ у него справа. `trailing` уходит к
 // концу поля: ряд частей шириной по дате, и без авто-отступа кнопка календаря
 // встала бы вплотную к дате, а не у края поля, которое растянули.
-.s-date-input__leading,
-.s-date-input__trailing {
+.so-date-input__leading,
+.so-date-input__trailing {
 	@apply flex shrink-0 items-center justify-center gap-1;
 	@apply cursor-default;
 	height: var(--s-date-input-slot-row);
 }
 
-.s-date-input__leading {
+.so-date-input__leading {
 	@apply ps-1;
 }
 
-.s-date-input__trailing {
+.so-date-input__trailing {
 	@apply ms-auto pe-1;
 }
 
 // Кнопка очистки — квадрат в строку слота, как у Input (`input.field-clear`):
 // кнопка календаря DatePicker рядом — квадрат той же стороны.
-.s-date-input__clear {
+.so-date-input__clear {
 	@include input.field-clear('date-input');
 }
 
 // Вид кнопки очистки — `plain`, как у Input и кнопки календаря: значения
 // вида разметка не передаёт, вид даёт контекст. Нулевая специфичность, как у
 // базового вида Button.
-:where(.s-date-input__clear) {
+:where(.so-date-input__clear) {
 	@include button.button-view('plain');
 }
 
@@ -173,7 +173,7 @@
 // Каретки нет: часть вводится целиком, и на сенсорных устройствах, где часть
 // редактируемая, мигающая черта в ней только путала бы. То же на компьютере,
 // пока ряд редактируемый ради контекстного меню.
-.s-date-input__segments {
+.so-date-input__segments {
 	@apply inline-flex shrink-0 items-center;
 	@apply whitespace-pre select-text outline-none;
 	padding-inline: calc(var(--s-date-input-indent) - var(--s-date-input-pad));
@@ -213,13 +213,13 @@
 }
 
 // Разделитель — с небольшими полями: дата не слипается в сплошную строку.
-.s-date-input__literal {
+.so-date-input__literal {
 	padding-inline: 0.125em;
 }
 
 // Часть даты. Своя подсветка под фокусом — с полями от текста, скруглённая,
 // высотой в строку слота (интерлиньяж ряда).
-.s-date-input__segment {
+.so-date-input__segment {
 	@apply rounded-sm outline-none;
 	padding-inline: var(--s-date-input-pad);
 
@@ -273,8 +273,8 @@
 // в `_mixins.scss`). Правило на тексте частей и разделителей, а не на ряду:
 // выделение красит текст своего узла, а наследуют ли его вложенные узлы, у
 // браузеров по-разному.
-.s-date-input__segment,
-.s-date-input__literal {
+.so-date-input__segment,
+.so-date-input__literal {
 	&::selection {
 		background-color: var(--s-date-input-highlight);
 		color: var(--s-date-input-highlight-text);
@@ -291,9 +291,9 @@
 // сборка сливает правила с одинаковыми объявлениями в одно `:is()` с весом
 // самого тяжёлого: так в режиме принудительных цветов подсказка перебила
 // фокус, и пустая часть под фокусом осталась цветом подсказки.
-$empty: ".s-date-input__segments:where(:not(:has(.s-date-input__segment:not([data-placeholder='true']))))";
+$empty: ".so-date-input__segments:where(:not(:has(.so-date-input__segment:not([data-placeholder='true']))))";
 
-#{$empty} > .s-date-input__literal {
+#{$empty} > .so-date-input__literal {
 	@apply text-s-neutral-500;
 }
 
@@ -305,12 +305,12 @@ $empty: ".s-date-input__segments:where(:not(:has(.s-date-input__segment:not([dat
 // стояли бы в прямоугольнике цвета страницы. Подсказка — системный цвет
 // неактивного текста: значение и подсказку здесь различает только он.
 @media (forced-colors: active) {
-	.s-date-input__segment[data-placeholder='true'],
-	#{$empty} > .s-date-input__literal {
+	.so-date-input__segment[data-placeholder='true'],
+	#{$empty} > .so-date-input__literal {
 		color: GrayText;
 	}
 
-	.s-date-input__segment:focus {
+	.so-date-input__segment:focus {
 		forced-color-adjust: none;
 		background-color: Highlight;
 		color: HighlightText;

@@ -48,7 +48,7 @@ const find = (selector: string, root: ParentNode = document): HTMLElement => {
 
 /** Элемент таба и его части. */
 const tab = (value: 'a' | 'b' | 'c') => {
-	const items = [...document.querySelectorAll('.s-tabs-item')]
+	const items = [...document.querySelectorAll('.so-tabs-item')]
 	const item = items[['a', 'b', 'c'].indexOf(value)]
 
 	if (!(item instanceof HTMLElement)) throw new Error(`таба ${value} нет`)
@@ -56,8 +56,8 @@ const tab = (value: 'a' | 'b' | 'c') => {
 	return {
 		item,
 		row: find('[role="tab"]', item),
-		text: find('.s-button__text', item),
-		close: find('.s-tabs-item__close', item),
+		text: find('.so-button__text', item),
+		close: find('.so-tabs-item__close', item),
 	}
 }
 
@@ -142,7 +142,7 @@ describe('таб покрывает крестик', () => {
 	it('подчёркивание view="line" идёт и под крестиком', async () => {
 		render(harness({ view: 'line' }))
 
-		const list = find('.s-tabs__list')
+		const list = find('.so-tabs__list')
 		const { item, close } = tab('a')
 
 		// Полосу `TTabsActiveTabPlugin` считает в целых `offsetLeft`/`offsetWidth`:
@@ -171,7 +171,7 @@ describe('таб покрывает крестик', () => {
 	it('карточка активного таба view="contained" — весь таб вместе с крестиком', async () => {
 		render(harness({ view: 'contained' }))
 
-		const list = find('.s-tabs__list')
+		const list = find('.so-tabs__list')
 		const { item, close } = tab('a')
 
 		await expect.poll(() => getComputedStyle(list, '::before').content).not.toBe('none')
@@ -200,12 +200,12 @@ describe('прозрачность крестика — прозрачность
 	it('у выключенного таба крестика нет', () => {
 		render(harness({}))
 
-		const archive = [...document.querySelectorAll('.s-tabs-item')].find(
+		const archive = [...document.querySelectorAll('.so-tabs-item')].find(
 			(item) => item.querySelector('[role="tab"]')?.textContent?.trim() === 'Архив',
 		)
 
 		expect(archive).toBeDefined()
-		expect(archive?.querySelector('.s-tabs-item__close')).toBeNull()
+		expect(archive?.querySelector('.so-tabs-item__close')).toBeNull()
 	})
 
 	it('наведение на крестик проявляет и строку таба', async () => {

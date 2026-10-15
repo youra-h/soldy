@@ -35,7 +35,7 @@ export default { ...SetupListBox, components: { ListBoxItem } }
 			<template v-for="entry in drawn" :key="entry.key">
 				<div
 					v-if="entry.kind === 'filler'"
-					class="s-list-box__filler"
+					class="so-list-box__filler"
 					aria-hidden="true"
 					:style="entry.style"
 				></div>

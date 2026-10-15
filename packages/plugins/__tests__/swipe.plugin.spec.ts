@@ -161,8 +161,8 @@ async function mount(props: Partial<IDrawerProps> = {}, { dir = 'ltr' }: TMountO
 	root.className = drawer.classes.base
 	root.innerHTML = [
 		`<div class="${drawer.classes.resolve('__handle')}"></div>`,
-		'<h2 class="s-test-title">Заголовок</h2>',
-		'<div class="s-test-body"><p class="s-test-text">Текст</p><button class="s-test-button">Действие</button></div>',
+		'<h2 class="so-test-title">Заголовок</h2>',
+		'<div class="so-test-body"><p class="so-test-text">Текст</p><button class="so-test-button">Действие</button></div>',
 	].join('')
 
 	applyDataset(root, drawer)
@@ -256,7 +256,7 @@ describe('нажатие становится жестом', () => {
 	it('за полосу: нажатие мимо неё жеста не начинает', async () => {
 		const { drawer, root, pointer } = await mount()
 
-		pointer('pointerdown', nodeOf('.s-test-title'), 750, 100, 0)
+		pointer('pointerdown', nodeOf('.so-test-title'), 750, 100, 0)
 		pointer('pointermove', root, 900, 100, 16)
 
 		expect(drawer.swiping).toBe(false)
@@ -290,7 +290,7 @@ describe('нажатие становится жестом', () => {
 		it('с любого места, кроме контролов, нажатие своего действия не теряет', async () => {
 			const { drawer, root, pointer } = await mount({ swipe: 'panel' })
 
-			const down = pointer('pointerdown', nodeOf('.s-test-text'), 750, 300, 0)
+			const down = pointer('pointerdown', nodeOf('.so-test-text'), 750, 300, 0)
 
 			expect(down.defaultPrevented).toBe(false)
 
@@ -302,7 +302,7 @@ describe('нажатие становится жестом', () => {
 		it('с кнопки внутри — нет: с контролом работают сами', async () => {
 			const { drawer, root, pointer } = await mount({ swipe: 'panel' })
 
-			pointer('pointerdown', nodeOf('.s-test-button'), 750, 300, 0)
+			pointer('pointerdown', nodeOf('.so-test-button'), 750, 300, 0)
 			pointer('pointermove', root, 800, 300, 16)
 
 			expect(drawer.swiping).toBe(false)
@@ -310,13 +310,13 @@ describe('нажатие становится жестом', () => {
 
 		it('из области, которая прокручивается вдоль оси, — нет', async () => {
 			const { drawer, root, pointer } = await mount({ swipe: 'panel' })
-			const body = nodeOf('.s-test-body')
+			const body = nodeOf('.so-test-body')
 
 			body.style.overflowX = 'auto'
 			Object.defineProperty(body, 'scrollWidth', { value: 600 })
 			Object.defineProperty(body, 'clientWidth', { value: 300 })
 
-			pointer('pointerdown', nodeOf('.s-test-text'), 750, 300, 0)
+			pointer('pointerdown', nodeOf('.so-test-text'), 750, 300, 0)
 			pointer('pointermove', root, 800, 300, 16)
 
 			expect(drawer.swiping).toBe(false)
@@ -326,10 +326,10 @@ describe('нажатие становится жестом', () => {
 			const { drawer, root, pointer } = await mount({ swipe: 'panel' })
 			const range = document.createRange()
 
-			range.selectNodeContents(nodeOf('.s-test-text'))
+			range.selectNodeContents(nodeOf('.so-test-text'))
 			document.getSelection()?.addRange(range)
 
-			pointer('pointerdown', nodeOf('.s-test-title'), 750, 100, 0)
+			pointer('pointerdown', nodeOf('.so-test-title'), 750, 100, 0)
 			pointer('pointermove', root, 800, 100, 16)
 
 			expect(drawer.swiping).toBe(false)
@@ -338,7 +338,7 @@ describe('нажатие становится жестом', () => {
 		it('жест гасит выделение до конца и возвращает его после', async () => {
 			const { root, pointer } = await mount({ swipe: 'panel' })
 
-			pointer('pointerdown', nodeOf('.s-test-text'), 750, 300, 0)
+			pointer('pointerdown', nodeOf('.so-test-text'), 750, 300, 0)
 			pointer('pointermove', root, 800, 300, 16)
 
 			expect(root.style.userSelect).toBe('none')
@@ -355,10 +355,10 @@ describe('нажатие становится жестом', () => {
 
 		// Вложенная панель — свой слой: номер у неё свой
 		nested.setAttribute('data-layer', '9999')
-		nested.innerHTML = '<p class="s-test-nested">Вложенная</p>'
+		nested.innerHTML = '<p class="so-test-nested">Вложенная</p>'
 		root.append(nested)
 
-		pointer('pointerdown', nodeOf('.s-test-nested'), 750, 300, 0)
+		pointer('pointerdown', nodeOf('.so-test-nested'), 750, 300, 0)
 		pointer('pointermove', root, 800, 300, 16)
 
 		expect(drawer.swiping).toBe(false)
@@ -663,7 +663,7 @@ async function mountPopover(
 	const panel = document.createElement('div')
 
 	root.className = popover.classes.base
-	root.innerHTML = '<button class="s-test-trigger">Открыть</button>'
+	root.innerHTML = '<button class="so-test-trigger">Открыть</button>'
 
 	for (const [name, value] of Object.entries(pluginOf(bundle, TDismissPlugin).ownerAttribute)) {
 		panel.setAttribute(name, value)
@@ -677,7 +677,7 @@ async function mountPopover(
 	panel.tabIndex = -1
 	panel.innerHTML = [
 		`<div class="${popover.classes.resolve('__handle')}"></div>`,
-		'<div class="s-test-content"><p class="s-test-text">Текст</p><button class="s-test-button">Действие</button></div>',
+		'<div class="so-test-content"><p class="so-test-text">Текст</p><button class="so-test-button">Действие</button></div>',
 	].join('')
 
 	document.body.append(root)
@@ -864,13 +864,13 @@ describe('поповер', () => {
 	it('за всю панель — с текста, но не с кнопки', async () => {
 		const { popover, panel } = await mountPopover({ swipe: 'panel' })
 
-		pointer('pointerdown', nodeOf('.s-test-button', panel), 250, 400, 0)
+		pointer('pointerdown', nodeOf('.so-test-button', panel), 250, 400, 0)
 		pointer('pointermove', panel, 250, 480, 16)
 
 		expect(popover.swiping).toBe(false)
 
 		pointer('pointerup', panel, 250, 480, 32)
-		pointer('pointerdown', nodeOf('.s-test-text', panel), 250, 400, 48)
+		pointer('pointerdown', nodeOf('.so-test-text', panel), 250, 400, 48)
 		pointer('pointermove', panel, 250, 480, 64)
 
 		expect(popover.swiping).toBe(true)
@@ -929,7 +929,7 @@ async function mountField(
 	const panel = document.createElement('div')
 
 	root.className = owner.classes.base
-	root.innerHTML = '<input class="s-test-field" aria-label="Поле">'
+	root.innerHTML = '<input class="so-test-field" aria-label="Поле">'
 
 	for (const [name, value] of Object.entries(pluginOf(bundle, TDismissPlugin).ownerAttribute)) {
 		panel.setAttribute(name, value)
@@ -939,7 +939,7 @@ async function mountField(
 	panel.setAttribute('data-placement', placement)
 	panel.innerHTML = [
 		`<div class="${owner.classes.resolve('__handle')}"></div>`,
-		'<div class="s-test-content"><button class="s-test-button">Действие</button></div>',
+		'<div class="so-test-content"><button class="so-test-button">Действие</button></div>',
 	].join('')
 
 	document.body.append(root, panel)

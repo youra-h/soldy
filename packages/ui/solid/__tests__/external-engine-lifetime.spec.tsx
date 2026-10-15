@@ -103,7 +103,7 @@ describe('ListBox над движком и владельцем снаружи',
 			const { container, destroy } = mount(() => <ListBox ctrl={owner} engine={engine} />)
 
 			// Смонтирован по-настоящему: элементы на месте
-			expect(container.querySelectorAll('.s-list-box-item')).toHaveLength(ITEMS.length)
+			expect(container.querySelectorAll('.so-list-box-item')).toHaveLength(ITEMS.length)
 
 			destroy()
 		}

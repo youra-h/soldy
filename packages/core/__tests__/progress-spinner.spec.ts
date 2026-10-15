@@ -31,8 +31,8 @@ describe('умолчания', () => {
 		expect(instance.indeterminate).toBe(false)
 		expect(instance.tag).toBe('span')
 		expect(instance.classes.toArray()).toEqual([
-			's-progress-spinner',
-			's-progress-spinner--size-normal',
+			'so-progress-spinner',
+			'so-progress-spinner--size-normal',
 		])
 		expect(instance.getProps()).toMatchObject({
 			value: 0,

@@ -32,6 +32,6 @@ describe('CheckBox · серверный рендер', () => {
 	it('выбранный — отметка в коробке с первой отрисовки', () => {
 		const body = render(CheckBox, { props: { value: true } }).body
 
-		expect(body).toMatch(/<svg [^>]*class="s-check-box__mark"/)
+		expect(body).toMatch(/<svg [^>]*class="so-check-box__mark"/)
 	})
 })

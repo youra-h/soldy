@@ -16,7 +16,7 @@ export default class TTabsItem<
 	extends TValueControl<string | number, TProps, TEvents>
 	implements ITabsItem<TProps, TEvents>
 {
-	static override baseClass = 's-tabs-item'
+	static override baseClass = 'so-tabs-item'
 
 	static defaultValues: typeof TValueControl.defaultValues &
 		TDefaultValues<ITabsItemProps, 'text', 'closable'> = {

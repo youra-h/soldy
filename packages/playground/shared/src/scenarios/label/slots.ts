@@ -17,20 +17,20 @@ function precedes(a: Element, b: Element): boolean {
  * браузер отдаёт полю один раз.
  */
 async function checkLabel(ctx: IScenarioContext): Promise<void> {
-	const root = ctx.scene.querySelector('.s-label')
+	const root = ctx.scene.querySelector('.so-label')
 
 	if (!root) {
-		ctx.check(false, 'подпись .s-label в сцене')
+		ctx.check(false, 'подпись .so-label в сцене')
 		return
 	}
 
 	ctx.check(root.localName === 'label', `корень подписи — label (пришёл ${root.localName})`)
 
-	const input = root.querySelector('.s-label__control input')
-	const text = root.querySelector('.s-label__text')
+	const input = root.querySelector('.so-label__control input')
+	const text = root.querySelector('.so-label__text')
 
 	if (!(input instanceof HTMLInputElement) || !(text instanceof HTMLElement)) {
-		ctx.check(false, 'контрол — поле в .s-label__control, текст — в .s-label__text')
+		ctx.check(false, 'контрол — поле в .so-label__control, текст — в .so-label__text')
 		return
 	}
 
@@ -69,7 +69,7 @@ export const LABEL_SLOTS: readonly TScenario[] = [
 		kind: 'auto',
 		title: 'CheckBox в подписи',
 		description:
-			'Чекбокс в слоте default лежит в .s-label__control, текст — после него; клик по тексту отмечает чекбокс одним change',
+			'Чекбокс в слоте default лежит в .so-label__control, текст — после него; клик по тексту отмечает чекбокс одним change',
 		fixture: 'label-check-box',
 		requires: ['check-box'],
 		props: { text: TEXT },
@@ -82,7 +82,7 @@ export const LABEL_SLOTS: readonly TScenario[] = [
 		kind: 'auto',
 		title: 'Switch в подписи',
 		description:
-			'Переключатель в слоте default лежит в .s-label__control, текст — после него; клик по тексту включает его одним change',
+			'Переключатель в слоте default лежит в .so-label__control, текст — после него; клик по тексту включает его одним change',
 		fixture: 'label-switch',
 		requires: ['switch'],
 		props: { text: TEXT },

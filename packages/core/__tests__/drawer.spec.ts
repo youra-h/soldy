@@ -43,11 +43,11 @@ describe('умолчания', () => {
 		expect(drawer.height).toBeUndefined()
 	})
 
-	it('базовый класс s-drawer, корень — div', () => {
+	it('базовый класс so-drawer, корень — div', () => {
 		const drawer = new TDrawer()
 
 		expect(drawer.tag).toBe('div')
-		expect(drawer.classes.toArray()).toContain('s-drawer')
+		expect(drawer.classes.toArray()).toContain('so-drawer')
 	})
 
 	it('пропсы конструктора перекрывают умолчания', () => {
@@ -110,14 +110,14 @@ describe('край', () => {
 
 		drawer.events.on('change:placement', (value) => changes.push(value))
 
-		expect(drawer.classes.toArray()).toContain('s-drawer--placement-end')
+		expect(drawer.classes.toArray()).toContain('so-drawer--placement-end')
 
 		drawer.placement = 'bottom'
 		drawer.placement = 'bottom'
 
 		const placements = drawer.classes.toArray().filter((cls) => cls.includes('--placement-'))
 
-		expect(placements).toEqual(['s-drawer--placement-bottom'])
+		expect(placements).toEqual(['so-drawer--placement-bottom'])
 		expect(changes).toEqual(['bottom'])
 	})
 })

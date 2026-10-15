@@ -52,7 +52,7 @@ export function RadioGroupItem(props: RadioGroupItemProps): ReactElement | null 
 	return (
 		<Tag {...toRootProps(ref, state, [dataset, attrs], toRootForward(forwardProps))}>
 			<NativeInput
-				className="s-radio-group-item__input"
+				className="so-radio-group-item__input"
 				type="radio"
 				name={name}
 				value={value}
@@ -65,10 +65,10 @@ export function RadioGroupItem(props: RadioGroupItemProps): ReactElement | null 
 				}}
 				live={{ checked: active }}
 			/>
-			<span className="s-radio-group-item__control">
-				<span className="s-radio-group-item__indicator" />
+			<span className="so-radio-group-item__control">
+				<span className="so-radio-group-item__indicator" />
 			</span>
-			<span className="s-radio-group-item__text">
+			<span className="so-radio-group-item__text">
 				{renderSlot(props.children, { active: active ?? false })}
 			</span>
 		</Tag>

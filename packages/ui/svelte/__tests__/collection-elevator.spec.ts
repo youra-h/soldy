@@ -50,7 +50,7 @@ async function flush(): Promise<void> {
 	flushSync()
 }
 
-const rows = () => [...document.querySelectorAll('.s-list-box-item .s-button')]
+const rows = () => [...document.querySelectorAll('.so-list-box-item .so-button')]
 
 function rowOf(text: string): HTMLElement {
 	const row = rows().find((candidate) => candidate.textContent?.trim() === text)
@@ -156,7 +156,7 @@ describe('элементы разметки в движке владельца',
 		return found
 	}
 
-	const headers = () => [...document.querySelectorAll('.s-accordion-item__header')]
+	const headers = () => [...document.querySelectorAll('.so-accordion-item__header')]
 
 	function header(text: string): HTMLElement {
 		const found = headers().find((candidate) => candidate.textContent?.trim() === text)
@@ -169,7 +169,7 @@ describe('элементы разметки в движке владельца',
 	it('табы: в движке ровно табы разметки; клик активирует таб и его панель', async () => {
 		const probe = engineProbe()
 		const panels = () =>
-			[...document.querySelectorAll('.s-tabs__panel')].map((panel) => panel.textContent)
+			[...document.querySelectorAll('.so-tabs__panel')].map((panel) => panel.textContent)
 
 		mount(TabsHarness, {
 			tabs: { onEngineCreate: probe.onEngineCreate },

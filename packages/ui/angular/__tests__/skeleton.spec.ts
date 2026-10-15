@@ -54,7 +54,7 @@ describe('Skeleton · variant', () => {
 	it('доходит до инстанса: у корня класс варианта, атрибута variant нет', () => {
 		const el = skeleton(mountHost(VariantHost))
 
-		expect(variantClasses(el)).toEqual(['s-skeleton--variant-brand'])
+		expect(variantClasses(el)).toEqual(['so-skeleton--variant-brand'])
 		expect(el.hasAttribute('variant')).toBe(false)
 	})
 
@@ -64,7 +64,7 @@ describe('Skeleton · variant', () => {
 		fixture.componentInstance.variant.set('danger')
 		fixture.detectChanges()
 
-		expect(variantClasses(skeleton(fixture))).toEqual(['s-skeleton--variant-danger'])
+		expect(variantClasses(skeleton(fixture))).toEqual(['so-skeleton--variant-danger'])
 	})
 })
 
@@ -73,7 +73,7 @@ describe('Skeleton · заглушка и содержимое', () => {
 		const el = skeleton(mountHost(ContentHost))
 
 		expect([...el.children].map((child) => child.localName)).toEqual(['div', 'b'])
-		expect(el.firstElementChild?.className).toBe('s-skeleton__placeholder')
+		expect(el.firstElementChild?.className).toBe('so-skeleton__placeholder')
 		expect(el.firstElementChild?.getAttribute('aria-hidden')).toBe('true')
 		// Пока заглушка показана, область занята
 		expect(el.getAttribute('aria-busy')).toBe('true')
@@ -87,7 +87,7 @@ describe('Skeleton · заглушка и содержимое', () => {
 
 		const el = skeleton(fixture)
 
-		expect(el.querySelector('.s-skeleton__placeholder')).toBeNull()
+		expect(el.querySelector('.so-skeleton__placeholder')).toBeNull()
 		expect(el.querySelector('b')?.textContent).toBe('Данные')
 		expect(el.style.display).toBe('')
 		expect(el.hasAttribute('aria-busy')).toBe(false)
@@ -101,7 +101,7 @@ describe('Skeleton · заглушка и содержимое', () => {
 
 		const el = skeleton(fixture)
 
-		expect(el.querySelector('.s-skeleton__placeholder')).toBeNull()
+		expect(el.querySelector('.so-skeleton__placeholder')).toBeNull()
 		expect(el.querySelector('b')?.textContent).toBe('Данные')
 		expect(el.style.display).toBe('')
 	})
@@ -114,12 +114,12 @@ describe('Skeleton · заглушка и содержимое', () => {
 		fixture.componentInstance.visible.set(false)
 		fixture.detectChanges()
 
-		expect(skeleton(fixture).querySelector('.s-skeleton__placeholder')).toBeNull()
+		expect(skeleton(fixture).querySelector('.so-skeleton__placeholder')).toBeNull()
 
 		fixture.componentInstance.visible.set(true)
 		fixture.detectChanges()
 
-		expect(skeleton(fixture).querySelector('.s-skeleton__placeholder')).not.toBeNull()
+		expect(skeleton(fixture).querySelector('.so-skeleton__placeholder')).not.toBeNull()
 		expect(skeleton(fixture).querySelector('b')).toBe(content)
 	})
 })

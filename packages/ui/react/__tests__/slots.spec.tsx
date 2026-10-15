@@ -68,7 +68,7 @@ describe('поведение слотов Button', () => {
 	it('содержимое children переопределяет text', () => {
 		const el = root(mount({ text: 'ignored', children: <b>Custom</b> }))
 
-		expect(el.querySelector('.s-button__text')?.textContent?.trim()).toBe('Custom')
+		expect(el.querySelector('.so-button__text')?.textContent?.trim()).toBe('Custom')
 	})
 
 	/**
@@ -83,7 +83,7 @@ describe('поведение слотов Button', () => {
 	])('children — %s: рисуется text', (_name, children) => {
 		const el = root(mount({ text: 'Сохранить', children }))
 
-		expect(el.querySelector('.s-button__text')?.textContent).toBe('Сохранить')
+		expect(el.querySelector('.so-button__text')?.textContent).toBe('Сохранить')
 	})
 
 	it('слот children получает scope с text', () => {
@@ -94,13 +94,13 @@ describe('поведение слотов Button', () => {
 			}),
 		)
 
-		expect(el.querySelector('.s-button__text')?.textContent?.trim()).toBe('Scoped!')
+		expect(el.querySelector('.so-button__text')?.textContent?.trim()).toBe('Scoped!')
 	})
 
 	it('без слота показывается text из props', () => {
 		const el = root(mount({ text: 'Fallback' }))
 
-		expect(el.querySelector('.s-button__text')?.textContent?.trim()).toBe('Fallback')
+		expect(el.querySelector('.so-button__text')?.textContent?.trim()).toBe('Fallback')
 	})
 })
 
@@ -125,7 +125,7 @@ describe('слот не ограничивает содержимое', () => {
 			}),
 		)
 
-		expect(el.querySelector('.s-button__text table td')?.textContent).toBe('ячейка')
+		expect(el.querySelector('.so-button__text table td')?.textContent).toBe('ячейка')
 		expect(el.tagName.toLowerCase()).toBe('button')
 	})
 
@@ -141,7 +141,7 @@ describe('слот не ограничивает содержимое', () => {
 			}),
 		)
 
-		expect(el.querySelector('.s-button__text li')?.textContent).toBe('Заголовок')
+		expect(el.querySelector('.so-button__text li')?.textContent).toBe('Заголовок')
 	})
 })
 

@@ -30,16 +30,16 @@ describe('Label · разметка', () => {
 
 		expect(el.localName).toBe('label')
 		expect([...el.classList]).toEqual([
-			's-label',
-			's-label--size-normal',
-			's-label--position-end',
+			'so-label',
+			'so-label--size-normal',
+			'so-label--position-end',
 		])
 		expect([...el.children].map((part) => part.className)).toEqual([
-			's-label__control',
-			's-label__text',
+			'so-label__control',
+			'so-label__text',
 		])
-		expect(el.querySelector('.s-label__control > .s-check-box input')).not.toBeNull()
-		expect(find(el, '.s-label__text', HTMLElement).textContent).toBe('Согласен')
+		expect(el.querySelector('.so-label__control > .so-check-box input')).not.toBeNull()
+		expect(find(el, '.so-label__text', HTMLElement).textContent).toBe('Согласен')
 	})
 
 	it('tag рисует корень другим тегом', () => {
@@ -50,13 +50,13 @@ describe('Label · разметка', () => {
 		const props = reactiveProps<LabelProps>({ position: 'start' })
 		const { root } = mount(Label, props)
 
-		expect(root().classList.contains('s-label--position-start')).toBe(true)
+		expect(root().classList.contains('so-label--position-start')).toBe(true)
 
 		props.position = 'top'
 		flushSync()
 
-		expect(root().classList.contains('s-label--position-top')).toBe(true)
-		expect(root().classList.contains('s-label--position-start')).toBe(false)
+		expect(root().classList.contains('so-label--position-top')).toBe(true)
+		expect(root().classList.contains('so-label--position-start')).toBe(false)
 	})
 
 	it('direction: rtl — dir на корне подписи', () => {
@@ -67,7 +67,7 @@ describe('Label · разметка', () => {
 })
 
 describe('Label · текст: проп и слот', () => {
-	const textOf = (root: HTMLElement) => find(root, '.s-label__text', HTMLElement)
+	const textOf = (root: HTMLElement) => find(root, '.so-label__text', HTMLElement)
 
 	/** Содержимое слота `content`. */
 	const bold = createRawSnippet(() => ({ render: () => '<b>Слот</b>' }))
@@ -146,7 +146,7 @@ describe.each(CHECKABLES)('Label · %s в подписи', (control) => {
 		// Слушатель поля плагин вешает кадром позже, по `ready` узла
 		await nextFrame()
 
-		find(el, '.s-label__text', HTMLElement).click()
+		find(el, '.so-label__text', HTMLElement).click()
 		flushSync()
 
 		expect(find(el, 'input', HTMLInputElement).checked).toBe(true)
@@ -180,13 +180,13 @@ describe('Label · радио в подписи', () => {
 
 		await nextFrame()
 
-		const label = find(el, '.s-label', HTMLLabelElement)
+		const label = find(el, '.so-label', HTMLLabelElement)
 		const input = find(label, 'input', HTMLInputElement)
 
 		expect(nestedWarnings(warn.mock.calls)).toEqual([])
 		expect([...(input.labels ?? [])]).toEqual([label])
 
-		find(label, '.s-label__text', HTMLElement).click()
+		find(label, '.so-label__text', HTMLElement).click()
 		flushSync()
 
 		expect(input.checked).toBe(true)

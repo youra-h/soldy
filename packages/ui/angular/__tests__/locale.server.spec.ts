@@ -60,7 +60,7 @@ const pageLocale = (page: string) =>
 
 /** Имя кнопки очистки поля на странице. */
 const clearName = (page: string) =>
-	find(parse(page), '.s-input__clear', HTMLButtonElement).getAttribute('aria-label')
+	find(parse(page), '.so-input__clear', HTMLButtonElement).getAttribute('aria-label')
 
 let dispose: (() => void) | undefined
 

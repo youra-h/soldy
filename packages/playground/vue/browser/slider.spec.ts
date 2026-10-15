@@ -55,7 +55,7 @@ async function mount(
 		defineComponent({
 			render: () =>
 				h('div', { dir, style: 'width: 400px; padding: 48px 24px 24px' }, [
-					before ? h('button', { class: 's-test-before' }, 'До') : null,
+					before ? h('button', { class: 'so-test-before' }, 'До') : null,
 					label ? h(Label, { text: 'Цена', position: 'top' }, slider) : slider(),
 				]),
 		}),
@@ -78,10 +78,10 @@ function find(selector: string): HTMLElement {
 }
 
 const all = (selector: string) => [...document.querySelectorAll<HTMLElement>(selector)]
-const track = () => find('.s-slider__track')
-const range = () => find('.s-slider__range')
-const thumbs = () => all('.s-slider__thumb')
-const fields = () => all('.s-slider__input')
+const track = () => find('.so-slider__track')
+const range = () => find('.so-slider__range')
+const thumbs = () => all('.so-slider__thumb')
+const fields = () => all('.so-slider__input')
 
 /** Поле ручки `index`; нет его — тест падает здесь. */
 function field(index: number): HTMLInputElement {
@@ -151,7 +151,7 @@ describe('раскладка', () => {
 	it('пустая подпись метки не видна, метка остаётся точкой', async () => {
 		await mount({ value: 50, marks: [{ value: 0, label: 'Мин' }, { value: 50 }] })
 
-		const [named, empty] = all('.s-slider__mark-label')
+		const [named, empty] = all('.so-slider__mark-label')
 
 		expect(getComputedStyle(named).display).not.toBe('none')
 		expect(getComputedStyle(empty).display).toBe('none')
@@ -176,10 +176,10 @@ describe('подписи меток', () => {
 			{ label: true },
 		)
 
-		const labels = all('.s-slider__mark-label')
+		const labels = all('.so-slider__mark-label')
 
 		expect(labels.map((node) => node.textContent)).toEqual(['Мин', 'Макс'])
-		expect(labels.every((node) => find('.s-label').contains(node))).toBe(true)
+		expect(labels.every((node) => find('.so-label').contains(node))).toBe(true)
 		expect(labels.map((node) => getComputedStyle(node).display)).not.toContain('none')
 		expect(page.getByRole('slider', { name: 'Цена', exact: true }).query()).toBe(field(0))
 	})
@@ -196,7 +196,7 @@ describe('имена ручек', () => {
 	it('в подписи Label имя каждой ручки — ровно её имя из thumbLabels', async () => {
 		await mount({ value: [20, 80], thumbLabels: ['От', 'До'] }, { label: true })
 
-		expect(fields().every((node) => find('.s-label').contains(node))).toBe(true)
+		expect(fields().every((node) => find('.so-label').contains(node))).toBe(true)
 		expect(page.getByRole('slider', { name: 'От', exact: true }).query()).toBe(field(0))
 		expect(page.getByRole('slider', { name: 'До', exact: true }).query()).toBe(field(1))
 	})
@@ -298,7 +298,7 @@ describe('протяжка', () => {
 	it('в подписи Label фокус остаётся на тянутой ручке', async () => {
 		const ctrl = await mount({ value: [20, 80] }, { label: true })
 
-		await userEvent.dragAndDrop(track(), find('.s-label__text'), {
+		await userEvent.dragAndDrop(track(), find('.so-label__text'), {
 			sourcePosition: along(0.8),
 		})
 
@@ -315,10 +315,10 @@ describe('протяжка', () => {
 		await mount({ value: 50 }, { before: true })
 
 		// На «До» с клавиатуры: Tab в поле и Shift+Tab обратно
-		find('.s-test-before').focus()
+		find('.so-test-before').focus()
 		await userEvent.keyboard('{Tab}')
 		await userEvent.keyboard('{Shift>}{Tab}{/Shift}')
-		expect(document.activeElement).toBe(find('.s-test-before'))
+		expect(document.activeElement).toBe(find('.so-test-before'))
 
 		await userEvent.click(thumbs()[0])
 
@@ -571,7 +571,7 @@ describe('заливка', () => {
 describe('подсказка', () => {
 	/** Подсказка ручки `index`; нет её — тест падает здесь. */
 	function tooltip(index = 0): HTMLElement {
-		const node = all('.s-slider__tooltip')[index]
+		const node = all('.so-slider__tooltip')[index]
 
 		if (!node) throw new Error(`подсказки ${index} нет`)
 
@@ -631,7 +631,7 @@ describe('подсказка', () => {
 
 		const tip = tooltip().getBoundingClientRect()
 		const knob = thumbs()[0].getBoundingClientRect()
-		const root = find('.s-slider').getBoundingClientRect()
+		const root = find('.so-slider').getBoundingClientRect()
 
 		expect(knob.top - tip.bottom).toBeGreaterThan(knob.height / 3)
 		expect(tip.top).toBeGreaterThanOrEqual(root.top - 0.5)
@@ -728,7 +728,7 @@ describe('подсказка', () => {
 		it('поле в фокусе с клавиатуры — видна; фокус ушёл — скрыта', async () => {
 			await mount({ value: 50, tooltip: 'auto' }, { before: true })
 
-			find('.s-test-before').focus()
+			find('.so-test-before').focus()
 			await userEvent.keyboard('{Tab}')
 
 			expect(document.activeElement).toBe(field(0))
@@ -795,7 +795,7 @@ describe('подсказка', () => {
 	it('в подписи Label имя поля — ровно текст подписи', async () => {
 		await mount({ value: 50, tooltip: 'always' }, { label: true })
 
-		expect(find('.s-label').contains(tooltip())).toBe(true)
+		expect(find('.so-label').contains(tooltip())).toBe(true)
 		expect(tooltip().textContent).toBe('50')
 		expect(page.getByRole('slider', { name: 'Цена', exact: true }).query()).toBe(field(0))
 	})

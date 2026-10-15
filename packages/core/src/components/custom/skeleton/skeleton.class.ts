@@ -14,7 +14,7 @@ export default class TSkeleton
 	extends TComponentView<ISkeletonProps, TSkeletonEvents>
 	implements ISkeleton
 {
-	static override baseClass = 's-skeleton'
+	static override baseClass = 'so-skeleton'
 
 	static defaultValues: typeof TComponentView.defaultValues &
 		TDefaultValues<ISkeletonProps, 'width' | 'height', 'shape' | 'animation' | 'variant'> = {

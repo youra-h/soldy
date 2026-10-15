@@ -32,18 +32,18 @@ type TDir = 'ltr' | 'rtl'
 
 /** Обязательный контрол и узел, чей `::after` рисует маркер. */
 const CASES: readonly { name: string; host: string; markup: () => VNode }[] = [
-	{ name: 'Input', host: '.s-input', markup: () => h(Input, { required: true }) },
+	{ name: 'Input', host: '.so-input', markup: () => h(Input, { required: true }) },
 	{
 		name: 'DateInput',
-		host: '.s-date-input',
+		host: '.so-date-input',
 		markup: () => h(DateInput, { required: true, aria_label: 'Дата' }),
 	},
 	{
 		name: 'CheckBox',
-		host: '.s-check-box__container',
+		host: '.so-check-box__container',
 		markup: () => h(CheckBox, { required: true }),
 	},
-	{ name: 'Switch', host: '.s-switch', markup: () => h(Switch, { required: true }) },
+	{ name: 'Switch', host: '.so-switch', markup: () => h(Switch, { required: true }) },
 ]
 
 /** Разметка в сцене заданного направления — направление страницы, у предка. */

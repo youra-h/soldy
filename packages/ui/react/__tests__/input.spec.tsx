@@ -44,7 +44,7 @@ describe('Input · разметка', () => {
 		const el = mount(<Input />).root()
 
 		expect(el.localName).toBe('div')
-		expect(el.classList.contains('s-input')).toBe(true)
+		expect(el.classList.contains('so-input')).toBe(true)
 		expect(field(el).type).toBe('text')
 	})
 
@@ -63,19 +63,19 @@ describe('Input · разметка', () => {
 		).root()
 
 		expect([...el.children].map((part) => part.localName + '.' + part.className)).toEqual([
-			'div.s-input__leading',
+			'div.so-input__leading',
 			'input.',
-			'div.s-input__trailing',
+			'div.so-input__trailing',
 		])
-		expect(find(el, '.s-input__leading', HTMLElement).innerHTML).toBe('<i>L</i>')
-		expect(find(el, '.s-input__trailing', HTMLElement).innerHTML).toBe('<b>текст</b>')
+		expect(find(el, '.so-input__leading', HTMLElement).innerHTML).toBe('<i>L</i>')
+		expect(find(el, '.so-input__trailing', HTMLElement).innerHTML).toBe('<b>текст</b>')
 	})
 
 	it('слот не передан — обёртки нет, и null её не оставляет', () => {
 		const el = mount(<Input leading={null} />).root()
 
-		expect(el.querySelector('.s-input__leading')).toBeNull()
-		expect(el.querySelector('.s-input__trailing')).toBeNull()
+		expect(el.querySelector('.so-input__leading')).toBeNull()
+		expect(el.querySelector('.so-input__trailing')).toBeNull()
 		expect(el.children).toHaveLength(1)
 	})
 
@@ -156,7 +156,7 @@ describe('Input · атрибуты', () => {
 		).root()
 		const input = field(el)
 
-		expect(el.classList.contains('s-input')).toBe(true)
+		expect(el.classList.contains('so-input')).toBe(true)
 		expect(el.classList.contains('app-field')).toBe(true)
 		expect(el.style.color).toBe('red')
 		expect(el.hasAttribute('data-testid')).toBe(false)
@@ -359,7 +359,7 @@ describe('Input · серверный рендер', () => {
  */
 describe('Input · кнопка очистки', () => {
 	/** Кнопка очистки внутри корня. */
-	const clearOf = (root: HTMLElement) => find(root, '.s-input__clear', HTMLButtonElement)
+	const clearOf = (root: HTMLElement) => find(root, '.so-input__clear', HTMLButtonElement)
 
 	function click(element: HTMLElement): void {
 		act(() => element.click())
@@ -368,20 +368,20 @@ describe('Input · кнопка очистки', () => {
 	it('без clearable кнопки нет, и обёртки у конца поля тоже', () => {
 		const el = mount(<Input value="текст" />).root()
 
-		expect(el.querySelector('.s-input__clear')).toBeNull()
-		expect(el.querySelector('.s-input__trailing')).toBeNull()
+		expect(el.querySelector('.so-input__clear')).toBeNull()
+		expect(el.querySelector('.so-input__trailing')).toBeNull()
 	})
 
 	it('по clearable — первой в обёртке у конца, перед содержимым trailing', () => {
 		const el = mount(<Input clearable name="Город" trailing={<i className="probe" />} />).root()
-		const parts = ['.s-input__clear', '.probe']
+		const parts = ['.so-input__clear', '.probe']
 
 		expect(
-			[...find(el, '.s-input__trailing', HTMLElement).children].map((node) =>
+			[...find(el, '.so-input__trailing', HTMLElement).children].map((node) =>
 				parts.find((part) => node.matches(part)),
 			),
 		).toEqual(parts)
-		expect(el.classList.contains('s-input--clearable')).toBe(true)
+		expect(el.classList.contains('so-input--clearable')).toBe(true)
 		expect(clearOf(el).getAttribute('aria-label')).toBe('Clear Город')
 	})
 
@@ -398,7 +398,7 @@ describe('Input · кнопка очистки', () => {
 	it('размер — поля, выключена — вместе с полем, readonly её не гасит', () => {
 		const view = mount(<Input clearable size="lg" readonly />)
 
-		expect(clearOf(view.root()).classList.contains('s-button--size-lg')).toBe(true)
+		expect(clearOf(view.root()).classList.contains('so-button--size-lg')).toBe(true)
 		expect(clearOf(view.root()).disabled).toBe(false)
 
 		view.render(<Input clearable size="lg" readonly disabled />)
@@ -464,8 +464,8 @@ describe('Input · кнопка очистки', () => {
 			/>,
 		).root()
 
-		expect(el.querySelector('.s-input__trailing > .probe')).not.toBeNull()
-		expect(el.querySelector('.s-input__clear')).toBeNull()
+		expect(el.querySelector('.so-input__trailing > .probe')).not.toBeNull()
+		expect(el.querySelector('.so-input__clear')).toBeNull()
 
 		click(find(el, '.probe', HTMLButtonElement))
 
@@ -477,7 +477,7 @@ describe('Input · кнопка очистки', () => {
 		const el = mount(<Input clearable clear={<b className="probe" />} />).root()
 
 		expect(el.querySelector('.probe')).not.toBeNull()
-		expect(el.querySelector('.s-input__clear')).toBeNull()
+		expect(el.querySelector('.so-input__clear')).toBeNull()
 		expect(el.hasAttribute('clear')).toBe(false)
 		expect(field(el).hasAttribute('clear')).toBe(false)
 	})

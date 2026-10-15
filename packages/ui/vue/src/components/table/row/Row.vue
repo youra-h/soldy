@@ -39,7 +39,7 @@ export default { ...SetupTableRow, components: { CheckBox, TableRowCells } }
 			экземпляра у ячейки нет, и его держит строка. В сетке ячейка принимает
 			фокус.
 		-->
-		<td v-if="selecting" class="s-table-row__select" v-bind="cellAria">
+		<td v-if="selecting" class="so-table-row__select" v-bind="cellAria">
 			<CheckBox
 				embedded="table.select"
 				:ctrl="context?.adapters.table.checkBox"

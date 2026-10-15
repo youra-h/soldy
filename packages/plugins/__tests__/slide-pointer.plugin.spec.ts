@@ -373,7 +373,7 @@ describe('что нажатием не считается', () => {
  */
 describe('владелец — любой ISlidable', () => {
 	class TProbe implements ISlidable {
-		readonly classes = new TClasses('s-probe')
+		readonly classes = new TClasses('so-probe')
 		readonly events = new TEvented<{ 'change:snap': (value: TSlideSnap) => void }>()
 		readonly orientation: TSlideOrientation = 'horizontal'
 		readonly inverted = false

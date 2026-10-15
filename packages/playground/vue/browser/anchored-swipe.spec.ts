@@ -126,13 +126,13 @@ const SELECT: TCase = {
 		return { opened }
 	},
 	async open() {
-		await userEvent.click(find('.s-select__field input'))
-		await expect.poll(() => find('.s-select__panel').dataset.open).toBe('true')
-		await settled(find('.s-select__panel'))
+		await userEvent.click(find('.so-select__field input'))
+		await expect.poll(() => find('.so-select__panel').dataset.open).toBe('true')
+		await settled(find('.so-select__panel'))
 	},
-	panel: '.s-select__panel',
-	handle: '.s-select__handle',
-	content: '.s-select__list',
+	panel: '.so-select__panel',
+	handle: '.so-select__handle',
+	content: '.so-select__list',
 }
 
 const DATE_PICKER: TCase = {
@@ -147,14 +147,14 @@ const DATE_PICKER: TCase = {
 		return { opened }
 	},
 	async open() {
-		await userEvent.click(find('.s-date-picker__trigger'))
+		await userEvent.click(find('.so-date-picker__trigger'))
 		// Фокус уходит на день сетки кадром позже — панель уже на месте
-		await expect.poll(() => active()?.classList.contains('s-calendar-item')).toBe(true)
-		await settled(find('.s-date-picker__panel'))
+		await expect.poll(() => active()?.classList.contains('so-calendar-item')).toBe(true)
+		await settled(find('.so-date-picker__panel'))
 	},
-	panel: '.s-date-picker__panel',
-	handle: '.s-date-picker__handle',
-	content: '.s-date-picker__content',
+	panel: '.so-date-picker__panel',
+	handle: '.so-date-picker__handle',
+	content: '.so-date-picker__content',
 }
 
 /** Протянуть мышью от середины узла на `dy` по вертикали — настоящими событиями, по шагам. */
@@ -339,7 +339,7 @@ describe.each([SELECT, DATE_PICKER])('$name', ({ show, open, ...selectors }) => 
 })
 
 describe('Select', () => {
-	const field = () => find('.s-select__field input')
+	const field = () => find('.so-select__field input')
 
 	it('нажатие на полосу фокус с поля не уводит и панель не закрывает', async () => {
 		await SELECT.show({ swipe: 'handle' })
@@ -347,41 +347,41 @@ describe('Select', () => {
 
 		expect(active()).toBe(field())
 
-		await userEvent.click(find('.s-select__handle'))
+		await userEvent.click(find('.so-select__handle'))
 
 		expect(active()).toBe(field())
-		expect(getComputedStyle(find('.s-select__panel')).display).not.toBe('none')
+		expect(getComputedStyle(find('.so-select__panel')).display).not.toBe('none')
 	})
 
 	it('смахнутая панель оставляет фокус на поле', async () => {
 		await SELECT.show({ swipe: 'handle' })
 		await SELECT.open()
-		await drag(find('.s-select__handle'), 150)
+		await drag(find('.so-select__handle'), 150)
 
-		await expect.poll(() => find('.s-select__panel').dataset.open).toBe('false')
+		await expect.poll(() => find('.so-select__panel').dataset.open).toBe('false')
 		expect(active()).toBe(field())
 	})
 })
 
 describe('DatePicker', () => {
-	const panel = () => find('.s-date-picker__panel')
-	const content = () => find('.s-date-picker__content')
+	const panel = () => find('.so-date-picker__panel')
+	const content = () => find('.so-date-picker__content')
 	const isOpen = () => getComputedStyle(panel()).display !== 'none'
 
 	it('после закрытия жестом фокус возвращается на кнопку, как после Escape', async () => {
 		await DATE_PICKER.show({ swipe: 'handle' })
 		await DATE_PICKER.open()
-		await drag(find('.s-date-picker__handle'), 150)
+		await drag(find('.so-date-picker__handle'), 150)
 
 		await expect.poll(isOpen).toBe(false)
-		await expect.poll(active).toBe(find('.s-date-picker__trigger'))
+		await expect.poll(active).toBe(find('.so-date-picker__trigger'))
 	})
 
 	it('за всю панель — тянут за место без контролов: шапку дней недели', async () => {
 		const { opened } = await DATE_PICKER.show({ swipe: 'panel' })
 
 		await DATE_PICKER.open()
-		await drag(find('.s-calendar__weekday'), 150)
+		await drag(find('.so-calendar__weekday'), 150)
 
 		await expect.poll(isOpen).toBe(false)
 		expect(opened.value).toBe(false)
@@ -410,7 +410,7 @@ describe('DatePicker', () => {
 
 		// Дальше четверти высоты панели: начнись жест — панель закрылась бы. И в
 		// пределах окна: ниже его края указатель странице уже не попадает
-		await drag(find('.s-calendar__weekday'), 100)
+		await drag(find('.so-calendar__weekday'), 100)
 		await nextFrame()
 
 		expect(isOpen()).toBe(true)

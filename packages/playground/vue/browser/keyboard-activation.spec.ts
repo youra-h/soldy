@@ -111,7 +111,7 @@ const byText = (selector: string, text: string): HTMLElement => {
 
 /** Тексты тегов на странице — по их строкам. */
 const tagTexts = () =>
-	[...document.querySelectorAll('.s-tags-item > .s-button:first-child')].map((row) =>
+	[...document.querySelectorAll('.so-tags-item > .so-button:first-child')].map((row) =>
 		row.textContent?.trim(),
 	)
 
@@ -127,7 +127,7 @@ describe('текстовое поле: пробел печатается', () =>
 	it('в Input', async () => {
 		await show(() => h(Input))
 
-		const input = field('.s-input input')
+		const input = field('.so-input input')
 
 		input.focus()
 		await userEvent.keyboard('a b')
@@ -140,7 +140,7 @@ describe('текстовое поле: пробел печатается', () =>
 			h(Select, { editable: true }, () => [h(SelectItem, { value: 'msk', text: 'Москва' })]),
 		)
 
-		const input = field('.s-select__field input')
+		const input = field('.so-select__field input')
 
 		input.focus()
 		await userEvent.keyboard('a b')
@@ -154,7 +154,7 @@ describe('текстовое поле: пробел печатается', () =>
 
 		await show(() => h('form', { onSubmit: submit }, [h(Input)]))
 
-		field('.s-input input').focus()
+		field('.so-input input').focus()
 		await userEvent.keyboard('{Enter}')
 
 		expect(submit).toHaveBeenCalledTimes(1)
@@ -174,13 +174,13 @@ describe('флажок: пробел переключает', () => {
 	it('CheckBox', async () => {
 		await show(() => h(CheckBox))
 
-		await toggles('.s-check-box input')
+		await toggles('.so-check-box input')
 	})
 
 	it('Switch', async () => {
 		await show(() => h(Switch))
 
-		await toggles('.s-switch input')
+		await toggles('.so-switch input')
 	})
 })
 
@@ -194,7 +194,7 @@ describe('вложенная кнопка нажимается', () => {
 			]),
 		)
 
-		const header = byText('.s-accordion-item__header', 'Доставка')
+		const header = byText('.so-accordion-item__header', 'Доставка')
 
 		header.focus()
 		await userEvent.keyboard(key)
@@ -229,7 +229,7 @@ describe('вложенная кнопка нажимается', () => {
 			}),
 		)
 
-		find('.s-tags-item__close[aria-label="Close Почта"]').focus()
+		find('.so-tags-item__close[aria-label="Close Почта"]').focus()
 		await userEvent.keyboard(key)
 
 		await expect.poll(tagTexts).toEqual(['Настройки'])
@@ -238,12 +238,12 @@ describe('вложенная кнопка нажимается', () => {
 	it.each(KEYS)('%s на кнопке очистки очищает Input', async (_name, key) => {
 		await show(() => h(Input, { clearable: true, value: 'текст' }))
 
-		const input = field('.s-input input')
+		const input = field('.so-input input')
 
 		// Без значения пустое поле ниже ничего бы не доказало
 		expect(input.value).toBe('текст')
 
-		find('.s-input__clear').focus()
+		find('.so-input__clear').focus()
 		await userEvent.keyboard(key)
 
 		await expect.poll(() => input.value).toBe('')
@@ -252,11 +252,11 @@ describe('вложенная кнопка нажимается', () => {
 	it.each(KEYS)('%s на кнопке очистки очищает DateInput', async (_name, key) => {
 		await show(() => h(DateInput, { clearable: true, value: '2026-05-12' }))
 
-		const hidden = field('.s-date-input input[type="hidden"]')
+		const hidden = field('.so-date-input input[type="hidden"]')
 
 		expect(hidden.value).toBe('2026-05-12')
 
-		find('.s-date-input__clear').focus()
+		find('.so-date-input__clear').focus()
 		await userEvent.keyboard(key)
 
 		await expect.poll(() => hidden.value).toBe('')
@@ -270,16 +270,16 @@ describe('вложенная кнопка нажимается', () => {
 			]),
 		)
 
-		const input = field('.s-select__field input')
+		const input = field('.so-select__field input')
 
 		// Без значения пустое поле ниже ничего бы не доказало
 		await expect.poll(() => input.value).toBe('Москва')
 
-		find('.s-select .s-input__clear').focus()
+		find('.so-select .so-input__clear').focus()
 		await userEvent.keyboard(key)
 
 		await expect.poll(() => input.value).toBe('')
-		expect(find('.s-select').dataset.open).not.toBe('true')
+		expect(find('.so-select').dataset.open).not.toBe('true')
 	})
 
 	it.each(KEYS)(
@@ -295,11 +295,11 @@ describe('вложенная кнопка нажимается', () => {
 			// Теги в поле появляются, когда опции зарегистрировались
 			await expect.poll(tagTexts).toEqual(['Москва', 'Петербург'])
 
-			find('.s-tags-item__close[aria-label="Close Петербург"]').focus()
+			find('.so-tags-item__close[aria-label="Close Петербург"]').focus()
 			await userEvent.keyboard(key)
 
 			await expect.poll(tagTexts).toEqual(['Москва'])
-			expect(find('.s-select').dataset.open).not.toBe('true')
+			expect(find('.so-select').dataset.open).not.toBe('true')
 		},
 	)
 })
@@ -314,7 +314,7 @@ describe.each(['div', 'button'] as const)('Button с корнем <%s>: press н
 
 		await show(() => h(Button, { tag, text: 'Сохранить', 'onAction:press': press }))
 
-		find('.s-button').focus()
+		find('.so-button').focus()
 		await userEvent.keyboard(key)
 		await nextFrame()
 
@@ -364,15 +364,15 @@ describe('ListBox: клавиша списка — только с корня и
 	]
 
 	/** Подсвеченный элемент — по `data-highlighted`, его пишет `TListItemPlugin`. */
-	const highlighted = () => document.querySelector('.s-list-box-item[data-highlighted="true"]')
+	const highlighted = () => document.querySelector('.so-list-box-item[data-highlighted="true"]')
 
 	/** Строка элемента по тексту: на ней `tabindex="-1"` и `aria-selected`. */
-	const rowOf = (text: string) => byText('.s-list-box-item .s-button', text)
+	const rowOf = (text: string) => byText('.so-list-box-item .so-button', text)
 
 	it('пробел печатается в Input из шапки, стрелка из него ничего не подсвечивает', async () => {
 		await show(() => h(ListBox, null, { header: () => h(Input), default: cities }))
 
-		const input = field('.s-list-box .s-input input')
+		const input = field('.so-list-box .so-input input')
 
 		input.focus()
 		await userEvent.keyboard('a b')
@@ -385,7 +385,7 @@ describe('ListBox: клавиша списка — только с корня и
 		expect(highlighted()).toBeNull()
 
 		// Та же стрелка с корня подсвечивает: проверка выше не пустая
-		find('.s-list-box').focus()
+		find('.so-list-box').focus()
 		await userEvent.keyboard('{ArrowDown}')
 
 		await expect.poll(highlighted).not.toBeNull()
@@ -412,7 +412,7 @@ describe('ListBox: клавиша списка — только с корня и
 			// доказала
 			await expect.poll(() => rowOf('Москва').getAttribute('aria-selected')).toBe('true')
 
-			byText('.s-button', 'Готово').focus()
+			byText('.so-button', 'Готово').focus()
 			await userEvent.keyboard(key)
 			await nextFrame()
 

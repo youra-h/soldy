@@ -42,16 +42,16 @@ describe('Label · разметка', () => {
 
 		expect(el.localName).toBe('label')
 		expect([...el.classList]).toEqual([
-			's-label',
-			's-label--size-normal',
-			's-label--position-end',
+			'so-label',
+			'so-label--size-normal',
+			'so-label--position-end',
 		])
 		expect([...el.children].map((part) => part.className)).toEqual([
-			's-label__control',
-			's-label__text',
+			'so-label__control',
+			'so-label__text',
 		])
-		expect(el.querySelector('.s-label__control > .s-check-box input')).not.toBeNull()
-		expect(find(el, '.s-label__text', HTMLElement).textContent).toBe('Согласен')
+		expect(el.querySelector('.so-label__control > .so-check-box input')).not.toBeNull()
+		expect(find(el, '.so-label__text', HTMLElement).textContent).toBe('Согласен')
 	})
 
 	it('tag рисует корень другим тегом', () => {
@@ -61,12 +61,12 @@ describe('Label · разметка', () => {
 	it('смена position меняет модификатор стороны', () => {
 		const { root, render } = mount(<Label position="start" />)
 
-		expect(root().classList.contains('s-label--position-start')).toBe(true)
+		expect(root().classList.contains('so-label--position-start')).toBe(true)
 
 		render(<Label position="top" />)
 
-		expect(root().classList.contains('s-label--position-top')).toBe(true)
-		expect(root().classList.contains('s-label--position-start')).toBe(false)
+		expect(root().classList.contains('so-label--position-top')).toBe(true)
+		expect(root().classList.contains('so-label--position-start')).toBe(false)
 	})
 
 	it('direction: rtl — dir на корне подписи', () => {
@@ -77,7 +77,7 @@ describe('Label · разметка', () => {
 })
 
 describe('Label · текст: проп и слот', () => {
-	const textOf = (root: HTMLElement) => find(root, '.s-label__text', HTMLElement)
+	const textOf = (root: HTMLElement) => find(root, '.so-label__text', HTMLElement)
 
 	it('без слота — проп text', () => {
 		expect(textOf(mount(<Label text="Проп" />).root()).textContent).toBe('Проп')
@@ -144,7 +144,7 @@ describe.each(CHECKABLES)('Label · %s в подписи', (_name, control) => {
 		// Слушатель поля плагин вешает кадром позже, по `ready` узла
 		await nextFrame()
 
-		act(() => find(el, '.s-label__text', HTMLElement).click())
+		act(() => find(el, '.so-label__text', HTMLElement).click())
 
 		expect(find(el, 'input', HTMLInputElement).checked).toBe(true)
 		expect(onChangeValue.mock.calls).toEqual([[{ newValue: true, oldValue: false }]])
@@ -186,13 +186,13 @@ describe('Label · радио в подписи', () => {
 
 		await nextFrame()
 
-		const label = find(el, '.s-label', HTMLLabelElement)
+		const label = find(el, '.so-label', HTMLLabelElement)
 		const input = find(label, 'input', HTMLInputElement)
 
 		expect(nestedWarnings(warn.mock.calls)).toEqual([])
 		expect([...(input.labels ?? [])]).toEqual([label])
 
-		act(() => find(label, '.s-label__text', HTMLElement).click())
+		act(() => find(label, '.so-label__text', HTMLElement).click())
 
 		expect(input.checked).toBe(true)
 		expect(onChangeValue).toHaveBeenLastCalledWith({ newValue: 'a', oldValue: undefined })

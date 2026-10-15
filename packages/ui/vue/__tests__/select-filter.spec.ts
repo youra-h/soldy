@@ -296,7 +296,7 @@ describe('ввод в поле под отбором', () => {
 		await nextTick()
 
 		expect((wrapper.find('input').element as HTMLInputElement).value).toBe('')
-		expect(wrapper.findAll('.s-tags-item').length).toBe(1)
+		expect(wrapper.findAll('.so-tags-item').length).toBe(1)
 	})
 
 	/**
@@ -332,7 +332,7 @@ describe('ввод в поле под отбором', () => {
 describe('опции из разметки под отбором', () => {
 	/** Показанные — те, что не скрыты `v-show`: он стоит на корне элемента, не на строке. */
 	const visibleTexts = () =>
-		[...document.querySelectorAll<HTMLElement>('.s-select-item')]
+		[...document.querySelectorAll<HTMLElement>('.so-select-item')]
 			.filter((el) => el.style.display !== 'none')
 			.map((el) => el.textContent?.trim())
 

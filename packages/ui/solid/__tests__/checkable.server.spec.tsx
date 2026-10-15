@@ -33,13 +33,13 @@ describe('CheckBox · серверный рендер', () => {
 	it('выбранный — отметка в коробке с первой отрисовки', () => {
 		const body = renderToString(() => <CheckBox value />)
 
-		expect(body).toMatch(/<svg [^>]*class="s-check-box__mark ?"/)
+		expect(body).toMatch(/<svg [^>]*class="so-check-box__mark ?"/)
 	})
 
 	it('частично выбранный — без атрибута indeterminate: у HTML его нет', () => {
 		const body = renderToString(() => <CheckBox indeterminate />)
 
 		expect(fieldOf(body)).not.toContain('indeterminate')
-		expect(body).toMatch(/<svg [^>]*class="s-check-box__mark ?"/)
+		expect(body).toMatch(/<svg [^>]*class="so-check-box__mark ?"/)
 	})
 })

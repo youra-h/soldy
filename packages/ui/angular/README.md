@@ -7,7 +7,7 @@ framework-agnostic core and thin adapters that render it in Vue, React, Angular,
 Web Components.
 
 The adapter is wiring, not behavior: it connects a core model to Angular's signals and renders the
-markup — BEM classes `s-*` and `data-*` state attributes. Props, events and slots come from the
+markup — BEM classes `so-*` and `data-*` state attributes. Props, events and slots come from the
 component descriptor, so they match the other five adapters; only the spelling is Angular's: a
 component is a prefixed attribute on your own element (`<button so-button>`), events are outputs
 named `so` + the core name in camelCase (`show` → `soShow`, `show:before` → `soShowBefore`,

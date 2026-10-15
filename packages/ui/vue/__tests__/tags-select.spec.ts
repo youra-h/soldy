@@ -54,7 +54,7 @@ const keydown = (target: Element, key: string): void => {
 }
 
 /** Строка тега — носитель его роли и `aria-selected`. */
-const rows = () => [...document.querySelectorAll('.s-tags-item > .s-button:first-child')]
+const rows = () => [...document.querySelectorAll('.so-tags-item > .so-button:first-child')]
 
 /** Строка тега по тексту; нет её — тест падает здесь. */
 const rowOf = (text: string): HTMLElement => {

@@ -26,7 +26,7 @@
 // разрешает (`motion.allowed`). Без движения доля встаёт сразу, а неизвестная
 // доля — мерцание всей дорожки (`progress.pulse`): отрезок, который стоит на
 // месте, читался бы зависшей полосой.
-.s-progress-linear {
+.so-progress-linear {
 	$this: &;
 
 	// Размер без модификатора — `normal`. Ядро пишет `--size-*` всегда, но блок
@@ -127,7 +127,7 @@
 		@include motion.allowed {
 			inset-inline-end: auto;
 			inline-size: 40%;
-			animation: s-progress-linear-run 1.6s linear infinite;
+			animation: so-progress-linear-run 1.6s linear infinite;
 		}
 	}
 
@@ -137,7 +137,7 @@
 		@include motion.allowed {
 			inset-block-start: auto;
 			block-size: 40%;
-			animation: s-progress-linear-run-vertical 1.6s linear infinite;
+			animation: so-progress-linear-run-vertical 1.6s linear infinite;
 		}
 	}
 
@@ -159,7 +159,7 @@
 // В кнопке вид без варианта — цвет её текста (`mixins/_indicator.scss`),
 // поэтому у модификатора `accent` правило своё, а `normal` — нейтраль.
 // Нулевая специфичность — вариант перекрывает базу, не споря с ней.
-:where(.s-progress-linear) {
+:where(.so-progress-linear) {
 	@include mixines.progress-linear-base-colors('accent');
 }
 
@@ -171,11 +171,11 @@
 // берут по содержимому (строчный флекс, кнопка), она схлопнулась бы в ноль.
 // У вертикальной длины по содержимому нет вовсе, высота своя — та же, что у
 // вертикального ползунка.
-:where(.s-progress-linear--horizontal) {
+:where(.so-progress-linear--horizontal) {
 	@apply min-w-40;
 }
 
-:where(.s-progress-linear--vertical) {
+:where(.so-progress-linear--vertical) {
 	@apply h-40;
 }
 
@@ -185,7 +185,7 @@
 // стоит справа и идёт влево. Отдельных кадров под RTL нет — их выбирал
 // селектор по атрибуту у предка, и полоса с `direction="ltr"` в RTL-предке
 // бежала в обратную сторону.
-@keyframes s-progress-linear-run {
+@keyframes so-progress-linear-run {
 	from {
 		translate: calc(-100% * var(--s-dir-sign));
 	}
@@ -197,7 +197,7 @@
 
 // Вертикальный бег: отрезок стоит у низа дорожки, выходит из-за нижнего края
 // и уходит за верхний. Ось экрана вниз, поэтому путь вверх — отрицательный.
-@keyframes s-progress-linear-run-vertical {
+@keyframes so-progress-linear-run-vertical {
 	from {
 		translate: 0 100%;
 	}
@@ -223,7 +223,7 @@
 // проигрывал: правило бега специфичнее (`[data-indeterminate]`), и в режиме
 // отрезок оставался цвета темы, хотя заливка уже брала системный.
 @media (forced-colors: active) {
-	.s-progress-linear {
+	.so-progress-linear {
 		forced-color-adjust: none;
 		--s-progress-linear-track: Canvas;
 		--s-progress-linear-fill: Highlight;

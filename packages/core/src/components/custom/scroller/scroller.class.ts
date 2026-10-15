@@ -41,7 +41,7 @@ export default class TScroller
 	extends TControl<IScrollerProps, TScrollerEvents>
 	implements IScroller
 {
-	static override baseClass = 's-scroller'
+	static override baseClass = 'so-scroller'
 
 	static defaultValues: typeof TControl.defaultValues &
 		TDefaultValues<IScrollerProps, never, 'viewportAria'> = {

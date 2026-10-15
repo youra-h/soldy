@@ -32,7 +32,7 @@ import type { AccordionItemAttributes, AccordionItemProps } from './base.compone
  * `leading-icon` и `trailing-icon` подменяют её, по умолчанию она — иконка
  * пакета по роли `arrowRight`. Стрелка — в обёртке, и класс стрелки на
  * обёртке, а не на иконке: тема поворачивает стрелку раскрытой секции по
- * `.s-accordion-item__arrow`, и подменённая иконка поворачивается так же.
+ * `.so-accordion-item__arrow`, и подменённая иконка поворачивается так же.
  * Обёртка стоит, пока на её стороне стрелка по умолчанию или задан слот.
  */
 export function AccordionItem(props: AccordionItemProps): ReactElement | null {
@@ -62,7 +62,7 @@ export function AccordionItem(props: AccordionItemProps): ReactElement | null {
 	/** Стрелка стороны: слот, а без него — иконка, если стрелка на этой стороне. */
 	const arrowAt = (side: 'start' | 'end', slot: ReactNode) =>
 		hasSlot(slot) || arrowPlacement === side ? (
-			<span className="s-accordion-item__arrow">
+			<span className="so-accordion-item__arrow">
 				{hasSlot(slot) ? (
 					renderSlot(slot)
 				) : (
@@ -75,7 +75,7 @@ export function AccordionItem(props: AccordionItemProps): ReactElement | null {
 		<Tag {...toRootProps(ref, state, [dataset, attrs], toRootForward(forwardProps))}>
 			<Button
 				embedded="accordion.header"
-				className="s-accordion-item__header"
+				className="so-accordion-item__header"
 				view={view}
 				disabled={disabled}
 				size={size}
@@ -102,8 +102,8 @@ export function AccordionItem(props: AccordionItemProps): ReactElement | null {
 				{renderSlot(props.header, { text: text ?? '', selected: selected ?? false }) ??
 					text}
 			</Button>
-			<div className="s-accordion-item__body">
-				<div className="s-accordion-item__content" {...toAriaProps(contentAria)}>
+			<div className="so-accordion-item__body">
+				<div className="so-accordion-item__content" {...toAriaProps(contentAria)}>
 					{renderSlot(props.children)}
 				</div>
 			</div>

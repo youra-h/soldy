@@ -17,7 +17,7 @@
 //
 // Контрол лежит в обёртке `__control` на любой глубине: у CheckBox и Switch
 // правило стоит на поле внутри корня, у радио — на самом корне.
-$hovered: ':hover, :where(.s-label:hover > .s-label__control *)';
+$hovered: ':hover, :where(.so-label:hover > .so-label__control *)';
 
 // Контрол только для чтения: наведение его не красит.
 //

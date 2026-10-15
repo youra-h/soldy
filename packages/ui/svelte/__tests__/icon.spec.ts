@@ -48,7 +48,7 @@ describe('Icon · размер из разметки', () => {
 		const el = mount(Icon, { tag: 'i' }).root()
 
 		expect(el.hasAttribute('style')).toBe(false)
-		expect(el.classList.contains('s-icon--size-normal')).toBe(true)
+		expect(el.classList.contains('so-icon--size-normal')).toBe(true)
 	})
 
 	it('смена размера доходит до style, снятый размер его убирает', () => {
@@ -91,7 +91,7 @@ describe('Icon · тег-компонент', () => {
 		const { container } = mount(Icon, { tag: Glyph, width: 16, class: 'app-icon' })
 		const svg = find(container, 'svg', SVGSVGElement)
 
-		expect(svg.getAttribute('class')).toBe('s-icon s-icon--size-normal app-icon')
+		expect(svg.getAttribute('class')).toBe('so-icon so-icon--size-normal app-icon')
 		expect(svg.getAttribute('aria-hidden')).toBe('true')
 		expect(svg.getAttribute('viewBox')).toBe('0 0 24 24')
 		expect(svg.style.width).toBe('16px')
@@ -128,7 +128,7 @@ describe('Icon · иконка по роли', () => {
 		const svg = find(container, ':scope > svg', SVGSVGElement)
 		const source = getIcon('arrowDown')
 
-		expect(svg.getAttribute('class')).toBe('s-icon s-icon--size-normal')
+		expect(svg.getAttribute('class')).toBe('so-icon so-icon--size-normal')
 		expect(svg.getAttribute('aria-hidden')).toBe('true')
 		expect(svg.style.width).toBe('20px')
 		expect(svg.getAttribute('viewBox')).toBe(source.viewBox)
@@ -186,7 +186,7 @@ describe('Icon · иконка по роли', () => {
 		flushSync()
 
 		expect(container.querySelector(':scope > i')).toBeNull()
-		expect(find(container, ':scope > svg', SVGSVGElement).classList.contains('s-icon')).toBe(
+		expect(find(container, ':scope > svg', SVGSVGElement).classList.contains('so-icon')).toBe(
 			true,
 		)
 	})
@@ -197,6 +197,6 @@ describe('Icon · без tag', () => {
 		const el = mount(Icon, {}).root()
 
 		expect(el.localName).toBe('span')
-		expect(el.classList.contains('s-icon')).toBe(true)
+		expect(el.classList.contains('so-icon')).toBe(true)
 	})
 })

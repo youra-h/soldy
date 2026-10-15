@@ -51,12 +51,12 @@
 	`leading-icon` и `trailing-icon` подменяют её, по умолчанию она — иконка
 	пакета по роли `arrowRight`. Стрелка — в обёртке, и класс стрелки на
 	обёртке, а не на иконке: тема поворачивает стрелку раскрытой секции по
-	`.s-accordion-item__arrow`, и подменённая иконка поворачивается так же.
+	`.so-accordion-item__arrow`, и подменённая иконка поворачивается так же.
 	Обёртка стоит, пока на её стороне стрелка по умолчанию или задан слот.
 -->
 {#snippet arrow(side: 'start' | 'end', slot: Snippet | undefined)}
 	{#if slot || state.arrowPlacement === side}
-		<span class="s-accordion-item__arrow">
+		<span class="so-accordion-item__arrow">
 			{#if slot}
 				{@render slot()}
 			{:else}
@@ -78,7 +78,7 @@
 	>
 		<Button
 			embedded="accordion.header"
-			class="s-accordion-item__header"
+			class="so-accordion-item__header"
 			view={state.view}
 			disabled={state.disabled}
 			size={state.size}
@@ -100,8 +100,8 @@
 			{#snippet trailing()}
 				{@render props.trailing?.()}{@render arrow('end', props['trailing-icon'])}
 			{/snippet}
-		</Button><div class="s-accordion-item__body">
-			<div class="s-accordion-item__content" {...state.contentAria}>
+		</Button><div class="so-accordion-item__body">
+			<div class="so-accordion-item__content" {...state.contentAria}>
 				{@render props.children?.()}
 			</div>
 		</div>

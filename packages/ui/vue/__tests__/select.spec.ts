@@ -45,7 +45,7 @@ const panel = () => document.querySelector('[role="listbox"]')
 
 /** Открыта ли панель. Она всегда в DOM — скрывается через display: none. */
 const isOpen = () => {
-	const frame = document.querySelector('.s-select__panel') as HTMLElement | null
+	const frame = document.querySelector('.so-select__panel') as HTMLElement | null
 
 	return !!frame && frame.style.display !== 'none'
 }
@@ -212,12 +212,12 @@ describe('опции', () => {
 	})
 
 	/**
-	 * Фон hover/подсветки рисует `.s-button` через общий `button-state-bg`
+	 * Фон hover/подсветки рисует `.so-button` через общий `button-state-bg`
 	 * темы, а не опция сама: миксин читает `data-highlighted`/`data-selected`
 	 * с самой кнопки, поэтому набор обязан доехать и туда, не только на
 	 * обёртку опции. Тот же приём, что у `ListBoxItem`.
 	 */
-	it('data-selected доезжает до .s-button опции, а вида в разметке нет', async () => {
+	it('data-selected доезжает до .so-button опции, а вида в разметке нет', async () => {
 		const wrapper = render()
 
 		await nextFrame()
@@ -227,7 +227,7 @@ describe('опции', () => {
 		await wrapper.find('input').trigger('click')
 		await nextTick()
 
-		const button = document.querySelector('.s-select-item .s-button') as HTMLElement
+		const button = document.querySelector('.so-select-item .so-button') as HTMLElement
 
 		expect(button.getAttribute('data-selected')).toBe('true')
 		// Вид строки опции — значение темы: разметка его не передаёт, тема
@@ -237,28 +237,28 @@ describe('опции', () => {
 })
 
 /**
- * Кнопку очистки рисует поле — `Input` внутри Select (`.s-input__clear`):
+ * Кнопку очистки рисует поле — `Input` внутри Select (`.so-input__clear`):
  * `clearable` Select отдаёт полю, имя кнопке пишет плагин имён самого поля,
  * и своей кнопки у Select нет.
  */
 describe('кнопка очистки', () => {
 	it('без clearable её нет', () => {
-		expect(render().find('.s-input__clear').exists()).toBe(false)
+		expect(render().find('.so-input__clear').exists()).toBe(false)
 	})
 
 	it('кнопка — поля, первой в его слоте у конца, перед стрелкой', () => {
 		const wrapper = render({ clearable: true })
-		const slot = wrapper.find('.s-select__field > .s-input__trailing')
-		const parts = ['.s-input__clear', '.s-select__arrow']
+		const slot = wrapper.find('.so-select__field > .so-input__trailing')
+		const parts = ['.so-input__clear', '.so-select__arrow']
 
 		expect(
 			[...slot.element.children].map((node) => parts.find((part) => node.matches(part))),
 		).toEqual(parts)
-		expect(wrapper.find('.s-select__clear').exists()).toBe(false)
+		expect(wrapper.find('.so-select__clear').exists()).toBe(false)
 	})
 
 	it('имя собрано с именем поля', () => {
-		const clear = render({ clearable: true }).find('.s-input__clear')
+		const clear = render({ clearable: true }).find('.so-input__clear')
 
 		expect(clear.attributes('aria-label')).toBe('Clear Город')
 	})
@@ -270,7 +270,7 @@ describe('кнопка очистки', () => {
 			attachTo: document.body,
 		})
 
-		expect(wrapper.find('.s-input__clear').attributes('aria-label')).toBe('Очистить Город')
+		expect(wrapper.find('.so-input__clear').attributes('aria-label')).toBe('Очистить Город')
 	})
 
 	it('клик сбрасывает выбранное значение и панель не открывает', async () => {
@@ -285,7 +285,7 @@ describe('кнопка очистки', () => {
 		expect(wrapper.find('input').element.value).toBe('Тверь')
 		expect(isOpen()).toBe(false)
 
-		await wrapper.find('.s-input__clear').trigger('click')
+		await wrapper.find('.so-input__clear').trigger('click')
 		await nextTick()
 
 		expect(wrapper.find('input').element.value).toBe('')
@@ -352,8 +352,8 @@ describe('кнопка очистки', () => {
 			attachTo: document.body,
 		})
 
-		expect(wrapper.find('.s-input__clear').exists()).toBe(false)
-		expect(wrapper.find('.s-select__field .s-input__trailing > .probe-clear').exists()).toBe(
+		expect(wrapper.find('.so-input__clear').exists()).toBe(false)
+		expect(wrapper.find('.so-select__field .so-input__trailing > .probe-clear').exists()).toBe(
 			true,
 		)
 	})
@@ -395,7 +395,7 @@ describe('множественный выбор', () => {
 
 		expect(wrapper.find('input').element.value).toBe('')
 
-		const tags = document.querySelectorAll('.s-tags-item')
+		const tags = document.querySelectorAll('.so-tags-item')
 
 		expect(tags).toHaveLength(1)
 		expect(tags[0].textContent).toContain('Москва')
@@ -409,10 +409,10 @@ describe('множественный выбор', () => {
 		await nextTick()
 		;(options()[0] as HTMLElement).click()
 		await nextTick()
-		;(document.querySelector('.s-tags-item__close') as HTMLElement).click()
+		;(document.querySelector('.so-tags-item__close') as HTMLElement).click()
 		await nextTick()
 
-		expect(document.querySelectorAll('.s-tags-item')).toHaveLength(0)
+		expect(document.querySelectorAll('.so-tags-item')).toHaveLength(0)
 
 		await wrapper.find('input').trigger('click')
 		await nextTick()
@@ -423,7 +423,7 @@ describe('множественный выбор', () => {
 	it('в single тегов в поле нет', () => {
 		render()
 
-		expect(document.querySelectorAll('.s-tags-item')).toHaveLength(0)
+		expect(document.querySelectorAll('.so-tags-item')).toHaveLength(0)
 	})
 
 	/**
@@ -466,7 +466,7 @@ describe('множественный выбор', () => {
 
 		expect(wrapper.find('span').text()).toBe('1')
 		expect(selected()).toEqual(['true', 'false'])
-		expect(document.querySelectorAll('.s-tags-item')).toHaveLength(1)
+		expect(document.querySelectorAll('.so-tags-item')).toHaveLength(1)
 	})
 })
 
@@ -481,7 +481,7 @@ describe('панель как телепортированный Frame', () => {
 		await wrapper.find('input').trigger('click')
 		await nextTick()
 
-		const frame = document.querySelector('.s-select__panel')
+		const frame = document.querySelector('.so-select__panel')
 
 		expect(frame).not.toBeNull()
 		expect(frame?.hasAttribute('data-owner')).toBe(true)
@@ -493,7 +493,7 @@ describe('панель как телепортированный Frame', () => {
 		const wrapper = render()
 
 		await nextFrame()
-		await wrapper.find('.s-select').trigger('click')
+		await wrapper.find('.so-select').trigger('click')
 		await nextTick()
 		await nextTick()
 
@@ -511,7 +511,7 @@ describe('панель как телепортированный Frame', () => {
 		const wrapper = render()
 
 		await nextFrame()
-		await wrapper.find('.s-select').trigger('click')
+		await wrapper.find('.so-select').trigger('click')
 		await nextTick()
 		await nextTick()
 
@@ -551,8 +551,8 @@ describe('слоты поля', () => {
 			trailing: '<i class="probe-trailing" />',
 		})
 
-		expect(wrapper.find('.s-input__leading .probe-leading').exists()).toBe(true)
-		expect(wrapper.find('.s-input__trailing .probe-trailing').exists()).toBe(true)
+		expect(wrapper.find('.so-input__leading .probe-leading').exists()).toBe(true)
+		expect(wrapper.find('.so-input__trailing .probe-trailing').exists()).toBe(true)
 
 		wrapper.unmount()
 	})
@@ -570,7 +570,7 @@ describe('слоты поля', () => {
 		// молча перестал бы работать для пользовательской иконки
 		const wrapper = withSlots({ 'arrow-icon': '<i class="probe-arrow" />' })
 
-		expect(wrapper.find('.s-select__arrow .probe-arrow').exists()).toBe(true)
+		expect(wrapper.find('.so-select__arrow .probe-arrow').exists()).toBe(true)
 
 		wrapper.unmount()
 	})
@@ -582,8 +582,8 @@ describe('слоты поля', () => {
 			attachTo: document.body,
 		})
 
-		expect(wrapper.find('.s-input__clear').exists()).toBe(true)
-		expect(wrapper.find('.s-select__arrow').exists()).toBe(true)
+		expect(wrapper.find('.so-input__clear').exists()).toBe(true)
+		expect(wrapper.find('.so-select__arrow').exists()).toBe(true)
 		expect(wrapper.find('.probe-trailing').exists()).toBe(true)
 
 		wrapper.unmount()
@@ -689,7 +689,7 @@ describe('списочные свойства', () => {
 
 	/**
 	 * `maxRows = 0` (по умолчанию) — предела нет, и плагин обязан ничего не
-	 * писать: потолок панели задаёт тема (`.s-select__list { max-h-64 }`), а
+	 * писать: потолок панели задаёт тема (`.so-select__list { max-h-64 }`), а
 	 * инлайновый стиль класс перебивает.
 	 */
 	it('без maxRows высота панели остаётся за темой', async () => {
@@ -698,7 +698,7 @@ describe('списочные свойства', () => {
 		await nextFrame()
 		await nextFrame()
 
-		const list = document.querySelector('.s-select__list') as HTMLElement
+		const list = document.querySelector('.so-select__list') as HTMLElement
 
 		expect(list.style.maxHeight).toBe('')
 	})
@@ -712,7 +712,7 @@ describe('списочные свойства', () => {
 		await nextTick()
 		await nextFrame()
 
-		const panelEl = document.querySelector('.s-select__panel') as HTMLElement
+		const panelEl = document.querySelector('.so-select__panel') as HTMLElement
 
 		expect(panelEl.style.height).toBe('auto')
 	})
@@ -727,8 +727,8 @@ describe('отступ панели от поля', () => {
 		await nextTick()
 		await nextFrame()
 
-		const field = wrapper.find('.s-select').element as HTMLElement
-		const panelEl = document.querySelector('.s-select__panel') as HTMLElement
+		const field = wrapper.find('.so-select').element as HTMLElement
+		const panelEl = document.querySelector('.so-select__panel') as HTMLElement
 
 		const fieldBottom = field.getBoundingClientRect().bottom
 		const panelTop = parseFloat(panelEl.style.top || '0')
@@ -803,13 +803,13 @@ describe('сторона панели', () => {
  */
 describe('жест', () => {
 	const frame = (): HTMLElement => {
-		const node = document.querySelector('.s-select__panel')
+		const node = document.querySelector('.so-select__panel')
 
 		if (!(node instanceof HTMLElement)) throw new Error('панели нет')
 
 		return node
 	}
-	const handle = () => document.querySelector('.s-select__handle')
+	const handle = () => document.querySelector('.so-select__handle')
 
 	/** Указатель мышью в точке по вертикали — как его слушает плагин жеста. */
 	const pointer = (type: string, target: Element, y: number) =>

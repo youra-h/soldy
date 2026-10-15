@@ -146,14 +146,14 @@ function columnOf(engine: TTableCollection, field: string): ITableColumn {
 }
 
 /** Строки `tbody` — по тексту ячейки заголовка. */
-const rowNames = () => findAll('.s-table-row').map((row) => text(find('th', row)))
+const rowNames = () => findAll('.so-table-row').map((row) => text(find('th', row)))
 
 /** Отметка выбора строк. */
-const rowsSelected = () => findAll('.s-table-row').map((row) => row.dataset.selected)
+const rowsSelected = () => findAll('.so-table-row').map((row) => row.dataset.selected)
 
 /** Отметки чекбоксов строк. */
 const rowsChecked = () =>
-	findAll('.s-table-row').map((row) => checkBoxInput('.s-table-row__select', row).checked)
+	findAll('.so-table-row').map((row) => checkBoxInput('.so-table-row__select', row).checked)
 
 describe('разметка', () => {
 	it('шапка — показанные колонки, тело — строки, в строке — ячейки по колонкам', async () => {
@@ -161,21 +161,21 @@ describe('разметка', () => {
 			<Table items={[ANNA, BORIS].map((data) => ({ data }))} columns={[NAME, AGE]} />,
 		)
 
-		const table = find('table.s-table')
+		const table = find('table.so-table')
 
-		expect(findAll('.s-table__head-row > th', table).map(text)).toEqual(['Имя', 'Возраст'])
-		expect(findAll('.s-table-row').map((row) => [...row.children].map(text))).toEqual([
+		expect(findAll('.so-table__head-row > th', table).map(text)).toEqual(['Имя', 'Возраст'])
+		expect(findAll('.so-table-row').map((row) => [...row.children].map(text))).toEqual([
 			['Анна', '30'],
 			['Борис', '41'],
 		])
 		// Колонки выбора нет: режим по умолчанию — `none`
-		expect(findAll('.s-table__select, .s-table-row__select')).toEqual([])
+		expect(findAll('.so-table__select, .so-table-row__select')).toEqual([])
 	})
 
 	it('заголовок колонки — th с набором колонки и шириной переменной', async () => {
 		await render(<Table items={[{ data: ANNA }]} columns={[NAME, { ...AGE, width: 120 }]} />)
 
-		const [name, age] = findAll('.s-table-column')
+		const [name, age] = findAll('.so-table-column')
 
 		expect(age.tagName).toBe('TH')
 		expect(age.dataset.align).toBe('end')
@@ -186,7 +186,7 @@ describe('разметка', () => {
 	it('ячейка колонки rowHeader — th scope="row" с id, остальные — td', async () => {
 		await render(<Table items={[{ data: ANNA }]} columns={[AGE, NAME]} />)
 
-		const [age, name] = [...find('.s-table-row').children]
+		const [age, name] = [...find('.so-table-row').children]
 
 		expect(age.tagName).toBe('TD')
 		expect(age.getAttribute('data-align')).toBe('end')
@@ -205,15 +205,15 @@ describe('разметка', () => {
 			<Table items={[{ data: ANNA }]} columns={[NAME]} stickyHead aria_label="Сотрудники" />,
 		)
 
-		const table = find('table.s-table')
-		const viewport = find('.s-table__viewport')
+		const table = find('table.so-table')
+		const viewport = find('.so-table__viewport')
 
 		expect(table.parentElement).toBe(viewport)
 		expect(viewport.tagName).toBe('DIV')
 		expect(table.dataset.stickyHead).toBe('true')
 		expect(table.getAttribute('aria-label')).toBe('Сотрудники')
 		// У окна — только свой класс: ни наборов, ни имени
-		expect(viewport.className).toBe('s-table__viewport')
+		expect(viewport.className).toBe('so-table__viewport')
 		expect(
 			viewport.getAttributeNames().filter((name) => name !== 'class' && name !== 'style'),
 		).toEqual([])
@@ -230,8 +230,8 @@ describe('разметка', () => {
 			/>,
 		)
 
-		const viewport = find('.s-table__viewport')
-		const table = find('table.s-table')
+		const viewport = find('.so-table__viewport')
+		const table = find('table.so-table')
 
 		expect(viewport.classList.contains('staff')).toBe(true)
 		expect(viewport.dataset.testid).toBe('staff')
@@ -246,12 +246,12 @@ describe('разметка', () => {
 			<Table items={[{ data: ANNA }]} columns={[NAME]} visible={false} />,
 		)
 
-		expect(find('.s-table__viewport').style.display).toBe('none')
-		expect(find('table.s-table').style.display).toBe('')
+		expect(find('.so-table__viewport').style.display).toBe('none')
+		expect(find('table.so-table').style.display).toBe('')
 
 		rerender(<Table items={[{ data: ANNA }]} columns={[NAME]} visible />)
 
-		expect(find('.s-table__viewport').style.display).toBe('')
+		expect(find('.so-table__viewport').style.display).toBe('')
 	})
 })
 
@@ -265,7 +265,7 @@ describe('разметка', () => {
 describe('раскладка колонок', () => {
 	/** Колонки заголовков — переменные ширины по порядку. */
 	const widths = () =>
-		findAll('.s-table-column').map((header) =>
+		findAll('.so-table-column').map((header) =>
 			header.style.getPropertyValue('--s-table-column-width'),
 		)
 
@@ -273,13 +273,13 @@ describe('раскладка колонок', () => {
 		await render(<Table items={[{ data: ANNA }]} columns={[NAME, AGE]} columnFit="none" />)
 
 		expect(widths()).toEqual(['160px', '160px'])
-		expect(findAll('.s-table-column').map((header) => header.dataset.sized)).toEqual([
+		expect(findAll('.so-table-column').map((header) => header.dataset.sized)).toEqual([
 			'true',
 			'true',
 		])
-		expect(find('table.s-table').hasAttribute('data-overflow')).toBe(false)
+		expect(find('table.so-table').hasAttribute('data-overflow')).toBe(false)
 		// Ширины известны и до места — таблица шириной в их сумму
-		expect(find('table.s-table').dataset.sized).toBe('true')
+		expect(find('table.so-table').dataset.sized).toBe('true')
 	})
 
 	it('по умолчанию auto — до места ширин нет, с местом — делят его', async () => {
@@ -288,13 +288,13 @@ describe('раскладка колонок', () => {
 		await render(<Table engine={engine} />)
 
 		expect(widths()).toEqual(['', ''])
-		expect(find('table.s-table').hasAttribute('data-sized')).toBe(false)
+		expect(find('table.so-table').hasAttribute('data-sized')).toBe(false)
 
 		await settle(() => engine.extensions.columns.notifySpace(500))
 
 		expect(widths()).toEqual(['250px', '250px'])
-		expect(find('table.s-table').dataset.overflow).toBe('false')
-		expect(find('table.s-table').dataset.sized).toBe('true')
+		expect(find('table.so-table').dataset.overflow).toBe('false')
+		expect(find('table.so-table').dataset.sized).toBe('true')
 	})
 
 	it('смена columnFit пропом — новая раскладка; шире места — data-overflow', async () => {
@@ -305,7 +305,7 @@ describe('раскладка колонок', () => {
 		await settle(() => engine.extensions.columns.notifySpace(600))
 
 		expect(widths()).toEqual(['160px', '160px'])
-		expect(find('table.s-table').dataset.overflow).toBe('false')
+		expect(find('table.so-table').dataset.overflow).toBe('false')
 
 		rerender(view('auto'))
 		await nextFrame()
@@ -315,7 +315,7 @@ describe('раскладка колонок', () => {
 		await settle(() => engine.extensions.columns.notifySpace(300))
 
 		expect(widths()).toEqual(['160px', '160px'])
-		expect(find('table.s-table').dataset.overflow).toBe('true')
+		expect(find('table.so-table').dataset.overflow).toBe('true')
 	})
 })
 
@@ -329,8 +329,8 @@ describe('слоты', () => {
 			/>,
 		)
 
-		expect(findAll('.s-table-column b').map(text)).toEqual(['name:Имя', 'age:Возраст'])
-		expect(text(find('.s-table-column__sort'))).toBe('age:Возраст')
+		expect(findAll('.so-table-column b').map(text)).toEqual(['name:Имя', 'age:Возраст'])
+		expect(text(find('.so-table-column__sort'))).toBe('age:Возраст')
 	})
 
 	/**
@@ -348,7 +348,7 @@ describe('слоты', () => {
 			/>,
 		)
 
-		expect(findAll('.s-table-column b').map(text)).toEqual([
+		expect(findAll('.so-table-column b').map(text)).toEqual([
 			'name:Имя:false',
 			'age:Возраст:true',
 		])
@@ -369,7 +369,7 @@ describe('слоты', () => {
 			/>,
 		)
 
-		expect(findAll('.s-table-row').map((row) => [...row.children].map(text))).toEqual([
+		expect(findAll('.so-table-row').map((row) => [...row.children].map(text))).toEqual([
 			['Анна', '1/30'],
 			['Борис', '2/41'],
 		])
@@ -393,7 +393,7 @@ describe('слоты', () => {
 			/>,
 		)
 
-		expect([...find('.s-table-row').children].map((cell) => cell.textContent)).toEqual([
+		expect([...find('.so-table-row').children].map((cell) => cell.textContent)).toEqual([
 			'Анна',
 			'30',
 			'true',
@@ -405,7 +405,7 @@ describe('слоты', () => {
 	it('empty — пока строк нет, ячейка во всю ширину строки', async () => {
 		await render(<Table columns={[NAME, AGE]} mode="multiple" empty="Нет данных" />)
 
-		const cell = find('.s-table__empty')
+		const cell = find('.so-table__empty')
 
 		expect(text(cell)).toBe('Нет данных')
 		// Две колонки и колонка выбора
@@ -415,7 +415,7 @@ describe('слоты', () => {
 	it('строки появились — пустой строки нет', async () => {
 		await render(<Table items={[{ data: ANNA }]} columns={[NAME]} />)
 
-		expect(findAll('.s-table__empty-row')).toEqual([])
+		expect(findAll('.so-table__empty-row')).toEqual([])
 	})
 })
 
@@ -423,8 +423,8 @@ describe('сортировка', () => {
 	it('кнопка заголовка сортирует строки: по возрастанию, по убыванию, снята', async () => {
 		await render(<Table engine={engineOf('none')} />)
 
-		const age = findAll('.s-table-column')[1]
-		const button = find('.s-table-column__sort', age)
+		const age = findAll('.so-table-column')[1]
+		const button = find('.so-table-column__sort', age)
 
 		expect(rowNames()).toEqual(['Анна', 'Борис', 'Вера'])
 
@@ -448,18 +448,18 @@ describe('сортировка', () => {
 	it('кнопка — только у сортируемой колонки; отметка скрыта от скринридера', async () => {
 		await render(<Table engine={engineOf('none')} />)
 
-		const [name, age] = findAll('.s-table-column')
+		const [name, age] = findAll('.so-table-column')
 
-		expect(findAll('.s-table-column__sort', name)).toEqual([])
-		expect(text(find('.s-table-column__text', name))).toBe('Имя')
-		expect(find('.s-table-column__sort-icon', age).getAttribute('aria-hidden')).toBe('true')
-		expect(age.querySelector('.s-table-column__sort-icon svg')).not.toBeNull()
+		expect(findAll('.so-table-column__sort', name)).toEqual([])
+		expect(text(find('.so-table-column__text', name))).toBe('Имя')
+		expect(find('.so-table-column__sort-icon', age).getAttribute('aria-hidden')).toBe('true')
+		expect(age.querySelector('.so-table-column__sort-icon svg')).not.toBeNull()
 	})
 
 	it('выключенная таблица — кнопка выключена, порядок прежний', async () => {
 		await render(<Table engine={engineOf('none')} disabled />)
 
-		const button = find('.s-table-column__sort')
+		const button = find('.so-table-column__sort')
 
 		expect(button.hasAttribute('disabled')).toBe(true)
 
@@ -473,20 +473,20 @@ describe('колонка выбора', () => {
 	it('multiple — заголовок с чекбоксом «выбрать все», single — пустая ячейка, у строк — чекбоксы', async () => {
 		const multiple = await render(<Table engine={engineOf('multiple')} />)
 
-		const head = find('.s-table__select')
+		const head = find('.so-table__select')
 
 		expect(head.tagName).toBe('TH')
-		expect(findAll('.s-check-box', head)).toHaveLength(1)
-		expect(findAll('.s-table-row__select .s-check-box')).toHaveLength(3)
+		expect(findAll('.so-check-box', head)).toHaveLength(1)
+		expect(findAll('.so-table-row__select .so-check-box')).toHaveLength(3)
 
 		multiple.render(<></>)
 		await render(<Table engine={engineOf('single')} />)
 
-		const single = find('.s-table__select')
+		const single = find('.so-table__select')
 
 		expect(single.tagName).toBe('TD')
 		expect(single.children).toHaveLength(0)
-		expect(findAll('.s-table-row__select .s-check-box')).toHaveLength(3)
+		expect(findAll('.so-table-row__select .so-check-box')).toHaveLength(3)
 	})
 
 	it('колонка появляется и уходит вместе с режимом', async () => {
@@ -494,19 +494,19 @@ describe('колонка выбора', () => {
 
 		await render(<Table engine={engine} />)
 
-		expect(findAll('.s-table__select, .s-table-row__select')).toEqual([])
+		expect(findAll('.so-table__select, .so-table-row__select')).toEqual([])
 
 		await settle(() => {
 			engine.extensions.selection.mode = 'multiple'
 		})
 
-		expect(findAll('.s-table-row__select')).toHaveLength(3)
+		expect(findAll('.so-table-row__select')).toHaveLength(3)
 
 		await settle(() => {
 			engine.extensions.selection.mode = 'none'
 		})
 
-		expect(findAll('.s-table__select, .s-table-row__select')).toEqual([])
+		expect(findAll('.so-table__select, .so-table-row__select')).toEqual([])
 	})
 
 	it('клик по чекбоксу строки выбирает строку, повторный — снимает', async () => {
@@ -514,8 +514,8 @@ describe('колонка выбора', () => {
 
 		await render(<Table engine={engine} />)
 
-		const anna = find('.s-table-row')
-		const input = checkBoxInput('.s-table-row__select', anna)
+		const anna = find('.so-table-row')
+		const input = checkBoxInput('.so-table-row__select', anna)
 
 		click(input)
 
@@ -535,9 +535,9 @@ describe('колонка выбора', () => {
 
 		await render(<Table engine={engine} />)
 
-		const head = checkBoxInput('.s-table__select')
-		const inputs = findAll('.s-table-row').map((row) =>
-			checkBoxInput('.s-table-row__select', row),
+		const head = checkBoxInput('.so-table__select')
+		const inputs = findAll('.so-table-row').map((row) =>
+			checkBoxInput('.so-table-row__select', row),
 		)
 
 		click(inputs[0])
@@ -559,7 +559,7 @@ describe('колонка выбора', () => {
 
 		await render(<Table engine={engine} />)
 
-		const head = checkBoxInput('.s-table__select')
+		const head = checkBoxInput('.so-table__select')
 
 		expect([head.checked, head.indeterminate]).toEqual([false, true])
 
@@ -585,10 +585,10 @@ describe('колонка выбора', () => {
 			engine.extensions.selection.select(rowOf(engine, 3))
 		})
 
-		const vera = findAll('.s-table-row')[2]
+		const vera = findAll('.so-table-row')[2]
 
-		expect(checkBoxInput('.s-table-row__select', vera).checked).toBe(true)
-		expect(checkBoxInput('.s-table__select').indeterminate).toBe(true)
+		expect(checkBoxInput('.so-table-row__select', vera).checked).toBe(true)
+		expect(checkBoxInput('.so-table__select').indeterminate).toBe(true)
 	})
 
 	it('пустая таблица и выключенные строки — чекбокс шапки выключен', async () => {
@@ -596,20 +596,20 @@ describe('колонка выбора', () => {
 
 		await render(<Table engine={engine} />)
 
-		expect(checkBoxInput('.s-table__select').disabled).toBe(true)
+		expect(checkBoxInput('.so-table__select').disabled).toBe(true)
 
 		await settle(() => {
 			engine.extensions.batch.items = [{ data: { ...ANNA } }]
 		})
 
-		expect(checkBoxInput('.s-table__select').disabled).toBe(false)
+		expect(checkBoxInput('.so-table__select').disabled).toBe(false)
 
 		act(() => {
 			rowOf(engine, 1).disabled = true
 		})
 
-		expect(checkBoxInput('.s-table__select').disabled).toBe(true)
-		expect(checkBoxInput('.s-table-row__select').disabled).toBe(true)
+		expect(checkBoxInput('.so-table__select').disabled).toBe(true)
+		expect(checkBoxInput('.so-table-row__select').disabled).toBe(true)
 	})
 
 	it('чекбоксы — размера и варианта таблицы', async () => {
@@ -617,9 +617,9 @@ describe('колонка выбора', () => {
 
 		await render(<Table ctrl={owner} engine={engineOf('multiple')} />)
 
-		expect(find('.s-table__select .s-check-box').classList).toContain('s-check-box--size-lg')
-		expect(find('.s-table-row__select .s-check-box').classList).toContain(
-			's-check-box--size-lg',
+		expect(find('.so-table__select .so-check-box').classList).toContain('so-check-box--size-lg')
+		expect(find('.so-table-row__select .so-check-box').classList).toContain(
+			'so-check-box--size-lg',
 		)
 	})
 })
@@ -628,8 +628,8 @@ describe('имена чекбоксов', () => {
 	it('чекбокс строки называет заголовок строки — ячейка колонки rowHeader', async () => {
 		await render(<Table engine={engineOf('multiple')} />)
 
-		const anna = find('.s-table-row')
-		const input = checkBoxInput('.s-table-row__select', anna)
+		const anna = find('.so-table-row')
+		const input = checkBoxInput('.so-table-row__select', anna)
 		const header = find('th[scope="row"]', anna)
 
 		expect(input.getAttribute('aria-labelledby')).toBe(header.id)
@@ -646,7 +646,7 @@ describe('имена чекбоксов', () => {
 			<Table engine={engineOf('multiple', [ANNA], [{ ...NAME, rowHeader: false }, AGE])} />,
 		)
 
-		expect(checkBoxInput('.s-table-row__select').hasAttribute('aria-labelledby')).toBe(false)
+		expect(checkBoxInput('.so-table-row__select').hasAttribute('aria-labelledby')).toBe(false)
 		expect(findAll('th[scope="row"]')).toEqual([])
 	})
 
@@ -659,11 +659,11 @@ describe('имена чекбоксов', () => {
 		)
 		const { render: rerender } = await render(view(enUS))
 
-		expect(checkBoxInput('.s-table__select').getAttribute('aria-label')).toBe('Select all')
+		expect(checkBoxInput('.so-table__select').getAttribute('aria-label')).toBe('Select all')
 
 		rerender(view(ruRU))
 
-		expect(checkBoxInput('.s-table__select').getAttribute('aria-label')).toBe('Выбрать все')
+		expect(checkBoxInput('.so-table__select').getAttribute('aria-label')).toBe('Выбрать все')
 	})
 })
 
@@ -680,7 +680,7 @@ describe('ручка ширины', () => {
 
 	/** Поле ручки в заголовке. */
 	function resizerField(root: ParentNode = document): HTMLInputElement {
-		const field = find('.s-table-column__resizer', root).querySelector('input')
+		const field = find('.so-table-column__resizer', root).querySelector('input')
 
 		if (!(field instanceof HTMLInputElement)) throw new Error('поля ручки нет')
 
@@ -695,12 +695,12 @@ describe('ручка ширины', () => {
 			/>,
 		)
 
-		const [name, age] = findAll('.s-table-column')
+		const [name, age] = findAll('.so-table-column')
 		const field = resizerField(name)
 
 		expect(field.type).toBe('range')
 		expect([field.min, field.max, field.value]).toEqual(['100', '300', '150'])
-		expect(findAll('.s-table-column__resizer', age)).toEqual([])
+		expect(findAll('.so-table-column__resizer', age)).toEqual([])
 	})
 
 	it('колонка без своей ширины — полоса появляется с местом таблицы, ширина — раскладки', async () => {
@@ -709,12 +709,12 @@ describe('ручка ширины', () => {
 		await render(<Table engine={engine} />)
 
 		// Места нет — ширину решает тема, и ручке нечего показать
-		expect(findAll('.s-table-column__resizer')).toEqual([])
+		expect(findAll('.so-table-column__resizer')).toEqual([])
 
 		await settle(() => engine.extensions.columns.notifySpace(180))
 
 		expect(resizerField().value).toBe('180')
-		expect(find('.s-table-column').style.getPropertyValue('--s-table-column-width')).toBe(
+		expect(find('.so-table-column').style.getPropertyValue('--s-table-column-width')).toBe(
 			'180px',
 		)
 		// Ширина раскладки — не своя: колонка остаётся гибкой
@@ -724,25 +724,25 @@ describe('ручка ширины', () => {
 	it('у выключенной таблицы ручек нет', async () => {
 		await render(<Table items={[{ data: ANNA }]} columns={[RESIZABLE]} disabled />)
 
-		expect(findAll('.s-table-column__resizer')).toEqual([])
+		expect(findAll('.so-table-column__resizer')).toEqual([])
 	})
 
 	it('заголовок и поле названы обёрткой содержимого — ровно текст колонки', async () => {
 		await render(<Table items={[{ data: ANNA }]} columns={[RESIZABLE, AGE]} />)
 
-		for (const header of findAll('.s-table-column')) {
-			const content = find('.s-table-column__content', header)
+		for (const header of findAll('.so-table-column')) {
+			const content = find('.so-table-column__content', header)
 
 			expect(content.id).not.toBe('')
 			expect(header.getAttribute('aria-labelledby')).toBe(content.id)
 		}
 
-		const name = findAll('.s-table-column')[0]
+		const name = findAll('.so-table-column')[0]
 
 		expect(resizerField(name).getAttribute('aria-labelledby')).toBe(
-			find('.s-table-column__content', name).id,
+			find('.so-table-column__content', name).id,
 		)
-		expect(text(find('.s-table-column__content', name))).toBe('Имя')
+		expect(text(find('.so-table-column__content', name))).toBe('Имя')
 	})
 
 	it('клавиша на поле — ширина заголовка, поле и onColumnResize таблицы', async () => {
@@ -751,7 +751,7 @@ describe('ручка ширины', () => {
 
 		await render(<Table engine={engine} onColumnResize={resize} />)
 
-		const header = find('.s-table-column')
+		const header = find('.so-table-column')
 
 		press(resizerField(), 'ArrowRight')
 
@@ -777,7 +777,7 @@ describe('перестановка колонок', () => {
 	it('data-reorderable — на заголовке колонки', async () => {
 		await render(<Table items={[{ data: ANNA }]} columns={[MOVABLE[0], AGE]} />)
 
-		const [name, age] = findAll('.s-table-column')
+		const [name, age] = findAll('.so-table-column')
 
 		expect(name.dataset.reorderable).toBe('true')
 		expect(age.dataset.reorderable).toBe('false')
@@ -789,11 +789,11 @@ describe('перестановка колонок', () => {
 
 		await render(<Table engine={engine} onColumnMove={move} />)
 
-		press(find('.s-table-column__sort'), 'ArrowLeft', { ctrlKey: true, shiftKey: true })
+		press(find('.so-table-column__sort'), 'ArrowLeft', { ctrlKey: true, shiftKey: true })
 		await nextFrame()
 
-		expect(findAll('.s-table-column').map(text)).toEqual(['Возраст', 'Имя'])
-		expect(findAll('.s-table-row__cell').map(text)).toEqual(['30', 'Анна'])
+		expect(findAll('.so-table-column').map(text)).toEqual(['Возраст', 'Имя'])
+		expect(findAll('.so-table-row__cell').map(text)).toEqual(['30', 'Анна'])
 		expect(move).toHaveBeenCalledTimes(1)
 		expect(move.mock.calls[0][0].order).toEqual(['age', 'name'])
 	})
@@ -811,7 +811,7 @@ describe('перестановка колонок', () => {
 		)
 		const { render: rerender } = await render(view('head'))
 
-		const table = find('table.s-table')
+		const table = find('table.so-table')
 		const [name] = columns.columns
 
 		expect(table.hasAttribute('data-reorder-preview')).toBe(false)
@@ -837,7 +837,7 @@ describe('перестановка колонок', () => {
 		// Встала — признак ушёл той же перерисовкой, что и перестановка
 		act(() => columns.dragEnd())
 
-		expect(findAll('.s-table-column').map(text)).toEqual(['Возраст', 'Имя'])
+		expect(findAll('.so-table-column').map(text)).toEqual(['Возраст', 'Имя'])
 		expect(table.hasAttribute('data-reorder-preview')).toBe(false)
 	})
 
@@ -865,7 +865,7 @@ describe('перестановка колонок', () => {
 			columns.dragDrop()
 		})
 
-		expect(findAll('.s-table-column').map(gesture)).toEqual([
+		expect(findAll('.so-table-column').map(gesture)).toEqual([
 			['dragging=true', 'landing=true'],
 			['shift=start'],
 			['drop=after', 'shift=start'],
@@ -873,9 +873,9 @@ describe('перестановка колонок', () => {
 
 		act(() => columns.dragEnd())
 
-		expect(findAll('.s-table-column').map(text)).toEqual(['Возраст', '№', 'Имя'])
-		expect(findAll('.s-table-row__cell').map(text)).toEqual(['30', '1', 'Анна'])
-		expect(findAll('.s-table-column').flatMap(gesture)).toEqual([])
+		expect(findAll('.so-table-column').map(text)).toEqual(['Возраст', '№', 'Имя'])
+		expect(findAll('.so-table-row__cell').map(text)).toEqual(['30', '1', 'Анна'])
+		expect(findAll('.so-table-column').flatMap(gesture)).toEqual([])
 	})
 })
 
@@ -897,23 +897,23 @@ describe('сетка', () => {
 			/>,
 		)
 
-		const table = find('.s-table')
+		const table = find('.so-table')
 
 		expect(table.getAttribute('role')).toBe('grid')
 		expect(table.getAttribute('tabindex')).toBe('0')
 		expect(table.getAttribute('aria-multiselectable')).toBe('true')
 		expect(table.dataset.grid).toBe('true')
-		expect(find('.s-table__select').getAttribute('tabindex')).toBe('-1')
+		expect(find('.so-table__select').getAttribute('tabindex')).toBe('-1')
 
-		for (const header of findAll('.s-table-column')) {
+		for (const header of findAll('.so-table-column')) {
 			expect(header.getAttribute('tabindex')).toBe('-1')
 		}
 
-		for (const cell of findAll('.s-table-row__cell, .s-table-row__select')) {
+		for (const cell of findAll('.so-table-row__cell, .so-table-row__select')) {
 			expect(cell.getAttribute('tabindex')).toBe('-1')
 		}
 
-		expect(findAll('.s-table-row').map((row) => row.getAttribute('aria-selected'))).toEqual([
+		expect(findAll('.so-table-row').map((row) => row.getAttribute('aria-selected'))).toEqual([
 			'false',
 			'false',
 		])
@@ -922,10 +922,10 @@ describe('сетка', () => {
 	it('без сетки — простая таблица: ни роли, ни tabindex, ни aria-selected', async () => {
 		await render(<Table items={[{ data: ANNA }]} columns={[NAME]} mode="multiple" />)
 
-		expect(find('.s-table').hasAttribute('role')).toBe(false)
-		expect(find('.s-table').hasAttribute('tabindex')).toBe(false)
-		expect(find('.s-table-row__cell').hasAttribute('tabindex')).toBe(false)
-		expect(find('.s-table-row').hasAttribute('aria-selected')).toBe(false)
+		expect(find('.so-table').hasAttribute('role')).toBe(false)
+		expect(find('.so-table').hasAttribute('tabindex')).toBe(false)
+		expect(find('.so-table-row__cell').hasAttribute('tabindex')).toBe(false)
+		expect(find('.so-table-row').hasAttribute('aria-selected')).toBe(false)
 	})
 
 	it('Tab в таблицу — на ячейку, стрелка — на соседнюю, пробел — выбор строки', async () => {
@@ -935,10 +935,10 @@ describe('сетка', () => {
 
 		await render(<Table engine={engine} />)
 
-		act(() => find('.s-table').focus())
+		act(() => find('.so-table').focus())
 
 		// Выбор включили после колонок — фокус сетки на первой из них
-		expect(document.activeElement).toBe(find('.s-table-column'))
+		expect(document.activeElement).toBe(find('.so-table-column'))
 
 		const active = document.activeElement
 
@@ -946,14 +946,14 @@ describe('сетка', () => {
 
 		press(active, 'ArrowDown')
 
-		const cell = find('.s-table-row th')
+		const cell = find('.so-table-row th')
 
 		expect(document.activeElement).toBe(cell)
 
 		press(cell, ' ')
 
 		expect(engine.extensions.selection.selected).toEqual([rowOf(engine, 1)])
-		expect(find('.s-table-row').getAttribute('aria-selected')).toBe('true')
+		expect(find('.so-table-row').getAttribute('aria-selected')).toBe('true')
 	})
 })
 
@@ -1002,7 +1002,7 @@ describe('перерисовка ячеек', () => {
 
 	/** Текст ячеек по строкам. */
 	const cellTexts = () =>
-		findAll('.s-table-row').map((row) => findAll('.s-table-row__cell', row).map(text))
+		findAll('.so-table-row').map((row) => findAll('.so-table-row__cell', row).map(text))
 
 	it('монтирование зовёт слот по разу на ячейку', async () => {
 		const slot = cellSlot()
@@ -1019,7 +1019,7 @@ describe('перерисовка ячеек', () => {
 
 	it('«выбрать все» и снятие выбора слот ячеек не зовут', async () => {
 		const { slot } = await renderCounted(engineOf('multiple'))
-		const head = checkBoxInput('.s-table__select')
+		const head = checkBoxInput('.so-table__select')
 
 		click(head)
 
@@ -1041,7 +1041,7 @@ describe('перерисовка ячеек', () => {
 
 		rerender({ label: 'Сотрудники' })
 
-		expect(find('.s-table').getAttribute('aria-label')).toBe('Сотрудники')
+		expect(find('.so-table').getAttribute('aria-label')).toBe('Сотрудники')
 		expect(slot).not.toHaveBeenCalled()
 	})
 
@@ -1068,7 +1068,7 @@ describe('перерисовка ячеек', () => {
 
 		const { slot } = await renderCounted(engine)
 
-		act(() => find('.s-table').focus())
+		act(() => find('.so-table').focus())
 
 		const active = document.activeElement
 
@@ -1076,14 +1076,14 @@ describe('перерисовка ячеек', () => {
 
 		press(active, 'ArrowDown')
 
-		const cell = find('.s-table-row th')
+		const cell = find('.so-table-row th')
 
 		expect(document.activeElement).toBe(cell)
 
 		press(cell, ' ')
 
 		expect(engine.extensions.selection.selected).toEqual([rowOf(engine, 1)])
-		expect(find('.s-table-row').getAttribute('aria-selected')).toBe('true')
+		expect(find('.so-table-row').getAttribute('aria-selected')).toBe('true')
 		expect(slot).not.toHaveBeenCalled()
 	})
 
@@ -1116,8 +1116,8 @@ describe('отменённый выбор', () => {
 
 		await render(<Table engine={engine} />)
 
-		const anna = find('.s-table-row')
-		const input = checkBoxInput('.s-table-row__select', anna)
+		const anna = find('.so-table-row')
+		const input = checkBoxInput('.so-table-row__select', anna)
 
 		click(input)
 
@@ -1133,7 +1133,7 @@ describe('отменённый выбор', () => {
 
 		await render(<Table engine={engine} />)
 
-		const head = checkBoxInput('.s-table__select')
+		const head = checkBoxInput('.so-table__select')
 
 		click(head)
 
@@ -1149,7 +1149,7 @@ describe('отменённый выбор', () => {
 
 		await render(<Table engine={engine} />)
 
-		const head = checkBoxInput('.s-table__select')
+		const head = checkBoxInput('.so-table__select')
 
 		click(head)
 
@@ -1192,13 +1192,13 @@ describe('окно', () => {
 	it('до замера — первые 50 строк; у таблицы число строк, у шапки и строк — номера', async () => {
 		await render(inWindow(manyRows(80)))
 
-		const rows = findAll('.s-table-row')
-		const table = find('table.s-table')
+		const rows = findAll('.so-table-row')
+		const table = find('table.so-table')
 
 		expect(rows).toHaveLength(50)
 		expect(table.getAttribute('aria-rowcount')).toBe('81')
 		expect(table.dataset.virtual).toBe('true')
-		expect(find('.s-table__head-row').getAttribute('aria-rowindex')).toBe('1')
+		expect(find('.so-table__head-row').getAttribute('aria-rowindex')).toBe('1')
 		expect(rows[0].getAttribute('aria-rowindex')).toBe('2')
 	})
 
@@ -1209,8 +1209,8 @@ describe('окно', () => {
 
 		measure(engine, 1200, 1600)
 
-		const body = find('.s-table__body')
-		const fillers = findAll('.s-table__filler-row', body)
+		const body = find('.so-table__body')
+		const fillers = findAll('.so-table__filler-row', body)
 
 		expect(fillers).toHaveLength(2)
 		expect(body.firstElementChild).toBe(fillers[0])
@@ -1224,8 +1224,8 @@ describe('окно', () => {
 			['800px', '1200px'],
 		)
 		// Колонка выбора и две колонки
-		expect(find('.s-table__filler', fillers[0]).getAttribute('colspan')).toBe('3')
-		expect(findAll('.s-table-row', body)).toHaveLength(30)
+		expect(find('.so-table__filler', fillers[0]).getAttribute('colspan')).toBe('3')
+		expect(findAll('.so-table-row', body)).toHaveLength(30)
 	})
 
 	/**
@@ -1239,7 +1239,7 @@ describe('окно', () => {
 
 		measure(engine, 1200, 1600)
 
-		const kept = findAll('.s-table-row').find(
+		const kept = findAll('.so-table-row').find(
 			(row) => row.getAttribute('aria-rowindex') === '40',
 		)
 
@@ -1247,17 +1247,17 @@ describe('окно', () => {
 
 		expect(kept).toBeDefined()
 		expect(
-			findAll('.s-table-row').find((row) => row.getAttribute('aria-rowindex') === '40'),
+			findAll('.so-table-row').find((row) => row.getAttribute('aria-rowindex') === '40'),
 		).toBe(kept)
 	})
 
 	it('без обёртки — все строки, без распорок и номеров', async () => {
 		await render(<Table items={[ANNA, BORIS].map((data) => ({ data }))} columns={[NAME]} />)
 
-		expect(findAll('.s-table-row')).toHaveLength(2)
-		expect(findAll('.s-table__filler-row')).toEqual([])
-		expect(find('table.s-table').hasAttribute('aria-rowcount')).toBe(false)
-		expect(find('.s-table__head-row').hasAttribute('aria-rowindex')).toBe(false)
+		expect(findAll('.so-table-row')).toHaveLength(2)
+		expect(findAll('.so-table__filler-row')).toEqual([])
+		expect(find('table.so-table').hasAttribute('aria-rowcount')).toBe(false)
+		expect(find('.so-table__head-row').hasAttribute('aria-rowindex')).toBe(false)
 	})
 })
 
@@ -1277,7 +1277,7 @@ describe('закреплённая шапка', () => {
 		)
 		const { render: rerender } = await render(view(false))
 
-		const table = find('table.s-table')
+		const table = find('table.so-table')
 
 		expect(table.dataset.stickyHead).toBe('false')
 
@@ -1295,13 +1295,13 @@ describe('закреплённая шапка', () => {
 
 		await render(<Table ctrl={owner} engine={engineOf('none')} />)
 
-		expect(find('table.s-table').dataset.stickyHead).toBe('false')
+		expect(find('table.so-table').dataset.stickyHead).toBe('false')
 
 		act(() => {
 			owner.stickyHead = true
 		})
 
-		expect(find('table.s-table').dataset.stickyHead).toBe('true')
+		expect(find('table.so-table').dataset.stickyHead).toBe('true')
 	})
 })
 
@@ -1329,23 +1329,23 @@ describe('StrictMode', () => {
 			</StrictMode>,
 		)
 
-		const anna = find('.s-table-row')
+		const anna = find('.so-table-row')
 
-		click(checkBoxInput('.s-table-row__select', anna))
+		click(checkBoxInput('.so-table-row__select', anna))
 
 		expect(engine.extensions.selection.selected).toEqual([rowOf(engine, 1)])
-		expect(checkBoxInput('.s-table-row__select', anna).checked).toBe(true)
+		expect(checkBoxInput('.so-table-row__select', anna).checked).toBe(true)
 		expect(anna.dataset.selected).toBe('true')
 		expect(select).toHaveBeenCalledTimes(1)
 
-		click(checkBoxInput('.s-table__select'))
+		click(checkBoxInput('.so-table__select'))
 
 		expect(engine.extensions.selection.selected).toHaveLength(3)
 		expect(rowsChecked()).toEqual([true, true, true])
-		expect(checkBoxInput('.s-table__select').checked).toBe(true)
+		expect(checkBoxInput('.so-table__select').checked).toBe(true)
 		expect(select).toHaveBeenCalledTimes(2)
 
-		const field = find('.s-table-column__resizer input')
+		const field = find('.so-table-column__resizer input')
 
 		press(field, 'ArrowRight')
 
@@ -1363,7 +1363,7 @@ describe('StrictMode', () => {
 			</StrictMode>,
 		)
 
-		const head = checkBoxInput('.s-table__select')
+		const head = checkBoxInput('.so-table__select')
 
 		click(head)
 
@@ -1371,7 +1371,7 @@ describe('StrictMode', () => {
 		expect(rowsChecked()).toEqual([true, true])
 		expect([head.checked, head.indeterminate]).toEqual([true, false])
 
-		click(checkBoxInput('.s-table-row__select', find('.s-table-row')))
+		click(checkBoxInput('.so-table-row__select', find('.so-table-row')))
 
 		expect(rowsSelected()).toEqual(['false', 'true'])
 		expect([head.checked, head.indeterminate]).toEqual([false, true])
@@ -1399,7 +1399,9 @@ describe('сервер', () => {
 		container.innerHTML = renderToString(element)
 
 		const rowHeaders = findAll('th[scope="row"]', container).map((cell) => cell.id)
-		const contents = findAll('.s-table-column__content', container).map((content) => content.id)
+		const contents = findAll('.so-table-column__content', container).map(
+			(content) => content.id,
+		)
 
 		// Строки из данных — в коллекции с самой сборки: сервер рисует их со
 		// ссылками чекбоксов на заголовки строк
@@ -1408,7 +1410,7 @@ describe('сервер', () => {
 		expect(rowHeaders.every(Boolean)).toBe(true)
 		expect(contents.every(Boolean)).toBe(true)
 		expect(
-			findAll('.s-table-row__select input', container).map((input) =>
+			findAll('.so-table-row__select input', container).map((input) =>
 				input.getAttribute('aria-labelledby'),
 			),
 		).toEqual(rowHeaders)
@@ -1422,17 +1424,17 @@ describe('сервер', () => {
 		expect(onRecoverableError).not.toHaveBeenCalled()
 		expect(findAll('th[scope="row"]', container).map((cell) => cell.id)).toEqual(rowHeaders)
 		expect(
-			findAll('.s-table-row__select input', container).map((input) =>
+			findAll('.so-table-row__select input', container).map((input) =>
 				input.getAttribute('aria-labelledby'),
 			),
 		).toEqual(rowHeaders)
 		expect(
-			findAll('.s-table-column', container).map((header) =>
+			findAll('.so-table-column', container).map((header) =>
 				header.getAttribute('aria-labelledby'),
 			),
 		).toEqual(contents)
 		expect(
-			find('.s-table-column__resizer input', container).getAttribute('aria-labelledby'),
+			find('.so-table-column__resizer input', container).getAttribute('aria-labelledby'),
 		).toBe(contents[1])
 	})
 })

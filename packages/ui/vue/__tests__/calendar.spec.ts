@@ -68,11 +68,11 @@ function dayCell(date: string): HTMLElement {
 		Date.UTC(Number(date.slice(0, 4)), Number(date.slice(5, 7)) - 1, Number(date.slice(8))),
 	)
 
-	return find(`.s-calendar-item[aria-label="${label}"]`)
+	return find(`.so-calendar-item[aria-label="${label}"]`)
 }
 
-const titles = () => findAll('.s-calendar__title').map((title) => title.textContent?.trim())
-const weekdays = () => findAll('.s-calendar__weekday').map((cell) => cell.textContent?.trim())
+const titles = () => findAll('.so-calendar__title').map((title) => title.textContent?.trim())
+const weekdays = () => findAll('.so-calendar__weekday').map((cell) => cell.textContent?.trim())
 
 /** Короткие имена недели языка `locale`, с первого дня `first` (2026-09-20 — воскресенье). */
 function shortWeek(locale: string, first: number): string[] {
@@ -83,8 +83,8 @@ function shortWeek(locale: string, first: number): string[] {
 	)
 }
 
-const prev = () => find('.s-calendar__prev')
-const next = () => find('.s-calendar__next')
+const prev = () => find('.so-calendar__prev')
+const next = () => find('.so-calendar__next')
 
 /** Нажатие клавиши с узла, как у пользователя: событие всплывает до корня. */
 function press(from: Element, key: string, init: KeyboardEventInit = {}): KeyboardEvent {
@@ -103,27 +103,27 @@ describe('разметка', () => {
 	it('кнопки листания — за заголовком первого месяца, сетка — таблица с шапкой дней недели', async () => {
 		await render(() => h(Calendar))
 
-		const root = find('.s-calendar')
+		const root = find('.so-calendar')
 
 		// Подвала без слота нет
-		expect(partsOf(root)).toEqual(['s-calendar__months'])
-		expect(partsOf(find('.s-calendar__months'))).toEqual(['s-calendar__month'])
-		expect(partsOf(find('.s-calendar__month'))).toEqual([
-			's-calendar__heading',
-			's-calendar__prev',
-			's-calendar__next',
-			's-calendar__grid',
+		expect(partsOf(root)).toEqual(['so-calendar__months'])
+		expect(partsOf(find('.so-calendar__months'))).toEqual(['so-calendar__month'])
+		expect(partsOf(find('.so-calendar__month'))).toEqual([
+			'so-calendar__heading',
+			'so-calendar__prev',
+			'so-calendar__next',
+			'so-calendar__grid',
 		])
 		// Подписи колонок — короткие имена: у en-US в них не больше трёх букв
 		expect(weekdays()).toEqual(shortWeek('en-US', 0))
-		expect(find('.s-calendar__grid thead').getAttribute('aria-hidden')).toBe('true')
+		expect(find('.so-calendar__grid thead').getAttribute('aria-hidden')).toBe('true')
 	})
 
 	it('заголовок называет сетку и объявляет смену месяца', async () => {
 		await render(() => h(Calendar))
 
-		const title = find('.s-calendar__title-text')
-		const grid = find('.s-calendar__grid')
+		const title = find('.so-calendar__title-text')
+		const grid = find('.so-calendar__grid')
 
 		expect(title.textContent?.trim()).toBe('September 2026')
 		expect(title.getAttribute('aria-live')).toBe('polite')
@@ -135,8 +135,8 @@ describe('разметка', () => {
 	it('день — ячейка с номером и именем; заполнитель — пустая ячейка, скрытая от скринридера', async () => {
 		await render(() => h(Calendar))
 
-		const fillers = findAll('.s-calendar__filler')
-		const days = findAll('.s-calendar-item')
+		const fillers = findAll('.so-calendar__filler')
+		const days = findAll('.so-calendar-item')
 
 		// Сентябрь 2026 с воскресенья: 2 дня августа, 3 дня октября
 		expect(fillers).toHaveLength(5)
@@ -150,7 +150,7 @@ describe('разметка', () => {
 	it('остановка Tab одна, у дня с фокусом; сегодня отмечено', async () => {
 		await render(() => h(Calendar))
 
-		const stops = findAll('.s-calendar-item[tabindex="0"]')
+		const stops = findAll('.so-calendar-item[tabindex="0"]')
 
 		expect(stops).toEqual([dayCell('2026-09-26')])
 		expect(dayCell('2026-09-26').dataset.today).toBe('true')
@@ -160,14 +160,14 @@ describe('разметка', () => {
 	it('несколько месяцев — сетка на каждый, у каждого свой заголовок; кнопки листания — одни, у первого', async () => {
 		await render(() => h(Calendar, { months: ['2026-01-01', '2026-09-01'] }))
 
-		const [january, september] = findAll('.s-calendar__month')
+		const [january, september] = findAll('.so-calendar__month')
 
 		expect(titles()).toEqual(['January 2026', 'September 2026'])
-		expect(findAll('.s-calendar__grid')).toHaveLength(2)
-		expect(findAll('.s-calendar__prev')).toHaveLength(1)
-		expect(findAll('.s-calendar__next')).toHaveLength(1)
+		expect(findAll('.so-calendar__grid')).toHaveLength(2)
+		expect(findAll('.so-calendar__prev')).toHaveLength(1)
+		expect(findAll('.so-calendar__next')).toHaveLength(1)
 		expect(january.contains(prev())).toBe(true)
-		expect(partsOf(september)).toEqual(['s-calendar__heading', 's-calendar__grid'])
+		expect(partsOf(september)).toEqual(['so-calendar__heading', 'so-calendar__grid'])
 	})
 
 	it('слот footer — подвал после ряда месяцев, своей строкой', async () => {
@@ -176,19 +176,22 @@ describe('разметка', () => {
 				Calendar,
 				{ months: ['2026-01-01', '2026-09-01'] },
 				{
-					footer: () => h('button', { class: 's-test-action' }, 'Готово'),
+					footer: () => h('button', { class: 'so-test-action' }, 'Готово'),
 				},
 			),
 		)
 
-		const footer = find('.s-calendar__footer')
+		const footer = find('.so-calendar__footer')
 
-		expect(partsOf(find('.s-calendar'))).toEqual(['s-calendar__months', 's-calendar__footer'])
-		expect(partsOf(find('.s-calendar__months'))).toEqual([
-			's-calendar__month',
-			's-calendar__month',
+		expect(partsOf(find('.so-calendar'))).toEqual([
+			'so-calendar__months',
+			'so-calendar__footer',
 		])
-		expect(footer.querySelector('.s-test-action')?.textContent).toBe('Готово')
+		expect(partsOf(find('.so-calendar__months'))).toEqual([
+			'so-calendar__month',
+			'so-calendar__month',
+		])
+		expect(footer.querySelector('.so-test-action')?.textContent).toBe('Готово')
 	})
 
 	it('первый день недели по локали поддерева: у ru-RU колонки с понедельника', async () => {
@@ -203,11 +206,11 @@ describe('разметка', () => {
 		await render(() =>
 			h(Calendar, null, {
 				item: ({ item }: { item: ICalendarItem }) =>
-					h('span', { class: 's-test-day' }, `${item.text}·${item.date.slice(5)}`),
+					h('span', { class: 'so-test-day' }, `${item.text}·${item.date.slice(5)}`),
 			}),
 		)
 
-		expect(dayCell('2026-09-05').querySelector('.s-test-day')?.textContent).toBe('5·09-05')
+		expect(dayCell('2026-09-05').querySelector('.so-test-day')?.textContent).toBe('5·09-05')
 	})
 
 	/**
@@ -218,18 +221,18 @@ describe('разметка', () => {
 		await render(() =>
 			h(Calendar, null, {
 				item: ({ text }: { text: string }) =>
-					h('span', { class: 's-test-day' }, `«${text}»`),
+					h('span', { class: 'so-test-day' }, `«${text}»`),
 			}),
 		)
 
-		expect(dayCell('2026-09-05').querySelector('.s-test-day')?.textContent).toBe('«5»')
+		expect(dayCell('2026-09-05').querySelector('.so-test-day')?.textContent).toBe('«5»')
 	})
 
 	it('без слота день рисует свой номер в плитке', async () => {
 		await render(() => h(Calendar))
 
 		expect(
-			dayCell('2026-09-05').querySelector('.s-calendar-item__day')?.textContent?.trim(),
+			dayCell('2026-09-05').querySelector('.so-calendar-item__day')?.textContent?.trim(),
 		).toBe('5')
 	})
 })
@@ -269,8 +272,8 @@ describe('кнопки листания', () => {
 
 		expect(prev().hasAttribute('disabled')).toBe(true)
 		expect(next().hasAttribute('disabled')).toBe(true)
-		expect(find('.s-calendar').dataset.disabled).toBe('true')
-		expect(findAll('.s-calendar-item[data-disabled="false"]')).toEqual([])
+		expect(find('.so-calendar').dataset.disabled).toBe('true')
+		expect(findAll('.so-calendar-item[data-disabled="false"]')).toEqual([])
 	})
 
 	it('граница, заданная инстансу, гасит кнопку и без листания', async () => {
@@ -358,7 +361,7 @@ describe('выбор', () => {
 			}),
 		)
 
-		expect(find('.s-calendar__grid').getAttribute('aria-multiselectable')).toBe('true')
+		expect(find('.so-calendar__grid').getAttribute('aria-multiselectable')).toBe('true')
 
 		dayCell('2026-09-14').click()
 		dayCell('2026-09-10').click()
@@ -379,7 +382,7 @@ describe('выбор', () => {
 		)
 		await settle()
 
-		expect(findAll('.s-calendar-item[data-preview="true"]')).toHaveLength(4)
+		expect(findAll('.so-calendar-item[data-preview="true"]')).toHaveLength(4)
 	})
 
 	it('недоступный день не выбирается, но фокус на него встаёт', async () => {
@@ -457,9 +460,9 @@ describe('клавиатура', () => {
  * здесь — что её выходы доезжают до разметки, а нажатия — до модели.
  */
 describe('выбор месяца и года', () => {
-	const title = () => find('.s-calendar__title')
-	const heading = () => find('.s-calendar__picker-heading')
-	const options = () => findAll('.s-calendar__picker-list .s-list-box-item')
+	const title = () => find('.so-calendar__title')
+	const heading = () => find('.so-calendar__picker-heading')
+	const options = () => findAll('.so-calendar__picker-list .so-list-box-item')
 	const option = (text: string) => {
 		const found = options().find((item) => item.textContent?.trim() === text)
 
@@ -469,7 +472,7 @@ describe('выбор месяца и года', () => {
 	}
 	/** Строка опции: на ней набор `aria` элемента и обработчик нажатия. */
 	const row = (text: string) => {
-		const found = option(text).querySelector('.s-button')
+		const found = option(text).querySelector('.so-button')
 
 		if (!(found instanceof HTMLElement)) throw new Error(`у опции «${text}» нет строки`)
 
@@ -484,7 +487,7 @@ describe('выбор месяца и года', () => {
 		title().click()
 		await settle()
 	}
-	const panel = () => find('.s-calendar__picker')
+	const panel = () => find('.so-calendar__picker')
 	/** Нажатие мышью по узлу — нажатие, отпускание и `click`, как у браузера. */
 	const pressOn = async (node: HTMLElement) => {
 		node.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, pointerType: 'mouse' }))
@@ -499,25 +502,25 @@ describe('выбор месяца и года', () => {
 		expect(title().tagName).toBe('BUTTON')
 		expect(title().getAttribute('aria-haspopup')).toBe('dialog')
 		expect(title().getAttribute('aria-expanded')).toBe('false')
-		expect(title().contains(find('.s-calendar__title-text'))).toBe(true)
+		expect(title().contains(find('.so-calendar__title-text'))).toBe(true)
 		// Содержимое панели не смонтировано до первого открытия
-		expect(document.querySelector('.s-calendar__picker')).toBeNull()
+		expect(document.querySelector('.so-calendar__picker')).toBeNull()
 	})
 
 	it('нажатие на заголовок открывает панель: 12 месяцев, выбран месяц сетки, в шапке год', async () => {
 		await render(() => h(Calendar))
 		await openPicker()
 
-		const dialog = find('.s-popover__panel')
+		const dialog = find('.so-popover__panel')
 
 		// Поповер внутри календаря: панель не телепортирована и накрывает его
-		expect(find('.s-calendar').contains(dialog)).toBe(true)
+		expect(find('.so-calendar').contains(dialog)).toBe(true)
 		expect(dialog.dataset.contained).toBe('true')
 		expect(title().getAttribute('aria-expanded')).toBe('true')
 		expect(title().getAttribute('aria-controls')).toBe(dialog.id)
 		expect(heading().textContent?.trim()).toBe('2026')
 		expect(dialog.getAttribute('aria-labelledby')).toBe(heading().id)
-		expect(find('.s-calendar__picker-list').getAttribute('aria-labelledby')).toBe(heading().id)
+		expect(find('.so-calendar__picker-list').getAttribute('aria-labelledby')).toBe(heading().id)
 		expect(heading().id).not.toBe('')
 		expect(options()).toHaveLength(12)
 		expect(row('Sep').getAttribute('aria-selected')).toBe('true')
@@ -528,17 +531,17 @@ describe('выбор месяца и года', () => {
 		await render(() => h(Calendar))
 		await openPicker()
 
-		const handle = find('.s-popover__handle')
+		const handle = find('.so-popover__handle')
 
 		// Плагин жеста узнаёт полосу только прямым потомком панели
-		expect(handle.parentElement).toBe(find('.s-popover__panel'))
+		expect(handle.parentElement).toBe(find('.so-popover__panel'))
 		expect(handle.getAttribute('aria-hidden')).toBe('true')
 	})
 
 	it('нажатие по подложке — самой панели — закрывает её, фокус — на заголовок', async () => {
 		await render(() => h(Calendar))
 		await openPicker()
-		await pressOn(find('.s-popover__panel'))
+		await pressOn(find('.so-popover__panel'))
 
 		expect(title().getAttribute('aria-expanded')).toBe('false')
 		expect(document.activeElement).toBe(title())
@@ -557,17 +560,17 @@ describe('выбор месяца и года', () => {
 		await render(() => h(Calendar))
 		await openPicker()
 
-		expect(partsOf(panel())).toEqual(['s-calendar__picker-list', 's-calendar__picker-header'])
+		expect(partsOf(panel())).toEqual(['so-calendar__picker-list', 'so-calendar__picker-header'])
 	})
 
 	it('в шапке год идёт перед стрелками — Tab за глазом', async () => {
 		await render(() => h(Calendar))
 		await openPicker()
 
-		expect(partsOf(find('.s-calendar__picker-header'))).toEqual([
-			's-calendar__picker-heading',
-			's-calendar__picker-prev',
-			's-calendar__picker-next',
+		expect(partsOf(find('.so-calendar__picker-header'))).toEqual([
+			'so-calendar__picker-heading',
+			'so-calendar__picker-prev',
+			'so-calendar__picker-next',
 		])
 	})
 
@@ -640,7 +643,7 @@ describe('выбор месяца и года', () => {
 		await openPicker()
 
 		const fits = () => options().map((item) => item.dataset.contentFit)
-		const list = () => find('.s-calendar__picker-list')
+		const list = () => find('.so-calendar__picker-list')
 
 		expect(list().dataset.contentFit).toBe('wrap')
 		expect(new Set(fits())).toEqual(new Set(['wrap']))
@@ -662,8 +665,8 @@ describe('выбор месяца и года', () => {
 		await render(() => h(Calendar))
 		await openPicker()
 
-		const prev = find('.s-calendar__picker-prev')
-		const next = find('.s-calendar__picker-next')
+		const prev = find('.so-calendar__picker-prev')
+		const next = find('.so-calendar__picker-next')
 
 		expect(prev.getAttribute('aria-label')).toBe('Previous year')
 		expect(next.getAttribute('aria-label')).toBe('Next year')
@@ -688,8 +691,8 @@ describe('выбор месяца и года', () => {
 		await render(() => h(Calendar, { max: '2026-10-20' }))
 		await openPicker()
 
-		expect(find('.s-calendar__picker-next').hasAttribute('disabled')).toBe(true)
-		expect(find('.s-calendar__picker-prev').hasAttribute('disabled')).toBe(false)
+		expect(find('.so-calendar__picker-next').hasAttribute('disabled')).toBe(true)
+		expect(find('.so-calendar__picker-prev').hasAttribute('disabled')).toBe(false)
 		expect(option('Nov').dataset.disabled).toBe('true')
 		expect(option('Oct').dataset.disabled).toBe('false')
 	})

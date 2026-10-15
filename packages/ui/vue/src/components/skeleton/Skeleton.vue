@@ -17,7 +17,7 @@ export default { ...SetupSkeleton }
 			`aria-hidden` стоит на ней, а не на корне — в корне лежит слот с
 			настоящим содержимым, и скрывать его нельзя.
 		-->
-		<div class="s-skeleton__placeholder" v-if="present" aria-hidden="true" />
+		<div class="so-skeleton__placeholder" v-if="present" aria-hidden="true" />
 		<slot />
 	</component>
 </template>

@@ -27,7 +27,7 @@ afterEach(() => {
 })
 
 /** Строка элемента — на ней обработчик выбора и `aria-selected`. */
-const rows = () => [...document.querySelectorAll('.s-list-box-item .s-button')]
+const rows = () => [...document.querySelectorAll('.so-list-box-item .so-button')]
 
 /** Строка элемента по тексту; нет её — тест падает здесь. */
 const rowOf = (text: string): HTMLElement => {

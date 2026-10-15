@@ -56,6 +56,6 @@ describe('Input · серверный рендер', () => {
 		const body = renderToString(() => <Input clearable name="Город" />)
 
 		expect(body).toMatch(/<button [^>]*aria-label="Clear Город"/)
-		expect(body).toContain('s-input__trailing')
+		expect(body).toContain('so-input__trailing')
 	})
 })

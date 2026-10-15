@@ -48,20 +48,20 @@ describe('точка резолвится в шаблоне SFC', () => {
 	it('<Tabs.Item> отрисовывает таб', () => {
 		const wrapper = render('dotted')
 
-		expect(wrapper.find('.s-tabs-item').exists()).toBe(true)
+		expect(wrapper.find('.so-tabs-item').exists()).toBe(true)
 		expect(wrapper.text()).toContain('First')
 	})
 
 	it('<TabsItem> даёт ту же разметку', () => {
 		// id связки ARIA строятся от uid и уникальны у каждого инстанса —
 		// сравнивать побайтово нельзя, сравниваем структуру
-		const strip = (html: string) => html.replace(/s-tab(panel)?-\d+/g, 's-tab-N')
+		const strip = (html: string) => html.replace(/so-tab(panel)?-\d+/g, 'so-tab-N')
 
 		expect(strip(render('flat').html())).toBe(strip(render('dotted').html()))
 	})
 
 	it('точка и плоское имя смешиваются в одном списке', () => {
-		expect(render('mixed').findAll('.s-tabs-item')).toHaveLength(2)
+		expect(render('mixed').findAll('.so-tabs-item')).toHaveLength(2)
 	})
 })
 
@@ -78,7 +78,7 @@ describe('ограничение точки', () => {
 			template: '<Tabs><Tabs.Item value="a" text="First" /></Tabs>',
 		})
 
-		expect(wrapper.find('.s-tabs-item').exists()).toBe(false)
+		expect(wrapper.find('.so-tabs-item').exists()).toBe(false)
 	})
 
 	it('плоское имя работает в обоих режимах компиляции', () => {
@@ -87,6 +87,6 @@ describe('ограничение точки', () => {
 			template: '<Tabs><TabsItem value="a" text="First" /></Tabs>',
 		})
 
-		expect(wrapper.find('.s-tabs-item').exists()).toBe(true)
+		expect(wrapper.find('.so-tabs-item').exists()).toBe(true)
 	})
 })

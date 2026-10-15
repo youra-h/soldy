@@ -26,7 +26,7 @@ export default class TCalendarItem<
 	extends TControl<TProps, TEvents>
 	implements ICalendarItem<TProps, TEvents>
 {
-	static override baseClass = 's-calendar-item'
+	static override baseClass = 'so-calendar-item'
 
 	static defaultValues: typeof TControl.defaultValues &
 		TDefaultValues<ICalendarItemProps, 'date' | 'text' | 'unavailable'> = {

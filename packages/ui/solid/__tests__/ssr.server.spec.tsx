@@ -32,7 +32,7 @@ import {
 /**
  * Разметка сервера без меток гидратации: ключи узлов (`data-hk`) и
  * комментарии вокруг вставок пишет Solid для гидратации, а проверяется сама
- * разметка. Классы Solid печатает с пробелом в конце (`class="s-button "`) —
+ * разметка. Классы Solid печатает с пробелом в конце (`class="so-button "`) —
  * место под `classList`.
  */
 const markup = (html: string) =>
@@ -52,7 +52,7 @@ describe('Frame · серверный рендер', () => {
 			)),
 		)
 
-		expect(body).toMatch(/^<div [^>]*class="s-frame ?"/)
+		expect(body).toMatch(/^<div [^>]*class="so-frame ?"/)
 		expect(body).toContain('data-contained="true"')
 		// Внутри контейнера — `absolute` без координат: место решает тема
 		expect(body).toMatch(/style="position:absolute;[^"]*z-index:\d+"/)
@@ -71,10 +71,10 @@ describe('Button · серверный рендер', () => {
 
 		expect(body).toMatch(/^<button /)
 		expect(body).toMatch(
-			/class="s-button s-button--size-lg s-button--variant-brand app-save ?"/,
+			/class="so-button so-button--size-lg so-button--variant-brand app-save ?"/,
 		)
 		expect(body).toContain('data-disabled="false"')
-		expect(body).toContain('<span class="s-button__text">Сохранить</span>')
+		expect(body).toContain('<span class="so-button__text">Сохранить</span>')
 	})
 
 	it('выключенная: нативный disabled на <button>, aria-disabled — на другом теге', () => {
@@ -98,7 +98,7 @@ describe('стиль и наборы на сервере', () => {
 	it('Icon по роли — <svg> иконки с размером и скрытием от скринридера', () => {
 		const body = markup(renderToString(() => <Icon tag={roleIcon('check')} width={20} />))
 
-		expect(body).toMatch(/^<svg [^>]*class="s-icon s-icon--size-normal ?"/)
+		expect(body).toMatch(/^<svg [^>]*class="so-icon so-icon--size-normal ?"/)
 		expect(body).toContain('aria-hidden="true"')
 		// Пустое значение (`height: ''` без размера) свойства не задаёт
 		expect(body).toContain('style="width:20px"')
@@ -122,7 +122,7 @@ describe('стиль и наборы на сервере', () => {
 			)),
 		)
 
-		expect(body).toContain('<div class="s-skeleton__placeholder" aria-hidden="true"></div>')
+		expect(body).toContain('<div class="so-skeleton__placeholder" aria-hidden="true"></div>')
 		expect(body).toContain('aria-busy="true"')
 		expect(body).toContain('<span>Панель</span>')
 		expect(body).not.toContain('display:none')
@@ -144,19 +144,19 @@ describe('Label · серверный рендер', () => {
 		)
 
 		expect(body).toMatch(
-			/^<label [^>]*class="s-label s-label--size-normal s-label--position-end ?"/,
+			/^<label [^>]*class="so-label so-label--size-normal so-label--position-end ?"/,
 		)
 		expect(body).toMatch(
-			/<span class="s-label__control"><span [^>]*class="s-check-box[^"]*"[^>]*><input [^>]*type="checkbox"[^>]*checked/,
+			/<span class="so-label__control"><span [^>]*class="so-check-box[^"]*"[^>]*><input [^>]*type="checkbox"[^>]*checked/,
 		)
-		expect(body).toContain('<span class="s-label__text">Согласен</span>')
+		expect(body).toContain('<span class="so-label__text">Согласен</span>')
 		expect(body).not.toMatch(/\sfor=/)
 	})
 
 	it('без текста обёртка текста пуста', () => {
 		const body = markup(renderToString(() => <Label />))
 
-		expect(body).toContain('<span class="s-label__text"></span>')
+		expect(body).toContain('<span class="so-label__text"></span>')
 	})
 })
 

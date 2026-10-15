@@ -42,7 +42,7 @@ const tabs = () => [...document.querySelectorAll('[role="tab"]')]
 
 /** Элемент таба по тексту строки; нет его — тест падает здесь. */
 const item = (text: string): Element => {
-	const found = [...document.querySelectorAll('.s-tabs-item')].find(
+	const found = [...document.querySelectorAll('.so-tabs-item')].find(
 		(candidate) => candidate.querySelector('[role="tab"]')?.textContent?.trim() === text,
 	)
 
@@ -52,7 +52,7 @@ const item = (text: string): Element => {
 }
 
 const closeOf = (text: string): HTMLElement => {
-	const close = item(text).querySelector('.s-tabs-item__close')
+	const close = item(text).querySelector('.so-tabs-item__close')
 
 	if (!(close instanceof HTMLElement)) throw new Error(`у таба «${text}» нет кнопки закрытия`)
 
@@ -79,7 +79,7 @@ describe('разметка', () => {
 
 		expect(row.getAttribute('role')).toBe('tab')
 		expect(close.tagName).toBe('BUTTON')
-		expect(close.classList.contains('s-tabs-item__close')).toBe(true)
+		expect(close.classList.contains('so-tabs-item__close')).toBe(true)
 		expect(rest).toHaveLength(0)
 	})
 
@@ -96,7 +96,7 @@ describe('разметка', () => {
 	it('без closable кнопки нет, в элементе одна строка', async () => {
 		await render(`<Tabs><TabsItem value="a" text="A" active /></Tabs>`)
 
-		expect(document.querySelector('.s-tabs-item__close')).toBeNull()
+		expect(document.querySelector('.so-tabs-item__close')).toBeNull()
 		expect(item('A').children).toHaveLength(1)
 	})
 })
@@ -129,7 +129,7 @@ describe('кнопка ведёт себя как раньше', () => {
 	it('размер кнопки — размер таба: от него считается кегль иконки', async () => {
 		await render(`<Tabs closable size="lg"><TabsItem value="a" text="A" active /></Tabs>`)
 
-		expect(closeOf('A').classList.contains('s-button--size-lg')).toBe(true)
+		expect(closeOf('A').classList.contains('so-button--size-lg')).toBe(true)
 	})
 })
 
@@ -155,11 +155,11 @@ describe('снятый closable таба возвращает значение �
 		wrapper = mounted
 		await nextTick()
 
-		expect(item('A').querySelector('.s-tabs-item__close')).toBeNull()
+		expect(item('A').querySelector('.so-tabs-item__close')).toBeNull()
 
 		await mounted.setProps({ own: undefined })
 
-		expect(item('A').querySelector('.s-tabs-item__close')).not.toBeNull()
+		expect(item('A').querySelector('.so-tabs-item__close')).not.toBeNull()
 	})
 })
 
@@ -196,7 +196,7 @@ describe('у выключенного таба кнопки закрытия н�
 
 	/** Табы, у которых есть кнопка закрытия, — по тексту строки. */
 	const withClose = () =>
-		['A', 'B', 'C'].filter((text) => item(text).querySelector('.s-tabs-item__close'))
+		['A', 'B', 'C'].filter((text) => item(text).querySelector('.so-tabs-item__close'))
 
 	it('выключенный со старта', async () => {
 		await mountHarness()

@@ -54,7 +54,7 @@ const render = async (attrs: string, setup: () => Record<string, unknown> = () =
 }
 
 const list = (): HTMLElement => {
-	const found = document.querySelector('.s-tabs__list')
+	const found = document.querySelector('.so-tabs__list')
 
 	if (!(found instanceof HTMLElement)) throw new Error('списка табов нет')
 
@@ -83,7 +83,7 @@ describe('геометрия активного таба без знания о 
 		expect(style.getPropertyValue('--active-tab-size')).not.toBe('')
 		expect(style.getPropertyValue('--gap-pos')).not.toBe('')
 		expect(style.getPropertyValue('--gap-size')).not.toBe('')
-		expect(document.querySelector('.s-tabs')?.classList).toContain('s-tabs--ready-animation')
+		expect(document.querySelector('.so-tabs')?.classList).toContain('so-tabs--ready-animation')
 	})
 })
 

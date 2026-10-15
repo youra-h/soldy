@@ -86,10 +86,10 @@ async function mount(props: Partial<IDateInputProps> = {}) {
 	/** Текст ядра, который перерисовка написала в узел последним */
 	const texts = new Map<string, string>()
 
-	root.className = 's-date-input'
-	leading.className = 's-date-input__leading'
+	root.className = 'so-date-input'
+	leading.className = 'so-date-input__leading'
 	leading.append(document.createElement('button'))
-	row.className = 's-date-input__segments'
+	row.className = 'so-date-input__segments'
 	root.append(leading, row)
 	document.body.append(document.createElement('button'), root)
 
@@ -116,7 +116,7 @@ async function mount(props: Partial<IDateInputProps> = {}) {
 					: { ...segment.attrs, ...segment.aria, ...segment.dataset }
 
 			node.className =
-				segment.type === 'literal' ? 's-date-input__literal' : 's-date-input__segment'
+				segment.type === 'literal' ? 'so-date-input__literal' : 'so-date-input__segment'
 
 			for (const name of node.getAttributeNames()) {
 				if (name !== 'class') node.removeAttribute(name)
@@ -523,13 +523,13 @@ describe('клавиши', () => {
 		const { owner, row, segment } = await mount({ value: '2026-05-12' })
 
 		owner.kind = 'datetime'
-		expect(row.querySelectorAll('.s-date-input__segment')).toHaveLength(5)
+		expect(row.querySelectorAll('.so-date-input__segment')).toHaveLength(5)
 
 		segment('minute').focus()
 		expect(owner.focusedSegment).toBe('minute')
 
 		owner.kind = 'date'
-		expect(row.querySelectorAll('.s-date-input__segment')).toHaveLength(3)
+		expect(row.querySelectorAll('.so-date-input__segment')).toHaveLength(3)
 		expect(owner.focusedSegment).toBeUndefined()
 	})
 
@@ -555,13 +555,13 @@ describe('клавиши', () => {
 		const { owner, row, segment } = await mount({ kind: 'datetime', value: '2026-05-12T14:30' })
 
 		owner.timePrecision = 'second'
-		expect(row.querySelectorAll('.s-date-input__segment')).toHaveLength(6)
+		expect(row.querySelectorAll('.so-date-input__segment')).toHaveLength(6)
 
 		segment('second').focus()
 		expect(owner.focusedSegment).toBe('second')
 
 		owner.timePrecision = 'minute'
-		expect(row.querySelectorAll('.s-date-input__segment')).toHaveLength(5)
+		expect(row.querySelectorAll('.so-date-input__segment')).toHaveLength(5)
 		expect(owner.focusedSegment).toBeUndefined()
 	})
 
@@ -581,7 +581,7 @@ describe('указатель', () => {
 	it('нажатие мимо частей — фокус ближайшей; по слоту — нет', async () => {
 		const { root, row, leading, segment } = await mount()
 
-		row.querySelector('.s-date-input__literal')?.dispatchEvent(
+		row.querySelector('.so-date-input__literal')?.dispatchEvent(
 			new MouseEvent('click', { bubbles: true }),
 		)
 		expect(document.activeElement).toBe(segment('day'))

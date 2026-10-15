@@ -5,7 +5,7 @@
  * собирал свой адаптерный контекст и плагины на каждую смену, и в таблице на
  * 5000 строк «выбрать все» собирала 5000 иконок — треть времени выбора
  * (BENCHMARKS.md, 869feq9un). Размер отметке даёт тема флажка по
- * `s-check-box__mark`.
+ * `so-check-box__mark`.
  */
 
 import { describe, it, expect, afterEach } from 'vitest'
@@ -33,7 +33,7 @@ function bodyOf(source: { body: string }): string {
 
 /** Отметка в коробке флажка; нет её — `null`. */
 function markOf(): SVGSVGElement | null {
-	return wrapper?.element.querySelector('.s-check-box__container svg') ?? null
+	return wrapper?.element.querySelector('.so-check-box__container svg') ?? null
 }
 
 describe('CheckBox · отметка', () => {
@@ -50,7 +50,7 @@ describe('CheckBox · отметка', () => {
 
 		expect(markOf()?.getAttribute('viewBox')).toBe(material.check.viewBox)
 		expect(markOf()?.innerHTML).toBe(bodyOf(material.check))
-		expect(markOf()?.classList.contains('s-check-box__mark')).toBe(true)
+		expect(markOf()?.classList.contains('so-check-box__mark')).toBe(true)
 
 		indeterminate.value = true
 		await nextTick()

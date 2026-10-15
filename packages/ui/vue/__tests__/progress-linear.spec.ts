@@ -40,9 +40,9 @@ describe('первая отрисовка', () => {
 		const node = root()
 
 		expect(node.localName).toBe('span')
-		expect(node.classList.contains('s-progress-linear')).toBe(true)
-		expect(node.classList.contains('s-progress-linear--size-normal')).toBe(true)
-		expect(node.classList.contains('s-progress-linear--horizontal')).toBe(true)
+		expect(node.classList.contains('so-progress-linear')).toBe(true)
+		expect(node.classList.contains('so-progress-linear--size-normal')).toBe(true)
+		expect(node.classList.contains('so-progress-linear--horizontal')).toBe(true)
 		expect(node.getAttribute('role')).toBe('progressbar')
 		expect(node.getAttribute('aria-valuemin')).toBe('0')
 		expect(node.getAttribute('aria-valuemax')).toBe('100')
@@ -81,8 +81,8 @@ describe('первая отрисовка', () => {
 
 		const node = root()
 
-		expect(node.classList.contains('s-progress-linear--vertical')).toBe(true)
-		expect(node.classList.contains('s-progress-linear--horizontal')).toBe(false)
+		expect(node.classList.contains('so-progress-linear--vertical')).toBe(true)
+		expect(node.classList.contains('so-progress-linear--horizontal')).toBe(false)
 		expect(node.hasAttribute('aria-orientation')).toBe(false)
 		expect(percent()).toBe('40%')
 	})
@@ -98,7 +98,7 @@ describe('первая отрисовка', () => {
 		expect(children).toHaveLength(1)
 		expect(children[0].localName).toBe('span')
 		expect(children[0].getAttributeNames()).toEqual(['class'])
-		expect(children[0].className).toBe('s-progress-linear__range')
+		expect(children[0].className).toBe('so-progress-linear__range')
 		// Содержимое роли `progressbar` скринридер не читает — слота нет
 		expect(root().textContent).toBe('')
 	})
@@ -170,13 +170,13 @@ describe('смена значения и флага', () => {
 
 		await mounted.setProps({ orientation: 'vertical' })
 
-		expect(root().classList.contains('s-progress-linear--vertical')).toBe(true)
-		expect(root().classList.contains('s-progress-linear--horizontal')).toBe(false)
+		expect(root().classList.contains('so-progress-linear--vertical')).toBe(true)
+		expect(root().classList.contains('so-progress-linear--horizontal')).toBe(false)
 
 		await mounted.setProps({ orientation: undefined })
 
-		expect(root().classList.contains('s-progress-linear--horizontal')).toBe(true)
-		expect(root().classList.contains('s-progress-linear--vertical')).toBe(false)
+		expect(root().classList.contains('so-progress-linear--horizontal')).toBe(true)
+		expect(root().classList.contains('so-progress-linear--vertical')).toBe(false)
 	})
 
 	it('смена шкалы пересчитывает долю и aria-value*', async () => {
@@ -220,7 +220,7 @@ describe('внешний ctrl', () => {
 		ctrl.orientation = 'vertical'
 		await nextTick()
 
-		expect(root().classList.contains('s-progress-linear--vertical')).toBe(true)
+		expect(root().classList.contains('so-progress-linear--vertical')).toBe(true)
 	})
 
 	it('пропсы разметки ложатся поверх ctrl', () => {
@@ -242,7 +242,7 @@ describe('внешний ctrl', () => {
 		wrapper = mount(ProgressLinear, { props: { ctrl } })
 
 		expect(root().dataset.indeterminate).toBe('true')
-		expect(root().classList.contains('s-progress-linear--vertical')).toBe(true)
+		expect(root().classList.contains('so-progress-linear--vertical')).toBe(true)
 	})
 })
 

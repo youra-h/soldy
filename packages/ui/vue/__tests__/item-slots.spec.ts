@@ -80,7 +80,7 @@ describe('ListBox', () => {
 
 		expect(texts('.probe')).toEqual(['a:Первый:false', 'b:Второй:false'])
 
-		nth('.s-list-box-item .s-button', 1).click()
+		nth('.so-list-box-item .so-button', 1).click()
 		await nextTick()
 
 		expect(texts('.probe')).toEqual(['a:Первый:false', 'b:Второй:true'])
@@ -96,14 +96,14 @@ describe('ListBox', () => {
 		})
 		await nextTick()
 
-		expect(marks('.s-list-box-item__indicator')).toEqual(['slot', 'empty'])
+		expect(marks('.so-list-box-item__indicator')).toEqual(['slot', 'empty'])
 		expect(texts('.probe')).toEqual(['false'])
 
-		nth('.s-list-box-item .s-button', 0).click()
-		nth('.s-list-box-item .s-button', 1).click()
+		nth('.so-list-box-item .so-button', 0).click()
+		nth('.so-list-box-item .so-button', 1).click()
 		await nextTick()
 
-		expect(marks('.s-list-box-item__indicator')).toEqual(['slot', 'icon'])
+		expect(marks('.so-list-box-item__indicator')).toEqual(['slot', 'icon'])
 		expect(texts('.probe')).toEqual(['true'])
 	})
 
@@ -114,10 +114,10 @@ describe('ListBox', () => {
 		})
 		await nextTick()
 
-		nth('.s-list-box-item .s-button', 1).click()
+		nth('.so-list-box-item .so-button', 1).click()
 		await nextTick()
 
-		expect(marks('.s-list-box-item__indicator')).toEqual(['empty', 'icon'])
+		expect(marks('.so-list-box-item__indicator')).toEqual(['empty', 'icon'])
 	})
 
 	it('empty — пока элементов нет: появились — пропал, ушли — вернулся', async () => {
@@ -140,7 +140,7 @@ describe('ListBox', () => {
 		await wrapper.setProps({ items: ITEMS })
 
 		expect(document.querySelector('.probe')).toBeNull()
-		expect(texts('.s-list-box-item')).toEqual(['Первый', 'Второй'])
+		expect(texts('.so-list-box-item')).toEqual(['Первый', 'Второй'])
 
 		await wrapper.setProps({ items: [] })
 
@@ -182,7 +182,7 @@ describe('Select', () => {
 		nth(OPTION, 1).click()
 		await nextTick()
 
-		expect(marks('.s-select-item__indicator')).toEqual(['slot', 'icon'])
+		expect(marks('.so-select-item__indicator')).toEqual(['slot', 'icon'])
 		expect(texts('.probe')).toEqual(['true'])
 	})
 })
@@ -216,7 +216,7 @@ describe('Tabs', () => {
 		})
 		await nextTick()
 
-		expect(marks('.s-tabs-item__close')).toEqual(['slot', 'icon'])
+		expect(marks('.so-tabs-item__close')).toEqual(['slot', 'icon'])
 	})
 })
 
@@ -232,7 +232,7 @@ describe('Tags', () => {
 
 		expect(texts('.probe')).toEqual(['a:Первый:false', 'b:Второй:false'])
 
-		nth('.s-tags-item > .s-button:first-child', 1).click()
+		nth('.so-tags-item > .so-button:first-child', 1).click()
 		await nextTick()
 
 		expect(texts('.probe')).toEqual(['a:Первый:false', 'b:Второй:true'])
@@ -248,16 +248,16 @@ describe('Tags', () => {
 		})
 		await nextTick()
 
-		expect(marks('.s-tags-item__close')).toEqual(['icon', 'slot'])
+		expect(marks('.so-tags-item__close')).toEqual(['icon', 'slot'])
 	})
 })
 
 describe('Accordion', () => {
 	/** Стрелки секций по порядку: у каждой — с какой стороны и что в обёртке. */
 	const arrows = () =>
-		[...document.querySelectorAll('.s-accordion-item__header')].map((header) =>
-			[...header.querySelectorAll(':scope > .s-accordion-item__arrow')].map((arrow) => {
-				const text = header.querySelector(':scope > .s-button__text')
+		[...document.querySelectorAll('.so-accordion-item__header')].map((header) =>
+			[...header.querySelectorAll(':scope > .so-accordion-item__arrow')].map((arrow) => {
+				const text = header.querySelector(':scope > .so-button__text')
 				const side =
 					text && arrow.compareDocumentPosition(text) & Node.DOCUMENT_POSITION_FOLLOWING
 						? 'start'
@@ -277,7 +277,7 @@ describe('Accordion', () => {
 
 		expect(texts('.probe')).toEqual(['a:Первый:false', 'b:Второй:false'])
 
-		nth('.s-accordion-item__header', 1).click()
+		nth('.so-accordion-item__header', 1).click()
 		await nextTick()
 
 		expect(texts('.probe')).toEqual(['a:Первый:false', 'b:Второй:true'])
@@ -325,7 +325,7 @@ describe('Accordion', () => {
 			['start:icon', 'end:slot'],
 		])
 
-		const empty = [...document.querySelectorAll('.s-accordion-item__arrow')].filter(
+		const empty = [...document.querySelectorAll('.so-accordion-item__arrow')].filter(
 			(arrow) => !arrow.querySelector('.probe, svg'),
 		)
 
@@ -362,11 +362,11 @@ describe('RadioGroup', () => {
 		})
 		await nextTick()
 
-		expect(texts('.s-radio-group-item__text')).toEqual(['a:false', 'b:true'])
+		expect(texts('.so-radio-group-item__text')).toEqual(['a:false', 'b:true'])
 
 		await wrapper.setProps({ value: 'a' })
 
-		expect(texts('.s-radio-group-item__text')).toEqual(['a:true', 'b:false'])
+		expect(texts('.so-radio-group-item__text')).toEqual(['a:true', 'b:false'])
 	})
 
 	it('подпись RadioGroup.Item получает active', async () => {
@@ -384,6 +384,6 @@ describe('RadioGroup', () => {
 		)
 		await nextTick()
 
-		expect(texts('.s-radio-group-item__text')).toEqual(['false', 'true'])
+		expect(texts('.so-radio-group-item__text')).toEqual(['false', 'true'])
 	})
 })

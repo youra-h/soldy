@@ -38,7 +38,7 @@ export default class TCalendar
 	extends TValueControl<TCalendarValue, ICalendarProps, TCalendarEvents>
 	implements ICalendar
 {
-	static override baseClass = 's-calendar'
+	static override baseClass = 'so-calendar'
 
 	static defaultValues: typeof TValueControl.defaultValues &
 		TDefaultValues<

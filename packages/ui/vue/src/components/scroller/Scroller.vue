@@ -36,7 +36,7 @@ export default { ...SetupScroller, components: { Button, Icon } }
 		<!--
 			Кнопка «назад». Вида разметка ей не передаёт: значения вида
 			объявляет тема, и красит она кнопку по контексту
-			(`:where(.s-scroller__prev)`), как крестики и кнопку «…» у Tags.
+			(`:where(.so-scroller__prev)`), как крестики и кнопку «…» у Tags.
 
 			Выключенность считает ядро — «выключена лента или упёрлись в
 			начало»: тема корень не гасит, и `disabled` обязан доехать до
@@ -48,7 +48,7 @@ export default { ...SetupScroller, components: { Button, Icon } }
 		-->
 		<Button
 			embedded="scroller.prev"
-			class="s-scroller__prev"
+			class="so-scroller__prev"
 			:size="size"
 			:disabled="prevDisabled"
 			v-bind="prevAria"
@@ -71,14 +71,14 @@ export default { ...SetupScroller, components: { Button, Icon } }
 			детьми вьюпорта: по ним тема расставляет точки снапа
 			(`scroll-snap-align`), а плагин считает края.
 		-->
-		<div class="s-scroller__viewport" :tabindex="viewportTabIndex" v-bind="viewportAria">
+		<div class="so-scroller__viewport" :tabindex="viewportTabIndex" v-bind="viewportAria">
 			<slot />
 		</div>
 
 		<!-- Кнопка «вперёд» — зеркальная пара «назад», см. комментарий выше. -->
 		<Button
 			embedded="scroller.next"
-			class="s-scroller__next"
+			class="so-scroller__next"
 			:size="size"
 			:disabled="nextDisabled"
 			v-bind="nextAria"

@@ -75,10 +75,10 @@ $pulse-duration: 1s;
 $pulse-opacity: 0.3;
 
 @mixin pulse {
-	animation: s-progress-pulse $pulse-duration ease-in-out infinite alternate;
+	animation: so-progress-pulse $pulse-duration ease-in-out infinite alternate;
 }
 
-@keyframes s-progress-pulse {
+@keyframes so-progress-pulse {
 	to {
 		opacity: $pulse-opacity;
 	}

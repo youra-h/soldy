@@ -24,7 +24,7 @@ const CHECK = roleIcon('check')
  *
  * Наборы ядра стоят на двух элементах. Корень несёт `dataset`, `attrs` и место
  * в коллекции (`order`): тема читает `data-content-fit` с него. Строка несёт
- * `aria` и тот же `dataset` — выбор и подсветку тема красит на `.s-button`.
+ * `aria` и тот же `dataset` — выбор и подсветку тема красит на `.so-button`.
  * Атрибуты потребителя делятся так же, как у Vue: класс и стиль — корню,
  * остальное — строке, поверх её наборов: `tabindex="-1"` элемента перекрывает
  * `tabindex="0"`, который кнопка на `div` ставит себе сама.
@@ -79,7 +79,7 @@ export function ListBoxItem(props: ListBoxItemProps): JSX.Element {
 	}
 
 	const mark = () => (
-		<span class="s-list-box-item__indicator" aria-hidden="true">
+		<span class="so-list-box-item__indicator" aria-hidden="true">
 			{indicatorIcon() ??
 				(state.selected ? (
 					<Icon embedded="list-box.indicator" tag={CHECK} size={state.size} />

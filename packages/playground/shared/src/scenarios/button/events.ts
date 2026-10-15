@@ -24,7 +24,7 @@ export const BUTTON_EVENTS: readonly TScenario[] = [
 			await ctx.frame()
 
 			const count = ctx.journal.count('change:text', from)
-			const shown = ctx.scene.querySelector('.s-button__text')?.textContent?.trim()
+			const shown = ctx.scene.querySelector('.so-button__text')?.textContent?.trim()
 
 			ctx.check(count === 1, `change:text пришло ровно один раз (пришло ${count})`)
 			ctx.check(shown === 'Новый текст', `в DOM новый текст (в DOM «${shown ?? ''}»)`)
@@ -96,7 +96,7 @@ export const BUTTON_EVENTS: readonly TScenario[] = [
 		],
 		props: { text: 'Выключена', disabled: true },
 		run: async (ctx) => {
-			const button = ctx.scene.querySelector('.s-button')
+			const button = ctx.scene.querySelector('.so-button')
 			let clicked = false
 			let tabbed = false
 

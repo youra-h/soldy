@@ -93,7 +93,7 @@ function clickButton(target: HTMLElement) {
 	buttonOf(target).dispatchEvent(new MouseEvent('click', { bubbles: true }))
 }
 
-const textOf = (target: HTMLElement) => target.querySelector('.s-button__text')?.textContent
+const textOf = (target: HTMLElement) => target.querySelector('.so-button__text')?.textContent
 
 /** Последний набор из `onBundleCreate`: аргумент события ядро не типизирует. */
 function lastBundle(bundles: readonly unknown[]): TPluginBundle {

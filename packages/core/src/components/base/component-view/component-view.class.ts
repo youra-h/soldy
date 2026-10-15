@@ -23,7 +23,7 @@ export default class TComponentView<
 	implements IComponentView<TProps, TEvents>
 {
 	/** Базовый CSS-класс по умолчанию (можно переопределить в наследниках). */
-	static baseClass = 's-component-view'
+	static baseClass = 'so-component-view'
 
 	static defaultValues: typeof TComponent.defaultValues &
 		TDefaultValues<IComponentViewProps, 'rendered' | 'visible' | 'tag' | 'direction'> = {

@@ -90,7 +90,7 @@
 		</Button><Button
 			embedded="tabs.close"
 			rendered={state.tab_closable === true}
-			class="s-tabs-item__close"
+			class="so-tabs-item__close"
 			disabled={state.disabled}
 			size={state.size}
 			{...state.closeAria}

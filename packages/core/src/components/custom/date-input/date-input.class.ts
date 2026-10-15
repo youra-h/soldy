@@ -104,7 +104,7 @@ export class TDateInput
 	extends TField<TDateInputValue, IDateInputProps, TDateInputEvents>
 	implements IDateInput
 {
-	static override baseClass = 's-date-input'
+	static override baseClass = 'so-date-input'
 
 	static defaultValues: typeof TField.defaultValues &
 		TDefaultValues<

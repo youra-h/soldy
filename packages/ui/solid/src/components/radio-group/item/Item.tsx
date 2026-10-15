@@ -73,7 +73,7 @@ export function RadioGroupItem(props: RadioGroupItemProps): JSX.Element {
 		<Show when={state.rendered}>
 			<Dynamic {...root()} component={rootTag(state.tag)} ref={binding.ref}>
 				<input
-					class="s-radio-group-item__input"
+					class="so-radio-group-item__input"
 					type="radio"
 					name={state.name}
 					value={state.value}
@@ -82,10 +82,10 @@ export function RadioGroupItem(props: RadioGroupItemProps): JSX.Element {
 					{...control()}
 					checked={state.active}
 				/>
-				<span class="s-radio-group-item__control">
-					<span class="s-radio-group-item__indicator" />
+				<span class="so-radio-group-item__control">
+					<span class="so-radio-group-item__indicator" />
 				</span>
-				<span class="s-radio-group-item__text">{label()}</span>
+				<span class="so-radio-group-item__text">{label()}</span>
 			</Dynamic>
 		</Show>
 	)

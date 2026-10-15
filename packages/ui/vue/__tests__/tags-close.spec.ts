@@ -55,11 +55,11 @@ const ROLES = { multiple: 'option', none: 'listitem' } as const
 const MODES = ['multiple', 'none'] as const
 
 /** Строка тега — носитель его роли. */
-const rows = () => [...document.querySelectorAll('.s-tags-item > .s-button:first-child')]
+const rows = () => [...document.querySelectorAll('.so-tags-item > .so-button:first-child')]
 
 /** Элемент тега по тексту строки; нет его — тест падает здесь. */
 const item = (text: string): Element => {
-	const found = [...document.querySelectorAll('.s-tags-item')].find(
+	const found = [...document.querySelectorAll('.so-tags-item')].find(
 		(candidate) => candidate.firstElementChild?.textContent?.trim() === text,
 	)
 
@@ -77,7 +77,7 @@ const rowOf = (text: string): Element => {
 }
 
 const closeOf = (text: string): HTMLElement => {
-	const close = item(text).querySelector('.s-tags-item__close')
+	const close = item(text).querySelector('.so-tags-item__close')
 
 	if (!(close instanceof HTMLElement)) throw new Error(`у тега «${text}» нет кнопки закрытия`)
 
@@ -105,7 +105,7 @@ describe.each(MODES)('разметка, mode="%s"', (mode) => {
 
 		expect(row.getAttribute('role')).toBe(ROLES[mode])
 		expect(close.tagName).toBe('BUTTON')
-		expect(close.classList.contains('s-tags-item__close')).toBe(true)
+		expect(close.classList.contains('so-tags-item__close')).toBe(true)
 		expect(rest).toHaveLength(0)
 	})
 
@@ -124,7 +124,7 @@ describe('без closable', () => {
 	it('кнопки нет, в элементе одна строка', async () => {
 		await render(`<Tags><TagsItem value="a" text="A" /></Tags>`)
 
-		expect(document.querySelector('.s-tags-item__close')).toBeNull()
+		expect(document.querySelector('.so-tags-item__close')).toBeNull()
 		expect(item('A').children).toHaveLength(1)
 	})
 })
@@ -142,7 +142,7 @@ describe('вид — у пилюли, а не у строки', () => {
 			</Tags>
 		`)
 
-		expect(document.querySelector('.s-tags')?.classList.contains('s-tags--view-ghost')).toBe(
+		expect(document.querySelector('.so-tags')?.classList.contains('so-tags--view-ghost')).toBe(
 			true,
 		)
 
@@ -204,7 +204,7 @@ describe('кнопка ведёт себя как раньше', () => {
 	it('размер кнопки — размер тега: от него считается кегль иконки', async () => {
 		await render(`<Tags closable size="lg"><TagsItem value="a" text="A" /></Tags>`)
 
-		expect(closeOf('A').classList.contains('s-button--size-lg')).toBe(true)
+		expect(closeOf('A').classList.contains('so-button--size-lg')).toBe(true)
 	})
 })
 
@@ -241,7 +241,7 @@ describe('у выключенного тега кнопки закрытия н�
 
 	/** Теги, у которых есть кнопка закрытия, — по тексту строки. */
 	const withClose = () =>
-		['A', 'B', 'C'].filter((text) => item(text).querySelector('.s-tags-item__close'))
+		['A', 'B', 'C'].filter((text) => item(text).querySelector('.so-tags-item__close'))
 
 	it('выключенный со старта', async () => {
 		await mountHarness()
@@ -298,10 +298,10 @@ describe('снятый closable тега возвращает значение �
 		wrapper = mounted
 		await nextTick()
 
-		expect(item('A').querySelector('.s-tags-item__close')).toBeNull()
+		expect(item('A').querySelector('.so-tags-item__close')).toBeNull()
 
 		await mounted.setProps({ own: undefined })
 
-		expect(item('A').querySelector('.s-tags-item__close')).not.toBeNull()
+		expect(item('A').querySelector('.so-tags-item__close')).not.toBeNull()
 	})
 })

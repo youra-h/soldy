@@ -37,13 +37,13 @@ export default { ...SetupSlider }
 			по оси, её мерит плагин указателя. Рельс рисует тема псевдоэлементом,
 			своего узла у него нет.
 		-->
-		<span class="s-slider__track">
+		<span class="so-slider__track">
 			<!--
 				Заливка — одна на ползунок: от начала или от `origin` до ручки, у
 				нескольких ручек — между крайними. Края приходят переменными
 				(`--s-slider-range-start`, `--s-slider-range-end`).
 			-->
-			<span class="s-slider__range" :style="rangeStyle"></span>
+			<span class="so-slider__range" :style="rangeStyle"></span>
 
 			<!--
 				Метки — только если они заданы: точками шкалы или списком. Каждая
@@ -52,11 +52,11 @@ export default { ...SetupSlider }
 				подсказка: подписи меток — зрительная шкала, значение и границы
 				объявляет поле, а в подписи `Label` их текст вошёл бы в имя поля.
 			-->
-			<span v-if="shownMarks.length > 0" class="s-slider__marks" aria-hidden="true">
+			<span v-if="shownMarks.length > 0" class="so-slider__marks" aria-hidden="true">
 				<span
 					v-for="(mark, index) in shownMarks"
 					:key="index"
-					class="s-slider__mark"
+					class="so-slider__mark"
 					:style="mark.style"
 					v-bind="mark.dataset"
 				>
@@ -66,7 +66,7 @@ export default { ...SetupSlider }
 						пустую подпись тема прячет по `:empty`, и метка остаётся
 						одной точкой.
 					-->
-					<span class="s-slider__mark-label"
+					<span class="so-slider__mark-label"
 						><slot name="mark" :value="mark.value" :label="mark.label">{{
 							mark.label
 						}}</slot></span
@@ -82,7 +82,7 @@ export default { ...SetupSlider }
 			<span
 				v-for="(thumb, index) in thumbs"
 				:key="index"
-				class="s-slider__thumb"
+				class="so-slider__thumb"
 				:style="thumb.style"
 				v-bind="thumb.dataset"
 			>
@@ -96,7 +96,7 @@ export default { ...SetupSlider }
 					тянет плагин, а не браузер.
 				-->
 				<input
-					class="s-slider__input"
+					class="so-slider__input"
 					type="range"
 					:min="thumb.min"
 					:max="thumb.max"
@@ -116,7 +116,7 @@ export default { ...SetupSlider }
 					пробелов, как у подписи метки: в тексте подсказки остались бы
 					пробелы по краям.
 				-->
-				<span v-if="tooltipRendered" class="s-slider__tooltip" aria-hidden="true"
+				<span v-if="tooltipRendered" class="so-slider__tooltip" aria-hidden="true"
 					><slot name="thumb" :value="thumb.value" :index="index">{{
 						thumb.value
 					}}</slot></span

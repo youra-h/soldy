@@ -19,7 +19,7 @@ import type { IProgressSpinner, TProgressSpinnerStyle } from './types'
  * `data-indeterminate` рисует сама тема: движение — её дело, а не ядра.
  */
 export default class TProgressSpinner extends TProgress implements IProgressSpinner {
-	static override baseClass = 's-progress-spinner'
+	static override baseClass = 'so-progress-spinner'
 
 	/**
 	 * `--s-progress-spinner-fraction` — доля готового числом от 0 до 1: вне

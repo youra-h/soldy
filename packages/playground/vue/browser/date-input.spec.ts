@@ -65,10 +65,10 @@ const show = async (
 		defineComponent({
 			render: () =>
 				h(LocaleProvider, { locale }, () =>
-					h('div', { class: 's-host', dir, style: 'padding: 16px' }, [
-						h('span', { class: 's-test-before' }, 'Дата рождения '),
+					h('div', { class: 'so-host', dir, style: 'padding: 16px' }, [
+						h('span', { class: 'so-test-before' }, 'Дата рождения '),
 						h(DateInput, { ctrl, aria_label: 'Дата рождения', ...attrs }),
-						h('button', { class: 's-test-after' }, 'После'),
+						h('button', { class: 'so-test-after' }, 'После'),
 					]),
 				),
 		}),
@@ -90,8 +90,8 @@ const find = (selector: string): HTMLElement => {
 	return element
 }
 
-const segment = (type: string) => find(`.s-date-input__segment[data-type="${type}"]`)
-const row = () => find('.s-date-input__segments')
+const segment = (type: string) => find(`.so-date-input__segment[data-type="${type}"]`)
+const row = () => find('.so-date-input__segments')
 
 /** Текст выделения документа — текстом узлов, как его кладёт в буфер поле. */
 const selectedText = (): string => {
@@ -317,7 +317,7 @@ describe('клавиши и фокус', () => {
 	it('у каждой части своя остановка Tab', async () => {
 		await show()
 
-		find('.s-test-after').focus()
+		find('.so-test-after').focus()
 		await userEvent.keyboard('{Shift>}{Tab}{/Shift}')
 		expect(document.activeElement).toBe(segment('year'))
 
@@ -394,7 +394,7 @@ describe('время', () => {
 
 		await show({ kind: 'datetime', value: '2026-05-12T14:30' })
 
-		const tops = [...document.querySelectorAll('.s-date-input__segment')].map(
+		const tops = [...document.querySelectorAll('.so-date-input__segment')].map(
 			(node) => node.getBoundingClientRect().top,
 		)
 
@@ -477,7 +477,7 @@ describe('время', () => {
 
 describe('сенсорный режим', () => {
 	/** Селектор части — касание ищет узел в рамке теста. */
-	const part = (type: string) => `.s-date-input__segment[data-type="${type}"]`
+	const part = (type: string) => `.so-date-input__segment[data-type="${type}"]`
 
 	it('касание делает части редактируемыми ещё до фокуса, каретка — в части', async () => {
 		await show()
@@ -576,7 +576,7 @@ describe('нажатие мимо частей', () => {
 	it('справа от даты — фокус на ближайшую часть, слева — на первую', async () => {
 		await show({}, { style: 'width: 320px' })
 
-		const root = find('.s-date-input')
+		const root = find('.so-date-input')
 		const box = root.getBoundingClientRect()
 
 		await userEvent.click(root, { position: { x: box.width - 8, y: box.height / 2 } })
@@ -589,7 +589,7 @@ describe('нажатие мимо частей', () => {
 	it('протяжка с пустого места поля выделяет дату', async () => {
 		await show({}, { style: 'width: 320px' })
 
-		const root = find('.s-date-input')
+		const root = find('.so-date-input')
 		const year = segment('year')
 		const { height } = root.getBoundingClientRect()
 
@@ -626,7 +626,7 @@ describe('ширина поля', () => {
 	 * долю пикселя. Рост, который сторожится, крупнее: цифра года или два поля
 	 * части, если место их не учло, — по пикселю на `normal`.
 	 */
-	const fieldWidth = () => find('.s-date-input').getBoundingClientRect().width
+	const fieldWidth = () => find('.so-date-input').getBoundingClientRect().width
 
 	it('набор года по одной цифре ширину поля не меняет', async () => {
 		await show({ value: undefined })
@@ -671,7 +671,7 @@ describe('ширина поля', () => {
 
 			await show({ value: undefined })
 			const empty = fieldWidth()
-			const first = document.querySelector('.s-date-input__segment')
+			const first = document.querySelector('.so-date-input__segment')
 
 			if (!(first instanceof HTMLElement)) throw new Error('части нет')
 
@@ -743,18 +743,18 @@ describe('кнопка очистки', () => {
 	it.each(COMPONENT_SIZES)('%s: квадрат высотой в строку слота, иконка внутри', async (size) => {
 		await show({ size }, { clearable: true })
 
-		expectClearSquare(find('.s-date-input__clear'), find('.s-date-input__trailing'), size)
+		expectClearSquare(find('.so-date-input__clear'), find('.so-date-input__trailing'), size)
 	})
 
 	it('нажатие очищает все части, фокус остаётся на кнопке', async () => {
 		const ctrl = await show({}, { clearable: true })
 
-		await userEvent.click(find('.s-date-input__clear'))
+		await userEvent.click(find('.so-date-input__clear'))
 
 		expect(ctrl.value).toBeUndefined()
-		expect(document.activeElement).toBe(find('.s-date-input__clear'))
+		expect(document.activeElement).toBe(find('.so-date-input__clear'))
 		expect(
-			[...document.querySelectorAll<HTMLElement>('.s-date-input__segment')].map(
+			[...document.querySelectorAll<HTMLElement>('.so-date-input__segment')].map(
 				(part) => part.dataset.placeholder,
 			),
 		).toEqual(['true', 'true', 'true'])

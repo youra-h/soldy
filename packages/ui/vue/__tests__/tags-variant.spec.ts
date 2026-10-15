@@ -4,7 +4,7 @@
  * В одном наборе теги бывают разного цвета: `variant` у `Tags.Item` — вход, и
  * набор его тегу не пишет (правило ядра стережёт
  * `core/__tests__/collection-style-inherit.spec.ts`). Вариант набора остаётся
- * модификатором корня набора (`s-tags--variant-<v>`): по нему тема красит тег
+ * модификатором корня набора (`so-tags--variant-<v>`): по нему тема красит тег
  * без своего варианта, а сам тег значения набора не получает. Здесь — что
  * вариант доходит до разметки в настоящем цикле Vue и смена меняет
  * модификатор; как модификаторы красят пилюлю, проверяет браузерный прогон
@@ -32,11 +32,11 @@ const variantsOf = (element: Element | null, block: string): string[] =>
 	[...(element?.classList ?? [])].filter((name) => name.startsWith(`${block}--variant-`))
 
 /** Корень набора: на нём модификатор варианта набора. */
-const root = (): Element | null => document.querySelector('.s-tags')
+const root = (): Element | null => document.querySelector('.so-tags')
 
 /** Элемент тега по тексту строки; нет его — тест падает здесь. */
 const tag = (text: string): Element => {
-	const found = [...document.querySelectorAll('.s-tags-item')].find(
+	const found = [...document.querySelectorAll('.so-tags-item')].find(
 		(candidate) => candidate.firstElementChild?.textContent?.trim() === text,
 	)
 
@@ -46,7 +46,7 @@ const tag = (text: string): Element => {
 }
 
 /** Модификаторы варианта тега по тексту строки. */
-const tagVariants = (text: string): string[] => variantsOf(tag(text), 's-tags-item')
+const tagVariants = (text: string): string[] => variantsOf(tag(text), 'so-tags-item')
 
 /**
  * Набор и два тега разметкой: у «A» вариант свой, у «B» — нет. Строковый
@@ -80,7 +80,7 @@ describe('тег из разметки', () => {
 		wrapper = mount(MarkupHarness, { props: { own: 'danger' }, attachTo: document.body })
 		await nextTick()
 
-		expect(tagVariants('A')).toEqual(['s-tags-item--variant-danger'])
+		expect(tagVariants('A')).toEqual(['so-tags-item--variant-danger'])
 		expect(tagVariants('B')).toEqual([])
 	})
 
@@ -93,7 +93,7 @@ describe('тег из разметки', () => {
 		await mounted.setProps({ own: 'brand' })
 		await nextTick()
 
-		expect(tagVariants('A')).toEqual(['s-tags-item--variant-brand'])
+		expect(tagVariants('A')).toEqual(['so-tags-item--variant-brand'])
 
 		// Снятый проп снимает модификатор: тег снова без своего варианта
 		await mounted.setProps({ own: undefined })
@@ -111,23 +111,23 @@ describe('тег из разметки', () => {
 		wrapper = mounted
 		await nextTick()
 
-		expect(variantsOf(root(), 's-tags')).toEqual(['s-tags--variant-danger'])
-		expect(tagVariants('A')).toEqual(['s-tags-item--variant-danger'])
+		expect(variantsOf(root(), 'so-tags')).toEqual(['so-tags--variant-danger'])
+		expect(tagVariants('A')).toEqual(['so-tags-item--variant-danger'])
 		expect(tagVariants('B')).toEqual([])
 
 		await mounted.setProps({ owner: 'brand' })
 		await nextTick()
 
 		// Вариант набора — на корне набора, и только там
-		expect(variantsOf(root(), 's-tags')).toEqual(['s-tags--variant-brand'])
-		expect(tagVariants('A')).toEqual(['s-tags-item--variant-danger'])
+		expect(variantsOf(root(), 'so-tags')).toEqual(['so-tags--variant-brand'])
+		expect(tagVariants('A')).toEqual(['so-tags-item--variant-danger'])
 		expect(tagVariants('B')).toEqual([])
 
 		await mounted.setProps({ owner: undefined })
 		await nextTick()
 
-		expect(variantsOf(root(), 's-tags')).toEqual([])
-		expect(tagVariants('A')).toEqual(['s-tags-item--variant-danger'])
+		expect(variantsOf(root(), 'so-tags')).toEqual([])
+		expect(tagVariants('A')).toEqual(['so-tags-item--variant-danger'])
 	})
 })
 
@@ -139,8 +139,8 @@ describe('тег из items', () => {
 		})
 		await nextTick()
 
-		expect(variantsOf(root(), 's-tags')).toEqual(['s-tags--variant-brand'])
-		expect(tagVariants('A')).toEqual(['s-tags-item--variant-danger'])
+		expect(variantsOf(root(), 'so-tags')).toEqual(['so-tags--variant-brand'])
+		expect(tagVariants('A')).toEqual(['so-tags-item--variant-danger'])
 		expect(tagVariants('B')).toEqual([])
 	})
 
@@ -165,7 +165,7 @@ describe('тег из items', () => {
 
 		// Сверка по ключу обновила тот же тег, а не нарисовала новый
 		expect(tag('A')).toBe(before)
-		expect(tagVariants('A')).toEqual(['s-tags-item--variant-brand'])
+		expect(tagVariants('A')).toEqual(['so-tags-item--variant-brand'])
 		expect(tagVariants('B')).toEqual([])
 	})
 
@@ -181,15 +181,15 @@ describe('тег из items', () => {
 		await mounted.setProps({ variant: 'brand' })
 		await nextTick()
 
-		expect(variantsOf(root(), 's-tags')).toEqual(['s-tags--variant-brand'])
-		expect(tagVariants('A')).toEqual(['s-tags-item--variant-danger'])
+		expect(variantsOf(root(), 'so-tags')).toEqual(['so-tags--variant-brand'])
+		expect(tagVariants('A')).toEqual(['so-tags-item--variant-danger'])
 		expect(tagVariants('B')).toEqual([])
 
 		await mounted.setProps({ variant: undefined })
 		await nextTick()
 
-		expect(variantsOf(root(), 's-tags')).toEqual([])
-		expect(tagVariants('A')).toEqual(['s-tags-item--variant-danger'])
+		expect(variantsOf(root(), 'so-tags')).toEqual([])
+		expect(tagVariants('A')).toEqual(['so-tags-item--variant-danger'])
 		expect(tagVariants('B')).toEqual([])
 	})
 })

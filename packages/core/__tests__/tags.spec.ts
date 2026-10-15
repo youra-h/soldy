@@ -330,10 +330,10 @@ describe('view — модификатор набора', () => {
 		expect(viewClasses(owner.classes.toArray())).toEqual([])
 	})
 
-	it('вид ставит модификатор s-tags--view-<v> на набор, а не на теги', () => {
+	it('вид ставит модификатор so-tags--view-<v> на набор, а не на теги', () => {
 		const { owner, items } = createTags(['a', 'b'], { view: 'ghost' })
 
-		expect(viewClasses(owner.classes.toArray())).toEqual(['s-tags--view-ghost'])
+		expect(viewClasses(owner.classes.toArray())).toEqual(['so-tags--view-ghost'])
 		expect(items.flatMap((item) => viewClasses(item.classes.toArray()))).toEqual([])
 	})
 
@@ -345,7 +345,7 @@ describe('view — модификатор набора', () => {
 
 		owner.view = 'solid'
 
-		expect(viewClasses(owner.classes.toArray())).toEqual(['s-tags--view-solid'])
+		expect(viewClasses(owner.classes.toArray())).toEqual(['so-tags--view-solid'])
 		expect(seen).toEqual(['solid'])
 	})
 

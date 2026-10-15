@@ -52,7 +52,7 @@ function tab(text: string): HTMLElement {
 
 /** Элемент таба по тексту строки; нет его — тест падает здесь. */
 function item(text: string): HTMLElement {
-	const found = [...document.querySelectorAll('.s-tabs-item')].find(
+	const found = [...document.querySelectorAll('.so-tabs-item')].find(
 		(candidate) => candidate.querySelector('[role="tab"]')?.textContent?.trim() === text,
 	)
 
@@ -63,14 +63,14 @@ function item(text: string): HTMLElement {
 
 /** Кнопка закрытия таба; нет её — тест падает здесь. */
 function closeOf(text: string): HTMLElement {
-	const close = item(text).querySelector('.s-tabs-item__close')
+	const close = item(text).querySelector('.so-tabs-item__close')
 
 	if (!(close instanceof HTMLElement)) throw new Error(`у таба «${text}» нет кнопки закрытия`)
 
 	return close
 }
 
-const panels = () => [...document.querySelectorAll('.s-tabs__panel')]
+const panels = () => [...document.querySelectorAll('.so-tabs__panel')]
 
 /** Единственная показанная панель; их не одна — тест падает здесь. */
 function panel(): HTMLElement {
@@ -147,7 +147,7 @@ describe('показ панели по активному табу', () => {
 		mount(Harness, harness())
 
 		// Попади она в `children`, оказалась бы внутри [role=tablist]
-		expect(document.querySelector('[role="tablist"] .s-tabs__panel')).toBeNull()
+		expect(document.querySelector('[role="tablist"] .so-tabs__panel')).toBeNull()
 		expect(panels()).toHaveLength(1)
 	})
 
@@ -223,8 +223,8 @@ describe('показ панели по активному табу', () => {
 describe('разметка, на которую опирается тема', () => {
 	/** Табы набора — дети списка, список и показанная панель — дети корня. */
 	function expectOwnParts(root: HTMLElement, count: number): void {
-		const list = find(root, ':scope > .s-tabs__list', HTMLElement)
-		const tabItems = [...document.querySelectorAll('.s-tabs-item')]
+		const list = find(root, ':scope > .so-tabs__list', HTMLElement)
+		const tabItems = [...document.querySelectorAll('.so-tabs-item')]
 
 		expect(panel().parentElement).toBe(root)
 		expect(tabItems).toHaveLength(count)
@@ -431,7 +431,7 @@ describe('таб из разметки', () => {
 			),
 		})
 
-		expect(tabs().map((row) => row.querySelector('.s-button__text')?.textContent)).toEqual([
+		expect(tabs().map((row) => row.querySelector('.so-button__text')?.textContent)).toEqual([
 			'[A]',
 			'[B]',
 		])
@@ -443,8 +443,8 @@ describe('таб из разметки', () => {
 			'a',
 			'b',
 		])
-		expect(document.querySelector('.s-tabs__list--leading .head')?.textContent).toBe('до')
-		expect(document.querySelector('.s-tabs__list--trailing .tail')?.textContent).toBe('после')
+		expect(document.querySelector('.so-tabs__list--leading .head')?.textContent).toBe('до')
+		expect(document.querySelector('.so-tabs__list--trailing .tail')?.textContent).toBe('после')
 	})
 
 	/**
@@ -478,7 +478,7 @@ describe('таб из разметки', () => {
 		mount(Slots, {})
 
 		expect(
-			[...document.querySelectorAll('.s-tabs-item__close')].map((close) =>
+			[...document.querySelectorAll('.so-tabs-item__close')].map((close) =>
 				close.querySelector('.probe')
 					? 'slot'
 					: close.querySelector('svg')
@@ -491,8 +491,8 @@ describe('таб из разметки', () => {
 	it('без leading и trailing обёрток краёв списка нет', () => {
 		mount(Tabs, { items: ITEMS })
 
-		expect(document.querySelector('.s-tabs__list--leading')).toBeNull()
-		expect(document.querySelector('.s-tabs__list--trailing')).toBeNull()
+		expect(document.querySelector('.so-tabs__list--leading')).toBeNull()
+		expect(document.querySelector('.so-tabs__list--trailing')).toBeNull()
 	})
 
 	it('пропсы фасада — не атрибуты, атрибуты потребителя — атрибуты', () => {
@@ -531,7 +531,7 @@ describe('кнопка закрытия: разметка', () => {
 
 		expect(row.getAttribute('role')).toBe('tab')
 		expect(close.tagName).toBe('BUTTON')
-		expect(close.classList.contains('s-tabs-item__close')).toBe(true)
+		expect(close.classList.contains('so-tabs-item__close')).toBe(true)
 		expect(rest).toHaveLength(0)
 	})
 
@@ -546,7 +546,7 @@ describe('кнопка закрытия: разметка', () => {
 	it('без closable кнопки нет, в элементе одна строка', () => {
 		mount(Harness, { items: [{ value: 'a', text: 'A', active: true }] })
 
-		expect(document.querySelector('.s-tabs-item__close')).toBeNull()
+		expect(document.querySelector('.so-tabs-item__close')).toBeNull()
 		expect(item('A').children).toHaveLength(1)
 	})
 
@@ -619,7 +619,7 @@ describe('кнопка закрытия: поведение', () => {
 			items: [{ value: 'a', text: 'A', active: true }],
 		})
 
-		expect(closeOf('A').classList.contains('s-button--size-lg')).toBe(true)
+		expect(closeOf('A').classList.contains('so-button--size-lg')).toBe(true)
 	})
 
 	/**
@@ -635,12 +635,12 @@ describe('кнопка закрытия: поведение', () => {
 
 		mount(Harness, props)
 
-		expect(item('A').querySelector('.s-tabs-item__close')).toBeNull()
+		expect(item('A').querySelector('.so-tabs-item__close')).toBeNull()
 
 		props.items = view(undefined).items
 		flushSync()
 
-		expect(item('A').querySelector('.s-tabs-item__close')).not.toBeNull()
+		expect(item('A').querySelector('.so-tabs-item__close')).not.toBeNull()
 	})
 })
 
@@ -661,7 +661,7 @@ describe('у выключенного таба кнопки закрытия н�
 
 	/** Табы, у которых есть кнопка закрытия, — по тексту строки. */
 	const withClose = () =>
-		['A', 'B', 'C'].filter((text) => item(text).querySelector('.s-tabs-item__close'))
+		['A', 'B', 'C'].filter((text) => item(text).querySelector('.so-tabs-item__close'))
 
 	it('выключенный со старта', () => {
 		mount(Harness, view())
@@ -728,7 +728,7 @@ describe('клавиатура', () => {
 	it('кнопка закрытия — не остановка Tab', () => {
 		mount(Harness, abc({ closable: true }))
 
-		const closes = [...document.querySelectorAll('.s-tabs-item__close')]
+		const closes = [...document.querySelectorAll('.so-tabs-item__close')]
 
 		expect(closes).toHaveLength(3)
 		expect(closes.every((close) => close.getAttribute('tabindex') === '-1')).toBe(true)
@@ -737,7 +737,7 @@ describe('клавиатура', () => {
 	it('tablist объявляет ориентацию и имя из aria_label', () => {
 		mount(Harness, abc({ orientation: 'vertical', aria_label: 'Разделы' }))
 
-		const list = document.querySelector('.s-tabs__list')
+		const list = document.querySelector('.so-tabs__list')
 
 		expect(list?.getAttribute('role')).toBe('tablist')
 		expect(list?.getAttribute('aria-orientation')).toBe('vertical')

@@ -82,19 +82,19 @@ const renderSelect = (tag = '') =>
 	)
 
 const root = (selector: string) => document.querySelector(selector)
-const line = (selector: string) => document.querySelector(`${selector} .s-button`)
+const line = (selector: string) => document.querySelector(`${selector} .so-button`)
 
 /** Строка — вложенный `<button>`: нативный `disabled` у неё свой, от `TButton`. */
 const NATIVE_LINE = [
-	['Tabs.Item', '.s-tabs-item', renderTabs, 'BUTTON'],
-	['Accordion.Item', '.s-accordion-item', renderAccordion, 'BUTTON'],
+	['Tabs.Item', '.so-tabs-item', renderTabs, 'BUTTON'],
+	['Accordion.Item', '.so-accordion-item', renderAccordion, 'BUTTON'],
 ] as const
 
 /** Строка с фиксированным тегом без нативного `disabled`: `div` или `span`. */
 const ARIA_LINE = [
-	['ListBox.Item', '.s-list-box-item', renderListBox, 'DIV'],
-	['Tags.Item', '.s-tags-item', renderTags, 'DIV'],
-	['Select.Item', '.s-select-item', renderSelect, 'SPAN'],
+	['ListBox.Item', '.so-list-box-item', renderListBox, 'DIV'],
+	['Tags.Item', '.so-tags-item', renderTags, 'DIV'],
+	['Select.Item', '.so-select-item', renderSelect, 'SPAN'],
 ] as const
 
 const WRAPPER_CASES = [...NATIVE_LINE, ...ARIA_LINE]
@@ -171,7 +171,7 @@ describe('Select.Item · строка и есть опция', () => {
 	it('role, id и aria-selected опции стоят на строке', async () => {
 		await renderSelect()
 
-		const lineEl = line('.s-select-item')
+		const lineEl = line('.so-select-item')
 
 		expect(lineEl?.getAttribute('role')).toBe('option')
 		expect(lineEl?.id).toMatch(/-option$/)
@@ -181,7 +181,7 @@ describe('Select.Item · строка и есть опция', () => {
 	it('обёртка без ARIA: ни роли, ни id, ни второго aria-disabled', async () => {
 		await renderSelect()
 
-		const wrapperEl = root('.s-select-item')
+		const wrapperEl = root('.so-select-item')
 
 		for (const name of ['role', 'id', 'aria-selected', 'aria-disabled']) {
 			expect(wrapperEl?.hasAttribute(name)).toBe(false)
@@ -191,7 +191,7 @@ describe('Select.Item · строка и есть опция', () => {
 	it('строка из обхода выведена и кнопкой себя не объявляет', async () => {
 		await renderSelect()
 
-		expect(document.querySelectorAll('.s-select-item [role="button"]')).toHaveLength(0)
-		expect(line('.s-select-item')?.getAttribute('tabindex')).toBe('-1')
+		expect(document.querySelectorAll('.so-select-item [role="button"]')).toHaveLength(0)
+		expect(line('.so-select-item')?.getAttribute('tabindex')).toBe('-1')
 	})
 })

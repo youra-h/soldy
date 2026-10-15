@@ -5,7 +5,7 @@ describe('TCheckBox', () => {
 	it('создаётся через { props } и через plain props', () => {
 		const a = new TCheckBox({ value: true })
 		expect(a.value).toBe(true)
-		expect(a.classes.toArray()).toContain('s-check-box')
+		expect(a.classes.toArray()).toContain('so-check-box')
 
 		const b = new TCheckBox({ value: false })
 		expect(b.value).toBe(false)
@@ -16,24 +16,24 @@ describe('TCheckBox', () => {
 			variant: 'brand',
 			view: 'bare',
 		})
-		expect(c.classes.toArray()).toContain('s-check-box')
+		expect(c.classes.toArray()).toContain('so-check-box')
 	})
 
 	it('classes меняются от indeterminate/view + variant/size', () => {
 		const cb = new TCheckBox({ size: 'normal' })
-		expect(cb.classes.toArray()).toContain('s-check-box')
+		expect(cb.classes.toArray()).toContain('so-check-box')
 
 		cb.variant = 'danger'
-		expect(cb.classes.toArray()).toContain('s-check-box--variant-danger')
+		expect(cb.classes.toArray()).toContain('so-check-box--variant-danger')
 
 		cb.size = 'xl'
-		expect(cb.classes.toArray()).toContain('s-check-box--size-xl')
+		expect(cb.classes.toArray()).toContain('so-check-box--size-xl')
 
 		cb.indeterminate = true
-		expect(cb.classes.toArray()).toContain('s-check-box--indeterminate')
+		expect(cb.classes.toArray()).toContain('so-check-box--indeterminate')
 
 		cb.view = 'bare'
-		expect(cb.classes.toArray()).toContain('s-check-box--view-bare')
+		expect(cb.classes.toArray()).toContain('so-check-box--view-bare')
 	})
 
 	/**
@@ -47,8 +47,8 @@ describe('TCheckBox', () => {
 		cb.events.on('change:view', changeView)
 
 		cb.view = 'boxed'
-		expect(cb.classes.toArray()).toContain('s-check-box--view-boxed')
-		expect(cb.classes.toArray()).not.toContain('s-check-box--view-bare')
+		expect(cb.classes.toArray()).toContain('so-check-box--view-boxed')
+		expect(cb.classes.toArray()).not.toContain('so-check-box--view-bare')
 		expect(cb.getProps()).toMatchObject({ view: 'boxed' })
 
 		cb.view = undefined

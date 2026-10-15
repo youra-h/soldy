@@ -5,7 +5,7 @@ import { setupTabs } from './setup.component'
 import type { TabsProps } from './base.component'
 
 /**
- * Tabs — набор табов: список (`s-tabs__list`) и панели рядом с ним.
+ * Tabs — набор табов: список (`so-tabs__list`) и панели рядом с ним.
  *
  * Набор `aria` владельца — это список табов: `role="tablist"` и
  * `aria-orientation` пишет ядро, имя из `aria_label` — `TAriaPlugin`. Корень
@@ -42,9 +42,9 @@ export function Tabs(props: TabsProps): JSX.Element {
 		<Show when={state.rendered}>
 			<div {...root()} ref={binding.ref}>
 				<Elevate layer={binding.layer}>
-					<div class="s-tabs__list" {...state.aria}>
+					<div class="so-tabs__list" {...state.aria}>
 						<ResolvedSlot content={props.leading}>
-							{(leading) => <div class="s-tabs__list--leading">{leading()}</div>}
+							{(leading) => <div class="so-tabs__list--leading">{leading()}</div>}
 						</ResolvedSlot>
 						<ResolvedSlot
 							content={props.children}
@@ -66,7 +66,7 @@ export function Tabs(props: TabsProps): JSX.Element {
 							}
 						/>
 						<ResolvedSlot content={props.trailing}>
-							{(trailing) => <div class="s-tabs__list--trailing">{trailing()}</div>}
+							{(trailing) => <div class="so-tabs__list--trailing">{trailing()}</div>}
 						</ResolvedSlot>
 					</div>
 					{renderSlot(props.content)}

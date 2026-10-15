@@ -81,7 +81,7 @@ export default class TTableColumn<
 	extends TComponentView<TProps, TEvents>
 	implements ITableColumn<TProps, TEvents>
 {
-	static override baseClass = 's-table-column'
+	static override baseClass = 'so-table-column'
 
 	static defaultValues: typeof TComponentView.defaultValues &
 		TDefaultValues<

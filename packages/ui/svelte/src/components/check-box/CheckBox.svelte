@@ -19,7 +19,7 @@
 	// Отметки без слота — иконки по ролям: метка одна на роль (`roleIcon`)
 	const CHECK = roleIcon('check')
 	const INDETERMINATE = roleIcon('checkIndeterminate')
-	const MARK = { class: 's-check-box__mark' }
+	const MARK = { class: 'so-check-box__mark' }
 </script>
 
 <!--
@@ -52,7 +52,7 @@
 	`Icon`: она появляется и пропадает с каждой сменой отметки, и `Icon`
 	собирал бы на каждую свой контекст и плагины — в таблице «выбрать все»
 	собирала их тысячами. Размер и цвет отметке даёт тема флажка по
-	`s-check-box__mark`.
+	`so-check-box__mark`.
 -->
 {#if state.rendered}
 	<Dynamic
@@ -71,7 +71,7 @@
 			checked={state.value}
 			indeterminate={state.indeterminate}
 		/>
-		<span class="s-check-box__container" aria-hidden="true">
+		<span class="so-check-box__container" aria-hidden="true">
 			{#if state.indeterminate}
 				{#if props['indeterminate-icon']}
 					{@render props['indeterminate-icon']({ value: state.value, indeterminate: true })}

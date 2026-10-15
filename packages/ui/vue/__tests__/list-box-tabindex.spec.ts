@@ -19,8 +19,8 @@ describe('ListBox: tabindex элементов', () => {
 	it('контейнер фокусируем, элементы — нет', () => {
 		wrapper = mount(ListBoxHarness, { attachTo: document.body })
 
-		const container = document.querySelector('.s-list-box')
-		const buttons = [...document.querySelectorAll('.s-list-box-item .s-button')]
+		const container = document.querySelector('.so-list-box')
+		const buttons = [...document.querySelectorAll('.so-list-box-item .so-button')]
 
 		expect(container?.getAttribute('tabindex')).toBe('0')
 		expect(buttons.length).toBeGreaterThan(0)

@@ -39,9 +39,9 @@ const show = async (content: () => VNode) => {
 /** Кнопки до и после набора — чтобы было откуда войти и куда уйти по Tab. */
 const around = (content: VNode) =>
 	h('div', [
-		h('button', { class: 's-test-before' }, 'До'),
+		h('button', { class: 'so-test-before' }, 'До'),
 		content,
-		h('button', { class: 's-test-after' }, 'После'),
+		h('button', { class: 'so-test-after' }, 'После'),
 	])
 
 /** Набор с выбором: «Почта» выбрана, закрыть можно любой тег. */
@@ -65,7 +65,7 @@ const find = (selector: string, root: ParentNode = document): HTMLElement => {
 
 /** Строка тега по тексту — носитель роли и остановки Tab. */
 const row = (text: string): HTMLElement => {
-	const found = [...document.querySelectorAll('.s-tags-item > .s-button:first-child')].find(
+	const found = [...document.querySelectorAll('.so-tags-item > .so-button:first-child')].find(
 		(candidate) => candidate.textContent?.trim() === text,
 	)
 
@@ -76,7 +76,7 @@ const row = (text: string): HTMLElement => {
 
 /** Тексты тегов на странице — по их строкам. */
 const texts = () =>
-	[...document.querySelectorAll('.s-tags-item > .s-button:first-child')].map((candidate) =>
+	[...document.querySelectorAll('.so-tags-item > .so-button:first-child')].map((candidate) =>
 		candidate.textContent?.trim(),
 	)
 
@@ -96,14 +96,14 @@ describe('с выбором набор — одна остановка Tab', () 
 	it('Tab входит в набор на выбранный тег, следующий Tab из него уходит', async () => {
 		await show(selectable)
 
-		find('.s-test-before').focus()
+		find('.so-test-before').focus()
 		await tab()
 
 		expect(document.activeElement).toBe(row('Почта'))
 
 		await tab()
 
-		expect(document.activeElement).toBe(find('.s-test-after'))
+		expect(document.activeElement).toBe(find('.so-test-after'))
 
 		await shiftTab()
 
@@ -173,17 +173,17 @@ describe('теги в поле Select: строки Tab не ловят, кре�
 
 		await expect.poll(texts).toEqual(['Москва', 'Тверь'])
 
-		find('.s-test-before').focus()
+		find('.so-test-before').focus()
 		await tab()
 
-		expect(document.activeElement).toBe(find('.s-tags-item__close[aria-label="Close Москва"]'))
-
-		await tab()
-
-		expect(document.activeElement).toBe(find('.s-tags-item__close[aria-label="Close Тверь"]'))
+		expect(document.activeElement).toBe(find('.so-tags-item__close[aria-label="Close Москва"]'))
 
 		await tab()
 
-		expect(document.activeElement).toBe(find('.s-select__field input'))
+		expect(document.activeElement).toBe(find('.so-tags-item__close[aria-label="Close Тверь"]'))
+
+		await tab()
+
+		expect(document.activeElement).toBe(find('.so-select__field input'))
 	})
 })

@@ -4,7 +4,7 @@
  * Повод для теста — реальная регрессия. `aria-selected` перенесли с обёртки на
  * элемент с ролью (правильно с точки зрения доступности), а тема раскрывала
  * панель Accordion и красила активный таб селекторами
- * `.s-accordion-item[aria-selected='true']` / `.s-tabs-item[data-selected]`.
+ * `.so-accordion-item[aria-selected='true']` / `.so-tabs-item[data-selected]`.
  * ARIA починили — вид сломался, и ни один тест этого не заметил, потому что
  * все они проверяли ARIA.
  *
@@ -32,7 +32,7 @@ const nextFrame = () => new Promise((resolve) => requestAnimationFrame(resolve))
 describe('Accordion: обёртка несёт data-selected для темы', () => {
 	it('раскрытый элемент помечен data-selected="true", свёрнутый — "false"', () => {
 		const items = mount(AccordionHarness, { attachTo: document.body }).findAll(
-			'.s-accordion-item',
+			'.so-accordion-item',
 		)
 
 		expect(items[0].attributes('data-selected')).toBe('true')
@@ -42,14 +42,14 @@ describe('Accordion: обёртка несёт data-selected для темы', (
 	it('следует за раскрытием по клику', async () => {
 		const wrapper = mount(AccordionHarness, { attachTo: document.body })
 
-		await wrapper.findAll('.s-accordion-item__header')[1].trigger('click')
+		await wrapper.findAll('.so-accordion-item__header')[1].trigger('click')
 		await nextTick()
 
-		expect(wrapper.findAll('.s-accordion-item')[1].attributes('data-selected')).toBe('true')
+		expect(wrapper.findAll('.so-accordion-item')[1].attributes('data-selected')).toBe('true')
 	})
 
 	it('на обёртке нет aria-selected — у неё нет роли', () => {
-		const item = mount(AccordionHarness, { attachTo: document.body }).find('.s-accordion-item')
+		const item = mount(AccordionHarness, { attachTo: document.body }).find('.so-accordion-item')
 
 		expect(item.attributes('aria-selected')).toBeUndefined()
 	})
@@ -57,7 +57,7 @@ describe('Accordion: обёртка несёт data-selected для темы', (
 
 describe('Tabs: обёртка несёт data-selected для темы', () => {
 	it('активный таб помечен data-selected="true"', () => {
-		const items = mount(TabsHarness, { attachTo: document.body }).findAll('.s-tabs-item')
+		const items = mount(TabsHarness, { attachTo: document.body }).findAll('.so-tabs-item')
 
 		expect(items.length).toBeGreaterThan(1)
 		expect(items.filter((i) => i.attributes('data-selected') === 'true')).toHaveLength(1)
@@ -66,7 +66,7 @@ describe('Tabs: обёртка несёт data-selected для темы', () => 
 	it('на обёртке нет aria-selected — он на элементе с role="tab"', () => {
 		const wrapper = mount(TabsHarness, { attachTo: document.body })
 
-		expect(wrapper.find('.s-tabs-item').attributes('aria-selected')).toBeUndefined()
+		expect(wrapper.find('.so-tabs-item').attributes('aria-selected')).toBeUndefined()
 		expect(wrapper.find('[role="tab"]').attributes('aria-selected')).toBeDefined()
 	})
 })
@@ -93,7 +93,7 @@ describe('Tabs: строка таба несёт data-disabled для темы',
 		)
 
 		// Селектор темы — тот же: строка таба это прямой потомок обёртки
-		const rows = wrapper.findAll('.s-tabs-item > *')
+		const rows = wrapper.findAll('.so-tabs-item > *')
 
 		expect(rows.map((row) => row.attributes('data-disabled'))).toEqual(['false', 'true'])
 	})
@@ -113,7 +113,7 @@ describe('Select: корень несёт data-open для темы', () => {
 
 		wrapper = select
 
-		const root = () => select.find('.s-select')
+		const root = () => select.find('.so-select')
 
 		expect(root().attributes('data-open')).toBe('false')
 
@@ -132,7 +132,7 @@ describe('Select: корень несёт data-open для темы', () => {
 	it('на корне нет aria-expanded — он на поле с role="combobox"', async () => {
 		wrapper = mount(SelectHarness, { attachTo: document.body })
 
-		expect(wrapper.find('.s-select').attributes('aria-expanded')).toBeUndefined()
+		expect(wrapper.find('.so-select').attributes('aria-expanded')).toBeUndefined()
 		expect(wrapper.find('[role="combobox"]').attributes('aria-expanded')).toBe('false')
 	})
 })
@@ -177,14 +177,14 @@ describe('Select: опция несёт data-disabled для темы', () => {
 	 * Обёртку опции красит `_select.scss`, кнопку внутри — общий
 	 * `button-state-bg`: атрибут обязан доехать до обоих.
 	 */
-	it('корень опции и её .s-button помечены data-disabled', async () => {
+	it('корень опции и её .so-button помечены data-disabled', async () => {
 		wrapper = mount(SelectHarness, { attachTo: document.body })
 
 		await nextFrame()
-		await wrapper.find('.s-select').trigger('click')
+		await wrapper.find('.so-select').trigger('click')
 		await nextTick()
 
-		const options = [...document.querySelectorAll('.s-select-item')]
+		const options = [...document.querySelectorAll('.so-select-item')]
 
 		// В обёртке disabled объявлена третья опция
 		expect(options.map((option) => option.getAttribute('data-disabled'))).toEqual([
@@ -192,6 +192,6 @@ describe('Select: опция несёт data-disabled для темы', () => {
 			'false',
 			'true',
 		])
-		expect(options[2].querySelector('.s-button')?.getAttribute('data-disabled')).toBe('true')
+		expect(options[2].querySelector('.so-button')?.getAttribute('data-disabled')).toBe('true')
 	})
 })

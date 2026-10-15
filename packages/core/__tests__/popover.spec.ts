@@ -24,11 +24,11 @@ describe('умолчания', () => {
 		expect(popover.contentRendered).toBe(true)
 	})
 
-	it('корень строчный — span, базовый класс s-popover', () => {
+	it('корень строчный — span, базовый класс so-popover', () => {
 		const popover = new TPopover()
 
 		expect(popover.tag).toBe('span')
-		expect(popover.classes.toArray()).toContain('s-popover')
+		expect(popover.classes.toArray()).toContain('so-popover')
 	})
 
 	it('пропсы конструктора перекрывают умолчания', () => {

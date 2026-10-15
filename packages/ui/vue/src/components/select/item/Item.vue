@@ -27,7 +27,7 @@ import SetupSelectItem from './setup.component'
  * `data-selected` с неё. То же устройство, что у `ListBoxItem`.
  *
  * Вида у строки в разметке нет: значения вида объявляет тема, и библиотека их
- * не знает. Строку опции тема красит по контексту (`.s-select-item`).
+ * не знает. Строку опции тема красит по контексту (`.so-select-item`).
  *
  * Выбранность и подсветка — разные вещи: подсветка живёт, только пока панель
  * открыта, и в значение не попадает.
@@ -67,7 +67,7 @@ export default { ...SetupSelectItem, components: { Icon, Button } }
 			<template #leading>
 				<span
 					v-if="indicator === 'start'"
-					class="s-select-item__indicator"
+					class="so-select-item__indicator"
 					aria-hidden="true"
 				>
 					<slot name="indicator-icon" :selected="selected">
@@ -90,7 +90,7 @@ export default { ...SetupSelectItem, components: { Icon, Button } }
 				<slot name="trailing" />
 				<span
 					v-if="indicator === 'end'"
-					class="s-select-item__indicator"
+					class="so-select-item__indicator"
 					aria-hidden="true"
 				>
 					<slot name="indicator-icon" :selected="selected">

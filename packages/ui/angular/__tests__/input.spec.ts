@@ -71,7 +71,7 @@ describe('Input · разметка', () => {
 		const el = root(mount())
 
 		expect(el.localName).toBe('so-input')
-		expect(el.classList.contains('s-input')).toBe(true)
+		expect(el.classList.contains('so-input')).toBe(true)
 		expect(field(el).type).toBe('text')
 	})
 
@@ -79,19 +79,19 @@ describe('Input · разметка', () => {
 		const el = findIn(mountHost(SidesHost), 'so-input', HTMLElement)
 
 		expect([...el.children].map((part) => part.localName + '.' + part.className)).toEqual([
-			'div.s-input__leading',
+			'div.so-input__leading',
 			'input.',
-			'div.s-input__trailing',
+			'div.so-input__trailing',
 		])
-		expect(markupOf(find(el, '.s-input__leading', HTMLElement))).toBe('<i>L</i>')
-		expect(markupOf(find(el, '.s-input__trailing', HTMLElement))).toBe('<b>текст</b>')
+		expect(markupOf(find(el, '.so-input__leading', HTMLElement))).toBe('<i>L</i>')
+		expect(markupOf(find(el, '.so-input__trailing', HTMLElement))).toBe('<b>текст</b>')
 	})
 
 	it('слот не передан — обёртки нет', () => {
 		const el = root(mount())
 
-		expect(el.querySelector('.s-input__leading')).toBeNull()
-		expect(el.querySelector('.s-input__trailing')).toBeNull()
+		expect(el.querySelector('.so-input__leading')).toBeNull()
+		expect(el.querySelector('.so-input__trailing')).toBeNull()
 		expect(el.children).toHaveLength(1)
 	})
 
@@ -195,7 +195,7 @@ describe('Input · атрибуты потребителя', () => {
 		const el = findIn(mountHost(ForwardHost), 'so-input', HTMLElement)
 		const input = field(el)
 
-		expect(el.classList.contains('s-input')).toBe(true)
+		expect(el.classList.contains('so-input')).toBe(true)
 		expect(el.classList.contains('app-field')).toBe(true)
 		expect(el.style.flex).not.toBe('')
 		expect(el.hasAttribute('data-testid')).toBe(false)
@@ -433,25 +433,25 @@ class OwnClearHost {
 
 describe('Input · кнопка очистки', () => {
 	/** Кнопка очистки внутри корня. */
-	const clearOf = (el: Element) => find(el, '.s-input__clear', HTMLButtonElement)
+	const clearOf = (el: Element) => find(el, '.so-input__clear', HTMLButtonElement)
 
 	it('без clearable кнопки нет, и обёртки у конца поля тоже', () => {
 		const el = root(mount({ value: 'текст' }))
 
-		expect(el.querySelector('.s-input__clear')).toBeNull()
-		expect(el.querySelector('.s-input__trailing')).toBeNull()
+		expect(el.querySelector('.so-input__clear')).toBeNull()
+		expect(el.querySelector('.so-input__trailing')).toBeNull()
 	})
 
 	it('по clearable — первой в обёртке у конца, перед содержимым trailing', () => {
 		const el = findIn(mountHost(ClearableHost), 'so-input', HTMLElement)
-		const parts = ['.s-input__clear', '.probe']
+		const parts = ['.so-input__clear', '.probe']
 
 		expect(
-			[...find(el, '.s-input__trailing', HTMLElement).children].map((node) =>
+			[...find(el, '.so-input__trailing', HTMLElement).children].map((node) =>
 				parts.find((part) => node.matches(part)),
 			),
 		).toEqual(parts)
-		expect(el.classList.contains('s-input--clearable')).toBe(true)
+		expect(el.classList.contains('so-input--clearable')).toBe(true)
 		expect(clearOf(el).getAttribute('aria-label')).toBe('Clear Город')
 	})
 
@@ -466,15 +466,15 @@ describe('Input · кнопка очистки', () => {
 
 		expect(button.getAttribute('aria-label')).toBe('Clear Город')
 		expect(button.getAttribute('data-disabled')).toBe('false')
-		expect(button.classList.contains('s-button')).toBe(true)
-		expect(button.classList.contains('s-input__clear')).toBe(true)
-		expect(button.querySelector('svg.s-icon')?.getAttribute('viewBox')).not.toBeNull()
+		expect(button.classList.contains('so-button')).toBe(true)
+		expect(button.classList.contains('so-input__clear')).toBe(true)
+		expect(button.querySelector('svg.so-icon')?.getAttribute('viewBox')).not.toBeNull()
 	})
 
 	it('размер — поля, выключена — вместе с полем, readonly её не гасит', () => {
 		const fixture = mount({ clearable: true, size: 'lg', readonly: true })
 
-		expect(clearOf(root(fixture)).classList.contains('s-button--size-lg')).toBe(true)
+		expect(clearOf(root(fixture)).classList.contains('so-button--size-lg')).toBe(true)
 		expect(clearOf(root(fixture)).disabled).toBe(false)
 
 		fixture.componentRef.setInput('disabled', true)
@@ -529,13 +529,13 @@ describe('Input · кнопка очистки', () => {
 		const fixture = mountHost(OwnClearHost)
 		const el = findIn(fixture, 'so-input', HTMLElement)
 
-		expect(el.querySelector('.s-input__trailing > .probe')).not.toBeNull()
-		expect(el.querySelector('.s-input__clear')).toBeNull()
+		expect(el.querySelector('.so-input__trailing > .probe')).not.toBeNull()
+		expect(el.querySelector('.so-input__clear')).toBeNull()
 
 		fixture.componentInstance.clearable.set(true)
 		fixture.detectChanges()
 
-		expect(el.querySelector('.s-input__clear')).toBeNull()
+		expect(el.querySelector('.so-input__clear')).toBeNull()
 
 		find(el, '.probe', HTMLButtonElement).click()
 		fixture.detectChanges()

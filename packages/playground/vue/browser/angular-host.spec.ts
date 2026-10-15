@@ -90,17 +90,17 @@ beforeEach(async () => {
 describe('хост Angular', () => {
 	// Селектор — компонент и его части: обёртка, элементы коллекций, панели
 	it.each([
-		['button', '.s-button'],
-		['icon', '.s-icon'],
-		['skeleton', '.s-skeleton'],
-		['input', '.s-input'],
-		['check-box', '.s-label, .s-check-box'],
-		['switch', '.s-label, .s-switch'],
-		['label', '.s-label, .s-check-box'],
-		['radio-group', '.s-radio-group, .s-radio-group-item'],
-		['list-box', '.s-list-box, .s-list-box-item'],
-		['tabs', '.s-tabs, .s-tabs-item, .s-tabs__panel'],
-		['accordion', '.s-accordion, .s-accordion-item'],
+		['button', '.so-button'],
+		['icon', '.so-icon'],
+		['skeleton', '.so-skeleton'],
+		['input', '.so-input'],
+		['check-box', '.so-label, .so-check-box'],
+		['switch', '.so-label, .so-switch'],
+		['label', '.so-label, .so-check-box'],
+		['radio-group', '.so-radio-group, .so-radio-group-item'],
+		['list-box', '.so-list-box, .so-list-box-item'],
+		['tabs', '.so-tabs, .so-tabs-item, .so-tabs__panel'],
+		['accordion', '.so-accordion, .so-accordion-item'],
 	])('%s стоит в ячейке так же, как у Vue', async (component, selector) => {
 		const vue = await boxesOf('vue', component, selector)
 		const angular = await boxesOf('angular', component, selector)

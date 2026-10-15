@@ -61,7 +61,7 @@ describe('<div is="so-component-view"> · нативный div', () => {
 
 		expect(el).toBeInstanceOf(HTMLDivElement)
 		expect(Array.from(el.classList)).toEqual(
-			expect.arrayContaining(['own', 's-component-view']),
+			expect.arrayContaining(['own', 'so-component-view']),
 		)
 		expect(el.getAttribute('title')).toBe('Блок')
 		expect(el.dataset.test).toBe('x')

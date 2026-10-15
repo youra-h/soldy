@@ -56,7 +56,7 @@ describe('без аргументов', () => {
 		expect(target.open).toBe(false)
 		expect(target.closeOnSelect).toBe(true)
 		expect(target.value).toBeUndefined()
-		expect(target.classes.toArray()).toContain('s-date-picker--single')
+		expect(target.classes.toArray()).toContain('so-date-picker--single')
 		expect(target.dataset.get('open')).toBe('false')
 	})
 
@@ -162,8 +162,8 @@ describe('общее — полям и календарю', () => {
 		target.mode = 'range'
 
 		expect(target.engine.extensions.selection.mode).toBe('range')
-		expect(target.classes.toArray()).toContain('s-date-picker--range')
-		expect(target.classes.toArray()).not.toContain('s-date-picker--single')
+		expect(target.classes.toArray()).toContain('so-date-picker--range')
+		expect(target.classes.toArray()).not.toContain('so-date-picker--single')
 	})
 })
 
@@ -346,11 +346,11 @@ describe('кнопка очистки', () => {
 
 		expect(target).toBeInstanceOf(TField)
 		expect(target.clearable).toBe(false)
-		expect(target.classes.toArray()).not.toContain('s-date-picker--clearable')
+		expect(target.classes.toArray()).not.toContain('so-date-picker--clearable')
 
 		target.clearable = true
 
-		expect(target.classes.toArray()).toContain('s-date-picker--clearable')
+		expect(target.classes.toArray()).toContain('so-date-picker--clearable')
 		expect(target.getProps().clearable).toBe(true)
 		expect(target.clearAria.valueOf()).toEqual({})
 	})

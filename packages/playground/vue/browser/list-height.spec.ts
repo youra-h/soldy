@@ -41,7 +41,7 @@ const PaddedRowsHarness = defineComponent({
 			h(
 				'button',
 				{
-					class: 's-test-toggle',
+					class: 'so-test-toggle',
 					onClick: () => {
 						this.padded = true
 					},
@@ -76,9 +76,9 @@ const find = (selector: string): HTMLElement => {
 	return element
 }
 
-const container = () => find('.s-list-box')
-const row = () => find('.s-list-box-item')
-const toggle = () => find('.s-test-toggle')
+const container = () => find('.so-list-box')
+const row = () => find('.so-list-box-item')
+const toggle = () => find('.so-test-toggle')
 
 /** Высота content-box: `clientHeight` — паддинг-бокс, рамки в него не входят. */
 const contentHeight = (element: HTMLElement) => {

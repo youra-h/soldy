@@ -26,7 +26,7 @@ export default class TRadioGroupItem
 	extends TValueControl<string | number, IRadioGroupItemProps, TRadioGroupItemEvents>
 	implements IRadioGroupItem
 {
-	static override baseClass = 's-radio-group-item'
+	static override baseClass = 'so-radio-group-item'
 
 	static defaultValues: typeof TValueControl.defaultValues &
 		TDefaultValues<IRadioGroupItemProps, never, 'view'> = {

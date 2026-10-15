@@ -93,7 +93,7 @@ describe('без аргументов', () => {
 		expect(owner.value).toBeUndefined()
 		expect(owner.locale).toBe('en-US')
 		expect(owner.months).toBeUndefined()
-		expect(owner.classes.toArray()).toContain('s-calendar')
+		expect(owner.classes.toArray()).toContain('so-calendar')
 		expect(owner.weekdays).toHaveLength(7)
 		expect(owner.weekdays[0].label).toBe(weekdayName('en-US', 0, 'short'))
 		expect(owner.weekdays[0].long).toBe(weekdayName('en-US', 0))
@@ -115,7 +115,7 @@ describe('без аргументов', () => {
 		const item = day(calendar(), '2026-09-05')
 
 		expect(item.tag).toBe('td')
-		expect(item.classes.toArray()).toContain('s-calendar-item')
+		expect(item.classes.toArray()).toContain('so-calendar-item')
 		expect(item.text).toBe('5')
 		expect(item.aria.get('aria-label')).toBe(
 			new Intl.DateTimeFormat('en-US', { dateStyle: 'full', timeZone: 'UTC' }).format(

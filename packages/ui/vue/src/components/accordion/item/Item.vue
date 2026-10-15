@@ -23,7 +23,7 @@ export default { ...SetupAccordionItem, components: { Icon, Button } }
 
 			`aria-selected` с обёртки убран: у неё нет роли, и для скринридера
 			он ничего не значил. Но тема раскрывала панель селектором
-			`.s-accordion-item[aria-selected='true']`, поэтому обёртка отдаёт то
+			`.so-accordion-item[aria-selected='true']`, поэтому обёртка отдаёт то
 			же состояние как `data-selected`: ARIA — для скринридера, `data-*` —
 			для CSS. Иначе ARIA нельзя починить, не сломав вид.
 
@@ -33,15 +33,15 @@ export default { ...SetupAccordionItem, components: { Icon, Button } }
 
 			Стрелка — в обёртке, и класс стрелки на обёртке, а не на иконке:
 			тема поворачивает стрелку раскрытой секции по
-			`.s-accordion-item__arrow`, и иконка, подменённая слотом
+			`.so-accordion-item__arrow`, и иконка, подменённая слотом
 			`leading-icon` или `trailing-icon`, поворачивается так же. Поставь
 			класс на `Icon` — и подменённая стрелка перестала бы поворачиваться,
-			причём молча (как `s-select__arrow` у Select). Обёртка стоит, пока на
+			причём молча (как `so-select__arrow` у Select). Обёртка стоит, пока на
 			её стороне стрелка по умолчанию или задан слот.
 		-->
 		<Button
 			embedded="accordion.header"
-			class="s-accordion-item__header"
+			class="so-accordion-item__header"
 			:view="view"
 			:disabled="disabled"
 			:size="size"
@@ -52,7 +52,7 @@ export default { ...SetupAccordionItem, components: { Icon, Button } }
 			<template #leading>
 				<span
 					v-if="arrowPlacement === 'start' || $slots['leading-icon']"
-					class="s-accordion-item__arrow"
+					class="so-accordion-item__arrow"
 				>
 					<slot name="leading-icon">
 						<Icon
@@ -74,7 +74,7 @@ export default { ...SetupAccordionItem, components: { Icon, Button } }
 				<slot name="trailing" />
 				<span
 					v-if="arrowPlacement === 'end' || $slots['trailing-icon']"
-					class="s-accordion-item__arrow"
+					class="so-accordion-item__arrow"
 				>
 					<slot name="trailing-icon">
 						<Icon
@@ -88,8 +88,8 @@ export default { ...SetupAccordionItem, components: { Icon, Button } }
 			</template>
 		</Button>
 
-		<div class="s-accordion-item__body">
-			<div class="s-accordion-item__content" v-bind="contentAria">
+		<div class="so-accordion-item__body">
+			<div class="so-accordion-item__content" v-bind="contentAria">
 				<slot />
 			</div>
 		</div>

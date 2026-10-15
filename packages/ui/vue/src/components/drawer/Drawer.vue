@@ -35,7 +35,7 @@ export default { ...SetupDrawer, inheritAttrs: false, components: { Button, Icon
 				только его. Пометки владельцем у неё нет — для своей панели она мимо.
 			-->
 			<div
-				class="s-drawer__backdrop"
+				class="so-drawer__backdrop"
 				v-show="visible"
 				:style="layout_backdropStyles"
 				v-bind="backdropDataset"
@@ -43,7 +43,7 @@ export default { ...SetupDrawer, inheritAttrs: false, components: { Button, Icon
 
 			<!--
 				Корень — сама панель: на ней слой (`data-layer`), пометка
-				владельцем, край (`s-drawer--placement-*`), размер
+				владельцем, край (`so-drawer--placement-*`), размер
 				(`--drawer-width`, `--drawer-height`), `data-open`,
 				`data-swiping` и `data-contained`. Сдвиг во время жеста
 				(`--s-swipe-offset`) плагин жеста пишет в неё сам. `tabindex="-1"`
@@ -69,7 +69,7 @@ export default { ...SetupDrawer, inheritAttrs: false, components: { Button, Icon
 					(`aria-hidden`). Закрыть без перетаскивания — крестик,
 					подложка и Escape.
 				-->
-				<div v-if="handleRendered" class="s-drawer__handle" aria-hidden="true" />
+				<div v-if="handleRendered" class="so-drawer__handle" aria-hidden="true" />
 
 				<!--
 					Заголовок рисуется всегда: на него панель ссылается
@@ -77,15 +77,15 @@ export default { ...SetupDrawer, inheritAttrs: false, components: { Button, Icon
 					`titleAria`. Вокруг слота нет пробелов: пустой заголовок тема
 					сворачивает по `:empty`.
 				-->
-				<h2 class="s-drawer__title" v-bind="titleAria"><slot name="title" /></h2>
+				<h2 class="so-drawer__title" v-bind="titleAria"><slot name="title" /></h2>
 
 				<!-- Тело — прокручивается оно, шапка и подвал остаются на месте -->
-				<div class="s-drawer__body">
+				<div class="so-drawer__body">
 					<slot />
 				</div>
 
 				<!-- Подвал — ряд действий. Пустой тема сворачивает по `:empty` -->
-				<div class="s-drawer__footer"><slot name="footer" /></div>
+				<div class="so-drawer__footer"><slot name="footer" /></div>
 
 				<!--
 					Кнопка закрытия — в углу шапки со стороны конца строки. Она
@@ -97,7 +97,7 @@ export default { ...SetupDrawer, inheritAttrs: false, components: { Button, Icon
 				-->
 				<Button
 					embedded="drawer.close"
-					class="s-drawer__close"
+					class="so-drawer__close"
 					:rendered="closable"
 					@click="drawer.requestClose('button')"
 					v-bind="closeAria"

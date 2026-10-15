@@ -23,7 +23,7 @@ describe('Skeleton · variant', () => {
 	it('доходит до инстанса: у корня класс варианта, атрибута variant нет', () => {
 		const el = mount(() => <Skeleton variant="brand" />).root()
 
-		expect(variantClasses(el)).toEqual(['s-skeleton--variant-brand'])
+		expect(variantClasses(el)).toEqual(['so-skeleton--variant-brand'])
 		expect(el.hasAttribute('variant')).toBe(false)
 	})
 
@@ -33,7 +33,7 @@ describe('Skeleton · variant', () => {
 
 		setVariant('danger')
 
-		expect(variantClasses(root())).toEqual(['s-skeleton--variant-danger'])
+		expect(variantClasses(root())).toEqual(['so-skeleton--variant-danger'])
 	})
 })
 
@@ -46,7 +46,7 @@ describe('Skeleton · заглушка и содержимое', () => {
 		)).root()
 
 		expect([...el.children].map((child) => child.localName)).toEqual(['div', 'b'])
-		expect(el.firstElementChild?.className).toBe('s-skeleton__placeholder')
+		expect(el.firstElementChild?.className).toBe('so-skeleton__placeholder')
 		expect(el.firstElementChild?.getAttribute('aria-hidden')).toBe('true')
 		// Пока заглушка показана, область занята
 		expect(el.getAttribute('aria-busy')).toBe('true')
@@ -59,7 +59,7 @@ describe('Skeleton · заглушка и содержимое', () => {
 			</Skeleton>
 		)).root()
 
-		expect(el.querySelector('.s-skeleton__placeholder')).toBeNull()
+		expect(el.querySelector('.so-skeleton__placeholder')).toBeNull()
 		expect(el.querySelector('b')?.textContent).toBe('Данные')
 		expect(el.style.display).toBe('')
 		expect(el.hasAttribute('aria-busy')).toBe(false)
@@ -72,7 +72,7 @@ describe('Skeleton · заглушка и содержимое', () => {
 			</Skeleton>
 		)).root()
 
-		expect(el.querySelector('.s-skeleton__placeholder')).toBeNull()
+		expect(el.querySelector('.so-skeleton__placeholder')).toBeNull()
 		expect(el.querySelector('b')?.textContent).toBe('Данные')
 	})
 
@@ -82,11 +82,11 @@ describe('Skeleton · заглушка и содержимое', () => {
 
 		setVisible(false)
 
-		expect(root().querySelector('.s-skeleton__placeholder')).toBeNull()
+		expect(root().querySelector('.so-skeleton__placeholder')).toBeNull()
 
 		setVisible(true)
 
-		expect(root().querySelector('.s-skeleton__placeholder')).not.toBeNull()
+		expect(root().querySelector('.so-skeleton__placeholder')).not.toBeNull()
 	})
 })
 

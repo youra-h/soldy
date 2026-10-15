@@ -24,7 +24,7 @@ import { Button, Frame, LocaleProvider } from '@soldy-ui/solid'
 import { find, mount } from './mount'
 
 /** Узел Frame — там, куда его увёл телепорт. */
-const frame = () => find(document, '.s-frame', HTMLElement)
+const frame = () => find(document, '.so-frame', HTMLElement)
 
 describe('Frame · телепорт', () => {
 	it('узел — в body, а не в контейнере компонента', () => {
@@ -80,29 +80,29 @@ describe('Frame · телепорт', () => {
 		setContained(true)
 
 		expect(frame().parentElement).toBe(container)
-		expect(document.querySelectorAll('.s-frame')).toHaveLength(1)
+		expect(document.querySelectorAll('.so-frame')).toHaveLength(1)
 
 		setContained(false)
 
 		expect(container.contains(frame())).toBe(false)
 		expect(document.body.contains(frame())).toBe(true)
-		expect(document.querySelectorAll('.s-frame')).toHaveLength(1)
+		expect(document.querySelectorAll('.so-frame')).toHaveLength(1)
 	})
 
 	it('цели нет — узла нет', () => {
 		mount(() => <Frame target="#missing" visible />)
 
-		expect(document.querySelector('.s-frame')).toBeNull()
+		expect(document.querySelector('.so-frame')).toBeNull()
 	})
 
 	it('размонтирование убирает узел из цели', () => {
 		const { destroy } = mount(() => <Frame visible />)
 
-		expect(document.querySelector('.s-frame')).not.toBeNull()
+		expect(document.querySelector('.so-frame')).not.toBeNull()
 
 		destroy()
 
-		expect(document.querySelector('.s-frame')).toBeNull()
+		expect(document.querySelector('.so-frame')).toBeNull()
 	})
 
 	/**
@@ -127,7 +127,7 @@ describe('Frame · телепорт', () => {
 		// Набор объявляется на микрозадаче после сборки
 		await Promise.resolve()
 
-		expect(frame().querySelector('.s-button')).not.toBeNull()
+		expect(frame().querySelector('.so-button')).not.toBeNull()
 		expect(bundles.map((bundle) => bundle.locale.locale.tag)).toEqual([ruRU.tag])
 	})
 })
@@ -148,7 +148,7 @@ describe('Frame · rendered и visible', () => {
 	it('rendered={false} — узла нет', () => {
 		mount(() => <Frame rendered={false} visible />)
 
-		expect(document.querySelector('.s-frame')).toBeNull()
+		expect(document.querySelector('.so-frame')).toBeNull()
 	})
 
 	// Открытость для темы пишет слой: по `data-open` она проявляет и гасит
@@ -206,7 +206,7 @@ describe('Frame · пропсы потребителя', () => {
 	it('class и data-* — на узле внутри телепорта', () => {
 		mount(() => <Frame visible class="app-panel" data-testid="panel" />)
 
-		expect(frame().classList.contains('s-frame')).toBe(true)
+		expect(frame().classList.contains('so-frame')).toBe(true)
 		expect(frame().classList.contains('app-panel')).toBe(true)
 		expect(frame().getAttribute('data-testid')).toBe('panel')
 	})

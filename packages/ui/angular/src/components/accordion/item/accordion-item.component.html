@@ -9,7 +9,7 @@
 	so-button
 	#control
 	embedded="accordion.header"
-	class="s-accordion-item__header"
+	class="so-accordion-item__header"
 	[view]="state()['view']"
 	[disabled]="state()['disabled']"
 	[size]="state()['size']"
@@ -19,7 +19,7 @@
 >
 	<ng-container ngProjectAs="[slot=leading]">
 		@if (state()['arrowPlacement'] === 'start' || slot('leading-icon')) {
-			<span class="s-accordion-item__arrow">
+			<span class="so-accordion-item__arrow">
 				@if (slot('leading-icon'); as icon) {
 					<ng-container [ngTemplateOutlet]="icon" />
 				} @else {
@@ -48,7 +48,7 @@
 	<ng-container ngProjectAs="[slot=trailing]">
 		<ng-content select="[slot=trailing]" />
 		@if (state()['arrowPlacement'] === 'end' || slot('trailing-icon')) {
-			<span class="s-accordion-item__arrow">
+			<span class="so-accordion-item__arrow">
 				@if (slot('trailing-icon'); as icon) {
 					<ng-container [ngTemplateOutlet]="icon" />
 				} @else {
@@ -63,8 +63,8 @@
 		}
 	</ng-container>
 </button>
-<div class="s-accordion-item__body">
-	<div class="s-accordion-item__content" [so-attributes]="state()['contentAria']">
+<div class="so-accordion-item__body">
+	<div class="so-accordion-item__content" [so-attributes]="state()['contentAria']">
 		<ng-content />
 	</div>
 </div>

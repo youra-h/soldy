@@ -30,7 +30,7 @@ export default class TProgressLinear
 	extends TProgress<IProgressLinearProps, TProgressLinearEvents>
 	implements IProgressLinear
 {
-	static override baseClass = 's-progress-linear'
+	static override baseClass = 'so-progress-linear'
 
 	static defaultValues: typeof TProgress.defaultValues &
 		TDefaultValues<IProgressLinearProps, 'orientation'> = {

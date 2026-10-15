@@ -34,26 +34,26 @@ $reorder-columns: 30;
 
 // Table — таблица по паттернам APG Table и Sortable Table.
 //
-//   .s-table__viewport              окно — `div` вокруг таблицы: прокрутка вбок
-//     .s-table                      корень — `table`
-//       .s-table__head              шапка — `thead`
-//         .s-table__head-row        строка заголовков — `tr`
-//           .s-table__select        заголовок колонки выбора — `th`, чекбокс «выбрать все»
-//           .s-table-column         заголовок колонки — Table.Column (`th`)
+//   .so-table__viewport              окно — `div` вокруг таблицы: прокрутка вбок
+//     .so-table                      корень — `table`
+//       .so-table__head              шапка — `thead`
+//         .so-table__head-row        строка заголовков — `tr`
+//           .so-table__select        заголовок колонки выбора — `th`, чекбокс «выбрать все»
+//           .so-table-column         заголовок колонки — Table.Column (`th`)
 //             __content             обёртка содержимого — блок во всю ячейку
 //               __sort              кнопка сортировки (Button) у сортируемой колонки
 //                 __sort-icon       отметка направления: иконка роли `arrowUpward`
 //               __text              текст заголовка у несортируемой колонки
 //             __resizer             полоса ручки ширины у конца заголовка
 //               __input             её поле — `input type="range"`, прозрачное
-//       .s-table__body              тело — `tbody`
-//         .s-table-row              строка — Table.Row (`tr`)
+//       .so-table__body              тело — `tbody`
+//         .so-table-row              строка — Table.Row (`tr`)
 //           __select                ячейка колонки выбора — `td`, чекбокс строки
 //           __cell                  ячейка — `td`, у колонки-заголовка строки — `th`
-//         .s-table__empty-row       строка пустого состояния — `tr`
-//           .s-table__empty         её ячейка во всю ширину — `td`, слот `empty`
-//         .s-table__filler-row      распорка окна — `tr` на месте пропущенных строк
-//           .s-table__filler        её ячейка во всю ширину — `td`, высота из стиля
+//         .so-table__empty-row       строка пустого состояния — `tr`
+//           .so-table__empty         её ячейка во всю ширину — `td`, слот `empty`
+//         .so-table__filler-row      распорка окна — `tr` на месте пропущенных строк
+//           .so-table__filler        её ячейка во всю ширину — `td`, высота из стиля
 //
 // От ядра приходят: у корня — `data-disabled`, модификаторы `--size-*` и
 // `--variant-*`, `data-overflow` (колонки шире места; нет — место ещё не
@@ -130,7 +130,7 @@ $reorder-columns: 30;
 // таблица объявляет свои на своём корне и от внешней их не наследует; по той
 // же причине правила, которые зависят от корня, написаны от него дочерними
 // комбинаторами — до ячеек вложенной таблицы они не дотянутся.
-.s-table {
+.so-table {
 	$this: &;
 
 	// Запас вокруг кнопки в ячейке — ровно под кольцо фокуса Button
@@ -175,9 +175,9 @@ $reorder-columns: 30;
 	&[data-disabled='true'] {
 		> #{$this}__head
 			> #{$this}__head-row
-			> .s-table-column
-			> .s-table-column__content
-			> .s-table-column__text,
+			> .so-table-column
+			> .so-table-column__content
+			> .so-table-column__text,
 		> #{$this}__body > #{$this}__empty-row > #{$this}__empty {
 			@apply opacity-s-component-disabled;
 		}
@@ -215,12 +215,12 @@ $reorder-columns: 30;
 
 // Окно — прокрутка вбок по признаку таблицы (см. выше). С закреплённой
 // шапкой окно не прокручивается (ниже, у неё).
-.s-table__viewport {
-	&:has(> .s-table[data-overflow='false']) {
+.so-table__viewport {
+	&:has(> .so-table[data-overflow='false']) {
 		overflow-x: clip;
 	}
 
-	&:has(> .s-table[data-overflow='true']:not([data-sticky-head='true'])) {
+	&:has(> .so-table[data-overflow='true']:not([data-sticky-head='true'])) {
 		overflow-x: auto;
 	}
 }
@@ -228,7 +228,7 @@ $reorder-columns: 30;
 // Цвет таблицы без варианта — нейтраль. Модификатору `normal` правило не нужно,
 // он совпадает с базой. Нулевая специфичность — вариант перекрывает базу, не
 // споря с ней.
-:where(.s-table) {
+:where(.so-table) {
 	@include mixines.table-colors('neutral');
 }
 
@@ -244,11 +244,11 @@ $reorder-columns: 30;
 // выбора его нет, и они стоят по началу. Стороны логические, в RTL `start` —
 // правый край. Браузер ставит `th` по центру и полужирным — тема задаёт оба
 // сама.
-.s-table-column,
-.s-table__select,
-.s-table-row__cell,
-.s-table-row__select,
-.s-table__empty {
+.so-table-column,
+.so-table__select,
+.so-table-row__cell,
+.so-table-row__select,
+.so-table__empty {
 	@apply font-normal text-start align-middle;
 	padding-inline: var(--s-table-cell-inline);
 	padding-block: var(--s-table-bleed);
@@ -288,13 +288,13 @@ $reorder-columns: 30;
 // Слитые рамки таблица рисует после фонов строк и ячеек, и вуаль ложится одним
 // слоем: у стыка ячеек линия не темнеет, а под выбранной строкой лежит поверх
 // её вуали.
-.s-table__head-row {
+.so-table__head-row {
 	block-size: var(--s-table-head-row);
 	border-block-end: 1px solid var(--s-neutral-300);
 }
 
-.s-table-row,
-.s-table__empty-row {
+.so-table-row,
+.so-table__empty-row {
 	border-block-end: 1px solid #{veil.tint('neutral', var(--s-component-fill))};
 }
 
@@ -314,12 +314,12 @@ $reorder-columns: 30;
 // Слоем само тело не делается: в своём слое тела браузер кладёт вуаль строки
 // не под её линию, а рядом, и между двумя выбранными строками проступает
 // светлая полоса. Подъём выше шапки в ячейке потребителя встанет над ней.
-.s-table > .s-table__head {
+.so-table > .so-table__head {
 	@apply relative z-30;
 }
 
-.s-table-column,
-.s-table__select {
+.so-table-column,
+.so-table__select {
 	@apply font-medium text-s-neutral-500;
 }
 
@@ -334,7 +334,7 @@ $reorder-columns: 30;
 //
 // Фон заголовка — его состояние: наведение, нажатие, протяжка ручки (ниже).
 // Переход — цвета, а не движения: он идёт в любом режиме.
-.s-table-column {
+.so-table-column {
 	@apply relative;
 	@apply transition-colors duration-150;
 	inline-size: var(--s-table-column-width, auto);
@@ -373,12 +373,12 @@ $reorder-columns: 30;
 //
 // У выключенной таблицы делать с заголовком нечего — кнопка выключена, ручки
 // нет, — и подсветки нет.
-.s-table:not([data-disabled='true'])
-	> .s-table__head
-	> .s-table__head-row
-	> .s-table-column:is(
+.so-table:not([data-disabled='true'])
+	> .so-table__head
+	> .so-table__head-row
+	> .so-table-column:is(
 		[data-reorderable='true'],
-		:has(> .s-table-column__content > .s-table-column__sort, > .s-table-column__resizer)
+		:has(> .so-table-column__content > .so-table-column__sort, > .so-table-column__resizer)
 	) {
 	@media (hover: hover) {
 		&:hover {
@@ -386,7 +386,7 @@ $reorder-columns: 30;
 		}
 	}
 
-	&:has(> .s-table-column__content > .s-table-column__sort:active),
+	&:has(> .so-table-column__content > .so-table-column__sort:active),
 	&[data-resizing='true'] {
 		background-color: var(--s-table-active);
 	}
@@ -395,7 +395,7 @@ $reorder-columns: 30;
 // Обёртка содержимого — блок во всю ячейку: кнопка сортировки и текст
 // раскладываются в ней так же, как раньше прямо в ячейке, — с её стороной
 // (`text-align` наследуется от заголовка) и её шириной.
-.s-table-column__content {
+.so-table-column__content {
 	@apply block;
 }
 
@@ -421,7 +421,7 @@ $reorder-columns: 30;
 //
 // Над кнопкой — полосы ручек ширины (ниже): у границы колонок нажатие — ручке,
 // мимо полосы — кнопке.
-.s-table-column > .s-table-column__content > .s-table-column__sort {
+.so-table-column > .so-table-column__content > .so-table-column__sort {
 	@apply justify-start rounded-none;
 	border-start-start-radius: $head-radius;
 	border-start-end-radius: $head-radius;
@@ -448,7 +448,7 @@ $reorder-columns: 30;
 	// Подпись сжимается и уже своего самого длинного слова: такое слово колонка
 	// переносит, как в ячейке, а не выталкивает за край кнопки. Шире своего
 	// текста она не растёт: сразу за ней стоит стрелка.
-	> .s-button__text {
+	> .so-button__text {
 		@apply min-w-0 grow-0 whitespace-normal;
 		overflow: visible;
 		text-overflow: clip;
@@ -457,7 +457,7 @@ $reorder-columns: 30;
 }
 
 // По центру — подпись со стрелкой посередине ячейки.
-.s-table-column[data-align='center'] > .s-table-column__content > .s-table-column__sort {
+.so-table-column[data-align='center'] > .so-table-column__content > .so-table-column__sort {
 	@apply justify-center;
 }
 
@@ -465,7 +465,7 @@ $reorder-columns: 30;
 // концом чисел колонки, а стрелка с внешней стороны. Порядок флекса
 // логический, и в RTL отметка сама уходит вправо от подписи; начало
 // перевёрнутого ряда — конец ячейки.
-.s-table-column[data-align='end'] > .s-table-column__content > .s-table-column__sort {
+.so-table-column[data-align='end'] > .so-table-column__content > .so-table-column__sort {
 	flex-direction: row-reverse;
 }
 
@@ -474,7 +474,7 @@ $reorder-columns: 30;
 // объявляет тема. Кольцо фокуса у неё есть: его гасит только модификатор
 // `--view-none`, а вид по контексту — нет. Нулевая специфичность, как у
 // базового вида Button.
-:where(.s-table-column__sort) {
+:where(.so-table-column__sort) {
 	@include button.button-view('none');
 }
 
@@ -489,7 +489,7 @@ $reorder-columns: 30;
 // приоритета (ниже), и он остаётся прямым. Поворот — движение, и он идёт по
 // режиму движения; без движения стрелка встаёт сразу. Проявление —
 // прозрачность — идёт в любом режиме.
-.s-table-column__sort-icon {
+.so-table-column__sort-icon {
 	@apply inline-flex shrink-0 items-center opacity-0;
 	@apply transition-opacity duration-150;
 
@@ -502,24 +502,24 @@ $reorder-columns: 30;
 	}
 }
 
-.s-table-column:not([data-sort])
-	> .s-table-column__content
-	> .s-table-column__sort:is(:hover, :focus-visible)
-	> .s-table-column__sort-icon {
+.so-table-column:not([data-sort])
+	> .so-table-column__content
+	> .so-table-column__sort:is(:hover, :focus-visible)
+	> .so-table-column__sort-icon {
 	@apply opacity-50;
 }
 
-.s-table-column[data-sort]
-	> .s-table-column__content
-	> .s-table-column__sort
-	> .s-table-column__sort-icon {
+.so-table-column[data-sort]
+	> .so-table-column__content
+	> .so-table-column__sort
+	> .so-table-column__sort-icon {
 	@apply opacity-100;
 }
 
-.s-table-column[data-sort='desc']
-	> .s-table-column__content
-	> .s-table-column__sort
-	> .s-table-column__sort-icon
+.so-table-column[data-sort='desc']
+	> .so-table-column__content
+	> .so-table-column__sort
+	> .so-table-column__sort-icon
 	> * {
 	@apply rotate-180;
 }
@@ -534,16 +534,16 @@ $reorder-columns: 30;
 // сортировки дальше девятой у таблицы не бывает на практике; у десятой
 // номера не будет, стрелка останется.
 @for $priority from 1 through 9 {
-	.s-table-column[data-sort-priority='#{$priority}'] {
+	.so-table-column[data-sort-priority='#{$priority}'] {
 		--s-table-sort-priority: '#{$priority}';
 	}
 }
 
-.s-table__head-row:has(> .s-table-column[data-sort-priority='2'])
-	> .s-table-column[data-sort-priority]
-	> .s-table-column__content
-	> .s-table-column__sort
-	> .s-table-column__sort-icon::after {
+.so-table__head-row:has(> .so-table-column[data-sort-priority='2'])
+	> .so-table-column[data-sort-priority]
+	> .so-table-column__content
+	> .so-table-column__sort
+	> .so-table-column__sort-icon::after {
 	content: var(--s-table-sort-priority);
 	@apply font-semibold leading-none;
 	font-size: 0.75em;
@@ -576,7 +576,7 @@ $reorder-columns: 30;
 // задевший полосу, зажигал и тут же гасил её — линия моргала. Гаснет она
 // сразу, а под фокусом с клавиатуры и в жесте появляется без ожидания: там
 // намерение уже известно.
-.s-table-column__resizer {
+.so-table-column__resizer {
 	@apply absolute inset-y-0 z-1 cursor-col-resize select-none;
 	inline-size: $resizer-zone;
 	inset-inline-end: calc(-1 * $resizer-zone / 2);
@@ -605,13 +605,13 @@ $reorder-columns: 30;
 	}
 
 	// Сильнее наведения: и под указателем линия встаёт без ожидания
-	&:has(> .s-table-column__input:focus-visible)::before {
+	&:has(> .so-table-column__input:focus-visible)::before {
 		@apply opacity-100;
 		transition-delay: 0s;
 	}
 }
 
-.s-table-column[data-resizing='true'] > .s-table-column__resizer::before {
+.so-table-column[data-resizing='true'] > .so-table-column__resizer::before {
 	@apply opacity-100;
 	transition-delay: 0s;
 }
@@ -627,7 +627,7 @@ $reorder-columns: 30;
 // (`will-change`) двигает композитор. Шапка поднята над телом, поэтому линия
 // идёт поверх строк. Движение — только появление: без него призрак встаёт
 // сразу, а за указателем идёт в любом режиме.
-.s-table-column[data-resize-ghost='true'] > .s-table-column__resizer::after {
+.so-table-column[data-resize-ghost='true'] > .so-table-column__resizer::after {
 	content: '';
 	@apply pointer-events-none absolute rounded-full;
 	inset-block-start: 0;
@@ -639,11 +639,11 @@ $reorder-columns: 30;
 	will-change: translate;
 
 	@include motion.allowed {
-		animation: s-table-ghost-in 150ms ease-out;
+		animation: so-table-ghost-in 150ms ease-out;
 	}
 }
 
-@keyframes s-table-ghost-in {
+@keyframes so-table-ghost-in {
 	from {
 		opacity: 0;
 	}
@@ -653,7 +653,7 @@ $reorder-columns: 30;
 // встаёт на ту же линию. Правило — ниже призрака: вес у них один
 // (`:last-child` и `[data-resize-ghost]` весят поровну), и выше его сторону
 // перебивал бы призрак — он вставал на несколько px раньше линии.
-.s-table-column:last-child > .s-table-column__resizer {
+.so-table-column:last-child > .so-table-column__resizer {
 	inset-inline-end: 0;
 
 	&::before,
@@ -708,11 +708,11 @@ $reorder-columns: 30;
 //
 // Палец, который тянет заголовок вдоль строки, не листает таблицу: вдоль
 // строки жест — перестановке, поперёк — прокрутке страницы.
-.s-table-column[data-reorderable='true'] {
+.so-table-column[data-reorderable='true'] {
 	touch-action: pan-y;
 }
 
-.s-table-column[data-dragging='true'] {
+.so-table-column[data-dragging='true'] {
 	@apply z-3 shadow-md;
 	translate: var(--s-table-column-drag, 0) 0;
 	transition-property: none;
@@ -720,7 +720,7 @@ $reorder-columns: 30;
 		linear-gradient(var(--s-table-active), var(--s-table-active)),
 		linear-gradient(var(--s-component-surface), var(--s-component-surface));
 
-	> .s-table-column__resizer {
+	> .so-table-column__resizer {
 		@apply invisible;
 	}
 
@@ -754,8 +754,8 @@ $reorder-columns: 30;
 // Взятый с `data-still` (`none`) соседей не трогает вовсе: ни нулевого
 // сдвига, ни перехода — слоёв у заголовков нет, и взятие колонки не
 // перекладывает таблицу.
-.s-table__head-row:has(> .s-table-column[data-dragging='true']:not([data-still='true']))
-	> .s-table-column:not([data-dragging='true']) {
+.so-table__head-row:has(> .so-table-column[data-dragging='true']:not([data-still='true']))
+	> .so-table-column:not([data-dragging='true']) {
 	@include motion.allowed {
 		translate: 0 0;
 		transition-property: color, background-color, translate;
@@ -783,7 +783,7 @@ $reorder-columns: 30;
 // у `head`.
 //
 // Ячейку с заголовком тема связывает номером колонки: ячейка k-й колонки
-// строки (`:nth-child(k of .s-table-row__cell)` — колонка выбора не в счёт)
+// строки (`:nth-child(k of .so-table-row__cell)` — колонка выбора не в счёт)
 // идёт за k-м заголовком шапки. Меток у строк и ячеек нет — их пришлось бы
 // перерисовывать на каждую смену места: о жесте тело узнаёт от шапки, и
 // строки, которые окно дорисует посреди жеста, подхватят его сами. Номеров —
@@ -806,7 +806,7 @@ $reorder-columns: 30;
 //
 // Шапку тело читает селектором `:has()` у самой шапки, а переменные — что с
 // каждой колонкой (`--s-table-shift-k`, `--s-table-hidden-k`) — получает
-// тело, сосед шапки (`~ .s-table__body`); ячейки только читают их. Условие у
+// тело, сосед шапки (`~ .so-table__body`); ячейки только читают их. Условие у
 // корня обходило бы на глубину три всё тело, все его строки и ячейки, — у
 // шапки обход — два десятка её узлов. Условие у ячейки ещё дороже: его
 // браузер перепроверяет для каждой ячейки на каждую смену метки — в таблице
@@ -844,32 +844,32 @@ $reorder-columns: 30;
 // разу, когда колонку берут и когда она встала: признак корня меняет правила
 // у всех ячеек. В окне `Virtual` их сотни, без окна — по ячейке на колонку
 // каждой строки. На покое и в `head` за колонку целиком не платит никто.
-.s-table[data-reorder-preview='column']
-	> .s-table__head:not(
+.so-table[data-reorder-preview='column']
+	> .so-table__head:not(
 		:has(
-			> .s-table__head-row
-				> .s-table-column:nth-child(#{$reorder-columns + 1} of .s-table-column)
+			> .so-table__head-row
+				> .so-table-column:nth-child(#{$reorder-columns + 1} of .so-table-column)
 		)
 	) {
-	&:has(> .s-table__head-row > .s-table-column[data-shift='start']) ~ .s-table__body {
+	&:has(> .so-table__head-row > .so-table-column[data-shift='start']) ~ .so-table__body {
 		@include motion.allowed {
 			--s-table-body-shift: calc(-1 * var(--s-table-column-shift, 0px) * var(--s-dir-sign));
 		}
 	}
 
-	&:has(> .s-table__head-row > .s-table-column[data-shift='end']) ~ .s-table__body {
+	&:has(> .so-table__head-row > .so-table-column[data-shift='end']) ~ .so-table__body {
 		@include motion.allowed {
 			--s-table-body-shift: calc(var(--s-table-column-shift, 0px) * var(--s-dir-sign));
 		}
 	}
 
-	&:has(> .s-table__head-row > .s-table-column[data-dragging='true']) ~ .s-table__body {
+	&:has(> .so-table__head-row > .so-table-column[data-dragging='true']) ~ .so-table__body {
 		@include motion.allowed {
 			--s-table-body-transition: translate;
 		}
 	}
 
-	~ .s-table__body {
+	~ .so-table__body {
 		@include motion.allowed {
 			--s-table-body-dragged: hidden;
 		}
@@ -879,7 +879,7 @@ $reorder-columns: 30;
 // Без переменной тела — `none`, а не недействительное объявление: у того
 // `transition-property` было бы `all`, и с длительностью ниже ячейка вела бы
 // переходом всё, что у неё меняется.
-.s-table[data-reorder-preview='column'] > .s-table__body > .s-table-row > .s-table-row__cell {
+.so-table[data-reorder-preview='column'] > .so-table__body > .so-table-row > .so-table-row__cell {
 	@include motion.allowed {
 		transition-property: var(--s-table-body-transition, none);
 		transition-duration: $reorder-duration;
@@ -888,24 +888,24 @@ $reorder-columns: 30;
 }
 
 @for $k from 1 through $reorder-columns {
-	$header: '> .s-table__head-row > .s-table-column:nth-child(#{$k} of .s-table-column)';
+	$header: '> .so-table__head-row > .so-table-column:nth-child(#{$k} of .so-table-column)';
 
-	.s-table[data-reorder-preview='column']
-		> .s-table__head:has(#{$header}[data-shift])
-		~ .s-table__body {
+	.so-table[data-reorder-preview='column']
+		> .so-table__head:has(#{$header}[data-shift])
+		~ .so-table__body {
 		--s-table-shift-#{$k}: var(--s-table-body-shift);
 	}
 
-	.s-table[data-reorder-preview='column']
-		> .s-table__head:has(#{$header}[data-dragging='true'])
-		~ .s-table__body {
+	.so-table[data-reorder-preview='column']
+		> .so-table__head:has(#{$header}[data-dragging='true'])
+		~ .so-table__body {
 		--s-table-hidden-#{$k}: var(--s-table-body-dragged);
 	}
 
-	.s-table[data-reorder-preview='column']
-		> .s-table__body
-		> .s-table-row
-		> .s-table-row__cell:nth-child(#{$k} of .s-table-row__cell) {
+	.so-table[data-reorder-preview='column']
+		> .so-table__body
+		> .so-table-row
+		> .so-table-row__cell:nth-child(#{$k} of .so-table-row__cell) {
 		translate: var(--s-table-shift-#{$k}) 0;
 		visibility: var(--s-table-hidden-#{$k});
 	}
@@ -916,11 +916,11 @@ $reorder-columns: 30;
 // ядро на весь жест, с приземлением, — столько же, сколько метку взятого
 // заголовка, — а не условие по шапке у корня: на покое его нет. Кнопка
 // сортировки ставит свой курсор, и во взятом заголовке его перекрывают.
-.s-table[data-dragging='true'] {
+.so-table[data-dragging='true'] {
 	@apply cursor-grabbing select-none;
 }
 
-.s-table-column[data-dragging='true'] .s-table-column__sort {
+.so-table-column[data-dragging='true'] .so-table-column__sort {
 	@apply cursor-grabbing;
 }
 
@@ -944,8 +944,8 @@ $reorder-columns: 30;
 // не перекладывает. Появляются линии вместе с жестом и уходят вместе с ним —
 // со взятием и перестановкой, которые и так переписывают стиль всей таблице.
 // С движением, когда соседи расступаются, псевдоэлемента нет вовсе.
-.s-table__head-row:has(> .s-table-column[data-dragging='true'])
-	> .s-table-column:not([data-dragging='true'])::before {
+.so-table__head-row:has(> .so-table-column[data-dragging='true'])
+	> .so-table-column:not([data-dragging='true'])::before {
 	content: '';
 	@apply pointer-events-none absolute inset-y-0 z-4;
 	inline-size: $resizer-line;
@@ -953,37 +953,37 @@ $reorder-columns: 30;
 
 // С движением линии нет, только если соседи расступаются: при `data-still`
 // (`none`) они стоят, и место видно только по линии.
-.s-table__head-row:has(> .s-table-column[data-dragging='true']:not([data-still='true']))
-	> .s-table-column::before {
+.so-table__head-row:has(> .so-table-column[data-dragging='true']:not([data-still='true']))
+	> .so-table-column::before {
 	@include motion.allowed {
 		display: none;
 	}
 }
 
-.s-table-column[data-drop]::before {
+.so-table-column[data-drop]::before {
 	background-color: var(--s-component-focus-ring);
 }
 
-.s-table-column[data-drop='before']::before {
+.so-table-column[data-drop='before']::before {
 	inset-inline-start: calc(-1 * $resizer-line / 2);
 }
 
-.s-table-column[data-drop='after']::before {
+.so-table-column[data-drop='after']::before {
 	inset-inline-end: calc(-1 * $resizer-line / 2);
 }
 
-.s-table-column:first-child[data-drop='before']::before {
+.so-table-column:first-child[data-drop='before']::before {
 	inset-inline-start: 0;
 }
 
-.s-table-column:last-child[data-drop='after']::before {
+.so-table-column:last-child[data-drop='after']::before {
 	inset-inline-end: 0;
 }
 
 // Поле ручки — во всю полосу и прозрачное: остаётся в дереве доступности и в
 // порядке фокуса, и рамку курсора скринридер рисует по полосе. Указатель оно не
 // ловит: тянет плагин, а не браузер, — иначе край двигали бы двое.
-.s-table-column__input {
+.so-table-column__input {
 	@apply absolute inset-0 m-0 p-0 size-full opacity-0;
 	@apply appearance-none pointer-events-none;
 }
@@ -993,11 +993,11 @@ $reorder-columns: 30;
 // без выбора, а от коробки до текста соседней — столько же, сколько между
 // текстами соседних колонок. Коробка — по центру ячейки, и когда её размер не
 // совпал с размером таблицы.
-.s-table__select,
-.s-table-row__select {
+.so-table__select,
+.so-table-row__select {
 	inline-size: calc(var(--s-table-check) + 2 * var(--s-table-cell-inline));
 
-	> .s-check-box {
+	> .so-check-box {
 		@apply mx-auto;
 	}
 }
@@ -1008,7 +1008,7 @@ $reorder-columns: 30;
 // Наведения у строки простой таблицы нет: в роли `table` нажатие по строке
 // ничего не делает — выбирают чекбоксом, — а подсветка обещала бы отклик,
 // которого не будет. У сетки — есть (ниже).
-.s-table-row {
+.so-table-row {
 	block-size: var(--s-table-row);
 
 	// Выбранная — вуалью цвета таблицы во всю строку, с ячейкой выбора.
@@ -1020,7 +1020,7 @@ $reorder-columns: 30;
 	// и гаснет сам: прозрачность ячейки выбора легла бы на него второй раз.
 	// Вуаль выбора — на строке, и выключенная выбранная строка остаётся
 	// выбранной на вид.
-	&[data-disabled='true'] > .s-table-row__cell {
+	&[data-disabled='true'] > .so-table-row__cell {
 		@apply opacity-s-component-disabled;
 	}
 }
@@ -1032,7 +1032,7 @@ $reorder-columns: 30;
 // подсветки нет: выбирать нечего, — у выключенной строки нет наведения, а фокус
 // на её ячейке подсвечен: по ней проходят клавиатурой. Наведение — только там,
 // где оно есть: после касания `:hover` залипает на строке.
-.s-table[data-grid='true']:not([data-disabled='true']) > .s-table__body > .s-table-row {
+.so-table[data-grid='true']:not([data-disabled='true']) > .so-table__body > .so-table-row {
 	&:focus-within {
 		background-color: var(--s-table-hover);
 	}
@@ -1058,9 +1058,9 @@ $reorder-columns: 30;
 // снаружи оно легло бы на соседние ячейки и линии строк, а у края таблицы его
 // срезал бы контейнер с прокруткой. Так же обведена кнопка сортировки, которая
 // занимает свою ячейку целиком.
-.s-table[data-grid='true'] {
-	> .s-table__head > .s-table__head-row > :is(.s-table-column, .s-table__select),
-	> .s-table__body > .s-table-row > :is(.s-table-row__cell, .s-table-row__select) {
+.so-table[data-grid='true'] {
+	> .so-table__head > .so-table__head-row > :is(.so-table-column, .so-table__select),
+	> .so-table__body > .so-table-row > :is(.so-table-row__cell, .so-table-row__select) {
 		&:focus-visible {
 			@apply outline-2 -outline-offset-2 outline-s-component;
 
@@ -1074,14 +1074,14 @@ $reorder-columns: 30;
 // Заголовок строки — ячейка колонки `rowHeader` (`th`): среднее начертание,
 // как у подписей шапки, но цветом данных. Её текст — имя строки: на него
 // ссылается чекбокс выбора.
-.s-table-row > th.s-table-row__cell {
+.so-table-row > th.so-table-row__cell {
 	@apply font-medium;
 }
 
 // Пустое состояние — ячейка во всю ширину, текст приглушён и по центру. Поля
 // сверху и снизу — в строку таблицы: таблица без строк не схлопывается в одну
 // шапку, а пустая полоса читается местом под данные.
-.s-table__empty {
+.so-table__empty {
 	@apply text-center text-s-neutral-500;
 	padding-block: var(--s-table-row);
 }
@@ -1095,16 +1095,16 @@ $reorder-columns: 30;
 // Распорка — пустая полоса высотой в пропущенные строки: без полей, рамок и
 // вуалей, под `aria-hidden`. Линии пропущенных строк она не рисует — их не
 // видно, пока строки не пришли.
-.s-table[data-virtual='true'] > .s-table__body > .s-table-row > .s-table-row__cell {
+.so-table[data-virtual='true'] > .so-table__body > .so-table-row > .so-table-row__cell {
 	@apply truncate;
 	overflow-wrap: normal;
 }
 
-.s-table__filler-row {
+.so-table__filler-row {
 	@apply border-0;
 }
 
-.s-table__filler {
+.so-table__filler {
 	@apply p-0 border-0;
 	block-size: var(--s-filler-height, 0);
 }
@@ -1175,19 +1175,19 @@ $reorder-columns: 30;
 // прокручивает контейнер потребителя или страница. Обрезать влезшую
 // (`clip`) окну можно и с закреплённой шапкой: контейнером прокрутки оно от
 // этого не становится.
-.s-table[data-sticky-head='true'] {
-	> .s-table__head {
+.so-table[data-sticky-head='true'] {
+	> .so-table__head {
 		@apply sticky;
 		inset-block-start: var(--s-table-head-offset, 0px);
 		@include mixines.sticky-head-surface;
 
-		> .s-table__head-row {
+		> .so-table__head-row {
 			border-block-end-width: 0;
 		}
 	}
 
 	// Ячейка — кольцо фокуса сетки у неё внутри
-	> .s-table__body > * > * {
+	> .so-table__body > * > * {
 		scroll-margin-block-start: calc(
 			max(0px, var(--s-table-head-offset, 0px)) +
 				var(--s-table-head-height, var(--s-table-head-row))
@@ -1195,7 +1195,7 @@ $reorder-columns: 30;
 	}
 
 	// Содержимое ячейки — кольцо фокуса снаружи, на запас ячейки
-	> .s-table__body > * > * * {
+	> .so-table__body > * > * * {
 		scroll-margin-block-start: calc(
 			max(0px, var(--s-table-head-offset, 0px)) +
 				var(--s-table-head-height, var(--s-table-head-row)) + var(--s-table-bleed)
@@ -1225,30 +1225,30 @@ $reorder-columns: 30;
 // Подложка — системный цвет страницы, линия — цвет текста, как линии строк.
 // Строке шапки подмену возвращают: заголовки рисуются системными цветами.
 @media (forced-colors: active) {
-	.s-table-row[data-selected='true']:not([data-disabled='true']) {
+	.so-table-row[data-selected='true']:not([data-disabled='true']) {
 		forced-color-adjust: none;
 		background-color: Highlight;
 		color: HighlightText;
 		border-block-end-color: CanvasText;
 
-		> .s-table-row__select > * {
+		> .so-table-row__select > * {
 			forced-color-adjust: auto;
 		}
 	}
 
-	.s-table-column__resizer::before,
-	.s-table-column__resizer::after,
-	.s-table-column[data-drop]::before {
+	.so-table-column__resizer::before,
+	.so-table-column__resizer::after,
+	.so-table-column[data-drop]::before {
 		forced-color-adjust: none;
 		background-color: Highlight;
 	}
 
-	.s-table[data-sticky-head='true'] > .s-table__head {
+	.so-table[data-sticky-head='true'] > .so-table__head {
 		forced-color-adjust: none;
 
 		@include mixines.sticky-head-surface(Canvas, CanvasText);
 
-		> .s-table__head-row {
+		> .so-table__head-row {
 			forced-color-adjust: auto;
 		}
 	}

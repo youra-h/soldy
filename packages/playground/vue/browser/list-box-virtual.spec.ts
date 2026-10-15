@@ -64,7 +64,7 @@ async function mount(): Promise<HTMLElement> {
 }
 
 function list(): HTMLElement {
-	const node = document.querySelector('.s-list-box')
+	const node = document.querySelector('.so-list-box')
 
 	if (!(node instanceof HTMLElement)) throw new Error('списка нет')
 
@@ -72,7 +72,7 @@ function list(): HTMLElement {
 }
 
 /** Нарисованные элементы. */
-const drawn = (): HTMLElement[] => [...document.querySelectorAll<HTMLElement>('.s-list-box-item')]
+const drawn = (): HTMLElement[] => [...document.querySelectorAll<HTMLElement>('.so-list-box-item')]
 
 /** Элемент по тексту, если он в документе. */
 const itemOf = (text: string): HTMLElement | undefined =>
@@ -80,7 +80,7 @@ const itemOf = (text: string): HTMLElement | undefined =>
 
 /** Строка элемента — на ней набор `aria` и фокус после клика. */
 function rowOf(text: string): HTMLElement {
-	const row = itemOf(text)?.querySelector(':scope > .s-button')
+	const row = itemOf(text)?.querySelector(':scope > .so-button')
 
 	if (!(row instanceof HTMLElement)) throw new Error(`${text}: строки нет`)
 
@@ -94,7 +94,7 @@ function itemAtTop(): string | null {
 	return (
 		document
 			.elementFromPoint(box.left + 20, box.top + 10)
-			?.closest('.s-list-box-item')
+			?.closest('.so-list-box-item')
 			?.textContent?.trim() ?? null
 	)
 }

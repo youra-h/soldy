@@ -168,7 +168,7 @@ describe('ListBox · серверный рендер', () => {
 
 		expect(attributeOf(rows, 'aria-selected')).toEqual(['false', 'true'])
 		expect(attributeOf(rows, 'tabindex')).toEqual(['-1', '-1'])
-		expect(attributeOf(withClass(body, 's-list-box-item'), 'data-selected')).toEqual([
+		expect(attributeOf(withClass(body, 'so-list-box-item'), 'data-selected')).toEqual([
 			'false',
 			'true',
 		])
@@ -273,8 +273,8 @@ describe('Accordion · серверный рендер', () => {
 	/** Заголовки и панели секций. */
 	function partsOf(body: string) {
 		return {
-			heads: withClass(body, 's-accordion-item__header'),
-			bodies: withClass(body, 's-accordion-item__content'),
+			heads: withClass(body, 'so-accordion-item__header'),
+			bodies: withClass(body, 'so-accordion-item__content'),
 		}
 	}
 
@@ -363,8 +363,8 @@ describe('id и name — от createUniqueId()', () => {
 		return {
 			tabs: attributeOf(tagsWith(body, 'role', 'tab'), 'id'),
 			panel: attributeOf(tagsWith(body, 'role', 'tabpanel'), 'id'),
-			heads: attributeOf(withClass(body, 's-accordion-item__header'), 'id'),
-			bodies: attributeOf(withClass(body, 's-accordion-item__content'), 'id'),
+			heads: attributeOf(withClass(body, 'so-accordion-item__header'), 'id'),
+			bodies: attributeOf(withClass(body, 'so-accordion-item__content'), 'id'),
 			names: attributeOf(tagsWith(body, 'type', 'radio'), 'name'),
 		}
 	}

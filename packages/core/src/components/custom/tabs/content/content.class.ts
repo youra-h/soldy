@@ -28,7 +28,7 @@ export class TTabsContent<
 	extends TComponentView<TProps, TEvents>
 	implements ITabsContent<TProps, TEvents>
 {
-	static override baseClass = 's-tabs__panel'
+	static override baseClass = 'so-tabs__panel'
 
 	static defaultValues: typeof TComponentView.defaultValues &
 		TDefaultValues<ITabsContentProps, 'value'> = {

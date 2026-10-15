@@ -4,8 +4,8 @@
  * внешних табов им не достаются.
  *
  * Тема рисует набор от его корня дочерними комбинаторами: свой список
- * (`> .s-tabs__list`), его табы (`> .s-tabs__list > .s-tabs-item`) и свою
- * панель (`> .s-tabs__panel`) — `themes/oren/AGENTS.md`, «Tabs: вид — от
+ * (`> .so-tabs__list`), его табы (`> .so-tabs__list > .so-tabs-item`) и свою
+ * панель (`> .so-tabs__panel`) — `themes/oren/AGENTS.md`, «Tabs: вид — от
  * своего списка». Пока правила вида были написаны для потомков, внутренние
  * табы получали стили внешних: горизонтальные под вертикальными
  * выстраивались столбиком, `contained` под `line` — с линией и полосой,
@@ -64,7 +64,7 @@ const scene = (outerLook: TTabsLook, innerLook: TTabsLook) =>
 	defineComponent({
 		render: () =>
 			h('div', { style: 'width: 640px' }, [
-				h('div', { class: 's-test-away', style: 'height: 24px' }),
+				h('div', { class: 'so-test-away', style: 'height: 24px' }),
 				h('div', { 'data-place': 'nested' }, [
 					tabs(outerLook, OUTER, () => inner(innerLook)),
 				]),
@@ -73,10 +73,10 @@ const scene = (outerLook: TTabsLook, innerLook: TTabsLook) =>
 	})
 
 /** Корни наборов на сцене: внешние, вложенные и эталон. */
-const roots = () => [...document.querySelectorAll('.s-tabs')]
+const roots = () => [...document.querySelectorAll('.so-tabs')]
 
-const nested = () => find('[data-place="nested"] .s-tabs__panel > .s-tabs')
-const reference = () => find('[data-place="reference"] > .s-tabs')
+const nested = () => find('[data-place="nested"] .so-tabs__panel > .so-tabs')
+const reference = () => find('[data-place="reference"] > .so-tabs')
 
 const SIDES = ['top', 'right', 'bottom', 'left'] as const
 
@@ -127,10 +127,10 @@ const read = (place: string, element: Element, properties: readonly string[], ps
 
 /** Вид набора табов — всё, что тема рисует от его корня. */
 function stylesOf(root: HTMLElement): Map<string, string> {
-	const list = find(':scope > .s-tabs__list', root)
-	const items = [...list.querySelectorAll(':scope > .s-tabs-item')]
-	const row = find(':scope > .s-tabs-item[data-selected="true"] > [role="tab"]', list)
-	const panel = find(':scope > .s-tabs__panel', root)
+	const list = find(':scope > .so-tabs__list', root)
+	const items = [...list.querySelectorAll(':scope > .so-tabs-item')]
+	const row = find(':scope > .so-tabs-item[data-selected="true"] > [role="tab"]', list)
+	const panel = find(':scope > .so-tabs__panel', root)
 
 	return new Map([
 		...read('список', list, LIST),
@@ -175,9 +175,9 @@ async function show(outerLook: TTabsLook, innerLook: TTabsLook): Promise<void> {
 	render(scene(outerLook, innerLook))
 
 	await expect
-		.poll(() => roots().filter((root) => root.classList.contains('s-tabs--ready-animation')))
+		.poll(() => roots().filter((root) => root.classList.contains('so-tabs--ready-animation')))
 		.toHaveLength(3)
-	await userEvent.hover(find('.s-test-away'))
+	await userEvent.hover(find('.so-test-away'))
 	await quiet()
 }
 

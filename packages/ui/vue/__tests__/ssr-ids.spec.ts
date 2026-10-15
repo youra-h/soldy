@@ -111,7 +111,7 @@ describe('id при гидратации', () => {
 		expect(warnings).toEqual([])
 		expect(attrs(client, '[role="tab"]', 'id')).toEqual(attrs(server, '[role="tab"]', 'id'))
 		expect(controls).toEqual(attrs(server, '[role="tab"]', 'aria-controls'))
-		expect(attrs(client, '.s-tabs__panel', 'id')).toEqual([controls[0]])
+		expect(attrs(client, '.so-tabs__panel', 'id')).toEqual([controls[0]])
 	})
 
 	const items = [
@@ -141,10 +141,10 @@ describe('id при гидратации', () => {
 		const { server, client, warnings } = await hydrate(() =>
 			h(Calendar, { months: ['2026-09-01', '2026-10-01'] }),
 		)
-		const ids = attrs(client, '.s-calendar__title-text', 'id')
+		const ids = attrs(client, '.so-calendar__title-text', 'id')
 
 		expect(warnings).toEqual([])
-		expect(ids).toEqual(attrs(server, '.s-calendar__title-text', 'id'))
+		expect(ids).toEqual(attrs(server, '.so-calendar__title-text', 'id'))
 		expect(attrs(client, '[role="grid"]', 'aria-labelledby')).toEqual(ids)
 		expect(new Set(ids).size).toBe(2)
 	})
@@ -153,13 +153,13 @@ describe('id при гидратации', () => {
 		const { server, client, warnings } = await hydrate(() =>
 			h(LocaleProvider, { locale: ruRU }, () => h(DateInput, { value: '2026-05-12' })),
 		)
-		const ids = attrs(client, '.s-date-input__segment', 'id')
+		const ids = attrs(client, '.so-date-input__segment', 'id')
 
 		expect(warnings).toEqual([])
-		expect(ids).toEqual(attrs(server, '.s-date-input__segment', 'id'))
+		expect(ids).toEqual(attrs(server, '.so-date-input__segment', 'id'))
 		expect(new Set(ids).size).toBe(3)
 		// Части редактируемыми делает только касание: сервер их не рисует такими
-		expect(attrs(server, '.s-date-input__segment', 'contenteditable')).toEqual([
+		expect(attrs(server, '.so-date-input__segment', 'contenteditable')).toEqual([
 			null,
 			null,
 			null,
@@ -178,7 +178,7 @@ describe('id при гидратации', () => {
 
 		expect(warnings).toEqual([])
 		expect(ids).toEqual(attrs(server, 'th[scope="row"]', 'id'))
-		expect(attrs(client, '.s-table-row__select input', 'aria-labelledby')).toEqual(ids)
+		expect(attrs(client, '.so-table-row__select input', 'aria-labelledby')).toEqual(ids)
 		expect(new Set(ids).size).toBe(2)
 	})
 
@@ -192,12 +192,12 @@ describe('id при гидратации', () => {
 				],
 			}),
 		)
-		const ids = attrs(client, '.s-table-column__content', 'id')
+		const ids = attrs(client, '.so-table-column__content', 'id')
 
 		expect(warnings).toEqual([])
-		expect(ids).toEqual(attrs(server, '.s-table-column__content', 'id'))
-		expect(attrs(client, '.s-table-column', 'aria-labelledby')).toEqual(ids)
-		expect(attrs(client, '.s-table-column__resizer input', 'aria-labelledby')).toEqual(ids)
+		expect(ids).toEqual(attrs(server, '.so-table-column__content', 'id'))
+		expect(attrs(client, '.so-table-column', 'aria-labelledby')).toEqual(ids)
+		expect(attrs(client, '.so-table-column__resizer input', 'aria-labelledby')).toEqual(ids)
 		expect(new Set(ids).size).toBe(2)
 	})
 

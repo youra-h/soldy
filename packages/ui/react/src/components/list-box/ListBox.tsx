@@ -47,7 +47,7 @@ export function ListBox(props: ListBoxProps): ReactElement | null {
 							entry.kind === 'filler' ? (
 								<div
 									key={entry.key}
-									className="s-list-box__filler"
+									className="so-list-box__filler"
 									aria-hidden="true"
 									style={toReactStyle(entry.style)}
 								/>

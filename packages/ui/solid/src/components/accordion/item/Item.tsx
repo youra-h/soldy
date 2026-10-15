@@ -37,7 +37,7 @@ const ARROW = roleIcon('arrowRight')
  * `leading-icon` и `trailing-icon` подменяют её, по умолчанию она — иконка
  * пакета по роли `arrowRight`. Стрелка — в обёртке, и класс стрелки на
  * обёртке, а не на иконке: тема поворачивает стрелку раскрытой секции по
- * `.s-accordion-item__arrow`, и подменённая иконка поворачивается так же.
+ * `.so-accordion-item__arrow`, и подменённая иконка поворачивается так же.
  * Обёртка стоит, пока на её стороне стрелка по умолчанию или задан слот.
  *
  * По слотам заголовка и стрелок разметка выбирает, что рисовать, поэтому их
@@ -82,7 +82,7 @@ export function AccordionItem(props: AccordionItemProps): JSX.Element {
 	/** Стрелка стороны: слот, а без него — иконка, если стрелка на этой стороне. */
 	const arrow = (side: 'start' | 'end', icon: Accessor<JSX.Element | undefined>) => (
 		<Show when={icon() !== undefined || state.arrowPlacement === side}>
-			<span class="s-accordion-item__arrow">
+			<span class="so-accordion-item__arrow">
 				{icon() ?? <Icon embedded="accordion.arrow" tag={ARROW} size={state.size} />}
 			</span>
 		</Show>
@@ -93,7 +93,7 @@ export function AccordionItem(props: AccordionItemProps): JSX.Element {
 			<Dynamic {...root()} component={rootTag(state.tag)} ref={binding.ref}>
 				<Button
 					embedded="accordion.header"
-					class="s-accordion-item__header"
+					class="so-accordion-item__header"
 					view={state.view}
 					disabled={state.disabled}
 					size={state.size}
@@ -115,8 +115,8 @@ export function AccordionItem(props: AccordionItemProps): JSX.Element {
 				>
 					{title() ?? state.text}
 				</Button>
-				<div class="s-accordion-item__body">
-					<div class="s-accordion-item__content" {...state.contentAria}>
+				<div class="so-accordion-item__body">
+					<div class="so-accordion-item__content" {...state.contentAria}>
 						{renderSlot(props.children)}
 					</div>
 				</div>

@@ -7,7 +7,7 @@
 	потребителя, а директива набора кладёт `aria` ядра.
 -->
 @if (slot('leading'); as leading) {
-	<div class="s-input__leading">
+	<div class="so-input__leading">
 		<ng-container
 			[ngTemplateOutlet]="leading"
 			[ngTemplateOutletContext]="{ ctrl: instance() }"
@@ -32,7 +32,7 @@
 	содержимым `trailing`.
 -->
 @if (state()['clearable'] || slot('clear') || slot('trailing')) {
-	<div class="s-input__trailing">
+	<div class="so-input__trailing">
 		<!--
 			Своя кнопка — слот `clear`: заменяет встроенную целиком и рисуется,
 			когда задана. Команду очистки получает в scope.
@@ -46,7 +46,7 @@
 			<button
 				so-button
 				embedded="input.clear"
-				class="s-input__clear"
+				class="so-input__clear"
 				[size]="state()['size']"
 				[disabled]="state()['disabled']"
 				[so-attributes]="state()['clearAria']"

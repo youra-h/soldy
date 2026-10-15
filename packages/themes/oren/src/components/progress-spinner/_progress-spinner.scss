@@ -42,7 +42,7 @@
 // разрешает (`motion.allowed`). Без движения доля встаёт сразу, а неизвестная
 // доля — мерцание всего кольца (`progress.pulse`): полное кольцо без мерцания
 // читалось бы готовой работой.
-.s-progress-spinner {
+.so-progress-spinner {
 	$this: &;
 
 	// Размер без модификатора — `normal`. Ядро пишет `--size-*` всегда, но блок
@@ -134,7 +134,8 @@
 	&[data-indeterminate='true'] {
 		> #{$this}__ring {
 			@include motion.allowed {
-				animation: s-progress-spinner-run 1.1s cubic-bezier(0.53, 0.21, 0.29, 0.67) infinite;
+				animation: so-progress-spinner-run 1.1s cubic-bezier(0.53, 0.21, 0.29, 0.67)
+					infinite;
 			}
 		}
 
@@ -174,7 +175,7 @@
 // Диаметр — тоже нулевой специфичности: класс или стиль потребителя его
 // перекрывает, не споря. Большое кольцо в карточке задают шириной и высотой,
 // и толщина вырастает вместе с ним.
-:where(.s-progress-spinner) {
+:where(.so-progress-spinner) {
 	@include mixines.progress-spinner-base-colors('accent');
 
 	inline-size: var(--s-progress-spinner-size);
@@ -183,7 +184,7 @@
 
 // Бег — полный круг рисунка. Отсчёт — от начала дуг сверху: поворот из кадров
 // складывается с `transform` рисунка.
-@keyframes s-progress-spinner-run {
+@keyframes so-progress-spinner-run {
 	from {
 		rotate: 0deg;
 	}
@@ -205,13 +206,13 @@
 // их, и правило режима не спорит по специфичности ни с вариантом, ни с бегом —
 // вариант задаёт те же переменные раньше в файле.
 @media (forced-colors: active) {
-	.s-progress-spinner {
+	.so-progress-spinner {
 		forced-color-adjust: none;
 		--s-progress-spinner-track: CanvasText;
 		--s-progress-spinner-fill: Highlight;
 	}
 
-	.s-progress-spinner__track {
+	.so-progress-spinner__track {
 		stroke-width: 1;
 	}
 }

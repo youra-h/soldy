@@ -41,8 +41,8 @@ export function Switch(props: SwitchProps): ReactElement | null {
 				{...toControlAttrs<SwitchAttributes>(forwardProps)}
 				live={{ checked: value }}
 			/>
-			<span className="s-switch__track" aria-hidden="true">
-				<span className="s-switch__track--thumb">
+			<span className="so-switch__track" aria-hidden="true">
+				<span className="so-switch__track--thumb">
 					{value ? renderSlot(props.on, scope) : renderSlot(props.off, scope)}
 				</span>
 			</span>

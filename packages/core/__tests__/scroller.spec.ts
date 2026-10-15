@@ -28,11 +28,11 @@ describe('умолчания', () => {
 		expect(scroller.viewportAria).toBeUndefined()
 	})
 
-	it('корень — div, базовый класс s-scroller', () => {
+	it('корень — div, базовый класс so-scroller', () => {
 		const scroller = new TScroller()
 
 		expect(scroller.tag).toBe('div')
-		expect(scroller.classes.toArray()).toContain('s-scroller')
+		expect(scroller.classes.toArray()).toContain('so-scroller')
 	})
 
 	it('пропсы конструктора перекрывают умолчания', () => {

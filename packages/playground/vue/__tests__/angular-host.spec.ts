@@ -37,10 +37,10 @@ afterEach(() => {
 })
 
 /** Кнопки превью в узле. */
-const buttons = (node: HTMLElement) => [...node.querySelectorAll('.s-button')]
+const buttons = (node: HTMLElement) => [...node.querySelectorAll('.so-button')]
 
 /** Текст кнопки превью. */
-const label = (node: HTMLElement) => node.querySelector('.s-button__text')?.textContent?.trim()
+const label = (node: HTMLElement) => node.querySelector('.so-button__text')?.textContent?.trim()
 
 describe('хост Angular', () => {
 	/**
@@ -139,12 +139,12 @@ describe('хост Angular · обёртка и содержимое', () => {
 	it('элементы списка входят в коллекцию владельца в порядке разметки', async () => {
 		const node = stage()
 		const handle = host.mount(node, { component: 'list-box', props: {} })
-		const items = all(node, '.s-list-box > .s-list-box-item')
+		const items = all(node, '.so-list-box > .so-list-box-item')
 
-		expect(textsOf(node, '.s-list-box-item')).toEqual(TEXTS)
+		expect(textsOf(node, '.so-list-box-item')).toEqual(TEXTS)
 		expect(items.map((item) => item.style.order)).toEqual(['0', '1', '2', '3', '4'])
 
-		all(items[1], '.s-button')[0]?.click()
+		all(items[1], '.so-button')[0]?.click()
 		await nextFrame()
 
 		expect(items.map((item) => item.dataset.selected)).toEqual([
@@ -168,11 +168,11 @@ describe('хост Angular · обёртка и содержимое', () => {
 	it('панели табов — в слоте content, вне списка табов', () => {
 		const node = stage()
 		const handle = host.mount(node, { component: 'tabs', props: {} })
-		const list = node.querySelector('.s-tabs > .s-tabs__list')
-		const panels = all(node, '.s-tabs > .s-tabs__panel')
+		const list = node.querySelector('.so-tabs > .so-tabs__list')
+		const panels = all(node, '.so-tabs > .so-tabs__panel')
 
-		expect(list && textsOf(list, '.s-tabs-item')).toEqual(TEXTS)
-		expect(list?.querySelectorAll('.s-tabs__panel')).toHaveLength(0)
+		expect(list && textsOf(list, '.so-tabs-item')).toEqual(TEXTS)
+		expect(list?.querySelectorAll('.so-tabs__panel')).toHaveLength(0)
 		expect(panels.map((panel) => panel.style.display !== 'none')).toEqual([
 			true,
 			false,
@@ -192,11 +192,11 @@ describe('хост Angular · обёртка и содержимое', () => {
 	it('радио — одной группой, с подписью содержимым', () => {
 		const node = stage()
 		const handle = host.mount(node, { component: 'radio-group', props: {} })
-		const names = all(node, '.s-radio-group-item input').map((input) =>
+		const names = all(node, '.so-radio-group-item input').map((input) =>
 			input.getAttribute('name'),
 		)
 
-		expect(textsOf(node, '.s-radio-group > .s-radio-group-item')).toEqual(TEXTS)
+		expect(textsOf(node, '.so-radio-group > .so-radio-group-item')).toEqual(TEXTS)
 		expect(names).toHaveLength(TEXTS.length)
 		expect(new Set(names).size).toBe(1)
 		expect(names[0]).toBeTruthy()
@@ -217,9 +217,9 @@ describe('хост Angular · обёртка и содержимое', () => {
 			props: {},
 			onEvent: (name) => events.push(name),
 		})
-		const input = node.querySelector('.s-label > .s-label__control > .s-check-box > input')
+		const input = node.querySelector('.so-label > .so-label__control > .so-check-box > input')
 
-		expect(textsOf(node, '.s-label__text')).toEqual(['Согласен'])
+		expect(textsOf(node, '.so-label__text')).toEqual(['Согласен'])
 		expect(input instanceof HTMLInputElement && input.checked).toBe(false)
 
 		handle.update({ value: true })
@@ -239,10 +239,10 @@ describe('хост Angular · обёртка и содержимое', () => {
 		const node = stage()
 		const handle = host.mount(node, { component: 'label', props: { text: 'Подпись' } })
 
-		expect(node.querySelector('.s-label > .s-label__control > .s-check-box > input')).not.toBe(
-			null,
-		)
-		expect(textsOf(node, '.s-label__text')).toEqual(['Подпись'])
+		expect(
+			node.querySelector('.so-label > .so-label__control > .so-check-box > input'),
+		).not.toBe(null)
+		expect(textsOf(node, '.so-label__text')).toEqual(['Подпись'])
 
 		handle.unmount()
 	})
@@ -258,15 +258,15 @@ describe('хост Angular · обёртка и содержимое', () => {
 			component: 'list-box',
 			props: { ctrl: new TListBox(), engine: createEngine() },
 		})
-		const [before] = all(node, '.s-list-box')
+		const [before] = all(node, '.so-list-box')
 
 		handle.update({ ctrl: new TListBox(), engine: createEngine() })
 
-		const lists = all(node, '.s-list-box')
+		const lists = all(node, '.so-list-box')
 
 		expect(lists).toHaveLength(1)
 		expect(lists[0]).not.toBe(before)
-		expect(all(lists[0], '.s-list-box-item').map((item) => item.style.order)).toEqual([
+		expect(all(lists[0], '.so-list-box-item').map((item) => item.style.order)).toEqual([
 			'0',
 			'1',
 			'2',

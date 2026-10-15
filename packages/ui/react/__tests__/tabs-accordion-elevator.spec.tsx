@@ -65,9 +65,9 @@ function tab(text: string): HTMLElement {
 const selection = () => tabs().map((row) => row.getAttribute('aria-selected'))
 
 const panels = () =>
-	[...document.querySelectorAll('.s-tabs__panel')].map((panel) => panel.textContent)
+	[...document.querySelectorAll('.so-tabs__panel')].map((panel) => panel.textContent)
 
-const headers = () => [...document.querySelectorAll('.s-accordion-item__header')]
+const headers = () => [...document.querySelectorAll('.so-accordion-item__header')]
 
 function header(text: string): HTMLElement {
 	const found = headers().find((candidate) => candidate.textContent?.trim() === text)
@@ -249,7 +249,7 @@ describe('сервер', () => {
 			/>,
 		)
 		const rows = [...container.querySelectorAll('[role="tab"]')]
-		const shown = [...container.querySelectorAll('.s-tabs__panel')]
+		const shown = [...container.querySelectorAll('.so-tabs__panel')]
 
 		expect(rows.map((row) => row.getAttribute('aria-selected'))).toEqual(['false', 'true'])
 		expect(shown.map((panel) => panel.textContent)).toEqual(['Панель B'])
@@ -267,8 +267,8 @@ describe('сервер', () => {
 				]}
 			/>,
 		)
-		const heads = [...container.querySelectorAll('.s-accordion-item__header')]
-		const bodies = [...container.querySelectorAll('.s-accordion-item__content')]
+		const heads = [...container.querySelectorAll('.so-accordion-item__header')]
+		const bodies = [...container.querySelectorAll('.so-accordion-item__content')]
 
 		expect(heads.map((node) => node.getAttribute('aria-expanded'))).toEqual(['true', 'false'])
 		expect(heads.map((node) => node.getAttribute('aria-controls'))).toEqual(
@@ -288,7 +288,7 @@ describe('сервер', () => {
 		)
 
 		// Табы разметки входят в коллекцию при коммите: сервер панели не рисует
-		expect(serverMarkup(element).querySelector('.s-tabs__panel')).toBeNull()
+		expect(serverMarkup(element).querySelector('.so-tabs__panel')).toBeNull()
 
 		const { onRecoverableError } = hydrate(element)
 

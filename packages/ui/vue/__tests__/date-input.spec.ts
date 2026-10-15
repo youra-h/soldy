@@ -65,11 +65,11 @@ function findAll(selector: string): HTMLElement[] {
 }
 
 /** Часть по типу. */
-const segment = (type: string) => find(`.s-date-input__segment[data-type="${type}"]`)
+const segment = (type: string) => find(`.so-date-input__segment[data-type="${type}"]`)
 
 /** Узлы ряда по порядку: класс и текст. */
 const rowContent = () =>
-	[...find('.s-date-input__segments').children].map((node) => [node.className, node.textContent])
+	[...find('.so-date-input__segments').children].map((node) => [node.className, node.textContent])
 
 /** Нажатие клавиши с узла, как у пользователя: событие всплывает до корня. */
 function press(from: Element, key: string): KeyboardEvent {
@@ -140,20 +140,20 @@ describe('разметка', () => {
 	it('ru: корень — группа, в ряду части и разделители в порядке формата', async () => {
 		await render(() => h(DateInput, { aria_label: 'Дата рождения' }))
 
-		const root = find('.s-date-input')
+		const root = find('.so-date-input')
 
 		expect(root.getAttribute('role')).toBe('group')
 		expect(root.getAttribute('aria-label')).toBe('Дата рождения')
 		expect(root.dataset.invalid).toBe('false')
 		expect(rowContent()).toEqual([
-			['s-date-input__segment', 'дд'],
-			['s-date-input__literal', '.'],
-			['s-date-input__segment', 'мм'],
-			['s-date-input__literal', '.'],
-			['s-date-input__segment', 'гггг'],
+			['so-date-input__segment', 'дд'],
+			['so-date-input__literal', '.'],
+			['so-date-input__segment', 'мм'],
+			['so-date-input__literal', '.'],
+			['so-date-input__segment', 'гггг'],
 		])
-		expect(find('.s-date-input__segments').getAttribute('dir')).toBe('ltr')
-		expect(find('.s-date-input__segments').getAttribute('lang')).toBe('ru-RU')
+		expect(find('.so-date-input__segments').getAttribute('dir')).toBe('ltr')
+		expect(find('.so-date-input__segments').getAttribute('lang')).toBe('ru-RU')
 	})
 
 	it('часть — spinbutton со своей остановкой Tab, разделитель скрыт от скринридера', async () => {
@@ -169,7 +169,7 @@ describe('разметка', () => {
 		)
 		expect(day.dataset.placeholder).toBe('false')
 		expect(
-			findAll('.s-date-input__literal').every(
+			findAll('.so-date-input__literal').every(
 				(node) => node.getAttribute('aria-hidden') === 'true',
 			),
 		).toBe(true)
@@ -183,22 +183,22 @@ describe('разметка', () => {
 
 		await render(() => h(DateInput, { value: '2026-05-12' }))
 
-		expect(find('.s-date-input__segments').getAttribute('dir')).toBe('rtl')
+		expect(find('.so-date-input__segments').getAttribute('dir')).toBe('rtl')
 		expect(rowContent().map(([, text]) => text)).toEqual(formatted('ar-EG', '2026-05-12'))
 	})
 
 	it('выключенное поле — частей вне порядка Tab, скрытое поле выключено', async () => {
 		await render(() => h(DateInput, { disabled: true, name: 'birthday', value: '2026-05-12' }))
 
-		expect(findAll('.s-date-input__segment[tabindex]')).toEqual([])
-		expect(find('.s-date-input').dataset.disabled).toBe('true')
+		expect(findAll('.so-date-input__segment[tabindex]')).toEqual([])
+		expect(find('.so-date-input').dataset.disabled).toBe('true')
 		expect(find('input[type="hidden"]').hasAttribute('disabled')).toBe(true)
 	})
 
 	it('дата вне min/max — data-invalid у корня и aria-invalid у частей', async () => {
 		await render(() => h(DateInput, { value: '2026-05-12', max: '2026-01-01' }))
 
-		expect(find('.s-date-input').dataset.invalid).toBe('true')
+		expect(find('.so-date-input').dataset.invalid).toBe('true')
 		expect(segment('year').getAttribute('aria-invalid')).toBe('true')
 	})
 })
@@ -268,7 +268,7 @@ describe('время', () => {
 		const parts = formattedTime('en-US', '2026-05-12T14:30')
 
 		expect(rowContent().map(([, text]) => text)).toEqual(parts.map(({ value }) => value))
-		expect(findAll('.s-date-input__segment').map((node) => node.dataset.type)).toEqual([
+		expect(findAll('.so-date-input__segment').map((node) => node.dataset.type)).toEqual([
 			'month',
 			'day',
 			'year',
@@ -365,7 +365,7 @@ describe('время', () => {
 		const parts = formattedTime('en-US', '2026-05-12T14:30:15', 'second')
 
 		expect(rowContent().map(([, text]) => text)).toEqual(parts.map(({ value }) => value))
-		expect(findAll('.s-date-input__segment').map((node) => node.dataset.type)).toEqual([
+		expect(findAll('.so-date-input__segment').map((node) => node.dataset.type)).toEqual([
 			'month',
 			'day',
 			'year',
@@ -482,7 +482,7 @@ describe('сенсорный режим', () => {
 		await nextTick()
 
 		expect(
-			findAll('.s-date-input__segment').map((part) => [
+			findAll('.so-date-input__segment').map((part) => [
 				part.getAttribute('contenteditable'),
 				part.getAttribute('inputmode'),
 			]),
@@ -497,8 +497,8 @@ describe('сенсорный режим', () => {
 		pointerDown(segment('month'), 'mouse')
 		await nextTick()
 
-		expect(findAll('.s-date-input__segment[contenteditable]')).toEqual([])
-		expect(findAll('.s-date-input__segment[inputmode]')).toEqual([])
+		expect(findAll('.so-date-input__segment[contenteditable]')).toEqual([])
+		expect(findAll('.so-date-input__segment[inputmode]')).toEqual([])
 	})
 
 	it('ввод экранной клавиатуры возвращает дату через update:value', async () => {
@@ -541,7 +541,7 @@ describe('сенсорный режим', () => {
 	it('у каждой части свой id — от монтирования и типа части', async () => {
 		await render(() => h(DateInput))
 
-		const parts = findAll('.s-date-input__segment')
+		const parts = findAll('.so-date-input__segment')
 
 		expect(parts.every((part) => part.id.endsWith(`-${part.dataset.type}`))).toBe(true)
 		expect(new Set(parts.map((part) => part.id)).size).toBe(3)
@@ -557,13 +557,13 @@ describe('слоты', () => {
 				trailing: ({ ctrl }: { ctrl: IDateInput }) => {
 					seen.push(ctrl)
 
-					return h('button', { class: 's-test-calendar' }, 'Календарь')
+					return h('button', { class: 'so-test-calendar' }, 'Календарь')
 				},
 			}),
 		)
 
-		expect(find('.s-date-input__trailing').querySelector('.s-test-calendar')).not.toBeNull()
-		expect(document.querySelector('.s-date-input__leading')).toBeNull()
+		expect(find('.so-date-input__trailing').querySelector('.so-test-calendar')).not.toBeNull()
+		expect(document.querySelector('.so-date-input__leading')).toBeNull()
 		expect(seen[0]?.locale).toBe('ru-RU')
 	})
 
@@ -572,11 +572,11 @@ describe('слоты', () => {
 			h(
 				DateInput,
 				{ value: '2026-05-12' },
-				{ trailing: () => h('button', { class: 's-test-calendar' }, 'Календарь') },
+				{ trailing: () => h('button', { class: 'so-test-calendar' }, 'Календарь') },
 			),
 		)
 
-		expect(press(find('.s-test-calendar'), 'ArrowUp').defaultPrevented).toBe(false)
+		expect(press(find('.so-test-calendar'), 'ArrowUp').defaultPrevented).toBe(false)
 	})
 })
 
@@ -589,8 +589,8 @@ describe('кнопка очистки', () => {
 	it('без clearable кнопки нет, и обёртки без слотов тоже', async () => {
 		await render(() => h(DateInput, { value: '2026-05-12' }))
 
-		expect(document.querySelector('.s-date-input__clear')).toBeNull()
-		expect(document.querySelector('.s-date-input__trailing')).toBeNull()
+		expect(document.querySelector('.so-date-input__clear')).toBeNull()
+		expect(document.querySelector('.so-date-input__trailing')).toBeNull()
 	})
 
 	it('по clearable — первой в обёртке у конца, перед кнопкой календаря', async () => {
@@ -598,18 +598,18 @@ describe('кнопка очистки', () => {
 			h(
 				DateInput,
 				{ clearable: true, name: 'Дата' },
-				{ trailing: () => h('button', { class: 's-test-calendar' }, 'Календарь') },
+				{ trailing: () => h('button', { class: 'so-test-calendar' }, 'Календарь') },
 			),
 		)
 
-		const parts = ['.s-date-input__clear', '.s-test-calendar']
+		const parts = ['.so-date-input__clear', '.so-test-calendar']
 
 		expect(
-			[...find('.s-date-input__trailing').children].map((node) =>
+			[...find('.so-date-input__trailing').children].map((node) =>
 				parts.find((part) => node.matches(part)),
 			),
 		).toEqual(parts)
-		expect(find('.s-date-input__clear').getAttribute('aria-label')).toBe('Очистить Дата')
+		expect(find('.so-date-input__clear').getAttribute('aria-label')).toBe('Очистить Дата')
 	})
 
 	it('клик очищает все части и значение, до корня не всплывает', async () => {
@@ -627,11 +627,11 @@ describe('кнопка очистки', () => {
 			}),
 		)
 
-		find('.s-date-input__clear').click()
+		find('.so-date-input__clear').click()
 		await nextTick()
 
 		expect(date.value).toBeUndefined()
-		expect(findAll('.s-date-input__segment').map((part) => part.dataset.placeholder)).toEqual([
+		expect(findAll('.so-date-input__segment').map((part) => part.dataset.placeholder)).toEqual([
 			'true',
 			'true',
 			'true',
@@ -652,12 +652,12 @@ describe('кнопка очистки', () => {
 			}),
 		)
 
-		expect(find('.s-date-input__clear').hasAttribute('disabled')).toBe(false)
+		expect(find('.so-date-input__clear').hasAttribute('disabled')).toBe(false)
 
 		disabled.value = true
 		await nextTick()
 
-		expect(find('.s-date-input__clear').hasAttribute('disabled')).toBe(true)
+		expect(find('.so-date-input__clear').hasAttribute('disabled')).toBe(true)
 	})
 
 	it('своя кнопка — слот clear с командой очистки в scope, без clearable', async () => {
@@ -667,18 +667,18 @@ describe('кнопка очистки', () => {
 				{ value: '2026-05-12' },
 				{
 					clear: ({ clear }: { clear: () => void }) =>
-						h('button', { class: 's-test-clear', onClick: () => clear() }),
+						h('button', { class: 'so-test-clear', onClick: () => clear() }),
 				},
 			),
 		)
 
-		find('.s-test-clear').click()
+		find('.so-test-clear').click()
 		await nextTick()
 
-		expect(find('.s-date-input__trailing > .s-test-clear')).toBeTruthy()
-		expect(document.querySelector('.s-date-input__clear')).toBeNull()
+		expect(find('.so-date-input__trailing > .so-test-clear')).toBeTruthy()
+		expect(document.querySelector('.so-date-input__clear')).toBeNull()
 		expect(
-			findAll('.s-date-input__segment').every((part) => part.dataset.placeholder === 'true'),
+			findAll('.so-date-input__segment').every((part) => part.dataset.placeholder === 'true'),
 		).toBe(true)
 	})
 })

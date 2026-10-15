@@ -93,7 +93,7 @@ describe('ListBox над движком и владельцем снаружи',
 			await nextTick()
 
 			// Смонтирован по-настоящему: элементы на месте
-			expect(wrapper.findAll('.s-list-box-item')).toHaveLength(ITEMS.length)
+			expect(wrapper.findAll('.so-list-box-item')).toHaveLength(ITEMS.length)
 
 			wrapper.unmount()
 		}

@@ -68,7 +68,7 @@ export default class TSlider
 	extends TValueControl<TSliderValue, ISliderProps, TSliderEvents>
 	implements ISlider
 {
-	static override baseClass = 's-slider'
+	static override baseClass = 'so-slider'
 
 	static defaultValues: typeof TValueControl.defaultValues &
 		TDefaultValues<

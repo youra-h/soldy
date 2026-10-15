@@ -45,7 +45,7 @@ const mountTags = async (overflow: TTagsOverflow) => {
 
 /** Строки тегов внутри узла — носители текста. */
 const textsIn = (scope: ParentNode) =>
-	[...scope.querySelectorAll('.s-tags-item')].map((item) => item.textContent?.trim())
+	[...scope.querySelectorAll('.so-tags-item')].map((item) => item.textContent?.trim())
 
 /** Узел по селектору; нет его — тест падает здесь, а не на чтении свойства. */
 const find = (selector: string): HTMLElement => {
@@ -68,13 +68,13 @@ describe('режимы wrap и scroll', () => {
 	it.each(['wrap', 'scroll'] as const)('%s: все теги в ряду', async (overflow) => {
 		await mountTags(overflow)
 
-		expect(textsIn(find('.s-tags'))).toEqual(TEXTS)
+		expect(textsIn(find('.so-tags'))).toEqual(TEXTS)
 	})
 
 	it('режим уезжает в тему через data-overflow', async () => {
 		await mountTags('scroll')
 
-		expect(find('.s-tags').dataset.overflow).toBe('scroll')
+		expect(find('.so-tags').dataset.overflow).toBe('scroll')
 	})
 })
 
@@ -98,13 +98,13 @@ describe('слот default: своя раскладка показанных т�
 		await mountOwn()
 
 		expect(textsIn(find('.own'))).toEqual(TEXTS)
-		expect(document.querySelectorAll('.s-tags-item')).toHaveLength(TEXTS.length)
+		expect(document.querySelectorAll('.so-tags-item')).toHaveLength(TEXTS.length)
 	})
 
 	it('закрытый тег выбывает и из своей разметки', async () => {
 		await mountOwn()
 
-		const close = find('.own .s-tags-item:nth-child(2) .s-tags-item__close')
+		const close = find('.own .so-tags-item:nth-child(2) .so-tags-item__close')
 
 		close.click()
 		await nextTick()
@@ -145,15 +145,15 @@ describe('слот tags у Select', () => {
 	it('свой ряд встаёт на место встроенного и получает выбранное тегами', async () => {
 		await mountSelect('multiple')
 
-		expect(document.querySelector('.s-select__tags')).toBeNull()
-		expect(find('.s-select__field .own-tags').contains(find('.own'))).toBe(true)
+		expect(document.querySelector('.so-select__tags')).toBeNull()
+		expect(find('.so-select__field .own-tags').contains(find('.own'))).toBe(true)
 		expect(textsIn(find('.own'))).toEqual(['Москва', 'Тверь'])
 	})
 
 	it('закрытый в своём ряду тег снимает выбор опции', async () => {
 		await mountSelect('multiple')
 
-		find('.own .s-tags-item:first-child .s-tags-item__close').click()
+		find('.own .so-tags-item:first-child .so-tags-item__close').click()
 		await nextTick()
 
 		expect(textsIn(find('.own'))).toEqual(['Тверь'])

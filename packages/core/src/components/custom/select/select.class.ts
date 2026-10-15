@@ -79,7 +79,7 @@ export class TSelect<
 	extends TInputControl<TSelectValue, TProps, TEvents>
 	implements ISelect<TProps, TEvents>
 {
-	static override baseClass = 's-select'
+	static override baseClass = 'so-select'
 
 	static defaultValues: typeof TInputControl.defaultValues &
 		TDefaultValues<

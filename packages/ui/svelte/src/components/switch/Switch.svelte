@@ -45,8 +45,8 @@
 			{...toControlAttrs<SwitchAttributes>(binding.forwardProps)}
 			checked={state.value}
 		/>
-		<span class="s-switch__track" aria-hidden="true">
-			<span class="s-switch__track--thumb">
+		<span class="so-switch__track" aria-hidden="true">
+			<span class="so-switch__track--thumb">
 				{#if state.value}
 					{@render props.on?.({ value: state.value, ctrl })}
 				{:else}

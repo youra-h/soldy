@@ -18,7 +18,7 @@ import type { ListBoxItemAttributes, ListBoxItemProps } from './base.component'
  *
  * Наборы ядра стоят на двух элементах. Корень несёт `dataset`, `attrs` и место
  * в коллекции (`order`): тема читает `data-content-fit` с него. Строка несёт
- * `aria` и тот же `dataset` — выбор и подсветку тема красит на `.s-button`.
+ * `aria` и тот же `dataset` — выбор и подсветку тема красит на `.so-button`.
  * Атрибуты потребителя делятся так же, как у Vue: класс и стиль — корню,
  * остальное — строке, поверх её наборов: `tabindex="-1"` элемента перекрывает
  * `tabindex="0"`, который кнопка на `div` ставит себе сама.
@@ -62,7 +62,7 @@ export function ListBoxItem(props: ListBoxItemProps): ReactElement | null {
 	const { onClick, ...row } = toControlAttrs<ListBoxItemAttributes>(forwardProps)
 
 	const mark = (
-		<span className="s-list-box-item__indicator" aria-hidden="true">
+		<span className="so-list-box-item__indicator" aria-hidden="true">
 			{renderSlot(props['indicator-icon'], { selected: chosen }) ??
 				(chosen ? (
 					<Icon embedded="list-box.indicator" tag={roleIcon('check')} size={size} />

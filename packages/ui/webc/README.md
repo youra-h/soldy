@@ -7,7 +7,7 @@ framework-agnostic core and thin adapters that render it in Vue, React, Angular,
 Web Components.
 
 The adapter is wiring, not behavior: it defines a Custom Element per component and renders the
-markup — BEM classes `s-*` and `data-*` state attributes. Props, events and slots come from the
+markup — BEM classes `so-*` and `data-*` state attributes. Props, events and slots come from the
 component descriptor, so they match the other five adapters; only the spelling is the platform's:
 props are attributes or element properties, and events are DOM events named `so:` + the core name
 (`so:show`, `so:show:before`, `so:action:press`, `so:change:disabled`). Every event has the prefix:

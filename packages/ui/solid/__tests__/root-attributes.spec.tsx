@@ -95,17 +95,17 @@ function TabsContentProbe(props: TabsContentProps): JSX.Element {
 const COMPONENTS: ReadonlyArray<
 	readonly [string, Component<TProbeProps>, string, Partial<TProbeProps>]
 > = [
-	['Button', Button, '.s-button', {}],
-	['ComponentView', ComponentView, '.s-component-view', {}],
-	['Frame', Frame, '.s-frame', { visible: true }],
-	['Icon', Icon, '.s-icon', { tag: 'i' }],
-	['Label', Label, '.s-label', {}],
-	['ProgressSpinner', ProgressSpinner, '.s-progress-spinner', {}],
-	['Skeleton', Skeleton, '.s-skeleton', {}],
-	['Tabs', Tabs, '.s-tabs', {}],
-	['Tabs.Content', TabsContentProbe, '.s-tabs__panel', {}],
-	['Accordion', Accordion, '.s-accordion', {}],
-	['RadioGroup', RadioGroup, '.s-radio-group', {}],
+	['Button', Button, '.so-button', {}],
+	['ComponentView', ComponentView, '.so-component-view', {}],
+	['Frame', Frame, '.so-frame', { visible: true }],
+	['Icon', Icon, '.so-icon', { tag: 'i' }],
+	['Label', Label, '.so-label', {}],
+	['ProgressSpinner', ProgressSpinner, '.so-progress-spinner', {}],
+	['Skeleton', Skeleton, '.so-skeleton', {}],
+	['Tabs', Tabs, '.so-tabs', {}],
+	['Tabs.Content', TabsContentProbe, '.so-tabs__panel', {}],
+	['Accordion', Accordion, '.so-accordion', {}],
+	['RadioGroup', RadioGroup, '.so-radio-group', {}],
 ]
 
 /** Общие пропсы элементов коллекций в таблице. */
@@ -149,9 +149,9 @@ function ListBoxItemProbe(props: ListBoxItemProps): JSX.Element {
 
 /** Элемент коллекции, класс его корня и строка, которой уходят атрибуты потребителя. */
 const ITEMS: ReadonlyArray<readonly [string, Component<TItemProbeProps>, string, string]> = [
-	['Tabs.Item', TabsItemProbe, '.s-tabs-item', '.s-tabs-item [role="tab"]'],
-	['Accordion.Item', AccordionItemProbe, '.s-accordion-item', '.s-accordion-item__header'],
-	['RadioGroup.Item', RadioGroupItemProbe, '.s-radio-group-item', '.s-radio-group-item__input'],
+	['Tabs.Item', TabsItemProbe, '.so-tabs-item', '.so-tabs-item [role="tab"]'],
+	['Accordion.Item', AccordionItemProbe, '.so-accordion-item', '.so-accordion-item__header'],
+	['RadioGroup.Item', RadioGroupItemProbe, '.so-radio-group-item', '.so-radio-group-item__input'],
 ]
 
 /** Общие пропсы полей в таблице. */
@@ -163,9 +163,9 @@ type TFieldProbeProps = CheckBoxProps & SwitchProps & InputProps
  * остаётся за адаптером и у него.
  */
 const FIELDS: ReadonlyArray<readonly [string, Component<TFieldProbeProps>, string]> = [
-	['CheckBox', CheckBox, '.s-check-box'],
-	['Switch', Switch, '.s-switch'],
-	['Input', Input, '.s-input'],
+	['CheckBox', CheckBox, '.so-check-box'],
+	['Switch', Switch, '.so-switch'],
+	['Input', Input, '.so-input'],
 ]
 
 describe('атрибут снаружи перекрывает набор ядра', () => {
@@ -330,25 +330,25 @@ type TRefProbeProps = {
  * коллекции — в своём владельце.
  */
 const ROOTS: ReadonlyArray<readonly [string, (props: TRefProbeProps) => JSX.Element, string]> = [
-	['Button', (props) => <Button {...props} />, '.s-button'],
-	['ComponentView', (props) => <ComponentView {...props} />, '.s-component-view'],
-	['Frame', (props) => <Frame visible {...props} />, '.s-frame'],
-	['Icon', (props) => <Icon tag="i" {...props} />, '.s-icon'],
-	['Label', (props) => <Label {...props} />, '.s-label'],
-	['ProgressSpinner', (props) => <ProgressSpinner {...props} />, '.s-progress-spinner'],
-	['Skeleton', (props) => <Skeleton {...props} />, '.s-skeleton'],
-	['CheckBox', (props) => <CheckBox {...props} />, '.s-check-box'],
-	['Switch', (props) => <Switch {...props} />, '.s-switch'],
-	['Input', (props) => <Input {...props} />, '.s-input'],
-	['Tabs', (props) => <Tabs {...props} />, '.s-tabs'],
-	['Tabs.Item', (props) => <TabsItemProbe {...props} />, '.s-tabs-item'],
-	['Tabs.Content', (props) => <TabsContentProbe {...props} />, '.s-tabs__panel'],
-	['Accordion', (props) => <Accordion {...props} />, '.s-accordion'],
-	['Accordion.Item', (props) => <AccordionItemProbe {...props} />, '.s-accordion-item'],
-	['RadioGroup', (props) => <RadioGroup {...props} />, '.s-radio-group'],
-	['RadioGroup.Item', (props) => <RadioGroupItemProbe {...props} />, '.s-radio-group-item'],
-	['ListBox', (props) => <ListBox {...props} />, '.s-list-box'],
-	['ListBox.Item', (props) => <ListBoxItemProbe {...props} />, '.s-list-box-item'],
+	['Button', (props) => <Button {...props} />, '.so-button'],
+	['ComponentView', (props) => <ComponentView {...props} />, '.so-component-view'],
+	['Frame', (props) => <Frame visible {...props} />, '.so-frame'],
+	['Icon', (props) => <Icon tag="i" {...props} />, '.so-icon'],
+	['Label', (props) => <Label {...props} />, '.so-label'],
+	['ProgressSpinner', (props) => <ProgressSpinner {...props} />, '.so-progress-spinner'],
+	['Skeleton', (props) => <Skeleton {...props} />, '.so-skeleton'],
+	['CheckBox', (props) => <CheckBox {...props} />, '.so-check-box'],
+	['Switch', (props) => <Switch {...props} />, '.so-switch'],
+	['Input', (props) => <Input {...props} />, '.so-input'],
+	['Tabs', (props) => <Tabs {...props} />, '.so-tabs'],
+	['Tabs.Item', (props) => <TabsItemProbe {...props} />, '.so-tabs-item'],
+	['Tabs.Content', (props) => <TabsContentProbe {...props} />, '.so-tabs__panel'],
+	['Accordion', (props) => <Accordion {...props} />, '.so-accordion'],
+	['Accordion.Item', (props) => <AccordionItemProbe {...props} />, '.so-accordion-item'],
+	['RadioGroup', (props) => <RadioGroup {...props} />, '.so-radio-group'],
+	['RadioGroup.Item', (props) => <RadioGroupItemProbe {...props} />, '.so-radio-group-item'],
+	['ListBox', (props) => <ListBox {...props} />, '.so-list-box'],
+	['ListBox.Item', (props) => <ListBoxItemProbe {...props} />, '.so-list-box-item'],
 ]
 
 /** Поля: `ref` потребителя — корень, а не `<input>`. */
@@ -415,8 +415,8 @@ describe('ref потребителя — корень компонента', () 
 			</>
 		))
 
-		expect(button).toBe(find(container, '.s-button', HTMLElement))
-		expect(input).toBe(find(container, '.s-input', HTMLElement))
+		expect(button).toBe(find(container, '.so-button', HTMLElement))
+		expect(input).toBe(find(container, '.so-input', HTMLElement))
 	})
 
 	/** Смена тега пересоздаёт узел: потребитель получает новый корень. */
@@ -486,8 +486,8 @@ describe('свойство, записанное в узел мимо разме
 				<Icon tag="i" width={width()} />
 			</>
 		))
-		const button = find(container, '.s-button', HTMLElement)
-		const icon = find(container, '.s-icon', HTMLElement)
+		const button = find(container, '.so-button', HTMLElement)
+		const icon = find(container, '.so-icon', HTMLElement)
 
 		button.style.setProperty('--s-swipe-offset', '12px')
 		icon.style.setProperty('--s-swipe-offset', '7px')
@@ -547,7 +547,7 @@ describe('раскладка корня: имена стиля — как в CSS
 
 	it('наборы ядра — первыми, атрибуты потребителя — поверх', () => {
 		const props = toRootProps(
-			{ classes: ['s-x'] },
+			{ classes: ['so-x'] },
 			[{ role: 'button', tabindex: '0' }, { 'data-open': 'true' }],
 			{ class: 'mine', style: { color: 'red' } },
 		)
@@ -556,7 +556,7 @@ describe('раскладка корня: имена стиля — как в CSS
 
 		expect(props).toMatchObject({ role: 'button', tabindex: '0', 'data-open': 'true' })
 		expect(toRootProps({}, [{ tabindex: '0' }], forward).tabindex).toBe(-1)
-		expect(props.class).toBe('s-x mine')
+		expect(props.class).toBe('so-x mine')
 		expect(props.style).toEqual({ color: 'red' })
 	})
 })

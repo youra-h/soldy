@@ -31,7 +31,7 @@ const nextFrame = () => new Promise<void>((resolve) => requestAnimationFrame(() 
  */
 const page = () =>
 	h('div', { style: 'padding: 40px' }, [
-		h('button', { class: 's-test-before' }, 'До'),
+		h('button', { class: 'so-test-before' }, 'До'),
 		h(
 			Popover,
 			{ aria_label: 'Проверка' },
@@ -39,17 +39,17 @@ const page = () =>
 				trigger: ({ triggerAria, triggerDataset }: TTriggerScope) =>
 					h(Button, {
 						text: 'Открыть',
-						class: 's-test-trigger',
+						class: 'so-test-trigger',
 						...triggerAria,
 						...triggerDataset,
 					}),
 				default: () => [
-					h('button', { class: 's-test-first' }, 'Первая'),
-					h('button', { class: 's-test-second' }, 'Вторая'),
+					h('button', { class: 'so-test-first' }, 'Первая'),
+					h('button', { class: 'so-test-second' }, 'Вторая'),
 				],
 			},
 		),
-		h('button', { class: 's-test-after' }, 'После'),
+		h('button', { class: 'so-test-after' }, 'После'),
 	])
 
 /** Разметка на странице, корень объявлен плагинам: `TElementPlugin` ждёт кадр. */
@@ -79,8 +79,8 @@ const boxOf = (selector: string): DOMRect => {
 	return element.getBoundingClientRect()
 }
 
-const trigger = () => find('.s-test-trigger')
-const panel = () => find('.s-popover__panel')
+const trigger = () => find('.so-test-trigger')
+const panel = () => find('.so-popover__panel')
 const isOpen = () => getComputedStyle(panel()).display !== 'none'
 const active = () => document.activeElement
 
@@ -91,7 +91,7 @@ const shiftTab = () => userEvent.keyboard('{Shift>}{Tab}{/Shift}')
 /** Открыть кликом и дождаться, пока фокус уйдёт в панель. */
 const open = async () => {
 	await userEvent.click(trigger())
-	await expect.poll(active).toBe(find('.s-test-first'))
+	await expect.poll(active).toBe(find('.so-test-first'))
 }
 
 beforeEach(() => {
@@ -115,7 +115,7 @@ describe('открытие', () => {
 		await show()
 		await open()
 
-		const anchor = find('.s-popover').getBoundingClientRect()
+		const anchor = find('.so-popover').getBoundingClientRect()
 		const box = panel().getBoundingClientRect()
 
 		expect(Math.round(box.top - anchor.bottom)).toBe(8)
@@ -141,8 +141,8 @@ describe('открытие', () => {
 		await show()
 		await open()
 
-		const button = boxOf('.s-popover__close')
-		const icon = boxOf('.s-popover__close .s-icon')
+		const button = boxOf('.so-popover__close')
+		const icon = boxOf('.so-popover__close .so-icon')
 
 		expect(icon.width).toBeLessThan(button.width)
 		expect(icon.left + icon.width / 2).toBeCloseTo(button.left + button.width / 2, 0)
@@ -156,13 +156,13 @@ describe('Tab: панель стоит в порядке сразу за три�
 		await open()
 
 		await tab()
-		expect(active()).toBe(find('.s-test-second'))
+		expect(active()).toBe(find('.so-test-second'))
 
 		await tab()
-		expect(active()).toBe(find('.s-popover__close'))
+		expect(active()).toBe(find('.so-popover__close'))
 
 		await tab()
-		expect(active()).toBe(find('.s-test-after'))
+		expect(active()).toBe(find('.so-test-after'))
 		await expect.poll(isOpen).toBe(false)
 	})
 
@@ -175,7 +175,7 @@ describe('Tab: панель стоит в порядке сразу за три�
 		expect(isOpen()).toBe(true)
 
 		await tab()
-		expect(active()).toBe(find('.s-test-first'))
+		expect(active()).toBe(find('.so-test-first'))
 	})
 
 	it('Shift+Tab с триггера уходит назад по странице и закрывает панель', async () => {
@@ -185,19 +185,19 @@ describe('Tab: панель стоит в порядке сразу за три�
 		await shiftTab()
 		await shiftTab()
 
-		expect(active()).toBe(find('.s-test-before'))
+		expect(active()).toBe(find('.so-test-before'))
 		await expect.poll(isOpen).toBe(false)
 	})
 
 	it('закрытая панель в порядке Tab не участвует', async () => {
 		await show()
 
-		find('.s-test-before').focus()
+		find('.so-test-before').focus()
 		await tab()
 		expect(active()).toBe(trigger())
 
 		await tab()
-		expect(active()).toBe(find('.s-test-after'))
+		expect(active()).toBe(find('.so-test-after'))
 	})
 })
 
@@ -214,7 +214,7 @@ describe('закрытие и возврат фокуса', () => {
 	it('крестик закрывает и возвращает фокус на триггер', async () => {
 		await show()
 		await open()
-		await userEvent.click(find('.s-popover__close'))
+		await userEvent.click(find('.so-popover__close'))
 
 		await expect.poll(isOpen).toBe(false)
 		expect(active()).toBe(trigger())
@@ -223,10 +223,10 @@ describe('закрытие и возврат фокуса', () => {
 	it('клик мимо закрывает, фокус остаётся там, куда нажали', async () => {
 		await show()
 		await open()
-		await userEvent.click(find('.s-test-after'))
+		await userEvent.click(find('.so-test-after'))
 
 		await expect.poll(isOpen).toBe(false)
-		expect(active()).toBe(find('.s-test-after'))
+		expect(active()).toBe(find('.so-test-after'))
 	})
 })
 

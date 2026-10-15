@@ -164,7 +164,7 @@ async function selectedAfterTwoClicks(row: DOMWrapper<Element>): Promise<number[
 	const stages = stagesOf(row)
 
 	for (const stage of stages) {
-		const items = stage.findAll('.s-list-box-item .s-button')
+		const items = stage.findAll('.so-list-box-item .so-button')
 
 		await items[0].trigger('click')
 		await items[1].trigger('click')
@@ -173,12 +173,12 @@ async function selectedAfterTwoClicks(row: DOMWrapper<Element>): Promise<number[
 	await nextTick()
 	await nextFrame()
 
-	return stages.map((stage) => stage.findAll('.s-list-box-item[data-selected="true"]').length)
+	return stages.map((stage) => stage.findAll('.so-list-box-item[data-selected="true"]').length)
 }
 
 /** Имя кнопки в каждой колонке строки. */
 const ariaLabels = (row: DOMWrapper<Element>) =>
-	row.findAll('.pg-col__stage .s-button').map((button) => button.attributes('aria-label'))
+	row.findAll('.pg-col__stage .so-button').map((button) => button.attributes('aria-label'))
 
 /**
  * Панели окон строки по колонкам. Окно телепортировано в `body` из корня хоста,
@@ -190,17 +190,17 @@ async function dialogPanels(row: DOMWrapper<Element>): Promise<HTMLElement[]> {
 	const panels: HTMLElement[] = []
 
 	for (const stage of stagesOf(row)) {
-		await stage.get('.s-button').trigger('click')
+		await stage.get('.so-button').trigger('click')
 		await nextTick()
 
-		const open = [...document.querySelectorAll('.s-dialog')].filter(
+		const open = [...document.querySelectorAll('.so-dialog')].filter(
 			(panel): panel is HTMLElement =>
 				panel instanceof HTMLElement && panel.style.display !== 'none',
 		)
 
 		if (open.length !== 1) throw new Error(`открытых окон ${open.length}, а не одно`)
 
-		const cancel = [...open[0].querySelectorAll('.s-button')].find(
+		const cancel = [...open[0].querySelectorAll('.so-button')].find(
 			(button) => button.textContent?.trim() === 'Отмена',
 		)
 
@@ -306,11 +306,11 @@ describe('превью tabs', () => {
 		expect(stages.length).toBeGreaterThan(0)
 
 		for (const stage of stages) {
-			const list = stage.find('.s-tabs__list')
+			const list = stage.find('.so-tabs__list')
 
 			expect(list.exists()).toBe(true)
-			expect(list.findAll('.s-tabs__panel')).toHaveLength(0)
-			expect(stage.findAll('.s-tabs__panel').length).toBeGreaterThan(0)
+			expect(list.findAll('.so-tabs__panel')).toHaveLength(0)
+			expect(stage.findAll('.so-tabs__panel').length).toBeGreaterThan(0)
 		}
 	})
 })
@@ -356,7 +356,7 @@ describe('переход между компонентами', () => {
 			const roots = previewRoots(wrapper)
 
 			expect(roots.length).toBeGreaterThan(0)
-			expect(roots.every((root) => root.classList.contains('s-list-box'))).toBe(true)
+			expect(roots.every((root) => root.classList.contains('so-list-box'))).toBe(true)
 		},
 	)
 })
@@ -443,7 +443,7 @@ describe('свойства коллекции', () => {
 
 			const multiselectable = () =>
 				row
-					.findAll('.s-calendar__grid')
+					.findAll('.so-calendar__grid')
 					.map((grid) => grid.attributes('aria-multiselectable'))
 
 			expect(multiselectable()).toEqual([undefined, undefined])
@@ -525,8 +525,8 @@ describe('пресет строки', () => {
 			expect(stages).toHaveLength(2)
 
 			for (const stage of stages) {
-				expect(stage.find('.s-select__tags').exists()).toBe(true)
-				expect(stage.find('.s-select__field input').attributes('readonly')).toBeUndefined()
+				expect(stage.find('.so-select__tags').exists()).toBe(true)
+				expect(stage.find('.so-select__field input').attributes('readonly')).toBeUndefined()
 			}
 		},
 	)
@@ -535,7 +535,7 @@ describe('пресет строки', () => {
 		const wrapper = await openPage(framework, 'select')
 
 		for (const stage of stagesOf(rowOf(wrapper, 'closeOnSelect'))) {
-			expect(stage.find('.s-select__tags').exists()).toBe(false)
+			expect(stage.find('.so-select__tags').exists()).toBe(false)
 		}
 	})
 
@@ -650,7 +650,7 @@ describe('очищенное поле', () => {
 			const row = rowOf(wrapper, 'max')
 			const scales = () =>
 				row
-					.findAll('.pg-col__stage .s-progress-linear')
+					.findAll('.pg-col__stage .so-progress-linear')
 					.map(
 						(bar) =>
 							`${bar.attributes('aria-valuenow')} из ${bar.attributes('aria-valuemax')}`,

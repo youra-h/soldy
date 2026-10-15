@@ -22,7 +22,7 @@ export default class TSwitch
 	extends TInputControl<boolean | undefined, ISwitchProps, TSwitchEvents>
 	implements ISwitch
 {
-	static override baseClass = 's-switch'
+	static override baseClass = 'so-switch'
 
 	static defaultValues: typeof TInputControl.defaultValues & TDefaultValues<ISwitchProps> = {
 		...TInputControl.defaultValues,

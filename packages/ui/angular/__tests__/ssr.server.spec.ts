@@ -101,13 +101,13 @@ describe('серверный рендер', () => {
 		expect([...button.classList]).toEqual(
 			expect.arrayContaining([
 				'app-save',
-				's-button',
-				's-button--size-lg',
-				's-button--variant-brand',
+				'so-button',
+				'so-button--size-lg',
+				'so-button--variant-brand',
 			]),
 		)
 		expect(button.getAttribute('data-disabled')).toBe('false')
-		expect(button.querySelector('.s-button__text')?.textContent).toBe('Сохранить')
+		expect(button.querySelector('.so-button__text')?.textContent).toBe('Сохранить')
 		// Атрибут с именем входа — запись входа, а не атрибут корня, и на сервере
 		expect(button.hasAttribute('text')).toBe(false)
 		expect(button.hasAttribute('size')).toBe(false)
@@ -140,7 +140,7 @@ describe('серверный рендер', () => {
 		const svg = find(page, 'svg[so-icon]', SVGSVGElement)
 		const source = getIcon('check')
 
-		expect(svg.getAttribute('class')).toBe('s-icon s-icon--size-normal')
+		expect(svg.getAttribute('class')).toBe('so-icon so-icon--size-normal')
 		expect(svg.getAttribute('aria-hidden')).toBe('true')
 		expect(svg.style.width).toBe('20px')
 		expect(svg.getAttribute('viewBox')).toBe(source.viewBox)
@@ -161,7 +161,7 @@ describe('серверный рендер', () => {
 		const skeleton = find(page, '[so-skeleton]', HTMLDivElement)
 
 		expect(
-			skeleton.querySelector('.s-skeleton__placeholder')?.getAttribute('aria-hidden'),
+			skeleton.querySelector('.so-skeleton__placeholder')?.getAttribute('aria-hidden'),
 		).toBe('true')
 		expect(skeleton.getAttribute('aria-busy')).toBe('true')
 		expect(skeleton.querySelector('.content')?.textContent).toBe('Панель')
@@ -269,9 +269,9 @@ describe('гидратация', () => {
 		expect(find(document, 'svg[so-icon]', SVGSVGElement)).toBe(svg)
 		expect(find(document, '[so-skeleton]', HTMLDivElement)).toBe(skeleton)
 		expect(find(document, '.layer', HTMLDivElement)).toBe(layer)
-		expect(button.querySelector('.s-button__text')?.textContent).toBe('Сохранить')
+		expect(button.querySelector('.so-button__text')?.textContent).toBe('Сохранить')
 		expect(svg.getAttribute('viewBox')).toBe(getIcon('check').viewBox)
-		expect(layer.querySelector('.inner .s-button__text')?.textContent).toBe('Слой')
+		expect(layer.querySelector('.inner .so-button__text')?.textContent).toBe('Слой')
 		expect(error).not.toHaveBeenCalled()
 		expect(warn).not.toHaveBeenCalled()
 	})
@@ -333,12 +333,12 @@ describe('после гидратации', () => {
 		const { app, page } = await hydrated()
 		const button = find(document, 'button[so-button]', HTMLButtonElement)
 
-		expect(button.classList).toContain('s-button--size-normal')
+		expect(button.classList).toContain('so-button--size-normal')
 
 		page.size.set('xl')
 		await app.whenStable()
 
-		expect([...button.classList]).toEqual(['s-button', 's-button--size-xl'])
+		expect([...button.classList]).toEqual(['so-button', 'so-button--size-xl'])
 	})
 
 	it('Button: включение <div so-button disabled> снимает aria-disabled и возвращает tabindex', async () => {
@@ -389,7 +389,7 @@ describe('после гидратации', () => {
 		expect(layer.parentElement).toBe(document.body)
 		expect(layer.style.display).toBe('')
 		expect(layer.querySelector('b')?.textContent).toBe('Слой')
-		expect(layer.classList).toContain('s-frame')
+		expect(layer.classList).toContain('so-frame')
 		expect(layer.getAttribute('data-open')).toBe('true')
 		expect(layer.getAttribute('data-layer')).not.toBeNull()
 		expect(layer.style.zIndex).toBe(layer.getAttribute('data-layer'))

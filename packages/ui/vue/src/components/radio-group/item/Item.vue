@@ -33,7 +33,7 @@ export default { ...SetupRadioGroupItem }
 			селектором от него. Визуально радио скрыто темой.
 		-->
 		<input
-			class="s-radio-group-item__input"
+			class="so-radio-group-item__input"
 			type="radio"
 			:name="name"
 			:value="value"
@@ -48,8 +48,8 @@ export default { ...SetupRadioGroupItem }
 			неотмеченного тема сжимает её в ноль, у вида `ring` прячет и
 			утолщает кольцо.
 		-->
-		<span class="s-radio-group-item__control">
-			<span class="s-radio-group-item__indicator"></span>
+		<span class="so-radio-group-item__control">
+			<span class="so-radio-group-item__indicator"></span>
 		</span>
 		<!--
 			Подпись — только слот: текста у радио нет, оно голый контрол, как
@@ -58,6 +58,6 @@ export default { ...SetupRadioGroupItem }
 			вокруг слота нет пробельного текста. Scope — отметка радио
 			(`active`), как у содержимого таба.
 		-->
-		<span class="s-radio-group-item__text"><slot :active="active" /></span>
+		<span class="so-radio-group-item__text"><slot :active="active" /></span>
 	</component>
 </template>

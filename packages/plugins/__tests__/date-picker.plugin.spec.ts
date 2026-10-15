@@ -51,10 +51,10 @@ function nodeOf(selector: string): HTMLElement {
 
 /** Календарь панели: кнопки листания до сетки, остановка сетки — день с `tabindex="0"`. */
 const CALENDAR = `
-	<div class="s-calendar">
-		<button class="s-calendar__prev">Назад</button>
-		<button class="s-calendar__next">Вперёд</button>
-		<table class="s-calendar__grid">
+	<div class="so-calendar">
+		<button class="so-calendar__prev">Назад</button>
+		<button class="so-calendar__next">Вперёд</button>
+		<table class="so-calendar__grid">
 			<tbody>
 				<tr>
 					<td class="day-1" tabindex="-1">1</td>
@@ -78,7 +78,7 @@ async function setup(props: Partial<IDatePickerProps> = {}, content = CALENDAR) 
 
 	root.innerHTML =
 		'<span class="part" tabindex="0">mm</span>' +
-		'<button class="s-date-picker__trigger">Календарь</button>'
+		'<button class="so-date-picker__trigger">Календарь</button>'
 	document.body.appendChild(root)
 	document.body.insertAdjacentHTML('beforeend', '<input class="outside" />')
 
@@ -177,7 +177,7 @@ describe('фокус панели', () => {
 		const forward = press('Tab')
 
 		expect(forward.defaultPrevented).toBe(true)
-		expect(document.activeElement).toBe(nodeOf('.s-calendar__prev'))
+		expect(document.activeElement).toBe(nodeOf('.so-calendar__prev'))
 
 		const back = press('Tab', { shiftKey: true })
 
@@ -225,7 +225,7 @@ describe('фокус панели', () => {
 		await nextFrame()
 		press('Escape')
 
-		expect(document.activeElement).toBe(nodeOf('.s-date-picker__trigger'))
+		expect(document.activeElement).toBe(nodeOf('.so-date-picker__trigger'))
 	})
 
 	it('нажатие мимо закрывает, фокус не возвращает и mousedown не гасит', async () => {
@@ -253,7 +253,7 @@ describe('фокус панели', () => {
 describe('что открывает панель', () => {
 	it('клик по кнопке календаря — тумблер', async () => {
 		const { owner } = await setup()
-		const trigger = nodeOf('.s-date-picker__trigger')
+		const trigger = nodeOf('.so-date-picker__trigger')
 
 		trigger.click()
 		expect(owner.open).toBe(true)

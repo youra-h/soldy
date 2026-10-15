@@ -106,7 +106,7 @@ describe('ListBox · серверный рендер', () => {
 
 		expect(attributeOf(rows, 'aria-selected')).toEqual(['false', 'true'])
 		expect(attributeOf(rows, 'tabindex')).toEqual(['-1', '-1'])
-		expect(attributeOf(withClass(body, 's-list-box-item'), 'data-selected')).toEqual([
+		expect(attributeOf(withClass(body, 'so-list-box-item'), 'data-selected')).toEqual([
 			'false',
 			'true',
 		])
@@ -168,8 +168,8 @@ describe('Accordion · серверный рендер', () => {
 	/** Заголовки и панели секций. */
 	function partsOf(body: string) {
 		return {
-			heads: withClass(body, 's-accordion-item__header'),
-			bodies: withClass(body, 's-accordion-item__content'),
+			heads: withClass(body, 'so-accordion-item__header'),
+			bodies: withClass(body, 'so-accordion-item__content'),
 		}
 	}
 
@@ -267,8 +267,8 @@ describe('id и name — от $props.id()', () => {
 		return {
 			tabs: attributeOf(tagsWith(body, 'role', 'tab'), 'id'),
 			panel: attributeOf(tagsWith(body, 'role', 'tabpanel'), 'id'),
-			heads: attributeOf(withClass(body, 's-accordion-item__header'), 'id'),
-			bodies: attributeOf(withClass(body, 's-accordion-item__content'), 'id'),
+			heads: attributeOf(withClass(body, 'so-accordion-item__header'), 'id'),
+			bodies: attributeOf(withClass(body, 'so-accordion-item__content'), 'id'),
 			names: attributeOf(tagsWith(body, 'type', 'radio'), 'name'),
 		}
 	}
@@ -290,12 +290,12 @@ describe('id и name — от $props.id()', () => {
 		expect(new Set(ids.names).size).toBe(1)
 	})
 
-	/** Счётчик набора даёт `s-<n>`: им набор берёт, когда адаптер id монтирования не передал. */
+	/** Счётчик набора даёт `so-<n>`: им набор берёт, когда адаптер id монтирования не передал. */
 	it('ни один id и name не от счётчика набора', () => {
 		const ids = idsOf(page())
 
 		for (const id of [...ids.tabs, ...ids.panel, ...ids.heads, ...ids.bodies, ...ids.names]) {
-			expect(id).not.toMatch(/^s-\d+-/)
+			expect(id).not.toMatch(/^so-\d+-/)
 		}
 	})
 })

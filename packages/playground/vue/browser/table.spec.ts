@@ -91,10 +91,10 @@ async function mount(
 }
 
 /** Заголовки колонок шапки — по порядку. */
-const headers = (): HTMLElement[] => [...document.querySelectorAll<HTMLElement>('.s-table-column')]
+const headers = (): HTMLElement[] => [...document.querySelectorAll<HTMLElement>('.so-table-column')]
 
 /** Строки тела — по порядку. */
-const rows = (): HTMLElement[] => [...document.querySelectorAll<HTMLElement>('.s-table-row')]
+const rows = (): HTMLElement[] => [...document.querySelectorAll<HTMLElement>('.so-table-row')]
 
 /**
  * Коробка текста узла — не узла: подпись в кнопке и значение в ячейке стоят в
@@ -112,7 +112,7 @@ function textBox(element: Element): DOMRect {
 const width = (element: Element) => element.getBoundingClientRect().width
 
 /** Окно таблицы — узел вокруг неё, который прокручивается вбок. */
-const viewport = () => find('.s-table__viewport')
+const viewport = () => find('.so-table__viewport')
 
 /**
  * Указатель в точку страницы. Наводится на `body`: точка протяжки лежит за
@@ -143,7 +143,7 @@ function columnOf(engine: TTableCollection, field: string): ITableColumn {
 }
 
 /** Полоса ручки в заголовке. */
-const resizerOf = (header: Element) => find('.s-table-column__resizer', header)
+const resizerOf = (header: Element) => find('.so-table-column__resizer', header)
 
 /** Поле ручки в заголовке. */
 function fieldOf(header: Element): HTMLInputElement {
@@ -187,7 +187,7 @@ describe('ширина колонок', () => {
 		await mount(engineOf())
 
 		const [name, city, age] = headers()
-		const table = find('.s-table')
+		const table = find('.so-table')
 
 		await expect.poll(() => name.dataset.sized).toBe('true')
 
@@ -201,7 +201,7 @@ describe('ширина колонок', () => {
 		await mount(engineOf(), 200)
 
 		const [name, city] = headers()
-		const table = find('.s-table')
+		const table = find('.so-table')
 
 		await expect.poll(() => width(name)).toBe(160)
 
@@ -228,7 +228,7 @@ describe('ширина колонок', () => {
 
 		expect(name.dataset.sized).toBe('false')
 		expect(width(name)).toBeGreaterThanOrEqual(strut)
-		expect(find('.s-table').hasAttribute('data-overflow')).toBe(false)
+		expect(find('.so-table').hasAttribute('data-overflow')).toBe(false)
 	})
 })
 
@@ -269,7 +269,7 @@ describe('раскладка колонок', () => {
 	it('none — таблица шириной в сумму ширин по умолчанию, хоть место и шире', async () => {
 		await mountIn(resizeEngine([NAME_FLEX, CITY_FLEX]), ref(400), { columnFit: 'none' })
 
-		const table = find('.s-table')
+		const table = find('.so-table')
 
 		await expect.poll(() => width(table)).toBe(320)
 
@@ -286,7 +286,7 @@ describe('раскладка колонок', () => {
 
 		await mountIn(engine, ref(400))
 
-		const table = find('.s-table')
+		const table = find('.so-table')
 
 		await expect.poll(() => width(table)).toBe(330)
 
@@ -298,7 +298,7 @@ describe('раскладка колонок', () => {
 
 		await mountIn(resizeEngine([NAME_FLEX, CITY_FLEX]), place, { columnFit: 'contain' })
 
-		const table = find('.s-table')
+		const table = find('.so-table')
 
 		await expect.poll(() => headers().map(width)).toEqual([200, 200])
 		expect(Math.abs(width(table) - 400)).toBeLessThanOrEqual(EPSILON)
@@ -323,8 +323,8 @@ describe('раскладка колонок', () => {
 
 		await mountIn(engine, ref(400))
 
-		const table = find('.s-table')
-		const select = find('.s-table__select')
+		const table = find('.so-table')
+		const select = find('.so-table__select')
 		const columns = () => headers().reduce((sum, header) => sum + width(header), 0)
 
 		await expect.poll(() => headers()[0].dataset.sized).toBe('true')
@@ -349,7 +349,7 @@ describe('раскладка колонок', () => {
 		render(
 			defineComponent({
 				render: () =>
-					h('div', { class: 's-test-scroll', style: 'width: 300px; overflow: auto' }, [
+					h('div', { class: 'so-test-scroll', style: 'width: 300px; overflow: auto' }, [
 						h(Table, { engine, aria_label: 'Сотрудники' }),
 					]),
 			}),
@@ -358,12 +358,12 @@ describe('раскладка колонок', () => {
 
 		const [, city] = headers()
 
-		await expect.poll(() => city.querySelector('.s-table-column__resizer')).not.toBeNull()
+		await expect.poll(() => city.querySelector('.so-table-column__resizer')).not.toBeNull()
 		await drag(city, 140)
 
-		const scroller = find('.s-test-scroll')
+		const scroller = find('.so-test-scroll')
 
-		await expect.poll(() => find('.s-table').dataset.overflow).toBe('true')
+		await expect.poll(() => find('.so-table').dataset.overflow).toBe('true')
 		expect(width(city)).toBe(240)
 		expect(style(viewport()).overflowX).toBe('auto')
 		expect(viewport().scrollWidth).toBeGreaterThan(viewport().clientWidth)
@@ -380,16 +380,16 @@ describe('раскладка колонок', () => {
 		render(
 			defineComponent({
 				render: () =>
-					h('div', { class: 's-test-scroll', style: 'width: 300px; overflow: auto' }, [
+					h('div', { class: 'so-test-scroll', style: 'width: 300px; overflow: auto' }, [
 						h(Table, { engine, stickyHead: true, aria_label: 'Сотрудники' }),
 					]),
 			}),
 		)
 		await new Promise((resolve) => requestAnimationFrame(resolve))
 
-		const scroller = find('.s-test-scroll')
+		const scroller = find('.so-test-scroll')
 
-		await expect.poll(() => find('.s-table').dataset.overflow).toBe('true')
+		await expect.poll(() => find('.so-table').dataset.overflow).toBe('true')
 		expect(style(viewport()).overflowX).toBe('visible')
 		expect(scroller.scrollWidth).toBeGreaterThan(scroller.clientWidth)
 	})
@@ -399,7 +399,7 @@ describe('подпись шапки вровень с текстом ячеек'
 	it('колонка по началу: подпись кнопки сортировки — над началом текста ячеек', async () => {
 		await mount(engineOf())
 
-		const header = find('.s-table-column__sort .s-button__text', headers()[0])
+		const header = find('.so-table-column__sort .so-button__text', headers()[0])
 		const cell = rows()[0].querySelector('th')
 
 		if (!cell) throw new Error('заголовка строки нет')
@@ -410,7 +410,7 @@ describe('подпись шапки вровень с текстом ячеек'
 	it('колонка по концу: подпись — над концом чисел', async () => {
 		await mount(engineOf())
 
-		const header = find('.s-table-column__sort .s-button__text', headers()[2])
+		const header = find('.so-table-column__sort .so-button__text', headers()[2])
 		const cell = rows()[0].children[3]
 
 		expect(Math.abs(textBox(header).right - textBox(cell).right)).toBeLessThanOrEqual(EPSILON)
@@ -419,7 +419,7 @@ describe('подпись шапки вровень с текстом ячеек'
 	it('несортируемая колонка: текст заголовка — над текстом ячеек', async () => {
 		await mount(engineOf())
 
-		const header = find('.s-table-column__text', headers()[1])
+		const header = find('.so-table-column__text', headers()[1])
 		const cell = rows()[0].children[2]
 
 		expect(Math.abs(textBox(header).left - textBox(cell).left)).toBeLessThanOrEqual(EPSILON)
@@ -440,18 +440,18 @@ describe('заголовок колонки — ячейкой', () => {
 
 	/** Подпись и стрелка кнопки сортировки в заголовке. */
 	function sortParts(header: Element) {
-		const button = find('.s-table-column__sort', header)
+		const button = find('.so-table-column__sort', header)
 
 		return {
 			button,
-			text: textBox(find('.s-button__text', button)),
-			icon: find('.s-table-column__sort-icon', button).getBoundingClientRect(),
+			text: textBox(find('.so-button__text', button)),
+			icon: find('.so-table-column__sort-icon', button).getBoundingClientRect(),
 		}
 	}
 
 	/** Фон заголовка без указателя на нём — и с указателем посередине. */
 	async function hoverBackground(header: Element): Promise<{ idle: string; hover: string }> {
-		await userEvent.hover(find('.s-test-away'))
+		await userEvent.hover(find('.so-test-away'))
 		await settled(header)
 
 		const idle = style(header).backgroundColor
@@ -469,7 +469,7 @@ describe('заголовок колонки — ячейкой', () => {
 			defineComponent({
 				render: () =>
 					h('div', { style: 'width: 600px' }, [
-						h('div', { class: 's-test-away', style: 'height: 24px' }),
+						h('div', { class: 'so-test-away', style: 'height: 24px' }),
 						h(Table, { engine, disabled, aria_label: 'Сотрудники' }),
 					]),
 			}),
@@ -500,7 +500,7 @@ describe('заголовок колонки — ячейкой', () => {
 				render: () =>
 					h('div', { style: 'width: 600px' }, [
 						h(Table, { engine: engineOf(), aria_label: 'Сотрудники' }),
-						h(Button, { class: 's-test-button', text: 'Кнопка' }),
+						h(Button, { class: 'so-test-button', text: 'Кнопка' }),
 					]),
 			}),
 		)
@@ -508,7 +508,7 @@ describe('заголовок колонки — ячейкой', () => {
 
 		const header = headers()[0]
 		const { button } = sortParts(header)
-		const half = parseFloat(style(find('.s-test-button')).borderTopLeftRadius) / 2
+		const half = parseFloat(style(find('.so-test-button')).borderTopLeftRadius) / 2
 
 		expect(half).toBeGreaterThan(0)
 
@@ -609,7 +609,7 @@ describe('линии строк', () => {
 		await mount(engine)
 
 		const [enabled, disabled] = rows()
-		const cell = disabled.querySelector('.s-table-row__cell')
+		const cell = disabled.querySelector('.so-table-row__cell')
 
 		if (!cell) throw new Error('ячейки нет')
 
@@ -673,7 +673,7 @@ describe('линии строк', () => {
 				defineComponent({
 					render: () =>
 						h('div', [
-							h('div', { class: 's-test-away', style: 'height: 24px' }),
+							h('div', { class: 'so-test-away', style: 'height: 24px' }),
 							...Object.entries(BACKDROPS).map(([name, color]) =>
 								h(
 									'div',
@@ -693,7 +693,7 @@ describe('линии строк', () => {
 			)
 
 			await new Promise((resolve) => requestAnimationFrame(resolve))
-			await userEvent.hover(find('.s-test-away'))
+			await userEvent.hover(find('.so-test-away'))
 			await settled(document.body)
 		}
 
@@ -703,10 +703,10 @@ describe('линии строк', () => {
 
 			return {
 				root,
-				head: find('.s-table__head-row', root),
-				row: find('.s-table-row', root),
-				cell: find('.s-table-row__cell', root),
-				button: find('.s-button--view-outlined', root),
+				head: find('.so-table__head-row', root),
+				row: find('.so-table-row', root),
+				cell: find('.so-table-row__cell', root),
+				button: find('.so-button--view-outlined', root),
 			}
 		}
 
@@ -836,7 +836,7 @@ describe('перестановка колонок', () => {
 
 	/** Ячейки строк — все, по строкам. */
 	const cells = (): HTMLElement[] => [
-		...document.querySelectorAll<HTMLElement>('.s-table-row__cell'),
+		...document.querySelectorAll<HTMLElement>('.so-table-row__cell'),
 	]
 
 	/** Сдвиги, которые идут переходом, — у заголовков и ячеек. */
@@ -925,7 +925,7 @@ describe('перестановка колонок', () => {
 		expect(headers()[1].dataset.landing).toBeUndefined()
 		expect(headers()[0].dataset.shift).toBeUndefined()
 		expect(headers()[1].style.getPropertyValue('--s-table-column-drag')).toBe('')
-		expect(find('.s-table').style.getPropertyValue('--s-table-column-shift')).toBe('')
+		expect(find('.so-table').style.getPropertyValue('--s-table-column-shift')).toBe('')
 	})
 
 	/**
@@ -941,8 +941,8 @@ describe('перестановка колонок', () => {
 		await laidOut()
 
 		const [name, city] = headers()
-		const table = find('.s-table')
-		const cell = () => find('.s-table-row__cell')
+		const table = find('.so-table')
+		const cell = () => find('.so-table-row__cell')
 		const rest = { cursor: style(cell()).cursor, select: style(cell()).userSelect }
 
 		expect(rest.cursor).not.toBe('grabbing')
@@ -1011,7 +1011,7 @@ describe('перестановка колонок', () => {
 			await mountWith(engine, { reorderPreview: preview })
 			await laidOut()
 
-			const root = find('.s-table')
+			const root = find('.so-table')
 			const nodes = headers()
 			const before = nodes.map(left)
 			const widths = nodes.map(width)
@@ -1046,7 +1046,7 @@ describe('перестановка колонок', () => {
 					const { target } = event
 
 					if (event.propertyName !== 'translate' || !(target instanceof Element)) return
-					if (!target.matches('.s-table-column, .s-table-row__cell')) return
+					if (!target.matches('.so-table-column, .so-table-row__cell')) return
 
 					runs.push(`${target.className} «${target.textContent?.trim()}»`)
 				})
@@ -1128,7 +1128,7 @@ describe('перестановка колонок', () => {
 			expect(near([left(city), left(age)], before)).toBe(true)
 			expect(style(city).translate).toBe('none')
 			expect(runs).not.toContain('translate')
-			expect(find('.s-table').style.getPropertyValue('--s-table-column-shift')).toBe('')
+			expect(find('.so-table').style.getPropertyValue('--s-table-column-shift')).toBe('')
 		} finally {
 			await commands.mouseUp()
 		}
@@ -1187,7 +1187,7 @@ describe('перестановка колонок', () => {
 		await mountWith(engine, { reorderPreview: 'column' })
 		await laidOut()
 
-		const root = find('.s-table')
+		const root = find('.so-table')
 		// Ни сдвига, ни объявленного перехода сдвига, ни идущего перехода
 		const still = () =>
 			moving().length === 0 &&
@@ -1392,8 +1392,8 @@ describe('перестановка колонок', () => {
 	it('шапка поднята над полем чекбокса строки', async () => {
 		await mount(engineOf(), PLACE)
 
-		const head = find('.s-table__head')
-		const field = find('.s-table-row__select input')
+		const head = find('.so-table__head')
+		const field = find('.so-table-row__select input')
 
 		expect(style(head).position).not.toBe('static')
 		expect(Number(style(head).zIndex)).toBeGreaterThan(Number(style(field).zIndex))
@@ -1425,7 +1425,7 @@ describe('перестановка колонок', () => {
 
 		const sortable = headers()[1]
 
-		await userEvent.click(find('.s-table-column__sort', sortable))
+		await userEvent.click(find('.so-table-column__sort', sortable))
 
 		await expect.poll(() => sortable.dataset.sort).toBe('asc')
 		expect(fieldsOf(engine)).toEqual(['city', 'name', 'age'])
@@ -1436,7 +1436,7 @@ describe('перестановка колонок', () => {
 
 		await mount(engine, PLACE)
 
-		const button = find('.s-table-column__sort', headers()[0])
+		const button = find('.so-table-column__sort', headers()[0])
 
 		button.focus()
 		await userEvent.keyboard('{Control>}{Shift>}{ArrowRight}{/Shift}{/Control}')
@@ -1451,7 +1451,7 @@ describe('перестановка колонок', () => {
 
 		await mount(engine, PLACE, 'rtl')
 
-		find('.s-table-column__sort', headers()[0]).focus()
+		find('.so-table-column__sort', headers()[0]).focus()
 		await userEvent.keyboard('{Control>}{Shift>}{ArrowLeft}{/Shift}{/Control}')
 
 		expect(fieldsOf(engine)).toEqual(['city', 'name', 'age'])
@@ -1475,9 +1475,9 @@ describe('сетка', () => {
 			defineComponent({
 				render: () =>
 					h('div', { style: 'width: 400px' }, [
-						h('button', { class: 's-test-before' }, 'до'),
+						h('button', { class: 'so-test-before' }, 'до'),
 						h(Table, { engine, aria_label: 'Сотрудники' }),
-						h('button', { class: 's-test-after' }, 'после'),
+						h('button', { class: 'so-test-after' }, 'после'),
 					]),
 			}),
 		)
@@ -1490,7 +1490,7 @@ describe('сетка', () => {
 	it('Tab — на ячейку, стрелки — по ячейкам, Tab — за таблицу мимо полей ячеек', async () => {
 		await mountGrid()
 
-		find('.s-test-before').focus()
+		find('.so-test-before').focus()
 		await userEvent.keyboard('{Tab}')
 
 		// Выбор включили после колонок — фокус сетки на первой из них
@@ -1502,7 +1502,7 @@ describe('сетка', () => {
 
 		await userEvent.keyboard('{Tab}')
 
-		expect(document.activeElement).toBe(find('.s-test-after'))
+		expect(document.activeElement).toBe(find('.so-test-after'))
 
 		// Shift+Tab — обратно на ту же ячейку: у сетки одна остановка
 		await userEvent.keyboard('{Shift>}{Tab}{/Shift}')
@@ -1513,7 +1513,7 @@ describe('сетка', () => {
 	it('ячейка под фокусом с клавиатуры — в кольце внутри своих границ', async () => {
 		await mountGrid()
 
-		find('.s-test-before').focus()
+		find('.so-test-before').focus()
 		await userEvent.keyboard('{Tab}{ArrowDown}')
 
 		const cell = rows()[0].children[1]
@@ -1527,7 +1527,7 @@ describe('сетка', () => {
 		const engine = await mountGrid()
 		const [first, second] = rows()
 
-		await userEvent.hover(find('.s-test-before'))
+		await userEvent.hover(find('.so-test-before'))
 		await settled(document.body)
 
 		expect(opacity(style(second).backgroundColor)).toBe(0)
@@ -1543,7 +1543,7 @@ describe('сетка', () => {
 		expect(second.getAttribute('aria-selected')).toBe('true')
 
 		// Фокус встал на нажатую ячейку — её строка подсвечена и без указателя
-		await userEvent.hover(find('.s-test-before'))
+		await userEvent.hover(find('.so-test-before'))
 		await settled(document.body)
 
 		expect(second.contains(document.activeElement)).toBe(true)
@@ -1645,7 +1645,7 @@ describe('ручка ширины', () => {
 
 		// До замера окна ширину решает тема, и ручка ждёт раскладки ядра —
 		// кадром позже наблюдателя
-		await expect.poll(() => header.querySelector('.s-table-column__resizer')).not.toBeNull()
+		await expect.poll(() => header.querySelector('.so-table-column__resizer')).not.toBeNull()
 
 		const before = width(header)
 
@@ -1704,7 +1704,7 @@ describe('ручка ширины', () => {
 				await expect.poll(() => ghostOf(name).shift).toBe('40px')
 				expect(ghostOf(name).shown).toBe(true)
 				// От верха заголовка до низа таблицы
-				const table = find('.s-table').getBoundingClientRect()
+				const table = find('.so-table').getBoundingClientRect()
 
 				expect(
 					Math.abs(
@@ -1834,7 +1834,7 @@ describe('ручка ширины', () => {
 
 		const [first, second] = headers()
 
-		await expect.poll(() => second.querySelector('.s-table-column__resizer')).not.toBeNull()
+		await expect.poll(() => second.querySelector('.so-table-column__resizer')).not.toBeNull()
 
 		const before = second.getBoundingClientRect()
 
@@ -1885,7 +1885,7 @@ describe('ручка ширины', () => {
 			expect(columnOf(engine, 'name').getProps().width).toBeUndefined()
 			expect(header.dataset.sized).toBe('true')
 			// Все гибкие упёрлись в границы — таблица уже места
-			expect(width(find('.s-table'))).toBe(360)
+			expect(width(find('.so-table'))).toBe(360)
 		})
 
 		it('первая стрелка к сужению — ровно шаг, без рывка', async () => {
@@ -1922,7 +1922,7 @@ describe('ручка ширины', () => {
 	it('ширина у всех колонок — таблица шириной в их сумму, соседи на месте', async () => {
 		await mount(resizeEngine([NAME_RESIZE, { ...CITY_RESIZE, width: 150 }, AGE_RESIZE]), PLACE)
 
-		const table = find('.s-table')
+		const table = find('.so-table')
 		const [name, city, age] = headers()
 
 		// Излишек места колонкам не раздаётся: таблица — сумма их ширин
@@ -1991,14 +1991,14 @@ describe('ручка ширины', () => {
 		expect(page.getByRole('slider', { name: 'Имя', exact: true }).query()).toBe(fieldOf(name))
 		// Сортирует по-прежнему кнопка с тем же именем
 		expect(page.getByRole('button', { name: 'Имя', exact: true }).query()).toBe(
-			find('.s-table-column__sort', name),
+			find('.so-table-column__sort', name),
 		)
 	})
 
 	it('полоса — зона захвата в 14 px; у последней колонки — в таблице', async () => {
 		await mount(resizeEngine(ALL), PLACE)
 
-		const table = find('.s-table').getBoundingClientRect()
+		const table = find('.so-table').getBoundingClientRect()
 		const [name, , age] = headers()
 
 		expect(Math.abs(width(resizerOf(name)) - 14)).toBeLessThanOrEqual(EPSILON)
@@ -2023,7 +2023,7 @@ describe('ручка ширины', () => {
 		await mount(resizeEngine(ALL), PLACE)
 
 		const [name, , age] = headers()
-		const button = find('.s-table-column__sort', name)
+		const button = find('.so-table-column__sort', name)
 		const edge = name.getBoundingClientRect()
 		const y = edge.top + edge.height / 2
 
@@ -2146,8 +2146,8 @@ describe('ручка ширины', () => {
 	it('держат ручку — курсор ручки и без выделения на всей таблице; отпустили — как было', async () => {
 		await mount(resizeEngine(ALL), PLACE)
 
-		const table = find('.s-table')
-		const cell = () => find('.s-table-row__cell')
+		const table = find('.so-table')
+		const cell = () => find('.so-table-row__cell')
 		const rest = { cursor: style(cell()).cursor, select: style(cell()).userSelect }
 		const box = resizerOf(headers()[0]).getBoundingClientRect()
 

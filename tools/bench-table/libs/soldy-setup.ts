@@ -45,12 +45,12 @@ export const columns = COLUMNS.map((c) => ({
 	...(resize ? { resizable: true } : {}),
 }))
 export const sel = {
-	selectAll: 'thead .s-table__select input',
-	sort: 'thead .s-table-column__sort',
+	selectAll: 'thead .so-table__select input',
+	sort: 'thead .so-table-column__sort',
 	// Заголовки колонок данных — их берут сценарии перестановки
-	columns: 'thead .s-table-column',
+	columns: 'thead .so-table-column',
 	// Полосы ручек ширины — их тянут сценарии протяжки
-	resizers: 'thead .s-table-column__resizer',
+	resizers: 'thead .so-table-column__resizer',
 }
 // `?mode=none` — таблица без выбора: строка без чекбокса, для сравнения памяти
 export const mode = query.get('mode') === 'none' ? 'none' : 'multiple'

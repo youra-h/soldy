@@ -104,7 +104,7 @@ export function TabsItem(props: TabsItemProps): JSX.Element {
 				<Show when={state.tab_closable === true}>
 					<Button
 						embedded="tabs.close"
-						class="s-tabs-item__close"
+						class="so-tabs-item__close"
 						disabled={state.disabled}
 						size={state.size}
 						{...state.closeAria}

@@ -107,17 +107,17 @@ describe('вход в строгом шаблоне · значение дохо
 
 		const root = buttonRoot(fixture)
 
-		expect(root.querySelector('.s-button__text')?.textContent?.trim()).toBe('Save')
-		expect(root.classList).toContain('s-button--size-xl')
+		expect(root.querySelector('.so-button__text')?.textContent?.trim()).toBe('Save')
+		expect(root.classList).toContain('so-button--size-xl')
 		expect(root.getAttribute('aria-label')).toBe('Сохранить')
 
 		fixture.componentInstance.text.set('Saved')
 		fixture.componentInstance.size.set('sm')
 		fixture.detectChanges()
 
-		expect(root.querySelector('.s-button__text')?.textContent?.trim()).toBe('Saved')
-		expect(root.classList).toContain('s-button--size-sm')
-		expect(root.classList).not.toContain('s-button--size-xl')
+		expect(root.querySelector('.so-button__text')?.textContent?.trim()).toBe('Saved')
+		expect(root.classList).toContain('so-button--size-sm')
+		expect(root.classList).not.toContain('so-button--size-xl')
 	})
 
 	it('ComponentView: [visible] и direction', () => {

@@ -6,13 +6,13 @@ describe('TIcon', () => {
 		const a = new TIcon({ tag: 'a', size: 'xl' })
 		expect(a.tag).toBe('a')
 		expect(a.size).toBe('xl')
-		expect(a.classes.toArray()).toContain('s-icon')
-		expect(a.classes.toArray()).toContain('s-icon--size-xl')
+		expect(a.classes.toArray()).toContain('so-icon')
+		expect(a.classes.toArray()).toContain('so-icon--size-xl')
 
 		const b = new TIcon({ tag: 'b', size: 'lg' })
 		expect(b.tag).toBe('b')
 		expect(b.size).toBe('lg')
-		expect(b.classes.toArray()).toContain('s-icon--size-lg')
+		expect(b.classes.toArray()).toContain('so-icon--size-lg')
 	})
 
 	it('без tag — span: элемент, который знает HTML', () => {
@@ -24,11 +24,11 @@ describe('TIcon', () => {
 
 	it('смена size меняет classes (size modifier)', () => {
 		const icon = new TIcon({ size: 'normal' })
-		expect(icon.classes.toArray()).toContain('s-icon--size-normal')
+		expect(icon.classes.toArray()).toContain('so-icon--size-normal')
 
 		icon.size = 'xl'
-		expect(icon.classes.toArray()).toContain('s-icon--size-xl')
-		expect(icon.classes.toArray()).not.toContain('s-icon--size-normal')
+		expect(icon.classes.toArray()).toContain('so-icon--size-xl')
+		expect(icon.classes.toArray()).not.toContain('so-icon--size-normal')
 	})
 
 	it('width/height отражаются в getProps/toJSON', () => {

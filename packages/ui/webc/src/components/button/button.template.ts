@@ -18,7 +18,7 @@ export const buttonTemplate: ITemplate<IButton> = {
 	create: (root) => {
 		const text = document.createElement('span')
 
-		text.className = 's-button__text'
+		text.className = 'so-button__text'
 		root.appendChild(text)
 
 		return {

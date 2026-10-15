@@ -1,6 +1,6 @@
 @use './mixins' as mixines;
 @use '../button/mixins' as button;
-.s-tabs {
+.so-tabs {
 	$this: &;
 
 	@apply flex w-full;
@@ -89,15 +89,15 @@
 //
 // Всё, что зависит от модификаторов корня, — вид, его вариант, ориентация и
 // выравнивание (выше), — пишется от своего корня дочерними комбинаторами:
-// свой список (`> .s-tabs__list`), его табы (`> .s-tabs__list > .s-tabs-item`)
-// и своя панель (`> .s-tabs__panel`). Табы бывают вложены — Tabs в панели
+// свой список (`> .so-tabs__list`), его табы (`> .so-tabs__list > .so-tabs-item`)
+// и своя панель (`> .so-tabs__panel`). Табы бывают вложены — Tabs в панели
 // других, — и правило для потомков досталось бы и вложенным: горизонтальные
 // под вертикальными выстраивались столбиком, `contained` под `line` получали
 // линию и полосу, `line` под `outline` — рамки папочных вкладок, а цвета
 // брались от варианта внешних. Сбрасывать у вложенных чужие стили — то же
 // гашение по свойству, что и между видами. Опора — разметка адаптеров:
 // список и панели — дети корня, табы — дети списка.
-$line: ':where(.s-tabs:not(.s-tabs--view-contained, .s-tabs--view-outline))';
+$line: ':where(.so-tabs:not(.so-tabs--view-contained, .so-tabs--view-outline))';
 
 // Полоса под активным табом — `::after` списка по `--active-tab-*`. К новому
 // табу она переезжает так же, как карточка `contained` (`active-tab-move`):
@@ -109,8 +109,8 @@ $line: ':where(.s-tabs:not(.s-tabs--view-contained, .s-tabs--view-outline))';
 // делает без признака переезда.
 #{$line} {
 	// Horizontal list: separator + indicator via ::after (uses --active-tab-pos and --active-tab-size)
-	&.s-tabs--horizontal {
-		> .s-tabs__list {
+	&.so-tabs--horizontal {
+		> .so-tabs__list {
 			@apply relative border-b;
 
 			&::after {
@@ -130,8 +130,8 @@ $line: ':where(.s-tabs:not(.s-tabs--view-contained, .s-tabs--view-outline))';
 	// Сторона логическая: в RTL список встаёт по другую сторону от панели, и
 	// физическая оставила бы линию и полосу на внешнем краю. Место полосы вдоль
 	// списка — сдвиг по вертикали, от направления письма оно не зависит.
-	&.s-tabs--vertical {
-		> .s-tabs__list {
+	&.so-tabs--vertical {
+		> .so-tabs__list {
 			@apply relative border-e;
 
 			&::after {
@@ -147,8 +147,8 @@ $line: ':where(.s-tabs:not(.s-tabs--view-contained, .s-tabs--view-outline))';
 		}
 
 		// Табы в конце ряда: панель — у начала списка
-		&.s-tabs--position-end {
-			> .s-tabs__list {
+		&.so-tabs--position-end {
+			> .so-tabs__list {
 				@apply border-e-0 border-s;
 
 				&::after {
@@ -160,19 +160,19 @@ $line: ':where(.s-tabs:not(.s-tabs--view-contained, .s-tabs--view-outline))';
 
 	@include mixines.tabs-line-variant('neutral');
 
-	&.s-tabs--variant-accent {
+	&.so-tabs--variant-accent {
 		@include mixines.tabs-line-variant('accent');
 	}
 
-	&.s-tabs--variant-positive {
+	&.so-tabs--variant-positive {
 		@include mixines.tabs-line-variant('positive');
 	}
 
-	&.s-tabs--variant-negative {
+	&.so-tabs--variant-negative {
 		@include mixines.tabs-line-variant('negative');
 	}
 
-	&.s-tabs--variant-caution {
+	&.so-tabs--variant-caution {
 		@include mixines.tabs-line-variant('caution');
 	}
 }
@@ -187,13 +187,13 @@ $line: ':where(.s-tabs:not(.s-tabs--view-contained, .s-tabs--view-outline))';
 // новому табу она переезжает переходом (`active-tab-move`), как полоса `line`.
 // Именно `::before`: он стоит в дереве раньше табов, и позиционированные табы
 // ложатся поверх него без `z-index`.
-.s-tabs--view-contained {
+.so-tabs--view-contained {
 	// Отступ карточки от края списка — паддинг списка: по поперечной оси табы
 	// растянуты на весь список, и карточка, отступив на него же, встаёт ровно
 	// на таб. Одно значение на оба места.
 	$inset: calc(var(--spacing) * 1);
 
-	> .s-tabs__list {
+	> .so-tabs__list {
 		// Точка отсчёта: `offset*` таба считаются от ближайшего
 		// позиционированного предка, и карточка встаёт от него же
 		@apply relative gap-1.5;
@@ -204,11 +204,11 @@ $line: ':where(.s-tabs:not(.s-tabs--view-contained, .s-tabs--view-outline))';
 	// Скругление и проявление фона — те же, что у строки-Button. Скругление —
 	// у каждой обёртки: фон таба, с которого ушла статичная карточка, гаснет
 	// переходом и до конца держит углы.
-	> .s-tabs__list > .s-tabs-item {
+	> .so-tabs__list > .so-tabs-item {
 		@apply rounded-md transition-colors duration-200;
 	}
 
-	&:not(.s-tabs--ready-animation) > .s-tabs__list > .s-tabs-item[data-selected='true'] {
+	&:not(.so-tabs--ready-animation) > .so-tabs__list > .so-tabs-item[data-selected='true'] {
 		@include mixines.tabs-contained-card;
 	}
 
@@ -218,19 +218,19 @@ $line: ':where(.s-tabs:not(.s-tabs--view-contained, .s-tabs--view-outline))';
 	// записями, и пересчёт стиля между ними (его требует, например, смена
 	// `tabindex` у таба под фокусом) снял бы псевдоэлемент вместе с переходом —
 	// новый таб получил бы карточку без переезда.
-	&.s-tabs--ready-animation > .s-tabs__list::before {
+	&.so-tabs--ready-animation > .so-tabs__list::before {
 		content: '';
 		@apply invisible absolute pointer-events-none;
 		@include mixines.tabs-contained-card;
 	}
 
-	&.s-tabs--ready-animation > .s-tabs__list:has(> .s-tabs-item[data-selected='true'])::before {
+	&.so-tabs--ready-animation > .so-tabs__list:has(> .so-tabs-item[data-selected='true'])::before {
 		@apply visible;
 	}
 
 	// Место физическое — сдвиг от левого и верхнего края, как `offset*` таба,
 	// — поэтому в RTL знак строки не нужен
-	&.s-tabs--horizontal > .s-tabs__list::before {
+	&.so-tabs--horizontal > .so-tabs__list::before {
 		top: $inset;
 		bottom: $inset;
 		left: 0;
@@ -240,7 +240,7 @@ $line: ':where(.s-tabs:not(.s-tabs--view-contained, .s-tabs--view-outline))';
 		@include mixines.active-tab-move(width);
 	}
 
-	&.s-tabs--vertical > .s-tabs__list::before {
+	&.so-tabs--vertical > .so-tabs__list::before {
 		top: 0;
 		left: $inset;
 		right: $inset;
@@ -252,25 +252,25 @@ $line: ':where(.s-tabs:not(.s-tabs--view-contained, .s-tabs--view-outline))';
 
 	@include mixines.tabs-contained-variant('neutral');
 
-	&.s-tabs--variant-accent {
+	&.so-tabs--variant-accent {
 		@include mixines.tabs-contained-variant('accent');
 	}
 
-	&.s-tabs--variant-positive {
+	&.so-tabs--variant-positive {
 		@include mixines.tabs-contained-variant('positive');
 	}
 
-	&.s-tabs--variant-negative {
+	&.so-tabs--variant-negative {
 		@include mixines.tabs-contained-variant('negative');
 	}
 
-	&.s-tabs--variant-caution {
+	&.so-tabs--variant-caution {
 		@include mixines.tabs-contained-variant('caution');
 	}
 }
 
-.s-tabs--view-outline {
-	> .s-tabs__list {
+.so-tabs--view-outline {
+	> .so-tabs__list {
 		@apply relative gap-1.5;
 
 		&::before,
@@ -279,7 +279,7 @@ $line: ':where(.s-tabs:not(.s-tabs--view-contained, .s-tabs--view-outline))';
 			@apply absolute;
 		}
 
-		> .s-tabs-item {
+		> .so-tabs-item {
 			@apply relative border rounded-t-md rounded-b-none;
 			@apply bg-transparent;
 			@apply border-b-0;
@@ -304,9 +304,9 @@ $line: ':where(.s-tabs:not(.s-tabs--view-contained, .s-tabs--view-outline))';
 		}
 	}
 
-	&.s-tabs--horizontal {
+	&.so-tabs--horizontal {
 		// Структурные стили (не зависят от варианта)
-		> .s-tabs__list {
+		> .so-tabs__list {
 			&::before,
 			&::after {
 				@apply bottom-0 h-px;
@@ -325,15 +325,15 @@ $line: ':where(.s-tabs:not(.s-tabs--view-contained, .s-tabs--view-outline))';
 			}
 		}
 
-		> .s-tabs__list > .s-tabs-item {
+		> .so-tabs__list > .so-tabs-item {
 			@apply rounded-t-md rounded-b-none border-b-0;
 		}
 	}
 
 	// Вертикальные: линия и открытая сторона вкладок — к панели, логическими
 	// сторонами, как у `line`
-	&.s-tabs--vertical {
-		> .s-tabs__list {
+	&.so-tabs--vertical {
+		> .so-tabs__list {
 			&::before,
 			&::after {
 				@apply inset-e-0 w-px h-auto;
@@ -352,18 +352,18 @@ $line: ':where(.s-tabs:not(.s-tabs--view-contained, .s-tabs--view-outline))';
 			}
 		}
 
-		> .s-tabs__list > .s-tabs-item {
+		> .so-tabs__list > .so-tabs-item {
 			@apply rounded-s-md rounded-e-none border-e-0 border-b;
 		}
 
-		&.s-tabs--position-end {
-			> .s-tabs__list {
+		&.so-tabs--position-end {
+			> .so-tabs__list {
 				&::before,
 				&::after {
 					@apply inset-s-0 inset-e-auto;
 				}
 
-				> .s-tabs-item {
+				> .so-tabs-item {
 					@apply rounded-e-md rounded-s-none border-s-0 border-e;
 				}
 			}
@@ -373,24 +373,24 @@ $line: ':where(.s-tabs:not(.s-tabs--view-contained, .s-tabs--view-outline))';
 	// Цветовые варианты
 	@include mixines.tabs-outline-variant('neutral');
 
-	&.s-tabs--variant-accent {
+	&.so-tabs--variant-accent {
 		@include mixines.tabs-outline-variant('accent');
 	}
 
-	&.s-tabs--variant-positive {
+	&.so-tabs--variant-positive {
 		@include mixines.tabs-outline-variant('positive');
 	}
 
-	&.s-tabs--variant-negative {
+	&.so-tabs--variant-negative {
 		@include mixines.tabs-outline-variant('negative');
 	}
 
-	&.s-tabs--variant-caution {
+	&.so-tabs--variant-caution {
 		@include mixines.tabs-outline-variant('caution');
 	}
 }
 
-.s-tabs-item {
+.so-tabs-item {
 	$this: &;
 
 	// Строка таба и кнопка закрытия — соседи в одну линию. Внутри строки
@@ -458,10 +458,10 @@ $line: ':where(.s-tabs:not(.s-tabs--view-contained, .s-tabs--view-outline))';
 // разметка больше не передаёт. Строка — `none`: фона нет ни в каком состоянии,
 // цвет текста красят виды табов выше. Крестик — `plain`. Нулевая
 // специфичность, как у базового вида Button (`button-view`).
-:where(.s-tabs-item > #{mixines.$row}) {
+:where(.so-tabs-item > #{mixines.$row}) {
 	@include button.button-view('none');
 }
 
-:where(.s-tabs-item__close) {
+:where(.so-tabs-item__close) {
 	@include button.button-view('plain');
 }

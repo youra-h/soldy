@@ -57,7 +57,7 @@ const tabs = () =>
 
 /** Подписи колонок календаря по порядку. */
 const weekdays = () =>
-	[...document.querySelectorAll('.s-calendar__weekday')].map((cell) => cell.textContent?.trim())
+	[...document.querySelectorAll('.so-calendar__weekday')].map((cell) => cell.textContent?.trim())
 
 /**
  * Короткие имена недели языка `locale`, с первого дня `first` (2026-09-20 —
@@ -81,13 +81,13 @@ describe('строки библиотеки', () => {
 	it('без провайдера — английские', async () => {
 		await render(tabs)
 
-		expect(find('.s-tabs-item__close').getAttribute('aria-label')).toBe('Close Почта')
+		expect(find('.so-tabs-item__close').getAttribute('aria-label')).toBe('Close Почта')
 	})
 
 	it('локаль провайдера — в разметке с первой отрисовки', async () => {
 		await render(() => h(LocaleProvider, { locale: ruRU }, tabs))
 
-		expect(find('.s-tabs-item__close').getAttribute('aria-label')).toBe('Закрыть Почта')
+		expect(find('.so-tabs-item__close').getAttribute('aria-label')).toBe('Закрыть Почта')
 	})
 
 	it('своя локаль поверх готовой — свои строки, остальное от готовой', async () => {
@@ -95,7 +95,7 @@ describe('строки библиотеки', () => {
 
 		await render(() => h(LocaleProvider, { locale }, tabs))
 
-		expect(find('.s-tabs-item__close').getAttribute('aria-label')).toBe('Убрать «Почта»')
+		expect(find('.so-tabs-item__close').getAttribute('aria-label')).toBe('Убрать «Почта»')
 	})
 
 	it('смена локали провайдера — новое имя крестика без перемонтирования', async () => {
@@ -103,14 +103,14 @@ describe('строки библиотеки', () => {
 
 		await render(() => h(LocaleProvider, { locale: locale.value }, tabs))
 
-		const close = find('.s-tabs-item__close')
+		const close = find('.so-tabs-item__close')
 
 		expect(close.getAttribute('aria-label')).toBe('Close Почта')
 
 		locale.value = ruRU
 		await nextTick()
 
-		expect(find('.s-tabs-item__close')).toBe(close)
+		expect(find('.so-tabs-item__close')).toBe(close)
 		expect(close.getAttribute('aria-label')).toBe('Закрыть Почта')
 
 		locale.value = zhCN
@@ -130,14 +130,14 @@ describe('язык', () => {
 			),
 		)
 
-		const table = find('.s-calendar__grid')
+		const table = find('.so-calendar__grid')
 
 		expect(weekdays()).toEqual(week('en-US', 0))
 
 		locale.value = ruRU
 		await nextTick()
 
-		expect(find('.s-calendar__grid')).toBe(table)
+		expect(find('.so-calendar__grid')).toBe(table)
 		expect(weekdays()).toEqual(week('ru-RU', 1))
 	})
 
@@ -155,20 +155,20 @@ describe('вложенный провайдер', () => {
 		await render(() =>
 			h(LocaleProvider, { locale: ruRU }, () =>
 				h('div', [
-					h('section', { class: 's-test-outer' }, [tabs()]),
+					h('section', { class: 'so-test-outer' }, [tabs()]),
 					h(LocaleProvider, { locale: enUS }, () =>
-						h('section', { class: 's-test-inner' }, [tabs()]),
+						h('section', { class: 'so-test-inner' }, [tabs()]),
 					),
 				]),
 			),
 		)
 
-		expect(find('.s-tabs-item__close', find('.s-test-outer')).getAttribute('aria-label')).toBe(
-			'Закрыть Почта',
-		)
-		expect(find('.s-tabs-item__close', find('.s-test-inner')).getAttribute('aria-label')).toBe(
-			'Close Почта',
-		)
+		expect(
+			find('.so-tabs-item__close', find('.so-test-outer')).getAttribute('aria-label'),
+		).toBe('Закрыть Почта')
+		expect(
+			find('.so-tabs-item__close', find('.so-test-inner')).getAttribute('aria-label'),
+		).toBe('Close Почта')
 	})
 })
 

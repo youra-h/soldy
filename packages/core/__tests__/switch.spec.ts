@@ -5,7 +5,7 @@ describe('TSwitch', () => {
 	it('создаётся через { props } и через plain props', () => {
 		const a = new TSwitch({ value: true })
 		expect(a.value).toBe(true)
-		expect(a.classes.toArray()).toContain('s-switch')
+		expect(a.classes.toArray()).toContain('so-switch')
 
 		const b = new TSwitch({ value: false })
 		expect(b.value).toBe(false)
@@ -15,7 +15,7 @@ describe('TSwitch', () => {
 			size: 'xl',
 			variant: 'brand',
 		})
-		expect(c.classes.toArray()).toContain('s-switch')
+		expect(c.classes.toArray()).toContain('so-switch')
 	})
 
 	it('value: value setter эмитит change:value', () => {

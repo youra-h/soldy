@@ -263,7 +263,7 @@ describe.each(IDS)('прогон через хост %s', (framework) => {
 		expect(block('test/auto').findAll('.pg-checks__item--failed')).toHaveLength(0)
 		expect(block('test/auto').findAll('.pg-checks__item')).toHaveLength(3)
 		expect(block('test/auto').find('.pg-scenario__placeholder').exists()).toBe(false)
-		expect(block('test/press').find('.pg-scenario__scene .s-button').exists()).toBe(false)
+		expect(block('test/press').find('.pg-scenario__scene .so-button').exists()).toBe(false)
 		expect(block('test/press').find('.pg-scenario__placeholder').exists()).toBe(true)
 		expect(wrapper.find('.pg-badge--failed').exists()).toBe(false)
 		expect(warnings).toEqual([])
@@ -278,7 +278,7 @@ describe.each(IDS)('прогон через хост %s', (framework) => {
 		await block('test/press').get('.pg-scenario__run').trigger('click')
 		await vi.waitFor(() => expect(status('test/press')).toBe('waiting'))
 
-		const button = block('test/press').get('.pg-scenario__scene .s-button')
+		const button = block('test/press').get('.pg-scenario__scene .so-button')
 
 		await button.trigger('click')
 		await button.trigger('click')
@@ -372,7 +372,7 @@ describe('меню страницы тестов', () => {
 			await rendered()
 
 			const [topics, components] = lists(wrapper).map((list) =>
-				list.findAll('.s-list-box-item').map((item) => item.text()),
+				list.findAll('.so-list-box-item').map((item) => item.text()),
 			)
 
 			expect(topics).toEqual(topicsOf(scenarios).map((item) => item.label))
@@ -407,7 +407,7 @@ describe('меню страницы тестов', () => {
 		const wrapper = mount(TestsSidebar, mountOptions)
 
 		await rendered()
-		await lists(wrapper)[0].findAll('.s-list-box-item .s-button')[1].trigger('click')
+		await lists(wrapper)[0].findAll('.so-list-box-item .so-button')[1].trigger('click')
 		await flushPromises()
 
 		return wrapper

@@ -78,7 +78,7 @@ const styleOfB = (own?: string) =>
 const harness = ({ tabs = {}, active = 'a', dir = 'ltr', style }: THarness = {}) =>
 	defineComponent({
 		render: () =>
-			h('div', { class: 's-test-scene', style: 'width: 640px', dir }, [
+			h('div', { class: 'so-test-scene', style: 'width: 640px', dir }, [
 				h(Tabs, { view: 'contained', closable: true, ...tabs }, () =>
 					(Object.keys(TABS) as TValue[]).map((value) =>
 						h(TabsItem, {
@@ -93,13 +93,13 @@ const harness = ({ tabs = {}, active = 'a', dir = 'ltr', style }: THarness = {})
 			]),
 	})
 
-const root = () => find('.s-tabs')
-const list = () => find('.s-tabs__list')
-const scene = () => find('.s-test-scene')
+const root = () => find('.so-tabs')
+const list = () => find('.so-tabs__list')
+const scene = () => find('.so-test-scene')
 
 /** Обёртка таба; её коробку и покрывает карточка. */
 const tabOf = (value: TValue): HTMLElement => {
-	const item = [...document.querySelectorAll('.s-tabs-item')].find(
+	const item = [...document.querySelectorAll('.so-tabs-item')].find(
 		(node) => node.querySelector('[role="tab"]')?.textContent?.trim() === TABS[value],
 	)
 
@@ -109,7 +109,7 @@ const tabOf = (value: TValue): HTMLElement => {
 }
 
 const rowOf = (value: TValue) => find('[role="tab"]', tabOf(value))
-const closeOf = (value: TValue) => find('.s-tabs-item__close', tabOf(value))
+const closeOf = (value: TValue) => find('.so-tabs-item__close', tabOf(value))
 
 /** Признак переезда на списке; пустая строка — его нет. */
 const moving = () => list().style.getPropertyValue('--active-tab-moving')
@@ -135,7 +135,7 @@ const cardSettled = () => pseudoSettled(list(), '::before')
  * `--ready-animation` он ставит после первой записи.
  */
 const measured = async () => {
-	await expect.poll(() => root().classList.contains('s-tabs--ready-animation')).toBe(true)
+	await expect.poll(() => root().classList.contains('so-tabs--ready-animation')).toBe(true)
 }
 
 /** Края карточки — края обёртки таба, по обеим осям. */

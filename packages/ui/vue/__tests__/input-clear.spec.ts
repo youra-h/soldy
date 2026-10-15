@@ -38,8 +38,8 @@ describe('Input · кнопка очистки', () => {
 	it('без clearable кнопки нет, и обёртки у конца поля тоже', () => {
 		const input = render({ value: 'текст' })
 
-		expect(input.find('.s-input__clear').exists()).toBe(false)
-		expect(input.find('.s-input__trailing').exists()).toBe(false)
+		expect(input.find('.so-input__clear').exists()).toBe(false)
+		expect(input.find('.so-input__trailing').exists()).toBe(false)
 	})
 
 	it('по clearable — первой в обёртке у конца, перед содержимым trailing', () => {
@@ -47,23 +47,23 @@ describe('Input · кнопка очистки', () => {
 			{ clearable: true, name: 'Город' },
 			{ trailing: () => h('i', { class: 'probe-trailing' }) },
 		)
-		const slot = input.find('.s-input__trailing')
-		const parts = ['.s-input__clear', '.probe-trailing']
+		const slot = input.find('.so-input__trailing')
+		const parts = ['.so-input__clear', '.probe-trailing']
 
 		expect(
 			[...slot.element.children].map((node) => parts.find((part) => node.matches(part))),
 		).toEqual(parts)
-		expect(input.classes()).toContain('s-input--clearable')
+		expect(input.classes()).toContain('so-input--clearable')
 	})
 
 	it('имя собрано с именем поля по шаблону локали и следует за name', async () => {
 		const input = render({ clearable: true, name: 'Город' })
 
-		expect(input.find('.s-input__clear').attributes('aria-label')).toBe('Clear Город')
+		expect(input.find('.so-input__clear').attributes('aria-label')).toBe('Clear Город')
 
 		await input.setProps({ name: 'Улица' })
 
-		expect(input.find('.s-input__clear').attributes('aria-label')).toBe('Clear Улица')
+		expect(input.find('.so-input__clear').attributes('aria-label')).toBe('Clear Улица')
 	})
 
 	it('под провайдером — строка его локали', () => {
@@ -72,14 +72,14 @@ describe('Input · кнопка очистки', () => {
 			slots: { default: () => h(Input, { clearable: true, name: 'Город' }) },
 		})
 
-		expect(wrapper.find('.s-input__clear').attributes('aria-label')).toBe('Очистить Город')
+		expect(wrapper.find('.so-input__clear').attributes('aria-label')).toBe('Очистить Город')
 	})
 
 	it('размер — поля, выключена — вместе с полем, readonly её не гасит', async () => {
 		const input = render({ clearable: true, size: 'lg', readonly: true })
-		const button = () => input.find('.s-input__clear')
+		const button = () => input.find('.so-input__clear')
 
-		expect(button().classes()).toContain('s-button--size-lg')
+		expect(button().classes()).toContain('so-button--size-lg')
 		expect(button().attributes('disabled')).toBeUndefined()
 
 		await input.setProps({ disabled: true })
@@ -102,7 +102,7 @@ describe('Input · кнопка очистки', () => {
 
 		const input = wrapper.findComponent(Input)
 
-		await wrapper.find('.s-input__clear').trigger('click')
+		await wrapper.find('.so-input__clear').trigger('click')
 		await nextTick()
 
 		expect(wrapper.find('input').element.value).toBe('')
@@ -117,7 +117,7 @@ describe('Input · кнопка очистки', () => {
 		ctrl.events.on('clear', clear)
 		render({ ctrl, clearable: true })
 
-		await wrapper?.find('.s-input__clear').trigger('click')
+		await wrapper?.find('.so-input__clear').trigger('click')
 
 		expect(clear).toHaveBeenCalledTimes(1)
 	})
@@ -135,8 +135,8 @@ describe('Input · кнопка очистки', () => {
 			},
 		)
 
-		expect(input.find('.s-input__trailing > .probe-clear').exists()).toBe(true)
-		expect(input.find('.s-input__clear').exists()).toBe(false)
+		expect(input.find('.so-input__trailing > .probe-clear').exists()).toBe(true)
+		expect(input.find('.so-input__clear').exists()).toBe(false)
 
 		await input.find('.probe-clear').trigger('click')
 		await nextTick()
@@ -151,6 +151,6 @@ describe('Input · кнопка очистки', () => {
 		)
 
 		expect(input.find('.probe-clear').exists()).toBe(true)
-		expect(input.find('.s-input__clear').exists()).toBe(false)
+		expect(input.find('.so-input__clear').exists()).toBe(false)
 	})
 })

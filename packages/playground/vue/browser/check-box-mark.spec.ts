@@ -2,9 +2,9 @@
  * Отметка CheckBox в настоящем браузере — того же размера, что иконка Icon
  * того же `size`.
  *
- * Раньше отметку рисовал компонент Icon, и размер ей давало правило `.s-icon`.
+ * Раньше отметку рисовал компонент Icon, и размер ей давало правило `.so-icon`.
  * Теперь это `svg` роли без Icon (869feq9un): размер даёт тема флажка по
- * `s-check-box__mark` теми же ступенями. Без правила `svg` в коробке-флексе
+ * `so-check-box__mark` теми же ступенями. Без правила `svg` в коробке-флексе
  * растянулся бы на её ширину. В jsdom раскладки нет.
  */
 
@@ -50,8 +50,8 @@ describe.each(COMPONENT_SIZES)('размер %s', (size) => {
 	it('отметка — размера иконки Icon', () => {
 		render(harness(size))
 
-		const mark = box('.s-check-box__mark')
-		const icon = box('.s-icon')
+		const mark = box('.so-check-box__mark')
+		const icon = box('.so-icon')
 
 		expect(mark.width).toBeGreaterThan(0)
 		expect([mark.width, mark.height]).toEqual([icon.width, icon.height])

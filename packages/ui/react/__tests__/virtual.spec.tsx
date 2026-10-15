@@ -45,10 +45,10 @@ function measure(engine: TListBoxCollection, top: number, bottom: number, step =
 	act(() => engine.extensions.draw.notifyViewport({ top, bottom, step }))
 }
 
-const options = (root: ParentNode = document) => [...root.querySelectorAll('.s-list-box-item')]
+const options = (root: ParentNode = document) => [...root.querySelectorAll('.so-list-box-item')]
 
 const fillers = (root: ParentNode = document) => [
-	...root.querySelectorAll<HTMLElement>('.s-list-box__filler'),
+	...root.querySelectorAll<HTMLElement>('.so-list-box__filler'),
 ]
 
 /** Элемент по тексту, если он в документе. */
@@ -61,7 +61,7 @@ function optionOf(text: string): HTMLElement | undefined {
 
 /** Строка элемента: на ней набор `aria` элемента и его `dataset`. */
 function optionRow(text: string): HTMLElement {
-	const row = optionOf(text)?.querySelector(':scope > .s-button')
+	const row = optionOf(text)?.querySelector(':scope > .so-button')
 
 	if (!(row instanceof HTMLElement)) throw new Error(`${text}: строки нет`)
 
@@ -69,7 +69,7 @@ function optionRow(text: string): HTMLElement {
 }
 
 function listRoot(): HTMLElement {
-	const root = document.querySelector('.s-list-box')
+	const root = document.querySelector('.so-list-box')
 
 	if (!(root instanceof HTMLElement)) throw new Error('списка нет')
 

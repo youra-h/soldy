@@ -7,24 +7,24 @@
 
 // DatePicker — поле даты и календарь в панели, как Select — поле и список.
 //
-//   .s-date-picker                  корень — якорь панели; у диапазона — коробка поля
-//     .s-date-picker__field         поле одной даты — DateInput
-//       .s-date-input__trailing     слоты поля `clear` и `trailing` (тема DateInput)
-//         .s-date-picker__clear     кнопка очистки — Button, если `clearable`
-//         .s-date-picker__trigger   кнопка календаря — Button
-//     .s-date-picker__start         поле начала диапазона — DateInput
-//     .s-date-picker__dash          тире между полями
-//     .s-date-picker__end           поле конца диапазона — DateInput
-//     .s-date-picker__clear         кнопка очистки периода, если `clearable`
-//     .s-date-picker__trigger       кнопка календаря после поля конца
+//   .so-date-picker                  корень — якорь панели; у диапазона — коробка поля
+//     .so-date-picker__field         поле одной даты — DateInput
+//       .so-date-input__trailing     слоты поля `clear` и `trailing` (тема DateInput)
+//         .so-date-picker__clear     кнопка очистки — Button, если `clearable`
+//         .so-date-picker__trigger   кнопка календаря — Button
+//     .so-date-picker__start         поле начала диапазона — DateInput
+//     .so-date-picker__dash          тире между полями
+//     .so-date-picker__end           поле конца диапазона — DateInput
+//     .so-date-picker__clear         кнопка очистки периода, если `clearable`
+//     .so-date-picker__trigger       кнопка календаря после поля конца
 //
-//   .s-date-picker__panel           панель — Frame, телепортирована в `body`
-//     .s-date-picker__handle        полоса жеста, если он включён (`swipe`)
-//     .s-date-picker__content       содержимое — прокручивается оно, а не панель
-//       .s-date-picker__calendar    календарь — Calendar
-//         .s-calendar__footer       подвал календаря (тема Calendar), при `confirmable`
-//           .s-date-picker__cancel  «Отмена» — Button
-//           .s-date-picker__confirm «OK» — Button
+//   .so-date-picker__panel           панель — Frame, телепортирована в `body`
+//     .so-date-picker__handle        полоса жеста, если он включён (`swipe`)
+//     .so-date-picker__content       содержимое — прокручивается оно, а не панель
+//       .so-date-picker__calendar    календарь — Calendar
+//         .so-calendar__footer       подвал календаря (тема Calendar), при `confirmable`
+//           .so-date-picker__cancel  «Отмена» — Button
+//           .so-date-picker__confirm «OK» — Button
 //
 // От ядра приходят: у корня — модификаторы режима (`--single`, `--range`),
 // `--size-*`, `--variant-*`, `--required`, `--clearable` и `data-disabled`; у
@@ -35,14 +35,14 @@
 // Своего у темы здесь немного. Поле, его коробку и слоты рисует DateInput,
 // день и сетку — Calendar, панель — та же семья оверлеев, что у Select и
 // Popover. DatePicker добавляет кнопки, коробку диапазона и панель.
-.s-date-picker {
+.so-date-picker {
 	// Строчный флекс по полю: DatePicker встаёт в строку, как само поле даты, и
 	// ширина у него — по дате и кнопкам, а не по контейнеру. Задали корню
 	// ширину — поле растягивается до неё, а кнопки остаются у его конца.
 	@apply inline-flex;
 }
 
-.s-date-picker__field {
+.so-date-picker__field {
 	@apply grow;
 
 	// Сторона кнопок — строка слота поля.
@@ -57,8 +57,8 @@
 // Значок календаря — по кеглю кнопки: иконку разметка рисует без своего
 // размера, а рисунок календаря плотный, и по шкале иконок на `lg` и крупнее
 // он перевешивал бы дату рядом.
-.s-date-picker__clear,
-.s-date-picker__trigger {
+.so-date-picker__clear,
+.so-date-picker__trigger {
 	@apply shrink-0 px-0;
 	inline-size: var(--s-date-picker-button);
 	block-size: var(--s-date-picker-button);
@@ -68,7 +68,7 @@
 // разметка не передаёт, а кнопка в поле не спорит с датой. Открытая панель —
 // кнопка календаря нажата: `data-selected` у неё рисует вуаль выбора того же
 // вида. Нулевая специфичность, как у базового вида Button.
-:where(.s-date-picker__clear, .s-date-picker__trigger) {
+:where(.so-date-picker__clear, .so-date-picker__trigger) {
 	@include button.button-view('plain');
 }
 
@@ -80,7 +80,7 @@
 
 	@include input.field-height('date-picker', $size);
 
-	> .s-date-picker__dash {
+	> .so-date-picker__dash {
 		@if map.get($scale, 'text') {
 			@apply #{map.get($scale, 'text')};
 		}
@@ -107,7 +107,7 @@
 // Свободное место обеих колонок оказывается по сторонам тире, и тире стоит
 // посередине между датами, а не прилипает к одной из них. Колонки логические:
 // в RTL начало справа, кнопки слева.
-.s-date-picker--range {
+.so-date-picker--range {
 	@include input.field('date-picker');
 	@include range-size('normal');
 
@@ -117,34 +117,34 @@
 	// Сторона кнопок — строка слота коробки.
 	--s-date-picker-button: var(--s-date-picker-slot-row);
 
-	&:has(.s-date-input__segment:focus) {
+	&:has(.so-date-input__segment:focus) {
 		@include input.field-focus;
 	}
 
-	&.s-date-picker--required::after {
+	&.so-date-picker--required::after {
 		@include required.required-indicator();
 	}
 
 	@each $variant in input.$variants {
-		&.s-date-picker--variant-#{$variant} {
+		&.so-date-picker--variant-#{$variant} {
 			@include input.input-variant($variant, $enabled: ":not([data-disabled='true'])");
 		}
 	}
 
 	// Ошибка перекрывает и заданный вариант, как у DateInput.
-	&:has(> .s-date-input[data-invalid='true']) {
+	&:has(> .so-date-input[data-invalid='true']) {
 		@include input.input-variant('negative', $enabled: ":not([data-disabled='true'])");
 	}
 
 	@each $size, $_ in input.$sizes {
-		&.s-date-picker--size-#{$size} {
+		&.so-date-picker--size-#{$size} {
 			@include range-size($size);
 		}
 	}
 
 	// Выключенный период гаснет датами, как DateInput: даты гасят поля, кнопки —
 	// их `disabled`, тире — здесь.
-	&[data-disabled='true'] > .s-date-picker__dash {
+	&[data-disabled='true'] > .so-date-picker__dash {
 		@apply opacity-s-component-disabled;
 	}
 
@@ -155,43 +155,43 @@
 	//
 	// Кольцо снимается и правилом фокуса: в режиме принудительных цветов поле
 	// под фокусом возвращает себе контур сплошным (`input.field-focus`).
-	> .s-date-input {
+	> .so-date-input {
 		@apply self-stretch;
 		height: auto;
 		border-width: 0;
 		background-color: transparent;
 
 		&,
-		&:has(.s-date-input__segment:focus) {
+		&:has(.so-date-input__segment:focus) {
 			outline-style: none;
 		}
 
-		&.s-date-input--required::after {
+		&.so-date-input--required::after {
 			content: none;
 		}
 	}
 
 	// Поле конца — шириной по дате, у конца своей колонки. Минимум ряда держит
 	// поле начала: формат у полей один, и минимумы равны.
-	> .s-date-picker__end {
+	> .so-date-picker__end {
 		@apply justify-self-end;
 
-		.s-date-input__segments {
+		.so-date-input__segments {
 			min-inline-size: 0;
 		}
 	}
 
 	// Кнопки — с теми же отступами от рамки и друг от друга, что в слоте поля
 	// (`pe-1` и `gap-1` слота DateInput).
-	> .s-date-picker__clear,
-	> .s-date-picker__trigger {
+	> .so-date-picker__clear,
+	> .so-date-picker__trigger {
 		@apply me-1;
 	}
 }
 
 // Рамка коробки без варианта — нейтраль, как у DateInput. Нулевая
 // специфичность — вариант перекрывает базу, не споря с ней.
-:where(.s-date-picker--range) {
+:where(.so-date-picker--range) {
 	@include input.input-variant('neutral', $enabled: ":not([data-disabled='true'])");
 }
 
@@ -202,16 +202,16 @@
 // Условие — контекст нулевой специфичности, как у пустой даты DateInput:
 // сборка сливает правила с одинаковыми объявлениями в одно `:is()` с весом
 // самого тяжёлого, и тяжёлое условие подняло бы вес чужого правила.
-$empty: ".s-date-picker--range:where(:not(:has(.s-date-input__segment:not([data-placeholder='true']))))";
+$empty: ".so-date-picker--range:where(:not(:has(.so-date-input__segment:not([data-placeholder='true']))))";
 
-#{$empty} > .s-date-picker__dash {
+#{$empty} > .so-date-picker__dash {
 	@apply text-s-neutral-500;
 }
 
 // Принудительные цвета: подсказку здесь от значения отличает только системный
 // цвет неактивного текста — тот же, что у подсказок частей DateInput.
 @media (forced-colors: active) {
-	#{$empty} > .s-date-picker__dash {
+	#{$empty} > .so-date-picker__dash {
 		color: GrayText;
 	}
 }
@@ -240,7 +240,7 @@ $empty: ".s-date-picker--range:where(:not(:has(.s-date-input__segment:not([data-
 // проявляется и гаснет на месте, одной прозрачностью и временем панели Popover
 // у триггера, а с жестом полоса стоит у края со стороны поля, и закрытая
 // панель уходит от поля, пока гаснет (`anchored.panel`).
-.s-date-picker__panel {
+.so-date-picker__panel {
 	@apply flex flex-col overflow-hidden rounded-md box-border;
 	@apply text-s-component shadow-md;
 	@apply ring-1 ring-s-neutral-300;
@@ -249,12 +249,12 @@ $empty: ".s-date-picker--range:where(:not(:has(.s-date-input__segment:not([data-
 	max-width: calc(100vw - 1rem);
 	max-height: calc(100dvh - 1rem);
 
-	@include anchored.panel('.s-date-picker__handle');
+	@include anchored.panel('.so-date-picker__handle');
 }
 
 // Поля вокруг календаря — внутри прокрутки: у края прокручиваемой области
 // кольцо фокуса дня или кнопки обрезалось бы.
-.s-date-picker__content {
+.so-date-picker__content {
 	@apply min-h-0 overflow-y-auto p-2;
 }
 
@@ -263,7 +263,7 @@ $empty: ".s-date-picker--range:where(:not(:has(.s-date-input__segment:not([data-
 // до края окна: у поля справа месяцы сложились бы в столбец. Поэтому ширину по
 // содержимому просит сам календарь, как содержимое Popover (`w-max`). Панель
 // упирается в свой потолок, и месяцы переносятся уже по ширине окна.
-.s-date-picker__content > .s-date-picker__calendar {
+.so-date-picker__content > .so-date-picker__calendar {
 	@apply w-max;
 }
 
@@ -271,7 +271,7 @@ $empty: ".s-date-picker--range:where(:not(:has(.s-date-input__segment:not([data-
 // конца строки подвал календаря. Вид — `plain` по контексту, как у кнопок
 // листания: значения вида разметка не передаёт, а кнопки подвала не спорят с
 // выбранным днём. Нулевая специфичность, как у базового вида Button.
-:where(.s-date-picker__cancel),
-:where(.s-date-picker__confirm) {
+:where(.so-date-picker__cancel),
+:where(.so-date-picker__confirm) {
 	@include button.button-view('plain');
 }

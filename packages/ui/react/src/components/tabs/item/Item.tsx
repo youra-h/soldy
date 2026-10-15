@@ -82,7 +82,7 @@ export function TabsItem(props: TabsItemProps): ReactElement | null {
 			<Button
 				embedded="tabs.close"
 				rendered={tab_closable === true}
-				className="s-tabs-item__close"
+				className="so-tabs-item__close"
 				disabled={disabled}
 				size={size}
 				{...toAriaProps(closeAria)}

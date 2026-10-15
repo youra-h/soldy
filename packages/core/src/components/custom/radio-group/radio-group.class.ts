@@ -30,7 +30,7 @@ export class TRadioGroup
 	extends TValueControl<TRadioGroupValue, IRadioGroupProps, TRadioGroupEvents>
 	implements IRadioGroup
 {
-	static override baseClass = 's-radio-group'
+	static override baseClass = 'so-radio-group'
 
 	static defaultValues: typeof TValueControl.defaultValues &
 		TDefaultValues<IRadioGroupProps, never, 'view'> = {

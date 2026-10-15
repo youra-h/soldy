@@ -3,7 +3,7 @@
  *
  * Расчёт общий с окном (`TModalLayoutPlugin`, см.
  * `dialog-layout.plugin.spec.ts`); здесь — что панель получает его целиком,
- * со своими именами переменных: их читает CSS блока `s-drawer`.
+ * со своими именами переменных: их читает CSS блока `so-drawer`.
  */
 
 import { describe, it, expect, beforeEach } from 'vitest'

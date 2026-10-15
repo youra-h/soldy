@@ -41,7 +41,7 @@ const ITEMS: TItem[] = [
 ]
 
 /** Строки элементов — на них обработчик выбора, `aria-selected` и `tabindex`. */
-const rows = () => [...document.querySelectorAll('.s-list-box-item .s-button')]
+const rows = () => [...document.querySelectorAll('.so-list-box-item .so-button')]
 
 /** Строка элемента по тексту; нет её — тест падает здесь. */
 function rowOf(text: string): HTMLElement {
@@ -55,7 +55,7 @@ function rowOf(text: string): HTMLElement {
 /** `aria-selected` всех строк по порядку. */
 const selection = () => rows().map((row) => row.getAttribute('aria-selected'))
 
-const listItems = () => [...document.querySelectorAll('.s-list-box-item')]
+const listItems = () => [...document.querySelectorAll('.so-list-box-item')]
 
 /** Корень списка в разметке хоста. */
 const rootOf = (fixture: ComponentFixture<unknown>) =>
@@ -363,7 +363,7 @@ describe('состав', () => {
 
 		mountHost(SplitHost)
 
-		const item = find(document, '.s-list-box-item', HTMLElement)
+		const item = find(document, '.so-list-box-item', HTMLElement)
 
 		expect(item.classList.contains('mine')).toBe(true)
 		expect(item.style.color).toBe('red')
@@ -416,7 +416,7 @@ describe('отметка выбранного и слоты', () => {
 	it('без indicator обёртки отметки нет', () => {
 		mountHost(IndicatorHost)
 
-		expect(document.querySelectorAll('.s-list-box-item__indicator')).toHaveLength(0)
+		expect(document.querySelectorAll('.so-list-box-item__indicator')).toHaveLength(0)
 	})
 
 	/**
@@ -435,24 +435,24 @@ describe('отметка выбранного и слоты', () => {
 
 		const fixture = mountHost(MarksHost)
 
-		expect(document.querySelectorAll('.s-list-box-item__indicator')).toHaveLength(3)
-		expect(document.querySelectorAll('.s-list-box-item__indicator svg')).toHaveLength(0)
+		expect(document.querySelectorAll('.so-list-box-item__indicator')).toHaveLength(3)
+		expect(document.querySelectorAll('.so-list-box-item__indicator svg')).toHaveLength(0)
 
 		click(fixture, rowOf('Второй'))
 
 		expect(
-			listItems().map((item) => !!item.querySelector('.s-list-box-item__indicator svg')),
+			listItems().map((item) => !!item.querySelector('.so-list-box-item__indicator svg')),
 		).toEqual([false, true, false])
 		expect(
-			find(document, '.s-list-box-item__indicator', HTMLElement).getAttribute('aria-hidden'),
+			find(document, '.so-list-box-item__indicator', HTMLElement).getAttribute('aria-hidden'),
 		).toBe('true')
 	})
 
 	it('start ставит отметку перед текстом, end — после', () => {
 		const fixture = mountHost(IndicatorHost)
 		const sideOf = () => {
-			const indicator = find(document, '.s-list-box-item__indicator', HTMLElement)
-			const text = find(document, '.s-button__text', HTMLElement)
+			const indicator = find(document, '.so-list-box-item__indicator', HTMLElement)
+			const text = find(document, '.so-button__text', HTMLElement)
 
 			return indicator.compareDocumentPosition(text) & Node.DOCUMENT_POSITION_FOLLOWING
 				? 'start'
@@ -494,8 +494,8 @@ describe('отметка выбранного и слоты', () => {
 
 		click(fixture, rowOf('A'))
 
-		expect(document.querySelector('.s-list-box-item__indicator .custom')).not.toBeNull()
-		expect(document.querySelector('.s-list-box-item__indicator svg')).toBeNull()
+		expect(document.querySelector('.so-list-box-item__indicator .custom')).not.toBeNull()
+		expect(document.querySelector('.so-list-box-item__indicator svg')).toBeNull()
 	})
 
 	it('default элемента — проекцией или шаблоном с text и selected, без него — text', () => {
@@ -545,7 +545,7 @@ describe('отметка выбранного и слоты', () => {
 
 		mountHost(RelayHost)
 
-		expect(rows().map((row) => row.querySelector('.s-button__text')?.textContent)).toEqual([
+		expect(rows().map((row) => row.querySelector('.so-button__text')?.textContent)).toEqual([
 			'[Первый]',
 			'[Второй]',
 		])
@@ -617,7 +617,7 @@ describe('отметка выбранного и слоты', () => {
 
 		const fixture = mountHost(RelayIndicatorHost)
 		const marks = () =>
-			[...document.querySelectorAll('.s-list-box-item__indicator')].map((indicator) =>
+			[...document.querySelectorAll('.so-list-box-item__indicator')].map((indicator) =>
 				indicator.querySelector('.probe')
 					? `slot:${indicator.textContent?.trim() ?? ''}`
 					: indicator.querySelector('svg')
@@ -625,7 +625,7 @@ describe('отметка выбранного и слоты', () => {
 						: 'empty',
 			)
 		// Текст отметки входит в текст строки — строки берём по месту
-		const rowAt = (index: number) => find(listItems()[index], '.s-button', HTMLElement)
+		const rowAt = (index: number) => find(listItems()[index], '.so-button', HTMLElement)
 
 		expect(marks()).toEqual(['slot:false', 'empty'])
 

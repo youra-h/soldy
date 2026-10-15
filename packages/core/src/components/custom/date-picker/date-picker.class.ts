@@ -127,7 +127,7 @@ export class TDatePicker
 	extends TField<TDatePickerValue, IDatePickerProps, TDatePickerEvents>
 	implements IDatePicker
 {
-	static override baseClass = 's-date-picker'
+	static override baseClass = 'so-date-picker'
 
 	static defaultValues: typeof TField.defaultValues &
 		TDefaultValues<

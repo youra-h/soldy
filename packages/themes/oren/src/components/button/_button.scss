@@ -1,7 +1,7 @@
 @use './mixins' as mixines;
 @use '../../mixins/indicator';
 
-.s-button {
+.so-button {
 	$this: &;
 
 	@apply flex items-center justify-center;
@@ -38,7 +38,7 @@
 
 // Цвет кнопки — переменные на её корне: нейтраль у блока, вариант у
 // модификатора (`button-tones`). Вид их только читает.
-@include mixines.button-tones('s-button');
+@include mixines.button-tones('so-button');
 
 // Вид блока без модификатора — `filled` с нейтралью.
 //
@@ -47,7 +47,7 @@
 // в разметку: строки ListBox, Accordion и Select, крестики Tabs и Tags,
 // очистка полей (`plain`), строка таба (`none`). Объявлены в файлах этих
 // компонентов, после Button.
-:where(.s-button) {
+:where(.so-button) {
 	@include mixines.button-view('filled');
 }
 
@@ -64,12 +64,12 @@
 //
 // Нулевая специфичность — свой цвет индикаторам кнопки потребитель задаёт
 // этими же переменными, не споря.
-:where(.s-button) {
+:where(.so-button) {
 	@include indicator.text-colored;
 }
 
 @each $view in mixines.$views {
-	.s-button--view-#{$view} {
+	.so-button--view-#{$view} {
 		@include mixines.button-view($view);
 	}
 }

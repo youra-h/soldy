@@ -82,7 +82,7 @@ const tabs = (view: (typeof VIEWS)[TView]) =>
 const scene = defineComponent({
 	render: () =>
 		h('div', [
-			h('div', { class: 's-test-away', style: 'height: 24px' }),
+			h('div', { class: 'so-test-away', style: 'height: 24px' }),
 			...Object.entries(BACKDROPS).map(([name, color]) =>
 				h(
 					'div',
@@ -118,12 +118,12 @@ const away = (color: string, under: TBackdropUnder): number =>
 	shift(color, under.color) * under.toward
 
 const listOf = (under: TBackdropUnder, view: TView): HTMLElement =>
-	find(`[data-view="${view}"] .s-tabs__list`, under.root)
+	find(`[data-view="${view}"] .so-tabs__list`, under.root)
 
 /** Рамка таба — только у `outline`; ступень у всех табов вида одна. */
 function border(name: TBackdrop): number {
 	const under = backdropOf(name)
-	const tab = find(`[data-view="outline"] .s-tabs-item`, under.root)
+	const tab = find(`[data-view="outline"] .so-tabs-item`, under.root)
 
 	return away(style(tab).borderTopColor, under)
 }
@@ -154,7 +154,7 @@ async function show(scheme: (typeof SCHEMES)[number]): Promise<void> {
 	document.documentElement.dataset.theme = scheme
 	render(scene)
 
-	await userEvent.hover(find('.s-test-away'))
+	await userEvent.hover(find('.so-test-away'))
 	await settled(document.body)
 }
 

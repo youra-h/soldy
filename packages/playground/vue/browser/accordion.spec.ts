@@ -55,7 +55,7 @@ const find = (selector: string): Element => {
 const section = (mark: string, selected: boolean, content: () => VNodeChild) =>
 	h(
 		AccordionItem,
-		{ key: mark, value: mark, text: mark, selected, class: `s-test-${mark}` },
+		{ key: mark, value: mark, text: mark, selected, class: `so-test-${mark}` },
 		{ default: content },
 	)
 
@@ -84,7 +84,7 @@ const scene = defineComponent({
  */
 const turn = (mark: string) => {
 	const { rotate, transform } = getComputedStyle(
-		find(`.s-test-${mark} > .s-accordion-item__header .s-accordion-item__arrow`),
+		find(`.so-test-${mark} > .so-accordion-item__header .so-accordion-item__arrow`),
 	)
 
 	return { rotate, transform }
@@ -92,7 +92,7 @@ const turn = (mark: string) => {
 
 /** Высота панели секции — её собственной. */
 const height = (mark: string) =>
-	find(`.s-test-${mark} > .s-accordion-item__body`).getBoundingClientRect().height
+	find(`.so-test-${mark} > .so-accordion-item__body`).getBoundingClientRect().height
 
 beforeEach(() => {
 	document.documentElement.dataset.theme = 'oren'
@@ -132,9 +132,9 @@ describe('подменённая стрелка', () => {
 	const custom = (mark: string, selected: boolean) =>
 		h(
 			AccordionItem,
-			{ key: mark, value: mark, text: mark, selected, class: `s-test-${mark}` },
+			{ key: mark, value: mark, text: mark, selected, class: `so-test-${mark}` },
 			{
-				'leading-icon': () => h('span', { class: 's-test-icon' }, '›'),
+				'leading-icon': () => h('span', { class: 'so-test-icon' }, '›'),
 				default: () => 'Содержимое',
 			},
 		)
@@ -154,7 +154,7 @@ describe('подменённая стрелка', () => {
 			}),
 		)
 
-		expect(find('.s-test-custom-open .s-accordion-item__arrow .s-test-icon')).toBeTruthy()
+		expect(find('.so-test-custom-open .so-accordion-item__arrow .so-test-icon')).toBeTruthy()
 		expect(turn('custom-open')).toEqual(turn('open'))
 		expect(turn('custom-closed')).toEqual(turn('closed'))
 		expect(turn('custom-open')).not.toEqual(turn('custom-closed'))
@@ -178,27 +178,28 @@ describe('подменённая стрелка', () => {
 					h('div', { style: 'width: 320px' }, [
 						h(
 							Accordion,
-							{ class: 's-test-relayed', items },
+							{ class: 'so-test-relayed', items },
 							{
 								'item-leading-icon': ({ item }: { item: { value: unknown } }) =>
 									item.value === 'b'
-										? h('span', { class: 's-test-icon' }, '›')
+										? h('span', { class: 'so-test-icon' }, '›')
 										: null,
 							},
 						),
-						h(Accordion, { class: 's-test-plain', items }),
+						h(Accordion, { class: 'so-test-plain', items }),
 					]),
 			}),
 		)
 
 		/** Начало текста первой секции аккордеона. */
 		const textOf = (accordion: string) =>
-			find(`.s-test-${accordion} .s-accordion-item .s-button__text`).getBoundingClientRect()
-				.left
+			find(
+				`.so-test-${accordion} .so-accordion-item .so-button__text`,
+			).getBoundingClientRect().left
 		/** Обёртки стрелок первой секции: что в каждой и видна ли она. */
 		const arrows = [
-			...find('.s-test-relayed .s-accordion-item').querySelectorAll(
-				'.s-accordion-item__arrow',
+			...find('.so-test-relayed .so-accordion-item').querySelectorAll(
+				'.so-accordion-item__arrow',
 			),
 		].map(
 			(arrow) =>

@@ -85,7 +85,7 @@ describe('ComponentView · элемент потребителя как коре
 		fixture.componentInstance.ctrl.dataset.add('state', 'open')
 		fixture.detectChanges()
 
-		expect(Array.from(section.classList)).toContain('s-component-view')
+		expect(Array.from(section.classList)).toContain('so-component-view')
 		expect(section.getAttribute('dir')).toBe('rtl')
 		expect(section.getAttribute('data-state')).toBe('open')
 		expect(section.querySelector('b')?.textContent).toBe('внутри')

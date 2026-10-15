@@ -85,7 +85,7 @@ describe('ListBox · серверный рендер', () => {
 	it('список из items — полностью: выбранное — aria-selected', async () => {
 		const page = await serverPage(ItemsPage)
 
-		expect(attributeOf(all(page, '.s-list-box-item .s-button'), 'aria-selected')).toEqual([
+		expect(attributeOf(all(page, '.so-list-box-item .so-button'), 'aria-selected')).toEqual([
 			'false',
 			'true',
 			'false',
@@ -94,11 +94,11 @@ describe('ListBox · серверный рендер', () => {
 
 	it('элементы разметки — с выбором и остановками Tab от коллекции', async () => {
 		const page = await serverPage(MarkupPage)
-		const rows = all(page, '.s-list-box-item .s-button')
+		const rows = all(page, '.so-list-box-item .so-button')
 
 		expect(attributeOf(rows, 'aria-selected')).toEqual(['false', 'true'])
 		expect(attributeOf(rows, 'tabindex')).toEqual(['-1', '-1'])
-		expect(attributeOf(all(page, '.s-list-box-item'), 'data-selected')).toEqual([
+		expect(attributeOf(all(page, '.so-list-box-item'), 'data-selected')).toEqual([
 			'false',
 			'true',
 		])
@@ -191,8 +191,8 @@ describe('Accordion · серверный рендер', () => {
 		['секции из разметки', MarkupPage],
 	] as const)('%s: aria-expanded и связка заголовка с панелью', async (_name, app) => {
 		const page = await serverPage(app)
-		const heads = all(page, '.s-accordion-item__header')
-		const bodies = all(page, '.s-accordion-item__content')
+		const heads = all(page, '.so-accordion-item__header')
+		const bodies = all(page, '.so-accordion-item__content')
 
 		expect(attributeOf(heads, 'aria-expanded')).toEqual(['true', 'false'])
 		expect(attributeOf(heads, 'aria-controls')).toEqual(bodies.map((node) => node.id))
@@ -283,8 +283,8 @@ function idsOf(page: ParentNode) {
 	return {
 		tabs: attributeOf(all(page, '[role="tab"]'), 'id'),
 		panels: attributeOf(all(page, '[role="tabpanel"]'), 'id'),
-		heads: attributeOf(all(page, '.s-accordion-item__header'), 'id'),
-		bodies: attributeOf(all(page, '.s-accordion-item__content'), 'id'),
+		heads: attributeOf(all(page, '.so-accordion-item__header'), 'id'),
+		bodies: attributeOf(all(page, '.so-accordion-item__content'), 'id'),
 		names: attributeOf(all(page, 'input[type="radio"]'), 'name'),
 	}
 }
@@ -307,7 +307,7 @@ describe('id и name — от номера сборки', () => {
 		expect(new Set(ids.names).size).toBe(1)
 	})
 
-	/** Счётчик набора даёт `s-<n>`: им набор берёт, когда адаптер id монтирования не передал. */
+	/** Счётчик набора даёт `so-<n>`: им набор берёт, когда адаптер id монтирования не передал. */
 	it('ни один id и name не от счётчика набора', async () => {
 		const ids = idsOf(await serverPage(CollectionsPage))
 
@@ -369,16 +369,16 @@ describe('гидратация', () => {
 		const app = await hydrated()
 
 		nodeOf('[role="tab"]', 'B').click()
-		nodeOf('.s-accordion-item__header', 'B').click()
+		nodeOf('.so-accordion-item__header', 'B').click()
 		all(document, 'input[type="radio"]')
 			.filter((field): field is HTMLInputElement => field instanceof HTMLInputElement)
 			.find((field) => field.value === 'b')
 			?.click()
-		nodeOf('.s-list-box-item .s-button', 'Бета').click()
+		nodeOf('.so-list-box-item .so-button', 'Бета').click()
 		await app.whenStable()
 
 		expect(shownPanels(document).map((panel) => panel.textContent)).toEqual(['Панель B'])
-		expect(attributeOf(all(document, '.s-accordion-item__header'), 'aria-expanded')).toEqual([
+		expect(attributeOf(all(document, '.so-accordion-item__header'), 'aria-expanded')).toEqual([
 			'false',
 			'true',
 		])
@@ -387,9 +387,8 @@ describe('гидратация', () => {
 				.filter((field): field is HTMLInputElement => field instanceof HTMLInputElement)
 				.map((field) => field.checked),
 		).toEqual([false, true])
-		expect(attributeOf(all(document, '.s-list-box-item .s-button'), 'aria-selected')).toEqual([
-			'false',
-			'true',
-		])
+		expect(attributeOf(all(document, '.so-list-box-item .so-button'), 'aria-selected')).toEqual(
+			['false', 'true'],
+		)
 	})
 })

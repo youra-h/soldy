@@ -28,19 +28,19 @@ describe('составной компонент', () => {
 describe('связка ARIA заголовок ↔ панель', () => {
 	it('aria-controls заголовка указывает на id панели, aria-labelledby — обратно', () => {
 		const wrapper = render()
-		const header = wrapper.findAll('.s-accordion-item__header')[0]
-		const content = wrapper.findAll('.s-accordion-item__content')[0]
+		const header = wrapper.findAll('.so-accordion-item__header')[0]
+		const content = wrapper.findAll('.so-accordion-item__content')[0]
 
 		expect(header.attributes('aria-controls')).toBe(content.attributes('id'))
 		expect(content.attributes('aria-labelledby')).toBe(header.attributes('id'))
 	})
 
 	it('панель объявлена как region', () => {
-		expect(render().find('.s-accordion-item__content').attributes('role')).toBe('region')
+		expect(render().find('.so-accordion-item__content').attributes('role')).toBe('region')
 	})
 
 	it('id уникальны между элементами', () => {
-		const contents = render().findAll('.s-accordion-item__content')
+		const contents = render().findAll('.so-accordion-item__content')
 
 		expect(contents[0].attributes('id')).not.toBe(contents[1].attributes('id'))
 	})
@@ -49,22 +49,22 @@ describe('связка ARIA заголовок ↔ панель', () => {
 describe('aria-expanded', () => {
 	it('отражает раскрытость и стоит на заголовке, а не на обёртке', () => {
 		const wrapper = render()
-		const headers = wrapper.findAll('.s-accordion-item__header')
+		const headers = wrapper.findAll('.so-accordion-item__header')
 
 		expect(headers[0].attributes('aria-expanded')).toBe('true')
 		expect(headers[1].attributes('aria-expanded')).toBe('false')
 
 		// Раньше на обёртке висел aria-selected без роли — для скринридера пусто
-		expect(wrapper.find('.s-accordion-item').attributes('aria-selected')).toBeUndefined()
+		expect(wrapper.find('.so-accordion-item').attributes('aria-selected')).toBeUndefined()
 	})
 
 	it('следует за раскрытием по клику', async () => {
 		const wrapper = render()
 
-		await wrapper.findAll('.s-accordion-item__header')[1].trigger('click')
+		await wrapper.findAll('.so-accordion-item__header')[1].trigger('click')
 		await nextTick()
 
-		expect(wrapper.findAll('.s-accordion-item__header')[1].attributes('aria-expanded')).toBe(
+		expect(wrapper.findAll('.so-accordion-item__header')[1].attributes('aria-expanded')).toBe(
 			'true',
 		)
 	})

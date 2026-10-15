@@ -38,10 +38,10 @@ function find(selector: string, scope: ParentNode = document): HTMLElement {
 	return element
 }
 
-const panel = (scope: ParentNode = document) => find('.s-drawer', scope)
-const backdrop = (scope: ParentNode = document) => find('.s-drawer__backdrop', scope)
+const panel = (scope: ParentNode = document) => find('.so-drawer', scope)
+const backdrop = (scope: ParentNode = document) => find('.so-drawer__backdrop', scope)
 const isOpen = (element: HTMLElement = panel()) => element.style.display !== 'none'
-const opener = () => find('.s-test-opener')
+const opener = () => find('.so-test-opener')
 
 /** Нажатие мимо — `pointerdown`, как его слушает плагин оверлея. */
 const pointerDown = (target: Element) =>
@@ -58,8 +58,8 @@ function press(key: string): KeyboardEvent {
 
 /** Содержимое панели с двумя остановками Tab. */
 const inside = () => [
-	h('button', { class: 's-test-first' }, 'Первая'),
-	h('button', { class: 's-test-second' }, 'Вторая'),
+	h('button', { class: 'so-test-first' }, 'Первая'),
+	h('button', { class: 'so-test-second' }, 'Вторая'),
 ]
 
 type TPageOptions = {
@@ -69,7 +69,7 @@ type TPageOptions = {
 
 /**
  * Страница с кнопкой, которая открывает панель, и сама панель на
- * `v-model:visible` внутри контейнера `.s-test-host`. Отдаёт открытость: её
+ * `v-model:visible` внутри контейнера `.so-test-host`. Отдаёт открытость: её
  * пишет и тест, и панель (`update:visible`).
  */
 async function render({ props = {}, content = inside }: TPageOptions = {}): Promise<Ref<boolean>> {
@@ -78,8 +78,8 @@ async function render({ props = {}, content = inside }: TPageOptions = {}): Prom
 	wrapper = mount(
 		defineComponent({
 			render: () =>
-				h('div', { class: 's-test-host' }, [
-					h('button', { class: 's-test-opener' }, 'Открыть'),
+				h('div', { class: 'so-test-host' }, [
+					h('button', { class: 'so-test-opener' }, 'Открыть'),
 					h(
 						Drawer,
 						{
@@ -127,12 +127,12 @@ describe('разметка', () => {
 	it('внутри контейнера: панель и подложка остаются на месте, target не действует', async () => {
 		const elsewhere = document.createElement('div')
 
-		elsewhere.id = 's-test-elsewhere'
+		elsewhere.id = 'so-test-elsewhere'
 		document.body.appendChild(elsewhere)
 
-		await render({ props: { contained: true, target: '#s-test-elsewhere' } })
+		await render({ props: { contained: true, target: '#so-test-elsewhere' } })
 
-		const host = find('.s-test-host')
+		const host = find('.so-test-host')
 
 		expect(panel().parentElement).toBe(host)
 		expect(backdrop().parentElement).toBe(host)
@@ -151,7 +151,7 @@ describe('разметка', () => {
 		drawer.contained = true
 		await nextTick()
 
-		expect(panel().parentElement).toBe(find('.s-test-host'))
+		expect(panel().parentElement).toBe(find('.so-test-host'))
 
 		drawer.contained = false
 		await nextTick()
@@ -162,7 +162,7 @@ describe('разметка', () => {
 	it('панель — модальный диалог, имя — заголовок', async () => {
 		await render()
 
-		const title = find('.s-drawer__title')
+		const title = find('.so-drawer__title')
 
 		expect(panel().getAttribute('role')).toBe('dialog')
 		expect(panel().getAttribute('aria-modal')).toBe('true')
@@ -174,7 +174,7 @@ describe('разметка', () => {
 	it('край — модификатором, по умолчанию end; открытость — data-open у панели и подложки', async () => {
 		const shown = await render({ props: { placement: 'bottom' } })
 
-		expect(panel().classList).toContain('s-drawer--placement-bottom')
+		expect(panel().classList).toContain('so-drawer--placement-bottom')
 		expect(panel().dataset.open).toBe('false')
 		expect(backdrop().dataset.open).toBe('false')
 		expect(panel().dataset.swiping).toBe('false')
@@ -217,9 +217,9 @@ describe('разметка', () => {
 	it('атрибуты и события потребителя — на панели, а не в телепорте', async () => {
 		const onClick = vi.fn()
 
-		await render({ props: { class: 's-test-mine', 'data-test': 'x', onClick } })
+		await render({ props: { class: 'so-test-mine', 'data-test': 'x', onClick } })
 
-		expect(panel().classList).toContain('s-test-mine')
+		expect(panel().classList).toContain('so-test-mine')
 		expect(panel().dataset.test).toBe('x')
 
 		panel().click()
@@ -229,7 +229,7 @@ describe('разметка', () => {
 })
 
 describe('полоса жеста', () => {
-	const handle = () => document.querySelector('.s-drawer__handle')
+	const handle = () => document.querySelector('.so-drawer__handle')
 
 	it('без жеста полосы нет; с жестом — первая в панели, немая для скринридера', async () => {
 		const drawer = new TDrawer()
@@ -270,9 +270,9 @@ describe('закрытие пользователем', () => {
 
 		await open(shown)
 
-		expect(document.activeElement).toBe(find('.s-test-first'))
+		expect(document.activeElement).toBe(find('.so-test-first'))
 
-		const close = find('.s-drawer__close')
+		const close = find('.so-drawer__close')
 
 		expect(close.getAttribute('aria-label')).toBe('Close')
 
@@ -287,7 +287,7 @@ describe('закрытие пользователем', () => {
 	it('closable: false убирает крестик из DOM', async () => {
 		await render({ props: { closable: false } })
 
-		expect(document.querySelector('.s-drawer__close')).toBeNull()
+		expect(document.querySelector('.so-drawer__close')).toBeNull()
 	})
 
 	it('Escape и подложка — причины escape и outside', async () => {
@@ -345,7 +345,7 @@ describe('закрытие пользователем', () => {
 				}),
 			)
 
-		pointer('pointerdown', find('.s-drawer__handle'), 705)
+		pointer('pointerdown', find('.so-drawer__handle'), 705)
 		pointer('pointermove', panel(), 800)
 
 		expect(panel().style.getPropertyValue('--s-swipe-offset')).toBe('95px')
@@ -390,7 +390,7 @@ describe('фон под панелью', () => {
 		await open(shown)
 
 		expect(opener().getAttribute('aria-hidden')).toBe('true')
-		expect(document.activeElement).toBe(find('.s-test-first'))
+		expect(document.activeElement).toBe(find('.so-test-first'))
 		expect(document.documentElement.style.overflow).toBe('')
 	})
 
@@ -436,7 +436,7 @@ describe('внутри модального окна', () => {
 							},
 						},
 						() => [
-							h('button', { class: 's-test-in-dialog' }, 'В окне'),
+							h('button', { class: 'so-test-in-dialog' }, 'В окне'),
 							h(
 								Drawer,
 								{
@@ -446,7 +446,7 @@ describe('внутри модального окна', () => {
 										drawer.value = value
 									},
 								},
-								() => h('button', { class: 's-test-in-drawer' }, 'В панели'),
+								() => h('button', { class: 'so-test-in-drawer' }, 'В панели'),
 							),
 						],
 					),
@@ -462,12 +462,12 @@ describe('внутри модального окна', () => {
 		drawer.value = true
 		await settle()
 
-		expect(document.activeElement).toBe(find('.s-test-in-drawer'))
+		expect(document.activeElement).toBe(find('.so-test-in-drawer'))
 		expect(Number(panel().dataset.layer)).toBeGreaterThan(
-			Number(find('.s-dialog').dataset.layer),
+			Number(find('.so-dialog').dataset.layer),
 		)
 
-		pointerDown(find('.s-test-in-drawer'))
+		pointerDown(find('.so-test-in-drawer'))
 		await nextTick()
 
 		expect(dialog.value).toBe(true)
@@ -503,6 +503,6 @@ describe('открытость — visible и v-model', () => {
 
 		expect(isOpen()).toBe(true)
 		expect(isOpen(backdrop())).toBe(true)
-		expect(document.activeElement).toBe(find('.s-test-first'))
+		expect(document.activeElement).toBe(find('.so-test-first'))
 	})
 })
