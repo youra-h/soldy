@@ -13,8 +13,11 @@
 import { describe, it, expect, beforeAll, afterEach, vi } from 'vitest'
 import { mount, type DOMWrapper, type VueWrapper } from '@vue/test-utils'
 import { nextTick } from 'vue'
+import { TButton } from '@soldy-ui/core'
+import { TPluginBundle } from '@soldy-ui/plugins'
 import { LOCALES } from '@soldy-ui/playground-shared'
 import { TLocaleProviderElement } from '@soldy-ui/webc'
+import { loadHost } from '../src/hosts'
 import { router } from '../src/router'
 import App from '../src/App.vue'
 import PropControl from '../src/components/PropControl.vue'
@@ -188,6 +191,52 @@ describe('выбор «Язык» в шапке', () => {
 
 		expect(buttons()).toEqual(before)
 		expect(tags()).toEqual(['ru-RU', 'ru-RU'])
+	})
+
+	/**
+	 * У Angular корень хоста — свой компонент с `so-locale-provider`: язык шапки
+	 * хост пишет в него, а провайдер — в свой источник. Компонентов со строками
+	 * у адаптера ещё нет, и видна сама локаль корня — источник, с которым сборка
+	 * компонента собрала набор плагинов (`bundle.locale`). Набор экземпляр ядра
+	 * отдаёт событием сборки, поэтому его ловит обёртка над `mount` хоста:
+	 * колонка экземпляра монтирует компонент с `ctrl`. Кнопки остаются теми же
+	 * узлами: компоненты не пересобраны.
+	 */
+	it('доходит до корня хоста Angular без перемонтирования', async () => {
+		const host = await loadHost('angular')
+		const draw = host.mount
+		const bundles: TPluginBundle[] = []
+		const spy = vi.spyOn(host, 'mount').mockImplementation((node, options) => {
+			const { ctrl } = options.props
+
+			if (ctrl instanceof TButton) {
+				ctrl.events.on('bundle:create', (bundle) => {
+					if (bundle instanceof TPluginBundle) bundles.push(bundle)
+				})
+			}
+
+			return draw.call(host, node, options)
+		})
+
+		try {
+			const wrapper = await open('/angular/button')
+			const row = rowOf(wrapper, 'text')
+			const buttons = () =>
+				row.findAll('.pg-col__stage .s-button').map((button) => button.element)
+			const before = buttons()
+			const tags = () => new Set(bundles.map((bundle) => bundle.locale.locale.tag))
+
+			expect(before).toHaveLength(2)
+			expect(bundles.length).toBeGreaterThan(0)
+			expect(tags()).toEqual(new Set(['en-US']))
+
+			await choose(wrapper, labelOf('ru-RU'))
+
+			expect(buttons()).toEqual(before)
+			expect(tags()).toEqual(new Set(['ru-RU']))
+		} finally {
+			spy.mockRestore()
+		}
 	})
 
 	it('переживает перезагрузку стенда', async () => {

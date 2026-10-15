@@ -100,7 +100,8 @@ jobs:
       # обесценивает его целиком, поэтому типы проверяются наравне с адаптерами.
       # Оболочка — Vue (vue-tsc), а хост превью фреймворка — своя программа
       # типов со своей разметкой: строка на хост. `.svelte` хоста Svelte
-      # проверяет svelte-check, а не tsc.
+      # проверяет svelte-check, а не tsc, а шаблоны хоста Angular — ngc, как у
+      # пакета адаптера (эмита нет: noEmit в tsconfig хоста).
       - name: Типы — Playground
         run: |
           npx tsc --noEmit -p packages/playground/shared/tsconfig.json
@@ -109,6 +110,7 @@ jobs:
           npx svelte-check --tsconfig packages/playground/vue/src/hosts/svelte/tsconfig.json
           npx tsc --noEmit -p packages/playground/vue/src/hosts/solid/tsconfig.json
           npx tsc --noEmit -p packages/playground/vue/src/hosts/webc/tsconfig.json
+          npx ngc -p packages/playground/vue/src/hosts/angular/tsconfig.json
 
       - name: Типы — React
         run: npx tsc --noEmit -p packages/ui/react/tsconfig.json
@@ -147,9 +149,9 @@ jobs:
           git diff --exit-code packages/icons/material/src/index.ts
 
       # Стенд один: оболочка на Vue, превью — хосты фреймворков, и хосты
-      # собираются вместе с ней, каждый своим ленивым куском. Хоста Angular у
-      # стенда пока нет — библиотеку Angular собрала «Сборка пакетов» выше, а
-      # хост встанет в эту сборку сам, папкой в packages/playground/vue/src/hosts.
+      # собираются вместе с ней, каждый своим ленивым куском. Хост Angular
+      # собирает из исходников адаптера, как остальные хосты, компилятор Angular
+      # (`src/vite-angular.ts` стенда), а пакеты Angular доводит его линкер.
       #
       # Тему здесь не пересобираем: её собрал корневой build выше, а build:css
       # темы вычистил бы её же `dist/setup` — у CSS-сборки `emptyOutDir`.

@@ -683,7 +683,8 @@ describe('очищенное поле', () => {
 /**
  * Код колонок пишет хост фреймворка — своим синтаксисом, и файл примера для
  * «Открыть в VS Code» у него того же синтаксиса. Строка на каждый фреймворк
- * стенда: хост без неё уронит проверку, а не пропустит её.
+ * стенда, у хоста которого есть генератор кода: такой хост без строки уронит
+ * проверку, а не пропустит её.
  */
 const WIDTH_CODE: Record<string, { number: string; text: string; extension: string }> = {
 	vue: { number: ':width="40"', text: `:width="'10%'"`, extension: 'vue' },
@@ -700,10 +701,13 @@ const WIDTH_CODE: Record<string, { number: string; text: string; extension: stri
  * компоненту: `40` — числом, `10%` — строкой. По превью их не отличить —
  * ширину в пикселях заглушка получила бы и от строки `'40'`, — а код учит
  * задавать пиксели числом. Заглушка — у всех хостов стенда, и проверка идёт
- * на каждом.
+ * на каждом, у которого есть генератор кода. У хоста без генератора блоков
+ * кода нет вовсе (Angular).
  */
 describe('код колонок', () => {
-	it.each(drawing('skeleton'))(
+	const coded = drawing('skeleton').filter((framework) => hostOf(framework).snippets)
+
+	it.each(coded)(
 		'%s: набранное в поле — в коде обеих колонок синтаксисом хоста',
 		async (framework) => {
 			const expected = WIDTH_CODE[framework]
@@ -728,6 +732,16 @@ describe('код колонок', () => {
 
 			expect(codes()[0]).toContain(expected.text)
 			expect(codes()[1]).toContain("instance.width = '10%'")
+		},
+	)
+
+	it.each(drawing('skeleton').filter((framework) => !coded.includes(framework)))(
+		'%s: генератора кода нет — у колонок нет блоков кода',
+		async (framework) => {
+			const wrapper = await openPage(framework, 'skeleton')
+
+			expect(rowComponentOf(wrapper, 'width').findAllComponents(CodeView)).toHaveLength(0)
+			expect(firstLines()).toEqual([])
 		},
 	)
 })

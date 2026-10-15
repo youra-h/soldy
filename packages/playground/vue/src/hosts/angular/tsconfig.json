@@ -1,0 +1,26 @@
+{
+  // Хост Angular — своя программа типов: оболочка стенда — Vue, а шаблоны
+  // Angular проверяет только его компилятор (ngc, `strictTemplates`), как у
+  // пакета адаптера. Оболочка папку исключает из своего `tsconfig.json`.
+  // Соседей хост, как и оболочка, читает исходниками.
+  "extends": "../../../../../../tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "types": [],
+    "experimentalDecorators": true,
+    "useDefineForClassFields": false,
+    "paths": {
+      "@soldy-ui/core": ["../../../../../core/src"],
+      "@soldy-ui/plugins": ["../../../../../plugins/src"],
+      "@soldy-ui/setup": ["../../../../../setup/index.ts"],
+      "@soldy-ui/angular": ["../../../../../ui/angular/src/index.ts"],
+      "@soldy-ui/playground-shared": ["../../../../shared/src/index.ts"]
+    }
+  },
+  "angularCompilerOptions": {
+    "strictInjectionParameters": true,
+    "strictInputAccessModifiers": true,
+    "strictTemplates": true
+  },
+  "include": ["./**/*"]
+}

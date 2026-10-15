@@ -4,6 +4,7 @@ import solid from 'vite-plugin-solid'
 import { svelte } from '@sveltejs/vite-plugin-svelte'
 import path from 'node:path'
 import type { PluginOption } from 'vite'
+import { angular } from './src/vite-angular.ts'
 
 /**
  * Плагины и алиасы стенда — одни на три конфига: dev-сервер и сборку
@@ -34,6 +35,10 @@ const resolve = (to: string) => path.resolve(import.meta.dirname, to)
  * есть только в хосте Svelte и исходниках его адаптера: плагину Svelte делить
  * нечего, и `include` ему не нужен. Конфиг Svelte он берёт отсюда же — им
  * пользуется и svelte-check хоста.
+ *
+ * Angular компилирует свой компилятор (`src/vite-angular.ts`) — `.ts` хоста
+ * Angular и исходников его адаптера (`include`) по программе `tsconfig.json`
+ * хоста; остальной `.ts` компилирует сам Vite. Там же линкер пакетов Angular.
  */
 export function plugins(): PluginOption[] {
 	return [
@@ -52,6 +57,13 @@ export function plugins(): PluginOption[] {
 			],
 		}),
 		svelte(),
+		angular({
+			tsconfig: resolve('src/hosts/angular/tsconfig.json'),
+			include: [
+				/\/playground\/vue\/src\/hosts\/angular\/.+\.ts$/,
+				/\/ui\/angular\/src\/.+\.ts$/,
+			],
+		}),
 	]
 }
 
@@ -78,6 +90,7 @@ export function aliases({ themeCss }: { themeCss: boolean }): Record<string, str
 		'@soldy-ui/solid': resolve('../../ui/solid/src/index.ts'),
 		'@soldy-ui/svelte': resolve('../../ui/svelte/src/index.ts'),
 		'@soldy-ui/webc': resolve('../../ui/webc/src/index.ts'),
+		'@soldy-ui/angular': resolve('../../ui/angular/src/index.ts'),
 		'@soldy-ui/playground-shared': resolve('../shared/src/index.ts'),
 	}
 }
