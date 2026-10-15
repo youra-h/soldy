@@ -3,10 +3,10 @@
 	import { setupSkeleton } from './setup.component'
 	import type { SkeletonProps } from './base.component'
 
-	const props: SkeletonProps = $props()
+	let { ref = $bindable(), ...props }: SkeletonProps = $props()
 	const mountId = $props.id()
 
-	const binding = setupSkeleton(() => props, mountId)
+	const binding = setupSkeleton(() => props, mountId, (node) => (ref = node))
 	const state = binding.state
 </script>
 

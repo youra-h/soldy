@@ -3,10 +3,10 @@
 	import { setupComponentView } from './setup.component'
 	import type { ComponentViewProps } from './base.component'
 
-	const props: ComponentViewProps = $props()
+	let { ref = $bindable(), ...props }: ComponentViewProps = $props()
 	const mountId = $props.id()
 
-	const binding = setupComponentView(() => props, mountId)
+	const binding = setupComponentView(() => props, mountId, (node) => (ref = node))
 	const state = binding.state
 </script>
 

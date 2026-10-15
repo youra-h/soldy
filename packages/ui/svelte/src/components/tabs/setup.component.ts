@@ -21,17 +21,18 @@ import {
 	joinState,
 	useAdapter,
 	useCollectionAdapter,
+	type TRootReceiver,
 } from '../../adapter'
 import type { TabsProps } from './base.component'
 
-export function setupTabs(getProps: () => TabsProps, mountId: string) {
+export function setupTabs(getProps: () => TabsProps, mountId: string, receive: TRootReceiver) {
 	const props = getProps()
 	const adapter = createSvelteAdapterContext(TabsDescriptor(), {
 		ctrl: props.ctrl,
 		props,
 		mountId,
 	})
-	const owner = useAdapter(adapter, getProps)
+	const owner = useAdapter(adapter, getProps, receive)
 
 	const collectionAdapter = createSvelteAdapterContext(
 		TabsCollectionDescriptor(),

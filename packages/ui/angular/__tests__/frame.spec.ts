@@ -12,14 +12,17 @@
  * оставляет якорь-комментарий. Своего у Angular здесь два: без цели панели
  * нет, но узел остаётся на месте — пустым, скрытым и без классов, наборов и
  * стиля ядра: элемент написал потребитель, — и `rendered=false` его прячет, а
- * не убирает.
+ * не убирает. Место узла ведёт Angular, и панель идёт за ним: место, которое
+ * он вынул, не снимая компонента (условная проекция чужого компонента),
+ * уводит из цели и её, а вернувшееся — возвращает.
  *
  * Сценарии — те же, что у React и Solid (`frame.spec.tsx`), без серверных:
  * Frame на сервере и после гидратации — в `ssr.server.spec.ts`.
  */
 
 import { describe, it, expect, afterEach } from 'vitest'
-import { Component, signal } from '@angular/core'
+import { Component, TemplateRef, ViewContainerRef, input, signal, viewChild } from '@angular/core'
+import { TestBed } from '@angular/core/testing'
 import { TFrame } from '@soldy-ui/core'
 import { TPluginBundle, ruRU } from '@soldy-ui/plugins'
 import { LocaleProviderDirective, TButtonComponent, TFrameComponent } from '@soldy-ui/angular'
@@ -195,6 +198,81 @@ class LocaleHost {
 	}
 }
 
+/**
+ * Чужой компонент, который показывает содержимое по условию: проекцию Angular
+ * вынимает из документа и вставляет снова, а компонентов в ней не снимает.
+ */
+@Component({
+	selector: 'app-card',
+	standalone: true,
+	template: `<article class="card">
+		@if (open()) {
+			<ng-content />
+		}
+	</article>`,
+})
+class CardComponent {
+	readonly open = input(true)
+}
+
+/** Frame — прямо в проекции карточки: его узел Angular вынимает и вставляет сам. */
+@Component({
+	standalone: true,
+	imports: [TFrameComponent, CardComponent],
+	template: `@if (card()) {
+		<app-card [open]="open()">
+			<div so-frame visible [contained]="contained()">Панель</div>
+		</app-card>
+	}`,
+})
+class ProjectionHost {
+	readonly card = signal(true)
+	readonly open = signal(true)
+	readonly contained = signal(false)
+}
+
+/** Frame в обёртке-элементе внутри проекции: Angular вынимает обёртку, а с ней и якорь. */
+@Component({
+	standalone: true,
+	imports: [TFrameComponent, CardComponent],
+	template: `<app-card [open]="open()">
+		<section class="wrap"><div so-frame visible>Панель</div></section>
+	</app-card>`,
+})
+class WrappedProjectionHost {
+	readonly open = signal(true)
+}
+
+/** Представление с Frame в контейнере: его отсоединяют и вставляют снова, не снимая. */
+@Component({
+	standalone: true,
+	imports: [TFrameComponent],
+	template: `<section class="place">
+		<ng-template #panel><div so-frame visible>Панель</div></ng-template>
+		<ng-container #outlet />
+	</section>`,
+})
+class DetachHost {
+	readonly panel = viewChild.required<TemplateRef<unknown>>('panel')
+	readonly outlet = viewChild.required('outlet', { read: ViewContainerRef })
+}
+
+/** Обход NG05106: Frame внутри `@for` — не первым узлом элемента, а в обёртке. */
+@Component({
+	standalone: true,
+	imports: [TFrameComponent],
+	template: `<section class="list">
+		@for (item of items(); track item) {
+			<div class="item" [attr.data-item]="item">
+				<div so-frame visible>{{ item }}</div>
+			</div>
+		}
+	</section>`,
+})
+class ListHost {
+	readonly items = signal(['a', 'b'])
+}
+
 describe('Frame · телепорт', () => {
 	it('узел — в body, а не на месте, на месте — якорь', () => {
 		const fixture = mountHost(PanelHost)
@@ -342,6 +420,179 @@ describe('Frame · телепорт', () => {
 
 		expect(document.querySelector('.s-frame')).toBeNull()
 		expect(anchors(place)).toHaveLength(0)
+	})
+
+	/**
+	 * Место, которое Angular вынул без снятия компонента, — условная проекция
+	 * чужого компонента. Узел Frame — корень проекции: Angular вынимает его
+	 * откуда угодно, и из цели тоже, а вставляет — на место. Панель идёт за
+	 * местом: место ушло — ушла и она, вернулось — она снова в цели.
+	 */
+	it('Frame прямо в проекции: закрыли — ни узла, ни якоря, открыли — тот же узел в body', () => {
+		const fixture = mountHost(ProjectionHost)
+		const host: HTMLElement = fixture.nativeElement
+		const { open } = fixture.componentInstance
+		const node = frame()
+
+		// Два круга подряд — без лишних якорей и панелей
+		for (const round of ['первый', 'второй']) {
+			open.set(false)
+			fixture.detectChanges()
+
+			expect(node.isConnected, round).toBe(false)
+			expect(anchors(document.body), round).toHaveLength(0)
+
+			open.set(true)
+			fixture.detectChanges()
+
+			expect(frame(), round).toBe(node)
+			expect(node.parentElement, round).toBe(document.body)
+			expect(node.style.display, round).toBe('')
+			expect(anchors(find(host, '.card', HTMLElement)), round).toHaveLength(1)
+			expect(anchors(document.body), round).toHaveLength(1)
+			expect(document.querySelectorAll('.s-frame'), round).toHaveLength(1)
+		}
+	})
+
+	/**
+	 * Проекцию, закрытую с самого начала, Angular в документ не вставляет вовсе:
+	 * узел ждёт, пока его вставят, и в цель без места не уезжает.
+	 */
+	it('проекция закрыта с самого начала — узла в документе нет, открыли — узел в цели', () => {
+		// Не `mountHost`: первая отрисовка — уже с закрытой проекцией
+		const fixture = TestBed.createComponent(ProjectionHost)
+		const host: HTMLElement = fixture.nativeElement
+
+		fixture.componentInstance.open.set(false)
+		fixture.detectChanges()
+
+		expect(document.querySelector('[so-frame]')).toBeNull()
+		expect(anchors(document.body)).toHaveLength(0)
+
+		fixture.componentInstance.open.set(true)
+		fixture.detectChanges()
+
+		expect(frame().parentElement).toBe(document.body)
+		expect(frame().textContent).toBe('Панель')
+		expect(anchors(find(host, '.card', HTMLElement))).toHaveLength(1)
+	})
+
+	/**
+	 * Узел Frame в обёртке: Angular вынимает обёртку, и якорь уходит из
+	 * документа вместе с ней, а узел остался бы в цели. Он уходит к якорю — в
+	 * обёртку, — и возвращается в цель, когда обёртку вставили снова.
+	 */
+	it('Frame в обёртке внутри проекции: закрыли — узла нет, открыли — тот же узел в цели', () => {
+		const fixture = mountHost(WrappedProjectionHost)
+		const host: HTMLElement = fixture.nativeElement
+		const node = frame()
+
+		fixture.componentInstance.open.set(false)
+		fixture.detectChanges()
+
+		expect(node.isConnected).toBe(false)
+		expect(anchors(document.body)).toHaveLength(0)
+
+		fixture.componentInstance.open.set(true)
+		fixture.detectChanges()
+
+		expect(frame()).toBe(node)
+		expect(node.parentElement).toBe(document.body)
+		expect(anchors(find(host, '.wrap', HTMLElement))).toHaveLength(1)
+		expect(anchors(document.body)).toHaveLength(1)
+	})
+
+	it('карточку сняли при закрытой проекции — ни узла, ни якоря', () => {
+		const fixture = mountHost(ProjectionHost)
+		const node = frame()
+
+		fixture.componentInstance.open.set(false)
+		fixture.detectChanges()
+
+		fixture.componentInstance.card.set(false)
+		fixture.detectChanges()
+
+		expect(node.isConnected).toBe(false)
+		expect(document.querySelector('[so-frame]')).toBeNull()
+		expect(anchors(document.body)).toHaveLength(0)
+	})
+
+	/** Якорь, который место потеряло с проекцией, узел больше не держит. */
+	it('contained при закрытой проекции: узел не вернулся к старому якорю, открыли — на месте', () => {
+		const fixture = mountHost(ProjectionHost)
+		const host: HTMLElement = fixture.nativeElement
+		const node = frame()
+
+		fixture.componentInstance.open.set(false)
+		fixture.detectChanges()
+
+		fixture.componentInstance.contained.set(true)
+		fixture.detectChanges()
+
+		expect(node.isConnected).toBe(false)
+		expect(anchors(document.body)).toHaveLength(0)
+
+		fixture.componentInstance.open.set(true)
+		fixture.detectChanges()
+
+		expect(node.parentElement).toBe(find(host, '.card', HTMLElement))
+		expect(node.style.display).toBe('')
+		expect(node.dataset.contained).toBe('true')
+		expect(anchors(document.body)).toHaveLength(0)
+	})
+
+	/**
+	 * Отсоединённое представление живёт без места: узлы его корней Angular
+	 * вынимает из документа, и из цели тоже, а компонент не снимает.
+	 */
+	it('представление отсоединили — узла нет, вставили снова — тот же узел в цели', () => {
+		const fixture = mountHost(DetachHost)
+		const host: HTMLElement = fixture.nativeElement
+		const { outlet, panel } = fixture.componentInstance
+		const view = outlet().createEmbeddedView(panel())
+
+		fixture.detectChanges()
+
+		const node = frame()
+
+		expect(node.parentElement).toBe(document.body)
+
+		outlet().detach()
+		fixture.detectChanges()
+
+		expect(node.isConnected).toBe(false)
+		expect(anchors(document.body)).toHaveLength(0)
+
+		outlet().insert(view)
+		fixture.detectChanges()
+
+		expect(frame()).toBe(node)
+		expect(node.parentElement).toBe(document.body)
+		expect(anchors(find(host, '.place', HTMLElement))).toHaveLength(1)
+	})
+
+	/**
+	 * Angular вставляет и переставляет узлы `@for` относительно первого узла
+	 * представления, и Frame на этом месте роняет его с NG05106. Обёртка-элемент
+	 * — первый узел вместо Frame: Angular двигает её, а якорь ездит внутри.
+	 */
+	it('обход NG05106: Frame в обёртке внутри @for — вставка в начало и перестановка', () => {
+		const fixture = mountHost(ListHost)
+		const host: HTMLElement = fixture.nativeElement
+		const { items } = fixture.componentInstance
+
+		items.set(['c', 'a', 'b'])
+		fixture.detectChanges()
+
+		items.set(['b', 'c', 'a'])
+		fixture.detectChanges()
+
+		const wraps = Array.from(host.querySelectorAll('.item'))
+		const panels = Array.from(document.body.querySelectorAll(':scope > .s-frame'))
+
+		expect(wraps.map((wrap) => wrap.getAttribute('data-item'))).toEqual(['b', 'c', 'a'])
+		expect(wraps.map((wrap) => anchors(wrap).length)).toEqual([1, 1, 1])
+		expect(panels.map((panel) => panel.textContent).sort()).toEqual(['a', 'b', 'c'])
 	})
 
 	/**

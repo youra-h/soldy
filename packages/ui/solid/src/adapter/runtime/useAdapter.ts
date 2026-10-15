@@ -11,11 +11,22 @@
  * 2. Solid → Core: входные пропсы в эффекте
  * 3. События (Core → колбэк-пропы onXxx)
  * 4. Компонент принят — adapter.attach()
- * 5. DOM-биндинг через callback-ref
+ * 5. DOM-биндинг через callback-ref, и тот же узел — `ref` потребителя
  * 6. Очистка при уничтожении компонента (onCleanup)
  *
  * Props передаются как есть: в Solid это объект геттеров, деструктурировать
  * его нельзя, но читать напрямую — можно и нужно.
+ *
+ * `ref` потребителя (`<Button ref={button}>`) получает корень компонента —
+ * узел, на который ложатся его класс и атрибуты. У поля (Input, CheckBox,
+ * Switch) — тоже корень, а не `<input>`: от корня до поля потребитель дойдёт
+ * `querySelector`, а от поля до корня — только по родителям, и этот путь
+ * ломается при каждой правке разметки. Отдаёт его callback-ref корня — тем же
+ * вызовом, после привязки к `TElementPlugin`: у узла `ref` один, и ставит его
+ * адаптер. Компоненту Solid отдаёт `ref` функцией — `ref={button}` тоже:
+ * функция присвоит узел переменной. Узлом он бывает только мимо компилятора
+ * Solid, и присвоить такой некуда. Снятие узла Solid своим `ref` не
+ * объявляет, и `ref` потребителя тоже: на `onCleanup` — только отвязка корня.
  */
 
 import { createEffect, createMemo, onCleanup } from 'solid-js'
@@ -24,6 +35,14 @@ import { toInstanceState } from '@soldy-ui/setup'
 import type { IAdapterContext, IComponentContract, TAdapterState } from '@soldy-ui/setup'
 import type { IPluginBundle } from '@soldy-ui/plugins'
 import { SolidProfile } from '../common'
+
+/**
+ * `ref` потребителя — корень компонента. Функция, которой Solid отдаёт узел,
+ * или переменная: `ref={button}` компилятор Solid превращает в функцию,
+ * которая присвоит ей узел. Узел — `Element`, а не `HTMLElement`: `tag`
+ * свободен, и корнем бывает `<svg>` (иконка по роли).
+ */
+export type TConsumerRef = Element | ((element: Element) => void)
 
 export type TBinding<
 	C extends IComponentContract = IComponentContract,
@@ -35,7 +54,7 @@ export type TBinding<
 	readonly state: TAdapterState<C>
 	/** Мемо: DOM-атрибуты, не съеденные компонентом */
 	forwardProps: () => Partial<TProps>
-	/** callback-ref для корневого элемента */
+	/** callback-ref корня: привязка к `TElementPlugin`, затем тот же узел — `ref` потребителя */
 	ref: (el: Element) => void
 }
 
@@ -85,6 +104,12 @@ export function useAdapter<C extends IComponentContract, TProps extends object>(
 			adapter.bindElement(el)
 
 			onCleanup(() => adapter.bindElement(null))
+
+			// Тот же узел — `ref` потребителя: Solid читает `ref` один раз, когда
+			// создаёт узел, — и потребителю его отдаёт тот же вызов
+			const consumer: unknown = Reflect.get(props, 'ref')
+
+			if (typeof consumer === 'function') consumer(el)
 		},
 	}
 }

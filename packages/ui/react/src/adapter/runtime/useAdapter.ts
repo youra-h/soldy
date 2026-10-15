@@ -12,14 +12,16 @@
  * 1. Core → React: подписка на состояние связки
  * 2. React → Core: входные пропсы, сменившиеся с прошлого рендера родителя
  * 3. События → колбэк-пропы
- * 4. DOM-биндинг через контекст (TElementPlugin)
+ * 4. DOM-биндинг через контекст (TElementPlugin), и тот же узел — `ref`
+ *    потребителя (`TRootRef`)
  *
  * Контекст может смениться: useAdapterContext пересобирает его, когда React
  * заново устанавливает эффекты (StrictMode, `<Activity>`). Пересборка — такое
  * же монтирование: пропсы применяет сборка, у нового контекста своя связка, и
  * состояние заполняется заново из неё.
  *
- * Возвращает ctrl, plugins, ref, forwardProps и state (экспортированные props).
+ * Возвращает ctrl, plugins, ref и bindRef, forwardProps и state
+ * (экспортированные props).
  *
  * Фасад коллекции связывает `useCollectionAdapter` — те же шаги 1–3 без
  * того, что принадлежит компоненту.
@@ -27,6 +29,7 @@
 
 import {
 	useEffect,
+	useInsertionEffect,
 	useLayoutEffect,
 	useMemo,
 	useReducer,
@@ -43,6 +46,7 @@ import type {
 } from '@soldy-ui/setup'
 import type { IPluginBundle } from '@soldy-ui/plugins'
 import { ReactProfile } from '../common'
+import { TRootRef, consumerRefOf } from './root-ref.class'
 import { TStableSnapshot } from './stable-snapshot.class'
 
 export type TBinding<
@@ -51,7 +55,13 @@ export type TBinding<
 > = {
 	ctrl: C['instance']
 	plugins: IPluginBundle | null
+	/** Ref корня: привязка к `TElementPlugin`, и тот же узел — `ref` потребителя. */
 	ref: (el: Element | null) => void
+	/**
+	 * Ref корня внутри обёртки (`toWrappedRootProps`) — только привязка к
+	 * `TElementPlugin`: `ref` потребителя получает обёртка, с его атрибутами.
+	 */
+	bindRef: (el: Element | null) => void
 	/** Пропсы, которые компонент не съел: уходят атрибутами в DOM. */
 	forwardProps: Partial<TProps>
 	/** Свойства инстанса и выходы плагинов со снимком через `valueOf()` — см. `TAdapterState`. */
@@ -59,8 +69,8 @@ export type TBinding<
 }
 
 /**
- * То же, что `TBinding`, но без `ctrl` и `ref`: они принадлежат компоненту, а
- * не фасаду его коллекции (см. `useCollectionAdapter`).
+ * То же, что `TBinding`, но без `ctrl` и ref корня: они принадлежат
+ * компоненту, а не фасаду его коллекции (см. `useCollectionAdapter`).
  */
 export type TCollectionBinding<
 	C extends IComponentContract = IComponentContract,
@@ -88,38 +98,6 @@ function bind(adapter: IAdapterContext): TStore {
 
 function rebind(_: TStore, adapter: IAdapterContext): TStore {
 	return bind(adapter)
-}
-
-/**
- * Ref корня: привязывает узел к контексту, пока контекст жив.
- *
- * Уничтоженный контекст ref отпускает. Ref React хранит в узле своего дерева
- * (fiber), и снятый узел живёт дольше размонтирования: событийная система
- * React DOM помнит узел последнего события до следующего события на странице
- * (`return_targetInst`). У снятого узла React чистит пропсы, состояние и
- * эффекты, но не `ref` — и ref, замкнутый на контекст, держал бы через него
- * размонтированный компонент целиком: у таблицы — все строки с записями.
- * Привязывать к уничтоженному контексту нечего: его набор плагинов уничтожен
- * вместе с ним.
- *
- * Своей функцией, а не замыканием в `useAdapter`: замыкание держит всю
- * область вызова, где его создали, а область `useAdapter` держит ещё пропсы и
- * связку своего рендера, — через них компонент остался бы досягаем и после
- * того, как ref отпустил контекст.
- *
- * Уничтожение ref слышит слушателем всех событий шины контекста (`listen`), а
- * не подпиской `on('destroy')`: слушатель шине — массив из одного элемента, а
- * подписка заводит ей карту наборов, у таблицы — по карте на контекст каждой
- * строки и каждого её чекбокса.
- */
-function rootRef(adapter: IAdapterContext): (el: Element | null) => void {
-	let context: IAdapterContext | null = adapter
-
-	adapter.events.listen((event) => {
-		if (event === 'destroy') context = null
-	})
-
-	return (el) => context?.bindElement(el)
 }
 
 /**
@@ -175,22 +153,39 @@ function useExchange(
 	return { binding, state }
 }
 
-/** Инстанс и выходы плагинов берутся из контракта в типе контекста — его выводит `createAdapterContext`. */
+/**
+ * Инстанс и выходы плагинов берутся из контракта в типе контекста — его
+ * выводит `createAdapterContext`.
+ *
+ * `ref` в пропсах — `ref` потребителя: в React 19 это обычный проп, и ведёт он
+ * к корню компонента (`TRootRef`).
+ */
 export function useAdapter<C extends IComponentContract, TProps extends object>(
 	adapter: IAdapterContext<C>,
 	props: TProps,
 ): TBinding<C, TProps> {
 	const { binding, state } = useExchange(adapter, props)
 
-	// 4. DOM-биндинг: контекст сам знает, есть ли у набора TElementPlugin
-	const ref = useMemo(() => rootRef(adapter), [adapter])
+	// 4. DOM-биндинг: контекст сам знает, есть ли у набора TElementPlugin, а
+	// корень потребителю отдаёт тот же ref корня
+	const root = useMemo(() => new TRootRef(adapter), [adapter])
+	const consumer = consumerRefOf(props)
+
+	// `ref` потребителя коммита — раньше, чем React привяжет ref узлов: ref
+	// корня того же коммита отдаст узел уже ему, а отброшенный рендер ничего не
+	// запишет
+	useInsertionEffect(() => root.consume(consumer), [root, consumer])
+	// Сменился только `ref` потребителя: ref корня тот же, и React его не
+	// зовёт, — новый получает узел здесь, после привязки ref узлов
+	useLayoutEffect(() => root.sync(), [root, consumer])
 
 	const forwardProps = useMemo(() => binding.forward(props), [props, binding])
 
 	return {
 		ctrl: adapter.instance,
 		plugins: adapter.bundle,
-		ref,
+		ref: root.attach,
+		bindRef: root.bind,
 		forwardProps,
 		state: toInstanceState<C>(state),
 	}
@@ -200,7 +195,7 @@ export function useAdapter<C extends IComponentContract, TProps extends object>(
  * Адаптер фасада коллекции — всё то же, кроме того, что принадлежит компоненту.
  *
  * У коллекционного компонента контекстов два: свой и фасада. Состояние, входы
- * и события у фасада те же, что у компонента, а `ctrl` и `ref` — нет:
+ * и события у фасада те же, что у компонента, а `ctrl` и ref корня — нет:
  *
  * - `ctrl` у фасада это `T*CollectionFacade`, тогда как снаружи под этим именем
  *   ждут сам компонент;

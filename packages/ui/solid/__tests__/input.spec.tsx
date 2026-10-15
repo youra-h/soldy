@@ -297,16 +297,18 @@ describe('Input · значение', () => {
 	})
 
 	/**
-	 * `ref` потребителя уходит полю, как остальные его атрибуты, и `ref` поля
-	 * не выбивает: значение из ядра доходит до узла и после набора, а
-	 * потребитель получает тот же узел.
+	 * `ref` потребителя получает корень поля, а не `<input>`: до поля
+	 * потребитель дойдёт от корня. Свой `ref` у `<input>` поле при этом не
+	 * теряет: значение из ядра доходит до узла и после набора.
 	 */
-	it('ref потребителя получает поле и не отнимает у поля его узел', async () => {
+	it('ref потребителя получает корень и не отнимает у поля его узел', async () => {
 		const ctrl = new TInput()
-		const ref = vi.fn()
-		const input = field(mount(() => <Input ctrl={ctrl} ref={ref} />).root())
+		const nodes: Element[] = []
+		const root = mount(() => <Input ctrl={ctrl} ref={(node) => nodes.push(node)} />).root()
+		const input = field(root)
 
-		expect(ref.mock.calls.map(([node]) => node)).toEqual([input])
+		expect(nodes).toHaveLength(1)
+		expect(nodes[0]).toBe(root)
 
 		await nextFrame()
 		type(input, 'abc')

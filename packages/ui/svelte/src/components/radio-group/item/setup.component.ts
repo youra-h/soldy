@@ -26,17 +26,22 @@ import {
 	joinState,
 	useAdapter,
 	useCollectionAdapter,
+	type TRootReceiver,
 } from '../../../adapter'
 import type { RadioGroupItemProps } from './base.component'
 
-export function setupRadioGroupItem(getProps: () => RadioGroupItemProps, mountId: string) {
+export function setupRadioGroupItem(
+	getProps: () => RadioGroupItemProps,
+	mountId: string,
+	receive: TRootReceiver,
+) {
 	const props = getProps()
 	const adapter = createSvelteAdapterContext(RadioGroupItemDescriptor(), {
 		ctrl: props.ctrl,
 		props,
 		mountId,
 	})
-	const owner = useAdapter(adapter, getProps)
+	const owner = useAdapter(adapter, getProps, receive)
 
 	const item = createSvelteAdapterContext(
 		RadioGroupCollectionItemDescriptor(),

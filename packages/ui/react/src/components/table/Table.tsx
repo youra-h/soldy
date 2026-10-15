@@ -29,8 +29,9 @@ const SortIcon = roleIcon('arrowUpward')
  * Окно таблицы — разметка `div.s-table__viewport` вокруг корня: в окне
  * таблица прокручивается вбок, когда колонки шире места, — прокрутку включает
  * тема по `data-overflow` таблицы. Окно — внешний узел компонента, и
- * атрибуты потребителя и скрытие достаются ему, а классы, наборы и `ref` —
- * таблице (`toWrappedRootProps`), как у Vue.
+ * атрибуты потребителя, его `ref` и скрытие достаются ему, а классы, наборы и
+ * привязка корня к `TElementPlugin` (`bindRef`) — таблице
+ * (`toWrappedRootProps`), как у Vue.
  *
  * Логики в разметке нет: заголовки — показанные колонки коллекции
  * (`shownColumns`), тело — то, что рисует коллекция строк (`drawn`), число
@@ -77,7 +78,7 @@ const SortIcon = roleIcon('arrowUpward')
  * коллекцию.
  */
 export function Table(props: TableProps): ReactElement | null {
-	const { ref, forwardProps, state, layer, facade } = useSetupTable(props)
+	const { bindRef, forwardProps, state, layer, facade } = useSetupTable(props)
 
 	const {
 		rendered,
@@ -101,7 +102,7 @@ export function Table(props: TableProps): ReactElement | null {
 
 	const Tag = tag as ElementType
 	const { wrapper, root } = toWrappedRootProps(
-		ref,
+		bindRef,
 		state,
 		[attrs, aria, dataset],
 		forwardProps,

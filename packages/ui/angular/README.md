@@ -118,9 +118,9 @@ template: `<div so-frame [visible]="open()" [x]="10" [y]="20" class="app-menu">�
 Angular inserts and moves nodes relative to the ones it rendered, so a Frame must not be the first
 node of an `@for` item that gets items inserted before it or reordered — Angular fails with
 NG05106. Wrap it in an element: `@for (item of items; track item.id) { <section><div so-frame>…`.
-Angular also does not tell a component that its place left the page while the component lives on,
-so a Frame projected through a conditional `<ng-content>` of another component does not follow that
-content: it stays in `target` or comes back in place. Put the condition around the Frame itself.
+The panel follows its place. When Angular takes the place off the page while the component lives
+on — a Frame inside a conditional `<ng-content>` of another component, or in a detached view — the
+panel leaves the page with it, and when the place comes back, the panel is back in `target`.
 
 The language and the strings the library renders itself come from the nearest
 `LocaleProviderDirective` above — it can sit on an `ng-container`, and changing `locale` updates

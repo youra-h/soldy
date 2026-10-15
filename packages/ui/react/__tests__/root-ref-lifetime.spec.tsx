@@ -19,7 +19,7 @@ import { describe, it, expect, vi } from 'vitest'
 import type { TTableColumnSource, TTableRecord } from '@soldy-ui/core'
 import { ButtonDescriptor, createAdapterContext } from '@soldy-ui/setup'
 import type { IAdapterContext } from '@soldy-ui/setup'
-import { Table } from '@soldy-ui/react'
+import { Button, Table } from '@soldy-ui/react'
 import { mount, nextFrame } from './mount'
 
 /** Ref узла: так React зовёт его — с узлом и с `null`. */
@@ -131,5 +131,27 @@ describe('ref корня после размонтирования не держ
 		for (const ref of refs) ref(document.createElement('div'))
 
 		expect(bindElement).not.toHaveBeenCalled()
+	})
+
+	/**
+	 * Ref корня отдаёт узел и `ref` потребителя (`TRootRef`). Уничтоженный
+	 * контекст отпускает и его: ref, вызванный после размонтирования, узла
+	 * потребителю больше не отдаёт.
+	 */
+	it('кнопка: ref корня после размонтирования ref потребителя не зовёт', () => {
+		const nodes: (Element | null)[] = []
+		const { container, render } = mount(<Button ref={(node) => void nodes.push(node)} />)
+		const root = container.firstElementChild
+		const refs = keptRefs(container)
+
+		expect(refs.length).toBeGreaterThan(0)
+
+		render(<></>)
+
+		for (const ref of refs) ref(document.createElement('div'))
+
+		expect(nodes).toHaveLength(2)
+		expect(nodes[0]).toBe(root)
+		expect(nodes[1]).toBeNull()
 	})
 })

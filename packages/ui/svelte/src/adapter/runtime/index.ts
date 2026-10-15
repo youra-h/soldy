@@ -3,6 +3,7 @@ export {
 	useCollectionAdapter,
 	type TBinding,
 	type TCollectionBinding,
+	type TRootReceiver,
 } from './useAdapter.svelte'
 export { joinState, type TJoinedState } from './state'
 export { default as Dynamic } from './Dynamic.svelte'

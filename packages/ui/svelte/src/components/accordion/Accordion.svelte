@@ -4,10 +4,10 @@
 	import { setupAccordion } from './setup.component'
 	import type { AccordionProps } from './base.component'
 
-	const props: AccordionProps = $props()
+	let { ref = $bindable(), ...props }: AccordionProps = $props()
 	const mountId = $props.id()
 
-	const binding = setupAccordion(() => props, mountId)
+	const binding = setupAccordion(() => props, mountId, (node) => (ref = node))
 	const state = binding.state
 </script>
 

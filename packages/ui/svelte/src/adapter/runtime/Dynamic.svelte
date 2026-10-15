@@ -12,7 +12,7 @@
 		tag: string | object | undefined
 		/** Атрибуты корня — `toRootProps` компонента. */
 		attributes: TRootAttributes
-		/** Привязка корня к `TElementPlugin` компонента — `binding.attachElement`. */
+		/** Привязка корня к `TElementPlugin` компонента и его `ref` — `binding.attachElement`. */
 		attach: Attachment<Element>
 		children?: Snippet
 	}

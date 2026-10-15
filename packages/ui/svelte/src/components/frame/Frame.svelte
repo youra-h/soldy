@@ -3,10 +3,10 @@
 	import { setupFrame } from './setup.component'
 	import type { FrameProps } from './base.component'
 
-	const props: FrameProps = $props()
+	let { ref = $bindable(), ...props }: FrameProps = $props()
 	const mountId = $props.id()
 
-	const binding = setupFrame(() => props, mountId)
+	const binding = setupFrame(() => props, mountId, (node) => (ref = node))
 	const state = binding.state
 </script>
 

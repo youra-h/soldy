@@ -3,10 +3,10 @@
 	import { setupSwitch } from './setup.component'
 	import type { SwitchAttributes, SwitchProps } from './base.component'
 
-	const props: SwitchProps = $props()
+	let { ref = $bindable(), ...props }: SwitchProps = $props()
 	const mountId = $props.id()
 
-	const binding = setupSwitch(() => props, mountId)
+	const binding = setupSwitch(() => props, mountId, (node) => (ref = node))
 	const state = binding.state
 	const ctrl = binding.ctrl
 </script>
