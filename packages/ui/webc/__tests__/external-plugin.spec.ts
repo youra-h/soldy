@@ -1,12 +1,12 @@
 /**
  * Плагин, поставленный снаружи: пропсы через `pluginProps`, события через
- * `plugin:event`.
+ * `so:plugin:event`.
  *
  * Тот же канал, что во Vue (`:plugin-props`, `@plugin:event`), React
  * (`pluginProps`, `onPluginEvent`) и Angular: поверхность компонента одна на
  * тип, а контракт внешнего плагина известен только в рантайме
  * (`definePlugin` записывает его за классом). У элемента это свойство
- * `pluginProps` или атрибут `plugin-props` с JSON и событие `plugin:event` с
+ * `pluginProps` или атрибут `plugin-props` с JSON и событие `so:plugin:event` с
  * конвертом в `detail`.
  */
 
@@ -79,7 +79,7 @@ function createButton(): { el: TButtonElementProps; bundle: () => TPluginBundle 
 
 	let bundle: TPluginBundle | undefined
 
-	el.addEventListener('bundle:create', (event) => {
+	el.addEventListener('so:bundle:create', (event) => {
 		if (event instanceof CustomEvent && event.detail instanceof TPluginBundle) {
 			bundle = event.detail
 		}
@@ -88,7 +88,7 @@ function createButton(): { el: TButtonElementProps; bundle: () => TPluginBundle 
 	return { el, bundle: () => bundle }
 }
 
-describe('плагин снаружи · pluginProps и plugin:event', () => {
+describe('плагин снаружи · pluginProps и so:plugin:event', () => {
 	it('плагин реестра получает значение свойства и его смену, снятое — умолчание', async () => {
 		dispose = usePlugins(TButton, [TStepPlugin])
 
@@ -127,16 +127,16 @@ describe('плагин снаружи · pluginProps и plugin:event', () => {
 		expect(bundle()?.get(TStepPlugin)?.size).toBe(1)
 	})
 
-	it('плагин из bundle:create получает ждавшее его значение, события — конвертом', async () => {
+	it('плагин из so:bundle:create получает ждавшее его значение, события — конвертом', async () => {
 		const { el, bundle } = createButton()
 		const events: unknown[] = []
 
-		el.addEventListener('bundle:create', (event) => {
+		el.addEventListener('so:bundle:create', (event) => {
 			if (event instanceof CustomEvent && event.detail instanceof TPluginBundle) {
 				event.detail.use(TStepPlugin)
 			}
 		})
-		el.addEventListener('plugin:event', (event) => {
+		el.addEventListener('so:plugin:event', (event) => {
 			if (event instanceof CustomEvent) events.push(event.detail)
 		})
 		Reflect.set(el, 'pluginProps', { step_size: 3 })

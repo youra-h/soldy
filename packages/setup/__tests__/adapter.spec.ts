@@ -412,6 +412,23 @@ describe('TCollectionItemExtension: сборка и вход', () => {
 
 		expect(engine.extensions.batch.items).toEqual([])
 	})
+
+	it('после connect() расширение не ставится: пропсы сборки для meta контекст уже отпустил', () => {
+		// Пустой `meta` молча потерял бы `selected` из разметки — поэтому ошибка
+		const { factory } = createElevatorFactory()
+		const context = createAdapterContext(ListBoxCollectionItemDescriptor(), {
+			props: { selected: true },
+		})
+
+		context.connect(CallbackProfile)
+
+		expect(() =>
+			context.use(TCollectionItemExtension, {
+				item: new TListBoxItem({ value: 'a', text: 'a' }),
+				elevator: factory,
+			}),
+		).toThrow('TCollectionItemExtension ставится до connect()')
+	})
 })
 
 /**

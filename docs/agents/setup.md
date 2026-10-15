@@ -145,6 +145,19 @@
 - **Начальные значения — только в сборке** и в общем формате имён
   (`CommonProfile`): имя пропа одно во всех фреймворках, профиль адаптера
   сборке не нужен. Память входов обмена начинается с тех же пропсов сборки.
+  **Пропсы сборки контекст держит до первого `connect()`**: из них обмен
+  заводит память входов, расширения читают их в конструкторе (`meta` элемента
+  коллекции), а дальше память входов живёт своими ячейками, и контекст пропсы
+  отпускает. У React, Angular и Web Components пропсы сборки — снимок одного
+  прохода, и раньше контекст держал его до размонтирования: у таблицы на React
+  — прежний список строк со всеми записями. Поэтому расширение, которому нужны
+  пропсы сборки, ставится до `connect()` (`TCollectionItemExtension` без них
+  бросает ошибку, а не теряет `selected` и `active` разметки), и обмен один на
+  монтирование: повторный `connect()` с тем же профилем отдаёт его же — React
+  зовёт его из инициализатора `useReducer`, а тот под StrictMode вызывается
+  дважды, — с другим профилем — ошибка. Сторож —
+  `setup/__tests__/binding.spec.ts`, «сборка · пропсы сборки живут до
+  connect()».
 - Реестры и тема ни о ком не знают: их зовут `TOwnBundle` и
   `TCollectionExtension`. Правило «`instanceof` + `scope` + `embedded`» одно на
   оба реестра — `createRegistrations` (`protected/registry/registrations.ts`).
@@ -399,10 +412,15 @@ Builder добавил бы изменяемое состояние, pipeline �
 - `callbackEventNaming` (`protected/naming/`) — `element:ready` → `onElementReady`; общая стратегия
   для React, Svelte и Solid, где события это колбэк-пропы. Тип-зеркало —
   `TCallbackEventProps`. Остальные адаптеры именуют события в своём
-  `adapter/common/naming.ts`: Vue и Web Components отдают имя ядра как есть
-  (`element:ready`), Angular — camelCase (`elementReady`), а событие из одного
-  слова — с префиксом `so` (`soInput`): на `(input)` у элемента Angular слушает
-  и выход, и событие DOM (см. «Angular-специфика»).
+  `adapter/common/naming.ts`: Vue отдаёт имя ядра как есть (`element:ready`).
+  Там, где события делят канал с DOM, префикс `so` получает **каждое** событие
+  адаптера, с разделителем его схемы имён: Web Components — `so:` и имя ядра
+  (`so:show`, `so:show:before`, `so:element:ready`): событие всплывает с
+  элемента потребителя; Angular — `so` и имя ядра в camelCase (`soInput`,
+  `soShowBefore`, `soElementReady`): на `(input)` у элемента Angular слушает и
+  выход, и событие DOM (см. «Angular-специфика»). Префикс — признак библиотеки,
+  а не метка совпавших с DOM имён (AGENTS.md, «Префикс — только в глобальном
+  пространстве имён»).
 - **Профиль фреймворка** (`IAdapterProfile`) — стратегия имён и слот по
   умолчанию, одна константа на адаптер (`VueProfile`, `ReactProfile`, …).
 - **Поверхность** — `TSurface.of(descriptor, profile)`: публичный API компонента
@@ -804,8 +822,8 @@ usePlugins(TButton, [TTimerPlugin])
 
 <Button :plugin-props="{ timer_ms: 500 }" @plugin:event="({ name, args }) => …" />   // Vue
 <Button pluginProps={{ timer_ms: 500 }} onPluginEvent={({ name, args }) => …} />    // React, Solid, Svelte
-<s-button [pluginProps]="{ timer_ms: 500 }" (pluginEvent)="…" />                     // Angular
-el.pluginProps = { timer_ms: 500 }; el.addEventListener('plugin:event', …)          // Web Components
+<button so-button [pluginProps]="{ timer_ms: 500 }" (soPluginEvent)="…"></button>    // Angular
+el.pluginProps = { timer_ms: 500 }; el.addEventListener('so:plugin:event', …)       // Web Components
 ```
 
 - **Контракт — свойство класса плагина** (`pluginContractOf`), а не места,

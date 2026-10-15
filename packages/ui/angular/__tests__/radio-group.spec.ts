@@ -76,7 +76,7 @@ function choose(fixture: ComponentFixture<unknown>, value: string): void {
 		so-radio-group
 		[value]="value()"
 		[disabled]="groupOff()"
-		(changeValue)="changes.push($event)"
+		(soChangeValue)="changes.push($event)"
 	>
 		<label so-radio-group-item value="a">Первый</label>
 		<label so-radio-group-item value="b" [disabled]="itemOff()">Второй</label>
@@ -206,7 +206,7 @@ describe('value ↔ checked', () => {
 			standalone: true,
 			imports: [TRadioGroupComponent, TRadioGroupItemComponent],
 			template: `@if (group()) {
-				<div so-radio-group [value]="value()" (changeValue)="value.set($event.newValue)">
+				<div so-radio-group [value]="value()" (soChangeValue)="value.set($event.newValue)">
 					<label so-radio-group-item value="a"></label>
 					@if (second()) {
 						<label so-radio-group-item value="b"></label>
@@ -320,7 +320,7 @@ describe('отменённый выбор', () => {
 				so-radio-group
 				[engine]="engine"
 				[value]="value"
-				(changeValue)="changes.push($event)"
+				(soChangeValue)="changes.push($event)"
 			>
 				<label so-radio-group-item value="a"></label>
 				<label so-radio-group-item value="b"></label>
@@ -574,7 +574,7 @@ describe('подпись', () => {
 		@Component({
 			standalone: true,
 			imports: [TRadioGroupComponent, TRadioGroupItemComponent],
-			template: `<div so-radio-group (changeValue)="order.push('группа')">
+			template: `<div so-radio-group (soChangeValue)="order.push('группа')">
 				<label so-radio-group-item value="a" (change)="order.push('потребитель')"></label>
 			</div>`,
 		})

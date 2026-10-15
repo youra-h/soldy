@@ -37,7 +37,7 @@ import type {
 } from '@soldy-ui/setup'
 import { CallbackProfile } from './helpers'
 
-/** Имена событий ядра как есть — так их отдают наружу Vue и Web Components. */
+/** Имена событий ядра как есть — так их отдаёт наружу Vue. */
 const RawProfile: IAdapterProfile = {
 	naming: { prop: underscorePropNaming, event: (name) => name.getName() },
 }

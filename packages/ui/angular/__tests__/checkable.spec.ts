@@ -226,11 +226,11 @@ describe.each(CHECKABLES)('%s · клик', (_name, { component, ctrl: create })
 		expect(ctrl.value).toBe(true)
 	})
 
-	it('один клик — одно changeValue', async () => {
+	it('один клик — одно soChangeValue', async () => {
 		const fixture = mount(component)
 		const changes: unknown[] = []
 
-		fixture.componentInstance.changeValue.subscribe((change) => changes.push(change))
+		fixture.componentInstance.soChangeValue.subscribe((change) => changes.push(change))
 
 		await nextFrame()
 		click(fixture, field(root(fixture)))

@@ -44,7 +44,7 @@ function click(fixture: ComponentFixture<unknown>, element: HTMLElement): void {
 @Component({
 	standalone: true,
 	imports: [TAccordionComponent, TAccordionItemComponent],
-	template: `<div so-accordion [mode]="mode()" (changeSelection)="selections = selections + 1">
+	template: `<div so-accordion [mode]="mode()" (soChangeSelection)="selections = selections + 1">
 		<so-accordion-item text="Первый" value="a" selected><p>Содержимое A</p></so-accordion-item>
 		<so-accordion-item text="Второй" value="b"><p>Содержимое B</p></so-accordion-item>
 	</div>`,
@@ -461,15 +461,15 @@ describe('проброс слотов секций из items', () => {
 
 describe('типы', () => {
 	it('выходы фасадов — выходы компонентов', () => {
-		expectTypeOf<TAccordionComponent['changeMode']>().toEqualTypeOf<
+		expectTypeOf<TAccordionComponent['soChangeMode']>().toEqualTypeOf<
 			EventEmitter<TSelectionMode>
 		>()
-		expectTypeOf<TAccordionComponent>().toHaveProperty('changeSelection')
-		expectTypeOf<TAccordionComponent>().toHaveProperty('engineCreate')
-		expectTypeOf<TAccordionItemComponent['changeSelected']>().toEqualTypeOf<
+		expectTypeOf<TAccordionComponent>().toHaveProperty('soChangeSelection')
+		expectTypeOf<TAccordionComponent>().toHaveProperty('soEngineCreate')
+		expectTypeOf<TAccordionItemComponent['soChangeSelected']>().toEqualTypeOf<
 			EventEmitter<undefined>
 		>()
-		expectTypeOf<TAccordionItemComponent['changeOrder']>().toEqualTypeOf<
+		expectTypeOf<TAccordionItemComponent['soChangeOrder']>().toEqualTypeOf<
 			EventEmitter<undefined>
 		>()
 	})

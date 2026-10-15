@@ -106,13 +106,13 @@ describe('атрибут потребителя перекрывает набо�
 })
 
 describe('корень связан с TElementPlugin', () => {
-	it.each(COMPONENTS)('%s: element:ready приходит с корнем', async (_name, tag, is, guard) => {
+	it.each(COMPONENTS)('%s: so:element:ready приходит с корнем', async (_name, tag, is, guard) => {
 		const el = document.createElement(tag, { is })
 		const ready: unknown[] = []
 
 		expect(guard(el)).toBe(true)
 
-		el.addEventListener('element:ready', (event) => {
+		el.addEventListener('so:element:ready', (event) => {
 			if (event instanceof CustomEvent) ready.push(event.detail)
 		})
 		document.body.appendChild(el)

@@ -93,11 +93,11 @@ function submissions(form: HTMLFormElement): TSubmission[] {
 	return seen
 }
 
-/** Нажатия кнопки (`action:press`) — счётчик. */
+/** Нажатия кнопки (`so:action:press`) — счётчик. */
 function presses(el: Element): { count: number } {
 	const counter = { count: 0 }
 
-	el.addEventListener('action:press', () => counter.count++)
+	el.addEventListener('so:action:press', () => counter.count++)
 
 	return counter
 }

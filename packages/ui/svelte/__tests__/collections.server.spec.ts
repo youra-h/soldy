@@ -73,12 +73,7 @@ const withClass = (body: string, name: string) =>
 /** Текст разметки без тегов и меток. */
 const textOf = (body: string) => body.replace(/<!--[\s\S]*?-->/g, '').replace(/<[^>]*>/g, '')
 
-/**
- * Временно, до 869ffnvvn: плагины списка (высота, прокрутка) планируют кадр
- * уже при сборке, а в Node `requestAnimationFrame` нет — рендер ListBox
- * падает. Серверные тесты Vue и React идут в jsdom и этого не видят.
- */
-describe.skip('ListBox · серверный рендер', () => {
+describe('ListBox · серверный рендер', () => {
 	it('список из items — полностью: выбранное — aria-selected', () => {
 		const { body } = render(ListBox, {
 			props: {

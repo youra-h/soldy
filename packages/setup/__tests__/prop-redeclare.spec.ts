@@ -46,7 +46,7 @@ import { inheritDeclarations } from '../protected/define/inherit'
 import { OWNER_STYLE_PROPS } from '../content/descriptors/components/stylable.descriptor'
 import { required } from './helpers'
 
-/** Имена событий ядра как есть — так их отдают наружу Vue и Web Components. */
+/** Имена событий ядра как есть — так их отдаёт наружу Vue. */
 const RawProfile: IAdapterProfile = {
 	naming: { prop: underscorePropNaming, event: (name) => name.getName() },
 }

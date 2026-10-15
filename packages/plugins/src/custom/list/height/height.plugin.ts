@@ -41,6 +41,13 @@ interface IListHeightOwner extends Pick<IList, 'maxRows'> {
  * их число и порядок не говорят ни сколько строк в списке, ни нужна ли
  * прокрутка. Высоту строки дают нарисованные: показанный, но не нарисованный
  * элемент — той же высоты, высота строк в окне одна на все.
+ *
+ * **Пересчёт на кадр — только при узле корня**: между `ready` и `removed`
+ * своего `TElementPlugin`. Сборка вместе с подписками плагина идёт и на
+ * сервере, и состав, `maxRows` и строки меняются уже тогда, а узла там нет,
+ * как нет и `requestAnimationFrame`. Без узла мерить нечего, и повод кадра не
+ * планирует: всё, что сменилось до узла, применяет `ready` — предел он ставит
+ * сразу.
  */
 export class TListHeightPlugin extends TBasePlugin<any> {
 	private _element: Element | null = null
@@ -49,11 +56,12 @@ export class TListHeightPlugin extends TBasePlugin<any> {
 	private _collectionElements: TCollectionElements | null = null
 	private _rootObserver: ResizeObserver | null = null
 	private readonly _itemObservers = new Map<string | number, ResizeObserver>()
-	private readonly _scheduleUpdate: () => void
+	/** Пересчёт в следующем кадре; прежний отложенный отменяется. */
+	private readonly _updateNextFrame: () => void
 
 	constructor() {
 		super()
-		this._scheduleUpdate = frameDebounce(() => this._update())
+		this._updateNextFrame = frameDebounce(() => this._update())
 	}
 
 	override install(ctx: IPluginContext): void {
@@ -137,6 +145,15 @@ export class TListHeightPlugin extends TBasePlugin<any> {
 		this._itemObservers.get(uid)?.disconnect()
 		this._itemObservers.delete(uid)
 		this._scheduleUpdate()
+	}
+
+	/**
+	 * Пересчитать предел кадром позже — пока у плагина есть узел корня. Без
+	 * узла повод ничего не планирует, какой бы он ни был: всё, что сменилось до
+	 * узла, пересчитает `ready`.
+	 */
+	private _scheduleUpdate(): void {
+		if (this._element) this._updateNextFrame()
 	}
 
 	/**

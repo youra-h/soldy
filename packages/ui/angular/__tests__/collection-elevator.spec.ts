@@ -165,7 +165,7 @@ describe('лифт', () => {
 		standalone: true,
 		imports: [TListBoxComponent, TListBoxItemComponent],
 		template: `<so-list-box-item value="z" text="Z" />
-			<div so-list-box (engineCreate)="engines.push($event)">
+			<div so-list-box (soEngineCreate)="engines.push($event)">
 				<so-list-box-item value="a" text="A" />
 			</div>`,
 	})
@@ -192,11 +192,11 @@ describe('лифт', () => {
 		@Component({
 			standalone: true,
 			imports: [TListBoxComponent, TListBoxItemComponent],
-			template: `<div so-list-box (engineCreate)="left = $event">
+			template: `<div so-list-box (soEngineCreate)="left = $event">
 					<so-list-box-item value="a" text="A" />
 					<so-list-box-item value="b" text="B" />
 				</div>
-				<div so-list-box (engineCreate)="right = $event">
+				<div so-list-box (soEngineCreate)="right = $event">
 					<so-list-box-item value="x" text="X" />
 					<so-list-box-item value="y" text="Y" />
 					<so-list-box-item value="z" text="Z" />
@@ -223,10 +223,10 @@ describe('лифт', () => {
 		@Component({
 			standalone: true,
 			imports: [TListBoxComponent, TListBoxItemComponent],
-			template: `<div so-list-box (engineCreate)="outer = $event">
+			template: `<div so-list-box (soEngineCreate)="outer = $event">
 				<so-list-box-item value="a" text="A">
 					<span slot="trailing">
-						<div so-list-box (engineCreate)="inner = $event">
+						<div so-list-box (soEngineCreate)="inner = $event">
 							<so-list-box-item value="x" text="X" />
 							<so-list-box-item value="y" text="Y" />
 						</div>
@@ -258,9 +258,9 @@ describe('лифт', () => {
 				TListBoxComponent,
 				TListBoxItemComponent,
 			],
-			template: `<div so-accordion (engineCreate)="sections = $event">
+			template: `<div so-accordion (soEngineCreate)="sections = $event">
 				<so-accordion-item value="s" text="Секция" selected>
-					<div so-list-box (engineCreate)="list = $event">
+					<div so-list-box (soEngineCreate)="list = $event">
 						<so-list-box-item value="x" text="X" />
 						<so-list-box-item value="y" text="Y" />
 					</div>
@@ -288,7 +288,7 @@ describe('лифт', () => {
 		@Component({
 			standalone: true,
 			imports: [TListBoxComponent, TListBoxItemComponent],
-			template: `<div so-list-box (engineCreate)="engine = $event">
+			template: `<div so-list-box (soEngineCreate)="engine = $event">
 				@for (value of values(); track value) {
 					<so-list-box-item [value]="value" [text]="value.toUpperCase()" />
 				}
@@ -354,7 +354,7 @@ describe('элементы разметки в движке владельца',
 		standalone: true,
 		imports: [TTabsComponent, TTabsItemComponent, TTabsContentComponent],
 		template: `@if (shown()) {
-			<div so-tabs (engineCreate)="engines.push($event)">
+			<div so-tabs (soEngineCreate)="engines.push($event)">
 				<so-tabs-item value="a" text="A" active />
 				<so-tabs-item value="b" text="B" />
 				<so-tabs-item value="c" text="C" />
@@ -375,7 +375,7 @@ describe('элементы разметки в движке владельца',
 		standalone: true,
 		imports: [TAccordionComponent, TAccordionItemComponent],
 		template: `@if (shown()) {
-			<div so-accordion (engineCreate)="engines.push($event)">
+			<div so-accordion (soEngineCreate)="engines.push($event)">
 				<so-accordion-item value="a" text="A" selected>Содержимое A</so-accordion-item>
 				<so-accordion-item value="b" text="B">Содержимое B</so-accordion-item>
 				<so-accordion-item value="c" text="C">Содержимое C</so-accordion-item>

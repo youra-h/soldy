@@ -9,8 +9,10 @@ Web Components.
 The adapter is wiring, not behavior: it defines a Custom Element per component and renders the
 markup — BEM classes `s-*` and `data-*` state attributes. Props, events and slots come from the
 component descriptor, so they match the other five adapters; only the spelling is the platform's:
-props are attributes or element properties, and events are DOM events with the core names
-(`action:press`).
+props are attributes or element properties, and events are DOM events named `so:` + the core name
+(`so:show`, `so:show:before`, `so:action:press`, `so:change:disabled`). Every event has the prefix:
+events bubble from your element through the DOM, and the prefix tells a component's event from the
+browser's and your own.
 
 Each component is a native element of its tag extended by Soldy (a customized built-in):
 `<button is="so-button">` is a real `<button>`, `<div is="so-component-view">` a real `<div>`.
@@ -24,7 +26,10 @@ element you wrote.
 Safari does not support customized built-ins, so the package imports the
 [`@ungap/custom-elements`](https://github.com/ungap/custom-elements) polyfill (3 KB gzipped); it
 does nothing where the browser supports them natively. With the polyfill an element comes to life a
-microtask after it is inserted, so right after `innerHTML` its `ctrl` is not there yet.
+microtask after it is inserted, so right after `innerHTML` its `ctrl` is not there yet. Elements
+already in the page when the package is imported are assembled a microtask after the import in every
+browser, so the theme, icons and plugins your entry point sets up right after the import (before any
+top-level `await`) apply to them too.
 
 Shadow DOM is not used — a theme styles global BEM classes, so light DOM is distributed by the
 `slot` attribute by hand. Content for a slot the component does not have is not rendered, and slots
@@ -83,7 +88,7 @@ const el = document.createElement('button', { is: 'so-button' })
 
 if (el instanceof TButtonElement) {
   el.ctrl = new TButton({ text: 'Save' })
-  el.addEventListener('action:press', () => console.log('pressed'))
+  el.addEventListener('so:action:press', () => console.log('pressed'))
   document.body.append(el)
 }
 ```

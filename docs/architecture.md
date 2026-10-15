@@ -128,7 +128,7 @@ Names in a framework's notation are computed by the surface — `TSurface.of(des
 - `TName` - Qualified name: raw name + optional namespace (`protected/define/name.class.ts`)
 - `TPropSpec` - Immutable property spec with `read(owner)` / `assign(owner, value)`, `hasDefault`, `rebase`, `withDefault` (`protected/define/prop-spec.class.ts`)
 - `IContribution`, `IPropDefinition`, `ISlotDefinition` / `ISlotDeclaration` - What a descriptor declares (`protected/define/contribution.types.ts`)
-- `INamingStrategy`, `IAdapterProfile`, `CommonProfile` - Prop/event naming rules (`protected/naming/`). Props are `ns_name` everywhere (`underscorePropNaming`); events: `element:ready` in Vue and Web Components, `onElementReady` in React/Svelte/Solid (`callbackEventNaming`), `elementReady` in Angular (a one-word event gets the `so` prefix there: `input` → `soInput`)
+- `INamingStrategy`, `IAdapterProfile`, `CommonProfile` - Prop/event naming rules (`protected/naming/`). Props are `ns_name` everywhere (`underscorePropNaming`); events: `element:ready` in Vue, `onElementReady` in React/Svelte/Solid (`callbackEventNaming`); where events share a channel with the DOM, every event gets the `so` prefix with the adapter's own separator — `so:element:ready` in Web Components (events bubble from the consumer's element), `soElementReady` in Angular (an output shares `(x)` with the DOM event `x`)
 
 ---
 
@@ -678,8 +678,9 @@ setup/vue/svelte/solid.
 Публичное имя компонента не префиксуется (`Button`, `Tabs`, `TabsItem`):
 пространство имён уже даёт npm-скоуп. Префикс `s-`/`so-` стоит ровно там,
 где пространство имён глобальное и другого способа нет — CSS-классы, теги
-Custom Elements, селекторы Angular. `SButton` в стиле PrimeVue дублировал бы
-импорт.
+Custom Elements, селекторы Angular, — а события, которые делят канал с DOM,
+получают `so` все до одного: `so:show` в Web Components, `soShow` у выходов
+Angular. `SButton` в стиле PrimeVue дублировал бы импорт.
 
 Для составных компонентов действует критерий:
 
@@ -1665,15 +1666,16 @@ There is no `adapter/static/`: React takes prop names from the descriptor types,
 **Структура** зеркалит Vue/React: `adapter/{common,runtime,locale,elevator}` + `components/*`.
 
 - `adapter/common/` — `AngularProfile` (`naming: AngularNaming`), `AngularNaming`
-  (события → camelCase без `on`-префикса, т.к. имя `@Output` обязано быть
-  валидным TS-идентификатором; событие из одного слова — с префиксом `so`,
-  `input` → `soInput`: на `(x)` у элемента Angular слушает и выход `x`, и
-  событие DOM `x`, а совпасть с событием DOM может только имя из одного
-  слова), `useInputs`/`useBooleanInputs`/`useOutputs`
+  (событие → `so` и полное имя ядра в camelCase, у каждого события:
+  `input` → `soInput`, `element:ready` → `soElementReady`; camelCase — т.к.
+  имя `@Output` обязано быть валидным TS-идентификатором, `on`-префикса нет —
+  его запрещает руководство Angular; префикс — т.к. на `(x)` у элемента
+  Angular слушает и выход `x`, и событие DOM `x`, и он говорит, чьё событие, у
+  всей категории сразу), `useInputs`/`useBooleanInputs`/`useOutputs`
   (**только для кодогенератора**: имена берутся из поверхности
   `TSurface.of(descriptor, AngularProfile)`; `useBooleanInputs` — входы, чей
   проп объявлен ровно `Boolean`; `useOutputs` отдаёт выход в паре с полным
-  именем события ядра — `actionPress` и `action:press`);
+  именем события ядра — `soActionPress` и `action:press`);
   `createAngularAdapterContext` — сборка с локалью поддерева из DI и id
   монтирования приложения (`nextMountId`), в контексте инъекции компонента;
   контекст на чужом наборе (фасад коллекции) их не берёт;
@@ -1728,8 +1730,8 @@ Angular AOT статически анализирует декоратор: `inp
 правки дескриптора; CI проверяет дрейф.
 
 Имён мало для строгого шаблона потребителя. `strictTemplates` — умолчание
-новых приложений Angular — проверяет привязку `(actionPress)="…"` обращением к
-свойству класса (`_t1["actionPress"].subscribe(($event) => …)`), а у базы,
+новых приложений Angular — проверяет привязку `(soActionPress)="…"` обращением к
+свойству класса (`_t1["soActionPress"].subscribe(($event) => …)`), а у базы,
 которая работает по массивам имён, такого свойства в типе нет: привязка не
 компилировалась (TS7053). Значение привязки входа (`_t1.text = 42`) она
 сверяет с полем входа, а вход без поля пропускает молча, с любым значением.
@@ -2061,7 +2063,7 @@ RadioGroup, ListBox, Tabs и Accordion собираются, как у Vue и Sv
   собирает компоненты в том же порядке, что сервер, — так собирает полная
   гидратация.
 - Нет двусторонней привязки: `[(text)]` требует аутпут `textChange`, а стратегия
-  именования даёт `changeText`.
+  именования даёт `soChangeText`.
 - Неактивная панель таба — скрытый элемент потребителя: содержимое её в
   документ не вставляется, но компоненты в нём Angular создаёт всё равно — их
   создаёт тот, кто написал содержимое, как `mat-tab` без ленивого шаблона.
@@ -2164,9 +2166,6 @@ Svelte 5 на рунах. Структура зеркалит React, потом�
 - Сниппет непрозрачен: заданный владельцу слот элемента (`item-close-icon`,
   `item-indicator-icon`) рисуется у каждого элемента вместо своего, и где у
   Vue и React пустой слот уступает место иконке, у Svelte остаётся пусто.
-- ListBox на сервере без `requestAnimationFrame` (чистый Node) падает: плагины
-  списка планируют кадр уже при сборке — задача 869ffnvvn, касается всех
-  адаптеров.
 
 ## Layer 8c: Solid Adapter (`packages/ui/solid/src`)
 
@@ -2264,11 +2263,15 @@ Svelte 5 на рунах. Структура зеркалит React, потом�
 архитектуры: ядро уже событийное, а `CustomEvent` это родная модель DOM.
 
 - `adapter/common/` — `WebcProfile` (`naming: WebcNaming`), `WebcNaming`
-  (`prop` = общий `underscorePropNaming`, `event` = имя как в ядре: двоеточия в
-  CustomEvent легальны, так же как во Vue), `attributes` (карта «атрибут →
-  проп» по поверхности + коэрция; `HOST_PROPS` — пропы, которых у элемента нет
-  ни атрибутом, ни свойством: `tag`); `createWebcAdapterContext` — сборка с
-  локалью ближайшего `<so-locale-provider>` вверх от хоста.
+  (`prop` = общий `underscorePropNaming`, `event` = `so:` и полное имя ядра у
+  каждого события: `show` → `so:show`, `element:ready` → `so:element:ready`;
+  событие всплывает с элемента потребителя в общий канал DOM, и префикс
+  говорит, чьё оно, у всей категории сразу, а разделитель — `:`, как в имени
+  ядра: двоеточия в CustomEvent легальны),
+  `attributes` (карта «атрибут → проп» по поверхности + коэрция; `HOST_PROPS` —
+  пропы, которых у элемента нет ни атрибутом, ни свойством: `tag`);
+  `createWebcAdapterContext` — сборка с локалью ближайшего
+  `<so-locale-provider>` вверх от хоста.
 - `adapter/runtime/` — `useAdapter` поверх связки
   `adapter.connect(WebcProfile)` (о пропе ядра она сообщает элементу колбэком
   `onUpdate`), `SoldyElement` (фабрика класса элемента поверх нативного класса
@@ -2276,8 +2279,9 @@ Svelte 5 на рунах. Структура зеркалит React, потом�
   DOM»), `defineElement` (регистрация с `extends`); в бочку не входят
   `root-attributes.ts`: `applyClasses`, `applyAttributes`, `applyStyles` со
   `stylesOf` и `applyHidden` раскладывают на элемент классы, наборы ядра, стиль
-  и скрытие, — и `defineAutonomousElement` — регистрация провайдера локали без
-  `extends`.
+  и скрытие, — `defineAutonomousElement` (регистрация провайдера локали без
+  `extends`) и `isDefining` (признак идущей регистрации, см. «Решения по
+  DOM»).
 - `adapter/context/` — `TPlaceContext`, контекст места: значение, привязанное
   к элементу, и поиск ближайшего вверх от узла — по `parentNode`, из теневого
   корня к его хосту. Наружу пакета не выходит.
@@ -2406,7 +2410,7 @@ WebKit:
 позже вставки, — и колбэки у них в другом порядке: `connectedCallback` раньше
 `attributeChangedCallback` начальных атрибутов. Поэтому при первом подключении
 база читает атрибуты сама: иначе ядро собралось бы без них, и атрибуты разметки
-дошли бы до потребителя событиями `change:*`. Колбэк, пришедший потом, приносит
+дошли бы до потребителя событиями `so:change:*`. Колбэк, пришедший потом, приносит
 то же значение, и сеттер его гасит.
 
 **Light DOM.** Классы из ядра остаются обычными глобальными BEM-классами,
@@ -2465,6 +2469,19 @@ WebKit:
   разметки, и парсер подключает элемент раньше, чем дописал его детей. Первое
   подключение, пока документ разбирается, поэтому ждёт `DOMContentLoaded`:
   иначе свет был бы пуст, а `slot="leading"` встал бы после текста.
+- **Регистрация.** Элемент, который уже стоит в документе, когда пакет его
+  регистрирует, браузер оживляет внутри `customElements.define` — синхронно,
+  ещё при импорте пакета, раньше строк точки входа, где приложение подключает
+  тему, иконки и свои плагины (`useTheme`, `setIcons`, `usePlugins`). Реестр
+  действует только на компоненты, собранные после регистрации, и такой
+  элемент собрался бы без плагинов темы и приложения. Поэтому `defineElement`
+  на время вызова держит признак (`isDefining`), и первое подключение,
+  пришедшее во время регистрации, база откладывает на микрозадачу: она
+  приходит после синхронной части графа модулей. Тогда же такие элементы
+  оживляет полифил в Safari, и момент для разметки страницы один во всех
+  браузерах. Элемент, убранный из документа до микрозадачи, не собирается.
+  Откладывать любое первое подключение нельзя: элемент, созданный кодом,
+  собран сразу после вставки, и на `el.ctrl` после неё опираются приложения.
 - **Перестановка в DOM** — отключение и подключение — элемент не ломает. Свет
   и структура создаются один раз, а каждое подключение — новая связка над тем
   же инстансом: инстанс первой сборки следующая получает как `ctrl`, и
@@ -2506,6 +2523,10 @@ ProgressSpinner слотов нет вовсе, и текст внутри эл�
   `importNode` оживают при вставке в документ.
 - Пока документ разбирается, первое подключение ждёт `DOMContentLoaded`:
   элемент, созданный скриптом до конца разбора, получает `ctrl` после него.
+- Элемент разметки, оживший при регистрации пакета, собирается микрозадачей
+  позже: сразу после импорта `el.ctrl` у него ещё нет. Настройка, которая
+  ждёт `await` верхнего уровня, приходит уже после этой сборки — как и с
+  полифилом.
 - `rendered=false` прячет элемент, а не удаляет: элемент написал потребитель.
 - Атрибут потребителя ровно с тем значением, что у ядра, база от своего не
   отличит: сняв своё, она снимет и его. То же с классом и свойством стиля.

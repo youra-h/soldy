@@ -32,7 +32,7 @@ import { find, mountHost } from './mount'
 /** Тег локали источника набора. */
 const tagOf = (source: ILocaleSource) => source.locale.tag
 
-/** Хост, который собирает наборы своих кнопок из `(bundleCreate)`, по порядку объявления. */
+/** Хост, который собирает наборы своих кнопок из `(soBundleCreate)`, по порядку объявления. */
 abstract class TBundlesHost {
 	readonly bundles: TPluginBundle[] = []
 
@@ -44,8 +44,8 @@ abstract class TBundlesHost {
 @Component({
 	standalone: true,
 	imports: [TButtonComponent],
-	template: `<button so-button (bundleCreate)="collect($event)"></button>
-		<button so-button (bundleCreate)="collect($event)"></button>`,
+	template: `<button so-button (soBundleCreate)="collect($event)"></button>
+		<button so-button (soBundleCreate)="collect($event)"></button>`,
 })
 class BareHost extends TBundlesHost {}
 
@@ -53,7 +53,7 @@ class BareHost extends TBundlesHost {}
 	standalone: true,
 	imports: [TButtonComponent, LocaleProviderDirective],
 	template: `<div so-locale-provider [locale]="locale()">
-		<button so-button (bundleCreate)="collect($event)"></button>
+		<button so-button (soBundleCreate)="collect($event)"></button>
 	</div>`,
 })
 class ProvidedHost extends TBundlesHost {
@@ -64,9 +64,9 @@ class ProvidedHost extends TBundlesHost {
 	standalone: true,
 	imports: [TButtonComponent, LocaleProviderDirective],
 	template: `<section so-locale-provider [locale]="outer">
-		<button so-button class="outer" (bundleCreate)="collect($event)"></button>
+		<button so-button class="outer" (soBundleCreate)="collect($event)"></button>
 		<div so-locale-provider [locale]="inner">
-			<button so-button class="inner" (bundleCreate)="collect($event)"></button>
+			<button so-button class="inner" (soBundleCreate)="collect($event)"></button>
 		</div>
 	</section>`,
 })
@@ -79,7 +79,7 @@ class NestedHost extends TBundlesHost {
 	standalone: true,
 	imports: [TButtonComponent, LocaleProviderDirective],
 	template: `<ng-container so-locale-provider [locale]="locale">
-		<button so-button (bundleCreate)="collect($event)"></button>
+		<button so-button (soBundleCreate)="collect($event)"></button>
 	</ng-container>`,
 })
 class ContainerHost extends TBundlesHost {
@@ -91,7 +91,7 @@ class ContainerHost extends TBundlesHost {
 	selector: 'app-panel',
 	standalone: true,
 	imports: [TButtonComponent],
-	template: `<button so-button (bundleCreate)="collect($event)"></button>`,
+	template: `<button so-button (soBundleCreate)="collect($event)"></button>`,
 })
 class PanelComponent extends TBundlesHost {}
 

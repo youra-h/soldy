@@ -262,13 +262,13 @@ describe('Input · значение', () => {
 		expect(field(root(mount())).value).toBe('')
 	})
 
-	it('ввод — в ctrl.value и одним changeValue', async () => {
+	it('ввод — в ctrl.value и одним soChangeValue', async () => {
 		const ctrl = new TInput()
 		const fixture = mount({ ctrl })
 		const changes: unknown[] = []
 		const input = field(root(fixture))
 
-		fixture.componentInstance.changeValue.subscribe((change) => changes.push(change))
+		fixture.componentInstance.soChangeValue.subscribe((change) => changes.push(change))
 
 		await nextFrame()
 		type(fixture, input, 'abc')
@@ -490,8 +490,8 @@ describe('Input · кнопка очистки', () => {
 		const presses: unknown[] = []
 		const outside = vi.fn()
 
-		fixture.componentInstance.changeValue.subscribe((change) => changes.push(change))
-		fixture.componentInstance.actionPress.subscribe((event) => presses.push(event))
+		fixture.componentInstance.soChangeValue.subscribe((change) => changes.push(change))
+		fixture.componentInstance.soActionPress.subscribe((event) => presses.push(event))
 		root(fixture).addEventListener('click', outside)
 
 		// Корень слушает нажатия своим TActionPlugin — он встаёт с `ready`

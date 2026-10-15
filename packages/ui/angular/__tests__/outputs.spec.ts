@@ -4,7 +4,7 @@
  * Шаблоны хостов ниже написаны так, как их пишет приложение: привязка выхода
  * с `$event` в обработчик точного типа. Проверяет их «Типы — Angular» (`ngc`
  * со `strictTemplates`, как в новом приложении Angular). Строгая проверка
- * читает выход как свойство класса — `_t1["actionPress"].subscribe(($event) => …)`.
+ * читает выход как свойство класса — `_t1["soActionPress"].subscribe(($event) => …)`.
  * Выход — геттер сгенерированного `T<Имя>Surface`, от которого наследуется
  * компонент, и тип даёт он; без него привязка падает с TS7053.
  *
@@ -21,10 +21,11 @@
  * Хост — на каждый компонент экспорта: выход типизирован, только если
  * компонент наследует свой `T<Имя>Surface`, а не `TComponentBase` напрямую.
  *
- * Имя выхода не совпадает с событием DOM: на `(x)` у элемента Angular слушает
- * и выход `x`, и событие DOM `x`, поэтому событие ядра из одного слова выходит
- * с префиксом `so` (`soInput`). Сверка — по всем дескрипторам экспорта setup
- * со схемой событий компилятора Angular.
+ * Имя выхода — `so` и полное имя события ядра в camelCase, у каждого события:
+ * на `(x)` у элемента Angular слушает и выход `x`, и событие DOM `x`, и
+ * префикс говорит, чьё событие, у всей категории сразу. Сверка — по всем
+ * дескрипторам экспорта setup, а с событиями DOM — по схеме компилятора
+ * Angular.
  */
 
 import { describe, it, expect, expectTypeOf } from 'vitest'
@@ -34,7 +35,7 @@ import { outputToObservable } from '@angular/core/rxjs-interop'
 import { TestBed } from '@angular/core/testing'
 import { TButton, TComponent, TComponentView, type TPluginEvent } from '@soldy-ui/core'
 import * as setup from '@soldy-ui/setup'
-import { InputDescriptor, type IComponentDescriptor } from '@soldy-ui/setup'
+import { ButtonDescriptor, InputDescriptor, type IComponentDescriptor } from '@soldy-ui/setup'
 import * as angular from '@soldy-ui/angular'
 import {
 	ButtonOutputNames,
@@ -49,7 +50,7 @@ import {
 @Component({
 	standalone: true,
 	imports: [TButtonComponent],
-	template: `<button so-button text="Save" (actionPress)="onPress($event)"></button>`,
+	template: `<button so-button text="Save" (soActionPress)="onPress($event)"></button>`,
 })
 class ButtonHost {
 	readonly presses: (MouseEvent | KeyboardEvent)[] = []
@@ -62,7 +63,7 @@ class ButtonHost {
 @Component({
 	standalone: true,
 	imports: [TComponentViewComponent],
-	template: `<div so-component-view [ctrl]="ctrl" (changeVisible)="onVisible($event)"></div>`,
+	template: `<div so-component-view [ctrl]="ctrl" (soChangeVisible)="onVisible($event)"></div>`,
 })
 class ComponentViewHost {
 	readonly ctrl = new TComponentView()
@@ -76,7 +77,7 @@ class ComponentViewHost {
 @Component({
 	standalone: true,
 	imports: [TComponentComponent],
-	template: `<so-component [ctrl]="ctrl" (pluginEvent)="onPluginEvent($event)" />`,
+	template: `<so-component [ctrl]="ctrl" (soPluginEvent)="onPluginEvent($event)" />`,
 })
 class ComponentHost {
 	readonly ctrl = new TComponent()
@@ -94,7 +95,7 @@ class ComponentHost {
 const frame = (): Promise<void> => new Promise((resolve) => requestAnimationFrame(() => resolve()))
 
 describe('выход в строгом шаблоне · $event — первый аргумент события ядра', () => {
-	it('Button: (actionPress) получает событие DOM, которое дало press', async () => {
+	it('Button: (soActionPress) получает событие DOM, которое дало press', async () => {
 		const fixture = TestBed.createComponent(ButtonHost)
 
 		fixture.detectChanges()
@@ -113,7 +114,7 @@ describe('выход в строгом шаблоне · $event — первый
 		expect(fixture.componentInstance.presses[0]).toBe(click)
 	})
 
-	it('ComponentView: (changeVisible) получает новое значение', () => {
+	it('ComponentView: (soChangeVisible) получает новое значение', () => {
 		const fixture = TestBed.createComponent(ComponentViewHost)
 
 		fixture.detectChanges()
@@ -123,7 +124,7 @@ describe('выход в строгом шаблоне · $event — первый
 		expect(fixture.componentInstance.changes).toEqual([false])
 	})
 
-	it('Component: (pluginEvent) получает конверт события внешнего плагина', () => {
+	it('Component: (soPluginEvent) получает конверт события внешнего плагина', () => {
 		const fixture = TestBed.createComponent(ComponentHost)
 		const event: TPluginEvent = { name: 'timer:tick', args: [500] }
 
@@ -142,18 +143,20 @@ describe('выход в строгом шаблоне · $event — первый
  */
 describe('тип выхода · эмиттер первого аргумента события ядра', () => {
 	it('у события с аргументом — его тип', () => {
-		expectTypeOf<TButtonComponent['actionPress']>().toEqualTypeOf<EventEmitter<MouseEvent>>()
-		expectTypeOf<TComponentViewComponent['changeVisible']>().toEqualTypeOf<
+		expectTypeOf<TButtonComponent['soActionPress']>().toEqualTypeOf<EventEmitter<MouseEvent>>()
+		expectTypeOf<TComponentViewComponent['soChangeVisible']>().toEqualTypeOf<
 			EventEmitter<boolean>
 		>()
-		expectTypeOf<TComponentComponent['pluginEvent']>().toEqualTypeOf<
+		expectTypeOf<TComponentComponent['soPluginEvent']>().toEqualTypeOf<
 			EventEmitter<TPluginEvent>
 		>()
 	})
 
 	it('у события без аргументов — undefined', () => {
 		expectTypeOf<TComponentViewComponent['soShow']>().toEqualTypeOf<EventEmitter<undefined>>()
-		expectTypeOf<TButtonComponent['elementRemoved']>().toEqualTypeOf<EventEmitter<undefined>>()
+		expectTypeOf<TButtonComponent['soElementRemoved']>().toEqualTypeOf<
+			EventEmitter<undefined>
+		>()
 	})
 })
 
@@ -192,7 +195,7 @@ class BareComponentHost {
 @Component({
 	standalone: true,
 	imports: [TButtonComponent],
-	template: `<button so-button [ctrl]="ctrl" (changeVisible)="onVisible($event)"></button>`,
+	template: `<button so-button [ctrl]="ctrl" (soChangeVisible)="onVisible($event)"></button>`,
 })
 class BoundButtonHost {
 	readonly ctrl = new TButton({ text: 'Save' })
@@ -257,11 +260,11 @@ describe('эмиттер выхода · заводит первое чтени�
 		fixture.detectChanges()
 
 		const view = fixture.componentInstance.view()
-		const emitter = view.changeVisible
+		const emitter = view.soChangeVisible
 
 		expect(emitter).toBeInstanceOf(EventEmitter)
-		expect(created(view, ComponentViewOutputNames)).toEqual(['changeVisible'])
-		expect(view.changeVisible).toBe(emitter)
+		expect(created(view, ComponentViewOutputNames)).toEqual(['soChangeVisible'])
+		expect(view.soChangeVisible).toBe(emitter)
 	})
 
 	it('привязка в шаблоне заводит эмиттер только своему выходу', () => {
@@ -273,7 +276,7 @@ describe('эмиттер выхода · заводит первое чтени�
 
 		expect(fixture.componentInstance.changes).toEqual([false])
 		expect(created(fixture.componentInstance.button(), ButtonOutputNames)).toEqual([
-			'changeVisible',
+			'soChangeVisible',
 		])
 	})
 
@@ -287,7 +290,7 @@ describe('эмиттер выхода · заводит первое чтени�
 
 		fixture.detectChanges()
 
-		fixture.componentInstance.view().changeVisible.subscribe((visible) => {
+		fixture.componentInstance.view().soChangeVisible.subscribe((visible) => {
 			changes.push(visible)
 		})
 		fixture.componentInstance.ctrl.visible = false
@@ -307,7 +310,7 @@ describe('эмиттер выхода · заводит первое чтени�
 
 		fixture.detectChanges()
 
-		outputToObservable(fixture.componentInstance.view().changeVisible).subscribe({
+		outputToObservable(fixture.componentInstance.view().soChangeVisible).subscribe({
 			complete: () => {
 				completed = true
 			},
@@ -430,20 +433,28 @@ function domEvents(): ReadonlySet<string> {
 	)
 }
 
+/** Части полного имени ядра с заглавной: `show:before` → `ShowBefore`. */
+const pascal = (event: string): string =>
+	event
+		.split(/[-:]/)
+		.filter(Boolean)
+		.map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+		.join('')
+
 /**
  * На `(x)` у элемента Angular ставит и подписку на выход `x`, и слушатель
- * события DOM `x`: выход с именем события DOM получал бы обработчик дважды —
- * от ядра и от браузера. Поэтому событие ядра из одного слова выходит с
- * префиксом `so` (`soInput`), а составное — camelCase, с заглавной
- * (`inputValue`).
+ * события DOM `x`: выходы делят шаблон с событиями DOM. Префикс `so` говорит,
+ * чьё событие, и стоит у каждого выхода, а не у тех, что совпали бы с событием
+ * DOM: `(soShow)` рядом с `(soShowBefore)`, `(soChangeValue)` и
+ * `(soElementReady)` — одна схема на всю категорию.
  *
  * Перебираются дескрипторы, а не компоненты Angular: под проверку сразу
  * попадают и непортированные — Select с `close`, коллекции с `reset`. Имена
- * выходов — те же, что пишет кодоген (`useOutputs`), события — из схемы
+ * выходов — те же, что пишет кодоген (`useOutputs`), события DOM — из схемы
  * компилятора Angular. Сверка по точному имени: `addEventListener` различает
  * регистр.
  */
-describe('имя выхода · не событие DOM', () => {
+describe('имя выхода · so и имя ядра в camelCase', () => {
 	const events = domEvents()
 	const descriptors = exportedDescriptors()
 
@@ -452,7 +463,39 @@ describe('имя выхода · не событие DOM', () => {
 		expect(descriptors.map(([name]) => name)).toEqual(
 			expect.arrayContaining(['InputDescriptor', 'SelectDescriptor', 'ListBoxDescriptor']),
 		)
-		expect(useOutputs(InputDescriptor()).map(([output]) => output)).toContain('soInput')
+		expect(useOutputs(InputDescriptor()).map(([output]) => output)).toEqual(
+			expect.arrayContaining(['soInput', 'soInputValue', 'soChangeValue']),
+		)
+	})
+
+	it('каждый выход каждого дескриптора — so и полное имя ядра в camelCase', () => {
+		const wrong = descriptors.flatMap(([name, descriptor]) =>
+			useOutputs(descriptor).flatMap(([output, event]) =>
+				output === `so${pascal(event)}` ? [] : [`${name}: ${event} → ${output}`],
+			),
+		)
+
+		expect(wrong).toEqual([])
+	})
+
+	/** Так выходы кнопки видит шаблон потребителя: схема одна, и без префикса нет ни одного. */
+	it('Button: событие из одного слова и составное — под одной схемой', () => {
+		const outputs = useOutputs(ButtonDescriptor()).map(([output]) => output)
+
+		expect(outputs).toEqual(
+			expect.arrayContaining([
+				'soShow',
+				'soShowBefore',
+				'soHide',
+				'soReady',
+				'soElementReady',
+				'soActionPress',
+				'soActionClick',
+				'soChangeVisible',
+				'soChangeDisabled',
+			]),
+		)
+		expect(outputs.filter((output) => !/^so[A-Z]/.test(output))).toEqual([])
 	})
 
 	it('ни один выход ни одного дескриптора не совпадает с событием DOM', () => {

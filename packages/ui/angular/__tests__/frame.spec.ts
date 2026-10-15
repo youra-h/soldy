@@ -142,7 +142,7 @@ class VisibilityHost {
 @Component({
 	standalone: true,
 	imports: [TFrameComponent],
-	template: `<div so-frame [ctrl]="ctrl" (elementReady)="ready.push($event)"></div>`,
+	template: `<div so-frame [ctrl]="ctrl" (soElementReady)="ready.push($event)"></div>`,
 })
 class CtrlHost {
 	readonly ctrl = new TFrame()
@@ -185,7 +185,7 @@ class ConsumerStyleHost {
 	imports: [TFrameComponent, TButtonComponent, LocaleProviderDirective],
 	template: `<div so-locale-provider [locale]="locale">
 		<div so-frame visible>
-			<button so-button (bundleCreate)="collect($event)"></button>
+			<button so-button (soBundleCreate)="collect($event)"></button>
 		</div>
 	</div>`,
 })

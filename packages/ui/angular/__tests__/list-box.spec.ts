@@ -86,7 +86,7 @@ type TEngineView = { extensions: { batch: { items: readonly object[] } } }
 		so-list-box
 		mode="multiple"
 		[disabled]="listOff()"
-		(changeValue)="changes.push($event)"
+		(soChangeValue)="changes.push($event)"
 	>
 		<so-list-box-item value="a" text="A" />
 		<so-list-box-item value="b" text="B" [disabled]="itemOff()" />
@@ -102,7 +102,7 @@ describe('выбор', () => {
 	@Component({
 		standalone: true,
 		imports: [TListBoxComponent, TListBoxItemComponent],
-		template: `<div so-list-box (engineCreate)="engines.push($event)">
+		template: `<div so-list-box (soEngineCreate)="engines.push($event)">
 			<so-list-box-item value="a" text="A" />
 			<so-list-box-item value="b" text="B" />
 			<so-list-box-item value="c" text="C" />
@@ -673,14 +673,14 @@ describe('типы', () => {
 	})
 
 	it('выходы фасада — выходы компонента', () => {
-		expectTypeOf<TListBoxComponent['changeMode']>().toEqualTypeOf<
+		expectTypeOf<TListBoxComponent['soChangeMode']>().toEqualTypeOf<
 			EventEmitter<TSelectionMode>
 		>()
-		expectTypeOf<TListBoxComponent>().toHaveProperty('engineCreate')
-		expectTypeOf<TListBoxItemComponent['changeSelected']>().toEqualTypeOf<
+		expectTypeOf<TListBoxComponent>().toHaveProperty('soEngineCreate')
+		expectTypeOf<TListBoxItemComponent['soChangeSelected']>().toEqualTypeOf<
 			EventEmitter<undefined>
 		>()
-		expectTypeOf<TListBoxItemComponent['changeOrder']>().toEqualTypeOf<
+		expectTypeOf<TListBoxItemComponent['soChangeOrder']>().toEqualTypeOf<
 			EventEmitter<undefined>
 		>()
 	})

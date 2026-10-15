@@ -733,9 +733,9 @@ describe('кнопка закрытия: поведение', () => {
 		@Component({
 			standalone: true,
 			imports: [TTabsComponent, TTabsItemComponent],
-			template: `<div so-tabs closable (actionPress)="setPresses = setPresses + 1">
+			template: `<div so-tabs closable (soActionPress)="setPresses = setPresses + 1">
 				<so-tabs-item value="a" text="A" active />
-				<so-tabs-item value="b" text="B" (actionPress)="tabPresses = tabPresses + 1" />
+				<so-tabs-item value="b" text="B" (soActionPress)="tabPresses = tabPresses + 1" />
 			</div>`,
 		})
 		class PressHost {
@@ -974,12 +974,14 @@ describe('клавиатура', () => {
 
 describe('типы', () => {
 	it('выходы фасадов — выходы компонентов', () => {
-		expectTypeOf<TTabsComponent>().toHaveProperty('itemActivated')
-		expectTypeOf<TTabsComponent>().toHaveProperty('itemClose')
-		expectTypeOf<TTabsComponent>().toHaveProperty('engineCreate')
-		expectTypeOf<TTabsItemComponent['changeActive']>().toEqualTypeOf<EventEmitter<undefined>>()
-		expectTypeOf<TTabsItemComponent['changeOrder']>().toEqualTypeOf<EventEmitter<undefined>>()
-		expectTypeOf<TTabsContentComponent['changeActive']>().toEqualTypeOf<
+		expectTypeOf<TTabsComponent>().toHaveProperty('soItemActivated')
+		expectTypeOf<TTabsComponent>().toHaveProperty('soItemClose')
+		expectTypeOf<TTabsComponent>().toHaveProperty('soEngineCreate')
+		expectTypeOf<TTabsItemComponent['soChangeActive']>().toEqualTypeOf<
+			EventEmitter<undefined>
+		>()
+		expectTypeOf<TTabsItemComponent['soChangeOrder']>().toEqualTypeOf<EventEmitter<undefined>>()
+		expectTypeOf<TTabsContentComponent['soChangeActive']>().toEqualTypeOf<
 			EventEmitter<undefined>
 		>()
 	})
@@ -989,7 +991,7 @@ describe('типы', () => {
 	 * события таба.
 	 */
 	it('одноимённый выход таба и фасада — один, по дескриптору таба', () => {
-		expectTypeOf<TTabsItemComponent['changeClosable']>().toEqualTypeOf<
+		expectTypeOf<TTabsItemComponent['soChangeClosable']>().toEqualTypeOf<
 			EventEmitter<boolean | undefined>
 		>()
 	})

@@ -171,7 +171,7 @@ describe('Label · текст: проп и слот', () => {
 	standalone: true,
 	imports: [TLabelComponent, TCheckBoxComponent],
 	template: `<label so-label text="Согласен"
-		><so-check-box (changeValue)="changes.push($event)"
+		><so-check-box (soChangeValue)="changes.push($event)"
 	/></label>`,
 })
 class CheckBoxChangeHost {
@@ -182,7 +182,7 @@ class CheckBoxChangeHost {
 	standalone: true,
 	imports: [TLabelComponent, TSwitchComponent],
 	template: `<label so-label text="Согласен"
-		><so-switch (changeValue)="changes.push($event)"
+		><so-switch (soChangeValue)="changes.push($event)"
 	/></label>`,
 })
 class SwitchChangeHost {
@@ -222,7 +222,7 @@ describe.each(CHECKABLES)('Label · %s в подписи', (_name, host) => {
 @Component({
 	standalone: true,
 	imports: [TLabelComponent, TRadioGroupComponent, TRadioGroupItemComponent],
-	template: `<div so-radio-group (changeValue)="changes.push($event)">
+	template: `<div so-radio-group (soChangeValue)="changes.push($event)">
 		<label so-label text="Курьер"><label so-radio-group-item value="a"></label></label>
 	</div>`,
 })
@@ -233,7 +233,7 @@ class LabelRadioHost {
 @Component({
 	standalone: true,
 	imports: [TLabelComponent, TRadioGroupComponent, TRadioGroupItemComponent],
-	template: `<div so-radio-group (changeValue)="changes.push($event)">
+	template: `<div so-radio-group (soChangeValue)="changes.push($event)">
 		<label so-label text="Курьер"
 			><span so-radio-group-item value="a" (change)="fieldChanges = fieldChanges + 1"></span
 		></label>

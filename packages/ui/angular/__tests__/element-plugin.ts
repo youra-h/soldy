@@ -1,7 +1,7 @@
 /**
- * Плагин узла в тестах — только через выход `element:create`.
+ * Плагин узла в тестах — только через выход `soElementCreate`.
  *
- * Выход `elementCreate` — геттер сгенерированного `T<Имя>Surface`, от которого
+ * Выход `soElementCreate` — геттер сгенерированного `T<Имя>Surface`, от которого
  * наследуется компонент: он даёт выходу тип, а первое чтение заводит эмиттер.
  * Поэтому выход читается как поле, без рефлексии и приведений.
  *
@@ -15,18 +15,18 @@ import type { ComponentFixture } from '@angular/core/testing'
 import { TElementPlugin } from '@soldy-ui/plugins'
 import type { TComponentViewComponent } from '@soldy-ui/angular'
 
-/** Компонент с `TElementPlugin` в наборе: выход `elementCreate` у всех визуальных один. */
-type TWithElementCreate = Pick<TComponentViewComponent, 'elementCreate'>
+/** Компонент с `TElementPlugin` в наборе: выход `soElementCreate` у всех визуальных один. */
+type TWithElementCreate = Pick<TComponentViewComponent, 'soElementCreate'>
 
 export function elementPlugin(fixture: ComponentFixture<TWithElementCreate>): () => TElementPlugin {
 	let plugin: TElementPlugin | undefined
 
-	fixture.componentInstance.elementCreate.subscribe((value) => {
+	fixture.componentInstance.soElementCreate.subscribe((value) => {
 		if (value instanceof TElementPlugin) plugin = value
 	})
 
 	return () => {
-		if (!plugin) throw new Error('element:create не пришёл')
+		if (!plugin) throw new Error('soElementCreate не пришёл')
 
 		return plugin
 	}
