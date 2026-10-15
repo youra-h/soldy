@@ -147,7 +147,7 @@ export function useSetup<Name>(props: <Name>Props) {
 }
 ```
 
-- `<Name>.tsx`: the view component. Consumes `{ ref, forwardProps, state }` from `useSetup<Name>()`, reads `rendered/visible/tag/classes` and the sets `attrs`/`aria`/`dataset` from `state`, returns `null` when `!rendered`, spreads `forwardProps` onto the root element **before** `ref` (in React 19 `ref` is a plain prop, and a consumer's `ref` inside `forwardProps` would override the adapter's) and the sets after it through `toAriaProps`. Slots are rendered with `renderSlot`.
+- `<Name>.tsx`: the view component. Consumes `{ ref, forwardProps, state }` from `useSetup<Name>()`, reads `rendered/visible/tag/classes` and the sets `attrs`/`aria`/`dataset` from `state`, returns `null` when `!rendered`, spreads `forwardProps` onto the root element **before** `ref` (in React 19 `ref` is a plain prop, and a consumer's `ref` inside `forwardProps` would override the adapter's; the root still reaches the consumer's `ref` — the adapter's `ref` hands it the same node, see a11y.md, «`ref` потребителя — корень компонента») and the sets after it through `toAriaProps`. Slots are rendered with `renderSlot`.
 
 - `index.ts`:
 

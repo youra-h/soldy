@@ -12,10 +12,10 @@
 	import { setupInput } from './setup.component'
 	import type { InputAttributes, InputProps } from './base.component'
 
-	const props: InputProps = $props()
+	let { ref = $bindable(), ...props }: InputProps = $props()
 	const mountId = $props.id()
 
-	const binding = setupInput(() => props, mountId)
+	const binding = setupInput(() => props, mountId, (node) => (ref = node))
 	const state = binding.state
 	const ctrl = binding.ctrl
 

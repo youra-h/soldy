@@ -3,10 +3,10 @@
 	import { setupTabsContent } from './setup.component'
 	import type { TabsContentProps } from './base.component'
 
-	const props: TabsContentProps = $props()
+	let { ref = $bindable(), ...props }: TabsContentProps = $props()
 	const mountId = $props.id()
 
-	const binding = setupTabsContent(() => props, mountId)
+	const binding = setupTabsContent(() => props, mountId, (node) => (ref = node))
 	const state = binding.state
 </script>
 

@@ -11,7 +11,8 @@
  * 2. Svelte → Core: входные пропсы в эффекте
  * 3. События (Core → колбэк-пропы onXxx)
  * 4. Компонент принят — adapter.attach()
- * 5. DOM-биндинг через attachment (аналог callback-ref в React)
+ * 5. DOM-биндинг через attachment (аналог callback-ref в React), и тот же
+ *    узел — связываемому пропу `ref` компонента
  * 6. Очистка при уничтожении компонента
  *
  * Фасад коллекции связывает `useCollectionAdapter` — те же шаги, кроме
@@ -20,17 +21,47 @@
  * Принимает геттер props: в Svelte 5 деструктуризация рвёт реактивность,
  * поэтому наружу передаётся сам объект `$props()`, а читается он лениво.
  *
+ * Корень компонента потребитель получает связываемым пропом `ref`
+ * (`<Button bind:ref={button}>`): `bind:this` у компонента Svelte даёт его
+ * экземпляр, а не узел. `ref` — корень, у поля (Input, CheckBox, Switch,
+ * RadioGroup.Item) тоже, а не `<input>`: от корня до поля потребитель дойдёт
+ * `querySelector`, а от поля до корня — только по родителям, и этот путь
+ * ломается при каждой правке разметки. `$bindable` компилятор пускает только
+ * в деструктуризацию `$props()` компонента, поэтому проп объявляет сам
+ * компонент (`ref = $bindable()`), а сюда отдаёт приёмник —
+ * `(node) => (ref = node)`, как отдаёт id монтирования. Узел приёмник
+ * получает тем же attachment-ом корня, что привязывает его к
+ * `TElementPlugin`, — после привязки, а при снятии — `null`. На сервере
+ * attachment-ов нет, и `ref` не пишется вовсе.
+ *
+ * Запасного значения у `ref` нет (`$bindable()`, а не `$bindable(null)`):
+ * переменную потребителя, ещё пустую — `let button = $state<Element>()`, —
+ * Svelte с запасным значением не связывает и падает (`props_invalid_value`).
+ *
  * Файл `.svelte.ts` — иначе руны `$effect` / `$derived` недоступны.
  */
 
-import { onDestroy } from 'svelte'
+import { onDestroy, untrack } from 'svelte'
 import { toInstanceState } from '@soldy-ui/setup'
 import type { IAdapterContext, IComponentContract, TAdapterState, TExchange } from '@soldy-ui/setup'
 import type { IPluginBundle } from '@soldy-ui/plugins'
 import { SvelteProfile } from '../common'
 
-/** Пропсы, которые компонент не съел. `children` и `ctrl` он съедает всегда. */
-type TForwardProps<TProps extends object> = Omit<Partial<TProps>, 'children' | 'ctrl'>
+/**
+ * Пропсы, которые компонент не съел. `children` и `ctrl` он съедает всегда, а
+ * `ref` — связываемый проп компонента: его компонент берёт из `$props()` сам.
+ */
+type TForwardProps<TProps extends object> = Omit<Partial<TProps>, 'children' | 'ctrl' | 'ref'>
+
+/**
+ * Приёмник корня — связываемый проп `ref` компонента: `(node) => (ref = node)`.
+ * Узел — `Element`, а не `HTMLElement`: `tag` свободен, и корнем бывает
+ * `<svg>` (иконка по роли).
+ */
+export type TRootReceiver = (node: Element | null) => void
+
+/** Сборка без своего корня (`setupControl`): узел отдавать некому. */
+const NO_RECEIVER: TRootReceiver = () => {}
 
 export type TBinding<
 	C extends IComponentContract = IComponentContract,
@@ -45,7 +76,10 @@ export type TBinding<
 	 * attachment-ы потребителя — пропсы с ключом-символом.
 	 */
 	readonly forwardProps: TForwardProps<TProps>
-	/** Svelte-attachment: `<div {@attach binding.attachElement}>` */
+	/**
+	 * Svelte-attachment корня: `<div {@attach binding.attachElement}>` —
+	 * привязка к `TElementPlugin`, затем тот же узел — `ref` компонента.
+	 */
 	attachElement: (node: Element) => (() => void) | void
 }
 
@@ -146,10 +180,17 @@ function forwardOf<TProps extends object>(binding: TExchange, props: TProps): Pa
 	return forward
 }
 
-/** Инстанс и выходы плагинов берутся из контракта в типе контекста — его выводит `createAdapterContext`. */
+/**
+ * Инстанс и выходы плагинов берутся из контракта в типе контекста — его
+ * выводит `createAdapterContext`.
+ *
+ * `receive` — приёмник корня: связываемый проп `ref` компонента. У сборки без
+ * своего корня (`setupControl`) его нет.
+ */
 export function useAdapter<C extends IComponentContract, TProps extends object>(
 	adapter: IAdapterContext<C>,
 	getProps: () => TProps,
+	receive: TRootReceiver = NO_RECEIVER,
 ): TBinding<C, TProps> {
 	const { binding, state } = useExchange(adapter, getProps)
 	const forwardProps = $derived(forwardOf(binding, getProps()))
@@ -163,11 +204,20 @@ export function useAdapter<C extends IComponentContract, TProps extends object>(
 			return forwardProps
 		},
 
-		// 5. DOM-биндинг: контекст сам знает, есть ли у набора TElementPlugin
+		// 5. DOM-биндинг: контекст сам знает, есть ли у набора TElementPlugin, а
+		// тот же узел, после привязки, получает `ref` компонента. Запись `ref` —
+		// мимо слежения attachment-а: сеттер привязки — код потребителя
+		// (`bind:ref={get, set}`), и прочитанное в нём attachment корня счёл бы
+		// своим — на его смену отвязал бы узел от `TElementPlugin` и привязал
+		// заново
 		attachElement(node: Element) {
 			adapter.bindElement(node)
+			untrack(() => receive(node))
 
-			return () => adapter.bindElement(null)
+			return () => {
+				adapter.bindElement(null)
+				untrack(() => receive(null))
+			}
 		},
 	}
 }

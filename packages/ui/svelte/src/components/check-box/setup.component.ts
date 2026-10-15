@@ -7,14 +7,20 @@
  *
  * Принимает геттер, а не сам объект props: в Svelte 5 захват $props() в
  * переменную теряет реактивность, читать его нужно лениво. Id монтирования
- * (`$props.id()`) отдаёт компонент: компилятор пускает его только туда.
+ * (`$props.id()`) отдаёт компонент: компилятор пускает его только туда. Так
+ * же — приёмник корня (`receive`): запись в связываемый проп `ref`
+ * компонента, `$bindable` компилятор тоже пускает только в компонент.
  */
 
 import { CheckBoxDescriptor } from '@soldy-ui/setup'
-import { createSvelteAdapterContext, useAdapter } from '../../adapter'
+import { createSvelteAdapterContext, useAdapter, type TRootReceiver } from '../../adapter'
 import type { CheckBoxProps } from './base.component'
 
-export function setupCheckBox(getProps: () => CheckBoxProps, mountId: string) {
+export function setupCheckBox(
+	getProps: () => CheckBoxProps,
+	mountId: string,
+	receive: TRootReceiver,
+) {
 	const adapter = createSvelteAdapterContext(CheckBoxDescriptor(), {
 		ctrl: getProps().ctrl,
 		props: getProps(),
@@ -23,5 +29,5 @@ export function setupCheckBox(getProps: () => CheckBoxProps, mountId: string) {
 
 	// Переключает значение плагин флажка по `change` поля; отметку и «выбрано
 	// частично» разметка пишет свойствами `<input>`
-	return useAdapter(adapter, getProps)
+	return useAdapter(adapter, getProps, receive)
 }

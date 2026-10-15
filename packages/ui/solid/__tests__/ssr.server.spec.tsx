@@ -13,15 +13,19 @@
  */
 
 import { describe, it, expect } from 'vitest'
+import type { JSX } from 'solid-js'
 import { renderToString } from 'solid-js/web'
 import {
 	Button,
 	CheckBox,
+	ComponentView,
 	Frame,
 	Icon,
+	Input,
 	Label,
 	ProgressSpinner,
 	Skeleton,
+	Switch,
 	roleIcon,
 } from '@soldy-ui/solid'
 
@@ -153,5 +157,44 @@ describe('Label · серверный рендер', () => {
 		const body = markup(renderToString(() => <Label />))
 
 		expect(body).toContain('<span class="s-label__text"></span>')
+	})
+})
+
+/**
+ * `ref` потребителя — корень компонента, и отдаёт его `ref` адаптера, когда
+ * узел создан. На сервере узлов нет, и `ref` Solid не зовёт: ни вызова, ни
+ * атрибута в разметке.
+ */
+describe('ref потребителя · серверный рендер', () => {
+	/** Компонент и пропсы, без которых его корня нет: у Icon тега по умолчанию нет. */
+	const ROOTS: ReadonlyArray<readonly [string, (ref?: (node: Element) => void) => JSX.Element]> =
+		[
+			['Button', (ref) => <Button ref={ref} />],
+			['ComponentView', (ref) => <ComponentView ref={ref} />],
+			['Frame', (ref) => <Frame contained visible ref={ref} />],
+			['Icon', (ref) => <Icon tag="i" ref={ref} />],
+			['Label', (ref) => <Label ref={ref} />],
+			['ProgressSpinner', (ref) => <ProgressSpinner ref={ref} />],
+			['Skeleton', (ref) => <Skeleton ref={ref} />],
+			['Input', (ref) => <Input ref={ref} />],
+			['CheckBox', (ref) => <CheckBox ref={ref} />],
+			['Switch', (ref) => <Switch ref={ref} />],
+		]
+
+	/**
+	 * Разметка без номера слоя: слой (`data-layer`, `z-index`) панель берёт из
+	 * общего счётчика показанных панелей, и у второй отрисовки он следующий.
+	 */
+	const layout = (html: string) =>
+		markup(html)
+			.replace(/data-layer="\d+"/g, 'data-layer')
+			.replace(/z-index:\d+/g, 'z-index')
+
+	it.each(ROOTS)('%s: ref не зовётся, разметка — та же', (_name, draw) => {
+		const nodes: Element[] = []
+		const body = layout(renderToString(() => draw((node) => nodes.push(node))))
+
+		expect(nodes).toHaveLength(0)
+		expect(body).toBe(layout(renderToString(() => draw())))
 	})
 })

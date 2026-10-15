@@ -63,10 +63,7 @@ export function Input(props: InputProps): JSX.Element {
 		forward: toRootForward(binding.forwardProps()),
 	}))
 	const control = () => toControlAttrs<InputAttributes>(binding.forwardProps())
-	const text = fieldText(
-		() => state.value,
-		() => control().ref,
-	)
+	const text = fieldText(() => state.value)
 	const leadingSlot = resolveSlot(
 		() => props.leading,
 		() => ({ ctrl }),

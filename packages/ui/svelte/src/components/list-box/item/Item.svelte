@@ -6,10 +6,10 @@
 	import { setupListBoxItem } from './setup.component'
 	import type { ListBoxItemAttributes, ListBoxItemProps } from './base.component'
 
-	const props: ListBoxItemProps = $props()
+	let { ref = $bindable(), ...props }: ListBoxItemProps = $props()
 	const mountId = $props.id()
 
-	const binding = setupListBoxItem(() => props, mountId)
+	const binding = setupListBoxItem(() => props, mountId, (node) => (ref = node))
 	const state = binding.state
 	const context = binding.context
 

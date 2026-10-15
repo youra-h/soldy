@@ -24,17 +24,22 @@ import {
 	joinState,
 	useAdapter,
 	useCollectionAdapter,
+	type TRootReceiver,
 } from '../../../adapter'
 import type { ListBoxItemProps } from './base.component'
 
-export function setupListBoxItem(getProps: () => ListBoxItemProps, mountId: string) {
+export function setupListBoxItem(
+	getProps: () => ListBoxItemProps,
+	mountId: string,
+	receive: TRootReceiver,
+) {
 	const props = getProps()
 	const adapter = createSvelteAdapterContext(ListBoxItemDescriptor(), {
 		ctrl: props.ctrl,
 		props,
 		mountId,
 	})
-	const owner = useAdapter(adapter, getProps)
+	const owner = useAdapter(adapter, getProps, receive)
 
 	const item = createSvelteAdapterContext(
 		ListBoxCollectionItemDescriptor(),

@@ -7,14 +7,20 @@
  *
  * Принимает геттер, а не сам объект props: в Svelte 5 захват $props() в
  * переменную теряет реактивность, читать его нужно лениво. Id монтирования
- * (`$props.id()`) отдаёт компонент: компилятор пускает его только туда.
+ * (`$props.id()`) отдаёт компонент: компилятор пускает его только туда. Так
+ * же — приёмник корня (`receive`): запись в связываемый проп `ref`
+ * компонента, `$bindable` компилятор тоже пускает только в компонент.
  */
 
 import { ProgressSpinnerDescriptor } from '@soldy-ui/setup'
-import { createSvelteAdapterContext, useAdapter } from '../../adapter'
+import { createSvelteAdapterContext, useAdapter, type TRootReceiver } from '../../adapter'
 import type { ProgressSpinnerProps } from './base.component'
 
-export function setupProgressSpinner(getProps: () => ProgressSpinnerProps, mountId: string) {
+export function setupProgressSpinner(
+	getProps: () => ProgressSpinnerProps,
+	mountId: string,
+	receive: TRootReceiver,
+) {
 	const adapter = createSvelteAdapterContext(ProgressSpinnerDescriptor(), {
 		ctrl: getProps().ctrl,
 		props: getProps(),
@@ -23,5 +29,5 @@ export function setupProgressSpinner(getProps: () => ProgressSpinnerProps, mount
 
 	// Логики здесь нет: долю, `aria-value*` и `data-indeterminate` считает ядро,
 	// рисунок и бег — тема. Выход `fractionStyle` разметка кладёт в стиль корня
-	return useAdapter(adapter, getProps)
+	return useAdapter(adapter, getProps, receive)
 }

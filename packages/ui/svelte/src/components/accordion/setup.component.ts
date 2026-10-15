@@ -22,17 +22,22 @@ import {
 	joinState,
 	useAdapter,
 	useCollectionAdapter,
+	type TRootReceiver,
 } from '../../adapter'
 import type { AccordionProps } from './base.component'
 
-export function setupAccordion(getProps: () => AccordionProps, mountId: string) {
+export function setupAccordion(
+	getProps: () => AccordionProps,
+	mountId: string,
+	receive: TRootReceiver,
+) {
 	const props = getProps()
 	const adapter = createSvelteAdapterContext(AccordionDescriptor(), {
 		ctrl: props.ctrl,
 		props,
 		mountId,
 	})
-	const owner = useAdapter(adapter, getProps)
+	const owner = useAdapter(adapter, getProps, receive)
 
 	const collectionAdapter = createSvelteAdapterContext(
 		AccordionCollectionDescriptor(),

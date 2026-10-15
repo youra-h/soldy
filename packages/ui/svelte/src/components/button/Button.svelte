@@ -3,10 +3,10 @@
 	import { setupButton } from './setup.component'
 	import type { ButtonProps } from './base.component'
 
-	const props: ButtonProps = $props()
+	let { ref = $bindable(), ...props }: ButtonProps = $props()
 	const mountId = $props.id()
 
-	const binding = setupButton(() => props, mountId)
+	const binding = setupButton(() => props, mountId, (node) => (ref = node))
 	const state = binding.state
 </script>
 

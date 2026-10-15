@@ -7,14 +7,16 @@
  *
  * Принимает геттер, а не сам объект props: в Svelte 5 захват $props() в
  * переменную теряет реактивность, читать его нужно лениво. Id монтирования
- * (`$props.id()`) отдаёт компонент: компилятор пускает его только туда.
+ * (`$props.id()`) отдаёт компонент: компилятор пускает его только туда. Так
+ * же — приёмник корня (`receive`): запись в связываемый проп `ref`
+ * компонента, `$bindable` компилятор тоже пускает только в компонент.
  */
 
 import { IconDescriptor } from '@soldy-ui/setup'
-import { createSvelteAdapterContext, useAdapter } from '../../adapter'
+import { createSvelteAdapterContext, useAdapter, type TRootReceiver } from '../../adapter'
 import type { IconProps } from './base.component'
 
-export function setupIcon(getProps: () => IconProps, mountId: string) {
+export function setupIcon(getProps: () => IconProps, mountId: string, receive: TRootReceiver) {
 	const adapter = createSvelteAdapterContext(IconDescriptor(), {
 		ctrl: getProps().ctrl,
 		props: getProps(),
@@ -22,5 +24,5 @@ export function setupIcon(getProps: () => IconProps, mountId: string) {
 	})
 
 	// Выход `layout_styles` разметка кладёт в стиль корня
-	return useAdapter(adapter, getProps)
+	return useAdapter(adapter, getProps, receive)
 }

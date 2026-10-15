@@ -23,7 +23,7 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import { flushSync, type Component } from 'svelte'
+import { flushSync, type Component, type ComponentProps } from 'svelte'
 import { createAttachmentKey, type Attachment } from 'svelte/attachments'
 import { TButton } from '@soldy-ui/core'
 import {
@@ -61,8 +61,10 @@ import {
 	type TabsProps,
 } from '@soldy-ui/svelte'
 import Attach from './Attach.test.svelte'
+import BindRef from './BindRef.test.svelte'
 import ItemProbe from './ItemProbe.test.svelte'
 import Link from './Link.test.svelte'
+import RootRef, { type TRootKind } from './RootRef.test.svelte'
 import { find, mount, nextFrame, readyProbe, type TMounted } from './mount'
 import { reactiveProps } from './reactive-props.svelte'
 import { attachRootStyle } from './root-style.svelte'
@@ -310,6 +312,191 @@ describe('привязка корня к TElementPlugin', () => {
 		expect(root()).not.toBe(first)
 		expect(root().localName).toBe('span')
 		expect(ready.elements.at(-1)).toBe(root())
+	})
+})
+
+/**
+ * Компонент со своим корнем — каждый, и часть коллекции тоже, — и класс
+ * корня: связываемый `ref` получает его, у поля и элемента коллекции тоже
+ * корень, а не `<input>` и не строку.
+ */
+const ROOTS: ReadonlyArray<readonly [TRootKind, string]> = [
+	['Button', '.s-button'],
+	['ComponentView', '.s-component-view'],
+	['Frame', '.s-frame'],
+	['Icon', '.s-icon'],
+	['Label', '.s-label'],
+	['ProgressSpinner', '.s-progress-spinner'],
+	['Skeleton', '.s-skeleton'],
+	['Input', '.s-input'],
+	['CheckBox', '.s-check-box'],
+	['Switch', '.s-switch'],
+	['Tabs', '.s-tabs'],
+	['Tabs.Item', '.s-tabs-item'],
+	['Tabs.Content', '.s-tabs__panel'],
+	['Accordion', '.s-accordion'],
+	['Accordion.Item', '.s-accordion-item'],
+	['RadioGroup', '.s-radio-group'],
+	['RadioGroup.Item', '.s-radio-group-item'],
+	['ListBox', '.s-list-box'],
+	['ListBox.Item', '.s-list-box-item'],
+]
+
+/** Поля: `ref` — корень, а не `<input>`. */
+const FIELD_ROOTS = ROOTS.filter(([kind]) =>
+	['Input', 'CheckBox', 'Switch', 'RadioGroup.Item'].includes(kind),
+)
+
+/** Записи `ref` компонентом — по порядку; узлы сверяют по ссылке, как у `readyProbe`. */
+type TRefProbe = {
+	readonly onRef: (node: Element | null) => void
+	readonly nodes: readonly (Element | null)[]
+}
+
+function refProbe(): TRefProbe {
+	const nodes: (Element | null)[] = []
+
+	return {
+		nodes,
+		onRef: (node) => {
+			nodes.push(node)
+		},
+	}
+}
+
+function expectNodes(
+	actual: readonly (Element | null)[],
+	expected: readonly (Element | null)[],
+): void {
+	expect(actual).toHaveLength(expected.length)
+	expected.forEach((node, index) => expect(actual[index]).toBe(node))
+}
+
+/**
+ * Корень компонента потребитель берёт связываемым пропом — `bind:ref`:
+ * `bind:this` у компонента Svelte даёт экземпляр, а не узел. Узел `ref`
+ * получает тот же attachment корня, что привязывает его к `TElementPlugin`, —
+ * после привязки, и привязку не выбивает; при снятии — `null`.
+ */
+describe('ref потребителя — корень компонента', () => {
+	it.each(ROOTS)(
+		'%s: bind:ref — корень, element:ready — тот же корень',
+		async (kind, selector) => {
+			const probe = refProbe()
+			const ready = readyProbe()
+
+			mount(RootRef, { kind, onRef: probe.onRef, onElementReady: ready.onElementReady })
+			await nextFrame()
+
+			const root = find(document, selector, Element)
+
+			expectNodes(probe.nodes, [root])
+			expect(ready.elements).toHaveLength(1)
+			expect(ready.elements[0]).toBe(root)
+		},
+	)
+
+	it.each(ROOTS)('%s: снятие — null', (kind, selector) => {
+		const probe = refProbe()
+		const props = reactiveProps<ComponentProps<typeof RootRef>>({
+			kind,
+			shown: true,
+			onRef: probe.onRef,
+		})
+
+		mount(RootRef, props)
+
+		const root = find(document, selector, Element)
+
+		props.shown = false
+		flushSync()
+
+		expectNodes(probe.nodes, [root, null])
+	})
+
+	it.each(FIELD_ROOTS)('%s: ref — корень, а не <input>', (kind, selector) => {
+		const probe = refProbe()
+
+		mount(RootRef, { kind, onRef: probe.onRef })
+
+		const root = find(document, selector, Element)
+
+		expectNodes(probe.nodes, [root])
+		expect(probe.nodes).not.toContain(find(root, 'input', HTMLInputElement))
+	})
+
+	/** Смена тега пересоздаёт узел: прежний корень `ref` отпускает, новый получает. */
+	it('смена тега — ref получает новый корень', async () => {
+		const ctrl = new TButton()
+		const probe = refProbe()
+		const ready = readyProbe()
+		const { root } = mount(RootRef, {
+			kind: 'Button',
+			ctrl,
+			onRef: probe.onRef,
+			onElementReady: ready.onElementReady,
+		})
+		const first = root()
+
+		ctrl.tag = 'span'
+		flushSync()
+		await nextFrame()
+
+		expect(root()).not.toBe(first)
+		expectNodes(probe.nodes, [first, null, root()])
+		expect(ready.elements.at(-1)).toBe(root())
+	})
+
+	/**
+	 * Так держит корень потребитель: своей переменной, `bind:ref={button}`.
+	 * Пустая переменная (`$state()`, а не `null`) связывается так же: запасного
+	 * значения у `ref` нет, и Svelte не падает на `props_invalid_value`.
+	 */
+	it('bind:ref={переменная} — корень, у поля тоже; пустая переменная — тоже', () => {
+		const refs: (readonly [Element | null | undefined, Element | null | undefined])[] = []
+		const { container } = mount(BindRef, {
+			onRefs: (button, input) => {
+				refs.push([button, input])
+			},
+		})
+		const [button, input] = refs.at(-1) ?? [null, null]
+
+		expect(button).toBe(find(container, '.s-button', HTMLButtonElement))
+		expect(input).toBe(find(container, '.s-input', HTMLElement))
+	})
+
+	/**
+	 * Сеттер привязки — код потребителя, и он вправе читать своё состояние.
+	 * Смена прочитанного корень не перепривязывает: ни `removed`, ни нового
+	 * `ready`, ни новой записи `ref`.
+	 */
+	it('сеттер bind:ref читает состояние — его смена корень не перепривязывает', async () => {
+		const writes: (readonly [number, Element | null | undefined])[] = []
+		const events: string[] = []
+		const props = reactiveProps<ComponentProps<typeof BindRef>>({
+			onRefs: () => {},
+			tick: 0,
+			onWrite: (tick, node) => {
+				writes.push([tick, node])
+			},
+			onElementReady: () => {
+				events.push('ready')
+			},
+			onElementRemoved: () => {
+				events.push('removed')
+			},
+		})
+		const { container } = mount(BindRef, props)
+
+		await nextFrame()
+
+		props.tick = 1
+		flushSync()
+		await nextFrame()
+
+		expect(writes).toHaveLength(1)
+		expect(writes[0]?.[1]).toBe(find(container, '.written', HTMLButtonElement))
+		expect(events).toEqual(['ready'])
 	})
 })
 

@@ -40,14 +40,21 @@
  * любого атрибута, отвязывая и заново привязывая узел к `TElementPlugin`.
  * Последним он стоит по той же причине, что у React: `ref` потребителя из его
  * атрибутов (`forward`) не должен выбить привязку корня — не было бы
- * `element:ready`.
+ * `element:ready`. Поэтому `ref` потребителя в раскладку не идёт вовсе
+ * (`toRootProps` его снимает): корень ему отдаёт `ref` адаптера — тем же
+ * вызовом, после привязки (`useAdapter`).
+ *
+ * `ref` потребителя — всегда корень компонента, у поля тоже. До `<input>`
+ * потребитель дойдёт от корня `querySelector`, а от поля до корня — только по
+ * родителям, и этот путь ломается при каждой правке разметки.
  *
  * У поля (Input, CheckBox, Switch) атрибуты потребителя делятся между двумя
  * элементами, как `useSplitAttrs` у Vue и `toControlAttrs` у React и Svelte:
  * класс и стиль — корню (`toRootForward`), всё остальное — его `<input>`
  * (`toControlAttrs`), поверх `aria` поля. Остальное — это и обработчики
- * событий, и `aria-*`, и `data-*`, и `ref` потребителя: поведение, которое он
- * вешает на поле, — подсказка, фокус по `ref` — встаёт на сам `<input>`.
+ * событий, и `aria-*`, и `data-*`: поведение, которое потребитель вешает на
+ * поле, — подсказка, обработчик ввода — встаёт на сам `<input>`. `ref` туда не
+ * уходит: он корня.
  */
 
 import { createMemo, type Accessor, type JSX } from 'solid-js'
@@ -81,6 +88,12 @@ export type TRootForward = {
 	readonly style?: JSX.CSSProperties | string
 }
 
+/**
+ * `ref` потребителя среди его атрибутов: ни раскладка корня, ни поле его не
+ * берут — корень ему отдаёт `ref` адаптера (`useAdapter`).
+ */
+type TConsumerRefForward = { readonly ref?: unknown }
+
 export type TRootLayout = {
 	class: string
 	/** Объект свойств; строка — только когда строкой пришёл стиль потребителя. */
@@ -97,7 +110,7 @@ export type TRootSource = {
 	/** Наборы ядра — в том порядке, в каком их кладёт Vue. */
 	readonly sets: readonly (TAttributesMap | undefined)[]
 	/** Атрибуты корня от потребителя — то, что не съела связка (`forwardProps`). */
-	readonly forward: TRootForward
+	readonly forward: TRootForward & TConsumerRefForward
 	/** Стиль-выход компонента (`fractionStyle`); нет — у компонента своего стиля нет. */
 	readonly style?: TRootStyle
 }
@@ -172,20 +185,22 @@ export function toRootLayout(
  *
  * `forward` — то, что компонент кладёт на корень из не съеденного им: пропсы,
  * которые не съела связка (`forwardProps`), — среди них и `ref` потребителя.
- * Его перекрывает `ref` адаптера, который компонент ставит после атрибутов
- * (см. шапку файла).
+ * Его раскладка снимает: корень ему отдаёт `ref` адаптера, который компонент
+ * ставит после атрибутов (см. шапку файла).
  */
 export function toRootProps(
 	state: TRootState,
 	sets: readonly (TAttributesMap | undefined)[],
-	forward: TRootForward,
+	forward: TRootForward & TConsumerRefForward,
 	style?: TRootStyle,
 ): TRootProps {
 	const attributes: Record<string, unknown> = {}
 
 	for (const set of sets) Object.assign(attributes, set)
 
-	return { ...attributes, ...forward, ...toRootLayout(state, forward, style) }
+	const { ref: _ref, ...consumer } = forward
+
+	return { ...attributes, ...consumer, ...toRootLayout(state, forward, style) }
 }
 
 /**
@@ -212,20 +227,20 @@ export function toRootForward(forward: TRootForward): TRootForward {
 
 /**
  * Атрибуты вложенного контрола: пропсы, которые компонент не съел, без класса
- * и стиля — те сливаются на корне (`toRootForward`). Так поле раздаёт атрибуты
- * потребителя двум элементам: обёртке — вид, `<input>` — всё остальное,
- * события, `aria-*`, `data-*` и `ref`. Аналог `useSplitAttrs` у Vue и
- * `toControlAttrs` у React и Svelte.
+ * и стиля — те сливаются на корне (`toRootForward`) — и без `ref`: он корня,
+ * его отдаёт `ref` адаптера. Так поле раздаёт атрибуты потребителя двум
+ * элементам: обёртке — вид, `<input>` — всё остальное, события, `aria-*` и
+ * `data-*`. Аналог `useSplitAttrs` у Vue и `toControlAttrs` у React и Svelte.
  *
  * Параметр типа — атрибуты компонента (`TDomAttributes` с `TFieldAttributes`),
  * а не весь его набор пропсов: `forwardProps` типизирован пропсами целиком, а
  * входов дескриптора в нём нет — их съела связка. Остаток ложится на `<input>`
  * спредом, и его тип сверяется с атрибутами `<input>`.
  */
-export function toControlAttrs<TAttributes extends TRootForward>(
+export function toControlAttrs<TAttributes extends TRootForward & TConsumerRefForward>(
 	forward: Partial<TAttributes>,
-): Omit<Partial<TAttributes>, keyof TRootForward> {
-	const { class: _class, style: _style, ...control } = forward
+): Omit<Partial<TAttributes>, keyof TRootForward | keyof TConsumerRefForward> {
+	const { class: _class, style: _style, ref: _ref, ...control } = forward
 
 	return control
 }

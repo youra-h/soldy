@@ -16,7 +16,17 @@ import { describe, it, expect } from 'vitest'
 import { createRawSnippet } from 'svelte'
 import { createAttachmentKey } from 'svelte/attachments'
 import { render } from 'svelte/server'
-import { Button, Frame, Icon, ProgressSpinner, Skeleton, roleIcon } from '@soldy-ui/svelte'
+import {
+	Button,
+	CheckBox,
+	Frame,
+	Icon,
+	Input,
+	ProgressSpinner,
+	Skeleton,
+	roleIcon,
+} from '@soldy-ui/svelte'
+import RootRef, { type TRootKind } from './RootRef.test.svelte'
 
 /** Содержимое панели. */
 const content = createRawSnippet(() => ({ render: () => '<span>Панель</span>' }))
@@ -139,5 +149,57 @@ describe('стиль и наборы на сервере', () => {
 		expect(body).toContain('aria-busy="true"')
 		expect(body).toContain('<span>Панель</span>')
 		expect(body).not.toContain('display: none')
+	})
+})
+
+/**
+ * Связываемый `ref` пишет attachment корня, а на сервере attachment-ов нет:
+ * `ref` не пишется вовсе, и в разметку он не попадает — компонент берёт его
+ * из `$props()` сам, мимо атрибутов корня.
+ */
+describe('ref потребителя · серверный рендер', () => {
+	const KINDS: readonly TRootKind[] = [
+		'Button',
+		'ComponentView',
+		'Frame',
+		'Icon',
+		'Label',
+		'ProgressSpinner',
+		'Skeleton',
+		'Input',
+		'CheckBox',
+		'Switch',
+		'Tabs',
+		'Tabs.Item',
+		'Tabs.Content',
+		'Accordion',
+		'Accordion.Item',
+		'RadioGroup',
+		'RadioGroup.Item',
+		'ListBox',
+		// ListBox.Item — временно, до 869ffnvvn: элемент списка в Node не рисуется
+		// (`requestAnimationFrame`), см. `collections.server.spec.ts`
+	]
+
+	it.each(KINDS)('%s: bind:ref не пишется, ref в разметке нет', (kind) => {
+		const nodes: (Element | null)[] = []
+		const body = markup(
+			render(RootRef, { props: { kind, onRef: (node) => nodes.push(node) } }).body,
+		)
+
+		expect(nodes).toHaveLength(0)
+		expect(body).not.toMatch(/\sref=/)
+	})
+
+	it('проп ref разметку не меняет — у кнопки и у полей', () => {
+		const pairs = [
+			[render(Button, { props: { ref: null } }), render(Button, { props: {} })],
+			[render(Input, { props: { ref: null } }), render(Input, { props: {} })],
+			[render(CheckBox, { props: { ref: null } }), render(CheckBox, { props: {} })],
+		]
+
+		for (const [withRef, without] of pairs) {
+			expect(markup(withRef.body)).toBe(markup(without.body))
+		}
 	})
 })

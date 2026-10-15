@@ -3,10 +3,10 @@
 	import { setupProgressSpinner } from './setup.component'
 	import type { ProgressSpinnerProps } from './base.component'
 
-	const props: ProgressSpinnerProps = $props()
+	let { ref = $bindable(), ...props }: ProgressSpinnerProps = $props()
 	const mountId = $props.id()
 
-	const binding = setupProgressSpinner(() => props, mountId)
+	const binding = setupProgressSpinner(() => props, mountId, (node) => (ref = node))
 	const state = binding.state
 </script>
 

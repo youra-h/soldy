@@ -3,10 +3,10 @@
 	import { setupIcon } from './setup.component'
 	import type { IconProps } from './base.component'
 
-	const props: IconProps = $props()
+	let { ref = $bindable(), ...props }: IconProps = $props()
 	const mountId = $props.id()
 
-	const binding = setupIcon(() => props, mountId)
+	const binding = setupIcon(() => props, mountId, (node) => (ref = node))
 	const state = binding.state
 </script>
 
