@@ -24,6 +24,7 @@ import {
 	createEngineListBox,
 	type IListBoxItem,
 	type TListBoxValue,
+	type TListBoxView,
 	type TListIndicator,
 } from '@soldy-ui/core'
 import { ListBox, ListBoxItem, type ListBoxItemProps, type ListBoxProps } from '@soldy-ui/solid'
@@ -319,6 +320,25 @@ describe('состав', () => {
 
 		expect(calls).toEqual([['данные', true]])
 		expect(selection()).toEqual(['true'])
+	})
+
+	/**
+	 * Вид строки элементу отдаёт фасад, а у списка без вида его нет вовсе:
+	 * ключа со значением `undefined` в сторе Solid нет. Вид, заданный позже,
+	 * доходит до строк — состояние двух контекстов элемента его видит.
+	 */
+	it('view, заданный списку после монтирования, доходит до строк', () => {
+		const [view, setView] = createSignal<TListBoxView | undefined>(undefined)
+		const views = () =>
+			rows().map((row) => [...row.classList].filter((name) => name.includes('--view-')))
+
+		mount(() => <ListBox items={ITEMS.slice(0, 2)} view={view()} />)
+
+		expect(views()).toEqual([[], []])
+
+		setView('ghost')
+
+		expect(views()).toEqual([['s-button--view-ghost'], ['s-button--view-ghost']])
 	})
 })
 
