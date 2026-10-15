@@ -26,7 +26,10 @@ element you wrote.
 Safari does not support customized built-ins, so the package imports the
 [`@ungap/custom-elements`](https://github.com/ungap/custom-elements) polyfill (3 KB gzipped); it
 does nothing where the browser supports them natively. With the polyfill an element comes to life a
-microtask after it is inserted, so right after `innerHTML` its `ctrl` is not there yet.
+microtask after it is inserted, so right after `innerHTML` its `ctrl` is not there yet. Elements
+already in the page when the package is imported are assembled a microtask after the import in every
+browser, so the theme, icons and plugins your entry point sets up right after the import (before any
+top-level `await`) apply to them too.
 
 Shadow DOM is not used — a theme styles global BEM classes, so light DOM is distributed by the
 `slot` attribute by hand. Content for a slot the component does not have is not rendered, and slots
