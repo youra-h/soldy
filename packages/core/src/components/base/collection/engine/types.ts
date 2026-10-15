@@ -1,5 +1,5 @@
 import type { ICommand, IQueryCommand } from './commands'
-import { TEvented } from '@soldy-ui/core'
+import { TEvented } from '../../../../common/event'
 import { TActionEvent } from '../../../../common/event/action-event'
 
 /**

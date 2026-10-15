@@ -57,6 +57,7 @@ export class TListBoxItemComponent extends TListBoxItemSurface<IListBoxItem> {
 			strategy: 'host',
 			sets: ['attrs', 'dataset'],
 			control: true,
+			order: true,
 		})
 	}
 

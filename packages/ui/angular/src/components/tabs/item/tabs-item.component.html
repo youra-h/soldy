@@ -7,6 +7,10 @@
 	Строка и кнопка закрытия — соседи: `view` нет ни у одной, значения вида
 	объявляет тема, и разметка библиотеки их не знает — обе части тема красит по
 	контексту.
+
+	Кнопка закрытия есть, только пока таб можно закрыть (`tab_closable`
+	фасада). Не `rendered` кнопки, как у Vue: у Angular он прячет корень, а не
+	удаляет, и скрытая кнопка со своими плагинами стояла бы у каждого таба.
 -->
 <button
 	so-button
@@ -36,20 +40,26 @@
 		<ng-content select="[slot=trailing]" />
 	</ng-container>
 </button>
-<button
-	so-button
-	embedded="tabs.close"
-	class="s-tabs-item__close"
-	[rendered]="state()['tab_closable'] === true"
-	[disabled]="state()['disabled']"
-	[size]="state()['size']"
-	[so-attributes]="state()['closeAria']"
-	(click)="close($event)"
->
-	@if (slot('close-icon'); as icon) {
-		<ng-container [ngTemplateOutlet]="icon" />
-	} @else {
-		<svg so-icon embedded="tabs.close-icon" so-role-icon="close" [size]="state()['size']"></svg>
-	}
-</button>
+@if (state()['tab_closable']) {
+	<button
+		so-button
+		embedded="tabs.close"
+		class="s-tabs-item__close"
+		[disabled]="state()['disabled']"
+		[size]="state()['size']"
+		[so-attributes]="state()['closeAria']"
+		(click)="close($event)"
+	>
+		@if (slot('close-icon'); as icon) {
+			<ng-container [ngTemplateOutlet]="icon" />
+		} @else {
+			<svg
+				so-icon
+				embedded="tabs.close-icon"
+				so-role-icon="close"
+				[size]="state()['size']"
+			></svg>
+		}
+	</button>
+}
 <ng-content select="ng-template[slot]" />

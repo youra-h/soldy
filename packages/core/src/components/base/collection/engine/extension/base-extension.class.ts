@@ -1,6 +1,6 @@
 import type { IExtension, IExtensionContext } from './types'
 import type { TEngineOptions } from '../options'
-import { TEvented } from '@soldy-ui/core'
+import { TEvented } from '../../../../../common/event'
 
 /**
  * Абстрактное расширение — устраняет повторяющийся код:

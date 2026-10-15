@@ -55,6 +55,7 @@ export class TTabsItemComponent extends TTabsItemSurface<ITabsItem> {
 			strategy: 'host',
 			sets: ['attrs', 'dataset'],
 			control: true,
+			order: true,
 		})
 	}
 

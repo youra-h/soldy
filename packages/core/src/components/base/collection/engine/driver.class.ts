@@ -5,7 +5,7 @@ import type {
 	IQueryStrategy,
 	TCollectionStorageDriverEvents,
 } from './types'
-import { TEvented } from '@soldy-ui/core'
+import { TEvented } from '../../../../common/event'
 
 export class TCollectionStorageDriver<T> implements ICollectionStorageDriver<T> {
 	private _storage: IStorage<T> // Хранилище элементов коллекции

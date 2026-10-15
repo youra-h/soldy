@@ -4,7 +4,13 @@
  * Выносит общий жизненный цикл, чтобы убрать дублирование между компонентами:
  *
  * - constructor: связывает корень компонента с TElementPlugin по описанию
- *   корня (`TRootSpec`), у корня-хоста ещё снимает с элемента атрибуты-входы
+ *   корня (`TRootSpec`), у корня-хоста ещё снимает с элемента атрибуты-входы.
+ *   Узел плагинам база отдаёт эффектом после отрисовки (`afterRenderEffect`),
+ *   то есть только в браузере, как остальные адаптеры, у которых на сервере
+ *   ни рефы, ни attachment-ы не зовутся: узел эмуляции DOM сервера плагинам
+ *   мерить и слушать незачем, а без `requestAnimationFrame` в Node
+ *   `TElementPlugin` его и не объявил бы. Классы, наборы и стиль ядра — обычные
+ *   эффекты: они нужны и разметке сервера
  * - state: сигнал состояния Core (шаблон подписывается сам, без ChangeDetectorRef)
  * - ngOnInit: создаёт binding (createBinding) из заданных inputs — у корня-хоста
  *   вместе с его тегом — в контексте инъекции компонента и ставит приёмник
@@ -67,10 +73,11 @@
  * - стиль — тоже эффект базы, по свойствам и тем же правилом: снизу выход
  *   плагина раскладки (`layout_styles`), поверх него стиль-выход компонента
  *   (`fractionStyle` у ProgressSpinner) и место элемента коллекции (`order`
- *   фасада): ряд коллекции — флексбокс, и элемент встаёт по номеру в
- *   коллекции, а не по месту в разметке, как у Svelte. Свойства, которых ядро
- *   не называет, — потребителя или плагина, записавшего его в узел сам, — база
- *   не трогает. Не привязка хоста `[style]` — по той же причине, что классы:
+ *   фасада, `TRootSpec.order`): ряд коллекции — флексбокс, и элемент встаёт по
+ *   номеру в коллекции, а не по месту в разметке, как у Vue и Svelte.
+ *   Свойства, которых ядро не называет, — потребителя или плагина,
+ *   записавшего его в узел сам, — база не трогает. Не привязка хоста
+ *   `[style]` — по той же причине, что классы:
  *   она стала бы первой привязкой стилей директивы. `[style.display]` скрытия
  *   остаётся привязкой;
  * - `rendered=false` прячет корень, как `visible=false`: убрать элемент
@@ -134,6 +141,7 @@ import {
 	OnInit,
 	SimpleChanges,
 	TemplateRef,
+	afterRenderEffect,
 	computed,
 	contentChildren,
 	effect,
@@ -187,6 +195,11 @@ import type { TBinding, TBindingState } from './useAdapter'
  * - `hides` — прячут ли `visible` и `rendered` корень, по умолчанию да. У
  *   Skeleton нет: они убирают только заглушку, а содержимое в корне остаётся
  *   на виду;
+ * - `order` — корень встаёт по месту в коллекции: `order` фасада элемента
+ *   уходит в стиль корня поверх стиль-выхода. У элементов ListBox, Tabs и
+ *   Accordion да — их ряд флексбокс; у радио нет: радио одной группы стоят
+ *   где угодно, хоть в строках чужого списка, и номер увёл бы радио по
+ *   чужому флекс-ряду, — как у Vue и Svelte;
  * - `shownBy` — выход состояния, без которого корень скрыт: пока он не
  *   `true`, корень прячется, как при `visible=false`. У панели таба это
  *   `active` фасада — панель видна, только пока активен её таб. Имя выхода
@@ -214,11 +227,15 @@ export type TRootSpec =
 			readonly strategy: 'host'
 			readonly style?: string
 			readonly hides?: boolean
+			readonly order?: boolean
 			readonly shownBy?: string
 			readonly teleport?: TRootTeleport
 			readonly sets?: readonly TRootSet[]
 			readonly control?: boolean
 	  }
+
+/** Описание корня-хоста — элемента потребителя (`TRootSpec` со стратегией `'host'`). */
+type TRootHost = Extract<TRootSpec, { readonly strategy: 'host' }>
 
 /** Набор ядра, который база может положить на корень-хост (`TRootSpec.sets`). */
 export type TRootSet = 'attrs' | 'aria' | 'dataset'
@@ -424,7 +441,7 @@ export abstract class TComponentBase<TInstance extends IEntity, TFacade = unknow
 			this._hides = root.hides ?? true
 			this._shownBy = root.shownBy
 			this.placed = root.teleport ? this._teleportHost(host, root.teleport) : IN_PLACE
-			this._bindHost(host, root.style, root.sets ?? ROOT_SETS)
+			this._bindHost(host, root)
 
 			if (root.control) this._moveToControl(host)
 		} else {
@@ -505,22 +522,22 @@ export abstract class TComponentBase<TInstance extends IEntity, TFacade = unknow
 
 	/**
 	 * Корень — сам хост (`'host'`). Элемент потребителя живёт всё время жизни
-	 * компонента: привязка к TElementPlugin разовая, а классы, наборы и стиль
-	 * ядра база раскладывает на него сама — шаблона на хост нет. Зовётся из
-	 * конструктора: эффектам нужен injection context.
+	 * компонента: привязка к TElementPlugin разовая и только в браузере, после
+	 * отрисовки, а классы, наборы и стиль ядра база раскладывает на него сама —
+	 * шаблона на хост нет. Зовётся из конструктора: эффектам нужен injection
+	 * context.
 	 *
-	 * `styleName` — имя стиль-выхода компонента в состоянии (`TRootSpec.style`),
-	 * `sets` — наборы ядра на корне (`TRootSpec.sets`).
+	 * Из описания корня здесь — имя стиль-выхода компонента (`style`), место в
+	 * коллекции (`order`) и наборы ядра на корне (`sets`).
 	 */
-	private _bindHost(
-		host: Element,
-		styleName: string | undefined,
-		sets: readonly TRootSet[],
-	): void {
+	private _bindHost(host: Element, root: TRootHost): void {
+		const styleName = root.style
+
 		// Атрибут с именем входа — запись входа, а не атрибут корня (см. шапку)
 		for (const name of ['ctrl', ...this._inputNames]) host.removeAttribute(name)
 
-		effect(() => this._binding()?.bindElement(host))
+		// Узел — плагинам только в браузере: на сервере эффекта после отрисовки нет
+		afterRenderEffect(() => this._binding()?.bindElement(host))
 
 		// Эффект на классы, на каждый набор и на стиль: перекладывается только
 		// сменившееся. Память начинается пустой и на гидратации: первая
@@ -538,7 +555,7 @@ export abstract class TComponentBase<TInstance extends IEntity, TFacade = unknow
 		// свой набор поверх кладёт ещё и разметка владельца (`AttributesDirective`)
 		const attributes = TElementAttributes.of(host)
 
-		for (const name of sets) {
+		for (const name of root.sets ?? ROOT_SETS) {
 			const set = computed(() => attributesOf(this._drawn()[name]))
 
 			effect(() => attributes.set(name, set()))
@@ -548,12 +565,12 @@ export abstract class TComponentBase<TInstance extends IEntity, TFacade = unknow
 		// на смену содержимого, и эффект не будит смена чужих свойств
 		const layout = computed(() => this._drawn()['layout_styles'])
 		const own = computed(() => (styleName === undefined ? undefined : this._drawn()[styleName]))
-		const order = computed(() => this._drawn()['order'])
+		const order = computed(() => (root.order ? this._drawn()['order'] : undefined))
 
 		let appliedStyles: TAppliedStyles = new Map()
 
 		// Снизу выход плагина раскладки, поверх — стиль-выход компонента и место
-		// элемента коллекции
+		// элемента коллекции, если корень стоит по нему
 		effect(() => {
 			appliedStyles = applyStyles(
 				host,
@@ -639,11 +656,12 @@ export abstract class TComponentBase<TInstance extends IEntity, TFacade = unknow
 
 	/**
 	 * Корень в шаблоне (`'view'`): существует не всегда и может пересоздаваться,
-	 * поэтому эффект перечитывает `#root` и переустанавливает связь. Зовётся из
-	 * конструктора: эффекту нужен injection context.
+	 * поэтому эффект перечитывает `#root` и переустанавливает связь — после
+	 * отрисовки, только в браузере, как у корня-хоста. Зовётся из конструктора:
+	 * эффекту нужен injection context.
 	 */
 	private _bindView(): void {
-		effect(() => {
+		afterRenderEffect(() => {
 			const binding = this._binding()
 			const ref = this._root()
 
