@@ -5,10 +5,10 @@
  * `LocaleProviderDirective` выше по дереву. Его источник уходит поддереву
  * через `providers` директивы, сборка компонента берёт ближайший из DI и
  * отдаёт своему набору плагинов (`bundle.locale`), а плагины языка и имён
- * пишут компоненту тег и имена. Компонентов со строками у Angular пока нет,
- * поэтому проверяется то, на чём они встанут: источник в наборе с первой
- * сборки, смена на лету без перемонтирования, вложенный провайдер и
- * провайдер на `<ng-container>`. Без провайдера — английский.
+ * пишут компоненту тег и имена. Проверяется сам путь — источник в наборе с
+ * первой сборки, смена на лету без перемонтирования, вложенный провайдер и
+ * провайдер на `<ng-container>`, без провайдера — английский, — и первый
+ * компонент Angular со строками: имя кнопки очистки Input.
  */
 
 import { describe, it, expect, afterEach } from 'vitest'
@@ -25,7 +25,7 @@ import {
 	type TLocale,
 } from '@soldy-ui/plugins'
 import { usePlugins } from '@soldy-ui/setup'
-import { LocaleProviderDirective, TButtonComponent } from '@soldy-ui/angular'
+import { LocaleProviderDirective, TButtonComponent, TInputComponent } from '@soldy-ui/angular'
 import { announced } from './element-plugin'
 import { find, mountHost } from './mount'
 
@@ -216,5 +216,60 @@ describe('LocaleProviderDirective', () => {
 		mountHost(DeepHost)
 
 		expect(installed).toEqual([ruRU.tag])
+	})
+})
+
+@Component({
+	standalone: true,
+	imports: [TInputComponent, LocaleProviderDirective],
+	template: `<ng-container so-locale-provider [locale]="locale()">
+		<so-input clearable name="Город" />
+	</ng-container>`,
+})
+class ClearNameHost {
+	readonly locale = signal<TLocale>(ruRU)
+}
+
+@Component({
+	standalone: true,
+	imports: [TInputComponent],
+	template: `<so-input clearable name="Город" />`,
+})
+class BareClearNameHost {}
+
+describe('Input · имя кнопки очистки', () => {
+	/** Кнопка очистки в разметке хоста. */
+	const clearOf = (host: HTMLElement) => find(host, '.s-input__clear', HTMLButtonElement)
+
+	it('строку имени задаёт локаль поддерева, без провайдера — английская', () => {
+		const provided: HTMLElement = mountHost(ClearNameHost).nativeElement
+		const bare: HTMLElement = mountHost(BareClearNameHost).nativeElement
+
+		expect(clearOf(provided).getAttribute('aria-label')).toBe('Очистить Город')
+		expect(clearOf(bare).getAttribute('aria-label')).toBe('Clear Город')
+	})
+
+	/**
+	 * Провайдер пишет новую локаль в тот же источник, плагин имён переписывает
+	 * набор кнопки, а разметка поля кладёт его на ту же кнопку: ни поле, ни
+	 * кнопка не пересобраны.
+	 */
+	it('смена локали провайдера переводит имя на той же кнопке', () => {
+		const fixture = mountHost(ClearNameHost)
+		const host: HTMLElement = fixture.nativeElement
+		const button = clearOf(host)
+		const input = find(host, 'so-input', HTMLElement)
+
+		fixture.componentInstance.locale.set(enUS)
+		fixture.detectChanges()
+
+		expect(clearOf(host)).toBe(button)
+		expect(find(host, 'so-input', HTMLElement)).toBe(input)
+		expect(button.getAttribute('aria-label')).toBe('Clear Город')
+
+		fixture.componentInstance.locale.set(zhCN)
+		fixture.detectChanges()
+
+		expect(button.getAttribute('aria-label')).toBe('清除Город')
 	})
 })

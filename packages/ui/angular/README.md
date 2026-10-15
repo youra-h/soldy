@@ -16,10 +16,10 @@ The components are standalone and zoneless — state is a signal, so Zone.js is 
 render on the server (`@angular/platform-server`) and hydrate in the browser
 (`provideClientHydration`); component ids match on both sides.
 
-> **Status:** the Angular adapter is in progress — Button, Icon, Frame, ProgressSpinner and Skeleton
-> are ported, the rest of the set is on its way. Frame moves the element you wrote into `target`
-> (`body` by default) in the browser; with `contained` it stays in place. `so-locale-provider` gives
-> a subtree its language and library strings. See
+> **Status:** the Angular adapter is in progress — Button, Icon, Label, Frame, ProgressSpinner,
+> Skeleton, Input, CheckBox and Switch are ported, the rest of the set is on its way. Frame moves
+> the element you wrote into `target` (`body` by default) in the browser; with `contained` it stays
+> in place. `so-locale-provider` gives a subtree its language and library strings. See
 > [the adapter table](https://github.com/youra-h/soldy#components).
 
 ## Install
@@ -76,6 +76,28 @@ nothing written inside it.
 
 ```ts
 template: `<svg so-icon so-role-icon="close" aria_label="Close"></svg>`
+```
+
+A field — Input, CheckBox, Switch — is an element of its own (`<so-input>`, `<so-check-box>`,
+`<so-switch>`) with a native `<input>` inside, so your markup is split the way Vue and React split
+it: `class` and `style` stay on the field, while the static attributes you write on it
+(`autocomplete`, `data-*`) move to the `<input>`. Bindings such as `[attr.title]` and event
+listeners stay on the field element — Angular attaches them where you wrote them; events that
+bubble from the `<input>` (`keydown`) reach them, `focus` and `blur` do not. A field gets its
+visible name from a Label around it:
+
+```ts
+template: `<label so-label text="Remember me"><so-check-box (changeValue)="remember($event)" /></label>
+  <so-input clearable name="City" autocomplete="address-level2" />`
+```
+
+Slots that hand data in are `<ng-template slot>` — the content next to an Input gets the field
+itself:
+
+```ts
+template: `<so-input>
+  <ng-template slot="trailing" let-ctrl="ctrl">{{ ctrl.value?.length ?? 0 }}/40</ng-template>
+</so-input>`
 ```
 
 A panel over the page is a Frame. The element you write is the panel, and it is that element which

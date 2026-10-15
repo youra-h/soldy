@@ -353,6 +353,10 @@ describe('выходы компонентов экспорта · геттер �
 				'TIconComponent',
 				'TProgressSpinnerComponent',
 				'TSkeletonComponent',
+				'TLabelComponent',
+				'TInputComponent',
+				'TCheckBoxComponent',
+				'TSwitchComponent',
 			]),
 		)
 	})

@@ -45,6 +45,26 @@ export function findIn<T extends Element>(
 }
 
 /**
+ * Разметка внутри узла без комментариев. Якоря блоков `@if` и
+ * `<ng-container>` Angular оставляет в DOM комментариями, а сверяется то, что
+ * видит документ: элементы и текст.
+ */
+export function markupOf(element: Element): string {
+	const clone = element.cloneNode(true)
+
+	if (!(clone instanceof Element)) throw new Error('Копия элемента — не элемент')
+
+	const walker = document.createTreeWalker(clone, NodeFilter.SHOW_COMMENT)
+	const comments: Node[] = []
+
+	while (walker.nextNode()) comments.push(walker.currentNode)
+
+	for (const comment of comments) comment.parentNode?.removeChild(comment)
+
+	return clone.innerHTML
+}
+
+/**
  * Кадр: `TElementPlugin` объявляет узел через `requestAnimationFrame`, и
  * `element:ready` приходит после него.
  */

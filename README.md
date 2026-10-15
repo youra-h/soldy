@@ -188,7 +188,7 @@ What each adapter implements so far:
 | -------------- | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
 | Vue            | `@soldy-ui/vue`     | all of the above                                                                                                                     |
 | React          | `@soldy-ui/react`   | Button, Icon, Label, Frame, Skeleton, ProgressSpinner, Input, CheckBox, Switch, RadioGroup, ListBox, Tabs, Accordion, Table, Virtual |
-| Angular        | `@soldy-ui/angular` | Button (`<button so-button>`), Icon, Frame, Skeleton, ProgressSpinner                                                                |
+| Angular        | `@soldy-ui/angular` | Button (`<button so-button>`), Icon, Label, Frame, Skeleton, ProgressSpinner, Input, CheckBox, Switch                                |
 | Svelte         | `@soldy-ui/svelte`  | Button, Icon, Label, Frame, Skeleton, ProgressSpinner, Input, CheckBox, Switch, RadioGroup, ListBox, Tabs, Accordion                 |
 | Solid          | `@soldy-ui/solid`   | Button, Icon, Label, Frame, Skeleton, ProgressSpinner, Input, CheckBox, Switch                                                       |
 | Web Components | `@soldy-ui/webc`    | Button (`<button is="so-button">`), Skeleton, ProgressSpinner                                                                        |
