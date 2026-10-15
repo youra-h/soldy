@@ -49,6 +49,14 @@ for (const lib of LIBS) {
 		await page.waitForFunction(() => 'bench' in window)
 		const b = (fn, arg) => page.evaluate(fn, arg)
 		const heap = async () => (await b(() => (gc(), bench.info()))).heap
+		// Куча после сборки вне стека. `gc()` из скрипта страницы оставляет живой
+		// часть снятого — сколько, зависит от прогона, и повторный `gc()` её не
+		// снимает: остаток держит стек вызова сборки, а не страница. Сборка
+		// отдельной задачей (`execution: 'async'`) идёт с пустым стеком, и что
+		// переживает её, держится на самом деле
+		const unstacked = async () =>
+			(await b(async () => (await gc({ type: 'major', execution: 'async' }), bench.info())))
+				.heap
 		const heap0 = await heap()
 		push('Рендер', await b((n) => bench.render(n), N))
 		const i1 = await b(() => bench.info())
@@ -92,6 +100,8 @@ for (const lib of LIBS) {
 		push('Замена данных', await b((n) => bench.replace(n, 7), N))
 		push('Размонтирование', await b(() => bench.clear()))
 		push('Память после, МБ', MB((await heap()) - heap0))
+		// И вне стека: утечку показывает только она
+		push('Память после, сборка вне стека, МБ', MB((await unstacked()) - heap0))
 		if (run === 0)
 			console.log(
 				lib,
@@ -101,18 +111,23 @@ for (const lib of LIBS) {
 		await page.close()
 	}
 	const med = (a) => [...a].sort((x, y) => x - y)[Math.floor(a.length / 2)]
+	// Разброс прогонов — рядом с медианой, «(min–max)»; у времени — до успокоения
+	const spread = (a) => `(${Math.min(...a)}–${Math.max(...a)})`
 	table[lib] = Object.fromEntries(
-		Object.entries(results).map(([k, v]) => [
-			k,
-			typeof v[0] === 'number'
-				? med(v)
-				: `${med(v.map((x) => x.paint))} / ${med(v.map((x) => x.settled))}`,
-		]),
+		Object.entries(results).map(([k, v]) => {
+			if (typeof v[0] === 'number') return [k, `${med(v)} ${spread(v)}`]
+
+			const settled = v.map((x) => x.settled)
+
+			return [k, `${med(v.map((x) => x.paint))} / ${med(settled)} ${spread(settled)}`]
+		}),
 	)
 	// Строка участника — сразу: зависший следующий не съест уже снятые цифры
 	console.log(lib, JSON.stringify(table[lib]))
 }
 await browser.close()
 server.close()
-console.log(`\nN=${N}, прогонов ${RUNS}, медиана; время — мс до кадра / до успокоения`)
+console.log(
+	`\nN=${N}, прогонов ${RUNS}, медиана (min–max); время — мс до кадра / до успокоения, разброс — до успокоения`,
+)
 console.table(table)

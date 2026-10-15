@@ -26,7 +26,6 @@
  */
 
 import {
-	useCallback,
 	useEffect,
 	useLayoutEffect,
 	useMemo,
@@ -92,6 +91,38 @@ function rebind(_: TStore, adapter: IAdapterContext): TStore {
 }
 
 /**
+ * Ref корня: привязывает узел к контексту, пока контекст жив.
+ *
+ * Уничтоженный контекст ref отпускает. Ref React хранит в узле своего дерева
+ * (fiber), и снятый узел живёт дольше размонтирования: событийная система
+ * React DOM помнит узел последнего события до следующего события на странице
+ * (`return_targetInst`). У снятого узла React чистит пропсы, состояние и
+ * эффекты, но не `ref` — и ref, замкнутый на контекст, держал бы через него
+ * размонтированный компонент целиком: у таблицы — все строки с записями.
+ * Привязывать к уничтоженному контексту нечего: его набор плагинов уничтожен
+ * вместе с ним.
+ *
+ * Своей функцией, а не замыканием в `useAdapter`: замыкание держит всю
+ * область вызова, где его создали, а область `useAdapter` держит ещё пропсы и
+ * связку своего рендера, — через них компонент остался бы досягаем и после
+ * того, как ref отпустил контекст.
+ *
+ * Уничтожение ref слышит слушателем всех событий шины контекста (`listen`), а
+ * не подпиской `on('destroy')`: слушатель шине — массив из одного элемента, а
+ * подписка заводит ей карту наборов, у таблицы — по карте на контекст каждой
+ * строки и каждого её чекбокса.
+ */
+function rootRef(adapter: IAdapterContext): (el: Element | null) => void {
+	let context: IAdapterContext | null = adapter
+
+	adapter.events.listen((event) => {
+		if (event === 'destroy') context = null
+	})
+
+	return (el) => context?.bindElement(el)
+}
+
+/**
  * Общая часть `useAdapter` и `useCollectionAdapter`: связка контекста,
  * состояние, входы и события. Отдаёт то, из чего каждый хук собирает свой
  * результат.
@@ -152,7 +183,7 @@ export function useAdapter<C extends IComponentContract, TProps extends object>(
 	const { binding, state } = useExchange(adapter, props)
 
 	// 4. DOM-биндинг: контекст сам знает, есть ли у набора TElementPlugin
-	const ref = useCallback((el: Element | null) => adapter.bindElement(el), [adapter])
+	const ref = useMemo(() => rootRef(adapter), [adapter])
 
 	const forwardProps = useMemo(() => binding.forward(props), [props, binding])
 
