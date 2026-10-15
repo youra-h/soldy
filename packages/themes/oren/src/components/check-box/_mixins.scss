@@ -14,7 +14,7 @@ $variants: 'accent', 'positive', 'negative', 'caution';
 		$svg-fill: $mark;
 
 		svg {
-			@apply #{'fill-s-' + $color + '-' + $svg-fill};
+			@apply #{'fill-so-' + $color + '-' + $svg-fill};
 		}
 	}
 
@@ -29,7 +29,7 @@ $variants: 'accent', 'positive', 'negative', 'caution';
 		}
 
 		&:disabled + #{$this}__container {
-			@apply #{'bg-s-' + $color + '-' + $bg-disabled};
+			@apply #{'bg-so-' + $color + '-' + $bg-disabled};
 		}
 	}
 }
@@ -65,7 +65,7 @@ $variants: 'accent', 'positive', 'negative', 'caution';
 	// коробка остаётся залитой, её гасит только прозрачность блока.
 	#{$on} #{$this}__container {
 		border-color: var(--so-#{$color}-#{$fill});
-		@apply #{'bg-s-' + $color + '-' + $fill} text-white;
+		@apply #{'bg-so-' + $color + '-' + $fill} text-white;
 
 		// Белый — цветом текста, а не в `fill`. В режиме принудительных цветов
 		// браузер заменяет фон коробки системным, а `fill` не трогает: белая
@@ -80,7 +80,7 @@ $variants: 'accent', 'positive', 'negative', 'caution';
 		input:is(#{hover.$hovered}):not(:disabled, #{hover.readonly($this)})
 		+ #{$this}__container {
 		border-color: var(--so-#{$color}-#{$fill-hover});
-		@apply #{'bg-s-' + $color + '-' + $fill-hover};
+		@apply #{'bg-so-' + $color + '-' + $fill-hover};
 	}
 }
 

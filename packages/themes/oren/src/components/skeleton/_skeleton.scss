@@ -50,7 +50,7 @@
 		// движения у волны пульсация, как у `pulse`.
 		#{$this}--animation-wave & {
 			@apply overflow-hidden;
-			@include mixins.skeleton-pulse;
+			@include mixins.so-skeleton-pulse;
 
 			@include motion.allowed {
 				animation: none;
@@ -120,7 +120,7 @@
 // иначе под ним осталась бы пульсация базы.
 :where(.so-skeleton) .so-skeleton__placeholder {
 	@apply rounded-md;
-	@include mixins.skeleton-pulse;
+	@include mixins.so-skeleton-pulse;
 
 	@include mixins.skeleton-variant('neutral');
 }

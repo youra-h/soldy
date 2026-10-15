@@ -45,7 +45,7 @@ $return-easing: cubic-bezier(0.33, 1, 0.68, 1);
 
 	&::before {
 		content: '';
-		@apply block shrink-0 rounded-full bg-s-neutral-300;
+		@apply block shrink-0 rounded-full bg-so-neutral-300;
 	}
 
 	@media (forced-colors: active) {

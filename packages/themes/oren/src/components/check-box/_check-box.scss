@@ -18,19 +18,19 @@
 			@apply cursor-default pointer-events-none;
 
 			+ #{$this}__container {
-				@apply opacity-s-component-disabled;
+				@apply opacity-so-component-disabled;
 			}
 		}
 
 		&:focus-visible + #{$this}__container {
-			@apply outline-2 outline-offset-2 outline-s-component;
+			@apply outline-2 outline-offset-2 outline-so-component;
 		}
 	}
 
 	&__container {
 		@apply flex items-center justify-center;
 		@apply w-full h-full rounded-md border;
-		@apply bg-s-component-surface;
+		@apply bg-so-component-surface;
 		@apply transition-colors duration-150;
 	}
 

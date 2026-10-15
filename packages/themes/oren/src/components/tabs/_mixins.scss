@@ -48,7 +48,7 @@ $move-easing: ease;
 // обёртки. Подмены цветов (`forced-color-adjust`) здесь нет: системный цвет
 // браузер и так оставляет, а у обёртки подмену унаследовал бы текст таба.
 @mixin tabs-contained-card {
-	@apply rounded-md bg-s-component-surface shadow-sm;
+	@apply rounded-md bg-so-component-surface shadow-sm;
 
 	@media (forced-colors: active) {
 		outline: 1px solid Highlight;
@@ -84,17 +84,17 @@ $move-easing: ease;
 		border-color: var(--so-#{$color}-#{$border});
 
 		&::after {
-			@apply #{'bg-s-' + $color + '-' + $indicator};
+			@apply #{'bg-so-' + $color + '-' + $indicator};
 		}
 
 		// Цвет текста при hover и у активного таба
 		> .so-tabs-item {
 			&:hover:not([data-disabled='true']) > #{$row} {
-				@apply #{'text-s-' + $color + '-' + $text};
+				@apply #{'text-so-' + $color + '-' + $text};
 			}
 
 			&[data-selected='true'] > #{$row} {
-				@apply #{'text-s-' + $color + '-' + $text};
+				@apply #{'text-so-' + $color + '-' + $text};
 			}
 		}
 	}
@@ -113,16 +113,16 @@ $move-easing: ease;
 // от варианта — цвет контейнера и текста.
 @mixin tabs-contained-variant($color, $text: 800, $container-bg: 100) {
 	> .so-tabs__list {
-		@apply #{'bg-s-' + $color + '-' + $container-bg};
+		@apply #{'bg-so-' + $color + '-' + $container-bg};
 	}
 
 	> .so-tabs__list > .so-tabs-item {
 		&:hover:not([data-disabled='true']) > #{$row} {
-			@apply #{'text-s-' + $color + '-' + $text};
+			@apply #{'text-so-' + $color + '-' + $text};
 		}
 
 		&[data-selected='true'] > #{$row} {
-			@apply #{'text-s-' + $color + '-' + $text};
+			@apply #{'text-so-' + $color + '-' + $text};
 		}
 	}
 }
@@ -153,7 +153,7 @@ $move-easing: ease;
 	> .so-tabs__list {
 		&::before,
 		&::after {
-			@apply #{'bg-s-' + $color + '-' + $border};
+			@apply #{'bg-so-' + $color + '-' + $border};
 		}
 	}
 
@@ -162,11 +162,11 @@ $move-easing: ease;
 
 		// @apply border-b-transparent;
 		&:hover:not([data-disabled='true']) > #{$row} {
-			@apply #{'text-s-' + $color + '-' + $text};
+			@apply #{'text-so-' + $color + '-' + $text};
 		}
 
 		&[data-selected='true'] > #{$row} {
-			@apply #{'text-s-' + $color + '-' + $text};
+			@apply #{'text-so-' + $color + '-' + $text};
 		}
 	}
 

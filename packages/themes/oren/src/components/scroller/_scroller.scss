@@ -100,7 +100,7 @@
 // Приём не новый: кольцо таба точно так же рисует обёртка, а фокус живёт на
 // строке внутри неё (`tabs/_tabs.scss`).
 .so-scroller:has(> .so-scroller__viewport:focus-visible) {
-	@apply outline-2 outline-offset-2 outline-s-component;
+	@apply outline-2 outline-offset-2 outline-so-component;
 }
 
 // Кнопки листания.

@@ -99,7 +99,7 @@
 		@apply cursor-default;
 
 		#{$this}__segments {
-			@apply opacity-s-component-disabled;
+			@apply opacity-so-component-disabled;
 		}
 	}
 }
@@ -262,7 +262,7 @@
 	// по ней читают, где день, а где месяц, и прочесть её обязаны. Прозрачность
 	// к тому же погасила бы и подсветку под фокусом.
 	&[data-placeholder='true'] {
-		@apply text-s-neutral-500;
+		@apply text-so-neutral-500;
 	}
 
 	// Под фокусом — подсветка: туда пойдёт ввод. Пустая часть под фокусом —
@@ -298,7 +298,7 @@
 $empty: ".so-date-input__segments:where(:not(:has(.so-date-input__segment:not([data-placeholder='true']))))";
 
 #{$empty} > .so-date-input__literal {
-	@apply text-s-neutral-500;
+	@apply text-so-neutral-500;
 }
 
 // Принудительные цвета (высокий контраст Windows): фоны браузер заменяет

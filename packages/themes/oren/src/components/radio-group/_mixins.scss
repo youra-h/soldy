@@ -91,6 +91,6 @@ $sizes: (
 	}
 
 	&[data-disabled='true'] > #{$this}__control {
-		@apply #{'bg-s-' + $color + '-' + $bg-disabled};
+		@apply #{'bg-so-' + $color + '-' + $bg-disabled};
 	}
 }

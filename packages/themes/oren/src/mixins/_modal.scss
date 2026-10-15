@@ -44,7 +44,7 @@ $button-height: map.get(map.get(button.$sizes, 'normal'), 'h');
 // `color-mix()` в непрозрачный запасной фон, и в браузере без него страница
 // пропала бы целиком.
 @mixin backdrop {
-	@apply bg-s-component-veil opacity-50;
+	@apply bg-so-component-veil opacity-50;
 }
 
 // Поверхность панели — та же семья, что панели Select и Popover: поверхность
@@ -55,8 +55,8 @@ $button-height: map.get(map.get(button.$sizes, 'normal'), 'h');
 // задаёт компонент: состав кнопок шапки у окна и у панели свой.
 @mixin surface {
 	@apply box-border grid overflow-hidden;
-	@apply text-s-component shadow-xl;
-	@apply ring-1 ring-s-neutral-300;
+	@apply text-so-component shadow-xl;
+	@apply ring-1 ring-so-neutral-300;
 	@include place.surface(var(--so-component-surface));
 
 	// Прозрачный контур — вторая половина кромки, как у панелей Popover и

@@ -294,7 +294,7 @@ $line: ':where(.so-tabs:not(.so-tabs--view-contained, .so-tabs--view-outline))';
 				@apply absolute inset-0;
 				@apply pointer-events-none;
 				@apply opacity-10;
-				@apply bg-s-component-veil;
+				@apply bg-so-component-veil;
 				transition: opacity 0.2s ease;
 			}
 
@@ -450,7 +450,7 @@ $line: ':where(.so-tabs:not(.so-tabs--view-contained, .so-tabs--view-outline))';
 	}
 
 	&:has(> #{mixines.$row}:focus-visible)::after {
-		@apply outline-2 -outline-offset-2 outline-s-component;
+		@apply outline-2 -outline-offset-2 outline-so-component;
 	}
 }
 

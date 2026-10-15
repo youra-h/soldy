@@ -79,8 +79,8 @@ $variants: 'accent', 'positive', 'negative', 'caution';
 	height: var(--so-#{$block}-height);
 
 	@apply rounded-md #{'border-(length:--so-' + $block + '-border)'};
-	@apply bg-s-component-surface;
-	@apply text-s-component;
+	@apply bg-so-component-surface;
+	@apply text-so-component;
 	@apply transition-colors duration-150;
 
 	// Кольцо есть всегда, меняется только его цвет. Если объявлять `outline-2`
@@ -124,7 +124,7 @@ $variants: 'accent', 'positive', 'negative', 'caution';
 // возвращает его сплошным, системным цветом фокуса: свой цвет темы браузер
 // здесь заменил бы, а `Highlight` оставляет как есть.
 @mixin field-focus {
-	@apply outline-s-component;
+	@apply outline-so-component;
 
 	@media (forced-colors: active) {
 		outline-style: solid;

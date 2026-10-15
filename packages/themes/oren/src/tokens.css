@@ -2,7 +2,7 @@
  * Палитра + семантические токены.
  *
  * Цвета объявлены как CSS-переменные (--so-*) и прокидываются в Tailwind
- * через @theme inline, чтобы утилиты (bg-s-accent-500 и т.д.) ссылались
+ * через @theme inline, чтобы утилиты (bg-so-accent-500 и т.д.) ссылались
  * на переменные — так темы переключаются в рантайме через [data-so-theme].
  * Переменная — глобальное имя, у неё префикс so-, как у библиотеки; имя
  * утилиты в собранный CSS не попадает, и префикс у неё свой, s- (AGENTS.md
@@ -157,63 +157,63 @@
 
 /* Регистрируем токены как tailwind-цвета (утилиты ссылаются на var) */
 @theme inline {
-	--color-s-accent-50: var(--so-accent-50);
-	--color-s-accent-100: var(--so-accent-100);
-	--color-s-accent-200: var(--so-accent-200);
-	--color-s-accent-300: var(--so-accent-300);
-	--color-s-accent-400: var(--so-accent-400);
-	--color-s-accent-500: var(--so-accent-500);
-	--color-s-accent-600: var(--so-accent-600);
-	--color-s-accent-700: var(--so-accent-700);
-	--color-s-accent-800: var(--so-accent-800);
-	--color-s-accent-900: var(--so-accent-900);
-	--color-s-accent-950: var(--so-accent-950);
+	--color-so-accent-50: var(--so-accent-50);
+	--color-so-accent-100: var(--so-accent-100);
+	--color-so-accent-200: var(--so-accent-200);
+	--color-so-accent-300: var(--so-accent-300);
+	--color-so-accent-400: var(--so-accent-400);
+	--color-so-accent-500: var(--so-accent-500);
+	--color-so-accent-600: var(--so-accent-600);
+	--color-so-accent-700: var(--so-accent-700);
+	--color-so-accent-800: var(--so-accent-800);
+	--color-so-accent-900: var(--so-accent-900);
+	--color-so-accent-950: var(--so-accent-950);
 
-	--color-s-positive-50: var(--so-positive-50);
-	--color-s-positive-100: var(--so-positive-100);
-	--color-s-positive-200: var(--so-positive-200);
-	--color-s-positive-300: var(--so-positive-300);
-	--color-s-positive-400: var(--so-positive-400);
-	--color-s-positive-500: var(--so-positive-500);
-	--color-s-positive-600: var(--so-positive-600);
-	--color-s-positive-700: var(--so-positive-700);
-	--color-s-positive-800: var(--so-positive-800);
-	--color-s-positive-900: var(--so-positive-900);
-	--color-s-positive-950: var(--so-positive-950);
+	--color-so-positive-50: var(--so-positive-50);
+	--color-so-positive-100: var(--so-positive-100);
+	--color-so-positive-200: var(--so-positive-200);
+	--color-so-positive-300: var(--so-positive-300);
+	--color-so-positive-400: var(--so-positive-400);
+	--color-so-positive-500: var(--so-positive-500);
+	--color-so-positive-600: var(--so-positive-600);
+	--color-so-positive-700: var(--so-positive-700);
+	--color-so-positive-800: var(--so-positive-800);
+	--color-so-positive-900: var(--so-positive-900);
+	--color-so-positive-950: var(--so-positive-950);
 
-	--color-s-negative-50: var(--so-negative-50);
-	--color-s-negative-100: var(--so-negative-100);
-	--color-s-negative-200: var(--so-negative-200);
-	--color-s-negative-300: var(--so-negative-300);
-	--color-s-negative-400: var(--so-negative-400);
-	--color-s-negative-500: var(--so-negative-500);
-	--color-s-negative-600: var(--so-negative-600);
-	--color-s-negative-700: var(--so-negative-700);
-	--color-s-negative-800: var(--so-negative-800);
-	--color-s-negative-900: var(--so-negative-900);
-	--color-s-negative-950: var(--so-negative-950);
+	--color-so-negative-50: var(--so-negative-50);
+	--color-so-negative-100: var(--so-negative-100);
+	--color-so-negative-200: var(--so-negative-200);
+	--color-so-negative-300: var(--so-negative-300);
+	--color-so-negative-400: var(--so-negative-400);
+	--color-so-negative-500: var(--so-negative-500);
+	--color-so-negative-600: var(--so-negative-600);
+	--color-so-negative-700: var(--so-negative-700);
+	--color-so-negative-800: var(--so-negative-800);
+	--color-so-negative-900: var(--so-negative-900);
+	--color-so-negative-950: var(--so-negative-950);
 
-	--color-s-caution-50: var(--so-caution-50);
-	--color-s-caution-100: var(--so-caution-100);
-	--color-s-caution-200: var(--so-caution-200);
-	--color-s-caution-300: var(--so-caution-300);
-	--color-s-caution-400: var(--so-caution-400);
-	--color-s-caution-500: var(--so-caution-500);
-	--color-s-caution-600: var(--so-caution-600);
-	--color-s-caution-700: var(--so-caution-700);
-	--color-s-caution-800: var(--so-caution-800);
-	--color-s-caution-900: var(--so-caution-900);
-	--color-s-caution-950: var(--so-caution-950);
+	--color-so-caution-50: var(--so-caution-50);
+	--color-so-caution-100: var(--so-caution-100);
+	--color-so-caution-200: var(--so-caution-200);
+	--color-so-caution-300: var(--so-caution-300);
+	--color-so-caution-400: var(--so-caution-400);
+	--color-so-caution-500: var(--so-caution-500);
+	--color-so-caution-600: var(--so-caution-600);
+	--color-so-caution-700: var(--so-caution-700);
+	--color-so-caution-800: var(--so-caution-800);
+	--color-so-caution-900: var(--so-caution-900);
+	--color-so-caution-950: var(--so-caution-950);
 
-	--color-s-neutral-50: var(--so-neutral-50);
-	--color-s-neutral-100: var(--so-neutral-100);
-	--color-s-neutral-200: var(--so-neutral-200);
-	--color-s-neutral-300: var(--so-neutral-300);
-	--color-s-neutral-400: var(--so-neutral-400);
-	--color-s-neutral-500: var(--so-neutral-500);
-	--color-s-neutral-600: var(--so-neutral-600);
-	--color-s-neutral-700: var(--so-neutral-700);
-	--color-s-neutral-800: var(--so-neutral-800);
-	--color-s-neutral-900: var(--so-neutral-900);
-	--color-s-neutral-950: var(--so-neutral-950);
+	--color-so-neutral-50: var(--so-neutral-50);
+	--color-so-neutral-100: var(--so-neutral-100);
+	--color-so-neutral-200: var(--so-neutral-200);
+	--color-so-neutral-300: var(--so-neutral-300);
+	--color-so-neutral-400: var(--so-neutral-400);
+	--color-so-neutral-500: var(--so-neutral-500);
+	--color-so-neutral-600: var(--so-neutral-600);
+	--color-so-neutral-700: var(--so-neutral-700);
+	--color-so-neutral-800: var(--so-neutral-800);
+	--color-so-neutral-900: var(--so-neutral-900);
+	--color-so-neutral-950: var(--so-neutral-950);
 }

@@ -176,7 +176,7 @@
 	&__thumb {
 		@apply absolute flex items-center justify-center;
 		@apply rounded-full border-solid;
-		@apply bg-s-component-knob shadow-sm;
+		@apply bg-so-component-knob shadow-sm;
 		@apply cursor-grab;
 		@apply ring-(length:--so-slider-halo) ring-(--so-slider-halo-color);
 		--so-slider-halo: 0px;
@@ -223,7 +223,7 @@
 
 	// Кольцо фокуса — на ручке: фокус у поля внутри неё, а поле невидимо.
 	&__thumb:has(> #{$this}__input:focus-visible) {
-		@apply outline-2 outline-offset-2 outline-s-component;
+		@apply outline-2 outline-offset-2 outline-so-component;
 	}
 
 	// Поле — во всю ручку и прозрачное: остаётся в дереве доступности и в
@@ -397,7 +397,7 @@
 	//
 	// Пустая подпись места не занимает: метка без подписи — одна точка.
 	&__mark-label {
-		@apply whitespace-nowrap text-s-neutral-500;
+		@apply whitespace-nowrap text-so-neutral-500;
 		@apply transition-colors duration-150;
 		@include mixines.slider-mark-text('normal');
 
@@ -407,7 +407,7 @@
 	}
 
 	&__mark[data-in-range='true'] > #{$this}__mark-label {
-		@apply text-s-component;
+		@apply text-so-component;
 	}
 
 	&__mark[data-current='true'] > #{$this}__mark-label {
@@ -432,7 +432,7 @@
 	// Disabled читается из `data-disabled`: ядро пишет его на корне при любом
 	// теге. Гаснет ползунок целиком.
 	&[data-disabled='true'] {
-		@apply opacity-s-component-disabled cursor-default pointer-events-none;
+		@apply opacity-so-component-disabled cursor-default pointer-events-none;
 	}
 
 	@each $size, $_ in mixines.$sizes {

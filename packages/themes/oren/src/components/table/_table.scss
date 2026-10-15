@@ -146,7 +146,7 @@ $reorder-columns: 30;
 	@include mixines.table-size('normal');
 
 	@apply w-full min-w-max table-fixed border-collapse;
-	@apply text-s-component;
+	@apply text-so-component;
 
 	// Свой слой: полосы ручек подняты над кнопками сортировки (`z-index`), но
 	// поверх соседей по странице этот подъём не выходит.
@@ -179,7 +179,7 @@ $reorder-columns: 30;
 			> .so-table-column__content
 			> .so-table-column__text,
 		> #{$this}__body > #{$this}__empty-row > #{$this}__empty {
-			@apply opacity-s-component-disabled;
+			@apply opacity-so-component-disabled;
 		}
 	}
 
@@ -320,7 +320,7 @@ $reorder-columns: 30;
 
 .so-table-column,
 .so-table__select {
-	@apply font-medium text-s-neutral-500;
+	@apply font-medium text-so-neutral-500;
 }
 
 // Заголовок колонки. Ширина — переменной, которую считает ядро: своя ширина
@@ -342,7 +342,7 @@ $reorder-columns: 30;
 	border-start-end-radius: $head-radius;
 
 	&[data-sort] {
-		@apply text-s-component;
+		@apply text-so-component;
 	}
 
 	// Распорка — нижняя граница колонки без ширины, пока ядро её не разложило:
@@ -1023,7 +1023,7 @@ $reorder-columns: 30;
 	// Вуаль выбора — на строке, и выключенная выбранная строка остаётся
 	// выбранной на вид.
 	&[data-disabled='true'] > .so-table-row__cell {
-		@apply opacity-s-component-disabled;
+		@apply opacity-so-component-disabled;
 	}
 }
 
@@ -1064,7 +1064,7 @@ $reorder-columns: 30;
 	> .so-table__head > .so-table__head-row > :is(.so-table-column, .so-table__select),
 	> .so-table__body > .so-table-row > :is(.so-table-row__cell, .so-table-row__select) {
 		&:focus-visible {
-			@apply outline-2 -outline-offset-2 outline-s-component;
+			@apply outline-2 -outline-offset-2 outline-so-component;
 
 			@media (forced-colors: active) {
 				outline-color: Highlight;
@@ -1084,7 +1084,7 @@ $reorder-columns: 30;
 // сверху и снизу — в строку таблицы: таблица без строк не схлопывается в одну
 // шапку, а пустая полоса читается местом под данные.
 .so-table__empty {
-	@apply text-center text-s-neutral-500;
+	@apply text-center text-so-neutral-500;
 	padding-block: var(--so-table-row);
 }
 

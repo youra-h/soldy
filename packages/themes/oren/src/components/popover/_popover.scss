@@ -42,8 +42,8 @@
 // «закрываемая» теме не нужен: без кнопки колонки просто нет.
 .so-popover__panel {
 	@apply flex items-start overflow-hidden rounded-md box-border;
-	@apply text-s-component shadow-md;
-	@apply ring-1 ring-s-neutral-300;
+	@apply text-so-component shadow-md;
+	@apply ring-1 ring-so-neutral-300;
 	@include place.surface(var(--so-component-surface));
 
 	// Прозрачный контур — вторая половина кромки (см. выше). Он же гасит

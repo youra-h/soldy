@@ -91,7 +91,7 @@
 	// отделён зазором в два запаса — как плитки соседних дней.
 	@apply relative flex flex-col;
 	@apply w-fit max-w-full;
-	@apply text-s-component;
+	@apply text-so-component;
 	gap: calc(2 * var(--so-calendar-bleed));
 
 	@include mixines.calendar-text('normal');
@@ -116,7 +116,7 @@
 	// Остаются подписи — дни недели: своего состояния у них нет.
 	&[data-disabled='true'] {
 		#{$this}__weekday {
-			@apply opacity-s-component-disabled;
+			@apply opacity-so-component-disabled;
 		}
 	}
 }
@@ -268,7 +268,7 @@
 // выглядывает из-под карточки панели выбора. Многоточия нет: от короткого
 // имени оно оставило бы букву.
 .so-calendar__weekday {
-	@apply p-0 text-center align-middle font-medium text-s-neutral-500;
+	@apply p-0 text-center align-middle font-medium text-so-neutral-500;
 	@apply overflow-hidden whitespace-nowrap;
 	inline-size: var(--so-calendar-cell);
 }
@@ -495,7 +495,7 @@
 	// приглушён. Прозрачности нет — кольцо фокуса на нём обязано быть видно
 	// целиком.
 	&[data-unavailable='true'] > #{$this}__day {
-		@apply line-through text-s-neutral-500;
+		@apply line-through text-so-neutral-500;
 	}
 
 	// Выбранный день — залитая плитка: в `single` и `multiple` каждый выбранный
@@ -538,7 +538,7 @@
 	// Выключенный день — вне `min`/`max` или выключен календарь: гаснет ячейка
 	// целиком, с плиткой и лентой, как выключенный Button.
 	&[data-disabled='true'] {
-		@apply opacity-s-component-disabled;
+		@apply opacity-so-component-disabled;
 	}
 }
 
@@ -698,8 +698,8 @@ $picker-panel: '.so-calendar__month > .so-calendar__heading > .so-popover__panel
 // заголовка у Dialog.
 .so-calendar__picker {
 	@apply box-border flex flex-col rounded-md;
-	@apply text-s-component shadow-md;
-	@apply ring-1 ring-s-neutral-300;
+	@apply text-so-component shadow-md;
+	@apply ring-1 ring-so-neutral-300;
 	@apply outline outline-transparent;
 	@include place.surface(var(--so-component-surface));
 	padding: calc(2 * var(--so-calendar-bleed));

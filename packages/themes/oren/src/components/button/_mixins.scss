@@ -143,7 +143,7 @@ $self-focus: ('&:focus', '&:focus-visible');
 // тегом: селектор по ним молча перестал бы срабатывать.
 @mixin button-disabled {
 	&[data-disabled='true'] {
-		@apply opacity-s-component-disabled cursor-default pointer-events-none;
+		@apply opacity-so-component-disabled cursor-default pointer-events-none;
 	}
 }
 
@@ -155,7 +155,7 @@ $self-focus: ('&:focus', '&:focus-visible');
 // `button-state-forced`, и кольцо осталось бы ступенью темы.
 @mixin button-focus-ring {
 	@apply duration-100;
-	@apply outline-2 outline-offset-2 outline-s-component;
+	@apply outline-2 outline-offset-2 outline-so-component;
 
 	@media (forced-colors: active) {
 		outline-color: Highlight;
@@ -393,7 +393,7 @@ $tone-steps: 300, 400, 500, 800;
 		&[data-selected='true']:not([data-disabled='true']),
 		&[data-selected='true'][data-highlighted='true']:not([data-disabled='true']) {
 			forced-color-adjust: inherit;
-			@apply bg-transparent text-s-component;
+			@apply bg-transparent text-so-component;
 		}
 
 		&[data-highlighted='true']:not([data-disabled='true']),
@@ -509,7 +509,7 @@ $tone-steps: 300, 400, 500, 800;
 
 		@include button-frame-forced($focused);
 	} @else if $view == 'none' {
-		@apply bg-transparent text-s-component;
+		@apply bg-transparent text-so-component;
 		@include button-state-none;
 		@include button-frame-none-forced;
 	} @else {

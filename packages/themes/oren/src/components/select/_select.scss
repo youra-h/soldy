@@ -222,8 +222,8 @@
 // под ним: опции она не накрывает, а прокрутка остаётся у списка.
 .so-select__panel {
 	@apply overflow-hidden rounded-md box-border;
-	@apply text-s-component shadow-md;
-	@apply ring-1 ring-s-neutral-300;
+	@apply text-so-component shadow-md;
+	@apply ring-1 ring-so-neutral-300;
 	@apply outline outline-transparent;
 	@include place.surface(var(--so-component-surface));
 

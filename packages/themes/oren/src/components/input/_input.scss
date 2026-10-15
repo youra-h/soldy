@@ -33,11 +33,11 @@ $enabled: ':not(:has(> input:disabled))';
 		@apply min-w-16;
 
 		&::placeholder {
-			@apply text-s-component-placeholder;
+			@apply text-so-component-placeholder;
 		}
 
 		&:disabled {
-			@apply opacity-s-component-disabled;
+			@apply opacity-so-component-disabled;
 			@apply cursor-default;
 		}
 	}
