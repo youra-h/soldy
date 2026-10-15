@@ -6,10 +6,10 @@
 	import { setupTabsItem } from './setup.component'
 	import type { TabsItemAttributes, TabsItemProps } from './base.component'
 
-	const props: TabsItemProps = $props()
+	let { ref = $bindable(), ...props }: TabsItemProps = $props()
 	const mountId = $props.id()
 
-	const binding = setupTabsItem(() => props, mountId)
+	const binding = setupTabsItem(() => props, mountId, (node) => (ref = node))
 	const state = binding.state
 	const context = binding.context
 

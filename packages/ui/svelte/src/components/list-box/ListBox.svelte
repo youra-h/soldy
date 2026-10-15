@@ -4,10 +4,10 @@
 	import { setupListBox } from './setup.component'
 	import type { ListBoxProps } from './base.component'
 
-	const props: ListBoxProps = $props()
+	let { ref = $bindable(), ...props }: ListBoxProps = $props()
 	const mountId = $props.id()
 
-	const binding = setupListBox(() => props, mountId)
+	const binding = setupListBox(() => props, mountId, (node) => (ref = node))
 	const state = binding.state
 
 	// Список — сам остановка Tab: по элементам ходят стрелки его клавиатуры.

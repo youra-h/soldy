@@ -7,10 +7,10 @@
 	import { setupAccordionItem } from './setup.component'
 	import type { AccordionItemAttributes, AccordionItemProps } from './base.component'
 
-	const props: AccordionItemProps = $props()
+	let { ref = $bindable(), ...props }: AccordionItemProps = $props()
 	const mountId = $props.id()
 
-	const binding = setupAccordionItem(() => props, mountId)
+	const binding = setupAccordionItem(() => props, mountId, (node) => (ref = node))
 	const state = binding.state
 	const context = binding.context
 

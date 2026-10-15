@@ -19,10 +19,8 @@
  * атрибуты.
  *
  * Атрибуты `fieldText` ложатся на `<input>` последними, после атрибутов
- * потребителя: `ref` потребителя из них (`toControlAttrs`) выбил бы `ref` поля,
- * и значение из ядра до узла не дошло бы. Свой `ref` потребитель при этом не
- * теряет — `ref` поля зовёт его тем же узлом: остальное из атрибутов
- * потребителя у поля уходит `<input>`, и `ref` тоже.
+ * потребителя. `ref` потребителя среди тех нет: он ведёт к корню поля, а не к
+ * `<input>`, и отдаёт его `ref` корня (`useAdapter`, `toControlAttrs`).
  *
  * На сервере `ref` не зовётся, эффектов нет, и текст уходит атрибутом
  * `value`: его берёт геттер на отрисовке. Сервер от браузера отличает
@@ -37,13 +35,6 @@ import { createRenderEffect } from 'solid-js'
 import { isServer } from 'solid-js/web'
 
 /**
- * `ref` потребителя из его атрибутов. Компоненту Solid отдаёт его функцией —
- * `ref={el}` тоже: функция присвоит узел переменной; узлом он бывает только в
- * типах атрибутов JSX.
- */
-export type TFieldRef = HTMLInputElement | ((node: HTMLInputElement) => void) | undefined
-
-/**
  * Атрибуты `<input>` для текста поля — спредом на поле, последними: в браузере
  * `ref` поля, на сервере — `value`.
  */
@@ -51,11 +42,8 @@ export type TFieldText =
 	| { readonly ref: (node: HTMLInputElement) => void }
 	| { readonly value: string | undefined }
 
-/**
- * Текст поля по геттеру `getText` — один раз на компонент. `getRef` — `ref`
- * потребителя из его атрибутов: `ref` поля зовёт его тем же узлом.
- */
-export function fieldText(getText: () => string | undefined, getRef: () => TFieldRef): TFieldText {
+/** Текст поля по геттеру `getText` — один раз на компонент. */
+export function fieldText(getText: () => string | undefined): TFieldText {
 	if (isServer) {
 		return {
 			get value() {
@@ -66,12 +54,6 @@ export function fieldText(getText: () => string | undefined, getRef: () => TFiel
 
 	return {
 		ref(node: HTMLInputElement) {
-			const ref = getRef()
-
-			// Узел вместо функции приходит только мимо компилятора Solid —
-			// присвоить его некуда
-			if (typeof ref === 'function') ref(node)
-
 			createRenderEffect(() => {
 				const text = getText() ?? ''
 

@@ -10,10 +10,10 @@
 	import { setupCheckBox } from './setup.component'
 	import type { CheckBoxAttributes, CheckBoxProps } from './base.component'
 
-	const props: CheckBoxProps = $props()
+	let { ref = $bindable(), ...props }: CheckBoxProps = $props()
 	const mountId = $props.id()
 
-	const binding = setupCheckBox(() => props, mountId)
+	const binding = setupCheckBox(() => props, mountId, (node) => (ref = node))
 	const state = binding.state
 
 	// Отметки без слота — иконки по ролям: метка одна на роль (`roleIcon`)

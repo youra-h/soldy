@@ -10,7 +10,9 @@
  *
  * `ref` адаптера — последним: в React 19 `ref` — обычный проп, и `ref`
  * потребителя из его атрибутов выбил бы привязку корня к `TElementPlugin` —
- * не было бы `element:ready`.
+ * не было бы `element:ready`. Корень `ref` потребителя отдаёт сам ref
+ * адаптера: у всех компонентов, у полей и элементов коллекций тоже — корень, а
+ * не `<input>` и не строку, у таблицы — окно, её внешний узел.
  *
  * Элемент коллекции (`Tabs.Item`, `Accordion.Item`, `RadioGroup.Item`) делит
  * атрибуты потребителя, как у Vue: класс и стиль — корню, остальное — строке
@@ -19,17 +21,25 @@
  */
 
 import { describe, it, expect, vi } from 'vitest'
-import { createRef, type ComponentType, type ReactNode } from 'react'
+import { StrictMode, act, createRef, type ComponentType, type ReactNode, type Ref } from 'react'
+import { hydrateRoot } from 'react-dom/client'
+import { renderToString } from 'react-dom/server'
+import { TButton, type TTableColumnSource } from '@soldy-ui/core'
 import {
 	Accordion,
 	Button,
+	CheckBox,
 	ComponentView,
 	Frame,
 	Icon,
+	Input,
 	Label,
+	ListBox,
 	ProgressSpinner,
 	RadioGroup,
 	Skeleton,
+	Switch,
+	Table,
 	Tabs,
 	type AccordionItemProps,
 	type AccordionProps,
@@ -38,6 +48,7 @@ import {
 	type FrameProps,
 	type IconProps,
 	type LabelProps,
+	type ListBoxItemProps,
 	type ProgressSpinnerProps,
 	type RadioGroupItemProps,
 	type RadioGroupProps,
@@ -45,9 +56,11 @@ import {
 	type TabsContentProps,
 	type TabsItemProps,
 	type TabsProps,
+	toControlAttrs,
+	toRootForward,
 	toRootLayout,
 } from '@soldy-ui/react'
-import { find, mount, nextFrame } from './mount'
+import { find, mount, nextFrame, track } from './mount'
 
 /** Общие пропсы строки таблицы: направление и колбэк готовности есть у всех. */
 type TProbeProps = ButtonProps &
@@ -178,30 +191,309 @@ describe('элемент коллекции: атрибуты снаружи —
 	})
 })
 
-describe('ref потребителя не выбивает привязку корня к TElementPlugin', () => {
-	it.each(COMPONENTS)(
-		'%s: element:ready приходит с корнем',
-		async (_name, Component, selector, own) => {
-			const onElementReady = vi.fn()
-			// `ref` в типах пропсов нет, но из атрибутов потребителя он доходит до корня
-			const attributes: Record<string, unknown> = { ref: createRef() }
+/** Пропсы, которые таблица `ref` отдаёт каждому компоненту: `ref` и события привязки корня. */
+type TRefProbeProps = {
+	ref?: Ref<Element>
+	onElementReady?: (element: Element) => void
+	onElementRemoved?: () => void
+}
 
-			mount(<Component {...own} {...attributes} onElementReady={onElementReady} />)
-			await nextFrame()
+const COLUMNS: TTableColumnSource[] = [{ field: 'name', text: 'Имя', rowHeader: true }]
 
-			expect(onElementReady).toHaveBeenCalledWith(find(document, selector, HTMLElement))
+/** Элемент списка — в списке: без него у элемента нет коллекции. */
+function ListBoxItemProbe(props: ListBoxItemProps): ReactNode {
+	return (
+		<ListBox>
+			<ListBox.Item value="a" text="A" {...props} />
+		</ListBox>
+	)
+}
+
+/**
+ * Компонент со своим корнем, как его рисовать, узел, который получает `ref`
+ * потребителя, и узел, с которым приходит `element:ready`. Это один узел — у
+ * всех, кроме таблицы: её `ref` получает окно, внешний узел, куда ложатся
+ * атрибуты потребителя, а к `TElementPlugin` привязан корень `table`. Поле и
+ * элемент коллекции отдают корень, а не `<input>` и не строку.
+ */
+const ROOTS: ReadonlyArray<
+	readonly [string, (props: TRefProbeProps) => ReactNode, string, string]
+> = [
+	['Button', (props) => <Button {...props} />, '.s-button', '.s-button'],
+	[
+		'ComponentView',
+		(props) => <ComponentView {...props} />,
+		'.s-component-view',
+		'.s-component-view',
+	],
+	['Frame', (props) => <Frame {...props} />, '.s-frame', '.s-frame'],
+	['Icon', (props) => <Icon tag="i" {...props} />, '.s-icon', '.s-icon'],
+	['Label', (props) => <Label {...props} />, '.s-label', '.s-label'],
+	[
+		'ProgressSpinner',
+		(props) => <ProgressSpinner {...props} />,
+		'.s-progress-spinner',
+		'.s-progress-spinner',
+	],
+	['Skeleton', (props) => <Skeleton {...props} />, '.s-skeleton', '.s-skeleton'],
+	['Input', (props) => <Input {...props} />, '.s-input', '.s-input'],
+	['CheckBox', (props) => <CheckBox {...props} />, '.s-check-box', '.s-check-box'],
+	['Switch', (props) => <Switch {...props} />, '.s-switch', '.s-switch'],
+	['Tabs', (props) => <Tabs {...props} />, '.s-tabs', '.s-tabs'],
+	['Tabs.Item', (props) => <TabsItemProbe {...props} />, '.s-tabs-item', '.s-tabs-item'],
+	[
+		'Tabs.Content',
+		(props) => <TabsContentProbe {...props} />,
+		'.s-tabs__panel',
+		'.s-tabs__panel',
+	],
+	['Accordion', (props) => <Accordion {...props} />, '.s-accordion', '.s-accordion'],
+	[
+		'Accordion.Item',
+		(props) => <AccordionItemProbe {...props} />,
+		'.s-accordion-item',
+		'.s-accordion-item',
+	],
+	['RadioGroup', (props) => <RadioGroup {...props} />, '.s-radio-group', '.s-radio-group'],
+	[
+		'RadioGroup.Item',
+		(props) => <RadioGroupItemProbe {...props} />,
+		'.s-radio-group-item',
+		'.s-radio-group-item',
+	],
+	['ListBox', (props) => <ListBox {...props} />, '.s-list-box', '.s-list-box'],
+	[
+		'ListBox.Item',
+		(props) => <ListBoxItemProbe {...props} />,
+		'.s-list-box-item',
+		'.s-list-box-item',
+	],
+	[
+		'Table',
+		(props) => (
+			<Table columns={COLUMNS} items={[{ data: { id: 1, name: 'Анна' } }]} {...props} />
+		),
+		'.s-table__viewport',
+		'table.s-table',
+	],
+]
+
+/** Поля: `ref` потребителя — корень, а не `<input>`. */
+const FIELD_ROOTS = ROOTS.filter(([name]) =>
+	['Input', 'CheckBox', 'Switch', 'RadioGroup.Item'].includes(name),
+)
+
+/** Узлы, которые получила `ref`-функция потребителя, — по порядку вызовов. */
+type TRefProbe = {
+	readonly ref: (node: Element | null) => void
+	readonly nodes: readonly (Element | null)[]
+}
+
+function refProbe(): TRefProbe {
+	const nodes: (Element | null)[] = []
+
+	return {
+		nodes,
+		ref: (node) => {
+			nodes.push(node)
+		},
+	}
+}
+
+/** Узлы сверяются по ссылке: `toEqual` сравнил бы узлы по разметке. */
+function expectNodes(
+	actual: readonly (Element | null)[],
+	expected: readonly (Element | null)[],
+): void {
+	expect(actual).toHaveLength(expected.length)
+	expected.forEach((node, index) => expect(actual[index]).toBe(node))
+}
+
+/**
+ * `ref` потребителя получает корень компонента — узел, на который ложатся его
+ * класс и атрибуты, — у поля и элемента коллекции тоже корень, а у таблицы —
+ * окно. Отдаёт его ref адаптера тем же вызовом, что привязывает корень к
+ * `TElementPlugin`, и привязку он не выбивает. Снятие — как у React: функции
+ * `null` или её очистка, объекту `current = null`.
+ */
+describe('ref потребителя — корень компонента', () => {
+	it.each(ROOTS)('%s: ref-функция — корень, размонтирование — null', (_name, draw, selector) => {
+		const probe = refProbe()
+		const { render } = mount(<>{draw({ ref: probe.ref })}</>)
+		const root = find(document, selector, Element)
+
+		expectNodes(probe.nodes, [root])
+
+		render(<></>)
+
+		expectNodes(probe.nodes, [root, null])
+	})
+
+	it.each(ROOTS)(
+		'%s: объектный ref — current, размонтирование — null',
+		(_name, draw, selector) => {
+			const ref = createRef<Element>()
+			const { render } = mount(<>{draw({ ref })}</>)
+
+			expect(ref.current).toBe(find(document, selector, Element))
+
+			render(<></>)
+
+			expect(ref.current).toBeNull()
 		},
 	)
 
-	it.each(ITEMS)('%s: element:ready приходит с корнем элемента', async (_name, Probe, root) => {
-		const onElementReady = vi.fn()
-		// `ref` уходит строке вместе с остальными атрибутами, корень — за адаптером
-		const attributes: Record<string, unknown> = { ref: createRef() }
+	it.each(ROOTS)(
+		'%s: element:ready приходит с привязанным корнем',
+		async (_name, draw, _selector, bound) => {
+			const ready: Element[] = []
 
-		mount(<Probe {...attributes} onElementReady={onElementReady} />)
+			mount(<>{draw({ ref: createRef(), onElementReady: (node) => ready.push(node) })}</>)
+			await nextFrame()
+
+			expectNodes(ready, [find(document, bound, Element)])
+		},
+	)
+
+	it.each(FIELD_ROOTS)('%s: ref — корень, а не <input>', (_name, draw, selector) => {
+		const probe = refProbe()
+
+		mount(<>{draw({ ref: probe.ref })}</>)
+
+		const root = find(document, selector, Element)
+
+		expect(probe.nodes[0]).toBe(root)
+		expect(probe.nodes).not.toContain(find(root, 'input', HTMLInputElement))
+	})
+
+	/** Смена тега пересоздаёт узел: прежний корень потребитель отпускает, новый получает. */
+	it('смена tag — потребителю новый корень', async () => {
+		const ctrl = new TButton()
+		const probe = refProbe()
+		const ready: Element[] = []
+		const { root } = mount(
+			<Button ctrl={ctrl} ref={probe.ref} onElementReady={(node) => ready.push(node)} />,
+		)
+		const first = root()
+
+		act(() => {
+			ctrl.tag = 'span'
+		})
 		await nextFrame()
 
-		expect(onElementReady).toHaveBeenCalledWith(find(document, root, HTMLElement))
+		expect(root()).not.toBe(first)
+		expect(root().localName).toBe('span')
+		expectNodes(probe.nodes, [first, null, root()])
+		expect(ready.at(-1)).toBe(root())
+	})
+
+	/**
+	 * Ref корня между рендерами тот же, и сменившийся `ref` потребителя корень
+	 * не перепривязывает: `TElementPlugin` не объявляет тот же узел парой
+	 * `removed` + `ready`. Узел — как отдал бы React: прежний `ref` его
+	 * отпускает, новый получает.
+	 */
+	it('смена ref потребителя — без removed и ready, прежнему null, новому корень', async () => {
+		const before = refProbe()
+		const after = createRef<Element>()
+		const events: string[] = []
+		const view = (ref: Ref<Element>) => (
+			<Button
+				ref={ref}
+				onElementReady={() => events.push('ready')}
+				onElementRemoved={() => events.push('removed')}
+			/>
+		)
+		const { root, render } = mount(view(before.ref))
+
+		await nextFrame()
+		render(view(after))
+		await nextFrame()
+
+		expectNodes(before.nodes, [root(), null])
+		expect(after.current).toBe(root())
+		expect(events).toEqual(['ready'])
+	})
+
+	/** Очистка из React 19: вернул её `ref` — при снятии зовётся она, а не `ref(null)`. */
+	it('ref-функция с очисткой — при снятии очистка, а не null', () => {
+		const nodes: (Element | null)[] = []
+		const released: Element[] = []
+		const ref = (node: Element | null) => {
+			nodes.push(node)
+
+			return () => {
+				if (node) released.push(node)
+			}
+		}
+		const { root, render } = mount(<Input ref={ref} />)
+		const node = root()
+
+		render(<></>)
+
+		expectNodes(nodes, [node])
+		expectNodes(released, [node])
+	})
+
+	/**
+	 * StrictMode снимает и ставит ref заново и пересобирает контексты
+	 * компонента: потребитель получает корень, отпускает и получает снова —
+	 * как ref любого узла, — а привязан корень к последнему контексту.
+	 */
+	it('StrictMode — корень, null, корень; element:ready — с корнем', async () => {
+		const probe = refProbe()
+		const ready: Element[] = []
+		const { root } = mount(
+			<StrictMode>
+				<Button ref={probe.ref} onElementReady={(node) => ready.push(node)} />
+			</StrictMode>,
+		)
+
+		await nextFrame()
+
+		expectNodes(probe.nodes, [root(), null, root()])
+		expect(ready.at(-1)).toBe(root())
+	})
+
+	it('делёж атрибутов поля: ref — не полю', () => {
+		const ref = createRef<Element>()
+		const forward = { className: 'mine', style: { color: 'red' }, title: 'Подсказка', ref }
+
+		expect(toRootForward(forward)).toEqual({ className: 'mine', style: { color: 'red' } })
+		expect(toControlAttrs(forward)).toEqual({ title: 'Подсказка' })
+	})
+})
+
+/**
+ * На сервере ref узлов React не зовёт, и `ref` потребителя разметки не
+ * меняет: ни атрибута, ни вызова. При гидратации `ref` получает корень из
+ * разметки сервера — тот же узел, а не новый.
+ */
+describe('ref потребителя · серверный рендер', () => {
+	it.each(ROOTS)('%s: ref не зовётся, разметка — та же', (_name, draw) => {
+		const probe = refProbe()
+		const markup = renderToString(<>{draw({ ref: probe.ref })}</>)
+
+		expect(probe.nodes).toHaveLength(0)
+		expect(markup).toBe(renderToString(<>{draw({})}</>))
+	})
+
+	it.each(FIELD_ROOTS)('%s: гидратация — корень из разметки сервера', (_name, draw, selector) => {
+		const probe = refProbe()
+		const onRecoverableError = vi.fn()
+		const container = document.createElement('div')
+
+		container.innerHTML = renderToString(<>{draw({ ref: probe.ref })}</>)
+		document.body.append(container)
+
+		const server = find(container, selector, Element)
+
+		act(() => {
+			track(hydrateRoot(container, <>{draw({ ref: probe.ref })}</>, { onRecoverableError }))
+		})
+
+		expect(onRecoverableError).not.toHaveBeenCalled()
+		expectNodes(probe.nodes, [server])
 	})
 })
 

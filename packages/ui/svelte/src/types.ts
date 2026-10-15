@@ -107,8 +107,22 @@ export type TFieldAttributes = Omit<
 >
 
 /**
+ * Корень компонента — связываемый проп `ref` (`<Button bind:ref={button}>`):
+ * `bind:this` у компонента Svelte даёт его экземпляр, а не узел. `ref` — не
+ * атрибут: компонент берёт его из `$props()` сам, и ни на корень, ни на
+ * `<input>` поля он не уходит. Узел — корень, у поля тоже, и `Element`, а не
+ * `HTMLElement`: `tag` свободен, корнем бывает `<svg>`. Снят узел — `null`; до
+ * монтирования и на сервере адаптер `ref` не пишет, и в нём то, с чем его
+ * связал потребитель, — `null` или пусто.
+ */
+export type TRootRefProps = {
+	ref?: Element | null
+}
+
+/**
  * Props DOM-компонента: UseProps + HTML-атрибуты без конфликтов с пропсами,
- * событиями и слотами дескриптора (см. `TDomAttributes`).
+ * событиями и слотами дескриптора (см. `TDomAttributes`) + корень `ref`
+ * (`TRootRefProps`).
  *
  * Атрибуты по умолчанию — `HTMLAttributes` корня; поля берут
  * `TFieldAttributes`: всё, кроме класса и стиля, у них уходит на `<input>`.
@@ -119,4 +133,5 @@ export type UseDomProps<
 	TEvents extends object = EventProps<TDescriptorFn>,
 	TAttributes extends object = HTMLAttributes<HTMLElement>,
 > = UseProps<TDescriptorFn, TInstance, TEvents> &
-	TDomAttributes<TDescriptorFn, TEvents, TAttributes>
+	TDomAttributes<TDescriptorFn, TEvents, TAttributes> &
+	TRootRefProps

@@ -9,11 +9,13 @@
  * строки списка стали бы остановками Tab.
  *
  * `ref` адаптера — последним: `ref` потребителя из его атрибутов выбил бы
- * привязку корня к `TElementPlugin` — не было бы `element:ready`.
+ * привязку корня к `TElementPlugin` — не было бы `element:ready`. Корень
+ * `ref` потребителя отдаёт сам `ref` адаптера, тем же вызовом, — у поля тоже
+ * корень, а не `<input>`.
  *
  * У поля атрибуты потребителя делятся, как у Vue: класс и стиль — корню,
- * остальное — `<input>`, поверх его `aria`; туда же уходит и `ref`
- * потребителя, а корень остаётся за адаптером.
+ * остальное, кроме `ref`, — `<input>`, поверх его `aria`, а корень остаётся
+ * за адаптером.
  *
  * Стиль Solid ставит объектом по свойству и не трогает того, что плагины
  * пишут в узел сами: сдвиг смахиваемой панели (`--s-swipe-offset`) переживает
@@ -167,52 +169,137 @@ describe('поле: атрибуты снаружи — <input>, поверх е
 	})
 
 	/**
-	 * `ref` потребителя — тоже «остальное»: поведение, которое он вешает на
-	 * поле, встаёт на `<input>`. Привязка корня к `TElementPlugin` — за
-	 * адаптером: `element:ready` приходит с корнем.
+	 * `ref` потребителя — не «остальное»: он получает корень поля, а не
+	 * `<input>`. До поля потребитель дойдёт от корня `querySelector`, а от поля
+	 * до корня — только по родителям, и этот путь ломается при правке разметки.
 	 */
 	it.each(FIELDS)(
-		'%s: ref потребителя — на <input>, element:ready — с корнем',
+		'%s: ref потребителя — корень, а не <input>; element:ready — с корнем',
 		async (_name, Probe, selector) => {
-			const consumer = vi.fn()
-			const onElementReady = vi.fn()
+			const nodes: Element[] = []
+			const ready: Element[] = []
 
-			mount(() => <Probe ref={consumer} onElementReady={onElementReady} />)
+			mount(() => (
+				<Probe
+					ref={(node) => nodes.push(node)}
+					onElementReady={(node) => ready.push(node)}
+				/>
+			))
 			await nextFrame()
 
 			const root = find(document, selector, HTMLElement)
 
-			expect(consumer.mock.calls.map(([node]) => node)).toEqual([
-				find(root, 'input', HTMLInputElement),
-			])
-			expect(onElementReady).toHaveBeenCalledTimes(1)
-			expect(onElementReady).toHaveBeenCalledWith(root)
+			expectNodes(nodes, [root])
+			expect(nodes).not.toContain(find(root, 'input', HTMLInputElement))
+			expectNodes(ready, [root])
 		},
 	)
 
-	it('делёж атрибутов: класс и стиль — корню, остальное — полю', () => {
+	it('делёж атрибутов: класс и стиль — корню, ref — не полю, остальное — полю', () => {
 		const ref = () => {}
 		const forward = { class: 'mine', style: 'color: red', title: 'Подсказка', ref }
 
 		expect(toRootForward(forward)).toEqual({ class: 'mine', style: 'color: red' })
-		expect(toControlAttrs(forward)).toEqual({ title: 'Подсказка', ref })
+		expect(toControlAttrs(forward)).toEqual({ title: 'Подсказка' })
 	})
 })
 
-describe('ref потребителя не выбивает привязку корня к TElementPlugin', () => {
-	it.each(COMPONENTS)(
-		'%s: element:ready приходит с корнем',
-		async (_name, Probe, selector, own) => {
-			const onElementReady = vi.fn()
-			const consumer = vi.fn()
+/** Узлы сверяются по ссылке: `toEqual` сравнил бы узлы по разметке. */
+function expectNodes(actual: readonly Element[], expected: readonly Element[]): void {
+	expect(actual).toHaveLength(expected.length)
+	expected.forEach((node, index) => expect(actual[index]).toBe(node))
+}
 
-			mount(() => <Probe {...own} ref={consumer} onElementReady={onElementReady} />)
+/** Пропсы, которые таблица `ref` отдаёт каждому компоненту: `ref` и событие привязки корня. */
+type TRefProbeProps = {
+	ref?: (node: Element) => void
+	onElementReady?: (element: Element) => void
+}
+
+/**
+ * Компонент со своим корнем — каждый, и поле тоже, — как его рисовать и класс
+ * корня. Frame по умолчанию скрыт и уходит телепортом в `body` — корень
+ * ищется по документу; у Icon тега по умолчанию нет.
+ */
+const ROOTS: ReadonlyArray<readonly [string, (props: TRefProbeProps) => JSX.Element, string]> = [
+	['Button', (props) => <Button {...props} />, '.s-button'],
+	['ComponentView', (props) => <ComponentView {...props} />, '.s-component-view'],
+	['Frame', (props) => <Frame visible {...props} />, '.s-frame'],
+	['Icon', (props) => <Icon tag="i" {...props} />, '.s-icon'],
+	['Label', (props) => <Label {...props} />, '.s-label'],
+	['ProgressSpinner', (props) => <ProgressSpinner {...props} />, '.s-progress-spinner'],
+	['Skeleton', (props) => <Skeleton {...props} />, '.s-skeleton'],
+	['CheckBox', (props) => <CheckBox {...props} />, '.s-check-box'],
+	['Switch', (props) => <Switch {...props} />, '.s-switch'],
+	['Input', (props) => <Input {...props} />, '.s-input'],
+]
+
+/**
+ * `ref` потребителя получает корень компонента — узел, на который ложатся его
+ * класс и атрибуты. Отдаёт его `ref` адаптера тем же вызовом, после привязки
+ * к `TElementPlugin`, и привязку он не выбивает. Как любой `ref` Solid, он
+ * зовётся, когда узел создан, и при снятии узла не зовётся.
+ */
+describe('ref потребителя — корень компонента', () => {
+	it.each(ROOTS)(
+		'%s: ref — корень, element:ready — тот же корень',
+		async (_name, draw, selector) => {
+			const nodes: Element[] = []
+			const ready: Element[] = []
+
+			mount(() =>
+				draw({
+					ref: (node) => nodes.push(node),
+					onElementReady: (node) => ready.push(node),
+				}),
+			)
 			await nextFrame()
 
-			expect(onElementReady).toHaveBeenCalledTimes(1)
-			expect(onElementReady).toHaveBeenCalledWith(find(document, selector, HTMLElement))
+			const root = find(document, selector, HTMLElement)
+
+			expectNodes(nodes, [root])
+			expectNodes(ready, [root])
 		},
 	)
+
+	it.each(ROOTS)('%s: снятие узла ref не зовёт', (_name, draw, selector) => {
+		const nodes: Element[] = []
+		const { destroy } = mount(() => draw({ ref: (node) => nodes.push(node) }))
+		const root = find(document, selector, HTMLElement)
+
+		destroy()
+
+		expectNodes(nodes, [root])
+	})
+
+	/** `ref={button}` компилятор Solid превращает в функцию, которая присвоит переменной узел. */
+	it('ref={переменная} — корень, у поля тоже', () => {
+		let button: Element | undefined
+		let input: Element | undefined
+		const { container } = mount(() => (
+			<>
+				<Button ref={button} />
+				<Input ref={input} />
+			</>
+		))
+
+		expect(button).toBe(find(container, '.s-button', HTMLElement))
+		expect(input).toBe(find(container, '.s-input', HTMLElement))
+	})
+
+	/** Смена тега пересоздаёт узел: потребитель получает новый корень. */
+	it('смена тега — потребителю новый корень', async () => {
+		const ctrl = new TButton()
+		const nodes: Element[] = []
+		const { root } = mount(() => <Button ctrl={ctrl} ref={(node) => nodes.push(node)} />)
+		const first = root()
+
+		ctrl.tag = 'span'
+		await nextFrame()
+
+		expect(root()).not.toBe(first)
+		expectNodes(nodes, [first, root()])
+	})
 
 	/** Смена тега пересоздаёт узел: привязка отпускает прежний и берёт новый. */
 	it('смена тега — ready с новым корнем', async () => {

@@ -13,6 +13,7 @@ import type {
 	TContractOf,
 	TSlotProps,
 } from '@soldy-ui/setup'
+import type { TConsumerRef } from './adapter'
 
 /** Событийные пропы компонента из дескриптора (core + плагины). */
 export type EventProps<TDescriptorFn extends (...args: any[]) => IComponentDescriptor> =
@@ -60,6 +61,10 @@ export type UseProps<
  * дескриптора. Атрибуты — корня (`HTMLAttributes`), у поля — его `<input>`
  * (`TFieldAttributes`): поле раздаёт их двум элементам, класс и стиль — корню,
  * остальное — `<input>` (`toControlAttrs`).
+ *
+ * Кроме `ref`: он всегда ведёт к корню компонента (`TConsumerRef`), у поля
+ * тоже, — `ref` из атрибутов узла (`<input>` у поля) здесь заменён им. Узел —
+ * `Element`: `tag` свободен, корнем бывает `<svg>`.
  */
 export type TDomAttributes<
 	TDescriptorFn extends (...args: any[]) => IComponentDescriptor,
@@ -68,11 +73,15 @@ export type TDomAttributes<
 > = Omit<
 	TAttributes,
 	| 'children'
+	| 'ref'
 	| keyof DescriptorAllProps<TDescriptorFn>
 	| TContractOf<TDescriptorFn>['protectedName']
 	| keyof SlotProps<TDescriptorFn>
 	| keyof TEvents
->
+> & {
+	/** Корень компонента — узел, на который ложатся класс и атрибуты потребителя. */
+	ref?: TConsumerRef
+}
 
 /**
  * Атрибуты `<input>` полей (Input, CheckBox, Switch): всё, кроме того, что
@@ -81,11 +90,13 @@ export type TDomAttributes<
  * рядом с ними был бы вторым путём к тому же состоянию. `readonly` — вход
  * дескриптора: `TDomAttributes` вычитает его и так, а `readOnly` — то же
  * свойство узла под именем DOM. Текст поля — вход `value`, его вычитает
- * `TDomAttributes`.
+ * `TDomAttributes`. `ref` `<input>` здесь нет: `ref` потребителя у поля ведёт
+ * к корню (`TDomAttributes`), а `ref` самого `<input>` — свой у поля
+ * (`fieldText`).
  */
 export type TFieldAttributes = Omit<
 	JSX.InputHTMLAttributes<HTMLInputElement>,
-	'checked' | 'prop:indeterminate' | 'readonly' | 'readOnly'
+	'checked' | 'prop:indeterminate' | 'readonly' | 'readOnly' | 'ref'
 >
 
 /**

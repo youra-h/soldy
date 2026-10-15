@@ -3,10 +3,10 @@
 	import { setupLabel } from './setup.component'
 	import type { LabelProps } from './base.component'
 
-	const props: LabelProps = $props()
+	let { ref = $bindable(), ...props }: LabelProps = $props()
 	const mountId = $props.id()
 
-	const binding = setupLabel(() => props, mountId)
+	const binding = setupLabel(() => props, mountId, (node) => (ref = node))
 	const state = binding.state
 </script>
 

@@ -4,10 +4,10 @@
 	import { setupRadioGroup } from './setup.component'
 	import type { RadioGroupProps } from './base.component'
 
-	const props: RadioGroupProps = $props()
+	let { ref = $bindable(), ...props }: RadioGroupProps = $props()
 	const mountId = $props.id()
 
-	const binding = setupRadioGroup(() => props, mountId)
+	const binding = setupRadioGroup(() => props, mountId, (node) => (ref = node))
 	const state = binding.state
 </script>
 

@@ -13,6 +13,7 @@ import type {
 	TContractOf,
 	TSlotProps,
 } from '@soldy-ui/setup'
+import type { TConsumerRef } from './adapter'
 
 /** Событийные пропсы компонента из дескриптора (core + плагины). */
 export type EventProps<TDescriptorFn extends (...args: any[]) => IComponentDescriptor> =
@@ -63,6 +64,11 @@ export type UseProps<
  *
  * События — те, что компонент принимает (`TEvents`): у коллекции это ещё и
  * события фасада, и `reset` коллекции иначе сошёлся бы с `onReset` формы.
+ *
+ * `ref` — проп React 19, и ведёт он к корню компонента (`TConsumerRef`) — у
+ * поля тоже, а не к `<input>`: среди атрибутов `<input>` его нет, и поле не
+ * отдаёт его туда (`toControlAttrs`). Узел — `Element`: `tag` свободен, корнем
+ * бывает `<svg>`.
  */
 export type TDomAttributes<
 	TDescriptorFn extends (...args: any[]) => IComponentDescriptor,
@@ -71,18 +77,23 @@ export type TDomAttributes<
 > = Omit<
 	TAttributes,
 	| 'children'
+	| 'ref'
 	| keyof DescriptorAllProps<TDescriptorFn>
 	| TContractOf<TDescriptorFn>['protectedName']
 	| keyof SlotProps<TDescriptorFn>
 	| keyof TEvents
->
+> & {
+	/** Корень компонента — узел, на который ложатся класс и атрибуты потребителя. */
+	ref?: TConsumerRef
+}
 
 /**
  * Атрибуты `<input>` полей (Input, CheckBox, Switch, RadioGroup.Item): всё,
  * кроме того, что поле ведёт само. Текст, отметку и её умолчание проводит
  * поле адаптера (`NativeInput`) из состояния ядра, а `readonly` — вход
  * дескриптора: атрибут `readOnly` рядом с ним был бы вторым путём к тому же
- * состоянию, а `checked` сделал бы поле контролируемым полем React.
+ * состоянию, а `checked` сделал бы поле контролируемым полем React. `ref` —
+ * не атрибут `<input>`: у поля он ведёт к корню (`TDomAttributes`).
  */
 export type TFieldAttributes = Omit<
 	InputHTMLAttributes<HTMLInputElement>,
