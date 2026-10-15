@@ -305,6 +305,34 @@ describe('повторная установка эффектов · StrictMode',
 		expect(onElementReady).toHaveBeenCalledWith(buttonOf(target))
 	})
 
+	it('с ctrl: проп, сменённый эффектом родителя, после пересборки — и в ядре, и в разметке', async () => {
+		// Пересборка идёт в эффекте с пропсами последнего коммита (`a`), а связку
+		// новый контекст получает следующим рендером — уже с `b` от эффекта
+		// родителя. Память связки начата с пропсов сборки, поэтому первый проход
+		// видит смену и пишет `b` в ядро. Начни память с пропсов этого рендера —
+		// смены бы не было, и ядро осталось бы с `a`
+		const ctrl = new TButton()
+
+		function Parent() {
+			const [text, setText] = useState('a')
+
+			useEffect(() => setText('b'), [])
+
+			return <Button ctrl={ctrl} text={text} />
+		}
+
+		const target = mount(
+			<StrictMode>
+				<Parent />
+			</StrictMode>,
+		)
+
+		await nextFrame()
+
+		expect(ctrl.text).toBe('b')
+		expect(textOf(target)).toBe('b')
+	})
+
 	it('с ctrl: onBundleCreate приходит один раз и с живым набором', async () => {
 		// Шина у обоих контекстов одна — инстанс, а первый уничтожен лишним
 		// циклом эффектов раньше, чем его набор объявлен

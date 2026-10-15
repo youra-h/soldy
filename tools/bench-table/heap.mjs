@@ -15,6 +15,7 @@ import path from 'node:path'
  *   npm run heap -- 5000 multiple 45 scroll
  *   npm run heap -- 5000 unmount soldy+fit=contain+track 1  # строк, участник, замен[, пауза, мс[, групп]]
  *   npm run heap -- 5000 unmount react:soldy+fit=contain+track 5 2000
+ *   npm run heap -- 500 mounted react:soldy+fit=contain+track 2  # то же, без размонтирования
  *
  * `scroll` — режим окна (`virtual`): первый снимок — после рендера, второй —
  * после прохода прокруткой по всем строкам. Разница — то, что прокрученные
@@ -28,15 +29,24 @@ import path from 'node:path'
  * следующая — со следующим. Сверх разницы по группам — пережившие: классы
  * soldy (`T…`) и записи строк, штук на строку, и на каждый — кратчайшая
  * цепочка удерживающих от корня по сильным рёбрам.
+ *
+ * `mounted` — что держит смонтированная таблица после замен. Участник и k —
+ * как у `unmount`, сценарий тот же без `bench.clear()`, пауза — после
+ * последней замены. Сверх разницы по группам — живые записи строк, штук на
+ * строку, разложенные по наборам (`recordSets`), и на каждый набор —
+ * кратчайшая цепочка удерживающих от корня до первой его записи.
  */
 const N = Number(process.argv[2] ?? 500)
-const UNMOUNT = process.argv[3] === 'unmount'
-const MODE = UNMOUNT ? undefined : (process.argv[3] ?? 'multiple')
-const LIB = UNMOUNT ? (process.argv[4] ?? 'soldy') : undefined
-const REPLACES = UNMOUNT ? Number(process.argv[5] ?? 1) : 0
-const PAUSE = UNMOUNT ? Number(process.argv[6] ?? 0) : 0
-const TOP = Number(process.argv[UNMOUNT ? 7 : 4] ?? 45)
-const SCROLL = !UNMOUNT && process.argv[5] === 'scroll'
+// Режимы со сценарием `run.mjs`: что пережило размонтирование и что держит смонтированная таблица
+const SCENARIO = ['unmount', 'mounted'].includes(process.argv[3]) ? process.argv[3] : undefined
+const UNMOUNT = SCENARIO === 'unmount'
+const MOUNTED = SCENARIO === 'mounted'
+const MODE = SCENARIO ? undefined : (process.argv[3] ?? 'multiple')
+const LIB = SCENARIO ? (process.argv[4] ?? 'soldy') : undefined
+const REPLACES = SCENARIO ? Number(process.argv[5] ?? 1) : 0
+const PAUSE = SCENARIO ? Number(process.argv[6] ?? 0) : 0
+const TOP = Number(process.argv[SCENARIO ? 7 : 4] ?? 45)
+const SCROLL = !SCENARIO && process.argv[5] === 'scroll'
 // Участник на React — с префиксом «react:»: `react:soldy+fit=none` —
 // `react.html?lib=soldy&fit=none`
 const urlOf = (lib) => {
@@ -73,7 +83,7 @@ const page = await browser.newPage({ viewport: { width: 1600, height: 1000 } })
 page.on('pageerror', (e) => console.error('pageerror', e.message))
 await page.goto(
 	`http://127.0.0.1:${server.address().port}/` +
-		(UNMOUNT ? urlOf(LIB) : `?lib=soldy&mode=${MODE}${SCROLL ? '&virtual=1' : ''}`),
+		(SCENARIO ? urlOf(LIB) : `?lib=soldy&mode=${MODE}${SCROLL ? '&virtual=1' : ''}`),
 )
 await page.waitForFunction(() => 'bench' in window)
 const cdp = await page.context().newCDPSession(page)
@@ -91,9 +101,10 @@ async function snapshot() {
 /**
  * Сценарий `run.mjs` до размонтирования включительно — те же шаги тем же
  * порядком, без замеров; замен данных — `REPLACES`, после размонтирования —
- * пауза `PAUSE`.
+ * пауза `PAUSE`. В режиме `mounted` таблица не размонтируется, и пауза идёт
+ * после последней замены.
  */
-async function unmount() {
+async function scenario() {
 	const b = (fn, arg) => page.evaluate(fn, arg)
 
 	await b((n) => bench.render(n), N)
@@ -122,7 +133,7 @@ async function unmount() {
 
 	for (let i = 0; i < REPLACES; i++) await b(([n, seed]) => bench.replace(n, seed), [N, 7 + i])
 
-	await b(() => bench.clear())
+	if (UNMOUNT) await b(() => bench.clear())
 
 	if (PAUSE) await page.waitForTimeout(PAUSE)
 }
@@ -169,13 +180,12 @@ function recordsOf(snap) {
 }
 
 /**
- * Кратчайшая цепочка удерживающих от корня снимка до ближайшего узла каждой
- * группы — обходом в ширину по сильным рёбрам. Группу узла называет `keyOf`,
- * чужой узел — `undefined`. Ярлык (`shortcut`) держит только от корня: так
- * корень снимка ссылается на глобальные объекты страницы, остальные ярлыки
- * дублируют настоящие пути.
+ * Кратчайшие пути от корня снимка — обходом в ширину по сильным рёбрам: для
+ * каждого узла — откуда и каким ребром он достигнут впервые, и порядок обхода.
+ * Ярлык (`shortcut`) держит только от корня: так корень снимка ссылается на
+ * глобальные объекты страницы, остальные ярлыки дублируют настоящие пути.
  */
-function retainers(snap, names, keyOf) {
+function shortestPaths(snap) {
 	const m = snap.snapshot.meta
 	const nf = m.node_fields.length
 	const ef = m.edge_fields.length
@@ -192,15 +202,12 @@ function retainers(snap, names, keyOf) {
 	const from = new Int32Array(count).fill(-1)
 	const via = new Int32Array(count).fill(-1)
 	const queue = new Int32Array(count)
-	const found = new Map()
 	let head = 0
 	let tail = 0
 	queue[tail++] = 0
 	from[0] = 0
 	while (head < tail) {
 		const v = queue[head++]
-		const key = keyOf(v)
-		if (key !== undefined && !found.has(key)) found.set(key, v)
 		for (let k = first[v]; k < first[v + 1]; k++) {
 			const t = edgeTypes[edges[k * ef + eType]]
 			if (t === 'weak' || (t === 'shortcut' && v !== 0)) continue
@@ -221,13 +228,67 @@ function retainers(snap, names, keyOf) {
 		if (t === 'shortcut') return '(shortcut)'
 		return `.${strings[n]}`
 	}
-	const chains = new Map()
-	for (const [name, node] of found) {
-		const chain = []
-		for (let v = node; v !== 0; v = from[v]) chain.push(`${edge(via[v])} → ${names[v]}`)
-		chains.set(name, chain.reverse())
+	return { from, via, edge, order: queue.subarray(0, tail) }
+}
+
+/** Цепочка удерживающих от корня до узла по кратчайшим путям, по звену на ребро. */
+function chainOf(paths, names, node) {
+	const chain = []
+	for (let v = node; v !== 0; v = paths.from[v])
+		chain.push(`${paths.edge(paths.via[v])} → ${names[v]}`)
+	return chain.reverse()
+}
+
+/**
+ * Кратчайшая цепочка удерживающих от корня снимка до ближайшего узла каждой
+ * группы. Группу узла называет `keyOf`, чужой узел — `undefined`.
+ */
+function retainers(snap, names, keyOf) {
+	const paths = shortestPaths(snap)
+	const found = new Map()
+	for (const v of paths.order) {
+		const key = keyOf(v)
+		if (key !== undefined && !found.has(key)) found.set(key, v)
 	}
-	return chains
+	return new Map([...found].map(([name, node]) => [name, chainOf(paths, names, node)]))
+}
+
+/** Звеньев у хвоста цепочки, по которому записи делятся на наборы. */
+const TAIL = 4
+
+/**
+ * Записи строк по наборам. Набор — последние `TAIL` звеньев кратчайшей цепочки
+ * удерживающих, номера элементов в них стёрты, и массив `Array` в хвосте, если
+ * он есть: записи одного списка лежат в одном массиве — у каждого держателя
+ * свой, — а записи, которые держат поштучно (снимок состояния строки), делятся
+ * по виду цепочки, хоть путь от корня до каждой и свой. Отдаёт наборы по
+ * убыванию числа записей, у каждого — полную цепочку первой записи, и сколько
+ * записей сильными рёбрами не достигнуто.
+ */
+function recordSets(snap, names, records) {
+	const paths = shortestPaths(snap)
+	const sets = new Map()
+	let reached = 0
+	for (const v of paths.order) {
+		if (!records.marks[v]) continue
+		reached++
+		const tail = []
+		let list = -1
+		for (let u = v; u !== 0 && tail.length < TAIL; u = paths.from[u]) {
+			tail.push(
+				`${paths.edge(paths.via[u])} → ${names[u]}`.replace(/^\[(hidden )?\d+\]/, '[$1#]'),
+			)
+			if (list === -1 && names[u] === 'Array') list = u
+		}
+		const key = `${list}\n${tail.join('\n')}`
+		const set = sets.get(key) ?? { count: 0, chain: chainOf(paths, names, v) }
+		set.count++
+		sets.set(key, set)
+	}
+	return {
+		sets: [...sets.values()].sort((x, y) => y.count - x.count),
+		unreached: records.count - reached,
+	}
 }
 
 /** Сумма собственного размера и число узлов по группам и имя каждого узла. */
@@ -463,14 +524,14 @@ if (SCROLL) await page.evaluate((n) => bench.render(n), N)
 const first = await snapshot()
 const before = group(first).groups
 // Записей строк на пустой странице нет, но разница — честнее
-const recordsBefore = UNMOUNT ? recordsOf(first).count : 0
-if (UNMOUNT) await unmount()
+const recordsBefore = SCENARIO ? recordsOf(first).count : 0
+if (SCENARIO) await scenario()
 else
 	await page.evaluate(
 		([n, scroll]) => (scroll ? bench.scrollThrough() : bench.render(n)),
 		[N, SCROLL],
 	)
-// Снимок после размонтирования нужен целиком — по нему ищутся цепочки
+// Снимок после сценария нужен целиком — по нему ищутся цепочки
 const raw = await snapshot()
 const { groups: after, names } = group(raw)
 await browser.close()
@@ -485,7 +546,9 @@ const total = diff
 	.reduce((s, d) => s + d.size, 0)
 const js = diff.find((d) => d.name === '__JS__')?.size ?? 0
 const kb = (x) => (x / N / 1024).toFixed(2)
-const what = UNMOUNT ? `${LIB}, замен ${REPLACES}, пауза ${PAUSE} мс` : `mode=${MODE}`
+const what = SCENARIO
+	? `${LIB}${MOUNTED ? ', смонтирована' : ''}, замен ${REPLACES}, пауза ${PAUSE} мс`
+	: `mode=${MODE}`
 console.log(`\nN=${N}, ${what}: +${(total / 1048576).toFixed(1)} МБ, ${kb(total)} КБ на строку\n`)
 console.log(`JS-куча: +${(js / 1048576).toFixed(1)} МБ, ${kb(js)} КБ на строку\n`)
 console.log('КБ/стр  шт/стр  группа')
@@ -538,4 +601,19 @@ if (UNMOUNT) {
 		for (const hop of chains.get(d.name) ?? ['(не достигнут сильными рёбрами)'])
 			console.log('  ' + hop.slice(0, 160))
 	}
+}
+
+if (MOUNTED) {
+	// Живые записи строк смонтированной таблицы — по наборам
+	const records = recordsOf(raw)
+	const count = records.count - recordsBefore
+	const { sets, unreached } = recordSets(raw, names, records)
+
+	console.log(`\nЖивые записи строк: ${count} шт, ${(count / N).toFixed(2)} на строку`)
+	console.log('\nНаборы записей — по кратчайшей цепочке удерживающих от корня')
+	for (const set of sets) {
+		console.log(`\n${set.count} шт, ${(set.count / N).toFixed(2)} на строку`)
+		for (const hop of set.chain) console.log('  ' + hop.slice(0, 160))
+	}
+	if (unreached) console.log(`\nНе достигнуты сильными рёбрами: ${unreached} шт`)
 }

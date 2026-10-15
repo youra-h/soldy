@@ -6,7 +6,9 @@
  * Работа разделена по фазам контекста:
  *
  * - **сборка** (конструктор) — движок и регистратор через лифт, контекст
- *   элемента в фасад, `meta` из пропсов. В чужое хранилище она не пишет;
+ *   элемента в фасад, `meta` из пропсов. В чужое хранилище она не пишет.
+ *   Пропсы сборки контекст держит до `connect()`, поэтому расширение ставят
+ *   до него — сразу за сборкой контекста;
  * - **вход** (`attach` контекста) — регистрация в коллекции владельца и
  *   `meta.apply`. Это запись в чужое хранилище, поэтому она ждёт, пока
  *   фреймворк примет компонент: у React сборка идёт на рендере, и отброшенный
@@ -55,10 +57,20 @@ export class TCollectionItemExtension {
 		options: ICollectionItemExtensionOptions,
 	) {
 		const { item, elevator } = options
+		const { props } = context
+
+		// Пропсы сборки контекст отпускает на `connect()`. Пустой `meta` вместо
+		// ошибки молча потерял бы `selected` и `active` из разметки
+		if (!props) {
+			throw new Error(
+				'TCollectionItemExtension ставится до connect(): пропсы сборки, из которых берётся meta элемента, контекст уже отпустил',
+			)
+		}
+
 		const engine = elevator(ITEM_CONTEXT_ELEVATOR).up()
 		const register = elevator(COLLECTION_ENGINE_ELEVATOR).up()
 		// Пропсы элемента для `meta` движка — из пропсов сборки
-		const meta = collectItemProps(context.descriptor.props, context.props)
+		const meta = collectItemProps(context.descriptor.props, props)
 		// Контекст элемента — этого монтирования. Фасад получает его при сборке:
 		// разметка читает его с первой отрисовки
 		const itemContext = engine ? new TItemContext(item, engine.extensions) : undefined
