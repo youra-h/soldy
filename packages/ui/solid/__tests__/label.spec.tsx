@@ -5,18 +5,29 @@
  * текст (слот `content`, без него — проп `text`). Связи через `for` и `id`
  * нет: контрол — первый labelable-потомок `label`, поэтому клик по тексту
  * переключает его, а текст становится его доступным именем. Сценарии — те
- * же, что у React (`label.spec.tsx`) и Vue (`label.spec.ts`); радио в подписи
- * придёт с RadioGroup — в Solid его пока нет.
+ * же, что у React (`label.spec.tsx`) и Vue (`label.spec.ts`), с радио в
+ * подписи: его корень — `label`, и в подписи радио рисуется с `tag="span"`.
  *
  * Слот `content` назван не `text`: в Solid слот — это проп, и одноимённый с
  * пропом `text` слился бы с ним.
  */
 
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, afterEach } from 'vitest'
 import { createSignal, type JSX } from 'solid-js'
 import type { TLabelPosition } from '@soldy-ui/core'
-import { CheckBox, Label, Switch, type SwitchProps } from '@soldy-ui/solid'
+import {
+	CheckBox,
+	Label,
+	RadioGroup,
+	Switch,
+	type RadioGroupProps,
+	type SwitchProps,
+} from '@soldy-ui/solid'
 import { find, mount, nextFrame } from './mount'
+
+afterEach(() => {
+	vi.restoreAllMocks()
+})
 
 describe('Label · разметка', () => {
 	it('корень — label, внутри контрол, потом текст', () => {
@@ -156,5 +167,53 @@ describe.each(CHECKABLES)('Label · %s в подписи', (_name, control) => {
 
 		expect(find(el, 'input', HTMLInputElement).checked).toBe(true)
 		expect(onChangeValue.mock.calls).toEqual([[{ newValue: true, oldValue: false }]])
+	})
+})
+
+describe('Label · радио в подписи', () => {
+	/** Группа с одним радио внутри подписи; `tag` радио — из аргумента. */
+	const radioIn = (tag?: string, onChangeValue?: RadioGroupProps['onChangeValue']) => () => (
+		<RadioGroup onChangeValue={onChangeValue}>
+			<Label text="Первый">
+				<RadioGroup.Item value="a" tag={tag} />
+			</Label>
+		</RadioGroup>
+	)
+
+	/** Тексты предупреждений подписи о вложенном `label`. */
+	const nestedWarnings = (calls: readonly unknown[][]): string[] =>
+		calls.map(([message]) => String(message)).filter((text) => text.includes('[soldy] Label'))
+
+	it('без tag="span" — предупреждение о вложенном label', async () => {
+		const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+		mount(radioIn())
+
+		// Плагин смотрит узел по `ready`, то есть кадром позже
+		await nextFrame()
+
+		const warnings = nestedWarnings(warn.mock.calls)
+
+		expect(warnings).toHaveLength(1)
+		expect(warnings[0]).toContain('tag="span"')
+	})
+
+	it('с tag="span" — тишина, у радио одна подпись, клик по тексту его отмечает', async () => {
+		const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+		const onChangeValue = vi.fn()
+		const el = mount(radioIn('span', onChangeValue)).root()
+
+		await nextFrame()
+
+		const label = find(el, '.s-label', HTMLLabelElement)
+		const input = find(label, 'input', HTMLInputElement)
+
+		expect(nestedWarnings(warn.mock.calls)).toEqual([])
+		expect([...(input.labels ?? [])]).toEqual([label])
+
+		find(label, '.s-label__text', HTMLElement).click()
+
+		expect(input.checked).toBe(true)
+		expect(onChangeValue).toHaveBeenLastCalledWith({ newValue: 'a', oldValue: undefined })
 	})
 })

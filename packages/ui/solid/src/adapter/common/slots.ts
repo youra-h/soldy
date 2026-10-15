@@ -71,3 +71,33 @@ export function resolveSlot<TScope extends object>(
 		return hasSlot(nodes) ? nodes : undefined
 	}
 }
+
+/**
+ * Проброс слота владельца коллекции в слот элемента — то, что у Vue пишут
+ * `<template #default="{ text }"><slot name="item" :item :text /></template>`,
+ * как `relaySlot` у React.
+ *
+ * Элемент зовёт слот со своим scope, а проброс добавляет к нему то, что знает
+ * владелец, — сам элемент (`extra`). Готовые узлы, нарисованные владельцем,
+ * scope элемента теряли бы: `text`, `selected` и `active` держит элемент, и до
+ * слота владельца они не доходили.
+ *
+ * Проброс — функция с параметром: функцию слота `renderSlot` узнаёт по
+ * арности, и без параметра проброс сочли бы ленивым мемо компилятора — готовым
+ * содержимым. Слот владельца не задан — проброса нет (`undefined`): по
+ * наличию слота элемент решает, рисовать ли своё — текст, отметку. Пустое,
+ * которое вернул слот владельца, элемент тоже видит (`resolveSlot`) и рисует
+ * своё, как у Vue и React.
+ *
+ * Scope элемента выводится из места, куда проброс отдают, — из типа слота
+ * элемента. Из слота владельца его не вывести: там он слит с `extra`, и
+ * `NoInfer` не даёт выводу туда смотреть.
+ */
+export function relaySlot<TScope extends object, TExtra extends object>(
+	content: TSlotContent<NoInfer<TScope & TExtra>> | undefined,
+	extra: TExtra,
+): ((scope: TScope) => JSX.Element) | undefined {
+	if (!hasSlot(content)) return undefined
+
+	return (scope) => renderSlot<TScope & TExtra>(content, { ...scope, ...extra })
+}

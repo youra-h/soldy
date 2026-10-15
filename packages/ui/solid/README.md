@@ -12,13 +12,15 @@ component descriptor, so they match the other five adapters; only the spelling i
 arrive as callback props (`element:ready` → `onElementReady`), and the default slot is `children`.
 
 > **Status:** the Solid adapter is in progress — Button, Icon, Label, Frame, ProgressSpinner,
-> Skeleton and the fields Input, CheckBox and Switch are ported, the rest of the set is on its way.
-> Icon renders the `tag` it is given: an element name, a Solid component, or `roleIcon(role)` — the
-> icon of that role from the registered icon pack. Frame teleports its panel into `target` (`body`
-> by default) on the client; with `contained` it stays in place. A field gives its class and style
-> to the root and every other attribute, `ref` included, to its `<input>`. `Label` names the
-> control it wraps; `LocaleProvider` gives a subtree its language and library strings, such as the
-> name of the clear button of `Input`. See
+> Skeleton, the fields Input, CheckBox and Switch and the collections ListBox, Tabs, Accordion and
+> RadioGroup (`<ListBox.Item>`, `<Tabs.Item>` with `<Tabs.Content>`, `<Accordion.Item>`,
+> `<RadioGroup.Item>` or `items`) are ported, the rest of the set is on its way. Icon renders the
+> `tag` it is given: an element name, a Solid component, or `roleIcon(role)` — the icon of that
+> role from the registered icon pack. Frame teleports its panel into `target` (`body` by default)
+> on the client; with `contained` it stays in place. A field gives its class and style to the root
+> and every other attribute to its `<input>`; an item of a collection gives them to its row; `ref`
+> always gets the root. `Label` names the control it wraps; `LocaleProvider` gives a subtree its
+> language and library strings, such as the name of the clear button of `Input`. See
 > [the adapter table](https://github.com/youra-h/soldy#components).
 
 ## Install
@@ -64,6 +66,34 @@ export function CloseIcon() {
   return <Icon tag={roleIcon('close')} aria_label="Close" />
 }
 ```
+
+A collection takes its items as markup parts or as data (`items`). Tabs keep their panels in the
+`content` slot, next to the list of tabs rather than inside it:
+
+```tsx
+import { Tabs } from '@soldy-ui/solid'
+
+export function Settings() {
+  return (
+    <Tabs
+      aria_label="Settings"
+      content={
+        <>
+          <Tabs.Content value="general">General settings</Tabs.Content>
+          <Tabs.Content value="privacy">Privacy settings</Tabs.Content>
+        </>
+      }
+    >
+      <Tabs.Item value="general" text="General" active />
+      <Tabs.Item value="privacy" text="Privacy" />
+    </Tabs>
+  )
+}
+```
+
+Items given as data are drawn by the owner, and their slots are the owner's `item-<slot>` props,
+with the item in the scope: `item={({ item, text }) => …}`. An item whose slot drew nothing draws
+its own content instead — its text, check mark or close icon.
 
 The application plugs in a theme and an icon pack once, in its entry point:
 

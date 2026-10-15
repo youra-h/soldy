@@ -15,7 +15,8 @@
  *
  * У поля атрибуты потребителя делятся, как у Vue: класс и стиль — корню,
  * остальное, кроме `ref`, — `<input>`, поверх его `aria`, а корень остаётся
- * за адаптером.
+ * за адаптером. Элемент коллекции (`Tabs.Item`, `Accordion.Item`,
+ * `RadioGroup.Item`) делит их так же: остальное — строке, у радио — полю.
  *
  * Стиль Solid ставит объектом по свойству и не трогает того, что плагины
  * пишут в узел сами: сдвиг смахиваемой панели (`--s-swipe-offset`) переживает
@@ -26,6 +27,7 @@ import { describe, it, expect, vi } from 'vitest'
 import { createSignal, type Component, type JSX } from 'solid-js'
 import { TButton } from '@soldy-ui/core'
 import {
+	Accordion,
 	Button,
 	CheckBox,
 	ComponentView,
@@ -33,13 +35,18 @@ import {
 	Icon,
 	Input,
 	Label,
+	ListBox,
 	ProgressSpinner,
+	RadioGroup,
 	Skeleton,
 	Switch,
+	Tabs,
 	toControlAttrs,
 	toRootForward,
 	toRootLayout,
 	toRootProps,
+	type AccordionItemProps,
+	type AccordionProps,
 	type ButtonProps,
 	type CheckBoxProps,
 	type ComponentViewProps,
@@ -47,9 +54,15 @@ import {
 	type IconProps,
 	type InputProps,
 	type LabelProps,
+	type ListBoxItemProps,
 	type ProgressSpinnerProps,
+	type RadioGroupItemProps,
+	type RadioGroupProps,
 	type SkeletonProps,
 	type SwitchProps,
+	type TabsContentProps,
+	type TabsItemProps,
+	type TabsProps,
 } from '@soldy-ui/solid'
 import { find, mount, nextFrame } from './mount'
 
@@ -60,7 +73,20 @@ type TProbeProps = ButtonProps &
 	IconProps &
 	LabelProps &
 	ProgressSpinnerProps &
-	SkeletonProps
+	SkeletonProps &
+	TabsProps &
+	AccordionProps &
+	RadioGroupProps &
+	TabsContentProps
+
+/** Панель рисуется, пока активен её таб, — и только внутри набора. */
+function TabsContentProbe(props: TabsContentProps): JSX.Element {
+	return (
+		<Tabs content={<Tabs.Content value="a" {...props} />}>
+			<Tabs.Item value="a" text="A" active />
+		</Tabs>
+	)
+}
 
 /**
  * Компонент, класс его корня и пропсы, без которых его корень не виден: Frame
@@ -76,6 +102,56 @@ const COMPONENTS: ReadonlyArray<
 	['Label', Label, '.s-label', {}],
 	['ProgressSpinner', ProgressSpinner, '.s-progress-spinner', {}],
 	['Skeleton', Skeleton, '.s-skeleton', {}],
+	['Tabs', Tabs, '.s-tabs', {}],
+	['Tabs.Content', TabsContentProbe, '.s-tabs__panel', {}],
+	['Accordion', Accordion, '.s-accordion', {}],
+	['RadioGroup', RadioGroup, '.s-radio-group', {}],
+]
+
+/** Общие пропсы элементов коллекций в таблице. */
+type TItemProbeProps = TabsItemProps & AccordionItemProps & RadioGroupItemProps
+
+/** Таб — в наборе: `id` строке пишет коллекция. */
+function TabsItemProbe(props: TabsItemProps): JSX.Element {
+	return (
+		<Tabs>
+			<Tabs.Item value="a" text="A" active {...props} />
+		</Tabs>
+	)
+}
+
+/** Секция — в аккордеоне: `id` заголовку пишет коллекция. */
+function AccordionItemProbe(props: AccordionItemProps): JSX.Element {
+	return (
+		<Accordion>
+			<Accordion.Item value="a" text="A" {...props} />
+		</Accordion>
+	)
+}
+
+/** Радио — в группе; строки у него нет, атрибуты потребителя уходят полю. */
+function RadioGroupItemProbe(props: RadioGroupItemProps): JSX.Element {
+	return (
+		<RadioGroup>
+			<RadioGroup.Item value="a" {...props} />
+		</RadioGroup>
+	)
+}
+
+/** Элемент списка — в списке: без него у элемента нет коллекции. */
+function ListBoxItemProbe(props: ListBoxItemProps): JSX.Element {
+	return (
+		<ListBox>
+			<ListBox.Item value="a" text="A" {...props} />
+		</ListBox>
+	)
+}
+
+/** Элемент коллекции, класс его корня и строка, которой уходят атрибуты потребителя. */
+const ITEMS: ReadonlyArray<readonly [string, Component<TItemProbeProps>, string, string]> = [
+	['Tabs.Item', TabsItemProbe, '.s-tabs-item', '.s-tabs-item [role="tab"]'],
+	['Accordion.Item', AccordionItemProbe, '.s-accordion-item', '.s-accordion-item__header'],
+	['RadioGroup.Item', RadioGroupItemProbe, '.s-radio-group-item', '.s-radio-group-item__input'],
 ]
 
 /** Общие пропсы полей в таблице. */
@@ -204,6 +280,37 @@ describe('поле: атрибуты снаружи — <input>, поверх е
 	})
 })
 
+describe('элемент коллекции: атрибуты снаружи — строке, поверх её aria', () => {
+	/** `id` строке пишет коллекция при входе элемента — связка с панелью. */
+	it.each(ITEMS)('%s: id потребителя — поверх id коллекции', (_name, Probe, _root, row) => {
+		mount(() => <Probe id="mine" />)
+
+		expect(find(document, row, HTMLElement).id).toBe('mine')
+	})
+
+	it.each(ITEMS)('%s: класс и стиль — корню, а не строке', (_name, Probe, root, row) => {
+		mount(() => <Probe class="mine" style={{ color: 'red' }} />)
+
+		expect(find(document, root, HTMLElement).classList.contains('mine')).toBe(true)
+		expect(find(document, root, HTMLElement).style.color).toBe('red')
+		expect(find(document, row, HTMLElement).classList.contains('mine')).toBe(false)
+	})
+
+	/** Смена атрибута потребителя доходит до строки, корень элемента — тот же. */
+	it.each(ITEMS)('%s: смена атрибута — на строке, корень тот же', (_name, Probe, root, row) => {
+		const [title, setTitle] = createSignal('a')
+
+		mount(() => <Probe title={title()} />)
+
+		const node = find(document, root, HTMLElement)
+
+		setTitle('b')
+
+		expect(find(document, row, HTMLElement).getAttribute('title')).toBe('b')
+		expect(find(document, root, HTMLElement)).toBe(node)
+	})
+})
+
 /** Узлы сверяются по ссылке: `toEqual` сравнил бы узлы по разметке. */
 function expectNodes(actual: readonly Element[], expected: readonly Element[]): void {
 	expect(actual).toHaveLength(expected.length)
@@ -217,9 +324,10 @@ type TRefProbeProps = {
 }
 
 /**
- * Компонент со своим корнем — каждый, и поле тоже, — как его рисовать и класс
- * корня. Frame по умолчанию скрыт и уходит телепортом в `body` — корень
- * ищется по документу; у Icon тега по умолчанию нет.
+ * Компонент со своим корнем — каждый, и поле и часть коллекции тоже, — как
+ * его рисовать и класс корня. Frame по умолчанию скрыт и уходит телепортом в
+ * `body` — корень ищется по документу; у Icon тега по умолчанию нет; часть
+ * коллекции — в своём владельце.
  */
 const ROOTS: ReadonlyArray<readonly [string, (props: TRefProbeProps) => JSX.Element, string]> = [
 	['Button', (props) => <Button {...props} />, '.s-button'],
@@ -232,7 +340,19 @@ const ROOTS: ReadonlyArray<readonly [string, (props: TRefProbeProps) => JSX.Elem
 	['CheckBox', (props) => <CheckBox {...props} />, '.s-check-box'],
 	['Switch', (props) => <Switch {...props} />, '.s-switch'],
 	['Input', (props) => <Input {...props} />, '.s-input'],
+	['Tabs', (props) => <Tabs {...props} />, '.s-tabs'],
+	['Tabs.Item', (props) => <TabsItemProbe {...props} />, '.s-tabs-item'],
+	['Tabs.Content', (props) => <TabsContentProbe {...props} />, '.s-tabs__panel'],
+	['Accordion', (props) => <Accordion {...props} />, '.s-accordion'],
+	['Accordion.Item', (props) => <AccordionItemProbe {...props} />, '.s-accordion-item'],
+	['RadioGroup', (props) => <RadioGroup {...props} />, '.s-radio-group'],
+	['RadioGroup.Item', (props) => <RadioGroupItemProbe {...props} />, '.s-radio-group-item'],
+	['ListBox', (props) => <ListBox {...props} />, '.s-list-box'],
+	['ListBox.Item', (props) => <ListBoxItemProbe {...props} />, '.s-list-box-item'],
 ]
+
+/** Поля: `ref` потребителя — корень, а не `<input>`. */
+const FIELD_ROOTS = ROOTS.filter(([name]) => ['RadioGroup.Item'].includes(name))
 
 /**
  * `ref` потребителя получает корень компонента — узел, на который ложатся его
@@ -270,6 +390,18 @@ describe('ref потребителя — корень компонента', () 
 		destroy()
 
 		expectNodes(nodes, [root])
+	})
+
+	/** Радио — поле с корнем-`label`: `ref` — корень, а не `<input>`, как у полей выше. */
+	it.each(FIELD_ROOTS)('%s: ref — корень, а не <input>', (_name, draw, selector) => {
+		const nodes: Element[] = []
+
+		mount(() => draw({ ref: (node) => nodes.push(node) }))
+
+		const root = find(document, selector, HTMLElement)
+
+		expectNodes(nodes, [root])
+		expect(nodes).not.toContain(find(root, 'input', HTMLInputElement))
 	})
 
 	/** `ref={button}` компилятор Solid превращает в функцию, которая присвоит переменной узел. */
