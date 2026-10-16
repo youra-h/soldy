@@ -177,7 +177,7 @@ describe('нажатия → v-model', () => {
 		await nextTick()
 
 		expect(model.value.value).toBe(10)
-		expect(row()).toBe('1 … 7 8 9 [10]')
+		expect(row()).toBe('1 … 6 7 8 9 [10]')
 	})
 
 	it('стрелки листают и гаснут на краях', async () => {
@@ -218,7 +218,7 @@ describe('нажатия → v-model', () => {
 		model.value.value = 7
 		await nextTick()
 
-		expect(row()).toBe('1 … 6 [7] 8 … 10')
+		expect(row()).toBe('1 … 6 [7] 8 9 10')
 	})
 
 	it('страница, оставшаяся на экране, — тот же узел, и фокус на ней остаётся', async () => {
@@ -246,7 +246,7 @@ describe('нажатия → v-model', () => {
 		ctrl.value = 7
 		await nextTick()
 
-		expect(row()).toBe('1 … 6 [7] 8 … 10')
+		expect(row()).toBe('1 … 6 [7] 8 9 10')
 	})
 
 	it('выключенная пагинация — выключены стрелки и страницы', async () => {
@@ -264,22 +264,25 @@ describe('текст и слоты', () => {
 	const PAGES = ['Админ', 'Записи', 'Конференция', 'Отчёты', 'Почта', 'Склад', 'Настройки']
 
 	it('текстовые страницы — по порядку списка, value — ключ страницы', async () => {
+		// Середина 1: при середине 3 семь страниц видны все, и пропусков нет
 		const model = withModel('reports', {
 			pages: PAGES.map((text, index) => ({
 				text,
 				value: index === 3 ? 'reports' : undefined,
 			})),
+			middleCount: 1,
 		})
 
 		await render(model.draw)
 
-		expect(row()).toBe('Админ … Конференция [Отчёты] Почта … Настройки')
+		expect(row()).toBe('Админ … [Отчёты] … Настройки')
 
-		page('Почта').click()
+		page('Настройки').click()
 		await nextTick()
 
 		// У страницы без своего ключа ключ — её номер
-		expect(model.value.value).toBe(5)
+		expect(model.value.value).toBe(7)
+		expect(row()).toBe('Админ … Почта Склад [Настройки]')
 	})
 
 	it('слот item получает страницу и её текст', async () => {

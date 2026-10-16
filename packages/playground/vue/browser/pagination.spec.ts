@@ -4,7 +4,8 @@
  * Здесь то, чего jsdom не считает вовсе. Раскладка: номер в одну и две цифры
  * стоит квадратом клетки на каждом размере, а номер длиннее и текст растут с
  * тем же полем; высота у страниц, стрелок и пропуска одна — клетка темы
- * (`themes/oren/src/components/pagination/_pagination.scss`). Цвет: отметка
+ * (`themes/oren/src/components/pagination/_pagination.scss`); при листании от
+ * первой страницы до последней стрелка «вперёд» не сдвигается. Цвет: отметка
  * текущей встаёт и сходит без перехода — и в середине, где окно сдвигается
  * вокруг неё, и у края, — а наведение на страницу идёт переходом; текущая
  * страница в режиме принудительных цветов — системная подсветка без слоя
@@ -157,6 +158,38 @@ describe('клетка', () => {
 		].map((part) => Math.round(rect(part).top))
 
 		expect(new Set(tops).size).toBe(1)
+	})
+})
+
+/**
+ * Жалоба, с которой ряд стал постоянной ширины: у края окно было на место
+ * короче (`1 2 3 4 … 10`), и на сдвиге от края стрелка «вперёд» отъезжала на
+ * клетку — нажатие, которое попадало в неё, уходило в страницу. Теперь мест в
+ * ряду на каждой странице столько же
+ * (`core/src/components/custom/pagination/window.ts`), а клетка пропуска —
+ * узкая страница (блок «клетка»): стрелка стоит на месте.
+ */
+describe('ряд постоянной ширины', () => {
+	it('«вперёд» с клавиатуры от первой до последней: стрелка не сдвигается, мест столько же', async () => {
+		await show({ total: 100, value: 1 })
+
+		const next = find('.so-pagination__next')
+		const places = () => findAll('.so-pagination__list > li').length
+		const left = rect(next).left
+
+		expect(places(), 'на первой странице').toBe(7)
+
+		next.focus()
+
+		for (let page = 2; page <= 10; page++) {
+			await userEvent.keyboard('{Enter}')
+			await expect.poll(() => current().textContent?.trim()).toBe(String(page))
+
+			expect(rect(next).left, `на странице ${page}`).toBeCloseTo(left, 0)
+			expect(places(), `на странице ${page}`).toBe(7)
+		}
+
+		expect(next.hasAttribute('disabled'), 'на последней').toBe(true)
 	})
 })
 
@@ -330,7 +363,7 @@ describe('отметка текущей без перехода', () => {
 		await expect.poll(() => current().textContent?.trim()).toBe('3')
 		await transitionEvents()
 
-		expect(numbers()).toEqual(['1', '2', '3', '4', '10'])
+		expect(numbers()).toEqual(['1', '2', '3', '4', '5', '10'])
 		expect(runs, 'переходы страниц').toEqual([])
 		expect(pages().filter(filled), 'залита только текущая').toEqual([current()])
 	})
