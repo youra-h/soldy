@@ -1,0 +1,431 @@
+@use 'sass:map';
+@use '../button/mixins' as button;
+@use '../../mixins/motion';
+@use '../../mixins/place';
+@use '../../mixins/swipe';
+
+// Toasts — всплывающие уведомления: регион у края окна и тосты в нём.
+//
+// Регион (`.so-toasts`) телепортирован в `body` и стоит всегда, и пустым:
+// живая область должна быть в документе до первого тоста. Места он не
+// занимает — он `fixed`, — и нажатий мимо тостов не ловит: указатель берут
+// только сами тосты. Номер слоя код пишет региону инлайном (`z-index`), и по
+// `data-layer` и `data-open` региона тема ничего не красит: регион открыт
+// всегда, а открытость тоста — у самого тоста.
+//
+// Место — модификатор региона `--placement-*`, код пишет его всегда: шесть
+// мест у верхнего или нижнего края окна — у начала строки, по центру и у
+// конца. `start` и `end` логические: в RTL тосты сами встают у другого края.
+//
+// Тост — элемент списка (`.so-toasts-item`) и его плашка (`__card`). Элемент —
+// место тоста в списке: высота места, сдвиг жеста, уход и прозрачность. Плашка
+// — то, что видно: поверхность, кромка, тень, значок, текст и крестик. Узла
+// два, а не один, потому что место растёт и схлопывается переходом высоты без
+// замеров (см. «Место тоста» ниже), а плашка при этом своего размера не
+// меняет.
+//
+// Код отдаёт теме модификаторами (`--placement-*` у региона, `--variant-*` у
+// тоста), набором `dataset` тоста (`data-open`, `data-swiping`) и переменной
+// жеста (`--so-swipe-offset`, её плагин жеста пишет тосту сам). Своего
+// появления и исчезания у кода нет: закрытый тост гаснет переходом темы, а из
+// коллекции уходит, когда переходы корня тоста доиграли.
+
+// Отступ региона от краёв окна. Тот же, что у окна Dialog: тост — тоже слой
+// поверх страницы, и от края он стоит так же.
+$offset: calc(var(--spacing) * 4);
+
+// Ширина тоста: строка текста — около сорока знаков, как у тостов Sonner и
+// Radix. На узком экране — во всю ширину региона, то есть окна без отступов.
+$width: 22rem;
+
+// Зазор между тостами.
+$gap: calc(var(--spacing) * 3);
+
+// Запас обрезки места тоста — на сколько видимое выходит за плашку: тень
+// (`shadow-md` — до 9px вниз), кромка и кольцо фокуса (4px). Он же — зазор:
+// схлопнутое место прячет плашку целиком, вместе с зазором до соседа.
+$room: $gap;
+
+// Отступ текста от края плашки.
+$pad-block: calc(var(--spacing) * 3.5);
+$pad-inline: calc(var(--spacing) * 4);
+
+// Строка текста (`text-sm`, 20px) и высота крестика — размер Button по
+// умолчанию из его шкалы, а не числом: разойдись они, крестик съехал бы с
+// первой строки молча. Так же считает модальный слой (`mixins/_modal.scss`).
+$line: 5;
+$button-height: map.get(map.get(button.$sizes, 'normal'), 'h');
+
+// Плотность цвета варианта в поверхности плашки — доля ступени 500 семейства,
+// подмешанная к поверхности контрола (см. «Цвет тоста» ниже). Подобрана глазом
+// в обеих схемах: реже — и в тёмной вариант почти не отличить от нейтрали,
+// плотнее — и в светлой плашка спорит с подписью цветом.
+$tint: 12%;
+
+// Появление и исчезание. Числа — вкус, подобраны глазом (AGENTS.md темы, «Что
+// тестом не проверяется»).
+//
+// Прозрачность — время окна Dialog: тост — короткое сообщение, и его
+// появление должно читаться, но не задерживать. Исчезание той же длины:
+// закрывают тост чаще таймером, чем рукой, и пропадать вспышкой ему незачем.
+//
+// Место растёт дольше прозрачности и с торможением к концу, как въезд Drawer:
+// тост подъезжает от края, а соседи расступаются, а не отпрыгивают.
+$enter-fade: 200ms;
+$enter-duration: 300ms;
+$enter-easing: cubic-bezier(0.33, 1, 0.68, 1);
+$exit-fade: 200ms;
+
+// Уход к стороне жеста — кривой выезда Drawer: тост трогается мягко и не
+// отпрыгивает от места первым кадром. Дольше прозрачности: тост уходит, пока
+// гаснет.
+$exit-duration: 250ms;
+$exit-easing: cubic-bezier(0.4, 0, 0.6, 1);
+
+// Место закрытого тоста схлопывается, когда тост почти ушёл, — у боковых мест
+// с задержкой: соседи смыкаются за ушедшим, а не под ним. У мест по центру
+// задержки нет: там уход вверх или вниз и есть схлопывание (см. ниже).
+$collapse-duration: 250ms;
+$collapse-easing: cubic-bezier(0.4, 0, 0.2, 1);
+$collapse-delay: 100ms;
+
+// Регион — во всю ширину окна без отступов, а тосты в нём встают у начала
+// строки, по центру или у конца (`align-items` списка). Стороны — физические и
+// обе сразу: поправки на вырез экрана (`safe-area-inset-*`) физические тоже, и
+// логическая сторона в RTL взяла бы поправку чужого края.
+//
+// Указатель мимо тостов уходит к странице: регион и список его не ловят.
+// `pointer-events` наследуется, и тост возвращает его себе.
+.so-toasts {
+	@apply fixed m-0 p-0 pointer-events-none;
+	left: calc(#{$offset} + env(safe-area-inset-left, 0px));
+	right: calc(#{$offset} + env(safe-area-inset-right, 0px));
+}
+
+// Список — столбец тостов. Новый тост в разметке первый, а на экране — у
+// края: у верхнего края столбец идёт сверху вниз, у нижнего — снизу вверх, и
+// список растёт от края.
+.so-toasts__list {
+	@apply m-0 p-0 list-none flex flex-col;
+}
+
+.so-toasts--placement-top-start,
+.so-toasts--placement-top,
+.so-toasts--placement-top-end {
+	top: calc(#{$offset} + env(safe-area-inset-top, 0px));
+}
+
+.so-toasts--placement-bottom-start,
+.so-toasts--placement-bottom,
+.so-toasts--placement-bottom-end {
+	bottom: calc(#{$offset} + env(safe-area-inset-bottom, 0px));
+
+	> .so-toasts__list {
+		@apply flex-col-reverse;
+	}
+}
+
+.so-toasts--placement-top-start,
+.so-toasts--placement-bottom-start {
+	> .so-toasts__list {
+		@apply items-start;
+	}
+}
+
+.so-toasts--placement-top,
+.so-toasts--placement-bottom {
+	// У мест по центру место закрытого тоста схлопывается сразу (см. выше)
+	--so-toasts-collapse-delay: 0s;
+
+	> .so-toasts__list {
+		@apply items-center;
+	}
+}
+
+.so-toasts--placement-top-end,
+.so-toasts--placement-bottom-end {
+	> .so-toasts__list {
+		@apply items-end;
+	}
+}
+
+// Место тоста — сетка в одну строку. У сетки высоты «авто» строка `1fr` —
+// высота плашки с зазором, `0fr` — ноль, и между ними строка идёт переходом:
+// соседи сдвигаются плавно, а высоту тоста никто не мерит. Минимум строки —
+// ноль, а не `auto`: с `auto` поля и зазор плашки держали бы строку открытой.
+//
+// Плашка своей высоты не меняет (`align-self` её не растягивает), а что не
+// поместилось в строку, режет `clip-path` места — с запасом под тень, кромку
+// и кольцо фокуса плашки. Запас — тот же зазор: схлопнутое место прячет
+// плашку целиком. Обрезка — `clip-path`, а не `overflow`: `overflow` резал бы
+// ровно по краю места, вместе с тенью и кольцом, а запаса за краем
+// (`overflow-clip-margin`) нет в Safari.
+//
+// Плашка прижата к той стороне места, что дальше от края окна, а зазор до
+// соседа — с другой. Поэтому схлопывание уводит её к краю окна: у нижнего края
+// плашка опускается за линию под собой, у верхнего — поднимается, а въезжает
+// новый тост оттуда же — от края. У последнего тоста зазора нет: соседа за ним
+// нет, и полоса зазора за столбцом ловила бы указатель.
+//
+// Корень тоста — фокус по F8 и Escape, и кольцо фокуса рисует плашка (ниже):
+// контур места обвёл бы её вместе с зазором.
+.so-toasts-item {
+	--so-toasts-gap: #{$gap};
+
+	@apply grid pointer-events-auto outline-none;
+	grid-template-rows: minmax(0, 1fr);
+	width: min(#{$width}, 100%);
+	clip-path: inset(calc(-1 * #{$room}));
+
+	&:last-child {
+		--so-toasts-gap: 0px;
+	}
+
+	// Тянут — курсор «держу», где бы указатель ни был
+	&[data-swiping='true'] {
+		@apply cursor-grabbing;
+	}
+}
+
+// Жест: у боковых мест — к своему краю строки, у мест по центру — к краю окна,
+// вверх или вниз. Сдвиг во время жеста пишет плагин (`--so-swipe-offset`, px со
+// знаком оси окна), а тема кладёт его в `translate` места: место уезжает целиком,
+// вместе с обрезкой, и плашку она не режет. Переменная не наследуется
+// (`mixins/_swipe.scss`), поэтому сдвиг читает сам корень тоста.
+:is(
+		.so-toasts--placement-top-start,
+		.so-toasts--placement-top-end,
+		.so-toasts--placement-bottom-start,
+		.so-toasts--placement-bottom-end
+	)
+	> .so-toasts__list
+	> .so-toasts-item {
+	translate: var(--so-swipe-offset, 0px) 0;
+}
+
+:is(.so-toasts--placement-top, .so-toasts--placement-bottom) > .so-toasts__list > .so-toasts-item {
+	translate: 0 var(--so-swipe-offset, 0px);
+}
+
+// Закрытый тост гаснет и нажатий не ловит: он уже не открыт, и нажатие сквозь
+// него — нажатие по тому, что под ним.
+//
+// С движением он ещё и уходит: место схлопывается, а у боковых мест тост
+// уезжает к своему краю строки — туда же, куда его смахивают, — от места, где
+// его отпустили: сдвиг жеста закрытый тост сохраняет. У мест по центру уход —
+// само схлопывание: плашка уходит за линию у края окна, а смахнутая — от места,
+// где её отпустили. Без движения тост гаснет там, где стоит, а место
+// схлопывается, когда тост ушёл из коллекции, — соседи встают сразу.
+.so-toasts-item[data-open='false'] {
+	@apply pointer-events-none opacity-0;
+
+	@include motion.allowed {
+		grid-template-rows: minmax(0, 0fr);
+	}
+}
+
+// Сдвиг уехавшего — знаком строки (`--so-dir-sign`, `direction.css`): у
+// `translate` логических направлений нет, а конец строки в RTL слева.
+:is(.so-toasts--placement-top-end, .so-toasts--placement-bottom-end)
+	> .so-toasts__list
+	> .so-toasts-item[data-open='false'] {
+	@include motion.allowed {
+		translate: calc(100% * var(--so-dir-sign)) 0;
+	}
+}
+
+:is(.so-toasts--placement-top-start, .so-toasts--placement-bottom-start)
+	> .so-toasts__list
+	> .so-toasts-item[data-open='false'] {
+	@include motion.allowed {
+		translate: calc(-100% * var(--so-dir-sign)) 0;
+	}
+}
+
+// Появление и исчезание. Закрытый тост из разметки не прячется — он уходит из
+// коллекции, когда доиграли переходы его корня (`afterTransitions`), — поэтому
+// переходы стоят на корне, а не на плашке: переходы потомков код не ждёт.
+// `@starting-style` даёт новому тосту начальное состояние — прозрачный, место
+// схлопнуто. Длительность и кривую браузер берёт из стиля, в который тост
+// переходит: появление — из `[data-open='true']`, исчезание — из
+// `[data-open='false']`.
+//
+// Пока тост тянут, перехода нет: он идёт за указателем без задержки. Поэтому
+// тайминги — под `:not([data-swiping='true'])`, как у Drawer. Отпущенный, но
+// не смахнутый, тост возвращается переходом появления.
+//
+// Место и сдвиг — движение (`motion.allowed`): без него тост проявляется и
+// гаснет на месте, соседи встают сразу, а отпущенный встаёт на место без
+// перехода. Прозрачность — не движение, она остаётся в любом режиме.
+.so-toasts-item:not([data-swiping='true']) {
+	transition-property: opacity;
+
+	&[data-open='true'] {
+		transition-duration: $enter-fade;
+		transition-timing-function: linear;
+	}
+
+	&[data-open='false'] {
+		transition-duration: $exit-fade;
+		transition-timing-function: linear;
+	}
+
+	@include motion.allowed {
+		transition-property: opacity, translate, grid-template-rows;
+
+		&[data-open='true'] {
+			transition-duration: $enter-fade, swipe.$return-duration, $enter-duration;
+			transition-timing-function: linear, swipe.$return-easing, $enter-easing;
+		}
+
+		&[data-open='false'] {
+			transition-duration: $exit-fade, $exit-duration, $collapse-duration;
+			transition-timing-function: linear, $exit-easing, $collapse-easing;
+			transition-delay: 0s, 0s, var(--so-toasts-collapse-delay, #{$collapse-delay});
+		}
+	}
+}
+
+@starting-style {
+	.so-toasts-item[data-open='true'] {
+		@apply opacity-0;
+		grid-template-rows: minmax(0, 0fr);
+	}
+}
+
+// Цвет тоста — переменные на корне: поверхность плашки, кромка и тон — цвет
+// заголовка и значка. Без варианта тост нейтральный: поверхность контрола,
+// кромка панелей оверлеев (ступень 300) и цвет текста. Корень нулевой
+// специфичности: модификатор варианта перекрывает его, не споря.
+//
+// Вариант — подмес ступени 500 своего семейства к поверхности контрола
+// (`$tint`): она симметрична в схемах, и плашка отходит от нейтральной в цвет
+// одинаково в светлой и в тёмной. Подмес, а не вуаль поверх: тост стоит поверх
+// чего угодно, и его поверхность обязана быть непрозрачной, — она же
+// поверхность места для содержимого (`place.surface`). Кромка — слабая граница
+// семейства (300), тон — ступень основного текста семейства (800), как текст
+// подписи с вариантом (`label/_label.scss`) и видов `plain` и `outlined` у
+// Button. Описание остаётся цветом текста: подпись варианта — заголовок, а
+// абзац читается текстом.
+:where(.so-toasts-item) {
+	--so-toasts-item-surface: var(--so-component-surface);
+	--so-toasts-item-edge: var(--so-neutral-300);
+	--so-toasts-item-tone: var(--so-component-text);
+}
+
+@each $variant in button.$variants {
+	.so-toasts-item--variant-#{$variant} {
+		--so-toasts-item-surface: color-mix(
+			in oklab,
+			var(--so-#{$variant}-500) #{$tint},
+			var(--so-component-surface)
+		);
+		--so-toasts-item-edge: var(--so-#{$variant}-300);
+		--so-toasts-item-tone: var(--so-#{$variant}-800);
+	}
+}
+
+// Плашка — та же семья, что панели Popover и Select: поверхность, кромка
+// кольцом и тень. Кромка держит край там, где тень не видна, — в тёмной схеме
+// и поверх панели того же цвета. Вторая половина кромки — прозрачный контур:
+// в режиме принудительных цветов браузер убирает кольцо вместе с тенью, а цвет
+// контура заменяет системным, и контур становится рамкой.
+//
+// Раскладка — ряд: значок, текст, крестик. Зазор до соседа — поле плашки со
+// стороны, дальней от края окна (`--so-toasts-gap`): оно внутри места и
+// схлопывается вместе с ним.
+.so-toasts-item__card {
+	@apply box-border flex items-start gap-3 rounded-lg;
+	@apply text-so-component shadow-md ring-1 ring-(--so-toasts-item-edge);
+	@apply outline outline-transparent;
+	@include place.surface(var(--so-toasts-item-surface));
+	align-self: start;
+	padding: $pad-block $pad-inline;
+	margin-block-start: var(--so-toasts-gap);
+}
+
+.so-toasts--placement-top-start,
+.so-toasts--placement-top,
+.so-toasts--placement-top-end {
+	> .so-toasts__list > .so-toasts-item > .so-toasts-item__card {
+		align-self: end;
+		margin-block: 0 var(--so-toasts-gap);
+	}
+}
+
+// Кольцо фокуса — у плашки: фокус получает корень тоста (F8, Escape), а его
+// контур обвёл бы плашку вместе с зазором. Кольцо — как у Button, в режиме
+// принудительных цветов — системным цветом фокуса.
+.so-toasts-item:focus-visible > .so-toasts-item__card {
+	@apply outline-2 outline-offset-2 outline-so-component;
+
+	@media (forced-colors: active) {
+		outline-color: Highlight;
+	}
+}
+
+// Значок — слот `icon`: нет слота — нет узла. Стоит по центру первой строки
+// текста, кегль — его размер: иконка soldy меряется в `em`, и `normal` здесь
+// встаёт в строку. Цвет — тон тоста, иконка берёт `currentColor`.
+.so-toasts-item__icon {
+	@apply flex shrink-0 items-center justify-center;
+	min-block-size: calc(var(--spacing) * #{$line});
+	font-size: calc(var(--spacing) * #{$line});
+	color: var(--so-toasts-item-tone);
+
+	svg {
+		fill: currentColor;
+	}
+}
+
+// Текст — заголовок, описание и своё содержимое (`render`: кнопка «Отменить»
+// и подобное) столбцом. Длинное слово переносится, а не раздвигает тост.
+.so-toasts-item__body {
+	@apply flex min-w-0 grow flex-col gap-0.5 text-sm;
+	overflow-wrap: break-word;
+}
+
+.so-toasts-item__text {
+	@apply font-medium;
+	color: var(--so-toasts-item-tone);
+}
+
+// Своё содержимое — ряд с переносом: чаще всего это кнопки действий.
+.so-toasts-item__content {
+	@apply flex flex-wrap items-center gap-2;
+	margin-block-start: calc(var(--spacing) * 1.5);
+}
+
+// Пустая часть места не занимает: тост без описания, без своего содержимого и
+// без значка — просто строка текста.
+.so-toasts-item__icon,
+.so-toasts-item__text,
+.so-toasts-item__description,
+.so-toasts-item__content {
+	&:empty {
+		@apply hidden;
+	}
+}
+
+// Крестик — квадрат высоты своего размера в конце ряда, по центру первой
+// строки текста. Поля по оси блока — минус половина разницы с строкой: тост в
+// одну строку крестик не раздвигает. Значок в квадрате отстоит от его края на
+// четверть высоты, и в конце строки крестик заходит в поле плашки на эту
+// четверть: значок встаёт на край текста, как у кнопок шапки окна.
+.so-toasts-item__close {
+	@apply shrink-0 aspect-square px-0;
+	margin-block: calc(var(--spacing) * (#{$line} - #{$button-height}) / 2);
+	margin-inline-end: calc(var(--spacing) * #{$button-height} / -4);
+
+	// Значок — по центру квадрата (см. `modal.parts`)
+	> .so-button__text {
+		@apply flex justify-center;
+	}
+}
+
+// Вид крестика — `plain`, как у крестиков Popover, Dialog и Tags. Значения
+// вида разметка не передаёт, вид даёт контекст. Нулевая специфичность, как у
+// базового вида Button.
+:where(.so-toasts-item__close) {
+	@include button.button-view('plain');
+}
