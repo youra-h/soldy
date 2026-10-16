@@ -21,7 +21,9 @@
  * `ownerAttributes` (`attributes.ts`): верхним слоем раскладчика элемента, тем
  * же правилом, что база на корне. Вложенный элемент soldy — деталь разметки
  * владельца — шаблон строит помощником `createDetail` с обязательным именем
- * места (`embedded`).
+ * места (`embedded`), а свою разметку отдаёт в её слот помощником `lend`.
+ * Элементы коллекции из данных шаблон владельца рисует петлёй по ключу
+ * (`TKeyedLoop`, `loop.ts`).
  */
 
 import type { TInstanceState } from '@soldy-ui/setup'
@@ -29,12 +31,32 @@ import type { TInstanceState } from '@soldy-ui/setup'
 /**
  * Куда попадает содержимое слота.
  *
- * Два режима, потому что слоты соседствуют в одном родителе: `default` у Button
- * лежит ВНУТРИ `.so-button__text`, а `leading` — ПЕРЕД этим узлом. Режим `before`
- * позволяет обойтись без узлов-обёрток, которых нет в остальных пяти адаптерах:
- * лишний `<span>` вокруг иконки сломал бы селекторы темы.
+ * Режимы `append` и `before` — потому, что слоты соседствуют в одном родителе:
+ * `default` у Button лежит ВНУТРИ `.so-button__text`, а `leading` — ПЕРЕД этим
+ * узлом. Режим `before` позволяет обойтись без узлов-обёрток, которых нет в
+ * остальных пяти адаптерах: лишний `<span>` вокруг иконки сломал бы селекторы
+ * темы.
+ *
+ * - `append` со слотом детали (`slot`) — точка ведёт в слот детали шаблона:
+ *   узлы встают в деталь (строку таба, заголовок секции) и назначаются её
+ *   слоту (`slot`), а не по своему атрибуту `slot`. Деталь ждёт своей сборки,
+ *   пока подключается владелец, и раскладывает их уже по назначению: `header`
+ *   секции становится `default` заголовка, `close-icon` таба — содержимым
+ *   кнопки закрытия;
+ * - `sample` — точка-образец: содержимое база не выводит, а держит у себя —
+ *   слот задан (`hasSlot`), а копию отдаёт контекст (`sample`). Так владелец
+ *   коллекции берёт слоты `item-*`: копию образца он кладёт в каждый свой
+ *   элемент из данных, в его слот.
  */
-export type TSlotTarget = { mode: 'append'; node: HTMLElement } | { mode: 'before'; node: Node }
+export type TSlotTarget =
+	| {
+			mode: 'append'
+			node: HTMLElement
+			/** Слот детали, в которую ведёт точка: узлы назначаются ему (см. выше). */
+			slot?: string
+	  }
+	| { mode: 'before'; node: Node }
+	| { mode: 'sample' }
 
 /**
  * Точки распределения света: имя слота → куда класть содержимое. Порядок
@@ -52,20 +74,26 @@ export type TTemplateParts = {
 	/** Точки распределения света — см. `TSlotTargets`. */
 	readonly slots: TSlotTargets
 	/**
-	 * Узел поля — вложенный `<input>` Input, CheckBox и Switch. Есть только у
-	 * корня с полем (`TRootSpec.control`): на него база при построении переносит
-	 * статические атрибуты разметки корня.
+	 * Узел поля — вложенный `<input>` Input, CheckBox, Switch и радио, строка
+	 * таба и заголовок секции. Есть только у корня с полем
+	 * (`TRootSpec.control`): на него база при построении переносит статические
+	 * атрибуты разметки корня.
 	 */
 	readonly control?: HTMLElement
 }
 
-export interface ITemplateContext<TInstance = object> {
+export interface ITemplateContext<TInstance = object, TFacade = unknown> {
 	/** Корень — сам элемент */
 	readonly root: HTMLElement
 	/** Узел слота по умолчанию — там же, куда перенесён свет без атрибута slot */
 	readonly content: HTMLElement
-	/** Свойства инстанса компонента со снимком через `valueOf()` — текущей связки */
-	readonly state: TInstanceState<TInstance>
+	/**
+	 * Свойства инстанса компонента со снимком через `valueOf()` — текущей
+	 * связки; у коллекционного компонента — вместе со свойствами фасада
+	 * (`items`, `shown`, `active`, `order`): имена пропсов фасада префиксуются,
+	 * и одноимённых у них нет.
+	 */
+	readonly state: TInstanceState<TInstance> & TInstanceState<TFacade>
 	/**
 	 * Инстанс компонента — текущей связки: его команды зовёт разметка (`clear`
 	 * кнопки очистки поля). Читается в момент обращения, поэтому обработчик,
@@ -73,8 +101,23 @@ export interface ITemplateContext<TInstance = object> {
 	 * не той, при которой он встал. До первой сборки инстанса нет.
 	 */
 	readonly ctrl: TInstance | undefined
-	/** Задано ли пользователем содержимое именованного слота */
+	/**
+	 * Фасад коллекции текущей связки — у компонента с двумя контекстами (свой и
+	 * фасада): через его контекст элемента разметка зовёт команды коллекции —
+	 * активировать таб, раскрыть секцию, закрыть таб. Читается в момент
+	 * обращения, как `ctrl`: каждое подключение — новая связка и новый фасад. У
+	 * остальных компонентов и до первой сборки его нет.
+	 */
+	readonly facade: TFacade | undefined
+	/** Задано ли пользователем содержимое именованного слота — и точки-образца */
 	hasSlot(name: string): boolean
+	/**
+	 * Копия образца — содержимого слота, который шаблон объявил образцом
+	 * (`TSlotTarget` с `sample`): `<template slot="item-leading">` даёт копию
+	 * своего содержимого, другой узел — копию себя, без атрибута `slot`. Каждый
+	 * вызов — новая копия. Слот не задан или не образец — `null`.
+	 */
+	sample(name: string): DocumentFragment | null
 	/**
 	 * Показать или снять слот, который выводит привязка, а не раскладка света:
 	 * содержимое ручки Switch по значению, отметку CheckBox по состоянию.
@@ -94,13 +137,13 @@ export interface ITemplateContext<TInstance = object> {
  * `apply` — метод: общая привязка, объявленная для части инстанса (`{ text }`),
  * подходит шаблону любого компонента, у которого эта часть есть.
  */
-export interface ITemplateBinding<TInstance = object> {
+export interface ITemplateBinding<TInstance = object, TFacade = unknown> {
 	/** Пропы, при изменении которых привязку надо применить */
 	props: readonly string[]
-	apply(ctx: ITemplateContext<TInstance>): void
+	apply(ctx: ITemplateContext<TInstance, TFacade>): void
 }
 
-export interface ITemplate<TInstance = object> {
+export interface ITemplate<TInstance = object, TFacade = unknown> {
 	/**
 	 * Строит структуру в корне — в самом элементе — и отдаёт точки
 	 * распределения света и узел поля. Зовётся один раз, при первом
@@ -109,17 +152,26 @@ export interface ITemplate<TInstance = object> {
 	 * шаблон строит, только когда в неё есть что положить. Ключи точек обязаны
 	 * совпадать с именами слотов из дескриптора — это проверяет
 	 * conformance-тест.
+	 *
+	 * Контекст — тот же живой вид элемента, что у привязок: обработчик, который
+	 * шаблон заводит на узле при построении (клик строки таба, `change` радио),
+	 * зовёт команды той связки, что живёт в момент события (`ctx.facade`), а не
+	 * той, при которой узел построен.
 	 */
-	create(root: HTMLElement, hasSlot: TSlotGiven): TTemplateParts
+	create(
+		root: HTMLElement,
+		hasSlot: TSlotGiven,
+		ctx: ITemplateContext<TInstance, TFacade>,
+	): TTemplateParts
 
-	bindings: readonly ITemplateBinding<TInstance>[]
+	bindings: readonly ITemplateBinding<TInstance, TFacade>[]
 }
 
 /** Объявление привязки: bind('text', ctx => ...) или bind(['a','b'], ...) */
-export function bind<TInstance>(
+export function bind<TInstance, TFacade = unknown>(
 	props: string | readonly string[],
-	apply: (ctx: ITemplateContext<TInstance>) => void,
-): ITemplateBinding<TInstance> {
+	apply: (ctx: ITemplateContext<TInstance, TFacade>) => void,
+): ITemplateBinding<TInstance, TFacade> {
 	return {
 		props: typeof props === 'string' ? [props] : props,
 		apply,

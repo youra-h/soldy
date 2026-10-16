@@ -81,6 +81,14 @@ export interface IPreviewHost {
 	 */
 	readonly slotScope?: boolean
 	/**
+	 * Задаётся ли тег корня компонента пропом `tag`. `false` — нет: у Web
+	 * Components тег — сам элемент, его задаёт регистрация (`<label
+	 * is="so-radio-group-item">`). Сценарии, фикстуры которых задают тег
+	 * пропом (`TScenario.tagProp`), такой хост не показывает. Не задан — проп
+	 * `tag` есть.
+	 */
+	readonly tagProp?: boolean
+	/**
 	 * Смонтировать компонент в узел — в свой корень фреймворка.
 	 *
 	 * Синхронно: к возврату компонент в DOM. Кадр, к которому `TElementPlugin`
@@ -124,6 +132,7 @@ export function isPreviewHost(value: unknown): value is IPreviewHost {
 		isKeys(value.previews) &&
 		isKeys(value.fixtures) &&
 		(value.slotScope === undefined || typeof value.slotScope === 'boolean') &&
+		(value.tagProp === undefined || typeof value.tagProp === 'boolean') &&
 		typeof value.mount === 'function' &&
 		typeof value.setLocale === 'function' &&
 		(value.snippets === undefined || isSnippets(value.snippets))

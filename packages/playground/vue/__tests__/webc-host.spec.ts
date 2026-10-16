@@ -10,7 +10,7 @@
  */
 
 import { describe, it, expect, afterEach } from 'vitest'
-import { TCheckBox } from '@soldy-ui/core'
+import { TCheckBox, createEngineAccordion } from '@soldy-ui/core'
 import { getIcon } from '@soldy-ui/setup'
 import { loadHost } from '../src/hosts'
 
@@ -179,6 +179,99 @@ describe('хост Web Components', () => {
 		await flush()
 
 		expect(root.querySelector('input')?.hasAttribute('id')).toBe(false)
+
+		handle.unmount()
+	})
+})
+
+/**
+ * Превью коллекций — как у React: элементы коллекции — дети описания в слоте
+ * по умолчанию, панели табов — в слоте `content`, подписи радио и содержимое
+ * секций — разметка без компонента. Элементы входят в коллекцию владельца при
+ * подключении, а слушатели хост вешает и по поверхности фасада.
+ */
+describe('хост Web Components · коллекции', () => {
+	const texts = (nodes: Iterable<Element>) => [...nodes].map((node) => node.textContent?.trim())
+
+	it('превью Tabs: табы в списке, панели в слоте content, первый таб активен', async () => {
+		const node = stage()
+		const handle = host.mount(node, { component: 'tabs', props: {} })
+
+		await flush()
+
+		const root = find(node, '.so-tabs')
+		const rows = node.querySelectorAll('.so-tabs__list > .so-tabs-item [role="tab"]')
+		const shown = [...root.querySelectorAll(':scope > .so-tabs__panel')].filter(
+			(panel) => panel instanceof HTMLElement && panel.style.display !== 'none',
+		)
+
+		expect(texts(rows)).toEqual(['Первый', 'Второй', 'Третий', 'Четвёртый', 'Пятый'])
+		expect(rows[0]?.getAttribute('aria-selected')).toBe('true')
+		expect(texts(shown)).toEqual(['Панель «Первый»'])
+
+		handle.unmount()
+	})
+
+	it('превью Accordion: секции с содержимым в панелях', () => {
+		const node = stage()
+		const handle = host.mount(node, { component: 'accordion', props: {} })
+
+		expect(texts(node.querySelectorAll('.so-accordion-item__header'))).toEqual([
+			'Первый',
+			'Второй',
+			'Третий',
+			'Четвёртый',
+			'Пятый',
+		])
+		expect(texts(node.querySelectorAll('.so-accordion-item__content'))[0]).toBe(
+			'Содержимое «Первый»',
+		)
+
+		handle.unmount()
+	})
+
+	/** Выбор радио приходит в журнал и событием группы, и событием её фасада. */
+	it('превью RadioGroup: подписи — текстом радио, события группы и фасада — в журнал', async () => {
+		const node = stage()
+		const events: string[] = []
+		const handle = host.mount(node, {
+			component: 'radio-group',
+			props: {},
+			onEvent: (name) => events.push(name),
+		})
+
+		expect(texts(node.querySelectorAll('.so-radio-group-item__text'))).toEqual([
+			'Первый',
+			'Второй',
+			'Третий',
+			'Четвёртый',
+			'Пятый',
+		])
+
+		await nextFrame()
+		events.length = 0
+		node.querySelector<HTMLInputElement>('.so-radio-group-item__input')?.click()
+
+		expect(events).toContain('change:value')
+		expect(events).toContain('item:activated')
+
+		handle.unmount()
+	})
+
+	/** Движок, как и `ctrl`, элемент берёт сборкой: другой движок — другой элемент. */
+	it('смена engine пересоздаёт элемент', () => {
+		const node = stage()
+		const first = createEngineAccordion()
+		const second = createEngineAccordion({ items: [{ value: 'x', text: 'Икс' }] })
+		const handle = host.mount(node, { component: 'accordion', props: { engine: first } })
+		const before = find(node, '.so-accordion')
+
+		handle.update({ engine: second })
+
+		const after = find(node, '.so-accordion')
+
+		expect(after).not.toBe(before)
+		expect(node.querySelectorAll('.so-accordion')).toHaveLength(1)
 
 		handle.unmount()
 	})

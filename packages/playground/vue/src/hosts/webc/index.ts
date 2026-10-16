@@ -3,7 +3,7 @@ import { DEFAULT_SLOT } from '@soldy-ui/setup'
 import { TLocaleProviderElement, isHostProp, toAttributeName } from '@soldy-ui/webc'
 import { findComponent, type IPreviewHost } from '@soldy-ui/playground-shared'
 import { FIXTURES } from './fixtures'
-import { PREVIEWS, type TPreview } from './previews'
+import { PREVIEWS, type TContent, type TPreview } from './previews'
 import { listenersOf, type TElementListener } from './events'
 import { instanceSnippet, propSnippet } from './snippet'
 
@@ -82,10 +82,24 @@ function build(
 }
 
 /**
+ * Ребёнок в слоте: элемент soldy строит его описание тем же путём, без пропсов
+ * строки, а разметку без компонента — её функция.
+ */
+function childOf(child: TContent): Node {
+	if (typeof child === 'function') return child()
+
+	const node = document.createElement(child.tag, { is: child.is })
+
+	fill(node, child, propsOf(child, {}))
+
+	return node
+}
+
+/**
  * Описание на элементе: свои атрибуты — атрибутами, как в разметке, пропсы —
- * свойствами, а дети по слотам — светом, с атрибутом `slot` (у слота по
- * умолчанию его нет). Всё — до вставки: первая сборка разложит свет по
- * слотам. Ребёнок получает своё описание тем же путём, без пропсов строки.
+ * свойствами, а дети по слотам — светом, элемент — с атрибутом `slot` (у слота
+ * по умолчанию его нет). Всё — до вставки: первая сборка разложит свет по
+ * слотам, и элементы коллекции соберутся следом за владельцем.
  */
 function fill(element: HTMLElement, preview: TPreview, props: Map<string, unknown>): void {
 	for (const [name, value] of Object.entries(preview.attributes ?? {})) {
@@ -98,11 +112,9 @@ function fill(element: HTMLElement, preview: TPreview, props: Map<string, unknow
 
 	for (const [slot, children] of Object.entries(preview.slots ?? {})) {
 		for (const child of children) {
-			const node = document.createElement(child.tag, { is: child.is })
+			const node = childOf(child)
 
-			fill(node, child, propsOf(child, {}))
-
-			if (slot !== DEFAULT_SLOT) node.setAttribute('slot', slot)
+			if (slot !== DEFAULT_SLOT && node instanceof Element) node.setAttribute('slot', slot)
 
 			element.appendChild(node)
 		}
@@ -175,6 +187,8 @@ const host: IPreviewHost = {
 	fixtures: Object.keys(FIXTURES),
 	// Содержимое слота — свет элемента: данных компонента ему не передать
 	slotScope: false,
+	// Тег корня — сам элемент: его задаёт регистрация, а не проп
+	tagProp: false,
 
 	mount(node, { component, fixture, props, onEvent }) {
 		const preview = drawing(component, fixture)
@@ -193,7 +207,9 @@ const host: IPreviewHost = {
 
 		return {
 			update(next) {
-				if (next.ctrl !== bind.ctrl) {
+				// Инстанс и движок коллекции элемент берёт сборкой, как `ctrl` и
+				// `engine` у остальных фреймворков: другой — значит, другой элемент
+				if (next.ctrl !== bind.ctrl || next.engine !== bind.engine) {
 					built.outer.remove()
 					built = build(preview, next, listeners)
 					root.appendChild(built.outer)

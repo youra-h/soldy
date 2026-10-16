@@ -1,4 +1,12 @@
-export { useAdapter, type TBinding, type TUpdateListener } from './useAdapter'
+export {
+	useAdapter,
+	useCollectionAdapter,
+	joinBindings,
+	type TBinding,
+	type TBindingState,
+	type TCollectionBinding,
+	type TUpdateListener,
+} from './useAdapter'
 export {
 	SoldyElement,
 	type ISoldyElement,

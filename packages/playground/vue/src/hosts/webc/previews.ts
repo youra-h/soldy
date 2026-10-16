@@ -1,3 +1,5 @@
+import { COLLECTION_ITEMS } from '@soldy-ui/playground-shared'
+
 /**
  * Как рисовать компонент на стенде — в Web Components.
  *
@@ -10,7 +12,7 @@
  * React, — и превью то же самое, что у Vue и React, чтобы колонки фреймворков
  * можно было сравнивать глазами.
  *
- * Чего у адаптера нет, того нет и в карте: коллекции переносятся своими
+ * Чего у адаптера нет, того нет и в карте: компоненты переносятся своими
  * задачами.
  */
 export type TPreview = {
@@ -28,11 +30,11 @@ export type TPreview = {
 	 */
 	readonly attributes?: Readonly<Record<string, string>>
 	/**
-	 * Дети по слотам — свет элемента: имя слота → элементы soldy. Код хоста
-	 * ставит их в элемент до вставки, с атрибутом `slot`, кроме слота по
-	 * умолчанию.
+	 * Дети по слотам — свет элемента: имя слота → элементы soldy и разметка без
+	 * компонента. Код хоста ставит их в элемент до вставки, элементы — с
+	 * атрибутом `slot`, кроме слота по умолчанию.
 	 */
-	readonly slots?: Readonly<Record<string, readonly TPreview[]>>
+	readonly slots?: Readonly<Record<string, readonly TContent[]>>
 	/**
 	 * Обёртка — элемент со своими пропсами, в слоте по умолчанию которого лежит
 	 * компонент: CheckBox и Switch — в подписи Label, как у Vue и React. Пропсы
@@ -41,6 +43,29 @@ export type TPreview = {
 	 */
 	readonly wrapper?: TPreview
 }
+
+/**
+ * Ребёнок в слоте: элемент soldy со своим описанием — часть коллекции, контрол
+ * подписи — или разметка без компонента — текст, блок с отступом. Разметку
+ * строит функция: у каждой отрисовки свои узлы.
+ */
+export type TContent = TPreview | (() => Node)
+
+/** Текст в слоте — подпись радио. */
+const text = (value: string) => (): Node => document.createTextNode(value)
+
+/** Блок содержимого с отступом — панель таба, содержимое секции, как у соседей. */
+const block = (padding: string, value: string) => (): Node => {
+	const node = document.createElement('div')
+
+	node.style.padding = padding
+	node.textContent = value
+
+	return node
+}
+
+/** Содержимое коллекций — из общего манифеста, как у Vue и React. */
+const ITEMS = COLLECTION_ITEMS
 
 export const PREVIEWS: Record<string, TPreview> = {
 	// Подпись — пропом `text`, а не содержимым: заданный слот перекрывает проп, и
@@ -70,6 +95,54 @@ export const PREVIEWS: Record<string, TPreview> = {
 		is: 'so-label',
 		props: { text: 'Согласен' },
 		slots: { default: [{ tag: 'span', is: 'so-check-box' }] },
+	},
+
+	// Подпись — содержимым: текста у радио нет, оно голый контрол, как CheckBox.
+	// Корень радио — подпись, `<label is="so-radio-group-item">`
+	'radio-group': {
+		tag: 'div',
+		is: 'so-radio-group',
+		slots: {
+			default: ITEMS.map((item) => ({
+				tag: 'label',
+				is: 'so-radio-group-item',
+				props: { value: item.value },
+				slots: { default: [text(item.text)] },
+			})),
+		},
+	},
+
+	// Первый таб активен сразу — иначе ни одна панель не покажется. Панели —
+	// слотом `content`, вне списка табов
+	tabs: {
+		tag: 'div',
+		is: 'so-tabs',
+		slots: {
+			default: ITEMS.map((item, index) => ({
+				tag: 'div',
+				is: 'so-tabs-item',
+				props: { active: index === 0, ...item },
+			})),
+			content: ITEMS.map((item) => ({
+				tag: 'div',
+				is: 'so-tabs-content',
+				props: { value: item.value },
+				slots: { default: [block('12px', `Панель «${item.text}»`)] },
+			})),
+		},
+	},
+
+	accordion: {
+		tag: 'div',
+		is: 'so-accordion',
+		slots: {
+			default: ITEMS.map((item) => ({
+				tag: 'div',
+				is: 'so-accordion-item',
+				props: { ...item },
+				slots: { default: [block('4px 0', `Содержимое «${item.text}»`)] },
+			})),
+		},
 	},
 
 	// Глиф — роль, свой атрибут элемента: `<svg>` рисунка строит шаблон Icon

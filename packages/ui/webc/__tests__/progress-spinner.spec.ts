@@ -19,6 +19,7 @@ import {
 	type TProgressSpinnerElementProps,
 } from '@soldy-ui/webc'
 import { progressSpinnerTemplate } from '../src/components/progress-spinner/progress-spinner.template'
+import { bareContext } from './template-context'
 
 /** Рендер коалесцируется в микротаске — ждём её перед проверкой. */
 const flush = () => new Promise<void>((resolve) => queueMicrotask(() => resolve()))
@@ -155,10 +156,8 @@ describe('первая отрисовка', () => {
 	})
 
 	it('шаблон объявляет ровно те слоты, что и дескриптор, — ни одного', () => {
-		const targets = progressSpinnerTemplate.create(
-			document.createElement('span'),
-			() => false,
-		).slots
+		const root = document.createElement('span')
+		const targets = progressSpinnerTemplate.create(root, () => false, bareContext(root)).slots
 
 		expect(Object.keys(targets)).toEqual(
 			ProgressSpinnerDescriptor().slots.map((slot) => slot.name),

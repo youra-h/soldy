@@ -1135,15 +1135,38 @@ describe('Web Components: instanceSnippet', () => {
 		)
 	})
 
-	/** Коллекции адаптер ещё не перенёс: коллекционной строки у страницы хоста нет. */
-	it('коллекционной строки у хоста нет', () => {
-		expect(() =>
-			webc.instanceSnippet(
-				entryOf('button'),
-				control({ name: 'mode', scope: 'collection' }),
-				'multiple',
-			),
-		).toThrow('нет коллекций')
+	/** Движок сборка берёт при подключении, как `ctrl`: свойство — до вставки элемента. */
+	it('свойство коллекции пишет в движок, engine — до вставки элемента', () => {
+		const code = webc.instanceSnippet(
+			entryOf('accordion'),
+			control({ name: 'mode', scope: 'collection' }),
+			'multiple',
+		)
+
+		expect(code).toBe(
+			[
+				'<script type="module">',
+				"\timport '@soldy-ui/webc'",
+				"\timport { createEngineAccordion } from '@soldy-ui/core'",
+				'',
+				'\tconst engine = createEngineAccordion()',
+				'',
+				"\tengine.extensions.selection.mode = 'multiple'",
+				'',
+				"\tconst element = document.createElement('div', { is: 'so-accordion' })",
+				'',
+				'\telement.engine = engine',
+				'\tdocument.body.append(element)',
+				'</script>',
+			].join('\n'),
+		)
+	})
+
+	/** Пропы фасада — тоже атрибуты-входы элемента коллекции. */
+	it('проп фасада в колонке пропа — атрибутом', () => {
+		expect(webc.propSnippet(entryOf('accordion'), 'mode', 'multiple')).toContain(
+			'<div is="so-accordion" mode="multiple"></div>',
+		)
 	})
 })
 

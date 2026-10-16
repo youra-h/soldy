@@ -30,9 +30,9 @@
  *
  * - connectedCallback: при первом подключении строит структуру шаблона в
  *   самом элементе и раскладывает по ней свет; при каждом — новая связка над
- *   тем же инстансом, `bindElement(this)` и полная отрисовка. Первое
- *   подключение бывает отложено — см. ниже. Подключение элемента, которого в
- *   документе уже нет (колбэк узла, снятого раньше своей очереди), — пропуск
+ *   тем же инстансом, `bindElement(this)` и полная отрисовка. Подключение
+ *   бывает отложено — см. ниже. Подключение элемента, которого в документе уже
+ *   нет (колбэк узла, снятого раньше своей очереди), — пропуск
  * - attributeChangedCallback: приводит атрибут к типу и пишет в Core
  * - disconnectedCallback: снимает подписки и уничтожает adapter-context;
  *   структура, свет и инстанс остаются у элемента. Отключение из переноса,
@@ -54,6 +54,15 @@
  *   браузерах.
  * Элемент, которого к этому времени в документе нет, не собирается — его
  * соберёт следующее подключение.
+ *
+ * Любое подключение, пришедшее, пока подключается другой элемент soldy, ждёт
+ * его конца и идёт сразу после него, в порядке прихода (ожидание,
+ * `waiting.ts`): раскладка света переносит элементы разметки, `create()`
+ * ставит детали, первая отрисовка — элементы из данных, и их колбэки приходят
+ * внутри подключения родителя. Собираться им там рано: элемент коллекции не
+ * нашёл бы движка, который владелец опускает лифтом при своей сборке, а деталь
+ * — света, который владелец ей назначает. Свою очередь элемент доводит тем же
+ * `_resume` и, если его к ней сняли, не собирается.
  *
  * Тег — `localName` элемента (`button`): база отдаёт его ядру пропом `tag` при
  * каждой сборке. Атрибута и свойства `tag` нет (`HOST_PROPS`): тег элемента
@@ -77,9 +86,11 @@
  *                          `TElementPlugin` связан с элементом всё время
  * Что у компонентов разное, называет описание корня (`TRootSpec`): имя
  * стиль-выхода (`fractionStyle` у ProgressSpinner), прячет ли видимость корень
- * (у Skeleton нет — она убирает только заглушку), уезжает ли корень в слой
+ * (у Skeleton нет — она убирает только заглушку), стоит ли корень по месту в
+ * коллекции (`order` — элементы Tabs и Accordion), без какого выхода корень
+ * скрыт (`shownBy` — `active` у панели таба), уезжает ли корень в слой
  * (`teleport` у Frame): тогда база уводит его в цель по селектору (`TTeleport`,
- * `teleport.ts`), а без цели прячет на месте — это третья причина скрытия,
+ * `teleport.ts`), а без цели прячет на месте — это ещё одна причина скрытия,
  * рядом с `rendered` и `visible`, — какие наборы ядра лежат на корне (`sets`)
  * и есть ли в корне поле (`control`, см. ниже).
  *
@@ -90,25 +101,34 @@
  * пропов (`disabled`): они и есть проп, и значение ядра для них верно всегда.
  * Память — у элемента, а не у связки: связка новая на каждое подключение.
  *
- * Корень с полем — Input, CheckBox, Switch: корень — элемент потребителя
- * (`<div is="so-input">`), а `<input>` — узел шаблона. Форма видит поле сама:
- * `<input>` лежит в обычном DOM страницы, и `FormData`, `<label>`,
- * `<fieldset disabled>` и валидация достаются нативному полю. Атрибуты
- * потребителя делятся, как у Vue, React и Angular: статические атрибуты
- * разметки корня база при построении переносит на поле (`create()` шаблона
- * отдаёт его узел). На корне остаются `class`, `style`, `is`, `slot`,
- * атрибуты-входы пропов и свои атрибуты элемента. Записанное из кода позже на
- * корне и остаётся: наблюдателя за корнем нет. `id` у такого элемента — проп
- * поля, а не вход корня: два узла с одним `id` сломали бы `<label for>` — он
- * нашёл бы корень, а тот подпись не принимает. Поэтому атрибута `id` нет в
+ * Корень с полем — Input, CheckBox, Switch, радио, а у таба и секции —
+ * строкой: корень — элемент потребителя (`<div is="so-input">`), а `<input>`
+ * или строка — узел шаблона. Форма видит поле сама: `<input>` лежит в обычном
+ * DOM страницы, и `FormData`, `<label>`, `<fieldset disabled>` и валидация
+ * достаются нативному полю. Атрибуты потребителя делятся, как у Vue, React и
+ * Angular: статические атрибуты разметки корня база при построении переносит
+ * на поле (`create()` шаблона отдаёт его узел). На корне остаются `class`,
+ * `style`, `is`, `slot`, атрибуты-входы пропов и свои атрибуты элемента.
+ * Записанное из кода позже на корне и остаётся: наблюдателя за корнем нет.
+ * `id` поля, которое его объявляет (Input, CheckBox, Switch), — проп поля, а не
+ * вход корня: два узла с одним `id` сломали бы `<label for>` — он нашёл бы
+ * корень, а тот подпись не принимает. Поэтому атрибута `id` нет в
  * `observedAttributes`: атрибут разметки база берёт пропом первой сборки и
- * снимает с корня, а на поле его пишет шаблон из состояния. Из кода — `ctrl.id`;
- * `el.id` — собственный `id` корня.
+ * снимает с корня, а на поле его пишет шаблон из состояния. Из кода —
+ * `ctrl.id`; `el.id` — собственный `id` корня. У радио и строки своего `id` нет,
+ * и атрибут разметки едет на поле вместе со всеми, как `controlAttrs` у Vue.
  *
  * Сборка — `createWebcAdapterContext` в setup-слое компонента: локаль
  * поддерева она берёт у ближайшего `<so-locale-provider>` вверх от элемента.
  * Связка заводится на подключение, поэтому элемент, переставленный под другой
  * провайдер, собирается уже с его локалью.
+ *
+ * У коллекционного компонента — владельца коллекции, её элемента, панели таба
+ * — контекстов два, свой и фасада, и setup-слой отдаёт их одной связкой
+ * (`joinBindings`). Описание элемента называет и дескриптор фасада (`facade`):
+ * его пропсы — тоже атрибуты-входы и свойства элемента (`items`, `engine`,
+ * `active`, `selected`), его свойства — в том же состоянии, а сам фасад шаблон
+ * получает из контекста (`ctx.facade`).
  *
  * Свойства пропов (`el.text = 'Click'`) база вешает на прототип, кроме тех, что
  * у элемента уже есть по тегу: `disabled` кнопки остаётся нативным свойством,
@@ -161,6 +181,20 @@
  * рисуется по состоянию (содержимое ручки Switch), выводит привязка шаблона
  * (`showSlot` контекста): снятое уходит из документа, показ — переносом силами
  * базы.
+ *
+ * Свет детали. Точка может вести в слот детали шаблона (`TSlotTarget.slot`):
+ * узлы встают в деталь — строку таба, заголовок секции, — пока та ждёт своей
+ * сборки, и назначаются её слоту (`assignment.ts`). Раскладка света детали
+ * берёт назначенный слот раньше атрибута `slot`: `header` секции становится
+ * `default` заголовка, `close-icon` таба — содержимым кнопки закрытия. Тем же
+ * назначением шаблон отдаёт детали свою разметку (`lend`), а владелец
+ * коллекции — копии образцов в элемент из данных.
+ *
+ * Точка-образец (`sample`) — слот, содержимое которого база не выводит, а
+ * держит у себя: слот задан (`hasSlot`), а копию — содержимого `<template>`
+ * или самого узла — отдаёт контекст (`sample`). Так владелец коллекции берёт
+ * слоты `item-*`: scope у слотов Web Components нет, и копию одного образца
+ * получает каждый элемент из данных.
  */
 
 import type { IComponentView, IComponentViewProps } from '@soldy-ui/core'
@@ -169,7 +203,6 @@ import {
 	TSurface,
 	type DescriptorComponentProps,
 	type IComponentDescriptor,
-	type TInstanceState,
 	type TStateSnapshot,
 } from '@soldy-ui/setup'
 import {
@@ -182,6 +215,7 @@ import {
 	WebcProfile,
 } from '../common'
 import type { ITemplate, ITemplateContext, TSlotTarget, TSlotTargets } from '../template'
+import { assignSlot, takeAssignedSlot } from './assignment'
 import { isDefining } from './defineElement'
 import { isRelocating, relocate } from './relocation'
 import {
@@ -189,13 +223,15 @@ import {
 	applyClasses,
 	applyHidden,
 	applyStyles,
+	orderOf,
 	stylesOf,
 	type TAppliedClasses,
 	type TAppliedStyles,
 	type THiddenDisplay,
 } from './root-attributes'
 import { TTeleport, type TTeleportPlace } from './teleport'
-import type { TBinding, TUpdateListener } from './useAdapter'
+import type { TBinding, TBindingState, TUpdateListener } from './useAdapter'
+import { connecting, isConnecting, wait } from './waiting'
 
 /** Наборы ядра, которые база раскладывает на корень, — по умолчанию все. */
 const ROOT_SETS = ['attrs', 'aria', 'dataset'] as const
@@ -211,8 +247,11 @@ export type TRootSet = (typeof ROOT_SETS)[number]
  */
 const ROOT_ONLY = new Set(['class', 'style', 'is', 'slot'])
 
-/** Атрибут корня с полем, который ведёт не корень, а поле (см. шапку). */
+/** Атрибут корня с полем, который ведёт не корень, а поле, — если поле его объявляет (см. шапку). */
 const CONTROL_ID = 'id'
+
+/** Точка, в которую база кладёт свет: всё, кроме образца. */
+type TPlacedTarget = Exclude<TSlotTarget, { mode: 'sample' }>
 
 /**
  * Содержимое ли узел: элемент или текст не из одних пробелов. Пробелы между
@@ -226,12 +265,17 @@ function isContent(node: ChildNode): boolean {
 }
 
 /**
- * Слот узла — атрибут `slot` на элементе, как в стандарте. Текстовые узлы
- * атрибутов не имеют и всегда попадают в слот по умолчанию, поэтому
+ * Слот узла — назначенный шаблоном владельца (свет детали, см. шапку), а без
+ * назначения — атрибут `slot` на элементе, как в стандарте. Текстовые узлы
+ * атрибутов не имеют и без назначения попадают в слот по умолчанию, поэтому
  * `<button is="so-button">Текст</button>` работает как у нативной кнопки. У
  * якоря увезённого корня слот — корня: якорь стоит на его месте.
  */
 function slotOf(node: ChildNode): string {
+	const assigned = takeAssignedSlot(node)
+
+	if (assigned !== undefined) return assigned
+
 	const element = node instanceof Element ? node : TTeleport.rootAt(node)
 
 	return element?.getAttribute('slot') ?? DEFAULT_SLOT
@@ -264,13 +308,34 @@ function targetOf(targets: TSlotTargets, name: string): TSlotTarget | undefined 
 	return Object.hasOwn(targets, name) ? targets[name] : undefined
 }
 
-/** Кладёт узел в точку слота: внутрь узла или перед ним (`TSlotTarget`). */
-function place(node: ChildNode, target: TSlotTarget): void {
+/**
+ * Кладёт узел в точку слота: внутрь узла или перед ним (`TSlotTarget`). Точка,
+ * которая ведёт в слот детали, назначает узлу этот слот: деталь разложит его
+ * по назначению, когда соберётся.
+ */
+function place(node: ChildNode, target: TPlacedTarget): void {
 	if (target.mode === 'append') {
+		if (target.slot !== undefined) assignSlot(node, target.slot)
+
 		target.node.appendChild(node)
 	} else {
 		target.node.parentNode?.insertBefore(node, target.node)
 	}
+}
+
+/**
+ * Копия узла образца: у `<template>` — копия его содержимого, у остального —
+ * самого узла, без атрибута `slot`: это имя слота владельца, а место копии
+ * назначает шаблон.
+ */
+function copyOf(node: ChildNode, owner: Document): Node {
+	if (node instanceof HTMLTemplateElement) return owner.importNode(node.content, true)
+
+	const copy = node.cloneNode(true)
+
+	if (copy instanceof Element) copy.removeAttribute('slot')
+
+	return copy
 }
 
 /**
@@ -287,26 +352,31 @@ function placeOf(state: TStateSnapshot, names: TRootTeleport): TTeleportPlace {
 }
 
 /**
- * Карта атрибутов-входов элемента — атрибуты пропов дескриптора. У корня с
- * полем `id` в ней нет: это проп поля, и атрибут разметки база берёт пропом
- * первой сборки, а затем снимает с корня — наблюдаемым атрибутом это снятие
- * вернуло бы проп к умолчанию (см. шапку).
+ * Карта атрибутов-входов элемента — атрибуты пропов его дескрипторов: своего
+ * и, у коллекционного компонента, фасада. Свой проп главнее одноимённого
+ * пропа фасада: элемент отдаёт дельту обеим связкам, и каждая берёт свои.
  */
-function inputsOf(
-	descriptor: IComponentDescriptor,
-	control: boolean,
-): ReadonlyMap<string, IAttributeBinding> {
-	const map = buildAttributeMap(descriptor)
+function attributesOf(
+	descriptors: readonly IComponentDescriptor[],
+): Map<string, IAttributeBinding> {
+	const map = new Map<string, IAttributeBinding>()
 
-	if (control) map.delete(CONTROL_ID)
+	for (const descriptor of descriptors) {
+		for (const [name, binding] of buildAttributeMap(descriptor)) {
+			if (!map.has(name)) map.set(name, binding)
+		}
+	}
 
 	return map
 }
 
 /** Что у элемента своего, помимо нативного: инстанс ядра и его состояние. */
-export interface ISoldyElement<TInstance> {
-	/** Свойства инстанса со снимком через `valueOf()` — см. `TInstanceState`. */
-	readonly state: TInstanceState<TInstance>
+export interface ISoldyElement<TInstance, TFacade = unknown> {
+	/**
+	 * Свойства инстанса со снимком через `valueOf()` — см. `TInstanceState`; у
+	 * коллекционного компонента — вместе со свойствами фасада.
+	 */
+	readonly state: TBindingState<TInstance, TFacade>
 	/**
 	 * Готовый core-инстанс. Связку элемент заводит на каждое подключение, и
 	 * присвоенный инстанс достаётся следующей: подключённому элементу — после
@@ -324,10 +394,12 @@ export interface ISoldyElement<TInstance> {
  * шапку). Состав — контракт дескриптора, как у пропсов React, Solid и Svelte
  * (`DescriptorComponentProps`): свои пропсы компонента, пропсы плагинов
  * дескриптора (`aria_label`, `anchor_anchor` у Frame) и пропсы связки
- * (`pluginProps`, `embedded`). Защищённых пропсов в контракте нет, как нет для
- * них и свойств на прототипе. Вычтено то, чего база на прототип не вешает:
- * свойства, которые у элемента уже есть по тегу (`TNative`), `HOST_PROPS` и
- * `ctrl` — его пара своя, в `ISoldyElement`.
+ * (`pluginProps`, `embedded`). Пропсы фасада коллекции (`items`, `active`) в
+ * нём уже есть: класс фасада объявляет пропсами `IComponentProps`, а их типы
+ * несёт интерфейс пропсов ядра компонента (`ITabsProps`). Защищённых пропсов в
+ * контракте нет, как нет для них и свойств на прототипе. Вычтено то, чего база
+ * на прототип не вешает: свойства, которые у элемента уже есть по тегу
+ * (`TNative`), `HOST_PROPS` и `ctrl` — его пара своя, в `ISoldyElement`.
  */
 export type TSoldyElementProps<
 	TDescriptorFn extends (...args: any[]) => IComponentDescriptor,
@@ -346,6 +418,14 @@ export type TSoldyElementProps<
  * - `hides` — прячут ли `visible` и `rendered` корень, по умолчанию да. У
  *   Skeleton нет: они убирают только заглушку, а содержимое в корне остаётся
  *   на виду;
+ * - `order` — корень встаёт по месту в коллекции: `order` фасада элемента
+ *   уходит в стиль корня поверх стиль-выхода. У элементов Tabs и Accordion да
+ *   — их ряд флексбокс, и элемент стоит по номеру в коллекции, а не по месту
+ *   в разметке, как у Vue. У радио нет: радио одной группы стоят где угодно, и
+ *   номер увёл бы радио по чужому флекс-ряду. Как у Angular;
+ * - `shownBy` — выход состояния, без которого корень скрыт: пока он не
+ *   `true`, корень прячется, как при `visible=false`. У панели таба это
+ *   `active` фасада — панель видна, только пока активен её таб. Как у Angular;
  * - `teleport` — корень уезжает в слой: имена выходов состояния с селектором
  *   цели и с признаком «на месте» (`{ target: 'target', contained: 'contained' }`
  *   у Frame), их называет компонент, как у Angular. Переносит корень
@@ -356,14 +436,17 @@ export type TSoldyElementProps<
  *   поля — только `attrs`: его `aria` стоит на `<input>`, его кладёт шаблон
  *   (`ownerAttributes`), а `dataset` разметка поля не выводит, как у
  *   остальных адаптеров;
- * - `control` — в корне поле (Input, CheckBox, Switch): `create()` шаблона
- *   отдаёт его узел, и статические атрибуты разметки корня база при
- *   построении переносит на него, а `id` — проп поля, а не вход корня (см.
+ * - `control` — в корне поле (Input, CheckBox, Switch, радио) или строка
+ *   элемента коллекции (таб, секция): `create()` шаблона отдаёт её узел, и
+ *   статические атрибуты разметки корня база при построении переносит на
+ *   него, а `id` поля, которое его объявляет, — проп поля, а не вход корня (см.
  *   шапку). Как у `control` в описании корня Angular.
  */
 export type TRootSpec = {
 	readonly style?: string
 	readonly hides?: boolean
+	readonly order?: boolean
+	readonly shownBy?: string
 	readonly teleport?: TRootTeleport
 	readonly sets?: readonly TRootSet[]
 	readonly control?: boolean
@@ -378,11 +461,16 @@ export type TRootTeleport = {
 }
 
 /** Всё, чем элементы soldy отличаются друг от друга. */
-export interface ISoldyElementSpec<TInstance> {
+export interface ISoldyElementSpec<TInstance, TFacade = unknown> {
 	/** Дескриптор компонента: по нему строятся атрибуты и свойства пропов. */
 	readonly descriptor: IComponentDescriptor
+	/**
+	 * Дескриптор фасада коллекции — у коллекционного компонента (`TabsCollectionDescriptor`):
+	 * его пропсы — тоже атрибуты-входы и свойства элемента (см. шапку).
+	 */
+	readonly facade?: IComponentDescriptor
 	/** Шаблон: структура в корне и привязки пропов. */
-	readonly template: ITemplate<TInstance>
+	readonly template: ITemplate<TInstance, TFacade>
 	/** Описание корня — см. `TRootSpec`. */
 	readonly root?: TRootSpec
 	/**
@@ -397,7 +485,7 @@ export interface ISoldyElementSpec<TInstance> {
 		ctrl: TInstance | undefined,
 		props: Record<string, unknown>,
 		onUpdate: TUpdateListener,
-	): TBinding<TInstance>
+	): TBinding<TInstance, TFacade>
 }
 
 /**
@@ -408,7 +496,9 @@ export interface ISoldyElementSpec<TInstance> {
 export type TNativeElementClass = new (...args: any[]) => HTMLElement
 
 /** Класс элемента soldy — то, что база добавляет к нативному классу тега. */
-export type TSoldyElementClass<TInstance> = (new (...args: any[]) => ISoldyElement<TInstance>) & {
+export type TSoldyElementClass<TInstance, TFacade = unknown> = (new (
+	...args: any[]
+) => ISoldyElement<TInstance, TFacade>) & {
 	readonly observedAttributes: string[]
 }
 
@@ -422,10 +512,26 @@ export type TSoldyElementClass<TInstance> = (new (...args: any[]) => ISoldyEleme
 export function SoldyElement<
 	TNative extends TNativeElementClass,
 	TInstance extends IComponentView<IComponentViewProps, any>,
->(Native: TNative, spec: ISoldyElementSpec<TInstance>): TNative & TSoldyElementClass<TInstance> {
-	/** В корне поле (`TRootSpec.control`): `id` — проп поля, а не вход корня (см. шапку). */
+	TFacade = unknown,
+>(
+	Native: TNative,
+	spec: ISoldyElementSpec<TInstance, TFacade>,
+): TNative & TSoldyElementClass<TInstance, TFacade> {
+	/** Описания элемента: своё и, у коллекционного компонента, фасада. */
+	const descriptors = spec.facade ? [spec.descriptor, spec.facade] : [spec.descriptor]
+	/** В корне поле (`TRootSpec.control`). */
 	const control = spec.root?.control === true
-	const attributes: ReadonlyMap<string, IAttributeBinding> = inputsOf(spec.descriptor, control)
+	const attributes = attributesOf(descriptors)
+	/**
+	 * `id` — проп поля, а не вход корня: поле его объявляет (см. шапку). Карта
+	 * его тогда не наблюдает — атрибут разметки база берёт пропом первой сборки
+	 * и снимает с корня, а наблюдаемым атрибутом это снятие вернуло бы проп к
+	 * умолчанию.
+	 */
+	const fieldId = control && attributes.has(CONTROL_ID)
+
+	if (fieldId) attributes.delete(CONTROL_ID)
+
 	/** Атрибуты-входы пропов: их значение в наборе ядра верно всегда. */
 	const inputs: ReadonlySet<string> = new Set(attributes.keys())
 	/** Наборы ядра на корне (`TRootSpec.sets`). */
@@ -436,17 +542,21 @@ export function SoldyElement<
 	)
 	/** Имя стиль-выхода компонента (`TRootSpec.style`); нет — стиль только от плагина. */
 	const styleOutput = spec.root?.style
+	/** Стоит ли корень по месту в коллекции (`TRootSpec.order`). */
+	const ordered = spec.root?.order === true
+	/** Выход, без которого корень скрыт (`TRootSpec.shownBy`); нет — не прячет. */
+	const shownBy = spec.root?.shownBy
 	/** Прячет ли видимость корень (`TRootSpec.hides`). */
 	const hides = spec.root?.hides ?? true
 	/** Имена выходов слоя (`TRootSpec.teleport`); нет — корень в слой не уезжает. */
 	const layer = spec.root?.teleport
 
-	class TSoldyElement extends Native implements ISoldyElement<TInstance> {
+	class TSoldyElement extends Native implements ISoldyElement<TInstance, TFacade> {
 		static get observedAttributes(): string[] {
 			return [...attributes.keys(), ...own.keys()]
 		}
 
-		private _binding?: TBinding<TInstance>
+		private _binding?: TBinding<TInstance, TFacade>
 
 		/**
 		 * Последнее значение каждого пропа, какое видел элемент: записанное
@@ -472,7 +582,7 @@ export function SoldyElement<
 		private readonly _dirty = new Set<string>()
 		private _flushQueued = false
 		private _connected = false
-		/** Первое подключение отложено (см. шапку). */
+		/** Подключение отложено — до разбора документа, регистрации или чужого подключения (см. шапку). */
 		private _deferred = false
 
 		/** Память раскладки корня: что поставила база (см. `root-attributes.ts`). */
@@ -483,14 +593,14 @@ export function SoldyElement<
 		private _hiddenDisplay: THiddenDisplay = undefined
 
 		/** Контекст привязок шаблона — живой вид элемента (`_viewOf`). */
-		private readonly _view: ITemplateContext<TInstance> = this._viewOf()
+		private readonly _view: ITemplateContext<TInstance, TFacade> = this._viewOf()
 
 		/** Телепорт корня слоя (`TRootSpec.teleport`) — заводит его первая раскладка. */
 		private _teleport?: TTeleport
 		/** Корень на своём месте: у слоя — в цели или на месте; без цели — нет. */
 		private _placed = true
 
-		get state(): TInstanceState<TInstance> {
+		get state(): TBindingState<TInstance, TFacade> {
 			return this._binding?.state ?? {}
 		}
 
@@ -532,16 +642,17 @@ export function SoldyElement<
 				}
 			}
 
-			this._connected = true
+			// Пришло, пока подключается другой элемент soldy, — сразу после него
+			// (ожидание, см. шапку): его сборка ещё не опустила движок, а деталь
+			// ещё не получила свет
+			if (isConnecting()) {
+				this._deferred = true
+				wait(this._resume)
 
-			// Структура — один раз: перестановка в DOM её не пересоздаёт
-			if (!this._light) {
-				this._readAttributes()
-				this._build()
+				return
 			}
 
-			this._assemble().bindElement(this)
-			this._flush(true)
+			connecting(() => this._connect())
 		}
 
 		disconnectedCallback(): void {
@@ -574,13 +685,30 @@ export function SoldyElement<
 		}
 
 		/**
-		 * Отложенное первое подключение — после разбора документа или микрозадачей
-		 * позже регистрации, если элемент ещё в документе.
+		 * Отложенное подключение — после разбора документа, микрозадачей позже
+		 * регистрации или в свою очередь после чужого подключения, если элемент
+		 * ещё в документе.
 		 */
 		private readonly _resume = (): void => {
 			this._deferred = false
 
 			if (this.isConnected) this.connectedCallback()
+		}
+
+		/**
+		 * Подключение: структура — один раз, перестановка в DOM её не пересоздаёт;
+		 * связка, узел и полная отрисовка — на каждое.
+		 */
+		private _connect(): void {
+			this._connected = true
+
+			if (!this._light) {
+				this._readAttributes()
+				this._build()
+			}
+
+			this._assemble().bindElement(this)
+			this._flush(true)
 		}
 
 		/**
@@ -635,7 +763,7 @@ export function SoldyElement<
 		 * значение, а снятие доходит следом записью в связку — как снятие атрибута у
 		 * подключённого элемента.
 		 */
-		private _assemble(): TBinding<TInstance> {
+		private _assemble(): TBinding<TInstance, TFacade> {
 			const offline = this._offline
 			const props: Record<string, unknown> = {}
 
@@ -671,6 +799,10 @@ export function SoldyElement<
 		 * при первом подключении. Дальше свет живёт в структуре, и раскладывать его
 		 * заново нельзя: в элементе уже своя разметка, и при перестановке она
 		 * попала бы в свет.
+		 *
+		 * Свет известен раньше, чем шаблон строит структуру: обёртку слота шаблон
+		 * строит, только когда в неё есть что положить, а контекст, который он
+		 * получает, видит заданные слоты уже при построении.
 		 */
 		private _build(): void {
 			const groups = groupBySlot(Array.from(this.childNodes))
@@ -681,7 +813,9 @@ export function SoldyElement<
 				if (nodes.some(isContent)) light.set(name, nodes)
 			}
 
-			const parts = spec.template.create(this, (name) => light.has(name))
+			this._light = light
+
+			const parts = spec.template.create(this, (name) => light.has(name), this._view)
 
 			if (control) this._handOver(parts.control)
 
@@ -691,16 +825,16 @@ export function SoldyElement<
 
 			this._content = fallback?.mode === 'append' ? fallback.node : this
 			this._targets = parts.slots
-			this._light = light
 			this._distribute(groups)
 		}
 
 		/**
 		 * Статические атрибуты разметки корня с полем — полю (см. шапку). На
 		 * корне остаются `class`, `style`, `is`, `slot`, атрибуты-входы пропов и
-		 * свои атрибуты элемента; `id` база берёт пропом первой сборки и снимает
-		 * с корня — на поле его пишет шаблон из состояния. Колбэков снятие не
-		 * вызывает: ни один из этих атрибутов элемент не наблюдает.
+		 * свои атрибуты элемента; `id` поля, которое его объявляет, база берёт
+		 * пропом первой сборки и снимает с корня — на поле его пишет шаблон из
+		 * состояния. Колбэков снятие не вызывает: ни один из этих атрибутов
+		 * элемент не наблюдает.
 		 */
 		private _handOver(field: HTMLElement | undefined): void {
 			if (!field) {
@@ -712,7 +846,7 @@ export function SoldyElement<
 
 				const value = this.getAttribute(name) ?? ''
 
-				if (name === CONTROL_ID) {
+				if (fieldId && name === CONTROL_ID) {
 					this._write(CONTROL_ID, value)
 				} else {
 					field.setAttribute(name, value)
@@ -731,9 +865,14 @@ export function SoldyElement<
 		 * одной операцией, из документа не выходя. Элемент soldy в нём не
 		 * пересобирается — ни собранный раньше контейнера (разметка страницы,
 		 * сборку контейнера отложила регистрация), ни несобранный: его первое
-		 * подключение приходит уже на новом месте, в документе, под провайдером.
-		 * Слот, который выводит привязка (`showSlot`), раскладывается так же:
-		 * первая раскладка связки его оставит или снимет.
+		 * подключение приходит уже на новом месте, в документе, под провайдером,
+		 * и ждёт конца подключения контейнера (ожидание). Слот, который выводит
+		 * привязка (`showSlot`), раскладывается так же: первая раскладка связки
+		 * его оставит или снимет. Точка, которая ведёт в слот детали, назначает
+		 * узлу этот слот (`place`).
+		 *
+		 * Образец (`sample`) не выводится: его узлы уходят из документа и
+		 * остаются в свете — копию шаблон берёт у контекста.
 		 *
 		 * Узлы без места снимаются:
 		 * - слот без содержимого (`isContent`) не задан. Иначе пробелы вокруг
@@ -750,11 +889,17 @@ export function SoldyElement<
 			for (const [name, target] of Object.entries(this._targets)) {
 				const nodes = this._light?.get(name)
 
-				if (nodes) {
-					relocate(nodes, () => {
-						for (const node of nodes) place(node, target)
-					})
+				if (!nodes) continue
+
+				if (target.mode === 'sample') {
+					for (const node of nodes) node.remove()
+
+					continue
 				}
+
+				relocate(nodes, () => {
+					for (const node of nodes) place(node, target)
+				})
 			}
 
 			for (const [name, nodes] of groups) {
@@ -768,13 +913,15 @@ export function SoldyElement<
 		 * Показать или снять слот по состоянию — `showSlot` контекста шаблона.
 		 * Снятое уходит из документа, и элементы soldy в нём отключаются, как при
 		 * перестановке; показ — переносом силами базы, в точку слота. Слот не
-		 * задан или не объявлен — делать нечего; уже так — тоже.
+		 * задан, не объявлен или образец — делать нечего; уже так — тоже.
 		 */
 		private _showSlot(name: string, shown: boolean): void {
 			const nodes = this._light?.get(name)
 			const target = targetOf(this._targets, name)
 
-			if (!nodes || !target || this._hidden.has(name) !== shown) return
+			if (!nodes || !target || target.mode === 'sample' || this._hidden.has(name) !== shown) {
+				return
+			}
 
 			if (shown) {
 				this._hidden.delete(name)
@@ -786,6 +933,19 @@ export function SoldyElement<
 
 				for (const node of nodes) node.remove()
 			}
+		}
+
+		/** Копия образца — `sample` контекста шаблона (см. шапку). */
+		private _sample(name: string): DocumentFragment | null {
+			const nodes = this._light?.get(name)
+
+			if (!nodes || targetOf(this._targets, name)?.mode !== 'sample') return null
+
+			const copy = this.ownerDocument.createDocumentFragment()
+
+			for (const node of nodes) copy.append(copyOf(node, this.ownerDocument))
+
+			return copy
 		}
 
 		private _onUpdate(name: string, value: unknown): void {
@@ -817,15 +977,16 @@ export function SoldyElement<
 
 		/**
 		 * Контекст привязок шаблона — живой вид элемента, один на всё время
-		 * жизни: узел содержимого, состояние и инстанс он отдаёт в момент
+		 * жизни: узел содержимого, состояние, инстанс и фасад он отдаёт в момент
 		 * обращения. Поэтому обработчик, который шаблон завёл на одной связке и
-		 * который запомнил контекст, после перестановки зовёт инстанс новой
-		 * связки, а не прежней.
+		 * который запомнил контекст, после перестановки зовёт инстанс и фасад
+		 * новой связки, а не прежней.
 		 */
-		private _viewOf(): ITemplateContext<TInstance> {
+		private _viewOf(): ITemplateContext<TInstance, TFacade> {
 			const content = (): HTMLElement => this._content
-			const state = (): TInstanceState<TInstance> => this.state
+			const state = (): TBindingState<TInstance, TFacade> => this.state
 			const instance = (): TInstance | undefined => this.ctrl
+			const facade = (): TFacade | undefined => this._binding?.facade
 
 			return {
 				root: this,
@@ -838,13 +999,18 @@ export function SoldyElement<
 				get ctrl() {
 					return instance()
 				},
+				get facade() {
+					return facade()
+				},
 				hasSlot: (name) => this._light?.has(name) ?? false,
 				showSlot: (name, shown) => this._showSlot(name, shown),
+				sample: (name) => this._sample(name),
 			}
 		}
 
 		private _flush(full = false): void {
 			const state = this.state
+			const snapshot: TStateSnapshot = state
 			// Имена забираются до раскладки: изменение, пришедшее во время неё (через
 			// обратную запись атрибута-входа `disabled`), дождётся своего флаша, а не
 			// пропадёт
@@ -863,16 +1029,20 @@ export function SoldyElement<
 				if (changed(name)) this._attributes.set(name, state[name] ?? {}, inputs)
 			}
 
-			// Снизу выход плагина раскладки, поверх — стиль-выход компонента. Их
-			// имена — не свойства инстанса, поэтому состояние читается по именам
-			if (changed('layout_styles') || (styleOutput !== undefined && changed(styleOutput))) {
-				const snapshot: TStateSnapshot = state
-
+			// Снизу выход плагина раскладки, поверх — стиль-выход компонента и место
+			// элемента коллекции. Их имена — не свойства инстанса, поэтому состояние
+			// читается по именам
+			if (
+				changed('layout_styles') ||
+				(styleOutput !== undefined && changed(styleOutput)) ||
+				(ordered && changed('order'))
+			) {
 				this._appliedStyles = applyStyles(
 					this,
 					stylesOf(
 						snapshot['layout_styles'],
 						styleOutput === undefined ? undefined : snapshot[styleOutput],
+						ordered ? orderOf(snapshot['order']) : undefined,
 					),
 					this._appliedStyles,
 				)
@@ -890,13 +1060,20 @@ export function SoldyElement<
 
 			// Скрытие — поверх стиля: `display: none` не перекрывает ни раскладка,
 			// ни потребитель. Прячут корень `rendered` и `visible`, если видимость
-			// его прячет, и слой без цели: корень на месте, а места у панели нет
-			if (changed('rendered') || changed('visible') || placing) {
+			// его прячет, выход, без которого корня нет (`shownBy`), и слой без
+			// цели: корень на месте, а места у панели нет
+			if (
+				changed('rendered') ||
+				changed('visible') ||
+				placing ||
+				(shownBy !== undefined && changed(shownBy))
+			) {
 				const unseen = hides && (state.rendered === false || state.visible === false)
+				const absent = shownBy !== undefined && snapshot[shownBy] !== true
 
 				this._hiddenDisplay = applyHidden(
 					this,
-					unseen || !this._placed,
+					unseen || absent || !this._placed,
 					this._hiddenDisplay,
 				)
 			}
@@ -909,9 +1086,11 @@ export function SoldyElement<
 		/**
 		 * Свойства пропов на прототипе — JS-путь `el.text = 'Click'`. Атрибуты
 		 * покрывают только примитивы, поэтому свойства — единственный способ
-		 * передать объект или готовый инстанс. Пропускаются `ctrl` (своя пара
-		 * выше), пропы `HOST_PROPS` и свойства, которые у элемента уже есть по
-		 * тегу: нативное свойство остаётся нативным (см. шапку).
+		 * передать объект или готовый инстанс. Свойства — у пропов обоих
+		 * дескрипторов: своего и фасада коллекции (`el.items`, `el.active`).
+		 * Пропускаются `ctrl` (своя пара выше), пропы `HOST_PROPS` и свойства,
+		 * которые у элемента уже есть по тегу: нативное свойство остаётся
+		 * нативным (см. шапку).
 		 *
 		 * Свойства своих атрибутов — следом, отражением атрибута: значение
 		 * хранит он сам (см. шапку). Имя, которое уже занято — пропом (его
@@ -919,7 +1098,13 @@ export function SoldyElement<
 		 * элементом, — ошибка описания, а не повод перекрыть чужое.
 		 */
 		static {
-			for (const prop of Object.keys(TSurface.of(spec.descriptor, WebcProfile).exportProps)) {
+			const props = new Set(
+				descriptors.flatMap((descriptor) =>
+					Object.keys(TSurface.of(descriptor, WebcProfile).exportProps),
+				),
+			)
+
+			for (const prop of props) {
 				if (prop === 'ctrl' || isHostProp(prop) || prop in Native.prototype) continue
 
 				Object.defineProperty(this.prototype, prop, {

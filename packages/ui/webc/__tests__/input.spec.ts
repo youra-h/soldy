@@ -27,6 +27,7 @@ import {
 	type TInputElementProps,
 } from '@soldy-ui/webc'
 import { inputTemplate } from '../src/components/input/input.template'
+import { bareContext } from './template-context'
 
 /** Рендер коалесцируется в микротаске — ждём её перед проверкой. */
 const flush = () => new Promise<void>((resolve) => queueMicrotask(() => resolve()))
@@ -162,7 +163,8 @@ describe('Input · разметка', () => {
 	})
 
 	it('шаблон объявляет ровно те слоты, что и дескриптор', () => {
-		const targets = inputTemplate.create(document.createElement('div'), () => false).slots
+		const root = document.createElement('div')
+		const targets = inputTemplate.create(root, () => false, bareContext(root)).slots
 
 		expect(Object.keys(targets).sort()).toEqual(
 			InputDescriptor()

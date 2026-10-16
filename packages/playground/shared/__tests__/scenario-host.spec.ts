@@ -258,4 +258,11 @@ describe('сторож модуля хоста', () => {
 		expect(isPreviewHost({ ...host, slotScope: true })).toBe(true)
 		expect(isPreviewHost({ ...host, slotScope: 'нет' })).toBe(false)
 	})
+
+	/** Проп `tag` — признак хоста: нет его — проп есть, задан — только флагом. */
+	it('проп tag — флаг или ничего', () => {
+		expect(isPreviewHost({ ...host, tagProp: false })).toBe(true)
+		expect(isPreviewHost({ ...host, tagProp: true })).toBe(true)
+		expect(isPreviewHost({ ...host, tagProp: 'нет' })).toBe(false)
+	})
 })

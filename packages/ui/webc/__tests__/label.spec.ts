@@ -16,6 +16,7 @@ import { describe, it, expect, afterEach } from 'vitest'
 import { LabelDescriptor } from '@soldy-ui/setup'
 import { TLabelElement, type TLabelElementProps } from '@soldy-ui/webc'
 import { labelTemplate } from '../src/components/label/label.template'
+import { bareContext } from './template-context'
 
 /** Рендер коалесцируется в микротаске — ждём её перед проверкой. */
 const flush = () => new Promise<void>((resolve) => queueMicrotask(() => resolve()))
@@ -156,7 +157,8 @@ describe('Label · текст: проп и слот', () => {
 	})
 
 	it('шаблон объявляет ровно те слоты, что и дескриптор', () => {
-		const targets = labelTemplate.create(document.createElement('label'), () => false).slots
+		const root = document.createElement('label')
+		const targets = labelTemplate.create(root, () => false, bareContext(root)).slots
 
 		expect(Object.keys(targets).sort()).toEqual(
 			LabelDescriptor()

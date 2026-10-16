@@ -98,6 +98,8 @@ export const LABEL_SLOTS: readonly TScenario[] = [
 			'RadioGroup.Item с tag="span" в слоте default: вложенного label нет, клик по тексту отмечает радио одним change',
 		fixture: 'label-radio',
 		requires: ['radio-group'],
+		// Радио в подписи — на `span`: тег корня фикстура задаёт пропом
+		tagProp: true,
 		props: { text: TEXT },
 		run: checkLabel,
 	},

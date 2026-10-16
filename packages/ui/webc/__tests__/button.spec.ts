@@ -16,6 +16,7 @@ import { ButtonDescriptor } from '@soldy-ui/setup'
 import type { IButton } from '@soldy-ui/core'
 import { TButtonElement, type TButtonElementProps } from '@soldy-ui/webc'
 import { buttonTemplate } from '../src/components/button/button.template'
+import { bareContext } from './template-context'
 
 /** Рендер коалесцируется в микротаске — ждём её перед проверкой. */
 const flush = () => new Promise<void>((resolve) => queueMicrotask(() => resolve()))
@@ -714,7 +715,8 @@ describe('<button is="so-button"> · перестановка в DOM', () => {
 
 describe('<button is="so-button"> · слоты', () => {
 	it('шаблон объявляет ровно те слоты, что и дескриптор', () => {
-		const targets = buttonTemplate.create(document.createElement('button'), () => false).slots
+		const root = document.createElement('button')
+		const targets = buttonTemplate.create(root, () => false, bareContext(root)).slots
 
 		// Contract conformance: имена в шаблоне и в дескрипторе обязаны совпадать
 		expect(Object.keys(targets).sort()).toEqual(

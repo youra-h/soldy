@@ -41,6 +41,7 @@ import {
 } from '@soldy-ui/webc'
 import { frameTemplate } from '../src/components/frame/frame.template'
 import { TELEPORT_ANCHOR } from '../src/adapter/runtime/teleport'
+import { bareContext } from './template-context'
 
 /** Флаш раскладки и наблюдатели DOM — на микрозадаче. */
 const flush = () => new Promise<void>((resolve) => queueMicrotask(() => resolve()))
@@ -738,7 +739,8 @@ describe('Frame · содержимое панели', () => {
 
 describe('Frame · слоты', () => {
 	it('шаблон объявляет ровно те слоты, что и дескриптор', () => {
-		const targets = frameTemplate.create(document.createElement('div'), () => false).slots
+		const root = document.createElement('div')
+		const targets = frameTemplate.create(root, () => false, bareContext(root)).slots
 
 		expect(Object.keys(targets).sort()).toEqual(
 			FrameDescriptor()

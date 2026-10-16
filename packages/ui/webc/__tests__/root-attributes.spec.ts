@@ -16,16 +16,19 @@
  * Плагина раскладки у кольца нет, поэтому порядок слоёв проверяется на самой
  * раскладке стиля (`stylesOf`, `applyStyles`), как в React, Solid и Angular.
  *
- * У корня с полем (Input, CheckBox, Switch) статические атрибуты разметки база
- * переносит на `<input>`, и там они так же главнее набора ядра, который на
- * поле кладёт шаблон. Набор владельца на элементе шаблона и наборы самого
- * элемента сходятся в одном раскладчике элемента (`TElementAttributes`):
- * набор владельца главнее при любом порядке записи.
+ * У корня с полем (Input, CheckBox, Switch, радио) и у элемента коллекции
+ * (таб, секция) статические атрибуты разметки база переносит на `<input>` или
+ * строку, и там они так же главнее набора ядра, который на поле кладёт шаблон.
+ * Набор владельца на элементе шаблона и наборы самого элемента сходятся в
+ * одном раскладчике элемента (`TElementAttributes`): набор владельца главнее
+ * при любом порядке записи.
  */
 
 import { describe, it, expect, afterEach } from 'vitest'
 import { TButton } from '@soldy-ui/core'
 import {
+	TAccordionElement,
+	TAccordionItemElement,
 	TButtonElement,
 	TCheckBoxElement,
 	TComponentViewElement,
@@ -33,8 +36,15 @@ import {
 	TInputElement,
 	TLabelElement,
 	TProgressSpinnerElement,
+	TRadioGroupElement,
+	TRadioGroupItemElement,
 	TSkeletonElement,
 	TSwitchElement,
+	TTabsContentElement,
+	TTabsElement,
+	TTabsItemElement,
+	type TAccordionElementProps,
+	type TAccordionItemElementProps,
 	type TButtonElementProps,
 	type TCheckBoxElementProps,
 	type TComponentViewElementProps,
@@ -42,8 +52,13 @@ import {
 	type TInputElementProps,
 	type TLabelElementProps,
 	type TProgressSpinnerElementProps,
+	type TRadioGroupElementProps,
+	type TRadioGroupItemElementProps,
 	type TSkeletonElementProps,
 	type TSwitchElementProps,
+	type TTabsContentElementProps,
+	type TTabsElementProps,
+	type TTabsItemElementProps,
 } from '@soldy-ui/webc'
 import { TElementAttributes, applyStyles, stylesOf } from '../src/adapter/runtime/root-attributes'
 
@@ -96,6 +111,34 @@ function isInput(node: Element | null): node is TInputElementProps {
 	return node instanceof TInputElement
 }
 
+function isTabs(node: Element | null): node is TTabsElementProps {
+	return node instanceof TTabsElement
+}
+
+function isTabsItem(node: Element | null): node is TTabsItemElementProps {
+	return node instanceof TTabsItemElement
+}
+
+function isTabsContent(node: Element | null): node is TTabsContentElementProps {
+	return node instanceof TTabsContentElement
+}
+
+function isAccordion(node: Element | null): node is TAccordionElementProps {
+	return node instanceof TAccordionElement
+}
+
+function isAccordionItem(node: Element | null): node is TAccordionItemElementProps {
+	return node instanceof TAccordionItemElement
+}
+
+function isRadioGroup(node: Element | null): node is TRadioGroupElementProps {
+	return node instanceof TRadioGroupElement
+}
+
+function isRadio(node: Element | null): node is TRadioGroupItemElementProps {
+	return node instanceof TRadioGroupItemElement
+}
+
 /** Элемент разметки, подключённый к документу; узел не того вида — тест падает здесь. */
 function mount<T extends HTMLElement>(html: string, guard: TElementGuard<T>): T {
 	const host = document.createElement('div')
@@ -111,28 +154,43 @@ function mount<T extends HTMLElement>(html: string, guard: TElementGuard<T>): T 
 }
 
 /**
- * Компонент, его тег с `is`, вид элемента, класс ядра на корне и есть ли в
- * корне поле — тогда атрибуты разметки уходят на `<input>`.
+ * Компонент, его тег с `is`, вид элемента, класс ядра на корне и поле в корне
+ * — селектор узла, на который уходят атрибуты разметки: `<input>` поля,
+ * строка таба, заголовок секции; `null` — поля нет.
  */
 const COMPONENTS: ReadonlyArray<
-	readonly [string, string, string, TElementGuard<HTMLElement>, string, boolean]
+	readonly [string, string, string, TElementGuard<HTMLElement>, string, string | null]
 > = [
-	['Button', 'button', 'so-button', isButton, 'so-button', false],
-	['ComponentView', 'div', 'so-component-view', isView, 'so-component-view', false],
-	['Icon', 'span', 'so-icon', isIcon, 'so-icon', false],
-	['ProgressSpinner', 'span', 'so-progress-spinner', isSpinner, 'so-progress-spinner', false],
-	['Skeleton', 'div', 'so-skeleton', isSkeleton, 'so-skeleton', false],
-	['Label', 'label', 'so-label', isLabel, 'so-label', false],
-	['CheckBox', 'span', 'so-check-box', isCheckBox, 'so-check-box', true],
-	['Switch', 'span', 'so-switch', isSwitch, 'so-switch', true],
-	['Input', 'div', 'so-input', isInput, 'so-input', true],
+	['Button', 'button', 'so-button', isButton, 'so-button', null],
+	['ComponentView', 'div', 'so-component-view', isView, 'so-component-view', null],
+	['Icon', 'span', 'so-icon', isIcon, 'so-icon', null],
+	['ProgressSpinner', 'span', 'so-progress-spinner', isSpinner, 'so-progress-spinner', null],
+	['Skeleton', 'div', 'so-skeleton', isSkeleton, 'so-skeleton', null],
+	['Label', 'label', 'so-label', isLabel, 'so-label', null],
+	['CheckBox', 'span', 'so-check-box', isCheckBox, 'so-check-box', 'input'],
+	['Switch', 'span', 'so-switch', isSwitch, 'so-switch', 'input'],
+	['Input', 'div', 'so-input', isInput, 'so-input', 'input'],
+	['Tabs', 'div', 'so-tabs', isTabs, 'so-tabs', null],
+	['Tabs.Item', 'div', 'so-tabs-item', isTabsItem, 'so-tabs-item', '[embedded="tabs.row"]'],
+	['Tabs.Content', 'div', 'so-tabs-content', isTabsContent, 'so-tabs__panel', null],
+	['Accordion', 'div', 'so-accordion', isAccordion, 'so-accordion', null],
+	[
+		'Accordion.Item',
+		'div',
+		'so-accordion-item',
+		isAccordionItem,
+		'so-accordion-item',
+		'.so-accordion-item__header',
+	],
+	['RadioGroup', 'div', 'so-radio-group', isRadioGroup, 'so-radio-group', null],
+	['RadioGroup.Item', 'label', 'so-radio-group-item', isRadio, 'so-radio-group-item', 'input'],
 ]
 
 /** Корни без поля: атрибуты разметки стоят на них самих. */
-const ROOTS = COMPONENTS.filter(([, , , , , field]) => !field)
+const ROOTS = COMPONENTS.filter(([, , , , , field]) => field === null)
 
 /** Корни с полем: атрибуты разметки, кроме класса, стиля и входов, — на поле. */
-const FIELDS = COMPONENTS.filter(([, , , , , field]) => field)
+const FIELDS = COMPONENTS.filter(([, , , , , field]) => field !== null)
 
 /** Разметка пробы: `direction` ядра против `dir` потребителя и класс потребителя. */
 const probe = (tag: string, is: string) =>
@@ -151,12 +209,12 @@ describe('атрибут потребителя перекрывает набо�
 	 */
 	it.each(FIELDS)(
 		'%s: атрибуты разметки — на поле, поверх его набора; dir ядра — на корне',
-		(_name, tag, is, guard) => {
+		(_name, tag, is, guard, _own, control) => {
 			const el = mount(
 				`<${tag} is="${is}" direction="rtl" dir="ltr" aria-label="Своё" aria_label="Ядра"></${tag}>`,
 				guard,
 			)
-			const field = el.querySelector('input')
+			const field = el.querySelector(control ?? 'input')
 
 			expect(el.getAttribute('dir')).toBe('rtl')
 			expect(el.hasAttribute('aria-label')).toBe(false)
@@ -164,6 +222,31 @@ describe('атрибут потребителя перекрывает набо�
 			expect(field?.getAttribute('aria-label')).toBe('Своё')
 		},
 	)
+
+	/**
+	 * Строка таба — корень вложенной кнопки: на неё пишут и база кнопки — свои
+	 * наборы, — и шаблон таба — `aria` таба. Набор элемента главнее того, что
+	 * кнопка пишет себе сама, при любом порядке записи: имя кнопки, заданное
+	 * ей самой, уступает имени таба.
+	 */
+	it('слой таба на строке главнее наборов самой кнопки', async () => {
+		const tab = mount('<div is="so-tabs-item" text="A" aria_label="Таб"></div>', isTabsItem)
+		const row = tab.querySelector('[embedded="tabs.row"]')
+
+		if (!isButton(row)) throw new Error('строки нет')
+
+		expect(row.getAttribute('aria-label')).toBe('Таб')
+
+		row.aria_label = 'Строка'
+		await flush()
+
+		expect(row.getAttribute('aria-label')).toBe('Таб')
+
+		tab.aria_label = undefined
+		await flush()
+
+		expect(row.getAttribute('aria-label')).toBe('Строка')
+	})
 
 	it.each(COMPONENTS)(
 		'%s: класс потребителя — рядом с классами ядра',
