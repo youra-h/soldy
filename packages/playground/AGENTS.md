@@ -54,7 +54,7 @@ notifications`. Фильтра по тексту в стороже нет и б�
 отфильтрованное сторожем не увидел бы никто. Сторож красный — чинится причина,
 а не он.
 
-- Node `^22.12.0 || ^24 || >=26`, TypeScript 6 in **strict** mode, ESLint 10, Vitest 4, Vite 8.
+- Node `^22.12.0 || ^24 || >=26`, TypeScript 6 in **strict** mode, ESLint 10, Vitest 5, Vite 8.
 - npm workspaces: patterns are in `workspaces` of the root `package.json`.
 
 ## Playground: инструмент не диктует библиотеке (критично)
