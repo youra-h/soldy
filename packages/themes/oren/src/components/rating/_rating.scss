@@ -1,0 +1,194 @@
+@use '../../mixins/motion';
+@use '../../mixins/veil';
+@use './mixins' as mixines;
+
+// Rating — оценка звёздами: ползунок с одной ручкой, у которого шкала — ряд
+// звёзд.
+//
+// Всё, что зависит от значения, приходит от ядра переменной в `style` звезды:
+// `--so-rating-fraction` — доля её заливки числом от 0 до 1, от предпросмотра
+// наведением, пока он идёт, иначе от значения. Доля, а не состояния «пустая,
+// половина, полная»: шаг бывает мельче половины, и оценка только для показа
+// рисует и 4,3.
+//
+// Звезда — два слоя одной иконки: пустая снизу, цветом пустой звезды, и
+// залитая сверху, в слое шириной в долю. Слой обрезает иконку, а не сжимает
+// её, и стоит у начала строки — в RTL заливка сама идёт справа налево, без
+// селектора по направлению.
+//
+// Контракт с плагином указателя — как у Slider: коробка `__track` и есть
+// шкала, 0 и 1 доли — её края по оси. Поэтому звёзды стоят в ней встык и
+// равными ячейками: доля коробки ложится на звёзды без остатка, а половина
+// звезды по указателю — ровно половина значка, он симметричен.
+.so-rating {
+	$this: &;
+
+	// Размер без модификатора — `normal`. Ядро пишет `--size-*` всегда, но блок
+	// и без него обязан выглядеть умолчанием.
+	@include mixines.rating-size('normal');
+
+	// Пустая звезда — вуаль нейтрали, как рельс Slider: своего места на шкале у
+	// неё нет, а оценка стоит и на странице, и на панели. Плотность та же, что
+	// у рельса: на двух шагах значок тише рельса и на панели тёмной схемы почти
+	// пропадает. Нейтраль при любом варианте: пустая звезда — «здесь ничего», и
+	// в цвет варианта она читалась бы недозалитой.
+	--so-rating-empty: #{veil.tint('neutral', calc(3 * var(--so-component-fill)))};
+
+	// Строчный: оценку ставят в строку текста — «4,5 ★★★★☆ (120)».
+	@apply inline-flex align-middle;
+
+	// Нажатие в любом месте ряда ставит оценку, протяжка не выделяет текст
+	// вокруг.
+	@apply select-none cursor-pointer;
+
+	// Дорожка — ряд звёзд. Ширина — сумма звёзд, ничего сверх них: доля её
+	// коробки — доля шкалы.
+	&__track {
+		@apply relative flex;
+	}
+
+	// Звезда — ячейка ряда. Цвет — пустой звезды: иконка берёт `currentColor`.
+	&__star {
+		@apply relative flex shrink-0;
+		inline-size: var(--so-rating-star-size);
+		block-size: var(--so-rating-star-size);
+		color: var(--so-rating-empty);
+	}
+
+	// Слой заливки — от начала строки на долю звезды. Его иконка — во всю
+	// звезду: слой режет её по своему краю.
+	&__star-fill {
+		@apply absolute flex overflow-hidden;
+		inset-block: 0;
+		inset-inline-start: 0;
+		inline-size: calc(var(--so-rating-fraction, 0) * 100%);
+		color: var(--so-rating-fill);
+	}
+
+	// Иконка обоих слоёв — во всю звезду: и `svg` роли, и иконка слота `icon`,
+	// у которой размер свой (`icon/_icon.scss`). Слой заливки уже звезды, и
+	// иконка в нём не сжимается.
+	&__star > :not(#{$this}__star-fill),
+	&__star > #{$this}__star-fill > * {
+		flex: none;
+		inline-size: var(--so-rating-star-size);
+		block-size: var(--so-rating-star-size);
+	}
+
+	&__star svg {
+		fill: currentColor;
+	}
+
+	// Ручка — невидимая и во весь ряд: в ней поле, а на ней кольцо фокуса — вокруг
+	// всех звёзд. Указатель она не ловит: наведение и нажатие достаются звёздам и
+	// корню, где их ловит плагин указателя.
+	&__thumb {
+		@apply absolute inset-0 rounded-md pointer-events-none;
+	}
+
+	&__thumb:has(> #{$this}__input:focus-visible) {
+		@apply outline-2 outline-offset-2 outline-so-component;
+	}
+
+	// Поле — во всю ручку и прозрачное, как у Slider: остаётся в дереве
+	// доступности и в порядке фокуса, и рамку курсора скринридер рисует по ряду.
+	// Указатель оно не ловит: иначе браузер двигал бы значение сам, мимо плагина.
+	&__input {
+		@apply absolute inset-0 m-0 p-0 size-full opacity-0;
+		@apply appearance-none pointer-events-none;
+	}
+
+	// Только для показа: нажатие оценку не меняет, поэтому курсор обычный, а
+	// наведение звезду не поднимает (ниже). Прозрачность не трогаем: readonly —
+	// не выключенный, оценка товара в списке выглядит так же, как в форме.
+	&--readonly {
+		@apply cursor-default;
+	}
+
+	// Disabled читается из `data-disabled`: ядро пишет его на корне при любом
+	// теге. Гаснет оценка целиком.
+	&[data-disabled='true'] {
+		@apply opacity-so-component-disabled cursor-default pointer-events-none;
+	}
+
+	@each $size, $_ in mixines.$sizes {
+		&--size-#{$size} {
+			@include mixines.rating-size($size);
+		}
+	}
+
+	@each $variant, $color in mixines.$variants {
+		&--variant-#{$variant} {
+			@include mixines.rating-colors($color);
+		}
+	}
+}
+
+// Цвет блока без варианта — золото, `caution`: оценку звёздами узнают по нему,
+// а серые звёзды — это `normal`. Нулевая специфичность — вариант перекрывает
+// базу, не споря с ней.
+:where(.so-rating) {
+	@include mixines.rating-colors('caution');
+}
+
+// Звезда под указателем приподнята — та, которую поставит нажатие. Наведение
+// только там, где нажатие что-то сделает, и только там, где оно есть: после
+// касания `:hover` залипает, и звезда осталась бы поднятой. Подъём — масштабом
+// звезды, а не размером ячейки: ряд не сдвигается, и доля под указателем та же.
+@media (hover: hover) {
+	.so-rating:not(.so-rating--readonly, [data-disabled='true']) .so-rating__star:hover {
+		scale: 1.15;
+	}
+}
+
+// Подъём — движение: в покое звезда встаёт сразу, переход — только в
+// надстройке.
+.so-rating__star {
+	@include motion.allowed {
+		transition-property: scale;
+		transition-duration: 150ms;
+		transition-timing-function: ease-out;
+	}
+}
+
+// Принудительные цвета (высокий контраст Windows): браузер красит текст
+// системным цветом, иконка идёт за ним через `currentColor`, и оба слоя
+// звезды слились бы в один цвет — оценку стало бы не прочесть. Поэтому залитая
+// часть — `Highlight`, как заливка Slider, а пустая звезда — контур цвета
+// текста: сплошная `GrayText` рядом с `Highlight` во многих палитрах почти того
+// же цвета. Контур лежит и под залитой частью — у залитой звезды остаётся
+// кромка.
+@media (forced-colors: active) {
+	.so-rating {
+		$this: &;
+
+		&__star {
+			forced-color-adjust: none;
+			color: CanvasText;
+		}
+
+		&__star > svg {
+			fill: none;
+			stroke: currentColor;
+			stroke-width: 1.5px;
+			stroke-linejoin: round;
+
+			// Толщина — в пикселях экрана при любом `viewBox` пакета иконок
+			* {
+				vector-effect: non-scaling-stroke;
+			}
+		}
+
+		&__star-fill {
+			color: Highlight;
+		}
+
+		&[data-disabled='true'] :is(#{$this}__star, #{$this}__star-fill) {
+			color: GrayText;
+		}
+
+		&__thumb:has(> #{$this}__input:focus-visible) {
+			outline-color: Highlight;
+		}
+	}
+}
