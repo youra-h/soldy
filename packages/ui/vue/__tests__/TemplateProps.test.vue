@@ -33,6 +33,7 @@ import {
 	Label,
 	ListBox,
 	LocaleProvider,
+	Pagination,
 	Popover,
 	ProgressLinear,
 	ProgressSpinner,
@@ -53,6 +54,9 @@ import {
 // Тост — внутренняя часть менеджера, наружу пакета не выходит, но аннотация
 // пропсов у него своя
 import { ToastsItem } from '../src/components/toasts/item'
+// Страница — внутренняя часть пагинации, наружу пакета не выходит, но
+// аннотация пропсов у неё своя
+import { PaginationItem } from '../src/components/pagination/item'
 
 const button = new TButton()
 const input = new TInput()
@@ -219,6 +223,26 @@ const dragAndDrop = new TDragAndDrop()
 	<!-- @vue-expect-error — локаль объектом (`ruRU`), а не тегом -->
 	<LocaleProvider locale="ru-RU" />
 	<LocaleProvider :locale="ruRU" />
+
+	<!-- @vue-expect-error — число элементов числом, а не строкой -->
+	<Pagination total="100" />
+	<Pagination :total="100" />
+
+	<!-- @vue-expect-error — середина окна числом, а не строкой -->
+	<Pagination middleCount="5" />
+	<Pagination :middleCount="5" />
+
+	<!-- @vue-expect-error — страницы текстовой пагинации — объекты с текстом, а не строки -->
+	<Pagination :pages="['Админ', 'Записи']" />
+	<Pagination :pages="[{ text: 'Админ', value: 'admin' }, { text: 'Записи' }]" />
+
+	<!-- @vue-expect-error — ключ страницы строкой или числом -->
+	<Pagination :value="{}" />
+	<Pagination value="admin" />
+
+	<!-- @vue-expect-error — направления `up` нет -->
+	<PaginationItem direction="up" />
+	<PaginationItem direction="rtl" />
 
 	<!-- @vue-expect-error — стороны `left` у поповера нет: сторона и выравнивание -->
 	<Popover placement="left" />
