@@ -8,5 +8,6 @@ export {
 	type TRootSpec,
 	type TRootTeleport,
 	type TSoldyElementClass,
+	type TSoldyElementProps,
 } from './element.base'
 export { defineElement } from './defineElement'

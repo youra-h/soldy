@@ -21,9 +21,9 @@
  */
 
 import { CheckBoxDescriptor } from '@soldy-ui/setup'
-import type { ICheckBox, ICheckBoxProps } from '@soldy-ui/core'
+import type { ICheckBox } from '@soldy-ui/core'
 import { SoldyElement, defineElement } from '../../adapter'
-import type { ISoldyElement, THostProp } from '../../adapter'
+import type { ISoldyElement, TSoldyElementProps } from '../../adapter'
 import { checkBoxTemplate } from './check-box.template'
 import { setupCheckBox } from './setup.component'
 
@@ -38,9 +38,10 @@ defineElement('so-check-box', TCheckBoxElement, 'span')
 
 /**
  * `<span is="so-check-box">` из JS: нативный `span`, своё элемента soldy
- * (`ctrl`, `state`) и props дескриптора — без тех, что у `span` уже есть
- * (`id` — собственный `id` корня), и без `HOST_PROPS`.
+ * (`ctrl`, `state`) и свойства пропов дескриптора вместе с пропсами его
+ * плагинов (`aria_label`) — без тех, что у `span` уже есть (`id` — собственный
+ * `id` корня), и без `HOST_PROPS` (`TSoldyElementProps`).
  */
 export type TCheckBoxElementProps = HTMLSpanElement &
 	ISoldyElement<ICheckBox> &
-	Omit<ICheckBoxProps, keyof HTMLSpanElement | THostProp>
+	TSoldyElementProps<typeof CheckBoxDescriptor, HTMLSpanElement>

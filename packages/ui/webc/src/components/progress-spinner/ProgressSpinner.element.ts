@@ -17,9 +17,9 @@
  */
 
 import { ProgressSpinnerDescriptor } from '@soldy-ui/setup'
-import type { IProgressProps, IProgressSpinner } from '@soldy-ui/core'
+import type { IProgressSpinner } from '@soldy-ui/core'
 import { SoldyElement, defineElement } from '../../adapter'
-import type { ISoldyElement, THostProp } from '../../adapter'
+import type { ISoldyElement, TSoldyElementProps } from '../../adapter'
 import { progressSpinnerTemplate } from './progress-spinner.template'
 import { setupProgressSpinner } from './setup.component'
 
@@ -34,10 +34,11 @@ defineElement('so-progress-spinner', TProgressSpinnerElement, 'span')
 
 /**
  * `<span is="so-progress-spinner">` из JS: нативный `span`, своё элемента
- * soldy (`ctrl`, `state`) и props дескриптора — без тех, что у `span` уже есть,
- * и без `HOST_PROPS`. Своих входов у кольца нет: пропсы — те, что у любого
- * индикатора выполнения (`IProgressProps`).
+ * soldy (`ctrl`, `state`) и свойства пропов дескриптора вместе с пропсами его
+ * плагинов (`aria_label`) — без тех, что у `span` уже есть, и без `HOST_PROPS`
+ * (`TSoldyElementProps`). Своих входов у кольца нет: пропсы — те, что у любого
+ * индикатора выполнения.
  */
 export type TProgressSpinnerElementProps = HTMLSpanElement &
 	ISoldyElement<IProgressSpinner> &
-	Omit<IProgressProps, keyof HTMLSpanElement | THostProp>
+	TSoldyElementProps<typeof ProgressSpinnerDescriptor, HTMLSpanElement>

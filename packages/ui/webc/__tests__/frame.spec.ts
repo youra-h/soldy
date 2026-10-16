@@ -26,9 +26,9 @@
  * `playground/vue/browser/webc-frame.spec.ts`.
  */
 
-import { describe, it, expect, afterEach } from 'vitest'
+import { describe, it, expect, expectTypeOf, afterEach } from 'vitest'
 import { TButton, TComponentView, TFrame } from '@soldy-ui/core'
-import { TBasePlugin, ruRU, zhCN, type IPluginContext } from '@soldy-ui/plugins'
+import { TAnchorPlugin, TBasePlugin, ruRU, zhCN, type IPluginContext } from '@soldy-ui/plugins'
 import { FrameDescriptor, usePlugins } from '@soldy-ui/setup'
 import {
 	TButtonElement,
@@ -493,6 +493,43 @@ describe('Frame · разметка потребителя', () => {
 		expect(frame().style.left).toBe('1px')
 		expect(frame().style.top).toBe('0px')
 		expect(frame().style.color).toBe('red')
+	})
+})
+
+/**
+ * Якорь — элемент, и атрибутом его не задать: только свойством пропа плагина
+ * `anchor_anchor`. Тип элемента знает его, как и остальные пропсы плагинов
+ * дескриптора. Снятое свойство (`undefined`) возвращает умолчание плагина
+ * `null` — панель ни к чему не привязана. Типы проверяет шаг CI «Типы — Web
+ * Components»: в рантайме `expectTypeOf` ничего не делает.
+ */
+describe('Frame · якорь', () => {
+	it('anchor_anchor — свойство в типе элемента: доходит до плагина, undefined отвязывает', async () => {
+		const anchor = document.body.appendChild(document.createElement('button'))
+		const el = create()
+		let plugin: TAnchorPlugin | undefined
+
+		el.addEventListener('so:anchor:create', (event) => {
+			if (event instanceof CustomEvent && event.detail instanceof TAnchorPlugin) {
+				plugin = event.detail
+			}
+		})
+		el.anchor_anchor = anchor
+		mountElement(el)
+		// Набор объявляет плагины на микрозадаче
+		await flush()
+
+		expect(plugin?.anchor).toBe(anchor)
+		expect(el.anchor_anchor).toBe(anchor)
+
+		el.anchor_anchor = undefined
+
+		expect(plugin?.anchor).toBeNull()
+		expect(el.anchor_anchor).toBeNull()
+
+		expectTypeOf<TFrameElementProps['anchor_anchor']>().toEqualTypeOf<
+			Element | null | undefined
+		>()
 	})
 })
 

@@ -25,9 +25,9 @@
  */
 
 import { FrameDescriptor } from '@soldy-ui/setup'
-import type { IFrame, IFrameProps } from '@soldy-ui/core'
+import type { IFrame } from '@soldy-ui/core'
 import { SoldyElement, defineElement } from '../../adapter'
-import type { ISoldyElement, THostProp } from '../../adapter'
+import type { ISoldyElement, TSoldyElementProps } from '../../adapter'
 import { frameTemplate } from './frame.template'
 import { setupFrame } from './setup.component'
 
@@ -42,9 +42,10 @@ defineElement('so-frame', TFrameElement, 'div')
 
 /**
  * `<div is="so-frame">` из JS: нативный `div`, своё элемента soldy (`ctrl`,
- * `state`) и props дескриптора — без тех, что у `div` уже есть, и без
- * `HOST_PROPS`.
+ * `state`) и свойства пропов дескриптора вместе с пропсами его плагинов —
+ * якоря (`anchor_anchor`) и имени (`aria_label`), — без тех, что у `div` уже
+ * есть, и без `HOST_PROPS` (`TSoldyElementProps`).
  */
 export type TFrameElementProps = HTMLDivElement &
 	ISoldyElement<IFrame> &
-	Omit<IFrameProps, keyof HTMLDivElement | THostProp>
+	TSoldyElementProps<typeof FrameDescriptor, HTMLDivElement>
