@@ -1,5 +1,6 @@
 import type { IBatchExtension } from './batch/types'
 import type { IDrawExtension, TDrawable } from './draw/types'
+import type { IFactoryExtension } from './factory/types'
 import type { IExtension } from './types'
 
 /**
@@ -24,6 +25,10 @@ function isDraw<TItem extends TDrawable>(ext: IExtension<TItem>): ext is IDrawEx
 	return 'drawn' in ext && 'pin' in ext && 'useStrategy' in ext && 'notifyViewport' in ext
 }
 
+function isFactory<TItem extends object>(ext: IExtension<TItem>): ext is IFactoryExtension<TItem> {
+	return 'create' in ext && 'isSource' in ext
+}
+
 /** Состав коллекции, если он есть: его выборка — показанные элементы. */
 export function batchOf<TItem extends object>(
 	neighbours: TNeighbours<TItem> | null | undefined,
@@ -40,4 +45,17 @@ export function drawOf<TItem extends TDrawable>(
 	const ext = neighbours?.extensions.draw
 
 	return ext && isDraw(ext) ? ext : undefined
+}
+
+/**
+ * Фабрика элементов коллекции, если она есть: она знает класс элемента, а с
+ * ним — чей элемент. У движка, собранного без компонента (`createEngine`),
+ * её нет, пока его не привязали к компоненту.
+ */
+export function factoryOf<TItem extends object>(
+	neighbours: TNeighbours<TItem> | null | undefined,
+): IFactoryExtension<TItem> | undefined {
+	const ext = neighbours?.extensions.factory
+
+	return ext && isFactory(ext) ? ext : undefined
 }
