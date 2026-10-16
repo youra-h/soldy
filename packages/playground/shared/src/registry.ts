@@ -25,6 +25,7 @@ import {
 	ProgressSpinnerDescriptor,
 	RadioGroupDescriptor,
 	RadioGroupCollectionDescriptor,
+	RatingDescriptor,
 	ScrollerDescriptor,
 	SelectDescriptor,
 	SelectCollectionDescriptor,
@@ -107,6 +108,15 @@ export const COMPONENTS: readonly TComponentEntry[] = [
 		showcase: true,
 		span: 1,
 		description: 'Ползунок: число или диапазон перетаскиванием, клавишами и жестом скринридера',
+	},
+	{
+		id: 'rating',
+		label: 'Rating',
+		descriptor: RatingDescriptor,
+		showcase: true,
+		span: 1,
+		description:
+			'Оценка звёздами: нажатием, протяжкой и клавишами, с половинками и предпросмотром наведением',
 	},
 	{
 		id: 'radio-group',

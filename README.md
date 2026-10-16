@@ -35,10 +35,10 @@ Web Components connect that model to a framework and render the markup: BEM clas
   event, and items come from the `items` prop or from markup. Calendar is a collection too: its
   days are items, built from the months on screen. A Table is two: rows and columns.
 - **Accessibility from the WAI-ARIA Authoring Practices.** Tabs, Tags, Accordion, Select, Switch,
-  RadioGroup, Slider, Popover, Tooltip, Dialog, Drawer, Calendar, DatePicker and Table take roles and
-  relations from their APG patterns, and ProgressLinear and ProgressSpinner use the `progressbar`
-  role. Select implements the Combobox keyboard model, and Tabs the Tabs one: arrow keys and
-  Home/End with automatic activation, and a single Tab stop. ARIA is computed outside the
+  RadioGroup, Slider, Rating, Popover, Tooltip, Dialog, Drawer, Calendar, DatePicker and Table take
+  roles and relations from their APG patterns, and ProgressLinear and ProgressSpinner use the
+  `progressbar` role. Select implements the Combobox keyboard model, and Tabs the Tabs one: arrow
+  keys and Home/End with automatic activation, and a single Tab stop. ARIA is computed outside the
   framework and rendered with the markup, so it is in place from the first render.
 - **Themes and icon packs are pluggable contracts.** A theme styles `so-*` classes and `data-*`
   attributes, never `aria-*`, so an accessibility fix does not break the look. An icon pack is
@@ -162,6 +162,7 @@ queued for development:
 | Switch                                                                              | Switch: the same value as a checkbox, a different metaphor                                     |
 | Label                                                                               | Control label: clicking the text toggles the control, and the text is its accessible name      |
 | Slider                                                                              | Slider: a number or a range, set by dragging, with keys or with a screen reader gesture        |
+| Rating                                                                              | Rating with stars: set by click, drag or arrow keys, halves, hover preview, read-only display  |
 | RadioGroup                                                                          | One option out of several: native radio buttons sharing a `name`                               |
 | Select                                                                              | Select field: an input plus a list in an overlay, the Combobox pattern                         |
 | Calendar                                                                            | Month grids: pick a single date, several dates or a range                                      |
@@ -183,7 +184,6 @@ queued for development:
 | Skeleton                                                                            | Placeholder while content loads                                                                |
 | DragAndDrop                                                                         | Drag and drop of collection items                                                              |
 | Virtual                                                                             | Window for long lists: ListBox and Table inside render only the visible items                  |
-| Rating ![in development](https://img.shields.io/badge/in%20development-orange)      | Rating with stars: set by click or arrow keys, halves, read-only display                       |
 | Toast ![in development](https://img.shields.io/badge/in%20development-orange)       | Pop-up notifications: a queue, auto-dismiss with a pause on hover and focus, swipe to close    |
 | Pagination ![in development](https://img.shields.io/badge/in%20development-orange)  | Page navigation: page numbers with gaps, previous and next, first and last                     |
 | Menu ![in development](https://img.shields.io/badge/in%20development-orange)        | Action menu at a button or on right click: submenus, checkbox and radio items                  |
