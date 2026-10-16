@@ -58,6 +58,7 @@ export default { ...SetupInput, components: { Button, Icon } }
 			<slot name="clear" :clear="ctrl.clear">
 				<Button
 					embedded="input.clear"
+					type="button"
 					v-if="clearable"
 					class="so-input__clear"
 					:size="size"

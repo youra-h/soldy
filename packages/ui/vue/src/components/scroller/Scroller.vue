@@ -48,6 +48,7 @@ export default { ...SetupScroller, components: { Button, Icon } }
 		-->
 		<Button
 			embedded="scroller.prev"
+			type="button"
 			class="so-scroller__prev"
 			:size="size"
 			:disabled="prevDisabled"
@@ -78,6 +79,7 @@ export default { ...SetupScroller, components: { Button, Icon } }
 		<!-- Кнопка «вперёд» — зеркальная пара «назад», см. комментарий выше. -->
 		<Button
 			embedded="scroller.next"
+			type="button"
 			class="so-scroller__next"
 			:size="size"
 			:disabled="nextDisabled"

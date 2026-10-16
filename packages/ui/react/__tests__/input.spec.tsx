@@ -395,6 +395,17 @@ describe('Input · кнопка очистки', () => {
 		expect(clearOf(el).getAttribute('aria-label')).toBe('Очистить Город')
 	})
 
+	/**
+	 * Кнопка — деталь разметки поля, а не кнопка отправки: у `<button>` без
+	 * `type` тип `submit`, и в форме клик по очистке отправил бы её. Форму в
+	 * браузере проверяет `playground/vue/browser/input.spec.ts`.
+	 */
+	it('type="button" — в форме она не кнопка отправки', () => {
+		const el = mount(<Input clearable />).root()
+
+		expect(clearOf(el).getAttribute('type')).toBe('button')
+	})
+
 	it('размер — поля, выключена — вместе с полем, readonly её не гасит', () => {
 		const view = mount(<Input clearable size="lg" readonly />)
 

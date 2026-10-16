@@ -138,6 +138,7 @@ export function Table(props: TableProps): ReactElement | null {
 										return sortable ? (
 											<Button
 												embedded="table.sort"
+												type="button"
 												className="so-table-column__sort"
 												size={size}
 												disabled={disabled}

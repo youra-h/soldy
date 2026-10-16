@@ -99,6 +99,7 @@ export default { ...SetupDialog, inheritAttrs: false, components: { Button, Icon
 				-->
 				<Button
 					embedded="dialog.maximize"
+					type="button"
 					class="so-dialog__maximize"
 					:rendered="maximizable"
 					@click="dialog.toggleMaximized()"
@@ -119,6 +120,7 @@ export default { ...SetupDialog, inheritAttrs: false, components: { Button, Icon
 				-->
 				<Button
 					embedded="dialog.close"
+					type="button"
 					class="so-dialog__close"
 					:rendered="closable"
 					@click="dialog.requestClose('button')"

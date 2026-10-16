@@ -105,6 +105,9 @@ export type TFieldAttributes = Omit<
  *
  * Атрибуты по умолчанию — `HTMLAttributes` корня; поля берут
  * `TFieldAttributes`: всё, кроме класса и стиля, у них уходит на `<input>`.
+ * Button берёт атрибуты кнопки (`ButtonHTMLAttributes`): его корень по
+ * умолчанию — `<button>`, и `type`, `form`, `name`, `value` доходят до неё —
+ * так деталь разметки библиотеки ставит себе `type="button"`.
  */
 export type UseDomProps<
 	TDescriptorFn extends (...args: any[]) => IComponentDescriptor,

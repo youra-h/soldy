@@ -114,6 +114,7 @@ export function Input(props: InputProps): JSX.Element {
 								<Show when={state.clearable}>
 									<Button
 										embedded="input.clear"
+										type="button"
 										class="so-input__clear"
 										size={state.size}
 										disabled={state.disabled}

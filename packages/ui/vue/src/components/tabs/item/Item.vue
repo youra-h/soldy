@@ -36,6 +36,7 @@ export default { ...SetupTabsItem, components: { Icon, Button } }
 		-->
 		<Button
 			embedded="tabs.row"
+			type="button"
 			:disabled="disabled"
 			:size="size"
 			:variant="variant"
@@ -76,6 +77,7 @@ export default { ...SetupTabsItem, components: { Icon, Button } }
 		-->
 		<Button
 			embedded="tabs.close"
+			type="button"
 			:rendered="!!tab_closable"
 			class="so-tabs-item__close"
 			:disabled="disabled"

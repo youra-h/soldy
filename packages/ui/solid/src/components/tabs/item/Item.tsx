@@ -91,6 +91,7 @@ export function TabsItem(props: TabsItemProps): JSX.Element {
 			<Dynamic {...root()} component={rootTag(state.tag)} ref={binding.ref}>
 				<Button
 					embedded="tabs.row"
+					type="button"
 					disabled={state.disabled}
 					size={state.size}
 					variant={state.variant}
@@ -104,6 +105,7 @@ export function TabsItem(props: TabsItemProps): JSX.Element {
 				<Show when={state.tab_closable === true}>
 					<Button
 						embedded="tabs.close"
+						type="button"
 						class="so-tabs-item__close"
 						disabled={state.disabled}
 						size={state.size}

@@ -18,9 +18,10 @@
  *   кнопка (слот `clear`) или встроенная, за ней — `trailing`, при любом
  *   порядке в разметке: свет раскладывается в порядке объявления слотов.
  * - Кнопка очистки — по `clearable`, как у Vue: деталь
- *   `<button is="so-button" embedded="input.clear">` с размером поля,
- *   выключена вместе с полем, `readonly` её не гасит — select-only Select и
- *   есть `readonly`, а очистка там работает. Внутри — иконка роли `close`,
+ *   `<button is="so-button" embedded="input.clear" type="button">` с размером
+ *   поля, выключена вместе с полем, `readonly` её не гасит — select-only
+ *   Select и есть `readonly`, а очистка там работает. `type="button"` — в
+ *   форме она не кнопка отправки. Внутри — иконка роли `close`,
  *   `<span is="so-icon" embedded="input.clear-icon">`. Имя ядро собирает с
  *   именем поля (`clearAria`), и на кнопку его кладёт шаблон верхним слоем,
  *   поверх того, что кнопка пишет себе сама. Очищает команда поля `clear` по
@@ -88,7 +89,7 @@ function clearOf(ctx: ITemplateContext<IInput>): TClearButton {
 	const button = createDetail(
 		ownerDocument,
 		'button',
-		{ is: 'so-button', embedded: 'input.clear' },
+		{ is: 'so-button', embedded: 'input.clear', attributes: { type: 'button' } },
 		isButton,
 	)
 	const icon = createDetail(

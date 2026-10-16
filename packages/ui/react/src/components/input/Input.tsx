@@ -90,6 +90,7 @@ export function Input(props: InputProps): ReactElement | null {
 						(clearable === true ? (
 							<Button
 								embedded="input.clear"
+								type="button"
 								className="so-input__clear"
 								size={size}
 								disabled={disabled}

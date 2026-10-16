@@ -75,6 +75,7 @@ export function AccordionItem(props: AccordionItemProps): ReactElement | null {
 		<Tag {...toRootProps(ref, state, [dataset, attrs], toRootForward(forwardProps))}>
 			<Button
 				embedded="accordion.header"
+				type="button"
 				className="so-accordion-item__header"
 				view={view}
 				disabled={disabled}

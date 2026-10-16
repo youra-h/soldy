@@ -107,6 +107,7 @@ export default { ...SetupTagsItem, components: { Icon, Button } }
 		-->
 		<Button
 			embedded="tags.close"
+			type="button"
 			:rendered="!!tag_closable"
 			class="so-tags-item__close"
 			:disabled="disabled"
