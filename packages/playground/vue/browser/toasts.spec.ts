@@ -16,7 +16,14 @@
  * Стопка (`layout: 'cascade'`) — тоже раскладка темы: передний у края, задние
  * уже и выглядывают на ступень, высота стопки — по переднему (`--so-toasts-front-height`
  * от поведения темы), фокус выводит тост вперёд без перестановки, колесо
- * листает стопку, а страница под ней не едет.
+ * листает стопку, а страница под ней не едет. Новый тост въезжает в стопку от
+ * края окна на свою высоту, а прежний передний тем же временем и той же
+ * кривой отходит на ступень, сразу за новым, и не схлопывается; переставленный
+ * колесом назад проявляется на своём месте, без въезда, а без движения новый
+ * только проявляется.
+ *
+ * Вариант тоста — цвет плашки и заголовка: что он доходит до экрана, видно
+ * только на вычисленном стиле.
  */
 
 import { describe, it, expect, beforeEach, afterEach, onTestFinished } from 'vitest'
@@ -29,7 +36,15 @@ import { Toasts } from '@soldy-ui/vue'
 
 import { setDir } from './directions'
 import { reducedMotion } from './media'
-import { settled, transitioning } from './transitions'
+import {
+	durationOf,
+	easingOf,
+	ownTransitionRuns,
+	settled,
+	transitionEvents,
+	transitionOf,
+	transitioning,
+} from './transitions'
 
 import '@soldy-ui/theme-oren'
 
@@ -321,6 +336,36 @@ describe('части тоста', () => {
 	})
 })
 
+describe('вариант', () => {
+	/** Заголовок тоста; нет его — тест падает здесь. */
+	const title = (item: HTMLElement): HTMLElement => {
+		const element = item.querySelector('.so-toasts-item__text')
+
+		if (!(element instanceof HTMLElement)) throw new Error('заголовка нет')
+
+		return element
+	}
+
+	it('цвет варианта доходит до экрана: плашка и заголовок — не нейтральные', async () => {
+		const { show, rest } = await mount()
+
+		await show('Сохранено', { text: 'Нет сети', variant: 'negative' })
+		await rest()
+
+		// Новый — первым
+		const [negative, neutral] = items()
+
+		if (!negative || !neutral) throw new Error('тостов меньше двух')
+
+		expect(getComputedStyle(card(negative)).backgroundColor).not.toBe(
+			getComputedStyle(card(neutral)).backgroundColor,
+		)
+		expect(getComputedStyle(title(negative)).color).not.toBe(
+			getComputedStyle(title(neutral)).color,
+		)
+	})
+})
+
 describe('появление и исчезание', () => {
 	it('новый тост въезжает: место растёт, тост проявляется', async () => {
 		const { engine } = await mount()
@@ -579,6 +624,122 @@ describe('стопка', () => {
 		expect(Math.abs(middle(back) - middle(front))).toBeLessThan(EPSILON)
 	})
 
+	/**
+	 * Второй тост въезжает в стопку: первый уже стоит, второй показан кодом.
+	 * Переход сдвига нового — въезд — встаёт на паузу в самом начале: так видно,
+	 * откуда тост въезжает.
+	 */
+	const arrive = async (props: Partial<IToastsProps> = {}) => {
+		const { show, engine } = await mount({ layout: 'cascade', ...props })
+
+		await show('Первый')
+		await still()
+
+		engine.extensions.toasts.show('Второй')
+		await nextTick()
+
+		const [arriving, previous] = take(2)
+
+		if (!arriving || !previous) throw new Error('тостов меньше двух')
+
+		const entry = transitionOf(arriving, 'translate')
+
+		entry.pause()
+		entry.currentTime = 0
+
+		return { arriving, previous, entry }
+	}
+
+	it('новый въезжает от края окна на свою высоту, прежний передний сразу за ним отходит тем же переходом', async () => {
+		const { arriving, previous, entry } = await arrive()
+
+		expect(transitioning(arriving)).toEqual(expect.arrayContaining(['translate', 'opacity']))
+		// Ниже своего места на свою высоту: верх — там, где встанет низ, у края окна
+		expect(card(arriving).getBoundingClientRect().top).toBeCloseTo(VIEWPORT.height - OFFSET, 0)
+		// Прежний передний — уже за новым, в том же кадре
+		expect(Number(getComputedStyle(previous).zIndex)).toBeLessThan(
+			Number(getComputedStyle(arriving).zIndex),
+		)
+
+		for (const property of ['translate', 'scale']) {
+			const step = transitionOf(previous, property)
+
+			expect(durationOf(step), property).toBe(durationOf(entry))
+			expect(easingOf(step), property).toBe(easingOf(entry))
+		}
+	})
+
+	it('у верхнего края новый въезжает сверху', async () => {
+		const { arriving } = await arrive({ placement: 'top' })
+
+		expect(card(arriving).getBoundingClientRect().bottom).toBeCloseTo(OFFSET, 0)
+	})
+
+	/**
+	 * Ушедший назад встаёт в высоту переднего из переменной поведения темы, а
+	 * не идёт к ней переходом от `auto`: под `contain: size` заднего `auto` —
+	 * ноль, и прежний передний схлопывался в полоску у края, пока новый
+	 * въезжал. Высота места — без сжатия (`offsetHeight`), каждым кадром.
+	 */
+	it('прежний передний не схлопывается: высота идёт от своей к высоте нового переднего', async () => {
+		const { show, engine } = await mount({ layout: 'cascade' })
+
+		await show({
+			text: 'Высокий',
+			description: 'Описание в несколько строк, чтобы тост стал заметно выше нового',
+		})
+		await still()
+
+		const [previous] = take(1)
+
+		if (!previous) throw new Error('тоста нет')
+
+		const own = previous.offsetHeight
+
+		engine.extensions.toasts.show('Низкий')
+		await nextTick()
+
+		const heights: number[] = []
+
+		do {
+			heights.push(previous.offsetHeight)
+			await nextFrame()
+		} while (items().some((item) => item.getAnimations().length > 0))
+
+		const [front] = take(1)
+
+		if (!front) throw new Error('тоста нет')
+
+		// Новый ниже прежнего — иначе проверять нечего
+		expect(front.offsetHeight).toBeLessThan(own)
+		expect(heights[0]).toBeCloseTo(own, 0)
+		expect(Math.min(...heights)).toBeGreaterThanOrEqual(front.offsetHeight - EPSILON)
+		expect(previous.offsetHeight).toBeCloseTo(front.offsetHeight, 0)
+	})
+
+	it('без движения новый только проявляется на месте, а прежний встаёт на ступень сразу', async () => {
+		await reducedMotion('reduce')
+
+		const { show, engine } = await mount({ layout: 'cascade' })
+
+		await show('Первый')
+		await still()
+
+		engine.extensions.toasts.show('Второй')
+		await nextTick()
+
+		const [arriving, previous] = take(2)
+
+		if (!arriving || !previous) throw new Error('тостов меньше двух')
+
+		expect(transitioning(arriving)).toEqual(['opacity'])
+		expect(transitioning(previous).filter((property) => property !== 'opacity')).toEqual([])
+		expect(card(arriving).getBoundingClientRect().bottom).toBeCloseTo(
+			VIEWPORT.height - OFFSET,
+			0,
+		)
+	})
+
 	it('RTL: стопка у своего края, задние — по середине переднего', async () => {
 		setDir(document.documentElement, 'rtl')
 
@@ -623,12 +784,20 @@ describe('стопка', () => {
 
 		if (!front || !next) throw new Error('тостов меньше двух')
 
+		const moved = ownTransitionRuns(front)
+
 		await userEvent.wheel(card(front), { delta: { y: 100 } })
 		await nextTick()
 
 		expect(texts()).toEqual(['Второй', 'Первый', 'Третий'])
 		expect(transitioning(next)).toEqual(expect.arrayContaining(['translate', 'scale']))
 		expect(window.scrollY).toBe(0)
+
+		// Ушедший назад — узел, вставленный заново: он проявляется на своём
+		// месте, а не въезжает от края, как новый
+		await transitionEvents()
+
+		expect(moved).toEqual(['opacity'])
 
 		await still()
 
