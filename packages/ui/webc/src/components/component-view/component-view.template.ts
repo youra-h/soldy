@@ -12,7 +12,7 @@ import type { IComponentView } from '@soldy-ui/core'
 import type { ITemplate } from '../../adapter'
 
 export const componentViewTemplate: ITemplate<IComponentView> = {
-	create: (root) => ({ default: { mode: 'append', node: root } }),
+	create: (root) => ({ slots: { default: { mode: 'append', node: root } } }),
 
 	bindings: [],
 }

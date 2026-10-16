@@ -701,7 +701,7 @@ describe('Frame · содержимое панели', () => {
 
 describe('Frame · слоты', () => {
 	it('шаблон объявляет ровно те слоты, что и дескриптор', () => {
-		const targets = frameTemplate.create(document.createElement('div'))
+		const targets = frameTemplate.create(document.createElement('div'), () => false).slots
 
 		expect(Object.keys(targets).sort()).toEqual(
 			FrameDescriptor()

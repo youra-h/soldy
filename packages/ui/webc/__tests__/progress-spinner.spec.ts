@@ -155,7 +155,10 @@ describe('первая отрисовка', () => {
 	})
 
 	it('шаблон объявляет ровно те слоты, что и дескриптор, — ни одного', () => {
-		const targets = progressSpinnerTemplate.create(document.createElement('span'))
+		const targets = progressSpinnerTemplate.create(
+			document.createElement('span'),
+			() => false,
+		).slots
 
 		expect(Object.keys(targets)).toEqual(
 			ProgressSpinnerDescriptor().slots.map((slot) => slot.name),

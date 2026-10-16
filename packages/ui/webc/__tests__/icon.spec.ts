@@ -321,7 +321,7 @@ describe('Icon · рисунок роли', () => {
 	})
 
 	it('шаблон объявляет ровно те слоты, что и дескриптор, — ни одного', () => {
-		const targets = iconTemplate.create(document.createElement('span'))
+		const targets = iconTemplate.create(document.createElement('span'), () => false).slots
 
 		expect(Object.keys(targets)).toEqual(IconDescriptor().slots.map((slot) => slot.name))
 		expect(Object.keys(targets)).toEqual([])
@@ -412,7 +412,7 @@ describe('база · свой атрибут элемента', () => {
 	const applied = { icon: 0, size: 0 }
 
 	const counting: ITemplate<IIcon> = {
-		create: () => ({}),
+		create: () => ({ slots: {} }),
 		bindings: [
 			bind('icon', () => {
 				applied.icon += 1

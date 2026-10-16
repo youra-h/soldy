@@ -4,6 +4,7 @@ export {
 	type ISoldyElement,
 	type ISoldyElementSpec,
 	type TNativeElementClass,
+	type TRootSet,
 	type TRootSpec,
 	type TRootTeleport,
 	type TSoldyElementClass,

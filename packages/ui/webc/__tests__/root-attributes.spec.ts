@@ -15,23 +15,37 @@
  * поверх него стиль-выход компонента (`fractionStyle` у ProgressSpinner).
  * Плагина раскладки у кольца нет, поэтому порядок слоёв проверяется на самой
  * раскладке стиля (`stylesOf`, `applyStyles`), как в React, Solid и Angular.
+ *
+ * У корня с полем (Input, CheckBox, Switch) статические атрибуты разметки база
+ * переносит на `<input>`, и там они так же главнее набора ядра, который на
+ * поле кладёт шаблон. Набор владельца на элементе шаблона и наборы самого
+ * элемента сходятся в одном раскладчике элемента (`TElementAttributes`):
+ * набор владельца главнее при любом порядке записи.
  */
 
 import { describe, it, expect, afterEach } from 'vitest'
 import { TButton } from '@soldy-ui/core'
 import {
 	TButtonElement,
+	TCheckBoxElement,
 	TComponentViewElement,
 	TIconElement,
+	TInputElement,
+	TLabelElement,
 	TProgressSpinnerElement,
 	TSkeletonElement,
+	TSwitchElement,
 	type TButtonElementProps,
+	type TCheckBoxElementProps,
 	type TComponentViewElementProps,
 	type TIconElementProps,
+	type TInputElementProps,
+	type TLabelElementProps,
 	type TProgressSpinnerElementProps,
 	type TSkeletonElementProps,
+	type TSwitchElementProps,
 } from '@soldy-ui/webc'
-import { applyStyles, stylesOf } from '../src/adapter/runtime/root-attributes'
+import { TElementAttributes, applyStyles, stylesOf } from '../src/adapter/runtime/root-attributes'
 
 /** Рендер коалесцируется в микротаске — ждём её перед проверкой. */
 const flush = () => new Promise<void>((resolve) => queueMicrotask(() => resolve()))
@@ -66,6 +80,22 @@ function isSkeleton(node: Element | null): node is TSkeletonElementProps {
 	return node instanceof TSkeletonElement
 }
 
+function isLabel(node: Element | null): node is TLabelElementProps {
+	return node instanceof TLabelElement
+}
+
+function isCheckBox(node: Element | null): node is TCheckBoxElementProps {
+	return node instanceof TCheckBoxElement
+}
+
+function isSwitch(node: Element | null): node is TSwitchElementProps {
+	return node instanceof TSwitchElement
+}
+
+function isInput(node: Element | null): node is TInputElementProps {
+	return node instanceof TInputElement
+}
+
 /** Элемент разметки, подключённый к документу; узел не того вида — тест падает здесь. */
 function mount<T extends HTMLElement>(html: string, guard: TElementGuard<T>): T {
 	const host = document.createElement('div')
@@ -80,16 +110,29 @@ function mount<T extends HTMLElement>(html: string, guard: TElementGuard<T>): T 
 	return node
 }
 
-/** Компонент, его тег с `is`, вид элемента и класс ядра на корне. */
+/**
+ * Компонент, его тег с `is`, вид элемента, класс ядра на корне и есть ли в
+ * корне поле — тогда атрибуты разметки уходят на `<input>`.
+ */
 const COMPONENTS: ReadonlyArray<
-	readonly [string, string, string, TElementGuard<HTMLElement>, string]
+	readonly [string, string, string, TElementGuard<HTMLElement>, string, boolean]
 > = [
-	['Button', 'button', 'so-button', isButton, 'so-button'],
-	['ComponentView', 'div', 'so-component-view', isView, 'so-component-view'],
-	['Icon', 'span', 'so-icon', isIcon, 'so-icon'],
-	['ProgressSpinner', 'span', 'so-progress-spinner', isSpinner, 'so-progress-spinner'],
-	['Skeleton', 'div', 'so-skeleton', isSkeleton, 'so-skeleton'],
+	['Button', 'button', 'so-button', isButton, 'so-button', false],
+	['ComponentView', 'div', 'so-component-view', isView, 'so-component-view', false],
+	['Icon', 'span', 'so-icon', isIcon, 'so-icon', false],
+	['ProgressSpinner', 'span', 'so-progress-spinner', isSpinner, 'so-progress-spinner', false],
+	['Skeleton', 'div', 'so-skeleton', isSkeleton, 'so-skeleton', false],
+	['Label', 'label', 'so-label', isLabel, 'so-label', false],
+	['CheckBox', 'span', 'so-check-box', isCheckBox, 'so-check-box', true],
+	['Switch', 'span', 'so-switch', isSwitch, 'so-switch', true],
+	['Input', 'div', 'so-input', isInput, 'so-input', true],
 ]
+
+/** Корни без поля: атрибуты разметки стоят на них самих. */
+const ROOTS = COMPONENTS.filter(([, , , , , field]) => !field)
+
+/** Корни с полем: атрибуты разметки, кроме класса, стиля и входов, — на поле. */
+const FIELDS = COMPONENTS.filter(([, , , , , field]) => field)
 
 /** Разметка пробы: `direction` ядра против `dir` потребителя и класс потребителя. */
 const probe = (tag: string, is: string) =>
@@ -97,9 +140,30 @@ const probe = (tag: string, is: string) =>
 
 describe('атрибут потребителя перекрывает набор ядра', () => {
 	/** `dir` ядро пишет в `attrs` по `direction`, а `dir` на элементе — атрибут потребителя. */
-	it.each(COMPONENTS)('%s: dir потребителя — поверх dir ядра', (_name, tag, is, guard) => {
+	it.each(ROOTS)('%s: dir потребителя — поверх dir ядра', (_name, tag, is, guard) => {
 		expect(mount(probe(tag, is), guard).getAttribute('dir')).toBe('ltr')
 	})
+
+	/**
+	 * У корня с полем `dir` разметки — атрибут потребителя, и он уходит на поле;
+	 * на корне — `dir` ядра. Имя поля потребителя главнее имени из набора,
+	 * который на поле кладёт шаблон.
+	 */
+	it.each(FIELDS)(
+		'%s: атрибуты разметки — на поле, поверх его набора; dir ядра — на корне',
+		(_name, tag, is, guard) => {
+			const el = mount(
+				`<${tag} is="${is}" direction="rtl" dir="ltr" aria-label="Своё" aria_label="Ядра"></${tag}>`,
+				guard,
+			)
+			const field = el.querySelector('input')
+
+			expect(el.getAttribute('dir')).toBe('rtl')
+			expect(el.hasAttribute('aria-label')).toBe(false)
+			expect(field?.getAttribute('dir')).toBe('ltr')
+			expect(field?.getAttribute('aria-label')).toBe('Своё')
+		},
+	)
 
 	it.each(COMPONENTS)(
 		'%s: класс потребителя — рядом с классами ядра',
@@ -110,6 +174,89 @@ describe('атрибут потребителя перекрывает набо�
 			expect(el.classList.contains(own)).toBe(true)
 		},
 	)
+})
+
+/**
+ * На элемент пишут двое, когда он корень вложенного компонента: база — свои
+ * наборы ядра, разметка владельца — свой набор. Раскладчик один на элемент, и
+ * набор владельца главнее при любом порядке записи: две памяти отдали бы
+ * общее имя тому, кто записал первым.
+ */
+describe('раскладчик элемента', () => {
+	/** Атрибуты-входы пропов элемента: их называет база вместе со своими наборами. */
+	const INPUTS: ReadonlySet<string> = new Set(['disabled'])
+
+	it('набор владельца — поверх наборов элемента, когда владелец пишет первым', () => {
+		const node = document.createElement('div')
+		const layout = TElementAttributes.of(node)
+
+		layout.set('owner', { role: 'tab', tabindex: '-1' })
+		layout.set('aria', { role: 'button', tabindex: '0', 'aria-pressed': 'false' }, INPUTS)
+
+		expect(node.getAttribute('role')).toBe('tab')
+		expect(node.getAttribute('tabindex')).toBe('-1')
+		expect(node.getAttribute('aria-pressed')).toBe('false')
+	})
+
+	it('набор владельца — поверх наборов элемента, когда владелец пишет вторым', () => {
+		const node = document.createElement('div')
+		const layout = TElementAttributes.of(node)
+
+		layout.set('aria', { role: 'button', tabindex: '0' }, INPUTS)
+		layout.set('owner', { role: 'tab', tabindex: '-1' })
+
+		expect(node.getAttribute('role')).toBe('tab')
+		expect(node.getAttribute('tabindex')).toBe('-1')
+	})
+
+	it('раскладчик у элемента один: владелец снял имя — на элементе снова значение элемента', () => {
+		const node = document.createElement('div')
+
+		TElementAttributes.of(node).set('aria', { role: 'button' }, INPUTS)
+		TElementAttributes.of(node).set('owner', { role: 'tab' })
+		TElementAttributes.of(node).set('owner', { role: null })
+
+		expect(node.getAttribute('role')).toBe('button')
+
+		TElementAttributes.of(node).set('aria', {}, INPUTS)
+
+		expect(node.hasAttribute('role')).toBe(false)
+	})
+
+	/** Чужое значение на узле — атрибут потребителя: он главнее обоих слоёв. */
+	it('атрибут потребителя главнее и набора владельца', () => {
+		const node = document.createElement('div')
+		const layout = TElementAttributes.of(node)
+
+		node.setAttribute('aria-label', 'Своё')
+		layout.set('aria', { 'aria-label': 'Элемента' }, INPUTS)
+		layout.set('owner', { 'aria-label': 'Владельца' })
+
+		expect(node.getAttribute('aria-label')).toBe('Своё')
+	})
+
+	/**
+	 * Вход пропа элемент ведёт по своему набору, чей бы атрибут ни был. Набор
+	 * владельца входов не называет: перекрытое им имя — обычный атрибут.
+	 */
+	it('вход пропа — только в наборах элемента', () => {
+		const node = document.createElement('div')
+		const layout = TElementAttributes.of(node)
+
+		node.setAttribute('disabled', '')
+		layout.set('attrs', { disabled: 'disabled' }, INPUTS)
+
+		expect(node.getAttribute('disabled')).toBe('disabled')
+
+		layout.set('attrs', { disabled: null }, INPUTS)
+
+		expect(node.hasAttribute('disabled')).toBe(false)
+
+		node.setAttribute('disabled', '')
+		layout.set('owner', { disabled: 'owner' })
+
+		expect(node.getAttribute('disabled')).toBe('')
+	})
 })
 
 describe('корень связан с TElementPlugin', () => {

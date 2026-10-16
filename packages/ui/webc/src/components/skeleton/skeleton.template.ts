@@ -34,7 +34,7 @@ export const skeletonTemplate: ITemplate<ISkeleton> = {
 		placeholder.setAttribute('aria-hidden', 'true')
 		placeholders.set(root, placeholder)
 
-		return { default: { mode: 'append', node: root } }
+		return { slots: { default: { mode: 'append', node: root } } }
 	},
 
 	bindings: [

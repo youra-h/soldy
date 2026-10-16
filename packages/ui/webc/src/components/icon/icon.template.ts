@@ -45,7 +45,7 @@ function pictureOf(root: HTMLElement, role: string): SVGSVGElement {
 
 export const iconTemplate: ITemplate<IIcon> = {
 	// Слотов нет: написанное внутри элемента не выводится
-	create: () => ({}),
+	create: () => ({ slots: {} }),
 
 	bindings: [
 		bind('icon', ({ root }) => {
