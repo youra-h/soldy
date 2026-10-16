@@ -103,6 +103,10 @@ const NAMED: Record<string, Record<string, (locale: TLocale) => string>> = {
 		clearAria: ({ translations }) => formatName(translations.field.clear, ''),
 	},
 	TableDescriptor: { names_selectAll: ({ translations }) => translations.table.selectAll },
+	// Кнопка сортировки в заголовке: подпись колонки по умолчанию сборки пустая
+	TableColumnDescriptor: {
+		sortAria: ({ translations }) => formatName(translations.table.sort, ''),
+	},
 	CalendarDescriptor: {
 		prevAria: ({ translations }) => translations.calendar.prevMonth,
 		nextAria: ({ translations }) => translations.calendar.nextMonth,

@@ -185,21 +185,28 @@ describe('коллекции', () => {
 		expect(row.aria.has('id')).toBe(false)
 	})
 
-	it('Table.Column: заголовок и поле ручки названы обёрткой содержимого', () => {
-		const column = new TTableColumn({ field: 'name', text: 'Имя', resizable: true })
+	it('Table.Column: заголовок и поле ручки названы подписью; кнопку сортировки плагин не трогает', () => {
+		const column = new TTableColumn({
+			field: 'name',
+			text: 'Имя',
+			resizable: true,
+			sortable: true,
+		})
 
 		new TPluginBundle(column, 'm1').use(TTableColumnIdsPlugin)
 
-		expect(column.contentAria.toObject()).toEqual({ id: 'm1-content' })
-		expect(column.aria.get('aria-labelledby')).toBe('m1-content')
-		expect(column.resizerAria.toObject()).toEqual({ 'aria-labelledby': 'm1-content' })
+		expect(column.textAria.toObject()).toEqual({ id: 'm1-text' })
+		expect(column.aria.get('aria-labelledby')).toBe('m1-text')
+		expect(column.resizerAria.toObject()).toEqual({ 'aria-labelledby': 'm1-text' })
+		// Имя кнопке — от локали, а не ссылкой на подпись: см. плагин имён
+		expect(column.sortAria.toObject()).toEqual({})
 
 		// Колонку таблица рисует с готовым экземпляром: новое монтирование — свой id
 		new TPluginBundle(column, 'm2').use(TTableColumnIdsPlugin)
 
-		expect(column.contentAria.get('id')).toBe('m2-content')
-		expect(column.aria.get('aria-labelledby')).toBe('m2-content')
-		expect(column.resizerAria.get('aria-labelledby')).toBe('m2-content')
+		expect(column.textAria.get('id')).toBe('m2-text')
+		expect(column.aria.get('aria-labelledby')).toBe('m2-text')
+		expect(column.resizerAria.get('aria-labelledby')).toBe('m2-text')
 		expect(column.aria.has('id')).toBe(false)
 	})
 

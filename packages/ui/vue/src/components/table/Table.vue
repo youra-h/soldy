@@ -1,12 +1,10 @@
 <script lang="ts">
-import { Button } from '../button'
 import { CheckBox } from '../check-box'
-import { Icon } from '../icon'
 import { TableColumn } from './column'
 import { TableRow } from './row'
 import SetupTable from './setup.component'
 
-export default { ...SetupTable, components: { Button, CheckBox, Icon, TableColumn, TableRow } }
+export default { ...SetupTable, components: { CheckBox, TableColumn, TableRow } }
 </script>
 
 <template>
@@ -82,72 +80,23 @@ export default { ...SetupTable, components: { Button, CheckBox, Icon, TableColum
 
 					<!--
 						Заголовок колонки — Table.Column над экземпляром колонки, по одному на
-						показанную колонку, ключ — колонка. Его содержимое — одно из двух,
-						по `sortable` колонки; текст — слот `header` со scope слота колонки
-						(`text`, `sortable`) и самой колонкой (`column`), колонку выбирают
-						условием по `column.field`. Без него — текст колонки.
+						показанную колонку, ключ — колонка. Подпись и кнопку сортировки рядом
+						с ней рисует сама колонка: кнопка — её, нажатие — её просьба, которую
+						выполняет коллекция. Таблица отдаёт колонке только подпись — слот
+						`header` со scope слота колонки (`text`, `sortable`) и самой колонкой
+						(`column`), колонку выбирают условием по `column.field`. Без него —
+						текст колонки. Свой контрол в подписи — кнопка, триггер Popover — и
+						есть своё действие по заголовку: нажатие по ячейке не сортирует.
 					-->
 					<TableColumn v-for="column in shownColumns" :key="column.uid" :ctrl="column">
 						<template #default="{ text, sortable }">
-							<!--
-								Сортируемая колонка — кнопка в заголовке, как в APG Sortable
-								Table: Button (`embedded: 'table.sort'`), нажатие — команда
-								коллекции `toggleSort(field)`. Вида разметка ей не передаёт:
-								красит её тема по контексту (`:where(.so-table-column__sort)`).
-								Выключена вместе с таблицей: сортировать её строки нельзя.
-								Текст — внутри кнопки: её имя — текст заголовка.
-
-								Отметка направления — в слоте кнопки `trailing`, после текста:
-								иконка роли `arrowUpward`. Обёртка отметки скрыта от
-								скринридера: направление он объявляет по `aria-sort`
-								заголовка. Отметка стоит и у неотсортированной колонки,
-								невидимой: держит место, и текст не сдвигается, когда колонку
-								отсортируют. Вниз стрелку поворачивает тема, номер приоритета
-								при сортировке по нескольким колонкам дописывает тоже она — у
-								обёртки отметки.
-							-->
-							<Button
-								v-if="sortable"
-								embedded="table.sort"
-								type="button"
-								class="so-table-column__sort"
-								:size="size"
-								:disabled="disabled"
-								@action:press="facade.toggleSort(column.field)"
+							<slot
+								name="header"
+								:column="column"
+								:text="text"
+								:sortable="sortable"
+								>{{ text }}</slot
 							>
-								<slot
-									name="header"
-									:column="column"
-									:text="text"
-									:sortable="sortable"
-									>{{ text }}</slot
-								>
-
-								<template #trailing>
-									<span class="so-table-column__sort-icon" aria-hidden="true">
-										<Icon
-											embedded="table.sort-icon"
-											:tag="sortIconTag"
-											:size="size"
-										/>
-									</span>
-								</template>
-							</Button>
-
-							<!--
-								Несортируемая колонка — только текст заголовка. Обёртка — для
-								темы: выключенная таблица гасит текст, а кнопку гасит сама
-								кнопка.
-							-->
-							<span v-else class="so-table-column__text">
-								<slot
-									name="header"
-									:column="column"
-									:text="text"
-									:sortable="sortable"
-									>{{ text }}</slot
-								>
-							</span>
 						</template>
 					</TableColumn>
 				</tr>

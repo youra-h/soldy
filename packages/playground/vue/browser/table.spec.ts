@@ -1,6 +1,7 @@
 /**
- * Table в настоящем браузере: раскладка колонок, линии строк, ручка ширины и
- * выбранная строка в принудительных цветах — тема.
+ * Table в настоящем браузере: раскладка колонок, шапка — подпись и кнопка
+ * сортировки рядом с ней, — линии строк, ручка ширины и выбранная строка в
+ * принудительных цветах — тема.
  *
  * Колонки, ячейки, сортировку, выбор и ширины колонок по месту считает ядро
  * (`core/__tests__/table*.spec.ts`), разметку — адаптер
@@ -34,7 +35,7 @@ import type {
 import { useMotion } from '@soldy-ui/plugins'
 import { Button, Table } from '@soldy-ui/vue'
 
-import { find, opacity, pixel, settled, shift, style, systemColor } from './colors'
+import { find, opacity, outlined, pixel, settled, shift, style, systemColor } from './colors'
 import { forcedColors } from './media'
 import { transitionRuns, transitioning } from './transitions'
 
@@ -42,6 +43,9 @@ import '@soldy-ui/theme-oren'
 
 /** Допуск на субпиксельное округление, px. */
 const EPSILON = 1
+
+/** Сторона зоны нажатия кнопки сортировки — минимум цели указателя по WCAG 2.5.8, px. */
+const ZONE = 24
 
 const RECORDS = [
 	{ id: 1, name: 'Анна Смирнова', city: 'Казань', age: 30 },
@@ -395,11 +399,16 @@ describe('раскладка колонок', () => {
 	})
 })
 
+/**
+ * Подпись — у всех колонок, и у сортируемой она тоже текст ячейки шапки, а не
+ * текст кнопки: кнопка сортировки стоит рядом с подписью и подпись не
+ * сдвигает.
+ */
 describe('подпись шапки вровень с текстом ячеек', () => {
-	it('колонка по началу: подпись кнопки сортировки — над началом текста ячеек', async () => {
+	it('сортируемая колонка по началу: подпись — над началом текста ячеек', async () => {
 		await mount(engineOf())
 
-		const header = find('.so-table-column__sort .so-button__text', headers()[0])
+		const header = find('.so-table-column__text', headers()[0])
 		const cell = rows()[0].querySelector('th')
 
 		if (!cell) throw new Error('заголовка строки нет')
@@ -407,16 +416,16 @@ describe('подпись шапки вровень с текстом ячеек'
 		expect(Math.abs(textBox(header).left - textBox(cell).left)).toBeLessThanOrEqual(EPSILON)
 	})
 
-	it('колонка по концу: подпись — над концом чисел', async () => {
+	it('сортируемая колонка по концу: подпись — над концом чисел, кнопка её не сдвигает', async () => {
 		await mount(engineOf())
 
-		const header = find('.so-table-column__sort .so-button__text', headers()[2])
+		const header = find('.so-table-column__text', headers()[2])
 		const cell = rows()[0].children[3]
 
 		expect(Math.abs(textBox(header).right - textBox(cell).right)).toBeLessThanOrEqual(EPSILON)
 	})
 
-	it('несортируемая колонка: текст заголовка — над текстом ячеек', async () => {
+	it('несортируемая колонка: подпись — над текстом ячеек', async () => {
 		await mount(engineOf())
 
 		const header = find('.so-table-column__text', headers()[1])
@@ -427,26 +436,37 @@ describe('подпись шапки вровень с текстом ячеек'
 })
 
 /**
- * Заголовок, с которым что-то делают, читается ячейкой: под указателем он
- * подсвечен прямоугольником от линии до линии, и видно, где колонка
- * кончается, — а у её границы ручка ширины. Верхние углы заголовка мягче —
- * вполовину скругления кнопки, нижние прямые. Кнопка сортировки — во всю
- * ячейку, с углами заголовка, а стрелка стоит сразу за подписью, как в
- * ClickUp, а не у другого края кнопки.
+ * Шапка колонки — подпись и маленькая кнопка сортировки рядом с ней.
+ * Сортирует кнопка, а нажатие по ячейке ничего не делает: свой контрол
+ * потребитель ставит в подпись. Кнопка — квадрат вокруг стрелки в кегль
+ * заголовка, сразу за подписью (у колонки по концу — перед ней), с зоной
+ * нажатия не меньше 24 px и кольцом фокуса вокруг себя. Стрелка
+ * неотсортированной колонки на покое невидима и проступает вполсилы, когда
+ * к заголовку тянутся. Заголовок, с которым что-то делают целиком, — с
+ * ручкой ширины или перестановкой, — подсвечен прямоугольником от линии до
+ * линии, и видно, где колонка кончается; сортируемый — нет. Верхние углы
+ * заголовка мягче — вполовину скругления кнопки, нижние прямые.
  */
-describe('заголовок колонки — ячейкой', () => {
-	/** Сколько от подписи до стрелки при любом выравнивании: зазор флекса кнопки, не больше. */
+describe('заголовок колонки', () => {
+	/** Сколько от подписи до стрелки при любом выравнивании: зазор ряда и поле кнопки, не больше. */
 	const GAP = 8
 
-	/** Подпись и стрелка кнопки сортировки в заголовке. */
+	/** Подпись, кнопка сортировки и её стрелка в заголовке. */
 	function sortParts(header: Element) {
 		const button = find('.so-table-column__sort', header)
 
 		return {
 			button,
-			text: textBox(find('.so-button__text', button)),
+			text: textBox(find('.so-table-column__text', header)),
 			icon: find('.so-table-column__sort-icon', button).getBoundingClientRect(),
 		}
+	}
+
+	/** Непрозрачность стрелки кнопки сортировки в заголовке — переход доиграл. */
+	async function arrowOf(header: Element): Promise<number> {
+		await settled(header)
+
+		return parseFloat(style(find('.so-table-column__sort-icon', header)).opacity)
 	}
 
 	/** Фон заголовка без указателя на нём — и с указателем посередине. */
@@ -478,53 +498,48 @@ describe('заголовок колонки — ячейкой', () => {
 		await new Promise((resolve) => requestAnimationFrame(resolve))
 	}
 
-	it('кнопка сортировки — во всю ячейку заголовка', async () => {
-		await mount(engineOf())
+	/** Середина узла. */
+	function middleOf(element: Element): { x: number; y: number } {
+		const box = element.getBoundingClientRect()
 
-		for (const index of [0, 2]) {
-			const header = headers()[index]
-			const box = header.getBoundingClientRect()
-			const { button } = sortParts(header)
-			const own = button.getBoundingClientRect()
+		return { x: box.left + box.width / 2, y: box.top + box.height / 2 }
+	}
 
-			expect(Math.abs(own.left - box.left)).toBeLessThanOrEqual(EPSILON)
-			expect(Math.abs(own.right - box.right)).toBeLessThanOrEqual(EPSILON)
-			expect(Math.abs(own.top - box.top)).toBeLessThanOrEqual(EPSILON)
-			expect(Math.abs(own.bottom - box.bottom)).toBeLessThanOrEqual(EPSILON)
-		}
+	it('кнопка — квадрат вокруг стрелки в кегль заголовка; номер приоритета её расширяет', async () => {
+		const engine = engineOf()
+
+		await mount(engine)
+
+		const [name, , age] = headers()
+		const { button, icon } = sortParts(name)
+		const own = button.getBoundingClientRect()
+		const size = parseFloat(style(name).fontSize)
+
+		// Стрелка — в кегль заголовка и его цветом, кнопка — квадрат с полем
+		// вокруг неё
+		expect(style(button).color).toBe(style(name).color)
+		expect(Math.abs(icon.width - size)).toBeLessThanOrEqual(EPSILON)
+		expect(Math.abs(icon.height - size)).toBeLessThanOrEqual(EPSILON)
+		expect(Math.abs(own.width - own.height)).toBeLessThanOrEqual(EPSILON)
+		expect(own.width).toBeGreaterThan(icon.width)
+		expect(own.width - icon.width).toBeLessThanOrEqual(GAP)
+		// Кнопка меньше строки шапки и не раздвигает её
+		expect(own.height).toBeLessThan(name.getBoundingClientRect().height)
+
+		engine.extensions.sort.sortMode = 'multiple'
+		engine.extensions.sort.sort = [
+			{ field: 'name', direction: 'asc' },
+			{ field: 'age', direction: 'desc' },
+		]
+
+		// Номер приоритета — у обеих отсортированных, кнопка шире квадрата
+		await expect
+			.poll(() => find('.so-table-column__sort', age).getBoundingClientRect().width)
+			.toBeGreaterThan(own.width + EPSILON)
+		expect(find('.so-table-column__sort', name).getBoundingClientRect().height).toBe(own.height)
 	})
 
-	it('верхние углы заголовка и кнопки — вполовину скругления кнопки, нижние прямые', async () => {
-		render(
-			defineComponent({
-				render: () =>
-					h('div', { style: 'width: 600px' }, [
-						h(Table, { engine: engineOf(), aria_label: 'Сотрудники' }),
-						h(Button, { class: 'so-test-button', text: 'Кнопка' }),
-					]),
-			}),
-		)
-		await new Promise((resolve) => requestAnimationFrame(resolve))
-
-		const header = headers()[0]
-		const { button } = sortParts(header)
-		const half = parseFloat(style(find('.so-test-button')).borderTopLeftRadius) / 2
-
-		expect(half).toBeGreaterThan(0)
-
-		for (const corner of [header, button]) {
-			expect(parseFloat(style(corner).borderTopLeftRadius)).toBe(half)
-			expect(parseFloat(style(corner).borderTopRightRadius)).toBe(half)
-			expect(style(corner).borderBottomLeftRadius).toBe('0px')
-			expect(style(corner).borderBottomRightRadius).toBe('0px')
-		}
-	})
-
-	/**
-	 * Отметка стоит и у неотсортированной колонки — невидимой, держа место, —
-	 * поэтому её место видно без сортировки.
-	 */
-	it('стрелка — сразу за подписью, у колонки по концу — перед ней', async () => {
+	it('кнопка — сразу за подписью, у колонки по концу — перед ней', async () => {
 		await mount(engineOf())
 
 		const start = sortParts(headers()[0])
@@ -538,60 +553,204 @@ describe('заголовок колонки — ячейкой', () => {
 		expect(end.text.left - end.icon.right).toBeLessThanOrEqual(GAP)
 	})
 
-	it('кольцо фокуса кнопки — внутри ячейки', async () => {
+	/**
+	 * Кнопка мельче минимума цели указателя, и зона нажатия — невидимый
+	 * квадрат по её центру: нажатие в нём — нажатие по кнопке. На подпись
+	 * зона не заходит — свой контрол потребителя в подписи нажимается весь.
+	 */
+	it('зона нажатия кнопки — не меньше 24 px и на подпись не заходит', async () => {
 		await mount(engineOf())
 
-		const { button } = sortParts(headers()[0])
+		const header = headers()[0]
+		const { button, text } = sortParts(header)
+		const caption = find('.so-table-column__text', header)
+		const { x, y } = middleOf(button)
+		const reach = ZONE / 2 - 0.5
 
-		button.focus({ focusVisible: true })
+		expect(button.getBoundingClientRect().width).toBeLessThan(ZONE)
 
-		expect(parseFloat(style(button).outlineOffset)).toBeLessThan(0)
+		for (const [dx, dy] of [
+			[-reach, 0],
+			[reach, 0],
+			[0, -reach],
+			[0, reach],
+		]) {
+			expect(button.contains(document.elementFromPoint(x + dx, y + dy)), `${dx}, ${dy}`).toBe(
+				true,
+			)
+		}
+
+		expect(caption.contains(document.elementFromPoint(text.right - 1, y))).toBe(true)
 	})
 
-	it('сортируемый заголовок под указателем подсвечен; заголовок без действий — нет', async () => {
+	it('кольцо фокуса — вокруг кнопки, внутри заголовка', async () => {
+		await mount(engineOf())
+
+		const header = headers()[0]
+		const { button } = sortParts(header)
+
+		button.focus({ focusVisible: true })
+		await settled(button)
+
+		const ring = style(button)
+		const reach = parseFloat(ring.outlineOffset) + parseFloat(ring.outlineWidth)
+		const own = button.getBoundingClientRect()
+		const cell = header.getBoundingClientRect()
+
+		expect(outlined(button)).toBe(true)
+		expect(parseFloat(ring.outlineOffset)).toBeGreaterThanOrEqual(0)
+		expect(own.left - reach).toBeGreaterThanOrEqual(cell.left)
+		expect(own.right + reach).toBeLessThanOrEqual(cell.right)
+		expect(own.top - reach).toBeGreaterThanOrEqual(cell.top)
+		expect(own.bottom + reach).toBeLessThanOrEqual(cell.bottom)
+	})
+
+	it('стрелка неотсортированной колонки: на покое невидима, вполсилы — при наведении на заголовок и фокусе кнопки', async () => {
+		const engine = engineOf()
+
+		await mountAway(engine)
+
+		const [name, , age] = headers()
+		const caption = find('.so-table-column__text', name)
+
+		expect(matchMedia('(hover: hover)').matches).toBe(true)
+		expect(await arrowOf(name)).toBe(0)
+
+		// Указатель на подписи, а не на кнопке: тянутся к заголовку
+		await userEvent.hover(caption)
+
+		expect(await arrowOf(name)).toBe(0.5)
+
+		await userEvent.hover(find('.so-test-away'))
+
+		expect(await arrowOf(name)).toBe(0)
+
+		find('.so-table-column__sort', name).focus({ focusVisible: true })
+
+		expect(await arrowOf(name)).toBe(0.5)
+
+		// Отсортированная — целиком
+		engine.extensions.sort.sort = [{ field: 'age', direction: 'asc' }]
+
+		await expect.poll(() => age.dataset.sort).toBe('asc')
+		expect(await arrowOf(age)).toBe(1)
+	})
+
+	it('у выключенной таблицы стрелка неотсортированной колонки не проступает', async () => {
+		await mountAway(engineOf(), true)
+
+		const [name] = headers()
+
+		await userEvent.hover(find('.so-table-column__text', name))
+
+		expect(await arrowOf(name)).toBe(0)
+	})
+
+	it('верхние углы заголовка — вполовину скругления кнопки, нижние прямые', async () => {
+		render(
+			defineComponent({
+				render: () =>
+					h('div', { style: 'width: 600px' }, [
+						h(Table, { engine: engineOf(), aria_label: 'Сотрудники' }),
+						h(Button, { class: 'so-test-button', text: 'Кнопка' }),
+					]),
+			}),
+		)
+		await new Promise((resolve) => requestAnimationFrame(resolve))
+
+		const header = headers()[0]
+		const half = parseFloat(style(find('.so-test-button')).borderTopLeftRadius) / 2
+
+		expect(half).toBeGreaterThan(0)
+		expect(parseFloat(style(header).borderTopLeftRadius)).toBe(half)
+		expect(parseFloat(style(header).borderTopRightRadius)).toBe(half)
+		expect(style(header).borderBottomLeftRadius).toBe('0px')
+		expect(style(header).borderBottomRightRadius).toBe('0px')
+	})
+
+	/**
+	 * Сортирует кнопка, а не ячейка: подсветка ячейки обещала бы отклик,
+	 * которого не будет. Кнопка своё наведение и нажатие показывает сама.
+	 */
+	it('сортируемый заголовок под указателем не подсвечен, и нажатие кнопки его не подсвечивает', async () => {
 		await mountAway(engineOf())
 
 		const [name, city] = headers()
 		const sortable = await hoverBackground(name)
 
 		expect(opacity(sortable.idle)).toBe(0)
-		expect(opacity(sortable.hover)).toBeGreaterThan(0)
+		expect(opacity(sortable.hover)).toBe(0)
+		expect(opacity((await hoverBackground(city)).hover)).toBe(0)
 
-		const plain = await hoverBackground(city)
+		const button = find('.so-table-column__sort', name)
+		const { x, y } = middleOf(button)
 
-		expect(opacity(plain.hover)).toBe(0)
+		await pointAt(x, y)
+		await commands.mouseDown()
+
+		try {
+			await settled(name)
+
+			expect(opacity(style(name).backgroundColor)).toBe(0)
+			// Нажатую кнопку видно по её собственной вуали
+			expect(opacity(style(button).backgroundColor)).toBeGreaterThan(0)
+		} finally {
+			await commands.mouseUp()
+		}
+
+		await expect.poll(() => name.dataset.sort).toBe('asc')
 	})
 
-	it('заголовок с одной ручкой ширины подсвечен так же, как сортируемый', async () => {
-		const columns = [NAME, CITY].map((column) => ({ ...column, resizable: true, width: 160 }))
-
-		await mountAway(engineOf(columns))
-
-		const [name, city] = headers()
-		const sortable = await hoverBackground(name)
-		const resizable = await hoverBackground(city)
-
-		expect(opacity(resizable.hover)).toBeGreaterThan(0)
-		expect(pixel([resizable.hover])).toEqual(pixel([sortable.hover]))
-	})
-
-	it('заголовок, который можно только перетащить, подсвечен так же', async () => {
-		await mountAway(engineOf([NAME, { ...CITY, reorderable: true }]))
+	it('заголовок с ручкой ширины и тот, что можно перетащить, подсвечены одинаково', async () => {
+		await mountAway(
+			engineOf([
+				{ ...NAME, resizable: true, width: 160 },
+				{ ...CITY, reorderable: true },
+			]),
+		)
 
 		const [name, city] = headers()
-		const sortable = await hoverBackground(name)
+		const resizable = await hoverBackground(name)
 		const reorderable = await hoverBackground(city)
 
-		expect(opacity(reorderable.hover)).toBeGreaterThan(0)
-		expect(pixel([reorderable.hover])).toEqual(pixel([sortable.hover]))
+		expect(opacity(resizable.idle)).toBe(0)
+		expect(opacity(resizable.hover)).toBeGreaterThan(0)
+		expect(pixel([reorderable.hover])).toEqual(pixel([resizable.hover]))
 	})
 
 	it('у выключенной таблицы подсветки нет', async () => {
-		await mountAway(engineOf(), true)
+		await mountAway(engineOf([NAME, { ...CITY, reorderable: true }]), true)
 
-		const { hover } = await hoverBackground(headers()[0])
+		const { hover } = await hoverBackground(headers()[1])
 
 		expect(opacity(hover)).toBe(0)
+	})
+
+	/**
+	 * Стрелку кнопка рисует цветом своего текста — цветом заголовка. В режиме
+	 * принудительных цветов его заменяет браузер, и стрелка остаётся видна;
+	 * кольцо фокуса — системного цвета фокуса, как у любой кнопки.
+	 */
+	it('принудительные цвета: стрелка — цветом текста кнопки, кольцо фокуса — системным цветом фокуса', async () => {
+		const engine = engineOf()
+
+		engine.extensions.sort.sort = [{ field: 'name', direction: 'asc' }]
+		await mount(engine)
+		await forcedColors('active')
+
+		const button = find('.so-table-column__sort', headers()[0])
+		const arrow = button.querySelector('.so-table-column__sort-icon svg')
+
+		if (!arrow) throw new Error('стрелки нет')
+
+		expect(opacity(style(button).color)).toBe(1)
+		expect(pixel([style(arrow).fill])).toEqual(pixel([style(button).color]))
+		expect(await arrowOf(headers()[0])).toBe(1)
+
+		button.focus({ focusVisible: true })
+		await settled(button)
+
+		expect(pixel([style(button).outlineColor])).toEqual(pixel([systemColor('Highlight')]))
 	})
 })
 
@@ -1399,13 +1558,18 @@ describe('перестановка колонок', () => {
 		expect(Number(style(head).zIndex)).toBeGreaterThan(Number(style(field).zIndex))
 	})
 
-	it('протяжка кнопку сортировки не нажимает, нажатие без протяжки — сортирует', async () => {
+	/**
+	 * Протяжку, начатую на кнопке сортировки, берёт перестановка: жест
+	 * захватывает указатель на корне, и `click` отпускания до кнопки не
+	 * доходит. Нажатие без протяжки остаётся нажатием кнопки.
+	 */
+	it('протяжка, начатая с кнопки сортировки, не сортирует; нажатие без протяжки — сортирует', async () => {
 		const engine = moveEngine()
 
 		await mount(engine, PLACE)
 
 		const [name, city] = headers()
-		const from = middleOf(name)
+		const from = middleOf(find('.so-table-column__sort', name))
 
 		await pointAt(from.x, from.y)
 		await commands.mouseDown()
@@ -1989,8 +2153,9 @@ describe('ручка ширины', () => {
 		expect(page.getByRole('columnheader', { name: 'Имя', exact: true }).query()).toBe(name)
 		expect(page.getByRole('columnheader', { name: 'Город', exact: true }).query()).toBe(city)
 		expect(page.getByRole('slider', { name: 'Имя', exact: true }).query()).toBe(fieldOf(name))
-		// Сортирует по-прежнему кнопка с тем же именем
-		expect(page.getByRole('button', { name: 'Имя', exact: true }).query()).toBe(
+		// Кнопка сортировки — рядом с подписью, со своим именем от локали: в
+		// имя заголовка оно не входит
+		expect(page.getByRole('button', { name: 'Sort by Имя', exact: true }).query()).toBe(
 			find('.so-table-column__sort', name),
 		)
 	})
@@ -2015,40 +2180,71 @@ describe('ручка ширины', () => {
 	})
 
 	/**
-	 * Кнопка сортировки занимает ячейку целиком, и под ней полосе места не
-	 * осталось бы: полоса — над кнопкой. У границы колонок нажатие берёт ручка,
-	 * мимо полосы — кнопка, и сортирует колонку, не меняя её ширины.
+	 * Кнопка сортировки стоит сразу за подписью, и у подписи во всю ширину
+	 * колонки подходит к её границе вместе со своей зоной нажатия: на `sm` зона
+	 * заходит под полосу. У границы колонок нажатие берёт ручка — полоса над
+	 * кнопкой и её зоной, — а на кнопке — кнопка, и сортирует колонку, не меняя
+	 * её ширины.
 	 */
-	it('полоса — над кнопкой сортировки: у границы — ручка, мимо полосы — кнопка', async () => {
-		await mount(resizeEngine(ALL), PLACE)
+	it('у границы колонок нажатие берёт ручка, а не кнопка; на кнопке — кнопка', async () => {
+		const LONG: TTableColumnSource = {
+			...NAME_RESIZE,
+			text: 'Фамилия, имя и отчество сотрудника',
+		}
+
+		render(
+			defineComponent({
+				render: () =>
+					h('div', { style: `width: ${PLACE}px` }, [
+						h(Table, {
+							engine: resizeEngine([LONG, CITY_RESIZE, AGE_RESIZE]),
+							size: 'sm',
+							aria_label: 'Сотрудники',
+						}),
+					]),
+			}),
+		)
+		await new Promise((resolve) => requestAnimationFrame(resolve))
 
 		const [name, , age] = headers()
 		const button = find('.so-table-column__sort', name)
 		const edge = name.getBoundingClientRect()
-		const y = edge.top + edge.height / 2
+		const strip = resizerOf(name).getBoundingClientRect()
+		const own = button.getBoundingClientRect()
+		const y = own.top + own.height / 2
 
-		// Своя полоса у конца и полоса соседа у начала — обе над кнопкой
-		expect(resizerOf(name).contains(document.elementFromPoint(edge.right - 4, y))).toBe(true)
+		// Подпись во всю ширину — кнопка у конца колонки
+		expect(edge.right - own.right).toBeLessThan(strip.width)
+
+		// Зона нажатия кнопки заходит под полосу
+		expect(own.left + own.width / 2 + ZONE / 2).toBeGreaterThan(strip.left)
+
+		// От границы до внутреннего края полосы — ручка, над кнопкой и её зоной
+		for (let x = edge.right - 0.5; x > strip.left; x -= 0.5) {
+			expect(resizerOf(name).contains(document.elementFromPoint(x, y)), `${x}`).toBe(true)
+		}
+
+		// Полоса соседа у начала — тоже ручка этой колонки
 		expect(resizerOf(name).contains(document.elementFromPoint(edge.right + 4, y))).toBe(true)
 
-		// Мимо полос — кнопка
-		const middle = edge.left + edge.width / 2
-
-		expect(button.contains(document.elementFromPoint(middle, y))).toBe(true)
-
-		// Полоса последней колонки — у края таблицы, над кнопкой по концу
+		// Полоса последней колонки — у края таблицы
 		const last = age.getBoundingClientRect()
 
 		expect(resizerOf(age).contains(document.elementFromPoint(last.right - 4, y))).toBe(true)
 
-		const body = document.body.getBoundingClientRect()
+		// На кнопке — кнопка: сортирует, ширина та же
+		const middle = own.left + own.width / 2
 
-		await userEvent.click(document.body, {
-			position: { x: middle - body.left, y: y - body.top },
-		})
+		expect(button.contains(document.elementFromPoint(middle, y))).toBe(true)
+
+		const before = width(name)
+
+		await pointAt(middle, y)
+		await commands.mouseDown()
+		await commands.mouseUp()
 
 		await expect.poll(() => name.dataset.sort).toBe('asc')
-		expect(Math.abs(width(name) - 120)).toBeLessThanOrEqual(EPSILON)
+		expect(Math.abs(width(name) - before)).toBeLessThanOrEqual(EPSILON)
 	})
 
 	/**

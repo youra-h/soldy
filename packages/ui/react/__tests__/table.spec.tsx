@@ -320,7 +320,7 @@ describe('раскладка колонок', () => {
 })
 
 describe('слоты', () => {
-	it('header — содержимое заголовка по колонке, и у сортируемой тоже', async () => {
+	it('header — подпись заголовка по колонке, и у сортируемой тоже; кнопка — вне подписи', async () => {
 		await render(
 			<Table
 				items={[{ data: ANNA }]}
@@ -329,8 +329,42 @@ describe('слоты', () => {
 			/>,
 		)
 
-		expect(findAll('.so-table-column b').map(text)).toEqual(['name:Имя', 'age:Возраст'])
-		expect(text(find('.so-table-column__sort'))).toBe('age:Возраст')
+		expect(findAll('.so-table-column__text b').map(text)).toEqual(['name:Имя', 'age:Возраст'])
+		// Кнопку сортировки рисует колонка рядом с подписью, а не таблица в ней
+		const button = find('.so-table-column__sort')
+
+		expect(button.closest('.so-table-column__text')).toBeNull()
+		expect(text(button)).toBe('')
+	})
+
+	/**
+	 * Своё действие по заголовку — контрол в подписи: у `th` фокуса нет, и
+	 * нажатие по ячейке ничего не делает. Нажатие по своему контролу
+	 * сортировку не трогает.
+	 */
+	it('кнопка в слоте header нажимается и не сортирует', async () => {
+		const opened = vi.fn()
+		const engine = engineOf('none')
+
+		await render(
+			<Table
+				engine={engine}
+				header={({ column, text: caption }) => (
+					<button type="button" className="menu" onClick={() => opened(column.field)}>
+						{caption}
+					</button>
+				)}
+			/>,
+		)
+
+		const age = findAll('.so-table-column')[1]
+
+		click(find('button.menu', age))
+
+		expect(opened.mock.calls).toEqual([['age']])
+		expect(rowNames()).toEqual(['Анна', 'Борис', 'Вера'])
+		expect(age.hasAttribute('aria-sort')).toBe(false)
+		expect(engine.extensions.sort.sort).toEqual([])
 	})
 
 	/**
@@ -348,7 +382,7 @@ describe('слоты', () => {
 			/>,
 		)
 
-		expect(findAll('.so-table-column b').map(text)).toEqual([
+		expect(findAll('.so-table-column__text b').map(text)).toEqual([
 			'name:Имя:false',
 			'age:Возраст:true',
 		])
@@ -445,15 +479,73 @@ describe('сортировка', () => {
 		expect(age.hasAttribute('aria-sort')).toBe(false)
 	})
 
-	it('кнопка — только у сортируемой колонки; отметка скрыта от скринридера', async () => {
+	it('подпись — у всех колонок, кнопка — только у сортируемой и рядом с подписью; стрелка скрыта от скринридера', async () => {
 		await render(<Table engine={engineOf('none')} />)
 
 		const [name, age] = findAll('.so-table-column')
 
 		expect(findAll('.so-table-column__sort', name)).toEqual([])
 		expect(text(find('.so-table-column__text', name))).toBe('Имя')
+		expect(text(find('.so-table-column__text', age))).toBe('Возраст')
+
+		const button = find('.so-table-column__sort', age)
+
+		// Подпись и кнопка — соседи в ряду содержимого заголовка
+		expect(button.parentElement).toBe(find('.so-table-column__content', age))
+		expect(button.closest('.so-table-column__text')).toBeNull()
+		expect(button.getAttribute('type')).toBe('button')
 		expect(find('.so-table-column__sort-icon', age).getAttribute('aria-hidden')).toBe('true')
 		expect(age.querySelector('.so-table-column__sort-icon svg')).not.toBeNull()
+	})
+
+	/**
+	 * Заголовок назван подписью, кнопка — своим именем от локали: имя кнопки в
+	 * имя заголовка не входит, и подписи заголовка в ссылке кнопки нет.
+	 */
+	it('имя кнопки — «Sort by …» от локали, имя заголовка — только подпись', async () => {
+		await render(<Table engine={engineOf('none')} />)
+
+		const age = findAll('.so-table-column')[1]
+		const button = find('.so-table-column__sort', age)
+		const caption = find('.so-table-column__text', age)
+
+		expect(button.getAttribute('aria-label')).toBe('Sort by Возраст')
+		expect(button.hasAttribute('aria-labelledby')).toBe(false)
+		expect(age.getAttribute('aria-labelledby')).toBe(caption.id)
+		expect(caption.contains(button)).toBe(false)
+	})
+
+	it('смена локали — новое имя кнопки на той же кнопке, без перемонтирования', async () => {
+		const engine = engineOf('none')
+		const view = (locale: TLocale) => (
+			<LocaleProvider locale={locale}>
+				<Table engine={engine} />
+			</LocaleProvider>
+		)
+		const { render: rerender } = await render(view(enUS))
+		const button = find('.so-table-column__sort')
+
+		expect(button.getAttribute('aria-label')).toBe('Sort by Возраст')
+
+		rerender(view(ruRU))
+
+		expect(find('.so-table-column__sort')).toBe(button)
+		expect(button.getAttribute('aria-label')).toBe('Сортировать по столбцу Возраст')
+	})
+
+	it('нажатие по подписи и по ячейке заголовка не сортирует', async () => {
+		const engine = engineOf('none')
+
+		await render(<Table engine={engine} />)
+
+		const age = findAll('.so-table-column')[1]
+
+		click(find('.so-table-column__text', age))
+		click(age)
+
+		expect(rowNames()).toEqual(['Анна', 'Борис', 'Вера'])
+		expect(age.hasAttribute('aria-sort')).toBe(false)
+		expect(engine.extensions.sort.sort).toEqual([])
 	})
 
 	it('выключенная таблица — кнопка выключена, порядок прежний', async () => {
@@ -727,22 +819,22 @@ describe('ручка ширины', () => {
 		expect(findAll('.so-table-column__resizer')).toEqual([])
 	})
 
-	it('заголовок и поле названы обёрткой содержимого — ровно текст колонки', async () => {
+	it('заголовок и поле названы подписью — ровно текст колонки', async () => {
 		await render(<Table items={[{ data: ANNA }]} columns={[RESIZABLE, AGE]} />)
 
 		for (const header of findAll('.so-table-column')) {
-			const content = find('.so-table-column__content', header)
+			const caption = find('.so-table-column__text', header)
 
-			expect(content.id).not.toBe('')
-			expect(header.getAttribute('aria-labelledby')).toBe(content.id)
+			expect(caption.id).not.toBe('')
+			expect(header.getAttribute('aria-labelledby')).toBe(caption.id)
 		}
 
 		const name = findAll('.so-table-column')[0]
 
 		expect(resizerField(name).getAttribute('aria-labelledby')).toBe(
-			find('.so-table-column__content', name).id,
+			find('.so-table-column__text', name).id,
 		)
-		expect(text(find('.so-table-column__content', name))).toBe('Имя')
+		expect(text(find('.so-table-column__text', name))).toBe('Имя')
 	})
 
 	it('клавиша на поле — ширина заголовка, поле и onColumnResize таблицы', async () => {
@@ -1380,9 +1472,11 @@ describe('StrictMode', () => {
 
 /**
  * Сервер рисует таблицу из данных: строки в коллекции с самой сборки, а `id`
- * заголовков строк и обёрток колонок плагины связок строят от id
- * монтирования — у React он от `useId`, и браузер получает те же. Гидратация
- * сходится без расхождений, ссылки чекбоксов и заголовков — на те же узлы.
+ * заголовков строк и подписей колонок плагины связок строят от id
+ * монтирования — у React он от `useId`, и браузер получает те же. Имя кнопки
+ * сортировки плагин имён пишет при сборке — оно уже в серверной разметке.
+ * Гидратация сходится без расхождений, ссылки чекбоксов и заголовков — на те
+ * же узлы.
  */
 describe('сервер', () => {
 	it('сервер рисует таблицу, гидратация сходится, id заголовков те же', () => {
@@ -1399,9 +1493,7 @@ describe('сервер', () => {
 		container.innerHTML = renderToString(element)
 
 		const rowHeaders = findAll('th[scope="row"]', container).map((cell) => cell.id)
-		const contents = findAll('.so-table-column__content', container).map(
-			(content) => content.id,
-		)
+		const contents = findAll('.so-table-column__text', container).map((caption) => caption.id)
 
 		// Строки из данных — в коллекции с самой сборки: сервер рисует их со
 		// ссылками чекбоксов на заголовки строк
@@ -1414,6 +1506,11 @@ describe('сервер', () => {
 				input.getAttribute('aria-labelledby'),
 			),
 		).toEqual(rowHeaders)
+		expect(
+			findAll('.so-table-column__sort', container).map((button) =>
+				button.getAttribute('aria-label'),
+			),
+		).toEqual(['Sort by Возраст'])
 
 		document.body.append(container)
 
@@ -1436,5 +1533,8 @@ describe('сервер', () => {
 		expect(
 			find('.so-table-column__resizer input', container).getAttribute('aria-labelledby'),
 		).toBe(contents[1])
+		expect(find('.so-table-column__sort', container).getAttribute('aria-label')).toBe(
+			'Sort by Возраст',
+		)
 	})
 })

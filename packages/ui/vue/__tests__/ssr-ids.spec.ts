@@ -182,23 +182,26 @@ describe('id при гидратации', () => {
 		expect(new Set(ids).size).toBe(2)
 	})
 
-	it('таблица: заголовки колонок и их ручки названы обёрткой содержимого у сервера и браузера одинаково', async () => {
+	it('таблица: заголовки колонок и их ручки названы подписью у сервера и браузера одинаково', async () => {
 		const { server, client, warnings } = await hydrate(() =>
 			h(Table, {
 				items: [{ data: { name: 'Анна', age: 30 } }],
 				columns: [
 					{ field: 'name', text: 'Имя', resizable: true, width: 150 },
-					{ field: 'age', text: 'Возраст', resizable: true, width: 100 },
+					{ field: 'age', text: 'Возраст', resizable: true, width: 100, sortable: true },
 				],
 			}),
 		)
-		const ids = attrs(client, '.so-table-column__content', 'id')
+		const ids = attrs(client, '.so-table-column__text', 'id')
 
 		expect(warnings).toEqual([])
-		expect(ids).toEqual(attrs(server, '.so-table-column__content', 'id'))
+		expect(ids).toEqual(attrs(server, '.so-table-column__text', 'id'))
 		expect(attrs(client, '.so-table-column', 'aria-labelledby')).toEqual(ids)
 		expect(attrs(client, '.so-table-column__resizer input', 'aria-labelledby')).toEqual(ids)
 		expect(new Set(ids).size).toBe(2)
+		// Имя кнопки сортировки — от локали, уже в серверной разметке
+		expect(attrs(server, '.so-table-column__sort', 'aria-label')).toEqual(['Sort by Возраст'])
+		expect(attrs(client, '.so-table-column__sort', 'aria-label')).toEqual(['Sort by Возраст'])
 	})
 
 	it('группа радио без своего имени: общий name у сервера и браузера один', async () => {

@@ -8,7 +8,6 @@ import {
 	useAdapter,
 	useExpose,
 	useCollectionAdapter,
-	useIcon,
 	VueElevatorFactory,
 	createVueAdapterContext,
 	type SetupContext,
@@ -24,7 +23,9 @@ import BaseTable, { type TableProps } from './base.component'
  * порядок строк — расширения коллекции, а разметка раскладывает то, что они
  * отдали. Чекбоксы колонки выбора — экземпляры, которые держит таблица: их
  * отметку она пишет от выбора, а клик по ним — просьба, которую она выполняет
- * командой выбора.
+ * командой выбора. Кнопку сортировки рисует заголовок колонки, и её нажатие —
+ * просьба колонки, которую выполняет коллекция: методов коллекции разметке
+ * таблицы не нужно.
  */
 export default {
 	name: '_Table',
@@ -59,8 +60,6 @@ export default {
 		return {
 			...refs,
 			...refsCollection,
-			/** Методы коллекции рефами не пробрасываются — отдаём инстанс. */
-			facade: collectionAdapter.instance,
 			/**
 			 * Чекбокс «выбрать все» — экземпляр, который держит таблица. Не проп
 			 * (не меняется за время жизни компонента), поэтому отдаём инстансом,
@@ -68,7 +67,6 @@ export default {
 			 * целиком.
 			 */
 			selectAll: collectionAdapter.instance.selectAll,
-			sortIconTag: useIcon('arrowUpward'),
 		}
 	},
 }
