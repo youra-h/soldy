@@ -48,6 +48,21 @@ a {
 	height: 100vh;
 }
 
+/* Узкое окно: меню — в выезжающей панели, превью — на всю ширину */
+.pg--narrow {
+	grid-template-columns: 1fr;
+	grid-template-areas:
+		'header'
+		'main';
+}
+
+/* Колонка в панели — без своей рамки и фона: их даёт панель */
+.pg__drawer .pg__sidebar {
+	padding: 0;
+	border-right: none;
+	background: none;
+}
+
 /* Узкой шапке контролы уходят на вторую строку, к правому краю, а не за край окна */
 .pg__header {
 	grid-area: header;

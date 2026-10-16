@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { Select, Switch } from '@soldy-ui/vue'
+import { Button, Select, Switch } from '@soldy-ui/vue'
 import { useTheme } from '../composables/useTheme'
 import { useIconPack } from '../composables/useIconPack'
 import { useLanguage } from '../composables/useLanguage'
+import { useSidebar } from '../composables/useSidebar'
 import { useMotionMode, type TMotionOffReason } from '../composables/useMotionMode'
 import { FRAMEWORKS, isFramework } from '../hosts'
 import { frameworkOf, isTestsRoute, propertiesPath, withFramework } from '../navigation'
@@ -13,6 +14,7 @@ const { theme, dark, themes } = useTheme()
 const { pack, packs, apply } = useIconPack()
 const { mode, modes, offReason, choose } = useMotionMode()
 const { language, languages, choose: chooseLanguage } = useLanguage()
+const { narrow, open: sidebarOpen } = useSidebar()
 
 /** Чем выключено движение — в плашке шапки. */
 const OFF_REASONS: Record<TMotionOffReason, string> = {
@@ -62,6 +64,8 @@ const counterpart = computed(() =>
 
 <template>
 	<header class="pg__header">
+		<!-- Узкое окно: меню спрятано в выезжающую панель, открывает её эта кнопка -->
+		<Button v-if="narrow" size="sm" type="button" @click="sidebarOpen = true">Меню</Button>
 		<div class="pg__brand">soldy <span>· playground</span></div>
 		<RouterLink :to="counterpart.to" class="pg__switch">{{ counterpart.label }}</RouterLink>
 
