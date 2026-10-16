@@ -10,8 +10,9 @@
  * календаря и поля — те же, что у них самих. Раскладка: коробка диапазона не
  * меняет ширину, пока даты набирают, а панель у правого края окна не
  * сжимается. Тема: ошибку поля конца коробка диапазона показывает своей
- * рамкой, а панель проявляется и гаснет на месте переходом — jsdom переходов
- * не ведёт.
+ * рамкой, панель проявляется и гаснет на месте переходом, а день, выбор
+ * которого закрывает панель, встаёт на новую заливку сразу, — в открытой
+ * панели заливка идёт переходом. jsdom переходов не ведёт.
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
@@ -25,7 +26,7 @@ import { DatePicker } from '@soldy-ui/vue'
 
 import { expectClearSquare } from './clear-button'
 import { settled } from './colors'
-import { expectFadesInPlace, ownTransitionRuns } from './transitions'
+import { expectFadesInPlace, ownTransitionRuns, transitionEvents } from './transitions'
 import { expectInsideWindow } from './viewport'
 
 import '@soldy-ui/theme-oren'
@@ -78,6 +79,15 @@ const day = (date: string): HTMLElement => {
 	)
 
 	return find(`.so-calendar-item[aria-label="${label}"]`)
+}
+
+/** Плитка дня — то, что заливает выбор: заливку тема кладёт на неё, а не на ячейку. */
+const tile = (date: string): HTMLElement => {
+	const element = day(date).querySelector('.so-calendar-item__day')
+
+	if (!(element instanceof HTMLElement)) throw new Error(`${date}: плитки дня нет`)
+
+	return element
 }
 
 const root = () => find('.so-date-picker')
@@ -179,6 +189,18 @@ describe('закрытие', () => {
  * панели (Frame). Панель проявляется и гаснет на месте, как поповер у
  * триггера без жеста: переходит одна прозрачность. Хуков под анимацию у кода
  * нет — видно это по переходу на самой панели.
+ *
+ * Выбор, который закрывает панель, — второй день диапазона или одна дата, —
+ * меняет заливку дней в том же кадре, в котором панель начинает гаснуть.
+ * Переходом цвета концы темнели бы, пока панель гаснет, — их видимая темнота
+ * сначала росла бы, потом падала, и концы мигали. Поэтому в закрытом слое
+ * плитка дня встаёт на новое значение сразу и гаснет вместе с панелью
+ * (`themes/oren/src/components/calendar/_calendar.scss`), а в открытой
+ * панели заливка идёт переходом, как у Calendar на странице. Выбирают
+ * клавиатурой: `:active` дня под мышью завёл бы переход ещё в открытой
+ * панели, и сторож поймал бы его, а не закрытие. Слушатели переходов плиток
+ * встают на покое — когда переходы предпросмотра и фокуса доиграли: закрытию
+ * они не принадлежат.
  */
 describe('появление и исчезание', () => {
 	it('открытие — панель проявляется, закрытие — гаснет на месте и до конца нажатий не ловит', async () => {
@@ -195,6 +217,76 @@ describe('появление и исчезание', () => {
 		await settled(panel())
 
 		await expectFadesInPlace(panel(), () => userEvent.keyboard('{Escape}'))
+	})
+
+	/** Переходы, которые плитки дней заведут дальше: слушатели — на покое. */
+	const runsAtRest = async (...dates: string[]): Promise<string[][]> => {
+		await transitionEvents()
+		await Promise.all(dates.map((date) => settled(tile(date))))
+
+		return dates.map((date) => ownTransitionRuns(tile(date)))
+	}
+
+	/**
+	 * Диапазон начат на 12-м и стрелками доведён до 14-го: предпросмотр стоит,
+	 * Enter выберет второй день. Отдаёт переходы плиток концов.
+	 */
+	const previewRange = async (): Promise<string[][]> => {
+		await userEvent.click(trigger())
+		await expect.poll(active).toBe(day('2026-05-12'))
+
+		await userEvent.keyboard('{Enter}{ArrowRight}{ArrowRight}')
+
+		return runsAtRest('2026-05-12', '2026-05-14')
+	}
+
+	it('второй день диапазона закрывает панель — концы встают сразу, без перехода заливки', async () => {
+		const ctrl = await show({ mode: 'range', value: ['2026-05-12', '2026-05-12'] })
+		const [start, end] = await previewRange()
+
+		await userEvent.keyboard('{Enter}')
+		await transitionEvents()
+
+		expect(ctrl.value).toEqual(['2026-05-12', '2026-05-14'])
+		expect(panel().dataset.open, 'панель закрыта').toBe('false')
+		expect(start, 'начало').not.toContain('background-color')
+		expect(end, 'конец').not.toContain('background-color')
+	})
+
+	it('одна дата закрывает панель — выбранный и прежний дни встают сразу, без перехода заливки', async () => {
+		const ctrl = await show({ value: '2026-05-12' })
+
+		await userEvent.click(trigger())
+		await expect.poll(active).toBe(day('2026-05-12'))
+
+		await userEvent.keyboard('{ArrowRight}')
+
+		const [chosen, previous] = await runsAtRest('2026-05-13', '2026-05-12')
+
+		await userEvent.keyboard('{Enter}')
+		await transitionEvents()
+
+		expect(ctrl.value).toBe('2026-05-13')
+		expect(panel().dataset.open, 'панель закрыта').toBe('false')
+		expect(chosen, 'выбранный').not.toContain('background-color')
+		expect(previous, 'прежний').not.toContain('background-color')
+	})
+
+	it('панель остаётся открытой (`closeOnSelect: false`) — концы заливаются переходом, как у Calendar', async () => {
+		const ctrl = await show({
+			mode: 'range',
+			value: ['2026-05-12', '2026-05-12'],
+			closeOnSelect: false,
+		})
+		const [start, end] = await previewRange()
+
+		await userEvent.keyboard('{Enter}')
+		await transitionEvents()
+
+		expect(ctrl.value).toEqual(['2026-05-12', '2026-05-14'])
+		expect(panel().dataset.open, 'панель открыта').toBe('true')
+		expect(start, 'начало').toContain('background-color')
+		expect(end, 'конец').toContain('background-color')
 	})
 })
 
