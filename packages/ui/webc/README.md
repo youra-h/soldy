@@ -36,8 +36,8 @@ Shadow DOM is not used — a theme styles global BEM classes, so light DOM is di
 get no scope: slot content is the element's own light DOM, so component data (the `text` of
 Button's `default` slot) cannot be passed into it.
 
-> **Status:** the Web Components adapter is in progress — Button, ProgressSpinner and Skeleton are
-> ported, the rest of the set is on its way. See
+> **Status:** the Web Components adapter is in progress — Button, ProgressSpinner, Skeleton and
+> Frame are ported, the rest of the set is on its way. See
 > [the adapter table](https://github.com/youra-h/soldy#components).
 
 ## Install
@@ -66,6 +66,24 @@ import '@soldy-ui/webc'
 Attributes, classes and inline styles you write on an element win over what the component writes
 there itself: `style="width: 40px"` on a skeleton beats the width it computes, and a property a
 script sets on the element directly survives the component's updates.
+
+A frame is a layer above the page: the element you wrote moves itself to its `target` (`body` by
+default), out from under `overflow` and stacking contexts, with your class, attributes and
+listeners on it, and a comment stays in its place. It is hidden until `visible`, and `contained`
+keeps it in place, inside the nearest positioned ancestor:
+
+```html
+<div class="card">
+  <div is="so-frame" visible target="#layers" class="menu-panel" x="40" y="120">
+    <button is="so-button" text="Rename"></button>
+  </div>
+</div>
+```
+
+Moving the panel rebuilds neither the frame nor anything inside it, and the panel keeps the place it
+was written in: the button above takes its language from the `<so-locale-provider>` around the
+card, not around `#layers`. Removing the card from the page takes the panel out of the target with
+it.
 
 In a form it is simply a button:
 

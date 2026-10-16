@@ -5,14 +5,38 @@
  * Классы, наборы ядра `aria`, `attrs` и `dataset` и скрытие база раскладывает
  * на сам элемент, рядом с атрибутами потребителя, а атрибуты потребителя
  * главнее. Содержимое остаётся в элементе: шаблон структуры не строит.
+ *
+ * Раскладка света — перенос силами базы: содержимое едет в точку шаблона
+ * одной операцией, из документа не выходя, и кнопка внутри собирается один
+ * раз — на своём месте, под провайдером вокруг.
  */
 
 import { describe, it, expect, afterEach } from 'vitest'
-import { TComponentView } from '@soldy-ui/core'
-import { TComponentViewElement, type TComponentViewElementProps } from '@soldy-ui/webc'
+import { TButton, TComponentView } from '@soldy-ui/core'
+import { TBasePlugin, ruRU, type IPluginContext } from '@soldy-ui/plugins'
+import { usePlugins } from '@soldy-ui/setup'
+import {
+	TComponentViewElement,
+	TLocaleProviderElement,
+	type TComponentViewElementProps,
+} from '@soldy-ui/webc'
 
 /** Рендер коалесцируется в микротаске — ждём её перед проверкой. */
 const flush = () => new Promise<void>((resolve) => queueMicrotask(() => resolve()))
+
+/** Теги локали, которые видел плагин кнопки при установке, — по одному на сборку. */
+const installed: string[] = []
+
+/** Плагин-зонд: запоминает локаль контекста в момент сборки кнопки. */
+class TLocaleProbePlugin extends TBasePlugin<TButton> {
+	override install(ctx: IPluginContext, options?: unknown): void {
+		super.install(ctx, options)
+
+		installed.push(ctx.locale.locale.tag)
+	}
+}
+
+let dispose: (() => void) | undefined
 
 /** Элемент soldy с props дескриптора; узел другой — тест падает здесь. */
 function asView(node: Element | null): TComponentViewElementProps {
@@ -51,6 +75,9 @@ function mountCtrl(ctrl: TComponentView): TComponentViewElementProps {
 
 afterEach(() => {
 	document.body.innerHTML = ''
+	dispose?.()
+	dispose = undefined
+	installed.length = 0
 })
 
 describe('<div is="so-component-view"> · нативный div', () => {
@@ -147,5 +174,46 @@ describe('<div is="so-component-view"> · нативный div', () => {
 		await flush()
 
 		expect(el.style.display).toBe('')
+	})
+})
+
+describe('<div is="so-component-view"> · раскладка света', () => {
+	/**
+	 * Свет раньше вынимался из элемента и вставлялся заново: кнопка внутри
+	 * собиралась сперва вне документа, без провайдера — на английском, — и
+	 * потом ещё раз. Теперь узел едет на своё место, не выходя из документа.
+	 */
+	it('кнопка внутри под провайдером собрана один раз, с его локалью', () => {
+		dispose = usePlugins(TButton, [TLocaleProbePlugin])
+
+		const host = document.createElement('div')
+
+		host.innerHTML =
+			'<so-locale-provider><div is="so-component-view"><button is="so-button"></button></div></so-locale-provider>'
+
+		const root = host.querySelector('so-locale-provider')
+
+		if (!(root instanceof TLocaleProviderElement)) throw new Error('<so-locale-provider> нет')
+
+		root.locale = ruRU
+		document.body.appendChild(host)
+
+		expect(installed).toEqual([ruRU.tag])
+		expect(host.querySelector('[is="so-component-view"] > .so-button')).not.toBeNull()
+	})
+
+	/**
+	 * Слот, которого шаблон не объявил, не выводится: узел снимается до своей
+	 * очереди подключения, и вне документа кнопке собираться незачем.
+	 */
+	it('кнопка в слоте, которого шаблон не объявил, не собирается', () => {
+		dispose = usePlugins(TButton, [TLocaleProbePlugin])
+
+		const el = mount(
+			'<div is="so-component-view"><button is="so-button" slot="nowhere"></button></div>',
+		)
+
+		expect(installed).toEqual([])
+		expect(el.querySelector('button')).toBeNull()
 	})
 })
