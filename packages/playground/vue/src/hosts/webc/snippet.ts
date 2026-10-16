@@ -29,7 +29,10 @@ import { PREVIEWS, type TPreview } from './previews'
  * при следующем подключении.
  *
  * Пропов, которых у элемента нет (`tag`: тег — сам элемент), в коде нет, как
- * их не получает и превью.
+ * их не получает и превью. Свои атрибуты элемента из описания превью (роль
+ * иконки) код пишет всегда — без них элемент рисует не то, что превью: в
+ * колонке пропа — атрибутом в разметке, в колонке экземпляра — свойством
+ * элемента.
  */
 
 /** Импорт, который регистрирует элементы пакета. */
@@ -60,7 +63,10 @@ export function propSnippet(
 ): string {
 	const element = elementOf(entry)
 	const bindings = bindingsOf(entry)
-	const attributes: string[] = []
+	// Свои атрибуты элемента — первыми, перед пропами, как в описании превью
+	const attributes = Object.entries(element.attributes ?? {}).map(
+		([name, raw]) => ` ${attribute(name, raw)}`,
+	)
 	const properties: string[] = []
 
 	for (const [name, given] of Object.entries(
@@ -153,8 +159,8 @@ function pluginInstanceSnippet(
 
 /**
  * Колонка экземпляра целиком: модуль с импортами, экземпляр и элемент,
- * который строит код. `ctrl` — до вставки, рядом с ним — пропы пресета
- * свойствами: так их передаёт и сам стенд.
+ * который строит код. `ctrl` — до вставки, рядом с ним — свои атрибуты
+ * элемента и пропы пресета свойствами: так их передаёт и сам стенд.
  */
 function instanceExample(
 	entry: TComponentEntry,
@@ -163,6 +169,9 @@ function instanceExample(
 	preset: Record<string, unknown> = {},
 ): string {
 	const element = elementOf(entry)
+	const own = Object.entries(element.attributes ?? {}).map(
+		([name, value]) => `element.${name} = ${literal(value)}`,
+	)
 	const props = Object.entries(preset)
 		.filter(([name]) => !isHostProp(name))
 		.map(([name, value]) => `element.${name} = ${literal(value)}`)
@@ -175,6 +184,7 @@ function instanceExample(
 			`const element = document.createElement('${element.tag}', { is: '${element.is}' })`,
 			'',
 			'element.ctrl = instance',
+			...own,
 			...props,
 			'document.body.append(element)',
 		],
