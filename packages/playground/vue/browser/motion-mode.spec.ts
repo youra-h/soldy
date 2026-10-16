@@ -39,6 +39,7 @@ import {
 	ProgressSpinner,
 	RadioGroup,
 	RadioGroupItem,
+	Rating,
 	Scroller,
 	Select,
 	SelectItem,
@@ -191,6 +192,12 @@ const CASES: readonly TCase[] = [
 		() => show(() => h('div', { style: 'width: 320px' }, [h(Slider, { value: 40 })])),
 		'.so-slider__range',
 		'inset-inline-start',
+	),
+	transition(
+		'Rating: подъём звезды под указателем',
+		() => show(() => h(Rating)),
+		'.so-rating__star',
+		'scale',
 	),
 	transition(
 		'ProgressLinear: переход доли',

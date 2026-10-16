@@ -24,9 +24,10 @@ export * from './popover'
 export * from './tooltip'
 export * from './scroller'
 // Только контракты: класса в этой папке нет — перетаскивание значения, общее
-// у ползунка и будущих компонентов
+// у ползунка и оценки
 export * from './slide'
 export * from './slider'
+export * from './rating'
 export * from './calendar'
 export * from './date-input'
 export * from './date-picker'

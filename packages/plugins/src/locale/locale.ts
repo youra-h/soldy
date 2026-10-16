@@ -68,6 +68,7 @@ function overlay(base: TTranslations, patch: TPartialTranslations): TTranslation
 		table: section(base, patch, 'table'),
 		calendar: section(base, patch, 'calendar'),
 		datePicker: section(base, patch, 'datePicker'),
+		rating: section(base, patch, 'rating'),
 	})
 }
 

@@ -16,6 +16,7 @@ import {
 	TDrawer,
 	TInput,
 	TPopover,
+	TRating,
 	TScroller,
 	TTable,
 	TTabsItem,
@@ -29,10 +30,12 @@ import {
 	TModalNamesPlugin,
 	TPluginBundle,
 	TPopoverNamesPlugin,
+	TRatingNamesPlugin,
 	TScrollerNamesPlugin,
 	TTableNamesPlugin,
 	TTabsItemNamesPlugin,
 	TTagsItemNamesPlugin,
+	arEG,
 	enUS,
 	extendLocale,
 	ruRU,
@@ -245,6 +248,44 @@ describe('выходы плагина: имена для вложенных ко
 	})
 })
 
+/**
+ * Оценка — не кнопка: плагин пишет не имя, а то, как звучит значение поля,
+ * `aria-valuetext`. Имя полю даёт подпись или `aria_label`, их плагин не
+ * трогает.
+ */
+describe('значение оценки: rating.value', () => {
+	it('оценка и наибольшая — на местах шаблона, числа — по тегу локали', () => {
+		const rating = new TRating({ value: 3.5, step: 0.5 })
+		const { source } = mount(rating, TRatingNamesPlugin)
+
+		expect(rating.aria.get('aria-valuetext')).toBe('3.5 of 5')
+		expect(rating.aria.has('aria-label')).toBe(false)
+
+		source.locale = ruRU
+
+		expect(rating.aria.get('aria-valuetext')).toBe('3,5 из 5')
+
+		source.locale = arEG
+
+		expect(rating.aria.get('aria-valuetext')).toBe('٣٫٥ من ٥')
+	})
+
+	it('переписывает на смену оценки и числа звёзд, предпросмотр — нет', () => {
+		const rating = new TRating({ value: 2 })
+
+		mount(rating, TRatingNamesPlugin, ruRU)
+
+		rating.value = 4
+		expect(rating.aria.get('aria-valuetext')).toBe('4 из 5')
+
+		rating.max = 10
+		expect(rating.aria.get('aria-valuetext')).toBe('4 из 10')
+
+		rating.hover(0.9)
+		expect(rating.aria.get('aria-valuetext')).toBe('4 из 10')
+	})
+})
+
 describe('жизнь подписок', () => {
 	it('после destroy() набора ни смена локали, ни смена текста не пишут', () => {
 		const item = new TTabsItem({ text: 'Почта' })
@@ -255,5 +296,16 @@ describe('жизнь подписок', () => {
 		item.text = 'Настройки'
 
 		expect(item.closeAria.get('aria-label')).toBe('Close Почта')
+	})
+
+	it('оценка: после destroy() набора ни локаль, ни значение строку не меняют', () => {
+		const rating = new TRating({ value: 2 })
+		const { source, bundle } = mount(rating, TRatingNamesPlugin)
+
+		bundle.destroy()
+		source.locale = ruRU
+		rating.value = 4
+
+		expect(rating.aria.get('aria-valuetext')).toBe('2 of 5')
 	})
 })

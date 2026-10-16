@@ -27,6 +27,7 @@ import {
 	ProgressLinear,
 	ProgressSpinner,
 	RadioGroup,
+	Rating,
 	Scroller,
 	Select,
 	Skeleton,
@@ -217,6 +218,9 @@ export const PREVIEWS: Record<string, TPreview> = {
 	// Имени у ползунка нет, как у чекбокса: видимое даёт подпись Label, над
 	// ползунком. Горизонтальный тянется на её ширину, вертикальный — своей высоты
 	slider: (bind) => h(Label, { text: 'Громкость', position: 'top' }, () => h(Slider, bind)),
+
+	// Имени у оценки нет, как у ползунка: видимое даёт подпись Label над звёздами
+	rating: (bind) => h(Label, { text: 'Оценка', position: 'top' }, () => h(Rating, bind)),
 
 	// Подпись — слотом: текста у радио нет, оно голый контрол, как CheckBox
 	'radio-group': (bind) =>
