@@ -5,10 +5,10 @@
  *
  * Работа разделена по фазам контекста:
  *
- * - **сборка** (конструктор) — движок и регистратор через лифт, контекст
- *   элемента в фасад, `meta` из пропсов. В чужое хранилище она не пишет.
- *   Пропсы сборки контекст держит до `connect()`, поэтому расширение ставят
- *   до него — сразу за сборкой контекста;
+ * - **сборка** (конструктор) — движок своей коллекции и её регистратор через
+ *   лифт, контекст элемента в фасад, `meta` из пропсов. В чужое хранилище она
+ *   не пишет. Пропсы сборки контекст держит до `connect()`, поэтому
+ *   расширение ставят до него — сразу за сборкой контекста;
  * - **вход** (`attach` контекста) — регистрация в коллекции владельца и
  *   `meta.apply`. Это запись в чужое хранилище, поэтому она ждёт, пока
  *   фреймворк примет компонент: у React сборка идёт на рендере, и отброшенный
@@ -18,6 +18,21 @@
  *   контекста элемента.
  *
  * Когда наступает `attach`, решает рантайм адаптера.
+ *
+ * Своя коллекция — ближайшая выше по дереву, если элемент её. Лифт отдаёт
+ * движок ближайшей коллекции, а она бывает чужой: тег вне Tags под
+ * `<Toasts>`, который оборачивает приложение, тег или радио в панели Tabs.
+ * Чей элемент, знает фабрика движка (`factoryOf`): всё, что не элемент её
+ * класса (`isSource`), она превращает в новый элемент своего класса, — радио,
+ * вошедшее из панели в Tabs, становилось табом. А фасаду элемента нужны
+ * расширения своей коллекции — тегу выбор, — и под чужой без них сборка
+ * падала. Набор расширений признаком не годится: при совпавшем чужая
+ * коллекция прошла бы проверку (радио под Tabs).
+ *
+ * Чужая коллекция — как будто её нет: ни контекста, ни входа, ни `meta`, и
+ * элемент рисуется сам по себе, как тег-чип без набора. Выше лифт не ищет —
+ * он отдаёт только ближайший слой. Предупреждения нет: под `<Toasts>` почти
+ * любой одиночный элемент стоит под чужой коллекцией, и это законный случай.
  *
  * Контекст элемента (`TItemContext`) — этого монтирования и живёт ровно
  * столько же: сборка отдаёт его фасаду, снятие отвязывает от фасада и
@@ -39,8 +54,8 @@
  * `ctrl` остаётся его — смонтированный снова, он рисуется.
  */
 
-import { TItemContext } from '@soldy-ui/core'
-import type { TPlainExtension, TRemoveEvent } from '@soldy-ui/core'
+import { TItemContext, factoryOf } from '@soldy-ui/core'
+import type { TCollectionEngine, TPlainExtension, TRemoveEvent } from '@soldy-ui/core'
 import type { TInstanceContext } from '../../../protected/adapter/context'
 import {
 	COLLECTION_ENGINE_ELEVATOR,
@@ -48,6 +63,16 @@ import {
 } from '../../../protected/adapter/elevator/keys'
 import { collectItemProps } from './item-props'
 import type { ICollectionItemExtensionOptions, TCollectionItemFacade } from './types'
+
+/** Движок ближайшей коллекции, если элемент её: фабрика признаёт его своим. */
+function ownEngine(
+	engine: TCollectionEngine<any, any> | undefined,
+	item: object,
+): TCollectionEngine<any, any> | undefined {
+	const factory = factoryOf(engine)
+
+	return factory && !factory.isSource(item) ? engine : undefined
+}
 
 export class TCollectionItemExtension {
 	private _leave: (() => void) | undefined
@@ -67,8 +92,11 @@ export class TCollectionItemExtension {
 			)
 		}
 
-		const engine = elevator(ITEM_CONTEXT_ELEVATOR).up()
-		const register = elevator(COLLECTION_ENGINE_ELEVATOR).up()
+		// Чужая коллекция — как будто её нет
+		const engine = ownEngine(elevator(ITEM_CONTEXT_ELEVATOR).up(), item)
+		// Регистратор кладёт тот же владелец, что и движок: у чужой коллекции
+		// и он чужой
+		const register = engine ? elevator(COLLECTION_ENGINE_ELEVATOR).up() : undefined
 		// Пропсы элемента для `meta` движка — из пропсов сборки
 		const meta = collectItemProps(context.descriptor.props, props)
 		// Контекст элемента — этого монтирования. Фасад получает его при сборке:

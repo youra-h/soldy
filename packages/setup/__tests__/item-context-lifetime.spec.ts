@@ -25,6 +25,13 @@
  *
  * Идёт по всем фасадам элементов из экспорта: новая коллекция попадёт под
  * проверку сама — без строки в таблице сторож упадёт.
+ *
+ * Второй сторож на том же харнессе — элемент под чужой коллекцией. Лифт
+ * отдаёт движок ближайшей коллекции, а она бывает чужой: `<Toasts>`
+ * оборачивает приложение. Каждый элемент разметки монтируется под списком
+ * каждой другой коллекции, панель таба — под каждым списком, кроме Tabs:
+ * сборка не падает, контекста у фасада нет, состав чужого движка тот же, и на
+ * его шинах элемент ничего не вешал.
  */
 
 import { describe, it, expect } from 'vitest'
@@ -320,6 +327,18 @@ function spyEngine(engine: TCollectionEngine<any, any>): IBusSpy[] {
 const firstOf = (engine: TCollectionEngine<any, any>): object =>
 	required(engine.extensions.batch.items[0], 'элемент из данных')
 
+/** Панель таба, смонтированная под списком, и её фасад. */
+function mountPanel(elevator: TElevatorFactory, value: string) {
+	const adapter = createAdapterContext(TabsContentDescriptor(), { props: { value } })
+	const facade = createAdapterContext(
+		TabsCollectionContentDescriptor(),
+		{ props: { value } },
+		{ bundle: adapter.bundle },
+	).use(TTabsContentBindingExtension, { content: adapter.instance, elevator })
+
+	return { content: adapter.instance, facade, unmount: accept([facade, adapter]) }
+}
+
 describe('сторож: элемент коллекции освобождает свой контекст', () => {
 	it('таблица покрывает каждый фасад элемента из экспорта', () => {
 		const facades = exportedDescriptors()
@@ -463,18 +482,6 @@ describe('rendered: удаление из коллекции, а не размо
  * ни к какому, когда таба с новым значением нет.
  */
 describe('сторож: панель таба освобождает контекст своего таба', () => {
-	/** Панель, смонтированная под списком табов, и её фасад. */
-	function mountPanel(elevator: TElevatorFactory, value: string) {
-		const adapter = createAdapterContext(TabsContentDescriptor(), { props: { value } })
-		const facade = createAdapterContext(
-			TabsCollectionContentDescriptor(),
-			{ props: { value } },
-			{ bundle: adapter.bundle },
-		).use(TTabsContentBindingExtension, { content: adapter.instance, elevator })
-
-		return { content: adapter.instance, facade, unmount: accept([facade, adapter]) }
-	}
-
 	const tabs = () => mountList(TabsDescriptor(), TabsCollectionDescriptor(), SOURCES)
 
 	it('после размонтирований подписок на движке и на табе нет', () => {
@@ -536,6 +543,81 @@ describe('сторож: панель таба освобождает конте�
 
 		unmount()
 
+		expect(leftovers(spies)).toEqual([])
+	})
+})
+
+/**
+ * Элемент входит только в ближайшую коллекцию своего типа. Лифт отдаёт движок
+ * ближайшей коллекции, а она бывает чужой: `<Toasts>` оборачивает
+ * приложение, и тег-чип стоит под тостами, тег или радио — в панели Tabs.
+ * Чужая коллекция — как будто её нет. Сборка не падает — у тега под тостами
+ * раньше падала: фасаду тега нужен выбор, которого у тостов нет. Контекста у
+ * фасада нет, состав чужого движка после приёма тот же — раньше фабрика
+ * чужого движка делала из элемента свой (радио под Tabs становилось табом), —
+ * и на шины чужого движка элемент ничего не вешал.
+ */
+describe('сторож: элемент под чужой коллекцией в неё не входит', () => {
+	const lists = { ...COLLECTIONS, ...DATA_ONLY }
+
+	/** Контекст элемента у фасада: есть он — фасад в коллекции. */
+	function contextOf(facade: IAdapterContext): unknown {
+		const instance: unknown = facade.instance
+
+		if (!(instance instanceof TCollectionItemComponent)) {
+			throw new Error('фасад элемента — не TCollectionItemComponent')
+		}
+
+		return instance.context
+	}
+
+	/** Каждый элемент разметки под списком каждой другой коллекции. */
+	const pairs = Object.entries(COLLECTIONS).flatMap(([itemName, itemKit]) =>
+		Object.entries(lists)
+			.filter(([listName]) => listName !== itemName)
+			.map(([listName, listKit]) => [itemName, listName, itemKit, listKit] as const),
+	)
+
+	it.each(pairs)('%s под списком %s', (_item, _list, itemKit, listKit) => {
+		const { engine, elevator } = listKit.list(SOURCES)
+		const before = [...engine.extensions.batch.items]
+		const spies = spyEngine(engine)
+		const { facade, unmount } = itemKit.item(elevator, { props: { value: 'm' } })
+
+		expect(contextOf(facade)).toBeUndefined()
+		expect(engine.extensions.batch.items).toEqual(before)
+
+		unmount()
+		reread(facade)
+
+		expect(contextOf(facade)).toBeUndefined()
+		expect(engine.extensions.batch.items).toEqual(before)
+		expect(subscribed(spies)).toEqual([])
+		expect(leftovers(spies)).toEqual([])
+	})
+
+	/**
+	 * Панель связывается только под движком Tabs. У списков из `COLLECTIONS`
+	 * в данных есть элемент `a` — со значением панели, — и связка нашла бы
+	 * его в чужом движке.
+	 */
+	const foreignLists = Object.entries(lists).filter(
+		([name]) => name !== 'TabsCollectionItemDescriptor',
+	)
+
+	it.each(foreignLists)('панель под списком %s — ни с каким табом', (_name, kit) => {
+		const { engine, elevator } = kit.list(SOURCES)
+		const spies = spyEngine(engine)
+		const { content, facade, unmount } = mountPanel(elevator, 'a')
+
+		expect(facade.instance.item).toBeUndefined()
+		expect(facade.instance.context).toBeUndefined()
+		expect(content.aria.get('id')).toBeUndefined()
+		expect(content.aria.get('aria-labelledby')).toBeUndefined()
+
+		unmount()
+
+		expect(subscribed(spies)).toEqual([])
 		expect(leftovers(spies)).toEqual([])
 	})
 })
