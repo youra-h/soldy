@@ -1,6 +1,6 @@
 import { TLayer } from '../../base/layer'
 import type { TDefaultValues } from '../../base/component'
-import type { IToasts, IToastsProps, TToastsEvents, TToastsPlacement } from './types'
+import type { IToasts, IToastsProps, TToastsEvents, TToastsLayout, TToastsPlacement } from './types'
 
 /**
  * Toasts — менеджер всплывающих уведомлений и их регион.
@@ -26,6 +26,13 @@ import type { IToasts, IToastsProps, TToastsEvents, TToastsPlacement } from './t
  * раскладку региона у края окна держит тема. Из места же расширение выводит,
  * куда тост смахивают.
  *
+ * **Раскладка** (`layout`) — модификатор `--layout-<v>`, тоже всегда: столбец
+ * (`list`) или стопка (`cascade`). В стопке передний тост — первый по порядку
+ * коллекции, а глубина тоста — его место в составе (`order` фасада тоста), и
+ * экран со скринридером видят один порядок. Вывести задний тост вперёд —
+ * перестановка в коллекции (`plain.move`), а не состояние тоста: колесо и
+ * стрелки листают стопку плагином стопки, раскладывает её тема.
+ *
  * **Длительность** (`duration`) — для тостов без своей: `0` — тост держится,
  * пока его не закроют. Отсчёт ведёт плагин таймера, а не ядро: время — дело
  * узла и вкладки браузера.
@@ -34,17 +41,19 @@ export default class TToasts extends TLayer<IToastsProps, TToastsEvents> impleme
 	static override baseClass = 'so-toasts'
 
 	static defaultValues: typeof TLayer.defaultValues &
-		TDefaultValues<IToastsProps, 'placement' | 'max' | 'duration'> = {
+		TDefaultValues<IToastsProps, 'placement' | 'layout' | 'max' | 'duration'> = {
 		...TLayer.defaultValues,
 		// Регион виден всегда: открыт или закрыт — у самого тоста
 		visible: true,
 		tag: 'section',
 		placement: 'bottom-end',
+		layout: 'list',
 		max: 3,
 		duration: 5000,
 	}
 
 	protected _placement!: TToastsPlacement
+	protected _layout!: TToastsLayout
 	protected _max: number
 	protected _duration: number
 
@@ -57,6 +66,7 @@ export default class TToasts extends TLayer<IToastsProps, TToastsEvents> impleme
 		this._duration = props.duration ?? ctor.defaultValues.duration
 
 		this._applyPlacement(props.placement ?? ctor.defaultValues.placement)
+		this._applyLayout(props.layout ?? ctor.defaultValues.layout)
 
 		// Живая область — в документе до первого тоста
 		this._aria.add('role', 'region')
@@ -73,6 +83,18 @@ export default class TToasts extends TLayer<IToastsProps, TToastsEvents> impleme
 
 		this._applyPlacement(value, this._placement)
 		this.events.emit('change:placement', value)
+	}
+
+	/** Как тосты стоят в регионе: столбцом (`list`) или стопкой (`cascade`). */
+	get layout(): TToastsLayout {
+		return this._layout
+	}
+
+	set layout(value: TToastsLayout) {
+		if (this._layout === value) return
+
+		this._applyLayout(value, this._layout)
+		this.events.emit('change:layout', value)
 	}
 
 	/** Сколько тостов видно разом; остальные ждут, пока место освободится. */
@@ -109,10 +131,21 @@ export default class TToasts extends TLayer<IToastsProps, TToastsEvents> impleme
 		this._placement = newValue
 	}
 
+	protected _applyLayout(newValue: TToastsLayout, oldValue?: TToastsLayout): void {
+		this._classes.swap({
+			prefix: '--layout-',
+			oldValue,
+			newValue,
+		})
+
+		this._layout = newValue
+	}
+
 	override getProps(): IToastsProps {
 		return {
 			...super.getProps(),
 			placement: this._placement,
+			layout: this._layout,
 			max: this._max,
 			duration: this._duration,
 		}

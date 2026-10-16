@@ -20,6 +20,7 @@ export default { ...SetupToastsItem, components: { Icon, Button } }
 		v-if="rendered"
 		v-show="visible"
 		:class="classes"
+		:style="{ '--so-toasts-depth': order }"
 		v-bind="{ ...attrs, ...aria, ...dataset }"
 	>
 		<!--
@@ -29,7 +30,9 @@ export default { ...SetupToastsItem, components: { Icon, Button } }
 			(с первой отрисовки; `false` — тост закрыт и гаснет), `data-swiping`
 			(тянут), роль `status` или `alert` для срочного, `tabindex` — фокус по
 			F8 и Escape на тосте под фокусом. Сдвиг во время жеста
-			(`--so-swipe-offset`) плагин жеста пишет сюда сам.
+			(`--so-swipe-offset`) плагин жеста пишет сюда сам. Глубина в стопке
+			(`--so-toasts-depth`) — место тоста в составе, `order` фасада: в
+			стопке передний — первый.
 
 			Плашка — то, что видно: поверхность, кромка, тень и кольцо фокуса
 			корня. Отдельный узел, а не корень: место растёт и схлопывается
@@ -69,9 +72,12 @@ export default { ...SetupToastsItem, components: { Icon, Button } }
 				Прячется `rendered` (`closable`). Имя — из локали вместе с текстом
 				тоста (`closeAria`). Вида и размера у него нет: квадрат и вид
 				`plain` даёт тема по контексту. Иконка — роль `close`.
+				`type="button"` — как у каждой кнопки-детали: в форме она форму не
+				отправляет.
 			-->
 			<Button
 				embedded="toasts.close"
+				type="button"
 				class="so-toasts-item__close"
 				:rendered="closable"
 				@click="toast.close()"

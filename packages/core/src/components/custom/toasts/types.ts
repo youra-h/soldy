@@ -14,10 +14,23 @@ import type { IToastsItem, IToastsItemProps } from './item/types'
 export type TToastsPlacement =
 	'top-start' | 'top' | 'top-end' | 'bottom-start' | 'bottom' | 'bottom-end'
 
+/**
+ * Как тосты стоят в регионе: `list` — столбцом, каждый на своём месте;
+ * `cascade` — стопкой: тосты перекрывают друг друга, передний — первый по
+ * порядку коллекции, задние выглядывают из-под него.
+ *
+ * Значение читают ядро (модификатор), плагин стопки (колесо и стрелки листают
+ * её только в `cascade`) и тема (раскладка), и смысл у него один в любой теме,
+ * поэтому это union ядра, как `placement`.
+ */
+export type TToastsLayout = 'list' | 'cascade'
+
 export type TToastsEvents = TLayerEvents &
 	TCollectionStorageDriverEvents<IToastsItem> & {
 		/** change:placement */
 		'change:placement': (value: TToastsPlacement) => void
+		/** change:layout */
+		'change:layout': (value: TToastsLayout) => void
 		/** change:max */
 		'change:max': (value: number) => void
 		/** change:duration */
@@ -28,6 +41,11 @@ export type TToastsEvents = TLayerEvents &
 export interface IToastsComponentProps extends ILayerProps {
 	/** Где регион тостов. По умолчанию `bottom-end` */
 	placement?: TToastsPlacement
+	/**
+	 * Как тосты стоят в регионе: столбцом (`list`) или стопкой (`cascade`),
+	 * которую листают колесом и стрелками. По умолчанию `list`
+	 */
+	layout?: TToastsLayout
 	/** Сколько тостов видно разом; остальные ждут места. По умолчанию 3 */
 	max?: number
 	/**
@@ -47,6 +65,8 @@ export interface IToasts<
 > extends ILayer<TProps, TEvents> {
 	/** Где регион тостов */
 	placement: TToastsPlacement
+	/** Как тосты стоят в регионе: столбцом или стопкой */
+	layout: TToastsLayout
 	/** Сколько тостов видно разом */
 	max: number
 	/** Длительность тоста без своей, мс; `0` — держится, пока не закроют */

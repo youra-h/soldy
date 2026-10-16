@@ -42,6 +42,7 @@ import type {
 	TDialogPlacement,
 	TDrawerPlacement,
 	TSwipe,
+	TToastsLayout,
 	TToastsPlacement,
 } from '@soldy-ui/core'
 import type { TFramePlacement } from '@soldy-ui/plugins'
@@ -250,6 +251,9 @@ export const TOASTS_PLACEMENTS = enumOf<TToastsPlacement>()([
 	'bottom',
 	'bottom-end',
 ])
+
+/** Как тосты стоят в регионе: столбцом или стопкой. */
+export const TOASTS_LAYOUTS = enumOf<TToastsLayout>()(['list', 'cascade'])
 
 /** За что слой смахивают, чтобы закрыть: выезжающую панель и поповер. */
 export const SWIPES = enumOf<TSwipe>()(['none', 'handle', 'panel'])

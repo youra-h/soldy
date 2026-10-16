@@ -131,6 +131,64 @@ describe('Toasts · менеджер и API', () => {
 	})
 })
 
+describe('Toasts · стопка', () => {
+	/** Глубина каждого тоста — переменная, которую разметка отдаёт теме. */
+	const depths = () => toasts().map((toast) => toast.style.getPropertyValue('--so-toasts-depth'))
+
+	it('раскладка — модификатор региона: столбец по умолчанию, стопка по пропу', () => {
+		render()
+
+		expect(region().classList.contains('so-toasts--layout-list')).toBe(true)
+
+		wrapper?.unmount()
+		document.body.innerHTML = ''
+		render({ layout: 'cascade' })
+
+		expect(region().classList.contains('so-toasts--layout-cascade')).toBe(true)
+		expect(region().classList.contains('so-toasts--layout-list')).toBe(false)
+	})
+
+	it('глубина — место в составе; перестановка меняет и порядок узлов, и глубину', async () => {
+		const engine = createEngineToasts()
+		const { show } = render({ engine, layout: 'cascade' })
+
+		const oldest = show('Первый')
+
+		show('Второй')
+		show('Третий')
+		await nextTick()
+
+		expect(texts()).toEqual(['Третий', 'Второй', 'Первый'])
+		expect(depths()).toEqual(['0', '1', '2'])
+
+		if (!oldest) throw new Error('тоста нет')
+
+		engine.extensions.plain.move(oldest, 0)
+		await nextTick()
+
+		expect(texts()).toEqual(['Первый', 'Третий', 'Второй'])
+		expect(depths()).toEqual(['0', '1', '2'])
+	})
+
+	it('колесо над стопкой листает её: передний уходит назад', async () => {
+		const { show } = render({ layout: 'cascade' })
+
+		show('Первый')
+		show('Второй')
+		await nextTick()
+		// Слушатели стопки встают на регион с его узлом — кадром позже
+		await nextFrame()
+
+		const event = new WheelEvent('wheel', { deltaY: 100, bubbles: true, cancelable: true })
+
+		toasts()[0]?.dispatchEvent(event)
+		await nextTick()
+
+		expect(event.defaultPrevented).toBe(true)
+		expect(texts()).toEqual(['Первый', 'Второй'])
+	})
+})
+
 describe('Toasts · движок снаружи', () => {
 	it('тосты, показанные до монтирования, рисуются', async () => {
 		const engine = createEngineToasts()

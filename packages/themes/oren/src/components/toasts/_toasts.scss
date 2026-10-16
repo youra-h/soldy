@@ -24,11 +24,16 @@
 // замеров (см. «Место тоста» ниже), а плашка при этом своего размера не
 // меняет.
 //
-// Код отдаёт теме модификаторами (`--placement-*` у региона, `--variant-*` у
-// тоста), набором `dataset` тоста (`data-open`, `data-swiping`) и переменной
-// жеста (`--so-swipe-offset`, её плагин жеста пишет тосту сам). Своего
-// появления и исчезания у кода нет: закрытый тост гаснет переходом темы, а из
-// коллекции уходит, когда переходы корня тоста доиграли.
+// Раскладка — модификатор региона `--layout-*`, тоже всегда: столбец (`list`,
+// всё, что выше раздела «Стопка») или стопка (`cascade`, раздел «Стопка»).
+//
+// Код отдаёт теме модификаторами (`--placement-*` и `--layout-*` у региона,
+// `--variant-*` у тоста), набором `dataset` тоста (`data-open`,
+// `data-swiping`), переменной жеста (`--so-swipe-offset`, её плагин жеста
+// пишет тосту сам) и глубиной тоста в стопке (`--so-toasts-depth` — место в
+// составе, его ставит разметка). Своего появления и исчезания у кода нет:
+// закрытый тост гаснет переходом темы, а из коллекции уходит, когда переходы
+// корня тоста доиграли.
 
 // Отступ региона от краёв окна. Тот же, что у окна Dialog: тост — тоже слой
 // поверх страницы, и от края он стоит так же.
@@ -88,6 +93,18 @@ $exit-easing: cubic-bezier(0.4, 0, 0.6, 1);
 $collapse-duration: 250ms;
 $collapse-easing: cubic-bezier(0.4, 0, 0.2, 1);
 $collapse-delay: 100ms;
+
+// Стопка (`cascade`): на сколько задний тост выглядывает из-под того, что
+// перед ним, — зазор столбца, и на сколько он уже на каждой ступени. Видно
+// переднего и два задних слоя (`$cascade-layers`), как у стопки Sonner:
+// глубже тосты стоят за вторым слоем прозрачными и проявляются, когда
+// стопку листают к ним. Смена места в стопке — время и кривая роста места
+// столбца: тост подъезжает, а не прыгает. Числа — вкус, подобраны глазом.
+$cascade-peek: $gap;
+$cascade-narrow: 0.05;
+$cascade-layers: 2;
+$cascade-shift: $enter-duration;
+$cascade-easing: $enter-easing;
 
 // Регион — во всю ширину окна без отступов, а тосты в нём встают у начала
 // строки, по центру или у конца (`align-items` списка). Стороны — физические и
@@ -428,4 +445,257 @@ $collapse-delay: 100ms;
 // базового вида Button.
 :where(.so-toasts-item__close) {
 	@include button.button-view('plain');
+}
+
+// Стопка (`--layout-cascade`)
+//
+// Тосты перекрывают друг друга в одной ячейке сетки списка. Передний — первый
+// по порядку коллекции — сверху и на месте тоста столбца, задние — за ним: уже
+// на `$cascade-narrow` за ступень и выглядывают из-под него к дальней от края
+// окна стороне на `$cascade-peek` за ступень. Ступень — глубина тоста
+// (`--so-toasts-depth`, место в составе). Листают стопку перестановкой в
+// коллекции — колесом и стрелками, это плагин стопки, — и смена места идёт
+// переходом: задний подъезжает вперёд, передний отъезжает назад. Без движения
+// тосты встают на новые места сразу.
+//
+// Высота стопки — высота переднего: в потоке ячейки стоит он один, задние места
+// не занимают (`contain: size`). Высоту переднего задним пишет поведение темы
+// (`--so-toasts-front-height` на регионе, `TToastsFrontPlugin`), и меняют они её
+// переходом, когда передний сменился; без поведения темы задний — во всю
+// ячейку, то есть той же высоты, но без перехода.
+//
+// Содержимое задних закрыто их же поверхностью (`::after` плашки) и нажатий не
+// ловит: выглядывает пустая плашка. Скринридер его читает — порядок тостов у
+// него тот же, что на экране. Нажатие по краю заднего достаётся самому тосту:
+// фокус на нём выводит тост вперёд.
+//
+// Фокус выводит тост вперёд (`:focus-within`): тост под фокусом встаёт передним,
+// а стоявшие перед ним отходят на ступень назад — видно так, будто его
+// переставили первым. Перестановки нет: порядок Tab — порядок документа, и
+// перестановка на фокус гоняла бы Tab по кругу между тостами.
+//
+// Закрытый ступени не держит: пока он гаснет, стоявшие за ним выходят на
+// ступень вперёд, а закрытый передний уходит поверх нового переднего. Из
+// коллекции он уйдёт, когда догаснет, и тогда глубина задних сойдётся со
+// ступенью.
+//
+// Передний — тост под фокусом, а без фокуса в стопке — первый, и за закрытым
+// первым — следующий.
+//
+// Переставленный узел браузер вставляет в документ заново, и `@starting-style`
+// достаётся ему как новому. Поэтому новый тост в стопке только проявляется на
+// месте, без въезда от края: так же проявится и переставленный — на своём новом
+// месте, а не въедет в стопку снаружи.
+
+$tops: '.so-toasts--placement-top-start, .so-toasts--placement-top, .so-toasts--placement-top-end';
+$bottoms: '.so-toasts--placement-bottom-start, .so-toasts--placement-bottom, .so-toasts--placement-bottom-end';
+$starts: '.so-toasts--placement-top-start, .so-toasts--placement-bottom-start';
+$centers: '.so-toasts--placement-top, .so-toasts--placement-bottom';
+$ends: '.so-toasts--placement-top-end, .so-toasts--placement-bottom-end';
+
+$cascade: '.so-toasts--layout-cascade';
+$cascade-list: '#{$cascade} > .so-toasts__list';
+$cascade-item: '#{$cascade-list} > .so-toasts-item';
+
+// Передний — тост под фокусом; без фокуса в стопке — первый, а за закрытым
+// первым — следующий. Тот же выбор у `TToastsFrontPlugin`: высоту задним он
+// меряет у этого тоста.
+$cascade-unfocused: ':not(:has(~ .so-toasts-item:focus-within))';
+$cascade-front: '#{$cascade-list} > .so-toasts-item:focus-within, #{$cascade-list} > .so-toasts-item:first-child#{$cascade-unfocused}, #{$cascade-list} > .so-toasts-item[data-open="false"]:first-child + .so-toasts-item#{$cascade-unfocused}';
+
+#{$cascade-list} {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr);
+	// Ступени — `z-index` тостов, и за стопку они не выходят
+	isolation: isolate;
+	// Задний, вставший вперёд, идёт к своей высоте переходом
+	interpolate-size: allow-keywords;
+}
+
+// Стопка — у края окна, задние выглядывают к дальней от него стороне
+#{$cascade}:is(#{$bottoms}) {
+	--so-toasts-peek-sign: -1;
+
+	> .so-toasts__list {
+		align-items: end;
+	}
+}
+
+#{$cascade}:is(#{$tops}) {
+	--so-toasts-peek-sign: 1;
+
+	> .so-toasts__list {
+		align-items: start;
+	}
+}
+
+#{$cascade}:is(#{$starts}) > .so-toasts__list {
+	justify-items: start;
+}
+
+#{$cascade}:is(#{$centers}) > .so-toasts__list {
+	justify-items: center;
+}
+
+#{$cascade}:is(#{$ends}) > .so-toasts__list {
+	justify-items: end;
+}
+
+// Тост стопки — задний; передний — ниже. Ступень — глубина, на одну дальше за
+// тостом под фокусом и на одну ближе за закрытым (см. выше). Глубже двух
+// задних слоёв тост стоит за вторым и прозрачен. Сжатие — от дальнего края:
+// он и выглядывает, и на сжатии стоит на месте.
+#{$cascade-item} {
+	--so-toasts-gap: 0px;
+	--so-toasts-place: calc(
+		var(--so-toasts-depth, 0) +
+			var(--so-toasts-behind-focus, 0) - var(--so-toasts-after-closed, 0)
+	);
+	--so-toasts-lift: calc(
+		var(--so-toasts-peek-sign) * min(var(--so-toasts-place), #{$cascade-layers}) *
+			#{$cascade-peek}
+	);
+
+	grid-area: 1 / 1;
+	grid-template-rows: minmax(0, 1fr);
+	z-index: calc(-1 * var(--so-toasts-place));
+	contain: size;
+	height: var(--so-toasts-front-height, 100%);
+	scale: calc(1 - min(var(--so-toasts-place), #{$cascade-layers}) * #{$cascade-narrow});
+	opacity: clamp(0, #{$cascade-layers + 1} - var(--so-toasts-place), 1);
+}
+
+#{$cascade}:is(#{$bottoms}) > .so-toasts__list > .so-toasts-item {
+	transform-origin: 50% 0;
+}
+
+#{$cascade}:is(#{$tops}) > .so-toasts__list > .so-toasts-item {
+	transform-origin: 50% 100%;
+}
+
+// Сдвиг жеста — по своей оси, как у столбца, а ступень — к дальней стороне
+#{$cascade}:is(#{$starts}, #{$ends}) > .so-toasts__list > .so-toasts-item {
+	translate: var(--so-swipe-offset, 0px) var(--so-toasts-lift);
+}
+
+#{$cascade}:is(#{$centers}) > .so-toasts__list > .so-toasts-item {
+	translate: 0 calc(var(--so-swipe-offset, 0px) + var(--so-toasts-lift));
+}
+
+// Тост под фокусом — передний, стоявшие перед ним — на ступень дальше
+#{$cascade-item}:has(~ .so-toasts-item:focus-within) {
+	--so-toasts-behind-focus: 1;
+}
+
+// Стоявшие за закрытым — на ступень ближе, пока он гаснет
+#{$cascade-list} > .so-toasts-item[data-open='false'] ~ .so-toasts-item {
+	--so-toasts-after-closed: 1;
+}
+
+#{$cascade-item}:focus-within {
+	--so-toasts-place: 0;
+}
+
+// Плашка заднего — во всю его высоту, содержимое закрыто её же поверхностью.
+// Указатель плашка отдаёт тосту: край заднего ловит сам тост.
+#{$cascade-item} > .so-toasts-item__card {
+	position: relative;
+	align-self: stretch;
+	margin-block: 0;
+	overflow: clip;
+	pointer-events: none;
+
+	&::after {
+		content: '';
+		position: absolute;
+		inset: 0;
+		border-radius: inherit;
+		background-color: inherit;
+		pointer-events: none;
+		transition: opacity $enter-fade linear;
+	}
+}
+
+// Передний — в потоке ячейки и своей высоты, содержимое открыто
+#{$cascade-front} {
+	contain: none;
+	height: auto;
+
+	> .so-toasts-item__card {
+		overflow: visible;
+		pointer-events: inherit;
+
+		&::after {
+			opacity: 0;
+		}
+	}
+}
+
+// Закрытый гаснет; с движением — уходит туда же, куда в столбце: у боковых
+// мест к своему краю строки, у мест по центру — за край окна. Место его в
+// ячейке не схлопывается: на нём стоят задние. Закрытый передний уходит поверх
+// нового переднего: тот встаёт на его место, пока он гаснет.
+#{$cascade-item}[data-open='false'] {
+	opacity: 0;
+}
+
+#{$cascade-item}[data-open='false']:first-child {
+	z-index: 1;
+}
+
+#{$cascade}:is(#{$ends}) > .so-toasts__list > .so-toasts-item[data-open='false'] {
+	@include motion.allowed {
+		translate: calc(100% * var(--so-dir-sign)) var(--so-toasts-lift);
+	}
+}
+
+#{$cascade}:is(#{$starts}) > .so-toasts__list > .so-toasts-item[data-open='false'] {
+	@include motion.allowed {
+		translate: calc(-100% * var(--so-dir-sign)) var(--so-toasts-lift);
+	}
+}
+
+#{$cascade}:is(#{$centers}) > .so-toasts__list > .so-toasts-item[data-open='false'] {
+	@include motion.allowed {
+		translate: 0 calc(-100% * var(--so-toasts-peek-sign));
+	}
+}
+
+// Переходы — те же, что у столбца, но место не растёт: в стопке ступень —
+// сдвиг, сжатие и высота заднего. Прозрачность — в любом режиме, остальное —
+// движение.
+#{$cascade-item}:not([data-swiping='true']) {
+	transition-property: opacity;
+
+	&[data-open='true'] {
+		transition-duration: $enter-fade;
+		transition-timing-function: linear;
+	}
+
+	&[data-open='false'] {
+		transition-duration: $exit-fade;
+		transition-timing-function: linear;
+	}
+
+	@include motion.allowed {
+		transition-property: opacity, translate, scale, height;
+
+		&[data-open='true'] {
+			transition-duration: $enter-fade, $cascade-shift, $cascade-shift, $cascade-shift;
+			transition-timing-function: linear, $cascade-easing, $cascade-easing, $cascade-easing;
+		}
+
+		&[data-open='false'] {
+			transition-duration: $exit-fade, $exit-duration, $exit-duration, $exit-duration;
+			transition-timing-function: linear, $exit-easing, $exit-easing, $exit-easing;
+			transition-delay: 0s;
+		}
+	}
+}
+
+// Новый тост стопки проявляется на месте (см. выше)
+@starting-style {
+	#{$cascade-item}[data-open='true'] {
+		opacity: 0;
+	}
 }

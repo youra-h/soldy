@@ -2,9 +2,9 @@
  * Дескриптор Toasts (TToasts) — менеджер уведомлений и их регион.
  *
  * Наследует `LayerDescriptor` (видимость, тег, наборы, цель телепорта, подъём
- * в стеке) и добавляет место, предел видимых и длительность, плагины
- * коллекции и поведение тостов: отсчёт, удаление догасших, клавиатуру,
- * раскладку слоя и имя региона.
+ * в стеке) и добавляет место, раскладку (столбец или стопка), предел видимых
+ * и длительность, плагины коллекции и поведение тостов: отсчёт, удаление
+ * догасших, клавиатуру, листание стопки, раскладку слоя и имя региона.
  *
  * Слот `default` — приложение: менеджер оборачивает его, как
  * `LocaleProvider`, а потомки берут API тостов у лифта (`useToasts()`).
@@ -19,6 +19,7 @@ import { LayerDescriptor } from '../layer.descriptor'
 import {
 	CollectionBundlesPluginDescriptor,
 	CollectionElementsPluginDescriptor,
+	ToastsCascadePluginDescriptor,
 	ToastsKeyboardPluginDescriptor,
 	ToastsLayoutPluginDescriptor,
 	ToastsNamesPluginDescriptor,
@@ -59,6 +60,7 @@ export const ToastsDescriptor = defineDescriptor(() =>
 			},
 			props: {
 				placement: { type: String, triggers: ['change:placement'] },
+				layout: { type: String, triggers: ['change:layout'] },
 				max: { type: Number, triggers: ['change:max'] },
 				duration: { type: Number, triggers: ['change:duration'] },
 			},
@@ -74,6 +76,8 @@ export const ToastsDescriptor = defineDescriptor(() =>
 			ToastsRemovalPluginDescriptor,
 			// F8 к тостам, Escape на тосте, фокус закрытого — соседу
 			ToastsKeyboardPluginDescriptor,
+			// Стопка (`cascade`): колесо и стрелки выводят задний тост вперёд
+			ToastsCascadePluginDescriptor,
 			// `z-index` слоя у региона
 			ToastsLayoutPluginDescriptor,
 			// Имя региона от локали

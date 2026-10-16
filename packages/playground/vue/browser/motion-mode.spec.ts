@@ -293,6 +293,19 @@ const CASES: readonly TCase[] = [
 		still: ['opacity'],
 	},
 	{
+		name: 'Toasts стопкой: ступени, сжатие и высота задних, без движения — прозрачность',
+		mount: async () => {
+			const engine = createEngineToasts()
+
+			engine.extensions.toasts.show({ text: 'Сохранено', duration: 0 })
+
+			await show(() => h(Toasts, { engine, layout: 'cascade' }, () => 'Приложение'))
+		},
+		look: () => transitions('.so-toasts-item'),
+		moving: ['opacity', 'translate', 'scale', 'height'],
+		still: ['opacity'],
+	},
+	{
 		name: 'Drawer: въезд и выезд, без движения — прозрачность',
 		mount: () =>
 			show(() =>
