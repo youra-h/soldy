@@ -22,10 +22,12 @@ import { TButton } from '@soldy-ui/core'
 import {
 	TButtonElement,
 	TComponentViewElement,
+	TIconElement,
 	TProgressSpinnerElement,
 	TSkeletonElement,
 	type TButtonElementProps,
 	type TComponentViewElementProps,
+	type TIconElementProps,
 	type TProgressSpinnerElementProps,
 	type TSkeletonElementProps,
 } from '@soldy-ui/webc'
@@ -50,6 +52,10 @@ function isButton(node: Element | null): node is TButtonElementProps {
 
 function isView(node: Element | null): node is TComponentViewElementProps {
 	return node instanceof TComponentViewElement
+}
+
+function isIcon(node: Element | null): node is TIconElementProps {
+	return node instanceof TIconElement
 }
 
 function isSpinner(node: Element | null): node is TProgressSpinnerElementProps {
@@ -80,6 +86,7 @@ const COMPONENTS: ReadonlyArray<
 > = [
 	['Button', 'button', 'so-button', isButton, 'so-button'],
 	['ComponentView', 'div', 'so-component-view', isView, 'so-component-view'],
+	['Icon', 'span', 'so-icon', isIcon, 'so-icon'],
 	['ProgressSpinner', 'span', 'so-progress-spinner', isSpinner, 'so-progress-spinner'],
 	['Skeleton', 'div', 'so-skeleton', isSkeleton, 'so-skeleton'],
 ]
