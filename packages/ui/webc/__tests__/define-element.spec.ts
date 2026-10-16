@@ -13,13 +13,22 @@
  * Регистрирует здесь `defineElement`, как модуль компонента при импорте пакета.
  * Имена свои, у каждого теста новое: зарегистрированные модулем пакета уже
  * живые, а имя регистрируется в документе один раз.
+ *
+ * Отложенная сборка контейнера застаёт внутри элементы, собранные раньше него.
+ * Раскладка света — перенос силами базы: кнопка едет в точку шаблона, не
+ * выходя из документа, и не пересобирается.
  */
 
 import { describe, it, expect, afterEach } from 'vitest'
 import { TButton } from '@soldy-ui/core'
 import { TBasePlugin, type IPluginContext } from '@soldy-ui/plugins'
 import { usePlugins } from '@soldy-ui/setup'
-import { TButtonElement, defineElement, type TButtonElementProps } from '@soldy-ui/webc'
+import {
+	TButtonElement,
+	TComponentViewElement,
+	defineElement,
+	type TButtonElementProps,
+} from '@soldy-ui/webc'
 
 /** Инстансы, на которые встал плагин приложения, — по одному на сборку. */
 const installed: unknown[] = []
@@ -56,6 +65,11 @@ function freshName(): string {
 /** Регистрация кнопки soldy под именем — как у модуля компонента при импорте пакета. */
 function register(name: string): void {
 	defineElement(name, class extends TButtonElement {}, 'button')
+}
+
+/** Регистрация контейнера — `<div is>` над ComponentView — под именем. */
+function registerView(name: string): void {
+	defineElement(name, class extends TComponentViewElement {}, 'div')
 }
 
 function isSoldyButton(node: Element | null): node is TButtonElementProps {
@@ -168,5 +182,33 @@ describe('defineElement · первая сборка элемента разме
 		expect(el.parentElement?.localName).toBe('section')
 		expect(el.ctrl).toBeInstanceOf(TButton)
 		expect(installed).toEqual([el.ctrl])
+	})
+
+	/**
+	 * Кнопка зарегистрирована раньше контейнера и собрана сразу, а сборку
+	 * контейнера регистрация отложила. Его раскладка света застаёт кнопку
+	 * собранной и переносит её в точку шаблона, не выходя из документа: связку
+	 * кнопки перенос не трогает. Раньше свет вынимался и вставлялся заново, и
+	 * кнопка собиралась второй раз.
+	 */
+	it('контейнер, чью сборку отложила регистрация, собранную кнопку внутри не пересобирает', async () => {
+		defined += 1
+
+		const name = `so-define-view-${defined}`
+
+		dispose = usePlugins(TButton, [TAppPlugin])
+		document.body.innerHTML = `<div is="${name}"><button is="so-button" text="Сохранить"></button></div>`
+
+		const el = button('[is="so-button"]')
+
+		expect(installed).toEqual([el.ctrl])
+
+		registerView(name)
+		await microtask()
+
+		expect(el.parentElement?.getAttribute('is')).toBe(name)
+		expect(el.parentElement?.classList.contains('so-component-view')).toBe(true)
+		expect(installed).toEqual([el.ctrl])
+		expect(text(el)).toBe('Сохранить')
 	})
 })

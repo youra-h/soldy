@@ -11,8 +11,15 @@
  * Не событие-запрос (context protocol): ответ на всплывающее событие —
  * тот же обход вверх, только через диспетчер и подписку у каждого
  * провайдера, а синхронный обход проще и не зависит от того, кто успел
- * подписаться. На нём же встанут лифт коллекций и переход панели Frame к
- * якорю.
+ * подписаться. На нём же встанет лифт коллекций.
+ *
+ * Место увезённого корня — у его якоря. Корень слоя телепорт уводит в цель
+ * (`body`), а на его месте оставляет якорь-комментарий; поиск вверх от корня
+ * идёт к родителю якоря, а не к цели (`anchor`). Так содержимое панели Frame
+ * остаётся в контексте места, где Frame написан: кнопка в панели видит
+ * локаль провайдера вокруг Frame. Связь общая для всех контекстов места —
+ * место у узла одно, — и держит её этот модуль, а пишет телепорт
+ * (`runtime/teleport.ts`): контекст о телепорте не знает.
  *
  * Ключ — сам объект контекста: значение под ним держит только он, и тип
  * значения у ключа один. Узлы — слабыми ссылками: снятый провайдер уходит
@@ -21,6 +28,35 @@
  * Наружу пакета не выходит: это механика адаптера, а не API.
  */
 export class TPlaceContext<T> {
+	/** Увезённые корни: корень → якорь на его месте. */
+	private static readonly _anchors = new WeakMap<Node, Node>()
+
+	/**
+	 * Место увезённого корня — у якоря: поиск вверх от корня идёт к родителю
+	 * якоря. Ставится до переноса — элемент, собранный во время него, уже видит
+	 * место.
+	 */
+	static anchor(root: Node, anchor: Node): void {
+		TPlaceContext._anchors.set(root, anchor)
+	}
+
+	/** Корень снова там, где стоит: поиск вверх идёт к его родителю. */
+	static unanchor(root: Node): void {
+		TPlaceContext._anchors.delete(root)
+	}
+
+	/**
+	 * Узел выше по документу: родитель, а из теневого корня — его хост. Так место
+	 * компонента внутри теневого дерева чужого элемента остаётся под провайдером,
+	 * который стоит над этим элементом. У увезённого корня выше — родитель его
+	 * якоря.
+	 */
+	private static _parentOf(node: Node): Node | null {
+		const parent = (TPlaceContext._anchors.get(node) ?? node).parentNode
+
+		return parent instanceof ShadowRoot ? parent.host : parent
+	}
+
 	private readonly _values = new WeakMap<Element, T>()
 
 	/** Отдать значение месту: всему, что стоит ниже `element`. */
@@ -33,21 +69,14 @@ export class TPlaceContext<T> {
 	 * от родителя. Выше значения нет — `undefined`.
 	 */
 	nearest(node: Node): T | undefined {
-		for (let place = parentOf(node); place; place = parentOf(place)) {
+		for (
+			let place = TPlaceContext._parentOf(node);
+			place;
+			place = TPlaceContext._parentOf(place)
+		) {
 			if (place instanceof Element && this._values.has(place)) return this._values.get(place)
 		}
 
 		return undefined
 	}
-}
-
-/**
- * Узел выше по документу: родитель, а из теневого корня — его хост. Так место
- * компонента внутри теневого дерева чужого элемента остаётся под провайдером,
- * который стоит над этим элементом.
- */
-function parentOf(node: Node): Node | null {
-	const parent = node.parentNode
-
-	return parent instanceof ShadowRoot ? parent.host : parent
 }

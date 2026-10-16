@@ -5,6 +5,7 @@ export {
 	type ISoldyElementSpec,
 	type TNativeElementClass,
 	type TRootSpec,
+	type TRootTeleport,
 	type TSoldyElementClass,
 } from './element.base'
 export { defineElement } from './defineElement'

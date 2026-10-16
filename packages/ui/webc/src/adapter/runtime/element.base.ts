@@ -28,13 +28,15 @@
  * Класс собирает фабрика `SoldyElement(HTMLButtonElement, { … })`: база одна,
  * а нативный класс у каждого тега свой.
  *
- * - connectedCallback: при первом подключении снимает свет и строит структуру
- *   шаблона в самом элементе; при каждом — новая связка над тем же инстансом,
- *   `bindElement(this)` и полная отрисовка. Первое подключение бывает
- *   отложено — см. ниже
+ * - connectedCallback: при первом подключении строит структуру шаблона в
+ *   самом элементе и раскладывает по ней свет; при каждом — новая связка над
+ *   тем же инстансом, `bindElement(this)` и полная отрисовка. Первое
+ *   подключение бывает отложено — см. ниже. Подключение элемента, которого в
+ *   документе уже нет (колбэк узла, снятого раньше своей очереди), — пропуск
  * - attributeChangedCallback: приводит атрибут к типу и пишет в Core
  * - disconnectedCallback: снимает подписки и уничтожает adapter-context;
- *   структура, свет и инстанс остаются у элемента
+ *   структура, свет и инстанс остаются у элемента. Отключение из переноса,
+ *   который делает сама база, — пропуск (см. «Перенос силами базы» ниже)
  *
  * Первая сборка — сразу при подключении: `el.ctrl` есть уже после вставки, на
  * это опираются приложения. Откладывается она в двух случаях, и оба раза
@@ -73,8 +75,11 @@
  *                          `visible=false`: содержимое остаётся на месте, а
  *                          `TElementPlugin` связан с элементом всё время
  * Что у компонентов разное, называет описание корня (`TRootSpec`): имя
- * стиль-выхода (`fractionStyle` у ProgressSpinner) и прячет ли видимость корень
- * (у Skeleton нет — она убирает только заглушку).
+ * стиль-выхода (`fractionStyle` у ProgressSpinner), прячет ли видимость корень
+ * (у Skeleton нет — она убирает только заглушку) и уезжает ли корень в слой
+ * (`teleport` у Frame): тогда база уводит его в цель по селектору (`TTeleport`,
+ * `teleport.ts`), а без цели прячет на месте — это третья причина скрытия,
+ * рядом с `rendered` и `visible`.
  *
  * Атрибуты, классы и свойства стиля потребителя главнее того, что пишет ядро:
  * по каждому имени база помнит, что поставила сама, своё пишет и снимает, а
@@ -92,6 +97,16 @@
  * у элемента уже есть по тегу: `disabled` кнопки остаётся нативным свойством,
  * отражённым в атрибут, а до ядра доходит через атрибут.
  *
+ * Свои атрибуты элемента — сверх пропов дескриптора (`attributes` в описании
+ * элемента): то, что элемент читает сам и ядру не отдаёт, — роль иконки
+ * (`<span is="so-icon" icon="close">`). Значение хранит сам атрибут: свойство
+ * на прототипе его отражает (`el.icon`; `null` и `undefined` атрибут снимают),
+ * атрибут стоит в `observedAttributes`, и его смена — флаш привязок шаблона на
+ * это имя, как смена пропа. Описание называет свойство, а атрибут — его имя
+ * через дефис, как у пропов. Имя, занятое пропом (и `HOST_PROPS`), классом
+ * элемента или нативным элементом, — ошибка описания: у атрибута или свойства
+ * было бы два смысла.
+ *
  * Перестановка в DOM — отключение и подключение — элемент не ломает. Свет и
  * структура создаются один раз, а каждое подключение — новая связка над тем же
  * инстансом: инстанс первой сборки следующая получает как `ctrl`, и `el.ctrl`
@@ -99,6 +114,20 @@
  * свойством, в последнем значении, которое видел элемент: перестановка не
  * откатывает то, что с тех пор поменяло ядро. Записанное без связки — до
  * подключения или вне DOM — ложится поверх (`_assemble`).
+ *
+ * Перенос силами базы — не перестановка (`relocation.ts`). Свои переносы база
+ * делает сама: телепорт слоя уводит корень в цель и возвращает на место, а
+ * раскладка света — содержимое элемента в точки шаблона. Узел едет одной
+ * операцией DOM, из документа не выходя, и колбэки, которые вызвал перенос,
+ * связку не трогают — ни у переносимого узла, ни у элементов внутри него.
+ * Отключение, пришедшее, когда элемент снова в документе под переносимым
+ * узлом, — пропуск, подключение при живой связке — пропуск. Признак переноса
+ * держится до микрозадачи после него: с полифилом колбэки приходят его
+ * наблюдателем позже. Так Frame не пересобирается на показе в цели и на
+ * `contained`, кнопка в панели и в свете контейнера собирается один раз, а
+ * отложенную первую сборку перенос не сбивает — её доводит `_resume`.
+ * Перестановка, которую делает потребитель, по-прежнему пересобирает: под
+ * другим провайдером элемент берёт его локаль.
  *
  * Обновления точечные. Подписка на связку (`subscribe`) сообщает, какой именно проп
  * изменился; имена копятся в `_dirty`, а на флаше применяются только те
@@ -108,10 +137,10 @@
  * Слоты распределяются по атрибуту `slot` — это нативная HTML-семантика, а
  * не выдумка soldy. Shadow DOM для этого не используется: тема раскладывается
  * глобальными BEM-классами и через теневую границу не проходит, поэтому свет
- * переносится вручную в точки, объявленные шаблоном. Содержимое слота, которого
- * шаблон не объявил, не выводится: места для него в разметке компонента нет —
- * так же его не рисуют остальные адаптеры, и так же теневое дерево не рисует
- * свет, не попавший ни в один `<slot>`.
+ * переносится вручную в точки, объявленные шаблоном, — переносом силами базы.
+ * Содержимое слота, которого шаблон не объявил, не выводится: места для него в
+ * разметке компонента нет — так же его не рисуют остальные адаптеры, и так же
+ * теневое дерево не рисует свет, не попавший ни в один `<slot>`.
  */
 
 import type { IComponentView, IComponentViewProps } from '@soldy-ui/core'
@@ -126,11 +155,13 @@ import {
 	buildAttributeMap,
 	coerceAttribute,
 	isHostProp,
+	toAttributeName,
 	type IAttributeBinding,
 	WebcProfile,
 } from '../common'
-import type { ITemplate, ITemplateContext, TSlotTargets } from '../template'
+import type { ITemplate, ITemplateContext, TSlotTarget, TSlotTargets } from '../template'
 import { isDefining } from './defineElement'
+import { isRelocating, relocate } from './relocation'
 import {
 	applyAttributes,
 	applyClasses,
@@ -142,6 +173,7 @@ import {
 	type TAppliedStyles,
 	type THiddenDisplay,
 } from './root-attributes'
+import { TTeleport, type TTeleportPlace } from './teleport'
 import type { TBinding, TUpdateListener } from './useAdapter'
 
 /** Наборы ядра, которые база раскладывает на корень. */
@@ -151,35 +183,33 @@ type TRootSet = (typeof ROOT_SETS)[number]
 
 /**
  * Содержимое ли узел: элемент или текст не из одних пробелов. Пробелы между
- * тегами — след переносов строк в разметке, а комментарий не рисуется.
+ * тегами — след переносов строк в разметке, а комментарий не рисуется. Якорь
+ * увезённого корня — содержимое: он стоит на месте корня (`TTeleport.rootAt`).
  */
 function isContent(node: ChildNode): boolean {
-	if (node instanceof Element) return true
+	if (node instanceof Element || TTeleport.rootAt(node)) return true
 
 	return node instanceof Text && node.data.trim() !== ''
 }
 
 /**
- * Раскладывает свет по слотам и вынимает его из элемента.
- *
- * Признак — атрибут `slot` на элементе, как в стандарте. Текстовые узлы
+ * Слот узла — атрибут `slot` на элементе, как в стандарте. Текстовые узлы
  * атрибутов не имеют и всегда попадают в слот по умолчанию, поэтому
- * `<button is="so-button">Текст</button>` работает как у нативной кнопки.
- *
- * Слот, в котором нет содержимого (`isContent`), — не задан, и его узлы
- * отбрасываются. Иначе пробелы вокруг `<svg slot="leading">` на своей строке
- * стали бы слотом по умолчанию и заглушили бы проп `text` — компилятор Vue
- * такие пробелы и комментарии выбрасывает, и одна разметка вела бы себя
- * по-разному. Пробелы внутри содержимого (`<b>Сохранить</b> <i>файл</i>`)
- * остаются.
+ * `<button is="so-button">Текст</button>` работает как у нативной кнопки. У
+ * якоря увезённого корня слот — корня: якорь стоит на его месте.
  */
+function slotOf(node: ChildNode): string {
+	const element = node instanceof Element ? node : TTeleport.rootAt(node)
+
+	return element?.getAttribute('slot') ?? DEFAULT_SLOT
+}
+
+/** Группирует свет по слотам, не вынимая из элемента. */
 function groupBySlot(nodes: readonly ChildNode[]): Map<string, ChildNode[]> {
 	const groups = new Map<string, ChildNode[]>()
 
 	for (const node of nodes) {
-		const name =
-			node instanceof Element ? (node.getAttribute('slot') ?? DEFAULT_SLOT) : DEFAULT_SLOT
-
+		const name = slotOf(node)
 		const group = groups.get(name)
 
 		if (group) {
@@ -187,15 +217,31 @@ function groupBySlot(nodes: readonly ChildNode[]): Map<string, ChildNode[]> {
 		} else {
 			groups.set(name, [node])
 		}
-
-		node.remove()
-	}
-
-	for (const [name, group] of groups) {
-		if (!group.some(isContent)) groups.delete(name)
 	}
 
 	return groups
+}
+
+/** Кладёт узел в точку слота: внутрь узла или перед ним (`TSlotTarget`). */
+function place(node: ChildNode, target: TSlotTarget): void {
+	if (target.mode === 'append') {
+		target.node.appendChild(node)
+	} else {
+		target.node.parentNode?.insertBefore(node, target.node)
+	}
+}
+
+/**
+ * Куда корню слоя — по состоянию, выходы называет описание корня: селектор
+ * цели — непустая строка, всё остальное — цели нет.
+ */
+function placeOf(state: TStateSnapshot, names: TRootTeleport): TTeleportPlace {
+	const target = state[names.target]
+
+	return {
+		target: typeof target === 'string' && target !== '' ? target : null,
+		contained: state[names.contained] === true,
+	}
 }
 
 /** Что у элемента своего, помимо нативного: инстанс ядра и его состояние. */
@@ -225,11 +271,26 @@ export interface ISoldyElement<TInstance> {
  *   Ложится поверх выхода плагина раскладки;
  * - `hides` — прячут ли `visible` и `rendered` корень, по умолчанию да. У
  *   Skeleton нет: они убирают только заглушку, а содержимое в корне остаётся
- *   на виду.
+ *   на виду;
+ * - `teleport` — корень уезжает в слой: имена выходов состояния с селектором
+ *   цели и с признаком «на месте» (`{ target: 'target', contained: 'contained' }`
+ *   у Frame), их называет компонент, как у Angular. Переносит корень
+ *   `TTeleport` (`teleport.ts`) — сам элемент потребителя: на первой раскладке
+ *   связки и на смене этих выходов. Цели нет — корень на месте и скрыт. Нет —
+ *   корень стоит, где его написали.
  */
 export type TRootSpec = {
 	readonly style?: string
 	readonly hides?: boolean
+	readonly teleport?: TRootTeleport
+}
+
+/** Слой в описании корня (`TRootSpec.teleport`): имена выходов состояния. */
+export type TRootTeleport = {
+	/** Выход с селектором цели: `target` у Frame. */
+	readonly target: string
+	/** Выход «корень на месте, без переноса»: `contained` у Frame. */
+	readonly contained: string
 }
 
 /** Всё, чем элементы soldy отличаются друг от друга. */
@@ -240,6 +301,12 @@ export interface ISoldyElementSpec<TInstance> {
 	readonly template: ITemplate<TInstance>
 	/** Описание корня — см. `TRootSpec`. */
 	readonly root?: TRootSpec
+	/**
+	 * Свои атрибуты элемента сверх пропов дескриптора — имена свойств (см.
+	 * шапку): роль иконки (`icon`). Привязка шаблона на такое имя читает
+	 * значение из атрибута корня.
+	 */
+	readonly attributes?: readonly string[]
 	/** setup-слой компонента: связка над готовым инстансом или новым. */
 	setup(
 		host: HTMLElement,
@@ -275,14 +342,20 @@ export function SoldyElement<
 	const attributes: ReadonlyMap<string, IAttributeBinding> = buildAttributeMap(spec.descriptor)
 	/** Атрибуты-входы пропов: их значение в наборе ядра верно всегда. */
 	const inputs: ReadonlySet<string> = new Set(attributes.keys())
+	/** Свои атрибуты элемента: имя атрибута → имя свойства (`ISoldyElementSpec.attributes`). */
+	const own: ReadonlyMap<string, string> = new Map(
+		(spec.attributes ?? []).map((name) => [toAttributeName(name), name]),
+	)
 	/** Имя стиль-выхода компонента (`TRootSpec.style`); нет — стиль только от плагина. */
 	const styleOutput = spec.root?.style
 	/** Прячет ли видимость корень (`TRootSpec.hides`). */
 	const hides = spec.root?.hides ?? true
+	/** Имена выходов слоя (`TRootSpec.teleport`); нет — корень в слой не уезжает. */
+	const layer = spec.root?.teleport
 
 	class TSoldyElement extends Native implements ISoldyElement<TInstance> {
 		static get observedAttributes(): string[] {
-			return [...attributes.keys()]
+			return [...attributes.keys(), ...own.keys()]
 		}
 
 		private _binding?: TBinding<TInstance>
@@ -320,6 +393,11 @@ export function SoldyElement<
 		private _appliedStyles: TAppliedStyles = new Map()
 		private _hiddenDisplay: THiddenDisplay = undefined
 
+		/** Телепорт корня слоя (`TRootSpec.teleport`) — заводит его первая раскладка. */
+		private _teleport?: TTeleport
+		/** Корень на своём месте: у слоя — в цели или на месте; без цели — нет. */
+		private _placed = true
+
 		get state(): TInstanceState<TInstance> {
 			return this._binding?.state ?? {}
 		}
@@ -333,6 +411,11 @@ export function SoldyElement<
 		}
 
 		connectedCallback(): void {
+			// Колбэк узла, снятого раньше своей очереди: вне документа собирать
+			// нечего — ни места, ни провайдера у элемента нет
+			if (!this.isConnected) return
+
+			// Живая связка — подключение после переноса силами базы (см. шапку)
 			if (this._connected || this._deferred) return
 
 			if (!this._light) {
@@ -370,19 +453,32 @@ export function SoldyElement<
 		}
 
 		disconnectedCallback(): void {
+			// Перенос силами базы — не отключение: элемент снова в документе, и
+			// связка остаётся (см. шапку)
+			if (isRelocating(this)) return
+
 			this._connected = false
 			this._binding?.destroy()
 			this._binding = undefined
+			// Увезённый корень сняли или переставили: якорь уходит с места
+			this._teleport?.release()
 		}
 
 		attributeChangedCallback(name: string, _old: string | null, value: string | null): void {
 			const attribute = attributes.get(name)
 
-			if (!attribute) return
+			if (attribute) {
+				// `undefined` тоже пишется: атрибут сняли — проп больше не задан, и
+				// связка вернёт его к умолчанию
+				this._write(attribute.prop, coerceAttribute(value, attribute))
 
-			// `undefined` тоже пишется: атрибут сняли — проп больше не задан, и
-			// связка вернёт его к умолчанию
-			this._write(attribute.prop, coerceAttribute(value, attribute))
+				return
+			}
+
+			// Свой атрибут: значение хранит он сам, и привязки читают его с корня
+			const property = own.get(name)
+
+			if (property !== undefined) this._mark(property)
 		}
 
 		/**
@@ -479,12 +575,13 @@ export function SoldyElement<
 		}
 
 		/**
-		 * Снимает свет и строит структуру шаблона в элементе — один раз, при первом
-		 * подключении. Дальше свет живёт в структуре, и снимать его заново нельзя: в
-		 * элементе уже своя разметка, и при перестановке она попала бы в свет.
+		 * Строит структуру шаблона в элементе и раскладывает по ней свет — один раз,
+		 * при первом подключении. Дальше свет живёт в структуре, и раскладывать его
+		 * заново нельзя: в элементе уже своя разметка, и при перестановке она
+		 * попала бы в свет.
 		 */
 		private _build(): void {
-			const light = groupBySlot(Array.from(this.childNodes))
+			const groups = groupBySlot(Array.from(this.childNodes))
 			const targets = spec.template.create(this)
 
 			// Слоты не наследуются: слота по умолчанию может не быть вовсе
@@ -492,34 +589,65 @@ export function SoldyElement<
 			const fallback = targets[DEFAULT_SLOT]
 
 			this._content = fallback?.mode === 'append' ? fallback.node : this
-			this._light = light
-			this._distribute(light, targets)
+			this._light = this._distribute(groups, targets)
 		}
 
 		/**
-		 * Раскладывает свет по точкам, объявленным шаблоном. Слот, которого шаблон
-		 * не объявил, места в разметке не имеет, и его содержимое не выводится (см.
-		 * шапку): в корне оно оказалось бы там, где компонент его не ждёт, — текст
-		 * внутри кольца ProgressSpinner вошёл бы в узел с ролью `progressbar`.
+		 * Раскладывает свет по точкам, объявленным шаблоном, и отдаёт заданные
+		 * слоты.
+		 *
+		 * Узел, которому есть место, едет туда переносом силами базы (см. шапку):
+		 * одной операцией, из документа не выходя. Элемент soldy в нём не
+		 * пересобирается — ни собранный раньше контейнера (разметка страницы,
+		 * сборку контейнера отложила регистрация), ни несобранный: его первое
+		 * подключение приходит уже на новом месте, в документе, под провайдером.
+		 *
+		 * Узлы без места снимаются:
+		 * - слот без содержимого (`isContent`) не задан. Иначе пробелы вокруг
+		 *   `<svg slot="leading">` на своей строке стали бы слотом по умолчанию и
+		 *   заглушили бы проп `text` — компилятор Vue такие пробелы и комментарии
+		 *   выбрасывает, и одна разметка вела бы себя по-разному. Пробелы внутри
+		 *   содержимого (`<b>Сохранить</b> <i>файл</i>`) остаются;
+		 * - слот, которого шаблон не объявил, места в разметке не имеет, и его
+		 *   содержимое не выводится: в корне оно оказалось бы там, где компонент
+		 *   его не ждёт, — текст внутри кольца ProgressSpinner вошёл бы в узел с
+		 *   ролью `progressbar`.
 		 */
-		private _distribute(light: ReadonlyMap<string, ChildNode[]>, targets: TSlotTargets): void {
-			for (const [name, nodes] of light) {
+		private _distribute(
+			groups: ReadonlyMap<string, ChildNode[]>,
+			targets: TSlotTargets,
+		): Map<string, ChildNode[]> {
+			const light = new Map<string, ChildNode[]>()
+
+			for (const [name, nodes] of groups) {
+				const given = nodes.some(isContent)
 				const target = targets[name]
 
-				if (!target) continue
+				if (given) light.set(name, nodes)
 
-				for (const node of nodes) {
-					if (target.mode === 'append') {
-						target.node.appendChild(node)
-					} else {
-						target.node.parentNode?.insertBefore(node, target.node)
-					}
+				if (given && target) {
+					relocate(nodes, () => {
+						for (const node of nodes) place(node, target)
+					})
+				} else {
+					for (const node of nodes) node.remove()
 				}
 			}
+
+			return light
 		}
 
 		private _onUpdate(name: string, value: unknown): void {
 			this._values.set(name, value)
+			this._mark(name)
+		}
+
+		/**
+		 * Имя — к отрисовке: на флаше применятся привязки, которые за него
+		 * отвечают. Без подключения флаша нет — имя дождётся полной отрисовки
+		 * следующего подключения.
+		 */
+		private _mark(name: string): void {
 			this._dirty.add(name)
 			this._queueFlush()
 		}
@@ -588,12 +716,25 @@ export function SoldyElement<
 				)
 			}
 
+			// Слой — в цель или на место: на первой раскладке связки и на смене
+			// цели или «на месте». Корень потребителя, и переносит его база
+			const placing =
+				layer !== undefined && (full || changed(layer.target) || changed(layer.contained))
+
+			if (placing) {
+				this._teleport ??= new TTeleport(this)
+				this._placed = this._teleport.place(placeOf(state, layer))
+			}
+
 			// Скрытие — поверх стиля: `display: none` не перекрывает ни раскладка,
-			// ни потребитель
-			if (hides && (changed('rendered') || changed('visible'))) {
+			// ни потребитель. Прячут корень `rendered` и `visible`, если видимость
+			// его прячет, и слой без цели: корень на месте, а места у панели нет
+			if (changed('rendered') || changed('visible') || placing) {
+				const unseen = hides && (state.rendered === false || state.visible === false)
+
 				this._hiddenDisplay = applyHidden(
 					this,
-					state.rendered === false || state.visible === false,
+					unseen || !this._placed,
 					this._hiddenDisplay,
 				)
 			}
@@ -611,6 +752,11 @@ export function SoldyElement<
 		 * передать объект или готовый инстанс. Пропускаются `ctrl` (своя пара
 		 * выше), пропы `HOST_PROPS` и свойства, которые у элемента уже есть по
 		 * тегу: нативное свойство остаётся нативным (см. шапку).
+		 *
+		 * Свойства своих атрибутов — следом, отражением атрибута: значение
+		 * хранит он сам (см. шапку). Имя, которое уже занято — пропом (его
+		 * атрибутом или свойством), `HOST_PROPS`, классом элемента или нативным
+		 * элементом, — ошибка описания, а не повод перекрыть чужое.
 		 */
 		static {
 			for (const prop of Object.keys(TSurface.of(spec.descriptor, WebcProfile).exportProps)) {
@@ -626,6 +772,35 @@ export function SoldyElement<
 
 					set(this: TSoldyElement, value: unknown) {
 						this._write(prop, value)
+					},
+				})
+			}
+
+			for (const [attribute, property] of own) {
+				if (
+					attributes.has(attribute) ||
+					isHostProp(property) ||
+					property in this.prototype
+				) {
+					throw new Error(
+						`[soldy] Свой атрибут «${attribute}» занят: это имя уже у пропа, класса элемента или нативного элемента`,
+					)
+				}
+
+				Object.defineProperty(this.prototype, property, {
+					configurable: true,
+					enumerable: true,
+
+					get(this: TSoldyElement): string | null {
+						return this.getAttribute(attribute)
+					},
+
+					set(this: TSoldyElement, value: unknown) {
+						if (value === null || value === undefined) {
+							this.removeAttribute(attribute)
+						} else {
+							this.setAttribute(attribute, String(value))
+						}
 					},
 				})
 			}

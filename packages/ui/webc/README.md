@@ -36,8 +36,8 @@ Shadow DOM is not used — a theme styles global BEM classes, so light DOM is di
 get no scope: slot content is the element's own light DOM, so component data (the `text` of
 Button's `default` slot) cannot be passed into it.
 
-> **Status:** the Web Components adapter is in progress — Button, ProgressSpinner and Skeleton are
-> ported, the rest of the set is on its way. See
+> **Status:** the Web Components adapter is in progress — Button, Icon, ProgressSpinner, Skeleton
+> and Frame are ported, the rest of the set is on its way. See
 > [the adapter table](https://github.com/youra-h/soldy#components).
 
 ## Install
@@ -63,9 +63,45 @@ import '@soldy-ui/webc'
 <div is="so-skeleton" width="160" height="16"><p>Loaded content</p></div>
 ```
 
+An icon from the icon pack is `<span is="so-icon">` with the role in its `icon` attribute (`el.icon`
+from code). The role is the element's own attribute, not a component prop: the element draws the
+role's `<svg>` inside itself, stretched to its box. The `span` is the icon's root — size, classes
+and the accessible name are on it, as with any element. Without a name the icon is hidden from
+screen readers:
+
+```html
+<span is="so-icon" icon="close" size="lg"></span>
+<span is="so-icon" icon="close" aria_label="Close"></span>
+<button is="so-button" text="Next">
+  <span is="so-icon" icon="arrowRight" slot="trailing"></span>
+</button>
+```
+
+The icon is always a `span`: `is` extends HTML elements only, so it cannot be an `<svg>`, and one
+name extends one tag, so `<i is="so-icon">` does not come to life. A bare `<svg>` with a role's
+picture, for markup of your own, is `roleIcon(role)` from the package.
+
 Attributes, classes and inline styles you write on an element win over what the component writes
 there itself: `style="width: 40px"` on a skeleton beats the width it computes, and a property a
 script sets on the element directly survives the component's updates.
+
+A frame is a layer above the page: the element you wrote moves itself to its `target` (`body` by
+default), out from under `overflow` and stacking contexts, with your class, attributes and
+listeners on it, and a comment stays in its place. It is hidden until `visible`, and `contained`
+keeps it in place, inside the nearest positioned ancestor:
+
+```html
+<div class="card">
+  <div is="so-frame" visible target="#layers" class="menu-panel" x="40" y="120">
+    <button is="so-button" text="Rename"></button>
+  </div>
+</div>
+```
+
+Moving the panel rebuilds neither the frame nor anything inside it, and the panel keeps the place it
+was written in: the button above takes its language from the `<so-locale-provider>` around the
+card, not around `#layers`. Removing the card from the page takes the panel out of the target with
+it.
 
 In a form it is simply a button:
 

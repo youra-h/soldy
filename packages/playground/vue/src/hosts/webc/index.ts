@@ -1,6 +1,8 @@
 import { enUS, type TLocale } from '@soldy-ui/plugins'
-import { TLocaleProviderElement, isHostProp } from '@soldy-ui/webc'
+import { DEFAULT_SLOT } from '@soldy-ui/setup'
+import { TLocaleProviderElement, isHostProp, toAttributeName } from '@soldy-ui/webc'
 import { findComponent, type IPreviewHost } from '@soldy-ui/playground-shared'
+import { FIXTURES } from './fixtures'
 import { PREVIEWS, type TPreview } from './previews'
 import { listenersOf, type TElementListener } from './events'
 import { instanceSnippet, propSnippet } from './snippet'
@@ -11,9 +13,9 @@ let locale: TLocale = enUS
 /** Живые корни хоста: смена языка пишется в каждый. */
 const roots = new Set<TLocaleProviderElement>()
 
-/** Чем рисовать. Фикстур у хоста нет — без ключа рисуется превью компонента. */
+/** Чем рисовать: фикстура по ключу, без ключа — превью компонента. */
 function drawing(component: string, fixture: string | undefined): TPreview {
-	const found = fixture === undefined ? PREVIEWS[component] : undefined
+	const found = fixture === undefined ? PREVIEWS[component] : FIXTURES[fixture]
 
 	if (!found) {
 		throw new Error(
@@ -52,13 +54,39 @@ function build(
 
 	if (bind.ctrl !== undefined) Reflect.set(element, 'ctrl', bind.ctrl)
 
-	for (const [name, value] of propsOf(preview, bind)) {
-		if (value !== undefined) Reflect.set(element, name, value)
-	}
+	fill(element, preview, propsOf(preview, bind))
 
 	for (const { type, listener } of listeners) element.addEventListener(type, listener)
 
 	return element
+}
+
+/**
+ * Описание на элементе: свои атрибуты — атрибутами, как в разметке, пропсы —
+ * свойствами, а дети по слотам — светом, с атрибутом `slot` (у слота по
+ * умолчанию его нет). Всё — до вставки: первая сборка разложит свет по
+ * слотам. Ребёнок получает своё описание тем же путём, без пропсов строки.
+ */
+function fill(element: HTMLElement, preview: TPreview, props: Map<string, unknown>): void {
+	for (const [name, value] of Object.entries(preview.attributes ?? {})) {
+		element.setAttribute(toAttributeName(name), value)
+	}
+
+	for (const [name, value] of props) {
+		if (value !== undefined) Reflect.set(element, name, value)
+	}
+
+	for (const [slot, children] of Object.entries(preview.slots ?? {})) {
+		for (const child of children) {
+			const node = document.createElement(child.tag, { is: child.is })
+
+			fill(node, child, propsOf(child, {}))
+
+			if (slot !== DEFAULT_SLOT) node.setAttribute('slot', slot)
+
+			element.appendChild(node)
+		}
+	}
 }
 
 /**
@@ -85,10 +113,11 @@ function write(element: HTMLElement, before: Map<string, unknown>, after: Map<st
  * язык шапки корню даёт хост — свойством `locale`, в источник провайдера:
  * компоненты не пересобираются.
  *
- * Элемент компонента строит код (`build`), пропсы уходят ему свойствами,
- * слушатели — по поверхности дескриптора (`listenersOf`). Смена `ctrl`
- * пересоздаёт элемент: присвоенный подключённому, он дошёл бы до ядра лишь при
- * следующем подключении.
+ * Элемент компонента строит код (`build`), пропсы уходят ему свойствами, свои
+ * атрибуты — атрибутами, содержимое слотов фикстуры — детьми, слушатели — по
+ * поверхности дескриптора (`listenersOf`). Смена `ctrl` пересоздаёт элемент:
+ * присвоенный подключённому, он дошёл бы до ядра лишь при следующем
+ * подключении.
  *
  * Синхронно: элемент собирается при подключении и раскладывает состояние
  * ядра на себя тем же вызовом, — к возврату из `mount` компонент в DOM, как
@@ -97,9 +126,7 @@ function write(element: HTMLElement, before: Map<string, unknown>, after: Map<st
  */
 const host: IPreviewHost = {
 	previews: Object.keys(PREVIEWS),
-	// Фикстур нет: меткам слотов Button нужен scope, а иконкам в слотах — Icon,
-	// ещё не перенесённый
-	fixtures: [],
+	fixtures: Object.keys(FIXTURES),
 	// Содержимое слота — свет элемента: данных компонента ему не передать
 	slotScope: false,
 
