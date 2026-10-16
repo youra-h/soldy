@@ -40,16 +40,27 @@ function propsOf(preview: TPreview, bind: Readonly<Record<string, unknown>>): Ma
 }
 
 /**
+ * Что построил хост: элемент компонента и узел, который встаёт в корень, —
+ * обёртку с компонентом в её слоте по умолчанию или сам компонент.
+ */
+type TBuilt = {
+	readonly element: HTMLElement
+	readonly outer: HTMLElement
+}
+
+/**
  * Элемент компонента — кодом, как его строит потребитель. Всё, что элемент
  * получает до вставки, применит его первая сборка, а `ctrl` — только до
  * вставки: инстанс, присвоенный подключённому элементу, достанется лишь
- * следующей сборке, после перестановки.
+ * следующей сборке, после перестановки. Обёртка (`TPreview.wrapper`) — тем же
+ * путём, со своими пропсами описания, а компонент — её светом, в слоте по
+ * умолчанию.
  */
 function build(
 	preview: TPreview,
 	bind: Readonly<Record<string, unknown>>,
 	listeners: readonly TElementListener[],
-): HTMLElement {
+): TBuilt {
 	const element = document.createElement(preview.tag, { is: preview.is })
 
 	if (bind.ctrl !== undefined) Reflect.set(element, 'ctrl', bind.ctrl)
@@ -58,7 +69,16 @@ function build(
 
 	for (const { type, listener } of listeners) element.addEventListener(type, listener)
 
-	return element
+	const { wrapper } = preview
+
+	if (!wrapper) return { element, outer: element }
+
+	const outer = document.createElement(wrapper.tag, { is: wrapper.is })
+
+	fill(outer, wrapper, propsOf(wrapper, {}))
+	outer.appendChild(element)
+
+	return { element, outer }
 }
 
 /**
@@ -90,6 +110,31 @@ function fill(element: HTMLElement, preview: TPreview, props: Map<string, unknow
 }
 
 /**
+ * Принимает ли элемент проп сам — наблюдает ли атрибут пропа. Не принимает
+ * его корень с полем: `id` — проп поля, атрибут разметки элемент берёт только
+ * первой сборкой, а `el.id` — собственный `id` корня.
+ */
+function takes(element: HTMLElement, prop: string): boolean {
+	const ctor = element.constructor
+
+	return (
+		'observedAttributes' in ctor &&
+		Array.isArray(ctor.observedAttributes) &&
+		ctor.observedAttributes.includes(toAttributeName(prop))
+	)
+}
+
+/**
+ * Проп собранному элементу: свойством элемента, а проп, которого элемент сам
+ * не принимает (`id` поля), — инстансу, как из кода приложения (`ctrl.id`).
+ */
+function assign(element: HTMLElement, name: string, value: unknown): void {
+	const target: unknown = takes(element, name) ? element : Reflect.get(element, 'ctrl')
+
+	if (typeof target === 'object' && target !== null) Reflect.set(target, name, value)
+}
+
+/**
  * Новые пропсы — свойствами, только сменившиеся: как полный набор пропсов у
  * остальных фреймворков, повтор прежнего значения не откатывает то, что с тех
  * пор поменяли ядро или код через инстанс. Снятый проп — `undefined`: связка
@@ -97,11 +142,11 @@ function fill(element: HTMLElement, preview: TPreview, props: Map<string, unknow
  */
 function write(element: HTMLElement, before: Map<string, unknown>, after: Map<string, unknown>) {
 	for (const [name, value] of after) {
-		if (!before.has(name) || before.get(name) !== value) Reflect.set(element, name, value)
+		if (!before.has(name) || before.get(name) !== value) assign(element, name, value)
 	}
 
 	for (const name of before.keys()) {
-		if (!after.has(name)) Reflect.set(element, name, undefined)
+		if (!after.has(name)) assign(element, name, undefined)
 	}
 }
 
@@ -114,10 +159,11 @@ function write(element: HTMLElement, before: Map<string, unknown>, after: Map<st
  * компоненты не пересобираются.
  *
  * Элемент компонента строит код (`build`), пропсы уходят ему свойствами, свои
- * атрибуты — атрибутами, содержимое слотов фикстуры — детьми, слушатели — по
- * поверхности дескриптора (`listenersOf`). Смена `ctrl` пересоздаёт элемент:
- * присвоенный подключённому, он дошёл бы до ядра лишь при следующем
- * подключении.
+ * атрибуты — атрибутами, содержимое слотов — детьми, слушатели — по
+ * поверхности дескриптора (`listenersOf`). Обёртка превью (подпись вокруг
+ * флажка) получает только свои пропсы описания. Смена `ctrl` пересоздаёт
+ * элемент вместе с обёрткой: присвоенный подключённому, он дошёл бы до ядра
+ * лишь при следующем подключении.
  *
  * Синхронно: элемент собирается при подключении и раскладывает состояние
  * ядра на себя тем же вызовом, — к возврату из `mount` компонент в DOM, как
@@ -141,18 +187,18 @@ const host: IPreviewHost = {
 		roots.add(root)
 
 		let bind = props
-		let element = build(preview, bind, listeners)
+		let built = build(preview, bind, listeners)
 
-		root.appendChild(element)
+		root.appendChild(built.outer)
 
 		return {
 			update(next) {
 				if (next.ctrl !== bind.ctrl) {
-					element.remove()
-					element = build(preview, next, listeners)
-					root.appendChild(element)
+					built.outer.remove()
+					built = build(preview, next, listeners)
+					root.appendChild(built.outer)
 				} else {
-					write(element, propsOf(preview, bind), propsOf(preview, next))
+					write(built.element, propsOf(preview, bind), propsOf(preview, next))
 				}
 
 				bind = next
