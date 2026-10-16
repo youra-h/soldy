@@ -346,6 +346,13 @@ a {
 	gap: 16px;
 }
 
+/* Узкое окно — то же, где меню уходит в панель (useSidebar): блоки друг под другом */
+@media (max-width: 768px) {
+	.pg-prop__columns {
+		grid-template-columns: minmax(0, 1fr);
+	}
+}
+
 .pg-col {
 	display: flex;
 	flex-direction: column;
