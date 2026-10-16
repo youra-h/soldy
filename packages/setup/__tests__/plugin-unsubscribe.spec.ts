@@ -28,6 +28,7 @@ import {
 	TAccordion,
 	TCalendar,
 	TListBox,
+	TPagination,
 	TRadioGroup,
 	TSelect,
 	TTable,
@@ -37,6 +38,7 @@ import {
 	createEngineAccordion,
 	createEngineCalendar,
 	createEngineListBox,
+	createEnginePagination,
 	createEngineRadioGroup,
 	createEngineSelect,
 	createEngineTable,
@@ -90,6 +92,11 @@ const ENGINES: Readonly<Record<string, () => TOwnedEngine>> = {
 		const owner = new TListBox()
 
 		return { owner, engine: createEngineListBox({ owner }) }
+	},
+	PaginationDescriptor: () => {
+		const owner = new TPagination({ total: 100 })
+
+		return { owner, engine: createEnginePagination({ owner }) }
 	},
 	RadioGroupDescriptor: () => {
 		const owner = new TRadioGroup()

@@ -51,6 +51,10 @@ import {
 	ListBoxCollectionItemDescriptor,
 	ListBoxDescriptor,
 	ListBoxItemDescriptor,
+	PaginationCollectionDescriptor,
+	PaginationCollectionItemDescriptor,
+	PaginationDescriptor,
+	PaginationItemDescriptor,
 	RadioGroupCollectionDescriptor,
 	RadioGroupCollectionItemDescriptor,
 	RadioGroupDescriptor,
@@ -262,8 +266,9 @@ const COLLECTIONS: Readonly<Record<string, TCollectionKit>> = {
 /**
  * Коллекции, у которых элемента из разметки нет: состав кладёт сама коллекция.
  * Дни календаря кладёт вид по месяцам сеток, `items` у него не принимается, а
- * день монтируется только над элементом из состава (`ctrl`). Строки таблицы —
- * только данными: таблица рисует строку сама, над её экземпляром.
+ * день монтируется только над элементом из состава (`ctrl`). Так же страницы
+ * пагинации — их кладёт окно. Строки таблицы — только данными: таблица рисует
+ * строку сама, над её экземпляром.
  */
 const DATA_ONLY: Readonly<Record<string, TCollectionKit>> = {
 	CalendarCollectionItemDescriptor: {
@@ -272,6 +277,17 @@ const DATA_ONLY: Readonly<Record<string, TCollectionKit>> = {
 			mountItem(
 				CalendarItemDescriptor(),
 				CalendarCollectionItemDescriptor(),
+				elevator,
+				source,
+			),
+	},
+	// Страницы окна кладёт расширение пагинации: без данных — одна страница
+	PaginationCollectionItemDescriptor: {
+		list: () => mountList(PaginationDescriptor(), PaginationCollectionDescriptor(), []),
+		item: (elevator, source) =>
+			mountItem(
+				PaginationItemDescriptor(),
+				PaginationCollectionItemDescriptor(),
 				elevator,
 				source,
 			),

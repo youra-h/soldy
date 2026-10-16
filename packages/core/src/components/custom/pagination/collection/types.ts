@@ -1,5 +1,4 @@
 import type {
-	IActivationCollectionItemProps,
 	ICollectionProps,
 	TActivationCollectionFacadeEvents,
 	TActivationExtension,
@@ -51,9 +50,6 @@ export type TPaginationCollectionFacadeEngine = TCollectionEngine<any, any>
  * ключ страницы.
  */
 export interface IPaginationCollectionProps extends ICollectionProps<TPaginationCollectionFacadeEngine> {}
-
-/** Item-level props страницы: текущая ли она (активность в коллекции). */
-export interface IPaginationCollectionItemProps extends IActivationCollectionItemProps {}
 
 /** События фасада коллекции: набор базы активации плюс окно. */
 export type TPaginationCollectionFacadeEvents = TActivationCollectionFacadeEvents<IPaginationItem> &

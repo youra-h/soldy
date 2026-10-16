@@ -31,6 +31,8 @@ import {
 	DatePickerDescriptor,
 	ListBoxDescriptor,
 	ListBoxItemDescriptor,
+	PaginationDescriptor,
+	PaginationItemDescriptor,
 	RadioGroupDescriptor,
 	RadioGroupItemDescriptor,
 	SelectDescriptor,
@@ -60,6 +62,9 @@ const DESCRIPTORS: Readonly<Record<string, () => IComponentDescriptor>> = {
 	Toasts: ToastsDescriptor,
 	// Тост — внутренняя часть: потребитель его не адресует, рисует только регион
 	'Toasts.Item': ToastsItemDescriptor,
+	Pagination: PaginationDescriptor,
+	// Страница — внутренняя часть, как тост: рисует её только пагинация
+	'Pagination.Item': PaginationItemDescriptor,
 	Accordion: AccordionDescriptor,
 	'Accordion.Item': AccordionItemDescriptor,
 	RadioGroup: RadioGroupDescriptor,
@@ -110,6 +115,8 @@ const RELAYS: readonly TRelay[] = [
 	['Toasts', 'item-content', 'Toasts.Item', 'content', 'item'],
 	['Toasts', 'item-close-icon', 'Toasts.Item', 'close-icon', 'item'],
 
+	['Pagination', 'item', 'Pagination.Item', 'default', 'item'],
+
 	['Accordion', 'item-leading-icon', 'Accordion.Item', 'leading-icon', 'item'],
 	['Accordion', 'item-leading', 'Accordion.Item', 'leading', 'item'],
 	['Accordion', 'item', 'Accordion.Item', 'header', 'item'],
@@ -133,6 +140,7 @@ const ITEMS = [
 	'Tabs.Item',
 	'Tags.Item',
 	'Toasts.Item',
+	'Pagination.Item',
 	'Accordion.Item',
 	'RadioGroup.Item',
 	'Calendar.Item',
