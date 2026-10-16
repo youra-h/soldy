@@ -40,6 +40,6 @@
     "generate": "node scripts/generate.mjs"
   },
   "dependencies": {
-    "@soldy-ui/setup": "^0.1.0"
+    "@soldy-ui/setup": "0.1.0"
   }
 }

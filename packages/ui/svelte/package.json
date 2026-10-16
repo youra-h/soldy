@@ -42,17 +42,17 @@
     "check": "svelte-check --tsconfig ./tsconfig.json"
   },
   "dependencies": {
-    "@soldy-ui/core": "^0.1.0",
-    "@soldy-ui/plugins": "^0.1.0",
-    "@soldy-ui/setup": "^0.1.0",
+    "@soldy-ui/core": "0.1.0",
+    "@soldy-ui/plugins": "0.1.0",
+    "@soldy-ui/setup": "0.1.0",
     "esm-env": "^1.2.2"
   },
   "peerDependencies": {
     "svelte": "^5.29.0"
   },
   "devDependencies": {
-    "@soldy-ui/icons-material": "^0.1.0",
-    "@soldy-ui/theme-oren": "^0.1.0",
+    "@soldy-ui/icons-material": "0.1.0",
+    "@soldy-ui/theme-oren": "0.1.0",
     "@sveltejs/package": "^3.0.1",
     "@sveltejs/vite-plugin-svelte": "^7.3.0",
     "svelte": "^5.29.0",

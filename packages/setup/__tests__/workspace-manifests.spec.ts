@@ -14,10 +14,9 @@ import { readChangesets } from '@changesets/read'
  * доступ, состав тарболла задан `files`, а текст лицензии и README лежат рядом
  * с манифестом — поля `license` в тарболле мало. Чужое содержимое под своей
  * лицензией пакет называет в `license` (`MIT AND Apache-2.0`) и везёт её текст
- * файлом `LICENSE-<идентификатор>` из `files`. Соседа он объявляет диапазоном
- * от общей версии (`^0.1.0`): протокол `workspace:` npm не понимает
- * (EUNSUPPORTEDPROTOCOL), а `"*"` выпуск не переписывает — в опубликованном
- * пакете он значил бы «любая версия ядра».
+ * файлом `LICENSE-<идентификатор>` из `files`. Соседа он объявляет точной
+ * общей версией (`0.1.0`): граница между пакетами внутренняя и меняется в
+ * любом выпуске, а набор у потребителя собирается из одного выпуска.
  *
  * Список пакетов не хардкодится: он раскрывается из `workspaces` корневого
  * манифеста, поэтому новый пакет попадает под проверку сам. Список стенда —
@@ -442,11 +441,14 @@ const DEPENDENCY_FIELDS = [
 ] as const
 
 /**
- * Нарушения диапазонов на соседей: сосед объявлен `^<его версия>`.
+ * Нарушения диапазонов на соседей: сосед объявлен точной `<его версией>`.
  *
- * Протокол `workspace:` npm не понимает вовсе (EUNSUPPORTEDPROTOCOL на
- * `npm install`), поэтому диапазон литеральный. `"*"` не годится: выпуск
- * переписывает диапазон, только когда новая версия из него выпала, а из `"*"`
+ * Не диапазоном: граница между ядром, setup, плагинами и адаптерами —
+ * внутренний контракт, он меняется и в patch, а `^0.1.0` пустил бы к
+ * `core@0.1.1` прежний `setup@0.1.0`. Точная версия держит набор из одного
+ * выпуска. Протокол `workspace:` npm не понимает вовсе (EUNSUPPORTEDPROTOCOL на
+ * `npm install`), поэтому версия литеральная. `"*"` не годится: выпуск
+ * переписывает запись, только когда новая версия из неё выпала, а из `"*"`
  * не выпадает ничего — в опубликованном пакете он значил бы «любая версия
  * ядра», включая ту, с которой контракт разошёлся. Версии у группы одна, и её
  * же берёт диапазон: второго списка версий в репозитории нет.
@@ -471,7 +473,7 @@ function checkInternalRanges(library: readonly TWorkspacePackage[]): string[] {
 					return []
 				}
 
-				const expected = `^${String(version)}`
+				const expected = String(version)
 
 				return range === expected
 					? []
@@ -689,7 +691,7 @@ describe('манифесты пакетов воркспейса', () => {
 		).toEqual([])
 	})
 
-	it('сосед объявлен диапазоном от общей версии', () => {
+	it('сосед объявлен точной общей версией', () => {
 		const violations = checkInternalRanges(library)
 
 		expect(
@@ -1022,10 +1024,10 @@ describe('сторож манифестов', () => {
 			},
 		})
 
-		it('диапазон от общей версии — без нарушений', () => {
+		it('точная общая версия — без нарушений', () => {
 			for (const field of DEPENDENCY_FIELDS) {
 				expect(
-					checkInternalRanges([library({}), dependent(field, `^${VERSION}`)]),
+					checkInternalRanges([library({}), dependent(field, VERSION)]),
 					field,
 				).toEqual([])
 			}
@@ -1033,7 +1035,7 @@ describe('сторож манифестов', () => {
 
 		it('"*" на соседе — нарушение: выпуск такой диапазон не переписывает', () => {
 			expect(checkInternalRanges([library({}), dependent('dependencies', '*')])).toEqual([
-				'packages/other: dependencies["@soldy-ui/example"] "*", ожидается "^1.2.0"',
+				'packages/other: dependencies["@soldy-ui/example"] "*", ожидается "1.2.0"',
 			])
 		})
 
@@ -1041,15 +1043,23 @@ describe('сторож манифестов', () => {
 			expect(
 				checkInternalRanges([library({}), dependent('peerDependencies', 'workspace:^')]),
 			).toEqual([
-				'packages/other: peerDependencies["@soldy-ui/example"] "workspace:^", ожидается "^1.2.0"',
+				'packages/other: peerDependencies["@soldy-ui/example"] "workspace:^", ожидается "1.2.0"',
 			])
 		})
 
-		it('диапазон отстал от версии соседа — нарушение', () => {
+		it('диапазон от общей версии — нарушение: пускает соседа другого выпуска', () => {
 			expect(
-				checkInternalRanges([library({}), dependent('devDependencies', '^1.1.0')]),
+				checkInternalRanges([library({}), dependent('dependencies', `^${VERSION}`)]),
 			).toEqual([
-				'packages/other: devDependencies["@soldy-ui/example"] "^1.1.0", ожидается "^1.2.0"',
+				'packages/other: dependencies["@soldy-ui/example"] "^1.2.0", ожидается "1.2.0"',
+			])
+		})
+
+		it('версия отстала от версии соседа — нарушение', () => {
+			expect(
+				checkInternalRanges([library({}), dependent('devDependencies', '1.1.0')]),
+			).toEqual([
+				'packages/other: devDependencies["@soldy-ui/example"] "1.1.0", ожидается "1.2.0"',
 			])
 		})
 	})
