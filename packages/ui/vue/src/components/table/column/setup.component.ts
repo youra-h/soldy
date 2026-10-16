@@ -1,5 +1,11 @@
 import { TableColumnDescriptor } from '@soldy-ui/setup'
-import { useAdapter, useExpose, createVueAdapterContext, type SetupContext } from '../../../adapter'
+import {
+	useAdapter,
+	useExpose,
+	useIcon,
+	createVueAdapterContext,
+	type SetupContext,
+} from '../../../adapter'
 import BaseTableColumn, { type TableColumnProps } from './base.component'
 
 /**
@@ -7,6 +13,10 @@ import BaseTableColumn, { type TableColumnProps } from './base.component'
  * нет: колонка — элемент своей коллекции, а лифт отдаёт движок строк, и
  * расширение элемента записало бы её строкой. Место колонки знает коллекция
  * колонок, а рисует заголовки таблица — по показанным колонкам.
+ *
+ * Логики здесь нет: имя кнопки сортировки — `TTableColumnNamesPlugin`, имя
+ * заголовка и ручки — `TTableColumnIdsPlugin`, сортировку по нажатию кнопки —
+ * расширение сортировки коллекции строк.
  */
 export default {
 	name: '_TableColumn',
@@ -18,6 +28,14 @@ export default {
 			props,
 		})
 
-		return useAdapter(adapter, props, emit)
+		return {
+			...useAdapter(adapter, props, emit),
+			/**
+			 * Методы колонки рефами не пробрасываются — отдаём инстанс: кнопка
+			 * сортировки зовёт его `toggleSort()`.
+			 */
+			column: adapter.instance,
+			sortIconTag: useIcon('arrowUpward'),
+		}
 	},
 }

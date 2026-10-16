@@ -256,6 +256,109 @@ describe('цикл направления', () => {
 	})
 })
 
+/**
+ * Кнопка сортировки в заголовке — просьба колонки (`toggleSort` →
+ * `sort:request`): о строках колонка не знает, и сортирует расширение —
+ * командой пользователя `toggle` по её полю, с её правилами. Проверок в
+ * колонке нет: второй экземпляр правила однажды разошёлся бы с первым.
+ */
+describe('кнопка сортировки колонки', () => {
+	it('toggleSort колонки — только просьба: sort:request, одна на нажатие', () => {
+		const column = new TTableColumn({ field: 'name', sortable: true })
+		const requested = vi.fn()
+
+		column.events.on('sort:request', requested)
+		column.toggleSort()
+
+		expect(requested).toHaveBeenCalledExactlyOnceWith()
+	})
+
+	it('сортирует как toggle(field): по возрастанию → по убыванию → снята', () => {
+		const engine = rows()
+		const age = columnOf(engine, 'age')
+		const { sort, batch } = engine.extensions
+
+		age.toggleSort()
+
+		expect(sort.sort).toEqual([{ field: 'age', direction: 'asc' }])
+		expect(ids(batch.shown)).toEqual([3, 1, 4, 2])
+		expect(marksOf(age)).toEqual({ sort: 'asc', priority: '1', aria: 'ascending' })
+
+		age.toggleSort()
+
+		expect(sort.sort).toEqual([{ field: 'age', direction: 'desc' }])
+
+		age.toggleSort()
+
+		expect(sort.sort).toEqual([])
+		expect(marksOf(age)).toEqual(NO_MARKS)
+	})
+
+	it('multiple: кнопка другой колонки добавляет её следующей по приоритету', () => {
+		const engine = rows()
+		const { sort } = engine.extensions
+
+		sort.sortMode = 'multiple'
+		columnOf(engine, 'age').toggleSort()
+		columnOf(engine, 'name').toggleSort()
+
+		expect(sort.sort).toEqual([
+			{ field: 'age', direction: 'asc' },
+			{ field: 'name', direction: 'asc' },
+		])
+	})
+
+	it('несортируемая колонка и выключенная таблица не сортируются', () => {
+		const owner = new TTable({ disabled: true })
+		const engine = rows()
+		const { sort } = engine.extensions
+		const { sort: changed } = watch(engine)
+
+		columnOf(engine, 'id').toggleSort()
+
+		engine.options.set({ owner })
+		columnOf(engine, 'age').toggleSort()
+
+		expect(sort.sort).toEqual([])
+		expect(changed).not.toHaveBeenCalled()
+
+		owner.disabled = false
+		columnOf(engine, 'age').toggleSort()
+
+		expect(sort.sort).toEqual([{ field: 'age', direction: 'asc' }])
+	})
+
+	it('колонка сменила поле — сортирует по новому', () => {
+		const engine = rows()
+		const age = columnOf(engine, 'age')
+
+		age.field = 'years'
+		age.toggleSort()
+
+		expect(engine.extensions.sort.sort).toEqual([{ field: 'years', direction: 'asc' }])
+	})
+
+	it('ушедшую колонку расширение больше не слушает', () => {
+		const engine = rows()
+		const age = columnOf(engine, 'age')
+		const { sort: changed } = watch(engine)
+
+		engine.extensions.columns.columns = [NAME, ID]
+		age.toggleSort()
+
+		expect(engine.extensions.sort.sort).toEqual([])
+		expect(changed).not.toHaveBeenCalled()
+
+		// И из коллекции колонок напрямую — тоже
+		const name = columnOf(engine, 'name')
+
+		engine.extensions.columns.engine.extensions.plain.remove(name)
+		name.toggleSort()
+
+		expect(engine.extensions.sort.sort).toEqual([])
+	})
+})
+
 describe('выборка, а не хранилище', () => {
 	it('показанное упорядочено, состав — в порядке данных', () => {
 		const engine = rows()

@@ -19,6 +19,7 @@ import {
 	TInput,
 	TPopover,
 	TScroller,
+	TTableColumn,
 	TTabsItem,
 	TTagsItem,
 } from '../src'
@@ -43,6 +44,7 @@ function nameSets(): Record<string, TNameSet[]> {
 	const dateInput = new TDateInput({ name: 'Дата' })
 	const calendar = new TCalendar()
 	const picker = new TDatePicker()
+	const column = new TTableColumn({ text: 'Имя', sortable: true })
 
 	return {
 		Dialog: [
@@ -69,6 +71,7 @@ function nameSets(): Record<string, TNameSet[]> {
 			{ set: picker.triggerAria, events: picker.events, event: 'change:triggerAria' },
 			{ set: picker.panelAria, events: picker.events, event: 'change:panelAria' },
 		],
+		'Table.Column': [{ set: column.sortAria, events: column.events, event: 'change:sortAria' }],
 	}
 }
 

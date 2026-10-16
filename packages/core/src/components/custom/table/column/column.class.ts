@@ -22,8 +22,17 @@ import { RESIZE_MAX, RESIZE_MIN, clampWidth } from './width'
  *
  * Колонка — экземпляр, а заголовок — его отрисовка: корень колонки — ячейка
  * шапки, `th`. База — визуальный слой, а не контрол: нажатия, фокуса и имени
- * у заголовка нет, а `disabled` нужен колонке только для ручки — его пишет
- * таблица.
+ * у заголовка нет — нажимают кнопку сортировки и ручку ширины в нём, — а
+ * `disabled` нужен колонке для них — его пишет таблица.
+ *
+ * **Сортировка** (`sortable`) — кнопка рядом с подписью, а не заголовок
+ * целиком: у `th` нет фокуса, и действие, повешенное на него, с клавиатуры
+ * было бы недоступно, а подпись остаётся местом для своего контрола
+ * потребителя. Сортирует строки не колонка — она о них не знает, — а
+ * расширение сортировки коллекции строк. Поэтому нажатие кнопки — просьба
+ * (`toggleSort` → `sort:request`), как листание у ленты, а правила —
+ * сортируется ли колонка, не выключена ли таблица — у расширения, в одном
+ * месте. Имя кнопке пишет плагин имён (`sortAria`): текста у неё нет.
  *
  * Своё у колонки — поле записи (`field`), заголовок, ширина с границами,
  * выравнивание, сортируемость, своё сравнение записей и признак заголовка
@@ -135,7 +144,8 @@ export default class TTableColumn<
 	/** Что идёт за протяжкой — значение таблицы, его пишет расширение колонок */
 	protected _resizePreview: TTableResizePreview = 'live'
 	protected _resizerAria: TAria
-	protected _contentAria: TAria
+	protected _textAria: TAria
+	protected _sortAria: TAria
 
 	constructor(props: Partial<TProps> = {}) {
 		super(props)
@@ -160,9 +170,14 @@ export default class TTableColumn<
 			this._sink.emit('change:resizerAria', this._resizerAria.toObject()),
 		)
 
-		this._contentAria = new TAria()
-		this._contentAria.events.on('change', () =>
-			this._sink.emit('change:contentAria', this._contentAria.toObject()),
+		this._textAria = new TAria()
+		this._textAria.events.on('change', () =>
+			this._sink.emit('change:textAria', this._textAria.toObject()),
+		)
+
+		this._sortAria = new TAria()
+		this._sortAria.events.on('change', () =>
+			this._sink.emit('change:sortAria', this._sortAria.toObject()),
 		)
 
 		this._syncAlign()
@@ -403,8 +418,22 @@ export default class TTableColumn<
 		return this._resizerAria
 	}
 
-	get contentAria(): TAria {
-		return this._contentAria
+	get textAria(): TAria {
+		return this._textAria
+	}
+
+	get sortAria(): TAria {
+		return this._sortAria
+	}
+
+	/**
+	 * Просьба отсортировать — и только она. Проверок здесь нет: сортируется ли
+	 * колонка и не выключена ли таблица, решает расширение сортировки тем же
+	 * правилом, что у команды таблицы, — второй его экземпляр однажды
+	 * разошёлся бы с первым.
+	 */
+	toggleSort(): void {
+		this._sink.emit('sort:request')
 	}
 
 	grab(): boolean {
