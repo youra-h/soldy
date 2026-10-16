@@ -27,6 +27,9 @@ export const ruRU = freezeLocale({
 			confirm: 'ОК',
 			cancel: 'Отмена',
 		},
-		rating: { value: '{value} из {max}' },
+		rating: {
+			value: '{value} из {max}',
+			required: 'Поставьте оценку',
+		},
 	},
 })

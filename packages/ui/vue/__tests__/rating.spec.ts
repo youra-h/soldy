@@ -250,6 +250,39 @@ describe('v-model и commit', () => {
 	})
 })
 
+/**
+ * `required` у range браузер не знает — у ползунка значение есть всегда, —
+ * и ошибку полю ставит плагин обязательности. Узел он получает кадром, как
+ * все плагины, поэтому ошибка есть после `ready`. Отправку формы проверяет
+ * браузер (`playground/vue/browser/rating.spec.ts`).
+ */
+describe('обязательность', () => {
+	it('обязательная оценка с 0 — поле неверно; поставили оценку — верно', async () => {
+		await render({ required: true })
+
+		expect(field().validity.customError).toBe(true)
+		expect(field().validationMessage).toBe('Please select a rating')
+		// Атрибутов, которых у range нет, разметка не ставит
+		expect(field().hasAttribute('required')).toBe(false)
+		expect(field().hasAttribute('aria-required')).toBe(false)
+
+		await press('ArrowRight')
+
+		expect(field().validity.customError).toBe(false)
+	})
+
+	it('ошибка — на языке поддерева', async () => {
+		wrapper = mount(
+			() => h(LocaleProvider, { locale: ruRU }, () => h(Rating, { required: true })),
+			{ attachTo: document.body },
+		)
+		await nextTick()
+		await nextFrame()
+
+		expect(field().validationMessage).toBe('Поставьте оценку')
+	})
+})
+
 describe('указатель', () => {
 	it('нажатие на левую половину звезды при шаге 0,5 — половина', async () => {
 		const mounted = await render({ step: 0.5 })

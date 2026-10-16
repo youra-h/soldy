@@ -100,11 +100,10 @@ export const outlined = (element: Element, pseudo?: string): boolean => {
 }
 
 /**
- * Светлота OKLab — единственная мера, сравнимая между схемами: шкала темы
- * инвертирована по ролям, и одинаковый на глаз шаг у тёмных цветов меньше по
- * sRGB, чем у светлых (`tokens-dark.css`).
+ * Цвет слоёв в OKLab: светлота и две оси цвета — `a` (зелёный — красный) и
+ * `b` (синий — жёлтый). Слои кладутся тем же холстом (`pixel`).
  */
-export function lightness(colors: string[]): number {
+export function oklab(colors: string[]): { lightness: number; a: number; b: number } {
 	const [red, green, blue] = pixel(colors)
 	const linear = (value: number) => {
 		const unit = value / 255
@@ -117,7 +116,29 @@ export function lightness(colors: string[]): number {
 	const medium = Math.cbrt(0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b)
 	const short = Math.cbrt(0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b)
 
-	return 0.2104542553 * long + 0.793617785 * medium - 0.0040720468 * short
+	return {
+		lightness: 0.2104542553 * long + 0.793617785 * medium - 0.0040720468 * short,
+		a: 1.9779984951 * long - 2.428592205 * medium + 0.4505937099 * short,
+		b: 0.0259040371 * long + 0.7827717662 * medium - 0.808675766 * short,
+	}
+}
+
+/**
+ * Светлота OKLab — единственная мера, сравнимая между схемами: шкала темы
+ * инвертирована по ролям, и одинаковый на глаз шаг у тёмных цветов меньше по
+ * sRGB, чем у светлых (`tokens-dark.css`).
+ */
+export const lightness = (colors: string[]): number => oklab(colors).lightness
+
+/**
+ * Тон слоёв — угол на плоскости цвета OKLab, в градусах, и насыщенность —
+ * расстояние от серого. По тону видно семейство цвета, а не его ступень: у
+ * вуали и у ступени одного семейства он один.
+ */
+export function hue(colors: string[]): { angle: number; chroma: number } {
+	const { a, b } = oklab(colors)
+
+	return { angle: (Math.atan2(b, a) * 180) / Math.PI, chroma: Math.hypot(a, b) }
 }
 
 /** Насколько цвет отошёл от подложки — со знаком: плюс светлее, минус темнее. */

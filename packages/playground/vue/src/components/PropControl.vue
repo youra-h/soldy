@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { Input, Select, Switch } from '@soldy-ui/vue'
-import { parseNumberOrText, type TPropControl } from '@soldy-ui/playground-shared'
+import { parseNumber, parseNumberOrText, type TPropControl } from '@soldy-ui/playground-shared'
 
 /**
  * Редактор одного пропа.
@@ -16,17 +16,41 @@ const props = defineProps<{ control: TPropControl; modelValue: unknown }>()
 
 const emit = defineEmits<{ 'update:modelValue': [unknown] }>()
 
+/** Текст поля по значению модели: не задано — пусто. */
+const textOf = (value: unknown): string => (value == null ? '' : String(value))
+
 const asBoolean = computed(() => Boolean(props.modelValue))
-const asText = computed(() => (props.modelValue == null ? '' : String(props.modelValue)))
+const asText = computed(() => textOf(props.modelValue))
 
 /**
- * Пустая строка в числовом поле — это «не задано», а не ноль. `Number('')`
- * даёт `0` и молча подменил бы смысл.
+ * Текст числового поля — набранный, а не текст модели.
+ *
+ * Из модели поле перерисовывалось на каждое нажатие: всё, что числом ещё не
+ * стало, — `-`, `.`, `0,`, — давало в нём `NaN`, и набирать дальше было не
+ * во что, а законченное переписывалось под пальцем — `0,5` в `0.5`. Поэтому
+ * набранное поле держит само, а текст модели берёт, только когда её сменил
+ * не этот ввод: свой ввод ведёт модель ровно к тому числу, что набрано.
+ */
+const numberText = ref(asText.value)
+
+watch(
+	() => props.modelValue,
+	(value) => {
+		if (parseNumber(numberText.value) !== value) numberText.value = textOf(value)
+	},
+)
+
+/**
+ * В модель уходит только законченное число или «не задано» — правило
+ * `parseNumber` в общем пакете. Незаконченная запись модель не трогает.
  */
 function onNumber(value: unknown): void {
-	const text = String(value ?? '').trim()
+	const text = String(value ?? '')
+	const number = parseNumber(text)
 
-	emit('update:modelValue', text === '' ? undefined : Number(text))
+	numberText.value = text
+
+	if (number !== null) emit('update:modelValue', number)
 }
 
 /**
@@ -64,7 +88,7 @@ function onNumberOrText(value: unknown): void {
 
 	<Input
 		v-else-if="control.kind === 'number'"
-		:value="asText"
+		:value="numberText"
 		size="sm"
 		placeholder="не задано"
 		@update:value="onNumber($event)"

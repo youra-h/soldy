@@ -21,6 +21,7 @@ import { TRating } from '@soldy-ui/core'
 import type { IRatingProps } from '@soldy-ui/core'
 import { Label, Rating } from '@soldy-ui/vue'
 
+import { hue, style } from './colors'
 import { reducedMotion } from './media'
 
 import '@soldy-ui/theme-oren'
@@ -59,6 +60,49 @@ async function mount(
 	await nextFrame()
 
 	return ctrl
+}
+
+/**
+ * Оценка в форме с именем `score`. Отправку тест перехватывает и запоминает,
+ * что ушло в форму. Подложка — поверхность места: на ней тема кладёт вуаль
+ * пустой звезды.
+ */
+async function mountForm(props: Partial<IRatingProps> = {}) {
+	const ctrl = new TRating({ name: 'score', ...props })
+	const submitted: FormData[] = []
+
+	const onSubmit = (event: Event) => {
+		event.preventDefault()
+
+		if (event.target instanceof HTMLFormElement) submitted.push(new FormData(event.target))
+	}
+
+	render(
+		defineComponent({
+			render: () =>
+				h(
+					'form',
+					{
+						class: 'so-test-form',
+						style: 'padding: 24px; background: var(--so-place-surface)',
+						onSubmit,
+					},
+					[h(Rating, { ctrl })],
+				),
+		}),
+	)
+
+	await nextFrame()
+	await nextFrame()
+
+	const form = document.querySelector('.so-test-form')
+
+	if (!(form instanceof HTMLFormElement)) throw new Error('формы нет')
+
+	/** Оценки, ушедшие в форму, — по отправкам. */
+	const scores = () => submitted.map((data) => data.get('score'))
+
+	return { ctrl, form, scores }
 }
 
 /** Узел по селектору; нет его — тест падает здесь, а не на чтении свойства. */
@@ -305,5 +349,75 @@ describe('клавиши, имя и фокус', () => {
 		expect(document.activeElement).toBe(field())
 		expect(ring.outlineStyle).not.toBe('none')
 		expect(Math.abs(box.width - row.width)).toBeLessThan(0.5)
+	})
+})
+
+/**
+ * Обязательная оценка в настоящей форме. `required` range браузер не знает,
+ * и ошибку полю ставит плагин обязательности — дальше всё делает браузер:
+ * не отправляет форму, ставит фокус на поле, показывает сообщение, а после
+ * попытки отправить включает `:user-invalid`, по которому тема красит звёзды.
+ */
+describe('обязательная оценка в форме', () => {
+	it('без оценки форма не уходит: сообщение — строка локали, фокус — на поле', async () => {
+		const { form, scores } = await mountForm({ required: true })
+
+		form.requestSubmit()
+
+		expect(scores()).toEqual([])
+		expect(field().validationMessage).toBe('Please select a rating')
+		expect(document.activeElement).toBe(field())
+	})
+
+	it('поставили оценку нажатием — форма уходит с ней', async () => {
+		const { form, scores } = await mountForm({ required: true })
+
+		await userEvent.click(track(), { position: along(0.5) })
+		await nextFrame()
+
+		form.requestSubmit()
+
+		expect(scores()).toEqual(['3'])
+	})
+
+	it('только для показа с 0 форма уходит: такую оценку не спрашивают', async () => {
+		const { form, scores } = await mountForm({ required: true, readonly: true })
+
+		form.requestSubmit()
+
+		expect(scores()).toEqual(['0'])
+	})
+
+	it('после неудачной отправки пустые звёзды — тона ошибки, поставили оценку — прежние', async () => {
+		const { form } = await mountForm({ required: true })
+
+		const backdrop = style(form).backgroundColor
+		const empty = () => style(stars()[4]).color
+		const resting = empty()
+
+		// Тон ошибки — семейства `negative`: проба его ступени на той же подложке
+		const probe = document.createElement('span')
+
+		probe.style.color = 'var(--so-negative-500)'
+		form.append(probe)
+
+		const negative = hue([backdrop, style(probe).color])
+
+		probe.remove()
+
+		form.requestSubmit()
+
+		const failed = hue([backdrop, empty()])
+		const apart = Math.abs(((failed.angle - negative.angle + 540) % 360) - 180)
+
+		// Нетронутая оценка не горела: пустая звезда — серая вуаль
+		expect(hue([backdrop, resting]).chroma).toBeLessThan(0.02)
+		expect(failed.chroma).toBeGreaterThan(0.04)
+		expect(apart).toBeLessThan(30)
+
+		await userEvent.click(track(), { position: along(0.5) })
+		await nextFrame()
+
+		expect(empty()).toBe(resting)
 	})
 })
