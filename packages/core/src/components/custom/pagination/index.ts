@@ -1,0 +1,6 @@
+export * from './item/types'
+export { default as TPaginationItem } from './item/item.class'
+export { TPaginationItemCollectionFacade } from './item/facade'
+export * from './types'
+export { default as TPagination } from './pagination.class'
+export * from './collection'
