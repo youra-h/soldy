@@ -167,6 +167,7 @@ import type { IComponentView, IComponentViewProps } from '@soldy-ui/core'
 import {
 	DEFAULT_SLOT,
 	TSurface,
+	type DescriptorComponentProps,
 	type IComponentDescriptor,
 	type TInstanceState,
 	type TStateSnapshot,
@@ -177,6 +178,7 @@ import {
 	isHostProp,
 	toAttributeName,
 	type IAttributeBinding,
+	type THostProp,
 	WebcProfile,
 } from '../common'
 import type { ITemplate, ITemplateContext, TSlotTarget, TSlotTargets } from '../template'
@@ -316,6 +318,21 @@ export interface ISoldyElement<TInstance> {
 	disconnectedCallback(): void
 	attributeChangedCallback(name: string, old: string | null, value: string | null): void
 }
+
+/**
+ * Свойства пропов элемента — те, что база вешает на прототип (`el.text`, см.
+ * шапку). Состав — контракт дескриптора, как у пропсов React, Solid и Svelte
+ * (`DescriptorComponentProps`): свои пропсы компонента, пропсы плагинов
+ * дескриптора (`aria_label`, `anchor_anchor` у Frame) и пропсы связки
+ * (`pluginProps`, `embedded`). Защищённых пропсов в контракте нет, как нет для
+ * них и свойств на прототипе. Вычтено то, чего база на прототип не вешает:
+ * свойства, которые у элемента уже есть по тегу (`TNative`), `HOST_PROPS` и
+ * `ctrl` — его пара своя, в `ISoldyElement`.
+ */
+export type TSoldyElementProps<
+	TDescriptorFn extends (...args: any[]) => IComponentDescriptor,
+	TNative extends HTMLElement,
+> = Omit<DescriptorComponentProps<TDescriptorFn>, keyof TNative | THostProp | 'ctrl'>
 
 /**
  * Описание корня — то, что база раскладывает на элемент по-разному у разных

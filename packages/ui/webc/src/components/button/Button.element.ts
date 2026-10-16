@@ -17,9 +17,9 @@
  */
 
 import { ButtonDescriptor } from '@soldy-ui/setup'
-import type { IButton, IButtonProps } from '@soldy-ui/core'
+import type { IButton } from '@soldy-ui/core'
 import { SoldyElement, defineElement } from '../../adapter'
-import type { ISoldyElement, THostProp } from '../../adapter'
+import type { ISoldyElement, TSoldyElementProps } from '../../adapter'
 import { buttonTemplate } from './button.template'
 import { setupButton } from './setup.component'
 
@@ -33,9 +33,10 @@ defineElement('so-button', TButtonElement, 'button')
 
 /**
  * `<button is="so-button">` из JS: нативная кнопка, своё элемента soldy
- * (`ctrl`, `state`) и props дескриптора — без тех, что у кнопки уже есть по
- * тегу, и без `HOST_PROPS`.
+ * (`ctrl`, `state`) и свойства пропов дескриптора вместе с пропсами его
+ * плагинов (`aria_label`) — без тех, что у кнопки уже есть по тегу, и без
+ * `HOST_PROPS` (`TSoldyElementProps`).
  */
 export type TButtonElementProps = HTMLButtonElement &
 	ISoldyElement<IButton> &
-	Omit<IButtonProps, keyof HTMLButtonElement | THostProp>
+	TSoldyElementProps<typeof ButtonDescriptor, HTMLButtonElement>

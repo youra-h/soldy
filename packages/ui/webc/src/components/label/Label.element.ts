@@ -17,9 +17,9 @@
  */
 
 import { LabelDescriptor } from '@soldy-ui/setup'
-import type { ILabel, ILabelProps } from '@soldy-ui/core'
+import type { ILabel } from '@soldy-ui/core'
 import { SoldyElement, defineElement } from '../../adapter'
-import type { ISoldyElement, THostProp } from '../../adapter'
+import type { ISoldyElement, TSoldyElementProps } from '../../adapter'
 import { labelTemplate } from './label.template'
 import { setupLabel } from './setup.component'
 
@@ -33,9 +33,9 @@ defineElement('so-label', TLabelElement, 'label')
 
 /**
  * `<label is="so-label">` из JS: нативный `label`, своё элемента soldy
- * (`ctrl`, `state`) и props дескриптора — без тех, что у `label` уже есть, и
- * без `HOST_PROPS`.
+ * (`ctrl`, `state`) и свойства пропов дескриптора — без тех, что у `label` уже
+ * есть, и без `HOST_PROPS` (`TSoldyElementProps`).
  */
 export type TLabelElementProps = HTMLLabelElement &
 	ISoldyElement<ILabel> &
-	Omit<ILabelProps, keyof HTMLLabelElement | THostProp>
+	TSoldyElementProps<typeof LabelDescriptor, HTMLLabelElement>

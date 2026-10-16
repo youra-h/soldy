@@ -9,7 +9,7 @@
  * делает клика из Enter и пробела.
  */
 
-import { describe, it, expect, afterEach, vi } from 'vitest'
+import { describe, it, expect, expectTypeOf, afterEach, vi } from 'vitest'
 import { TButton } from '@soldy-ui/core'
 import { TElementPlugin, TPluginBundle } from '@soldy-ui/plugins'
 import { ButtonDescriptor } from '@soldy-ui/setup'
@@ -386,6 +386,27 @@ describe('<button is="so-button"> · свойства из JS', () => {
 		el.direction = 'inherit'
 		await flush()
 		expect(el.hasAttribute('dir')).toBe(false)
+	})
+
+	/**
+	 * Тип элемента — контракт дескриптора, как у пропсов React, Solid и Svelte:
+	 * свойство пропа плагина (`aria_label`) в нём есть, как и на прототипе, а
+	 * `tag` (`HOST_PROPS`) — нет. `ctrl` — пара элемента (`ISoldyElement`), а не
+	 * проп связки. Типы проверяет шаг CI «Типы — Web Components»: в рантайме
+	 * `expectTypeOf` ничего не делает.
+	 */
+	it('aria_label — свойство в типе элемента и имя кнопки, tag в типе нет', async () => {
+		const el = mountButton('<button is="so-button"></button>')
+
+		el.aria_label = 'Сохранить'
+		await flush()
+
+		expect(el.getAttribute('aria-label')).toBe('Сохранить')
+		expect(el.aria_label).toBe('Сохранить')
+
+		expectTypeOf<TButtonElementProps['aria_label']>().toEqualTypeOf<string | undefined>()
+		expectTypeOf<TButtonElementProps['ctrl']>().toEqualTypeOf<IButton | undefined>()
+		expectTypeOf<TButtonElementProps>().not.toHaveProperty('tag')
 	})
 })
 

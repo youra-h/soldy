@@ -69,8 +69,8 @@ function isSoldyButton(node: Element): node is TButtonElementProps {
 
 /**
  * Кнопка из JS, ещё не подключённая, и набор её плагинов — когда придёт.
- * `pluginProps` — не свойство инстанса, а проп связки: в типе элемента его
- * нет, и пишется он так же, как любое свойство пропа, — присваиванием.
+ * `pluginProps` — проп связки, а не инстанса, но у элемента это такое же
+ * свойство пропа, как `text`: есть в типе элемента и пишется присваиванием.
  */
 function createButton(): { el: TButtonElementProps; bundle: () => TPluginBundle | undefined } {
 	const el = document.createElement('button', { is: 'so-button' })
@@ -94,7 +94,7 @@ describe('плагин снаружи · pluginProps и so:plugin:event', () => 
 
 		const { el, bundle } = createButton()
 
-		Reflect.set(el, 'pluginProps', { step_size: 5 })
+		el.pluginProps = { step_size: 5 }
 		document.body.appendChild(el)
 		await flush()
 
@@ -102,11 +102,11 @@ describe('плагин снаружи · pluginProps и so:plugin:event', () => 
 
 		expect(plugin()?.size).toBe(5)
 
-		Reflect.set(el, 'pluginProps', { step_size: 7 })
+		el.pluginProps = { step_size: 7 }
 
 		expect(plugin()?.size).toBe(7)
 
-		Reflect.set(el, 'pluginProps', undefined)
+		el.pluginProps = undefined
 
 		expect(plugin()?.size).toBe(1)
 	})
@@ -139,7 +139,7 @@ describe('плагин снаружи · pluginProps и so:plugin:event', () => 
 		el.addEventListener('so:plugin:event', (event) => {
 			if (event instanceof CustomEvent) events.push(event.detail)
 		})
-		Reflect.set(el, 'pluginProps', { step_size: 3 })
+		el.pluginProps = { step_size: 3 }
 		document.body.appendChild(el)
 		await flush()
 

@@ -10,9 +10,9 @@
  */
 
 import { ComponentViewDescriptor } from '@soldy-ui/setup'
-import type { IComponentView, IComponentViewProps } from '@soldy-ui/core'
+import type { IComponentView } from '@soldy-ui/core'
 import { SoldyElement, defineElement } from '../../adapter'
-import type { ISoldyElement, THostProp } from '../../adapter'
+import type { ISoldyElement, TSoldyElementProps } from '../../adapter'
 import { componentViewTemplate } from './component-view.template'
 import { setupComponentView } from './setup.component'
 
@@ -26,8 +26,9 @@ defineElement('so-component-view', TComponentViewElement, 'div')
 
 /**
  * `<div is="so-component-view">` из JS: нативный `div`, своё элемента soldy и
- * props дескриптора — без тех, что у `div` уже есть, и без `HOST_PROPS`.
+ * свойства пропов дескриптора — без тех, что у `div` уже есть, и без
+ * `HOST_PROPS` (`TSoldyElementProps`).
  */
 export type TComponentViewElementProps = HTMLDivElement &
 	ISoldyElement<IComponentView> &
-	Omit<IComponentViewProps, keyof HTMLDivElement | THostProp>
+	TSoldyElementProps<typeof ComponentViewDescriptor, HTMLDivElement>

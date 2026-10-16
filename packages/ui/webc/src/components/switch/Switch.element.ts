@@ -16,9 +16,9 @@
  */
 
 import { SwitchDescriptor } from '@soldy-ui/setup'
-import type { ISwitch, ISwitchProps } from '@soldy-ui/core'
+import type { ISwitch } from '@soldy-ui/core'
 import { SoldyElement, defineElement } from '../../adapter'
-import type { ISoldyElement, THostProp } from '../../adapter'
+import type { ISoldyElement, TSoldyElementProps } from '../../adapter'
 import { switchTemplate } from './switch.template'
 import { setupSwitch } from './setup.component'
 
@@ -33,9 +33,10 @@ defineElement('so-switch', TSwitchElement, 'span')
 
 /**
  * `<span is="so-switch">` из JS: нативный `span`, своё элемента soldy (`ctrl`,
- * `state`) и props дескриптора — без тех, что у `span` уже есть (`id` —
- * собственный `id` корня), и без `HOST_PROPS`.
+ * `state`) и свойства пропов дескриптора вместе с пропсами его плагинов
+ * (`aria_label`) — без тех, что у `span` уже есть (`id` — собственный `id`
+ * корня), и без `HOST_PROPS` (`TSoldyElementProps`).
  */
 export type TSwitchElementProps = HTMLSpanElement &
 	ISoldyElement<ISwitch> &
-	Omit<ISwitchProps, keyof HTMLSpanElement | THostProp>
+	TSoldyElementProps<typeof SwitchDescriptor, HTMLSpanElement>

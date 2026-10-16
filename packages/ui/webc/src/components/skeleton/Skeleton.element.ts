@@ -14,9 +14,9 @@
  */
 
 import { SkeletonDescriptor } from '@soldy-ui/setup'
-import type { ISkeleton, ISkeletonProps } from '@soldy-ui/core'
+import type { ISkeleton } from '@soldy-ui/core'
 import { SoldyElement, defineElement } from '../../adapter'
-import type { ISoldyElement, THostProp } from '../../adapter'
+import type { ISoldyElement, TSoldyElementProps } from '../../adapter'
 import { skeletonTemplate } from './skeleton.template'
 import { setupSkeleton } from './setup.component'
 
@@ -30,9 +30,10 @@ export const TSkeletonElement = SoldyElement(HTMLDivElement, {
 defineElement('so-skeleton', TSkeletonElement, 'div')
 
 /**
- * `<div is="so-skeleton">` из JS: нативный `div`, своё элемента soldy и props
- * дескриптора — без тех, что у `div` уже есть, и без `HOST_PROPS`.
+ * `<div is="so-skeleton">` из JS: нативный `div`, своё элемента soldy и
+ * свойства пропов дескриптора — без тех, что у `div` уже есть, и без
+ * `HOST_PROPS` (`TSoldyElementProps`).
  */
 export type TSkeletonElementProps = HTMLDivElement &
 	ISoldyElement<ISkeleton> &
-	Omit<ISkeletonProps, keyof HTMLDivElement | THostProp>
+	TSoldyElementProps<typeof SkeletonDescriptor, HTMLDivElement>
