@@ -99,8 +99,9 @@ export function propSnippet(
  * экземпляр ядра, а свойство меняется на нём.
  *
  * Ветвится по `control.scope`, как у остальных хостов: свойство компонента
- * пишется в экземпляр, плагина — в плагин из bundle. Пустое поле — проп не
- * задан, и записи в коде нет: свежий экземпляр уже стоит на умолчании.
+ * пишется в экземпляр, коллекции — в движок, плагина — в плагин из bundle.
+ * Пустое поле — проп не задан, и записи в коде нет: свежий экземпляр уже стоит
+ * на умолчании.
  */
 export function instanceSnippet(
 	entry: TComponentEntry,
@@ -111,9 +112,7 @@ export function instanceSnippet(
 		case 'component':
 			return componentInstanceSnippet(entry, control.name, value, control.preset)
 		case 'collection':
-			// Коллекции адаптер ещё не перенёс, и коллекционной строки у страницы
-			// этого хоста нет: её рисует только компонент-коллекция
-			throw new Error(`[playground] у хоста Web Components нет коллекций («${entry.id}»)`)
+			return collectionInstanceSnippet(entry, control.name, value, control.preset)
 		case 'plugin':
 			return pluginInstanceSnippet(entry, control.plugin, value, control.preset)
 	}
@@ -132,6 +131,29 @@ function componentInstanceSnippet(
 		[`import { ${ctor} } from '@soldy-ui/core'`],
 		[`const instance = new ${ctor}()`, ...assignment(`instance.${prop}`, value)],
 		preset,
+	)
+}
+
+/**
+ * Коллекционный проп — в движок, который элемент получает свойством `engine`
+ * до вставки, как `ctrl`: движок сборка берёт при подключении. Движок —
+ * сборщиком самого компонента (`createEngineAccordion` и соседи), как у хостов
+ * Vue и React.
+ */
+function collectionInstanceSnippet(
+	entry: TComponentEntry,
+	prop: string,
+	value: unknown,
+	preset?: Record<string, unknown>,
+): string {
+	const create = `createEngine${entry.label}`
+
+	return instanceExample(
+		entry,
+		[`import { ${create} } from '@soldy-ui/core'`],
+		[`const engine = ${create}()`, ...assignment(`engine.extensions.selection.${prop}`, value)],
+		preset,
+		'element.engine = engine',
 	)
 }
 
@@ -159,14 +181,16 @@ function pluginInstanceSnippet(
 
 /**
  * Колонка экземпляра целиком: модуль с импортами, экземпляр и элемент,
- * который строит код. `ctrl` — до вставки, рядом с ним — свои атрибуты
- * элемента и пропы пресета свойствами: так их передаёт и сам стенд.
+ * который строит код. Экземпляр — до вставки (`given`: `ctrl` или движок
+ * коллекции `engine`), рядом с ним — свои атрибуты элемента и пропы пресета
+ * свойствами: так их передаёт и сам стенд.
  */
 function instanceExample(
 	entry: TComponentEntry,
 	imports: readonly string[],
 	instance: readonly string[],
 	preset: Record<string, unknown> = {},
+	given = 'element.ctrl = instance',
 ): string {
 	const element = elementOf(entry)
 	const own = Object.entries(element.attributes ?? {}).map(
@@ -183,7 +207,7 @@ function instanceExample(
 			'',
 			`const element = document.createElement('${element.tag}', { is: '${element.is}' })`,
 			'',
-			'element.ctrl = instance',
+			given,
 			...own,
 			...props,
 			'document.body.append(element)',
@@ -234,13 +258,24 @@ function pluginAssignment(
 	}
 }
 
-/** Как атрибуты элемента пишут пропы: проп → правило приведения строки атрибута. */
+/**
+ * Как атрибуты элемента пишут пропы: проп → правило приведения строки
+ * атрибута. У коллекции — и пропы фасада (`mode` у Accordion): они тоже
+ * атрибуты-входы элемента.
+ */
 function bindingsOf(entry: TComponentEntry): Map<string, IAttributeBinding> {
+	// Фасад первым: одноимённый проп компонента главнее, как у элемента
+	const descriptors = [
+		...(entry.collectionDescriptor ? [entry.collectionDescriptor()] : []),
+		entry.descriptor(),
+	]
+
 	return new Map(
-		[...buildAttributeMap(entry.descriptor()).values()].map((binding) => [
-			binding.prop,
-			binding,
-		]),
+		descriptors.flatMap((descriptor) =>
+			[...buildAttributeMap(descriptor).values()].map(
+				(binding) => [binding.prop, binding] as const,
+			),
+		),
 	)
 }
 

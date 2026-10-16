@@ -114,6 +114,15 @@ type TScenarioBase = {
 	 * не показывает: нарисовать его нечем, и это не забытая фикстура.
 	 */
 	slotScope?: true
+	/**
+	 * Фикстура задаёт компоненту тег корня пропом `tag` — радио в подписи
+	 * пишут на `span` (`tag="span"`): `label` в `label` HTML запрещает. Хост, у
+	 * компонентов которого тег задан регистрацией элемента, а не пропом
+	 * (`IPreviewHost.tagProp` — `false` у Web Components: радио — только
+	 * `<label is="so-radio-group-item">`), сценарий не показывает: нарисовать его
+	 * нечем, и это не забытая фикстура.
+	 */
+	tagProp?: true
 }
 
 export type TAutoScenario = TScenarioBase & {

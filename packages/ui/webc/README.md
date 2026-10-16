@@ -38,8 +38,8 @@ Button's `default` slot) cannot be passed into it — slot content reads it from
 `el.ctrl`.
 
 > **Status:** the Web Components adapter is in progress — Button, Icon, Label, Input, CheckBox,
-> Switch, ProgressSpinner, Skeleton and Frame are ported, the rest of the set is on its way. See
-> [the adapter table](https://github.com/youra-h/soldy#components).
+> Switch, ProgressSpinner, Skeleton, Frame, RadioGroup, Tabs and Accordion are ported, the rest of
+> the set is on its way. See [the adapter table](https://github.com/youra-h/soldy#components).
 
 ## Install
 
@@ -144,6 +144,50 @@ Slot content gets no scope, so your own clear button (the `clear` slot) clears t
 the element: `el.ctrl.clear()`. The built-in clear button and its icon are part of the field's
 markup, so their events (`so:action:press`, `so:change:focused`) do not bubble — listeners on the
 field and delegation on the form hear the field's own events only.
+
+A collection is an owner element with item elements inside: tabs with their panels, an accordion
+with its sections, a radio group with its radios. An item joins the collection of the nearest owner
+above it in the document when it is connected — in document order, however the markup got onto the
+page (`innerHTML`, markup written before the package was imported). The owner's collection props
+(`items`, `engine`, `trackBy`, `mode`) and the item's (`active`, `selected`) are attributes and
+properties of the same elements:
+
+```html
+<div is="so-tabs" closable aria_label="Settings">
+  <div is="so-tabs-item" value="general" text="General" active></div>
+  <div is="so-tabs-item" value="mail" text="Mail"><i slot="leading">✉</i></div>
+  <div is="so-tabs-content" slot="content" value="general">…</div>
+  <div is="so-tabs-content" slot="content" value="mail">…</div>
+</div>
+
+<div is="so-accordion" mode="multiple">
+  <div is="so-accordion-item" value="a" text="First" selected><p>First section</p></div>
+  <div is="so-accordion-item" value="b" text="Second"><b slot="header">Second</b>…</div>
+</div>
+
+<div is="so-radio-group" name="delivery" value="courier">
+  <label is="so-radio-group-item" value="courier">Courier</label>
+  <label is="so-radio-group-item" value="pickup">Pickup</label>
+</div>
+```
+
+Panels go to the `content` slot: the default slot of tabs is the tab list, `[role=tablist]`. An
+inactive panel is hidden, and its content is out of the document — its fields are not submitted
+with the form. A radio is a real `<input type="radio">` inside a `<label>` root; attributes you
+write on it (`id`, `aria-label`, `data-*`) move to the input, as on a field, and on a tab or a
+section they move to its row — the button that carries the item's role.
+
+Items given as data (`el.items = [...]`, or an `engine`) are drawn by the owner. Slots of those
+items have no scope either, so the owner's `item-*` slots are templates: each item drawn from data
+gets its own copy, in its own slot — `<template slot="item-leading">★</template>` puts a star before
+every tab's text. The item's data is on the item element, `el.ctrl`.
+
+A radio is always a `<label>` root, so a radio cannot go inside `<label is="so-label">` the way
+other adapters write it with `tag="span"`. An item element you add after its owner is built joins
+the collection, but the owner does not move it into its markup — put a tab into `.so-tabs__list`
+yourself. Moving an owner in the document builds it again, with a fresh collection: what the user
+chose and you did not set in markup or properties starts over, unless the collection is your own
+`engine`.
 
 From JavaScript the element is the component: props are its properties, events are DOM events, and
 a core instance can be handed over as `ctrl` before the element is connected:

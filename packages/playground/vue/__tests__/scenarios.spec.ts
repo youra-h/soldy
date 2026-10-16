@@ -97,6 +97,25 @@ describe.each(IDS)('каталог сценариев %s', (framework) => {
 		)
 	})
 
+	/**
+	 * Сценарий, фикстура которого задаёт тег корня пропом (радио на `span` в
+	 * подписи), — на странице хоста ровно тогда, когда тег задаётся пропом: у
+	 * Web Components тег — сам элемент, у остальных проп `tag` есть.
+	 */
+	it('сценарии с тегом пропом — только у хоста с пропом tag', () => {
+		const tagged = SCENARIO_REGISTRY.filter(
+			(scenario) =>
+				scenario.tagProp &&
+				[scenario.component, ...(scenario.requires ?? [])].every((id) =>
+					host.previews.includes(id),
+				),
+		)
+
+		expect(tagged.filter((scenario) => scenarios.includes(scenario)).length).toBe(
+			host.tagProp === false ? 0 : tagged.length,
+		)
+	})
+
 	it('нет фикстур, на которые не ссылается ни один сценарий', () => {
 		const used = new Set(SCENARIO_REGISTRY.map((scenario) => scenario.fixture))
 
