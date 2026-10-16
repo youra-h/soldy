@@ -22,6 +22,14 @@
  * Перерешение нужно в двух случаях: панель смонтировалась раньше своего таба
  * (тогда ждём `item:added`) и у панели сменилось `value`.
  *
+ * Таб ищется только в движке Tabs — в том, где стоит расширение табов
+ * (`TTabsExtension`). Лифт отдаёт движок ближайшей коллекции, и она бывает
+ * чужой: панель вне своих табов под `<Toasts>`, который оборачивает
+ * приложение. Чужая коллекция — как будто её нет, как у элемента коллекции
+ * (`TCollectionItemExtension`): иначе панель связалась бы с чужим элементом,
+ * чьё `value` совпало, — молча под RadioGroup и с падением сборки там, где
+ * активации нет.
+ *
  * Работа разделена по фазам контекста, как у `TCollectionItemExtension`:
  *
  * - **сборка** — первое связывание. Оно пишет только своё — фасад панели и её
@@ -41,12 +49,22 @@
  *   уходят.
  */
 
-import { TItemContext } from '@soldy-ui/core'
-import type { ITabsItem, TTabsCollection, TTabsCollectionExtensions } from '@soldy-ui/core'
+import { TItemContext, TTabsExtension } from '@soldy-ui/core'
+import type {
+	ITabsItem,
+	TCollectionEngine,
+	TTabsCollection,
+	TTabsCollectionExtensions,
+} from '@soldy-ui/core'
 import type { TInstanceContext } from '../../../protected/adapter/context'
 import { ITEM_CONTEXT_ELEVATOR } from '../../../protected/adapter/elevator/keys'
 import type { TCollectionItemFacade } from '../collection'
 import type { ITabsContentBindingOptions } from './types'
+
+/** Движок Tabs: в нём стоит расширение табов. Движок другой коллекции панели чужой. */
+function isTabsEngine(engine: TCollectionEngine<any, any> | undefined): engine is TTabsCollection {
+	return engine?.extensions.tabs instanceof TTabsExtension
+}
 
 /** Таб, чьё значение совпало со значением панели. */
 function findByValue(engine: TTabsCollection, value: unknown): ITabsItem | undefined {
@@ -64,10 +82,11 @@ export class TTabsContentBindingExtension {
 	) {
 		const { content, elevator } = options
 
-		// Лифт отдаёт движок любой коллекции; над Tabs.Content это движок Tabs.
-		const engine: TTabsCollection | undefined = elevator(ITEM_CONTEXT_ELEVATOR).up()
+		// Лифт отдаёт движок ближайшей коллекции, и она бывает не Tabs. Чужая —
+		// как будто её нет: панель — ни с каким табом, и работы у связки нет
+		const engine = elevator(ITEM_CONTEXT_ELEVATOR).up()
 
-		if (!engine) return
+		if (!isTabsEngine(engine)) return
 
 		const extensions: TTabsCollectionExtensions = engine.extensions
 
