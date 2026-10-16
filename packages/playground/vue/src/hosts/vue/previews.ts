@@ -36,9 +36,12 @@ import {
 	Table,
 	Tabs,
 	Tags,
+	Toasts,
 	Tooltip,
 	Virtual,
 	useIcon,
+	useToasts,
+	type TToastRender,
 } from '@soldy-ui/vue'
 
 /**
@@ -192,6 +195,42 @@ const DrawerPreview = defineComponent({
 	},
 })
 
+/** Своё содержимое тоста — кнопка «Отменить»: тост приходит ей пропом и закрывается ею. */
+const ToastUndo: TToastRender = ({ toast }) =>
+	h(Button, { text: 'Отменить', onClick: () => toast.close() })
+
+/**
+ * Тосты приходят из кода, а не из разметки: кнопка внутри менеджера берёт API
+ * (`useToasts()`) и показывает тост. Менеджер оборачивает её, как приложение,
+ * а регион с тостами — телепортом у края окна, вне ячейки превью.
+ *
+ * Тосты чередуются: обычный с кнопкой «Отменить» и срочный (`alert`) с
+ * описанием, — так на странице видно и своё содержимое, и обе роли.
+ */
+const ToastsTrigger = defineComponent({
+	name: 'ToastsTrigger',
+	setup() {
+		const { show } = useToasts()
+		let count = 0
+
+		const notify = () => {
+			count += 1
+
+			if (count % 2 === 0) {
+				show({
+					text: `Нет сети (${count})`,
+					description: 'Изменения сохранятся позже',
+					alert: true,
+				})
+			} else {
+				show({ text: `Черновик сохранён (${count})`, render: ToastUndo })
+			}
+		}
+
+		return () => h(Button, { text: 'Показать тост', onClick: notify })
+	},
+})
+
 /** Слои наследования: у них нет своей разметки, показываем пустую коробку. */
 const layer =
 	(label: string): TPreview =>
@@ -289,6 +328,9 @@ export const PREVIEWS: Record<string, TPreview> = {
 
 	// Кнопка открывает панель, панель — на своём состоянии (см. `DrawerPreview`)
 	drawer: (bind) => h(DrawerPreview, bind),
+
+	// Менеджер оборачивает кнопку, которая показывает тосты (см. `ToastsTrigger`)
+	toasts: (bind) => h(Toasts as Component, bind, { default: () => h(ToastsTrigger) }),
 
 	/**
 	 * Содержимое ленты — просто разметка: коллекции у неё нет, и делить ей

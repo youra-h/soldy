@@ -10,8 +10,9 @@
  * Вторая половина — прозрачный контур: его цвет браузер тоже заменяет
  * системным, и контур становится рамкой
  * (`themes/oren/src/components/popover/_popover.scss`).
- * Тем же контуром держатся плашка Tooltip, модальное окно Dialog и
- * выезжающая панель Drawer: их фон здесь тоже становится фоном страницы. У
+ * Тем же контуром держатся плашка Tooltip, модальное окно Dialog,
+ * выезжающая панель Drawer и плашка тоста: их фон здесь тоже становится фоном
+ * страницы. У
  * окна и панели контур общий — в поверхности модального слоя
  * (`themes/oren/src/mixins/_modal.scss`).
  *
@@ -56,7 +57,9 @@ import {
 	TabsItem,
 	Tags,
 	TagsItem,
+	Toasts,
 	Tooltip,
+	useToasts,
 } from '@soldy-ui/vue'
 import type { DescriptorSlots, PopoverDescriptor } from '@soldy-ui/setup'
 
@@ -85,6 +88,15 @@ const show = async (scheme: (typeof SCHEMES)[number], markup: () => VNode) => {
 afterEach(async () => {
 	cleanup()
 	await forcedColors('none')
+})
+
+/** Приложение под менеджером тостов: показывает тост, как приложение, — из кода. */
+const ShowToast = defineComponent({
+	setup() {
+		useToasts().show('Сохранено')
+
+		return () => h('p', 'Приложение')
+	},
 })
 
 /** Панели оверлеев — открытые, в разметке, где их открывают. */
@@ -149,6 +161,13 @@ const PANELS = [
 		name: 'DatePicker',
 		panel: '.so-date-picker__panel',
 		markup: () => h(DatePicker, { open: true, aria_label: 'Дата' }),
+	},
+	{
+		// Плашка тоста — та же семья, что панели оверлеев: кромка кольцом и
+		// прозрачный контур
+		name: 'Toasts',
+		panel: '.so-toasts-item__card',
+		markup: () => h(Toasts, { duration: 0 }, () => h(ShowToast)),
 	},
 ]
 

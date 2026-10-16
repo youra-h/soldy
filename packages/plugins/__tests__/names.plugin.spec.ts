@@ -21,6 +21,8 @@ import {
 	TTable,
 	TTabsItem,
 	TTagsItem,
+	TToasts,
+	TToastsItem,
 } from '@soldy-ui/core'
 import {
 	TDatePickerNamesPlugin,
@@ -35,6 +37,8 @@ import {
 	TTableNamesPlugin,
 	TTabsItemNamesPlugin,
 	TTagsItemNamesPlugin,
+	TToastsItemNamesPlugin,
+	TToastsNamesPlugin,
 	arEG,
 	enUS,
 	extendLocale,
@@ -102,6 +106,19 @@ describe('имена при установке и на смену локали',
 		expect(scroller.nextAria.get('aria-label')).toBe('Прокрутить вперёд')
 	})
 
+	it('Toasts: имя региона — toasts.region, вместе с клавишей', () => {
+		const toasts = new TToasts()
+		const { source } = mount(toasts, TToastsNamesPlugin)
+
+		expect(toasts.aria.get('aria-label')).toBe('Notifications (F8)')
+		// Роль и живую область пишет ядро — плагин их не трогает
+		expect(toasts.aria.get('role')).toBe('region')
+
+		source.locale = ruRU
+
+		expect(toasts.aria.get('aria-label')).toBe('Уведомления (F8)')
+	})
+
 	it('смена локали — одна запись в набор на кнопку, та же строка — ни одной', () => {
 		const popover = new TPopover()
 		const changes = vi.fn()
@@ -156,6 +173,21 @@ describe('имя с текстом части: шаблон локали и см
 		tag.text = 'Работа'
 
 		expect(tag.closeAria.get('aria-label')).toBe('Закрыть Работа')
+	})
+
+	it('тост: текст тоста на месте {name}', () => {
+		const toast = new TToastsItem({ text: 'Сохранено' })
+		const { source } = mount(toast, TToastsItemNamesPlugin, ruRU)
+
+		expect(toast.closeAria.get('aria-label')).toBe('Закрыть Сохранено')
+
+		toast.text = 'Отправлено'
+
+		expect(toast.closeAria.get('aria-label')).toBe('Закрыть Отправлено')
+
+		source.locale = enUS
+
+		expect(toast.closeAria.get('aria-label')).toBe('Close Отправлено')
 	})
 
 	it('Input и DateInput: имя поля на месте {name}, следует за name', () => {
