@@ -54,6 +54,12 @@ export const PaginationDescriptor = defineDescriptor(() =>
 				'next-icon': { description: 'Значок стрелки «вперёд»' },
 			},
 			props: {
+				/**
+				 * Ключ текущей страницы — число или строка: номер у числовой
+				 * пагинации, `value` страницы у текстовой. Переобъявлен только тип,
+				 * триггеры — от `ValueControlDescriptor`.
+				 */
+				value: { type: [Number, String] },
 				total: { type: Number, triggers: ['change:total'] },
 				pageSize: { type: Number, triggers: ['change:pageSize'] },
 				/**
