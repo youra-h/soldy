@@ -295,7 +295,7 @@ describe.each(CHECKABLES)('%s · атрибуты разметки', (_name, { i
 
 		expect(field(el).getAttribute('aria-label')).toBe('Своё')
 
-		el.setAttribute('aria_label', 'Другое')
+		el.aria_label = 'Другое'
 		await flush()
 
 		expect(el.ctrl?.aria.get('aria-label')).toBe('Другое')

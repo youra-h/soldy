@@ -20,9 +20,9 @@
  */
 
 import { IconDescriptor } from '@soldy-ui/setup'
-import type { IIcon, IIconProps } from '@soldy-ui/core'
+import type { IIcon } from '@soldy-ui/core'
 import { SoldyElement, defineElement } from '../../adapter'
-import type { ISoldyElement, THostProp } from '../../adapter'
+import type { ISoldyElement, TSoldyElementProps } from '../../adapter'
 import { iconTemplate } from './icon.template'
 import { setupIcon } from './setup.component'
 
@@ -37,12 +37,13 @@ defineElement('so-icon', TIconElement, 'span')
 
 /**
  * `<span is="so-icon">` из JS: нативный `span`, своё элемента soldy (`ctrl`,
- * `state`), props дескриптора — без тех, что у `span` уже есть, и без
- * `HOST_PROPS`, — и роль.
+ * `state`), свойства пропов дескриптора вместе с пропсами его плагинов
+ * (`aria_label`) — без тех, что у `span` уже есть, и без `HOST_PROPS`
+ * (`TSoldyElementProps`), — и роль.
  */
 export type TIconElementProps = HTMLSpanElement &
 	ISoldyElement<IIcon> &
-	Omit<IIconProps, keyof HTMLSpanElement | THostProp> & {
+	TSoldyElementProps<typeof IconDescriptor, HTMLSpanElement> & {
 		/**
 		 * Роль иконки — ключ реестра (`check`, `close`, …, своя роль приложения),
 		 * отражение атрибута `icon`: без него — `null`. `null` и `undefined`

@@ -2666,6 +2666,14 @@ WebKit:
 приватные члены. Свойства пропов потребитель видит через тип элемента
 компонента (`TButtonElementProps`): карты тегов у `is=` нет, и
 `querySelector('button[is="so-button"]')` — просто `HTMLButtonElement`.
+Состав свойств в типе — контракт дескриптора, как у пропсов React, Solid и
+Svelte (`TSoldyElementProps` над `DescriptorComponentProps`): свои пропсы,
+пропсы плагинов дескриптора (`aria_label`, `anchor_anchor` у Frame) и
+`pluginProps` — без свойств, которые у элемента есть по тегу, `HOST_PROPS` и
+`ctrl`, ровно то, что база вешает на прототип. Раньше тип брал интерфейс
+пропсов ядра (`IButtonProps`), и `el.aria_label = 'Сохранить'`, рабочее в
+браузере, не компилировалось. Сторожат `expectTypeOf` в
+`ui/webc/__tests__/button.spec.ts` и `frame.spec.ts`.
 
 Плата за light DOM: `<slot>` недоступен, поэтому пользовательское содержимое
 раскладывается при первом подключении вручную — по атрибуту `slot` в точки,

@@ -20,9 +20,9 @@
  */
 
 import { InputDescriptor } from '@soldy-ui/setup'
-import type { IInput, IInputProps } from '@soldy-ui/core'
+import type { IInput } from '@soldy-ui/core'
 import { SoldyElement, defineElement } from '../../adapter'
-import type { ISoldyElement, THostProp } from '../../adapter'
+import type { ISoldyElement, TSoldyElementProps } from '../../adapter'
 import { inputTemplate } from './input.template'
 import { setupInput } from './setup.component'
 
@@ -37,9 +37,10 @@ defineElement('so-input', TInputElement, 'div')
 
 /**
  * `<div is="so-input">` из JS: нативный `div`, своё элемента soldy (`ctrl`,
- * `state`) и props дескриптора — без тех, что у `div` уже есть (`id` —
- * собственный `id` корня), и без `HOST_PROPS`.
+ * `state`) и свойства пропов дескриптора вместе с пропсами его плагинов
+ * (`aria_label`) — без тех, что у `div` уже есть (`id` — собственный `id`
+ * корня), и без `HOST_PROPS` (`TSoldyElementProps`).
  */
 export type TInputElementProps = HTMLDivElement &
 	ISoldyElement<IInput> &
-	Omit<IInputProps, keyof HTMLDivElement | THostProp>
+	TSoldyElementProps<typeof InputDescriptor, HTMLDivElement>
