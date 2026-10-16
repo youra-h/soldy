@@ -266,6 +266,56 @@ describe('стопка', () => {
 	})
 })
 
+describe('части тоста', () => {
+	/** Часть тоста по классу; нет её — тест падает здесь. */
+	const part = (item: HTMLElement, name: string): HTMLElement => {
+		const element = item.querySelector(`.so-toasts-item__${name}`)
+
+		if (!(element instanceof HTMLElement)) throw new Error(`${name}: части нет`)
+
+		return element
+	}
+
+	it('пустые описание и своё содержимое места не занимают, значка без слота нет', async () => {
+		const { show, rest } = await mount()
+
+		await show('Сохранено')
+		await rest()
+
+		const [item] = items()
+
+		if (!item) throw new Error('тоста нет')
+
+		expect(getComputedStyle(part(item, 'description')).display).toBe('none')
+		expect(getComputedStyle(part(item, 'content')).display).toBe('none')
+		expect(item.querySelector('.so-toasts-item__icon')).toBeNull()
+		// Текст и крестик — в одной строке: крестик по центру строки текста
+		const text = part(item, 'text').getBoundingClientRect()
+		const close = part(item, 'close').getBoundingClientRect()
+
+		expect(
+			Math.abs((close.top + close.bottom) / 2 - (text.top + text.bottom) / 2),
+		).toBeLessThan(EPSILON)
+	})
+
+	it('описание — под текстом, тем же столбцом', async () => {
+		const { show, rest } = await mount()
+
+		await show({ text: 'Отправлено', description: 'Письмо ушло адресату' })
+		await rest()
+
+		const [item] = items()
+
+		if (!item) throw new Error('тоста нет')
+
+		const text = part(item, 'text').getBoundingClientRect()
+		const description = part(item, 'description').getBoundingClientRect()
+
+		expect(description.top).toBeGreaterThanOrEqual(text.bottom - EPSILON)
+		expect(description.left).toBeCloseTo(text.left, 0)
+	})
+})
+
 describe('появление и исчезание', () => {
 	it('новый тост въезжает: место растёт, тост проявляется', async () => {
 		const { engine } = await mount()
