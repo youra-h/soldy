@@ -11,8 +11,11 @@
  * страница в режиме принудительных цветов — системная подсветка без слоя
  * заливки темы, и у выключенной тоже. Фокус: каждая стрелка и каждая
  * страница — своя остановка Tab, а нажатая с клавиатуры страница остаётся тем
- * же узлом под фокусом, хотя окно сдвинулось. Модель проверяет ядро,
- * проводку — `ui/vue/__tests__/pagination.spec.ts`.
+ * же узлом под фокусом, хотя окно сдвинулось; стрелка, погасшая у края под
+ * фокусом, отдаёт его текущей странице — выключенную кнопку браузер оставил
+ * бы без фокуса, — и Tab идёт от неё мимо погасшей стрелки. Модель проверяет
+ * ядро, проводку — `ui/vue/__tests__/pagination.spec.ts`, плагин фокуса —
+ * `plugins/__tests__/pagination-focus.plugin.spec.ts`.
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
@@ -258,6 +261,51 @@ describe('фокус', () => {
 
 		await expect.poll(() => page('6').getAttribute('aria-current')).toBe('page')
 		expect(document.activeElement).toBe(next)
+	})
+
+	/**
+	 * Стрелка погасла у края под фокусом — выключенная кнопка фокус теряет, и
+	 * браузер сбросил бы его в начало документа. Плагин фокуса переводит его
+	 * на кнопку текущей страницы раньше, чем стрелка выключится, и следующий
+	 * Tab идёт от текущей мимо погасшей стрелки.
+	 */
+	it('Enter на «вперёд» у предпоследней: фокус на текущей, Tab — мимо погасшей стрелки', async () => {
+		await show({ total: 30, value: 2 })
+
+		const next = find('.so-pagination__next')
+
+		next.focus()
+		await userEvent.keyboard('{Enter}')
+
+		await expect.poll(() => next.hasAttribute('disabled')).toBe(true)
+		// Кадр: правило focus fixup браузер выполняет с отрисовкой
+		await nextFrame()
+
+		expect(document.activeElement).toBe(current())
+		expect(focused()).toBe('3')
+
+		await tab()
+
+		expect(focused()).toBe('После')
+	})
+
+	it('Enter на «назад» у второй: фокус на текущей, Shift+Tab — мимо погасшей стрелки', async () => {
+		await show({ total: 30, value: 2 })
+
+		const prev = find('.so-pagination__prev')
+
+		prev.focus()
+		await userEvent.keyboard('{Enter}')
+
+		await expect.poll(() => prev.hasAttribute('disabled')).toBe(true)
+		await nextFrame()
+
+		expect(document.activeElement).toBe(current())
+		expect(focused()).toBe('1')
+
+		await userEvent.keyboard('{Shift>}{Tab}{/Shift}')
+
+		expect(focused()).toBe('До')
 	})
 })
 
