@@ -14,7 +14,7 @@ import { TButton } from '@soldy-ui/core'
 import { TElementPlugin, TPluginBundle } from '@soldy-ui/plugins'
 import { ButtonDescriptor } from '@soldy-ui/setup'
 import type { IButton } from '@soldy-ui/core'
-import { TButtonElement, type TButtonElementProps } from '@soldy-ui/webc'
+import { TButtonElement, registerButtonTag, type TButtonElementProps } from '@soldy-ui/webc'
 import { buttonTemplate } from '../src/components/button/button.template'
 import { bareContext } from './template-context'
 
@@ -61,7 +61,7 @@ function mountCtrl(ctrl: TButton): TButtonElementProps {
 }
 
 /** Инстанс элемента; его нет — тест падает здесь, а не на чтении свойства. */
-function ctrlOf(el: TButtonElementProps): IButton {
+function ctrlOf(el: Pick<TButtonElementProps, 'ctrl'>): IButton {
 	const { ctrl } = el
 
 	if (!ctrl) throw new Error('у кнопки нет инстанса')
@@ -812,5 +812,95 @@ describe('<button is="so-button"> · слоты', () => {
 
 		expect(children(el)).toEqual(['L', 'Mid'])
 		expect(el.ctrl).toBeDefined()
+	})
+})
+
+/**
+ * Button на другом теге — тот же Button под своим именем: одно имя элемента
+ * расширяет один тег. Регистрирует его фабрика `registerButtonTag`: описание
+ * элемента — дескриптор, шаблон, setup — у всех тегов одно, и тег ядро
+ * получает от элемента. На `div` ядро пишет кнопке `role="button"`,
+ * `tabindex` и `aria-disabled` вместо нативного `disabled`, а `disabled` —
+ * свойство пропа: своего у `div` нет.
+ */
+describe('<div is="so-button-div"> · Button на div', () => {
+	const TButtonDivElement = registerButtonTag('div')
+
+	function isButtonDiv(node: Element | null): node is TButtonElementProps<HTMLDivElement> {
+		return node instanceof TButtonDivElement
+	}
+
+	/** Кнопка на `div` из разметки. */
+	function mountDiv(html: string): TButtonElementProps<HTMLDivElement> {
+		const host = document.createElement('div')
+
+		host.innerHTML = html
+		document.body.appendChild(host)
+
+		const node = host.firstElementChild
+
+		if (!isButtonDiv(node)) throw new Error('<div is="so-button-div"> нет')
+
+		return node
+	}
+
+	it('класс у тега один: повторный вызов отдаёт его же, имя — so-button-div', () => {
+		expect(registerButtonTag('div')).toBe(TButtonDivElement)
+		expect(customElements.get('so-button-div')).toBe(TButtonDivElement)
+		expect(document.createElement('div', { is: 'so-button-div' })).toBeInstanceOf(
+			TButtonDivElement,
+		)
+	})
+
+	it('описание — то же, что у <button is="so-button">: атрибуты-входы одни', () => {
+		expect(TButtonDivElement.observedAttributes).toEqual(TButtonElement.observedAttributes)
+	})
+
+	it('div с классами, текстом и слотами кнопки; роль и остановку Tab ядро пишет само', () => {
+		const el = mountDiv(
+			'<div is="so-button-div" text="Mid" size="xl"><i slot="leading">L</i><i slot="trailing">T</i></div>',
+		)
+
+		expect(el).toBeInstanceOf(HTMLDivElement)
+		expect(el.classList).toContain('so-button')
+		expect(el.classList).toContain('so-button--size-xl')
+		expect(children(el)).toEqual(['L', 'Mid', 'T'])
+		expect(ctrlOf(el).tag).toBe('div')
+		expect(el.getAttribute('role')).toBe('button')
+		expect(el.getAttribute('tabindex')).toBe('0')
+	})
+
+	it('disabled — свойство пропа: aria-disabled без disabled, остановки Tab нет', async () => {
+		const el = mountDiv('<div is="so-button-div" text="A"></div>')
+
+		expect(
+			Object.getOwnPropertyDescriptor(TButtonDivElement.prototype, 'disabled')?.set,
+		).toBeTypeOf('function')
+
+		el.disabled = true
+		await flush()
+
+		expect(ctrlOf(el).disabled).toBe(true)
+		expect(el.getAttribute('aria-disabled')).toBe('true')
+		expect(el.hasAttribute('disabled')).toBe(false)
+		expect(el.hasAttribute('tabindex')).toBe(false)
+		expect(el.getAttribute('data-disabled')).toBe('true')
+	})
+
+	it('клик даёт so:action:press, у выключенной — нет', async () => {
+		const el = mountDiv('<div is="so-button-div" text="A"></div>')
+		const presses = collect(el, 'so:action:press')
+
+		await nextFrame()
+
+		el.click()
+
+		expect(presses).toHaveLength(1)
+
+		el.disabled = true
+		await flush()
+		el.click()
+
+		expect(presses).toHaveLength(1)
 	})
 })

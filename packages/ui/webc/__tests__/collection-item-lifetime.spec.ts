@@ -16,9 +16,11 @@ import { TEvented, TTabs, createEngine, createEngineTabs } from '@soldy-ui/core'
 import type { TCollectionEngine } from '@soldy-ui/core'
 import {
 	TAccordionElement,
+	TListBoxElement,
 	TRadioGroupElement,
 	TTabsElement,
 	type TAccordionElementProps,
+	type TListBoxElementProps,
 	type TRadioGroupElementProps,
 	type TTabsElementProps,
 } from '@soldy-ui/webc'
@@ -64,7 +66,8 @@ function watchSubscriptions(engine: TCollectionEngine<any, any>): () => number {
 }
 
 /** Владелец коллекции, как его видит тест: движок — свойство элемента. */
-type TOwner = TTabsElementProps | TAccordionElementProps | TRadioGroupElementProps
+type TOwner =
+	TTabsElementProps | TAccordionElementProps | TRadioGroupElementProps | TListBoxElementProps
 
 function isTabs(node: Element): node is TTabsElementProps {
 	return node instanceof TTabsElement
@@ -75,6 +78,7 @@ const COLLECTIONS: ReadonlyArray<readonly [string, string, (node: Element) => no
 	['Tabs', 'so-tabs', (node): node is TOwner => node instanceof TTabsElement],
 	['Accordion', 'so-accordion', (node): node is TOwner => node instanceof TAccordionElement],
 	['RadioGroup', 'so-radio-group', (node): node is TOwner => node instanceof TRadioGroupElement],
+	['ListBox', 'so-list-box', (node): node is TOwner => node instanceof TListBoxElement],
 ]
 
 /** Владелец над движком снаружи — кодом, движок свойством до вставки. */

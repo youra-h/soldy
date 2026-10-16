@@ -258,6 +258,37 @@ describe('хост Web Components · коллекции', () => {
 		handle.unmount()
 	})
 
+	/**
+	 * Строка элемента списка — кнопка на `div` (`<div is="so-button-div">`), а
+	 * выбор приходит в журнал и событием списка, и событием его фасада.
+	 */
+	it('превью ListBox: строки — кнопки на div, выбор — событиями списка и фасада', async () => {
+		const node = stage()
+		const events: string[] = []
+		const handle = host.mount(node, {
+			component: 'list-box',
+			props: {},
+			onEvent: (name) => events.push(name),
+		})
+		const rows = [
+			...node.querySelectorAll('.so-list-box > .so-list-box-item > .so-button'),
+		].filter((row): row is HTMLElement => row instanceof HTMLElement)
+
+		expect(texts(rows)).toEqual(['Первый', 'Второй', 'Третий', 'Четвёртый', 'Пятый'])
+		expect(rows.every((row) => row instanceof HTMLDivElement)).toBe(true)
+
+		await nextFrame()
+		events.length = 0
+		rows[1]?.click()
+		await flush()
+
+		expect(rows[1]?.getAttribute('aria-selected')).toBe('true')
+		expect(events).toContain('change:value')
+		expect(events).toContain('change:selection')
+
+		handle.unmount()
+	})
+
 	/** Движок, как и `ctrl`, элемент берёт сборкой: другой движок — другой элемент. */
 	it('смена engine пересоздаёт элемент', () => {
 		const node = stage()

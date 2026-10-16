@@ -13,6 +13,7 @@
 import { describe, it, expect } from 'vitest'
 import {
 	ACCORDION_ITEM_SLOTS,
+	LIST_BOX_ITEM_SLOTS,
 	RADIO_GROUP_ITEM_SLOTS,
 	TABS_ITEM_SLOTS,
 	type TItemSlots,
@@ -39,6 +40,7 @@ describe('карта копий образцов — строки таблицы
 		['Tabs', TABS_ITEM_SLOTS],
 		['Accordion', ACCORDION_ITEM_SLOTS],
 		['RadioGroup', RADIO_GROUP_ITEM_SLOTS],
+		['ListBox', LIST_BOX_ITEM_SLOTS],
 	] as const)('%s', (owner, slots) => {
 		const relays = relaysOf(owner)
 

@@ -38,8 +38,8 @@ Button's `default` slot) cannot be passed into it — slot content reads it from
 `el.ctrl`.
 
 > **Status:** the Web Components adapter is in progress — Button, Icon, Label, Input, CheckBox,
-> Switch, ProgressSpinner, Skeleton, Frame, RadioGroup, Tabs and Accordion are ported, the rest of
-> the set is on its way. See [the adapter table](https://github.com/youra-h/soldy#components).
+> Switch, ProgressSpinner, Skeleton, Frame, RadioGroup, ListBox, Tabs and Accordion are ported, the
+> rest of the set is on its way. See [the adapter table](https://github.com/youra-h/soldy#components).
 
 ## Install
 
@@ -146,11 +146,11 @@ markup, so their events (`so:action:press`, `so:change:focused`) do not bubble �
 field and delegation on the form hear the field's own events only.
 
 A collection is an owner element with item elements inside: tabs with their panels, an accordion
-with its sections, a radio group with its radios. An item joins the collection of the nearest owner
-above it in the document when it is connected — in document order, however the markup got onto the
-page (`innerHTML`, markup written before the package was imported). The owner's collection props
-(`items`, `engine`, `trackBy`, `mode`) and the item's (`active`, `selected`) are attributes and
-properties of the same elements:
+with its sections, a radio group with its radios, a list box with its options. An item joins the
+collection of the nearest owner above it in the document when it is connected — in document order,
+however the markup got onto the page (`innerHTML`, markup written before the package was imported).
+The owner's collection props (`items`, `engine`, `trackBy`, `mode`) and the item's (`active`,
+`selected`) are attributes and properties of the same elements:
 
 ```html
 <div is="so-tabs" closable aria_label="Settings">
@@ -169,13 +169,25 @@ properties of the same elements:
   <label is="so-radio-group-item" value="courier">Courier</label>
   <label is="so-radio-group-item" value="pickup">Pickup</label>
 </div>
+
+<div is="so-list-box" mode="multiple" indicator="start" aria_label="Cities">
+  <div is="so-list-box-item" value="msk" text="Moscow" selected></div>
+  <div is="so-list-box-item" value="spb" text="Saint Petersburg" disabled></div>
+</div>
 ```
 
 Panels go to the `content` slot: the default slot of tabs is the tab list, `[role=tablist]`. An
 inactive panel is hidden, and its content is out of the document — its fields are not submitted
 with the form. A radio is a real `<input type="radio">` inside a `<label>` root; attributes you
-write on it (`id`, `aria-label`, `data-*`) move to the input, as on a field, and on a tab or a
-section they move to its row — the button that carries the item's role.
+write on it (`id`, `aria-label`, `data-*`) move to the input, as on a field, and on a tab, a
+section or a list box option they move to its row — the button that carries the item's state.
+
+A list box is a single Tab stop: the arrows move through its options, Enter and Space choose. An
+option's row is a button on a `<div>` — `<div is="so-button-div">`, the same Button under a name of
+its own, since one element name extends one tag: a disabled option stays focusable and is announced
+as unavailable (`aria-disabled`), which a disabled `<button>` would not allow. Its selected mark
+(`indicator`) is the `indicator-icon` slot or a check icon, and it shows on selected options only —
+slot content has no scope to tell selected from not.
 
 Items given as data (`el.items = [...]`, or an `engine`) are drawn by the owner. Slots of those
 items have no scope either, so the owner's `item-*` slots are templates: each item drawn from data

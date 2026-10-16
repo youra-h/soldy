@@ -35,6 +35,8 @@ import {
 	TIconElement,
 	TInputElement,
 	TLabelElement,
+	TListBoxElement,
+	TListBoxItemElement,
 	TProgressSpinnerElement,
 	TRadioGroupElement,
 	TRadioGroupItemElement,
@@ -43,6 +45,7 @@ import {
 	TTabsContentElement,
 	TTabsElement,
 	TTabsItemElement,
+	registerButtonTag,
 	type TAccordionElementProps,
 	type TAccordionItemElementProps,
 	type TButtonElementProps,
@@ -51,6 +54,8 @@ import {
 	type TIconElementProps,
 	type TInputElementProps,
 	type TLabelElementProps,
+	type TListBoxElementProps,
+	type TListBoxItemElementProps,
 	type TProgressSpinnerElementProps,
 	type TRadioGroupElementProps,
 	type TRadioGroupItemElementProps,
@@ -77,6 +82,13 @@ type TElementGuard<T extends HTMLElement> = (node: Element | null) => node is T
 
 function isButton(node: Element | null): node is TButtonElementProps {
 	return node instanceof TButtonElement
+}
+
+/** Button на `div` — строка элемента списка: тот же класс, что регистрирует фабрика кнопки. */
+const TButtonDivElement = registerButtonTag('div')
+
+function isButtonDiv(node: Element | null): node is TButtonElementProps<HTMLDivElement> {
+	return node instanceof TButtonDivElement
 }
 
 function isView(node: Element | null): node is TComponentViewElementProps {
@@ -139,6 +151,14 @@ function isRadio(node: Element | null): node is TRadioGroupItemElementProps {
 	return node instanceof TRadioGroupItemElement
 }
 
+function isListBox(node: Element | null): node is TListBoxElementProps {
+	return node instanceof TListBoxElement
+}
+
+function isListBoxItem(node: Element | null): node is TListBoxItemElementProps {
+	return node instanceof TListBoxItemElement
+}
+
 /** Элемент разметки, подключённый к документу; узел не того вида — тест падает здесь. */
 function mount<T extends HTMLElement>(html: string, guard: TElementGuard<T>): T {
 	const host = document.createElement('div')
@@ -156,12 +176,13 @@ function mount<T extends HTMLElement>(html: string, guard: TElementGuard<T>): T 
 /**
  * Компонент, его тег с `is`, вид элемента, класс ядра на корне и поле в корне
  * — селектор узла, на который уходят атрибуты разметки: `<input>` поля,
- * строка таба, заголовок секции; `null` — поля нет.
+ * строка таба, заголовок секции, строка элемента списка; `null` — поля нет.
  */
 const COMPONENTS: ReadonlyArray<
 	readonly [string, string, string, TElementGuard<HTMLElement>, string, string | null]
 > = [
 	['Button', 'button', 'so-button', isButton, 'so-button', null],
+	['Button на div', 'div', 'so-button-div', isButtonDiv, 'so-button', null],
 	['ComponentView', 'div', 'so-component-view', isView, 'so-component-view', null],
 	['Icon', 'span', 'so-icon', isIcon, 'so-icon', null],
 	['ProgressSpinner', 'span', 'so-progress-spinner', isSpinner, 'so-progress-spinner', null],
@@ -184,6 +205,15 @@ const COMPONENTS: ReadonlyArray<
 	],
 	['RadioGroup', 'div', 'so-radio-group', isRadioGroup, 'so-radio-group', null],
 	['RadioGroup.Item', 'label', 'so-radio-group-item', isRadio, 'so-radio-group-item', 'input'],
+	['ListBox', 'div', 'so-list-box', isListBox, 'so-list-box', null],
+	[
+		'ListBox.Item',
+		'div',
+		'so-list-box-item',
+		isListBoxItem,
+		'so-list-box-item',
+		'[embedded="list-box.row"]',
+	],
 ]
 
 /** Корни без поля: атрибуты разметки стоят на них самих. */
@@ -243,6 +273,29 @@ describe('атрибут потребителя перекрывает набо�
 		expect(row.getAttribute('aria-label')).toBe('Таб')
 
 		tab.aria_label = undefined
+		await flush()
+
+		expect(row.getAttribute('aria-label')).toBe('Строка')
+	})
+
+	/** Строка элемента списка — корень кнопки на `div`: то же правило слоёв. */
+	it('слой элемента списка на строке главнее наборов самой кнопки на div', async () => {
+		const item = mount(
+			'<div is="so-list-box-item" text="A" aria_label="Пункт"></div>',
+			isListBoxItem,
+		)
+		const row = item.querySelector('[embedded="list-box.row"]')
+
+		if (!isButtonDiv(row)) throw new Error('строки нет')
+
+		expect(row.getAttribute('aria-label')).toBe('Пункт')
+
+		row.aria_label = 'Строка'
+		await flush()
+
+		expect(row.getAttribute('aria-label')).toBe('Пункт')
+
+		item.aria_label = undefined
 		await flush()
 
 		expect(row.getAttribute('aria-label')).toBe('Строка')
