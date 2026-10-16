@@ -27,6 +27,7 @@ export * from './scroller'
 // у ползунка и будущих компонентов
 export * from './slide'
 export * from './slider'
+export * from './rating'
 export * from './calendar'
 export * from './date-input'
 export * from './date-picker'

@@ -37,6 +37,7 @@ import {
 	ProgressLinear,
 	ProgressSpinner,
 	RadioGroup,
+	Rating,
 	Scroller,
 	Select,
 	Skeleton,
@@ -270,6 +271,14 @@ const dragAndDrop = new TDragAndDrop()
 	<!-- @vue-expect-error — текст опции строкой -->
 	<Select.Item :text="42" />
 	<Select.Item text="Первый" />
+
+	<!-- @vue-expect-error — оценка числом, а не строкой -->
+	<Rating value="4" />
+	<Rating :value="4" />
+
+	<!-- @vue-expect-error — шаг числом -->
+	<Rating step="half" />
+	<Rating :step="0.5" />
 
 	<!-- @vue-expect-error — высота числом или строкой -->
 	<Skeleton :height="true" />

@@ -72,6 +72,14 @@ describe('готовые локали', () => {
 		},
 	)
 
+	it.each(Object.entries(PACKS))(
+		'%s: значение оценки несёт места для оценки и наибольшей',
+		(_, locale) => {
+			expect(locale.translations.rating.value).toContain('{value}')
+			expect(locale.translations.rating.value).toContain('{max}')
+		},
+	)
+
 	it.each(Object.entries(PACKS))('%s: тег — канонический BCP 47', (_, locale) => {
 		expect(Intl.getCanonicalLocales(locale.tag)).toEqual([locale.tag])
 	})

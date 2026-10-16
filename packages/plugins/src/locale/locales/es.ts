@@ -27,5 +27,6 @@ export const esES = freezeLocale({
 			confirm: 'Aceptar',
 			cancel: 'Cancelar',
 		},
+		rating: { value: '{value} de {max}' },
 	},
 })

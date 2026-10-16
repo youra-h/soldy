@@ -52,9 +52,14 @@ function writableProps(descriptor: IComponentDescriptor): string[] {
 		.map((declaration) => declaration.name.getName())
 }
 
-/** Имя в выходе: у набора — его `aria-label`, у строки — она сама. */
+/**
+ * Имя в выходе: у набора — его `aria-label`, а у набора без имени — то, как
+ * звучит значение (`aria-valuetext` поля оценки): это тоже строка локали. У
+ * строки — она сама.
+ */
 function nameIn(value: unknown): unknown {
-	if (typeof value === 'object' && value !== null) return Reflect.get(value, 'aria-label')
+	if (typeof value === 'object' && value !== null)
+		return Reflect.get(value, 'aria-label') ?? Reflect.get(value, 'aria-valuetext')
 
 	return value
 }
@@ -100,6 +105,11 @@ const NAMED: Record<string, Record<string, (locale: TLocale) => string>> = {
 		names_end: ({ translations }) => translations.datePicker.end,
 		names_confirm: ({ translations }) => translations.datePicker.confirm,
 		names_cancel: ({ translations }) => translations.datePicker.cancel,
+	},
+	// Не имя кнопки, а то, как звучит значение поля: «0 из 5» по умолчанию сборки
+	RatingDescriptor: {
+		aria: ({ translations }) =>
+			translations.rating.value.replace('{value}', '0').replace('{max}', '5'),
 	},
 }
 
