@@ -26,6 +26,7 @@ describe('eslint.config.ts: игнорируется то же, что и у git
 		['покрытие', 'coverage/lcov-report/block.ts'],
 		['сторонние плагины', 'packages/_plugins/sample/index.ts'],
 		['отчёт браузерного прогона', 'test-results/sample/probe.spec.ts'],
+		['следы прогона vitest', 'packages/playground/vue/.vitest/attachments/sample.ts'],
 		['кэш Angular', 'packages/ui/angular/.angular/cache/sample.ts'],
 	])('%s — игнорируется', async (_title, filePath) => {
 		expect(await eslint.isPathIgnored(filePath)).toBe(true)
