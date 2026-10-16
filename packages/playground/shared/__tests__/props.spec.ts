@@ -9,11 +9,18 @@
  */
 
 import { describe, it, expect } from 'vitest'
+import { TRating } from '@soldy-ui/core'
 import { TName, TPropSpec } from '@soldy-ui/setup'
 import { TAnchorPlugin } from '@soldy-ui/plugins'
 import { ButtonDescriptor } from '@soldy-ui/setup'
 import { FRAME_PLACEMENTS } from '../src/enums'
-import { isEmptyField, parseNumberOrText, propControl, propControls } from '../src/props'
+import {
+	isEmptyField,
+	parseNumber,
+	parseNumberOrText,
+	propControl,
+	propControls,
+} from '../src/props'
 import { findComponent } from '../src/registry'
 
 /** Проп `button`, которого нет ни в списках значений, ни в пресетах. */
@@ -228,4 +235,76 @@ describe('parseNumberOrText', () => {
 			expect(parseNumberOrText(text)).toBe(text)
 		},
 	)
+})
+
+/**
+ * Текст числового поля → значение пропа.
+ *
+ * Поле переводило каждое нажатие в `Number(text)`: `-`, `.` и `0,` давали
+ * `NaN`, и он уходил и компоненту, и обратно в поле. Теперь числом становится
+ * только законченная запись, а незаконченная модель не трогает — набранное
+ * поле держит само (`PropControl.vue`).
+ */
+describe('parseNumber', () => {
+	it('пустое и из одних пробелов — проп не задан, а не ноль', () => {
+		expect(parseNumber('')).toBeUndefined()
+		expect(parseNumber('  ')).toBeUndefined()
+	})
+
+	it.each([
+		['0.5', 0.5],
+		['.5', 0.5],
+		['-1', -1],
+		['+2', 2],
+		['1e1', 10],
+		['007', 7],
+		['1.', 1],
+		[' 3 ', 3],
+	])('%s — законченное число', (text, number) => {
+		expect(parseNumber(text)).toBe(number)
+	})
+
+	it.each([
+		['0,5', 0.5],
+		[',5', 0.5],
+		['1,', 1],
+	])('%s — запятая работает как точка', (text, number) => {
+		expect(parseNumber(text)).toBe(number)
+	})
+
+	it.each(['-', '+', '.', ',', '-.', '1e', '1e-'])(
+		'%s — запись не закончена: модель не трогают',
+		(text) => {
+			expect(parseNumber(text)).toBeNull()
+		},
+	)
+
+	it.each(['abc', 'NaN', 'Infinity', '1e999', '1,2,3', '0x10'])(
+		'%s — не конечное число: NaN не уходит никуда',
+		(text) => {
+			expect(parseNumber(text)).toBeNull()
+		},
+	)
+})
+
+/**
+ * Значение оценки приводится к шагу, как у нативного ползунка: при шаге 1
+ * значение 1.3 строки `value` встало бы одной звездой, и куда делись 0.3, не
+ * видно. Пресет строки даёт ей мелкий шаг.
+ */
+describe('пресет строки value у Rating', () => {
+	it('шаг пресета держит дробь строки: 1.3 — не одна звезда', () => {
+		const row = propControls(entryOf('rating')).componentControls.find(
+			(control) => control.name === 'value',
+		)
+
+		if (!row) throw new Error('нет строки value у rating')
+
+		const step = row.preset?.step
+
+		if (typeof step !== 'number') throw new Error('пресет строки value не задаёт шаг')
+
+		expect(new TRating({ value: 1.3 }).value).toBe(1)
+		expect(new TRating({ step, value: 1.3 }).value).toBe(1.3)
+	})
 })

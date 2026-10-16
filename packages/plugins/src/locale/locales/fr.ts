@@ -27,6 +27,9 @@ export const frFR = freezeLocale({
 			confirm: 'OK',
 			cancel: 'Annuler',
 		},
-		rating: { value: '{value} sur {max}' },
+		rating: {
+			value: '{value} sur {max}',
+			required: 'Veuillez choisir une note',
+		},
 	},
 })

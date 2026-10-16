@@ -30,6 +30,9 @@ export const arEG = freezeLocale({
 			confirm: 'حسنًا',
 			cancel: 'إلغاء',
 		},
-		rating: { value: '{value} من {max}' },
+		rating: {
+			value: '{value} من {max}',
+			required: 'يُرجى اختيار تقييم',
+		},
 	},
 })

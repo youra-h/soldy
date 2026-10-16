@@ -6,7 +6,9 @@
  * disabled, focused, size, variant, наборы, плагины element/ready/action/aria)
  * и добавляет число звёзд и шаг, выход звёзд для разметки, слот значка и
  * плагины: указатель и клавиатуру Slider — оценка реализует их контракт
- * (`ISlidable`), — наведение и строку значения от локали.
+ * (`ISlidable`), — наведение, строку значения от локали и обязательность:
+ * `required` нативный range не знает, и форму с обязательной оценкой, которую
+ * не поставили, не отправляет плагин — ошибкой поля со строкой локали.
  */
 
 import { defineComponent, defineDescriptor, defineType } from '../../../protected/define'
@@ -14,6 +16,7 @@ import { TRating } from '@soldy-ui/core'
 import {
 	RatingHoverPluginDescriptor,
 	RatingNamesPluginDescriptor,
+	RatingValidityPluginDescriptor,
 	SlideKeyboardPluginDescriptor,
 	SlidePointerPluginDescriptor,
 } from '../plugins'
@@ -69,6 +72,7 @@ export const RatingDescriptor = defineDescriptor(() =>
 			SlideKeyboardPluginDescriptor,
 			RatingHoverPluginDescriptor,
 			RatingNamesPluginDescriptor,
+			RatingValidityPluginDescriptor,
 		],
 	}),
 )

@@ -32,6 +32,9 @@ export const enUS = freezeLocale({
 			confirm: 'OK',
 			cancel: 'Cancel',
 		},
-		rating: { value: '{value} of {max}' },
+		rating: {
+			value: '{value} of {max}',
+			required: 'Please select a rating',
+		},
 	},
 })

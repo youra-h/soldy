@@ -94,6 +94,11 @@ export type TTranslations = {
 		 * меняет слот, и звёздами он бывает не всегда
 		 */
 		readonly value: string
+		/**
+		 * Ошибка обязательной оценки, которую не поставили, — сообщение
+		 * браузера при отправке формы (`setCustomValidity`). Тоже без «звёзд»
+		 */
+		readonly required: string
 	}
 }
 

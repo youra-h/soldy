@@ -27,6 +27,9 @@ export const zhCN = freezeLocale({
 			confirm: '确定',
 			cancel: '取消',
 		},
-		rating: { value: '{value} 分，满分 {max} 分' },
+		rating: {
+			value: '{value} 分，满分 {max} 分',
+			required: '请选择评分',
+		},
 	},
 })
