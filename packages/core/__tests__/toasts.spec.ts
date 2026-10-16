@@ -1,10 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import {
 	FRAME_LAYER_ATTRIBUTE,
+	TItemContextRegistry,
 	TLayer,
 	TToasts,
 	TToastsCollectionFacade,
 	TToastsItem,
+	TToastsItemCollectionFacade,
 	createEngine,
 	createEngineToasts,
 	isCloseRequestable,
@@ -19,8 +21,10 @@ import type { IToastsItem, TToastsPlacement } from '@soldy-ui/core'
  * тост. Тост закрывается окончательно, смахивается за всю плашку к стороне
  * своего места и объявляет себя живой областью. Очередь — расширение
  * коллекции `toasts`: вставка в начало, предел видимых вместе с закрытыми,
- * сторона жеста, длительность и событие закрытия. Отсчёт, удаление догасших,
- * клавиши и жест ведут плагины, раскладывает и анимирует — тема.
+ * сторона жеста, длительность и событие закрытия. Стопка (`layout:
+ * 'cascade'`) своего состояния у тоста не заводит: передний — первый по
+ * порядку, глубина — место в составе. Отсчёт, удаление догасших, клавиши,
+ * жест и листание стопки ведут плагины, раскладывает и анимирует — тема.
  */
 
 beforeEach(() => {
@@ -35,13 +39,14 @@ function engineOf(owner = new TToasts()) {
 const textsOf = (toasts: ReadonlyArray<IToastsItem>) => toasts.map((toast) => toast.text)
 
 describe('регион (TToasts)', () => {
-	it('умолчания: виден, section, внизу у конца строки, три видимых, 5 секунд', () => {
+	it('умолчания: виден, section, внизу у конца строки, столбцом, три видимых, 5 секунд', () => {
 		const owner = new TToasts()
 
 		expect(owner.visible).toBe(true)
 		expect(owner.tag).toBe('section')
 		expect(owner.target).toBe('body')
 		expect(owner.placement).toBe('bottom-end')
+		expect(owner.layout).toBe('list')
 		expect(owner.max).toBe(3)
 		expect(owner.duration).toBe(5000)
 	})
@@ -64,6 +69,21 @@ describe('регион (TToasts)', () => {
 
 		expect(owner.classes.toArray()).toContain('so-toasts--placement-bottom')
 		expect(owner.classes.toArray()).not.toContain('so-toasts--placement-top-start')
+	})
+
+	it('модификатор раскладки — тоже всегда: столбец по умолчанию, смена меняет его', () => {
+		const layoutClasses = (owner: TToasts) =>
+			owner.classes.toArray().filter((name) => name.includes('--layout-'))
+		const owner = new TToasts()
+
+		expect(layoutClasses(owner)).toEqual(['so-toasts--layout-list'])
+
+		owner.layout = 'cascade'
+
+		expect(layoutClasses(owner)).toEqual(['so-toasts--layout-cascade'])
+		expect(layoutClasses(new TToasts({ layout: 'cascade' }))).toEqual([
+			'so-toasts--layout-cascade',
+		])
 	})
 
 	it('виден с конструктора — значит, у него уже есть номер слоя', () => {
@@ -90,26 +110,31 @@ describe('регион (TToasts)', () => {
 		const onMax = vi.fn()
 		const onDuration = vi.fn()
 		const onPlacement = vi.fn()
+		const onLayout = vi.fn()
 
 		owner.events.on('change:max', onMax)
 		owner.events.on('change:duration', onDuration)
 		owner.events.on('change:placement', onPlacement)
+		owner.events.on('change:layout', onLayout)
 
 		owner.max = 3
 		owner.duration = 5000
 		owner.placement = 'bottom-end'
+		owner.layout = 'list'
 
-		expect([onMax, onDuration, onPlacement].map((spy) => spy.mock.calls.length)).toEqual([
-			0, 0, 0,
-		])
+		expect(
+			[onMax, onDuration, onPlacement, onLayout].map((spy) => spy.mock.calls.length),
+		).toEqual([0, 0, 0, 0])
 
 		owner.max = 5
 		owner.duration = 0
 		owner.placement = 'top'
+		owner.layout = 'cascade'
 
 		expect(onMax).toHaveBeenCalledWith(5)
 		expect(onDuration).toHaveBeenCalledWith(0)
 		expect(onPlacement).toHaveBeenCalledWith('top')
+		expect(onLayout).toHaveBeenCalledWith('cascade')
 	})
 })
 
@@ -446,5 +471,66 @@ describe('очередь (расширение toasts)', () => {
 		expect(facade.engine.extensions.batch.items[0]).toBeInstanceOf(TToastsItem)
 		expect(facade.engine.extensions.toasts.show('Новый')?.text).toBe('Новый')
 		expect(textsOf(facade.shown)).toEqual(['Новый', 'Из данных'])
+	})
+})
+
+/**
+ * Стопка своего состояния у тоста не заводит: передний — первый по порядку
+ * коллекции, глубина — место тоста в составе (`order` фасада, его разметка
+ * отдаёт теме переменной `--so-toasts-depth`), а вывести задний вперёд —
+ * перестановка. Экран и скринридер видят один порядок.
+ */
+describe('стопка: передний — первый по порядку, глубина — место в составе', () => {
+	function stackOf(...texts: string[]) {
+		const { engine } = engineOf(new TToasts({ layout: 'cascade' }))
+		const toasts = texts.map((text) => {
+			const toast = engine.extensions.toasts.show(text)
+
+			if (!toast) throw new Error('тост не показан')
+
+			return toast
+		})
+		const registry = new TItemContextRegistry(engine.getCore())
+
+		/** Фасад тоста с контекстом — так его держит разметка тоста. */
+		const facadeOf = (toast: IToastsItem) => {
+			const facade = new TToastsItemCollectionFacade()
+
+			facade.setContext(registry.get(toast))
+
+			return facade
+		}
+
+		return { engine, toasts, facadeOf }
+	}
+
+	it('новый тост — передний: глубина 0, у прежних — на шаг больше', () => {
+		const { toasts, facadeOf } = stackOf('Первый', 'Второй', 'Третий')
+
+		expect(toasts.map((toast) => facadeOf(toast).order)).toEqual([2, 1, 0])
+	})
+
+	it('вывести задний вперёд — перестановка: новый порядок и глубина, change:order', () => {
+		const { engine, toasts, facadeOf } = stackOf('Первый', 'Второй', 'Третий')
+		const [oldest] = toasts
+
+		if (!oldest) throw new Error('тостов нет')
+
+		const facades = toasts.map(facadeOf)
+		const changed = facades.map((facade) => {
+			const handler = vi.fn()
+
+			facade.events.on('change:order', handler)
+
+			return handler
+		})
+
+		engine.extensions.plain.move(oldest, 0)
+
+		expect(textsOf(engine.extensions.batch.shown)).toEqual(['Первый', 'Третий', 'Второй'])
+		expect(facades.map((facade) => facade.order)).toEqual([0, 2, 1])
+		expect(changed.map((handler) => handler.mock.calls.length)).toEqual([1, 1, 1])
+		// Перестановка — не закрытие и не смена стороны: тост тот же
+		expect(oldest.open).toBe(true)
 	})
 })

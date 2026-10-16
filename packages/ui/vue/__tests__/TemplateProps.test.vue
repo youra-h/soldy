@@ -380,6 +380,10 @@ const dragAndDrop = new TDragAndDrop()
 	<Toasts placement="left" />
 	<Toasts placement="top-start" />
 
+	<!-- @vue-expect-error — раскладки `grid` нет: столбец или стопка -->
+	<Toasts layout="grid" />
+	<Toasts layout="cascade" />
+
 	<!-- @vue-expect-error — предел видимых числом, а не строкой -->
 	<Toasts max="3" />
 	<Toasts :max="3" />

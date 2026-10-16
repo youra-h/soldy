@@ -41,6 +41,7 @@ import {
 	TABS_VIEWS,
 	TAGS_OVERFLOWS,
 	TIME_PRECISIONS,
+	TOASTS_LAYOUTS,
 	TOASTS_PLACEMENTS,
 	TOOLTIP_PLACEMENTS,
 	TOOLTIP_TYPES,
@@ -266,6 +267,7 @@ const OWN: Record<string, Record<string, string>> = {
 	toasts: {
 		placement:
 			'Где регион тостов: у верхнего или нижнего края окна — у начала строки, по центру или у конца. start и end меняются местами в RTL; смахивают тост туда же',
+		layout: 'Как стоят тосты: list — столбцом, cascade — стопкой, где задние выглядывают из-под переднего. Стопку листают колесом над ней и стрелками ↑ ↓, фокус выводит тост вперёд',
 		max: 'Сколько тостов видно разом. Остальные ждут и появляются, когда место освободится',
 		duration:
 			'Сколько тост держится на экране, мс, если своей длительности у него нет. 0 — пока его не закроют. Время стоит, пока указатель или фокус на тостах',
@@ -398,7 +400,7 @@ const OPTIONS: Record<string, Record<string, readonly string[]>> = {
 	'progress-linear': { orientation: PROGRESS_LINEAR_ORIENTATIONS },
 	dialog: { placement: DIALOG_PLACEMENTS },
 	drawer: { placement: DRAWER_PLACEMENTS, swipe: SWIPES },
-	toasts: { placement: TOASTS_PLACEMENTS },
+	toasts: { placement: TOASTS_PLACEMENTS, layout: TOASTS_LAYOUTS },
 	tabs: {
 		view: TABS_VIEWS,
 		orientation: TABS_ORIENTATIONS,
