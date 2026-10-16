@@ -92,6 +92,16 @@
  * у элемента уже есть по тегу: `disabled` кнопки остаётся нативным свойством,
  * отражённым в атрибут, а до ядра доходит через атрибут.
  *
+ * Свои атрибуты элемента — сверх пропов дескриптора (`attributes` в описании
+ * элемента): то, что элемент читает сам и ядру не отдаёт, — роль иконки
+ * (`<span is="so-icon" icon="close">`). Значение хранит сам атрибут: свойство
+ * на прототипе его отражает (`el.icon`; `null` и `undefined` атрибут снимают),
+ * атрибут стоит в `observedAttributes`, и его смена — флаш привязок шаблона на
+ * это имя, как смена пропа. Описание называет свойство, а атрибут — его имя
+ * через дефис, как у пропов. Имя, занятое пропом (и `HOST_PROPS`), классом
+ * элемента или нативным элементом, — ошибка описания: у атрибута или свойства
+ * было бы два смысла.
+ *
  * Перестановка в DOM — отключение и подключение — элемент не ломает. Свет и
  * структура создаются один раз, а каждое подключение — новая связка над тем же
  * инстансом: инстанс первой сборки следующая получает как `ctrl`, и `el.ctrl`
@@ -126,6 +136,7 @@ import {
 	buildAttributeMap,
 	coerceAttribute,
 	isHostProp,
+	toAttributeName,
 	type IAttributeBinding,
 	WebcProfile,
 } from '../common'
@@ -240,6 +251,12 @@ export interface ISoldyElementSpec<TInstance> {
 	readonly template: ITemplate<TInstance>
 	/** Описание корня — см. `TRootSpec`. */
 	readonly root?: TRootSpec
+	/**
+	 * Свои атрибуты элемента сверх пропов дескриптора — имена свойств (см.
+	 * шапку): роль иконки (`icon`). Привязка шаблона на такое имя читает
+	 * значение из атрибута корня.
+	 */
+	readonly attributes?: readonly string[]
 	/** setup-слой компонента: связка над готовым инстансом или новым. */
 	setup(
 		host: HTMLElement,
@@ -275,6 +292,10 @@ export function SoldyElement<
 	const attributes: ReadonlyMap<string, IAttributeBinding> = buildAttributeMap(spec.descriptor)
 	/** Атрибуты-входы пропов: их значение в наборе ядра верно всегда. */
 	const inputs: ReadonlySet<string> = new Set(attributes.keys())
+	/** Свои атрибуты элемента: имя атрибута → имя свойства (`ISoldyElementSpec.attributes`). */
+	const own: ReadonlyMap<string, string> = new Map(
+		(spec.attributes ?? []).map((name) => [toAttributeName(name), name]),
+	)
 	/** Имя стиль-выхода компонента (`TRootSpec.style`); нет — стиль только от плагина. */
 	const styleOutput = spec.root?.style
 	/** Прячет ли видимость корень (`TRootSpec.hides`). */
@@ -282,7 +303,7 @@ export function SoldyElement<
 
 	class TSoldyElement extends Native implements ISoldyElement<TInstance> {
 		static get observedAttributes(): string[] {
-			return [...attributes.keys()]
+			return [...attributes.keys(), ...own.keys()]
 		}
 
 		private _binding?: TBinding<TInstance>
@@ -378,11 +399,18 @@ export function SoldyElement<
 		attributeChangedCallback(name: string, _old: string | null, value: string | null): void {
 			const attribute = attributes.get(name)
 
-			if (!attribute) return
+			if (attribute) {
+				// `undefined` тоже пишется: атрибут сняли — проп больше не задан, и
+				// связка вернёт его к умолчанию
+				this._write(attribute.prop, coerceAttribute(value, attribute))
 
-			// `undefined` тоже пишется: атрибут сняли — проп больше не задан, и
-			// связка вернёт его к умолчанию
-			this._write(attribute.prop, coerceAttribute(value, attribute))
+				return
+			}
+
+			// Свой атрибут: значение хранит он сам, и привязки читают его с корня
+			const property = own.get(name)
+
+			if (property !== undefined) this._mark(property)
 		}
 
 		/**
@@ -520,6 +548,15 @@ export function SoldyElement<
 
 		private _onUpdate(name: string, value: unknown): void {
 			this._values.set(name, value)
+			this._mark(name)
+		}
+
+		/**
+		 * Имя — к отрисовке: на флаше применятся привязки, которые за него
+		 * отвечают. Без подключения флаша нет — имя дождётся полной отрисовки
+		 * следующего подключения.
+		 */
+		private _mark(name: string): void {
 			this._dirty.add(name)
 			this._queueFlush()
 		}
@@ -611,6 +648,11 @@ export function SoldyElement<
 		 * передать объект или готовый инстанс. Пропускаются `ctrl` (своя пара
 		 * выше), пропы `HOST_PROPS` и свойства, которые у элемента уже есть по
 		 * тегу: нативное свойство остаётся нативным (см. шапку).
+		 *
+		 * Свойства своих атрибутов — следом, отражением атрибута: значение
+		 * хранит он сам (см. шапку). Имя, которое уже занято — пропом (его
+		 * атрибутом или свойством), `HOST_PROPS`, классом элемента или нативным
+		 * элементом, — ошибка описания, а не повод перекрыть чужое.
 		 */
 		static {
 			for (const prop of Object.keys(TSurface.of(spec.descriptor, WebcProfile).exportProps)) {
@@ -626,6 +668,35 @@ export function SoldyElement<
 
 					set(this: TSoldyElement, value: unknown) {
 						this._write(prop, value)
+					},
+				})
+			}
+
+			for (const [attribute, property] of own) {
+				if (
+					attributes.has(attribute) ||
+					isHostProp(property) ||
+					property in this.prototype
+				) {
+					throw new Error(
+						`[soldy] Свой атрибут «${attribute}» занят: это имя уже у пропа, класса элемента или нативного элемента`,
+					)
+				}
+
+				Object.defineProperty(this.prototype, property, {
+					configurable: true,
+					enumerable: true,
+
+					get(this: TSoldyElement): string | null {
+						return this.getAttribute(attribute)
+					},
+
+					set(this: TSoldyElement, value: unknown) {
+						if (value === null || value === undefined) {
+							this.removeAttribute(attribute)
+						} else {
+							this.setAttribute(attribute, String(value))
+						}
 					},
 				})
 			}

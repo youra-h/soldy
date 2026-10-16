@@ -2296,7 +2296,7 @@ Svelte 5 на рунах. Структура зеркалит React, потом�
 
 ## Layer 8d: Web Components Adapter (`packages/ui/webc/src`)
 
-### ✅ IMPLEMENTED (Component / ComponentView / Stylable / Control / Textable / Button / ProgressSpinner / Skeleton)
+### ✅ IMPLEMENTED (Component / ComponentView / Stylable / Control / Textable / Button / Icon / ProgressSpinner / Skeleton)
 
 Единственный таргет без фреймворка — и потому самый показательный тест
 архитектуры: ядро уже событийное, а `CustomEvent` это родная модель DOM.
@@ -2310,17 +2310,20 @@ Svelte 5 на рунах. Структура зеркалит React, потом�
   `attributes` (карта «атрибут → проп» по поверхности + коэрция; `HOST_PROPS` —
   пропы, которых у элемента нет ни атрибутом, ни свойством: `tag`);
   `createWebcAdapterContext` — сборка с локалью ближайшего
-  `<so-locale-provider>` вверх от хоста.
+  `<so-locale-provider>` вверх от хоста; `icon` — иконка по роли из реестра:
+  `drawRoleIcon` (рисунок роли — `viewBox` и содержимое — на готовом `<svg>`)
+  и `roleIcon` (голый `<svg>` с рисунком роли — для разметки, где иконка не
+  компонент, и для приложения).
 - `adapter/runtime/` — `useAdapter` поверх связки
   `adapter.connect(WebcProfile)` (о пропе ядра она сообщает элементу колбэком
   `onUpdate`), `SoldyElement` (фабрика класса элемента поверх нативного класса
-  тега: жизненный цикл и корень по описанию `TRootSpec`, см. «Решения по
-  DOM»), `defineElement` (регистрация с `extends`); в бочку не входят
-  `root-attributes.ts`: `applyClasses`, `applyAttributes`, `applyStyles` со
-  `stylesOf` и `applyHidden` раскладывают на элемент классы, наборы ядра, стиль
-  и скрытие, — `defineAutonomousElement` (регистрация провайдера локали без
-  `extends`) и `isDefining` (признак идущей регистрации, см. «Решения по
-  DOM»).
+  тега: жизненный цикл, корень по описанию `TRootSpec` и свои атрибуты
+  элемента, см. «Решения по DOM»), `defineElement` (регистрация с
+  `extends`); в бочку не входят `root-attributes.ts`: `applyClasses`,
+  `applyAttributes`, `applyStyles` со `stylesOf` и `applyHidden` раскладывают
+  на элемент классы, наборы ядра, стиль и скрытие, — `defineAutonomousElement`
+  (регистрация провайдера локали без `extends`) и `isDefining` (признак идущей
+  регистрации, см. «Решения по DOM»).
 - `adapter/context/` — `TPlaceContext`, контекст места: значение, привязанное
   к элементу, и поиск ближайшего вверх от узла — по `parentNode`, из теневого
   корня к его хосту. Наружу пакета не выходит.
@@ -2347,6 +2350,15 @@ defineElement('so-button', TButtonElement, 'button')
 описании элемента): имя стиль-выхода — `{ style: 'fractionStyle' }` у
 ProgressSpinner — и прячет ли видимость корень — `{ hides: false }` у
 Skeleton.
+
+Свои атрибуты элемента сверх пропов дескриптора — то, что элемент читает
+сам и ядру не отдаёт, — называет описание элемента (`attributes`): роль
+иконки, `attributes: ['icon']` у Icon. Значение хранит сам атрибут: он стоит
+в `observedAttributes`, на прототипе — отражающее его свойство (`el.icon`;
+`null` и `undefined` атрибут снимают), а смена — флаш привязок шаблона на
+это имя, как у пропа. Имя, занятое пропом, `HOST_PROPS`, классом элемента
+или нативным элементом, фабрика не примет: у атрибута или свойства было бы
+два смысла.
 
 ### Чем Web Components проще Angular
 
@@ -2488,6 +2500,19 @@ WebKit:
   прячет, как `visible=false`: содержимое на месте, `TElementPlugin` связан с
   элементом всё время. У Skeleton (`hides: false`) видимость корень не прячет:
   она убирает только заглушку, а содержимое в корне остаётся на виду.
+- **Иконка** — `<span is="so-icon">`: атрибут `is` расширяет только элементы
+  HTML, и `<svg>`, корень Icon по роли в остальных адаптерах, элементом soldy
+  не стать. Корень — элемент потребителя, `span` (тег ядра по умолчанию), и
+  классы размера, наборы и `so:element:ready` — у него, как у всех. Рисунок
+  роли — `<svg>` внутри: роль — свой атрибут элемента (`icon`), по ней шаблон
+  кладёт в корень `<svg>` с рисунком (`roleIcon`), растянутый на корень
+  атрибутами `width` и `height="100%"`, под `aria-hidden` — имя у корня, — а
+  при смене роли рисует на том же узле. Отвергнут автономный `<so-icon>` без
+  своей коробки с корнем-`<svg>` внутри: класс и стиль потребителя ложились бы
+  на носитель, а не на корень Icon, а путь к корню у Web Components — сам
+  элемент (`docs/agents/a11y.md`, «`ref` потребителя — корень компонента»).
+  Теме корень `span` — то же, что корень `svg`: корень иконки любого тега у
+  неё блок (`docs/agents/theming.md`, «Пакеты иконок»).
 - **Локаль поддерева** — `<so-locale-provider>`, автономный элемент: своего
   нативного поведения у него нет, расширять нечего. Контекста у платформы нет,
   поэтому источник (`TLocaleSource`) провайдер отдаёт контекстом места своему
@@ -2551,7 +2576,9 @@ ProgressSpinner слотов нет вовсе, и текст внутри эл�
 ### Известные ограничения
 
 - Тег корня задан регистрацией: одно имя расширяет один тег. Кнопки-ссылки нет
-  — ей понадобилось бы своё имя (`<a is="so-link">`).
+  — ей понадобилось бы своё имя (`<a is="so-link">`). Иконка — только
+  `<span is="so-icon">`: `<i is="so-icon">` под тем же именем не оживёт, а
+  `<svg>` атрибут `is` не расширяет вовсе.
 - `is`, выставленный атрибутом после `createElement`, элемент не оживляет —
   так по стандарту в Chrome и Firefox (с полифилом в Safari — оживляет). Так
   создаёт элементы Angular: в его шаблоне `<button is="so-button">` останется
@@ -2741,7 +2768,7 @@ Framework-agnostic dependency injection:
 | @soldy-ui/angular        | `TButtonComponent`, `TComponentViewComponent`, `TComponentComponent`, `TIconComponent`, `TProgressSpinnerComponent`, `TSkeletonComponent`, `TFrameComponent`, `TLabelComponent`, `TInputComponent`, `TCheckBoxComponent`, `TSwitchComponent`, `TRadioGroupComponent` / `TRadioGroupItemComponent`, `TListBoxComponent` / `TListBoxItemComponent`, `TTabsComponent` / `TTabsItemComponent` / `TTabsContentComponent`, `TAccordionComponent` / `TAccordionItemComponent`, `setupXxx`, generated names and surfaces (`ButtonInputNames` / `ButtonOutputNames` / `TButtonSurface`, …), `createAngularAdapterContext`, `useAdapter` / `useCollectionAdapter` / `joinBindings`, `TInputValue` / `TOutputEmitter`, `TComponentBase`, `TRootSpec`, `SlotDirective`, `RoleIconDirective`, `LocaleProviderDirective`, `AngularProfile`, `AngularNaming`, `useInputs` / `useOutputs`, `TAngularElevator`, `AngularElevatorFactory`, `provideElevator`                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | @soldy-ui/svelte         | `Button`, `ComponentView`, `setupXxx`, `useAdapter`, `SvelteProfile`, `SvelteNaming`, `TSvelteElevator`, `SvelteElevatorFactory`, prop types (`UseProps`, `UseDomProps`, `EventProps`, `SlotProps`, `TSnippetSlots`)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | @soldy-ui/solid          | `Button`, `ComponentView`, `Icon`, `Frame`, `ProgressSpinner`, `Skeleton`, collections with parts (`ListBox` with `ListBox.Item`, `Tabs` with `Tabs.Item` / `Tabs.Content`, `Accordion` with `Accordion.Item`, `RadioGroup` with `RadioGroup.Item`, and flat `ListBoxItem`, `TabsItem`, `TabsContent`, `AccordionItem`, `RadioGroupItem`), `setupXxx`, `createSolidAdapterContext`, `useAdapter`, `useCollectionAdapter`, `joinState`, `LocaleProvider`, `Teleport`, `KeyedFor`, `roleIcon`, `createRootProps`, `toRootProps`, `rootTag`, `SolidProfile`, `SolidNaming`, `TSolidElevator`, `useElevator`, `Elevate`, `renderSlot`, `resolveSlot`, `relaySlot`, `ResolvedSlot`, `chainHandler`, prop types (`UseProps`, `UseDomProps`, `EventProps`, `SlotProps`)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
-| @soldy-ui/webc           | `<button is="so-button">` (`TButtonElement`), `<div is="so-component-view">` (`TComponentViewElement`), `<span is="so-progress-spinner">` (`TProgressSpinnerElement`), `<div is="so-skeleton">` (`TSkeletonElement`), `<so-locale-provider>` (`TLocaleProviderElement`), `setupXxx`, templates (`buttonTemplate`, `componentViewTemplate`, `progressSpinnerTemplate`, `skeletonTemplate`), `SoldyElement`, `TRootSpec`, `defineElement`, `createWebcAdapterContext`, `useAdapter`, `useAttributes`, `HOST_PROPS`, `bind`, `WebcProfile`, `WebcNaming`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| @soldy-ui/webc           | `<button is="so-button">` (`TButtonElement`), `<div is="so-component-view">` (`TComponentViewElement`), `<span is="so-icon">` (`TIconElement`), `<span is="so-progress-spinner">` (`TProgressSpinnerElement`), `<div is="so-skeleton">` (`TSkeletonElement`), `<so-locale-provider>` (`TLocaleProviderElement`), `setupXxx`, templates (`buttonTemplate`, `componentViewTemplate`, `iconTemplate`, `progressSpinnerTemplate`, `skeletonTemplate`), `SoldyElement`, `TRootSpec`, `defineElement`, `createWebcAdapterContext`, `useAdapter`, `useAttributes`, `HOST_PROPS`, `bind`, `roleIcon`, `drawRoleIcon`, `WebcProfile`, `WebcNaming`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | @soldy-ui/theme-oren     | CSS: `dist/index.css` (built by `npm run build --workspace=@soldy-ui/theme-oren`); types: `index.d.ts` — theme values of the appearance registries; `@soldy-ui/theme-oren/setup` — the theme object for `useTheme` and `TTabsViewPlugin`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | @soldy-ui/icons-material | Icons as data (`TIconSource`), a named export per icon — every role of `ICON_ROLES` and more; the app registers them via `setIcons`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 

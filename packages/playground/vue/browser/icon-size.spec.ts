@@ -9,6 +9,10 @@
  * правила растягивается на ширину контейнера, и бокс у него ненулевой.
  * Иконка — та же, что у компонентов: глиф из `useIcon`, с `viewBox`. Без него
  * `svg` раскладывается иначе. В jsdom раскладки нет.
+ *
+ * Корень другого тега берёт тот же размер: `span` — корень `<Icon>` без тега и
+ * элемента Web Components `<span is="so-icon">`, — потому что тема делает
+ * корень иконки любого тега блоком, как `svg` под Preflight.
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
@@ -37,11 +41,14 @@ const harness = (sizes: readonly (typeof COMPONENT_SIZES)[number][]) =>
 		},
 	})
 
-/** Бокс иконки размера; нет её — тест падает здесь, а не на чтении свойства. */
-const iconBox = (size: string) => {
-	const icon = document.querySelector(`svg.so-icon--size-${size}`)
+/**
+ * Бокс иконки размера с корнем этого тега; нет её — тест падает здесь, а не на
+ * чтении свойства.
+ */
+const iconBox = (size: string, root = 'svg') => {
+	const icon = document.querySelector(`${root}.so-icon--size-${size}`)
 
-	if (!icon) throw new Error(`иконки размера ${size} нет`)
+	if (!icon) throw new Error(`иконки размера ${size} с корнем ${root} нет`)
 
 	return icon.getBoundingClientRect()
 }
@@ -65,11 +72,36 @@ describe.each(COMPONENT_SIZES)('размер %s', (size) => {
 	})
 })
 
+/**
+ * Хост — блочный, как строка текста: в нём строчный `span` размер не берёт
+ * вовсе, и иконка оставалась без ширины. Флекс-хост, как выше, этого не
+ * покажет — ребёнок флекса блочный и без правила темы.
+ */
+describe.each(COMPONENT_SIZES)('размер %s · корень span', (size) => {
+	it('бокс — тот же, что у корня svg', () => {
+		render(
+			defineComponent({
+				render: () =>
+					h('div', [
+						h('div', [h(Icon, { tag: CLOSE, size })]),
+						h('div', [h(Icon, { size })]),
+					]),
+			}),
+		)
+
+		const svg = iconBox(size)
+		const span = iconBox(size, 'span')
+
+		expect(span.width).toBeGreaterThan(0)
+		expect([span.width, span.height]).toEqual([svg.width, svg.height])
+	})
+})
+
 /** Кегль у всех иконок один, поэтому бокс растёт вместе с правилом темы. */
 it('бокс растёт по шкале', () => {
 	render(harness(COMPONENT_SIZES))
 
-	const boxes = COMPONENT_SIZES.map(iconBox)
+	const boxes = COMPONENT_SIZES.map((size) => iconBox(size))
 
 	boxes.slice(1).forEach((box, index) => {
 		const step = `${COMPONENT_SIZES[index]} → ${COMPONENT_SIZES[index + 1]}`

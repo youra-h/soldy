@@ -1031,6 +1031,24 @@ describe('Web Components: propSnippet', () => {
 
 		expect(code).toContain('<span is="so-progress-spinner" value="40" max="50"></span>')
 	})
+
+	/** Роль иконки — свой атрибут элемента, а не проп: без неё иконка пуста. */
+	it('свой атрибут элемента — в разметке всегда, перед пропами', () => {
+		const icon = entryOf('icon')
+
+		expect(webc.propSnippet(icon, 'size', 'lg')).toBe(
+			[
+				'<script type="module">',
+				"\timport '@soldy-ui/webc'",
+				'</script>',
+				'',
+				'<span is="so-icon" icon="arrowDown" size="lg"></span>',
+			].join('\n'),
+		)
+		expect(webc.propSnippet(icon, 'size', undefined)).toContain(
+			'<span is="so-icon" icon="arrowDown"></span>',
+		)
+	})
 })
 
 describe('Web Components: instanceSnippet', () => {
@@ -1101,6 +1119,19 @@ describe('Web Components: instanceSnippet', () => {
 		expect(code).toContain('\tinstance.max = 50')
 		expect(code).toContain(
 			'\telement.ctrl = instance\n\telement.value = 40\n\tdocument.body.append(element)',
+		)
+	})
+
+	it('свой атрибут элемента — свойством рядом с ctrl', () => {
+		const code = webc.instanceSnippet(
+			entryOf('icon'),
+			control({ name: 'size', scope: 'component' }),
+			'lg',
+		)
+
+		expect(code).toContain("\tinstance.size = 'lg'")
+		expect(code).toContain(
+			"\telement.ctrl = instance\n\telement.icon = 'arrowDown'\n\tdocument.body.append(element)",
 		)
 	})
 
