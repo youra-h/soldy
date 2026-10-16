@@ -85,12 +85,12 @@ export default class TLayer<
 		this._target = props.target ?? ctor.defaultValues.target
 
 		// Показ поднимает слой над всеми, кто показан раньше
-		this.events.on('show', () => this._raise())
+		this.events.on('show', () => this.raise())
 
 		// Созданный видимым уже на экране, а `show` для него не придёт. Без слоя
 		// он стоял бы с `z-index: 0` под всеми, и нажатие в панель, открытую
 		// поверх него, плагин оверлея счёл бы нажатием мимо
-		if (this.visible) this._raise()
+		if (this.visible) this.raise()
 
 		this._syncOpen()
 		this.events.on('change:visible', () => this._syncOpen())
@@ -104,8 +104,15 @@ export default class TLayer<
 		return this.events
 	}
 
-	/** Новый z-index — выше всех выданных — и тот же номер в `data-layer`. */
-	private _raise(): void {
+	/**
+	 * Поднять слой над всеми выданными: новый z-index — выше всех — и тот же
+	 * номер в `data-layer`.
+	 *
+	 * Показ зовёт его сам. Снаружи — тому, кто виден всегда и встаёт наверх
+	 * по своему поводу: регион тостов поднимается на каждый новый тост и на
+	 * F8, и «Сохранено» видно поверх окна, открытого раньше.
+	 */
+	raise(): void {
 		this._zIndex = TLayer.nextZIndex()
 		this._dataset.add(FRAME_LAYER_ATTRIBUTE, this._zIndex)
 		this._sink.emit('change:zIndex', this._zIndex)

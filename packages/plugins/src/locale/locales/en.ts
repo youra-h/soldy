@@ -14,6 +14,7 @@ export const enUS = freezeLocale({
 		popover: { close: 'Close' },
 		tabs: { close: 'Close {name}' },
 		tags: { close: 'Close {name}' },
+		toasts: { region: 'Notifications (F8)', close: 'Close {name}' },
 		scroller: { prev: 'Scroll back', next: 'Scroll forward' },
 		field: { clear: 'Clear {name}' },
 		table: { selectAll: 'Select all' },

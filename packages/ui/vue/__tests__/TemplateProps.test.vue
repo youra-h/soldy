@@ -46,9 +46,13 @@ import {
 	Table,
 	Tabs,
 	Tags,
+	Toasts,
 	Tooltip,
 	Virtual,
 } from '@soldy-ui/vue'
+// Тост — внутренняя часть менеджера, наружу пакета не выходит, но аннотация
+// пропсов у него своя
+import { ToastsItem } from '../src/components/toasts/item'
 
 const button = new TButton()
 const input = new TInput()
@@ -347,6 +351,26 @@ const dragAndDrop = new TDragAndDrop()
 	<!-- @vue-expect-error — вариант тега — имя темы, а `rainbow` она не объявила -->
 	<Tags.Item variant="rainbow" />
 	<Tags.Item variant="brand" />
+
+	<!-- @vue-expect-error — места `left` у региона нет: край и сторона строки -->
+	<Toasts placement="left" />
+	<Toasts placement="top-start" />
+
+	<!-- @vue-expect-error — предел видимых числом, а не строкой -->
+	<Toasts max="3" />
+	<Toasts :max="3" />
+
+	<!-- @vue-expect-error — длительность числом, а не строкой -->
+	<Toasts duration="5s" />
+	<Toasts :duration="0" />
+
+	<!-- @vue-expect-error — текст тоста строкой -->
+	<ToastsItem :text="42" />
+	<ToastsItem text="Сохранено" />
+
+	<!-- @vue-expect-error — флаг, а не строка -->
+	<ToastsItem :alert="'yes'" />
+	<ToastsItem alert />
 
 	<!-- @vue-expect-error — стороны `left` у подсказки нет: сторона и выравнивание -->
 	<Tooltip placement="left" />

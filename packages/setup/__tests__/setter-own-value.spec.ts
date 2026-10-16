@@ -50,6 +50,9 @@ import {
 	TTags,
 	TTagsCollectionFacade,
 	TTagsItemCollectionFacade,
+	TToasts,
+	TToastsCollectionFacade,
+	TToastsItemCollectionFacade,
 } from '@soldy-ui/core'
 import { createAdapterContext } from '../protected/adapter'
 import type { IComponentDescriptor, TPropSpec } from '../protected/define'
@@ -220,6 +223,18 @@ const COLLECTIONS: Readonly<Record<string, readonly [string | null, () => TMount
 			facade.items = SOURCES
 
 			return withItem(facade, new TTagsItemCollectionFacade())
+		},
+	],
+	// Состав тостам пишет очередь (`show`), а место — порядок: у фасада тоста
+	// входов нет
+	ToastsCollectionDescriptor: [
+		null,
+		() => {
+			const facade = new TToastsCollectionFacade({}, { owner: new TToasts() })
+
+			facade.items = SOURCES.map(({ text }) => ({ text }))
+
+			return withItem(facade, new TToastsItemCollectionFacade())
 		},
 	],
 }

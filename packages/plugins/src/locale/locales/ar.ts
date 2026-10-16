@@ -12,6 +12,7 @@ export const arEG = freezeLocale({
 		popover: { close: 'إغلاق' },
 		tabs: { close: 'إغلاق {name}' },
 		tags: { close: 'إغلاق {name}' },
+		toasts: { region: 'الإشعارات (F8)', close: 'إغلاق {name}' },
 		scroller: { prev: 'التمرير للخلف', next: 'التمرير للأمام' },
 		field: { clear: 'مسح {name}' },
 		table: { selectAll: 'تحديد الكل' },

@@ -9,6 +9,7 @@ export const frFR = freezeLocale({
 		popover: { close: 'Fermer' },
 		tabs: { close: 'Fermer {name}' },
 		tags: { close: 'Fermer {name}' },
+		toasts: { region: 'Notifications (F8)', close: 'Fermer {name}' },
 		scroller: { prev: 'Défiler vers l’arrière', next: 'Défiler vers l’avant' },
 		field: { clear: 'Effacer {name}' },
 		table: { selectAll: 'Tout sélectionner' },

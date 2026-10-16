@@ -1,0 +1,86 @@
+<script lang="ts">
+import { Icon } from '../../icon'
+import { Button } from '../../button'
+import SetupToastsItem from './setup.component'
+
+/**
+ * Тост — внутренняя часть менеджера: его рисует только регион `Toasts`, по
+ * одному на показанный элемент коллекции, и наружу пакета он не выходит.
+ *
+ * Атрибуты снаружи падают на корень сами: набор тоста (`aria`, `dataset`)
+ * стоит на нём же, и разводить атрибуты по узлам незачем.
+ */
+export default { ...SetupToastsItem, components: { Icon, Button } }
+</script>
+
+<template>
+	<component
+		ref="rootElement"
+		:is="tag"
+		v-if="rendered"
+		v-show="visible"
+		:class="classes"
+		v-bind="{ ...attrs, ...aria, ...dataset }"
+	>
+		<!--
+			Корень — место тоста в списке: высота места, сдвиг жеста, уход и
+			прозрачность (тема). На нём: вариант — модификатор
+			`so-toasts-item--variant-*` (нет варианта — нейтральный), `data-open`
+			(с первой отрисовки; `false` — тост закрыт и гаснет), `data-swiping`
+			(тянут), роль `status` или `alert` для срочного, `tabindex` — фокус по
+			F8 и Escape на тосте под фокусом. Сдвиг во время жеста
+			(`--so-swipe-offset`) плагин жеста пишет сюда сам.
+
+			Плашка — то, что видно: поверхность, кромка, тень и кольцо фокуса
+			корня. Отдельный узел, а не корень: место растёт и схлопывается
+			переходом высоты без замеров, а плашка своего размера не меняет.
+		-->
+		<div class="so-toasts-item__card">
+			<!--
+				Значок — слот `icon`; без слота узла нет. Декор: имя тосту даёт
+				текст, поэтому узел спрятан от скринридера.
+			-->
+			<span v-if="$slots.icon" class="so-toasts-item__icon" aria-hidden="true"
+				><slot name="icon"
+			/></span>
+
+			<!--
+				Текст: заголовок (слот `default`, запасное — `text` тоста),
+				описание (`description` тоста) и своё содержимое (слот `content`,
+				запасное — `render` тоста: кнопка «Отменить» и подобное, она
+				получает тост пропом `toast` и может его закрыть). Пробелы с переносом
+				строки вокруг слотов компилятор Vue убирает, и пустую часть тема
+				сворачивает по `:empty`.
+			-->
+			<div class="so-toasts-item__body">
+				<div class="so-toasts-item__text">
+					<slot :text="text">{{ text }}</slot>
+				</div>
+				<div class="so-toasts-item__description">{{ description }}</div>
+				<div class="so-toasts-item__content">
+					<slot name="content"
+						><component v-if="isToastRender(render)" :is="render" :toast="toast"
+					/></slot>
+				</div>
+			</div>
+
+			<!--
+				Крестик — последним в DOM: последняя остановка Tab в тосте.
+				Прячется `rendered` (`closable`). Имя — из локали вместе с текстом
+				тоста (`closeAria`). Вида и размера у него нет: квадрат и вид
+				`plain` даёт тема по контексту. Иконка — роль `close`.
+			-->
+			<Button
+				embedded="toasts.close"
+				class="so-toasts-item__close"
+				:rendered="closable"
+				@click="toast.close()"
+				v-bind="closeAria"
+			>
+				<slot name="close-icon">
+					<Icon embedded="toasts.close-icon" :tag="closeIconTag" />
+				</slot>
+			</Button>
+		</div>
+	</component>
+</template>

@@ -63,6 +63,7 @@ function overlay(base: TTranslations, patch: TPartialTranslations): TTranslation
 		popover: section(base, patch, 'popover'),
 		tabs: section(base, patch, 'tabs'),
 		tags: section(base, patch, 'tags'),
+		toasts: section(base, patch, 'toasts'),
 		scroller: section(base, patch, 'scroller'),
 		field: section(base, patch, 'field'),
 		table: section(base, patch, 'table'),

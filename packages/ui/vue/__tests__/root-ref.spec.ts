@@ -9,7 +9,8 @@
  *
  * `$el` даёт сам Vue — первый узел шаблона. У Frame, Dialog и Drawer первый
  * узел шаблона — `<teleport>`, и Vue отдавал его якорь, узел-комментарий, а
- * панель была в другом месте. Корень им открывает `exposeRoot`, и он читается
+ * панель была в другом месте; у Toasts первый узел — приложение в слоте, а
+ * регион телепортирован. Корень им открывает `exposeRoot`, и он читается
  * через ссылку адаптера: смена тега отдаёт новый корень, не отрисован —
  * `null`. Телепорт выключен (`contained`) — корень тот же.
  *
@@ -33,7 +34,7 @@ import {
 	type VNode,
 	type VNodeRef,
 } from 'vue'
-import { TDialog, TDrawer, TFrame, type TTableColumnSource } from '@soldy-ui/core'
+import { TDialog, TDrawer, TFrame, TToasts, type TTableColumnSource } from '@soldy-ui/core'
 import { ruRU } from '@soldy-ui/plugins'
 import * as SoldyVue from '@soldy-ui/vue'
 import {
@@ -69,6 +70,7 @@ import {
 	TabsItem,
 	Tags,
 	TagsItem,
+	Toasts,
 	Tooltip,
 } from '@soldy-ui/vue'
 import ButtonTemplate from '../src/components/button/Button.vue'
@@ -144,6 +146,8 @@ const ROOTS: ReadonlyArray<readonly [string, (props: TProbeProps) => VNode, stri
 	],
 	['Popover', (props) => h(Popover, props), '.so-popover', '.so-popover'],
 	['Tooltip', (props) => h(Tooltip, props), '.so-tooltip', '.so-tooltip'],
+	// Первый узел шаблона — приложение в слоте, корень — регион в телепорте
+	['Toasts', (props) => h(Toasts, props), '.so-toasts', '.so-toasts'],
 	['Icon', (props) => h(Icon, { tag: 'i', ...props }), '.so-icon', '.so-icon'],
 	['Label', (props) => h(Label, props), '.so-label', '.so-label'],
 	[
@@ -354,6 +358,16 @@ const TELEPORTED: ReadonlyArray<readonly [string, () => TTeleported, string]> = 
 			return { ctrl, draw: (props) => h(Drawer, { ctrl, contained: true, ...props }) }
 		},
 		'.so-drawer',
+	],
+	[
+		'Toasts',
+		() => {
+			// Регион по умолчанию — `section`: смене тега нужен другой стартовый
+			const ctrl = new TToasts({ tag: 'div' })
+
+			return { ctrl, draw: (props) => h(Toasts, { ctrl, ...props }) }
+		},
+		'.so-toasts',
 	],
 ]
 

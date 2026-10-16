@@ -9,6 +9,7 @@ export const ruRU = freezeLocale({
 		popover: { close: 'Закрыть' },
 		tabs: { close: 'Закрыть {name}' },
 		tags: { close: 'Закрыть {name}' },
+		toasts: { region: 'Уведомления (F8)', close: 'Закрыть {name}' },
 		scroller: { prev: 'Прокрутить назад', next: 'Прокрутить вперёд' },
 		field: { clear: 'Очистить {name}' },
 		table: { selectAll: 'Выбрать все' },

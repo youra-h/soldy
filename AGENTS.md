@@ -715,15 +715,18 @@ class TTabsContentCollectionFacade extends TCollectionItemComponent {
 
 ```
 TCollectionComponent
-└── TBatchCollectionFacade           batch
+└── TBatchCollectionFacade           batch        → Toasts
     ├── TSelectionCollectionFacade   + selection  → Accordion, Select, ListBox, Tags
     └── TActivationCollectionFacade  + activation → Tabs, RadioGroup
 
 TCollectionItemComponent
-└── TOrderItemFacade                 order
+└── TOrderItemFacade                 order      → тост Toasts
     ├── TSelectionItemFacade         + selected → Accordion/ListBox/Select/Tags.Item
     └── TActivationItemFacade        + active   → Tabs.Item, RadioGroup.Item
 ```
+
+У тостов ни выбора, ни активации: их фасады стоят прямо на базах `batch` и
+`order`, и своего в них нет — очередь живёт в расширении `toasts`.
 
 У табов и радио активность, а не выбор: активный элемент один, и снять его, не
 выбрав другой, пользователь не может. Поэтому база у них своя, соседняя с

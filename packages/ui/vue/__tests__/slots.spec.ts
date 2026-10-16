@@ -61,6 +61,8 @@ import {
 	TabsItemDescriptor,
 	TagsDescriptor,
 	TagsItemDescriptor,
+	ToastsDescriptor,
+	ToastsItemDescriptor,
 	TooltipDescriptor,
 	VirtualDescriptor,
 } from '@soldy-ui/setup'
@@ -117,6 +119,9 @@ const DESCRIPTORS: Readonly<Record<string, () => IComponentDescriptor>> = {
 	'tabs/item/Item.vue': TabsItemDescriptor,
 	'tags/Tags.vue': TagsDescriptor,
 	'tags/item/Item.vue': TagsItemDescriptor,
+	'toasts/Toasts.vue': ToastsDescriptor,
+	// Тост — внутренняя часть менеджера, но слоты у него свои
+	'toasts/item/Item.vue': ToastsItemDescriptor,
 	'tooltip/Tooltip.vue': TooltipDescriptor,
 	'virtual/Virtual.vue': VirtualDescriptor,
 }

@@ -36,6 +36,8 @@ export interface ILayer<
 	readonly zIndex: number
 	/** Целевой элемент для Teleport */
 	target: string
+	/** Поднять слой над всеми выданными: новый номер в стеке и в `data-layer` */
+	raise(): void
 }
 
 /**

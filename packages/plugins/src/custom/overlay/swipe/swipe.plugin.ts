@@ -108,8 +108,9 @@ function scrollsAlong(node: Element, panel: Element, axis: TSwipeAxis): boolean 
  *
  * Общий для слоёв, которые смахивают (`ISwipeable`): выезжающая панель уходит
  * к своему краю, поповер — от триггера, а внутри контейнера — к своему краю,
- * панели Select и DatePicker — от поля. С владельцем плагин говорит только
- * через контракт: класса ядра не требует, а владельца без контракта не трогает.
+ * панели Select и DatePicker — от поля, тост — к стороне своего места в
+ * регионе. С владельцем плагин говорит только через контракт: класса ядра не
+ * требует, а владельца без контракта не трогает.
  *
  * **Панель** — узел, который тянут. Это узел с пометкой владельцем
  * (`TDismissPlugin.findPanel()`): панель поповера телепортирована, и ссылки на
@@ -335,12 +336,16 @@ export class TSwipePlugin extends TBasePlugin<ISwipeOwner, TSwipePluginEvents> {
 	}
 
 	/**
-	 * Можно ли начать жест с узла. Узел — в своём слое: у панели, открытой
-	 * внутри этой (`contained`), жест свой. Дальше — по выбору владельца: полоса
-	 * или вся панель, кроме контролов, прокрутки вдоль оси и выделенного текста.
+	 * Можно ли начать жест с узла. Узел — в слое своей панели: у панели,
+	 * открытой внутри этой (`contained`), жест свой. Слой панели — она сама или
+	 * ближайший слой над ней: тост своего слоя не держит, он лежит в регионе
+	 * тостов, и слой у тоста — регион. Дальше — по выбору владельца: полоса или
+	 * вся панель, кроме контролов, прокрутки вдоль оси и выделенного текста.
 	 */
 	private _grabbable(owner: ISwipeOwner, panel: HTMLElement, node: Element): boolean {
-		if (node.closest(`[${FRAME_LAYER_ATTRIBUTE}]`) !== panel) return false
+		const layer = `[${FRAME_LAYER_ATTRIBUTE}]`
+
+		if (node.closest(layer) !== panel.closest(layer)) return false
 
 		if (owner.swipe === 'handle') {
 			const handle = node.closest(owner.classes.resolve('__handle', { point: true }))

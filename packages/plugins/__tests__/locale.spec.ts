@@ -31,6 +31,7 @@ const PACKS: Record<string, TLocale> = { enUS, ruRU, zhCN, frFR, esES, arEG }
 const NAMED: ReadonlyArray<readonly [keyof TTranslations, string]> = [
 	['tabs', 'close'],
 	['tags', 'close'],
+	['toasts', 'close'],
 	['field', 'clear'],
 ]
 
@@ -77,6 +78,13 @@ describe('готовые локали', () => {
 		(_, locale) => {
 			expect(locale.translations.rating.value).toContain('{value}')
 			expect(locale.translations.rating.value).toContain('{max}')
+		},
+	)
+
+	it.each(Object.entries(PACKS))(
+		'%s: имя региона тостов называет клавишу, которая к ним ведёт',
+		(_, locale) => {
+			expect(locale.translations.toasts.region).toContain('F8')
 		},
 	)
 

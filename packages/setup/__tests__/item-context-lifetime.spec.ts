@@ -66,6 +66,10 @@ import {
 	TagsCollectionItemDescriptor,
 	TagsDescriptor,
 	TagsItemDescriptor,
+	ToastsCollectionDescriptor,
+	ToastsCollectionItemDescriptor,
+	ToastsDescriptor,
+	ToastsItemDescriptor,
 } from '../content/descriptors'
 import {
 	TCollectionExtension,
@@ -282,6 +286,17 @@ const DATA_ONLY: Readonly<Record<string, TCollectionKit>> = {
 		},
 		item: (elevator, source) =>
 			mountItem(TableRowDescriptor(), TableCollectionRowDescriptor(), elevator, source),
+	},
+	// Тосты приходят из кода (`show`), в разметку их не ставят: тост рисует
+	// регион владельца, над экземпляром из состава
+	ToastsCollectionItemDescriptor: {
+		list: () =>
+			mountList(ToastsDescriptor(), ToastsCollectionDescriptor(), [
+				{ text: 'Сохранено' },
+				{ text: 'Отправлено' },
+			]),
+		item: (elevator, source) =>
+			mountItem(ToastsItemDescriptor(), ToastsCollectionItemDescriptor(), elevator, source),
 	},
 }
 

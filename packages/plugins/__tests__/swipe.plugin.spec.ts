@@ -24,6 +24,7 @@ import {
 	TLayer,
 	TPopover,
 	TSelect,
+	TToastsItem,
 	isCloseRequestable,
 	isSwipeable,
 } from '@soldy-ui/core'
@@ -33,6 +34,7 @@ import type {
 	TCloseReason,
 	TDrawerPlacement,
 	TSwipeableEvents,
+	TSwipeSide,
 } from '@soldy-ui/core'
 import { TDismissPlugin, TElementPlugin, TPluginBundle, TSwipePlugin } from '../src'
 import type { IListenable, IPlugin, IPluginConstructor, ISwipeOwner } from '../src'
@@ -1040,17 +1042,116 @@ describe.each<[string, () => IFieldOwner]>([
 	})
 })
 
+/**
+ * Тост своего слоя не держит: он лежит в регионе тостов, а номер слоя
+ * (`data-layer`) — у региона. Жест тоста начинается в слое его панели, то есть
+ * в регионе, — за всю плашку, к стороне его места.
+ */
+describe('тост в регионе', () => {
+	/** Тост в регионе-слое: плашка с текстом и крестиком, коробка у правого нижнего угла. */
+	async function mountToast(side: TSwipeSide = 'end') {
+		const toast = new TToastsItem({ text: 'Сохранено' })
+
+		toast.swipeSide = side
+
+		// Открытость тоста — `open`, как в дескрипторе тоста
+		const bundle = new TPluginBundle(toast).use(TElementPlugin).use(TSwipePlugin)
+
+		bundles.push(bundle)
+
+		const region = document.createElement('section')
+		const list = document.createElement('ol')
+		const root = document.createElement('li')
+
+		region.setAttribute('data-layer', '1001')
+		root.innerHTML = [
+			'<div class="so-test-card">',
+			'<p class="so-test-text">Сохранено</p>',
+			'<button class="so-test-close">Закрыть</button>',
+			'</div>',
+		].join('')
+		list.append(root)
+		region.append(list)
+		document.body.append(region)
+		vi.spyOn(root, 'getBoundingClientRect').mockReturnValue(new DOMRect(600, 700, 352, 48))
+
+		pluginOf(bundle, TElementPlugin).element = root
+		await nextFrame()
+
+		const offset = () => root.style.getPropertyValue(SWIPE_VARIABLE)
+
+		return { toast, root, swipe: swipeOn(root), offset }
+	}
+
+	it('тянется внутри региона: слой узла — регион, как и у самого тоста', async () => {
+		const { toast, root, offset } = await mountToast()
+
+		expect(root.style.touchAction).toBe('pan-y pinch-zoom')
+
+		pointer('pointerdown', nodeOf('.so-test-text', root), 620, 720, 0)
+		pointer('pointermove', root, 700, 720, 16)
+
+		expect(toast.swiping).toBe(true)
+		expect(toast.dataset.get('swiping')).toBe('true')
+		expect(offset()).toBe('80px')
+	})
+
+	it('смахнули к своей стороне дальше четверти — тост закрыт', async () => {
+		const { toast, root, swipe } = await mountToast()
+
+		swipe(nodeOf('.so-test-text', root), [
+			[620, 720],
+			[700, 720],
+			[760, 720],
+		])
+
+		expect(toast.open).toBe(false)
+		expect(toast.swiping).toBe(false)
+	})
+
+	it('с крестика жест не начинается: с контролом работают сами', async () => {
+		const { toast, root } = await mountToast()
+
+		pointer('pointerdown', nodeOf('.so-test-close', root), 900, 720, 0)
+		pointer('pointermove', root, 980, 720, 16)
+
+		expect(toast.swiping).toBe(false)
+	})
+
+	it('у места по центру — вниз, по вертикали', async () => {
+		const { toast, root, offset } = await mountToast('bottom')
+
+		expect(root.style.touchAction).toBe('pan-x pinch-zoom')
+
+		pointer('pointerdown', nodeOf('.so-test-text', root), 620, 710, 0)
+		pointer('pointermove', root, 620, 740, 16)
+
+		expect(toast.swiping).toBe(true)
+		expect(offset()).toBe('30px')
+	})
+
+	it('закрытый тост жест не слушает', async () => {
+		const { toast, root } = await mountToast()
+
+		toast.close()
+
+		expect(root.style.touchAction).toBe('')
+	})
+})
+
 describe('контракт жеста', () => {
-	it('выезжающая панель, поповер, Select и DatePicker — владельцы жеста', () => {
+	it('выезжающая панель, поповер, Select, DatePicker и тост — владельцы жеста', () => {
 		expectTypeOf<TDrawer>().toExtend<ISwipeOwner>()
 		expectTypeOf<TPopover>().toExtend<ISwipeOwner>()
 		expectTypeOf<TSelect>().toExtend<ISwipeOwner>()
 		expectTypeOf<TDatePicker>().toExtend<ISwipeOwner>()
+		expectTypeOf<TToastsItem>().toExtend<ISwipeOwner>()
 
 		expect(isSwipeable(new TDrawer())).toBe(true)
 		expect(isSwipeable(new TPopover())).toBe(true)
 		expect(isSwipeable(new TSelect())).toBe(true)
 		expect(isSwipeable(new TDatePicker())).toBe(true)
+		expect(isSwipeable(new TToastsItem())).toBe(true)
 	})
 
 	it('владельца без контракта плагин не трогает', async () => {

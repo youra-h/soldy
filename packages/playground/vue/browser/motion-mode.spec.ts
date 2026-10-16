@@ -25,7 +25,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { render, cleanup } from 'vitest-browser-vue'
 import { userEvent } from 'vitest/browser'
 import { defineComponent, h, nextTick, ref, type VNode } from 'vue'
-import { createEngineTable } from '@soldy-ui/core'
+import { createEngineTable, createEngineToasts } from '@soldy-ui/core'
 import { useMotion } from '@soldy-ui/plugins'
 import type { TMotionMode } from '@soldy-ui/plugins'
 import {
@@ -49,6 +49,7 @@ import {
 	Table,
 	Tabs,
 	TabsItem,
+	Toasts,
 } from '@soldy-ui/vue'
 
 import { reducedMotion } from './media'
@@ -278,6 +279,19 @@ const CASES: readonly TCase[] = [
 		'.so-calendar__heading > .so-popover__panel > .so-popover__content',
 		'translate',
 	),
+	{
+		name: 'Toasts: въезд, уход и смыкание соседей, без движения — прозрачность',
+		mount: async () => {
+			const engine = createEngineToasts()
+
+			engine.extensions.toasts.show({ text: 'Сохранено', duration: 0 })
+
+			await show(() => h(Toasts, { engine }, () => 'Приложение'))
+		},
+		look: () => transitions('.so-toasts-item'),
+		moving: ['opacity', 'translate', 'grid-template-rows'],
+		still: ['opacity'],
+	},
 	{
 		name: 'Drawer: въезд и выезд, без движения — прозрачность',
 		mount: () =>
