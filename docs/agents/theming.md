@@ -78,6 +78,13 @@ CheckBox), и для приложения — даёт `roleIcon(role)` адап
 `ui/webc/__tests__/icon.spec.ts`, `playground/vue/browser/webc-icon.spec.ts`
 и «корень span» в `playground/vue/browser/icon-size.spec.ts`.
 
+Цвет рисунка у oren — у той же базы: `fill: currentColor` в `:where(.so-icon)`,
+и иконка в любом месте берёт цвет его текста, а рисунок в корне `span`
+наследует `fill` корня. Пока правило было только у кнопки (`.so-button svg`),
+иконка вне кнопки — стрелка Select, одиночная иконка потребителя — брала
+умолчание SVG, чёрный, в обеих схемах. Сторожит
+`playground/vue/browser/icon-color.spec.ts`.
+
 **Устройство пакета** (`packages/icons/material/`): SVG лежат в `src/*.svg` и
 правятся глазами, `src/index.ts` **генерируется** и закоммичен — как
 метаданные Angular. После правки SVG или генератора нужен
