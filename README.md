@@ -172,6 +172,7 @@ queued for development:
 | Tooltip                                                                             | Hint for an element, shown on hover and on keyboard focus                                      |
 | Dialog                                                                              | Modal window: centered or at an edge of the screen, can be maximized to full screen            |
 | Drawer                                                                              | Panel that slides in at an edge of the screen or a container, can be swiped away               |
+| Toasts                                                                              | Pop-up notifications shown from code: a queue, auto-dismiss with a pause, swipe to close       |
 | Scroller                                                                            | Single-row strip of any content, paged with two buttons                                        |
 | ListBox                                                                             | List with single or multiple selection                                                         |
 | Table                                                                               | Table: columns as data, sorting by column headers, row selection with checkboxes               |
@@ -184,7 +185,6 @@ queued for development:
 | Skeleton                                                                            | Placeholder while content loads                                                                |
 | DragAndDrop                                                                         | Drag and drop of collection items                                                              |
 | Virtual                                                                             | Window for long lists: ListBox and Table inside render only the visible items                  |
-| Toast ![in development](https://img.shields.io/badge/in%20development-orange)       | Pop-up notifications: a queue, auto-dismiss with a pause on hover and focus, swipe to close    |
 | Pagination ![in development](https://img.shields.io/badge/in%20development-orange)  | Page navigation: page numbers with gaps, previous and next, first and last                     |
 | Menu ![in development](https://img.shields.io/badge/in%20development-orange)        | Action menu at a button or on right click: submenus, checkbox and radio items                  |
 | Textarea ![in development](https://img.shields.io/badge/in%20development-orange)    | Multi-line text field that grows with its content                                              |
