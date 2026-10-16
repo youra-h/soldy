@@ -330,14 +330,18 @@ describe('превью tabs', () => {
 describe('переход между компонентами', () => {
 	/**
 	 * Корни превью в сценах страницы — элементы, которые стоят в раскладке
-	 * ячейки. Свой корень хоста (`pg-angular-root` у Angular) в раскладке не
-	 * участвует (`display: contents`), и корни превью — его дети.
+	 * ячейки. Свой корень хоста в раскладке не участвует (`display: contents`),
+	 * и корни превью — его дети: `pg-angular-root` у Angular и
+	 * `<so-locale-provider>` у Web Components. У провайдера это правило `:host`
+	 * его теневого корня, а jsdom правил теневого корня не считает, поэтому
+	 * провайдер узнаётся по имени.
 	 */
 	function previewRoots(wrapper: VueWrapper): Element[] {
-		const inLayout = (element: Element): Element[] =>
+		const boxless = (element: Element): boolean =>
+			element.localName === 'so-locale-provider' ||
 			getComputedStyle(element).display === 'contents'
-				? [...element.children].flatMap(inLayout)
-				: [element]
+		const inLayout = (element: Element): Element[] =>
+			boxless(element) ? [...element.children].flatMap(inLayout) : [element]
 
 		return wrapper
 			.findAll('.pg-col__stage > .pg-mount')

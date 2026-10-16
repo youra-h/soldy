@@ -8,14 +8,19 @@
  * связка новая на каждое подключение: элемент, переставленный в документе,
  * собирается заново, и прежняя сборка обязана уйти с движка целиком. Здесь —
  * настоящий цикл Web Components, как `ui/angular/__tests__/external-engine-lifetime.spec.ts`
- * у Angular: набор табов, переставленный трижды и снятый, и на шинах
+ * у Angular: набор табов и список, переставленные трижды и снятые, и на шинах
  * владельца, движка и его расширений ни подписки, ни перехватчика, ни
  * слушателя обмена.
  */
 
 import { describe, it, expect, afterEach, vi } from 'vitest'
-import { TEvented, TTabs, createEngineTabs } from '@soldy-ui/core'
-import { TTabsElement, type TTabsElementProps } from '@soldy-ui/webc'
+import { TEvented, TListBox, TTabs, createEngineListBox, createEngineTabs } from '@soldy-ui/core'
+import {
+	TListBoxElement,
+	TTabsElement,
+	type TListBoxElementProps,
+	type TTabsElementProps,
+} from '@soldy-ui/webc'
 
 /** Отрисовка коалесцируется в микротаске — ждём её перед проверкой. */
 const flush = () => new Promise<void>((resolve) => queueMicrotask(() => resolve()))
@@ -32,6 +37,10 @@ const ITEMS = [
 
 function isTabs(node: Element): node is TTabsElementProps {
 	return node instanceof TTabsElement
+}
+
+function isListBox(node: Element): node is TListBoxElementProps {
+	return node instanceof TListBoxElement
 }
 
 /**
@@ -99,6 +108,39 @@ function watchBuses(buses: readonly TEvented<any>[]): () => string[] {
 	return () => [...live.keys()].map((key) => key.replace(/#\d+$/, ''))
 }
 
+/**
+ * Набор над движком и владельцем снаружи — переставленный трижды и снятый.
+ * После каждой перестановки он собран по-настоящему (элементы на месте) и
+ * одной сборкой — прежние ушли, а после снятия на шинах ничего.
+ */
+async function moveThriceAndRemove(
+	el: HTMLElement,
+	live: () => string[],
+	item: string,
+): Promise<void> {
+	document.body.appendChild(el)
+	await flush()
+
+	// Подписки одной сборки — после первой перестановки: подписки движка на
+	// владельца, заведённые до слежки (сборщиком движка с `owner`), снимает
+	// снятие прежней сборки, а новая заводит их заново
+	let mounted: string[] | undefined
+
+	for (let i = 0; i < 3; i++) {
+		document.body.appendChild(document.createElement('section')).appendChild(el)
+		await flush()
+
+		mounted ??= live().sort()
+
+		expect(el.querySelectorAll(`.${item}`)).toHaveLength(ITEMS.length)
+		expect(live().sort()).toEqual(mounted)
+	}
+
+	el.remove()
+
+	expect(live()).toEqual([])
+}
+
 describe('Tabs над движком и владельцем снаружи', () => {
 	it('переставленный трижды и снятый — на шинах владельца и движка ничего', async () => {
 		const owner = new TTabs()
@@ -113,27 +155,27 @@ describe('Tabs над движком и владельцем снаружи', ()
 
 		el.ctrl = owner
 		el.engine = engine
-		document.body.appendChild(el)
-		await flush()
 
-		// Подписки одной сборки — после первой перестановки: подписки движка на
-		// владельца, заведённые до слежки (`createEngineTabs({ owner })`),
-		// снимает снятие прежней сборки, а новая заводит их заново
-		let mounted: string[] | undefined
+		await moveThriceAndRemove(el, live, 'so-tabs-item')
+	})
+})
 
-		for (let i = 0; i < 3; i++) {
-			document.body.appendChild(document.createElement('section')).appendChild(el)
-			await flush()
+/** Как у Vue и Angular — на ListBox: строки элементов — кнопки на `div`. */
+describe('ListBox над движком и владельцем снаружи', () => {
+	it('переставленный трижды и снятый — на шинах владельца и движка ничего', async () => {
+		const owner = new TListBox()
+		const engine = createEngineListBox({ owner, items: ITEMS })
+		const extensions = Object.values(engine.extensions).flatMap((extension) =>
+			extension ? [extension.events] : [],
+		)
+		const live = watchBuses([owner.events, engine.events, ...extensions])
+		const el = document.createElement('div', { is: 'so-list-box' })
 
-			mounted ??= live().sort()
+		if (!isListBox(el)) throw new Error('<div is="so-list-box"> нет')
 
-			// Собран по-настоящему: табы на месте, и сборка одна — прежние ушли
-			expect(el.querySelectorAll('.so-tabs-item')).toHaveLength(ITEMS.length)
-			expect(live().sort()).toEqual(mounted)
-		}
+		el.ctrl = owner
+		el.engine = engine
 
-		el.remove()
-
-		expect(live()).toEqual([])
+		await moveThriceAndRemove(el, live, 'so-list-box-item')
 	})
 })

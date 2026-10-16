@@ -1,13 +1,16 @@
 /**
  * Коллекции Web Components в настоящем браузере: `<div is="so-tabs">`,
- * `<div is="so-accordion">` и `<div is="so-radio-group">`.
+ * `<div is="so-accordion">`, `<div is="so-radio-group">` и
+ * `<div is="so-list-box">`.
  *
  * Теме корень элемента коллекции Web Components — то же, что корень остальных
  * адаптеров: строка таба и его кнопка закрытия, заголовок секции и её стрелка,
- * радио и его кольцо каждого размера стоят так же, как у Vue. Клавиатура — то,
- * чего jsdom не выполняет: стрелки по табам ведёт плагин набора, а по радио —
+ * радио и его кольцо, строка элемента списка — кнопка на `div` — и его отметка
+ * каждого размера стоят так же, как у Vue. Клавиатура — то, чего jsdom не
+ * выполняет: стрелки по табам и списку ведёт плагин владельца, а по радио —
  * сам браузер, по общему `name` группы. Разметку и наборы ядра сторожат
- * `ui/webc/__tests__/tabs.spec.ts`, `accordion.spec.ts` и `radio-group.spec.ts`.
+ * `ui/webc/__tests__/tabs.spec.ts`, `accordion.spec.ts`, `radio-group.spec.ts`
+ * и `list-box.spec.ts`.
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
@@ -15,7 +18,16 @@ import { render, cleanup } from 'vitest-browser-vue'
 import { userEvent } from 'vitest/browser'
 import { defineComponent, h, nextTick } from 'vue'
 import { COMPONENT_SIZES } from '@soldy-ui/playground-shared'
-import { Accordion, AccordionItem, RadioGroup, RadioGroupItem, Tabs, TabsItem } from '@soldy-ui/vue'
+import {
+	Accordion,
+	AccordionItem,
+	ListBox,
+	ListBoxItem,
+	RadioGroup,
+	RadioGroupItem,
+	Tabs,
+	TabsItem,
+} from '@soldy-ui/vue'
 import { TRadioGroupElement, type TRadioGroupElementProps } from '@soldy-ui/webc'
 
 import '@soldy-ui/theme-oren'
@@ -98,9 +110,12 @@ describe.each(COMPONENT_SIZES)('размер %s — как у Vue', (scale) => {
 	function expectSameParts(root: HTMLElement, part: string): void {
 		const vue = all(document, `.vue ${part}`).map(size)
 
-		expect(vue.length).toBeGreaterThan(0)
-		expect(vue.every(({ width }) => width > 0)).toBe(true)
-		expect(all(root, `.webc ${part}`).map(size)).toEqual(vue)
+		expect(vue.length, part).toBeGreaterThan(0)
+		expect(
+			vue.every(({ width }) => width > 0),
+			part,
+		).toBe(true)
+		expect(all(root, `.webc ${part}`).map(size), part).toEqual(vue)
 	}
 
 	it('Tabs: список, табы, строки и кнопки закрытия', async () => {
@@ -173,6 +188,37 @@ describe.each(COMPONENT_SIZES)('размер %s — как у Vue', (scale) => {
 			expectSameParts(root, part)
 		}
 	})
+
+	/** Отметка стоит у обоих пунктов, иконка в ней — у выбранного. */
+	it('ListBox: список, элементы, строки и отметка', async () => {
+		const root = await pair(
+			() =>
+				h(ListBox, { size: scale, indicator: 'start', value: 'a' }, () => [
+					h(ListBoxItem, { value: 'a', text: 'Первый' }),
+					h(ListBoxItem, { value: 'b', text: 'Второй' }),
+				]),
+			`<div is="so-list-box" size="${scale}" indicator="start" value="a">
+				<div is="so-list-box-item" value="a" text="Первый"></div>
+				<div is="so-list-box-item" value="b" text="Второй"></div>
+			</div>`,
+		)
+
+		for (const part of [
+			'.so-list-box',
+			'.so-list-box-item',
+			'.so-list-box-item .so-button',
+			'.so-list-box-item__indicator',
+		]) {
+			expectSameParts(root, part)
+		}
+
+		// Иконка отметки у Vue — `<svg>` роли, у Web Components — `<span>` с
+		// рисунком внутри: элементы разные, а коробка одна
+		const icon = (box: string) =>
+			size(find(document, `${box} .so-list-box-item__indicator .so-icon`, Element))
+
+		expect(icon('.webc')).toEqual(icon('.vue'))
+	})
 })
 
 describe('клавиатура', () => {
@@ -228,5 +274,57 @@ describe('клавиатура', () => {
 		expect(find(root, '[value="b"].so-radio-group-item', HTMLElement).dataset['selected']).toBe(
 			'true',
 		)
+	})
+
+	/**
+	 * Список — одна остановка Tab, по элементам ходят стрелки его клавиатуры.
+	 * Строку элемента — кнопку на `div` — плагин списка узнаёт по разметке
+	 * шаблона элемента: стрелка и Enter с неё — клавиши списка. Enter выбирает
+	 * один раз: строка его не нажимает, иначе второе переключение сняло бы выбор.
+	 */
+	it('ListBox: стрелка и Enter со строки элемента выбирают его один раз', async () => {
+		const root = await show(`<div is="so-list-box">
+			<div is="so-list-box-item" value="msk" text="Москва"></div>
+			<div is="so-list-box-item" value="spb" text="Петербург"></div>
+		</div>`)
+		const rows = all(root, '.so-list-box-item .so-button')
+
+		expect(find(root, '.so-list-box', HTMLDivElement).tabIndex).toBe(0)
+
+		rows[0]?.focus()
+		await userEvent.keyboard('{ArrowDown}{Enter}')
+		await nextFrame()
+
+		expect(rows.map((row) => row.getAttribute('aria-selected'))).toEqual(['true', 'false'])
+	})
+
+	/**
+	 * Строка — кнопка на `div`, а не `<button>`: выключенная нативная кнопка
+	 * фокуса не берёт вовсе (`webc-button.spec.ts`), а выключенный пункт списка
+	 * виден, фокусируется и объявляется скринридером недоступным — выбор ему
+	 * отказывает список. Клик — `force`: Playwright сам не кликает по
+	 * `aria-disabled`, а тема гасит мышь на выключенной строке, и клик уходит
+	 * списку.
+	 */
+	it('ListBox: выключенный пункт фокусируется, клик выбора не меняет', async () => {
+		const root = await show(`<div is="so-list-box">
+			<div is="so-list-box-item" value="msk" text="Москва"></div>
+			<div is="so-list-box-item" value="spb" text="Петербург" disabled></div>
+		</div>`)
+		const rows = all(root, '.so-list-box-item .so-button')
+		const [, off] = rows
+
+		if (!off) throw new Error('строки выключенного пункта нет')
+
+		await userEvent.click(off, { force: true })
+		await nextFrame()
+
+		expect(rows.map((row) => row.getAttribute('aria-selected'))).toEqual(['false', 'false'])
+		expect(off.getAttribute('aria-disabled')).toBe('true')
+		expect(off.hasAttribute('disabled')).toBe(false)
+
+		off.focus()
+
+		expect(document.activeElement).toBe(off)
 	})
 })

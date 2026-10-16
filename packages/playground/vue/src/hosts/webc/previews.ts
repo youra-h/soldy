@@ -145,6 +145,20 @@ export const PREVIEWS: Record<string, TPreview> = {
 		},
 	},
 
+	// Элементы — разметкой, как у Vue и React. Строка элемента — кнопка на `div`
+	// (`<div is="so-button-div">`): её строит шаблон элемента
+	'list-box': {
+		tag: 'div',
+		is: 'so-list-box',
+		slots: {
+			default: ITEMS.map((item) => ({
+				tag: 'div',
+				is: 'so-list-box-item',
+				props: { ...item },
+			})),
+		},
+	},
+
 	// Глиф — роль, свой атрибут элемента: `<svg>` рисунка строит шаблон Icon
 	icon: { tag: 'span', is: 'so-icon', attributes: { icon: 'arrowDown' } },
 
