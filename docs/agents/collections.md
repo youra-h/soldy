@@ -129,9 +129,9 @@ type TFacadeEvents = Pick<TBatchEvents<TItem>, 'items:added' | 'items:removed'>
   `ui/solid/__tests__/external-engine-lifetime.spec.tsx` — то же в настоящем
   цикле Vue, Angular и Solid, на ListBox;
 - `ui/webc/__tests__/external-engine-lifetime.spec.ts` — в настоящем цикле Web
-  Components, на Tabs: связка у элемента новая на каждое подключение, и набор,
-  переставленный в документе трижды и снятый, ничего на владельце и движке не
-  оставляет;
+  Components, на Tabs и ListBox: связка у элемента новая на каждое
+  подключение, и набор, переставленный в документе трижды и снятый, ничего на
+  владельце и движке не оставляет;
 - `ui/react/__tests__/external-lifetime.spec.tsx` — в настоящем цикле React,
   по всем компонентам адаптера (см. «Отброшенный рендер React»).
 
@@ -369,7 +369,10 @@ Select и строк таблицы. Выход `drawn` — что рисова�
 записи `drawn` новые на каждую смену, и петля, сравнивающая их по ссылке
 (`<For>` Solid), пересоздавала бы все элементы вместе с узлами и фокусом. У
 Solid петля по ключу — `KeyedFor` адаптера (сторожит «петля по drawn» в
-`ui/solid/__tests__/list-box.spec.tsx`).
+`ui/solid/__tests__/list-box.spec.tsx`), у Web Components — `TKeyedLoop`
+шаблона: узлу живого ключа она отдаёт его новую запись (`update`), и распорка
+берёт из неё стиль (сторожит «распорки окна» в
+`ui/webc/__tests__/list-box.spec.ts`).
 
 - **Стратегия, а не флаг.** По умолчанию рисуются все показанные. Окно
   (`TWindowStrategy`, отдельным модулем) ставит тот, кто его включает
