@@ -1375,28 +1375,33 @@ describe('ручка ширины', () => {
 	})
 
 	describe('наборы', () => {
-		it('у поля ручки и обёртки содержимого — свои, пустые до плагина связок', () => {
+		it('у поля ручки, подписи и кнопки сортировки — свои, пустые до плагинов', () => {
 			const column = new TTableColumn()
+			const sets = [column.aria, column.resizerAria, column.textAria, column.sortAria]
 
 			expect(column.resizerAria.toObject()).toEqual({})
-			expect(column.contentAria.toObject()).toEqual({})
-			expect(column.resizerAria).not.toBe(column.contentAria)
-			expect(column.resizerAria).not.toBe(column.aria)
+			expect(column.textAria.toObject()).toEqual({})
+			expect(column.sortAria.toObject()).toEqual({})
+			expect(new Set(sets).size).toBe(sets.length)
 		})
 
 		it('смена набора — событие с его снимком', () => {
 			const column = new TTableColumn()
 			const resizer = vi.fn()
-			const content = vi.fn()
+			const text = vi.fn()
+			const sort = vi.fn()
 
 			column.events.on('change:resizerAria', resizer)
-			column.events.on('change:contentAria', content)
+			column.events.on('change:textAria', text)
+			column.events.on('change:sortAria', sort)
 
 			column.resizerAria.add('aria-labelledby', 'x')
-			column.contentAria.add('id', 'x')
+			column.textAria.add('id', 'x')
+			column.sortAria.add('aria-label', 'Sort by x')
 
 			expect(resizer.mock.calls).toEqual([[{ 'aria-labelledby': 'x' }]])
-			expect(content.mock.calls).toEqual([[{ id: 'x' }]])
+			expect(text.mock.calls).toEqual([[{ id: 'x' }]])
+			expect(sort.mock.calls).toEqual([[{ 'aria-label': 'Sort by x' }]])
 		})
 	})
 

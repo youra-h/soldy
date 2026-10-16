@@ -61,7 +61,9 @@ const ARIA_SORT: Readonly<Record<TTableSortDirection, string>> = {
  * по ARIA 1.2 его ставят одному заголовку за раз. Колонка ушла из коллекции
  * колонок — её сортировка снимается вместе с ней. Скрытая колонка остаётся в
  * коллекции, и её сортировка — тоже: скрыть колонку — решение о виде, а не о
- * порядке строк.
+ * порядке строк. Нажатие кнопки сортировки в заголовке колонка присылает
+ * просьбой (`sort:request`): о строках она не знает, и выполняет просьбу
+ * расширение — командой пользователя `toggle` по её полю.
  *
  * Показанное расширение не хранит — порядок считается на чтение выборки, а
  * помнит его память выборки коллекции (`memory`, у строк таблицы — до
@@ -95,9 +97,10 @@ export class TTableSortExtension<TOwner extends ITable = ITable, TRow extends IT
 	private _collator: Intl.Collator | undefined = undefined
 
 	/**
-	 * Колонки коллекции колонок — с обработчиком своего сравнения. Ушедшую
-	 * колонку расширение больше не слушает: подписка удерживала бы его, пока
-	 * жива сама колонка.
+	 * Колонки коллекции колонок — с отпиской от их событий: своего сравнения и
+	 * просьбы отсортировать. Ушедшую колонку расширение больше не слушает:
+	 * подписка удерживала бы его, пока жива сама колонка, а её кнопка
+	 * сортировала бы строки таблицы, где колонки уже нет.
 	 */
 	private readonly _columns = new Map<ITableColumn, () => void>()
 
@@ -260,16 +263,21 @@ export class TTableSortExtension<TOwner extends ITable = ITable, TRow extends IT
 	 * сортировка снимается. Пришло поле, по которому уже сортируют, — у его
 	 * колонки может быть своё сравнение.
 	 *
+	 * Колонку слушают ради двух событий: её своё сравнение сменилось — и
+	 * пользователь нажал кнопку сортировки в её заголовке (`sort:request`). Это
+	 * просьба: о строках колонка не знает, и сортирует расширение — командой
+	 * пользователя `toggle` по полю колонки, с её правилами.
+	 *
 	 * Отвечает, устарело ли показанное: сообщить о нём — дело вызывающего.
 	 */
 	private _syncColumns(): boolean {
 		const columns = columnsOf(this._ctx)?.columns ?? []
 		const stored = new Set(columns)
 
-		for (const [column, onCompare] of this._columns) {
+		for (const [column, unwatch] of this._columns) {
 			if (stored.has(column)) continue
 
-			column.events.off('change:compare', onCompare)
+			unwatch()
 			this._columns.delete(column)
 			this._unpaint(column)
 		}
@@ -280,9 +288,15 @@ export class TTableSortExtension<TOwner extends ITable = ITable, TRow extends IT
 			const onCompare = (): void => {
 				if (this._sorts(column.field)) this._invalidate()
 			}
+			// Поле — на нажатие, а не на подписку: колонка могла его сменить
+			const onRequest = (): void => this.toggle(column.field)
 
-			this._columns.set(column, onCompare)
 			column.events.on('change:compare', onCompare)
+			column.events.on('sort:request', onRequest)
+			this._columns.set(column, () => {
+				column.events.off('change:compare', onCompare)
+				column.events.off('sort:request', onRequest)
+			})
 		}
 
 		const before = this._fields

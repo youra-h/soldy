@@ -33,6 +33,7 @@ const NAMED: ReadonlyArray<readonly [keyof TTranslations, string]> = [
 	['tags', 'close'],
 	['toasts', 'close'],
 	['field', 'clear'],
+	['table', 'sort'],
 ]
 
 /** Ключи разделов локали: «раздел.ключ». */

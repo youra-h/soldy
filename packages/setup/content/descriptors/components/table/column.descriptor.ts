@@ -2,11 +2,12 @@
  * Дескриптор TableColumn (TTableColumn) — заголовок колонки таблицы.
  *
  * Наследует `ComponentViewDescriptor`, а не `ControlDescriptor`: нажатия,
- * фокуса и имени у заголовка нет, а `disabled` колонке пишет таблица — для
- * ручки ширины. Колонку рисует таблица — по заголовку на показанную колонку,
- * над её экземпляром (`ctrl`), как Calendar рисует день, — а колонки задаются
- * только данными (`columns`). Поэтому входов у части нет: всё своё у колонки
- * объявлено защищённым и только читается.
+ * фокуса и имени у заголовка нет — нажимают кнопку сортировки и ручку ширины в
+ * нём, — а `disabled` колонке пишет таблица — для них. Колонку рисует
+ * таблица — по заголовку на показанную колонку, над её экземпляром (`ctrl`),
+ * как Calendar рисует день, — а колонки задаются только данными (`columns`).
+ * Поэтому входов у части нет: всё своё у колонки объявлено защищённым и
+ * только читается.
  *
  * Корень — ячейка шапки (`th`), на ней наборы колонки (`aria-sort`,
  * `aria-labelledby`, `data-sort`, `data-sort-priority`, `data-align`,
@@ -16,19 +17,30 @@
  * раскладывает таблица — расширение колонок по месту, которое мерит плагин
  * раскладки таблицы. Перестановку ведёт плагин таблицы, а не колонки: место
  * колонки знает коллекция колонок.
- * Содержимое — слот по умолчанию в обёртке с набором `contentAria`: его
- * наполняет таблица — кнопкой сортировки или текстом. За обёрткой — ручка
- * ширины (`resizerRendered`): поле с ходом и шириной (`resizer`) и набором
+ *
+ * Содержимое — ряд: подпись — слот по умолчанию с набором `textAria`, у всех
+ * колонок, — и за ней у сортируемой колонки кнопка сортировки с набором
+ * `sortAria`. Кнопку рисует сама колонка, а не таблица через слот: заголовок
+ * назван подписью, и кнопка в ней дописала бы своё имя к имени заголовка, а
+ * второй слот колонки стал бы публичным слотом таблицы. Нажатие кнопки —
+ * просьба колонки (`toggleSort`), сортирует расширение коллекции строк. Своё
+ * действие по заголовку потребитель ставит контролом в подпись (слот
+ * `header` таблицы): у `th` фокуса нет. За рядом — ручка ширины
+ * (`resizerRendered`): поле с ходом и шириной (`resizer`) и набором
  * `resizerAria`.
  *
- * Плагин связок называет заголовок и поле ручки обёрткой содержимого, плагин
- * ручки ведёт указатель и клавиши.
+ * Плагин связок называет заголовок и поле ручки подписью, плагин имён —
+ * кнопку сортировки, от локали, плагин ручки ведёт указатель и клавиши.
  */
 
 import { defineComponent, defineDescriptor, defineType } from '../../../../protected/define'
 import { TTableColumn } from '@soldy-ui/core'
 import { ComponentViewDescriptor } from '../component-view.descriptor'
-import { TableColumnIdsPluginDescriptor, TableColumnResizePluginDescriptor } from '../../plugins'
+import {
+	TableColumnIdsPluginDescriptor,
+	TableColumnNamesPluginDescriptor,
+	TableColumnResizePluginDescriptor,
+} from '../../plugins'
 
 export const TableColumnDescriptor = defineDescriptor(() =>
 	defineComponent({
@@ -43,7 +55,7 @@ export const TableColumnDescriptor = defineDescriptor(() =>
 						text: defineType<string>(String),
 						sortable: defineType<boolean>(Boolean),
 					},
-					description: 'Содержимое заголовка. Без него — текст колонки',
+					description: 'Подпись заголовка. Без него — текст колонки',
 				},
 			},
 			props: {
@@ -80,17 +92,20 @@ export const TableColumnDescriptor = defineDescriptor(() =>
 				 */
 				resizer: { type: Object, protected: true, triggers: ['change:resizer'] },
 				/**
-				 * Атрибуты поля ручки и обёртки содержимого. Наборы колонки, а не
-				 * свои: у разметки без компонента экземпляра нет.
+				 * Атрибуты поля ручки, подписи и кнопки сортировки. Наборы колонки,
+				 * а не свои: у разметки без компонента экземпляра нет.
 				 */
 				resizerAria: { type: Object, protected: true, triggers: ['change:resizerAria'] },
-				contentAria: { type: Object, protected: true, triggers: ['change:contentAria'] },
+				textAria: { type: Object, protected: true, triggers: ['change:textAria'] },
+				sortAria: { type: Object, protected: true, triggers: ['change:sortAria'] },
 			},
 		},
 
 		plugins: [
-			// Имя заголовка и поля ручки — обёртка содержимого заголовка
+			// Имя заголовка и поля ручки — подпись заголовка
 			TableColumnIdsPluginDescriptor,
+			// Имя кнопки сортировки — от локали, с подписью колонки
+			TableColumnNamesPluginDescriptor,
 			// Ручка ширины: указатель, клавиши и жест скринридера
 			TableColumnResizePluginDescriptor,
 		],

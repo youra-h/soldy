@@ -16,7 +16,7 @@ export const arEG = freezeLocale({
 		scroller: { prev: 'التمرير للخلف', next: 'التمرير للأمام' },
 		pagination: { prev: 'الصفحة السابقة', next: 'الصفحة التالية' },
 		field: { clear: 'مسح {name}' },
-		table: { selectAll: 'تحديد الكل' },
+		table: { selectAll: 'تحديد الكل', sort: 'فرز حسب {name}' },
 		calendar: {
 			prevMonth: 'الشهر السابق',
 			nextMonth: 'الشهر التالي',

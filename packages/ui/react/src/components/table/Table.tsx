@@ -1,22 +1,17 @@
 import type { ElementType, ReactElement } from 'react'
 import {
 	Elevate,
+	relaySlot,
 	renderSlot,
-	roleIcon,
 	toAriaProps,
 	toReactStyle,
 	toWrappedRootProps,
 } from '../../adapter'
-import { Button } from '../button'
 import { CheckBox } from '../check-box'
-import { Icon } from '../icon'
 import { TableColumn } from './column'
 import { TableRow } from './row'
 import { useSetupTable } from './setup.component'
 import type { TableProps } from './base.component'
-
-/** Отметка направления сортировки — иконка по роли, компонент на роль один на модуль (`roleIcon`). */
-const SortIcon = roleIcon('arrowUpward')
 
 /**
  * Table — таблица по паттернам APG Table и Sortable Table, как у Vue. Корень —
@@ -50,15 +45,13 @@ const SortIcon = roleIcon('arrowUpward')
  * новым «выбрать все», и CheckBox над ним монтируется заново, а не остаётся
  * над прежним.
  *
- * Дальше — `Table.Column` на каждую показанную колонку, ключ — колонка. Его
- * содержимое — по `sortable` колонки: сортируемая — кнопка в заголовке
- * (`embedded: 'table.sort'`), нажатие — команда коллекции `toggleSort(field)`,
- * размер и «выключена» — таблицы, вида нет: красит её тема по контексту.
- * Отметка направления — в слоте кнопки `trailing`, под `aria-hidden`:
- * направление скринридер объявляет по `aria-sort` заголовка. Стоит и у
- * неотсортированной колонки, невидимой: держит место. Несортируемая —
- * только текст в обёртке для темы. Текст — слот `header` со scope слота
- * колонки (`text`, `sortable`) и самой колонкой, без него — текст колонки.
+ * Дальше — `Table.Column` на каждую показанную колонку, ключ — колонка.
+ * Подпись и кнопку сортировки рядом с ней рисует сама колонка: кнопка — её,
+ * нажатие — её просьба, которую выполняет коллекция. Таблица отдаёт колонке
+ * только подпись — слот `header` пробросом (`relaySlot`): scope слота колонки
+ * (`text`, `sortable`) и сама колонка; без него — текст колонки. Свой контрол
+ * в подписи — кнопка, триггер Popover — и есть своё действие по заголовку:
+ * нажатие по ячейке не сортирует.
  *
  * Тело — одна петля по `drawn`, ключ — ключ записи. Без окна это все
  * показанные строки. В окне обёртки `Virtual` — строки окна и распорки на
@@ -83,8 +76,6 @@ export function Table(props: TableProps): ReactElement | null {
 	const {
 		rendered,
 		tag,
-		size,
-		disabled,
 		mode,
 		names_selectAll,
 		headRowAria,
@@ -130,40 +121,7 @@ export function Table(props: TableProps): ReactElement | null {
 							) : null}
 							{shownColumns?.map((column) => (
 								<TableColumn key={column.uid} ctrl={column}>
-									{({ text, sortable }) => {
-										const caption =
-											renderSlot(props.header, { column, text, sortable }) ??
-											text
-
-										return sortable ? (
-											<Button
-												embedded="table.sort"
-												type="button"
-												className="so-table-column__sort"
-												size={size}
-												disabled={disabled}
-												onActionPress={() =>
-													facade.toggleSort(column.field)
-												}
-												trailing={
-													<span
-														className="so-table-column__sort-icon"
-														aria-hidden="true"
-													>
-														<Icon
-															embedded="table.sort-icon"
-															tag={SortIcon}
-															size={size}
-														/>
-													</span>
-												}
-											>
-												{caption}
-											</Button>
-										) : (
-											<span className="so-table-column__text">{caption}</span>
-										)
-									}}
+									{relaySlot(props.header, { column })}
 								</TableColumn>
 							))}
 						</tr>

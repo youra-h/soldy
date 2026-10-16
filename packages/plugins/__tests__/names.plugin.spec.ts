@@ -20,6 +20,7 @@ import {
 	TRating,
 	TScroller,
 	TTable,
+	TTableColumn,
 	TTabsItem,
 	TTagsItem,
 	TToasts,
@@ -36,6 +37,7 @@ import {
 	TPopoverNamesPlugin,
 	TRatingNamesPlugin,
 	TScrollerNamesPlugin,
+	TTableColumnNamesPlugin,
 	TTableNamesPlugin,
 	TTabsItemNamesPlugin,
 	TTagsItemNamesPlugin,
@@ -197,6 +199,40 @@ describe('имя с текстом части: шаблон локали и см
 		expect(tag.closeAria.get('aria-label')).toBe('Закрыть Работа')
 	})
 
+	/**
+	 * Кнопка сортировки — своим набором (`sortAria`): имя заголовка — подпись
+	 * колонки, и плагин его не трогает.
+	 */
+	it('Table.Column: подпись колонки на месте {name}; заголовок плагин не называет', () => {
+		const column = new TTableColumn({ field: 'name', text: 'Имя', sortable: true })
+		const { source } = mount(column, TTableColumnNamesPlugin)
+
+		expect(column.sortAria.valueOf()).toEqual({ 'aria-label': 'Sort by Имя' })
+		expect(column.aria.has('aria-label')).toBe(false)
+
+		source.locale = ruRU
+
+		expect(column.sortAria.get('aria-label')).toBe('Сортировать по столбцу Имя')
+
+		column.text = 'Фамилия'
+
+		expect(column.sortAria.get('aria-label')).toBe('Сортировать по столбцу Фамилия')
+
+		source.locale = extendLocale(enUS, {
+			translations: { table: { sort: '{name}: sort' } },
+		})
+
+		expect(column.sortAria.get('aria-label')).toBe('Фамилия: sort')
+	})
+
+	it('Table.Column: без подписи — одни слова строки', () => {
+		const column = new TTableColumn({ field: 'name', sortable: true })
+
+		mount(column, TTableColumnNamesPlugin, ruRU)
+
+		expect(column.sortAria.get('aria-label')).toBe('Сортировать по столбцу')
+	})
+
 	it('тост: текст тоста на месте {name}', () => {
 		const toast = new TToastsItem({ text: 'Сохранено' })
 		const { source } = mount(toast, TToastsItemNamesPlugin, ruRU)
@@ -350,6 +386,21 @@ describe('жизнь подписок', () => {
 		item.text = 'Настройки'
 
 		expect(item.closeAria.get('aria-label')).toBe('Close Почта')
+	})
+
+	/**
+	 * Колонку таблица рисует с готовым экземпляром, и экземпляр переживает
+	 * заголовок: снятый заголовок имени кнопки больше не пишет.
+	 */
+	it('колонка: после destroy() набора ни локаль, ни подпись имя кнопки не меняют', () => {
+		const column = new TTableColumn({ field: 'name', text: 'Имя', sortable: true })
+		const { source, bundle } = mount(column, TTableColumnNamesPlugin)
+
+		bundle.destroy()
+		source.locale = ruRU
+		column.text = 'Фамилия'
+
+		expect(column.sortAria.get('aria-label')).toBe('Sort by Имя')
 	})
 
 	it('оценка: после destroy() набора ни локаль, ни значение строку не меняют', () => {
