@@ -16,6 +16,7 @@ export const enUS = freezeLocale({
 		tags: { close: 'Close {name}' },
 		toasts: { region: 'Notifications (F8)', close: 'Close {name}' },
 		scroller: { prev: 'Scroll back', next: 'Scroll forward' },
+		pagination: { prev: 'Previous page', next: 'Next page' },
 		field: { clear: 'Clear {name}' },
 		table: { selectAll: 'Select all' },
 		calendar: {

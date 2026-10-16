@@ -30,6 +30,7 @@ import {
 	TCalendar,
 	TCollectionComponent,
 	TListBox,
+	TPagination,
 	TRadioGroup,
 	TSelect,
 	TTable,
@@ -39,6 +40,7 @@ import {
 	createEngineAccordion,
 	createEngineCalendar,
 	createEngineListBox,
+	createEnginePagination,
 	createEngineRadioGroup,
 	createEngineSelect,
 	createEngineTable,
@@ -54,6 +56,8 @@ import {
 	CalendarDescriptor,
 	ListBoxCollectionDescriptor,
 	ListBoxDescriptor,
+	PaginationCollectionDescriptor,
+	PaginationDescriptor,
 	RadioGroupCollectionDescriptor,
 	RadioGroupDescriptor,
 	SelectCollectionDescriptor,
@@ -170,6 +174,17 @@ const COLLECTIONS: Readonly<Record<string, TCollectionKit>> = {
 			engine,
 			mount: () =>
 				mountOver(ListBoxDescriptor(), ListBoxCollectionDescriptor(), owner, engine),
+		}
+	},
+	PaginationCollectionDescriptor: () => {
+		const owner = new TPagination({ total: 100 })
+		const engine = createEnginePagination()
+
+		return {
+			owner,
+			engine,
+			mount: () =>
+				mountOver(PaginationDescriptor(), PaginationCollectionDescriptor(), owner, engine),
 		}
 	},
 	RadioGroupCollectionDescriptor: () => {

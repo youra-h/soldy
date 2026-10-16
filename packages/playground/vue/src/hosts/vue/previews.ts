@@ -23,6 +23,7 @@ import {
 	Input,
 	Label,
 	ListBox,
+	Pagination,
 	Popover,
 	ProgressLinear,
 	ProgressSpinner,
@@ -359,6 +360,16 @@ export const PREVIEWS: Record<string, TPreview> = {
 		h(ListBox as Component, bind, () =>
 			ITEMS.map((item) => h(ListBox.Item, { key: item.value, ...item })),
 		),
+
+	/**
+	 * Содержимого у пагинации нет: страницы окна кладёт в коллекцию она сама.
+	 * Данных — сотня элементов по десять на странице, текущая — пятая: пропуски
+	 * по обе стороны видны с первой отрисовки. Имени у ряда без приложения нет
+	 * — даёт его превью, как таблице. Язык номеров и имён стрелок — из шапки
+	 * стенда.
+	 */
+	pagination: (bind) =>
+		h(Pagination as Component, { total: 100, value: 5, aria_label: 'Страницы', ...bind }),
 
 	/**
 	 * Строки и колонки — данными (`items`, `columns`): частей разметкой у

@@ -41,6 +41,8 @@ import {
 	LabelDescriptor,
 	ListBoxDescriptor,
 	ListBoxItemDescriptor,
+	PaginationDescriptor,
+	PaginationItemDescriptor,
 	PopoverDescriptor,
 	ProgressLinearDescriptor,
 	ProgressSpinnerDescriptor,
@@ -96,6 +98,9 @@ const DESCRIPTORS: Readonly<Record<string, () => IComponentDescriptor>> = {
 	'label/Label.vue': LabelDescriptor,
 	'list-box/ListBox.vue': ListBoxDescriptor,
 	'list-box/item/Item.vue': ListBoxItemDescriptor,
+	'pagination/Pagination.vue': PaginationDescriptor,
+	// Страница — внутренняя часть пагинации, но слот у неё свой
+	'pagination/item/Item.vue': PaginationItemDescriptor,
 	'popover/Popover.vue': PopoverDescriptor,
 	'progress-linear/ProgressLinear.vue': ProgressLinearDescriptor,
 	'progress-spinner/ProgressSpinner.vue': ProgressSpinnerDescriptor,

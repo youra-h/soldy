@@ -20,6 +20,8 @@ import {
 	LabelDescriptor,
 	ListBoxDescriptor,
 	ListBoxCollectionDescriptor,
+	PaginationDescriptor,
+	PaginationCollectionDescriptor,
 	PopoverDescriptor,
 	ProgressLinearDescriptor,
 	ProgressSpinnerDescriptor,
@@ -221,6 +223,16 @@ export const COMPONENTS: readonly TComponentEntry[] = [
 		showcase: true,
 		span: 1,
 		description: 'Список с выбором одного или нескольких элементов',
+	},
+	{
+		id: 'pagination',
+		label: 'Pagination',
+		descriptor: PaginationDescriptor,
+		collectionDescriptor: PaginationCollectionDescriptor,
+		showcase: true,
+		span: 2,
+		description:
+			'Постраничная навигация: первая и последняя страницы, окно вокруг текущей и стрелки',
 	},
 	{
 		id: 'table',

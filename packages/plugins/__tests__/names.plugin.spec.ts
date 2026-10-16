@@ -15,6 +15,7 @@ import {
 	TDialog,
 	TDrawer,
 	TInput,
+	TPagination,
 	TPopover,
 	TRating,
 	TScroller,
@@ -30,6 +31,7 @@ import {
 	TFieldNamesPlugin,
 	TLocaleSource,
 	TModalNamesPlugin,
+	TPaginationNamesPlugin,
 	TPluginBundle,
 	TPopoverNamesPlugin,
 	TRatingNamesPlugin,
@@ -104,6 +106,26 @@ describe('имена при установке и на смену локали',
 
 		expect(scroller.prevAria.get('aria-label')).toBe('Прокрутить назад')
 		expect(scroller.nextAria.get('aria-label')).toBe('Прокрутить вперёд')
+	})
+
+	it('Pagination: обе стрелки; ряд плагин не называет', () => {
+		const pagination = new TPagination()
+		const { source, bundle } = mount(pagination, TPaginationNamesPlugin)
+
+		expect(pagination.prevAria.get('aria-label')).toBe('Previous page')
+		expect(pagination.nextAria.get('aria-label')).toBe('Next page')
+		// Имя ряду даёт приложение: что листают, знает только оно
+		expect(pagination.aria.has('aria-label')).toBe(false)
+
+		source.locale = arEG
+
+		expect(pagination.prevAria.get('aria-label')).toBe(arEG.translations.pagination.prev)
+		expect(pagination.nextAria.get('aria-label')).toBe(arEG.translations.pagination.next)
+
+		bundle.destroy()
+		source.locale = ruRU
+
+		expect(pagination.prevAria.get('aria-label')).toBe(arEG.translations.pagination.prev)
 	})
 
 	it('Toasts: имя региона — toasts.region, вместе с клавишей', () => {
