@@ -1,6 +1,6 @@
 /**
  * Select в настоящем браузере: появление и исчезание панели, форма кнопки
- * очистки.
+ * очистки и области стрелки.
  *
  * Панель — Frame, телепортированный в `body`, и открытость для темы ей пишет
  * её слой: `data-open` корня Select до телепортированной панели не доходит.
@@ -46,6 +46,15 @@ const show = async (props: Record<string, unknown> = {}) => {
 	await nextFrame()
 	await nextFrame()
 }
+
+/**
+ * Select с выбранным значением и кнопкой очистки: в слоте поля у конца стоят
+ * очистка и стрелка.
+ */
+const showClearable = (
+	size?: (typeof COMPONENT_SIZES)[number],
+	props: Record<string, unknown> = {},
+) => show({ clearable: true, size, value: '0', ...props })
 
 /** Узел по селектору; нет его — тест падает здесь, а не на чтении свойства. */
 const find = (selector: string): HTMLElement => {
@@ -174,31 +183,6 @@ describe('отбор: гаснущая панель держит отобран�
  * тумблит панель, он не всплывает.
  */
 describe('кнопка очистки', () => {
-	/** Select с выбранным значением и кнопкой очистки. */
-	const showClearable = async (size?: (typeof COMPONENT_SIZES)[number]) => {
-		render(
-			defineComponent({
-				render: () =>
-					h('div', { style: 'padding: 40px; width: 320px' }, [
-						h(
-							Select,
-							{ clearable: true, size, value: '0' },
-							{
-								default: () =>
-									CITIES.map((text, index) =>
-										h(SelectItem, { key: text, value: String(index), text }),
-									),
-							},
-						),
-					]),
-			}),
-		)
-
-		await nextTick()
-		await nextFrame()
-		await nextFrame()
-	}
-
 	it.each(COMPONENT_SIZES)('%s: квадрат высотой в строку слота, иконка внутри', async (size) => {
 		await showClearable(size)
 
@@ -223,4 +207,67 @@ describe('кнопка очистки', () => {
 		await expect.poll(() => input.value).toBe('')
 		expect(find('.so-select').dataset.open).not.toBe('true')
 	})
+})
+
+/** Ширина и высота узла — те же, что у образца, с допуском на субпиксели. */
+const expectSameSize = (element: Element, sample: Element, label: string) => {
+	const own = element.getBoundingClientRect()
+	const other = sample.getBoundingClientRect()
+
+	expect(own.width, `${label}: ширина`).toBeCloseTo(other.width, 0)
+	expect(own.height, `${label}: высота`).toBeCloseTo(other.height, 0)
+}
+
+/** Значок внутри узла; нет его — тест падает здесь, а не на замере. */
+const glyph = (element: Element): SVGSVGElement => {
+	const icon = element.querySelector('svg')
+
+	if (!icon) throw new Error('значка нет')
+
+	return icon
+}
+
+/**
+ * Область нажатия стрелки — её обёртка целиком (`TSelectPointerPlugin` ищет
+ * её от цели нажатия), а в `editable` по тексту поля панель не открывается, и
+ * стрелка — единственное место, которое её открывает. Своей коробки у обёртки
+ * не было: область совпадала со значком, а значок брал кегль страницы на любом
+ * размере, и на `2xl` в поле 44px в стрелку надо было попасть 23px. Теперь
+ * обёртка — квадрат очистки рядом, в строку слота, а значок — её значка: кегль
+ * поля по размеру (`themes/oren/src/components/select/_select.scss`).
+ */
+describe('стрелка', () => {
+	it.each(COMPONENT_SIZES)('%s: область — квадрат очистки, значок — её значка', async (size) => {
+		await showClearable(size)
+
+		const clear = find('.so-select__field .so-input__clear')
+		const arrow = find('.so-select__arrow')
+
+		expectClearSquare(clear, find('.so-select__field .so-input__trailing'), size)
+		expectSameSize(arrow, clear, `${size}: область стрелки`)
+		expectSameSize(glyph(arrow), glyph(clear), `${size}: значок стрелки`)
+	})
+
+	/**
+	 * Область — вся строка слота по высоте: нажатие у верхнего края строки над
+	 * серединой стрелки открывает панель. Пока областью был значок, он стоял
+	 * посередине строки, такое нажатие доставалось слоту, и панель оставалась
+	 * закрытой.
+	 */
+	it.each(COMPONENT_SIZES)(
+		'%s: в editable нажатие у края строки над стрелкой открывает панель',
+		async (size) => {
+			await showClearable(size, { editable: true })
+
+			const slot = find('.so-select__field .so-input__trailing')
+			const arrow = find('.so-select__arrow').getBoundingClientRect()
+			const row = slot.getBoundingClientRect()
+
+			await userEvent.click(slot, {
+				position: { x: arrow.left + arrow.width / 2 - row.left, y: 1 },
+			})
+
+			await expect.poll(() => panel().dataset.open).toBe('true')
+		},
+	)
 })
