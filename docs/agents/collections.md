@@ -128,6 +128,10 @@ type TFacadeEvents = Pick<TBatchEvents<TItem>, 'items:added' | 'items:removed'>
   `ui/angular/__tests__/external-engine-lifetime.spec.ts` и
   `ui/solid/__tests__/external-engine-lifetime.spec.tsx` — то же в настоящем
   цикле Vue, Angular и Solid, на ListBox;
+- `ui/webc/__tests__/external-engine-lifetime.spec.ts` — в настоящем цикле Web
+  Components, на Tabs: связка у элемента новая на каждое подключение, и набор,
+  переставленный в документе трижды и снятый, ничего на владельце и движке не
+  оставляет;
 - `ui/react/__tests__/external-lifetime.spec.tsx` — в настоящем цикле React,
   по всем компонентам адаптера (см. «Отброшенный рендер React»).
 
@@ -812,13 +816,14 @@ Tabs — с расширением `tabs` (`TTabsExtension`). Сторожат �
 с чтением фасада после снятия, и перепривязку панели, —
 `ui/vue/__tests__/collection-item-lifetime.spec.ts`,
 `ui/svelte/__tests__/collection-item-lifetime.spec.ts`,
-`ui/solid/__tests__/collection-item-lifetime.spec.tsx` и
-`ui/angular/__tests__/collection-item-lifetime.spec.ts` (фильтр прячет и
+`ui/solid/__tests__/collection-item-lifetime.spec.tsx`,
+`ui/angular/__tests__/collection-item-lifetime.spec.ts` и
+`ui/webc/__tests__/collection-item-lifetime.spec.ts` (фильтр прячет и
 показывает элемент), `ui/react/__tests__/collection-item-lifetime.spec.tsx`
 (StrictMode над движком снаружи) и смена `value` у панели в
 `ui/vue/__tests__/tabs-content.spec.ts`, `ui/react/__tests__/tabs.spec.tsx`,
-`ui/svelte/__tests__/tabs.spec.ts`, `ui/solid/__tests__/tabs.spec.tsx` и
-`ui/angular/__tests__/tabs.spec.ts`.
+`ui/svelte/__tests__/tabs.spec.ts`, `ui/solid/__tests__/tabs.spec.tsx`,
+`ui/angular/__tests__/tabs.spec.ts` и `ui/webc/__tests__/tabs.spec.ts`.
 
 `attach()`, как `destroy()` и `bindElement`, зовёт рантайм адаптера, а не
 компонент: Vue — `useAdapterParts` в `setup()` (она идёт и на сервере),
@@ -896,6 +901,30 @@ Solid, Svelte — в `useAdapter` при инициализации, Angular —
 `collections.server.spec.tsx` — запись мимо `Provider` видна только в
 серверном прогоне: в браузерной сборке разработки у компонента свой владелец.
 
+**Лифт Web Components — контекст места** (`ui/webc/src/adapter/elevator/`).
+Своего дерева у Custom Elements нет, а дерево документа есть, и место
+элемента в нём известно, пока он подключён, — на этом же стоит локаль
+поддерева. Поэтому лифт знает свой элемент — сборка берёт фабрику на хост
+(`createWebcElevator(host)`): `down()` отдаёт значение хосту владельца,
+`up()` ищет ближайшее выше элемента, сам элемент не в счёт; опущенный `null`
+— тоже значение. Значение владельца видят и элементы разметки — его свет, —
+и элементы из данных в его шаблоне, а соседям и предкам его не видно. Связка
+у элемента новая на каждое подключение, и сборка опускает значение заново:
+владелец, переставленный в документе, — новая связка и новый фасад, а элемент,
+переставленный к другому владельцу, находит при сборке его. Вход —
+`attach` в `connectedCallback`, и раньше владельца элемент не собирается:
+подключение, пришедшее во время чужого подключения, ждёт его конца и идёт
+сразу после него, в порядке прихода (ожидание,
+`ui/webc/src/adapter/runtime/waiting.ts`). Раскладка света владельца
+переносит элементы разметки, и без ожидания их колбэки пришли бы внутри неё —
+раньше, чем владелец опустил движок: после `innerHTML` коллекция осталась бы
+пустой. С ожиданием элементы разметки входят в коллекцию в порядке документа —
+и после `innerHTML`, и в разметке, написанной до регистрации: модуль
+владельца регистрирует свои части после себя, и при апгрейде владелец
+собирается первым. Сторожат `ui/webc/__tests__/collection-elevator.spec.ts`
+(место лифта, вход в порядке документа, переставленный элемент) и
+`collection-item-lifetime.spec.ts`.
+
 **Цена.** Серверная разметка и первый кадр элемента из разметки — без того,
 что пишет ему коллекция (`data-selected`, `tabindex`, размер от списка).
 Гидратация сходится, после коммита всё на месте. Список из данных (`items`,
@@ -906,7 +935,10 @@ Vue, Svelte, Solid и Angular этой цены не платят: элемен�
 что пишет коллекция, и панель таба находит свой таб к своей инициализации
 (сторожат `ui/svelte/__tests__/collections.server.spec.ts`,
 `ui/solid/__tests__/collections.server.spec.tsx` и
-`ui/angular/__tests__/collections.server.spec.ts`).
+`ui/angular/__tests__/collections.server.spec.ts`). У Web Components сервера
+нет, и цены тоже: элемент входит в коллекцию при подключении, а то, что
+коллекция пишет ему и соседям, доходит до разметки отрисовкой — микрозадачей,
+до кадра.
 
 Сторожат `setup/__tests__/adapter.spec.ts` («сборка и вход»),
 `ui/react/__tests__/list-box-elevator.spec.tsx` — лифт, StrictMode,

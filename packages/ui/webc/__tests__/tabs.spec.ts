@@ -1064,6 +1064,35 @@ describe('образцы item-* набора', () => {
 	})
 })
 
+/**
+ * Набор, переставленный в документе, собирается заново, как любой элемент
+ * soldy: новая связка — новый фасад. Состав и выбор живут в движке, и движок
+ * снаружи с табами из данных переставленный набор подхватывает целиком —
+ * табы те же, активный тот же. Своего движка набор после перестановки не
+ * держит: табы разметки входят в коллекцию заново, с тем, что задано их
+ * атрибутами и свойствами (`docs/architecture.md`, Layer 8d, «Известные
+ * ограничения»).
+ */
+describe('перестановка набора', () => {
+	it('движок снаружи: табы — те же узлы, активный — тот же', async () => {
+		const engine = createEngineTabs({ items: ITEMS })
+		const el = await mountTabs({ engine })
+		const rows = () =>
+			tabs().map((row) => `${row.textContent}:${row.getAttribute('aria-selected')}`)
+
+		await click(tab('C'))
+
+		const nodes = [...el.querySelectorAll('.so-tabs-item')]
+
+		document.body.appendChild(document.createElement('section')).appendChild(el)
+		await flush()
+
+		expect(rows()).toEqual(['A:false', 'B:false', 'C:true'])
+		expect([...el.querySelectorAll('.so-tabs-item')]).toEqual(nodes)
+		expect(engine.extensions.activation.activeItem?.value).toBe('c')
+	})
+})
+
 describe('шаблоны объявляют ровно те слоты, что и дескрипторы', () => {
 	it.each([
 		['Tabs', tabsTemplate, TabsDescriptor],

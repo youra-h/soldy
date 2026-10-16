@@ -185,9 +185,10 @@ every tab's text. The item's data is on the item element, `el.ctrl`.
 A radio is always a `<label>` root, so a radio cannot go inside `<label is="so-label">` the way
 other adapters write it with `tag="span"`. An item element you add after its owner is built joins
 the collection, but the owner does not move it into its markup — put a tab into `.so-tabs__list`
-yourself. Moving an owner in the document builds it again, with a fresh collection: what the user
-chose and you did not set in markup or properties starts over, unless the collection is your own
-`engine`.
+yourself. Moving a collection in the document rebuilds it, as any element is rebuilt when it moves:
+markup items join again with what their attributes and properties say, so a choice the user made
+(the active tab, an open section) does not survive the move. Items given as data in your own
+`engine` keep it.
 
 From JavaScript the element is the component: props are its properties, events are DOM events, and
 a core instance can be handed over as `ctrl` before the element is connected:

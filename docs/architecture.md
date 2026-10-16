@@ -349,7 +349,7 @@ Owns the `pluginProps` prop and emits `plugin:event`. It has no write, reset or 
 
 - **TElevator** (base) - Caches string/symbol keys to unique symbols
 - **Pattern**: Abstracts parent-child context passing
-- Implementations live in the adapters: `TVueElevator` (provide/inject), `TReactElevator` (one React Context carrying a layer of values, `Elevate` hands it to children), `TSvelteElevator` (`setContext`/`getContext`), `TSolidElevator` (one Solid context carrying a layer of values per owner: the assembly takes it with `useElevator()`, `Elevate` hands it to children), `TAngularElevator` (one DI token carrying a layer of values per owner, the owner adds it with `providers: [provideElevator()]`); Web Components have none
+- Implementations live in the adapters: `TVueElevator` (provide/inject), `TReactElevator` (one React Context carrying a layer of values, `Elevate` hands it to children), `TSvelteElevator` (`setContext`/`getContext`), `TSolidElevator` (one Solid context carrying a layer of values per owner: the assembly takes it with `useElevator()`, `Elevate` hands it to children), `TAngularElevator` (one DI token carrying a layer of values per owner, the owner adds it with `providers: [provideElevator()]`), `TWebcElevator` (the place context: `down()` gives the value to the owner's host element, `up()` takes the nearest one above the element in the document; the assembly gets a factory per host, `createWebcElevator(host)`)
 
 ### Key Files
 
@@ -2296,7 +2296,7 @@ Svelte 5 на рунах. Структура зеркалит React, потом�
 
 ## Layer 8d: Web Components Adapter (`packages/ui/webc/src`)
 
-### ✅ IMPLEMENTED (Component / ComponentView / Stylable / Control / Textable / Button / Icon / Label / Frame / ProgressSpinner / Skeleton / Input / CheckBox / Switch)
+### ✅ IMPLEMENTED (Component / ComponentView / Stylable / Control / Textable / Button / Icon / Label / Frame / ProgressSpinner / Skeleton / Input / CheckBox / Switch / RadioGroup / Tabs / Accordion)
 
 Единственный таргет без фреймворка — и потому самый показательный тест
 архитектуры: ядро уже событийное, а `CustomEvent` это родная модель DOM.
@@ -2316,30 +2316,41 @@ Svelte 5 на рунах. Структура зеркалит React, потом�
   компонент, и для приложения).
 - `adapter/runtime/` — `useAdapter` поверх связки
   `adapter.connect(WebcProfile)` (о пропе ядра она сообщает элементу колбэком
-  `onUpdate`), `SoldyElement` (фабрика класса элемента поверх нативного класса
+  `onUpdate`), `useCollectionAdapter` (связка фасада коллекции — без `ctrl` и
+  узла) и `joinBindings` (две связки коллекционного компонента — одной, как у
+  Angular), `SoldyElement` (фабрика класса элемента поверх нативного класса
   тега: жизненный цикл, корень по описанию `TRootSpec` и свои атрибуты
   элемента, см. «Решения по DOM»), `defineElement` (регистрация с
   `extends`); в бочку не входят `root-attributes.ts`: `applyClasses`,
-  `applyStyles` со `stylesOf` и `applyHidden` раскладывают на элемент классы,
-  стиль и скрытие, а атрибуты — раскладчик элемента `TElementAttributes` по
-  правилу `applyAttributes`: один на узел, со слоями — наборы ядра самого
-  элемента снизу, набор владельца сверху, — `defineAutonomousElement`
-  (регистрация провайдера локали без `extends`), `isDefining` (признак идущей
-  регистрации), `teleport.ts` (`TTeleport` — телепорт корня слоя в цель) и
-  `relocation.ts` (`relocate` и `isRelocating` — перенос силами базы), см.
-  «Решения по DOM».
+  `applyStyles` со `stylesOf` и `orderOf` и `applyHidden` раскладывают на
+  элемент классы, стиль и скрытие, а атрибуты — раскладчик элемента
+  `TElementAttributes` по правилу `applyAttributes`: один на узел, со слоями —
+  наборы ядра самого элемента снизу, набор владельца сверху, —
+  `defineAutonomousElement` (регистрация провайдера локали без `extends`),
+  `isDefining` (признак идущей регистрации), `teleport.ts` (`TTeleport` —
+  телепорт корня слоя в цель), `relocation.ts` (`relocate` и `isRelocating` —
+  перенос силами базы), `waiting.ts` (ожидание: подключение внутри чужого
+  подключения — следом за ним) и `assignment.ts` (назначенный слот — свет
+  детали), см. «Решения по DOM».
 - `adapter/context/` — `TPlaceContext`, контекст места: значение, привязанное
   к элементу, и поиск ближайшего вверх от узла — по `parentNode`, из теневого
   корня к его хосту, а от корня, увезённого телепортом, — к родителю его
   якоря (`TPlaceContext.anchor`, связь пишет телепорт). Наружу пакета не
   выходит.
+- `adapter/elevator/` — лифт коллекций на контексте места: `TWebcElevator` и
+  фабрика на хост `createWebcElevator(host)` — `down()` отдаёт значение хосту,
+  `up()` берёт ближайшее выше (см. «Коллекция» в «Решениях по DOM»). Наружу
+  пакета не выходит.
 - `adapter/locale/` — `TLocaleProviderElement`, `<so-locale-provider>`:
   свой `TLocaleSource` поддереву контекстом места, свойство `locale` — в тот же
   источник (см. «Решения по DOM»).
 - `adapter/template/` — `ITemplate`, `bind` (привязка пропа), `ownerAttributes`
-  (набор ядра на элементе шаблона — верхним слоем его раскладчика) и
+  (набор ядра на элементе шаблона — верхним слоем его раскладчика),
   `createDetail` (вложенный элемент soldy шаблона — деталь с обязательным
-  именем места `embedded`).
+  именем места `embedded`), `lend` (разметка шаблона — в слот детали,
+  назначением), `TKeyedLoop` (петля по ключу — элементы коллекции из данных),
+  `createItem` и `lendSamples` (элемент из данных и копии образцов `item-*` в
+  нём).
 - Вход пакета (`index.ts`) первым импортирует полифил `@ungap/custom-elements`
   (см. «Решения по DOM»).
 
@@ -2355,15 +2366,37 @@ export const TButtonElement = SoldyElement(HTMLButtonElement, {
 defineElement('so-button', TButtonElement, 'button')
 ```
 
+У коллекционного компонента описание элемента называет ещё и дескриптор
+фасада (`facade`), а модуль владельца регистрирует свои части после себя:
+
+```ts
+export const TTabsElement = SoldyElement(HTMLDivElement, {
+  descriptor: TabsDescriptor(),
+  facade: TabsCollectionDescriptor(),
+  template: tabsTemplate,
+  root: { sets: ['attrs'] },
+  setup: setupTabs,
+})
+
+defineElement('so-tabs', TTabsElement, 'div')
+defineElement('so-tabs-item', TTabsItemElement, 'div')
+defineElement('so-tabs-content', TTabsContentElement, 'div')
+```
+
 Что у компонентов на корне разное, называет описание корня (`root` в
 описании элемента): имя стиль-выхода — `{ style: 'fractionStyle' }` у
 ProgressSpinner, — прячет ли видимость корень — `{ hides: false }` у
-Skeleton, — уезжает ли корень в слой — `{ teleport: { target: 'target',
-contained: 'contained' } }` у Frame: имена выходов с селектором цели и с
-признаком «на месте», как `TRootTeleport` у Angular (см. «Слой» в «Решениях
-по DOM»), — какие наборы ядра лежат на корне (`sets`, по умолчанию все три) и
-есть ли в корне поле (`control`): `{ sets: ['attrs'], control: true }` у
-Input, CheckBox и Switch, как у Angular (см. «Поле» в «Решениях по DOM»).
+Skeleton, — стоит ли корень по месту в коллекции — `{ order: true }` у
+табов и секций: `order` фасада уходит в стиль корня, — без какого выхода
+корень скрыт — `{ shownBy: 'active' }` у панели таба, — уезжает ли корень в
+слой — `{ teleport: { target: 'target', contained: 'contained' } }` у Frame:
+имена выходов с селектором цели и с признаком «на месте», как
+`TRootTeleport` у Angular (см. «Слой» в «Решениях по DOM»), — какие наборы
+ядра лежат на корне (`sets`, по умолчанию все три) и есть ли в корне поле
+(`control`): `{ sets: ['attrs'], control: true }` у Input, CheckBox и Switch,
+`{ sets: ['attrs', 'dataset'], control: true }` у радио, а у таба и секции
+полем служит строка, как у Angular (см. «Поле» и «Коллекция» в «Решениях по
+DOM»).
 
 Свои атрибуты элемента сверх пропов дескриптора — то, что элемент читает
 сам и ядру не отдаёт, — называет описание элемента (`attributes`): роль
@@ -2658,6 +2691,43 @@ WebKit:
   стоит якорь, и раскладка света берёт его за сам корень: слот — корня, и
   содержимое — он. Сторожат `ui/webc/__tests__/frame.spec.ts` и
   `browser/webc-frame.spec.ts` стенда.
+- **Коллекция** — RadioGroup, Tabs с `Tabs.Content` и Accordion: владелец
+  (`<div is="so-tabs">`) и его элементы (`<div is="so-tabs-item">`,
+  `<label is="so-radio-group-item">`), корень каждого — элемент потребителя,
+  как у Angular. Контекстов два, свой и фасада, и setup-слой сводит их одной
+  связкой (`joinBindings`): состояние — одним живым видом, входы — обоим,
+  события — от обоих, с того же элемента (у фасада — по `embedded`
+  компонента), узел — только свой, фасад уничтожается первым. Пропсы фасада —
+  атрибуты-входы и свойства того же элемента: описание элемента называет
+  дескриптор фасада (`facade`). Лифт — контекст места (`adapter/elevator/`):
+  сборка владельца отдаёт движок и регистратор своему хосту, а элемент берёт
+  ближайшее выше себя — его разметки свет владельца, элементы из данных в его
+  шаблоне. В коллекцию элемент входит, когда собирается (`attach` в
+  `connectedCallback`), — и раньше владельца не собирается: подключение,
+  пришедшее во время чужого подключения, ждёт его конца и идёт сразу после
+  него, в порядке прихода (ожидание, `waiting.ts`). Раскладка света владельца
+  переносит элементы разметки, и без ожидания их колбэки пришли бы внутри
+  неё, раньше, чем владелец опустил движок: после `innerHTML` коллекция
+  осталась бы пустой. Поэтому элементы разметки входят в коллекцию в порядке
+  документа — и после `innerHTML`, и в разметке, написанной до регистрации,
+  где модуль владельца регистрирует свои части после себя. Элемент,
+  переставленный к другому владельцу, собирается заново и входит в его
+  коллекцию. Элементы из данных (`items`, `engine`) рисует шаблон владельца
+  петлёй по ключу (`TKeyedLoop`): дети узла по `shown`, ключ — `uid`; новый —
+  `createElement(tag, { is })` без `embedded`, с `ctrl` и копиями образцов до
+  вставки, лишний снимается, порядок DOM — порядок записей, а переставленный
+  едет переносом силами базы. Рисует петля, только когда владельцу не задан
+  `default`. Строка таба и заголовок секции — детали
+  (`<button is="so-button" embedded="tabs.row" type="button">`) и поле корня
+  (`control`): статические атрибуты разметки элемента, `id` тоже, переезжают
+  на них, а `aria` элемента ложится верхним слоем их раскладчика — главнее
+  того, что кнопка пишет себе сама. У радио поле — `<input type="radio">`.
+  Неактивная панель таба скрыта (`shownBy: 'active'`), и её содержимое вне
+  документа (`showSlot`): поля в нём не уходят с формой, как у Vue. Сторожат
+  `ui/webc/__tests__/tabs.spec.ts`, `accordion.spec.ts`, `radio-group.spec.ts`,
+  `collection-elevator.spec.ts`, `collection-item-lifetime.spec.ts`,
+  `external-engine-lifetime.spec.ts` и `browser/webc-collections.spec.ts`
+  стенда.
 
 **Типы.** Класс элемента собирает фабрика `SoldyElement(Native, spec)`: база
 одна, а нативный класс у каждого тега свой. Тип результата объявлен явно —
@@ -2672,8 +2742,12 @@ Svelte (`TSoldyElementProps` над `DescriptorComponentProps`): свои про
 `pluginProps` — без свойств, которые у элемента есть по тегу, `HOST_PROPS` и
 `ctrl`, ровно то, что база вешает на прототип. Раньше тип брал интерфейс
 пропсов ядра (`IButtonProps`), и `el.aria_label = 'Сохранить'`, рабочее в
-браузере, не компилировалось. Сторожат `expectTypeOf` в
-`ui/webc/__tests__/button.spec.ts` и `frame.spec.ts`.
+браузере, не компилировалось. Пропсы фасада коллекции (`items`, `active`) в
+этом контракте уже есть: их типы несёт интерфейс пропсов ядра компонента
+(`ITabsProps`), а состояние элемента коллекции (`ISoldyElement` со вторым
+параметром) — вместе со свойствами фасада. Сторожат `expectTypeOf` в
+`ui/webc/__tests__/button.spec.ts`, `frame.spec.ts`, `tabs.spec.ts` и
+`accordion.spec.ts`.
 
 Плата за light DOM: `<slot>` недоступен, поэтому пользовательское содержимое
 раскладывается при первом подключении вручную — по атрибуту `slot` в точки,
@@ -2692,6 +2766,30 @@ Svelte (`TSoldyElementProps` над `DescriptorComponentProps`): свои про
 привязка — `showSlot` контекста: снятое уходит из документа, и элементы
 soldy в нём отключаются, как при перестановке, а показ — переносом силами
 базы.
+
+Свет детали. Точка может вести в слот детали шаблона (`TSlotTarget.slot`):
+узлы встают в деталь — строку таба, заголовок секции, кнопку закрытия, —
+пока та ждёт своей сборки (ожидание), и назначаются её слоту
+(`assignment.ts`). Раскладка света детали берёт назначенный слот раньше
+атрибута `slot`: `header` секции становится `default` заголовка, `leading` и
+`trailing` таба — краями его строки, `close-icon` — содержимым кнопки
+закрытия. Тем же назначением шаблон отдаёт детали свою разметку (`lend`):
+обёртки стрелок секции — первым узлом `leading` и последним `trailing`
+заголовка, иконку крестика — кнопке. Элемент soldy в свете элемента едет в
+деталь переносом силами базы и собирается один раз.
+
+Образцы `item-*`. Слоты элементов из данных у остальных адаптеров получают
+данные элемента через scope, а у Web Components scope нет. Поэтому владелец
+объявляет их точками-образцами (`TSlotTarget` с `sample`): содержимое база не
+выводит, а держит у себя — слот задан (`hasSlot`), а копию отдаёт контекст
+(`sample`): у `<template slot="item-leading">` — копию его содержимого, у
+другого узла — копию его самого без атрибута `slot`. Копию одного образца
+получает каждый элемент из данных — до вставки, назначением в свой слот по
+таблице пробросов (`setup/__tests__/item-slots.spec.ts`), вместе с текстом.
+Пустой образец ничего не кладёт, и элемент рисует своё. Элементы разметки
+копий не получают: свой свет у них есть. Сторожат `tabs.spec.ts`,
+`accordion.spec.ts`, `radio-group.spec.ts` и `item-slots.spec.ts` пакета —
+карта копий сверяется со строками той таблицы.
 
 ### Известные ограничения
 
@@ -2741,9 +2839,20 @@ soldy в нём отключаются, как при перестановке, 
   уводит и не пересобирает: она остаётся собранной на прежнем месте, с
   локалью прежнего провайдера, а новое место видят только элементы, которые
   собираются в панели после перестановки.
-- Элеватор не написан: коллекции не портированы, а плодить мёртвый код
-  (как вышло с React/Svelte/Solid) незачем. Встанет он на контекст места
-  (`adapter/context/`), как локаль поддерева.
+- Радио — только `<label is="so-radio-group-item">`: одно имя расширяет один
+  тег, а `label` в `label` HTML запрещает, поэтому радио в подписи
+  `<label is="so-label">` (у остальных адаптеров — `tag="span"`) нет.
+- Элемент коллекции, добавленный после построения владельца, в коллекцию
+  входит, но в разметку владельца не раскладывается: наблюдателя за светом
+  нет. Таб, добавленный в корень набора, остаётся рядом со списком, — в
+  `.so-tabs__list` его ставит потребитель.
+- Коллекция, переставленная в документе, собирается заново, как любой
+  элемент: новый фасад, а без движка снаружи — и новый движок. Элементы
+  разметки входят в коллекцию снова с тем, что задано их атрибутами и
+  свойствами, и выбор пользователя (активный таб, раскрытая секция) после
+  перестановки не держится. Элементы из данных в движке снаружи его держат.
+- У образцов `item-*` нет scope: копия одна на все элементы из данных, и
+  данные своего элемента (`text`, `active`) копия берёт у него — `el.ctrl`.
 
 ---
 
