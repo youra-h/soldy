@@ -12,7 +12,9 @@
  * скринридера; имя ему даёт приложение (`aria_label`, `aria_labelledBy`), а
  * не локаль: что листают, знает только оно. Текущая страница —
  * `aria-current="page"`. Стрелки и страницы — нативные кнопки, каждая — своя
- * остановка Tab, поэтому клавиатурного плагина нет. См. AGENTS.md, «Готовые
+ * остановка Tab, поэтому клавиатурного плагина нет. Стрелку, погасшую у края
+ * под фокусом, выключенной кнопкой браузер оставил бы без фокуса — его
+ * переводит на текущую страницу плагин фокуса. См. AGENTS.md, «Готовые
  * паттерны».
  */
 
@@ -22,7 +24,9 @@ import type { IPaginationItem } from '@soldy-ui/core'
 import { ValueControlDescriptor } from '../value-control.descriptor'
 import {
 	CollectionBundlesPluginDescriptor,
+	CollectionElementsPluginDescriptor,
 	LocalePluginDescriptor,
+	PaginationFocusPluginDescriptor,
 	PaginationNamesPluginDescriptor,
 } from '../../plugins'
 
@@ -113,10 +117,14 @@ export const PaginationDescriptor = defineDescriptor(() =>
 		plugins: [
 			// Язык — до поведения: номера в цифрах локали с первой отрисовки
 			LocalePluginDescriptor,
-			// Коллекция: реестр bundles страниц
+			// Коллекция: реестр bundles страниц + доступ к их DOM-узлам
 			CollectionBundlesPluginDescriptor,
+			CollectionElementsPluginDescriptor,
 			// Имена стрелок от локали
 			PaginationNamesPluginDescriptor,
+			// Стрелка погасла у края под фокусом — фокус на текущую страницу.
+			// После плагинов коллекции: движок и узлы страниц — от них
+			PaginationFocusPluginDescriptor,
 		],
 	}),
 )
