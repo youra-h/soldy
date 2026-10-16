@@ -12,3 +12,7 @@ export * from './input'
 export * from './progress-spinner'
 export * from './skeleton'
 export * from './frame'
+// Коллекции: модуль владельца регистрирует свои части после себя
+export * from './radio-group'
+export * from './tabs'
+export * from './accordion'

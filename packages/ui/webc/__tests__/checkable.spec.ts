@@ -29,6 +29,7 @@ import {
 } from '@soldy-ui/webc'
 import { checkBoxTemplate } from '../src/components/check-box/check-box.template'
 import { switchTemplate } from '../src/components/switch/switch.template'
+import { bareContext } from './template-context'
 
 /** Рендер коалесцируется в микротаске — ждём её перед проверкой. */
 const flush = () => new Promise<void>((resolve) => queueMicrotask(() => resolve()))
@@ -610,7 +611,8 @@ describe('CheckBox · отметка', () => {
 	})
 
 	it('шаблон объявляет ровно те слоты, что и дескриптор', () => {
-		const targets = checkBoxTemplate.create(document.createElement('span'), () => false).slots
+		const root = document.createElement('span')
+		const targets = checkBoxTemplate.create(root, () => false, bareContext(root)).slots
 
 		expect(Object.keys(targets).sort()).toEqual(
 			CheckBoxDescriptor()
@@ -663,7 +665,8 @@ describe('Switch · роль и ручка', () => {
 	})
 
 	it('шаблон объявляет ровно те слоты, что и дескриптор', () => {
-		const targets = switchTemplate.create(document.createElement('span'), () => false).slots
+		const root = document.createElement('span')
+		const targets = switchTemplate.create(root, () => false, bareContext(root)).slots
 
 		expect(Object.keys(targets).sort()).toEqual(
 			SwitchDescriptor()

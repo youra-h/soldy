@@ -14,31 +14,82 @@
  * изменении сообщает колбэк onUpdate (перерисовку планирует базовый класс
  * элемента), а события уходят `CustomEvent` на элементе. Всплывают они у
  * элемента потребителя, а у детали чужой разметки (`embedded`) — нет.
+ *
+ * У коллекционного компонента контекстов два — свой и фасада коллекции, — и
+ * фасад связывает `useCollectionAdapter`: всё то же, кроме `ctrl` и привязки
+ * узла, они принадлежат компоненту. Базе элемента (`SoldyElement`) нужна одна
+ * связка, поэтому две сводит `joinBindings`, как у Angular: состояние — одним
+ * живым видом, входы и события — обоих, узел — только свой.
  */
 
 import { toInstanceState } from '@soldy-ui/setup'
-import type { IAdapterContext, IComponentContract, TInstanceState } from '@soldy-ui/setup'
+import type {
+	IAdapterContext,
+	IComponentContract,
+	TAdapterState,
+	TInstanceState,
+} from '@soldy-ui/setup'
 import type { IPluginBundle } from '@soldy-ui/plugins'
 import { WebcProfile } from '../common'
 
-export type TBinding<TInstance = object> = {
-	/** Свойства инстанса со снимком через `valueOf()` — см. `TInstanceState`. */
-	readonly state: TInstanceState<TInstance>
+/**
+ * Состояние компонента, как его читают база и шаблон: свойства инстанса и, у
+ * коллекционного компонента, свойства фасада. Одноимённых у них нет: имена
+ * пропсов фасада префиксуются (`tab_closable`).
+ */
+export type TBindingState<TInstance, TFacade = unknown> = TInstanceState<TInstance> &
+	TInstanceState<TFacade>
+
+/**
+ * Связка компонента для базы элемента (`SoldyElement`). `TFacade` — фасад
+ * коллекции у компонента с двумя контекстами (`joinBindings`); у остальных его
+ * нет.
+ */
+export type TBinding<TInstance = object, TFacade = unknown> = {
+	/** Свойства инстанса и фасада со снимком через `valueOf()` — см. `TInstanceState`. */
+	readonly state: TBindingState<TInstance, TFacade>
 	readonly ctrl: TInstance
+	/** Фасад коллекции: через его контекст элемента шаблон зовёт команды коллекции. */
+	readonly facade: TFacade
 	readonly plugins: IPluginBundle | null
 	syncProps(props: object): void
 	bindElement(el: Element | null): void
 	destroy(): void
 }
 
+/**
+ * То же, что `TBinding`, но без `ctrl` и привязки узла: они принадлежат
+ * компоненту, а не фасаду его коллекции (см. `useCollectionAdapter`).
+ */
+export type TCollectionBinding<TFacade = object> = {
+	/** Свойства фасада со снимком через `valueOf()`. */
+	readonly state: TInstanceState<TFacade>
+	readonly facade: TFacade
+	syncProps(props: object): void
+	destroy(): void
+}
+
 /** Сменился проп в ядре: имя в поверхности и новое значение. */
 export type TUpdateListener = (name: string, value: unknown) => void
 
-export function useAdapter<C extends IComponentContract>(
+/** Общая часть связок контекста — свой он или фасада. */
+type TExchangeBinding<C extends IComponentContract> = {
+	readonly state: TAdapterState<C>
+	syncProps(props: object): void
+	destroy(): void
+}
+
+/**
+ * Общая часть `useAdapter` и `useCollectionAdapter`: связка контекста,
+ * состояние, входы, события, приём и уничтожение. `bubbles` — всплывают ли
+ * события контекста: у детали чужой разметки (`embedded`) — нет.
+ */
+function useExchange<C extends IComponentContract>(
 	adapter: IAdapterContext<C>,
 	host: HTMLElement,
 	onUpdate: TUpdateListener,
-): TBinding<C['instance']> {
+	bubbles: boolean,
+): TExchangeBinding<C> {
 	const binding = adapter.connect(WebcProfile)
 	const state: Record<string, unknown> = {}
 
@@ -48,12 +99,6 @@ export function useAdapter<C extends IComponentContract>(
 		state[name] = value
 		onUpdate(name, value)
 	})
-
-	// Событие детали (`embedded`) не всплывает: деталь — разметка владельца, и
-	// владелец слушает её на самом элементе, как в остальных адаптерах. Иначе
-	// `so:action:press` кнопки очистки дошёл бы до слушателей поля и до
-	// делегирования на форме — как событие самого поля
-	const bubbles = adapter.embedded === undefined
 
 	const unbindEvents = binding.events.listen((exportName, args) => {
 		host.dispatchEvent(
@@ -71,24 +116,149 @@ export function useAdapter<C extends IComponentContract>(
 
 	return {
 		state: toInstanceState<C>(state),
-		ctrl: adapter.instance,
-		plugins: adapter.bundle,
 
 		// Элемент отдаёт не полный набор, а то, что задано: по одному атрибуту или
 		// свойству. Выставленное до подключения применила сборка контекста.
-		// Поэтому `inputs.delta`: `inputs.full` сбросил бы к умолчанию остальные
+		// Поэтому `inputs.delta`: `inputs.full` сбросил бы к умолчанию остальные.
+		// Чужих имён дельта не трогает: входы компонента и фасада идут обоим
 		syncProps(props: object): void {
 			binding.inputs.delta(props)
-		},
-
-		bindElement(el: Element | null): void {
-			adapter.bindElement(el)
 		},
 
 		destroy(): void {
 			unsubscribe()
 			unbindEvents()
 			adapter.destroy()
+		},
+	}
+}
+
+export function useAdapter<C extends IComponentContract>(
+	adapter: IAdapterContext<C>,
+	host: HTMLElement,
+	onUpdate: TUpdateListener,
+): TBinding<C['instance']> {
+	// Событие детали (`embedded`) не всплывает: деталь — разметка владельца, и
+	// владелец слушает её на самом элементе, как в остальных адаптерах. Иначе
+	// `so:action:press` кнопки очистки дошёл бы до слушателей поля и до
+	// делегирования на форме — как событие самого поля
+	const exchange = useExchange(adapter, host, onUpdate, adapter.embedded === undefined)
+
+	return {
+		...exchange,
+
+		ctrl: adapter.instance,
+		facade: undefined,
+		plugins: adapter.bundle,
+
+		bindElement(el: Element | null): void {
+			adapter.bindElement(el)
+		},
+	}
+}
+
+/**
+ * Адаптер фасада коллекции — всё то же, кроме того, что принадлежит компоненту.
+ *
+ * У коллекционного компонента контекстов два: свой (`owner`) и фасада.
+ * Состояние, входы, события, приём и уничтожение у фасада те же, что у
+ * компонента, а `ctrl` и привязки узла — нет:
+ *
+ * - `ctrl` у фасада это `T*CollectionFacade`, тогда как под этим именем
+ *   элемент отдаёт сам компонент;
+ * - своего узла у фасада нет: он делит набор компонента, и корень к
+ *   `TElementPlugin` привязывает связка компонента.
+ *
+ * События фасада уходят с того же элемента и всплывают по `embedded`
+ * компонента: деталь чужой разметки — это компонент целиком, с его
+ * коллекцией. Сам фасад связка отдаёт: элемент коллекции зовёт через его
+ * контекст команды коллекции (`toggle`, `close`, активацию).
+ */
+export function useCollectionAdapter<C extends IComponentContract>(
+	adapter: IAdapterContext<C>,
+	owner: IAdapterContext,
+	host: HTMLElement,
+	onUpdate: TUpdateListener,
+): TCollectionBinding<C['instance']> {
+	return {
+		...useExchange(adapter, host, onUpdate, owner.embedded === undefined),
+		facade: adapter.instance,
+	}
+}
+
+/**
+ * Живой вид двух состояний: свойство — из состояния компонента, а нет его там
+ * — из состояния фасада. Состояния заполнила подписка (`useExchange`): ключ на
+ * каждое свойство с триггерами, и других ключей у них не появляется, поэтому
+ * вид строится по ним один раз, а значения читает в момент обращения: база
+ * читает состояние на каждой отрисовке, а связка пишет в оба объекта на месте.
+ */
+function joinStates(
+	owner: Readonly<Record<string, unknown>>,
+	facade: Readonly<Record<string, unknown>>,
+): Readonly<Record<string, unknown>> {
+	const view: Record<string, unknown> = {}
+
+	for (const name of new Set([...Object.keys(facade), ...Object.keys(owner)])) {
+		Object.defineProperty(view, name, {
+			enumerable: true,
+			get: () => (Object.hasOwn(owner, name) ? owner[name] : facade[name]),
+		})
+	}
+
+	return view
+}
+
+/**
+ * Типизированный вид на состояние двух связок (`TBindingState`).
+ *
+ * Граница между рантаймом и типом — как `toInstanceState` у одной связки и
+ * `toBindingState` у Vue. Вид собран по дескрипторам компонента и фасада из тех
+ * же инстансов, что называют `TInstance` и `TFacade`, но по именам свойств —
+ * эту связь держат дескрипторы, TypeScript её не видит.
+ */
+function toBindingState<TInstance, TFacade>(
+	view: Readonly<Record<string, unknown>>,
+): TBindingState<TInstance, TFacade> {
+	return view as TBindingState<TInstance, TFacade>
+}
+
+/**
+ * Связка компонента с двумя контекстами — для базы, которой нужна одна:
+ *
+ * - состояние — одним живым видом, свойства компонента и фасада
+ *   (`TBindingState`);
+ * - входы — обоим: элемент отдаёт дельту, и каждый берёт свои;
+ * - события — от обоих, с одного элемента (их отдаёт каждая связка сама);
+ * - узел — только свой: у фасада его нет;
+ * - уничтожение — фасад раньше компонента, как у Angular и React: элемент
+ *   выходит из коллекции, пока его набор плагинов цел.
+ */
+export function joinBindings<TInstance, TFacade>(
+	owner: TBinding<TInstance>,
+	facade: TCollectionBinding<TFacade>,
+): TBinding<TInstance, TFacade> {
+	const ownerState: Readonly<Record<string, unknown>> = owner.state
+	const facadeState: Readonly<Record<string, unknown>> = facade.state
+
+	return {
+		state: toBindingState<TInstance, TFacade>(joinStates(ownerState, facadeState)),
+		ctrl: owner.ctrl,
+		facade: facade.facade,
+		plugins: owner.plugins,
+
+		syncProps(props: object): void {
+			owner.syncProps(props)
+			facade.syncProps(props)
+		},
+
+		bindElement(el: Element | null): void {
+			owner.bindElement(el)
+		},
+
+		destroy(): void {
+			facade.destroy()
+			owner.destroy()
 		},
 	}
 }

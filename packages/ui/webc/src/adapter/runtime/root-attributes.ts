@@ -124,6 +124,15 @@ export function stylesOf(...layers: readonly unknown[]): TRootStyles {
 }
 
 /**
+ * Место элемента коллекции в её ряду — слой стиля корня (`TRootSpec.order`):
+ * ряд коллекции — флексбокс, и элемент встаёт по номеру в коллекции, а не по
+ * месту в разметке, как `:style="{ order }"` у Vue. Номера нет — слоя нет.
+ */
+export function orderOf(value: unknown): object | undefined {
+	return typeof value === 'number' ? { order: value } : undefined
+}
+
+/**
  * Раскладывает атрибуты на элемент и возвращает новую память раскладчика.
  * `wanted` — что слои называют: имя → значение и вход ли это пропа (см.
  * шапку).

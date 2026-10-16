@@ -30,6 +30,7 @@ import {
 } from '@soldy-ui/webc'
 import type { IIcon } from '@soldy-ui/core'
 import { iconTemplate } from '../src/components/icon/icon.template'
+import { bareContext } from './template-context'
 
 /** Рендер коалесцируется в микротаске — ждём её перед проверкой. */
 const flush = () => new Promise<void>((resolve) => queueMicrotask(() => resolve()))
@@ -321,7 +322,8 @@ describe('Icon · рисунок роли', () => {
 	})
 
 	it('шаблон объявляет ровно те слоты, что и дескриптор, — ни одного', () => {
-		const targets = iconTemplate.create(document.createElement('span'), () => false).slots
+		const root = document.createElement('span')
+		const targets = iconTemplate.create(root, () => false, bareContext(root)).slots
 
 		expect(Object.keys(targets)).toEqual(IconDescriptor().slots.map((slot) => slot.name))
 		expect(Object.keys(targets)).toEqual([])

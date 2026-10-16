@@ -1,0 +1,5 @@
+export { setupTabs } from './setup.component'
+export { TTabsElement, type TTabsElementProps } from './Tabs.element'
+export { tabsTemplate, TABS_ITEM_SLOTS } from './tabs.template'
+export * from './item'
+export * from './content'

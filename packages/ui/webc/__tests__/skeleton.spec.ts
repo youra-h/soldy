@@ -14,6 +14,7 @@ import { describe, it, expect, afterEach } from 'vitest'
 import { SkeletonDescriptor } from '@soldy-ui/setup'
 import { TSkeletonElement, type TSkeletonElementProps } from '@soldy-ui/webc'
 import { skeletonTemplate } from '../src/components/skeleton/skeleton.template'
+import { bareContext } from './template-context'
 
 /** Рендер коалесцируется в микротаске — ждём её перед проверкой. */
 const flush = () => new Promise<void>((resolve) => queueMicrotask(() => resolve()))
@@ -142,7 +143,8 @@ describe('Skeleton · заглушка и содержимое', () => {
 	})
 
 	it('шаблон объявляет ровно те слоты, что и дескриптор', () => {
-		const targets = skeletonTemplate.create(document.createElement('div'), () => false).slots
+		const root = document.createElement('div')
+		const targets = skeletonTemplate.create(root, () => false, bareContext(root)).slots
 
 		expect(Object.keys(targets).sort()).toEqual(
 			SkeletonDescriptor()
