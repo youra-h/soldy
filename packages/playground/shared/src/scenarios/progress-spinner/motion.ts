@@ -1,4 +1,5 @@
-import { LOADING, LOADING_PROPS, REDUCE, VERDICT, loadingCycle } from '../progress-motion'
+import { LOADING, LOADING_PROPS, loadingCycle } from '../progress-motion'
+import { REDUCE, VERDICT } from '../motion'
 import type { TScenario } from '../types'
 
 /**
