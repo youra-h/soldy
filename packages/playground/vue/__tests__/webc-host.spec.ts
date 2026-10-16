@@ -4,13 +4,21 @@
  * Общее со всеми хостами — витрину, страницы, сценарии, язык — проверяют
  * дымовые тесты по списку фреймворков. Здесь — описание элемента, которым
  * хост рисует превью и фикстуры: свои атрибуты элемента (роль иконки) стоят на
- * нём, как в разметке, а дети по слотам — его светом, и первая сборка
- * раскладывает их по слотам.
+ * нём, как в разметке, дети по слотам — его светом, и первая сборка
+ * раскладывает их по слотам, а обёртка превью (подпись вокруг флажка) — свой
+ * элемент, в слоте по умолчанию которого лежит компонент.
  */
 
 import { describe, it, expect, afterEach } from 'vitest'
+import { TCheckBox } from '@soldy-ui/core'
 import { getIcon } from '@soldy-ui/setup'
 import { loadHost } from '../src/hosts'
+
+/** Рендер элемента коалесцируется в микротаске — ждём её перед проверкой. */
+const flush = () => new Promise<void>((resolve) => queueMicrotask(() => resolve()))
+
+/** `TElementPlugin` объявляет узел через кадр — после него встают слушатели плагинов. */
+const nextFrame = () => new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
 
 const host = await loadHost('webc')
 
@@ -77,4 +85,110 @@ describe('хост Web Components', () => {
 
 		handle.unmount()
 	})
+
+	/**
+	 * Превью флажка — в подписи, как у Vue и React. Подпись — обёртка со своими
+	 * пропсами описания, а пропсы строки и слушатели — у флажка: страница
+	 * правит контрол, и в журнал попадают его события.
+	 */
+	it('флажок в подписи: пропсы строки и слушатели — у флажка', async () => {
+		const node = stage()
+		const events: string[] = []
+		const handle = host.mount(node, {
+			component: 'check-box',
+			props: { size: 'lg' },
+			onEvent: (name) => events.push(name),
+		})
+		const label = find(node, 'label.so-label')
+		const box = find(label, '.so-label__control > .so-check-box')
+
+		expect(find(label, '.so-label__text').textContent).toBe('Согласен')
+		expect(box.classList.contains('so-check-box--size-lg')).toBe(true)
+		expect(label.classList.contains('so-label--size-normal')).toBe(true)
+
+		await nextFrame()
+		events.length = 0
+		find(label, '.so-label__text').click()
+
+		expect(box.querySelector('input')?.checked).toBe(true)
+		expect(events).toContain('change:value')
+
+		handle.update({ size: 'sm' })
+		await flush()
+
+		expect(box.classList.contains('so-check-box--size-sm')).toBe(true)
+		expect(label.classList.contains('so-label--size-normal')).toBe(true)
+
+		handle.unmount()
+	})
+
+	/** Смена `ctrl` строит заново и флажок, и подпись вокруг него. */
+	it('смена ctrl пересоздаёт и обёртку, и компонент', () => {
+		const node = stage()
+		const first = new TCheckBox()
+		const second = new TCheckBox({ value: true })
+		const handle = host.mount(node, { component: 'check-box', props: { ctrl: first } })
+		const label = find(node, 'label.so-label')
+
+		handle.update({ ctrl: second })
+
+		const next = find(node, 'label.so-label')
+
+		expect(next).not.toBe(label)
+		expect(node.querySelectorAll('label.so-label')).toHaveLength(1)
+		expect(next.querySelector('input')?.checked).toBe(true)
+
+		handle.unmount()
+	})
+
+	it('фикстура label-check-box — подпись с флажком в слоте по умолчанию, текст — из пропа', () => {
+		const node = stage()
+		const handle = host.mount(node, {
+			component: 'label',
+			fixture: 'label-check-box',
+			props: { text: 'Подпись' },
+		})
+		const label = find(node, 'label.so-label')
+		const input = label.querySelector('.so-label__control input')
+
+		expect(find(label, '.so-label__text').textContent).toBe('Подпись')
+		expect(input instanceof HTMLInputElement ? [...(input.labels ?? [])] : []).toEqual([label])
+
+		handle.unmount()
+	})
+
+	/**
+	 * У корня с полем `id` — проп поля, а не вход корня: `el.id` — собственный
+	 * `id` корня. Строка `id` после монтирования доходит до поля инстансом.
+	 */
+	it('id поля из строки — на <input>, а не на корне', async () => {
+		const node = stage()
+		const handle = host.mount(node, { component: 'input', props: { id: 'first' } })
+		const root = find(node, '.so-input')
+
+		expect(root.querySelector('input')?.id).toBe('first')
+		expect(root.hasAttribute('id')).toBe(false)
+
+		handle.update({ id: 'second' })
+		await flush()
+
+		expect(root.querySelector('input')?.id).toBe('second')
+		expect(root.hasAttribute('id')).toBe(false)
+
+		handle.update({})
+		await flush()
+
+		expect(root.querySelector('input')?.hasAttribute('id')).toBe(false)
+
+		handle.unmount()
+	})
 })
+
+/** Узел по селектору; нет его — тест падает здесь. */
+function find(root: ParentNode, selector: string): HTMLElement {
+	const node = root.querySelector(selector)
+
+	if (!(node instanceof HTMLElement)) throw new Error(`${selector}: узла нет`)
+
+	return node
+}

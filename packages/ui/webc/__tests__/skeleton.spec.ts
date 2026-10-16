@@ -142,7 +142,7 @@ describe('Skeleton · заглушка и содержимое', () => {
 	})
 
 	it('шаблон объявляет ровно те слоты, что и дескриптор', () => {
-		const targets = skeletonTemplate.create(document.createElement('div'))
+		const targets = skeletonTemplate.create(document.createElement('div'), () => false).slots
 
 		expect(Object.keys(targets).sort()).toEqual(
 			SkeletonDescriptor()

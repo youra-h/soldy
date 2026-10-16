@@ -13,7 +13,7 @@ import type { IFrame } from '@soldy-ui/core'
 import type { ITemplate } from '../../adapter'
 
 export const frameTemplate: ITemplate<IFrame> = {
-	create: (root) => ({ default: { mode: 'append', node: root } }),
+	create: (root) => ({ slots: { default: { mode: 'append', node: root } } }),
 
 	bindings: [],
 }

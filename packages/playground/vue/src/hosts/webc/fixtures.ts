@@ -24,4 +24,18 @@ export const FIXTURES: Record<string, TPreview> = {
 			trailing: [{ tag: 'span', is: 'so-icon', attributes: { icon: 'arrowRight' } }],
 		},
 	},
+
+	// Подпись вокруг контрола: текст — из пропа `text` сценария, контрол — в
+	// слоте по умолчанию
+	'label-check-box': {
+		tag: 'label',
+		is: 'so-label',
+		slots: { default: [{ tag: 'span', is: 'so-check-box' }] },
+	},
+
+	'label-switch': {
+		tag: 'label',
+		is: 'so-label',
+		slots: { default: [{ tag: 'span', is: 'so-switch' }] },
+	},
 }

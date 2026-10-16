@@ -65,7 +65,7 @@ export const progressSpinnerTemplate: ITemplate<IProgressSpinner> = {
 		root.appendChild(ring)
 
 		// Слотов нет: написанное внутри элемента не выводится
-		return {}
+		return { slots: {} }
 	},
 
 	bindings: [],

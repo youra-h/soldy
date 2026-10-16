@@ -12,7 +12,8 @@
  * Общее с остальными адаптерами — в обмене `adapter.connect()` из setup. Своё
  * здесь: реактивности у платформы нет, поэтому состояние — обычный объект, об
  * изменении сообщает колбэк onUpdate (перерисовку планирует базовый класс
- * элемента), а события уходят `CustomEvent` на элементе.
+ * элемента), а события уходят `CustomEvent` на элементе. Всплывают они у
+ * элемента потребителя, а у детали чужой разметки (`embedded`) — нет.
  */
 
 import { toInstanceState } from '@soldy-ui/setup'
@@ -48,11 +49,17 @@ export function useAdapter<C extends IComponentContract>(
 		onUpdate(name, value)
 	})
 
+	// Событие детали (`embedded`) не всплывает: деталь — разметка владельца, и
+	// владелец слушает её на самом элементе, как в остальных адаптерах. Иначе
+	// `so:action:press` кнопки очистки дошёл бы до слушателей поля и до
+	// делегирования на форме — как событие самого поля
+	const bubbles = adapter.embedded === undefined
+
 	const unbindEvents = binding.events.listen((exportName, args) => {
 		host.dispatchEvent(
 			new CustomEvent(exportName, {
 				detail: args.length > 1 ? args : args[0],
-				bubbles: true,
+				bubbles,
 				composed: true,
 			}),
 		)

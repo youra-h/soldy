@@ -34,10 +34,11 @@ top-level `await`) apply to them too.
 Shadow DOM is not used — a theme styles global BEM classes, so light DOM is distributed by the
 `slot` attribute by hand. Content for a slot the component does not have is not rendered, and slots
 get no scope: slot content is the element's own light DOM, so component data (the `text` of
-Button's `default` slot) cannot be passed into it.
+Button's `default` slot) cannot be passed into it — slot content reads it from the element,
+`el.ctrl`.
 
-> **Status:** the Web Components adapter is in progress — Button, Icon, ProgressSpinner, Skeleton
-> and Frame are ported, the rest of the set is on its way. See
+> **Status:** the Web Components adapter is in progress — Button, Icon, Label, Input, CheckBox,
+> Switch, ProgressSpinner, Skeleton and Frame are ported, the rest of the set is on its way. See
 > [the adapter table](https://github.com/youra-h/soldy#components).
 
 ## Install
@@ -112,6 +113,37 @@ In a form it is simply a button:
   <button is="so-button" type="reset" text="Clear"></button>
 </form>
 ```
+
+A field — `<div is="so-input">`, `<span is="so-check-box">`, `<span is="so-switch">` — is your
+element with a real `<input>` inside, in the page's ordinary DOM. The form sees that input by
+itself: `FormData`, `<fieldset disabled>`, validation and `<label>` work as with any input, no
+form-associated element involved. A checkbox and a switch get their visible name from
+`<label is="so-label">` around them: clicking the text toggles the control, and the text becomes
+its accessible name.
+
+```html
+<form>
+  <div is="so-input" name="city" placeholder="City" autocomplete="address-level2"></div>
+  <label is="so-label" text="Send me news">
+    <span is="so-check-box" name="news"></span>
+  </label>
+  <label is="so-label" text="Dark theme">
+    <span is="so-switch" name="dark"></span>
+  </label>
+</form>
+```
+
+Attributes you write on a field are split as in the other adapters: `class`, `style` and the
+component's own props (`name`, `disabled`, `placeholder`) stay on the element, and every other
+attribute in the markup — `autocomplete`, `aria-label`, `tabindex`, `data-*` — moves to the
+`<input>` when the element is built. An attribute you set from code later stays on the element.
+`id` is the input's: `id="city"` in the markup lands on the `<input>`, so `<label for="city">`
+finds it; from code the input's id is `el.ctrl.id`, while `el.id` is the element's own.
+
+Slot content gets no scope, so your own clear button (the `clear` slot) clears the field through
+the element: `el.ctrl.clear()`. The built-in clear button and its icon are part of the field's
+markup, so their events (`so:action:press`, `so:change:focused`) do not bubble — listeners on the
+field and delegation on the form hear the field's own events only.
 
 From JavaScript the element is the component: props are its properties, events are DOM events, and
 a core instance can be handed over as `ctrl` before the element is connected:

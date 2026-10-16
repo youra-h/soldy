@@ -693,7 +693,7 @@ describe('<button is="so-button"> · перестановка в DOM', () => {
 
 describe('<button is="so-button"> · слоты', () => {
 	it('шаблон объявляет ровно те слоты, что и дескриптор', () => {
-		const targets = buttonTemplate.create(document.createElement('button'))
+		const targets = buttonTemplate.create(document.createElement('button'), () => false).slots
 
 		// Contract conformance: имена в шаблоне и в дескрипторе обязаны совпадать
 		expect(Object.keys(targets).sort()).toEqual(

@@ -64,7 +64,8 @@
  * одинаково у всех визуальных компонентов soldy (`root-attributes.ts`):
  *   classes              → классы, отдельными токенами
  *   aria, attrs, dataset → атрибуты (в `attrs` и `dir`: ядро уже перевело
- *                          'inherit' в null, а null снимает атрибут)
+ *                          'inherit' в null, а null снимает атрибут) —
+ *                          раскладчиком элемента, нижними его слоями
  *   layout_styles и      → стиль, по свойствам: снизу выход плагина
  *   стиль-выход            раскладки, поверх него стиль-выход компонента,
  *                          имена — как в CSS (`--*`, `z-index`)
@@ -76,10 +77,11 @@
  *                          `TElementPlugin` связан с элементом всё время
  * Что у компонентов разное, называет описание корня (`TRootSpec`): имя
  * стиль-выхода (`fractionStyle` у ProgressSpinner), прячет ли видимость корень
- * (у Skeleton нет — она убирает только заглушку) и уезжает ли корень в слой
+ * (у Skeleton нет — она убирает только заглушку), уезжает ли корень в слой
  * (`teleport` у Frame): тогда база уводит его в цель по селектору (`TTeleport`,
  * `teleport.ts`), а без цели прячет на месте — это третья причина скрытия,
- * рядом с `rendered` и `visible`.
+ * рядом с `rendered` и `visible`, — какие наборы ядра лежат на корне (`sets`)
+ * и есть ли в корне поле (`control`, см. ниже).
  *
  * Атрибуты, классы и свойства стиля потребителя главнее того, что пишет ядро:
  * по каждому имени база помнит, что поставила сама, своё пишет и снимает, а
@@ -87,6 +89,21 @@
  * записанное в узел мимо раскладки переживает её смену. Кроме атрибутов-входов
  * пропов (`disabled`): они и есть проп, и значение ядра для них верно всегда.
  * Память — у элемента, а не у связки: связка новая на каждое подключение.
+ *
+ * Корень с полем — Input, CheckBox, Switch: корень — элемент потребителя
+ * (`<div is="so-input">`), а `<input>` — узел шаблона. Форма видит поле сама:
+ * `<input>` лежит в обычном DOM страницы, и `FormData`, `<label>`,
+ * `<fieldset disabled>` и валидация достаются нативному полю. Атрибуты
+ * потребителя делятся, как у Vue, React и Angular: статические атрибуты
+ * разметки корня база при построении переносит на поле (`create()` шаблона
+ * отдаёт его узел). На корне остаются `class`, `style`, `is`, `slot`,
+ * атрибуты-входы пропов и свои атрибуты элемента. Записанное из кода позже на
+ * корне и остаётся: наблюдателя за корнем нет. `id` у такого элемента — проп
+ * поля, а не вход корня: два узла с одним `id` сломали бы `<label for>` — он
+ * нашёл бы корень, а тот подпись не принимает. Поэтому атрибута `id` нет в
+ * `observedAttributes`: атрибут разметки база берёт пропом первой сборки и
+ * снимает с корня, а на поле его пишет шаблон из состояния. Из кода — `ctrl.id`;
+ * `el.id` — собственный `id` корня.
  *
  * Сборка — `createWebcAdapterContext` в setup-слое компонента: локаль
  * поддерева она берёт у ближайшего `<so-locale-provider>` вверх от элемента.
@@ -140,7 +157,10 @@
  * переносится вручную в точки, объявленные шаблоном, — переносом силами базы.
  * Содержимое слота, которого шаблон не объявил, не выводится: места для него в
  * разметке компонента нет — так же его не рисуют остальные адаптеры, и так же
- * теневое дерево не рисует свет, не попавший ни в один `<slot>`.
+ * теневое дерево не рисует свет, не попавший ни в один `<slot>`. Слот, который
+ * рисуется по состоянию (содержимое ручки Switch), выводит привязка шаблона
+ * (`showSlot` контекста): снятое уходит из документа, показ — переносом силами
+ * базы.
  */
 
 import type { IComponentView, IComponentViewProps } from '@soldy-ui/core'
@@ -163,12 +183,11 @@ import type { ITemplate, ITemplateContext, TSlotTarget, TSlotTargets } from '../
 import { isDefining } from './defineElement'
 import { isRelocating, relocate } from './relocation'
 import {
-	applyAttributes,
+	TElementAttributes,
 	applyClasses,
 	applyHidden,
 	applyStyles,
 	stylesOf,
-	type TAppliedAttributes,
 	type TAppliedClasses,
 	type TAppliedStyles,
 	type THiddenDisplay,
@@ -176,10 +195,22 @@ import {
 import { TTeleport, type TTeleportPlace } from './teleport'
 import type { TBinding, TUpdateListener } from './useAdapter'
 
-/** Наборы ядра, которые база раскладывает на корень. */
-const ROOT_SETS = ['aria', 'attrs', 'dataset'] as const
+/** Наборы ядра, которые база раскладывает на корень, — по умолчанию все. */
+const ROOT_SETS = ['attrs', 'aria', 'dataset'] as const
 
-type TRootSet = (typeof ROOT_SETS)[number]
+/** Набор ядра на корне — см. `TRootSpec.sets`. */
+export type TRootSet = (typeof ROOT_SETS)[number]
+
+/**
+ * Атрибуты корня с полем, которые при построении остаются на корне, сверх
+ * входов пропов и своих атрибутов элемента: класс и стиль — корню, как у
+ * остальных адаптеров, `is` — имя элемента, `slot` — место корня в свете его
+ * родителя.
+ */
+const ROOT_ONLY = new Set(['class', 'style', 'is', 'slot'])
+
+/** Атрибут корня с полем, который ведёт не корень, а поле (см. шапку). */
+const CONTROL_ID = 'id'
 
 /**
  * Содержимое ли узел: элемент или текст не из одних пробелов. Пробелы между
@@ -222,6 +253,15 @@ function groupBySlot(nodes: readonly ChildNode[]): Map<string, ChildNode[]> {
 	return groups
 }
 
+/**
+ * Точка слота, если шаблон её объявил. Имя слота — значение атрибута `slot`
+ * из разметки, поэтому ищется только среди своих ключей: `slot="toString"`
+ * не найдёт метод объекта.
+ */
+function targetOf(targets: TSlotTargets, name: string): TSlotTarget | undefined {
+	return Object.hasOwn(targets, name) ? targets[name] : undefined
+}
+
 /** Кладёт узел в точку слота: внутрь узла или перед ним (`TSlotTarget`). */
 function place(node: ChildNode, target: TSlotTarget): void {
 	if (target.mode === 'append') {
@@ -242,6 +282,23 @@ function placeOf(state: TStateSnapshot, names: TRootTeleport): TTeleportPlace {
 		target: typeof target === 'string' && target !== '' ? target : null,
 		contained: state[names.contained] === true,
 	}
+}
+
+/**
+ * Карта атрибутов-входов элемента — атрибуты пропов дескриптора. У корня с
+ * полем `id` в ней нет: это проп поля, и атрибут разметки база берёт пропом
+ * первой сборки, а затем снимает с корня — наблюдаемым атрибутом это снятие
+ * вернуло бы проп к умолчанию (см. шапку).
+ */
+function inputsOf(
+	descriptor: IComponentDescriptor,
+	control: boolean,
+): ReadonlyMap<string, IAttributeBinding> {
+	const map = buildAttributeMap(descriptor)
+
+	if (control) map.delete(CONTROL_ID)
+
+	return map
 }
 
 /** Что у элемента своего, помимо нативного: инстанс ядра и его состояние. */
@@ -277,12 +334,22 @@ export interface ISoldyElement<TInstance> {
  *   у Frame), их называет компонент, как у Angular. Переносит корень
  *   `TTeleport` (`teleport.ts`) — сам элемент потребителя: на первой раскладке
  *   связки и на смене этих выходов. Цели нет — корень на месте и скрыт. Нет —
- *   корень стоит, где его написали.
+ *   корень стоит, где его написали;
+ * - `sets` — какие наборы ядра база кладёт на корень, по умолчанию все три. У
+ *   поля — только `attrs`: его `aria` стоит на `<input>`, его кладёт шаблон
+ *   (`ownerAttributes`), а `dataset` разметка поля не выводит, как у
+ *   остальных адаптеров;
+ * - `control` — в корне поле (Input, CheckBox, Switch): `create()` шаблона
+ *   отдаёт его узел, и статические атрибуты разметки корня база при
+ *   построении переносит на него, а `id` — проп поля, а не вход корня (см.
+ *   шапку). Как у `control` в описании корня Angular.
  */
 export type TRootSpec = {
 	readonly style?: string
 	readonly hides?: boolean
 	readonly teleport?: TRootTeleport
+	readonly sets?: readonly TRootSet[]
+	readonly control?: boolean
 }
 
 /** Слой в описании корня (`TRootSpec.teleport`): имена выходов состояния. */
@@ -339,9 +406,13 @@ export function SoldyElement<
 	TNative extends TNativeElementClass,
 	TInstance extends IComponentView<IComponentViewProps, any>,
 >(Native: TNative, spec: ISoldyElementSpec<TInstance>): TNative & TSoldyElementClass<TInstance> {
-	const attributes: ReadonlyMap<string, IAttributeBinding> = buildAttributeMap(spec.descriptor)
+	/** В корне поле (`TRootSpec.control`): `id` — проп поля, а не вход корня (см. шапку). */
+	const control = spec.root?.control === true
+	const attributes: ReadonlyMap<string, IAttributeBinding> = inputsOf(spec.descriptor, control)
 	/** Атрибуты-входы пропов: их значение в наборе ядра верно всегда. */
 	const inputs: ReadonlySet<string> = new Set(attributes.keys())
+	/** Наборы ядра на корне (`TRootSpec.sets`). */
+	const rootSets: readonly TRootSet[] = spec.root?.sets ?? ROOT_SETS
 	/** Свои атрибуты элемента: имя атрибута → имя свойства (`ISoldyElementSpec.attributes`). */
 	const own: ReadonlyMap<string, string> = new Map(
 		(spec.attributes ?? []).map((name) => [toAttributeName(name), name]),
@@ -375,6 +446,10 @@ export function SoldyElement<
 		private _ctrl?: TInstance
 		/** Свет, сгруппированный по имени слота; `null` — структура ещё не построена. */
 		private _light: Map<string, ChildNode[]> | null = null
+		/** Точки слотов, которые объявил шаблон; пока структуры нет — ни одной. */
+		private _targets: TSlotTargets = {}
+		/** Слоты, которые привязка сняла (`showSlot`): их содержимое вне документа. */
+		private readonly _hidden = new Set<string>()
 		/** Узел слота по умолчанию; пока структуры нет — сам элемент. */
 		private _content: HTMLElement = this
 		private readonly _dirty = new Set<string>()
@@ -385,13 +460,13 @@ export function SoldyElement<
 
 		/** Память раскладки корня: что поставила база (см. `root-attributes.ts`). */
 		private _appliedClasses: TAppliedClasses = new Set()
-		private readonly _appliedSets: Record<TRootSet, TAppliedAttributes> = {
-			aria: new Map(),
-			attrs: new Map(),
-			dataset: new Map(),
-		}
+		/** Раскладчик атрибутов элемента: наборы ядра корня — его нижние слои. */
+		private readonly _attributes = TElementAttributes.of(this)
 		private _appliedStyles: TAppliedStyles = new Map()
 		private _hiddenDisplay: THiddenDisplay = undefined
+
+		/** Контекст привязок шаблона — живой вид элемента (`_viewOf`). */
+		private readonly _view: ITemplateContext<TInstance> = this._viewOf()
 
 		/** Телепорт корня слоя (`TRootSpec.teleport`) — заводит его первая раскладка. */
 		private _teleport?: TTeleport
@@ -582,25 +657,66 @@ export function SoldyElement<
 		 */
 		private _build(): void {
 			const groups = groupBySlot(Array.from(this.childNodes))
-			const targets = spec.template.create(this)
+			const light = new Map<string, ChildNode[]>()
+
+			// Слот без содержимого (`isContent`) не задан — см. `_distribute`
+			for (const [name, nodes] of groups) {
+				if (nodes.some(isContent)) light.set(name, nodes)
+			}
+
+			const parts = spec.template.create(this, (name) => light.has(name))
+
+			if (control) this._handOver(parts.control)
 
 			// Слоты не наследуются: слота по умолчанию может не быть вовсе
 			// (ProgressSpinner), и узлом содержимого тогда остаётся корень
-			const fallback = targets[DEFAULT_SLOT]
+			const fallback = targetOf(parts.slots, DEFAULT_SLOT)
 
 			this._content = fallback?.mode === 'append' ? fallback.node : this
-			this._light = this._distribute(groups, targets)
+			this._targets = parts.slots
+			this._light = light
+			this._distribute(groups)
 		}
 
 		/**
-		 * Раскладывает свет по точкам, объявленным шаблоном, и отдаёт заданные
-		 * слоты.
+		 * Статические атрибуты разметки корня с полем — полю (см. шапку). На
+		 * корне остаются `class`, `style`, `is`, `slot`, атрибуты-входы пропов и
+		 * свои атрибуты элемента; `id` база берёт пропом первой сборки и снимает
+		 * с корня — на поле его пишет шаблон из состояния. Колбэков снятие не
+		 * вызывает: ни один из этих атрибутов элемент не наблюдает.
+		 */
+		private _handOver(field: HTMLElement | undefined): void {
+			if (!field) {
+				throw new Error('[soldy] Описание корня объявляет поле, а шаблон его не построил')
+			}
+
+			for (const name of this.getAttributeNames()) {
+				if (ROOT_ONLY.has(name) || attributes.has(name) || own.has(name)) continue
+
+				const value = this.getAttribute(name) ?? ''
+
+				if (name === CONTROL_ID) {
+					this._write(CONTROL_ID, value)
+				} else {
+					field.setAttribute(name, value)
+				}
+
+				this.removeAttribute(name)
+			}
+		}
+
+		/**
+		 * Раскладывает свет по точкам, объявленным шаблоном, — в порядке их
+		 * объявления: в одну точку `append` содержимое слота, объявленного
+		 * раньше, встаёт раньше при любом порядке в разметке.
 		 *
 		 * Узел, которому есть место, едет туда переносом силами базы (см. шапку):
 		 * одной операцией, из документа не выходя. Элемент soldy в нём не
 		 * пересобирается — ни собранный раньше контейнера (разметка страницы,
 		 * сборку контейнера отложила регистрация), ни несобранный: его первое
 		 * подключение приходит уже на новом месте, в документе, под провайдером.
+		 * Слот, который выводит привязка (`showSlot`), раскладывается так же:
+		 * первая раскладка связки его оставит или снимет.
 		 *
 		 * Узлы без места снимаются:
 		 * - слот без содержимого (`isContent`) не задан. Иначе пробелы вокруг
@@ -613,28 +729,46 @@ export function SoldyElement<
 		 *   его не ждёт, — текст внутри кольца ProgressSpinner вошёл бы в узел с
 		 *   ролью `progressbar`.
 		 */
-		private _distribute(
-			groups: ReadonlyMap<string, ChildNode[]>,
-			targets: TSlotTargets,
-		): Map<string, ChildNode[]> {
-			const light = new Map<string, ChildNode[]>()
+		private _distribute(groups: ReadonlyMap<string, ChildNode[]>): void {
+			for (const [name, target] of Object.entries(this._targets)) {
+				const nodes = this._light?.get(name)
 
-			for (const [name, nodes] of groups) {
-				const given = nodes.some(isContent)
-				const target = targets[name]
-
-				if (given) light.set(name, nodes)
-
-				if (given && target) {
+				if (nodes) {
 					relocate(nodes, () => {
 						for (const node of nodes) place(node, target)
 					})
-				} else {
-					for (const node of nodes) node.remove()
 				}
 			}
 
-			return light
+			for (const [name, nodes] of groups) {
+				if (this._light?.has(name) && targetOf(this._targets, name)) continue
+
+				for (const node of nodes) node.remove()
+			}
+		}
+
+		/**
+		 * Показать или снять слот по состоянию — `showSlot` контекста шаблона.
+		 * Снятое уходит из документа, и элементы soldy в нём отключаются, как при
+		 * перестановке; показ — переносом силами базы, в точку слота. Слот не
+		 * задан или не объявлен — делать нечего; уже так — тоже.
+		 */
+		private _showSlot(name: string, shown: boolean): void {
+			const nodes = this._light?.get(name)
+			const target = targetOf(this._targets, name)
+
+			if (!nodes || !target || this._hidden.has(name) !== shown) return
+
+			if (shown) {
+				this._hidden.delete(name)
+				relocate(nodes, () => {
+					for (const node of nodes) place(node, target)
+				})
+			} else {
+				this._hidden.add(name)
+
+				for (const node of nodes) node.remove()
+			}
 		}
 
 		private _onUpdate(name: string, value: unknown): void {
@@ -664,14 +798,31 @@ export function SoldyElement<
 			})
 		}
 
-		private _context(): ITemplateContext<TInstance> {
-			const light = this._light
+		/**
+		 * Контекст привязок шаблона — живой вид элемента, один на всё время
+		 * жизни: узел содержимого, состояние и инстанс он отдаёт в момент
+		 * обращения. Поэтому обработчик, который шаблон завёл на одной связке и
+		 * который запомнил контекст, после перестановки зовёт инстанс новой
+		 * связки, а не прежней.
+		 */
+		private _viewOf(): ITemplateContext<TInstance> {
+			const content = (): HTMLElement => this._content
+			const state = (): TInstanceState<TInstance> => this.state
+			const instance = (): TInstance | undefined => this.ctrl
 
 			return {
 				root: this,
-				content: this._content,
-				state: this.state,
-				hasSlot: (name) => (light?.get(name)?.length ?? 0) > 0,
+				get content() {
+					return content()
+				},
+				get state() {
+					return state()
+				},
+				get ctrl() {
+					return instance()
+				},
+				hasSlot: (name) => this._light?.has(name) ?? false,
+				showSlot: (name, shown) => this._showSlot(name, shown),
 			}
 		}
 
@@ -689,16 +840,10 @@ export function SoldyElement<
 				this._appliedClasses = applyClasses(this, state.classes ?? [], this._appliedClasses)
 			}
 
-			// Память у каждого набора своя: снятие записи в одном не уносит чужие
-			for (const name of ROOT_SETS) {
-				if (changed(name)) {
-					this._appliedSets[name] = applyAttributes(
-						this,
-						state[name] ?? {},
-						this._appliedSets[name],
-						inputs,
-					)
-				}
+			// Наборы корня — нижние слои раскладчика элемента: память у слоёв одна,
+			// и снятие записи в одном не уносит чужие. Входы пропов называют они
+			for (const name of rootSets) {
+				if (changed(name)) this._attributes.set(name, state[name] ?? {}, inputs)
 			}
 
 			// Снизу выход плагина раскладки, поверх — стиль-выход компонента. Их
@@ -739,10 +884,8 @@ export function SoldyElement<
 				)
 			}
 
-			const context = this._context()
-
 			for (const binding of spec.template.bindings) {
-				if (full || binding.props.some(changed)) binding.apply(context)
+				if (full || binding.props.some(changed)) binding.apply(this._view)
 			}
 		}
 

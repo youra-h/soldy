@@ -22,9 +22,11 @@ export const buttonTemplate: ITemplate<IButton> = {
 		root.appendChild(text)
 
 		return {
-			leading: { mode: 'before', node: text },
-			default: { mode: 'append', node: text },
-			trailing: { mode: 'append', node: root },
+			slots: {
+				leading: { mode: 'before', node: text },
+				default: { mode: 'append', node: text },
+				trailing: { mode: 'append', node: root },
+			},
 		}
 	},
 

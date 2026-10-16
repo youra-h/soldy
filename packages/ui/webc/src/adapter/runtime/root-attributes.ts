@@ -1,7 +1,7 @@
 /**
  * Раскладка того, что ядро пишет на корень-хост: наборы `aria`, `attrs`,
- * `dataset` (`applyAttributes`), классы (`applyClasses`), стиль
- * (`applyStyles`) и скрытие (`applyHidden`).
+ * `dataset` (`applyAttributes` — раскладчиком элемента `TElementAttributes`),
+ * классы (`applyClasses`), стиль (`applyStyles`) и скрытие (`applyHidden`).
  *
  * Корень компонента — сам элемент (`<button is="so-button">`, см.
  * `SoldyElement`), и атрибуты на нём ставит не только база: `class`, `style`,
@@ -25,6 +25,13 @@
  * свой база ставит и снимает, а класс, который уже стоял, когда ядро его
  * назвало, — потребителя.
  *
+ * Атрибуты на элемент пишут не только наборы его собственного ядра: на
+ * элемент шаблона кладёт свой набор разметка владельца — `aria` поля на
+ * `<input>`, `clearAria` поля на кнопку очистки. Когда такой элемент — корень
+ * вложенного компонента (кнопка), писателей двое, и пишут они через один
+ * раскладчик элемента (`TElementAttributes`): каждый свой слой, на элемент —
+ * их сумма, набор владельца поверх наборов самого элемента.
+ *
  * Стиль — по тому же правилу, по каждому свойству отдельно, а не атрибутом
  * `style` целиком: в инлайновый стиль корня пишут и потребитель (`style` в
  * разметке, `el.style.x` из кода), и плагины мимо разметки
@@ -40,17 +47,26 @@
  * правила: сняв своё значение, потребитель возвращает место базе только со
  * следующей её раскладкой — сама она узел не перечитывает.
  *
- * Память — своя у каждого набора, у классов и у стиля: `aria`, `attrs` и
- * `dataset` по именам не пересекаются, и раздельная память не даёт одному
- * набору снять атрибут, поставленный другим. Держит её элемент, а не связка:
- * связка у элемента новая на каждое подключение, и со свежей памятью своё
- * значение после перестановки база сочла бы чужим.
+ * Память — своя у классов и у стиля, а у атрибутов одна на элемент — у его
+ * раскладчика: одна память на все слои не даёт одному писателю снять атрибут,
+ * поставленный другим. Держит её элемент, а не связка: связка у элемента
+ * новая на каждое подключение, и со свежей памятью своё значение после
+ * перестановки база сочла бы чужим.
  */
 
 import type { TAttributesMap } from '@soldy-ui/core'
 
-/** Что поставила база в прошлый раз: имя → значение. */
-export type TAppliedAttributes = ReadonlyMap<string, string>
+/**
+ * Атрибут, который поставил раскладчик: значение и вход ли это пропа — его
+ * раскладчик ведёт по набору, чей бы он ни был (см. шапку).
+ */
+type TAppliedAttribute = {
+	readonly value: string
+	readonly input: boolean
+}
+
+/** Что поставил раскладчик в прошлый раз: имя → атрибут. */
+export type TAppliedAttributes = ReadonlyMap<string, TAppliedAttribute>
 
 /** Какие классы поставила база в прошлый раз. */
 export type TAppliedClasses = ReadonlySet<string>
@@ -108,41 +124,136 @@ export function stylesOf(...layers: readonly unknown[]): TRootStyles {
 }
 
 /**
- * Раскладывает набор на элемент и возвращает новую память базы. `null` в
- * наборе ядра — «атрибута нет». `inputs` — атрибуты-входы пропов: их база
- * ведёт по набору всегда (см. шапку).
+ * Раскладывает атрибуты на элемент и возвращает новую память раскладчика.
+ * `wanted` — что слои называют: имя → значение и вход ли это пропа (см.
+ * шапку).
  */
 export function applyAttributes(
 	element: Element,
-	set: TAttributesMap,
+	wanted: TAppliedAttributes,
 	applied: TAppliedAttributes,
-	inputs: ReadonlySet<string> = new Set(),
 ): TAppliedAttributes {
-	const next = new Map<string, string>()
+	const next = new Map<string, TAppliedAttribute>()
 
-	for (const [name, value] of Object.entries(set)) {
-		if (value === null) continue
-
+	for (const [name, attribute] of wanted) {
 		const current = element.getAttribute(name)
 
 		// Чужое значение — атрибут потребителя
-		if (current !== null && current !== applied.get(name) && !inputs.has(name)) continue
+		if (current !== null && current !== applied.get(name)?.value && !attribute.input) continue
 
-		if (current !== value) element.setAttribute(name, value)
+		if (current !== attribute.value) element.setAttribute(name, attribute.value)
 
-		next.set(name, value)
+		next.set(name, attribute)
 	}
 
 	// Ушло из набора — снимается, если на элементе ещё своё значение: у
 	// выключенной кнопки из набора пропадает `disabled`. Вход пропа снимается
 	// при любом значении: ядро его уже приняло
-	for (const [name, value] of applied) {
+	for (const [name, { value, input }] of applied) {
 		if (next.has(name)) continue
 
-		if (inputs.has(name) || element.getAttribute(name) === value) element.removeAttribute(name)
+		if (input || element.getAttribute(name) === value) element.removeAttribute(name)
 	}
 
 	return next
+}
+
+/**
+ * Слои атрибутов элемента — кто их пишет, снизу вверх:
+ *
+ * - `attrs`, `aria`, `dataset` — наборы ядра компонента, чей корень этот
+ *   элемент (база, `SoldyElement`), в порядке шаблона Vue;
+ * - `owner` — набор, который на элемент кладёт разметка компонента-владельца
+ *   (`ownerAttributes`): `aria` поля — на `<input>`, `clearAria` поля — на
+ *   вложенную кнопку очистки.
+ */
+export const ATTRIBUTE_LAYERS = ['attrs', 'aria', 'dataset', 'owner'] as const
+
+/** Слой атрибутов элемента — см. `ATTRIBUTE_LAYERS`. */
+export type TAttributeLayer = (typeof ATTRIBUTE_LAYERS)[number]
+
+/** Слой: набор и его атрибуты-входы пропов. */
+type TLayer = {
+	readonly set: TAttributesMap
+	readonly inputs: ReadonlySet<string>
+}
+
+/** Входов у слоя нет — набор владельца. */
+const NO_INPUTS: ReadonlySet<string> = new Set()
+
+/** Раскладчики по элементам: один на элемент, кто бы на него ни писал. */
+const LAID_OUT = new WeakMap<Element, TElementAttributes>()
+
+/**
+ * Атрибуты элемента от всех, кто их на него пишет, — слоями
+ * (`ATTRIBUTE_LAYERS`), одной раскладкой и одной памятью.
+ *
+ * На элемент пишут двое, когда он корень вложенного компонента: база этого
+ * компонента — его наборы ядра — и разметка владельца — свой набор поверх
+ * (`clearAria` поля на кнопке очистки). Набор владельца главнее на общем
+ * имени, как атрибут снаружи у Vue и React: `role="tab"` строки перекрыл бы
+ * `role="button"`, который кнопка на `div` пишет себе сама. Порядок, в каком
+ * они пишут, не задан — разметка владельца пишет на флаше своего элемента,
+ * база вложенного — на своём, — поэтому каждый пишет только свой слой, а на
+ * элемент раскладчик кладёт их сумму, верхний поверх нижних. Две раскладки со
+ * своей памятью спорили бы за общее имя: общее имя досталось бы тому, кто
+ * записал первым, а второй счёл бы его атрибутом потребителя.
+ *
+ * Правило раскладки — `applyAttributes`: значение, которое раскладчик не
+ * ставил, — атрибут потребителя, кроме входов пропов. Входы называет только
+ * сам элемент — его база, вместе со своими наборами: на имени, которое
+ * перекрыл набор владельца, правило входа не действует. `null` в наборе имя не
+ * называет и нижний слой не перекрывает. Память — у раскладчика, а он — у
+ * элемента: связка у элемента новая на каждое подключение.
+ */
+export class TElementAttributes {
+	/** Раскладчик элемента: тот же у всех, кто на него пишет. */
+	static of(element: Element): TElementAttributes {
+		let attributes = LAID_OUT.get(element)
+
+		if (!attributes) {
+			attributes = new TElementAttributes(element)
+			LAID_OUT.set(element, attributes)
+		}
+
+		return attributes
+	}
+
+	private readonly _layers = new Map<TAttributeLayer, TLayer>()
+	private _applied: TAppliedAttributes = new Map()
+
+	private constructor(private readonly _element: Element) {}
+
+	/**
+	 * Слой `layer` теперь — `set`; на элементе — сумма слоёв. `inputs` — атрибуты-
+	 * входы пропов элемента: их называет база вместе со своими наборами.
+	 */
+	set(
+		layer: TAttributeLayer,
+		set: TAttributesMap,
+		inputs: ReadonlySet<string> = NO_INPUTS,
+	): void {
+		this._layers.set(layer, { set, inputs })
+		this._applied = applyAttributes(this._element, this._sum(), this._applied)
+	}
+
+	/** Слои снизу вверх: из одноимённых действует верхний, `null` не перекрывает. */
+	private _sum(): TAppliedAttributes {
+		const sum = new Map<string, TAppliedAttribute>()
+
+		for (const name of ATTRIBUTE_LAYERS) {
+			const layer = this._layers.get(name)
+
+			if (!layer) continue
+
+			for (const [attribute, value] of Object.entries(layer.set)) {
+				if (value !== null)
+					sum.set(attribute, { value, input: layer.inputs.has(attribute) })
+			}
+		}
+
+		return sum
+	}
 }
 
 /** Раскладывает классы ядра на элемент и возвращает новую память базы. */

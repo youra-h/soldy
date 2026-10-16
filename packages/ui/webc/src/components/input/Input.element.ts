@@ -1,0 +1,45 @@
+/**
+ * `<div is="so-input">` — текстовое поле: корень и `<input>` внутри, по
+ * сторонам — слоты `leading` и `trailing`.
+ *
+ * Элемент — настоящий `<div>`, расширенный классом soldy (customized
+ * built-in, см. `SoldyElement`): тег ядра по умолчанию. Поле — узел шаблона в
+ * обычном DOM страницы, поэтому форма видит его сама: `FormData`, `<label>`,
+ * `<fieldset disabled>` и валидация достаются нативному полю, а связанного с
+ * формой элемента (`formAssociated`) не нужно.
+ *
+ * Корень с полем (`control` в описании корня): на корне из наборов ядра только
+ * `attrs` (`dir`), `aria` — на поле, его кладёт шаблон. Статические атрибуты
+ * разметки, кроме `class`, `style`, `is`, `slot` и входов пропов, база при
+ * построении переносит на поле: `autocomplete`, `aria-label`, `tabindex` и
+ * `data-*` потребителя стоят на `<input>`. `id` — проп поля: атрибут разметки
+ * база берёт пропом первой сборки, из кода — `ctrl.id`, а `el.id` —
+ * собственный `id` корня.
+ *
+ * Разметка вынесена в input.template.ts, жизненный цикл — в SoldyElement.
+ */
+
+import { InputDescriptor } from '@soldy-ui/setup'
+import type { IInput, IInputProps } from '@soldy-ui/core'
+import { SoldyElement, defineElement } from '../../adapter'
+import type { ISoldyElement, THostProp } from '../../adapter'
+import { inputTemplate } from './input.template'
+import { setupInput } from './setup.component'
+
+export const TInputElement = SoldyElement(HTMLDivElement, {
+	descriptor: InputDescriptor(),
+	template: inputTemplate,
+	root: { sets: ['attrs'], control: true },
+	setup: setupInput,
+})
+
+defineElement('so-input', TInputElement, 'div')
+
+/**
+ * `<div is="so-input">` из JS: нативный `div`, своё элемента soldy (`ctrl`,
+ * `state`) и props дескриптора — без тех, что у `div` уже есть (`id` —
+ * собственный `id` корня), и без `HOST_PROPS`.
+ */
+export type TInputElementProps = HTMLDivElement &
+	ISoldyElement<IInput> &
+	Omit<IInputProps, keyof HTMLDivElement | THostProp>
