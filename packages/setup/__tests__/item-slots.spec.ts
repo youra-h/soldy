@@ -42,6 +42,8 @@ import {
 	TabsItemDescriptor,
 	TagsDescriptor,
 	TagsItemDescriptor,
+	ToastsDescriptor,
+	ToastsItemDescriptor,
 } from '../content/descriptors'
 import type { IComponentDescriptor } from '../protected/define'
 
@@ -55,6 +57,9 @@ const DESCRIPTORS: Readonly<Record<string, () => IComponentDescriptor>> = {
 	'Tabs.Item': TabsItemDescriptor,
 	Tags: TagsDescriptor,
 	'Tags.Item': TagsItemDescriptor,
+	Toasts: ToastsDescriptor,
+	// Тост — внутренняя часть: потребитель его не адресует, рисует только регион
+	'Toasts.Item': ToastsItemDescriptor,
 	Accordion: AccordionDescriptor,
 	'Accordion.Item': AccordionItemDescriptor,
 	RadioGroup: RadioGroupDescriptor,
@@ -100,6 +105,11 @@ const RELAYS: readonly TRelay[] = [
 	['Tags', 'item-trailing', 'Tags.Item', 'trailing', 'item'],
 	['Tags', 'item-close-icon', 'Tags.Item', 'close-icon', 'item'],
 
+	['Toasts', 'item-icon', 'Toasts.Item', 'icon', 'item'],
+	['Toasts', 'item', 'Toasts.Item', 'default', 'item'],
+	['Toasts', 'item-content', 'Toasts.Item', 'content', 'item'],
+	['Toasts', 'item-close-icon', 'Toasts.Item', 'close-icon', 'item'],
+
 	['Accordion', 'item-leading-icon', 'Accordion.Item', 'leading-icon', 'item'],
 	['Accordion', 'item-leading', 'Accordion.Item', 'leading', 'item'],
 	['Accordion', 'item', 'Accordion.Item', 'header', 'item'],
@@ -122,6 +132,7 @@ const ITEMS = [
 	'Select.Item',
 	'Tabs.Item',
 	'Tags.Item',
+	'Toasts.Item',
 	'Accordion.Item',
 	'RadioGroup.Item',
 	'Calendar.Item',

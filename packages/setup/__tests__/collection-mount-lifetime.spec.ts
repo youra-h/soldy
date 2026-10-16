@@ -35,6 +35,7 @@ import {
 	TTable,
 	TTabs,
 	TTags,
+	TToasts,
 	createEngineAccordion,
 	createEngineCalendar,
 	createEngineListBox,
@@ -43,6 +44,7 @@ import {
 	createEngineTable,
 	createEngineTabs,
 	createEngineTags,
+	createEngineToasts,
 } from '@soldy-ui/core'
 import type { TCollectionEngine } from '@soldy-ui/core'
 import {
@@ -62,6 +64,8 @@ import {
 	TabsDescriptor,
 	TagsCollectionDescriptor,
 	TagsDescriptor,
+	ToastsCollectionDescriptor,
+	ToastsDescriptor,
 } from '../content/descriptors'
 import { TCollectionExtension } from '../content/extensions'
 import type { TCollectionOwner } from '../content/extensions'
@@ -217,6 +221,16 @@ const COLLECTIONS: Readonly<Record<string, TCollectionKit>> = {
 			owner,
 			engine,
 			mount: () => mountOver(TagsDescriptor(), TagsCollectionDescriptor(), owner, engine),
+		}
+	},
+	ToastsCollectionDescriptor: () => {
+		const owner = new TToasts()
+		const engine = createEngineToasts()
+
+		return {
+			owner,
+			engine,
+			mount: () => mountOver(ToastsDescriptor(), ToastsCollectionDescriptor(), owner, engine),
 		}
 	},
 }

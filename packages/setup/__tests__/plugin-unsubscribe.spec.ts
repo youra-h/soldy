@@ -33,6 +33,7 @@ import {
 	TTable,
 	TTabs,
 	TTags,
+	TToasts,
 	createEngineAccordion,
 	createEngineCalendar,
 	createEngineListBox,
@@ -41,6 +42,7 @@ import {
 	createEngineTable,
 	createEngineTabs,
 	createEngineTags,
+	createEngineToasts,
 } from '@soldy-ui/core'
 import type { TCollectionEngine } from '@soldy-ui/core'
 import { TCollectionBundlesPlugin } from '@soldy-ui/plugins'
@@ -113,6 +115,11 @@ const ENGINES: Readonly<Record<string, () => TOwnedEngine>> = {
 		const owner = new TTags()
 
 		return { owner, engine: createEngineTags({ owner }) }
+	},
+	ToastsDescriptor: () => {
+		const owner = new TToasts()
+
+		return { owner, engine: createEngineToasts({ owner }) }
 	},
 }
 

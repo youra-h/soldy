@@ -335,12 +335,16 @@ export class TSwipePlugin extends TBasePlugin<ISwipeOwner, TSwipePluginEvents> {
 	}
 
 	/**
-	 * Можно ли начать жест с узла. Узел — в своём слое: у панели, открытой
-	 * внутри этой (`contained`), жест свой. Дальше — по выбору владельца: полоса
-	 * или вся панель, кроме контролов, прокрутки вдоль оси и выделенного текста.
+	 * Можно ли начать жест с узла. Узел — в слое своей панели: у панели,
+	 * открытой внутри этой (`contained`), жест свой. Слой панели — она сама или
+	 * ближайший слой над ней: тост своего слоя не держит, он лежит в регионе
+	 * тостов, и слой у тоста — регион. Дальше — по выбору владельца: полоса или
+	 * вся панель, кроме контролов, прокрутки вдоль оси и выделенного текста.
 	 */
 	private _grabbable(owner: ISwipeOwner, panel: HTMLElement, node: Element): boolean {
-		if (node.closest(`[${FRAME_LAYER_ATTRIBUTE}]`) !== panel) return false
+		const layer = `[${FRAME_LAYER_ATTRIBUTE}]`
+
+		if (node.closest(layer) !== panel.closest(layer)) return false
 
 		if (owner.swipe === 'handle') {
 			const handle = node.closest(owner.classes.resolve('__handle', { point: true }))

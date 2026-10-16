@@ -1,4 +1,5 @@
 export * from './collection'
 export * from './drag-and-drop'
 export * from './tabs'
+export * from './toasts'
 export * from './virtual'

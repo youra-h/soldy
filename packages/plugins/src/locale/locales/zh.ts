@@ -9,6 +9,7 @@ export const zhCN = freezeLocale({
 		popover: { close: '关闭' },
 		tabs: { close: '关闭{name}' },
 		tags: { close: '关闭{name}' },
+		toasts: { region: '通知 (F8)', close: '关闭{name}' },
 		scroller: { prev: '向前滚动', next: '向后滚动' },
 		field: { clear: '清除{name}' },
 		table: { selectAll: '全选' },

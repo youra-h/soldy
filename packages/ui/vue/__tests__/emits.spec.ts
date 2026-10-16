@@ -43,6 +43,8 @@ import {
 	SliderDescriptor,
 	SwitchDescriptor,
 	TabsDescriptor,
+	ToastsDescriptor,
+	ToastsItemDescriptor,
 	TooltipDescriptor,
 	VirtualDescriptor,
 } from '@soldy-ui/setup'
@@ -75,6 +77,8 @@ const DESCRIPTORS: Array<[string, () => IComponentDescriptor]> = [
 	['Slider', SliderDescriptor],
 	['Switch', SwitchDescriptor],
 	['Tabs', TabsDescriptor],
+	['Toasts', ToastsDescriptor],
+	['ToastsItem', ToastsItemDescriptor],
 	['Tooltip', TooltipDescriptor],
 	['Virtual', VirtualDescriptor],
 ]
