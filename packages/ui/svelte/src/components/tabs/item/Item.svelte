@@ -74,6 +74,7 @@
 	>
 		<Button
 			embedded="tabs.row"
+			type="button"
 			disabled={state.disabled}
 			size={state.size}
 			variant={state.variant}
@@ -89,6 +90,7 @@
 			{/if}
 		</Button><Button
 			embedded="tabs.close"
+			type="button"
 			rendered={state.tab_closable === true}
 			class="so-tabs-item__close"
 			disabled={state.disabled}

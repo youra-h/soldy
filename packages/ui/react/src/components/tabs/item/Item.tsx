@@ -65,6 +65,7 @@ export function TabsItem(props: TabsItemProps): ReactElement | null {
 		<Tag {...toRootProps(ref, state, [dataset, attrs], toRootForward(forwardProps))}>
 			<Button
 				embedded="tabs.row"
+				type="button"
 				disabled={disabled}
 				size={size}
 				variant={variant}
@@ -81,6 +82,7 @@ export function TabsItem(props: TabsItemProps): ReactElement | null {
 			</Button>
 			<Button
 				embedded="tabs.close"
+				type="button"
 				rendered={tab_closable === true}
 				className="so-tabs-item__close"
 				disabled={disabled}

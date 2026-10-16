@@ -97,6 +97,7 @@ export default { ...SetupDrawer, inheritAttrs: false, components: { Button, Icon
 				-->
 				<Button
 					embedded="drawer.close"
+					type="button"
 					class="so-drawer__close"
 					:rendered="closable"
 					@click="drawer.requestClose('button')"

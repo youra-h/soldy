@@ -1,6 +1,7 @@
 /**
  * Поле ввода Input в настоящем браузере — то, что рисует тема: рамка под
- * курсором, стороны слотов и форма кнопки очистки.
+ * курсором, стороны слотов и форма кнопки очистки, — и поле в форме: кнопка
+ * очистки не отправляет её.
  *
  * Рамку под курсором тема красит только включённому полю. Корень Input —
  * `div`, и `:not(:disabled)` у него истинно всегда: выключено вложенное поле,
@@ -21,7 +22,7 @@ import { render, cleanup } from 'vitest-browser-vue'
 import { userEvent } from 'vitest/browser'
 import { defineComponent, h, nextTick, type VNode } from 'vue'
 import { COMPONENT_SIZES, COMPONENT_VARIANTS } from '@soldy-ui/playground-shared'
-import { Input } from '@soldy-ui/vue'
+import { Button, Input } from '@soldy-ui/vue'
 
 import { expectClearSquare } from './clear-button'
 import { find, settled, style } from './colors'
@@ -173,5 +174,80 @@ describe.each(COMPONENT_SIZES)('размер %s: кнопка очистки', (
 		await show(() => h(Input, { clearable: true, size }))
 
 		expectClearSquare(find('.so-input__clear'), find('.so-input__trailing'), size)
+	})
+})
+
+/**
+ * Кнопка очистки — деталь разметки поля, а не кнопка отправки: у неё
+ * `type="button"`. У `<button>` без `type` тип `submit`, и клик по очистке
+ * отправлял форму, а Enter в поле — неявная отправка — нажимал первую такую
+ * кнопку формы, то есть её же: поле очищалось вместо отправки. Неявную
+ * отправку jsdom не выполняет — поэтому спек браузерный, как
+ * `keyboard-activation.spec.ts`.
+ *
+ * Button потребителя без `type` остаётся кнопкой отправки, как нативная
+ * `<button>`: Enter в поле нажимает его.
+ */
+describe('в форме', () => {
+	/** Отправка формы: кнопка, которая её отправила, и данные формы в этот момент. */
+	type TSubmission = {
+		readonly submitter: HTMLElement | null
+		readonly data: [string, FormDataEntryValue][]
+	}
+
+	/** Форма с полем `clearable` и кнопкой потребителя; отправки — в журнал. */
+	async function showForm(): Promise<TSubmission[]> {
+		const submissions: TSubmission[] = []
+
+		const onSubmit = (event: Event) => {
+			// Неотменённая отправка перезагрузила бы фрейм с тестами
+			event.preventDefault()
+
+			if (event instanceof SubmitEvent && event.target instanceof HTMLFormElement) {
+				submissions.push({
+					submitter: event.submitter,
+					data: [...new FormData(event.target)],
+				})
+			}
+		}
+
+		await show(() =>
+			h('form', { onSubmit }, [
+				h(Input, { name: 'q', value: 'текст', clearable: true }),
+				h(Button, { text: 'Найти' }),
+			]),
+		)
+
+		return submissions
+	}
+
+	/** Поле Input: проверкам нужен его `value`. */
+	const field = (): HTMLInputElement => {
+		const element = find('.so-input input')
+
+		if (!(element instanceof HTMLInputElement)) throw new Error('поля нет')
+
+		return element
+	}
+
+	it('Enter в поле отправляет форму кнопкой потребителя, значение прежнее', async () => {
+		const submissions = await showForm()
+
+		field().focus()
+		await userEvent.keyboard('{Enter}')
+
+		expect(submissions).toHaveLength(1)
+		expect(submissions[0].submitter).toBe(find('form > .so-button'))
+		expect(submissions[0].data).toEqual([['q', 'текст']])
+		expect(field().value).toBe('текст')
+	})
+
+	it('клик по кнопке очистки очищает поле и форму не отправляет', async () => {
+		const submissions = await showForm()
+
+		await userEvent.click(find('.so-input__clear'))
+
+		await expect.poll(() => field().value).toBe('')
+		expect(submissions).toEqual([])
 	})
 })

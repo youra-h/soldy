@@ -111,6 +111,7 @@ export default { ...SetupDateInput, components: { Button, Icon } }
 			<slot name="clear" :clear="ctrl.clear">
 				<Button
 					embedded="date-input.clear"
+					type="button"
 					v-if="clearable"
 					class="so-date-input__clear"
 					:size="size"

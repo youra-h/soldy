@@ -97,6 +97,7 @@
 				{:else if state.clearable}
 					<Button
 						embedded="input.clear"
+						type="button"
 						class="so-input__clear"
 						size={state.size}
 						disabled={state.disabled}

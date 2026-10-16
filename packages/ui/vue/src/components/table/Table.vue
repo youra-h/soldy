@@ -109,6 +109,7 @@ export default { ...SetupTable, components: { Button, CheckBox, Icon, TableColum
 							<Button
 								v-if="sortable"
 								embedded="table.sort"
+								type="button"
 								class="so-table-column__sort"
 								:size="size"
 								:disabled="disabled"

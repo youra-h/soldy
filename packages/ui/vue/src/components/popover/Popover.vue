@@ -108,6 +108,7 @@ export default { ...SetupPopover, components: { Frame, Button, Icon } }
 			-->
 			<Button
 				embedded="popover.close"
+				type="button"
 				class="so-popover__close"
 				:rendered="closable"
 				@click="popover.open = false"

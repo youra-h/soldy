@@ -93,6 +93,7 @@ export function AccordionItem(props: AccordionItemProps): JSX.Element {
 			<Dynamic {...root()} component={rootTag(state.tag)} ref={binding.ref}>
 				<Button
 					embedded="accordion.header"
+					type="button"
 					class="so-accordion-item__header"
 					view={state.view}
 					disabled={state.disabled}

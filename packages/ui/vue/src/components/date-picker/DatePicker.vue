@@ -72,6 +72,7 @@ export default { ...SetupDatePicker, components: { Button, Calendar, DateInput, 
 				<slot name="clear" :clear="ctrl.clear">
 					<Button
 						embedded="date-picker.clear"
+						type="button"
 						v-if="clearable"
 						class="so-date-picker__clear"
 						:size="size"
@@ -97,6 +98,7 @@ export default { ...SetupDatePicker, components: { Button, Calendar, DateInput, 
 				-->
 				<Button
 					embedded="date-picker.trigger"
+					type="button"
 					class="so-date-picker__trigger"
 					:size="size"
 					:disabled="!openable"
@@ -139,6 +141,7 @@ export default { ...SetupDatePicker, components: { Button, Calendar, DateInput, 
 			<slot name="clear" :clear="ctrl.clear">
 				<Button
 					embedded="date-picker.clear"
+					type="button"
 					v-if="clearable"
 					class="so-date-picker__clear"
 					:size="size"
@@ -151,6 +154,7 @@ export default { ...SetupDatePicker, components: { Button, Calendar, DateInput, 
 			</slot>
 			<Button
 				embedded="date-picker.trigger"
+				type="button"
 				class="so-date-picker__trigger"
 				:size="size"
 				:disabled="!openable"
@@ -240,6 +244,7 @@ export default { ...SetupDatePicker, components: { Button, Calendar, DateInput, 
 					<template v-if="confirmable" #footer>
 						<Button
 							embedded="date-picker.cancel"
+							type="button"
 							class="so-date-picker__cancel"
 							:size="size"
 							:text="names_cancel"
@@ -247,6 +252,7 @@ export default { ...SetupDatePicker, components: { Button, Calendar, DateInput, 
 						/>
 						<Button
 							embedded="date-picker.confirm"
+							type="button"
 							class="so-date-picker__confirm"
 							:size="size"
 							:disabled="confirmDisabled"

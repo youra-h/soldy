@@ -471,6 +471,15 @@ describe('Input · кнопка очистки', () => {
 		expect(button.querySelector('svg.so-icon')?.getAttribute('viewBox')).not.toBeNull()
 	})
 
+	/**
+	 * Кнопка — деталь разметки поля, а не кнопка отправки: у `<button>` без
+	 * `type` тип `submit`, и в форме клик по очистке отправил бы её. Форму в
+	 * браузере проверяет `playground/vue/browser/input.spec.ts`.
+	 */
+	it('type="button" — в форме она не кнопка отправки', () => {
+		expect(clearOf(root(mount({ clearable: true }))).getAttribute('type')).toBe('button')
+	})
+
 	it('размер — поля, выключена — вместе с полем, readonly её не гасит', () => {
 		const fixture = mount({ clearable: true, size: 'lg', readonly: true })
 

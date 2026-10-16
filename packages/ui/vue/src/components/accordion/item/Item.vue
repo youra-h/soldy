@@ -41,6 +41,7 @@ export default { ...SetupAccordionItem, components: { Icon, Button } }
 		-->
 		<Button
 			embedded="accordion.header"
+			type="button"
 			class="so-accordion-item__header"
 			:view="view"
 			:disabled="disabled"

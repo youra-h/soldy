@@ -568,11 +568,14 @@ describe('Input · кнопка очистки', () => {
 
 	/**
 	 * Деталь — разметка поля: её события не всплывают, и слушатели поля и
-	 * делегирование на предке слышат только события самого поля.
+	 * делегирование на форме слышат только события самого поля. Кнопка —
+	 * `type="button"`, а не кнопка отправки: у `<button>` без `type` тип
+	 * `submit`, и клик по очистке отправил бы форму.
 	 */
-	it('события кнопки и иконки не доходят до слушателей поля', async () => {
-		const host = markup('<section><div is="so-input" clearable></div></section>')
+	it('события кнопки и иконки не доходят до слушателей поля, клик форму не отправляет', async () => {
+		const host = markup('<form><div is="so-input" clearable></div></form>')
 		const el = input(host)
+		const form = find(host, 'form', HTMLFormElement)
 		const foreign: string[] = []
 		const names = [
 			'so:action:press',
@@ -582,8 +585,10 @@ describe('Input · кнопка очистки', () => {
 			'so:ready',
 			'so:bundle:create',
 		]
+		// Отправка отменяется: дальше jsdom её не выполняет и пишет об этом в консоль
+		const submit = vi.fn((event: Event) => event.preventDefault())
 
-		for (const target of [el, find(host, 'section', HTMLElement)]) {
+		for (const target of [el, form]) {
 			for (const name of names) {
 				target.addEventListener(name, (event) => {
 					if (event.target !== el) foreign.push(name)
@@ -591,6 +596,7 @@ describe('Input · кнопка очистки', () => {
 			}
 		}
 
+		form.addEventListener('submit', submit)
 		document.body.appendChild(host)
 		await nextFrame()
 		await nextFrame()
@@ -599,6 +605,8 @@ describe('Input · кнопка очистки', () => {
 		clearOf(el).click()
 
 		expect(foreign).toEqual([])
+		expect(submit).not.toHaveBeenCalled()
+		expect(clearOf(el).getAttribute('type')).toBe('button')
 	})
 
 	/**

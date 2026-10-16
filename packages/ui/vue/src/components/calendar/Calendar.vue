@@ -98,6 +98,7 @@ export default { ...SetupCalendar, components: { Button, Icon, ListBox, Popover,
 					<template #trigger="{ triggerAria, triggerDataset }">
 						<Button
 							embedded="calendar.title"
+							type="button"
 							class="so-calendar__title"
 							:size="size"
 							:disabled="disabled"
@@ -148,6 +149,7 @@ export default { ...SetupCalendar, components: { Button, Icon, ListBox, Popover,
 						<div class="so-calendar__picker-header">
 							<Button
 								embedded="calendar.picker-heading"
+								type="button"
 								class="so-calendar__picker-heading"
 								:size="size"
 								v-bind="pickers[index].headingAria"
@@ -157,6 +159,7 @@ export default { ...SetupCalendar, components: { Button, Icon, ListBox, Popover,
 
 							<Button
 								embedded="calendar.picker-prev"
+								type="button"
 								class="so-calendar__picker-prev"
 								:size="size"
 								:disabled="pickers[index].prevDisabled"
@@ -171,6 +174,7 @@ export default { ...SetupCalendar, components: { Button, Icon, ListBox, Popover,
 
 							<Button
 								embedded="calendar.picker-next"
+								type="button"
 								class="so-calendar__picker-next"
 								:size="size"
 								:disabled="pickers[index].nextDisabled"
@@ -207,6 +211,7 @@ export default { ...SetupCalendar, components: { Button, Icon, ListBox, Popover,
 				<template v-if="index === 0">
 					<Button
 						embedded="calendar.prev"
+						type="button"
 						class="so-calendar__prev"
 						:size="size"
 						:disabled="prevDisabled"
@@ -219,6 +224,7 @@ export default { ...SetupCalendar, components: { Button, Icon, ListBox, Popover,
 
 					<Button
 						embedded="calendar.next"
+						type="button"
 						class="so-calendar__next"
 						:size="size"
 						:disabled="nextDisabled"

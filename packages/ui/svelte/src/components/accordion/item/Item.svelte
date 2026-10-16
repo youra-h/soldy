@@ -78,6 +78,7 @@
 	>
 		<Button
 			embedded="accordion.header"
+			type="button"
 			class="so-accordion-item__header"
 			view={state.view}
 			disabled={state.disabled}
