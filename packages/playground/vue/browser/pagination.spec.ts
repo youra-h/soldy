@@ -4,12 +4,14 @@
  * Здесь то, чего jsdom не считает вовсе. Раскладка: номер в одну и две цифры
  * стоит квадратом клетки на каждом размере, а номер длиннее и текст растут с
  * тем же полем; высота у страниц, стрелок и пропуска одна — клетка темы
- * (`themes/oren/src/components/pagination/_pagination.scss`). Цвет: текущая
- * страница в режиме принудительных цветов — системная подсветка, и у
- * выключенной тоже. Фокус: каждая стрелка и каждая страница — своя остановка
- * Tab, а нажатая с клавиатуры страница остаётся тем же узлом под фокусом,
- * хотя окно сдвинулось. Модель проверяет ядро, проводку —
- * `ui/vue/__tests__/pagination.spec.ts`.
+ * (`themes/oren/src/components/pagination/_pagination.scss`). Цвет: отметка
+ * текущей встаёт и сходит без перехода — и в середине, где окно сдвигается
+ * вокруг неё, и у края, — а наведение на страницу идёт переходом; текущая
+ * страница в режиме принудительных цветов — системная подсветка без слоя
+ * заливки темы, и у выключенной тоже. Фокус: каждая стрелка и каждая
+ * страница — своя остановка Tab, а нажатая с клавиатуры страница остаётся тем
+ * же узлом под фокусом, хотя окно сдвинулось. Модель проверяет ядро,
+ * проводку — `ui/vue/__tests__/pagination.spec.ts`.
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
@@ -21,6 +23,7 @@ import { COMPONENT_SIZES } from '@soldy-ui/playground-shared'
 
 import { find, pixel, settled, style, systemColor } from './colors'
 import { forcedColors } from './media'
+import { transitionEvents } from './transitions'
 
 import '@soldy-ui/theme-oren'
 
@@ -70,6 +73,12 @@ const page = (text: string): HTMLElement => {
 
 	return found
 }
+
+/** Номера страниц окна по порядку. */
+const numbers = () => pages().map((button) => button.textContent?.trim())
+
+/** Кнопка текущей страницы. */
+const current = (): HTMLElement => find('.so-pagination-item > .so-button[aria-current="page"]')
 
 const rect = (element: Element) => element.getBoundingClientRect()
 
@@ -220,10 +229,131 @@ describe('фокус', () => {
 })
 
 /**
+ * Отметка текущей встаёт и сходит сразу, без перехода цвета. Окно сдвигается
+ * вокруг текущей, а узел страницы при сдвиге тот же — так фокус не уходит с
+ * нажатой страницы (блок «фокус» выше) — и переезжает в соседнюю клетку:
+ * переходом отметка гасла бы на уехавшей странице и разгоралась на
+ * приехавшей, и средняя клетка, где текущая стоит всё время, мигала. У края
+ * окно стоит, и отметка так же сразу встаёт на соседнюю. Наведение на
+ * страницу по-прежнему идёт переходом, как у любого `plain`
+ * (`themes/oren/src/components/pagination/_pagination.scss`).
+ *
+ * Переходы ловит слушатель `transitionrun` на списке страниц за время
+ * действия и два кадра (`transitionEvents`): событие приходит на каждый
+ * начатый переход и всплывает со страницы до списка, и тест не зависит от
+ * того, успел ли он прочитать стиль за 200 мс. Стрелки стоят вне списка — их
+ * кольцо фокуса в проверку не попадает. Слушатель встаёт на покое, когда
+ * переходы кольца фокуса и наведения доиграли: действию они не принадлежат. А
+ * указатель стоит вне ряда — страница, уехавшая из-под него, свела бы вуаль
+ * наведения переходом.
+ */
+describe('отметка текущей без перехода', () => {
+	/** Указатель — вне ряда, на кнопке под ним. */
+	const park = () => userEvent.hover(find('.so-test-after'))
+
+	/** Переходы, которые страницы заведут дальше, — «номер: свойство». */
+	const runsAtRest = async (): Promise<string[]> => {
+		const list = find('.so-pagination__list')
+
+		await transitionEvents()
+		await settled(list)
+
+		const runs: string[] = []
+
+		list.addEventListener('transitionrun', ({ target, propertyName }) => {
+			const text = target instanceof Element ? target.textContent?.trim() : String(target)
+
+			runs.push(`${text}: ${propertyName}`)
+		})
+
+		return runs
+	}
+
+	/** Залита ли страница: отметка текущей — фоновый слой. */
+	const filled = (button: HTMLElement) => style(button).backgroundImage !== 'none'
+
+	it('«вперёд» из середины: следующая сразу встаёт в среднюю клетку', async () => {
+		await show({ total: 100, value: 5 })
+		await park()
+
+		const middle = rect(current()).left
+
+		find('.so-pagination__next').focus()
+
+		const runs = await runsAtRest()
+
+		await userEvent.keyboard('{Enter}')
+		await expect.poll(() => current().textContent?.trim()).toBe('6')
+		await transitionEvents()
+
+		expect(numbers()).toEqual(['1', '5', '6', '7', '10'])
+		expect(rect(current()).left, 'в средней клетке').toBeCloseTo(middle, 0)
+		expect(runs, 'переходы страниц').toEqual([])
+		expect(pages().filter(filled), 'залита только текущая').toEqual([current()])
+	})
+
+	it('Enter на соседней под фокусом: она сразу встаёт в среднюю клетку', async () => {
+		await show({ total: 100, value: 5 })
+		await park()
+
+		const middle = rect(current()).left
+		const six = page('6')
+
+		// С клавиатуры: кольцо фокуса зажигается до действия, а не от Enter
+		find('.so-test-before').focus()
+
+		for (let step = 0; step < 5; step++) await tab()
+
+		expect(document.activeElement, 'под фокусом').toBe(six)
+
+		const runs = await runsAtRest()
+
+		await userEvent.keyboard('{Enter}')
+		await expect.poll(() => current()).toBe(six)
+		await transitionEvents()
+
+		expect(numbers()).toEqual(['1', '5', '6', '7', '10'])
+		expect(rect(six).left, 'в средней клетке').toBeCloseTo(middle, 0)
+		expect(runs, 'переходы страниц').toEqual([])
+		expect(pages().filter(filled), 'залита только текущая').toEqual([six])
+	})
+
+	it('у края окно стоит, и отметка тоже встаёт на соседнюю сразу', async () => {
+		await show({ total: 100, value: 2 })
+		await park()
+
+		find('.so-pagination__next').focus()
+
+		const runs = await runsAtRest()
+
+		await userEvent.keyboard('{Enter}')
+		await expect.poll(() => current().textContent?.trim()).toBe('3')
+		await transitionEvents()
+
+		expect(numbers()).toEqual(['1', '2', '3', '4', '10'])
+		expect(runs, 'переходы страниц').toEqual([])
+		expect(pages().filter(filled), 'залита только текущая').toEqual([current()])
+	})
+
+	it('наведение на страницу идёт переходом, как у любого `plain`', async () => {
+		await show({ total: 100, value: 5 })
+		await park()
+
+		const runs = await runsAtRest()
+
+		await userEvent.hover(page('4'))
+		await transitionEvents()
+
+		expect(runs).toContain('4: background-color')
+	})
+})
+
+/**
  * Принудительные цвета (высокий контраст Windows): заливку текущей браузер
  * заменил бы цветом поверхности, и она стала бы как соседи. Текущую красит
  * системная подсветка — фон `Highlight`, текст `HighlightText`, как выбранную
- * строку списка, — и у выключенной пагинации тоже.
+ * строку списка, — и у выключенной пагинации тоже. Слоя заливки темы у неё
+ * нет: подмена цветов у текущей снята, и слой лёг бы поверх подсветки.
  */
 describe('текущая в режиме принудительных цветов', () => {
 	const expectHighlight = (element: Element): void => {
@@ -231,6 +361,7 @@ describe('текущая в режиме принудительных цвето
 
 		expect(pixel([look.backgroundColor]), 'фон').toEqual(pixel([systemColor('Highlight')]))
 		expect(pixel([look.color]), 'текст').toEqual(pixel([systemColor('HighlightText')]))
+		expect(look.backgroundImage, 'слой заливки').toBe('none')
 	}
 
 	it.each(SCHEMES)('%s: системная подсветка, у соседей — нет', async (scheme) => {
