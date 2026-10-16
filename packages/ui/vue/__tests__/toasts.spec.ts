@@ -15,10 +15,10 @@
 import { describe, it, expect, afterEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { defineComponent, h, nextTick, type VNode } from 'vue'
-import { createEngineToasts } from '@soldy-ui/core'
+import { createEngineTags, createEngineToasts } from '@soldy-ui/core'
 import type { IToastsItem, IToastsProps } from '@soldy-ui/core'
 import { ruRU } from '@soldy-ui/plugins'
-import { LocaleProvider, Toasts, useToasts } from '@soldy-ui/vue'
+import { LocaleProvider, Tags, Toasts, useToasts } from '@soldy-ui/vue'
 import type { TToastRender } from '@soldy-ui/vue'
 
 const nextFrame = () => new Promise((resolve) => requestAnimationFrame(resolve))
@@ -128,6 +128,106 @@ describe('Toasts · менеджер и API', () => {
 
 		expect(find('.so-test-app').textContent).toBe('Приложение')
 		expect(document.querySelector('.so-toasts')).toBeNull()
+	})
+})
+
+describe('Toasts · стопка', () => {
+	/** Глубина каждого тоста — переменная, которую разметка отдаёт теме. */
+	const depths = () => toasts().map((toast) => toast.style.getPropertyValue('--so-toasts-depth'))
+
+	it('раскладка — модификатор региона: столбец по умолчанию, стопка по пропу', () => {
+		render()
+
+		expect(region().classList.contains('so-toasts--layout-list')).toBe(true)
+
+		wrapper?.unmount()
+		document.body.innerHTML = ''
+		render({ layout: 'cascade' })
+
+		expect(region().classList.contains('so-toasts--layout-cascade')).toBe(true)
+		expect(region().classList.contains('so-toasts--layout-list')).toBe(false)
+	})
+
+	it('глубина — место в составе; перестановка меняет и порядок узлов, и глубину', async () => {
+		const engine = createEngineToasts()
+		const { show } = render({ engine, layout: 'cascade' })
+
+		const oldest = show('Первый')
+
+		show('Второй')
+		show('Третий')
+		await nextTick()
+
+		expect(texts()).toEqual(['Третий', 'Второй', 'Первый'])
+		expect(depths()).toEqual(['0', '1', '2'])
+
+		if (!oldest) throw new Error('тоста нет')
+
+		engine.extensions.plain.move(oldest, 0)
+		await nextTick()
+
+		expect(texts()).toEqual(['Первый', 'Третий', 'Второй'])
+		expect(depths()).toEqual(['0', '1', '2'])
+	})
+
+	it('колесо над стопкой листает её: передний уходит назад', async () => {
+		const { show } = render({ layout: 'cascade' })
+
+		show('Первый')
+		show('Второй')
+		await nextTick()
+		// Слушатели стопки встают на регион с его узлом — кадром позже
+		await nextFrame()
+
+		const event = new WheelEvent('wheel', { deltaY: 100, bubbles: true, cancelable: true })
+
+		toasts()[0]?.dispatchEvent(event)
+		await nextTick()
+
+		expect(event.defaultPrevented).toBe(true)
+		expect(texts()).toEqual(['Первый', 'Второй'])
+	})
+})
+
+/**
+ * Менеджер оборачивает приложение, и его коллекция — ближайшая выше почти
+ * везде в дереве. Элемент коллекции входит только в коллекцию своего типа:
+ * тег вне своего набора (чип) под менеджером рисуется сам по себе, а не
+ * становится тостом и не роняет сборку приложения.
+ */
+describe('Toasts · элемент чужой коллекции под менеджером', () => {
+	/** Менеджер над своим движком, а под ним — содержимое приложения. */
+	function renderUnder(content: () => VNode) {
+		const engine = createEngineToasts()
+
+		wrapper = mount(defineComponent({ render: () => h(Toasts, { engine }, content) }), {
+			attachTo: document.body,
+		})
+
+		return engine
+	}
+
+	it('тег вне Tags рисуется сам по себе, тостом не становится', async () => {
+		const engine = renderUnder(() => h(Tags.Item, { value: 'a', text: 'Тег' }))
+
+		await nextTick()
+
+		expect(find('.so-tags-item').textContent).toContain('Тег')
+		expect(engine.extensions.batch.items).toEqual([])
+		expect(toasts()).toEqual([])
+	})
+
+	it('тег в своём Tags под менеджером входит в Tags', async () => {
+		const tags = createEngineTags()
+		const engine = renderUnder(() =>
+			h(Tags, { engine: tags }, () => h(Tags.Item, { value: 'a', text: 'Тег' })),
+		)
+
+		await nextTick()
+
+		expect(tags.extensions.batch.items.map((item) => item.value)).toEqual(['a'])
+		expect(engine.extensions.batch.items).toEqual([])
+		expect(toasts()).toEqual([])
 	})
 })
 

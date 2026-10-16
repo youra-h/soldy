@@ -5,10 +5,11 @@
  * расширениями коллекций, и отменяется тема тоже целиком.
  */
 
-import { TTable, TTabs } from '@soldy-ui/core'
+import { TTable, TTabs, TToasts } from '@soldy-ui/core'
 import type { IThemePlugins } from '@soldy-ui/setup'
 import { TTableHeadPlugin } from './table-head.plugin'
 import { TTabsViewPlugin } from './tabs-view.plugin'
+import { TToastsFrontPlugin } from './toasts-front.plugin'
 
 export const plugins: readonly IThemePlugins[] = [
 	// Геометрия активного таба (`--so-tabs-active-*`, `--so-tabs-gap-*`) и признак её
@@ -17,4 +18,7 @@ export const plugins: readonly IThemePlugins[] = [
 	// Высота закреплённой шапки (`--so-table-head-height`): фокус в теле
 	// встаёт ниже шапки
 	{ type: TTable, plugins: [TTableHeadPlugin] },
+	// Высота переднего тоста стопки (`--so-toasts-front-height`): задние меняют
+	// её переходом, когда передний сменился
+	{ type: TToasts, plugins: [TToastsFrontPlugin] },
 ]

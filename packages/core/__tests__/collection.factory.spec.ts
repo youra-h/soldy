@@ -1,5 +1,14 @@
 import { describe, it, expect } from 'vitest'
-import { TCollectionEngine, TBatchExtension, TFactoryExtension } from '@soldy-ui/core'
+import {
+	TCollectionEngine,
+	TBatchExtension,
+	TFactoryExtension,
+	TTabsItem,
+	TTagsItem,
+	createEngine,
+	createEngineTags,
+	factoryOf,
+} from '@soldy-ui/core'
 
 interface ITestItem {
 	id: number
@@ -94,5 +103,25 @@ describe('TFactoryExtension + TBatchExtension.update/trackBy', () => {
 		expect(byId.get(1)?.text).toBe('a-updated')
 		expect(byId.get(3)).toBeInstanceOf(TTestItem)
 		expect(byId.get(3)?.text).toBe('c')
+	})
+})
+
+/**
+ * Фабрику движка находят проверкой контракта: движок к расширениям адаптера
+ * приходит как `TCollectionEngine<any, any>`. По ней элемент узнаёт свою
+ * коллекцию — фабрика знает класс элемента.
+ */
+describe('factoryOf', () => {
+	it('у движка компонента — его фабрика: свой элемент не источник, чужой — источник', () => {
+		const engine = createEngineTags()
+		const factory = factoryOf(engine)
+
+		expect(factory).toBe(engine.extensions.factory)
+		expect(factory?.isSource(new TTagsItem({ value: 'a' }))).toBe(false)
+		expect(factory?.isSource(new TTabsItem({ value: 'a' }))).toBe(true)
+	})
+
+	it('у движка без компонента фабрики нет: класс элемента знает компонент', () => {
+		expect(factoryOf(createEngine())).toBeUndefined()
 	})
 })

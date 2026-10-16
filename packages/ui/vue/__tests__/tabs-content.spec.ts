@@ -7,8 +7,9 @@
 
 import { describe, it, expect, afterEach } from 'vitest'
 import { mount } from '@vue/test-utils'
-import { h, nextTick } from 'vue'
-import { Tabs, TabsItem, TabsContent } from '@soldy-ui/vue'
+import { defineComponent, h, nextTick } from 'vue'
+import { createEngineTabs } from '@soldy-ui/core'
+import { RadioGroup, Tabs, TabsItem, TabsContent, Tags } from '@soldy-ui/vue'
 import Harness from './TabsContent.test.vue'
 
 const render = () => mount(Harness, { attachTo: document.body })
@@ -177,6 +178,50 @@ describe('смена value у панели', () => {
 		expect(panel.attributes('aria-labelledby')).toBe(
 			mounted.findAll('[role="tab"]')[0].attributes('id'),
 		)
+	})
+})
+
+/**
+ * Панель — содержимое приложения, и ближайшая коллекция над её содержимым —
+ * Tabs. Элемент чужой коллекции в панели (тег-чип, радио) входит только в
+ * коллекцию своего типа, а не в табы. Тег раньше ронял сборку — фасаду тега
+ * нужен выбор, которого у табов нет, — а радио с тем же набором расширений
+ * (активация) молча становилось новым табом.
+ */
+describe('элемент чужой коллекции в панели', () => {
+	it('тег и радио в панели табами не становятся', async () => {
+		const engine = createEngineTabs()
+		const wrapper = mount(
+			defineComponent({
+				render: () =>
+					h(
+						Tabs,
+						{ engine },
+						{
+							default: () => [
+								h(TabsItem, { value: 'a', text: 'First', active: true }),
+								h(TabsItem, { value: 'b', text: 'Second' }),
+							],
+							content: () =>
+								h(TabsContent, { value: 'a' }, () => [
+									h(Tags.Item, { value: 'tag', text: 'Тег' }),
+									h(RadioGroup.Item, { value: 'radio' }),
+								]),
+						},
+					),
+			}),
+			{ attachTo: document.body },
+		)
+
+		await nextTick()
+
+		expect(engine.extensions.batch.items.map((item) => item.value)).toEqual(['a', 'b'])
+		expect(wrapper.findAll('[role="tab"]')).toHaveLength(2)
+		// Свои элементы нарисованы в панели — сами по себе
+		expect(wrapper.find('.so-tabs__panel .so-tags-item').text()).toContain('Тег')
+		expect(wrapper.find('.so-tabs__panel input[type="radio"]').exists()).toBe(true)
+
+		wrapper.unmount()
 	})
 })
 

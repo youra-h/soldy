@@ -1,14 +1,15 @@
 import { describe, it, expect, afterEach } from 'vitest'
-import { TButton, TTable, TTabs } from '@soldy-ui/core'
+import { TButton, TTable, TTabs, TToasts } from '@soldy-ui/core'
 import { resolveRegisteredPlugins, useTheme } from '@soldy-ui/setup'
-import oren, { TTableHeadPlugin, TTabsViewPlugin } from '../setup'
+import oren, { TTableHeadPlugin, TTabsViewPlugin, TToastsFrontPlugin } from '../setup'
 
 /**
  * Поведение темы: `@soldy-ui/theme-oren/setup` ставит плагины, данные которых
  * читает её CSS. Полосу под активным табом рисует `_tabs.scss` по переменным
  * `TTabsViewPlugin` — без регистрации её нет. Отступ прокрутки к фокусу под
  * закреплённой шапкой Table `_table.scss` берёт из высоты шапки, которую пишет
- * `TTableHeadPlugin`.
+ * `TTableHeadPlugin`, а высоту задних тостов стопки `_toasts.scss` — из высоты
+ * переднего от `TToastsFrontPlugin`.
  */
 
 let dispose: (() => void) | null = null
@@ -39,12 +40,23 @@ describe('тема oren · регистрации', () => {
 		expect(ctors({ embedded: 'panel.table' })).toEqual([TTableHeadPlugin])
 	})
 
+	it('ставит TToastsFrontPlugin всем Toasts', () => {
+		dispose = useTheme(oren)
+
+		expect(resolveRegisteredPlugins(new TToasts()).map(({ ctor }) => ctor)).toEqual([
+			TToastsFrontPlugin,
+		])
+	})
+
 	it('другим компонентам плагины темы не ставит', () => {
 		dispose = useTheme(oren)
 
 		expect(resolveRegisteredPlugins(new TButton())).toEqual([])
 		expect(resolveRegisteredPlugins(new TTabs()).map(({ ctor }) => ctor)).not.toContain(
 			TTableHeadPlugin,
+		)
+		expect(resolveRegisteredPlugins(new TTable()).map(({ ctor }) => ctor)).not.toContain(
+			TToastsFrontPlugin,
 		)
 	})
 
@@ -53,5 +65,6 @@ describe('тема oren · регистрации', () => {
 
 		expect(resolveRegisteredPlugins(new TTabs())).toEqual([])
 		expect(resolveRegisteredPlugins(new TTable())).toEqual([])
+		expect(resolveRegisteredPlugins(new TToasts())).toEqual([])
 	})
 })
