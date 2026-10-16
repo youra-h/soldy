@@ -226,19 +226,90 @@ describe('окно — чистые функции', () => {
 
 	it('примеры владельца и дизайнера', () => {
 		expect(plan(10, 5, 3)).toBe('1 … 4 5 6 … 10')
-		expect(plan(10, 5, 5)).toBe('1 … 3 4 5 6 7 … 10')
-		expect(plan(10, 1, 3)).toBe('1 2 3 4 … 10')
-		expect(plan(10, 2, 3)).toBe('1 2 3 4 … 10')
-		expect(plan(10, 10, 3)).toBe('1 … 7 8 9 10')
+		expect(plan(10, 5, 5)).toBe('1 2 3 4 5 6 7 … 10')
+		expect(plan(10, 1, 3)).toBe('1 2 3 4 5 … 10')
+		expect(plan(10, 2, 3)).toBe('1 2 3 4 5 … 10')
+		expect(plan(10, 10, 3)).toBe('1 … 6 7 8 9 10')
 		expect(plan(5, 3, 3)).toBe('1 2 3 4 5')
 		expect(plan(1, 1, 3)).toBe('1')
 		expect(plan(10, 5, 0)).toBe('1 … 10')
 	})
 
-	it('пропуск — на месте любых пропущенных страниц, даже одной', () => {
-		expect(plan(10, 4, 3)).toBe('1 … 3 4 5 … 10')
-		expect(plan(7, 4, 3)).toBe('1 … 3 4 5 … 7')
-		expect(plan(6, 4, 3)).toBe('1 … 3 4 5 6')
+	/**
+	 * Жалоба владельца: у края ряд был короче (`1 2 3 4 … 10`), и на сдвиге
+	 * окна от края стрелка «вперёд» отъезжала на клетку — нажатие уходило мимо
+	 * неё. Теперь у края место пропуска занимает страница, и мест в ряду на
+	 * каждой странице столько же.
+	 */
+	it('листание: мест в ряду на каждой странице столько же', () => {
+		const rows = Array.from({ length: 10 }, (_, index) => plan(10, index + 1, 3))
+
+		expect(rows).toEqual([
+			'1 2 3 4 5 … 10',
+			'1 2 3 4 5 … 10',
+			'1 2 3 4 5 … 10',
+			'1 2 3 4 5 … 10',
+			'1 … 4 5 6 … 10',
+			'1 … 5 6 7 … 10',
+			'1 … 6 7 8 9 10',
+			'1 … 6 7 8 9 10',
+			'1 … 6 7 8 9 10',
+			'1 … 6 7 8 9 10',
+		])
+	})
+
+	it('пропущена одна страница — стоит она сама, пропуск — от двух', () => {
+		expect(plan(10, 4, 3)).toBe('1 2 3 4 5 … 10')
+		expect(plan(10, 7, 3)).toBe('1 … 6 7 8 9 10')
+		// Пропущены 2–3 и 7–9
+		expect(plan(10, 5, 3)).toBe('1 … 4 5 6 … 10')
+		// Середина к краю вплотную не подходит, пока на это хватает страниц: при
+		// середине 3 — с семи
+		expect(plan(7, 4, 3)).toBe('1 2 3 4 5 6 7')
+		expect(plan(6, 4, 3)).toBe('1 2 3 4 5 6')
+	})
+
+	/**
+	 * Правила окна — по сетке: страниц 1…15, середина 0…«страниц − 2», каждая
+	 * текущая, а ещё 0 и «страниц + 1» — текущей нет.
+	 */
+	it('сетка: число мест по формуле, пропуск — не на месте одной страницы, текущая видна', () => {
+		for (let count = 1; count <= 15; count++) {
+			for (let middle = 0; middle <= Math.max(count - 2, 0); middle++) {
+				const places = middle === 0 ? Math.min(count, 3) : Math.min(count, middle + 4)
+
+				for (let position = 0; position <= count + 1; position++) {
+					const label = `страниц ${count}, середина ${middle}, текущая ${position}`
+					const entries = pageWindow(count, position, middle)
+
+					expect(entries, label).toHaveLength(places)
+					expect(entries.at(-1), label).toEqual({ kind: 'page', position: count })
+
+					// Без пропуска страницы идут подряд, с пропуском — через две и больше
+					let previous = 0
+					let gap = false
+
+					for (const entry of entries) {
+						if (entry.kind === 'ellipsis') {
+							gap = true
+							continue
+						}
+
+						const skipped = entry.position - previous - 1
+
+						if (gap) expect(skipped, label).toBeGreaterThanOrEqual(2)
+						else expect(skipped, label).toBe(0)
+
+						previous = entry.position
+						gap = false
+					}
+
+					if (middle >= 1 && position >= 1 && position <= count) {
+						expect(entries, label).toContainEqual({ kind: 'page', position })
+					}
+				}
+			}
+		}
 	})
 
 	it('чётной середине лишнее место — после текущей', () => {
@@ -268,8 +339,8 @@ describe('окно — чистые функции', () => {
 	})
 
 	it('текущей страницы нет — окно с начала', () => {
-		expect(plan(10, 0, 3)).toBe('1 2 3 4 … 10')
-		expect(plan(10, 42, 3)).toBe('1 2 3 4 … 10')
+		expect(plan(10, 0, 3)).toBe('1 2 3 4 5 … 10')
+		expect(plan(10, 42, 3)).toBe('1 2 3 4 5 … 10')
 	})
 
 	it('число страниц — ⌈total / pageSize⌉, но не меньше одной', () => {
@@ -330,7 +401,7 @@ describe('окно в коллекции', () => {
 		expect(facade.items).toHaveLength(5)
 	})
 
-	it('50 000 страниц — в коллекции середина + 2', () => {
+	it('50 000 страниц — в коллекции середина + 2, у края — середина + 3', () => {
 		const { owner, facade } = createPagination({ total: 500_000, pageSize: 10, value: 25_000 })
 
 		expect(facade.items).toHaveLength(5)
@@ -339,6 +410,16 @@ describe('окно в коллекции', () => {
 		owner.middleCount = 7
 
 		expect(facade.items).toHaveLength(9)
+
+		// У края место пропуска занимает страница
+		owner.value = 50_000
+
+		expect(facade.items).toHaveLength(10)
+
+		owner.middleCount = 3
+
+		expect(facade.items).toHaveLength(6)
+		expect(windowOf(facade)).toBe('1 … 49,996 49,997 49,998 49,999 [50,000]')
 	})
 
 	it('страница, оставшаяся на экране, — тот же экземпляр', () => {
@@ -371,7 +452,7 @@ describe('окно в коллекции', () => {
 
 		facade.events.on('change:cells', onCells)
 
-		// Окно у края то же: `1 2 3 4 … 10`
+		// Окно у края то же: `1 2 3 4 5 … 10`
 		owner.value = 2
 
 		expect(onCells).not.toHaveBeenCalled()
@@ -386,7 +467,7 @@ describe('окно в коллекции', () => {
 
 		owner.middleCount = 5
 
-		expect(windowOf(facade)).toBe('1 … 3 4 [5] 6 7 … 10')
+		expect(windowOf(facade)).toBe('1 2 3 4 [5] 6 7 … 10')
 
 		owner.pageSize = 50
 
@@ -396,22 +477,24 @@ describe('окно в коллекции', () => {
 
 		owner.total = 1000
 
-		expect(windowOf(facade)).toBe('1 … 3 4 [5] 6 7 … 20')
+		expect(windowOf(facade)).toBe('1 2 3 4 [5] 6 7 … 20')
 	})
 
 	it('текстовая пагинация — страницы из списка по порядку', () => {
 		const pages = ['Админ', 'Записи', 'Конференция', 'Отчёты', 'Почта', 'Склад', 'Настройки']
+		// Середина 1: при середине 3 семь страниц видны все, и пропусков нет
 		const { owner, facade, press } = createPagination({
 			pages: pages.map((text) => ({ text, value: text.toLowerCase() })),
 			value: 'отчёты',
+			middleCount: 1,
 		})
 
-		expect(windowOf(facade)).toBe('Админ … Конференция [Отчёты] Почта … Настройки')
+		expect(windowOf(facade)).toBe('Админ … [Отчёты] … Настройки')
 
-		press('Почта')
+		press('Настройки')
 
-		expect(owner.value).toBe('почта')
-		expect(windowOf(facade)).toBe('Админ … Отчёты [Почта] Склад Настройки')
+		expect(owner.value).toBe('настройки')
+		expect(windowOf(facade)).toBe('Админ … Почта Склад [Настройки]')
 	})
 
 	it('пустой список страниц — ни одной страницы, стрелки выключены', () => {
@@ -472,22 +555,22 @@ describe('текущая страница ⇄ value', () => {
 		press('10')
 
 		expect(owner.value).toBe(10)
-		expect(windowOf(facade)).toBe('1 … 7 8 9 [10]')
+		expect(windowOf(facade)).toBe('1 … 6 7 8 9 [10]')
 	})
 
 	it('value из кода — окно вокруг него, его страница текущая', () => {
 		const { owner, facade } = createPagination({ total: 100, pageSize: 10 })
 
-		expect(windowOf(facade)).toBe('[1] 2 3 4 … 10')
+		expect(windowOf(facade)).toBe('[1] 2 3 4 5 … 10')
 
 		owner.value = 7
 
-		expect(windowOf(facade)).toBe('1 … 6 [7] 8 … 10')
+		expect(windowOf(facade)).toBe('1 … 6 [7] 8 9 10')
 		expect(facade.activeItem?.value).toBe(7)
 
 		owner.next()
 
-		expect(windowOf(facade)).toBe('1 … 7 [8] 9 10')
+		expect(windowOf(facade)).toBe('1 … 6 7 [8] 9 10')
 	})
 
 	it('aria-current — только у текущей', () => {
@@ -623,7 +706,7 @@ describe('отмены не разводят value и текущую', () => {
 		press('6')
 
 		expect(owner.value).toBe(8)
-		expect(windowOf(facade)).toBe('1 … 7 [8] 9 10')
+		expect(windowOf(facade)).toBe('1 … 6 7 [8] 9 10')
 	})
 })
 
