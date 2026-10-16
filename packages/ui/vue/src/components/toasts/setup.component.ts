@@ -18,9 +18,10 @@ import BaseToasts, { type ToastsProps } from './base.component'
 /**
  * Логики здесь нет: очередь, предел видимых и подъём региона — расширение
  * коллекции `toasts`, отсчёт — `TToastsTimerPlugin`, удаление догасших —
- * `TToastsRemovalPlugin`, F8 и Escape — `TToastsKeyboardPlugin`, слой в
- * стилях — `TToastsLayoutPlugin`, имя региона — `TToastsNamesPlugin`.
- * Разметка раскладывает то, что отдали ядро и плагины.
+ * `TToastsRemovalPlugin`, F8 и Escape — `TToastsKeyboardPlugin`, листание
+ * стопки — `TToastsCascadePlugin`, слой в стилях — `TToastsLayoutPlugin`, имя
+ * региона — `TToastsNamesPlugin`. Разметка раскладывает то, что отдали ядро и
+ * плагины.
  */
 export default {
 	name: '_Toasts',

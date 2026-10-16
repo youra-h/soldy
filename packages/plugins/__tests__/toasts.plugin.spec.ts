@@ -2,8 +2,8 @@
 
 /**
  * Плагины тостов: отсчёт (`TToastsTimerPlugin`), удаление догасших
- * (`TToastsRemovalPlugin`), клавиатура (`TToastsKeyboardPlugin`) и слой в
- * стилях (`TToastsLayoutPlugin`).
+ * (`TToastsRemovalPlugin`), клавиатура (`TToastsKeyboardPlugin`), листание
+ * стопки (`TToastsCascadePlugin`) и слой в стилях (`TToastsLayoutPlugin`).
  *
  * Плагины собраны настоящим набором, как в рантайме, но без адаптера: разметку
  * тест строит сам в том виде, в каком её рисует Vue, — регион, в нём список и
@@ -24,6 +24,7 @@ import {
 	TCollectionElements,
 	TElementPlugin,
 	TPluginBundle,
+	TToastsCascadePlugin,
 	TToastsKeyboardPlugin,
 	TToastsLayoutPlugin,
 	TToastsRemovalPlugin,
@@ -547,6 +548,281 @@ describe('TToastsKeyboardPlugin — клавиатура', () => {
 		toast.close()
 
 		expect(document.activeElement).toBe(outside)
+	})
+})
+
+describe('TToastsCascadePlugin — листание стопки', () => {
+	/** Стопка на поддельных часах: узел региона плагин получает кадром позже. */
+	function mountCascade(owner: Partial<IToastsProps> = { layout: 'cascade' }) {
+		vi.useFakeTimers()
+
+		const mounted = mount({ owner, plugins: [TToastsCascadePlugin] })
+
+		vi.advanceTimersToNextFrame()
+
+		/** Показать тосты по порядку; новый — первым, он и передний. */
+		const stack = (...texts: string[]): IToastsItem[] => texts.map((text) => mounted.show(text))
+
+		/** Порядок показанных — порядок стопки: передний первым. */
+		const order = (): string[] =>
+			mounted.engine.extensions.batch.shown.map((toast) => toast.text)
+
+		return { ...mounted, stack, order }
+	}
+
+	/** Колесо над узлом: всплывает до региона. Отдаёт событие — по нему видно, погашено ли. */
+	function wheel(target: Element, deltaY: number, init: WheelEventInit = {}): WheelEvent {
+		const event = new WheelEvent('wheel', { deltaY, bubbles: true, cancelable: true, ...init })
+
+		target.dispatchEvent(event)
+
+		return event
+	}
+
+	it('колесо вниз — передний уходит назад, вверх — задний выходит вперёд; колесо погашено', () => {
+		const { stack, order, nodeOf } = mountCascade()
+		const [, , front] = stack('Первый', 'Второй', 'Третий')
+
+		if (!front) throw new Error('тостов нет')
+
+		expect(order()).toEqual(['Третий', 'Второй', 'Первый'])
+		expect(wheel(nodeOf(front), 100).defaultPrevented).toBe(true)
+		expect(order()).toEqual(['Второй', 'Первый', 'Третий'])
+
+		// Жест кончился — следующий жест вверх
+		vi.advanceTimersByTime(200)
+		wheel(nodeOf(front), -100)
+
+		expect(order()).toEqual(['Третий', 'Второй', 'Первый'])
+	})
+
+	it('шаг один на жест: события подряд — один шаг и все погашены, тишина — новый жест', () => {
+		const { stack, order, nodeOf } = mountCascade()
+		const [first] = stack('Первый', 'Второй', 'Третий')
+
+		if (!first) throw new Error('тостов нет')
+
+		const node = nodeOf(first)
+		const events = [wheel(node, 100)]
+
+		vi.advanceTimersByTime(150)
+		events.push(wheel(node, 100))
+		vi.advanceTimersByTime(150)
+		events.push(wheel(node, 100))
+
+		expect(order()).toEqual(['Второй', 'Первый', 'Третий'])
+		expect(events.every((event) => event.defaultPrevented)).toBe(true)
+
+		vi.advanceTimersByTime(200)
+		wheel(node, 100)
+
+		expect(order()).toEqual(['Первый', 'Третий', 'Второй'])
+	})
+
+	it('мелкие доли тачпада копятся до шага', () => {
+		const { stack, order, nodeOf } = mountCascade()
+		const [first] = stack('Первый', 'Второй', 'Третий')
+
+		if (!first) throw new Error('тостов нет')
+
+		wheel(nodeOf(first), 20)
+		wheel(nodeOf(first), 20)
+
+		expect(order()).toEqual(['Третий', 'Второй', 'Первый'])
+
+		wheel(nodeOf(first), 20)
+
+		expect(order()).toEqual(['Второй', 'Первый', 'Третий'])
+	})
+
+	it('колесо с Ctrl — масштаб окна, вбок — не наше: не погашено, порядок тот же', () => {
+		const { stack, order, nodeOf } = mountCascade()
+		const [first] = stack('Первый', 'Второй')
+
+		if (!first) throw new Error('тостов нет')
+
+		expect(wheel(nodeOf(first), 100, { ctrlKey: true }).defaultPrevented).toBe(false)
+		expect(wheel(nodeOf(first), 10, { deltaX: 100 }).defaultPrevented).toBe(false)
+		expect(order()).toEqual(['Второй', 'Первый'])
+	})
+
+	it('без стопки колесо и стрелки остаются странице; смена раскладки — сразу', () => {
+		const { owner, stack, order, nodeOf } = mountCascade({ layout: 'list' })
+		const [, front] = stack('Первый', 'Второй')
+
+		if (!front) throw new Error('тостов нет')
+
+		nodeOf(front).focus()
+
+		expect(wheel(nodeOf(front), 100).defaultPrevented).toBe(false)
+		expect(press(nodeOf(front), 'ArrowDown').defaultPrevented).toBe(false)
+		expect(order()).toEqual(['Второй', 'Первый'])
+
+		owner.layout = 'cascade'
+
+		expect(wheel(nodeOf(front), 100).defaultPrevented).toBe(true)
+		expect(order()).toEqual(['Первый', 'Второй'])
+	})
+
+	it('открытых меньше двух — листать нечего: колесо не гасится, гаснущий не в счёт', () => {
+		const { stack, order, nodeOf } = mountCascade()
+		const [single] = stack('Один')
+
+		if (!single) throw new Error('тостов нет')
+
+		expect(wheel(nodeOf(single), 100).defaultPrevented).toBe(false)
+
+		const [closing] = stack('Закрыт')
+
+		closing?.close()
+
+		expect(wheel(nodeOf(single), 100).defaultPrevented).toBe(false)
+		expect(order()).toEqual(['Закрыт', 'Один'])
+	})
+
+	it('стрелки при фокусе на тосте: ↓ — передний назад, ↑ — задний вперёд, фокус — переднему', () => {
+		const { stack, order, nodeOf } = mountCascade()
+		const [first, second, third] = stack('Первый', 'Второй', 'Третий')
+
+		if (!first || !second || !third) throw new Error('тостов меньше трёх')
+
+		nodeOf(third).focus()
+
+		expect(press(nodeOf(third), 'ArrowDown').defaultPrevented).toBe(true)
+		expect(order()).toEqual(['Второй', 'Первый', 'Третий'])
+		expect(document.activeElement).toBe(nodeOf(second))
+
+		press(nodeOf(second), 'ArrowUp')
+		press(nodeOf(third), 'ArrowUp')
+
+		expect(order()).toEqual(['Первый', 'Третий', 'Второй'])
+		expect(document.activeElement).toBe(nodeOf(first))
+	})
+
+	it('стрелки с крестика — тоже шаг; из поля ввода, с модификатором и погашенные — нет', () => {
+		const { stack, order, nodeOf } = mountCascade()
+		const [, front] = stack('Первый', 'Второй')
+
+		if (!front) throw new Error('тостов нет')
+
+		const close = nodeOf(front).querySelector('.so-test-close')
+		const input = document.createElement('input')
+
+		if (!close) throw new Error('крестика нет')
+
+		nodeOf(front).append(input)
+
+		expect(press(input, 'ArrowDown').defaultPrevented).toBe(false)
+		expect(press(close, 'ArrowDown', { shiftKey: true }).defaultPrevented).toBe(false)
+
+		close.addEventListener('keydown', (event) => event.preventDefault(), { once: true })
+		press(close, 'ArrowDown')
+
+		expect(order()).toEqual(['Второй', 'Первый'])
+		expect(press(close, 'ArrowDown').defaultPrevented).toBe(true)
+		expect(order()).toEqual(['Первый', 'Второй'])
+	})
+
+	it('под фокусом задний тост — его тема вывела вперёд, и шаг считается от него', () => {
+		const { stack, order, nodeOf } = mountCascade()
+		const [first, second] = stack('Первый', 'Второй', 'Третий')
+
+		if (!first || !second) throw new Error('тостов меньше трёх')
+
+		// Видно: «Первый» впереди, за ним «Третий» и «Второй». ↑ — задний вперёд
+		nodeOf(first).focus()
+		press(nodeOf(first), 'ArrowUp')
+
+		expect(order()).toEqual(['Второй', 'Первый', 'Третий'])
+		expect(document.activeElement).toBe(nodeOf(second))
+	})
+
+	it('колесо при фокусе на тосте — фокус за передним; без фокуса в регионе — не трогается', () => {
+		const { outside, stack, nodeOf } = mountCascade()
+		const [first, second, third] = stack('Первый', 'Второй', 'Третий')
+
+		if (!first || !second || !third) throw new Error('тостов меньше трёх')
+
+		outside.focus()
+		wheel(nodeOf(third), 100)
+
+		expect(document.activeElement).toBe(outside)
+
+		vi.advanceTimersByTime(200)
+		nodeOf(second).focus()
+		wheel(nodeOf(second), 100)
+
+		expect(document.activeElement).toBe(nodeOf(first))
+	})
+
+	it('гаснущие встают за открытыми, ждущие за пределом видимых не трогаются', () => {
+		const { engine, stack, nodeOf } = mountCascade({ layout: 'cascade', max: 3 })
+		const [, , closing, front] = stack('Ждёт', 'Первый', 'Гаснет', 'Передний')
+
+		if (!closing || !front) throw new Error('тостов меньше четырёх')
+
+		closing.close()
+		wheel(nodeOf(front), 100)
+
+		expect(engine.extensions.batch.items.map((toast) => toast.text)).toEqual([
+			'Первый',
+			'Передний',
+			'Гаснет',
+			'Ждёт',
+		])
+	})
+
+	it('шаг — одной пачкой: одно change:items на поворот', () => {
+		const { engine, stack, nodeOf } = mountCascade()
+		const [first] = stack('Первый', 'Второй', 'Третий')
+		const onItems = vi.fn()
+
+		if (!first) throw new Error('тостов нет')
+
+		engine.extensions.plain.events.on('change:items', onItems)
+		// Задний вперёд от заднего под фокусом — две перестановки
+		nodeOf(first).focus()
+		press(nodeOf(first), 'ArrowUp')
+
+		expect(onItems).toHaveBeenCalledTimes(1)
+	})
+
+	it('после destroy колесо и стрелки не слушаются', () => {
+		const { bundle, stack, order, nodeOf } = mountCascade()
+		const [, front] = stack('Первый', 'Второй')
+
+		if (!front) throw new Error('тостов нет')
+
+		bundle.destroy()
+
+		expect(wheel(nodeOf(front), 100).defaultPrevented).toBe(false)
+		expect(press(nodeOf(front), 'ArrowDown').defaultPrevented).toBe(false)
+		expect(order()).toEqual(['Второй', 'Первый'])
+	})
+})
+
+describe('TToastsCascadePlugin — фокус после перерисовки', () => {
+	it('переставленный узел фокус потерял — кадром позже фокус снова на переднем', async () => {
+		const { show, nodeOf } = mount({
+			owner: { layout: 'cascade' },
+			plugins: [TToastsCascadePlugin],
+		})
+
+		await nextFrame()
+
+		const first = show('Первый')
+		const second = show('Второй')
+
+		nodeOf(second).focus()
+		press(nodeOf(second), 'ArrowUp')
+
+		expect(document.activeElement).toBe(nodeOf(first))
+
+		// Браузер снимает фокус с узла, который разметка переносит в документе
+		nodeOf(first).blur()
+		await nextFrame()
+
+		expect(document.activeElement).toBe(nodeOf(first))
 	})
 })
 

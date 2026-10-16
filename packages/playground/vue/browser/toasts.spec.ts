@@ -12,9 +12,14 @@
  *
  * Жест — настоящей мышью: захват указателя и `touch-action` jsdom не
  * выполняет вовсе.
+ *
+ * Стопка (`layout: 'cascade'`) — тоже раскладка темы: передний у края, задние
+ * уже и выглядывают на ступень, высота стопки — по переднему (`--so-toasts-front-height`
+ * от поведения темы), фокус выводит тост вперёд без перестановки, колесо
+ * листает стопку, а страница под ней не едет.
  */
 
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, onTestFinished } from 'vitest'
 import { render, cleanup } from 'vitest-browser-vue'
 import { page, userEvent } from 'vitest/browser'
 import { defineComponent, h, nextTick } from 'vue'
@@ -440,5 +445,294 @@ describe('жест', () => {
 		await expect
 			.poll(() => Math.abs(card(item).getBoundingClientRect().left - before.left))
 			.toBeLessThan(EPSILON)
+	})
+})
+
+describe('стопка', () => {
+	/** На сколько задний выглядывает из-под стоящего перед ним: зазор столбца. */
+	const PEEK = GAP
+
+	/** На сколько задний уже на каждой ступени. */
+	const NARROW = 0.05
+
+	/** Середина плашки по строке. */
+	const middle = (box: DOMRect) => (box.left + box.right) / 2
+
+	/** Тексты тостов по порядку документа — порядок стопки, передний первым. */
+	const texts = () =>
+		items().map((item) => item.querySelector('.so-toasts-item__text')?.textContent)
+
+	/** Тосты по порядку; их меньше `count` — тест падает здесь. */
+	const take = (count: number): HTMLElement[] => {
+		const found = items()
+
+		if (found.length < count) throw new Error(`тостов меньше ${count}`)
+
+		return found
+	}
+
+	/**
+	 * Узел в конце документа — за регионом тостов, который телепортирован туда
+	 * раньше. Снимается после теста.
+	 */
+	const append = <T extends HTMLElement>(element: T): T => {
+		document.body.append(element)
+		onTestFinished(() => element.remove())
+
+		return element
+	}
+
+	/** Страница длиннее окна: её есть куда прокрутить. */
+	const scrollable = () => {
+		const spacer = append(document.createElement('div'))
+
+		spacer.style.height = '200vh'
+	}
+
+	/**
+	 * Переходы стопки доиграли. Высоту задних поведение темы пишет, когда
+	 * передний сменился, и переход высоты, начатый сменой ступени, сменяется
+	 * новым: прерванный переход `finished` отклоняет. Ждём, пока новых нет.
+	 */
+	const still = async () => {
+		for (;;) {
+			const running = items().flatMap((item) => item.getAnimations())
+
+			if (running.length === 0) return
+
+			await Promise.allSettled(running.map((animation) => animation.finished))
+		}
+	}
+
+	it('передний — у края окна, задние уже и выглядывают на ступень к дальней стороне', async () => {
+		const { show } = await mount({ layout: 'cascade' })
+
+		await show('Первый', 'Второй', 'Третий')
+		await still()
+
+		const [front, next, last] = take(3).map((item) => card(item).getBoundingClientRect())
+
+		if (!front || !next || !last) throw new Error('тостов меньше трёх')
+
+		expect(texts()).toEqual(['Третий', 'Второй', 'Первый'])
+		expect(front.bottom).toBeCloseTo(VIEWPORT.height - OFFSET, 0)
+		expect(front.right).toBeCloseTo(viewportWidth() - OFFSET, 0)
+		expect(front.width).toBeCloseTo(WIDTH, 0)
+		expect(front.top - next.top).toBeCloseTo(PEEK, 0)
+		expect(next.top - last.top).toBeCloseTo(PEEK, 0)
+		expect(next.width).toBeCloseTo(WIDTH * (1 - NARROW), 0)
+		expect(last.width).toBeCloseTo(WIDTH * (1 - 2 * NARROW), 0)
+		expect(Math.abs(middle(next) - middle(front))).toBeLessThan(EPSILON)
+		expect(Math.abs(middle(last) - middle(front))).toBeLessThan(EPSILON)
+
+		// Передний сверху: в его середине — он
+		const hit = document.elementFromPoint(middle(front), (front.top + front.bottom) / 2)
+
+		expect(hit?.closest('.so-toasts-item')).toBe(take(1)[0])
+	})
+
+	it('высота стопки — по переднему: задний выше переднего не торчит', async () => {
+		const { show } = await mount({ layout: 'cascade' })
+
+		await show(
+			{
+				text: 'Высокий',
+				description: 'Описание в несколько строк, чтобы тост стал заметно выше переднего',
+			},
+			'Низкий',
+		)
+		await still()
+
+		const [front, back] = take(2)
+		const region = document.querySelector<HTMLElement>('.so-toasts')
+		const list = region?.querySelector('.so-toasts__list')
+		const body = back?.querySelector('.so-toasts-item__body')
+
+		if (!front || !back || !region || !list || !body) throw new Error('разметки нет')
+
+		const frontHeight = front.getBoundingClientRect().height
+
+		// Своё содержимое заднего выше переднего — иначе проверять нечего
+		expect(Number.parseFloat(getComputedStyle(body).height)).toBeGreaterThan(frontHeight)
+		expect(getComputedStyle(back).height).toBe(getComputedStyle(front).height)
+		expect(
+			Number.parseFloat(region.style.getPropertyValue('--so-toasts-front-height')),
+		).toBeCloseTo(frontHeight, 0)
+		expect(list.getBoundingClientRect().height).toBeCloseTo(frontHeight, 0)
+		expect(
+			card(front).getBoundingClientRect().top - card(back).getBoundingClientRect().top,
+		).toBeCloseTo(PEEK, 0)
+	})
+
+	it('у верхнего края задние выглядывают вниз', async () => {
+		const { show } = await mount({ layout: 'cascade', placement: 'top' })
+
+		await show('Первый', 'Второй')
+		await still()
+
+		const [front, back] = take(2).map((item) => card(item).getBoundingClientRect())
+
+		if (!front || !back) throw new Error('тостов меньше двух')
+
+		expect(front.top).toBeCloseTo(OFFSET, 0)
+		expect(back.bottom - front.bottom).toBeCloseTo(PEEK, 0)
+		expect(Math.abs(middle(back) - middle(front))).toBeLessThan(EPSILON)
+	})
+
+	it('RTL: стопка у своего края, задние — по середине переднего', async () => {
+		setDir(document.documentElement, 'rtl')
+
+		const { show } = await mount({ layout: 'cascade', placement: 'bottom-start' })
+
+		await show('Первый', 'Второй')
+		await still()
+
+		const [front, back] = take(2).map((item) => card(item).getBoundingClientRect())
+
+		if (!front || !back) throw new Error('тостов меньше двух')
+
+		expect(front.right).toBeCloseTo(viewportWidth() - OFFSET, 0)
+		expect(Math.abs(middle(back) - middle(front))).toBeLessThan(EPSILON)
+	})
+
+	it('содержимое заднего закрыто его плашкой, а нажатие по краю достаётся тосту', async () => {
+		const { show } = await mount({ layout: 'cascade' })
+
+		await show('Первый', 'Второй')
+		await still()
+
+		const [front, back] = take(2)
+
+		if (!front || !back) throw new Error('тостов меньше двух')
+
+		const peek = card(back).getBoundingClientRect()
+
+		expect(getComputedStyle(card(back), '::after').opacity).toBe('1')
+		expect(getComputedStyle(card(front), '::after').opacity).toBe('0')
+		expect(document.elementFromPoint(middle(peek), peek.top + PEEK / 2)).toBe(back)
+	})
+
+	it('колесо над стопкой: передний уходит назад переходом, страница не едет', async () => {
+		const { show } = await mount({ layout: 'cascade' })
+
+		scrollable()
+		await show('Первый', 'Второй', 'Третий')
+		await still()
+
+		const [front, next] = take(2)
+
+		if (!front || !next) throw new Error('тостов меньше двух')
+
+		await userEvent.wheel(card(front), { delta: { y: 100 } })
+		await nextTick()
+
+		expect(texts()).toEqual(['Второй', 'Первый', 'Третий'])
+		expect(transitioning(next)).toEqual(expect.arrayContaining(['translate', 'scale']))
+		expect(window.scrollY).toBe(0)
+
+		await still()
+
+		expect(card(next).getBoundingClientRect().bottom).toBeCloseTo(VIEWPORT.height - OFFSET, 0)
+	})
+
+	it('столбцом колесо над тостом — странице', async () => {
+		const { show } = await mount()
+
+		scrollable()
+		await show('Первый', 'Второй')
+		await still()
+
+		const [front] = take(1)
+
+		if (!front) throw new Error('тоста нет')
+
+		await userEvent.wheel(card(front), { delta: { y: 100 } })
+
+		await expect.poll(() => window.scrollY).toBeGreaterThan(0)
+		expect(texts()).toEqual(['Второй', 'Первый'])
+	})
+
+	it('фокус выводит задний вперёд без перестановки, и Tab идёт по тостам и из стопки', async () => {
+		const { show } = await mount({ layout: 'cascade' })
+		const after = append(document.createElement('button'))
+
+		after.textContent = 'После региона'
+		await show('Первый', 'Второй')
+		await still()
+
+		const [front, back] = take(2)
+
+		if (!front || !back) throw new Error('тостов меньше двух')
+
+		front.focus()
+		// Крестик переднего, потом задний
+		await userEvent.tab()
+		await userEvent.tab()
+
+		expect(document.activeElement).toBe(back)
+
+		await still()
+
+		const box = card(back).getBoundingClientRect()
+
+		expect(texts()).toEqual(['Второй', 'Первый'])
+		expect(box.bottom).toBeCloseTo(VIEWPORT.height - OFFSET, 0)
+		expect(box.width).toBeCloseTo(WIDTH, 0)
+		expect(
+			document
+				.elementFromPoint(middle(box), (box.top + box.bottom) / 2)
+				?.closest('.so-toasts-item'),
+		).toBe(back)
+		// Передний отошёл на ступень назад
+		expect(box.top - card(front).getBoundingClientRect().top).toBeCloseTo(PEEK, 0)
+
+		// Крестик заднего, потом — из стопки, к тому, что за регионом
+		await userEvent.tab()
+		await userEvent.tab()
+
+		expect(document.activeElement).toBe(after)
+	})
+
+	it('закрытый передний уходит поверх, а следующий сразу встаёт вперёд', async () => {
+		const { show } = await mount({ layout: 'cascade' })
+		const [, toast] = await show('Первый', 'Второй')
+
+		await still()
+
+		const [front, next] = take(2)
+
+		if (!toast || !front || !next) throw new Error('тостов меньше двух')
+
+		toast.close()
+		await nextTick()
+
+		expect(getComputedStyle(front).zIndex).toBe('1')
+
+		await still()
+
+		expect(card(next).getBoundingClientRect().bottom).toBeCloseTo(VIEWPORT.height - OFFSET, 0)
+		expect(card(next).getBoundingClientRect().width).toBeCloseTo(WIDTH, 0)
+
+		await expect.poll(() => front.isConnected).toBe(false)
+	})
+
+	it('без движения стопка листается на месте: переходит одна прозрачность', async () => {
+		await reducedMotion('reduce')
+
+		const { show } = await mount({ layout: 'cascade' })
+
+		await show('Первый', 'Второй')
+		await still()
+
+		const [front, next] = take(2)
+
+		if (!front || !next) throw new Error('тостов меньше двух')
+
+		await userEvent.wheel(card(front), { delta: { y: 100 } })
+		await nextTick()
+
+		expect(texts()).toEqual(['Первый', 'Второй'])
+		expect(transitioning(next).filter((property) => property !== 'opacity')).toEqual([])
+		expect(card(next).getBoundingClientRect().bottom).toBeCloseTo(VIEWPORT.height - OFFSET, 0)
 	})
 })

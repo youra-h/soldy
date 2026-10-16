@@ -27,10 +27,11 @@ export default { ...SetupToasts, inheritAttrs: false, components: { ToastsItem }
 			до первого тоста. Места он не занимает и нажатий мимо тостов не
 			ловит — это тема (`toasts/_toasts.scss`).
 
-			На нём: место — модификатор `so-toasts--placement-*` (стоит всегда),
-			номер слоя — `z-index` (`layout_styles`) и `data-layer`,
-			`role="region"`, `aria-live` и имя из локали («Уведомления (F8)»),
-			`dir`. Атрибуты потребителя — поверх наборов.
+			На нём: место — модификатор `so-toasts--placement-*` и раскладка —
+			`so-toasts--layout-*` (оба стоят всегда), номер слоя — `z-index`
+			(`layout_styles`) и `data-layer`, `role="region"`, `aria-live` и имя
+			из локали («Уведомления (F8)»), `dir`. Атрибуты потребителя — поверх
+			наборов. Колесо и стрелки стопки слушает на нём плагин стопки.
 		-->
 		<component
 			ref="rootElement"
