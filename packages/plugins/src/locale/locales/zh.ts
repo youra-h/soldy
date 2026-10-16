@@ -11,6 +11,7 @@ export const zhCN = freezeLocale({
 		tags: { close: '关闭{name}' },
 		toasts: { region: '通知 (F8)', close: '关闭{name}' },
 		scroller: { prev: '向前滚动', next: '向后滚动' },
+		pagination: { prev: '上一页', next: '下一页' },
 		field: { clear: '清除{name}' },
 		table: { selectAll: '全选' },
 		calendar: {

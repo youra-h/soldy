@@ -14,6 +14,7 @@ export const arEG = freezeLocale({
 		tags: { close: 'إغلاق {name}' },
 		toasts: { region: 'الإشعارات (F8)', close: 'إغلاق {name}' },
 		scroller: { prev: 'التمرير للخلف', next: 'التمرير للأمام' },
+		pagination: { prev: 'الصفحة السابقة', next: 'الصفحة التالية' },
 		field: { clear: 'مسح {name}' },
 		table: { selectAll: 'تحديد الكل' },
 		calendar: {

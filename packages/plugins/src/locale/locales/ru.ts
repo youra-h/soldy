@@ -11,6 +11,7 @@ export const ruRU = freezeLocale({
 		tags: { close: 'Закрыть {name}' },
 		toasts: { region: 'Уведомления (F8)', close: 'Закрыть {name}' },
 		scroller: { prev: 'Прокрутить назад', next: 'Прокрутить вперёд' },
+		pagination: { prev: 'Предыдущая страница', next: 'Следующая страница' },
 		field: { clear: 'Очистить {name}' },
 		table: { selectAll: 'Выбрать все' },
 		calendar: {

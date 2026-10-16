@@ -65,6 +65,7 @@ function overlay(base: TTranslations, patch: TPartialTranslations): TTranslation
 		tags: section(base, patch, 'tags'),
 		toasts: section(base, patch, 'toasts'),
 		scroller: section(base, patch, 'scroller'),
+		pagination: section(base, patch, 'pagination'),
 		field: section(base, patch, 'field'),
 		table: section(base, patch, 'table'),
 		calendar: section(base, patch, 'calendar'),

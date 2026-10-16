@@ -11,6 +11,7 @@ export const frFR = freezeLocale({
 		tags: { close: 'Fermer {name}' },
 		toasts: { region: 'Notifications (F8)', close: 'Fermer {name}' },
 		scroller: { prev: 'Défiler vers l’arrière', next: 'Défiler vers l’avant' },
+		pagination: { prev: 'Page précédente', next: 'Page suivante' },
 		field: { clear: 'Effacer {name}' },
 		table: { selectAll: 'Tout sélectionner' },
 		calendar: {
