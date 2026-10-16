@@ -40,15 +40,15 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@soldy-ui/core": "^0.1.0",
-    "@soldy-ui/plugins": "^0.1.0",
-    "@soldy-ui/setup": "^0.1.0"
+    "@soldy-ui/core": "0.1.0",
+    "@soldy-ui/plugins": "0.1.0",
+    "@soldy-ui/setup": "0.1.0"
   },
   "peerDependencies": {
     "vue": "^3.5.32"
   },
   "devDependencies": {
-    "@soldy-ui/icons-material": "^0.1.0",
+    "@soldy-ui/icons-material": "0.1.0",
     "@types/node": "^26.1.1",
     "vite-plugin-vue-devtools": "^8.2.1",
     "vue": "^3.5.32",

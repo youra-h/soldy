@@ -40,17 +40,17 @@
     "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
-    "@soldy-ui/core": "^0.1.0",
-    "@soldy-ui/plugins": "^0.1.0",
-    "@soldy-ui/setup": "^0.1.0"
+    "@soldy-ui/core": "0.1.0",
+    "@soldy-ui/plugins": "0.1.0",
+    "@soldy-ui/setup": "0.1.0"
   },
   "peerDependencies": {
     "react": "^19.2.0",
     "react-dom": "^19.2.0"
   },
   "devDependencies": {
-    "@soldy-ui/icons-material": "^0.1.0",
-    "@soldy-ui/theme-oren": "^0.1.0",
+    "@soldy-ui/icons-material": "0.1.0",
+    "@soldy-ui/theme-oren": "0.1.0",
     "@types/node": "^26.1.1",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",

@@ -35,7 +35,7 @@
     "dist"
   ],
   "dependencies": {
-    "@soldy-ui/core": "^0.1.0"
+    "@soldy-ui/core": "0.1.0"
   },
   "scripts": {
     "build": "vite build -c vite.lib.config.ts && tsc -p tsconfig.build.json",
