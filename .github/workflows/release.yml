@@ -1,0 +1,74 @@
+name: Release
+
+# Публикация в npm (см. docs/agents/build.md, «Версии пакетов»). Выпуск
+# готовит PR `Выпуск <версия>`; после его мержа версия ядра в манифесте ещё
+# не опубликована — тогда и публикуем. На любом другом push версия уже в npm,
+# и шаги ниже пропускаются.
+on:
+  push:
+    branches: [main]
+
+# Два мержа подряд не публикуют одну версию дважды.
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Публикация в npm
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # теги и GitHub Release
+      id-token: write # provenance npm
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          registry-url: https://registry.npmjs.org
+
+      # Группа `fixed` идёт одной версией, поэтому хватает версии ядра.
+      - name: Версия опубликована?
+        id: check
+        run: |
+          version=$(node -p "require('./packages/core/package.json').version")
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          if npm view "@soldy-ui/core@$version" version >/dev/null 2>&1; then
+            echo "publish=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "publish=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - if: steps.check.outputs.publish == 'true'
+        run: npm ci
+
+      - if: steps.check.outputs.publish == 'true'
+        name: Сборка пакетов
+        run: npm run build
+
+      - if: steps.check.outputs.publish == 'true'
+        name: Импорты пакетов объявлены
+        run: npm run check:published-imports
+
+      # changeset publish публикует каждый пакет, чьей версии в npm нет, и
+      # ставит теги `<пакет>@<версия>`.
+      - if: steps.check.outputs.publish == 'true'
+        name: Публикация
+        run: npx changeset publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_CONFIG_PROVENANCE: true
+
+      - if: steps.check.outputs.publish == 'true'
+        name: Теги и GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.check.outputs.version }}
+        run: |
+          git push origin --tags
+          # Раздел новой версии: от «## <версия>» до следующего «## ».
+          awk -v v="## $VERSION" '$0==v{f=1;next} /^## /{f=0} f' packages/core/CHANGELOG.md > notes.md
+          gh release create "v$VERSION" --title "v$VERSION" --notes-file notes.md
