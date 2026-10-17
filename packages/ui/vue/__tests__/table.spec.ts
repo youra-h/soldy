@@ -31,6 +31,7 @@ import type {
 	TSelectionMode,
 	TTableCollection,
 	TTableColumnFit,
+	TTableColumnSort,
 	TTableColumnSource,
 	TTableRecord,
 	TTableReorderPreview,
@@ -546,6 +547,32 @@ describe('сортировка', () => {
 		await settle()
 
 		expect(rowNames()).toEqual(['Анна', 'Борис', 'Вера'])
+	})
+
+	/**
+	 * Незаданному `sortMode` Vue ставит умолчание декларации — `single`. Чужому
+	 * движку фасад его не пишет: смена режима срезала бы сортировку до одной
+	 * колонки.
+	 */
+	it('движок снаружи сохраняет режим и все колонки сортировки', async () => {
+		const engine = engineOf('none')
+		const sort: TTableColumnSort[] = [
+			{ field: 'age', direction: 'asc' },
+			{ field: 'name', direction: 'desc' },
+		]
+
+		engine.extensions.sort.sortMode = 'multiple'
+		engine.extensions.sort.sort = sort
+
+		await render(() => h(Table, { engine }))
+
+		const [name, age] = findAll('.so-table-column')
+
+		expect(engine.extensions.sort.sortMode).toBe('multiple')
+		expect(engine.extensions.sort.sort).toEqual(sort)
+		expect(rowNames()).toEqual(['Вера', 'Анна', 'Борис'])
+		expect(age.dataset.sortPriority).toBe('1')
+		expect(name.dataset.sortPriority).toBe('2')
 	})
 })
 

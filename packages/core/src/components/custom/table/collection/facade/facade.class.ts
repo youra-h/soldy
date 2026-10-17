@@ -93,12 +93,16 @@ export class TTableCollectionFacade extends TSelectionCollectionFacade<
 	/**
 	 * Колонки — расширению колонок, сортировка — расширению сортировки, режим и
 	 * состав строк — базе. Режим сортировки — до состояния: он решает, сколько
-	 * колонок в нём останется. Пустой состав колонок, как и строк, и пустая
-	 * сортировка не применяются: движок снаружи свои не теряет.
+	 * колонок в нём останется. Пустой состав колонок, как и строк, пустая
+	 * сортировка и значения, равные умолчаниям, не применяются: движок снаружи
+	 * свои не теряет. Умолчание декларации фреймворк ставит и незаданному
+	 * пропу, а `single` срезал бы сортировку движка до одной колонки.
 	 */
 	protected override applyProps(props: TTableCollectionFacadeProps): void {
+		const defaults = TTableCollectionFacade.defaultValues
+
 		if (props.columns?.length) this.columns = props.columns
-		if (props.sortMode) this.sortMode = props.sortMode
+		if (props.sortMode && props.sortMode !== defaults.sortMode) this.sortMode = props.sortMode
 		if (props.presorted) this.presorted = props.presorted
 		if (props.sort?.length) this.sort = props.sort
 		if (props.grid) this.grid = props.grid
