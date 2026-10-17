@@ -300,17 +300,17 @@ describe('набор', () => {
 	 * День с нуля не начинается, и ноль числа не даёт — но виден: часть
 	 * показывает набранное, пока не придёт следующая цифра.
 	 */
-	it('ноль первой цифрой виден: «00» без числа, из «0» и «5» выходит 5', () => {
+	it('ноль первой цифрой виден: «0» без числа, из «0» и «5» выходит 5', () => {
 		const input = field({ locale: 'ru-RU' }, 'day')
 		const segments = vi.fn()
 
 		input.events.on('change:segments', segments)
 		type(input, '0')
 
-		expect(part(input, 'day')).toMatchObject({ text: '00', placeholder: false })
+		expect(part(input, 'day')).toMatchObject({ text: '0', placeholder: false })
 		expect(part(input, 'day').dataset['data-placeholder']).toBe('false')
 		expect(part(input, 'day').aria['aria-valuenow']).toBeNull()
-		expect(part(input, 'day').aria['aria-valuetext']).toBe('00')
+		expect(part(input, 'day').aria['aria-valuetext']).toBe('0')
 		// Набрано — разделители уже текст даты, а не подсказка формата
 		expect(
 			input.segments
@@ -331,7 +331,7 @@ describe('набор', () => {
 		const input = field({ locale: 'ru-RU', value: '2026-05-12' }, 'day')
 
 		type(input, '0')
-		expect(part(input, 'day').text).toBe('00')
+		expect(part(input, 'day').text).toBe('0')
 		expect(part(input, 'day').aria['aria-valuenow']).toBeNull()
 		expect(input.value).toBeUndefined()
 		expect(input.focusedSegment).toBe('day')
@@ -365,16 +365,40 @@ describe('набор', () => {
 		expect(input.focusedSegment).toBe('day')
 	})
 
-	it('лишний ноль не копится: часть показывает нули и ждёт цифры, а не пустеет', () => {
-		const day = field({ locale: 'ru-RU' }, 'day')
+	/**
+	 * Без проверки «00» — число как есть: верна ли дата, решает приложение, и
+	 * набор идёт дальше, хоть одни нули.
+	 */
+	it('«00» без validate записывается, и фокус уходит дальше', () => {
+		const input = field({ locale: 'ru-RU' }, 'day')
+
+		type(input, '00')
+		expect(part(input, 'day').text).toBe('00')
+		expect(input.focusedSegment).toBe('month')
+
+		type(input, '00')
+		expect(part(input, 'month').text).toBe('00')
+		expect(input.focusedSegment).toBe('year')
+
+		type(input, '0000')
+		expect(part(input, 'year').text).toBe('0')
+		// Дня 00.00.0000 нет — значения нет, а ошибкой его помечает приложение
+		expect(input.value).toBeUndefined()
+		expect(input.invalid).toBe(false)
+	})
+
+	it('validate: «00» не записывается, часть ждёт цифры, лишний ноль не копится', () => {
+		const day = field({ locale: 'ru-RU', validate: true }, 'day')
 		const segments = vi.fn()
 
 		type(day, '00')
+		expect(part(day, 'day').text).toBe('00')
+		expect(part(day, 'day').aria['aria-valuenow']).toBeNull()
+		expect(day.focusedSegment).toBe('day')
+
 		day.events.on('change:segments', segments)
 		type(day, '0')
-
 		expect(part(day, 'day').text).toBe('00')
-		expect(day.focusedSegment).toBe('day')
 		// Текст тот же — перечитывать нечего
 		expect(segments).not.toHaveBeenCalled()
 
@@ -382,14 +406,30 @@ describe('набор', () => {
 		expect(part(day, 'day').text).toBe('07')
 		expect(day.focusedSegment).toBe('month')
 
-		const year = field({ locale: 'ru-RU' }, 'year')
+		type(day, '01')
+		expect(day.focusedSegment).toBe('year')
+
+		const year = field({ locale: 'ru-RU', validate: true }, 'year')
 
 		type(year, '00000')
-		expect(part(year, 'year').text).toBe('000')
+		expect(part(year, 'year').text).toBe('0000')
 
 		type(year, '5')
 		expect(part(year, 'year').text).toBe('5')
 		expect(part(year, 'year').aria['aria-valuenow']).toBe('5')
+	})
+
+	it('validate включается на лету — со следующей цифры', () => {
+		const input = field({ locale: 'ru-RU' }, 'day')
+		const changed = vi.fn()
+
+		input.events.on('change:validate', changed)
+		input.validate = true
+		input.validate = true
+		expect(changed).toHaveBeenCalledTimes(1)
+
+		type(input, '00')
+		expect(input.focusedSegment).toBe('day')
 	})
 
 	it('ar-EG: набранный ноль — нулями локали', () => {
@@ -399,8 +439,8 @@ describe('набор', () => {
 		type(input, '0')
 
 		expect(zero).not.toBe('0')
-		expect(part(input, 'day').text).toBe(zero.repeat(2))
-		expect(part(input, 'day').aria['aria-valuetext']).toBe(zero.repeat(2))
+		expect(part(input, 'day').text).toBe(zero)
+		expect(part(input, 'day').aria['aria-valuetext']).toBe(zero)
 	})
 
 	it('год — четыре цифры, с нулями впереди тоже', () => {
@@ -1411,7 +1451,7 @@ describe('время: набор', () => {
 		)
 	})
 
-	it('час и минута h23 начинаются с нуля, а ноль часа h12 — не число: «00» до цифры', () => {
+	it('час и минута h23 начинаются с нуля, а ноль часа h12 — не число: «0» до цифры', () => {
 		const ru = field({ locale: 'ru-RU', kind: 'datetime', value: '2026-05-12T14:30' }, 'hour')
 
 		type(ru, '0')
@@ -1429,7 +1469,7 @@ describe('время: набор', () => {
 		const en = field({ locale: 'en-US', kind: 'datetime' }, 'hour')
 
 		type(en, '0')
-		expect(part(en, 'hour')).toMatchObject({ text: '00', placeholder: false })
+		expect(part(en, 'hour')).toMatchObject({ text: '0', placeholder: false })
 		expect(part(en, 'hour').aria['aria-valuenow']).toBeNull()
 		expect(en.focusedSegment).toBe('hour')
 

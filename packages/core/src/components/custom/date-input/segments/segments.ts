@@ -14,7 +14,7 @@ import type { TDateFieldPart, TDateInputEdge, TDateInputParts } from '../types'
  *
  * Набранные цифры части (`typed`) — то, к чему допишется следующая. Пока числа
  * у части нет, их видно вместо подсказки: ноль, с которого день не
- * начинается, — «00».
+ * начинается, — «0».
  */
 
 /** Часть формата по типу; части нет в формате — `undefined`. */
@@ -99,8 +99,9 @@ export function enterKey(
 	typed: string,
 	part: TFieldPart,
 	key: string,
+	validate: boolean,
 ): TKeyEntry | undefined {
-	const entry = part.rule.enter(parts, typed, key)
+	const entry = part.rule.enter(parts, typed, key, validate)
 
 	if (entry === undefined) return undefined
 
