@@ -1,58 +1,70 @@
+<script lang="ts">
+import { Button } from '../../button'
+import SetupMenuItem from './setup.component'
+
+/**
+ * Пункт-действие. Строку флажок рисует свою (`CheckboxItem.vue`): у него
+ * отметка в начале строки и другое нажатие.
+ *
+ * Вокруг слотов значка и подсказки нет пробелов: пустую обёртку тема прячет
+ * по `:empty`, и пробельный текст сделал бы её непустой.
+ */
+export default { ...SetupMenuItem, components: { Button } }
+</script>
+
 <template>
-	<div class="so-menu-item">
+	<component
+		ref="rootElement"
+		:is="tag"
+		v-if="rendered"
+		v-show="visible"
+		:class="classes"
+		v-bind="{ ...dataset, ...containerAttrs, ...attrs }"
+	>
 		<!--
-			Пункт: действие, флажок или переключатель — строка у них одна.
-			Корень несёт состояние для темы (`data-highlighted`,
-			`data-selected`, `data-disabled`) и модификаторы размера и своего
-			варианта, а строка красится от него.
+			Корень несёт состояние для темы (`data-highlighted`, `data-disabled`)
+			и модификаторы размера меню и своего варианта, а строка красится от
+			него: носитель `dataset` один.
 		-->
 
 		<!--
 			Строка — `Button` на `div`, как у ListBox: на ней ARIA пункта (роль
-			`menuitem`, `menuitemcheckbox` или `menuitemradio`, `aria-checked`,
-			`tabindex` обхода) и DOM-фокус. Размер и `disabled` — пункта. Вида и
-			варианта строка не получает: вид ей даёт тема по контексту, а цвет
-			она берёт с пункта и панели.
-		-->
-		<Button>
-			<template #leading>
-				<!--
-					Отметка — только у флажка и переключателя, и у неотмеченных
-					тоже: обёртка держит колонку, а её наличие в списке тема
-					читает как «у меню есть колонка отметок». Рисунок внутри —
-					только у отмеченного: у флажка `Icon` роли `check`, у
-					переключателя — точка темы. Обёртка скрыта от скринридера:
-					состояние объявляет `aria-checked`.
-				-->
-				<span class="so-menu-item__indicator">
-					<slot name="indicator-icon">
-						<Icon />
-						<span class="so-menu-item__dot"></span>
-					</slot>
-				</span>
+			`menuitem`, `tabindex="-1"` от меню) и DOM-фокус, когда пункт
+			подсвечен. Размер и `disabled` — пункта. Вида и варианта строка не
+			получает: вид ей даёт тема по контексту, а цвет она берёт с пункта и
+			панели.
 
-				<!--
-					Значок — слот `leading` в обёртке колонки. Обёртка есть у
-					каждого пункта: пустая места не занимает, а если значок есть
-					хоть у одного пункта меню — держит его колонку.
-				-->
-				<span class="so-menu-item__icon">
-					<slot name="leading" />
-				</span>
+			Нажатие — клик строки: Enter и пробел на ней превращает в клик сама
+			строка (`TActionPlugin`), и путь у мыши и клавиатуры один. Решает
+			меню (`adapters.menu.choose()`): выключенному пункту оно отказывает,
+			а доступный выполняет и закрывается.
+		-->
+		<Button
+			embedded="menu.row"
+			tag="div"
+			:size="size"
+			:disabled="disabled"
+			@click="context?.adapters.menu.choose()"
+			v-bind="{ ...aria, ...controlAttrs }"
+		>
+			<!--
+				Значок — слот `leading` в обёртке колонки. Обёртка есть у каждого
+				пункта: пустая места не занимает, а если значок есть хоть у одного
+				пункта меню, держит его колонку.
+			-->
+			<template #leading>
+				<span class="so-menu-item__icon"><slot name="leading" /></span>
 			</template>
 
-			<!-- Текст пункта; запасное — `text` -->
-			<slot />
+			<slot :text="text">{{ text }}</slot>
 
+			<!--
+				Подсказка сочетания клавиш (`Ctrl+S`, `⌘⌫`) — слот `trailing` в
+				обёртке у конца строки. Пустая обёртка места не занимает.
+			-->
 			<template #trailing>
-				<!--
-					Подсказка сочетания клавиш (`Ctrl+S`, `⌘⌫`) — слот `trailing`
-					в обёртке у конца строки. Пустая обёртка места не занимает.
-				-->
-				<span class="so-menu-item__shortcut">
-					<slot name="trailing" />
-				</span>
+				<span class="so-menu-item__shortcut"><slot name="trailing" /></span>
 			</template>
 		</Button>
-	</div>
+	</component>
 </template>

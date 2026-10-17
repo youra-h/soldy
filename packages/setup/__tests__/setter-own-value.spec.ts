@@ -35,6 +35,10 @@ import {
 	TListBox,
 	TListBoxCollectionFacade,
 	TListBoxItemCollectionFacade,
+	TMenu,
+	TMenuCheckboxItem,
+	TMenuCollectionFacade,
+	TMenuItemCollectionFacade,
 	TRadioGroup,
 	TRadioGroupCollectionFacade,
 	TRadioGroupItemCollectionFacade,
@@ -165,6 +169,17 @@ const COLLECTIONS: Readonly<Record<string, readonly [string | null, () => TMount
 			facade.items = SOURCES
 
 			return withItem(facade, new TListBoxItemCollectionFacade())
+		},
+	],
+	// Записываемое у пункта — только отметка флажка: у фасада действия входов нет
+	MenuCollectionDescriptor: [
+		'MenuCollectionCheckboxItemDescriptor',
+		() => {
+			const facade = new TMenuCollectionFacade({}, { owner: new TMenu() })
+
+			facade.items = SOURCES.map((source) => new TMenuCheckboxItem(source))
+
+			return withItem(facade, new TMenuItemCollectionFacade())
 		},
 	],
 	RadioGroupCollectionDescriptor: [
