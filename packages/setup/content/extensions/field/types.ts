@@ -3,7 +3,7 @@
  * связка видит контрол, и опции расширений.
  */
 
-import type { IField, TInputControlEvents } from '@soldy-ui/core'
+import type { IField, TAria, TInputControlEvents } from '@soldy-ui/core'
 import type { IListenable, TFieldIdsPlugin } from '@soldy-ui/plugins'
 import type { TElevatorFactory } from '../../../protected/adapter/elevator'
 
@@ -17,12 +17,15 @@ export interface IFieldLink {
 }
 
 /**
- * Контрол поля глазами связки: ошибка, которую ему пишет поле, и признак
- * labelable — называет ли подпись его своим `for` или, как группу, ссылкой.
+ * Контрол поля глазами связки: ошибка, которую ему пишет поле, признак
+ * labelable — называет ли подпись его своим `for` или, как группу, ссылкой, —
+ * и набор элемента, который она называет: у labelable-контрола без `id` поля
+ * `id` от поля ложится туда.
  */
 export interface IFieldControl {
 	invalid: boolean
 	readonly labelable: boolean
+	readonly aria: TAria
 }
 
 /**
@@ -35,7 +38,7 @@ export interface IFieldInputControl extends IFieldControl {
 	readonly events: IListenable<Pick<TInputControlEvents, 'change:id'>>
 }
 
-/** Любой контрол поля: с `id` поля или без него (группа радио). */
+/** Любой контрол поля: с `id` поля или без него (группа радио, ползунок). */
 export type TFieldControl = IFieldControl | IFieldInputControl
 
 export interface IFieldExtensionOptions {

@@ -10,12 +10,16 @@
  * контролу (Input, Select, CheckBox, Switch, Rating) имя даёт `for`, а не
  * ссылка: `aria-labelledby` перекрыл бы подпись `Label` у флажка в поле.
  *
- * `id` поле задаёт значением `id` контрола, а не записью в его `aria`: свой
- * `id` каждый контрол уже ведёт до своего `<input>`, и у Select — до поля
- * внутри. Набор `aria` Select разметка кладёт атрибутами на вложенный Input,
- * а `id` там — проп Input, и снятый `id` из набора вернул бы `id` поля Select к
- * умолчанию поверх своего. Свой `id` потребителя главнее: поле задаёт `id`,
- * только пока своего нет, и снимает свой, когда контрол уходит из поля.
+ * `id` поле задаёт каналом самого контрола. У контрола с `id` поля
+ * (`TInputControl`: Input, Select, CheckBox, Switch, Rating) — значением его
+ * `id`, а не записью в `aria`: свой `id` каждый такой контрол уже ведёт до
+ * своего `<input>`, и у Select — до поля внутри. Набор `aria` Select разметка
+ * кладёт атрибутами на вложенный Input, а `id` там — проп Input, и снятый `id`
+ * из набора вернул бы `id` поля Select к умолчанию поверх своего. Свой `id`
+ * потребителя главнее: поле задаёт `id`, только пока своего нет, и снимает
+ * свой, когда контрол уходит из поля. У labelable-контрола без `id` поля
+ * (ползунок) канала, кроме `aria`, нет — `id` ложится туда, как `id` панели
+ * Tabs.
  *
  * Сам о себе контрол сообщает полю — `id` и labelable ли он: только он их
  * знает. По ним плагин связок поля решает `for` подписи — `id` контрола или
@@ -81,11 +85,20 @@ export class TFieldControlExtension {
 			aria.links = { labelledBy: control.labelable ? undefined : labelledBy, describedBy }
 		}
 
-		/** `id` поля — labelable-контролу без своего. */
+		/**
+		 * `id` поля — labelable-контролу без своего, каналом контрола: значением
+		 * `id`, а у контрола без `id` поля — в его `aria`.
+		 */
 		const syncId = (): void => {
-			if ('id' in control && control.labelable && control.id === undefined) {
-				control.id = ids.controlId
+			if (!control.labelable) return
+
+			if (!('id' in control)) {
+				control.aria.add('id', ids.controlId)
+
+				return
 			}
+
+			if (control.id === undefined) control.id = ids.controlId
 		}
 
 		const apply = (): void => {
@@ -113,7 +126,12 @@ export class TFieldControlExtension {
 			control.invalid = false
 
 			if (aria) aria.links = {}
-			if ('id' in control && control.id === ids.controlId) control.id = undefined
+
+			if (!('id' in control)) {
+				if (control.aria.get('id') === ids.controlId) control.aria.remove('id')
+			} else if (control.id === ids.controlId) {
+				control.id = undefined
+			}
 		}
 
 		apply()

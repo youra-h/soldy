@@ -24,6 +24,7 @@ import {
 	InputDescriptor,
 	RadioGroupDescriptor,
 	SelectDescriptor,
+	SliderDescriptor,
 	TFieldControlExtension,
 	TFieldExtension,
 	createAdapterContext,
@@ -261,6 +262,25 @@ describe('приём: связка контрола', () => {
 		expect(picker.instance.field.invalid).toBe(true)
 		expect(owner.labelAria.has('for')).toBe(false)
 		expect(ariaOf(picker, 'aria-labelledby')).toBe('f-label')
+	})
+
+	/**
+	 * У ползунка `id` поля нет: канала, кроме `aria`, у него нет, и `id` от поля
+	 * ложится туда — на элемент, который называет подпись.
+	 */
+	it('labelable-контрол без id поля: id поля — в его aria, снятие его убирает', () => {
+		const { factory } = createElevatorFactory()
+		const { field: owner } = field(factory, { label: 'Громкость' })
+		const slider = control(factory, SliderDescriptor())
+		const instance = slider.instance
+
+		expect(instance.labelable).toBe(true)
+		expect(ariaOf(slider, 'id')).toBe('f-control')
+		expect(owner.labelAria.get('for')).toBe('f-control')
+
+		slider.destroy()
+
+		expect(instance.aria.has('id')).toBe(false)
 	})
 })
 
