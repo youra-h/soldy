@@ -88,6 +88,11 @@ export const DateInputDescriptor = defineDescriptor(() =>
 				/** `minute` — время до минуты, `second` — ещё секунда. У поля даты ничего не меняет. */
 				timePrecision: { type: String, triggers: ['change:timePrecision'] },
 				/**
+				 * Проверка набора: «00» у дня и месяца не записывается, часть ждёт
+				 * следующей цифры. Выключена — верна ли дата, решает приложение.
+				 */
+				validate: { type: Boolean, triggers: ['change:validate'] },
+				/**
 				 * Части и разделители в порядке формата. Перечитываются на правку
 				 * частей и наборов частей (`change:segments`) и на всё, что пишет
 				 * их наборы ядро: локаль, вид поля и точность времени — текст,

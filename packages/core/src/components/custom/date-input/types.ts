@@ -183,6 +183,8 @@ export type TDateInputEvents = TClearableEvents<TDateInputValue> & {
 	'change:kind': (value: TDateInputKind) => void
 	/** change:timePrecision */
 	'change:timePrecision': (value: TTimePrecision) => void
+	/** change:validate */
+	'change:validate': (value: boolean) => void
 	/**
 	 * Части надо перечитать: набрали, стёрли, вставили, записали значение, фокус
 	 * ушёл с части, где видны набранные нули, или плагин сменил набор части
@@ -223,6 +225,11 @@ export interface IDateInputProps extends IClearableProps<TDateInputValue> {
 	 * ничего не меняет
 	 */
 	timePrecision?: TTimePrecision
+	/**
+	 * Проверка набора: «00» у дня и месяца не записывается, часть ждёт
+	 * следующей цифры. По умолчанию выключена — верна ли дата, решает приложение
+	 */
+	validate?: boolean
 }
 
 export interface IDateInput extends IClearable<TDateInputValue, IDateInputProps, TDateInputEvents> {
@@ -238,6 +245,8 @@ export interface IDateInput extends IClearable<TDateInputValue, IDateInputProps,
 	kind: TDateInputKind
 	/** Точность времени: до минуты или до секунды */
 	timePrecision: TTimePrecision
+	/** Проверка набора: число ниже хода части не записывается */
+	validate: boolean
 	/**
 	 * Итог ошибки: записанное своё (ошибку задаёт поле формы `Field` или код)
 	 * или собранное значение вне `min`/`max`, или его день недоступен

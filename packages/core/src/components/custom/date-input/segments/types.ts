@@ -40,13 +40,18 @@ export type TPartRule = {
 	step(value: number, min: number, max: number): number
 	/** Текст части с числом `shown` */
 	text(shown: number): string
-	/**
-	 * Текст набранных цифр, пока числа у части нет: нули, с которых она не
-	 * начинается («00»)
-	 */
+	/** Текст набранных цифр, пока числа у части нет: нули ниже её хода («0») */
 	typedText(typed: string): string
-	/** Знак в часть; знак не этой части — `undefined` */
-	enter(parts: TDateInputParts, typed: string, key: string): TPartEntry | undefined
+	/**
+	 * Знак в часть; знак не этой части — `undefined`. `validate` — число ниже
+	 * хода не записывается, часть ждёт следующей цифры
+	 */
+	enter(
+		parts: TDateInputParts,
+		typed: string,
+		key: string,
+		validate: boolean,
+	): TPartEntry | undefined
 	/** Backspace по набранной части с числом `shown` */
 	erase(shown: number): TPartErase
 	/** Части после записи этой части — согласованные с ней соседи её группы */

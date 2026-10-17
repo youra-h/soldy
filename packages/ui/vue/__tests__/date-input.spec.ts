@@ -259,15 +259,15 @@ describe('v-model', () => {
  * фокуса: ушёл фокус с нулей — ядро само сообщает, что их сменила подсказка.
  */
 describe('набранный ноль', () => {
-	it('клавиша «0» на дне — в части «00»; фокус ушёл на месяц — у дня снова подсказка', async () => {
+	it('клавиша «0» на дне — в части «0»; фокус ушёл на месяц — у дня снова подсказка', async () => {
 		await render(() => h(DateInput))
 
 		segment('day').focus()
 		await type('0')
 
-		expect(segment('day').textContent).toBe('00')
+		expect(segment('day').textContent).toBe('0')
 		expect(segment('day').dataset.placeholder).toBe('false')
-		expect(segment('day').getAttribute('aria-valuetext')).toBe('00')
+		expect(segment('day').getAttribute('aria-valuetext')).toBe('0')
 		expect(segment('day').hasAttribute('aria-valuenow')).toBe(false)
 		expect(document.activeElement).toBe(segment('day'))
 
@@ -276,6 +276,28 @@ describe('набранный ноль', () => {
 
 		expect(segment('day').textContent).toBe('дд')
 		expect(segment('day').dataset.placeholder).toBe('true')
+	})
+
+	it('«00» на дне без validate — день 00, фокус уходит на месяц', async () => {
+		await render(() => h(DateInput))
+
+		segment('day').focus()
+		await type('0')
+		await type('0')
+
+		expect(segment('day').textContent).toBe('00')
+		expect(document.activeElement).toBe(segment('month'))
+	})
+
+	it('«00» на дне с validate — фокус стоит, часть ждёт цифры', async () => {
+		await render(() => h(DateInput, { validate: true }))
+
+		segment('day').focus()
+		await type('0')
+		await type('0')
+
+		expect(segment('day').textContent).toBe('00')
+		expect(document.activeElement).toBe(segment('day'))
 	})
 })
 

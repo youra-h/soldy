@@ -117,7 +117,7 @@ export class TDateInput
 	static defaultValues: typeof TClearable.defaultValues &
 		TDefaultValues<
 			IDateInputProps,
-			'locale' | 'kind' | 'timePrecision',
+			'locale' | 'kind' | 'timePrecision' | 'validate',
 			'min' | 'max' | 'unavailable'
 		> = {
 		...TClearable.defaultValues,
@@ -129,6 +129,8 @@ export class TDateInput
 		locale: DEFAULT_LOCALE,
 		kind: 'date',
 		timePrecision: 'minute',
+		// Верна ли дата, по умолчанию решает приложение
+		validate: false,
 	}
 
 	protected _min: TDateInputBound
@@ -137,6 +139,7 @@ export class TDateInput
 	protected _locale: string
 	protected _kind: TDateInputKind
 	protected _timePrecision: TTimePrecision
+	protected _validate: boolean
 	protected _parts: TDateInputParts
 	protected _focusedSegment: TDateFieldPart | undefined = undefined
 	/**
@@ -160,6 +163,7 @@ export class TDateInput
 		this._locale = props.locale ?? ctor.defaultValues.locale
 		this._kind = props.kind ?? ctor.defaultValues.kind
 		this._timePrecision = props.timePrecision ?? ctor.defaultValues.timePrecision
+		this._validate = props.validate ?? ctor.defaultValues.validate
 		this._parts = partsOfValue(this._value)
 
 		// Корень — группа частей: имя ей даёт `aria_label` или `aria_labelledBy`
@@ -273,6 +277,23 @@ export class TDateInput
 	}
 
 	/**
+	 * Проверка набора: число ниже хода части («00» у дня и месяца) не
+	 * записывается, и часть ждёт следующей цифры. Выключена — набранное
+	 * записывается как есть, и верна ли дата, решает приложение. Набранного не
+	 * меняет: действует со следующей цифры.
+	 */
+	get validate(): boolean {
+		return this._validate
+	}
+
+	set validate(value: boolean) {
+		if (this._validate === value) return
+
+		this._validate = value
+		this.events.emit('change:validate', value)
+	}
+
+	/**
 	 * Итог ошибки: своё — записанное полем формы `Field` или кодом, — или
 	 * собранное значение вне `min`/`max`, или его день недоступен. Значения нет
 	 * — своей проверке нечего проверять.
@@ -380,7 +401,7 @@ export class TDateInput
 
 		if (part === undefined) return false
 
-		const entry = enterKey(this._parts, this._typed, part, key)
+		const entry = enterKey(this._parts, this._typed, part, key, this._validate)
 
 		if (entry === undefined) return false
 		if (this._editable) this._enter(entry)
@@ -394,7 +415,13 @@ export class TDateInput
 
 		if (first === undefined) return false
 
-		const entry = enterKey(withoutParts(this._parts, parts, format), '', first, key)
+		const entry = enterKey(
+			withoutParts(this._parts, parts, format),
+			'',
+			first,
+			key,
+			this._validate,
+		)
 
 		if (entry === undefined) return false
 		if (!this._editable) return true
