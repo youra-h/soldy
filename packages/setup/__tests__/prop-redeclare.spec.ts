@@ -25,6 +25,8 @@ import {
 	AccordionItemDescriptor,
 	ButtonDescriptor,
 	ListBoxItemDescriptor,
+	MenuCheckboxItemDescriptor,
+	MenuItemDescriptor,
 	RadioGroupItemDescriptor,
 	SelectItemDescriptor,
 	StylableDescriptor,
@@ -199,7 +201,7 @@ describe('переобъявление ходит в обе стороны', () 
 })
 
 describe('элементы коллекций: размер и вид задаёт владелец', () => {
-	// Tags.Item — не здесь: вариант у тега свой (ниже)
+	// Tags.Item и пункты меню — не здесь: вариант у них свой (ниже)
 	const items: Array<[string, () => IComponentDescriptor]> = [
 		['ListBox.Item', ListBoxItemDescriptor],
 		['Select.Item', SelectItemDescriptor],
@@ -238,13 +240,17 @@ describe('элементы коллекций: размер и вид задаё
 })
 
 /**
- * Тег: размер диктует набор, а вариант у тега свой — в одном наборе теги
- * бывают разного цвета. Снят только `size`, `variant` — вход, унаследованный
- * от `ValueControlDescriptor`.
+ * Тег и пункт меню: размер диктует владелец, а вариант у них свой — в одном
+ * наборе теги бывают разного цвета, в одном меню бывает «опасный» пункт. Снят
+ * только `size`, `variant` — вход, унаследованный от `ValueControlDescriptor`.
  */
-describe('тег: размер задаёт набор, вариант — свой', () => {
+describe.each([
+	['Tags.Item', TagsItemDescriptor],
+	['Menu.Item', MenuItemDescriptor],
+	['Menu.CheckboxItem', MenuCheckboxItemDescriptor],
+])('%s: размер задаёт владелец, вариант — свой', (_name, factory) => {
 	it('в разметке size нет, variant есть', () => {
-		const descriptor = TagsItemDescriptor()
+		const descriptor: IComponentDescriptor = factory()
 		const surface = TSurface.of(descriptor, RawProfile)
 
 		expect(inputs(descriptor)).not.toContain('size')
@@ -257,8 +263,10 @@ describe('тег: размер задаёт набор, вариант — св�
 			expect.arrayContaining(['change:size', 'change:variant']),
 		)
 	})
+})
 
-	it('в типах пропсов тега variant есть, size нет', () => {
+describe('в типах пропсов тега и пункта меню variant есть, size нет', () => {
+	it('тег', () => {
 		type TTagProps = DescriptorProps<typeof TagsItemDescriptor>
 
 		// @ts-expect-error — размер тега диктует набор
@@ -267,6 +275,20 @@ describe('тег: размер задаёт набор, вариант — св�
 
 		expect([size, variant]).toEqual(['size', 'variant'])
 		expectTypeOf<TTagProps>().toHaveProperty('variant')
+	})
+
+	it('пункт меню и флажок', () => {
+		type TItemProps = DescriptorProps<typeof MenuItemDescriptor>
+		type TCheckboxProps = DescriptorProps<typeof MenuCheckboxItemDescriptor>
+
+		// @ts-expect-error — размер пункта диктует меню
+		const size: keyof TItemProps = 'size'
+		// @ts-expect-error — и флажка тоже
+		const checkboxSize: keyof TCheckboxProps = 'size'
+
+		expect([size, checkboxSize]).toEqual(['size', 'size'])
+		expectTypeOf<TItemProps>().toHaveProperty('variant')
+		expectTypeOf<TCheckboxProps>().toHaveProperty('variant')
 	})
 })
 

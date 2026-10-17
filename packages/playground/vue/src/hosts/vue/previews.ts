@@ -1,6 +1,11 @@
 import { defineComponent, h, mergeProps, ref, watch, type Component } from 'vue'
 import type { TComponentVariant } from '@soldy-ui/core'
-import type { DescriptorSlots, PopoverDescriptor, TooltipDescriptor } from '@soldy-ui/setup'
+import type {
+	DescriptorSlots,
+	MenuDescriptor,
+	PopoverDescriptor,
+	TooltipDescriptor,
+} from '@soldy-ui/setup'
 import {
 	COLLECTION_ITEMS,
 	COLLECTION_MANY_ITEMS,
@@ -25,6 +30,7 @@ import {
 	Input,
 	Label,
 	ListBox,
+	Menu,
 	Pagination,
 	Popover,
 	ProgressLinear,
@@ -68,6 +74,9 @@ type TPopoverTriggerScope = DescriptorSlots<typeof PopoverDescriptor>['trigger']
 
 /** Scope слота `trigger` у Tooltip — ссылка триггера на панель. */
 type TTooltipTriggerScope = DescriptorSlots<typeof TooltipDescriptor>['trigger']
+
+/** Scope слота `trigger` у Menu — связка кнопки с меню и вид «нажата». */
+type TMenuTriggerScope = DescriptorSlots<typeof MenuDescriptor>['trigger']
 
 /**
  * Содержимое коллекций — из общего манифеста: состав нужен не только здесь.
@@ -340,6 +349,31 @@ export const PREVIEWS: Record<string, TPreview> = {
 				],
 			},
 		),
+
+	// Триггер — Button, связку с меню и вид «нажата» он берёт из scope слота.
+	// Пункты — разметкой: группа флажков с подписью, действия с подсказками
+	// сочетаний, выключенное действие и «опасный» пункт своего варианта
+	menu: (bind) =>
+		h(Menu as Component, bind, {
+			trigger: ({ triggerAria, triggerDataset }: TMenuTriggerScope) =>
+				h(Button, { text: 'Действия', ...triggerAria, ...triggerDataset }),
+			default: () => [
+				h(Menu.Group, { label: 'Вид' }, () => [
+					h(Menu.CheckboxItem, { value: 'grid', text: 'Сетка', selected: true }),
+					h(Menu.CheckboxItem, { value: 'ruler', text: 'Линейка' }),
+				]),
+				h(Menu.Separator),
+				h(Menu.Item, { value: 'edit', text: 'Изменить' }, { trailing: () => 'Ctrl+E' }),
+				h(Menu.Item, { value: 'copy', text: 'Дублировать' }, { trailing: () => 'Ctrl+D' }),
+				h(Menu.Item, { value: 'archive', text: 'В архив', disabled: true }),
+				h(Menu.Separator),
+				h(
+					Menu.Item,
+					{ value: 'remove', text: 'Удалить', variant: 'negative' },
+					{ trailing: () => 'Del' },
+				),
+			],
+		}),
 
 	// Триггер — Button, ссылку на панель (`aria-describedby`) он берёт из
 	// scope слота. Текст подсказки — слотом: пропа текста у неё нет

@@ -13,8 +13,9 @@ import type {
 	TBatchExtension,
 	TSelectionCollectionFacadeEvents,
 	TSelectionExtension,
+	TSelectionItemFacadeEvents,
 } from '../../../base/collection'
-import type { IMenuItemExtension } from './extensions/menu/item/types'
+import type { IMenuItemExtension, TMenuItemEventsExtension } from './extensions/menu/item/types'
 import type { TMenuExtension, TMenuEngineOptions, TMenuExtensionEvents } from './extensions'
 import type { IMenu } from '../types'
 import type { IMenuItem, IMenuItemProps } from '../item/types'
@@ -76,3 +77,6 @@ export type TMenuAdapters<TItem extends IMenuItem = IMenuItem> = {
 /** События фасада меню: база выбора плюс карта расширения `menu` (`choose`). */
 export type TMenuCollectionFacadeEvents = TSelectionCollectionFacadeEvents<IMenuItem> &
 	TMenuExtensionEvents
+
+/** События фасада пункта: набор базы плюс карта адаптера `menu`. */
+export type TMenuItemCollectionFacadeEvents = TSelectionItemFacadeEvents & TMenuItemEventsExtension

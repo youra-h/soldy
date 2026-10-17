@@ -32,6 +32,7 @@ import {
 	createEngine,
 	createEngineAccordion,
 	createEngineListBox,
+	createEngineMenu,
 	createEngineRadioGroup,
 	createEngineSelect,
 	createEngineTable,
@@ -41,6 +42,7 @@ import {
 	TAttributes,
 	TCollectionStorageDriver,
 	TListBox,
+	TMenu,
 	TRadioGroup,
 	TSelect,
 	TTable,
@@ -147,6 +149,14 @@ const cases: TCase[] = [
 			const { batch } = createEngineTable({ owner: new TTable() }).extensions
 
 			return { fill: (list) => batch.set(list.map(tableRow)), items: () => batch.items }
+		},
+	},
+	{
+		name: 'Menu',
+		build: () => {
+			const { batch } = createEngineMenu({ owner: new TMenu() }).extensions
+
+			return { fill: (list) => batch.set(list), items: () => batch.items }
 		},
 	},
 ]
