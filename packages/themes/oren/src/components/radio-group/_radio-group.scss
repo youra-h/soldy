@@ -140,13 +140,31 @@
 	@include mixines.radio-variant('.so-radio-group-item', $color: 'neutral');
 }
 
+// Невалидная группа — `data-invalid` корня группы (его пишет поле `Field`):
+// кольца невыбранных радио — цвета ошибки, как у варианта `negative`, и под
+// наведением тоже. Ошибку несёт рамка покоя, а не выбор: отметка выбранного
+// остаётся цветом своего варианта. Радио стоят в группе на любой глубине —
+// раскладку задаёт потребитель, — отсюда потомок, а не ребёнок.
+.so-radio-group[data-invalid='true'] .so-radio-group-item:not([data-selected='true']) {
+	@include mixines.radio-ring('.so-radio-group-item', 'negative');
+}
+
 // Принудительные цвета (высокий контраст Windows): браузер заменяет фон
 // системным цветом поверхности, и точка пропала бы вместе с ним, а нативное
 // радио скрыто — выбор видно только по ней. Рамку он перекрашивает, но не
 // убирает, поэтому толстое кольцо вида `ring` видно и так.
+//
+// Ошибку от покоя здесь отличает толщина: цвет кольца системный, и кольца
+// невалидной группы вдвое толще, как рамка ошибки у полей и коробки CheckBox.
 @media (forced-colors: active) {
 	.so-radio-group-item__indicator {
 		forced-color-adjust: none;
 		background-color: CanvasText;
+	}
+
+	.so-radio-group[data-invalid='true']
+		.so-radio-group-item:not([data-selected='true'])
+		> .so-radio-group-item__control {
+		border-width: 2px;
 	}
 }

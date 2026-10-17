@@ -1,5 +1,4 @@
-@use 'sass:map';
-@use '../radio-group/mixins' as radio;
+@use '../../mixins/caption';
 
 // Подпись контрола: текст рядом с CheckBox, Switch или радио.
 //
@@ -19,22 +18,26 @@
 	@apply cursor-pointer select-none;
 	gap: var(--so-label-gap);
 
-	// Размер — кегль текста и зазор до контрола. Шкала та же, что у текста
-	// радио (`radio-group/_mixins.scss`): радио со своим текстом и радио в
-	// подписи выглядят одинаково.
+	// Размер — кегль текста и зазор до контрола. Шкала — общая шкала подписи
+	// (`mixins/_caption.scss`), та же, что у текста радио и у подписи `Field`:
+	// радио со своим текстом и радио в подписи выглядят одинаково, а флажок в
+	// подписи и поле в Field стоят от своих подписей на одном расстоянии.
 	//
 	// Кегль — у текста и распорки, а не у корня: иконки контрола меряются в
 	// `em` (`icon/_icon.scss`), и кегль подписи раздул бы галку CheckBox и
-	// иконки в ручке Switch. Зазор — переменной: в столбце от него половина.
-	@each $size, $scale in radio.$sizes {
-		&--size-#{$size} {
-			--so-label-gap: calc(var(--spacing) * #{map.get($scale, 'gap')});
+	// иконки в ручке Switch. Зазоры — переменными: сбоку `gap`, в столбце
+	// `stack` той же шкалы. Без модификатора размера — `normal`.
+	--so-label-gap: #{caption.space('normal', 'gap')};
+	--so-label-stack: #{caption.space('normal', 'stack')};
 
-			@if map.get($scale, 'text') {
-				> #{$this}__text,
-				> #{$this}__control::before {
-					@apply #{map.get($scale, 'text')};
-				}
+	@each $size, $_ in caption.$sizes {
+		&--size-#{$size} {
+			--so-label-gap: #{caption.space($size, 'gap')};
+			--so-label-stack: #{caption.space($size, 'stack')};
+
+			> #{$this}__text,
+			> #{$this}__control::before {
+				@include caption.text($size);
 			}
 		}
 	}
@@ -75,14 +78,14 @@
 
 	// Текст над контролом и под ним — столбец, прижатый к началу строки.
 	//
-	// Зазор — половина бокового: в столбце к нему прибавляются полуинтерлиньяж
-	// и выносные элементы строки, и полный зазор читался бы шире, чем сбоку.
-	// Распорки нет: ровнять по строке нечего, а обёртка высотой в строку
-	// добавила бы зазора вокруг контрола, который ниже строки.
+	// Зазор — `stack` шкалы подписи: на глаз он равен боковому, хотя числом
+	// меньше (почему — `mixins/_caption.scss`). Распорки нет: ровнять по
+	// строке нечего, а обёртка высотой в строку добавила бы зазора вокруг
+	// контрола, который ниже строки.
 	&--position-top,
 	&--position-bottom {
 		@apply flex-col items-start;
-		gap: calc(var(--so-label-gap) / 2);
+		gap: var(--so-label-stack);
 
 		> #{$this}__control::before {
 			content: none;

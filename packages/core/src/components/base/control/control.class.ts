@@ -1,4 +1,4 @@
-import { NATIVE_DISABLED_TAGS, TChangeEvent } from '../../../common'
+import { LABELABLE_TAGS, NATIVE_DISABLED_TAGS, TChangeEvent } from '../../../common'
 import type { TEventSink } from '../../../common'
 import type { TDefaultValues } from '../component'
 import { TStylable } from '../stylable'
@@ -109,6 +109,21 @@ export default class TControl<
 	 */
 	protected get _ariaTag(): string | object {
 		return this.tag
+	}
+
+	/**
+	 * Labelable ли элемент с `aria` (`LABELABLE_TAGS`): такой подпись называет
+	 * своим `for` и передаёт ему клик — поле Input, Select, CheckBox, Switch,
+	 * Rating. Группу частей (DateInput, DatePicker) и группу радио подпись
+	 * называет только ссылкой `aria-labelledby`, и клик по ней ничего не делает.
+	 *
+	 * Решает тег элемента с `aria` (`_ariaTag`), а не корня: у Input корень —
+	 * обёртка, а labelable — вложенный `<input>`.
+	 */
+	get labelable(): boolean {
+		const tag = this._ariaTag
+
+		return typeof tag === 'string' && LABELABLE_TAGS.has(tag.toLowerCase())
 	}
 
 	/**

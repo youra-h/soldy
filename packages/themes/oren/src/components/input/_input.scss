@@ -3,13 +3,9 @@
 @use '../button/mixins' as button;
 @use '../../mixins/required' as required;
 
-// Наведение красит рамку только у включённого поля. Корень Input — `div` (по
-// `tag`), и `:not(:disabled)` у него истинно всегда: выключено вложенное
-// поле. Его тег фиксирован, поэтому псевдокласс на нём разрешён (корневой
-// AGENTS.md, «CSS не стилизуется по `aria-*`»), а `data-disabled` разметка
-// Input на корень не выводит. Поле — прямой ребёнок корня: ввод в слоте
-// (разметка потребителя) выключенность поля не решает.
-$enabled: ':not(:has(> input:disabled))';
+// Наведение красит рамку только у включённого поля — выключенность читается
+// с вложенного поля (`$input-enabled` в `_mixins.scss`).
+$enabled: mixines.$input-enabled;
 
 .so-input {
 	$this: &;
@@ -76,6 +72,12 @@ $enabled: ':not(:has(> input:disabled))';
 		&--variant-#{$variant} {
 			@include mixines.input-variant($variant, $enabled);
 		}
+	}
+
+	// Невалидное поле — `data-invalid` корня, его пишет поле формы `Field`:
+	// рамка ошибки, как у DateInput (`field-invalid` в `_mixins.scss`).
+	&[data-invalid='true'] {
+		@include mixines.field-invalid('input', $enabled);
 	}
 
 	// Высота размера — по шкале `$sizes` в `_mixins.scss`, единственному месту

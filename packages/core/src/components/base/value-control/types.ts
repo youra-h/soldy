@@ -11,6 +11,11 @@ export type TValueControlEvents<T> = TControlEvents & {
 	input: (payload: TValuePayload<T>) => void
 	/** change:name */
 	'change:name': (value: string) => void
+	/**
+	 * change:invalid — итог ошибки сменился: записали своё или, у поля даты,
+	 * значение вышло за границы
+	 */
+	'change:invalid': (value: boolean) => void
 }
 
 export interface IValueControlProps<TValue> extends IControlProps {
@@ -25,4 +30,9 @@ export interface IValueControl<
 > extends IControl<TProps, TEvents> {
 	value: TValue
 	name: string
+	/**
+	 * Значение не прошло проверку: `data-invalid` и `aria-invalid` — только у
+	 * невалидного. Не проп: в разметке ошибку задают полю формы `Field`
+	 */
+	invalid: boolean
 }

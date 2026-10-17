@@ -1,6 +1,7 @@
 export * from './accordion'
 export * from './action'
 export * from './calendar'
+export * from './clearable'
 export * from './collection'
 export * from './component-view'
 export * from './date-input'

@@ -34,3 +34,18 @@ export interface IAriaPluginProps {
 	labelledBy?: string
 	describedBy?: string
 }
+
+/**
+ * Ссылки от разметки вокруг компонента — второй вход плагина рядом с
+ * пропсами: подпись и пояснение поля формы (`Field`). Пишет их связка поля с
+ * контролом, а не разметка компонента, поэтому в контракт они не входят.
+ */
+export interface IAriaLinks {
+	/**
+	 * `id` подписи — имя, пока своего нет: своё имя (`label`, `labelledBy`)
+	 * главнее
+	 */
+	readonly labelledBy?: string
+	/** `id` пояснения — встаёт в `aria-describedby` перед своим */
+	readonly describedBy?: string
+}

@@ -12,6 +12,7 @@ import {
 	DialogDescriptor,
 	DragAndDropDescriptor,
 	DrawerDescriptor,
+	FieldDescriptor,
 	FrameDescriptor,
 	IconDescriptor,
 	InputDescriptor,
@@ -106,6 +107,14 @@ export const COMPONENTS: readonly TComponentEntry[] = [
 		showcase: true,
 		span: 1,
 		description: 'Подпись контрола: клик по тексту переключает его, текст — его имя',
+	},
+	{
+		id: 'field',
+		label: 'Field',
+		descriptor: FieldDescriptor,
+		showcase: true,
+		span: 1,
+		description: 'Поле формы: подпись, подсказка и ошибка, связанные с контролом сами',
 	},
 	{
 		id: 'slider',

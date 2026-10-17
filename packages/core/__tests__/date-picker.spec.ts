@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { TDatePicker, TField, isSwipeable } from '@soldy-ui/core'
+import { TDatePicker, TClearable, isSwipeable } from '@soldy-ui/core'
 import type {
 	IDateInput,
 	IDatePickerProps,
@@ -331,7 +331,7 @@ describe('значение', () => {
 })
 
 /**
- * Кнопка очистки — DatePicker как поле (база `TField`): признак, набор кнопки и
+ * Кнопка очистки — DatePicker как поле (база `TClearable`): признак, набор кнопки и
  * команда `clear`. Кнопка одна на значение, и полям `clearable` не уходит:
  * очищает DatePicker свой режим целиком — у диапазона оба конца, в том числе
  * набранные не до конца, у которых значения нет.
@@ -344,7 +344,7 @@ describe('кнопка очистки', () => {
 	it('DatePicker — поле: clearable с модификатором, имя кнопки пишет плагин имён', () => {
 		const target = picker()
 
-		expect(target).toBeInstanceOf(TField)
+		expect(target).toBeInstanceOf(TClearable)
 		expect(target.clearable).toBe(false)
 		expect(target.classes.toArray()).not.toContain('so-date-picker--clearable')
 

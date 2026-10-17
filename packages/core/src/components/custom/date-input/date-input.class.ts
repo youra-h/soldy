@@ -1,4 +1,4 @@
-import { TField } from '../../base/field'
+import { TClearable } from '../../base/clearable'
 import type { TDefaultValues } from '../../base/component'
 import { DEFAULT_LOCALE, TAria, TAttributes } from '../../../common'
 import type { TAttributesMap } from '../../../common'
@@ -90,29 +90,31 @@ const SEGMENT_ROLE = 'spinbutton'
  * `aria-value*` — у счётчика, у текстового поля значение — сам текст.
  *
  * `min` и `max` значение не прижимают: собранное значение вне них — `invalid`
- * (`data-invalid` у корня, `aria-invalid` у частей), и его видно таким, каким
- * его набрали. Сравнение — с точностью грубейшего: дата и дата со временем —
- * по дню, время до минуты и время до секунды — до минуты. Так же и день,
- * которого не даст выбрать календарь: `unavailable` — та же функция, что у
- * календаря, — поле зовёт с днём значения (у даты со временем — с её днём) и
- * без якоря: начатого диапазона у поля нет.
+ * (`data-invalid` и `aria-invalid` у корня, `aria-invalid` у частей), и его
+ * видно таким, каким его набрали. Сравнение — с точностью грубейшего: дата и
+ * дата со временем — по дню, время до минуты и время до секунды — до минуты.
+ * Так же и день, которого не даст выбрать календарь: `unavailable` — та же
+ * функция, что у календаря, — поле зовёт с днём значения (у даты со временем —
+ * с её днём) и без якоря: начатого диапазона у поля нет. Ошибку, записанную
+ * снаружи (её задаёт поле формы `Field`), это не отменяет: итог `invalid` —
+ * своё или своя проверка, как итог `value` у Slider.
  *
  * **Очистка** (`clear`, кнопка `clearable`) опустошает все части, и скрытые
  * форматом тоже: смена вида или точности после неё скрытое время не вернёт.
  */
 export class TDateInput
-	extends TField<TDateInputValue, IDateInputProps, TDateInputEvents>
+	extends TClearable<TDateInputValue, IDateInputProps, TDateInputEvents>
 	implements IDateInput
 {
 	static override baseClass = 'so-date-input'
 
-	static defaultValues: typeof TField.defaultValues &
+	static defaultValues: typeof TClearable.defaultValues &
 		TDefaultValues<
 			IDateInputProps,
 			'locale' | 'kind' | 'timePrecision',
 			'min' | 'max' | 'unavailable'
 		> = {
-		...TField.defaultValues,
+		...TClearable.defaultValues,
 		min: undefined,
 		max: undefined,
 		unavailable: undefined,
@@ -154,11 +156,7 @@ export class TDateInput
 		// Корень — группа частей: имя ей даёт `aria_label` или `aria_labelledBy`
 		this._aria.add('role', 'group')
 
-		this.events.on('change:value', () => this._syncInvalid())
-		this.events.on('change:min', () => this._syncInvalid())
-		this.events.on('change:max', () => this._syncInvalid())
-		this.events.on('change:unavailable', () => this._syncInvalid())
-
+		// Значение могло прийти вне границ — ошибка с первой отрисовки
 		this._syncInvalid()
 	}
 
@@ -174,7 +172,10 @@ export class TDateInput
 	set min(value: TDateInputBound) {
 		if (this._min === value) return
 
+		const invalid = this.invalid
+
 		this._min = value
+		this._invalidChanged(invalid)
 		this.events.emit('change:min', value)
 	}
 
@@ -186,7 +187,10 @@ export class TDateInput
 	set max(value: TDateInputBound) {
 		if (this._max === value) return
 
+		const invalid = this.invalid
+
 		this._max = value
+		this._invalidChanged(invalid)
 		this.events.emit('change:max', value)
 	}
 
@@ -198,7 +202,10 @@ export class TDateInput
 	set unavailable(value: TCalendarUnavailable | undefined) {
 		if (this._unavailable === value) return
 
+		const invalid = this.invalid
+
 		this._unavailable = value
+		this._invalidChanged(invalid)
 		this.events.emit('change:unavailable', value)
 	}
 
@@ -257,11 +264,16 @@ export class TDateInput
 	}
 
 	/**
-	 * Собранное значение вне `min`/`max` или его день недоступен. Значения нет —
-	 * верно: проверять нечего.
+	 * Итог ошибки: своё — записанное полем формы `Field` или кодом, — или
+	 * собранное значение вне `min`/`max`, или его день недоступен. Значения нет
+	 * — своей проверке нечего проверять.
 	 */
-	get invalid(): boolean {
-		return outOfBounds(this._value, this._min, this._max) || this._unavailableValue()
+	override get invalid(): boolean {
+		return this._invalid || this._outOfRange(this._value)
+	}
+
+	override set invalid(value: boolean) {
+		super.invalid = value
 	}
 
 	get focusedSegment(): TDateFieldPart | undefined {
@@ -492,6 +504,9 @@ export class TDateInput
 	 * даты значения нет вовсе, а время, ушедшее из значения у поля даты,
 	 * в частях остаётся). Запись снаружи и поправленная в `change:value:before`
 	 * правка берут части из значения, набранные цифры сбрасываются.
+	 *
+	 * Ошибка — раньше событий значения: подписчик `change:value` застаёт
+	 * атрибуты ошибки уже по новому значению.
 	 */
 	protected override _valueChanged(oldValue: TDateInputValue): void {
 		const pending = this._pending
@@ -505,6 +520,7 @@ export class TDateInput
 			this._typed = ''
 		}
 
+		this._invalidChanged(this._invalid || this._outOfRange(oldValue))
 		super._valueChanged(oldValue)
 		this.events.emit('change:segments')
 	}
@@ -592,9 +608,15 @@ export class TDateInput
 		if (fieldValueOf(this._parts, this._format) !== before) this._commit(this._parts)
 	}
 
-	/** День значения отвергает функция `unavailable`. Значения нет — проверять нечего. */
-	protected _unavailableValue(): boolean {
-		const date = dateOfValue(this._value)
+	/**
+	 * Своя проверка значения: вне `min`/`max` или день отвергает функция
+	 * `unavailable`. Значения нет — проверять нечего. Значением, а не полем —
+	 * итог до записи считается по прежнему значению.
+	 */
+	protected _outOfRange(value: TDateInputValue): boolean {
+		if (outOfBounds(value, this._min, this._max)) return true
+
+		const date = dateOfValue(value)
 
 		return date !== undefined && Boolean(this._unavailable?.(date, undefined))
 	}
@@ -645,8 +667,12 @@ export class TDateInput
 		}
 	}
 
-	/** `data-invalid` — состояние для темы: значение вне `min`/`max` или его день недоступен. */
-	protected _syncInvalid(): void {
-		this._dataset.add('invalid', this.invalid)
+	/**
+	 * Атрибуты ошибки — и у частей: их `aria-invalid` считает снимок
+	 * `segments`, и итог, который сменила запись своего, его перечитывает.
+	 */
+	protected override _syncInvalid(): void {
+		super._syncInvalid()
+		this.events.emit('change:segments')
 	}
 }

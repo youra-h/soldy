@@ -49,6 +49,12 @@
 	--so-date-picker-button: var(--so-date-input-slot-row);
 }
 
+// Невалидная дата от поля формы `Field` — `data-invalid` корня: рамка ошибки у
+// поля, та же, что у DateInput со своей ошибкой (дата вне границ).
+.so-date-picker[data-invalid='true'] > .so-date-picker__field {
+	@include input.field-invalid('date-input', $enabled: ":not([data-disabled='true'])");
+}
+
 // Кнопки очистки и календаря — квадрат со стороной в строку слота: в коробке
 // поля они стоят на том же просвете от рамки, что подсветка части, и на любом
 // размере не выше её. Сторону квадрата задаёт режим: у одной даты кнопки стоят
@@ -131,9 +137,11 @@
 		}
 	}
 
-	// Ошибка перекрывает и заданный вариант, как у DateInput.
-	&:has(> .so-date-input[data-invalid='true']) {
-		@include input.input-variant('negative', $enabled: ":not([data-disabled='true'])");
+	// Ошибка перекрывает и заданный вариант, как у DateInput. Её нашло поле
+	// периода или поставило поле формы `Field` — `data-invalid` самого корня.
+	&:has(> .so-date-input[data-invalid='true']),
+	&[data-invalid='true'] {
+		@include input.field-invalid('date-picker', $enabled: ":not([data-disabled='true'])");
 	}
 
 	@each $size, $_ in input.$sizes {

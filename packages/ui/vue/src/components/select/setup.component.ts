@@ -1,5 +1,6 @@
 import {
 	TCollectionExtension,
+	TFieldControlExtension,
 	TVirtualCollectionExtension,
 	SelectDescriptor,
 	SelectCollectionDescriptor,
@@ -28,6 +29,9 @@ import BaseSelect, { type SelectProps } from './base.component'
  *
  * Якорь панели — `rootElement` из адаптера: разметка отдаёт DOM-узел,
  * а не поведение, и собственной реактивности компоненту не нужно.
+ *
+ * Поле формы `Field` над Select связывается с ним, а не с его полем: поле —
+ * деталь его разметки (`embedded`), и `aria` Select разметка кладёт на него.
  */
 export default {
 	name: '_Select',
@@ -38,7 +42,7 @@ export default {
 		const adapter = createVueAdapterContext(SelectDescriptor(), {
 			ctrl: props.ctrl,
 			props,
-		})
+		}).use(TFieldControlExtension, { elevator: VueElevatorFactory })
 
 		// Выходы плагинов — третьим аргументом: шаблон раскладывает
 		// `dismiss_ownerAttribute` спредом на телепортированную панель

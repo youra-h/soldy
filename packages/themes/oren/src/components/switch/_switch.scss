@@ -98,6 +98,14 @@
 		@include mixines.switch-variant($this, $color: 'caution');
 	}
 
+	// Невалидный переключатель — `data-invalid` корня (его пишет поле
+	// `Field`): выключенная дорожка — вуаль цвета ошибки той же плотности, как
+	// у варианта `negative`. Ошибку несёт дорожка покоя, а не значение:
+	// включённая остаётся цветом своего варианта.
+	&[data-invalid='true'] {
+		@include mixines.switch-track($this, 'negative');
+	}
+
 	&--required {
 		&::after {
 			@include required.required-indicator($top: '-top-0.5', $start: '-start-0.5');
@@ -179,6 +187,13 @@
 
 		input:focus-visible + #{$this}__track {
 			outline-color: Highlight;
+		}
+
+		// Ошибка: цвет контура здесь системный, и невалидный отличает толщина —
+		// контур вдвое толще, как рамка ошибки у полей и коробки CheckBox.
+		&[data-invalid='true'] #{$this}__track {
+			outline-width: 2px;
+			outline-offset: -2px;
 		}
 	}
 }

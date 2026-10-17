@@ -17,6 +17,7 @@ import {
 	TDatePicker,
 	TDialog,
 	TDrawer,
+	TField,
 	TMenu,
 	TMenuGroup,
 	TPopover,
@@ -39,6 +40,7 @@ import {
 	TDatePickerIdsPlugin,
 	TDialogIdsPlugin,
 	TDismissPlugin,
+	TFieldIdsPlugin,
 	TMenuGroupIdsPlugin,
 	TMenuIdsPlugin,
 	TModalIdsPlugin,
@@ -341,6 +343,104 @@ describe('поле даты', () => {
 			['day', 'm1-day'],
 			['year', 'm1-year'],
 		])
+	})
+})
+
+/**
+ * Поле формы: `id` подписи, подсказки и ошибки — в их наборы, `for` подписи —
+ * на `id` контрола, а ссылки контрола на части — на те, что рисуются.
+ */
+describe('поле формы', () => {
+	function field(props: ConstructorParameters<typeof TField>[0] = {}) {
+		const owner = new TField(props)
+		const bundle = new TPluginBundle(owner, 'm1').use(TFieldIdsPlugin)
+		const ids = bundle.get(TFieldIdsPlugin)
+
+		if (!ids) throw new Error('плагина связок нет')
+
+		return { owner, ids }
+	}
+
+	it('id частей — от монтирования, for подписи — на id поля контрола', () => {
+		const { owner, ids } = field()
+
+		expect(owner.labelAria.toObject()).toEqual({ id: 'm1-label', for: 'm1-control' })
+		expect(owner.helperAria.get('id')).toBe('m1-helper')
+		expect(owner.errorAria.get('id')).toBe('m1-error')
+		expect(ids.controlId).toBe('m1-control')
+	})
+
+	it('ссылка на подпись — пока у неё есть текст', () => {
+		const { owner, ids } = field()
+
+		expect(ids.links.labelledBy).toBeUndefined()
+
+		owner.label = 'Почта'
+
+		expect(ids.links.labelledBy).toBe('m1-label')
+	})
+
+	it('пояснение — видимая справка: подсказка, а при ошибке — ошибка', () => {
+		const { owner, ids } = field({ helper: 'Подсказка', error: 'Ошибка' })
+
+		expect(ids.links.describedBy).toBe('m1-helper')
+
+		owner.invalid = true
+
+		expect(ids.links.describedBy).toBe('m1-error')
+
+		owner.error = ''
+
+		expect(ids.links.describedBy).toBe('m1-helper')
+
+		owner.helper = ''
+
+		expect(ids.links.describedBy).toBeUndefined()
+	})
+
+	it('change:links — только когда ссылки сменились', () => {
+		const { owner, ids } = field({ helper: 'Подсказка' })
+		const seen: unknown[] = []
+
+		ids.events.on('change:links', (links) => seen.push(links))
+
+		owner.helper = 'Другая подсказка'
+		owner.label = 'Почта'
+		owner.invalid = true
+
+		expect(seen).toEqual([{ labelledBy: 'm1-label', describedBy: 'm1-helper' }])
+	})
+
+	it('for подписи — на id контрола; у группы for нет', () => {
+		const { owner, ids } = field()
+
+		ids.bindControl({ id: 'own', labelable: true })
+
+		expect(owner.labelAria.get('for')).toBe('own')
+		expect(ids.bound).toBe(true)
+
+		ids.bindControl({ id: undefined, labelable: false })
+
+		expect(owner.labelAria.has('for')).toBe(false)
+
+		ids.unbindControl()
+
+		expect(owner.labelAria.get('for')).toBe('m1-control')
+		expect(ids.bound).toBe(false)
+	})
+
+	it('после destroy поле не слушает и подпись не пишет', () => {
+		const { owner, ids } = field()
+		const seen: unknown[] = []
+
+		ids.events.on('change:links', (links) => seen.push(links))
+		ids.destroy()
+
+		owner.label = 'Почта'
+		ids.bindControl({ id: 'own', labelable: true })
+
+		expect(seen).toEqual([])
+		expect(owner.labelAria.get('for')).toBe('m1-control')
 	})
 })
 

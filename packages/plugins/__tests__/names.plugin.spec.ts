@@ -29,7 +29,7 @@ import {
 import {
 	TDatePickerNamesPlugin,
 	TDialogNamesPlugin,
-	TFieldNamesPlugin,
+	TClearableNamesPlugin,
 	TLocaleSource,
 	TModalNamesPlugin,
 	TPaginationNamesPlugin,
@@ -252,8 +252,8 @@ describe('имя с текстом части: шаблон локали и см
 		const input = new TInput({ name: 'Город' })
 		const date = new TDateInput()
 
-		mount(input, TFieldNamesPlugin, ruRU)
-		mount(date, TFieldNamesPlugin)
+		mount(input, TClearableNamesPlugin, ruRU)
+		mount(date, TClearableNamesPlugin)
 
 		expect(input.clearAria.get('aria-label')).toBe('Очистить Город')
 		expect(date.clearAria.get('aria-label')).toBe('Clear')

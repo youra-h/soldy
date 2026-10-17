@@ -398,7 +398,7 @@ describe('выбор с подтверждением', () => {
 })
 
 /**
- * Кнопка очистки — DatePicker'а: он сам поле (база `TField`), и кнопка у него
+ * Кнопка очистки — DatePicker'а: он сам поле (база `TClearable`), и кнопка у него
  * одна на значение. У одной даты она стоит в слоте `clear` поля — первой у его
  * конца, перед кнопкой календаря, — у диапазона одна на период, после поля
  * конца. Своей кнопки поля не рисуют. Что очистка делает с моделью — у обоих
@@ -567,7 +567,7 @@ describe('ошибка в поле', () => {
 		const field = find('.so-date-picker__field')
 		const parts = () => findAll('.so-date-picker__field .so-date-input__segment')
 
-		expect(field.dataset.invalid).toBe('false')
+		expect(field.dataset.invalid).toBeUndefined()
 		expect(parts().some((part) => part.hasAttribute('aria-invalid'))).toBe(false)
 
 		ctrl.unavailable = (date) => date === '2026-09-15'
@@ -581,7 +581,7 @@ describe('ошибка в поле', () => {
 		await render(() => h(DatePicker, { mode: 'range', value: ['2026-09-20', '2026-09-10'] }))
 
 		expect(find('.so-date-picker__end').dataset.invalid).toBe('true')
-		expect(find('.so-date-picker__start').dataset.invalid).toBe('false')
+		expect(find('.so-date-picker__start').dataset.invalid).toBeUndefined()
 	})
 })
 

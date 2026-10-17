@@ -1,12 +1,12 @@
 import type { IDatePicker, TEventSink } from '@soldy-ui/core'
-import { TFieldNamesPlugin } from '../../field/names'
+import { TClearableNamesPlugin } from '../../clearable/names'
 import type { TTranslations } from '../../../locale/types'
 import type { TDatePickerNamesPluginEvents } from './types'
 
 /**
  * TDatePickerNamesPlugin — имена DatePicker от локали.
  *
- * Имя кнопки очистки — как у любого поля (`TFieldNamesPlugin`): DatePicker —
+ * Имя кнопки очистки — как у любого поля (`TClearableNamesPlugin`): DatePicker —
  * поле, и имя его кнопки собирается с его именем (`field.clear`). Имя кнопки
  * календаря — в её набор (`triggerAria`) и в набор панели (`panelAria`):
  * панель называется так же, как кнопка, которая её открывает. Имена полей
@@ -16,7 +16,7 @@ import type { TDatePickerNamesPluginEvents } from './types'
  * (`confirm`, `cancel`): кнопки — свои компоненты, и текст им разметка отдаёт
  * пропом `text`.
  */
-export class TDatePickerNamesPlugin extends TFieldNamesPlugin<
+export class TDatePickerNamesPlugin extends TClearableNamesPlugin<
 	IDatePicker,
 	TDatePickerNamesPluginEvents
 > {

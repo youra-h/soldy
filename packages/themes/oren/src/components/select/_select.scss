@@ -222,6 +222,13 @@
 	&[data-open='true'] &__arrow {
 		@apply rotate-180;
 	}
+
+	// Невалидный выбор — `data-invalid` корня (его пишет поле формы `Field`):
+	// рамка ошибки у поля, та же, что у Input (`input.field-invalid`). Поле —
+	// его Input, и выключенность наведение читает так же, как Input.
+	&[data-invalid='true'] > &__field {
+		@include input.field-invalid('input', input.$input-enabled);
+	}
 }
 
 // Панель телепортируется в body, поэтому вложенным селектором её не достать.

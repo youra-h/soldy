@@ -1,4 +1,4 @@
-import { TField } from '../../base/field'
+import { TClearable } from '../../base/clearable'
 import type { TDefaultValues } from '../../base/component'
 import type { TSwipe, TSwipeSide } from '../../base/layer'
 import { DEFAULT_LOCALE, TAria, compareDates, parseDate } from '../../../common'
@@ -61,8 +61,8 @@ function commitOf(confirmable: boolean, host: IDatePickerCommitHost): IDatePicke
  * панель, а якорь выключает «OK» (`confirmDisabled`).
  *
  * **Общее — вниз, от ядра.** `disabled`, `size`, `variant`, `locale`, `min`,
- * `max` и `unavailable` DatePicker отдаёт полям и календарю, `readonly` и
- * `required` — полям, `weekStart` и `timeZone` — календарю, `name` — полю
+ * `max` и `unavailable` DatePicker отдаёт полям и календарю, `readonly`,
+ * `required` и `invalid` — полям, `weekStart` и `timeZone` — календарю, `name` — полю
  * одной даты, `startName` и `endName` — полям концов, режим — выбору
  * коллекции. Разметка эти значения не пробрасывает: второй путь к тем же
  * данным разошёлся бы с первым. Строк библиотеки DatePicker не строит и вниз
@@ -101,7 +101,7 @@ function commitOf(confirmable: boolean, host: IDatePickerCommitHost): IDatePicke
  * любое другое закрытие возвращает календарю значение DatePicker. Пока
  * диапазон выбран наполовину, «OK» выключена (`confirmDisabled`).
  *
- * **Кнопка очистки — DatePicker как поле** (база `TField`, третья форма поля
+ * **Кнопка очистки — DatePicker как поле** (база `TClearable`, третья форма поля
  * рядом с Input и DateInput): `clearable`, набор кнопки `clearAria` и команда
  * `clear`. Кнопка одна на значение: у диапазона — одна на период, а не по
  * кнопке у конца, как одна у него рамка и одна кнопка календаря. Полям
@@ -124,12 +124,12 @@ function commitOf(confirmable: boolean, host: IDatePickerCommitHost): IDatePicke
  * открыли.
  */
 export class TDatePicker
-	extends TField<TDatePickerValue, IDatePickerProps, TDatePickerEvents>
+	extends TClearable<TDatePickerValue, IDatePickerProps, TDatePickerEvents>
 	implements IDatePicker
 {
 	static override baseClass = 'so-date-picker'
 
-	static defaultValues: typeof TField.defaultValues &
+	static defaultValues: typeof TClearable.defaultValues &
 		TDefaultValues<
 			IDatePickerProps,
 			| 'mode'
@@ -142,7 +142,7 @@ export class TDatePicker
 			| 'swipe',
 			'min' | 'max' | 'unavailable' | 'weekStart' | 'timeZone'
 		> = {
-		...TField.defaultValues,
+		...TClearable.defaultValues,
 		mode: 'single',
 		open: false,
 		closeOnSelect: true,
@@ -662,8 +662,8 @@ export class TDatePicker
 
 	/**
 	 * Набор корня. У диапазона корень — группа полей концов: роль и `aria`
-	 * DatePicker'а с именем от плагина имени. У одной даты группа частей — само
-	 * поле, имя разметка отдаёт ему, а корню ARIA не нужна.
+	 * DatePicker'а — имя, описание, ошибка. У одной даты группа частей — само
+	 * поле, и `aria` DatePicker'а разметка кладёт на него, а корню ARIA не нужна.
 	 */
 	get rootAria(): TAriaAttributes {
 		return this._mode === 'range' ? { role: 'group', ...this._aria.toObject() } : {}
@@ -754,6 +754,12 @@ export class TDatePicker
 		})
 		this.events.on('change:required', (value: boolean) => {
 			this._inputs.forEach((input) => (input.required = value))
+		})
+		// Ошибка поля формы — полям, как `required`: `aria-invalid` стоит на их
+		// частях. Свою проверку — границы и конец раньше начала — поля держат
+		// сами, и ошибка DatePicker её не стирает
+		this.events.on('change:invalid', (value: boolean) => {
+			this._inputs.forEach((input) => (input.invalid = value))
 		})
 		this.events.on('change:size', (payload: TValuePayload<TComponentSize>) => {
 			this._inputs.forEach((input) => (input.size = payload.newValue))

@@ -1,12 +1,12 @@
 import type { IInputControl, IInputControlProps, TInputControlEvents } from '../input-control'
 import type { TAria, TAriaAttributes } from '../../../common'
 
-export interface IFieldProps<T = string> extends IInputControlProps<T> {
+export interface IClearableProps<T = string> extends IInputControlProps<T> {
 	/** Показывать ли кнопку очистки значения */
 	clearable?: boolean
 }
 
-export type TFieldEvents<T = string> = TInputControlEvents<T> & {
+export type TClearableEvents<T = string> = TInputControlEvents<T> & {
 	/** change:clearable */
 	'change:clearable': (value: boolean) => void
 	/** change:clearAria — набор атрибутов кнопки очистки изменился */
@@ -19,10 +19,10 @@ export type TFieldEvents<T = string> = TInputControlEvents<T> & {
 	clear: () => void
 }
 
-export interface IField<
+export interface IClearable<
 	T,
-	TProps extends IFieldProps<T> = IFieldProps<T>,
-	TEvents extends Record<string, (...args: any) => any> = TFieldEvents<T>,
+	TProps extends IClearableProps<T> = IClearableProps<T>,
+	TEvents extends Record<string, (...args: any) => any> = TClearableEvents<T>,
 > extends IInputControl<T, TProps, TEvents> {
 	/** Показывать ли кнопку очистки значения */
 	clearable: boolean

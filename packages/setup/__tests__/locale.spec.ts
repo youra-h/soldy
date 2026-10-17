@@ -96,7 +96,7 @@ const NAMED: Record<string, Record<string, (locale: TLocale) => string>> = {
 		prevAria: ({ translations }) => translations.pagination.prev,
 		nextAria: ({ translations }) => translations.pagination.next,
 	},
-	// Базе поля (`FieldDescriptor`) плагин имён не ставится, как модальному слою:
+	// Базе очистки (`ClearableDescriptor`) плагин имён не ставится, как модальному слою:
 	// он один на компонент, и у DatePicker кнопок с именами больше
 	InputDescriptor: { clearAria: ({ translations }) => formatName(translations.field.clear, '') },
 	DateInputDescriptor: {

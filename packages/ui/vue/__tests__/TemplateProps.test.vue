@@ -27,6 +27,7 @@ import {
 	Dialog,
 	DragAndDrop,
 	Drawer,
+	Field,
 	Frame,
 	Icon,
 	Input,
@@ -192,6 +193,18 @@ const dragAndDrop = new TDragAndDrop()
 	<!-- @vue-expect-error — ширина числом или строкой -->
 	<Drawer :width="true" />
 	<Drawer :width="360" />
+
+	<!-- @vue-expect-error — стороны `left` у подписи поля нет: стороны логические -->
+	<Field position="left" />
+	<Field position="start" />
+
+	<!-- @vue-expect-error — ошибка поля — флаг, а не строка -->
+	<Field :invalid="'yes'" />
+	<Field invalid />
+
+	<!-- @vue-expect-error — подсказка строкой -->
+	<Field :helper="42" />
+	<Field helper="Не покажем никому" />
 
 	<!-- @vue-expect-error — позиционирования `sticky` нет -->
 	<Frame position="sticky" />

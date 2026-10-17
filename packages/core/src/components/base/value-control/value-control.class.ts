@@ -11,6 +11,7 @@ import type { TValuePayload, TEventSink } from '../../../common'
  * Содержит:
  * - `value` (commit) + `input(value)` (optional)
  * - `name` (form semantics)
+ * - `invalid` — значение не прошло проверку
  *
  * Интерактивность (disabled/focused) и stylable (size/variant) наследуются из `TControl`.
  */
@@ -28,6 +29,8 @@ export default class TValueControl<
 
 	protected _name: string
 	protected _value: TValue
+	/** Своё `invalid` — то, что записали. Итог считает геттер. */
+	protected _invalid = false
 
 	constructor(props: Partial<TProps> = {}) {
 		super(props)
@@ -93,6 +96,55 @@ export default class TValueControl<
 		this._sink.emit('change:value', payload)
 		this._sink.emit('input:value', payload)
 		this._sink.emit('input', payload)
+	}
+
+	/**
+	 * Значение не прошло проверку: ошибку видят тема (`data-invalid`) и
+	 * скринридер (`aria-invalid` на элементе с `aria`).
+	 *
+	 * Свойство инстанса, а не проп: что неверно и когда это показывать, решает
+	 * приложение, а в разметке ошибку задают полю формы `Field` — он и пишет её
+	 * своему контролу. Без разметки её задаёт код. Своей проверки у базы нет;
+	 * наследник, который проверяет значение сам (поле даты — границы), считает
+	 * итог геттером: своё или своя ошибка.
+	 *
+	 * Атрибуты стоят только у невалидного: при `false` их нет, и у контролов
+	 * вне формы — строк списков, табов, тегов — не появляется лишнего
+	 * `data-invalid="false"`.
+	 */
+	get invalid(): boolean {
+		return this._invalid
+	}
+
+	set invalid(value: boolean) {
+		if (this._invalid === value) return
+
+		const before = this.invalid
+
+		this._invalid = value
+		this._invalidChanged(before)
+	}
+
+	/**
+	 * Итог `invalid` мог смениться — атрибуты и `change:invalid`, если
+	 * сменился. Наследник, чей итог зависит не только от своего значения, зовёт
+	 * это и при смене той зависимости.
+	 */
+	protected _invalidChanged(before: boolean): void {
+		const invalid = this.invalid
+
+		if (invalid === before) return
+
+		this._syncInvalid()
+		this._sink.emit('change:invalid', invalid)
+	}
+
+	/** Атрибуты ошибки по итогу: только при `true`, `null` их снимает. */
+	protected _syncInvalid(): void {
+		const invalid = this.invalid
+
+		this._dataset.add('invalid', invalid || null)
+		this._aria.add('aria-invalid', invalid ? 'true' : null)
 	}
 
 	getProps(): TProps {

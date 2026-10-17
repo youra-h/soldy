@@ -1,7 +1,7 @@
 /**
  * Дескриптор DatePicker (TDatePicker).
  *
- * Наследует `FieldDescriptor` — DatePicker сам поле: кнопка очистки
+ * Наследует `ClearableDescriptor` — DatePicker сам поле: кнопка очистки
  * (`clearable`, набор `clearAria`) поверх value, name, readonly, required, id,
  * disabled, size, variant, ... Добавляет слоты, режим, открытость
  * панели, выбор с подтверждением и то, что DatePicker отдаёт полям и
@@ -38,13 +38,13 @@ import {
 	LocalePluginDescriptor,
 	SwipePluginDescriptor,
 } from '../plugins'
-import { FieldDescriptor } from './field.descriptor'
+import { ClearableDescriptor } from './clearable.descriptor'
 
 export const DatePickerDescriptor = defineDescriptor(() =>
 	defineComponent({
 		ctor: TDatePicker,
 
-		extends: FieldDescriptor(),
+		extends: ClearableDescriptor(),
 
 		contribution: {
 			slots: {

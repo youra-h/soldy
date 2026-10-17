@@ -144,7 +144,7 @@ describe('разметка', () => {
 
 		expect(root.getAttribute('role')).toBe('group')
 		expect(root.getAttribute('aria-label')).toBe('Дата рождения')
-		expect(root.dataset.invalid).toBe('false')
+		expect(root.dataset.invalid).toBeUndefined()
 		expect(rowContent()).toEqual([
 			['so-date-input__segment', 'дд'],
 			['so-date-input__literal', '.'],
@@ -581,7 +581,7 @@ describe('слоты', () => {
 })
 
 /**
- * Кнопка очистки — та же, что у Input: часть поля (`FieldDescriptor`). Что
+ * Кнопка очистки — та же, что у Input: часть поля (`ClearableDescriptor`). Что
  * очистка делает с частями, проверяет ядро (`core/__tests__/date-input.spec.ts`),
  * форму кнопки — браузерный прогон.
  */

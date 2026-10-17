@@ -2,11 +2,14 @@ import { TInputControl } from '../input-control'
 import type { TDefaultValues } from '../component'
 import { TAria } from '../../../common'
 import type { TEventSink } from '../../../common'
-import type { IField, IFieldProps, TFieldEvents } from './types'
+import type { IClearable, IClearableProps, TClearableEvents } from './types'
 
 /**
- * Поле ввода — общая база текстового поля (`TInput`), поля даты
+ * Очистка значения — общая база текстового поля (`TInput`), поля даты
  * (`TDateInput`) и DatePicker (`TDatePicker`): кнопка очистки значения.
+ *
+ * База названа по тому, что добавляет, как `TStylable` и `TTextable`. Имя
+ * `TField` — у поля формы: подписи, подсказки и ошибки вокруг контрола.
  *
  * Кнопка — часть поля, а не его владельца: Select рисует её не сам, а отдаёт
  * своему полю `clearable`, как `name` и `size`. Поэтому всё, что следует из
@@ -29,16 +32,16 @@ import type { IField, IFieldProps, TFieldEvents } from './types'
  * Событие `clear` в дескриптор не публикуется: это поверхность инстанса, как
  * `choose` у ListBox.
  */
-export default class TField<
+export default class TClearable<
 	TValue = string,
-	TProps extends IFieldProps<TValue> = IFieldProps<TValue>,
-	TEvents extends TFieldEvents<TValue> = TFieldEvents<TValue>,
+	TProps extends IClearableProps<TValue> = IClearableProps<TValue>,
+	TEvents extends TClearableEvents<TValue> = TClearableEvents<TValue>,
 >
 	extends TInputControl<TValue, TProps, TEvents>
-	implements IField<TValue, TProps, TEvents>
+	implements IClearable<TValue, TProps, TEvents>
 {
 	static defaultValues: typeof TInputControl.defaultValues &
-		TDefaultValues<IFieldProps<any>, 'clearable'> = {
+		TDefaultValues<IClearableProps<any>, 'clearable'> = {
 		...TInputControl.defaultValues,
 		clearable: false,
 	}
@@ -49,7 +52,7 @@ export default class TField<
 	constructor(props: Partial<TProps> = {}) {
 		super(props)
 
-		const ctor = new.target as typeof TField
+		const ctor = new.target as typeof TClearable
 
 		this._applyClearable(props.clearable ?? ctor.defaultValues.clearable)
 
@@ -63,7 +66,7 @@ export default class TField<
 	 * Эмит собственных событий класса — без приведения `this.events` к
 	 * конкретной карте (см. `TEventSink` в `common/event/types.ts`).
 	 */
-	protected override get _sink(): TEventSink<TFieldEvents<TValue>> {
+	protected override get _sink(): TEventSink<TClearableEvents<TValue>> {
 		return this.events
 	}
 
@@ -84,7 +87,7 @@ export default class TField<
 	 * Без имени поля на форме с пятью полями в списке элементов скринридера
 	 * будет пять одинаковых «Clear, кнопка», и выбрать нужную нельзя. Та же
 	 * причина, по которой у таба имя кнопки закрытия собирается с его текстом.
-	 * Имя пишет плагин имён формы (`TFieldNamesPlugin`, у DatePicker — его
+	 * Имя пишет плагин имён формы (`TClearableNamesPlugin`, у DatePicker — его
 	 * наследник) по шаблону локали — и на смену имени поля; об изменении набор
 	 * сообщает `change:clearAria`.
 	 *

@@ -1,4 +1,5 @@
 @use 'sass:map';
+@use '../../mixins/caption';
 @use '../../mixins/veil';
 
 // Шкала размеров — ступени утилит Tailwind.
@@ -10,43 +11,38 @@
 // спорит с ней за внимание. Ручка на полступени крупнее ручки Switch — та
 // ездит внутри своей дорожки, а эта лежит поверх рельса и сама служит целью.
 //
-// `text` и `gap` — кегль подписей меток и их зазор от полосы ручек. Кегль на
-// ступень мельче текста Button того же размера: подпись метки — справка при
-// контроле, а не его текст.
+// `gap` — зазор подписей меток от полосы ручек. Их кегль — кегль справки при
+// контроле из шкалы подписи (`note` в `mixins/_caption.scss`): на ступень
+// мельче текста Button того же размера, как подсказка поля `Field`.
 $sizes: (
 	'sm': (
 		'thumb': 3.5,
 		'rail': 1,
 		'border': 2px,
-		'text': 'text-xs',
 		'gap': 1,
 	),
 	'normal': (
 		'thumb': 4.5,
 		'rail': 1.5,
 		'border': 2px,
-		'text': 'text-sm',
 		'gap': 1,
 	),
 	'lg': (
 		'thumb': 5.5,
 		'rail': 2,
 		'border': 2px,
-		'text': 'text-base',
 		'gap': 1.5,
 	),
 	'xl': (
 		'thumb': 6.5,
 		'rail': 2.5,
 		'border': 3px,
-		'text': 'text-lg',
 		'gap': 1.5,
 	),
 	'2xl': (
 		'thumb': 7.5,
 		'rail': 3,
 		'border': 3px,
-		'text': 'text-xl',
 		'gap': 2,
 	),
 );
@@ -63,10 +59,11 @@ $sizes: (
 	--so-slider-gap: calc(var(--spacing) * #{map.get($scale, 'gap')});
 }
 
-// Кегль подписей меток по шкале `$sizes`. Отдельно от переменных: утилита
-// ставит кегль вместе с интерлиньяжем, а переменной его не передать.
+// Кегль подписей меток — справка при контроле (`caption.note`). Отдельно от
+// переменных: утилита ставит кегль вместе с интерлиньяжем, а переменной его
+// не передать.
 @mixin slider-mark-text($size) {
-	@apply #{map.get(map.get($sizes, $size), 'text')};
+	@include caption.note($size);
 }
 
 // Варианты темы со своим цветом. `normal` сюда не входит: это нейтраль, и у
@@ -95,6 +92,18 @@ $variants: 'accent', 'positive', 'negative', 'caution';
 // - подпись метки, на которой стоит ручка, — текст варианта, ступень 800, как
 //   текст видов `plain` и `outlined` у Button.
 @mixin slider-colors($color) {
+	@include slider-rail($color);
+
+	--so-slider-fill: var(--so-#{$color}-500);
+	--so-slider-halo-hover: #{veil.tint($color, calc(2 * var(--so-component-state-hover)))};
+	--so-slider-halo-active: #{veil.tint($color, calc(2 * var(--so-component-state-active)))};
+	--so-slider-tick: #{veil.tint($color, 45%)};
+	--so-slider-current-text: var(--so-#{$color}-800);
+}
+
+// Рельс — в покое и под наведением ползунка. Его один красит и ошибка
+// (`data-invalid`): заливка и ручка остаются цветом варианта.
+@mixin slider-rail($color) {
 	$rail: calc(3 * var(--so-component-fill));
 
 	--so-slider-rail: #{veil.tint($color, $rail)};
@@ -102,11 +111,6 @@ $variants: 'accent', 'positive', 'negative', 'caution';
 			$color,
 			veil.density(var(--so-component-state-hover), $rail)
 		)};
-	--so-slider-fill: var(--so-#{$color}-500);
-	--so-slider-halo-hover: #{veil.tint($color, calc(2 * var(--so-component-state-hover)))};
-	--so-slider-halo-active: #{veil.tint($color, calc(2 * var(--so-component-state-active)))};
-	--so-slider-tick: #{veil.tint($color, 45%)};
-	--so-slider-current-text: var(--so-#{$color}-800);
 }
 
 // Вынос края заливки под скругление рельса.

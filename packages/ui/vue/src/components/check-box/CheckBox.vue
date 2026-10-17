@@ -11,12 +11,14 @@ export default { ...SetupCheckBox }
 		v-if="rendered"
 		v-show="visible"
 		:class="classes"
-		v-bind="{ ...attrs, ...containerAttrs }"
+		v-bind="{ ...attrs, ...dataset, ...containerAttrs }"
 	>
 		<!--
 			Корень рисуется по `tag`, по умолчанию `span`: чекбокс кладут в
 			подпись `Label`, а внутри `label` HTML разрешает только строчную
-			разметку. Поэтому и всё внутри — `span`.
+			разметку. Поэтому и всё внутри — `span`. На корне — `dataset`
+			(`data-disabled`, `data-invalid`): тема красит коробку и подпись
+			поля формы по корню, а `aria` — у вложенного `<input>`.
 		-->
 		<input
 			type="checkbox"

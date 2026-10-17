@@ -44,6 +44,10 @@ export default { ...SetupDatePicker, components: { Button, Calendar, DateInput, 
 			Поле и есть группа частей, поэтому имя DatePicker (`aria_label`,
 			`aria_labelledBy`, `aria_describedBy`) уходит ему: так оно дойдёт и до
 			частей там, где группы скринридер не объявляет.
+
+			Набор `aria` DatePicker ложится на поле атрибутами, поверх его
+			собственного: в нём ещё и то, что DatePicker'у даёт поле формы
+			`Field`, — ссылки на подпись и справку и ошибка (`aria-invalid`).
 		-->
 		<DateInput
 			v-if="mode === 'single'"
@@ -53,10 +57,11 @@ export default { ...SetupDatePicker, components: { Button, Calendar, DateInput, 
 			:aria_label="aria_label"
 			:aria_labelledBy="aria_labelledBy"
 			:aria_describedBy="aria_describedBy"
+			v-bind="aria"
 		>
 			<!--
 				Кнопка очистки — DatePicker'а, а не поля: DatePicker сам поле (база
-				`TField`) и очищает своё значение целиком, а `clear` шлёт он, в обоих
+				`TClearable`) и очищает своё значение целиком, а `clear` шлёт он, в обоих
 				режимах одинаково. Поле своей кнопки не рисует — `clearable` ему не
 				уходит, — а место у конца поля даёт его слот `clear`, первым, перед
 				кнопкой календаря.

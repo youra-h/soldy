@@ -25,3 +25,18 @@ export const NATIVE_DISABLED_TAGS = new Set(['button', 'input', 'select', 'texta
 
 /** Теги, которые фокусируются и активируются сами, без role/tabindex. */
 export const NATIVE_BUTTON_TAGS = new Set(['button', 'input'])
+
+/**
+ * Теги labelable-элементов HTML: `<label for>` называет их и передаёт им клик.
+ * Остальное подпись называет только ссылкой `aria-labelledby` — группу частей
+ * поля даты, группу радио.
+ */
+export const LABELABLE_TAGS = new Set([
+	'button',
+	'input',
+	'meter',
+	'output',
+	'progress',
+	'select',
+	'textarea',
+])

@@ -102,6 +102,86 @@ describe('запись имени в общий набор', () => {
 	})
 })
 
+/**
+ * Второй вход плагина — ссылки от разметки вокруг (`links`): подпись и
+ * пояснение поля формы. Пишет их связка поля с контролом, а сливает с пропсами
+ * плагин: своё имя главнее подписи поля, пояснение поля — перед своим.
+ */
+describe('ссылки поля формы', () => {
+	it('подпись поля — имя, пока своего нет', () => {
+		const button = new TButton()
+		const plugin = install(button)
+
+		plugin.links = { labelledBy: 'f-label' }
+
+		expect(button.aria.get('aria-labelledby')).toBe('f-label')
+		expect(plugin.named).toBe(true)
+	})
+
+	it('своё имя главнее подписи поля: aria-label не перекрывается ссылкой', () => {
+		const button = new TButton()
+		const plugin = install(button)
+
+		plugin.links = { labelledBy: 'f-label' }
+		plugin.label = 'Своё'
+
+		expect(button.aria.get('aria-label')).toBe('Своё')
+		expect(button.aria.has('aria-labelledby')).toBe(false)
+
+		plugin.label = undefined
+
+		expect(button.aria.get('aria-labelledby')).toBe('f-label')
+	})
+
+	it('свой labelledBy главнее подписи поля', () => {
+		const button = new TButton()
+		const plugin = install(button)
+
+		plugin.labelledBy = 'own'
+		plugin.links = { labelledBy: 'f-label' }
+
+		expect(button.aria.get('aria-labelledby')).toBe('own')
+	})
+
+	it('пояснение поля — перед своим, оба в aria-describedby', () => {
+		const button = new TButton()
+		const plugin = install(button)
+
+		plugin.describedBy = 'own-hint'
+		plugin.links = { describedBy: 'f-helper' }
+
+		expect(button.aria.get('aria-describedby')).toBe('f-helper own-hint')
+
+		plugin.describedBy = undefined
+
+		expect(button.aria.get('aria-describedby')).toBe('f-helper')
+
+		plugin.links = {}
+
+		expect(button.aria.has('aria-describedby')).toBe(false)
+	})
+
+	it('ссылки не проп: в контракте плагина их нет', () => {
+		const names = ButtonDescriptor()
+			.plugins.filter((plugin) => plugin.ctor === TAriaPlugin)
+			.flatMap((plugin) => plugin.props.map((prop) => prop.name.name))
+
+		expect(names).not.toContain('links')
+	})
+
+	it('после destroy ссылок нет, и запись в набор не идёт', () => {
+		const button = new TButton()
+		const plugin = install(button)
+
+		plugin.links = { labelledBy: 'f-label' }
+		plugin.destroy()
+		button.aria.remove('aria-labelledby')
+		plugin.links = { labelledBy: 'f-other' }
+
+		expect(button.aria.has('aria-labelledby')).toBe(false)
+	})
+})
+
 describe('декоративный элемент: имя снимает aria-hidden', () => {
 	it('без имени иконка остаётся скрытой', () => {
 		const icon = new TIcon()

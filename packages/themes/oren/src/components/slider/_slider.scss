@@ -450,6 +450,14 @@
 			@include mixines.slider-colors($variant);
 		}
 	}
+
+	// Невалидный ползунок — `data-invalid` корня (его пишет поле формы
+	// `Field`): рельс — вуаль цвета ошибки той же плотности, как у варианта
+	// `negative`. Ошибку несёт рельс, а не значение: заливка и ручка остаются
+	// цветом своего варианта, как звёзды Rating.
+	&[data-invalid='true'] {
+		@include mixines.slider-rail('negative');
+	}
 }
 
 // Вид блока без варианта — нейтраль. Модификатору `normal` правило не нужно,
@@ -556,5 +564,13 @@
 	.so-slider__mark::before {
 		forced-color-adjust: none;
 		background-color: CanvasText;
+	}
+
+	// Ошибка: цвет рельса здесь системный, и невалидный отличает контур вокруг
+	// рельса — рамка, как у полей и коробки CheckBox, которые в ошибке вдвое
+	// толще. Точки меток на рельсе он не закрывает.
+	.so-slider[data-invalid='true'] .so-slider__track::before {
+		outline: 1px solid CanvasText;
+		outline-offset: 1px;
 	}
 }

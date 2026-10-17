@@ -1,43 +1,87 @@
 /**
- * Дескриптор Field (TField) — поле ввода, общая база Input, DateInput и
- * DatePicker.
+ * Дескриптор Field (TField) — поле формы: подпись, контрол, подсказка и
+ * ошибка.
  *
- * Наследует InputControlDescriptor (value, name, readonly, required, id,
- * disabled, focused, size, variant, ...) и добавляет кнопку очистки: признак
- * `clearable` и набор кнопки `clearAria`. Саму кнопку рисует разметка формы:
- * Input и DateInput — у конца поля, первой в слоте `trailing`, DatePicker — у
- * одной даты в слоте `clear` своего поля, у диапазона — одну на период, после
- * поля конца. Select своей кнопки не рисует: `clearable` он отдаёт полю.
+ * Наследует StylableDescriptor (rendered, visible, tag, size, variant, наборы)
+ * и добавляет тексты частей, ошибку поля, сторону подписи, наборы частей и
+ * плагин связок. Своих состояний контрола у поля нет — ни `disabled`, ни
+ * `required`: они у контрола, как у подписи `Label`.
  *
- * Слот `clear` — своя кнопка вместо встроенной — объявляет каждая форма сама:
- * своей разметки у базы нет ни в одном адаптере, а слоты не наследуются.
+ * Части — разметка поля, а не компоненты: потребитель их не размещает и
+ * пропсов им не задаёт (AGENTS.md, «Часть или слот»). Текст части — проп с её
+ * именем, своя разметка вместо текста — слот `<часть>-content`: имя слота не
+ * совпадает с именем пропа, как `text`/`content` у `Label`. Контрол — слот
+ * `default`.
  *
- * Плагина имён у базы нет, как у модального слоя: плагин имён у компонента
- * один, а у DatePicker кнопок с именами больше. Имя кнопки очистки пишет
- * плагин имён формы — `TFieldNamesPlugin` у Input и DateInput, его
- * наследник `TDatePickerNamesPlugin` у DatePicker.
+ * С контролом поле связывает проводка адаптера (`TFieldExtension` у поля,
+ * `TFieldControlExtension` у контрола): ошибку, `id` поля и ссылки на части
+ * контрол берёт при сборке, о себе сообщает при приёме.
  */
 
 import { defineComponent, defineDescriptor } from '../../../protected/define'
 import { TField } from '@soldy-ui/core'
-import { InputControlDescriptor } from './input-control.descriptor'
+import { FieldIdsPluginDescriptor } from '../plugins'
+import { StylableDescriptor } from './stylable.descriptor'
 
 export const FieldDescriptor = defineDescriptor(() =>
 	defineComponent({
 		ctor: TField,
 
-		extends: InputControlDescriptor(),
+		extends: StylableDescriptor(),
 
 		contribution: {
+			slots: {
+				default: {
+					description:
+						'Контрол: Input, Select, CheckBox, Switch, DateInput, DatePicker, RadioGroup, Rating или Label с контролом',
+				},
+				'label-content': {
+					description:
+						'Своя разметка подписи — только строчная. Рисуется, пока задан label',
+				},
+				'helper-content': {
+					description:
+						'Своя разметка подсказки. Рисуется, пока задан helper и нет ошибки',
+				},
+				'error-content': {
+					description: 'Своя разметка ошибки. Рисуется при invalid, пока задан error',
+				},
+			},
 			props: {
-				clearable: { type: Boolean, triggers: ['change:clearable'] },
+				label: { type: String, triggers: ['change:label'] },
+				helper: { type: String, triggers: ['change:helper'] },
+				error: { type: String, triggers: ['change:error'] },
 				/**
-				 * Набор кнопки очистки: отдельный, а не часть `aria` — `aria`
-				 * описывает само поле, а это соседняя кнопка. Имя с именем поля в
-				 * него пишет плагин имён формы.
+				 * Ошибка поля: её видно, и контрол помечен ошибкой. Проверку и
+				 * момент, когда её показывать, решает приложение.
 				 */
-				clearAria: { type: Object, protected: true, triggers: ['change:clearAria'] },
+				invalid: { type: Boolean, triggers: ['change:invalid'] },
+				position: { type: String, triggers: ['change:position'] },
+				/** Подсказку видно: текст есть, а ошибки не видно — она встаёт на её место. */
+				helperRendered: {
+					type: Boolean,
+					protected: true,
+					triggers: ['change:helper', 'change:error', 'change:invalid'],
+				},
+				/** Ошибку видно: поле невалидно, и текст ошибки есть. */
+				errorRendered: {
+					type: Boolean,
+					protected: true,
+					triggers: ['change:error', 'change:invalid'],
+				},
+				/**
+				 * Наборы частей — разметки без экземпляра, поэтому наборы поля, как
+				 * `titleAria` у окна. `id` частей и `for` подписи пишет плагин
+				 * связок.
+				 */
+				labelAria: { type: Object, protected: true, triggers: ['change:labelAria'] },
+				helperAria: { type: Object, protected: true, triggers: ['change:helperAria'] },
+				errorAria: { type: Object, protected: true, triggers: ['change:errorAria'] },
 			},
 		},
+
+		// `id` частей, `for` подписи и ссылки контрола на видимые части — от
+		// монтирования, с первой отрисовки
+		plugins: [FieldIdsPluginDescriptor],
 	}),
 )

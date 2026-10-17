@@ -553,7 +553,7 @@ describe('ошибка', () => {
 		// Набранное не прижимается: значение — как набрано, ошибка — у конца
 		expect(ctrl.value).toEqual(['2026-05-12', '2026-05-05'])
 		expect(find('.so-date-picker__end').dataset.invalid).toBe('true')
-		expect(find('.so-date-picker__start').dataset.invalid).toBe('false')
+		expect(find('.so-date-picker__start').dataset.invalid).toBeUndefined()
 
 		const invalid = await border()
 

@@ -1,8 +1,9 @@
-import { DatePickerDescriptor } from '@soldy-ui/setup'
+import { DatePickerDescriptor, TFieldControlExtension } from '@soldy-ui/setup'
 import {
 	useAdapter,
 	useExpose,
 	useIcon,
+	VueElevatorFactory,
 	createVueAdapterContext,
 	type SetupContext,
 } from '../../adapter'
@@ -18,6 +19,9 @@ import BaseDatePicker, { type DatePickerProps } from './base.component'
  * Поля, календарь и движок его коллекции — экземпляры ядра на всю жизнь
  * DatePicker, а не пропсы: их отдаём инстансами, как `field` у Select, — и
  * компоненты берут их целиком (`:ctrl`, `:engine`).
+ *
+ * Поле формы `Field` над DatePicker связывается с ним, а не с его полями:
+ * поля — детали его разметки (`embedded`), и связку поля формы они не берут.
  */
 export default {
 	name: '_DatePicker',
@@ -27,7 +31,7 @@ export default {
 		const adapter = createVueAdapterContext(DatePickerDescriptor(), {
 			ctrl: props.ctrl,
 			props,
-		})
+		}).use(TFieldControlExtension, { elevator: VueElevatorFactory })
 		const picker = adapter.instance
 
 		return {
