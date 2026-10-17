@@ -7,7 +7,10 @@ import { useRoute } from 'vue-router'
  */
 const NARROW = '(max-width: 768px)'
 
-const query = typeof window === 'undefined' ? null : window.matchMedia(NARROW)
+const query =
+	typeof window !== 'undefined' && typeof window.matchMedia === 'function'
+		? window.matchMedia(NARROW)
+		: null
 
 /** Окно узкое — меню в выезжающей панели, а не колонкой. */
 const narrow = ref(query?.matches ?? false)
