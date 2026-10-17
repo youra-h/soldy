@@ -66,7 +66,7 @@ jobs:
 
       # Раздел версии у пакетов группы разный: changeset пишет пункт только
       # названным в нём пакетам. Поэтому в заметках — ссылки на CHANGELOG
-      # каждого пакета на теге выпуска, а не раздел одного из них.
+      # каждого пакета на коммите выпуска (тег `пакет@версия` GitHub в ссылке на файл не разбирает), а не раздел одного из них.
       - if: steps.check.outputs.publish == 'true'
         name: Теги и GitHub Release
         env:
@@ -79,7 +79,7 @@ jobs:
             echo
             for f in $(git ls-files 'packages/**/CHANGELOG.md'); do
               name=$(node -p "require('./$(dirname "$f")/package.json').name")
-              echo "- [$name]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/blob/$name@$VERSION/$f)"
+              echo "- [$name]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/blob/$GITHUB_SHA/$f)"
             done
           } > notes.md
           gh release create "v$VERSION" --title "v$VERSION" --target "$GITHUB_SHA" --notes-file notes.md
