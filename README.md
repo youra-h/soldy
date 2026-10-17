@@ -55,11 +55,11 @@ Install the adapter for your framework, a theme and an icon pack. The adapter br
 
 | Framework      | Install                                                                       | Requires      |
 | -------------- | ----------------------------------------------------------------------------- | ------------- |
-| Vue            | `npm install @soldy-ui/vue @soldy-ui/theme-oren @soldy-ui/icons-material`     | Vue 3.5+      |
+| Vue            | `npm install @soldy-ui/vue @soldy-ui/theme-oren @soldy-ui/icons-material`     | Vue 3.5.21+   |
 | React          | `npm install @soldy-ui/react @soldy-ui/theme-oren @soldy-ui/icons-material`   | React 19.2+   |
-| Angular        | `npm install @soldy-ui/angular @soldy-ui/theme-oren @soldy-ui/icons-material` | Angular 22.1+ |
+| Angular        | `npm install @soldy-ui/angular @soldy-ui/theme-oren @soldy-ui/icons-material` | Angular 21.1+ |
 | Svelte         | `npm install @soldy-ui/svelte @soldy-ui/theme-oren @soldy-ui/icons-material`  | Svelte 5.29+  |
-| Solid          | `npm install @soldy-ui/solid @soldy-ui/theme-oren @soldy-ui/icons-material`   | Solid 1.9+    |
+| Solid          | `npm install @soldy-ui/solid @soldy-ui/theme-oren @soldy-ui/icons-material`   | Solid 1.9.10+ |
 | Web Components | `npm install @soldy-ui/webc @soldy-ui/theme-oren @soldy-ui/icons-material`    | —             |
 
 All `@soldy-ui/*` packages share one version; keep them on the same one. Not every component is
