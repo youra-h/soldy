@@ -1,9 +1,9 @@
 name: Release
 
-# Публикация в npm (см. docs/agents/build.md, «Версии пакетов»). Выпуск
-# готовит PR `Выпуск <версия>`; после его мержа версия ядра в манифесте ещё
-# не опубликована — тогда и публикуем. На любом другом push версия уже в npm,
-# и шаги ниже пропускаются.
+# Публикация в npm (см. docs/agents/build.md, «Версии пакетов»). Публикует
+# только мерж PR выпуска — ветки `release/v<версия>` (обычный мерж) или PR
+# «Выпуск <версия>» (squash). Одной проверки «версии нет в npm» мало: версия,
+# которую ни разу не выпускали (0.1.0), опубликовалась бы с любым push.
 on:
   push:
     branches: [main]
@@ -16,6 +16,7 @@ concurrency:
 jobs:
   publish:
     name: Публикация в npm
+    if: contains(github.event.head_commit.message, 'release/v') || startsWith(github.event.head_commit.message, 'Выпуск ')
     runs-on: ubuntu-latest
     permissions:
       contents: write # теги и GitHub Release
@@ -30,7 +31,8 @@ jobs:
           cache: npm
           registry-url: https://registry.npmjs.org
 
-      # Группа `fixed` идёт одной версией, поэтому хватает версии ядра.
+      # Группа `fixed` идёт одной версией, поэтому хватает версии ядра. Уже в
+      # npm — перезапуск после удачной публикации, делать нечего.
       - name: Версия опубликована?
         id: check
         run: |
@@ -62,6 +64,9 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           NPM_CONFIG_PROVENANCE: true
 
+      # Раздел версии у пакетов группы разный: changeset пишет пункт только
+      # названным в нём пакетам. Поэтому в заметках — ссылки на CHANGELOG
+      # каждого пакета на теге выпуска, а не раздел одного из них.
       - if: steps.check.outputs.publish == 'true'
         name: Теги и GitHub Release
         env:
@@ -69,6 +74,12 @@ jobs:
           VERSION: ${{ steps.check.outputs.version }}
         run: |
           git push origin --tags
-          # Раздел новой версии: от «## <версия>» до следующего «## ».
-          awk -v v="## $VERSION" '$0==v{f=1;next} /^## /{f=0} f' packages/core/CHANGELOG.md > notes.md
-          gh release create "v$VERSION" --title "v$VERSION" --notes-file notes.md
+          {
+            echo "Что изменилось — в CHANGELOG пакетов:"
+            echo
+            for f in $(git ls-files 'packages/**/CHANGELOG.md'); do
+              name=$(node -p "require('./$(dirname "$f")/package.json').name")
+              echo "- [$name]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/blob/$name@$VERSION/$f)"
+            done
+          } > notes.md
+          gh release create "v$VERSION" --title "v$VERSION" --target "$GITHUB_SHA" --notes-file notes.md

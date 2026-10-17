@@ -87,14 +87,16 @@ npm run changeset -- --empty
 готовности, а не по календарю; сводку за неделю собирает `/week` — выпуски и
 влитые PR за семь дней.
 
-**Публикация в npm** — workflow `.github/workflows/release.yml` на каждый
-push в `main`. Версии `@soldy-ui/core` из манифеста в npm ещё нет — значит,
-влит PR выпуска: workflow собирает пакеты (`npm run build`), проверяет
+**Публикация в npm** — workflow `.github/workflows/release.yml`, только на
+мерж PR выпуска в `main` (коммит ветки `release/v<версия>` или squash
+«Выпуск <версия>»): собирает пакеты (`npm run build`), проверяет
 `check:published-imports`, публикует группу `npx changeset publish` с
-provenance, пушит теги пакетов и заводит GitHub Release `v<версия>` с
-разделом версии из `CHANGELOG.md` ядра. Версия уже в npm — шаги пропущены,
-и обычный push в `main` ничего не публикует. Токен — секрет репозитория
-`NPM_TOKEN`. Руками `npm publish` не запускается.
+provenance, пушит теги пакетов и заводит GitHub Release `v<версия>` со
+ссылками на `CHANGELOG.md` каждого пакета. Версия уже в npm — шаги
+пропущены. Остальные push в `main` его не запускают: проверки «версии нет в
+npm» мало, никогда не выпущенная версия опубликовалась бы с любым push.
+Токен — секрет репозитория `NPM_TOKEN`. Руками `npm publish` не
+запускается.
 
 Сторожит `packages/setup/__tests__/workspace-manifests.spec.ts`. Библиотечные
 пакеты для него — пакеты из `workspaces` корневого манифеста, кроме `ignore`;
