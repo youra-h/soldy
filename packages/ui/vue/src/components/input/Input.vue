@@ -13,12 +13,14 @@ export default { ...SetupInput, components: { Button, Icon } }
 		v-if="rendered"
 		v-show="visible"
 		:class="classes"
-		v-bind="{ ...attrs, ...containerAttrs }"
+		v-bind="{ ...attrs, ...dataset, ...containerAttrs }"
 	>
 		<!--
 			Корень рисуется по `tag`, по умолчанию `div`: `tag` — всегда тег
 			корня, и по нему же ядро решает, есть ли у корня нативный
-			`disabled`.
+			`disabled`. На корне — `dataset` (`data-disabled`, `data-invalid`):
+			тема красит коробку поля и подпись поля формы по корню, а `aria` —
+			у вложенного `<input>`.
 		-->
 		<div v-if="$slots.leading" class="so-input__leading">
 			<slot name="leading" :ctrl="ctrl"> </slot>

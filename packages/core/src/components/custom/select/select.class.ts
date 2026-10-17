@@ -221,6 +221,9 @@ export class TSelect<
 		this.events.on('change:name', (value: string) => (this._field.name = value))
 		this.events.on('change:id', (value: string | undefined) => (this._field.id = value))
 		this.events.on('change:clearable', (value: boolean) => (this._field.clearable = value))
+		// Ошибка — и полю, как `required`: его рамку красит тема Input, и
+		// `aria-invalid` стоит на том же `<input>`, что и набор Select
+		this.events.on('change:invalid', (value: boolean) => (this._field.invalid = value))
 	}
 
 	/**
@@ -250,6 +253,18 @@ export class TSelect<
 
 	get field(): IInput {
 		return this._field
+	}
+
+	/**
+	 * `aria` Select'а разметка кладёт на `<input>` поля, рядом с набором
+	 * комбобокса (`field.aria`): имя (`aria_label`), описание и ошибка
+	 * описывают элемент, на котором стоит фокус, а не корневой `div`. Поэтому
+	 * ARIA-половину правил решает `input`: `disabled` у него нативный, и
+	 * `aria-disabled` рядом не пишется, а подпись поля формы называет его
+	 * своим `for` (`labelable`).
+	 */
+	protected override get _ariaTag(): string {
+		return 'input'
 	}
 
 	/**

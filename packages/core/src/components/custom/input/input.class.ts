@@ -1,15 +1,15 @@
-import { TField } from '../../base/field'
+import { TClearable } from '../../base/clearable'
 import type { TDefaultValues } from '../../base/component'
 import type { IInput, IInputProps, TInputEvents } from './types'
 
-export class TInput extends TField<string, IInputProps, TInputEvents> implements IInput {
+export class TInput extends TClearable<string, IInputProps, TInputEvents> implements IInput {
 	static override baseClass = 'so-input'
 
-	static defaultValues: typeof TField.defaultValues & TDefaultValues<IInputProps, 'placeholder'> =
-		{
-			...TField.defaultValues,
-			placeholder: '',
-		}
+	static defaultValues: typeof TClearable.defaultValues &
+		TDefaultValues<IInputProps, 'placeholder'> = {
+		...TClearable.defaultValues,
+		placeholder: '',
+	}
 
 	protected _placeholder!: string
 

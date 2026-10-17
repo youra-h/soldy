@@ -531,7 +531,7 @@ describe('стирание', () => {
 })
 
 /**
- * Кнопка очистки — та же, что у Input (база `TField`): признак, имя кнопки и
+ * Кнопка очистки — та же, что у Input (база `TClearable`): признак, имя кнопки и
  * команда `clear`. Шаг очистки поля даты — пустые части, все, и скрытые
  * форматом тоже.
  */
@@ -795,7 +795,7 @@ describe('состояния', () => {
 
 		input.min = undefined
 		expect(input.invalid).toBe(false)
-		expect(input.dataset.get('invalid')).toBe('false')
+		expect(input.dataset.has('invalid')).toBe(false)
 		expect(part(input, 'day').aria['aria-invalid']).toBeNull()
 
 		// Не прижимается: дату видно такой, какой её набрали
@@ -909,7 +909,7 @@ describe('недоступный день', () => {
 
 		expect(input.value).toBe('2026-05-13')
 		expect(input.invalid).toBe(false)
-		expect(input.dataset.get('invalid')).toBe('false')
+		expect(input.dataset.has('invalid')).toBe(false)
 	})
 
 	it('правило зовётся без якоря: начатого диапазона у поля нет', () => {
@@ -943,7 +943,7 @@ describe('недоступный день', () => {
 		input.unavailable = undefined
 
 		expect(input.invalid).toBe(false)
-		expect(input.dataset.get('invalid')).toBe('false')
+		expect(input.dataset.has('invalid')).toBe(false)
 		expect(part(input, 'day').aria['aria-invalid']).toBeNull()
 	})
 

@@ -1,4 +1,4 @@
-import type { IField, IFieldProps, TFieldEvents } from '../../base/field'
+import type { IClearable, IClearableProps, TClearableEvents } from '../../base/clearable'
 import type { ISwipeable, TSwipe, TSwipeableEvents } from '../../base/layer'
 import type {
 	TAria,
@@ -37,7 +37,7 @@ export type TDatePickerValue = TCalendarDate | TCalendarRange | undefined
  */
 export type TDatePickerSide = 'calendar' | 'fields'
 
-export type TDatePickerEvents = TFieldEvents<TDatePickerValue> &
+export type TDatePickerEvents = TClearableEvents<TDatePickerValue> &
 	TSwipeableEvents & {
 		/** change:mode */
 		'change:mode': (value: TDatePickerMode) => void
@@ -82,7 +82,7 @@ export type TDatePickerEvents = TFieldEvents<TDatePickerValue> &
  * Пропсы DatePicker. Кнопка очистки — от базы поля (`clearable`): DatePicker
  * — поле, как Input и DateInput, и очищает он весь свой режим.
  */
-export interface IDatePickerProps extends IFieldProps<TDatePickerValue> {
+export interface IDatePickerProps extends IClearableProps<TDatePickerValue> {
 	/** Режим: одна дата или диапазон. По умолчанию `single` */
 	mode?: TDatePickerMode
 	/** Открыта ли панель с календарём */
@@ -136,11 +136,11 @@ export interface IDatePickerProps extends IFieldProps<TDatePickerValue> {
  * DatePicker. Панель смахивают, чтобы закрыть (`ISwipeable`): она у поля, и
  * сторону после flip знает только её узел — `swipeSide` всегда `null`.
  *
- * Поле (`IField`): кнопка очистки — `clearable`, её набор `clearAria` и
+ * Поле (`IClearable`): кнопка очистки — `clearable`, её набор `clearAria` и
  * команда `clear`, которая очищает поля режима — у диапазона оба конца.
  */
 export interface IDatePicker
-	extends IField<TDatePickerValue, IDatePickerProps, TDatePickerEvents>, ISwipeable {
+	extends IClearable<TDatePickerValue, IDatePickerProps, TDatePickerEvents>, ISwipeable {
 	/** Режим: одна дата или диапазон */
 	mode: TDatePickerMode
 	/** Открыта ли панель с календарём */

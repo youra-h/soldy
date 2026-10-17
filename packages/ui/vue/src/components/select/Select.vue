@@ -26,14 +26,21 @@ export default { ...SetupSelect, components: { Frame, Input, Icon, Tags, SelectI
 			выводится самим `Input.vue` на его внутренний `<input>` — здесь его
 			пробрасывать не нужно.
 
-			`:ctrl="field"`, а не набор пропов: текст, плейсхолдер и ARIA,
-			которые видит пользователь, принадлежат отдельному экземпляру
-			`TInput` (`field`), которым владеет Select (см. `TSelect.field`,
-			`TSelectExtension`). Рядом `:value`/`:placeholder`/`aria` не
-			ставить ни в каком виде — тогда снова завелись бы вторые копии.
+			`:ctrl="field"`, а не набор пропов: текст, плейсхолдер и ARIA
+			комбобокса, которые видит пользователь, принадлежат отдельному
+			экземпляру `TInput` (`field`), которым владеет Select (см.
+			`TSelect.field`, `TSelectExtension`). Рядом `:value`/`:placeholder`
+			не ставить ни в каком виде — тогда снова завелись бы вторые копии.
 			`disabled`, `size`, `variant`, `readonly`, `required`, `name`, `id`,
-			`clearable` тоже несёт инстанс: Select синхронизирует их с ним сам.
-			Имя кнопки очистки поле получает от своего плагина имён.
+			`clearable` и ошибку (`invalid`) тоже несёт инстанс: Select
+			синхронизирует их с ним сам. Имя кнопки очистки поле получает от
+			своего плагина имён.
+
+			Свой набор `aria` Select — имя (`aria_label`, `aria_labelledBy`),
+			описание, `aria-invalid` и `id` от поля формы `Field` — ложится
+			атрибутами на `Input`, а `Input` отдаёт их своему `<input>`, поверх
+			набора комбобокса: имя и описание — у элемента, на котором стоит
+			фокус. Атрибуты потребителя — поверх обоих.
 
 			Кнопку очистки рисует поле — первой в своём слоте у конца, перед
 			стрелкой. Очищает поле его команда `clear`, а выбор снимает
@@ -56,7 +63,7 @@ export default { ...SetupSelect, components: { Frame, Input, Icon, Tags, SelectI
 				embedded="select.field"
 				class="so-select__field"
 				:ctrl="field"
-				v-bind="controlAttrs"
+				v-bind="{ ...aria, ...controlAttrs }"
 			>
 				<!-- Слоты Input пробрасываются наружу как есть -->
 				<template #leading>

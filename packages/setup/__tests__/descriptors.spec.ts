@@ -16,7 +16,7 @@ import {
 	TSelectItem,
 	TSelectCollectionFacade,
 	TSelectItemCollectionFacade,
-	TField,
+	TClearable,
 } from '@soldy-ui/core'
 import {
 	TElementPlugin,
@@ -27,7 +27,7 @@ import {
 	TListKeyboardPlugin,
 	TListHeightPlugin,
 	TListItemPlugin,
-	TFieldNamesPlugin,
+	TClearableNamesPlugin,
 	TDatePickerNamesPlugin,
 } from '@soldy-ui/plugins'
 import {
@@ -47,7 +47,7 @@ import {
 	SelectItemDescriptor,
 	SelectCollectionDescriptor,
 	SelectCollectionItemDescriptor,
-	FieldDescriptor,
+	ClearableDescriptor,
 	InputDescriptor,
 	DateInputDescriptor,
 	DatePickerDescriptor,
@@ -399,15 +399,15 @@ describe('Select', () => {
 })
 
 /**
- * Кнопка очистки — часть поля: `FieldDescriptor`, общий у Input, DateInput и
+ * Кнопка очистки — часть поля: `ClearableDescriptor`, общий у Input, DateInput и
  * DatePicker. Select её не рисует — свой `clearable` он отдаёт полю, а набора
  * кнопки у него нет: он у поля, и имя в него пишет плагин имён поля.
  */
 describe('поле: кнопка очистки', () => {
-	it('FieldDescriptor — база TField поверх InputControl', () => {
-		const d = FieldDescriptor()
+	it('ClearableDescriptor — база TClearable поверх InputControl', () => {
+		const d = ClearableDescriptor()
 
-		expect(d.ctor).toBe(TField)
+		expect(d.ctor).toBe(TClearable)
 		expect(propNames(d)).toEqual(expect.arrayContaining(['readonly', 'clearable', 'clearAria']))
 	})
 
@@ -439,11 +439,11 @@ describe('поле: кнопка очистки', () => {
 		const names = (d: IComponentDescriptor) =>
 			d.plugins.filter((plugin) => plugin.namespace === 'names').map((plugin) => plugin.ctor)
 
-		expect(names(FieldDescriptor())).toEqual([])
-		expect(names(InputDescriptor())).toEqual([TFieldNamesPlugin])
-		expect(names(DateInputDescriptor())).toEqual([TFieldNamesPlugin])
+		expect(names(ClearableDescriptor())).toEqual([])
+		expect(names(InputDescriptor())).toEqual([TClearableNamesPlugin])
+		expect(names(DateInputDescriptor())).toEqual([TClearableNamesPlugin])
 		expect(names(DatePickerDescriptor())).toEqual([TDatePickerNamesPlugin])
-		expect(TDatePickerNamesPlugin.prototype).toBeInstanceOf(TFieldNamesPlugin)
+		expect(TDatePickerNamesPlugin.prototype).toBeInstanceOf(TClearableNamesPlugin)
 	})
 
 	it('у Select своего имени кнопки нет — его собирает поле', () => {

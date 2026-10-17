@@ -23,6 +23,7 @@ import {
 	Accordion,
 	Calendar,
 	DateInput,
+	Field,
 	Input,
 	RadioGroup,
 	RadioGroupItem,
@@ -91,6 +92,32 @@ describe('id при гидратации', () => {
 
 		expect(warnings).toEqual([])
 		expect(attrs(client, 'input', 'id')).toEqual(['field'])
+	})
+
+	it('поле в поле формы: id поля, for подписи и справка у сервера и браузера одни', async () => {
+		const { server, client, warnings } = await hydrate(() =>
+			h(Field, { label: 'Почта', helper: 'Подсказка' }, () => h(Input, { value: 'a' })),
+		)
+		const id = attrs(client, 'input', 'id')
+
+		expect(warnings).toEqual([])
+		expect(id).toEqual(attrs(server, 'input', 'id'))
+		expect(id[0]).not.toBeNull()
+		expect(attrs(client, 'label', 'for')).toEqual(id)
+		expect(attrs(client, 'input', 'aria-describedby')).toEqual(
+			attrs(server, '.so-field__helper', 'id'),
+		)
+	})
+
+	it('группа в поле формы: ссылка на подпись у сервера и браузера одна', async () => {
+		const { server, client, warnings } = await hydrate(() =>
+			h(Field, { label: 'Дата' }, () => h(DateInput)),
+		)
+
+		expect(warnings).toEqual([])
+		expect(attrs(client, '.so-date-input', 'aria-labelledby')).toEqual(
+			attrs(server, '.so-field__label', 'id'),
+		)
 	})
 
 	it('табы из разметки: связка «таб ↔ панель» у сервера и браузера одна', async () => {

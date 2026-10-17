@@ -1,9 +1,10 @@
-import { InputDescriptor } from '@soldy-ui/setup'
+import { InputDescriptor, TFieldControlExtension } from '@soldy-ui/setup'
 import {
 	useAdapter,
 	useExpose,
 	useIcon,
 	useSplitAttrs,
+	VueElevatorFactory,
 	createVueAdapterContext,
 	type SetupContext,
 } from '../../adapter'
@@ -15,10 +16,11 @@ export default {
 	extends: BaseInput,
 	expose: useExpose(),
 	setup(props: InputProps, { emit }: SetupContext) {
+		// Поле формы `Field` над полем: ошибка, `id` и ссылки на части — от него
 		const adapter = createVueAdapterContext(InputDescriptor(), {
 			ctrl: props.ctrl,
 			props,
-		})
+		}).use(TFieldControlExtension, { elevator: VueElevatorFactory })
 
 		return {
 			...useAdapter(adapter, props, emit),

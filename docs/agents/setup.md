@@ -911,13 +911,13 @@ scope задаётся через `defineType<T>` — из него берётс
 индикаторам выполнения, Calendar, Table и полям дат, и в React
 `<CheckBox>подпись</CheckBox>` компилировался, а подпись молча пропадала.
 Наследник Button со своим шаблоном так же получил бы `leading` и `trailing`.
-Даже у ModalLayer с Dialog и Drawer и у Field с Input, DateInput и DatePicker
-совпадение слотов держалось руками: шаблоны у потомков разные.
+Даже у ModalLayer с Dialog и Drawer и у Clearable с Input, DateInput и
+DatePicker совпадение слотов держалось руками: шаблоны у потомков разные.
 
 Поэтому `default` объявляет каждый, кто его рисует, — и ComponentView: его
 разметка рисует содержимое во всех шести адаптерах. Общий слот (`clear` полей,
 `close-icon` окна, панели, Popover и элементов) объявлен литералом у каждого,
-а у баз без своей разметки (ModalLayer, Field, Control, Stylable, Textable)
+а у баз без своей разметки (ModalLayer, Clearable, Control, Stylable, Textable)
 слотов нет. Слот не объявляют ради стенда или теста: содержимое у компонента
 без места для него — ошибка, которую прятал тип, а подпись контрола — `Label`
 вложением. Сторожат `setup/__tests__/slots.spec.ts` («слоты не наследуются», в

@@ -1,13 +1,13 @@
-import type { IField, IFieldProps, TFieldEvents } from '../../base/field'
+import type { IClearable, IClearableProps, TClearableEvents } from '../../base/clearable'
 
-export interface IInputProps extends IFieldProps<string> {
+export interface IInputProps extends IClearableProps<string> {
 	placeholder?: string
 }
 
-export type TInputEvents = TFieldEvents<string> & {
+export type TInputEvents = TClearableEvents<string> & {
 	'change:placeholder': (value: string) => void
 }
 
-export interface IInput extends IField<string, IInputProps, TInputEvents> {
+export interface IInput extends IClearable<string, IInputProps, TInputEvents> {
 	placeholder: string
 }

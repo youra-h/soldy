@@ -1,8 +1,9 @@
-import { RatingDescriptor } from '@soldy-ui/setup'
+import { RatingDescriptor, TFieldControlExtension } from '@soldy-ui/setup'
 import {
 	useAdapter,
 	useExpose,
 	useIcon,
+	VueElevatorFactory,
 	createVueAdapterContext,
 	type SetupContext,
 } from '../../adapter'
@@ -17,7 +18,8 @@ import BaseRating, { type RatingProps } from './base.component'
  * Разделения атрибутов между корнем и полем (`useSplitAttrs`, как у CheckBox)
  * нет, как у Slider: указатель поле не ловит, и обработчик нажатия
  * потребителя на нём не сработал бы никогда. Атрибут потребителя достаётся
- * корню, имя полю даёт подпись `Label` или проп `aria_label`.
+ * корню, имя полю даёт подпись `Label`, подпись поля формы `Field` или проп
+ * `aria_label`.
  */
 export default {
 	name: '_Rating',
@@ -27,7 +29,7 @@ export default {
 		const adapter = createVueAdapterContext(RatingDescriptor(), {
 			ctrl: props.ctrl,
 			props,
-		})
+		}).use(TFieldControlExtension, { elevator: VueElevatorFactory })
 
 		return {
 			...useAdapter(adapter, props, emit),

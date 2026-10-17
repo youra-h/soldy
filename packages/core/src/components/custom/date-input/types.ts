@@ -1,4 +1,4 @@
-import type { IField, IFieldProps, TFieldEvents } from '../../base/field'
+import type { IClearable, IClearableProps, TClearableEvents } from '../../base/clearable'
 import type {
 	TAria,
 	TAriaAttributes,
@@ -162,7 +162,7 @@ export type TDateInputEdit = {
 	readonly value: TDateInputValue
 }
 
-export type TDateInputEvents = TFieldEvents<TDateInputValue> & {
+export type TDateInputEvents = TClearableEvents<TDateInputValue> & {
 	/** change:min */
 	'change:min': (value: TDateInputBound) => void
 	/** change:max */
@@ -185,7 +185,7 @@ export type TDateInputEvents = TFieldEvents<TDateInputValue> & {
 	'change:focusedSegment': (part: TDateFieldPart | undefined) => void
 }
 
-export interface IDateInputProps extends IFieldProps<TDateInputValue> {
+export interface IDateInputProps extends IClearableProps<TDateInputValue> {
 	/**
 	 * Первый день или момент, который поле считает верным; раньше —
 	 * `aria-invalid`
@@ -217,7 +217,7 @@ export interface IDateInputProps extends IFieldProps<TDateInputValue> {
 	timePrecision?: TTimePrecision
 }
 
-export interface IDateInput extends IField<TDateInputValue, IDateInputProps, TDateInputEvents> {
+export interface IDateInput extends IClearable<TDateInputValue, IDateInputProps, TDateInputEvents> {
 	/** Первый верный день или момент */
 	min: TDateInputBound
 	/** Последний верный день или момент */
@@ -230,8 +230,11 @@ export interface IDateInput extends IField<TDateInputValue, IDateInputProps, TDa
 	kind: TDateInputKind
 	/** Точность времени: до минуты или до секунды */
 	timePrecision: TTimePrecision
-	/** Собранное значение вне `min`/`max` или его день недоступен */
-	readonly invalid: boolean
+	/**
+	 * Итог ошибки: записанное своё (ошибку задаёт поле формы `Field` или код)
+	 * или собранное значение вне `min`/`max`, или его день недоступен
+	 */
+	invalid: boolean
 	/** Части и разделители в порядке формата локали */
 	readonly segments: TDateInputSegment[]
 	/**

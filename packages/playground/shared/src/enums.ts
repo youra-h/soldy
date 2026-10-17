@@ -6,6 +6,7 @@ import type {
 	TButtonView,
 	TCheckBoxView,
 	TLabelPosition,
+	TFieldPosition,
 	TRadioGroupView,
 	TAccordionArrowPlacement,
 	TListContentFit,
@@ -113,6 +114,9 @@ export const CHECK_BOX_VIEWS = enumOf<TCheckBoxView>()(['outlined', 'filled', 'p
 
 /** С какой стороны от контрола стоит текст подписи. */
 export const LABEL_POSITIONS = enumOf<TLabelPosition>()(['start', 'end', 'top', 'bottom'])
+
+/** С какой стороны от контрола стоит подпись поля формы. */
+export const FIELD_POSITIONS = enumOf<TFieldPosition>()(['top', 'start', 'end'])
 
 /** Чем отмечено выбранное радио: точкой внутри кольца или утолщённым кольцом. */
 export const RADIO_GROUP_VIEWS = enumOf<TRadioGroupView>()(['dot', 'ring'])

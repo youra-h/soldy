@@ -17,7 +17,15 @@
 
 import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
+import { TCheckBox, TInput, TSwitch } from '@soldy-ui/core'
 import { CheckBox, Input, Switch } from '@soldy-ui/vue'
+
+/** Контрол с ошибкой: её задают инстансу — в разметке её задаёт поле формы. */
+function invalid<T extends { invalid: boolean }>(ctrl: T): T {
+	ctrl.invalid = true
+
+	return ctrl
+}
 
 describe('Input', () => {
 	it('disabled и required — нативные атрибуты <input>, без ARIA-дублей', () => {
@@ -54,6 +62,23 @@ describe('Input', () => {
 
 		expect(wrapper.attributes('dir')).toBe('rtl')
 		expect(wrapper.find('input').attributes('dir')).toBeUndefined()
+	})
+
+	/**
+	 * Тема красит коробку поля и подпись поля формы по корню: `dataset` — на
+	 * корне, а ошибку скринридеру объявляет `<input>`.
+	 */
+	it('dataset — на корне: data-disabled и data-invalid, aria-invalid — у <input>', () => {
+		const ctrl = new TInput({ disabled: true })
+
+		ctrl.invalid = true
+
+		const wrapper = mount(Input, { props: { ctrl } })
+
+		expect(wrapper.attributes('data-disabled')).toBe('true')
+		expect(wrapper.attributes('data-invalid')).toBe('true')
+		expect(wrapper.find('input').attributes('data-invalid')).toBeUndefined()
+		expect(wrapper.find('input').attributes('aria-invalid')).toBe('true')
 	})
 
 	/**
@@ -137,6 +162,13 @@ describe.each(CHECKABLES)('%s', (_name, render, decor) => {
 		expect(input.attributes('aria-label')).toBe('Согласие')
 	})
 
+	it('dataset — на корне: data-disabled читает тема, а не <input>', () => {
+		const wrapper = render({ disabled: true })
+
+		expect(wrapper.attributes('data-disabled')).toBe('true')
+		expect(wrapper.find('input').attributes('data-disabled')).toBeUndefined()
+	})
+
 	it.each([true, false])('value: %s — нативный checked у <input>, без aria-checked', (value) => {
 		const input = render({ value }).find('input')
 
@@ -151,6 +183,19 @@ describe.each(CHECKABLES)('%s', (_name, render, decor) => {
 	 */
 	it('value без значения — отмечен', () => {
 		expect(render({ value: '' }).find('input').element.checked).toBe(true)
+	})
+})
+
+describe.each([
+	['CheckBox', () => mount(CheckBox, { props: { ctrl: invalid(new TCheckBox()) } })],
+	['Switch', () => mount(Switch, { props: { ctrl: invalid(new TSwitch()) } })],
+] as const)('%s · ошибка', (_name, render) => {
+	it('data-invalid — на корне, aria-invalid — у <input>', () => {
+		const wrapper = render()
+
+		expect(wrapper.attributes('data-invalid')).toBe('true')
+		expect(wrapper.find('input').attributes('data-invalid')).toBeUndefined()
+		expect(wrapper.find('input').attributes('aria-invalid')).toBe('true')
 	})
 })
 

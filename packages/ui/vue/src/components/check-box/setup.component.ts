@@ -1,9 +1,10 @@
-import { CheckBoxDescriptor } from '@soldy-ui/setup'
+import { CheckBoxDescriptor, TFieldControlExtension } from '@soldy-ui/setup'
 import {
 	useAdapter,
 	useExpose,
 	useIcon,
 	useSplitAttrs,
+	VueElevatorFactory,
 	createVueAdapterContext,
 	type SetupContext,
 } from '../../adapter'
@@ -15,10 +16,11 @@ export default {
 	extends: BaseCheckBox,
 	expose: useExpose(),
 	setup(props: CheckBoxProps, { emit }: SetupContext) {
+		// Поле формы `Field` над флажком: ошибка, `id` и ссылки на части — от него
 		const adapter = createVueAdapterContext(CheckBoxDescriptor(), {
 			ctrl: props.ctrl,
 			props,
-		})
+		}).use(TFieldControlExtension, { elevator: VueElevatorFactory })
 
 		return {
 			...useAdapter(adapter, props, emit),

@@ -21,4 +21,9 @@ export interface IControl<
 > extends IStylable<TProps, TEvents> {
 	disabled: boolean
 	focused: boolean
+	/**
+	 * Labelable ли элемент с `aria`: подпись называет его `for`, а не ссылкой
+	 * `aria-labelledby`, как группу
+	 */
+	readonly labelable: boolean
 }

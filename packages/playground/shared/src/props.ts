@@ -11,6 +11,7 @@ import {
 	DIALOG_PLACEMENTS,
 	DIRECTIONS,
 	DRAWER_PLACEMENTS,
+	FIELD_POSITIONS,
 	SWIPES,
 	FRAME_PLACEMENTS,
 	FRAME_POSITIONS,
@@ -72,8 +73,8 @@ import type {
  * Унаследованные пропы описываются один раз.
  *
  * Их дают слои `ComponentView`, `Stylable`, `Control`, `ValueControl`,
- * `InputControl`, `Field` — расписывать `size` в двадцати компонентах значило
- * бы получить двадцать слегка разных формулировок.
+ * `InputControl`, `Clearable` — расписывать `size` в двадцати компонентах
+ * значило бы получить двадцать слегка разных формулировок.
  */
 const SHARED: Record<string, string> = {
 	rendered: 'Есть ли компонент в дереве. Аналог v-if: false — узла нет вовсе',
@@ -150,6 +151,15 @@ const OWN: Record<string, Record<string, string>> = {
 	label: {
 		text: 'Текст подписи — доступное имя контрола. Слот content его переопределяет',
 		position: 'С какой стороны от контрола стоит текст. start и end меняются местами в RTL',
+	},
+	field: {
+		label: 'Подпись — видимое имя контрола: for на его поле, у групп — ссылка aria-labelledby. Пусто — подписи нет',
+		helper: 'Подсказка под контролом — его aria-describedby. Пока видна ошибка, подсказки нет',
+		error: 'Текст ошибки — виден, пока поле невалидно, и встаёт на место подсказки',
+		invalid:
+			'Значение поля неверно: видна ошибка, контрол помечен ошибкой (aria-invalid). Проверку делает приложение',
+		position:
+			'С какой стороны от контрола стоит подпись: над ним, в начале или в конце строки. start и end меняются местами в RTL',
 	},
 	'radio-group': {
 		view: 'Отметка выбранного: точка внутри тонкого кольца или утолщённое кольцо. Группа раздаёт вид каждому радио',
@@ -389,6 +399,7 @@ const OPTIONS: Record<string, Record<string, readonly string[]>> = {
 	button: { view: BUTTON_VIEWS },
 	'check-box': { view: CHECK_BOX_VIEWS },
 	label: { position: LABEL_POSITIONS },
+	field: { position: FIELD_POSITIONS },
 	accordion: { view: BUTTON_VIEWS },
 	'list-box': { view: BUTTON_VIEWS },
 	'radio-group': { view: RADIO_GROUP_VIEWS },

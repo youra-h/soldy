@@ -1,5 +1,6 @@
 import {
 	TCollectionExtension,
+	TFieldControlExtension,
 	RadioGroupDescriptor,
 	RadioGroupCollectionDescriptor,
 } from '@soldy-ui/setup'
@@ -17,6 +18,9 @@ import BaseRadioGroup, { type RadioGroupProps } from './base.component'
  * Два контекста, как у остальных коллекций: собственный (props группы) и
  * фасада коллекции (состав и отмеченное радио). Drag-and-drop нет: радио
  * одной группы стоят где угодно в разметке, и порядка на экране у них нет.
+ *
+ * Поле формы `Field` связывается с группой, а не с радио: подпись поля
+ * называет группу ссылкой, ошибка — группы.
  */
 export default {
 	name: '_RadioGroup',
@@ -26,7 +30,7 @@ export default {
 		const adapter = createVueAdapterContext(RadioGroupDescriptor(), {
 			ctrl: props.ctrl,
 			props,
-		})
+		}).use(TFieldControlExtension, { elevator: VueElevatorFactory })
 
 		const refs = useAdapter(adapter, props, emit)
 

@@ -1,7 +1,15 @@
 import type { IComponentView, TDefaultValues } from '@soldy-ui/core'
 import { TBasePlugin } from '../../base'
 import type { IPluginContext } from '../../base'
-import type { IAriaPluginOptions, IAriaPluginProps, TAriaPluginEvents } from './types'
+import type { IAriaLinks, IAriaPluginOptions, IAriaPluginProps, TAriaPluginEvents } from './types'
+
+/** Ссылок от разметки вокруг нет. */
+const NO_LINKS: IAriaLinks = {}
+
+/** Те же ли ссылки — по содержимому: связка пишет новый объект на каждую смену. */
+function sameLinks(a: IAriaLinks, b: IAriaLinks): boolean {
+	return a.labelledBy === b.labelledBy && a.describedBy === b.describedBy
+}
 
 /**
  * TAriaPlugin — доступное имя и описание компонента.
@@ -19,6 +27,13 @@ import type { IAriaPluginOptions, IAriaPluginProps, TAriaPluginEvents } from './
  * серверную разметку. Этот в DOM не ходит: он пишет в `instance.aria` — тот же
  * набор, что заполняют ядро и расширения коллекции, — а раскладывает набор
  * шаблон, синхронно.
+ *
+ * Входов у плагина два: пропсы (`aria_label`, `aria_labelledBy`,
+ * `aria_describedBy`) — их задаёт разметка компонента — и ссылки от разметки
+ * вокруг (`links`) — их пишет поле формы `Field` своему контролу. Сливает их
+ * плагин: подпись поля — имя, пока своего нет, а пояснение поля встаёт перед
+ * своим. Второго писателя тех же атрибутов нет, и ни один вход не стирает
+ * другой.
  */
 export class TAriaPlugin extends TBasePlugin<any, TAriaPluginEvents> {
 	/**
@@ -42,6 +57,7 @@ export class TAriaPlugin extends TBasePlugin<any, TAriaPluginEvents> {
 	private _label = TAriaPlugin.defaultValues.label
 	private _labelledBy = TAriaPlugin.defaultValues.labelledBy
 	private _describedBy = TAriaPlugin.defaultValues.describedBy
+	private _links: IAriaLinks = NO_LINKS
 	private _role: string | undefined
 
 	override install(ctx: IPluginContext, options?: IAriaPluginOptions): void {
@@ -100,9 +116,36 @@ export class TAriaPlugin extends TBasePlugin<any, TAriaPluginEvents> {
 		this.events.emit('change:describedBy', value)
 	}
 
-	/** Есть ли у компонента имя из этого плагина. Описание именем не считается. */
+	/**
+	 * Ссылки от разметки вокруг — подпись и пояснение поля формы. Не проп: в
+	 * контракт плагина не входит, пишет его связка поля с контролом
+	 * (`TFieldControlExtension`), а не разметка компонента.
+	 *
+	 * - `labelledBy` — имя, пока своего нет: своё (`label`, `labelledBy`)
+	 *   главнее, иначе подпись поля перекрыла бы имя, которое задал
+	 *   потребитель;
+	 * - `describedBy` — перед своим: `aria-describedby` получает оба `id`,
+	 *   пояснение поля — первым.
+	 *
+	 * Объект заменяется целиком, а не правится на месте.
+	 */
+	get links(): IAriaLinks {
+		return this._links
+	}
+
+	set links(value: IAriaLinks) {
+		if (sameLinks(value, this._links)) return
+
+		this._links = value
+		this._apply()
+	}
+
+	/**
+	 * Есть ли у компонента имя из этого плагина — своё или подпись поля.
+	 * Описание именем не считается.
+	 */
 	get named(): boolean {
-		return !!(this._label || this._labelledBy)
+		return !!(this._label || this._labelledBy || this._links.labelledBy)
 	}
 
 	/** Пишет свою часть в общий набор компонента. */
@@ -111,9 +154,13 @@ export class TAriaPlugin extends TBasePlugin<any, TAriaPluginEvents> {
 
 		if (!aria) return
 
+		// Своё имя главнее подписи поля: `aria-labelledby` перекрыл бы `aria-label`
+		const labelledBy = this._labelledBy || (this._label ? undefined : this._links.labelledBy)
+		const describedBy = [this._links.describedBy, this._describedBy].filter(Boolean).join(' ')
+
 		aria.add('aria-label', this._label || null)
-		aria.add('aria-labelledby', this._labelledBy || null)
-		aria.add('aria-describedby', this._describedBy || null)
+		aria.add('aria-labelledby', labelledBy || null)
+		aria.add('aria-describedby', describedBy || null)
 
 		if (!this._role) return
 
@@ -131,6 +178,7 @@ export class TAriaPlugin extends TBasePlugin<any, TAriaPluginEvents> {
 		this._label = undefined
 		this._labelledBy = undefined
 		this._describedBy = undefined
+		this._links = NO_LINKS
 		this._role = undefined
 
 		super.destroy()

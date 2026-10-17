@@ -1,7 +1,7 @@
 /**
  * Дескриптор DateInput (TDateInput).
  *
- * Наследует `FieldDescriptor` (кнопка очистки — clearable, clearAria — поверх
+ * Наследует `ClearableDescriptor` (кнопка очистки — clearable, clearAria — поверх
  * value, name, readonly, required, id, disabled, size, variant, ...) и
  * добавляет слоты `leading`, `clear` и `trailing`, границы и недоступные дни,
  * вид поля — дата или дата со временем — и точность времени: до минуты или до
@@ -27,16 +27,16 @@ import {
 	DateInputKeyboardPluginDescriptor,
 	DateInputPointerPluginDescriptor,
 	DateInputTouchPluginDescriptor,
-	FieldNamesPluginDescriptor,
+	ClearableNamesPluginDescriptor,
 	LocalePluginDescriptor,
 } from '../plugins'
-import { FieldDescriptor } from './field.descriptor'
+import { ClearableDescriptor } from './clearable.descriptor'
 
 export const DateInputDescriptor = defineDescriptor(() =>
 	defineComponent({
 		ctor: TDateInput,
 
-		extends: FieldDescriptor(),
+		extends: ClearableDescriptor(),
 
 		contribution: {
 			/**
@@ -122,7 +122,7 @@ export const DateInputDescriptor = defineDescriptor(() =>
 
 		plugins: [
 			// Имя кнопки очистки от локали — с первой отрисовки
-			FieldNamesPluginDescriptor,
+			ClearableNamesPluginDescriptor,
 			// Язык приложения — до поведения частей: формат с первой отрисовки
 			LocalePluginDescriptor,
 			// Клавиши частей и DOM-фокус за частью под фокусом ядра

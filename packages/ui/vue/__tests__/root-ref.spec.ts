@@ -45,6 +45,7 @@ import {
 	ComponentView,
 	Dialog,
 	Drawer,
+	Field,
 	Frame,
 	Icon,
 	Input,
@@ -151,6 +152,7 @@ const ROOTS: ReadonlyArray<readonly [string, (props: TProbeProps) => VNode, stri
 	['Toasts', (props) => h(Toasts, props), '.so-toasts', '.so-toasts'],
 	['Icon', (props) => h(Icon, { tag: 'i', ...props }), '.so-icon', '.so-icon'],
 	['Label', (props) => h(Label, props), '.so-label', '.so-label'],
+	['Field', (props) => h(Field, props), '.so-field', '.so-field'],
 	[
 		'ProgressLinear',
 		(props) => h(ProgressLinear, props),
