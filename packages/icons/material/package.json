@@ -1,6 +1,6 @@
 {
   "name": "@soldy-ui/icons-material",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Иконки Material: реализация контракта ролей ICON_ROLES",
   "keywords": [
     "soldy",
@@ -40,6 +40,6 @@
     "generate": "node scripts/generate.mjs"
   },
   "dependencies": {
-    "@soldy-ui/setup": "0.1.0"
+    "@soldy-ui/setup": "0.2.0"
   }
 }
