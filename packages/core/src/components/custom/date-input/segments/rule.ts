@@ -16,17 +16,21 @@ export const AS_IS: Pick<TPartRule, 'shown' | 'stored' | 'settle'> = {
 
 /**
  * Правило числовой части: текст — число цифрами локали не короче `width`
- * цифр, ввод — цифрами.
+ * цифр, ввод — цифрами. Набранные нули без числа — тоже цифрами локали, не
+ * короче `width` и не короче набранного: «0» у дня — «00», у года — «0», а
+ * «000» — «000».
  */
 export function numberRule(
 	width: number,
 	digits: readonly string[],
-	rule: Omit<TPartRule, 'numeric' | 'text' | 'enter' | 'erase'>,
+	rule: Omit<TPartRule, 'numeric' | 'text' | 'typedText' | 'enter' | 'erase'>,
 ): TPartRule {
 	return {
 		...rule,
 		numeric: true,
 		text: (shown) => formatFieldNumber(shown, width, digits),
+		typedText: (typed) =>
+			formatFieldNumber(Number(typed), Math.max(width, typed.length), digits),
 		enter: (parts, typed, key) => {
 			const digit = digitOf(key, digits)
 
@@ -50,11 +54,17 @@ export function wrap(value: number, min: number, max: number): number {
 
 /**
  * Цифра в числовую часть с ходом `limits`. Цифры копятся, пока число в ходе
- * части, иначе часть начинается с новой цифры. Ноль первой цифрой значения не
- * даёт, если ноля нет в ходе части: из «0» и «5» выйдет 5, а минута и час
- * `h23` с нуля начинаются. Дописать больше некуда — следующая цифра вывела бы
- * за ход или цифр уже столько, сколько у края хода, — набранное сбрасывается,
- * и фокус уходит на следующую часть.
+ * части, иначе часть начинается с новой цифры. Дописать больше некуда —
+ * следующая цифра вывела бы за ход или цифр уже столько, сколько у края хода,
+ * — набранное сбрасывается, и фокус уходит на следующую часть.
+ *
+ * Ноль, с которого часть не начинается (ноля нет в её ходе: день, месяц, год,
+ * час `h12` и `h24`), — обычная первая цифра: числа у части нет до следующей
+ * цифры, и набранные нули она показывает. Из «0» и «5» выйдет 5, а минута,
+ * секунда и час `h11` и `h23` с нуля начинаются — у них ноль и есть число.
+ * Нули без числа дописываются, пока есть куда; дальше лишний ноль не копится:
+ * набранного остаётся на цифру меньше края хода («00» у дня — снова «0»), и
+ * часть ждёт цифры.
  */
 function enterDigit({ min, max }: TDatePartLimits, typed: string, digit: number): TPartEntry {
 	const entered = `${typed}${digit}`
@@ -63,11 +73,11 @@ function enterDigit({ min, max }: TDatePartLimits, typed: string, digit: number)
 	const settable = value !== 0 || min === 0
 	const full = Number(`${number}0`) > max || entered.length >= String(max).length
 
-	return {
-		shown: settable ? value : undefined,
-		typed: full ? '' : entered,
-		advance: full && settable,
+	if (!settable) {
+		return { shown: undefined, typed: full ? entered.slice(1) : entered, advance: false }
 	}
+
+	return { shown: value, typed: full ? '' : entered, advance: full }
 }
 
 /**

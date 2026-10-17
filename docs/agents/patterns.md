@@ -895,8 +895,8 @@ useToasts()`. API опускает лифт (`TOASTS_ELEVATOR`, расширен
   `kind: 'datetime'` — даты и времени, с `timePrecision: 'second'` — до
   секунды: корень — `role="group"`, имя — `aria_label` или `aria_labelledBy`
   (подпись `Label` вложением его не назовёт: части не labelable), часть —
-  `role="spinbutton"` с именем части на
-  языке локали, `aria-valuenow` (у пустой его нет, у периода суток — 0 или 1),
+  `role="spinbutton"` с именем части на языке локали, `aria-valuenow` (у
+  части без числа его нет, у периода суток — 0 или 1),
   `aria-valuetext` — текст в цифрах локали, у периода — его имя (`PM`),
   `aria-valuemin`/`aria-valuemax` — ход части, `aria-invalid`,
   `aria-required`, `aria-readonly` и `aria-disabled` — на частях, а не на

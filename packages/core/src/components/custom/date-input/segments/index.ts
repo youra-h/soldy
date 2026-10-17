@@ -3,6 +3,7 @@ export {
 	withPart,
 	withoutParts,
 	emptyParts,
+	emptyPart,
 	sameParts,
 	shownOf,
 	textOf,
