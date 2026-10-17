@@ -2,8 +2,9 @@ import type { TDateFieldPart, TDateInputParts, TDatePartLimits } from '../types'
 
 /**
  * Итог знака в части: число, которое видит пользователь, и набранные цифры.
- * Числа нет (`undefined`) — знак части, но число не меняется: ноль первой
- * цифрой, буква, с которой начинаются оба периода суток.
+ * Числа нет (`undefined`) — часть после знака без числа: ноль, с которого она
+ * не начинается, снимает её число до следующей цифры, и часть показывает
+ * набранное (`typedText`).
  */
 export type TPartEntry = {
 	readonly shown: number | undefined
@@ -37,8 +38,13 @@ export type TPartRule = {
 	stored(shown: number, parts: TDateInputParts): number
 	/** Шаг ↑/↓: по кругу хода или до его края */
 	step(value: number, min: number, max: number): number
-	/** Текст набранной части */
+	/** Текст части с числом `shown` */
 	text(shown: number): string
+	/**
+	 * Текст набранных цифр, пока числа у части нет: нули, с которых она не
+	 * начинается («00»)
+	 */
+	typedText(typed: string): string
 	/** Знак в часть; знак не этой части — `undefined` */
 	enter(parts: TDateInputParts, typed: string, key: string): TPartEntry | undefined
 	/** Backspace по набранной части с числом `shown` */
