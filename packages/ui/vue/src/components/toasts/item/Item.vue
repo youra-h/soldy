@@ -1,6 +1,7 @@
 <script lang="ts">
 import { Icon } from '../../icon'
 import { Button } from '../../button'
+import { ProgressSpinner } from '../../progress-spinner'
 import SetupToastsItem from './setup.component'
 
 /**
@@ -10,7 +11,7 @@ import SetupToastsItem from './setup.component'
  * Атрибуты снаружи падают на корень сами: набор тоста (`aria`, `dataset`)
  * стоит на нём же, и разводить атрибуты по узлам незачем.
  */
-export default { ...SetupToastsItem, components: { Icon, Button } }
+export default { ...SetupToastsItem, components: { Icon, Button, ProgressSpinner } }
 </script>
 
 <template>
@@ -25,8 +26,8 @@ export default { ...SetupToastsItem, components: { Icon, Button } }
 	>
 		<!--
 			Корень — место тоста в списке: высота места, сдвиг жеста, уход и
-			прозрачность (тема). На нём: вариант — модификатор
-			`so-toasts-item--variant-*` (нет варианта — нейтральный), `data-open`
+			прозрачность (тема). На нём: вид сообщения — модификатор
+			`so-toasts-item--type-*` (нет вида — обычное сообщение), `data-open`
 			(с первой отрисовки; `false` — тост закрыт и гаснет), `data-swiping`
 			(тянут), роль `status` или `alert` для срочного, `tabindex` — фокус по
 			F8 и Escape на тосте под фокусом. Сдвиг во время жеста
@@ -40,12 +41,26 @@ export default { ...SetupToastsItem, components: { Icon, Button } }
 		-->
 		<div class="so-toasts-item__card">
 			<!--
-				Значок — слот `icon`; без слота узла нет. Декор: имя тосту даёт
-				текст, поэтому узел спрятан от скринридера.
+				Коробка значка стоит всегда, и в ней одно из трёх:
+				- тост ждёт (`loading`) — бегущее кольцо, при любом виде и что бы ни
+				  стояло в слоте. Размер и вариант кольцу разметка не передаёт:
+				  диаметр и цвет даёт тема по месту — коробке значка;
+				- задан слот `icon` (scope — вид) — свой значок;
+				- иначе — значок вида по роли: `info`, `success`, `warning`,
+				  `error`, у обычного сообщения — `notification`.
+				Пустой слот уступает место значку вида, как пустые слоты-иконки у
+				элементов коллекций. Коробка — декор: что случилось, говорит текст,
+				поэтому она спрятана от скринридера вместе с ролью кольца.
 			-->
-			<span v-if="$slots.icon" class="so-toasts-item__icon" aria-hidden="true"
-				><slot name="icon"
-			/></span>
+			<span class="so-toasts-item__icon" aria-hidden="true">
+				<ProgressSpinner v-if="loading" embedded="toasts.spinner" indeterminate />
+				<slot v-else name="icon" :type="type">
+					<Icon
+						embedded="toasts.icon"
+						:tag="type ? typeIconTags[type] : notificationIconTag"
+					/>
+				</slot>
+			</span>
 
 			<!--
 				Текст: заголовок (слот `default`, запасное — `text` тоста),

@@ -1,7 +1,6 @@
 import type { IExtension } from '../../../../../base/collection'
-import type { TComponentVariant } from '../../../../../../common'
 import type { IToasts } from '../../../types'
-import type { IToastsItem } from '../../../item/types'
+import type { IToastsItem, TToastsItemType } from '../../../item/types'
 
 /**
  * Опции тоста для `show`.
@@ -15,8 +14,17 @@ export interface IToastOptions<TRender = unknown> {
 	text?: string
 	/** Описание под текстом */
 	description?: string
-	/** Вариант темы — цвет тоста. Не задан — тост нейтральный */
-	variant?: TComponentVariant
+	/**
+	 * Вид сообщения: `info`, `success`, `warning` или `error` — значок вида в
+	 * начале строки. Не задан — обычное сообщение
+	 */
+	type?: TToastsItemType
+	/**
+	 * Тост ждёт — работа ещё идёт («Сохраняем…»): на месте значка кольцо, и сам
+	 * тост не закрывается. Кончилась работа — снимите флаг у тоста
+	 * (`toast.loading = false`), и отсчёт пойдёт заново
+	 */
+	loading?: boolean
 	/** Есть ли у тоста кнопка закрытия. По умолчанию есть */
 	closable?: boolean
 	/** Сколько тост держится, мс. Не задано — как у владельца, `0` — пока не закроют */
@@ -51,8 +59,8 @@ export type TToastsExtensionEvents = {
 	/** Тост закрылся. Закрытие окончательное, поэтому приходит один раз */
 	'item:close': (toast: IToastsItem) => void
 	/**
-	 * Длительность тоста (`durationOf`) сменилась: его своя или, у тоста без
-	 * своей, владельца
+	 * Длительность тоста (`durationOf`) сменилась: его своя, его ожидание
+	 * (`loading`) или, у тоста без своей, длительность владельца
 	 */
 	'item:duration': (toast: IToastsItem) => void
 }
@@ -60,6 +68,9 @@ export type TToastsExtensionEvents = {
 /** Контракт расширения тостов: очередь, предел видимых, длительность и сторона жеста. */
 export interface IToastsExtension
 	extends IExtension<IToastsItem, TToastsExtensionEvents>, IToastsApi {
-	/** Длительность тоста, мс: своя, а если её нет — владельца. `0` — не закрывается сам */
+	/**
+	 * Длительность тоста, мс: своя, а если её нет — владельца. `0` — не
+	 * закрывается сам: так у тоста, который ждёт (`loading`)
+	 */
 	durationOf(toast: IToastsItem): number
 }

@@ -12,7 +12,7 @@ import {
 	isCloseRequestable,
 	isSwipeable,
 } from '@soldy-ui/core'
-import type { IToastsItem, TToastsPlacement } from '@soldy-ui/core'
+import type { IToastsItem, TToastsItemType, TToastsPlacement } from '@soldy-ui/core'
 
 /**
  * Модель тостов: менеджер-регион, тост и очередь коллекции.
@@ -139,16 +139,26 @@ describe('регион (TToasts)', () => {
 })
 
 describe('тост (TToastsItem)', () => {
-	it('умолчания: открыт, li, с крестиком, длительность владельца, вежливый', () => {
+	it('умолчания: открыт, li, обычное сообщение, не ждёт, с крестиком, длительность владельца, вежливый', () => {
 		const toast = new TToastsItem()
 
 		expect(toast.open).toBe(true)
 		expect(toast.tag).toBe('li')
+		expect(toast.type).toBeUndefined()
+		expect(toast.loading).toBe(false)
 		expect(toast.closable).toBe(true)
 		expect(toast.duration).toBeUndefined()
 		expect(toast.alert).toBe(false)
 		expect(toast.render).toBeUndefined()
 		expect(toast.classes.toArray()).toContain('so-toasts-item')
+	})
+
+	it('ни размера, ни варианта: модификаторов --size-* и --variant-* нет', () => {
+		const toast = new TToastsItem({ type: 'error' })
+
+		expect(toast.classes.toArray().filter((name) => /--(size|variant)-/.test(name))).toEqual([])
+		expect('size' in toast).toBe(false)
+		expect('variant' in toast).toBe(false)
 	})
 
 	it('роль status, у срочного — alert; смена alert меняет роль', () => {
@@ -179,13 +189,71 @@ describe('тост (TToastsItem)', () => {
 		expect(toast.dataset.get('swiping')).toBe('false')
 	})
 
-	it('вариант — модификатор --variant-*, без варианта модификатора нет', () => {
-		expect(
-			new TToastsItem().classes.toArray().some((name) => name.includes('--variant-')),
-		).toBe(false)
-		expect(new TToastsItem({ variant: 'brand' }).classes.toArray()).toContain(
-			'so-toasts-item--variant-brand',
+	describe('вид сообщения', () => {
+		/** Модификаторы вида на тосте. */
+		const typeClasses = (toast: TToastsItem) =>
+			toast.classes.toArray().filter((name) => name.includes('--type-'))
+
+		it('модификатор --type-* — с конструктора; без вида модификатора нет', () => {
+			expect(typeClasses(new TToastsItem())).toEqual([])
+			expect(typeClasses(new TToastsItem({ type: 'error' }))).toEqual([
+				'so-toasts-item--type-error',
+			])
+		})
+
+		it('смена вида меняет модификатор, undefined его снимает', () => {
+			const toast = new TToastsItem()
+
+			toast.type = 'info'
+
+			expect(typeClasses(toast)).toEqual(['so-toasts-item--type-info'])
+
+			toast.type = 'success'
+
+			expect(typeClasses(toast)).toEqual(['so-toasts-item--type-success'])
+
+			toast.type = undefined
+
+			expect(typeClasses(toast)).toEqual([])
+		})
+
+		it.each<[TToastsItemType]>([['info'], ['success'], ['warning'], ['error']])(
+			'%s — свой модификатор',
+			(type) => {
+				expect(typeClasses(new TToastsItem({ type }))).toEqual([
+					`so-toasts-item--type-${type}`,
+				])
+			},
 		)
+
+		it('change:type и change:loading — только на смену', () => {
+			const toast = new TToastsItem({ type: 'warning' })
+			const onType = vi.fn()
+			const onLoading = vi.fn()
+
+			toast.events.on('change:type', onType)
+			toast.events.on('change:loading', onLoading)
+
+			toast.type = 'warning'
+			toast.loading = false
+
+			expect([onType.mock.calls.length, onLoading.mock.calls.length]).toEqual([0, 0])
+
+			toast.type = 'success'
+			toast.loading = true
+			toast.type = undefined
+			toast.loading = false
+
+			expect(onType.mock.calls).toEqual([['success'], [undefined]])
+			expect(onLoading.mock.calls).toEqual([[true], [false]])
+		})
+
+		it('getProps — вид и ожидание', () => {
+			const props = new TToastsItem({ type: 'info', loading: true }).getProps()
+
+			expect(props.type).toBe('info')
+			expect(props.loading).toBe(true)
+		})
 	})
 
 	describe('закрытие окончательное', () => {
@@ -298,6 +366,20 @@ describe('очередь (расширение toasts)', () => {
 		expect(textsOf(engine.extensions.batch.items)).toEqual(['Отправлено', 'Сохранено'])
 	})
 
+	it('show доносит вид и ожидание: модификатор вида — с первой записи', () => {
+		const { engine } = engineOf()
+		const { show } = engine.extensions.toasts
+
+		const saving = show({ text: 'Сохраняем…', loading: true })
+		const failed = show({ text: 'Нет сети', type: 'error', alert: true })
+
+		expect(saving?.loading).toBe(true)
+		expect(saving?.type).toBeUndefined()
+		expect(failed?.type).toBe('error')
+		expect(failed?.loading).toBe(false)
+		expect(failed?.classes.toArray()).toContain('so-toasts-item--type-error')
+	})
+
 	it('show без this — поле со стрелкой, деструктуризация работает', () => {
 		const { engine } = engineOf()
 		const { show } = engine.extensions.toasts
@@ -404,6 +486,40 @@ describe('очередь (расширение toasts)', () => {
 
 		expect(toasts.durationOf(new TToastsItem())).toBe(7000)
 		expect(createEngineToasts().extensions.toasts.durationOf(new TToastsItem())).toBe(0)
+	})
+
+	it('пока тост ждёт, durationOf — 0 при любой своей и владельца; снятое ожидание возвращает итог', () => {
+		const { engine } = engineOf(new TToasts({ duration: 3000 }))
+		const { toasts } = engine.extensions
+		const inherited = new TToastsItem({ loading: true })
+		const own = new TToastsItem({ loading: true, duration: 1000 })
+
+		expect(toasts.durationOf(inherited)).toBe(0)
+		expect(toasts.durationOf(own)).toBe(0)
+
+		inherited.loading = false
+		own.loading = false
+
+		expect(toasts.durationOf(inherited)).toBe(3000)
+		expect(toasts.durationOf(own)).toBe(1000)
+	})
+
+	it('item:duration — на ожидание и на его снятие', () => {
+		const { engine } = engineOf()
+		const toast = engine.extensions.toasts.show({ text: 'Сохраняем…', loading: true })
+		const onDuration = vi.fn()
+
+		engine.extensions.toasts.events.on('item:duration', onDuration)
+
+		if (toast) toast.loading = false
+
+		expect(onDuration.mock.calls).toEqual([[toast]])
+
+		onDuration.mockClear()
+
+		if (toast) toast.loading = true
+
+		expect(onDuration.mock.calls).toEqual([[toast]])
 	})
 
 	it('item:duration — на свою длительность и на длительность владельца у тостов без своей', () => {

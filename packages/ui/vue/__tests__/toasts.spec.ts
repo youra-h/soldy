@@ -5,8 +5,9 @@
  * (`core/__tests__/toasts.spec.ts`), отсчёт, удаление, клавиши и жест — плагины;
  * здесь важно, что они сходятся: менеджер оборачивает приложение и отдаёт API
  * тостов лифтом, регион телепортирован и стоит пустым, тосты рисуются по
- * показанным, слоты пробрасываются, своё содержимое получает тост и закрывает
- * его, а закрытый тост уходит из разметки.
+ * показанным, слоты пробрасываются, значок — по виду сообщения, а пока тост
+ * ждёт, на его месте кольцо, своё содержимое получает тост и закрывает его, а
+ * закрытый тост уходит из разметки.
  *
  * Раскладку, переходы темы и настоящий указатель jsdom не выполняет — место,
  * стопка, уход и жест мышью — `playground/vue/browser/toasts.spec.ts`.
@@ -16,8 +17,10 @@ import { describe, it, expect, afterEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { defineComponent, h, nextTick, type VNode } from 'vue'
 import { createEngineTags, createEngineToasts } from '@soldy-ui/core'
-import type { IToastsItem, IToastsProps } from '@soldy-ui/core'
+import type { IToastsItem, IToastsProps, TToastsItemType } from '@soldy-ui/core'
 import { ruRU } from '@soldy-ui/plugins'
+import { getIcon } from '@soldy-ui/setup'
+import type { TIconRole } from '@soldy-ui/setup'
 import { LocaleProvider, Tags, Toasts, useToasts } from '@soldy-ui/vue'
 import type { TToastRender } from '@soldy-ui/vue'
 
@@ -47,13 +50,16 @@ const texts = () => toasts().map((toast) => find('.so-toasts-item__text', toast)
 /** API, которое взял потомок менеджера: его `setup()` зовёт `useToasts()`. */
 type TApi = ReturnType<typeof useToasts>
 
+/** Scope слота менеджера: тост и scope его слота — текст или вид. */
+type TSlotScope = { item: IToastsItem; text?: string; type?: TToastsItemType }
+
 /**
  * Приложение под менеджером: потомок берёт API тостов и отдаёт его тесту.
  * Слоты менеджера — `slots`.
  */
 function render(
 	props: Partial<IToastsProps> & Record<string, unknown> = {},
-	slots: Record<string, (scope: { item: IToastsItem; text?: string }) => VNode | VNode[]> = {},
+	slots: Record<string, (scope: TSlotScope) => VNode | VNode[]> = {},
 ): TApi {
 	let api: TApi | null = null
 
@@ -365,28 +371,6 @@ describe('Toasts · слоты', () => {
 		expect(find('.so-toasts-item__content .so-test-content').textContent).toBe('Сохранено')
 	})
 
-	it('item-icon — значок; без слота узла значка нет', async () => {
-		const { show } = render()
-
-		show('Без значка')
-		await nextTick()
-
-		expect(document.querySelector('.so-toasts-item__icon')).toBeNull()
-
-		wrapper?.unmount()
-		document.body.innerHTML = ''
-
-		const api = render({}, { 'item-icon': () => h('svg', { class: 'so-test-icon' }) })
-
-		api.show('Со значком')
-		await nextTick()
-
-		const icon = find('.so-toasts-item__icon')
-
-		expect(icon.getAttribute('aria-hidden')).toBe('true')
-		expect(icon.querySelector('.so-test-icon')).not.toBeNull()
-	})
-
 	it('item-close-icon подменяет иконку крестика', async () => {
 		const { show } = render({}, { 'item-close-icon': () => h('i', { class: 'so-test-x' }) })
 
@@ -394,6 +378,159 @@ describe('Toasts · слоты', () => {
 		await nextTick()
 
 		expect(find('.so-toasts-item__close .so-test-x')).toBeTruthy()
+	})
+})
+
+/**
+ * Значок: коробка стоит всегда, в ней значок вида по роли иконки, свой значок
+ * из `item-icon` или, пока тост ждёт, бегущее кольцо. Цвет значку даёт тема по
+ * модификатору вида — его видно только в браузере
+ * (`playground/vue/browser/toasts.spec.ts`).
+ */
+describe('Toasts · значок', () => {
+	/** Коробка значка первого тоста. */
+	const iconBox = () => find('.so-toasts-item__icon', toasts()[0])
+
+	/** Содержимое `<svg>` иконки роли так, как его сериализует документ. */
+	function bodyOf(role: TIconRole): string {
+		const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
+
+		svg.innerHTML = getIcon(role).body
+
+		return svg.innerHTML
+	}
+
+	/** Рисунок значка в коробке: содержимое иконки, её единственного ребёнка. */
+	function glyph(): string {
+		const [icon, ...rest] = iconBox().children
+
+		if (!icon || rest.length > 0) throw new Error('в коробке не один узел')
+		if (!icon.classList.contains('so-icon')) throw new Error('в коробке не иконка')
+
+		return icon.innerHTML
+	}
+
+	it('коробка стоит всегда, даже без слота, и спрятана от скринридера', async () => {
+		const { show } = render()
+
+		show('Сохранено')
+		await nextTick()
+
+		expect(iconBox().getAttribute('aria-hidden')).toBe('true')
+	})
+
+	it.each<[TToastsItemType | undefined, TIconRole]>([
+		[undefined, 'notification'],
+		['info', 'info'],
+		['success', 'success'],
+		['warning', 'warning'],
+		['error', 'error'],
+	])('вид %s — значок роли %s', async (type, role) => {
+		const { show } = render()
+
+		show({ text: 'Сообщение', type })
+		await nextTick()
+
+		expect(glyph()).toBe(bodyOf(role))
+	})
+
+	it('значки пяти видов разные: в принудительных цветах вид различает только глиф', () => {
+		const roles: TIconRole[] = ['notification', 'info', 'success', 'warning', 'error']
+
+		expect(new Set(roles.map(bodyOf)).size).toBe(roles.length)
+	})
+
+	it('смена вида меняет значок, снятый вид возвращает значок обычного сообщения', async () => {
+		const { show } = render()
+		const toast = show('Сохраняем…')
+
+		await nextTick()
+
+		if (!toast) throw new Error('тоста нет')
+
+		toast.type = 'success'
+		await nextTick()
+
+		expect(glyph()).toBe(bodyOf('success'))
+
+		toast.type = undefined
+		await nextTick()
+
+		expect(glyph()).toBe(bodyOf('notification'))
+	})
+
+	it('item-icon подменяет значок и получает { item, type }; смена вида доходит до слота', async () => {
+		const { show } = render(
+			{},
+			{
+				'item-icon': ({ item, type }) =>
+					h('i', { class: 'so-test-icon', 'data-uid': item.uid, 'data-type': type }),
+			},
+		)
+		const toast = show({ text: 'Нет сети', type: 'error' })
+
+		await nextTick()
+
+		if (!toast) throw new Error('тоста нет')
+
+		const icon = find('.so-test-icon', iconBox())
+
+		expect(iconBox().children).toHaveLength(1)
+		expect(icon.dataset.uid).toBe(String(toast.uid))
+		expect(icon.dataset.type).toBe('error')
+
+		toast.type = 'success'
+		await nextTick()
+
+		expect(find('.so-test-icon', iconBox()).dataset.type).toBe('success')
+	})
+
+	it('пустой item-icon уступает место значку вида, как пустые слоты-иконки элементов', async () => {
+		const { show } = render({}, { 'item-icon': () => [] })
+
+		show({ text: 'Место почти закончилось', type: 'warning' })
+		await nextTick()
+
+		expect(glyph()).toBe(bodyOf('warning'))
+	})
+
+	it('пока тост ждёт — в коробке одно бегущее кольцо; снятое ожидание возвращает значок', async () => {
+		const { show } = render()
+		const toast = show({ text: 'Сохраняем…', loading: true })
+
+		await nextTick()
+
+		if (!toast) throw new Error('тоста нет')
+
+		const [ring, ...rest] = iconBox().children
+
+		expect(rest).toEqual([])
+		expect(ring?.classList.contains('so-progress-spinner')).toBe(true)
+		expect(ring?.getAttribute('data-indeterminate')).toBe('true')
+
+		toast.loading = false
+		toast.type = 'success'
+		await nextTick()
+
+		expect(glyph()).toBe(bodyOf('success'))
+	})
+
+	it('кольцо встаёт и на место своего значка из item-icon', async () => {
+		const { show } = render({}, { 'item-icon': () => h('i', { class: 'so-test-icon' }) })
+		const toast = show({ text: 'Отправляем…', type: 'info', loading: true })
+
+		await nextTick()
+
+		if (!toast) throw new Error('тоста нет')
+
+		expect(iconBox().querySelector('.so-test-icon')).toBeNull()
+		expect(iconBox().querySelectorAll('.so-progress-spinner')).toHaveLength(1)
+
+		toast.loading = false
+		await nextTick()
+
+		expect(iconBox().querySelector('.so-progress-spinner')).toBeNull()
+		expect(find('.so-test-icon', iconBox())).toBeTruthy()
 	})
 })
 

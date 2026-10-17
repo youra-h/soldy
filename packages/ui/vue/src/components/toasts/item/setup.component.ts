@@ -1,3 +1,4 @@
+import type { TToastsItemType } from '@soldy-ui/core'
 import {
 	TCollectionItemExtension,
 	ToastsItemDescriptor,
@@ -16,8 +17,9 @@ import BaseToastsItem, { type ToastsItemProps } from './base.component'
 
 /**
  * Логики здесь нет: имя крестика — `TToastsItemNamesPlugin`, жест —
- * `TSwipePlugin`, роль, `tabindex` и `data-*` — ядро тоста. Разметка
- * раскладывает то, что отдали ядро и плагины.
+ * `TSwipePlugin`, роль, `tabindex`, `data-*` и модификатор вида — ядро тоста,
+ * а что ожидающий тост сам не закрывается — его длительность у коллекции.
+ * Разметка раскладывает то, что отдали ядро и плагины.
  */
 export default {
 	name: '_ToastsItem',
@@ -50,6 +52,20 @@ export default {
 			 */
 			toast: adapter.instance,
 			closeIconTag: useIcon('close'),
+			/**
+			 * Значок вида — по роли, своей у каждого вида: в режиме принудительных
+			 * цветов вид различает только глиф. Роль выбирает разметка, как отметку
+			 * CheckBox, тема значок только красит. Таблица закрыта по виду
+			 * (`satisfies`): новый вид без своего значка не соберётся.
+			 */
+			typeIconTags: {
+				info: useIcon('info'),
+				success: useIcon('success'),
+				warning: useIcon('warning'),
+				error: useIcon('error'),
+			} satisfies Record<TToastsItemType, unknown>,
+			/** Значок обычного сообщения — тоста без вида */
+			notificationIconTag: useIcon('notification'),
 			/** Своё содержимое рисуется, только когда это компонент Vue */
 			isToastRender,
 		}

@@ -44,6 +44,7 @@ import type {
 	TDialogPlacement,
 	TDrawerPlacement,
 	TSwipe,
+	TToastsItemType,
 	TToastsLayout,
 	TToastsPlacement,
 } from '@soldy-ui/core'
@@ -270,6 +271,12 @@ export const TOASTS_PLACEMENTS = enumOf<TToastsPlacement>()([
 
 /** Как тосты стоят в регионе: столбцом или стопкой. */
 export const TOASTS_LAYOUTS = enumOf<TToastsLayout>()(['list', 'cascade'])
+
+/**
+ * Вид сообщения тоста — значок вида в начале строки. Обычного сообщения в
+ * списке нет: это тост без вида, а не значение вида.
+ */
+export const TOASTS_ITEM_TYPES = enumOf<TToastsItemType>()(['info', 'success', 'warning', 'error'])
 
 /** За что слой смахивают, чтобы закрыть: выезжающую панель и поповер. */
 export const SWIPES = enumOf<TSwipe>()(['none', 'handle', 'panel'])

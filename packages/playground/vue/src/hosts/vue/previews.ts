@@ -1,5 +1,5 @@
 import { defineComponent, h, mergeProps, ref, watch, type Component } from 'vue'
-import type { TComponentVariant } from '@soldy-ui/core'
+import type { IToastOptions, TToastsItemType } from '@soldy-ui/core'
 import type {
 	DescriptorSlots,
 	MenuDescriptor,
@@ -9,11 +9,11 @@ import type {
 import {
 	COLLECTION_ITEMS,
 	COLLECTION_MANY_ITEMS,
-	COMPONENT_VARIANTS,
 	TABLE_COLUMNS,
 	TABLE_MANY_ROWS,
 	TABLE_ROWS,
 	TABLE_SCROLL_ROWS,
+	TOASTS_ITEM_TYPES,
 } from '@soldy-ui/playground-shared'
 import {
 	Accordion,
@@ -212,20 +212,38 @@ const DrawerPreview = defineComponent({
 const ToastUndo: TToastRender = ({ toast }) =>
 	h(Button, { text: 'Отменить', onClick: () => toast.close() })
 
+/** Обычное сообщение — тост без вида: значок у него свой, нейтральный. */
+const TOAST_NORMAL: IToastOptions<TToastRender> = { text: 'Черновик сохранён', render: ToastUndo }
+
+/**
+ * Что сообщает тост каждого вида — чтобы значок читался рядом с текстом.
+ * Срочный (`alert`) — ошибка, своё содержимое — у успеха и обычного: так на
+ * странице видно и обе роли, и кнопку «Отменить».
+ */
+const TOAST_SAMPLES = {
+	info: { text: 'Вышла новая версия', description: 'Обновится при следующем входе' },
+	success: { text: 'Письмо отправлено', render: ToastUndo },
+	warning: { text: 'Место почти закончилось', description: 'Свободно 200 МБ из 15 ГБ' },
+	error: { text: 'Нет сети', description: 'Изменения сохранятся позже', alert: true },
+} satisfies Record<TToastsItemType, IToastOptions<TToastRender>>
+
+/** Сколько «Сохраняем…» ждёт, прежде чем тот же тост сообщит итог, мс. */
+const TOAST_SAVING = 2000
+
 /**
  * Тосты приходят из кода, а не из разметки: кнопки внутри менеджера берут API
  * (`useToasts()`) и показывают тост. Менеджер оборачивает их, как приложение,
  * а регион с тостами — телепортом у края окна, вне ячейки превью.
  *
- * Кнопка — на каждый вариант темы (`COMPONENT_VARIANTS`): она сама этого
- * варианта и показывает тост своего варианта. Строки свойств правят менеджер,
- * а цвета у него нет и быть не должно: цвет у каждого тоста свой, его задаёт
- * `show`.
+ * Кнопка — на обычное сообщение и на каждый вид (`TOASTS_ITEM_TYPES`): тост
+ * показывает значок своего вида. Строки свойств правят менеджер, а вида у него
+ * нет и быть не должно: вид у каждого тоста свой, его задаёт `show`. Текст
+ * начинается с номера: в стопке видно, какой тост где.
  *
- * Тосты чередуются: обычный с кнопкой «Отменить» и срочный (`alert`) с
- * описанием, — так на странице видно и своё содержимое, и обе роли. Текст
- * называет номер и вариант: в стопке видно, какой тост где. Ряд кнопок — с
- * переносом: в ячейку витрины пять кнопок одной строкой не встают.
+ * Последняя кнопка — ожидание: «Сохраняем…» с кольцом на месте значка
+ * (`loading`) сам не закрывается, а через пару секунд тот же тост сообщает
+ * успех — снятое ожидание начинает отсчёт. Ряд кнопок — с переносом: в ячейку
+ * витрины шесть кнопок одной строкой не встают.
  */
 const ToastsTrigger = defineComponent({
 	name: 'ToastsTrigger',
@@ -233,38 +251,37 @@ const ToastsTrigger = defineComponent({
 		const { show } = useToasts()
 		let count = 0
 
-		const notify = (variant: TComponentVariant) => {
+		const notify = (type?: TToastsItemType) => {
+			const sample = type ? TOAST_SAMPLES[type] : TOAST_NORMAL
+
+			count += 1
+			show({ ...sample, text: `${count}. ${sample.text}`, type })
+		}
+
+		// Работа идёт — тост ждёт; кончилась — тот же тост сообщает итог
+		const save = () => {
 			count += 1
 
-			if (count % 2 === 0) {
-				show({
-					text: `${count}. Нет сети — ${variant}`,
-					description: 'Изменения сохранятся позже',
-					alert: true,
-					variant,
-				})
-			} else {
-				show({
-					text: `${count}. Черновик сохранён — ${variant}`,
-					render: ToastUndo,
-					variant,
-				})
-			}
+			const toast = show({ text: `${count}. Сохраняем…`, loading: true })
+			const done = `${count}. Сохранено`
+
+			setTimeout(() => {
+				if (!toast) return
+
+				toast.loading = false
+				toast.type = 'success'
+				toast.text = done
+			}, TOAST_SAVING)
 		}
 
 		return () =>
-			h(
-				'div',
-				{ style: 'display:flex; flex-wrap:wrap; gap:8px' },
-				COMPONENT_VARIANTS.map((variant) =>
-					h(Button, {
-						key: variant,
-						text: variant,
-						variant,
-						onClick: () => notify(variant),
-					}),
+			h('div', { style: 'display:flex; flex-wrap:wrap; gap:8px' }, [
+				h(Button, { key: 'normal', text: 'обычное', onClick: () => notify() }),
+				...TOASTS_ITEM_TYPES.map((type) =>
+					h(Button, { key: type, text: type, onClick: () => notify(type) }),
 				),
-			)
+				h(Button, { key: 'loading', text: 'загрузка → готово', onClick: save }),
+			])
 	},
 })
 
@@ -399,7 +416,7 @@ export const PREVIEWS: Record<string, TPreview> = {
 	drawer: (bind) => h(DrawerPreview, bind),
 
 	// Менеджер оборачивает кнопки, которые показывают тосты, — по кнопке на
-	// вариант (см. `ToastsTrigger`)
+	// вид сообщения и кнопка ожидания (см. `ToastsTrigger`)
 	toasts: (bind) => h(Toasts as Component, bind, { default: () => h(ToastsTrigger) }),
 
 	/**

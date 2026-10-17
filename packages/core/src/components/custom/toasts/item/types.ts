@@ -1,9 +1,26 @@
-import type { IStylable, IStylableProps, TStylableEvents } from '../../../base/stylable'
+import type {
+	IComponentView,
+	IComponentViewProps,
+	TComponentViewEvents,
+} from '../../../base/component-view'
 import type { ISwipeable, TSwipeableEvents, TSwipeSide } from '../../../base/layer'
 import type { ICloseRequestable } from '../../../base/layer'
 import type { TAria, TAriaAttributes, TChangeEvent, TValuePayload } from '../../../../common'
 
-export type TToastsItemEvents = TStylableEvents &
+/**
+ * Вид сообщения тоста — что случилось: сведения (`info`), успех (`success`),
+ * предупреждение (`warning`) или ошибка (`error`). Не задан — обычное
+ * сообщение.
+ *
+ * Значок по виду выбирает разметка — роль иконки, своя у каждого вида, — а тема
+ * только красит его по модификатору `--type-<v>`. Смысл у вида один в любой
+ * теме, поэтому это union ядра, как `type` у Tooltip, а не реестр темы, как
+ * `variant`: имён вариантов библиотека не знает, и выбрать по ним значок не
+ * смогла бы.
+ */
+export type TToastsItemType = 'info' | 'success' | 'warning' | 'error'
+
+export type TToastsItemEvents = TComponentViewEvents &
 	TSwipeableEvents & {
 		/** change:text */
 		'change:text': (payload: TValuePayload<string>) => void
@@ -11,6 +28,10 @@ export type TToastsItemEvents = TStylableEvents &
 		'change:text:before': (e: TChangeEvent<string>) => void
 		/** change:description */
 		'change:description': (value: string) => void
+		/** change:type — вид сообщения; `undefined` — обычное */
+		'change:type': (value: TToastsItemType | undefined) => void
+		/** change:loading — тост ждёт или ожидание снято */
+		'change:loading': (value: boolean) => void
 		/** change:closable */
 		'change:closable': (value: boolean) => void
 		/** Запись своего `closable` — подправить или отменить (`TChangeEvent`) */
@@ -27,11 +48,22 @@ export type TToastsItemEvents = TStylableEvents &
 		'change:closeAria': (value: TAriaAttributes) => void
 	}
 
-export interface IToastsItemProps extends IStylableProps {
+export interface IToastsItemProps extends IComponentViewProps {
 	/** Текст тоста — его заголовок */
 	text?: string
 	/** Описание под текстом */
 	description?: string
+	/**
+	 * Вид сообщения: `info`, `success`, `warning` или `error` — значок вида в
+	 * начале строки. Не задан — обычное сообщение
+	 */
+	type?: TToastsItemType
+	/**
+	 * Тост ждёт — идёт работа, о которой он сообщает («Сохраняем…»): на месте
+	 * значка бежит кольцо, при любом виде, и сам тост не закрывается. Снятое
+	 * ожидание начинает отсчёт заново
+	 */
+	loading?: boolean
 	/** Есть ли у тоста кнопка закрытия. По умолчанию есть */
 	closable?: boolean
 	/**
@@ -56,11 +88,15 @@ export interface IToastsItem<
 	TProps extends IToastsItemProps = IToastsItemProps,
 	TEvents extends TToastsItemEvents = TToastsItemEvents,
 >
-	extends IStylable<TProps, TEvents>, ISwipeable, ICloseRequestable {
+	extends IComponentView<TProps, TEvents>, ISwipeable, ICloseRequestable {
 	/** Текст тоста — его заголовок */
 	text: string
 	/** Описание под текстом */
 	description: string
+	/** Вид сообщения; `undefined` — обычное сообщение */
+	type: TToastsItemType | undefined
+	/** Тост ждёт: на месте значка кольцо, и сам тост не закрывается */
+	loading: boolean
 	/** Есть ли у тоста кнопка закрытия */
 	closable: boolean
 	/** Своя длительность, мс; `undefined` — как у владельца, `0` — не закрывается сам */

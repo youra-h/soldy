@@ -335,6 +335,45 @@ describe('TToastsTimerPlugin — отсчёт', () => {
 		expect(toast.open).toBe(false)
 	})
 
+	it('ожидающий тост таймер не закрывает; снятое ожидание — отсчёт заново, целиком', () => {
+		const { show } = mountTimer({ duration: 5000 })
+		const toast = show({ text: 'Сохраняем…', loading: true })
+
+		vi.advanceTimersByTime(60_000)
+
+		expect(toast.open).toBe(true)
+
+		toast.loading = false
+		vi.advanceTimersByTime(4999)
+
+		expect(toast.open).toBe(true)
+
+		vi.advanceTimersByTime(1)
+
+		expect(toast.open).toBe(false)
+	})
+
+	it('ожидание посреди отсчёта его останавливает, а снятое — начинает с полной длительности', () => {
+		const { show } = mountTimer({ duration: 5000 })
+		const toast = show('Сохранено')
+
+		vi.advanceTimersByTime(3000)
+		toast.loading = true
+		vi.advanceTimersByTime(60_000)
+
+		expect(toast.open).toBe(true)
+
+		toast.loading = false
+		// Прошлые 3000 не в счёт: отсчёт — с полной длительности
+		vi.advanceTimersByTime(4999)
+
+		expect(toast.open).toBe(true)
+
+		vi.advanceTimersByTime(1)
+
+		expect(toast.open).toBe(false)
+	})
+
 	it('смена длительности владельца — заново у тостов без своей', () => {
 		const { owner, show } = mountTimer({ duration: 5000 })
 		const inherited = show('Владельца')

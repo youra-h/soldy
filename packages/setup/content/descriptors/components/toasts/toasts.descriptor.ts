@@ -14,7 +14,7 @@
 
 import { defineComponent, defineDescriptor, defineType } from '../../../../protected/define'
 import { TToasts } from '@soldy-ui/core'
-import type { IToastsItem } from '@soldy-ui/core'
+import type { IToastsItem, TToastsItemType } from '@soldy-ui/core'
 import { LayerDescriptor } from '../layer.descriptor'
 import {
 	CollectionBundlesPluginDescriptor,
@@ -46,8 +46,12 @@ export const ToastsDescriptor = defineDescriptor(() =>
 					description: 'Текст тоста. Задано — переопределяет его проп text',
 				},
 				'item-icon': {
-					scope: { item: defineType<IToastsItem>(Object) },
-					description: 'Значок тоста — перед текстом. Без слота значка нет',
+					scope: {
+						item: defineType<IToastsItem>(Object),
+						type: defineType<TToastsItemType | undefined>(String),
+					},
+					description:
+						'Значок тоста — перед текстом. Без слота — значок вида; пока тост ждёт — кольцо',
 				},
 				'item-content': {
 					scope: { item: defineType<IToastsItem>(Object) },

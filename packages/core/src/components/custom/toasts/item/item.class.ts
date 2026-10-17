@@ -1,15 +1,30 @@
-import { TStylable } from '../../../base/stylable'
+import { TComponentView } from '../../../base/component-view'
 import type { TDefaultValues } from '../../../base/component'
 import type { TCloseReason, TSwipe, TSwipeSide } from '../../../base/layer'
 import { TAria, TChangeEvent } from '../../../../common'
 import type { TEventSink } from '../../../../common'
-import type { IToastsItem, IToastsItemProps, TToastsItemEvents } from './types'
+import type { IToastsItem, IToastsItemProps, TToastsItemEvents, TToastsItemType } from './types'
 
 /**
  * Тост — элемент коллекции Toasts.
  *
- * `TStylable` — ради `variant`: цвет тоста выбирает приложение («ошибка»,
- * «готово»), а имена вариантов объявляет тема. Размер тосту не нужен.
+ * База — `TComponentView`, а не `TStylable`: ни размера, ни варианта у тоста
+ * нет. Что случилось, говорит вид сообщения, а не цвет темы.
+ *
+ * **Вид** (`type`: `info`, `success`, `warning`, `error`; не задан — обычное
+ * сообщение) — модификатор `--type-<v>`, без вида модификатора нет. Значок по
+ * виду выбирает разметка — роль иконки, своя у каждого вида, — а тема его
+ * красит; плашка под вид не подкрашивается. Это union ядра, а не реестр темы:
+ * смысл у вида один в любой теме, а по имени варианта темы библиотека значок
+ * выбрать не смогла бы.
+ *
+ * **Ожидание** (`loading`) — тост сообщает о работе, которая ещё идёт
+ * («Сохраняем…»): на месте значка разметка рисует бегущее кольцо, при любом
+ * виде и любом значке, и сам тост не закрывается — длительность ожидающего у
+ * коллекции `0` (`durationOf`), а снятое ожидание начинает отсчёт заново.
+ * Флаг, а не пятый вид: ждать может сообщение любого вида. ARIA ожидание не
+ * меняет: коробка значка — декор, а что происходит, говорит текст; `aria-busy`
+ * на живой области отложил бы объявление «Сохраняем…».
  *
  * **Закрытие окончательное.** `open` только для чтения, закрывает `close()`:
  * закрытый тост гаснет переходом темы и уходит из коллекции, когда доиграл
@@ -40,21 +55,23 @@ export default class TToastsItem<
 	TProps extends IToastsItemProps = IToastsItemProps,
 	TEvents extends TToastsItemEvents = TToastsItemEvents,
 >
-	extends TStylable<TProps, TEvents>
+	extends TComponentView<TProps, TEvents>
 	implements IToastsItem<TProps, TEvents>
 {
 	static override baseClass = 'so-toasts-item'
 
-	static defaultValues: typeof TStylable.defaultValues &
+	static defaultValues: typeof TComponentView.defaultValues &
 		TDefaultValues<
 			IToastsItemProps,
-			'text' | 'description' | 'closable' | 'alert',
-			'duration' | 'render'
+			'text' | 'description' | 'loading' | 'closable' | 'alert',
+			'type' | 'duration' | 'render'
 		> = {
-		...TStylable.defaultValues,
+		...TComponentView.defaultValues,
 		tag: 'li',
 		text: '',
 		description: '',
+		type: undefined,
+		loading: false,
 		closable: true,
 		duration: undefined,
 		alert: false,
@@ -63,6 +80,8 @@ export default class TToastsItem<
 
 	protected _text: string
 	protected _description: string
+	protected _type: TToastsItemType | undefined
+	protected _loading: boolean
 	protected _closable: boolean
 	protected _duration: number | undefined
 	protected _alert: boolean
@@ -80,6 +99,8 @@ export default class TToastsItem<
 
 		this._text = own.text ?? ctor.defaultValues.text
 		this._description = own.description ?? ctor.defaultValues.description
+		this._type = own.type ?? ctor.defaultValues.type
+		this._loading = own.loading ?? ctor.defaultValues.loading
 		this._closable = own.closable ?? ctor.defaultValues.closable
 		this._duration = own.duration ?? ctor.defaultValues.duration
 		this._alert = own.alert ?? ctor.defaultValues.alert
@@ -91,6 +112,7 @@ export default class TToastsItem<
 			this._sink.emit('change:closeAria', this._closeAria.toObject()),
 		)
 
+		this._classes.swap({ prefix: '--type-', newValue: this._type })
 		this._syncRole()
 		this._aria.add('tabindex', '0')
 		this._dataset.add('open', true)
@@ -135,6 +157,35 @@ export default class TToastsItem<
 		this._sink.emit('change:description', value)
 	}
 
+	/** Вид сообщения; `undefined` — обычное сообщение. */
+	get type(): TToastsItemType | undefined {
+		return this._type
+	}
+
+	/**
+	 * `swap`, а не `swapClass` с шаблонной строкой: вида может не быть, и
+	 * шаблон дал бы `--type-undefined`.
+	 */
+	set type(value: TToastsItemType | undefined) {
+		if (value === this._type) return
+
+		this._classes.swap({ prefix: '--type-', oldValue: this._type, newValue: value })
+		this._type = value
+		this._sink.emit('change:type', value)
+	}
+
+	/** Тост ждёт: на месте значка кольцо, и сам тост не закрывается. */
+	get loading(): boolean {
+		return this._loading
+	}
+
+	set loading(value: boolean) {
+		if (value === this._loading) return
+
+		this._loading = value
+		this._sink.emit('change:loading', value)
+	}
+
 	/** Есть ли у тоста кнопка закрытия. */
 	get closable(): boolean {
 		return this._closable
@@ -156,7 +207,7 @@ export default class TToastsItem<
 	/**
 	 * Своя длительность, мс. `undefined` — как у владельца, `0` — тост
 	 * держится, пока его не закроют. Итог — у коллекции (`durationOf`): своя
-	 * или владельца.
+	 * или владельца, а пока тост ждёт — `0`.
 	 */
 	get duration(): number | undefined {
 		return this._duration
@@ -287,6 +338,8 @@ export default class TToastsItem<
 			...super.getProps(),
 			text: this._text,
 			description: this._description,
+			type: this._type,
+			loading: this._loading,
 			closable: this._closable,
 			duration: this._duration,
 			alert: this._alert,

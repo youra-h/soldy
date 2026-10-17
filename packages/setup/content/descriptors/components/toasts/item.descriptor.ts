@@ -1,10 +1,10 @@
 /**
  * Дескриптор тоста (TToastsItem).
  *
- * Наследует `StylableDescriptor` — ради `variant`: цвет тоста выбирает
- * приложение, имена вариантов объявляет тема. Размер тосту не нужен, и вход
- * `size` снят. Добавляет текст, описание, кнопку закрытия, длительность,
- * срочность, своё содержимое (`render`) и набор `closeAria`.
+ * Наследует `ComponentViewDescriptor`: ни размера, ни варианта у тоста нет —
+ * что случилось, говорит вид сообщения (`type`), а не цвет темы. Добавляет
+ * текст, описание, вид, ожидание, кнопку закрытия, длительность, срочность,
+ * своё содержимое (`render`) и набор `closeAria`.
  *
  * Тост приходит из кода (`show`), а не из разметки: частью `Toasts.Item` он
  * не стал (см. «Часть или слот»), и его рисует только регион владельца.
@@ -15,18 +15,26 @@
 
 import { defineComponent, defineDescriptor, defineType } from '../../../../protected/define'
 import { TToastsItem } from '@soldy-ui/core'
-import { StylableDescriptor } from '../stylable.descriptor'
+import type { TToastsItemType } from '@soldy-ui/core'
+import { ComponentViewDescriptor } from '../component-view.descriptor'
 import { SwipePluginDescriptor, ToastsItemNamesPluginDescriptor } from '../../plugins'
 
 export const ToastsItemDescriptor = defineDescriptor(() =>
 	defineComponent({
 		ctor: TToastsItem,
 
-		extends: StylableDescriptor(),
+		extends: ComponentViewDescriptor(),
 
 		contribution: {
 			slots: {
-				icon: { description: 'Значок тоста — перед текстом. Без слота узла значка нет' },
+				// Подмена значка вида в одном месте; по умолчанию он берётся из пакета
+				// иконок по роли вида (см. `ICON_ROLES`). Пока тост ждёт, на месте
+				// значка кольцо — и на месте значка из слота тоже
+				icon: {
+					scope: { type: defineType<TToastsItemType | undefined>(String) },
+					description:
+						'Значок тоста — перед текстом. Без слота — значок вида; пока тост ждёт — кольцо',
+				},
 				default: {
 					scope: { text: defineType<string>(String) },
 					description: 'Текст тоста. Задано — переопределяет проп text',
@@ -39,10 +47,15 @@ export const ToastsItemDescriptor = defineDescriptor(() =>
 				'close-icon': { description: 'Иконка кнопки закрытия' },
 			},
 			props: {
-				// Размер тосту не нужен: вход снят. Вариант — вход от `StylableDescriptor`
-				size: { protected: true },
 				text: { type: String, triggers: ['change:text'] },
 				description: { type: String, triggers: ['change:description'] },
+				/**
+				 * Вид сообщения: модификатор `--type-<v>` и значок вида. Union ядра, а
+				 * не значение темы: значок по нему выбирает разметка
+				 */
+				type: { type: String, triggers: ['change:type'] },
+				/** Тост ждёт: на месте значка кольцо, и сам тост не закрывается */
+				loading: { type: Boolean, triggers: ['change:loading'] },
 				closable: { type: Boolean, triggers: ['change:closable'] },
 				duration: { type: Number, triggers: ['change:duration'] },
 				alert: { type: Boolean, triggers: ['change:alert'] },
