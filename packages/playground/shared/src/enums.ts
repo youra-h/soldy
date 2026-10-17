@@ -38,6 +38,7 @@ import type {
 	TTagsOverflow,
 	TPopoverEdge,
 	TPopoverPlacement,
+	TMenuPlacement,
 	TTooltipPlacement,
 	TTooltipType,
 	TDialogPlacement,
@@ -217,6 +218,17 @@ export const POPOVER_PLACEMENTS = enumOf<TPopoverPlacement>()([
 
 /** Край контейнера, к которому прижата панель поповера внутри него. */
 export const POPOVER_EDGES = enumOf<TPopoverEdge>()(['top', 'bottom', 'start', 'end'])
+
+/**
+ * Сторона и выравнивание панели меню у триггера — те же четыре значения, что у
+ * Popover; тип свой — ядра: проп принадлежит меню.
+ */
+export const MENU_PLACEMENTS = enumOf<TMenuPlacement>()([
+	'bottom-start',
+	'bottom-end',
+	'top-start',
+	'top-end',
+])
 
 /**
  * Сторона и выравнивание подсказки у триггера. Значения те же, что у

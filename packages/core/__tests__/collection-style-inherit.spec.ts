@@ -1,5 +1,6 @@
 /**
- * Размер и вид элемента коллекции: их диктует владелец — кроме варианта тега.
+ * Размер и вид элемента коллекции: их диктует владелец — кроме варианта тега и
+ * пункта меню.
  *
  * Список, собранный данными (`items`), терял собственные `size` и `variant`
  * элемента сразу, а объявленный разметкой — на первой же смене у списка:
@@ -8,11 +9,12 @@
  * `size` и `variant` владельца при добавлении, на смену у владельца и поверх
  * `batch.patch`.
  *
- * Вариант тега — исключение: в одном наборе теги бывают разного цвета, и
- * `TTagsExtension` вариант тегу не пишет — ни при добавлении, ни на смену у
- * набора, ни поверх патча. Тег без своего варианта тема красит вариантом
- * набора по классу набора, поэтому у него нет ни значения, ни модификатора.
- * Размер тегу по-прежнему диктует набор.
+ * Вариант тега и пункта меню — исключение: в одном наборе теги бывают разного
+ * цвета, в одном меню бывает «опасный» пункт, и `TTagsExtension` с
+ * `TMenuExtension` вариант элементу не пишут — ни при добавлении, ни на смену у
+ * владельца, ни поверх патча. Элемент без своего варианта тема красит
+ * вариантом владельца по его классу, поэтому у элемента нет ни значения, ни
+ * модификатора. Размер элементу по-прежнему диктует владелец.
  *
  * Сценарий один на все коллекции: забытая коллекция иначе прошла бы мимо.
  * Каждая сборка — замыкание на своей фабрике, как в `engine-create.spec.ts`:
@@ -23,6 +25,7 @@ import { describe, it, expect, vi } from 'vitest'
 import {
 	createEngineAccordion,
 	createEngineListBox,
+	createEngineMenu,
 	createEngineRadioGroup,
 	createEngineSelect,
 	createEngineTable,
@@ -30,6 +33,7 @@ import {
 	createEngineTags,
 	TAccordion,
 	TListBox,
+	TMenu,
 	TRadioGroup,
 	TSelect,
 	TTable,
@@ -129,26 +133,45 @@ function modifiers(item: TItemProbe, prefix: string): string[] {
 }
 
 /**
- * Tags: размер тегу диктует набор, а вариант у тега свой — у него свой
- * сценарий (в конце файла), в общий он не входит.
+ * Tags и Menu: размер элементу диктует владелец, а вариант у тега и пункта
+ * свой — у них свой сценарий (в конце файла), в общий они не входят.
  */
-const tags: TCase = {
-	name: 'Tags',
-	build: ({ size, variant, items }) => {
-		const owner = new TTags({ size, variant })
-		const { batch, plain } = createEngineTags({ owner, items }).extensions
+const ownVariant: TCase[] = [
+	{
+		name: 'Tags',
+		build: ({ size, variant, items }) => {
+			const owner = new TTags({ size, variant })
+			const { batch, plain } = createEngineTags({ owner, items }).extensions
 
-		return {
-			owner,
-			item: (value) => found(batch.items, value),
-			push: (source) => plain.push(source),
-			patch: (sources) => {
-				batch.trackBy = (item) => item.value
-				batch.patch(sources)
-			},
-		}
+			return {
+				owner,
+				item: (value) => found(batch.items, value),
+				push: (source) => plain.push(source),
+				patch: (sources) => {
+					batch.trackBy = (item) => item.value
+					batch.patch(sources)
+				},
+			}
+		},
 	},
-}
+	{
+		name: 'Menu',
+		build: ({ size, variant, items }) => {
+			const owner = new TMenu({ size, variant })
+			const { batch, plain } = createEngineMenu({ owner, items }).extensions
+
+			return {
+				owner,
+				item: (value) => found(batch.items, value),
+				push: (source) => plain.push(source),
+				patch: (sources) => {
+					batch.trackBy = (item) => item.value
+					batch.patch(sources)
+				},
+			}
+		},
+	},
+]
 
 /** Коллекции, которым владелец диктует и размер, и вид элемента. */
 const cases: TCase[] = [
@@ -346,99 +369,102 @@ describe.each(cases)('$name · размер и вид элемента дикт�
 })
 
 /**
- * Tags: размер тегу диктует набор, а вариант у тега свой — в одном наборе
- * теги бывают разного цвета. Вариант набора тегу не пишется вовсе, ни поверх
- * своего, ни «если своего нет»: тег без своего тема красит вариантом набора по
- * классу набора (`so-tags--variant-<v>`).
+ * Tags и Menu: размер элементу диктует владелец, а вариант у тега и пункта
+ * свой — в одном наборе теги бывают разного цвета, в одном меню бывает
+ * «опасный» пункт. Вариант владельца элементу не пишется вовсе, ни поверх
+ * своего, ни «если своего нет»: элемент без своего тема красит вариантом
+ * владельца по его классу (`so-tags--variant-<v>`, у меню — класс панели
+ * `so-menu__panel--variant-<v>`).
  */
-describe('Tags · размер тега диктует набор, вариант — свой', () => {
-	const { build } = tags
+describe.each(ownVariant)(
+	'$name · размер элемента диктует владелец, вариант — свой',
+	({ build }) => {
+		it('из items: размер — набора, вариант — свой', () => {
+			const { item } = build({
+				size: 'lg',
+				variant: 'brand',
+				items: [{ value: 'a', size: 'sm', variant: 'danger' }, { value: 'b' }],
+			})
 
-	it('из items: размер — набора, вариант — свой', () => {
-		const { item } = build({
-			size: 'lg',
-			variant: 'brand',
-			items: [{ value: 'a', size: 'sm', variant: 'danger' }, { value: 'b' }],
+			expect(item('a').size).toBe('lg')
+			expect(modifiers(item('a'), '--size-')).toEqual(['--size-lg'])
+			expect(item('a').variant).toBe('danger')
+			expect(modifiers(item('a'), '--variant-')).toEqual(['--variant-danger'])
+
+			// Своего нет — ни значения, ни модификатора: вариант набора не его
+			expect(item('b').size).toBe('lg')
+			expect(item('b').variant).toBeUndefined()
+			expect(modifiers(item('b'), '--variant-')).toEqual([])
 		})
 
-		expect(item('a').size).toBe('lg')
-		expect(modifiers(item('a'), '--size-')).toEqual(['--size-lg'])
-		expect(item('a').variant).toBe('danger')
-		expect(modifiers(item('a'), '--variant-')).toEqual(['--variant-danger'])
+		it('batch.patch: размер — набора, вариант — из данных', () => {
+			const { item, patch } = build({ size: 'lg', variant: 'brand', items: [{ value: 'a' }] })
+			const a = item('a')
 
-		// Своего нет — ни значения, ни модификатора: вариант набора не его
-		expect(item('b').size).toBe('lg')
-		expect(item('b').variant).toBeUndefined()
-		expect(modifiers(item('b'), '--variant-')).toEqual([])
-	})
+			patch([{ value: 'a', size: 'sm', variant: 'danger' }])
 
-	it('batch.patch: размер — набора, вариант — из данных', () => {
-		const { item, patch } = build({ size: 'lg', variant: 'brand', items: [{ value: 'a' }] })
-		const a = item('a')
-
-		patch([{ value: 'a', size: 'sm', variant: 'danger' }])
-
-		// Патч обновил тот же тег, а не заменил его
-		expect(item('a')).toBe(a)
-		expect(a.size).toBe('lg')
-		expect(modifiers(a, '--size-')).toEqual(['--size-lg'])
-		expect(a.variant).toBe('danger')
-		expect(modifiers(a, '--variant-')).toEqual(['--variant-danger'])
-	})
-
-	it('вставленный тег: размер — набора, вариант — свой', () => {
-		const { push } = build({ size: 'lg', variant: 'brand', items: [] })
-		const pushed = push({ value: 'b', size: 'xl', variant: 'danger' })
-
-		expect(pushed.size).toBe('lg')
-		expect(modifiers(pushed, '--size-')).toEqual(['--size-lg'])
-		expect(pushed.variant).toBe('danger')
-		expect(modifiers(pushed, '--variant-')).toEqual(['--variant-danger'])
-	})
-
-	it('смена у набора: размер доезжает, вариант тегов не тронут', () => {
-		const { owner, item } = build({
-			size: 'lg',
-			variant: 'brand',
-			items: [{ value: 'a', variant: 'danger' }, { value: 'b' }, { value: 'c' }],
+			// Патч обновил тот же тег, а не заменил его
+			expect(item('a')).toBe(a)
+			expect(a.size).toBe('lg')
+			expect(modifiers(a, '--size-')).toEqual(['--size-lg'])
+			expect(a.variant).toBe('danger')
+			expect(modifiers(a, '--variant-')).toEqual(['--variant-danger'])
 		})
-		const handler = vi.fn()
 
-		// Вариант из кода — такой же свой, как из данных
-		item('c').variant = 'brand'
+		it('вставленный тег: размер — набора, вариант — свой', () => {
+			const { push } = build({ size: 'lg', variant: 'brand', items: [] })
+			const pushed = push({ value: 'b', size: 'xl', variant: 'danger' })
 
-		for (const value of ['a', 'b', 'c']) item(value).events.on('change:variant', handler)
-
-		owner.size = '2xl'
-		owner.variant = 'danger'
-		owner.variant = undefined
-
-		for (const value of ['a', 'b', 'c']) {
-			expect(item(value).size).toBe('2xl')
-			expect(modifiers(item(value), '--size-')).toEqual(['--size-2xl'])
-		}
-
-		expect(item('a').variant).toBe('danger')
-		expect(modifiers(item('a'), '--variant-')).toEqual(['--variant-danger'])
-		expect(item('b').variant).toBeUndefined()
-		expect(modifiers(item('b'), '--variant-')).toEqual([])
-		expect(item('c').variant).toBe('brand')
-		expect(modifiers(item('c'), '--variant-')).toEqual(['--variant-brand'])
-		expect(handler).not.toHaveBeenCalled()
-	})
-
-	it('change:size — одно на смену у набора', () => {
-		const { owner, item } = build({
-			size: 'lg',
-			items: [{ value: 'a', size: 'sm' }, { value: 'b' }],
+			expect(pushed.size).toBe('lg')
+			expect(modifiers(pushed, '--size-')).toEqual(['--size-lg'])
+			expect(pushed.variant).toBe('danger')
+			expect(modifiers(pushed, '--variant-')).toEqual(['--variant-danger'])
 		})
-		const handler = vi.fn()
 
-		item('a').events.on('change:size', handler)
+		it('смена у набора: размер доезжает, вариант тегов не тронут', () => {
+			const { owner, item } = build({
+				size: 'lg',
+				variant: 'brand',
+				items: [{ value: 'a', variant: 'danger' }, { value: 'b' }, { value: 'c' }],
+			})
+			const handler = vi.fn()
 
-		owner.size = 'xl'
+			// Вариант из кода — такой же свой, как из данных
+			item('c').variant = 'brand'
 
-		expect(handler).toHaveBeenCalledOnce()
-		expect(handler).toHaveBeenLastCalledWith({ newValue: 'xl', oldValue: 'lg' })
-	})
-})
+			for (const value of ['a', 'b', 'c']) item(value).events.on('change:variant', handler)
+
+			owner.size = '2xl'
+			owner.variant = 'danger'
+			owner.variant = undefined
+
+			for (const value of ['a', 'b', 'c']) {
+				expect(item(value).size).toBe('2xl')
+				expect(modifiers(item(value), '--size-')).toEqual(['--size-2xl'])
+			}
+
+			expect(item('a').variant).toBe('danger')
+			expect(modifiers(item('a'), '--variant-')).toEqual(['--variant-danger'])
+			expect(item('b').variant).toBeUndefined()
+			expect(modifiers(item('b'), '--variant-')).toEqual([])
+			expect(item('c').variant).toBe('brand')
+			expect(modifiers(item('c'), '--variant-')).toEqual(['--variant-brand'])
+			expect(handler).not.toHaveBeenCalled()
+		})
+
+		it('change:size — одно на смену у набора', () => {
+			const { owner, item } = build({
+				size: 'lg',
+				items: [{ value: 'a', size: 'sm' }, { value: 'b' }],
+			})
+			const handler = vi.fn()
+
+			item('a').events.on('change:size', handler)
+
+			owner.size = 'xl'
+
+			expect(handler).toHaveBeenCalledOnce()
+			expect(handler).toHaveBeenLastCalledWith({ newValue: 'xl', oldValue: 'lg' })
+		})
+	},
+)

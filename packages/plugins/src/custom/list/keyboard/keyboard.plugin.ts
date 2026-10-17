@@ -2,17 +2,8 @@ import type { IControl, TCollectionEngine } from '@soldy-ui/core'
 import type { IPluginContext } from '../../../base'
 import { TCollectionElements } from '../../collection'
 import { TListNavigationPlugin } from '../navigation'
+import { rowOf } from '../row'
 import type { TListKeyboardPluginEvents } from './types'
-
-/**
- * Строка элемента внутри его узла. Корень элемента — обёртка для темы, а фокус
- * держит вложенная строка: на ней набор `aria` элемента, и в него
- * `TListBoxExtension` пишет `tabindex="-1"` (roving tabindex). Из-за этого
- * атрибута строка и может держать фокус — после клика он остаётся на ней. Роли
- * `option` у строки пока нет, поэтому строка — первый потомок узла элемента с
- * этим атрибутом.
- */
-const ROW_SELECTOR = '[tabindex]'
 
 /**
  * TListKeyboardPlugin — клавиатура самостоятельного списка (ListBox).
@@ -118,12 +109,7 @@ export class TListKeyboardPlugin extends TListNavigationPlugin<TListKeyboardPlug
 	private _isOwnKey(e: KeyboardEvent): boolean {
 		if (e.target === e.currentTarget) return true
 
-		return this.shown().some((item) => this._rowOf(item) === e.target)
-	}
-
-	/** Строка элемента — узел, который держит фокус внутри узла элемента. */
-	private _rowOf(item: IControl): Element | null {
-		return this._elements?.getElementByUid(item.uid)?.querySelector(ROW_SELECTOR) ?? null
+		return this.shown().some((item) => rowOf(this._elements, item.uid) === e.target)
 	}
 
 	/**

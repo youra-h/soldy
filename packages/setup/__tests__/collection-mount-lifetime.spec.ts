@@ -30,6 +30,7 @@ import {
 	TCalendar,
 	TCollectionComponent,
 	TListBox,
+	TMenu,
 	TPagination,
 	TRadioGroup,
 	TSelect,
@@ -40,6 +41,7 @@ import {
 	createEngineAccordion,
 	createEngineCalendar,
 	createEngineListBox,
+	createEngineMenu,
 	createEnginePagination,
 	createEngineRadioGroup,
 	createEngineSelect,
@@ -56,6 +58,8 @@ import {
 	CalendarDescriptor,
 	ListBoxCollectionDescriptor,
 	ListBoxDescriptor,
+	MenuCollectionDescriptor,
+	MenuDescriptor,
 	PaginationCollectionDescriptor,
 	PaginationDescriptor,
 	RadioGroupCollectionDescriptor,
@@ -174,6 +178,16 @@ const COLLECTIONS: Readonly<Record<string, TCollectionKit>> = {
 			engine,
 			mount: () =>
 				mountOver(ListBoxDescriptor(), ListBoxCollectionDescriptor(), owner, engine),
+		}
+	},
+	MenuCollectionDescriptor: () => {
+		const owner = new TMenu()
+		const engine = createEngineMenu()
+
+		return {
+			owner,
+			engine,
+			mount: () => mountOver(MenuDescriptor(), MenuCollectionDescriptor(), owner, engine),
 		}
 	},
 	PaginationCollectionDescriptor: () => {

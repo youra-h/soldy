@@ -24,6 +24,7 @@ import {
 	createEngineListBox,
 	createEngineSelect,
 	createEngineAccordion,
+	createEngineMenu,
 	TTabs,
 	TTabsItem,
 	TTabsCollectionFacade,
@@ -32,6 +33,7 @@ import {
 	TSelect,
 	TSelectCollectionFacade,
 	TAccordion,
+	TMenu,
 } from '../src'
 
 afterEach(() => {
@@ -133,6 +135,20 @@ const engineCases: EngineTestCase[] = [
 			const engine = createEngineAccordion()
 
 			expect(engine.extensions.accordion).toBeDefined()
+			expect(engine.options.get('owner')).toBeUndefined()
+		},
+	},
+	{
+		name: 'createEngineMenu',
+		run: () => {
+			const engine = createEngineMenu({ owner: new TMenu() })
+			return { batch: engine.extensions.batch, ownerExtension: engine.extensions.menu }
+		},
+		runWithoutOwner: () => {
+			// Владелец — опция движка: без него движок собран целиком, опция пуста
+			const engine = createEngineMenu()
+
+			expect(engine.extensions.menu).toBeDefined()
 			expect(engine.options.get('owner')).toBeUndefined()
 		},
 	},

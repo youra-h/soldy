@@ -35,7 +35,7 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import { TCollectionItemComponent, TListBoxItem } from '@soldy-ui/core'
+import { TCollectionItemComponent, TListBoxItem, TMenuCheckboxItem } from '@soldy-ui/core'
 import type { TCollectionEngine } from '@soldy-ui/core'
 import { TCollectionBundlesPlugin } from '@soldy-ui/plugins'
 import {
@@ -51,6 +51,12 @@ import {
 	ListBoxCollectionItemDescriptor,
 	ListBoxDescriptor,
 	ListBoxItemDescriptor,
+	MenuCheckboxItemDescriptor,
+	MenuCollectionCheckboxItemDescriptor,
+	MenuCollectionDescriptor,
+	MenuCollectionItemDescriptor,
+	MenuDescriptor,
+	MenuItemDescriptor,
 	PaginationCollectionDescriptor,
 	PaginationCollectionItemDescriptor,
 	PaginationDescriptor,
@@ -236,6 +242,27 @@ const COLLECTIONS: Readonly<Record<string, TCollectionKit>> = {
 		item: (elevator, source) =>
 			mountItem(ListBoxItemDescriptor(), ListBoxCollectionItemDescriptor(), elevator, source),
 	},
+	MenuCollectionItemDescriptor: {
+		list: (items) => mountList(MenuDescriptor(), MenuCollectionDescriptor(), items),
+		item: (elevator, source) =>
+			mountItem(MenuItemDescriptor(), MenuCollectionItemDescriptor(), elevator, source),
+	},
+	// Флажок — пункт той же коллекции меню: его список — меню из флажков
+	MenuCollectionCheckboxItemDescriptor: {
+		list: (items) =>
+			mountList(
+				MenuDescriptor(),
+				MenuCollectionDescriptor(),
+				items.map((source) => new TMenuCheckboxItem(source)),
+			),
+		item: (elevator, source) =>
+			mountItem(
+				MenuCheckboxItemDescriptor(),
+				MenuCollectionCheckboxItemDescriptor(),
+				elevator,
+				source,
+			),
+	},
 	RadioGroupCollectionItemDescriptor: {
 		list: (items) => mountList(RadioGroupDescriptor(), RadioGroupCollectionDescriptor(), items),
 		item: (elevator, source) =>
@@ -322,6 +349,19 @@ const DATA_ONLY: Readonly<Record<string, TCollectionKit>> = {
 			mountItem(ToastsItemDescriptor(), ToastsCollectionItemDescriptor(), elevator, source),
 	},
 }
+
+/**
+ * Части одной коллекции с разными фасадами элементов: флажок меню — пункт
+ * той же коллекции, что и действие, и под её списком он в неё входит. Чужой
+ * друг другу их коллекция не считается.
+ */
+const SIBLINGS: Readonly<Record<string, string>> = {
+	MenuCollectionCheckboxItemDescriptor: 'MenuCollectionItemDescriptor',
+}
+
+/** Своя ли коллекция у элемента и списка: та же строка таблицы или соседняя часть. */
+const sameCollection = (item: string, list: string): boolean =>
+	item === list || SIBLINGS[item] === list || SIBLINGS[list] === item
 
 /**
  * Фасады, чей контекст берут не через вход в коллекцию: панель таба в
@@ -590,7 +630,7 @@ describe('сторож: элемент под чужой коллекцией в
 	/** Каждый элемент разметки под списком каждой другой коллекции. */
 	const pairs = Object.entries(COLLECTIONS).flatMap(([itemName, itemKit]) =>
 		Object.entries(lists)
-			.filter(([listName]) => listName !== itemName)
+			.filter(([listName]) => !sameCollection(itemName, listName))
 			.map(([listName, listKit]) => [itemName, listName, itemKit, listKit] as const),
 	)
 

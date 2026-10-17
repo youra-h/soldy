@@ -24,6 +24,7 @@ export * from './drawer'
 export * from './toasts'
 export * from './pagination'
 export * from './popover'
+export * from './menu'
 export * from './tooltip'
 export * from './scroller'
 // Только контракты: класса в этой папке нет — перетаскивание значения, общее
