@@ -61,8 +61,17 @@ export class TSelectCollectionFacade extends TSelectionCollectionFacade<
 		this.applyProps(props)
 	}
 
+	/**
+	 * Режим переполнения, равный умолчанию, не применяется: умолчание декларации
+	 * фреймворк ставит и незаданному пропу, а движок снаружи свой режим не
+	 * теряет.
+	 */
 	protected override applyProps(props: TSelectCollectionFacadeProps): void {
-		if (props.tags_overflow) this.tags_overflow = props.tags_overflow
+		const overflow = props.tags_overflow
+
+		if (overflow && overflow !== TSelectCollectionFacade.defaultValues.tags_overflow) {
+			this.tags_overflow = overflow
+		}
 
 		super.applyProps(props)
 	}

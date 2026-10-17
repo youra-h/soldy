@@ -17,7 +17,7 @@ import { defineComponent, nextTick, h, ref } from 'vue'
 const nextFrame = () => new Promise((resolve) => requestAnimationFrame(resolve))
 import { Frame, LocaleProvider, Select, SelectItem, Input, propsSelect } from '@soldy-ui/vue'
 import { TAnchorPlugin, ruRU } from '@soldy-ui/plugins'
-import { TSelect } from '@soldy-ui/core'
+import { TSelect, createEngineSelect } from '@soldy-ui/core'
 import type { IInput, TSelectPlacement } from '@soldy-ui/core'
 import Harness from './Select.test.vue'
 
@@ -467,6 +467,32 @@ describe('множественный выбор', () => {
 		expect(wrapper.find('span').text()).toBe('1')
 		expect(selected()).toEqual(['true', 'false'])
 		expect(document.querySelectorAll('.so-tags-item')).toHaveLength(1)
+	})
+
+	/**
+	 * Незаданному `tags_overflow` Vue ставит умолчание декларации — `wrap`.
+	 * Чужому движку фасад его не пишет: режим переполнения остаётся движка.
+	 */
+	it('движок снаружи сохраняет режим переполнения тегов', async () => {
+		const engine = createEngineSelect()
+
+		engine.extensions.selection.mode = 'multiple'
+		engine.extensions.tags.overflow = 'scroll'
+
+		wrapper = mount(
+			defineComponent({
+				render: () =>
+					h(Select, { engine }, () => h(SelectItem, { value: 'msk', text: 'Москва' })),
+			}),
+			{ attachTo: document.body },
+		)
+
+		await nextFrame()
+
+		expect(engine.extensions.tags.overflow).toBe('scroll')
+		expect(document.querySelector('.so-select__tags')?.getAttribute('data-overflow')).toBe(
+			'scroll',
+		)
 	})
 })
 

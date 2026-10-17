@@ -986,6 +986,41 @@ describe('фасад коллекции строк', () => {
 		expect(ids(facade.shown)).toEqual([2, 1, 4, 3])
 	})
 
+	/**
+	 * Пропсы, равные умолчаниям декларации, — то, что фреймворк ставит и
+	 * незаданным пропсам. Чужому движку фасад их не пишет, как внешнему `ctrl`
+	 * сборка: `single` срезал бы сортировку до одной колонки.
+	 */
+	it('движок снаружи: пропсы-умолчания не меняют режим, сортировку и сетку', () => {
+		const engine = rows()
+		const sort: TTableColumnSort[] = [
+			{ field: 'age', direction: 'asc' },
+			{ field: 'name', direction: 'desc' },
+		]
+
+		engine.extensions.sort.sortMode = 'multiple'
+		engine.extensions.sort.sort = sort
+		engine.extensions.grid.grid = true
+
+		const facade = new TTableCollectionFacade(
+			{ ...TTableCollectionFacade.defaultValues },
+			{ engine },
+		)
+
+		expect(facade.sortMode).toBe('multiple')
+		expect(facade.sort).toEqual(sort)
+		expect(ids(facade.shown)).toEqual([3, 4, 1, 2])
+		expect(facade.grid).toBe(true)
+	})
+
+	it('движок снаружи: режим, отличный от умолчания, фасад пишет', () => {
+		const engine = rows()
+
+		new TTableCollectionFacade({ sortMode: 'multiple' }, { engine })
+
+		expect(engine.extensions.sort.sortMode).toBe('multiple')
+	})
+
 	it('движок уровня 1: фасад доставит сортировку', () => {
 		const engine = createEngine<ITableRow>({ items: [ANNA, BORIS].map(source) })
 		const facade = new TTableCollectionFacade(

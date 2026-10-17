@@ -7,7 +7,14 @@
  */
 
 import { describe, it, expect, vi } from 'vitest'
-import { TTags, TTagsItem, TTagsCollectionFacade, TSelect, TSelectCollectionFacade } from '../src'
+import {
+	TTags,
+	TTagsItem,
+	TTagsCollectionFacade,
+	TSelect,
+	TSelectCollectionFacade,
+	createEngineSelect,
+} from '../src'
 import type { ITagsItem } from '@soldy-ui/core'
 
 describe('свойство overflow', () => {
@@ -96,6 +103,26 @@ describe('Select передаёт режим своим тегам', () => {
 			{ owner },
 		)
 
+		expect(facade.tags?.overflow).toBe('scroll')
+	})
+
+	/**
+	 * Пропсы, равные умолчаниям декларации, — то, что фреймворк ставит и
+	 * незаданным пропсам. Чужому движку фасад `wrap` не пишет: режим
+	 * переполнения остаётся движка.
+	 */
+	it('движок снаружи: пропсы-умолчания режим движка не меняют', () => {
+		const engine = createEngineSelect()
+
+		engine.extensions.selection.mode = 'multiple'
+		engine.extensions.tags.overflow = 'scroll'
+
+		const facade = new TSelectCollectionFacade(
+			{ ...TSelectCollectionFacade.defaultValues },
+			{ engine },
+		)
+
+		expect(facade.tags_overflow).toBe('scroll')
 		expect(facade.tags?.overflow).toBe('scroll')
 	})
 })
