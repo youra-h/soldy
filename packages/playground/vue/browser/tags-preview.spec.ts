@@ -8,13 +8,18 @@
  * `scroll` не было. Проверить это можно только на настоящей странице: в
  * самодельном контейнере такой ячейки нет.
  *
- * Ширину задаёт `body`, а не окно: размер окна прогона — не то, что открыто у
- * человека, а колонки страницы считаются от ширины страницы.
+ * Ширину задаёт окно (`page.viewport`), а не `body`: колонки страницы
+ * считаются от окна. В узком правило `@media` в `src/styles.css` ставит
+ * колонки строки одну под другой, а `useSidebar` уводит меню в выезжающую
+ * панель. Окно прогона по умолчанию (414 px) узкое, и с шириной `body` тест
+ * мерил одну колонку во всю страницу, куда теги помещались. Поэтому каждый
+ * случай идёт в двух окнах, по одному на раскладку, и раскладку тест сверяет
+ * сам.
  */
 
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach } from 'vitest'
 import { render } from 'vitest-browser-vue'
-import { userEvent } from 'vitest/browser'
+import { page, userEvent } from 'vitest/browser'
 import { setIcons, useTheme } from '@soldy-ui/setup'
 import * as material from '@soldy-ui/icons-material'
 import App from '../src/App.vue'
@@ -27,8 +32,16 @@ import '../src/styles.css'
 setIcons(material)
 useTheme(oren)
 
-/** Ширины страницы, на которых теги в колонку не помещаются. */
-const NARROW = [1100, 900, 760]
+/**
+ * Окна, в которых теги в колонку не помещаются: шире 768 px колонки строки
+ * стоят рядом, справа от меню, уже — одна под другой во всю ширину.
+ */
+const WINDOWS = [
+	{ width: 900, columns: 2 },
+	{ width: 375, columns: 1 },
+]
+
+const HEIGHT = 800
 
 const settle = () => new Promise((resolve) => setTimeout(resolve, 300))
 
@@ -65,6 +78,17 @@ const pick = async (row: HTMLElement, value: string) => {
 	await settle()
 }
 
+/**
+ * Колонок в ряду строки. Колонки рядом начинаются в разных местах по
+ * горизонтали, одна под другой — в одном.
+ */
+const columnsOf = (prop: HTMLElement) =>
+	new Set(
+		[...prop.querySelectorAll('.pg-prop__columns > .pg-col')].map((column) =>
+			Math.round(column.getBoundingClientRect().left),
+		),
+	).size
+
 /** Ряд тегов первой колонки строки — той, что правится пропами. */
 const rowOf = (prop: HTMLElement): HTMLElement => {
 	const element = prop.querySelector('.pg-col .so-tags')
@@ -91,54 +115,48 @@ const stageOf = (prop: HTMLElement): DOMRect => {
 const contentEdge = (row: HTMLElement) =>
 	[...row.children].reduce((max, node) => Math.max(max, node.getBoundingClientRect().right), 0)
 
-const page = async (width: number) => {
-	document.body.style.width = `${width}px`
-
-	await settle()
-}
-
-let prop: HTMLElement
-
-beforeEach(async () => {
-	document.documentElement.dataset.soTheme = 'oren'
-
-	await router.push('/vue/tags')
-
-	render(App, { global: { plugins: [router] } })
-
-	await settle()
-
-	prop = propRow('overflow')
-
-	prop.scrollIntoView()
-})
-
-afterEach(() => {
-	document.body.style.width = ''
-})
-
 describe('строка overflow на странице компонента', () => {
-	it('scroll: ряд прокручивается внутри ячейки, а не выходит за неё', async () => {
-		await pick(prop, 'scroll')
-		await page(NARROW[1])
+	describe.each(WINDOWS)('окно $width px', ({ width, columns }) => {
+		let prop: HTMLElement
 
-		const row = rowOf(prop)
+		beforeEach(async () => {
+			document.documentElement.dataset.soTheme = 'oren'
 
-		// Прокручивать есть что, и прокрутка — у самого ряда
-		expect(row.scrollWidth).toBeGreaterThan(row.clientWidth)
-		expect(row.getBoundingClientRect().right).toBeLessThanOrEqual(stageOf(prop).right + 0.5)
-	})
+			await page.viewport(width, HEIGHT)
+			await router.push('/vue/tags')
 
-	it('wrap: ряд переносится строками и тоже остаётся в ячейке', async () => {
-		await pick(prop, 'wrap')
-		await page(NARROW[2])
+			render(App, { global: { plugins: [router] } })
 
-		const row = rowOf(prop)
-		const tops = [...row.querySelectorAll('.so-tags-item')].map((item) =>
-			Math.round(item.getBoundingClientRect().top),
-		)
+			await settle()
 
-		expect(new Set(tops).size, 'строк в ряду').toBeGreaterThan(1)
-		expect(contentEdge(row)).toBeLessThanOrEqual(stageOf(prop).right + 0.5)
+			prop = propRow('overflow')
+
+			prop.scrollIntoView()
+
+			// Раскладка — та, ради которой взято окно, иначе тест мерил бы другую
+			expect(columnsOf(prop), 'колонок в строке').toBe(columns)
+		})
+
+		it('scroll: ряд прокручивается внутри ячейки, а не выходит за неё', async () => {
+			await pick(prop, 'scroll')
+
+			const row = rowOf(prop)
+
+			// Прокручивать есть что, и прокрутка — у самого ряда
+			expect(row.scrollWidth).toBeGreaterThan(row.clientWidth)
+			expect(row.getBoundingClientRect().right).toBeLessThanOrEqual(stageOf(prop).right + 0.5)
+		})
+
+		it('wrap: ряд переносится строками и тоже остаётся в ячейке', async () => {
+			await pick(prop, 'wrap')
+
+			const row = rowOf(prop)
+			const tops = [...row.querySelectorAll('.so-tags-item')].map((item) =>
+				Math.round(item.getBoundingClientRect().top),
+			)
+
+			expect(new Set(tops).size, 'строк в ряду').toBeGreaterThan(1)
+			expect(contentEdge(row)).toBeLessThanOrEqual(stageOf(prop).right + 0.5)
+		})
 	})
 })
