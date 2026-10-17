@@ -4,10 +4,11 @@
 render it in Vue, React, Angular, Svelte, Solid and Web Components.**
 
 [![CI](https://github.com/youra-h/soldy/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/youra-h/soldy/actions/workflows/ci.yml)
+[![npm](https://img.shields.io/npm/v/@soldy-ui/core?label=npm)](https://www.npmjs.com/org/soldy-ui)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-> **Status:** version `0.1.0`, early development. The API still changes. The packages are ready to
-> publish — the first release to npm is on its way.
+> **Status:** version `0.2.0`, the first release on npm. Early development: the API still changes
+> between minor versions until `1.0`.
 
 ## What it is
 
@@ -46,6 +47,24 @@ Web Components connect that model to a framework and render the markup: BEM clas
 - **Rules are enforced, not just written down.** TypeScript runs in `strict` mode with no escape
   hatches: `as any`, `as unknown as X`, non-null `!` and `@ts-ignore` fail CI. Key architectural
   rules have guard tests, and the playground layout is checked in real Chromium, not in jsdom.
+
+## Installation
+
+Install the adapter for your framework, a theme and an icon pack. The adapter brings the core
+(`@soldy-ui/core`, `@soldy-ui/plugins`, `@soldy-ui/setup`) with it.
+
+| Framework      | Install                                                                       | Requires      |
+| -------------- | ----------------------------------------------------------------------------- | ------------- |
+| Vue            | `npm install @soldy-ui/vue @soldy-ui/theme-oren @soldy-ui/icons-material`     | Vue 3.5+      |
+| React          | `npm install @soldy-ui/react @soldy-ui/theme-oren @soldy-ui/icons-material`   | React 19.2+   |
+| Angular        | `npm install @soldy-ui/angular @soldy-ui/theme-oren @soldy-ui/icons-material` | Angular 22.1+ |
+| Svelte         | `npm install @soldy-ui/svelte @soldy-ui/theme-oren @soldy-ui/icons-material`  | Svelte 5.29+  |
+| Solid          | `npm install @soldy-ui/solid @soldy-ui/theme-oren @soldy-ui/icons-material`   | Solid 1.9+    |
+| Web Components | `npm install @soldy-ui/webc @soldy-ui/theme-oren @soldy-ui/icons-material`    | —             |
+
+All `@soldy-ui/*` packages share one version; keep them on the same one. Not every component is
+in every adapter yet — see [what each adapter implements](#components). Then plug in the theme and
+the icons at the application entry point, as shown below.
 
 ## What it looks like
 
@@ -270,7 +289,6 @@ On the way there:
 - every component ported to React, Angular, Svelte, Solid and Web Components;
 - a playground for each of those adapters;
 - Menu on the same overlay layer as Select and Popover;
-- the packages published to npm;
 - more themes and icon packs on the same contracts.
 
 ## Documentation
