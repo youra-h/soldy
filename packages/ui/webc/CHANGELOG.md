@@ -1,0 +1,276 @@
+# @soldy-ui/webc
+
+## 0.2.0
+
+### Minor Changes
+
+- c124dad: Общий слой адаптеров переписан: пакета `@soldy-ui/accessor` больше нет, всё общее живёт в `@soldy-ui/setup`. Компоненты, дескрипторы и API приложения (`usePlugins`, `useExtensions`, `useTheme`, `setIcons`, `createAdapterContext`, `withParts`) не изменились.
+  
+  Ломающее — для тех, кто пишет свой адаптер или читает метаданные дескриптора:
+  
+  - `bindComponent(adapter, profile)` заменён на `adapter.connect(profile)`. Вместо методов связки — три порта: `state.subscribe` / `state.getSnapshot`, `inputs.full` / `inputs.delta` и `offer` у одного входа, `events.listen`; спред несъеденных пропсов — `forward`. Слушатель состояния получает имя свойства во фреймворке, а не запись поверхности.
+  - `surfaceOf(descriptor, profile)` заменён на `TSurface.of(descriptor, profile)`. Записи поверхности ссылаются на описание пропа (`prop.spec`), полей `key`, `protected`, `triggers` у них больше нет; список `inputs` убран — входы отдаёт обмен.
+  - `IPropDeclaration` заменён классом `TPropSpec`: те же поля `name`, `type`, `protected`, `triggers`, `default` (ключ есть, только если умолчание объявлено) плюс `hasDefault`, `read(owner)`, `assign(owner, value)`.
+  - `TName`, `INamingStrategy`, `IContribution`, `IPropDefinition`, `ISlotDefinition`, `ISlotDeclaration`, `IContextElevator` импортируются из `@soldy-ui/setup`.
+  - Контекст адаптера больше не отдаёт `accessor` и `writePluginProps`: `pluginProps` — обычный вход обмена.
+  - О двух пропах или событиях с одним полным именем в составе компонента дескриптор сообщает в консоль при построении (`console.error`); раньше на этом падало монтирование.
+  
+  Пакет `@soldy-ui/setup` объявлен `"sideEffects": false`: приложение с одной кнопкой больше не тянет дескрипторы и плагины остальных компонентов (бандл одного `ButtonDescriptor` — 159 KiB вместо 466). Плагин с объявленным контрактом (`definePlugin`) ставьте снаружи определением, а не классом — `usePlugins(TButton, [AnchorPluginDescriptor])`, можно с `.with(options)`: импорт определения держит в бандле модуль, где записан контракт, иначе `pluginProps` до плагина в продакшен-сборке не дойдут.
+  
+  Поведение обмена значениями не менялось: прежние тесты связки, внешних плагинов и сборки проходят на новом ядре без правок ожиданий.
+- 25ef801: Web Components: у компонентов нет обёртки — `<so-button>` сам и есть кнопка и корень компонента, внутреннего `<button>` больше нет; `<so-component-view>` так же держит содержимое в себе. Класс, стиль, атрибуты и слушатели на элементе действуют сразу, а атрибут потребителя главнее того, что пишет компонент (`tabindex="-1"`, `role="link"` остаются). `<so-button>` связан с формой: внутри формы или с атрибутом `form` нажатие её отправляет, `type="reset"` сбрасывает, `type="button"` ничего не делает; `disabled` выключает его по-настоящему — без фокуса и кликов. Атрибута и свойства `tag` больше нет: тег — всегда сам элемент, кнопок-ссылок нет. `rendered=false` прячет элемент (`display: none` поверх инлайнового `display`), а не удаляет корень. Элемент, переставленный в DOM, остаётся рабочим: инстанс (`el.ctrl`) и содержимое те же. Из экспорта удалены `ariaBinding`, `datasetBinding`, `createAttributesBinding` и `applyAttributeSet` — наборы ядра раскладывает база `TSoldyElement`; у `ITemplate` нет `tag` и появились `reactions` (`on`, `formAction`), а `useAdapter` и setup-функции принимают колбэк событий `onEvent`.
+- 7c9d5c6: Пакеты переехали в скоуп `@soldy-ui`: прежний скоуп занят в npm чужой учётной записью. Адаптеры названы по фреймворку, без повторения слова ui — `@soldy-ui/vue`, `@soldy-ui/react`, `@soldy-ui/angular`, `@soldy-ui/svelte`, `@soldy-ui/solid`, `@soldy-ui/webc`. Остальные пакеты сохранили прежние имена в новом скоупе: `@soldy-ui/core`, `@soldy-ui/setup`, `@soldy-ui/plugins`, `@soldy-ui/theme-oren`, `@soldy-ui/icons-material`. Как обновиться: сменить скоуп в импортах и в манифесте, у адаптеров дополнительно убрать из имени пакета префикс `ui-`.
+- 9dfdb31: Angular и Web Components: теги компонентов сменили префикс `soldy-` на `so-` — `<so-button>`, `<so-component-view>`, в Angular ещё `<so-component>`. Переименуйте теги в шаблонах и разметке, а также строки в `querySelector`, `createElement` и ключах `HTMLElementTagNameMap`: старые имена не зарегистрированы, и `<soldy-button>` больше не кнопка. CSS-классы (`s-*`) и имена пакетов (`@soldy-ui/*`) не меняются.
+- 88db640: Префикс `so` — у каждого события, которое адаптер отдаёт туда, где его слышит и DOM: у событий Web Components и у выходов Angular, без исключений. Префикс говорит, чьё это событие, поэтому стоит у всей категории, а не у имён, что совпали бы с событием браузера: угадывать, у каких событий он есть, не нужно. Разделитель — тот, что в схеме имён адаптера: `:` у Web Components, camelCase у Angular.
+  
+  Web Components: событие элемента — `so:` и полное имя ядра: `so:show`, `so:hide`, `so:ready`, `so:show:before`, `so:element:ready`, `so:action:press`, `so:change:disabled`, `so:bundle:create`, `so:plugin:event`, а с портом полей, Select и коллекций — `so:input`, `so:open`, `so:close`, `so:reset`. Ломающее: слушатели на элементах soldy переименуйте — `addEventListener('action:press', …)` → `addEventListener('so:action:press', …)`, `show` → `so:show`; под прежним именем событие больше не приходит, и ошибки об этом нет.
+  
+  Angular: выход — `so` и полное имя ядра в camelCase: `input` → `soInput`, `show` → `soShow`, `hide` → `soHide`, `ready` → `soReady`, `elementReady` → `soElementReady`, `actionPress` → `soActionPress`, `changeValue` → `soChangeValue`, `inputValue` → `soInputValue`, `showBefore` → `soShowBefore`, `bundleCreate` → `soBundleCreate`, `pluginEvent` → `soPluginEvent`. На `(x)` у элемента Angular слушает и выход `x`, и событие DOM `x`, поэтому `(input)` на поле получал два вызова на нажатие — событие ядра и всплывшее событие браузера. Теперь `(input)` на `<so-input>`, `<so-check-box>` и `<so-switch>` — только событие браузера, как на нативном `<input>`, а событие ядра — `(soInput)` (или `(soInputValue)`, `(soChangeValue)`). Ломающее: привязки переименуйте — `(actionPress)` → `(soActionPress)`, `(changeValue)` → `(soChangeValue)`, `(show)` → `(soShow)` и т. д. Старую привязку шаблон не отвергнет: Angular примет её за событие DOM, и обработчик молча перестанет вызываться; подписка из кода (`button.actionPress.subscribe(…)`) перестанет компилироваться.
+- bf6a08c: Плагин объявляется один раз, константой: `XPluginDescriptor` — определение, а не фабрика. Вызовы `XPluginDescriptor()` заменить на `XPluginDescriptor`, опции установки — `XPluginDescriptor.with(options)`; у `definePlugin` поля `options` больше нет. У дескриптора снят `getSlots()` — слоты читаются полем `slots`; декларации дескриптора `readonly` и заморожены.
+- 7876446: CSS-классы — с префиксом `so-`, тем же, что у Custom Elements, селекторов Angular и событий: `class="so-button"`, `.so-tabs__list`, `.so-input--clearable`. Тот же префикс у кадров анимаций темы (`@keyframes so-progress-pulse`) и у запасного id монтирования, от которого набор плагинов строит id в разметке без адаптера (`so-<n>`).
+- 3c38d3d: Связывание компонента с фреймворком — одно на все шесть адаптеров.
+  
+  Публичная поверхность компонента в именах фреймворка — `surfaceOf(descriptor, profile)` из `@soldy-ui/setup`: экспортные имена пропов и событий, умолчания и типы для статического слоя, список съеденных пропсов. Считается один раз на пару «дескриптор × профиль» и заменяет `TDescriptorInspector`, который пересчитывал то же самое на каждом монтировании и в двух режимах. Профиль (`IAdapterProfile`) — стратегия имён и слот по умолчанию, одна константа на адаптер: `VueProfile`, `ReactProfile`, `SolidProfile`, `SvelteProfile`, `WebcProfile`, `AngularProfile`.
+  
+  На монтирование адаптер берёт связку `bindComponent(adapter, profile)`: стартовое состояние, подписки на триггеры, проброс событий с дедупликацией, чтение и запись пропсов с guard'ом, спред несъеденных пропсов. Своих циклов по аксессору у адаптеров больше нет — остаётся только то, куда писать значение и как отдать событие.
+  
+  Удалены: `TDescriptorInspector` из `@soldy-ui/accessor`; `createInspectorFactory`, `collectEventBindings`, `collectForwardProps` из `@soldy-ui/setup`; `createInspector`, `useSyncProps`, `useSyncEvents` и их опции из адаптеров, а также `bindOutput`/`bindInput`/`buildInitialState`/`bindEvents` из Angular. Как обновиться: вместо `createInspector(descriptor).getExportEvents()` — `surfaceOf(descriptor, VueProfile).exportEvents`, вместо `getExportProps()` — `.exportProps`.
+- f7b4492: Spinner удалён: компонент Vue и React, класс ядра `TSpinner` с типами `ISpinner`, `ISpinnerProps` и `TSpinnerEvents`, плагин `TSpinnerLayoutPlugin`, дескрипторы `SpinnerDescriptor` и `SpinnerLayoutPluginDescriptor` и стили Spinner в теме oren. Замена — ProgressSpinner с `indeterminate`: строчное кольцо той же шкалы размеров, которое бежит по кругу, пока доля неизвестна. Как обновиться: `<Spinner />` → `<ProgressSpinner indeterminate />`, имя — тем же `aria_label`. Отличия: роль кольца — `progressbar` без `aria-valuenow`, а не живая область `status`; содержимого у кольца нет — текст ставят рядом и связывают через `aria_labelledBy`; толщину кольца задаёт тема долей диаметра, пропа `borderWidth` и переменной толщины кольца больше нет. В React ProgressSpinner пока нет — его перенос идёт отдельно.
+- 4100cf5: Кнопка на не-нативном теге (`div`) делает клик из Enter (на keydown) и пробела (на keyup), как браузер у `<button>`: на клавишу приходит `click`, а `action:press` — из него; `preventDefault` у keydown на любом обработчике по пути нажатие отменяет.
+  
+  Web Components: элементы soldy — нативные элементы своего тега (customized built-in). Вместо `<so-button>` пишется `<button is="so-button">`, вместо `<so-component-view>` — `<div is="so-component-view">`; из JS — `document.createElement('button', { is: 'so-button' })`. Кнопка — настоящая `<button>`: форму, `submitter`, `new FormData(form, submitter)`, Enter в поле, `form*`-атрибуты, `<fieldset disabled>`, `<label for>`, фокус и клавиатуру ведёт браузер. Для Safari пакет подключает полифил `@ungap/custom-elements`. Классы элементов собирает фабрика `SoldyElement(HTMLButtonElement, { descriptor, template, setup })` вместо наследования `TSoldyElement`; `defineProps`, реакции шаблона (`on`, `formAction`) и `TEventListener` убраны; `defineElement` принимает тег, который расширяется. Пробелы и комментарии вокруг слотов больше не глушат `text`; разметка со скриптом в `<head>` раскладывает слоты правильно.
+- 1b8b606: Переменные CSS, которые пишут ядро и плагины, а читает тема, названы одной схемой `--so-…` — с префиксом классов, и одноимённая переменная приложения у предка их не подменяет: `--so-dialog-width`, `--so-dialog-height`, `--so-dialog-offset-{top,bottom,start,end}`, `--so-drawer-width`, `--so-drawer-height`, `--so-swipe-offset`, `--so-filler-height`, `--so-slider-position`, `--so-slider-range-start`, `--so-slider-range-end`, `--so-progress-linear-percent`, `--so-progress-spinner-fraction`, `--so-table-column-width`, `--so-table-column-drag`, `--so-table-column-shift`, `--so-table-column-ghost` и `--so-table-column-ghost-size`. Тема oren читает их под этими именами.
+- 55eccf2: Типы setup едут одним контрактом: `IComponentDescriptor<C>`, `IPluginDefinition<C>` и `IAdapterContext<C>` вместо позиционных параметров. `defineComponent` и `definePlugin` выводят контракт сами — явные аргументы типа у `definePlugin` убрать. Сняты `TPluginEventsFrom`, `TPluginPropsFrom`, `TPluginOutputsFrom`, `DescriptorPlugins`, `TDescriptorInstance`, `NamespacedEvents`; `TAdapterState` и `toInstanceState` принимают контракт. `useAdapter` и `useCollectionAdapter` адаптеров дженериков не требуют: `useAdapter(adapter, props)`.
+
+### Patch Changes
+
+- fe0551e: Плагины и расширения коллекций подключаются снаружи. Одному компоненту — из `bundle:create` / `engine:create`: плагин, поставленный в `bundle:create`, объявляется вместе с плагинами компонента. Всем компонентам типа — `usePlugins(TButton, [TTimerPlugin])` и `useExtensions(TTags, [(owner) => new TExt()])` из `@soldy-ui/setup`; по умолчанию только компонентам пользователя, `{ scope: 'all' }` — и деталям разметки других компонентов (строка и крестик тега), которые библиотека помечает пропом `embedded`. Контракт компонента — пропсы, события и слоты — объявляет только дескриптор: внешний плагин его не расширяет. `usePlugins` принимает класс или класс с опциями (`{ ctor, options }`), настраивается плагин опциями регистрации, а обращаются к нему через его собственный API — из `bundle:create` или по ссылке, которую он сам о себе оставил.
+  
+  Плагины уничтожаются при размонтировании: `destroy()` плагинов раньше не вызывался ни в одном адаптере. У `IPluginBundle` появились `created()` и `destroy()`, у `IAdapterContext` — `embedded`.
+  
+  Тема объявляет своё поведение: `defineTheme` / `useTheme` в `@soldy-ui/setup`, объект темы oren — `@soldy-ui/theme-oren/setup`. `TTabsViewPlugin` переехал из `@soldy-ui/plugins` в тему и снят с Tabs, событие `view:create` у Tabs пропало. Как обновиться: в точке входа приложения рядом с `import "@soldy-ui/theme-oren"` подключить `useTheme(oren)` из `@soldy-ui/theme-oren/setup`, иначе полосы под активным табом нет; импорт `TTabsViewPlugin` брать из `@soldy-ui/theme-oren/setup`.
+- b97ee10: Снятый проп возвращается к умолчанию декларации во всех адаптерах. Раньше `undefined` из фреймворка не доезжал до ядра, и трёхзначный проп — `closable` у элементов Tabs и Tags, `contentFit` у элемента ListBox — нельзя было вернуть из разметки к «как у владельца»: компонент оставался с последним заданным значением. Проп, который ни разу не задавали, по-прежнему не пишется, и внешний `ctrl` не затирается. У связки новый метод `writeChanged` для фреймворков, отдающих только изменившиеся пропсы: через него пишут Angular и Web Components. В Web Components снятый атрибут и свойство, выставленное в `undefined`, сбрасывают проп; Angular пишет входы, заданные при монтировании, и во внешний `ctrl`.
+- a2e3e21: Web Components: иконка — `<span is="so-icon" icon="close">`. Роль — свой атрибут элемента `icon` (свойство `el.icon`), а не проп: по ней элемент рисует внутри себя `<svg>` иконки роли из подключённого пакета, растянутый на корень, и при смене роли перерисовывает тот же узел. Корень — сам `span`: размер (`size`, `width`, `height`), классы и доступное имя (`aria_label`; без него иконка скрыта от скринридера) — на нём, как у любого элемента. Голый `<svg>` с рисунком роли для своей разметки даёт `roleIcon(role)`, рисунок на готовом `<svg>` — `drawRoleIcon(svg, role)`. База элементов (`SoldyElement`) принимает свои атрибуты элемента сверх пропов — `attributes` в описании элемента. Тема oren делает корень иконки любого тега блоком, как `svg`: иконка не на `svg` — `<Icon>` без тега в любом адаптере — теперь берёт размер ступени.
+- d620707: Web Components: Label, Input, CheckBox и Switch — `<label is="so-label">`, `<div is="so-input">`, `<span is="so-check-box">` и `<span is="so-switch">`. Поле — настоящий `<input>` внутри элемента, который написал потребитель, и форма видит его сама: `FormData`, `<label>`, `<fieldset disabled>` и валидация достаются нативному полю. Статические атрибуты разметки поля (`autocomplete`, `aria-label`, `tabindex`, `data-*`) при построении переезжают на `<input>`, а `class`, `style` и атрибуты пропов остаются на элементе, как и всё, что код запишет на него потом. `id` поля — проп, а не атрибут элемента: `id` из разметки стоит только на `<input>`, из кода — `el.ctrl.id`. Текст, отметку и «выбрано частично» элемент пишет в `<input>`, только когда они разошлись с ним, — каретка остаётся на месте. Имя кнопки очистки Input — из локали `<so-locale-provider>` и меняется на лету. События деталей разметки — кнопки очистки и иконки в ней — не всплывают: слушатели поля и делегирование на форме слышат только события самого поля. Набор, который разметка компонента кладёт на вложенный элемент soldy, главнее того, что элемент пишет себе сам, при любом порядке записи.
+  
+  Свой шаблон элемента (`ITemplate`) — по новому контракту: `create(root, hasSlot)` отдаёт `{ slots, control }` вместо одних точек слотов, а контекст привязок отдаёт ещё инстанс текущей связки (`ctrl`) и вывод слота по состоянию (`showSlot`).
+- 7b387fb: Пакеты soldy зависят друг от друга точной версией: набор у потребителя всегда собран из одного выпуска.
+- d88ab2e: У плагина, поставленного снаружи, появились пропсы и события — одинаково во всех адаптерах.
+  
+  Контракт плагина описывает `definePlugin` один раз, рядом с классом. Значения его пропсов компонент принимает одним пропом `pluginProps` (`{ timer_ms: 500 }`), события отдаёт одним конвертом `plugin:event` (`{ name: 'timer:tick', args }`): `:plugin-props` и `@plugin:event` во Vue, `pluginProps` и `onPluginEvent` в React, Solid и Svelte, `[pluginProps]` и `(soPluginEvent)` в Angular, свойство `pluginProps` и событие `so:plugin:event` у Web Components. Работает для плагина из `usePlugins` и для поставленного позже через `bundle.use` — значения, пришедшие раньше плагина, ждут его. Правила те же, что у пропсов компонента: пишется только значение, отличное от умолчания, пропавший ключ возвращает умолчание. Типы ключей — дополнением интерфейса `IExternalPluginProps` из `@soldy-ui/setup`.
+  
+  У `TPluginBundle` появилась шина `events` с событиями `use` и `remove`. В ядре — тип `TPluginEvent` и событие `plugin:event` в `TComponentEvents`.
+- 5d2d8a9: Слой setup собирает компонент по одному составу. Состав монтирования (плагины дескриптора плюс регистрации приложения) считается один раз, и по нему строятся набор плагинов, units аксессора и начальные значения плагинных пропсов — раньше каждый выяснял состав сам, и плагины реестра доходили только до набора.
+  
+  Дескриптор стал описанием типа и только им: методы `createBundle` и `createAccessor` с него сняты (их звала одна сборка), а сам он строится один раз на тип — `defineDescriptor` кэширует фабрику, и монтирование больше не пересобирает всю цепочку до `EntityContribution`.
+  
+  Расширения `TPluginsBindingExtension` и `TPluginPropsExtension` удалены вместе с `resolveDefaultExtensions` и полем `defaultExtensions` в конфиге контекста. Начальные значения плагинных пропсов пишет сборка, а корневой узел привязывается методом контекста `adapter.bindElement(el)` — у компонента без `TElementPlugin` он ничего не делает. Как обновиться: `adapter.get(TPluginsBindingExtension)?.bindElement(el)` заменить на `adapter.bindElement(el)`, `{ defaultExtensions: [] }` из вызовов `createAdapterContext` убрать.
+  
+  `IAdapterContextOptions` и `IAdapterContextConfig` теперь экспортируются из `@soldy-ui/setup`.
+- c3de8b0: Web Components: тип элемента (`TButtonElementProps` и соседи) выводится из контракта дескриптора, как пропсы React, Solid и Svelte. В нём появились свойства пропов плагинов дескриптора — `el.aria_label`, `aria_labelledBy`, `aria_describedBy`, у Frame `anchor_anchor`, `anchor_placement` и остальные пропсы якоря — и пропсы связки `pluginProps` и `embedded`. В браузере они работали и раньше, а в TypeScript запись `button.aria_label = 'Сохранить'` не компилировалась, и приходилось писать атрибут строкой; якорь атрибутом не задать вовсе. Общий тип свойств элемента — `TSoldyElementProps<typeof XDescriptor, HTMLXElement>`: пропсы дескриптора без свойств, которые у элемента есть по тегу, без `HOST_PROPS` и без `ctrl`.
+- e0251d2: Web Components: Frame — `<div is="so-frame">`, слой поверх страницы. В цель `target` (по умолчанию `body`) уезжает сам элемент — с классом, атрибутами и слушателями, которые написал потребитель, — а на его месте остаётся комментарий-якорь. `contained` оставляет панель на месте, а без цели она стоит на месте скрытой. Содержимое панели остаётся в контексте места: кнопка в панели берёт локаль провайдера вокруг Frame, а не вокруг цели. Перенос, `contained` и смена цели не пересобирают ни Frame, ни элементы в панели; перестановка, которую делает потребитель, пересобирает, как раньше. Контейнер, снятый со страницы, уносит панель с собой, а вставленный снова — возвращает её в цель. Содержимое любого элемента теперь раскладывается по слотам, не покидая страницы, и элемент soldy внутри собирается один раз, на своём месте. Раньше несобранный собирался сперва вне документа, на английском, а уже собранный — ещё раз, когда его контейнер собирался позже него (сборку контейнера отложила регистрация).
+- c37e233: Кнопки, которые компоненты рисуют сами, — очистка полей, крестики окна, панели, поповера, табов и тегов, листание календаря и ленты, кнопки DatePicker, строка таба, заголовок секции Accordion, сортировка колонки таблицы — получили `type="button"`. У `<button>` без `type` тип `submit`: в форме клик по очистке поля отправлял форму, а Enter в поле нажимал первую такую кнопку, и поле очищалось вместо отправки. Button, который ставит приложение, остаётся кнопкой отправки, как нативная `<button>`. В React, Solid и Svelte пропсы Button несут атрибуты кнопки: `type`, `form`, `name` и `value` типизированы.
+- b39d9be: Web Components: коллекции RadioGroup, Tabs (с Tabs.Content) и Accordion — элементы владельца и частей, вход элемента в коллекцию при подключении, элементы из данных и образцы слотов item-*
+- 5659d22: Инициализация компонента одинакова во всех адаптерах и идёт теми же путями, что и изменения.
+  
+  Пропсы применяет сборка компонента. Внешний `ctrl` и плагины получают через сеттер всё, что отличается от объявленного умолчания; свой инстанс получает пропсы ядра конструктором, и второй раз они не пишутся. Адаптеры стартовых значений больше не пишут, поэтому коллекция с пропом `items` во Vue при монтировании больше не очищается и не заполняется повторно. Проп, равный умолчанию, внешний `ctrl` не трогает. Пересборка контекста в React (StrictMode, `<Activity>`) — такое же монтирование: разметка снова применяется к внешнему `ctrl`.
+  
+  Значения из ядра фреймворк получает подпиской на связку. `binding.subscribe(listener)` сразу отдаёт каждое свойство тем же вызовом, что и срабатывание триггера, дальше — изменения; `binding.getSnapshot()` отдаёт неизменяемый снимок (React рисует по нему через `useSyncExternalStore`). Порядок «подписка, потом чтение» держит связка, поэтому изменение ядра между рендером и подпиской больше не теряется в React и Svelte. `update:<prop>` для `v-model` объявляет профиль Vue (`IAdapterProfile.model`) и эмитит связка в `bindEvents`.
+  
+  Как обновиться, если вы пишете свой адаптер: `binding.state()` и `binding.bindOutput(write)` заменены на `binding.subscribe(write)` (он же отдаёт начальное состояние) и `binding.getSnapshot()`; у `bindComponent` больше нет третьего параметра `previous`.
+- 054a24f: Web Components: ListBox — `<div is="so-list-box">` с элементами `<div is="so-list-box-item">`, элементы из данных с распорками окна и образцы слотов `item-*`. Строка элемента — Button на `div`, `<div is="so-button-div">`: одно имя элемента расширяет один тег, и кнопку на другом теге регистрирует фабрика `registerButtonTag(tag)` под именем `so-button-<тег>` — с тем же описанием элемента, что у `<button is="so-button">`; тип такой кнопки — `TButtonElementProps<HTMLDivElement>`. Выключенный пункт списка остаётся фокусируемым и объявляется через `aria-disabled`.
+- 5875ed2: Атрибут пропа с несколькими типами приводится по порядку типов: value="abc" остаётся строкой, width="50%" — строкой
+- 2788652: Пакеты открыты к публикации: сняты private, добавлены publishConfig, files, README и LICENSE. Фреймворк адаптера стал peer-зависимостью, тема и иконки — devDependency: приложение выбирает их само, и второй копии Vue, React или Angular в нём больше не появится. Соседи по скоупу объявлены диапазоном ^0.1.0 вместо "любая версия".
+- 5c91838: Web Components: элемент, который уже стоит в разметке страницы, когда пакет регистрирует элементы, собирается микрозадачей позже импорта — после строк точки входа, где приложение подключает тему, иконки и плагины (`useTheme`, `setIcons`, `usePlugins`), и получает их во всех браузерах. Раньше в Chrome и Firefox он собирался ещё при импорте и оставался без них. `el.ctrl` у такого элемента появляется микрозадачей позже импорта, как уже было в Safari; элемент, созданный кодом, по-прежнему собран сразу после вставки.
+- c9aaade: Адаптеры Vue, React, Solid и Web Components уезжают собранным ESM с декларациями в dist, а не исходниками
+- b21cb75: Рантайм адаптера принимает собранный контекст — `adapter.attach()` при инициализации компонента (Angular — в `ngOnInit`, Web Components — в `connectedCallback`), парой к `destroy()`.
+- c876282: Web Components: ProgressSpinner и Skeleton — `<span is="so-progress-spinner">` и `<div is="so-skeleton">`; у Skeleton `visible` и `rendered` убирают только заглушку, а корень с содержимым остаётся на виду. `<so-locale-provider>` даёт поддереву язык и строки библиотеки: свойство `locale` (локаль — объект, атрибута нет) пишется в источник провайдера, элементы собираются через `createWebcAdapterContext` и берут локаль ближайшего провайдера вверх по документу — смена доходит до них без пересборки, а элемент, переставленный под другой провайдер, берёт его локаль. Стиль корня база элемента раскладывает по свойствам — размер от плагина раскладки и стиль-выход компонента (доля кольца; имя выхода называет описание корня `TRootSpec`), — а `style` потребителя и свойства, которые плагины пишут в узел сами, не трогает. Содержимое слота, которого у компонента нет, больше не выводится (раньше оно ложилось в корень) — как в остальных адаптерах.
+- Updated dependencies [85bcbed]
+- Updated dependencies [1ed86e6]
+- Updated dependencies [f535f0d]
+- Updated dependencies [bb9cd8f]
+- Updated dependencies [fe0551e]
+- Updated dependencies [45fce47]
+- Updated dependencies [b97ee10]
+- Updated dependencies [dd5c935]
+- Updated dependencies [c9d24bc]
+- Updated dependencies [c124dad]
+- Updated dependencies [8595512]
+- Updated dependencies [b919172]
+- Updated dependencies [eae46e4]
+- Updated dependencies [9e0c6e7]
+- Updated dependencies [a7cf90d]
+- Updated dependencies [ed00f0c]
+- Updated dependencies [8b89d9e]
+- Updated dependencies [cf94344]
+- Updated dependencies [89815b8]
+- Updated dependencies [b4243ba]
+- Updated dependencies [c037d5c]
+- Updated dependencies [4f1c80f]
+- Updated dependencies [0b61b6a]
+- Updated dependencies [581d47a]
+- Updated dependencies [b84aaf2]
+- Updated dependencies [8b77053]
+- Updated dependencies [de54fc7]
+- Updated dependencies [3a72379]
+- Updated dependencies [bd02d06]
+- Updated dependencies [5c4c620]
+- Updated dependencies [4df23ca]
+- Updated dependencies [445c257]
+- Updated dependencies [2e53a0f]
+- Updated dependencies [0d1a6cb]
+- Updated dependencies [e982bdf]
+- Updated dependencies [dd268c6]
+- Updated dependencies [b6b8274]
+- Updated dependencies [b0938c0]
+- Updated dependencies [5efeeb0]
+- Updated dependencies [7b387fb]
+- Updated dependencies [d88ab2e]
+- Updated dependencies [f2bc1f9]
+- Updated dependencies [4fa09bc]
+- Updated dependencies [b45d550]
+- Updated dependencies [9e22258]
+- Updated dependencies [61bd37d]
+- Updated dependencies [1a1a8e9]
+- Updated dependencies [b850687]
+- Updated dependencies [6903a74]
+- Updated dependencies [a58f169]
+- Updated dependencies [e76d680]
+- Updated dependencies [700c746]
+- Updated dependencies [7c9d5c6]
+- Updated dependencies [ccd7713]
+- Updated dependencies [6071ef5]
+- Updated dependencies [17bc937]
+- Updated dependencies [72df2c0]
+- Updated dependencies [19d58ac]
+- Updated dependencies [a91b783]
+- Updated dependencies [bd02d06]
+- Updated dependencies [5d2d8a9]
+- Updated dependencies [268439c]
+- Updated dependencies [95c608b]
+- Updated dependencies [c449ef7]
+- Updated dependencies [60f8114]
+- Updated dependencies [e4cedbf]
+- Updated dependencies [5514596]
+- Updated dependencies [6cd5781]
+- Updated dependencies [0fc492f]
+- Updated dependencies [e0aa88f]
+- Updated dependencies [021af92]
+- Updated dependencies [c5e3798]
+- Updated dependencies [0ac7524]
+- Updated dependencies [21ba816]
+- Updated dependencies [0c6f41d]
+- Updated dependencies [01e60e2]
+- Updated dependencies [05d9f0a]
+- Updated dependencies [e07fd63]
+- Updated dependencies [f3e1083]
+- Updated dependencies [a8e75d7]
+- Updated dependencies [c0c7b0a]
+- Updated dependencies [e376e9c]
+- Updated dependencies [d23da50]
+- Updated dependencies [ff6b7a2]
+- Updated dependencies [b715bb9]
+- Updated dependencies [01e6c91]
+- Updated dependencies [186903f]
+- Updated dependencies [a1d81be]
+- Updated dependencies [dcee2e2]
+- Updated dependencies [0f36216]
+- Updated dependencies [bf6a08c]
+- Updated dependencies [f7769b8]
+- Updated dependencies [8d5c70b]
+- Updated dependencies [4785689]
+- Updated dependencies [6103988]
+- Updated dependencies [7b97cec]
+- Updated dependencies [7fd538d]
+- Updated dependencies [eaffd69]
+- Updated dependencies [5c40d3d]
+- Updated dependencies [6476cb7]
+- Updated dependencies [9972268]
+- Updated dependencies [dcb1c8b]
+- Updated dependencies [7876446]
+- Updated dependencies [251e29a]
+- Updated dependencies [0abcc93]
+- Updated dependencies [7bee975]
+- Updated dependencies [b2d8b19]
+- Updated dependencies [cd29b8f]
+- Updated dependencies [7cea82e]
+- Updated dependencies [ceb0a8e]
+- Updated dependencies [251e7e2]
+- Updated dependencies [3bfa716]
+- Updated dependencies [20a45da]
+- Updated dependencies [43af3f3]
+- Updated dependencies [4c7715f]
+- Updated dependencies [260b56e]
+- Updated dependencies [7336a0b]
+- Updated dependencies [5659d22]
+- Updated dependencies [b37a7a1]
+- Updated dependencies [b1fad65]
+- Updated dependencies [b3dccfc]
+- Updated dependencies [2c76370]
+- Updated dependencies [3c38d3d]
+- Updated dependencies [f7b4492]
+- Updated dependencies [29ccac8]
+- Updated dependencies [268439c]
+- Updated dependencies [5f48561]
+- Updated dependencies [792ab59]
+- Updated dependencies [b16c0b3]
+- Updated dependencies [50f05bd]
+- Updated dependencies [2f920ac]
+- Updated dependencies [9aa7f6f]
+- Updated dependencies [3c56a74]
+- Updated dependencies [89ab825]
+- Updated dependencies [1d68664]
+- Updated dependencies [6bd5ac2]
+- Updated dependencies [2788652]
+- Updated dependencies [cab24c8]
+- Updated dependencies [0f36216]
+- Updated dependencies [20c28fa]
+- Updated dependencies [c0c7b0a]
+- Updated dependencies [3daf6b0]
+- Updated dependencies [5c86dce]
+- Updated dependencies [4a8dc74]
+- Updated dependencies [5cdd861]
+- Updated dependencies [63bb30a]
+- Updated dependencies [dadfec8]
+- Updated dependencies [62d2c7c]
+- Updated dependencies [de9a974]
+- Updated dependencies [84ab767]
+- Updated dependencies [e182825]
+- Updated dependencies [5e219b7]
+- Updated dependencies [b26c05f]
+- Updated dependencies [883e44a]
+- Updated dependencies [f8b8ef4]
+- Updated dependencies [090daba]
+- Updated dependencies [080cf7a]
+- Updated dependencies [c3032e2]
+- Updated dependencies [0471882]
+- Updated dependencies [89ab825]
+- Updated dependencies [25ecd85]
+- Updated dependencies [81755d0]
+- Updated dependencies [cd197a5]
+- Updated dependencies [312ec01]
+- Updated dependencies [87a7a4d]
+- Updated dependencies [884a39d]
+- Updated dependencies [130ecc5]
+- Updated dependencies [593087a]
+- Updated dependencies [b2288b1]
+- Updated dependencies [e6213d6]
+- Updated dependencies [b2d21dd]
+- Updated dependencies [6cddad0]
+- Updated dependencies [4100cf5]
+- Updated dependencies [b50cc61]
+- Updated dependencies [01b6fbc]
+- Updated dependencies [8d77de0]
+- Updated dependencies [72428d0]
+- Updated dependencies [b89d322]
+- Updated dependencies [1d4551c]
+- Updated dependencies [5c86dce]
+- Updated dependencies [1b8b606]
+- Updated dependencies [daad2de]
+- Updated dependencies [b50cc61]
+- Updated dependencies [55eccf2]
+- Updated dependencies [83dd6f6]
+- Updated dependencies [0886ef3]
+  - @soldy-ui/core@0.2.0
+  - @soldy-ui/plugins@0.2.0
+  - @soldy-ui/setup@0.2.0
