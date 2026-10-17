@@ -79,11 +79,12 @@
 		}
 	}
 
-	// Дата вне `min`/`max` — рамка ошибки, как у варианта `negative`: ошибка в
-	// теме выглядит одинаково, задал её потребитель вариантом или посчитало
-	// ядро. Перекрывает и заданный вариант — атрибут сильнее модификатора.
+	// Дата вне `min`/`max` или невалидное поле формы `Field` — рамка ошибки,
+	// как у варианта `negative` (`input.field-invalid`): ошибка в теме
+	// выглядит одинаково, задал её потребитель вариантом или посчитал код.
+	// Перекрывает и заданный вариант — атрибут сильнее модификатора.
 	&[data-invalid='true'] {
-		@include input.input-variant('negative', $enabled: ":not([data-disabled='true'])");
+		@include input.field-invalid('date-input', $enabled: ":not([data-disabled='true'])");
 	}
 
 	@each $size, $_ in input.$sizes {

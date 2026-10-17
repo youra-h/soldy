@@ -1,42 +1,20 @@
 @use 'sass:map';
+@use '../../mixins/caption';
 @use '../../mixins/hover';
 
-// Шкала размеров — ступени утилит Tailwind.
+// Сторона контрола по размеру — ступени `--spacing`, шкала коробки CheckBox
+// (`check-box/_check-box.scss`): радио и чекбокс одного размера стоят в форме
+// рядом, и кольцо обязано совпасть с коробкой.
 //
-// Сторона контрола — шкала коробки CheckBox (`check-box/_check-box.scss`):
-// радио и чекбокс одного размера стоят в форме рядом, и кольцо обязано совпасть
-// с коробкой. Кегль подписи — шкала Button и Input. Зазор до подписи на
-// полступени шире зазора Button: там он отделяет иконку внутри кнопки, здесь —
-// самостоятельный контрол от текста.
-//
-// Кегль и зазор этой же шкалы берёт подпись `Label` (`label/_label.scss`):
-// радио со своим текстом и радио в подписи обязаны выглядеть одинаково.
+// Кегль текста радио и зазор до него — шкала подписи (`mixins/_caption.scss`),
+// общая с `Label` и `Field`: радио со своим текстом и радио в подписи обязаны
+// выглядеть одинаково.
 $sizes: (
-	'sm': (
-		'control': 4,
-		'text': 'text-sm',
-		'gap': 1.5,
-	),
-	'normal': (
-		'control': 5,
-		'text': null,
-		'gap': 2,
-	),
-	'lg': (
-		'control': 6,
-		'text': 'text-lg',
-		'gap': 2.5,
-	),
-	'xl': (
-		'control': 7,
-		'text': 'text-xl',
-		'gap': 3,
-	),
-	'2xl': (
-		'control': 8,
-		'text': 'text-2xl',
-		'gap': 3.5,
-	),
+	'sm': 4,
+	'normal': 5,
+	'lg': 6,
+	'xl': 7,
+	'2xl': 8,
 );
 
 // Размер по шкале `$sizes`.
@@ -45,15 +23,11 @@ $sizes: (
 // точка, толщина кольца у вида `ring` и выравнивание по первой строке подписи.
 // Одно число на размер вместо четырёх правил на каждый.
 @mixin radio-size($size) {
-	$scale: map.get($sizes, $size);
+	@include caption.text($size);
 
-	@if map.get($scale, 'text') {
-		@apply #{map.get($scale, 'text')};
-	}
+	gap: caption.space($size, 'gap');
 
-	@apply #{'gap-' + map.get($scale, 'gap')};
-
-	--so-radio-control-size: calc(var(--spacing) * #{map.get($scale, 'control')});
+	--so-radio-control-size: calc(var(--spacing) * #{map.get($sizes, $size)});
 }
 
 // Цвет варианта.
@@ -63,13 +37,26 @@ $sizes: (
 // вид решает только геометрию отметки, вариант — только её цвет, и матрицы
 // «вид × вариант» нет.
 @mixin radio-variant($this, $color: 'neutral', $ring: 300, $mark: 500, $bg-disabled: 50) {
+	@include radio-ring($this, $color, $ring);
+
+	> #{$this}__control {
+		color: var(--so-#{$color}-#{$mark});
+	}
+
+	&[data-disabled='true'] > #{$this}__control {
+		@apply #{'bg-so-' + $color + '-' + $bg-disabled};
+	}
+}
+
+// Кольцо — в покое и под наведением. Его одно красит и ошибка группы
+// (`data-invalid`): отметка выбранного остаётся цветом варианта.
+@mixin radio-ring($this, $color, $ring: 300) {
 	// Одна ветка на обе схемы — см. комментарий в button/_mixins.scss
 	$ring-hover: $ring + 100;
 
 	> #{$this}__control {
 		// Обычное объявление, не `@apply border-s-…` — почему, см. input/_mixins.scss
 		border-color: var(--so-#{$color}-#{$ring});
-		color: var(--so-#{$color}-#{$mark});
 	}
 
 	// Наведение — только там, где клик что-то сделает: выбранное радио
@@ -79,7 +66,8 @@ $sizes: (
 	//
 	// - `:hover` корня — своя подпись радио;
 	// - контекст из `hover.$hovered` — `Label` в любом браузере: наведение на
-	//   подпись полю отдают не все;
+	//   подпись полю отдают не все. Контекста подписи `Field` здесь нет: она
+	//   называет группу, и клик по ней радио не выбирает;
 	// - `:has(> input:hover)` — наведение любой подписи, которое браузер полю
 	//   отдаёт (так делает Firefox), в том числе обычного `label` потребителя.
 	&:is(#{hover.$hovered}, :has(> #{$this}__input:hover)):not(
@@ -88,9 +76,5 @@ $sizes: (
 		)
 		> #{$this}__control {
 		border-color: var(--so-#{$color}-#{$ring-hover});
-	}
-
-	&[data-disabled='true'] > #{$this}__control {
-		@apply #{'bg-so-' + $color + '-' + $bg-disabled};
 	}
 }

@@ -7,10 +7,9 @@ $variants: 'accent', 'positive', 'negative', 'caution';
 // Цвет варианта у вида по умолчанию (`outlined`): рамка, отметка и фон
 // выключенной коробки. Отметку этим цветом рисует и `plain`.
 @mixin checkbox-variant($this, $color: 'neutral', $border: 300, $mark: 500, $bg-disabled: 50) {
-	#{$this}__container {
-		// Обычное объявление, не `@apply border-s-…` — почему, см. input/_mixins.scss
-		border-color: var(--so-#{$color}-#{$border});
+	@include checkbox-frame($this, $color, $border);
 
+	#{$this}__container {
 		$svg-fill: $mark;
 
 		svg {
@@ -18,19 +17,28 @@ $variants: 'accent', 'positive', 'negative', 'caution';
 		}
 	}
 
-	input {
-		// Одна ветка на обе схемы — см. комментарий в button/_mixins.scss
-		$border-hover: $border + 100;
+	input:disabled + #{$this}__container {
+		@apply #{'bg-so-' + $color + '-' + $bg-disabled};
+	}
+}
 
-		// Наведено — курсор на коробке или на подписи `Label` вокруг неё.
-		// Выключенную и readonly-коробку клик не переключает — их не красим
-		&:is(#{hover.$hovered}):not(:disabled, #{hover.readonly($this)}) + #{$this}__container {
-			border-color: var(--so-#{$color}-#{$border-hover});
-		}
+// Рамка коробки: в покое и под наведением. Её одну красит и ошибка
+// (`data-invalid`): отметка остаётся цветом варианта.
+@mixin checkbox-frame($this, $color, $border: 300) {
+	// Одна ветка на обе схемы — см. комментарий в button/_mixins.scss
+	$border-hover: $border + 100;
 
-		&:disabled + #{$this}__container {
-			@apply #{'bg-so-' + $color + '-' + $bg-disabled};
-		}
+	#{$this}__container {
+		// Обычное объявление, не `@apply border-s-…` — почему, см. input/_mixins.scss
+		border-color: var(--so-#{$color}-#{$border});
+	}
+
+	// Наведено — курсор на коробке, на подписи `Label` вокруг неё или на
+	// подписи `Field`. Выключенную и readonly-коробку клик не переключает — их
+	// не красим
+	input:is(#{hover.$hovered-field}):not(:disabled, #{hover.readonly($this)})
+		+ #{$this}__container {
+		border-color: var(--so-#{$color}-#{$border-hover});
 	}
 }
 
@@ -77,7 +85,7 @@ $variants: 'accent', 'positive', 'negative', 'caution';
 	}
 
 	#{$on}
-		input:is(#{hover.$hovered}):not(:disabled, #{hover.readonly($this)})
+		input:is(#{hover.$hovered-field}):not(:disabled, #{hover.readonly($this)})
 		+ #{$this}__container {
 		border-color: var(--so-#{$color}-#{$fill-hover});
 		@apply #{'bg-so-' + $color + '-' + $fill-hover};
