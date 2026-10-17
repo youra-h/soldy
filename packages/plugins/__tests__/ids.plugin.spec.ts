@@ -17,6 +17,8 @@ import {
 	TDatePicker,
 	TDialog,
 	TDrawer,
+	TMenu,
+	TMenuGroup,
 	TPopover,
 	TRadioGroup,
 	TRadioGroupCollectionFacade,
@@ -37,6 +39,8 @@ import {
 	TDatePickerIdsPlugin,
 	TDialogIdsPlugin,
 	TDismissPlugin,
+	TMenuGroupIdsPlugin,
+	TMenuIdsPlugin,
 	TModalIdsPlugin,
 	TPluginBundle,
 	TPopoverIdsPlugin,
@@ -82,6 +86,46 @@ describe('оверлеи', () => {
 
 		expect(popover.aria.get('id')).toBe('m1-panel')
 		expect(popover.triggerAria.get('aria-controls')).toBe('m1-panel')
+	})
+
+	it('Menu: триггер и панель ссылаются друг на друга — имя меню от кнопки', () => {
+		const menu = new TMenu()
+
+		new TPluginBundle(menu, 'm1').use(TMenuIdsPlugin)
+
+		expect(menu.triggerAria.toObject()).toEqual({
+			'aria-haspopup': 'menu',
+			'aria-expanded': 'false',
+			id: 'm1-trigger',
+			'aria-controls': 'm1-panel',
+		})
+		expect(menu.aria.get('id')).toBe('m1-panel')
+		expect(menu.aria.get('aria-labelledby')).toBe('m1-trigger')
+	})
+
+	it('Menu.Group: имя группы — подпись, пока она не пуста', () => {
+		const group = new TMenuGroup({ label: 'Вид' })
+
+		new TPluginBundle(group, 'm1').use(TMenuGroupIdsPlugin)
+
+		expect(group.labelAria.toObject()).toEqual({ id: 'm1-label' })
+		expect(group.aria.get('aria-labelledby')).toBe('m1-label')
+
+		group.label = ''
+
+		expect(group.aria.has('aria-labelledby')).toBe(false)
+
+		group.label = 'Сортировка'
+
+		expect(group.aria.get('aria-labelledby')).toBe('m1-label')
+	})
+
+	it('Menu.Group: без подписи ссылки нет с первой отрисовки', () => {
+		const group = new TMenuGroup()
+
+		new TPluginBundle(group, 'm1').use(TMenuGroupIdsPlugin)
+
+		expect(group.aria.has('aria-labelledby')).toBe(false)
 	})
 
 	it('Tooltip: ссылка триггера по режиму, ровно одна', () => {

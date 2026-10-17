@@ -1,6 +1,6 @@
 import type { ISelect } from '@soldy-ui/core'
 import { TSelectKeyboardStrategy } from './base.strategy'
-import { isPrintableKey } from './is-printable'
+import { isPrintableKey } from '../../../../utils'
 import type { ISelectKeyboardHost } from './types'
 
 /**

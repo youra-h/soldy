@@ -52,6 +52,11 @@ import {
 	ListBox,
 	ListBoxItem,
 	LocaleProvider,
+	Menu,
+	MenuCheckboxItem,
+	MenuGroup,
+	MenuItem,
+	MenuSeparator,
 	Pagination,
 	Popover,
 	ProgressLinear,
@@ -231,6 +236,32 @@ const ROOTS: ReadonlyArray<readonly [string, (props: TProbeProps) => VNode, stri
 		'.so-table__viewport',
 		'table.so-table',
 	],
+	// Корень меню — обёртка триггера, а не его телепортированная панель
+	['Menu', (props) => h(Menu, props), '.so-menu', '.so-menu'],
+	[
+		'Menu.Item',
+		(props) => h(Menu, null, () => h(MenuItem, { value: 'a', text: 'A', ...props })),
+		'.so-menu-item',
+		'.so-menu-item',
+	],
+	[
+		'Menu.CheckboxItem',
+		(props) => h(Menu, null, () => h(MenuCheckboxItem, { value: 'a', text: 'A', ...props })),
+		'.so-menu-item',
+		'.so-menu-item',
+	],
+	[
+		'Menu.Group',
+		(props) => h(Menu, null, () => h(MenuGroup, { label: 'Вид', ...props })),
+		'.so-menu-group',
+		'.so-menu-group',
+	],
+	[
+		'Menu.Separator',
+		(props) => h(Menu, null, () => h(MenuSeparator, props)),
+		'.so-menu-separator',
+		'.so-menu-separator',
+	],
 ]
 
 /** У всех, кроме таблицы, `$el` — узел, привязанный к `TElementPlugin`. */
@@ -248,6 +279,8 @@ const ITEM_ROWS: Readonly<Record<string, string>> = {
 	'ListBox.Item': '.so-button',
 	'Select.Item': '.so-button',
 	'Tags.Item': '.so-button',
+	'Menu.Item': '.so-button',
+	'Menu.CheckboxItem': '.so-button',
 }
 
 const ITEM_ROOTS = ROOTS.filter(([name]) => name in ITEM_ROWS)

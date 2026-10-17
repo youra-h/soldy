@@ -31,6 +31,8 @@ import {
 	DatePickerDescriptor,
 	ListBoxDescriptor,
 	ListBoxItemDescriptor,
+	MenuDescriptor,
+	MenuItemDescriptor,
 	PaginationDescriptor,
 	PaginationItemDescriptor,
 	RadioGroupDescriptor,
@@ -53,6 +55,9 @@ import type { IComponentDescriptor } from '../protected/define'
 const DESCRIPTORS: Readonly<Record<string, () => IComponentDescriptor>> = {
 	ListBox: ListBoxDescriptor,
 	'ListBox.Item': ListBoxItemDescriptor,
+	Menu: MenuDescriptor,
+	// Из данных меню рисует только действия: флажок ставят разметкой
+	'Menu.Item': MenuItemDescriptor,
 	Select: SelectDescriptor,
 	'Select.Item': SelectItemDescriptor,
 	Tabs: TabsDescriptor,
@@ -95,6 +100,10 @@ const RELAYS: readonly TRelay[] = [
 	['ListBox', 'item-trailing', 'ListBox.Item', 'trailing', 'item'],
 	['ListBox', 'item-indicator-icon', 'ListBox.Item', 'indicator-icon', 'item'],
 
+	['Menu', 'item-leading', 'Menu.Item', 'leading', 'item'],
+	['Menu', 'item', 'Menu.Item', 'default', 'item'],
+	['Menu', 'item-trailing', 'Menu.Item', 'trailing', 'item'],
+
 	['Select', 'item-leading', 'Select.Item', 'leading', 'item'],
 	['Select', 'item', 'Select.Item', 'default', 'item'],
 	['Select', 'item-trailing', 'Select.Item', 'trailing', 'item'],
@@ -136,6 +145,7 @@ const RELAYS: readonly TRelay[] = [
 /** Элементы коллекций: каждый их слот обязан стоять источником в `RELAYS`. */
 const ITEMS = [
 	'ListBox.Item',
+	'Menu.Item',
 	'Select.Item',
 	'Tabs.Item',
 	'Tags.Item',

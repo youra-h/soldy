@@ -33,6 +33,7 @@ import {
 	Label,
 	ListBox,
 	LocaleProvider,
+	Menu,
 	Pagination,
 	Popover,
 	ProgressLinear,
@@ -223,6 +224,34 @@ const dragAndDrop = new TDragAndDrop()
 	<!-- @vue-expect-error — локаль объектом (`ruRU`), а не тегом -->
 	<LocaleProvider locale="ru-RU" />
 	<LocaleProvider :locale="ruRU" />
+
+	<!-- @vue-expect-error — стороны `left` у меню нет: сторона и выравнивание -->
+	<Menu placement="left" />
+	<Menu placement="bottom-end" />
+
+	<!-- @vue-expect-error — флаг, а не строка -->
+	<Menu :open="'yes'" />
+	<Menu open />
+
+	<!-- @vue-expect-error — текст пункта строкой -->
+	<Menu.Item :text="42" />
+	<Menu.Item text="Изменить" />
+
+	<!-- @vue-expect-error — вариант пункта — имя темы, а `rainbow` она не объявила -->
+	<Menu.Item variant="rainbow" />
+	<Menu.Item variant="brand" />
+
+	<!-- @vue-expect-error — отметка флажка — флаг, а не строка -->
+	<Menu.CheckboxItem :selected="'yes'" />
+	<Menu.CheckboxItem selected />
+
+	<!-- @vue-expect-error — подпись группы строкой -->
+	<Menu.Group :label="42" />
+	<Menu.Group label="Вид" />
+
+	<!-- @vue-expect-error — направления `up` нет -->
+	<Menu.Separator direction="up" />
+	<Menu.Separator direction="rtl" />
 
 	<!-- @vue-expect-error — число элементов числом, а не строкой -->
 	<Pagination total="100" />
