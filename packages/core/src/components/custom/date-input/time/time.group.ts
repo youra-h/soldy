@@ -125,7 +125,10 @@ function createGroup(
 			limits: () => DAY_PERIODS,
 			step: wrap,
 			text: (shown) => periods[shown] ?? '',
-			enter: (_parts, _typed, key) => enterPeriod(key, periods, lang),
+			// Букв период не копит: выбранный пишется сразу, и набранного без
+			// числа у него не бывает
+			typedText: (typed) => typed,
+			enter: (parts, _typed, key) => enterPeriod(key, periods, lang, parts.dayPeriod),
 			erase: () => ({ shown: undefined, typed: '' }),
 			settle: hourOfPeriod,
 		},
@@ -281,12 +284,14 @@ function hourOfPeriod(parts: TDateInputParts): TDateInputParts {
 /**
  * Буква в период суток: имя периода начинается с неё, регистр не важен. Не
  * начинается ни одно — знак не периода. Начинаются оба (`ko-KR` — «오전» и
- * «오후») — период не меняется. Выбрали — дописывать нечего, фокус дальше.
+ * «오후») — период остаётся выбранным прежде (`current`): знак без числа снял
+ * бы его. Выбрали — дописывать нечего, фокус дальше.
  */
 function enterPeriod(
 	key: string,
 	periods: readonly [string, string],
 	lang: string,
+	current: number | undefined,
 ): TPartEntry | undefined {
 	if (key === '') return undefined
 
@@ -296,7 +301,7 @@ function enterPeriod(
 	)
 
 	if (found.length === 0) return undefined
-	if (found.length > 1) return { shown: undefined, typed: '', advance: false }
+	if (found.length > 1) return { shown: current, typed: '', advance: false }
 
 	return { shown: found[0], typed: '', advance: true }
 }

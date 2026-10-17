@@ -14,6 +14,7 @@ import {
 import { fieldFormat } from './format'
 import type { IDateFieldFormat } from './format'
 import {
+	emptyPart,
 	emptyParts,
 	enterKey,
 	erasePart,
@@ -77,7 +78,12 @@ const SEGMENT_ROLE = 'spinbutton'
  * **Фокус части** ведёт ядро (`focusedSegment`, как `focusedDate` у
  * календаря): плагин сообщает, куда пришёл DOM-фокус, а ядро переводит его,
  * когда в часть больше нечего дописать. Набранные цифры живут, пока фокус на
- * части.
+ * части, и, пока у неё нет числа, видны в ней: ноль, с которого часть не
+ * начинается (день, месяц, год, час `h12` и `h24`), снимает её число до
+ * следующей цифры и показан нулями («00»). Одинокий ноль — ошибка
+ * пользователя: ни `invalid`, ни дописанного числа, а ушёл фокус — часть
+ * пуста. Набранное пишется одним путём с частями, и его смена в тексте части
+ * — тоже `change:segments`.
  *
  * Клавиш, буфера обмена и выделения ядро не знает: их переводят в команды
  * плагины. Выделение всей даты — выделение браузера, а не состояние ядра: оно
@@ -111,7 +117,7 @@ export class TDateInput
 	static defaultValues: typeof TClearable.defaultValues &
 		TDefaultValues<
 			IDateInputProps,
-			'locale' | 'kind' | 'timePrecision',
+			'locale' | 'kind' | 'timePrecision' | 'validate',
 			'min' | 'max' | 'unavailable'
 		> = {
 		...TClearable.defaultValues,
@@ -123,6 +129,8 @@ export class TDateInput
 		locale: DEFAULT_LOCALE,
 		kind: 'date',
 		timePrecision: 'minute',
+		// Верна ли дата, по умолчанию решает приложение
+		validate: false,
 	}
 
 	protected _min: TDateInputBound
@@ -131,9 +139,13 @@ export class TDateInput
 	protected _locale: string
 	protected _kind: TDateInputKind
 	protected _timePrecision: TTimePrecision
+	protected _validate: boolean
 	protected _parts: TDateInputParts
 	protected _focusedSegment: TDateFieldPart | undefined = undefined
-	/** Цифры, набранные в часть под фокусом: к ним допишется следующая */
+	/**
+	 * Цифры, набранные в часть под фокусом: к ним допишется следующая. Пишутся
+	 * только вместе с частями — `_write` и `_valueChanged`
+	 */
 	protected _typed = ''
 	/** Своя правка, которую сейчас пишет сеттер `value` */
 	private _pending: TDateInputEdit | undefined = undefined
@@ -151,6 +163,7 @@ export class TDateInput
 		this._locale = props.locale ?? ctor.defaultValues.locale
 		this._kind = props.kind ?? ctor.defaultValues.kind
 		this._timePrecision = props.timePrecision ?? ctor.defaultValues.timePrecision
+		this._validate = props.validate ?? ctor.defaultValues.validate
 		this._parts = partsOfValue(this._value)
 
 		// Корень — группа частей: имя ей даёт `aria_label` или `aria_labelledBy`
@@ -264,6 +277,23 @@ export class TDateInput
 	}
 
 	/**
+	 * Проверка набора: число ниже хода части («00» у дня и месяца) не
+	 * записывается, и часть ждёт следующей цифры. Выключена — набранное
+	 * записывается как есть, и верна ли дата, решает приложение. Набранного не
+	 * меняет: действует со следующей цифры.
+	 */
+	get validate(): boolean {
+		return this._validate
+	}
+
+	set validate(value: boolean) {
+		if (this._validate === value) return
+
+		this._validate = value
+		this.events.emit('change:validate', value)
+	}
+
+	/**
 	 * Итог ошибки: своё — записанное полем формы `Field` или кодом, — или
 	 * собранное значение вне `min`/`max`, или его день недоступен. Значения нет
 	 * — своей проверке нечего проверять.
@@ -286,12 +316,13 @@ export class TDateInput
 
 	/**
 	 * Части и разделители в порядке формата локали — снимок на каждое чтение,
-	 * как сетки календаря. `invalid` считается раз на снимок, а не на часть:
+	 * как сетки календаря. Набранное в нём — только у части под фокусом: живёт
+	 * оно, пока фокус на ней. `invalid` считается раз на снимок, а не на часть:
 	 * функцию потребителя `unavailable` на каждую часть заново не зовут.
 	 */
 	get segments(): TDateInputSegment[] {
 		const format = this._format
-		const empty = emptyParts(this._parts, format)
+		const empty = emptyParts(this._parts, this._typed, format)
 		const invalid = this.invalid
 
 		return format.tokens.map((token, index) =>
@@ -351,8 +382,9 @@ export class TDateInput
 	focusSegment(part: TDateFieldPart | undefined): void {
 		if (this._focusedSegment === part) return
 
+		// Набранное — части под фокусом и уходит с ней: её нули сменяет подсказка
+		this._write(this._parts, '')
 		this._focusedSegment = part
-		this._typed = ''
 		this.events.emit('change:focusedSegment', part)
 	}
 
@@ -369,7 +401,7 @@ export class TDateInput
 
 		if (part === undefined) return false
 
-		const entry = enterKey(this._parts, this._typed, part, key)
+		const entry = enterKey(this._parts, this._typed, part, key, this._validate)
 
 		if (entry === undefined) return false
 		if (this._editable) this._enter(entry)
@@ -383,7 +415,13 @@ export class TDateInput
 
 		if (first === undefined) return false
 
-		const entry = enterKey(withoutParts(this._parts, parts, format), '', first, key)
+		const entry = enterKey(
+			withoutParts(this._parts, parts, format),
+			'',
+			first,
+			key,
+			this._validate,
+		)
 
 		if (entry === undefined) return false
 		if (!this._editable) return true
@@ -399,7 +437,6 @@ export class TDateInput
 
 		if (part === undefined || !this._editable) return
 
-		this._typed = ''
 		this._commit(stepPart(this._parts, part, count, nowOf(this._format)))
 	}
 
@@ -408,7 +445,6 @@ export class TDateInput
 
 		if (part === undefined || !this._editable) return
 
-		this._typed = ''
 		this._commit(partAtEdge(this._parts, part, edge))
 	}
 
@@ -417,20 +453,17 @@ export class TDateInput
 
 		if (part === undefined || !this._editable) return
 
-		const erased = erasePart(this._parts, part)
+		const erased = erasePart(this._parts, this._typed, part)
 
-		// Пустую часть стирать нечего: Backspace идёт дальше, к предыдущей
+		// Пустую часть — ни числа, ни набранного — стирать нечего: Backspace идёт
+		// дальше, к предыдущей
 		if (erased === undefined) {
 			this.shiftFocus(-1)
 
 			return
 		}
 
-		const typed = this._typed
-
-		this._typed = erased.typed
-
-		if (!this._commit(erased.parts)) this._typed = typed
+		this._commit(erased.parts, erased.typed)
 	}
 
 	clearSegment(): void {
@@ -438,14 +471,12 @@ export class TDateInput
 
 		if (part === undefined || !this._editable) return
 
-		this._typed = ''
 		this._commit(withPart(this._parts, part, undefined))
 	}
 
 	clearSegments(parts: readonly TDateFieldPart[]): void {
 		if (!this._editable) return
 
-		this._typed = ''
 		this._commit(withoutParts(this._parts, parts, this._format))
 	}
 
@@ -459,8 +490,6 @@ export class TDateInput
 		const value = parseFieldText(text, this._format)
 
 		if (value === undefined) return false
-
-		this._typed = ''
 
 		return this._commit({ ...this._parts, ...partsOfValue(value) })
 	}
@@ -493,17 +522,28 @@ export class TDateInput
 		return type === undefined ? undefined : fieldPartOf(type, this._format)
 	}
 
+	/**
+	 * Текст части под фокусом — с набранным: его меняет и набор, не меняющий
+	 * частей. Фокуса нет — `undefined`.
+	 */
+	protected get _focusedText(): string | undefined {
+		const part = this._focusedPart
+
+		return part === undefined ? undefined : textOf(this._parts, this._typed, part)
+	}
+
 	/** Править можно: поле не выключено и не только для чтения. */
 	protected get _editable(): boolean {
 		return !this.disabled && !this.readonly
 	}
 
 	/**
-	 * Значение сменилось — части за ним. Своя правка оставляет свои части, если
-	 * значение записалось как есть: из него те же части не собрать (у недописанной
-	 * даты значения нет вовсе, а время, ушедшее из значения у поля даты,
-	 * в частях остаётся). Запись снаружи и поправленная в `change:value:before`
-	 * правка берут части из значения, набранные цифры сбрасываются.
+	 * Значение сменилось — части за ним. Своя правка оставляет свои части и
+	 * набранное, если значение записалось как есть: из него те же части не
+	 * собрать (у недописанной даты значения нет вовсе, а время, ушедшее из
+	 * значения у поля даты, в частях остаётся). Запись снаружи и поправленная в
+	 * `change:value:before` правка берут части из значения, набранные цифры
+	 * сбрасываются.
 	 *
 	 * Ошибка — раньше событий значения: подписчик `change:value` застаёт
 	 * атрибуты ошибки уже по новому значению.
@@ -515,6 +555,7 @@ export class TDateInput
 
 		if (pending !== undefined && pending.value === this._value) {
 			this._parts = pending.parts
+			this._typed = pending.typed
 		} else {
 			this._parts = partsOfValue(this._value)
 			this._typed = ''
@@ -533,25 +574,26 @@ export class TDateInput
 	 * `change:value:before`.
 	 */
 	protected override _clearValue(): void {
-		this._typed = ''
 		this._commit({})
 	}
 
 	/**
-	 * Записать правку частей. Значение то же — сменились только части. Иначе
-	 * значение пишется сеттером: его можно поправить или отменить в
-	 * `change:value:before`. Возвращает, принята ли правка.
+	 * Записать правку: части и набранные цифры части под фокусом (`typed`;
+	 * правка не набором их сбрасывает) — одним путём. Значение то же — пишутся
+	 * только они (`_write`). Иначе значение пишется сеттером: его можно
+	 * поправить или отменить в `change:value:before`, а отменённая правка не
+	 * трогает ни частей, ни набранного. Возвращает, принята ли правка.
 	 */
-	protected _commit(next: TDateInputParts): boolean {
+	protected _commit(next: TDateInputParts, typed = ''): boolean {
 		const value = fieldValueOf(next, this._format)
 
 		if (value === this._value) {
-			this._setParts(next)
+			this._write(next, typed)
 
 			return true
 		}
 
-		const pending: TDateInputEdit = { parts: next, value }
+		const pending: TDateInputEdit = { parts: next, typed, value }
 
 		this._pending = pending
 		this.value = value
@@ -564,26 +606,24 @@ export class TDateInput
 		return accepted
 	}
 
-	protected _setParts(next: TDateInputParts): void {
-		if (sameParts(next, this._parts)) return
+	/**
+	 * Части и набранное без смены значения. `change:segments` — одно, если
+	 * сменились части или текст части под фокусом: набранный ноль меняет текст,
+	 * не меняя частей. Не сменилось ни то, ни другое — события нет.
+	 */
+	protected _write(next: TDateInputParts, typed: string): void {
+		const text = this._focusedText
+		const same = sameParts(next, this._parts)
 
 		this._parts = next
-		this.events.emit('change:segments')
+		this._typed = typed
+
+		if (!same || this._focusedText !== text) this.events.emit('change:segments')
 	}
 
 	/** Набранный знак — в части; дописать больше некуда — фокус на следующую. */
 	protected _enter(entry: TKeyEntry): void {
-		const previous = this._typed
-
-		this._typed = entry.typed
-
-		if (!this._commit(entry.parts)) {
-			this._typed = previous
-
-			return
-		}
-
-		if (entry.advance) this.shiftFocus(1)
+		if (this._commit(entry.parts, entry.typed) && entry.advance) this.shiftFocus(1)
 	}
 
 	/**
@@ -600,7 +640,7 @@ export class TDateInput
 	 * прочтение не меняет, не трогает.
 	 */
 	protected _formatChanged(before: TDateInputValue): void {
-		this._typed = ''
+		this._write(this._parts, '')
 
 		if (this._focusedSegment !== undefined && this._focusedPart === undefined) {
 			this.focusSegment(undefined)
@@ -624,6 +664,10 @@ export class TDateInput
 	/**
 	 * Часть — снимок для разметки: своё ядра и поверх — наборы части
 	 * (`segmentSets`). `invalid` — поля, посчитанный на весь снимок.
+	 *
+	 * Подсказка и `aria-valuetext` — по тексту: набранные нули — не подсказка,
+	 * а текст части. `aria-valuenow` — только у части с числом: нули числа не
+	 * дают.
 	 */
 	protected _segment(
 		part: TFieldPart,
@@ -632,9 +676,11 @@ export class TDateInput
 	): TDateInputPart {
 		const { type } = part
 		const { min, max } = part.rule.limits(this._parts)
+		// Набранное — части под фокусом: у остальных его нет
+		const typed = type === this._focusedSegment ? this._typed : ''
 		const shown = shownOf(this._parts, part)
-		const text = textOf(this._parts, part)
-		const empty = shown === undefined
+		const text = textOf(this._parts, typed, part)
+		const empty = emptyPart(this._parts, typed, part)
 		const sets = this._segmentSets.get(type)
 		// Значение — свойство счётчика: у роли, которую задал набор части
 		// (`textbox`), его нет, и значение там — сам текст части
@@ -650,7 +696,7 @@ export class TDateInput
 			aria: {
 				role: SEGMENT_ROLE,
 				'aria-label': format.names[type],
-				'aria-valuenow': counter && !empty ? String(shown) : null,
+				'aria-valuenow': counter && shown !== undefined ? String(shown) : null,
 				'aria-valuetext': counter && !empty ? text : null,
 				'aria-valuemin': counter ? String(min) : null,
 				'aria-valuemax': counter ? String(max) : null,

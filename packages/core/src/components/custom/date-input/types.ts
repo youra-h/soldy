@@ -83,11 +83,13 @@ export type TDateInputPart = {
 	key: TDateFieldPart
 	type: TDateFieldPart
 	/**
-	 * Набранное число цифрами локали, у периода суток — его имя (`PM`), у пустой
-	 * части — подсказка (`дд`, `––`)
+	 * Набранное число цифрами локали, у периода суток — его имя (`PM`). У части
+	 * без числа — набранные нули (`00`, у года — `0`, `00`, `000`): ноль, с
+	 * которого она не начинается, виден, пока фокус на ней. У пустой части — ни
+	 * числа, ни набранного — подсказка (`дд`, `––`)
 	 */
 	text: string
-	/** Часть пуста и показывает подсказку */
+	/** Часть пуста — ни числа, ни набранного — и показывает подсказку */
 	placeholder: boolean
 	/** Имя части на языке локали (`день`) — её `aria-label`, пока набор части не задал другое */
 	name: string
@@ -97,8 +99,9 @@ export type TDateInputPart = {
 	 */
 	numeric: boolean
 	/**
-	 * Набор части: `role="spinbutton"`, имя части, `aria-value*` (у пустой нет
-	 * `aria-valuenow`), `aria-invalid`, `aria-required`, `aria-readonly`,
+	 * Набор части: `role="spinbutton"`, имя части, `aria-value*` (у части без
+	 * числа нет `aria-valuenow`, у пустой — и `aria-valuetext`; набранные нули —
+	 * текст без числа), `aria-invalid`, `aria-required`, `aria-readonly`,
 	 * `aria-disabled` и остановка Tab — у каждой своя, у выключенного поля ни
 	 * одной. Поверх — набор части снаружи ядра (`segmentSets`): `id`, а на
 	 * сенсорных устройствах Apple — роль `textbox` и имя вместе с именем поля.
@@ -156,9 +159,14 @@ export type TDatePartLimits = {
 	readonly max: number
 }
 
-/** Своя правка значения: части, из которых оно собрано, и само значение. */
+/**
+ * Своя правка значения: части, из которых оно собрано, набранные цифры части
+ * под фокусом и само значение.
+ */
 export type TDateInputEdit = {
 	readonly parts: TDateInputParts
+	/** Набранные цифры части под фокусом: к ним допишется следующая */
+	readonly typed: string
 	readonly value: TDateInputValue
 }
 
@@ -175,10 +183,12 @@ export type TDateInputEvents = TClearableEvents<TDateInputValue> & {
 	'change:kind': (value: TDateInputKind) => void
 	/** change:timePrecision */
 	'change:timePrecision': (value: TTimePrecision) => void
+	/** change:validate */
+	'change:validate': (value: boolean) => void
 	/**
-	 * Части надо перечитать: набрали, стёрли, вставили, записали значение или
-	 * плагин сменил набор части (`segmentSets`). Без аргумента: событие значит
-	 * «перечитай `segments`»
+	 * Части надо перечитать: набрали, стёрли, вставили, записали значение, фокус
+	 * ушёл с части, где видны набранные нули, или плагин сменил набор части
+	 * (`segmentSets`). Без аргумента: событие значит «перечитай `segments`»
 	 */
 	'change:segments': () => void
 	/** Сменилась часть под фокусом — плагин переводит туда DOM-фокус */
@@ -215,6 +225,11 @@ export interface IDateInputProps extends IClearableProps<TDateInputValue> {
 	 * ничего не меняет
 	 */
 	timePrecision?: TTimePrecision
+	/**
+	 * Проверка набора: «00» у дня и месяца не записывается, часть ждёт
+	 * следующей цифры. По умолчанию выключена — верна ли дата, решает приложение
+	 */
+	validate?: boolean
 }
 
 export interface IDateInput extends IClearable<TDateInputValue, IDateInputProps, TDateInputEvents> {
@@ -230,6 +245,8 @@ export interface IDateInput extends IClearable<TDateInputValue, IDateInputProps,
 	kind: TDateInputKind
 	/** Точность времени: до минуты или до секунды */
 	timePrecision: TTimePrecision
+	/** Проверка набора: число ниже хода части не записывается */
+	validate: boolean
 	/**
 	 * Итог ошибки: записанное своё (ошибку задаёт поле формы `Field` или код)
 	 * или собранное значение вне `min`/`max`, или его день недоступен
@@ -254,10 +271,11 @@ export interface IDateInput extends IClearable<TDateInputValue, IDateInputProps,
 	/** Фокус на соседнюю часть в порядке формата: `1` — следующая, `-1` — предыдущая */
 	shiftFocus(count: number): void
 	/**
-	 * Знак в часть под фокусом: цифра — в число, у периода суток — буква, с
-	 * которой начинается имя периода (регистр не важен; с неё начинаются оба
-	 * имени — период не меняется). Знак части — `true`, даже если поле только
-	 * для чтения и править нечего; не её знак — `false`
+	 * Знак в часть под фокусом: цифра — в число (ноль, с которого часть не
+	 * начинается, снимает её число до следующей цифры и виден нулями), у периода
+	 * суток — буква, с которой начинается имя периода (регистр не важен; с неё
+	 * начинаются оба имени — период не меняется). Знак части — `true`, даже если
+	 * поле только для чтения и править нечего; не её знак — `false`
 	 */
 	typeKey(key: string): boolean
 	/**
@@ -276,7 +294,8 @@ export interface IDateInput extends IClearable<TDateInputValue, IDateInputProps,
 	moveSegmentToEdge(edge: TDateInputEdge): void
 	/**
 	 * Backspace: стереть последнюю цифру части под фокусом, период суток —
-	 * целиком; пустая — фокус на предыдущую
+	 * целиком, у части без числа — набранный ноль; пустая — ни числа, ни
+	 * набранного — фокус на предыдущую
 	 */
 	eraseDigit(): void
 	/** Delete: очистить часть под фокусом */

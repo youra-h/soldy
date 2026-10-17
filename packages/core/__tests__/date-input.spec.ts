@@ -296,22 +296,167 @@ describe('набор', () => {
 		expect(input.focusedSegment).toBe('year')
 	})
 
-	it('ноль первой цифрой значения не даёт: из «0» и «5» выходит 5', () => {
+	/**
+	 * День с нуля не начинается, и ноль числа не даёт — но виден: часть
+	 * показывает набранное, пока не придёт следующая цифра.
+	 */
+	it('ноль первой цифрой виден: «0» без числа, из «0» и «5» выходит 5', () => {
 		const input = field({ locale: 'ru-RU' }, 'day')
+		const segments = vi.fn()
 
+		input.events.on('change:segments', segments)
 		type(input, '0')
-		expect(part(input, 'day').placeholder).toBe(true)
+
+		expect(part(input, 'day')).toMatchObject({ text: '0', placeholder: false })
+		expect(part(input, 'day').dataset['data-placeholder']).toBe('false')
+		expect(part(input, 'day').aria['aria-valuenow']).toBeNull()
+		expect(part(input, 'day').aria['aria-valuetext']).toBe('0')
+		// Набрано — разделители уже текст даты, а не подсказка формата
+		expect(
+			input.segments
+				.filter((segment) => segment.type === 'literal')
+				.every(({ placeholder }) => !placeholder),
+		).toBe(true)
+		expect(input.value).toBeUndefined()
 		expect(input.focusedSegment).toBe('day')
+		expect(segments).toHaveBeenCalledTimes(1)
 
 		type(input, '5')
 		expect(part(input, 'day').text).toBe('05')
+		expect(part(input, 'day').aria['aria-valuenow']).toBe('5')
 		expect(input.focusedSegment).toBe('month')
+	})
+
+	it('ноль поверх числа начинает часть заново: значения нет до следующей цифры', () => {
+		const input = field({ locale: 'ru-RU', value: '2026-05-12' }, 'day')
+
+		type(input, '0')
+		expect(part(input, 'day').text).toBe('0')
+		expect(part(input, 'day').aria['aria-valuenow']).toBeNull()
+		expect(input.value).toBeUndefined()
+		expect(input.focusedSegment).toBe('day')
+
+		type(input, '5')
+		expect(input.value).toBe('2026-05-05')
+		expect(input.focusedSegment).toBe('month')
+	})
+
+	it('ноль, отменённый в change:value:before, — часть с прежним числом и без набранного', () => {
+		const input = field({ locale: 'ru-RU', value: '2026-05-12' }, 'day')
+		const segments = vi.fn()
+		let cancel = true
+
+		input.events.on('change:value:before', (e: TChangeEvent<string | undefined>) => {
+			if (cancel) e.preventDefault()
+		})
+		input.events.on('change:segments', segments)
+
+		type(input, '0')
+
+		expect(part(input, 'day').text).toBe('12')
+		expect(input.value).toBe('2026-05-12')
+		expect(segments).not.toHaveBeenCalled()
+
+		// Отменённый ноль не набран: «1» начинает день, а не дописывает «01»
+		cancel = false
+		type(input, '1')
+
+		expect(input.value).toBe('2026-05-01')
+		expect(input.focusedSegment).toBe('day')
+	})
+
+	/**
+	 * Без проверки «00» — число как есть: верна ли дата, решает приложение, и
+	 * набор идёт дальше, хоть одни нули.
+	 */
+	it('«00» без validate записывается, и фокус уходит дальше', () => {
+		const input = field({ locale: 'ru-RU' }, 'day')
+
+		type(input, '00')
+		expect(part(input, 'day').text).toBe('00')
+		expect(input.focusedSegment).toBe('month')
+
+		type(input, '00')
+		expect(part(input, 'month').text).toBe('00')
+		expect(input.focusedSegment).toBe('year')
+
+		type(input, '0000')
+		expect(part(input, 'year').text).toBe('0')
+		// Дня 00.00.0000 нет — значения нет, а ошибкой его помечает приложение
+		expect(input.value).toBeUndefined()
+		expect(input.invalid).toBe(false)
+	})
+
+	it('validate: «00» не записывается, часть ждёт цифры, лишний ноль не копится', () => {
+		const day = field({ locale: 'ru-RU', validate: true }, 'day')
+		const segments = vi.fn()
+
+		type(day, '00')
+		expect(part(day, 'day').text).toBe('00')
+		expect(part(day, 'day').aria['aria-valuenow']).toBeNull()
+		expect(day.focusedSegment).toBe('day')
+
+		day.events.on('change:segments', segments)
+		type(day, '0')
+		expect(part(day, 'day').text).toBe('00')
+		// Текст тот же — перечитывать нечего
+		expect(segments).not.toHaveBeenCalled()
+
+		type(day, '7')
+		expect(part(day, 'day').text).toBe('07')
+		expect(day.focusedSegment).toBe('month')
+
+		type(day, '01')
+		expect(day.focusedSegment).toBe('year')
+
+		const year = field({ locale: 'ru-RU', validate: true }, 'year')
+
+		type(year, '00000')
+		expect(part(year, 'year').text).toBe('0000')
+
+		type(year, '5')
+		expect(part(year, 'year').text).toBe('5')
+		expect(part(year, 'year').aria['aria-valuenow']).toBe('5')
+	})
+
+	it('validate включается на лету — со следующей цифры', () => {
+		const input = field({ locale: 'ru-RU' }, 'day')
+		const changed = vi.fn()
+
+		input.events.on('change:validate', changed)
+		input.validate = true
+		input.validate = true
+		expect(changed).toHaveBeenCalledTimes(1)
+
+		type(input, '00')
+		expect(input.focusedSegment).toBe('day')
+	})
+
+	it('ar-EG: набранный ноль — нулями локали', () => {
+		const input = field({ locale: 'ar-EG' }, 'day')
+		const zero = new Intl.NumberFormat('ar-EG').format(0)
+
+		type(input, '0')
+
+		expect(zero).not.toBe('0')
+		expect(part(input, 'day').text).toBe(zero)
+		expect(part(input, 'day').aria['aria-valuetext']).toBe(zero)
 	})
 
 	it('год — четыре цифры, с нулями впереди тоже', () => {
 		const input = field({ locale: 'ru-RU', value: '2026-05-12' }, 'year')
+		const texts: string[] = []
 
-		type(input, '0005')
+		// Год пишется как есть, а нули без числа — сколько набрано
+		for (const key of '000') {
+			type(input, key)
+			texts.push(part(input, 'year').text)
+		}
+
+		expect(texts).toEqual(['0', '00', '000'])
+		expect(input.value).toBeUndefined()
+
+		type(input, '5')
 		expect(input.value).toBe('0005-05-12')
 		expect(part(input, 'year').text).toBe('5')
 	})
@@ -499,6 +644,54 @@ describe('стирание', () => {
 
 		input.eraseDigit()
 		expect(input.focusedSegment).toBe('day')
+	})
+
+	it('Backspace стирает набранный ноль, а с опустевшей части уходит на предыдущую', () => {
+		const input = field({ locale: 'ru-RU' }, 'month')
+
+		type(input, '0')
+		input.eraseDigit()
+		expect(part(input, 'month')).toMatchObject({ text: 'мм', placeholder: true })
+		expect(input.focusedSegment).toBe('month')
+
+		input.eraseDigit()
+		expect(input.focusedSegment).toBe('day')
+	})
+
+	/**
+	 * Одинокий ноль — ошибка пользователя, и поле её не исправляет: ни
+	 * `invalid`, ни дописанного числа. Набранное живёт, пока фокус на части.
+	 */
+	it('одинокий ноль: уход с части, Delete и очистка оставляют её пустой', () => {
+		const leaves: Record<string, (input: TDateInput) => void> = {
+			focusSegment: (input) => input.focusSegment('year'),
+			shiftFocus: (input) => input.shiftFocus(1),
+			Delete: (input) => input.clearSegment(),
+			clear: (input) => input.clear(),
+		}
+
+		for (const [name, leave] of Object.entries(leaves)) {
+			const input = field({ locale: 'ru-RU' }, 'month')
+			const segments = vi.fn()
+
+			type(input, '0')
+			input.events.on('change:segments', segments)
+			leave(input)
+
+			expect(part(input, 'month'), name).toMatchObject({ text: 'мм', placeholder: true })
+			expect(segments, name).toHaveBeenCalledTimes(1)
+			expect(input.invalid, name).toBe(false)
+			expect(input.value, name).toBeUndefined()
+		}
+	})
+
+	it('↑/↓ по набранному нулю начинают часть как пустую', () => {
+		const input = field({ locale: 'ru-RU' }, 'day')
+
+		type(input, '0')
+		input.shiftSegment(1)
+
+		expect(part(input, 'day').text).toBe('26')
 	})
 
 	it('Delete очищает часть под фокусом, clearSegments — заданные', () => {
@@ -1258,7 +1451,7 @@ describe('время: набор', () => {
 		)
 	})
 
-	it('час и минута h23 начинаются с нуля, час h12 — нет', () => {
+	it('час и минута h23 начинаются с нуля, а ноль часа h12 — не число: «0» до цифры', () => {
 		const ru = field({ locale: 'ru-RU', kind: 'datetime', value: '2026-05-12T14:30' }, 'hour')
 
 		type(ru, '0')
@@ -1276,7 +1469,9 @@ describe('время: набор', () => {
 		const en = field({ locale: 'en-US', kind: 'datetime' }, 'hour')
 
 		type(en, '0')
-		expect(part(en, 'hour').placeholder).toBe(true)
+		expect(part(en, 'hour')).toMatchObject({ text: '0', placeholder: false })
+		expect(part(en, 'hour').aria['aria-valuenow']).toBeNull()
+		expect(en.focusedSegment).toBe('hour')
 
 		type(en, '9')
 		expect(part(en, 'hour').text).toBe('09')

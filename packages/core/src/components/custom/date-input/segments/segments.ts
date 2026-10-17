@@ -11,6 +11,10 @@ import type { TDateFieldPart, TDateInputEdge, TDateInputParts } from '../types'
  * части (`TPartRule`): о дате и времени механизм не знает, веток по типу части
  * в нём нет. Соседей части согласует её правило (`settle`) — внутри своей
  * группы: месяц прижимает день, период суток переносит час.
+ *
+ * Набранные цифры части (`typed`) — то, к чему допишется следующая. Пока числа
+ * у части нет, их видно вместо подсказки: ноль, с которого день не
+ * начинается, — «0».
  */
 
 /** Часть формата по типу; части нет в формате — `undefined`. */
@@ -41,9 +45,21 @@ export function withoutParts(
 		.reduce((next, part) => withPart(next, part, undefined), parts)
 }
 
-/** Пусты ли все части формата. */
-export function emptyParts(parts: TDateInputParts, format: IDateFieldFormat): boolean {
-	return format.parts.every((part) => parts[part.type] === undefined)
+/**
+ * Пусто ли поле: ни у одной части формата нет числа, и ничего не набрано —
+ * разделители тогда часть подсказки.
+ */
+export function emptyParts(
+	parts: TDateInputParts,
+	typed: string,
+	format: IDateFieldFormat,
+): boolean {
+	return typed === '' && format.parts.every((part) => parts[part.type] === undefined)
+}
+
+/** Пуста ли часть: ни числа, ни набранного (`typed`) — она показывает подсказку. */
+export function emptyPart(parts: TDateInputParts, typed: string, part: TFieldPart): boolean {
+	return parts[part.type] === undefined && typed === ''
 }
 
 /** Одинаковы ли части — все, и те, которых нет в формате. */
@@ -61,39 +77,53 @@ export function shownOf(parts: TDateInputParts, part: TFieldPart): number | unde
 	return value === undefined ? undefined : part.rule.shown(value)
 }
 
-/** Текст части: набранное по правилу части, у пустой — подсказка. */
-export function textOf(parts: TDateInputParts, part: TFieldPart): string {
+/**
+ * Текст части: есть число — по правилу части; числа нет — набранное
+ * (`typed`: нули, с которых часть не начинается); нет ничего — подсказка.
+ */
+export function textOf(parts: TDateInputParts, typed: string, part: TFieldPart): string {
 	const shown = shownOf(parts, part)
 
-	return shown === undefined ? part.rule.placeholder : part.rule.text(shown)
+	if (shown !== undefined) return part.rule.text(shown)
+	if (typed !== '') return part.rule.typedText(typed)
+
+	return part.rule.placeholder
 }
 
-/** Знак в часть. Знак не этой части — `undefined`. */
+/**
+ * Знак в часть: знак без числа снимает число части — ноль поверх «12»
+ * начинает её заново. Знак не этой части — `undefined`.
+ */
 export function enterKey(
 	parts: TDateInputParts,
 	typed: string,
 	part: TFieldPart,
 	key: string,
+	validate: boolean,
 ): TKeyEntry | undefined {
-	const entry = part.rule.enter(parts, typed, key)
+	const entry = part.rule.enter(parts, typed, key, validate)
 
 	if (entry === undefined) return undefined
 
-	return {
-		parts:
-			entry.shown === undefined
-				? parts
-				: withPart(parts, part, part.rule.stored(entry.shown, parts)),
-		typed: entry.typed,
-		advance: entry.advance,
-	}
+	const value = entry.shown === undefined ? undefined : part.rule.stored(entry.shown, parts)
+
+	return { parts: withPart(parts, part, value), typed: entry.typed, advance: entry.advance }
 }
 
-/** Backspace в части. Пустой части стирать нечего — `undefined`. */
-export function erasePart(parts: TDateInputParts, part: TFieldPart): TDigitErase | undefined {
+/**
+ * Backspace в части. У части без числа стирается набранный ноль; пустой —
+ * ни числа, ни набранного — стирать нечего: `undefined`.
+ */
+export function erasePart(
+	parts: TDateInputParts,
+	typed: string,
+	part: TFieldPart,
+): TDigitErase | undefined {
+	if (emptyPart(parts, typed, part)) return undefined
+
 	const shown = shownOf(parts, part)
 
-	if (shown === undefined) return undefined
+	if (shown === undefined) return { parts, typed: typed.slice(0, -1) }
 
 	const erased = part.rule.erase(shown)
 	const value = erased.shown === undefined ? undefined : part.rule.stored(erased.shown, parts)

@@ -253,6 +253,54 @@ describe('v-model', () => {
 	})
 })
 
+/**
+ * Ноль, с которого день не начинается, числа не даёт, но виден в части, пока
+ * фокус на ней. Ряд перечитывается по `change:segments` ядра, а не по смене
+ * фокуса: ушёл фокус с нулей — ядро само сообщает, что их сменила подсказка.
+ */
+describe('набранный ноль', () => {
+	it('клавиша «0» на дне — в части «0»; фокус ушёл на месяц — у дня снова подсказка', async () => {
+		await render(() => h(DateInput))
+
+		segment('day').focus()
+		await type('0')
+
+		expect(segment('day').textContent).toBe('0')
+		expect(segment('day').dataset.placeholder).toBe('false')
+		expect(segment('day').getAttribute('aria-valuetext')).toBe('0')
+		expect(segment('day').hasAttribute('aria-valuenow')).toBe(false)
+		expect(document.activeElement).toBe(segment('day'))
+
+		segment('month').focus()
+		await nextTick()
+
+		expect(segment('day').textContent).toBe('дд')
+		expect(segment('day').dataset.placeholder).toBe('true')
+	})
+
+	it('«00» на дне без validate — день 00, фокус уходит на месяц', async () => {
+		await render(() => h(DateInput))
+
+		segment('day').focus()
+		await type('0')
+		await type('0')
+
+		expect(segment('day').textContent).toBe('00')
+		expect(document.activeElement).toBe(segment('month'))
+	})
+
+	it('«00» на дне с validate — фокус стоит, часть ждёт цифры', async () => {
+		await render(() => h(DateInput, { validate: true }))
+
+		segment('day').focus()
+		await type('0')
+		await type('0')
+
+		expect(segment('day').textContent).toBe('00')
+		expect(document.activeElement).toBe(segment('day'))
+	})
+})
+
 describe('время', () => {
 	it('en-US: час, минута и период суток — в ряду в порядке формата, значение — в скрытом поле', async () => {
 		locale.value = enUS

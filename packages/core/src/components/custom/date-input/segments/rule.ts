@@ -16,21 +16,25 @@ export const AS_IS: Pick<TPartRule, 'shown' | 'stored' | 'settle'> = {
 
 /**
  * Правило числовой части: текст — число цифрами локали не короче `width`
- * цифр, ввод — цифрами.
+ * цифр, ввод — цифрами. Набранные нули без числа — цифрами локали как есть:
+ * «0» — «0», «00» — «00».
  */
 export function numberRule(
 	width: number,
 	digits: readonly string[],
-	rule: Omit<TPartRule, 'numeric' | 'text' | 'enter' | 'erase'>,
+	rule: Omit<TPartRule, 'numeric' | 'text' | 'typedText' | 'enter' | 'erase'>,
 ): TPartRule {
 	return {
 		...rule,
 		numeric: true,
 		text: (shown) => formatFieldNumber(shown, width, digits),
-		enter: (parts, typed, key) => {
+		typedText: (typed) => formatFieldNumber(Number(typed), typed.length, digits),
+		enter: (parts, typed, key, validate) => {
 			const digit = digitOf(key, digits)
 
-			return digit === undefined ? undefined : enterDigit(rule.limits(parts), typed, digit)
+			return digit === undefined
+				? undefined
+				: enterDigit(rule.limits(parts), typed, digit, validate)
 		},
 		erase: (shown) => eraseDigit(shown, width),
 	}
@@ -50,24 +54,34 @@ export function wrap(value: number, min: number, max: number): number {
 
 /**
  * Цифра в числовую часть с ходом `limits`. Цифры копятся, пока число в ходе
- * части, иначе часть начинается с новой цифры. Ноль первой цифрой значения не
- * даёт, если ноля нет в ходе части: из «0» и «5» выйдет 5, а минута и час
- * `h23` с нуля начинаются. Дописать больше некуда — следующая цифра вывела бы
- * за ход или цифр уже столько, сколько у края хода, — набранное сбрасывается,
- * и фокус уходит на следующую часть.
+ * части, иначе часть начинается с новой цифры. Дописать больше некуда —
+ * следующая цифра вывела бы за ход или цифр уже столько, сколько у края хода,
+ * — набранное сбрасывается, и фокус уходит на следующую часть.
+ *
+ * Число ниже хода (нули дня, месяца, года, часа `h12` и `h24`) — обычные
+ * цифры: пока дописать есть куда, числа у части нет, и она показывает
+ * набранное («0»). Дописать некуда — без проверки (`validate`) число
+ * записывается как есть и фокус уходит дальше: «00» у дня — день 0, верна ли
+ * дата, решает приложение. С проверкой часть стоит на набранном и ждёт цифры:
+ * из «00» и «5» выйдет 5, лишний ноль не копится.
  */
-function enterDigit({ min, max }: TDatePartLimits, typed: string, digit: number): TPartEntry {
+function enterDigit(
+	{ min, max }: TDatePartLimits,
+	typed: string,
+	digit: number,
+	validate: boolean,
+): TPartEntry {
 	const entered = `${typed}${digit}`
 	const number = Number(entered)
 	const value = number > max ? digit : number
-	const settable = value !== 0 || min === 0
 	const full = Number(`${number}0`) > max || entered.length >= String(max).length
 
-	return {
-		shown: settable ? value : undefined,
-		typed: full ? '' : entered,
-		advance: full && settable,
+	if (value < min && !full) return { shown: undefined, typed: entered, advance: false }
+	if (value < min && validate) {
+		return { shown: undefined, typed: entered.slice(-String(max).length), advance: false }
 	}
+
+	return { shown: value, typed: full ? '' : entered, advance: full }
 }
 
 /**
