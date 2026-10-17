@@ -442,6 +442,14 @@ const dragAndDrop = new TDragAndDrop()
 	<ToastsItem :alert="'yes'" />
 	<ToastsItem alert />
 
+	<!-- @vue-expect-error — вида `danger` у тоста нет: info, success, warning или error -->
+	<ToastsItem type="danger" />
+	<ToastsItem type="error" />
+
+	<!-- @vue-expect-error — ожидание — флаг, а не строка -->
+	<ToastsItem :loading="'yes'" />
+	<ToastsItem loading />
+
 	<!-- @vue-expect-error — стороны `left` у подсказки нет: сторона и выравнивание -->
 	<Tooltip placement="left" />
 	<Tooltip placement="top" />

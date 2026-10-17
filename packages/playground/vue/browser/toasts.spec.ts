@@ -22,8 +22,10 @@
  * колесом назад проявляется на своём месте, без въезда, а без движения новый
  * только проявляется.
  *
- * Вариант тоста — цвет плашки и заголовка: что он доходит до экрана, видно
- * только на вычисленном стиле.
+ * Вид сообщения — тон значка в начале строки, а плашка и заголовок у всех видов
+ * одни: что тон доходит до рисунка значка, видно только на вычисленном стиле.
+ * Пока тост ждёт, на месте значка бежит кольцо — по кругу глифа, и текст не
+ * сдвигается, когда кольцо сменилось значком.
  */
 
 import { describe, it, expect, beforeEach, afterEach, onTestFinished } from 'vitest'
@@ -73,6 +75,15 @@ const card = (item: HTMLElement): HTMLElement => {
 	const element = item.querySelector('.so-toasts-item__card')
 
 	if (!(element instanceof HTMLElement)) throw new Error('плашки нет')
+
+	return element
+}
+
+/** Часть тоста по классу; нет её — тест падает здесь. */
+const part = (item: HTMLElement, name: string): HTMLElement => {
+	const element = item.querySelector(`.so-toasts-item__${name}`)
+
+	if (!(element instanceof HTMLElement)) throw new Error(`${name}: части нет`)
 
 	return element
 }
@@ -287,16 +298,7 @@ describe('стопка', () => {
 })
 
 describe('части тоста', () => {
-	/** Часть тоста по классу; нет её — тест падает здесь. */
-	const part = (item: HTMLElement, name: string): HTMLElement => {
-		const element = item.querySelector(`.so-toasts-item__${name}`)
-
-		if (!(element instanceof HTMLElement)) throw new Error(`${name}: части нет`)
-
-		return element
-	}
-
-	it('пустые описание и своё содержимое места не занимают, значка без слота нет', async () => {
+	it('пустые описание и своё содержимое места не занимают; значок и крестик — по центру строки', async () => {
 		const { show, rest } = await mount()
 
 		await show('Сохранено')
@@ -308,14 +310,40 @@ describe('части тоста', () => {
 
 		expect(getComputedStyle(part(item, 'description')).display).toBe('none')
 		expect(getComputedStyle(part(item, 'content')).display).toBe('none')
-		expect(item.querySelector('.so-toasts-item__icon')).toBeNull()
-		// Текст и крестик — в одной строке: крестик по центру строки текста
+		// Значок, текст и крестик — в одной строке: значок перед текстом, крестик
+		// после, оба по центру строки текста
+		const icon = part(item, 'icon').getBoundingClientRect()
 		const text = part(item, 'text').getBoundingClientRect()
 		const close = part(item, 'close').getBoundingClientRect()
+		const middle = (text.top + text.bottom) / 2
 
-		expect(
-			Math.abs((close.top + close.bottom) / 2 - (text.top + text.bottom) / 2),
-		).toBeLessThan(EPSILON)
+		expect(icon.width).toBeGreaterThan(0)
+		expect(icon.right).toBeLessThanOrEqual(text.left + EPSILON)
+		expect(Math.abs((icon.top + icon.bottom) / 2 - middle)).toBeLessThan(EPSILON)
+		expect(Math.abs((close.top + close.bottom) / 2 - middle)).toBeLessThan(EPSILON)
+	})
+
+	it('у текста в несколько строк значок — по центру первой', async () => {
+		const { show, rest } = await mount()
+
+		await show({
+			text: 'Черновик сохранён, но письмо не ушло: адрес получателя не найден, проверьте его',
+			type: 'warning',
+		})
+		await rest()
+
+		const [item] = items()
+
+		if (!item) throw new Error('тоста нет')
+
+		const icon = part(item, 'icon').getBoundingClientRect()
+		const title = part(item, 'text')
+		const text = title.getBoundingClientRect()
+		const line = parseFloat(getComputedStyle(title).lineHeight)
+
+		// Текст и правда в несколько строк — иначе первая строка и есть весь текст
+		expect(text.height).toBeGreaterThan(line * 1.5)
+		expect(Math.abs((icon.top + icon.bottom) / 2 - (text.top + line / 2))).toBeLessThan(EPSILON)
 	})
 
 	it('описание — под текстом, тем же столбцом', async () => {
@@ -336,33 +364,79 @@ describe('части тоста', () => {
 	})
 })
 
-describe('вариант', () => {
-	/** Заголовок тоста; нет его — тест падает здесь. */
-	const title = (item: HTMLElement): HTMLElement => {
-		const element = item.querySelector('.so-toasts-item__text')
+describe('вид', () => {
+	/** Рисунок в коробке значка — `svg` иконки; нет его — тест падает здесь. */
+	const glyph = (item: HTMLElement): SVGElement => {
+		const element = part(item, 'icon').querySelector('svg')
 
-		if (!(element instanceof HTMLElement)) throw new Error('заголовка нет')
+		if (!(element instanceof SVGElement)) throw new Error('рисунка значка нет')
 
 		return element
 	}
 
-	it('цвет варианта доходит до экрана: плашка и заголовок — не нейтральные', async () => {
-		const { show, rest } = await mount()
+	it('плашка и заголовок у пяти видов одни, а тон значка у каждого свой и доходит до рисунка', async () => {
+		const { show, rest } = await mount({ max: 5 })
 
-		await show('Сохранено', { text: 'Нет сети', variant: 'negative' })
+		await show(
+			'Обычное',
+			{ text: 'Сведения', type: 'info' },
+			{ text: 'Готово', type: 'success' },
+			{ text: 'Внимание', type: 'warning' },
+			{ text: 'Ошибка', type: 'error' },
+		)
 		await rest()
 
-		// Новый — первым
-		const [negative, neutral] = items()
+		const shown = items()
+		const style = (element: Element) => getComputedStyle(element)
 
-		if (!negative || !neutral) throw new Error('тостов меньше двух')
+		expect(shown).toHaveLength(5)
+		// Под вид плашка не подкрашивается: поверхность, кромка и тень — одни
+		expect(new Set(shown.map((item) => style(card(item)).backgroundColor)).size).toBe(1)
+		expect(new Set(shown.map((item) => style(card(item)).boxShadow)).size).toBe(1)
+		expect(new Set(shown.map((item) => style(part(item, 'text')).color)).size).toBe(1)
+		// Вид говорит значок — тоном, своим у каждого из пяти
+		expect(new Set(shown.map((item) => style(part(item, 'icon')).color)).size).toBe(5)
 
-		expect(getComputedStyle(card(negative)).backgroundColor).not.toBe(
-			getComputedStyle(card(neutral)).backgroundColor,
-		)
-		expect(getComputedStyle(title(negative)).color).not.toBe(
-			getComputedStyle(title(neutral)).color,
-		)
+		for (const item of shown) {
+			expect(style(glyph(item)).fill).toBe(style(part(item, 'icon')).color)
+		}
+	})
+
+	it('кольцо ожидания — по кругу значка, и текст не сдвигается, когда кольцо сменилось значком', async () => {
+		const { show, rest } = await mount()
+		const [toast] = await show({ text: 'Сохраняем…', type: 'success', loading: true })
+
+		await rest()
+
+		const [item] = items()
+
+		if (!item || !toast) throw new Error('тоста нет')
+
+		const box = part(item, 'icon').getBoundingClientRect()
+		const spinner = part(item, 'icon').querySelector('.so-progress-spinner')
+
+		if (!(spinner instanceof HTMLElement)) throw new Error('кольца нет')
+
+		const ring = spinner.getBoundingClientRect()
+		const before = part(item, 'text').getBoundingClientRect()
+
+		// Круг значков Material — 800 из 960 единиц коробки, 5/6 её стороны
+		expect(ring.width).toBeCloseTo((box.width * 5) / 6, 0)
+		expect(ring.height).toBeCloseTo((box.height * 5) / 6, 0)
+		expect((ring.left + ring.right) / 2).toBeCloseTo((box.left + box.right) / 2, 0)
+		expect((ring.top + ring.bottom) / 2).toBeCloseTo((box.top + box.bottom) / 2, 0)
+
+		toast.loading = false
+		await nextTick()
+		await nextFrame()
+
+		const after = part(item, 'text').getBoundingClientRect()
+
+		expect(part(item, 'icon').querySelector('.so-progress-spinner')).toBeNull()
+		expect(glyph(item).getBoundingClientRect().width).toBeCloseTo(box.width, 0)
+		expect(part(item, 'icon').getBoundingClientRect().width).toBeCloseTo(box.width, 1)
+		expect(after.left).toBeCloseTo(before.left, 1)
+		expect(after.top).toBeCloseTo(before.top, 1)
 	})
 })
 

@@ -53,16 +53,19 @@ function swipeSideOf(placement: TToastsPlacement): TSwipeSide {
  * 4. **Подъём региона** — на каждый добавленный тост владелец встаёт в
  *    общем стеке выше всех слоёв: новое уведомление видно поверх окна,
  *    открытого раньше.
- * 5. **Длительность** — `durationOf`: своя у тоста, иначе владельца; смена
- *    итога — событие `item:duration`, по нему плагин таймера начинает отсчёт
- *    заново.
+ * 5. **Длительность** — `durationOf`: своя у тоста, иначе владельца, а у
+ *    тоста, который ждёт (`loading`), — `0`: «Сохраняем…» не должен истечь
+ *    раньше, чем кончится сохранение. Смена итога — своей длительности,
+ *    ожидания или длительности владельца — событие `item:duration`, по нему
+ *    плагин таймера начинает отсчёт заново: снятое ожидание — с полной
+ *    длительности.
  * 6. **Закрытие** — событие `item:close`: тост закрылся. Закрытие
  *    окончательное, поэтому событие приходит один раз. Удаляет закрытый тост
  *    из коллекции плагин владельца, когда доиграли переходы его узла.
  *
  * Item-адаптера у расширения нет, как у `filter`: всё, что тост знает о
  * себе, — его собственные свойства, а итог по тосту (`durationOf`) считается
- * от двух значений сразу.
+ * от свойств тоста и владельца сразу.
  */
 export class TToastsExtension<TOwner extends IToasts = IToasts>
 	extends TBaseExtension<IToastsItem, TToastsExtensionEvents, TToastsEngineOptions<TOwner>>
@@ -137,8 +140,14 @@ export class TToastsExtension<TOwner extends IToasts = IToasts>
 		return this._ctx.driver.valueOf().find((toast) => toast === command.item)
 	}
 
-	/** Длительность тоста, мс: своя, а если её нет — владельца. `0` — не закрывается сам. */
+	/**
+	 * Длительность тоста, мс: своя, а если её нет — владельца. `0` — не
+	 * закрывается сам: так у тоста, который ждёт (`loading`), — о конце работы
+	 * его известит снятое ожидание, а не таймер.
+	 */
 	durationOf(toast: IToastsItem): number {
+		if (toast.loading) return 0
+
 		return toast.duration ?? this._ctx.options.get('owner')?.duration ?? 0
 	}
 
@@ -158,21 +167,24 @@ export class TToastsExtension<TOwner extends IToasts = IToasts>
 		toast.swipeSide = swipeSideOf(owner.placement)
 	}
 
-	/** Закрытие и своя длительность тоста — в события расширения. */
+	/** Закрытие, своя длительность и ожидание тоста — в события расширения. */
 	private _watch(toast: IToastsItem): void {
 		if (this._watched.has(toast)) return
 
 		const onOpen = (open: boolean): void => {
 			if (!open) this.events.emit('item:close', toast)
 		}
+		// Своя длительность и ожидание — оба входа итога `durationOf`
 		const onDuration = (): void => this.events.emit('item:duration', toast)
 
 		toast.events.on('change:open', onOpen)
 		toast.events.on('change:duration', onDuration)
+		toast.events.on('change:loading', onDuration)
 
 		this._watched.set(toast, () => {
 			toast.events.off('change:open', onOpen)
 			toast.events.off('change:duration', onDuration)
+			toast.events.off('change:loading', onDuration)
 		})
 	}
 

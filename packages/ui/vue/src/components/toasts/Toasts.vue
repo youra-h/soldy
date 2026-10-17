@@ -51,14 +51,15 @@ export default { ...SetupToasts, inheritAttrs: false, components: { ToastsItem }
 
 					Слоты тоста пробрасываются целиком: `item-<слот>`, scope —
 					scope слота тоста плюс сам тост. Значок и иконка крестика
-					отдаются тосту, только когда заданы менеджеру: без слота у тоста
-					нет узла значка, а крестик рисует свою иконку. Текст и своё
-					содержимое пробрасываются всегда: пустой проброс тост заменяет
-					своим — текстом и `render`.
+					отдаются тосту, только когда заданы менеджеру, как слоты-иконки
+					элементов у остальных коллекций: без слота тост рисует свои —
+					значок вида и иконку крестика. Текст и своё содержимое
+					пробрасываются всегда. Пустой проброс тост заменяет своим —
+					значком вида, текстом и `render`.
 				-->
 				<ToastsItem v-for="item in shown" :key="item.uid" :ctrl="item">
-					<template v-if="$slots['item-icon']" #icon>
-						<slot name="item-icon" :item="item" />
+					<template v-if="$slots['item-icon']" #icon="{ type }">
+						<slot name="item-icon" :item="item" :type="type" />
 					</template>
 					<template #default="{ text }">
 						<slot name="item" :item="item" :text="text" />
