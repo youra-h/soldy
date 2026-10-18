@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="brand/soldy-banner-mini.jpg" alt="Soldy UI — Headless. Universal. Flexible." width="100%">
+</p>
+
 # Soldy UI
 
 **UI components with the logic written once: a framework-agnostic core and thin adapters that
