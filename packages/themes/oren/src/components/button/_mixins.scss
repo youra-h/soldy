@@ -273,6 +273,48 @@ $tone-steps: 300, 400, 500, 800;
 	--so-tone-filled-text: var(--color-white);
 }
 
+// Переменные цвета от текста места (`button-tones`) — нейтраль кнопки там, где
+// под ней насыщенная заливка со своим цветом текста: плашка тоста с видом
+// (`toasts/_toasts.scss`).
+//
+// Нейтраль кнопки — вуаль ступени 500 нейтрали и текст ступени 800, а на
+// насыщенной заливке ни то ни другое не работает: серый слой отходит от
+// заливки не в ту сторону и почти не виден, а тёмный текст на заливке
+// светлой схемы не читается. Сторону, в которую отходить, задаёт место: его
+// текст тема держит читаемым на его заливке. Поэтому всё здесь — цвет текста
+// места (`currentColor`, кнопка наследует его от места), а вуаль — из него же
+// (`veil.layer`), как дорожка индикатора в кнопке (`mixins/_indicator.scss`).
+// Плотности — те же, что у нейтрали: заливка `filled` — на шаг от того, на чём
+// кнопка стоит, состояния прибавляются к ней, у `plain` и `outlined` — вуаль
+// состояний поверх. Рамка `outlined` — тот же цвет вполсилы и сильнее под
+// наведением и фокусом, как ступени 300 и 400 — слабая граница и граница.
+//
+// `currentColor` в переменной вычисляется там, где её читают: в `color` кнопки
+// это цвет, унаследованный от места, в фоне и рамке — цвет самой кнопки, то
+// есть тот же. Вариант кнопки пишет свои переменные модификатором, на класс
+// сильнее, и место его не перекрывает: это выбор потребителя.
+@mixin button-text-colored-tones {
+	--so-tone-300: #{veil.layer(currentColor, 40%)};
+	--so-tone-400: #{veil.layer(currentColor, 70%)};
+	--so-tone-500: currentColor;
+	--so-tone-800: currentColor;
+	--so-tone-filled: #{veil.layer(currentColor, var(--so-component-fill))};
+	--so-tone-filled-hover: #{veil.layer(
+			currentColor,
+			veil.density(var(--so-component-state-hover), var(--so-component-fill))
+		)};
+	--so-tone-filled-active: #{veil.layer(
+			currentColor,
+			veil.density(var(--so-component-state-active), var(--so-component-fill))
+		)};
+	--so-tone-filled-both: #{veil.layer(
+			currentColor,
+			veil.density(var(--so-component-state-active-hover), var(--so-component-fill))
+		)};
+	--so-tone-filled-layer: none;
+	--so-tone-filled-text: currentColor;
+}
+
 // Выбор в режиме принудительных цветов (высокий контраст Windows) — хвост
 // состояний каждого вида. Фон браузер в этом режиме заменяет цветом
 // поверхности — заливку целиком, вуаль вместе с её прозрачностью, — и выбор
