@@ -195,10 +195,20 @@
 	// с полем. Своей коробки у обёртки не было, область совпадала со значком: на
 	// `2xl` в поле 44px в неё надо было попасть 23px. Значок — по центру, и
 	// квадрат поворачивается вокруг своего центра, как значок раньше.
+	//
+	// На `sm` квадрат — 20px, меньше минимума цели, и цель добирает зона нажатия
+	// очистки (`input.field-button-zone`): нажатие по зоне достаётся обёртке, и
+	// плагин находит стрелку и по ней. Без `clearable` у начала стрелки вплотную
+	// стоит ввод, и зона заходит на него на 2px, с очисткой — сходится с её
+	// зоной встык. Зона — псевдоэлемент обёртки и стоит от неё, поэтому обёртка
+	// позиционирована: она `span`, а не Button, у которой `relative` уже есть.
+	// Поворот открытой панели зону не сдвигает: она симметрична.
 	&__arrow {
-		@apply inline-flex shrink-0 items-center justify-center;
+		@apply relative inline-flex shrink-0 items-center justify-center;
 		inline-size: var(--so-input-slot-row);
 		block-size: var(--so-input-slot-row);
+
+		@include input.field-button-zone;
 
 		@include motion.allowed {
 			@apply transition-transform duration-200;
