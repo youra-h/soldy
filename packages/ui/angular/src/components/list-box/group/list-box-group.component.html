@@ -1,0 +1,12 @@
+<!--
+	Корень — сам хост (`<div so-list-box-group>`), поэтому шаблон — подпись и
+	элементы. Подпись — пока `label` не пуст: без неё нет и узла, а ссылку на
+	него снимает плагин имени. `<ng-content>` — один раз и вне `@if`: иначе
+	содержимое терялось бы при смене ветки.
+-->
+@if (state()['label']) {
+	<div class="so-list-box-group__label" [so-attributes]="state()['labelAria']">
+		{{ state()['label'] }}
+	</div>
+}
+<ng-content />

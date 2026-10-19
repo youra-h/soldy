@@ -799,6 +799,122 @@ describe('отметка выбранного и слоты', () => {
 	})
 })
 
+/**
+ * Группы из данных — как у Vue (`ui/vue/__tests__/list-groups.spec.ts`):
+ * секции нарисованного (`drawnSections`) — группа с подписью в
+ * `<div so-list-box-group>`, элементы без группы — последними, прямо в
+ * списке, между секциями — немой разделитель. Стрелки ходят тем же порядком,
+ * что элементы стоят на экране. Элементы в группе — из шаблона списка, и
+ * слой лифта списка они видят и внутри группы.
+ */
+describe('группы', () => {
+	/** В данных «Морковь» стоит между фруктами, у «Воды» группы нет. */
+	const MIXED = [
+		{ value: 'apple', text: 'Яблоко', _: { group: 'fruit' } },
+		{ value: 'carrot', text: 'Морковь', _: { group: 'veg' } },
+		{ value: 'water', text: 'Вода' },
+		{ value: 'pear', text: 'Груша', _: { group: 'fruit' } },
+	]
+
+	@Component({
+		standalone: true,
+		imports: [TListBoxComponent],
+		template: `<so-list-box [items]="items" [groups]="groups()"></so-list-box>`,
+	})
+	class GroupsHost {
+		readonly items = MIXED
+		readonly groups = signal([
+			{ key: 'fruit', label: 'Фрукты' },
+			{ key: 'veg', label: 'Овощи' },
+		])
+	}
+
+	/** Части списка: группа — подписью и текстами элементов, разделитель — `—`. */
+	const parts = (fixture: ComponentFixture<unknown>) =>
+		[...listOf(fixture).children].map((node) => {
+			if (node.classList.contains('so-list-box-group')) {
+				return [
+					node.querySelector('.so-list-box-group__label')?.textContent?.trim() ?? '',
+					[...node.querySelectorAll('.so-list-box-item')].map((item) =>
+						item.textContent?.trim(),
+					),
+				]
+			}
+
+			if (node.classList.contains('so-list-box__separator')) return '—'
+
+			return node.textContent?.trim()
+		})
+
+	it('группа с подписью, разделитель — между секциями, без группы — последними', () => {
+		const fixture = mountHost(GroupsHost)
+
+		expect(parts(fixture)).toEqual([
+			['Фрукты', ['Яблоко', 'Груша']],
+			'—',
+			['Овощи', ['Морковь']],
+			'—',
+			'Вода',
+		])
+
+		for (const group of listOf(fixture).querySelectorAll('.so-list-box-group')) {
+			const label = find(group, '.so-list-box-group__label', HTMLElement)
+
+			expect(group.getAttribute('role')).toBe('group')
+			expect(group.getAttribute('aria-labelledby')).toBe(label.id)
+			expect(label.id).not.toBe('')
+			expect(label.getAttribute('role')).toBe('presentation')
+		}
+
+		expect(
+			[...listOf(fixture).querySelectorAll('.so-list-box__separator')].map((node) =>
+				node.getAttribute('aria-hidden'),
+			),
+		).toEqual(['true', 'true'])
+		// Элементы группы — в коллекции списка: выбор пишет им `aria-selected`
+		expect(selection()).toEqual(['false', 'false', 'false', 'false'])
+	})
+
+	it('стрелки ходят порядком экрана: ↓ после «Яблока» — «Груша»', async () => {
+		const fixture = mountHost(GroupsHost)
+		const list = listOf(fixture)
+
+		await nextFrame()
+
+		const highlighted = () =>
+			rows()
+				.find((row) => row.getAttribute('data-highlighted') === 'true')
+				?.textContent?.trim()
+
+		press(fixture, list, 'ArrowDown')
+		expect(highlighted()).toBe('Яблоко')
+
+		press(fixture, list, 'ArrowDown')
+		expect(highlighted()).toBe('Груша')
+
+		press(fixture, list, 'ArrowDown')
+		expect(highlighted()).toBe('Морковь')
+	})
+
+	it('смена подписи в groups перерисовывает подписи групп', () => {
+		const fixture = mountHost(GroupsHost)
+
+		fixture.componentInstance.groups.set([
+			{ key: 'fruit', label: 'Fruit' },
+			{ key: 'veg', label: 'Vegetables' },
+		])
+		fixture.detectChanges()
+
+		expect(parts(fixture)).toEqual([
+			['Fruit', ['Яблоко', 'Груша']],
+			'—',
+			['Vegetables', ['Морковь']],
+			'—',
+			'Вода',
+		])
+	})
+})
+
 describe('типы', () => {
 	it('входы фасада — по типам пропсов ядра', () => {
 		expectTypeOf<TListBoxComponent['value']>().toEqualTypeOf<TListBoxValue | undefined>()

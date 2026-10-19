@@ -6,8 +6,8 @@
  * списка (`div.so-list-box__list`) и подвал. Набор `aria` владельца — это сам
  * список (`role="listbox"`, `aria-multiselectable`, имя от `aria_label`), и на
  * узел списка его кладёт шаблон (`ownerAttributes`): в `listbox` ARIA пускает
- * только опции, а шапка и подвал — место полей и кнопок. Узел списка — и
- * остановка Tab: по элементам ходят стрелки его клавиатуры
+ * только опции и группы, а шапка и подвал — место полей и кнопок. Узел списка
+ * — и остановка Tab: по элементам ходят стрелки его клавиатуры
  * (`TListKeyboardPlugin`), и свои клавиши она берёт с этого узла. Поэтому
  * `tabindex="0"` шаблон ставит ему при построении, как статику разметки у Vue
  * и Angular. Узел списка шаблон отдаёт базе полем корня (`control`): на него
@@ -15,17 +15,24 @@
  * поэтому `tabindex` потребителя главнее статики шаблона.
  *
  * - `header` — перед узлом списка, `footer` — за ним, оба в корне.
- * - Элементы — слот `default`: элементы разметки `<div is="so-list-box-item">`.
- *   В коллекцию элемент входит сам, когда собирается: движок списка он
- *   находит лифтом вверх по документу.
- * - Без элементов разметки — то, что рисует коллекция (`drawn`): петля по
- *   ключу записи (`TKeyedLoop`) строит `<div is="so-list-box-item">` на каждую
- *   запись элемента, с инстансом данных и копиями образцов `item-*`, а на месте
- *   пропущенных окном — распорку `div.so-list-box__filler` под `aria-hidden`,
- *   высоту и место которой тема берёт из её стиля, а стиль — из записи. Одна
- *   петля на элементы и распорки: петли по видам переставляли бы элемент,
- *   когда он переходит из одной в другую. Без окна записи — все показанные
- *   элементы.
+ * - Элементы — слот `default`: элементы разметки `<div is="so-list-box-item">`
+ *   и группы `<div is="so-list-box-group">` с элементами в них. В коллекцию
+ *   элемент входит сам, когда собирается: движок списка он находит лифтом
+ *   вверх по документу, и сквозь группу тоже.
+ * - Без элементов разметки — то, что рисует коллекция, по секциям группировки
+ *   (`drawnSections`): петля по ключу (`TKeyedLoop`) строит строки списка —
+ *   группу с подписью (`<div is="so-list-box-group">`, её записи — своей
+ *   петлёй внутри неё), записи без группы прямо в списке и немой разделитель
+ *   (`div.so-list-box__separator` под `aria-hidden`, не `separator`: в
+ *   `listbox` ARIA пускает только опции и группы) между соседними секциями.
+ *   Секции идут порядком показанного, и стрелки ходят так же, как элементы
+ *   стоят на экране; без групп секция одна — ни группы, ни разделителя. Запись
+ *   элемента — `<div is="so-list-box-item">` с инстансом данных и копиями
+ *   образцов `item-*`, а на месте пропущенных окном (у списка без групп) —
+ *   распорка `div.so-list-box__filler` под `aria-hidden`, высоту и место
+ *   которой тема берёт из её стиля, а стиль — из записи. Одна петля на
+ *   элементы и распорки: петли по видам переставляли бы элемент, когда он
+ *   переходит из одной в другую. Без окна записи — все показанные элементы.
  * - `empty` — пока показанных элементов нет, на их месте, внутри списка, как
  *   у Select: пустой `listbox` для скринридера — тупик. Выводит его привязка
  *   (`showSlot`).
@@ -34,12 +41,18 @@
  *   слотов Web Components нет, и копию одного образца получает каждый элемент.
  *   Данные копия берёт у элемента (`el.ctrl`).
  *
- * Элементы и `empty` стоят в узле списка перед концом элементов — узлом
- * шаблона, пустым комментарием: петля держит элементы перед ним, и показанный
+ * Строки и `empty` стоят в узле списка перед концом элементов — узлом
+ * шаблона, пустым комментарием: петля держит строки перед ним, и показанный
  * снова `empty` встаёт туда же, за элементы.
  */
 
-import type { IListBox, IListBoxItem, TDrawnEntry, TListBoxCollectionFacade } from '@soldy-ui/core'
+import type {
+	IListBox,
+	IListBoxItem,
+	TDrawnEntry,
+	TDrawnSection,
+	TListBoxCollectionFacade,
+} from '@soldy-ui/core'
 import {
 	TKeyedLoop,
 	bind,
@@ -51,6 +64,7 @@ import {
 	type TItemSlots,
 } from '../../adapter'
 import { TListBoxItemElement, type TListBoxItemElementProps } from './item'
+import { TListBoxGroupElement, type TListBoxGroupElementProps } from './group'
 
 /**
  * Копии образцов в элементы из данных: слот списка → слот элемента, как
@@ -66,14 +80,44 @@ export const LIST_BOX_ITEM_SLOTS: TItemSlots = {
 /** Запись того, что рисует список: элемент на своём месте или распорка. */
 type TListBoxEntry = TDrawnEntry<IListBoxItem>
 
+/** Секция того, что рисует список: записи одной группы. */
+type TListBoxSection = TDrawnSection<IListBoxItem>
+
+/**
+ * Строка узла списка: разделитель перед секцией, группа с её записями или
+ * запись без группы. Ключи у видов не пересекаются: у записи — её ключ
+ * (число), у группы — ключ секции, у разделителя — свой от ключа секции.
+ */
+type TListBoxRow =
+	| { readonly kind: 'separator'; readonly key: string }
+	| { readonly kind: 'group'; readonly key: string; readonly section: TListBoxSection }
+	| TListBoxEntry
+
 /** Узел списка каждого ListBox — один на всё время жизни элемента. */
 const lists = new WeakMap<HTMLElement, HTMLElement>()
 
-/** Петля записей рисования — только у списка без элементов разметки. */
-const loops = new WeakMap<HTMLElement, TKeyedLoop<TListBoxEntry, number, HTMLElement>>()
+/** Петля строк — только у списка без элементов разметки. */
+const loops = new WeakMap<HTMLElement, TKeyedLoop<TListBoxRow, string | number, HTMLElement>>()
+
+/** Петля записей каждой группы из данных — внутри группы. */
+const groupLoops = new WeakMap<HTMLElement, TKeyedLoop<TListBoxEntry, number, HTMLElement>>()
 
 function isItem(node: Element): node is TListBoxItemElementProps {
 	return node instanceof TListBoxItemElement
+}
+
+function isGroup(node: Element): node is TListBoxGroupElementProps {
+	return node instanceof TListBoxGroupElement
+}
+
+/** Строки списка по секциям: разделитель — перед всеми, кроме первой. */
+function rowsOf(sections: ReadonlyArray<TListBoxSection>): TListBoxRow[] {
+	return sections.flatMap((section, index): TListBoxRow[] => [
+		...(index > 0 ? [{ kind: 'separator' as const, key: `separator:${section.key}` }] : []),
+		...(section.group
+			? [{ kind: 'group' as const, key: section.key, section }]
+			: section.entries),
+	])
 }
 
 /**
@@ -116,6 +160,71 @@ function updateDrawn(node: HTMLElement, entry: TListBoxEntry): void {
 	if (entry.kind === 'filler') styleFiller(node, entry.style)
 }
 
+/**
+ * Подпись и записи группы — по её секции. Записи — своей петлёй внутри
+ * группы: в конце её корня, за подписью. Новая группа ещё не в документе, и
+ * записи становятся её светом — база группы раскладывает их в слот по
+ * умолчанию, когда группа собирается.
+ */
+function fillGroup(
+	ctx: ITemplateContext<IListBox, TListBoxCollectionFacade>,
+	group: TListBoxGroupElementProps,
+	section: TListBoxSection,
+): void {
+	group.label = section.group?.label
+
+	let loop = groupLoops.get(group)
+
+	if (!loop) {
+		loop = new TKeyedLoop(group, null, (entry: TListBoxEntry) => entry.key)
+		groupLoops.set(group, loop)
+	}
+
+	loop.draw(section.entries, (entry) => drawnOf(ctx, entry), updateDrawn)
+}
+
+/** Узел строки: разделитель, группа с записями или запись без группы. */
+function rowOf(
+	ctx: ITemplateContext<IListBox, TListBoxCollectionFacade>,
+	row: TListBoxRow,
+): HTMLElement {
+	if (row.kind === 'separator') {
+		const separator = ctx.root.ownerDocument.createElement('div')
+
+		separator.className = 'so-list-box__separator'
+		separator.setAttribute('aria-hidden', 'true')
+
+		return separator
+	}
+
+	if (row.kind === 'group') {
+		const group = createItem(ctx.root.ownerDocument, 'div', 'so-list-box-group', isGroup)
+
+		fillGroup(ctx, group, row.section)
+
+		return group
+	}
+
+	return drawnOf(ctx, row)
+}
+
+/** Живой строке — её запись: группе — подпись и записи, распорке — стиль. */
+function updateRow(
+	ctx: ITemplateContext<IListBox, TListBoxCollectionFacade>,
+	node: HTMLElement,
+	row: TListBoxRow,
+): void {
+	if (row.kind === 'separator') return
+
+	if (row.kind === 'group') {
+		if (isGroup(node)) fillGroup(ctx, node, row.section)
+
+		return
+	}
+
+	updateDrawn(node, row)
+}
+
 export const listBoxTemplate: ITemplate<IListBox, TListBoxCollectionFacade> = {
 	create: (root, hasSlot) => {
 		const { ownerDocument } = root
@@ -129,7 +238,7 @@ export const listBoxTemplate: ITemplate<IListBox, TListBoxCollectionFacade> = {
 
 		// Элементы разметки — сами элементы списка: петли из данных при них нет
 		if (!hasSlot('default')) {
-			loops.set(root, new TKeyedLoop(list, end, (entry: TListBoxEntry) => entry.key))
+			loops.set(root, new TKeyedLoop(list, end, (row: TListBoxRow) => row.key))
 		}
 
 		lists.set(root, list)
@@ -156,10 +265,12 @@ export const listBoxTemplate: ITemplate<IListBox, TListBoxCollectionFacade> = {
 			if (list) ownerAttributes(list, state.aria)
 		}),
 
-		bind('drawn', (ctx) => {
-			loops
-				.get(ctx.root)
-				?.draw(ctx.state.drawn ?? [], (entry) => drawnOf(ctx, entry), updateDrawn)
+		bind('drawnSections', (ctx) => {
+			loops.get(ctx.root)?.draw(
+				rowsOf(ctx.state.drawnSections ?? []),
+				(row) => rowOf(ctx, row),
+				(node, row) => updateRow(ctx, node, row),
+			)
 		}),
 
 		bind('shown', ({ state, showSlot }) => {
