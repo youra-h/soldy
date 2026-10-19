@@ -46,9 +46,16 @@ const HIGHLIGHT = 'highlight'
  * подсвеченный элемент вошёл в документ (`onHighlightedMounted`): то, что есть
  * только у смонтированного элемента, — `id` и узел — появилось у него только
  * сейчас.
+ *
+ * Элемент списка — `TItem`. Навигации хватает `IControl`, а наследник
+ * называет элемент своего списка: этим типом подсвеченный ждёт расширение,
+ * через которое идёт выбор (`list.chooseItem` у ListBox, `select.chooseItem`
+ * у Select). `any` в констрейнте — карта событий элемента инвариантна, и
+ * точный `IControl` не принял бы элемент со своими событиями.
  */
 export abstract class TListNavigationPlugin<
 	TEvents extends TListNavigationPluginEvents = TListNavigationPluginEvents,
+	TItem extends IControl<any, any> = IControl,
 > extends TBasePlugin<any, TEvents> {
 	/** Узел нужен только под слушатель клавиш — отсюда и тип. */
 	protected _element: IDomEventTarget | null = null
@@ -160,13 +167,15 @@ export abstract class TListNavigationPlugin<
 	 * ним наследник узнаёт, с чьей строки пришла клавиша, а `move` — откуда
 	 * шагать.
 	 *
-	 * Тип — `IControl`, а не элемент конкретного списка: навигации нужны только
-	 * `uid`, `disabled`, `rendered` и `visible`. Элементы ListBox и опции Select
-	 * общего предка ниже `IControl` не имеют, и раньше здесь стоял `IListItem`
-	 * от несуществующего теперь компонента `TList`.
+	 * Тип — элемент списка наследника (`TItem`), а база опирается только на
+	 * `IControl`: навигации нужны `uid`, `disabled`, `rendered` и `visible`.
+	 * Элементы ListBox и опции Select общего предка ниже `IControl` не имеют, и
+	 * раньше здесь стоял `IListItem` от несуществующего теперь компонента
+	 * `TList`. Массив — только для чтения: это сама выборка коллекции, у
+	 * коллекции с памятью выборки — запомненная.
 	 */
-	protected shown(): IControl[] {
-		return (batchOf<IControl>(this._engine)?.shown ?? []) as IControl[]
+	protected shown(): readonly TItem[] {
+		return batchOf<TItem>(this._engine)?.shown ?? []
 	}
 
 	/**
@@ -174,7 +183,7 @@ export abstract class TListNavigationPlugin<
 	 * пропускаются у ListBox и у Select одинаково — правило не зависит ни от
 	 * роли элемента, ни от модели фокуса.
 	 */
-	protected items(): IControl[] {
+	protected items(): TItem[] {
 		return this.shown().filter(isNavigable)
 	}
 
@@ -188,11 +197,11 @@ export abstract class TListNavigationPlugin<
 		return this.items().findIndex((item) => item.uid === uid)
 	}
 
-	protected itemAt(index: number): IControl | null {
+	protected itemAt(index: number): TItem | null {
 		return this.items()[index] ?? null
 	}
 
-	protected itemByUid(uid: string | number): IControl | null {
+	protected itemByUid(uid: string | number): TItem | null {
 		return this.items().find((item) => item.uid === uid) ?? null
 	}
 
@@ -312,7 +321,7 @@ export abstract class TListNavigationPlugin<
 		const item =
 			uid === null ? undefined : this.shown().find((candidate) => candidate.uid === uid)
 
-		drawOf<IControl>(this._engine)?.pin(HIGHLIGHT, item)
+		drawOf<TItem>(this._engine)?.pin(HIGHLIGHT, item)
 	}
 
 	private emitHighlight(

@@ -94,7 +94,7 @@ export class TTableGridPlugin extends TBasePlugin<ITable, TTableGridPluginEvents
 		// Коллекция привязывается после install — ждём момент привязки. Движок
 		// живёт дольше монтирования, поэтому подписка через базу: её снимет
 		// `destroy()`
-		ctx.get(TCollectionBundlesPlugin)?.events.on('engine:bound', (engine) => {
+		ctx.get(TCollectionBundlesPlugin)?.events.on('engine:bound', (engine: TTableCollection) => {
 			this._engine = engine
 			this._listenTo(engine.extensions.grid.events, 'change:focusedCell', this._follow)
 		})
