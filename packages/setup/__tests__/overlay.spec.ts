@@ -12,6 +12,10 @@
  * элементом и пишет во Frame координаты. Здесь проверяется вторая половина —
  * что она кладёт во Frame, включая flip, shift и RTL поверх выбора
  * потребителя.
+ *
+ * Место привязка считает, только пока панель на экране, поэтому тесты
+ * координат собирают показанный Frame (`visible: true`), а когда она за якорем
+ * следит, проверяет «слежение по открытости».
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
@@ -105,11 +109,13 @@ afterEach(() => {
 	document.body.innerHTML = ''
 	// Подставленный `visualViewportOf`; у остальных тестов его и не было
 	Reflect.deleteProperty(window, 'visualViewport')
+	// Шпионы на окне иначе пережили бы тест, и следующий считал бы чужие вызовы
+	vi.restoreAllMocks()
 })
 
 describe('привязка к якорю', () => {
 	it('bottom-start ставит панель под якорь по его левому краю', () => {
-		const frame = new TFrame({ position: 'fixed' })
+		const frame = new TFrame({ position: 'fixed', visible: true })
 
 		anchorFor(frame).setAnchor(anchorAt({ left: 100, bottom: 250, right: 300, width: 200 }))
 
@@ -118,7 +124,7 @@ describe('привязка к якорю', () => {
 	})
 
 	it('bottom-end выравнивает правый край панели по правому краю якоря', async () => {
-		const frame = new TFrame({ position: 'fixed' })
+		const frame = new TFrame({ position: 'fixed', visible: true })
 		const panel = panelOf(120, 60)
 		const plugin = anchorFor(frame, panel.plugin)
 
@@ -131,7 +137,7 @@ describe('привязка к якорю', () => {
 	})
 
 	it('top-start поднимает панель над якорем на её высоту', async () => {
-		const frame = new TFrame({ position: 'fixed' })
+		const frame = new TFrame({ position: 'fixed', visible: true })
 		const panel = panelOf(120, 60)
 		const plugin = anchorFor(frame, panel.plugin)
 
@@ -144,7 +150,7 @@ describe('привязка к якорю', () => {
 	})
 
 	it('matchWidth тянет ширину панели по якорю', () => {
-		const frame = new TFrame({ position: 'fixed', width: 42 })
+		const frame = new TFrame({ position: 'fixed', width: 42, visible: true })
 		const plugin = anchorFor(frame)
 
 		plugin.matchWidth = true
@@ -159,7 +165,7 @@ describe('привязка к якорю', () => {
 	 * Панель под `v-show` меряется нулём, и `*-end` съехал бы на ширину якоря.
 	 */
 	it('bottom-end + matchWidth при нулевой ширине панели ставит x по левому краю якоря', async () => {
-		const frame = new TFrame({ position: 'fixed' })
+		const frame = new TFrame({ position: 'fixed', visible: true })
 		const panel = panelOf(0, 60)
 		const plugin = anchorFor(frame, panel.plugin)
 
@@ -174,7 +180,7 @@ describe('привязка к якорю', () => {
 	})
 
 	it('bottom-end + matchWidth без панели ставит x по левому краю якоря', () => {
-		const frame = new TFrame({ position: 'fixed' })
+		const frame = new TFrame({ position: 'fixed', visible: true })
 		const plugin = anchorFor(frame)
 
 		plugin.placement = 'bottom-end'
@@ -186,7 +192,7 @@ describe('привязка к якорю', () => {
 
 	it('самый частый случай не зависит от того, отрисовалась ли панель', () => {
 		// Список под полем по левому краю считается только из якоря
-		const frame = new TFrame({ position: 'fixed' })
+		const frame = new TFrame({ position: 'fixed', visible: true })
 
 		anchorFor(frame).setAnchor(anchorAt({ left: 40, bottom: 90 }))
 
@@ -199,7 +205,7 @@ describe('привязка к якорю', () => {
 	 * координаты окна ей ни к чему, и стороны у неё нет.
 	 */
 	it('панель внутри контейнера якорь не двигает и стороны не держит', () => {
-		const frame = new TFrame({ position: 'fixed' })
+		const frame = new TFrame({ position: 'fixed', visible: true })
 		const plugin = anchorFor(frame)
 
 		plugin.setAnchor(anchorAt({ left: 100, bottom: 250 }))
@@ -224,7 +230,7 @@ describe('привязка к якорю', () => {
 	})
 
 	it('offset сдвигает панель вниз при bottom-*', () => {
-		const frame = new TFrame({ position: 'fixed' })
+		const frame = new TFrame({ position: 'fixed', visible: true })
 		const plugin = anchorFor(frame)
 
 		plugin.offset = 4
@@ -234,7 +240,7 @@ describe('привязка к якорю', () => {
 	})
 
 	it('offset сдвигает панель вверх при top-*', async () => {
-		const frame = new TFrame({ position: 'fixed' })
+		const frame = new TFrame({ position: 'fixed', visible: true })
 		const panel = panelOf(120, 60)
 		const plugin = anchorFor(frame, panel.plugin)
 
@@ -248,7 +254,7 @@ describe('привязка к якорю', () => {
 	})
 
 	it('смена placement пересчитывает координаты', async () => {
-		const frame = new TFrame({ position: 'fixed' })
+		const frame = new TFrame({ position: 'fixed', visible: true })
 		const panel = panelOf(120, 60)
 		const plugin = anchorFor(frame, panel.plugin)
 
@@ -266,7 +272,7 @@ describe('привязка к якорю', () => {
 
 describe('flip: сторона у края экрана', () => {
 	it('у нижнего края окна bottom становится top, data-placement = top-start', async () => {
-		const frame = new TFrame({ position: 'fixed' })
+		const frame = new TFrame({ position: 'fixed', visible: true })
 		const panel = panelOf(120, 100)
 		const plugin = anchorFor(frame, panel.plugin)
 
@@ -281,7 +287,7 @@ describe('flip: сторона у края экрана', () => {
 	})
 
 	it('места мало с обеих сторон — остаётся выбранная сторона', async () => {
-		const frame = new TFrame({ position: 'fixed' })
+		const frame = new TFrame({ position: 'fixed', visible: true })
 		const panel = panelOf(120, 500)
 		const plugin = anchorFor(frame, panel.plugin)
 
@@ -296,7 +302,7 @@ describe('flip: сторона у края экрана', () => {
 	})
 
 	it('flip = false: у нижнего края остаётся bottom-start', async () => {
-		const frame = new TFrame({ position: 'fixed' })
+		const frame = new TFrame({ position: 'fixed', visible: true })
 		const panel = panelOf(120, 100)
 		const plugin = anchorFor(frame, panel.plugin)
 
@@ -311,7 +317,7 @@ describe('flip: сторона у края экрана', () => {
 	})
 
 	it('flip = false: top-start у верхнего края остаётся сверху', async () => {
-		const frame = new TFrame({ position: 'fixed' })
+		const frame = new TFrame({ position: 'fixed', visible: true })
 		const panel = panelOf(120, 100)
 		const plugin = anchorFor(frame, panel.plugin)
 
@@ -327,7 +333,7 @@ describe('flip: сторона у края экрана', () => {
 	})
 
 	it('переключение flip на лету пересчитывает y и data-placement', async () => {
-		const frame = new TFrame({ position: 'fixed' })
+		const frame = new TFrame({ position: 'fixed', visible: true })
 		const panel = panelOf(120, 100)
 		const plugin = anchorFor(frame, panel.plugin)
 
@@ -353,7 +359,7 @@ describe('flip: сторона у края экрана', () => {
 	 * съеденного хватает, чтобы панель перестала влезать снизу.
 	 */
 	it('места меряются по видимой области, а не по окну', async () => {
-		const frame = new TFrame({ position: 'fixed' })
+		const frame = new TFrame({ position: 'fixed', visible: true })
 		const panel = panelOf(120, 300)
 		const plugin = anchorFor(frame, panel.plugin)
 
@@ -569,7 +575,7 @@ describe('flip: сторона у края экрана', () => {
 
 describe('shift: сдвиг внутрь окна', () => {
 	it('у левого края не даёт панели уйти за x=0', async () => {
-		const frame = new TFrame({ position: 'fixed' })
+		const frame = new TFrame({ position: 'fixed', visible: true })
 		const panel = panelOf(120, 60)
 		const plugin = anchorFor(frame, panel.plugin)
 
@@ -582,7 +588,7 @@ describe('shift: сдвиг внутрь окна', () => {
 	})
 
 	it('у правого края не даёт панели уйти за правый край окна', async () => {
-		const frame = new TFrame({ position: 'fixed' })
+		const frame = new TFrame({ position: 'fixed', visible: true })
 		const panel = panelOf(120, 60)
 		const plugin = anchorFor(frame, panel.plugin)
 
@@ -601,7 +607,7 @@ describe('shift: сдвиг внутрь окна', () => {
 	 * ширину. Границей служит видимая область.
 	 */
 	it('краем служит видимая область, а не окно: полоса прокрутки не съедает панель', async () => {
-		const frame = new TFrame({ position: 'fixed' })
+		const frame = new TFrame({ position: 'fixed', visible: true })
 		const panel = panelOf(120, 60)
 		const plugin = anchorFor(frame, panel.plugin)
 
@@ -617,7 +623,7 @@ describe('shift: сдвиг внутрь окна', () => {
 
 describe('RTL', () => {
 	it('в rtl -start выравнивает панель по правому краю якоря', async () => {
-		const frame = new TFrame({ position: 'fixed' })
+		const frame = new TFrame({ position: 'fixed', visible: true })
 		const panel = panelOf(120, 60)
 		const plugin = anchorFor(frame, panel.plugin)
 
@@ -641,7 +647,7 @@ describe('RTL', () => {
 describe('центр: top и bottom без суффикса', () => {
 	/** Панель 120×60: по центру она начинается на 60px левее середины якоря. */
 	const centered = async (placement: 'top' | 'bottom') => {
-		const frame = new TFrame({ position: 'fixed' })
+		const frame = new TFrame({ position: 'fixed', visible: true })
 		const panel = panelOf(120, 60)
 		const plugin = anchorFor(frame, panel.plugin)
 
@@ -717,7 +723,7 @@ describe('центр: top и bottom без суффикса', () => {
 	})
 
 	it('смена выравнивания на центр пересчитывает x', async () => {
-		const frame = new TFrame({ position: 'fixed' })
+		const frame = new TFrame({ position: 'fixed', visible: true })
 		const panel = panelOf(120, 60)
 		const plugin = anchorFor(frame, panel.plugin)
 
@@ -797,7 +803,7 @@ describe('position панели', () => {
 	it('на странице — absolute, от начала документа', () => {
 		scrollWindowTo(30, 400)
 
-		const frame = new TFrame({ position: 'fixed' })
+		const frame = new TFrame({ position: 'fixed', visible: true })
 
 		anchorFor(frame).setAnchor(anchorAt({ left: 100, top: 220, bottom: 250, right: 300 }))
 
@@ -813,7 +819,7 @@ describe('position панели', () => {
 	it('прокрутка окна координаты absolute не меняет', () => {
 		scrollWindowTo(0, 400)
 
-		const frame = new TFrame()
+		const frame = new TFrame({ visible: true })
 		const anchor = anchorAt({ left: 100, top: 220, bottom: 250, right: 300 })
 		const moved = vi.fn()
 
@@ -831,7 +837,7 @@ describe('position панели', () => {
 		scrollWindowTo(0, 400)
 
 		const header = boxIn(document.body, 'position: fixed')
-		const frame = new TFrame({ position: 'absolute' })
+		const frame = new TFrame({ position: 'absolute', visible: true })
 
 		anchorFor(frame).setAnchor(anchorIn(header, { left: 100, top: 20, bottom: 50, right: 300 }))
 
@@ -841,7 +847,7 @@ describe('position панели', () => {
 	})
 
 	it('сам якорь fixed — fixed', () => {
-		const frame = new TFrame()
+		const frame = new TFrame({ visible: true })
 		const anchor = anchorAt({ left: 100, bottom: 50 })
 
 		anchor.style.position = 'fixed'
@@ -852,7 +858,7 @@ describe('position панели', () => {
 
 	it('якорь в sticky к окну — fixed, в sticky внутренней прокрутки — absolute', () => {
 		const sticky = boxIn(document.body, 'position: sticky; top: 0')
-		const pinned = new TFrame()
+		const pinned = new TFrame({ visible: true })
 
 		anchorFor(pinned).setAnchor(anchorIn(sticky, { left: 100, bottom: 50 }))
 
@@ -864,7 +870,7 @@ describe('position панели', () => {
 		Object.defineProperty(scroller, 'scrollHeight', { value: 500 })
 		Object.defineProperty(scroller, 'clientHeight', { value: 100 })
 
-		const inner = new TFrame()
+		const inner = new TFrame({ visible: true })
 
 		anchorFor(inner).setAnchor(
 			anchorIn(boxIn(scroller, 'position: sticky; top: 0'), { left: 100, bottom: 50 }),
@@ -883,7 +889,7 @@ describe('position панели', () => {
 		Object.defineProperty(target, 'clientTop', { value: 3 })
 		target.scrollTop = 40
 
-		const frame = new TFrame()
+		const frame = new TFrame({ visible: true })
 		const plugin = await panelIn(target, frame)
 
 		plugin.setAnchor(anchorAt({ left: 100, top: 220, bottom: 250, right: 300 }))
@@ -899,7 +905,7 @@ describe('position панели', () => {
 
 		placeAt(target, { left: 40, top: 60 })
 
-		const frame = new TFrame()
+		const frame = new TFrame({ visible: true })
 		const plugin = await panelIn(target, frame)
 
 		plugin.setAnchor(anchorIn(header, { left: 100, top: 220, bottom: 250, right: 300 }))
@@ -915,7 +921,7 @@ describe('position панели', () => {
 
 		placeAt(target, { left: 40, top: 60 })
 
-		const frame = new TFrame()
+		const frame = new TFrame({ visible: true })
 		const plugin = await panelIn(target, frame)
 
 		plugin.setAnchor(anchorIn(header, { left: 100, top: 220, bottom: 250, right: 300 }))
@@ -926,12 +932,13 @@ describe('position панели', () => {
 
 	it('показ выбирает position заново', () => {
 		const header = boxIn(document.body, '')
-		const frame = new TFrame()
+		const frame = new TFrame({ visible: true })
 
 		anchorFor(frame).setAnchor(anchorIn(header, { left: 100, bottom: 50 }))
 
 		expect(frame.position).toBe('absolute')
 
+		frame.hide()
 		header.style.position = 'fixed'
 		frame.show()
 
@@ -950,7 +957,7 @@ describe('подписка на скролл', () => {
 		document.body.appendChild(parent)
 
 		const remove = vi.spyOn(parent, 'removeEventListener')
-		const plugin = anchorFor(new TFrame({ position: 'fixed' }))
+		const plugin = anchorFor(new TFrame({ position: 'fixed', visible: true }))
 
 		plugin.setAnchor(anchor)
 		plugin.removeAnchor()
@@ -961,7 +968,7 @@ describe('подписка на скролл', () => {
 	it('destroy тоже снимает подписки', () => {
 		const anchor = anchorAt({ left: 0, bottom: 0 })
 		const remove = vi.spyOn(window, 'removeEventListener')
-		const plugin = anchorFor(new TFrame({ position: 'fixed' }))
+		const plugin = anchorFor(new TFrame({ position: 'fixed', visible: true }))
 
 		plugin.setAnchor(anchor)
 		plugin.destroy()
@@ -972,7 +979,7 @@ describe('подписка на скролл', () => {
 	it('изменение размера якоря без скролла пересчитывает координаты', () => {
 		// Тег в поле Select удалили, соседние сместились — сам якорь не
 		// скроллился и не менял размеры окна, но подвинулся его край
-		const frame = new TFrame({ position: 'fixed' })
+		const frame = new TFrame({ position: 'fixed', visible: true })
 		const anchor = anchorAt({ left: 100, bottom: 250, right: 300 })
 		const plugin = anchorFor(frame)
 
@@ -987,7 +994,7 @@ describe('подписка на скролл', () => {
 	})
 
 	it('removeAnchor снимает data-placement и отключает наблюдатели', () => {
-		const frame = new TFrame({ position: 'fixed' })
+		const frame = new TFrame({ position: 'fixed', visible: true })
 		const anchor = anchorAt({ left: 100, bottom: 250, right: 300 })
 		const plugin = anchorFor(frame)
 
@@ -999,6 +1006,262 @@ describe('подписка на скролл', () => {
 
 		expect(frame.dataset.has('placement')).toBe(false)
 		expect(observerCount(anchor)).toBe(0)
+	})
+})
+
+/**
+ * Место панели плагин считает, только пока она на экране: показана или ещё
+ * гаснет. Закрытые панели у полей стоят на странице десятками, и каждая на
+ * каждом кадре прокрутки меряла бы свой якорь и писала бы во Frame новый `y`.
+ *
+ * Считал ли плагин место, видно по замерам якоря — с них начинается каждый
+ * расчёт. Слушателей jsdom не показывает, поэтому их считают шпионы
+ * `addEventListener` и `removeEventListener`.
+ */
+describe('слежение по открытости', () => {
+	/** Под этим якорем панель встаёт на `y = 250`. */
+	const RECT = { left: 100, top: 220, bottom: 250, right: 300 }
+	/** Якорь уехал вверх на 100px: панель под ним — на `y = 150`. */
+	const SCROLLED = { left: 100, top: 120, bottom: 150, right: 300 }
+
+	const NONE = { windowScroll: 0, windowResize: 0, parentScroll: 0, anchorObserver: 0 }
+	const ONE_SET = { windowScroll: 1, windowResize: 1, parentScroll: 1, anchorObserver: 1 }
+
+	/** Все микрозадачи позади: цепочка ожидания `finished` отработала. */
+	const flush = () => new Promise((resolve) => setTimeout(resolve, 0))
+
+	/** Сколько слушателей события сейчас висит на узле. */
+	const listenersOn = (target: EventTarget): ((type: string) => number) => {
+		const add = vi.spyOn(target, 'addEventListener')
+		const remove = vi.spyOn(target, 'removeEventListener')
+		const count = (calls: ReadonlyArray<readonly unknown[]>, type: string): number =>
+			calls.filter(([name]) => name === type).length
+
+		return (type) => count(add.mock.calls, type) - count(remove.mock.calls, type)
+	}
+
+	/**
+	 * CSS-переход корня, как его отдаёт `getAnimations()`. Кончает его тест —
+	 * `finish()`.
+	 */
+	class TProbeTransition {
+		finish: () => void = () => {}
+		readonly finished = new Promise<void>((resolve) => {
+			this.finish = resolve
+		})
+	}
+
+	afterEach(() => {
+		Reflect.deleteProperty(window, 'CSSTransition')
+	})
+
+	/**
+	 * Frame (по умолчанию закрытый) с объявленным корнем панели и якорем в
+	 * своём предке. Слушатели окна и предка считаются с самого начала, замеры
+	 * якоря — шпионом.
+	 */
+	const anchored = async (frame = new TFrame()) => {
+		const onWindow = listenersOn(window)
+		const parent = document.body.appendChild(document.createElement('div'))
+		const onParent = listenersOn(parent)
+		const anchor = parent.appendChild(anchorAt(RECT))
+		const measured = vi.spyOn(anchor, 'getBoundingClientRect')
+		const panel = panelOf(120, 60)
+		const plugin = anchorFor(frame, panel.plugin)
+
+		panel.plugin.element = panel.element
+		await nextFrame()
+		plugin.setAnchor(anchor)
+
+		return {
+			frame,
+			plugin,
+			anchor,
+			parent,
+			panel,
+			measured,
+			/** Подписки на якорь: `scroll` окна и предка, `resize` окна, наблюдатель якоря. */
+			subscriptions: () => ({
+				windowScroll: onWindow('scroll'),
+				windowResize: onWindow('resize'),
+				parentScroll: onParent('scroll'),
+				anchorObserver: observerCount(anchor),
+			}),
+		}
+	}
+
+	it('закрытая панель слушателей не держит, и прокрутка место не считает', async () => {
+		const { frame, parent, measured, subscriptions } = await anchored()
+
+		window.dispatchEvent(new Event('scroll'))
+		parent.dispatchEvent(new Event('scroll'))
+
+		expect(subscriptions()).toEqual(NONE)
+		expect(measured).not.toHaveBeenCalled()
+		expect(frame.dataset.has('placement')).toBe(false)
+	})
+
+	it('у закрытой панели место не считают ни сеттеры, ни наблюдатель панели', async () => {
+		const { frame, plugin, panel, measured } = await anchored()
+
+		plugin.placement = 'top-start'
+		plugin.matchWidth = true
+		plugin.flip = false
+		plugin.offset = 4
+		triggerResize(panel.element)
+
+		expect(measured).not.toHaveBeenCalled()
+		expect(frame.width).toBe('auto')
+	})
+
+	it('показ заводит слежение и считает место', async () => {
+		const { frame, anchor, subscriptions } = await anchored()
+
+		frame.show()
+
+		expect(subscriptions()).toEqual(ONE_SET)
+		expect(frame.y).toBe(250)
+		expect(frame.dataset.get('placement')).toBe('bottom-start')
+
+		scrollAnchorTo(anchor, SCROLLED)
+
+		expect(frame.y).toBe(150)
+	})
+
+	/**
+	 * Закрытая панель ещё гаснет — до конца закрытия она на экране и идёт за
+	 * полем. Переходов в jsdom нет, и конец закрытия — следующий кадр.
+	 */
+	it('закрытие снимает слежение в конце закрытия: без переходов — следующим кадром', async () => {
+		const { frame, anchor, measured, subscriptions } = await anchored()
+
+		frame.show()
+		frame.hide()
+		scrollAnchorTo(anchor, SCROLLED)
+
+		expect(subscriptions()).toEqual(ONE_SET)
+		expect(frame.y).toBe(150)
+
+		await nextFrame()
+
+		expect(subscriptions()).toEqual(NONE)
+
+		measured.mockClear()
+		window.dispatchEvent(new Event('scroll'))
+
+		expect(measured).not.toHaveBeenCalled()
+	})
+
+	it('гаснущая панель идёт за полем, пока корень не доиграл переход закрытия', async () => {
+		const { frame, anchor, panel, subscriptions } = await anchored()
+		const transition = new TProbeTransition()
+
+		Object.defineProperty(window, 'CSSTransition', {
+			value: TProbeTransition,
+			configurable: true,
+		})
+		Object.defineProperty(panel.element, 'getAnimations', {
+			value: () => [transition],
+			configurable: true,
+		})
+
+		frame.show()
+		frame.hide()
+		await nextFrame()
+		await flush()
+		scrollAnchorTo(anchor, SCROLLED)
+
+		expect(subscriptions()).toEqual(ONE_SET)
+		expect(frame.y).toBe(150)
+
+		transition.finish()
+		await flush()
+
+		expect(subscriptions()).toEqual(NONE)
+	})
+
+	it('повторный показ подписывается снова, без второго набора', async () => {
+		const { frame, subscriptions } = await anchored()
+
+		frame.show()
+		frame.hide()
+		await nextFrame()
+		frame.show()
+
+		expect(subscriptions()).toEqual(ONE_SET)
+
+		// Показ, пока панель гаснет, отменяет конец закрытия
+		frame.hide()
+		frame.show()
+		await nextFrame()
+
+		expect(subscriptions()).toEqual(ONE_SET)
+	})
+
+	it('Frame, созданный видимым, следит с назначения якоря', async () => {
+		const { frame, subscriptions } = await anchored(new TFrame({ visible: true }))
+
+		expect(subscriptions()).toEqual(ONE_SET)
+		expect(frame.y).toBe(250)
+	})
+
+	/**
+	 * Снятый корень — панели на экране нет: ни следить, ни ждать её перехода
+	 * незачем. Корень вернули показанной панели — слежение возвращается.
+	 */
+	it('снятый корень снимает слежение сразу, новый корень показанной панели его возвращает', async () => {
+		const { frame, anchor, panel, subscriptions } = await anchored()
+
+		frame.show()
+		panel.plugin.element = null
+
+		expect(subscriptions()).toEqual(NONE)
+
+		scrollAnchorTo(anchor, SCROLLED)
+		panel.plugin.element = panel.element
+		await nextFrame()
+
+		expect(subscriptions()).toEqual(ONE_SET)
+		expect(frame.y).toBe(150)
+
+		// У закрытой панели корень, снятый посреди закрытия, слежения не возвращает
+		frame.hide()
+		panel.plugin.element = null
+
+		expect(subscriptions()).toEqual(NONE)
+
+		panel.plugin.element = panel.element
+		await nextFrame()
+
+		expect(subscriptions()).toEqual(NONE)
+	})
+
+	it('без корня закрытию ждать нечего: слежение снимается сразу', () => {
+		const frame = new TFrame()
+		const onWindow = listenersOn(window)
+
+		anchorFor(frame).setAnchor(anchorAt(RECT))
+		frame.show()
+
+		expect(onWindow('scroll')).toBe(1)
+
+		frame.hide()
+
+		expect(onWindow('scroll')).toBe(0)
+	})
+
+	it('destroy посреди закрытия снимает слежение сразу', async () => {
+		const { frame, plugin, subscriptions } = await anchored()
+
+		frame.show()
+		frame.hide()
+		plugin.destroy()
+
+		expect(subscriptions()).toEqual(NONE)
+
+		await nextFrame()
+
+		expect(subscriptions()).toEqual(NONE)
 	})
 })
 
@@ -1035,7 +1298,7 @@ describe('наблюдатель панели', () => {
 describe('пауза наблюдения панели на уведомление якоря', () => {
 	/** Панель объявлена, якорь назначен: за каждым следит свой наблюдатель. */
 	const anchored = async () => {
-		const frame = new TFrame({ position: 'fixed' })
+		const frame = new TFrame({ position: 'fixed', visible: true })
 		const panel = panelOf(120, 60)
 		const anchor = anchorAt({ left: 100, bottom: 250, right: 300 })
 		const plugin = anchorFor(frame, panel.plugin)
