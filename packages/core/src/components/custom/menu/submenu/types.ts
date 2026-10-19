@@ -1,13 +1,10 @@
-import type { TAria, TAriaAttributes, TClasses } from '../../../../common'
+import type { TClasses } from '../../../../common'
 import type { IMenuCollectionProps } from '../collection/types'
-import type { IMenuItem, IMenuItemProps, TMenuItemEvents } from '../item/types'
+import type { IMenuItem, IMenuItemProps } from '../item/types'
+import type { IMenuPopupItem, IMenuPopupItemProps, TMenuPopupItemEvents } from '../popup-item/types'
 import type { IMenuOwner } from '../types'
 
-export type TMenuSubmenuEvents = TMenuItemEvents & {
-	/** change:open */
-	'change:open': (value: boolean) => void
-	/** change:panelAria — набор атрибутов панели подменю изменился */
-	'change:panelAria': (value: TAriaAttributes) => void
+export type TMenuSubmenuEvents = TMenuPopupItemEvents & {
 	/** change:panelClasses — классы панели подменю изменились */
 	'change:panelClasses': (value: string[]) => void
 	/**
@@ -15,12 +12,6 @@ export type TMenuSubmenuEvents = TMenuItemEvents & {
 	 * закрывается целиком и сообщает выбор выше (`notifyChoose`)
 	 */
 	choose: (item: IMenuItem) => void
-}
-
-/** Пропсы самого пункта с подменю (без коллекционной части). */
-export interface IMenuSubmenuComponentProps extends IMenuItemProps {
-	/** Открыта ли панель подменю */
-	open?: boolean
 }
 
 /**
@@ -32,24 +23,20 @@ export interface IMenuSubmenuComponentProps extends IMenuItemProps {
  * пункт: так же у меню.
  */
 export interface IMenuSubmenuProps
-	extends IMenuSubmenuComponentProps, IMenuCollectionProps<IMenuItemProps, IMenuItem> {}
+	extends IMenuPopupItemProps, IMenuCollectionProps<IMenuItemProps, IMenuItem> {}
 
 /**
  * Пункт с подменю (`Menu.Submenu`): строка в меню, у которой своя панель с
  * пунктами — «Поделиться → Ссылка, Почта».
  *
- * Пункт меню, в котором стоит, и владелец своих пунктов: для них он то же,
- * что меню для своих (`IMenuOwner`).
+ * Пункт со своей панелью в меню, в котором стоит (`IMenuPopupItem`: панель —
+ * меню, `panelAria` — роль `menu`, `id` и имя от строки), и владелец своих
+ * пунктов: для них он то же, что меню для своих (`IMenuOwner`).
  */
 export interface IMenuSubmenu
-	extends IMenuItem<IMenuSubmenuProps, TMenuSubmenuEvents>, IMenuOwner<TMenuSubmenuEvents> {
+	extends IMenuPopupItem<IMenuSubmenuProps, TMenuSubmenuEvents>, IMenuOwner<TMenuSubmenuEvents> {
 	/** Открыта ли панель подменю */
 	open: boolean
-	/**
-	 * ARIA панели подменю — второй стороны связки «пункт ↔ подменю»: роль
-	 * `menu`; `id` и `aria-labelledby` на строку пункта пишет плагин связок
-	 */
-	readonly panelAria: TAria
 	/**
 	 * Классы панели: блок панели меню с размером и вариантом подменю — до
 	 * телепортированной панели модификаторы пункта не доходят

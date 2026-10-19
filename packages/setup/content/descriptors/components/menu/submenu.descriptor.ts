@@ -23,8 +23,8 @@ import {
 	CollectionElementsPluginDescriptor,
 	DismissPluginDescriptor,
 	MenuHoverPluginDescriptor,
+	MenuPopupIdsPluginDescriptor,
 	MenuSubmenuFocusPluginDescriptor,
-	MenuSubmenuIdsPluginDescriptor,
 	MenuSubmenuKeyboardPluginDescriptor,
 } from '../../plugins'
 
@@ -73,7 +73,7 @@ export const MenuSubmenuDescriptor = defineDescriptor(() =>
 				open: { type: Boolean, triggers: ['change:open'] },
 				/**
 				 * Набор панели подменю — разметки без своего экземпляра: роль
-				 * `menu`, `id` и имя от строки (`TMenuSubmenuIdsPlugin`).
+				 * `menu`, `id` и имя от строки (`TMenuPopupIdsPlugin`).
 				 */
 				panelAria: { type: Object, protected: true, triggers: ['change:panelAria'] },
 				/**
@@ -106,7 +106,7 @@ export const MenuSubmenuDescriptor = defineDescriptor(() =>
 			// клавиатуры: берёт у них панель, `dismiss` и строку подсвеченного
 			MenuSubmenuFocusPluginDescriptor,
 			// `id` и ссылки «пункт ↔ подменю»
-			MenuSubmenuIdsPluginDescriptor,
+			MenuPopupIdsPluginDescriptor,
 		],
 	}),
 )

@@ -5,10 +5,13 @@ import {
 	TMenuCollectionFacade,
 	TMenuGroup,
 	TMenuItem,
+	TMenuPopoverItem,
 	TMenuSeparator,
 	TMenuSubmenu,
 	createEngineMenu,
 	createEngineSelection,
+	isMenuPopoverItem,
+	isMenuPopupItem,
 	isMenuSubmenu,
 	menuOf,
 } from '@soldy-ui/core'
@@ -557,6 +560,9 @@ describe('TMenuSubmenu · пункт', () => {
 		expect(share).toBeInstanceOf(TMenuItem)
 		expect(isMenuSubmenu(share)).toBe(true)
 		expect(isMenuSubmenu(new TMenuItem())).toBe(false)
+		// Пункт со своей панелью — как пункт с панелью, но не он
+		expect(isMenuPopupItem(share)).toBe(true)
+		expect(isMenuPopoverItem(share)).toBe(false)
 		expect(share.open).toBe(false)
 		expect(share.checkable).toBe(false)
 		expect(share.tag).toBe('div')
@@ -853,6 +859,247 @@ describe('фасад подменю', () => {
 
 		expect(choose).toHaveBeenCalledWith(itemOf(facade.items, 'link'))
 		expect(share.open).toBe(false)
+	})
+})
+
+/**
+ * Пункт с панелью — `Menu.PopoverItem`: строка открывает сбоку немодальную
+ * панель-диалог с любым содержимым. Здесь — то, что пункт знает о себе, и что
+ * коллекция меню делает с его панелью: открыта одна панель на меню, какого бы
+ * вида ни был пункт, и закрытое меню закрывает её. Фокус, клавиши и связки —
+ * плагины (`plugins/__tests__/menu-popover-item.plugin.spec.ts`).
+ */
+describe('TMenuPopoverItem · пункт', () => {
+	it('пункт меню с ролью menuitem: объявляет диалог и закрыт', () => {
+		const due = new TMenuPopoverItem({ value: 'due', text: 'Срок' })
+
+		expect(due).toBeInstanceOf(TMenuItem)
+		expect(isMenuPopoverItem(due)).toBe(true)
+		expect(isMenuPopupItem(due)).toBe(true)
+		expect(isMenuSubmenu(due)).toBe(false)
+		expect(isMenuPopoverItem(new TMenuItem())).toBe(false)
+		expect(isMenuPopupItem(new TMenuItem())).toBe(false)
+		expect(due.open).toBe(false)
+		expect(due.checkable).toBe(false)
+		expect(due.tag).toBe('div')
+		expect(due.classes.toArray()).toContain('so-menu-item')
+		expect(due.aria.toObject()).toEqual({
+			role: 'menuitem',
+			// `dialog`, а не `true`: `true` у ARIA значит `menu`
+			'aria-haspopup': 'dialog',
+			'aria-expanded': 'false',
+		})
+		expect(due.dataset.get('open')).toBe('false')
+	})
+
+	it('открытость — aria-expanded на строке и data-open для темы', () => {
+		const due = new TMenuPopoverItem({ open: true })
+
+		expect(due.aria.get('aria-expanded')).toBe('true')
+		expect(due.dataset.get('open')).toBe('true')
+		expect(due.getProps()).toMatchObject({ open: true, lazyMount: false })
+
+		due.open = false
+
+		expect(due.aria.get('aria-expanded')).toBe('false')
+		expect(due.dataset.get('open')).toBe('false')
+	})
+
+	it('change:open — только на смену', () => {
+		const due = new TMenuPopoverItem()
+		const handler = vi.fn()
+
+		due.events.on('change:open', handler)
+		due.open = false
+		due.open = true
+		due.open = true
+
+		expect(handler).toHaveBeenCalledOnce()
+		expect(handler).toHaveBeenCalledWith(true)
+	})
+
+	// `id` и ссылки ядро не пишет: их пишет плагин связок (plugins, ids.plugin.spec)
+	it('панель — диалог, без id; набор панели живой', () => {
+		const due = new TMenuPopoverItem()
+		const handler = vi.fn()
+
+		expect(due.panelAria.toObject()).toEqual({ role: 'dialog' })
+
+		due.events.on('change:panelAria', handler)
+		due.panelAria.add('id', 'x')
+
+		expect(handler).toHaveBeenCalledWith({ role: 'dialog', id: 'x' })
+	})
+
+	it('без lazyMount содержимое смонтировано всегда', () => {
+		const due = new TMenuPopoverItem()
+
+		expect(due.lazyMount).toBe(false)
+		expect(due.contentRendered).toBe(true)
+	})
+
+	it('lazyMount: содержимое — с первого открытия, закрытие его не снимает', () => {
+		const due = new TMenuPopoverItem({ lazyMount: true })
+
+		expect(due.contentRendered).toBe(false)
+
+		due.open = true
+
+		expect(due.contentRendered).toBe(true)
+
+		due.open = false
+
+		expect(due.contentRendered).toBe(true)
+	})
+
+	it('lazyMount у открытого со старта: содержимое уже смонтировано', () => {
+		const due = new TMenuPopoverItem({ lazyMount: true, open: true })
+
+		expect(due.contentRendered).toBe(true)
+	})
+
+	it('снятый lazyMount монтирует содержимое; change:lazyMount — только на смену', () => {
+		const due = new TMenuPopoverItem({ lazyMount: true })
+		const handler = vi.fn()
+
+		due.events.on('change:lazyMount', handler)
+		due.lazyMount = true
+		due.lazyMount = false
+
+		expect(handler).toHaveBeenCalledOnce()
+		expect(handler).toHaveBeenCalledWith(false)
+		expect(due.contentRendered).toBe(true)
+		expect(due.getProps()).toMatchObject({ lazyMount: false })
+	})
+})
+
+describe('коллекция меню · пункт с панелью', () => {
+	/**
+	 * Меню «Изменить · Срок → (календарь) · Поделиться → (Ссылка)»: пункт с
+	 * панелью рядом с подменю — так их собирает разметка.
+	 */
+	function tree() {
+		const root = new TMenu({ open: true })
+		const edit = new TMenuItem({ value: 'edit', text: 'Изменить' })
+		const due = new TMenuPopoverItem({ value: 'due', text: 'Срок' })
+		const share = new TMenuSubmenu({ value: 'share', text: 'Поделиться' })
+		const engine = createEngineMenu({ owner: root, items: [edit, due, share] })
+
+		createEngineMenu({ owner: share, items: [new TMenuItem({ value: 'link' })] })
+
+		return { root, edit, due, share, engine }
+	}
+
+	it('пункт с панелью, пришедший готовым, остаётся им и вне обхода Tab', () => {
+		const { edit, due, share, engine } = tree()
+
+		expect(engine.extensions.batch.items).toEqual([edit, due, share])
+		expect(due.aria.get('tabindex')).toBe('-1')
+	})
+
+	it('openItem открывает панель, выключенному — отказ; открытый — opened меню', () => {
+		const { due, engine } = tree()
+		const { menu } = engine.extensions
+
+		expect(menu.openItem(due)).toBe(true)
+		expect(due.open).toBe(true)
+		expect(menu.opened).toBe(due)
+
+		// Открывает, а не переключает: открытую панель клик по строке не закроет
+		expect(menu.openItem(due)).toBe(true)
+		expect(due.open).toBe(true)
+
+		const off = new TMenuPopoverItem({ value: 'off', disabled: true })
+
+		engine.extensions.plain.push(off)
+
+		expect(menu.openItem(off)).toBe(false)
+		expect(off.open).toBe(false)
+	})
+
+	it('пункт с панелью — не действие: chooseItem ему отказывает, меню открыто', () => {
+		const { root, due, engine } = tree()
+		const choose = vi.fn()
+
+		engine.extensions.menu.events.on('choose', choose)
+
+		expect(engine.extensions.menu.chooseItem(due)).toBe(false)
+		expect(root.open).toBe(true)
+		expect(choose).not.toHaveBeenCalled()
+	})
+
+	it('открыта одна панель на меню: пункт с панелью и подменю закрывают друг друга', () => {
+		const { due, share, engine } = tree()
+		const { menu } = engine.extensions
+
+		menu.openItem(share)
+		menu.openItem(due)
+
+		expect([due.open, share.open]).toEqual([true, false])
+		expect(menu.opened).toBe(due)
+
+		// И из кода тоже
+		share.open = true
+
+		expect([due.open, share.open]).toEqual([false, true])
+		expect(menu.opened).toBe(share)
+	})
+
+	it('закрылось меню — закрылась панель пункта; закрылась она — меню открыто', () => {
+		const { root, due } = tree()
+
+		due.open = true
+		due.open = false
+
+		expect(root.open).toBe(true)
+
+		due.open = true
+		root.open = false
+
+		expect(due.open).toBe(false)
+	})
+
+	it('пункт с панелью в подменю: закрытое меню закрывает и его', () => {
+		const { root, share } = tree()
+		const deep = new TMenuPopoverItem({ value: 'deep' })
+
+		createEngineMenu({ owner: share, items: [deep] })
+
+		share.open = true
+		deep.open = true
+		root.open = false
+
+		expect([share.open, deep.open]).toEqual([false, false])
+	})
+
+	it('пункт с панелью, снятый из коллекции, меню больше не трогает', () => {
+		const { due, share, engine } = tree()
+
+		engine.extensions.plain.remove(due)
+
+		due.open = true
+		share.open = true
+
+		expect(due.open).toBe(true)
+		expect(engine.extensions.menu.opened).toBe(share)
+	})
+
+	it('нажатие строки пункта с панелью — через item-адаптер: открывает', () => {
+		const { due, engine } = tree()
+
+		engine.extensions.menu.createItem(due).open()
+
+		expect(due.open).toBe(true)
+	})
+
+	it('размер меню — пункту с панелью, вариант — свой', () => {
+		const { root, due } = tree()
+
+		due.variant = 'danger'
+		root.size = 'lg'
+
+		expect(due.size).toBe('lg')
+		expect(due.variant).toBe('danger')
 	})
 })
 

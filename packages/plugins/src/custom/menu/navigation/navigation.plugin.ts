@@ -33,7 +33,8 @@ import type { TMenuNavigationPluginEvents } from './types'
  * обработали (`defaultPrevented`), панель не трогает: строка пункта с
  * подменю гасит свои — стрелку к концу строки, Enter и пробел, — и своё
  * подменю открывает сама (`TMenuSubmenuKeyboardPlugin`), а набор её пробела
- * не перехватывает.
+ * не перехватывает; строка пункта с панелью так же гасит стрелку к концу
+ * строки (`TMenuPopoverItemKeyboardPlugin`).
  *
  * Enter и пробел на строке не трогаются: строка — `Button` на `div`, и клик
  * из них делает её `TActionPlugin`, как браузер у `<button>`. Нажатие пункта

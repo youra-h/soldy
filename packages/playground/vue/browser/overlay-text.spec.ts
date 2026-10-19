@@ -1,6 +1,6 @@
 /**
- * Цвет текста в панелях оверлеев — Select, Popover и DatePicker — в обеих
- * схемах, по вычисленным стилям.
+ * Цвет текста в панелях оверлеев — Select, Popover, DatePicker и панели
+ * пункта меню — в обеих схемах, по вычисленным стилям.
  *
  * Панель телепортирована в `body` и без своего цвета текста берёт цвет
  * страницы. Опции Select этого не замечают: строку рисует `Button` со своим
@@ -22,7 +22,7 @@
 import { describe, it, expect, afterEach } from 'vitest'
 import { render, cleanup } from 'vitest-browser-vue'
 import { defineComponent, h, nextTick } from 'vue'
-import { Button, DatePicker, Popover, Select } from '@soldy-ui/vue'
+import { Button, DatePicker, Menu, Popover, Select } from '@soldy-ui/vue'
 
 import { find, shift, style } from './colors'
 
@@ -35,7 +35,8 @@ const SCHEMES = ['oren', 'oren-dark'] as const
 
 /**
  * Сцена: открытый Select без опций — в его панели остаётся один слот `empty` —
- * и открытый Popover с текстом. Своего цвета текста у страницы нет.
+ * открытый Popover с текстом, DatePicker и меню с открытым пунктом с панелью.
+ * Своего цвета текста у страницы нет.
  */
 const scene = defineComponent({
 	render: () =>
@@ -54,6 +55,17 @@ const scene = defineComponent({
 				},
 			),
 			h(DatePicker, { open: true, aria_label: 'Дата' }),
+			h(
+				Menu,
+				{ open: true },
+				{
+					trigger: () => h(Button, { text: 'Действия' }),
+					default: () =>
+						h(Menu.PopoverItem, { value: 'due', text: 'Срок', open: true }, () =>
+							h('span', { class: 'so-test-due' }, 'Содержимое панели пункта'),
+						),
+				},
+			),
 		]),
 })
 
@@ -104,5 +116,22 @@ describe('Select: текст в панели помимо опций', () => {
 
 		expect(Math.sign(empty), 'в ту же сторону').toBe(Math.sign(popover))
 		expect(empty, 'на столько же').toBeCloseTo(popover, 3)
+	})
+})
+
+/**
+ * Панель пункта меню с панелью — та же семья оверлеев: своё содержимое без
+ * своего цвета текста берёт её текст, а не текст страницы. Панель
+ * телепортирована и соседка панели меню, поэтому цвет меню до неё не доходит.
+ */
+describe('Menu.PopoverItem: текст панели пункта', () => {
+	it.each(SCHEMES)('%s: содержимое отходит от панели, как текст Popover', async (scheme) => {
+		await show(scheme)
+
+		const popover = away('.so-test-popover', '.so-popover__panel')
+		const due = away('.so-test-due', '.so-menu-item__panel')
+
+		expect(Math.sign(due), 'в ту же сторону').toBe(Math.sign(popover))
+		expect(due, 'на столько же').toBeCloseTo(popover, 3)
 	})
 })

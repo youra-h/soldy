@@ -13,8 +13,8 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { render, cleanup } from 'vitest-browser-vue'
 import { commands, userEvent } from 'vitest/browser'
-import { defineComponent, h, nextTick } from 'vue'
-import { Button, Menu } from '@soldy-ui/vue'
+import { defineComponent, h, nextTick, type VNode } from 'vue'
+import { Button, Calendar, Menu } from '@soldy-ui/vue'
 import type { DescriptorSlots, MenuDescriptor } from '@soldy-ui/setup'
 
 import { pixel, settled, shift, style, systemColor } from './colors'
@@ -725,5 +725,256 @@ describe('подменю', () => {
 		expect(shareRow().getAttribute('aria-expanded')).toBe('false')
 		// Закрытая панель гаснет переходом темы, а потом прячется
 		await expect.poll(subOpen).toBe(false)
+	})
+})
+
+/**
+ * Пункт с панелью — `Menu.PopoverItem`: сбоку от строки немодальная панель с
+ * любым содержимым, у края окна — с другой стороны, в RTL — зеркально;
+ * путь указателя к панели через соседний пункт её не закрывает, а нажатие в
+ * содержимом — день календаря — не закрывает меню. Переходы плагинов —
+ * `plugins/__tests__/menu-popover-item.plugin.spec.ts`; здесь — настоящая
+ * раскладка, настоящий указатель и настоящий Tab.
+ */
+describe('пункт с панелью', () => {
+	/**
+	 * Меню «Срок → (содержимое) · Удалить · В архив» и кнопка за ним; `style` —
+	 * где стоит меню, `content` — содержимое панели.
+	 */
+	const popoverPage = (style: string, content: () => VNode | VNode[]) => () =>
+		h('div', { style: `padding: 40px; ${style}` }, [
+			h(
+				Menu,
+				{},
+				{
+					trigger: ({ triggerAria, triggerDataset }: TTriggerScope) =>
+						h(Button, {
+							text: 'Действия',
+							class: 'so-test-trigger',
+							...triggerAria,
+							...triggerDataset,
+						}),
+					default: () => [
+						h(Menu.PopoverItem, { value: 'due', text: 'Срок' }, content),
+						h(Menu.Item, { value: 'remove', text: 'Удалить' }),
+						h(Menu.Item, { value: 'archive', text: 'В архив' }),
+					],
+				},
+			),
+			h('button', { class: 'so-test-after' }, 'После'),
+		])
+
+	/** Две кнопки — первая и последняя остановки панели. */
+	const buttons = () => [
+		h('button', { class: 'so-test-earlier' }, 'Раньше'),
+		h('button', { class: 'so-test-later' }, 'Позже'),
+	]
+
+	const showPopover = async (style = '', content: () => VNode | VNode[] = buttons) => {
+		render(defineComponent({ render: popoverPage(style, content) }))
+
+		await nextTick()
+		await nextFrame()
+		await nextFrame()
+	}
+
+	/** Строка пункта с панелью — у неё `aria-haspopup="dialog"`. */
+	const dueRow = () => find('.so-menu-item > [aria-haspopup="dialog"]')
+	/** Корень пункта с панелью — якорь его панели. */
+	const dueItem = () => {
+		const item = dueRow().parentElement
+
+		if (!item) throw new Error('у строки нет корня пункта')
+
+		return item
+	}
+
+	/** Панель по `id`, на который ссылается `aria-controls`. */
+	const panelOf = (node: HTMLElement) => find(`#${node.getAttribute('aria-controls') ?? ''}`)
+	const rootPanel = () => panelOf(trigger())
+	const duePanel = () => panelOf(dueRow())
+	const rootOpen = () => getComputedStyle(rootPanel()).display !== 'none'
+	const dueOpen = () => getComputedStyle(duePanel()).display !== 'none'
+
+	/** Строка меню по тексту. */
+	const menuRow = (text: string): HTMLElement => {
+		const row = [
+			...rootPanel().querySelectorAll<HTMLElement>('.so-menu-item > .so-button'),
+		].find((candidate) => find('.so-button__text', candidate).textContent?.trim() === text)
+
+		if (!row) throw new Error(`строки «${text}» нет`)
+
+		return row
+	}
+
+	/** Тексты горящих строк меню: открытый пункт горит, как подсвеченный. */
+	const litRows = () =>
+		[...rootPanel().querySelectorAll<HTMLElement>('.so-menu-item > .so-button')]
+			.filter((row) => getComputedStyle(row).backgroundColor !== 'rgba(0, 0, 0, 0)')
+			.map((row) => find('.so-button__text', row).textContent?.trim())
+
+	/** Открыть меню кликом и панель «Срока» нажатием строки у её конца. */
+	const openDue = async () => {
+		await userEvent.click(trigger())
+		await expect.poll(rootOpen).toBe(true)
+
+		const row = dueRow().getBoundingClientRect()
+
+		await userEvent.click(dueRow(), { position: { x: row.width - 12, y: row.height / 2 } })
+		await expect.poll(dueOpen).toBe(true)
+		await nextFrame()
+	}
+
+	afterEach(() => {
+		document.documentElement.removeAttribute('dir')
+	})
+
+	it('панель — у конца строки, верхом вровень с ней, без зазора; фокус в панели, строка горит', async () => {
+		await showPopover()
+		await openDue()
+
+		const anchor = dueItem().getBoundingClientRect()
+		const box = duePanel().getBoundingClientRect()
+
+		expect(box.left).toBeCloseTo(anchor.right, 0)
+		expect(box.top).toBeCloseTo(anchor.top, 0)
+		expect(duePanel().dataset.placement).toBe('end-start')
+		expect(active()).toBe(find('.so-test-earlier'))
+		expect(dueItem().dataset.open).toBe('true')
+		// Слой панели пункта — выше слоя меню
+		expect(Number(duePanel().dataset.layer)).toBeGreaterThan(Number(rootPanel().dataset.layer))
+		// Строка открытого пункта горит, пока фокус в его панели
+		await expect.poll(litRows).toEqual(['Срок'])
+	})
+
+	it('у правого края окна панель встаёт у начала строки', async () => {
+		await showPopover('display: flex; justify-content: flex-end')
+		await openDue()
+
+		// Сторону привязка выбирает по разложенной панели: на показе она ещё без
+		// размера, и выбор приходит с её наблюдателем размера
+		await expect.poll(() => duePanel().dataset.placement).toBe('start-start')
+
+		const anchor = dueItem().getBoundingClientRect()
+		const box = duePanel().getBoundingClientRect()
+
+		expect(box.right).toBeCloseTo(anchor.left, 0)
+	})
+
+	it('в RTL панель — слева, у конца строки, а стрелка смотрит влево', async () => {
+		document.documentElement.dir = 'rtl'
+
+		await showPopover()
+		await openDue()
+
+		const anchor = dueItem().getBoundingClientRect()
+
+		await expect
+			.poll(() => duePanel().getBoundingClientRect().right)
+			.toBeCloseTo(anchor.left, 0)
+		expect(duePanel().dataset.placement).toBe('end-start')
+		expect(getComputedStyle(find('.so-menu-item__arrow', dueRow())).transform).toBe(
+			'matrix(-1, 0, 0, 1, 0, 0)',
+		)
+	})
+
+	it('путь наискосок к панели через соседний пункт её не закрывает', async () => {
+		// Панель выше строки на несколько пунктов, как с календарём: путь к ней —
+		// треугольник от точки ухода к её ближнему краю
+		await showPopover('', () => [h('div', { style: 'height: 120px' }), ...buttons()])
+		await openDue()
+
+		const remove = menuRow('Удалить')
+		const below = remove.getBoundingClientRect()
+		const row = dueRow().getBoundingClientRect()
+
+		// Со строки «Срок» вниз-вправо, через «Удалить» — к панели
+		await userEvent.hover(remove, { position: { x: row.width - 8, y: 3 } })
+		await userEvent.hover(remove, { position: { x: row.width - 4, y: below.height - 4 } })
+
+		expect(dueOpen()).toBe(true)
+		expect(litRows()).toEqual(['Срок'])
+
+		await userEvent.hover(find('.so-test-later'))
+
+		expect(dueOpen()).toBe(true)
+		expect(litRows()).toEqual(['Срок'])
+	})
+
+	it('уход со строки прочь от панели закрывает её: подсветка — у пункта под указателем', async () => {
+		await showPopover()
+		await openDue()
+
+		const remove = menuRow('Удалить')
+
+		await userEvent.hover(remove, { position: { x: 10, y: 10 } })
+		await userEvent.hover(remove, { position: { x: 6, y: 14 } })
+
+		await expect.poll(dueOpen).toBe(false)
+		await expect.poll(active).toBe(remove)
+		// Строка закрытого пункта гаснет переходом темы — ждём его конца
+		await expect.poll(litRows).toEqual(['Удалить'])
+	})
+
+	it('клик по дню календаря в панели меню не закрывает и выбирает день', async () => {
+		const chosen: unknown[] = []
+
+		await showPopover('', () =>
+			h(Calendar, {
+				months: ['2026-09-01'],
+				'onUpdate:value': (value: unknown) => chosen.push(value),
+			}),
+		)
+		await openDue()
+
+		// День — по имени, полной дате, как его прочтёт скринридер: строки английские
+		const label = new Intl.DateTimeFormat('en-US', {
+			dateStyle: 'full',
+			timeZone: 'UTC',
+		}).format(Date.UTC(2026, 8, 16))
+
+		await userEvent.click(find(`.so-calendar-item[aria-label="${label}"]`, duePanel()))
+
+		expect(chosen).toHaveLength(1)
+		expect(rootOpen()).toBe(true)
+		expect(dueOpen()).toBe(true)
+	})
+
+	it('Escape в панели закрывает её — фокус на строке, меню открыто', async () => {
+		await showPopover()
+		trigger().focus()
+		await userEvent.keyboard('{ArrowDown}')
+		await expect.poll(active).toBe(dueRow())
+
+		await userEvent.keyboard('{ArrowRight}')
+
+		await expect.poll(active).toBe(find('.so-test-earlier'))
+
+		await userEvent.keyboard('{Escape}')
+
+		await expect.poll(active).toBe(dueRow())
+		expect(dueRow().getAttribute('aria-expanded')).toBe('false')
+		expect(rootOpen()).toBe(true)
+		// Закрытая панель гаснет переходом темы, а потом прячется
+		await expect.poll(dueOpen).toBe(false)
+	})
+
+	it('Tab по остановкам панели, с последней — из меню: всё закрыто, фокус за меню', async () => {
+		await showPopover()
+		trigger().focus()
+		await userEvent.keyboard('{ArrowDown}')
+		await expect.poll(active).toBe(dueRow())
+		await userEvent.keyboard('{ArrowRight}')
+		await expect.poll(active).toBe(find('.so-test-earlier'))
+
+		await userEvent.keyboard('{Tab}')
+
+		expect(active()).toBe(find('.so-test-later'))
+
+		await userEvent.keyboard('{Tab}')
+
+		expect(active()).toBe(find('.so-test-after'))
+		expect(trigger().getAttribute('aria-expanded')).toBe('false')
+		expect(dueRow().getAttribute('aria-expanded')).toBe('false')
 	})
 })

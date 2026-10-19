@@ -59,8 +59,8 @@ export const MenuSubmenuCollectionDescriptor = defineDescriptor(() =>
 /**
  * Фасад пункта-действия: своих пропсов у него нет — нажатие разметка отдаёт
  * item-адаптеру `menu` через `context`, а отметки у действия не бывает. Тот
- * же фасад — у пункта с подменю: в меню над ним он пункт, и его нажатие
- * (`open`) разметка отдаёт тому же item-адаптеру.
+ * же фасад — у пунктов со своей панелью, подменю и пункта с панелью: в меню
+ * они пункты, и их нажатие (`open`) разметка отдаёт тому же item-адаптеру.
  */
 export const MenuCollectionItemDescriptor = defineDescriptor(() =>
 	defineComponent({

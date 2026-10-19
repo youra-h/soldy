@@ -31,7 +31,7 @@ export class TMenuItemExtension<
 		this._parent.toggleItem(this._item)
 	}
 
-	/** Нажатие пункта с подменю: решает меню — открыть подменю или отказать. */
+	/** Нажатие пункта со своей панелью: решает меню — открыть панель или отказать. */
 	open(): void {
 		this._parent.openItem(this._item)
 	}
