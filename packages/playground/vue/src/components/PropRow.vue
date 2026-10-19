@@ -5,9 +5,11 @@ import { TPluginBundle } from '@soldy-ui/plugins'
 import {
 	createInstance,
 	isEmptyField,
+	previewProps,
 	type IPreviewHost,
 	type TComponentEntry,
 	type TInstance,
+	type TInstanceProps,
 	type TPreviewEventSink,
 	type TPropControl,
 } from '@soldy-ui/playground-shared'
@@ -27,7 +29,26 @@ const props = defineProps<{
 	sink: (column: 'props' | 'instance') => TPreviewEventSink
 }>()
 
-const value = shallowRef<unknown>(props.control.default)
+/**
+ * Значение строки — с тем, что превью задаёт компоненту само (`initial`):
+ * подпись кнопки, плейсхолдер поля. Поле показывает то же, что колонки. Без
+ * значения превью — с умолчанием декларации.
+ */
+const value = shallowRef<unknown>(
+	Object.hasOwn(props.control, 'initial') ? props.control.initial : props.control.default,
+)
+
+/**
+ * Значение превью своего пропа владелец свойства получает при создании, а не
+ * разметкой второй колонки: разметку рядом с `ctrl` сборка пишет экземпляру
+ * при каждом монтировании, и смена фреймворка вернула бы ему значение превью
+ * поверх набранного. Свойству компонента его отдаёт конструктор экземпляра,
+ * свойству коллекции — конструктор фасада, а плагину — запись на
+ * `bundle:create`: значение строки начинается с него.
+ */
+const initialProps: TInstanceProps = Object.hasOwn(props.control, 'initial')
+	? { [props.control.name]: props.control.initial }
+	: {}
 
 /**
  * Экземпляр ядра для правой колонки.
@@ -37,7 +58,9 @@ const value = shallowRef<unknown>(props.control.default)
  * `variant`. Строка переживает смену фреймворка (её ключ от него не зависит),
  * и экземпляр вместе с ней: хост другого фреймворка получает тот же `ctrl`.
  */
-const instance = shallowRef(createInstance(props.entry))
+const instance = shallowRef(
+	createInstance(props.entry, props.control.scope === 'component' ? initialProps : {}),
+)
 
 const isCollectionRow = props.control.scope === 'collection'
 
@@ -89,7 +112,8 @@ function createFacade(withEngine: unknown): TInstance {
 
 	const Ctor = collectionDescriptor().ctor as new (props: object, options: object) => TInstance
 
-	return new Ctor({}, { engine: withEngine, owner: instance.value })
+	// Фасад есть только у коллекционной строки: значение превью её пропа — ему
+	return new Ctor(initialProps, { engine: withEngine, owner: instance.value })
 }
 
 /**
@@ -160,13 +184,24 @@ onUnmounted(() => instance.value.destroy?.())
 const propSink = props.sink('props')
 const instanceSink = props.sink('instance')
 
-// Пресет первым: собственное значение строки его перекрывает, а не наоборот
+/**
+ * Пропсы превью — обеим колонкам, но без своего пропа строки: его колонки
+ * получают каждая по-своему — пропом и экземпляром. Стёртое поле поэтому даёт
+ * в обеих умолчание декларации, как и код под ними, а не значение превью в
+ * одной из них.
+ */
+const preview = computed(() => previewProps(props.entry.id, props.control.name))
+
+// Пропсы превью первыми, поверх — пресет, поверх него — собственное значение
+// строки: оно перекрывает оба, а не наоборот
 const propBind = computed(() => ({
+	...preview.value,
 	...props.control.preset,
 	...(isEmptyField(value.value) ? {} : { [props.control.name]: value.value }),
 }))
 
 const instanceBind = computed(() => ({
+	...preview.value,
 	// Пресет разметкой, рядом с `ctrl`: сборка применяет написанные пропы и к
 	// инстансу, и к фасаду коллекции (`applyInitialProps`), а `mode`
 	// у компонентной строки иначе записать некуда — своего движка у неё нет
