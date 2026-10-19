@@ -21,6 +21,15 @@ ListBox, список Select, Popover и Menu выглядят одинаков�
 | элемент         | выбирается      | выбирается               | выполняет действие         |
 | `aria-selected` | есть            | есть                     | нет                        |
 
+Роли ListBox пишет ядро, и от режима выбора они не зависят: `role="listbox"` —
+сам `TListBox` в свой `aria`, `role="option"` — `TListBoxItem`. Что выбрать
+можно несколько, знает коллекция: `aria-multiselectable="true"` в `multiple`
+пишет `TListBoxExtension`, рядом с `aria-selected` элементов. Набор элемента
+ложится на строку верхним слоем и перекрывает `role="button"`, который
+`Button` на `div` пишет себе сам, — узел с ролью у пункта один. Сторожат
+`core/__tests__/list-box.spec.ts` и спеки ListBox адаптеров — у Vue
+`item-control-attrs.spec.ts` и `list-box-tabindex.spec.ts`.
+
 Проверка на конкретном коде: `ListBox.vue` держит `tabindex="0"` на корне, а
 `TListKeyboardPlugin` слушает `keydown` там же — ListBox спроектирован как
 самостоятельный фокусируемый виджет. Клавиши плагин берёт только с корня и со

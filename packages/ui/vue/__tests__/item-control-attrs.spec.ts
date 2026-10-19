@@ -195,3 +195,36 @@ describe('Select.Item · строка и есть опция', () => {
 		expect(line('.so-select-item')?.getAttribute('tabindex')).toBe('-1')
 	})
 })
+
+/**
+ * Строка ListBox — тоже сама опция: `role="option"` элемента ложится поверх
+ * того, что `Button` на `div` пишет себе сам, и перекрывает его
+ * `role="button"`. Узел с ролью один — обёртка ничего не объявляет.
+ */
+describe('ListBox.Item · строка и есть опция', () => {
+	it('role и aria-selected опции стоят на строке', async () => {
+		await renderListBox()
+
+		const lineEl = line('.so-list-box-item')
+
+		expect(lineEl?.getAttribute('role')).toBe('option')
+		expect(lineEl?.getAttribute('aria-selected')).toBe('false')
+	})
+
+	it('обёртка без ARIA: ни роли, ни aria-selected, ни второго aria-disabled', async () => {
+		await renderListBox()
+
+		const wrapperEl = root('.so-list-box-item')
+
+		for (const name of ['role', 'aria-selected', 'aria-disabled']) {
+			expect(wrapperEl?.hasAttribute(name)).toBe(false)
+		}
+	})
+
+	it('строка из обхода выведена и кнопкой себя не объявляет', async () => {
+		await renderListBox()
+
+		expect(document.querySelectorAll('.so-list-box-item [role="button"]')).toHaveLength(0)
+		expect(line('.so-list-box-item')?.getAttribute('tabindex')).toBe('-1')
+	})
+})

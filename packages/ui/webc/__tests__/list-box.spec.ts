@@ -244,6 +244,18 @@ describe('выбор', () => {
 		expect(rows().map((row) => row.getAttribute('tabindex'))).toEqual(['-1', '-1'])
 	})
 
+	/**
+	 * Роль корня пишет ядро списка, `aria-multiselectable` в `multiple` —
+	 * коллекция; оба база раскладывает на корень набором `aria`. Роль строки —
+	 * в «строка — кнопка на div».
+	 */
+	it('корень — listbox, в multiple — с aria-multiselectable', async () => {
+		const list = listIn(await mount(HARNESS))
+
+		expect(list.getAttribute('role')).toBe('listbox')
+		expect(list.getAttribute('aria-multiselectable')).toBe('true')
+	})
+
 	it('tabindex потребителя на корне главнее', async () => {
 		const list = listIn(
 			await mount(`<div is="so-list-box" tabindex="-1">
@@ -303,17 +315,19 @@ describe('строка — кнопка на div', () => {
 	})
 
 	/**
-	 * Роль и остановку Tab кнопка на `div` пишет себе сама, а `tabindex` и
-	 * `aria-selected` списка — набор элемента — ложатся поверх.
+	 * Роль и остановку Tab кнопка на `div` пишет себе сама, а набор элемента —
+	 * `role="option"` элемента, `tabindex` и `aria-selected` списка — ложится
+	 * поверх: строка и есть опция, и кнопкой себя не объявляет.
 	 */
-	it('роль — кнопки, tabindex и aria-selected — элемента', async () => {
+	it('роль, tabindex и aria-selected — элемента: строка — опция', async () => {
 		await mount(HARNESS)
 
 		const row = rowOf('A')
 
-		expect(row.getAttribute('role')).toBe('button')
+		expect(row.getAttribute('role')).toBe('option')
 		expect(row.getAttribute('tabindex')).toBe('-1')
 		expect(row.getAttribute('aria-selected')).toBe('false')
+		expect(document.querySelectorAll('.so-list-box-item [role="button"]')).toHaveLength(0)
 	})
 
 	it('выключенный пункт: aria-disabled без disabled, фокус на нём остаётся', async () => {

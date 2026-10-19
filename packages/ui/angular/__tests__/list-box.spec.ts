@@ -176,6 +176,22 @@ describe('выбор', () => {
 		expect(rows().map((row) => row.getAttribute('tabindex'))).toEqual(['-1', '-1'])
 	})
 
+	/**
+	 * Роли пишет ядро: корень — `listbox`, в `multiple` — с
+	 * `aria-multiselectable`, строка — `option`. Набор элемента лежит верхним
+	 * слоем раскладчика строки, и `role="button"`, который кнопка на `div`
+	 * пишет себе сама, в разметку не попадает.
+	 */
+	it('корень — listbox с aria-multiselectable, строки — опции, а не кнопки', () => {
+		const fixture = mountHost(Harness)
+		const root = rootOf(fixture)
+
+		expect(root.getAttribute('role')).toBe('listbox')
+		expect(root.getAttribute('aria-multiselectable')).toBe('true')
+		expect(rows().map((row) => row.getAttribute('role'))).toEqual(['option', 'option'])
+		expect(document.querySelectorAll('.so-list-box-item [role="button"]')).toHaveLength(0)
+	})
+
 	it('стрелки ведут подсветку, Enter и пробел переключают выбор', async () => {
 		const fixture = mountHost(Harness)
 		const root = rootOf(fixture)

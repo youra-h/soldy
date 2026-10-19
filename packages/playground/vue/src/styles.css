@@ -46,7 +46,8 @@ a {
  * потребителя: панель Select лежит в `body`, и внутренняя прокрутка колонки
  * везла бы поле без неё — на телефоне панель отставала бы на кадр
  * (docs/agents/overlay.md, `TAnchorPlugin`). Высоту шапки для меню пишет
- * оболочка в `--pg-header-height` (`App.vue`): узкая шапка — в две строки.
+ * оболочка в `--pg-header-height` (`App.vue`): в окне между узким и широким
+ * шапка переносит контролы на вторую строку.
  */
 .pg {
 	display: grid;
@@ -76,7 +77,48 @@ a {
 	background: none;
 }
 
-/* Узкой шапке контролы уходят на вторую строку, к правому краю, а не за край окна */
+/* Ссылка между свойствами и тестами в панели меню — отдельным блоком над списком */
+.pg__drawer .pg__switch {
+	display: block;
+	width: fit-content;
+	margin: 0;
+}
+
+/*
+ * Панель настроек узкого окна: контролы столбцом, подпись над полем, поле во
+ * всю ширину панели. Ширину 160 px из шапки (`.pg__control` ниже) панель
+ * перебивает: контрол здесь — строка столбца во всю его ширину, а не сжатый
+ * по содержимому flex-элемент шапки, и процент поля считается от неё.
+ */
+.pg__drawer .pg__settings {
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+}
+
+.pg__drawer .pg__control {
+	flex-direction: column;
+	align-items: flex-start;
+	gap: 4px;
+}
+
+.pg__drawer .pg__control :is(.so-select, .so-input) {
+	width: 100%;
+}
+
+/* Плашке движения в панели места хватает: текст переносится, а не режется многоточием */
+.pg__drawer .pg__motion-off {
+	flex: none;
+	max-width: none;
+	white-space: normal;
+	border-radius: 8px;
+}
+
+/*
+ * В окне между узким и широким контролы уходят на вторую строку, к правому
+ * краю, а не за край окна. В узком окне шапка — полоска в одну строку
+ * (`.pg__header--narrow` ниже).
+ */
 .pg__header {
 	grid-area: header;
 	position: sticky;
@@ -91,6 +133,47 @@ a {
 	padding: 10px 20px;
 	border-bottom: 1px solid var(--so-neutral-200);
 	background: var(--so-component-surface);
+}
+
+/*
+ * Шапка узкого окна — полоска в одну строку: меню, название, настройки. Меню
+ * и контролы уехали в выезжающие панели, переносить нечего. Класс ставит тот
+ * же признак `narrow` (`useSidebar`), что меняет разметку шапки, а не свой
+ * `@media`: разметка и раскладка полоски не расходятся на границе.
+ */
+.pg__header--narrow {
+	flex-wrap: nowrap;
+	justify-content: flex-start;
+	gap: 8px;
+	padding: 6px 12px;
+}
+
+/* Название отодвигает настройки в конец полоски; не влезает — режется многоточием */
+.pg__header--narrow .pg__brand {
+	flex: 1 1 auto;
+	min-width: 0;
+	overflow: hidden;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+}
+
+/*
+ * В широкой шапке у обёртки настроек (`AppSettings.vue`) нет своей коробки:
+ * контролы и плашка — flex-элементы шапки, и на этом держатся правила плашки
+ * (`.pg__motion-off` ниже).
+ */
+.pg__header .pg__settings {
+	display: contents;
+}
+
+/*
+ * Кнопка с глифом — квадрат высоты своего размера, как кнопки шапки панели в
+ * теме. Глиф — блок, и по центру его ставит область текста кнопки.
+ */
+.pg__glyph-button {
+	flex: none;
+	aspect-ratio: 1;
+	padding-inline: 0;
 }
 
 .pg__brand {
