@@ -1,5 +1,13 @@
 import type { ElementType, ReactElement } from 'react'
-import { NativeInput, renderSlot, toAriaProps, toControlAttrs, toRootLayout } from '../../adapter'
+import {
+	Elevate,
+	NativeInput,
+	renderSlot,
+	toAriaProps,
+	toControlAttrs,
+	toRootForward,
+	toRootProps,
+} from '../../adapter'
 import { useSetupSwitch } from './setup.component'
 import type { SwitchAttributes, SwitchProps } from './base.component'
 
@@ -9,7 +17,9 @@ import type { SwitchAttributes, SwitchProps } from './base.component'
  *
  * Корень по умолчанию — `span`: переключатель кладут в подпись `Label`, а
  * внутри `label` HTML разрешает только строчную разметку. Поэтому и всё
- * внутри — `span`.
+ * внутри — `span`. На корне — `attrs` и `dataset` (`data-disabled`,
+ * `data-invalid`): тема красит дорожку и подпись поля формы `Field` по корню,
+ * а `aria` — у вложенного `<input>`.
  *
  * `role="switch"` ядро пишет в `aria` поля, состояние скринридеру сообщает
  * нативный `checked` — свойство узла, его проводит поле адаптера
@@ -18,34 +28,42 @@ import type { SwitchAttributes, SwitchProps } from './base.component'
  * Дорожка — декор: `aria-hidden` не пускает содержимое слотов в доступное
  * имя, которое переключателю даёт подпись. В ручке — слот `on` у включённого
  * и `off` у выключенного, scope `{ value, ctrl }`.
+ *
+ * Поле формы `Field` над переключателем отдаёт ему ошибку, `id` и ссылки на
+ * части (`TFieldControlExtension`), а своему содержимому переключатель
+ * опускает пустую связку. Поэтому содержимое — в слое лифта переключателя
+ * (`Elevate`).
  */
 export function Switch(props: SwitchProps): ReactElement | null {
-	const { ctrl, ref, forwardProps, state } = useSetupSwitch(props)
+	const { ctrl, ref, forwardProps, state, layer } = useSetupSwitch(props)
 
-	const { rendered, tag, attrs, aria, id, value, name, disabled, required } = state
+	const { rendered, tag, attrs, aria, dataset, id, value, name, disabled, required } = state
 
 	if (!rendered) return null
 
 	const Tag = tag as ElementType
 	const scope = { value, ctrl }
 
+	// Корню — его наборы, класс и стиль потребителя; `ref` адаптера последним
 	return (
-		<Tag ref={ref} {...toRootLayout(state, forwardProps)} {...toAriaProps(attrs)}>
-			<NativeInput
-				type="checkbox"
-				id={id}
-				name={name}
-				disabled={disabled}
-				required={required}
-				{...toAriaProps(aria)}
-				{...toControlAttrs<SwitchAttributes>(forwardProps)}
-				live={{ checked: value }}
-			/>
-			<span className="so-switch__track" aria-hidden="true">
-				<span className="so-switch__track--thumb">
-					{value ? renderSlot(props.on, scope) : renderSlot(props.off, scope)}
+		<Tag {...toRootProps(ref, state, [attrs, dataset], toRootForward(forwardProps))}>
+			<Elevate layer={layer}>
+				<NativeInput
+					type="checkbox"
+					id={id}
+					name={name}
+					disabled={disabled}
+					required={required}
+					{...toAriaProps(aria)}
+					{...toControlAttrs<SwitchAttributes>(forwardProps)}
+					live={{ checked: value }}
+				/>
+				<span className="so-switch__track" aria-hidden="true">
+					<span className="so-switch__track--thumb">
+						{value ? renderSlot(props.on, scope) : renderSlot(props.off, scope)}
+					</span>
 				</span>
-			</span>
+			</Elevate>
 		</Tag>
 	)
 }

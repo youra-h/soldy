@@ -25,12 +25,13 @@ import { describe, it, expect, vi } from 'vitest'
 import { StrictMode, act, createRef, type ComponentType, type ReactNode, type Ref } from 'react'
 import { hydrateRoot } from 'react-dom/client'
 import { renderToString } from 'react-dom/server'
-import { TButton, type TTableColumnSource } from '@soldy-ui/core'
+import { TButton, TCheckBox, TInput, TSwitch, type TTableColumnSource } from '@soldy-ui/core'
 import {
 	Accordion,
 	Button,
 	CheckBox,
 	ComponentView,
+	Field,
 	Frame,
 	Icon,
 	Input,
@@ -46,6 +47,7 @@ import {
 	type AccordionProps,
 	type ButtonProps,
 	type ComponentViewProps,
+	type FieldProps,
 	type FrameProps,
 	type IconProps,
 	type LabelProps,
@@ -67,6 +69,7 @@ import { find, mount, nextFrame, track } from './mount'
 /** Общие пропсы строки таблицы: направление и колбэк готовности есть у всех. */
 type TProbeProps = ButtonProps &
 	ComponentViewProps &
+	FieldProps &
 	FrameProps &
 	IconProps &
 	LabelProps &
@@ -96,6 +99,7 @@ const COMPONENTS: ReadonlyArray<
 > = [
 	['Button', Button, '.so-button', {}],
 	['ComponentView', ComponentView, '.so-component-view', {}],
+	['Field', Field, '.so-field', {}],
 	['Frame', Frame, '.so-frame', {}],
 	['Icon', Icon, '.so-icon', { tag: 'i' }],
 	['Label', Label, '.so-label', {}],
@@ -190,6 +194,50 @@ describe('элемент коллекции: атрибуты снаружи —
 		expect(find(document, root, HTMLElement).style.color).toBe('red')
 		expect(find(document, row, HTMLElement).classList.contains('mine')).toBe(false)
 	})
+})
+
+/** Контрол с ошибкой: её задают инстансу — в разметке её задаёт поле формы. */
+function invalid<T extends { invalid: boolean }>(ctrl: T): T {
+	ctrl.invalid = true
+
+	return ctrl
+}
+
+/**
+ * Поле, как его рисовать — выключенным и с ошибкой, — и класс его корня.
+ * Ошибку пишет поле формы `Field`, здесь — инстанс.
+ */
+const FIELDS: ReadonlyArray<readonly [string, () => ReactNode, string]> = [
+	['Input', () => <Input ctrl={invalid(new TInput({ disabled: true }))} />, '.so-input'],
+	[
+		'CheckBox',
+		() => <CheckBox ctrl={invalid(new TCheckBox({ disabled: true }))} />,
+		'.so-check-box',
+	],
+	['Switch', () => <Switch ctrl={invalid(new TSwitch({ disabled: true }))} />, '.so-switch'],
+]
+
+/**
+ * Тема красит коробку поля и подпись поля формы `Field` по корню поля —
+ * прямому ребёнку обёртки контрола, — поэтому `dataset` (`data-disabled`,
+ * `data-invalid`) — на корне, а ошибку скринридеру объявляет `<input>`.
+ */
+describe('поле: dataset — на корне, aria — у <input>', () => {
+	it.each(FIELDS)(
+		'%s: data-disabled и data-invalid — на корне, aria-invalid — у <input>',
+		(_name, draw, selector) => {
+			mount(<>{draw()}</>)
+
+			const root = find(document, selector, HTMLElement)
+			const input = find(root, 'input', HTMLInputElement)
+
+			expect(root.dataset['disabled']).toBe('true')
+			expect(root.dataset['invalid']).toBe('true')
+			expect(input.hasAttribute('data-disabled')).toBe(false)
+			expect(input.hasAttribute('data-invalid')).toBe(false)
+			expect(input.getAttribute('aria-invalid')).toBe('true')
+		},
+	)
 })
 
 /** Общие пропсы списков в таблице. */
@@ -310,6 +358,7 @@ const ROOTS: ReadonlyArray<
 		'.so-component-view',
 	],
 	['Frame', (props) => <Frame {...props} />, '.so-frame', '.so-frame'],
+	['Field', (props) => <Field {...props} />, '.so-field', '.so-field'],
 	['Icon', (props) => <Icon tag="i" {...props} />, '.so-icon', '.so-icon'],
 	['Label', (props) => <Label {...props} />, '.so-label', '.so-label'],
 	[
