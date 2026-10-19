@@ -20,6 +20,7 @@
 		| 'RadioGroup.Item'
 		| 'ListBox'
 		| 'ListBox.Item'
+		| 'Table'
 </script>
 
 <script lang="ts">
@@ -32,7 +33,8 @@
 	 *
 	 * Часть коллекции рисуется в своём владельце, панель — в слоте `content`
 	 * набора, под активным табом. Frame — показанный: скрытый уходит
-	 * телепортом, когда его покажут.
+	 * телепортом, когда его покажут. Таблица — из одной строки и одной
+	 * колонки: её `ref` — окно, а к `TElementPlugin` привязана `table` внутри.
 	 */
 	import type { TButton } from '@soldy-ui/core'
 	import {
@@ -49,6 +51,7 @@
 		RadioGroup,
 		Skeleton,
 		Switch,
+		Table,
 		Tabs,
 	} from '@soldy-ui/svelte'
 
@@ -67,6 +70,9 @@
 	const { kind, shown = true, ctrl, onRef, onElementReady }: THarnessProps = $props()
 
 	let node: Element | null = null
+
+	const COLUMNS = [{ field: 'name', text: 'Имя', rowHeader: true }]
+	const ROWS = [{ data: { id: 1, name: 'Анна' } }]
 
 	const get = () => node
 	const set = (value: Element | null | undefined) => {
@@ -124,9 +130,11 @@
 		</RadioGroup>
 	{:else if kind === 'ListBox'}
 		<ListBox bind:ref={get, set} {onElementReady} />
-	{:else}
+	{:else if kind === 'ListBox.Item'}
 		<ListBox>
 			<ListBox.Item value="a" text="A" bind:ref={get, set} {onElementReady} />
 		</ListBox>
+	{:else}
+		<Table columns={COLUMNS} items={ROWS} bind:ref={get, set} {onElementReady} />
 	{/if}
 {/if}

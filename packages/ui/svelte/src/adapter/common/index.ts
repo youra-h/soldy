@@ -10,6 +10,7 @@ export {
 	toRootLayout,
 	toRootProps,
 	toStyleText,
+	toWrappedRootProps,
 	type TRootAttributes,
 	type TRootForward,
 	type TRootLayout,
@@ -18,6 +19,8 @@ export {
 	type TRootStyle,
 	type TRootStyleLayers,
 	type TStyleProperties,
+	type TWrappedRootAttributes,
 } from './root'
+export { toText } from './text'
 export { roleIcon, TRoleIcon } from './icon'
 export { default as RoleIcon } from './RoleIcon.svelte'

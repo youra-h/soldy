@@ -52,6 +52,14 @@
  * он вешает на поле, — подсказка, автофокус — встаёт на сам `<input>`. Так же
  * делится элемент коллекции (`Tabs.Item`, `ListBox.Item`, `Accordion.Item`):
  * остальное у него — строке, поверх её `aria`, а у радио — его `<input>`.
+ *
+ * Корень бывает и не внешним узлом компонента: окно таблицы
+ * (`div.so-table__viewport`) обёрнуто вокруг её корня `table`. Тогда атрибуты
+ * потребителя, его attachment-ы, класс, стиль и скрытие достаются обёртке, а
+ * корню — только своё (`toWrappedRootProps`, как у React и Solid). Attachment
+ * корня адаптера и здесь разведён на половины: обёртке — только запись `ref`
+ * компонента (`consumerRef`), корню — только привязка к `TElementPlugin`
+ * (`bindRef`).
  */
 
 import type { ClassValue } from 'svelte/elements'
@@ -109,6 +117,14 @@ export type TRootLayout = {
 
 /** Атрибуты корня целиком: наборы ядра, атрибуты потребителя и раскладка. */
 export type TRootAttributes = Record<string, unknown> & TRootLayout
+
+/** Обёртка корня и сам корень внутри неё — см. `toWrappedRootProps`. */
+export type TWrappedRootAttributes = {
+	/** Внешний узел компонента: свой класс, атрибуты потребителя и скрытие. */
+	readonly wrapper: TRootAttributes
+	/** Корень внутри обёртки: наборы ядра, классы и стиль ядра. */
+	readonly root: TRootAttributes
+}
 
 /**
  * Атрибуты, которые ложатся на узел корня, — они же пропсы компонента в `tag`.
@@ -215,6 +231,44 @@ export function toRootProps(
 	for (const set of sets) Object.assign(attributes, set)
 
 	return { ...attributes, ...forward, ...toRootLayout(state, forward, style) }
+}
+
+/**
+ * Корень внутри своей обёртки — у компонента, чей внешний узел не корень:
+ * окно таблицы (`div.so-table__viewport`) вокруг `table`. Корень — узел,
+ * который видят плагины и тема, обёртка — разметка вокруг него. Во Vue
+ * атрибуты потребителя сами достаются внешнему узлу шаблона, и `v-show` стоит
+ * на нём же; здесь то же разведение, как `toWrappedRootProps` у React и Solid:
+ *
+ * - обёртке — её класс `wrapper` и за ним класс потребителя, стиль потребителя
+ *   и `display: none` скрытого компонента, остальные атрибуты и attachment-ы
+ *   потребителя — как есть. `ref` компонента обёртке пишет attachment
+ *   `consumerRef` адаптера, вне раскладки;
+ * - корню — `toRootProps` без атрибутов потребителя и без своего скрытия:
+ *   спрятана обёртка — спрятан и корень внутри неё. Наборы ядра, классы и
+ *   стиль-выход `style` — его, а к `TElementPlugin` его привязывает attachment
+ *   `bindRef` адаптера, без записи `ref`.
+ *
+ * Состояние корню отдаётся поимённо, без `visible`, а не остатком
+ * деструктуризации: состояние компонента — геттеры над рунами (`joinState`),
+ * и остаток прочёл бы их все.
+ */
+export function toWrappedRootProps(
+	state: TRootState,
+	sets: readonly (TAttributesMap | undefined)[],
+	forward: TRootForward,
+	wrapper: string,
+	style?: TRootStyle,
+): TWrappedRootAttributes {
+	return {
+		wrapper: toRootProps({ classes: [wrapper], visible: state.visible }, [], forward),
+		root: toRootProps(
+			{ classes: state.classes, layout_styles: state.layout_styles, order: state.order },
+			sets,
+			{},
+			style,
+		),
+	}
 }
 
 /** Класс и стиль потребителя — то, что из его атрибутов остаётся корню поля. */

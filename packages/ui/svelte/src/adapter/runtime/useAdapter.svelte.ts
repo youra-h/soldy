@@ -38,6 +38,11 @@
  * переменную потребителя, ещё пустую — `let button = $state<Element>()`, —
  * Svelte с запасным значением не связывает и падает (`props_invalid_value`).
  *
+ * Корень внутри обёртки (окно таблицы вокруг `table`, `toWrappedRootProps`)
+ * получает эти две половины attachment-а корня по отдельности: корню — только
+ * привязку (`bindRef`), обёртке — только запись `ref` (`consumerRef`): внешний
+ * узел — тот, на который легли атрибуты потребителя.
+ *
  * Файл `.svelte.ts` — иначе руны `$effect` / `$derived` недоступны.
  */
 
@@ -81,6 +86,17 @@ export type TBinding<
 	 * привязка к `TElementPlugin`, затем тот же узел — `ref` компонента.
 	 */
 	attachElement: (node: Element) => (() => void) | void
+	/**
+	 * Svelte-attachment корня внутри обёртки (`toWrappedRootProps`) — только
+	 * привязка к `TElementPlugin`: `ref` компонента получает обёртка.
+	 */
+	bindRef: (node: Element) => () => void
+	/**
+	 * Svelte-attachment обёртки корня — только `ref` компонента: узел, на
+	 * который легли атрибуты потребителя. К `TElementPlugin` привязан корень
+	 * внутри неё (`bindRef`).
+	 */
+	consumerRef: (node: Element) => () => void
 }
 
 /**
@@ -195,28 +211,46 @@ export function useAdapter<C extends IComponentContract, TProps extends object>(
 	const { binding, state } = useExchange(adapter, getProps)
 	const forwardProps = $derived(forwardOf(binding, getProps()))
 
+	// 5. DOM-биндинг: контекст сам знает, есть ли у набора TElementPlugin.
+	// Отвязка — очисткой attachment-а: смена тега пересоздаёт узел, и прежний
+	// отвязывается, а новый привязывается
+	const bindRef = (node: Element): (() => void) => {
+		adapter.bindElement(node)
+
+		return () => adapter.bindElement(null)
+	}
+
+	// Узел — `ref` компонента, при снятии — `null`. Запись — мимо слежения
+	// attachment-а: сеттер привязки — код потребителя (`bind:ref={get, set}`),
+	// и прочитанное в нём attachment счёл бы своим и на его смену перезапустился
+	// бы — а `attachElement` с ним отвязал бы узел от `TElementPlugin` и
+	// привязал заново
+	const consumerRef = (node: Element): (() => void) => {
+		untrack(() => receive(node))
+
+		return () => untrack(() => receive(null))
+	}
+
 	return {
 		ctrl: adapter.instance,
 		plugins: adapter.bundle,
 		state: toInstanceState<C>(state),
+		bindRef,
+		consumerRef,
 
 		get forwardProps() {
 			return forwardProps
 		},
 
-		// 5. DOM-биндинг: контекст сам знает, есть ли у набора TElementPlugin, а
-		// тот же узел, после привязки, получает `ref` компонента. Запись `ref` —
-		// мимо слежения attachment-а: сеттер привязки — код потребителя
-		// (`bind:ref={get, set}`), и прочитанное в нём attachment корня счёл бы
-		// своим — на его смену отвязал бы узел от `TElementPlugin` и привязал
-		// заново
+		// Корень и есть внешний узел: привязка, затем тот же узел — `ref`
+		// компонента; при снятии — в том же порядке
 		attachElement(node: Element) {
-			adapter.bindElement(node)
-			untrack(() => receive(node))
+			const unbind = bindRef(node)
+			const release = consumerRef(node)
 
 			return () => {
-				adapter.bindElement(null)
-				untrack(() => receive(null))
+				unbind()
+				release()
 			}
 		},
 	}
