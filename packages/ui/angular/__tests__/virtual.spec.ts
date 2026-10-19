@@ -105,7 +105,7 @@ abstract class TEngineHost {
 @Component({
 	standalone: true,
 	imports: [TListBoxComponent, TVirtualComponent],
-	template: `<so-virtual><div so-list-box [engine]="engine()"></div></so-virtual>`,
+	template: `<so-virtual><so-list-box [engine]="engine()"></so-list-box></so-virtual>`,
 })
 class WindowHost extends TEngineHost {}
 
@@ -126,7 +126,7 @@ describe('ListBox в окне', () => {
 	@Component({
 		standalone: true,
 		imports: [TListBoxComponent],
-		template: `<div so-list-box [items]="items"></div>`,
+		template: `<so-list-box [items]="items"></so-list-box>`,
 	})
 	class BareHost {
 		readonly items = items(80)
@@ -142,7 +142,7 @@ describe('ListBox в окне', () => {
 	@Component({
 		standalone: true,
 		imports: [TListBoxComponent, TVirtualComponent],
-		template: `<so-virtual><div so-list-box [items]="items"></div></so-virtual>`,
+		template: `<so-virtual><so-list-box [items]="items"></so-list-box></so-virtual>`,
 	})
 	class WrappedHost {
 		readonly items = items(80)
@@ -211,7 +211,7 @@ describe('ListBox в окне', () => {
 		standalone: true,
 		imports: [TListBoxComponent, TVirtualComponent],
 		template: `<so-virtual [enabled]="enabled()"
-			><div so-list-box [items]="items"></div
+			><so-list-box [items]="items"></so-list-box
 		></so-virtual>`,
 	})
 	class SwitchHost {
@@ -241,15 +241,15 @@ describe('ListBox в окне', () => {
 		standalone: true,
 		imports: [TListBoxComponent, TVirtualComponent, SlotDirective],
 		template: `<so-virtual>
-			<div so-list-box class="outer" [items]="outer">
+			<so-list-box class="outer" [items]="outer">
 				<ng-template slot="item" let-item="item">
 					@if (item.value === 'v1') {
-						<div so-list-box class="inner" [items]="inner"></div>
+						<so-list-box class="inner" [items]="inner"></so-list-box>
 					} @else {
 						{{ item.text }}
 					}
 				</ng-template>
-			</div>
+			</so-list-box>
 		</so-virtual>`,
 	})
 	class NestedHost {
@@ -302,7 +302,7 @@ describe('ListBox в окне — цикл Angular', () => {
 		imports: [TListBoxComponent, TVirtualComponent],
 		template: `<so-virtual [enabled]="enabled()">
 			@if (listed()) {
-				<div so-list-box [engine]="engine()"></div>
+				<so-list-box [engine]="engine()"></so-list-box>
 			}
 		</so-virtual>`,
 	})

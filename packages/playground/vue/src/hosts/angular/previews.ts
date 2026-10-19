@@ -331,7 +331,7 @@ export const PREVIEWS: Record<string, TPreview> = {
 			markup('display: flex; gap: 24px; align-items: flex-start; width: 100%', [
 				{
 					component: TListBoxComponent,
-					element: tag('div'),
+					element: tag('so-list-box'),
 					props: { items: COLLECTION_MANY_ITEMS, maxRows: 8, aria_label: 'Пункты' },
 				},
 				markup('flex: 1; min-width: 0; height: 320px; overflow: auto', [

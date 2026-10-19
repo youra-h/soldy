@@ -11,7 +11,7 @@ export default { ...SetupListBox, components: { ListBoxItem } }
 		v-if="rendered"
 		v-show="visible"
 		:class="classes"
-		v-bind="{ ...attrs, ...dataset }"
+		v-bind="{ ...attrs, ...dataset, ...containerAttrs }"
 	>
 		<!--
 			Корень — рамка: шапка, список и подвал. Набор `aria` — это сам список
@@ -22,11 +22,16 @@ export default { ...SetupListBox, components: { ListBoxItem } }
 			(`TListKeyboardPlugin`). На корне — `attrs` и `dataset`: тема красит
 			рамку по корню.
 
+			Атрибуты потребителя делятся, как у поля: класс и стиль — корню
+			(`containerAttrs`), остальное — узлу списка (`controlAttrs`), поверх его
+			`aria` и остановки Tab. `aria-label` и `id` потребителя называют список,
+			а не рамку без роли, а `tabindex="-1"` снимает список с остановок Tab.
+
 			Предел строк (`maxRows`) плагин высоты ставит родителю элементов —
 			узлу списка: он и прокручивается, а шапка и подвал стоят на месте.
 		-->
 		<slot name="header" />
-		<div class="so-list-box__list" tabindex="0" v-bind="aria">
+		<div class="so-list-box__list" tabindex="0" v-bind="{ ...aria, ...controlAttrs }">
 			<slot>
 				<!--
 					Элементы — то, что рисует коллекция (`drawn`), по порядку, ключ —

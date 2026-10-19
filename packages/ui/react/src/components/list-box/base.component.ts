@@ -1,6 +1,7 @@
+import type { HTMLAttributes } from 'react'
 import type { IListBox } from '@soldy-ui/core'
 import type { ListBoxCollectionDescriptor, ListBoxDescriptor } from '@soldy-ui/setup'
-import type { EventProps, UseDomProps } from '../../types'
+import type { EventProps, TDomAttributes, UseDomProps } from '../../types'
 
 /**
  * События ListBox — свои (ядро и плагины) и фасада коллекции: режим и выбор,
@@ -9,6 +10,13 @@ import type { EventProps, UseDomProps } from '../../types'
  */
 export type ListBoxEventProps = EventProps<typeof ListBoxDescriptor> &
 	EventProps<typeof ListBoxCollectionDescriptor>
+
+/** Атрибуты списка: класс и стиль — корню, остальное — узлу списка с `role="listbox"`. */
+export type ListBoxAttributes = TDomAttributes<
+	typeof ListBoxDescriptor,
+	HTMLAttributes<HTMLElement>,
+	ListBoxEventProps
+>
 
 /**
  * Пропсы ListBox. Коллекционные входы (`engine`, `items`, `mode`, `trackBy`)

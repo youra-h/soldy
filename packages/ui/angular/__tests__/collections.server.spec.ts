@@ -74,7 +74,7 @@ describe('ListBox · серверный рендер', () => {
 		selector: 'app-root',
 		standalone: true,
 		imports: [TListBoxComponent],
-		template: `<div so-list-box [items]="items" value="b"></div>`,
+		template: `<so-list-box [items]="items" value="b"></so-list-box>`,
 	})
 	class ItemsPage {
 		readonly items = ITEMS
@@ -84,10 +84,10 @@ describe('ListBox · серверный рендер', () => {
 		selector: 'app-root',
 		standalone: true,
 		imports: [TListBoxComponent, TListBoxItemComponent],
-		template: `<div so-list-box>
+		template: `<so-list-box>
 			<so-list-box-item value="a" text="A" />
 			<so-list-box-item value="b" text="B" selected />
-		</div>`,
+		</so-list-box>`,
 	})
 	class MarkupPage {}
 
@@ -119,10 +119,10 @@ describe('Tabs · серверный рендер', () => {
 		selector: 'app-root',
 		standalone: true,
 		imports: [TTabsComponent, TTabsContentComponent],
-		template: `<div so-tabs [items]="items">
+		template: `<so-tabs [items]="items">
 			<div so-tabs-content slot="content" value="a">Панель A</div>
 			<div so-tabs-content slot="content" value="b">Панель B</div>
-		</div>`,
+		</so-tabs>`,
 	})
 	class ItemsPage {
 		readonly items = [
@@ -135,11 +135,11 @@ describe('Tabs · серверный рендер', () => {
 		selector: 'app-root',
 		standalone: true,
 		imports: [TTabsComponent, TTabsItemComponent, TTabsContentComponent],
-		template: `<div so-tabs>
+		template: `<so-tabs>
 			<so-tabs-item value="a" text="A" />
 			<so-tabs-item value="b" text="B" active />
 			<div so-tabs-content slot="content" value="b">Панель B</div>
-		</div>`,
+		</so-tabs>`,
 	})
 	class MarkupPage {}
 
@@ -266,12 +266,12 @@ describe('RadioGroup · серверный рендер', () => {
 		TListBoxComponent,
 		TListBoxItemComponent,
 	],
-	template: `<div so-tabs>
+	template: `<so-tabs>
 			<so-tabs-item value="a" text="A" active />
 			<so-tabs-item value="b" text="B" />
 			<div so-tabs-content slot="content" value="a">Панель A</div>
 			<div so-tabs-content slot="content" value="b">Панель B</div>
-		</div>
+		</so-tabs>
 		<div so-accordion>
 			<so-accordion-item value="a" text="A">Содержимое A</so-accordion-item>
 			<so-accordion-item value="b" text="B">Содержимое B</so-accordion-item>
@@ -280,10 +280,10 @@ describe('RadioGroup · серверный рендер', () => {
 			<label so-radio-group-item value="a">Первый</label>
 			<label so-radio-group-item value="b">Второй</label>
 		</div>
-		<div so-list-box>
+		<so-list-box>
 			<so-list-box-item value="a" text="Альфа" />
 			<so-list-box-item value="b" text="Бета" />
-		</div>`,
+		</so-list-box>`,
 })
 class CollectionsPage {}
 
@@ -526,7 +526,7 @@ describe('Table · гидратация', () => {
 	selector: 'app-root',
 	standalone: true,
 	imports: [TListBoxComponent, TVirtualComponent],
-	template: `<so-virtual><div so-list-box [items]="items"></div></so-virtual>`,
+	template: `<so-virtual><so-list-box [items]="items"></so-list-box></so-virtual>`,
 })
 class VirtualPage {
 	readonly items = Array.from({ length: 80 }, (_, index) => ({

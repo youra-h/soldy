@@ -9,15 +9,20 @@ import { setupListBox } from './setup.component'
 /**
  * TListBoxComponent — список с выбором.
  *
- * Обёртки нет: корень — сам элемент потребителя, `<div so-list-box>`, как у
- * Button. Классы, `attrs`, `dataset` и скрытие раскладывает на него
- * `TComponentBase` (стратегия `'host'`). Корень — рамка: шапка, узел списка
+ * Селектор — элементный, `<so-list-box>`: атрибуты потребителя у списка
+ * делятся, как у поля, и корнем служит сам элемент компонента. Классы,
+ * `attrs`, `dataset` и скрытие раскладывает на него `TComponentBase`
+ * (стратегия `'host'`). Корень — рамка: шапка, узел списка
  * (`.so-list-box__list`) и подвал. Набор `aria` владельца — это сам список
  * (`role="listbox"`, `aria-multiselectable`, имя от `aria_label`), и на узел
  * списка его кладёт директива набора: в `listbox` ARIA пускает только опции,
  * а шапка и подвал — место полей и кнопок. Узел списка — и остановка Tab
  * (`tabindex="0"` статикой шаблона): по элементам ходят стрелки его
  * клавиатуры (`TListKeyboardPlugin`), и свои клавиши она берёт с этого узла.
+ * Статические атрибуты, которые потребитель записал на список, кроме `class`
+ * и `style`, база переносит на узел списка (`control`): `aria-label` и `id`
+ * называют список, а не рамку без роли, `tabindex="-1"` снимает его с
+ * остановок Tab.
  *
  * Контекстов два — свой и фасада коллекции (`setupListBox`), и входы фасада
  * (`items`, `mode`, `engine`, `trackBy`) — входы того же элемента. Свой слой
@@ -28,14 +33,10 @@ import { setupListBox } from './setup.component'
  * Элементы разметки — `<so-list-box-item>` в содержимом. Без них список рисует
  * то, что рисует коллекция (`drawn`), — запасным содержимым `<ng-content>`.
  *
- * `div[so-list-box]` стоит первым: по первому селектору Angular выбирает тег
- * хоста, когда создаёт компонент сам (`createComponent`), — это тег ядра по
- * умолчанию.
- *
- * Selector: div[so-list-box], [so-list-box]
+ * Selector: so-list-box
  */
 @Component({
-	selector: 'div[so-list-box], [so-list-box]',
+	selector: 'so-list-box',
 	standalone: true,
 	imports: [NgTemplateOutlet, AttributesDirective, SlotDirective, TListBoxItemComponent],
 	providers: [provideElevator()],
@@ -44,7 +45,7 @@ import { setupListBox } from './setup.component'
 })
 export class TListBoxComponent extends TListBoxSurface<IListBox> {
 	constructor() {
-		super(ListBoxInputNames, { strategy: 'host', sets: ['attrs', 'dataset'] })
+		super(ListBoxInputNames, { strategy: 'host', sets: ['attrs', 'dataset'], control: true })
 	}
 
 	protected createBinding(

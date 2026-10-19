@@ -64,7 +64,7 @@ let engine: TCollectionEngine<any, any> = createEngine()
 @Component({
 	standalone: true,
 	imports: [TListBoxComponent],
-	template: `<div so-list-box [engine]="engine"></div>`,
+	template: `<so-list-box [engine]="engine"></so-list-box>`,
 })
 class ListBoxHost {
 	readonly engine = engine
@@ -73,7 +73,7 @@ class ListBoxHost {
 @Component({
 	standalone: true,
 	imports: [TTabsComponent],
-	template: `<div so-tabs [engine]="engine"></div>`,
+	template: `<so-tabs [engine]="engine"></so-tabs>`,
 })
 class TabsHost {
 	readonly engine = engine
@@ -155,7 +155,7 @@ describe('движок снаружи', () => {
 		@Component({
 			standalone: true,
 			imports: [TListBoxComponent],
-			template: `<div so-list-box [ctrl]="owner" [engine]="engine"></div>`,
+			template: `<so-list-box [ctrl]="owner" [engine]="engine"></so-list-box>`,
 		})
 		class ExternalHost {
 			readonly owner = owner

@@ -1,8 +1,8 @@
 <script lang="ts">
-	import { Dynamic, toRootProps } from '../../adapter'
+	import { Dynamic, toControlAttrs, toRootForward, toRootProps } from '../../adapter'
 	import { TabsItem } from './item'
 	import { setupTabs } from './setup.component'
-	import type { TabsProps } from './base.component'
+	import type { TabsAttributes, TabsProps } from './base.component'
 
 	let { ref = $bindable(), ...props }: TabsProps = $props()
 	const mountId = $props.id()
@@ -18,6 +18,11 @@
 	`aria-orientation` пишет ядро, имя из `aria_label` — `TAriaPlugin`. Корень
 	его не получает: рядом со списком там лежат панели. На корне — `attrs`,
 	как у Vue.
+
+	Атрибуты потребителя делятся, как у поля и у Vue: класс и стиль — корню,
+	остальное — списку табов, поверх его `aria`, и attachment потребителя —
+	тоже ему: `aria-label` и `id` потребителя называют список, а не корень без
+	роли. `ref` — корень.
 
 	Табы — содержимое (`<Tabs.Item>`), а без него — `shown` коллекции, по
 	`TabsItem` на элемент. Слоты элементов статические и получают элемент
@@ -41,10 +46,14 @@
 {#if state.rendered}
 	<Dynamic
 		tag="div"
-		attributes={toRootProps(state, [state.attrs], binding.forwardProps)}
+		attributes={toRootProps(state, [state.attrs], toRootForward(binding.forwardProps))}
 		attach={binding.attachElement}
 	>
-		<div class="so-tabs__list" {...state.aria}>
+		<div
+			class="so-tabs__list"
+			{...state.aria}
+			{...toControlAttrs<TabsAttributes>(binding.forwardProps)}
+		>
 			{#if props.leading}
 				<div class="so-tabs__list--leading">{@render props.leading()}</div>
 			{/if}{#if props.children}

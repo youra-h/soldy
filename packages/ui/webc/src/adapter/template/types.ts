@@ -77,9 +77,9 @@ export type TTemplateParts = {
 	readonly slots: TSlotTargets
 	/**
 	 * Узел поля — вложенный `<input>` Input, CheckBox, Switch и радио, строка
-	 * таба и заголовок секции. Есть только у корня с полем
-	 * (`TRootSpec.control`): на него база при построении переносит статические
-	 * атрибуты разметки корня.
+	 * таба, секции и элемента списка, узел списка с ролью у ListBox и Tabs.
+	 * Есть только у корня с полем (`TRootSpec.control`): на него база при
+	 * построении переносит статические атрибуты разметки корня.
 	 */
 	readonly control?: HTMLElement
 	/**

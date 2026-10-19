@@ -28,10 +28,12 @@ import {
 	TIconComponent,
 	TInputComponent,
 	TLabelComponent,
+	TListBoxComponent,
 	TProgressSpinnerComponent,
 	TSkeletonComponent,
 	TSwitchComponent,
 	TTableComponent,
+	TTabsComponent,
 } from '@soldy-ui/angular'
 import {
 	applyAttributes,
@@ -198,6 +200,46 @@ const FIELDS: ReadonlyArray<readonly [string, Type<TProbeHost>, string, string]>
 	['Input', InputProbe, 'so-input', 'so-input'],
 ]
 
+/**
+ * Проба списка: у ListBox и Tabs атрибуты потребителя делятся, как у поля, —
+ * между корнем и узлом списка, на котором роль и `aria` компонента. `dir`
+ * потребителя уезжает на узел списка, а `dir` ядра по `direction` стоит на
+ * корне.
+ */
+@Component({
+	standalone: true,
+	imports: [TListBoxComponent],
+	template: `<so-list-box
+		direction="rtl"
+		dir="ltr"
+		title="probe"
+		class="mine"
+		style="color: red"
+		(soElementReady)="ready.push($event)"
+	/>`,
+})
+class ListBoxProbe extends TProbeHost {}
+
+@Component({
+	standalone: true,
+	imports: [TTabsComponent],
+	template: `<so-tabs
+		direction="rtl"
+		dir="ltr"
+		title="probe"
+		class="mine"
+		style="color: red"
+		(soElementReady)="ready.push($event)"
+	/>`,
+})
+class TabsProbe extends TProbeHost {}
+
+/** Список, хост его пробы, селектор корня, класс ядра на нём и селектор узла списка. */
+const LISTS: ReadonlyArray<readonly [string, Type<TProbeHost>, string, string, string]> = [
+	['ListBox', ListBoxProbe, 'so-list-box', 'so-list-box', '[role="listbox"]'],
+	['Tabs', TabsProbe, 'so-tabs', 'so-tabs', '[role="tablist"]'],
+]
+
 describe('что называет ядро, — за базой, остальное — потребителя', () => {
 	/**
 	 * `dir` ядро пишет в `attrs` по `direction`, и имя `dir` у него — за базой,
@@ -313,6 +355,60 @@ describe('поле: атрибуты потребителя делятся ме�
 			)
 		},
 	)
+})
+
+/**
+ * У ListBox и Tabs атрибуты потребителя делятся, как у поля: класс и стиль —
+ * корню, атрибуты из разметки — узлу списка, где роль и `aria` компонента
+ * (`TRootSpec.control`). Наборы ядра — каждый на своём элементе: `attrs`
+ * (`dir`) — на корне, `aria` — на узле списка.
+ */
+describe('ListBox и Tabs: атрибуты потребителя делятся между корнем и списком', () => {
+	it.each(LISTS)(
+		'%s: класс и стиль — на корне рядом с классом ядра',
+		(_name, host, selector, own, list) => {
+			const fixture = mountHost(host)
+			const el = findIn(fixture, selector, HTMLElement)
+			const node = findIn(fixture, list, HTMLElement)
+
+			expect(el.classList.contains('mine')).toBe(true)
+			expect(el.classList.contains(own)).toBe(true)
+			expect(el.style.color).toBe('red')
+			expect(node.classList.contains('mine')).toBe(false)
+			expect(node.style.color).toBe('')
+		},
+	)
+
+	it.each(LISTS)(
+		'%s: атрибуты из разметки — на узле списка, не на корне',
+		(_name, host, selector, _own, list) => {
+			const fixture = mountHost(host)
+			const el = findIn(fixture, selector, HTMLElement)
+			const node = findIn(fixture, list, HTMLElement)
+
+			expect(node.parentElement).toBe(el)
+			expect(el.hasAttribute('title')).toBe(false)
+			expect(node.getAttribute('title')).toBe('probe')
+		},
+	)
+
+	it.each(LISTS)(
+		'%s: dir ядра — на корне, dir потребителя — на узле списка',
+		(_name, host, selector, _own, list) => {
+			const fixture = mountHost(host)
+
+			expect(findIn(fixture, selector, HTMLElement).getAttribute('dir')).toBe('rtl')
+			expect(findIn(fixture, list, HTMLElement).getAttribute('dir')).toBe('ltr')
+		},
+	)
+
+	it.each(LISTS)('%s: soElementReady приходит с корнем', async (_name, host, selector) => {
+		const fixture = mountHost(host)
+
+		await nextFrame()
+
+		expect(fixture.componentInstance.ready).toEqual([findIn(fixture, selector, HTMLElement)])
+	})
 })
 
 @Component({
