@@ -391,6 +391,33 @@ describe('Field · одно поле — один контрол', () => {
 			find(document, '.so-field__helper', HTMLElement).id,
 		])
 	})
+
+	/**
+	 * Поле, которое связки не взяло — её взял флажок раньше него, — своему
+	 * содержимому всё равно опускает пустую связку: контрол в его слоте — его
+	 * содержимое. Флажок сняли, связка свободна, а переключатель, появившийся в
+	 * слоте поля, её не берёт.
+	 */
+	it('связка освободилась — контрол в слоте другого контрола её не берёт', () => {
+		function Harness({ first, nested }: { first: boolean; nested: boolean }): ReactElement {
+			return (
+				<Field label="Почта" helper="Подсказка">
+					{first ? <CheckBox /> : null}
+					<Input trailing={nested ? <Switch /> : null} />
+				</Field>
+			)
+		}
+
+		const { render } = mount(<Harness first nested={false} />)
+
+		render(<Harness first={false} nested={false} />)
+		render(<Harness first={false} nested />)
+
+		const nested = find(document, '.so-switch input', HTMLInputElement)
+
+		expect(nested.id).toBe('')
+		expect(nested.hasAttribute('aria-describedby')).toBe(false)
+	})
 })
 
 /**

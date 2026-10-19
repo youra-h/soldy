@@ -32,6 +32,7 @@ import {
 	Button,
 	CheckBox,
 	ComponentView,
+	Field,
 	Frame,
 	Icon,
 	Input,
@@ -52,6 +53,7 @@ import {
 	type ButtonProps,
 	type CheckBoxProps,
 	type ComponentViewProps,
+	type FieldProps,
 	type FrameProps,
 	type IconProps,
 	type InputProps,
@@ -73,6 +75,7 @@ import { find, mount, nextFrame } from './mount'
 /** Общие пропсы строки таблицы: направление, атрибуты и колбэк готовности есть у всех. */
 type TProbeProps = ButtonProps &
 	ComponentViewProps &
+	FieldProps &
 	FrameProps &
 	IconProps &
 	LabelProps &
@@ -101,6 +104,7 @@ const COMPONENTS: ReadonlyArray<
 > = [
 	['Button', Button, '.so-button', {}],
 	['ComponentView', ComponentView, '.so-component-view', {}],
+	['Field', Field, '.so-field', {}],
 	['Frame', Frame, '.so-frame', { visible: true }],
 	['Icon', Icon, '.so-icon', { tag: 'i' }],
 	['Label', Label, '.so-label', {}],
@@ -271,6 +275,32 @@ describe('поле: атрибуты снаружи — <input>, поверх е
 			expectNodes(nodes, [root])
 			expect(nodes).not.toContain(find(root, 'input', HTMLInputElement))
 			expectNodes(ready, [root])
+		},
+	)
+
+	/**
+	 * Тема красит коробку поля и подпись поля формы `Field` по корню поля —
+	 * прямому ребёнку обёртки контрола, — поэтому `dataset` (`data-disabled`,
+	 * `data-invalid`) — на корне, а ошибку скринридеру объявляет `<input>`.
+	 * Ошибку контролу пишет поле формы.
+	 */
+	it.each(FIELDS)(
+		'%s: data-disabled и data-invalid — на корне, aria-invalid — у <input>',
+		(_name, Probe, selector) => {
+			mount(() => (
+				<Field invalid>
+					<Probe disabled />
+				</Field>
+			))
+
+			const root = find(document, selector, HTMLElement)
+			const field = find(root, 'input', HTMLInputElement)
+
+			expect(root.dataset['disabled']).toBe('true')
+			expect(root.dataset['invalid']).toBe('true')
+			expect(field.hasAttribute('data-disabled')).toBe(false)
+			expect(field.hasAttribute('data-invalid')).toBe(false)
+			expect(field.getAttribute('aria-invalid')).toBe('true')
 		},
 	)
 

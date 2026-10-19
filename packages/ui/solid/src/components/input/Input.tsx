@@ -1,6 +1,7 @@
 import { Show, type JSX } from 'solid-js'
 import { Dynamic } from 'solid-js/web'
 import {
+	Elevate,
 	createRootProps,
 	fieldText,
 	resolveSlot,
@@ -21,11 +22,13 @@ const CloseGlyph = roleIcon('close')
  * Input — текстовое поле: корень по `tag` (по умолчанию `div`) и `<input>`
  * внутри, по сторонам — слоты `leading` и `trailing`.
  *
- * Наборы ядра стоят на разных элементах: `attrs` (`dir`) — на корне, `aria` —
- * на `<input>`. Нативные `disabled`, `readonly` и `required` поля проводит
- * разметка, поэтому ARIA-дублей ядро рядом с ними не пишет. Атрибуты
- * потребителя делятся, как у Vue: класс и стиль — корню, всё остальное —
- * полю, поверх его `aria`.
+ * Наборы ядра стоят на разных элементах: `attrs` (`dir`) и `dataset`
+ * (`data-disabled`, `data-invalid`) — на корне, `aria` — на `<input>`: тема
+ * красит коробку поля и подпись поля формы `Field` по корню, а ошибку
+ * скринридеру объявляет `<input>`. Нативные `disabled`, `readonly` и
+ * `required` поля проводит разметка, поэтому ARIA-дублей ядро рядом с ними не
+ * пишет. Атрибуты потребителя делятся, как у Vue: класс и стиль — корню, всё
+ * остальное — полю, поверх его `aria`.
  *
  * Текст поля ведёт ядро: в ядро его несёт плагин ввода, в узел — `ref` поля
  * (`fieldText`), и только когда текст разошёлся с узлом: привязку `value`
@@ -51,40 +54,49 @@ const CloseGlyph = roleIcon('close')
  *
  * У кнопки нет `view`: значения вида объявляет тема, и разметка библиотеки их
  * не знает. Кнопку тема красит по контексту (`.so-input__clear`).
+ *
+ * Поле формы `Field` над полем отдаёт ему ошибку, `id` и ссылки на части
+ * (`TFieldControlExtension`), а своему содержимому поле опускает пустую
+ * связку: контролы в его слотах — его содержимое, а не контрол поля формы.
+ * Поэтому содержимое — в слое лифта поля (`Elevate`), и слоты разворачиваются
+ * там же: узлы слота Solid создаёт там, где его развернули, и развёрнутые в
+ * теле поля видели бы связку поля формы над ним.
  */
 export function Input(props: InputProps): JSX.Element {
 	const binding = setupInput(props)
 	const state = binding.state
 	const ctrl = binding.ctrl
-	// Корню — его набор, класс и стиль потребителя; `ref` адаптера последним
+	// Корню — его наборы, класс и стиль потребителя; `ref` адаптера последним
 	const root = createRootProps(() => ({
 		state,
-		sets: [state.attrs],
+		sets: [state.attrs, state.dataset],
 		forward: toRootForward(binding.forwardProps()),
 	}))
 	const control = () => toControlAttrs<InputAttributes>(binding.forwardProps())
 	const text = fieldText(() => state.value)
-	const leadingSlot = resolveSlot(
-		() => props.leading,
-		() => ({ ctrl }),
-	)
-	const clearSlot = resolveSlot(
-		() => props.clear,
-		() => ({ clear: ctrl.clear }),
-	)
-	const trailingSlot = resolveSlot(
-		() => props.trailing,
-		() => ({ ctrl }),
-	)
 
 	function clear(event: MouseEvent): void {
 		event.stopPropagation()
 		ctrl.clear()
 	}
 
-	return (
-		<Show when={state.rendered}>
-			<Dynamic {...root()} component={rootTag(state.tag)} ref={binding.ref}>
+	/** Содержимое корня — под слоем лифта поля: зовёт его `Elevate`, внутри себя. */
+	function content(): JSX.Element {
+		const leadingSlot = resolveSlot(
+			() => props.leading,
+			() => ({ ctrl }),
+		)
+		const clearSlot = resolveSlot(
+			() => props.clear,
+			() => ({ clear: ctrl.clear }),
+		)
+		const trailingSlot = resolveSlot(
+			() => props.trailing,
+			() => ({ ctrl }),
+		)
+
+		return (
+			<>
 				<Show when={leadingSlot()}>
 					<div class="so-input__leading">{leadingSlot()}</div>
 				</Show>
@@ -135,6 +147,14 @@ export function Input(props: InputProps): JSX.Element {
 						{trailingSlot()}
 					</div>
 				</Show>
+			</>
+		)
+	}
+
+	return (
+		<Show when={state.rendered}>
+			<Dynamic {...root()} component={rootTag(state.tag)} ref={binding.ref}>
+				<Elevate layer={binding.layer}>{content()}</Elevate>
 			</Dynamic>
 		</Show>
 	)
