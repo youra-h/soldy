@@ -1,21 +1,9 @@
+import { digitOf } from '../../../../common'
+
 /**
  * Цифры частей — в системе счисления локали: набор, текст и разбор чисел.
+ * Какая цифра в знаке, решает общее правило цифр локали (`digitOf`).
  */
-
-/**
- * Цифра в знаке: цифра ASCII, цифра системы счисления локали (`digits`) или
- * полноширинная — её приводит к ASCII нормализация NFKC, как и прочие
- * совместимые формы цифр. Не цифра — `undefined`.
- */
-export function digitOf(char: string, digits: readonly string[]): number | undefined {
-	const normalized = char.normalize('NFKC')
-
-	if (normalized.length === 1 && normalized >= '0' && normalized <= '9') return Number(normalized)
-
-	const index = digits.indexOf(char)
-
-	return index === -1 ? undefined : index
-}
 
 /** Число из цифр локали; знак не цифра — `NaN`. */
 export function numberOf(text: string, digits: readonly string[]): number {

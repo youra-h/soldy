@@ -1,6 +1,7 @@
 import { DATE_GROUP } from '../date'
 import { TIME_GROUPS } from '../time'
 import { asciiDigits } from '../segments'
+import { DIRECTION_MARKS } from '../../../../common'
 import type { TCalendarDate } from '../../../../common'
 import type { IDateFieldFormat, TGroupSpec } from '../format'
 import type {
@@ -49,14 +50,6 @@ const KINDS: Readonly<
 const COMPOSITIONS: readonly (readonly TGroupSpec[])[] = Object.values(KINDS).flatMap(
 	(byPrecision) => Object.values(byPrecision),
 )
-
-/**
- * Метки направления и изолирующие знаки: ALM, LRM, RLM, встраивания и
- * изоляты. В литералах формата их ставит Intl (`ar-EG` — RLM перед «/»), а в
- * тексте даты, который вставляют в поле, они не значат ничего: разбор их не
- * считает.
- */
-const DIRECTION_MARKS = /[؜‎‏‪-‮⁦-⁩]/g
 
 /** Группы цифр текста, уже приведённого к цифрам ASCII. */
 const DIGIT_GROUPS = /\d+/g
