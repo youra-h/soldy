@@ -1,5 +1,6 @@
 export { shiftSize } from './utility/size'
 export { frameDebounce } from './utility/frame-debounce'
+export { toText } from './utility/to-text'
 export type {
 	TThemeRegistry,
 	IComponentVariants,

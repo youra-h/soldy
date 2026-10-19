@@ -21,5 +21,4 @@ export {
 	type TWrappedRootProps,
 	type TWrappedRootSource,
 } from './root'
-export { toText } from './text'
 export { roleIcon, type TRoleIconProps } from './icon'
