@@ -32,16 +32,29 @@ import {
 import type { IDismissPluginOptions } from '@soldy-ui/plugins'
 import { FRAME_LAYER_ATTRIBUTE, TFrame, TPopover } from '@soldy-ui/core'
 
-/** Якорь с заданным прямоугольником: jsdom сам ничего не раскладывает. */
+/** Узел встаёт в заданный прямоугольник: jsdom сам ничего не раскладывает. */
+function placeAt(element: HTMLElement, rect: Partial<DOMRect>): void {
+	element.getBoundingClientRect = () =>
+		({ left: 0, top: 0, right: 0, bottom: 0, width: 0, height: 0, ...rect }) as DOMRect
+}
+
+/** Якорь с заданным прямоугольником. */
 function anchorAt(rect: Partial<DOMRect>): HTMLElement {
 	const element = document.createElement('div')
 
-	element.getBoundingClientRect = () =>
-		({ left: 0, top: 0, right: 0, bottom: 0, width: 0, height: 0, ...rect }) as DOMRect
-
+	placeAt(element, rect)
 	document.body.appendChild(element)
 
 	return element
+}
+
+/**
+ * Страницу прокрутили: якорь встал в новый прямоугольник, и окно прислало
+ * `scroll` — по нему плагин и пересчитывает место панели.
+ */
+function scrollAnchorTo(anchor: HTMLElement, rect: Partial<DOMRect>): void {
+	placeAt(anchor, rect)
+	window.dispatchEvent(new Event('scroll'))
 }
 
 /** Панель заданного размера — нужна только для `*-end`, центра, показа сверху, flip и shift. */
@@ -380,6 +393,188 @@ describe('flip: сторона у края экрана', () => {
 
 		expect(handler).toHaveBeenCalledTimes(1)
 		expect(handler).toHaveBeenCalledWith(false)
+	})
+
+	/**
+	 * Сторону выбирает правило выше, а открытая панель её держит: стоит, пока
+	 * там влезает, и переходит, только если влезает напротив. Без памяти
+	 * граница «снизу влезает» гоняла панель туда и обратно — на телефоне
+	 * страница идёт по пикселю, и поле стоит на границе всё время.
+	 */
+	describe('открытая панель держит сторону', () => {
+		/** Под якорем 20px, над ним 750px. */
+		const NEAR_BOTTOM = { left: 100, top: 750, bottom: 780, right: 220 }
+		/** Над якорем 500px, под ним 270px: панель в 100px влезает с обеих сторон. */
+		const BOTH_FIT = { left: 100, top: 500, bottom: 530, right: 220 }
+
+		type TOpened = { frame: TFrame; plugin: TAnchorPlugin; anchor: HTMLElement }
+
+		/**
+		 * Панель высотой `height` у якоря `rect`: узел панели объявлен — она
+		 * разложена, — якорь назначен, Frame показан.
+		 */
+		const opened = async (height: number, rect: Partial<DOMRect>): Promise<TOpened> => {
+			const frame = new TFrame({ position: 'fixed' })
+			const panel = panelOf(120, height)
+			const plugin = anchorFor(frame, panel.plugin)
+			const anchor = anchorAt(rect)
+
+			panel.plugin.element = panel.element
+			await nextFrame()
+			plugin.setAnchor(anchor)
+			frame.show()
+
+			return { frame, plugin, anchor }
+		}
+
+		it('открыта сверху у нижнего края: якорь поднялся, снизу влезает — остаётся сверху и идёт за якорем', async () => {
+			const { frame, anchor } = await opened(100, NEAR_BOTTOM)
+
+			expect(frame.dataset.get('placement')).toBe('top-start')
+
+			// Под якорем 270px: панель в 100px влезла бы и снизу
+			scrollAnchorTo(anchor, BOTH_FIT)
+
+			expect(frame.dataset.get('placement')).toBe('top-start')
+			expect(frame.y).toBe(400) // 500 - 100
+		})
+
+		it('держит низ: снизу не влезает, сверху места больше, но тоже не влезает — остаётся; сверху влезает — переходит', async () => {
+			const { frame, anchor } = await opened(500, {
+				left: 100,
+				top: 100,
+				bottom: 130,
+				right: 220,
+			})
+
+			expect(frame.dataset.get('placement')).toBe('bottom-start')
+
+			// Над якорем 450px, под ним 320px — панели в 500px мало и там и
+			// там. Выбор увёл бы её наверх: места там больше
+			scrollAnchorTo(anchor, { left: 100, top: 450, bottom: 480, right: 220 })
+
+			expect(frame.dataset.get('placement')).toBe('bottom-start')
+			expect(frame.y).toBe(480)
+
+			// Над якорем 520px — сверху панель влезает
+			scrollAnchorTo(anchor, { left: 100, top: 520, bottom: 550, right: 220 })
+
+			expect(frame.dataset.get('placement')).toBe('top-start')
+			expect(frame.y).toBe(20) // 520 - 500
+		})
+
+		it('закрытие и новое открытие выбирают сторону заново', async () => {
+			const { frame, anchor } = await opened(500, {
+				left: 100,
+				top: 520,
+				bottom: 550,
+				right: 220,
+			})
+
+			expect(frame.dataset.get('placement')).toBe('top-start')
+
+			// Над якорем 300px, под ним 470px — не влезает нигде: открытая
+			// держит верх, а выбор оставил бы сторону потребителя, низ
+			scrollAnchorTo(anchor, { left: 100, top: 300, bottom: 330, right: 220 })
+
+			expect(frame.dataset.get('placement')).toBe('top-start')
+
+			frame.hide()
+			frame.show()
+
+			expect(frame.dataset.get('placement')).toBe('bottom-start')
+			expect(frame.y).toBe(330)
+		})
+
+		/** Закрытие сторону не забывает: она нужна панели, пока та гаснет. */
+		it('закрытая панель сторону держит', async () => {
+			const { frame, anchor } = await opened(100, NEAR_BOTTOM)
+
+			scrollAnchorTo(anchor, BOTH_FIT)
+			frame.hide()
+			scrollAnchorTo(anchor, { ...BOTH_FIT, top: 490, bottom: 520 })
+
+			expect(frame.dataset.get('placement')).toBe('top-start')
+		})
+
+		it('смена placement у открытой панели выбирает сторону заново', async () => {
+			const { frame, plugin } = await opened(100, BOTH_FIT)
+
+			expect(frame.dataset.get('placement')).toBe('bottom-start')
+
+			// Влезает с обеих сторон: удержание оставило бы панель снизу
+			plugin.placement = 'top-start'
+
+			expect(frame.dataset.get('placement')).toBe('top-start')
+			expect(frame.y).toBe(400)
+		})
+
+		/**
+		 * Каждый из этих поводов меняет то, по чему сторону выбирали, —
+		 * держать прежнюю незачем. Панель держит верх там, где влезает с
+		 * обеих сторон, а выбор ставит её на сторону потребителя, вниз.
+		 */
+		it.each<[string, (state: TOpened) => void]>([
+			['новый якорь', ({ plugin }) => plugin.setAnchor(anchorAt(BOTH_FIT))],
+			[
+				'якорь сняли и вернули',
+				({ plugin, anchor }) => {
+					plugin.removeAnchor()
+					plugin.setAnchor(anchor)
+				},
+			],
+			[
+				'contained включили и выключили',
+				({ frame }) => {
+					frame.contained = true
+					frame.contained = false
+				},
+			],
+			[
+				'flip выключили и включили',
+				({ plugin }) => {
+					plugin.flip = false
+					plugin.flip = true
+				},
+			],
+		])('%s — сторона выбирается заново', async (_, forget) => {
+			const state = await opened(100, NEAR_BOTTOM)
+
+			scrollAnchorTo(state.anchor, BOTH_FIT)
+
+			expect(state.frame.dataset.get('placement')).toBe('top-start')
+
+			forget(state)
+
+			expect(state.frame.dataset.get('placement')).toBe('bottom-start')
+			expect(state.frame.y).toBe(530)
+		})
+
+		/**
+		 * На `show` закрытая панель ещё не разложена, и нулевая высота влезает с
+		 * любой стороны. Запомни плагин сторону по ней, на первом настоящем
+		 * измерении панель удержала бы низ вместо выбора.
+		 */
+		it('неразложенная панель сторону не держит', async () => {
+			const frame = new TFrame({ position: 'fixed' })
+			const panel = panelOf(120, 0)
+			const plugin = anchorFor(frame, panel.plugin)
+
+			panel.plugin.element = panel.element
+			await nextFrame()
+			// Якорь в нижней половине окна: над ним 450px, под ним 320px
+			plugin.setAnchor(anchorAt({ left: 100, top: 450, bottom: 480, right: 220 }))
+			frame.show()
+
+			expect(frame.dataset.get('placement')).toBe('bottom-start')
+
+			// Панель разложилась: 500px не влезают нигде, места больше сверху
+			placeAt(panel.element, { right: 120, bottom: 500, width: 120, height: 500 })
+			triggerResize(panel.element)
+
+			expect(frame.dataset.get('placement')).toBe('top-start')
+			expect(frame.y).toBe(-50) // 450 - 500
+		})
 	})
 })
 
