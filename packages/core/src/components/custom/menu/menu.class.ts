@@ -10,6 +10,7 @@ import type {
 	TMenuPlacement,
 	TMenuPoint,
 } from './types'
+import type { IMenuItem } from './item/types'
 
 /** Одна ли это точка: координаты те же, или точки нет у обеих. */
 const samePoint = (a: TMenuPoint | null, b: TMenuPoint | null): boolean =>
@@ -36,7 +37,9 @@ const samePoint = (a: TMenuPoint | null, b: TMenuPoint | null): boolean =>
  *
  * Пункты — коллекция меню (`createEngineMenu`): движок, выбор для флажков,
  * подсветка `TListItemPlugin`, навигация — наследник `TListNavigationPlugin`.
- * Что нажали, сообщает событие коллекции `choose`. Клавиатура, указатель,
+ * Что нажали, сообщает событие коллекции `choose` — и о пунктах подменю: у
+ * пункта с подменю (`TMenuSubmenu`) своя коллекция, а выбор в ней доходит до
+ * меню и закрывает его целиком (`notifyChoose`). Клавиатура, указатель,
  * фокус и нажатие мимо — плагины; здесь только состояние и то, что из него
  * следует для разметки.
  *
@@ -113,6 +116,15 @@ export class TMenu extends TStylable<IMenuProps, TMenuEvents> implements IMenu {
 
 		this._applyOpen(value)
 		this.events.emit('change:open', value)
+	}
+
+	/**
+	 * Пункт-действие выбрали — в панели меню или в любом его подменю: меню
+	 * закрывается целиком. Открытые подменю закрывает его коллекция, когда
+	 * закрылось само меню, а фокус возвращает на триггер модель фокуса.
+	 */
+	notifyChoose(_item: IMenuItem): void {
+		this.open = false
 	}
 
 	/**

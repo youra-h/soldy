@@ -44,6 +44,17 @@ export type TInlineSpan = {
 }
 
 /**
+ * Прямоугольник в координатах окна браузера — левый верхний угол и размер,
+ * как их отдаёт `getBoundingClientRect()`.
+ */
+export type TBox = {
+	left: number
+	top: number
+	width: number
+	height: number
+}
+
+/**
  * Что нужно доводке элемента под фокусом (`nearestShift`) — всё отрезками по
  * строке.
  */

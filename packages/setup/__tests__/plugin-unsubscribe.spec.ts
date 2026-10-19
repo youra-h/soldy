@@ -29,6 +29,7 @@ import {
 	TCalendar,
 	TListBox,
 	TMenu,
+	TMenuSubmenu,
 	TPagination,
 	TRadioGroup,
 	TSelect,
@@ -97,6 +98,12 @@ const ENGINES: Readonly<Record<string, () => TOwnedEngine>> = {
 	},
 	MenuDescriptor: () => {
 		const owner = new TMenu()
+
+		return { owner, engine: createEngineMenu({ owner }) }
+	},
+	// Пункт с подменю — владелец своих пунктов: его коллекция — та же, что у меню
+	MenuSubmenuDescriptor: () => {
+		const owner = new TMenuSubmenu()
 
 		return { owner, engine: createEngineMenu({ owner }) }
 	},

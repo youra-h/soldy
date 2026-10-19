@@ -6,3 +6,4 @@
  */
 
 export * from './menu'
+export { menuOf } from './guards'

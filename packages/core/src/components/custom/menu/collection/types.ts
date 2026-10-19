@@ -21,7 +21,7 @@ import type {
 } from '../../../base/collection'
 import type { IMenuItemExtension, TMenuItemEventsExtension } from './extensions/menu/item/types'
 import type { TMenuExtension, TMenuEngineOptions, TMenuExtensionEvents } from './extensions'
-import type { IMenu } from '../types'
+import type { IMenuOwner } from '../types'
 import type { IMenuItem, IMenuItemProps } from '../item/types'
 
 export type TMenuCollectionExtensions<TItem extends IMenuItem = IMenuItem> = {
@@ -35,7 +35,7 @@ export type TMenuCollectionExtensions<TItem extends IMenuItem = IMenuItem> = {
 	selection: TSelectionExtension<TItem>
 	/** Группы пунктов: показанное по группам и его секции */
 	group: TGroupExtension<TItem>
-	menu: TMenuExtension<IMenu, TItem>
+	menu: TMenuExtension<IMenuOwner<any>, TItem>
 }
 
 export type TMenuCollection = TCollectionEngine<

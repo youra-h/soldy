@@ -31,6 +31,7 @@ import {
 	TCollectionComponent,
 	TListBox,
 	TMenu,
+	TMenuSubmenu,
 	TPagination,
 	TRadioGroup,
 	TSelect,
@@ -60,6 +61,8 @@ import {
 	ListBoxDescriptor,
 	MenuCollectionDescriptor,
 	MenuDescriptor,
+	MenuSubmenuCollectionDescriptor,
+	MenuSubmenuDescriptor,
 	PaginationCollectionDescriptor,
 	PaginationDescriptor,
 	RadioGroupCollectionDescriptor,
@@ -188,6 +191,23 @@ const COLLECTIONS: Readonly<Record<string, TCollectionKit>> = {
 			owner,
 			engine,
 			mount: () => mountOver(MenuDescriptor(), MenuCollectionDescriptor(), owner, engine),
+		}
+	},
+	// Пункт с подменю — владелец своих пунктов: фасад тот же, что у меню
+	MenuSubmenuCollectionDescriptor: () => {
+		const owner = new TMenuSubmenu()
+		const engine = createEngineMenu()
+
+		return {
+			owner,
+			engine,
+			mount: () =>
+				mountOver(
+					MenuSubmenuDescriptor(),
+					MenuSubmenuCollectionDescriptor(),
+					owner,
+					engine,
+				),
 		}
 	},
 	PaginationCollectionDescriptor: () => {

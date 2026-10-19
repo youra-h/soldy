@@ -1,8 +1,52 @@
 import type { IStylable, IStylableProps, TStylableEvents } from '../../base/stylable'
 import type { TCollectionStorageDriverEvents } from '../../base/collection'
-import type { TAria, TAriaAttributes, TClasses, TDatasetAttributes } from '../../../common'
+import type {
+	TAria,
+	TAriaAttributes,
+	TClasses,
+	TComponentSize,
+	TComponentVariant,
+	TDatasetAttributes,
+	TEvented,
+	TValuePayload,
+} from '../../../common'
 import type { IMenuCollectionProps } from './collection/types'
 import type { IMenuItem, IMenuItemProps } from './item/types'
+
+/** События владельца пунктов меню, которые слушает его коллекция. */
+export type TMenuOwnerEvents = {
+	/** change:open */
+	'change:open': (value: boolean) => void
+	/** change:size */
+	'change:size': (payload: TValuePayload<TComponentSize>) => void
+}
+
+/**
+ * Владелец пунктов меню — тот, чья панель их показывает: меню (`TMenu`) или
+ * пункт с подменю (`TMenuSubmenu`) — для пунктов подменю.
+ *
+ * Коллекции меню от владельца нужны три вещи: открытость — закрытое меню
+ * закрывает свои открытые подменю; размер — его пункты получают размер
+ * меню; и что делает выбор пункта (`notifyChoose`) — это решает владелец:
+ * меню закрывается, подменю закрывает и меню, в котором стоит.
+ *
+ * Карта событий — параметр: шина инвариантна по своей карте, и у меню и у
+ * подменю она своя. Коллекция требует от неё только `TMenuOwnerEvents`.
+ */
+export interface IMenuOwner<TEvents extends TMenuOwnerEvents = TMenuOwnerEvents> {
+	/** Открыта ли панель с пунктами */
+	open: boolean
+	/** Размер меню — размер его пунктов */
+	size: TComponentSize
+	/** Вариант меню — цвет пунктов без своего варианта */
+	variant: TComponentVariant | undefined
+	readonly events: TEvented<TEvents>
+	/**
+	 * Пункт-действие этого меню выбрали — меню закрывается. Зовёт коллекция
+	 * перед тем, как сообщить `choose`: подписчик застаёт меню закрытым.
+	 */
+	notifyChoose(item: IMenuItem): void
+}
 
 /**
  * Сторона и выравнивание панели у триггера.
@@ -65,7 +109,7 @@ export interface IMenuProps
  * Меню действий у кнопки (APG Menu Button) или контекстное меню области:
  * триггер потребителя и панель с пунктами.
  */
-export interface IMenu extends IStylable<IMenuProps, TMenuEvents> {
+export interface IMenu extends IStylable<IMenuProps, TMenuEvents>, IMenuOwner<TMenuEvents> {
 	/** Открыта ли панель */
 	open: boolean
 	/** Сторона и выравнивание панели у триггера */

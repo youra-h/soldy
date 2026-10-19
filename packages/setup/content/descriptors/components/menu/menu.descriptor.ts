@@ -17,6 +17,7 @@ import {
 	CollectionElementsPluginDescriptor,
 	DismissPluginDescriptor,
 	MenuFocusPluginDescriptor,
+	MenuHoverPluginDescriptor,
 	MenuIdsPluginDescriptor,
 	MenuKeyboardPluginDescriptor,
 	MenuPointerPluginDescriptor,
@@ -113,9 +114,11 @@ export const MenuDescriptor = defineDescriptor(() =>
 			// у него панель
 			MenuKeyboardPluginDescriptor,
 			// Открытие по способу `openOn` — клик по кнопке или контекстное меню
-			// области — и наведение на пункты. После клавиатуры: открывает и
-			// подсвечивает через неё
+			// области. После клавиатуры: открывает через неё
 			MenuPointerPluginDescriptor,
+			// Указатель в панели: подсветка пунктов, открытие подменю наведением и
+			// путь к нему. После клавиатуры: подсвечивает через неё
+			MenuHoverPluginDescriptor,
 			// Фокус при открытии и закрытии, Escape и Tab. После dismiss и
 			// клавиатуры: берёт у них панель, `dismiss` и строку подсвеченного
 			MenuFocusPluginDescriptor,

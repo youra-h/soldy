@@ -43,8 +43,25 @@ export const MenuCollectionDescriptor = defineDescriptor(() =>
 )
 
 /**
+ * Фасад пунктов подменю — тот же фасад меню: у пункта с подменю своя
+ * коллекция, такая же, как у меню, со своим составом, группами и `choose`.
+ * Своего сверх меню нет. Дескриптор — свой: это коллекционная часть
+ * `Menu.Submenu`, и её пропсы входят в интерфейс подменю
+ * (`IMenuSubmenuProps`), а не меню.
+ */
+export const MenuSubmenuCollectionDescriptor = defineDescriptor(() =>
+	defineComponent({
+		ctor: TMenuCollectionFacade,
+
+		extends: MenuCollectionDescriptor(),
+	}),
+)
+
+/**
  * Фасад пункта-действия: своих пропсов у него нет — нажатие разметка отдаёт
- * item-адаптеру `menu` через `context`, а отметки у действия не бывает.
+ * item-адаптеру `menu` через `context`, а отметки у действия не бывает. Тот
+ * же фасад — у пункта с подменю: в меню над ним он пункт, и его нажатие
+ * (`open`) разметка отдаёт тому же item-адаптеру.
  */
 export const MenuCollectionItemDescriptor = defineDescriptor(() =>
 	defineComponent({

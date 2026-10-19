@@ -13,7 +13,8 @@ export { nearestShift } from './nearestShift'
 export { scrollWindowOf, itemOf } from './scrollWindow'
 export { afterTransitions } from './afterTransitions'
 export { isScrollable, scrollParentOf, type TScrollAxis } from './scrollParent'
-export type { IDomEventTarget, TInlineSpan, TNearestShiftOptions } from './types'
+export { graceArea, isPointInPolygon } from './graceArea'
+export type { IDomEventTarget, TBox, TInlineSpan, TNearestShiftOptions } from './types'
 export {
 	positionOriginOf,
 	isPinnedToViewport,
