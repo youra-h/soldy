@@ -1,6 +1,7 @@
 import {
 	TValueSelectionExtension,
 	TFilterExtension,
+	TGroupExtension,
 	TDrawExtension,
 	TPositionInSetExtension,
 } from '../../../base/collection'
@@ -23,10 +24,17 @@ import { TSelectExtension, TSelectTagsExtension } from './extensions'
  * какому полю сравнивать, ставит `TSelectExtension`: сам `filter` про `text`
  * ничего не знает.
  *
+ * `group` — группы опций из данных, как у ListBox: показанное идёт по
+ * группам, и список панели рисует его секциями. За `filter`: подписчики
+ * выборки идут по порядку установки, и группировка выстраивает то, что
+ * осталось после отбора, — группа, все опции которой отбор убрал, пропадает
+ * целиком, вместе с подписью.
+ *
  * `draw` — что список панели рисует из показанных опций: без окна все, а окно
- * ему ставит обёртка `Virtual`, как у ListBox. Сразу за ним `positionInSet`:
- * место опции в наборе (`aria-posinset`) пишется по нарисованному. Оба — за
- * `filter`, по порядку чтения: отбор сужает показанные, рисование берёт из них.
+ * ему ставит обёртка `Virtual`, как у ListBox; сгруппированное окно не рисует.
+ * Сразу за ним `positionInSet`: место опции в наборе (`aria-posinset`)
+ * пишется по нарисованному. Оба — за `filter` и `group`, по порядку чтения:
+ * отбор сужает показанные, группировка выстраивает, рисование берёт из них.
  *
  * `select` пишет `owner.field.placeholder` по составу тегов
  * (`ctx.extensions.tags.hasTags`), поэтому `tags` стоит раньше.
@@ -35,6 +43,7 @@ export function selectExtensions(): TExtensionSet<ISelectItem> {
 	return {
 		...selectionExtensions<ISelectItem>(TSelectItem),
 		filter: () => new TFilterExtension<ISelectItem>(),
+		group: () => new TGroupExtension<ISelectItem>(),
 		draw: () => new TDrawExtension<ISelectItem>(),
 		positionInSet: () => new TPositionInSetExtension<ISelectItem>(),
 		// Связь `value` ↔ выбор — то же расширение, что у ListBox

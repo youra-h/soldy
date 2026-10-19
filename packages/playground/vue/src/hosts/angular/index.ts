@@ -287,7 +287,10 @@ function drawPreview(
 			place = outletPlace(outlet, preview.element?.())
 		}
 
-		const content = nodesOf(preview.content)
+		// Содержимое, которое зависит от пропсов оболочки, — по пропсам постановки
+		const content = nodesOf(
+			typeof preview.content === 'function' ? preview.content(props) : preview.content,
+		)
 		const { ref, write } = insert(place, preview.component, propsOf(preview, props), {
 			directives: preview.directives,
 			projected: project(preview.component, content),

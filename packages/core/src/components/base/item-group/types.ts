@@ -1,24 +1,23 @@
-import type {
-	IComponentView,
-	IComponentViewProps,
-	TComponentViewEvents,
-} from '../../../base/component-view'
-import type { TAria, TAriaAttributes } from '../../../../common'
+import type { IComponentView, IComponentViewProps, TComponentViewEvents } from '../component-view'
+import type { TAria, TAriaAttributes } from '../../../common'
 
-export type TMenuGroupEvents = TComponentViewEvents & {
+export type TItemGroupEvents = TComponentViewEvents & {
 	/** change:label */
 	'change:label': (value: string) => void
 	/** change:labelAria — набор атрибутов подписи изменился */
 	'change:labelAria': (value: TAriaAttributes) => void
 }
 
-export interface IMenuGroupProps extends IComponentViewProps {
+export interface IItemGroupProps extends IComponentViewProps {
 	/** Подпись группы. Пустая — подписи нет */
 	label?: string
 }
 
-/** Группа пунктов меню под общей подписью (`Menu.Group`). */
-export interface IMenuGroup extends IComponentView<IMenuGroupProps, TMenuGroupEvents> {
+/**
+ * Группа элементов коллекции под общей подписью — `Menu.Group`,
+ * `ListBox.Group` и `Select.Group`.
+ */
+export interface IItemGroup extends IComponentView<IItemGroupProps, TItemGroupEvents> {
 	/** Подпись группы. Пустая — подписи нет */
 	label: string
 	/** Атрибуты подписи: её `id`, на который ссылается группа, пишет плагин связок */

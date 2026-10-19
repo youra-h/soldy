@@ -13,6 +13,7 @@ import {
 	TAccordionItemComponent,
 	TButtonComponent,
 	TCheckBoxComponent,
+	TFieldComponent,
 	TIconComponent,
 	TInputComponent,
 	TLabelComponent,
@@ -97,8 +98,14 @@ type TPreviewBase = {
 	readonly component: Type<object>
 	/** Директивы на корне — как атрибуты директив рядом с селектором в разметке. */
 	readonly directives?: readonly DirectiveWithBindings<unknown>[]
-	/** Содержимое компонента — части коллекции, контрол подписи, текст. */
-	readonly content?: readonly TContent[]
+	/**
+	 * Содержимое компонента — части коллекции, контрол подписи, текст. Функция
+	 * пропсов оболочки — когда содержимое от них зависит: список, состав которого
+	 * пришёл данными (`items` блока групп страницы), рисуется без частей
+	 * разметки — они заменили бы данные. Содержимое строится, когда превью
+	 * ставится, а смена пропсов его не перестраивает.
+	 */
+	readonly content?: readonly TContent[] | ((props: TProps) => readonly TContent[])
 	/**
 	 * Данные превью для входов компонента, которых нет в пропсах превью
 	 * оболочки: строки и колонки таблицы, как `items` и `columns` в превью Vue
@@ -234,6 +241,20 @@ export const PREVIEWS: Record<string, TPreview> = {
 		content: [{ component: TCheckBoxComponent, element: tag('so-check-box') }],
 	},
 
+	// Поле формы вокруг Input: тексты частей — пропсы превью, контрол —
+	// содержимым. Строки страницы правят само поле: сторону подписи, тексты,
+	// ошибку
+	field: {
+		component: TFieldComponent,
+		content: [
+			{
+				component: TInputComponent,
+				element: tag('so-input'),
+				props: { placeholder: 'name@example.com' },
+			},
+		],
+	},
+
 	// Подпись — содержимым: текста у радио нет, оно голый контрол, как CheckBox.
 	// Корень радио — подпись, `<label so-radio-group-item>`
 	'radio-group': {
@@ -246,13 +267,19 @@ export const PREVIEWS: Record<string, TPreview> = {
 		})),
 	},
 
+	// Элементы — частями разметки, а пришли данными (`items` блока групп
+	// страницы) — из них: части заменили бы данные, а группы список рисует из
+	// данных
 	'list-box': {
 		component: TListBoxComponent,
-		content: ITEMS.map((item) => ({
-			component: TListBoxItemComponent,
-			element: tag('so-list-box-item'),
-			props: { ...item },
-		})),
+		content: (bind) =>
+			bind.items
+				? []
+				: ITEMS.map((item) => ({
+						component: TListBoxItemComponent,
+						element: tag('so-list-box-item'),
+						props: { ...item },
+					})),
 	},
 
 	// Строки и колонки — данными, как у Vue и React: частей разметкой у таблицы

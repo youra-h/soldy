@@ -9,12 +9,18 @@
  * (`setContext`): радио, смонтированное внутри, войдёт в коллекцию группы при
  * своей инициализации. Drag-and-drop нет, как у Vue: радио одной группы стоят
  * где угодно в разметке, и порядка на экране у них нет.
+ *
+ * Поле формы `Field` связывается с группой, а не с радио: подпись поля
+ * называет группу ссылкой, ошибка — группы (`TFieldControlExtension` на
+ * своём контексте). Своему содержимому группа опускает пустую связку: радио и
+ * контролы в их подписях связку поля не берут.
  */
 
 import {
 	RadioGroupCollectionDescriptor,
 	RadioGroupDescriptor,
 	TCollectionExtension,
+	TFieldControlExtension,
 } from '@soldy-ui/setup'
 import {
 	SvelteElevatorFactory,
@@ -36,7 +42,7 @@ export function setupRadioGroup(
 		ctrl: props.ctrl,
 		props,
 		mountId,
-	})
+	}).use(TFieldControlExtension, { elevator: SvelteElevatorFactory })
 	const owner = useAdapter(adapter, getProps, receive)
 
 	const collectionAdapter = createSvelteAdapterContext(

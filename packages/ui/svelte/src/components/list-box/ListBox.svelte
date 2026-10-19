@@ -1,6 +1,8 @@
 <script lang="ts">
+	import type { IListBoxItem, TDrawnEntry } from '@soldy-ui/core'
 	import { Dynamic, toControlAttrs, toRootForward, toRootProps, toStyleText } from '../../adapter'
 	import { ListBoxItem } from './item'
+	import { ListBoxGroup } from './group'
 	import { setupListBox } from './setup.component'
 	import type { ListBoxAttributes, ListBoxProps } from './base.component'
 
@@ -19,10 +21,10 @@
 	ListBox — список с выбором. Корень — рамка: шапка, узел списка
 	(`so-list-box__list`) и подвал. Набор `aria` владельца — это сам список
 	(`role="listbox"`, `aria-multiselectable`, имя от `aria_label`), и лежит он
-	на узле списка: в `listbox` ARIA пускает только опции, а шапка и подвал —
-	место полей и кнопок. На узле списка и остановка Tab: список фокусируется
-	сам, и клавиши его клавиатуры (`TListKeyboardPlugin`) — с этого узла. На
-	корне — `attrs` и `dataset`, как у Vue.
+	на узле списка: в `listbox` ARIA пускает только опции и группы, а шапка и
+	подвал — место полей и кнопок. На узле списка и остановка Tab: список
+	фокусируется сам, и клавиши его клавиатуры (`TListKeyboardPlugin`) — с этого
+	узла. На корне — `attrs` и `dataset`, как у Vue.
 
 	Атрибуты потребителя делятся, как у поля и у Vue: класс и стиль — корню,
 	остальное — узлу списка, поверх его `aria` и остановки Tab, и attachment
@@ -30,12 +32,19 @@
 	`tabindex="-1"` снимает его с остановок Tab. `ref` — корень.
 
 	Элементы — содержимое (`<ListBox.Item>`), а без него — то, что рисует
-	коллекция (`drawn`), по порядку, ключ — ключ записи. Без окна это все
-	показанные элементы, по `ListBoxItem` на каждый. В окне — видимые и
-	распорки на месте пропущенных: `div` под `aria-hidden`, высоту которого
-	тема берёт из его стиля, а стиль пишет ядро. Одна петля на элементы и
-	распорки: петли по блокам перемонтировали бы элемент, когда он переходит из
-	блока в блок.
+	коллекция, по секциям группировки (`drawnSections`), ключ секции — её ключ:
+	группа с подписью — в `ListBoxGroup`, элементы без группы — прямо в списке,
+	между соседними секциями — немой разделитель (`aria-hidden`, не `separator`:
+	в `listbox` ARIA пускает только опции и группы). Секции идут порядком
+	показанного, и стрелки ходят так же, как элементы стоят на экране. Без групп
+	секция одна — ни обёртки, ни разделителя.
+
+	В секции — её записи по порядку (сниппет `entries`), ключ — ключ записи:
+	без окна это все показанные элементы секции, по `ListBoxItem` на каждый, в
+	окне (у списка без групп) — видимые и распорки на месте пропущенных: `div`
+	под `aria-hidden`, высоту которого тема берёт из его стиля, а стиль пишет
+	ядро. Одна петля на элементы и распорки: петли по блокам перемонтировали бы
+	элемент, когда он переходит из блока в блок.
 
 	Слоты элементов статические и получают элемент через scope. Проброс
 	целиком: у каждого слота элемента есть `item-<слот>` (`default` — `item`),
@@ -49,10 +58,42 @@
 
 	Элемент, смонтированный внутри, читает движок и регистратор списка лифтом
 	(`setContext` списка) и входит в его коллекцию при своей инициализации.
+	Группа контекста не заводит: элементы в ней читают контекст списка.
 
 	Части стоят вплотную: пробел между блоками Svelte оставил бы в списке и
 	корне текстом.
 -->
+{#snippet entries(list: ReadonlyArray<TDrawnEntry<IListBoxItem>>)}
+	{#each list as entry (entry.key)}
+		{#if entry.kind === 'filler'}
+			<div
+				class="so-list-box__filler"
+				aria-hidden="true"
+				style={toStyleText(entry.style)}
+			></div>
+		{:else}
+			{#snippet leading()}
+				{@render props['item-leading']?.({ item: entry.item })}
+			{/snippet}
+			{#snippet content(scope: { text: string; selected: boolean })}
+				{@render props.item?.({ ...scope, item: entry.item })}
+			{/snippet}
+			{#snippet trailing()}
+				{@render props['item-trailing']?.({ item: entry.item })}
+			{/snippet}
+			{#snippet indicator(scope: { selected: boolean })}
+				{@render props['item-indicator-icon']?.({ ...scope, item: entry.item })}
+			{/snippet}
+			<ListBoxItem
+				ctrl={entry.item}
+				leading={props['item-leading'] ? leading : undefined}
+				trailing={props['item-trailing'] ? trailing : undefined}
+				indicator-icon={props['item-indicator-icon'] ? indicator : undefined}
+				children={props.item ? content : undefined}
+			/>
+		{/if}
+	{/each}
+{/snippet}
 {#if state.rendered}
 	<Dynamic
 		tag="div"
@@ -72,34 +113,13 @@
 			{#if props.children}
 				{@render props.children()}
 			{:else}
-				{#each state.drawn ?? [] as entry (entry.key)}
-					{#if entry.kind === 'filler'}
-						<div
-							class="so-list-box__filler"
+				{#each state.drawnSections ?? [] as section, index (section.key)}
+					{#if index > 0}<div
+							class="so-list-box__separator"
 							aria-hidden="true"
-							style={toStyleText(entry.style)}
-						></div>
-					{:else}
-						{#snippet leading()}
-							{@render props['item-leading']?.({ item: entry.item })}
-						{/snippet}
-						{#snippet content(scope: { text: string; selected: boolean })}
-							{@render props.item?.({ ...scope, item: entry.item })}
-						{/snippet}
-						{#snippet trailing()}
-							{@render props['item-trailing']?.({ item: entry.item })}
-						{/snippet}
-						{#snippet indicator(scope: { selected: boolean })}
-							{@render props['item-indicator-icon']?.({ ...scope, item: entry.item })}
-						{/snippet}
-						<ListBoxItem
-							ctrl={entry.item}
-							leading={props['item-leading'] ? leading : undefined}
-							trailing={props['item-trailing'] ? trailing : undefined}
-							indicator-icon={props['item-indicator-icon'] ? indicator : undefined}
-							children={props.item ? content : undefined}
-						/>
-					{/if}
+						></div>{/if}{#if section.group}<ListBoxGroup label={section.group.label}
+							>{@render entries(section.entries)}</ListBoxGroup
+						>{:else}{@render entries(section.entries)}{/if}
 				{/each}
 			{/if}{#if state.shown?.length === 0}
 				{@render props.empty?.()}

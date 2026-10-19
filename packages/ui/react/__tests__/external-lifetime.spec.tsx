@@ -28,6 +28,7 @@ import {
 	TCheckBox,
 	TComponentView,
 	TEvented,
+	TField,
 	TFrame,
 	TIcon,
 	TInput,
@@ -52,6 +53,7 @@ import {
 	Button,
 	CheckBox,
 	ComponentView,
+	Field,
 	Frame,
 	Icon,
 	Input,
@@ -296,6 +298,26 @@ const COMPONENTS: Readonly<Record<string, Readonly<Record<string, TCase>>>> = {
 			() => new TComponentView(),
 			(ctrl) => <ComponentView ctrl={ctrl} />,
 		),
+	},
+	/**
+	 * Поле — над своим `ctrl` и `ctrl` контрола: связка контрола с полем
+	 * подписывается на шины обоих — ошибку поля, свой `id` и labelable, — и
+	 * снять обязана обе.
+	 */
+	Field: {
+		'ctrl поля и ctrl контрола': () => {
+			const field = new TField({ label: 'Почта', helper: 'Подсказка' })
+			const input = new TInput()
+
+			return {
+				node: (
+					<Field ctrl={field}>
+						<Input ctrl={input} />
+					</Field>
+				),
+				buses: [field.events, input.events],
+			}
+		},
 	},
 	Frame: {
 		ctrl: overCtrl(

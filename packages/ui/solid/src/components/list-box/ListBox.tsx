@@ -1,5 +1,5 @@
 import { Show, type Accessor, type JSX } from 'solid-js'
-import type { IListBoxItem, TDrawnEntry } from '@soldy-ui/core'
+import type { IListBoxItem, TDrawnEntry, TDrawnSection } from '@soldy-ui/core'
 import {
 	Elevate,
 	KeyedFor,
@@ -11,6 +11,7 @@ import {
 	toRootForward,
 } from '../../adapter'
 import { ListBoxItem } from './item'
+import { ListBoxGroup } from './group'
 import { setupListBox } from './setup.component'
 import type { ListBoxAttributes, ListBoxProps } from './base.component'
 
@@ -28,10 +29,11 @@ function fillerStyleOf(entry: TDrawnEntry<IListBoxItem>): JSX.CSSProperties | un
  * ListBox — список с выбором. Корень — рамка: шапка, узел списка
  * (`so-list-box__list`) и подвал. Набор `aria` владельца — это сам список
  * (`role="listbox"`, `aria-multiselectable`, имя от `aria_label`), и лежит он
- * на узле списка: в `listbox` ARIA пускает только опции, а шапка и подвал —
- * место полей и кнопок. На узле списка и остановка Tab (`tabindex="0"`):
- * список фокусируется сам, и клавиши его клавиатуры (`TListKeyboardPlugin`) —
- * с этого узла. На корне — `attrs` и `dataset`, как у Vue.
+ * на узле списка: в `listbox` ARIA пускает только опции и группы, а шапка и
+ * подвал — место полей и кнопок. На узле списка и остановка Tab
+ * (`tabindex="0"`): список фокусируется сам, и клавиши его клавиатуры
+ * (`TListKeyboardPlugin`) — с этого узла. На корне — `attrs` и `dataset`, как
+ * у Vue.
  *
  * Атрибуты потребителя делятся, как у поля и у Vue: класс и стиль — корню,
  * остальное, кроме `ref`, — узлу списка, поверх его `aria` и остановки Tab:
@@ -39,15 +41,20 @@ function fillerStyleOf(entry: TDrawnEntry<IListBoxItem>): JSX.CSSProperties | un
  * его с остановок Tab. `ref` потребителя — корень.
  *
  * Элементы — содержимое (`<ListBox.Item>`), а без него — то, что рисует
- * коллекция (`drawn`), по порядку. Без окна это все показанные элементы, по
- * `ListBoxItem` на каждый. В окне обёртки `Virtual` — видимые и распорки на
- * месте пропущенных: `div` под `aria-hidden`, высоту которого тема берёт из
- * его стиля, а стиль пишет ядро. Одна петля на элементы и распорки: петли по
- * блокам перемонтировали бы элемент, когда он переходит из блока в блок.
- * Петля — по ключу записи (`KeyedFor`): записи `drawn` новые на каждую смену,
- * и `<For>`, сравнивая их по ссылке, пересоздавал бы все элементы вместе с
- * узлами и фокусом. Вид записи ключ не меняет: ключ элемента — его `uid`, у
- * распорки ключ свой.
+ * коллекция, по секциям группировки (`drawnSections`): группа с подписью — в
+ * `ListBoxGroup`, элементы без группы — прямо в списке, между соседними
+ * секциями — немой разделитель (`aria-hidden`, не `separator`: в `listbox`
+ * ARIA пускает только опции и группы). Секции идут порядком показанного, и
+ * стрелки ходят так же, как элементы стоят на экране. Без групп секция одна —
+ * ни обёртки, ни разделителя. В секции — её записи по порядку: без окна это
+ * все показанные элементы секции, по `ListBoxItem` на каждый, в окне обёртки
+ * `Virtual` (у списка без групп) — видимые и распорки на месте пропущенных:
+ * `div` под `aria-hidden`, высоту которого тема берёт из его стиля, а стиль
+ * пишет ядро. Одна петля на элементы и распорки: петли по блокам
+ * перемонтировали бы элемент, когда он переходит из блока в блок. Петли —
+ * по ключу (`KeyedFor`): секции — по ключу секции, записи — по ключу записи;
+ * записи `drawnSections` новые на каждую смену, и `<For>`, сравнивая их по
+ * ссылке, пересоздавал бы все элементы вместе с узлами и фокусом.
  *
  * Слоты элементов статические и получают элемент через scope. Проброс
  * целиком: у каждого слота элемента есть `item-<слот>` (`default` — `item`),
@@ -63,7 +70,7 @@ function fillerStyleOf(entry: TDrawnEntry<IListBoxItem>): JSX.CSSProperties | un
  * внутри, прочтёт движок и регистратор этого списка и при своей сборке войдёт
  * в его коллекцию. Содержимое разворачивается там же (`ResolvedSlot`), а не в
  * теле списка: узлы элементов Solid создал бы там, где развернули слот, — вне
- * его слоя.
+ * его слоя. Группа слоя не заводит: элементы в ней читают слой списка.
  */
 export function ListBox(props: ListBoxProps): JSX.Element {
 	const binding = setupListBox(props)
@@ -106,6 +113,34 @@ export function ListBox(props: ListBoxProps): JSX.Element {
 		</Show>
 	)
 
+	/** Записи секции по порядку — по ключу записи. */
+	const drawEntries = (section: Accessor<TDrawnSection<IListBoxItem>>) => (
+		<KeyedFor each={section().entries} by={(entry) => entry.key}>
+			{drawEntry}
+		</KeyedFor>
+	)
+
+	/** Первая ли секция: перед ней разделителя нет. */
+	const isFirst = (section: Accessor<TDrawnSection<IListBoxItem>>) =>
+		state.drawnSections?.[0]?.key === section().key
+
+	/**
+	 * Секция: разделитель перед всеми, кроме первой, а дальше группа с
+	 * подписью или записи без группы прямо в списке.
+	 */
+	const drawSection = (section: Accessor<TDrawnSection<IListBoxItem>>) => (
+		<>
+			<Show when={!isFirst(section)}>
+				<div class="so-list-box__separator" aria-hidden="true" />
+			</Show>
+			<Show when={section().group} fallback={drawEntries(section)}>
+				{(group) => (
+					<ListBoxGroup label={group().label}>{drawEntries(section)}</ListBoxGroup>
+				)}
+			</Show>
+		</>
+	)
+
 	return (
 		<Show when={state.rendered}>
 			<div {...root()} ref={binding.ref}>
@@ -115,8 +150,8 @@ export function ListBox(props: ListBoxProps): JSX.Element {
 						<ResolvedSlot
 							content={props.children}
 							fallback={
-								<KeyedFor each={state.drawn} by={(entry) => entry.key}>
-									{drawEntry}
+								<KeyedFor each={state.drawnSections} by={(section) => section.key}>
+									{drawSection}
 								</KeyedFor>
 							}
 						/>

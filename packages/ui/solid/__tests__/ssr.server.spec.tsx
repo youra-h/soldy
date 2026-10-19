@@ -19,6 +19,7 @@ import {
 	Button,
 	CheckBox,
 	ComponentView,
+	Field,
 	Frame,
 	Icon,
 	Input,
@@ -171,6 +172,7 @@ describe('ref потребителя · серверный рендер', () => 
 		[
 			['Button', (ref) => <Button ref={ref} />],
 			['ComponentView', (ref) => <ComponentView ref={ref} />],
+			['Field', (ref) => <Field ref={ref} />],
 			['Frame', (ref) => <Frame contained visible ref={ref} />],
 			['Icon', (ref) => <Icon tag="i" ref={ref} />],
 			['Label', (ref) => <Label ref={ref} />],

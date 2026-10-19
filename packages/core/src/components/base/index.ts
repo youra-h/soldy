@@ -1,6 +1,7 @@
 export * from './entity'
 export * from './component'
 export * from './component-view'
+export * from './item-group'
 export * from './layer'
 export * from './modal-layer'
 export * from './collection'

@@ -6,6 +6,9 @@ export * from './textable'
 export * from './button'
 export * from './icon'
 export * from './label'
+// Поле формы — раньше полей: при апгрейде разметки элемент, зарегистрированный
+// раньше, собирается раньше, и контрол в поле находит его связку
+export * from './field'
 export * from './check-box'
 export * from './switch'
 export * from './input'

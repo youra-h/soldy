@@ -3,6 +3,7 @@ import { NgTemplateOutlet } from '@angular/common'
 import type { IListBox, TListBoxCollectionFacade } from '@soldy-ui/core'
 import { AttributesDirective, SlotDirective, provideElevator, type TBinding } from '../../adapter'
 import { TListBoxItemComponent } from './item'
+import { TListBoxGroupComponent } from './group'
 import { ListBoxInputNames, TListBoxSurface } from './base.component'
 import { setupListBox } from './setup.component'
 
@@ -31,14 +32,22 @@ import { setupListBox } from './setup.component'
  * слоя движок и регистратор этого списка, а соседний список — свои.
  *
  * Элементы разметки — `<so-list-box-item>` в содержимом. Без них список рисует
- * то, что рисует коллекция (`drawn`), — запасным содержимым `<ng-content>`.
+ * то, что рисует коллекция, по секциям группировки (`drawnSections`), —
+ * запасным содержимым `<ng-content>`: группу с подписью —
+ * `<div so-list-box-group>`, между секциями — немой разделитель.
  *
  * Selector: so-list-box
  */
 @Component({
 	selector: 'so-list-box',
 	standalone: true,
-	imports: [NgTemplateOutlet, AttributesDirective, SlotDirective, TListBoxItemComponent],
+	imports: [
+		NgTemplateOutlet,
+		AttributesDirective,
+		SlotDirective,
+		TListBoxItemComponent,
+		TListBoxGroupComponent,
+	],
 	providers: [provideElevator()],
 	changeDetection: ChangeDetectionStrategy.OnPush,
 	templateUrl: './list-box.component.html',

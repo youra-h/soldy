@@ -5,6 +5,7 @@ import {
 	AttributesDirective,
 	FieldTextDirective,
 	RoleIconDirective,
+	provideElevator,
 	type TBinding,
 } from '../../adapter'
 import { TButtonComponent } from '../button'
@@ -18,9 +19,11 @@ import { setupInput } from './setup.component'
  *
  * Селектор — элементный, `<so-input>`: у поля атрибуты потребителя делятся
  * между корнем и вложенным `<input>`, и корнем служит сам элемент компонента.
- * Наборы ядра стоят на разных элементах: `attrs` (`dir`) — на корне, его
- * кладёт `TComponentBase` (стратегия `'host'`), `aria` — на `<input>`, его
- * кладёт директива набора (`AttributesDirective`). Нативные `disabled`,
+ * Наборы ядра стоят на разных элементах: `attrs` (`dir`) и `dataset`
+ * (`data-disabled`, `data-invalid`) — на корне, их кладёт `TComponentBase`
+ * (стратегия `'host'`): тема красит коробку поля и подпись поля формы
+ * `Field` по корню; `aria` — на `<input>`, его кладёт директива набора
+ * (`AttributesDirective`). Нативные `disabled`,
  * `readonly` и `required` поля проводит разметка, поэтому ARIA-дублей ядро
  * рядом с ними не пишет. Статические атрибуты, которые потребитель записал на
  * поле (`autocomplete`), кроме `class` и `style`, база переносит на `<input>`
@@ -46,6 +49,10 @@ import { setupInput } from './setup.component'
  * У кнопки нет `view`: значения вида объявляет тема, и разметка библиотеки их
  * не знает. Кнопку тема красит по контексту (`.so-input__clear`).
  *
+ * Поле формы `Field` над полем отдаёт ему ошибку, `id` и ссылки на части, а
+ * своему содержимому поле опускает пустую связку — в свой слой лифта
+ * (`provideElevator()`): контролы в его слотах — его содержимое.
+ *
  * Selector: so-input
  */
 @Component({
@@ -59,12 +66,13 @@ import { setupInput } from './setup.component'
 		TButtonComponent,
 		TIconComponent,
 	],
+	providers: [provideElevator()],
 	changeDetection: ChangeDetectionStrategy.OnPush,
 	templateUrl: './input.component.html',
 })
 export class TInputComponent extends TInputSurface<IInput> {
 	constructor() {
-		super(InputInputNames, { strategy: 'host', sets: ['attrs'], control: true })
+		super(InputInputNames, { strategy: 'host', sets: ['attrs', 'dataset'], control: true })
 	}
 
 	protected createBinding(ctrl: IInput | undefined, inputs: object): TBinding<IInput> {

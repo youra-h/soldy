@@ -26,17 +26,20 @@ import {
 	type TSelectionMode,
 	type TValuePayload,
 } from '@soldy-ui/core'
-import { ListBoxDescriptor, ListBoxItemDescriptor } from '@soldy-ui/setup'
+import { ListBoxDescriptor, ListBoxGroupDescriptor, ListBoxItemDescriptor } from '@soldy-ui/setup'
 import {
 	TListBoxElement,
+	TListBoxGroupElement,
 	TListBoxItemElement,
 	registerButtonTag,
+	type ITemplate,
 	type TButtonElementProps,
 	type TListBoxElementProps,
 	type TListBoxItemElementProps,
 } from '@soldy-ui/webc'
 import { listBoxTemplate } from '../src/components/list-box/list-box.template'
 import { listBoxItemTemplate } from '../src/components/list-box/item/list-box-item.template'
+import { listBoxGroupTemplate } from '../src/components/list-box/group/list-box-group.template'
 import { bareContext } from './template-context'
 
 /** Отрисовка коалесцируется в микротаске — ждём её перед проверкой. */
@@ -950,15 +953,161 @@ describe('распорки окна', () => {
 	})
 })
 
-describe('шаблоны объявляют ровно те слоты, что и дескрипторы', () => {
-	it.each([
-		['ListBox', listBoxTemplate, ListBoxDescriptor],
-		['ListBox.Item', listBoxItemTemplate, ListBoxItemDescriptor],
-	] as const)('%s', (_name, template, descriptor) => {
-		const root = document.createElement('div')
-		const targets = template.create(root, () => false, bareContext(root)).slots
+/**
+ * Группы из данных — как у Vue (`ui/vue/__tests__/list-groups.spec.ts`):
+ * секции нарисованного (`drawnSections`) — группа с подписью в
+ * `<div is="so-list-box-group">`, элементы без группы — последними, прямо в
+ * списке, между секциями — немой разделитель. Записи группы — её свет, и
+ * элементы в ней находят движок списка лифтом сквозь группу.
+ */
+describe('группы', () => {
+	/** В данных «Морковь» стоит между фруктами, у «Воды» группы нет. */
+	const MIXED = [
+		{ value: 'apple', text: 'Яблоко', _: { group: 'fruit' } },
+		{ value: 'carrot', text: 'Морковь', _: { group: 'veg' } },
+		{ value: 'water', text: 'Вода' },
+		{ value: 'pear', text: 'Груша', _: { group: 'fruit' } },
+	]
 
-		expect(Object.keys(targets).sort()).toEqual(
+	const GROUPS = [
+		{ key: 'fruit', label: 'Фрукты' },
+		{ key: 'veg', label: 'Овощи' },
+	]
+
+	/** Части узла списка: группа — подписью и текстами элементов, разделитель — `—`. */
+	const parts = (list: Element) =>
+		[...nodeOf(list).children].map((node) => {
+			if (node.classList.contains('so-list-box-group')) {
+				return [
+					node.querySelector('.so-list-box-group__label')?.textContent?.trim() ?? '',
+					[...node.querySelectorAll('.so-list-box-item')].map((item) =>
+						item.textContent?.trim(),
+					),
+				]
+			}
+
+			if (node.classList.contains('so-list-box__separator')) return '—'
+
+			return node.textContent?.trim()
+		})
+
+	it('группа с подписью, разделитель — между секциями, без группы — последними', async () => {
+		const list = await mountList({ items: MIXED, groups: GROUPS })
+
+		await flush()
+
+		expect(parts(list)).toEqual([
+			['Фрукты', ['Яблоко', 'Груша']],
+			'—',
+			['Овощи', ['Морковь']],
+			'—',
+			'Вода',
+		])
+
+		for (const group of nodeOf(list).querySelectorAll('.so-list-box-group')) {
+			const label = find(group, '.so-list-box-group__label', HTMLElement)
+
+			expect(group).toBeInstanceOf(TListBoxGroupElement)
+			expect(group.getAttribute('role')).toBe('group')
+			expect(group.getAttribute('aria-labelledby')).toBe(label.id)
+			expect(label.id).not.toBe('')
+			expect(label.getAttribute('role')).toBe('presentation')
+			// Подпись — первая, элементы — за ней
+			expect(group.firstElementChild).toBe(label)
+		}
+
+		expect(
+			[...nodeOf(list).querySelectorAll('.so-list-box__separator')].map((node) =>
+				node.getAttribute('aria-hidden'),
+			),
+		).toEqual(['true', 'true'])
+		// Элементы группы — в коллекции списка: выбор пишет им `aria-selected`
+		expect(selection()).toEqual(['false', 'false', 'false', 'false'])
+	})
+
+	it('стрелки ходят порядком экрана: ↓ после «Яблока» — «Груша»', async () => {
+		const list = await mountList({ items: MIXED, groups: GROUPS })
+
+		await flush()
+		await nextFrame()
+
+		const highlighted = () =>
+			rows()
+				.find((row) => row.getAttribute('data-highlighted') === 'true')
+				?.textContent?.trim()
+
+		await press(nodeOf(list), 'ArrowDown')
+		expect(highlighted()).toBe('Яблоко')
+
+		await press(nodeOf(list), 'ArrowDown')
+		expect(highlighted()).toBe('Груша')
+
+		await press(nodeOf(list), 'ArrowDown')
+		expect(highlighted()).toBe('Морковь')
+	})
+
+	it('смена подписи — та же группа и те же элементы с новой подписью', async () => {
+		const list = await mountList({ items: MIXED, groups: GROUPS })
+
+		await flush()
+
+		const group = find(nodeOf(list), '.so-list-box-group', HTMLElement)
+		const items = listItems()
+
+		list.groups = [
+			{ key: 'fruit', label: 'Fruit' },
+			{ key: 'veg', label: 'Vegetables' },
+		]
+		await flush()
+		await flush()
+
+		expect(parts(list)).toEqual([
+			['Fruit', ['Яблоко', 'Груша']],
+			'—',
+			['Vegetables', ['Морковь']],
+			'—',
+			'Вода',
+		])
+		expect(find(nodeOf(list), '.so-list-box-group', HTMLElement)).toBe(group)
+		listItems().forEach((node, index) => expect(node).toBe(items[index]))
+	})
+
+	it('без группировки — ни групп, ни разделителей', async () => {
+		const list = await mountList({ items: ITEMS })
+
+		expect(parts(list)).toEqual(['Первый', 'Второй', 'Третий'])
+	})
+
+	it('группа разметкой — обёртка: элементы в ней входят в коллекцию списка', async () => {
+		const host = await mount(`<div is="so-list-box">
+			<div is="so-list-box-group" label="Фрукты">
+				<div is="so-list-box-item" value="apple" text="Яблоко"></div>
+			</div>
+			<div is="so-list-box-item" value="water" text="Вода"></div>
+		</div>`)
+
+		await flush()
+
+		expect(parts(listIn(host))).toEqual([['Фрукты', ['Яблоко']], 'Вода'])
+		expect(selection()).toEqual(['false', 'false'])
+	})
+})
+
+describe('шаблоны объявляют ровно те слоты, что и дескрипторы', () => {
+	/** Точки слотов шаблона — в пустом корне, где ни один слот не задан. */
+	function slotsOf<TInstance, TFacade>(template: ITemplate<TInstance, TFacade>): string[] {
+		const root = document.createElement('div')
+		const targets = template.create(root, () => false, bareContext<TInstance, TFacade>(root))
+
+		return Object.keys(targets.slots).sort()
+	}
+
+	it.each([
+		['ListBox', () => slotsOf(listBoxTemplate), ListBoxDescriptor],
+		['ListBox.Item', () => slotsOf(listBoxItemTemplate), ListBoxItemDescriptor],
+		['ListBox.Group', () => slotsOf(listBoxGroupTemplate), ListBoxGroupDescriptor],
+	] as const)('%s', (_name, slots, descriptor) => {
+		expect(slots()).toEqual(
 			descriptor()
 				.slots.map((slot) => slot.name)
 				.sort(),

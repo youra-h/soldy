@@ -222,7 +222,7 @@ come in later releases.
 | Pagination      | Page navigation: page numbers with gaps, previous and next, first and last                     | Vue        | 0.2.0   |
 | Menu            | Action menu at a button or on right click: submenus, checkbox and radio items                  | Vue        | 0.2.0   |
 | Textarea        | Multi-line text field that grows with its content                                              | Vue        | alpha   |
-| Field           | Field wrapper: description, error message and invalid state linked to the control              | Vue        | 0.2.0   |
+| Field           | Field wrapper: description, error message and invalid state linked to the control              | *          | 0.2.0   |
 | Alert           | Inline message by severity: info, success, warning, error                                      | -          | future  |
 | Badge           | Counter or status mark, on its own or over another element                                     | -          | future  |
 | Avatar          | User picture with a fallback to initials or an icon                                            | -          | future  |

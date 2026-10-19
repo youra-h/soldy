@@ -366,6 +366,7 @@ describe('выходы компонентов экспорта · геттер �
 				'TProgressSpinnerComponent',
 				'TSkeletonComponent',
 				'TLabelComponent',
+				'TFieldComponent',
 				'TInputComponent',
 				'TCheckBoxComponent',
 				'TSwitchComponent',

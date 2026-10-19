@@ -8,14 +8,13 @@ import type {
 	IOrderItemExtension,
 	TCollectionFacadeProps,
 	TFactoryExtension,
-	TGroupEvents,
+	TGroupCollectionFacadeEvents,
 	TGroupExtension,
 	TOrderExtension,
 	TPlainExtension,
 	TUniqueExtension,
 	TMetaExtension,
 	TBatchExtension,
-	TSelectionCollectionFacadeEvents,
 	TSelectionExtension,
 	TSelectionItemFacadeEvents,
 } from '../../../base/collection'
@@ -71,7 +70,7 @@ export interface IMenuCollectionProps<
 
 /**
  * Входные пропсы фасада меню: состав и ключ сверки — базе, группировка —
- * расширению `group`.
+ * расширению `group`. Режима среди них нет: его ставит коллекция.
  */
 export type TMenuCollectionFacadeProps = TCollectionFacadeProps<IMenuItem> &
 	IGroupCollectionProps<IMenuItem>
@@ -90,9 +89,8 @@ export type TMenuAdapters<TItem extends IMenuItem = IMenuItem> = {
 	menu: IMenuItemExtension<TItem>
 }
 
-/** События фасада меню: база выбора плюс карты расширений `group` и `menu` (`choose`). */
-export type TMenuCollectionFacadeEvents = TSelectionCollectionFacadeEvents<IMenuItem> &
-	TGroupEvents<IMenuItem> &
+/** События фасада меню: база группировки плюс карта расширения `menu` (`choose`). */
+export type TMenuCollectionFacadeEvents = TGroupCollectionFacadeEvents<IMenuItem> &
 	TMenuExtensionEvents
 
 /** События фасада пункта: набор базы плюс карта адаптера `menu`. */

@@ -9,6 +9,7 @@
 import { defineComponent, defineDescriptor } from '../../../../protected/define'
 import { TSelectCollectionFacade, TSelectItemCollectionFacade } from '@soldy-ui/core'
 import { CollectionDescriptor } from '../collection'
+import { GROUP_PROPS } from '../list'
 
 export const SelectCollectionDescriptor = defineDescriptor(() =>
 	defineComponent({
@@ -18,7 +19,8 @@ export const SelectCollectionDescriptor = defineDescriptor(() =>
 
 		/**
 		 * Коллекционные props владельца Select (выводятся `TSelectCollectionFacade`):
-		 * режим выбора, сам выбор, теги поля и что рисует список панели.
+		 * режим выбора, сам выбор, группы опций (общий фрагмент `GROUP_PROPS`, как
+		 * у Menu и ListBox), теги поля и что рисует список панели.
 		 *
 		 * `mode` служит переключателем множественного выбора: отдельного `multiple`
 		 * нет намеренно — два имени для одного состояния однажды разошлись бы.
@@ -27,6 +29,7 @@ export const SelectCollectionDescriptor = defineDescriptor(() =>
 			props: {
 				mode: { type: String, triggers: ['change:mode'] },
 				selected: { type: Array, protected: true, triggers: ['change:selection'] },
+				...GROUP_PROPS,
 				/**
 				 * Инстанс тегов при множественном выборе, `null` иначе. Живёт в
 				 * `TSelectTagsExtension` — второй компонент со своей коллекцией, а не
@@ -43,11 +46,16 @@ export const SelectCollectionDescriptor = defineDescriptor(() =>
 				 */
 				tags_overflow: { type: String, triggers: ['change:overflow'] },
 				/**
-				 * Что рисует список панели по порядку: опции на своих местах и, в окне
-				 * обёртки `Virtual`, распорки на месте пропущенных. Без окна — все
-				 * показанные опции
+				 * Что рисует список панели, по секциям: группа с подписью или опции
+				 * без группы, а в секции — опции на своих местах и, в окне обёртки
+				 * `Virtual`, распорки на месте пропущенных. Между соседними
+				 * секциями разметка рисует разделитель. Без групп секция одна
 				 */
-				drawn: { type: Array, protected: true, triggers: ['change:drawn'] },
+				drawnSections: {
+					type: Array,
+					protected: true,
+					triggers: ['change:drawnSections'],
+				},
 			},
 		},
 	}),

@@ -776,7 +776,8 @@ class TTabsContentCollectionFacade extends TCollectionItemComponent {
 ```
 TCollectionComponent
 └── TBatchCollectionFacade           batch        → Toasts
-    ├── TSelectionCollectionFacade   + selection  → Accordion, Select, ListBox, Tags
+    ├── TSelectionCollectionFacade   + selection  → Accordion, Tags
+    │   └── TGroupCollectionFacade   + group      → ListBox, Select, Menu
     └── TActivationCollectionFacade  + activation → Tabs, RadioGroup
 
 TCollectionItemComponent
@@ -794,6 +795,12 @@ TCollectionItemComponent
 подстраиваться под неизвестное требование дороже, чем поднять пятнадцать
 строк; вторым стал RadioGroup. Своё у фасадов Tabs — только закрытие вкладок,
 у фасадов RadioGroup своего нет вовсе.
+
+Группировка (`group`) — база ниже выбора: группы есть только у коллекций с
+выбором — у меню, ListBox и Select. Пока группы были у одного меню, проекция
+`groupBy`, `groups` и `sections` жила в его фасаде; с ListBox и Select
+потребителей стало три, и она ушла в базу (collections.md, «Группировка —
+механизм коллекции»).
 
 Правило держится не на честном слове: дженерик базы сужен до расширения,
 которое она потребляет (`TExtensions extends { selection: TSelectionExtension<any> }`),
@@ -1013,13 +1020,18 @@ Proxy над инстансом библиотека не запрещает, н
   `IComponentView.ready`.
 - Сборка вместе с подписками плагинов идёт и на сервере, где нет ни узла, ни
   `requestAnimationFrame`, а события состава, выбора и свойств приходят
-  плагинам уже тогда. Кадр (`requestAnimationFrame`, `frameDebounce`) на
-  такое событие плагин планирует только при узле — между `ready` и `removed`
-  своего `TElementPlugin`, — а что сменилось до узла, применяет `ready`. Кадру
-  от того, чего при сборке не бывает, — жеста, фокуса, клавиши, снятия и
-  перестановки элемента, — проверка не нужна. Сторож —
-  `packages/setup/__tests__/server-assembly.spec.ts`: ListBox и Select
-  собираются в окружении `node`, без кадра.
+  плагинам уже тогда. Снятие там тоже бывает: Solid снимает собранный корень
+  следующей задачей после `renderToString`, и элементы разметки уходят из
+  коллекции. Кадр (`requestAnimationFrame`, `frameDebounce`) на такое
+  событие, в том числе на снятие и перестановку элемента, плагин планирует
+  только при узле — между `ready` и `removed` своего `TElementPlugin`, — а
+  что сменилось до узла, применяет `ready`. Кадру от того, чего на сервере не
+  бывает, — жеста, фокуса, клавиши, — проверка не нужна. Сторож —
+  `packages/setup/__tests__/server-assembly.spec.ts`: ListBox, Select,
+  Textarea и Tabs собираются в окружении `node` и снимаются, без кадра.
+  Ошибку подписчика проброса (`relayAll` — так `plain` отдаёт события
+  драйвера) шина не бросает, а печатает, поэтому `console.error` там под
+  шпионом на каждом тесте.
 - Узел у плагина — `Element`, а не `HTMLElement`: `tag` свободен, корнем
   бывает `svg`. Нужна HTML-специфика (`offset*`, инлайновый `style`,
   `focus`/`blur`) — сужайте тип-гардом из `packages/plugins/src/utils`

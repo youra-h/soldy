@@ -30,6 +30,8 @@ export const ListBoxInputs = [
 	'items',
 	'trackBy',
 	'mode',
+	'groupBy',
+	'groups',
 ] as const
 export const ListBoxOutputs = [
 	'soBundleCreate',
@@ -100,7 +102,9 @@ export const ListBoxOutputs = [
 	'soChangeTrackBy',
 	'soChangeMode',
 	'soChangeSelection',
-	'soChangeDrawn',
+	'soChangeGroupBy',
+	'soChangeGroups',
+	'soChangeDrawnSections',
 ] as const
 
 /**
@@ -141,6 +145,8 @@ export const ListBoxOutputs = [
 		'items',
 		'trackBy',
 		'mode',
+		'groupBy',
+		'groups',
 	],
 	outputs: [...ListBoxOutputs],
 })
@@ -172,6 +178,8 @@ export abstract class TListBoxSurface<TInstance extends IEntity> extends TCompon
 	declare items: TInputValue<typeof descriptor, 'items'>
 	declare trackBy: TInputValue<typeof descriptor, 'trackBy'>
 	declare mode: TInputValue<typeof descriptor, 'mode'>
+	declare groupBy: TInputValue<typeof descriptor, 'groupBy'>
+	declare groups: TInputValue<typeof descriptor, 'groups'>
 	get soBundleCreate(): TOutputEmitter<typeof descriptor, 'bundle:create'> {
 		return this.createOutput('soBundleCreate')
 	}
@@ -376,7 +384,13 @@ export abstract class TListBoxSurface<TInstance extends IEntity> extends TCompon
 	get soChangeSelection(): TOutputEmitter<typeof facade, 'change:selection'> {
 		return this.createOutput('soChangeSelection')
 	}
-	get soChangeDrawn(): TOutputEmitter<typeof facade, 'change:drawn'> {
-		return this.createOutput('soChangeDrawn')
+	get soChangeGroupBy(): TOutputEmitter<typeof facade, 'change:groupBy'> {
+		return this.createOutput('soChangeGroupBy')
+	}
+	get soChangeGroups(): TOutputEmitter<typeof facade, 'change:groups'> {
+		return this.createOutput('soChangeGroups')
+	}
+	get soChangeDrawnSections(): TOutputEmitter<typeof facade, 'change:drawnSections'> {
+		return this.createOutput('soChangeDrawnSections')
 	}
 }

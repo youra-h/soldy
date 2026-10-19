@@ -8,8 +8,10 @@
  * `<fieldset disabled>` и валидация достаются нативному полю, а связанного с
  * формой элемента (`formAssociated`) не нужно.
  *
- * Корень с полем (`control` в описании корня): на корне из наборов ядра только
- * `attrs` (`dir`), `aria` — на поле, его кладёт шаблон. Статические атрибуты
+ * Корень с полем (`control` в описании корня): на корне из наборов ядра —
+ * `attrs` (`dir`) и `dataset` (`data-disabled`, `data-invalid`), по нему тема
+ * красит коробку поля и подпись поля формы `Field`; `aria` — на поле, его
+ * кладёт шаблон. Статические атрибуты
  * разметки, кроме `class`, `style`, `is`, `slot` и входов пропов, база при
  * построении переносит на поле: `autocomplete`, `aria-label`, `tabindex` и
  * `data-*` потребителя стоят на `<input>`. `id` — проп поля: атрибут разметки
@@ -29,7 +31,7 @@ import { setupInput } from './setup.component'
 export const TInputElement = SoldyElement(HTMLDivElement, {
 	descriptor: InputDescriptor(),
 	template: inputTemplate,
-	root: { sets: ['attrs'], control: true },
+	root: { sets: ['attrs', 'dataset'], control: true },
 	setup: setupInput,
 })
 

@@ -8,5 +8,6 @@ export type {
 	TDrawnEntry,
 	TDrawnFiller,
 	TDrawnItem,
+	TDrawnSection,
 	TDrawViewport,
 } from './types'

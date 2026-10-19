@@ -1,11 +1,13 @@
 import type { ElementType, ReactElement, ReactNode } from 'react'
 import {
 	NativeInput,
+	elevated,
 	renderSlot,
 	roleIcon,
 	toAriaProps,
 	toControlAttrs,
-	toRootLayout,
+	toRootForward,
+	toRootProps,
 } from '../../adapter'
 import { useSetupCheckBox } from './setup.component'
 import type { CheckBoxAttributes, CheckBoxProps } from './base.component'
@@ -20,7 +22,9 @@ const IndeterminateMark = roleIcon('checkIndeterminate')
  *
  * Корень по умолчанию — `span`: флажок кладут в подпись `Label`, а внутри
  * `label` HTML разрешает только строчную разметку. Поэтому и всё внутри —
- * `span`.
+ * `span`. На корне — `attrs` и `dataset` (`data-disabled`, `data-invalid`):
+ * тема красит коробку и подпись поля формы `Field` по корню, а `aria` — у
+ * вложенного `<input>`.
  *
  * Отметку и «выбрано частично» скринридеру сообщают нативные `checked` и
  * `indeterminate` поля, `aria-checked` ядро не пишет. Оба — свойства узла, и
@@ -36,11 +40,28 @@ const IndeterminateMark = roleIcon('checkIndeterminate')
  * появляется и пропадает с каждой сменой отметки, и `Icon` собирал бы на
  * каждую свой контекст и плагины — в таблице «выбрать все» собирала их
  * тысячами. Размер и цвет отметке даёт тема флажка по `so-check-box__mark`.
+ *
+ * Поле формы `Field` над флажком отдаёт ему ошибку, `id` и ссылки на части
+ * (`TFieldControlExtension`), а своему содержимому флажок опускает пустую
+ * связку. Поэтому содержимое слотов отметки — в слое лифта флажка
+ * (`elevated`).
  */
 export function CheckBox(props: CheckBoxProps): ReactElement | null {
-	const { ref, forwardProps, state } = useSetupCheckBox(props)
+	const { ref, forwardProps, state, layer } = useSetupCheckBox(props)
 
-	const { rendered, tag, attrs, aria, id, value, indeterminate, name, disabled, required } = state
+	const {
+		rendered,
+		tag,
+		attrs,
+		aria,
+		dataset,
+		id,
+		value,
+		indeterminate,
+		name,
+		disabled,
+		required,
+	} = state
 
 	if (!rendered) return null
 
@@ -52,15 +73,18 @@ export function CheckBox(props: CheckBoxProps): ReactElement | null {
 	let mark: ReactNode = null
 
 	if (indeterminate) {
-		mark = renderSlot(props['indeterminate-icon'], scope) ?? (
+		mark = elevated(layer, renderSlot(props['indeterminate-icon'], scope)) ?? (
 			<IndeterminateMark className="so-check-box__mark" />
 		)
 	} else if (value) {
-		mark = renderSlot(props.icon, scope) ?? <CheckMark className="so-check-box__mark" />
+		mark = elevated(layer, renderSlot(props.icon, scope)) ?? (
+			<CheckMark className="so-check-box__mark" />
+		)
 	}
 
+	// Корню — его наборы, класс и стиль потребителя; `ref` адаптера последним
 	return (
-		<Tag ref={ref} {...toRootLayout(state, forwardProps)} {...toAriaProps(attrs)}>
+		<Tag {...toRootProps(ref, state, [attrs, dataset], toRootForward(forwardProps))}>
 			<NativeInput
 				type="checkbox"
 				id={id}

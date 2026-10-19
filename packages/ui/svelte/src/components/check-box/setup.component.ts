@@ -10,10 +10,20 @@
  * (`$props.id()`) отдаёт компонент: компилятор пускает его только туда. Так
  * же — приёмник корня (`receive`): запись в связываемый проп `ref`
  * компонента, `$bindable` компилятор тоже пускает только в компонент.
+ *
+ * Поле формы `Field` над флажком: ошибку, `id` и ссылки на части контрол
+ * берёт от него своим расширением (`TFieldControlExtension`) лифтом
+ * (`getContext`), а своему содержимому опускает пустую связку
+ * (`setContext`): контролы в его слотах — его содержимое.
  */
 
-import { CheckBoxDescriptor } from '@soldy-ui/setup'
-import { createSvelteAdapterContext, useAdapter, type TRootReceiver } from '../../adapter'
+import { CheckBoxDescriptor, TFieldControlExtension } from '@soldy-ui/setup'
+import {
+	SvelteElevatorFactory,
+	createSvelteAdapterContext,
+	useAdapter,
+	type TRootReceiver,
+} from '../../adapter'
 import type { CheckBoxProps } from './base.component'
 
 export function setupCheckBox(
@@ -25,7 +35,7 @@ export function setupCheckBox(
 		ctrl: getProps().ctrl,
 		props: getProps(),
 		mountId,
-	})
+	}).use(TFieldControlExtension, { elevator: SvelteElevatorFactory })
 
 	// Переключает значение плагин флажка по `change` поля; отметку и «выбрано
 	// частично» разметка пишет свойствами `<input>`

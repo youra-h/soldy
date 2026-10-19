@@ -491,8 +491,8 @@ const OPTIONS: Record<string, Record<string, readonly string[]>> = {
  * Здесь — только пропы самого компонента, у которых есть строка: ключи
  * сторожит `__tests__/manifest.spec.ts`. Пропсы обёртки (подпись `Label`
  * вокруг CheckBox) и содержимое — элементы коллекций, строки и колонки
- * таблицы, глиф иконки — остаются в превью хоста: строки у них нет, а глиф —
- * компонент фреймворка.
+ * таблицы, глиф иконки — остаются в превью хоста: строки у них нет (у `tag`
+ * Icon её снимает `NON_EDITABLE_BY_COMPONENT`), а глиф — компонент фреймворка.
  */
 export const PREVIEW_PROPS: Readonly<Record<string, Readonly<Record<string, unknown>>>> = {
 	// Подпись — пропом `text`, а не слотом: заданный слот перекрывает проп, и
@@ -711,6 +711,22 @@ export const NON_EDITABLE = new Set([
 	'groups',
 ])
 
+/**
+ * Пропы без строки у одного компонента: ключ — id реестра, проп — именем из
+ * разметки, как в `NON_EDITABLE`.
+ *
+ * `tag` у Icon — корень-глиф: превью кладёт в него компонент иконки своего
+ * фреймворка, а тег из списка строки дал бы корень без рисунка — пустую
+ * иконку. Значением превью (`PREVIEW_PROPS`) глиф не стать — это компонент
+ * фреймворка, а не данные, — и строка открывалась бы с умолчанием `span`:
+ * колонка пропа получала бы его поверх глифа, а экземпляр — глиф из разметки
+ * хоста, и колонки расходились бы с первой отрисовки. У остальных компонентов
+ * тег — обычный проп, и строка у них есть.
+ */
+const NON_EDITABLE_BY_COMPONENT: Readonly<Record<string, ReadonlySet<string>>> = {
+	icon: new Set(['tag']),
+}
+
 export function describeProp(componentId: string, prop: string): string | undefined {
 	return OWN[componentId]?.[prop] ?? SHARED[prop] ?? PLUGIN[prop]
 }
@@ -919,14 +935,21 @@ export function parseNumber(text: string): number | null | undefined {
 }
 
 /**
- * Есть ли у пропа строка на странице.
+ * Есть ли у пропа строка на странице компонента.
  *
  * `protected` — вычисляемые наружу значения (`classes`, `aria`, `dataset`,
  * `present`, `styles` плагинов раскладки): обмен их не пишет вовсе, и
- * контрол для них был бы обманом. `NON_EDITABLE` — по имени из разметки.
+ * контрол для них был бы обманом. `NON_EDITABLE` — по имени из разметки у
+ * всех компонентов, `NON_EDITABLE_BY_COMPONENT` — у одного.
  */
-function isEditable(prop: TPropSpec): boolean {
-	return !prop.protected && !NON_EDITABLE.has(underscorePropNaming(prop.name))
+function isEditable(componentId: string, prop: TPropSpec): boolean {
+	const name = underscorePropNaming(prop.name)
+
+	return (
+		!prop.protected &&
+		!NON_EDITABLE.has(name) &&
+		!NON_EDITABLE_BY_COMPONENT[componentId]?.has(name)
+	)
 }
 
 /**
@@ -952,19 +975,20 @@ function byName(a: TPropControl, b: TPropControl): number {
 export function propControls(entry: TComponentEntry): TPropControlGroups {
 	const descriptor = entry.descriptor()
 	const collectionProps = entry.collectionDescriptor?.().props ?? []
+	const editable = (prop: TPropSpec) => isEditable(entry.id, prop)
 
 	return {
 		componentControls: descriptor.props
-			.filter(isEditable)
+			.filter(editable)
 			.map((prop) => propControl(entry.id, prop))
 			.sort(byName),
 		collectionControls: collectionProps
-			.filter(isEditable)
+			.filter(editable)
 			.map((prop) => propControl(entry.id, prop, { scope: 'collection' }))
 			.sort(byName),
 		pluginControls: descriptor.plugins
 			.flatMap(({ ctor, props }) =>
-				props.filter(isEditable).map((prop) =>
+				props.filter(editable).map((prop) =>
 					propControl(entry.id, prop, {
 						scope: 'plugin',
 						plugin: { ctor, name: prop.name.name },
@@ -973,4 +997,19 @@ export function propControls(entry: TComponentEntry): TPropControlGroups {
 			)
 			.sort(byName),
 	}
+}
+
+/**
+ * Есть ли у коллекции группы — проп `groupBy` у дескриптора её фасада (Menu,
+ * ListBox, Select). Строки у групп нет: ключ группы — функция, а группы —
+ * список записей (`NON_EDITABLE`), — и страница показывает их блоком в
+ * свойствах коллекции, на составе с группами (`GROUPED_ITEMS`).
+ *
+ * По дескриптору, а не списком компонентов: коллекция, которой группы
+ * добавят, получит блок сама.
+ */
+export function hasGroups(entry: TComponentEntry): boolean {
+	const props = entry.collectionDescriptor?.().props ?? []
+
+	return props.some((prop) => underscorePropNaming(prop.name) === 'groupBy')
 }

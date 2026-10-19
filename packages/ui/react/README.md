@@ -12,7 +12,8 @@ component descriptor, so they match the other five adapters; only the spelling i
 arrive as callback props (`element:ready` → `onElementReady`), and the default slot is `children`.
 
 > **Status:** the React adapter is in progress — Button, Icon, Label, Frame, Skeleton,
-> ProgressSpinner, Input, CheckBox, Switch, the collections ListBox, Tabs, Accordion and
+> ProgressSpinner, Input, CheckBox, Switch, the form field `Field` (label, helper and error linked
+> to the control inside it), the collections ListBox, Tabs, Accordion and
 > RadioGroup (`<ListBox.Item>`, `<Tabs.Item>` with `<Tabs.Content>`, `<Accordion.Item>`,
 > `<RadioGroup.Item>` or `items`), Table (columns and rows as data — `columns`, `items` — with
 > sorting, row selection, column resizing and reordering) and the `Virtual` window for long lists

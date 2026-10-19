@@ -1,9 +1,10 @@
-import { TSelectionCollectionFacade } from '../../../../base/collection'
+import { TGroupCollectionFacade } from '../../../../base/collection'
 import type {
 	TCollectionEngine,
 	TCollectionFacadeOptions,
 	TDrawnEntry,
-	TSelectionFacadeProps,
+	TDrawnSection,
+	TGroupFacadeProps,
 } from '../../../../base/collection'
 import { listBoxExtensions } from '../factory'
 import { completeEngine } from '../../../../base/collection/create/internal'
@@ -19,20 +20,21 @@ import type { TListBoxView } from '../../types'
 /**
  * Фасад коллекции списка.
  *
- * Состав и выбор приходят из базы; своё — `view` и что список рисует
- * (`drawn`, расширение `draw`): без окна все показанные элементы, в окне —
- * видимые и распорки на месте пропущенных. Окно ставит обёртка `Virtual`
- * вокруг списка. Раньше между фасадом и базой стоял `TListCollectionFacade`,
- * не добавлявший ничего: он существовал ради компонента `TList`, которого
- * больше нет.
+ * Состав, выбор и группировка приходят из базы (`TGroupCollectionFacade`);
+ * своё — `view` и что список рисует (расширение `draw`): без окна все
+ * показанные элементы, в окне — видимые и распорки на месте пропущенных, а по
+ * секциям группировки — `drawnSections`, отсюда рисует разметка. Окно ставит
+ * обёртка `Virtual` вокруг списка; список с группами она не рисует. Раньше
+ * между фасадом и базой стоял `TListCollectionFacade`, не добавлявший ничего:
+ * он существовал ради компонента `TList`, которого больше нет.
  */
-export class TListBoxCollectionFacade extends TSelectionCollectionFacade<
+export class TListBoxCollectionFacade extends TGroupCollectionFacade<
 	IListBoxItem,
 	TListBoxCollectionExtensions,
 	TListBoxCollectionFacadeEvents
 > {
 	constructor(
-		props: TSelectionFacadeProps<IListBoxItem> = {},
+		props: TGroupFacadeProps<IListBoxItem> = {},
 		options: TCollectionFacadeOptions<TListBoxCollectionFacadeEngine, IListBox> = {},
 	) {
 		// Движок мог прийти снаружи собранным на любом уровне — `completeEngine`
@@ -66,5 +68,14 @@ export class TListBoxCollectionFacade extends TSelectionCollectionFacade<
 	 */
 	get drawn(): ReadonlyArray<TDrawnEntry<IListBoxItem>> {
 		return this.extensions.draw.drawn
+	}
+
+	/**
+	 * Что рисует список, по секциям группировки: группа с подписью или
+	 * элементы без группы, между соседними секциями — разделитель. Без групп
+	 * секция одна — все записи `drawn`
+	 */
+	get drawnSections(): ReadonlyArray<TDrawnSection<IListBoxItem>> {
+		return this.extensions.draw.drawnSections
 	}
 }

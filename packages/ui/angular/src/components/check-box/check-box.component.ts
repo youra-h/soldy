@@ -1,7 +1,12 @@
 import { Component, ChangeDetectionStrategy } from '@angular/core'
 import { NgTemplateOutlet } from '@angular/common'
 import type { ICheckBox } from '@soldy-ui/core'
-import { AttributesDirective, RoleIconDirective, type TBinding } from '../../adapter'
+import {
+	AttributesDirective,
+	RoleIconDirective,
+	provideElevator,
+	type TBinding,
+} from '../../adapter'
 import { CheckBoxInputNames, TCheckBoxSurface } from './base.component'
 import { setupCheckBox } from './setup.component'
 
@@ -13,8 +18,9 @@ import { setupCheckBox } from './setup.component'
  * делятся между корнем и вложенным `<input>`, и корнем служит сам элемент
  * компонента. Это строчный элемент, поэтому флажок кладут в подпись `Label`:
  * внутри `label` HTML разрешает только строчную разметку, и всё внутри — тоже
- * `span`. Классы, `attrs` (`dir`) и скрытие раскладывает на корень
- * `TComponentBase` (стратегия `'host'`); `aria` стоит на `<input>` — его
+ * `span`. Классы, `attrs` (`dir`), `dataset` (`data-disabled`, `data-invalid`)
+ * и скрытие раскладывает на корень `TComponentBase` (стратегия `'host'`):
+ * тема красит коробку и подпись поля формы `Field` по корню; `aria` стоит на `<input>` — его
  * кладёт директива набора (`AttributesDirective`). Статические атрибуты,
  * которые потребитель записал на флажок, кроме `class` и `style`, база
  * переносит на `<input>` (`control`).
@@ -35,18 +41,27 @@ import { setupCheckBox } from './setup.component'
  * в таблице «выбрать все» собирала их тысячами. Размер и цвет отметке даёт
  * тема флажка по `so-check-box__mark`.
  *
+ * Поле формы `Field` над флажком отдаёт ему ошибку, `id` и ссылки на части,
+ * а своему содержимому флажок опускает пустую связку — в свой слой лифта
+ * (`provideElevator()`).
+ *
  * Selector: so-check-box
  */
 @Component({
 	selector: 'so-check-box',
 	standalone: true,
 	imports: [NgTemplateOutlet, AttributesDirective, RoleIconDirective],
+	providers: [provideElevator()],
 	changeDetection: ChangeDetectionStrategy.OnPush,
 	templateUrl: './check-box.component.html',
 })
 export class TCheckBoxComponent extends TCheckBoxSurface<ICheckBox> {
 	constructor() {
-		super(CheckBoxInputNames, { strategy: 'host', sets: ['attrs'], control: true })
+		super(CheckBoxInputNames, {
+			strategy: 'host',
+			sets: ['attrs', 'dataset'],
+			control: true,
+		})
 	}
 
 	protected createBinding(ctrl: ICheckBox | undefined, inputs: object): TBinding<ICheckBox> {

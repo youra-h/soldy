@@ -1,12 +1,14 @@
 import type { ElementType, ReactElement } from 'react'
 import {
 	NativeInput,
+	elevated,
 	hasSlot,
 	renderSlot,
 	roleIcon,
 	toAriaProps,
 	toControlAttrs,
-	toRootLayout,
+	toRootForward,
+	toRootProps,
 } from '../../adapter'
 import { Button } from '../button'
 import { Icon } from '../icon'
@@ -17,11 +19,13 @@ import type { InputAttributes, InputProps } from './base.component'
  * Input — текстовое поле: корень по `tag` (по умолчанию `div`) и `<input>`
  * внутри, по сторонам — слоты `leading` и `trailing`.
  *
- * Наборы ядра стоят на разных элементах: `attrs` (`dir`) — на корне, `aria` —
- * на `<input>`. Нативные `disabled`, `readonly` и `required` поля проводит
- * разметка, поэтому ARIA-дублей ядро рядом с ними не пишет. Атрибуты
- * потребителя делятся так же, как у Vue: класс и стиль — корню, всё
- * остальное — полю, поверх его атрибутов.
+ * Наборы ядра стоят на разных элементах: `attrs` (`dir`) и `dataset`
+ * (`data-disabled`, `data-invalid`) — на корне, `aria` — на `<input>`: тема
+ * красит коробку поля и подпись поля формы `Field` по корню, а ошибку
+ * скринридеру объявляет `<input>`. Нативные `disabled`, `readonly` и
+ * `required` поля проводит разметка, поэтому ARIA-дублей ядро рядом с ними не
+ * пишет. Атрибуты потребителя делятся так же, как у Vue: класс и стиль —
+ * корню, всё остальное — полю, поверх его атрибутов.
  *
  * Текст поля ведёт ядро: в ядро его несёт плагин ввода, в узел — поле
  * адаптера (`NativeInput`), контролируемого поля React здесь нет.
@@ -41,15 +45,21 @@ import type { InputAttributes, InputProps } from './base.component'
  * `stopPropagation` React опоздал бы — к нему событие уже прошло корни
  * предков, а select-only Select открывает панель кликом по корню. Vue гасит
  * то же `@click.stop`.
+ *
+ * Поле формы `Field` над полем отдаёт ему ошибку, `id` и ссылки на части
+ * (`TFieldControlExtension`), а своему содержимому поле опускает пустую
+ * связку: контролы в его слотах — его содержимое, а не контрол поля формы.
+ * Поэтому содержимое слотов — в слое лифта поля (`elevated`).
  */
 export function Input(props: InputProps): ReactElement | null {
-	const { ctrl, ref, forwardProps, state } = useSetupInput(props)
+	const { ctrl, ref, forwardProps, state, layer } = useSetupInput(props)
 
 	const {
 		rendered,
 		tag,
 		attrs,
 		aria,
+		dataset,
 		id,
 		value,
 		name,
@@ -67,10 +77,13 @@ export function Input(props: InputProps): ReactElement | null {
 	const Tag = tag as ElementType
 	const trailing = clearable === true || hasSlot(props.clear) || hasSlot(props.trailing)
 
+	// Корню — его наборы, класс и стиль потребителя; `ref` адаптера последним
 	return (
-		<Tag ref={ref} {...toRootLayout(state, forwardProps)} {...toAriaProps(attrs)}>
+		<Tag {...toRootProps(ref, state, [attrs, dataset], toRootForward(forwardProps))}>
 			{hasSlot(props.leading) ? (
-				<div className="so-input__leading">{renderSlot(props.leading, { ctrl })}</div>
+				<div className="so-input__leading">
+					{elevated(layer, renderSlot(props.leading, { ctrl }))}
+				</div>
 			) : null}
 			<NativeInput
 				type="text"
@@ -86,7 +99,7 @@ export function Input(props: InputProps): ReactElement | null {
 			/>
 			{trailing ? (
 				<div className="so-input__trailing">
-					{renderSlot(props.clear, { clear: ctrl.clear }) ??
+					{elevated(layer, renderSlot(props.clear, { clear: ctrl.clear })) ??
 						(clearable === true ? (
 							<Button
 								embedded="input.clear"
@@ -107,7 +120,7 @@ export function Input(props: InputProps): ReactElement | null {
 								/>
 							</Button>
 						) : null)}
-					{renderSlot(props.trailing, { ctrl })}
+					{elevated(layer, renderSlot(props.trailing, { ctrl }))}
 				</div>
 			) : null}
 		</Tag>

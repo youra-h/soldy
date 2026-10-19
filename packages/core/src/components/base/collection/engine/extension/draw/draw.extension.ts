@@ -1,6 +1,7 @@
 import type { IExtensionContext } from '../types'
 import { TBaseExtension } from '../base-extension.class'
-import { batchOf } from '../neighbours'
+import { batchOf, groupOf } from '../neighbours'
+import type { TGroup, TGroupSection } from '../group/types'
 import { drawnItem } from './entries'
 import type {
 	IDrawExtension,
@@ -9,8 +10,17 @@ import type {
 	TDrawEvents,
 	TDrawnEntry,
 	TDrawnFiller,
+	TDrawnItem,
+	TDrawnSection,
 	TDrawViewport,
 } from './types'
+
+/**
+ * Ключ секции записей без группы — тот же, что у такой секции группировки
+ * (`group.sections`): разметка рисует ту же петлю по ключу и с группировкой, и
+ * без неё.
+ */
+const FREE_SECTION = 'free'
 
 /**
  * Без окна коллекция рисует все показанные элементы, каждый на своём месте.
@@ -40,7 +50,7 @@ function drawAll<TItem extends TDrawable>(shown: ReadonlyArray<TItem>): TDrawnEn
  * умолчанию — все показанные, окно (`TWindowStrategy`) ставит тот, кто его
  * включает, — обёртка `Virtual` над компонентом. Так код окна попадает в
  * сборку приложения только вместе с обёрткой, а коллекция без неё рисует
- * всё. `virtual` — стоит ли окно.
+ * всё. `virtual` — рисует ли окно.
  *
  * **Входы окна — замер и закрепления.** Видимую полосу и шаг элементов мерит
  * плагин окна (`notifyViewport`): высота элементов одна на все, и место
@@ -49,7 +59,20 @@ function drawAll<TItem extends TDrawable>(shown: ReadonlyArray<TItem>): TDrawnEn
  * клавиатурой, строка ячейки сетки. Закреплений несколько — по причине, и
  * каждое снимает только его причина.
  *
- * `change:drawn` и `change:virtual` — только на смену.
+ * **Группы — секциями нарисованного, и без окна.** Коллекция с группировкой
+ * (сосед `group`, ListBox и Select) рисует показанное секциями: группу —
+ * обёрткой с подписью, между соседними секциями — разделитель. Записи по
+ * секциям отдаёт `drawnSections`, и разметка — петля по секциям, а в секции —
+ * по её записям; без групп секция одна, со всеми записями, распорками тоже.
+ * Окно считает строки одной высоты, а подпись группы и разделитель — не строки
+ * окна, и место элемента от шага разошлось бы с экраном. Поэтому
+ * сгруппированное показанное окно не рисует: пока среди показанных есть
+ * элемент группы, коллекция рисует все показанные, а `virtual` — `false`.
+ * Группировка ставится раньше рисования: на смену показанных её секции уже
+ * пересчитаны, а смену одной подписи рисование узнаёт по `change:sections`.
+ *
+ * `change:drawn`, `change:drawnSections` и `change:virtual` — только на смену,
+ * в этом порядке, когда к ним привела одна запись.
  */
 export class TDrawExtension<TItem extends TDrawable = any>
 	extends TBaseExtension<TItem, TDrawEvents<TItem>>
@@ -66,11 +89,19 @@ export class TDrawExtension<TItem extends TDrawable = any>
 
 	private _drawn: ReadonlyArray<TDrawnEntry<TItem>> = []
 
+	private _drawnSections: ReadonlyArray<TDrawnSection<TItem>> = []
+
+	/** Рисует ли окно: стратегия стоит, и показанное не сгруппировано. */
+	private _virtual = false
+
 	override install(ctx: IExtensionContext<TItem>): void {
 		super.install(ctx)
 
 		// Показанные элементы сменились — состав, отбор или порядок
 		batchOf(ctx)?.events.on('change:shown', () => this._update())
+
+		// Секции группировки сменились без смены показанных — подпись группы
+		groupOf(ctx)?.events.on('change:sections', () => this._update())
 
 		this._update()
 	}
@@ -79,19 +110,19 @@ export class TDrawExtension<TItem extends TDrawable = any>
 		return this._drawn
 	}
 
+	get drawnSections(): ReadonlyArray<TDrawnSection<TItem>> {
+		return this._drawnSections
+	}
+
 	get virtual(): boolean {
-		return this._strategy !== null
+		return this._virtual
 	}
 
 	useStrategy(strategy: IDrawStrategy | null): void {
 		if (this._strategy === strategy) return
 
-		const virtual = this.virtual
-
 		this._strategy = strategy
 		this._update()
-
-		if (virtual !== this.virtual) this.events.emit('change:virtual', this.virtual)
 	}
 
 	pin(reason: string, item: TItem | undefined): void {
@@ -116,18 +147,39 @@ export class TDrawExtension<TItem extends TDrawable = any>
 	/* Внутреннее                                                         */
 	/* ------------------------------------------------------------------ */
 
-	/** Что рисовать — заново. Событие — только на смену. */
+	/**
+	 * Что рисовать и по каким секциям — заново. Состояние пишется целиком до
+	 * событий: подписчик `change:drawn` видит уже новые секции и `virtual`.
+	 * События — только на смену.
+	 */
 	private _update(): void {
 		const shown = batchOf(this._ctx)?.shown ?? []
-		const strategy = this._strategy
+		const sections = groupOf(this._ctx)?.sections ?? []
+		const grouped = sections.some((section) => section.group !== null)
+		const strategy = grouped ? null : this._strategy
 		const next = strategy
 			? this._placeFillers(strategy.draw(shown, this._pinnedPlaces(shown), this._viewport))
 			: drawAll(shown)
 
-		if (sameDrawn(this._drawn, next)) return
+		const drawnChanged = !sameDrawn(this._drawn, next)
 
-		this._drawn = next
-		this.events.emit('change:drawn', next)
+		if (drawnChanged) this._drawn = next
+
+		const nextSections = grouped
+			? groupedSections(this._drawn, sections)
+			: wholeSection(this._drawn)
+		const sectionsChanged = !sameSections(this._drawnSections, nextSections)
+
+		if (sectionsChanged) this._drawnSections = nextSections
+
+		const virtual = strategy !== null
+		const virtualChanged = virtual !== this._virtual
+
+		this._virtual = virtual
+
+		if (drawnChanged) this.events.emit('change:drawn', this._drawn)
+		if (sectionsChanged) this.events.emit('change:drawnSections', this._drawnSections)
+		if (virtualChanged) this.events.emit('change:virtual', virtual)
 	}
 
 	/**
@@ -167,6 +219,35 @@ export class TDrawExtension<TItem extends TDrawable = any>
 	}
 }
 
+/** Без групп секция одна — все записи, распорки окна тоже; без записей секций нет. */
+function wholeSection<TItem extends TDrawable>(
+	drawn: ReadonlyArray<TDrawnEntry<TItem>>,
+): TDrawnSection<TItem>[] {
+	return drawn.length > 0 ? [{ key: FREE_SECTION, group: null, entries: drawn }] : []
+}
+
+/**
+ * Записи по секциям группировки. Сгруппированное окно не рисует, поэтому
+ * запись есть у каждого показанного элемента; элемент секции, которого среди
+ * нарисованных нет, — не в счёт.
+ */
+function groupedSections<TItem extends TDrawable>(
+	drawn: ReadonlyArray<TDrawnEntry<TItem>>,
+	sections: ReadonlyArray<TGroupSection<TItem>>,
+): TDrawnSection<TItem>[] {
+	const entries = new Map<TItem, TDrawnItem<TItem>>()
+
+	for (const entry of drawn) {
+		if (entry.kind === 'item') entries.set(entry.item, entry)
+	}
+
+	return sections.map(({ key, group, items }) => ({
+		key,
+		group,
+		entries: items.flatMap((item) => entries.get(item) ?? []),
+	}))
+}
+
 /** То же самое: те же элементы на тех же местах и распорки того же стиля тем же порядком. */
 function sameDrawn<TItem extends TDrawable>(
 	a: ReadonlyArray<TDrawnEntry<TItem>>,
@@ -197,5 +278,36 @@ function sameStyle(a: TDrawnFiller, b: TDrawnFiller): boolean {
 	return (
 		keys.length === Object.keys(b.style).length &&
 		keys.every((key) => a.style[key] === b.style[key])
+	)
+}
+
+/** Та же группа секции: обе без группы или тот же ключ с той же подписью. */
+function sameGroup(a: TGroup | null, b: TGroup | null): boolean {
+	if (a === null || b === null) return a === b
+
+	return a.key === b.key && a.label === b.label
+}
+
+/**
+ * Те же секции: те же ключи и группы с теми же записями тем же порядком.
+ * Записи сверяются по ссылке: `drawn`, который не сменился, остаётся прежним
+ * массивом с прежними записями, а сменившийся — уже другие записи.
+ */
+function sameSections<TItem extends TDrawable>(
+	a: ReadonlyArray<TDrawnSection<TItem>>,
+	b: ReadonlyArray<TDrawnSection<TItem>>,
+): boolean {
+	return (
+		a.length === b.length &&
+		a.every((section, index) => {
+			const other = b[index]
+
+			return (
+				section.key === other.key &&
+				sameGroup(section.group, other.group) &&
+				section.entries.length === other.entries.length &&
+				section.entries.every((entry, place) => entry === other.entries[place])
+			)
+		})
 	)
 }
