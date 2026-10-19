@@ -10,9 +10,10 @@ import { setupTabs } from './setup.component'
  * TTabsComponent — набор вкладок: список табов и панели под ним.
  *
  * Селектор — элементный, `<so-tabs>`: атрибуты потребителя у набора делятся,
- * как у поля, и корнем служит сам элемент компонента. Классы, `attrs` и
- * скрытие раскладывает на него `TComponentBase` (стратегия `'host'`); набор
- * `aria` владельца — это список табов (`role="tablist"`, `aria-orientation`,
+ * как у поля, и корнем служит сам элемент компонента. Классы, `attrs`,
+ * `dataset` и скрытие раскладывает на него `TComponentBase` (стратегия
+ * `'host'`): выключенный набор тема гасит корнем, вместе с панелями
+ * (`data-disabled`). Набор `aria` владельца — это список табов (`role="tablist"`, `aria-orientation`,
  * имя из `aria_label`), и на `.so-tabs__list` его кладёт директива набора: на
  * корне рядом со списком лежат панели. Статические атрибуты, которые
  * потребитель записал на набор, кроме `class` и `style`, база переносит на
@@ -42,7 +43,7 @@ import { setupTabs } from './setup.component'
 })
 export class TTabsComponent extends TTabsSurface<ITabs> {
 	constructor() {
-		super(TabsInputNames, { strategy: 'host', sets: ['attrs'], control: true })
+		super(TabsInputNames, { strategy: 'host', sets: ['attrs', 'dataset'], control: true })
 	}
 
 	protected createBinding(

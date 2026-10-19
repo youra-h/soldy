@@ -49,10 +49,15 @@
 	--so-date-picker-button: var(--so-date-input-slot-row);
 }
 
+// Выключенность — `data-disabled`, как у DateInput: у поля одной даты и у
+// коробки диапазона. По ней коробка гаснет целиком, с кнопками, а наведение
+// рамку не красит (`input.field-frame`, `input.input-border`).
+$disabled: "[data-disabled='true']";
+
 // Невалидная дата от поля формы `Field` — `data-invalid` корня: рамка ошибки у
 // поля, та же, что у DateInput со своей ошибкой (дата вне границ).
 .so-date-picker[data-invalid='true'] > .so-date-picker__field {
-	@include input.field-invalid('date-input', $enabled: ":not([data-disabled='true'])");
+	@include input.field-invalid('date-input', $disabled);
 }
 
 // Кнопки очистки и календаря — квадрат со стороной в строку слота: в коробке
@@ -115,6 +120,8 @@
 // размера, кольцо. Кольцо горит, пока фокус на части любого из полей, — как у
 // DateInput, фокус на кнопке его не зажигает. Ошибка — рамкой ошибки, пока её
 // нашло хоть одно поле: дата вне границ, недоступная или конец раньше начала.
+// Выключенный период гаснет коробкой целиком — с датами, тире и кнопками, — как
+// DateInput: поля и кнопки выключены вместе с ним и второй раз не гаснут.
 //
 // Раскладка — сетка из пяти колонок: начало, тире, конец и две кнопки —
 // очистка и календарь, каждая по своей ширине. Без очистки кнопка календаря
@@ -126,7 +133,7 @@
 // посередине между датами, а не прилипает к одной из них. Колонки логические:
 // в RTL начало справа, кнопки слева.
 .so-date-picker--range {
-	@include input.field('date-picker');
+	@include input.field('date-picker', $disabled);
 	@include range-size('normal');
 
 	display: inline-grid;
@@ -145,7 +152,7 @@
 
 	@each $variant in input.$variants {
 		&.so-date-picker--variant-#{$variant} {
-			@include input.input-variant($variant, $enabled: ":not([data-disabled='true'])");
+			@include input.input-variant($variant, $disabled);
 		}
 	}
 
@@ -153,7 +160,7 @@
 	// периода или поставило поле формы `Field` — `data-invalid` самого корня.
 	&:has(> .so-date-input[data-invalid='true']),
 	&[data-invalid='true'] {
-		@include input.field-invalid('date-picker', $enabled: ":not([data-disabled='true'])");
+		@include input.field-invalid('date-picker', $disabled);
 	}
 
 	@each $size, $_ in input.$sizes {
@@ -162,16 +169,15 @@
 		}
 	}
 
-	// Выключенный период гаснет датами, как DateInput: даты гасят поля, кнопки —
-	// их `disabled`, тире — здесь.
-	&[data-disabled='true'] > .so-date-picker__dash {
-		@apply opacity-so-component-disabled;
-	}
-
 	// Поле внутри коробки — без своей: ни рамки, ни поверхности, ни кольца, ни
 	// маркера обязательности — всё это у коробки. Высота — во всю строку
 	// коробки: нажатие у её края попадает в поле, и плагин указателя поля
 	// отдаёт фокус ближайшей части.
+	//
+	// Поверхности нет и у выключенного поля: выключенную поверхность даёт
+	// коробка. Правило выключенного поля с вариантом (`input.input-variant`)
+	// равно по специфичности первому селектору, и второй перекрывает его, не
+	// полагаясь на порядок файлов.
 	//
 	// Кольцо снимается и правилом фокуса: в режиме принудительных цветов поле
 	// под фокусом возвращает себе контур сплошным (`input.field-focus`).
@@ -179,7 +185,11 @@
 		@apply self-stretch;
 		height: auto;
 		border-width: 0;
-		background-color: transparent;
+
+		&,
+		&#{$disabled} {
+			background-color: transparent;
+		}
 
 		&,
 		&:has(.so-date-input__segment:focus) {
@@ -212,7 +222,7 @@
 // Рамка коробки без варианта — нейтраль, как у DateInput. Нулевая
 // специфичность — вариант перекрывает базу, не споря с ней.
 :where(.so-date-picker--range) {
-	@include input.input-variant('neutral', $enabled: ":not([data-disabled='true'])");
+	@include input.input-variant('neutral', $disabled);
 }
 
 // Пустой период — подсказка целиком: тире гаснет вместе с подсказками частей

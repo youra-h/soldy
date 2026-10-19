@@ -3,7 +3,8 @@
  *
  * Элемент — настоящий `<div>`, расширенный классом soldy (customized
  * built-in, см. `SoldyElement`): тег ядра по умолчанию. На корне из наборов
- * ядра только `attrs`: набор `aria` владельца — это список табов, и на
+ * ядра `attrs` и `dataset` — выключенный набор тема гасит корнем, вместе с
+ * панелями (`data-disabled`). Набор `aria` владельца — это список табов, и на
  * `.so-tabs__list` его кладёт шаблон, а рядом со списком лежат панели.
  *
  * Список табов — поле корня (`control` в описании корня), как `<input>` у
@@ -38,7 +39,7 @@ export const TTabsElement = SoldyElement(HTMLDivElement, {
 	descriptor: TabsDescriptor(),
 	facade: TabsCollectionDescriptor(),
 	template: tabsTemplate,
-	root: { sets: ['attrs'], control: true },
+	root: { sets: ['attrs', 'dataset'], control: true },
 	setup: setupTabs,
 })
 

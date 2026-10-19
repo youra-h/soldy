@@ -17,8 +17,9 @@ import type { TabsAttributes, TabsProps } from './base.component'
  *
  * Набор `aria` владельца — это список табов: `role="tablist"` и
  * `aria-orientation` пишет ядро, имя из `aria_label` — `TAriaPlugin`. Корень
- * его не получает: рядом со списком там лежат панели. На корне — `attrs`,
- * как у Vue.
+ * его не получает: рядом со списком там лежат панели. На корне — `attrs` и
+ * `dataset`, как у Vue: выключенный набор тема гасит корнем, вместе с
+ * панелями (`data-disabled`).
  *
  * Атрибуты потребителя делятся, как у поля и у Vue: класс и стиль — корню,
  * остальное, кроме `ref`, — списку табов, поверх его `aria`: `aria-label` и
@@ -44,10 +45,10 @@ import type { TabsAttributes, TabsProps } from './base.component'
 export function Tabs(props: TabsProps): JSX.Element {
 	const binding = setupTabs(props)
 	const state = binding.state
-	// Корню — `attrs`, класс и стиль потребителя; `ref` адаптера последним
+	// Корню — `attrs`, `dataset`, класс и стиль потребителя; `ref` адаптера последним
 	const root = createRootProps(() => ({
 		state,
-		sets: [state.attrs],
+		sets: [state.attrs, state.dataset],
 		forward: toRootForward(binding.forwardProps()),
 	}))
 	// Списку табов — остальное от потребителя, поверх его `aria`
