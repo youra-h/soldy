@@ -1,5 +1,65 @@
 # @soldy-ui/vue
 
+## 0.3.0-alpha.0
+
+### Minor Changes
+
+- 3f19e5e: Table: атрибуты, которые приложение пишет на компонент, кроме класса и стиля, — `aria-label`, `id`, `data-*`, в Vue, React, Solid и Svelte и обработчики, у Svelte attachment-ы, в Angular и Web Components статические атрибуты разметки — теперь на `table`, где её роль и имя, а не на окне прокрутки `.so-table__viewport`; класс, стиль, скрытие и `ref` — по-прежнему окно. Angular: `<so-table>` вместо `<div so-table>`. Тема oren делает окно таблицы блоком сама (`display: block`) — и на незнакомом браузеру теге `<so-table>`.
+- 7872e77: Slider в поле формы `Field` связан с подписью, подсказкой и ошибкой. С одной ручкой подпись называет её поле (`for`): клик по подписи ставит на него фокус, справка и `aria-invalid` — на нём же. С несколькими ручками корень ползунка — группа (`role="group"`): её называют подпись поля и `aria_label`, к ней ведёт справка, а на каждой ручке — своё имя из `thumbLabels` и `aria-invalid`. Что сломалось: у ползунка с несколькими ручками `aria_label` называет группу, а не каждую ручку, — и в поле, и вне его. Как обновиться: имена ручкам задавайте `thumbLabels`. В ядре набор поля ручки отдаётся целиком: своя разметка поверх `TSlider` кладёт на поле только `thumb.aria` (без `aria` ползунка), а на корень — новый `rootAria`. `TSlider.labelable` с несколькими ручками — `false`; новое событие `change:labelable` у контролов — элемент с `aria` стал или перестал быть labelable.
+- 2e3950e: ListBox и Tabs: атрибуты, которые приложение пишет на компонент, кроме класса и стиля, — `aria-*`, `id`, `tabindex`, `data-*`, в Vue, React, Solid и Svelte и обработчики — теперь на узле списка (`[role=listbox]`, `[role=tablist]`), а не на корне; `ref` — по-прежнему корень. Angular: `<so-list-box>` и `<so-tabs>` вместо `<div so-list-box>` и `<div so-tabs>`.
+- 8e2e31e: ListBox и Select: группы пунктов из данных, как у Menu (`_: { group }`, `groupBy`, `groups`), части `ListBox.Group` и `Select.Group`. `TMenuGroupIdsPlugin` заменён общим плагином имени группы `TItemGroupIdsPlugin` (описание — `ItemGroupIdsPluginDescriptor` вместо `MenuGroupIdsPluginDescriptor`), типы `IMenuGroup`, `IMenuGroupProps`, `TMenuGroupEvents` — общими `IItemGroup`, `IItemGroupProps`, `TItemGroupEvents` — замените импорт. Рисование отдаёт разметке ListBox и Select секции: в поверхности компонента `drawnSections` вместо `drawn` (событие `change:drawnSections`). Список с группами окно `Virtual` не рисует.
+- 1411d88: Тост: вид сообщения `type` (`info`, `success`, `warning`, `error`) со значком вида и `loading` — кольцо на месте значка; ожидающий тост сам не закрывается. `variant` и `size` у тоста сняты: вместо `show({ variant: 'negative' })` пишите `show({ type: 'error' })`. Новые роли иконок `notification`, `info`, `success`, `warning` — свой пакет иконок должен их закрыть.
+- ce9316e: NumberInput (Vue): поле числа в формате локали — шаг и границы, ↑/↓, PageUp/PageDown, Home/End, кнопки «−» и «+» с удержанием, `formatOptions` (процент, валюта, единица), событие `commit`; `createScale` принимает открытые границы, а `shift` шкалы со значения вне сетки шагает к соседнему узлу со стороны сдвига (с 2,5 при шаге 1 — на 3 и на 2). Ломающее: роли иконок `minus` и `plus` — дополните ими свой пакет иконок; раздел локали `numberInput` — дополните им свой `TLocale` (`extendLocale` возьмёт из основы).
+- a61b6a5: Ячейка таблицы отдаёт готовый текст значения (`cell.text`) — одним правилом во всех адаптерах. Удалён помощник `toText` адаптеров: вместо `toText(cell.value)` читайте `cell.text`, а в своём слоте `cell` — `toText(value)` из `@soldy-ui/core` (в шаблоне Angular — пайп `soText`, он теперь зовёт её).
+- 6408875: ListBox объявляет себя списком для скринридера: корень — `role="listbox"` (в `mode="multiple"` — ещё `aria-multiselectable="true"`), пункт — `role="option"` вместо `role="button"`, плитка панели выбора месяца и года Calendar — тоже. Обновление: эти пункты ищите по роли `option`, а не `button`.
+- 958c866: ListBox: список — свой узел `.so-list-box__list` внутри корня, шапка и подвал — вне его. Роль, имя и остановка Tab — на этом узле, и прокручивается тоже он: в пределе `maxRows` ровно строки, а шапка и подвал при прокрутке стоят на месте. Стили фокуса и прокрутки и селекторы по `role` и `tabindex` корня ListBox переносите на него. `focused = true` из кода фокус в список пока не ставит — как у Input и Tabs, корень которых фокус не держит.
+
+### Patch Changes
+
+- b6881dd: README: несколько приложений Vue на одной странице — каждому свой `app.config.idPrefix`.
+- 7731c71: Menu: группы пунктов из данных — ключ группы в метке `_: { group }` или функцией `groupBy`, порядок и подписи — `groups`; меню рисует группы с подписью и разделителем, и стрелки ходят в том же порядке. Расширение коллекции `group` отдаёт секции — `engine.extensions.group.sections`
+- 5f4c58a: Menu: контекстное меню — режим `openOn: 'contextmenu'` (`open-on="contextmenu"` во Vue). Меню открывают правая кнопка, долгое касание, клавиша контекстного меню и Shift+F10 над областью в слоте `trigger`, и панель встаёт у точки вызова (`point`); у области нет связки кнопки — `triggerAria` пуст. У Frame новый вход `anchor_point`: точка в координатах окна вместо якоря, главнее него, пока задана.
+- f06e5f9: Меню: пункт с панелью `Menu.PopoverItem` (`MenuPopoverItem`) — строка открывает сбоку панель с любым содержимым, например календарём: нажатием, Enter, пробелом или → (в RTL ←); Escape возвращает к пункту, Tab из панели закрывает меню. Открыта одна панель на меню — подменю или пункта с панелью, — и связку строки с панелью у обоих пишет один плагин `TMenuPopupIdsPlugin`.
+- 4206633: Tabs: корень набора несёт `data-disabled`, как ListBox и Table: по нему тема гасит выключенный набор вместе с панелями.
+- 47e560d: Textarea: новый компонент (Vue) — многострочное поле с контрактом Input и подписью от `Field`: `rows`, авторост `autoresize` до `maxRows`, счётчик символов `counter` с пределом `maxlength`. Новая строка локали `textarea.counter`: свою полную `TLocale` дополните ею или соберите через `extendLocale`.
+- e888c8f: Минимальные версии фреймворков ниже: Vue 3.5.21 вместо 3.5.32, Solid 1.9.10 вместо 1.9.17, Angular 21.1 вместо 22.1.5.
+- e977046: Меню: подменю — `Menu.Submenu` (`MenuSubmenu`). Пункт открывает сбоку своё меню наведением, стрелкой к концу строки, Enter и пробелом; путь указателя наискосок к открытой панели её не закрывает; стрелка к началу строки и Escape закрывают один уровень, а выбор пункта и Tab — всё меню, и `choose` приходит каждому меню над пунктом. Наведение в панели меню — теперь плагин `TMenuHoverPlugin`: `TMenuPointerPlugin` только открывает меню.
+- 4429cbc: DatePicker: проп `validate` — проверка набора в полях, как у DateInput: «00» у дня и месяца не записывается, часть ждёт следующей цифры. DatePicker отдаёт его полю одной даты и обоим концам диапазона; по умолчанию выключен
+- Updated dependencies [dca2a76]
+- Updated dependencies [8bbb7d8]
+- Updated dependencies [7731c71]
+- Updated dependencies [bc530a2]
+- Updated dependencies [7872e77]
+- Updated dependencies [a67b85a]
+- Updated dependencies [f4676b7]
+- Updated dependencies [5f4c58a]
+- Updated dependencies [7002663]
+- Updated dependencies [7f54086]
+- Updated dependencies [88a6ccf]
+- Updated dependencies [f06e5f9]
+- Updated dependencies [d4c3583]
+- Updated dependencies [51ce716]
+- Updated dependencies [0ad9f22]
+- Updated dependencies [8e2e31e]
+- Updated dependencies [b3b63db]
+- Updated dependencies [1411d88]
+- Updated dependencies [ce9316e]
+- Updated dependencies [a61b6a5]
+- Updated dependencies [47e560d]
+- Updated dependencies [10c38fe]
+- Updated dependencies [6408875]
+- Updated dependencies [e977046]
+- Updated dependencies [04fb073]
+- Updated dependencies [fb85110]
+- Updated dependencies [76329be]
+- Updated dependencies [958c866]
+- Updated dependencies [b810fa0]
+- Updated dependencies [4429cbc]
+- Updated dependencies [f256e0f]
+  - @soldy-ui/plugins@0.3.0-alpha.0
+  - @soldy-ui/core@0.3.0-alpha.0
+  - @soldy-ui/setup@0.3.0-alpha.0
+
 ## 0.2.0
 
 ### Minor Changes

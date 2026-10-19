@@ -1,5 +1,56 @@
 # @soldy-ui/plugins
 
+## 0.3.0-alpha.0
+
+### Minor Changes
+
+- dca2a76: Панель DatePicker при закрытии возвращает фокус в поле: на часть, с которой её открыли Alt+↓, а если открыли кнопкой календаря — на первую часть поля (у диапазона — поля начала). Раньше фокус возвращался на кнопку календаря: тесты и код, которые ждали его там, теперь должны ждать его на части поля.
+- 8bbb7d8: Плагины и проводка коллекций находят соседние расширения охранниками контракта, а не чтением движка без типа; у ListBox для этого появился охранник `listOf`. Поведение не меняется. Ломающее для наследников `TListNavigationPlugin`: `shown()` отдаёт массив только для чтения — копию для правки снимайте сами (`[...this.shown()]`); элемент своего списка наследник называет вторым параметром типа базы (по умолчанию `IControl`).
+- 0ad9f22: Соседа по коллекции находят по контракту, а не приведением типа: новые охранники `activationOf`, `filterOf`, `plainOf`, `selectionOf`, у Select — `selectOf` и `tagsOf`, и контракт `IPlainExtension`. Ломающее: в `ISelectTagsExtension` объявлены обязательные `hasTags` и `syncTags()` — своё расширение `tags` для движка Select должно их реализовать, иначе Select его не найдёт.
+- 8e2e31e: ListBox и Select: группы пунктов из данных, как у Menu (`_: { group }`, `groupBy`, `groups`), части `ListBox.Group` и `Select.Group`. `TMenuGroupIdsPlugin` заменён общим плагином имени группы `TItemGroupIdsPlugin` (описание — `ItemGroupIdsPluginDescriptor` вместо `MenuGroupIdsPluginDescriptor`), типы `IMenuGroup`, `IMenuGroupProps`, `TMenuGroupEvents` — общими `IItemGroup`, `IItemGroupProps`, `TItemGroupEvents` — замените импорт. Рисование отдаёт разметке ListBox и Select секции: в поверхности компонента `drawnSections` вместо `drawn` (событие `change:drawnSections`). Список с группами окно `Virtual` не рисует.
+- 1411d88: Тост: вид сообщения `type` (`info`, `success`, `warning`, `error`) со значком вида и `loading` — кольцо на месте значка; ожидающий тост сам не закрывается. `variant` и `size` у тоста сняты: вместо `show({ variant: 'negative' })` пишите `show({ type: 'error' })`. Новые роли иконок `notification`, `info`, `success`, `warning` — свой пакет иконок должен их закрыть.
+- ce9316e: NumberInput (Vue): поле числа в формате локали — шаг и границы, ↑/↓, PageUp/PageDown, Home/End, кнопки «−» и «+» с удержанием, `formatOptions` (процент, валюта, единица), событие `commit`; `createScale` принимает открытые границы, а `shift` шкалы со значения вне сетки шагает к соседнему узлу со стороны сдвига (с 2,5 при шаге 1 — на 3 и на 2). Ломающее: роли иконок `minus` и `plus` — дополните ими свой пакет иконок; раздел локали `numberInput` — дополните им свой `TLocale` (`extendLocale` возьмёт из основы).
+- 04fb073: Select: набор по первым буквам — как у Menu, по правилам APG: повтор буквы ведёт к следующей опции на неё, а не снимает подсветку, без совпадения подсветка остаётся на месте, а закрытие панели начинает набор заново. `TSelectKeyboardPlugin.highlightByText` ищет только подстроку: параметр `mode` снят, и вызов с одним текстом теперь ищет подстроку в любом месте, а не начало текста, — вместо `highlightByText(text, 'includes')` пишите `highlightByText(text)`.
+- 958c866: ListBox: список — свой узел `.so-list-box__list` внутри корня, шапка и подвал — вне его. Роль, имя и остановка Tab — на этом узле, и прокручивается тоже он: в пределе `maxRows` ровно строки, а шапка и подвал при прокрутке стоят на месте. Стили фокуса и прокрутки и селекторы по `role` и `tabindex` корня ListBox переносите на него. `focused = true` из кода фокус в список пока не ставит — как у Input и Tabs, корень которых фокус не держит.
+
+### Patch Changes
+
+- bc530a2: Tabs: снятие табов на сервере больше не печатает `requestAnimationFrame is not defined`
+- a67b85a: Тип `TPoint` (проп `point` плагина якоря) отдаётся из пакета: без него не собирались декларации компонентов с якорем
+- 5f4c58a: Menu: контекстное меню — режим `openOn: 'contextmenu'` (`open-on="contextmenu"` во Vue). Меню открывают правая кнопка, долгое касание, клавиша контекстного меню и Shift+F10 над областью в слоте `trigger`, и панель встаёт у точки вызова (`point`); у области нет связки кнопки — `triggerAria` пуст. У Frame новый вход `anchor_point`: точка в координатах окна вместо якоря, главнее него, пока задана.
+- 7002663: Смахивание пальцем у Drawer, Popover, панелей Select и DatePicker и тостов больше не обрывается сразу после начала, а с `swipe: 'panel'` слой смахивается пальцем и из прокручиваемого содержимого.
+- 7f54086: Колонку таблицы можно переставить пальцем: жест больше не отменяется сразу после начала.
+- 88a6ccf: Панель у поля и триггера — Select, Popover, Menu, Tooltip, DatePicker — больше не перескакивает на другую сторону при прокрутке страницы: открытая панель держит сторону, пока на ней влезает, и переходит на противоположную, только если влезает там. Сторону заново выбирает следующее открытие.
+- f06e5f9: Меню: пункт с панелью `Menu.PopoverItem` (`MenuPopoverItem`) — строка открывает сбоку панель с любым содержимым, например календарём: нажатием, Enter, пробелом или → (в RTL ←); Escape возвращает к пункту, Tab из панели закрывает меню. Открыта одна панель на меню — подменю или пункта с панелью, — и связку строки с панелью у обоих пишет один плагин `TMenuPopupIdsPlugin`.
+- 51ce716: Закрытые Select, Tooltip, Menu, Popover и DatePicker больше не пересчитывают место панели на прокрутке страницы — только пока панель показана или гаснет.
+- 47e560d: Textarea: новый компонент (Vue) — многострочное поле с контрактом Input и подписью от `Field`: `rows`, авторост `autoresize` до `maxRows`, счётчик символов `counter` с пределом `maxlength`. Новая строка локали `textarea.counter`: свою полную `TLocale` дополните ею или соберите через `extendLocale`.
+- e977046: Меню: подменю — `Menu.Submenu` (`MenuSubmenu`). Пункт открывает сбоку своё меню наведением, стрелкой к концу строки, Enter и пробелом; путь указателя наискосок к открытой панели её не закрывает; стрелка к началу строки и Escape закрывают один уровень, а выбор пункта и Tab — всё меню, и `choose` приходит каждому меню над пунктом. Наведение в панели меню — теперь плагин `TMenuHoverPlugin`: `TMenuPointerPlugin` только открывает меню.
+- fb85110: Привязка панели к якорю (`anchor_placement` у Frame) умеет стороны строки — `start-*` и `end-*`: панель сбоку от якоря переходит на другую сторону у края окна и не уходит за экран; `start` и `end` логические, в RTL меняются местами.
+- 76329be: Панель у поля и триггера — Select, Popover, Menu, Tooltip, DatePicker — больше не дрожит при прокрутке страницы на телефоне: на странице она стоит absolute в документе и прокручивается вместе с полем, а у поля в fixed-шапке остаётся fixed. Фокус в открытую панель окно не прокручивает.
+- Updated dependencies [8bbb7d8]
+- Updated dependencies [7731c71]
+- Updated dependencies [7872e77]
+- Updated dependencies [f4676b7]
+- Updated dependencies [5f4c58a]
+- Updated dependencies [f06e5f9]
+- Updated dependencies [d4c3583]
+- Updated dependencies [0ad9f22]
+- Updated dependencies [8e2e31e]
+- Updated dependencies [b3b63db]
+- Updated dependencies [1411d88]
+- Updated dependencies [ce9316e]
+- Updated dependencies [a61b6a5]
+- Updated dependencies [47e560d]
+- Updated dependencies [10c38fe]
+- Updated dependencies [6408875]
+- Updated dependencies [e977046]
+- Updated dependencies [76329be]
+- Updated dependencies [958c866]
+- Updated dependencies [b810fa0]
+- Updated dependencies [4429cbc]
+- Updated dependencies [f256e0f]
+  - @soldy-ui/core@0.3.0-alpha.0
+
 ## 0.2.0
 
 ### Minor Changes

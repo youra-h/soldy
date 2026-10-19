@@ -1,5 +1,58 @@
 # @soldy-ui/angular
 
+## 0.3.0-alpha.0
+
+### Minor Changes
+
+- 3f19e5e: Table: атрибуты, которые приложение пишет на компонент, кроме класса и стиля, — `aria-label`, `id`, `data-*`, в Vue, React, Solid и Svelte и обработчики, у Svelte attachment-ы, в Angular и Web Components статические атрибуты разметки — теперь на `table`, где её роль и имя, а не на окне прокрутки `.so-table__viewport`; класс, стиль, скрытие и `ref` — по-прежнему окно. Angular: `<so-table>` вместо `<div so-table>`. Тема oren делает окно таблицы блоком сама (`display: block`) — и на незнакомом браузеру теге `<so-table>`.
+- 2e3950e: ListBox и Tabs: атрибуты, которые приложение пишет на компонент, кроме класса и стиля, — `aria-*`, `id`, `tabindex`, `data-*`, в Vue, React, Solid и Svelte и обработчики — теперь на узле списка (`[role=listbox]`, `[role=tablist]`), а не на корне; `ref` — по-прежнему корень. Angular: `<so-list-box>` и `<so-tabs>` вместо `<div so-list-box>` и `<div so-tabs>`.
+- 8e2e31e: ListBox и Select: группы пунктов из данных, как у Menu (`_: { group }`, `groupBy`, `groups`), части `ListBox.Group` и `Select.Group`. `TMenuGroupIdsPlugin` заменён общим плагином имени группы `TItemGroupIdsPlugin` (описание — `ItemGroupIdsPluginDescriptor` вместо `MenuGroupIdsPluginDescriptor`), типы `IMenuGroup`, `IMenuGroupProps`, `TMenuGroupEvents` — общими `IItemGroup`, `IItemGroupProps`, `TItemGroupEvents` — замените импорт. Рисование отдаёт разметке ListBox и Select секции: в поверхности компонента `drawnSections` вместо `drawn` (событие `change:drawnSections`). Список с группами окно `Virtual` не рисует.
+- a61b6a5: Ячейка таблицы отдаёт готовый текст значения (`cell.text`) — одним правилом во всех адаптерах. Удалён помощник `toText` адаптеров: вместо `toText(cell.value)` читайте `cell.text`, а в своём слоте `cell` — `toText(value)` из `@soldy-ui/core` (в шаблоне Angular — пайп `soText`, он теперь зовёт её).
+- 6408875: ListBox объявляет себя списком для скринридера: корень — `role="listbox"` (в `mode="multiple"` — ещё `aria-multiselectable="true"`), пункт — `role="option"` вместо `role="button"`, плитка панели выбора месяца и года Calendar — тоже. Обновление: эти пункты ищите по роли `option`, а не `button`.
+- 958c866: ListBox: список — свой узел `.so-list-box__list` внутри корня, шапка и подвал — вне его. Роль, имя и остановка Tab — на этом узле, и прокручивается тоже он: в пределе `maxRows` ровно строки, а шапка и подвал при прокрутке стоят на месте. Стили фокуса и прокрутки и селекторы по `role` и `tabindex` корня ListBox переносите на него. `focused = true` из кода фокус в список пока не ставит — как у Input и Tabs, корень которых фокус не держит.
+
+### Patch Changes
+
+- 5f4c58a: Menu: контекстное меню — режим `openOn: 'contextmenu'` (`open-on="contextmenu"` во Vue). Меню открывают правая кнопка, долгое касание, клавиша контекстного меню и Shift+F10 над областью в слоте `trigger`, и панель встаёт у точки вызова (`point`); у области нет связки кнопки — `triggerAria` пуст. У Frame новый вход `anchor_point`: точка в координатах окна вместо якоря, главнее него, пока задана.
+- 4206633: Tabs: корень набора несёт `data-disabled`, как ListBox и Table: по нему тема гасит выключенный набор вместе с панелями.
+- dd15cd3: Поле формы Field в React, Solid, Svelte, Angular (`<div so-field>`) и Web Components (`<div is="so-field">`): подпись, подсказка и ошибка связаны с Input, CheckBox, Switch и RadioGroup внутри — `for` подписи или ссылка `aria-labelledby` у группы, справка в `aria-describedby`, ошибка — `aria-invalid` и `data-invalid` контрола. На корне Input, CheckBox и Switch теперь и `dataset` (`data-disabled`, `data-invalid`): по ним тема красит поле и подпись поля формы.
+- e888c8f: Минимальные версии фреймворков ниже: Vue 3.5.21 вместо 3.5.32, Solid 1.9.10 вместо 1.9.17, Angular 21.1 вместо 22.1.5.
+- 865d328: Table и Virtual в Angular: `<div so-table>` с частями `th[so-table-column]` и `tr[so-table-row]` — колонки и строки данными или движком снаружи, сортировка, выбор строк с «выбрать все», ручка ширины и перестановка колонок, сетка, закреплённая шапка, шаблоны `header` и `cell`, проекция `empty`; окно — `<so-virtual>` вокруг таблицы и списка. Атрибуты потребителя и скрытие — окну таблицы.
+- Updated dependencies [dca2a76]
+- Updated dependencies [8bbb7d8]
+- Updated dependencies [7731c71]
+- Updated dependencies [bc530a2]
+- Updated dependencies [7872e77]
+- Updated dependencies [a67b85a]
+- Updated dependencies [f4676b7]
+- Updated dependencies [5f4c58a]
+- Updated dependencies [7002663]
+- Updated dependencies [7f54086]
+- Updated dependencies [88a6ccf]
+- Updated dependencies [f06e5f9]
+- Updated dependencies [d4c3583]
+- Updated dependencies [51ce716]
+- Updated dependencies [0ad9f22]
+- Updated dependencies [8e2e31e]
+- Updated dependencies [b3b63db]
+- Updated dependencies [1411d88]
+- Updated dependencies [ce9316e]
+- Updated dependencies [a61b6a5]
+- Updated dependencies [47e560d]
+- Updated dependencies [10c38fe]
+- Updated dependencies [6408875]
+- Updated dependencies [e977046]
+- Updated dependencies [04fb073]
+- Updated dependencies [fb85110]
+- Updated dependencies [76329be]
+- Updated dependencies [958c866]
+- Updated dependencies [b810fa0]
+- Updated dependencies [4429cbc]
+- Updated dependencies [f256e0f]
+  - @soldy-ui/plugins@0.3.0-alpha.0
+  - @soldy-ui/core@0.3.0-alpha.0
+  - @soldy-ui/setup@0.3.0-alpha.0
+
 ## 0.2.0
 
 ### Minor Changes

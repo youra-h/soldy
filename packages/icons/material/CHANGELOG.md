@@ -1,5 +1,30 @@
 # @soldy-ui/icons-material
 
+## 0.3.0-alpha.0
+
+### Minor Changes
+
+- 1411d88: Тост: вид сообщения `type` (`info`, `success`, `warning`, `error`) со значком вида и `loading` — кольцо на месте значка; ожидающий тост сам не закрывается. `variant` и `size` у тоста сняты: вместо `show({ variant: 'negative' })` пишите `show({ type: 'error' })`. Новые роли иконок `notification`, `info`, `success`, `warning` — свой пакет иконок должен их закрыть.
+- ce9316e: NumberInput (Vue): поле числа в формате локали — шаг и границы, ↑/↓, PageUp/PageDown, Home/End, кнопки «−» и «+» с удержанием, `formatOptions` (процент, валюта, единица), событие `commit`; `createScale` принимает открытые границы, а `shift` шкалы со значения вне сетки шагает к соседнему узлу со стороны сдвига (с 2,5 при шаге 1 — на 3 и на 2). Ломающее: роли иконок `minus` и `plus` — дополните ими свой пакет иконок; раздел локали `numberInput` — дополните им свой `TLocale` (`extendLocale` возьмёт из основы).
+
+### Patch Changes
+
+- 8b22fd5: Значки видов тоста `notification`, `info`, `success` и `warning` — контурные, как `error`.
+- 4718cd0: Значок ошибки error — контурный круг вместо залитого: у текста ошибки Field он читался сплошным красным пятном
+- Updated dependencies [8bbb7d8]
+- Updated dependencies [7731c71]
+- Updated dependencies [7872e77]
+- Updated dependencies [f4676b7]
+- Updated dependencies [5f4c58a]
+- Updated dependencies [f06e5f9]
+- Updated dependencies [8e2e31e]
+- Updated dependencies [1411d88]
+- Updated dependencies [ce9316e]
+- Updated dependencies [47e560d]
+- Updated dependencies [e977046]
+- Updated dependencies [4429cbc]
+  - @soldy-ui/setup@0.3.0-alpha.0
+
 ## 0.2.0
 
 ### Minor Changes
