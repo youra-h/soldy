@@ -73,7 +73,7 @@ $sizes: (
 	}
 
 	.so-calendar-item,
-	.so-calendar__picker-list > .so-list-box-item > .so-button {
+	.so-calendar__picker-list > .so-list-box__list > .so-list-box-item > .so-button {
 		@apply #{map.get($scale, 'day')};
 	}
 }

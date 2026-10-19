@@ -128,6 +128,13 @@ function listIn(host: ParentNode): TListBoxElementProps {
 	return node
 }
 
+/**
+ * Узел списка в корне — шаблона: на нём набор `aria` списка и остановка Tab,
+ * в нём элементы, распорки окна и `empty`.
+ */
+const nodeOf = (list: Element): HTMLElement =>
+	find(list, ':scope > .so-list-box__list', HTMLElement)
+
 /** Список кодом: пропсы свойствами и свет — до вставки. */
 async function mountList(
 	props: Record<string, unknown>,
@@ -232,38 +239,32 @@ describe('выбор', () => {
 	})
 
 	/**
-	 * Roving tabindex (APG listbox): Tab фокусирует контейнер, а по элементам
+	 * Roving tabindex (APG listbox): Tab фокусирует узел списка, а по элементам
 	 * ходят стрелки. `tabindex="-1"` элемента пишет ядро в его `aria`, и на
 	 * строке он перекрывает `tabindex="0"`, который кнопка на `div` ставит себе
-	 * сама: набор владельца главнее.
+	 * сама: набор владельца главнее. Корень — рамка вокруг шапки, списка и
+	 * подвала, остановкой он не бывает.
 	 */
-	it('строки — не остановки Tab, контейнер — остановка', async () => {
+	it('строки — не остановки Tab, узел списка — остановка, корень — нет', async () => {
 		const list = listIn(await mount(HARNESS))
 
-		expect(list.getAttribute('tabindex')).toBe('0')
+		expect(nodeOf(list).getAttribute('tabindex')).toBe('0')
+		expect(list.hasAttribute('tabindex')).toBe(false)
 		expect(rows().map((row) => row.getAttribute('tabindex'))).toEqual(['-1', '-1'])
 	})
 
 	/**
-	 * Роль корня пишет ядро списка, `aria-multiselectable` в `multiple` —
-	 * коллекция; оба база раскладывает на корень набором `aria`. Роль строки —
-	 * в «строка — кнопка на div».
+	 * Роль списка пишет ядро, `aria-multiselectable` в `multiple` — коллекция;
+	 * оба на узел списка кладёт шаблон набором `aria`, а база на корень его не
+	 * кладёт. Роль строки — в «строка — кнопка на div».
 	 */
-	it('корень — listbox, в multiple — с aria-multiselectable', async () => {
+	it('узел списка — listbox, в multiple — с aria-multiselectable; у корня роли нет', async () => {
 		const list = listIn(await mount(HARNESS))
 
-		expect(list.getAttribute('role')).toBe('listbox')
-		expect(list.getAttribute('aria-multiselectable')).toBe('true')
-	})
-
-	it('tabindex потребителя на корне главнее', async () => {
-		const list = listIn(
-			await mount(`<div is="so-list-box" tabindex="-1">
-				<div is="so-list-box-item" value="a" text="A"></div>
-			</div>`),
-		)
-
-		expect(list.getAttribute('tabindex')).toBe('-1')
+		expect(nodeOf(list).getAttribute('role')).toBe('listbox')
+		expect(nodeOf(list).getAttribute('aria-multiselectable')).toBe('true')
+		expect(list.hasAttribute('role')).toBe(false)
+		expect(list.hasAttribute('aria-multiselectable')).toBe(false)
 	})
 
 	it('стрелки ведут подсветку, Enter и пробел переключают выбор', async () => {
@@ -272,18 +273,47 @@ describe('выбор', () => {
 		// Клавиатура списка слушает корень с `element:ready` — через кадр
 		await nextFrame()
 
-		await press(list, 'ArrowDown')
+		await press(nodeOf(list), 'ArrowDown')
 
 		expect(rows().map((row) => row.getAttribute('data-highlighted'))).toEqual(['true', 'false'])
 
-		await press(list, 'Enter')
+		await press(nodeOf(list), 'Enter')
 
 		expect(selection()).toEqual(['true', 'false'])
 
-		await press(list, 'ArrowDown')
-		await press(list, ' ')
+		await press(nodeOf(list), 'ArrowDown')
+		await press(nodeOf(list), ' ')
 
 		expect(selection()).toEqual(['true', 'true'])
+	})
+
+	/**
+	 * В `listbox` ARIA пускает только опции, поэтому шапка и подвал — дети
+	 * корня рядом с узлом списка. Их клавиши — не списка: поле печатает,
+	 * кнопка нажимается.
+	 */
+	it('шапка и подвал — вне listbox; их клавиши подсветку не двигают', async () => {
+		const list = listIn(
+			await mount(`<div is="so-list-box">
+				<input slot="header" class="so-test-header" />
+				<div is="so-list-box-item" value="a" text="A"></div>
+				<button slot="footer" class="so-test-footer">Готово</button>
+			</div>`),
+		)
+
+		await nextFrame()
+
+		const header = find(list, '.so-test-header', HTMLInputElement)
+		const footer = find(list, '.so-test-footer', HTMLButtonElement)
+
+		expect([...list.children]).toEqual([header, nodeOf(list), footer])
+		expect(nodeOf(list).contains(header)).toBe(false)
+		expect(nodeOf(list).contains(footer)).toBe(false)
+
+		await press(header, 'ArrowDown')
+		await press(footer, 'ArrowDown')
+
+		expect(rows().map((row) => row.getAttribute('data-highlighted'))).toEqual(['false'])
 	})
 
 	/** Клавиша со строки, на которой фокус остался после клика, — тоже списка. */
@@ -726,7 +756,7 @@ describe('отметка выбранного и слоты', () => {
 		expect(parts()).toEqual(['head', 'so-button__text', 'tail', 'so-list-box-item__indicator'])
 	})
 
-	it('шапка и подвал — над и под элементами, empty — пока элементов нет', async () => {
+	it('шапка и подвал — над и под узлом списка, empty — в нём, пока элементов нет', async () => {
 		const list = await mountList(
 			{ items: [] },
 			`<i slot="header" class="head"></i>
@@ -736,19 +766,18 @@ describe('отметка выбранного и слоты', () => {
 
 		expect([...list.children].map((child) => child.className)).toEqual([
 			'head',
-			'probe',
+			'so-list-box__list',
 			'foot',
 		])
+		expect([...nodeOf(list).children].map((child) => child.className)).toEqual(['probe'])
 
 		list.items = ITEMS.slice(0, 2)
 		await flush()
 
 		expect(document.querySelector('.probe')).toBeNull()
-		expect([...list.children].map((child) => child.className.split(' ')[0])).toEqual([
-			'head',
+		expect([...nodeOf(list).children].map((child) => child.className.split(' ')[0])).toEqual([
 			'so-list-box-item',
 			'so-list-box-item',
-			'foot',
 		])
 
 		list.items = []
@@ -756,9 +785,10 @@ describe('отметка выбранного и слоты', () => {
 
 		expect([...list.children].map((child) => child.className)).toEqual([
 			'head',
-			'probe',
+			'so-list-box__list',
 			'foot',
 		])
+		expect([...nodeOf(list).children].map((child) => child.className)).toEqual(['probe'])
 	})
 
 	/**
@@ -857,7 +887,8 @@ describe('распорки окна', () => {
 		expect(fillers(list)).toEqual([tail])
 		expect(tail.style.getPropertyValue('--so-filler-height')).toBe('700px')
 		expect(listItems()).toHaveLength(30)
-		expect(list.lastElementChild).toBe(tail)
+		// Распорки и элементы — в узле списка
+		expect(nodeOf(list).lastElementChild).toBe(tail)
 	})
 })
 

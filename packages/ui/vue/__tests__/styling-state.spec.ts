@@ -140,27 +140,31 @@ describe('Select: корень несёт data-open для темы', () => {
 /**
  * Disabled тема читает из `data-disabled` — одного на любом теге: нативный
  * `disabled` и `aria-disabled` решает тег элемента, и они переезжают вместе с
- * ним. Корень ListBox — сам фокусируемый виджет, поэтому `aria-disabled` на
- * нём тоже стоит, но приходит набором ядра, а не вычисляется шаблоном.
+ * ним. Фокусируемый виджет ListBox — узел списка внутри корня, поэтому
+ * `aria-disabled` стоит на нём, рядом с ролью, и приходит набором ядра, а не
+ * вычисляется шаблоном. `data-disabled` — на корне, его рамку красит тема.
  */
 describe('ListBox: корень несёт data-disabled для темы', () => {
-	it('disabled: data-disabled="true" рядом с aria-disabled из набора', () => {
+	it('disabled: data-disabled="true" на корне, aria-disabled из набора — на узле списка', () => {
 		const root = mount(ListBox, { props: { disabled: true } })
+		const list = root.find('.so-list-box__list')
 
 		expect(root.attributes('data-disabled')).toBe('true')
-		expect(root.attributes('aria-disabled')).toBe('true')
+		expect(root.attributes('aria-disabled')).toBeUndefined()
+		expect(list.attributes('aria-disabled')).toBe('true')
 	})
 
 	it('без disabled: data-disabled="false", aria-disabled нет вовсе', async () => {
 		const root = mount(ListBox)
+		const list = root.find('.so-list-box__list')
 
 		expect(root.attributes('data-disabled')).toBe('false')
-		expect(root.attributes('aria-disabled')).toBeUndefined()
+		expect(list.attributes('aria-disabled')).toBeUndefined()
 
 		await root.setProps({ disabled: true })
 
 		expect(root.attributes('data-disabled')).toBe('true')
-		expect(root.attributes('aria-disabled')).toBe('true')
+		expect(list.attributes('aria-disabled')).toBe('true')
 	})
 })
 

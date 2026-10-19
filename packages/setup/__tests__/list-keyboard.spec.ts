@@ -11,9 +11,10 @@
  * корне, Enter и Space переключают выбор. Это и есть его отличие от Select,
  * где фокус остаётся на поле.
  *
- * Клавишу список берёт только с корня и со строки элемента, на которой фокус
- * остаётся после клика. До корня всплывают и клавиши полей и кнопок из шапки,
- * подвала и слотов элемента — их плагин не трогает.
+ * Корень — рамка: шапка, узел списка и подвал. Клавишу список берёт только с
+ * узла списка — остановки Tab с ролью `listbox` — и со строки элемента, на
+ * которой фокус остаётся после клика. До корня всплывают и клавиши полей и
+ * кнопок из шапки, подвала и слотов элемента — их плагин не трогает.
  */
 
 import { describe, it, expect, afterEach } from 'vitest'
@@ -46,11 +47,12 @@ const keydown = (target: Element, key: string) => {
 /**
  * Собирает ListBox с коллекцией и клавиатурой без адаптера фреймворка.
  *
- * Разметка — как у `ListBox.vue` и `Item.vue`: у каждого элемента свой узел
- * под корнем (`TElementPlugin` в его bundle, узлы отдаёт `TCollectionElements`),
- * внутри узла — строка с `tabindex="-1"`. В разметке атрибут приходит из
- * набора `aria` элемента, его пишет `TListBoxExtension`; по нему плагин и
- * узнаёт строку.
+ * Разметка — как у `ListBox.vue` и `Item.vue`: в корне — узел списка с ролью
+ * `listbox` и `tabindex="0"` (набор `aria` списка разметка кладёт на него), в
+ * нём у каждого элемента свой узел (`TElementPlugin` в его bundle, узлы отдаёт
+ * `TCollectionElements`), внутри узла — строка с `tabindex="-1"`. В разметке
+ * атрибут приходит из набора `aria` элемента, его пишет `TListBoxExtension`;
+ * по нему плагин и узнаёт строку.
  */
 async function setup(texts: string[]) {
 	const owner = new TListBox()
@@ -60,7 +62,11 @@ async function setup(texts: string[]) {
 	facade.items = items as IListBoxItem[]
 
 	const root = document.createElement('div')
+	const list = document.createElement('div')
 
+	list.setAttribute('role', 'listbox')
+	list.setAttribute('tabindex', '0')
+	root.appendChild(list)
 	document.body.appendChild(root)
 
 	const rootElement = new TElementPlugin()
@@ -84,7 +90,7 @@ async function setup(texts: string[]) {
 
 		row.setAttribute('tabindex', '-1')
 		node.appendChild(row)
-		root.appendChild(node)
+		list.appendChild(node)
 		rows.push(row)
 
 		const bundle = new TPluginBundle(item)
@@ -102,10 +108,10 @@ async function setup(texts: string[]) {
 	rootElement.element = root
 	await nextFrame()
 
-	/** Клавиша с корня — там фокус после Tab. */
-	const press = (key: string) => keydown(root, key)
+	/** Клавиша с узла списка — там фокус после Tab. */
+	const press = (key: string) => keydown(list, key)
 
-	return { owner, facade, items, keyboard, press, itemPlugins, root, rows }
+	return { owner, facade, items, keyboard, press, itemPlugins, root, list, rows }
 }
 
 type TListBoxSetup = Awaited<ReturnType<typeof setup>>
@@ -418,15 +424,15 @@ const ACTIVATION_KEYS = [
 
 /**
  * Слушатель висит на корне, и до него всплывают клавиши всего, что лежит под
- * корнем. Список берёт клавишу с корня — там фокус после Tab — и со строки
- * элемента: у строки `tabindex="-1"`, и после клика фокус остаётся на ней.
- * Свою клавишу список отменяет: пробел иначе прокрутил бы страницу.
+ * корнем. Список берёт клавишу с узла списка — там фокус после Tab — и со
+ * строки элемента: у строки `tabindex="-1"`, и после клика фокус остаётся на
+ * ней. Свою клавишу список отменяет: пробел иначе прокрутил бы страницу.
  *
  * Строка — не первого элемента: так видно, что плагин узнаёт строку любого
  * показанного элемента, а не одну.
  */
 describe.each([
-	['с корня', ({ root }: TListBoxSetup) => root],
+	['с узла списка', ({ list }: TListBoxSetup) => list],
 	['со строки элемента', ({ rows }: TListBoxSetup) => rows[1]],
 ] as const)('клавиша %s — списка', (_from, targetOf) => {
 	it('стрелки двигают подсветку и отменяются', async () => {
@@ -504,6 +510,21 @@ const place = (parent: Element, tag: 'input' | 'button', where: 'first' | 'last'
 }
 
 /**
+ * Кнопка на `div` в шапке — остановка Tab, как узел списка: `Button` на
+ * чужом теге пишет себе `tabindex="0"`. Стоит в корне раньше узла списка, и
+ * правило «первый ребёнок корня с `tabindex`» приняло бы её за список.
+ */
+const placeDivButton = (root: Element) => {
+	const element = document.createElement('div')
+
+	element.setAttribute('role', 'button')
+	element.setAttribute('tabindex', '0')
+	root.insertAdjacentElement('afterbegin', element)
+
+	return element
+}
+
+/**
  * Клавиши полей и кнопок из шапки, подвала и слотов элемента всплывают до
  * корня, но они не списка: что с ними делать, эти элементы знают сами. Поле
  * печатает пробел, кнопка делает из Enter и пробела клик — если клавишу не
@@ -513,11 +534,17 @@ const place = (parent: Element, tag: 'input' | 'button', where: 'first' | 'last'
  * ни стрелки, ни Enter с пробелом. Клика из клавиши jsdom не делает — что
  * пробел печатается и кнопка нажимается, проверяет
  * `playground/vue/browser/keyboard-activation.spec.ts`.
+ *
+ * Шапка и подвал — дети корня рядом с узлом списка, а не внутри него: в
+ * `listbox` ARIA пускает только опции. Сам корень — только рамка: клавиша с
+ * него тоже не списка.
  */
 describe.each([
 	['поля в шапке', ({ root }: TListBoxSetup) => place(root, 'input', 'first')],
+	['кнопки на div в шапке', ({ root }: TListBoxSetup) => placeDivButton(root)],
 	['кнопки в подвале', ({ root }: TListBoxSetup) => place(root, 'button')],
 	['кнопки в строке элемента', ({ rows }: TListBoxSetup) => place(rows[1], 'button')],
+	['самого корня', ({ root }: TListBoxSetup) => root],
 ] as const)('клавиша %s — не списка', (_from, slotted) => {
 	it.each([...ARROWS, ...ACTIVATION_KEYS])(
 		'%s не отменяется, подсветка и выбор не меняются',
@@ -526,7 +553,7 @@ describe.each([
 			const { facade, keyboard, press, items } = listBox
 			const target = slotted(listBox)
 
-			// Подсветка — с корня: Enter и пробелу есть что выбрать
+			// Подсветка — с узла списка: Enter и пробелу есть что выбрать
 			press('ArrowDown')
 
 			const event = keydown(target, key)

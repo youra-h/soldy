@@ -1261,7 +1261,10 @@ describe('выбор месяца и года', () => {
 		find('.so-calendar__title').focus()
 		await userEvent.keyboard('{Enter}')
 
-		await expect.poll(() => document.activeElement).toBe(find('.so-calendar__picker-list'))
+		// Список — ListBox: остановка Tab у него — узел списка в корне
+		await expect
+			.poll(() => document.activeElement)
+			.toBe(find('.so-calendar__picker-list > .so-list-box__list'))
 
 		await userEvent.keyboard('{ArrowDown}{ArrowDown}{Enter}')
 
@@ -1471,7 +1474,7 @@ describe('выбор месяца и года', () => {
 			.poll(() => find('.so-calendar__picker-heading').textContent?.trim())
 			.toBe('2027')
 		expect(find('.so-calendar__picker-next').hasAttribute('disabled')).toBe(true)
-		expect(document.activeElement).toBe(find('.so-calendar__picker-list'))
+		expect(document.activeElement).toBe(find('.so-calendar__picker-list > .so-list-box__list'))
 	})
 
 	/**

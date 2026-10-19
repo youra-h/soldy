@@ -55,6 +55,10 @@ afterEach(() => {
  * смонтированы, узел корня объявлен кадром позже. Раскладки в jsdom нет —
  * коробки задаёт тест: окно списка высотой `ROWS` шагов, элемент — на своём
  * месте от его верха.
+ *
+ * Разметка — как у ListBox: элементы — в узле списка внутри корня, и
+ * прокручивается он, родитель элементов, а не корень (`rootScrollTo`): рядом с
+ * ним в корне стоят шапка и подвал.
  */
 async function setup(scrollBehavior: TScrollBehavior = 'smooth') {
 	const owner = new TListBox({ value: 'v151', scrollBehavior })
@@ -74,12 +78,15 @@ async function setup(scrollBehavior: TScrollBehavior = 'smooth') {
 	draw.useStrategy(new TWindowStrategy())
 
 	const root = document.body.appendChild(document.createElement('div'))
+	const list = root.appendChild(document.createElement('div'))
 	const scrollTo = vi.fn()
+	const rootScrollTo = vi.fn()
 
-	root.getBoundingClientRect = () =>
+	list.getBoundingClientRect = () =>
 		DOMRect.fromRect({ x: 0, y: 0, width: 200, height: ROWS * STEP })
-	Object.defineProperty(root, 'clientHeight', { value: ROWS * STEP })
-	Object.defineProperty(root, 'scrollTo', { value: scrollTo })
+	Object.defineProperty(list, 'clientHeight', { value: ROWS * STEP })
+	Object.defineProperty(list, 'scrollTo', { value: scrollTo })
+	Object.defineProperty(root, 'scrollTo', { value: rootScrollTo })
 
 	const bundle = new TPluginBundle(owner)
 		.use(TElementPlugin)
@@ -94,7 +101,7 @@ async function setup(scrollBehavior: TScrollBehavior = 'smooth') {
 	/** Смонтировать элемент, как адаптер: набор — в реестр, узел — следом. */
 	const mountItem = (item: IListBoxItem): void => {
 		const itemBundle = new TPluginBundle(item).use(TElementPlugin)
-		const node = root.appendChild(document.createElement('div'))
+		const node = list.appendChild(document.createElement('div'))
 		const top = items.indexOf(item) * STEP
 
 		node.getBoundingClientRect = () =>
@@ -113,7 +120,7 @@ async function setup(scrollBehavior: TScrollBehavior = 'smooth') {
 	pluginOf(bundle, TElementPlugin).element = root
 	await nextFrame()
 
-	return { owner, items, drawn: draw.drawn, mountItem, scrollTo }
+	return { owner, items, drawn: draw.drawn, mountItem, scrollTo, rootScrollTo }
 }
 
 describe('выбранного окно ещё не нарисовало', () => {
@@ -127,7 +134,7 @@ describe('выбранного окно ещё не нарисовало', () =>
 	})
 
 	it('выбранный смонтировали — кадром позже он в середине окна, сразу и при smooth', async () => {
-		const { items, mountItem, scrollTo } = await setup()
+		const { items, mountItem, scrollTo, rootScrollTo } = await setup()
 
 		mountItem(items[150])
 
@@ -141,6 +148,8 @@ describe('выбранного окно ещё не нарисовало', () =>
 			top: 150 * STEP - (ROWS * STEP) / 2,
 			behavior: 'instant',
 		})
+		// Прокручивается узел списка — родитель элементов, а не корень
+		expect(rootScrollTo).not.toHaveBeenCalled()
 	})
 
 	it('смонтировали другой элемент — прокрутки нет', async () => {

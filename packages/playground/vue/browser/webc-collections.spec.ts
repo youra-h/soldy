@@ -278,9 +278,11 @@ describe('клавиатура', () => {
 
 	/**
 	 * Список — одна остановка Tab, по элементам ходят стрелки его клавиатуры.
-	 * Строку элемента — кнопку на `div` — плагин списка узнаёт по разметке
-	 * шаблона элемента: стрелка и Enter с неё — клавиши списка. Enter выбирает
-	 * один раз: строка его не нажимает, иначе второе переключение сняло бы выбор.
+	 * Остановка — узел списка в корне, не сам корень: рядом с узлом в корне
+	 * стоят шапка и подвал. Строку элемента — кнопку на `div` — плагин списка
+	 * узнаёт по разметке шаблона элемента: стрелка и Enter с неё — клавиши
+	 * списка. Enter выбирает один раз: строка его не нажимает, иначе второе
+	 * переключение сняло бы выбор.
 	 */
 	it('ListBox: стрелка и Enter со строки элемента выбирают его один раз', async () => {
 		const root = await show(`<div is="so-list-box">
@@ -289,7 +291,8 @@ describe('клавиатура', () => {
 		</div>`)
 		const rows = all(root, '.so-list-box-item .so-button')
 
-		expect(find(root, '.so-list-box', HTMLDivElement).tabIndex).toBe(0)
+		expect(find(root, '.so-list-box > .so-list-box__list', HTMLDivElement).tabIndex).toBe(0)
+		expect(find(root, '.so-list-box', HTMLDivElement).tabIndex).toBe(-1)
 
 		rows[0]?.focus()
 		await userEvent.keyboard('{ArrowDown}{Enter}')

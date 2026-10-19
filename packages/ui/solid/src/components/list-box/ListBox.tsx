@@ -12,12 +12,6 @@ import { ListBoxItem } from './item'
 import { setupListBox } from './setup.component'
 import type { ListBoxProps } from './base.component'
 
-/**
- * Список — сам остановка Tab: по элементам ходят стрелки его клавиатуры.
- * Набором ниже наборов ядра — атрибут потребителя `tabindex` его перекроет.
- */
-const FOCUSABLE = { tabindex: '0' }
-
 /** Элемент записи; у распорки его нет. */
 function itemOf(entry: TDrawnEntry<IListBoxItem>): IListBoxItem | undefined {
 	return entry.kind === 'item' ? entry.item : undefined
@@ -29,8 +23,13 @@ function fillerStyleOf(entry: TDrawnEntry<IListBoxItem>): JSX.CSSProperties | un
 }
 
 /**
- * ListBox — список с выбором. Корень — `div` с `tabindex="0"`: список
- * фокусируется сам, и его клавиатура (`TListKeyboardPlugin`) слушает корень.
+ * ListBox — список с выбором. Корень — рамка: шапка, узел списка
+ * (`so-list-box__list`) и подвал. Набор `aria` владельца — это сам список
+ * (`role="listbox"`, `aria-multiselectable`, имя от `aria_label`), и лежит он
+ * на узле списка: в `listbox` ARIA пускает только опции, а шапка и подвал —
+ * место полей и кнопок. На узле списка и остановка Tab (`tabindex="0"`):
+ * список фокусируется сам, и клавиши его клавиатуры (`TListKeyboardPlugin`) —
+ * с этого узла. На корне — `attrs` и `dataset`, как у Vue.
  *
  * Элементы — содержимое (`<ListBox.Item>`), а без него — то, что рисует
  * коллекция (`drawn`), по порядку. Без окна это все показанные элементы, по
@@ -50,8 +49,8 @@ function fillerStyleOf(entry: TDrawnEntry<IListBoxItem>): JSX.CSSProperties | un
  * которые нарисовал список, scope элемента теряли бы. Слот отметки отдаётся
  * элементу, только когда задан списку: без него элемент рисует свою.
  *
- * Пока показанных элементов нет, на их месте слот `empty` — как у Select:
- * пустой `listbox` для скринридера — тупик.
+ * Пока показанных элементов нет, на их месте слот `empty`, внутри списка, —
+ * как у Select: пустой `listbox` для скринридера — тупик.
  *
  * Всё содержимое — в слое лифта списка (`Elevate`): элемент, смонтированный
  * внутри, прочтёт движок и регистратор этого списка и при своей сборке войдёт
@@ -62,10 +61,10 @@ function fillerStyleOf(entry: TDrawnEntry<IListBoxItem>): JSX.CSSProperties | un
 export function ListBox(props: ListBoxProps): JSX.Element {
 	const binding = setupListBox(props)
 	const state = binding.state
-	// Наборы ядра, поверх — атрибуты снаружи, `ref` адаптера последним
+	// Корню — его наборы, поверх — атрибуты снаружи, `ref` адаптера последним
 	const root = createRootProps(() => ({
 		state,
-		sets: [FOCUSABLE, state.attrs, state.aria, state.dataset],
+		sets: [state.attrs, state.dataset],
 		forward: binding.forwardProps(),
 	}))
 
@@ -103,15 +102,17 @@ export function ListBox(props: ListBoxProps): JSX.Element {
 			<div {...root()} ref={binding.ref}>
 				<Elevate layer={binding.layer}>
 					{renderSlot(props.header)}
-					<ResolvedSlot
-						content={props.children}
-						fallback={
-							<KeyedFor each={state.drawn} by={(entry) => entry.key}>
-								{drawEntry}
-							</KeyedFor>
-						}
-					/>
-					<Show when={state.shown?.length === 0}>{renderSlot(props.empty)}</Show>
+					<div class="so-list-box__list" tabindex="0" {...state.aria}>
+						<ResolvedSlot
+							content={props.children}
+							fallback={
+								<KeyedFor each={state.drawn} by={(entry) => entry.key}>
+									{drawEntry}
+								</KeyedFor>
+							}
+						/>
+						<Show when={state.shown?.length === 0}>{renderSlot(props.empty)}</Show>
+					</div>
 					{renderSlot(props.footer)}
 				</Elevate>
 			</div>
