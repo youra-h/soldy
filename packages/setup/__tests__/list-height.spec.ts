@@ -36,8 +36,8 @@ afterEach(() => {
  * Собирает список без адаптера фреймворка — до объявления корня.
  *
  * Корень компонента и панель со списком — **разные узлы и не вложены**: так
- * устроен Select, у которого корень это поле, а список лежит в
- * телепортированной панели.
+ * устроен Select, у которого корень это поле, а список (`role="listbox"`)
+ * лежит в телепортированной панели.
  */
 function assemble(rows: number, maxRows: number, panelStyle?: Partial<CSSStyleDeclaration>) {
 	const owner = new TListBox({ maxRows })
@@ -51,6 +51,8 @@ function assemble(rows: number, maxRows: number, panelStyle?: Partial<CSSStyleDe
 
 	const root = document.createElement('div')
 	const panel = document.createElement('div')
+
+	panel.setAttribute('role', 'listbox')
 
 	if (panelStyle) {
 		Object.assign(panel.style, panelStyle)
@@ -196,7 +198,7 @@ describe('высота контейнера по maxRows', () => {
 
 /**
  * Разметка ListBox: в корне — шапка, узел списка и подвал, элементы — в узле
- * списка. Предел строк получает узел списка — родитель элементов: он и
+ * списка (`role="listbox"`). Предел строк получает узел списка: он и
  * прокручивается, а шапка и подвал в предел не входят и стоят на месте.
  */
 describe('узел списка ListBox', () => {
@@ -215,6 +217,7 @@ describe('узел списка ListBox', () => {
 		const list = document.createElement('div')
 		const footer = document.createElement('button')
 
+		list.setAttribute('role', 'listbox')
 		root.append(header, list, footer)
 		document.body.append(root)
 
@@ -270,6 +273,93 @@ describe('узел списка ListBox', () => {
 
 		expect(list.style.maxHeight).toBe('')
 		expect(list.style.overflowY).toBe('')
+	})
+})
+
+/**
+ * Строки в группах (`ListBox.Group`): родитель строки — группа, а предел
+ * получает узел списка вокруг групп. Суммой высот строк его не сосчитать —
+ * между строками стоят подписи групп и разделители, — поэтому предел — по
+ * месту последней из первых строк: от верха содержимого списка до её низа.
+ * Раскладки в jsdom нет — места строк задаёт тест.
+ */
+describe('строки в группах', () => {
+	/** Низ строк от верха страницы: подпись над каждой группой и разделитель между ними. */
+	const ROW_BOTTOMS = [140, 164, 188, 236, 260, 284]
+	const LIST_TOP = 100
+
+	async function setupGrouped(maxRows: number) {
+		const owner = new TListBox({ maxRows })
+		const facade = new TListBoxCollectionFacade(
+			{
+				items: ROW_BOTTOMS.map((_, i) => ({
+					value: `i${i}`,
+					_: { group: i < 3 ? 'first' : 'second' },
+				})),
+			},
+			{ owner },
+		)
+		const root = document.createElement('div')
+		const list = root.appendChild(document.createElement('div'))
+		const groups = [
+			list.appendChild(document.createElement('div')),
+			list.appendChild(document.createElement('div')),
+		]
+
+		list.setAttribute('role', 'listbox')
+		list.getBoundingClientRect = () =>
+			DOMRect.fromRect({ x: 0, y: LIST_TOP, width: 200, height: 400 })
+		document.body.append(root)
+
+		const rootElement = new TElementPlugin()
+		const bundles = new TCollectionBundlesPlugin()
+		const elements = new TCollectionElements()
+		const height = new TListHeightPlugin()
+		const ctx = createPluginContext(owner, [rootElement, bundles, elements])
+
+		bundles.install(ctx)
+		elements.install(ctx)
+		height.install(ctx)
+
+		facade.extensions.batch.shown.forEach((item, place) => {
+			const bundle = new TPluginBundle(item)
+			const element = groups[place < 3 ? 0 : 1].appendChild(document.createElement('div'))
+
+			bundle.use(TElementPlugin)
+			bundles.register(bundle, item)
+			Object.defineProperty(element, 'offsetHeight', { value: ROW_HEIGHT })
+			element.getBoundingClientRect = () =>
+				DOMRect.fromRect({
+					x: 0,
+					y: ROW_BOTTOMS[place] - ROW_HEIGHT,
+					width: 200,
+					height: ROW_HEIGHT,
+				})
+			required(bundle.get(TElementPlugin), 'TElementPlugin').element = element
+		})
+
+		bundles.bindEngine(facade.engine)
+		rootElement.element = root
+		await nextFrame()
+		await nextFrame()
+
+		return { list, groups }
+	}
+
+	it('предел — у узла списка, по месту последней из первых строк', async () => {
+		const { list, groups } = await setupGrouped(4)
+
+		// Четвёртая строка — первая во второй группе: подпись и разделитель — в пределе
+		expect(list.style.maxHeight).toBe(`${ROW_BOTTOMS[3] - LIST_TOP}px`)
+		expect(list.style.overflowY).toBe('auto')
+		expect(groups.map((group) => group.style.maxHeight)).toEqual(['', ''])
+	})
+
+	it('строк меньше предела — по месту последней строки, без прокрутки', async () => {
+		const { list } = await setupGrouped(10)
+
+		expect(list.style.maxHeight).toBe(`${ROW_BOTTOMS[5] - LIST_TOP}px`)
+		expect(list.style.overflowY).toBe('hidden')
 	})
 })
 

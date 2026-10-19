@@ -232,9 +232,17 @@ const dragAndDrop = new TDragAndDrop()
 	<ListBox indicator="middle" />
 	<ListBox indicator="end" />
 
+	<!-- @vue-expect-error — у группы есть ключ: по нему её находят `groupBy` и метка `_.group` -->
+	<ListBox :groups="[{ label: 'Фрукты' }]" />
+	<ListBox :groups="[{ key: 'fruit', label: 'Фрукты' }]" />
+
 	<!-- @vue-expect-error — флаг, а не строка -->
 	<ListBox.Item :selected="'yes'" />
 	<ListBox.Item selected />
+
+	<!-- @vue-expect-error — подпись группы строкой -->
+	<ListBox.Group :label="42" />
+	<ListBox.Group label="Фрукты" />
 
 	<!-- @vue-expect-error — локаль объектом (`ruRU`), а не тегом -->
 	<LocaleProvider locale="ru-RU" />
@@ -352,9 +360,17 @@ const dragAndDrop = new TDragAndDrop()
 	<Select :swipe="true" />
 	<Select swipe="panel" />
 
+	<!-- @vue-expect-error — ключ группы опции — функция от опции, а не имя поля -->
+	<Select groupBy="kind" />
+	<Select :groupBy="(option) => (option.value === 'a' ? 'first' : undefined)" />
+
 	<!-- @vue-expect-error — текст опции строкой -->
 	<Select.Item :text="42" />
 	<Select.Item text="Первый" />
+
+	<!-- @vue-expect-error — подпись группы строкой -->
+	<Select.Group :label="42" />
+	<Select.Group label="Фрукты" />
 
 	<!-- @vue-expect-error — число поля — числом, а не строкой -->
 	<NumberInput value="4" />

@@ -21,9 +21,9 @@
  * его сборка опускает лифтом своему хосту, и элементы находят его вверх по
  * документу.
  *
- * Модуль регистрирует и элемент списка — после списка: при апгрейде разметки
- * элемент, зарегистрированный раньше, собирается раньше, и список уже опустил
- * движок, когда собираются его элементы. Строку элемента — Button на `div`
+ * Модуль регистрирует и части — элемент и группу списка — после списка: при
+ * апгрейде разметки элемент, зарегистрированный раньше, собирается раньше, и
+ * список уже опустил движок, когда собираются его элементы. Строку элемента — Button на `div`
  * (`<div is="so-button-div">`) — регистрирует фабрика кнопки там, где она
  * впервые нужна, — модуль шаблона элемента.
  *
@@ -35,6 +35,7 @@ import type { IListBox, TListBoxCollectionFacade } from '@soldy-ui/core'
 import { SoldyElement, defineElement } from '../../adapter'
 import type { ISoldyElement, TSoldyElementProps } from '../../adapter'
 import { TListBoxItemElement } from './item'
+import { TListBoxGroupElement } from './group'
 import { listBoxTemplate } from './list-box.template'
 import { setupListBox } from './setup.component'
 
@@ -49,6 +50,7 @@ export const TListBoxElement = SoldyElement(HTMLDivElement, {
 defineElement('so-list-box', TListBoxElement, 'div')
 // Части — после владельца (см. шапку)
 defineElement('so-list-box-item', TListBoxItemElement, 'div')
+defineElement('so-list-box-group', TListBoxGroupElement, 'div')
 
 /**
  * `<div is="so-list-box">` из JS: нативный `div`, своё элемента soldy

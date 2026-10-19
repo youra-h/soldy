@@ -3,6 +3,7 @@ import type { IBatchExtension } from './batch/types'
 import type { IDrawExtension, TDrawable } from './draw/types'
 import type { IFactoryExtension } from './factory/types'
 import type { IFilterExtension } from './filter/types'
+import type { IGroupExtension } from './group/types'
 import type { IMetaExtension } from './meta/types'
 import type { IPlainExtension } from './plain/types'
 import type { ISelectionExtension } from './selection/types'
@@ -50,6 +51,10 @@ function isFactory<TItem extends object>(ext: IExtension<TItem>): ext is IFactor
 
 function isFilter<TItem extends object>(ext: IExtension<TItem>): ext is IFilterExtension<TItem> {
 	return 'query' in ext && 'matches' in ext && 'predicate' in ext
+}
+
+function isGroup<TItem extends object>(ext: IExtension<TItem>): ext is IGroupExtension<TItem> {
+	return 'sections' in ext && 'groups' in ext && 'groupBy' in ext
 }
 
 function isMeta<TItem extends object>(ext: IExtension<TItem>): ext is IMetaExtension<TItem> {
@@ -113,6 +118,15 @@ export function filterOf<TItem extends object>(
 	const ext = neighbours?.extensions.filter
 
 	return ext && isFilter(ext) ? ext : undefined
+}
+
+/** Группировка коллекции, если она есть: показанное по группам и его секции. */
+export function groupOf<TItem extends object>(
+	neighbours: TNeighbours<TItem> | null | undefined,
+): IGroupExtension<TItem> | undefined {
+	const ext = neighbours?.extensions.group
+
+	return ext && isGroup(ext) ? ext : undefined
 }
 
 /**

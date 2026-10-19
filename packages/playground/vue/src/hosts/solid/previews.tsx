@@ -105,9 +105,13 @@ export const PREVIEWS: Record<string, TPreview> = {
 		</RadioGroup>
 	),
 
+	// Элементы — разметкой, а пришли данными (`items` блока групп страницы) —
+	// из них: разметка заменила бы данные, а группы список рисует из данных
 	'list-box': (bind) => (
 		<ListBox {...bind()}>
-			<For each={ITEMS}>{(item) => <ListBox.Item {...item} />}</For>
+			{bind().items ? undefined : (
+				<For each={ITEMS}>{(item) => <ListBox.Item {...item} />}</For>
+			)}
 		</ListBox>
 	),
 

@@ -58,9 +58,14 @@ export type TPreview = {
 	/**
 	 * Дети по слотам — свет элемента: имя слота → элементы soldy и разметка без
 	 * компонента. Код хоста ставит их в элемент до вставки, элементы — с
-	 * атрибутом `slot`, кроме слота по умолчанию.
+	 * атрибутом `slot`, кроме слота по умолчанию. Функция — дети от пропсов
+	 * строки компонента: список, состав которого пришёл данными (`items` блока
+	 * групп страницы), рисуется без элементов разметки — они заменили бы данные.
+	 * Дети ставятся до вставки, и смена пропсов их не перестраивает.
 	 */
-	readonly slots?: Readonly<Record<string, readonly TContent[]>>
+	readonly slots?:
+		| Readonly<Record<string, readonly TContent[]>>
+		| ((bind: TPreviewProps) => Readonly<Record<string, readonly TContent[]>>)
 	/**
 	 * Обёртка — элемент вокруг компонента, как у Vue и React: подпись Label у
 	 * CheckBox и Switch — элемент soldy со своими пропсами, в слоте по
@@ -232,17 +237,21 @@ export const PREVIEWS: Record<string, TPreview> = {
 	},
 
 	// Элементы — разметкой, как у Vue и React. Строка элемента — кнопка на `div`
-	// (`<div is="so-button-div">`): её строит шаблон элемента
+	// (`<div is="so-button-div">`): её строит шаблон элемента. Пришли данными
+	// (`items` блока групп страницы) — из них: разметка заменила бы данные, а
+	// группы список рисует из данных
 	'list-box': {
 		tag: 'div',
 		is: 'so-list-box',
-		slots: {
-			default: ITEMS.map((item) => ({
-				tag: 'div',
-				is: 'so-list-box-item',
-				props: { ...item },
-			})),
-		},
+		slots: (bind) => ({
+			default: bind.items
+				? []
+				: ITEMS.map((item) => ({
+						tag: 'div',
+						is: 'so-list-box-item',
+						props: { ...item },
+					})),
+		}),
 	},
 
 	// Строки и колонки — данными, как у Vue и React: частей разметкой у таблицы

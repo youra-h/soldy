@@ -1,9 +1,15 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { findComponent, propControls, type TPreviewEventSink } from '@soldy-ui/playground-shared'
+import {
+	findComponent,
+	hasGroups,
+	propControls,
+	type TPreviewEventSink,
+} from '@soldy-ui/playground-shared'
 import { findAvailable } from '../catalog'
 import { frameworkLabel, hostOf } from '../hosts'
 import PropRow from '../components/PropRow.vue'
+import GroupsDemo from '../components/GroupsDemo.vue'
 
 const props = defineProps<{ framework: string; id: string }>()
 
@@ -80,6 +86,19 @@ function sink(column: 'props' | 'instance'): TPreviewEventSink {
 				:key="`${entry.id}:collection:${control.name}`"
 				:entry="entry"
 				:control="control"
+				:host="host"
+				:sink="sink"
+			/>
+
+			<!--
+				Группы — блоком, а не строкой: ключ группы — функция, а группы —
+				список записей, и полем их не набрать. Блок показывает их на своём
+				составе, меткой в данных и функцией `groupBy` (`GroupsDemo`).
+			-->
+			<GroupsDemo
+				v-if="hasGroups(entry)"
+				:key="`${entry.id}:collection:groups`"
+				:entry="entry"
 				:host="host"
 				:sink="sink"
 			/>

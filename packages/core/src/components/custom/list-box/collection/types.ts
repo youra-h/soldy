@@ -2,6 +2,7 @@ import { TCollectionEngine } from '../../../base/collection'
 import type {
 	ICollectionProps,
 	IBatchCollectionProps,
+	IGroupCollectionProps,
 	ISelectionCollectionItemProps,
 	ISelectionCollectionProps,
 	ISelectionItemExtension,
@@ -14,8 +15,9 @@ import type {
 	TBatchExtension,
 	TDrawEvents,
 	TDrawExtension,
+	TGroupCollectionFacadeEvents,
+	TGroupExtension,
 	TPositionInSetExtension,
-	TSelectionCollectionFacadeEvents,
 	TSelectionExtension,
 	TValueSelectionExtension,
 } from '../../../base/collection'
@@ -37,7 +39,9 @@ export type TListBoxCollectionExtensions<TItem extends IListBoxItem = IListBoxIt
 	selection: TSelectionExtension<TItem>
 	/** Связь `value` списка с выбором коллекции — в обе стороны. */
 	value: TValueSelectionExtension<any, TItem>
-	/** Что список рисует из показанных элементов: все или окно с распорками. */
+	/** Группы элементов: показанное по группам и его секции */
+	group: TGroupExtension<TItem>
+	/** Что список рисует из показанных элементов: все или окно с распорками, по секциям. */
 	draw: TDrawExtension<TItem>
 	/** Место нарисованного элемента в наборе, пока стоит окно. */
 	positionInSet: TPositionInSetExtension<TItem>
@@ -71,7 +75,7 @@ export type TListBoxCollection = TCollectionEngine<
 export type TListBoxCollectionFacadeEngine = TCollectionEngine<any, any>
 
 /**
- * Owner-level props коллекции: состав + режим выбора.
+ * Owner-level props коллекции: состав, режим выбора и группы элементов.
  *
  * `TCollection` по умолчанию — `TListBoxCollectionFacadeEngine`, а не
  * `TListBoxCollection`: `engine` принимает движок любого уровня сборки, тот
@@ -86,7 +90,8 @@ export interface IListBoxCollectionProps<
 	extends
 		ICollectionProps<TCollection>,
 		IBatchCollectionProps<TItemProps, TItem>,
-		ISelectionCollectionProps {}
+		ISelectionCollectionProps,
+		IGroupCollectionProps<TItem> {}
 
 /** Item-level props элемента: выбранность. */
 export interface IListBoxCollectionItemProps extends ISelectionCollectionItemProps {}
@@ -108,6 +113,6 @@ export type TListBoxAdapters<TItem extends IListBoxItem = IListBoxItem> = {
 export type TListBoxItemCollectionFacadeEvents = TSelectionItemFacadeEvents &
 	TListBoxItemEventsExtension
 
-/** События фасада списка: база выбора плюс карта рисования (`draw`). */
-export type TListBoxCollectionFacadeEvents = TSelectionCollectionFacadeEvents<IListBoxItem> &
+/** События фасада списка: база группировки плюс карта рисования (`draw`). */
+export type TListBoxCollectionFacadeEvents = TGroupCollectionFacadeEvents<IListBoxItem> &
 	TDrawEvents<IListBoxItem>

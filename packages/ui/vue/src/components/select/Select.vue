@@ -4,9 +4,13 @@ import { Input } from '../input'
 import { Icon } from '../icon'
 import { Tags } from '../tags'
 import { SelectItem } from './item'
+import { SelectGroup } from './group'
 import SetupSelect from './setup.component'
 
-export default { ...SetupSelect, components: { Frame, Input, Icon, Tags, SelectItem } }
+export default {
+	...SetupSelect,
+	components: { Frame, Input, Icon, Tags, SelectItem, SelectGroup },
+}
 </script>
 
 <template>
@@ -176,52 +180,104 @@ export default { ...SetupSelect, components: { Frame, Input, Icon, Tags, SelectI
 						пока слот не задан, — поэтому слот отметки отдаётся ей, только
 						когда задан Select'у.
 
-						Опции — то, что рисует коллекция (`drawn`), по порядку, ключ —
-						ключ записи. Без окна это все показанные опции, то есть то,
-						что осталось после отбора. Скрытая опция размонтируется, но из
-						коллекции не исчезает — составом владеют данные, а не разметка
-						(см. `owned` в `TCollectionExtension`). Снятие фильтра
-						возвращает её на место вместе с выбором.
+						Опции — то, что рисует коллекция, по секциям группировки
+						(`drawnSections`), как у ListBox: группа с подписью — в
+						`SelectGroup`, опции без группы — прямо в списке, между соседними
+						секциями — немой разделитель (`aria-hidden`, не `separator`: в
+						`listbox` ARIA пускает только опции и группы). Секции идут
+						порядком показанного — стрелки подсвечивают опции так, как они
+						стоят на экране. Без групп секция одна — ни обёртки, ни
+						разделителя. Отбор, убравший все опции группы, убирает и её
+						секцию — вместе с подписью.
 
-						В окне обёртки `Virtual` — видимые опции и распорки на месте
-						пропущенных: `div` под `aria-hidden`, высоту которого тема
-						берёт из его стиля. Одна петля на опции и распорки, как у
-						ListBox: петли по блокам перемонтировали бы опцию, когда она
-						переходит из блока в блок.
+						В секции — её записи по порядку, ключ — ключ записи. Без окна это
+						все показанные опции секции, то есть то, что осталось после
+						отбора. Скрытая опция размонтируется, но из коллекции не исчезает
+						— составом владеют данные, а не разметка (см. `owned` в
+						`TCollectionExtension`). Снятие фильтра возвращает её на место
+						вместе с выбором.
+
+						В окне обёртки `Virtual` (у списка без групп) — видимые опции и
+						распорки на месте пропущенных: `div` под `aria-hidden`, высоту
+						которого тема берёт из его стиля. Одна петля на опции и распорки,
+						как у ListBox: петли по блокам перемонтировали бы опцию, когда она
+						переходит из блока в блок. Проброс слотов записан у опций группы
+						и у опций без неё: обёртка у них разная.
 					-->
-					<template v-for="entry in drawn" :key="entry.key">
-						<div
-							v-if="entry.kind === 'filler'"
-							class="so-select__filler"
-							aria-hidden="true"
-							:style="entry.style"
-						></div>
-						<SelectItem v-else :ctrl="entry.item">
-							<template #leading>
-								<slot name="item-leading" :item="entry.item" />
+					<template v-for="(section, index) in drawnSections" :key="section.key">
+						<div v-if="index > 0" class="so-select__separator" aria-hidden="true"></div>
+						<SelectGroup v-if="section.group" :label="section.group.label">
+							<template v-for="entry in section.entries" :key="entry.key">
+								<div
+									v-if="entry.kind === 'filler'"
+									class="so-select__filler"
+									aria-hidden="true"
+									:style="entry.style"
+								></div>
+								<SelectItem v-else :ctrl="entry.item">
+									<template #leading>
+										<slot name="item-leading" :item="entry.item" />
+									</template>
+									<template #default="{ text, selected }">
+										<slot
+											name="item"
+											:item="entry.item"
+											:text="text"
+											:selected="selected"
+										/>
+									</template>
+									<template #trailing>
+										<slot name="item-trailing" :item="entry.item" />
+									</template>
+									<template
+										v-if="$slots['item-indicator-icon']"
+										#indicator-icon="{ selected }"
+									>
+										<slot
+											name="item-indicator-icon"
+											:item="entry.item"
+											:selected="selected"
+										/>
+									</template>
+								</SelectItem>
 							</template>
-							<template #default="{ text, selected }">
-								<slot
-									name="item"
-									:item="entry.item"
-									:text="text"
-									:selected="selected"
-								/>
+						</SelectGroup>
+						<template v-else>
+							<template v-for="entry in section.entries" :key="entry.key">
+								<div
+									v-if="entry.kind === 'filler'"
+									class="so-select__filler"
+									aria-hidden="true"
+									:style="entry.style"
+								></div>
+								<SelectItem v-else :ctrl="entry.item">
+									<template #leading>
+										<slot name="item-leading" :item="entry.item" />
+									</template>
+									<template #default="{ text, selected }">
+										<slot
+											name="item"
+											:item="entry.item"
+											:text="text"
+											:selected="selected"
+										/>
+									</template>
+									<template #trailing>
+										<slot name="item-trailing" :item="entry.item" />
+									</template>
+									<template
+										v-if="$slots['item-indicator-icon']"
+										#indicator-icon="{ selected }"
+									>
+										<slot
+											name="item-indicator-icon"
+											:item="entry.item"
+											:selected="selected"
+										/>
+									</template>
+								</SelectItem>
 							</template>
-							<template #trailing>
-								<slot name="item-trailing" :item="entry.item" />
-							</template>
-							<template
-								v-if="$slots['item-indicator-icon']"
-								#indicator-icon="{ selected }"
-							>
-								<slot
-									name="item-indicator-icon"
-									:item="entry.item"
-									:selected="selected"
-								/>
-							</template>
-						</SelectItem>
+						</template>
 					</template>
 				</slot>
 

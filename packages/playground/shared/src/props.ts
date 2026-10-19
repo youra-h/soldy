@@ -998,3 +998,18 @@ export function propControls(entry: TComponentEntry): TPropControlGroups {
 			.sort(byName),
 	}
 }
+
+/**
+ * Есть ли у коллекции группы — проп `groupBy` у дескриптора её фасада (Menu,
+ * ListBox, Select). Строки у групп нет: ключ группы — функция, а группы —
+ * список записей (`NON_EDITABLE`), — и страница показывает их блоком в
+ * свойствах коллекции, на составе с группами (`GROUPED_ITEMS`).
+ *
+ * По дескриптору, а не списком компонентов: коллекция, которой группы
+ * добавят, получит блок сама.
+ */
+export function hasGroups(entry: TComponentEntry): boolean {
+	const props = entry.collectionDescriptor?.().props ?? []
+
+	return props.some((prop) => underscorePropNaming(prop.name) === 'groupBy')
+}

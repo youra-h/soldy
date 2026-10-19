@@ -8,6 +8,7 @@ import {
 	createEngineTabs,
 	createEngineTags,
 	filterOf,
+	groupOf,
 	listOf,
 	plainOf,
 	selectOf,
@@ -46,6 +47,14 @@ describe('охранник отдаёт расширение коллекции,
 		expect(filterOf(engine)).toBe(engine.extensions.filter)
 	})
 
+	it('groupOf — группировка ListBox и Select', () => {
+		const list = createEngineListBox()
+		const select = createEngineSelect()
+
+		expect(groupOf(list)).toBe(list.extensions.group)
+		expect(groupOf(select)).toBe(select.extensions.group)
+	})
+
 	it('plainOf — базовые операции любой коллекции', () => {
 		const engine = createEngine()
 
@@ -79,6 +88,7 @@ describe('расширения нет — undefined', () => {
 		expect(activationOf(engine)).toBeUndefined()
 		expect(selectionOf(engine)).toBeUndefined()
 		expect(filterOf(engine)).toBeUndefined()
+		expect(groupOf(createEngineTabs())).toBeUndefined()
 		expect(selectOf(createEngineListBox())).toBeUndefined()
 		expect(listOf(createEngineSelect())).toBeUndefined()
 	})

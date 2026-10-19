@@ -1,6 +1,7 @@
 export * from './item/types'
 export { default as TListBoxItem } from './item/item.class'
 export { TListBoxItemCollectionFacade } from './item/facade'
+export { TListBoxGroup } from './group/group.class'
 export * from './types'
 export { TListBox } from './list-box.class'
 export * from './collection'

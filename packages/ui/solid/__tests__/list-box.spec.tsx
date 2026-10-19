@@ -27,7 +27,13 @@ import {
 	type TListBoxView,
 	type TListIndicator,
 } from '@soldy-ui/core'
-import { ListBox, ListBoxItem, type ListBoxItemProps, type ListBoxProps } from '@soldy-ui/solid'
+import {
+	ListBox,
+	ListBoxGroup,
+	ListBoxItem,
+	type ListBoxItemProps,
+	type ListBoxProps,
+} from '@soldy-ui/solid'
 import { find, mount, nextFrame } from './mount'
 
 type TItem = { value: string; text: string }
@@ -662,10 +668,130 @@ describe('отметка выбранного и слоты', () => {
 	})
 })
 
+/**
+ * Группы из данных — как у Vue (`ui/vue/__tests__/list-groups.spec.ts`):
+ * секции нарисованного (`drawnSections`) — группа с подписью в
+ * `ListBox.Group`, элементы без группы — последними, прямо в списке, между
+ * секциями — немой разделитель. Стрелки ходят тем же порядком, что элементы
+ * стоят на экране. Петля секций — по ключу секции: смена подписи группы
+ * узлов элементов не пересоздаёт.
+ */
+describe('группы', () => {
+	/** В данных «Морковь» стоит между фруктами, у «Воды» группы нет. */
+	const MIXED = [
+		{ value: 'apple', text: 'Яблоко', _: { group: 'fruit' } },
+		{ value: 'carrot', text: 'Морковь', _: { group: 'veg' } },
+		{ value: 'water', text: 'Вода' },
+		{ value: 'pear', text: 'Груша', _: { group: 'fruit' } },
+	]
+
+	const GROUPS = [
+		{ key: 'fruit', label: 'Фрукты' },
+		{ key: 'veg', label: 'Овощи' },
+	]
+
+	/** Части списка: группа — подписью и текстами элементов, разделитель — `—`. */
+	const parts = () =>
+		[...list().children].map((node) => {
+			if (node.classList.contains('so-list-box-group')) {
+				return [
+					node.querySelector('.so-list-box-group__label')?.textContent?.trim() ?? '',
+					[...node.querySelectorAll('.so-list-box-item')].map((item) =>
+						item.textContent?.trim(),
+					),
+				]
+			}
+
+			if (node.classList.contains('so-list-box__separator')) return '—'
+
+			return node.textContent?.trim()
+		})
+
+	it('группа с подписью, разделитель — между секциями, без группы — последними', () => {
+		mount(() => <ListBox items={MIXED} groups={GROUPS} />)
+
+		expect(parts()).toEqual([
+			['Фрукты', ['Яблоко', 'Груша']],
+			'—',
+			['Овощи', ['Морковь']],
+			'—',
+			'Вода',
+		])
+
+		for (const group of list().querySelectorAll('.so-list-box-group')) {
+			const label = find(group, '.so-list-box-group__label', HTMLElement)
+
+			expect(group.getAttribute('role')).toBe('group')
+			expect(group.getAttribute('aria-labelledby')).toBe(label.id)
+			expect(label.id).not.toBe('')
+			expect(label.getAttribute('role')).toBe('presentation')
+		}
+
+		expect(
+			[...list().querySelectorAll('.so-list-box__separator')].map((node) =>
+				node.getAttribute('aria-hidden'),
+			),
+		).toEqual(['true', 'true'])
+	})
+
+	it('стрелки ходят порядком экрана: ↓ после «Яблока» — «Груша»', async () => {
+		mount(() => <ListBox items={MIXED} groups={GROUPS} />)
+
+		await nextFrame()
+
+		const highlighted = () =>
+			rows()
+				.find((row) => row.getAttribute('data-highlighted') === 'true')
+				?.textContent?.trim()
+
+		press(list(), 'ArrowDown')
+		expect(highlighted()).toBe('Яблоко')
+
+		press(list(), 'ArrowDown')
+		expect(highlighted()).toBe('Груша')
+
+		press(list(), 'ArrowDown')
+		expect(highlighted()).toBe('Морковь')
+	})
+
+	it('смена подписи в groups — новые подписи, узлы элементов те же', () => {
+		const [groups, setGroups] = createSignal(GROUPS)
+
+		mount(() => <ListBox items={MIXED} groups={groups()} />)
+
+		const before = listItems()
+
+		setGroups([
+			{ key: 'fruit', label: 'Fruit' },
+			{ key: 'veg', label: 'Vegetables' },
+		])
+
+		expect(parts()).toEqual([
+			['Fruit', ['Яблоко', 'Груша']],
+			'—',
+			['Vegetables', ['Морковь']],
+			'—',
+			'Вода',
+		])
+		listItems().forEach((node, index) => expect(node).toBe(before[index]))
+	})
+
+	it('без группировки — ни групп, ни разделителей', () => {
+		mount(() => <ListBox items={ITEMS} />)
+
+		expect(parts()).toEqual(['Первый', 'Второй', 'Третий'])
+	})
+})
+
 describe('типы', () => {
 	it('ListBox.Item — это ListBoxItem', () => {
 		expect(ListBox.Item).toBe(ListBoxItem)
 		expectTypeOf(ListBox.Item).toEqualTypeOf<typeof ListBoxItem>()
+	})
+
+	it('ListBox.Group — это ListBoxGroup', () => {
+		expect(ListBox.Group).toBe(ListBoxGroup)
+		expectTypeOf(ListBox.Group).toEqualTypeOf<typeof ListBoxGroup>()
 	})
 
 	it('слоты несут scope из дескрипторов', () => {

@@ -5,6 +5,7 @@ import type { IListenable, IPluginContext } from '../../../base'
 import { TElementPlugin } from '../../element'
 import { TCollectionBundlesPlugin, TCollectionElements } from '../../collection'
 import { isMeasurableElement } from '../../../utils'
+import { closestList } from '../row'
 
 /**
  * Что плагину нужно от компонента: число строк и канал о его смене.
@@ -20,6 +21,23 @@ interface IListHeightOwner extends Pick<IList, 'maxRows'> {
 function release(container: HTMLElement): void {
 	container.style.maxHeight = ''
 	container.style.overflowY = ''
+}
+
+/**
+ * Что `max-height` контейнера берёт сверх строк: при `box-sizing: border-box`
+ * — вертикальные паддинги и рамки, иначе тема, добавившая отступы, теряла бы
+ * последнюю строку. При `content-box` добавлять нечего, поэтому решаем по
+ * факту стиля, а не по допущению про конкретную тему.
+ */
+function boxExtra(style: CSSStyleDeclaration): number {
+	if (style.boxSizing !== 'border-box') return 0
+
+	return (
+		(parseFloat(style.paddingTop) || 0) +
+		(parseFloat(style.paddingBottom) || 0) +
+		(parseFloat(style.borderTopWidth) || 0) +
+		(parseFloat(style.borderBottomWidth) || 0)
+	)
 }
 
 /**
@@ -47,6 +65,13 @@ function release(container: HTMLElement): void {
  * их число и порядок не говорят ни сколько строк в списке, ни нужна ли
  * прокрутка. Высоту строки дают нарисованные: показанный, но не нарисованный
  * элемент — той же высоты, высота строк в окне одна на все.
+ *
+ * **Строки в группах** (`ListBox.Group`, `Select.Group`) — не дети
+ * контейнера, а между ними стоят подписи групп и разделители, и суммой высот
+ * строк предел не сосчитать. Тогда он — по месту последней из первых строк:
+ * от верха содержимого списка до её низа, с подписью первой группы и всем, что
+ * между строками. Окна у списка с группами нет — нарисованы все строки, и
+ * место есть у каждой.
  *
  * **Пересчёт на кадр — только при узле корня**: между `ready` и `removed`
  * своего `TElementPlugin`. Сборка вместе с подписками плагина идёт и на
@@ -173,17 +198,20 @@ export class TListHeightPlugin extends TBasePlugin<any> {
 	/**
 	 * Ограничивает высоту прокручиваемого контейнера по `maxRows`.
 	 *
-	 * Контейнер — **родитель элементов**, а не корень компонента. У Select его
-	 * корень — поле, а список лежит в телепортированной панели: пока плагин
-	 * писал в корень, Select получал `max-height` на поле и схлопывался в
-	 * полосу. У ListBox родитель элементов — узел списка внутри корня: шапка и
-	 * подвал стоят рядом с ним и в предел строк не входят.
+	 * Контейнер — **список, в котором стоят элементы** (`closestList`), а не
+	 * корень компонента. У Select его корень — поле, а список лежит в
+	 * телепортированной панели: пока плагин писал в корень, Select получал
+	 * `max-height` на поле и схлопывался в полосу. У ListBox это узел списка
+	 * внутри корня: шапка и подвал стоят рядом с ним и в предел строк не входят.
+	 * Не родитель элемента: у элемента группы родитель — группа, и предел
+	 * получила бы она.
 	 */
 	private _update(): void {
 		const shown: readonly object[] = batchOf<object>(this._engine)?.shown ?? []
 		// Узлы показанных по порядку; не нарисованный окном — `null`
 		const rows = shown.map((item) => this._collectionElements?.getElementByItem(item) ?? null)
-		const container = rows.find((row) => row !== null)?.parentElement ?? this._element
+		const row = rows.find((candidate) => candidate !== null)
+		const container = (row ? closestList(row) : null) ?? this._element
 
 		// Высота пишется инлайновым стилем и считается по `offsetHeight` — у узла
 		// без layout-бокса (например, корень-`svg`) мерить нечего и писать некуда.
@@ -218,15 +246,13 @@ export class TListHeightPlugin extends TBasePlugin<any> {
 	/**
 	 * Высота первых `count` строк вместе с промежутками между ними.
 	 *
-	 * Строку, которую окно не нарисовало, считаем высотой нарисованной: в окне
-	 * высота строк одна на все. Не нарисовано ни одной — строки ещё не
-	 * измерены, и писать нечего.
+	 * Строки — дети контейнера: сумма их высот и зазоров. Строку, которую окно
+	 * не нарисовало, считаем высотой нарисованной: в окне высота строк одна на
+	 * все. Не нарисовано ни одной — строки ещё не измерены, и писать нечего.
+	 * Последняя из первых строк стоит в группе — по её месту (`_measureByPlace`).
 	 *
-	 * `max-height` пишется в контейнер, а не в область строк, поэтому при
-	 * `box-sizing: border-box` в неё нужно добавить вертикальные паддинги и
-	 * рамки — иначе тема, добавившая отступы, теряет последнюю строку. При
-	 * `content-box` добавлять нечего, поэтому решаем по факту стиля, а не по
-	 * допущению про конкретную тему.
+	 * `max-height` пишется в контейнер, а не в область строк, поэтому в неё идёт
+	 * и то, что контейнер берёт сверх строк (`boxExtra`).
 	 */
 	private _measure(
 		container: HTMLElement,
@@ -234,6 +260,10 @@ export class TListHeightPlugin extends TBasePlugin<any> {
 		count: number,
 	): number {
 		if (count === 0) return 0
+
+		const last = rows[count - 1]
+
+		if (last && last.parentElement !== container) return this._measureByPlace(container, last)
 
 		const drawn = rows.find((row) => row !== null && isMeasurableElement(row))
 
@@ -254,14 +284,23 @@ export class TListHeightPlugin extends TBasePlugin<any> {
 
 		total += (count - 1) * gap
 
-		if (style.boxSizing === 'border-box') {
-			total +=
-				(parseFloat(style.paddingTop) || 0) +
-				(parseFloat(style.paddingBottom) || 0) +
-				(parseFloat(style.borderTopWidth) || 0) +
-				(parseFloat(style.borderBottomWidth) || 0)
-		}
+		return total + boxExtra(style)
+	}
 
-		return total
+	/**
+	 * Высота до низа последней из первых строк по её месту — у строк в группах:
+	 * от верха содержимого контейнера, с подписями групп и разделителями между
+	 * строками. Верх — без прокрутки: место строки считается от начала списка, а
+	 * не от того, что сейчас видно.
+	 */
+	private _measureByPlace(container: HTMLElement, last: Element): number {
+		const style = getComputedStyle(container)
+		const top =
+			container.getBoundingClientRect().top +
+			(parseFloat(style.borderTopWidth) || 0) +
+			(parseFloat(style.paddingTop) || 0) -
+			container.scrollTop
+
+		return last.getBoundingClientRect().bottom - top + boxExtra(style)
 	}
 }

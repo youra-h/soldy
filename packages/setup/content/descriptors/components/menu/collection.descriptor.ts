@@ -9,6 +9,7 @@
 import { defineComponent, defineDescriptor } from '../../../../protected/define'
 import { TMenuCollectionFacade, TMenuItemCollectionFacade } from '@soldy-ui/core'
 import { CollectionDescriptor } from '../collection'
+import { GROUP_PROPS } from '../list'
 
 export const MenuCollectionDescriptor = defineDescriptor(() =>
 	defineComponent({
@@ -18,18 +19,16 @@ export const MenuCollectionDescriptor = defineDescriptor(() =>
 
 		/**
 		 * Сверх состава у меню — группы пунктов: ключ группы пункта, порядок и
-		 * подписи групп и выход — секции показанного, по которым разметка рисует
-		 * группы и разделители. Режима выбора нет: выбор у меню — отметки
-		 * флажков, и режим всегда `multiple` (его ставит коллекция), а отметку
-		 * каждый флажок отдаёт своим `selected`. Событие — нажатие
-		 * пункта-действия, его фасад отдаёт пробросом расширения `menu`.
+		 * подписи групп (общий фрагмент `GROUP_PROPS`, как у ListBox и Select) и
+		 * выход — секции показанного, по которым разметка рисует группы и
+		 * разделители. Режима выбора нет: выбор у меню — отметки флажков, и
+		 * режим всегда `multiple` (его ставит коллекция), а отметку каждый флажок
+		 * отдаёт своим `selected`. Событие — нажатие пункта-действия, его фасад
+		 * отдаёт пробросом расширения `menu`.
 		 */
 		contribution: {
 			props: {
-				/** Ключ группы пункта. Не задан — метка `_.group` из данных */
-				groupBy: { type: Function, triggers: ['change:groupBy'] },
-				/** Порядок групп и их подписи. Сверка по содержимому */
-				groups: { type: Array, triggers: ['change:groups'] },
+				...GROUP_PROPS,
 				/**
 				 * Секции показанных пунктов по порядку: группа с подписью или
 				 * пункты без группы. Между соседними секциями разметка рисует

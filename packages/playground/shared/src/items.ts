@@ -21,6 +21,44 @@ export const COLLECTION_ITEMS = [
 export const COLLECTION_VALUES = COLLECTION_ITEMS.map((item) => item.value)
 
 /**
+ * Состав с группами — для блока групп коллекций, у которых группы есть
+ * (ListBox, Select, Menu). Метка группы — в отметках элемента (`_.group`). В
+ * данных фрукты и овощи вперемешку, а у воды группы нет: видно и то, что
+ * группы встают порядком `groups`, и то, что элементы без группы идут
+ * последними, за разделителем.
+ */
+export const GROUPED_ITEMS = [
+	{ value: 'apple', text: 'Яблоко', _: { group: 'fruit' } },
+	{ value: 'carrot', text: 'Морковь', _: { group: 'veg' } },
+	{ value: 'pear', text: 'Груша', _: { group: 'fruit' } },
+	{ value: 'potato', text: 'Картофель', _: { group: 'veg' } },
+	{ value: 'water', text: 'Вода' },
+]
+
+/** Тот же состав без меток: группу элемента считает `groupBy` (`produceGroupOf`). */
+export const PRODUCE_ITEMS = GROUPED_ITEMS.map(({ value, text }) => ({ value, text }))
+
+/** Порядок групп состава и их подписи — `groups`. */
+export const PRODUCE_GROUPS = [
+	{ key: 'fruit', label: 'Фрукты' },
+	{ key: 'veg', label: 'Овощи' },
+]
+
+/**
+ * Группа элемента состава по его значению — `groupBy` блока групп: та же
+ * группировка, что метками, только ключ считает функция. Элемент — экземпляр
+ * коллекции, и значение функция берёт у него.
+ */
+export function produceGroupOf(item: object): string | undefined {
+	const value = Reflect.get(item, 'value')
+
+	if (value === 'apple' || value === 'pear') return 'fruit'
+	if (value === 'carrot' || value === 'potato') return 'veg'
+
+	return undefined
+}
+
+/**
  * Тысяча элементов списка — для окна (обёртка `Virtual`), как тысяча строк
  * таблицы ниже: на пяти элементах окно не видно. Текст — в одну строку: в окне
  * высота элементов одна на все.

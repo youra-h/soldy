@@ -1,9 +1,11 @@
-import type { IMenuGroup } from '@soldy-ui/core'
+import type { IItemGroup } from '@soldy-ui/core'
 import { TBasePlugin } from '../../../base'
 import type { IPluginContext } from '../../../base'
 
 /**
- * TMenuGroupIdsPlugin — имя группы меню от её подписи.
+ * TItemGroupIdsPlugin — имя группы элементов от её подписи: у групп меню,
+ * ListBox и Select (`Menu.Group`, `ListBox.Group`, `Select.Group`) — один на
+ * все три, формула связки у них одна.
  *
  * `id` подписи — в её набор (`labelAria`), ссылка на него — `aria-labelledby`
  * группы, пока подпись не пуста: без подписи разметка её не рисует, и ссылка
@@ -14,11 +16,11 @@ import type { IPluginContext } from '../../../base'
  * Шина группы бывает долговечнее плагина — приложение передаёт свой `ctrl`,
  * — поэтому подписка через `_listenTo`.
  */
-export class TMenuGroupIdsPlugin extends TBasePlugin {
+export class TItemGroupIdsPlugin extends TBasePlugin {
 	override install(ctx: IPluginContext): void {
 		super.install(ctx)
 
-		const group = ctx.getInstance<IMenuGroup>()
+		const group = ctx.getInstance<IItemGroup>()
 
 		if (!group) return
 
