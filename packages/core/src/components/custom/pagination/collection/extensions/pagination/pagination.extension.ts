@@ -1,4 +1,4 @@
-import { TBaseExtension, batchOf } from '../../../../../base/collection'
+import { TBaseExtension, activationOf, batchOf } from '../../../../../base/collection'
 import type { IActivationExtension, IExtensionContext } from '../../../../../base/collection'
 import { pageCount, pageKey, pageNumber, pagePosition, pageWindow } from '../../../window'
 import type { TPageWindowEntry } from '../../../window'
@@ -149,7 +149,7 @@ export class TPaginationExtension
 	}
 
 	private get _activation(): IActivationExtension<IPaginationItem> | undefined {
-		return this._ctx.extensions.activation as IActivationExtension<IPaginationItem> | undefined
+		return activationOf(this._ctx)
 	}
 
 	/** Окно заново и текущая — по значению. */

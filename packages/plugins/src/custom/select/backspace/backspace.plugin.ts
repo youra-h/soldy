@@ -1,3 +1,4 @@
+import { selectTagsOf, selectionOf } from '@soldy-ui/core'
 import type {
 	ISelect,
 	ISelectItem,
@@ -88,11 +89,11 @@ export class TSelectBackspacePlugin extends TBasePlugin<any, TSelectBackspacePlu
 	}
 
 	private get _selectionExtension(): ISelectionExtension<ISelectItem> | undefined {
-		return this._engine?.extensions?.selection as ISelectionExtension<ISelectItem> | undefined
+		return selectionOf<ISelectItem>(this._engine)
 	}
 
 	private get _tagsExtension(): ISelectTagsExtension<ISelectItem> | undefined {
-		return this._engine?.extensions?.tags as ISelectTagsExtension<ISelectItem> | undefined
+		return selectTagsOf(this._engine)
 	}
 
 	/** Слушаем `keydown`, только пока все три условия выполнены разом. */

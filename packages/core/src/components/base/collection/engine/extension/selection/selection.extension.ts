@@ -4,7 +4,8 @@ import type { TSelectionEvents, TSelectionMode, ISelectionExtension } from './ty
 import type { ISelectionItemExtension } from './item'
 import { TSelectionItemExtension } from './item'
 import { TBaseOwnerItemExtension } from '../base-owner-item-extension.class'
-import type { TMetaEntry, TMetaExtension } from '../meta'
+import type { TMetaEntry } from '../meta'
+import { metaOf } from '../neighbours'
 import type { TDataset } from '../../../../../../common'
 import { sameValue } from '../../../../../../common/utility/same-value'
 
@@ -99,7 +100,7 @@ export class TSelectionExtension<TItem extends object = any>
 			this.resetSelection()
 		})
 
-		const meta = ctx.extensions.meta as TMetaExtension<TItem> | undefined
+		const meta = metaOf(ctx)
 
 		if (meta) {
 			// Отметки одной записи `meta` отдаёт одним списком — и выбираются
@@ -115,7 +116,7 @@ export class TSelectionExtension<TItem extends object = any>
 			// Догон: расширение могло прийти в уже наполненную коллекцию, и свои
 			// `meta:applied` оно тогда пропустило. Снимок помнит `meta`, а
 			// отметки собираются той же группой
-			this._selectMarked(ctx.driver.valueOf().filter((item) => meta.get?.(item)?.selected))
+			this._selectMarked(ctx.driver.valueOf().filter((item) => meta.get(item)?.selected))
 		}
 	}
 

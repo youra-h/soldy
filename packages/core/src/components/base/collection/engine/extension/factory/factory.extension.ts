@@ -1,5 +1,6 @@
 import type { IExtension, IExtensionContext } from '../types'
 import { TBaseExtension } from '../base-extension.class'
+import { batchOf } from '../neighbours'
 import type { TFactoryEvents, IFactoryExtension, IFactoryExtensionOptions } from './types'
 
 /**
@@ -80,9 +81,7 @@ export class TFactoryExtension<TItem extends object>
 
 		if (raw.length === 0) return
 
-		const batch = ctx.extensions.batch as { update?(items: TItem[]): void } | undefined
-
-		batch?.update?.(ctx.driver.valueOf())
+		batchOf(ctx)?.update(ctx.driver.valueOf())
 	}
 
 	create(source: Partial<TItem>): TItem {

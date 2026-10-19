@@ -1,3 +1,4 @@
+import { filterOf, selectOf, selectionOf } from '@soldy-ui/core'
 import type {
 	ISelect,
 	IFilterExtension,
@@ -415,15 +416,15 @@ export class TEditablePlugin extends TBasePlugin<any, TEditablePluginEvents> {
 	}
 
 	private get _filterExtension(): IFilterExtension<ISelectItem> | undefined {
-		return this._engine?.extensions?.filter as IFilterExtension<ISelectItem> | undefined
+		return filterOf<ISelectItem>(this._engine)
 	}
 
 	private get _selectionExtension(): ISelectionExtension<ISelectItem> | undefined {
-		return this._engine?.extensions?.selection as ISelectionExtension<ISelectItem> | undefined
+		return selectionOf<ISelectItem>(this._engine)
 	}
 
 	private get _selectExtension(): ISelectExtension | undefined {
-		return this._engine?.extensions?.select as ISelectExtension | undefined
+		return selectOf(this._engine)
 	}
 
 	/**

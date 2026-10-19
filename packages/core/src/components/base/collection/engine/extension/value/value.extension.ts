@@ -1,6 +1,7 @@
 import { TBaseExtension } from '../base-extension.class'
 import type { IExtension, IExtensionContext } from '../types'
-import type { TSelectionExtension } from '../selection'
+import type { ISelectionExtension } from '../selection'
+import { selectionOf } from '../neighbours'
 import type {
 	IValueSelectionOwner,
 	IValuedItem,
@@ -85,8 +86,8 @@ export class TValueSelectionExtension<
 		}
 	}
 
-	private get _selection(): TSelectionExtension<TItem> | undefined {
-		return this._ctx?.extensions.selection as TSelectionExtension<TItem> | undefined
+	private get _selection(): ISelectionExtension<TItem> | undefined {
+		return selectionOf(this._ctx)
 	}
 
 	/**

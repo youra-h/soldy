@@ -9,15 +9,11 @@ import {
 	TBaseOwnerItemExtension,
 	TItemContextRegistry,
 	TRemoveCommand,
+	activationOf,
 } from '../../../../../base/collection'
 import type { ITabsItem } from '../../../item/types'
 import type { ITabs } from '../../../types'
-import type {
-	TTabsExtensionEvents,
-	TTabsEngineOptions,
-	TTabsExtensions,
-	ITabsExtension,
-} from './types'
+import type { TTabsExtensionEvents, TTabsEngineOptions, ITabsExtension } from './types'
 import { TTabsItemExtension, type ITabsItemExtension } from './item'
 
 /**
@@ -42,7 +38,11 @@ export class TTabsExtension<TOwner extends ITabs = ITabs, TItem extends ITabsIte
 {
 	readonly name = 'tabs' as const
 
-	private _itemRegistry!: TItemContextRegistry<TItem, TTabsExtensions<TItem>>
+	/**
+	 * Контексты табов — над своим расширением, а не над всей картой: из
+	 * контекста читается только свой адаптер (`closeTab`).
+	 */
+	private _itemRegistry!: TItemContextRegistry<TItem, { tabs: ITabsExtension<TItem> }>
 
 	/**
 	 * Удаление активного таба и состав списка перед ним.
@@ -73,7 +73,7 @@ export class TTabsExtension<TOwner extends ITabs = ITabs, TItem extends ITabsIte
 
 		// Реестр для доступа к item-адаптерам (кеширует через WeakMap)
 		this._itemRegistry = new TItemContextRegistry({
-			extensions: ctx.extensions as TTabsExtensions<TItem>,
+			extensions: { tabs: this },
 			driver: ctx.driver,
 		})
 
@@ -183,7 +183,7 @@ export class TTabsExtension<TOwner extends ITabs = ITabs, TItem extends ITabsIte
 	}
 
 	private get _activation(): IActivationExtension<TItem> | undefined {
-		return this._ctx.extensions.activation as IActivationExtension<TItem> | undefined
+		return activationOf(this._ctx)
 	}
 
 	/**

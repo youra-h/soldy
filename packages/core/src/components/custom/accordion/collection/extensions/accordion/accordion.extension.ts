@@ -5,7 +5,7 @@ import type {
 	ISelectionExtension,
 } from '../../../../../base/collection'
 import type { TAccordionView } from '../../../types'
-import { TBaseOwnerItemExtension } from '../../../../../base/collection'
+import { TBaseOwnerItemExtension, selectionOf } from '../../../../../base/collection'
 import type { IAccordionItem } from '../../../item/types'
 import type { IAccordion } from '../../../types'
 import type {
@@ -65,7 +65,7 @@ export class TAccordionExtension<
 		ctx.driver.events.on('item:updated', (e) => this._inheritOwner(e.item as TItem))
 
 		// Раскрытость — по событию selection-расширения: оно стоит раньше
-		const selection = ctx.extensions.selection as ISelectionExtension<TItem> | undefined
+		const selection = selectionOf(ctx)
 
 		if (selection) {
 			// Всем — на смену выбора, добавленной — только ей: проход по всем на
