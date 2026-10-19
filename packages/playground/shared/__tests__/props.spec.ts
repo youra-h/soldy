@@ -255,6 +255,35 @@ describe('propControls: пропы плагинов', () => {
 })
 
 /**
+ * Проп без строки у одного компонента, а не у всех.
+ *
+ * `tag` у Icon — корень-глиф: превью кладёт в него компонент иконки своего
+ * фреймворка, а строка открывалась с умолчанием `span` — колонка пропа
+ * рисовала пустой корень, экземпляр — стрелку из разметки хоста. Тег из списка
+ * строки иконке и не нужен: корень без рисунка — пустая иконка. У соседей тег —
+ * обычный проп, и строка у них остаётся.
+ */
+describe('propControls: проп без строки у одного компонента', () => {
+	/** Имена строк страницы — из всех групп. */
+	function namesOf(id: string): string[] {
+		return Object.values(propControls(entryOf(id)))
+			.flat()
+			.map((control) => control.name)
+	}
+
+	it('у Icon строки tag нет, остальные строки на месте', () => {
+		const names = namesOf('icon')
+
+		expect(names).not.toContain('tag')
+		expect(names).toEqual(expect.arrayContaining(['size', 'width', 'height', 'aria_label']))
+	})
+
+	it('у Button строка tag есть', () => {
+		expect(namesOf('button')).toContain('tag')
+	})
+})
+
+/**
  * Вид поля выводится из типа декларации, на настоящих дескрипторах.
  *
  * Длины объявлены объединением `Number` и `String`, и числовое поле, которое
