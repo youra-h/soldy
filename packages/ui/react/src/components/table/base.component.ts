@@ -15,6 +15,7 @@ export type TableEventProps = EventProps<typeof TableDescriptor> &
  * Пропсы Table. Коллекционные входы (`engine`, `items`, `columns`, `mode`,
  * `sort`, `grid`, …) отдельно не перечислены: они входят в интерфейс пропсов
  * ядра (`ITableProps`), и тип их несёт дескриптор компонента. Атрибуты DOM
- * достаются окну таблицы — внешнему узлу компонента.
+ * делятся: класс, стиль и `ref` — окну таблицы, внешнему узлу компонента,
+ * остальное — `table`, где её роль и имя.
  */
 export type TableProps = UseDomProps<typeof TableDescriptor, ITable, TableEventProps>

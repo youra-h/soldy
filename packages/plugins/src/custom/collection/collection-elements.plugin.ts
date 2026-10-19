@@ -1,3 +1,5 @@
+import { batchOf } from '@soldy-ui/core'
+import type { IComponentView } from '@soldy-ui/core'
 import { TElementPlugin } from '../element'
 import { TCollectionBundlesAccess } from './collection-bundles-access.plugin'
 
@@ -48,11 +50,9 @@ export class TCollectionElements extends TCollectionBundlesAccess {
 
 	/** Найти uid по DOM-элементу. */
 	getUidByElement(element: Element): string | number | undefined {
-		if (!this.bundles?.engine) return undefined
-
-		for (const item of this.bundles.engine.extensions.batch.items) {
+		for (const item of batchOf<IComponentView>(this.bundles?.engine)?.items ?? []) {
 			if (this.getElementByItem(item) === element) {
-				return (item as { uid?: string | number }).uid
+				return item.uid
 			}
 		}
 

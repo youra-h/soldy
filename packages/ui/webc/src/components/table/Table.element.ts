@@ -5,9 +5,15 @@
  * Элемент — настоящий `<div>`, расширенный классом soldy (customized
  * built-in, см. `SoldyElement`), и это окно таблицы (`so-table__viewport`):
  * внешний узел компонента, вокруг корня `table`, который строит шаблон, —
- * элемент-обёртка (`wrapped` в описании корня). Атрибуты, класс и стиль
- * потребителя и скрытие — окну, как у Vue и React; классы, наборы ядра и
- * привязка к `TElementPlugin` — `table`, и тег ядру уходит её.
+ * элемент-обёртка (`wrapped` в описании корня). Класс и стиль потребителя и
+ * скрытие — окну, как у Vue и React; классы, наборы ядра и привязка к
+ * `TElementPlugin` — `table`, и тег ядру уходит её.
+ *
+ * Корень `table` — и поле окна (`control` в описании корня), как узел списка
+ * у ListBox и Tabs: статические атрибуты разметки, кроме `class`, `style`,
+ * `is`, `slot` и входов пропов, база при построении переносит на неё.
+ * `aria-label` и `id` называют таблицу, а не окно без роли. Записанное из
+ * кода позже остаётся на окне.
  *
  * Контекстов два — свой и фасада коллекции (`setupTable`), и пропсы фасада
  * (`items`, `columns`, `mode`, `engine`, `sort`, `grid`) — атрибуты-входы и
@@ -37,7 +43,7 @@ export const TTableElement = SoldyElement(HTMLDivElement, {
 	descriptor: TableDescriptor(),
 	facade: TableCollectionDescriptor(),
 	template: tableTemplate,
-	root: { wrapped: true },
+	root: { wrapped: true, control: true },
 	setup: setupTable,
 })
 

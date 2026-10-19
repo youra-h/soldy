@@ -8,15 +8,20 @@ export default { ...SetupTable, components: { CheckBox, TableColumn, TableRow } 
 </script>
 
 <template>
-	<div v-if="rendered" v-show="visible" class="so-table__viewport">
+	<div v-if="rendered" v-show="visible" class="so-table__viewport" v-bind="containerAttrs">
 		<!--
 			Окно таблицы — разметка вокруг неё, а не корень: корень, классы и
 			наборы — у самой `table`, плагины и тема видят корнем её. В окне
 			таблица прокручивается вбок, когда колонки шире места: прокрутку
 			включает тема по `data-overflow` таблицы — его пишет раскладка
 			колонок. Ширину окна мерит плагин раскладки таблицы, по ней ядро
-			раскладывает колонки без своей ширины. Атрибуты потребителя
-			достаются окну — внешнему узлу компонента.
+			раскладывает колонки без своей ширины.
+
+			Атрибуты потребителя делятся, как у поля: класс и стиль — окну
+			(`containerAttrs`), внешнему узлу компонента, остальное — `table`
+			(`controlAttrs`), поверх её наборов. `aria-label` и `id` потребителя
+			называют таблицу, а не окно без роли. `$el` — окно: первый узел
+			шаблона.
 
 			Table — таблица по паттернам APG Table и Sortable Table. Корень — сама
 			`table`, рисуется по `tag`: роль `table` даёт тег, своей клавиатуры у
@@ -36,7 +41,7 @@ export default { ...SetupTable, components: { CheckBox, TableColumn, TableRow } 
 			ref="rootElement"
 			:is="tag"
 			:class="classes"
-			v-bind="{ ...attrs, ...aria, ...dataset }"
+			v-bind="{ ...attrs, ...aria, ...dataset, ...controlAttrs }"
 		>
 			<thead class="so-table__head">
 				<!--
