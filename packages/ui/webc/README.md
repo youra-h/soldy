@@ -38,7 +38,8 @@ Button's `default` slot) cannot be passed into it — slot content reads it from
 `el.ctrl`.
 
 > **Status:** the Web Components adapter is in progress — Button, Icon, Label, Input, CheckBox,
-> Switch, ProgressSpinner, Skeleton, Frame, RadioGroup, ListBox, Tabs, Accordion, Table and the
+> Switch, the form field `<div is="so-field">` (label, helper and error linked to the control
+> inside it), ProgressSpinner, Skeleton, Frame, RadioGroup, ListBox, Tabs, Accordion, Table and the
 > `<so-virtual>` window for long lists are ported, the rest of the set is on its way. See
 > [the adapter table](https://github.com/youra-h/soldy#components).
 

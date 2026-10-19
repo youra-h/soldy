@@ -21,7 +21,8 @@ render on the server (`@angular/platform-server`) and hydrate in the browser
 (`provideClientHydration`); component ids match on both sides.
 
 > **Status:** the Angular adapter is in progress — Button, Icon, Label, Frame, ProgressSpinner,
-> Skeleton, Input, CheckBox, Switch, RadioGroup, ListBox, Tabs, Accordion, Table and the `Virtual`
+> Skeleton, Input, CheckBox, Switch, the form field `<div so-field>` (label, helper and error linked
+> to the control inside it), RadioGroup, ListBox, Tabs, Accordion, Table and the `Virtual`
 > window for long lists are ported, the rest of the set is on its way. Frame moves
 > the element you wrote into `target` (`body` by default) in the browser; with `contained` it stays
 > in place. `so-locale-provider` gives a subtree its language and library strings. See

@@ -2,6 +2,7 @@ import type { Component } from 'svelte'
 import AccordionPreview from './AccordionPreview.svelte'
 import ButtonPreview from './ButtonPreview.svelte'
 import CheckBoxPreview from './CheckBoxPreview.svelte'
+import FieldPreview from './FieldPreview.svelte'
 import IconPreview from './IconPreview.svelte'
 import InputPreview from './InputPreview.svelte'
 import LabelPreview from './LabelPreview.svelte'
@@ -42,6 +43,7 @@ export const PREVIEWS: Record<string, TPreview> = {
 	'check-box': CheckBoxPreview,
 	switch: SwitchPreview,
 	label: LabelPreview,
+	field: FieldPreview,
 	'radio-group': RadioGroupPreview,
 	'list-box': ListBoxPreview,
 	table: TablePreview,

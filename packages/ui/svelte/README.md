@@ -13,7 +13,8 @@ are snippets, events arrive as callback props (`element:ready` → `onElementRea
 slot is `children`.
 
 > **Status:** the Svelte adapter is in progress — Button, Icon, Label, Frame, ProgressSpinner,
-> Skeleton, the fields Input, CheckBox and Switch, the collections ListBox, Tabs, Accordion and
+> Skeleton, the fields Input, CheckBox and Switch, the form field `Field` (label, helper and
+> error linked to the control inside it), the collections ListBox, Tabs, Accordion and
 > RadioGroup (`<ListBox.Item>`, `<Tabs.Item>` with `<Tabs.Content>`, `<Accordion.Item>`,
 > `<RadioGroup.Item>` or `items`), Table (columns and rows as data — `columns`, `items` — with
 > sorting, row selection, column resizing and reordering) and the `Virtual` window for long lists

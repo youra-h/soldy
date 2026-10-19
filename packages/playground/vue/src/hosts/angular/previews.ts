@@ -13,6 +13,7 @@ import {
 	TAccordionItemComponent,
 	TButtonComponent,
 	TCheckBoxComponent,
+	TFieldComponent,
 	TIconComponent,
 	TInputComponent,
 	TLabelComponent,
@@ -232,6 +233,20 @@ export const PREVIEWS: Record<string, TPreview> = {
 	label: {
 		component: TLabelComponent,
 		content: [{ component: TCheckBoxComponent, element: tag('so-check-box') }],
+	},
+
+	// Поле формы вокруг Input: тексты частей — пропсы превью, контрол —
+	// содержимым. Строки страницы правят само поле: сторону подписи, тексты,
+	// ошибку
+	field: {
+		component: TFieldComponent,
+		content: [
+			{
+				component: TInputComponent,
+				element: tag('so-input'),
+				props: { placeholder: 'name@example.com' },
+			},
+		],
 	},
 
 	// Подпись — содержимым: текста у радио нет, оно голый контрол, как CheckBox.
