@@ -57,11 +57,11 @@
  *
  * Корень бывает и не внешним узлом компонента: окно таблицы
  * (`div.so-table__viewport`) обёрнуто вокруг её корня `table`. Тогда атрибуты
- * потребителя, его attachment-ы, класс, стиль и скрытие достаются обёртке, а
- * корню — только своё (`toWrappedRootProps`, как у React и Solid). Attachment
- * корня адаптера и здесь разведён на половины: обёртке — только запись `ref`
- * компонента (`consumerRef`), корню — только привязка к `TElementPlugin`
- * (`bindRef`).
+ * потребителя делятся, как у поля: класс, стиль и скрытие — обёртке,
+ * остальное и attachment-ы потребителя — корню, поверх его наборов
+ * (`toWrappedRootProps`, как у React и Solid). Attachment корня адаптера и
+ * здесь разведён на половины: обёртке — только запись `ref` компонента
+ * (`consumerRef`), корню — только привязка к `TElementPlugin` (`bindRef`).
  */
 
 import type { ClassValue } from 'svelte/elements'
@@ -122,9 +122,9 @@ export type TRootAttributes = Record<string, unknown> & TRootLayout
 
 /** Обёртка корня и сам корень внутри неё — см. `toWrappedRootProps`. */
 export type TWrappedRootAttributes = {
-	/** Внешний узел компонента: свой класс, атрибуты потребителя и скрытие. */
+	/** Внешний узел компонента: свой класс, класс и стиль потребителя, скрытие. */
 	readonly wrapper: TRootAttributes
-	/** Корень внутри обёртки: наборы ядра, классы и стиль ядра. */
+	/** Корень внутри обёртки: наборы ядра, поверх — остальное от потребителя, классы и стиль ядра. */
 	readonly root: TRootAttributes
 }
 
@@ -238,18 +238,21 @@ export function toRootProps(
 /**
  * Корень внутри своей обёртки — у компонента, чей внешний узел не корень:
  * окно таблицы (`div.so-table__viewport`) вокруг `table`. Корень — узел,
- * который видят плагины и тема, обёртка — разметка вокруг него. Во Vue
- * атрибуты потребителя сами достаются внешнему узлу шаблона, и `v-show` стоит
- * на нём же; здесь то же разведение, как `toWrappedRootProps` у React и Solid:
+ * который видят плагины и тема, обёртка — разметка вокруг него. Атрибуты
+ * потребителя делятся, как у поля (`toRootForward`, `toControlAttrs`), как
+ * `useSplitAttrs` у Vue, где `v-show` стоит на окне, и как
+ * `toWrappedRootProps` у React и Solid:
  *
  * - обёртке — её класс `wrapper` и за ним класс потребителя, стиль потребителя
- *   и `display: none` скрытого компонента, остальные атрибуты и attachment-ы
- *   потребителя — как есть. `ref` компонента обёртке пишет attachment
- *   `consumerRef` адаптера, вне раскладки;
- * - корню — `toRootProps` без атрибутов потребителя и без своего скрытия:
- *   спрятана обёртка — спрятан и корень внутри неё. Наборы ядра, классы и
- *   стиль-выход `style` — его, а к `TElementPlugin` его привязывает attachment
- *   `bindRef` адаптера, без записи `ref`.
+ *   и `display: none` скрытого компонента. `ref` компонента обёртке пишет
+ *   attachment `consumerRef` адаптера, вне раскладки;
+ * - корню — `toRootProps` с остальными атрибутами и attachment-ами
+ *   потребителя поверх наборов ядра, как у поля — `<input>`, и без своего
+ *   скрытия: спрятана обёртка — спрятан и корень внутри неё. Роль и имя
+ *   таблицы — у корня, и `aria-label`, `id` и обработчики потребителя
+ *   достаются ей, а не окну без роли. Классы и стиль-выход `style` — его, а к
+ *   `TElementPlugin` его привязывает attachment `bindRef` адаптера, без записи
+ *   `ref`.
  *
  * Состояние корню отдаётся поимённо, без `visible`, а не остатком
  * деструктуризации: состояние компонента — геттеры над рунами (`joinState`),
@@ -263,17 +266,21 @@ export function toWrappedRootProps(
 	style?: TRootStyle,
 ): TWrappedRootAttributes {
 	return {
-		wrapper: toRootProps({ classes: [wrapper], visible: state.visible }, [], forward),
+		wrapper: toRootProps(
+			{ classes: [wrapper], visible: state.visible },
+			[],
+			toRootForward(forward),
+		),
 		root: toRootProps(
 			{ classes: state.classes, layout_styles: state.layout_styles, order: state.order },
 			sets,
-			{},
+			toControlAttrs(forward),
 			style,
 		),
 	}
 }
 
-/** Класс и стиль потребителя — то, что из его атрибутов остаётся корню поля. */
+/** Класс и стиль потребителя — то, что из его атрибутов остаётся корню поля и окну таблицы. */
 export function toRootForward(forward: TRootForward): TRootForward {
 	return { class: forward.class, style: forward.style }
 }
@@ -284,7 +291,8 @@ export function toRootForward(forward: TRootForward): TRootForward {
  * потребителя двум элементам: обёртке — вид, `<input>` — всё остальное,
  * события, `aria-*`, `data-*` и attachment-ы потребителя (символьные ключи
  * остаток копирует наравне со строковыми). Аналог `useSplitAttrs` у Vue и
- * `toControlAttrs` у React.
+ * `toControlAttrs` у React. Так же окно таблицы отдаёт остальное своему корню
+ * `table` (`toWrappedRootProps`).
  *
  * Параметр типа — атрибуты компонента (`TDomAttributes` с `TFieldAttributes`),
  * а не весь его набор пропсов: `forwardProps` типизирован пропсами целиком, а

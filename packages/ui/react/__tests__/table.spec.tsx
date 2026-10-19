@@ -219,13 +219,20 @@ describe('разметка', () => {
 		).toEqual([])
 	})
 
-	it('атрибуты потребителя — окну: оно внешний узел компонента', async () => {
+	/**
+	 * Атрибуты потребителя делятся, как у поля и у Vue: класс и стиль — окну,
+	 * внешнему узлу компонента, остальное — `table`, где роль и имя таблицы
+	 * (`toWrappedRootProps`).
+	 */
+	it('атрибуты потребителя: aria-label, id и data-* — table, класс и стиль — окну', async () => {
 		await render(
 			<Table
 				items={[{ data: ANNA }]}
 				columns={[NAME]}
 				className="staff"
 				style={{ maxHeight: 320 }}
+				aria-label="Сотрудники"
+				id="staff"
 				data-testid="staff"
 			/>,
 		)
@@ -233,10 +240,14 @@ describe('разметка', () => {
 		const viewport = find('.so-table__viewport')
 		const table = find('table.so-table')
 
+		expect(table.getAttribute('aria-label')).toBe('Сотрудники')
+		expect(table.id).toBe('staff')
+		expect(table.dataset.testid).toBe('staff')
+		expect(
+			['aria-label', 'id', 'data-testid'].filter((name) => viewport.hasAttribute(name)),
+		).toEqual([])
 		expect(viewport.classList.contains('staff')).toBe(true)
-		expect(viewport.dataset.testid).toBe('staff')
 		expect(viewport.style.maxHeight).toBe('320px')
-		expect(table.hasAttribute('data-testid')).toBe(false)
 		expect(table.classList.contains('staff')).toBe(false)
 		expect(table.hasAttribute('style')).toBe(false)
 	})
