@@ -7,6 +7,7 @@ import {
 } from '@soldy-ui/webc'
 import {
 	isEmptyField,
+	snippetLiteral,
 	type TComponentEntry,
 	type TPluginPropAddress,
 	type TPropControl,
@@ -77,7 +78,7 @@ export function propSnippet(
 		const raw = attributeOf(bindings.get(name), given)
 
 		if (raw === undefined) {
-			properties.push(`element.${name} = ${literal(given)}`)
+			properties.push(`element.${name} = ${snippetLiteral(given)}`)
 		} else {
 			attributes.push(` ${attribute(name, raw)}`)
 		}
@@ -194,11 +195,11 @@ function instanceExample(
 ): string {
 	const element = elementOf(entry)
 	const own = Object.entries(element.attributes ?? {}).map(
-		([name, value]) => `element.${name} = ${literal(value)}`,
+		([name, value]) => `element.${name} = ${snippetLiteral(value)}`,
 	)
 	const props = Object.entries(preset)
 		.filter(([name]) => !isHostProp(name))
-		.map(([name, value]) => `element.${name} = ${literal(value)}`)
+		.map(([name, value]) => `element.${name} = ${snippetLiteral(value)}`)
 
 	return moduleScript(
 		[REGISTER, ...imports],
@@ -228,7 +229,7 @@ function moduleScript(imports: readonly string[], body: readonly string[]): stri
 
 /** Присваивание с отбивкой сверху. Пустое поле — проп не задан, строк нет. */
 function assignment(target: string, value: unknown): string[] {
-	return isEmptyField(value) ? [] : ['', `${target} = ${literal(value)}`]
+	return isEmptyField(value) ? [] : ['', `${target} = ${snippetLiteral(value)}`]
 }
 
 /**
@@ -252,7 +253,7 @@ function pluginAssignment(
 			'',
 			`\tconst plugin = bundle.get(${pluginCtor})`,
 			'',
-			`\tif (plugin) plugin.${address.name} = ${literal(value)}`,
+			`\tif (plugin) plugin.${address.name} = ${snippetLiteral(value)}`,
 			'})',
 		],
 	}
@@ -314,17 +315,6 @@ function attribute(name: string, raw: string): string {
 /** Селектор элемента примера — для модуля, который пишет ему свойства. */
 function selectorOf(element: TPreview): string {
 	return `${element.tag}[is="${element.is}"]`
-}
-
-/**
- * Значение так, как его пишут в коде. Пустое поле сюда не доходит: такой проп
- * не задан, и в коде его нет вовсе.
- */
-function literal(value: unknown): string {
-	if (typeof value === 'string') return `'${value.replace(/[\\']/g, '\\$&')}'`
-	if (typeof value === 'number' || typeof value === 'boolean') return String(value)
-
-	return JSON.stringify(value)
 }
 
 /** Строка на уровень глубже. Пустая остаётся пустой — без хвостового отступа. */

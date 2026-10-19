@@ -1,5 +1,6 @@
 import {
 	isEmptyField,
+	snippetLiteral,
 	type TComponentEntry,
 	type TPluginPropAddress,
 	type TPropControl,
@@ -162,7 +163,7 @@ function pluginInstanceSnippet(
 
 /** Присваивание с отбивкой сверху. Пустое поле — проп не задан, строк нет. */
 function assignment(target: string, value: unknown): string[] {
-	return isEmptyField(value) ? [] : ['', `${target} = ${toTemplateValue(value)}`]
+	return isEmptyField(value) ? [] : ['', `${target} = ${snippetLiteral(value)}`]
 }
 
 /**
@@ -186,7 +187,7 @@ function pluginAssignment(
 			'',
 			`\tconst plugin = bundle.get(${pluginCtor})`,
 			'',
-			`\tif (plugin) plugin.${address.name} = ${toTemplateValue(value)}`,
+			`\tif (plugin) plugin.${address.name} = ${snippetLiteral(value)}`,
 			'})',
 		],
 	}
@@ -203,18 +204,16 @@ function presetAttrs(preset: Record<string, unknown> = {}): string {
 		.join('')
 }
 
-/** Один проп в шаблоне — всегда через `:` и со значением. */
-function attr(name: string, value: unknown): string {
-	return `:${name}="${toTemplateValue(value)}"`
-}
-
 /**
- * Значение так, как его пишут в коде. Пустое поле сюда не доходит: такой проп
- * не задан, и в коде его нет вовсе.
+ * Один проп в шаблоне — всегда через `:` и со значением.
+ *
+ * Выражение стоит в атрибуте с двойными кавычками, а значение атрибута шаблон
+ * Vue читает как HTML: кавычка оборвала бы атрибут, а `&` — начало сущности
+ * (`&amp;` стал бы `&`). Обе уходят сущностями, как значение атрибута у хоста
+ * Web Components, и компилятор шаблона отдаёт выражению исходный текст.
  */
-function toTemplateValue(value: unknown): string {
-	if (typeof value === 'string') return `'${value.replace(/'/g, "\\'")}'`
-	if (typeof value === 'number' || typeof value === 'boolean') return String(value)
+function attr(name: string, value: unknown): string {
+	const expression = snippetLiteral(value).replace(/&/g, '&amp;').replace(/"/g, '&quot;')
 
-	return JSON.stringify(value)
+	return `:${name}="${expression}"`
 }
