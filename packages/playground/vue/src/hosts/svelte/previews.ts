@@ -10,7 +10,9 @@ import ProgressSpinnerPreview from './ProgressSpinnerPreview.svelte'
 import RadioGroupPreview from './RadioGroupPreview.svelte'
 import SkeletonPreview from './SkeletonPreview.svelte'
 import SwitchPreview from './SwitchPreview.svelte'
+import TablePreview from './TablePreview.svelte'
 import TabsPreview from './TabsPreview.svelte'
+import VirtualPreview from './VirtualPreview.svelte'
 
 /** Пропсы превью: пропы строки, `ctrl` с экземпляром ядра и колбэки событий хоста. */
 export type TPreviewProps = Record<string, unknown>
@@ -42,9 +44,11 @@ export const PREVIEWS: Record<string, TPreview> = {
 	label: LabelPreview,
 	'radio-group': RadioGroupPreview,
 	'list-box': ListBoxPreview,
+	table: TablePreview,
 	tabs: TabsPreview,
 	accordion: AccordionPreview,
 	icon: IconPreview,
 	'progress-spinner': ProgressSpinnerPreview,
 	skeleton: SkeletonPreview,
+	virtual: VirtualPreview,
 }

@@ -16,6 +16,12 @@ interface IListHeightOwner extends Pick<IList, 'maxRows'> {
 	readonly events: IListenable<Pick<TListEvents, 'change:maxRows'>>
 }
 
+/** Снять с узла предел строк: потолок и прокрутка возвращаются теме. */
+function release(container: HTMLElement): void {
+	container.style.maxHeight = ''
+	container.style.overflowY = ''
+}
+
 /**
  * TListHeightPlugin — высота контейнера списка по `maxRows`.
  *
@@ -56,6 +62,12 @@ export class TListHeightPlugin extends TBasePlugin<any> {
 	private _collectionElements: TCollectionElements | null = null
 	private _rootObserver: ResizeObserver | null = null
 	private readonly _itemObservers = new Map<string | number, ResizeObserver>()
+	/**
+	 * Узел, которому плагин ставил предел последним. Контейнер бывает и другим
+	 * узлом — у списка без строк это корень, — и с прежнего предел снимается:
+	 * иначе узел списка ListBox, опустев, остался бы в пределе прежних строк.
+	 */
+	private _container: HTMLElement | null = null
 	/** Пересчёт в следующем кадре; прежний отложенный отменяется. */
 	private readonly _updateNextFrame: () => void
 
@@ -89,6 +101,7 @@ export class TListHeightPlugin extends TBasePlugin<any> {
 			this._rootObserver?.disconnect()
 			this._rootObserver = null
 			this._element = null
+			this._container = null
 		})
 
 		const bundles = ctx.get(TCollectionBundlesPlugin)
@@ -123,6 +136,7 @@ export class TListHeightPlugin extends TBasePlugin<any> {
 		this._itemObservers.clear()
 
 		this._element = null
+		this._container = null
 		this._list = null
 		this._engine = null
 		this._collectionElements = null
@@ -159,10 +173,11 @@ export class TListHeightPlugin extends TBasePlugin<any> {
 	/**
 	 * Ограничивает высоту прокручиваемого контейнера по `maxRows`.
 	 *
-	 * Контейнер — **родитель элементов**, а не корень компонента. Для ListBox
-	 * это одно и то же, а для Select нет: его корень — поле, а список лежит в
-	 * телепортированной панели. Пока плагин писал в корень, Select получал
-	 * `max-height` на поле и схлопывался в полосу.
+	 * Контейнер — **родитель элементов**, а не корень компонента. У Select его
+	 * корень — поле, а список лежит в телепортированной панели: пока плагин
+	 * писал в корень, Select получал `max-height` на поле и схлопывался в
+	 * полосу. У ListBox родитель элементов — узел списка внутри корня: шапка и
+	 * подвал стоят рядом с ним и в предел строк не входят.
 	 */
 	private _update(): void {
 		const shown: readonly object[] = batchOf<object>(this._engine)?.shown ?? []
@@ -173,6 +188,12 @@ export class TListHeightPlugin extends TBasePlugin<any> {
 		// Высота пишется инлайновым стилем и считается по `offsetHeight` — у узла
 		// без layout-бокса (например, корень-`svg`) мерить нечего и писать некуда.
 		if (!isMeasurableElement(container)) return
+
+		if (this._container !== container) {
+			if (this._container) release(this._container)
+
+			this._container = container
+		}
 
 		const maxRows = this._list?.maxRows ?? 0
 
@@ -185,8 +206,7 @@ export class TListHeightPlugin extends TBasePlugin<any> {
 		const totalHeight = this._measure(container, rows, visibleCount)
 
 		if (totalHeight === 0) {
-			container.style.maxHeight = ''
-			container.style.overflowY = ''
+			release(container)
 
 			return
 		}

@@ -1,5 +1,6 @@
 import {
 	isEmptyField,
+	snippetLiteral,
 	type TComponentEntry,
 	type TPluginPropAddress,
 	type TPropControl,
@@ -139,7 +140,7 @@ function example(imports: readonly string[], body: readonly string[], markup: st
 
 /** Присваивание с отбивкой сверху. Пустое поле — проп не задан, строк нет. */
 function assignment(target: string, value: unknown): string[] {
-	return isEmptyField(value) ? [] : ['', `${target} = ${literal(value)}`]
+	return isEmptyField(value) ? [] : ['', `${target} = ${snippetLiteral(value)}`]
 }
 
 /**
@@ -163,7 +164,7 @@ function pluginAssignment(
 			'',
 			`\tconst plugin = bundle.get(${pluginCtor})`,
 			'',
-			`\tif (plugin) plugin.${address.name} = ${literal(value)}`,
+			`\tif (plugin) plugin.${address.name} = ${snippetLiteral(value)}`,
 			'})',
 		],
 	}
@@ -188,18 +189,7 @@ function presetAttrs(preset: Record<string, unknown> = {}): string {
 function attr(name: string, value: unknown): string {
 	return typeof value === 'string' && !/["&]/.test(value)
 		? `${name}="${value}"`
-		: `${name}={${literal(value)}}`
-}
-
-/**
- * Значение так, как его пишут в коде. Пустое поле сюда не доходит: такой проп
- * не задан, и в коде его нет вовсе.
- */
-function literal(value: unknown): string {
-	if (typeof value === 'string') return `'${value.replace(/[\\']/g, '\\$&')}'`
-	if (typeof value === 'number' || typeof value === 'boolean') return String(value)
-
-	return JSON.stringify(value)
+		: `${name}={${snippetLiteral(value)}}`
 }
 
 /** Строка на уровень глубже. Пустая остаётся пустой — без хвостового отступа. */

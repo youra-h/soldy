@@ -432,7 +432,10 @@ Select и строк таблицы. Выход `drawn` — что рисова�
 (`<For>` Solid), пересоздавала бы все элементы вместе с узлами и фокусом. У
 Solid петля по ключу — `KeyedFor` адаптера (сторожат «петля по drawn» в
 `ui/solid/__tests__/list-box.spec.tsx` и «окно» в
-`ui/solid/__tests__/table.spec.tsx`), у Web Components — `TKeyedLoop`
+`ui/solid/__tests__/table.spec.tsx`), у Svelte — `{#each}` с ключом записи:
+узлу живого ключа он отдаёт его новую запись (сторожат «окно» в
+`ui/svelte/__tests__/table.spec.ts` и «цикл Svelte» в
+`ui/svelte/__tests__/virtual.spec.ts`), у Web Components — `TKeyedLoop`
 шаблона: узлу живого ключа она отдаёт его новую запись (`update`), и распорка
 берёт из неё стиль (сторожит «распорки окна» в
 `ui/webc/__tests__/list-box.spec.ts`).

@@ -2,7 +2,7 @@ import type { IControl, TCollectionEngine } from '@soldy-ui/core'
 import type { IPluginContext } from '../../../base'
 import { TCollectionElements } from '../../collection'
 import { TListNavigationPlugin } from '../navigation'
-import { rowOf } from '../row'
+import { listOf, rowOf } from '../row'
 import type { TListKeyboardPluginEvents } from './types'
 
 /**
@@ -13,13 +13,14 @@ import type { TListKeyboardPluginEvents } from './types'
  * `TListNavigationPlugin`. Здесь только то, чем список отличается: набор
  * клавиш и смысл активации.
  *
- * `ListBox` фокусируется сам (`tabindex="0"` на корне), поэтому `keydown`
- * слушается на нём же. Enter и Space переключают выбор подсвеченного через
- * расширение списка (`list.chooseItem`), как и клик по строке.
+ * `ListBox` фокусируется сам: остановка Tab — узел списка внутри корня
+ * (`tabindex="0"`, на нём же роль `listbox`), а шапка и подвал стоят рядом с
+ * ним. Enter и Space переключают выбор подсвеченного через расширение списка
+ * (`list.chooseItem`), как и клик по строке.
  *
- * Слушатель висит на корне, но клавишу список берёт только с самого корня и
- * со строки показанного элемента, на которой фокус остаётся после клика. До
- * корня всплывают и клавиши полей и кнопок из шапки, подвала и слотов
+ * Слушатель висит на корне, но клавишу список берёт только с узла списка
+ * (`listOf`) и со строки показанного элемента, на которой фокус остаётся после
+ * клика. До корня всплывают и клавиши полей и кнопок из шапки, подвала и слотов
  * элемента — что с ними делать, эти элементы знают сами: поле печатает
  * пробел, кнопка делает из Enter и пробела клик. Правило отвечает на вопрос
  * «чья клавиша», а не «какая», исключений нет: из поля в шапке не работают и
@@ -34,7 +35,8 @@ import type { TListKeyboardPluginEvents } from './types'
 export class TListKeyboardPlugin extends TListNavigationPlugin<TListKeyboardPluginEvents> {
 	/**
 	 * Узлы элементов — по ним ищется строка, с которой пришла клавиша. Без
-	 * этого плагина строку не узнать, и список берёт клавиши только с корня.
+	 * этого плагина строку не узнать, и список берёт клавиши только с узла
+	 * списка.
 	 */
 	private _elements: TCollectionElements | null = null
 
@@ -99,15 +101,20 @@ export class TListKeyboardPlugin extends TListNavigationPlugin<TListKeyboardPlug
 	}
 
 	/**
-	 * Клавиша списка — с корня, то есть с узла, на котором висит слушатель, или
+	 * Клавиша списка — с узла списка в корне, на котором висит слушатель, или
 	 * со строки показанного элемента, в том числе недоступного. Навигация его
 	 * пропускает, но фокус на его строке бывает: элемент могли выключить, пока
 	 * фокус на ней, а если тема не глушит мышь на выключенной строке, фокус на
 	 * неё ставит и клик, хоть и не выбирает. Если искать строку только среди
 	 * доступных, стрелки с неё не работали бы.
+	 *
+	 * С самого корня клавиша не списка: корень — рамка вокруг шапки, списка и
+	 * подвала, и остановкой Tab его делает только атрибут потребителя.
 	 */
 	private _isOwnKey(e: KeyboardEvent): boolean {
-		if (e.target === e.currentTarget) return true
+		const root = e.currentTarget
+
+		if (root instanceof Element && e.target === listOf(root)) return true
 
 		return this.shown().some((item) => rowOf(this._elements, item.uid) === e.target)
 	}

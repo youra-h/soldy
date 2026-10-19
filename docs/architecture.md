@@ -1309,14 +1309,14 @@ ListBox, список Select, будущие Menu и Popover выглядят о
 | --------------- | --------------- | ------------------------ | ------------------ |
 | роль контейнера | `listbox`       | `listbox`                | `menu`             |
 | роль элемента   | `option`        | `option`                 | `menuitem`         |
-| где DOM-фокус   | на контейнере   | **на поле, не в списке** | на элементе        |
+| где DOM-фокус   | на узле списка  | **на поле, не в списке** | на элементе        |
 | навигация       | roving tabindex | `aria-activedescendant`  | roving tabindex    |
 | элемент         | выбирается      | выбирается               | выполняет действие |
 | `aria-selected` | есть            | есть                     | нет                |
 
-Проверка на коде: `ListBox.vue` держит `tabindex="0"` на корне, а
-`TListKeyboardPlugin` слушает `keydown` там же — ListBox спроектирован как
-самостоятельный фокусируемый виджет. У combobox фокус обязан оставаться на
+Проверка на коде: `ListBox.vue` держит `tabindex="0"` на узле списка
+(`so-list-box__list`), а `TListKeyboardPlugin` берёт клавиши с него — ListBox
+спроектирован как самостоятельный фокусируемый виджет. У combobox фокус обязан оставаться на
 поле. Вложить готовый ListBox в Select значит снимать ему `tabindex`, глушить
 его клавиатурный плагин и перенаправлять подсветку наружу — то есть добавлять
 ListBox режимы ради чужого компонента, после чего его тесты начнут охранять
@@ -2098,7 +2098,7 @@ RadioGroup, ListBox, Tabs и Accordion собираются, как у Vue и Sv
 
 ## Layer 8b: Svelte Adapter (`packages/ui/svelte/src`)
 
-### ✅ IMPLEMENTED (Component / ComponentView / Stylable / Control / Textable / Button / Icon / Label / Frame / ProgressSpinner / Skeleton / Input / CheckBox / Switch / RadioGroup / ListBox / Tabs / Accordion)
+### ✅ IMPLEMENTED (Component / ComponentView / Stylable / Control / Textable / Button / Icon / Label / Frame / ProgressSpinner / Skeleton / Input / CheckBox / Switch / RadioGroup / ListBox / Tabs / Accordion / Table / Virtual)
 
 Svelte 5 на рунах. Структура зеркалит React, потому что механика событий та же —
 колбэк-пропы:
@@ -2108,13 +2108,18 @@ Svelte 5 на рунах. Структура зеркалит React, потом�
   `event` = `callbackEventNaming` — обе стратегии общие с React);
   `createSvelteAdapterContext` — сборка с id монтирования от `$props.id()`
   компонента и локалью поддерева; раскладка корня `toRootProps` (наборы ядра,
-  поверх атрибуты потребителя, класс, стиль слоями) и делёж атрибутов
-  потребителя у поля — `toRootForward` (класс и стиль корню) и
-  `toControlAttrs` (остальное `<input>`); `roleIcon(role)` — метка иконки по
-  роли для `tag` у Icon и `RoleIcon`, который рисует её `<svg>`, — он же
-  рисует отметку CheckBox без слота.
+  поверх атрибуты потребителя, класс, стиль слоями); корень внутри обёртки —
+  `toWrappedRootProps` (окно таблицы вокруг `table`: обёртке атрибуты и
+  attachment-ы потребителя и скрытие, корню классы и наборы ядра); `toText` —
+  значение неизвестного типа текстом по правилу интерполяции Vue (значение
+  ячейки таблицы); делёж атрибутов потребителя у поля — `toRootForward` (класс
+  и стиль корню) и `toControlAttrs` (остальное `<input>`); `roleIcon(role)` —
+  метка иконки по роли для `tag` у Icon и `RoleIcon`, который рисует её
+  `<svg>`, — он же рисует отметку CheckBox без слота.
 - `adapter/runtime/` — `useAdapter.svelte.ts`: `useAdapter` поверх связки
-  `adapter.connect(SvelteProfile)` и `useCollectionAdapter` — связка фасада
+  `adapter.connect(SvelteProfile)` (attachment корня `attachElement` и его
+  половины: `bindRef` — только привязка к `TElementPlugin`, `consumerRef` —
+  только запись `ref`, для корня внутри обёртки) и `useCollectionAdapter` — связка фасада
   коллекции: те же состояние, входы, события, приём и уничтожение, но без
   `ctrl` и привязки узла, а атрибуты — из того, что не съел компонент.
   Расширение `.svelte.ts` обязательно там, где используются руны (`$state`,
@@ -2144,8 +2149,15 @@ Svelte 5 на рунах. Структура зеркалит React, потом�
   коллекции два (свой и фасада), лифт — контекст Svelte, и элемент входит в
   коллекцию при инициализации, на сервере тоже. Слоя `Elevate`, `TDrafts` и
   пересборки, как у React, нет. Элементы из данных — петля `{#each}` по `shown`
-  (у ListBox — по `drawn`, с распорками окна), проброс слота элемента —
-  сниппет, объявленный в петле рядом с элементом.
+  (у ListBox и строк Table — по `drawn`, с распорками окна), проброс слота
+  элемента — сниппет, объявленный в петле рядом с элементом. Петля — по ключу
+  записи: записи `drawn` и ячейки строки новые на каждую смену, а узел живого
+  ключа `{#each}` оставляет на месте и отдаёт ему новую запись. Своей границы
+  перерисовки, как `withRenderBoundary` у React и `_TableRowCells` у Vue,
+  ячейкам не нужно: выбор строки меняет её атрибуты, а содержимое ячейки
+  читает только ячейку и сниппет `cell`. Table — тот же рецепт, что ListBox, с
+  окном `Virtual` и без drag-and-drop; `Virtual` — обёртка без узла,
+  подключение к окну опускает контекстом.
 - **props передаются геттером** (`() => props`): в Svelte 5 захват `$props()`
   в переменную рвёт реактивность, читать нужно лениво. Компилятор ловит это
   предупреждением `state_referenced_locally`.
@@ -2157,6 +2169,8 @@ Svelte 5 на рунах. Структура зеркалит React, потом�
   attachment пишет корень в связываемый проп `ref` компонента
   (`<Button bind:ref={button}>`): компонент объявляет его сам
   (`ref = $bindable()`) и отдаёт `useAdapter` приёмник `(node) => (ref = node)`.
+  У корня внутри обёртки (окно таблицы) половины разведены: обёртке —
+  `consumerRef`, корню — `bindRef`.
 - **Стиль корня — по свойствам**, attachment-ом `rootStyle`: атрибут `style`
   Svelte пишет целиком и стирал бы то, что плагины ставят на узел сами. В
   браузере attachment едет в атрибутах узла под своим ключом, на сервере стиль
@@ -2183,7 +2197,9 @@ Svelte 5 на рунах. Структура зеркалит React, потом�
   (компонент чужого фреймворка) Svelte нарисовать не может, и корня нет.
 - Сниппет непрозрачен: заданный владельцу слот элемента (`item-close-icon`,
   `item-indicator-icon`) рисуется у каждого элемента вместо своего, и где у
-  Vue и React пустой слот уступает место иконке, у Svelte остаётся пусто.
+  Vue и React пустой слот уступает место иконке, у Svelte остаётся пусто. Так
+  же у таблицы: заданные `header` и `cell` рисуются в каждом заголовке и
+  ячейке вместо текста и значения.
 
 ## Layer 8c: Solid Adapter (`packages/ui/solid/src`)
 
@@ -2773,8 +2789,10 @@ WebKit:
   элемента: `tabindex="-1"` и `aria-selected` списка поверх `role="button"`
   и остановки Tab кнопки. Отметка выбранного — край строки
   (`span.so-list-box-item__indicator`), иконка роли `check` в ней — у
-  выбранного. Список — сам остановка Tab: `tabindex="0"` шаблон ставит корню,
-  если потребитель не написал свой. У радио поле — `<input type="radio">`.
+  выбранного. Остановка Tab списка — узел списка в корне
+  (`div.so-list-box__list`): `tabindex="0"` и набор `aria` списка ставит ему
+  шаблон, а шапка и подвал стоят в корне рядом с ним. У радио поле —
+  `<input type="radio">`.
   Неактивная панель таба скрыта (`shownBy: 'active'`), и её содержимое вне
   документа (`showSlot`): поля в нём не уходят с формой, как у Vue. Сторожат
   `ui/webc/__tests__/tabs.spec.ts`, `accordion.spec.ts`, `radio-group.spec.ts`,

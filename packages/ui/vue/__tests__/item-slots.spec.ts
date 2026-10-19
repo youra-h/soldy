@@ -132,10 +132,11 @@ describe('ListBox', () => {
 		})
 		await nextTick()
 
-		// На месте элементов: после шапки, перед подвалом
+		// На месте элементов — в узле списка, между шапкой и подвалом
 		expect(
 			[...wrapper.element.children].map((child) => child.className || child.tagName),
-		).toEqual(['head', 'probe', 'foot'])
+		).toEqual(['head', 'so-list-box__list', 'foot'])
+		expect(document.querySelector('.probe')?.parentElement?.className).toBe('so-list-box__list')
 
 		await wrapper.setProps({ items: ITEMS })
 

@@ -1,20 +1,20 @@
 @use '../button/mixins' as button;
 
+// Корень — рамка: шапка, узел списка (`__list`) и подвал столбцом, с тем же
+// зазором, что между элементами. Состояние (`data-disabled`,
+// `data-content-fit`, `data-indicator`) ядро отдаёт на корень, а роль, имя и
+// остановку Tab — узлу списка: в `listbox` ARIA пускает только опции, и шапка
+// с подвалом стоят рядом с ним.
 .so-list-box {
 	@apply flex flex-col gap-1;
 	@apply rounded-md border box-border;
 	@apply bg-transparent;
 	@apply min-w-40 max-w-80;
 	@apply text-so-component;
-	// Внутренний отступ от границы контейнера до первого/последнего элемента —
-	// то же значение стоит у `.so-select__list`, чтобы отступы совпадали.
-	// Вертикальный отступ учитывает `TListHeightPlugin` при расчёте
-	// `max-height` (border-box) — поменяешь `py-1`, высота списка пересчитается
-	// сама, руками ничего подгонять не нужно.
+	// Внутренний отступ от границы контейнера до шапки, списка и подвала — то
+	// же значение стоит у `.so-select__list`, чтобы отступы до элементов
+	// совпадали.
 	@apply px-1 py-1;
-	// Прокрутка при `maxRows` меньше числа элементов — то же устройство, что у
-	// `.so-select__list`.
-	@apply overflow-y-auto;
 	// Обычное объявление, не `@apply border-s-…` — почему, см. input/_mixins.scss
 	border-color: var(--so-neutral-300);
 
@@ -24,16 +24,22 @@
 		}
 	}
 
-	&:focus-visible {
-		&:not([data-disabled='true']) {
-			@apply outline-2 outline-offset-2 outline-so-component;
-		}
-	}
-
 	// `contentFit` — одно свойство на два уровня. Со списка тема читает только
 	// `expand`: ширина контейнера — решение общее для всех строк.
 	&[data-content-fit='expand'] {
 		@apply w-max min-w-0 max-w-none;
+	}
+
+	// Узел списка — элементы столбцом. Прокручивается он, а не корень: предел
+	// строк (`maxRows`) `TListHeightPlugin` ставит родителю элементов — узлу
+	// списка, — инлайновыми `max-height` и прокруткой, и шапка с подвалом
+	// остаются на месте. Своих полей и рамки у узла нет, поэтому предел — ровно
+	// строки с зазорами. Высоту корня может ограничить и приложение: тогда
+	// сжимается и прокручивается тот же узел (`min-h-0`), а не корень выпускает
+	// содержимое.
+	&__list {
+		@apply flex flex-col gap-1;
+		@apply min-h-0 overflow-y-auto;
 	}
 
 	// Распорка окна (обёртка `Virtual`) — пустая полоса на месте пропущенных
@@ -52,6 +58,14 @@
 		@apply shrink-0 p-0 border-0 -mb-1;
 		block-size: var(--so-filler-height, 0);
 	}
+}
+
+// Кольцо фокуса — у узла списка: остановка Tab — он. Корень — только рамка, и
+// фокус в поле шапки кольцом всего списка не читается. Кольцо стоит в поле
+// корня вокруг узла, и корень его не режет: прокручивается сам узел, а не
+// корень.
+.so-list-box:not([data-disabled='true']) > .so-list-box__list:focus-visible {
+	@apply outline-2 outline-offset-2 outline-so-component;
 }
 
 .so-list-box-item {

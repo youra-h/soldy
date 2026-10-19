@@ -61,7 +61,7 @@ const propRow = (name: string): HTMLElement => {
 
 /** Выбрать значение в контроле строки — так же, как это делает человек. */
 const pick = async (row: HTMLElement, value: string) => {
-	const trigger = row.querySelector('.pg-prop__control .so-select')
+	const trigger = row.querySelector('.pg-prop__head > .so-field__control .so-select')
 
 	if (!(trigger instanceof HTMLElement)) throw new Error('контрола-селекта в строке нет')
 

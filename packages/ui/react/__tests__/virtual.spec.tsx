@@ -68,8 +68,12 @@ function optionRow(text: string): HTMLElement {
 	return row
 }
 
+/**
+ * Узел списка в корне ListBox — в нём элементы и распорки, на нём остановка
+ * Tab, и клавиши список берёт с него.
+ */
 function listRoot(): HTMLElement {
-	const root = document.querySelector('.so-list-box')
+	const root = document.querySelector('.so-list-box > .so-list-box__list')
 
 	if (!(root instanceof HTMLElement)) throw new Error('списка нет')
 

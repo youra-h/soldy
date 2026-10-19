@@ -79,6 +79,20 @@ export default class TControl<
 		this._sink.emit('change:disabled', e.value)
 	}
 
+	/**
+	 * Тег корня. Пока `aria` стоит на корне (`_ariaTag` — `tag`), тег решает и
+	 * labelable: `change:labelable` уходит за `change:tag`, если он сменился.
+	 */
+	override get tag(): string | object {
+		return super.tag
+	}
+	override set tag(value: string | object) {
+		const before = this.labelable
+
+		super.tag = value
+		this._labelableChanged(before)
+	}
+
 	get focused(): boolean {
 		return this._focused
 	}
@@ -118,12 +132,27 @@ export default class TControl<
 	 * называет только ссылкой `aria-labelledby`, и клик по ней ничего не делает.
 	 *
 	 * Решает тег элемента с `aria` (`_ariaTag`), а не корня: у Input корень —
-	 * обёртка, а labelable — вложенный `<input>`.
+	 * обёртка, а labelable — вложенный `<input>`. Сменился — `change:labelable`:
+	 * его шлёт запись, от которой он зависит (`_labelableChanged`).
 	 */
 	get labelable(): boolean {
 		const tag = this._ariaTag
 
 		return typeof tag === 'string' && LABELABLE_TAGS.has(tag.toLowerCase())
+	}
+
+	/**
+	 * Labelable мог смениться — `change:labelable`, если сменился. Зовёт запись,
+	 * от которой он зависит: здесь тег корня, у ползунка — значение (число
+	 * ручек). Наследник, чей labelable зависит от чего-то ещё, зовёт это и при
+	 * смене той зависимости.
+	 */
+	protected _labelableChanged(before: boolean): void {
+		const labelable = this.labelable
+
+		if (labelable === before) return
+
+		this._sink.emit('change:labelable', labelable)
 	}
 
 	/**

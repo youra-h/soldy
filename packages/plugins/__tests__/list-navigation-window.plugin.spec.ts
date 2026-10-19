@@ -95,6 +95,13 @@ async function setup(
 	const registry = pluginOf(bundle, TCollectionBundlesPlugin)
 	const keyboard = pluginOf(bundle, Keyboard)
 	const root = document.createElement('div')
+	// Узел списка — как в разметке ListBox: роль `listbox` и остановка Tab, с
+	// него клавиши и берутся
+	const list = document.createElement('div')
+
+	list.setAttribute('role', 'listbox')
+	list.tabIndex = 0
+	root.append(list)
 
 	registry.bindEngine(engine)
 	document.body.append(root)
@@ -118,7 +125,7 @@ async function setup(
 	}
 
 	const press = (key: string) =>
-		root.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true }))
+		list.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true }))
 
 	return { bundle, engine, keyboard, items, drawn, mountItem, press, registry }
 }

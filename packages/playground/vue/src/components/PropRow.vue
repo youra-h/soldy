@@ -2,6 +2,7 @@
 import { computed, onUnmounted, shallowRef, watch } from 'vue'
 import { createEngine, isEventSource } from '@soldy-ui/core'
 import { TPluginBundle } from '@soldy-ui/plugins'
+import { Field } from '@soldy-ui/vue'
 import {
 	createInstance,
 	isEmptyField,
@@ -217,24 +218,37 @@ const instanceBind = computed(() => ({
 <template>
 	<section class="pg-prop">
 		<!--
-			Имя и контрол стоят рядом и прижаты влево. Обе колонки фиксированной
-			ширины, ряд не растягивается: иначе на широком экране `margin-left:
-			auto` уводил контрол к правому краю, и чтобы понять, что именно ты
-			крутишь, приходилось водить глазами через всю страницу.
+			Шапка строки — поле формы `Field`: имя пропа — его подпись, описание —
+			подсказка, редактор — контрол. Подпись и подсказку поле связывает с
+			редактором само: `for` подписи — на его `<input>`, `id` подсказки — в
+			его `aria-describedby`. Имя — код, поэтому подпись рисует слот
+			`label-content`, а `label` нужен, чтобы она вообще рисовалась.
 
-			Фиксированная ширина второй колонки выстраивает switch, select и
-			input в одну вертикаль, а не по содержимому. В узком окне рядом
-			они не помещаются: имя встаёт над контролом подписью, а ширина
-			колонки та же, что на широком экране (`styles.css`).
+			Подпись — в начале строки и прижата влево: колонка подписи и контрол
+			фиксированной ширины (`styles.css`), иначе на широком экране контрол
+			уезжал к правому краю, и чтобы понять, что именно ты крутишь,
+			приходилось водить глазами через всю страницу. Фиксированная ширина
+			контрола выстраивает switch, select и input в одну вертикаль, а не по
+			содержимому. В узком окне рядом они не помещаются: колонка у поля
+			одна, и подпись встаёт над контролом, а ширина контрола та же, что на
+			широком экране. Подсказка — под контролом, где её ставит тема.
+
+			Редактор — прямо в слоте, без обёртки: состояние контрола тема читает
+			с прямого ребёнка `.so-field__control`.
 		-->
-		<div class="pg-prop__head">
-			<span class="pg-prop__name">{{ control.name }}</span>
-			<div class="pg-prop__control">
-				<PropControl :control="control" v-model="value" />
-			</div>
-		</div>
+		<Field
+			class="pg-prop__head"
+			position="start"
+			size="sm"
+			:label="control.name"
+			:helper="control.description"
+		>
+			<template #label-content>
+				<code class="pg-prop__name">{{ control.name }}</code>
+			</template>
 
-		<p class="pg-prop__note">{{ control.description }}</p>
+			<PropControl :control="control" v-model="value" />
+		</Field>
 
 		<!--
 			Колонки рисует хост фреймворка (`PreviewStage`), код под ними — тоже

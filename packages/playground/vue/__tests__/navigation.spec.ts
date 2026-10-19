@@ -96,7 +96,7 @@ describe('адреса', () => {
 async function chooseFramework(wrapper: VueWrapper, label: string): Promise<void> {
 	const control = wrapper
 		.findAll('.pg__control')
-		.find((node) => node.get('.pg__control-label').text() === 'Фреймворк')
+		.find((node) => node.get('.pg__control > .so-field__label').text() === 'Фреймворк')
 
 	if (!control) throw new Error('в шапке нет выбора «Фреймворк»')
 
@@ -134,6 +134,34 @@ describe('переключатель «Фреймворк» в шапке', () =
 		expect(router.currentRoute.value.path).toBe(to)
 
 		wrapper.unmount()
+	})
+})
+
+/**
+ * Контрол шапки — поле формы `Field`: подпись называет `<input>` контрола
+ * сама, своим `for`, и становится его именем. Своей разметки подписи рядом с
+ * контролом у оболочки нет. Сверяются все шесть контролов, в порядке
+ * разметки.
+ */
+describe('контролы шапки', () => {
+	const SETTINGS = ['Фреймворк', 'Анимация движения', 'Язык', 'Тема', 'Иконки', 'Тёмная']
+
+	it('подпись каждого контрола ведёт на его поле', async () => {
+		const wrapper = mount(AppHeader, mountOptions)
+
+		await nextTick()
+		await nextFrame()
+
+		const links = wrapper.findAll('.pg__control').map((control) => {
+			const label = control.get('.pg__control > .so-field__label')
+			const input = control.get('.pg__control > .so-field__control input').element
+
+			return [label.text(), input.id !== '' && label.attributes('for') === input.id]
+		})
+
+		wrapper.unmount()
+
+		expect(links).toEqual(SETTINGS.map((label) => [label, true]))
 	})
 })
 

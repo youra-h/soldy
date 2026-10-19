@@ -1,14 +1,18 @@
 /**
  * Шаблон ListBox.
  *
- * Корень — сам `<div is="so-list-box">`: классы, все три набора ядра и
- * скрытие раскладывает на него база (`SoldyElement`). Список — сам остановка
- * Tab: по элементам ходят стрелки его клавиатуры (`TListKeyboardPlugin`
- * слушает корень). Поэтому `tabindex="0"` шаблон ставит корню при построении,
- * как статику разметки у Vue и Angular, — если потребитель не написал свой:
- * его атрибут главнее.
+ * Корень — сам `<div is="so-list-box">`: классы, `attrs`, `dataset` и скрытие
+ * раскладывает на него база (`SoldyElement`). Корень — рамка: шапка, узел
+ * списка (`div.so-list-box__list`) и подвал. Набор `aria` владельца — это сам
+ * список (`role="listbox"`, `aria-multiselectable`, имя от `aria_label`), и на
+ * узел списка его кладёт шаблон (`ownerAttributes`): в `listbox` ARIA пускает
+ * только опции, а шапка и подвал — место полей и кнопок. Узел списка — и
+ * остановка Tab: по элементам ходят стрелки его клавиатуры
+ * (`TListKeyboardPlugin`), и свои клавиши она берёт с этого узла. Поэтому
+ * `tabindex="0"` шаблон ставит ему при построении, как статику разметки у Vue
+ * и Angular.
  *
- * - `header` — над элементами, `footer` — под ними.
+ * - `header` — перед узлом списка, `footer` — за ним, оба в корне.
  * - Элементы — слот `default`: элементы разметки `<div is="so-list-box-item">`.
  *   В коллекцию элемент входит сам, когда собирается: движок списка он
  *   находит лифтом вверх по документу.
@@ -20,17 +24,17 @@
  *   петля на элементы и распорки: петли по видам переставляли бы элемент,
  *   когда он переходит из одной в другую. Без окна записи — все показанные
  *   элементы.
- * - `empty` — пока показанных элементов нет, на их месте, как у Select:
- *   пустой `listbox` для скринридера — тупик. Выводит его привязка
+ * - `empty` — пока показанных элементов нет, на их месте, внутри списка, как
+ *   у Select: пустой `listbox` для скринридера — тупик. Выводит его привязка
  *   (`showSlot`).
  * - `item`, `item-leading`, `item-trailing`, `item-indicator-icon` — образцы
  *   слотов элементов из данных (`<template slot="item-leading">`): scope у
  *   слотов Web Components нет, и копию одного образца получает каждый элемент.
  *   Данные копия берёт у элемента (`el.ctrl`).
  *
- * Шапка, элементы и `empty` стоят перед концом элементов — узлом шаблона,
- * пустым комментарием, а подвал — за ним: петля держит элементы перед ним, и
- * показанный снова `empty` встаёт туда же, а не за подвал.
+ * Элементы и `empty` стоят в узле списка перед концом элементов — узлом
+ * шаблона, пустым комментарием: петля держит элементы перед ним, и показанный
+ * снова `empty` встаёт туда же, за элементы.
  */
 
 import type { IListBox, IListBoxItem, TDrawnEntry, TListBoxCollectionFacade } from '@soldy-ui/core'
@@ -39,6 +43,7 @@ import {
 	bind,
 	createItem,
 	lendSamples,
+	ownerAttributes,
 	type ITemplate,
 	type ITemplateContext,
 	type TItemSlots,
@@ -58,6 +63,9 @@ export const LIST_BOX_ITEM_SLOTS: TItemSlots = {
 
 /** Запись того, что рисует список: элемент на своём месте или распорка. */
 type TListBoxEntry = TDrawnEntry<IListBoxItem>
+
+/** Узел списка каждого ListBox — один на всё время жизни элемента. */
+const lists = new WeakMap<HTMLElement, HTMLElement>()
 
 /** Петля записей рисования — только у списка без элементов разметки. */
 const loops = new WeakMap<HTMLElement, TKeyedLoop<TListBoxEntry, number, HTMLElement>>()
@@ -108,20 +116,25 @@ function updateDrawn(node: HTMLElement, entry: TListBoxEntry): void {
 
 export const listBoxTemplate: ITemplate<IListBox, TListBoxCollectionFacade> = {
 	create: (root, hasSlot) => {
-		const end = root.ownerDocument.createComment('')
+		const { ownerDocument } = root
+		const list = ownerDocument.createElement('div')
+		const end = ownerDocument.createComment('')
 
-		if (!root.hasAttribute('tabindex')) root.setAttribute('tabindex', '0')
-
-		root.appendChild(end)
+		list.className = 'so-list-box__list'
+		list.setAttribute('tabindex', '0')
+		list.appendChild(end)
+		root.appendChild(list)
 
 		// Элементы разметки — сами элементы списка: петли из данных при них нет
 		if (!hasSlot('default')) {
-			loops.set(root, new TKeyedLoop(root, end, (entry: TListBoxEntry) => entry.key))
+			loops.set(root, new TKeyedLoop(list, end, (entry: TListBoxEntry) => entry.key))
 		}
+
+		lists.set(root, list)
 
 		return {
 			slots: {
-				header: { mode: 'before', node: end },
+				header: { mode: 'before', node: list },
 				default: { mode: 'before', node: end },
 				empty: { mode: 'before', node: end },
 				footer: { mode: 'append', node: root },
@@ -134,6 +147,12 @@ export const listBoxTemplate: ITemplate<IListBox, TListBoxCollectionFacade> = {
 	},
 
 	bindings: [
+		bind('aria', ({ root, state }) => {
+			const list = lists.get(root)
+
+			if (list) ownerAttributes(list, state.aria)
+		}),
+
 		bind('drawn', (ctx) => {
 			loops
 				.get(ctx.root)

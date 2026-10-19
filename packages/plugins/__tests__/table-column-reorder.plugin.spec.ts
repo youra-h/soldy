@@ -8,11 +8,12 @@
  * кнопкой сортировки, как их рисует Vue, — а плагин собран настоящим набором
  * над настоящей таблицей и движком строк. Коробки заголовков задаёт тест:
  * jsdom раскладку не считает. Захвата указателя в jsdom нет, поэтому события
- * тест шлёт прямо в узлы. Переходов в jsdom тоже нет: отпущенный заголовок
- * получает место кадром позже, а колонка встаёт ещё через кадр — ожидание
- * переходов (`afterTransitions`) кончается в своём кадре. Шапку после
- * перестановки здесь никто не перерисовывает — её порядок в разметке прежний.
- * Настоящий ввод, раскладка и переходы темы —
+ * тест шлёт прямо в узлы, а о потере захвата (`lostpointercapture`) сообщает
+ * сам. Переходов в jsdom тоже нет: отпущенный заголовок получает место кадром
+ * позже, а колонка встаёт ещё через кадр — ожидание переходов
+ * (`afterTransitions`) кончается в своём кадре. Шапку после перестановки
+ * здесь никто не перерисовывает — её порядок в разметке прежний.
+ * Настоящий ввод — мышью и пальцем, — раскладка и переходы темы —
  * `playground/vue/browser/table.spec.ts`; куда встаёт колонка, какие метки у
  * колонок и что слышит приложение, — `core/__tests__/table-columns.spec.ts`.
  */
@@ -504,14 +505,69 @@ describe('указатель', () => {
 		expect(move).not.toHaveBeenCalled()
 	})
 
+	/**
+	 * Касание браузер сам захватывает за узлом под пальцем, и начало жеста,
+	 * перенося захват на корень, этот узел захвата лишает: его
+	 * `lostpointercapture` всплывает до корня. Указатель при этом у корня, и
+	 * жест идёт дальше; кончает его только потеря захвата самим корнем.
+	 */
+	it('захват потеряла кнопка под пальцем — жест идёт дальше, отпускание переставляет', async () => {
+		const { engine, cells, move, pointer, sortOf } = await mount()
+		const [name, city] = engine.extensions.columns.columns
+
+		pointer('pointerdown', sortOf(cells[0]), 50)
+		pointer('pointermove', cells[0], 140)
+		// Начало жеста перенесло захват с кнопки на корень
+		pointer('lostpointercapture', sortOf(cells[0]), 140, { cancelable: false })
+
+		expect(engine.extensions.columns.dragged).toBe(name)
+		expect(name.dataset.has('landing')).toBe(false)
+
+		// Место меняется дальше
+		pointer('pointermove', cells[0], 160)
+
+		expect(city.dataset.get('drop')).toBe('after')
+
+		pointer('pointerup', cells[0], 160)
+		await frames(2)
+
+		expect(fields(engine)).toEqual(['city', 'name', 'age'])
+		expect(move).toHaveBeenCalledTimes(1)
+	})
+
+	it('захват потерял корень — отмена: заголовок едет на своё место, колонка на месте', async () => {
+		const { engine, root, cells, move, pointer, sortOf } = await mount()
+		const [name, , age] = engine.extensions.columns.columns
+
+		pointer('pointerdown', sortOf(cells[0]), 50)
+		pointer('pointermove', cells[0], 260)
+		pointer('lostpointercapture', root, 260, { cancelable: false })
+
+		// Соседи возвращаются сразу, заголовок — приземлением
+		expect(age.dataset.has('drop')).toBe(false)
+		expect(name.dataset.get('landing')).toBe('true')
+
+		// Отпускание после отнятого указателя — уже не конец жеста
+		pointer('pointerup', cells[0], 260)
+		await nextFrame()
+
+		expect(variable(cells[0], DRAG)).toBe('0px')
+
+		await nextFrame()
+
+		expect(fields(engine)).toEqual(['name', 'city', 'age'])
+		expect(engine.extensions.columns.dragged).toBeUndefined()
+		expect(move).not.toHaveBeenCalled()
+	})
+
 	it('lostpointercapture после отпускания приземление не отменяет', async () => {
-		const { engine, cells, move, pointer } = await mount()
+		const { engine, root, cells, move, pointer } = await mount()
 
 		pointer('pointerdown', cells[0], 50)
 		pointer('pointermove', cells[0], 260)
 		pointer('pointerup', cells[0], 260)
-		// Захват браузер снимает сам — следом за отпусканием
-		pointer('lostpointercapture', cells[0], 260)
+		// Захват корня браузер снимает сам — следом за отпусканием
+		pointer('lostpointercapture', root, 260, { cancelable: false })
 		await frames(2)
 
 		expect(fields(engine)).toEqual(['city', 'age', 'name'])

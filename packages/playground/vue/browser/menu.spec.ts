@@ -1,26 +1,33 @@
 /**
- * Menu в настоящем браузере: фокус за подсветкой, указатель, Escape и Tab, и
- * раскладка строки пункта.
+ * Menu в настоящем браузере: фокус за подсветкой, указатель, нажатие пункта,
+ * Escape и Tab, и раскладка строки пункта.
  *
  * jsdom не считает ни раскладку, ни действия браузера по умолчанию: клик из
  * Enter и пробела на кнопке-триггере, которые клавиатура меню гасит, порядок
- * Tab и `:empty` пустых обёрток. Юнит-тесты (`plugins/__tests__/menu.plugin.spec.ts`,
- * `ui/vue/__tests__/menu.spec.ts`) проверяют переходы плагинов и проводку;
- * здесь — что они складываются с браузерными.
+ * Tab, `:empty` пустых обёрток и `:active` под кнопкой мыши. Юнит-тесты
+ * (`plugins/__tests__/menu.plugin.spec.ts`, `ui/vue/__tests__/menu.spec.ts`)
+ * проверяют переходы плагинов и проводку; здесь — что они складываются с
+ * браузерными.
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { render, cleanup } from 'vitest-browser-vue'
-import { userEvent } from 'vitest/browser'
+import { commands, userEvent } from 'vitest/browser'
 import { defineComponent, h, nextTick } from 'vue'
 import { Button, Menu } from '@soldy-ui/vue'
 import type { DescriptorSlots, MenuDescriptor } from '@soldy-ui/setup'
+
+import { pixel, settled, shift, style, systemColor } from './colors'
+import { forcedColors } from './media'
 
 import '@soldy-ui/theme-oren'
 
 type TTriggerScope = DescriptorSlots<typeof MenuDescriptor>['trigger']
 
 const nextFrame = () => new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
+
+/** Обе схемы: вуаль отходит от поверхности панели, а поверхность у схем своя. */
+const SCHEMES = ['oren', 'oren-dark'] as const
 
 /**
  * Меню между двумя кнопками страницы — чтобы было откуда прийти и куда уйти
@@ -191,6 +198,21 @@ describe('фокус за подсветкой', () => {
 	})
 
 	/**
+	 * Мышью меню открывают кликом, и фокус тогда на панели, а не на пункте:
+	 * подсвечивать пункт под указателем панели это не мешает.
+	 */
+	it('открыли кликом — мышь подсвечивает пункт под собой', async () => {
+		await show()
+		await userEvent.click(trigger())
+		await expect.poll(active).toBe(panel())
+
+		await userEvent.hover(rowOf('Изменить'))
+
+		await expect.poll(active).toBe(rowOf('Изменить'))
+		await expect.poll(lit).toEqual(['Изменить'])
+	})
+
+	/**
 	 * Указатель у выключенной строки тема гасит (`pointer-events: none`), и
 	 * под ним оказывается корень пункта — к нему и подводится мышь.
 	 */
@@ -208,6 +230,95 @@ describe('фокус за подсветкой', () => {
 		await expect.poll(active).toBe(panel())
 		await expect.poll(lit).toEqual([])
 	})
+})
+
+/**
+ * Нажатие пункта мышью — вуаль нажатия, как у строки ListBox. Указатель над
+ * пунктом его подсвечивает, поэтому нажимают подсвеченный пункт, и кнопка мыши
+ * уводит его фон от поверхности панели дальше подсветки. Цвета тест не знает:
+ * насколько фон ушёл от панели, он меряет в сторону текста строки (`./colors`).
+ */
+describe('нажатие', () => {
+	afterEach(async () => {
+		await forcedColors('none')
+	})
+
+	/** Открыть меню кликом и навести мышь на пункт: он подсвечен, переходы цвета доиграли. */
+	const hoverAfterClick = async (text: string) => {
+		await userEvent.click(trigger())
+		await expect.poll(active).toBe(panel())
+		await userEvent.hover(rowOf(text))
+		await expect.poll(active).toBe(rowOf(text))
+		await settled(panel())
+	}
+
+	/**
+	 * Замер при зажатой кнопке мыши — когда доиграл переход цвета. Кнопка
+	 * отпускается и при упавшей проверке: зажатая досталась бы следующему
+	 * тесту. Отпускание над пунктом — его клик.
+	 */
+	const whilePressed = async <T>(measure: () => T): Promise<T> => {
+		await commands.mouseDown()
+
+		try {
+			await settled(panel())
+
+			return measure()
+		} finally {
+			await commands.mouseUp()
+		}
+	}
+
+	/** Насколько фон строки ушёл от поверхности панели в сторону текста строки. */
+	const away = (row: HTMLElement): number => {
+		const surface = style(panel()).backgroundColor
+		const { color, backgroundColor } = style(row)
+
+		return shift(backgroundColor, surface) * Math.sign(shift(color, surface))
+	}
+
+	it.each(SCHEMES)(
+		'%s: нажатый пункт дальше от панели, чем подсвеченный; отпустили — флажок отмечен, меню открыто, снова подсветка',
+		async (scheme) => {
+			document.documentElement.dataset.soTheme = scheme
+			await show()
+			await hoverAfterClick('Сетка')
+
+			const row = rowOf('Сетка')
+			const highlightColor = style(row).backgroundColor
+			const highlight = away(row)
+			const press = await whilePressed(() => away(row))
+
+			expect(highlight).toBeGreaterThan(0)
+			expect(press).toBeGreaterThan(highlight)
+
+			await expect.poll(() => row.getAttribute('aria-checked')).toBe('true')
+			expect(isOpen()).toBe(true)
+
+			await settled(panel())
+			expect(style(row).backgroundColor).toBe(highlightColor)
+		},
+	)
+
+	/**
+	 * Вуаль нажатия режим принудительных цветов заменил бы цветом поверхности,
+	 * и нажатия там не видно. Подсвеченный пункт под нажатием остаётся
+	 * подсвеченным: правило подсветки режима стоит после правила нажатия.
+	 */
+	it.each(SCHEMES)(
+		'%s, принудительные цвета: подсвеченный пункт под нажатием — системная подсветка',
+		async (scheme) => {
+			await forcedColors('active')
+			document.documentElement.dataset.soTheme = scheme
+			await show()
+			await hoverAfterClick('Сетка')
+
+			const row = rowOf('Сетка')
+			const pressed = await whilePressed(() => style(row).backgroundColor)
+
+			expect(pixel([pressed])).toEqual(pixel([systemColor('Highlight')]))
+		},
+	)
 })
 
 describe('закрытие', () => {

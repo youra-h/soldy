@@ -561,6 +561,29 @@ describe('роли списка и элемента', () => {
 })
 
 /**
+ * `aria` списка стоит на узле списка внутри корня — `div` разметки, а не на
+ * корне: в корне рядом со списком шапка и подвал. Поэтому ARIA-половину
+ * правила «нативный атрибут вместо ARIA-дубля» решает этот узел, как список
+ * табов у Tabs, а нативную — тег корня.
+ */
+describe('disabled: ARIA-половину решает узел списка, а не тег корня', () => {
+	it('у корня-fieldset — нативный disabled в attrs, у узла списка — aria-disabled', () => {
+		const owner = new TListBox({ tag: 'fieldset', disabled: true })
+
+		expect(owner.attrs.get('disabled')).toBe('disabled')
+		expect(owner.aria.get('aria-disabled')).toBe('true')
+	})
+
+	it('смена тега корня aria-disabled не снимает', () => {
+		const owner = new TListBox({ disabled: true })
+
+		owner.tag = 'fieldset'
+
+		expect(owner.aria.get('aria-disabled')).toBe('true')
+	})
+})
+
+/**
  * Можно ли выбрать несколько, решает режим выбора — его знает коллекция, а не
  * список. Поэтому `aria-multiselectable` пишет `TListBoxExtension` в `aria`
  * владельца, как Select — в `listAria`, а Tags — в `aria` набора: в `multiple`

@@ -120,9 +120,10 @@ describe('высота контейнера по maxRows', () => {
 	})
 
 	/**
-	 * Ограничивается **родитель элементов**, а не корень компонента. Для ListBox
-	 * это одно и то же, для Select — нет; пока плагин писал в корень, поле
-	 * получало `max-height` и схлопывалось в полосу.
+	 * Ограничивается **родитель элементов**, а не корень компонента. У Select
+	 * это список в панели: пока плагин писал в корень, поле получало
+	 * `max-height` и схлопывалось в полосу. У ListBox — узел списка внутри корня
+	 * (ниже, «узел списка ListBox»).
 	 */
 	it('высоту получает панель, а не корень компонента', async () => {
 		const { root, panel } = await setup(4, 2)
@@ -190,6 +191,85 @@ describe('высота контейнера по maxRows', () => {
 
 		expect(panel.style.maxHeight).toBe(`${2 * ROW_HEIGHT + 4 + 4}px`)
 		expect(panel.style.overflowY).toBe('hidden')
+	})
+})
+
+/**
+ * Разметка ListBox: в корне — шапка, узел списка и подвал, элементы — в узле
+ * списка. Предел строк получает узел списка — родитель элементов: он и
+ * прокручивается, а шапка и подвал в предел не входят и стоят на месте.
+ */
+describe('узел списка ListBox', () => {
+	async function setupNested(rows: number, maxRows: number) {
+		const owner = new TListBox({ maxRows })
+		const facade = new TListBoxCollectionFacade({}, { owner })
+		const items = Array.from(
+			{ length: rows },
+			(_, i) => new TListBoxItem({ value: `i${i}`, text: `Item ${i}` }),
+		)
+
+		facade.items = items as IListBoxItem[]
+
+		const root = document.createElement('div')
+		const header = document.createElement('input')
+		const list = document.createElement('div')
+		const footer = document.createElement('button')
+
+		root.append(header, list, footer)
+		document.body.append(root)
+
+		const rootElement = new TElementPlugin()
+		const bundles = new TCollectionBundlesPlugin()
+		const elements = new TCollectionElements()
+		const height = new TListHeightPlugin()
+		const ctx = createPluginContext(owner, [rootElement, bundles, elements])
+
+		bundles.install(ctx)
+		elements.install(ctx)
+		height.install(ctx)
+
+		for (const item of items) {
+			const bundle = new TPluginBundle(item)
+			const element = document.createElement('div')
+
+			bundle.use(TElementPlugin)
+			bundles.register(bundle, item)
+			Object.defineProperty(element, 'offsetHeight', { value: ROW_HEIGHT })
+			list.appendChild(element)
+			required(bundle.get(TElementPlugin), 'TElementPlugin').element = element
+		}
+
+		bundles.bindEngine(facade.engine)
+		rootElement.element = root
+		await nextFrame()
+		await nextFrame()
+
+		return { root, list, facade }
+	}
+
+	it('предел — у узла списка, корень с шапкой и подвалом без предела', async () => {
+		const { root, list } = await setupNested(5, 2)
+
+		expect(list.style.maxHeight).toBe(`${2 * ROW_HEIGHT}px`)
+		expect(list.style.overflowY).toBe('auto')
+		expect(root.style.maxHeight).toBe('')
+		expect(root.style.overflowY).toBe('')
+	})
+
+	/**
+	 * Без строк контейнер плагину взять неоткуда, и он обращается к корню. Предел
+	 * узла списка при этом снимается: иначе опустевший список держал бы высоту и
+	 * прокрутку прежних строк, а слот `empty` стоит в нём же.
+	 */
+	it('список опустел — предел с узла списка снят', async () => {
+		const { list, facade } = await setupNested(5, 2)
+
+		facade.items = []
+		await nextFrame()
+		await nextFrame()
+
+		expect(list.style.maxHeight).toBe('')
+		expect(list.style.overflowY).toBe('')
 	})
 })
 
