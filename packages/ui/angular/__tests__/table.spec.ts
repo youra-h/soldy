@@ -205,6 +205,18 @@ abstract class TEngineHost {
 })
 class EngineHost extends TEngineHost {}
 
+/** Хост над движком в провайдере локали: язык поддерева тест меняет на лету. */
+@Component({
+	standalone: true,
+	imports: [TTableComponent, LocaleProviderDirective],
+	template: `<ng-container so-locale-provider [locale]="locale()">
+		<so-table [engine]="engine()"></so-table>
+	</ng-container>`,
+})
+class LocaleHost extends TEngineHost {
+	readonly locale = signal<TLocale>(enUS)
+}
+
 /** Смонтировать хост над движком `engine` и дождаться кадра. */
 async function renderEngine<T extends TEngineHost>(
 	host: Type<T>,
@@ -489,7 +501,13 @@ describe('раскладка колонок', () => {
 })
 
 describe('слоты', () => {
+	/**
+	 * Селектор свой у хостов, которые различаются только выражениями и
+	 * содержимым шаблона слота: этого в id компонента Angular нет, и без
+	 * селектора id совпал бы (предупреждение NG0912).
+	 */
 	@Component({
+		selector: 'probe-header',
 		standalone: true,
 		imports: [TTableComponent, SlotDirective],
 		template: `<so-table [items]="items()" [columns]="columns()">
@@ -546,6 +564,7 @@ describe('слоты', () => {
 	})
 
 	@Component({
+		selector: 'probe-header-scope',
 		standalone: true,
 		imports: [TTableComponent, SlotDirective],
 		template: `<so-table [items]="items()" [columns]="columns()">
@@ -570,6 +589,7 @@ describe('слоты', () => {
 	})
 
 	@Component({
+		selector: 'probe-opaque-header',
 		standalone: true,
 		imports: [TTableComponent, SlotDirective],
 		template: `<so-table [items]="items()" [columns]="columns()">
@@ -594,6 +614,7 @@ describe('слоты', () => {
 	})
 
 	@Component({
+		selector: 'probe-cell',
 		standalone: true,
 		imports: [TTableComponent, SlotDirective],
 		template: `<so-table [items]="items()" [columns]="columns()">
@@ -650,6 +671,7 @@ describe('слоты', () => {
 	})
 
 	@Component({
+		selector: 'probe-text-cell',
 		standalone: true,
 		imports: [TTableComponent, SlotDirective, TextPipe],
 		template: `<so-table [items]="items()" [columns]="columns()">
@@ -770,17 +792,6 @@ describe('сортировка', () => {
 		expect(age.getAttribute('aria-labelledby')).toBe(caption.id)
 		expect(caption.contains(button)).toBe(false)
 	})
-
-	@Component({
-		standalone: true,
-		imports: [TTableComponent, LocaleProviderDirective],
-		template: `<ng-container so-locale-provider [locale]="locale()">
-			<so-table [engine]="engine()"></so-table>
-		</ng-container>`,
-	})
-	class LocaleHost extends TEngineHost {
-		readonly locale = signal<TLocale>(enUS)
-	}
 
 	it('смена локали — новое имя кнопки на той же кнопке, без перемонтирования', async () => {
 		const fixture = await renderEngine(LocaleHost, engineOf('none'))
@@ -964,7 +975,12 @@ describe('колонка выбора', () => {
 		expect(checkBoxInput('.so-table-row__select').disabled).toBe(true)
 	})
 
+	/**
+	 * Разметка — как у `OwnerHost`, а поля экземпляра в id компонента Angular не
+	 * входят: селектор у обоих свой, иначе id совпал бы (предупреждение NG0912).
+	 */
 	@Component({
+		selector: 'probe-sized',
 		standalone: true,
 		imports: [TTableComponent],
 		template: `<so-table [ctrl]="owner" [engine]="engine()"></so-table>`,
@@ -1009,17 +1025,6 @@ describe('имена чекбоксов', () => {
 		expect(checkBoxInput('.so-table-row__select').hasAttribute('aria-labelledby')).toBe(false)
 		expect(findAll('th[scope="row"]')).toEqual([])
 	})
-
-	@Component({
-		standalone: true,
-		imports: [TTableComponent, LocaleProviderDirective],
-		template: `<ng-container so-locale-provider [locale]="locale()">
-			<so-table [engine]="engine()"></so-table>
-		</ng-container>`,
-	})
-	class LocaleHost extends TEngineHost {
-		readonly locale = signal<TLocale>(enUS)
-	}
 
 	it('чекбокс шапки — имя от локали поддерева, на лету', async () => {
 		const fixture = await renderEngine(LocaleHost, engineOf('multiple'))
@@ -1741,7 +1746,9 @@ describe('закреплённая шапка', () => {
 		expect(table.dataset['stickyHead']).toBe('false')
 	})
 
+	/** Зачем селектор — см. `SizedHost`. */
 	@Component({
+		selector: 'probe-owner',
 		standalone: true,
 		imports: [TTableComponent],
 		template: `<so-table [ctrl]="owner" [engine]="engine()"></so-table>`,
