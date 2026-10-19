@@ -1,11 +1,4 @@
-import type {
-	IBatchExtension,
-	IControl,
-	IList,
-	ISelect,
-	ISelectItem,
-	TCollectionEngine,
-} from '@soldy-ui/core'
+import type { IBatchExtension, IControl, IList, ISelect, TCollectionEngine } from '@soldy-ui/core'
 import type { IPluginContext } from '../../../base'
 import { smoothScrollBehavior } from '../../../motion'
 import { TElementPlugin } from '../../element'
@@ -306,18 +299,18 @@ export class TSelectKeyboardPlugin
 	}
 
 	/**
-	 * Подсветить первую опцию, чей текст совпал с `needle` — без учёта
-	 * регистра. Пустая строка и текст без совпадения снимают подсветку.
+	 * Подсветить первую опцию, в чьём тексте есть `needle` — в любом месте и
+	 * без учёта регистра. Пустая строка и текст без совпадения снимают
+	 * подсветку.
 	 *
-	 * Сравнение — `startsWith` (по умолчанию, по началу текста) или
-	 * `includes`: так ищет ввод в поле в режиме `search` (`TEditablePlugin`) —
-	 * подстроку в любом месте текста, как в режиме `filter`. Подсветка и
-	 * `aria-activedescendant` и для ввода остаются здесь, в одной точке.
+	 * Так ищет ввод в поле в режиме `search` (`TEditablePlugin`) — как отбор в
+	 * режиме `filter`. Подсветка и `aria-activedescendant` и для ввода
+	 * остаются здесь, в одной точке.
 	 *
 	 * Набор по первым буквам сюда не ходит: у него свои правила —
 	 * `typeaheadTo`.
 	 */
-	highlightByText(needle: string, mode: 'startsWith' | 'includes' = 'startsWith'): void {
+	highlightByText(needle: string): void {
 		if (!needle) {
 			this.clearHighlight()
 
@@ -325,11 +318,7 @@ export class TSelectKeyboardPlugin
 		}
 
 		const lower = needle.toLowerCase()
-		const match = (this.items() as ISelectItem[]).find((item) => {
-			const text = item.text.toLowerCase()
-
-			return mode === 'includes' ? text.includes(lower) : text.startsWith(lower)
-		})
+		const match = this.items().find((item) => itemText(item).toLowerCase().includes(lower))
 
 		if (match) {
 			this.highlight(match.uid)

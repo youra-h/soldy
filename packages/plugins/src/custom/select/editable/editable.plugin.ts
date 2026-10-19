@@ -270,7 +270,7 @@ export class TEditablePlugin extends TBasePlugin<any, TEditablePluginEvents> {
 		if (!value) return
 
 		this._open()
-		this._keyboard?.highlightByText(value, 'includes')
+		this._keyboard?.highlightByText(value)
 	}
 
 	/**

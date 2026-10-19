@@ -633,6 +633,39 @@ describe('набор по буквам', () => {
 })
 
 /**
+ * `highlightByText` — подсветка для ввода в поле (`TEditablePlugin`, режим
+ * `search`): подстрока в любом месте текста. Набор по буквам сюда не ходит,
+ * у него свои правила (выше).
+ */
+describe('highlightByText — подстрока для ввода в поле', () => {
+	it('подсвечивает первую опцию, в чьём тексте есть подстрока, без учёта регистра', async () => {
+		const { owner, keyboard, items } = await setup(['Москва', 'Тверь', 'Тула'])
+
+		keyboard.highlightByText('ВЕР')
+
+		expect(keyboard.highlightedUid).toBe(items[1].uid)
+		expect(owner.field.aria.get('aria-activedescendant')).toBe(items[1].aria.get('id'))
+	})
+
+	it('текст без совпадения и пустая строка снимают подсветку', async () => {
+		const { keyboard, items } = await setup(['Москва', 'Тверь', 'Тула'])
+
+		keyboard.highlightByText('ул')
+
+		expect(keyboard.highlightedUid).toBe(items[2].uid)
+
+		keyboard.highlightByText('я')
+
+		expect(keyboard.highlightedUid).toBeNull()
+
+		keyboard.highlightByText('ул')
+		keyboard.highlightByText('')
+
+		expect(keyboard.highlightedUid).toBeNull()
+	})
+})
+
+/**
  * `scrollBehavior` — свойство поля, а прокручивает опцию клавиатура.
  *
  * У ListBox то же свойство читает `TListScrollPlugin`, и это не дублирование:
