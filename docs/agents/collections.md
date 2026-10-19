@@ -127,7 +127,8 @@ type TFacadeEvents = Pick<TBatchEvents<TItem>, 'items:added' | 'items:removed'>
 - `ui/vue/__tests__/external-engine-lifetime.spec.ts`,
   `ui/angular/__tests__/external-engine-lifetime.spec.ts` и
   `ui/solid/__tests__/external-engine-lifetime.spec.tsx` — то же в настоящем
-  цикле Vue, Angular и Solid, на ListBox;
+  цикле Vue, Angular и Solid, на ListBox, а у Solid ещё и на Table — со
+  строками, колонками и «выбрать все», в окне `Virtual` и без;
 - `ui/webc/__tests__/external-engine-lifetime.spec.ts` — в настоящем цикле Web
   Components, на Tabs и ListBox: связка у элемента новая на каждое
   подключение, и набор, переставленный в документе трижды и снятый, ничего на
@@ -368,8 +369,9 @@ Select и строк таблицы. Выход `drawn` — что рисова�
 в составе). Разметка — одна петля по `drawn`, и узел записи держит её ключ:
 записи `drawn` новые на каждую смену, и петля, сравнивающая их по ссылке
 (`<For>` Solid), пересоздавала бы все элементы вместе с узлами и фокусом. У
-Solid петля по ключу — `KeyedFor` адаптера (сторожит «петля по drawn» в
-`ui/solid/__tests__/list-box.spec.tsx`), у Web Components — `TKeyedLoop`
+Solid петля по ключу — `KeyedFor` адаптера (сторожат «петля по drawn» в
+`ui/solid/__tests__/list-box.spec.tsx` и «окно» в
+`ui/solid/__tests__/table.spec.tsx`), у Web Components — `TKeyedLoop`
 шаблона: узлу живого ключа она отдаёт его новую запись (`update`), и распорка
 берёт из неё стиль (сторожит «распорки окна» в
 `ui/webc/__tests__/list-box.spec.ts`).

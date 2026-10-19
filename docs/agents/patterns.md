@@ -210,8 +210,11 @@ ListBox, список Select, Popover и Menu выглядят одинаков�
   не сверяя, — набор возвращал бы узлу его же текст, и браузер переставал бы
   проверять `minlength`. Каретку такая запись не двигает: HTML уводит её в
   конец, только когда текст другой. Текст ставит свой `ref` поля — `fieldText`
-  (`ui/solid/src/adapter/runtime/`): эффект отрисовки пишет текст, только
-  когда он разошёлся с узлом, а на сервере текст уходит атрибутом `value`.
+  (`ui/solid/src/adapter/runtime/`): эффект пишет текст, только когда он
+  разошёлся с узлом, а на сервере текст уходит атрибутом `value`. Эффект —
+  пользовательский, после атрибутов узла, как `value` последним у Vue: `ref`
+  Solid зовёт раньше атрибутов, и поле `range` ручки ширины колонки таблицы
+  прижало бы ширину к ходу по умолчанию, 0–100, ещё до своих `min` и `max`.
   `ref` потребителя сюда не идёт: он получает корень поля, а не `<input>`
   (a11y.md, «`ref` потребителя — корень компонента»). Сторожат
   `ui/solid/__tests__/input.spec.tsx` («набор не переписывает поле», «ввод в
@@ -1174,7 +1177,10 @@ useToasts()`. API опускает лифт (`TOASTS_ELEVATOR`, расширен
   — разметка `div.so-table__viewport` вокруг `table`, а не корень: корень,
   роль, классы и наборы — у `table`, плагины и тема видят корнем её, а
   атрибуты потребителя и скрытие достаются окну — внешнему узлу компонента:
-  во Vue сами, в React их разводит помощник адаптера `toWrappedRootProps`.
+  во Vue сами, в React их разводит помощник адаптера `toWrappedRootProps`, в
+  Solid — его мемо `createWrappedRootProps`, а `ref` адаптера Solid отдаёт
+  половинами: окну — `ref` потребителя (`consumerRef`), `table` — привязку к
+  `TElementPlugin` (`bindRef`).
   Прокрутку окну включает тема по `data-overflow` таблицы — его пишет
   расширение `columns`, колонки шире места: признака нет (места ещё нет) —
   окно ничего не обрезает, `false` —
@@ -1442,7 +1448,8 @@ useToasts()`. API опускает лифт (`TOASTS_ELEVATOR`, расширен
   нарисованным строкам — свой `aria-rowindex` с двух, ушедшие из окна его
   теряют. Окно таблицы сторожат `core/__tests__/table-virtual.spec.ts`,
   `playground/vue/browser/table-virtual.spec.ts` и «окно» в
-  `ui/vue/__tests__/table.spec.ts` и `ui/react/__tests__/table.spec.tsx`.
+  `ui/vue/__tests__/table.spec.ts`, `ui/react/__tests__/table.spec.tsx` и
+  `ui/solid/__tests__/table.spec.tsx`.
   **Закреплённая шапка** (`stickyHead`, по
   умолчанию нет — решение владельца: кому-то шапка в потоке как раз нужна) —
   шапка стоит у верхнего края ближайшей прокрутки, контейнера или страницы, а
@@ -1475,8 +1482,10 @@ useToasts()`. API опускает лифт (`TOASTS_ELEVATOR`, расширен
   `plugins/__tests__/table-grid.plugin.spec.ts`,
   `ui/vue/__tests__/table.spec.ts`, `ui/vue/__tests__/input-bool.spec.ts`,
   `ui/vue/__tests__/ssr-ids.spec.ts`, `ui/react/__tests__/table.spec.tsx`
-  (сверх сценариев Vue — StrictMode и сервер с гидратацией) и
-  `playground/vue/browser/table.spec.ts`.
+  (сверх сценариев Vue — StrictMode и сервер с гидратацией),
+  `ui/solid/__tests__/table.spec.tsx` (сверх сценариев Vue — узел ячейки,
+  переживший смену записи), «Table» в `ui/solid/__tests__/collections.server.spec.tsx`
+  и `playground/vue/browser/table.spec.ts`.
 - **Окно** (`Virtual`) — длинный список рисует только видимые элементы, а на
   месте остальных — распорки той же высоты. Невизуальная обёртка, как
   DragAndDrop: `<Virtual><ListBox :items /></Virtual>`, так же Select и Table;
@@ -1552,13 +1561,16 @@ useToasts()`. API опускает лифт (`TOASTS_ELEVATOR`, расширен
   элементов одна на все; элементы разметкой (`ListBox.Item`, `Select.Item` в
   слоте) окно не прячет — оно у элементов данными (`items`, `engine`); поиск
   по странице и печать видят только нарисованное — для печати приложение
-  выключает окно (`enabled`). **Адаптеры**: Vue и React. В React `Virtual`
-  своего узла тоже не рисует — детям отдаёт слой лифта (`Elevate`);
+  выключает окно (`enabled`). **Адаптеры**: Vue, React и Solid. В React
+  `Virtual` своего узла тоже не рисует — детям отдаёт слой лифта (`Elevate`);
   пересобранная обёртка (StrictMode, `<Activity>`) опускает новое
   подключение, и список пересобирается вслед за ней — сменилось прочитанное
   через лифт. Стиль распорки ядро пишет по-CSS, объект стиля React из него
-  делает перевод адаптера (`toReactStyle`). Select в React нет — окно у него
-  пока только во Vue. Сторожат
+  делает перевод адаптера (`toReactStyle`). В Solid обёртка тоже без узла —
+  слой лифта детям отдаёт `Elevate`, и слот она разворачивает внутри него;
+  сборка одна, и пересборки вслед за обёрткой нет, а стиль распорки по-CSS
+  Solid ставит как есть. Select в React и Solid нет — окно у него пока только
+  во Vue. Сторожат
   `core/__tests__/collection.draw.spec.ts`,
   `core/__tests__/list-box-virtual.spec.ts`,
   `core/__tests__/select-virtual.spec.ts`,
@@ -1572,6 +1584,9 @@ useToasts()`. API опускает лифт (`TOASTS_ELEVATOR`, расширен
   (сверх сценариев Vue — элемент, оставшийся в окне, не перемонтируется,
   StrictMode, сервер с гидратацией, подсветка дорисованного элемента), строки
   `Virtual` в `ui/react/__tests__/external-lifetime.spec.tsx`,
+  `ui/solid/__tests__/virtual.spec.tsx` (вместо StrictMode — снятый список
+  снимает окно с движка снаружи и отписан от обёртки), «Virtual» в
+  `ui/solid/__tests__/collections.server.spec.tsx`,
   `playground/vue/browser/list-box-virtual.spec.ts` и
   `playground/vue/browser/select-virtual.spec.ts`; окно таблицы — выше.
 
