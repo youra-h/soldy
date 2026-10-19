@@ -1,5 +1,5 @@
 import type { IControl, IList, TCollectionEngine } from '@soldy-ui/core'
-import { frameDebounce } from '@soldy-ui/core'
+import { frameDebounce, selectionOf } from '@soldy-ui/core'
 import { TBasePlugin } from '../../../base'
 import type { IPluginContext } from '../../../base'
 import { smoothScrollBehavior } from '../../../motion'
@@ -108,19 +108,15 @@ export class TListScrollPlugin extends TBasePlugin<any, TListScrollPluginEvents>
 	}
 
 	private _subscribeToEngine(engine: TCollectionEngine<any, any>): void {
-		this._listenTo(
-			engine.extensions.selection.events,
-			'change:selection',
-			(items: IControl[]) => {
-				this._awaitedUid = null
+		this._listenTo(selectionOf<IControl>(engine)?.events, 'change:selection', (items) => {
+			this._awaitedUid = null
 
-				if (items.length > 0) {
-					const { uid } = items[0]
+			if (items.length > 0) {
+				const { uid } = items[0]
 
-					this._schedule(() => this._follow(uid, 'center'))
-				}
-			},
-		)
+				this._schedule(() => this._follow(uid, 'center'))
+			}
+		})
 	}
 
 	/**
@@ -142,7 +138,7 @@ export class TListScrollPlugin extends TBasePlugin<any, TListScrollPluginEvents>
 
 		if (!this._element || !engine) return
 
-		const [selected] = engine.extensions.selection.selected as IControl[]
+		const [selected] = selectionOf<IControl>(engine)?.selected ?? []
 
 		if (!selected) return
 

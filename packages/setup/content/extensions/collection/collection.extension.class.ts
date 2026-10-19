@@ -8,6 +8,7 @@
  * через COLLECTION_ENGINE_ELEVATOR.
  */
 
+import { batchOf, plainOf } from '@soldy-ui/core'
 import type { TCollectionEngine } from '@soldy-ui/core'
 import { TCollectionBundlesPlugin } from '@soldy-ui/plugins'
 import { applyRegisteredExtensions } from '../../../protected/registry'
@@ -79,12 +80,12 @@ export class TCollectionExtension {
 			// Элемент, объявленный в разметке, до этого момента коллекции не
 			// принадлежал. Для него источник состава — шаблон, и исчезновение из
 			// шаблона действительно означает удаление.
-			const items = engine.extensions.batch?.items
+			const items = batchOf<object>(engine)?.items
 			const owned = !items?.includes(instance)
 
 			// push (а не insert) сохраняет порядок DOM: item-ы приходят через
 			// elevator по мере монтирования, поэтому добавляем их последовательно.
-			if (owned) engine.extensions.plain?.push(instance)
+			if (owned) plainOf<object>(engine)?.push(instance)
 
 			// Регистрируем bundle элемента (ключ — uid элемента). У элемента без
 			// плагинов бандла нет — регистрировать нечего.
@@ -93,7 +94,7 @@ export class TCollectionExtension {
 			return () => {
 				// Удаление из коллекции эмитит item:removed — реестр bundles
 				// очистит запись по этому событию.
-				if (owned) engine.extensions.plain?.remove(instance)
+				if (owned) plainOf<object>(engine)?.remove(instance)
 				// Элемент из данных остаётся в коллекции, а его монтирование кончилось:
 				// запись реестра живёт одно монтирование, иначе каждая строка, ушедшая
 				// из окна таблицы, держала бы bundle с отсоединённым узлом
