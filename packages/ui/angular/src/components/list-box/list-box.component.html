@@ -1,14 +1,16 @@
 <!--
-	Корень — сам хост (`<div so-list-box>`), поэтому шаблон — шапка, узел списка
-	и подвал. Слоты контракта: default — элементы, header и footer — над и под
+	Корень — сам хост (`<so-list-box>`), поэтому шаблон — шапка, узел списка и
+	подвал. Слоты контракта: default — элементы, header и footer — над и под
 	списком, empty — пока элементов нет; item, item-leading, item-trailing и
 	item-indicator-icon — слоты элементов из данных.
 
 	Узел списка (`.so-list-box__list`) несёт набор `aria` владельца — роль
 	`listbox`, `aria-multiselectable` и имя — и остановку Tab: в `listbox` ARIA
 	пускает только опции, поэтому шапка и подвал стоят рядом с ним, в корне.
-	Внутри — элементы, распорки окна и `empty`. Предел строк (`maxRows`) плагин
-	высоты ставит родителю элементов — узлу списка: он и прокручивается.
+	Он помечен `#control`: на него база переносит статические атрибуты
+	потребителя, поверх статики шаблона. Внутри — элементы, распорки окна и
+	`empty`. Предел строк (`maxRows`) плагин высоты ставит родителю элементов —
+	узлу списка: он и прокручивается.
 
 	Элементы — содержимое (`<so-list-box-item>`), а без него — то, что рисует
 	коллекция (`drawn`), запасным содержимым `<ng-content>`, ключ — ключ записи.
@@ -38,7 +40,7 @@
 	как у Select: пустой `listbox` для скринридера — тупик.
 -->
 <ng-content select="[slot=header]" />
-<div class="so-list-box__list" tabindex="0" [so-attributes]="state()['aria']">
+<div #control class="so-list-box__list" tabindex="0" [so-attributes]="state()['aria']">
 	<ng-content>
 		@for (entry of state()['drawn'] ?? []; track entry.key) {
 			@if (entry.kind === 'filler') {

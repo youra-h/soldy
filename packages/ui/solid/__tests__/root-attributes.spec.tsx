@@ -16,7 +16,8 @@
  * У поля атрибуты потребителя делятся, как у Vue: класс и стиль — корню,
  * остальное, кроме `ref`, — `<input>`, поверх его `aria`, а корень остаётся
  * за адаптером. Элемент коллекции (`Tabs.Item`, `Accordion.Item`,
- * `RadioGroup.Item`) делит их так же: остальное — строке, у радио — полю.
+ * `RadioGroup.Item`) делит их так же: остальное — строке, у радио — полю. И
+ * ListBox с Tabs: остальное — узлу списка с ролью (`listbox`, `tablist`).
  *
  * Стиль Solid ставит объектом по свойству и не трогает того, что плагины
  * пишут в узел сами: сдвиг смахиваемой панели (`--so-swipe-offset`) переживает
@@ -56,6 +57,7 @@ import {
 	type InputProps,
 	type LabelProps,
 	type ListBoxItemProps,
+	type ListBoxProps,
 	type ProgressSpinnerProps,
 	type RadioGroupItemProps,
 	type RadioGroupProps,
@@ -104,7 +106,6 @@ const COMPONENTS: ReadonlyArray<
 	['Label', Label, '.so-label', {}],
 	['ProgressSpinner', ProgressSpinner, '.so-progress-spinner', {}],
 	['Skeleton', Skeleton, '.so-skeleton', {}],
-	['Tabs', Tabs, '.so-tabs', {}],
 	['Tabs.Content', TabsContentProbe, '.so-tabs__panel', {}],
 	['Accordion', Accordion, '.so-accordion', {}],
 	['RadioGroup', RadioGroup, '.so-radio-group', {}],
@@ -310,6 +311,116 @@ describe('элемент коллекции: атрибуты снаружи —
 
 		expect(find(document, row, HTMLElement).getAttribute('title')).toBe('b')
 		expect(find(document, root, HTMLElement)).toBe(node)
+	})
+})
+
+/** Общие пропсы списков в таблице. */
+type TListProbeProps = ListBoxProps & TabsProps
+
+/**
+ * Список, класс его корня и узел списка — ребёнок корня с ролью, которому
+ * уходят атрибуты потребителя: на нём `aria` компонента, а корень — рамка
+ * (шапка и подвал ListBox, панели Tabs).
+ */
+const LISTS: ReadonlyArray<readonly [string, Component<TListProbeProps>, string, string]> = [
+	['ListBox', ListBox, '.so-list-box', '.so-list-box > [role="listbox"]'],
+	['Tabs', Tabs, '.so-tabs', '.so-tabs > [role="tablist"]'],
+]
+
+describe('ListBox, Tabs: атрибуты снаружи — узлу списка, поверх его aria', () => {
+	it.each(LISTS)(
+		'%s: aria-label, id и data-* — на узле списка, а не на корне',
+		(_name, List, root, list) => {
+			mount(() => <List aria-label="Своё" id="mine" data-probe="1" />)
+
+			const node = find(document, list, HTMLElement)
+
+			expect(node.getAttribute('aria-label')).toBe('Своё')
+			expect(node.id).toBe('mine')
+			expect(node.dataset['probe']).toBe('1')
+			expect(
+				['aria-label', 'id', 'data-probe'].filter((name) =>
+					find(document, root, HTMLElement).hasAttribute(name),
+				),
+			).toEqual([])
+		},
+	)
+
+	/** Имя пишет плагин доступного имени в `aria`, а `aria-label` снаружи — атрибут потребителя. */
+	it.each(LISTS)('%s: aria-label потребителя — поверх aria_label', (_name, List, _root, list) => {
+		mount(() => <List aria_label="Ядро" aria-label="Своё" />)
+
+		expect(find(document, list, HTMLElement).getAttribute('aria-label')).toBe('Своё')
+	})
+
+	/** Класс ядра — первым, класс потребителя — за ним, оба на корне. */
+	it.each(LISTS)('%s: класс и стиль — корню, а не узлу списка', (_name, List, root, list) => {
+		mount(() => <List class="mine" style={{ color: 'red' }} />)
+
+		const el = find(document, root, HTMLElement)
+		const node = find(document, list, HTMLElement)
+		const classes = [...el.classList]
+
+		expect(classes.at(-1)).toBe('mine')
+		expect(classes[0]).toBe(root.slice(1))
+		expect(el.style.color).toBe('red')
+		expect(node.classList.contains('mine')).toBe(false)
+		expect(node.style.color).toBe('')
+	})
+
+	/** `dir` ядро пишет в `attrs` по `direction`, на корень; `dir` снаружи — узлу списка. */
+	it.each(LISTS)(
+		'%s: dir ядра — на корне, dir потребителя — на узле списка',
+		(_name, List, root, list) => {
+			mount(() => <List direction="rtl" dir="ltr" />)
+
+			expect(find(document, root, HTMLElement).getAttribute('dir')).toBe('rtl')
+			expect(find(document, list, HTMLElement).getAttribute('dir')).toBe('ltr')
+		},
+	)
+
+	/** Смена атрибута потребителя доходит до узла списка, корень — тот же. */
+	it.each(LISTS)(
+		'%s: смена атрибута — на узле списка, корень тот же',
+		(_name, List, root, list) => {
+			const [title, setTitle] = createSignal('a')
+
+			mount(() => <List title={title()} />)
+
+			const node = find(document, root, HTMLElement)
+
+			setTitle('b')
+
+			expect(find(document, list, HTMLElement).getAttribute('title')).toBe('b')
+			expect(find(document, root, HTMLElement)).toBe(node)
+			expect(node.hasAttribute('title')).toBe(false)
+		},
+	)
+
+	it.each(LISTS)('%s: обработчик потребителя — на узле списка', (_name, List, _root, list) => {
+		const targets: EventTarget[] = []
+
+		mount(() => (
+			<List
+				onClick={(event) => {
+					targets.push(event.currentTarget)
+				}}
+			/>
+		))
+
+		const node = find(document, list, HTMLElement)
+
+		node.click()
+
+		expect(targets).toHaveLength(1)
+		expect(targets[0]).toBe(node)
+	})
+
+	it('ListBox: tabindex="-1" снимает список с остановок Tab', () => {
+		const { root } = mount(() => <ListBox tabindex={-1} />)
+
+		expect(find(root(), '[role="listbox"]', HTMLElement).getAttribute('tabindex')).toBe('-1')
+		expect(root().hasAttribute('tabindex')).toBe(false)
 	})
 })
 

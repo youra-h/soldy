@@ -10,7 +10,9 @@
  * остановка Tab: по элементам ходят стрелки его клавиатуры
  * (`TListKeyboardPlugin`), и свои клавиши она берёт с этого узла. Поэтому
  * `tabindex="0"` шаблон ставит ему при построении, как статику разметки у Vue
- * и Angular.
+ * и Angular. Узел списка шаблон отдаёт базе полем корня (`control`): на него
+ * база переносит статические атрибуты разметки корня — уже после построения,
+ * поэтому `tabindex` потребителя главнее статики шаблона.
  *
  * - `header` — перед узлом списка, `footer` — за ним, оба в корне.
  * - Элементы — слот `default`: элементы разметки `<div is="so-list-box-item">`.
@@ -143,6 +145,7 @@ export const listBoxTemplate: ITemplate<IListBox, TListBoxCollectionFacade> = {
 				'item-trailing': { mode: 'sample' },
 				'item-indicator-icon': { mode: 'sample' },
 			},
+			control: list,
 		}
 	},
 

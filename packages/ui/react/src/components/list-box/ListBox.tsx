@@ -5,12 +5,14 @@ import {
 	relaySlot,
 	renderSlot,
 	toAriaProps,
+	toControlAttrs,
 	toReactStyle,
+	toRootForward,
 	toRootProps,
 } from '../../adapter'
 import { ListBoxItem } from './item'
 import { useSetupListBox } from './setup.component'
-import type { ListBoxProps } from './base.component'
+import type { ListBoxAttributes, ListBoxProps } from './base.component'
 
 /**
  * ListBox — список с выбором. Корень — рамка: шапка, узел списка
@@ -20,6 +22,11 @@ import type { ListBoxProps } from './base.component'
  * место полей и кнопок. На узле списка и остановка Tab (`tabIndex={0}`): список
  * фокусируется сам, и клавиши его клавиатуры (`TListKeyboardPlugin`) — с этого
  * узла. На корне — `attrs` и `dataset`, как у Vue.
+ *
+ * Атрибуты потребителя делятся, как у поля и у Vue: класс и стиль — корню,
+ * остальное — узлу списка, поверх его `aria` и остановки Tab: `aria-label` и
+ * `id` потребителя называют список, `tabIndex={-1}` снимает его с остановок
+ * Tab. `ref` потребителя — корень.
  *
  * Элементы — дети (`<ListBox.Item>`), а без детей — то, что рисует коллекция
  * (`drawn`), по порядку, ключ — ключ записи. Без окна это все показанные
@@ -51,10 +58,15 @@ export function ListBox(props: ListBoxProps): ReactElement | null {
 	if (!rendered) return null
 
 	return (
-		<div {...toRootProps(ref, state, [attrs, dataset], forwardProps)}>
+		<div {...toRootProps(ref, state, [attrs, dataset], toRootForward(forwardProps))}>
 			<Elevate layer={layer}>
 				{renderSlot(props.header)}
-				<div className="so-list-box__list" tabIndex={0} {...toAriaProps(aria)}>
+				<div
+					className="so-list-box__list"
+					tabIndex={0}
+					{...toAriaProps(aria)}
+					{...toControlAttrs<ListBoxAttributes>(forwardProps)}
+				>
 					{hasSlot(props.children)
 						? renderSlot(props.children)
 						: drawn?.map((entry) =>

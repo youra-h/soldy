@@ -9,6 +9,7 @@ import {
 	useAdapter,
 	useExpose,
 	useCollectionAdapter,
+	useSplitAttrs,
 	VueElevatorFactory,
 	createVueAdapterContext,
 	type SetupContext,
@@ -17,6 +18,7 @@ import BaseListBox, { type ListBoxProps } from './base.component'
 
 export default {
 	name: '_ListBox',
+	inheritAttrs: false,
 	extends: BaseListBox,
 	expose: useExpose(),
 	setup(props: ListBoxProps, { emit }: SetupContext) {
@@ -46,6 +48,6 @@ export default {
 
 		const refsCollection = useCollectionAdapter(collectionAdapter, props, emit)
 
-		return { ...refs, ...refsCollection }
+		return { ...refs, ...refsCollection, ...useSplitAttrs() }
 	},
 }

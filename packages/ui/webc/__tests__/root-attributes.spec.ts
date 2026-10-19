@@ -16,9 +16,10 @@
  * Плагина раскладки у кольца нет, поэтому порядок слоёв проверяется на самой
  * раскладке стиля (`stylesOf`, `applyStyles`), как в React, Solid и Angular.
  *
- * У корня с полем (Input, CheckBox, Switch, радио) и у элемента коллекции
- * (таб, секция) статические атрибуты разметки база переносит на `<input>` или
- * строку, и там они так же главнее набора ядра, который на поле кладёт шаблон.
+ * У корня с полем (Input, CheckBox, Switch, радио), у элемента коллекции
+ * (таб, секция, элемент списка) и у ListBox и Tabs статические атрибуты
+ * разметки база переносит на `<input>`, строку или узел списка с ролью, и там
+ * они так же главнее набора ядра, который на поле кладёт шаблон.
  * Набор владельца на элементе шаблона и наборы самого элемента сходятся в
  * одном раскладчике элемента (`TElementAttributes`): набор владельца главнее
  * при любом порядке записи.
@@ -176,7 +177,8 @@ function mount<T extends HTMLElement>(html: string, guard: TElementGuard<T>): T 
 /**
  * Компонент, его тег с `is`, вид элемента, класс ядра на корне и поле в корне
  * — селектор узла, на который уходят атрибуты разметки: `<input>` поля,
- * строка таба, заголовок секции, строка элемента списка; `null` — поля нет.
+ * строка таба, заголовок секции, строка элемента списка, узел списка с ролью
+ * у Tabs и ListBox; `null` — поля нет.
  */
 const COMPONENTS: ReadonlyArray<
 	readonly [string, string, string, TElementGuard<HTMLElement>, string, string | null]
@@ -191,7 +193,7 @@ const COMPONENTS: ReadonlyArray<
 	['CheckBox', 'span', 'so-check-box', isCheckBox, 'so-check-box', 'input'],
 	['Switch', 'span', 'so-switch', isSwitch, 'so-switch', 'input'],
 	['Input', 'div', 'so-input', isInput, 'so-input', 'input'],
-	['Tabs', 'div', 'so-tabs', isTabs, 'so-tabs', null],
+	['Tabs', 'div', 'so-tabs', isTabs, 'so-tabs', '[role="tablist"]'],
 	['Tabs.Item', 'div', 'so-tabs-item', isTabsItem, 'so-tabs-item', '[embedded="tabs.row"]'],
 	['Tabs.Content', 'div', 'so-tabs-content', isTabsContent, 'so-tabs__panel', null],
 	['Accordion', 'div', 'so-accordion', isAccordion, 'so-accordion', null],
@@ -205,7 +207,7 @@ const COMPONENTS: ReadonlyArray<
 	],
 	['RadioGroup', 'div', 'so-radio-group', isRadioGroup, 'so-radio-group', null],
 	['RadioGroup.Item', 'label', 'so-radio-group-item', isRadio, 'so-radio-group-item', 'input'],
-	['ListBox', 'div', 'so-list-box', isListBox, 'so-list-box', null],
+	['ListBox', 'div', 'so-list-box', isListBox, 'so-list-box', '[role="listbox"]'],
 	[
 		'ListBox.Item',
 		'div',

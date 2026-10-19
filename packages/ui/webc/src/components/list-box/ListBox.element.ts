@@ -9,6 +9,12 @@
  * шаблон): клавиатура списка слушает корень, а свои клавиши берёт с этого
  * узла.
  *
+ * Узел списка — поле корня (`control` в описании корня), как `<input>` у
+ * поля: статические атрибуты разметки, кроме `class`, `style`, `is`, `slot` и
+ * входов пропов, база при построении переносит на него. `aria-label` и `id`
+ * называют список, а не рамку без роли, `tabindex="-1"` снимает его с
+ * остановок Tab. Записанное из кода позже остаётся на корне.
+ *
  * Контекстов два — свой и фасада коллекции (`setupListBox`), и пропсы фасада
  * (`items`, `mode`, `engine`, `trackBy`) — атрибуты-входы и свойства того же
  * элемента: дескриптор фасада элемент называет рядом со своим. Движок списка
@@ -36,7 +42,7 @@ export const TListBoxElement = SoldyElement(HTMLDivElement, {
 	descriptor: ListBoxDescriptor(),
 	facade: ListBoxCollectionDescriptor(),
 	template: listBoxTemplate,
-	root: { sets: ['attrs', 'dataset'] },
+	root: { sets: ['attrs', 'dataset'], control: true },
 	setup: setupListBox,
 })
 

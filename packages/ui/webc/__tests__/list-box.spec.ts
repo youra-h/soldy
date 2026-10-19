@@ -329,6 +329,58 @@ describe('выбор', () => {
 })
 
 /**
+ * Атрибуты потребителя делятся, как у поля: класс и стиль — корню-рамке,
+ * статические атрибуты разметки — узлу списка, где роль `listbox`. Имя и `id`
+ * называют список, а не рамку без роли.
+ */
+describe('атрибуты потребителя — узлу списка', () => {
+	it('aria-label, id и data-* — на [role=listbox], не на корне; класс и стиль — на корне', async () => {
+		const list = listIn(
+			await mount(`<div
+				is="so-list-box"
+				aria-label="Города"
+				id="cities"
+				data-testid="list"
+				class="mine"
+				style="color: red"
+			>
+				<div is="so-list-box-item" value="a" text="A"></div>
+			</div>`),
+		)
+		const node = find(list, '[role="listbox"]', HTMLDivElement)
+
+		expect(node).toBe(nodeOf(list))
+		expect(node.getAttribute('aria-label')).toBe('Города')
+		expect(node.id).toBe('cities')
+		expect(node.dataset['testid']).toBe('list')
+		expect(
+			['aria-label', 'id', 'data-testid'].filter((name) => list.hasAttribute(name)),
+		).toEqual([])
+		expect(list.classList.contains('mine')).toBe(true)
+		expect(list.style.color).toBe('red')
+		expect(node.classList.contains('mine')).toBe(false)
+	})
+
+	it('tabindex="-1" снимает список с остановок Tab', async () => {
+		const list = listIn(
+			await mount(`<div is="so-list-box" tabindex="-1">
+				<div is="so-list-box-item" value="a" text="A"></div>
+			</div>`),
+		)
+
+		expect(nodeOf(list).getAttribute('tabindex')).toBe('-1')
+		expect(list.hasAttribute('tabindex')).toBe(false)
+	})
+
+	it('dir от direction — на корне', async () => {
+		const list = await mountList({ items: ITEMS, direction: 'rtl' })
+
+		expect(list.getAttribute('dir')).toBe('rtl')
+		expect(nodeOf(list).hasAttribute('dir')).toBe(false)
+	})
+})
+
+/**
  * Строка — Button на `div`: на `<button>` выключенный пункт терял бы фокус и
  * клик, а ядро пишет строке ARIA под `div` (`TListBoxItem._ariaTag`).
  */
@@ -481,16 +533,18 @@ describe('состав', () => {
 	/**
 	 * Пропсы фасада — `mode`, `items`, `engine` у списка — свойства того же
 	 * элемента, атрибутами в DOM их не пишут. Атрибуты потребителя остаются: у
-	 * списка — на корне, у элемента — на строке.
+	 * списка — на узле списка, у элемента — на строке.
 	 */
 	it('пропсы фасада — свойства, не атрибуты; атрибуты потребителя — атрибуты', async () => {
 		const list = await mountList({ items: ITEMS, mode: 'multiple', title: 'Города' })
 
 		for (const name of ['mode', 'items', 'engine']) {
 			expect(list.hasAttribute(name), name).toBe(false)
+			expect(nodeOf(list).hasAttribute(name), name).toBe(false)
 		}
 
-		expect(list.getAttribute('title')).toBe('Города')
+		expect(list.hasAttribute('title')).toBe(false)
+		expect(nodeOf(list).getAttribute('title')).toBe('Города')
 		expect(list.state.mode).toBe('multiple')
 		expect(list.items).toEqual(list.state.items)
 	})
@@ -606,11 +660,15 @@ describe('состав', () => {
 		expect(bundles).toEqual([])
 	})
 
-	/** Список в слоте элемента — свой: его элементы входят в его коллекцию, а не во внешнюю. */
+	/**
+	 * Список в слоте элемента — свой: его элементы входят в его коллекцию, а не
+	 * во внешнюю. Списки помечены классом: `id` разметки списка уезжает на его
+	 * узел списка.
+	 */
 	it('список в строке элемента: элементы входят каждый в свой список', async () => {
-		const host = await mount(`<div is="so-list-box" id="outer">
+		const host = await mount(`<div is="so-list-box" class="outer">
 			<div is="so-list-box-item" value="a" text="A">
-				<div is="so-list-box" id="inner">
+				<div is="so-list-box" class="inner">
 					<div is="so-list-box-item" value="x" text="X"></div>
 					<div is="so-list-box-item" value="y" text="Y"></div>
 				</div>
@@ -618,7 +676,7 @@ describe('состав', () => {
 			<div is="so-list-box-item" value="b" text="B"></div>
 		</div>`)
 		const outer = listIn(host)
-		const inner = host.querySelector('#inner')
+		const inner = host.querySelector('.inner')
 
 		if (!isList(inner)) throw new Error('внутреннего списка нет')
 

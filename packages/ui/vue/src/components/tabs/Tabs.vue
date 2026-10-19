@@ -6,13 +6,24 @@ export default { ...SetupTabs, components: { TabsItem } }
 </script>
 
 <template>
-	<div ref="rootElement" v-if="rendered" v-show="visible" :class="classes" v-bind="attrs">
+	<div
+		ref="rootElement"
+		v-if="rendered"
+		v-show="visible"
+		:class="classes"
+		v-bind="{ ...attrs, ...containerAttrs }"
+	>
 		<!--
 			Набор `aria` владельца — это список табов: `role="tablist"` и
 			`aria-orientation` пишет ядро, имя из `aria_label` — TAriaPlugin.
 			Корень его не получает: там рядом со списком лежат панели.
+
+			Атрибуты потребителя делятся, как у поля: класс и стиль — корню
+			(`containerAttrs`), остальное — списку табов (`controlAttrs`), поверх
+			его `aria`: `aria-label` и `id` потребителя называют список, а не
+			корень без роли.
 		-->
-		<div class="so-tabs__list" v-bind="aria">
+		<div class="so-tabs__list" v-bind="{ ...aria, ...controlAttrs }">
 			<div class="so-tabs__list--leading" v-if="$slots.leading">
 				<slot name="leading"></slot>
 			</div>

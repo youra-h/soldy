@@ -7,10 +7,12 @@ import {
 	createRootProps,
 	relaySlot,
 	renderSlot,
+	toControlAttrs,
+	toRootForward,
 } from '../../adapter'
 import { ListBoxItem } from './item'
 import { setupListBox } from './setup.component'
-import type { ListBoxProps } from './base.component'
+import type { ListBoxAttributes, ListBoxProps } from './base.component'
 
 /** Элемент записи; у распорки его нет. */
 function itemOf(entry: TDrawnEntry<IListBoxItem>): IListBoxItem | undefined {
@@ -30,6 +32,11 @@ function fillerStyleOf(entry: TDrawnEntry<IListBoxItem>): JSX.CSSProperties | un
  * место полей и кнопок. На узле списка и остановка Tab (`tabindex="0"`):
  * список фокусируется сам, и клавиши его клавиатуры (`TListKeyboardPlugin`) —
  * с этого узла. На корне — `attrs` и `dataset`, как у Vue.
+ *
+ * Атрибуты потребителя делятся, как у поля и у Vue: класс и стиль — корню,
+ * остальное, кроме `ref`, — узлу списка, поверх его `aria` и остановки Tab:
+ * `aria-label` и `id` потребителя называют список, `tabindex="-1"` снимает
+ * его с остановок Tab. `ref` потребителя — корень.
  *
  * Элементы — содержимое (`<ListBox.Item>`), а без него — то, что рисует
  * коллекция (`drawn`), по порядку. Без окна это все показанные элементы, по
@@ -61,12 +68,14 @@ function fillerStyleOf(entry: TDrawnEntry<IListBoxItem>): JSX.CSSProperties | un
 export function ListBox(props: ListBoxProps): JSX.Element {
 	const binding = setupListBox(props)
 	const state = binding.state
-	// Корню — его наборы, поверх — атрибуты снаружи, `ref` адаптера последним
+	// Корню — его наборы, класс и стиль потребителя; `ref` адаптера последним
 	const root = createRootProps(() => ({
 		state,
 		sets: [state.attrs, state.dataset],
-		forward: binding.forwardProps(),
+		forward: toRootForward(binding.forwardProps()),
 	}))
+	// Узлу списка — остальное от потребителя, поверх его `aria`
+	const control = () => toControlAttrs<ListBoxAttributes>(binding.forwardProps())
 
 	/** Элемент из данных — со слотами списка, проброшенными целиком. */
 	const drawItem = (item: IListBoxItem) => (
@@ -102,7 +111,7 @@ export function ListBox(props: ListBoxProps): JSX.Element {
 			<div {...root()} ref={binding.ref}>
 				<Elevate layer={binding.layer}>
 					{renderSlot(props.header)}
-					<div class="so-list-box__list" tabindex="0" {...state.aria}>
+					<div class="so-list-box__list" tabindex="0" {...state.aria} {...control()}>
 						<ResolvedSlot
 							content={props.children}
 							fallback={

@@ -1850,21 +1850,23 @@ Zone.js и молча ломалось бы под `provideZonelessChangeDetecti
 `span[so-progress-spinner], [so-progress-spinner]` у ProgressSpinner,
 `[so-skeleton]` у Skeleton, `div[so-frame], [so-frame]` у Frame,
 `label[so-label], [so-label]` у Label, у владельцев коллекций и панели таба —
-`div[so-list-box]`, `div[so-tabs]`, `div[so-accordion]`, `div[so-radio-group]`,
-`div[so-tabs-content]` (и `[…]` без тега). Потребитель
+`div[so-accordion]`, `div[so-radio-group]`, `div[so-tabs-content]` (и `[…]`
+без тега). Потребитель
 пишет `<button so-button>`, `<a so-button href>`, `<div so-button>`, и этот
 элемент — корень: какой тег написан, так он себя и ведёт, а класс, стиль,
 атрибуты и события на нём работают без проброса. Раньше `<so-button>` был
 обёрткой с кнопкой внутри, и написанное на `<so-button>` до кнопки не доходило.
 Первым стоит селектор с тегом умолчания ядра: по первому селектору Angular
 выбирает тег хоста, когда создаёт компонент сам (`createComponent`), а для
-`[…]` берёт `div`. У поля (`so-input`, `so-check-box`, `so-switch`) и
-элемента коллекции (`so-list-box-item`, `so-tabs-item`, `so-accordion-item`)
-селектор элементный: атрибуты потребителя у них делятся между корнем и
-вложенным `<input>` или строкой, и корень — сам элемент компонента (см. ниже,
-`control`). Исключение — радио, `label[so-radio-group-item]`: корень обязан
-быть подписью и элементом потребителя (в `Label` — `<span so-radio-group-item>`),
-а атрибуты делятся, как у поля.
+`[…]` берёт `div`. У поля (`so-input`, `so-check-box`, `so-switch`), элемента
+коллекции (`so-list-box-item`, `so-tabs-item`, `so-accordion-item`) и у
+ListBox и Tabs (`so-list-box`, `so-tabs`) селектор элементный: атрибуты
+потребителя у них делятся между корнем и вложенным `<input>`, строкой или
+узлом списка с ролью (`listbox`, `tablist`), и корень — сам элемент
+компонента (см. ниже, `control`). Исключение — радио,
+`label[so-radio-group-item]`: корень обязан быть подписью и элементом
+потребителя (в `Label` — `<span so-radio-group-item>`), а атрибуты делятся,
+как у поля.
 
 Корень ведёт базовый `TComponentBase` по описанию корня (`TRootSpec`), которое
 компонент передаёт в конструктор, — своих привязок хоста и эффектов у
@@ -1947,11 +1949,12 @@ Zone.js и молча ломалось бы под `provideZonelessChangeDetecti
   таба `active` — неактивная панель скрыта, а её содержимое в документ не
   вставляется;
 - `control` в описании корня — у поля, Input, CheckBox и Switch
-  (`{ strategy: 'host', sets: ['attrs'], control: true }`), и у радио и
-  элемента коллекции: статические атрибуты, которые потребитель записал на
-  компонент, кроме `class`, `style`, входов и меток soldy (`so-*` — селектор
-  радио), база переносит с корня на элемент шаблона `#control` — вложенный
-  `<input>` или строку, как атрибуты снаружи у Vue и React. Чей атрибут, она
+  (`{ strategy: 'host', sets: ['attrs'], control: true }`), у радио,
+  элемента коллекции, ListBox и Tabs: статические атрибуты, которые
+  потребитель записал на компонент, кроме `class`, `style`, входов и меток
+  soldy (`so-*` — селектор радио), база переносит с корня на элемент шаблона
+  `#control` — вложенный `<input>`, строку или узел списка с ролью
+  (`listbox`, `tablist`), как атрибуты снаружи у Vue и React. Чей атрибут, она
   узнаёт не по узлу, а по скомпилированной разметке потребителя
   (`HostAttributeToken`):
   атрибут инкапсуляции стилей (`_ngcontent-*`) и всё, что при гидратации
@@ -2162,9 +2165,10 @@ Svelte 5 на рунах. Структура зеркалит React, потом�
   `toWrappedRootProps` (окно таблицы вокруг `table`: обёртке атрибуты и
   attachment-ы потребителя и скрытие, корню классы и наборы ядра); делёж
   атрибутов потребителя у поля — `toRootForward` (класс и стиль корню) и
-  `toControlAttrs` (остальное `<input>`); `roleIcon(role)` —
-  метка иконки по роли для `tag` у Icon и `RoleIcon`, который рисует её
-  `<svg>`, — он же рисует отметку CheckBox без слота.
+  `toControlAttrs` (остальное `<input>`; так же делит их элемент коллекции —
+  строке, а ListBox и Tabs — узлу списка); `roleIcon(role)` — метка иконки по
+  роли для `tag` у Icon и `RoleIcon`, который рисует её `<svg>`, — он же
+  рисует отметку CheckBox без слота.
 - `adapter/runtime/` — `useAdapter.svelte.ts`: `useAdapter` поверх связки
   `adapter.connect(SvelteProfile)` (attachment корня `attachElement` и его
   половины: `bindRef` — только привязка к `TElementPlugin`, `consumerRef` —
@@ -2271,7 +2275,8 @@ Svelte 5 на рунах. Структура зеркалит React, потом�
   классы и наборы ядра); делёж атрибутов потребителя у поля —
   `toRootForward` (класс и стиль корню) и
   `toControlAttrs` (остальное, кроме `ref`, — `<input>`; так же делит их
-  элемент коллекции — строке, у радио — полю); `roleIcon(role)` — компонент
+  элемент коллекции — строке, у радио — полю, а ListBox и Tabs — узлу
+  списка); `roleIcon(role)` — компонент
   иконки по роли для `tag` у Icon, один на роль, — он же рисует отметку
   CheckBox без слота; `renderSlot`, `hasSlot` и `resolveSlot` — слот,
   развёрнутый один раз поверх `children()`; `ResolvedSlot` — то же
@@ -2500,9 +2505,10 @@ Skeleton, — стоит ли корень по месту в коллекции
 `TRootTeleport` у Angular (см. «Слой» в «Решениях по DOM»), — какие наборы
 ядра лежат на корне (`sets`, по умолчанию все три) и есть ли в корне поле
 (`control`): `{ sets: ['attrs'], control: true }` у Input, CheckBox и Switch,
-`{ sets: ['attrs', 'dataset'], control: true }` у радио, а у таба и секции
-полем служит строка, как у Angular (см. «Поле» и «Коллекция» в «Решениях по
-DOM»), — и не обёртка ли элемент вокруг корня (`wrapped`): `{ wrapped: true }`
+`{ sets: ['attrs', 'dataset'], control: true }` у радио, у таба и секции
+полем служит строка, а у ListBox и Tabs — узел списка с ролью, как у Angular
+(см. «Поле» и «Коллекция» в «Решениях по DOM»), — и не обёртка ли элемент
+вокруг корня (`wrapped`): `{ wrapped: true }`
 у Table — элемент `<div is="so-table">` и есть окно таблицы, а корень `table`
 строит шаблон (`TTemplateParts.root`); на него база кладёт классы, наборы и
 стиль ядра, с ним связывает `TElementPlugin` и его тег отдаёт ядру, а элементу
@@ -2849,7 +2855,10 @@ WebKit:
   (`span.so-list-box-item__indicator`), иконка роли `check` в ней — у
   выбранного. Остановка Tab списка — узел списка в корне
   (`div.so-list-box__list`): `tabindex="0"` и набор `aria` списка ставит ему
-  шаблон, а шапка и подвал стоят в корне рядом с ним. У радио поле —
+  шаблон, а шапка и подвал стоят в корне рядом с ним. Узел списка ListBox и
+  список табов Tabs — тоже поле корня (`control`): статические атрибуты
+  разметки владельца, `id` и `tabindex` тоже, переезжают на них, и там они
+  главнее набора `aria`, который кладёт шаблон. У радио поле —
   `<input type="radio">`.
   Неактивная панель таба скрыта (`shownBy: 'active'`), и её содержимое вне
   документа (`showSlot`): поля в нём не уходят с формой, как у Vue. Таблица

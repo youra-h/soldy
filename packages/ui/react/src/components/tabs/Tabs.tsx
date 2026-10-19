@@ -1,8 +1,17 @@
 import type { ReactElement } from 'react'
-import { Elevate, hasSlot, relaySlot, renderSlot, toAriaProps, toRootProps } from '../../adapter'
+import {
+	Elevate,
+	hasSlot,
+	relaySlot,
+	renderSlot,
+	toAriaProps,
+	toControlAttrs,
+	toRootForward,
+	toRootProps,
+} from '../../adapter'
 import { TabsItem } from './item'
 import { useSetupTabs } from './setup.component'
-import type { TabsProps } from './base.component'
+import type { TabsAttributes, TabsProps } from './base.component'
 
 /**
  * Tabs — набор табов: список (`so-tabs__list`) и панели рядом с ним.
@@ -11,6 +20,11 @@ import type { TabsProps } from './base.component'
  * `aria-orientation` пишет ядро, имя из `aria_label` — `TAriaPlugin`. Корень
  * его не получает: рядом со списком там лежат панели. На корне — `attrs`,
  * как у Vue.
+ *
+ * Атрибуты потребителя делятся, как у поля и у Vue: класс и стиль — корню,
+ * остальное — списку табов, поверх его `aria`: `aria-label` и `id`
+ * потребителя называют список, а не корень без роли. `ref` потребителя —
+ * корень.
  *
  * Табы — дети (`<Tabs.Item>`), а без детей — `shown` коллекции, по `TabsItem`
  * на элемент. Слоты элементов статические и получают элемент через scope.
@@ -32,9 +46,13 @@ export function Tabs(props: TabsProps): ReactElement | null {
 	if (!rendered) return null
 
 	return (
-		<div {...toRootProps(ref, state, [attrs], forwardProps)}>
+		<div {...toRootProps(ref, state, [attrs], toRootForward(forwardProps))}>
 			<Elevate layer={layer}>
-				<div className="so-tabs__list" {...toAriaProps(aria)}>
+				<div
+					className="so-tabs__list"
+					{...toAriaProps(aria)}
+					{...toControlAttrs<TabsAttributes>(forwardProps)}
+				>
 					{hasSlot(props.leading) ? (
 						<div className="so-tabs__list--leading">{renderSlot(props.leading)}</div>
 					) : null}

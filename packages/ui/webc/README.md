@@ -181,7 +181,10 @@ Panels go to the `content` slot: the default slot of tabs is the tab list, `[rol
 inactive panel is hidden, and its content is out of the document — its fields are not submitted
 with the form. A radio is a real `<input type="radio">` inside a `<label>` root; attributes you
 write on it (`id`, `aria-label`, `data-*`) move to the input, as on a field, and on a tab, a
-section or a list box option they move to its row — the button that carries the item's state.
+section or a list box option they move to its row — the button that carries the item's state. On
+a list box and on tabs they move to the list itself, `[role=listbox]` or `[role=tablist]`: the
+element is a frame around it, next to the header and footer of a list box or the panels of tabs,
+so `aria-label` names the list and `tabindex="-1"` takes a list box out of the Tab order.
 
 A list box is a single Tab stop: the arrows move through its options, Enter and Space choose. An
 option's row is a button on a `<div>` — `<div is="so-button-div">`, the same Button under a name of

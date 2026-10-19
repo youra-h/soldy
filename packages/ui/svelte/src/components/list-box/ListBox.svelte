@@ -1,8 +1,8 @@
 <script lang="ts">
-	import { Dynamic, toRootProps, toStyleText } from '../../adapter'
+	import { Dynamic, toControlAttrs, toRootForward, toRootProps, toStyleText } from '../../adapter'
 	import { ListBoxItem } from './item'
 	import { setupListBox } from './setup.component'
-	import type { ListBoxProps } from './base.component'
+	import type { ListBoxAttributes, ListBoxProps } from './base.component'
 
 	let { ref = $bindable(), ...props }: ListBoxProps = $props()
 	const mountId = $props.id()
@@ -23,6 +23,11 @@
 	место полей и кнопок. На узле списка и остановка Tab: список фокусируется
 	сам, и клавиши его клавиатуры (`TListKeyboardPlugin`) — с этого узла. На
 	корне — `attrs` и `dataset`, как у Vue.
+
+	Атрибуты потребителя делятся, как у поля и у Vue: класс и стиль — корню,
+	остальное — узлу списка, поверх его `aria` и остановки Tab, и attachment
+	потребителя — тоже ему: `aria-label` и `id` потребителя называют список,
+	`tabindex="-1"` снимает его с остановок Tab. `ref` — корень.
 
 	Элементы — содержимое (`<ListBox.Item>`), а без него — то, что рисует
 	коллекция (`drawn`), по порядку, ключ — ключ записи. Без окна это все
@@ -51,10 +56,19 @@
 {#if state.rendered}
 	<Dynamic
 		tag="div"
-		attributes={toRootProps(state, [state.attrs, state.dataset], binding.forwardProps)}
+		attributes={toRootProps(
+			state,
+			[state.attrs, state.dataset],
+			toRootForward(binding.forwardProps),
+		)}
 		attach={binding.attachElement}
 	>
-		{@render props.header?.()}<div class="so-list-box__list" {...FOCUSABLE} {...state.aria}>
+		{@render props.header?.()}<div
+			class="so-list-box__list"
+			{...FOCUSABLE}
+			{...state.aria}
+			{...toControlAttrs<ListBoxAttributes>(binding.forwardProps)}
+		>
 			{#if props.children}
 				{@render props.children()}
 			{:else}

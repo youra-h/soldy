@@ -281,7 +281,8 @@ describe('состав', () => {
 	/**
 	 * Пропсы фасада — `mode`, `items`, `engine` у списка и `selected` у
 	 * элемента — съедает связка фасада, и атрибутами в DOM они не уходят. Что
-	 * не съели ни компонент, ни фасад, — уходит.
+	 * не съели ни компонент, ни фасад, — уходит: у списка — узлу списка, у
+	 * элемента — строке.
 	 */
 	it('пропсы фасада — не атрибуты, атрибуты потребителя — атрибуты', () => {
 		const engine = createEngine<TItem>()
@@ -293,9 +294,11 @@ describe('состав', () => {
 
 		for (const name of ['mode', 'items', 'engine']) {
 			expect(root().hasAttribute(name), name).toBe(false)
+			expect(list().hasAttribute(name), name).toBe(false)
 		}
 
-		expect(root().getAttribute('title')).toBe('Города')
+		expect(root().hasAttribute('title')).toBe(false)
+		expect(list().getAttribute('title')).toBe('Города')
 		expect(rowOf('Z').hasAttribute('selected')).toBe(false)
 		expect(rowOf('Z').getAttribute('title')).toBe('Строка')
 	})

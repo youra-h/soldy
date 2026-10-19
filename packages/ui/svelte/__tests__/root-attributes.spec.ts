@@ -19,7 +19,8 @@
  * Элемент коллекции (`Tabs.Item`, `Accordion.Item`, `RadioGroup.Item`) делит
  * атрибуты потребителя, как у Vue: класс и стиль — корню, остальное — строке
  * (у радио — полю), поверх её набора `aria`. Корень остаётся за адаптером и у
- * него.
+ * него. ListBox и Tabs делят их так же: остальное — узлу списка с ролью
+ * (`listbox`, `tablist`), поверх его `aria`.
  *
  * Корень таблицы стоит внутри окна: атрибуты, attachment-ы и `ref` потребителя
  * — окну, внешнему узлу, а наборы ядра и привязка к `TElementPlugin` —
@@ -39,6 +40,7 @@ import {
 	Icon,
 	Input,
 	Label,
+	ListBox,
 	ProgressSpinner,
 	RadioGroup,
 	Skeleton,
@@ -58,6 +60,7 @@ import {
 	type IconProps,
 	type InputProps,
 	type LabelProps,
+	type ListBoxProps,
 	type ProgressSpinnerProps,
 	type RadioGroupProps,
 	type SkeletonProps,
@@ -102,7 +105,6 @@ const COMPONENTS: ReadonlyArray<readonly [string, (props: TProbeProps) => TMount
 	['Label', (props) => mount(Label, props), '.so-label'],
 	['ProgressSpinner', (props) => mount(ProgressSpinner, props), '.so-progress-spinner'],
 	['Skeleton', (props) => mount(Skeleton, props), '.so-skeleton'],
-	['Tabs', (props) => mount(Tabs, props), '.so-tabs'],
 	['Tabs.Content', (props) => mount(ItemProbe, { kind: 'content', ...props }), '.so-tabs__panel'],
 	['Accordion', (props) => mount(Accordion, props), '.so-accordion'],
 	['RadioGroup', (props) => mount(RadioGroup, props), '.so-radio-group'],
@@ -288,6 +290,124 @@ describe('элемент коллекции: атрибуты снаружи —
 			expect(ready.elements[0]).toBe(find(document, root, HTMLElement))
 		},
 	)
+})
+
+/** Общие пропсы списков в таблице. */
+type TListProbeProps = ListBoxProps & TabsProps
+
+/**
+ * Список, как его рисовать, класс его корня и узел списка — ребёнок корня с
+ * ролью, которому уходят атрибуты потребителя: на нём `aria` компонента, а
+ * корень — рамка (шапка и подвал ListBox, панели Tabs).
+ */
+const LISTS: ReadonlyArray<
+	readonly [string, (props: TListProbeProps) => TMounted, string, string]
+> = [
+	[
+		'ListBox',
+		(props) => mount(ListBox, props),
+		'.so-list-box',
+		'.so-list-box > [role="listbox"]',
+	],
+	['Tabs', (props) => mount(Tabs, props), '.so-tabs', '.so-tabs > [role="tablist"]'],
+]
+
+describe('ListBox, Tabs: атрибуты снаружи — узлу списка, поверх его aria', () => {
+	it.each(LISTS)(
+		'%s: aria-label, id и data-* — на узле списка, а не на корне',
+		(_name, draw, root, list) => {
+			draw({ 'aria-label': 'Своё', id: 'mine', 'data-probe': '1' })
+
+			const node = find(document, list, HTMLElement)
+
+			expect(node.getAttribute('aria-label')).toBe('Своё')
+			expect(node.id).toBe('mine')
+			expect(node.dataset['probe']).toBe('1')
+			expect(
+				['aria-label', 'id', 'data-probe'].filter((name) =>
+					find(document, root, HTMLElement).hasAttribute(name),
+				),
+			).toEqual([])
+		},
+	)
+
+	/** Имя пишет плагин доступного имени в `aria`, а `aria-label` снаружи — атрибут потребителя. */
+	it.each(LISTS)('%s: aria-label потребителя — поверх aria_label', (_name, draw, _root, list) => {
+		draw({ aria_label: 'Ядро', 'aria-label': 'Своё' })
+
+		expect(find(document, list, HTMLElement).getAttribute('aria-label')).toBe('Своё')
+	})
+
+	/** Класс ядра — первым, класс потребителя — за ним, оба на корне. */
+	it.each(LISTS)('%s: класс и стиль — корню, а не узлу списка', (_name, draw, root, list) => {
+		draw({ class: 'mine', style: 'color: red' })
+
+		const el = find(document, root, HTMLElement)
+		const node = find(document, list, HTMLElement)
+		const classes = [...el.classList]
+
+		expect(classes.at(-1)).toBe('mine')
+		expect(classes[0]).toBe(root.slice(1))
+		expect(el.style.color).toBe('red')
+		expect(node.classList.contains('mine')).toBe(false)
+		expect(node.style.color).toBe('')
+	})
+
+	/** `dir` ядро пишет в `attrs` по `direction`, на корень; `dir` снаружи — узлу списка. */
+	it.each(LISTS)(
+		'%s: dir ядра — на корне, dir потребителя — на узле списка',
+		(_name, draw, root, list) => {
+			draw({ direction: 'rtl', dir: 'ltr' })
+
+			expect(find(document, root, HTMLElement).getAttribute('dir')).toBe('rtl')
+			expect(find(document, list, HTMLElement).getAttribute('dir')).toBe('ltr')
+		},
+	)
+
+	/**
+	 * Attachment потребителя — тоже «остальное»: поведение, которое он вешает
+	 * на список, встаёт на узел списка. Привязка корня к `TElementPlugin` — за
+	 * адаптером: `element:ready` приходит с корнем.
+	 */
+	it.each(LISTS)(
+		'%s: attachment потребителя — на узле списка, element:ready — с корнем',
+		async (_name, draw, root, list) => {
+			const consumer = attachmentProbe()
+			const ready = readyProbe()
+
+			draw({ onElementReady: ready.onElementReady, [createAttachmentKey()]: consumer.attach })
+			await nextFrame()
+
+			expect(consumer.attached).toHaveLength(1)
+			expect(consumer.attached[0]).toBe(find(document, list, HTMLElement))
+			expect(ready.elements).toHaveLength(1)
+			expect(ready.elements[0]).toBe(find(document, root, HTMLElement))
+		},
+	)
+
+	it.each(LISTS)('%s: обработчик потребителя — на узле списка', (_name, draw, _root, list) => {
+		const targets: (EventTarget | null)[] = []
+
+		draw({
+			onclick: (event: MouseEvent) => {
+				targets.push(event.currentTarget)
+			},
+		})
+
+		const node = find(document, list, HTMLElement)
+
+		node.click()
+
+		expect(targets).toHaveLength(1)
+		expect(targets[0]).toBe(node)
+	})
+
+	it('ListBox: tabindex="-1" снимает список с остановок Tab', () => {
+		const { root } = mount(ListBox, { tabindex: -1 })
+
+		expect(find(root(), '[role="listbox"]', HTMLElement).getAttribute('tabindex')).toBe('-1')
+		expect(root().hasAttribute('tabindex')).toBe(false)
+	})
 })
 
 /** Таблица из одной строки и одной колонки — движком: пропсы у теста реактивные. */

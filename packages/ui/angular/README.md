@@ -105,28 +105,34 @@ template: `<so-input>
 </so-input>`
 ```
 
-A collection — RadioGroup, ListBox, Tabs, Accordion — is your element with its items inside. The
-parts are components of their own, written as separate tags, since Angular has no dot syntax:
-`<so-list-box-item>`, `<so-tabs-item>`, `<so-accordion-item>`, `<label so-radio-group-item>` and
-the tab panel `<div so-tabs-content>`. Items written in the markup join the collection in document
-order, on the server too; without them the owner renders its `items`. Inputs of the collection —
-`items`, `engine`, `mode`, an item's `selected` or `active` — are inputs of the same element:
+A collection — RadioGroup, ListBox, Tabs, Accordion — is an owner element with its items inside:
+your element for RadioGroup and Accordion (`<div so-radio-group>`, `<div so-accordion>`), an
+element of its own for ListBox and Tabs (`<so-list-box>`, `<so-tabs>`). The parts are components of
+their own, written as separate tags, since Angular has no dot syntax: `<so-list-box-item>`,
+`<so-tabs-item>`, `<so-accordion-item>`, `<label so-radio-group-item>` and the tab panel
+`<div so-tabs-content>`. Items written in the markup join the collection in document order, on the
+server too; without them the owner renders its `items`. Inputs of the collection — `items`,
+`engine`, `mode`, an item's `selected` or `active` — are inputs of the same element:
 
 ```ts
-template: `<div so-list-box mode="multiple" (soChangeValue)="pick($event.newValue)">
+template: `<so-list-box mode="multiple" aria-label="Cities" (soChangeValue)="pick($event.newValue)">
   <so-list-box-item value="a" text="Moscow" />
   <so-list-box-item value="b" text="Kazan" selected />
-</div>
-<div so-tabs>
+</so-list-box>
+<so-tabs>
   <so-tabs-item value="a" text="General" active />
   <so-tabs-item value="b" text="Mail" />
   <div so-tabs-content slot="content" value="a">…</div>
   <div so-tabs-content slot="content" value="b">…</div>
-</div>`
+</so-tabs>`
 ```
 
-An item splits your markup like a field: `class` and `style` stay on the item, the static
-attributes you write on it (`title`, `id`) move to its row — or to the `<input>` of a radio. Inside
+A list box and tabs split your markup like a field: `class` and `style` stay on the element — a
+frame around the list, next to the header and footer of a list box or the panels of tabs — while
+the static attributes you write on it (`aria-label`, `id`, `tabindex`, `data-*`) move to the list
+itself, `[role=listbox]` or `[role=tablist]`, which they name. An item splits your markup the same
+way: `class` and `style` stay on the item, the static attributes you write on it (`title`, `id`)
+move to its row — or to the `<input>` of a radio. Inside
 a Label, write the radio on an inline tag, `<span so-radio-group-item>`: a `label` inside a `label`
 is not allowed. Items rendered from `items` get their slots from the owner — `item`, `item-leading`
 and the rest receive the item along with their scope:
@@ -164,7 +170,7 @@ what is visible inside `<so-virtual>` — the same with a table; the wrapper has
 and `enabled` turns the window off:
 
 ```ts
-template: `<so-virtual><div so-list-box [items]="cities"></div></so-virtual>`
+template: `<so-virtual><so-list-box [items]="cities" /></so-virtual>`
 ```
 
 A panel over the page is a Frame. The element you write is the panel, and it is that element which

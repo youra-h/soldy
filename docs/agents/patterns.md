@@ -36,7 +36,12 @@ ARIA пускает только `option` и `group` (axe — `aria-required-chi
 «Готово» под ним. Поэтому корень ListBox — рамка (класс, `attrs`, `dataset`,
 `ref` потребителя), а набор `aria` списка — роль, имя от `TAriaPlugin`,
 `aria-multiselectable` — и остановку Tab разметка кладёт на узел списка
-(`so-list-box__list`, частью он не стал: потребитель его не адресует). В нём —
+(`so-list-box__list`, частью он не стал: потребитель его не адресует). Туда
+же уходят атрибуты потребителя, кроме класса и стиля, — как у поля: на корне
+`aria-label` назвал бы узел без роли (axe — `aria-prohibited-attr`), а
+список остался бы без имени; `id` потребителя тоже у списка, и
+`tabindex="-1"` снимает его с остановок Tab. Так же делит их Tabs — узлу
+`[role=tablist]`, рядом с которым в корне лежат панели. В нём —
 элементы, распорки окна и `empty`, как в списке панели Select; шапка и подвал
 стоят в корне рядом с ним. ARIA-половину `disabled` решает тег узла списка,
 `div`, а не корня (`TListBox._ariaTag`), как у списка табов. Прокручивается
@@ -45,7 +50,8 @@ ARIA пускает только `option` и `group` (axe — `aria-required-chi
 стоят на месте. Прокручивайся корень, Tab из поля шапки на узел списка увёл
 бы шапку из виду — браузер докручивает к получившему фокус узлу.
 `TListScrollPlugin` крутит тот же контейнер — родителя элементов. Сторожат
-спеки ListBox адаптеров (`list-box-tabindex.spec.ts` у Vue),
+спеки ListBox адаптеров (`list-box-tabindex.spec.ts` и
+`list-control-attrs.spec.ts` у Vue, `root-attributes.spec.*` у остальных),
 `setup/__tests__/list-height.spec.ts` («узел списка ListBox») и
 `playground/vue/browser/list-height.spec.ts` («шапка и подвал — на месте»).
 
