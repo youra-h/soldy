@@ -181,6 +181,21 @@ const ariaLabels = (row: DOMWrapper<Element>) =>
 	row.findAll('.pg-col__stage .so-button').map((button) => button.attributes('aria-label'))
 
 /**
+ * Что стоит под контролом поля в каждой колонке строки: подсказка или ошибка
+ * со своим текстом. Видна одна из двух — ошибка встаёт на место подсказки, — а
+ * список по колонке покажет и обе сразу, и ни одной.
+ */
+const fieldNotes = (row: DOMWrapper<Element>) =>
+	stagesOf(row).map((stage) => [
+		...stage.findAll('.so-field__helper').map(() => 'подсказка'),
+		...stage.findAll('.so-field__error-text').map((error) => `ошибка: ${error.text()}`),
+	])
+
+/** Отметка ошибки у контрола поля в каждой колонке строки — `aria-invalid` его `<input>`. */
+const invalidMarks = (row: DOMWrapper<Element>) =>
+	stagesOf(row).map((stage) => stage.get('.so-field__control input').attributes('aria-invalid'))
+
+/**
  * Панели окон строки по колонкам. Окно телепортировано в `body` из корня хоста,
  * и ни в DOM строки, ни в дереве её компонентов его нет. Панель колонки — та,
  * что открыла её кнопка: после нажатия видна ровно она. Закрывает её «Отмена»
@@ -509,7 +524,8 @@ describe('свойства плагинов', () => {
 /**
  * Пресет строки: `removeOnBackspace` виден только в `editable` + `multiple`,
  * `indicator` у ListBox нужен там, где выбрано несколько элементов, `offset`
- * у Dialog виден у окна, растянутого по экрану.
+ * у Dialog виден у окна, растянутого по экрану, текст `error` у Field — только
+ * при `invalid`, а сообщение `invalid` — только с текстом ошибки.
  *
  * Проверяем DOM обеих колонок, а не сам пресет: во второй колонке он едет
  * разметкой рядом с `ctrl`, и доехать до инстанса и фасада коллекции там
@@ -517,7 +533,8 @@ describe('свойства плагинов', () => {
  * снятый `readonly` у поля (снимает только `editable`). У ListBox режим в DOM
  * не выведен, и признак — поведение: после кликов по двум разным элементам
  * оба остаются выбранными только в `multiple`. У окна признак — переменные
- * размера и отступа на его панели.
+ * размера и отступа на его панели. У поля формы — что стоит под контролом,
+ * подсказка или ошибка, и отметка ошибки у самого контрола (`aria-invalid`).
  */
 describe('пресет строки', () => {
 	it.each(drawing('select'))(
@@ -629,6 +646,52 @@ describe('пресет строки', () => {
 			}
 		},
 	)
+
+	/**
+	 * Строка `error` — с пресетом `invalid`: набранный текст встаёт ошибкой на
+	 * место подсказки. Стёртый — проп не задан: первая колонка его не передаёт,
+	 * и поле берёт текст превью, а экземпляр второй — умолчание декларации.
+	 * Обе обязаны вернуться к подсказке: текст ошибки в умолчаниях превью
+	 * оставил бы первую на ошибке, а вторую — на подсказке.
+	 */
+	it.each(drawing('field'))(
+		'%s: текст error встаёт у Field на место подсказки в обеих колонках',
+		async (framework) => {
+			const wrapper = await openPage(framework, 'field')
+			const row = rowOf(wrapper, 'error')
+
+			// Пресет доехал до обеих колонок: контрол помечен ошибкой сразу, а
+			// пока текста ошибки нет, под ним подсказка
+			expect(invalidMarks(row)).toEqual(['true', 'true'])
+			expect(fieldNotes(row)).toEqual([['подсказка'], ['подсказка']])
+
+			await enter(row, 'Нужен домен')
+			expect(fieldNotes(row)).toEqual([['ошибка: Нужен домен'], ['ошибка: Нужен домен']])
+
+			await enter(row, '')
+			expect(fieldNotes(row)).toEqual([['подсказка'], ['подсказка']])
+		},
+	)
+
+	it.each(drawing('field'))(
+		'%s: invalid показывает у Field ошибку с текстом пресета в обеих колонках',
+		async (framework) => {
+			const wrapper = await openPage(framework, 'field')
+			const row = rowOf(wrapper, 'invalid')
+
+			expect(fieldNotes(row)).toEqual([['подсказка'], ['подсказка']])
+
+			await enter(row, true)
+
+			expect(fieldNotes(row)).toEqual([['ошибка: Нет @'], ['ошибка: Нет @']])
+		},
+	)
+
+	it.each(drawing('field'))('%s: соседние строки Field пресет не получают', async (framework) => {
+		const wrapper = await openPage(framework, 'field')
+
+		expect(invalidMarks(rowOf(wrapper, 'helper'))).toEqual([undefined, undefined])
+	})
 })
 
 /**
