@@ -1,4 +1,5 @@
 import { defineConfig } from 'vitest/config'
+import type { BrowserCommandContext } from 'vitest/node'
 import { defineBrowserCommand, playwright } from '@vitest/browser-playwright'
 import { aliases, plugins } from './vite.base.ts'
 
@@ -29,45 +30,87 @@ const DOUBLE_TAP_PAUSE = 500
 /** Когда кончилось прошлое касание — по часам процесса прогона. */
 let lastTap = 0
 
+/** Точка касания — в координатах страницы. */
+type TTouchPoint = { x: number; y: number }
+
+/** Событие касания протокола DevTools: `touchEnd` точек не несёт. */
+type TTouchEvent = {
+	type: 'touchStart' | 'touchMove' | 'touchEnd'
+	touchPoints: TTouchPoint[]
+}
+
 /**
- * Касание пальцем — в центре узла: `touchStart` и `touchEnd` протокола
- * DevTools. `userEvent` касаться не умеет, а `touchscreen` Playwright требует
- * контекста с `hasTouch` — он сменил бы устройство всем браузерным спекам.
- * Касание протокола браузер разбирает как настоящее: `pointerdown` с
+ * Палец — событиями касания протокола DevTools (`Input.dispatchTouchEvent`).
+ * `userEvent` касаться не умеет, а `touchscreen` Playwright требует контекста
+ * с `hasTouch` — он сменил бы устройство всем браузерным спекам. Касание
+ * протокола браузер разбирает как настоящее: `pointerdown` с
  * `pointerType: 'touch'`, фокус и каретка в редактируемом узле, `click` — всё
  * от одного жеста (`browser/date-input.spec.ts`, «сенсорный режим»). Узел —
- * селектором CSS в рамке теста, точку страницы считает Playwright. Касаний
- * `count` подряд, без пауз между ними: два — двойное касание. С касанием
- * прошлой команды первое двойного не составит: команда выжидает паузу от него.
+ * селектором CSS в рамке теста, точку страницы — центр узла — считает
+ * Playwright, а события от неё строит команда (`events`).
+ *
+ * Окно двойного касания у команд общее: с касанием прошлой команды касание
+ * этой двойного не составит — команда выжидает паузу от него. Протяжка тоже
+ * его выжидает: протяжка сразу после касания — двойное касание с протяжкой, то
+ * есть масштаб.
+ */
+async function touch(
+	{ page, frame }: BrowserCommandContext,
+	selector: string,
+	events: (point: TTouchPoint) => TTouchEvent[],
+): Promise<void> {
+	const box = await (await frame()).locator(selector).boundingBox()
+
+	if (!box) throw new Error(`${selector}: узла нет или он не нарисован`)
+
+	const point = { x: box.x + box.width / 2, y: box.y + box.height / 2 }
+	const pause = lastTap + DOUBLE_TAP_PAUSE - Date.now()
+	const session = await page.context().newCDPSession(page)
+
+	try {
+		if (pause > 0) await page.waitForTimeout(pause)
+
+		for (const event of events(point)) {
+			await session.send('Input.dispatchTouchEvent', event)
+		}
+	} finally {
+		lastTap = Date.now()
+		await session.detach()
+	}
+}
+
+/**
+ * Касание пальцем — в центре узла: `touchStart` и `touchEnd`. Касаний `count`
+ * подряд, без пауз между ними: два — двойное касание.
  */
 const tap = defineBrowserCommand<[selector: string, count?: number]>(
-	async ({ page, frame }, selector, count = 1) => {
-		const box = await (await frame()).locator(selector).boundingBox()
+	(context, selector, count = 1) =>
+		touch(context, selector, (point) =>
+			Array.from({ length: count }, (): TTouchEvent[] => [
+				{ type: 'touchStart', touchPoints: [point] },
+				{ type: 'touchEnd', touchPoints: [] },
+			]).flat(),
+		),
+)
 
-		if (!box) throw new Error(`${selector}: узла нет или он не нарисован`)
-
-		const point = { x: box.x + box.width / 2, y: box.y + box.height / 2 }
-		const pause = lastTap + DOUBLE_TAP_PAUSE - Date.now()
-		const session = await page.context().newCDPSession(page)
-
-		try {
-			if (pause > 0) await page.waitForTimeout(pause)
-
-			for (let index = 0; index < count; index++) {
-				await session.send('Input.dispatchTouchEvent', {
-					type: 'touchStart',
-					touchPoints: [point],
-				})
-				await session.send('Input.dispatchTouchEvent', {
-					type: 'touchEnd',
-					touchPoints: [],
-				})
-			}
-		} finally {
-			lastTap = Date.now()
-			await session.detach()
-		}
-	},
+/**
+ * Протяжка пальцем — от центра узла на `dx`, `dy`: `touchStart`, `touchMove`
+ * равными шагами (`steps`) и `touchEnd` в последней точке. Жест смахивания
+ * (`browser/drawer.spec.ts`, «пальцем»): касание, в отличие от мыши, браузер
+ * сам захватывает за узлом под пальцем и забирает под прокрутку.
+ */
+const touchDrag = defineBrowserCommand<[selector: string, dx: number, dy: number, steps?: number]>(
+	(context, selector, dx, dy, steps = 10) =>
+		touch(context, selector, ({ x, y }) => [
+			{ type: 'touchStart', touchPoints: [{ x, y }] },
+			...Array.from({ length: steps }, (_, index): TTouchEvent => ({
+				type: 'touchMove',
+				touchPoints: [
+					{ x: x + (dx * (index + 1)) / steps, y: y + (dy * (index + 1)) / steps },
+				],
+			})),
+			{ type: 'touchEnd', touchPoints: [] },
+		]),
 )
 
 /**
@@ -150,7 +193,7 @@ export default defineConfig({
 				launchOptions: { ignoreDefaultArgs: ['--hide-scrollbars'] },
 			}),
 			instances: [{ browser: 'chromium' }],
-			commands: { mouseDown, mouseUp, tap, insertText, compose },
+			commands: { mouseDown, mouseUp, tap, touchDrag, insertText, compose },
 		},
 	},
 	resolve: {
