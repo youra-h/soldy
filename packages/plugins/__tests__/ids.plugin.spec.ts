@@ -20,6 +20,7 @@ import {
 	TField,
 	TMenu,
 	TMenuGroup,
+	TMenuPopoverItem,
 	TMenuSubmenu,
 	TPopover,
 	TRadioGroup,
@@ -44,7 +45,7 @@ import {
 	TFieldIdsPlugin,
 	TMenuGroupIdsPlugin,
 	TMenuIdsPlugin,
-	TMenuSubmenuIdsPlugin,
+	TMenuPopupIdsPlugin,
 	TModalIdsPlugin,
 	TPluginBundle,
 	TPopoverIdsPlugin,
@@ -136,7 +137,7 @@ describe('оверлеи', () => {
 	it('Menu.Submenu: строка и панель подменю ссылаются друг на друга — имя подменю от строки', () => {
 		const submenu = new TMenuSubmenu({ text: 'Поделиться' })
 
-		new TPluginBundle(submenu, 'm1').use(TMenuSubmenuIdsPlugin)
+		new TPluginBundle(submenu, 'm1').use(TMenuPopupIdsPlugin)
 
 		expect(submenu.aria.toObject()).toEqual({
 			role: 'menuitem',
@@ -147,6 +148,25 @@ describe('оверлеи', () => {
 		})
 		expect(submenu.panelAria.toObject()).toEqual({
 			role: 'menu',
+			id: 'm1-panel',
+			'aria-labelledby': 'm1-row',
+		})
+	})
+
+	it('Menu.PopoverItem: строка и панель-диалог ссылаются друг на друга — имя диалога от строки', () => {
+		const due = new TMenuPopoverItem({ text: 'Срок' })
+
+		new TPluginBundle(due, 'm1').use(TMenuPopupIdsPlugin)
+
+		expect(due.aria.toObject()).toEqual({
+			role: 'menuitem',
+			'aria-haspopup': 'dialog',
+			'aria-expanded': 'false',
+			id: 'm1-row',
+			'aria-controls': 'm1-panel',
+		})
+		expect(due.panelAria.toObject()).toEqual({
+			role: 'dialog',
 			id: 'm1-panel',
 			'aria-labelledby': 'm1-row',
 		})

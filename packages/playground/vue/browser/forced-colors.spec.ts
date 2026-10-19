@@ -49,6 +49,7 @@ import {
 	Input,
 	ListBox,
 	ListBoxItem,
+	Menu,
 	NumberInput,
 	Popover,
 	Select,
@@ -171,6 +172,26 @@ const PANELS = [
 		name: 'DatePicker',
 		panel: '.so-date-picker__panel',
 		markup: () => h(DatePicker, { open: true, aria_label: 'Дата' }),
+	},
+	{
+		// Панель пункта меню с панелью — та же семья: поверхность у неё одна с
+		// панелью меню (`_menu.scss`)
+		name: 'Menu.PopoverItem',
+		panel: '.so-menu-item__panel',
+		markup: () =>
+			h(
+				Menu,
+				{ open: true },
+				{
+					trigger: () => h(Button, { text: 'Действия' }),
+					default: () =>
+						h(
+							Menu.PopoverItem,
+							{ value: 'due', text: 'Срок', open: true },
+							() => 'Календарь',
+						),
+				},
+			),
 	},
 	{
 		// Плашка тоста — та же семья, что панели оверлеев: кромка кольцом и

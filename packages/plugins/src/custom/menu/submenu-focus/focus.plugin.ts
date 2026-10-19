@@ -5,6 +5,8 @@ import { TOverlayFocusPlugin } from '../../overlay/focus'
 import type { IOverlayOpenOptions } from '../../overlay/types'
 import { rowIn } from '../../list/row'
 import { TMenuSubmenuKeyboardPlugin } from '../submenu-keyboard'
+import { TMenuPopoverItemFocusPlugin } from '../popover-item-focus'
+import { holdsFocus } from '../nested-layer'
 import type { TMenuSubmenuFocusPluginEvents } from './types'
 
 /**
@@ -24,16 +26,17 @@ import type { TMenuSubmenuFocusPluginEvents } from './types'
  *   возвращается на его строку, меню над ним открыто. Клавишу гасит
  *   `preventDefault`, и меню над подменю её пропускает, как слои Select в
  *   поповере;
- * - **возвращать ли фокус.** Только когда фокус ещё в подменю или нигде:
- *   подменю, закрытое вместе с меню (выбор пункта), не тянет его на строку
- *   спрятанной панели — меню уже вернуло его на триггер. Нажатие и уход
- *   фокуса мимо фокус не возвращают, как у Popover: пользователь уже там,
- *   куда нажал или навёл;
+ * - **возвращать ли фокус.** Только когда фокус ещё в подменю или нигде
+ *   (`holdsFocus`): подменю, закрытое вместе с меню (выбор пункта), не тянет
+ *   его на строку спрятанной панели — меню уже вернуло его на триггер.
+ *   Нажатие и уход фокуса мимо фокус не возвращают, как у Popover:
+ *   пользователь уже там, куда нажал или навёл;
  * - **Tab.** Закрывает все меню (APG) и ведёт к остановке за корнем меню, а
  *   корня подменю не знает. Поэтому подменю сообщает о Tab меню над собой
  *   (`tab`), а то — дальше, до корня (`TMenuFocusPlugin`): тот закрывается и
- *   ведёт фокус, как Tab из своей панели. Подписка — через реестр наборов
- *   коллекции (`listenSubmenuTabs`).
+ *   ведёт фокус, как Tab из своей панели. Так же доходит Tab из слоёв под
+ *   подменю — его подменю и панелей его пунктов. Подписка — через реестр
+ *   наборов коллекции (`listenNestedTabs`).
  */
 export class TMenuSubmenuFocusPlugin extends TOverlayFocusPlugin<TMenuSubmenuFocusPluginEvents> {
 	private _navigation: TMenuSubmenuKeyboardPlugin | null = null
@@ -48,8 +51,8 @@ export class TMenuSubmenuFocusPlugin extends TOverlayFocusPlugin<TMenuSubmenuFoc
 			this._restore = false
 		})
 
-		// Tab подменю ниже — дальше, к корню
-		listenSubmenuTabs(ctx, (event) => this.events.emit('tab', event))
+		// Tab подменю и панелей пунктов ниже — дальше, к корню
+		listenNestedTabs(ctx, (event) => this.events.emit('tab', event))
 	}
 
 	override destroy(): void {
@@ -74,12 +77,7 @@ export class TMenuSubmenuFocusPlugin extends TOverlayFocusPlugin<TMenuSubmenuFoc
 
 	/** Возвращать фокус, только пока он в подменю или нигде. */
 	protected override _returnsFocus(root: Element): boolean {
-		const doc = root.ownerDocument
-		const active = doc.activeElement
-
-		if (!active || active === doc.body || active === doc.documentElement) return true
-
-		return this._dismiss?.isInside(active) ?? false
+		return holdsFocus(root, this._dismiss)
 	}
 
 	/** Tab в подменю — меню над ним: куда вести фокус, решает корень. */
@@ -89,15 +87,14 @@ export class TMenuSubmenuFocusPlugin extends TOverlayFocusPlugin<TMenuSubmenuFoc
 }
 
 /**
- * Слушать Tab подменю этого меню: их модели фокуса сообщают о нём событием
- * (`tab`), а их наборы лежат в реестре коллекции. Подписка — прямым `on`:
- * шина плагина элемента умирает вместе с его набором.
+ * Слушать Tab вложенных слоёв этого меню — подменю и панелей пунктов с
+ * панелью: их модели фокуса сообщают о нём событием (`tab`), а их наборы
+ * лежат в реестре коллекции. Подписка — прямым `on`: шина плагина элемента
+ * умирает вместе с его набором.
  */
-export function listenSubmenuTabs(
-	ctx: IPluginContext,
-	onTab: (event: KeyboardEvent) => void,
-): void {
+export function listenNestedTabs(ctx: IPluginContext, onTab: (event: KeyboardEvent) => void): void {
 	ctx.get(TCollectionBundlesPlugin)?.events.on('bundle:registered', ({ bundle }) => {
 		bundle.get(TMenuSubmenuFocusPlugin)?.events.on('tab', onTab)
+		bundle.get(TMenuPopoverItemFocusPlugin)?.events.on('tab', onTab)
 	})
 }

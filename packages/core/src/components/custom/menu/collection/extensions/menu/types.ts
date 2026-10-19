@@ -2,7 +2,7 @@ import type { IMenuOwner } from '../../../types'
 import type { IExtension, IExtensionItems } from '../../../../../base/collection'
 import type { IMenuItemExtension } from './item'
 import type { IMenuItem } from '../../../item/types'
-import type { IMenuSubmenu } from '../../../submenu/types'
+import type { IMenuPopupItem } from '../../../popup-item/types'
 
 /**
  * Контракт расширения меню.
@@ -18,10 +18,10 @@ export interface IMenuExtension<
 >
 	extends IExtension<TItem, TMenuExtensionEvents>, IExtensionItems<TItem, TItemExt> {
 	/**
-	 * Открытое подменю этого меню — пункт с подменю, чья панель открыта.
-	 * Открыто бывает одно: открывшееся закрывает прежнее. `null` — открытого нет.
+	 * Пункт этого меню с открытой панелью — подменю или пункт с панелью.
+	 * Открыта бывает одна: открывшаяся закрывает прежнюю. `null` — такого нет.
 	 */
-	readonly opened: IMenuSubmenu | null
+	readonly opened: IMenuPopupItem | null
 	/**
 	 * Нажатие пункта-действия: закрыть меню целиком и сообщить `choose`.
 	 * Возвращает `false`, если пункт недоступен или это не действие.
@@ -33,8 +33,9 @@ export interface IMenuExtension<
 	 */
 	toggleItem(item: TItem): boolean
 	/**
-	 * Открыть подменю пункта — нажатием, наведением или клавишей. Выключенному
-	 * и пункту без подменю — отказ. Возвращает, открыто ли подменю после вызова.
+	 * Открыть панель пункта — подменю или панель пункта с панелью — нажатием,
+	 * наведением или клавишей. Выключенному и пункту без своей панели — отказ.
+	 * Возвращает, открыта ли панель после вызова.
 	 */
 	openItem(item: TItem): boolean
 }

@@ -911,3 +911,289 @@ describe('подменю', () => {
 		expect(find('.so-menu-group__label', subPanel()).textContent).toBe('Отправить')
 	})
 })
+
+/**
+ * Пункт с панелью — `Menu.PopoverItem`: строка открывает сбоку немодальную
+ * панель-диалог с любым содержимым. Переходы плагинов —
+ * `plugins/__tests__/menu-popover-item.plugin.spec.ts`; здесь — что во Vue
+ * пункт входит в коллекцию меню, связки стоят на своих узлах, панель
+ * телепортирована и открывается нажатием и клавишами, фокус ходит между
+ * меню и панелью, а содержимое панели меню не закрывает.
+ */
+describe('пункт с панелью', () => {
+	/** Строка пункта с панелью — узел с ролью у пункта «Срок». */
+	const dueRow = () => find('.so-menu-item > [aria-haspopup="dialog"]')
+
+	/** Панель по `id` — так на неё ссылается `aria-controls`. */
+	const panelOf = (node: HTMLElement): HTMLElement =>
+		find(`#${node.getAttribute('aria-controls') ?? ''}`)
+
+	const rootPanel = () => panelOf(triggerNode())
+	const duePanel = () => panelOf(dueRow())
+	const shown = (node: HTMLElement) => node.style.display !== 'none'
+
+	/** Клавиша на узле и кадр модели фокуса. */
+	async function press(
+		target: HTMLElement,
+		key: string,
+		init: KeyboardEventInit = {},
+	): Promise<KeyboardEvent> {
+		const event = new KeyboardEvent('keydown', {
+			key,
+			bubbles: true,
+			cancelable: true,
+			...init,
+		})
+
+		target.dispatchEvent(event)
+		await nextTick()
+		await nextFrame()
+
+		return event
+	}
+
+	/**
+	 * Меню «Изменить · Срок → (Раньше, Позже) · Поделиться → (Ссылка)»
+	 * разметкой; `due` — пропсы пункта с панелью.
+	 */
+	const markup = (menu: Record<string, unknown> = {}, due: Record<string, unknown> = {}) =>
+		h(Menu, menu, {
+			trigger,
+			default: () => [
+				h(Menu.Item, { value: 'edit', text: 'Изменить' }),
+				h(Menu.PopoverItem, { value: 'due', text: 'Срок', ...due }, () => [
+					h('button', { class: 'so-test-earlier' }, 'Раньше'),
+					h('button', { class: 'so-test-later' }, 'Позже'),
+				]),
+				h(Menu.Submenu, { value: 'share', text: 'Поделиться' }, () => [
+					h(Menu.Item, { value: 'link', text: 'Ссылка' }),
+				]),
+			],
+		})
+
+	/** Открыть меню клавишей и спуститься на «Срок». */
+	async function openOnDue(): Promise<void> {
+		triggerNode().focus()
+		await press(triggerNode(), 'ArrowDown')
+		await press(rowOf('Изменить'), 'ArrowDown')
+	}
+
+	it('строка — пункт меню, панель — диалог с именем от строки, в body и скрыта', async () => {
+		await render(() => markup())
+
+		const row = dueRow()
+
+		expect(row.getAttribute('role')).toBe('menuitem')
+		expect(row.getAttribute('tabindex')).toBe('-1')
+		expect(row.getAttribute('aria-expanded')).toBe('false')
+		expect(row.id).not.toBe('')
+		expect(duePanel().getAttribute('role')).toBe('dialog')
+		expect(duePanel().getAttribute('aria-labelledby')).toBe(row.id)
+		expect(duePanel().getAttribute('tabindex')).toBe('-1')
+		expect(duePanel().classList).toContain('so-menu-item__panel')
+		expect(duePanel().parentElement).toBe(document.body)
+		expect(duePanel()).not.toBe(rootPanel())
+		expect(shown(duePanel())).toBe(false)
+		// Содержимое — в своей обёртке, без lazyMount смонтировано сразу
+		expect(duePanel().querySelector('.so-menu-item__content .so-test-earlier')).not.toBeNull()
+		// Стрелка у конца строки — немая: о панели говорит aria-haspopup
+		expect(find('.so-menu-item__arrow', row).getAttribute('aria-hidden')).toBe('true')
+		expect(row.querySelector('.so-menu-item__arrow .so-icon')).not.toBeNull()
+		// Пункт — в коллекции меню, рядом с остальными
+		expect(rows().map((candidate) => candidate.textContent?.trim())).toEqual([
+			'Изменить',
+			'Срок',
+			'Поделиться',
+		])
+	})
+
+	it('клик по строке открывает панель — фокус в ней, повторный клик её не закрывает', async () => {
+		await render(() => markup())
+
+		await open()
+		await click(dueRow())
+		await nextFrame()
+
+		expect(shown(duePanel())).toBe(true)
+		expect(dueRow().getAttribute('aria-expanded')).toBe('true')
+		expect(dueRow().parentElement?.dataset.open).toBe('true')
+		expect(document.activeElement).toBe(find('.so-test-earlier'))
+
+		await click(dueRow())
+
+		expect(shown(duePanel())).toBe(true)
+		expect(shown(rootPanel())).toBe(true)
+	})
+
+	it.each(['ArrowRight', 'Enter'])(
+		'%s на строке открывает панель — фокус на её первой остановке, меню открыто',
+		async (key) => {
+			await render(() => markup())
+
+			await openOnDue()
+
+			expect(document.activeElement).toBe(dueRow())
+
+			await press(dueRow(), key)
+
+			expect(shown(duePanel())).toBe(true)
+			expect(shown(rootPanel())).toBe(true)
+			expect(document.activeElement).toBe(find('.so-test-earlier'))
+		},
+	)
+
+	it('Escape в панели закрывает её — фокус на строке; следующий Escape — меню', async () => {
+		await render(() => markup())
+
+		await openOnDue()
+		await press(dueRow(), 'ArrowRight')
+		await press(find('.so-test-earlier'), 'Escape')
+
+		expect(shown(duePanel())).toBe(false)
+		expect(shown(rootPanel())).toBe(true)
+		expect(document.activeElement).toBe(dueRow())
+
+		await press(dueRow(), 'Escape')
+
+		expect(shown(rootPanel())).toBe(false)
+		expect(document.activeElement).toBe(triggerNode())
+	})
+
+	it('Shift+Tab с первой остановки — на строку, Tab со строки — снова в панель', async () => {
+		await render(() => markup())
+
+		await openOnDue()
+		await press(dueRow(), 'ArrowRight')
+		await press(find('.so-test-earlier'), 'Tab', { shiftKey: true })
+
+		expect(document.activeElement).toBe(dueRow())
+		expect(shown(duePanel())).toBe(true)
+
+		await press(dueRow(), 'Tab')
+
+		expect(document.activeElement).toBe(find('.so-test-earlier'))
+	})
+
+	it('Tab с последней остановки закрывает всё меню и ведёт к остановке за ним', async () => {
+		await render(() => h('div', [markup(), h('button', { class: 'so-test-after' }, 'После')]))
+
+		await openOnDue()
+		await press(dueRow(), 'ArrowRight')
+		find('.so-test-later').focus()
+		await press(find('.so-test-later'), 'Tab')
+
+		expect(shown(rootPanel())).toBe(false)
+		expect(shown(duePanel())).toBe(false)
+		expect(document.activeElement).toBe(find('.so-test-after'))
+	})
+
+	it('нажатие в содержимом панели меню не закрывает и не выбирает пункт', async () => {
+		const chosen: unknown[] = []
+
+		await render(() => markup({ onChoose: (item: IMenuItem) => chosen.push(item.value) }))
+
+		await open()
+		await click(dueRow())
+		await nextFrame()
+		await click(find('.so-test-later'))
+
+		expect(shown(rootPanel())).toBe(true)
+		expect(shown(duePanel())).toBe(true)
+		expect(chosen).toEqual([])
+	})
+
+	it('открыта одна панель: пункт с панелью закрывает подменю, и подменю — его', async () => {
+		await render(() => markup())
+
+		const shareRow = () => find('.so-menu-item > [aria-haspopup="menu"]')
+
+		await open()
+		await click(shareRow())
+		await click(dueRow())
+
+		expect(shown(duePanel())).toBe(true)
+		expect(shown(panelOf(shareRow()))).toBe(false)
+
+		await click(shareRow())
+
+		expect(shown(duePanel())).toBe(false)
+		expect(shown(panelOf(shareRow()))).toBe(true)
+	})
+
+	it('lazyMount: содержимое — с первого открытия, закрытие его не снимает', async () => {
+		await render(() => markup({}, { lazyMount: true }))
+
+		expect(duePanel().querySelector('.so-test-earlier')).toBeNull()
+		expect(duePanel().querySelector('.so-menu-item__content')).not.toBeNull()
+
+		await open()
+		await click(dueRow())
+
+		expect(duePanel().querySelector('.so-test-earlier')).not.toBeNull()
+
+		await press(find('.so-test-earlier'), 'Escape')
+
+		expect(shown(duePanel())).toBe(false)
+		expect(duePanel().querySelector('.so-test-earlier')).not.toBeNull()
+	})
+
+	it('v-model:open — в обе стороны', async () => {
+		const opened = ref(false)
+
+		await render(() =>
+			markup(
+				{},
+				{ open: opened.value, 'onUpdate:open': (value: boolean) => (opened.value = value) },
+			),
+		)
+
+		await openOnDue()
+		await press(dueRow(), 'ArrowRight')
+
+		expect(opened.value).toBe(true)
+
+		opened.value = false
+		await nextTick()
+
+		expect(shown(duePanel())).toBe(false)
+	})
+
+	it('слоты строки: значок, свой текст со scope и своя стрелка', async () => {
+		await render(() =>
+			h(Menu, null, {
+				trigger,
+				default: () =>
+					h(
+						Menu.PopoverItem,
+						{ value: 'due', text: 'Срок' },
+						{
+							leading: () => h('i', { class: 'so-test-icon' }),
+							header: ({ text, open }: { text: string; open: boolean }) =>
+								`${text}: ${open ? 'открыт' : 'закрыт'}`,
+							'arrow-icon': () => h('b', { class: 'so-test-arrow' }),
+							default: () => 'Календарь',
+						},
+					),
+			}),
+		)
+
+		const row = dueRow()
+
+		expect(row.querySelector('.so-menu-item__icon .so-test-icon')).not.toBeNull()
+		expect(find('.so-button__text', row).textContent).toBe('Срок: закрыт')
+		expect(row.querySelector('.so-menu-item__arrow .so-test-arrow')).not.toBeNull()
+		expect(row.querySelector('.so-menu-item__arrow .so-icon')).toBeNull()
+		expect(find('.so-menu-item__content', duePanel()).textContent).toBe('Календарь')
+	})
+
+	it('размер меню — у пункта с панелью, вариант — свой; у панели модификаторов нет', async () => {
+		await render(() => markup({ size: 'lg' }, { variant: 'danger' }))
+
+		const item = dueRow().parentElement
+
+		expect(item?.classList).toContain('so-menu-item--size-lg')
+		expect(item?.classList).toContain('so-menu-item--variant-danger')
+		// Содержимое панели красится само: размер и вариант меню ему ни к чему
+		expect([...duePanel().classList].some((cls) => cls.includes('--size-'))).toBe(false)
+	})
+})

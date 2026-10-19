@@ -38,8 +38,16 @@ import type { TPopoverFocusPluginEvents } from './types'
  *
  * Поповер немодальный: ловушки фокуса, `aria-modal` и `inert` нет, страница
  * за панелью доступна.
+ *
+ * Наследнику со своим триггером остаются две точки: что считать остановками
+ * триггера (`_triggerStops`) и что делает Tab с последней остановки панели
+ * (`_tabOutOfPanel`). Так модель фокуса пункта меню с панелью берёт эти
+ * правила Tab целиком: её триггер — строка пункта, а куда фокусу уйти из
+ * панели, решает меню над пунктом.
  */
-export class TPopoverFocusPlugin extends TOverlayFocusPlugin<TPopoverFocusPluginEvents> {
+export class TPopoverFocusPlugin<
+	TEvents extends TPopoverFocusPluginEvents = TPopoverFocusPluginEvents,
+> extends TOverlayFocusPlugin<TEvents> {
 	override install(ctx: IPluginContext, options?: IOverlayOpenOptions): void {
 		super.install(ctx, options)
 
@@ -54,8 +62,13 @@ export class TPopoverFocusPlugin extends TOverlayFocusPlugin<TPopoverFocusPlugin
 		return this._triggerStops(root)
 	}
 
-	/** Остановки триггера: корня, но не панели, когда она лежит в корне (`contained`). */
-	private _triggerStops(root: Element): Element[] {
+	/**
+	 * Остановки триггера: откуда Tab ведёт в панель, куда Shift+Tab из неё
+	 * возвращает и куда уходит фокус, когда запомненного элемента нет. У
+	 * поповера это остановки корня, но не панели, когда она лежит в корне
+	 * (`contained`). Наследник подставляет свой триггер.
+	 */
+	protected _triggerStops(root: Element): Element[] {
 		const panel = this._dismiss?.findPanel() ?? this._panel
 
 		return tabStops(root).filter((stop) => !panel?.contains(stop))
@@ -105,12 +118,7 @@ export class TPopoverFocusPlugin extends TOverlayFocusPlugin<TPopoverFocusPlugin
 		if (focusFirst(this._triggerStops(root).reverse())) event.preventDefault()
 	}
 
-	/**
-	 * Tab с последней остановки панели — к первой остановке после корня.
-	 * Поповер закрывается без возврата фокуса: фокус уходит дальше по
-	 * странице. Остановок после корня нет — Tab не гасится, фокус уводит
-	 * браузер.
-	 */
+	/** Tab с последней остановки панели или с неё самой, когда остановок нет, — наружу. */
 	private _tabForwardFromPanel(
 		event: KeyboardEvent,
 		root: Element,
@@ -119,6 +127,15 @@ export class TPopoverFocusPlugin extends TOverlayFocusPlugin<TPopoverFocusPlugin
 	): void {
 		if (active !== (tabStops(panel).at(-1) ?? panel)) return
 
+		this._tabOutOfPanel(event, root, panel)
+	}
+
+	/**
+	 * Tab из панели наружу — к первой остановке после корня. Поповер
+	 * закрывается без возврата фокуса: фокус уходит дальше по странице.
+	 * Остановок после корня нет — Tab не гасится, фокус уводит браузер.
+	 */
+	protected _tabOutOfPanel(event: KeyboardEvent, root: Element, panel: Element): void {
 		this._restore = false
 		this._close()
 

@@ -372,8 +372,9 @@ export const PREVIEWS: Record<string, TPreview> = {
 	// вызова. Режим область берёт из пропсов колонки, как таблица своё окно:
 	// у колонки экземпляра его нет, и там меню вызывают над кнопкой. Пункты —
 	// разметкой: группа флажков с подписью, действия с подсказками сочетаний,
-	// подменю с подменю внутри, выключенное действие и «опасный» пункт своего
-	// варианта
+	// подменю с подменю внутри, пункт с панелью — календарём, который
+	// монтируется с первым открытием, — выключенное действие и «опасный» пункт
+	// своего варианта
 	menu: (bind) =>
 		h(Menu as Component, bind, {
 			trigger: ({ triggerAria, triggerDataset }: TMenuTriggerScope) =>
@@ -403,6 +404,9 @@ export const PREVIEWS: Record<string, TPreview> = {
 						h(Menu.Item, { value: 'whatsapp', text: 'WhatsApp' }),
 					]),
 				]),
+				h(Menu.PopoverItem, { value: 'due', text: 'Срок', lazyMount: true }, () =>
+					h(Calendar as Component),
+				),
 				h(Menu.Item, { value: 'archive', text: 'В архив', disabled: true }),
 				h(Menu.Separator),
 				h(

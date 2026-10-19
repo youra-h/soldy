@@ -272,6 +272,14 @@ const dragAndDrop = new TDragAndDrop()
 	<Menu.Submenu :items="'link'" />
 	<Menu.Submenu :items="[{ value: 'link', text: 'Ссылка' }]" />
 
+	<!-- @vue-expect-error — открытость панели пункта — флаг, а не строка -->
+	<Menu.PopoverItem :open="'yes'" />
+	<Menu.PopoverItem open />
+
+	<!-- @vue-expect-error — lazyMount — флаг, а не строка -->
+	<Menu.PopoverItem :lazy-mount="'yes'" />
+	<Menu.PopoverItem lazy-mount />
+
 	<!-- @vue-expect-error — подпись группы строкой -->
 	<Menu.Group :label="42" />
 	<Menu.Group label="Вид" />

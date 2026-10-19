@@ -7,7 +7,12 @@ import type {
 import { TBaseOwnerItemExtension, selectionOf } from '../../../../../base/collection'
 import type { IMenuItem } from '../../../item/types'
 import type { IMenuOwner } from '../../../types'
-import type { IMenuSubmenu } from '../../../submenu/types'
+import type {
+	IMenuPopupItem,
+	IMenuPopupItemProps,
+	TMenuPopupItemEvents,
+} from '../../../popup-item/types'
+import { isMenuPopupItem } from '../../../popup-item/popup-item.class'
 import { isMenuSubmenu } from '../../../submenu/submenu.class'
 import type { IMenuExtension, TMenuEngineOptions, TMenuExtensionEvents } from './types'
 import { TMenuItemExtension, type IMenuItemExtension } from './item'
@@ -41,13 +46,16 @@ import { TMenuItemExtension, type IMenuItemExtension } from './item'
  *    а свой модификатор пункта сильнее. Писать вариант меню пункту «если
  *    своего нет» значило бы завести второй путь: в одном поле не различить,
  *    задал ли его потребитель или записало меню.
- * 4. **Подменю.** Открыто одно: открывшееся закрывает прежнее, а закрывшееся
- *    меню закрывает открытое (и оно — свои, до самого нижнего уровня). Выбор
- *    в подменю доходит сюда событием подменю (`choose`) и закрывает это меню
- *    так же, как выбор своего пункта.
+ * 4. **Панели пунктов** — у пунктов со своей панелью (`isMenuPopupItem`):
+ *    подменю и пункта с панелью. Открыта одна: открывшаяся закрывает
+ *    прежнюю, — у меню одна панель сбоку, какого бы вида ни был пункт, — а
+ *    закрывшееся меню закрывает открытую (подменю — и свои, до самого нижнего
+ *    уровня). Выбор в подменю доходит сюда событием подменю (`choose`) и
+ *    закрывает это меню так же, как выбор своего пункта: подменю — ещё и
+ *    владелец своих пунктов.
  *
  * Через него идёт нажатие пункта: `chooseItem` у действия, `toggleItem` у
- * флажка, `openItem` у пункта с подменю. Выключенному пункту все три
+ * флажка, `openItem` у пункта со своей панелью. Выключенному пункту все три
  * отказывают — `item.disabled` из кода пункта; своего `disabled` у меню нет.
  */
 export class TMenuExtension<
@@ -64,8 +72,14 @@ export class TMenuExtension<
 {
 	readonly name = 'menu' as const
 
-	/** Подписки на подменю коллекции: открытость и выбор в них. */
-	private readonly _watched = new Map<IMenuSubmenu, () => void>()
+	/**
+	 * Подписки на пункты со своей панелью: открытость панели, а у подменю —
+	 * ещё и выбор в нём.
+	 */
+	private readonly _watched = new Map<
+		IMenuPopupItem<IMenuPopupItemProps, TMenuPopupItemEvents>,
+		() => void
+	>()
 
 	constructor(options?: IBaseOwnerItemExtensionOptions<TItem, IMenuItemExtension<TItem>>) {
 		super(TMenuItemExtension, options)
@@ -118,18 +132,18 @@ export class TMenuExtension<
 				ctx.driver.valueOf().forEach((item) => this._applySize(item as TItem, owner)),
 			)
 
-			// Закрытое меню не держит открытых подменю: их панели стоят у
+			// Закрытое меню не держит открытых панелей пунктов: они стоят у
 			// строк, которых больше не видно
 			scope.on(owner.events, 'change:open', (open: boolean) => {
-				if (!open) this._closeSubmenus(null)
+				if (!open) this._closePanels(null)
 			})
 		})
 	}
 
-	/** Открытое подменю этого меню; `null` — открытого нет. */
-	get opened(): IMenuSubmenu | null {
-		for (const submenu of this._watched.keys()) {
-			if (submenu.open) return submenu
+	/** Пункт этого меню с открытой панелью — подменю или пункт с панелью; `null` — такого нет. */
+	get opened(): IMenuPopupItem | null {
+		for (const item of this._watched.keys()) {
+			if (item.open) return item
 		}
 
 		return null
@@ -141,8 +155,8 @@ export class TMenuExtension<
 	 *
 	 * Выключенный пункт не нажимается: он виден и объявляется скринридером
 	 * недоступным, но нажатие ничего не делает. Проверка здесь, а не в
-	 * разметке: она одна на клик и на клавиатуру. Пункт с подменю — не
-	 * действие: его нажатие открывает подменю (`openItem`).
+	 * разметке: она одна на клик и на клавиатуру. Пункт со своей панелью — не
+	 * действие: его нажатие открывает панель (`openItem`).
 	 *
 	 * Сначала меню закрывается целиком — фокус возвращается на триггер
 	 * (`TMenuFocusPlugin`), — потом уходит `choose`. Обработчик, который
@@ -150,7 +164,7 @@ export class TMenuExtension<
 	 * закрывшись, вернёт его туда, а не на строку спрятанной панели.
 	 */
 	chooseItem(item: TItem): boolean {
-		if (item.disabled || isMenuSubmenu(item)) return false
+		if (item.disabled || isMenuPopupItem(item)) return false
 
 		this._choose(item)
 
@@ -175,15 +189,15 @@ export class TMenuExtension<
 	}
 
 	/**
-	 * Открыть подменю пункта — нажатием строки, наведением или клавишей.
-	 * Открывает, а не переключает: подменю, открытое наведением, клик по
-	 * строке не закроет. Прежнее открытое подменю закрывается само — на
-	 * открытие нового (`_watch`).
+	 * Открыть панель пункта — подменю или панель пункта с панелью — нажатием
+	 * строки, наведением или клавишей. Открывает, а не переключает: панель,
+	 * открытая наведением, клик по строке не закроет. Прежняя открытая панель
+	 * закрывается сама — на открытие новой (`_watch`).
 	 *
-	 * @returns открыто ли подменю после вызова
+	 * @returns открыта ли панель после вызова
 	 */
 	openItem(item: TItem): boolean {
-		if (!isMenuSubmenu(item) || item.disabled) return false
+		if (!isMenuPopupItem(item) || item.disabled) return false
 
 		item.open = true
 
@@ -205,38 +219,42 @@ export class TMenuExtension<
 	}
 
 	/**
-	 * Следить за подменю: открылось — закрыть прежнее открытое, в нём выбрали
-	 * пункт — закрыть меню и сообщить выбор выше. У остальных пунктов
-	 * следить не за чем.
+	 * Следить за пунктом со своей панелью: открылась его панель — закрыть
+	 * прежнюю открытую. Подменю — ещё и владелец своих пунктов: в нём выбрали
+	 * пункт — закрыть меню и сообщить выбор выше. У остальных пунктов следить
+	 * не за чем.
 	 */
 	private _watch(item: TItem): void {
-		if (!isMenuSubmenu(item) || this._watched.has(item)) return
+		if (!isMenuPopupItem(item) || this._watched.has(item)) return
 
 		const onOpen = (open: boolean): void => {
-			if (open) this._closeSubmenus(item)
+			if (open) this._closePanels(item)
 		}
-		const onChoose = (chosen: IMenuItem): void => this._choose(chosen)
+		const offs = [(): void => item.events.off('change:open', onOpen)]
 
 		item.events.on('change:open', onOpen)
-		item.events.on('choose', onChoose)
 
-		this._watched.set(item, () => {
-			item.events.off('change:open', onOpen)
-			item.events.off('choose', onChoose)
-		})
+		if (isMenuSubmenu(item)) {
+			const onChoose = (chosen: IMenuItem): void => this._choose(chosen)
+
+			item.events.on('choose', onChoose)
+			offs.push(() => item.events.off('choose', onChoose))
+		}
+
+		this._watched.set(item, () => offs.forEach((off) => off()))
 	}
 
 	private _unwatch(item: TItem): void {
-		if (!isMenuSubmenu(item)) return
+		if (!isMenuPopupItem(item)) return
 
 		this._watched.get(item)?.()
 		this._watched.delete(item)
 	}
 
-	/** Закрыть открытые подменю, кроме `keep`. */
-	private _closeSubmenus(keep: IMenuSubmenu | null): void {
-		for (const submenu of this._watched.keys()) {
-			if (submenu !== keep) submenu.open = false
+	/** Закрыть открытые панели пунктов, кроме панели `keep`. */
+	private _closePanels(keep: IMenuPopupItem | null): void {
+		for (const item of this._watched.keys()) {
+			if (item !== keep) item.open = false
 		}
 	}
 

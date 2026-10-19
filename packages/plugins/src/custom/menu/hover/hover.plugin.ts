@@ -1,5 +1,5 @@
 import { batchOf, isMenuSubmenu, menuOf } from '@soldy-ui/core'
-import type { IControl, IMenuOwner, IMenuSubmenu } from '@soldy-ui/core'
+import type { IControl, IMenuOwner, IMenuPopupItem } from '@soldy-ui/core'
 import { TBasePlugin } from '../../../base'
 import type { IPluginContext } from '../../../base'
 import { TElementPlugin } from '../../element'
@@ -23,16 +23,16 @@ const NO_SCROLL: FocusOptions = { preventScroll: true }
 const SUBMENU_OPEN_DELAY = 100
 
 /**
- * Сколько держит путь к открытому подменю после ухода со строки, мс: дольше
- * указатель идёт к панели только стоя, а стоящий на соседнем пункте его и
- * выбрал (Radix — те же 300 мс).
+ * Сколько держит путь к открытой панели пункта после ухода со строки, мс:
+ * дольше указатель идёт к панели только стоя, а стоящий на соседнем пункте
+ * его и выбрал (Radix — те же 300 мс).
  */
 const SUBMENU_GRACE_DELAY = 300
 
 /** Указатель, который наводят, — мышь и перо. У пальца наведения нет. */
 const hovers = (e: PointerEvent): boolean => e.pointerType === 'mouse' || e.pointerType === 'pen'
 
-/** Путь к открытому подменю: многоугольник и снятие по таймеру. */
+/** Путь к открытой панели пункта: многоугольник и снятие по таймеру. */
 type TGrace = { readonly area: readonly TPoint[]; readonly timer: ReturnType<typeof setTimeout> }
 
 /** Отложенное открытие подменю наведением. */
@@ -50,23 +50,27 @@ type TPendingOpen = { readonly uid: string | number; readonly timer: ReturnType<
  * подсвеченная и та, что под указателем. Касание не подсвечивает: у пальца
  * наведения нет, а нажатие пункта — его клик.
  *
- * **Подменю** — намерение указателя (APG Menu, как Radix и React Aria):
+ * **Панели пунктов** — намерение указателя (APG Menu, как Radix и React
+ * Aria):
  *
  * - указатель, простоявший на пункте с подменю `SUBMENU_OPEN_DELAY`,
  *   открывает его — через коллекцию (`openItem`): выключенному она
  *   откажет. Фокус остаётся на строке: в панель подменю он входит
- *   указателем или клавишами;
- * - указатель ушёл со строки открытого подменю — от точки ухода к его
- *   панели ложится путь (`graceArea`): пока указатель на нём, пункты по
- *   дороге подсветку не перехватывают, и подменю открыто. Путь держит
- *   `SUBMENU_GRACE_DELAY`, а сходит с него указатель — подсветка уходит к
- *   пункту под ним, и подменю закрывается тем же путём, что от клавиш:
- *   фокус ушёл из подменю — оно закрылось (`TDismissPlugin` с
+ *   указателем или клавишами. Пункт с панелью (`Menu.PopoverItem`)
+ *   наведением не открывается — нажатием и клавишами: его модель фокуса
+ *   уводит фокус в панель при открытии, а панели, открытой указателем, брать
+ *   его не положено;
+ * - указатель ушёл со строки пункта с открытой панелью — подменю или своей —
+ *   от точки ухода к панели ложится путь (`graceArea`): пока указатель на
+ *   нём, пункты по дороге подсветку не перехватывают, и панель открыта. Путь
+ *   держит `SUBMENU_GRACE_DELAY`, а сходит с него указатель — подсветка
+ *   уходит к пункту под ним, и панель закрывается тем же путём, что от
+ *   клавиш: фокус ушёл из пункта — его панель закрылась (`TDismissPlugin` с
  *   `focusOutside`);
- * - указатель ушёл с панели, пока подменю открыто, — подсветка остаётся у
- *   его строки: указатель уходит в его панель.
+ * - указатель ушёл с панели меню, пока панель пункта открыта, — подсветка
+ *   остаётся у его строки: указатель уходит в его панель.
  *
- * Панель подменю плагин находит у его набора — `TDismissPlugin` по пометке
+ * Панель пункта плагин находит у его набора — `TDismissPlugin` по пометке
  * владельцем, — а набор пункта — в реестре коллекции.
  *
  * Слушатели висят на панели, пока меню открыто: панель телепортирована, и
@@ -165,8 +169,8 @@ export class TMenuHoverPlugin extends TBasePlugin<any, TMenuHoverPluginEvents> {
 		return batchOf<IControl>(this._elements?.engine)?.shown ?? []
 	}
 
-	/** Открытое подменю этого уровня; `null` — открытого нет. */
-	private _opened(): IMenuSubmenu | null {
+	/** Пункт этого уровня с открытой панелью — подменю или своей; `null` — такого нет. */
+	private _opened(): IMenuPopupItem | null {
 		return menuOf(this._elements?.engine)?.opened ?? null
 	}
 
@@ -179,7 +183,7 @@ export class TMenuHoverPlugin extends TBasePlugin<any, TMenuHoverPluginEvents> {
 
 		this._lastUid = uid
 
-		// Путь к открытому подменю: пункты по дороге подсветку не перехватывают
+		// Путь к открытой панели пункта: пункты по дороге подсветку не перехватывают
 		if (this._onGrace(point, uid, last)) return
 
 		this._scheduleOpen(uid)
@@ -190,8 +194,8 @@ export class TMenuHoverPlugin extends TBasePlugin<any, TMenuHoverPluginEvents> {
 	}
 
 	/**
-	 * Указатель ушёл с панели: открытое подменю держит подсветку своей строки.
-	 * Путь к нему снят — указатель до панели дошёл или ушёл мимо, и
+	 * Указатель ушёл с панели: пункт с открытой панелью держит подсветку своей
+	 * строки. Путь к ней снят — указатель до панели дошёл или ушёл мимо, и
 	 * вернувшийся указатель решает заново.
 	 */
 	private readonly _onPointerLeave = (e: PointerEvent): void => {
@@ -207,9 +211,9 @@ export class TMenuHoverPlugin extends TBasePlugin<any, TMenuHoverPluginEvents> {
 	}
 
 	/**
-	 * Идёт ли указатель к открытому подменю. Только что ушёл с его строки —
-	 * путь ложится от точки ухода; путь есть и указатель на нём — да; сошёл с
-	 * пути — путь снят.
+	 * Идёт ли указатель к открытой панели пункта. Только что ушёл с его строки
+	 * — путь ложится от точки ухода; путь есть и указатель на нём — да; сошёл
+	 * с пути — путь снят.
 	 */
 	private _onGrace(point: TPoint, uid: string | number | undefined, last: unknown): boolean {
 		const opened = this._opened()
@@ -229,11 +233,11 @@ export class TMenuHoverPlugin extends TBasePlugin<any, TMenuHoverPluginEvents> {
 		return false
 	}
 
-	/** Путь от точки ухода к панели подменю — на время `SUBMENU_GRACE_DELAY`. */
-	private _layGrace(exit: TPoint, submenu: IMenuSubmenu): void {
+	/** Путь от точки ухода к панели пункта — на время `SUBMENU_GRACE_DELAY`. */
+	private _layGrace(exit: TPoint, item: IMenuPopupItem): void {
 		this._dropGrace()
 
-		const panel = this._bundles?.getByUid(submenu.uid)?.get(TDismissPlugin)?.findPanel()
+		const panel = this._bundles?.getByUid(item.uid)?.get(TDismissPlugin)?.findPanel()
 		const box = panel?.getBoundingClientRect()
 
 		// Панель ещё не разложена — пути нет
@@ -255,8 +259,8 @@ export class TMenuHoverPlugin extends TBasePlugin<any, TMenuHoverPluginEvents> {
 
 	/**
 	 * Пункт с подменю под указателем откроется, если указатель на нём
-	 * простоит: доступный, закрытый, — открытое и пункт без подменю
-	 * ожидание снимают.
+	 * простоит: доступный, закрытый, — открытое и пункт без подменю ожидание
+	 * снимают. Пункт с панелью наведением не открывается (см. шапку).
 	 */
 	private _scheduleOpen(uid: string | number | undefined): void {
 		const item =
