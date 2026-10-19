@@ -1,6 +1,13 @@
 import { Show, type JSX } from 'solid-js'
 import { Dynamic } from 'solid-js/web'
-import { createRootProps, renderSlot, rootTag, toControlAttrs, toRootForward } from '../../adapter'
+import {
+	Elevate,
+	createRootProps,
+	renderSlot,
+	rootTag,
+	toControlAttrs,
+	toRootForward,
+} from '../../adapter'
 import { setupSwitch } from './setup.component'
 import type { SwitchAttributes, SwitchProps } from './base.component'
 
@@ -10,7 +17,9 @@ import type { SwitchAttributes, SwitchProps } from './base.component'
  *
  * Корень по умолчанию — `span`: переключатель кладут в подпись `Label`, а
  * внутри `label` HTML разрешает только строчную разметку. Поэтому и всё
- * внутри — `span`.
+ * внутри — `span`. На корне — `attrs` и `dataset` (`data-disabled`,
+ * `data-invalid`): тема красит дорожку и подпись поля формы `Field` по корню,
+ * а `aria` — у вложенного `<input>`.
  *
  * `role="switch"` ядро пишет в `aria` поля, состояние скринридеру сообщает
  * нативный `checked` — Solid пишет его свойством узла, а на сервере —
@@ -22,6 +31,11 @@ import type { SwitchAttributes, SwitchProps } from './base.component'
  * имя, которое переключателю даёт подпись. В ручке — слот `on` у включённого
  * и `off` у выключенного, scope `{ value, ctrl }`. Запасного содержимого у
  * них нет, и каждый слот читается один раз — когда ручка его показывает.
+ *
+ * Поле формы `Field` над переключателем отдаёт ему ошибку, `id` и ссылки на
+ * части (`TFieldControlExtension`), а своему содержимому переключатель
+ * опускает пустую связку. Поэтому содержимое — в слое лифта переключателя
+ * (`Elevate`): слоты ручки читаются внутри него.
  */
 export function Switch(props: SwitchProps): JSX.Element {
 	const binding = setupSwitch(props)
@@ -30,7 +44,7 @@ export function Switch(props: SwitchProps): JSX.Element {
 	// Корню — его набор, класс и стиль потребителя; `ref` адаптера последним
 	const root = createRootProps(() => ({
 		state,
-		sets: [state.attrs],
+		sets: [state.attrs, state.dataset],
 		forward: toRootForward(binding.forwardProps()),
 	}))
 	const scope = () => ({ value: state.value, ctrl })
@@ -38,23 +52,25 @@ export function Switch(props: SwitchProps): JSX.Element {
 	return (
 		<Show when={state.rendered}>
 			<Dynamic {...root()} component={rootTag(state.tag)} ref={binding.ref}>
-				<input
-					type="checkbox"
-					id={state.id}
-					name={state.name}
-					disabled={state.disabled}
-					required={state.required}
-					{...state.aria}
-					{...toControlAttrs<SwitchAttributes>(binding.forwardProps())}
-					checked={state.value}
-				/>
-				<span class="so-switch__track" aria-hidden="true">
-					<span class="so-switch__track--thumb">
-						<Show when={state.value} fallback={renderSlot(props.off, scope())}>
-							{renderSlot(props.on, scope())}
-						</Show>
+				<Elevate layer={binding.layer}>
+					<input
+						type="checkbox"
+						id={state.id}
+						name={state.name}
+						disabled={state.disabled}
+						required={state.required}
+						{...state.aria}
+						{...toControlAttrs<SwitchAttributes>(binding.forwardProps())}
+						checked={state.value}
+					/>
+					<span class="so-switch__track" aria-hidden="true">
+						<span class="so-switch__track--thumb">
+							<Show when={state.value} fallback={renderSlot(props.off, scope())}>
+								{renderSlot(props.on, scope())}
+							</Show>
+						</span>
 					</span>
-				</span>
+				</Elevate>
 			</Dynamic>
 		</Show>
 	)

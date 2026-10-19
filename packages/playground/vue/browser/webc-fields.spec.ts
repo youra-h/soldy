@@ -1,6 +1,7 @@
 /**
  * Поля и подпись Web Components в настоящем браузере: `<div is="so-input">`,
- * `<span is="so-check-box">`, `<span is="so-switch">` и `<label is="so-label">`.
+ * `<span is="so-check-box">`, `<span is="so-switch">`, `<label is="so-label">`
+ * и поле формы `<div is="so-field">`.
  *
  * Корень — элемент потребителя, а `<input>` — узел шаблона в обычном DOM
  * страницы, и всё, что браузер делает с полем, он делает сам: печать с
@@ -8,8 +9,10 @@
  * jsdom ни того, ни другого честно не выполняет, а раскладки не считает вовсе
  * — поэтому спек браузерный. Теме корень поля Web Components — то же, что
  * корень остальных адаптеров: коробка флажка, дорожка переключателя и поле
- * каждого размера стоят так же, как у Vue. Разметку и наборы ядра сторожат
- * `ui/webc/__tests__/input.spec.ts`, `checkable.spec.ts` и `label.spec.ts`.
+ * каждого размера стоят так же, как у Vue, а части поля формы — на тех же
+ * местах на каждой стороне подписи. Разметку и наборы ядра сторожат
+ * `ui/webc/__tests__/input.spec.ts`, `checkable.spec.ts`, `label.spec.ts` и
+ * `field.spec.ts`.
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
@@ -17,7 +20,8 @@ import { render, cleanup } from 'vitest-browser-vue'
 import { userEvent } from 'vitest/browser'
 import { defineComponent, h, nextTick } from 'vue'
 import { COMPONENT_SIZES } from '@soldy-ui/playground-shared'
-import { CheckBox, Input, Switch } from '@soldy-ui/vue'
+import type { TFieldPosition } from '@soldy-ui/core'
+import { CheckBox, Field, Input, Switch } from '@soldy-ui/vue'
 import { TInputElement, type TInputElementProps } from '@soldy-ui/webc'
 
 import '@soldy-ui/theme-oren'
@@ -176,6 +180,120 @@ describe.each(COMPONENT_SIZES)('размер %s — как у Vue', (scale) => {
 
 			expect(vue.width).toBeGreaterThan(0)
 			expect(size(find(root, `.webc ${part}`, HTMLElement))).toEqual(vue)
+		}
+	})
+})
+
+/**
+ * Подпись поля формы называет поле своим `for`: клик по ней браузер доводит
+ * до поля — у поля ввода это фокус, у флажка — переключение.
+ */
+describe('Field · клик по подписи', () => {
+	it('поле ввода — фокус на поле', async () => {
+		const root = await show('<div is="so-field" label="Почта"><div is="so-input"></div></div>')
+
+		await userEvent.click(find(root, '.so-field__label', HTMLLabelElement))
+
+		expect(document.activeElement).toBe(find(root, '.so-input input', HTMLInputElement))
+	})
+
+	it('флажок — переключается одним change', async () => {
+		const root = await show(
+			'<div is="so-field" label="Согласие"><span is="so-check-box"></span></div>',
+		)
+		const field = find(root, 'input', HTMLInputElement)
+		let changes = 0
+
+		field.addEventListener('change', () => changes++)
+
+		await userEvent.click(find(root, '.so-field__label', HTMLLabelElement))
+		await nextFrame()
+
+		expect(field.checked).toBe(true)
+		expect(changes).toBe(1)
+	})
+})
+
+/** Место узла в блоке — от его угла — и размер, в пикселях. */
+function placeIn(node: Element, block: Element) {
+	const outer = block.getBoundingClientRect()
+	const inner = node.getBoundingClientRect()
+
+	return {
+		x: Math.round(inner.left - outer.left),
+		y: Math.round(inner.top - outer.top),
+		width: Math.round(inner.width),
+		height: Math.round(inner.height),
+	}
+}
+
+/**
+ * Поле формы Web Components и поле Vue с теми же частями стоят рядом — в
+ * одинаковых блоках одной ширины. Тема видит у них одни классы и одну
+ * разметку внутри корня: подпись, контрол, подсказка и ошибка со значком
+ * встают на те же места и тех же размеров на каждой стороне подписи. Значок у
+ * Web Components — `<span is="so-icon">` с рисунком внутри, а у Vue — сам
+ * `<svg>`: для темы это один корень.
+ */
+describe.each(['top', 'start', 'end'] as const)('Field, подпись %s — как у Vue', (position) => {
+	/** Блок одной ширины для пары полей. */
+	const BOX = 'width: 360px'
+
+	async function pair(
+		props: { invalid?: boolean; position: TFieldPosition },
+		attributes: string,
+	): Promise<{ vue: Element; webc: Element }> {
+		render(
+			defineComponent({
+				render: () =>
+					h('div', { class: 'vue', style: BOX }, [
+						h(
+							Field,
+							{ label: 'Почта', helper: 'Подсказка', error: 'Нет @', ...props },
+							() => h(Input),
+						),
+					]),
+			}),
+		)
+		await nextTick()
+
+		const root = await show(
+			`<div class="webc" style="${BOX}"><div is="so-field" label="Почта" helper="Подсказка" error="Нет @" ${attributes}><div is="so-input"></div></div></div>`,
+		)
+
+		return { vue: find(document, '.vue', HTMLElement), webc: find(root, '.webc', HTMLElement) }
+	}
+
+	it('подпись, контрол и подсказка', async () => {
+		const { vue, webc } = await pair({ position }, `position="${position}"`)
+
+		for (const part of [
+			'.so-field',
+			'.so-field__label',
+			'.so-field__control',
+			'.so-input',
+			'.so-field__helper',
+		]) {
+			const expected = placeIn(find(vue, part, HTMLElement), vue)
+
+			expect(expected.width).toBeGreaterThan(0)
+			expect(placeIn(find(webc, part, HTMLElement), webc)).toEqual(expected)
+		}
+	})
+
+	it('ошибка со значком — на месте подсказки', async () => {
+		const { vue, webc } = await pair(
+			{ position, invalid: true },
+			`position="${position}" invalid`,
+		)
+
+		expect(webc.querySelector('.so-field__helper')).toBeNull()
+
+		for (const part of ['.so-field__error', '.so-field__error-icon', '.so-field__error-text']) {
+			const expected = placeIn(find(vue, part, Element), vue)
+
+			expect(expected.width).toBeGreaterThan(0)
+			expect(placeIn(find(webc, part, Element), webc)).toEqual(expected)
 		}
 	})
 })

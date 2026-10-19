@@ -9,12 +9,18 @@
  *
  * `engine` — готовая коллекция снаружи, свойство элемента (`el.engine`):
  * фасад работает на ней, а без неё собирает свою (`completeEngine`).
+ *
+ * Поле формы `Field` связывается с группой, а не с радио: подпись поля
+ * называет группу ссылкой, ошибка — группы (`TFieldControlExtension` на
+ * своём контексте). Своему содержимому группа опускает пустую связку своим
+ * хостом: радио и контролы в их подписях связку поля не берут.
  */
 
 import {
 	RadioGroupCollectionDescriptor,
 	RadioGroupDescriptor,
 	TCollectionExtension,
+	TFieldControlExtension,
 } from '@soldy-ui/setup'
 import type { IRadioGroup, TRadioGroupCollectionFacade } from '@soldy-ui/core'
 import {
@@ -32,7 +38,10 @@ export function setupRadioGroup(
 	props: Record<string, unknown>,
 	onUpdate: TUpdateListener,
 ): TBinding<IRadioGroup, TRadioGroupCollectionFacade> {
-	const adapter = createWebcAdapterContext(host, RadioGroupDescriptor(), { ctrl, props })
+	const adapter = createWebcAdapterContext(host, RadioGroupDescriptor(), {
+		ctrl,
+		props,
+	}).use(TFieldControlExtension, { elevator: createWebcElevator(host) })
 	const owner = useAdapter(adapter, host, onUpdate)
 
 	const collectionAdapter = createWebcAdapterContext(

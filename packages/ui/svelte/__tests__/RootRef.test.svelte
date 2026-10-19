@@ -3,6 +3,7 @@
 	export type TRootKind =
 		| 'Button'
 		| 'ComponentView'
+		| 'Field'
 		| 'Frame'
 		| 'Icon'
 		| 'Label'
@@ -42,6 +43,7 @@
 		Button,
 		CheckBox,
 		ComponentView,
+		Field,
 		Frame,
 		Icon,
 		Input,
@@ -90,6 +92,8 @@
 		<Button {ctrl} bind:ref={get, set} {onElementReady} />
 	{:else if kind === 'ComponentView'}
 		<ComponentView bind:ref={get, set} {onElementReady} />
+	{:else if kind === 'Field'}
+		<Field bind:ref={get, set} {onElementReady} />
 	{:else if kind === 'Frame'}
 		<Frame visible bind:ref={get, set} {onElementReady} />
 	{:else if kind === 'Icon'}

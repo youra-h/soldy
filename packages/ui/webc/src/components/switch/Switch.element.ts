@@ -8,7 +8,9 @@
  * страницы, поэтому форма видит его сама.
  *
  * Корень с полем (`control` в описании корня), как у CheckBox: на корне из
- * наборов ядра только `attrs` (`dir`), `aria` с `role="switch"` — на поле.
+ * наборов ядра — `attrs` (`dir`) и `dataset` (`data-disabled`,
+ * `data-invalid`), по нему тема красит дорожку и подпись поля формы `Field`;
+ * `aria` с `role="switch"` — на поле.
  * Статические атрибуты разметки, кроме `class`, `style`, `is`, `slot` и
  * входов пропов, база при построении переносит на поле, а `id` — проп поля.
  *
@@ -25,7 +27,7 @@ import { setupSwitch } from './setup.component'
 export const TSwitchElement = SoldyElement(HTMLSpanElement, {
 	descriptor: SwitchDescriptor(),
 	template: switchTemplate,
-	root: { sets: ['attrs'], control: true },
+	root: { sets: ['attrs', 'dataset'], control: true },
 	setup: setupSwitch,
 })
 

@@ -99,6 +99,7 @@ describe('хост Angular', () => {
 		['check-box', '.so-label, .so-check-box'],
 		['switch', '.so-label, .so-switch'],
 		['label', '.so-label, .so-check-box'],
+		['field', '.so-field, .so-field__label, .so-field__control, .so-input, .so-field__helper'],
 		['radio-group', '.so-radio-group, .so-radio-group-item'],
 		['list-box', '.so-list-box, .so-list-box-item'],
 		['tabs', '.so-tabs, .so-tabs-item, .so-tabs__panel'],

@@ -17,7 +17,9 @@
 
 	Корень по умолчанию — `span`: переключатель кладут в подпись `Label`, а
 	внутри `label` HTML разрешает только строчную разметку. Поэтому и всё
-	внутри — `span`.
+	внутри — `span`. На корне — `attrs` и `dataset` (`data-disabled`,
+	`data-invalid`): тема красит дорожку и подпись поля формы `Field` по корню,
+	а `aria` — у вложенного `<input>`.
 
 	`role="switch"` ядро пишет в `aria` поля, состояние скринридеру сообщает
 	нативный `checked` — Svelte пишет его свойством узла, а на сервере —
@@ -32,7 +34,11 @@
 {#if state.rendered}
 	<Dynamic
 		tag={state.tag}
-		attributes={toRootProps(state, [state.attrs], toRootForward(binding.forwardProps))}
+		attributes={toRootProps(
+			state,
+			[state.attrs, state.dataset],
+			toRootForward(binding.forwardProps),
+		)}
 		attach={binding.attachElement}
 	>
 		<input

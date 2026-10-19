@@ -41,9 +41,12 @@
 	Input — текстовое поле: корень по `tag` (по умолчанию `div`) и `<input>`
 	внутри, по сторонам — слоты `leading` и `trailing`.
 
-	Наборы ядра стоят на разных элементах: `attrs` (`dir`) — на корне, `aria` —
-	на `<input>`. Нативные `disabled`, `readonly` и `required` поля проводит
-	разметка, поэтому ARIA-дублей ядро рядом с ними не пишет. Атрибуты
+	Наборы ядра стоят на разных элементах: `attrs` (`dir`) и `dataset`
+	(`data-disabled`, `data-invalid`) — на корне, `aria` — на `<input>`: тема
+	красит коробку поля и подпись поля формы `Field` по корню, а ошибку
+	скринридеру объявляет `<input>`. Нативные `disabled`, `readonly` и
+	`required` поля проводит разметка, поэтому ARIA-дублей ядро рядом с ними
+	не пишет. Атрибуты
 	потребителя делятся, как у Vue: класс и стиль — корню, всё остальное —
 	полю, поверх его `aria`.
 
@@ -68,7 +71,11 @@
 {#if state.rendered}
 	<Dynamic
 		tag={state.tag}
-		attributes={toRootProps(state, [state.attrs], toRootForward(binding.forwardProps))}
+		attributes={toRootProps(
+			state,
+			[state.attrs, state.dataset],
+			toRootForward(binding.forwardProps),
+		)}
 		attach={binding.attachElement}
 	>
 		{#if props.leading}

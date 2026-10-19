@@ -17,6 +17,13 @@ import type { TActiveTabOffset, TTabsActiveTabPluginEvents } from './types'
  *
  * Пересчитывает offset при активации/деактивации, удалении/перемещении элементов,
  * изменении view и изменении layout (resize).
+ *
+ * **Удаление и перемещение пересчитываются кадром позже — и только при узле
+ * корня**: между `ready` и `removed` своего `TElementPlugin`. Сборка вместе с
+ * подписками плагина идёт и на сервере, и табы там уходят из коллекции — Solid
+ * снимает собранный корень после `renderToString`, — а узла там нет, как нет и
+ * `requestAnimationFrame`. Без узла мерить нечего (`_computeOffset` отдаёт
+ * `null`), и кадр не планируется: место активного таба померит `ready`.
  */
 export class TTabsActiveTabPlugin extends TBasePlugin<ITabs, TTabsActiveTabPluginEvents> {
 	private _element: Element | null = null
@@ -47,7 +54,7 @@ export class TTabsActiveTabPlugin extends TBasePlugin<ITabs, TTabsActiveTabPlugi
 			this._engine = engine
 
 			const emit = () => this._emitOffset()
-			const emitNextFrame = () => requestAnimationFrame(emit)
+			const emitNextFrame = () => this._emitOffsetNextFrame()
 
 			this._listenTo(engine.extensions.activation.events, 'item:activated', emit)
 			this._listenTo(engine.extensions.activation.events, 'item:deactivated', emit)
@@ -74,6 +81,15 @@ export class TTabsActiveTabPlugin extends TBasePlugin<ITabs, TTabsActiveTabPlugi
 
 	private _emitOffset(): void {
 		this.events.emit('change:active-tab', this._computeOffset())
+	}
+
+	/**
+	 * Пересчитать offset кадром позже — пока у плагина есть узел корня: разметка
+	 * после удаления или перемещения таба ещё не перерисована. Без узла повод
+	 * ничего не планирует: место активного таба померит `ready`.
+	 */
+	private _emitOffsetNextFrame(): void {
+		if (this._element) requestAnimationFrame(() => this._emitOffset())
 	}
 
 	private _computeOffset(): TActiveTabOffset | null {

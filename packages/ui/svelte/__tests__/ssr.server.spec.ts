@@ -161,6 +161,7 @@ describe('ref потребителя · серверный рендер', () => 
 	const KINDS: readonly TRootKind[] = [
 		'Button',
 		'ComponentView',
+		'Field',
 		'Frame',
 		'Icon',
 		'Label',

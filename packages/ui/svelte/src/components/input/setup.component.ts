@@ -10,10 +10,20 @@
  * (`$props.id()`) отдаёт компонент: компилятор пускает его только туда. Так
  * же — приёмник корня (`receive`): запись в связываемый проп `ref`
  * компонента, `$bindable` компилятор тоже пускает только в компонент.
+ *
+ * Поле формы `Field` над полем: ошибку, `id` и ссылки на части контрол
+ * берёт от него своим расширением (`TFieldControlExtension`) лифтом
+ * (`getContext`), а своему содержимому опускает пустую связку
+ * (`setContext`): контролы в его слотах — его содержимое.
  */
 
-import { InputDescriptor } from '@soldy-ui/setup'
-import { createSvelteAdapterContext, useAdapter, type TRootReceiver } from '../../adapter'
+import { InputDescriptor, TFieldControlExtension } from '@soldy-ui/setup'
+import {
+	SvelteElevatorFactory,
+	createSvelteAdapterContext,
+	useAdapter,
+	type TRootReceiver,
+} from '../../adapter'
 import type { InputProps } from './base.component'
 
 export function setupInput(getProps: () => InputProps, mountId: string, receive: TRootReceiver) {
@@ -21,7 +31,7 @@ export function setupInput(getProps: () => InputProps, mountId: string, receive:
 		ctrl: getProps().ctrl,
 		props: getProps(),
 		mountId,
-	})
+	}).use(TFieldControlExtension, { elevator: SvelteElevatorFactory })
 
 	// Текст в ядро несёт плагин ввода по `input` поля, имя кнопки очистки
 	// (`clearAria`) пишет плагин имён формы по локали поддерева

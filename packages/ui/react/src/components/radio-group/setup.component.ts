@@ -9,12 +9,18 @@
  * детям его слой (`layer`) отдаёт `Elevate` в разметке. Drag-and-drop нет, как
  * у Vue: радио одной группы стоят где угодно в разметке, и порядка на экране
  * у них нет.
+ *
+ * Поле формы `Field` связывается с группой, а не с радио: подпись поля
+ * называет группу ссылкой, ошибка — группы (`TFieldControlExtension` на
+ * своём контексте). Своему содержимому группа опускает пустую связку тем же
+ * лифтом: радио и контролы в их подписях связку поля не берут.
  */
 
 import {
 	RadioGroupCollectionDescriptor,
 	RadioGroupDescriptor,
 	TCollectionExtension,
+	TFieldControlExtension,
 } from '@soldy-ui/setup'
 import { useAdapter, useAdapterContext, useCollectionAdapter } from '../../adapter'
 import type { RadioGroupProps } from './base.component'
@@ -24,7 +30,10 @@ export function useSetupRadioGroup(props: RadioGroupProps) {
 		contexts: [adapter, collectionAdapter],
 		layer,
 	} = useAdapterContext((create, elevator) => {
-		const adapter = create(RadioGroupDescriptor(), { ctrl: props.ctrl, props })
+		const adapter = create(RadioGroupDescriptor(), { ctrl: props.ctrl, props }).use(
+			TFieldControlExtension,
+			{ elevator },
+		)
 
 		const collectionAdapter = create(
 			RadioGroupCollectionDescriptor(),
