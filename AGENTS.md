@@ -776,7 +776,8 @@ class TTabsContentCollectionFacade extends TCollectionItemComponent {
 ```
 TCollectionComponent
 └── TBatchCollectionFacade           batch        → Toasts
-    ├── TSelectionCollectionFacade   + selection  → Accordion, Select, ListBox, Tags
+    ├── TSelectionCollectionFacade   + selection  → Accordion, Tags
+    │   └── TGroupCollectionFacade   + group      → ListBox, Select, Menu
     └── TActivationCollectionFacade  + activation → Tabs, RadioGroup
 
 TCollectionItemComponent
@@ -794,6 +795,12 @@ TCollectionItemComponent
 подстраиваться под неизвестное требование дороже, чем поднять пятнадцать
 строк; вторым стал RadioGroup. Своё у фасадов Tabs — только закрытие вкладок,
 у фасадов RadioGroup своего нет вовсе.
+
+Группировка (`group`) — база ниже выбора: группы есть только у коллекций с
+выбором — у меню, ListBox и Select. Пока группы были у одного меню, проекция
+`groupBy`, `groups` и `sections` жила в его фасаде; с ListBox и Select
+потребителей стало три, и она ушла в базу (collections.md, «Группировка —
+механизм коллекции»).
 
 Правило держится не на честном слове: дженерик базы сужен до расширения,
 которое она потребляет (`TExtensions extends { selection: TSelectionExtension<any> }`),
