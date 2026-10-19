@@ -99,6 +99,8 @@ export class TMenuFocusPlugin extends TPopoverFocusPlugin {
 	/** Запасной возврат: у области — никуда, у кнопки — остановки корня, как у Popover. */
 	private _syncFallback(): void {
 		this._fallback =
-			this._owner?.openOn === 'contextmenu' ? NOWHERE : (root) => super._returnCandidates(root)
+			this._owner?.openOn === 'contextmenu'
+				? NOWHERE
+				: (root) => super._returnCandidates(root)
 	}
 }

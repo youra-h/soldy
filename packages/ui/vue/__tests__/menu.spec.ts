@@ -577,7 +577,12 @@ describe('контекстное меню', () => {
 			new PointerEvent('pointerdown', { bubbles: true, pointerType: 'mouse', button: 2 }),
 		)
 		areaNode().dispatchEvent(
-			new MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: x, clientY: y }),
+			new MouseEvent('contextmenu', {
+				bubbles: true,
+				cancelable: true,
+				clientX: x,
+				clientY: y,
+			}),
 		)
 
 		await nextTick()

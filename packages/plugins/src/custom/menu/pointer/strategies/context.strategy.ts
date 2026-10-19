@@ -1,4 +1,4 @@
-import { isAppleTouch } from '../../../../utils'
+import { isAppleTouch, isMeasurableElement } from '../../../../utils'
 import type { IDomEventTarget } from '../../../../utils'
 import type { IMenuOpenHost, IMenuOpenStrategy, TMenuContextPress } from './types'
 
@@ -10,6 +10,9 @@ const LONG_PRESS_SLOP = 10
 
 /** Вторая кнопка мыши и кнопка пера: её нажатие вызывает контекстное меню. */
 const SECONDARY_BUTTON = 2
+
+/** Системная выноска iOS на долгое касание — ссылки, картинки: её место занимает меню. */
+const CALLOUT = '-webkit-touch-callout'
 
 /**
  * TMenuContextStrategy — контекстное меню области (`openOn: 'contextmenu'`):
@@ -33,7 +36,12 @@ const SECONDARY_BUTTON = 2
  * него не шлёт: на сенсорных устройствах Apple (`isAppleTouch`). Палец или
  * перо, ушедшие дальше порога, — прокрутка, и вызова нет; второй палец —
  * масштаб, тоже. Браузер, приславший `contextmenu` раньше таймера, таймер
- * снимает: вызов один.
+ * снимает: вызов один. Системное меню долгого касания там — выноска над
+ * ссылкой и картинкой, и `preventDefault` её не убирает: её снимает
+ * `-webkit-touch-callout: none` на корне, пока стратегия стоит, а потом
+ * возвращается прежнее инлайновое значение. Ставит его стратегия, а не тема:
+ * без него не работает поведение, а не вид, — как `touch-action` у
+ * `TSwipePlugin`.
  *
  * **Нажатие в области мимо вызова закрывает меню**: область — не кнопка, и
  * нажатие на неё — то же, что нажатие мимо. Мышь — на `pointerdown`, как у
@@ -53,11 +61,18 @@ export class TMenuContextStrategy implements IMenuOpenStrategy {
 	private _byKeyboard = true
 	/** Нажатие пальцем или пером, которое ещё решается. */
 	private _press: TMenuContextPress | null = null
+	/** Инлайновая выноска корня до стратегии; `null` — стратегия её не трогала. */
+	private _callout: string | null = null
 
 	constructor(root: Element, host: IMenuOpenHost) {
 		this._root = root
 		this._host = host
 		this._longPress = isAppleTouch(root.ownerDocument.defaultView?.navigator)
+
+		if (this._longPress && isMeasurableElement(root)) {
+			this._callout = root.style.getPropertyValue(CALLOUT)
+			root.style.setProperty(CALLOUT, 'none')
+		}
 
 		const target: IDomEventTarget = root
 
@@ -73,6 +88,7 @@ export class TMenuContextStrategy implements IMenuOpenStrategy {
 
 	destroy(): void {
 		this._dropPress()
+		this._restoreCallout()
 
 		const target: IDomEventTarget = this._root
 
@@ -82,6 +98,22 @@ export class TMenuContextStrategy implements IMenuOpenStrategy {
 		target.removeEventListener('pointermove', this._onPointerMove)
 		target.removeEventListener('pointerup', this._onPointerUp)
 		target.removeEventListener('pointercancel', this._onPointerCancel)
+	}
+
+	/** Вернуть корню инлайновую выноску, что была до стратегии: пустая — снять свойство. */
+	private _restoreCallout(): void {
+		const root = this._root
+		const callout = this._callout
+
+		if (callout === null || !isMeasurableElement(root)) return
+
+		this._callout = null
+
+		if (callout === '') {
+			root.style.removeProperty(CALLOUT)
+		} else {
+			root.style.setProperty(CALLOUT, callout)
+		}
 	}
 
 	private readonly _onContextMenu = (event: MouseEvent): void => {

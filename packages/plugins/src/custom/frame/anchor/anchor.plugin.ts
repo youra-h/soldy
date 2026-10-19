@@ -620,7 +620,12 @@ export class TAnchorPlugin extends TBasePlugin<any, TAnchorPluginEvents> {
 	 * между границами — не подобранное число пикселей, а вся полоса, где
 	 * панель влезает с обеих сторон или ни с одной.
 	 */
-	private _holdSide(side: TAnchorSide, rect: TAnchorRect, needed: number, rtl: boolean): TAnchorSide {
+	private _holdSide(
+		side: TAnchorSide,
+		rect: TAnchorRect,
+		needed: number,
+		rtl: boolean,
+	): TAnchorSide {
 		if (this._spaceAt(side, rect, rtl) >= needed) return side
 
 		return this._spaceAt(opposite(side), rect, rtl) >= needed ? opposite(side) : side
@@ -690,7 +695,12 @@ export class TAnchorPlugin extends TBasePlugin<any, TAnchorPluginEvents> {
 	 * описание класса). Шире области — прижимается к левому краю, как панель
 	 * над якорем и под ним.
 	 */
-	private _inlineX(side: TInlineSide, rect: TAnchorRect, panelWidth: number, rtl: boolean): number {
+	private _inlineX(
+		side: TInlineSide,
+		rect: TAnchorRect,
+		panelWidth: number,
+		rtl: boolean,
+	): number {
 		const x = isLeftSide(side, rtl)
 			? rect.left - panelWidth - this._offset
 			: rect.right + this._offset

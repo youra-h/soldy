@@ -993,6 +993,31 @@ describe('контекстное меню', () => {
 			expect(owner.open).toBe(true)
 		})
 
+		/**
+		 * Системное меню долгого касания на iOS — выноска над ссылкой и
+		 * картинкой; `preventDefault` её не убирает, её снимает CSS корня.
+		 * jsdom свойство с префиксом WebKit не хранит, поэтому видна запись.
+		 */
+		it('выноска iOS снята, пока меню вызывают над областью, а со сменой способа возвращена', async () => {
+			const set = vi.spyOn(CSSStyleDeclaration.prototype, 'setProperty')
+			const remove = vi.spyOn(CSSStyleDeclaration.prototype, 'removeProperty')
+			const { owner } = await onApple()
+
+			expect(set).toHaveBeenCalledWith('-webkit-touch-callout', 'none')
+
+			owner.openOn = 'press'
+
+			expect(remove).toHaveBeenCalledWith('-webkit-touch-callout')
+		})
+
+		it('на остальных устройствах выноску не трогают', async () => {
+			const set = vi.spyOn(CSSStyleDeclaration.prototype, 'setProperty')
+
+			await area()
+
+			expect(set).not.toHaveBeenCalledWith('-webkit-touch-callout', 'none')
+		})
+
 		it('мышь на устройстве Apple таймера не заводит', async () => {
 			const { owner, trigger } = await onApple()
 
