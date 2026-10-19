@@ -17,6 +17,7 @@ import {
 	TScenarioRunner,
 	isPreviewHost,
 	isPreviewHostModule,
+	previewProps,
 	type IPreviewHost,
 	type IPreviewSnippets,
 	type TInstance,
@@ -105,6 +106,34 @@ describe('хост сценариев', () => {
 		expect(mounted[0].mount.fixture).toBe('button-slot-labels')
 		expect(mounted[0].mount.props).toEqual({ text: 'До', ctrl: instance })
 		expect(nodes.scene.querySelector('.probe')).not.toBeNull()
+	})
+
+	/**
+	 * Без фикстуры рисуется превью компонента, и подписи кнопки в разметке
+	 * хоста нет — она в пропсах превью. Они идут с превью под пропами
+	 * сценария, как на витрине; у фикстуры разметка своя, и их нет.
+	 */
+	it('превью — с пропсами превью под пропами сценария, фикстура — без них', async () => {
+		const { host, mounted } = fakeHost()
+		const scenes = new TScenarioHost(host)
+		const journal = new TScenarioJournal(scenario.id, () => {})
+
+		scenes.attach(scenario.id, block())
+
+		for (const next of [
+			{ ...scenario, props: { size: 'lg' } },
+			{ ...scenario, props: { text: 'До' } },
+			{ ...scenario, props: { size: 'lg' }, fixture: 'button-slot-labels' },
+		]) {
+			await scenes.mount({ scenario: next, instance, journal })
+		}
+
+		expect(previewProps('button')).toEqual({ text: 'Кнопка' })
+		expect(mounted.map((record) => record.mount.props)).toEqual([
+			{ text: 'Кнопка', size: 'lg', ctrl: instance },
+			{ text: 'До', ctrl: instance },
+			{ size: 'lg', ctrl: instance },
+		])
 	})
 
 	it('события компонента — в журнал прогона', async () => {

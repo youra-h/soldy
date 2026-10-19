@@ -2,10 +2,10 @@
  * `TAnchorPlugin` в настоящем браузере: раскладка, которую jsdom не считает.
  *
  * `getBoundingClientRect()` в jsdom всегда нули, поэтому измерение панели,
- * flip у края окна и пересчёт без scroll/resize (по `ResizeObserver`)
- * проверяются только здесь. Юнит-тесты плагина (`overlay.spec.ts`) те же
- * сценарии гоняют на заглушках координат — здесь эти координаты считает
- * настоящий layout-движок браузера.
+ * flip у края окна, сторона открытой панели, пока окно едет, и пересчёт без
+ * scroll/resize (по `ResizeObserver`) проверяются только здесь. Юнит-тесты
+ * плагина (`overlay.spec.ts`) те же сценарии гоняют на заглушках координат —
+ * здесь эти координаты считает настоящий layout-движок браузера.
  *
  * Здесь же — граница, внутрь которой плагин сдвигает панель: настоящую полосу
  * прокрутки не подставить заглушкой, а без неё `innerWidth` и видимая область
@@ -20,11 +20,14 @@ import { defineComponent, h } from 'vue'
 import { Frame, Select, SelectItem } from '@soldy-ui/vue'
 import type { TSelectPlacement } from '@soldy-ui/core'
 
+import { find } from './colors'
 import { expectClassicScrollbar, expectInsideWindow } from './viewport'
 
 import '@soldy-ui/theme-oren'
 
 const OPTIONS = ['Москва', 'Тверь', 'Тула', 'Казань', 'Самара']
+
+const nextFrame = () => new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
 
 /**
  * Якорь-кнопка и `Frame` над ней. Ссылку на якорь плагин получает как
@@ -365,6 +368,19 @@ const selectAtTop = (placement?: TSelectPlacement) => ({
 	render: () => h('div', { style: 'width: 320px' }, [selectWith(placement)]),
 })
 
+/**
+ * Поле у нижнего края окна посреди длинной страницы: под ним ещё экран, и
+ * окну есть куда ехать.
+ */
+const selectOnLongPage = () => ({
+	render: () =>
+		h('div', [
+			h('div', { style: 'height: calc(100vh - 48px)' }),
+			h('div', { style: 'width: 320px' }, [selectWith()]),
+			h('div', { style: 'height: 100vh' }),
+		]),
+})
+
 const panel = () => document.querySelector('.so-test-panel') as HTMLElement
 const anchor = () => document.querySelector('.so-test-anchor') as HTMLElement
 
@@ -380,6 +396,8 @@ beforeEach(() => {
  */
 afterEach(() => {
 	cleanup()
+	// Окно, которое прокрутил тест, возвращается к началу
+	window.scrollTo(0, 0)
 })
 
 describe('измерение панели', () => {
@@ -445,6 +463,71 @@ describe('flip', () => {
 		expect(selectPanel().getBoundingClientRect().bottom).toBeLessThanOrEqual(
 			field().getBoundingClientRect().top + 1,
 		)
+	})
+
+	/**
+	 * Окно едет, как его ведёт палец на телефоне: по нескольку пикселей за
+	 * кадр, через прежнюю границу «снизу влезает» и обратно. Правило без памяти
+	 * на этой границе уводило открытую панель вниз и возвращало наверх — она
+	 * скакала. Открытая панель держит сторону, пока на ней влезает, а заново
+	 * сторону выбирает следующее открытие.
+	 */
+	it('открытая панель держит сторону, пока окно едет через границу «снизу влезает»', async () => {
+		/** Отступ панели от поля — `anchor_offset` у Select. */
+		const OFFSET = 4
+		/** Шаг прокрутки за кадр, px. */
+		const STEP = 3
+
+		render(selectOnLongPage())
+
+		await userEvent.click(arrow())
+		await expect.poll(() => selectPanel().getAttribute('data-placement')).toBe('top-start')
+
+		const viewport = window.visualViewport?.height ?? window.innerHeight
+		/** Место под полем — по корню Select: он и есть якорь панели. */
+		const below = () => viewport - find('.so-select').getBoundingClientRect().bottom
+		const needed = selectPanel().getBoundingClientRect().height + OFFSET
+		// С этого сдвига окна снизу панель влезает, и прежнее правило увело бы
+		// её вниз. Окно проезжает его с запасом
+		const far = Math.ceil(needed - below()) + 8 * STEP
+
+		const placements: Array<string | null> = []
+		const record = () => placements.push(selectPanel().getAttribute('data-placement'))
+		const observer = new MutationObserver(record)
+
+		observer.observe(selectPanel(), { attributeFilter: ['data-placement'] })
+
+		const scrollWindow = async (y: number) => {
+			window.scrollTo(0, y)
+			await nextFrame()
+
+			expect(
+				selectPanel().getBoundingClientRect().bottom,
+				`панель над полем, окно на ${y}px`,
+			).toBeLessThanOrEqual(field().getBoundingClientRect().top + 1)
+		}
+
+		for (let y = STEP; y <= far; y += STEP) await scrollWindow(y)
+
+		expect(below(), 'снизу панель влезает').toBeGreaterThanOrEqual(needed)
+
+		for (let y = far - STEP; y >= 0; y -= STEP) await scrollWindow(y)
+
+		if (observer.takeRecords().length > 0) record()
+		observer.disconnect()
+
+		expect(placements, 'смены стороны').toEqual([])
+
+		// Закрыли и открыли там, где снизу влезает, — сторону выбирает показ
+		await scrollWindow(far)
+		await userEvent.click(arrow())
+		await expect.poll(() => selectPanel().dataset.open).toBe('false')
+		await userEvent.click(arrow())
+
+		await expect.poll(() => selectPanel().getAttribute('data-placement')).toBe('bottom-start')
+		await expect
+			.poll(() => selectPanel().getBoundingClientRect().top)
+			.toBeGreaterThanOrEqual(field().getBoundingClientRect().bottom - 1)
 	})
 })
 

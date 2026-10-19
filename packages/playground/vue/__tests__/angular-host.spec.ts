@@ -51,10 +51,10 @@ describe('хост Angular', () => {
 	 */
 	it('компилятора Angular в рантайме нет', () => {
 		const node = stage()
-		const handle = host.mount(node, { component: 'button', props: {} })
+		const handle = host.mount(node, { component: 'button', props: { text: 'Собрано' } })
 		const ng: unknown = Reflect.get(globalThis, 'ng')
 
-		expect(label(node)).toBe('Кнопка')
+		expect(label(node)).toBe('Собрано')
 		expect(typeof ng === 'object' && ng !== null && 'ɵcompilerFacade' in ng).toBe(false)
 
 		handle.unmount()
