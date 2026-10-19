@@ -349,8 +349,12 @@
 	&[data-selected='true'] {
 	}
 
+	// Выключенная опция гаснет одной строкой, как пункт ListBox: строка —
+	// Button и гасит себя сама по своему `data-disabled` (`button-disabled`).
+	// Прозрачность обёртки легла бы на строку второй раз, и опция выходила
+	// вдвое бледнее пункта ListBox. Указатель обёртка гасит по-прежнему.
 	&[data-disabled='true'] {
-		@apply opacity-50 pointer-events-none;
+		@apply pointer-events-none;
 	}
 }
 
