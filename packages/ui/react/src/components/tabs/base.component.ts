@@ -1,6 +1,7 @@
+import type { HTMLAttributes } from 'react'
 import type { ITabs } from '@soldy-ui/core'
 import type { TabsCollectionDescriptor, TabsDescriptor } from '@soldy-ui/setup'
-import type { EventProps, UseDomProps } from '../../types'
+import type { EventProps, TDomAttributes, UseDomProps } from '../../types'
 
 /**
  * События Tabs — свои (ядро и плагины) и фасада коллекции: активация,
@@ -9,6 +10,13 @@ import type { EventProps, UseDomProps } from '../../types'
  */
 export type TabsEventProps = EventProps<typeof TabsDescriptor> &
 	EventProps<typeof TabsCollectionDescriptor>
+
+/** Атрибуты набора: класс и стиль — корню, остальное — списку табов с `role="tablist"`. */
+export type TabsAttributes = TDomAttributes<
+	typeof TabsDescriptor,
+	HTMLAttributes<HTMLElement>,
+	TabsEventProps
+>
 
 /**
  * Пропсы Tabs. Коллекционные входы (`engine`, `items`, `trackBy`) отдельно не

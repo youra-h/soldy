@@ -2,10 +2,11 @@
  * `TAnchorPlugin` в настоящем браузере: раскладка, которую jsdom не считает.
  *
  * `getBoundingClientRect()` в jsdom всегда нули, поэтому измерение панели,
- * flip у края окна и пересчёт без scroll/resize (по `ResizeObserver`)
- * проверяются только здесь. Юнит-тесты плагина (`overlay.spec.ts`) те же
- * сценарии гоняют на заглушках координат — здесь эти координаты считает
- * настоящий layout-движок браузера.
+ * flip у края окна, сторона открытой панели, пока окно едет, и пересчёт без
+ * scroll/resize (по `ResizeObserver`) проверяются только здесь. Юнит-тесты
+ * плагина (`overlay.spec.ts`) те же сценарии гоняют на заглушках координат —
+ * здесь эти координаты считает настоящий layout-движок браузера. Так же и
+ * слежение по открытости: гаснет панель здесь настоящим переходом темы.
  *
  * Здесь же — граница, внутрь которой плагин сдвигает панель: настоящую полосу
  * прокрутки не подставить заглушкой, а без неё `innerWidth` и видимая область
@@ -13,18 +14,22 @@
  * (`vitest.browser.config.ts`).
  */
 
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, cleanup } from 'vitest-browser-vue'
 import { userEvent } from 'vitest/browser'
 import { defineComponent, h } from 'vue'
-import { Frame, Select, SelectItem } from '@soldy-ui/vue'
+import { DatePicker, Frame, Select, SelectItem } from '@soldy-ui/vue'
 import type { TSelectPlacement } from '@soldy-ui/core'
 
+import { find } from './colors'
+import { settled, whileLeaving } from './transitions'
 import { expectClassicScrollbar, expectInsideWindow } from './viewport'
 
 import '@soldy-ui/theme-oren'
 
 const OPTIONS = ['Москва', 'Тверь', 'Тула', 'Казань', 'Самара']
+
+const nextFrame = () => new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
 
 /**
  * Якорь-кнопка и `Frame` над ней. Ссылку на якорь плагин получает как
@@ -57,7 +62,6 @@ const TopStartHarness = defineComponent({
 						Frame,
 						{
 							visible: this.open,
-							position: 'fixed',
 							anchor_anchor: this.anchorEl,
 							anchor_placement: 'top-start',
 							class: 'so-test-panel',
@@ -99,7 +103,6 @@ const ResizableAnchorHarness = defineComponent({
 						Frame,
 						{
 							visible: true,
-							position: 'fixed',
 							anchor_anchor: this.anchorEl,
 							anchor_placement: 'bottom-start',
 							anchor_matchWidth: true,
@@ -150,7 +153,6 @@ const PaddedAnchorHarness = defineComponent({
 						Frame,
 						{
 							visible: true,
-							position: 'fixed',
 							anchor_anchor: this.anchorEl,
 							anchor_placement: 'bottom-start',
 							anchor_matchWidth: true,
@@ -193,7 +195,6 @@ const WrappingPanelHarness = defineComponent({
 						Frame,
 						{
 							visible: true,
-							position: 'fixed',
 							anchor_anchor: this.anchorEl,
 							anchor_placement: 'top-start',
 							anchor_matchWidth: true,
@@ -229,7 +230,6 @@ const RtlHarness = defineComponent({
 							Frame,
 							{
 								visible: true,
-								position: 'fixed',
 								anchor_anchor: this.anchorEl,
 								anchor_placement: 'bottom-start',
 								class: 'so-test-panel',
@@ -276,7 +276,6 @@ const centerHarness = (dir: 'ltr' | 'rtl') =>
 								Frame,
 								{
 									visible: true,
-									position: 'fixed',
 									anchor_anchor: this.anchorEl,
 									anchor_placement: 'top',
 									class: 'so-test-panel',
@@ -284,6 +283,54 @@ const centerHarness = (dir: 'ltr' | 'rtl') =>
 								{
 									default: () =>
 										h('div', { style: 'width: 120px; height: 40px' }, 'panel'),
+								},
+							)
+						: null,
+				],
+			)
+		},
+	})
+
+/**
+ * Якорь и `Frame` сбоку от него — `end-start`: панель у конца строки якоря,
+ * верхние края вровень. Где якорь стоит в строке страницы, задаёт `justify`:
+ * `center` — место есть с обеих сторон, `flex-end` — у правого края окна.
+ * Направление письма — `dir`.
+ */
+const besideHarness = (justify: 'center' | 'flex-end', dir: 'ltr' | 'rtl' = 'ltr') =>
+	defineComponent({
+		data() {
+			return { anchorEl: null as Element | null }
+		},
+		mounted() {
+			this.anchorEl = this.$refs.anchor as Element
+		},
+		render() {
+			return h(
+				'div',
+				{ dir, style: `display: flex; justify-content: ${justify}; padding-top: 200px` },
+				[
+					h(
+						'button',
+						{
+							ref: 'anchor',
+							class: 'so-test-anchor',
+							style: 'width: 80px; height: 32px',
+						},
+						'anchor',
+					),
+					this.anchorEl
+						? h(
+								Frame,
+								{
+									visible: true,
+									anchor_anchor: this.anchorEl,
+									anchor_placement: 'end-start',
+									class: 'so-test-panel',
+								},
+								{
+									default: () =>
+										h('div', { style: 'width: 100px; height: 60px' }, 'panel'),
 								},
 							)
 						: null,
@@ -323,7 +370,6 @@ const RightEdgeHarness = defineComponent({
 						Frame,
 						{
 							visible: true,
-							position: 'fixed',
 							anchor_anchor: this.anchorEl,
 							anchor_placement: 'bottom-start',
 							class: 'so-test-panel',
@@ -365,6 +411,19 @@ const selectAtTop = (placement?: TSelectPlacement) => ({
 	render: () => h('div', { style: 'width: 320px' }, [selectWith(placement)]),
 })
 
+/**
+ * Поле у нижнего края окна посреди длинной страницы: под ним ещё экран, и
+ * окну есть куда ехать.
+ */
+const selectOnLongPage = () => ({
+	render: () =>
+		h('div', [
+			h('div', { style: 'height: calc(100vh - 48px)' }),
+			h('div', { style: 'width: 320px' }, [selectWith()]),
+			h('div', { style: 'height: 100vh' }),
+		]),
+})
+
 const panel = () => document.querySelector('.so-test-panel') as HTMLElement
 const anchor = () => document.querySelector('.so-test-anchor') as HTMLElement
 
@@ -380,6 +439,8 @@ beforeEach(() => {
  */
 afterEach(() => {
 	cleanup()
+	// Окно, которое прокрутил тест, возвращается к началу
+	window.scrollTo(0, 0)
 })
 
 describe('измерение панели', () => {
@@ -445,6 +506,232 @@ describe('flip', () => {
 		expect(selectPanel().getBoundingClientRect().bottom).toBeLessThanOrEqual(
 			field().getBoundingClientRect().top + 1,
 		)
+	})
+
+	/**
+	 * Окно едет, как его ведёт палец на телефоне: по нескольку пикселей за
+	 * кадр, через прежнюю границу «снизу влезает» и обратно. Правило без памяти
+	 * на этой границе уводило открытую панель вниз и возвращало наверх — она
+	 * скакала. Открытая панель держит сторону, пока на ней влезает, а заново
+	 * сторону выбирает следующее открытие.
+	 */
+	it('открытая панель держит сторону, пока окно едет через границу «снизу влезает»', async () => {
+		/** Отступ панели от поля — `anchor_offset` у Select. */
+		const OFFSET = 4
+		/** Шаг прокрутки за кадр, px. */
+		const STEP = 3
+
+		render(selectOnLongPage())
+
+		await userEvent.click(arrow())
+		await expect.poll(() => selectPanel().getAttribute('data-placement')).toBe('top-start')
+
+		const viewport = window.visualViewport?.height ?? window.innerHeight
+		/** Место под полем — по корню Select: он и есть якорь панели. */
+		const below = () => viewport - find('.so-select').getBoundingClientRect().bottom
+		const needed = selectPanel().getBoundingClientRect().height + OFFSET
+		// С этого сдвига окна снизу панель влезает, и прежнее правило увело бы
+		// её вниз. Окно проезжает его с запасом
+		const far = Math.ceil(needed - below()) + 8 * STEP
+
+		const placements: Array<string | null> = []
+		const record = () => placements.push(selectPanel().getAttribute('data-placement'))
+		const observer = new MutationObserver(record)
+
+		observer.observe(selectPanel(), { attributeFilter: ['data-placement'] })
+
+		const scrollWindow = async (y: number) => {
+			window.scrollTo(0, y)
+			await nextFrame()
+
+			expect(
+				selectPanel().getBoundingClientRect().bottom,
+				`панель над полем, окно на ${y}px`,
+			).toBeLessThanOrEqual(field().getBoundingClientRect().top + 1)
+		}
+
+		for (let y = STEP; y <= far; y += STEP) await scrollWindow(y)
+
+		expect(below(), 'снизу панель влезает').toBeGreaterThanOrEqual(needed)
+
+		for (let y = far - STEP; y >= 0; y -= STEP) await scrollWindow(y)
+
+		if (observer.takeRecords().length > 0) record()
+		observer.disconnect()
+
+		expect(placements, 'смены стороны').toEqual([])
+
+		// Закрыли и открыли там, где снизу влезает, — сторону выбирает показ
+		await scrollWindow(far)
+		await userEvent.click(arrow())
+		await expect.poll(() => selectPanel().dataset.open).toBe('false')
+		await userEvent.click(arrow())
+
+		await expect.poll(() => selectPanel().getAttribute('data-placement')).toBe('bottom-start')
+		await expect
+			.poll(() => selectPanel().getBoundingClientRect().top)
+			.toBeGreaterThanOrEqual(field().getBoundingClientRect().bottom - 1)
+	})
+})
+
+/**
+ * Сама причина дрожи на телефоне: страницу там прокручивает композитор, а
+ * `scroll` приходит в JS кадром позже. Панель `fixed` до него стоит, а поле
+ * уже уехало. Панель у якоря на странице — `absolute`, в документе, и
+ * прокрутку окна браузер применяет к ней вместе с полем.
+ *
+ * Измеряем сразу за `scrollTo`, в той же задаче: раскладка уже прокручена, а
+ * `scroll` браузер шлёт только на следующем кадре, и пересчитать плагин ещё
+ * ничего не мог.
+ */
+describe('прокрутка окна', () => {
+	const arrow = () => document.querySelector('.so-select__arrow') as HTMLElement
+	const selectPanel = () => document.querySelector('.so-select__panel') as HTMLElement
+	const gap = () =>
+		selectPanel().getBoundingClientRect().top -
+		find('.so-select').getBoundingClientRect().bottom
+
+	it('панель едет с полем ещё до события scroll', async () => {
+		render({
+			render: () =>
+				h('div', [
+					h('div', { style: 'height: 100px' }),
+					h('div', { style: 'width: 320px' }, [selectWith()]),
+					h('div', { style: 'height: 200vh' }),
+				]),
+		})
+
+		await userEvent.click(arrow())
+		await expect.poll(() => selectPanel().getAttribute('data-placement')).toBe('bottom-start')
+		await expect.poll(gap).toBeGreaterThanOrEqual(0)
+
+		const before = gap()
+		const scrolled = vi.fn()
+
+		window.addEventListener('scroll', scrolled, { once: true })
+		window.scrollTo(0, 60)
+
+		expect(window.scrollY, 'окно прокрутилось').toBe(60)
+		expect(scrolled, 'scroll ещё не пришёл').not.toHaveBeenCalled()
+		expect(gap()).toBeCloseTo(before, 0)
+
+		window.removeEventListener('scroll', scrolled)
+	})
+
+	/**
+	 * Поле в шапке `fixed` прокрутка окна не двигает — и панель у него
+	 * `fixed`: в документе она уезжала бы от поля до пересчёта.
+	 */
+	it('у поля в fixed-шапке панель стоит с ним ещё до события scroll', async () => {
+		render({
+			render: () =>
+				h('div', [
+					h('div', { style: 'position: fixed; top: 0; left: 0; width: 320px' }, [
+						selectWith(),
+					]),
+					h('div', { style: 'height: 200vh' }),
+				]),
+		})
+
+		await userEvent.click(arrow())
+		await expect.poll(() => selectPanel().getAttribute('data-placement')).toBe('bottom-start')
+		await expect.poll(gap).toBeGreaterThanOrEqual(0)
+
+		const before = gap()
+
+		window.scrollTo(0, 60)
+
+		expect(window.scrollY, 'окно прокрутилось').toBe(60)
+		expect(gap()).toBeCloseTo(before, 0)
+	})
+
+	/**
+	 * Панель в документе фокус может прокрутить к себе. DatePicker уводит фокус
+	 * на день кадром позже показа — раньше, чем панель измерена: она ещё стоит
+	 * под полем, по нулевой высоте. Прокрутка к ней увела бы страницу, и
+	 * панель осталась бы внизу. Фокус в панель окно не прокручивает.
+	 */
+	it('DatePicker у нижнего края открывается над полем, окно стоит', async () => {
+		render({
+			render: () =>
+				h('div', [
+					h('div', { style: 'height: calc(100vh - 48px)' }),
+					h('div', { style: 'width: 320px' }, [
+						h(DatePicker, { value: '2026-05-12', aria_label: 'Дата' }),
+					]),
+					h('div', { style: 'height: 100vh' }),
+				]),
+		})
+
+		await userEvent.click(find('.so-date-picker__trigger'))
+		await expect
+			.poll(() => document.activeElement?.classList.contains('so-calendar-item'))
+			.toBe(true)
+		await expect
+			.poll(() => find('.so-date-picker__panel').getAttribute('data-placement'))
+			.toBe('top-start')
+
+		expect(window.scrollY).toBe(0)
+	})
+})
+
+/**
+ * Место панели плагин считает, только пока она на экране: показана или ещё
+ * гаснет. Поле здесь во внутренней прокрутке, а панель в `body`, и за полем
+ * её двигает только пересчёт по `scroll` блока. Гаснущая панель идёт за полем
+ * до конца, а закрытая на прокрутку не отвечает: место её стоит.
+ */
+describe('слежение по открытости', () => {
+	const arrow = () => find('.so-select__arrow')
+	const selectPanel = () => find('.so-select__panel')
+	/** Зазор между полем и панелью под ним: у панели, которая идёт за полем, он прежний. */
+	const gap = () =>
+		selectPanel().getBoundingClientRect().top -
+		find('.so-select').getBoundingClientRect().bottom
+
+	it('гаснущая панель идёт за полем до конца, закрытая место не считает', async () => {
+		render({
+			render: () =>
+				h('div', { class: 'so-test-scroller', style: 'height: 400px; overflow-y: auto' }, [
+					h('div', { style: 'height: 60px' }),
+					h('div', { style: 'width: 320px' }, [selectWith()]),
+					h('div', { style: 'height: 1000px' }),
+				]),
+		})
+
+		const scroller = find('.so-test-scroller')
+
+		await userEvent.click(arrow())
+		await expect.poll(() => selectPanel().getAttribute('data-placement')).toBe('bottom-start')
+		await settled(selectPanel())
+
+		const open = gap()
+		let scrolled = 0
+
+		await userEvent.click(arrow())
+
+		// Блок едет на каждом кадре исчезания. `scroll` приходит кадром позже, и
+		// к следующей проверке панель уже стоит за полем
+		const seen = await whileLeaving(selectPanel(), () => {
+			expect(Math.abs(gap() - open), `зазор, блок на ${scrolled}px`).toBeLessThan(1)
+			scrolled += 4
+			scroller.scrollTop = scrolled
+		})
+
+		expect(seen, 'кадров на экране после закрытия').toBeGreaterThan(1)
+		expect(scroller.scrollTop, 'блок прокрутился').toBe(scrolled)
+
+		// Конец закрытия плагин узнаёт микрозадачей за концом перехода
+		await nextFrame()
+
+		const top = selectPanel().style.top
+
+		scroller.scrollTop = scrolled + 100
+		await nextFrame()
+		await nextFrame()
+
+		expect(scroller.scrollTop, 'блок прокрутился').toBe(scrolled + 100)
+		expect(selectPanel().style.top, 'закрытая панель место не считает').toBe(top)
 	})
 })
 
@@ -555,6 +842,57 @@ describe('центр', () => {
 			expect(panel().dataset.placement).toBe('top')
 		},
 	)
+})
+
+/**
+ * Стороны строки: `end-start` ставит панель у конца строки якоря, верхние края
+ * вровень. Конец — логический: в LTR справа, в RTL слева. У правого края окна
+ * flip переносит панель к началу строки, а `data-placement` называет
+ * логическую сторону, на которой она встала.
+ *
+ * Координаты плагин узнаёт по `ready` и `ResizeObserver`, поэтому край панели
+ * опрашиваем: на кадре до замера панель стоит по нулевой ширине.
+ */
+describe('боковые стороны', () => {
+	it('end-start в LTR — справа от якоря, верхние края вровень', async () => {
+		render(besideHarness('center'))
+
+		const anchorRect = anchor().getBoundingClientRect()
+
+		await expect
+			.poll(() => panel().getBoundingClientRect().left)
+			.toBeCloseTo(anchorRect.right, 0)
+		expect(panel().getBoundingClientRect().top).toBeCloseTo(anchorRect.top, 0)
+		expect(panel().dataset.placement).toBe('end-start')
+	})
+
+	it('у правого края окна end-start встаёт слева от якоря — start-start', async () => {
+		render(besideHarness('flex-end'))
+
+		const anchorRect = anchor().getBoundingClientRect()
+
+		// Справа места под панель действительно нет
+		expect(document.documentElement.clientWidth - anchorRect.right).toBeLessThan(100)
+
+		await expect
+			.poll(() => panel().getBoundingClientRect().right)
+			.toBeCloseTo(anchorRect.left, 0)
+		expect(panel().getBoundingClientRect().top).toBeCloseTo(anchorRect.top, 0)
+		expect(panel().dataset.placement).toBe('start-start')
+		expectInsideWindow(panel(), 'панель')
+	})
+
+	it('dir=rtl: end — слева от якоря, data-placement логический', async () => {
+		render(besideHarness('center', 'rtl'))
+
+		const anchorRect = anchor().getBoundingClientRect()
+
+		await expect
+			.poll(() => panel().getBoundingClientRect().right)
+			.toBeCloseTo(anchorRect.left, 0)
+		expect(panel().getBoundingClientRect().top).toBeCloseTo(anchorRect.top, 0)
+		expect(panel().dataset.placement).toBe('end-start')
+	})
 })
 
 describe('граница — видимая область', () => {

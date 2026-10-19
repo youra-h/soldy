@@ -1,9 +1,11 @@
 <script lang="ts">
 import { Frame } from '../frame'
+import { MenuGroup } from './group'
 import { MenuItem } from './item'
+import { MenuSeparator } from './separator'
 import SetupMenu from './setup.component'
 
-export default { ...SetupMenu, components: { Frame, MenuItem } }
+export default { ...SetupMenu, components: { Frame, MenuGroup, MenuItem, MenuSeparator } }
 </script>
 
 <template>
@@ -34,7 +36,8 @@ export default { ...SetupMenu, components: { Frame, MenuItem } }
 			сторону связки (`aria-haspopup`, `aria-expanded`, `id`,
 			`aria-controls`) и вид «нажата» (`data-selected`) он получает через
 			scope — двумя наборами, ARIA и `data-*` врозь. Стрелку у кнопки
-			рисует потребитель.
+			рисует потребитель. У контекстного меню (`openOn: 'contextmenu'`)
+			здесь область — строка, файл, картинка, — и связка у неё пуста.
 		-->
 		<slot name="trigger" :triggerAria="triggerAria" :triggerDataset="triggerDataset" />
 
@@ -45,6 +48,10 @@ export default { ...SetupMenu, components: { Frame, MenuItem } }
 			который ссылается `aria-controls` триггера, и `aria-labelledby` на
 			триггер — имя меню. `tabindex="-1"` — фокус встаёт на саму панель,
 			пока ни один пункт не подсвечен.
+
+			У контекстного меню панель встаёт у точки вызова (`point`): точка
+			главнее корня, пока задана, и выбирает между ними якорь, а не
+			шаблон. Корень остаётся якорем на случай, когда точки нет.
 
 			Открытость — `visible` панели, а не `rendered`: пункты входят в
 			коллекцию при монтировании, и закрытие не должно её вычищать.
@@ -63,6 +70,7 @@ export default { ...SetupMenu, components: { Frame, MenuItem } }
 			:visible="open"
 			position="fixed"
 			:anchor_anchor="rootElement"
+			:anchor_point="point"
 			:anchor_placement="placement"
 			:anchor_offset="4"
 			v-bind="{ ...aria, ...dismiss_ownerAttribute }"
@@ -77,22 +85,48 @@ export default { ...SetupMenu, components: { Frame, MenuItem } }
 				<slot>
 					<!--
 						Пункты из `items` — только действия: флажки ставят
-						разметкой. Петля — по показанным пунктам (`shown`), ключ —
-						`uid` пункта. Слоты пункта пробрасываются целиком: у каждого
-						есть `item-<слот>`, scope — scope слота пункта плюс сам пункт
-						(`item`).
+						разметкой. Петля — по секциям показанных пунктов
+						(`sections`), ключ — ключ секции: группа с подписью — в
+						`MenuGroup`, пункты без группы — прямо в списке, между
+						соседними секциями — разделитель. Секции идут порядком
+						показанного, поэтому стрелки ходят так же, как пункты стоят
+						на экране. Без групп секция одна — ни обёртки, ни
+						разделителя.
+
+						Пункт — по `uid`. Слоты пункта пробрасываются целиком: у
+						каждого есть `item-<слот>`, scope — scope слота пункта плюс
+						сам пункт (`item`). Проброс записан у пунктов группы и у
+						пунктов без неё: обёртка у них разная.
 					-->
-					<MenuItem v-for="item in shown" :key="item.uid" :ctrl="item">
-						<template #leading>
-							<slot name="item-leading" :item="item" />
+					<template v-for="(section, index) in sections" :key="section.key">
+						<MenuSeparator v-if="index > 0" />
+						<MenuGroup v-if="section.group" :label="section.group.label">
+							<MenuItem v-for="item in section.items" :key="item.uid" :ctrl="item">
+								<template #leading>
+									<slot name="item-leading" :item="item" />
+								</template>
+								<template #default="{ text }">
+									<slot name="item" :item="item" :text="text" />
+								</template>
+								<template #trailing>
+									<slot name="item-trailing" :item="item" />
+								</template>
+							</MenuItem>
+						</MenuGroup>
+						<template v-else>
+							<MenuItem v-for="item in section.items" :key="item.uid" :ctrl="item">
+								<template #leading>
+									<slot name="item-leading" :item="item" />
+								</template>
+								<template #default="{ text }">
+									<slot name="item" :item="item" :text="text" />
+								</template>
+								<template #trailing>
+									<slot name="item-trailing" :item="item" />
+								</template>
+							</MenuItem>
 						</template>
-						<template #default="{ text }">
-							<slot name="item" :item="item" :text="text" />
-						</template>
-						<template #trailing>
-							<slot name="item-trailing" :item="item" />
-						</template>
-					</MenuItem>
+					</template>
 				</slot>
 			</div>
 		</Frame>

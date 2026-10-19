@@ -16,7 +16,9 @@
  * У поля атрибуты потребителя делятся, как у Vue: класс и стиль — корню,
  * остальное, кроме `ref`, — `<input>`, поверх его `aria`, а корень остаётся
  * за адаптером. Элемент коллекции (`Tabs.Item`, `Accordion.Item`,
- * `RadioGroup.Item`) делит их так же: остальное — строке, у радио — полю.
+ * `RadioGroup.Item`) делит их так же: остальное — строке, у радио — полю. И
+ * ListBox с Tabs: остальное — узлу списка с ролью (`listbox`, `tablist`), а
+ * Table — корню `table` внутри окна, которому остаются класс и стиль.
  *
  * Стиль Solid ставит объектом по свойству и не трогает того, что плагины
  * пишут в узел сами: сдвиг смахиваемой панели (`--so-swipe-offset`) переживает
@@ -25,7 +27,7 @@
 
 import { describe, it, expect, vi } from 'vitest'
 import { createSignal, type Component, type JSX } from 'solid-js'
-import { TButton } from '@soldy-ui/core'
+import { TButton, type TTableColumnSource } from '@soldy-ui/core'
 import {
 	Accordion,
 	Button,
@@ -40,11 +42,13 @@ import {
 	RadioGroup,
 	Skeleton,
 	Switch,
+	Table,
 	Tabs,
 	toControlAttrs,
 	toRootForward,
 	toRootLayout,
 	toRootProps,
+	toWrappedRootProps,
 	type AccordionItemProps,
 	type AccordionProps,
 	type ButtonProps,
@@ -55,11 +59,13 @@ import {
 	type InputProps,
 	type LabelProps,
 	type ListBoxItemProps,
+	type ListBoxProps,
 	type ProgressSpinnerProps,
 	type RadioGroupItemProps,
 	type RadioGroupProps,
 	type SkeletonProps,
 	type SwitchProps,
+	type TableProps,
 	type TabsContentProps,
 	type TabsItemProps,
 	type TabsProps,
@@ -102,7 +108,6 @@ const COMPONENTS: ReadonlyArray<
 	['Label', Label, '.so-label', {}],
 	['ProgressSpinner', ProgressSpinner, '.so-progress-spinner', {}],
 	['Skeleton', Skeleton, '.so-skeleton', {}],
-	['Tabs', Tabs, '.so-tabs', {}],
 	['Tabs.Content', TabsContentProbe, '.so-tabs__panel', {}],
 	['Accordion', Accordion, '.so-accordion', {}],
 	['RadioGroup', RadioGroup, '.so-radio-group', {}],
@@ -311,6 +316,253 @@ describe('элемент коллекции: атрибуты снаружи —
 	})
 })
 
+/** Общие пропсы списков в таблице. */
+type TListProbeProps = ListBoxProps & TabsProps
+
+/**
+ * Список, класс его корня и узел списка — ребёнок корня с ролью, которому
+ * уходят атрибуты потребителя: на нём `aria` компонента, а корень — рамка
+ * (шапка и подвал ListBox, панели Tabs).
+ */
+const LISTS: ReadonlyArray<readonly [string, Component<TListProbeProps>, string, string]> = [
+	['ListBox', ListBox, '.so-list-box', '.so-list-box > [role="listbox"]'],
+	['Tabs', Tabs, '.so-tabs', '.so-tabs > [role="tablist"]'],
+]
+
+describe('ListBox, Tabs: атрибуты снаружи — узлу списка, поверх его aria', () => {
+	it.each(LISTS)(
+		'%s: aria-label, id и data-* — на узле списка, а не на корне',
+		(_name, List, root, list) => {
+			mount(() => <List aria-label="Своё" id="mine" data-probe="1" />)
+
+			const node = find(document, list, HTMLElement)
+
+			expect(node.getAttribute('aria-label')).toBe('Своё')
+			expect(node.id).toBe('mine')
+			expect(node.dataset['probe']).toBe('1')
+			expect(
+				['aria-label', 'id', 'data-probe'].filter((name) =>
+					find(document, root, HTMLElement).hasAttribute(name),
+				),
+			).toEqual([])
+		},
+	)
+
+	/** Имя пишет плагин доступного имени в `aria`, а `aria-label` снаружи — атрибут потребителя. */
+	it.each(LISTS)('%s: aria-label потребителя — поверх aria_label', (_name, List, _root, list) => {
+		mount(() => <List aria_label="Ядро" aria-label="Своё" />)
+
+		expect(find(document, list, HTMLElement).getAttribute('aria-label')).toBe('Своё')
+	})
+
+	/** Класс ядра — первым, класс потребителя — за ним, оба на корне. */
+	it.each(LISTS)('%s: класс и стиль — корню, а не узлу списка', (_name, List, root, list) => {
+		mount(() => <List class="mine" style={{ color: 'red' }} />)
+
+		const el = find(document, root, HTMLElement)
+		const node = find(document, list, HTMLElement)
+		const classes = [...el.classList]
+
+		expect(classes.at(-1)).toBe('mine')
+		expect(classes[0]).toBe(root.slice(1))
+		expect(el.style.color).toBe('red')
+		expect(node.classList.contains('mine')).toBe(false)
+		expect(node.style.color).toBe('')
+	})
+
+	/** `dir` ядро пишет в `attrs` по `direction`, на корень; `dir` снаружи — узлу списка. */
+	it.each(LISTS)(
+		'%s: dir ядра — на корне, dir потребителя — на узле списка',
+		(_name, List, root, list) => {
+			mount(() => <List direction="rtl" dir="ltr" />)
+
+			expect(find(document, root, HTMLElement).getAttribute('dir')).toBe('rtl')
+			expect(find(document, list, HTMLElement).getAttribute('dir')).toBe('ltr')
+		},
+	)
+
+	/** Смена атрибута потребителя доходит до узла списка, корень — тот же. */
+	it.each(LISTS)(
+		'%s: смена атрибута — на узле списка, корень тот же',
+		(_name, List, root, list) => {
+			const [title, setTitle] = createSignal('a')
+
+			mount(() => <List title={title()} />)
+
+			const node = find(document, root, HTMLElement)
+
+			setTitle('b')
+
+			expect(find(document, list, HTMLElement).getAttribute('title')).toBe('b')
+			expect(find(document, root, HTMLElement)).toBe(node)
+			expect(node.hasAttribute('title')).toBe(false)
+		},
+	)
+
+	it.each(LISTS)('%s: обработчик потребителя — на узле списка', (_name, List, _root, list) => {
+		const targets: EventTarget[] = []
+
+		mount(() => (
+			<List
+				onClick={(event) => {
+					targets.push(event.currentTarget)
+				}}
+			/>
+		))
+
+		const node = find(document, list, HTMLElement)
+
+		node.click()
+
+		expect(targets).toHaveLength(1)
+		expect(targets[0]).toBe(node)
+	})
+
+	it('ListBox: tabindex="-1" снимает список с остановок Tab', () => {
+		const { root } = mount(() => <ListBox tabindex={-1} />)
+
+		expect(find(root(), '[role="listbox"]', HTMLElement).getAttribute('tabindex')).toBe('-1')
+		expect(root().hasAttribute('tabindex')).toBe(false)
+	})
+})
+
+/**
+ * Корень таблицы стоит внутри окна (`div.so-table__viewport`), и атрибуты
+ * потребителя делятся, как у поля (`createWrappedRootProps`): класс, стиль и
+ * скрытие — окну, внешнему узлу компонента, остальное, кроме `ref`, —
+ * `table`, поверх её наборов, где роль и имя таблицы.
+ */
+describe('Table: корень внутри окна', () => {
+	it('класс и стиль потребителя — окну, остальные атрибуты, классы и наборы ядра — table', () => {
+		mount(() => (
+			<TableProbe
+				class="mine"
+				style={{ color: 'red' }}
+				title="Сотрудники"
+				id="staff"
+				data-probe="1"
+				direction="rtl"
+				aria_label="Таблица"
+			/>
+		))
+
+		const viewport = find(document, '.so-table__viewport', HTMLElement)
+		const table = find(document, 'table.so-table', HTMLElement)
+
+		expect([...viewport.classList]).toEqual(['so-table__viewport', 'mine'])
+		expect(viewport.style.color).toBe('red')
+		expect(table.classList.contains('mine')).toBe(false)
+		expect(table.classList[0]).toBe('so-table')
+		expect(table.hasAttribute('style')).toBe(false)
+		expect(table.title).toBe('Сотрудники')
+		expect(table.id).toBe('staff')
+		expect(table.dataset['probe']).toBe('1')
+		expect(
+			['title', 'id', 'data-probe', 'dir', 'aria-label'].filter((name) =>
+				viewport.hasAttribute(name),
+			),
+		).toEqual([])
+		// Наборы ядра — у таблицы: `dir` из `direction`, имя — из `aria_label`
+		expect(table.getAttribute('dir')).toBe('rtl')
+		expect(table.getAttribute('aria-label')).toBe('Таблица')
+	})
+
+	/** Имя пишет плагин доступного имени в `aria` таблицы, `dir` ядро — в её `attrs`. */
+	it('aria-label и dir потребителя — поверх aria_label и dir ядра', () => {
+		mount(() => <TableProbe aria_label="Ядро" aria-label="Своё" direction="rtl" dir="ltr" />)
+
+		const table = find(document, 'table.so-table', HTMLElement)
+
+		expect(table.getAttribute('aria-label')).toBe('Своё')
+		expect(table.getAttribute('dir')).toBe('ltr')
+		expect(find(document, '.so-table__viewport', HTMLElement).hasAttribute('dir')).toBe(false)
+	})
+
+	it('обработчик потребителя — на table', () => {
+		const targets: EventTarget[] = []
+
+		mount(() => (
+			<TableProbe
+				onClick={(event) => {
+					targets.push(event.currentTarget)
+				}}
+			/>
+		))
+
+		const table = find(document, 'table.so-table', HTMLElement)
+
+		table.click()
+
+		expect(targets).toHaveLength(1)
+		expect(targets[0]).toBe(table)
+	})
+
+	it('смена атрибута — на table, окно и table — те же узлы', () => {
+		const [title, setTitle] = createSignal('a')
+
+		mount(() => <TableProbe title={title()} />)
+
+		const viewport = find(document, '.so-table__viewport', HTMLElement)
+		const table = find(document, 'table.so-table', HTMLElement)
+
+		setTitle('b')
+
+		expect(find(document, '.so-table__viewport', HTMLElement)).toBe(viewport)
+		expect(find(document, 'table.so-table', HTMLElement)).toBe(table)
+		expect(table.title).toBe('b')
+		expect(viewport.hasAttribute('title')).toBe(false)
+	})
+
+	it('делёж атрибутов окна: класс и стиль — окну, остальное, кроме ref, — корню поверх наборов', () => {
+		const forward = {
+			class: 'mine',
+			style: { color: 'red' },
+			ref: () => {},
+			'aria-label': 'Своё',
+			title: 'Подсказка',
+		}
+		const { wrapper, root } = toWrappedRootProps(
+			{ classes: ['so-table'], visible: false },
+			[{ 'aria-label': 'Ядро', role: 'grid' }],
+			forward,
+			'so-table__viewport',
+		)
+
+		expect(wrapper).toEqual({
+			class: 'so-table__viewport mine',
+			style: { color: 'red', display: 'none' },
+		})
+		expect(root).toEqual({
+			'aria-label': 'Своё',
+			role: 'grid',
+			title: 'Подсказка',
+			class: 'so-table',
+			style: {},
+		})
+	})
+
+	it('свойство, записанное в окно мимо разметки, переживает смену стиля потребителя и видимости', () => {
+		const [style, setStyle] = createSignal<JSX.CSSProperties>({ color: 'red' })
+		const [visible, setVisible] = createSignal(true)
+
+		mount(() => <TableProbe style={style()} visible={visible()} />)
+
+		const viewport = find(document, '.so-table__viewport', HTMLElement)
+
+		viewport.style.setProperty('--so-probe', '1')
+		setStyle({ color: 'blue' })
+		setVisible(false)
+
+		expect(viewport.style.display).toBe('none')
+
+		setVisible(true)
+
+		expect(viewport.style.color).toBe('blue')
+		expect(viewport.style.display).toBe('')
+		expect(viewport.style.getPropertyValue('--so-probe')).toBe('1')
+	})
+})
+
 /** Узлы сверяются по ссылке: `toEqual` сравнил бы узлы по разметке. */
 function expectNodes(actual: readonly Element[], expected: readonly Element[]): void {
 	expect(actual).toHaveLength(expected.length)
@@ -323,32 +575,75 @@ type TRefProbeProps = {
 	onElementReady?: (element: Element) => void
 }
 
+const COLUMNS: TTableColumnSource[] = [{ field: 'name', text: 'Имя', rowHeader: true }]
+
+/** Таблица из одной строки и одной колонки. */
+function TableProbe(props: TableProps): JSX.Element {
+	return <Table columns={COLUMNS} items={[{ data: { id: 1, name: 'Анна' } }]} {...props} />
+}
+
 /**
  * Компонент со своим корнем — каждый, и поле и часть коллекции тоже, — как
- * его рисовать и класс корня. Frame по умолчанию скрыт и уходит телепортом в
- * `body` — корень ищется по документу; у Icon тега по умолчанию нет; часть
- * коллекции — в своём владельце.
+ * его рисовать, класс узла, который получает `ref` потребителя, и класс узла,
+ * с которым приходит `element:ready`. Это один узел — у всех, кроме таблицы:
+ * её `ref` получает окно, внешний узел, куда ложатся атрибуты потребителя, а
+ * к `TElementPlugin` привязан корень `table`. Frame по умолчанию скрыт и
+ * уходит телепортом в `body` — корень ищется по документу; у Icon тега по
+ * умолчанию нет; часть коллекции — в своём владельце.
  */
-const ROOTS: ReadonlyArray<readonly [string, (props: TRefProbeProps) => JSX.Element, string]> = [
-	['Button', (props) => <Button {...props} />, '.so-button'],
-	['ComponentView', (props) => <ComponentView {...props} />, '.so-component-view'],
-	['Frame', (props) => <Frame visible {...props} />, '.so-frame'],
-	['Icon', (props) => <Icon tag="i" {...props} />, '.so-icon'],
-	['Label', (props) => <Label {...props} />, '.so-label'],
-	['ProgressSpinner', (props) => <ProgressSpinner {...props} />, '.so-progress-spinner'],
-	['Skeleton', (props) => <Skeleton {...props} />, '.so-skeleton'],
-	['CheckBox', (props) => <CheckBox {...props} />, '.so-check-box'],
-	['Switch', (props) => <Switch {...props} />, '.so-switch'],
-	['Input', (props) => <Input {...props} />, '.so-input'],
-	['Tabs', (props) => <Tabs {...props} />, '.so-tabs'],
-	['Tabs.Item', (props) => <TabsItemProbe {...props} />, '.so-tabs-item'],
-	['Tabs.Content', (props) => <TabsContentProbe {...props} />, '.so-tabs__panel'],
-	['Accordion', (props) => <Accordion {...props} />, '.so-accordion'],
-	['Accordion.Item', (props) => <AccordionItemProbe {...props} />, '.so-accordion-item'],
-	['RadioGroup', (props) => <RadioGroup {...props} />, '.so-radio-group'],
-	['RadioGroup.Item', (props) => <RadioGroupItemProbe {...props} />, '.so-radio-group-item'],
-	['ListBox', (props) => <ListBox {...props} />, '.so-list-box'],
-	['ListBox.Item', (props) => <ListBoxItemProbe {...props} />, '.so-list-box-item'],
+const ROOTS: ReadonlyArray<
+	readonly [string, (props: TRefProbeProps) => JSX.Element, string, string]
+> = [
+	['Button', (props) => <Button {...props} />, '.so-button', '.so-button'],
+	[
+		'ComponentView',
+		(props) => <ComponentView {...props} />,
+		'.so-component-view',
+		'.so-component-view',
+	],
+	['Frame', (props) => <Frame visible {...props} />, '.so-frame', '.so-frame'],
+	['Icon', (props) => <Icon tag="i" {...props} />, '.so-icon', '.so-icon'],
+	['Label', (props) => <Label {...props} />, '.so-label', '.so-label'],
+	[
+		'ProgressSpinner',
+		(props) => <ProgressSpinner {...props} />,
+		'.so-progress-spinner',
+		'.so-progress-spinner',
+	],
+	['Skeleton', (props) => <Skeleton {...props} />, '.so-skeleton', '.so-skeleton'],
+	['CheckBox', (props) => <CheckBox {...props} />, '.so-check-box', '.so-check-box'],
+	['Switch', (props) => <Switch {...props} />, '.so-switch', '.so-switch'],
+	['Input', (props) => <Input {...props} />, '.so-input', '.so-input'],
+	['Tabs', (props) => <Tabs {...props} />, '.so-tabs', '.so-tabs'],
+	['Tabs.Item', (props) => <TabsItemProbe {...props} />, '.so-tabs-item', '.so-tabs-item'],
+	[
+		'Tabs.Content',
+		(props) => <TabsContentProbe {...props} />,
+		'.so-tabs__panel',
+		'.so-tabs__panel',
+	],
+	['Accordion', (props) => <Accordion {...props} />, '.so-accordion', '.so-accordion'],
+	[
+		'Accordion.Item',
+		(props) => <AccordionItemProbe {...props} />,
+		'.so-accordion-item',
+		'.so-accordion-item',
+	],
+	['RadioGroup', (props) => <RadioGroup {...props} />, '.so-radio-group', '.so-radio-group'],
+	[
+		'RadioGroup.Item',
+		(props) => <RadioGroupItemProbe {...props} />,
+		'.so-radio-group-item',
+		'.so-radio-group-item',
+	],
+	['ListBox', (props) => <ListBox {...props} />, '.so-list-box', '.so-list-box'],
+	[
+		'ListBox.Item',
+		(props) => <ListBoxItemProbe {...props} />,
+		'.so-list-box-item',
+		'.so-list-box-item',
+	],
+	['Table', (props) => <TableProbe {...props} />, '.so-table__viewport', 'table.so-table'],
 ]
 
 /** Поля: `ref` потребителя — корень, а не `<input>`. */
@@ -356,14 +651,16 @@ const FIELD_ROOTS = ROOTS.filter(([name]) => ['RadioGroup.Item'].includes(name))
 
 /**
  * `ref` потребителя получает корень компонента — узел, на который ложатся его
- * класс и атрибуты. Отдаёт его `ref` адаптера тем же вызовом, после привязки
- * к `TElementPlugin`, и привязку он не выбивает. Как любой `ref` Solid, он
- * зовётся, когда узел создан, и при снятии узла не зовётся.
+ * класс и атрибуты, — а у таблицы окно. Отдаёт его `ref` адаптера тем же
+ * вызовом, после привязки к `TElementPlugin`, и привязку он не выбивает; у
+ * таблицы половины `ref` разведены: окну — `ref` потребителя, `table` —
+ * привязка. Как любой `ref` Solid, он зовётся, когда узел создан, и при снятии
+ * узла не зовётся.
  */
 describe('ref потребителя — корень компонента', () => {
 	it.each(ROOTS)(
-		'%s: ref — корень, element:ready — тот же корень',
-		async (_name, draw, selector) => {
+		'%s: ref — корень, element:ready — привязанный корень',
+		async (_name, draw, selector, bound) => {
 			const nodes: Element[] = []
 			const ready: Element[] = []
 
@@ -375,10 +672,8 @@ describe('ref потребителя — корень компонента', () 
 			)
 			await nextFrame()
 
-			const root = find(document, selector, HTMLElement)
-
-			expectNodes(nodes, [root])
-			expectNodes(ready, [root])
+			expectNodes(nodes, [find(document, selector, HTMLElement)])
+			expectNodes(ready, [find(document, bound, HTMLElement)])
 		},
 	)
 

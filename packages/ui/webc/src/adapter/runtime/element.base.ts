@@ -30,7 +30,7 @@
  *
  * - connectedCallback: при первом подключении строит структуру шаблона в
  *   самом элементе и раскладывает по ней свет; при каждом — новая связка над
- *   тем же инстансом, `bindElement(this)` и полная отрисовка. Подключение
+ *   тем же инстансом, `bindElement` корня и полная отрисовка. Подключение
  *   бывает отложено — см. ниже. Подключение элемента, которого в документе уже
  *   нет (колбэк узла, снятого раньше своей очереди), — пропуск
  * - attributeChangedCallback: приводит атрибут к типу и пишет в Core
@@ -64,12 +64,25 @@
  * — света, который владелец ей назначает. Свою очередь элемент доводит тем же
  * `_resume` и, если его к ней сняли, не собирается.
  *
- * Тег — `localName` элемента (`button`): база отдаёт его ядру пропом `tag` при
- * каждой сборке. Атрибута и свойства `tag` нет (`HOST_PROPS`): тег элемента
- * задан разметкой. Для ядра это нативный тег: `role` и `tabindex` оно не пишет,
- * а `disabled` пишет нативным атрибутом, как у `<Button>` во Vue.
+ * Тег — `localName` корня (`button`): база отдаёт его ядру пропом `tag` при
+ * каждой сборке. Атрибута и свойства `tag` нет (`HOST_PROPS`): тег корня задан
+ * разметкой — тегом элемента, а у обёрнутого корня (ниже) — шаблоном. Для ядра
+ * это нативный тег: `role` и `tabindex` оно не пишет, а `disabled` пишет
+ * нативным атрибутом, как у `<Button>` во Vue.
  *
- * То, что ядро пишет на корень, база раскладывает на элемент сама — это
+ * Корень — сам элемент, кроме компонента, чей внешний узел — обёртка вокруг
+ * корня: окно таблицы (`<div is="so-table">`, класс `so-table__viewport`)
+ * вокруг `table`. Тогда корень — узел шаблона внутри элемента
+ * (`TRootSpec.wrapped`): на него ложится всё, что ядро пишет на корень, с ним
+ * связан `TElementPlugin`, и тег ядру уходит его, а элементу остаются скрытие
+ * и класс и стиль потребителя — как окну у Vue и React. Остальные атрибуты
+ * разметки у таблицы едут на корень: он же её поле (`control`, ниже).
+ *
+ * Компонент бывает и невизуальным — окно `<so-virtual>`: классов, наборов и
+ * видимости у него нет, и база, которая читает их из состояния по имени,
+ * ничего на элемент не кладёт.
+ *
+ * То, что ядро пишет на корень, база раскладывает на него сама — это
  * одинаково у всех визуальных компонентов soldy (`root-attributes.ts`):
  *   classes              → классы, отдельными токенами
  *   aria, attrs, dataset → атрибуты (в `attrs` и `dir`: ядро уже перевело
@@ -91,8 +104,9 @@
  * скрыт (`shownBy` — `active` у панели таба), уезжает ли корень в слой
  * (`teleport` у Frame): тогда база уводит его в цель по селектору (`TTeleport`,
  * `teleport.ts`), а без цели прячет на месте — это ещё одна причина скрытия,
- * рядом с `rendered` и `visible`, — какие наборы ядра лежат на корне (`sets`)
- * и есть ли в корне поле (`control`, см. ниже).
+ * рядом с `rendered` и `visible`, — какие наборы ядра лежат на корне (`sets`),
+ * есть ли в корне поле (`control`, см. ниже) и не обёртка ли элемент вокруг
+ * корня (`wrapped`, см. выше).
  *
  * Атрибуты, классы и свойства стиля потребителя главнее того, что пишет ядро:
  * по каждому имени база помнит, что поставила сама, своё пишет и снимает, а
@@ -102,8 +116,11 @@
  * Память — у элемента, а не у связки: связка новая на каждое подключение.
  *
  * Корень с полем — Input, CheckBox, Switch, радио, а у таба и секции —
- * строкой: корень — элемент потребителя (`<div is="so-input">`), а `<input>`
- * или строка — узел шаблона. Форма видит поле сама: `<input>` лежит в обычном
+ * строкой, у ListBox и Tabs — узлом списка с ролью: корень — элемент
+ * потребителя (`<div is="so-input">`), а `<input>`, строка или узел списка —
+ * узел шаблона. У таблицы поле — её корень `table` внутри окна: элемент —
+ * окно, и атрибуты потребителя делятся между ним и `table`, где роль и имя.
+ * Форма видит поле сама: `<input>` лежит в обычном
  * DOM страницы, и `FormData`, `<label>`, `<fieldset disabled>` и валидация
  * достаются нативному полю. Атрибуты потребителя делятся, как у Vue, React и
  * Angular: статические атрибуты разметки корня база при построении переносит
@@ -115,8 +132,9 @@
  * корень, а тот подпись не принимает. Поэтому атрибута `id` нет в
  * `observedAttributes`: атрибут разметки база берёт пропом первой сборки и
  * снимает с корня, а на поле его пишет шаблон из состояния. Из кода —
- * `ctrl.id`; `el.id` — собственный `id` корня. У радио и строки своего `id` нет,
- * и атрибут разметки едет на поле вместе со всеми, как `controlAttrs` у Vue.
+ * `ctrl.id`; `el.id` — собственный `id` корня. У радио, строки, узла списка и
+ * таблицы своего `id` нет, и атрибут разметки едет на поле вместе со всеми,
+ * как `controlAttrs` у Vue.
  *
  * Сборка — `createWebcAdapterContext` в setup-слое компонента: локаль
  * поддерева она берёт у ближайшего `<so-locale-provider>` вверх от элемента.
@@ -197,7 +215,7 @@
  * получает каждый элемент из данных.
  */
 
-import type { IComponentView, IComponentViewProps } from '@soldy-ui/core'
+import type { IComponent, IComponentProps } from '@soldy-ui/core'
 import {
 	DEFAULT_SLOT,
 	TSurface,
@@ -216,6 +234,7 @@ import {
 } from '../common'
 import type { ITemplate, ITemplateContext, TSlotTarget, TSlotTargets } from '../template'
 import { assignSlot, takeAssignedSlot } from './assignment'
+import { isContent } from './content'
 import { isDefining } from './defineElement'
 import { isRelocating, relocate } from './relocation'
 import {
@@ -223,7 +242,9 @@ import {
 	applyClasses,
 	applyHidden,
 	applyStyles,
+	classesOf,
 	orderOf,
+	setOf,
 	stylesOf,
 	type TAppliedClasses,
 	type TAppliedStyles,
@@ -252,17 +273,6 @@ const CONTROL_ID = 'id'
 
 /** Точка, в которую база кладёт свет: всё, кроме образца. */
 type TPlacedTarget = Exclude<TSlotTarget, { mode: 'sample' }>
-
-/**
- * Содержимое ли узел: элемент или текст не из одних пробелов. Пробелы между
- * тегами — след переносов строк в разметке, а комментарий не рисуется. Якорь
- * увезённого корня — содержимое: он стоит на месте корня (`TTeleport.rootAt`).
- */
-function isContent(node: ChildNode): boolean {
-	if (node instanceof Element || TTeleport.rootAt(node)) return true
-
-	return node instanceof Text && node.data.trim() !== ''
-}
 
 /**
  * Слот узла — назначенный шаблоном владельца (свет детали, см. шапку), а без
@@ -436,11 +446,21 @@ export type TSoldyElementProps<
  *   поля — только `attrs`: его `aria` стоит на `<input>`, его кладёт шаблон
  *   (`ownerAttributes`), а `dataset` разметка поля не выводит, как у
  *   остальных адаптеров;
- * - `control` — в корне поле (Input, CheckBox, Switch, радио) или строка
- *   элемента коллекции (таб, секция): `create()` шаблона отдаёт её узел, и
- *   статические атрибуты разметки корня база при построении переносит на
- *   него, а `id` поля, которое его объявляет, — проп поля, а не вход корня (см.
- *   шапку). Как у `control` в описании корня Angular.
+ * - `control` — в корне поле (Input, CheckBox, Switch, радио), строка
+ *   элемента коллекции (таб, секция, элемент списка) или узел списка с ролью
+ *   (ListBox, Tabs), а у обёртки — сам корень внутри неё (`table`):
+ *   `create()` шаблона отдаёт его узел, и статические атрибуты разметки
+ *   элемента база при построении переносит на него, а `id` поля, которое его
+ *   объявляет, — проп поля, а не вход корня (см. шапку). Как у `control` в
+ *   описании корня Angular;
+ * - `wrapped` — элемент — обёртка вокруг корня, а корень — узел шаблона
+ *   внутри него: окно таблицы вокруг `table`. `create()` шаблона отдаёт узел
+ *   корня (`TTemplateParts.root`), и на него база кладёт классы, наборы и
+ *   стиль ядра, с ним связывает `TElementPlugin` и его тег отдаёт ядру.
+ *   Элементу остаются скрытие и класс и стиль потребителя — он внешний узел
+ *   компонента, как окно у Vue и React; остальные атрибуты разметки уходят
+ *   корню, если он же и поле (`control`). Входов пропов у такого корня нет:
+ *   их атрибуты потребитель пишет на элемент. Нет — корень сам элемент.
  */
 export type TRootSpec = {
 	readonly style?: string
@@ -450,6 +470,7 @@ export type TRootSpec = {
 	readonly teleport?: TRootTeleport
 	readonly sets?: readonly TRootSet[]
 	readonly control?: boolean
+	readonly wrapped?: boolean
 }
 
 /** Слой в описании корня (`TRootSpec.teleport`): имена выходов состояния. */
@@ -505,13 +526,17 @@ export type TSoldyElementClass<TInstance, TFacade = unknown> = (new (
 /**
  * Класс элемента soldy поверх нативного класса тега.
  *
+ * Компонент — любой компонент ядра, визуальный или нет (`IComponent`): что
+ * у визуального есть сверх событий — классы, наборы, видимость, — база читает
+ * из состояния по имени (см. шапку).
+ *
  * Тип результата объявлен явно — нативный класс плюс своё (`ISoldyElement`):
  * класс, выведенный из выражения, TypeScript в декларации не выпустит, у него
  * приватные члены.
  */
 export function SoldyElement<
 	TNative extends TNativeElementClass,
-	TInstance extends IComponentView<IComponentViewProps, any>,
+	TInstance extends IComponent<IComponentProps, any>,
 	TFacade = unknown,
 >(
 	Native: TNative,
@@ -521,6 +546,8 @@ export function SoldyElement<
 	const descriptors = spec.facade ? [spec.descriptor, spec.facade] : [spec.descriptor]
 	/** В корне поле (`TRootSpec.control`). */
 	const control = spec.root?.control === true
+	/** Элемент — обёртка вокруг корня (`TRootSpec.wrapped`). */
+	const wrapped = spec.root?.wrapped === true
 	const attributes = attributesOf(descriptors)
 	/**
 	 * `id` — проп поля, а не вход корня: поле его объявляет (см. шапку). Карта
@@ -532,8 +559,11 @@ export function SoldyElement<
 
 	if (fieldId) attributes.delete(CONTROL_ID)
 
-	/** Атрибуты-входы пропов: их значение в наборе ядра верно всегда. */
-	const inputs: ReadonlySet<string> = new Set(attributes.keys())
+	/**
+	 * Атрибуты-входы пропов на корне: их значение в наборе ядра верно всегда. У
+	 * обёрнутого корня входов нет — атрибуты пропов стоят на элементе.
+	 */
+	const inputs: ReadonlySet<string> = new Set(wrapped ? [] : attributes.keys())
 	/** Наборы ядра на корне (`TRootSpec.sets`). */
 	const rootSets: readonly TRootSet[] = spec.root?.sets ?? ROOT_SETS
 	/** Свои атрибуты элемента: имя атрибута → имя свойства (`ISoldyElementSpec.attributes`). */
@@ -585,11 +615,17 @@ export function SoldyElement<
 		/** Подключение отложено — до разбора документа, регистрации или чужого подключения (см. шапку). */
 		private _deferred = false
 
+		/**
+		 * Корень компонента — узел, на который база кладёт то, что пишет ядро, и
+		 * который связан с `TElementPlugin`: сам элемент, а у обёрнутого корня
+		 * (`TRootSpec.wrapped`) — узел шаблона внутри него, с построения.
+		 */
+		private _root: HTMLElement = this
+
 		/** Память раскладки корня: что поставила база (см. `root-attributes.ts`). */
 		private _appliedClasses: TAppliedClasses = new Set()
-		/** Раскладчик атрибутов элемента: наборы ядра корня — его нижние слои. */
-		private readonly _attributes = TElementAttributes.of(this)
 		private _appliedStyles: TAppliedStyles = new Map()
+		/** Память скрытия — у элемента: скрытие ложится на него и у обёрнутого корня. */
 		private _hiddenDisplay: THiddenDisplay = undefined
 
 		/** Контекст привязок шаблона — живой вид элемента (`_viewOf`). */
@@ -707,7 +743,7 @@ export function SoldyElement<
 				this._build()
 			}
 
-			this._assemble().bindElement(this)
+			this._assemble().bindElement(this._root)
 			this._flush(true)
 		}
 
@@ -757,7 +793,7 @@ export function SoldyElement<
 		 * Новая связка над тем же инстансом.
 		 *
 		 * Пропсы сборки — заданные потребителем в последнем значении, которое видел
-		 * элемент, поверх — записанное без связки, и тег элемента. Снятое без связки
+		 * элемент, поверх — записанное без связки, и тег корня. Снятое без связки
 		 * (`undefined`) сборка не донесла бы: она пропускает `undefined` и вернуть
 		 * проп к умолчанию не может. Поэтому у такого пропа в сборку уходит прежнее
 		 * значение, а снятие доходит следом записью в связку — как снятие атрибута у
@@ -773,7 +809,7 @@ export function SoldyElement<
 				if (value !== undefined) props[name] = value
 			}
 
-			props['tag'] = this.localName
+			props['tag'] = this._root.localName
 
 			this._offline = new Map()
 
@@ -818,6 +854,7 @@ export function SoldyElement<
 			const parts = spec.template.create(this, (name) => light.has(name), this._view)
 
 			if (control) this._handOver(parts.control)
+			if (wrapped) this._root = this._wrappedRoot(parts.root)
 
 			// Слоты не наследуются: слота по умолчанию может не быть вовсе
 			// (ProgressSpinner), и узлом содержимого тогда остаётся корень
@@ -854,6 +891,21 @@ export function SoldyElement<
 
 				this.removeAttribute(name)
 			}
+		}
+
+		/**
+		 * Корень внутри элемента-обёртки — узел, который построил шаблон
+		 * (`TRootSpec.wrapped`). Не построил — описание корня с шаблоном
+		 * разошлось, и раскладывать ядро некуда.
+		 */
+		private _wrappedRoot(root: HTMLElement | undefined): HTMLElement {
+			if (!root) {
+				throw new Error(
+					'[soldy] Описание корня объявляет обёртку, а шаблон корня не построил',
+				)
+			}
+
+			return root
 		}
 
 		/**
@@ -1009,8 +1061,10 @@ export function SoldyElement<
 		}
 
 		private _flush(full = false): void {
-			const state = this.state
-			const snapshot: TStateSnapshot = state
+			// Состояние — по именам: база не знает инстанса компонента, а у
+			// невизуального нет ни классов, ни наборов, ни видимости
+			const snapshot: TStateSnapshot = this.state
+			const root = this._root
 			// Имена забираются до раскладки: изменение, пришедшее во время неё (через
 			// обратную запись атрибута-входа `disabled`), дождётся своего флаша, а не
 			// пропадёт
@@ -1020,13 +1074,19 @@ export function SoldyElement<
 			this._dirty.clear()
 
 			if (changed('classes')) {
-				this._appliedClasses = applyClasses(this, state.classes ?? [], this._appliedClasses)
+				this._appliedClasses = applyClasses(
+					root,
+					classesOf(snapshot['classes']),
+					this._appliedClasses,
+				)
 			}
 
-			// Наборы корня — нижние слои раскладчика элемента: память у слоёв одна,
-			// и снятие записи в одном не уносит чужие. Входы пропов называют они
+			// Наборы корня — нижние слои его раскладчика: память у слоёв одна, и
+			// снятие записи в одном не уносит чужие. Входы пропов называют они
 			for (const name of rootSets) {
-				if (changed(name)) this._attributes.set(name, state[name] ?? {}, inputs)
+				if (changed(name)) {
+					TElementAttributes.of(root).set(name, setOf(snapshot[name]), inputs)
+				}
 			}
 
 			// Снизу выход плагина раскладки, поверх — стиль-выход компонента и место
@@ -1038,7 +1098,7 @@ export function SoldyElement<
 				(ordered && changed('order'))
 			) {
 				this._appliedStyles = applyStyles(
-					this,
+					root,
 					stylesOf(
 						snapshot['layout_styles'],
 						styleOutput === undefined ? undefined : snapshot[styleOutput],
@@ -1055,20 +1115,22 @@ export function SoldyElement<
 
 			if (placing) {
 				this._teleport ??= new TTeleport(this)
-				this._placed = this._teleport.place(placeOf(state, layer))
+				this._placed = this._teleport.place(placeOf(snapshot, layer))
 			}
 
 			// Скрытие — поверх стиля: `display: none` не перекрывает ни раскладка,
 			// ни потребитель. Прячут корень `rendered` и `visible`, если видимость
 			// его прячет, выход, без которого корня нет (`shownBy`), и слой без
-			// цели: корень на месте, а места у панели нет
+			// цели: корень на месте, а места у панели нет. Прячется элемент, и у
+			// обёрнутого корня тоже: спрятана обёртка — спрятан и корень в ней
 			if (
 				changed('rendered') ||
 				changed('visible') ||
 				placing ||
 				(shownBy !== undefined && changed(shownBy))
 			) {
-				const unseen = hides && (state.rendered === false || state.visible === false)
+				const unseen =
+					hides && (snapshot['rendered'] === false || snapshot['visible'] === false)
 				const absent = shownBy !== undefined && snapshot[shownBy] !== true
 
 				this._hiddenDisplay = applyHidden(

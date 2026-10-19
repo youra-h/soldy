@@ -35,6 +35,7 @@ import {
 	ListBox,
 	LocaleProvider,
 	Menu,
+	NumberInput,
 	Pagination,
 	Popover,
 	ProgressLinear,
@@ -49,6 +50,7 @@ import {
 	Table,
 	Tabs,
 	Tags,
+	Textarea,
 	Toasts,
 	Tooltip,
 	Virtual,
@@ -246,6 +248,10 @@ const dragAndDrop = new TDragAndDrop()
 	<Menu :open="'yes'" />
 	<Menu open />
 
+	<!-- @vue-expect-error — у группы есть ключ: по нему её находят `groupBy` и метка `_.group` -->
+	<Menu :groups="[{ label: 'Правка' }]" />
+	<Menu :groups="[{ key: 'edit', label: 'Правка' }]" />
+
 	<!-- @vue-expect-error — текст пункта строкой -->
 	<Menu.Item :text="42" />
 	<Menu.Item text="Изменить" />
@@ -257,6 +263,14 @@ const dragAndDrop = new TDragAndDrop()
 	<!-- @vue-expect-error — отметка флажка — флаг, а не строка -->
 	<Menu.CheckboxItem :selected="'yes'" />
 	<Menu.CheckboxItem selected />
+
+	<!-- @vue-expect-error — открытость подменю — флаг, а не строка -->
+	<Menu.Submenu :open="'yes'" />
+	<Menu.Submenu open />
+
+	<!-- @vue-expect-error — у подменю пункты данными — массивом -->
+	<Menu.Submenu :items="'link'" />
+	<Menu.Submenu :items="[{ value: 'link', text: 'Ссылка' }]" />
 
 	<!-- @vue-expect-error — подпись группы строкой -->
 	<Menu.Group :label="42" />
@@ -342,6 +356,22 @@ const dragAndDrop = new TDragAndDrop()
 	<Select.Item :text="42" />
 	<Select.Item text="Первый" />
 
+	<!-- @vue-expect-error — число поля — числом, а не строкой -->
+	<NumberInput value="4" />
+	<NumberInput :value="4" />
+
+	<!-- @vue-expect-error — граница числом -->
+	<NumberInput min="0" />
+	<NumberInput :min="0" />
+
+	<!-- @vue-expect-error — сокращённую запись поле обратно не разберёт -->
+	<NumberInput :formatOptions="{ notation: 'compact' }" />
+	<NumberInput :formatOptions="{ style: 'percent' }" />
+
+	<!-- @vue-expect-error — знак, который прячет минус, поле не пускает -->
+	<NumberInput :formatOptions="{ signDisplay: 'never' }" />
+	<NumberInput :formatOptions="{ signDisplay: 'exceptZero' }" />
+
 	<!-- @vue-expect-error — оценка числом, а не строкой -->
 	<Rating value="4" />
 	<Rating :value="4" />
@@ -417,6 +447,30 @@ const dragAndDrop = new TDragAndDrop()
 	<!-- @vue-expect-error — вариант тега — имя темы, а `rainbow` она не объявила -->
 	<Tags.Item variant="rainbow" />
 	<Tags.Item variant="brand" />
+
+	<!-- @vue-expect-error — текст поля строкой -->
+	<Textarea :value="42" />
+	<Textarea value="Комментарий" />
+
+	<!-- @vue-expect-error — высота в строках числом, а не строкой -->
+	<Textarea rows="3" />
+	<Textarea :rows="3" />
+
+	<!-- @vue-expect-error — потолок автороста числом -->
+	<Textarea maxRows="6" />
+	<Textarea :maxRows="6" />
+
+	<!-- @vue-expect-error — предел символов числом -->
+	<Textarea maxlength="200" />
+	<Textarea :maxlength="200" />
+
+	<!-- @vue-expect-error — флаг, а не строка -->
+	<Textarea :autoresize="'yes'" />
+	<Textarea autoresize />
+
+	<!-- @vue-expect-error — флаг, а не строка -->
+	<Textarea :counter="'yes'" />
+	<Textarea counter />
 
 	<!-- @vue-expect-error — места `left` у региона нет: край и сторона строки -->
 	<Toasts placement="left" />

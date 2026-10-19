@@ -32,6 +32,7 @@ import {
 	Label,
 	ListBox,
 	Menu,
+	NumberInput,
 	Pagination,
 	Popover,
 	ProgressLinear,
@@ -46,6 +47,7 @@ import {
 	Table,
 	Tabs,
 	Tags,
+	Textarea,
 	Toasts,
 	Tooltip,
 	Virtual,
@@ -66,7 +68,11 @@ import {
  *
  * Функция получает готовые атрибуты (`bind`) и рисует ими компонент. Одна и та
  * же функция обслуживает обе колонки: в первой в `bind` лежат пропы, во второй
- * — только `ctrl` с экземпляром ядра. Слушатели событий кладёт туда же хост.
+ * — `ctrl` с экземпляром ядра. Слушатели событий кладёт туда же хост.
+ *
+ * Значений пропов самого компонента — подписи кнопки, плейсхолдера поля —
+ * здесь нет: это данные, одни на все хосты (`PREVIEW_PROPS` в общем пакете), и
+ * в `bind` их кладёт оболочка. Здесь — обёртка и содержимое.
  */
 export type TPreview = (bind: Record<string, unknown>) => unknown
 
@@ -292,11 +298,14 @@ const layer =
 		h(ComponentView, bind, { default: () => label })
 
 export const PREVIEWS: Record<string, TPreview> = {
-	// Подпись — пропом `text`, а не слотом: заданный слот `default` перекрывает
-	// проп, и строка `text` на странице свойств не меняла бы ничего видимого
-	button: (bind) => h(Button, { text: 'Кнопка', ...bind }),
+	// Подпись — проп `text` из пропсов превью, а не слот: заданный слот
+	// `default` перекрывает проп, и строка `text` не меняла бы ничего видимого
+	button: (bind) => h(Button, bind),
 
-	input: (bind) => h(Input, { placeholder: 'Введите текст', ...bind }),
+	input: (bind) => h(Input, bind),
+	'number-input': (bind) => h(NumberInput, bind),
+
+	textarea: (bind) => h(Textarea, bind),
 
 	// Текста у чекбокса и переключателя нет, оба — голый контрол: подпись даёт
 	// обёртка Label. Её пропы задаёт превью, строки страницы правят контрол
@@ -304,16 +313,13 @@ export const PREVIEWS: Record<string, TPreview> = {
 
 	switch: (bind) => h(Label, { text: 'Включено' }, () => h(Switch, bind)),
 
-	// Подпись — пропом `text`, контрол — слотом. Строки страницы правят саму
-	// подпись: сторону, размер текста, вариант
-	label: (bind) => h(Label, { text: 'Согласен', ...bind }, () => h(CheckBox)),
+	// Подпись — проп `text` из пропсов превью, контрол — слотом. Строки
+	// страницы правят саму подпись: сторону, размер текста, вариант
+	label: (bind) => h(Label, bind, () => h(CheckBox)),
 
-	// Поле формы вокруг Input: тексты частей — пропами, контрол — слотом.
-	// Строки страницы правят само поле: сторону подписи, тексты, ошибку
-	field: (bind) =>
-		h(Field, { label: 'Почта', helper: 'Не покажем никому', error: 'Нет @', ...bind }, () =>
-			h(Input, { placeholder: 'name@example.com' }),
-		),
+	// Поле формы вокруг Input: тексты частей — пропсы превью, контрол —
+	// слотом. Строки страницы правят само поле: сторону подписи, тексты, ошибку
+	field: (bind) => h(Field, bind, () => h(Input, { placeholder: 'name@example.com' })),
 
 	// Имени у ползунка нет, как у чекбокса: видимое даёт подпись Label, над
 	// ползунком. Горизонтальный тянется на её ширину, вертикальный — своей высоты
@@ -330,13 +336,8 @@ export const PREVIEWS: Record<string, TPreview> = {
 			),
 		),
 
-	// `editable: true` в дефолте, а не только на строке самого пропа — иначе
-	// строка `editableMode` показывала бы select без ввода вовсе: `editable`
-	// на ней не тронут и остаётся `false` от `defaultValues` ядра, ввод в
-	// поле невозможен, и подсветка по тексту ничем не отличалась бы от её
-	// отсутствия
 	select: (bind) =>
-		h(Select as Component, { placeholder: 'Выберите', editable: true, ...bind }, () =>
+		h(Select as Component, bind, () =>
 			ITEMS.map((item) => h(Select.Item, { key: item.value, ...item })),
 		),
 
@@ -345,43 +346,47 @@ export const PREVIEWS: Record<string, TPreview> = {
 	// выбор языка в шапке (`setLocale` хоста)
 	calendar: (bind) => h(Calendar as Component, bind),
 
-	// Язык — из шапки стенда, как у календаря. Имени у поля нет, как у
-	// ползунка, — даёт его aria_label: подпись Label части не назовёт, они не
-	// поля ввода
-	'date-input': (bind) => h(DateInput, { aria_label: 'Дата', ...bind }),
+	// Язык — из шапки стенда, как у календаря
+	'date-input': (bind) => h(DateInput, bind),
 
 	// Поле и календарь — экземпляры DatePicker, содержимого у него нет. Язык —
-	// из шапки стенда, как у поля и календаря. Имя одной даты — у поля,
-	// диапазона — у группы концов: даёт его aria_label
-	'date-picker': (bind) => h(DatePicker, { aria_label: 'Дата', ...bind }),
+	// из шапки стенда, как у поля и календаря
+	'date-picker': (bind) => h(DatePicker, bind),
 
 	// Триггер — Button, связку с панелью и вид «нажат» он берёт из scope
 	// слота. В содержимом есть кнопка: на неё при открытии уходит фокус
 	popover: (bind) =>
-		h(
-			Popover as Component,
-			{ aria_label: 'Пример поповера', ...bind },
-			{
-				trigger: ({ triggerAria, triggerDataset }: TPopoverTriggerScope) =>
-					h(Button, { text: 'Открыть', ...triggerAria, ...triggerDataset }),
-				default: () => [
-					h(
-						'p',
-						{ style: 'margin:0 0 8px' },
-						'Произвольное содержимое: текст, поля, кнопки',
-					),
-					h(Button, { text: 'Действие' }),
-				],
-			},
-		),
+		h(Popover as Component, bind, {
+			trigger: ({ triggerAria, triggerDataset }: TPopoverTriggerScope) =>
+				h(Button, { text: 'Открыть', ...triggerAria, ...triggerDataset }),
+			default: () => [
+				h('p', { style: 'margin:0 0 8px' }, 'Произвольное содержимое: текст, поля, кнопки'),
+				h(Button, { text: 'Действие' }),
+			],
+		}),
 
 	// Триггер — Button, связку с меню и вид «нажата» он берёт из scope слота.
-	// Пункты — разметкой: группа флажков с подписью, действия с подсказками
-	// сочетаний, выключенное действие и «опасный» пункт своего варианта
+	// У контекстного меню (`openOn: 'contextmenu'`) в слоте область, как
+	// «файл» у потребителя: меню вызывают над ней правой кнопкой, долгим
+	// касанием и Shift+F10 — она фокусируемая, — и панель встаёт у точки
+	// вызова. Режим область берёт из пропсов колонки, как таблица своё окно:
+	// у колонки экземпляра его нет, и там меню вызывают над кнопкой. Пункты —
+	// разметкой: группа флажков с подписью, действия с подсказками сочетаний,
+	// подменю с подменю внутри, выключенное действие и «опасный» пункт своего
+	// варианта
 	menu: (bind) =>
 		h(Menu as Component, bind, {
 			trigger: ({ triggerAria, triggerDataset }: TMenuTriggerScope) =>
-				h(Button, { text: 'Действия', ...triggerAria, ...triggerDataset }),
+				bind.openOn === 'contextmenu'
+					? h(
+							'div',
+							{
+								tabindex: 0,
+								style: 'padding:24px 32px;border:1px dashed;border-radius:8px',
+							},
+							'Правая кнопка, долгое касание или Shift+F10',
+						)
+					: h(Button, { text: 'Действия', ...triggerAria, ...triggerDataset }),
 			default: () => [
 				h(Menu.Group, { label: 'Вид' }, () => [
 					h(Menu.CheckboxItem, { value: 'grid', text: 'Сетка', selected: true }),
@@ -390,6 +395,14 @@ export const PREVIEWS: Record<string, TPreview> = {
 				h(Menu.Separator),
 				h(Menu.Item, { value: 'edit', text: 'Изменить' }, { trailing: () => 'Ctrl+E' }),
 				h(Menu.Item, { value: 'copy', text: 'Дублировать' }, { trailing: () => 'Ctrl+D' }),
+				h(Menu.Submenu, { value: 'share', text: 'Поделиться' }, () => [
+					h(Menu.Item, { value: 'link', text: 'Ссылка' }),
+					h(Menu.Item, { value: 'mail', text: 'Почта' }),
+					h(Menu.Submenu, { value: 'messengers', text: 'Мессенджеры' }, () => [
+						h(Menu.Item, { value: 'telegram', text: 'Telegram' }),
+						h(Menu.Item, { value: 'whatsapp', text: 'WhatsApp' }),
+					]),
+				]),
 				h(Menu.Item, { value: 'archive', text: 'В архив', disabled: true }),
 				h(Menu.Separator),
 				h(
@@ -449,18 +462,13 @@ export const PREVIEWS: Record<string, TPreview> = {
 
 	/**
 	 * Содержимого у пагинации нет: страницы окна кладёт в коллекцию она сама.
-	 * Данных — сотня элементов по десять на странице, текущая — пятая: пропуски
-	 * по обе стороны видны с первой отрисовки. Имени у ряда без приложения нет
-	 * — даёт его превью, как таблице. Язык номеров и имён стрелок — из шапки
-	 * стенда.
+	 * Язык номеров и имён стрелок — из шапки стенда.
 	 */
-	pagination: (bind) =>
-		h(Pagination as Component, { total: 100, value: 5, aria_label: 'Страницы', ...bind }),
+	pagination: (bind) => h(Pagination as Component, bind),
 
 	/**
 	 * Строки и колонки — данными (`items`, `columns`): частей разметкой у
-	 * таблицы нет, заголовки и строки она рисует сама. Имени без видимой
-	 * подписи у таблицы нет — превью даёт его пропом, как поповеру.
+	 * таблицы нет, заголовки и строки она рисует сама.
 	 *
 	 * Обёртка — граница ширины, как у ленты: таблица встаёт во всю ширину
 	 * места, а сцена ячейки — флексбокс, и таблица держала бы там только свой
@@ -478,7 +486,6 @@ export const PREVIEWS: Record<string, TPreview> = {
 				h(Table as Component, {
 					items: bind.stickyHead ? TABLE_SCROLL_ROWS : TABLE_ROWS,
 					columns: TABLE_COLUMNS,
-					aria_label: 'Сотрудники',
 					...bind,
 				}),
 			],
@@ -536,20 +543,16 @@ export const PREVIEWS: Record<string, TPreview> = {
 	 * и обёртка ей не мешает.
 	 *
 	 * По умолчанию полоса пуста: доля — ноль, а бег — флаг `indeterminate`.
-	 * Имени без видимой подписи у неё нет, превью даёт его пропом, как
-	 * поповеру.
 	 */
-	'progress-linear': (bind) =>
-		h('div', { style: 'width:100%' }, [h(ProgressLinear, { aria_label: 'Загрузка', ...bind })]),
+	'progress-linear': (bind) => h('div', { style: 'width:100%' }, [h(ProgressLinear, bind)]),
 
 	/**
 	 * Кольцо строчное и своего размера: обёртка по ширине ему не нужна. По
-	 * умолчанию оно пусто — доля ноль, а бег — флаг `indeterminate`. Имя
-	 * превью даёт пропом, как полосе.
+	 * умолчанию оно пусто — доля ноль, а бег — флаг `indeterminate`.
 	 */
-	'progress-spinner': (bind) => h(ProgressSpinner, { aria_label: 'Загрузка', ...bind }),
+	'progress-spinner': (bind) => h(ProgressSpinner, bind),
 
-	skeleton: (bind) => h(Skeleton, { width: 160, height: 16, ...bind }),
+	skeleton: (bind) => h(Skeleton, bind),
 
 	'drag-and-drop': (bind) =>
 		h(DragAndDrop as Component, bind, () =>

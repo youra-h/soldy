@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="brand/soldy-banner-mini.jpg" alt="Soldy UI — Headless. Universal. Flexible." width="100%">
+</p>
+
 # Soldy UI
 
 **UI components with the logic written once: a framework-agnostic core and thin adapters that
@@ -36,11 +40,12 @@ Web Components connect that model to a framework and render the markup: BEM clas
   event, and items come from the `items` prop or from markup. Calendar is a collection too: its
   days are items, built from the months on screen. A Table is two: rows and columns.
 - **Accessibility from the WAI-ARIA Authoring Practices.** Tabs, Tags, Accordion, Select, Switch,
-  RadioGroup, Slider, Rating, Popover, Tooltip, Dialog, Drawer, Calendar, DatePicker and Table take
-  roles and relations from their APG patterns, and ProgressLinear and ProgressSpinner use the
-  `progressbar` role. Select implements the Combobox keyboard model, and Tabs the Tabs one: arrow
-  keys and Home/End with automatic activation, and a single Tab stop. ARIA is computed outside the
-  framework and rendered with the markup, so it is in place from the first render.
+  RadioGroup, Slider, Rating, NumberInput, Popover, Tooltip, Dialog, Drawer, Calendar, DatePicker
+  and Table take roles and relations from their APG patterns, and ProgressLinear and
+  ProgressSpinner use the `progressbar` role. Select implements the Combobox keyboard model, and
+  Tabs the Tabs one: arrow keys and Home/End with automatic activation, and a single Tab stop. ARIA
+  is computed outside the framework and rendered with the markup, so it is in place from the first
+  render.
 - **Themes and icon packs are pluggable contracts.** A theme styles `so-*` classes and `data-*`
   attributes, never `aria-*`, so an accessibility fix does not break the look. An icon pack is
   plain data for a fixed set of roles, with no bundler-specific imports.
@@ -53,17 +58,24 @@ Web Components connect that model to a framework and render the markup: BEM clas
 Install the adapter for your framework, a theme and an icon pack. The adapter brings the core
 (`@soldy-ui/core`, `@soldy-ui/plugins`, `@soldy-ui/setup`) with it.
 
-| Framework      | Install                                                                       | Requires      |
-| -------------- | ----------------------------------------------------------------------------- | ------------- |
-| Vue            | `npm install @soldy-ui/vue @soldy-ui/theme-oren @soldy-ui/icons-material`     | Vue 3.5.21+   |
-| React          | `npm install @soldy-ui/react @soldy-ui/theme-oren @soldy-ui/icons-material`   | React 19.2+   |
-| Angular        | `npm install @soldy-ui/angular @soldy-ui/theme-oren @soldy-ui/icons-material` | Angular 21.1+ |
-| Svelte         | `npm install @soldy-ui/svelte @soldy-ui/theme-oren @soldy-ui/icons-material`  | Svelte 5.29+  |
-| Solid          | `npm install @soldy-ui/solid @soldy-ui/theme-oren @soldy-ui/icons-material`   | Solid 1.9.10+ |
-| Web Components | `npm install @soldy-ui/webc @soldy-ui/theme-oren @soldy-ui/icons-material`    | —             |
+| Framework      | Install                         | Requires      |
+| -------------- | ------------------------------- | ------------- |
+| Vue            | `npm install @soldy-ui/vue`     | Vue 3.5.21+   |
+| React          | `npm install @soldy-ui/react`   | React 19.2+   |
+| Angular        | `npm install @soldy-ui/angular` | Angular 21.1+ |
+| Svelte         | `npm install @soldy-ui/svelte`  | Svelte 5.29+  |
+| Solid          | `npm install @soldy-ui/solid`   | Solid 1.9.10+ |
+| Web Components | `npm install @soldy-ui/webc`    | —             |
+
+The theme and the icon pack are the same for every adapter:
+
+| Package | Install                                |
+| ------- | -------------------------------------- |
+| Theme   | `npm install @soldy-ui/theme-oren`     |
+| Icons   | `npm install @soldy-ui/icons-material` |
 
 All `@soldy-ui/*` packages share one version; keep them on the same one. Not every component is
-in every adapter yet — see [what each adapter implements](#components). Then plug in the theme and
+in every adapter yet — see [the component table](#components). Then plug in the theme and
 the icons at the application entry point, as shown below.
 
 ## What it looks like
@@ -169,67 +181,58 @@ a ready locale: `extendLocale(enUS, { tag: 'mn-MN', translations: { modal: { clo
 
 ## Components
 
-The component set, as the playground shows it. Components marked
-![in development](https://img.shields.io/badge/in%20development-orange) are not ready yet and are
-queued for development:
+The component set, as the playground shows it. **Frameworks** says which adapters already have the
+component: `*` — all six, a list — only those, `-` — none yet. **Release** is the first release
+on npm with the component in at least one adapter: a version number; `alpha` — already in `main`,
+ships with the next alpha release; `future` — queued for development. Ports to the other adapters
+come in later releases.
 
-| Component                                                                           | What it is                                                                                     |
-| ----------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| Button                                                                              | Button: text, icons in slots, four views                                                       |
-| Input                                                                               | Text field with slots for icons and buttons                                                    |
-| CheckBox                                                                            | Checkbox with a third, indeterminate state                                                     |
-| Switch                                                                              | Switch: the same value as a checkbox, a different metaphor                                     |
-| Label                                                                               | Control label: clicking the text toggles the control, and the text is its accessible name      |
-| Slider                                                                              | Slider: a number or a range, set by dragging, with keys or with a screen reader gesture        |
-| Rating                                                                              | Rating with stars: set by click, drag or arrow keys, halves, hover preview, read-only display  |
-| RadioGroup                                                                          | One option out of several: native radio buttons sharing a `name`                               |
-| Select                                                                              | Select field: an input plus a list in an overlay, the Combobox pattern                         |
-| Calendar                                                                            | Month grids: pick a single date, several dates or a range                                      |
-| DateInput                                                                           | Date and time field typed in parts in the locale's format, selected and copied as a whole      |
-| DatePicker                                                                          | Date field and a calendar in a panel: a single date or a range                                 |
-| Popover                                                                             | Panel at a trigger with any content: a non-modal dialog                                        |
-| Tooltip                                                                             | Hint for an element, shown on hover and on keyboard focus                                      |
-| Dialog                                                                              | Modal window: centered or at an edge of the screen, can be maximized to full screen            |
-| Drawer                                                                              | Panel that slides in at an edge of the screen or a container, can be swiped away               |
-| Toasts                                                                              | Pop-up notifications shown from code: a queue, auto-dismiss with a pause, swipe to close       |
-| Scroller                                                                            | Single-row strip of any content, paged with two buttons                                        |
-| ListBox                                                                             | List with single or multiple selection                                                         |
-| Table                                                                               | Table: columns as data, sorting by column headers, row selection with checkboxes               |
-| Tabs                                                                                | Tabs: a tab list and panels linked by value                                                    |
-| Tags                                                                                | Tag set: close buttons, optional selection                                                     |
-| Accordion                                                                           | Sections that expand one at a time or several at once                                          |
-| Icon                                                                                | Icon from the registered pack, by role                                                         |
-| ProgressLinear                                                                      | Linear progress indicator: the share done, or an indeterminate animation while it is unknown   |
-| ProgressSpinner                                                                     | Circular progress indicator: the share done, or an indeterminate animation while it is unknown |
-| Skeleton                                                                            | Placeholder while content loads                                                                |
-| DragAndDrop                                                                         | Drag and drop of collection items                                                              |
-| Virtual                                                                             | Window for long lists: ListBox and Table inside render only the visible items                  |
-| Pagination ![in development](https://img.shields.io/badge/in%20development-orange)  | Page navigation: page numbers with gaps, previous and next, first and last                     |
-| Menu ![in development](https://img.shields.io/badge/in%20development-orange)        | Action menu at a button or on right click: submenus, checkbox and radio items                  |
-| Textarea ![in development](https://img.shields.io/badge/in%20development-orange)    | Multi-line text field that grows with its content                                              |
-| NumberInput ![in development](https://img.shields.io/badge/in%20development-orange) | Number field: step, bounds, increment buttons, the locale's number format                      |
-| Field ![in development](https://img.shields.io/badge/in%20development-orange)       | Field wrapper: description, error message and invalid state linked to the control              |
-| Alert ![in development](https://img.shields.io/badge/in%20development-orange)       | Inline message by severity: info, success, warning, error                                      |
-| Badge ![in development](https://img.shields.io/badge/in%20development-orange)       | Counter or status mark, on its own or over another element                                     |
-| Avatar ![in development](https://img.shields.io/badge/in%20development-orange)      | User picture with a fallback to initials or an icon                                            |
-| Breadcrumbs ![in development](https://img.shields.io/badge/in%20development-orange) | Path to the current page, collapsing a long trail                                              |
-| Separator ![in development](https://img.shields.io/badge/in%20development-orange)   | Horizontal or vertical divider, semantic or decorative                                         |
-| ToggleGroup ![in development](https://img.shields.io/badge/in%20development-orange) | Toggle button and a group of them with single or multiple selection                            |
-| Tree ![in development](https://img.shields.io/badge/in%20development-orange)        | Hierarchy with expandable branches, selection and keyboard navigation by level                 |
-| Stepper ![in development](https://img.shields.io/badge/in%20development-orange)     | Steps of a multi-step form: done, current, with an error; linear or free order                 |
-| FileUpload ![in development](https://img.shields.io/badge/in%20development-orange)  | File picker and drop zone with type, size and count limits                                     |
-| Splitter ![in development](https://img.shields.io/badge/in%20development-orange)    | Panels with a draggable border: size limits, keyboard, collapsing                              |
-
-What each adapter implements so far:
-
-| Adapter        | Package             | Ready                                                                                                                                                                    |
-| -------------- | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Vue            | `@soldy-ui/vue`     | all of the above                                                                                                                                                         |
-| React          | `@soldy-ui/react`   | Button, Icon, Label, Frame, Skeleton, ProgressSpinner, Input, CheckBox, Switch, RadioGroup, ListBox, Tabs, Accordion, Table, Virtual                                     |
-| Angular        | `@soldy-ui/angular` | Button (`<button so-button>`), Icon, Label, Frame, Skeleton, ProgressSpinner, Input, CheckBox, Switch, RadioGroup, ListBox, Tabs, Accordion                              |
-| Svelte         | `@soldy-ui/svelte`  | Button, Icon, Label, Frame, Skeleton, ProgressSpinner, Input, CheckBox, Switch, RadioGroup, ListBox, Tabs, Accordion                                                     |
-| Solid          | `@soldy-ui/solid`   | Button, Icon, Label, Frame, Skeleton, ProgressSpinner, Input, CheckBox, Switch, RadioGroup, ListBox, Tabs, Accordion                                                     |
-| Web Components | `@soldy-ui/webc`    | Button (`<button is="so-button">`), Icon (`<span is="so-icon">`), Label, Frame, Skeleton, ProgressSpinner, Input, CheckBox, Switch, RadioGroup, ListBox, Tabs, Accordion |
+| Component       | What it is                                                                                     | Frameworks | Release |
+| --------------- | ---------------------------------------------------------------------------------------------- | ---------- | ------- |
+| Button          | Button: text, icons in slots, four views                                                       | *          | 0.2.0   |
+| Input           | Text field with slots for icons and buttons                                                    | *          | 0.2.0   |
+| NumberInput     | Number field in the locale's format: step and bounds, arrow keys, − and + buttons with hold    | Vue        | alpha   |
+| CheckBox        | Checkbox with a third, indeterminate state                                                     | *          | 0.2.0   |
+| Switch          | Switch: the same value as a checkbox, a different metaphor                                     | *          | 0.2.0   |
+| Label           | Control label: clicking the text toggles the control, and the text is its accessible name      | *          | 0.2.0   |
+| Slider          | Slider: a number or a range, set by dragging, with keys or with a screen reader gesture        | Vue        | 0.2.0   |
+| Rating          | Rating with stars: set by click, drag or arrow keys, halves, hover preview, read-only display  | Vue        | 0.2.0   |
+| RadioGroup      | One option out of several: native radio buttons sharing a `name`                               | *          | 0.2.0   |
+| Select          | Select field: an input plus a list in an overlay, the Combobox pattern                         | Vue        | 0.2.0   |
+| Calendar        | Month grids: pick a single date, several dates or a range                                      | Vue        | 0.2.0   |
+| DateInput       | Date and time field typed in parts in the locale's format, selected and copied as a whole      | Vue        | 0.2.0   |
+| DatePicker      | Date field and a calendar in a panel: a single date or a range                                 | Vue        | 0.2.0   |
+| Popover         | Panel at a trigger with any content: a non-modal dialog                                        | Vue        | 0.2.0   |
+| Tooltip         | Hint for an element, shown on hover and on keyboard focus                                      | Vue        | 0.2.0   |
+| Dialog          | Modal window: centered or at an edge of the screen, can be maximized to full screen            | Vue        | 0.2.0   |
+| Drawer          | Panel that slides in at an edge of the screen or a container, can be swiped away               | Vue        | 0.2.0   |
+| Toasts          | Pop-up notifications shown from code: a queue, auto-dismiss with a pause, swipe to close       | Vue        | 0.2.0   |
+| Scroller        | Single-row strip of any content, paged with two buttons                                        | Vue        | 0.2.0   |
+| ListBox         | List with single or multiple selection                                                         | *          | 0.2.0   |
+| Table           | Table: columns as data, sorting by column headers, row selection with checkboxes               | *          | 0.2.0   |
+| Tabs            | Tabs: a tab list and panels linked by value                                                    | *          | 0.2.0   |
+| Tags            | Tag set: close buttons, optional selection                                                     | Vue        | 0.2.0   |
+| Accordion       | Sections that expand one at a time or several at once                                          | *          | 0.2.0   |
+| Icon            | Icon from the registered pack, by role                                                         | *          | 0.2.0   |
+| ProgressLinear  | Linear progress indicator: the share done, or an indeterminate animation while it is unknown   | Vue        | 0.2.0   |
+| ProgressSpinner | Circular progress indicator: the share done, or an indeterminate animation while it is unknown | *          | 0.2.0   |
+| Skeleton        | Placeholder while content loads                                                                | *          | 0.2.0   |
+| DragAndDrop     | Drag and drop of collection items                                                              | Vue        | 0.2.0   |
+| Virtual         | Window for long lists: ListBox and Table inside render only the visible items                  | *          | 0.2.0   |
+| Pagination      | Page navigation: page numbers with gaps, previous and next, first and last                     | Vue        | 0.2.0   |
+| Menu            | Action menu at a button or on right click: submenus, checkbox and radio items                  | Vue        | 0.2.0   |
+| Textarea        | Multi-line text field that grows with its content                                              | Vue        | alpha   |
+| Field           | Field wrapper: description, error message and invalid state linked to the control              | Vue        | 0.2.0   |
+| Alert           | Inline message by severity: info, success, warning, error                                      | -          | future  |
+| Badge           | Counter or status mark, on its own or over another element                                     | -          | future  |
+| Avatar          | User picture with a fallback to initials or an icon                                            | -          | future  |
+| Breadcrumbs     | Path to the current page, collapsing a long trail                                              | -          | future  |
+| Separator       | Horizontal or vertical divider, semantic or decorative                                         | -          | future  |
+| ToggleGroup     | Toggle button and a group of them with single or multiple selection                            | -          | future  |
+| Tree            | Hierarchy with expandable branches, selection and keyboard navigation by level                 | -          | future  |
+| Stepper         | Steps of a multi-step form: done, current, with an error; linear or free order                 | -          | future  |
+| FileUpload      | File picker and drop zone with type, size and count limits                                     | -          | future  |
+| Splitter        | Panels with a draggable border: size limits, keyboard, collapsing                              | -          | future  |
 
 A new component comes to Vue first and moves to the other adapters after that.
 
@@ -276,10 +279,10 @@ npm run lint        # ESLint
 
 The playground's overview page shows every component. A component page renders each prop twice —
 from props and from a core instance passed as `ctrl` — with the code for both. Components are drawn
-by the framework picked in the header (Vue, React, Svelte, Solid); the framework is the first
-segment of the address, `#/react/button`. The playground's pages, layout and tests are described in
-[packages/playground/README.md](packages/playground/README.md). The rest of the commands are listed
-in [AGENTS.md → Commands](AGENTS.md#commands).
+by the framework picked in the header (Vue, React, Angular, Svelte, Solid, Web Components); the
+framework is the first segment of the address, `#/react/button`. The playground's pages, layout and
+tests are described in [packages/playground/README.md](packages/playground/README.md). The rest of
+the commands are listed in [AGENTS.md → Commands](AGENTS.md#commands).
 
 ## Roadmap
 
@@ -287,8 +290,6 @@ The goal is one component set with the same behavior, accessibility and look in 
 On the way there:
 
 - every component ported to React, Angular, Svelte, Solid and Web Components;
-- a playground for each of those adapters;
-- Menu on the same overlay layer as Select and Popover;
 - more themes and icon packs on the same contracts.
 
 ## Documentation

@@ -8,15 +8,20 @@ export default { ...SetupTable, components: { CheckBox, TableColumn, TableRow } 
 </script>
 
 <template>
-	<div v-if="rendered" v-show="visible" class="so-table__viewport">
+	<div v-if="rendered" v-show="visible" class="so-table__viewport" v-bind="containerAttrs">
 		<!--
 			Окно таблицы — разметка вокруг неё, а не корень: корень, классы и
 			наборы — у самой `table`, плагины и тема видят корнем её. В окне
 			таблица прокручивается вбок, когда колонки шире места: прокрутку
 			включает тема по `data-overflow` таблицы — его пишет раскладка
 			колонок. Ширину окна мерит плагин раскладки таблицы, по ней ядро
-			раскладывает колонки без своей ширины. Атрибуты потребителя
-			достаются окну — внешнему узлу компонента.
+			раскладывает колонки без своей ширины.
+
+			Атрибуты потребителя делятся, как у поля: класс и стиль — окну
+			(`containerAttrs`), внешнему узлу компонента, остальное — `table`
+			(`controlAttrs`), поверх её наборов. `aria-label` и `id` потребителя
+			называют таблицу, а не окно без роли. `$el` — окно: первый узел
+			шаблона.
 
 			Table — таблица по паттернам APG Table и Sortable Table. Корень — сама
 			`table`, рисуется по `tag`: роль `table` даёт тег, своей клавиатуры у
@@ -36,7 +41,7 @@ export default { ...SetupTable, components: { CheckBox, TableColumn, TableRow } 
 			ref="rootElement"
 			:is="tag"
 			:class="classes"
-			v-bind="{ ...attrs, ...aria, ...dataset }"
+			v-bind="{ ...attrs, ...aria, ...dataset, ...controlAttrs }"
 		>
 			<thead class="so-table__head">
 				<!--
@@ -115,7 +120,10 @@ export default { ...SetupTable, components: { CheckBox, TableColumn, TableRow } 
 					Строка — Table.Row над элементом коллекции строк. Содержимое ячейки —
 					слот `cell` со scope `{ row, column, value }`: колонку выбирают
 					условием по `column.field`, `value` — поле записи под ключом колонки.
-					Без него — `value` текстом.
+					Без него и там, где он ничего не нарисовал, — значение текстом: его
+					рисуют ячейки строки из `text` ячейки, а считает ядро. Своего
+					запасного содержимого у проброса нет — иначе ячейке достался бы
+					текст интерполяции Vue, а не ядра.
 
 					Строки не перерисовываются вместе с таблицей, только пока их слоты
 					стабильны. Поэтому слот уходит им пробросом как есть — строку в scope
@@ -138,9 +146,7 @@ export default { ...SetupTable, components: { CheckBox, TableColumn, TableRow } 
 						</tr>
 						<TableRow v-else :ctrl="entry.item">
 							<template #cell="{ row, column, value }">
-								<slot name="cell" :row="row" :column="column" :value="value">{{
-									value
-								}}</slot>
+								<slot name="cell" :row="row" :column="column" :value="value" />
 							</template>
 						</TableRow>
 					</template>

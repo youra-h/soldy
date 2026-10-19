@@ -9,11 +9,15 @@ import { setupTabs } from './setup.component'
 /**
  * TTabsComponent — набор вкладок: список табов и панели под ним.
  *
- * Обёртки нет: корень — сам элемент потребителя, `<div so-tabs>`. Классы,
- * `attrs` и скрытие раскладывает на него `TComponentBase` (стратегия
- * `'host'`); набор `aria` владельца — это список табов (`role="tablist"`,
- * `aria-orientation`, имя из `aria_label`), и на `.so-tabs__list` его кладёт
- * директива набора: на корне рядом со списком лежат панели.
+ * Селектор — элементный, `<so-tabs>`: атрибуты потребителя у набора делятся,
+ * как у поля, и корнем служит сам элемент компонента. Классы, `attrs` и
+ * скрытие раскладывает на него `TComponentBase` (стратегия `'host'`); набор
+ * `aria` владельца — это список табов (`role="tablist"`, `aria-orientation`,
+ * имя из `aria_label`), и на `.so-tabs__list` его кладёт директива набора: на
+ * корне рядом со списком лежат панели. Статические атрибуты, которые
+ * потребитель записал на набор, кроме `class` и `style`, база переносит на
+ * список табов (`control`): `aria-label` и `id` называют список, а не корень
+ * без роли.
  *
  * Контекстов два — свой и фасада коллекции (`setupTabs`), и входы фасада
  * (`items`, `engine`, `trackBy`) — входы того же элемента. Свой слой лифта
@@ -26,14 +30,10 @@ import { setupTabs } from './setup.component'
  * (`<div so-tabs-content slot="content" value="a">`): `default` лежит внутри
  * `[role=tablist]`, и панель, попав туда, оказалась бы в списке табов.
  *
- * `div[so-tabs]` стоит первым: по первому селектору Angular выбирает тег
- * хоста, когда создаёт компонент сам (`createComponent`), — это тег ядра по
- * умолчанию.
- *
- * Selector: div[so-tabs], [so-tabs]
+ * Selector: so-tabs
  */
 @Component({
-	selector: 'div[so-tabs], [so-tabs]',
+	selector: 'so-tabs',
 	standalone: true,
 	imports: [NgTemplateOutlet, AttributesDirective, SlotDirective, TTabsItemComponent],
 	providers: [provideElevator()],
@@ -42,7 +42,7 @@ import { setupTabs } from './setup.component'
 })
 export class TTabsComponent extends TTabsSurface<ITabs> {
 	constructor() {
-		super(TabsInputNames, { strategy: 'host', sets: ['attrs'] })
+		super(TabsInputNames, { strategy: 'host', sets: ['attrs'], control: true })
 	}
 
 	protected createBinding(

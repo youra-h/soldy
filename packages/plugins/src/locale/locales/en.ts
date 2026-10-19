@@ -18,6 +18,7 @@ export const enUS = freezeLocale({
 		scroller: { prev: 'Scroll back', next: 'Scroll forward' },
 		pagination: { prev: 'Previous page', next: 'Next page' },
 		field: { clear: 'Clear {name}' },
+		numberInput: { increment: 'Increase {name}', decrement: 'Decrease {name}' },
 		table: { selectAll: 'Select all', sort: 'Sort by {name}' },
 		calendar: {
 			prevMonth: 'Previous month',
@@ -38,5 +39,6 @@ export const enUS = freezeLocale({
 			value: '{value} of {max}',
 			required: 'Please select a rating',
 		},
+		textarea: { counter: '{count} / {max}' },
 	},
 })

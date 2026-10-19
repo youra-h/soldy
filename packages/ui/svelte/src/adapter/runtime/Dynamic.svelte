@@ -12,7 +12,12 @@
 		tag: string | object | undefined
 		/** Атрибуты корня — `toRootProps` компонента. */
 		attributes: TRootAttributes
-		/** Привязка корня к `TElementPlugin` компонента и его `ref` — `binding.attachElement`. */
+		/**
+		 * Привязка корня к `TElementPlugin` компонента и его `ref` —
+		 * `binding.attachElement`. У корня внутри обёртки (окно таблицы) половины
+		 * разведены: обёртке — только `ref` (`binding.consumerRef`), корню —
+		 * только привязка (`binding.bindRef`).
+		 */
 		attach: Attachment<Element>
 		children?: Snippet
 	}
@@ -47,6 +52,10 @@
 	Стиль корня в браузере — тоже attachment, и едет он в атрибутах узла, как
 	attachment-ы потребителя: так он доходит до `<svg>` иконки и до корня
 	компонента из `tag` без своего пропа.
+
+	Так же рисуется и обёртка корня — внешний узел компонента, чей корень стоит
+	внутри неё (окно таблицы вокруг `table`, `toWrappedRootProps`): стиль
+	потребителя и скрытие ложатся на неё по свойствам, как на корень.
 -->
 {#if typeof tag === 'string'}
 	<svelte:element this={tag} {...node} {@attach attach}>

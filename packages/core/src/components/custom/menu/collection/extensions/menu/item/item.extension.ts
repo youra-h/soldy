@@ -30,4 +30,9 @@ export class TMenuItemExtension<
 	toggle(): void {
 		this._parent.toggleItem(this._item)
 	}
+
+	/** Нажатие пункта с подменю: решает меню — открыть подменю или отказать. */
+	open(): void {
+		this._parent.openItem(this._item)
+	}
 }

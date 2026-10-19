@@ -1,5 +1,5 @@
 import { TMenuExtension } from './extensions'
-import { TSelectionExtension } from './../../../base/collection'
+import { TGroupExtension, TSelectionExtension } from './../../../base/collection'
 import { selectionExtensions } from './../../../base/collection/create/internal'
 import type { TExtensionSet } from './../../../base/collection/create/internal'
 import TMenuItem from './../item/item.class'
@@ -13,6 +13,10 @@ import type { IMenuItem } from './../item/types'
  * Переопределение только здесь, дефолт самого расширения не трогаем; движок,
  * пришедший снаружи со своим выбором, в тот же режим переводит фасад.
  *
+ * `group` — группы пунктов из данных: показанное идёт по группам, и меню
+ * рисует его секциями. Отбора и сортировки у меню нет — переставить
+ * показанное после группировки некому.
+ *
  * `draw` нет: меню рисует свои пункты все, окна у него не бывает.
  */
 export function menuExtensions(): TExtensionSet<IMenuItem> {
@@ -25,6 +29,7 @@ export function menuExtensions(): TExtensionSet<IMenuItem> {
 
 			return selection
 		},
+		group: () => new TGroupExtension<IMenuItem>(),
 		menu: () => new TMenuExtension(),
 	}
 }

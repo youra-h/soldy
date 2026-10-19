@@ -1,7 +1,7 @@
 /**
- * Выбор под клавиатурной подсветкой у Button в настоящем браузере: слой поверх
- * фона есть только у насыщенной заливки — `filled` с вариантом, — и раскладку
- * кнопки он не трогает.
+ * Выбор под клавиатурной подсветкой у Button в настоящем браузере: у любого
+ * вида и варианта это цвет фона, без слоя поверх, и раскладку кнопки он не
+ * трогает.
  *
  * Цвет вида тема задаёт переменными на узле (`button-tones` в
  * `themes/oren/src/components/button/_mixins.scss`), а вид объявляет один раз
@@ -10,7 +10,10 @@
  * и `overflow: hidden` у кнопки — правилом варианта протекал в вид по
  * контексту: строка ListBox с вариантом (`plain`) получала его поверх своей
  * вуали, светлее или темнее строки нейтрального списка, а кнопка с
- * `position: absolute` (листание Calendar) теряла своё место.
+ * `position: absolute` (листание Calendar) теряла своё место. Потом слой стал
+ * фоновым изображением, а теперь его нет вовсе: состояния насыщенной заливки —
+ * тень, смешанная с заливкой одним цветом (`themes/oren/src/mixins/_solid.scss`),
+ * и выбор под подсветкой — такой же цвет фона, как остальные состояния.
  *
  * Цветов темы тест не знает: слой видно по `background-image`, раскладку — по
  * вычисленным `position` и `overflow` той же кнопки в покое.
@@ -33,7 +36,7 @@ const VARIANTS = [undefined, 'accent'] as const
 
 const BOTH = { 'data-selected': 'true', 'data-highlighted': 'true' }
 
-/** Раскладка узла — то, что слой поверх фона менять не вправе. */
+/** Раскладка узла — то, что выбор под подсветкой менять не вправе. */
 const layoutOf = (element: Element) => {
 	const { position, overflow } = style(element)
 
@@ -47,7 +50,6 @@ const CASES = SCHEMES.flatMap((scheme) =>
 			view,
 			variant: variant ?? 'нейтраль',
 			props: { view, variant },
-			layered: view === 'filled' && variant !== undefined,
 		})),
 	),
 )
@@ -62,8 +64,8 @@ afterEach(() => {
 
 describe('Button: выбор под подсветкой', () => {
 	it.each(CASES)(
-		'$scheme, $view, $variant: слой — только у насыщенной заливки, раскладка — как в покое',
-		async ({ scheme, props, layered }) => {
+		'$scheme, $view, $variant: слоя поверх фона нет, раскладка — как в покое',
+		async ({ scheme, props }) => {
 			document.documentElement.dataset.soTheme = scheme
 			render(
 				defineComponent({
@@ -85,7 +87,7 @@ describe('Button: выбор под подсветкой', () => {
 
 			await settled(button)
 
-			expect(style(button).backgroundImage !== 'none', 'слой').toBe(layered)
+			expect(style(button).backgroundImage, 'слой').toBe('none')
 			expect(style(button, '::after').content, 'псевдоэлемента нет').toBe('none')
 			expect(layoutOf(button)).toEqual(layoutOf(find('.so-test-idle')))
 		},

@@ -17,20 +17,51 @@ export const MenuCollectionDescriptor = defineDescriptor(() =>
 		extends: CollectionDescriptor(),
 
 		/**
-		 * Своих пропсов сверх состава у меню нет: выбор у него — отметки
+		 * Сверх состава у меню — группы пунктов: ключ группы пункта, порядок и
+		 * подписи групп и выход — секции показанного, по которым разметка рисует
+		 * группы и разделители. Режима выбора нет: выбор у меню — отметки
 		 * флажков, и режим всегда `multiple` (его ставит коллекция), а отметку
 		 * каждый флажок отдаёт своим `selected`. Событие — нажатие
 		 * пункта-действия, его фасад отдаёт пробросом расширения `menu`.
 		 */
 		contribution: {
+			props: {
+				/** Ключ группы пункта. Не задан — метка `_.group` из данных */
+				groupBy: { type: Function, triggers: ['change:groupBy'] },
+				/** Порядок групп и их подписи. Сверка по содержимому */
+				groups: { type: Array, triggers: ['change:groups'] },
+				/**
+				 * Секции показанных пунктов по порядку: группа с подписью или
+				 * пункты без группы. Между соседними секциями разметка рисует
+				 * разделитель
+				 */
+				sections: { type: Array, protected: true, triggers: ['change:sections'] },
+			},
 			events: ['choose'],
 		},
 	}),
 )
 
 /**
+ * Фасад пунктов подменю — тот же фасад меню: у пункта с подменю своя
+ * коллекция, такая же, как у меню, со своим составом, группами и `choose`.
+ * Своего сверх меню нет. Дескриптор — свой: это коллекционная часть
+ * `Menu.Submenu`, и её пропсы входят в интерфейс подменю
+ * (`IMenuSubmenuProps`), а не меню.
+ */
+export const MenuSubmenuCollectionDescriptor = defineDescriptor(() =>
+	defineComponent({
+		ctor: TMenuCollectionFacade,
+
+		extends: MenuCollectionDescriptor(),
+	}),
+)
+
+/**
  * Фасад пункта-действия: своих пропсов у него нет — нажатие разметка отдаёт
- * item-адаптеру `menu` через `context`, а отметки у действия не бывает.
+ * item-адаптеру `menu` через `context`, а отметки у действия не бывает. Тот
+ * же фасад — у пункта с подменю: в меню над ним он пункт, и его нажатие
+ * (`open`) разметка отдаёт тому же item-адаптеру.
  */
 export const MenuCollectionItemDescriptor = defineDescriptor(() =>
 	defineComponent({

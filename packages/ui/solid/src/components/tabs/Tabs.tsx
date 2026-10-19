@@ -1,8 +1,16 @@
 import { For, Show, type JSX } from 'solid-js'
-import { Elevate, ResolvedSlot, createRootProps, relaySlot, renderSlot } from '../../adapter'
+import {
+	Elevate,
+	ResolvedSlot,
+	createRootProps,
+	relaySlot,
+	renderSlot,
+	toControlAttrs,
+	toRootForward,
+} from '../../adapter'
 import { TabsItem } from './item'
 import { setupTabs } from './setup.component'
-import type { TabsProps } from './base.component'
+import type { TabsAttributes, TabsProps } from './base.component'
 
 /**
  * Tabs — набор табов: список (`so-tabs__list`) и панели рядом с ним.
@@ -11,6 +19,11 @@ import type { TabsProps } from './base.component'
  * `aria-orientation` пишет ядро, имя из `aria_label` — `TAriaPlugin`. Корень
  * его не получает: рядом со списком там лежат панели. На корне — `attrs`,
  * как у Vue.
+ *
+ * Атрибуты потребителя делятся, как у поля и у Vue: класс и стиль — корню,
+ * остальное, кроме `ref`, — списку табов, поверх его `aria`: `aria-label` и
+ * `id` потребителя называют список, а не корень без роли. `ref` потребителя —
+ * корень.
  *
  * Табы — содержимое (`<Tabs.Item>`), а без него — `shown` коллекции, по
  * `TabsItem` на элемент. Слоты элементов статические и получают элемент через
@@ -31,18 +44,20 @@ import type { TabsProps } from './base.component'
 export function Tabs(props: TabsProps): JSX.Element {
 	const binding = setupTabs(props)
 	const state = binding.state
-	// Корню — `attrs`, поверх — атрибуты снаружи, `ref` адаптера последним
+	// Корню — `attrs`, класс и стиль потребителя; `ref` адаптера последним
 	const root = createRootProps(() => ({
 		state,
 		sets: [state.attrs],
-		forward: binding.forwardProps(),
+		forward: toRootForward(binding.forwardProps()),
 	}))
+	// Списку табов — остальное от потребителя, поверх его `aria`
+	const control = () => toControlAttrs<TabsAttributes>(binding.forwardProps())
 
 	return (
 		<Show when={state.rendered}>
 			<div {...root()} ref={binding.ref}>
 				<Elevate layer={binding.layer}>
-					<div class="so-tabs__list" {...state.aria}>
+					<div class="so-tabs__list" {...state.aria} {...control()}>
 						<ResolvedSlot content={props.leading}>
 							{(leading) => <div class="so-tabs__list--leading">{leading()}</div>}
 						</ResolvedSlot>

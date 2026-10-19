@@ -39,6 +39,7 @@ import type {
 	TPopoverEdge,
 	TPopoverPlacement,
 	TMenuPlacement,
+	TMenuOpenOn,
 	TTooltipPlacement,
 	TTooltipType,
 	TDialogPlacement,
@@ -231,6 +232,9 @@ export const MENU_PLACEMENTS = enumOf<TMenuPlacement>()([
 	'top-end',
 ])
 
+/** Чем меню открывают: кнопкой или как контекстное меню области. */
+export const MENU_OPEN_ONS = enumOf<TMenuOpenOn>()(['press', 'contextmenu'])
+
 /**
  * Сторона и выравнивание подсказки у триггера. Значения те же, что у
  * `anchor_placement`, но тип свой — ядра: проп принадлежит подсказке.
@@ -292,6 +296,12 @@ export const FRAME_PLACEMENTS = enumOf<TFramePlacement>()([
 	'top-start',
 	'top',
 	'top-end',
+	'end-start',
+	'end',
+	'end-end',
+	'start-start',
+	'start',
+	'start-end',
 ])
 
 /**

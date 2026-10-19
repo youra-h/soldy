@@ -1,3 +1,4 @@
+import { filterOf, selectOf, selectionOf } from '@soldy-ui/core'
 import type {
 	ISelect,
 	IFilterExtension,
@@ -29,12 +30,12 @@ import type { TEditablePluginEvents } from './types'
  * — операция над ним, по одной функции на режим:
  *
  * - `search` — {@link _highlight}: подсвечивает первую опцию, чей текст
- *   содержит набранное в любом месте, без учёта регистра — тем же методом,
- *   что и набор по буквам с клавиатуры (`TSelectKeyboardPlugin.highlightByText`),
- *   но со сравнением по вхождению, а не по началу строки: набор по буквам
- *   ищет один печатный символ за раз на закрытом списке (WAI-ARIA), а здесь
- *   вводят произвольный фрагмент текста. Список остаётся целым, ничего не
- *   скрывается.
+ *   содержит набранное в любом месте, без учёта регистра, — методом
+ *   клавиатуры (`TSelectKeyboardPlugin.highlightByText`): подсветка и
+ *   `aria-activedescendant` остаются у неё. Правила набора по первым буквам
+ *   (`TTypeahead`) сюда не идут: там буквы ищут опцию по началу текста от
+ *   подсвеченной (WAI-ARIA), а здесь вводят произвольный фрагмент текста.
+ *   Список остаётся целым, ничего не скрывается.
  * - `filter` — {@link _filter}: отдаёт набранное в `filter.query` коллекции.
  *   Отбор уже умеет `TFilterExtension` — сузить выдачу, не трогая хранилище;
  *   плагину остаётся передать текст. Отсюда и одна строка вместо второго
@@ -270,7 +271,7 @@ export class TEditablePlugin extends TBasePlugin<any, TEditablePluginEvents> {
 		if (!value) return
 
 		this._open()
-		this._keyboard?.highlightByText(value, 'includes')
+		this._keyboard?.highlightByText(value)
 	}
 
 	/**
@@ -415,15 +416,15 @@ export class TEditablePlugin extends TBasePlugin<any, TEditablePluginEvents> {
 	}
 
 	private get _filterExtension(): IFilterExtension<ISelectItem> | undefined {
-		return this._engine?.extensions?.filter as IFilterExtension<ISelectItem> | undefined
+		return filterOf<ISelectItem>(this._engine)
 	}
 
 	private get _selectionExtension(): ISelectionExtension<ISelectItem> | undefined {
-		return this._engine?.extensions?.selection as ISelectionExtension<ISelectItem> | undefined
+		return selectionOf<ISelectItem>(this._engine)
 	}
 
 	private get _selectExtension(): ISelectExtension | undefined {
-		return this._engine?.extensions?.select as ISelectExtension | undefined
+		return selectOf(this._engine)
 	}
 
 	/**

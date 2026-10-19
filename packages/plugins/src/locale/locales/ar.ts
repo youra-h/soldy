@@ -16,6 +16,7 @@ export const arEG = freezeLocale({
 		scroller: { prev: 'التمرير للخلف', next: 'التمرير للأمام' },
 		pagination: { prev: 'الصفحة السابقة', next: 'الصفحة التالية' },
 		field: { clear: 'مسح {name}' },
+		numberInput: { increment: 'زيادة {name}', decrement: 'تقليل {name}' },
 		table: { selectAll: 'تحديد الكل', sort: 'فرز حسب {name}' },
 		calendar: {
 			prevMonth: 'الشهر السابق',
@@ -36,5 +37,6 @@ export const arEG = freezeLocale({
 			value: '{value} من {max}',
 			required: 'يُرجى اختيار تقييم',
 		},
+		textarea: { counter: '{count} / {max}' },
 	},
 })

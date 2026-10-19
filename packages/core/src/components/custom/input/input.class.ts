@@ -1,5 +1,6 @@
 import { TClearable } from '../../base/clearable'
 import type { TDefaultValues } from '../../base/component'
+import { syncTextFieldAria } from './aria'
 import type { IInput, IInputProps, TInputEvents } from './types'
 
 export class TInput extends TClearable<string, IInputProps, TInputEvents> implements IInput {
@@ -54,24 +55,11 @@ export class TInput extends TClearable<string, IInputProps, TInputEvents> implem
 	}
 
 	/**
-	 * На теге `input` `required` и `readonly` нативные — браузер сам сообщает
-	 * о них скринридеру, дублировать в ARIA не нужно.
-	 *
-	 * Исключение — `required` на `readonly`-поле: браузер такое поле не
-	 * валидирует, нативный `required` на нём бессмыслен, и без явного
-	 * `aria-required` состояние останется немым.
-	 *
-	 * Решает тег элемента с `aria` (`_ariaTag`), а не `tag` корня: дубль встал
-	 * бы рядом с нативным атрибутом на том же вложенном `<input>`.
+	 * На теге `input` `required` и `readonly` нативные — дублей в ARIA нет,
+	 * кроме `required` на `readonly`-поле. Правило одно с полем числа —
+	 * `syncTextFieldAria`.
 	 */
 	protected override _syncInputAccessibility(): void {
-		const isNativeTag = this._ariaTag.toLowerCase() === 'input'
-
-		this._aria.add(
-			'aria-required',
-			this.required && (!isNativeTag || this.readonly) ? 'true' : null,
-		)
-
-		this._aria.add('aria-readonly', this.readonly && !isNativeTag ? 'true' : null)
+		syncTextFieldAria(this._aria, this._ariaTag, this.required, this.readonly)
 	}
 }

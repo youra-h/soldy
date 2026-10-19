@@ -72,7 +72,8 @@ function closingSign(side: TSwipeSide, rtl: boolean): 1 | -1 {
  * Сторона панели у якоря после flip — её пишет `TAnchorPlugin` в самой панели
  * (`data-placement`): `top…` — над триггером, `bottom…` — под ним. Панель
  * уходит от триггера, то есть к этой же стороне. Атрибута нет — панель не у
- * якоря, и уходить ей некуда.
+ * якоря, и уходить ей некуда. Сбоку от якоря (`start…`, `end…`) — тоже `null`:
+ * смахиваемых боковых панелей у якоря нет.
  */
 function anchoredSide(panel: Element): TSwipeSide | null {
 	const placement = panel.getAttribute(ANCHOR_PLACEMENT_ATTRIBUTE)
@@ -157,9 +158,19 @@ function scrollsAlong(node: Element, panel: Element, axis: TSwipeAxis): boolean 
  *
  * **Касание.** Пока жест включён, плагин ставит панели `touch-action` по оси:
  * без него браузер забрал бы касание под прокрутку страницы, и жест не работал
- * бы пальцем, а поведение не должно зависеть от CSS темы. Прокручиваемая
- * область внутри панели остаётся своей: по правилам `touch-action` цепочка
- * кончается на ней.
+ * бы пальцем, а поведение не должно зависеть от CSS темы. Но `touch-action`
+ * действует только до ближайшей прокручиваемой области: касание в ней — в
+ * теле панели, даже когда прокручивать нечего, — браузер забирает под
+ * прокрутку в любую сторону и отнимает указатель (`pointercancel`). Поэтому,
+ * пока идёт жест, плагин гасит `touchmove` панели. До порога он не гасит
+ * ничего: касание поперёк оси остаётся прокрутке, а из области, которая
+ * прокручивается вдоль оси, жест и не начинается — у пальца то же правило,
+ * что у мыши.
+ *
+ * Касание, в отличие от мыши, браузер сам захватывает за узлом под пальцем —
+ * полосой или абзацем тела. Начало жеста переносит захват на панель, и узел
+ * под пальцем его теряет: его `lostpointercapture` всплывает до панели. Жест
+ * кончает только потеря захвата самой панелью.
  *
  * Своих действий у нажатия на полосу нет (`preventDefault`): ни выделения, ни
  * фокуса на саму панель. Нажатие по содержимому своих действий не теряет, а
@@ -255,8 +266,10 @@ export class TSwipePlugin extends TBasePlugin<ISwipeOwner, TSwipePluginEvents> {
 		target.addEventListener('pointermove', this._onPointerMove)
 		target.addEventListener('pointerup', this._onPointerEnd)
 		target.addEventListener('pointercancel', this._onPointerEnd)
-		target.addEventListener('lostpointercapture', this._onPointerEnd)
+		target.addEventListener('lostpointercapture', this._onLostCapture)
 		target.addEventListener('click', this._onClick)
+		// Не пассивный: касание жеста гасится, иначе браузер забрал бы его под прокрутку
+		target.addEventListener('touchmove', this._onTouchMove, { passive: false })
 
 		// Сдвиг, с которым панель закрыли, остался до этого показа
 		panel.style.removeProperty(SWIPE_VARIABLE)
@@ -285,8 +298,9 @@ export class TSwipePlugin extends TBasePlugin<ISwipeOwner, TSwipePluginEvents> {
 		target.removeEventListener('pointermove', this._onPointerMove)
 		target.removeEventListener('pointerup', this._onPointerEnd)
 		target.removeEventListener('pointercancel', this._onPointerEnd)
-		target.removeEventListener('lostpointercapture', this._onPointerEnd)
+		target.removeEventListener('lostpointercapture', this._onLostCapture)
 		target.removeEventListener('click', this._onClick)
+		target.removeEventListener('touchmove', this._onTouchMove)
 
 		const gesture = this._gesture
 
@@ -453,6 +467,16 @@ export class TSwipePlugin extends TBasePlugin<ISwipeOwner, TSwipePluginEvents> {
 		panel?.style.setProperty(SWIPE_VARIABLE, `${gesture.offset * gesture.sign}px`)
 	}
 
+	/**
+	 * Захват потеряла панель — указатель у неё отняли, и жест кончен. Узел под
+	 * пальцем теряет захват и посреди жеста: касание браузер сам захватывает за
+	 * ним, а начало жеста переносит захват на панель. Это событие всплывает до
+	 * панели, но жест не кончает — указатель по-прежнему у неё.
+	 */
+	private readonly _onLostCapture = (event: PointerEvent): void => {
+		if (event.target === this._target) this._onPointerEnd(event)
+	}
+
 	private readonly _onPointerEnd = (event: PointerEvent): void => {
 		if (this._press?.pointer === event.pointerId) this._press = null
 
@@ -510,6 +534,16 @@ export class TSwipePlugin extends TBasePlugin<ISwipeOwner, TSwipePluginEvents> {
 
 		this._swallowClick = false
 		event.preventDefault()
+	}
+
+	/**
+	 * Касание, которое ведёт жест, — жесту, а не прокрутке (см. «Касание» в
+	 * шапке). До порога жеста касание остаётся браузеру, а событие, которое
+	 * отменить уже нельзя (`cancelable: false`), не гасится: прокрутку, начатую
+	 * раньше жеста, браузер не отдаёт.
+	 */
+	private readonly _onTouchMove = (event: TouchEvent): void => {
+		if (this._gesture && event.cancelable) event.preventDefault()
 	}
 
 	private _restoreSelect(panel: HTMLElement, gesture: TSwipeGesture): void {

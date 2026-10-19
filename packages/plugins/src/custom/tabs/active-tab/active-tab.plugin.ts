@@ -43,8 +43,8 @@ export class TTabsActiveTabPlugin extends TBasePlugin<ITabs, TTabsActiveTabPlugi
 
 		// Коллекция привязывается к TCollectionBundlesPlugin ПОСЛЕ install() —
 		// слушаем момент привязки и подписываемся на события коллекции.
-		ctx.get(TCollectionBundlesPlugin)?.events.on('engine:bound', (engine) => {
-			this._engine = engine as TTabsCollection
+		ctx.get(TCollectionBundlesPlugin)?.events.on('engine:bound', (engine: TTabsCollection) => {
+			this._engine = engine
 
 			const emit = () => this._emitOffset()
 			const emitNextFrame = () => requestAnimationFrame(emit)

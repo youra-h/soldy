@@ -2,8 +2,9 @@
  * `ref` потребителя во Vue — экземпляр, и путь к корню у него — `$el`.
  *
  * Корень — узел, на который ложатся класс и атрибуты потребителя: у поля
- * (Input, CheckBox, Switch, RadioGroup.Item) — корень, а не `<input>`, у
- * элемента коллекции — корень, а не строка, у таблицы — окно, внешний узел. У
+ * (Input, NumberInput, CheckBox, Switch, RadioGroup.Item, Textarea) — корень, а
+ * не поле, у элемента коллекции — корень, а не строка, у таблицы — окно,
+ * внешний узел. У
  * всех, кроме таблицы, это тот же узел, что привязан к `TElementPlugin`: с ним
  * приходит `element:ready`.
  *
@@ -58,6 +59,8 @@ import {
 	MenuGroup,
 	MenuItem,
 	MenuSeparator,
+	MenuSubmenu,
+	NumberInput,
 	Pagination,
 	Popover,
 	ProgressLinear,
@@ -77,6 +80,7 @@ import {
 	TabsItem,
 	Tags,
 	TagsItem,
+	Textarea,
 	Toasts,
 	Tooltip,
 } from '@soldy-ui/vue'
@@ -176,6 +180,8 @@ const ROOTS: ReadonlyArray<readonly [string, (props: TProbeProps) => VNode, stri
 	['Scroller', (props) => h(Scroller, props), '.so-scroller', '.so-scroller'],
 	['Pagination', (props) => h(Pagination, props), '.so-pagination', '.so-pagination'],
 	['Input', (props) => h(Input, props), '.so-input', '.so-input'],
+	['NumberInput', (props) => h(NumberInput, props), '.so-number-input', '.so-number-input'],
+	['Textarea', (props) => h(Textarea, props), '.so-textarea', '.so-textarea'],
 	['CheckBox', (props) => h(CheckBox, props), '.so-check-box', '.so-check-box'],
 	['Switch', (props) => h(Switch, props), '.so-switch', '.so-switch'],
 	['Select', (props) => h(Select, props), '.so-select', '.so-select'],
@@ -252,6 +258,14 @@ const ROOTS: ReadonlyArray<readonly [string, (props: TProbeProps) => VNode, stri
 		'.so-menu-item',
 		'.so-menu-item',
 	],
+	// Корень пункта с подменю — пункт, а не его телепортированная панель
+	[
+		'Menu.Submenu',
+		(props) =>
+			h(Menu, null, () => h(MenuSubmenu, { value: 'share', text: 'Поделиться', ...props })),
+		'.so-menu-item',
+		'.so-menu-item',
+	],
 	[
 		'Menu.Group',
 		(props) => h(Menu, null, () => h(MenuGroup, { label: 'Вид', ...props })),
@@ -269,10 +283,17 @@ const ROOTS: ReadonlyArray<readonly [string, (props: TProbeProps) => VNode, stri
 /** У всех, кроме таблицы, `$el` — узел, привязанный к `TElementPlugin`. */
 const BOUND_ROOTS = ROOTS.filter(([, , root, bound]) => root === bound)
 
-/** Поля: `$el` — корень, а не `<input>`. */
-const FIELD_ROOTS = ROOTS.filter(([name]) =>
-	['Input', 'CheckBox', 'Switch', 'RadioGroup.Item'].includes(name),
-)
+/** Поле каждого компонента-поля: `$el` — корень, а не оно. */
+const FIELDS: Readonly<Record<string, string>> = {
+	Input: 'input',
+	NumberInput: 'input',
+	CheckBox: 'input',
+	Switch: 'input',
+	'RadioGroup.Item': 'input',
+	Textarea: 'textarea',
+}
+
+const FIELD_ROOTS = ROOTS.filter(([name]) => name in FIELDS)
 
 /** Строка элемента коллекции — вложенный узел, который `$el` не отдаёт. */
 const ITEM_ROWS: Readonly<Record<string, string>> = {
@@ -283,6 +304,7 @@ const ITEM_ROWS: Readonly<Record<string, string>> = {
 	'Tags.Item': '.so-button',
 	'Menu.Item': '.so-button',
 	'Menu.CheckboxItem': '.so-button',
+	'Menu.Submenu': '.so-button',
 }
 
 const ITEM_ROOTS = ROOTS.filter(([name]) => name in ITEM_ROWS)
@@ -319,7 +341,7 @@ describe('ref потребителя: $el — корень компонента'
 		expect(instanceOf(host).$el).toBe(ready[0])
 	})
 
-	it.each(FIELD_ROOTS)('%s: $el — корень, а не <input>', (_name, draw, root) => {
+	it.each(FIELD_ROOTS)('%s: $el — корень, а не поле', (name, draw, root) => {
 		const host = shallowRef<ComponentPublicInstance | null>(null)
 
 		render(() => draw({ ref: host }))
@@ -327,7 +349,7 @@ describe('ref потребителя: $el — корень компонента'
 		const node = find(root)
 
 		expect(instanceOf(host).$el).toBe(node)
-		expect(instanceOf(host).$el).not.toBe(find('input', node))
+		expect(instanceOf(host).$el).not.toBe(find(FIELDS[name], node))
 	})
 
 	it.each(ITEM_ROOTS)('%s: $el — корень, а не строка', (name, draw, root) => {

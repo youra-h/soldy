@@ -30,6 +30,11 @@
  * функция присвоит узел переменной. Узлом он бывает только мимо компилятора
  * Solid, и присвоить такой некуда. Снятие узла Solid своим `ref` не
  * объявляет, и `ref` потребителя тоже: на `onCleanup` — только отвязка корня.
+ *
+ * Корень внутри обёртки (окно таблицы вокруг `table`, `createWrappedRootProps`)
+ * получает эти две половины `ref` по отдельности: корню — только привязку
+ * (`bindRef`), обёртке — только `ref` потребителя (`consumerRef`): внешний
+ * узел — тот, на который легли его класс и атрибуты.
  */
 
 import { createEffect, createMemo, onCleanup } from 'solid-js'
@@ -59,6 +64,17 @@ export type TBinding<
 	forwardProps: () => Partial<TProps>
 	/** callback-ref корня: привязка к `TElementPlugin`, затем тот же узел — `ref` потребителя */
 	ref: (el: Element) => void
+	/**
+	 * callback-ref корня внутри обёртки (`createWrappedRootProps`) — только
+	 * привязка к `TElementPlugin`: `ref` потребителя получает обёртка.
+	 */
+	bindRef: (el: Element) => void
+	/**
+	 * callback-ref обёртки корня — только `ref` потребителя: узел, на который
+	 * легли его класс и атрибуты. К `TElementPlugin` привязан корень внутри
+	 * неё (`bindRef`).
+	 */
+	consumerRef: (el: Element) => void
 }
 
 /**
@@ -127,23 +143,35 @@ export function useAdapter<C extends IComponentContract, TProps extends object>(
 	const { binding, state } = useExchange(adapter, props)
 	const forwardProps = createMemo(() => binding.forward(props))
 
+	// 5. DOM-биндинг: контекст сам знает, есть ли у набора `TElementPlugin`.
+	// Отвязка — очисткой того владельца, под которым Solid создал узел: смена
+	// тега (`Dynamic`) отвязывает прежний и привязывает новый
+	const bindRef = (el: Element): void => {
+		adapter.bindElement(el)
+
+		onCleanup(() => adapter.bindElement(null))
+	}
+
+	// `ref` потребителя: Solid читает `ref` один раз, когда создаёт узел, — и
+	// потребителю его отдаёт тот же вызов
+	const consumerRef = (el: Element): void => {
+		const consumer: unknown = Reflect.get(props, 'ref')
+
+		if (typeof consumer === 'function') consumer(el)
+	}
+
 	return {
 		ctrl: adapter.instance,
 		plugins: adapter.bundle,
 		state: toInstanceState<C>(state),
 		forwardProps,
+		bindRef,
+		consumerRef,
 
-		// 5. DOM-биндинг: контекст сам знает, есть ли у набора `TElementPlugin`
+		// Корень и есть внешний узел: привязка, затем тот же узел — `ref` потребителя
 		ref(el: Element) {
-			adapter.bindElement(el)
-
-			onCleanup(() => adapter.bindElement(null))
-
-			// Тот же узел — `ref` потребителя: Solid читает `ref` один раз, когда
-			// создаёт узел, — и потребителю его отдаёт тот же вызов
-			const consumer: unknown = Reflect.get(props, 'ref')
-
-			if (typeof consumer === 'function') consumer(el)
+			bindRef(el)
+			consumerRef(el)
 		},
 	}
 }

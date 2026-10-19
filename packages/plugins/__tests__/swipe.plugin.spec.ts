@@ -632,6 +632,129 @@ describe('жест выключили посреди жеста', () => {
 	})
 })
 
+/**
+ * Касание. Браузер сам захватывает указатель за узлом под пальцем, и начало
+ * жеста, перенося захват на панель, этого узла его лишает: его
+ * `lostpointercapture` всплывает до панели. А в теле, которое прокручивается,
+ * касание браузер забрал бы под прокрутку, поэтому, пока идёт жест, плагин
+ * гасит `touchmove` панели. Захвата в jsdom нет — о его потере тест сообщает
+ * сам; настоящее касание — «пальцем» в `playground/vue/browser/drawer.spec.ts`.
+ */
+describe('касание', () => {
+	/** Палец двинулся над узлом: `touchmove`, всплывает до панели. Отдаёт событие. */
+	function touchMove(target: Element, init: TouchEventInit = {}): TouchEvent {
+		const event = new TouchEvent('touchmove', { bubbles: true, cancelable: true, ...init })
+
+		target.dispatchEvent(event)
+
+		return event
+	}
+
+	/** Узел потерял захват указателя жеста — событие всплывает до панели. */
+	const lostCapture = (target: Element) =>
+		pointer('lostpointercapture', target, 0, 0, 0, { cancelable: false })
+
+	it('захват потерял узел под пальцем — жест идёт дальше, отпускание закрывает', async () => {
+		const { drawer, root, handle, reasons, offset } = await mount()
+
+		pointer('pointerdown', handle, 705, 400, 0)
+		pointer('pointermove', root, 725, 400, 16)
+		// Начало жеста перенесло захват с полосы на панель
+		lostCapture(handle)
+
+		expect(drawer.swiping).toBe(true)
+
+		// Медленно: дело в пути, а не в скорости
+		pointer('pointermove', root, 805, 400, 300)
+
+		expect(offset()).toBe('100px')
+
+		pointer('pointerup', root, 805, 400, 600)
+
+		expect(reasons).toEqual(['swipe'])
+		expect(drawer.visible).toBe(false)
+	})
+
+	it('захват потеряла сама панель — жест кончен, панель возвращается', async () => {
+		const { drawer, root, handle, reasons, offset } = await mount()
+
+		pointer('pointerdown', handle, 705, 400, 0)
+		pointer('pointermove', root, 905, 400, 16)
+		lostCapture(root)
+
+		expect(drawer.swiping).toBe(false)
+
+		// Отпускание после отнятого указателя — уже не конец жеста
+		pointer('pointerup', root, 905, 400, 32)
+
+		expect(reasons).toEqual([])
+		expect(drawer.visible).toBe(true)
+
+		await nextFrame()
+
+		expect(offset()).toBe('')
+	})
+
+	it('touchmove гасится, только пока идёт жест: не до порога и не после отпускания', async () => {
+		const { root } = await mount({ swipe: 'panel' })
+		const text = nodeOf('.so-test-text')
+
+		expect(touchMove(text).defaultPrevented, 'без нажатия').toBe(false)
+
+		pointer('pointerdown', text, 750, 300, 0)
+
+		expect(touchMove(text).defaultPrevented, 'нажатие').toBe(false)
+
+		pointer('pointermove', root, 753, 300, 16)
+
+		expect(touchMove(text).defaultPrevented, 'до порога').toBe(false)
+
+		pointer('pointermove', root, 800, 300, 32)
+
+		expect(touchMove(text).defaultPrevented, 'жест').toBe(true)
+
+		pointer('pointerup', root, 800, 300, 400)
+
+		expect(touchMove(text).defaultPrevented, 'после отпускания').toBe(false)
+	})
+
+	it('поперёк оси — не жест: касание остаётся прокрутке', async () => {
+		const { drawer, root } = await mount({ swipe: 'panel' })
+		const text = nodeOf('.so-test-text')
+
+		pointer('pointerdown', text, 750, 300, 0)
+		pointer('pointermove', root, 752, 340, 16)
+
+		expect(drawer.swiping).toBe(false)
+		expect(touchMove(text).defaultPrevented).toBe(false)
+	})
+
+	it('касание, которое отменить нельзя, плагин не гасит и во время жеста', async () => {
+		const { root } = await mount({ swipe: 'panel' })
+		const text = nodeOf('.so-test-text')
+
+		pointer('pointerdown', text, 750, 300, 0)
+		pointer('pointermove', root, 800, 300, 16)
+
+		const event = new TouchEvent('touchmove', { bubbles: true, cancelable: false })
+		const prevent = vi.spyOn(event, 'preventDefault')
+
+		text.dispatchEvent(event)
+
+		expect(prevent).not.toHaveBeenCalled()
+	})
+
+	it('закрыли панель — касание она больше не слушает', async () => {
+		const { drawer, root } = await mount()
+		// Без жеста плагин касание и так не гасит — снятие слушателя видно только так
+		const removeListener = vi.spyOn(root, 'removeEventListener')
+
+		drawer.hide()
+
+		expect(removeListener).toHaveBeenCalledWith('touchmove', expect.any(Function))
+	})
+})
+
 /** Коробка панели поповера: 300 × 200, под триггером, в окне 1000 × 800. */
 const POPOVER_BOX = new DOMRect(100, 300, 300, 200)
 
@@ -852,6 +975,24 @@ describe('поповер', () => {
 
 	it('у триггера без стороны на узле жест не начинается: уходить некуда', async () => {
 		const { popover, panel, handle } = await mountPopover({}, { placement: null })
+
+		pointer('pointerdown', handle, 250, 305, 0)
+		pointer('pointermove', panel, 250, 385, 16)
+
+		expect(popover.swiping).toBe(false)
+
+		pointer('pointerup', panel, 250, 385, 400)
+
+		expect(popover.open).toBe(true)
+	})
+
+	/**
+	 * Сбоку от якоря панель тоже не смахивают: сторона на узле есть, но
+	 * смахиваемых боковых панелей у якоря нет. Ось у панели у якоря
+	 * вертикальная, и протяжка вниз начала бы жест, будь у неё сторона жеста.
+	 */
+	it.each(['end-start', 'start'])('сбоку от триггера (%s) жест не начинается', async (side) => {
+		const { popover, panel, handle } = await mountPopover({}, { placement: side })
 
 		pointer('pointerdown', handle, 250, 305, 0)
 		pointer('pointermove', panel, 250, 385, 16)

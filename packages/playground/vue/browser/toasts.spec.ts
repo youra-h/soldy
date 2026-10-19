@@ -22,20 +22,44 @@
  * колесом назад проявляется на своём месте, без въезда, а без движения новый
  * только проявляется.
  *
- * Вид сообщения — тон значка в начале строки, а плашка и заголовок у всех видов
- * одни: что тон доходит до рисунка значка, видно только на вычисленном стиле.
- * Пока тост ждёт, на месте значка бежит кольцо — по кругу глифа, и текст не
- * сдвигается, когда кольцо сменилось значком.
+ * Вид сообщения — заливка плашки: обычное сообщение стоит на поверхности
+ * контрола, у каждого вида заливка своя, и всё на ней читается — заголовок,
+ * описание, значок, подписи кнопок своего содержимого и крестик, в покое, под
+ * наведением и при нажатии, — а наведение и нажатие кнопки видно. Палитры спек
+ * не знает: меряет он отношение контраста по WCAG, слоями, как их кладёт
+ * браузер (`./colors`). Смена вида у открытого тоста — переход цвета плашки, а
+ * не корня: переходов корня ждёт удаление закрытого тоста. Пока тост ждёт, на
+ * месте значка бежит кольцо цвета значка — по кругу глифа, и текст не
+ * сдвигается, когда кольцо сменилось значком. Значки всех видов — одного
+ * рисунка с ошибкой: контур, фигура внутри пуста.
  */
 
 import { describe, it, expect, beforeEach, afterEach, onTestFinished } from 'vitest'
 import { render, cleanup } from 'vitest-browser-vue'
-import { page, userEvent } from 'vitest/browser'
+import { commands, page, userEvent } from 'vitest/browser'
 import { defineComponent, h, nextTick } from 'vue'
 import { createEngineToasts } from '@soldy-ui/core'
-import type { IToastsItem, IToastsProps, TToastInput, TToastsPlacement } from '@soldy-ui/core'
-import { Toasts } from '@soldy-ui/vue'
+import type {
+	IToastsItem,
+	IToastsProps,
+	TToastInput,
+	TToastsItemType,
+	TToastsPlacement,
+} from '@soldy-ui/core'
+import { Button, Toasts } from '@soldy-ui/vue'
+import type { TToastRender } from '@soldy-ui/vue'
+import { BUTTON_VIEWS, TOASTS_ITEM_TYPES } from '@soldy-ui/playground-shared'
 
+import {
+	contrast,
+	find,
+	lightness,
+	opacity,
+	outlined,
+	pixel,
+	settled as colorsSettled,
+	style,
+} from './colors'
 import { setDir } from './directions'
 import { reducedMotion } from './media'
 import {
@@ -365,6 +389,34 @@ describe('части тоста', () => {
 })
 
 describe('вид', () => {
+	/** Обе схемы: заливка вида в них — разные ступени, а отношения те же. */
+	const SCHEMES = ['oren', 'oren-dark'] as const
+
+	/** Виды тоста: обычное сообщение — тост без вида — и каждый вид. */
+	const KINDS = [
+		{ name: 'обычное', type: undefined },
+		...TOASTS_ITEM_TYPES.map((type) => ({ name: type, type })),
+	] satisfies readonly { name: string; type: TToastsItemType | undefined }[]
+
+	/** Случай «схема × вид»: тост на случай. */
+	const CASES = SCHEMES.flatMap((scheme) => KINDS.map((kind) => ({ scheme, ...kind })))
+
+	/**
+	 * Пороги WCAG 2. Заголовок, описание и подписи кнопок — текст кегля
+	 * `text-sm`: 4,5:1 (1.4.3). Значок, крестик и кольцо фокуса — графика: 3:1
+	 * (1.4.11).
+	 */
+	const TEXT = 4.5
+	const GRAPHIC = 3
+
+	/**
+	 * Состояние кнопки видно, если фон под ним отошёл от фона в покое по
+	 * светлоте OKLab не меньше, чем вуаль-заливка от подложки, — порог
+	 * `VISIBLE_FILL` из `button-view.spec.ts`. По модулю: на заливке вида
+	 * состояния уводят фон от белой подписи, то есть темнее, а не к тексту.
+	 */
+	const VISIBLE_FILL = 0.02
+
 	/** Рисунок в коробке значка — `svg` иконки; нет его — тест падает здесь. */
 	const glyph = (item: HTMLElement): SVGElement => {
 		const element = part(item, 'icon').querySelector('svg')
@@ -374,32 +426,315 @@ describe('вид', () => {
 		return element
 	}
 
-	it('плашка и заголовок у пяти видов одни, а тон значка у каждого свой и доходит до рисунка', async () => {
-		const { show, rest } = await mount({ max: 5 })
+	/** Тост с этим заголовком; нет его — тест падает здесь. */
+	const titled = (text: string): HTMLElement => {
+		const found = items().find((item) => part(item, 'text').textContent === text)
 
-		await show(
-			'Обычное',
-			{ text: 'Сведения', type: 'info' },
-			{ text: 'Готово', type: 'success' },
-			{ text: 'Внимание', type: 'warning' },
-			{ text: 'Ошибка', type: 'error' },
-		)
+		if (!found) throw new Error(`${text}: тоста нет`)
+
+		return found
+	}
+
+	/**
+	 * Поверхность контрола в текущей схеме — проба: единственный токен, который
+	 * спек знает. На ней стоит обычный тост, как панели оверлеев.
+	 */
+	const surface = (): string => {
+		const probe = document.createElement('div')
+
+		probe.style.backgroundColor = 'var(--so-component-surface)'
+		document.body.append(probe)
+
+		const color = style(probe).backgroundColor
+
+		probe.remove()
+
+		return color
+	}
+
+	it.each(SCHEMES)(
+		'%s: у каждого вида своя заливка, и текст и значок на ней читаются',
+		async (scheme) => {
+			document.documentElement.dataset.soTheme = scheme
+
+			const { show, rest } = await mount({ max: KINDS.length })
+
+			await show(
+				...KINDS.map(({ name, type }) => ({ text: name, description: 'Описание', type })),
+			)
+			await rest()
+
+			const fills = KINDS.map(({ name }) => style(card(titled(name))).backgroundColor)
+
+			// Обычное сообщение — на поверхности контрола
+			expect(pixel([style(card(titled('обычное'))).backgroundColor])).toEqual(
+				pixel([surface()]),
+			)
+			// У каждого вида — своя заливка, и она непрозрачна: тост стоит поверх
+			// чего угодно, а содержимое заднего в стопке закрывает её цвет
+			expect(fills.map(opacity)).toEqual(KINDS.map(() => 1))
+			expect(new Set(fills.map((fill) => pixel([fill]).join())).size).toBe(KINDS.length)
+
+			for (const { name, type } of KINDS) {
+				const item = titled(name)
+				const plate = [style(card(item)).backgroundColor]
+				const icon = style(part(item, 'icon')).color
+
+				expect(
+					contrast(style(part(item, 'text')).color, plate),
+					`${name}: заголовок`,
+				).toBeGreaterThanOrEqual(TEXT)
+				expect(
+					contrast(style(part(item, 'description')).color, plate),
+					`${name}: описание`,
+				).toBeGreaterThanOrEqual(TEXT)
+				// Рисунок значка — цвета коробки, а коробка — графика на плашке
+				expect(pixel([style(glyph(item)).fill]), `${name}: рисунок значка`).toEqual(
+					pixel([icon]),
+				)
+				expect(contrast(icon, plate), `${name}: значок`).toBeGreaterThanOrEqual(GRAPHIC)
+
+				// На заливке вида значок — цвета заголовка: всё на ней одного цвета
+				if (type) {
+					expect(pixel([icon]), `${name}: значок цвета заголовка`).toEqual(
+						pixel([style(part(item, 'text')).color]),
+					)
+				}
+			}
+		},
+	)
+
+	/**
+	 * Точка внутри фигуры значка вида, мимо знака на ней, — в единицах `viewBox`
+	 * Material (x 0…960, y −960…0): у круга — под верхним краем, над знаком, у
+	 * колокольчика — посередине, у треугольника — над «!».
+	 */
+	const HOLLOW: Readonly<Record<string, { x: number; y: number }>> = {
+		обычное: { x: 480, y: -480 },
+		info: { x: 480, y: -760 },
+		success: { x: 480, y: -760 },
+		warning: { x: 480, y: -640 },
+		error: { x: 480, y: -760 },
+	}
+
+	/** Стороны от точки — шаг в единицах `viewBox`. */
+	const SIDES = {
+		вправо: { x: 1, y: 0 },
+		влево: { x: -1, y: 0 },
+		вниз: { x: 0, y: 1 },
+		вверх: { x: 0, y: -1 },
+	}
+
+	/** Есть ли рисунок от точки в сторону `side` — до края коробки значка. */
+	const reaches = (
+		path: SVGGeometryElement,
+		point: { x: number; y: number },
+		side: { x: number; y: number },
+	): boolean => {
+		for (let step = 1; step < 960; step++) {
+			const x = point.x + side.x * step
+			const y = point.y + side.y * step
+
+			if (path.isPointInFill({ x, y })) return true
+		}
+
+		return false
+	}
+
+	/**
+	 * Значки видов — одного рисунка: контур, как у ошибки. Залитый значок у
+	 * текста ошибки Field читался пятном и стал контуром, а значки остальных
+	 * видов пришли залитыми — в стопке ошибка выглядела чужой. Контур — пустая
+	 * фигура: в точке внутри неё рисунка нет, а в каждую сторону от точки он
+	 * есть — точка не снаружи фигуры. Мера — геометрия рисунка
+	 * (`isPointInFill`), а не пиксели: цвет и сглаживание ей не мешают.
+	 */
+	it('значок каждого вида — контур, как у ошибки: фигура внутри пуста', async () => {
+		const { show, rest } = await mount({ max: KINDS.length })
+
+		await show(...KINDS.map(({ name, type }) => ({ text: name, type })))
 		await rest()
 
-		const shown = items()
-		const style = (element: Element) => getComputedStyle(element)
+		for (const { name } of KINDS) {
+			const path = glyph(titled(name)).querySelector('path')
+			const point = HOLLOW[name]
 
-		expect(shown).toHaveLength(5)
-		// Под вид плашка не подкрашивается: поверхность, кромка и тень — одни
-		expect(new Set(shown.map((item) => style(card(item)).backgroundColor)).size).toBe(1)
-		expect(new Set(shown.map((item) => style(card(item)).boxShadow)).size).toBe(1)
-		expect(new Set(shown.map((item) => style(part(item, 'text')).color)).size).toBe(1)
-		// Вид говорит значок — тоном, своим у каждого из пяти
-		expect(new Set(shown.map((item) => style(part(item, 'icon')).color)).size).toBe(5)
+			if (!(path instanceof SVGPathElement)) throw new Error(`${name}: рисунка значка нет`)
+			if (!point) throw new Error(`${name}: точки внутри фигуры нет`)
 
-		for (const item of shown) {
-			expect(style(glyph(item)).fill).toBe(style(part(item, 'icon')).color)
+			expect(path.isPointInFill(point), `${name}: внутри фигуры`).toBe(false)
+
+			for (const [direction, side] of Object.entries(SIDES)) {
+				expect(reaches(path, point, side), `${name}: рисунок ${direction}`).toBe(true)
+			}
 		}
+	})
+
+	/** Своё содержимое — кнопка каждого вида, без варианта: цвет ей даёт плашка. */
+	const Actions: TToastRender = () =>
+		BUTTON_VIEWS.map((view) => h(Button, { key: view, view, text: view }))
+
+	/**
+	 * Кнопки тоста в порядке разметки — порядке Tab: своё содержимое, потом
+	 * крестик. Подпись кнопки — текст, у крестика — значок, графика. У вида
+	 * `none` нет ни фона состояний, ни кольца фокуса и вне тоста
+	 * (`button/_button.scss`) — у него проверяется только подпись.
+	 */
+	const CONTROLS = [
+		...BUTTON_VIEWS.map((view) => ({
+			name: view,
+			selector: `.so-toasts-item__content > .so-button--view-${view}`,
+			label: TEXT,
+			bare: view === 'none',
+		})),
+		{ name: 'крестик', selector: '.so-toasts-item__close', label: GRAPHIC, bare: false },
+	]
+
+	/** Что видно у кнопки: контраст подписи к своему фону и светлота этого фона. */
+	const look = (item: HTMLElement, button: HTMLElement) => {
+		const { color, backgroundColor } = style(button)
+		const backdrop = [style(card(item)).backgroundColor, backgroundColor]
+
+		return { label: contrast(color, backdrop), fill: lightness(backdrop) }
+	}
+
+	/**
+	 * Кнопка под наведением и при нажатии — когда доиграли переходы цвета всего
+	 * тоста. Нажатие отпускается и при упавшей проверке: зажатая кнопка мыши
+	 * досталась бы следующему тесту. Отпускание над кнопкой — клик, поэтому
+	 * крестик меряется последним: клик закрывает тост.
+	 */
+	const press = async (item: HTMLElement, button: HTMLElement) => {
+		await userEvent.hover(button)
+		await colorsSettled(item)
+
+		const hovered = look(item, button)
+
+		await commands.mouseDown()
+
+		try {
+			await colorsSettled(item)
+
+			return { наведение: hovered, нажатие: look(item, button) }
+		} finally {
+			await commands.mouseUp()
+		}
+	}
+
+	it.each(CASES)(
+		'$scheme, $name: подписи кнопок и крестик читаются в покое, под наведением и при нажатии, а состояние видно',
+		async ({ scheme, type }) => {
+			document.documentElement.dataset.soTheme = scheme
+
+			const { show, rest } = await mount()
+
+			await show({ text: 'Сохранено', type, render: Actions })
+			await rest()
+
+			const [item] = items()
+
+			if (!item) throw new Error('тоста нет')
+
+			// Покой — у всех кнопок разом: указатель уведён с тоста
+			await userEvent.hover(find('.so-test-page'))
+			await colorsSettled(item)
+
+			const controls = CONTROLS.map((control) => ({
+				...control,
+				resting: look(item, find(control.selector, item)),
+			}))
+
+			for (const { name, selector, label, bare, resting } of controls) {
+				const looks = { покой: resting, ...(await press(item, find(selector, item))) }
+
+				for (const [state, seen] of Object.entries(looks)) {
+					expect(seen.label, `${name}, ${state}: подпись`).toBeGreaterThanOrEqual(label)
+				}
+
+				if (bare) continue
+
+				for (const state of ['наведение', 'нажатие'] as const) {
+					expect(
+						Math.abs(looks[state].fill - resting.fill),
+						`${name}, ${state}: фон отошёл от покоя`,
+					).toBeGreaterThanOrEqual(VISIBLE_FILL)
+				}
+			}
+		},
+	)
+
+	/**
+	 * Кольцо фокуса кнопок с клавиатуры — по Tab от корня тоста, по кнопкам в
+	 * порядке разметки. На заливке вида оно цвета текста плашки: кольцо темы на
+	 * ней почти пропадает. Кольцо — графика, 3:1 к плашке, — и у крестика тоже.
+	 * У обычного тоста кольцо темы, как везде, — его не меряем.
+	 */
+	it.each(CASES.filter(({ type }) => type))(
+		'$scheme, $name: кольцо фокуса кнопок с клавиатуры читается на заливке',
+		async ({ scheme, type }) => {
+			document.documentElement.dataset.soTheme = scheme
+
+			const { show, rest } = await mount()
+
+			await show({ text: 'Сохранено', type, render: Actions })
+			await rest()
+
+			const [item] = items()
+
+			if (!item) throw new Error('тоста нет')
+
+			const plate = [style(card(item)).backgroundColor]
+
+			item.focus()
+
+			for (const { name, selector, bare } of CONTROLS) {
+				const button = find(selector, item)
+
+				await userEvent.tab()
+
+				expect(document.activeElement, name).toBe(button)
+
+				if (bare) continue
+
+				await colorsSettled(item)
+
+				expect(outlined(button), `${name}: кольцо`).toBe(true)
+				expect(
+					contrast(style(button).outlineColor, plate),
+					`${name}: кольцо`,
+				).toBeGreaterThanOrEqual(GRAPHIC)
+			}
+		},
+	)
+
+	/**
+	 * «Сохраняем…» на белой плашке становится «Сохранено» на заливке успеха.
+	 * Плашка перекрашивается переходом — и фон, и текст на нём: текст, ставший
+	 * белым сразу, на миг пропал бы на ещё белой плашке. У корня переходов нет:
+	 * их ждёт удаление закрытого тоста (`afterTransitions`), а цвет переходом
+	 * идёт и без движения.
+	 */
+	it('смена вида у открытого тоста — переход цвета плашки, а не корня', async () => {
+		const { show, rest } = await mount()
+		const [toast] = await show({ text: 'Сохраняем…', loading: true })
+
+		await rest()
+
+		const [item] = items()
+
+		if (!item || !toast) throw new Error('тоста нет')
+
+		const own = ownTransitionRuns(item)
+		const plate = ownTransitionRuns(card(item))
+
+		toast.loading = false
+		toast.type = 'success'
+		toast.text = 'Сохранено'
+		await nextTick()
+		await transitionEvents()
+
+		expect(plate).toEqual(expect.arrayContaining(['background-color', 'color']))
+		expect(own).toEqual([])
 	})
 
 	it('кольцо ожидания — по кругу значка, и текст не сдвигается, когда кольцо сменилось значком', async () => {
@@ -419,12 +754,18 @@ describe('вид', () => {
 
 		const ring = spinner.getBoundingClientRect()
 		const before = part(item, 'text').getBoundingClientRect()
+		const runner = spinner.querySelector('.so-progress-spinner__runner')
+
+		if (!(runner instanceof SVGElement)) throw new Error('бегущей дуги нет')
 
 		// Круг значков Material — 800 из 960 единиц коробки, 5/6 её стороны
 		expect(ring.width).toBeCloseTo((box.width * 5) / 6, 0)
 		expect(ring.height).toBeCloseTo((box.height * 5) / 6, 0)
 		expect((ring.left + ring.right) / 2).toBeCloseTo((box.left + box.right) / 2, 0)
 		expect((ring.top + ring.bottom) / 2).toBeCloseTo((box.top + box.bottom) / 2, 0)
+		// Дуга — цвета коробки значка, как значок, который она сменит. Кольцо
+		// бежит, и видна бегущая дуга: дугу доли тема на бегу прячет
+		expect(pixel([style(runner).stroke])).toEqual(pixel([style(part(item, 'icon')).color]))
 
 		toast.loading = false
 		await nextTick()
@@ -830,10 +1171,16 @@ describe('стопка', () => {
 		expect(Math.abs(middle(back) - middle(front))).toBeLessThan(EPSILON)
 	})
 
+	/**
+	 * Задний — с видом: его плашка залита, и закрыть содержимое она обязана
+	 * своей заливкой. Закрывает его `::after` цветом фона плашки
+	 * (`background-color: inherit`), и заливка не фоном — градиентом или своим
+	 * слоем — под ним не повторилась бы: текст заднего проступил бы.
+	 */
 	it('содержимое заднего закрыто его плашкой, а нажатие по краю достаётся тосту', async () => {
 		const { show } = await mount({ layout: 'cascade' })
 
-		await show('Первый', 'Второй')
+		await show({ text: 'Первый', type: 'error' }, 'Второй')
 		await still()
 
 		const [front, back] = take(2)
@@ -841,8 +1188,13 @@ describe('стопка', () => {
 		if (!front || !back) throw new Error('тостов меньше двух')
 
 		const peek = card(back).getBoundingClientRect()
+		const cover = style(card(back), '::after')
 
-		expect(getComputedStyle(card(back), '::after').opacity).toBe('1')
+		expect(cover.opacity).toBe('1')
+		expect(opacity(cover.backgroundColor), 'слой непрозрачен').toBe(1)
+		expect(pixel([cover.backgroundColor]), 'цвета заливки').toEqual(
+			pixel([style(card(back)).backgroundColor]),
+		)
 		expect(getComputedStyle(card(front), '::after').opacity).toBe('0')
 		expect(document.elementFromPoint(middle(peek), peek.top + PEEK / 2)).toBe(back)
 	})

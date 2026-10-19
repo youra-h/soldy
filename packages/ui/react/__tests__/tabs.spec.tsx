@@ -478,11 +478,15 @@ describe('таб из разметки', () => {
 		expect(document.querySelector('.so-tabs__list--trailing')).toBeNull()
 	})
 
+	/** Атрибуты потребителя набора — на списке табов, а не на корне. */
 	it('пропсы фасада — не атрибуты, атрибуты потребителя — атрибуты', () => {
 		const { root } = mount(<Tabs items={ITEMS} title="Разделы" />)
+		const list = find(root(), ':scope > .so-tabs__list', HTMLElement)
 
 		expect(root().hasAttribute('items')).toBe(false)
-		expect(root().getAttribute('title')).toBe('Разделы')
+		expect(list.hasAttribute('items')).toBe(false)
+		expect(root().hasAttribute('title')).toBe(false)
+		expect(list.getAttribute('title')).toBe('Разделы')
 	})
 })
 

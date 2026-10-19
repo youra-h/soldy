@@ -1,5 +1,12 @@
 import { inputBinding, type DirectiveWithBindings, type Type } from '@angular/core'
-import { COLLECTION_ITEMS } from '@soldy-ui/playground-shared'
+import {
+	COLLECTION_ITEMS,
+	COLLECTION_MANY_ITEMS,
+	TABLE_COLUMNS,
+	TABLE_MANY_ROWS,
+	TABLE_ROWS,
+	TABLE_SCROLL_ROWS,
+} from '@soldy-ui/playground-shared'
 import {
 	RoleIconDirective,
 	TAccordionComponent,
@@ -16,9 +23,11 @@ import {
 	TRadioGroupItemComponent,
 	TSkeletonComponent,
 	TSwitchComponent,
+	TTableComponent,
 	TTabsComponent,
 	TTabsContentComponent,
 	TTabsItemComponent,
+	TVirtualComponent,
 } from '@soldy-ui/angular'
 
 /** Пропсы компонента — именами разметки. */
@@ -50,10 +59,25 @@ export type TPart = {
 }
 
 /**
- * Содержимое компонента: часть или разметка без компонента — текст, блок с
- * отступом. Разметку строит функция: у каждой отрисовки свои узлы.
+ * Разметка без компонента со своим содержимым — частями и разметкой: ряд,
+ * окно прокрутки вокруг списка и таблицы в окне `Virtual`. Элемент строит
+ * функция, как и разметку без содержимого, а содержимое ложится в него
+ * детьми, по порядку. Части в ней собираются, как части её владельца: с его
+ * инжектором и после него.
  */
-export type TContent = TPart | (() => Node)
+export type TMarkup = {
+	/** Элемент разметки — у каждой отрисовки свой. */
+	readonly markup: () => Element
+	/** Содержимое элемента — части и разметка. */
+	readonly content: readonly TContent[]
+}
+
+/**
+ * Содержимое компонента: часть, разметка со своим содержимым или разметка без
+ * компонента — текст, блок с отступом. Разметку строит функция: у каждой
+ * отрисовки свои узлы.
+ */
+export type TContent = TPart | TMarkup | (() => Node)
 
 /**
  * Обёртка вокруг компонента превью — компонент адаптера со своими пропсами, а
@@ -66,14 +90,23 @@ export type TWrapper = {
 
 /** Что есть у любого превью — с обёрткой и без неё. */
 type TPreviewBase = {
-	/** Компонент адаптера: его входам уходят пропсы строки, его выходы слушает хост. */
+	/**
+	 * Компонент адаптера: его входам уходят пропсы оболочки — пропсы превью и
+	 * строки, — его выходы слушает хост.
+	 */
 	readonly component: Type<object>
-	/** Пропсы превью — под пропсами строки. */
-	readonly props?: TProps
 	/** Директивы на корне — как атрибуты директив рядом с селектором в разметке. */
 	readonly directives?: readonly DirectiveWithBindings<unknown>[]
 	/** Содержимое компонента — части коллекции, контрол подписи, текст. */
 	readonly content?: readonly TContent[]
+	/**
+	 * Данные превью для входов компонента, которых нет в пропсах превью
+	 * оболочки: строки и колонки таблицы, как `items` и `columns` в превью Vue
+	 * и React. Функция пропсов оболочки: с закреплённой шапкой у таблицы свои
+	 * строки. Пропсы оболочки ложатся поверх, и строка страницы правит то, что
+	 * правит.
+	 */
+	readonly props?: (props: TProps) => TProps
 }
 
 /**
@@ -82,12 +115,15 @@ type TPreviewBase = {
  * Та же карта, что у хоста Vue (`hosts/vue/previews.ts`), и с теми же ключами
  * — идентификаторами реестра. Разметки, в которую разложить пропсы строки, у
  * Angular нет: привязки шаблона перечисляются поимённо, а у строки проп свой.
- * Поэтому превью — не шаблон, а описание: компонент адаптера, пропсы превью,
- * обёртка вокруг него и его содержимое. Строит всё это хост
- * (`createComponent`), а пропсы — и превью, и строки поверх них, как атрибуты
- * перед `{...bind}` у React, — отдаёт входам компонента по имени. Превью то же
- * самое, что у Vue и React, чтобы колонки фреймворков можно было сравнивать
- * глазами.
+ * Поэтому превью — не шаблон, а описание: компонент адаптера, обёртка вокруг
+ * него и его содержимое. Строит всё это хост (`createComponent`), а пропсы,
+ * которые отдала оболочка, — входам компонента по имени. Превью то же самое,
+ * что у Vue и React, чтобы колонки фреймворков можно было сравнивать глазами.
+ *
+ * Пропсов компонента в описании нет: подпись кнопки, плейсхолдер поля —
+ * данные, одни на все хосты (`PREVIEW_PROPS` в общем пакете), и отдаёт их
+ * оболочка вместе с пропсами строки. Своё у описания — только данные, которые
+ * превью соседей тоже пишет само (`props`: строки и колонки таблицы).
  *
  * Корень компонента — сам элемент (`<button so-button>`), и тег его — тег
  * первого селектора: так Angular строит хост сам. Входа `tag` нет, как у
@@ -104,6 +140,7 @@ export type TPreview = TPreviewBase &
 	(
 		| {
 				readonly wrapper?: undefined
+				readonly frame?: undefined
 				/**
 				 * Свой элемент корня, когда тег первого селектора не годится:
 				 * рисунок иконки по роли ложится только на `<svg>`.
@@ -113,11 +150,24 @@ export type TPreview = TPreviewBase &
 		| {
 				/** Обёртка вокруг компонента. */
 				readonly wrapper: TWrapper
+				readonly frame?: undefined
 				/**
 				 * Элемент компонента в проекции обёртки — тег, которым его пишут в
 				 * разметке. Обёртка получает его раньше, чем на нём соберётся
 				 * компонент, поэтому элемент строит хост.
 				 */
+				readonly element: () => Element
+		  }
+		| {
+				readonly wrapper?: undefined
+				/**
+				 * Рамка вокруг компонента — разметка без компонента
+				 * (`PreviewFrameComponent`): её стиль строкой CSS, от пропсов
+				 * оболочки — граница ширины, а у таблицы с закреплённой шапкой ещё
+				 * и окно прокрутки. Смена пропсов пишет рамке новый стиль.
+				 */
+				readonly frame: (props: TProps) => string
+				/** Элемент компонента в проекции рамки — как в проекции обёртки. */
 				readonly element: () => Element
 		  }
 	)
@@ -141,15 +191,27 @@ const block = (padding: string, value: string) => (): Node => {
 	return node
 }
 
+/** Разметка `div` со стилем строкой CSS и своим содержимым — ряд, окно прокрутки. */
+const markup = (style: string, content: readonly TContent[]): TMarkup => ({
+	markup: () => {
+		const node = document.createElement('div')
+
+		node.setAttribute('style', style)
+
+		return node
+	},
+	content,
+})
+
 /** Содержимое коллекций — из общего манифеста, как у Vue и React. */
 const ITEMS = COLLECTION_ITEMS
 
 export const PREVIEWS: Record<string, TPreview> = {
-	// Подпись — пропом `text`, а не содержимым: заданный слот перекрывает проп,
-	// и строка `text` на странице свойств не меняла бы ничего видимого
-	button: { component: TButtonComponent, props: { text: 'Кнопка' } },
+	// Подпись — проп `text` из пропсов превью, а не содержимое: заданный слот
+	// перекрывает проп, и строка `text` не меняла бы ничего видимого
+	button: { component: TButtonComponent },
 
-	input: { component: TInputComponent, props: { placeholder: 'Введите текст' } },
+	input: { component: TInputComponent },
 
 	// Текста у чекбокса и переключателя нет, оба — голый контрол: подпись даёт
 	// обёртка Label. Её пропы задаёт превью, строки страницы правят контрол
@@ -165,11 +227,10 @@ export const PREVIEWS: Record<string, TPreview> = {
 		wrapper: { component: TLabelComponent, props: { text: 'Включено' } },
 	},
 
-	// Подпись — пропом `text`, контрол — содержимым. Строки страницы правят саму
-	// подпись: сторону, размер текста, вариант
+	// Подпись — проп `text` из пропсов превью, контрол — содержимым. Строки
+	// страницы правят саму подпись: сторону, размер текста, вариант
 	label: {
 		component: TLabelComponent,
-		props: { text: 'Согласен' },
 		content: [{ component: TCheckBoxComponent, element: tag('so-check-box') }],
 	},
 
@@ -192,6 +253,20 @@ export const PREVIEWS: Record<string, TPreview> = {
 			element: tag('so-list-box-item'),
 			props: { ...item },
 		})),
+	},
+
+	// Строки и колонки — данными, как у Vue и React: частей разметкой у таблицы
+	// нет. Рамка — граница ширины, а с закреплённой шапкой — ещё и окно прокрутки
+	// высотой 320 px на сорок строк. Окно таблицы — на странице Virtual
+	table: {
+		component: TTableComponent,
+		element: tag('so-table'),
+		frame: (bind) =>
+			bind.stickyHead ? 'width: 100%; height: 320px; overflow: auto' : 'width: 100%',
+		props: (bind) => ({
+			items: bind.stickyHead ? TABLE_SCROLL_ROWS : TABLE_ROWS,
+			columns: TABLE_COLUMNS,
+		}),
 	},
 
 	// Первый таб активен сразу — иначе ни одна панель не смонтируется. Панели —
@@ -238,9 +313,40 @@ export const PREVIEWS: Record<string, TPreview> = {
 	},
 
 	// Кольцо строчное и своего размера. По умолчанию оно пусто — доля ноль, а
-	// бег — флаг `indeterminate`. Имени без видимой подписи у него нет, превью
-	// даёт его пропом
-	'progress-spinner': { component: TProgressSpinnerComponent, props: { aria_label: 'Загрузка' } },
+	// бег — флаг `indeterminate`
+	'progress-spinner': { component: TProgressSpinnerComponent },
 
-	skeleton: { component: TSkeletonComponent, props: { width: 160, height: 16 } },
+	skeleton: { component: TSkeletonComponent },
+
+	// Окно на списке и таблице по тысяче элементов: на пяти его не видно.
+	// ListBox с пределом строк прокручивается сам, таблица — в окне прокрутки
+	// высотой 320 px; строка `enabled` включает и выключает окно у обоих.
+	// Элементы — данными (`items`): элементы разметкой окно не прячет. Ряд —
+	// граница ширины, как у Vue и React. Select в Angular нет, и его окна рядом
+	// тоже. Переставленную колонку таблица ведёт целиком, с ячейками строк
+	// (`reorderPreview: 'column'`): в окне это сотни ячеек, а не тысячи
+	virtual: {
+		component: TVirtualComponent,
+		content: [
+			markup('display: flex; gap: 24px; align-items: flex-start; width: 100%', [
+				{
+					component: TListBoxComponent,
+					element: tag('so-list-box'),
+					props: { items: COLLECTION_MANY_ITEMS, maxRows: 8, aria_label: 'Пункты' },
+				},
+				markup('flex: 1; min-width: 0; height: 320px; overflow: auto', [
+					{
+						component: TTableComponent,
+						element: tag('so-table'),
+						props: {
+							items: TABLE_MANY_ROWS,
+							columns: TABLE_COLUMNS,
+							reorderPreview: 'column',
+							aria_label: 'Сотрудники',
+						},
+					},
+				]),
+			]),
+		],
+	},
 }

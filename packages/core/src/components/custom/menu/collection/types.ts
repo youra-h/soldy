@@ -2,10 +2,14 @@ import type {
 	TCollectionEngine,
 	ICollectionProps,
 	IBatchCollectionProps,
+	IGroupCollectionProps,
 	ISelectionCollectionItemProps,
 	ISelectionItemExtension,
 	IOrderItemExtension,
+	TCollectionFacadeProps,
 	TFactoryExtension,
+	TGroupEvents,
+	TGroupExtension,
 	TOrderExtension,
 	TPlainExtension,
 	TUniqueExtension,
@@ -17,7 +21,7 @@ import type {
 } from '../../../base/collection'
 import type { IMenuItemExtension, TMenuItemEventsExtension } from './extensions/menu/item/types'
 import type { TMenuExtension, TMenuEngineOptions, TMenuExtensionEvents } from './extensions'
-import type { IMenu } from '../types'
+import type { IMenuOwner } from '../types'
 import type { IMenuItem, IMenuItemProps } from '../item/types'
 
 export type TMenuCollectionExtensions<TItem extends IMenuItem = IMenuItem> = {
@@ -29,7 +33,9 @@ export type TMenuCollectionExtensions<TItem extends IMenuItem = IMenuItem> = {
 	batch: TBatchExtension<TItem>
 	/** Отметки флажков — выбор в режиме `multiple`. */
 	selection: TSelectionExtension<TItem>
-	menu: TMenuExtension<IMenu, TItem>
+	/** Группы пунктов: показанное по группам и его секции */
+	group: TGroupExtension<TItem>
+	menu: TMenuExtension<IMenuOwner<any>, TItem>
 }
 
 export type TMenuCollection = TCollectionEngine<
@@ -48,7 +54,7 @@ export type TMenuCollection = TCollectionEngine<
 export type TMenuCollectionFacadeEngine = TCollectionEngine<any, any>
 
 /**
- * Owner-level props коллекции меню: состав.
+ * Owner-level props коллекции меню: состав и группы пунктов.
  *
  * Режима выбора среди них нет: отметки флажков независимы, и режим у меню
  * всегда `multiple` — его ставит коллекция, а не разметка.
@@ -58,7 +64,17 @@ export interface IMenuCollectionProps<
 	TItem = IMenuItem,
 	TCollection = TMenuCollectionFacadeEngine,
 >
-	extends ICollectionProps<TCollection>, IBatchCollectionProps<TItemProps, TItem> {}
+	extends
+		ICollectionProps<TCollection>,
+		IBatchCollectionProps<TItemProps, TItem>,
+		IGroupCollectionProps<TItem> {}
+
+/**
+ * Входные пропсы фасада меню: состав и ключ сверки — базе, группировка —
+ * расширению `group`.
+ */
+export type TMenuCollectionFacadeProps = TCollectionFacadeProps<IMenuItem> &
+	IGroupCollectionProps<IMenuItem>
 
 /** Item-level props флажка: отметка — выбор коллекции. */
 export interface IMenuCollectionCheckboxItemProps extends ISelectionCollectionItemProps {}
@@ -74,8 +90,9 @@ export type TMenuAdapters<TItem extends IMenuItem = IMenuItem> = {
 	menu: IMenuItemExtension<TItem>
 }
 
-/** События фасада меню: база выбора плюс карта расширения `menu` (`choose`). */
+/** События фасада меню: база выбора плюс карты расширений `group` и `menu` (`choose`). */
 export type TMenuCollectionFacadeEvents = TSelectionCollectionFacadeEvents<IMenuItem> &
+	TGroupEvents<IMenuItem> &
 	TMenuExtensionEvents
 
 /** События фасада пункта: набор базы плюс карта адаптера `menu`. */

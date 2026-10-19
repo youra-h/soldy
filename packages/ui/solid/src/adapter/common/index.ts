@@ -6,15 +6,19 @@ export { ResolvedSlot, type TResolvedSlotProps } from './ResolvedSlot'
 export { chainHandler, type THandlerUnion } from './handlers'
 export {
 	createRootProps,
+	createWrappedRootProps,
 	toControlAttrs,
 	toRootForward,
 	toRootLayout,
 	toRootProps,
+	toWrappedRootProps,
 	type TRootForward,
 	type TRootLayout,
 	type TRootProps,
 	type TRootSource,
 	type TRootState,
 	type TRootStyle,
+	type TWrappedRootProps,
+	type TWrappedRootSource,
 } from './root'
 export { roleIcon, type TRoleIconProps } from './icon'

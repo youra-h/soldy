@@ -47,6 +47,8 @@ import {
 	MenuGroupDescriptor,
 	MenuItemDescriptor,
 	MenuSeparatorDescriptor,
+	MenuSubmenuDescriptor,
+	NumberInputDescriptor,
 	PaginationDescriptor,
 	PaginationItemDescriptor,
 	PopoverDescriptor,
@@ -69,6 +71,7 @@ import {
 	TabsItemDescriptor,
 	TagsDescriptor,
 	TagsItemDescriptor,
+	TextareaDescriptor,
 	ToastsDescriptor,
 	ToastsItemDescriptor,
 	TooltipDescriptor,
@@ -110,6 +113,8 @@ const DESCRIPTORS: Readonly<Record<string, () => IComponentDescriptor>> = {
 	'menu/group/Group.vue': MenuGroupDescriptor,
 	'menu/item/Item.vue': MenuItemDescriptor,
 	'menu/separator/Separator.vue': MenuSeparatorDescriptor,
+	'menu/submenu/Submenu.vue': MenuSubmenuDescriptor,
+	'number-input/NumberInput.vue': NumberInputDescriptor,
 	'pagination/Pagination.vue': PaginationDescriptor,
 	// Страница — внутренняя часть пагинации, но слот у неё свой
 	'pagination/item/Item.vue': PaginationItemDescriptor,
@@ -136,6 +141,7 @@ const DESCRIPTORS: Readonly<Record<string, () => IComponentDescriptor>> = {
 	'tabs/item/Item.vue': TabsItemDescriptor,
 	'tags/Tags.vue': TagsDescriptor,
 	'tags/item/Item.vue': TagsItemDescriptor,
+	'textarea/Textarea.vue': TextareaDescriptor,
 	'toasts/Toasts.vue': ToastsDescriptor,
 	// Тост — внутренняя часть менеджера, но слоты у него свои
 	'toasts/item/Item.vue': ToastsItemDescriptor,

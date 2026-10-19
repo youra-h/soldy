@@ -73,6 +73,42 @@ function scaleOf(tokens: Map<string, string>, family: string): number[] {
 	)
 }
 
+/** Значение токена со ссылками `var(--so-…)`, раскрытыми до цвета. */
+function resolved(tokens: Map<string, string>, name: string): string {
+	const value = tokenOf(tokens, name)
+	const link = value.match(/^var\(\s*(--so-[\w-]+)\s*\)$/)
+
+	return link?.[1] ? resolved(tokens, link[1]) : value
+}
+
+/**
+ * Относительная яркость цвета `oklch(L C H)` по WCAG — тем путём, каким его
+ * кладёт браузер: OKLab → линейный sRGB, доли за пределами охвата обрезаются.
+ */
+function luminanceOf(value: string): number {
+	const match = value.match(/oklch\(\s*([\d.]+)\s+([\d.]+)\s+([\d.]+)\s*\)/)
+
+	if (!match) throw new Error(`не oklch: ${value}`)
+
+	const [L, C, H] = [Number(match[1]), Number(match[2]), Number(match[3])]
+	const a = C * Math.cos((H * Math.PI) / 180)
+	const b = C * Math.sin((H * Math.PI) / 180)
+	const l = (L + 0.3963377774 * a + 0.2158037573 * b) ** 3
+	const m = (L - 0.1055613458 * a - 0.0638541728 * b) ** 3
+	const s = (L - 0.0894841775 * a - 1.291485548 * b) ** 3
+	const clip = (channel: number) => Math.min(1, Math.max(0, channel))
+	const red = clip(4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s)
+	const green = clip(-1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s)
+	const blue = clip(-0.0041960863 * l - 0.7034186147 * m + 1.707614701 * s)
+
+	return 0.2126 * red + 0.7152 * green + 0.0722 * blue
+}
+
+/** Отношение контраста белого к цвету по WCAG. */
+function contrastWithWhite(value: string): number {
+	return 1.05 / (luminanceOf(value) + 0.05)
+}
+
 /** Исходники стилей — `.scss` и `.css`, рекурсивно. */
 function styleFiles(dir: string): string[] {
 	return readdirSync(dir).flatMap((entry) => {
@@ -180,6 +216,33 @@ describe('токены цветовых схем', () => {
 	])('%s схема сообщает браузеру свою схему: color-scheme %s', (_, value, body) => {
 		expect(propertyValues(body, 'color-scheme')).toEqual([value])
 	})
+
+	/**
+	 * Насыщенная заливка под белым текстом (`--so-component-solid-*`) заведена
+	 * ради отношения: белый текст кегля `text-sm` на ней обязан держать 4,5:1
+	 * (WCAG 1.4.3) в обеих схемах — на ней стоят подпись `filled` с вариантом
+	 * у Button и пилюли тега, номер текущей страницы Pagination и выбранного
+	 * дня Calendar, заголовок и описание тоста с видом. Середина хроматической
+	 * шкалы этого не держит, и токен, переставленный на неё, молча сделал бы
+	 * всё это нечитаемым. Состояния заливки темнее покоя (тень,
+	 * `mixins/_solid.scss`), и белый на них держит не меньше — это сторожит
+	 * браузер (`playground/vue/browser/solid-fill.spec.ts`). Чего тёмная схема
+	 * не объявила, она берёт у светлой — как в браузере, где её блок лежит
+	 * поверх `:root`: у нейтрали ступень одна на обе схемы.
+	 */
+	it.each(
+		['светлая', 'тёмная'].flatMap((scheme) =>
+			['accent', 'positive', 'caution', 'negative', 'neutral'].map((family) => [
+				scheme,
+				family,
+			]),
+		),
+	)('%s схема: белый на насыщенной заливке %s — не ниже 4,5:1', (scheme, family) => {
+		const tokens = scheme === 'светлая' ? light : new Map([...light, ...dark])
+		const fill = resolved(tokens, `--so-component-solid-${family}`)
+
+		expect(contrastWithWhite(fill)).toBeGreaterThanOrEqual(4.5)
+	})
 })
 
 /**
@@ -264,9 +327,9 @@ describe('компоненты не берут цвет мимо темы', () =
 	 * Белый фон не инвертируется вместе со шкалой и в тёмной схеме остался бы
 	 * белым. Для этого есть `--so-component-surface` / `--so-component-knob`.
 	 *
-	 * `text-white` при этом законен: он лежит на насыщенной заливке
-	 * (вид `filled` у Button), а середина хроматических шкал в обеих схемах
-	 * остаётся насыщенной.
+	 * `text-white` при этом законен: он лежит на насыщенной заливке под белым
+	 * текстом (`--so-component-solid-*`, вид `filled` с вариантом у Button), а
+	 * она в обеих схемах остаётся насыщенной.
 	 */
 	it('не заливают фон белым или чёрным в обход токена', () => {
 		expect(scan(/\bbg-(?:white|black)\b/g)).toEqual([])

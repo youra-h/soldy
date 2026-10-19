@@ -2,9 +2,18 @@
  * `<div is="so-list-box">` — список с выбором.
  *
  * Элемент — настоящий `<div>`, расширенный классом soldy (customized
- * built-in, см. `SoldyElement`): тег ядра по умолчанию. Все наборы ядра — на
- * корне, как у Vue и Angular. Список — сам остановка Tab (`tabindex="0"`
- * ставит шаблон), и его клавиатура слушает корень.
+ * built-in, см. `SoldyElement`): тег ядра по умолчанию. На корне — `attrs` и
+ * `dataset`, как у Vue и Angular, а набор `aria` — сам список — шаблон кладёт
+ * на узел списка внутри корня (`div.so-list-box__list`): рядом с ним в корне
+ * стоят шапка и подвал. Узел списка — и остановка Tab (`tabindex="0"` ставит
+ * шаблон): клавиатура списка слушает корень, а свои клавиши берёт с этого
+ * узла.
+ *
+ * Узел списка — поле корня (`control` в описании корня), как `<input>` у
+ * поля: статические атрибуты разметки, кроме `class`, `style`, `is`, `slot` и
+ * входов пропов, база при построении переносит на него. `aria-label` и `id`
+ * называют список, а не рамку без роли, `tabindex="-1"` снимает его с
+ * остановок Tab. Записанное из кода позже остаётся на корне.
  *
  * Контекстов два — свой и фасада коллекции (`setupListBox`), и пропсы фасада
  * (`items`, `mode`, `engine`, `trackBy`) — атрибуты-входы и свойства того же
@@ -33,6 +42,7 @@ export const TListBoxElement = SoldyElement(HTMLDivElement, {
 	descriptor: ListBoxDescriptor(),
 	facade: ListBoxCollectionDescriptor(),
 	template: listBoxTemplate,
+	root: { sets: ['attrs', 'dataset'], control: true },
 	setup: setupListBox,
 })
 

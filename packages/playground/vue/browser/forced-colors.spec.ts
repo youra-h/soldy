@@ -12,7 +12,7 @@
  * (`themes/oren/src/components/popover/_popover.scss`).
  * Тем же контуром держатся плашка Tooltip, модальное окно Dialog,
  * выезжающая панель Drawer и плашка тоста: их фон здесь тоже становится фоном
- * страницы. У
+ * страницы — у тоста с видом тоже, заливку вида браузер снимает (см. ниже). У
  * окна и панели контур общий — в поверхности модального слоя
  * (`themes/oren/src/mixins/_modal.scss`).
  *
@@ -37,7 +37,8 @@
 import { describe, it, expect, afterEach } from 'vitest'
 import { render, cleanup } from 'vitest-browser-vue'
 import { userEvent } from 'vitest/browser'
-import { defineComponent, h, nextTick, type VNode } from 'vue'
+import { defineComponent, h, nextTick, type PropType, type VNode } from 'vue'
+import type { TToastInput } from '@soldy-ui/core'
 import {
 	Button,
 	Calendar,
@@ -48,6 +49,7 @@ import {
 	Input,
 	ListBox,
 	ListBoxItem,
+	NumberInput,
 	Popover,
 	Select,
 	SelectItem,
@@ -61,7 +63,9 @@ import {
 	Tooltip,
 	useToasts,
 } from '@soldy-ui/vue'
+import type { TToastRender } from '@soldy-ui/vue'
 import type { DescriptorSlots, PopoverDescriptor } from '@soldy-ui/setup'
+import { TOASTS_ITEM_TYPES } from '@soldy-ui/playground-shared'
 
 import { find, outlined, pixel, settled, style, systemColor } from './colors'
 import { forcedColors } from './media'
@@ -90,10 +94,16 @@ afterEach(async () => {
 	await forcedColors('none')
 })
 
-/** Приложение под менеджером тостов: показывает тост, как приложение, — из кода. */
+/**
+ * Приложение под менеджером тостов: показывает тост, как приложение, — из
+ * кода. Что показать — текст или опции показа — пропом.
+ */
 const ShowToast = defineComponent({
-	setup() {
-		useToasts().show('Сохранено')
+	props: {
+		input: { type: [String, Object] as PropType<TToastInput<TToastRender>>, required: true },
+	},
+	setup(props) {
+		useToasts().show(props.input)
 
 		return () => h('p', 'Приложение')
 	},
@@ -167,7 +177,17 @@ const PANELS = [
 		// прозрачный контур
 		name: 'Toasts',
 		panel: '.so-toasts-item__card',
-		markup: () => h(Toasts, { duration: 0 }, () => h(ShowToast)),
+		markup: () => h(Toasts, { duration: 0 }, () => h(ShowToast, { input: 'Сохранено' })),
+	},
+	{
+		// Плашка с видом залита цветом вида, а кромка у неё та же: в этом
+		// режиме заливку браузер снимает, и рамка держит её край, как у белой
+		name: 'Toasts, тост с видом',
+		panel: '.so-toasts-item__card',
+		markup: () =>
+			h(Toasts, { duration: 0 }, () =>
+				h(ShowToast, { input: { text: 'Нет сети', type: 'error' } }),
+			),
 	},
 ]
 
@@ -192,6 +212,37 @@ describe.each(PANELS)('$name: кромка панели', ({ panel, markup }) =>
 		expect(outlined(element)).toBe(true)
 		expect(pixel([look.outlineColor])).not.toEqual(pixel([look.backgroundColor]))
 	})
+})
+
+/**
+ * Плашка тоста с видом залита цветом вида
+ * (`themes/oren/src/components/toasts/_toasts.scss`). В этом режиме заливку
+ * снимает браузер: фон плашки — фон страницы системы, текст — её текст, а вид
+ * различает только глиф значка. Тема заливку удерживать не должна — снятой
+ * подменой цветов: цвет вида рядом с системными цветами чужой палитре
+ * пользователя, и белый текст на его фоне ничем не обещан.
+ */
+describe('Toasts: плашка с видом', () => {
+	const CASES = SCHEMES.flatMap((scheme) => TOASTS_ITEM_TYPES.map((type) => ({ scheme, type })))
+
+	it.each(CASES)(
+		'$scheme, $type: фон — цвет страницы системы, заголовок — её текст',
+		async ({ scheme, type }) => {
+			await forcedColors('active')
+			await show(scheme, () =>
+				h(Toasts, { duration: 0 }, () =>
+					h(ShowToast, { input: { text: 'Сообщение', type } }),
+				),
+			)
+
+			expect(pixel([style(find('.so-toasts-item__card')).backgroundColor]), 'фон').toEqual(
+				pixel([systemColor('Canvas')]),
+			)
+			expect(pixel([style(find('.so-toasts-item__text')).color]), 'заголовок').toEqual(
+				pixel([systemColor('CanvasText')]),
+			)
+		},
+	)
 })
 
 /**
@@ -247,7 +298,7 @@ describe('Popover: панель под фокусом', () => {
 })
 
 /**
- * Кольцо фокуса поля — у Input и DateInput: коробка поля у них общая
+ * Кольцо фокуса поля — у Input, NumberInput и DateInput: коробка поля у них общая
  * (`field` в `themes/oren/src/components/input/_mixins.scss`). В покое кольцо
  * — прозрачный контур: так под фокусом его цвет проявляется переходом. В
  * режиме принудительных цветов браузер заменил бы прозрачный цвет системным,
@@ -261,6 +312,12 @@ const FIELDS = [
 		field: '.so-input',
 		target: '.so-input input',
 		markup: () => h(Input, { aria_label: 'Имя' }),
+	},
+	{
+		name: 'NumberInput',
+		field: '.so-number-input',
+		target: '.so-number-input__input',
+		markup: () => h(NumberInput, { aria_label: 'Количество' }),
 	},
 	{
 		name: 'DateInput',
@@ -977,7 +1034,8 @@ const LISTS = [
 	{
 		name: 'ListBox',
 		rows: '.so-list-box-item > .so-button',
-		focus: '.so-list-box',
+		// Остановка Tab ListBox — узел списка в корне
+		focus: '.so-list-box > .so-list-box__list',
 		toLast: '{ArrowDown}',
 		markup: () =>
 			h(ListBox, { value: 'b' }, () => [

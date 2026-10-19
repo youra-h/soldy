@@ -5,4 +5,4 @@
 	const bind: TPreviewProps = $props()
 </script>
 
-<Input placeholder="Введите текст" {...bind} />
+<Input {...bind} />

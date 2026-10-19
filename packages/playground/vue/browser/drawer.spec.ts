@@ -11,13 +11,14 @@
  * под панелью, возвращается, когда панель выехала, — вернись она на
  * закрытии, панель съехала бы вбок в начале выезда.
  *
- * Жест — настоящей мышью: захват указателя, `touch-action` и то, что нажатие
- * на полосу не уводит фокус, jsdom не выполняет вовсе.
+ * Жест — настоящей мышью и пальцем: захват указателя, `touch-action`,
+ * прокрутку касанием и то, что нажатие на полосу не уводит фокус, jsdom не
+ * выполняет вовсе.
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { render, cleanup } from 'vitest-browser-vue'
-import { page, userEvent } from 'vitest/browser'
+import { commands, page, userEvent } from 'vitest/browser'
 import { defineComponent, h, nextTick, ref, type VNode } from 'vue'
 import { Drawer, Input } from '@soldy-ui/vue'
 import type { IDrawerProps, TCloseEvent, TCloseReason, TDrawerPlacement } from '@soldy-ui/core'
@@ -736,6 +737,108 @@ describe('жест', () => {
 
 		await expect.poll(isOpen).toBe(false)
 		expect(reasons).toEqual(['swipe'])
+	})
+
+	/**
+	 * Палец — не мышь. Касание браузер сам захватывает за узлом под пальцем, и
+	 * жест, который переносит захват на панель, этот узел захвата лишает. А в
+	 * теле, которое прокручивается, `touch-action` панели не действует, и
+	 * касание браузер забирает под прокрутку. Протяжка — командой протокола
+	 * DevTools (`commands.touchDrag`).
+	 */
+	describe('пальцем', () => {
+		/** Абзац в теле, за который тянут всю панель, и две остановки Tab. */
+		const text = (): VNode[] => [
+			h('p', { class: 'so-test-text', style: 'width: 120px' }, 'Текст тела'),
+			...inside(),
+		]
+
+		/**
+		 * Тело выше панели — прокручивается. Абзац — на 300 px ниже начала
+		 * тела: протяжка от него вверх остаётся в окне.
+		 */
+		const tallText = (): VNode[] => [
+			...inside(),
+			h('div', { style: 'height: 300px' }),
+			h('p', { class: 'so-test-text', style: 'width: 120px' }, 'Текст тела'),
+			h('div', { style: 'height: 2000px' }),
+		]
+
+		/**
+		 * Края с осью жеста: боковой — по горизонтали, нижний — по вертикали.
+		 * Нижняя — своей высоты: протяжка на её половину остаётся в окне.
+		 */
+		const EDGES = [
+			['end', { placement: 'end' }],
+			['bottom', { placement: 'bottom', height: 300 }],
+		] as const
+
+		/** Путь пальца к краю — на полразмера панели по оси края. */
+		const halfway = (placement: 'end' | 'bottom'): [number, number] => {
+			const box = panel().getBoundingClientRect()
+
+			return placement === 'end' ? [box.width / 2, 0] : [0, box.height / 2]
+		}
+
+		it.each(EDGES)(
+			'%s: за полосу к краю — закрытие с причиной swipe',
+			async (placement, props) => {
+				const { shown, reasons } = await show({ swipe: 'handle', ...props })
+
+				await open()
+				await commands.touchDrag('.so-drawer__handle', ...halfway(placement))
+
+				await expect.poll(isOpen).toBe(false)
+				expect(shown.value).toBe(false)
+				expect(reasons).toEqual(['swipe'])
+			},
+		)
+
+		it.each(EDGES)(
+			'%s, за всю панель: от абзаца в теле — закрытие с причиной swipe',
+			async (placement, props) => {
+				const { reasons } = await show({ swipe: 'panel', ...props }, { content: text })
+
+				await open()
+				await commands.touchDrag('.so-test-text', ...halfway(placement))
+
+				await expect.poll(isOpen).toBe(false)
+				expect(reasons).toEqual(['swipe'])
+			},
+		)
+
+		/**
+		 * Поперёк оси касание — не жест: прокрутку тела браузер ведёт сам, и
+		 * гашение касания во время жеста её не трогает.
+		 */
+		it('end, за всю панель: по телу вертикально — тело прокрутилось, панель открыта', async () => {
+			const { reasons } = await show({ swipe: 'panel' }, { content: tallText })
+
+			await open()
+			await commands.touchDrag('.so-test-text', 0, -200)
+
+			await expect.poll(() => find('.so-drawer__body').scrollTop).toBeGreaterThan(0)
+			expect(isOpen()).toBe(true)
+			expect(reasons).toEqual([])
+		})
+
+		/**
+		 * Вдоль оси тело прокручивается само, и жест из него не начинается
+		 * (`scrollsAlong`) — у пальца то же правило, что у мыши.
+		 */
+		it('bottom, за всю панель: тело выше панели — протяжка вверх прокручивает его, панель открыта', async () => {
+			const { reasons } = await show(
+				{ swipe: 'panel', placement: 'bottom' },
+				{ content: tallText },
+			)
+
+			await open()
+			await commands.touchDrag('.so-test-text', 0, -200)
+
+			await expect.poll(() => find('.so-drawer__body').scrollTop).toBeGreaterThan(0)
+			expect(isOpen()).toBe(true)
+			expect(reasons).toEqual([])
+		})
 	})
 })
 

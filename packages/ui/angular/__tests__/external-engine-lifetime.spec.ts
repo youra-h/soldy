@@ -102,7 +102,7 @@ describe('ListBox над движком и владельцем снаружи',
 		@Component({
 			standalone: true,
 			imports: [TListBoxComponent],
-			template: `<div so-list-box [ctrl]="owner" [engine]="engine"></div>`,
+			template: `<so-list-box [ctrl]="owner" [engine]="engine"></so-list-box>`,
 		})
 		class ExternalHost {
 			readonly owner = owner

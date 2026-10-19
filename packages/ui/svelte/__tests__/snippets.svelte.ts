@@ -27,6 +27,30 @@ export function scopeText<TScope>(text: (scope: TScope) => string): Snippet<[TSc
 	}))
 }
 
+/**
+ * Слот-текст под счётом отрисовок: как `scopeText`, и каждая отрисовка —
+ * первая и на каждую смену scope — отдаёт scope в `onDraw`. Заново Svelte
+ * сниппет не зовёт: новый scope доходит до него геттером, и то, что прочло
+ * scope, перерисовывается само. Поэтому отрисовка сниппета — его чтение
+ * scope, и их счёт — то же, что счёт вызовов слота у Vue и React.
+ */
+export function countedText<TScope>(
+	text: (scope: TScope) => string,
+	onDraw: (scope: TScope) => void,
+): Snippet<[TScope]> {
+	return createRawSnippet((scope: () => TScope) => ({
+		render: () => '<span></span>',
+		setup(node) {
+			$effect(() => {
+				const current = scope()
+
+				onDraw(current)
+				node.textContent = text(current)
+			})
+		},
+	}))
+}
+
 /** Слот-разметка без scope: один элемент из строки. */
 export function markup(html: string): Snippet {
 	return createRawSnippet(() => ({ render: () => html }))

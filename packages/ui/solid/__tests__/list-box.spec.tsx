@@ -55,6 +55,9 @@ const selection = () => rows().map((row) => row.getAttribute('aria-selected'))
 
 const listItems = () => [...document.querySelectorAll('.so-list-box-item')]
 
+/** Узел списка в корне: на нём набор `aria` списка и остановка Tab. */
+const list = () => find(document, '.so-list-box > .so-list-box__list', HTMLElement)
+
 /** Клавиша на узле — как её шлёт браузер: всплывает и отменяется. */
 function press(target: Element, key: string): void {
 	target.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true }))
@@ -142,36 +145,85 @@ describe('выбор', () => {
 	})
 
 	/**
-	 * Roving tabindex (APG listbox): Tab фокусирует контейнер, а по элементам
+	 * Roving tabindex (APG listbox): Tab фокусирует узел списка, а по элементам
 	 * ходят стрелки. `tabindex="-1"` элемента пишет ядро в его `aria`, и на
 	 * строке он перекрывает `tabindex="0"`, который кнопка на `div` ставит себе
-	 * сама: атрибуты снаружи ложатся на корень поверх наборов.
+	 * сама: атрибуты снаружи ложатся на корень поверх наборов. Корень — рамка
+	 * вокруг шапки, списка и подвала, остановкой он не бывает.
 	 */
-	it('строки — не остановки Tab, контейнер — остановка', () => {
+	it('строки — не остановки Tab, узел списка — остановка, корень — нет', () => {
 		const { root } = mount(harness(() => ({})))
 
-		expect(root().getAttribute('tabindex')).toBe('0')
+		expect(list().parentElement).toBe(root())
+		expect(list().getAttribute('tabindex')).toBe('0')
+		expect(root().hasAttribute('tabindex')).toBe(false)
 		expect(rows().map((row) => row.getAttribute('tabindex'))).toEqual(['-1', '-1'])
 	})
 
-	it('стрелки ведут подсветку, Enter и пробел переключают выбор', async () => {
+	/**
+	 * Роли пишет ядро: узел списка — `listbox`, в `multiple` — с
+	 * `aria-multiselectable`, строка — `option`. Набор элемента ложится на
+	 * строку поверх того, что кнопка на `div` пишет себе сама, и её
+	 * `role="button"` в разметку не попадает.
+	 */
+	it('узел списка — listbox с aria-multiselectable, строки — опции, а не кнопки', () => {
 		const { root } = mount(harness(() => ({})))
+
+		expect(list().getAttribute('role')).toBe('listbox')
+		expect(list().getAttribute('aria-multiselectable')).toBe('true')
+		expect(root().hasAttribute('role')).toBe(false)
+		expect(rows().map((row) => row.getAttribute('role'))).toEqual(['option', 'option'])
+		expect(document.querySelectorAll('.so-list-box-item [role="button"]')).toHaveLength(0)
+	})
+
+	it('стрелки ведут подсветку, Enter и пробел переключают выбор', async () => {
+		mount(harness(() => ({})))
 
 		// Клавиатура списка слушает корень с `element:ready` — через кадр
 		await nextFrame()
 
-		press(root(), 'ArrowDown')
+		press(list(), 'ArrowDown')
 
 		expect(rows().map((row) => row.getAttribute('data-highlighted'))).toEqual(['true', 'false'])
 
-		press(root(), 'Enter')
+		press(list(), 'Enter')
 
 		expect(selection()).toEqual(['true', 'false'])
 
-		press(root(), 'ArrowDown')
-		press(root(), ' ')
+		press(list(), 'ArrowDown')
+		press(list(), ' ')
 
 		expect(selection()).toEqual(['true', 'true'])
+	})
+
+	/**
+	 * В `listbox` ARIA пускает только опции, поэтому шапка и подвал — дети
+	 * корня рядом с узлом списка. Их клавиши — не списка: поле печатает,
+	 * кнопка нажимается.
+	 */
+	it('шапка и подвал — вне listbox; их клавиши подсветку не двигают', async () => {
+		const { root } = mount(() => (
+			<ListBox
+				header={<input class="so-test-header" />}
+				footer={<button class="so-test-footer">Готово</button>}
+			>
+				<ListBox.Item value="a" text="A" />
+			</ListBox>
+		))
+
+		await nextFrame()
+
+		const header = find(document, '.so-test-header', HTMLInputElement)
+		const footer = find(document, '.so-test-footer', HTMLButtonElement)
+
+		expect([...root().children]).toEqual([header, list(), footer])
+		expect(list().contains(header)).toBe(false)
+		expect(list().contains(footer)).toBe(false)
+
+		press(header, 'ArrowDown')
+		press(footer, 'ArrowDown')
+
+		expect(rows().map((row) => row.getAttribute('data-highlighted'))).toEqual(['false'])
 	})
 })
 
@@ -243,7 +295,8 @@ describe('состав', () => {
 	/**
 	 * Пропсы фасада — `mode`, `items`, `engine` у списка и `selected` у
 	 * элемента — съедает связка фасада, и атрибутами в DOM они не уходят. Что
-	 * не съели ни компонент, ни фасад, — уходит.
+	 * не съели ни компонент, ни фасад, — уходит: у списка — узлу списка, у
+	 * элемента — строке.
 	 */
 	it('пропсы фасада — не атрибуты, атрибуты потребителя — атрибуты', () => {
 		const engine = createEngine<TItem>()
@@ -255,9 +308,11 @@ describe('состав', () => {
 
 		for (const name of ['mode', 'items', 'engine']) {
 			expect(root().hasAttribute(name), name).toBe(false)
+			expect(list().hasAttribute(name), name).toBe(false)
 		}
 
-		expect(root().getAttribute('title')).toBe('Города')
+		expect(root().hasAttribute('title')).toBe(false)
+		expect(list().getAttribute('title')).toBe('Города')
 		expect(rowOf('Z').hasAttribute('selected')).toBe(false)
 		expect(rowOf('Z').getAttribute('title')).toBe('Строка')
 	})
@@ -563,7 +618,7 @@ describe('отметка выбранного и слоты', () => {
 		expect(marks()).toEqual(['slot:true', 'icon'])
 	})
 
-	it('empty — пока элементов нет: после шапки, перед подвалом; появились — пропал', () => {
+	it('empty — пока элементов нет: в узле списка, между шапкой и подвалом; появились — пропал', () => {
 		const [items, setItems] = createSignal<TItem[]>([])
 		const { root } = mount(() => (
 			<ListBox
@@ -576,9 +631,10 @@ describe('отметка выбранного и слоты', () => {
 
 		expect([...root().children].map((child) => child.className)).toEqual([
 			'head',
-			'probe',
+			'so-list-box__list',
 			'foot',
 		])
+		expect([...list().children].map((child) => child.className)).toEqual(['probe'])
 
 		setItems(ITEMS.slice(0, 2))
 

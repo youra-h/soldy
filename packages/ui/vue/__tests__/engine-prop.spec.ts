@@ -103,18 +103,16 @@ describe('уровень движка компоненту не важен', () 
 	it('Tabs доустанавливает недостающее сам', async () => {
 		const bare = createEngine<TItem>({ items: ITEMS })
 
-		// `bare` статически типизирован уровнем 1 — прочитать имя расширения,
-		// которое доустановит Tabs при привязке, можно только через
-		// обобщённую карту, как в core/__tests__/engine-create.spec.ts.
-		const extensions = bare.extensions as Record<string, unknown>
-
-		expect(extensions.activation).toBeUndefined()
+		// `bare` статически типизирован уровнем 1 — расширение, которое
+		// доустановит Tabs при привязке, спрашиваем у движка по имени, как в
+		// core/__tests__/engine-create.spec.ts.
+		expect(bare.has('activation')).toBe(false)
 
 		wrapper = mount(Tabs, { props: { engine: bare }, attachTo: document.body })
 		await nextTick()
 
-		expect(extensions.activation).toBeDefined()
-		expect(extensions.tabs).toBeDefined()
+		expect(bare.has('activation')).toBe(true)
+		expect(bare.has('tabs')).toBe(true)
 	})
 
 	it('движок нужного уровня принимается как есть', async () => {

@@ -48,7 +48,7 @@ async function open(path: string): Promise<VueWrapper> {
 async function choose(wrapper: VueWrapper, label: string): Promise<void> {
 	const control = wrapper
 		.findAll('.pg__control')
-		.find((node) => node.get('.pg__control-label').text() === 'Язык')
+		.find((node) => node.get('.pg__control > .so-field__label').text() === 'Язык')
 
 	if (!control) throw new Error('в шапке нет выбора «Язык»')
 

@@ -9,6 +9,7 @@ import {
 	TTableRowCollectionFacade,
 	createEngine,
 	createEngineTable,
+	toText,
 } from '@soldy-ui/core'
 import type {
 	ITableColumn,
@@ -400,6 +401,123 @@ describe('ячейки', () => {
 		const engine = rows([ANNA], [])
 
 		expect(facadeOf(engine, rowOf(engine.extensions.batch.items, 1)).cells).toEqual([])
+	})
+})
+
+/**
+ * Текст ячейки — её значение, каким его рисует ячейка без слота. Тип поля
+ * записи таблица не знает, а правило текста одно на библиотеку: его считает
+ * ядро, разметка рисует готовое.
+ */
+describe('текст ячейки', () => {
+	/** Тексты ячеек записи — по колонке на каждое поле, в порядке полей. */
+	function texts(record: TTableRecord, fields: readonly string[]): string[] {
+		const engine = rows(
+			[record],
+			fields.map((field) => ({ field })),
+		)
+		const [row] = engine.extensions.batch.items
+
+		return facadeOf(engine, row).cells.map((cell) => cell.text)
+	}
+
+	it('строка — как есть; null, undefined и поля нет — пусто; число и булево — String(), без языка', () => {
+		const record = { name: 'Анна', note: null, email: undefined, age: 30, sum: 1234567.5 }
+
+		expect(texts(record, ['name', 'note', 'email', 'phone', 'age', 'sum'])).toEqual([
+			'Анна',
+			'',
+			'',
+			'',
+			'30',
+			'1234567.5',
+		])
+		expect(texts({ on: true, off: false }, ['on', 'off'])).toEqual(['true', 'false'])
+	})
+
+	it('массив и простой объект — JSON с отступом в два пробела', () => {
+		const bare: object = Object.create(null)
+
+		Reflect.set(bare, 'id', 7)
+
+		const record = { tags: ['a', 'b'], none: [], user: { id: 7, name: 'Борис' }, bare }
+
+		expect(texts(record, ['tags', 'none', 'user', 'bare'])).toEqual([
+			'[\n  "a",\n  "b"\n]',
+			'[]',
+			'{\n  "id": 7,\n  "name": "Борис"\n}',
+			'{\n  "id": 7\n}',
+		])
+	})
+
+	it('объект со своим toString — его текст: дата, свой класс, свой метод', () => {
+		class Money {
+			constructor(private readonly _amount: number) {}
+
+			toString(): string {
+				return `${this._amount} ₽`
+			}
+		}
+		const born = new Date(2001, 4, 17)
+		const record = { born, salary: new Money(1200), short: { toString: () => 'А. П.' } }
+
+		expect(texts(record, ['born', 'salary', 'short'])).toEqual([
+			String(born),
+			'1200 ₽',
+			'А. П.',
+		])
+	})
+
+	// Текст считается и у ячейки, которую рисует слот, — а слоту годится любое
+	// значение. Исключение на цикле сломало бы чтение ячеек всей строки
+	it('массив и объект, которых JSON не пишет, — их тег, и чтение ячеек не падает', () => {
+		const parent: Record<string, unknown> = { name: 'Анна' }
+		const chain: unknown[] = ['a']
+		const bare: object = Object.create(null)
+
+		parent.self = parent
+		chain.push(chain)
+		Reflect.set(bare, 'self', bare)
+
+		const record = { parent, chain, money: { amount: 10n }, bare }
+
+		expect(texts(record, ['parent', 'chain', 'money', 'bare'])).toEqual([
+			'[object Object]',
+			'[object Array]',
+			'[object Object]',
+			'[object Object]',
+		])
+	})
+
+	it('запись строки сменилась — новый текст к событию ячеек', () => {
+		const engine = rows([ANNA])
+		const row = rowOf(engine.extensions.batch.items, 1)
+		const facade = facadeOf(engine, row)
+		const seen: string[][] = []
+
+		facade.events.on('change:cells', () => seen.push(facade.cells.map((cell) => cell.text)))
+
+		row.data = { ...ANNA, name: 'Анна Петровна', age: 31 }
+
+		expect(seen).toEqual([['Анна Петровна', '31']])
+	})
+
+	it('toText ядра — то же правило, что текст ячейки', () => {
+		const record = {
+			name: 'Анна',
+			age: 30,
+			flag: true,
+			note: null,
+			tags: ['a'],
+			born: new Date(),
+		}
+		const engine = rows(
+			[record],
+			Object.keys(record).map((field) => ({ field })),
+		)
+		const { cells } = facadeOf(engine, engine.extensions.batch.items[0])
+
+		expect(cells.map((cell) => toText(cell.value))).toEqual(cells.map((cell) => cell.text))
 	})
 })
 

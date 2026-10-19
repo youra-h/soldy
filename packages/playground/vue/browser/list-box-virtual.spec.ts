@@ -63,8 +63,12 @@ async function mount(): Promise<HTMLElement> {
 	return list()
 }
 
+/**
+ * Узел списка в корне ListBox: остановка Tab, с него клавиши, и прокручивается
+ * он — предел строк плагин высоты ставит родителю элементов.
+ */
 function list(): HTMLElement {
-	const node = document.querySelector('.so-list-box')
+	const node = document.querySelector('.so-list-box > .so-list-box__list')
 
 	if (!(node instanceof HTMLElement)) throw new Error('списка нет')
 

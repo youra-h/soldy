@@ -33,6 +33,8 @@ const NAMED: ReadonlyArray<readonly [keyof TTranslations, string]> = [
 	['tags', 'close'],
 	['toasts', 'close'],
 	['field', 'clear'],
+	['numberInput', 'increment'],
+	['numberInput', 'decrement'],
 	['table', 'sort'],
 ]
 
@@ -79,6 +81,14 @@ describe('готовые локали', () => {
 		(_, locale) => {
 			expect(locale.translations.rating.value).toContain('{value}')
 			expect(locale.translations.rating.value).toContain('{max}')
+		},
+	)
+
+	it.each(Object.entries(PACKS))(
+		'%s: счётчик Textarea несёт места для набранного и предела',
+		(_, locale) => {
+			expect(locale.translations.textarea.counter).toContain('{count}')
+			expect(locale.translations.textarea.counter).toContain('{max}')
 		},
 	)
 

@@ -3,7 +3,7 @@ import { DEFAULT_SLOT } from '@soldy-ui/setup'
 import { TLocaleProviderElement, isHostProp, toAttributeName } from '@soldy-ui/webc'
 import { findComponent, type IPreviewHost } from '@soldy-ui/playground-shared'
 import { FIXTURES } from './fixtures'
-import { PREVIEWS, type TContent, type TPreview } from './previews'
+import { PREVIEWS, type TContent, type TPreview, type TPreviewProps } from './previews'
 import { listenersOf, type TElementListener } from './events'
 import { instanceSnippet, propSnippet } from './snippet'
 
@@ -27,16 +27,30 @@ function drawing(component: string, fixture: string | undefined): TPreview {
 }
 
 /**
- * Пропсы, которые элемент получает свойствами: пропсы превью, поверх — пропсы
- * строки. `ctrl` среди них нет — он ставится до вставки (см. `build`), — как
- * и пропов, которых у элемента нет вовсе (`tag`: тег — сам элемент).
+ * Пропсы, которые элемент получает свойствами: пропсы описания — у
+ * компонента превью выведенные из пропсов строки, — поверх — то, что отдала
+ * оболочка (у компонента превью — пропсы превью и строки). `ctrl` среди них
+ * нет — он ставится до вставки (см. `build`), — как и пропов, которых у
+ * элемента нет вовсе (`tag`: тег — сам элемент).
  */
-function propsOf(preview: TPreview, bind: Readonly<Record<string, unknown>>): Map<string, unknown> {
+function propsOf(preview: TPreview, bind: TPreviewProps): Map<string, unknown> {
+	const own = typeof preview.props === 'function' ? preview.props(bind) : preview.props
+
 	return new Map(
-		Object.entries({ ...preview.props, ...bind }).filter(
+		Object.entries({ ...own, ...bind }).filter(
 			([name]) => name !== 'ctrl' && !isHostProp(name),
 		),
 	)
+}
+
+/**
+ * Элемент описания: встроенный элемент soldy — тегом с `is`, автономный и
+ * обёртка без компонента — одним тегом.
+ */
+function elementOf(preview: TPreview): HTMLElement {
+	return preview.is === undefined
+		? document.createElement(preview.tag)
+		: document.createElement(preview.tag, { is: preview.is })
 }
 
 /**
@@ -53,15 +67,15 @@ type TBuilt = {
  * получает до вставки, применит его первая сборка, а `ctrl` — только до
  * вставки: инстанс, присвоенный подключённому элементу, достанется лишь
  * следующей сборке, после перестановки. Обёртка (`TPreview.wrapper`) — тем же
- * путём, со своими пропсами описания, а компонент — её светом, в слоте по
- * умолчанию.
+ * путём, со своими пропсами описания и стилем от пропсов строки, а компонент
+ * — её светом, в слоте по умолчанию.
  */
 function build(
 	preview: TPreview,
-	bind: Readonly<Record<string, unknown>>,
+	bind: TPreviewProps,
 	listeners: readonly TElementListener[],
 ): TBuilt {
-	const element = document.createElement(preview.tag, { is: preview.is })
+	const element = elementOf(preview)
 
 	if (bind.ctrl !== undefined) Reflect.set(element, 'ctrl', bind.ctrl)
 
@@ -73,12 +87,18 @@ function build(
 
 	if (!wrapper) return { element, outer: element }
 
-	const outer = document.createElement(wrapper.tag, { is: wrapper.is })
+	const outer = elementOf(wrapper)
 
 	fill(outer, wrapper, propsOf(wrapper, {}))
+	styleWrapper(outer, wrapper, bind)
 	outer.appendChild(element)
 
 	return { element, outer }
+}
+
+/** Стиль обёртки от пропсов строки компонента (`TPreview.style`); нет его — не трогается. */
+function styleWrapper(outer: HTMLElement, wrapper: TPreview, bind: TPreviewProps): void {
+	if (wrapper.style) outer.style.cssText = wrapper.style(bind)
 }
 
 /**
@@ -88,7 +108,7 @@ function build(
 function childOf(child: TContent): Node {
 	if (typeof child === 'function') return child()
 
-	const node = document.createElement(child.tag, { is: child.is })
+	const node = elementOf(child)
 
 	fill(node, child, propsOf(child, {}))
 
@@ -215,6 +235,8 @@ const host: IPreviewHost = {
 					root.appendChild(built.outer)
 				} else {
 					write(built.element, propsOf(preview, bind), propsOf(preview, next))
+
+					if (preview.wrapper) styleWrapper(built.outer, preview.wrapper, next)
 				}
 
 				bind = next

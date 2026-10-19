@@ -19,6 +19,7 @@ import {
 	LABEL_POSITIONS,
 	LIST_CONTENT_FITS,
 	LIST_INDICATORS,
+	MENU_OPEN_ONS,
 	MENU_PLACEMENTS,
 	POPOVER_EDGES,
 	POPOVER_PLACEMENTS,
@@ -95,7 +96,7 @@ const SHARED: Record<string, string> = {
 	required: 'Поле обязательно. Рисует маркер и попадает в валидацию формы',
 	id: 'Идентификатор поля. Пусто — берётся uid экземпляра',
 
-	// Кнопка очистки — часть поля: общая у Input, DateInput и DatePicker (у
+	// Кнопка очистки — часть поля: общая у Input, NumberInput, DateInput и DatePicker (у
 	// диапазона — одна на период), Select отдаёт её своему полю
 	clearable: 'Показывать кнопку очистки значения',
 
@@ -123,10 +124,10 @@ const PLUGIN: Record<string, string> = {
 	aria_labelledBy: 'id элемента, чей текст служит именем. Сильнее aria_label',
 	aria_describedBy: 'id элемента с пояснением: подсказка под полем, текст ошибки',
 	anchor_placement:
-		'Сторона и выравнивание панели у якоря: -start и -end — по началу и концу, top и bottom — по центру. Не влезает по высоте — flip переносит на другую сторону',
+		'Сторона и выравнивание панели у якоря: top и bottom — над и под ним, start и end — сбоку, у начала и конца строки (в RTL меняются местами); -start и -end — по началу и концу якоря, без суффикса — по центру. Не влезает — flip переносит на другую сторону',
 	anchor_matchWidth: 'Тянуть ширину панели по ширине якоря',
 	anchor_flip:
-		'Переносить панель на другую сторону, если на выбранной она не влезает по высоте окна',
+		'Переносить панель на другую сторону, если на выбранной она не влезает в окно: сверху и снизу — по высоте, сбоку — по ширине',
 	anchor_offset: 'Отступ панели от якоря, px',
 	dismiss_enabled:
 		'Слушать ли нажатие мимо панели, чтобы её закрыть. У Select, Popover, Tooltip и DatePicker его ведёт сам плагин по open, у Dialog и Drawer — по visible',
@@ -144,6 +145,27 @@ const OWN: Record<string, Record<string, string>> = {
 	input: {
 		placeholder: 'Подсказка в пустом поле',
 	},
+	'number-input': {
+		value: 'Число. Хранится как задано, а поле показывает его прижатым к min и max; к шагу не приводится. Пусто — числа нет',
+		min: 'Наименьшее значение. Пусто — снизу границы нет; меньше нуля или пусто — минус набирается',
+		max: 'Наибольшее значение. Пусто — сверху границы нет. У края кнопка шага в его сторону выключена',
+		step: 'Шаг стрелок и кнопок: сетка от min, без него — от нуля. Число вне сетки шагает к соседнему узлу',
+		largeStep: 'Сколько шагов делают Shift со стрелкой, PageUp и PageDown',
+		formatOptions:
+			'Формат числа — опции Intl.NumberFormat: процент, валюта, единица, точность. Здесь — пресетами, кодом — любым объектом',
+		placeholder: 'Подсказка в пустом поле',
+	},
+	textarea: {
+		placeholder: 'Подсказка в пустом поле',
+		rows: 'Высота в строках, как у нативного поля. С autoresize — наименьшая высота',
+		maxRows:
+			'Сколько строк поле растёт с autoresize, дальше — прокрутка. 0 — без предела. Без autoresize ничего не меняет',
+		maxlength:
+			'Сколько символов можно набрать: больше браузер не даст. Значение из кода длиннее он не обрежет — счётчик покажет превышение',
+		autoresize:
+			'Высота по тексту — от rows до maxRows строк. Ручки размера при этом нет: высоту ведёт поле',
+		counter: 'Счётчик символов под полем: набрано / maxlength, без предела — одно число',
+	},
 	'check-box': {
 		indeterminate:
 			'Третье состояние: выбрано частично. Ставится извне, клик снимает его и отмечает чекбокс',
@@ -156,9 +178,9 @@ const OWN: Record<string, Record<string, string>> = {
 	field: {
 		label: 'Подпись — видимое имя контрола: for на его поле, у групп — ссылка aria-labelledby. Пусто — подписи нет',
 		helper: 'Подсказка под контролом — его aria-describedby. Пока видна ошибка, подсказки нет',
-		error: 'Текст ошибки — виден, пока поле невалидно, и встаёт на место подсказки',
+		error: 'Текст ошибки. Виден только при invalid и встаёт на место подсказки',
 		invalid:
-			'Значение поля неверно: видна ошибка, контрол помечен ошибкой (aria-invalid). Проверку делает приложение',
+			'Значение поля неверно: контрол помечен ошибкой (aria-invalid), а на месте подсказки — текст ошибки из error. Проверку делает приложение',
 		position:
 			'С какой стороны от контрола стоит подпись: над ним, в начале или в конце строки. start и end меняются местами в RTL',
 	},
@@ -215,6 +237,8 @@ const OWN: Record<string, Record<string, string>> = {
 			'Подтверждать выбор кнопкой: в подвале панели «Отмена» и «OK». Выбор в календаре значение не меняет, пока не нажали «OK»; любое другое закрытие его сбрасывает',
 		min: 'Первый день, который можно выбрать, YYYY-MM-DD: в календаре раньше — ни фокуса, ни выбора, в поле — ошибка',
 		max: 'Последний день, который можно выбрать, YYYY-MM-DD',
+		validate:
+			'Проверка набора в полях: на «00» у дня и месяца часть ждёт следующей цифры, у диапазона — в обоих концах. Выключена — «00» записывается и набор идёт дальше, верна ли дата, решает приложение',
 		weekStart: 'Первый день недели календаря: 0 — воскресенье … 6 — суббота. Пусто — по языку',
 		timeZone: 'Часовой пояс «сегодня», имя IANA: Europe/Moscow. Пусто — пояс среды',
 		name: 'Имя одной даты при отправке формы. У диапазона концы уходят под startName и endName',
@@ -260,6 +284,7 @@ const OWN: Record<string, Record<string, string>> = {
 		open: 'Открыто ли меню. Закрывают его нажатие пункта, Escape, Tab, нажатие и фокус мимо',
 		placement:
 			'Сторона и выравнивание панели у кнопки. У края окна сторону переворачивает flip',
+		openOn: 'Чем меню открывают: press — кнопкой, contextmenu — как контекстное меню области: правой кнопкой, долгим касанием, клавишей контекстного меню и Shift+F10, и панель встаёт у точки вызова',
 		variant:
 			'Смысловой цвет пунктов меню. Свой вариант пункта сильнее: так красится «опасный» пункт',
 	},
@@ -420,7 +445,7 @@ const OPTIONS: Record<string, Record<string, readonly string[]>> = {
 		tags_overflow: TAGS_OVERFLOWS,
 	},
 	popover: { placement: POPOVER_PLACEMENTS, edge: POPOVER_EDGES, swipe: SWIPES },
-	menu: { placement: MENU_PLACEMENTS },
+	menu: { placement: MENU_PLACEMENTS, openOn: MENU_OPEN_ONS },
 	tooltip: { placement: TOOLTIP_PLACEMENTS, type: TOOLTIP_TYPES },
 	slider: { orientation: SLIDE_ORIENTATIONS, snap: SLIDE_SNAPS, tooltip: SLIDER_TOOLTIPS },
 	calendar: { mode: CALENDAR_MODES },
@@ -448,6 +473,85 @@ const OPTIONS: Record<string, Record<string, readonly string[]>> = {
 }
 
 /**
+ * Что превью задаёт компоненту само — пропсы превью.
+ *
+ * Голым превью компонент не рисует: у кнопки есть подпись, у поля —
+ * плейсхолдер, у кольца — имя. Это данные, а не разметка, и они одни на все
+ * хосты, поэтому живут здесь, а не в превью хоста. Раздаёт их оболочка:
+ * обеим колонкам каждой строки, витрине и сценариям без фикстуры.
+ *
+ * Строка такого пропа открывается с его значением (`TPropControl.initial`),
+ * а в разметку колонок свой проп не кладёт: колонка пропа получает значение
+ * строки, экземпляр — при создании. Пока значения лежали в разметке хоста,
+ * поле строки открывалось пустым при видимом тексте; стёртое, оно давало
+ * колонке пропа текст превью, а экземпляру — умолчание декларации; а разметку
+ * рядом с `ctrl` сборка пишет экземпляру при каждом монтировании, и смена
+ * фреймворка возвращала ему текст превью поверх набранного.
+ *
+ * Здесь — только пропы самого компонента, у которых есть строка: ключи
+ * сторожит `__tests__/manifest.spec.ts`. Пропсы обёртки (подпись `Label`
+ * вокруг CheckBox) и содержимое — элементы коллекций, строки и колонки
+ * таблицы, глиф иконки — остаются в превью хоста: строки у них нет, а глиф —
+ * компонент фреймворка.
+ */
+export const PREVIEW_PROPS: Readonly<Record<string, Readonly<Record<string, unknown>>>> = {
+	// Подпись — пропом `text`, а не слотом: заданный слот перекрывает проп, и
+	// строка `text` не меняла бы ничего видимого
+	button: { text: 'Кнопка' },
+	input: { placeholder: 'Введите текст' },
+	// Число с группой и дробью: формат локали видно с первой отрисовки. Имени
+	// без подписи у поля нет
+	'number-input': { value: 1234.5, aria_label: 'Количество' },
+	textarea: { placeholder: 'Комментарий' },
+	// Подпись — пропом `text`, контрол — содержимым превью
+	label: { text: 'Согласен' },
+	// Тексты частей поля, контрол — содержимым превью. Текста ошибки нет:
+	// ошибку видно только при `invalid`, и текст даёт пресет строки `invalid`
+	// (`PRESETS`), — отсюда строка `error` показала бы ошибку ещё до ввода
+	field: { label: 'Почта', helper: 'Не покажем никому' },
+	// `editable` — у всех строк, а не пресетом своей: иначе строка
+	// `editableMode` показывала бы Select без ввода, и подсветка по тексту
+	// ничем не отличалась бы от её отсутствия
+	select: { placeholder: 'Выберите', editable: true },
+	// Имени у поля даты нет, как у ползунка: подпись Label части не назовёт,
+	// они не поля ввода. У DatePicker имя одной даты — у поля, диапазона — у
+	// группы концов
+	'date-input': { aria_label: 'Дата' },
+	'date-picker': { aria_label: 'Дата' },
+	popover: { aria_label: 'Пример поповера' },
+	// Сотня элементов по десять на странице, текущая — пятая: пропуски по обе
+	// стороны видны с первой отрисовки. Имени у ряда без приложения нет
+	pagination: { total: 100, value: 5, aria_label: 'Страницы' },
+	// Имени без видимой подписи нет ни у таблицы, ни у полосы, ни у кольца
+	table: { aria_label: 'Сотрудники' },
+	'progress-linear': { aria_label: 'Загрузка' },
+	'progress-spinner': { aria_label: 'Загрузка' },
+	skeleton: { width: 160, height: 16 },
+}
+
+/** Пропсов превью у компонента нет — один пустой набор на всех. */
+const NO_PREVIEW_PROPS: Readonly<Record<string, unknown>> = {}
+
+/**
+ * Пропсы превью компонента (`PREVIEW_PROPS`) — без пропа строки `except`: свой
+ * проп колонки строки получают каждая по-своему.
+ *
+ * Без `except` — тот же объект на каждый вызов: витрина отдаёт его сцене
+ * прямо в разметке, и новый объект на каждую её отрисовку слал бы хосту
+ * обновление с теми же пропсами.
+ */
+export function previewProps(
+	componentId: string,
+	except?: string,
+): Readonly<Record<string, unknown>> {
+	const all = PREVIEW_PROPS[componentId] ?? NO_PREVIEW_PROPS
+
+	if (except === undefined) return all
+
+	return Object.fromEntries(Object.entries(all).filter(([name]) => name !== except))
+}
+
+/**
  * Метки строк щелчка ползунка: редкие и с подписями на мелком шаге — там, где
  * плавную ручку трудно остановить ровно на метке. Точки шкалы (`marks: true`)
  * не годятся: с шагом 1 метка стоит на каждом значении, и щелчок ничего бы не
@@ -458,9 +562,9 @@ const SNAP_MARKS = [0, 25, 50, 75, 100].map((value) => ({ value, label: String(v
 /**
  * Что ещё выставить превью на строке пропа, чтобы сам проп было видно.
  *
- * Строка правит одно свойство, остальные остаются по умолчанию. Большинству
- * пропов этого хватает, но не тем, что раскрываются только в сочетании. Таких
- * случаев два:
+ * Строка правит одно свойство, остальные остаются такими, какими их рисует
+ * превью (`PREVIEW_PROPS`), или по умолчанию. Большинству пропов этого
+ * хватает, но не тем, что раскрываются только в сочетании. Таких случаев два:
  *
  * - без сочетания проп не делает ничего: `removeOnBackspace` без `editable` и
  *   `multiple` — строка показала бы переключатель, который ни на что не
@@ -469,11 +573,28 @@ const SNAP_MARKS = [0, 25, 50, 75, 100].map((value) => ({ value, label: String(v
  *   `indicator` у ListBox ставит отметку и при одиночном выборе, а смысл у неё
  *   там, где выбрано несколько элементов.
  *
- * Пресет — только для своей строки. Глобальный дефолт превью (как `editable`
- * у Select) перевёл бы в `multiple` и все соседние строки, а `closeOnSelect`
- * в одиночном выборе и во множественном выглядит по-разному.
+ * Пресет — только для своей строки. Значение из `PREVIEW_PROPS` (как
+ * `editable` у Select) достаётся всем строкам компонента: `mode: 'multiple'`
+ * там перевёл бы в множественный выбор и все соседние строки, а
+ * `closeOnSelect` в одиночном выборе и во множественном выглядит по-разному.
  */
 export const PRESETS: Record<string, Record<string, Record<string, unknown>>> = {
+	field: {
+		// Ошибку видно, только пока поле невалидно: без `invalid` набранный
+		// текст не менял бы ничего
+		error: { invalid: true },
+		// Контрол помечается ошибкой и без текста, а сообщение встаёт на
+		// место подсказки, только когда текст есть
+		invalid: { error: 'Нет @' },
+	},
+	textarea: {
+		// Потолок — потолок автороста: без него поле не растёт, и строка ни на
+		// что не влияла бы
+		maxRows: { autoresize: true },
+		// Предел держит и сам — больше не набрать, — но сколько осталось,
+		// видно только по счётчику
+		maxlength: { counter: true },
+	},
 	select: {
 		removeOnBackspace: { editable: true, mode: 'multiple' },
 		// Теги в поле бывают только во множественном выборе, и переполняться
@@ -564,6 +685,9 @@ export const NON_EDITABLE = new Set([
 	'engine',
 	// Якорь — DOM-элемент, как `ctrl` и `engine`: вводить в контрол нечего
 	'anchor_anchor',
+	// Точка вместо якоря — координаты места вызова: их пишет тот, кто открыл
+	// панель (контекстное меню), а не строка стенда
+	'anchor_point',
 	// Атрибуты вьюпорта ленты от потребителя — набор, а не значение: роль ряда
 	// приносит тот, кто ленту применяет, и текстовым полем его не задать
 	'viewportAria',
@@ -581,14 +705,46 @@ export const NON_EDITABLE = new Set([
 	// Страницы текстовой пагинации — список записей с текстом и ключом, как
 	// `items`: текстовым полем их не задать
 	'pages',
+	// Группы коллекции: ключ группы элемента — функция, как `trackBy`, а группы —
+	// список записей с ключом и подписью, как `columns`
+	'groupBy',
+	'groups',
 ])
 
 export function describeProp(componentId: string, prop: string): string | undefined {
 	return OWN[componentId]?.[prop] ?? SHARED[prop] ?? PLUGIN[prop]
 }
 
+/**
+ * Значения списка, которые не строки, — пресеты по имени: имя пункта — в
+ * списке строки, значение — компоненту. Опции формата поля числа — объект, и
+ * набрать его в поле строки нечем, а без них не видно, как поле пишет процент,
+ * валюту и единицу.
+ */
+const PRESET_VALUES: Record<string, Record<string, Readonly<Record<string, unknown>>>> = {
+	'number-input': {
+		formatOptions: {
+			percent: { style: 'percent', maximumFractionDigits: 1 },
+			currency: { style: 'currency', currency: 'RUB' },
+			unit: { style: 'unit', unit: 'kilogram' },
+		},
+	},
+}
+
 export function optionsForProp(componentId: string, prop: string): readonly string[] | undefined {
+	const values = valuesForProp(componentId, prop)
+
+	if (values) return Object.keys(values)
+
 	return OPTIONS[componentId]?.[prop] ?? OPTIONS['*'][prop]
+}
+
+/** Значения пунктов списка по имени — у пропа, чьи значения не строки; иначе нет. */
+export function valuesForProp(
+	componentId: string,
+	prop: string,
+): Readonly<Record<string, unknown>> | undefined {
+	return PRESET_VALUES[componentId]?.[prop]
 }
 
 /**
@@ -651,10 +807,15 @@ export function controlKind(componentId: string, prop: TPropSpec): TControlKind 
  * Tags объявлен с умолчанием `undefined`, и проверка `!== undefined` спутала бы
  * его с пропом, у которого умолчания нет вовсе.
  *
+ * Значение превью (`initial`) — отдельно от умолчания и с той же семантикой
+ * ключа: строка открывается с ним, а умолчание экземпляр получает, когда поле
+ * стёрто.
+ *
  * Имя — то, которым проп пишут в разметке (`underscorePropNaming`). У пропов
  * компонента и коллекции оно совпадает с именем из декларации, а плагинные
  * перестают сталкиваться с одноимёнными: `placement` есть и у Select, и у
- * якоря. По этому же имени ищутся описание, список значений и пресет.
+ * якоря. По этому же имени ищутся описание, список значений, пресет и
+ * значение превью.
  */
 export function propControl(
 	componentId: string,
@@ -662,6 +823,7 @@ export function propControl(
 	owner: TPropOwner = { scope: 'component' },
 ): TPropControl {
 	const name = underscorePropNaming(prop.name)
+	const preview = previewProps(componentId)
 
 	const control: TPropControl = {
 		...owner,
@@ -672,7 +834,11 @@ export function propControl(
 		preset: presetForProp(componentId, name),
 	}
 
+	const values = valuesForProp(componentId, name)
+
+	if (values) control.values = values
 	if (Object.hasOwn(prop, 'default')) control.default = prop.default
+	if (Object.hasOwn(preview, name)) control.initial = preview[name]
 
 	return control
 }

@@ -13,6 +13,7 @@
 @use './components/field/field';
 @use './components/list-box/list-box';
 @use './components/menu/menu';
+@use './components/number-input/number-input';
 @use './components/pagination/pagination';
 @use './components/popover/popover';
 @use './components/progress-linear/progress-linear';
@@ -27,5 +28,6 @@
 @use './components/table/table';
 @use './components/tabs/tabs';
 @use './components/tags/tags';
+@use './components/textarea/textarea';
 @use './components/toasts/toasts';
 @use './components/tooltip/tooltip';

@@ -1,5 +1,5 @@
 import type { IControl, IList, TCollectionEngine } from '@soldy-ui/core'
-import { frameDebounce } from '@soldy-ui/core'
+import { frameDebounce, selectionOf } from '@soldy-ui/core'
 import { TBasePlugin } from '../../../base'
 import type { IPluginContext } from '../../../base'
 import { smoothScrollBehavior } from '../../../motion'
@@ -44,6 +44,10 @@ type TScrollMode = 'center' | 'nearest'
  * Начальная прокрутка мгновенная и при `smooth`: показывать на монтировании
  * нечего, а плавный проход перерисовывал бы окно на каждом кадре. При `none`
  * её нет.
+ *
+ * **Контейнер — родитель элементов**, как у `TListHeightPlugin`: предел строк
+ * тот ставит ему, и прокручивается он. У ListBox это узел списка, а не
+ * корень: шапка и подвал стоят в корне рядом с ним и не прокручиваются.
  */
 export class TListScrollPlugin extends TBasePlugin<any, TListScrollPluginEvents> {
 	private _element: Element | null = null
@@ -104,19 +108,15 @@ export class TListScrollPlugin extends TBasePlugin<any, TListScrollPluginEvents>
 	}
 
 	private _subscribeToEngine(engine: TCollectionEngine<any, any>): void {
-		this._listenTo(
-			engine.extensions.selection.events,
-			'change:selection',
-			(items: IControl[]) => {
-				this._awaitedUid = null
+		this._listenTo(selectionOf<IControl>(engine)?.events, 'change:selection', (items) => {
+			this._awaitedUid = null
 
-				if (items.length > 0) {
-					const { uid } = items[0]
+			if (items.length > 0) {
+				const { uid } = items[0]
 
-					this._schedule(() => this._follow(uid, 'center'))
-				}
-			},
-		)
+				this._schedule(() => this._follow(uid, 'center'))
+			}
+		})
 	}
 
 	/**
@@ -138,7 +138,7 @@ export class TListScrollPlugin extends TBasePlugin<any, TListScrollPluginEvents>
 
 		if (!this._element || !engine) return
 
-		const [selected] = engine.extensions.selection.selected as IControl[]
+		const [selected] = selectionOf<IControl>(engine)?.selected ?? []
 
 		if (!selected) return
 
@@ -181,7 +181,8 @@ export class TListScrollPlugin extends TBasePlugin<any, TListScrollPluginEvents>
 	}
 
 	private _scrollTo(target: Element, mode: TScrollMode, behavior: ScrollBehavior): void {
-		const container = this._element
+		// Корня уже нет — кадр пришёл после снятия
+		const container = this._element ? target.parentElement : null
 
 		if (!container) return
 
@@ -190,7 +191,7 @@ export class TListScrollPlugin extends TBasePlugin<any, TListScrollPluginEvents>
 			return
 		}
 
-		if (this._isFullyVisible(target)) return
+		if (this._isFullyVisible(target, container)) return
 
 		const containerRect = container.getBoundingClientRect()
 		const targetRect = target.getBoundingClientRect()
@@ -201,10 +202,8 @@ export class TListScrollPlugin extends TBasePlugin<any, TListScrollPluginEvents>
 		container.scrollTo({ top: scrollTop, behavior })
 	}
 
-	private _isFullyVisible(el: Element): boolean {
-		if (!this._element) return false
-
-		const containerRect = this._element.getBoundingClientRect()
+	private _isFullyVisible(el: Element, container: Element): boolean {
+		const containerRect = container.getBoundingClientRect()
 		const targetRect = el.getBoundingClientRect()
 
 		return targetRect.top >= containerRect.top && targetRect.bottom <= containerRect.bottom

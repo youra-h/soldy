@@ -16,7 +16,7 @@ import { mount, type DOMWrapper, type VueWrapper } from '@vue/test-utils'
 import { nextTick } from 'vue'
 import { setIcons } from '@soldy-ui/setup'
 import * as material from '@soldy-ui/icons-material'
-import { COMPONENTS, propControls } from '@soldy-ui/playground-shared'
+import { COMPONENTS, findComponent, propControls } from '@soldy-ui/playground-shared'
 import { availableOf, showcaseOf } from '../src/catalog'
 import { FRAMEWORKS, hostOf, loadHost } from '../src/hosts'
 import { router } from '../src/router'
@@ -180,6 +180,62 @@ async function selectedAfterTwoClicks(row: DOMWrapper<Element>): Promise<number[
 const ariaLabels = (row: DOMWrapper<Element>) =>
 	row.findAll('.pg-col__stage .so-button').map((button) => button.attributes('aria-label'))
 
+/** Подпись кнопки в каждой колонке строки. */
+const buttonTexts = (row: DOMWrapper<Element>) =>
+	stagesOf(row).map((stage) => stage.get('.so-button').text())
+
+/** Имя кольца в каждой колонке строки. */
+const ringNames = (row: DOMWrapper<Element>) =>
+	stagesOf(row).map((stage) => stage.get('.so-progress-spinner').attributes('aria-label'))
+
+/** Текст в поле строки — то, что человек видит в редакторе пропа. */
+function fieldText(row: DOMWrapper<Element>): string {
+	const field = row.get('.pg-prop__head > .so-field__control input').element
+
+	if (!(field instanceof HTMLInputElement)) throw new Error('у строки нет поля ввода')
+
+	return field.value
+}
+
+/**
+ * Строки, чья шапка не связана с редактором. Шапка — поле формы `Field`, и
+ * связывает его само: `for` подписи ведёт на `<input>` редактора, а `id`
+ * подсказки с описанием пропа стоит в `aria-describedby` того же `<input>`.
+ * Описание — из строки, а не из DOM: пропавшая подсказка тоже находка.
+ */
+function unlinkedHeads(wrapper: VueWrapper): string[] {
+	return wrapper.findAllComponents(PropRow).flatMap((row) => {
+		const { name, description } = row.props('control')
+		const input = row.get('.pg-prop__head > .so-field__control input').element
+		const target = row.get('.pg-prop__head > .so-field__label').attributes('for')
+		const helper = row.find('.pg-prop__head > .so-field__helper')
+		const described = input.getAttribute('aria-describedby')?.split(/\s+/) ?? []
+		const labelled = input.id !== '' && target === input.id
+		const explained =
+			description === '' || (helper.exists() && described.includes(helper.element.id))
+
+		return [
+			...(labelled ? [] : [`${name}: подпись не ведёт на поле`]),
+			...(explained ? [] : [`${name}: описания нет в aria-describedby поля`]),
+		]
+	})
+}
+
+/**
+ * Что стоит под контролом поля в каждой колонке строки: подсказка или ошибка
+ * со своим текстом. Видна одна из двух — ошибка встаёт на место подсказки, — а
+ * список по колонке покажет и обе сразу, и ни одной.
+ */
+const fieldNotes = (row: DOMWrapper<Element>) =>
+	stagesOf(row).map((stage) => [
+		...stage.findAll('.so-field__helper').map(() => 'подсказка'),
+		...stage.findAll('.so-field__error-text').map((error) => `ошибка: ${error.text()}`),
+	])
+
+/** Отметка ошибки у контрола поля в каждой колонке строки — `aria-invalid` его `<input>`. */
+const invalidMarks = (row: DOMWrapper<Element>) =>
+	stagesOf(row).map((stage) => stage.get('.so-field__control input').attributes('aria-invalid'))
+
 /**
  * Панели окон строки по колонкам. Окно телепортировано в `body` из корня хоста,
  * и ни в DOM строки, ни в дереве её компонентов его нет. Панель колонки — та,
@@ -242,13 +298,49 @@ describe.each(IDS)('каталог хоста %s', (framework) => {
 	})
 })
 
+/**
+ * Значения, которые превью задаёт компоненту само, лежат не в разметке хоста, а
+ * в общих данных (`PREVIEW_PROPS`), и витрине их отдаёт оболочка. Забудь она
+ * их — ячейка осталась бы нарисованной, но кнопка — без подписи, а кольцо —
+ * без имени, и проверка выше этого не увидела бы.
+ */
+describe('пропсы превью на витрине', () => {
+	/** Ячейка витрины по подписи компонента. */
+	function cellOf(wrapper: VueWrapper, label: string): DOMWrapper<Element> {
+		const found = wrapper
+			.findAll('.pg-cell')
+			.find((cell) => cell.get('.pg-cell__title').text() === label)
+
+		if (!found) throw new Error(`на витрине нет ${label}`)
+
+		return found
+	}
+
+	it.each(drawing('button', 'progress-spinner'))(
+		'%s: кнопка — с подписью превью, кольцо — с именем',
+		async (framework) => {
+			page = mount(OverviewPage, { ...mountOptions, props: { framework } })
+
+			await nextTick()
+			await nextFrame()
+
+			expect(cellOf(page, 'Button').get('.so-button').text()).toBe('Кнопка')
+			expect(
+				cellOf(page, 'ProgressSpinner')
+					.get('.so-progress-spinner')
+					.attributes('aria-label'),
+			).toBe('Загрузка')
+		},
+	)
+})
+
 describe('страница компонента', () => {
 	const PAGES = IDS.flatMap((framework) =>
 		availableOf(hostOf(framework)).map((entry) => [framework, entry.id, entry] as const),
 	)
 
 	it.each(PAGES)(
-		'%s/%s открывается и рисует строку на каждый проп',
+		'%s/%s открывается и рисует строку на каждый проп, имя и описание — у её редактора',
 		async (framework, id, entry) => {
 			const wrapper = await openPage(framework, id)
 
@@ -260,9 +352,29 @@ describe('страница компонента', () => {
 				componentControls.length + collectionControls.length + pluginControls.length
 
 			expect(wrapper.findAll('.pg-prop')).toHaveLength(rows)
+			expect(unlinkedHeads(wrapper)).toEqual([])
 			expect(firstLines()).toEqual([])
 		},
 	)
+
+	/**
+	 * Панель оверлея плагины слоя находят по пометке владельцем (`data-owner`
+	 * — от id монтирования) первой в документе: жест, фокус и немой фон. На
+	 * странице превью по два на строку, и совпавшая пометка увела бы их на
+	 * чужую панель — какую, решает порядок панелей в документе, а он меняется,
+	 * когда панели уходят и возвращаются. Превью Vue — отдельные приложения, и
+	 * `useId` у каждого считает заново: пометки различает только свой
+	 * `idPrefix` приложения (`src/hosts/vue/index.ts`).
+	 */
+	it.each(PAGES)('%s/%s: пометки панелей владельцами не повторяются', async (framework, id) => {
+		await openPage(framework, id)
+
+		const marks = [...document.querySelectorAll('[data-owner]')].map((node) =>
+			node.getAttribute('data-owner'),
+		)
+
+		expect(marks.filter((mark, index) => marks.indexOf(mark) !== index)).toEqual([])
+	})
 
 	it('на неизвестный идентификатор отвечает, а не падает', async () => {
 		const wrapper = await openPage('vue', 'нет-такого')
@@ -509,7 +621,8 @@ describe('свойства плагинов', () => {
 /**
  * Пресет строки: `removeOnBackspace` виден только в `editable` + `multiple`,
  * `indicator` у ListBox нужен там, где выбрано несколько элементов, `offset`
- * у Dialog виден у окна, растянутого по экрану.
+ * у Dialog виден у окна, растянутого по экрану, текст `error` у Field — только
+ * при `invalid`, а сообщение `invalid` — только с текстом ошибки.
  *
  * Проверяем DOM обеих колонок, а не сам пресет: во второй колонке он едет
  * разметкой рядом с `ctrl`, и доехать до инстанса и фасада коллекции там
@@ -517,7 +630,8 @@ describe('свойства плагинов', () => {
  * снятый `readonly` у поля (снимает только `editable`). У ListBox режим в DOM
  * не выведен, и признак — поведение: после кликов по двум разным элементам
  * оба остаются выбранными только в `multiple`. У окна признак — переменные
- * размера и отступа на его панели.
+ * размера и отступа на его панели. У поля формы — что стоит под контролом,
+ * подсказка или ошибка, и отметка ошибки у самого контрола (`aria-invalid`).
  */
 describe('пресет строки', () => {
 	it.each(drawing('select'))(
@@ -598,7 +712,7 @@ describe('пресет строки', () => {
 		async (framework) => {
 			const wrapper = await openPage(framework, 'dialog')
 			const row = rowOf(wrapper, 'offset')
-			const field = row.find('.pg-prop__control input')
+			const field = row.find('.pg-prop__head > .so-field__control input')
 			const tops = async () =>
 				(await dialogPanels(row)).map((panel) =>
 					panel.style.getPropertyValue('--so-dialog-offset-top'),
@@ -629,6 +743,52 @@ describe('пресет строки', () => {
 			}
 		},
 	)
+
+	/**
+	 * Строка `error` — с пресетом `invalid`: набранный текст встаёт ошибкой на
+	 * место подсказки. Стёртый — проп не задан: первая колонка его не передаёт,
+	 * и поле берёт текст превью, а экземпляр второй — умолчание декларации.
+	 * Обе обязаны вернуться к подсказке: текст ошибки в умолчаниях превью
+	 * оставил бы первую на ошибке, а вторую — на подсказке.
+	 */
+	it.each(drawing('field'))(
+		'%s: текст error встаёт у Field на место подсказки в обеих колонках',
+		async (framework) => {
+			const wrapper = await openPage(framework, 'field')
+			const row = rowOf(wrapper, 'error')
+
+			// Пресет доехал до обеих колонок: контрол помечен ошибкой сразу, а
+			// пока текста ошибки нет, под ним подсказка
+			expect(invalidMarks(row)).toEqual(['true', 'true'])
+			expect(fieldNotes(row)).toEqual([['подсказка'], ['подсказка']])
+
+			await enter(row, 'Нужен домен')
+			expect(fieldNotes(row)).toEqual([['ошибка: Нужен домен'], ['ошибка: Нужен домен']])
+
+			await enter(row, '')
+			expect(fieldNotes(row)).toEqual([['подсказка'], ['подсказка']])
+		},
+	)
+
+	it.each(drawing('field'))(
+		'%s: invalid показывает у Field ошибку с текстом пресета в обеих колонках',
+		async (framework) => {
+			const wrapper = await openPage(framework, 'field')
+			const row = rowOf(wrapper, 'invalid')
+
+			expect(fieldNotes(row)).toEqual([['подсказка'], ['подсказка']])
+
+			await enter(row, true)
+
+			expect(fieldNotes(row)).toEqual([['ошибка: Нет @'], ['ошибка: Нет @']])
+		},
+	)
+
+	it.each(drawing('field'))('%s: соседние строки Field пресет не получают', async (framework) => {
+		const wrapper = await openPage(framework, 'field')
+
+		expect(invalidMarks(rowOf(wrapper, 'helper'))).toEqual([undefined, undefined])
+	})
 })
 
 /**
@@ -706,6 +866,130 @@ describe('очищенное поле', () => {
 })
 
 /**
+ * Значение, которое превью задаёт компоненту само, — подпись кнопки, имя
+ * кольца — лежит в общих данных (`PREVIEW_PROPS`), а раздаёт его оболочка.
+ * Строка такого пропа открывается с ним, а в разметку колонок свой проп не
+ * кладёт. Пока значение лежало в разметке хоста, поле строки открывалось
+ * пустым при видимой подписи, стёртое — давало колонке пропа подпись превью, а
+ * экземпляру умолчание, и смена фреймворка возвращала экземпляру подпись
+ * превью поверх набранной: разметку рядом с `ctrl` сборка пишет при каждом
+ * монтировании.
+ *
+ * По случаю на ветку записи второй колонки: свойство компонента — экземпляру
+ * при создании, свойство плагина — плагину на `bundle:create`.
+ */
+describe('значение превью в строке', () => {
+	const CASES = [
+		{
+			component: 'button',
+			prop: 'text',
+			preview: 'Кнопка',
+			shown: buttonTexts,
+			// Умолчание `text` — пустая строка: подписи нет
+			cleared: '',
+		},
+		{
+			component: 'progress-spinner',
+			prop: 'aria_label',
+			preview: 'Загрузка',
+			shown: ringNames,
+			// Умолчание доступного имени — не задано: атрибута нет
+			cleared: undefined,
+		},
+	]
+
+	const ROWS = CASES.flatMap((item) =>
+		drawing(item.component).map((framework) => [framework, item.component, item] as const),
+	)
+
+	it.each(ROWS)(
+		'%s/%s: строка открывается со значением превью — в поле и в обеих колонках',
+		async (framework, component, { prop, preview, shown }) => {
+			const row = rowOf(await openPage(framework, component), prop)
+
+			expect(fieldText(row)).toBe(preview)
+			expect(shown(row)).toEqual([preview, preview])
+			expect(firstLines()).toEqual([])
+		},
+	)
+
+	it.each(ROWS)(
+		'%s/%s: набранное и стёртое — одно в обеих колонках',
+		async (framework, component, { prop, shown, cleared }) => {
+			const wrapper = await openPage(framework, component)
+
+			await enter(rowOf(wrapper, prop), 'Набранное')
+			expect(shown(rowOf(wrapper, prop))).toEqual(['Набранное', 'Набранное'])
+
+			await enter(rowOf(wrapper, prop), '')
+			expect(shown(rowOf(wrapper, prop))).toEqual([cleared, cleared])
+		},
+	)
+
+	/**
+	 * Строка и экземпляр живут в оболочке, и хост нового фреймворка рисует
+	 * вторую колонку тем же экземпляром. Его сборка пишет экземпляру разметку
+	 * превью — значения превью там больше нет, и набранное остаётся.
+	 */
+	const SWITCHES = ROWS.flatMap(([framework, component, item]) => {
+		const from = drawing(component).find((other) => other !== framework)
+
+		return from ? [[framework, component, from, item] as const] : []
+	})
+
+	it.each(SWITCHES)(
+		'%s/%s: набранное переживает переход на фреймворк — с %s, обе колонки',
+		async (framework, component, from, { prop, shown }) => {
+			const wrapper = await openPage(from, component)
+
+			await enter(rowOf(wrapper, prop), 'Набранное')
+
+			await wrapper.setProps({ framework })
+			await nextTick()
+			await nextFrame()
+
+			expect(shown(rowOf(wrapper, prop))).toEqual(['Набранное', 'Набранное'])
+			expect(firstLines()).toEqual([])
+		},
+	)
+
+	/**
+	 * Коллекционного пропа среди значений превью нет, а путь у него свой —
+	 * конструктор фасада второй колонки. Проверяется он строкой со значением
+	 * превью, подложенным в её контрол: `mode` списка — сразу множественный в
+	 * обеих колонках.
+	 */
+	it.each(drawing('list-box'))(
+		'%s: значение превью свойства коллекции фасад получает при создании',
+		async (framework) => {
+			const entry = findComponent('list-box')
+			const control = entry
+				? propControls(entry).collectionControls.find(({ name }) => name === 'mode')
+				: undefined
+
+			if (!entry || !control) throw new Error('нет строки mode у ListBox')
+
+			const row = mount(PropRow, {
+				...mountOptions,
+				props: {
+					entry,
+					control: { ...control, initial: 'multiple' },
+					host: hostOf(framework),
+					sink: () => () => {},
+				},
+			})
+
+			page = row
+
+			await nextTick()
+			await nextFrame()
+
+			expect(await selectedAfterTwoClicks(row.find('.pg-prop'))).toEqual([2, 2])
+		},
+	)
+})
+
+/**
  * Код колонок пишет хост фреймворка — своим синтаксисом, и файл примера для
  * «Открыть в VS Code» у него того же синтаксиса. Строка на каждый фреймворк
  * стенда, у хоста которого есть генератор кода: такой хост без строки уронит
@@ -737,7 +1021,7 @@ describe('код колонок', () => {
 		async (framework) => {
 			const expected = WIDTH_CODE[framework]
 			const wrapper = await openPage(framework, 'skeleton')
-			const field = rowOf(wrapper, 'width').find('.pg-prop__control input')
+			const field = rowOf(wrapper, 'width').find('.pg-prop__head > .so-field__control input')
 			const views = () => rowComponentOf(wrapper, 'width').findAllComponents(CodeView)
 			const codes = () => views().map((view) => view.props('code'))
 

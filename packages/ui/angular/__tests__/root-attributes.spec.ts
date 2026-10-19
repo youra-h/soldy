@@ -28,9 +28,12 @@ import {
 	TIconComponent,
 	TInputComponent,
 	TLabelComponent,
+	TListBoxComponent,
 	TProgressSpinnerComponent,
 	TSkeletonComponent,
 	TSwitchComponent,
+	TTableComponent,
+	TTabsComponent,
 } from '@soldy-ui/angular'
 import {
 	applyAttributes,
@@ -147,8 +150,13 @@ const COMPONENTS: ReadonlyArray<readonly [string, Type<TProbeHost>, string, stri
  * Проба поля: у него атрибуты потребителя делятся между корнем и `<input>`.
  * `dir` потребителя — атрибут из разметки, и он уезжает на поле, а `dir` ядра
  * по `direction` стоит на корне.
+ *
+ * Селектор свой у каждой пробы поля и списка: их разметка различается только
+ * тегом, а тег в id компонента Angular не входит — без селектора id совпал бы
+ * (предупреждение NG0912).
  */
 @Component({
+	selector: 'probe-check-box',
 	standalone: true,
 	imports: [TCheckBoxComponent],
 	template: `<so-check-box
@@ -163,6 +171,7 @@ const COMPONENTS: ReadonlyArray<readonly [string, Type<TProbeHost>, string, stri
 class CheckBoxProbe extends TProbeHost {}
 
 @Component({
+	selector: 'probe-switch',
 	standalone: true,
 	imports: [TSwitchComponent],
 	template: `<so-switch
@@ -177,6 +186,7 @@ class CheckBoxProbe extends TProbeHost {}
 class SwitchProbe extends TProbeHost {}
 
 @Component({
+	selector: 'probe-input',
 	standalone: true,
 	imports: [TInputComponent],
 	template: `<so-input
@@ -195,6 +205,48 @@ const FIELDS: ReadonlyArray<readonly [string, Type<TProbeHost>, string, string]>
 	['CheckBox', CheckBoxProbe, 'so-check-box', 'so-check-box'],
 	['Switch', SwitchProbe, 'so-switch', 'so-switch'],
 	['Input', InputProbe, 'so-input', 'so-input'],
+]
+
+/**
+ * Проба списка: у ListBox и Tabs атрибуты потребителя делятся, как у поля, —
+ * между корнем и узлом списка, на котором роль и `aria` компонента. `dir`
+ * потребителя уезжает на узел списка, а `dir` ядра по `direction` стоит на
+ * корне. Селектор свой — по той же причине, что у проб полей.
+ */
+@Component({
+	selector: 'probe-list-box',
+	standalone: true,
+	imports: [TListBoxComponent],
+	template: `<so-list-box
+		direction="rtl"
+		dir="ltr"
+		title="probe"
+		class="mine"
+		style="color: red"
+		(soElementReady)="ready.push($event)"
+	/>`,
+})
+class ListBoxProbe extends TProbeHost {}
+
+@Component({
+	selector: 'probe-tabs',
+	standalone: true,
+	imports: [TTabsComponent],
+	template: `<so-tabs
+		direction="rtl"
+		dir="ltr"
+		title="probe"
+		class="mine"
+		style="color: red"
+		(soElementReady)="ready.push($event)"
+	/>`,
+})
+class TabsProbe extends TProbeHost {}
+
+/** Список, хост его пробы, селектор корня, класс ядра на нём и селектор узла списка. */
+const LISTS: ReadonlyArray<readonly [string, Type<TProbeHost>, string, string, string]> = [
+	['ListBox', ListBoxProbe, 'so-list-box', 'so-list-box', '[role="listbox"]'],
+	['Tabs', TabsProbe, 'so-tabs', 'so-tabs', '[role="tablist"]'],
 ]
 
 describe('что называет ядро, — за базой, остальное — потребителя', () => {
@@ -312,6 +364,60 @@ describe('поле: атрибуты потребителя делятся ме�
 			)
 		},
 	)
+})
+
+/**
+ * У ListBox и Tabs атрибуты потребителя делятся, как у поля: класс и стиль —
+ * корню, атрибуты из разметки — узлу списка, где роль и `aria` компонента
+ * (`TRootSpec.control`). Наборы ядра — каждый на своём элементе: `attrs`
+ * (`dir`) — на корне, `aria` — на узле списка.
+ */
+describe('ListBox и Tabs: атрибуты потребителя делятся между корнем и списком', () => {
+	it.each(LISTS)(
+		'%s: класс и стиль — на корне рядом с классом ядра',
+		(_name, host, selector, own, list) => {
+			const fixture = mountHost(host)
+			const el = findIn(fixture, selector, HTMLElement)
+			const node = findIn(fixture, list, HTMLElement)
+
+			expect(el.classList.contains('mine')).toBe(true)
+			expect(el.classList.contains(own)).toBe(true)
+			expect(el.style.color).toBe('red')
+			expect(node.classList.contains('mine')).toBe(false)
+			expect(node.style.color).toBe('')
+		},
+	)
+
+	it.each(LISTS)(
+		'%s: атрибуты из разметки — на узле списка, не на корне',
+		(_name, host, selector, _own, list) => {
+			const fixture = mountHost(host)
+			const el = findIn(fixture, selector, HTMLElement)
+			const node = findIn(fixture, list, HTMLElement)
+
+			expect(node.parentElement).toBe(el)
+			expect(el.hasAttribute('title')).toBe(false)
+			expect(node.getAttribute('title')).toBe('probe')
+		},
+	)
+
+	it.each(LISTS)(
+		'%s: dir ядра — на корне, dir потребителя — на узле списка',
+		(_name, host, selector, _own, list) => {
+			const fixture = mountHost(host)
+
+			expect(findIn(fixture, selector, HTMLElement).getAttribute('dir')).toBe('rtl')
+			expect(findIn(fixture, list, HTMLElement).getAttribute('dir')).toBe('ltr')
+		},
+	)
+
+	it.each(LISTS)('%s: soElementReady приходит с корнем', async (_name, host, selector) => {
+		const fixture = mountHost(host)
+
+		await nextFrame()
+
+		expect(fixture.componentInstance.ready).toEqual([findIn(fixture, selector, HTMLElement)])
+	})
 })
 
 @Component({
@@ -598,5 +704,168 @@ describe('свойство, записанное в узел мимо разме
 		expect(button.style.display).toBe('')
 		expect(el.style.getPropertyValue('--so-swipe-offset')).toBe('7px')
 		expect(el.style.width).toBe('20px')
+	})
+})
+
+/**
+ * Корень внутри обёртки — у таблицы (`'wrapped'`): элемент компонента
+ * (`<so-table>`) — окно, а корень — `table` в шаблоне, как
+ * `div.so-table__viewport` вокруг `table` у Vue и React. Класс и стиль
+ * потребителя стоят на окне, и его же прячет видимость; остальные статические
+ * атрибуты разметки база переносит на `table`, как на поле, — там же классы,
+ * наборы ядра и `TElementPlugin`.
+ */
+@Component({
+	standalone: true,
+	imports: [TTableComponent],
+	template: `<so-table
+		[columns]="columns"
+		direction="rtl"
+		dir="ltr"
+		title="probe"
+		aria-label="Сотрудники"
+		id="staff"
+		data-probe="1"
+		class="mine"
+		style="color: red"
+		[visible]="visible()"
+		[stickyHead]="sticky()"
+		(soElementReady)="ready.push($event)"
+	></so-table>`,
+})
+class TableProbe {
+	readonly columns = [{ field: 'name', text: 'Имя' }]
+	readonly visible = signal(true)
+	readonly sticky = signal(false)
+	readonly ready: Element[] = []
+}
+
+/**
+ * Имя таблицы и входом, и атрибутом: `aria-label` называет и ядро — плагин
+ * доступного имени пишет его в `aria` таблицы.
+ */
+@Component({
+	standalone: true,
+	imports: [TTableComponent],
+	template: `<so-table [columns]="columns" aria_label="Ядро" aria-label="Своё" />`,
+})
+class TableNameProbe {
+	readonly columns = [{ field: 'name', text: 'Имя' }]
+}
+
+/** Окно таблицы — элемент компонента — и `table` в нём. */
+function tableParts(fixture: ComponentFixture<unknown>): {
+	viewport: HTMLElement
+	table: HTMLElement
+} {
+	return {
+		viewport: findIn(fixture, 'so-table', HTMLElement),
+		table: findIn(fixture, 'so-table > table', HTMLElement),
+	}
+}
+
+describe('корень внутри обёртки: окно таблицы', () => {
+	it('класс и стиль потребителя — окну, рядом с его классом', () => {
+		const { viewport, table } = tableParts(mountHost(TableProbe))
+
+		expect([...viewport.classList].sort()).toEqual(['mine', 'so-table__viewport'])
+		expect(viewport.style.color).toBe('red')
+		expect(table.classList.contains('mine')).toBe(false)
+		expect(table.style.color).toBe('')
+	})
+
+	/**
+	 * Статические атрибуты разметки, кроме класса и стиля, база переносит на
+	 * `table`, как на поле: там роль и имя таблицы, и `aria-label` называет её,
+	 * а не окно без роли.
+	 */
+	it('остальные атрибуты из разметки — table, а не окну', () => {
+		const { viewport, table } = tableParts(mountHost(TableProbe))
+
+		expect(table.getAttribute('title')).toBe('probe')
+		expect(table.getAttribute('aria-label')).toBe('Сотрудники')
+		expect(table.id).toBe('staff')
+		expect(table.dataset['probe']).toBe('1')
+		expect(
+			['title', 'aria-label', 'id', 'data-probe', 'dir'].filter((name) =>
+				viewport.hasAttribute(name),
+			),
+		).toEqual([])
+	})
+
+	/**
+	 * Имя, которое называет ядро, — за ядром, как на корне-хосте: атрибуты
+	 * потребителя встают на `table` раньше раскладки наборов. `dir` ядро пишет
+	 * в `attrs` по `direction`, имя — в `aria` по `aria_label`.
+	 */
+	it('dir и aria-label, которые называет ядро, — за ядром', () => {
+		expect(tableParts(mountHost(TableProbe)).table.getAttribute('dir')).toBe('rtl')
+		expect(tableParts(mountHost(TableNameProbe)).table.getAttribute('aria-label')).toBe('Ядро')
+	})
+
+	it('классы и наборы ядра — table; смена набора доходит до неё, а не до окна', () => {
+		const fixture = mountHost(TableProbe)
+		const { viewport, table } = tableParts(fixture)
+
+		expect(table.classList.contains('so-table')).toBe(true)
+		expect(viewport.classList.contains('so-table')).toBe(false)
+		expect(table.getAttribute('dir')).toBe('rtl')
+		expect(table.dataset['stickyHead']).toBe('false')
+
+		fixture.componentInstance.sticky.set(true)
+		fixture.detectChanges()
+
+		expect(table.dataset['stickyHead']).toBe('true')
+		expect(viewport.hasAttribute('data-sticky-head')).toBe(false)
+	})
+
+	it('входы — не атрибуты окна: статические атрибуты входов база снимает', () => {
+		const { viewport } = tableParts(mountHost(TableProbe))
+
+		expect(viewport.hasAttribute('direction')).toBe(false)
+	})
+
+	it('скрытие — окну: visible=false прячет окно, table не трогает', () => {
+		const fixture = mountHost(TableProbe)
+		const { viewport, table } = tableParts(fixture)
+
+		fixture.componentInstance.visible.set(false)
+		fixture.detectChanges()
+
+		expect(viewport.style.display).toBe('none')
+		expect(table.style.display).toBe('')
+
+		fixture.componentInstance.visible.set(true)
+		fixture.detectChanges()
+
+		expect(viewport.style.display).toBe('')
+	})
+
+	it('soElementReady приходит с table, а не с окном', async () => {
+		const fixture = mountHost(TableProbe)
+
+		await nextFrame()
+
+		expect(fixture.componentInstance.ready).toEqual([tableParts(fixture).table])
+	})
+
+	/**
+	 * Окно — элемент потребителя: свойство, которое записали в него мимо
+	 * разметки, база не трогает — она пишет на него только скрытие.
+	 */
+	it('свойство, записанное в окно мимо разметки, переживает смену видимости и набора', () => {
+		const fixture = mountHost(TableProbe)
+		const { viewport } = tableParts(fixture)
+
+		viewport.style.setProperty('--so-probe', '7px')
+
+		fixture.componentInstance.visible.set(false)
+		fixture.componentInstance.sticky.set(true)
+		fixture.detectChanges()
+		fixture.componentInstance.visible.set(true)
+		fixture.detectChanges()
+
+		expect(viewport.style.getPropertyValue('--so-probe')).toBe('7px')
+		expect(viewport.style.color).toBe('red')
 	})
 })

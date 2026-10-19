@@ -2,7 +2,7 @@ import { createComponentEngine } from '../../../base/collection/create/internal'
 import type { TCreateEngineOptions } from '../../../base'
 import { menuExtensions } from './factory'
 import type { TMenuCollection } from './types'
-import type { IMenu } from '../types'
+import type { IMenuOwner } from '../types'
 import type { IMenuItem } from '../item/types'
 
 /**
@@ -11,7 +11,7 @@ import type { IMenuItem } from '../item/types'
  * `engine.options.set({ owner })`.
  */
 export function createEngineMenu(
-	options: TCreateEngineOptions<IMenuItem> & { owner?: IMenu } = {},
+	options: TCreateEngineOptions<IMenuItem> & { owner?: IMenuOwner<any> } = {},
 ): TMenuCollection {
 	return createComponentEngine(menuExtensions(), options)
 }

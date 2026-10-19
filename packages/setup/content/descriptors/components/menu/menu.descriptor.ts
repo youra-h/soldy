@@ -1,10 +1,11 @@
 /**
- * Дескриптор Menu (TMenu) — меню действий у кнопки (APG Menu Button).
+ * Дескриптор Menu (TMenu) — меню действий у кнопки (APG Menu Button) или
+ * контекстное меню области (`openOn: 'contextmenu'`).
  *
  * Наследует StylableDescriptor (size, variant, rendered, visible, tag, наборы и
- * плагины element/ready) и добавляет открытость, сторону панели, выходы для
- * разметки и плагины: коллекцию пунктов, нажатие мимо, клавиатуру, указатель,
- * модель фокуса и связки.
+ * плагины element/ready) и добавляет открытость, сторону панели, способ
+ * открытия, выходы для разметки и плагины: коллекцию пунктов, нажатие мимо,
+ * клавиатуру, открытие и указатель, модель фокуса и связки.
  */
 
 import { defineComponent, defineDescriptor, defineType } from '../../../../protected/define'
@@ -16,6 +17,7 @@ import {
 	CollectionElementsPluginDescriptor,
 	DismissPluginDescriptor,
 	MenuFocusPluginDescriptor,
+	MenuHoverPluginDescriptor,
 	MenuIdsPluginDescriptor,
 	MenuKeyboardPluginDescriptor,
 	MenuPointerPluginDescriptor,
@@ -32,7 +34,8 @@ export const MenuDescriptor = defineDescriptor(() =>
 			 * Триггер — слот внутри корня, как у Popover: корень служит панели
 			 * якорем, а нажатие по открытому триггеру остаётся нажатием внутри
 			 * владельца. Своей ARIA у содержимого слота нет, поэтому сторону
-			 * связки компонент отдаёт ему в scope.
+			 * связки компонент отдаёт ему в scope. У контекстного меню в слоте —
+			 * область, по которой его вызывают, и связки у неё нет.
 			 *
 			 * Пункты — слот `default`; без него меню рисует пункты из `items` —
 			 * только действия. Каждый слот пункта есть у меню как `item-<слот>`
@@ -45,7 +48,8 @@ export const MenuDescriptor = defineDescriptor(() =>
 						triggerAria: defineType<TAriaAttributes>(Object),
 						triggerDataset: defineType<TDatasetAttributes>(Object),
 					},
-					description: 'Кнопка, которая открывает меню. ARIA и data-* для неё — в scope',
+					description:
+						'Кнопка, которая открывает меню, а у контекстного меню — область. ARIA и data-* для кнопки — в scope',
 				},
 				default: { description: 'Пункты меню, группы и разделители' },
 				item: {
@@ -68,9 +72,21 @@ export const MenuDescriptor = defineDescriptor(() =>
 				open: { type: Boolean, triggers: ['change:open'] },
 				placement: { type: String, triggers: ['change:placement'] },
 				/**
+				 * Чем меню открывают: кнопкой (`press`) или как контекстное меню
+				 * области в слоте `trigger` (`contextmenu`).
+				 */
+				openOn: { type: String, triggers: ['change:openOn'] },
+				/**
+				 * Точка вызова контекстного меню в координатах окна. Пишет её плагин
+				 * открытия, шаблон отдаёт якорю панели (`anchor_point`): панель
+				 * встаёт у неё, а не у корня.
+				 */
+				point: { type: Object, protected: true, triggers: ['change:point'] },
+				/**
 				 * Сторона триггера в связке с панелью и его вид «нажат». Вычисляют
 				 * ядро и `TMenuIdsPlugin` (`id`, `aria-controls`), шаблон
-				 * раскладывает в scope слота `trigger`.
+				 * раскладывает в scope слота `trigger`. У области контекстного
+				 * меню связки нет — набор пуст.
 				 */
 				triggerAria: { type: Object, protected: true, triggers: ['change:triggerAria'] },
 				triggerDataset: { type: Object, protected: true, triggers: ['change:open'] },
@@ -97,13 +113,16 @@ export const MenuDescriptor = defineDescriptor(() =>
 			// Клавиши триггера и панели, подсветка — фокус. После dismiss: берёт
 			// у него панель
 			MenuKeyboardPluginDescriptor,
-			// Клик по триггеру и наведение на пункты. После клавиатуры:
-			// подсвечивает через неё
+			// Открытие по способу `openOn` — клик по кнопке или контекстное меню
+			// области. После клавиатуры: открывает через неё
 			MenuPointerPluginDescriptor,
+			// Указатель в панели: подсветка пунктов, открытие подменю наведением и
+			// путь к нему. После клавиатуры: подсвечивает через неё
+			MenuHoverPluginDescriptor,
 			// Фокус при открытии и закрытии, Escape и Tab. После dismiss и
 			// клавиатуры: берёт у них панель, `dismiss` и строку подсвеченного
 			MenuFocusPluginDescriptor,
-			// `id` и ссылки «кнопка ↔ меню»
+			// `id` и ссылки «кнопка ↔ меню» — пока меню открывают кнопкой
 			MenuIdsPluginDescriptor,
 		],
 	}),

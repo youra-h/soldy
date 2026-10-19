@@ -54,8 +54,8 @@
  * `ctrl` остаётся его — смонтированный снова, он рисуется.
  */
 
-import { TItemContext, factoryOf } from '@soldy-ui/core'
-import type { TCollectionEngine, TPlainExtension, TRemoveEvent } from '@soldy-ui/core'
+import { TItemContext, factoryOf, metaOf, plainOf } from '@soldy-ui/core'
+import type { TCollectionEngine, TRemoveEvent } from '@soldy-ui/core'
 import type { TInstanceContext } from '../../../protected/adapter/context'
 import {
 	COLLECTION_ENGINE_ELEVATOR,
@@ -102,7 +102,7 @@ export class TCollectionItemExtension {
 		// Контекст элемента — этого монтирования. Фасад получает его при сборке:
 		// разметка читает его с первой отрисовки
 		const itemContext = engine ? new TItemContext(item, engine.extensions) : undefined
-		const plain: TPlainExtension<object> | undefined = engine?.extensions.plain
+		const plain = plainOf<object>(engine)
 
 		if (itemContext) context.instance.setContext(itemContext)
 
@@ -117,7 +117,7 @@ export class TCollectionItemExtension {
 			if (register) this._leave = register(item, context.bundle)
 
 			// `meta` — после регистрации: движок применяет его к элементу, который уже в нём
-			engine?.extensions.meta?.apply(item, meta)
+			metaOf<object>(engine)?.apply(item, meta)
 		})
 
 		context.events.on('destroy', () => {

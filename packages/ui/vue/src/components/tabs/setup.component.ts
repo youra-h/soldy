@@ -8,6 +8,7 @@ import {
 	useAdapter,
 	useExpose,
 	useCollectionAdapter,
+	useSplitAttrs,
 	VueElevatorFactory,
 	createVueAdapterContext,
 	type SetupContext,
@@ -16,6 +17,7 @@ import BaseTabs, { type TabsProps } from './base.component'
 
 export default {
 	name: '_Tabs',
+	inheritAttrs: false,
 	extends: BaseTabs,
 	expose: useExpose(),
 	setup(props: TabsProps, { emit }: SetupContext) {
@@ -42,6 +44,6 @@ export default {
 
 		const refsCollection = useCollectionAdapter(collectionAdapter, props, emit)
 
-		return { ...refs, ...refsCollection }
+		return { ...refs, ...refsCollection, ...useSplitAttrs() }
 	},
 }

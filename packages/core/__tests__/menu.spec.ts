@@ -6,10 +6,13 @@ import {
 	TMenuGroup,
 	TMenuItem,
 	TMenuSeparator,
+	TMenuSubmenu,
 	createEngineMenu,
 	createEngineSelection,
+	isMenuSubmenu,
+	menuOf,
 } from '@soldy-ui/core'
-import type { IMenuItem } from '@soldy-ui/core'
+import type { IMenuItem, TGroupSection } from '@soldy-ui/core'
 
 /**
  * Модель Menu: состояние меню и то, что из него следует для разметки, и
@@ -26,6 +29,25 @@ function itemOf(items: ReadonlyArray<IMenuItem>, value: string): IMenuItem {
 
 	return item
 }
+
+const values = (items: ReadonlyArray<IMenuItem>): unknown[] => items.map((item) => item.value)
+
+/** Секции коротко: ключ, подпись группы (`null` — без группы) и пункты. */
+const brief = (sections: ReadonlyArray<TGroupSection<IMenuItem>>) =>
+	sections.map(({ key, group, items }) => [
+		key,
+		group === null ? null : group.label,
+		values(items),
+	])
+
+/** Пример владельца: метка группы — в данных, «Переименовать» стоит между пунктами «Правки». */
+const GROUPED = [
+	{ value: 'cut', text: 'Вырезать', _: { group: 'edit' } },
+	{ value: 'rename', text: 'Переименовать' },
+	{ value: 'copy', text: 'Копировать', _: { group: 'edit' } },
+]
+
+const EDIT = [{ key: 'edit', label: 'Правка' }]
 
 describe('TMenu · умолчания', () => {
 	it('закрыто, панель снизу по началу, корень строчный — span', () => {
@@ -101,6 +123,130 @@ describe('TMenu · связка «кнопка ↔ меню»', () => {
 
 		expect(handler).toHaveBeenCalledOnce()
 		expect(handler).toHaveBeenCalledWith(true)
+	})
+})
+
+/**
+ * Контекстное меню — режим того же меню (`openOn`): в слоте `trigger` область,
+ * а не кнопка, и панель встаёт у точки вызова. Открывают его плагины
+ * (`plugins/__tests__/menu.plugin.spec.ts`); здесь — что режим значит для
+ * состояния и разметки.
+ */
+describe('TMenu · контекстное меню', () => {
+	it('по умолчанию меню открывают кнопкой, режим — из конструктора', () => {
+		expect(new TMenu().openOn).toBe('press')
+
+		const menu = new TMenu({ openOn: 'contextmenu' })
+
+		expect(menu.openOn).toBe('contextmenu')
+		expect(menu.getProps()).toMatchObject({ openOn: 'contextmenu' })
+	})
+
+	it('у области связки «кнопка ↔ меню» нет: набор триггера пуст и у открытого', () => {
+		const menu = new TMenu({ openOn: 'contextmenu' })
+
+		expect(menu.triggerAria.toObject()).toEqual({})
+
+		menu.open = true
+
+		expect(menu.triggerAria.toObject()).toEqual({})
+		// Панель — меню в любом режиме, корень несёт открытость
+		expect(menu.aria.get('role')).toBe('menu')
+		expect(menu.dataset.get('open')).toBe('true')
+	})
+
+	it('смена режима на лету ставит и снимает связку — с текущей открытостью', () => {
+		const menu = new TMenu({ open: true })
+		const handler = vi.fn()
+
+		menu.events.on('change:triggerAria', handler)
+		menu.openOn = 'contextmenu'
+
+		expect(menu.triggerAria.toObject()).toEqual({})
+		expect(handler).toHaveBeenLastCalledWith({})
+
+		menu.openOn = 'press'
+
+		expect(menu.triggerAria.toObject()).toEqual({
+			'aria-haspopup': 'menu',
+			'aria-expanded': 'true',
+		})
+	})
+
+	it('change:openOn — только на смену', () => {
+		const menu = new TMenu()
+		const handler = vi.fn()
+
+		menu.events.on('change:openOn', handler)
+		menu.openOn = 'press'
+		menu.openOn = 'contextmenu'
+		menu.openOn = 'contextmenu'
+
+		expect(handler).toHaveBeenCalledOnce()
+		expect(handler).toHaveBeenCalledWith('contextmenu')
+	})
+
+	it('точки нет, пока меню не вызвали', () => {
+		expect(new TMenu({ openOn: 'contextmenu' }).point).toBe(null)
+	})
+
+	/**
+	 * Точка уходит за границу core → ui значением: адаптер узнаёт о смене по
+	 * новому объекту, а та же точка — не смена.
+	 */
+	it('точка — значение: новый объект на смену, та же точка ничего не шлёт', () => {
+		const menu = new TMenu({ openOn: 'contextmenu' })
+		const handler = vi.fn()
+		const given = { x: 120, y: 80 }
+
+		menu.events.on('change:point', handler)
+		menu.point = given
+
+		const first = menu.point
+
+		expect(first).toEqual({ x: 120, y: 80 })
+		// Свой объект: чужой, поправленный после записи, точку не двигает
+		expect(first).not.toBe(given)
+		expect(handler).toHaveBeenCalledOnce()
+		expect(handler).toHaveBeenLastCalledWith(first)
+
+		menu.point = { x: 120, y: 80 }
+
+		expect(menu.point).toBe(first)
+		expect(handler).toHaveBeenCalledOnce()
+
+		menu.point = { x: 300, y: 80 }
+
+		expect(menu.point).toEqual({ x: 300, y: 80 })
+		expect(menu.point).not.toBe(first)
+		expect(handler).toHaveBeenCalledTimes(2)
+
+		menu.point = null
+
+		expect(menu.point).toBe(null)
+		expect(handler).toHaveBeenLastCalledWith(null)
+	})
+
+	it('закрытие точку не снимает: гаснущая панель стоит, где её открыли', () => {
+		const menu = new TMenu({ openOn: 'contextmenu' })
+
+		menu.point = { x: 40, y: 60 }
+		menu.open = true
+		menu.open = false
+
+		expect(menu.point).toEqual({ x: 40, y: 60 })
+	})
+
+	it('смена режима снимает точку: кнопка открывает меню у себя', () => {
+		const menu = new TMenu({ openOn: 'contextmenu' })
+		const handler = vi.fn()
+
+		menu.point = { x: 40, y: 60 }
+		menu.events.on('change:point', handler)
+		menu.openOn = 'press'
+
+		expect(menu.point).toBe(null)
+		expect(handler).toHaveBeenCalledWith(null)
 	})
 })
 
@@ -394,5 +540,407 @@ describe('фасад меню', () => {
 
 		expect(engine.extensions.selection.mode).toBe('multiple')
 		expect(facade.selected).toEqual([grid, ruler])
+	})
+})
+
+/**
+ * Пункт с подменю — пункт меню, в котором стоит, и владелец своих пунктов.
+ * Клавиши уровней, наведение и фокус — плагины
+ * (`plugins/__tests__/menu-submenu.plugin.spec.ts`); здесь — состояние
+ * пункта и то, что его коллекция и коллекция меню делают с открытостью и
+ * выбором.
+ */
+describe('TMenuSubmenu · пункт', () => {
+	it('пункт меню с ролью menuitem: объявляет подменю и закрыт', () => {
+		const share = new TMenuSubmenu({ value: 'share', text: 'Поделиться' })
+
+		expect(share).toBeInstanceOf(TMenuItem)
+		expect(isMenuSubmenu(share)).toBe(true)
+		expect(isMenuSubmenu(new TMenuItem())).toBe(false)
+		expect(share.open).toBe(false)
+		expect(share.checkable).toBe(false)
+		expect(share.tag).toBe('div')
+		expect(share.classes.toArray()).toContain('so-menu-item')
+		expect(share.aria.toObject()).toEqual({
+			role: 'menuitem',
+			'aria-haspopup': 'menu',
+			'aria-expanded': 'false',
+		})
+		expect(share.dataset.get('open')).toBe('false')
+	})
+
+	it('открытость — aria-expanded на строке и data-open для темы', () => {
+		const share = new TMenuSubmenu({ open: true })
+
+		expect(share.aria.get('aria-expanded')).toBe('true')
+		expect(share.dataset.get('open')).toBe('true')
+		expect(share.getProps()).toMatchObject({ open: true })
+
+		share.open = false
+
+		expect(share.aria.get('aria-expanded')).toBe('false')
+		expect(share.dataset.get('open')).toBe('false')
+	})
+
+	it('change:open — только на смену', () => {
+		const share = new TMenuSubmenu()
+		const handler = vi.fn()
+
+		share.events.on('change:open', handler)
+		share.open = false
+		share.open = true
+		share.open = true
+
+		expect(handler).toHaveBeenCalledOnce()
+		expect(handler).toHaveBeenCalledWith(true)
+	})
+
+	// `id` и ссылки ядро не пишет: их пишет плагин связок (plugins, ids.plugin.spec)
+	it('панель — меню, без id; набор панели живой', () => {
+		const share = new TMenuSubmenu()
+		const handler = vi.fn()
+
+		expect(share.panelAria.toObject()).toEqual({ role: 'menu' })
+
+		share.events.on('change:panelAria', handler)
+		share.panelAria.add('id', 'x')
+
+		expect(handler).toHaveBeenCalledWith({ role: 'menu', id: 'x' })
+	})
+
+	it('классы панели — блок панели меню с размером и вариантом подменю', () => {
+		const share = new TMenuSubmenu({ variant: 'danger' })
+		const handler = vi.fn()
+
+		expect(share.panelClasses.toArray()).toEqual([
+			'so-menu__panel',
+			'so-menu__panel--size-normal',
+			'so-menu__panel--variant-danger',
+		])
+
+		share.events.on('change:panelClasses', handler)
+		share.size = 'lg'
+		share.variant = undefined
+
+		expect(share.panelClasses.toArray()).toEqual(['so-menu__panel', 'so-menu__panel--size-lg'])
+		expect(handler).toHaveBeenLastCalledWith(['so-menu__panel', 'so-menu__panel--size-lg'])
+	})
+
+	it('выбор в подменю: сообщает choose и закрывается', () => {
+		const share = new TMenuSubmenu({ open: true })
+		const link = new TMenuItem({ value: 'link' })
+		const seen: boolean[] = []
+
+		share.events.on('choose', (item) => {
+			expect(item).toBe(link)
+			seen.push(share.open)
+		})
+		share.notifyChoose(link)
+
+		// Сообщает раньше, чем закрывается: меню над ним закрывает всю цепочку само
+		expect(seen).toEqual([true])
+		expect(share.open).toBe(false)
+	})
+})
+
+describe('коллекция меню · подменю', () => {
+	/**
+	 * Меню с подменю «Поделиться» (ссылка, почта) и действием «Изменить»;
+	 * у подменю своя коллекция — так их собирает разметка.
+	 */
+	function tree() {
+		const root = new TMenu({ open: true })
+		const share = new TMenuSubmenu({ value: 'share', text: 'Поделиться' })
+		const send = new TMenuSubmenu({ value: 'send', text: 'Отправить' })
+		const edit = new TMenuItem({ value: 'edit', text: 'Изменить' })
+		const link = new TMenuItem({ value: 'link', text: 'Ссылка' })
+		const mail = new TMenuItem({ value: 'mail', text: 'Почта' })
+		const engine = createEngineMenu({ owner: root, items: [share, send, edit] })
+		const shareEngine = createEngineMenu({ owner: share, items: [link, mail] })
+
+		return { root, share, send, edit, link, mail, engine, shareEngine }
+	}
+
+	it('подменю, пришедшее готовым, остаётся подменю', () => {
+		const { share, send, edit, engine } = tree()
+
+		expect(engine.extensions.batch.items).toEqual([share, send, edit])
+		expect(share.aria.get('tabindex')).toBe('-1')
+	})
+
+	it('openItem открывает подменю, выключенному и действию — отказ', () => {
+		const { share, edit, engine } = tree()
+		const { menu } = engine.extensions
+
+		expect(menu.openItem(share)).toBe(true)
+		expect(share.open).toBe(true)
+		expect(menu.opened).toBe(share)
+
+		// Открывает, а не переключает: открытое наведением клик не закроет
+		expect(menu.openItem(share)).toBe(true)
+		expect(share.open).toBe(true)
+
+		expect(menu.openItem(edit)).toBe(false)
+
+		const off = new TMenuSubmenu({ value: 'off', disabled: true })
+
+		engine.extensions.plain.push(off)
+
+		expect(menu.openItem(off)).toBe(false)
+		expect(off.open).toBe(false)
+	})
+
+	it('пункт с подменю — не действие: chooseItem ему отказывает, меню открыто', () => {
+		const { root, share, engine } = tree()
+		const choose = vi.fn()
+
+		engine.extensions.menu.events.on('choose', choose)
+
+		expect(engine.extensions.menu.chooseItem(share)).toBe(false)
+		expect(root.open).toBe(true)
+		expect(choose).not.toHaveBeenCalled()
+	})
+
+	it('открыто одно: открывшееся закрывает прежнее — и из кода тоже', () => {
+		const { share, send, engine } = tree()
+
+		engine.extensions.menu.openItem(share)
+		send.open = true
+
+		expect(share.open).toBe(false)
+		expect(send.open).toBe(true)
+		expect(engine.extensions.menu.opened).toBe(send)
+	})
+
+	it('закрылось меню — закрылись подменю всех уровней', () => {
+		const { root, share } = tree()
+		const deep = new TMenuSubmenu({ value: 'deep' })
+
+		createEngineMenu({ owner: share, items: [deep] })
+
+		share.open = true
+		deep.open = true
+		root.open = false
+
+		expect(share.open).toBe(false)
+		expect(deep.open).toBe(false)
+	})
+
+	it('закрылось подменю — меню над ним открыто: уровень закрывается один', () => {
+		const { root, share } = tree()
+
+		share.open = true
+		share.open = false
+
+		expect(root.open).toBe(true)
+	})
+
+	it('выбор в подменю закрывает меню целиком и сообщает choose — уже закрытым', () => {
+		const { root, share, link, engine, shareEngine } = tree()
+		const seen: string[] = []
+
+		share.open = true
+
+		engine.extensions.menu.events.on('choose', (item) =>
+			seen.push(`меню ${String(item.value)} ${root.open} ${share.open}`),
+		)
+		shareEngine.extensions.menu.events.on('choose', (item) =>
+			seen.push(`подменю ${String(item.value)} ${root.open} ${share.open}`),
+		)
+
+		expect(shareEngine.extensions.menu.chooseItem(link)).toBe(true)
+
+		// Выбор доходит до каждого меню над подменю: корень узнаёт первым
+		expect(seen).toEqual(['меню link false false', 'подменю link false false'])
+	})
+
+	it('выбор на втором уровне доходит до корня', () => {
+		const { root, share, engine } = tree()
+		const deep = new TMenuSubmenu({ value: 'deep' })
+		const leaf = new TMenuItem({ value: 'leaf' })
+		const chosen = vi.fn()
+
+		const shareEngine = createEngineMenu({ owner: share, items: [deep] })
+		const deepEngine = createEngineMenu({ owner: deep, items: [leaf] })
+
+		share.open = true
+		deep.open = true
+		engine.extensions.menu.events.on('choose', chosen)
+
+		deepEngine.extensions.menu.createItem(leaf).choose()
+
+		expect(chosen).toHaveBeenCalledWith(leaf)
+		expect([root.open, share.open, deep.open]).toEqual([false, false, false])
+		expect(shareEngine.extensions.menu.opened).toBe(null)
+	})
+
+	it('выключенный пункт подменю не выбирается: никто не закрывается', () => {
+		const { root, share, shareEngine } = tree()
+		const off = new TMenuItem({ value: 'off', disabled: true })
+
+		shareEngine.extensions.plain.push(off)
+		share.open = true
+
+		expect(shareEngine.extensions.menu.chooseItem(off)).toBe(false)
+		expect([root.open, share.open]).toEqual([true, true])
+	})
+
+	it('флажок в подменю отмечается, меню открыты', () => {
+		const { root, share } = tree()
+		const grid = new TMenuCheckboxItem({ value: 'grid' })
+		const { menu, selection } = createEngineMenu({ owner: share, items: [grid] }).extensions
+
+		share.open = true
+
+		expect(menu.toggleItem(grid)).toBe(true)
+		expect(selection.selected).toEqual([grid])
+		expect([root.open, share.open]).toEqual([true, true])
+	})
+
+	it('размер меню — подменю, а от подменю — его пунктам', () => {
+		const { root, share, link } = tree()
+
+		root.size = 'lg'
+
+		expect(share.size).toBe('lg')
+		expect(link.size).toBe('lg')
+		expect(share.panelClasses.toArray()).toContain('so-menu__panel--size-lg')
+	})
+
+	it('пункт с подменю, снятый из коллекции, меню больше не трогает', () => {
+		const { root, share, send, engine } = tree()
+		const chosen = vi.fn()
+
+		engine.extensions.menu.events.on('choose', chosen)
+		engine.extensions.plain.remove(share)
+
+		share.open = true
+		send.open = true
+		share.notifyChoose(new TMenuItem({ value: 'x' }))
+
+		expect(chosen).not.toHaveBeenCalled()
+		expect(root.open).toBe(true)
+	})
+
+	it('нажатие строки пункта с подменю — через item-адаптер: открывает', () => {
+		const { share, engine } = tree()
+
+		engine.extensions.menu.createItem(share).open()
+
+		expect(share.open).toBe(true)
+	})
+
+	it('охранник menuOf находит расширение меню, у чужой коллекции — нет', () => {
+		const { engine } = tree()
+
+		expect(menuOf(engine)).toBe(engine.extensions.menu)
+		expect(menuOf(createEngineSelection())).toBeUndefined()
+		expect(menuOf(null)).toBeUndefined()
+	})
+})
+
+describe('фасад подменю', () => {
+	it('владелец — пункт с подменю: выбор в фасаде закрывает его и сообщает choose', () => {
+		const share = new TMenuSubmenu({ open: true })
+		const facade = new TMenuCollectionFacade(
+			{ items: [{ value: 'link' }, { value: 'mail' }] },
+			{ owner: share },
+		)
+		const choose = vi.fn()
+
+		facade.events.on('choose', choose)
+		facade.extensions.menu.chooseItem(itemOf(facade.items, 'link'))
+
+		expect(choose).toHaveBeenCalledWith(itemOf(facade.items, 'link'))
+		expect(share.open).toBe(false)
+	})
+})
+
+/**
+ * Группы пунктов — расширение коллекции `group`: показанное идёт по группам,
+ * и стрелки, которые ходят по показанному, идут тем же порядком, что экран.
+ * Разметку групп и разделителей проверяет `ui/vue/__tests__/menu.spec.ts`.
+ */
+describe('коллекция меню · группы', () => {
+	it('у createEngineMenu: показанное по группам, секции с подписью', () => {
+		const { batch, group } = createEngineMenu({ items: GROUPED }).extensions
+
+		group.groups = EDIT
+
+		expect(values(batch.shown)).toEqual(['cut', 'copy', 'rename'])
+		expect(values(batch.items)).toEqual(['cut', 'rename', 'copy'])
+		expect(brief(group.sections)).toEqual([
+			['group:edit', 'Правка', ['cut', 'copy']],
+			['free', null, ['rename']],
+		])
+	})
+
+	it('движок снаружи: фасад доставляет группировку, метки из данных доезжают', () => {
+		const engine = createEngineSelection({ items: GROUPED })
+		const facade = new TMenuCollectionFacade({ groups: EDIT }, { owner: new TMenu(), engine })
+
+		expect(engine.extensions.group).toBe(facade.extensions.group)
+		expect(values(facade.shown)).toEqual(['cut', 'copy', 'rename'])
+		expect(brief(facade.sections)).toEqual([
+			['group:edit', 'Правка', ['cut', 'copy']],
+			['free', null, ['rename']],
+		])
+	})
+})
+
+describe('фасад меню · группы', () => {
+	it('groupBy, groups и sections — проекция расширения, change:sections — пробросом', () => {
+		const facade = new TMenuCollectionFacade(
+			{ items: [{ value: 'a' }, { value: 'b' }] },
+			{ owner: new TMenu() },
+		)
+		const sections = vi.fn()
+		const by = (item: IMenuItem) => (item.value === 'b' ? 'first' : undefined)
+
+		facade.events.on('change:sections', sections)
+
+		facade.groupBy = by
+		facade.groups = [{ key: 'first', label: 'Первая' }]
+
+		expect(facade.extensions.group.groupBy).toBe(by)
+		expect(facade.groupBy).toBe(by)
+		expect(facade.groups).toEqual([{ key: 'first', label: 'Первая' }])
+		expect(values(facade.shown)).toEqual(['b', 'a'])
+		expect(facade.sections).toBe(facade.extensions.group.sections)
+		expect(brief(facade.sections)).toEqual([
+			['group:first', 'Первая', ['b']],
+			['free', null, ['a']],
+		])
+		expect(sections).toHaveBeenLastCalledWith(facade.sections)
+	})
+
+	it('пропсы конструктора: группировка — до состава', () => {
+		const facade = new TMenuCollectionFacade(
+			{
+				items: [{ value: 'a' }, { value: 'b' }, { value: 'c' }],
+				groupBy: (item) => (item.value === 'a' ? undefined : 'rest'),
+				groups: [{ key: 'rest', label: 'Остальное' }],
+			},
+			{ owner: new TMenu() },
+		)
+
+		expect(values(facade.shown)).toEqual(['b', 'c', 'a'])
+		expect(brief(facade.sections)).toEqual([
+			['group:rest', 'Остальное', ['b', 'c']],
+			['free', null, ['a']],
+		])
+	})
+
+	it('движок снаружи свою группировку не теряет: незаданное и пустое не применяется', () => {
+		const engine = createEngineMenu({ items: GROUPED })
+		const by = (item: IMenuItem) => (item.value === 'rename' ? 'edit' : undefined)
+
+		engine.extensions.group.groups = EDIT
+		engine.extensions.group.groupBy = by
+
+		new TMenuCollectionFacade({ groups: [] }, { owner: new TMenu(), engine })
+
+		expect(engine.extensions.group.groups).toEqual(EDIT)
+		expect(engine.extensions.group.groupBy).toBe(by)
 	})
 })

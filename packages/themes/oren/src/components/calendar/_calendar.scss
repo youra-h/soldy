@@ -39,6 +39,7 @@
 //     .so-popover__content          раскладка в подложке — ровно по карточке
 //       .so-calendar__picker        карточка: список и шапка
 //         .so-calendar__picker-list   список месяцев или лет — ListBox
+//           .so-list-box__list          узел списка: плитки сеткой
 //         .so-calendar__picker-header шапка: год и стрелки (в DOM после списка)
 //           .so-calendar__picker-heading  год или отрезок лет — кнопка уровня
 //           .so-calendar__picker-prev     стрелка «назад» (Button)
@@ -545,7 +546,7 @@
 	}
 
 	// Сегодня и выбран — рамка ступени границы на насыщенной заливке не годится:
-	// заливка — середина шкалы, и граница отходит от неё в светлой схеме к
+	// заливка — насыщенная ступень, и граница отходит от неё в светлой схеме к
 	// белому тексту, а в тёмной — от него, тёмным краем заливки. Остаётся
 	// внутренняя рамка цвета текста на заливке, полупрозрачная: «сегодня» видно
 	// в обеих схемах, а плитка читается выбранной.
@@ -768,10 +769,18 @@ $picker-panel: '.so-calendar__month > .so-calendar__heading > .so-popover__panel
 // Строка выше ячейки дня на четверть: плитки почти квадратные на любом
 // размере, а длинной подписи (год `th-TH` с эрой) хватает места на вторую
 // строку.
+//
+// Плитки — дети узла списка (`.so-list-box__list`), а не корня ListBox: корень
+// — рамка вокруг шапки, списка и подвала, и сетку держит узел списка. Корню
+// остаётся снять рамку, поля и ширину списка.
 .so-calendar__picker > .so-calendar__picker-list {
-	@apply grid min-w-0 max-w-none grid-cols-4 border-0 p-0;
-	grid-template-rows: repeat(3, calc(1.25 * var(--so-calendar-cell)));
-	gap: calc(2 * var(--so-calendar-bleed));
+	@apply min-w-0 max-w-none border-0 p-0;
+
+	> .so-list-box__list {
+		@apply grid grid-cols-4;
+		grid-template-rows: repeat(3, calc(1.25 * var(--so-calendar-cell)));
+		gap: calc(2 * var(--so-calendar-bleed));
+	}
 }
 
 // Полоса жеста — у нижнего края карточки, когда жест включён (`swipe`): панель
@@ -862,7 +871,7 @@ $picker-panel: '.so-calendar__month > .so-calendar__heading > .so-popover__panel
 // и многоточие срезало бы номер — то, чем плитки и различаются. Полей у строки
 // нет: подпись и так стоит по центру, а с полями не поместились бы и слова,
 // которым плитки хватает, — «ஜூலை» у `ta-IN` на любом размере.
-.so-calendar__picker-list > .so-list-box-item {
+.so-calendar__picker-list > .so-list-box__list > .so-list-box-item {
 	@apply flex;
 
 	> .so-button {

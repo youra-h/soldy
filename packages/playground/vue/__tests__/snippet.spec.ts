@@ -12,8 +12,9 @@
  */
 
 import { describe, it, expect } from 'vitest'
+import { compileScript, parse } from 'vue/compiler-sfc'
 import type { IPreviewSnippets, TPropControl, TPropOwner } from '@soldy-ui/playground-shared'
-import { COMPONENTS } from '@soldy-ui/playground-shared'
+import { COMPONENTS, presetForProp, valuesForProp } from '@soldy-ui/playground-shared'
 import { TAriaPlugin } from '@soldy-ui/plugins'
 import { loadHost } from '../src/hosts'
 
@@ -57,6 +58,48 @@ const control = (overrides: Partial<TPropControl> & TPropOwner): TPropControl =>
 	description: '',
 	...overrides,
 })
+
+/** Опции формата поля числа — пресеты строки по имени; без них проверять нечего. */
+const FORMATS = valuesForProp('number-input', 'formatOptions')
+
+if (!FORMATS) throw new Error('у строки formatOptions поля числа нет пресетов')
+
+/** Значение, которое прочтёт код с этим выражением. */
+function evaluate(expression: string | undefined): unknown {
+	if (expression === undefined) throw new Error('выражения нет')
+
+	return new Function(`return (${expression})`)()
+}
+
+/**
+ * Пример Vue, разобранный компилятором SFC: выражения привязок `:prop` корня
+ * шаблона по имени пропа, с текстом, который компилятор вернул из сущностей.
+ * Ошибка разбора шаблона или скрипта роняет тест — такой пример в проекте не
+ * скомпилировался бы.
+ */
+function vueBindings(code: string): Record<string, string> {
+	const { descriptor, errors } = parse(code, { filename: 'Example.vue' })
+
+	expect(errors.map((error) => error.message)).toEqual([])
+	// Скрипт `parse` не разбирает — это делает компилятор скрипта, и
+	// синтаксическая ошибка в нём бросает
+	compileScript(descriptor, { id: 'example' })
+
+	const root = descriptor.template?.ast?.children.find((node) => 'props' in node)
+
+	if (!root || !('props' in root)) throw new Error('у шаблона примера нет корня')
+
+	const bindings: Record<string, string> = {}
+
+	for (const prop of root.props) {
+		if (!('exp' in prop) || prop.name !== 'bind') continue
+		if (!prop.arg || !('content' in prop.arg) || !prop.exp || !('content' in prop.exp)) continue
+
+		bindings[prop.arg.content] = prop.exp.content
+	}
+
+	return bindings
+}
 
 describe('Vue: instanceSnippet', () => {
 	it('свойство компонента пишет в сам инстанс', () => {
@@ -258,6 +301,62 @@ describe.each([
 })
 
 /**
+ * Значение-объект или список — литерал JS, а не JSON: двойные кавычки JSON
+ * обрывали атрибут, где выражение само стоит в двойных кавычках, и пример,
+ * вставленный в проект, не компилировался. Код обеих колонок разбирает
+ * компилятор SFC, и выражение читается тем же значением.
+ */
+describe('Vue: значение-объект компилируется', () => {
+	it('пресет строки snap ползунка — метки списком объектов', () => {
+		const slider = entryOf('slider')
+		const preset = presetForProp('slider', 'snap')
+		const own = vueBindings(propSnippet(slider, 'snap', 'magnet', preset))
+		const instance = vueBindings(
+			instanceSnippet(
+				slider,
+				control({ name: 'snap', scope: 'component', preset }),
+				'magnet',
+			),
+		)
+
+		expect(evaluate(own.marks)).toEqual(preset.marks)
+		expect(evaluate(own.snap)).toBe('magnet')
+		expect(evaluate(instance.marks)).toEqual(preset.marks)
+		expect(instance.ctrl).toBe('instance')
+	})
+
+	/** В колонке экземпляра значение — присваиванием в скрипте, а не в шаблоне. */
+	it.each(Object.entries(FORMATS))('formatOptions поля числа — пресет %s', (_name, value) => {
+		const numberInput = entryOf('number-input')
+		const own = vueBindings(propSnippet(numberInput, 'formatOptions', value))
+		const code = instanceSnippet(
+			numberInput,
+			control({ name: 'formatOptions', scope: 'component' }),
+			value,
+		)
+
+		expect(evaluate(own.formatOptions)).toEqual(value)
+		expect(vueBindings(code)).toEqual({ ctrl: 'instance' })
+		expect(evaluate(code.match(/^instance\.formatOptions = (.+)$/m)?.[1])).toEqual(value)
+	})
+
+	/**
+	 * Кавычка оборвала бы атрибут, а `&` шаблон читает началом сущности:
+	 * `&amp;` дошёл бы до выражения как `&`. Обе — сущностями.
+	 */
+	it('кавычка и & в строке — сущностями, выражение — исходная строка', () => {
+		const button = entryOf('button')
+		const quoted = propSnippet(button, 'text', 'Он сказал "да"')
+		const ampersand = propSnippet(button, 'text', 'A &amp; B')
+
+		expect(quoted).toContain(`<Button :text="'Он сказал &quot;да&quot;'" />`)
+		expect(evaluate(vueBindings(quoted).text)).toBe('Он сказал "да"')
+		expect(ampersand).toContain(`<Button :text="'A &amp;amp; B'" />`)
+		expect(evaluate(vueBindings(ampersand).text)).toBe('A &amp; B')
+	})
+})
+
+/**
  * Код React — те же случаи синтаксисом JSX: пример — функциональный компонент,
  * строка в кавычках, остальное в `{}`. Экземпляр и движок — один на
  * монтирование: `useState` с инициализатором, и запись свойства там же, до
@@ -395,6 +494,14 @@ describe('React: propSnippet', () => {
 		)
 		expect(react.propSnippet(button, 'text', 'A &amp; B')).toContain(
 			`<Button text={'A &amp; B'} />`,
+		)
+	})
+
+	it('объект — литералом JS в {}', () => {
+		const format = { style: 'percent', maximumFractionDigits: 1 }
+
+		expect(react.propSnippet(entryOf('number-input'), 'formatOptions', format)).toContain(
+			"<NumberInput formatOptions={{ style: 'percent', maximumFractionDigits: 1 }} />",
 		)
 	})
 })
@@ -627,6 +734,14 @@ describe('Svelte: propSnippet', () => {
 		)
 		expect(svelte.propSnippet(button, 'text', '{name}')).toContain(`<Button text={'{name}'} />`)
 	})
+
+	it('объект — литералом JS в {}', () => {
+		const format = { style: 'percent', maximumFractionDigits: 1 }
+
+		expect(svelte.propSnippet(entryOf('number-input'), 'formatOptions', format)).toContain(
+			"<NumberInput formatOptions={{ style: 'percent', maximumFractionDigits: 1 }} />",
+		)
+	})
 })
 
 describe('Svelte: пресет строки', () => {
@@ -853,6 +968,14 @@ describe('Solid: propSnippet', () => {
 			`<Button text={'A &amp; B'} />`,
 		)
 	})
+
+	it('объект — литералом JS в {}', () => {
+		const format = { style: 'percent', maximumFractionDigits: 1 }
+
+		expect(solid.propSnippet(entryOf('number-input'), 'formatOptions', format)).toContain(
+			"<NumberInput formatOptions={{ style: 'percent', maximumFractionDigits: 1 }} />",
+		)
+	})
 })
 
 describe('Solid: пресет строки', () => {
@@ -1016,6 +1139,13 @@ describe('Web Components: propSnippet', () => {
 		)
 		expect(webc.propSnippet(button, 'text', 'A & B')).toContain(
 			'<button is="so-button" text="A &amp; B"></button>',
+		)
+	})
+
+	/** Список атрибутом не передать: модуль пишет его свойством, литералом JS. */
+	it('список — свойством из модуля, литералом JS', () => {
+		expect(webc.propSnippet(entryOf('list-box'), 'value', ['a', 'b'])).toContain(
+			"\telement.value = ['a', 'b']",
 		)
 	})
 

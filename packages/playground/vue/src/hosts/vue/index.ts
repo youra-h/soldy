@@ -13,6 +13,9 @@ import { instanceSnippet, propSnippet } from './snippet'
  */
 const locale = shallowRef<TLocale>(enUS)
 
+/** Сколько приложений превью смонтировано — номер в префиксе id следующего (см. `mount`). */
+let apps = 0
+
 /** Чем рисовать: фикстура по ключу, без ключа — превью компонента. */
 function drawing(component: string, fixture: string | undefined): Component {
 	const found =
@@ -33,6 +36,15 @@ function drawing(component: string, fixture: string | undefined): Component {
  *
  * Пропсы приложение держит в своём `shallowRef`: `update` подменяет набор
  * целиком, и Vue отдаёт компоненту то, что сменилось.
+ *
+ * Префикс id у каждого приложения свой (`app.config.idPrefix`). `useId` Vue
+ * выводит id из места в дереве приложения, и у двух одинаковых превью — их по
+ * два на строку страницы — совпали бы id монтирования, а с ними `id` частей и
+ * пометки панелей владельцами (`data-owner`). Плагины слоя находят панель по
+ * пометке первой в документе, и жест, фокус и немой фон уходили бы на чужую
+ * скрытую панель. Несколько приложений на странице Vue и просит различать
+ * префиксом; `v` — по умолчанию, у оболочки. Сторожит «пометки панелей
+ * владельцами не повторяются» в `__tests__/smoke.spec.ts`.
  */
 const host: IPreviewHost = {
 	previews: Object.keys(PREVIEW_COMPONENTS),
@@ -50,6 +62,7 @@ const host: IPreviewHost = {
 				),
 		})
 
+		app.config.idPrefix = `preview${++apps}`
 		app.mount(node)
 
 		return {

@@ -20,6 +20,7 @@ import {
 	TField,
 	TMenu,
 	TMenuGroup,
+	TMenuSubmenu,
 	TPopover,
 	TRadioGroup,
 	TRadioGroupCollectionFacade,
@@ -43,6 +44,7 @@ import {
 	TFieldIdsPlugin,
 	TMenuGroupIdsPlugin,
 	TMenuIdsPlugin,
+	TMenuSubmenuIdsPlugin,
 	TModalIdsPlugin,
 	TPluginBundle,
 	TPopoverIdsPlugin,
@@ -103,6 +105,51 @@ describe('оверлеи', () => {
 		})
 		expect(menu.aria.get('id')).toBe('m1-panel')
 		expect(menu.aria.get('aria-labelledby')).toBe('m1-trigger')
+	})
+
+	/**
+	 * Контекстное меню вызывают над областью, а она не кнопка: ни `id`
+	 * триггера, ни ссылок у неё нет, и панели не на что ссылаться за именем.
+	 * `id` панели — её собственный, остаётся.
+	 */
+	it('Menu: у контекстного меню связки нет с первой отрисовки, смена режима её ставит и снимает', () => {
+		const menu = new TMenu({ openOn: 'contextmenu' })
+
+		new TPluginBundle(menu, 'm1').use(TMenuIdsPlugin)
+
+		expect(menu.triggerAria.toObject()).toEqual({})
+		expect(menu.aria.get('id')).toBe('m1-panel')
+		expect(menu.aria.has('aria-labelledby')).toBe(false)
+
+		menu.openOn = 'press'
+
+		expect(menu.triggerAria.get('id')).toBe('m1-trigger')
+		expect(menu.triggerAria.get('aria-controls')).toBe('m1-panel')
+		expect(menu.aria.get('aria-labelledby')).toBe('m1-trigger')
+
+		menu.openOn = 'contextmenu'
+
+		expect(menu.triggerAria.toObject()).toEqual({})
+		expect(menu.aria.has('aria-labelledby')).toBe(false)
+	})
+
+	it('Menu.Submenu: строка и панель подменю ссылаются друг на друга — имя подменю от строки', () => {
+		const submenu = new TMenuSubmenu({ text: 'Поделиться' })
+
+		new TPluginBundle(submenu, 'm1').use(TMenuSubmenuIdsPlugin)
+
+		expect(submenu.aria.toObject()).toEqual({
+			role: 'menuitem',
+			'aria-haspopup': 'menu',
+			'aria-expanded': 'false',
+			id: 'm1-row',
+			'aria-controls': 'm1-panel',
+		})
+		expect(submenu.panelAria.toObject()).toEqual({
+			role: 'menu',
+			id: 'm1-panel',
+			'aria-labelledby': 'm1-row',
+		})
 	})
 
 	it('Menu.Group: имя группы — подпись, пока она не пуста', () => {

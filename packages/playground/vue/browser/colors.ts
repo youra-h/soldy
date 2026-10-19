@@ -1,11 +1,14 @@
 /**
  * Чем меряются цвета в настоящем браузере — общее для спеков, которые смотрят
- * на тему (`button-view.spec.ts`, `switch-view.spec.ts`, `tabs-view.spec.ts`).
+ * на тему (`button-view.spec.ts`, `switch-view.spec.ts`, `tabs-view.spec.ts`,
+ * `toasts.spec.ts`).
  *
  * Цвета вида решает дизайн, и спеки их не знают (`themes/oren/AGENTS.md`, «Что
  * тестом не проверяется»). Знают они отношение: насколько цвет ушёл от
- * подложки и в какую сторону. Одна копия на всех — счёт светлоты и слой поверх
- * слоя тут неочевидные, и разъехаться двум копиям было бы нечему помешать.
+ * подложки и в какую сторону, а читается ли текст на своём фоне — отношение
+ * контраста по WCAG (`contrast`). Одна копия на всех — счёт светлоты, яркости
+ * и слой поверх слоя тут неочевидные, и разъехаться двум копиям было бы нечему
+ * помешать.
  *
  * Исключение — режим принудительных цветов: палитру там выбирает
  * пользователь, и часть, которую тема красит сама, обязана взять его
@@ -100,17 +103,22 @@ export const outlined = (element: Element, pseudo?: string): boolean => {
 }
 
 /**
+ * Байт канала sRGB — в линейный свет: из него считаются и OKLab, и яркость
+ * WCAG. Порог перегиба у WCAG 2 записан как 0,03928, у sRGB — 0,04045, но
+ * между ними не лежит ни одного байта, и счёт один.
+ */
+function linear(value: number): number {
+	const unit = value / 255
+
+	return unit <= 0.04045 ? unit / 12.92 : ((unit + 0.055) / 1.055) ** 2.4
+}
+
+/**
  * Цвет слоёв в OKLab: светлота и две оси цвета — `a` (зелёный — красный) и
  * `b` (синий — жёлтый). Слои кладутся тем же холстом (`pixel`).
  */
 export function oklab(colors: string[]): { lightness: number; a: number; b: number } {
 	const [red, green, blue] = pixel(colors)
-	const linear = (value: number) => {
-		const unit = value / 255
-
-		return unit <= 0.04045 ? unit / 12.92 : ((unit + 0.055) / 1.055) ** 2.4
-	}
-
 	const [r, g, b] = [linear(red), linear(green), linear(blue)]
 	const long = Math.cbrt(0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b)
 	const medium = Math.cbrt(0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b)
@@ -144,3 +152,32 @@ export function hue(colors: string[]): { angle: number; chroma: number } {
 /** Насколько цвет отошёл от подложки — со знаком: плюс светлее, минус темнее. */
 export const shift = (color: string, backdrop: string): number =>
 	lightness([backdrop, color]) - lightness([backdrop])
+
+/**
+ * Относительная яркость слоёв по WCAG 2 — из байтов холста (`pixel`). Слои
+ * обязаны закрыть холст целиком: у просвечивающего итога байты цвета без его
+ * прозрачности — не тот цвет, который видно.
+ */
+function luminance(colors: string[]): number {
+	const [red, green, blue, alpha] = pixel(colors)
+
+	if (alpha !== 255) throw new Error(`${colors.join(' + ')}: подложка просвечивает`)
+
+	return 0.2126 * linear(red) + 0.7152 * linear(green) + 0.0722 * linear(blue)
+}
+
+/**
+ * Отношение контраста по WCAG 2 — от 1 до 21: цвет поверх подложки против
+ * самой подложки. Подложка — слои снизу вверх, первым — непрозрачный: под
+ * подписью кнопки на плашке тоста лежат плашка и фон кнопки, вуаль поверх
+ * плашки. Слои кладутся тем же холстом, что и у светлоты, то есть так, как их
+ * кладёт браузер, а не по токенам: описание на 95 % и тень кнопок видны только
+ * так. Пороги — у спеков, по WCAG: тексту кегля `text-sm` — 4,5 (1.4.3),
+ * графике — значку, крестику, кольцу фокуса — 3 (1.4.11).
+ */
+export const contrast = (color: string, backdrop: string[]): number => {
+	const front = luminance([...backdrop, color])
+	const back = luminance(backdrop)
+
+	return (Math.max(front, back) + 0.05) / (Math.min(front, back) + 0.05)
+}

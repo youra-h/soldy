@@ -2,12 +2,15 @@
 import { computed, onUnmounted, shallowRef, watch } from 'vue'
 import { createEngine, isEventSource } from '@soldy-ui/core'
 import { TPluginBundle } from '@soldy-ui/plugins'
+import { Field } from '@soldy-ui/vue'
 import {
 	createInstance,
 	isEmptyField,
+	previewProps,
 	type IPreviewHost,
 	type TComponentEntry,
 	type TInstance,
+	type TInstanceProps,
 	type TPreviewEventSink,
 	type TPropControl,
 } from '@soldy-ui/playground-shared'
@@ -27,7 +30,26 @@ const props = defineProps<{
 	sink: (column: 'props' | 'instance') => TPreviewEventSink
 }>()
 
-const value = shallowRef<unknown>(props.control.default)
+/**
+ * Значение строки — с тем, что превью задаёт компоненту само (`initial`):
+ * подпись кнопки, плейсхолдер поля. Поле показывает то же, что колонки. Без
+ * значения превью — с умолчанием декларации.
+ */
+const value = shallowRef<unknown>(
+	Object.hasOwn(props.control, 'initial') ? props.control.initial : props.control.default,
+)
+
+/**
+ * Значение превью своего пропа владелец свойства получает при создании, а не
+ * разметкой второй колонки: разметку рядом с `ctrl` сборка пишет экземпляру
+ * при каждом монтировании, и смена фреймворка вернула бы ему значение превью
+ * поверх набранного. Свойству компонента его отдаёт конструктор экземпляра,
+ * свойству коллекции — конструктор фасада, а плагину — запись на
+ * `bundle:create`: значение строки начинается с него.
+ */
+const initialProps: TInstanceProps = Object.hasOwn(props.control, 'initial')
+	? { [props.control.name]: props.control.initial }
+	: {}
 
 /**
  * Экземпляр ядра для правой колонки.
@@ -37,7 +59,9 @@ const value = shallowRef<unknown>(props.control.default)
  * `variant`. Строка переживает смену фреймворка (её ключ от него не зависит),
  * и экземпляр вместе с ней: хост другого фреймворка получает тот же `ctrl`.
  */
-const instance = shallowRef(createInstance(props.entry))
+const instance = shallowRef(
+	createInstance(props.entry, props.control.scope === 'component' ? initialProps : {}),
+)
 
 const isCollectionRow = props.control.scope === 'collection'
 
@@ -89,7 +113,8 @@ function createFacade(withEngine: unknown): TInstance {
 
 	const Ctor = collectionDescriptor().ctor as new (props: object, options: object) => TInstance
 
-	return new Ctor({}, { engine: withEngine, owner: instance.value })
+	// Фасад есть только у коллекционной строки: значение превью её пропа — ему
+	return new Ctor(initialProps, { engine: withEngine, owner: instance.value })
 }
 
 /**
@@ -160,13 +185,24 @@ onUnmounted(() => instance.value.destroy?.())
 const propSink = props.sink('props')
 const instanceSink = props.sink('instance')
 
-// Пресет первым: собственное значение строки его перекрывает, а не наоборот
+/**
+ * Пропсы превью — обеим колонкам, но без своего пропа строки: его колонки
+ * получают каждая по-своему — пропом и экземпляром. Стёртое поле поэтому даёт
+ * в обеих умолчание декларации, как и код под ними, а не значение превью в
+ * одной из них.
+ */
+const preview = computed(() => previewProps(props.entry.id, props.control.name))
+
+// Пропсы превью первыми, поверх — пресет, поверх него — собственное значение
+// строки: оно перекрывает оба, а не наоборот
 const propBind = computed(() => ({
+	...preview.value,
 	...props.control.preset,
 	...(isEmptyField(value.value) ? {} : { [props.control.name]: value.value }),
 }))
 
 const instanceBind = computed(() => ({
+	...preview.value,
 	// Пресет разметкой, рядом с `ctrl`: сборка применяет написанные пропы и к
 	// инстансу, и к фасаду коллекции (`applyInitialProps`), а `mode`
 	// у компонентной строки иначе записать некуда — своего движка у неё нет
@@ -182,22 +218,30 @@ const instanceBind = computed(() => ({
 <template>
 	<section class="pg-prop">
 		<!--
-			Имя и контрол стоят рядом и прижаты влево. Обе колонки фиксированной
-			ширины, ряд не растягивается: иначе на широком экране `margin-left:
-			auto` уводил контрол к правому краю, и чтобы понять, что именно ты
-			крутишь, приходилось водить глазами через всю страницу.
+			Шапка строки — поле формы `Field`: имя пропа — его подпись, описание —
+			подсказка, редактор — контрол. Подпись и подсказку поле связывает с
+			редактором само: `for` подписи — на его `<input>`, `id` подсказки — в
+			его `aria-describedby`. Имя — код, поэтому подпись рисует слот
+			`label-content`, а `label` нужен, чтобы она вообще рисовалась.
 
-			Фиксированная ширина второй колонки выстраивает switch, select и
-			input в одну вертикаль, а не по содержимому.
+			Подпись — над контролом, сторона поля по умолчанию (`top`): имя,
+			редактор и подсказка идут столбцом, в любом окне одинаково. С
+			подписью в начале строки имя стояло слева, а редактор с подсказкой —
+			справа от него, и что к чему относится, читалось хуже. Контрол —
+			фиксированной ширины (`styles.css`): switch, select и input стоят в
+			одну вертикаль, а не по содержимому, и на широком экране редактор не
+			тянется во всю строку. Подсказка — под контролом, где её ставит тема.
+
+			Редактор — прямо в слоте, без обёртки: состояние контрола тема читает
+			с прямого ребёнка `.so-field__control`.
 		-->
-		<div class="pg-prop__head">
-			<span class="pg-prop__name">{{ control.name }}</span>
-			<div class="pg-prop__control">
-				<PropControl :control="control" v-model="value" />
-			</div>
-		</div>
+		<Field class="pg-prop__head" size="sm" :label="control.name" :helper="control.description">
+			<template #label-content>
+				<code class="pg-prop__name">{{ control.name }}</code>
+			</template>
 
-		<p class="pg-prop__note">{{ control.description }}</p>
+			<PropControl :control="control" v-model="value" />
+		</Field>
 
 		<!--
 			Колонки рисует хост фреймворка (`PreviewStage`), код под ними — тоже

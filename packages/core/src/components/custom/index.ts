@@ -9,6 +9,8 @@ export * from './switch'
 export * from './label'
 export * from './field'
 export * from './input'
+export * from './number-input'
+export * from './textarea'
 export * from './tabs'
 export * from './accordion'
 // Только контракты: класса в этой папке нет — общее у ListBox и Select

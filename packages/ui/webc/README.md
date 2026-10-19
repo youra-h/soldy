@@ -38,8 +38,9 @@ Button's `default` slot) cannot be passed into it — slot content reads it from
 `el.ctrl`.
 
 > **Status:** the Web Components adapter is in progress — Button, Icon, Label, Input, CheckBox,
-> Switch, ProgressSpinner, Skeleton, Frame, RadioGroup, ListBox, Tabs and Accordion are ported, the
-> rest of the set is on its way. See [the adapter table](https://github.com/youra-h/soldy#components).
+> Switch, ProgressSpinner, Skeleton, Frame, RadioGroup, ListBox, Tabs, Accordion, Table and the
+> `<so-virtual>` window for long lists are ported, the rest of the set is on its way. See
+> [the adapter table](https://github.com/youra-h/soldy#components).
 
 ## Install
 
@@ -180,7 +181,10 @@ Panels go to the `content` slot: the default slot of tabs is the tab list, `[rol
 inactive panel is hidden, and its content is out of the document — its fields are not submitted
 with the form. A radio is a real `<input type="radio">` inside a `<label>` root; attributes you
 write on it (`id`, `aria-label`, `data-*`) move to the input, as on a field, and on a tab, a
-section or a list box option they move to its row — the button that carries the item's state.
+section or a list box option they move to its row — the button that carries the item's state. On
+a list box and on tabs they move to the list itself, `[role=listbox]` or `[role=tablist]`: the
+element is a frame around it, next to the header and footer of a list box or the panels of tabs,
+so `aria-label` names the list and `tabindex="-1"` takes a list box out of the Tab order.
 
 A list box is a single Tab stop: the arrows move through its options, Enter and Space choose. An
 option's row is a button on a `<div>` — `<div is="so-button-div">`, the same Button under a name of
@@ -201,6 +205,48 @@ yourself. Moving a collection in the document rebuilds it, as any element is reb
 markup items join again with what their attributes and properties say, so a choice the user made
 (the active tab, an open section) does not survive the move. Items given as data in your own
 `engine` keep it.
+
+A table takes its columns and rows as data only — `columns` and `items` (`el.columns = [...]`, or
+JSON in the attribute), or an `engine` — and draws the column headers and rows itself:
+`<th is="so-table-column">` and `<tr is="so-table-row">` over the core column and row. The element
+you write is the table's viewport, its outer box: your class and style and hiding go there, while
+the `table` inside is the root that the classes, `data-*` and roles go to — and so do the other
+attributes of your markup, `aria-label` and `id` among them, which name the table. Sorting
+buttons, row selection with "select all" (`mode`), column resizing and reordering, the grid mode
+(`grid`) and the sticky head (`sticky-head`) work as in the other adapters; a resized or moved
+column is reported by `so:column:resize` and `so:column:move`.
+
+```html
+<div
+  is="so-table"
+  mode="multiple"
+  aria_label="Staff"
+  columns='[{"field":"name","text":"Name","rowHeader":true,"sortable":true},{"field":"age","text":"Age","align":"end"}]'
+>
+  <template slot="cell"><my-cell></my-cell></template>
+  <p slot="empty">Nobody here yet</p>
+</div>
+```
+
+The `header` and `cell` slots are templates, like the `item-*` slots of a list: each header gets a
+copy of `header` and each cell a copy of `cell`. Without `cell` a cell shows its value as text. A
+copy finds its data on the elements around it: the column on its header (`el.ctrl` of the nearest
+`<th is="so-table-column">`), the row on its row (`el.ctrl` of the nearest `<tr is="so-table-row">`)
+and a cell's column by the cell's place among the row's column cells (`.so-table-row__cell`) in
+the table's `state.shownColumns`; the value is the row's `data[column.field]`. Copies of a row's
+cells are built anew when its record or the columns change; selecting rows leaves them alone.
+
+For thousands of rows or options given as data (`items`, `engine`), put the table or list box into
+the `<so-virtual>` window: it draws only the visible ones, with spacers in place of the rest. The window is an element of its
+own tag, without `is` and without a box of its own — the list or table inside is laid out as if it
+were not there; `el.enabled = false` turns it off. A list taken out of the window draws all of its
+items again.
+
+```html
+<so-virtual>
+  <div is="so-list-box" max-rows="8" aria_label="Items"></div>
+</so-virtual>
+```
 
 From JavaScript the element is the component: props are its properties, events are DOM events, and
 a core instance can be handed over as `ctrl` before the element is connected:

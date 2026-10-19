@@ -6,17 +6,19 @@
  * Фокус — APG Date Picker Dialog: первый фокус на дне сетки, Tab замкнут в
  * панели, как у модального окна, а нажатие мимо фокус отпускает, как у
  * немодального поповера: подложки нет, и соседнее поле получает фокус с
- * первого нажатия. Открывают панель кнопка календаря и Alt+↓ на поле.
+ * первого нажатия. Возврат — в поле: туда, откуда открыли (Alt+↓ на части),
+ * а с кнопки календаря и с `body` — на первую часть поля, у диапазона — поля
+ * начала. Открывают панель кнопка календаря и Alt+↓ на поле.
  *
- * Разметку тест строит сам — корень с частью поля и кнопкой календаря и
+ * Разметку тест строит сам — корень с частями поля и кнопкой календаря и
  * телепортированную панель с кнопками листания и сеткой, как их рисует
- * разметка DatePicker и Calendar, — а плагины собирает настоящим набором
- * над настоящим `TDatePicker`.
+ * разметка DatePicker, DateInput и Calendar, — а плагины собирает настоящим
+ * набором над настоящим `TDatePicker`.
  */
 
 import { describe, it, expect, afterEach } from 'vitest'
 import { TDatePicker } from '@soldy-ui/core'
-import type { IDatePickerProps } from '@soldy-ui/core'
+import type { IDatePickerProps, TDatePickerMode } from '@soldy-ui/core'
 import {
 	TDatePickerFocusPlugin,
 	TDatePickerTriggerPlugin,
@@ -49,6 +51,12 @@ function nodeOf(selector: string): HTMLElement {
 	return node
 }
 
+/** Часть поля по типу — первая такая в `scope`; по умолчанию — в корне. */
+const part = (type: string, scope = '.so-date-picker') =>
+	nodeOf(`${scope} .so-date-input__segment[data-type="${type}"]`)
+
+const trigger = () => nodeOf('.so-date-picker__trigger')
+
 /** Календарь панели: кнопки листания до сетки, остановка сетки — день с `tabindex="0"`. */
 const CALENDAR = `
 	<div class="so-calendar">
@@ -65,10 +73,35 @@ const CALENDAR = `
 	</div>
 `
 
+/** Части поля, как их рисует DateInput: у `en-US` — месяц, день, год. */
+const PARTS = ['month', 'day', 'year']
+	.map(
+		(type) =>
+			`<span class="so-date-input__segment" data-type="${type}" tabindex="0">${type}</span>`,
+	)
+	.join('')
+
+const TRIGGER = '<button class="so-date-picker__trigger">Календарь</button>'
+
+/**
+ * Корень по режиму, как его рисует разметка DatePicker: у одной даты кнопка
+ * календаря — в слоте у конца поля, у диапазона — после поля конца.
+ */
+function rootMarkup(mode: TDatePickerMode): string {
+	if (mode === 'range') {
+		return (
+			`<div class="so-date-picker__start">${PARTS}</div>` +
+			`<div class="so-date-picker__end">${PARTS}</div>${TRIGGER}`
+		)
+	}
+
+	return `<div class="so-date-picker__field">${PARTS}<span class="so-date-input__trailing">${TRIGGER}</span></div>`
+}
+
 const bundles: TPluginBundle[] = []
 
 /**
- * Корень — часть поля и кнопка календаря, панель телепортирована и помечена
+ * Корень — части поля и кнопка календаря, панель телепортирована и помечена
  * владельцем; за корнем на странице — соседнее поле.
  */
 async function setup(props: Partial<IDatePickerProps> = {}, content = CALENDAR) {
@@ -76,9 +109,8 @@ async function setup(props: Partial<IDatePickerProps> = {}, content = CALENDAR) 
 	const root = document.createElement('div')
 	const panel = document.createElement('div')
 
-	root.innerHTML =
-		'<span class="part" tabindex="0">mm</span>' +
-		'<button class="so-date-picker__trigger">Календарь</button>'
+	root.className = 'so-date-picker'
+	root.innerHTML = rootMarkup(owner.mode)
 	document.body.appendChild(root)
 	document.body.insertAdjacentHTML('beforeend', '<input class="outside" />')
 
@@ -104,10 +136,21 @@ async function setup(props: Partial<IDatePickerProps> = {}, content = CALENDAR) 
 	return { owner, root, panel, bundle }
 }
 
-/** Открыть с фокусом на части поля и дождаться, пока фокус уйдёт в панель. */
-async function openFromPart(owner: TDatePicker): Promise<void> {
-	nodeOf('.part').focus()
-	owner.open = true
+/**
+ * Открыть Alt+↓ с части дня — не первой: так видно, что фокус вернулся
+ * туда, откуда открыли, а не на первую часть поля. Ждёт, пока фокус уйдёт в
+ * панель.
+ */
+async function openFromPart(): Promise<void> {
+	part('day').focus()
+	press('ArrowDown', { altKey: true })
+	await nextFrame()
+}
+
+/** Открыть кнопкой календаря, как Enter на ней: фокус на кнопке, её клик. */
+async function openFromTrigger(): Promise<void> {
+	trigger().focus()
+	trigger().click()
 	await nextFrame()
 }
 
@@ -154,25 +197,25 @@ afterEach(() => {
 
 describe('фокус панели', () => {
 	it('при открытии — на остановку сетки, а не на кнопку листания', async () => {
-		const { owner } = await setup()
+		await setup()
 
-		await openFromPart(owner)
+		await openFromPart()
 
 		expect(document.activeElement).toBe(nodeOf('.day-2'))
 	})
 
 	it('сетки в панели нет — на её первую остановку', async () => {
-		const { owner } = await setup({}, '<button class="first">Раз</button>')
+		await setup({}, '<button class="first">Раз</button>')
 
-		await openFromPart(owner)
+		await openFromPart()
 
 		expect(document.activeElement).toBe(nodeOf('.first'))
 	})
 
 	it('Tab замкнут: с последней остановки — на первую, Shift+Tab — обратно', async () => {
-		const { owner } = await setup()
+		await setup()
 
-		await openFromPart(owner)
+		await openFromPart()
 
 		const forward = press('Tab')
 
@@ -185,22 +228,10 @@ describe('фокус панели', () => {
 		expect(document.activeElement).toBe(nodeOf('.day-2'))
 	})
 
-	it('Escape закрывает и возвращает фокус туда, откуда открыли', async () => {
-		const { owner } = await setup()
-
-		await openFromPart(owner)
-
-		const event = press('Escape')
-
-		expect(event.defaultPrevented).toBe(true)
-		expect(owner.open).toBe(false)
-		expect(document.activeElement).toBe(nodeOf('.part'))
-	})
-
 	it('Escape, который погасил календарь (начатый диапазон), панель не закрывает', async () => {
 		const { owner, panel } = await setup()
 
-		await openFromPart(owner)
+		await openFromPart()
 
 		panel.addEventListener('keydown', (event) => event.preventDefault(), { capture: true })
 		press('Escape')
@@ -208,64 +239,114 @@ describe('фокус панели', () => {
 		expect(owner.open).toBe(true)
 	})
 
-	it('выбор закрыл панель — фокус туда, откуда открыли', async () => {
-		const { owner } = await setup()
-
-		await openFromPart(owner)
-		owner.engine.extensions.selection.chooseDate('2026-09-12')
-
-		expect(owner.open).toBe(false)
-		expect(document.activeElement).toBe(nodeOf('.part'))
-	})
-
-	it('открыли с body — фокус возвращается на кнопку календаря', async () => {
-		const { owner } = await setup()
-
-		owner.open = true
-		await nextFrame()
-		press('Escape')
-
-		expect(document.activeElement).toBe(nodeOf('.so-date-picker__trigger'))
-	})
-
 	it('нажатие мимо закрывает, фокус не возвращает и mousedown не гасит', async () => {
-		const { owner } = await setup()
+		const { owner, root } = await setup()
 		const outside = nodeOf('.outside')
 
-		await openFromPart(owner)
+		await openFromPart()
 		pointerDown(outside)
 
 		expect(owner.open).toBe(false)
-		expect(document.activeElement).not.toBe(nodeOf('.part'))
+		expect(root.contains(document.activeElement)).toBe(false)
 		expect(mouseDown(outside).defaultPrevented).toBe(false)
 	})
 
 	it('нажатие в корень — не мимо: панель открыта', async () => {
 		const { owner } = await setup()
 
-		await openFromPart(owner)
-		pointerDown(nodeOf('.part'))
+		await openFromPart()
+		pointerDown(part('month'))
 
 		expect(owner.open).toBe(true)
+	})
+})
+
+/**
+ * Возврат — в поле. Открыли с части (Alt+↓) — на неё; открыли кнопкой
+ * календаря или фокуса не было (`body`) — на первую часть поля: кнопка
+ * местом возврата не считается.
+ */
+describe('возврат фокуса', () => {
+	it('открыли с части — Escape закрывает и возвращает фокус на неё', async () => {
+		const { owner } = await setup()
+
+		await openFromPart()
+
+		const event = press('Escape')
+
+		expect(event.defaultPrevented).toBe(true)
+		expect(owner.open).toBe(false)
+		expect(document.activeElement).toBe(part('day'))
+	})
+
+	it('открыли с части — выбор закрыл панель, фокус на ней', async () => {
+		const { owner } = await setup()
+
+		await openFromPart()
+		owner.engine.extensions.selection.chooseDate('2026-09-12')
+
+		expect(owner.open).toBe(false)
+		expect(document.activeElement).toBe(part('day'))
+	})
+
+	it('открыли кнопкой — Escape возвращает фокус на первую часть поля, а не на кнопку', async () => {
+		const { owner } = await setup()
+
+		await openFromTrigger()
+		expect(document.activeElement).toBe(nodeOf('.day-2'))
+
+		press('Escape')
+
+		expect(owner.open).toBe(false)
+		expect(document.activeElement).toBe(part('month'))
+	})
+
+	it('открыли кнопкой — выбор закрыл панель, фокус на первой части поля', async () => {
+		const { owner } = await setup()
+
+		await openFromTrigger()
+		owner.engine.extensions.selection.chooseDate('2026-09-12')
+
+		expect(owner.open).toBe(false)
+		expect(document.activeElement).toBe(part('month'))
+	})
+
+	it('открыли с body — фокус на первую часть поля', async () => {
+		const { owner } = await setup()
+
+		owner.open = true
+		await nextFrame()
+		press('Escape')
+
+		expect(document.activeElement).toBe(part('month'))
+	})
+
+	it('диапазон, открыли кнопкой — фокус на первую часть поля начала', async () => {
+		const { owner } = await setup({ mode: 'range' })
+
+		await openFromTrigger()
+		press('Escape')
+
+		expect(owner.open).toBe(false)
+		expect(document.activeElement).toBe(part('month', '.so-date-picker__start'))
 	})
 })
 
 describe('что открывает панель', () => {
 	it('клик по кнопке календаря — тумблер', async () => {
 		const { owner } = await setup()
-		const trigger = nodeOf('.so-date-picker__trigger')
 
-		trigger.click()
+		trigger().click()
 		expect(owner.open).toBe(true)
 
-		trigger.click()
+		trigger().click()
 		expect(owner.open).toBe(false)
 	})
 
 	it('клик по полю панель не открывает', async () => {
 		const { owner } = await setup()
 
-		nodeOf('.part').click()
+		part('month').click()
 
 		expect(owner.open).toBe(false)
 	})
@@ -273,7 +354,7 @@ describe('что открывает панель', () => {
 	it('Alt+↓ на поле открывает и гасится; открытую не закрывает', async () => {
 		const { owner } = await setup()
 
-		nodeOf('.part').focus()
+		part('month').focus()
 
 		const event = press('ArrowDown', { altKey: true })
 
@@ -281,7 +362,7 @@ describe('что открывает панель', () => {
 		expect(owner.open).toBe(true)
 
 		await nextFrame()
-		nodeOf('.part').focus()
+		part('month').focus()
 		press('ArrowDown', { altKey: true })
 
 		expect(owner.open).toBe(true)
@@ -289,13 +370,13 @@ describe('что открывает панель', () => {
 
 	it('↓ без Alt, погашенная клавиша и Alt+↓ у выключенного — не наши', async () => {
 		const { owner } = await setup()
-		const part = nodeOf('.part')
+		const month = part('month')
 
-		part.focus()
+		month.focus()
 		press('ArrowDown')
 		expect(owner.open).toBe(false)
 
-		part.addEventListener('keydown', (event) => event.preventDefault())
+		month.addEventListener('keydown', (event) => event.preventDefault())
 		press('ArrowDown', { altKey: true })
 		expect(owner.open).toBe(false)
 	})
@@ -303,7 +384,7 @@ describe('что открывает панель', () => {
 	it('у выключенного Alt+↓ не гасится и ничего не открывает', async () => {
 		const { owner } = await setup({ disabled: true })
 
-		nodeOf('.part').focus()
+		part('month').focus()
 
 		const event = press('ArrowDown', { altKey: true })
 

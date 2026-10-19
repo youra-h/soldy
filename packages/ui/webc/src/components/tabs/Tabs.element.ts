@@ -6,6 +6,12 @@
  * ядра только `attrs`: набор `aria` владельца — это список табов, и на
  * `.so-tabs__list` его кладёт шаблон, а рядом со списком лежат панели.
  *
+ * Список табов — поле корня (`control` в описании корня), как `<input>` у
+ * поля: статические атрибуты разметки, кроме `class`, `style`, `is`, `slot` и
+ * входов пропов, база при построении переносит на него. `aria-label` и `id`
+ * называют список, а не корень без роли. Записанное из кода позже остаётся на
+ * корне.
+ *
  * Контекстов два — свой и фасада коллекции (`setupTabs`), и пропсы фасада
  * (`items`, `engine`, `trackBy`) — атрибуты-входы и свойства того же элемента:
  * дескриптор фасада элемент называет рядом со своим. Движок набора его сборка
@@ -32,7 +38,7 @@ export const TTabsElement = SoldyElement(HTMLDivElement, {
 	descriptor: TabsDescriptor(),
 	facade: TabsCollectionDescriptor(),
 	template: tabsTemplate,
-	root: { sets: ['attrs'] },
+	root: { sets: ['attrs'], control: true },
 	setup: setupTabs,
 })
 

@@ -1,4 +1,5 @@
 import type { IPreviewHandle, IPreviewHost } from '../host'
+import { previewProps } from '../props'
 import type { IScenarioHost, TScenarioMount } from './types'
 
 /** Узлы блока сценария на странице. */
@@ -54,6 +55,11 @@ export class TScenarioHost implements IScenarioHost {
 	 * Компонент сценария — на его сцену: стартовые пропы сценария, `ctrl` с
 	 * экземпляром, фикстура, события — в журнал.
 	 *
+	 * Без фикстуры рисуется превью компонента, и пропсы превью
+	 * (`PREVIEW_PROPS`) идут с ним, как на витрине, — под пропами сценария:
+	 * подпись кнопки, имя кольца. У фикстуры разметка своя, и пропсы превью ей
+	 * не к чему.
+	 *
 	 * Отдаёт сцену кадром позже, а не сразу: `TElementPlugin` отдаёт узел
 	 * плагинам через requestAnimationFrame, и до него компонент нарисован, но
 	 * DOM ещё не слушает — клик сценария ушёл бы в пустоту.
@@ -63,13 +69,15 @@ export class TScenarioHost implements IScenarioHost {
 
 		if (!nodes) throw new Error(`у сценария «${scenario.id}» нет блока на странице`)
 
+		const preview = scenario.fixture === undefined ? previewProps(scenario.component) : {}
+
 		this._release(scenario.id)
 		this._handles.set(
 			scenario.id,
 			this._preview.mount(nodes.target, {
 				component: scenario.component,
 				fixture: scenario.fixture,
-				props: { ...scenario.props, ctrl: instance },
+				props: { ...preview, ...scenario.props, ctrl: instance },
 				onEvent: (name, args) => journal.record(name, args),
 			}),
 		)

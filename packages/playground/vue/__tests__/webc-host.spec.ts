@@ -6,12 +6,15 @@
  * хост рисует превью и фикстуры: свои атрибуты элемента (роль иконки) стоят на
  * нём, как в разметке, дети по слотам — его светом, и первая сборка
  * раскладывает их по слотам, а обёртка превью (подпись вокруг флажка) — свой
- * элемент, в слоте по умолчанию которого лежит компонент.
+ * элемент, в слоте по умолчанию которого лежит компонент. У таблицы обёртка —
+ * граница без компонента, со стилем от пропсов строки, а окно `<so-virtual>` —
+ * автономный элемент, своим тегом.
  */
 
 import { describe, it, expect, afterEach } from 'vitest'
 import { TCheckBox, createEngineAccordion } from '@soldy-ui/core'
 import { getIcon } from '@soldy-ui/setup'
+import { TABLE_ROWS, TABLE_SCROLL_ROWS } from '@soldy-ui/playground-shared'
 import { loadHost } from '../src/hosts'
 
 /** Рендер элемента коалесцируется в микротаске — ждём её перед проверкой. */
@@ -271,7 +274,9 @@ describe('хост Web Components · коллекции', () => {
 			onEvent: (name) => events.push(name),
 		})
 		const rows = [
-			...node.querySelectorAll('.so-list-box > .so-list-box-item > .so-button'),
+			...node.querySelectorAll(
+				'.so-list-box > .so-list-box__list > .so-list-box-item > .so-button',
+			),
 		].filter((row): row is HTMLElement => row instanceof HTMLElement)
 
 		expect(texts(rows)).toEqual(['Первый', 'Второй', 'Третий', 'Четвёртый', 'Пятый'])
@@ -303,6 +308,55 @@ describe('хост Web Components · коллекции', () => {
 
 		expect(after).not.toBe(before)
 		expect(node.querySelectorAll('.so-accordion')).toHaveLength(1)
+
+		handle.unmount()
+	})
+
+	/**
+	 * Таблица — как у React: строки и колонки данными, элемент — окно таблицы,
+	 * а вокруг — граница ширины. С закреплённой шапкой граница — ещё и окно
+	 * прокрутки, и строк больше: стиль обёртки и строки выводит превью из
+	 * пропсов строки, и их смена пишет новые.
+	 */
+	it('превью Table: окно таблицы в границе ширины; закреплённая шапка — прокрутка и длинный список', async () => {
+		const node = stage()
+		const handle = host.mount(node, { component: 'table', props: {} })
+		const viewport = find(node, '.so-table__viewport')
+		const frame = viewport.parentElement
+
+		await flush()
+
+		expect(frame?.style.cssText).toBe('width: 100%;')
+		expect(viewport.querySelector(':scope > table.so-table')).not.toBeNull()
+		expect(node.querySelectorAll('.so-table-row')).toHaveLength(TABLE_ROWS.length)
+
+		handle.update({ stickyHead: true })
+		await flush()
+		await flush()
+
+		expect(find(node, '.so-table__viewport')).toBe(viewport)
+		expect(frame?.style.overflow).toBe('auto')
+		expect(frame?.style.height).toBe('320px')
+		expect(find(node, 'table.so-table').dataset.stickyHead).toBe('true')
+		expect(node.querySelectorAll('.so-table-row')).toHaveLength(TABLE_SCROLL_ROWS.length)
+
+		handle.unmount()
+	})
+
+	/**
+	 * Окно — автономный `<so-virtual>` своим тегом, без `is`: список и таблица
+	 * в нём рисуют по первым 50 элементам из тысячи.
+	 */
+	it('превью Virtual: <so-virtual> вокруг списка и таблицы — окно у обоих', async () => {
+		const node = stage()
+		const handle = host.mount(node, { component: 'virtual', props: {} })
+		const virtual = node.querySelector('so-virtual')
+
+		await flush()
+
+		expect(virtual?.hasAttribute('is')).toBe(false)
+		expect(virtual?.querySelectorAll('.so-list-box-item')).toHaveLength(50)
+		expect(virtual?.querySelectorAll('.so-table-row')).toHaveLength(50)
 
 		handle.unmount()
 	})

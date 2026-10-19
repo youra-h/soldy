@@ -562,13 +562,52 @@ describe('таб из разметки', () => {
 		expect(find(list, '.so-tabs__list--trailing .tail', HTMLElement).textContent).toBe('после')
 	})
 
+	/** Атрибуты потребителя набора — на списке табов, а не на корне. */
 	it('пропсы фасада — свойства, не атрибуты; атрибуты потребителя — атрибуты', async () => {
 		const el = await mountTabs({ items: ITEMS, title: 'Разделы' })
+		const list = find(el, ':scope > .so-tabs__list', HTMLDivElement)
 
 		expect(el.hasAttribute('items')).toBe(false)
-		expect(el.getAttribute('title')).toBe('Разделы')
+		expect(el.hasAttribute('title')).toBe(false)
+		expect(list.getAttribute('title')).toBe('Разделы')
 		expect(el.items).toEqual(el.state.items)
 		expect(el.state.items?.map((each) => each.value)).toEqual(['a', 'b', 'c'])
+	})
+
+	/**
+	 * Атрибуты потребителя делятся, как у поля: класс и стиль — корню,
+	 * статические атрибуты разметки — списку табов, где роль `tablist`. Имя и
+	 * `id` называют список, а не корень без роли; `dir` по `direction` — на
+	 * корне.
+	 */
+	it('aria-label, id и data-* — на [role=tablist], не на корне; класс, стиль и dir ядра — на корне', async () => {
+		const el = tabsIn(
+			await mount(`<div
+				is="so-tabs"
+				direction="rtl"
+				aria-label="Разделы"
+				id="sections"
+				data-testid="tabs"
+				class="mine"
+				style="color: red"
+			>
+				<div is="so-tabs-item" value="a" text="A" active></div>
+			</div>`),
+		)
+		const list = find(el, '[role="tablist"]', HTMLDivElement)
+
+		expect(list.parentElement).toBe(el)
+		expect(list.getAttribute('aria-label')).toBe('Разделы')
+		expect(list.id).toBe('sections')
+		expect(list.dataset['testid']).toBe('tabs')
+		expect(['aria-label', 'id', 'data-testid'].filter((name) => el.hasAttribute(name))).toEqual(
+			[],
+		)
+		expect(el.classList.contains('mine')).toBe(true)
+		expect(el.style.color).toBe('red')
+		expect(el.getAttribute('dir')).toBe('rtl')
+		expect(list.classList.contains('mine')).toBe(false)
+		expect(list.hasAttribute('dir')).toBe(false)
 	})
 })
 

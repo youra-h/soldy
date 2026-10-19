@@ -5,7 +5,8 @@
  * Наследует ValueControlDescriptor (value, name, disabled, focused, size,
  * variant, наборы, плагины element/ready/action/aria) и добавляет шкалу,
  * ось, метки, щелчок к меткам, имена ручек, подсказку со значением, выходы
- * для разметки и плагины указателя и клавиатуры.
+ * для разметки — с набором корня и наборами полей ручек — и плагины
+ * указателя и клавиатуры.
  */
 
 import { defineComponent, defineDescriptor, defineType } from '../../../protected/define'
@@ -79,9 +80,22 @@ export const SliderDescriptor = defineDescriptor(() =>
 				tooltip: { type: String, triggers: ['change:tooltip'] },
 				tooltipRendered: { type: Boolean, protected: true, triggers: ['change:tooltip'] },
 				/**
-				 * Ручки: значение, ход и шаг поля, позиция, `data-dragging` и имя.
-				 * Своего экземпляра у ручки нет — её наборы отдаются значением.
-				 * Ход поля сужают соседи и зазор, `data-dragging` — жест.
+				 * Набор корня: у нескольких ручек корень — группа с именем и
+				 * описанием ползунка, у одной набор пуст — `aria` ползунка уходит
+				 * её полю (`thumbs`). Решает ядро по числу ручек — форме значения,
+				 * — поэтому набор перечитывается на смену `aria` и значения.
+				 */
+				rootAria: {
+					type: Object,
+					protected: true,
+					triggers: ['change:aria', 'change:value'],
+				},
+				/**
+				 * Ручки: значение, ход и шаг поля, позиция, `data-dragging` и набор
+				 * поля целиком. Своего экземпляра у ручки нет — её наборы
+				 * отдаются значением. Ход поля сужают соседи и зазор,
+				 * `data-dragging` — жест, набор поля — `aria` ползунка (у одной
+				 * ручки — весь, у нескольких — ориентация и ошибка) и имя ручки.
 				 */
 				thumbs: {
 					type: Array,
@@ -92,6 +106,7 @@ export const SliderDescriptor = defineDescriptor(() =>
 						'change:minStepsBetweenThumbs',
 						'change:thumbLabels',
 						'change:dragging',
+						'change:aria',
 					],
 				},
 				/** Края заливки: `--so-slider-range-start` и `--so-slider-range-end`. */

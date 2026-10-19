@@ -22,11 +22,13 @@
 
 import { describe, it, expect } from 'vitest'
 import { render } from 'svelte/server'
-import { Accordion, ListBox, RadioGroup } from '@soldy-ui/svelte'
+import type { TTableColumnSource } from '@soldy-ui/core'
+import { Accordion, ListBox, RadioGroup, Table } from '@soldy-ui/svelte'
 import AccordionHarness from './Accordion.test.svelte'
 import ListBoxHarness from './ListBox.test.svelte'
 import RadioGroupHarness from './RadioGroup.test.svelte'
 import TabsHarness from './Tabs.test.svelte'
+import VirtualHarness from './Virtual.test.svelte'
 
 /** Открывающий тег разметки: имя и атрибуты; атрибут без значения — пустая строка. */
 type TTag = {
@@ -232,6 +234,117 @@ describe('RadioGroup · серверный рендер', () => {
 		expect(fields.map((field) => 'checked' in field.attributes)).toEqual([false, true, false])
 		expect(names.size).toBe(1)
 		expect([...names][0]).not.toBe('')
+	})
+})
+
+/**
+ * Таблица из данных: строки в коллекции с самой сборки, и сервер рисует их со
+ * всем, что пишут им коллекция и плагины, — `id` заголовков строк и ссылки
+ * чекбоксов на них, `id` подписей колонок и ссылки заголовков и поля ручки на
+ * них, имя кнопки сортировки от локали. Ширину поле ручки отдаёт атрибутом
+ * `value`: attachment-а поля на сервере нет.
+ */
+describe('Table · серверный рендер', () => {
+	const NAME: TTableColumnSource = { field: 'name', text: 'Имя', rowHeader: true }
+	const AGE: TTableColumnSource = {
+		field: 'age',
+		text: 'Возраст',
+		sortable: true,
+		resizable: true,
+		width: 120,
+	}
+	const ROWS = [
+		{ data: { id: 1, name: 'Анна', age: 30 } },
+		{ data: { id: 2, name: 'Борис', age: 41 } },
+	]
+
+	it('строки и колонки из данных — со связками, именами и шириной', () => {
+		const { body } = render(Table, {
+			props: { items: ROWS, columns: [NAME, AGE], mode: 'multiple' },
+		})
+		const rowHeaders = attributeOf(tagsWith(body, 'scope', 'row'), 'id')
+		const captions = attributeOf(withClass(body, 'so-table-column__text'), 'id')
+		// Чекбоксы строк называет ссылка; у «выбрать все» — своё имя
+		const rowChecks = tagsWith(body, 'type', 'checkbox').filter(
+			(tag) => 'aria-labelledby' in tag.attributes,
+		)
+
+		expect(textOf(body)).toContain('Анна')
+		expect(textOf(body)).toContain('Борис')
+		expect(rowHeaders).toHaveLength(2)
+		expect(rowHeaders.every(Boolean)).toBe(true)
+		expect(attributeOf(rowChecks, 'aria-labelledby')).toEqual(rowHeaders)
+		expect(captions).toHaveLength(2)
+		expect(captions.every(Boolean)).toBe(true)
+		expect(attributeOf(withClass(body, 'so-table-column'), 'aria-labelledby')).toEqual(captions)
+		expect(attributeOf(withClass(body, 'so-table-column__sort'), 'aria-label')).toEqual([
+			'Sort by Возраст',
+		])
+
+		const [field] = withClass(body, 'so-table-column__input')
+
+		expect(field?.attributes['aria-labelledby']).toBe(captions[1])
+		expect(field?.attributes.value).toBe('120')
+	})
+
+	it('окно таблицы — внешний узел, корень, наборы и атрибуты потребителя — у table', () => {
+		const { body } = render(Table, {
+			props: {
+				items: ROWS,
+				columns: [NAME],
+				class: 'staff',
+				aria_label: 'Сотрудники',
+				id: 'staff',
+				'data-probe': '1',
+			},
+		})
+		const [viewport] = withClass(body, 'so-table__viewport')
+		const [table] = withClass(body, 'so-table')
+		const classes = (tag: TTag | undefined) =>
+			(tag?.attributes.class ?? '').split(' ').filter(Boolean)
+
+		expect(viewport?.name).toBe('div')
+		expect(classes(viewport)).toEqual(['so-table__viewport', 'staff'])
+		expect(viewport?.attributes['aria-label']).toBeUndefined()
+		expect(viewport?.attributes['id']).toBeUndefined()
+		expect(table?.name).toBe('table')
+		expect(table?.attributes['aria-label']).toBe('Сотрудники')
+		expect(table?.attributes['id']).toBe('staff')
+		expect(table?.attributes['data-probe']).toBe('1')
+		expect(classes(table)).not.toContain('staff')
+	})
+})
+
+/**
+ * Окно на сервере: подхват — при сборке коллекции, а она идёт и на сервере.
+ * Сервер рисует уже окно — первые 50 элементов, без распорок: замера нет.
+ */
+describe('Virtual · серверный рендер', () => {
+	const ITEMS = Array.from({ length: 80 }, (_, index) => ({
+		value: `v${index + 1}`,
+		text: `Пункт ${index + 1}`,
+	}))
+
+	it('список в окне — первые 50 элементов, распорок нет', () => {
+		const { body } = render(VirtualHarness, { props: { list: { items: ITEMS } } })
+
+		expect(withClass(body, 'so-list-box-item')).toHaveLength(50)
+		expect(withClass(body, 'so-list-box__filler')).toEqual([])
+		expect(attributeOf(tagsWith(body, 'aria-posinset'), 'aria-posinset').at(-1)).toBe('50')
+	})
+
+	it('таблица в окне — первые 50 строк и число строк у таблицы', () => {
+		const rows = ITEMS.map((item, index) => ({ data: { id: index + 1, name: item.text } }))
+		const { body } = render(VirtualHarness, {
+			props: {
+				kind: 'table',
+				table: { items: rows, columns: [{ field: 'name', text: 'Имя', rowHeader: true }] },
+			},
+		})
+
+		expect(withClass(body, 'so-table-row')).toHaveLength(50)
+		expect(withClass(body, 'so-table__filler-row')).toEqual([])
+		expect(withClass(body, 'so-table')[0]?.attributes['aria-rowcount']).toBe('81')
 	})
 })
 

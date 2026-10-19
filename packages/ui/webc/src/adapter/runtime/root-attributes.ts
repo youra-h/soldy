@@ -52,9 +52,14 @@
  * поставленный другим. Держит её элемент, а не связка: связка у элемента
  * новая на каждое подключение, и со свежей памятью своё значение после
  * перестановки база сочла бы чужим.
+ *
+ * Корень — не всегда сам элемент: у таблицы это узел шаблона внутри элемента,
+ * `table` в окне (`TRootSpec.wrapped`). Наборы, классы и стиль ядра база
+ * кладёт на него тем же правилом, класс и стиль потребителя и скрытие
+ * остаются на элементе — внешнем узле компонента, — а остальные атрибуты его
+ * разметки база при построении переносит на `table`, как на поле, и там они
+ * так же главнее наборов ядра.
  */
-
-import type { TAttributesMap } from '@soldy-ui/core'
 
 /**
  * Атрибут, который поставил раскладчик: значение и вход ли это пропа — его
@@ -181,14 +186,45 @@ export const ATTRIBUTE_LAYERS = ['attrs', 'aria', 'dataset', 'owner'] as const
 /** Слой атрибутов элемента — см. `ATTRIBUTE_LAYERS`. */
 export type TAttributeLayer = (typeof ATTRIBUTE_LAYERS)[number]
 
-/** Слой: набор и его атрибуты-входы пропов. */
+/**
+ * Слой: набор и его атрибуты-входы пропов. Набор — объект `имя → значение`:
+ * база читает его из состояния по имени и вид не берёт на веру (`setOf`), а
+ * на элемент идут только строки — `null` и всё прочее имени не называют.
+ */
 type TLayer = {
-	readonly set: TAttributesMap
+	readonly set: object
 	readonly inputs: ReadonlySet<string>
 }
 
 /** Входов у слоя нет — набор владельца. */
 const NO_INPUTS: ReadonlySet<string> = new Set()
+
+/** Пустой набор — один на всех: чего в состоянии нет, то ничего не называет. */
+const NO_SET: object = Object.freeze({})
+
+/** Нет классов — тот же пустой список, по той же причине. */
+const NO_CLASSES: readonly string[] = Object.freeze([])
+
+/**
+ * Набор ядра из состояния компонента — объект `имя → значение`, а чего нет —
+ * пустой набор. База не знает инстанса компонента и читает его состояние по
+ * именам: у невизуального компонента (окно `Virtual`) наборов нет вовсе.
+ * Поэтому вид значения проверяется здесь, а не берётся на веру, как у
+ * стиля (`stylesOf`).
+ */
+export function setOf(value: unknown): object {
+	return typeof value === 'object' && value !== null ? value : NO_SET
+}
+
+/**
+ * Классы из состояния компонента — снимок `TClasses`, список имён; чего нет —
+ * пустой список. Читаются по имени, как наборы (`setOf`).
+ */
+export function classesOf(value: unknown): readonly string[] {
+	return Array.isArray(value) && value.every((name): name is string => typeof name === 'string')
+		? value
+		: NO_CLASSES
+}
 
 /** Раскладчики по элементам: один на элемент, кто бы на него ни писал. */
 const LAID_OUT = new WeakMap<Element, TElementAttributes>()
@@ -237,16 +273,15 @@ export class TElementAttributes {
 	 * Слой `layer` теперь — `set`; на элементе — сумма слоёв. `inputs` — атрибуты-
 	 * входы пропов элемента: их называет база вместе со своими наборами.
 	 */
-	set(
-		layer: TAttributeLayer,
-		set: TAttributesMap,
-		inputs: ReadonlySet<string> = NO_INPUTS,
-	): void {
+	set(layer: TAttributeLayer, set: object, inputs: ReadonlySet<string> = NO_INPUTS): void {
 		this._layers.set(layer, { set, inputs })
 		this._applied = applyAttributes(this._element, this._sum(), this._applied)
 	}
 
-	/** Слои снизу вверх: из одноимённых действует верхний, `null` не перекрывает. */
+	/**
+	 * Слои снизу вверх: из одноимённых действует верхний. Имя называет только
+	 * строка: `null` в наборе нижний слой не перекрывает.
+	 */
 	private _sum(): TAppliedAttributes {
 		const sum = new Map<string, TAppliedAttribute>()
 
@@ -256,7 +291,7 @@ export class TElementAttributes {
 			if (!layer) continue
 
 			for (const [attribute, value] of Object.entries(layer.set)) {
-				if (value !== null)
+				if (typeof value === 'string')
 					sum.set(attribute, { value, input: layer.inputs.has(attribute) })
 			}
 		}

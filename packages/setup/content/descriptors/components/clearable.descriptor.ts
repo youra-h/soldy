@@ -1,21 +1,23 @@
 /**
  * Дескриптор Clearable (TClearable) — очистка значения, общая база Input,
- * DateInput и DatePicker.
+ * NumberInput, DateInput и DatePicker.
  *
  * Наследует InputControlDescriptor (value, name, readonly, required, id,
  * disabled, focused, size, variant, ...) и добавляет кнопку очистки: признак
  * `clearable` и набор кнопки `clearAria`. Саму кнопку рисует разметка формы:
- * Input и DateInput — у конца поля, первой в слоте `trailing`, DatePicker — у
- * одной даты в слоте `clear` своего поля, у диапазона — одну на период, после
- * поля конца. Select своей кнопки не рисует: `clearable` он отдаёт полю.
+ * Input, NumberInput и DateInput — у конца поля, первой в слоте `trailing`,
+ * DatePicker — у одной даты в слоте `clear` своего поля, у диапазона — одну на
+ * период, после поля конца. Select своей кнопки не рисует: `clearable` он
+ * отдаёт полю.
  *
  * Слот `clear` — своя кнопка вместо встроенной — объявляет каждая форма сама:
  * своей разметки у базы нет ни в одном адаптере, а слоты не наследуются.
  *
  * Плагина имён у базы нет, как у модального слоя: плагин имён у компонента
- * один, а у DatePicker кнопок с именами больше. Имя кнопки очистки пишет
- * плагин имён формы — `TClearableNamesPlugin` у Input и DateInput, его
- * наследник `TDatePickerNamesPlugin` у DatePicker.
+ * один, а у DatePicker и NumberInput кнопок с именами больше. Имя кнопки
+ * очистки пишет плагин имён формы — `TClearableNamesPlugin` у Input и
+ * DateInput, его наследники `TDatePickerNamesPlugin` у DatePicker и
+ * `TNumberInputNamesPlugin` у NumberInput.
  */
 
 import { defineComponent, defineDescriptor } from '../../../protected/define'

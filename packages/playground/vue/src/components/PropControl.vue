@@ -23,6 +23,25 @@ const asBoolean = computed(() => Boolean(props.modelValue))
 const asText = computed(() => textOf(props.modelValue))
 
 /**
+ * Пункт списка по значению модели. У пресетов (`control.values`) значение —
+ * не имя пункта, а то, что он отдаёт компоненту: пункт ищется по нему.
+ */
+const asOption = computed(() => {
+	const values = props.control.values
+
+	if (!values) return asText.value
+
+	return Object.keys(values).find((name) => values[name] === props.modelValue) ?? ''
+})
+
+/** В модель — значение пункта: у пресетов — его значение, иначе — имя. */
+function onOption(option: unknown): void {
+	const values = props.control.values
+
+	emit('update:modelValue', values && typeof option === 'string' ? values[option] : option)
+}
+
+/**
  * Текст числового поля — набранный, а не текст модели.
  *
  * Из модели поле перерисовывалось на каждое нажатие: всё, что числом ещё не
@@ -72,11 +91,11 @@ function onNumberOrText(value: unknown): void {
 
 	<Select
 		v-else-if="control.kind === 'select'"
-		:value="asText"
+		:value="asOption"
 		size="sm"
 		placeholder="не задано"
 		clearable
-		@update:value="emit('update:modelValue', $event)"
+		@update:value="onOption($event)"
 	>
 		<Select.Item
 			v-for="option in control.options"

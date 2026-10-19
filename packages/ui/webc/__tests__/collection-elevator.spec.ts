@@ -370,23 +370,27 @@ describe('порядок входа', () => {
 		])
 	})
 
-	/** Таб, переставленный кодом приложения, приходит в коллекцию со своим инстансом. */
+	/**
+	 * Таб, переставленный кодом приложения, приходит в коллекцию со своим
+	 * инстансом. Наборы помечены классом: `id` разметки набора уезжает на его
+	 * список табов.
+	 */
 	it('переставленный элемент входит со своим инстансом', async () => {
-		await mount(`<div is="so-tabs" id="first">
+		await mount(`<div is="so-tabs" class="first">
 				<div is="so-tabs-item" value="a" text="A"></div>
 			</div>
-			<div is="so-tabs" id="second"></div>`)
+			<div is="so-tabs" class="second"></div>`)
 
-		const moved = pick('#first [value="a"]', isTab)
+		const moved = pick('.first [value="a"]', isTab)
 
 		const ctrl = moved.ctrl
 
-		owner('#second').querySelector('.so-tabs__list')?.appendChild(moved)
+		owner('.second').querySelector('.so-tabs__list')?.appendChild(moved)
 		await flush()
 
 		expect(ctrl).toBeInstanceOf(TTabsItem)
-		expect(owner('#second').state.items).toEqual([ctrl])
-		expect(owner('#first').state.items).toEqual([])
+		expect(owner('.second').state.items).toEqual([ctrl])
+		expect(owner('.first').state.items).toEqual([])
 	})
 })
 

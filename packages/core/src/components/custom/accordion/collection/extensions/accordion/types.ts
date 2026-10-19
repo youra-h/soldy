@@ -1,7 +1,6 @@
 import type { IAccordion } from '../../../types'
 import type { TAccordionView } from '../../../types'
 import type { IExtension, IExtensionItems } from '../../../../../base/collection'
-import type { TAccordionExtension } from './accordion.extension'
 import type { IAccordionItemExtension } from './item'
 import type { IAccordionItem } from '../../../item/types'
 
@@ -27,9 +26,4 @@ export type TAccordionEngineOptions<TOwner extends IAccordion = IAccordion> = {
  */
 export type TAccordionExtensionEvents = {
 	'change:view': (value: TAccordionView | undefined) => void
-}
-
-export type TAccordionExtensions<TItem extends IAccordionItem> = {
-	accordion: TAccordionExtension<any, TItem>
-	[key: string]: IExtension<TItem>
 }

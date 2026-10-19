@@ -62,6 +62,8 @@ export type TDatePickerEvents = TClearableEvents<TDatePickerValue> &
 		'change:max': (value: TCalendarDate | undefined) => void
 		/** change:unavailable */
 		'change:unavailable': (value: TCalendarUnavailable | undefined) => void
+		/** change:validate */
+		'change:validate': (value: boolean) => void
 		/** change:weekStart */
 		'change:weekStart': (value: TWeekday | undefined) => void
 		/** change:locale */
@@ -108,6 +110,12 @@ export interface IDatePickerProps extends IClearableProps<TDatePickerValue> {
 	 * ошибка. Конец диапазона проверяется с якорем — набранным началом
 	 */
 	unavailable?: TCalendarUnavailable
+	/**
+	 * Проверка набора: «00» у дня и месяца не записывается, часть ждёт
+	 * следующей цифры. DatePicker отдаёт её полю одной даты и обоим концам
+	 * диапазона. По умолчанию выключена — верна ли дата, решает приложение
+	 */
+	validate?: boolean
 	/** Первый день недели; не задан — по локали */
 	weekStart?: TWeekday
 	/**
@@ -160,6 +168,8 @@ export interface IDatePicker
 	max: TCalendarDate | undefined
 	/** Недоступные дни — календарю и полям */
 	unavailable: TCalendarUnavailable | undefined
+	/** Проверка набора — полям: число ниже хода части не записывается */
+	validate: boolean
 	/** Первый день недели; `undefined` — по локали */
 	weekStart: TWeekday | undefined
 	/** Локаль поля и календаря */

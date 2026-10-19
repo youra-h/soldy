@@ -3,20 +3,22 @@
  *
  * Подпись называет labelable-контрол своим `for`: клик по ней браузер доводит
  * до поля — у поля ввода это фокус, у флажка — переключение, — а текст
- * становится именем поля. Группу (DateInput, DatePicker, RadioGroup) подпись
- * называет ссылкой `aria-labelledby`, и клик по ней ничего не делает. Ни то
- * ни другое jsdom честно не выполняет.
+ * становится именем поля. Группу (DateInput, DatePicker, RadioGroup, ползунок
+ * с несколькими ручками) подпись называет ссылкой `aria-labelledby`, и клик по
+ * ней ничего не делает. Ни то ни другое jsdom честно не выполняет.
  *
  * Раскладку сторон jsdom не считает вовсе. Сбоку (`start`) первая строка
  * подписи стоит по центру контрола — у поля ввода, выбора и даты это строка
- * его текста, у флажка, переключателя и оценки — их середина, — на любом
- * размере. Колонку подписи задаёт `--so-field-columns`: одна колонка ставит
+ * его текста, у флажка, переключателя и оценки — их середина, у ползунка —
+ * полоса ручек, — на любом размере. Колонку подписи задаёт `--so-field-columns`: одна колонка ставит
  * подпись над контролом пиксель в пиксель, как `top`. Подсказка стоит под
  * колонкой контрола и от него не отрывается, сколько бы строк ни заняла
  * подпись.
  *
  * В режиме принудительных цветов цвет рамки браузер заменяет системным, и
  * ошибку от покоя отличает толщина: рамка поля и коробки флажка вдвое толще.
+ * Фон там браузер заменяет цветом страницы, а точка обязательного поля — фон:
+ * она обязана остаться видна и у подписи, и у контрола без подписи.
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
@@ -30,13 +32,16 @@ import {
 	DatePicker,
 	Field,
 	Input,
+	NumberInput,
 	RadioGroup,
 	Rating,
 	Select,
+	Slider,
 	Switch,
+	Textarea,
 } from '@soldy-ui/vue'
 
-import { find } from './colors'
+import { contrast, find, style, systemColor } from './colors'
 import { forcedColors } from './media'
 
 import '@soldy-ui/theme-oren'
@@ -158,6 +163,41 @@ describe('клик по подписи', () => {
 			find('.so-radio-group'),
 		)
 	})
+
+	it('ползунок с одной ручкой — фокус на поле ручки, имя — текст подписи', async () => {
+		await show(() => h(Field, { label: 'Громкость' }, () => h(Slider, { value: 40 })))
+
+		const input = find('.so-slider input')
+
+		await userEvent.click(find('.so-field__label'))
+
+		expect(document.activeElement).toBe(input)
+		expect(page.getByRole('slider', { name: 'Громкость', exact: true }).query()).toBe(input)
+	})
+
+	/**
+	 * Подпись называет группу ручек — корень ползунка, — а ручки сохраняют свои
+	 * имена из `thumbLabels`: ни текст подписи, ни значение соседнего поля в них
+	 * не входят. Клик по подписи группы ничего не делает, как у радио.
+	 */
+	it('ползунок с несколькими ручками — подпись называет группу, имена ручек целы', async () => {
+		await show(() =>
+			h(Field, { label: 'Цена' }, () =>
+				h(Slider, { value: [20, 80], thumbLabels: ['От', 'До'] }),
+			),
+		)
+
+		const [from, to] = [...document.querySelectorAll('.so-slider input')]
+
+		await userEvent.click(find('.so-field__label'))
+
+		expect([from, to]).not.toContain(document.activeElement)
+		expect(page.getByRole('group', { name: 'Цена', exact: true }).query()).toBe(
+			find('.so-slider'),
+		)
+		expect(page.getByRole('slider', { name: 'От', exact: true }).query()).toBe(from)
+		expect(page.getByRole('slider', { name: 'До', exact: true }).query()).toBe(to)
+	})
 })
 
 /**
@@ -166,12 +206,15 @@ describe('клик по подписи', () => {
  */
 const CONTROLS: ReadonlyArray<readonly [string, (size: TComponentSize) => VNode, string]> = [
 	['Input', (size) => h(Input, { size }), '.so-input'],
+	['NumberInput', (size) => h(NumberInput, { size }), '.so-number-input'],
 	['Select', (size) => h(Select, { size }), '.so-select__field'],
 	['DateInput', (size) => h(DateInput, { size }), '.so-date-input'],
 	['DatePicker', (size) => h(DatePicker, { size }), '.so-date-picker__field'],
 	['CheckBox', (size) => h(CheckBox, { size }), '.so-check-box__container'],
 	['Switch', (size) => h(Switch, { size }), '.so-switch__track'],
 	['Rating', (size) => h(Rating, { size }), '.so-rating__track'],
+	// Ползунок — по полосе ручек: ручка стоит на ней во всю её высоту
+	['Slider', (size) => h(Slider, { size }), '.so-slider__thumb'],
 ]
 
 describe.each(CONTROLS)('%s: подпись сбоку', (_name, control, box) => {
@@ -187,6 +230,40 @@ describe.each(CONTROLS)('%s: подпись сбоку', (_name, control, box) =
 			expect(
 				Math.abs(middle(rows[0]) - middle(rect(box))),
 				`${size}: центр первой строки и контрола`,
+			).toBeLessThanOrEqual(1)
+
+			cleanup()
+		}
+	})
+})
+
+/**
+ * Многострочное поле выше своей первой строки: подпись сбоку ровняется не по
+ * центру коробки, а по первой строке текста — там, где она у Input того же
+ * размера, сколько бы строк ни было ниже и есть ли под полем счётчик.
+ */
+describe('Textarea: подпись сбоку', () => {
+	it('первая строка подписи — по центру первой строки поля на любом размере', async () => {
+		for (const size of SIZES) {
+			await show(() =>
+				h(Field, { label: LONG_LABEL, position: 'start', size }, () =>
+					h(Textarea, { size, rows: 3, counter: true }),
+				),
+			)
+
+			const rows = lines()
+			const field = find('.so-textarea textarea')
+			const style = getComputedStyle(field)
+			const first =
+				field.getBoundingClientRect().top +
+				parseFloat(style.borderTopWidth) +
+				parseFloat(style.paddingTop) +
+				parseFloat(style.lineHeight) / 2
+
+			expect(rows.length, `${size}: подпись в несколько строк`).toBeGreaterThan(1)
+			expect(
+				Math.abs(middle(rows[0]) - first),
+				`${size}: центр первой строки подписи и поля`,
 			).toBeLessThanOrEqual(1)
 
 			cleanup()
@@ -306,5 +383,51 @@ describe('режим принудительных цветов', () => {
 
 		expect(valid).toBe('1px')
 		expect(invalid).toBe('2px')
+	})
+
+	/**
+	 * Точка обязательного поля — фон, а фон браузер в этом режиме заменяет
+	 * цветом страницы: у контролов точка пропадала, и обязательное поле было
+	 * не отличить от прочих. Точка стоит у подписи, а без подписи — у самого
+	 * контрола, у каждого на своём узле (`themes/oren/src/mixins/_required.scss`).
+	 * Цвета точки спек не знает: видна — значит отходит от страницы не меньше
+	 * порога графики по WCAG (1.4.11).
+	 */
+	const DOTS: readonly { name: string; label?: string; control: () => VNode; host: string }[] = [
+		{
+			name: 'у подписи',
+			label: 'Подпись',
+			control: () => h(Input, { required: true }),
+			host: '.so-field__label',
+		},
+		{
+			name: 'у поля ввода без подписи',
+			control: () => h(Input, { required: true }),
+			host: '.so-input',
+		},
+		{
+			name: 'у флажка без подписи',
+			control: () => h(CheckBox, { required: true }),
+			host: '.so-check-box__container',
+		},
+		{
+			name: 'у переключателя без подписи',
+			control: () => h(Switch, { required: true }),
+			host: '.so-switch',
+		},
+	]
+
+	it.each(DOTS)('точка обязательного поля $name видна', async ({ label, control, host }) => {
+		await forcedColors('active')
+		await show(() => h(Field, { label }, control))
+
+		const dot = style(find(host), '::after')
+
+		expect(dot.content, 'точка нарисована').not.toBe('none')
+		expect(dot.display, 'точка не скрыта').not.toBe('none')
+		expect(
+			contrast(dot.backgroundColor, [systemColor('Canvas')]),
+			'контраст точки к странице',
+		).toBeGreaterThanOrEqual(3)
 	})
 })

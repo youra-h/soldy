@@ -10,7 +10,9 @@ import ProgressSpinnerPreview from './ProgressSpinnerPreview.svelte'
 import RadioGroupPreview from './RadioGroupPreview.svelte'
 import SkeletonPreview from './SkeletonPreview.svelte'
 import SwitchPreview from './SwitchPreview.svelte'
+import TablePreview from './TablePreview.svelte'
 import TabsPreview from './TabsPreview.svelte'
+import VirtualPreview from './VirtualPreview.svelte'
 
 /** Пропсы превью: пропы строки, `ctrl` с экземпляром ядра и колбэки событий хоста. */
 export type TPreviewProps = Record<string, unknown>
@@ -25,7 +27,9 @@ export type TPreviewProps = Record<string, unknown>
  * Vue, чтобы колонки фреймворков можно было сравнивать глазами. Разметка
  * Svelte живёт только в `.svelte`, поэтому превью — файлы, а карта — ссылки
  * на них. Содержимое коллекций — из общего манифеста (`COLLECTION_ITEMS`), как
- * у Vue и React.
+ * у Vue и React. Значения пропов самого компонента — подпись кнопки,
+ * плейсхолдер поля — данные, одни на все хосты (`PREVIEW_PROPS` в общем
+ * пакете), и в `bind` их кладёт оболочка. Превью — обёртка и содержимое.
  *
  * Слоёв и `frame` здесь нет: во Vue это ComponentView с чужими пропами, а в
  * Svelte чужой проп ушёл бы атрибутом в корень.
@@ -40,9 +44,11 @@ export const PREVIEWS: Record<string, TPreview> = {
 	label: LabelPreview,
 	'radio-group': RadioGroupPreview,
 	'list-box': ListBoxPreview,
+	table: TablePreview,
 	tabs: TabsPreview,
 	accordion: AccordionPreview,
 	icon: IconPreview,
 	'progress-spinner': ProgressSpinnerPreview,
 	skeleton: SkeletonPreview,
+	virtual: VirtualPreview,
 }

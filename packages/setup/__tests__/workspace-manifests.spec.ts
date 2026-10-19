@@ -42,6 +42,14 @@ type TChangesetConfig = {
 	readonly ignore: readonly string[]
 }
 
+/** `.changeset/pre.json`: режим предварительных выпусков changesets. */
+type TPreState = {
+	/** `pre` — версии выходят с суффиксом, `exit` — следующий выпуск без него. */
+	readonly mode: string
+	/** Суффикс версии и тег npm: `alpha` → `0.3.0-alpha.0`. */
+	readonly tag: string
+}
+
 /** Changeset в том виде, в каком его читает сам changesets (`@changesets/read`). */
 type TChangeset = {
 	/** Имя файла без `.md`, от `.changeset/`. */
@@ -92,6 +100,23 @@ function readChangesetConfig(): TChangesetConfig {
 	}
 
 	return { fixed, ignore }
+}
+
+/** Нет файла — changesets не в pre-режиме: `undefined`, как у самого changesets. */
+function readPreState(): TPreState | undefined {
+	const file = join(ROOT, '.changeset', 'pre.json')
+
+	if (!existsSync(file)) {
+		return undefined
+	}
+
+	const { mode, tag } = readJsonObject(file)
+
+	if (typeof mode !== 'string' || typeof tag !== 'string') {
+		throw new Error(`${file}: mode и tag — строки`)
+	}
+
+	return { mode, tag }
 }
 
 function joinDir(dir: string, name: string): string {
@@ -654,6 +679,37 @@ function checkChangesets(
 	return violations
 }
 
+/**
+ * До `1.0` библиотека не готова, и версия говорит об этом суффиксом: changesets
+ * в pre-режиме, выпуск — `0.3.0-alpha.0`. Версия без суффикса допустима — с неё
+ * pre-режим начинается, — а суффикс не того тега значит, что режим сменили
+ * мимо changesets.
+ */
+function checkPrerelease(
+	preState: TPreState | undefined,
+	library: readonly TWorkspacePackage[],
+): string[] {
+	const violations: string[] = []
+
+	for (const { dir, manifest } of library) {
+		const { version } = manifest
+
+		if (typeof version !== 'string' || !version.startsWith('0.')) {
+			continue
+		}
+
+		if (preState?.mode !== 'pre') {
+			violations.push(
+				`${dir}: версия ${version}, а changesets не в pre-режиме — до 1.0 выпуск идёт с суффиксом (npx changeset pre enter alpha)`,
+			)
+		} else if (version.includes('-') && !version.includes(`-${preState.tag}.`)) {
+			violations.push(`${dir}: версия ${version}, а тег pre-режима — ${preState.tag}`)
+		}
+	}
+
+	return violations
+}
+
 describe('манифесты пакетов воркспейса', () => {
 	const root = readManifest('')
 	const packages = collectWorkspacePackages(root)
@@ -744,6 +800,15 @@ describe('манифесты пакетов воркспейса', () => {
 		expect(
 			violations,
 			'Changeset разошёлся с разделом AGENTS.md «Версии пакетов»:\n' + violations.join('\n'),
+		).toEqual([])
+	})
+
+	it('до 1.0 выпуск идёт pre-режимом, с суффиксом версии', () => {
+		const violations = checkPrerelease(readPreState(), library)
+
+		expect(
+			violations,
+			'Pre-режим разошёлся с разделом AGENTS.md «Версии пакетов»:\n' + violations.join('\n'),
 		).toEqual([])
 	})
 })
@@ -1209,5 +1274,29 @@ describe('сторож манифестов', () => {
 	it('minor при версии 0.x и major при 1.x — без нарушений', () => {
 		expect(checkChangesets([changeset('minor')], [library({ version: '0.3.0' })])).toEqual([])
 		expect(checkChangesets([changeset('major')], [library({})])).toEqual([])
+	})
+
+	it('версия 0.x без pre-режима — нарушение', () => {
+		const message =
+			'packages/example: версия 0.3.0, а changesets не в pre-режиме — до 1.0 выпуск идёт с суффиксом (npx changeset pre enter alpha)'
+
+		expect(checkPrerelease(undefined, [library({ version: '0.3.0' })])).toEqual([message])
+		expect(
+			checkPrerelease({ mode: 'exit', tag: 'alpha' }, [library({ version: '0.3.0' })]),
+		).toEqual([message])
+	})
+
+	it('суффикс не того тега — нарушение', () => {
+		expect(
+			checkPrerelease({ mode: 'pre', tag: 'alpha' }, [library({ version: '0.3.0-beta.1' })]),
+		).toEqual(['packages/example: версия 0.3.0-beta.1, а тег pre-режима — alpha'])
+	})
+
+	it('pre-режим с суффиксом своего тега или до первого выпуска, версия 1.x — без нарушений', () => {
+		const alpha = { mode: 'pre', tag: 'alpha' }
+
+		expect(checkPrerelease(alpha, [library({ version: '0.3.0-alpha.2' })])).toEqual([])
+		expect(checkPrerelease(alpha, [library({ version: '0.2.0' })])).toEqual([])
+		expect(checkPrerelease(undefined, [library({})])).toEqual([])
 	})
 })
