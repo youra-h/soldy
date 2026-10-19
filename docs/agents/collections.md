@@ -447,7 +447,10 @@ Solid петля по ключу — `KeyedFor` адаптера (сторожа
 `ui/solid/__tests__/table.spec.tsx`), у Svelte — `{#each}` с ключом записи:
 узлу живого ключа он отдаёт его новую запись (сторожат «окно» в
 `ui/svelte/__tests__/table.spec.ts` и «цикл Svelte» в
-`ui/svelte/__tests__/virtual.spec.ts`), у Web Components — `TKeyedLoop`
+`ui/svelte/__tests__/virtual.spec.ts`), у Angular — `@for` с `track` по ключу
+записи: узел живого ключа он оставляет и отдаёт ему новую запись (сторожат
+«окно» в `ui/angular/__tests__/table.spec.ts` и «цикл Angular» в
+`ui/angular/__tests__/virtual.spec.ts`), у Web Components — `TKeyedLoop`
 шаблона: узлу живого ключа она отдаёт его новую запись (`update`), и распорка
 берёт из неё стиль (сторожат «распорки окна» в
 `ui/webc/__tests__/list-box.spec.ts` и «окно» в
@@ -774,11 +777,13 @@ webc) типизируется по инстансу: `TInstanceState<TInstance>
 (`C['plugins']['outputs']`). `useAdapter` React, Solid и Svelte отдаёт `state`
 типа `TAdapterState<C>`: к свойствам инстанса добавлены выходы того же вида —
 снимок, только чтение, необязательный ключ. Граница та же, `toInstanceState`.
-У Angular и webc состояние шаблону отдаёт базовый класс: `state` у них —
-`TInstanceState` инстанса, без выходов. У Angular компонента, который читает
-выход, нет, а в webc выход читают по имени, с проверкой вида значения: база —
-выход плагина раскладки (`layout_styles`), шаблон таблицы — имя чекбокса
-«выбрать все» (`names_selectAll`).
+У Angular и webc состояние шаблону отдаёт базовый класс. У Angular в нём и
+выходы: базе их называет сгенерированная поверхность
+(`DescriptorPluginOutputs`), и шаблон таблицы читает имя чекбокса «выбрать
+все» из `state()` по типу. У webc `state` — `TInstanceState` инстанса, без
+выходов, и выход читают по имени, с проверкой вида значения: база — выход
+плагина раскладки (`layout_styles`), шаблон таблицы — то же имя
+(`names_selectAll`).
 
 Vue отдаёт шаблону не `state`, а рефы (`TBinding`: пропы `TProps`, свойства
 инстанса и выходы плагинов контракта), и граница у него своя —

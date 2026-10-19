@@ -1,0 +1,110 @@
+<!--
+	Хост (`<div so-table>`) — окно таблицы, поэтому шаблон — сама таблица,
+	корень `#root`: классы, наборы и стиль ядра кладёт на неё база. Слоты
+	контракта: header (scope { column, text, sortable }) и cell
+	(scope { row, column, value }) — шаблонами, empty — проекцией.
+
+	Логики в разметке нет: заголовки — показанные колонки коллекции
+	(`shownColumns`), тело — то, что рисует коллекция строк (`drawn`), число
+	колонок и счёт выбора — выходы коллекции.
+
+	Шапка: строка с набором `headRowAria` — у неё нет экземпляра, и его держит
+	коллекция: в окне это номер шапки среди строк таблицы. Первая ячейка —
+	колонка выбора, пока режим выбора не `none`: один факт решает и выбор, и
+	колонку. Это разметка таблицы, а не колонка коллекции. В `multiple` —
+	заголовок с чекбоксом «выбрать все» (`embedded: 'table.select-all'`) над
+	экземпляром, который держит таблица (`selectAll` фасада): отметку, «часть»
+	и «выключен» она пишет ему из счёта выбора, а клик по нему — просьба, которую
+	она выполняет сама. Имя — выход плагина имён (`names_selectAll`), от локали.
+	В `single` — пустая `td`: пустой заголовок скринридеры считают ошибкой.
+	Набор ячейки (`cellAria`) — коллекции: в сетке ячейка принимает фокус.
+
+	Дальше — заголовок колонки на каждую показанную колонку, ключ — колонка.
+	Подпись и кнопку сортировки рядом с ней рисует сама колонка; таблица отдаёт
+	ей только подпись — свой шаблон `header` пробросом в шаблон `default`
+	колонки, и только заданный: пустой шаблон Angular от заданного не отличает.
+	Scope проброса — scope подписи колонки (`text`, `sortable`) и сама колонка.
+	Проброс — `<ng-template slot>`, уведённый в слив шаблонов колонки
+	(`ngProjectAs`): в её основной проекции он снял бы запасной текст.
+
+	Тело — одна петля по `drawn`, ключ — ключ записи: записи новые на каждую
+	смену, а строка, оставшаяся в окне, — тот же узел вместе с фокусом сетки.
+	Без окна это все показанные строки. В окне обёртки `Virtual` — строки окна и
+	распорки на месте пропущенных: `tr` под `aria-hidden` с ячейкой во всю
+	ширину таблицы (`columnCount`), высоту которой тема берёт из её стиля, а
+	стиль пишет ядро. Строка — над элементом коллекции строк; шаблон `cell`
+	уходит ей пробросом в её шаблон `cell`: scope один, а строку в него кладёт
+	сама строка.
+
+	Пока показанных строк нет — строка с одной ячейкой во всю ширину таблицы,
+	`colspan` — число показанных колонок вместе с колонкой выбора, готовым
+	значением ядра (`columnCount`). Содержимое — проекция `empty`; без неё ячейка
+	пуста, и под шапкой остаётся пустая полоса.
+-->
+<table #root>
+	<thead class="so-table__head">
+		<tr class="so-table__head-row" [so-attributes]="state()['headRowAria']">
+			@if (state()['mode'] === 'multiple') {
+				<th class="so-table__select" [so-attributes]="state()['cellAria']">
+					<so-check-box
+						embedded="table.select-all"
+						[ctrl]="facade()?.selectAll"
+						[aria_label]="state()['names_selectAll']"
+					/>
+				</th>
+			} @else if (state()['mode'] === 'single') {
+				<td class="so-table__select" [so-attributes]="state()['cellAria']"></td>
+			}
+			@for (column of state()['shownColumns'] ?? []; track column.uid) {
+				<th so-table-column [ctrl]="column">
+					@if (slot('header'); as header) {
+						<ng-template
+							slot="default"
+							ngProjectAs="ng-template[slot]"
+							let-text="text"
+							let-sortable="sortable"
+						>
+							<ng-container
+								[ngTemplateOutlet]="header"
+								[ngTemplateOutletContext]="{ column, text, sortable }"
+							/>
+						</ng-template>
+					}
+				</th>
+			}
+		</tr>
+	</thead>
+	<tbody class="so-table__body">
+		@for (entry of state()['drawn'] ?? []; track entry.key) {
+			@if (entry.kind === 'filler') {
+				<tr class="so-table__filler-row" aria-hidden="true" [style]="entry.style">
+					<td class="so-table__filler" [attr.colspan]="state()['columnCount']"></td>
+				</tr>
+			} @else {
+				<tr so-table-row [ctrl]="entry.item">
+					@if (slot('cell'); as cell) {
+						<ng-template
+							slot="cell"
+							ngProjectAs="ng-template[slot]"
+							let-row="row"
+							let-column="column"
+							let-value="value"
+						>
+							<ng-container
+								[ngTemplateOutlet]="cell"
+								[ngTemplateOutletContext]="{ row, column, value }"
+							/>
+						</ng-template>
+					}
+				</tr>
+			}
+		}
+		@if (state()['shown']?.length === 0) {
+			<tr class="so-table__empty-row">
+				<td class="so-table__empty" [attr.colspan]="state()['columnCount']">
+					<ng-content select="[slot=empty]" />
+				</td>
+			</tr>
+		}
+	</tbody>
+</table>
