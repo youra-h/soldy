@@ -2,7 +2,7 @@ import type { IFrame, TDefaultValues } from '@soldy-ui/core'
 import { TBasePlugin } from '../../../base'
 import type { IPluginContext } from '../../../base'
 import { TElementPlugin } from '../../element'
-import { isPinnedToViewport, positionOriginOf } from '../../../utils'
+import { afterTransitions, isPinnedToViewport, positionOriginOf } from '../../../utils'
 import type {
 	IAnchorPluginOptions,
 	IAnchorPluginProps,
@@ -81,6 +81,23 @@ const shiftInto = (start: number, size: number, limit: number): number =>
  * привязка — за слежение за посторонним элементом. Смешивать их значит
  * заводить в одном плагине два повода меняться.
  *
+ * **Место считается, пока панель на экране** — показана или ещё гаснет.
+ * Закрытые панели у полей — списки Select, подсказки, меню, календари
+ * DatePicker — стоят на странице десятками, и каждая на каждом кадре
+ * прокрутки меряла бы свой якорь и писала бы во Frame новые координаты.
+ * Поэтому якорь плагин запоминает сразу, а слежение за ним (`_subscribe`)
+ * заводит показ Frame, у Frame, созданного видимым, — назначение якоря.
+ * Снимает его конец закрытия: когда корень доиграл переходы закрытия
+ * (`afterTransitions`), — гаснущая и уходящая жестом панель идёт за полем до
+ * конца. Новый показ ожидание отменяет. Снятие якоря и `destroy()` снимают
+ * слежение сразу, снятый корень — тоже: панели на экране нет, и ждать её
+ * перехода незачем, — а новый корень показанной панели слежение возвращает.
+ * Вне слежения место не считает ничто — ни прокрутка, ни наблюдатель панели,
+ * ни сеттеры, — на любой стороне, сбоку тоже: показ считает его заново.
+ * Открытость плагин ведёт сам, по `show` и `hide` своего Frame, а не
+ * адаптер: якорь только у открытой панели развёл бы это правило по шести
+ * адаптерам.
+ *
  * `placement` — сторона и выравнивание по якорю: `-start` — по началу, `-end` —
  * по концу, без суффикса — по центру. Стороны блока, `top` и `bottom`, ставят
  * панель над якорем или под ним, и выравнивание идёт вдоль строки. Стороны
@@ -140,8 +157,8 @@ const shiftInto = (start: number, size: number, limit: number): number =>
  * `absolute` лежит в документе, и окно браузер прокручивает вместе с ней и
  * полем, без JS, — так у PrimeVue. Якорь в окне (`fixed` или `sticky` к
  * окну, `isPinnedToViewport`) прокрутка окна не двигает, и панель `absolute`
- * отставала бы от него наоборот — у него `fixed`. Выбирают заново там же, где
- * забывают сторону: показ Frame и смена якоря.
+ * отставала бы от него наоборот — у него `fixed`. Выбирают заново показ Frame
+ * и смена якоря у показанной панели.
  *
  * Внутренняя прокрутка — граница, а не недоделка. Поле в своём прокручиваемом
  * блоке, а панель в `body`: её отставание на кадр снимет только CSS Anchor
@@ -216,6 +233,13 @@ export class TAnchorPlugin extends TBasePlugin<any, TAnchorPluginEvents> {
 	 * `matchWidth` даёт якорь и до раскладки, а высоту знает только узел.
 	 */
 	private _heldSide: TAnchorSide | null = null
+	/**
+	 * Слежение идёт: панель показана или ещё гаснет (см. описание класса). Вне
+	 * слежения у плагина нет подписок на якорь, и место он не считает.
+	 */
+	private _following = false
+	/** Отмена ожидания конца перехода закрытия; `null` — плагин не ждёт. */
+	private _stopWaiting: (() => void) | null = null
 
 	override install(ctx: IPluginContext, options?: IAnchorPluginOptions): void {
 		super.install(ctx, options)
@@ -225,6 +249,9 @@ export class TAnchorPlugin extends TBasePlugin<any, TAnchorPluginEvents> {
 		this._flip = options?.flip ?? this._flip
 		this._offset = options?.offset ?? this._offset
 		this._frame = ctx.getInstance<IFrame>() ?? null
+		// Frame, созданный видимым, уже на экране, а `show` для него не придёт:
+		// за якорем он следит с назначения
+		this._following = this._frame?.visible ?? false
 
 		const elementPlugin = ctx.get(TElementPlugin)
 
@@ -238,14 +265,20 @@ export class TAnchorPlugin extends TBasePlugin<any, TAnchorPluginEvents> {
 			this._panelObserver?.disconnect()
 			this._panelObserver = new ResizeObserver(() => this._update())
 			this._panelObserver.observe(element, { box: 'border-box' })
+			// Показанной панели вернули корень: слежение, снятое на `removed`,
+			// возвращается
+			if (!this._following && this._frame?.visible) this._follow()
 			this._update()
 		})
 
+		// Панели на экране нет: ни следить за якорем, ни ждать её перехода
+		// закрытия незачем
 		elementPlugin?.events.on('removed', () => {
 			this._cancelPanelResume()
 			this._panelObserver?.disconnect()
 			this._panelObserver = null
 			this._element = null
+			this._unfollow()
 		})
 
 		// Панель могла открыться после того, как якорь уже назначен. Сторону
@@ -254,19 +287,29 @@ export class TAnchorPlugin extends TBasePlugin<any, TAnchorPluginEvents> {
 		this._listenTo(this._frame?.events, 'show', () => {
 			this._heldSide = null
 			this._choosePosition()
+			this._follow()
 			this._update()
 		})
+		this._listenTo(this._frame?.events, 'hide', () => this._unfollowAfterTransitions())
 		this._listenTo(this._frame?.events, 'change:contained', () => this._update())
 	}
 
+	/**
+	 * Назначает якорь. У закрытой панели якорь только запоминается: место
+	 * посчитает показ.
+	 */
 	setAnchor(element: Element): void {
 		if (this._anchor === element) return
 
 		this._anchor = element
 		this._heldSide = null
-		this._choosePosition()
-		this._subscribe()
-		this._update()
+
+		if (this._following) {
+			this._choosePosition()
+			this._subscribe()
+			this._update()
+		}
+
 		this.events.emit('change:anchor', element)
 	}
 
@@ -336,7 +379,7 @@ export class TAnchorPlugin extends TBasePlugin<any, TAnchorPluginEvents> {
 	}
 
 	override destroy(): void {
-		this._unsubscribe()
+		this._unfollow()
 
 		this._cancelPanelResume()
 		this._panelObserver?.disconnect()
@@ -352,6 +395,10 @@ export class TAnchorPlugin extends TBasePlugin<any, TAnchorPluginEvents> {
 	/**
 	 * Считает координаты и кладёт их во Frame.
 	 *
+	 * Вне слежения не считает ничего, на какой бы стороне ни стояла панель:
+	 * закрытой панели место не нужно, его посчитает показ (см. описание
+	 * класса).
+	 *
 	 * Расчёт выбирает сторона после flip. Над якорем и под ним `x` идёт от
 	 * выравнивания по строке (`_resolveX`), а `y` — от стороны. Сбоку наоборот:
 	 * `x` — от стороны (`_inlineX`), `y` — от выравнивания по вертикали
@@ -362,6 +409,8 @@ export class TAnchorPlugin extends TBasePlugin<any, TAnchorPluginEvents> {
 	 * после рендера адаптера.
 	 */
 	private _update(): void {
+		if (!this._following) return
+
 		const frame = this._frame
 		const anchor = this._anchor
 
@@ -666,10 +715,62 @@ export class TAnchorPlugin extends TBasePlugin<any, TAnchorPluginEvents> {
 	}
 
 	/**
+	 * Заводит слежение: показ Frame, у Frame, созданного видимым, —
+	 * назначение якоря (см. описание класса). Ожидание конца закрытия
+	 * отменяется: панель снова открыта.
+	 */
+	private _follow(): void {
+		this._stopWaitingTransitions()
+		this._following = true
+		this._subscribe()
+	}
+
+	/** Снимает слежение сразу — вместе с ожиданием конца закрытия, если оно шло. */
+	private _unfollow(): void {
+		this._stopWaitingTransitions()
+		this._following = false
+		this._unsubscribe()
+	}
+
+	/**
+	 * Закрытие снимает слежение, когда корень доиграет переходы закрытия:
+	 * гаснущая и уходящая жестом панель ещё на экране и идёт за полем до
+	 * конца. Снятое прямо на `hide`, слежение оставило бы её стоять, пока поле
+	 * уезжает. Корня нет — ждать нечего, и слежение снимается сразу.
+	 */
+	private _unfollowAfterTransitions(): void {
+		if (!this._following) return
+
+		const element = this._element
+
+		if (!element) {
+			this._unfollow()
+
+			return
+		}
+
+		this._stopWaitingTransitions()
+		this._stopWaiting = afterTransitions(element, () => {
+			this._stopWaiting = null
+			this._unfollow()
+		})
+	}
+
+	/** Отменяет ожидание конца закрытия. */
+	private _stopWaitingTransitions(): void {
+		this._stopWaiting?.()
+		this._stopWaiting = null
+	}
+
+	/**
 	 * Следит за скроллом предков якоря, ресайзом окна и изменением размера
 	 * самого якоря (без скролла — например, у него пропал соседний тег).
 	 * Scroll и resize пересчитывают координаты сразу, уведомление наблюдателя
 	 * якоря — через `_onAnchorResize`.
+	 *
+	 * Подписки живут только при слежении (`_follow`, смена якоря у показанной
+	 * панели): у закрытой панели их нет вовсе. Прежние снимаются первыми, и
+	 * повторный показ второго набора не заводит.
 	 *
 	 * Каждый слушатель снимается по своей ссылке на элемент: одна переменная
 	 * цикла, захваченная всеми замыканиями, к моменту очистки была бы уже
@@ -744,8 +845,8 @@ export class TAnchorPlugin extends TBasePlugin<any, TAnchorPluginEvents> {
 	 * Возврат один: повторное уведомление до кадра второго не заводит, иначе
 	 * отмена застала бы только последний. Отменяют возврат `removed`, новый
 	 * `ready` и `destroy` — то, что убирает или меняет саму панель. Снятие якоря
-	 * (`removeAnchor`, `_unsubscribe`) его не отменяет: панель осталась, и без
-	 * возврата за её размером никто бы не следил.
+	 * и конец закрытия (`removeAnchor`, `_unsubscribe`) его не отменяют: панель
+	 * осталась, и без возврата за её размером никто бы не следил.
 	 */
 	private _pausePanel(): void {
 		const observer = this._panelObserver
