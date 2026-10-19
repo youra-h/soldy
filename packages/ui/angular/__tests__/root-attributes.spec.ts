@@ -25,6 +25,7 @@ import {
 	TButtonComponent,
 	TCheckBoxComponent,
 	TComponentViewComponent,
+	TFieldComponent,
 	TIconComponent,
 	TInputComponent,
 	TLabelComponent,
@@ -136,6 +137,20 @@ class SkeletonProbe extends TProbeHost {}
 })
 class LabelProbe extends TProbeHost {}
 
+@Component({
+	standalone: true,
+	imports: [TFieldComponent],
+	template: `<div
+		so-field
+		direction="rtl"
+		dir="ltr"
+		title="probe"
+		class="mine"
+		(soElementReady)="ready.push($event)"
+	></div>`,
+})
+class FieldProbe extends TProbeHost {}
+
 /** Компонент, хост его пробы, селектор корня и класс ядра на нём. */
 const COMPONENTS: ReadonlyArray<readonly [string, Type<TProbeHost>, string, string]> = [
 	['Button', ButtonProbe, '[so-button]', 'so-button'],
@@ -144,6 +159,7 @@ const COMPONENTS: ReadonlyArray<readonly [string, Type<TProbeHost>, string, stri
 	['ProgressSpinner', ProgressSpinnerProbe, '[so-progress-spinner]', 'so-progress-spinner'],
 	['Skeleton', SkeletonProbe, '[so-skeleton]', 'so-skeleton'],
 	['Label', LabelProbe, '[so-label]', 'so-label'],
+	['Field', FieldProbe, '[so-field]', 'so-field'],
 ]
 
 /**
@@ -192,6 +208,16 @@ class SwitchProbe extends TProbeHost {}
 	/>`,
 })
 class InputProbe extends TProbeHost {}
+
+/** Поля выключенные и с ошибкой — её пишет поле формы `Field` над каждым. */
+@Component({
+	standalone: true,
+	imports: [TFieldComponent, TCheckBoxComponent, TSwitchComponent, TInputComponent],
+	template: `<div so-field invalid><so-check-box disabled /></div>
+		<div so-field invalid><so-switch disabled /></div>
+		<div so-field invalid><so-input disabled /></div>`,
+})
+class InvalidFieldsHost {}
 
 /** Поле, хост его пробы, селектор корня и класс ядра на нём. */
 const FIELDS: ReadonlyArray<readonly [string, Type<TProbeHost>, string, string]> = [
@@ -340,6 +366,27 @@ describe('поле: атрибуты потребителя делятся ме�
 			expect(input.getAttribute('title')).toBe('probe')
 			expect(input.hasAttribute('class')).toBe(false)
 			expect(input.hasAttribute('style')).toBe(false)
+		},
+	)
+
+	/**
+	 * Тема красит коробку поля и подпись поля формы `Field` по корню поля —
+	 * прямому ребёнку обёртки контрола, — поэтому `dataset` (`data-disabled`,
+	 * `data-invalid`) база кладёт на корень, а ошибку скринридеру объявляет
+	 * `<input>`.
+	 */
+	it.each(FIELDS)(
+		'%s: data-disabled и data-invalid — на корне, aria-invalid — у <input>',
+		(_name, _host, selector) => {
+			const fixture = mountHost(InvalidFieldsHost)
+			const el = findIn(fixture, selector, HTMLElement)
+			const input = findIn(fixture, `${selector} input`, HTMLInputElement)
+
+			expect(el.dataset['disabled']).toBe('true')
+			expect(el.dataset['invalid']).toBe('true')
+			expect(input.hasAttribute('data-disabled')).toBe(false)
+			expect(input.hasAttribute('data-invalid')).toBe(false)
+			expect(input.getAttribute('aria-invalid')).toBe('true')
 		},
 	)
 

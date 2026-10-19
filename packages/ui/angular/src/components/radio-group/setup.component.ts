@@ -2,6 +2,7 @@ import {
 	RadioGroupCollectionDescriptor,
 	RadioGroupDescriptor,
 	TCollectionExtension,
+	TFieldControlExtension,
 } from '@soldy-ui/setup'
 import type { IRadioGroup, IRadioGroupProps, TRadioGroupCollectionFacade } from '@soldy-ui/core'
 import {
@@ -24,13 +25,21 @@ import type { TBinding } from '../../adapter'
  *
  * `engine` — готовая коллекция снаружи, вход группы: фасад работает на ней, а
  * без неё собирает свою (`completeEngine`).
+ *
+ * Поле формы `Field` связывается с группой, а не с радио: подпись поля
+ * называет группу ссылкой, ошибка — группы (`TFieldControlExtension` на
+ * своём контексте). Своему содержимому группа опускает пустую связку в тот же
+ * слой: радио и контролы в их подписях связку поля не берут.
  */
 export function setupRadioGroup(
 	ctrl: IRadioGroup | undefined,
 	props: object,
 	engine: IRadioGroupProps['engine'],
 ): TBinding<IRadioGroup, TRadioGroupCollectionFacade> {
-	const adapter = createAngularAdapterContext(RadioGroupDescriptor(), { ctrl, props })
+	const adapter = createAngularAdapterContext(RadioGroupDescriptor(), { ctrl, props }).use(
+		TFieldControlExtension,
+		{ elevator: AngularElevatorFactory },
+	)
 	const owner = useAdapter(adapter)
 
 	const collectionAdapter = createAngularAdapterContext(
