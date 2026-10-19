@@ -1,28 +1,45 @@
 /**
- * Зона нажатия кнопки очистки полей на `sm`.
+ * Зона нажатия кнопок в строке поля на `sm`: очистки и тех, что открывают
+ * панель, — кнопки календаря DatePicker и стрелки Select.
  *
- * Строка слота поля на `sm` — 20px, и кнопка очистки — квадрат в неё
- * (`clear-button.ts`), меньше минимума цели указателя по WCAG 2.5.8 (24×24).
- * Исключение по отступу её не спасает: вплотную к ней стоит ввод. Цель
- * добирает тема — невидимой зоной 24×24 по центру кнопки (`field-button-zone`
- * в `themes/oren/src/components/input/_mixins.scss`): нажатие по зоне —
- * нажатие по кнопке, а сама кнопка выглядит по-прежнему. Зона — у очистки
- * всей семьи полей: Input, DateInput, NumberInput, Select (очистку рисует его
- * поле — Input) и DatePicker в обоих режимах — у него очистка своя, не поля.
+ * Строка слота поля на `sm` — 20px, и эти кнопки — квадраты в неё
+ * (`clear-button.ts`; стрелка — квадрат очистки, `select.spec.ts`), меньше
+ * минимума цели указателя по WCAG 2.5.8 (24×24). Исключение по отступу их не
+ * спасает: вплотную к первой кнопке слота стоит ввод. Цель добирает тема —
+ * невидимой зоной 24×24 по центру кнопки (`field-button-zone` в
+ * `themes/oren/src/components/input/_mixins.scss`): нажатие по зоне — нажатие
+ * по кнопке, а сама кнопка выглядит по-прежнему. Зона — у очистки всей семьи
+ * полей: Input, DateInput, NumberInput, Select (очистку рисует его поле —
+ * Input) и DatePicker в обоих режимах — у него очистка своя, не поля, — и у
+ * кнопок, которые открывают панель: у кнопки календаря DatePicker в обоих
+ * режимах и у стрелки Select. Стрелка — `span`, а не Button, и зона стоит от
+ * неё, только пока она позиционирована.
  *
- * У каждого поля, слева направо и справа налево: зона — квадрат 24×24 по
- * центру кнопки, нажатие ловят и её углы, на ввод она заходит не дальше, чем
- * выходит за кнопку, а соседнюю кнопку не задевает. И настоящим нажатием мыши:
- * за краем кнопки со стороны ввода оно очищает поле, а у края соседней кнопки
- * достаётся ей, и поле остаётся со значением. Соседняя кнопка — та, что стоит
- * в поле за очисткой: кнопка потребителя в слоте `trailing`, кнопка шага
- * «меньше» у NumberInput, стрелка Select и кнопка календаря DatePicker.
+ * Очистка — у каждого поля, слева направо и справа налево: зона — квадрат
+ * 24×24 по центру кнопки, нажатие ловят и её углы, на ввод она заходит не
+ * дальше, чем выходит за кнопку, а соседнюю кнопку не задевает — и её зону,
+ * если зона у соседа своя. И настоящим нажатием мыши: за краем кнопки со
+ * стороны ввода оно очищает поле, а у края соседней кнопки достаётся ей, и
+ * поле остаётся со значением. Соседняя кнопка — та, что стоит в поле за
+ * очисткой: кнопка потребителя в слоте `trailing`, а со своей зоной — кнопка
+ * шага «меньше» у NumberInput, стрелка Select и кнопка календаря DatePicker.
  *
- * Проверен поломкой. Без зоны падают проверки зоны и нажатие за краем кнопки у
- * всех полей. С зоной вдвое больше падают проверки зоны у всех, а нажатие у
- * соседа — там, где сосед не позиционирован (кнопка в `trailing`, стрелка
- * Select): зона лежит поверх него. Кнопка-сосед — Button, она `relative` и
- * позже в дереве, поэтому лежит над зоной сама, и её край ловит одна проверка
+ * Кнопка, которая открывает панель, — без очистки: тогда ввод стоит вплотную
+ * к ней. Зона — та же, что у очистки, и у открытой панели тоже, когда стрелка
+ * Select развёрнута. Нажатие за краем кнопки со стороны ввода открывает
+ * панель, а за краем зоны — нет: там уже ввод. Select — в `editable`: без
+ * него панель открывает и нажатие по вводу, и проверять было бы нечего.
+ *
+ * Проверен поломкой. Без зоны падают проверки зоны и нажатие за краем кнопки:
+ * у очистки — всех полей, у кнопок панели — всех трёх, а у очистки Select и
+ * DatePicker, сосед которой остался без зоны, — ещё и проверка зоны соседа.
+ * Без `relative` у стрелки её зона встаёт от поля — в 145px от центра
+ * стрелки, — и у Select падают проверки зоны и нажатие за краем стрелки. С
+ * зоной вдвое больше падают проверки зоны у всех, нажатие за краем зоны
+ * кнопки панели — панель открывается и с ввода, — и нажатие у соседа очистки
+ * там, где сосед не позиционирован (кнопка в `trailing`): зона лежит поверх
+ * него. Остальные соседи — Button и стрелка — позиционированы и позже в
+ * дереве, поэтому лежат над зоной очистки сами, и их край ловит одна проверка
  * зоны.
  *
  * Ни раскладки, ни попадания по точке у jsdom нет — поэтому спек браузерный.
@@ -36,7 +53,7 @@ import { userEvent } from 'vitest/browser'
 import { defineComponent, h, nextTick, type VNode } from 'vue'
 import { DateInput, DatePicker, Input, NumberInput, Select, SelectItem } from '@soldy-ui/vue'
 
-import { find } from './colors'
+import { find, settled } from './colors'
 import { sidesOf, type TLine } from './directions'
 import { pseudoBox } from './pseudo-box'
 
@@ -60,6 +77,12 @@ const nextButton = (): VNode =>
 		'aria-label': 'Дальше',
 		style: 'inline-size: 20px; block-size: 20px; padding: 0',
 	})
+
+/** Опции Select. */
+const cities = (): VNode[] =>
+	['Москва', 'Тверь'].map((text, index) =>
+		h(SelectItem, { key: text, value: String(index), text }),
+	)
 
 /** Значение поля ввода по селектору. */
 function valueOf(selector: string): string {
@@ -87,6 +110,8 @@ type TFieldCase = {
 	input: string
 	/** Соседняя кнопка — за очисткой, к концу строки */
 	next: string
+	/** У соседней кнопки своя зона: зона очистки не задевает и её */
+	nextZone: boolean
 	/** Значение поля пусто */
 	empty: () => boolean
 }
@@ -103,6 +128,7 @@ const CASES: readonly TFieldCase[] = [
 		clear: '.so-input__clear',
 		input: '.so-input > input',
 		next: `.${NEXT}`,
+		nextZone: false,
 		empty: () => valueOf('.so-input > input') === '',
 	},
 	{
@@ -116,6 +142,7 @@ const CASES: readonly TFieldCase[] = [
 		clear: '.so-date-input__clear',
 		input: '.so-date-input__segments',
 		next: `.${NEXT}`,
+		nextZone: false,
 		empty: datesEmpty,
 	},
 	{
@@ -125,24 +152,16 @@ const CASES: readonly TFieldCase[] = [
 		clear: '.so-number-input__clear',
 		input: '.so-number-input__input',
 		next: '.so-number-input__decrement',
+		nextZone: true,
 		empty: () => valueOf('.so-number-input__input') === '',
 	},
 	{
 		name: 'Select',
-		field: () =>
-			h(
-				Select,
-				{ size: 'sm', value: '0', clearable: true },
-				{
-					default: () =>
-						['Москва', 'Тверь'].map((text, index) =>
-							h(SelectItem, { key: text, value: String(index), text }),
-						),
-				},
-			),
+		field: () => h(Select, { size: 'sm', value: '0', clearable: true }, { default: cities }),
 		clear: '.so-select__field .so-input__clear',
 		input: '.so-select__field > input',
 		next: '.so-select__arrow',
+		nextZone: true,
 		empty: () => valueOf('.so-select__field > input') === '',
 	},
 	{
@@ -157,6 +176,7 @@ const CASES: readonly TFieldCase[] = [
 		clear: '.so-date-picker__clear',
 		input: '.so-date-picker__field > .so-date-input__segments',
 		next: '.so-date-picker__trigger',
+		nextZone: true,
 		empty: datesEmpty,
 	},
 	{
@@ -172,7 +192,51 @@ const CASES: readonly TFieldCase[] = [
 		clear: '.so-date-picker__clear',
 		input: '.so-date-picker__end',
 		next: '.so-date-picker__trigger',
+		nextZone: true,
 		empty: datesEmpty,
+	},
+]
+
+type TOpenerCase = {
+	/** Поле — в заголовке теста */
+	name: string
+	/** Поле на `sm` со значением, без очистки: ввод стоит вплотную к кнопке */
+	field: () => VNode
+	/** Кнопка, которая открывает панель */
+	button: string
+	/** Ввод у начала кнопки: ряд частей даты, поле конца периода или поле ввода */
+	input: string
+	/** Панель — открытость ей пишет её слой (`data-open`) */
+	panel: string
+}
+
+const OPENERS: readonly TOpenerCase[] = [
+	{
+		name: 'DatePicker, одна дата',
+		field: () => h(DatePicker, { size: 'sm', value: '2026-05-12', aria_label: 'Дата заезда' }),
+		button: '.so-date-picker__trigger',
+		input: '.so-date-picker__field > .so-date-input__segments',
+		panel: '.so-date-picker__panel',
+	},
+	{
+		name: 'DatePicker, диапазон',
+		field: () =>
+			h(DatePicker, {
+				size: 'sm',
+				mode: 'range',
+				value: ['2026-05-12', '2026-05-20'],
+				aria_label: 'Даты поездки',
+			}),
+		button: '.so-date-picker__trigger',
+		input: '.so-date-picker__end',
+		panel: '.so-date-picker__panel',
+	},
+	{
+		name: 'Select, editable',
+		field: () => h(Select, { size: 'sm', value: '0', editable: true }, { default: cities }),
+		button: '.so-select__arrow',
+		input: '.so-select__field > input',
+		panel: '.so-select__panel',
 	},
 ]
 
@@ -205,7 +269,7 @@ const inlineOverlap = (a: DOMRect, b: DOMRect): number =>
  *
  * Точку Blink проверяет квадратом 1×1 вправо и вниз от неё
  * (`HitTestLocation`), поэтому квадрат ставится центром в точку, как в
- * `tags-close.spec.ts`: точка в углу зоны задевает её на полпикселя.
+ * `tags-close.spec.ts`.
  */
 const lands = (target: Element, x: number, y: number): boolean => {
 	const hit = document.elementFromPoint(x - 0.5, y - 0.5)
@@ -223,6 +287,52 @@ async function pressAt(x: number, y: number): Promise<void> {
 	await userEvent.click(document.body, { position: { x: x - body.left, y: y - body.top } })
 }
 
+/**
+ * Зона кнопки — квадрат 24×24 по её центру, нажатие ловят и его углы, а на
+ * ввод у начала кнопки он заходит не дальше, чем выходит за кнопку. Отдаёт
+ * коробку зоны.
+ *
+ * Углы — попаданием по точке: оно, в отличие от коробки псевдоэлемента, видит
+ * и поворот кнопки. Квадрат проверки — угловой пиксель зоны, внутри неё: зона
+ * соседа сходится с ней встык и лежит выше, и квадрат, заходящий за край,
+ * достался бы соседу.
+ */
+function expectZone(button: HTMLElement, input: HTMLElement): DOMRect {
+	const own = button.getBoundingClientRect()
+	const zone = pseudoBox(button, '::before')
+	const overhang = (MIN_TARGET - own.width) / 2
+
+	expect(overhang, 'кнопка на sm меньше минимума цели').toBeGreaterThan(0)
+	expect(zone.width, 'ширина зоны').toBeCloseTo(MIN_TARGET, 0)
+	expect(zone.height, 'высота зоны').toBeCloseTo(MIN_TARGET, 0)
+	expect(
+		Math.abs(zone.left + zone.right - own.left - own.right) / 2,
+		'зона по центру кнопки вдоль строки',
+	).toBeLessThan(EPSILON)
+	expect(
+		Math.abs(zone.top + zone.bottom - own.top - own.bottom) / 2,
+		'зона по центру кнопки поперёк строки',
+	).toBeLessThan(EPSILON)
+
+	const corners = {
+		'левый верхний': [zone.left + 0.5, zone.top + 0.5],
+		'правый верхний': [zone.right - 0.5, zone.top + 0.5],
+		'левый нижний': [zone.left + 0.5, zone.bottom - 0.5],
+		'правый нижний': [zone.right - 0.5, zone.bottom - 0.5],
+	}
+
+	for (const [corner, [x, y]] of Object.entries(corners)) {
+		expect(lands(button, x, y), `угол зоны: ${corner}`).toBe(true)
+	}
+
+	expect(
+		inlineOverlap(zone, input.getBoundingClientRect()),
+		'на ввод — не дальше выступа за кнопку',
+	).toBeLessThanOrEqual(overhang + EPSILON)
+
+	return zone
+}
+
 beforeEach(() => {
 	document.documentElement.dataset.soTheme = 'oren'
 })
@@ -231,50 +341,27 @@ afterEach(() => {
 	cleanup()
 })
 
-describe.each<TLine>(['ltr', 'rtl'])('%s', (dir) => {
+describe.each<TLine>(['ltr', 'rtl'])('очистка, %s', (dir) => {
 	/** Сторона экрана, где начало строки. */
 	const { start } = sidesOf(dir)
 
 	/** Шаг вдоль строки к её концу, в пикселях экрана. */
 	const forward = dir === 'ltr' ? 1 : -1
 
-	describe.each(CASES)('$name', ({ field, clear, input, next, empty }) => {
-		it('зона — 24×24 по центру кнопки, углы ловят нажатие, на ввод заходит на свой выступ, соседа не задевает', async () => {
+	describe.each(CASES)('$name', ({ field, clear, input, next, nextZone, empty }) => {
+		it('зона — 24×24 по центру кнопки, углы ловят нажатие, на ввод заходит на свой выступ, соседа и его зону не задевает', async () => {
 			await show(field, dir)
 
-			const button = find(clear)
-			const own = button.getBoundingClientRect()
-			const zone = pseudoBox(button, '::before')
-			const overhang = (MIN_TARGET - own.width) / 2
+			const zone = expectZone(find(clear), find(input))
+			const neighbour = find(next)
 
-			expect(overhang, 'кнопка на sm меньше минимума цели').toBeGreaterThan(0)
-			expect(zone.width, 'ширина зоны').toBeCloseTo(MIN_TARGET, 0)
-			expect(zone.height, 'высота зоны').toBeCloseTo(MIN_TARGET, 0)
-			expect(
-				Math.abs(zone.left + zone.right - own.left - own.right) / 2,
-				'зона по центру кнопки вдоль строки',
-			).toBeLessThan(EPSILON)
-			expect(
-				Math.abs(zone.top + zone.bottom - own.top - own.bottom) / 2,
-				'зона по центру кнопки поперёк строки',
-			).toBeLessThan(EPSILON)
+			expect(overlap(zone, neighbour.getBoundingClientRect()), 'соседняя кнопка').toBe(false)
 
-			const corners = {
-				'левый верхний': [zone.left, zone.top],
-				'правый верхний': [zone.right, zone.top],
-				'левый нижний': [zone.left, zone.bottom],
-				'правый нижний': [zone.right, zone.bottom],
+			if (nextZone) {
+				const neighbourZone = pseudoBox(neighbour, '::before')
+
+				expect(overlap(zone, neighbourZone), 'зона соседней кнопки').toBe(false)
 			}
-
-			for (const [corner, [x, y]] of Object.entries(corners)) {
-				expect(lands(button, x, y), `угол зоны: ${corner}`).toBe(true)
-			}
-
-			expect(
-				inlineOverlap(zone, find(input).getBoundingClientRect()),
-				'на ввод — не дальше выступа за кнопку',
-			).toBeLessThanOrEqual(overhang + EPSILON)
-			expect(overlap(zone, find(next).getBoundingClientRect()), 'соседняя кнопка').toBe(false)
 		})
 
 		it('нажатие за краем кнопки со стороны ввода очищает поле', async () => {
@@ -309,6 +396,51 @@ describe.each<TLine>(['ltr', 'rtl'])('%s', (dir) => {
 
 			expect(pressed, 'нажатие у соседа').toBe(true)
 			expect(empty(), 'поле со значением').toBe(false)
+		})
+	})
+})
+
+describe.each<TLine>(['ltr', 'rtl'])('кнопка панели, %s', (dir) => {
+	/** Сторона экрана, где начало строки. */
+	const { start } = sidesOf(dir)
+
+	/** Шаг вдоль строки к её концу, в пикселях экрана. */
+	const forward = dir === 'ltr' ? 1 : -1
+
+	describe.each(OPENERS)('$name', ({ field, button, input, panel }) => {
+		const opened = (): boolean => find(panel).dataset.open === 'true'
+
+		it('зона — 24×24 по центру кнопки, углы ловят нажатие, на ввод заходит на свой выступ — и у открытой панели', async () => {
+			await show(field, dir)
+
+			expectZone(find(button), find(input))
+
+			await userEvent.click(find(button))
+			await expect.poll(opened).toBe(true)
+			// Стрелка Select разворачивается переходом: мерить, когда доиграл
+			await settled(find(button))
+
+			expectZone(find(button), find(input))
+		})
+
+		it('нажатие за краем кнопки со стороны ввода открывает панель, за краем зоны — нет', async () => {
+			await show(field, dir)
+
+			const own = find(button).getBoundingClientRect()
+			const overhang = (MIN_TARGET - own.width) / 2
+			const middle = (own.top + own.bottom) / 2
+
+			// За краем зоны — ввод: он панель не открывает
+			await pressAt(own[start] - forward * (overhang + 2), middle)
+			// Кнопка, перехвати она нажатие, открыла бы панель кадром позже
+			await nextFrame()
+
+			expect(opened(), 'нажатие на ввод за краем зоны').toBe(false)
+
+			// Середина выступа зоны над вводом: за краем кнопки, но не за краем зоны
+			await pressAt(own[start] - (forward * overhang) / 2, middle)
+
+			await expect.poll(opened).toBe(true)
 		})
 	})
 })
