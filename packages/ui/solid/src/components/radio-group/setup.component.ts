@@ -15,12 +15,18 @@
  *
  * Состояние у контекстов своё, а разметка читает его одним видом
  * (`joinState`); атрибуты корня — то, что не съели ни группа, ни фасад.
+ *
+ * Поле формы `Field` связывается с группой, а не с радио: подпись поля
+ * называет группу ссылкой, ошибка — группы (`TFieldControlExtension` на
+ * своём контексте). Своему содержимому группа опускает пустую связку в тот же
+ * слой: радио и контролы в их подписях связку поля не берут.
  */
 
 import {
 	RadioGroupCollectionDescriptor,
 	RadioGroupDescriptor,
 	TCollectionExtension,
+	TFieldControlExtension,
 } from '@soldy-ui/setup'
 import {
 	createSolidAdapterContext,
@@ -33,7 +39,10 @@ import type { RadioGroupProps } from './base.component'
 
 export function setupRadioGroup(props: RadioGroupProps) {
 	const { elevator, layer } = useElevator()
-	const adapter = createSolidAdapterContext(RadioGroupDescriptor(), { ctrl: props.ctrl, props })
+	const adapter = createSolidAdapterContext(RadioGroupDescriptor(), {
+		ctrl: props.ctrl,
+		props,
+	}).use(TFieldControlExtension, { elevator })
 	const owner = useAdapter(adapter, props)
 
 	const collectionAdapter = createSolidAdapterContext(

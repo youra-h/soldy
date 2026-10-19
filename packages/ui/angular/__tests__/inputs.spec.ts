@@ -451,6 +451,7 @@ describe('вход в строгом шаблоне · хосты компоне
 				'TSkeletonComponent',
 				'TFrameComponent',
 				'TLabelComponent',
+				'TFieldComponent',
 				'TInputComponent',
 				'TCheckBoxComponent',
 				'TSwitchComponent',

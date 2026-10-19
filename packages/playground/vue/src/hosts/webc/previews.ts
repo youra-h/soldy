@@ -173,6 +173,16 @@ export const PREVIEWS: Record<string, TPreview> = {
 		slots: { default: [{ tag: 'span', is: 'so-check-box' }] },
 	},
 
+	// Поле формы вокруг Input: тексты частей — пропсы превью, контрол —
+	// слотом. Строки страницы правят само поле: сторону подписи, тексты, ошибку
+	field: {
+		tag: 'div',
+		is: 'so-field',
+		slots: {
+			default: [{ tag: 'div', is: 'so-input', props: { placeholder: 'name@example.com' } }],
+		},
+	},
+
 	// Подпись — содержимым: текста у радио нет, оно голый контрол, как CheckBox.
 	// Корень радио — подпись, `<label is="so-radio-group-item">`
 	'radio-group': {

@@ -11,6 +11,7 @@ import {
 	Accordion,
 	Button,
 	CheckBox,
+	Field,
 	Icon,
 	Input,
 	Label,
@@ -78,6 +79,15 @@ export const PREVIEWS: Record<string, TPreview> = {
 		<Label {...bind}>
 			<CheckBox />
 		</Label>
+	),
+
+	// Поле формы вокруг Input: тексты частей — пропсы превью, контрол —
+	// содержимым. Строки страницы правят само поле: сторону подписи, тексты,
+	// ошибку
+	field: (bind) => (
+		<Field {...bind}>
+			<Input placeholder="name@example.com" />
+		</Field>
 	),
 
 	// Подпись — содержимым: текста у радио нет, оно голый контрол, как CheckBox

@@ -33,6 +33,7 @@ import {
 	TButtonElement,
 	TCheckBoxElement,
 	TComponentViewElement,
+	TFieldElement,
 	TIconElement,
 	TInputElement,
 	TLabelElement,
@@ -52,6 +53,7 @@ import {
 	type TButtonElementProps,
 	type TCheckBoxElementProps,
 	type TComponentViewElementProps,
+	type TFieldElementProps,
 	type TIconElementProps,
 	type TInputElementProps,
 	type TLabelElementProps,
@@ -110,6 +112,10 @@ function isSkeleton(node: Element | null): node is TSkeletonElementProps {
 
 function isLabel(node: Element | null): node is TLabelElementProps {
 	return node instanceof TLabelElement
+}
+
+function isField(node: Element | null): node is TFieldElementProps {
+	return node instanceof TFieldElement
 }
 
 function isCheckBox(node: Element | null): node is TCheckBoxElementProps {
@@ -190,6 +196,7 @@ const COMPONENTS: ReadonlyArray<
 	['ProgressSpinner', 'span', 'so-progress-spinner', isSpinner, 'so-progress-spinner', null],
 	['Skeleton', 'div', 'so-skeleton', isSkeleton, 'so-skeleton', null],
 	['Label', 'label', 'so-label', isLabel, 'so-label', null],
+	['Field', 'div', 'so-field', isField, 'so-field', null],
 	['CheckBox', 'span', 'so-check-box', isCheckBox, 'so-check-box', 'input'],
 	['Switch', 'span', 'so-switch', isSwitch, 'so-switch', 'input'],
 	['Input', 'div', 'so-input', isInput, 'so-input', 'input'],
@@ -310,6 +317,38 @@ describe('атрибут потребителя перекрывает набо�
 
 			expect(el.classList.contains('mine')).toBe(true)
 			expect(el.classList.contains(own)).toBe(true)
+		},
+	)
+})
+
+/** Поля с ошибкой и выключенные: ошибку пишет поле формы `Field` над каждым. */
+const INVALID_FIELDS = [
+	['CheckBox', '<span is="so-check-box" disabled></span>', '.so-check-box'],
+	['Switch', '<span is="so-switch" disabled></span>', '.so-switch'],
+	['Input', '<div is="so-input" disabled></div>', '.so-input'],
+] as const
+
+/**
+ * Тема красит коробку поля и подпись поля формы `Field` по корню поля —
+ * прямому ребёнку обёртки контрола, — поэтому `dataset` (`data-disabled`,
+ * `data-invalid`) база кладёт на корень, а ошибку скринридеру объявляет
+ * `<input>`.
+ */
+describe('поле: dataset — на корне, aria — у <input>', () => {
+	it.each(INVALID_FIELDS)(
+		'%s: data-disabled и data-invalid — на корне, aria-invalid — у <input>',
+		(_name, control, selector) => {
+			const field = mount(`<div is="so-field" invalid>${control}</div>`, isField)
+			const root = field.querySelector(selector)
+			const input = root?.querySelector('input')
+
+			if (!(root instanceof HTMLElement) || !input) throw new Error('поля нет')
+
+			expect(root.dataset['disabled']).toBe('true')
+			expect(root.dataset['invalid']).toBe('true')
+			expect(input.hasAttribute('data-disabled')).toBe(false)
+			expect(input.hasAttribute('data-invalid')).toBe(false)
+			expect(input.getAttribute('aria-invalid')).toBe('true')
 		},
 	)
 })

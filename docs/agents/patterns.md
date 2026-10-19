@@ -350,12 +350,34 @@ ARIA пускает только `option` и `group` (axe — `aria-required-chi
   контрол опускает пустую связку. Составные контролы отдают ошибку вниз, как
   `required`: Select — полю, DatePicker — своим полям. Флажок с подсказкой —
   `<Field helper="…"><Label text="…"><CheckBox /></Label></Field>`: имя даёт
-  `Label`, справку — поле. Адаптеры: Vue. Сторожат
+  `Label`, справку — поле. Адаптеры: Vue, React, Solid, Svelte, Angular и Web
+  Components; в пяти последних связку берут поля, которые в них есть, — Input,
+  CheckBox, Switch и RadioGroup. Проводка у всех одна — поле ставит
+  `TFieldExtension`, контрол — `TFieldControlExtension` на свой лифт, — а слой
+  лифта каждый адаптер отдаёт своим механизмом. Поле ставит под свой слой
+  содержимое, контрол — содержимое своих слотов, иначе пустая связка контрола
+  до них не дошла бы: React оборачивает слоты контрола `elevated` — без слотов
+  обёртки нет, и флажок в строке таблицы лишних узлов дерева не несёт; Solid
+  оборачивает содержимое `Elevate` и разворачивает слоты внутри него — узлы
+  слота он создаёт там, где слот развернули, — а слой без своего (`empty`)
+  провайдера не ставит; у Angular свой слой (`provideElevator()`) есть и у
+  поля, и у Input, CheckBox и Switch — `down()` без него — ошибка; Web
+  Components опускает связку хостом, и поле регистрируется раньше полей.
+  Контрол в слоте контрола связку не берёт, даже когда она освободилась:
+  держит его пустая связка, а не порядок приёма — React и вовсе принимает
+  детей раньше родителя. На корне Input, CheckBox и Switch во всех адаптерах —
+  `dataset`: тема читает там `data-disabled` и `data-invalid`. Сторожат
   `core/__tests__/field.spec.ts`, `plugins/__tests__/ids.plugin.spec.ts`
   («поле формы»), `setup/__tests__/field-link.spec.ts`,
   `setup/__tests__/aria-plugin.spec.ts` («ссылки поля формы»),
-  `ui/vue/__tests__/field.spec.ts`, `ui/vue/__tests__/ssr-ids.spec.ts` и
-  `playground/vue/browser/field.spec.ts`.
+  `ui/vue/__tests__/field.spec.ts`, `ui/vue/__tests__/ssr-ids.spec.ts`,
+  `field.spec.*` адаптеров React, Solid, Svelte, Angular и Web Components
+  (у React — и сервер с гидратацией, у Solid — и слой контрола вне поля без
+  провайдера), `field.server.spec.*` Solid, Svelte и
+  Angular, спеки атрибутов корня адаптеров (`dataset` на корне полей),
+  `playground/vue/browser/field.spec.ts`, `webc-fields.spec.ts` (Field Web
+  Components стоит, как у Vue, на каждой стороне подписи) и
+  `angular-host.spec.ts`.
 - **Textarea** — многострочное поле: нативная `<textarea>` в корне-рамке, тот
   же контракт, что у Input (`value`, `name`, `id`, `disabled`, `readonly`,
   `required`, `placeholder`, размер, вариант, ошибка от `Field`), без кнопки

@@ -30,12 +30,20 @@
 import { describe, it, expect } from 'vitest'
 import { flushSync, type Component, type ComponentProps } from 'svelte'
 import { createAttachmentKey, type Attachment } from 'svelte/attachments'
-import { TButton, createEngineTable, type TTableCollection } from '@soldy-ui/core'
+import {
+	TButton,
+	TCheckBox,
+	TInput,
+	TSwitch,
+	createEngineTable,
+	type TTableCollection,
+} from '@soldy-ui/core'
 import {
 	Accordion,
 	Button,
 	CheckBox,
 	ComponentView,
+	Field,
 	Frame,
 	Icon,
 	Input,
@@ -57,6 +65,7 @@ import {
 	type ButtonProps,
 	type CheckBoxProps,
 	type ComponentViewProps,
+	type FieldProps,
 	type FrameProps,
 	type IconProps,
 	type InputProps,
@@ -82,6 +91,7 @@ import { attachRootStyle } from './root-style.svelte'
 /** Общие пропсы строки таблицы: направление, атрибуты и колбэк готовности есть у всех. */
 type TProbeProps = ButtonProps &
 	ComponentViewProps &
+	FieldProps &
 	FrameProps &
 	IconProps &
 	LabelProps &
@@ -101,6 +111,7 @@ type TProbeProps = ButtonProps &
 const COMPONENTS: ReadonlyArray<readonly [string, (props: TProbeProps) => TMounted, string]> = [
 	['Button', (props) => mount(Button, props), '.so-button'],
 	['ComponentView', (props) => mount(ComponentView, props), '.so-component-view'],
+	['Field', (props) => mount(Field, props), '.so-field'],
 	['Frame', (props) => mount(Frame, { visible: true, ...props }), '.so-frame'],
 	['Icon', (props) => mount(Icon, { tag: 'i', ...props }), '.so-icon'],
 	['Label', (props) => mount(Label, props), '.so-label'],
@@ -123,6 +134,28 @@ const FIELDS: ReadonlyArray<readonly [string, Component<TFieldProbeProps>, strin
 	['CheckBox', CheckBox, '.so-check-box'],
 	['Switch', Switch, '.so-switch'],
 	['Input', Input, '.so-input'],
+]
+
+/** Контрол с ошибкой: её задают инстансу — в разметке её задаёт поле формы. */
+function invalid<T extends { invalid: boolean }>(ctrl: T): T {
+	ctrl.invalid = true
+
+	return ctrl
+}
+
+/** Поле, выключенное и с ошибкой, и класс его корня. */
+const INVALID_FIELDS: ReadonlyArray<readonly [string, () => TMounted, string]> = [
+	[
+		'CheckBox',
+		() => mount(CheckBox, { ctrl: invalid(new TCheckBox({ disabled: true })) }),
+		'.so-check-box',
+	],
+	[
+		'Switch',
+		() => mount(Switch, { ctrl: invalid(new TSwitch({ disabled: true })) }),
+		'.so-switch',
+	],
+	['Input', () => mount(Input, { ctrl: invalid(new TInput({ disabled: true })) }), '.so-input'],
 ]
 
 /** Рисование элемента коллекции в своём владельце — пропсами самого элемента. */
@@ -242,6 +275,27 @@ describe('поле: атрибуты снаружи — <input>, поверх е
 			expect(consumer.attached[0]).toBe(find(root, 'input', HTMLInputElement))
 			expect(ready.elements).toHaveLength(1)
 			expect(ready.elements[0]).toBe(root)
+		},
+	)
+
+	/**
+	 * Тема красит коробку поля и подпись поля формы `Field` по корню поля —
+	 * прямому ребёнку обёртки контрола, — поэтому `dataset` (`data-disabled`,
+	 * `data-invalid`) — на корне, а ошибку скринридеру объявляет `<input>`.
+	 */
+	it.each(INVALID_FIELDS)(
+		'%s: data-disabled и data-invalid — на корне, aria-invalid — у <input>',
+		(_name, draw, selector) => {
+			draw()
+
+			const root = find(document, selector, HTMLElement)
+			const field = find(root, 'input', HTMLInputElement)
+
+			expect(root.dataset['disabled']).toBe('true')
+			expect(root.dataset['invalid']).toBe('true')
+			expect(field.hasAttribute('data-disabled')).toBe(false)
+			expect(field.hasAttribute('data-invalid')).toBe(false)
+			expect(field.getAttribute('aria-invalid')).toBe('true')
 		},
 	)
 
@@ -612,6 +666,7 @@ describe('привязка корня к TElementPlugin', () => {
 const ROOTS: ReadonlyArray<readonly [TRootKind, string, string]> = [
 	['Button', '.so-button', '.so-button'],
 	['ComponentView', '.so-component-view', '.so-component-view'],
+	['Field', '.so-field', '.so-field'],
 	['Frame', '.so-frame', '.so-frame'],
 	['Icon', '.so-icon', '.so-icon'],
 	['Label', '.so-label', '.so-label'],
