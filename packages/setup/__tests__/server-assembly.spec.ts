@@ -1,28 +1,39 @@
 /**
- * Сторож: сборка списка идёт и на сервере, где нет ни узла, ни
+ * Сторож: сборка компонента идёт и на сервере, где нет ни узла, ни
  * `requestAnimationFrame`.
  *
  * Адаптер собирает компонент и на сервере (Vue — `setup()`, React — рендер,
  * Svelte — инициализация): плагины подписываются, движок привязывается,
  * элементы разметки у Vue и Svelte входят в коллекцию, — и события состава,
- * выбора и подсветки приходят плагинам уже тогда. Узел корень получает только
- * в браузере. Работе на кадр он нужен — высоте, чтобы мерить, прокрутке, чтобы
- * крутить, — поэтому плагин планирует кадр, только пока узел у него есть
- * (`ready` … `removed` своего `TElementPlugin`). Что сменилось до узла,
- * применяет `ready`.
+ * выбора и подсветки приходят плагинам уже тогда. Снятие там тоже бывает:
+ * Solid снимает собранный корень следующей задачей после `renderToString`, и
+ * элементы разметки уходят из коллекции. Узел корень получает только в
+ * браузере. Работе на кадр он нужен — высоте, чтобы мерить, прокрутке, чтобы
+ * крутить, подчёркиванию таба, чтобы найти таб, — поэтому плагин планирует
+ * кадр, только пока узел у него есть (`ready` … `removed` своего
+ * `TElementPlugin`). Что сменилось до узла, применяет `ready`.
  *
  * Окружение — `node`, как у сервера: `requestAnimationFrame` в нём нет, и
- * сторож его не подкладывает. Кадр, запланированный без узла, роняет сборку
- * `ReferenceError`. Серверные тесты Vue и React идут в jsdom, где кадр есть, и
- * этого не видят.
+ * сторож его не подкладывает. Кадр, запланированный без узла, бросает
+ * `ReferenceError`. Подписчик прямо на эмиттере роняет им сборку, а подписчика
+ * проброса (`relayAll` — так `plain` отдаёт события драйвера) шина не роняет:
+ * ошибку она печатает в `console.error`. Поэтому `console.error` под шпионом
+ * на каждом тесте файла. Серверные тесты Vue и React идут в jsdom, где кадр
+ * есть, и этого не видят.
  *
  * Сборка — как у адаптеров: свой контекст и контекст фасада на общем наборе,
  * обмен подписан на состояние, приём (`attach`) — по порядку сборки. Узла нет:
  * `bindElement` не зовётся.
  */
 
-import { describe, it, expect } from 'vitest'
-import { TListHeightPlugin, TListScrollPlugin, TTextareaAutoresizePlugin } from '@soldy-ui/plugins'
+import { afterEach, beforeEach, describe, it, expect, vi } from 'vitest'
+import type { MockInstance } from 'vitest'
+import {
+	TListHeightPlugin,
+	TListScrollPlugin,
+	TTabsActiveTabPlugin,
+	TTextareaAutoresizePlugin,
+} from '@soldy-ui/plugins'
 import {
 	ListBoxCollectionDescriptor,
 	ListBoxCollectionItemDescriptor,
@@ -30,6 +41,10 @@ import {
 	ListBoxItemDescriptor,
 	SelectCollectionDescriptor,
 	SelectDescriptor,
+	TabsCollectionDescriptor,
+	TabsCollectionItemDescriptor,
+	TabsDescriptor,
+	TabsItemDescriptor,
 	TextareaDescriptor,
 } from '../content/descriptors'
 import {
@@ -40,7 +55,23 @@ import {
 } from '../content/extensions'
 import { createAdapterContext } from '../protected/adapter'
 import type { IAdapterContext, TExchange } from '../protected/adapter'
-import { CallbackProfile, createElevatorFactory } from './helpers'
+import { CallbackProfile, createElevatorFactory, required } from './helpers'
+
+/** Шпион `console.error` текущего теста: вывод не глушится, а считается. */
+let consoleError: MockInstance<typeof console.error>
+
+beforeEach(() => {
+	consoleError = vi.spyOn(console, 'error')
+})
+
+afterEach(() => {
+	const calls = [...consoleError.mock.calls]
+
+	// Консоль возвращается до проверки: после упавшего `expect` хук дальше не идёт
+	consoleError.mockRestore()
+
+	expect(calls, 'в консоль ушли ошибки').toEqual([])
+})
 
 /** Принятый контекст: его обмен и снятие. */
 type TAccepted = { readonly exchange: TExchange; readonly unmount: () => void }
@@ -131,6 +162,41 @@ function assembleSelect(props: object) {
 		facadeInputs: facadeAccepted.exchange.inputs,
 		unmount: () => unmountAll([ownAccepted, facadeAccepted]),
 	}
+}
+
+/**
+ * Tabs, собранный как в адаптере Svelte, — и табы разметки под ним: свой
+ * контекст таба и контекст его фасада, лифт — общий с Tabs.
+ */
+function assembleTabs(props: object, markup: readonly object[] = []) {
+	const { factory: elevator } = createElevatorFactory()
+	const tabs = createAdapterContext(TabsDescriptor(), { props })
+	const ownAccepted = accept(tabs)
+	const facade = createAdapterContext(
+		TabsCollectionDescriptor(),
+		{ props, options: { owner: tabs.instance } },
+		{ bundle: tabs.bundle },
+	)
+		.use(TCollectionExtension, { elevator })
+		.use(TDragAndDropCollectionExtension, { elevator })
+	const accepted = [ownAccepted, accept(facade)]
+
+	for (const itemProps of markup) {
+		const item = createAdapterContext(TabsItemDescriptor(), { props: itemProps })
+
+		accepted.push(accept(item))
+		accepted.push(
+			accept(
+				createAdapterContext(
+					TabsCollectionItemDescriptor(),
+					{ props: itemProps },
+					{ bundle: item.bundle },
+				).use(TCollectionItemExtension, { item: item.instance, elevator }),
+			),
+		)
+	}
+
+	return { facade, unmount: () => unmountAll(accepted) }
 }
 
 /** Значения элементов по порядку. */
@@ -244,5 +310,50 @@ describe('сторож: сборка Textarea без узла и без requestA
 		expect(textarea.instance.autoresize).toBe(false)
 
 		unmount()
+	})
+})
+
+/**
+ * Подчёркивание активного таба работает на кадр: таб сняли или переставили —
+ * место активного оно мерит кадром позже, когда разметка перерисована. Табы
+ * разметки входят в коллекцию и на сервере, а снимает их там Solid вместе с
+ * корнем после `renderToString`. Узла нет — кадр плагин не планирует, место
+ * померит `ready`.
+ */
+describe('сторож: сборка Tabs без узла и без requestAnimationFrame', () => {
+	/** Иначе сценарий ниже прошёл бы без того, кто работает на кадр. */
+	it('плагин подчёркивания стоит в наборе Tabs', () => {
+		const tabs = createAdapterContext(TabsDescriptor(), { props: {} })
+
+		expect(tabs.bundle?.get(TTabsActiveTabPlugin)).toBeDefined()
+
+		tabs.destroy()
+	})
+
+	it('табы разметки: вход на attach, перестановка, снятие со всеми табами', () => {
+		const { facade, unmount } = assembleTabs({}, [
+			{ value: 'a', text: 'A' },
+			{ value: 'b', text: 'B', active: true },
+			{ value: 'c', text: 'C' },
+		])
+		const { activation, batch, plain } = facade.instance.engine.extensions
+		const moved: unknown[] = []
+		const removed: unknown[] = []
+
+		plain.events.on('item:moved', (e) => moved.push(e.item.value))
+		plain.events.on('item:removed', (e) => removed.push(e.item.value))
+
+		expect(valuesOf(batch.items)).toEqual(['a', 'b', 'c'])
+		expect(activation.activeItem?.value).toBe('b')
+
+		plain.move(required(batch.items[2], 'таб c'), 0)
+
+		expect(valuesOf(batch.items)).toEqual(['c', 'a', 'b'])
+
+		// Табы разметки уходят из коллекции раньше Tabs — как при снятии корня
+		unmount()
+
+		expect(moved).toEqual(['c'])
+		expect(removed).toEqual(['c', 'b', 'a'])
 	})
 })
