@@ -35,10 +35,12 @@ function fillerStyleOf(entry: TDrawnEntry<ITableRow>): JSX.CSSProperties | undef
  *
  * Окно таблицы — разметка `div.so-table__viewport` вокруг корня: в окне
  * таблица прокручивается вбок, когда колонки шире места, — прокрутку включает
- * тема по `data-overflow` таблицы. Окно — внешний узел компонента, и
- * атрибуты потребителя, его `ref` (`consumerRef`) и скрытие достаются ему, а
- * классы, наборы и привязка корня к `TElementPlugin` (`bindRef`) — таблице
- * (`createWrappedRootProps`), как у Vue и React.
+ * тема по `data-overflow` таблицы. Окно — внешний узел компонента, и класс,
+ * стиль и `ref` потребителя (`consumerRef`) и скрытие достаются ему, а
+ * классы, наборы, привязка корня к `TElementPlugin` (`bindRef`) и поверх
+ * наборов остальные атрибуты потребителя — таблице (`createWrappedRootProps`),
+ * как у Vue и React: `aria-label` и `id` потребителя называют таблицу, а не
+ * окно без роли.
  *
  * Логики в разметке нет: заголовки — показанные колонки коллекции
  * (`shownColumns`), тело — то, что рисует коллекция строк (`drawn`), число
@@ -81,8 +83,9 @@ export function Table(props: TableProps): JSX.Element {
 	const binding = setupTable(props)
 	const state = binding.state
 	const facade = binding.facade
-	// Окну — его класс и атрибуты потребителя, таблице — классы и наборы ядра.
-	// `ref` — вне раскладки: окну `ref` потребителя, таблице привязка корня
+	// Окну — его класс, класс и стиль потребителя, таблице — классы и наборы
+	// ядра, поверх — остальное от потребителя. `ref` — вне раскладки: окну
+	// `ref` потребителя, таблице привязка корня
 	const layout = createWrappedRootProps(() => ({
 		state,
 		sets: [state.attrs, state.aria, state.dataset],

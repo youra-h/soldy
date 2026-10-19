@@ -49,7 +49,14 @@ abstract class TBundlesHost {
 })
 class BareHost extends TBundlesHost {}
 
+/**
+ * Провайдер на элементе. Селектор свой у этого хоста и у `ContainerHost`: их
+ * разметка различается только тегом провайдера и выражением входа, а ни тег,
+ * ни выражения в id компонента Angular не входят — без селектора id совпал бы
+ * (предупреждение NG0912).
+ */
 @Component({
+	selector: 'probe-provided',
 	standalone: true,
 	imports: [TButtonComponent, LocaleProviderDirective],
 	template: `<div so-locale-provider [locale]="locale()">
@@ -75,7 +82,9 @@ class NestedHost extends TBundlesHost {
 	readonly inner = enUS
 }
 
+/** Провайдер на `<ng-container>`. Зачем селектор — см. `ProvidedHost`. */
 @Component({
+	selector: 'probe-container',
 	standalone: true,
 	imports: [TButtonComponent, LocaleProviderDirective],
 	template: `<ng-container so-locale-provider [locale]="locale">

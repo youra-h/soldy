@@ -1,10 +1,9 @@
-import { selectionOf, tagsOf } from '@soldy-ui/core'
+import { batchOf, selectionOf, tagsOf } from '@soldy-ui/core'
 import type {
 	ISelect,
 	ISelectItem,
 	ISelectionExtension,
 	ISelectTagsExtension,
-	ITagsItem,
 	TCollectionEngine,
 } from '@soldy-ui/core'
 import { TBasePlugin } from '../../../base'
@@ -36,9 +35,9 @@ import type { TSelectBackspacePluginEvents } from './types'
  * Что считается «последним» — последний тег, а не последний элемент
  * `selection.selected`: пользователь видит теги, не порядок выбора в
  * коллекции (на практике они совпадают, но знание об этом не должно жить в
- * плагине). Тег ищется через `engine.extensions.tags`, снимается выбор — через
- * `engine.extensions.selection.deselect`, а не через driver: плагину сама
- * коллекция опций недоступна на уровне хранилища, только через расширения.
+ * плагине). Тег ищется через расширение тегов (`tags`), снимается выбор — через
+ * `selection.deselect`, а не через driver: плагину сама коллекция опций
+ * недоступна на уровне хранилища, только через расширения.
  */
 export class TSelectBackspacePlugin extends TBasePlugin<any, TSelectBackspacePluginEvents> {
 	private _owner: ISelect | null = null
@@ -165,14 +164,14 @@ export class TSelectBackspacePlugin extends TBasePlugin<any, TSelectBackspacePlu
 
 		if (!selection || !tags) return
 
-		const tagItems = tags.engine?.extensions.batch.items as ReadonlyArray<ITagsItem> | undefined
+		const tagItems = tags.engine?.extensions.batch.items
 		const lastTag = tagItems?.[tagItems.length - 1]
 
 		if (!lastTag) return
 
-		const item = (
-			this._engine?.extensions.batch.items as ReadonlyArray<ISelectItem> | undefined
-		)?.find((candidate) => candidate.value === lastTag.value)
+		const item = batchOf<ISelectItem>(this._engine)?.items.find(
+			(candidate) => candidate.value === lastTag.value,
+		)
 
 		if (item) selection.deselect(item)
 	}

@@ -61,7 +61,13 @@ function watchSubscriptions(engine: TCollectionEngine<any, any>): () => number {
 /** Движок, который хост отдаёт коллекции; его задаёт тест до монтирования. */
 let engine: TCollectionEngine<any, any> = createEngine()
 
+/**
+ * Селектор у хостов ListBox и Tabs свой: их разметка различается только
+ * тегом, а тег в id компонента Angular не входит — без селектора id совпал бы
+ * (предупреждение NG0912).
+ */
 @Component({
+	selector: 'probe-list-box',
 	standalone: true,
 	imports: [TListBoxComponent],
 	template: `<so-list-box [engine]="engine"></so-list-box>`,
@@ -71,6 +77,7 @@ class ListBoxHost {
 }
 
 @Component({
+	selector: 'probe-tabs',
 	standalone: true,
 	imports: [TTabsComponent],
 	template: `<so-tabs [engine]="engine"></so-tabs>`,

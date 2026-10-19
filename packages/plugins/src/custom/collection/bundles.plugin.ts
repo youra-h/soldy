@@ -1,7 +1,7 @@
-import { plainOf } from '@soldy-ui/core'
+import { batchOf, plainOf } from '@soldy-ui/core'
 import { TBasePlugin } from '../../base'
 import type { IPluginBundle } from '../../base'
-import type { IControl, TCollectionEngine } from '@soldy-ui/core'
+import type { IComponentView, TCollectionEngine } from '@soldy-ui/core'
 import type { TBundlesEvents } from './types'
 
 /**
@@ -29,7 +29,7 @@ export class TCollectionBundlesPlugin extends TBasePlugin<any, TBundlesEvents> {
 
 		this._engine = engine
 
-		const plain = plainOf<IControl>(engine)
+		const plain = plainOf<IComponentView>(engine)
 
 		// Синхронизация реестра bundles с жизненным циклом элементов коллекции.
 		this._listenTo(plain?.events, 'item:removed', (e) => {
@@ -106,7 +106,7 @@ export class TCollectionBundlesPlugin extends TBasePlugin<any, TBundlesEvents> {
 
 		const result: IPluginBundle[] = []
 
-		for (const item of this._engine.extensions.batch.items) {
+		for (const item of batchOf<IComponentView>(this._engine)?.items ?? []) {
 			const bundle = this.getByItem(item)
 
 			if (bundle) result.push(bundle)

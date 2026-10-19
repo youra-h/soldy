@@ -1,5 +1,5 @@
-import { batchOf } from '@soldy-ui/core'
-import type { IControl, IList, ISelect, TCollectionEngine } from '@soldy-ui/core'
+import { batchOf, selectOf, selectionOf } from '@soldy-ui/core'
+import type { IList, ISelect, ISelectItem, TCollectionEngine } from '@soldy-ui/core'
 import type { IPluginContext } from '../../../base'
 import { smoothScrollBehavior } from '../../../motion'
 import { TElementPlugin } from '../../element'
@@ -49,7 +49,7 @@ import type { ISelectKeyboardPluginOptions, TSelectKeyboardPluginEvents } from '
  * скринридер немым.
  */
 export class TSelectKeyboardPlugin
-	extends TListNavigationPlugin<TSelectKeyboardPluginEvents>
+	extends TListNavigationPlugin<TSelectKeyboardPluginEvents, ISelectItem>
 	implements ISelectKeyboardHost
 {
 	private _owner: ISelect | null = null
@@ -125,7 +125,7 @@ export class TSelectKeyboardPlugin
 	 * состояние, и знать о ней отбору незачем.
 	 */
 	protected override onEngineBound(engine: TCollectionEngine<any, any>): void {
-		this._listenTo(batchOf<IControl>(engine)?.events, 'change:shown', () => {
+		this._listenTo(batchOf<ISelectItem>(engine)?.events, 'change:shown', () => {
 			// Подсветки нет — ставить её на смене выдачи незачем: панель может
 			// быть и закрыта
 			if (this._highlightedUid == null) return
@@ -258,7 +258,7 @@ export class TSelectKeyboardPlugin
 
 		const item = this.itemByUid(this._highlightedUid)
 
-		if (item) this._engine?.extensions?.select?.chooseItem(item)
+		if (item) selectOf(this._engine)?.chooseItem(item)
 	}
 
 	/**
@@ -286,7 +286,7 @@ export class TSelectKeyboardPlugin
 	 * любое другое открытие без явного участника подсветку не ставят.
 	 */
 	highlightSelected(): void {
-		const selected = this._engine?.extensions?.selection?.selected?.[0] as IControl | undefined
+		const [selected] = selectionOf<ISelectItem>(this._engine)?.selected ?? []
 
 		if (selected && this.indexOf(selected.uid) !== -1) {
 			this.highlight(selected.uid)

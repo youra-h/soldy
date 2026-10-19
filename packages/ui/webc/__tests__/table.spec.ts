@@ -330,13 +330,21 @@ describe('разметка', () => {
 		expect(ready).toEqual([find('table.so-table')])
 	})
 
-	it('атрибуты потребителя — окну: оно внешний узел компонента', async () => {
+	/**
+	 * Атрибуты потребителя делятся, как у поля: класс и стиль — окну, внешнему
+	 * узлу компонента, остальные статические атрибуты разметки база при
+	 * построении переносит на `table` — поле окна, где роль и имя таблицы.
+	 * Атрибуты-входы пропов остаются на элементе.
+	 */
+	it('атрибуты потребителя: aria-label, id и data-* — table, класс и стиль — окну', async () => {
 		const host = document.createElement('div')
 
 		host.innerHTML = `<div
 			is="so-table"
 			class="staff"
 			style="max-height: 320px"
+			aria-label="Сотрудники"
+			id="staff"
 			data-testid="staff"
 			columns='[{"field":"name","text":"Имя"}]'
 			items='[{"data":{"id":1,"name":"Анна"}}]'
@@ -347,16 +355,59 @@ describe('разметка', () => {
 		const viewport = find('.so-table__viewport')
 		const table = find('table.so-table')
 
+		expect(table.getAttribute('aria-label')).toBe('Сотрудники')
+		expect(table.id).toBe('staff')
+		expect(table.dataset.testid).toBe('staff')
+		expect(
+			['aria-label', 'id', 'data-testid'].filter((name) => viewport.hasAttribute(name)),
+		).toEqual([])
 		expect(viewport.classList.contains('staff')).toBe(true)
-		expect(viewport.dataset.testid).toBe('staff')
 		expect(viewport.style.maxHeight).toBe('320px')
-		expect(table.hasAttribute('data-testid')).toBe(false)
 		expect(table.classList.contains('staff')).toBe(false)
 		expect(table.hasAttribute('style')).toBe(false)
-		// Колонки и строки — атрибутами, JSON
+		// Колонки и строки — атрибутами-входами, JSON: они остаются на элементе
+		expect(viewport.hasAttribute('columns')).toBe(true)
+		expect(table.hasAttribute('columns')).toBe(false)
 		expect(findAll('.so-table-row').map((row) => [...row.children].map(text))).toEqual([
 			['Анна'],
 		])
+	})
+
+	/**
+	 * Атрибут потребителя на `table` главнее набора ядра, как на поле: чужое
+	 * значение база не трогает. Имя ядро пишет в `aria` по `aria_label`, `dir` —
+	 * в `attrs` по `direction`.
+	 */
+	it('aria-label и dir потребителя — поверх aria_label и dir ядра', async () => {
+		const host = document.createElement('div')
+
+		host.innerHTML = `<div
+			is="so-table"
+			aria_label="Ядро"
+			aria-label="Своё"
+			direction="rtl"
+			dir="ltr"
+			columns='[{"field":"name","text":"Имя"}]'
+		></div>`
+		document.body.appendChild(host)
+		await settle()
+
+		const table = find('table.so-table')
+
+		expect(table.getAttribute('aria-label')).toBe('Своё')
+		expect(table.getAttribute('dir')).toBe('ltr')
+		expect(find('.so-table__viewport').hasAttribute('dir')).toBe(false)
+	})
+
+	/** Перенос — при построении, как у поля: записанное из кода позже остаётся на окне. */
+	it('атрибут, записанный из кода после построения, остаётся на окне', async () => {
+		const el = await mountTable(fromData([ANNA], [NAME]))
+
+		el.setAttribute('title', 'Сотрудники')
+		await settle()
+
+		expect(el.getAttribute('title')).toBe('Сотрудники')
+		expect(find('table.so-table').hasAttribute('title')).toBe(false)
 	})
 
 	it('скрытая таблица прячет окно: скрытие — на окне', async () => {

@@ -152,17 +152,18 @@ is hidden the same way — the element is yours.
 
 A table takes its columns and rows as data only — `columns` and `items`, or an `engine` — and draws
 its headers (`th[so-table-column]`) and rows (`tr[so-table-row]`) itself: sorting, row selection
-with "select all", column resizing and reordering, a grid mode and a sticky head. The element you
-write is the table's scroll viewport, with the `<table>` inside it: your `class`, `style`,
-attributes and hiding go to the viewport, the classes and ARIA of the table to the `<table>`. A
-header and a cell are filled through templates — a template given to the table renders in every
-header or cell — and an empty table through the `empty` slot:
+with "select all", column resizing and reordering, a grid mode and a sticky head. The element of its
+own, `<so-table>`, is the table's scroll viewport, with the `<table>` inside it, and it splits your
+markup like a field: `class`, `style` and hiding stay on the viewport, while the static attributes
+you write on it (`aria-label`, `id`, `data-*`) move to the `<table>`, which they name, next to the
+classes and ARIA of the table. A header and a cell are filled through templates — a template given
+to the table renders in every header or cell — and an empty table through the `empty` slot:
 
 ```ts
-template: `<div so-table [items]="rows" [columns]="columns" mode="multiple" (soColumnResize)="save($event)">
+template: `<so-table [items]="rows" [columns]="columns" mode="multiple" aria-label="Staff" (soColumnResize)="save($event)">
   <ng-template slot="cell" let-column="column" let-value="value">…</ng-template>
   <p slot="empty">No data</p>
-</div>`
+</so-table>`
 ```
 
 Without a `cell` template a value is rendered as the cell's text from the core (`cell.text`) — an

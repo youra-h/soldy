@@ -1,8 +1,11 @@
-import type { IControl, TCollectionEngine } from '@soldy-ui/core'
+import { listOf, selectionOf } from '@soldy-ui/core'
+import type { IListBoxItem, TCollectionEngine } from '@soldy-ui/core'
 import type { IPluginContext } from '../../../base'
 import { TCollectionElements } from '../../collection'
 import { TListNavigationPlugin } from '../navigation'
-import { listOf, rowOf } from '../row'
+// Одноимённый узел списка: `listOf` в этом файле — охранник расширения
+// списка, и различает их алиас в импорте
+import { listOf as listNodeOf, rowOf } from '../row'
 import type { TListKeyboardPluginEvents } from './types'
 
 /**
@@ -32,7 +35,10 @@ import type { TListKeyboardPluginEvents } from './types'
  * цели — здесь, а не в `TListNavigationPlugin`: база общая с Select, у которого
  * своё правило — клавиши только с поля.
  */
-export class TListKeyboardPlugin extends TListNavigationPlugin<TListKeyboardPluginEvents> {
+export class TListKeyboardPlugin extends TListNavigationPlugin<
+	TListKeyboardPluginEvents,
+	IListBoxItem
+> {
 	/**
 	 * Узлы элементов — по ним ищется строка, с которой пришла клавиша. Без
 	 * этого плагина строку не узнать, и список берёт клавиши только с узла
@@ -58,17 +64,14 @@ export class TListKeyboardPlugin extends TListNavigationPlugin<TListKeyboardPlug
 	 * ещё не в навигации.
 	 */
 	protected override onEngineBound(engine: TCollectionEngine<any, any>): void {
-		const selected = engine.extensions.selection.selected as IControl[]
+		const selection = selectionOf<IListBoxItem>(engine)
+		const selected = selection?.selected ?? []
 
 		if (selected.length > 0) this.trackHighlight(selected[0].uid)
 
-		this._listenTo(
-			engine.extensions.selection.events,
-			'change:selection',
-			(items: IControl[]) => {
-				if (items.length > 0) this.trackHighlight(items[0].uid)
-			},
-		)
+		this._listenTo(selection?.events, 'change:selection', (items) => {
+			if (items.length > 0) this.trackHighlight(items[0].uid)
+		})
 	}
 
 	protected override onKeyDown(e: KeyboardEvent): void {
@@ -114,7 +117,7 @@ export class TListKeyboardPlugin extends TListNavigationPlugin<TListKeyboardPlug
 	private _isOwnKey(e: KeyboardEvent): boolean {
 		const root = e.currentTarget
 
-		if (root instanceof Element && e.target === listOf(root)) return true
+		if (root instanceof Element && e.target === listNodeOf(root)) return true
 
 		return this.shown().some((item) => rowOf(this._elements, item.uid) === e.target)
 	}
@@ -132,6 +135,6 @@ export class TListKeyboardPlugin extends TListNavigationPlugin<TListKeyboardPlug
 
 		const item = this.itemByUid(this._highlightedUid)
 
-		if (item) this._engine?.extensions.list.chooseItem(item)
+		if (item) listOf(this._engine)?.chooseItem(item)
 	}
 }

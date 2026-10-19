@@ -17,7 +17,8 @@
  * остальное, кроме `ref`, — `<input>`, поверх его `aria`, а корень остаётся
  * за адаптером. Элемент коллекции (`Tabs.Item`, `Accordion.Item`,
  * `RadioGroup.Item`) делит их так же: остальное — строке, у радио — полю. И
- * ListBox с Tabs: остальное — узлу списка с ролью (`listbox`, `tablist`).
+ * ListBox с Tabs: остальное — узлу списка с ролью (`listbox`, `tablist`), а
+ * Table — корню `table` внутри окна, которому остаются класс и стиль.
  *
  * Стиль Solid ставит объектом по свойству и не трогает того, что плагины
  * пишут в узел сами: сдвиг смахиваемой панели (`--so-swipe-offset`) переживает
@@ -48,6 +49,7 @@ import {
 	toRootForward,
 	toRootLayout,
 	toRootProps,
+	toWrappedRootProps,
 	type AccordionItemProps,
 	type AccordionProps,
 	type ButtonProps,
@@ -455,19 +457,20 @@ describe('ListBox, Tabs: атрибуты снаружи — узлу списк
 })
 
 /**
- * Корень таблицы стоит внутри окна (`div.so-table__viewport`), и окно — внешний
- * узел компонента: атрибуты потребителя, его класс, стиль и скрытие — окну, а
- * классы и наборы ядра — `table`, которую видят плагины и тема
- * (`createWrappedRootProps`).
+ * Корень таблицы стоит внутри окна (`div.so-table__viewport`), и атрибуты
+ * потребителя делятся, как у поля (`createWrappedRootProps`): класс, стиль и
+ * скрытие — окну, внешнему узлу компонента, остальное, кроме `ref`, —
+ * `table`, поверх её наборов, где роль и имя таблицы.
  */
 describe('Table: корень внутри окна', () => {
-	it('класс, стиль и атрибуты потребителя — окну, классы и наборы ядра — table', () => {
+	it('класс и стиль потребителя — окну, остальные атрибуты, классы и наборы ядра — table', () => {
 		mount(() => (
 			<TableProbe
 				class="mine"
 				style={{ color: 'red' }}
 				title="Сотрудники"
-				dir="ltr"
+				id="staff"
+				data-probe="1"
 				direction="rtl"
 				aria_label="Таблица"
 			/>
@@ -478,16 +481,94 @@ describe('Table: корень внутри окна', () => {
 
 		expect([...viewport.classList]).toEqual(['so-table__viewport', 'mine'])
 		expect(viewport.style.color).toBe('red')
-		expect(viewport.title).toBe('Сотрудники')
-		expect(viewport.getAttribute('dir')).toBe('ltr')
 		expect(table.classList.contains('mine')).toBe(false)
 		expect(table.classList[0]).toBe('so-table')
 		expect(table.hasAttribute('style')).toBe(false)
-		expect(table.hasAttribute('title')).toBe(false)
+		expect(table.title).toBe('Сотрудники')
+		expect(table.id).toBe('staff')
+		expect(table.dataset['probe']).toBe('1')
+		expect(
+			['title', 'id', 'data-probe', 'dir', 'aria-label'].filter((name) =>
+				viewport.hasAttribute(name),
+			),
+		).toEqual([])
 		// Наборы ядра — у таблицы: `dir` из `direction`, имя — из `aria_label`
 		expect(table.getAttribute('dir')).toBe('rtl')
 		expect(table.getAttribute('aria-label')).toBe('Таблица')
-		expect(viewport.hasAttribute('aria-label')).toBe(false)
+	})
+
+	/** Имя пишет плагин доступного имени в `aria` таблицы, `dir` ядро — в её `attrs`. */
+	it('aria-label и dir потребителя — поверх aria_label и dir ядра', () => {
+		mount(() => <TableProbe aria_label="Ядро" aria-label="Своё" direction="rtl" dir="ltr" />)
+
+		const table = find(document, 'table.so-table', HTMLElement)
+
+		expect(table.getAttribute('aria-label')).toBe('Своё')
+		expect(table.getAttribute('dir')).toBe('ltr')
+		expect(find(document, '.so-table__viewport', HTMLElement).hasAttribute('dir')).toBe(false)
+	})
+
+	it('обработчик потребителя — на table', () => {
+		const targets: EventTarget[] = []
+
+		mount(() => (
+			<TableProbe
+				onClick={(event) => {
+					targets.push(event.currentTarget)
+				}}
+			/>
+		))
+
+		const table = find(document, 'table.so-table', HTMLElement)
+
+		table.click()
+
+		expect(targets).toHaveLength(1)
+		expect(targets[0]).toBe(table)
+	})
+
+	it('смена атрибута — на table, окно и table — те же узлы', () => {
+		const [title, setTitle] = createSignal('a')
+
+		mount(() => <TableProbe title={title()} />)
+
+		const viewport = find(document, '.so-table__viewport', HTMLElement)
+		const table = find(document, 'table.so-table', HTMLElement)
+
+		setTitle('b')
+
+		expect(find(document, '.so-table__viewport', HTMLElement)).toBe(viewport)
+		expect(find(document, 'table.so-table', HTMLElement)).toBe(table)
+		expect(table.title).toBe('b')
+		expect(viewport.hasAttribute('title')).toBe(false)
+	})
+
+	it('делёж атрибутов окна: класс и стиль — окну, остальное, кроме ref, — корню поверх наборов', () => {
+		const forward = {
+			class: 'mine',
+			style: { color: 'red' },
+			ref: () => {},
+			'aria-label': 'Своё',
+			title: 'Подсказка',
+		}
+		const { wrapper, root } = toWrappedRootProps(
+			{ classes: ['so-table'], visible: false },
+			[{ 'aria-label': 'Ядро', role: 'grid' }],
+			forward,
+			'so-table__viewport',
+		)
+
+		expect(wrapper).toEqual({
+			class: 'so-table__viewport mine',
+			style: { color: 'red', display: 'none' },
+		})
+		expect(root).toEqual({
+			'aria-label': 'Своё',
+			role: 'grid',
+			title: 'Подсказка',
+			class: 'so-table',
+			style: {},
+		})
 	})
 
 	it('свойство, записанное в окно мимо разметки, переживает смену стиля потребителя и видимости', () => {

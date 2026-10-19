@@ -166,8 +166,13 @@ const COMPONENTS: ReadonlyArray<readonly [string, Type<TProbeHost>, string, stri
  * Проба поля: у него атрибуты потребителя делятся между корнем и `<input>`.
  * `dir` потребителя — атрибут из разметки, и он уезжает на поле, а `dir` ядра
  * по `direction` стоит на корне.
+ *
+ * Селектор свой у каждой пробы поля и списка: их разметка различается только
+ * тегом, а тег в id компонента Angular не входит — без селектора id совпал бы
+ * (предупреждение NG0912).
  */
 @Component({
+	selector: 'probe-check-box',
 	standalone: true,
 	imports: [TCheckBoxComponent],
 	template: `<so-check-box
@@ -182,6 +187,7 @@ const COMPONENTS: ReadonlyArray<readonly [string, Type<TProbeHost>, string, stri
 class CheckBoxProbe extends TProbeHost {}
 
 @Component({
+	selector: 'probe-switch',
 	standalone: true,
 	imports: [TSwitchComponent],
 	template: `<so-switch
@@ -196,6 +202,7 @@ class CheckBoxProbe extends TProbeHost {}
 class SwitchProbe extends TProbeHost {}
 
 @Component({
+	selector: 'probe-input',
 	standalone: true,
 	imports: [TInputComponent],
 	template: `<so-input
@@ -230,9 +237,10 @@ const FIELDS: ReadonlyArray<readonly [string, Type<TProbeHost>, string, string]>
  * Проба списка: у ListBox и Tabs атрибуты потребителя делятся, как у поля, —
  * между корнем и узлом списка, на котором роль и `aria` компонента. `dir`
  * потребителя уезжает на узел списка, а `dir` ядра по `direction` стоит на
- * корне.
+ * корне. Селектор свой — по той же причине, что у проб полей.
  */
 @Component({
+	selector: 'probe-list-box',
 	standalone: true,
 	imports: [TListBoxComponent],
 	template: `<so-list-box
@@ -247,6 +255,7 @@ const FIELDS: ReadonlyArray<readonly [string, Type<TProbeHost>, string, string]>
 class ListBoxProbe extends TProbeHost {}
 
 @Component({
+	selector: 'probe-tabs',
 	standalone: true,
 	imports: [TTabsComponent],
 	template: `<so-tabs
@@ -746,27 +755,30 @@ describe('свойство, записанное в узел мимо разме
 })
 
 /**
- * Корень внутри обёртки — у таблицы (`'wrapped'`): элемент потребителя
- * (`<div so-table>`) — окно, а корень — `table` в шаблоне, как
- * `div.so-table__viewport` вокруг `table` у Vue и React. Атрибуты, класс и
- * стиль потребителя стоят на окне, и его же прячет видимость; классы, наборы
- * ядра и `TElementPlugin` — у `table`.
+ * Корень внутри обёртки — у таблицы (`'wrapped'`): элемент компонента
+ * (`<so-table>`) — окно, а корень — `table` в шаблоне, как
+ * `div.so-table__viewport` вокруг `table` у Vue и React. Класс и стиль
+ * потребителя стоят на окне, и его же прячет видимость; остальные статические
+ * атрибуты разметки база переносит на `table`, как на поле, — там же классы,
+ * наборы ядра и `TElementPlugin`.
  */
 @Component({
 	standalone: true,
 	imports: [TTableComponent],
-	template: `<div
-		so-table
+	template: `<so-table
 		[columns]="columns"
 		direction="rtl"
 		dir="ltr"
 		title="probe"
+		aria-label="Сотрудники"
+		id="staff"
+		data-probe="1"
 		class="mine"
 		style="color: red"
 		[visible]="visible()"
 		[stickyHead]="sticky()"
 		(soElementReady)="ready.push($event)"
-	></div>`,
+	></so-table>`,
 })
 class TableProbe {
 	readonly columns = [{ field: 'name', text: 'Имя' }]
@@ -775,29 +787,67 @@ class TableProbe {
 	readonly ready: Element[] = []
 }
 
-/** Окно таблицы — элемент потребителя — и `table` в нём. */
+/**
+ * Имя таблицы и входом, и атрибутом: `aria-label` называет и ядро — плагин
+ * доступного имени пишет его в `aria` таблицы.
+ */
+@Component({
+	standalone: true,
+	imports: [TTableComponent],
+	template: `<so-table [columns]="columns" aria_label="Ядро" aria-label="Своё" />`,
+})
+class TableNameProbe {
+	readonly columns = [{ field: 'name', text: 'Имя' }]
+}
+
+/** Окно таблицы — элемент компонента — и `table` в нём. */
 function tableParts(fixture: ComponentFixture<unknown>): {
 	viewport: HTMLElement
 	table: HTMLElement
 } {
 	return {
-		viewport: findIn(fixture, '[so-table]', HTMLElement),
-		table: findIn(fixture, '[so-table] > table', HTMLElement),
+		viewport: findIn(fixture, 'so-table', HTMLElement),
+		table: findIn(fixture, 'so-table > table', HTMLElement),
 	}
 }
 
 describe('корень внутри обёртки: окно таблицы', () => {
-	it('класс, стиль и атрибуты потребителя — окну, рядом с его классом', () => {
+	it('класс и стиль потребителя — окну, рядом с его классом', () => {
 		const { viewport, table } = tableParts(mountHost(TableProbe))
 
 		expect([...viewport.classList].sort()).toEqual(['mine', 'so-table__viewport'])
 		expect(viewport.style.color).toBe('red')
-		expect(viewport.getAttribute('title')).toBe('probe')
-		// `dir` потребителя на окне — ядро пишет свой на корень
-		expect(viewport.getAttribute('dir')).toBe('ltr')
 		expect(table.classList.contains('mine')).toBe(false)
-		expect(table.hasAttribute('title')).toBe(false)
 		expect(table.style.color).toBe('')
+	})
+
+	/**
+	 * Статические атрибуты разметки, кроме класса и стиля, база переносит на
+	 * `table`, как на поле: там роль и имя таблицы, и `aria-label` называет её,
+	 * а не окно без роли.
+	 */
+	it('остальные атрибуты из разметки — table, а не окну', () => {
+		const { viewport, table } = tableParts(mountHost(TableProbe))
+
+		expect(table.getAttribute('title')).toBe('probe')
+		expect(table.getAttribute('aria-label')).toBe('Сотрудники')
+		expect(table.id).toBe('staff')
+		expect(table.dataset['probe']).toBe('1')
+		expect(
+			['title', 'aria-label', 'id', 'data-probe', 'dir'].filter((name) =>
+				viewport.hasAttribute(name),
+			),
+		).toEqual([])
+	})
+
+	/**
+	 * Имя, которое называет ядро, — за ядром, как на корне-хосте: атрибуты
+	 * потребителя встают на `table` раньше раскладки наборов. `dir` ядро пишет
+	 * в `attrs` по `direction`, имя — в `aria` по `aria_label`.
+	 */
+	it('dir и aria-label, которые называет ядро, — за ядром', () => {
+		expect(tableParts(mountHost(TableProbe)).table.getAttribute('dir')).toBe('rtl')
+		expect(tableParts(mountHost(TableNameProbe)).table.getAttribute('aria-label')).toBe('Ядро')
 	})
 
 	it('классы и наборы ядра — table; смена набора доходит до неё, а не до окна', () => {

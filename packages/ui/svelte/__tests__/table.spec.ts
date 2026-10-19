@@ -243,22 +243,33 @@ describe('разметка', () => {
 		).toEqual([])
 	})
 
-	it('атрибуты потребителя — окну: оно внешний узел компонента', async () => {
+	/**
+	 * Атрибуты потребителя делятся, как у поля и у Vue: класс и стиль — окну,
+	 * внешнему узлу компонента, остальное — `table`, где роль и имя таблицы
+	 * (`toWrappedRootProps`).
+	 */
+	it('атрибуты потребителя: aria-label, id и data-* — table, класс и стиль — окну', async () => {
 		await render(Table, {
 			items: [{ data: ANNA }],
 			columns: [NAME],
 			class: 'staff',
 			style: 'max-height: 320px',
+			'aria-label': 'Сотрудники',
+			id: 'staff',
 			'data-testid': 'staff',
 		})
 
 		const viewport = node('.so-table__viewport')
 		const table = node('table.so-table')
 
+		expect(table.getAttribute('aria-label')).toBe('Сотрудники')
+		expect(table.id).toBe('staff')
+		expect(table.dataset.testid).toBe('staff')
+		expect(
+			['aria-label', 'id', 'data-testid'].filter((name) => viewport.hasAttribute(name)),
+		).toEqual([])
 		expect(viewport.classList.contains('staff')).toBe(true)
-		expect(viewport.dataset.testid).toBe('staff')
 		expect(viewport.style.maxHeight).toBe('320px')
-		expect(table.hasAttribute('data-testid')).toBe(false)
 		expect(table.classList.contains('staff')).toBe(false)
 		expect(table.hasAttribute('style')).toBe(false)
 	})
@@ -276,8 +287,11 @@ describe('разметка', () => {
 		expect(node('.so-table__viewport').style.display).toBe('')
 	})
 
-	/** Атрибуты окна и таблицы — разные узлы: смена атрибута окна таблицу не перепривязывает. */
-	it('смена атрибута окна не перепривязывает таблицу', async () => {
+	/**
+	 * Привязка корня — attachment, а не атрибут: смена атрибута потребителя на
+	 * таблице её не перепривязывает.
+	 */
+	it('смена атрибута таблицы её не перепривязывает', async () => {
 		const ready = readyProbe()
 		const props = reactiveProps<TableProps>({
 			engine: engineOf('none'),
@@ -290,7 +304,8 @@ describe('разметка', () => {
 		act(() => (props.title = 'b'))
 		await nextFrame()
 
-		expect(node('.so-table__viewport').title).toBe('b')
+		expect(node('table.so-table').title).toBe('b')
+		expect(node('.so-table__viewport').hasAttribute('title')).toBe(false)
 		expect(ready.elements).toHaveLength(1)
 		expect(ready.elements[0]).toBe(node('table.so-table'))
 	})

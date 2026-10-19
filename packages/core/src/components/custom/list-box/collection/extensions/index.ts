@@ -8,3 +8,4 @@
  */
 
 export * from './list-box'
+export { listOf } from './guards'

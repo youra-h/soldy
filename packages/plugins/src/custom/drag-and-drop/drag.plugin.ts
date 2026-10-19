@@ -1,3 +1,4 @@
+import { batchOf, plainOf } from '@soldy-ui/core'
 import type { IComponentView, TCollectionEngine } from '@soldy-ui/core'
 import { TBasePlugin } from '../../base'
 import type { IPluginContext, IPluginBundle } from '../../base'
@@ -10,8 +11,8 @@ import type { TDragPluginEvents } from './types'
  * TDragPlugin — drag-and-drop для перетаскивания элементов коллекции.
  *
  * Слушает нативные события `dragstart`, `dragend`, `dragover` на корневом
- * DOM-элементе компонента и при перетаскивании вызывает `engine.extensions.plain.move()`,
- * синхронизируя порядок DOM-узлов с порядком элементов в коллекции.
+ * DOM-элементе компонента и при перетаскивании вызывает `move()` базовых операций
+ * коллекции (`plain`), синхронизируя порядок DOM-узлов с порядком элементов в коллекции.
  *
  * Зависит от плагинов, которые должны присутствовать в том же бандле:
  * - {@link TElementPlugin} — корневой DOM-элемент компонента;
@@ -133,7 +134,8 @@ export class TDragPlugin extends TBasePlugin<any, TDragPluginEvents> {
 
 		// Элементы перетаскиваемой коллекции — компоненты: у них есть uid и classes.
 		// Состав читается при каждом событии: между ними коллекция могла измениться.
-		const collectionItems = (): ReadonlyArray<IComponentView> => engine.extensions.batch.items
+		const collectionItems = (): ReadonlyArray<IComponentView> =>
+			batchOf<IComponentView>(engine)?.items ?? []
 
 		const onDragStart = (e: DragEvent) => {
 			const target = (e.target as HTMLElement).closest(
@@ -212,7 +214,7 @@ export class TDragPlugin extends TBasePlugin<any, TDragPluginEvents> {
 			if (targetIndex === -1 || targetIndex === draggingIndex) return
 
 			const draggingItem = collectionItems()[draggingIndex]
-			engine.extensions.plain.move(draggingItem, targetIndex, draggingIndex)
+			plainOf<IComponentView>(engine)?.move(draggingItem, targetIndex, draggingIndex)
 			draggingIndex = targetIndex
 		}
 
