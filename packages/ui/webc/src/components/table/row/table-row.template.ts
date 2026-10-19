@@ -30,9 +30,10 @@
  *   различает ячейки тегом. Набор ячейки — `data-align` колонки, набор ячеек
  *   строки (`cellAria`: в сетке ячейка принимает фокус) и у заголовка строки
  *   его `id`.
- * - Содержимое ячейки — копия образца `cell` или значение текстом (`toText`:
- *   тип поля записи таблица не знает, а `textContent` нарисовал бы объект как
- *   `[object Object]`). Образец — слот строки: копию образца `cell` таблицы
+ * - Содержимое ячейки — копия образца `cell` или значение текстом (`text`
+ *   ячейки: тип поля записи таблица не знает, и текст считает ядро по
+ *   правилу, общему для всех адаптеров, — `textContent` нарисовал бы объект
+ *   как `[object Object]`). Образец — слот строки: копию образца `cell` таблицы
  *   строке кладёт таблица, и строка копирует его в каждую свою ячейку. Scope у
  *   слотов Web Components нет: строку копия находит у неё — `el.ctrl`
  *   ближайшего `<tr is="so-table-row">`; колонку — по месту ячейки, её номеру
@@ -55,7 +56,6 @@ import {
 	bind,
 	createDetail,
 	ownerAttributes,
-	toText,
 	type ITemplate,
 	type ITemplateContext,
 } from '../../../adapter'
@@ -107,9 +107,7 @@ function fill(ctx: TRowContext, node: HTMLTableCellElement, cell: TTableCell): v
 		return
 	}
 
-	const text = toText(cell.value)
-
-	if (node.textContent !== text) node.textContent = text
+	if (node.textContent !== cell.text) node.textContent = cell.text
 }
 
 /** Набор ячейки: `data-align` колонки, поверх — набор ячеек строки и `id` заголовка строки. */
