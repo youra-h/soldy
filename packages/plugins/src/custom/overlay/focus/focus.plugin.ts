@@ -193,11 +193,20 @@ export abstract class TOverlayFocusPlugin<
 		if (restore && root) this._returnFocus(root, returnTo)
 	}
 
-	/** Фокус — в панель, на первого из кандидатов, кто его примет. */
+	/**
+	 * Фокус — в панель, на первого из кандидатов, кто его примет.
+	 *
+	 * Окно к нему не прокручивается (`preventScroll`): место панели решает её
+	 * раскладка, а не фокус. Кадр фокуса идёт раньше наблюдателей размера, и
+	 * панель у якоря, которая лежит в документе, ещё стоит там, где её
+	 * поставил расчёт по нулевой высоте, — под полем у нижнего края окна.
+	 * Прокрутка к ней увела бы страницу, и панель осталась бы внизу, а не
+	 * встала над полем.
+	 */
 	private _focusPanel(): void {
 		const panel = this._panel
 
-		if (panel) focusFirst(this._focusCandidates(panel))
+		if (panel) focusFirst(this._focusCandidates(panel), { preventScroll: true })
 	}
 
 	/**

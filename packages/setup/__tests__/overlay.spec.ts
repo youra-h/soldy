@@ -194,17 +194,6 @@ describe('привязка к якорю', () => {
 		expect(frame.y).toBe(90)
 	})
 
-	it('при position=absolute якорь игнорируется', () => {
-		// Привязка опирается на координаты окна, а их даёт только fixed:
-		// при absolute отсчёт идёт от позиционированного предка
-		const frame = new TFrame({ position: 'absolute', x: 10, y: 20 })
-
-		anchorFor(frame).setAnchor(anchorAt({ left: 100, bottom: 250 }))
-
-		expect(frame.x).toBe(10)
-		expect(frame.y).toBe(20)
-	})
-
 	/**
 	 * Панель внутри контейнера (`contained`) встаёт в нём там, где решит тема:
 	 * координаты окна ей ни к чему, и стороны у неё нет.
@@ -742,6 +731,211 @@ describe('центр: top и bottom без суффикса', () => {
 
 		expect(frame.x).toBe(140)
 		expect(frame.dataset.get('placement')).toBe('bottom')
+	})
+})
+
+/**
+ * `position` панели у якоря выбирает плагин: `absolute` — панель лежит в
+ * документе, и окно браузер прокручивает вместе с ней и полем, без пересчёта
+ * по `scroll`, который на телефоне приходит кадром позже прокрутки; `fixed` —
+ * у якоря, который стоит в окне. Во Frame координаты уходят от угла блока, от
+ * которого браузер отсчитывает `left`/`top` панели.
+ */
+describe('position панели', () => {
+	const scrollDescriptors = {
+		x: Object.getOwnPropertyDescriptor(window, 'scrollX'),
+		y: Object.getOwnPropertyDescriptor(window, 'scrollY'),
+	}
+
+	/** Окно прокручено: jsdom его не прокручивает, подставляем сами. */
+	const scrollWindowTo = (x: number, y: number): void => {
+		Object.defineProperty(window, 'scrollX', { value: x, configurable: true })
+		Object.defineProperty(window, 'scrollY', { value: y, configurable: true })
+	}
+
+	afterEach(() => {
+		for (const [key, descriptor] of [
+			['scrollX', scrollDescriptors.x],
+			['scrollY', scrollDescriptors.y],
+		] as const) {
+			if (descriptor) Object.defineProperty(window, key, descriptor)
+			else Reflect.deleteProperty(window, key)
+		}
+	})
+
+	/** Узел с инлайновым стилем в `parent` — по нему `getComputedStyle` и отвечает. */
+	const boxIn = (parent: HTMLElement, style: string): HTMLElement => {
+		const element = document.createElement('div')
+
+		element.setAttribute('style', style)
+		parent.appendChild(element)
+
+		return element
+	}
+
+	/** Якорь с прямоугольником `rect` внутри `parent`. */
+	const anchorIn = (parent: HTMLElement, rect: Partial<DOMRect>): HTMLElement => {
+		const element = anchorAt(rect)
+
+		parent.appendChild(element)
+
+		return element
+	}
+
+	/** Панель, телепортированная в `target`, — узел объявлен, как после `ready`. */
+	const panelIn = async (target: HTMLElement, frame: TFrame): Promise<TAnchorPlugin> => {
+		const panel = panelOf(120, 60)
+		const plugin = anchorFor(frame, panel.plugin)
+
+		target.appendChild(panel.element)
+		panel.plugin.element = panel.element
+		await nextFrame()
+
+		return plugin
+	}
+
+	it('на странице — absolute, от начала документа', () => {
+		scrollWindowTo(30, 400)
+
+		const frame = new TFrame({ position: 'fixed' })
+
+		anchorFor(frame).setAnchor(anchorAt({ left: 100, top: 220, bottom: 250, right: 300 }))
+
+		expect(frame.position).toBe('absolute')
+		expect(frame.x).toBe(130)
+		expect(frame.y).toBe(650)
+	})
+
+	/**
+	 * Сама причина: прокрутка окна панель `absolute` не двигает — её везёт
+	 * браузер. Координаты во Frame те же, и адаптеру перерисовывать нечего.
+	 */
+	it('прокрутка окна координаты absolute не меняет', () => {
+		scrollWindowTo(0, 400)
+
+		const frame = new TFrame()
+		const anchor = anchorAt({ left: 100, top: 220, bottom: 250, right: 300 })
+		const moved = vi.fn()
+
+		anchorFor(frame).setAnchor(anchor)
+		frame.events.on('change:y', moved)
+
+		scrollWindowTo(0, 500)
+		scrollAnchorTo(anchor, { left: 100, top: 120, bottom: 150, right: 300 })
+
+		expect(frame.y).toBe(650)
+		expect(moved).not.toHaveBeenCalled()
+	})
+
+	it('якорь в fixed-предке — fixed, от окна', () => {
+		scrollWindowTo(0, 400)
+
+		const header = boxIn(document.body, 'position: fixed')
+		const frame = new TFrame({ position: 'absolute' })
+
+		anchorFor(frame).setAnchor(anchorIn(header, { left: 100, top: 20, bottom: 50, right: 300 }))
+
+		expect(frame.position).toBe('fixed')
+		expect(frame.x).toBe(100)
+		expect(frame.y).toBe(50)
+	})
+
+	it('сам якорь fixed — fixed', () => {
+		const frame = new TFrame()
+		const anchor = anchorAt({ left: 100, bottom: 50 })
+
+		anchor.style.position = 'fixed'
+		anchorFor(frame).setAnchor(anchor)
+
+		expect(frame.position).toBe('fixed')
+	})
+
+	it('якорь в sticky к окну — fixed, в sticky внутренней прокрутки — absolute', () => {
+		const sticky = boxIn(document.body, 'position: sticky; top: 0')
+		const pinned = new TFrame()
+
+		anchorFor(pinned).setAnchor(anchorIn(sticky, { left: 100, bottom: 50 }))
+
+		expect(pinned.position).toBe('fixed')
+
+		const scroller = boxIn(document.body, 'overflow-y: auto')
+
+		// jsdom не раскладывает: содержимое не влезает в окно блока
+		Object.defineProperty(scroller, 'scrollHeight', { value: 500 })
+		Object.defineProperty(scroller, 'clientHeight', { value: 100 })
+
+		const inner = new TFrame()
+
+		anchorFor(inner).setAnchor(
+			anchorIn(boxIn(scroller, 'position: sticky; top: 0'), { left: 100, bottom: 50 }),
+		)
+
+		expect(inner.position).toBe('absolute')
+	})
+
+	it('панель в позиционированном предке — от его угла за рамкой и с его прокруткой', async () => {
+		scrollWindowTo(0, 400)
+
+		const target = boxIn(document.body, 'position: relative')
+
+		placeAt(target, { left: 50, top: 80 })
+		Object.defineProperty(target, 'clientLeft', { value: 2 })
+		Object.defineProperty(target, 'clientTop', { value: 3 })
+		target.scrollTop = 40
+
+		const frame = new TFrame()
+		const plugin = await panelIn(target, frame)
+
+		plugin.setAnchor(anchorAt({ left: 100, top: 220, bottom: 250, right: 300 }))
+
+		expect(frame.position).toBe('absolute')
+		expect(frame.x).toBe(48) // 100 - (50 + 2)
+		expect(frame.y).toBe(207) // 250 - (80 + 3 - 40)
+	})
+
+	it('fixed в предке с трансформацией — от его угла', async () => {
+		const header = boxIn(document.body, 'position: fixed')
+		const target = boxIn(document.body, 'transform: translateX(0)')
+
+		placeAt(target, { left: 40, top: 60 })
+
+		const frame = new TFrame()
+		const plugin = await panelIn(target, frame)
+
+		plugin.setAnchor(anchorIn(header, { left: 100, top: 220, bottom: 250, right: 300 }))
+
+		expect(frame.position).toBe('fixed')
+		expect(frame.x).toBe(60)
+		expect(frame.y).toBe(190)
+	})
+
+	it('позиционированный предок без трансформации fixed не держит', async () => {
+		const header = boxIn(document.body, 'position: fixed')
+		const target = boxIn(document.body, 'position: relative')
+
+		placeAt(target, { left: 40, top: 60 })
+
+		const frame = new TFrame()
+		const plugin = await panelIn(target, frame)
+
+		plugin.setAnchor(anchorIn(header, { left: 100, top: 220, bottom: 250, right: 300 }))
+
+		expect(frame.x).toBe(100)
+		expect(frame.y).toBe(250)
+	})
+
+	it('показ выбирает position заново', () => {
+		const header = boxIn(document.body, '')
+		const frame = new TFrame()
+
+		anchorFor(frame).setAnchor(anchorIn(header, { left: 100, bottom: 50 }))
+
+		expect(frame.position).toBe('absolute')
+
+		header.style.position = 'fixed'
+		frame.show()
+
+		expect(frame.position).toBe('fixed')
 	})
 })
 

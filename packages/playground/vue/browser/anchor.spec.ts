@@ -13,11 +13,11 @@
  * (`vitest.browser.config.ts`).
  */
 
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, cleanup } from 'vitest-browser-vue'
 import { userEvent } from 'vitest/browser'
 import { defineComponent, h } from 'vue'
-import { Frame, Select, SelectItem } from '@soldy-ui/vue'
+import { DatePicker, Frame, Select, SelectItem } from '@soldy-ui/vue'
 import type { TSelectPlacement } from '@soldy-ui/core'
 
 import { find } from './colors'
@@ -60,7 +60,6 @@ const TopStartHarness = defineComponent({
 						Frame,
 						{
 							visible: this.open,
-							position: 'fixed',
 							anchor_anchor: this.anchorEl,
 							anchor_placement: 'top-start',
 							class: 'so-test-panel',
@@ -102,7 +101,6 @@ const ResizableAnchorHarness = defineComponent({
 						Frame,
 						{
 							visible: true,
-							position: 'fixed',
 							anchor_anchor: this.anchorEl,
 							anchor_placement: 'bottom-start',
 							anchor_matchWidth: true,
@@ -153,7 +151,6 @@ const PaddedAnchorHarness = defineComponent({
 						Frame,
 						{
 							visible: true,
-							position: 'fixed',
 							anchor_anchor: this.anchorEl,
 							anchor_placement: 'bottom-start',
 							anchor_matchWidth: true,
@@ -196,7 +193,6 @@ const WrappingPanelHarness = defineComponent({
 						Frame,
 						{
 							visible: true,
-							position: 'fixed',
 							anchor_anchor: this.anchorEl,
 							anchor_placement: 'top-start',
 							anchor_matchWidth: true,
@@ -232,7 +228,6 @@ const RtlHarness = defineComponent({
 							Frame,
 							{
 								visible: true,
-								position: 'fixed',
 								anchor_anchor: this.anchorEl,
 								anchor_placement: 'bottom-start',
 								class: 'so-test-panel',
@@ -279,7 +274,6 @@ const centerHarness = (dir: 'ltr' | 'rtl') =>
 								Frame,
 								{
 									visible: true,
-									position: 'fixed',
 									anchor_anchor: this.anchorEl,
 									anchor_placement: 'top',
 									class: 'so-test-panel',
@@ -326,7 +320,6 @@ const RightEdgeHarness = defineComponent({
 						Frame,
 						{
 							visible: true,
-							position: 'fixed',
 							anchor_anchor: this.anchorEl,
 							anchor_placement: 'bottom-start',
 							class: 'so-test-panel',
@@ -528,6 +521,107 @@ describe('flip', () => {
 		await expect
 			.poll(() => selectPanel().getBoundingClientRect().top)
 			.toBeGreaterThanOrEqual(field().getBoundingClientRect().bottom - 1)
+	})
+})
+
+/**
+ * Сама причина дрожи на телефоне: страницу там прокручивает композитор, а
+ * `scroll` приходит в JS кадром позже. Панель `fixed` до него стоит, а поле
+ * уже уехало. Панель у якоря на странице — `absolute`, в документе, и
+ * прокрутку окна браузер применяет к ней вместе с полем.
+ *
+ * Измеряем сразу за `scrollTo`, в той же задаче: раскладка уже прокручена, а
+ * `scroll` браузер шлёт только на следующем кадре, и пересчитать плагин ещё
+ * ничего не мог.
+ */
+describe('прокрутка окна', () => {
+	const arrow = () => document.querySelector('.so-select__arrow') as HTMLElement
+	const selectPanel = () => document.querySelector('.so-select__panel') as HTMLElement
+	const gap = () =>
+		selectPanel().getBoundingClientRect().top -
+		find('.so-select').getBoundingClientRect().bottom
+
+	it('панель едет с полем ещё до события scroll', async () => {
+		render({
+			render: () =>
+				h('div', [
+					h('div', { style: 'height: 100px' }),
+					h('div', { style: 'width: 320px' }, [selectWith()]),
+					h('div', { style: 'height: 200vh' }),
+				]),
+		})
+
+		await userEvent.click(arrow())
+		await expect.poll(() => selectPanel().getAttribute('data-placement')).toBe('bottom-start')
+		await expect.poll(gap).toBeGreaterThanOrEqual(0)
+
+		const before = gap()
+		const scrolled = vi.fn()
+
+		window.addEventListener('scroll', scrolled, { once: true })
+		window.scrollTo(0, 60)
+
+		expect(window.scrollY, 'окно прокрутилось').toBe(60)
+		expect(scrolled, 'scroll ещё не пришёл').not.toHaveBeenCalled()
+		expect(gap()).toBeCloseTo(before, 0)
+
+		window.removeEventListener('scroll', scrolled)
+	})
+
+	/**
+	 * Поле в шапке `fixed` прокрутка окна не двигает — и панель у него
+	 * `fixed`: в документе она уезжала бы от поля до пересчёта.
+	 */
+	it('у поля в fixed-шапке панель стоит с ним ещё до события scroll', async () => {
+		render({
+			render: () =>
+				h('div', [
+					h('div', { style: 'position: fixed; top: 0; left: 0; width: 320px' }, [
+						selectWith(),
+					]),
+					h('div', { style: 'height: 200vh' }),
+				]),
+		})
+
+		await userEvent.click(arrow())
+		await expect.poll(() => selectPanel().getAttribute('data-placement')).toBe('bottom-start')
+		await expect.poll(gap).toBeGreaterThanOrEqual(0)
+
+		const before = gap()
+
+		window.scrollTo(0, 60)
+
+		expect(window.scrollY, 'окно прокрутилось').toBe(60)
+		expect(gap()).toBeCloseTo(before, 0)
+	})
+
+	/**
+	 * Панель в документе фокус может прокрутить к себе. DatePicker уводит фокус
+	 * на день кадром позже показа — раньше, чем панель измерена: она ещё стоит
+	 * под полем, по нулевой высоте. Прокрутка к ней увела бы страницу, и
+	 * панель осталась бы внизу. Фокус в панель окно не прокручивает.
+	 */
+	it('DatePicker у нижнего края открывается над полем, окно стоит', async () => {
+		render({
+			render: () =>
+				h('div', [
+					h('div', { style: 'height: calc(100vh - 48px)' }),
+					h('div', { style: 'width: 320px' }, [
+						h(DatePicker, { value: '2026-05-12', aria_label: 'Дата' }),
+					]),
+					h('div', { style: 'height: 100vh' }),
+				]),
+		})
+
+		await userEvent.click(find('.so-date-picker__trigger'))
+		await expect
+			.poll(() => document.activeElement?.classList.contains('so-calendar-item'))
+			.toBe(true)
+		await expect
+			.poll(() => find('.so-date-picker__panel').getAttribute('data-placement'))
+			.toBe('top-start')
+
+		expect(window.scrollY).toBe(0)
 	})
 })
 

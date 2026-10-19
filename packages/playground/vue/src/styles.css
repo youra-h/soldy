@@ -37,7 +37,17 @@ a {
 
 /* ─── Каркас ─────────────────────────────────────────────── */
 
-/* Ширину колонки задаёт сама панель: у страницы тестов в ней два меню */
+/*
+ * Ширину колонки задаёт сама панель: у страницы тестов в ней два меню.
+ *
+ * Страницу прокручивает окно, а не своя колонка превью: шапка и меню
+ * прилипают (`sticky`), превью едет с документом. Так прокручивает почти любое
+ * приложение, и только так превью показывает панели у якоря, как у
+ * потребителя: панель Select лежит в `body`, и внутренняя прокрутка колонки
+ * везла бы поле без неё — на телефоне панель отставала бы на кадр
+ * (docs/agents/overlay.md, `TAnchorPlugin`). Высоту шапки для меню пишет
+ * оболочка в `--pg-header-height` (`App.vue`): узкая шапка — в две строки.
+ */
 .pg {
 	display: grid;
 	grid-template-rows: auto 1fr;
@@ -45,7 +55,7 @@ a {
 	grid-template-areas:
 		'header header'
 		'sidebar main';
-	height: 100vh;
+	min-height: 100vh;
 }
 
 /* Узкое окно: меню — в выезжающей панели, превью — на всю ширину */
@@ -56,8 +66,11 @@ a {
 		'main';
 }
 
-/* Колонка в панели — без своей рамки и фона: их даёт панель */
+/* Колонка в панели — без своей рамки и фона: их даёт панель. Прилипать ей не к чему:
+   прокручивает её сама панель */
 .pg__drawer .pg__sidebar {
+	position: static;
+	height: auto;
 	padding: 0;
 	border-right: none;
 	background: none;
@@ -66,6 +79,10 @@ a {
 /* Узкой шапке контролы уходят на вторую строку, к правому краю, а не за край окна */
 .pg__header {
 	grid-area: header;
+	position: sticky;
+	top: 0;
+	/* Над превью, но под слоями: их номера начинаются с 1000 (`TLayer.baseZIndex`) */
+	z-index: 100;
 	display: flex;
 	flex-wrap: wrap;
 	justify-content: flex-end;
@@ -147,6 +164,10 @@ a {
 
 .pg__sidebar {
 	grid-area: sidebar;
+	position: sticky;
+	top: var(--pg-header-height, 0px);
+	align-self: start;
+	height: calc(100vh - var(--pg-header-height, 0px));
 	width: 260px;
 	overflow-y: auto;
 	padding: 12px;
@@ -194,7 +215,7 @@ a {
 
 .pg__main {
 	grid-area: main;
-	overflow-y: auto;
+	min-width: 0;
 	padding: 24px 28px 64px;
 }
 
