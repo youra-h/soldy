@@ -622,6 +622,18 @@ describe('указатель', () => {
 			expect(share.open).toBe(false)
 		})
 
+		it('ушёл с панели меню и вернулся — путь снят: пункт под указателем горит', async () => {
+			const { share, panel, rowOf, lit } = await heading()
+
+			hover(rowOf('remove'), 192, 62)
+			pointer(panel, 'pointerleave')
+			// Та же точка, что была на пути, — но путь до панели уже пройден
+			hover(rowOf('remove'), 193, 63)
+
+			expect(lit()).toEqual(['remove'])
+			expect(share.open).toBe(false)
+		})
+
 		it('вернулся на строку и ушёл от панели — путь от новой точки, и подсветка уходит', async () => {
 			const { share, rowOf, lit } = await heading()
 

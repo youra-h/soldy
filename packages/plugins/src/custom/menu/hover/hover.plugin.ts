@@ -189,11 +189,16 @@ export class TMenuHoverPlugin extends TBasePlugin<any, TMenuHoverPluginEvents> {
 		this._navigation?.unhighlight(NO_SCROLL)
 	}
 
-	/** Указатель ушёл с панели: открытое подменю держит подсветку своей строки. */
+	/**
+	 * Указатель ушёл с панели: открытое подменю держит подсветку своей строки.
+	 * Путь к нему снят — указатель до панели дошёл или ушёл мимо, и
+	 * вернувшийся указатель решает заново.
+	 */
 	private readonly _onPointerLeave = (e: PointerEvent): void => {
 		if (!hovers(e)) return
 
 		this._lastUid = undefined
+		this._dropGrace()
 		this._cancelOpen()
 
 		if (this._opened()) return
