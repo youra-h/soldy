@@ -292,6 +292,12 @@ export const FRAME_PLACEMENTS = enumOf<TFramePlacement>()([
 	'top-start',
 	'top',
 	'top-end',
+	'end-start',
+	'end',
+	'end-end',
+	'start-start',
+	'start',
+	'start-end',
 ])
 
 /**
