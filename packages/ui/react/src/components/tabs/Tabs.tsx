@@ -18,8 +18,9 @@ import type { TabsAttributes, TabsProps } from './base.component'
  *
  * Набор `aria` владельца — это список табов: `role="tablist"` и
  * `aria-orientation` пишет ядро, имя из `aria_label` — `TAriaPlugin`. Корень
- * его не получает: рядом со списком там лежат панели. На корне — `attrs`,
- * как у Vue.
+ * его не получает: рядом со списком там лежат панели. На корне — `attrs` и
+ * `dataset`, как у Vue: выключенный набор тема гасит корнем, вместе с
+ * панелями (`data-disabled`).
  *
  * Атрибуты потребителя делятся, как у поля и у Vue: класс и стиль — корню,
  * остальное — списку табов, поверх его `aria`: `aria-label` и `id`
@@ -41,12 +42,12 @@ import type { TabsAttributes, TabsProps } from './base.component'
 export function Tabs(props: TabsProps): ReactElement | null {
 	const { ref, forwardProps, state, layer } = useSetupTabs(props)
 
-	const { rendered, shown, attrs, aria } = state
+	const { rendered, shown, attrs, aria, dataset } = state
 
 	if (!rendered) return null
 
 	return (
-		<div {...toRootProps(ref, state, [attrs], toRootForward(forwardProps))}>
+		<div {...toRootProps(ref, state, [attrs, dataset], toRootForward(forwardProps))}>
 			<Elevate layer={layer}>
 				<div
 					className="so-tabs__list"

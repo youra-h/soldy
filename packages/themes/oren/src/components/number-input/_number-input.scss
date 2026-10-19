@@ -30,10 +30,11 @@
 // Ширина — минимум Input, а не по содержимому, как у DateInput: длина числа
 // заранее не известна, и поле без минимума схлопнулось бы до кнопок.
 
-// Включённое поле — наведение красит рамку только у него. Выключенность
-// корень несёт сам (`data-disabled`), как DateInput: искать её у вложенного
-// ввода незачем, а `:not(:disabled)` у корня-`div` истинно всегда.
-$enabled: ":not([data-disabled='true'])";
+// Выключенное поле гаснет коробкой целиком, а наведение красит рамку только у
+// включённого. Выключенность корень несёт сам (`data-disabled`), как DateInput:
+// искать её у вложенного ввода незачем, а `:disabled` у корня-`div` не
+// срабатывает.
+$disabled: "[data-disabled='true']";
 
 // Размер поля — по шкале поля (`input.$sizes`): высота, кегль, интерлиньяж и
 // отступ текста от рамки те же, что у Input того же размера. Своих чисел здесь
@@ -64,7 +65,7 @@ $enabled: ":not([data-disabled='true'])";
 .so-number-input {
 	$this: &;
 
-	@include input.field('number-input');
+	@include input.field('number-input', $disabled);
 
 	// Размер без модификатора — `normal`, как у DateInput: ядро пишет `--size-*`
 	// всегда, но блок и без него обязан выглядеть умолчанием.
@@ -88,7 +89,7 @@ $enabled: ":not([data-disabled='true'])";
 
 	@each $variant in input.$variants {
 		&--variant-#{$variant} {
-			@include input.input-variant($variant, $enabled);
+			@include input.input-variant($variant, $disabled);
 		}
 	}
 
@@ -97,7 +98,7 @@ $enabled: ":not([data-disabled='true'])";
 	// числа, и выглядит ошибка одинаково. Перекрывает и заданный вариант —
 	// атрибут сильнее модификатора.
 	&[data-invalid='true'] {
-		@include input.field-invalid('number-input', $enabled);
+		@include input.field-invalid('number-input', $disabled);
 	}
 
 	@each $size, $_ in input.$sizes {
@@ -106,10 +107,10 @@ $enabled: ":not([data-disabled='true'])";
 		}
 	}
 
-	// Выключенное поле гаснет числом, как Input — вводом: рамка и поверхность
-	// остаются, кнопки гаснут своим `data-disabled`, содержимое слотов — само.
-	&[data-disabled='true'] > #{$this}__input {
-		@apply opacity-so-component-disabled cursor-default;
+	// Гаснет не число, а коробка целиком (`input.field-frame`), с кнопками и
+	// содержимым слотов: здесь только курсор.
+	&#{$disabled} > #{$this}__input {
+		@apply cursor-default;
 	}
 }
 
@@ -117,7 +118,7 @@ $enabled: ":not([data-disabled='true'])";
 // он совпадает с базой. Нулевая специфичность — вариант перекрывает базу, не
 // споря с ней.
 :where(.so-number-input) {
-	@include input.input-variant('neutral', $enabled);
+	@include input.input-variant('neutral', $disabled);
 }
 
 // Ввод — число строкой от Intl: «1 234,5», «12 %», «1 234,50 ₽», «5 кг»;

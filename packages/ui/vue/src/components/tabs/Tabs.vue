@@ -11,12 +11,14 @@ export default { ...SetupTabs, components: { TabsItem } }
 		v-if="rendered"
 		v-show="visible"
 		:class="classes"
-		v-bind="{ ...attrs, ...containerAttrs }"
+		v-bind="{ ...attrs, ...dataset, ...containerAttrs }"
 	>
 		<!--
 			Набор `aria` владельца — это список табов: `role="tablist"` и
 			`aria-orientation` пишет ядро, имя из `aria_label` — TAriaPlugin.
-			Корень его не получает: там рядом со списком лежат панели.
+			Корень его не получает: там рядом со списком лежат панели. На корне —
+			`attrs` и `dataset`: выключенный набор тема гасит корнем, вместе с
+			панелями (`data-disabled`).
 
 			Атрибуты потребителя делятся, как у поля: класс и стиль — корню
 			(`containerAttrs`), остальное — списку табов (`controlAttrs`), поверх

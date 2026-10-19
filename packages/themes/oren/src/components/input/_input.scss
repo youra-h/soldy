@@ -3,17 +3,17 @@
 @use '../button/mixins' as button;
 @use '../../mixins/required' as required;
 
-// Наведение красит рамку только у включённого поля — выключенность читается
-// с вложенного поля (`$input-enabled` в `_mixins.scss`).
-$enabled: mixines.$input-enabled;
+// Выключенность читается с вложенного поля (`$input-disabled` в
+// `_mixins.scss`): по ней гаснет коробка, а наведение рамку не красит.
+$disabled: mixines.$input-disabled;
 
 .so-input {
 	$this: &;
 
-	// Коробка поля — рамка, поверхность, геометрия строки слота и кольцо
-	// фокуса — общая с DateInput: `field` в `_mixins.scss`, там же объяснение
-	// геометрии.
-	@include mixines.field('input');
+	// Коробка поля — рамка, поверхность, геометрия строки слота, кольцо
+	// фокуса и выключенность — общая с DateInput: `field` в `_mixins.scss`,
+	// там же объяснение геометрии.
+	@include mixines.field('input', $disabled);
 
 	// Минимум против схлопывания: `inline-flex` сжимается по содержимому, и в
 	// узком контейнере поле уходило в полосу. У `.so-list-box` то же самое.
@@ -32,8 +32,8 @@ $enabled: mixines.$input-enabled;
 			@apply text-so-component-placeholder;
 		}
 
+		// Гаснет не ввод, а коробка целиком (`field-frame`): здесь только курсор.
 		&:disabled {
-			@apply opacity-so-component-disabled;
 			@apply cursor-default;
 		}
 	}
@@ -70,14 +70,14 @@ $enabled: mixines.$input-enabled;
 
 	@each $variant in mixines.$variants {
 		&--variant-#{$variant} {
-			@include mixines.input-variant($variant, $enabled);
+			@include mixines.input-variant($variant, $disabled);
 		}
 	}
 
 	// Невалидное поле — `data-invalid` корня, его пишет поле формы `Field`:
 	// рамка ошибки, как у DateInput (`field-invalid` в `_mixins.scss`).
 	&[data-invalid='true'] {
-		@include mixines.field-invalid('input', $enabled);
+		@include mixines.field-invalid('input', $disabled);
 	}
 
 	// Высота размера — по шкале `$sizes` в `_mixins.scss`, единственному месту
@@ -103,7 +103,7 @@ $enabled: mixines.$input-enabled;
 // он совпадает с базой. Нулевая специфичность — вариант перекрывает базу, не
 // споря с ней.
 :where(.so-input) {
-	@include mixines.input-variant('neutral', $enabled);
+	@include mixines.input-variant('neutral', $disabled);
 }
 
 // Вид кнопки очистки — `plain`, как у крестиков Dialog, Drawer и Popover:
