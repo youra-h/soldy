@@ -527,3 +527,203 @@ describe('строка пункта', () => {
 		expect(lefts[2]).toBeCloseTo(lefts[0], 0)
 	})
 })
+
+/**
+ * Подменю — `Menu.Submenu`: панель сбоку от строки пункта, у края окна — с
+ * другой стороны, в RTL — зеркально; указатель открывает его, постояв на
+ * строке, и путь наискосок к панели через соседний пункт его не закрывает.
+ * Переходы плагинов на часах — `plugins/__tests__/menu-submenu.plugin.spec.ts`;
+ * здесь — настоящая раскладка и настоящий указатель.
+ */
+describe('подменю', () => {
+	/** Меню «Поделиться → (Ссылка, Почта, Мессенджер) · Удалить»; `style` — где стоит меню. */
+	const submenuPage = (style: string) => () =>
+		h('div', { style: `padding: 40px; ${style}` }, [
+			h(
+				Menu,
+				{},
+				{
+					trigger: ({ triggerAria, triggerDataset }: TTriggerScope) =>
+						h(Button, {
+							text: 'Действия',
+							class: 'so-test-trigger',
+							...triggerAria,
+							...triggerDataset,
+						}),
+					default: () => [
+						h(Menu.Submenu, { value: 'share', text: 'Поделиться' }, () => [
+							h(Menu.Item, { value: 'link', text: 'Ссылка' }),
+							h(Menu.Item, { value: 'mail', text: 'Почта' }),
+							h(Menu.Item, { value: 'chat', text: 'Мессенджер' }),
+						]),
+						h(Menu.Item, { value: 'remove', text: 'Удалить' }),
+						h(Menu.Item, { value: 'archive', text: 'В архив' }),
+					],
+				},
+			),
+		])
+
+	const showSubmenu = async (style = '') => {
+		render(defineComponent({ render: submenuPage(style) }))
+
+		await nextTick()
+		await nextFrame()
+		await nextFrame()
+	}
+
+	/** Строка пункта с подменю — у неё `aria-haspopup`, как у триггера, но она в пункте. */
+	const shareRow = () => find('.so-menu-item > [aria-haspopup="menu"]')
+	/** Корень пункта с подменю — якорь его панели. */
+	const shareItem = () => {
+		const item = shareRow().parentElement
+
+		if (!item) throw new Error('у строки нет корня пункта')
+
+		return item
+	}
+
+	/** Панель по `id`, на который ссылается `aria-controls`. */
+	const panelOf = (node: HTMLElement) => find(`#${node.getAttribute('aria-controls') ?? ''}`)
+	const rootPanel = () => panelOf(trigger())
+	const subPanel = () => panelOf(shareRow())
+	const subOpen = () => getComputedStyle(subPanel()).display !== 'none'
+
+	/** Строка по тексту — в любой из панелей. */
+	const rowIn = (scope: HTMLElement, text: string): HTMLElement => {
+		const row = [...scope.querySelectorAll<HTMLElement>('.so-menu-item > .so-button')].find(
+			(candidate) => find('.so-button__text', candidate).textContent?.trim() === text,
+		)
+
+		if (!row) throw new Error(`строки «${text}» нет`)
+
+		return row
+	}
+
+	/** Тексты горящих строк обеих панелей: открытый пункт горит, как подсвеченный. */
+	const litRows = () =>
+		[rootPanel(), subPanel()].flatMap((scope) =>
+			[...scope.querySelectorAll<HTMLElement>('.so-menu-item > .so-button')]
+				.filter((row) => getComputedStyle(row).backgroundColor !== 'rgba(0, 0, 0, 0)')
+				.map((row) => find('.so-button__text', row).textContent?.trim()),
+		)
+
+	/** Открыть меню кликом и навести на «Поделиться» у конца строки: подменю открывается. */
+	const openSubmenu = async () => {
+		await userEvent.click(trigger())
+		await expect.poll(() => getComputedStyle(rootPanel()).display).not.toBe('none')
+
+		const row = shareRow().getBoundingClientRect()
+
+		await userEvent.hover(shareRow(), { position: { x: row.width - 12, y: row.height / 2 } })
+		await expect.poll(subOpen).toBe(true)
+		await nextFrame()
+	}
+
+	afterEach(() => {
+		document.documentElement.removeAttribute('dir')
+	})
+
+	it('панель — у конца строки, верхом вровень с ней, без зазора; фокус остался на строке', async () => {
+		await showSubmenu()
+		await openSubmenu()
+
+		const anchor = shareItem().getBoundingClientRect()
+		const box = subPanel().getBoundingClientRect()
+
+		expect(box.left).toBeCloseTo(anchor.right, 0)
+		expect(box.top).toBeCloseTo(anchor.top, 0)
+		expect(subPanel().dataset.placement).toBe('end-start')
+		expect(active()).toBe(shareRow())
+		expect(shareItem().dataset.open).toBe('true')
+		// Слой подменю — выше слоя меню
+		expect(Number(subPanel().dataset.layer)).toBeGreaterThan(Number(rootPanel().dataset.layer))
+	})
+
+	it('у правого края окна панель встаёт у начала строки', async () => {
+		await showSubmenu('display: flex; justify-content: flex-end')
+		await openSubmenu()
+
+		// Сторону привязка выбирает по разложенной панели: на показе она ещё без
+		// размера, и выбор приходит с её наблюдателем размера
+		await expect.poll(() => subPanel().dataset.placement).toBe('start-start')
+
+		const anchor = shareItem().getBoundingClientRect()
+		const box = subPanel().getBoundingClientRect()
+
+		expect(box.right).toBeCloseTo(anchor.left, 0)
+	})
+
+	it('в RTL панель — слева, у конца строки, а стрелка смотрит влево', async () => {
+		document.documentElement.dir = 'rtl'
+
+		await showSubmenu()
+		await openSubmenu()
+
+		const anchor = shareItem().getBoundingClientRect()
+
+		// Слева от строки место панели зависит от её ширины, а ширину привязка
+		// узнаёт с наблюдателем размера
+		await expect
+			.poll(() => subPanel().getBoundingClientRect().right)
+			.toBeCloseTo(anchor.left, 0)
+		expect(subPanel().dataset.placement).toBe('end-start')
+		expect(getComputedStyle(find('.so-menu-item__arrow', shareRow())).transform).toBe(
+			'matrix(-1, 0, 0, 1, 0, 0)',
+		)
+	})
+
+	it('путь наискосок к панели через соседний пункт подменю не закрывает', async () => {
+		await showSubmenu()
+		await openSubmenu()
+
+		const remove = rowIn(rootPanel(), 'Удалить')
+		const below = remove.getBoundingClientRect()
+		const row = shareRow().getBoundingClientRect()
+
+		// Со строки «Поделиться» вниз-вправо, через «Удалить» — к нижнему пункту подменю
+		await userEvent.hover(remove, { position: { x: row.width - 8, y: 3 } })
+		await userEvent.hover(remove, { position: { x: row.width - 4, y: below.height - 4 } })
+
+		expect(subOpen()).toBe(true)
+		expect(litRows()).toEqual(['Поделиться'])
+
+		await userEvent.hover(rowIn(subPanel(), 'Мессенджер'))
+
+		await expect.poll(active).toBe(rowIn(subPanel(), 'Мессенджер'))
+		// Пункт с открытым подменю горит, пока подменю открыто
+		await expect.poll(litRows).toEqual(['Поделиться', 'Мессенджер'])
+	})
+
+	it('уход со строки прочь от панели закрывает подменю: подсветка — у пункта под указателем', async () => {
+		await showSubmenu()
+		await openSubmenu()
+
+		const remove = rowIn(rootPanel(), 'Удалить')
+
+		await userEvent.hover(remove, { position: { x: 10, y: 10 } })
+		await userEvent.hover(remove, { position: { x: 6, y: 14 } })
+
+		await expect.poll(subOpen).toBe(false)
+		await expect.poll(active).toBe(remove)
+		// Строка закрытого пункта гаснет переходом темы — ждём его конца
+		await expect.poll(litRows).toEqual(['Удалить'])
+	})
+
+	it('стрелка к концу строки — подменю на первом пункте, стрелка к началу — назад', async () => {
+		await showSubmenu()
+		trigger().focus()
+		await userEvent.keyboard('{ArrowDown}')
+		await expect.poll(active).toBe(shareRow())
+
+		await userEvent.keyboard('{ArrowRight}')
+
+		await expect.poll(active).toBe(rowIn(subPanel(), 'Ссылка'))
+
+		await userEvent.keyboard('{ArrowLeft}')
+
+		await expect.poll(active).toBe(shareRow())
+		expect(shareRow().getAttribute('aria-expanded')).toBe('false')
+		// Закрытая панель гаснет переходом темы, а потом прячется
+		await expect.poll(subOpen).toBe(false)
+	})
+})
