@@ -568,19 +568,34 @@ describe('слоты', () => {
 	})
 
 	/**
-	 * Без образца значение — текстом, по правилу интерполяции Vue: `textContent`
-	 * нарисовал бы объект как `[object Object]`, а `null` — словом.
+	 * Без образца значение — текстом ядра (`text` ячейки): `textContent`
+	 * нарисовал бы объект как `[object Object]`, а `null` — словом. Цикл JSON
+	 * не пишет, и ядро отдаёт тег объекта.
 	 */
-	it('без cell значение — текстом: число, булево, пусто, объект', async () => {
+	it('без cell значение — текстом: число, булево, пусто, объект, цикл', async () => {
 		const FLAG: TTableColumnSource = { field: 'flag', text: 'Флаг' }
 		const NOTE: TTableColumnSource = { field: 'note', text: 'Заметка' }
 		const TAGS: TTableColumnSource = { field: 'tags', text: 'Теги' }
+		const LOOP: TTableColumnSource = { field: 'loop', text: 'Цикл' }
+		const loop: Record<string, unknown> = {}
+
+		loop.self = loop
 
 		await mountTable({
 			items: [
-				{ data: { id: 1, name: 'Анна', age: 30, flag: true, note: null, tags: ['a'] } },
+				{
+					data: {
+						id: 1,
+						name: 'Анна',
+						age: 30,
+						flag: true,
+						note: null,
+						tags: ['a'],
+						loop,
+					},
+				},
 			],
-			columns: [NAME, AGE, FLAG, NOTE, TAGS],
+			columns: [NAME, AGE, FLAG, NOTE, TAGS, LOOP],
 		})
 
 		expect([...find('.so-table-row').children].map((cell) => cell.textContent)).toEqual([
@@ -589,6 +604,7 @@ describe('слоты', () => {
 			'true',
 			'',
 			'[\n  "a"\n]',
+			'[object Object]',
 		])
 	})
 

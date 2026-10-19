@@ -1,7 +1,7 @@
 import { Component, ChangeDetectionStrategy } from '@angular/core'
 import { NgTemplateOutlet } from '@angular/common'
 import type { ITableRow, TTableRowCollectionFacade } from '@soldy-ui/core'
-import { AttributesDirective, TextPipe, type TBinding } from '../../../adapter'
+import { AttributesDirective, type TBinding } from '../../../adapter'
 import { TCheckBoxComponent } from '../../check-box'
 import { TableRowInputNames, TTableRowSurface } from './base.component'
 import { setupTableRow } from './setup.component'
@@ -38,7 +38,7 @@ import { setupTableRow } from './setup.component'
 @Component({
 	selector: 'tr[so-table-row], [so-table-row]',
 	standalone: true,
-	imports: [NgTemplateOutlet, AttributesDirective, TextPipe, TCheckBoxComponent],
+	imports: [NgTemplateOutlet, AttributesDirective, TCheckBoxComponent],
 	changeDetection: ChangeDetectionStrategy.OnPush,
 	templateUrl: './table-row.component.html',
 })

@@ -1,4 +1,5 @@
 import { TBaseItemExtension } from '../../../../../../base/collection'
+import { toText } from '../../../../../../../common/utility/to-text'
 import type { ITableColumn } from '../../../../column/types'
 import type { ITableRow } from '../../../../row/types'
 import type {
@@ -12,9 +13,10 @@ import type {
  * Item-адаптер колонок — ячейки строки.
  *
  * Ячеек не хранит никто: на каждое чтение это запись строки, разложенная по
- * показанным колонкам, — по ячейке на колонку, в их порядке. Своего состояния
- * у адаптера нет: колонки знает родитель, запись и набор заголовка — сама
- * строка.
+ * показанным колонкам, — по ячейке на колонку, в их порядке: значение поля и
+ * оно же текстом (`toText`), который ячейка рисует без слота. Своего
+ * состояния у адаптера нет: колонки знает родитель, запись и набор
+ * заголовка — сама строка.
  *
  * **Заголовок строки** — ячейка колонки `rowHeader`. Таких колонок бывает
  * несколько (имя и фамилия), и заголовками рисуются все, но набор заголовка
@@ -45,14 +47,19 @@ export class TTableColumnsItemExtension<TRow extends ITableRow = ITableRow>
 		const data = this._item.data
 		const header = this._header
 
-		return this._parent.shownColumns.map((column) => ({
-			column,
+		return this._parent.shownColumns.map((column) => {
 			// Поле записи, как `data[field]`: записи нет — нет и значения
-			value: data === undefined ? undefined : Reflect.get(data, column.field),
-			rowHeader: column.rowHeader,
-			aria: column === header ? this._item.headerAria.toObject() : {},
-			dataset: { 'data-align': column.align },
-		}))
+			const value: unknown = data === undefined ? undefined : Reflect.get(data, column.field)
+
+			return {
+				column,
+				value,
+				text: toText(value),
+				rowHeader: column.rowHeader,
+				aria: column === header ? this._item.headerAria.toObject() : {},
+				dataset: { 'data-align': column.align },
+			}
+		})
 	}
 
 	get rowHeaderId(): string | undefined {

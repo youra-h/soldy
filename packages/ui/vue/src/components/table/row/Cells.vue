@@ -49,7 +49,8 @@ const BaseTableRowCells = {
  * заголовка строки, его `id`. Ячейка колонки `rowHeader` — заголовок строки:
  * `th` с `scope="row"`, на её текст ссылается имя чекбокса строки. Остальные —
  * `td`. Класс один: тема различает их тегом. Содержимое — слот `cell` со scope
- * `{ row, column, value }`, без него — `value` текстом.
+ * `{ row, column, value }`, без него — значение текстом: `text` ячейки, его
+ * считает ядро по правилу, общему для всех адаптеров.
  *
  * Узлов Vue на ячейку — два, сама ячейка и её текст. Тег выбирает
  * `<component :is>`, а не пара `th`/`td` под `<template v-for>`, и без слота
@@ -82,7 +83,7 @@ export default {
 			v-bind="{ ...cell.dataset, ...cellAria, ...cell.aria }"
 		>
 			<slot name="cell" :row="row" :column="cell.column" :value="cell.value">{{
-				cell.value
+				cell.text
 			}}</slot>
 		</component>
 	</template>
@@ -94,7 +95,7 @@ export default {
 			class="so-table-row__cell"
 			:scope="cell.rowHeader ? 'row' : undefined"
 			v-bind="{ ...cell.dataset, ...cellAria, ...cell.aria }"
-			>{{ cell.value }}</component
+			>{{ cell.text }}</component
 		>
 	</template>
 </template>

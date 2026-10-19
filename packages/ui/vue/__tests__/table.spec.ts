@@ -419,6 +419,64 @@ describe('слоты', () => {
 		])
 	})
 
+	/**
+	 * Без слота значение — текстом ядра (`text` ячейки), а не интерполяцией
+	 * Vue: правило одно на все адаптеры. Различает их цикл: интерполяция на нём
+	 * падает, ядро отдаёт тег объекта.
+	 */
+	it('без cell значение — текстом ядра: число, булево, пусто, объект, цикл', async () => {
+		const FLAG: TTableColumnSource = { field: 'flag', text: 'Флаг' }
+		const NOTE: TTableColumnSource = { field: 'note', text: 'Заметка' }
+		const TAGS: TTableColumnSource = { field: 'tags', text: 'Теги' }
+		const LOOP: TTableColumnSource = { field: 'loop', text: 'Цикл' }
+		const loop: Record<string, unknown> = {}
+
+		loop.self = loop
+
+		await render(() =>
+			h(Table, {
+				items: [{ data: { ...ANNA, flag: true, note: null, tags: ['a'], loop } }],
+				columns: [NAME, AGE, FLAG, NOTE, TAGS, LOOP],
+			}),
+		)
+
+		expect([...find('.so-table-row').children].map((cell) => cell.textContent)).toEqual([
+			'Анна',
+			'30',
+			'true',
+			'',
+			'[\n  "a"\n]',
+			'[object Object]',
+		])
+	})
+
+	// Запасное содержимое — только у ячеек: проброс слота через таблицу и
+	// строку своего не держит, и ячейке, где слот ничего не нарисовал,
+	// достаётся текст ядра, а не интерполяция Vue
+	it('cell, ничего не нарисовавший, — текст ячейки от ядра', async () => {
+		const LOOP: TTableColumnSource = { field: 'loop', text: 'Цикл' }
+		const loop: Record<string, unknown> = {}
+
+		loop.self = loop
+
+		await render(() =>
+			h(
+				Table,
+				{ items: [{ data: { ...ANNA, loop } }], columns: [NAME, AGE, LOOP] },
+				{
+					cell: ({ column, value }: { column: ITableColumn; value: unknown }) =>
+						column.field === 'age' ? h('i', String(value)) : [],
+				},
+			),
+		)
+
+		expect([...find('.so-table-row').children].map((cell) => cell.innerHTML)).toEqual([
+			'Анна',
+			'<i>30</i>',
+			'[object Object]',
+		])
+	})
+
 	it('empty — пока строк нет, ячейка во всю ширину строки', async () => {
 		await render(() =>
 			h(Table, { columns: [NAME, AGE], mode: 'multiple' }, { empty: () => 'Нет данных' }),

@@ -164,8 +164,8 @@ template: `<div so-table [items]="rows" [columns]="columns" mode="multiple" (soC
 </div>`
 ```
 
-Without a `cell` template a value is rendered as text the way Vue interpolates it — an object as
-JSON; the `soText` pipe (`TextPipe`) gives your own template the same text. A long list renders only
+Without a `cell` template a value is rendered as the cell's text from the core (`cell.text`) — an
+object as JSON; the `soText` pipe (`TextPipe`) gives your own template the same text. A long list renders only
 what is visible inside `<so-virtual>` — the same with a table; the wrapper has no box of its own,
 and `enabled` turns the window off:
 

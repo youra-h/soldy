@@ -1,4 +1,5 @@
 @use 'sass:map';
+@use '../../mixins/solid';
 @use '../../mixins/veil';
 @use '../button/mixins' as button;
 
@@ -88,11 +89,12 @@ $variants: 'accent', 'positive', 'negative', 'caution';
 // календарь (`bindStyleToOwner`), — но цвет всё равно один на календарь, и
 // держать его на каждой ячейке незачем.
 //
-// - выбранный день и концы выбранного диапазона — насыщенная ступень 500 с
-//   белым текстом, как отмеченная коробка CheckBox `filled` и заливка Slider:
-//   своё место на шкале у неё есть, и в обеих схемах она одна и та же.
-//   Наведение и нажатие — ступени 600 и 700, как у Button `filled` с
-//   вариантом: вуаль той же ступени на такой заливке невидима;
+// - выбранный день и концы выбранного диапазона — насыщенная заливка под
+//   белым текстом (`mixins/_solid.scss`), та же, что у Button `filled` с
+//   вариантом и у отмеченной коробки CheckBox `filled`: своё место на шкале у
+//   неё есть, а белый номер на ней держит 4,5:1 в обеих схемах. Наведение и
+//   нажатие — тень плотностей наведения и нажатия, как у Button: она уводит
+//   заливку от белого номера, а вуаль ступени 500 вела бы к нему;
 // - наведение и нажатие у остальных дней — вуаль состояний Button
 //   (`--so-component-state-*`): календарь стоит и на странице, и на панели
 //   DatePicker, и ступень, отсчитанная от страницы, на панели пропала бы;
@@ -111,9 +113,9 @@ $variants: 'accent', 'positive', 'negative', 'caution';
 //   рядом, а 300 на вуали мало: в тёмной схеме на панели DatePicker лента
 //   почти ровно ступени 300, и рамка в ней пропадала.
 @mixin calendar-colors($color) {
-	--so-calendar-fill: var(--so-#{$color}-500);
-	--so-calendar-fill-hover: var(--so-#{$color}-600);
-	--so-calendar-fill-active: var(--so-#{$color}-700);
+	--so-calendar-fill: #{solid.fill($color)};
+	--so-calendar-fill-hover: #{solid.fill($color, var(--so-component-state-hover))};
+	--so-calendar-fill-active: #{solid.fill($color, var(--so-component-state-active))};
 	--so-calendar-hover: #{veil.tint($color, var(--so-component-state-hover))};
 	--so-calendar-press: #{veil.tint($color, var(--so-component-state-active))};
 	--so-calendar-band: #{veil.tint($color, var(--so-component-state-active))};

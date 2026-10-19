@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Dynamic, toRootProps, toText } from '../../../adapter'
+	import { Dynamic, toRootProps } from '../../../adapter'
 	import { CheckBox } from '../../check-box'
 	import { setupTableRow } from './setup.component'
 	import type { TableRowProps } from './base.component'
@@ -50,10 +50,12 @@
 
 	Содержимое ячейки — сниппет `cell` со scope `{ row, column, value }`: строку
 	в scope кладут ячейки, таблица отдаёт строке свой сниппет как есть. Без
-	него — значение текстом (`toText`): тип поля записи таблица не знает, а
-	интерполяция Svelte нарисовала бы объект как `[object Object]`. Сниппет
-	непрозрачен: заданный, он рисуется в каждой ячейке вместо значения — и там,
-	где ничего не нарисовал.
+	него — значение текстом (`text` ячейки): тип поля записи таблица не знает,
+	и текст считает ядро по правилу, общему для всех адаптеров, — интерполяция
+	Svelte нарисовала бы объект как `[object Object]`. Сниппет непрозрачен:
+	заданный, он рисуется в каждой ячейке вместо значения — и там, где ничего не
+	нарисовал. Тот же текст значения сниппет рисует сам — `toText(value)` из
+	`@soldy-ui/core`.
 
 	Ячейка выбора и ячейки колонок стоят вплотную: пробел между ними Svelte
 	оставил бы в строке текстом.
@@ -86,7 +88,7 @@
 				{#if props.cell}
 					{@render props.cell({ row, column: cell.column, value: cell.value })}
 				{:else}
-					{toText(cell.value)}
+					{cell.text}
 				{/if}
 			</svelte:element>
 		{/each}
