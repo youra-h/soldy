@@ -49,6 +49,7 @@ import {
 	Table,
 	Tabs,
 	Tags,
+	Textarea,
 	Toasts,
 	Tooltip,
 	Virtual,
@@ -417,6 +418,30 @@ const dragAndDrop = new TDragAndDrop()
 	<!-- @vue-expect-error — вариант тега — имя темы, а `rainbow` она не объявила -->
 	<Tags.Item variant="rainbow" />
 	<Tags.Item variant="brand" />
+
+	<!-- @vue-expect-error — текст поля строкой -->
+	<Textarea :value="42" />
+	<Textarea value="Комментарий" />
+
+	<!-- @vue-expect-error — высота в строках числом, а не строкой -->
+	<Textarea rows="3" />
+	<Textarea :rows="3" />
+
+	<!-- @vue-expect-error — потолок автороста числом -->
+	<Textarea maxRows="6" />
+	<Textarea :maxRows="6" />
+
+	<!-- @vue-expect-error — предел символов числом -->
+	<Textarea maxlength="200" />
+	<Textarea :maxlength="200" />
+
+	<!-- @vue-expect-error — флаг, а не строка -->
+	<Textarea :autoresize="'yes'" />
+	<Textarea autoresize />
+
+	<!-- @vue-expect-error — флаг, а не строка -->
+	<Textarea :counter="'yes'" />
+	<Textarea counter />
 
 	<!-- @vue-expect-error — места `left` у региона нет: край и сторона строки -->
 	<Toasts placement="left" />

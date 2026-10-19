@@ -267,8 +267,8 @@ ListBox, список Select, Popover и Menu выглядят одинаков�
   `playground/vue/browser/radio-group.spec.ts`.
 - **Field** — поле формы: подпись, контрол, подсказка и ошибка. Своего
   паттерна APG у него нет; связи — как у Field в Ark и React Aria: подпись
-  называет labelable-контрол (Input, Select, CheckBox, Switch, Rating)
-  своим `for` — клик по ней доходит до поля, — а группу (DateInput,
+  называет labelable-контрол (Input, Textarea, Select, CheckBox, Switch,
+  Rating) своим `for` — клик по ней доходит до поля, — а группу (DateInput,
   DatePicker, RadioGroup) — ссылкой `aria-labelledby`, и клик по ней ничего
   не делает; справка — `aria-describedby` контрола на видимую часть; ошибка —
   `aria-invalid` и `data-invalid` контрола. **Части — разметка поля**, а не
@@ -310,6 +310,35 @@ ListBox, список Select, Popover и Menu выглядят одинаков�
   `setup/__tests__/aria-plugin.spec.ts` («ссылки поля формы»),
   `ui/vue/__tests__/field.spec.ts`, `ui/vue/__tests__/ssr-ids.spec.ts` и
   `playground/vue/browser/field.spec.ts`.
+- **Textarea** — многострочное поле: нативная `<textarea>` в корне-рамке, тот
+  же контракт, что у Input (`value`, `name`, `id`, `disabled`, `readonly`,
+  `required`, `placeholder`, размер, вариант, ошибка от `Field`), без кнопки
+  очистки и боковых слотов — поэтому `TInputControl`, а не вид Input: корень
+  у него другой. `aria` — у `<textarea>`, её `disabled`, `required` и
+  `readonly` нативные; ARIA-дубль один — `aria-required` у поля только для
+  чтения, как у Input. **Чего нативное поле не умеет, включается флагом**:
+  авторост `autoresize` и счётчик `counter`; `rows` и `maxlength` остаются
+  нативными атрибутами, а имя `maxlength` — как у атрибута, как `readonly`.
+  **Авторост — плагин** (`TTextareaAutoresizePlugin`): инлайновая высота
+  `<textarea>` от `rows` до `maxRows` строк по вычисленным интерлиньяжу,
+  полям и рамке, без прокрутки до потолка и без ручки, пока он включён;
+  выключили — свои стили снимает. Ввод пересчитывает синхронно, значение из
+  кода, `rows`, `maxRows`, `autoresize`, `size`, ширину поля
+  (`ResizeObserver`) и подгруженный шрифт — кадром и только при узле. Замер
+  на миг сжимает поле, и прокрутку предков, которую браузер при этом прижал к
+  концу страницы, плагин возвращает: без привязки прокрутки
+  (`overflow-anchor`) страница уезжала бы на каждую клавишу у её низа.
+  **Счётчик** — видимый текст разметки «12 / 200», выход `names_counter`
+  плагина имён по локали; набранное считает ядро (`textLength`: перевод
+  строки — один символ, как у браузера для `maxlength`), и по нему же
+  `data-limit` корня: `reached` — ровно предел, `exceeded` — больше
+  (значение из кода браузер не обрезает). Скринридеру счётчик пока не
+  объявляется. Адаптеры: Vue. Сторожат `core/__tests__/textarea.spec.ts`,
+  `plugins/__tests__/textarea-autoresize.plugin.spec.ts`,
+  `plugins/__tests__/names.plugin.spec.ts`, `ui/vue/__tests__/textarea.spec.ts`
+  и `playground/vue/browser/textarea.spec.ts` (рост до потолка и сжатие,
+  пересчёт от значения, ширины и размера, прокрутка страницы на вводе, Enter —
+  перевод строки, `rows="1"` — высота Input).
 - **Popover** — немодальный Dialog: `role="dialog"` на панели, имя —
   `aria_label` или `aria_labelledBy` (`TAriaPlugin`). Триггер — слот
   `trigger` внутри корня: корень служит панели якорем, а нажатие по открытому

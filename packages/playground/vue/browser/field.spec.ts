@@ -34,6 +34,7 @@ import {
 	Rating,
 	Select,
 	Switch,
+	Textarea,
 } from '@soldy-ui/vue'
 
 import { find } from './colors'
@@ -187,6 +188,40 @@ describe.each(CONTROLS)('%s: подпись сбоку', (_name, control, box) =
 			expect(
 				Math.abs(middle(rows[0]) - middle(rect(box))),
 				`${size}: центр первой строки и контрола`,
+			).toBeLessThanOrEqual(1)
+
+			cleanup()
+		}
+	})
+})
+
+/**
+ * Многострочное поле выше своей первой строки: подпись сбоку ровняется не по
+ * центру коробки, а по первой строке текста — там, где она у Input того же
+ * размера, сколько бы строк ни было ниже и есть ли под полем счётчик.
+ */
+describe('Textarea: подпись сбоку', () => {
+	it('первая строка подписи — по центру первой строки поля на любом размере', async () => {
+		for (const size of SIZES) {
+			await show(() =>
+				h(Field, { label: LONG_LABEL, position: 'start', size }, () =>
+					h(Textarea, { size, rows: 3, counter: true }),
+				),
+			)
+
+			const rows = lines()
+			const field = find('.so-textarea textarea')
+			const style = getComputedStyle(field)
+			const first =
+				field.getBoundingClientRect().top +
+				parseFloat(style.borderTopWidth) +
+				parseFloat(style.paddingTop) +
+				parseFloat(style.lineHeight) / 2
+
+			expect(rows.length, `${size}: подпись в несколько строк`).toBeGreaterThan(1)
+			expect(
+				Math.abs(middle(rows[0]) - first),
+				`${size}: центр первой строки подписи и поля`,
 			).toBeLessThanOrEqual(1)
 
 			cleanup()

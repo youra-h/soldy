@@ -1,7 +1,9 @@
 /**
- * Определение TInputPlugin (namespace `input`) — ввод текста в поле Input.
+ * Определение TInputPlugin (namespace `input`) — ввод текста в поле Input и
+ * Textarea.
  *
- * Переносит набранное из `<input>` в `value`, пока поле не `readonly` и не `disabled`.
+ * Переносит набранное из `<input>` или `<textarea>` в `value`, пока поле не
+ * `readonly` и не `disabled`.
  */
 
 import { definePlugin } from '../../../protected/define'

@@ -38,5 +38,6 @@ export const enUS = freezeLocale({
 			value: '{value} of {max}',
 			required: 'Please select a rating',
 		},
+		textarea: { counter: '{count} / {max}' },
 	},
 })
