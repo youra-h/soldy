@@ -665,6 +665,10 @@ export const NON_EDITABLE = new Set([
 	// Страницы текстовой пагинации — список записей с текстом и ключом, как
 	// `items`: текстовым полем их не задать
 	'pages',
+	// Группы коллекции: ключ группы элемента — функция, как `trackBy`, а группы —
+	// список записей с ключом и подписью, как `columns`
+	'groupBy',
+	'groups',
 ])
 
 export function describeProp(componentId: string, prop: string): string | undefined {

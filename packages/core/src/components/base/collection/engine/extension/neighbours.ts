@@ -1,6 +1,7 @@
 import type { IBatchExtension } from './batch/types'
 import type { IDrawExtension, TDrawable } from './draw/types'
 import type { IFactoryExtension } from './factory/types'
+import type { IMetaExtension } from './meta/types'
 import type { IExtension } from './types'
 
 /**
@@ -27,6 +28,10 @@ function isDraw<TItem extends TDrawable>(ext: IExtension<TItem>): ext is IDrawEx
 
 function isFactory<TItem extends object>(ext: IExtension<TItem>): ext is IFactoryExtension<TItem> {
 	return 'create' in ext && 'isSource' in ext
+}
+
+function isMeta<TItem extends object>(ext: IExtension<TItem>): ext is IMetaExtension<TItem> {
+	return 'apply' in ext && 'get' in ext
 }
 
 /** Состав коллекции, если он есть: его выборка — показанные элементы. */
@@ -58,4 +63,16 @@ export function factoryOf<TItem extends object>(
 	const ext = neighbours?.extensions.factory
 
 	return ext && isFactory(ext) ? ext : undefined
+}
+
+/**
+ * Отметки элементов из данных (`_`), если они есть: события о них и снимок,
+ * применённый к элементу раньше.
+ */
+export function metaOf<TItem extends object>(
+	neighbours: TNeighbours<TItem> | null | undefined,
+): IMetaExtension<TItem> | undefined {
+	const ext = neighbours?.extensions.meta
+
+	return ext && isMeta(ext) ? ext : undefined
 }

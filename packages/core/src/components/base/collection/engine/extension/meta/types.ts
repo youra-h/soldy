@@ -25,4 +25,11 @@ export interface IMetaExtension<TItem extends object = any> extends IExtension<
 > {
 	/** Программно применить meta к элементу — `meta:applied` приходит сразу. */
 	apply(item: TItem, meta: Record<string, unknown>): void
+
+	/**
+	 * Снимок, применённый к элементу раньше, — тому, кто читает отметку не в
+	 * момент события: подключился к наполненной коллекции или читает её на
+	 * выборке.
+	 */
+	get(item: TItem): Record<string, unknown> | undefined
 }

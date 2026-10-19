@@ -246,6 +246,10 @@ const dragAndDrop = new TDragAndDrop()
 	<Menu :open="'yes'" />
 	<Menu open />
 
+	<!-- @vue-expect-error — у группы есть ключ: по нему её находят `groupBy` и метка `_.group` -->
+	<Menu :groups="[{ label: 'Правка' }]" />
+	<Menu :groups="[{ key: 'edit', label: 'Правка' }]" />
+
 	<!-- @vue-expect-error — текст пункта строкой -->
 	<Menu.Item :text="42" />
 	<Menu.Item text="Изменить" />
