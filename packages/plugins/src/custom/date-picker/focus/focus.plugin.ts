@@ -30,9 +30,16 @@ import type { TDatePickerFocusPluginEvents } from './types'
  * или сегодня (`resetFocus` при открытии). Сетки нет в панели — фокус встаёт
  * на её первую остановку, как у любого оверлея.
  *
- * **Возврат — на кнопку календаря**, если фокус при открытии был на `body`:
- * так бывает после нажатия кнопки в Safari, где кнопка по нажатию фокус не
- * получает, и фокус потерялся бы после выбора.
+ * **Возврат — в поле.** Открыли с части поля (Alt+↓) — фокус возвращается
+ * на неё. Открыли кнопкой календаря — на первую часть поля, у диапазона —
+ * поля начала: кнопка местом возврата не считается (`_canReturnTo`). Туда
+ * же, если фокус при открытии был на `body`: так бывает после нажатия кнопки
+ * в Safari, где кнопка по нажатию фокус не получает, и фокус потерялся бы
+ * после выбора. APG возвращает фокус на кнопку; здесь — как у нативного
+ * `<input type="date">`, где кнопка календаря — часть поля: после выбора
+ * дату можно сразу поправить с клавиатуры. Часть поля плагин узнаёт по
+ * классу части (`__segment`) экземпляра поля DatePicker, как кнопку — по
+ * `__trigger`, а не строкой.
  */
 export class TDatePickerFocusPlugin extends TOverlayFocusPlugin<TDatePickerFocusPluginEvents> {
 	private _owner: IDatePicker | null = null
@@ -67,11 +74,32 @@ export class TDatePickerFocusPlugin extends TOverlayFocusPlugin<TDatePickerFocus
 		return [...days, ...super._focusCandidates(panel)]
 	}
 
-	/** Запомненного элемента нет — фокус на кнопку календаря в корне. */
-	protected override _returnCandidates(root: Element): readonly Element[] {
+	/** Кнопка календаря в корне местом возврата не считается: фокус — в поле. */
+	protected override _canReturnTo(element: Element, root: Element): boolean {
 		const trigger = this._owner?.classes.resolve('__trigger', { point: true })
-		const button = trigger ? root.querySelector(trigger) : null
+		const button = trigger ? element.closest(trigger) : null
 
-		return button ? [button] : []
+		return !button || !root.contains(button)
+	}
+
+	/** Запомненного элемента нет или это кнопка календаря — фокус на первую часть поля. */
+	protected override _returnCandidates(root: Element): readonly Element[] {
+		const part = this._firstPart(root)
+
+		return part ? [part] : []
+	}
+
+	/**
+	 * Первая часть поля в корне: у одной даты — поля `field`, у диапазона —
+	 * поля начала `start`, оно стоит в корне раньше поля конца.
+	 */
+	private _firstPart(root: Element): Element | null {
+		const owner = this._owner
+
+		if (!owner) return null
+
+		const field = owner.mode === 'range' ? owner.start : owner.field
+
+		return root.querySelector(field.classes.resolve('__segment', { point: true }))
 	}
 }

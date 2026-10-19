@@ -34,8 +34,19 @@ export class TListScale extends TScale {
 		return this.points[this._index(value)]
 	}
 
+	/**
+	 * Первый шаг — к соседнему элементу со стороны сдвига, как у сетки: со
+	 * значения вне списка — к ближайшему с той стороны. С элемента — на
+	 * `count` элементов.
+	 */
 	shift(value: number, count: number): number {
-		return this.points[clamp(this._index(value) + steps(count), 0, this.points.length - 1)]
+		const step = steps(count)
+		const index = this._index(value)
+		const point = this.points[index]
+		const from =
+			point < value && step < 0 ? index + 1 : point > value && step > 0 ? index - 1 : index
+
+		return this.points[clamp(from + step, 0, this.points.length - 1)]
 	}
 
 	/**

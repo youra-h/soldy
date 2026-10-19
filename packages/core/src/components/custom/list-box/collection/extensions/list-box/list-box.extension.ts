@@ -31,9 +31,10 @@ import { TListBoxItemExtension, type IListBoxItemExtension } from './item'
  * Ещё ставит элементам атрибуты для темы: `data-content-fit` — своё значение
  * элемента поверх списочного, `data-indicator` — значение списка. Сами
  * свойства лежат на инстансе списка по контракту `IList`. Для скринридера —
- * `aria-selected` всем элементам, как у Select и Tags. Место элемента в наборе,
- * пока список рисует окно, пишет не он, а общее расширение `positionInSet` —
- * то же у Select.
+ * `aria-selected` всем элементам и `aria-multiselectable` списку в `multiple`,
+ * как у Select и Tags. Роли пишут сами список и элемент (`listbox`, `option`):
+ * от коллекции они не зависят. Место элемента в наборе, пока список рисует
+ * окно, пишет не он, а общее расширение `positionInSet` — то же у Select.
  *
  * Через него идёт выбор пользователя (`chooseItem`): и клик по строке, и
  * клавиатура списка. Выключенному элементу он отказывает.
@@ -157,6 +158,11 @@ export class TListBoxExtension<
 				view = value
 				this.events.emit('change:view', value)
 			})
+
+			// Можно ли выбрать несколько, решает режим выбора — его знает коллекция,
+			// а не список: пришедший владелец получает `aria-multiselectable` по
+			// текущему режиму, смену режима ловит подписка ниже
+			this._syncMultiselectable()
 		})
 
 		ctx.driver.valueOf().forEach((item) => this._watchContentFit(item))
@@ -170,6 +176,12 @@ export class TListBoxExtension<
 		this._selection?.events.on('change:selection', () => {
 			ctx.driver.valueOf().forEach((item) => this._applySelectedAria(item as TItem))
 		})
+
+		// Смена режима — многовыборность текущему владельцу. Подписка живёт с
+		// движком, а не с владельцем, как у Select и Tags: владелец уходит и
+		// возвращается, когда компонент пересобирают над тем же движком, а режим
+		// у коллекции один
+		this._selection?.events.on('change:mode', () => this._syncMultiselectable())
 	}
 
 	/**
@@ -247,6 +259,18 @@ export class TListBoxExtension<
 		const selection = this._selection
 
 		if (selection) item.aria.add('aria-selected', selection.isSelected(item) ? 'true' : 'false')
+	}
+
+	/**
+	 * `aria-multiselectable` списка — в `multiple`; в `single` и `none`
+	 * атрибута нет, как у Select и Tags. Пишет коллекция, а не список: режим
+	 * выбора — свойство коллекции, и элементы знают о выборе от неё же.
+	 * Владельца нет — писать некуда: пришедший получит атрибут в наблюдателе.
+	 */
+	private _syncMultiselectable(): void {
+		this._ctx.options
+			.get('owner')
+			?.aria.add('aria-multiselectable', this._selection?.multiple ? 'true' : null)
 	}
 
 	/**

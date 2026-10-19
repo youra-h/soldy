@@ -15,6 +15,7 @@ import {
 	TDialog,
 	TDrawer,
 	TInput,
+	TNumberInput,
 	TPagination,
 	TPopover,
 	TRating,
@@ -33,6 +34,7 @@ import {
 	TClearableNamesPlugin,
 	TLocaleSource,
 	TModalNamesPlugin,
+	TNumberInputNamesPlugin,
 	TPaginationNamesPlugin,
 	TPluginBundle,
 	TPopoverNamesPlugin,
@@ -263,6 +265,32 @@ describe('имя с текстом части: шаблон локали и см
 		input.name = 'Улица'
 
 		expect(input.clearAria.get('aria-label')).toBe('Очистить Улица')
+	})
+
+	/**
+	 * У поля числа кнопок с именами три — очистка и шаг, — и плагин имён у него
+	 * один: наследник плагина имён поля пишет и кнопки шага, тем же именем поля.
+	 */
+	it('NumberInput: кнопки шага и очистки — с name поля, на лету', () => {
+		const field = new TNumberInput({ name: 'Количество' })
+		const { source } = mount(field, TNumberInputNamesPlugin, ruRU)
+
+		expect(field.incrementAria.valueOf()).toEqual({
+			tabindex: '-1',
+			'aria-label': 'Увеличить Количество',
+		})
+		expect(field.decrementAria.get('aria-label')).toBe('Уменьшить Количество')
+		expect(field.clearAria.get('aria-label')).toBe('Очистить Количество')
+
+		field.name = 'Цена'
+
+		expect(field.incrementAria.get('aria-label')).toBe('Увеличить Цена')
+
+		source.locale = enUS
+
+		expect(field.incrementAria.get('aria-label')).toBe('Increase Цена')
+		expect(field.decrementAria.get('aria-label')).toBe('Decrease Цена')
+		expect(TNumberInputNamesPlugin.prototype).toBeInstanceOf(TClearableNamesPlugin)
 	})
 
 	/**

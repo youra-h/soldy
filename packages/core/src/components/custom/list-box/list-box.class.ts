@@ -26,6 +26,12 @@ import type { IListBoxProps, TListBoxView, TListBoxEvents, IListBox, TListBoxVal
  * Применять их ядру по силам не всё: `contentFit` уходит в `data-*`, что ядру
  * доступно, а `maxRows` требует измерений — его применяет `TListHeightPlugin`,
  * читая свойство отсюда. `scrollBehavior` отсюда только читают.
+ *
+ * Роль — природа компонента, и пишет её он сам: `role="listbox"` в свой
+ * `aria`, как `TSelect` — в `listAria`, а `TMenu` — `menu`. От режима выбора
+ * она не зависит: роль по режиму — знание Tags, у которого без выбора набор —
+ * простой список. Что выбрать можно несколько (`aria-multiselectable`), знает
+ * коллекция: пишет это `TListBoxExtension`, рядом с `aria-selected` элементов.
  */
 export class TListBox
 	extends TValueControl<TListBoxValue, IListBoxProps, TListBoxEvents>
@@ -50,6 +56,10 @@ export class TListBox
 		super(props)
 
 		const ctor = new.target as typeof TListBox
+
+		// Только то, что список знает о себе сам: он — listbox. Роль стоит на
+		// корне — там же фокус, клавиатура и имя от `TAriaPlugin`
+		this._aria.add('role', 'listbox')
 
 		this._applyView(props.view ?? ctor.defaultValues.view)
 

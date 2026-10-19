@@ -4,11 +4,11 @@
  * Части — разметка поля: часть стоит, пока задан её текст, ошибка — при
  * `invalid` и на месте подсказки. С контролом поле связывает проводка: поле
  * опускает связку по лифту, контрол её берёт. Labelable-контрол (Input,
- * Textarea, Select, CheckBox, Switch, Rating, Slider с одной ручкой) подпись
- * называет своим `for`, группу (DateInput, DatePicker, RadioGroup, Slider с
- * несколькими ручками) — ссылкой `aria-labelledby`. Справку контрол получает
- * в `aria-describedby`, ошибку — `aria-invalid` и `data-invalid` на своём
- * корне.
+ * NumberInput, Textarea, Select, CheckBox, Switch, Rating, Slider с одной
+ * ручкой) подпись называет своим `for`, группу (DateInput, DatePicker,
+ * RadioGroup, Slider с несколькими ручками) — ссылкой `aria-labelledby`.
+ * Справку контрол получает в `aria-describedby`, ошибку — `aria-invalid` и
+ * `data-invalid` на своём корне.
  *
  * Раскладку сторон, выравнивание по первой строке и клик по подписи jsdom не
  * считает — их проверяет `playground/vue/browser/field.spec.ts`.
@@ -27,6 +27,7 @@ import {
 	Field,
 	Input,
 	Label,
+	NumberInput,
 	RadioGroup,
 	RadioGroupItem,
 	Rating,
@@ -164,6 +165,7 @@ describe('разметка', () => {
  */
 const LABELABLES: ReadonlyArray<readonly [string, () => VNode, string, string]> = [
 	['Input', () => h(Input), '.so-input', '.so-input input'],
+	['NumberInput', () => h(NumberInput), '.so-number-input', '.so-number-input__input'],
 	['Textarea', () => h(Textarea), '.so-textarea', '.so-textarea textarea'],
 	[
 		'Select',

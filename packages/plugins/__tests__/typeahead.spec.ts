@@ -7,7 +7,7 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import { TTypeahead, TYPEAHEAD_TIMEOUT } from '../src/custom/list/typeahead'
+import { TTypeahead, TYPEAHEAD_TIMEOUT, itemText } from '../src/custom/list/typeahead'
 
 const ITEMS = ['Изменить', 'Сохранить', 'Сохранить как', 'Создать', 'Удалить']
 
@@ -89,5 +89,19 @@ describe('TTypeahead', () => {
 
 	it('пустой список — null', () => {
 		expect(new TTypeahead().next('с', [], null, text, 0)).toBe(null)
+	})
+})
+
+/** Текст элемента, общий у меню и Select: пункт и опция отдают его в `text`. */
+describe('itemText', () => {
+	it('текст элемента — его text', () => {
+		expect(itemText({ uid: 1, text: 'Сохранить' })).toBe('Сохранить')
+	})
+
+	it('у элемента без текста — пусто, и набор его не находит', () => {
+		const items = [{ uid: 1 }, { uid: 2, text: 42 }, { uid: 3, text: 'Создать' }]
+
+		expect(items.map(itemText)).toEqual(['', '', 'Создать'])
+		expect(new TTypeahead().next('с', items, null, itemText, 0)).toBe(items[2])
 	})
 })

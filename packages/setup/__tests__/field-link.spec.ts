@@ -22,6 +22,7 @@ import {
 	DatePickerDescriptor,
 	FieldDescriptor,
 	InputDescriptor,
+	NumberInputDescriptor,
 	RadioGroupDescriptor,
 	SelectDescriptor,
 	SliderDescriptor,
@@ -132,6 +133,22 @@ describe('сборка: своё контролу — с первой отрис
 		expect(ariaOf(input, 'aria-describedby')).toBe('f-helper')
 		// Labelable-контрол называет `for` подписи, а не ссылка
 		expect(ariaOf(input, 'aria-labelledby')).toBeUndefined()
+		expect(owner.labelAria.get('for')).toBe('f-control')
+	})
+
+	/**
+	 * Поле числа — labelable, как Input: `aria` у него на вложенном `<input>`,
+	 * и подпись называет его своим `for`, а не ссылкой.
+	 */
+	it('NumberInput: labelable — id поля и for подписи, справка ссылкой', () => {
+		const { factory } = createElevatorFactory()
+		const { field: owner } = field(factory, { label: 'Количество', helper: 'Подсказка' })
+		const number = assemble(factory, NumberInputDescriptor())
+
+		expect(number.instance.labelable).toBe(true)
+		expect(number.instance.id).toBe('f-control')
+		expect(ariaOf(number, 'aria-describedby')).toBe('f-helper')
+		expect(ariaOf(number, 'aria-labelledby')).toBeUndefined()
 		expect(owner.labelAria.get('for')).toBe('f-control')
 	})
 

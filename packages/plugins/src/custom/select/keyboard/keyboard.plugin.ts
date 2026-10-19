@@ -1,17 +1,11 @@
-import type {
-	IBatchExtension,
-	IControl,
-	IList,
-	ISelect,
-	ISelectItem,
-	TCollectionEngine,
-} from '@soldy-ui/core'
+import type { IBatchExtension, IControl, IList, ISelect, TCollectionEngine } from '@soldy-ui/core'
 import type { IPluginContext } from '../../../base'
 import { smoothScrollBehavior } from '../../../motion'
 import { TElementPlugin } from '../../element'
 import { TCollectionElements } from '../../collection'
 import { TListNavigationPlugin } from '../../list/navigation'
 import type { TListEdge } from '../../list/navigation'
+import { TTypeahead, itemText } from '../../list/typeahead'
 import { TEditableKeyboardStrategy, TSelectOnlyKeyboardStrategy } from './strategies'
 import type { ISelectKeyboardHost, ISelectKeyboardStrategy } from './strategies'
 import type { ISelectKeyboardPluginOptions, TSelectKeyboardPluginEvents } from './types'
@@ -41,6 +35,11 @@ import type { ISelectKeyboardPluginOptions, TSelectKeyboardPluginEvents } from '
  * `Escape`. Проверка цели — здесь, а не в `TListNavigationPlugin`: база общая
  * с ListBox, у которого фокус на самом списке.
  *
+ * Набор по первым буквам — правило, общее с меню (`TTypeahead`,
+ * `list/typeahead.ts`): следующая за подсвеченной опция на набранное, повтор
+ * буквы — по опциям на неё, без совпадения подсветка на месте. Набор живёт,
+ * пока открыта панель: закрытие начинает следующий заново, как у меню.
+ *
  * **В окне** (обёртка `Virtual`) клавиши ходят по всем показанным опциям, а
  * подсветка, уведённая к опции вне окна, закрепляет её в рисовании (база).
  * Своего `id` и узла у такой опции нет, пока окно её не нарисует: ссылка
@@ -58,16 +57,15 @@ export class TSelectKeyboardPlugin
 	private _elements: TCollectionElements | null = null
 	private _list: IList | null = null
 	private _strategy: ISelectKeyboardStrategy = new TSelectOnlyKeyboardStrategy()
-	private _typeahead = ''
-	private _typeaheadAt = 0
-	private _typeaheadTimeout = 500
+	/** Набор по первым буквам; паузу набора задают опции установки. */
+	private _typeahead = new TTypeahead()
 	/** Кадр с отложенной прокруткой к подсветке; `null` — прокручивать нечего. */
 	private _scrollFrame: number | null = null
 
 	override install(ctx: IPluginContext, options?: ISelectKeyboardPluginOptions): void {
 		super.install(ctx, options)
 
-		this._typeaheadTimeout = options?.typeaheadTimeout ?? this._typeaheadTimeout
+		this._typeahead = new TTypeahead(options?.typeaheadTimeout)
 		this._owner = ctx.getInstance<ISelect>() ?? null
 		this._elements = ctx.get(TCollectionElements) ?? null
 		this._list = ctx.getInstance<IList>()
@@ -85,8 +83,12 @@ export class TSelectKeyboardPlugin
 		this._syncStrategy()
 		this._listenTo(this._owner?.events, 'change:editable', () => this._syncStrategy())
 
-		// Закрытая панель подсветку не держит: она про навигацию, а не про выбор
-		this._listenTo(this._owner?.events, 'close', () => this.clearHighlight())
+		// Закрытая панель подсветку не держит: она про навигацию, а не про выбор.
+		// Набор — тоже: он ищет от подсветки, и буква после закрытия начинает новый
+		this._listenTo(this._owner?.events, 'close', () => {
+			this._typeahead.reset()
+			this.clearHighlight()
+		})
 	}
 
 	override destroy(): void {
@@ -260,14 +262,16 @@ export class TSelectKeyboardPlugin
 		if (item) this._engine?.extensions?.select?.chooseItem(item)
 	}
 
+	/**
+	 * Буква набора по первым буквам: подсветка — на опцию, которую нашёл
+	 * набор, а нет такой — остаётся на месте. Подсветки нет (панель открыла
+	 * эта же буква) — поиск с первой опции.
+	 */
 	typeaheadTo(char: string): void {
-		const now = Date.now()
+		const current = this._highlightedUid == null ? null : this.itemByUid(this._highlightedUid)
+		const match = this._typeahead.next(char, this.items(), current, itemText)
 
-		this._typeahead =
-			now - this._typeaheadAt > this._typeaheadTimeout ? char : this._typeahead + char
-		this._typeaheadAt = now
-
-		this.highlightByText(this._typeahead)
+		if (match) this.highlight(match.uid)
 	}
 
 	emitClosedEscape(): void {
@@ -295,20 +299,18 @@ export class TSelectKeyboardPlugin
 	}
 
 	/**
-	 * Подсветить первую опцию, чей текст совпал с `needle` — без учёта
-	 * регистра. Пустая строка снимает подсветку.
+	 * Подсветить первую опцию, в чьём тексте есть `needle` — в любом месте и
+	 * без учёта регистра. Пустая строка и текст без совпадения снимают
+	 * подсветку.
 	 *
-	 * Один метод на два источника, у каждого свой способ сравнения:
+	 * Так ищет ввод в поле в режиме `search` (`TEditablePlugin`) — как отбор в
+	 * режиме `filter`. Подсветка и `aria-activedescendant` и для ввода
+	 * остаются здесь, в одной точке.
 	 *
-	 * - `startsWith` (по умолчанию) — набор с клавиатуры (`typeaheadTo`), как
-	 *   того требует WAI-ARIA для закрытого списка;
-	 * - `includes` — ввод в поле в режиме `search` (`TEditablePlugin`): там
-	 *   ищут подстроку в любом месте текста, как в режиме `filter`.
-	 *
-	 * Подсветка и `aria-activedescendant` в обоих случаях остаются здесь, в
-	 * одной точке.
+	 * Набор по первым буквам сюда не ходит: у него свои правила —
+	 * `typeaheadTo`.
 	 */
-	highlightByText(needle: string, mode: 'startsWith' | 'includes' = 'startsWith'): void {
+	highlightByText(needle: string): void {
 		if (!needle) {
 			this.clearHighlight()
 
@@ -316,11 +318,7 @@ export class TSelectKeyboardPlugin
 		}
 
 		const lower = needle.toLowerCase()
-		const match = (this.items() as ISelectItem[]).find((item) => {
-			const text = item.text.toLowerCase()
-
-			return mode === 'includes' ? text.includes(lower) : text.startsWith(lower)
-		})
+		const match = this.items().find((item) => itemText(item).toLowerCase().includes(lower))
 
 		if (match) {
 			this.highlight(match.uid)

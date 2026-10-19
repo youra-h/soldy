@@ -18,7 +18,7 @@ export interface ISelectKeyboardHost {
 	highlightSelected(): void
 	/** Выбрать подсвеченную опцию. */
 	chooseHighlighted(): void
-	/** Накопить символ в буфере набора и подсветить совпадение. */
+	/** Буква набора по первым буквам: подсветка — на найденную опцию, нет такой — на месте. */
 	typeaheadTo(char: string): void
 	/** Escape нажат на уже закрытой панели — сигнал `TEditablePlugin`. */
 	emitClosedEscape(): void

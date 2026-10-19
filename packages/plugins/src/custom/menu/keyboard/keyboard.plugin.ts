@@ -1,4 +1,4 @@
-import type { IControl, IMenu } from '@soldy-ui/core'
+import type { IMenu } from '@soldy-ui/core'
 import type { IPluginContext } from '../../../base'
 import { TElementPlugin } from '../../element'
 import { TDismissPlugin } from '../../dismiss'
@@ -6,14 +6,10 @@ import { TCollectionElements } from '../../collection'
 import { TListNavigationPlugin } from '../../list/navigation'
 import type { TListEdge } from '../../list/navigation'
 import { rowOf } from '../../list/row'
-import { TTypeahead } from '../../list/typeahead'
+import { TTypeahead, itemText } from '../../list/typeahead'
 import { isFocusableElement, isPrintableKey } from '../../../utils'
 import type { IDomEventTarget } from '../../../utils'
 import type { TMenuKeyboardPluginEvents } from './types'
-
-/** Текст пункта для набора по первым буквам; у узла без текста — пусто. */
-const textOf = (item: IControl): string =>
-	'text' in item && typeof item.text === 'string' ? item.text : ''
 
 /**
  * TMenuKeyboardPlugin — клавиатура меню по паттерну APG Menu Button.
@@ -245,7 +241,7 @@ export class TMenuKeyboardPlugin extends TListNavigationPlugin<TMenuKeyboardPlug
 	/** Буква набора: подсветка — на найденный пункт, нет такого — на месте. */
 	private _typeTo(char: string): void {
 		const current = this._highlightedUid === null ? null : this.itemByUid(this._highlightedUid)
-		const match = this._typeahead.next(char, this.items(), current, textOf)
+		const match = this._typeahead.next(char, this.items(), current, itemText)
 
 		if (match) this.highlight(match.uid)
 	}

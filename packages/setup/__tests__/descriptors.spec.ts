@@ -29,6 +29,7 @@ import {
 	TListItemPlugin,
 	TClearableNamesPlugin,
 	TDatePickerNamesPlugin,
+	TNumberInputNamesPlugin,
 } from '@soldy-ui/plugins'
 import {
 	ButtonDescriptor,
@@ -49,6 +50,7 @@ import {
 	SelectCollectionItemDescriptor,
 	ClearableDescriptor,
 	InputDescriptor,
+	NumberInputDescriptor,
 	DateInputDescriptor,
 	DatePickerDescriptor,
 	defineComponent,
@@ -399,8 +401,8 @@ describe('Select', () => {
 })
 
 /**
- * Кнопка очистки — часть поля: `ClearableDescriptor`, общий у Input, DateInput и
- * DatePicker. Select её не рисует — свой `clearable` он отдаёт полю, а набора
+ * Кнопка очистки — часть поля: `ClearableDescriptor`, общий у Input, NumberInput,
+ * DateInput и DatePicker. Select её не рисует — свой `clearable` он отдаёт полю, а набора
  * кнопки у него нет: он у поля, и имя в него пишет плагин имён поля.
  */
 describe('поле: кнопка очистки', () => {
@@ -413,6 +415,7 @@ describe('поле: кнопка очистки', () => {
 
 	it.each([
 		['Input', InputDescriptor],
+		['NumberInput', NumberInputDescriptor],
 		['DateInput', DateInputDescriptor],
 		['DatePicker', DatePickerDescriptor],
 	])('%s наследует кнопку очистки, а слот clear объявляет сам', (_name, factory) => {
@@ -425,6 +428,7 @@ describe('поле: кнопка очистки', () => {
 
 	it('событие clear дескриптор не публикует — это поверхность инстанса', () => {
 		expect(eventNames(InputDescriptor())).not.toContain('clear')
+		expect(eventNames(NumberInputDescriptor())).not.toContain('clear')
 		expect(eventNames(DateInputDescriptor())).not.toContain('clear')
 		expect(eventNames(DatePickerDescriptor())).not.toContain('clear')
 	})
@@ -442,6 +446,8 @@ describe('поле: кнопка очистки', () => {
 		expect(names(ClearableDescriptor())).toEqual([])
 		expect(names(InputDescriptor())).toEqual([TClearableNamesPlugin])
 		expect(names(DateInputDescriptor())).toEqual([TClearableNamesPlugin])
+		expect(names(NumberInputDescriptor())).toEqual([TNumberInputNamesPlugin])
+		expect(TNumberInputNamesPlugin.prototype).toBeInstanceOf(TClearableNamesPlugin)
 		expect(names(DatePickerDescriptor())).toEqual([TDatePickerNamesPlugin])
 		expect(TDatePickerNamesPlugin.prototype).toBeInstanceOf(TClearableNamesPlugin)
 	})

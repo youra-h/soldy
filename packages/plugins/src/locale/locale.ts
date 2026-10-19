@@ -67,6 +67,7 @@ function overlay(base: TTranslations, patch: TPartialTranslations): TTranslation
 		scroller: section(base, patch, 'scroller'),
 		pagination: section(base, patch, 'pagination'),
 		field: section(base, patch, 'field'),
+		numberInput: section(base, patch, 'numberInput'),
 		table: section(base, patch, 'table'),
 		calendar: section(base, patch, 'calendar'),
 		datePicker: section(base, patch, 'datePicker'),
