@@ -24,4 +24,13 @@ export * from './group'
 export * from './memory'
 export * from './draw'
 export * from './position-in-set'
-export { batchOf, drawOf, factoryOf, metaOf } from './neighbours'
+export {
+	activationOf,
+	batchOf,
+	drawOf,
+	factoryOf,
+	filterOf,
+	metaOf,
+	plainOf,
+	selectionOf,
+} from './neighbours'

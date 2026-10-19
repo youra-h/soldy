@@ -66,6 +66,26 @@ describe('eslint.config.ts: приведения в src ядра', () => {
 			'soldy/no-explicit-any',
 		],
 		['non-null assertion `x!`', NON_NULL, '@typescript-eslint/no-non-null-assertion'],
+		[
+			'сосед по коллекции `ctx.extensions.selection as …`',
+			'declare const ctx: { extensions: Record<string, object> }\nexport const x = ctx.extensions.selection as { mode: string }',
+			'no-restricted-syntax',
+		],
+		[
+			'сосед через `?.` — `engine?.extensions?.filter as …`',
+			'declare const engine: { extensions?: Record<string, object> } | null\nexport const x = engine?.extensions?.filter as { query: string } | undefined',
+			'no-restricted-syntax',
+		],
+		[
+			'сосед с переносом строки перед типом',
+			'declare const ctx: { extensions: Record<string, object> }\nexport const x = ctx.extensions.batch as\n\t| { shown: object[] }\n\t| undefined',
+			'no-restricted-syntax',
+		],
+		[
+			'вся карта соседей `ctx.extensions as …`',
+			'declare const ctx: { extensions: object }\nexport const x = ctx.extensions as Record<string, unknown>',
+			'no-restricted-syntax',
+		],
 	])('%s — ошибка', async (_title, code, ruleId) => {
 		expect(await ruleIds(code, SRC)).toContain(ruleId)
 	})
@@ -82,6 +102,10 @@ describe('eslint.config.ts: приведения в src ядра', () => {
 			'export type TMap<T extends Record<string, (...args: any) => any>> = T',
 		],
 		['definite assignment у поля', 'export class TSample {\n\tprivate _a!: string\n}'],
+		[
+			'сосед охранником `selectionOf(ctx)`',
+			"import { selectionOf } from '@soldy-ui/core'\nimport type { IExtensionContext } from '@soldy-ui/core'\ndeclare const ctx: IExtensionContext<object>\nexport const x = selectionOf(ctx)",
+		],
 	])('%s — допустимо', async (_title, code) => {
 		expect(await ruleIds(code, SRC)).toEqual([])
 	})

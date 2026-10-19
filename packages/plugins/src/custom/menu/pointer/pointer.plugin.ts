@@ -1,4 +1,5 @@
-import type { IBatchExtension, IControl, IMenu } from '@soldy-ui/core'
+import { batchOf } from '@soldy-ui/core'
+import type { IControl, IMenu } from '@soldy-ui/core'
 import { TBasePlugin } from '../../../base'
 import type { IPluginContext } from '../../../base'
 import { TElementPlugin } from '../../element'
@@ -109,10 +110,7 @@ export class TMenuPointerPlugin extends TBasePlugin<any, TMenuPointerPluginEvent
 	private _uidAt(target: EventTarget | null): string | number | undefined {
 		if (!(target instanceof Node)) return undefined
 
-		const batch = this._elements?.engine?.extensions.batch as
-			IBatchExtension<IControl> | undefined
-
-		return batch?.shown.find((item) =>
+		return batchOf<IControl>(this._elements?.engine)?.shown.find((item) =>
 			this._elements?.getElementByUid(item.uid)?.contains(target),
 		)?.uid
 	}

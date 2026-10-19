@@ -292,6 +292,54 @@ const centerHarness = (dir: 'ltr' | 'rtl') =>
 	})
 
 /**
+ * Якорь и `Frame` сбоку от него — `end-start`: панель у конца строки якоря,
+ * верхние края вровень. Где якорь стоит в строке страницы, задаёт `justify`:
+ * `center` — место есть с обеих сторон, `flex-end` — у правого края окна.
+ * Направление письма — `dir`.
+ */
+const besideHarness = (justify: 'center' | 'flex-end', dir: 'ltr' | 'rtl' = 'ltr') =>
+	defineComponent({
+		data() {
+			return { anchorEl: null as Element | null }
+		},
+		mounted() {
+			this.anchorEl = this.$refs.anchor as Element
+		},
+		render() {
+			return h(
+				'div',
+				{ dir, style: `display: flex; justify-content: ${justify}; padding-top: 200px` },
+				[
+					h(
+						'button',
+						{
+							ref: 'anchor',
+							class: 'so-test-anchor',
+							style: 'width: 80px; height: 32px',
+						},
+						'anchor',
+					),
+					this.anchorEl
+						? h(
+								Frame,
+								{
+									visible: true,
+									anchor_anchor: this.anchorEl,
+									anchor_placement: 'end-start',
+									class: 'so-test-panel',
+								},
+								{
+									default: () =>
+										h('div', { style: 'width: 100px; height: 60px' }, 'panel'),
+								},
+							)
+						: null,
+				],
+			)
+		},
+	})
+
+/**
  * Якорь у самого правого края страницы, которая выше окна, и панель заметно
  * шире места справа от него.
  *
@@ -794,6 +842,57 @@ describe('центр', () => {
 			expect(panel().dataset.placement).toBe('top')
 		},
 	)
+})
+
+/**
+ * Стороны строки: `end-start` ставит панель у конца строки якоря, верхние края
+ * вровень. Конец — логический: в LTR справа, в RTL слева. У правого края окна
+ * flip переносит панель к началу строки, а `data-placement` называет
+ * логическую сторону, на которой она встала.
+ *
+ * Координаты плагин узнаёт по `ready` и `ResizeObserver`, поэтому край панели
+ * опрашиваем: на кадре до замера панель стоит по нулевой ширине.
+ */
+describe('боковые стороны', () => {
+	it('end-start в LTR — справа от якоря, верхние края вровень', async () => {
+		render(besideHarness('center'))
+
+		const anchorRect = anchor().getBoundingClientRect()
+
+		await expect
+			.poll(() => panel().getBoundingClientRect().left)
+			.toBeCloseTo(anchorRect.right, 0)
+		expect(panel().getBoundingClientRect().top).toBeCloseTo(anchorRect.top, 0)
+		expect(panel().dataset.placement).toBe('end-start')
+	})
+
+	it('у правого края окна end-start встаёт слева от якоря — start-start', async () => {
+		render(besideHarness('flex-end'))
+
+		const anchorRect = anchor().getBoundingClientRect()
+
+		// Справа места под панель действительно нет
+		expect(document.documentElement.clientWidth - anchorRect.right).toBeLessThan(100)
+
+		await expect
+			.poll(() => panel().getBoundingClientRect().right)
+			.toBeCloseTo(anchorRect.left, 0)
+		expect(panel().getBoundingClientRect().top).toBeCloseTo(anchorRect.top, 0)
+		expect(panel().dataset.placement).toBe('start-start')
+		expectInsideWindow(panel(), 'панель')
+	})
+
+	it('dir=rtl: end — слева от якоря, data-placement логический', async () => {
+		render(besideHarness('center', 'rtl'))
+
+		const anchorRect = anchor().getBoundingClientRect()
+
+		await expect
+			.poll(() => panel().getBoundingClientRect().right)
+			.toBeCloseTo(anchorRect.left, 0)
+		expect(panel().getBoundingClientRect().top).toBeCloseTo(anchorRect.top, 0)
+		expect(panel().dataset.placement).toBe('end-start')
+	})
 })
 
 describe('граница — видимая область', () => {

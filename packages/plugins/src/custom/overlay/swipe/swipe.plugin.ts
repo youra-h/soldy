@@ -72,7 +72,8 @@ function closingSign(side: TSwipeSide, rtl: boolean): 1 | -1 {
  * Сторона панели у якоря после flip — её пишет `TAnchorPlugin` в самой панели
  * (`data-placement`): `top…` — над триггером, `bottom…` — под ним. Панель
  * уходит от триггера, то есть к этой же стороне. Атрибута нет — панель не у
- * якоря, и уходить ей некуда.
+ * якоря, и уходить ей некуда. Сбоку от якоря (`start…`, `end…`) — тоже `null`:
+ * смахиваемых боковых панелей у якоря нет.
  */
 function anchoredSide(panel: Element): TSwipeSide | null {
 	const placement = panel.getAttribute(ANCHOR_PLACEMENT_ATTRIBUTE)

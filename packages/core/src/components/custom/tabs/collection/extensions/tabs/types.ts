@@ -1,6 +1,5 @@
 import type { ITabs } from '../../../types'
 import type { IExtension, IExtensionItems } from '../../../../../base/collection'
-import type { TTabsExtension } from './tabs.extension'
 import type { ITabsItemExtension } from './item'
 import type { ITabsItem } from '../../../item/types'
 
@@ -43,9 +42,4 @@ export type TTabsEngineOptions<TOwner extends ITabs = ITabs> = {
 export type TTabsExtensionEvents = {
 	'item:close': (item: ITabsItem) => void
 	'change:closable': (value: boolean) => void
-}
-
-export type TTabsExtensions<TItem extends ITabsItem> = {
-	tabs: TTabsExtension<any, TItem>
-	[key: string]: IExtension<TItem>
 }

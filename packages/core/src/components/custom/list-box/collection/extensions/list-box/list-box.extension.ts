@@ -4,7 +4,7 @@ import type {
 	IExtensionContext,
 	ISelectionExtension,
 } from '../../../../../base/collection'
-import { TBaseOwnerItemExtension } from '../../../../../base/collection'
+import { TBaseOwnerItemExtension, selectionOf } from '../../../../../base/collection'
 import {
 	LIST_CONTENT_FIT_ATTRIBUTE,
 	LIST_DEFAULTS,
@@ -211,7 +211,7 @@ export class TListBoxExtension<
 	}
 
 	private get _selection(): ISelectionExtension<TItem> | undefined {
-		return this._ctx?.extensions.selection as ISelectionExtension<TItem> | undefined
+		return selectionOf(this._ctx)
 	}
 
 	/**

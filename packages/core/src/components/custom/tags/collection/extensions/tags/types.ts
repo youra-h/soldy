@@ -1,6 +1,5 @@
 import type { ITags } from '../../../types'
 import type { IExtension, IExtensionItems } from '../../../../../base/collection'
-import type { TTagsExtension } from './tags.extension'
 import type { ITagsItemExtension } from './item'
 import type { ITagsItem } from '../../../item/types'
 
@@ -47,9 +46,4 @@ export type TTagsEngineOptions<TOwner extends ITags = ITags> = {
 export type TTagsExtensionEvents = {
 	'item:close': (item: ITagsItem) => void
 	'change:closable': (value: boolean) => void
-}
-
-export type TTagsExtensions<TItem extends ITagsItem> = {
-	tags: TTagsExtension<any, TItem>
-	[key: string]: IExtension<TItem>
 }

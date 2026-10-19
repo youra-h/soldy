@@ -8,15 +8,11 @@ import {
 	TBaseOwnerItemExtension,
 	TItemContextRegistry,
 	TRemoveCommand,
+	selectionOf,
 } from '../../../../../base/collection'
 import type { ITagsItem } from '../../../item/types'
 import type { ITags } from '../../../types'
-import type {
-	TTagsExtensionEvents,
-	TTagsEngineOptions,
-	TTagsExtensions,
-	ITagsExtension,
-} from './types'
+import type { TTagsExtensionEvents, TTagsEngineOptions, ITagsExtension } from './types'
 import { TTagsItemExtension, type ITagsItemExtension } from './item'
 
 /**
@@ -66,7 +62,11 @@ export class TTagsExtension<TOwner extends ITags = ITags, TItem extends ITagsIte
 {
 	readonly name = 'tags' as const
 
-	private _itemRegistry!: TItemContextRegistry<TItem, TTagsExtensions<TItem>>
+	/**
+	 * Контексты тегов — над своим расширением, а не над всей картой: из
+	 * контекста читается только свой адаптер (`closeTag`).
+	 */
+	private _itemRegistry!: TItemContextRegistry<TItem, { tags: ITagsExtension<TItem> }>
 
 	/**
 	 * Тег, на котором последним был фокус, пока он в коллекции.
@@ -92,7 +92,7 @@ export class TTagsExtension<TOwner extends ITags = ITags, TItem extends ITagsIte
 		super.install(ctx)
 
 		this._itemRegistry = new TItemContextRegistry({
-			extensions: ctx.extensions as TTagsExtensions<TItem>,
+			extensions: { tags: this },
 			driver: ctx.driver,
 		})
 
@@ -102,7 +102,7 @@ export class TTagsExtension<TOwner extends ITags = ITags, TItem extends ITagsIte
 		// Патч пишет элементу своё из данных — свойства владельца поверх
 		ctx.driver.events.on('item:updated', (e) => this._inheritOwner(e.item as TItem))
 
-		const selection = ctx.extensions.selection as ISelectionExtension<TItem> | undefined
+		const selection = selectionOf(ctx)
 
 		if (selection) {
 			selection.events.on('change:mode', () => this._applyMode())
@@ -190,7 +190,7 @@ export class TTagsExtension<TOwner extends ITags = ITags, TItem extends ITagsIte
 	}
 
 	private get _selection(): ISelectionExtension<TItem> | undefined {
-		return this._ctx.extensions.selection as ISelectionExtension<TItem> | undefined
+		return selectionOf(this._ctx)
 	}
 
 	/**

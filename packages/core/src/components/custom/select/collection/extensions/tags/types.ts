@@ -18,6 +18,17 @@ export interface ISelectTagsExtension<TItem extends ISelectItem = ISelectItem> e
 	readonly engine: TTagsCollection | null
 	/** Что делать с тегами, которым не хватило строки поля. */
 	overflow: TTagsOverflow
+	/**
+	 * Есть ли в поле хоть один тег. Не то же, что наличие `tags`: инстанс
+	 * живёт всё время, пока режим `multiple`, даже когда не выбрано ничего.
+	 */
+	readonly hasTags: boolean
+	/**
+	 * Пересобрать теги по выбору Select. Зовёт расширение `select` на
+	 * переименование выбранной опции: `change:selection` на него не приходит.
+	 * Вне `multiple` тегов нет, и вызов ничего не делает.
+	 */
+	syncTags(): void
 }
 
 export type TSelectTagsExtensionEvents = {
