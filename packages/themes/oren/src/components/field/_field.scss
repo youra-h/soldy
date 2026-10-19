@@ -1,4 +1,5 @@
 @use 'sass:map';
+@use '../input/mixins' as input;
 @use '../../mixins/caption';
 
 // Field — поле формы: подпись, контрол, подсказка и ошибка.
@@ -209,6 +210,23 @@
 
 		> #{$this}__control:has(> .so-slider--vertical) {
 			@apply items-start;
+		}
+
+		// - Многострочное поле Textarea — по своей первой строке текста: она
+		//   стоит по центру строки поля его размера — высоты Input того же
+		//   размера (`textarea/_textarea.scss`). Распорка — у верха обёртки,
+		//   высотой в эту строку: подпись встаёт на первую строку, как у
+		//   Input, сколько бы строк ни было ниже и есть ли под полем счётчик.
+		//   Высота строки — из шкалы поля (`input.$sizes`), по размеру самого
+		//   поля: размер подписи и размер поля задают отдельно.
+		> #{$this}__control:has(> .so-textarea) {
+			@apply items-start;
+		}
+
+		@each $size, $scale in input.$sizes {
+			> #{$this}__control:has(> .so-textarea--size-#{$size})::before {
+				line-height: calc(var(--spacing) * #{map.get($scale, 'h')});
+			}
 		}
 	}
 
