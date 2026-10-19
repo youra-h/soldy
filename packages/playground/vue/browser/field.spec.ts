@@ -17,6 +17,8 @@
  *
  * В режиме принудительных цветов цвет рамки браузер заменяет системным, и
  * ошибку от покоя отличает толщина: рамка поля и коробки флажка вдвое толще.
+ * Фон там браузер заменяет цветом страницы, а точка обязательного поля — фон:
+ * она обязана остаться видна и у подписи, и у контрола без подписи.
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
@@ -37,7 +39,7 @@ import {
 	Textarea,
 } from '@soldy-ui/vue'
 
-import { find } from './colors'
+import { contrast, find, style, systemColor } from './colors'
 import { forcedColors } from './media'
 
 import '@soldy-ui/theme-oren'
@@ -341,5 +343,51 @@ describe('режим принудительных цветов', () => {
 
 		expect(valid).toBe('1px')
 		expect(invalid).toBe('2px')
+	})
+
+	/**
+	 * Точка обязательного поля — фон, а фон браузер в этом режиме заменяет
+	 * цветом страницы: у контролов точка пропадала, и обязательное поле было
+	 * не отличить от прочих. Точка стоит у подписи, а без подписи — у самого
+	 * контрола, у каждого на своём узле (`themes/oren/src/mixins/_required.scss`).
+	 * Цвета точки спек не знает: видна — значит отходит от страницы не меньше
+	 * порога графики по WCAG (1.4.11).
+	 */
+	const DOTS: readonly { name: string; label?: string; control: () => VNode; host: string }[] = [
+		{
+			name: 'у подписи',
+			label: 'Подпись',
+			control: () => h(Input, { required: true }),
+			host: '.so-field__label',
+		},
+		{
+			name: 'у поля ввода без подписи',
+			control: () => h(Input, { required: true }),
+			host: '.so-input',
+		},
+		{
+			name: 'у флажка без подписи',
+			control: () => h(CheckBox, { required: true }),
+			host: '.so-check-box__container',
+		},
+		{
+			name: 'у переключателя без подписи',
+			control: () => h(Switch, { required: true }),
+			host: '.so-switch',
+		},
+	]
+
+	it.each(DOTS)('точка обязательного поля $name видна', async ({ label, control, host }) => {
+		await forcedColors('active')
+		await show(() => h(Field, { label }, control))
+
+		const dot = style(find(host), '::after')
+
+		expect(dot.content, 'точка нарисована').not.toBe('none')
+		expect(dot.display, 'точка не скрыта').not.toBe('none')
+		expect(
+			contrast(dot.backgroundColor, [systemColor('Canvas')]),
+			'контраст точки к странице',
+		).toBeGreaterThanOrEqual(3)
 	})
 })
