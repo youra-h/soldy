@@ -1,5 +1,5 @@
-import { drawOf } from '@soldy-ui/core'
-import type { IControl, IBatchExtension, TCollectionEngine, TEventSink } from '@soldy-ui/core'
+import { batchOf, drawOf } from '@soldy-ui/core'
+import type { IControl, TCollectionEngine, TEventSink } from '@soldy-ui/core'
 import { TBasePlugin } from '../../../base'
 import type { IPluginContext } from '../../../base'
 import { TElementPlugin } from '../../element'
@@ -166,9 +166,7 @@ export abstract class TListNavigationPlugin<
 	 * от несуществующего теперь компонента `TList`.
 	 */
 	protected shown(): IControl[] {
-		const batch = this._engine?.extensions.batch as IBatchExtension<IControl> | undefined
-
-		return (batch?.shown ?? []) as IControl[]
+		return (batchOf<IControl>(this._engine)?.shown ?? []) as IControl[]
 	}
 
 	/**

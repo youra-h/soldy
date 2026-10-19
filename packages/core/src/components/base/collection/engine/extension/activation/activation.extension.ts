@@ -3,7 +3,8 @@ import { TActivateEvent } from './types'
 import type { TActivationEvents, IActivationExtension } from './types'
 import { TActivationItemExtension, type IActivationItemExtension } from './item'
 import { TBaseOwnerItemExtension } from '../base-owner-item-extension.class'
-import type { TMetaEntry, TMetaExtension } from '../meta'
+import type { TMetaEntry } from '../meta'
+import { metaOf } from '../neighbours'
 import type { TDataset } from '../../../../../../common'
 
 /**
@@ -60,7 +61,7 @@ export class TActivationExtension<TItem extends object = any>
 			this.reset()
 		})
 
-		const meta = ctx.extensions.meta as TMetaExtension<TItem> | undefined
+		const meta = metaOf(ctx)
 
 		if (meta) {
 			// Отметки одной записи `meta` отдаёт одним списком. Активный один, и
@@ -78,7 +79,7 @@ export class TActivationExtension<TItem extends object = any>
 			// Догон: расширение могло прийти в уже наполненную коллекцию, и свои
 			// `meta:applied` оно тогда пропустило. Снимок помнит `meta`
 			ctx.driver.valueOf().forEach((item) => {
-				if (meta.get?.(item)?.active) this.activate(item)
+				if (meta.get(item)?.active) this.activate(item)
 			})
 		}
 	}

@@ -1,7 +1,6 @@
 import type { IListBox, TListBoxView } from '../../../types'
 import type { TListIndicator } from '../../../../list'
 import type { IExtension, IExtensionItems } from '../../../../../base/collection'
-import type { TListBoxExtension } from './list-box.extension'
 import type { IListBoxItemExtension } from './item'
 import type { IListBoxItem } from '../../../item/types'
 
@@ -45,9 +44,4 @@ export type TListBoxExtensionEvents = {
 	 * пользователя не отличить ни от снятия, ни от записи `value` из кода
 	 */
 	choose: (item: IListBoxItem) => void
-}
-
-export type TListBoxExtensions<TItem extends IListBoxItem> = {
-	list: TListBoxExtension<any, TItem>
-	[key: string]: IExtension<TItem>
 }

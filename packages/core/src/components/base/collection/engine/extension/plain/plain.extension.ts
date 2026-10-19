@@ -1,14 +1,14 @@
 import type { IExtension, IExtensionContext } from '../types'
 import { TInsertCommand, TRemoveCommand, TUpdateCommand, TMoveCommand } from '../../commands'
 import { TBaseExtension } from '../base-extension.class'
-import type { TPlainEvents } from './types'
+import type { IPlainExtension, TPlainEvents } from './types'
 
 /**
  * TPlainExtension — расширение для базовых операций с коллекцией
  */
 export class TPlainExtension<TItem extends object>
 	extends TBaseExtension<TItem, TPlainEvents<TItem>>
-	implements IExtension<TItem>
+	implements IExtension<TItem>, IPlainExtension<TItem>
 {
 	readonly name = 'plain' as const
 

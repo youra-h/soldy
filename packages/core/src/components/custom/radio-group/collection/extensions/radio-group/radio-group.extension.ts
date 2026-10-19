@@ -1,4 +1,4 @@
-import { TBaseExtension } from '../../../../../base/collection'
+import { TBaseExtension, activationOf } from '../../../../../base/collection'
 import type {
 	IActivationExtension,
 	IExtension,
@@ -118,7 +118,7 @@ export class TRadioGroupExtension<
 	}
 
 	private get _activation(): IActivationExtension<TItem> | undefined {
-		return this._ctx.extensions.activation as IActivationExtension<TItem> | undefined
+		return activationOf(this._ctx)
 	}
 
 	/**

@@ -1,5 +1,4 @@
-import type { IExtension, IExtensionContext } from '../../../../base/collection'
-import type { ICalendarItem } from '../../item/types'
+import type { TNeighbours } from '../../../../base/collection/engine/extension/neighbours'
 import type { ICalendarFocusExtension } from './focus/types'
 import type { ICalendarSelectionExtension } from './selection/types'
 import type { ICalendarViewExtension } from './view/types'
@@ -13,39 +12,50 @@ import type { ICalendarViewExtension } from './view/types'
  * `IExtension`, поэтому соседа узнают проверкой его контракта, а не
  * приведением типа. Классы соседей не импортируются: так расширения не
  * замыкают друг на друга циклом модулей.
+ *
+ * Искать можно в любой коллекции — у чужой охранник отдаёт `undefined`,
+ * поэтому тип её элементов не важен, а контракт — календаря.
  */
 
-type TExtensions = IExtensionContext<ICalendarItem>['extensions']
-
-function isView(ext: IExtension<ICalendarItem>): ext is ICalendarViewExtension {
+function isView(ext: object): ext is ICalendarViewExtension {
 	return 'reveal' in ext && 'grids' in ext
 }
 
-function isSelection(ext: IExtension<ICalendarItem>): ext is ICalendarSelectionExtension {
+function isSelection(ext: object): ext is ICalendarSelectionExtension {
 	return 'chooseDate' in ext && 'multiselectable' in ext
 }
 
-function isFocus(ext: IExtension<ICalendarItem>): ext is ICalendarFocusExtension {
+function isFocus(ext: object): ext is ICalendarFocusExtension {
 	return 'focusDate' in ext && 'focusedDate' in ext
 }
 
 /** Расширение вида, если оно есть в коллекции. */
-export function viewOf(ctx: { extensions: TExtensions } | undefined) {
-	const ext = ctx?.extensions.view
+export function viewOf<TItem extends object>(
+	neighbours: TNeighbours<TItem> | null | undefined,
+): ICalendarViewExtension | undefined {
+	const ext = neighbours?.extensions.view
 
 	return ext && isView(ext) ? ext : undefined
 }
 
-/** Расширение выбора, если оно есть в коллекции. */
-export function selectionOf(ctx: { extensions: TExtensions } | undefined) {
-	const ext = ctx?.extensions.selection
+/**
+ * Выбор дат, если он есть в коллекции. Под тем же именем `selection` у других
+ * коллекций — стандартный выбор элементов, другой контракт: у них охранник
+ * отдаёт `undefined`.
+ */
+export function selectionOf<TItem extends object>(
+	neighbours: TNeighbours<TItem> | null | undefined,
+): ICalendarSelectionExtension | undefined {
+	const ext = neighbours?.extensions.selection
 
 	return ext && isSelection(ext) ? ext : undefined
 }
 
 /** Расширение фокуса, если оно есть в коллекции. */
-export function focusOf(ctx: { extensions: TExtensions } | undefined) {
-	const ext = ctx?.extensions.focus
+export function focusOf<TItem extends object>(
+	neighbours: TNeighbours<TItem> | null | undefined,
+): ICalendarFocusExtension | undefined {
+	const ext = neighbours?.extensions.focus
 
 	return ext && isFocus(ext) ? ext : undefined
 }

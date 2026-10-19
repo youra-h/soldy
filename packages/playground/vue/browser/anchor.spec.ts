@@ -5,7 +5,8 @@
  * flip у края окна, сторона открытой панели, пока окно едет, и пересчёт без
  * scroll/resize (по `ResizeObserver`) проверяются только здесь. Юнит-тесты
  * плагина (`overlay.spec.ts`) те же сценарии гоняют на заглушках координат —
- * здесь эти координаты считает настоящий layout-движок браузера.
+ * здесь эти координаты считает настоящий layout-движок браузера. Так же и
+ * слежение по открытости: гаснет панель здесь настоящим переходом темы.
  *
  * Здесь же — граница, внутрь которой плагин сдвигает панель: настоящую полосу
  * прокрутки не подставить заглушкой, а без неё `innerWidth` и видимая область
@@ -21,6 +22,7 @@ import { DatePicker, Frame, Select, SelectItem } from '@soldy-ui/vue'
 import type { TSelectPlacement } from '@soldy-ui/core'
 
 import { find } from './colors'
+import { settled, whileLeaving } from './transitions'
 import { expectClassicScrollbar, expectInsideWindow } from './viewport'
 
 import '@soldy-ui/theme-oren'
@@ -281,6 +283,54 @@ const centerHarness = (dir: 'ltr' | 'rtl') =>
 								{
 									default: () =>
 										h('div', { style: 'width: 120px; height: 40px' }, 'panel'),
+								},
+							)
+						: null,
+				],
+			)
+		},
+	})
+
+/**
+ * Якорь и `Frame` сбоку от него — `end-start`: панель у конца строки якоря,
+ * верхние края вровень. Где якорь стоит в строке страницы, задаёт `justify`:
+ * `center` — место есть с обеих сторон, `flex-end` — у правого края окна.
+ * Направление письма — `dir`.
+ */
+const besideHarness = (justify: 'center' | 'flex-end', dir: 'ltr' | 'rtl' = 'ltr') =>
+	defineComponent({
+		data() {
+			return { anchorEl: null as Element | null }
+		},
+		mounted() {
+			this.anchorEl = this.$refs.anchor as Element
+		},
+		render() {
+			return h(
+				'div',
+				{ dir, style: `display: flex; justify-content: ${justify}; padding-top: 200px` },
+				[
+					h(
+						'button',
+						{
+							ref: 'anchor',
+							class: 'so-test-anchor',
+							style: 'width: 80px; height: 32px',
+						},
+						'anchor',
+					),
+					this.anchorEl
+						? h(
+								Frame,
+								{
+									visible: true,
+									anchor_anchor: this.anchorEl,
+									anchor_placement: 'end-start',
+									class: 'so-test-panel',
+								},
+								{
+									default: () =>
+										h('div', { style: 'width: 100px; height: 60px' }, 'panel'),
 								},
 							)
 						: null,
@@ -625,6 +675,66 @@ describe('прокрутка окна', () => {
 	})
 })
 
+/**
+ * Место панели плагин считает, только пока она на экране: показана или ещё
+ * гаснет. Поле здесь во внутренней прокрутке, а панель в `body`, и за полем
+ * её двигает только пересчёт по `scroll` блока. Гаснущая панель идёт за полем
+ * до конца, а закрытая на прокрутку не отвечает: место её стоит.
+ */
+describe('слежение по открытости', () => {
+	const arrow = () => find('.so-select__arrow')
+	const selectPanel = () => find('.so-select__panel')
+	/** Зазор между полем и панелью под ним: у панели, которая идёт за полем, он прежний. */
+	const gap = () =>
+		selectPanel().getBoundingClientRect().top -
+		find('.so-select').getBoundingClientRect().bottom
+
+	it('гаснущая панель идёт за полем до конца, закрытая место не считает', async () => {
+		render({
+			render: () =>
+				h('div', { class: 'so-test-scroller', style: 'height: 400px; overflow-y: auto' }, [
+					h('div', { style: 'height: 60px' }),
+					h('div', { style: 'width: 320px' }, [selectWith()]),
+					h('div', { style: 'height: 1000px' }),
+				]),
+		})
+
+		const scroller = find('.so-test-scroller')
+
+		await userEvent.click(arrow())
+		await expect.poll(() => selectPanel().getAttribute('data-placement')).toBe('bottom-start')
+		await settled(selectPanel())
+
+		const open = gap()
+		let scrolled = 0
+
+		await userEvent.click(arrow())
+
+		// Блок едет на каждом кадре исчезания. `scroll` приходит кадром позже, и
+		// к следующей проверке панель уже стоит за полем
+		const seen = await whileLeaving(selectPanel(), () => {
+			expect(Math.abs(gap() - open), `зазор, блок на ${scrolled}px`).toBeLessThan(1)
+			scrolled += 4
+			scroller.scrollTop = scrolled
+		})
+
+		expect(seen, 'кадров на экране после закрытия').toBeGreaterThan(1)
+		expect(scroller.scrollTop, 'блок прокрутился').toBe(scrolled)
+
+		// Конец закрытия плагин узнаёт микрозадачей за концом перехода
+		await nextFrame()
+
+		const top = selectPanel().style.top
+
+		scroller.scrollTop = scrolled + 100
+		await nextFrame()
+		await nextFrame()
+
+		expect(scroller.scrollTop, 'блок прокрутился').toBe(scrolled + 100)
+		expect(selectPanel().style.top, 'закрытая панель место не считает').toBe(top)
+	})
+})
+
 describe('пересчёт без scroll/resize окна', () => {
 	it('якорь меняет ширину — matchWidth панели едет следом', async () => {
 		render(ResizableAnchorHarness)
@@ -732,6 +842,57 @@ describe('центр', () => {
 			expect(panel().dataset.placement).toBe('top')
 		},
 	)
+})
+
+/**
+ * Стороны строки: `end-start` ставит панель у конца строки якоря, верхние края
+ * вровень. Конец — логический: в LTR справа, в RTL слева. У правого края окна
+ * flip переносит панель к началу строки, а `data-placement` называет
+ * логическую сторону, на которой она встала.
+ *
+ * Координаты плагин узнаёт по `ready` и `ResizeObserver`, поэтому край панели
+ * опрашиваем: на кадре до замера панель стоит по нулевой ширине.
+ */
+describe('боковые стороны', () => {
+	it('end-start в LTR — справа от якоря, верхние края вровень', async () => {
+		render(besideHarness('center'))
+
+		const anchorRect = anchor().getBoundingClientRect()
+
+		await expect
+			.poll(() => panel().getBoundingClientRect().left)
+			.toBeCloseTo(anchorRect.right, 0)
+		expect(panel().getBoundingClientRect().top).toBeCloseTo(anchorRect.top, 0)
+		expect(panel().dataset.placement).toBe('end-start')
+	})
+
+	it('у правого края окна end-start встаёт слева от якоря — start-start', async () => {
+		render(besideHarness('flex-end'))
+
+		const anchorRect = anchor().getBoundingClientRect()
+
+		// Справа места под панель действительно нет
+		expect(document.documentElement.clientWidth - anchorRect.right).toBeLessThan(100)
+
+		await expect
+			.poll(() => panel().getBoundingClientRect().right)
+			.toBeCloseTo(anchorRect.left, 0)
+		expect(panel().getBoundingClientRect().top).toBeCloseTo(anchorRect.top, 0)
+		expect(panel().dataset.placement).toBe('start-start')
+		expectInsideWindow(panel(), 'панель')
+	})
+
+	it('dir=rtl: end — слева от якоря, data-placement логический', async () => {
+		render(besideHarness('center', 'rtl'))
+
+		const anchorRect = anchor().getBoundingClientRect()
+
+		await expect
+			.poll(() => panel().getBoundingClientRect().right)
+			.toBeCloseTo(anchorRect.left, 0)
+		expect(panel().getBoundingClientRect().top).toBeCloseTo(anchorRect.top, 0)
+		expect(panel().dataset.placement).toBe('end-start')
+	})
 })
 
 describe('граница — видимая область', () => {

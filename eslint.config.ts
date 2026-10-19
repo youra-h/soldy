@@ -146,6 +146,17 @@ export default defineConfigWithVueTs(
 					message:
 						'`as TEvented<…>` — свои события класс шлёт через TEventSink (AGENTS.md, «События item-адаптера»).',
 				},
+				// Сосед по коллекции приведением: `x.extensions.selection as …`,
+				// `x?.extensions?.filter as …` и вся карта — `x.extensions as …`.
+				// Перенос строки перед типом и `?.` дерево не меняют; цепочка с
+				// `?.` в нём — ChainExpression вокруг обращений. Приведение члена
+				// соседа (`x.extensions.selection.selected as …`) правило не ловит.
+				{
+					selector:
+						"TSAsExpression:matches([expression.property.name='extensions'], [expression.object.property.name='extensions'], [expression.expression.property.name='extensions'], [expression.expression.object.property.name='extensions'])",
+					message:
+						'Соседа по коллекции находят охранником `*Of` (`selectionOf(ctx)`, `batchOf(engine)`), а не приведением `extensions` (docs/agents/collections.md, «Сосед по коллекции — по контракту»).',
+				},
 			],
 		},
 	},
