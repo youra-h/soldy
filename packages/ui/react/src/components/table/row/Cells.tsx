@@ -1,6 +1,6 @@
 import type { ReactElement } from 'react'
 import type { ITableRow, TAriaAttributes, TTableCell } from '@soldy-ui/core'
-import { renderSlot, toAriaProps, toText, withRenderBoundary } from '../../../adapter'
+import { renderSlot, toAriaProps, withRenderBoundary } from '../../../adapter'
 import type { TableRowProps } from './base.component'
 
 /** Входы ячеек — то, что строка уже получила, и сама строка для scope слота. */
@@ -43,8 +43,9 @@ type TTableRowCellsProps = {
  *
  * Содержимое ячейки — слот `cell` со scope `{ row, column, value }`: строку в
  * scope кладут ячейки, таблица отдаёт строке свой слот как есть. Без слота —
- * значение текстом (`toText`): тип поля записи таблица не знает, и React его,
- * в отличие от интерполяции Vue, как есть не нарисует.
+ * значение текстом (`text` ячейки): тип поля записи таблица не знает, и текст
+ * считает ядро по правилу, общему для всех адаптеров, — React объект как есть
+ * не нарисует, а булево и `null` пропустит.
  */
 export const TableRowCells = withRenderBoundary(function TableRowCells({
 	row,
@@ -67,7 +68,7 @@ export const TableRowCells = withRenderBoundary(function TableRowCells({
 						{...toAriaProps(cell.aria)}
 					>
 						{renderSlot(slot, { row, column: cell.column, value: cell.value }) ??
-							toText(cell.value)}
+							cell.text}
 					</Cell>
 				)
 			})}

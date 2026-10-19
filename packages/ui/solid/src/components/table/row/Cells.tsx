@@ -1,7 +1,7 @@
 import type { Accessor, JSX } from 'solid-js'
 import { Dynamic } from 'solid-js/web'
 import type { ITableRow, TAriaAttributes, TTableCell } from '@soldy-ui/core'
-import { KeyedFor, renderSlot, toText } from '../../../adapter'
+import { KeyedFor, renderSlot } from '../../../adapter'
 import type { TableRowProps } from './base.component'
 
 /** Входы ячеек — то, что строка уже получила, и сама строка для scope слота. */
@@ -42,8 +42,9 @@ type TTableRowCellsProps = {
  *
  * Содержимое ячейки — слот `cell` со scope `{ row, column, value }`: строку в
  * scope кладут ячейки, таблица отдаёт строке свой слот как есть. Без слота —
- * значение текстом (`toText`): тип поля записи таблица не знает, и Solid его,
- * в отличие от интерполяции Vue, как есть не нарисует.
+ * значение текстом (`text` ячейки): тип поля записи таблица не знает, и текст
+ * считает ядро по правилу, общему для всех адаптеров, — Solid булево и `null`
+ * пропустит, а объект — с предупреждением в консоли.
  */
 export function TableRowCells(props: TTableRowCellsProps): JSX.Element {
 	/** Ячейка колонки — заголовок строки или обычная. */
@@ -60,7 +61,7 @@ export function TableRowCells(props: TTableRowCellsProps): JSX.Element {
 				row: props.row,
 				column: cell().column,
 				value: cell().value,
-			}) ?? toText(cell().value)}
+			}) ?? cell().text}
 		</Dynamic>
 	)
 

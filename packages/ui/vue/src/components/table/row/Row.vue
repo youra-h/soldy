@@ -57,11 +57,13 @@ export default { ...SetupTableRow, components: { CheckBox, TableRowCells } }
 			в него кладут ячейки, таблица отдаёт свой слот как есть. Слот есть —
 			ячейкам он уходит пробросом, нет — ячейкам слотов не передают вовсе:
 			проброс у строки без слотов Vue считает динамическим и перерисовывал
-			бы ячейки с каждой перерисовкой строки (AGENTS.md, Pitfalls).
+			бы ячейки с каждой перерисовкой строки (AGENTS.md, Pitfalls). Запасное
+			содержимое — только у ячеек, текст ячейки от ядра: своё у проброса
+			рисовало бы значение интерполяцией Vue.
 		-->
 		<TableRowCells v-if="$slots.cell" :row="ctrl" :cells="cells" :cellAria="cellAria">
 			<template #cell="{ row, column, value }">
-				<slot name="cell" :row="row" :column="column" :value="value">{{ value }}</slot>
+				<slot name="cell" :row="row" :column="column" :value="value" />
 			</template>
 		</TableRowCells>
 		<TableRowCells v-else :row="ctrl" :cells="cells" :cellAria="cellAria" />

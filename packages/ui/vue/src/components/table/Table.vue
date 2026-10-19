@@ -115,7 +115,10 @@ export default { ...SetupTable, components: { CheckBox, TableColumn, TableRow } 
 					Строка — Table.Row над элементом коллекции строк. Содержимое ячейки —
 					слот `cell` со scope `{ row, column, value }`: колонку выбирают
 					условием по `column.field`, `value` — поле записи под ключом колонки.
-					Без него — `value` текстом.
+					Без него и там, где он ничего не нарисовал, — значение текстом: его
+					рисуют ячейки строки из `text` ячейки, а считает ядро. Своего
+					запасного содержимого у проброса нет — иначе ячейке достался бы
+					текст интерполяции Vue, а не ядра.
 
 					Строки не перерисовываются вместе с таблицей, только пока их слоты
 					стабильны. Поэтому слот уходит им пробросом как есть — строку в scope
@@ -138,9 +141,7 @@ export default { ...SetupTable, components: { CheckBox, TableColumn, TableRow } 
 						</tr>
 						<TableRow v-else :ctrl="entry.item">
 							<template #cell="{ row, column, value }">
-								<slot name="cell" :row="row" :column="column" :value="value">{{
-									value
-								}}</slot>
+								<slot name="cell" :row="row" :column="column" :value="value" />
 							</template>
 						</TableRow>
 					</template>
