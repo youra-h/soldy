@@ -14,10 +14,12 @@ import { TName, TPropSpec } from '@soldy-ui/setup'
 import { TAnchorPlugin } from '@soldy-ui/plugins'
 import { ButtonDescriptor } from '@soldy-ui/setup'
 import { FRAME_PLACEMENTS } from '../src/enums'
+import { createInstance } from '../src/instance'
 import {
 	isEmptyField,
 	parseNumber,
 	parseNumberOrText,
+	PREVIEW_PROPS,
 	previewProps,
 	propControl,
 	propControls,
@@ -144,6 +146,22 @@ describe('propControl: значение превью', () => {
 	it('проп, которого превью не задаёт, ключа не получает', () => {
 		expect(Object.hasOwn(rowOf('button', 'size'), 'initial')).toBe(false)
 		expect(Object.hasOwn(rowOf('tabs', 'view'), 'initial')).toBe(false)
+	})
+
+	/**
+	 * Значение превью своего пропа экземпляр второй колонки получает
+	 * конструктором. Конструктор, который проп не применил бы, оставил бы
+	 * экземпляр на умолчании, а строку и колонку пропа — на значении превью:
+	 * колонки разошлись бы с первой отрисовки.
+	 */
+	const OWN_ROWS = Object.keys(PREVIEW_PROPS).flatMap((id) =>
+		propControls(entryOf(id))
+			.componentControls.filter((control) => Object.hasOwn(control, 'initial'))
+			.map((control) => [id, control.name, control.initial] as const),
+	)
+
+	it.each(OWN_ROWS)('%s.%s: экземпляр принимает его конструктором', (id, name, initial) => {
+		expect(createInstance(entryOf(id), { [name]: initial })[name]).toEqual(initial)
 	})
 })
 
