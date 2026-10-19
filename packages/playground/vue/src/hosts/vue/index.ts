@@ -13,6 +13,9 @@ import { instanceSnippet, propSnippet } from './snippet'
  */
 const locale = shallowRef<TLocale>(enUS)
 
+/** Сколько приложений превью хост создал — номер в префиксе id следующего. */
+let apps = 0
+
 /** Чем рисовать: фикстура по ключу, без ключа — превью компонента. */
 function drawing(component: string, fixture: string | undefined): Component {
 	const found =
@@ -33,6 +36,18 @@ function drawing(component: string, fixture: string | undefined): Component {
  *
  * Пропсы приложение держит в своём `shallowRef`: `update` подменяет набор
  * целиком, и Vue отдаёт компоненту то, что сменилось.
+ *
+ * У каждого приложения свой префикс id (`app.config.idPrefix`): `preview-1`,
+ * `preview-2`, … Id монтирования адаптер берёт у `useId`, а тот считает
+ * места внутри своего приложения, и у двух превью с одним деревом id
+ * совпали бы. От них плагины строят `id` частей, ссылки ARIA и пометку
+ * панели оверлея (`data-owner`), и одинаковые id ломали страницу: панели
+ * DatePicker всех превью получали одну пометку, плагины оверлея находили по
+ * ней первую в документе — чужую и скрытую, — и фокус с кнопки календаря в
+ * свою панель не уходил. Свой префикс каждому из нескольких приложений на
+ * странице советует и документация `useId`; у Angular ту же задачу решает
+ * `APP_ID`. Префикс не `v`: это умолчание Vue, с ним считает приложение
+ * оболочки. Сторожит `__tests__/mount-ids.spec.ts`.
  */
 const host: IPreviewHost = {
 	previews: Object.keys(PREVIEW_COMPONENTS),
@@ -50,6 +65,7 @@ const host: IPreviewHost = {
 				),
 		})
 
+		app.config.idPrefix = `preview-${++apps}`
 		app.mount(node)
 
 		return {
