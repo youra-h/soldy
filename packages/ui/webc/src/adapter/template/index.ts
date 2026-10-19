@@ -3,7 +3,7 @@ export { ownerAttributes } from './attributes'
 export { createDetail, type TDetailOptions } from './detail'
 export { lend, type TLendAt } from './lend'
 export { TKeyedLoop } from './loop'
-export { createItem, lendSamples, type TItemSlots } from './item'
+export { createItem, lendSamples, lendTemplates, type TItemSlots } from './item'
 export type {
 	ITemplate,
 	ITemplateBinding,
