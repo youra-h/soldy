@@ -30,7 +30,8 @@
  * браузер (`./colors`). Смена вида у открытого тоста — переход цвета плашки, а
  * не корня: переходов корня ждёт удаление закрытого тоста. Пока тост ждёт, на
  * месте значка бежит кольцо цвета значка — по кругу глифа, и текст не
- * сдвигается, когда кольцо сменилось значком.
+ * сдвигается, когда кольцо сменилось значком. Значки всех видов — одного
+ * рисунка с ошибкой: контур, фигура внутри пуста.
  */
 
 import { describe, it, expect, beforeEach, afterEach, onTestFinished } from 'vitest'
@@ -502,6 +503,72 @@ describe('вид', () => {
 			}
 		},
 	)
+
+	/**
+	 * Точка внутри фигуры значка вида, мимо знака на ней, — в единицах `viewBox`
+	 * Material (x 0…960, y −960…0): у круга — под верхним краем, над знаком, у
+	 * колокольчика — посередине, у треугольника — над «!».
+	 */
+	const HOLLOW: Readonly<Record<string, { x: number; y: number }>> = {
+		обычное: { x: 480, y: -480 },
+		info: { x: 480, y: -760 },
+		success: { x: 480, y: -760 },
+		warning: { x: 480, y: -640 },
+		error: { x: 480, y: -760 },
+	}
+
+	/** Стороны от точки — шаг в единицах `viewBox`. */
+	const SIDES = {
+		вправо: { x: 1, y: 0 },
+		влево: { x: -1, y: 0 },
+		вниз: { x: 0, y: 1 },
+		вверх: { x: 0, y: -1 },
+	}
+
+	/** Есть ли рисунок от точки в сторону `side` — до края коробки значка. */
+	const reaches = (
+		path: SVGGeometryElement,
+		point: { x: number; y: number },
+		side: { x: number; y: number },
+	): boolean => {
+		for (let step = 1; step < 960; step++) {
+			const x = point.x + side.x * step
+			const y = point.y + side.y * step
+
+			if (path.isPointInFill({ x, y })) return true
+		}
+
+		return false
+	}
+
+	/**
+	 * Значки видов — одного рисунка: контур, как у ошибки. Залитый значок у
+	 * текста ошибки Field читался пятном и стал контуром, а значки остальных
+	 * видов пришли залитыми — в стопке ошибка выглядела чужой. Контур — пустая
+	 * фигура: в точке внутри неё рисунка нет, а в каждую сторону от точки он
+	 * есть — точка не снаружи фигуры. Мера — геометрия рисунка
+	 * (`isPointInFill`), а не пиксели: цвет и сглаживание ей не мешают.
+	 */
+	it('значок каждого вида — контур, как у ошибки: фигура внутри пуста', async () => {
+		const { show, rest } = await mount({ max: KINDS.length })
+
+		await show(...KINDS.map(({ name, type }) => ({ text: name, type })))
+		await rest()
+
+		for (const { name } of KINDS) {
+			const path = glyph(titled(name)).querySelector('path')
+			const point = HOLLOW[name]
+
+			if (!(path instanceof SVGPathElement)) throw new Error(`${name}: рисунка значка нет`)
+			if (!point) throw new Error(`${name}: точки внутри фигуры нет`)
+
+			expect(path.isPointInFill(point), `${name}: внутри фигуры`).toBe(false)
+
+			for (const [direction, side] of Object.entries(SIDES)) {
+				expect(reaches(path, point, side), `${name}: рисунок ${direction}`).toBe(true)
+			}
+		}
+	})
 
 	/** Своё содержимое — кнопка каждого вида, без варианта: цвет ей даёт плашка. */
 	const Actions: TToastRender = () =>
