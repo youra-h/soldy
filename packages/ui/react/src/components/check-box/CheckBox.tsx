@@ -1,7 +1,7 @@
 import type { ElementType, ReactElement, ReactNode } from 'react'
 import {
-	Elevate,
 	NativeInput,
+	elevated,
 	renderSlot,
 	roleIcon,
 	toAriaProps,
@@ -43,7 +43,8 @@ const IndeterminateMark = roleIcon('checkIndeterminate')
  *
  * Поле формы `Field` над флажком отдаёт ему ошибку, `id` и ссылки на части
  * (`TFieldControlExtension`), а своему содержимому флажок опускает пустую
- * связку. Поэтому содержимое — в слое лифта флажка (`Elevate`).
+ * связку. Поэтому содержимое слотов отметки — в слое лифта флажка
+ * (`elevated`).
  */
 export function CheckBox(props: CheckBoxProps): ReactElement | null {
 	const { ref, forwardProps, state, layer } = useSetupCheckBox(props)
@@ -72,31 +73,31 @@ export function CheckBox(props: CheckBoxProps): ReactElement | null {
 	let mark: ReactNode = null
 
 	if (indeterminate) {
-		mark = renderSlot(props['indeterminate-icon'], scope) ?? (
+		mark = elevated(layer, renderSlot(props['indeterminate-icon'], scope)) ?? (
 			<IndeterminateMark className="so-check-box__mark" />
 		)
 	} else if (value) {
-		mark = renderSlot(props.icon, scope) ?? <CheckMark className="so-check-box__mark" />
+		mark = elevated(layer, renderSlot(props.icon, scope)) ?? (
+			<CheckMark className="so-check-box__mark" />
+		)
 	}
 
 	// Корню — его наборы, класс и стиль потребителя; `ref` адаптера последним
 	return (
 		<Tag {...toRootProps(ref, state, [attrs, dataset], toRootForward(forwardProps))}>
-			<Elevate layer={layer}>
-				<NativeInput
-					type="checkbox"
-					id={id}
-					name={name}
-					disabled={disabled}
-					required={required}
-					{...toAriaProps(aria)}
-					{...toControlAttrs<CheckBoxAttributes>(forwardProps)}
-					live={{ checked: value, indeterminate }}
-				/>
-				<span className="so-check-box__container" aria-hidden="true">
-					{mark}
-				</span>
-			</Elevate>
+			<NativeInput
+				type="checkbox"
+				id={id}
+				name={name}
+				disabled={disabled}
+				required={required}
+				{...toAriaProps(aria)}
+				{...toControlAttrs<CheckBoxAttributes>(forwardProps)}
+				live={{ checked: value, indeterminate }}
+			/>
+			<span className="so-check-box__container" aria-hidden="true">
+				{mark}
+			</span>
 		</Tag>
 	)
 }

@@ -19,10 +19,11 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import { Show, createSignal, type JSX } from 'solid-js'
+import { Show, createSignal, useContext, type JSX } from 'solid-js'
 import { TField, TInput } from '@soldy-ui/core'
 import type { TFieldPosition } from '@soldy-ui/core'
 import { CheckBox, Field, Input, Label, RadioGroup, Switch } from '@soldy-ui/solid'
+import { ElevatorContext, type TElevatorLayer } from '../src/adapter/elevator/layer'
 import { find, mount } from './mount'
 
 /** Подпись поля на странице; нет её — тест падает здесь. */
@@ -393,5 +394,50 @@ describe('Field · одно поле — один контрол', () => {
 
 		expect(label().htmlFor).toBe(field.id)
 		expect(refsOf(field, 'aria-describedby')).toEqual([node('.so-field__helper').id])
+	})
+})
+
+/** Слой лифта, который видит узел в этом месте дерева. */
+function LayerProbe(props: { into: (layer: TElevatorLayer | undefined) => void }): JSX.Element {
+	props.into(useContext(ElevatorContext))
+
+	return null
+}
+
+/**
+ * Пустую связку контрол опускает своему содержимому, только когда поле над
+ * ним есть. Вне поля своего в слое контрола нет, и провайдера он не ставит:
+ * содержимое его слотов видит слой предка — тот же объект, — и флажок в каждой
+ * строке таблицы провайдера не несёт.
+ */
+describe('Field · слой лифта контрола', () => {
+	it('вне поля — содержимое слота видит слой предка, провайдера у контрола нет', () => {
+		const layers: (TElevatorLayer | undefined)[] = []
+
+		mount(() => (
+			<RadioGroup>
+				<LayerProbe into={(layer) => layers.push(layer)} />
+				<Input trailing={<LayerProbe into={(layer) => layers.push(layer)} />} />
+			</RadioGroup>
+		))
+
+		expect(layers).toHaveLength(2)
+		expect(layers[0]).toBeDefined()
+		expect(layers[1]).toBe(layers[0])
+	})
+
+	it('в поле — у содержимого слота свой слой контрола, с пустой связкой', () => {
+		const layers: (TElevatorLayer | undefined)[] = []
+
+		mount(() => (
+			<Field label="Почта">
+				<LayerProbe into={(layer) => layers.push(layer)} />
+				<Input trailing={<LayerProbe into={(layer) => layers.push(layer)} />} />
+			</Field>
+		))
+
+		expect(layers).toHaveLength(2)
+		expect(layers[1]).not.toBe(layers[0])
+		expect(layers[1]?.empty).toBe(false)
 	})
 })

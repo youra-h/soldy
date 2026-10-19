@@ -1,7 +1,7 @@
 import type { ElementType, ReactElement } from 'react'
 import {
-	Elevate,
 	NativeInput,
+	elevated,
 	renderSlot,
 	toAriaProps,
 	toControlAttrs,
@@ -31,8 +31,8 @@ import type { SwitchAttributes, SwitchProps } from './base.component'
  *
  * Поле формы `Field` над переключателем отдаёт ему ошибку, `id` и ссылки на
  * части (`TFieldControlExtension`), а своему содержимому переключатель
- * опускает пустую связку. Поэтому содержимое — в слое лифта переключателя
- * (`Elevate`).
+ * опускает пустую связку. Поэтому содержимое слотов ручки — в слое лифта
+ * переключателя (`elevated`).
  */
 export function Switch(props: SwitchProps): ReactElement | null {
 	const { ctrl, ref, forwardProps, state, layer } = useSetupSwitch(props)
@@ -47,23 +47,24 @@ export function Switch(props: SwitchProps): ReactElement | null {
 	// Корню — его наборы, класс и стиль потребителя; `ref` адаптера последним
 	return (
 		<Tag {...toRootProps(ref, state, [attrs, dataset], toRootForward(forwardProps))}>
-			<Elevate layer={layer}>
-				<NativeInput
-					type="checkbox"
-					id={id}
-					name={name}
-					disabled={disabled}
-					required={required}
-					{...toAriaProps(aria)}
-					{...toControlAttrs<SwitchAttributes>(forwardProps)}
-					live={{ checked: value }}
-				/>
-				<span className="so-switch__track" aria-hidden="true">
-					<span className="so-switch__track--thumb">
-						{value ? renderSlot(props.on, scope) : renderSlot(props.off, scope)}
-					</span>
+			<NativeInput
+				type="checkbox"
+				id={id}
+				name={name}
+				disabled={disabled}
+				required={required}
+				{...toAriaProps(aria)}
+				{...toControlAttrs<SwitchAttributes>(forwardProps)}
+				live={{ checked: value }}
+			/>
+			<span className="so-switch__track" aria-hidden="true">
+				<span className="so-switch__track--thumb">
+					{elevated(
+						layer,
+						value ? renderSlot(props.on, scope) : renderSlot(props.off, scope),
+					)}
 				</span>
-			</Elevate>
+			</span>
 		</Tag>
 	)
 }

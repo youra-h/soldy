@@ -1,7 +1,7 @@
 import type { ElementType, ReactElement } from 'react'
 import {
-	Elevate,
 	NativeInput,
+	elevated,
 	hasSlot,
 	renderSlot,
 	roleIcon,
@@ -49,7 +49,7 @@ import type { InputAttributes, InputProps } from './base.component'
  * Поле формы `Field` над полем отдаёт ему ошибку, `id` и ссылки на части
  * (`TFieldControlExtension`), а своему содержимому поле опускает пустую
  * связку: контролы в его слотах — его содержимое, а не контрол поля формы.
- * Поэтому содержимое — в слое лифта поля (`Elevate`).
+ * Поэтому содержимое слотов — в слое лифта поля (`elevated`).
  */
 export function Input(props: InputProps): ReactElement | null {
 	const { ctrl, ref, forwardProps, state, layer } = useSetupInput(props)
@@ -80,49 +80,49 @@ export function Input(props: InputProps): ReactElement | null {
 	// Корню — его наборы, класс и стиль потребителя; `ref` адаптера последним
 	return (
 		<Tag {...toRootProps(ref, state, [attrs, dataset], toRootForward(forwardProps))}>
-			<Elevate layer={layer}>
-				{hasSlot(props.leading) ? (
-					<div className="so-input__leading">{renderSlot(props.leading, { ctrl })}</div>
-				) : null}
-				<NativeInput
-					type="text"
-					id={id}
-					name={name}
-					disabled={disabled}
-					readOnly={readonly}
-					required={required}
-					placeholder={placeholder}
-					{...toAriaProps(aria)}
-					{...toControlAttrs<InputAttributes>(forwardProps)}
-					live={{ value }}
-				/>
-				{trailing ? (
-					<div className="so-input__trailing">
-						{renderSlot(props.clear, { clear: ctrl.clear }) ??
-							(clearable === true ? (
-								<Button
-									embedded="input.clear"
-									type="button"
-									className="so-input__clear"
+			{hasSlot(props.leading) ? (
+				<div className="so-input__leading">
+					{elevated(layer, renderSlot(props.leading, { ctrl }))}
+				</div>
+			) : null}
+			<NativeInput
+				type="text"
+				id={id}
+				name={name}
+				disabled={disabled}
+				readOnly={readonly}
+				required={required}
+				placeholder={placeholder}
+				{...toAriaProps(aria)}
+				{...toControlAttrs<InputAttributes>(forwardProps)}
+				live={{ value }}
+			/>
+			{trailing ? (
+				<div className="so-input__trailing">
+					{elevated(layer, renderSlot(props.clear, { clear: ctrl.clear })) ??
+						(clearable === true ? (
+							<Button
+								embedded="input.clear"
+								type="button"
+								className="so-input__clear"
+								size={size}
+								disabled={disabled}
+								{...toAriaProps(clearAria)}
+								onActionClick={(event) => {
+									event.stopPropagation()
+									ctrl.clear()
+								}}
+							>
+								<Icon
+									embedded="input.clear-icon"
+									tag={roleIcon('close')}
 									size={size}
-									disabled={disabled}
-									{...toAriaProps(clearAria)}
-									onActionClick={(event) => {
-										event.stopPropagation()
-										ctrl.clear()
-									}}
-								>
-									<Icon
-										embedded="input.clear-icon"
-										tag={roleIcon('close')}
-										size={size}
-									/>
-								</Button>
-							) : null)}
-						{renderSlot(props.trailing, { ctrl })}
-					</div>
-				) : null}
-			</Elevate>
+								/>
+							</Button>
+						) : null)}
+					{elevated(layer, renderSlot(props.trailing, { ctrl }))}
+				</div>
+			) : null}
 		</Tag>
 	)
 }
