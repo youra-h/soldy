@@ -30,8 +30,9 @@
 	`label` HTML разрешает только строчную разметку. Поэтому и всё внутри —
 	`span`.
 
-	Наборы ядра стоят на разных элементах: `attrs` (`dir`) — на корне, `aria` —
-	на `<input>`. Нативные `disabled` и `required` поля проводит разметка, и
+	Наборы ядра стоят на разных элементах: `attrs` (`dir`) и `dataset`
+	(`data-disabled`, `data-invalid`) — на корне, `aria` — на `<input>`: тема
+	красит коробку и подпись поля формы `Field` по корню. Нативные `disabled` и `required` поля проводит разметка, и
 	ARIA-дублей рядом с ними ядро не пишет. Атрибуты потребителя делятся, как у
 	Vue: класс и стиль — корню, остальное — полю, поверх его `aria`.
 
@@ -57,7 +58,11 @@
 {#if state.rendered}
 	<Dynamic
 		tag={state.tag}
-		attributes={toRootProps(state, [state.attrs], toRootForward(binding.forwardProps))}
+		attributes={toRootProps(
+			state,
+			[state.attrs, state.dataset],
+			toRootForward(binding.forwardProps),
+		)}
 		attach={binding.attachElement}
 	>
 		<input

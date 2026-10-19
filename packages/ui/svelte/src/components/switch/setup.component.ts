@@ -10,10 +10,20 @@
  * (`$props.id()`) отдаёт компонент: компилятор пускает его только туда. Так
  * же — приёмник корня (`receive`): запись в связываемый проп `ref`
  * компонента, `$bindable` компилятор тоже пускает только в компонент.
+ *
+ * Поле формы `Field` над переключателем: ошибку, `id` и ссылки на части контрол
+ * берёт от него своим расширением (`TFieldControlExtension`) лифтом
+ * (`getContext`), а своему содержимому опускает пустую связку
+ * (`setContext`): контролы в его слотах — его содержимое.
  */
 
-import { SwitchDescriptor } from '@soldy-ui/setup'
-import { createSvelteAdapterContext, useAdapter, type TRootReceiver } from '../../adapter'
+import { SwitchDescriptor, TFieldControlExtension } from '@soldy-ui/setup'
+import {
+	SvelteElevatorFactory,
+	createSvelteAdapterContext,
+	useAdapter,
+	type TRootReceiver,
+} from '../../adapter'
 import type { SwitchProps } from './base.component'
 
 export function setupSwitch(getProps: () => SwitchProps, mountId: string, receive: TRootReceiver) {
@@ -21,7 +31,7 @@ export function setupSwitch(getProps: () => SwitchProps, mountId: string, receiv
 		ctrl: getProps().ctrl,
 		props: getProps(),
 		mountId,
-	})
+	}).use(TFieldControlExtension, { elevator: SvelteElevatorFactory })
 
 	// Переключает значение плагин по `change` поля; отметку разметка пишет
 	// свойством `<input>`

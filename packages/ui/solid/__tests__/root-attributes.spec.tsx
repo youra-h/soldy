@@ -551,6 +551,7 @@ const ROOTS: ReadonlyArray<
 		'.so-component-view',
 	],
 	['Frame', (props) => <Frame visible {...props} />, '.so-frame', '.so-frame'],
+	['Field', (props) => <Field {...props} />, '.so-field', '.so-field'],
 	['Icon', (props) => <Icon tag="i" {...props} />, '.so-icon', '.so-icon'],
 	['Label', (props) => <Label {...props} />, '.so-label', '.so-label'],
 	[
