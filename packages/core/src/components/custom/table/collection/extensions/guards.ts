@@ -1,10 +1,14 @@
-import type { IExtension, ISelectionExtension } from '../../../../base/collection'
+import type { IExtension } from '../../../../base/collection'
+import type { TNeighbours } from '../../../../base/collection/engine/extension/neighbours'
 import type { ITableRow } from '../../row/types'
 import type { ITableColumnsExtension } from './columns/types'
 import type { ITableGridExtension } from './grid/types'
 
-/** Состав коллекции — общий с остальными коллекциями: его выборка — показанные строки. */
-export { batchOf } from '../../../../base/collection/engine/extension/neighbours'
+/**
+ * Состав и выбор — общие с остальными коллекциями: выборка состава —
+ * показанные строки, выбор — выбранные.
+ */
+export { batchOf, selectionOf } from '../../../../base/collection/engine/extension/neighbours'
 
 /**
  * Соседи по коллекции строк таблицы.
@@ -17,11 +21,6 @@ export { batchOf } from '../../../../base/collection/engine/extension/neighbours
  * замыкают друг на друга циклом модулей.
  */
 
-/** Где искать соседа: контекст расширения или сам движок строк. */
-type TNeighbours<TRow extends object> = {
-	readonly extensions: Readonly<Record<string, IExtension<TRow> | undefined>>
-}
-
 function isColumns<TRow extends ITableRow>(
 	ext: IExtension<TRow>,
 ): ext is ITableColumnsExtension<TRow> {
@@ -32,10 +31,6 @@ function isGrid<TRow extends ITableRow>(ext: IExtension<TRow>): ext is ITableGri
 	return 'focusedCell' in ext && 'gridRows' in ext && 'moveFocus' in ext
 }
 
-function isSelection<TRow extends object>(ext: IExtension<TRow>): ext is ISelectionExtension<TRow> {
-	return 'isSelected' in ext && 'selectMany' in ext && 'deselectMany' in ext && 'multiple' in ext
-}
-
 /** Расширение колонок, если оно есть в коллекции. */
 export function columnsOf<TRow extends ITableRow>(
 	ctx: TNeighbours<TRow> | undefined,
@@ -43,15 +38,6 @@ export function columnsOf<TRow extends ITableRow>(
 	const ext = ctx?.extensions.columns
 
 	return ext && isColumns(ext) ? ext : undefined
-}
-
-/** Выбор строк, если он есть в коллекции. */
-export function selectionOf<TRow extends object>(
-	ctx: TNeighbours<TRow> | undefined,
-): ISelectionExtension<TRow> | undefined {
-	const ext = ctx?.extensions.selection
-
-	return ext && isSelection(ext) ? ext : undefined
 }
 
 /** Сетка строк, если она есть в коллекции: её ячейка под фокусом. */

@@ -1,4 +1,5 @@
-import type { IBatchExtension, IControl, IList, ISelect, TCollectionEngine } from '@soldy-ui/core'
+import { batchOf } from '@soldy-ui/core'
+import type { IControl, IList, ISelect, TCollectionEngine } from '@soldy-ui/core'
 import type { IPluginContext } from '../../../base'
 import { smoothScrollBehavior } from '../../../motion'
 import { TElementPlugin } from '../../element'
@@ -124,9 +125,7 @@ export class TSelectKeyboardPlugin
 	 * состояние, и знать о ней отбору незачем.
 	 */
 	protected override onEngineBound(engine: TCollectionEngine<any, any>): void {
-		const batch = engine.extensions.batch as IBatchExtension<IControl>
-
-		this._listenTo(batch.events, 'change:shown', () => {
+		this._listenTo(batchOf<IControl>(engine)?.events, 'change:shown', () => {
 			// Подсветки нет — ставить её на смене выдачи незачем: панель может
 			// быть и закрыта
 			if (this._highlightedUid == null) return

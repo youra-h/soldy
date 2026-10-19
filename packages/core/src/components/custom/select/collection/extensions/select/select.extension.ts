@@ -1,10 +1,13 @@
-import { TBaseOwnerItemExtension } from '../../../../../base/collection'
+import {
+	TBaseOwnerItemExtension,
+	batchOf,
+	filterOf,
+	selectionOf,
+} from '../../../../../base/collection'
 import type {
 	IBaseOwnerItemExtensionOptions,
-	IBatchExtension,
 	IExtension,
 	IExtensionContext,
-	IFilterExtension,
 	ISelectionExtension,
 } from '../../../../../base/collection'
 import {
@@ -15,7 +18,8 @@ import {
 import type { TListIndicator } from '../../../../list'
 import type { ISelect } from '../../../types'
 import type { ISelectItem } from '../../../item/types'
-import type { TSelectTagsExtension } from '../tags'
+import { tagsOf } from '../guards'
+import type { ISelectTagsExtension } from '../tags'
 import { TSelectItemExtension, type ISelectItemExtension } from './item'
 import type { ISelectExtension, TSelectEngineOptions, TSelectExtensionEvents } from './types'
 
@@ -85,7 +89,6 @@ export class TSelectExtension<
 	readonly name = 'select' as const
 
 	private _text = ''
-	private _batch: IBatchExtension<TItem> | null = null
 
 	/**
 	 * Подписки на переименование опций, которые сейчас в списке.
@@ -121,7 +124,7 @@ export class TSelectExtension<
 		// Отбор по тексту опции — знание Select, а не `filter`: общее расширение
 		// умеет сравнивать с любыми полями, а какое из них показывается
 		// пользователю, знает только компонент.
-		const filter = ctx.extensions.filter as IFilterExtension<TItem> | undefined
+		const filter = filterOf(ctx)
 
 		if (filter) filter.fields = ['text' as keyof TItem]
 
@@ -131,8 +134,7 @@ export class TSelectExtension<
 		// слот, и перебрать его коллекция не может; зато у каждой опции есть
 		// `visible`, который все шесть адаптеров уже уважают. Отсюда и правило:
 		// показана ровно та опция, что осталась в выдаче.
-		this._batch = ctx.extensions.batch as IBatchExtension<TItem>
-		this._batch.events.on('change:shown', () => this._syncShown())
+		batchOf(ctx)?.events.on('change:shown', () => this._syncShown())
 
 		ctx.driver.events.on('item:added', (e) => this._onItemAdded(e.item as TItem))
 
@@ -298,11 +300,11 @@ export class TSelectExtension<
 	}
 
 	private get _selection(): ISelectionExtension<TItem> | undefined {
-		return this._ctx?.extensions.selection as ISelectionExtension<TItem> | undefined
+		return selectionOf(this._ctx)
 	}
 
-	private get _tags(): TSelectTagsExtension<ISelect, TItem> | undefined {
-		return this._ctx?.extensions.tags as TSelectTagsExtension<ISelect, TItem> | undefined
+	private get _tags(): ISelectTagsExtension | undefined {
+		return tagsOf(this._ctx)
 	}
 
 	/**
@@ -515,9 +517,11 @@ export class TSelectExtension<
 	 * при включённом отборе принадлежит ему.
 	 */
 	private _syncShown(): void {
-		if (!this._ctx || !this._batch) return
+		const batch = batchOf(this._ctx)
 
-		const shown = new Set<unknown>(this._batch.shown)
+		if (!batch) return
+
+		const shown = new Set<unknown>(batch.shown)
 
 		this._ctx.driver.valueOf().forEach((item) => {
 			const visible = shown.has(item)
