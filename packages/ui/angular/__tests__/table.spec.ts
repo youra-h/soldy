@@ -45,6 +45,7 @@ import {
 	SlotDirective,
 	TTableComponent,
 	TVirtualComponent,
+	TextPipe,
 } from '@soldy-ui/angular'
 import { mountHost, nextFrame } from './mount'
 
@@ -610,23 +611,59 @@ describe('слоты', () => {
 		])
 	})
 
-	/**
-	 * Без шаблона значение — текстом, по правилу интерполяции Vue
-	 * (`soText`): интерполяция Angular нарисовала бы объект как
-	 * `[object Object]`, а массив — через запятую.
-	 */
-	it('без cell значение — текстом: число, булево, пусто, объект', async () => {
-		const FLAG: TTableColumnSource = { field: 'flag', text: 'Флаг' }
-		const NOTE: TTableColumnSource = { field: 'note', text: 'Заметка' }
-		const TAGS: TTableColumnSource = { field: 'tags', text: 'Теги' }
+	const FLAG: TTableColumnSource = { field: 'flag', text: 'Флаг' }
+	const NOTE: TTableColumnSource = { field: 'note', text: 'Заметка' }
+	const TAGS: TTableColumnSource = { field: 'tags', text: 'Теги' }
 
-		await renderData(
-			DataHost,
-			[{ id: 1, name: 'Анна', age: 30, flag: true, note: null, tags: ['a'] }],
-			[NAME, AGE, FLAG, NOTE, TAGS],
-		)
+	/** Запись со значениями всех видов: число, булево, пусто и массив. */
+	const MIXED = { id: 1, name: 'Анна', age: 30, flag: true, note: null, tags: ['a'] }
+
+	/**
+	 * Без шаблона значение — текстом ядра (`text` ячейки): интерполяция
+	 * Angular нарисовала бы объект как `[object Object]`, а массив — через
+	 * запятую. Цикл JSON не пишет, и ядро отдаёт тег объекта.
+	 */
+	it('без cell значение — текстом: число, булево, пусто, объект, цикл', async () => {
+		const LOOP: TTableColumnSource = { field: 'loop', text: 'Цикл' }
+		const loop: Record<string, unknown> = {}
+
+		loop.self = loop
+
+		await renderData(DataHost, [{ ...MIXED, loop }], [NAME, AGE, FLAG, NOTE, TAGS, LOOP])
 
 		expect([...find('.so-table-row').children].map((cell) => cell.textContent)).toEqual([
+			'Анна',
+			'30',
+			'true',
+			'',
+			'[\n  "a"\n]',
+			'[object Object]',
+		])
+	})
+
+	@Component({
+		standalone: true,
+		imports: [TTableComponent, SlotDirective, TextPipe],
+		template: `<div so-table [items]="items()" [columns]="columns()">
+			<ng-template slot="cell" let-column="column" let-value="value">
+				@if (column.field === 'age') {
+					<i>{{ value }}</i>
+				} @else {
+					{{ value | soText }}
+				}
+			</ng-template>
+		</div>`,
+	})
+	class TextCellHost extends TDataHost {}
+
+	/**
+	 * Шаблон `cell` непрозрачен, и текст остальных колонок потребитель рисует
+	 * сам: пайп `soText` — то же правило ядра, что текст ячейки без шаблона.
+	 */
+	it('своему шаблону cell тот же текст — пайп soText', async () => {
+		await renderData(TextCellHost, [MIXED], [NAME, AGE, FLAG, NOTE, TAGS])
+
+		expect([...find('.so-table-row').children].map(text)).toEqual([
 			'Анна',
 			'30',
 			'true',
