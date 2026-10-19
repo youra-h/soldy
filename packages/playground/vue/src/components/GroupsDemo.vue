@@ -62,12 +62,21 @@ const groupsSink = props.sink('props')
 			<div class="pg-col">
 				<div class="pg-col__head">Метка в данных</div>
 				<div class="pg-col__stage">
-					<PreviewStage :host="host" :component="entry.id" :bind="marked" :sink="groupsSink" />
+					<PreviewStage
+						:host="host"
+						:component="entry.id"
+						:bind="marked"
+						:sink="groupsSink"
+					/>
 				</div>
 				<CodeView
 					v-if="host.snippets"
 					:name="`${entry.label}-groups`"
-					:code="host.snippets.propSnippet(entry, 'groups', PRODUCE_GROUPS, { items: GROUPED_ITEMS })"
+					:code="
+						host.snippets.propSnippet(entry, 'groups', PRODUCE_GROUPS, {
+							items: GROUPED_ITEMS,
+						})
+					"
 					:extension="host.snippets.extension"
 				/>
 			</div>
@@ -75,7 +84,12 @@ const groupsSink = props.sink('props')
 			<div class="pg-col">
 				<div class="pg-col__head">groupBy</div>
 				<div class="pg-col__stage">
-					<PreviewStage :host="host" :component="entry.id" :bind="counted" :sink="groupsSink" />
+					<PreviewStage
+						:host="host"
+						:component="entry.id"
+						:bind="counted"
+						:sink="groupsSink"
+					/>
 				</div>
 				<CodeView
 					v-if="host.snippets"

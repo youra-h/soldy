@@ -99,7 +99,9 @@ export const PREVIEWS: Record<string, TPreview> = {
 	// из них: разметка заменила бы данные, а группы список рисует из данных
 	'list-box': (bind) => (
 		<ListBox {...bind()}>
-			{bind().items ? undefined : <For each={ITEMS}>{(item) => <ListBox.Item {...item} />}</For>}
+			{bind().items ? undefined : (
+				<For each={ITEMS}>{(item) => <ListBox.Item {...item} />}</For>
+			)}
 		</ListBox>
 	),
 
