@@ -11,13 +11,11 @@
  * случай с меню идёт отдельным окном, а широкое окно сверяет, что там
  * широкая ячейка по-прежнему занимает две дорожки.
  *
- * Строку свойства тест сверяет в окнах телефонов от 360 до 414 px, у каждой
- * строки страницы: имя стоит над контролом подписью, контрол не выходит из
- * своей строки и шириной такой же, как рядом с именем в широком окне, — во
- * всё окно он у края узкой раскладки тянулся бы почти на 700 px. В 414 px
- * вбок не прокручивалось и при двух колонках, но сетка строки была шире своей
- * коробки.
- * Широкое окно сверяет, что там имя и контрол по-прежнему рядом.
+ * Имя свойства стоит над контролом в любом окне — подпись поля сверху, — и
+ * строку тест сверяет в окнах телефонов от 360 до 414 px и в окне 900 px, у
+ * каждой строки страницы: имя над контролом, подсказка под ним, все три — от
+ * начала строки; контрол не выходит из строки и шириной один во всех окнах —
+ * во всё окно он у края узкой раскладки тянулся бы почти на 700 px.
  *
  * Шапка в окне телефона занимала полэкрана: контролы переносились в несколько
  * строк. В узком окне она теперь полоска в одну строку — кнопка меню,
@@ -131,9 +129,11 @@ const expectNoSideScroll = () => {
 
 /**
  * Шапка каждой строки страницы свойств — поле `Field`: имя свойства, коробки
- * шапки, подписи и контрола и зазор поля между строками. Коробка имени — у
- * подписи, а не у `<code>` в ней: строчная коробка ниже строки, и зазор до
- * контрола разошёлся бы на полуинтерлиньяж.
+ * шапки, подписи, контрола и подсказки и зазоры поля над контролом и над
+ * подсказкой. Подсказка есть у каждой строки: описание пропа обязательно
+ * (`shared/__tests__/manifest.spec.ts`). Коробка имени — у подписи, а не у
+ * `<code>` в ней: строчная коробка ниже строки, и зазор до контрола разошёлся
+ * бы на полуинтерлиньяж.
  */
 const propHeads = () => {
 	const heads = [...document.querySelectorAll('.pg-prop__head')]
@@ -143,18 +143,49 @@ const propHeads = () => {
 	return heads.map((head) => {
 		const name = head.querySelector(':scope > .so-field__label')
 		const control = head.querySelector(':scope > .so-field__control')
+		const helper = head.querySelector(':scope > .so-field__helper')
 
-		if (!name || !control)
-			throw new Error(`в шапке строки нет имени или контрола: ${label(head)}`)
+		if (!name || !control || !helper)
+			throw new Error(`в шапке строки нет имени, контрола или подсказки: ${label(head)}`)
 
 		return {
 			prop: name.textContent?.trim() ?? '',
 			head: head.getBoundingClientRect(),
 			name: name.getBoundingClientRect(),
 			control: control.getBoundingClientRect(),
-			gap: parseFloat(getComputedStyle(head).rowGap),
+			helper: helper.getBoundingClientRect(),
+			// Подпись сверху — столбец без `row-gap`: зазоры до контрола и до
+			// подсказки тема ставит им отступом сверху
+			above: parseFloat(getComputedStyle(control).marginBlockStart),
+			below: parseFloat(getComputedStyle(helper).marginBlockStart),
 		}
 	})
+}
+
+/**
+ * Шапка каждой строки — столбец: имя над контролом на зазоре подписи,
+ * подсказка под контролом на своём, все три — от начала строки. Контрол не
+ * выходит из строки, и ширина у него одна в любом окне.
+ */
+const expectHeadColumn = () => {
+	for (const { prop, head, name, control, helper, above, below } of propHeads()) {
+		expect(control.top - name.bottom, `${prop}: имя над контролом, зазор подписи`).toBeCloseTo(
+			above,
+			0,
+		)
+		expect(helper.top - control.bottom, `${prop}: подсказка под контролом`).toBeCloseTo(
+			below,
+			0,
+		)
+
+		expect(name.left, `${prop}: имя — от начала строки`).toBeCloseTo(head.left, 0)
+		expect(control.left, `${prop}: контрол — от начала строки`).toBeCloseTo(head.left, 0)
+		expect(helper.left, `${prop}: подсказка — от начала строки`).toBeCloseTo(head.left, 0)
+		expect(control.right, `${prop}: контрол в своей строке`).toBeLessThanOrEqual(
+			head.right + 0.5,
+		)
+		expect(control.width, `${prop}: ширина контрола`).toBeCloseTo(CONTROL_WIDTH, 0)
+	}
 }
 
 /** Ширины широкой и обычной ячеек витрины и зазор между дорожками. */
@@ -168,39 +199,23 @@ const cells = () => {
 
 describe('стенд в узком окне не прокручивается вбок', () => {
 	it.each(PHONES)(
-		'%i px, страница свойств: имя — подписью над контролом, контрол той же ширины, что в широком окне',
+		'%i px, страница свойств: имя над контролом, подсказка под ним, контрол той же ширины, что в широком окне',
 		async (width) => {
 			await open(width, '/vue/button')
 
 			expect(narrowLayout(), 'меню в выезжающей панели').toBe(true)
 
 			expectNoSideScroll()
-
-			for (const { prop, head, name, control, gap } of propHeads()) {
-				expect(
-					control.top - name.bottom,
-					`${prop}: имя над контролом, зазор подписи`,
-				).toBeCloseTo(gap, 0)
-				expect(control.right, `${prop}: контрол в своей строке`).toBeLessThanOrEqual(
-					head.right + 0.5,
-				)
-				expect(control.width, `${prop}: ширина контрола`).toBeCloseTo(CONTROL_WIDTH, 0)
-			}
+			expectHeadColumn()
 		},
 	)
 
-	it('900 px, страница свойств: имя и контрол рядом', async () => {
+	it('900 px, страница свойств: имя над контролом, подсказка под ним — как в узком окне', async () => {
 		await open(900, '/vue/button')
 
 		expect(narrowLayout(), 'меню колонкой').toBe(false)
 
-		for (const { prop, name, control } of propHeads()) {
-			expect(control.left, `${prop}: контрол справа от имени`).toBeGreaterThanOrEqual(
-				name.right,
-			)
-			expect(control.top, `${prop}: контрол на строке имени`).toBeLessThan(name.bottom)
-			expect(control.width, `${prop}: ширина контрола`).toBeCloseTo(CONTROL_WIDTH, 0)
-		}
+		expectHeadColumn()
 	})
 
 	it('375 px, витрина: широкая ячейка — в одну дорожку, превью не шире ячейки', async () => {

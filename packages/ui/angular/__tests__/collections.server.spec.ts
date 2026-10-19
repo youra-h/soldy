@@ -405,12 +405,21 @@ describe('гидратация', () => {
 const NAME: TTableColumnSource = { field: 'name', text: 'Имя', rowHeader: true }
 const AGE: TTableColumnSource = { field: 'age', text: 'Возраст', align: 'end', sortable: true }
 
-/** Таблица из данных с колонкой выбора, сортируемой колонкой и ручкой ширины. */
+/**
+ * Таблица из данных с колонкой выбора, сортируемой колонкой и ручкой ширины;
+ * имя и метка — атрибутами разметки, их база переносит на `table`.
+ */
 @Component({
 	selector: 'app-root',
 	standalone: true,
 	imports: [TTableComponent],
-	template: `<div so-table [items]="items" [columns]="columns" mode="multiple"></div>`,
+	template: `<so-table
+		[items]="items"
+		[columns]="columns"
+		mode="multiple"
+		aria-label="Сотрудники"
+		data-probe="1"
+	></so-table>`,
 })
 class TablePage {
 	readonly items = [
@@ -442,9 +451,7 @@ describe('Table · серверный рендер', () => {
 		const page = await serverPage(TablePage)
 		const ids = tableIdsOf(page)
 
-		expect(page.querySelector('div[so-table].so-table__viewport > table.so-table')).not.toBe(
-			null,
-		)
+		expect(page.querySelector('so-table.so-table__viewport > table.so-table')).not.toBe(null)
 		expect(all(page, '.so-table-row').map((row) => row.textContent?.trim())).toEqual([
 			'Анна30',
 			'Борис41',
@@ -464,6 +471,18 @@ describe('Table · серверный рендер', () => {
 
 		expect(field?.getAttribute('type')).toBe('range')
 		expect(field?.getAttribute('value')).toBe('120')
+	})
+
+	/** Атрибуты разметки база переносит на `table` и на сервере: там роль и имя таблицы. */
+	it('атрибуты потребителя — на table, а не на окне', async () => {
+		const page = await serverPage(TablePage)
+		const viewport = page.querySelector('so-table')
+		const table = page.querySelector('so-table > table.so-table')
+
+		expect(table?.getAttribute('aria-label')).toBe('Сотрудники')
+		expect(table?.getAttribute('data-probe')).toBe('1')
+		expect(viewport?.hasAttribute('aria-label')).toBe(false)
+		expect(viewport?.hasAttribute('data-probe')).toBe(false)
 	})
 })
 
@@ -491,6 +510,27 @@ describe('Table · гидратация', () => {
 		expect(tableIdsOf(document)).toEqual(server)
 		expect(error).not.toHaveBeenCalled()
 		expect(warn).not.toHaveBeenCalled()
+	})
+
+	/**
+	 * Статические атрибуты Angular ставит на узел сервера заново, а база
+	 * переносит их на `table` из разметки сервера: на окне их нет и после
+	 * гидратации.
+	 */
+	it('атрибуты потребителя — на table, а не на окне', async () => {
+		loadPage(await renderOnServer(TablePage))
+
+		const app = await hydrate(TablePage)
+
+		await app.whenStable()
+
+		const viewport = document.querySelector('so-table')
+		const table = document.querySelector('so-table > table.so-table')
+
+		expect(table?.getAttribute('aria-label')).toBe('Сотрудники')
+		expect(table?.getAttribute('data-probe')).toBe('1')
+		expect(viewport?.hasAttribute('aria-label')).toBe(false)
+		expect(viewport?.hasAttribute('data-probe')).toBe(false)
 	})
 
 	/**

@@ -224,13 +224,20 @@ describe('разметка', () => {
 		).toEqual([])
 	})
 
-	it('атрибуты потребителя — окну: оно внешний узел компонента', async () => {
+	/**
+	 * Атрибуты потребителя делятся, как у поля и у Vue: класс и стиль — окну,
+	 * внешнему узлу компонента, остальное — `table`, где роль и имя таблицы
+	 * (`createWrappedRootProps`).
+	 */
+	it('атрибуты потребителя: aria-label, id и data-* — table, класс и стиль — окну', async () => {
 		await render(() => (
 			<Table
 				items={[{ data: ANNA }]}
 				columns={[NAME]}
 				class="staff"
 				style={{ 'max-height': '320px' }}
+				aria-label="Сотрудники"
+				id="staff"
 				data-testid="staff"
 			/>
 		))
@@ -238,10 +245,14 @@ describe('разметка', () => {
 		const viewport = find('.so-table__viewport')
 		const table = find('table.so-table')
 
+		expect(table.getAttribute('aria-label')).toBe('Сотрудники')
+		expect(table.id).toBe('staff')
+		expect(table.dataset.testid).toBe('staff')
+		expect(
+			['aria-label', 'id', 'data-testid'].filter((name) => viewport.hasAttribute(name)),
+		).toEqual([])
 		expect(viewport.classList.contains('staff')).toBe(true)
-		expect(viewport.dataset.testid).toBe('staff')
 		expect(viewport.style.maxHeight).toBe('320px')
-		expect(table.hasAttribute('data-testid')).toBe(false)
 		expect(table.classList.contains('staff')).toBe(false)
 		expect(table.hasAttribute('style')).toBe(false)
 	})
@@ -260,7 +271,7 @@ describe('разметка', () => {
 	})
 
 	/** Атрибуты таблицы — мемо раскладки: смена атрибута потребителя корень не перепривязывает. */
-	it('смена атрибута окна не перепривязывает таблицу', async () => {
+	it('смена атрибута таблицы её не перепривязывает', async () => {
 		const onElementReady = vi.fn()
 		const [title, setTitle] = createSignal('a')
 
@@ -276,7 +287,8 @@ describe('разметка', () => {
 		setTitle('b')
 		await nextFrame()
 
-		expect(find('.so-table__viewport').title).toBe('b')
+		expect(find('table.so-table').title).toBe('b')
+		expect(find('.so-table__viewport').hasAttribute('title')).toBe(false)
 		expect(onElementReady).toHaveBeenCalledTimes(1)
 		expect(onElementReady).toHaveBeenLastCalledWith(find('table.so-table'))
 	})

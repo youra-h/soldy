@@ -22,9 +22,9 @@
  * него. ListBox и Tabs делят их так же: остальное — узлу списка с ролью
  * (`listbox`, `tablist`), поверх его `aria`.
  *
- * Корень таблицы стоит внутри окна: атрибуты, attachment-ы и `ref` потребителя
- * — окну, внешнему узлу, а наборы ядра и привязка к `TElementPlugin` —
- * `table`.
+ * Корень таблицы стоит внутри окна: класс, стиль и `ref` потребителя — окну,
+ * внешнему узлу, а остальные атрибуты и attachment-ы потребителя, наборы ядра
+ * и привязка к `TElementPlugin` — `table`.
  */
 
 import { describe, it, expect } from 'vitest'
@@ -52,6 +52,7 @@ import {
 	toRootForward,
 	toRootLayout,
 	toRootProps,
+	toWrappedRootProps,
 	type AccordionProps,
 	type ButtonProps,
 	type CheckBoxProps,
@@ -420,19 +421,20 @@ function tableEngine(): TTableCollection {
 }
 
 /**
- * Корень таблицы стоит внутри окна (`div.so-table__viewport`), и окно — внешний
- * узел компонента: атрибуты потребителя, его attachment-ы, класс, стиль и
- * скрытие — окну, а классы и наборы ядра — `table`, которую видят плагины и
- * тема (`toWrappedRootProps`).
+ * Корень таблицы стоит внутри окна (`div.so-table__viewport`), и атрибуты
+ * потребителя делятся, как у поля (`toWrappedRootProps`): класс, стиль и
+ * скрытие — окну, внешнему узлу компонента, остальное и attachment-ы —
+ * `table`, поверх её наборов, где роль и имя таблицы.
  */
 describe('Table: корень внутри окна', () => {
-	it('класс, стиль и атрибуты потребителя — окну, классы и наборы ядра — table', () => {
+	it('класс и стиль потребителя — окну, остальные атрибуты, классы и наборы ядра — table', () => {
 		mount(Table, {
 			engine: tableEngine(),
 			class: 'mine',
 			style: 'color: red',
 			title: 'Сотрудники',
-			dir: 'ltr',
+			id: 'staff',
+			'data-probe': '1',
 			direction: 'rtl',
 			aria_label: 'Таблица',
 		})
@@ -442,19 +444,63 @@ describe('Table: корень внутри окна', () => {
 
 		expect([...viewport.classList]).toEqual(['so-table__viewport', 'mine'])
 		expect(viewport.style.color).toBe('red')
-		expect(viewport.title).toBe('Сотрудники')
-		expect(viewport.getAttribute('dir')).toBe('ltr')
 		expect(table.classList.contains('mine')).toBe(false)
 		expect(table.classList[0]).toBe('so-table')
 		expect(table.hasAttribute('style')).toBe(false)
-		expect(table.hasAttribute('title')).toBe(false)
+		expect(table.title).toBe('Сотрудники')
+		expect(table.id).toBe('staff')
+		expect(table.dataset['probe']).toBe('1')
+		expect(
+			['title', 'id', 'data-probe', 'dir', 'aria-label'].filter((name) =>
+				viewport.hasAttribute(name),
+			),
+		).toEqual([])
 		// Наборы ядра — у таблицы: `dir` из `direction`, имя — из `aria_label`
 		expect(table.getAttribute('dir')).toBe('rtl')
 		expect(table.getAttribute('aria-label')).toBe('Таблица')
-		expect(viewport.hasAttribute('aria-label')).toBe(false)
 	})
 
-	it('attachment потребителя — на окне, element:ready — с table', async () => {
+	/** Имя пишет плагин доступного имени в `aria` таблицы, `dir` ядро — в её `attrs`. */
+	it('aria-label и dir потребителя — поверх aria_label и dir ядра', () => {
+		mount(Table, {
+			engine: tableEngine(),
+			aria_label: 'Ядро',
+			'aria-label': 'Своё',
+			direction: 'rtl',
+			dir: 'ltr',
+		})
+
+		const table = find(document, 'table.so-table', HTMLElement)
+
+		expect(table.getAttribute('aria-label')).toBe('Своё')
+		expect(table.getAttribute('dir')).toBe('ltr')
+		expect(find(document, '.so-table__viewport', HTMLElement).hasAttribute('dir')).toBe(false)
+	})
+
+	it('обработчик потребителя — на table', () => {
+		const targets: (EventTarget | null)[] = []
+
+		mount(Table, {
+			engine: tableEngine(),
+			onclick: (event: MouseEvent) => {
+				targets.push(event.currentTarget)
+			},
+		})
+
+		const table = find(document, 'table.so-table', HTMLElement)
+
+		table.click()
+
+		expect(targets).toHaveLength(1)
+		expect(targets[0]).toBe(table)
+	})
+
+	/**
+	 * Attachment потребителя — тоже «остальное», как у поля: поведение, которое
+	 * он вешает на таблицу, встаёт на `table`. Привязка корня к `TElementPlugin`
+	 * — за адаптером: `element:ready` приходит с `table`.
+	 */
+	it('attachment потребителя — на table, element:ready — с table', async () => {
 		const consumer = attachmentProbe()
 		const ready = readyProbe()
 
@@ -466,9 +512,39 @@ describe('Table: корень внутри окна', () => {
 		await nextFrame()
 
 		expect(consumer.attached).toHaveLength(1)
-		expect(consumer.attached[0]).toBe(find(document, '.so-table__viewport', HTMLElement))
+		expect(consumer.attached[0]).toBe(find(document, 'table.so-table', HTMLElement))
 		expect(ready.elements).toHaveLength(1)
 		expect(ready.elements[0]).toBe(find(document, 'table.so-table', HTMLElement))
+	})
+
+	it('делёж атрибутов окна: класс и стиль — окну, остальное и attachment-ы — корню', () => {
+		const attach = createAttachmentKey()
+		const consumer = attachmentProbe()
+		const forward = {
+			class: 'mine',
+			style: 'color: red',
+			'aria-label': 'Своё',
+			[attach]: consumer.attach,
+		}
+		const { wrapper, root } = toWrappedRootProps(
+			{ classes: ['so-table'], visible: false },
+			[{ 'aria-label': 'Ядро', role: 'grid' }],
+			forward,
+			'so-table__viewport',
+		)
+
+		expect(wrapper.class).toEqual(['so-table__viewport', 'mine'])
+		expect(wrapper.style).toEqual({
+			below: {},
+			forward: 'color: red',
+			above: { display: 'none' },
+		})
+		expect(Object.getOwnPropertySymbols(wrapper)).toEqual([])
+		expect(root['aria-label']).toBe('Своё')
+		expect(root['role']).toBe('grid')
+		expect(root.class).toEqual(['so-table', undefined])
+		expect(root.style).toEqual({ below: {}, forward: undefined, above: {} })
+		expect(Reflect.get(root, attach)).toBe(consumer.attach)
 	})
 
 	it('свойство, записанное в окно мимо разметки, переживает смену стиля потребителя и видимости', () => {

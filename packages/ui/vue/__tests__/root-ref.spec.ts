@@ -59,6 +59,7 @@ import {
 	MenuGroup,
 	MenuItem,
 	MenuSeparator,
+	MenuSubmenu,
 	NumberInput,
 	Pagination,
 	Popover,
@@ -257,6 +258,14 @@ const ROOTS: ReadonlyArray<readonly [string, (props: TProbeProps) => VNode, stri
 		'.so-menu-item',
 		'.so-menu-item',
 	],
+	// Корень пункта с подменю — пункт, а не его телепортированная панель
+	[
+		'Menu.Submenu',
+		(props) =>
+			h(Menu, null, () => h(MenuSubmenu, { value: 'share', text: 'Поделиться', ...props })),
+		'.so-menu-item',
+		'.so-menu-item',
+	],
 	[
 		'Menu.Group',
 		(props) => h(Menu, null, () => h(MenuGroup, { label: 'Вид', ...props })),
@@ -295,6 +304,7 @@ const ITEM_ROWS: Readonly<Record<string, string>> = {
 	'Tags.Item': '.so-button',
 	'Menu.Item': '.so-button',
 	'Menu.CheckboxItem': '.so-button',
+	'Menu.Submenu': '.so-button',
 }
 
 const ITEM_ROOTS = ROOTS.filter(([name]) => name in ITEM_ROWS)

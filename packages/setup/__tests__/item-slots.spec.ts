@@ -33,6 +33,7 @@ import {
 	ListBoxItemDescriptor,
 	MenuDescriptor,
 	MenuItemDescriptor,
+	MenuSubmenuDescriptor,
 	PaginationDescriptor,
 	PaginationItemDescriptor,
 	RadioGroupDescriptor,
@@ -58,6 +59,8 @@ const DESCRIPTORS: Readonly<Record<string, () => IComponentDescriptor>> = {
 	Menu: MenuDescriptor,
 	// Из данных меню рисует только действия: флажок ставят разметкой
 	'Menu.Item': MenuItemDescriptor,
+	// Пункт с подменю — владелец своих пунктов: из данных рисует их, как меню
+	'Menu.Submenu': MenuSubmenuDescriptor,
 	Select: SelectDescriptor,
 	'Select.Item': SelectItemDescriptor,
 	Tabs: TabsDescriptor,
@@ -103,6 +106,10 @@ const RELAYS: readonly TRelay[] = [
 	['Menu', 'item-leading', 'Menu.Item', 'leading', 'item'],
 	['Menu', 'item', 'Menu.Item', 'default', 'item'],
 	['Menu', 'item-trailing', 'Menu.Item', 'trailing', 'item'],
+
+	['Menu.Submenu', 'item-leading', 'Menu.Item', 'leading', 'item'],
+	['Menu.Submenu', 'item', 'Menu.Item', 'default', 'item'],
+	['Menu.Submenu', 'item-trailing', 'Menu.Item', 'trailing', 'item'],
 
 	['Select', 'item-leading', 'Select.Item', 'leading', 'item'],
 	['Select', 'item', 'Select.Item', 'default', 'item'],

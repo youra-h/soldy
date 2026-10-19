@@ -8,6 +8,7 @@ import {
 	useAdapter,
 	useExpose,
 	useCollectionAdapter,
+	useSplitAttrs,
 	VueElevatorFactory,
 	createVueAdapterContext,
 	type SetupContext,
@@ -26,9 +27,13 @@ import BaseTable, { type TableProps } from './base.component'
  * командой выбора. Кнопку сортировки рисует заголовок колонки, и её нажатие —
  * просьба колонки, которую выполняет коллекция: методов коллекции разметке
  * таблицы не нужно.
+ *
+ * Атрибуты потребителя делятся, как у поля (`useSplitAttrs`): класс и стиль —
+ * окну, остальное — `table`, где роль и имя таблицы.
  */
 export default {
 	name: '_Table',
+	inheritAttrs: false,
 	extends: BaseTable,
 	expose: useExpose(),
 	setup(props: TableProps, { emit }: SetupContext) {
@@ -60,6 +65,7 @@ export default {
 		return {
 			...refs,
 			...refsCollection,
+			...useSplitAttrs(),
 			/**
 			 * Чекбокс «выбрать все» — экземпляр, который держит таблица. Не проп
 			 * (не меняется за время жизни компонента), поэтому отдаём инстансом,

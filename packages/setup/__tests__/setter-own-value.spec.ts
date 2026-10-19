@@ -39,6 +39,7 @@ import {
 	TMenuCheckboxItem,
 	TMenuCollectionFacade,
 	TMenuItemCollectionFacade,
+	TMenuSubmenu,
 	TRadioGroup,
 	TRadioGroupCollectionFacade,
 	TRadioGroupItemCollectionFacade,
@@ -176,6 +177,18 @@ const COLLECTIONS: Readonly<Record<string, readonly [string | null, () => TMount
 		'MenuCollectionCheckboxItemDescriptor',
 		() => {
 			const facade = new TMenuCollectionFacade({}, { owner: new TMenu() })
+
+			facade.items = SOURCES.map((source) => new TMenuCheckboxItem(source))
+
+			return withItem(facade, new TMenuItemCollectionFacade())
+		},
+	],
+	// Пункты подменю — та же коллекция меню, владелец — пункт с подменю. Фасады
+	// пунктов у неё те же, что у меню, и их сверяет строка меню
+	MenuSubmenuCollectionDescriptor: [
+		null,
+		() => {
+			const facade = new TMenuCollectionFacade({}, { owner: new TMenuSubmenu() })
 
 			facade.items = SOURCES.map((source) => new TMenuCheckboxItem(source))
 

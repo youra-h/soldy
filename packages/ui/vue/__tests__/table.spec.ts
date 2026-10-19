@@ -208,27 +208,117 @@ describe('разметка', () => {
 		).toEqual([])
 	})
 
-	it('атрибуты потребителя — окну: оно внешний узел компонента', async () => {
+	/**
+	 * Атрибуты потребителя делятся, как у поля (`useSplitAttrs`): класс и стиль
+	 * — окну, внешнему узлу компонента, остальное — `table`, где роль и имя
+	 * таблицы. На окне `aria-label` называл бы узел без роли (axe —
+	 * `aria-prohibited-attr`), а у таблицы имени не было бы.
+	 */
+	it('атрибуты потребителя: aria-label, id и data-* — table, класс и стиль — окну', async () => {
 		await render(() =>
 			h(Table, {
 				items: [{ data: ANNA }],
 				columns: [NAME],
 				class: 'staff',
+				style: 'max-height: 320px',
+				'aria-label': 'Сотрудники',
+				id: 'staff',
 				'data-testid': 'staff',
 			}),
 		)
 
 		const viewport = find('.so-table__viewport')
+		const table = find('table.so-table')
 
-		expect(viewport.classList.contains('staff')).toBe(true)
-		expect(viewport.dataset.testid).toBe('staff')
-		expect(find('table.so-table').hasAttribute('data-testid')).toBe(false)
+		expect(table.getAttribute('aria-label')).toBe('Сотрудники')
+		expect(table.id).toBe('staff')
+		expect(table.dataset.testid).toBe('staff')
+		expect(
+			['aria-label', 'id', 'data-testid'].filter((name) => viewport.hasAttribute(name)),
+		).toEqual([])
+		expect([...viewport.classList]).toEqual(['so-table__viewport', 'staff'])
+		expect(viewport.style.maxHeight).toBe('320px')
+		expect(table.classList.contains('staff')).toBe(false)
+		expect(table.hasAttribute('style')).toBe(false)
+	})
+
+	/** Имя пишет плагин доступного имени в `aria` таблицы, а атрибут снаружи — поверх наборов. */
+	it('aria-label и dir потребителя — поверх aria_label и dir ядра', async () => {
+		await render(() =>
+			h(Table, {
+				items: [{ data: ANNA }],
+				columns: [NAME],
+				aria_label: 'Ядро',
+				'aria-label': 'Своё',
+				direction: 'rtl',
+				dir: 'ltr',
+			}),
+		)
+
+		const table = find('table.so-table')
+
+		expect(table.getAttribute('aria-label')).toBe('Своё')
+		expect(table.getAttribute('dir')).toBe('ltr')
+		expect(find('.so-table__viewport').hasAttribute('dir')).toBe(false)
+	})
+
+	it('обработчик потребителя — на table', async () => {
+		const targets: (EventTarget | null)[] = []
+
+		await render(() =>
+			h(Table, {
+				items: [{ data: ANNA }],
+				columns: [NAME],
+				onClick: (event: MouseEvent) => targets.push(event.currentTarget),
+			}),
+		)
+
+		const table = find('table.so-table')
+
+		table.click()
+
+		expect(targets).toEqual([table])
 	})
 
 	it('скрытая таблица прячет окно: v-show — на окне', async () => {
 		await render(() => h(Table, { items: [{ data: ANNA }], columns: [NAME], visible: false }))
 
 		expect(find('.so-table__viewport').style.display).toBe('none')
+	})
+
+	/**
+	 * Стиль потребителя Vue ставит окну по свойствам: свойство, которое записали
+	 * в окно мимо разметки, переживает смену стиля и видимости.
+	 */
+	it('свойство, записанное в окно мимо разметки, переживает смену стиля и видимости', async () => {
+		const style = ref('color: red')
+		const visible = ref(true)
+
+		await render(() =>
+			h(Table, {
+				items: [{ data: ANNA }],
+				columns: [NAME],
+				style: style.value,
+				visible: visible.value,
+			}),
+		)
+
+		const viewport = find('.so-table__viewport')
+
+		viewport.style.setProperty('--so-probe', '1')
+		style.value = 'color: blue'
+		visible.value = false
+		await settle()
+
+		expect(viewport.style.display).toBe('none')
+
+		visible.value = true
+		await settle()
+
+		expect(viewport.style.color).toBe('blue')
+		expect(viewport.style.display).toBe('')
+		expect(viewport.style.getPropertyValue('--so-probe')).toBe('1')
+		expect(find('table.so-table').style.color).toBe('')
 	})
 })
 

@@ -33,7 +33,15 @@ const LIST_SELECTOR = '[role="listbox"]'
  * ставить фокус подсвеченному пункту): строку оба ищут одним правилом.
  */
 export function rowOf(elements: TCollectionElements | null, uid: string | number): Element | null {
-	return elements?.getElementByUid(uid)?.querySelector(ROW_SELECTOR) ?? null
+	return rowIn(elements?.getElementByUid(uid) ?? null)
+}
+
+/**
+ * Строка внутри узла элемента — тем же правилом, что `rowOf`, когда узел уже
+ * на руках: свой корень у пункта с подменю — узел пункта в меню над ним.
+ */
+export function rowIn(node: Element | null): Element | null {
+	return node?.querySelector(ROW_SELECTOR) ?? null
 }
 
 /**

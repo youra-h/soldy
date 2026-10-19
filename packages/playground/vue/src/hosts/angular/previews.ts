@@ -272,7 +272,7 @@ export const PREVIEWS: Record<string, TPreview> = {
 	// высотой 320 px на сорок строк. Окно таблицы — на странице Virtual
 	table: {
 		component: TTableComponent,
-		element: tag('div'),
+		element: tag('so-table'),
 		frame: (bind) =>
 			bind.stickyHead ? 'width: 100%; height: 320px; overflow: auto' : 'width: 100%',
 		props: (bind) => ({
@@ -349,7 +349,7 @@ export const PREVIEWS: Record<string, TPreview> = {
 				markup('flex: 1; min-width: 0; height: 320px; overflow: auto', [
 					{
 						component: TTableComponent,
-						element: tag('div'),
+						element: tag('so-table'),
 						props: {
 							items: TABLE_MANY_ROWS,
 							columns: TABLE_COLUMNS,

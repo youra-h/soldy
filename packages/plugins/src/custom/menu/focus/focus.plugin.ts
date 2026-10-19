@@ -3,6 +3,9 @@ import type { IPluginContext } from '../../../base'
 import { TPopoverFocusPlugin } from '../../popover/focus'
 import type { IOverlayOpenOptions } from '../../overlay/types'
 import { TMenuKeyboardPlugin } from '../keyboard'
+// Не из бочки `../submenu-focus`: подписка на Tab подменю — внутренний
+// инструмент двух моделей фокуса меню, а не API пакета
+import { listenSubmenuTabs } from '../submenu-focus/focus.plugin'
 import { focusFirst, tabStopsAfter } from '../../../utils'
 
 /** Возвращать фокус некуда. */
@@ -32,7 +35,9 @@ const NOWHERE = (): readonly Element[] => []
  *   ведёт к первой остановке после корня — будто панель стоит в документе
  *   сразу за триггером — и фокус не возвращает; остановок после корня нет —
  *   Tab не гасится, фокус уводит браузер. Shift+Tab закрывает с возвратом:
- *   предыдущая остановка перед панелью — сам триггер;
+ *   предыдущая остановка перед панелью — сам триггер. Tab в подменю — так
+ *   же: о нём сообщает модель фокуса подменю (`tab`), и меню закрывается
+ *   целиком, со всеми подменю;
  * - **куда вернуть фокус, когда возвращать некуда** — фокус был на `body`.
  *   Запасной возврат Popover — на кнопку в корне — годится кнопке. У
  *   контекстного меню в корне область, а она бывает нефокусируемой, и её
@@ -54,6 +59,9 @@ export class TMenuFocusPlugin extends TPopoverFocusPlugin {
 
 		this._syncFallback()
 		this._listenTo(this._owner?.events, 'change:openOn', () => this._syncFallback())
+
+		// Tab в подменю — Tab из меню: подменю корня меню не знают
+		listenSubmenuTabs(ctx, (event) => this._leave(event))
 	}
 
 	override destroy(): void {
@@ -82,6 +90,20 @@ export class TMenuFocusPlugin extends TPopoverFocusPlugin {
 
 		// Tab с триггера уводит фокус мимо панели сам: уход фокуса закрывает меню
 		if (!root || !panel || !active || !panel.contains(active)) return
+
+		this._leave(event)
+	}
+
+	/**
+	 * Tab из меню — из его панели или из подменю: Shift+Tab закрывает с
+	 * возвратом на триггер, Tab — без возврата, к остановке за корнем.
+	 */
+	private _leave(event: KeyboardEvent): void {
+		const root = this._root
+		// Панель — до закрытия: закрытие снимает слушатели вместе с ней
+		const panel = this._panel
+
+		if (!root || !panel) return
 
 		if (event.shiftKey) {
 			this._close()

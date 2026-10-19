@@ -9,6 +9,7 @@ import {
 	createEngineTags,
 	filterOf,
 	groupOf,
+	listOf,
 	plainOf,
 	selectOf,
 	selectionOf,
@@ -67,6 +68,12 @@ describe('охранник отдаёт расширение коллекции,
 		expect(tagsOf(engine)).toBe(engine.extensions.tags)
 	})
 
+	it('listOf ListBox — его расширение списка', () => {
+		const engine = createEngineListBox()
+
+		expect(listOf(engine)).toBe(engine.extensions.list)
+	})
+
 	it('selectionOf календаря — выбор дат', () => {
 		const engine = createEngineCalendar()
 
@@ -83,6 +90,7 @@ describe('расширения нет — undefined', () => {
 		expect(filterOf(engine)).toBeUndefined()
 		expect(groupOf(createEngineTabs())).toBeUndefined()
 		expect(selectOf(createEngineListBox())).toBeUndefined()
+		expect(listOf(createEngineSelect())).toBeUndefined()
 	})
 
 	it('искать негде — контекста или движка нет', () => {

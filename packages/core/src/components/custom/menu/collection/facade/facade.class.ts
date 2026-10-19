@@ -9,7 +9,7 @@ import type {
 	TMenuCollectionFacadeProps,
 } from '../types'
 import type { IMenuItem } from '../../item/types'
-import type { IMenu } from '../../types'
+import type { IMenuOwner } from '../../types'
 
 /**
  * Фасад коллекции меню.
@@ -32,7 +32,7 @@ export class TMenuCollectionFacade extends TGroupCollectionFacade<
 > {
 	constructor(
 		props: TMenuCollectionFacadeProps = {},
-		options: TCollectionFacadeOptions<TMenuCollectionFacadeEngine, IMenu> = {},
+		options: TCollectionFacadeOptions<TMenuCollectionFacadeEngine, IMenuOwner<any>> = {},
 	) {
 		// Движок мог прийти снаружи собранным на любом уровне — `completeEngine`
 		// доставит в него то, чего не хватает меню. Именно здесь, а не в теле:

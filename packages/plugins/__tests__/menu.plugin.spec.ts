@@ -23,6 +23,7 @@ import {
 	TElementPlugin,
 	TListItemPlugin,
 	TMenuFocusPlugin,
+	TMenuHoverPlugin,
 	TMenuKeyboardPlugin,
 	TMenuPointerPlugin,
 	TPluginBundle,
@@ -89,6 +90,7 @@ async function setup(entries: TEntry[] = ACTIONS, props: Partial<IMenuProps> = {
 		.use(TDismissPlugin, { focusOutside: true })
 		.use(TMenuKeyboardPlugin)
 		.use(TMenuPointerPlugin)
+		.use(TMenuHoverPlugin)
 		.use(TMenuFocusPlugin)
 
 	for (const [name, value] of Object.entries(pluginOf(bundle, TDismissPlugin).ownerAttribute)) {

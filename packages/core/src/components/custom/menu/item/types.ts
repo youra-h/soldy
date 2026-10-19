@@ -24,9 +24,18 @@ export interface IMenuItemProps extends IValueControlProps<string | number> {
 	text?: string
 }
 
+/**
+ * Пункт меню любого вида — действие, флажок, пункт с подменю.
+ *
+ * Карта событий по умолчанию стёрта (`any`), как у констрейнта: коллекция
+ * меню держит пункты разных видов, у пункта с подменю карта шире — своя
+ * открытость и выбор в подменю, — а шина инвариантна по карте, и пункт с
+ * подменю иначе не встал бы в коллекцию пунктов. Точная карта — у класса
+ * (`TMenuItem`, `TMenuSubmenu`) и у интерфейса вида.
+ */
 export interface IMenuItem<
 	TProps extends IMenuItemProps = IMenuItemProps,
-	TEvents extends TMenuItemEvents = TMenuItemEvents,
+	TEvents extends TMenuItemEvents = any,
 > extends IValueControl<string | number, TProps, TEvents> {
 	/** Текст пункта */
 	text: string

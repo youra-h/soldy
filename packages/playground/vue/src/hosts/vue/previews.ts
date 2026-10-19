@@ -93,7 +93,8 @@ const ITEMS = COLLECTION_ITEMS
 
 /**
  * Пункты меню разметкой: группа флажков с подписью, действия с подсказками
- * сочетаний, выключенное действие и «опасный» пункт своего варианта.
+ * сочетаний, подменю с подменю внутри, выключенное действие и «опасный» пункт
+ * своего варианта.
  */
 const menuItems = () => [
 	h(Menu.Group, { label: 'Вид' }, () => [
@@ -103,6 +104,14 @@ const menuItems = () => [
 	h(Menu.Separator),
 	h(Menu.Item, { value: 'edit', text: 'Изменить' }, { trailing: () => 'Ctrl+E' }),
 	h(Menu.Item, { value: 'copy', text: 'Дублировать' }, { trailing: () => 'Ctrl+D' }),
+	h(Menu.Submenu, { value: 'share', text: 'Поделиться' }, () => [
+		h(Menu.Item, { value: 'link', text: 'Ссылка' }),
+		h(Menu.Item, { value: 'mail', text: 'Почта' }),
+		h(Menu.Submenu, { value: 'messengers', text: 'Мессенджеры' }, () => [
+			h(Menu.Item, { value: 'telegram', text: 'Telegram' }),
+			h(Menu.Item, { value: 'whatsapp', text: 'WhatsApp' }),
+		]),
+	]),
 	h(Menu.Item, { value: 'archive', text: 'В архив', disabled: true }),
 	h(Menu.Separator),
 	h(
@@ -399,9 +408,9 @@ export const PREVIEWS: Record<string, TPreview> = {
 	// вызова. Режим область берёт из пропсов колонки, как таблица своё окно:
 	// у колонки экземпляра его нет, и там меню вызывают над кнопкой. Пункты —
 	// разметкой: группа флажков с подписью, действия с подсказками сочетаний,
-	// выключенное действие и «опасный» пункт своего варианта. Пришли данными
-	// (`items` блока групп страницы) — из них: разметка заменила бы данные, а
-	// группы меню рисует из данных
+	// подменю с подменю внутри, выключенное действие и «опасный» пункт своего
+	// варианта. Пришли данными (`items` блока групп страницы) — из них:
+	// разметка заменила бы данные, а группы меню рисует из данных
 	menu: (bind) =>
 		h(Menu as Component, bind, {
 			trigger: ({ triggerAria, triggerDataset }: TMenuTriggerScope) =>

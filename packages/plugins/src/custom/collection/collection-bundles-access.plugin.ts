@@ -1,7 +1,8 @@
+import { batchOf } from '@soldy-ui/core'
 import { TBasePlugin } from '../../base'
 import type { IPluginContext, IPluginBundle } from '../../base'
 import { TCollectionBundlesPlugin } from './bundles.plugin'
-import type { TCollectionEngine } from '@soldy-ui/core'
+import type { IComponentView, TCollectionEngine } from '@soldy-ui/core'
 
 /**
  * TCollectionBundlesAccess — базовый плагин доступа к bundles элементов коллекции.
@@ -40,7 +41,7 @@ export abstract class TCollectionBundlesAccess extends TBasePlugin<any> {
 
 	/** Элемент коллекции по порядковому индексу. */
 	protected getItemByIndex(index: number): unknown {
-		return this.bundles?.engine?.extensions.batch.items[index]
+		return batchOf<IComponentView>(this.bundles?.engine)?.items[index]
 	}
 
 	/** Все bundles в порядке элементов коллекции. */

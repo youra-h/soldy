@@ -272,6 +272,14 @@ const dragAndDrop = new TDragAndDrop()
 	<Menu.CheckboxItem :selected="'yes'" />
 	<Menu.CheckboxItem selected />
 
+	<!-- @vue-expect-error — открытость подменю — флаг, а не строка -->
+	<Menu.Submenu :open="'yes'" />
+	<Menu.Submenu open />
+
+	<!-- @vue-expect-error — у подменю пункты данными — массивом -->
+	<Menu.Submenu :items="'link'" />
+	<Menu.Submenu :items="[{ value: 'link', text: 'Ссылка' }]" />
+
 	<!-- @vue-expect-error — подпись группы строкой -->
 	<Menu.Group :label="42" />
 	<Menu.Group label="Вид" />

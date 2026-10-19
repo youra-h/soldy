@@ -21,6 +21,7 @@ import {
 	TListBoxGroup,
 	TMenu,
 	TMenuGroup,
+	TMenuSubmenu,
 	TPopover,
 	TRadioGroup,
 	TRadioGroupCollectionFacade,
@@ -45,6 +46,7 @@ import {
 	TFieldIdsPlugin,
 	TItemGroupIdsPlugin,
 	TMenuIdsPlugin,
+	TMenuSubmenuIdsPlugin,
 	TModalIdsPlugin,
 	TPluginBundle,
 	TPopoverIdsPlugin,
@@ -131,6 +133,25 @@ describe('оверлеи', () => {
 
 		expect(menu.triggerAria.toObject()).toEqual({})
 		expect(menu.aria.has('aria-labelledby')).toBe(false)
+	})
+
+	it('Menu.Submenu: строка и панель подменю ссылаются друг на друга — имя подменю от строки', () => {
+		const submenu = new TMenuSubmenu({ text: 'Поделиться' })
+
+		new TPluginBundle(submenu, 'm1').use(TMenuSubmenuIdsPlugin)
+
+		expect(submenu.aria.toObject()).toEqual({
+			role: 'menuitem',
+			'aria-haspopup': 'menu',
+			'aria-expanded': 'false',
+			id: 'm1-row',
+			'aria-controls': 'm1-panel',
+		})
+		expect(submenu.panelAria.toObject()).toEqual({
+			role: 'menu',
+			id: 'm1-panel',
+			'aria-labelledby': 'm1-row',
+		})
 	})
 
 	/**
