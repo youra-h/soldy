@@ -239,6 +239,23 @@ describe('разметка, на которую опирается тема', ()
 
 		expectOwnParts(root(), ITEMS.length)
 	})
+
+	/**
+	 * Выключенный набор тема гасит корнем, вместе с панелями: `data-disabled`
+	 * пишет ядро, а разметка кладёт его на корень, а не на список табов.
+	 */
+	it('выключенность — data-disabled корня', () => {
+		const { root, render } = mount(<Tabs items={ITEMS} disabled />)
+
+		expect(root().dataset.disabled).toBe('true')
+		expect(
+			find(root(), ':scope > .so-tabs__list', HTMLElement).dataset.disabled,
+		).toBeUndefined()
+
+		render(<Tabs items={ITEMS} disabled={false} />)
+
+		expect(root().dataset.disabled).toBe('false')
+	})
 })
 
 /**

@@ -11,11 +11,15 @@
  * случай с меню идёт отдельным окном, а широкое окно сверяет, что там
  * широкая ячейка по-прежнему занимает две дорожки.
  *
- * Имя свойства стоит над контролом в любом окне — подпись поля сверху, — и
- * строку тест сверяет в окнах телефонов от 360 до 414 px и в окне 900 px, у
- * каждой строки страницы: имя над контролом, подсказка под ним, все три — от
- * начала строки; контрол не выходит из строки и шириной один во всех окнах —
- * во всё окно он у края узкой раскладки тянулся бы почти на 700 px.
+ * Имя свойства стоит над полем ввода или выбора в любом окне — подпись поля
+ * сверху, — а у переключателя слева от него, в одну строку с ним: под именем
+ * узкий Switch стоял один в пустой строке. Строку тест сверяет в окнах
+ * телефонов от 360 до 414 px и в окне 900 px, у каждой строки страницы: имя
+ * над полем или рядом с переключателем, подсказка под ними, имя и подсказка —
+ * от начала строки; поле не выходит из строки и шириной одно во всех окнах —
+ * во всё окно оно у края узкой раскладки тянулось бы почти на 700 px. Длинное
+ * имя рядом с переключателем в окне телефона не переносится: колонка имени —
+ * по имени, а не до 40 % строки, как у темы по умолчанию.
  *
  * Шапка в окне телефона занимала полэкрана: контролы переносились в несколько
  * строк. В узком окне она теперь полоска в одну строку — кнопка меню,
@@ -60,7 +64,7 @@ const PHONES = [360, 375, 414]
 /** Ширина сетки витрины, с которой в неё помещаются две дорожки: 2 × 280 + 16. */
 const TWO_TRACKS = 576
 
-/** Ширина контрола в строке свойства (`.pg-prop__head`) — одна в любом окне. */
+/** Ширина поля под именем в строке свойства (`.pg-prop__head`) — одна в любом окне. */
 const CONTROL_WIDTH = 220
 
 const settle = () => new Promise((resolve) => setTimeout(resolve, 300))
@@ -91,6 +95,24 @@ const narrowLayout = () => document.querySelector('.pg--narrow') !== null
 
 /** Имя узла для сообщения: тег и классы. */
 const label = (node: Element) => [node.tagName.toLowerCase(), ...node.classList].join('.')
+
+/** Середина коробки по вертикали. */
+const middleOf = (box: DOMRect) => box.top + box.height / 2
+
+/** Прямоугольники текста узла — по одному на строку. */
+const textRects = (node: Element) => {
+	const range = document.createRange()
+
+	range.selectNodeContents(node)
+
+	return [...range.getClientRects()]
+}
+
+/** Сколько строк занимает текст узла. */
+const linesOf = (node: Element) => new Set(textRects(node).map((rect) => Math.round(rect.top))).size
+
+/** Ширина текста узла одной строкой: перенесённый — его строки подряд. */
+const textWidthOf = (node: Element) => textRects(node).reduce((sum, rect) => sum + rect.width, 0)
 
 /**
  * Что вылезает за край содержимого области — только для сообщения упавшей
@@ -129,11 +151,13 @@ const expectNoSideScroll = () => {
 
 /**
  * Шапка каждой строки страницы свойств — поле `Field`: имя свойства, коробки
- * шапки, подписи, контрола и подсказки и зазоры поля над контролом и над
- * подсказкой. Подсказка есть у каждой строки: описание пропа обязательно
- * (`shared/__tests__/manifest.spec.ts`). Коробка имени — у подписи, а не у
- * `<code>` в ней: строчная коробка ниже строки, и зазор до контрола разошёлся
- * бы на полуинтерлиньяж.
+ * шапки, подписи, контрола и подсказки, дорожка переключателя, если редактор
+ * — Switch, и зазоры поля. Подсказка есть у каждой строки: описание пропа
+ * обязательно (`shared/__tests__/manifest.spec.ts`). Коробка имени — у
+ * подписи, а не у `<code>` в ней: строчная коробка ниже строки, и зазор до
+ * контрола разошёлся бы на полуинтерлиньяж. Строки и ширину текста имени
+ * тест считает по тексту `<code>`: прямоугольники подписи несли бы ещё и
+ * коробку самого `<code>`, и ширина вышла бы вдвое.
  */
 const propHeads = () => {
 	const heads = [...document.querySelectorAll('.pg-prop__head')]
@@ -142,33 +166,64 @@ const propHeads = () => {
 
 	return heads.map((head) => {
 		const name = head.querySelector(':scope > .so-field__label')
+		const text = name?.querySelector('.pg-prop__name')
 		const control = head.querySelector(':scope > .so-field__control')
 		const helper = head.querySelector(':scope > .so-field__helper')
 
-		if (!name || !control || !helper)
+		if (!name || !text || !control || !helper)
 			throw new Error(`в шапке строки нет имени, контрола или подсказки: ${label(head)}`)
+
+		const track = control.querySelector(':scope > .so-switch > .so-switch__track')
+		const grid = getComputedStyle(head)
 
 		return {
 			prop: name.textContent?.trim() ?? '',
 			head: head.getBoundingClientRect(),
 			name: name.getBoundingClientRect(),
+			lines: linesOf(text),
+			textWidth: textWidthOf(text),
 			control: control.getBoundingClientRect(),
 			helper: helper.getBoundingClientRect(),
+			// Видимая часть переключателя; у строки с полем ввода или выбора его нет
+			track: track?.getBoundingClientRect() ?? null,
 			// Подпись сверху — столбец без `row-gap`: зазоры до контрола и до
 			// подсказки тема ставит им отступом сверху
 			above: parseFloat(getComputedStyle(control).marginBlockStart),
 			below: parseFloat(getComputedStyle(helper).marginBlockStart),
+			// Подпись в начале строки — сетка: переключатель от имени отделяет
+			// зазор колонок, подсказку от них — зазор строк
+			beside: parseFloat(grid.columnGap),
+			under: parseFloat(grid.rowGap),
 		}
 	})
 }
 
+type THead = ReturnType<typeof propHeads>[number]
+
+/** Строка со Switch: у неё есть дорожка переключателя. */
+const isToggle = (head: THead): head is THead & { track: DOMRect } => head.track !== null
+
 /**
- * Шапка каждой строки — столбец: имя над контролом на зазоре подписи,
- * подсказка под контролом на своём, все три — от начала строки. Контрол не
- * выходит из строки, и ширина у него одна в любом окне.
+ * Шапки строк страницы. Строки каждого вида на странице есть — иначе
+ * проверка вида прошла бы впустую.
+ *
+ * Строка с полем — столбец: имя над контролом на зазоре подписи, подсказка
+ * под контролом на своём, все три — от начала строки. Контрол не выходит из
+ * строки, и ширина у него одна в любом окне.
+ *
+ * Строка со Switch — имя в начале строки, в одну строку текста, за ним на
+ * зазоре колонок переключатель, по центру строки имени; подсказка под ними
+ * на зазоре строк — от начала строки, как имя, а не от переключателя.
  */
-const expectHeadColumn = () => {
-	for (const { prop, head, name, control, helper, above, below } of propHeads()) {
+const expectHeads = () => {
+	const heads = propHeads()
+	const toggles = heads.filter(isToggle)
+	const fields = heads.filter((head) => !isToggle(head))
+
+	expect(fields.length, 'строки с полем ввода или выбора').toBeGreaterThan(0)
+	expect(toggles.length, 'строки со Switch').toBeGreaterThan(0)
+
+	for (const { prop, head, name, control, helper, above, below } of fields) {
 		expect(control.top - name.bottom, `${prop}: имя над контролом, зазор подписи`).toBeCloseTo(
 			above,
 			0,
@@ -186,6 +241,25 @@ const expectHeadColumn = () => {
 		)
 		expect(control.width, `${prop}: ширина контрола`).toBeCloseTo(CONTROL_WIDTH, 0)
 	}
+
+	for (const { prop, head, name, lines, control, helper, track, beside, under } of toggles) {
+		expect(name.left, `${prop}: имя — от начала строки`).toBeCloseTo(head.left, 0)
+		expect(lines, `${prop}: имя — в одну строку`).toBe(1)
+		expect(track.left - name.right, `${prop}: переключатель — за именем`).toBeCloseTo(beside, 0)
+		expect(
+			Math.abs(middleOf(track) - middleOf(name)),
+			`${prop}: переключатель — на строке имени`,
+		).toBeLessThanOrEqual(1)
+		expect(track.right, `${prop}: переключатель в своей строке`).toBeLessThanOrEqual(
+			head.right + 0.5,
+		)
+
+		expect(
+			helper.top - Math.max(name.bottom, control.bottom),
+			`${prop}: подсказка под именем и переключателем`,
+		).toBeCloseTo(under, 0)
+		expect(helper.left, `${prop}: подсказка — от начала строки`).toBeCloseTo(head.left, 0)
+	}
 }
 
 /** Ширины широкой и обычной ячеек витрины и зазор между дорожками. */
@@ -199,23 +273,46 @@ const cells = () => {
 
 describe('стенд в узком окне не прокручивается вбок', () => {
 	it.each(PHONES)(
-		'%i px, страница свойств: имя над контролом, подсказка под ним, контрол той же ширины, что в широком окне',
+		'%i px, страница свойств: имя над полем, у переключателя — рядом, подсказка — от начала строки',
 		async (width) => {
 			await open(width, '/vue/button')
 
 			expect(narrowLayout(), 'меню в выезжающей панели').toBe(true)
 
 			expectNoSideScroll()
-			expectHeadColumn()
+			expectHeads()
 		},
 	)
 
-	it('900 px, страница свойств: имя над контролом, подсказка под ним — как в узком окне', async () => {
+	it('900 px, страница свойств: шапки строк — как в узком окне', async () => {
 		await open(900, '/vue/button')
 
 		expect(narrowLayout(), 'меню колонкой').toBe(false)
 
-		expectHeadColumn()
+		expectHeads()
+	})
+
+	/**
+	 * Колонку имени у строки со Switch тема по умолчанию держит не шире 40 %
+	 * поля, и в окне телефона длинное имя рвалось посреди слова, хотя за
+	 * переключателем оставалось полстроки. Имена Button коротки — длинные есть
+	 * у плагинов Dialog (`hideOutside_enabled`).
+	 */
+	it('360 px, страница свойств: длинное имя у переключателя — в одну строку', async () => {
+		await open(360, '/vue/dialog')
+
+		expect(narrowLayout(), 'меню в выезжающей панели').toBe(true)
+
+		const widest = Math.max(
+			...propHeads()
+				.filter(isToggle)
+				.map(({ head, textWidth }) => textWidth / head.width),
+		)
+
+		expect(widest, 'у переключателя есть имя шире 40 % строки').toBeGreaterThan(0.4)
+
+		expectNoSideScroll()
+		expectHeads()
 	})
 
 	it('375 px, витрина: широкая ячейка — в одну дорожку, превью не шире ячейки', async () => {
@@ -340,18 +437,6 @@ const choose = async (control: Element, text: string) => {
 	if (!(option instanceof HTMLElement)) throw new Error(`в списке нет «${text}»`)
 
 	await userEvent.click(option)
-}
-
-/** Середина коробки по вертикали. */
-const middleOf = (box: DOMRect) => box.top + box.height / 2
-
-/** Сколько строк занимает текст узла. */
-const linesOf = (node: Element) => {
-	const range = document.createRange()
-
-	range.selectNodeContents(node)
-
-	return new Set([...range.getClientRects()].map((rect) => Math.round(rect.top))).size
 }
 
 describe('шапка в узком окне', () => {

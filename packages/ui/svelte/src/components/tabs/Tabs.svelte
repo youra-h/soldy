@@ -16,8 +16,9 @@
 
 	Набор `aria` владельца — это список табов: `role="tablist"` и
 	`aria-orientation` пишет ядро, имя из `aria_label` — `TAriaPlugin`. Корень
-	его не получает: рядом со списком там лежат панели. На корне — `attrs`,
-	как у Vue.
+	его не получает: рядом со списком там лежат панели. На корне — `attrs` и
+	`dataset`, как у Vue: выключенный набор тема гасит корнем, вместе с
+	панелями (`data-disabled`).
 
 	Атрибуты потребителя делятся, как у поля и у Vue: класс и стиль — корню,
 	остальное — списку табов, поверх его `aria`, и attachment потребителя —
@@ -46,7 +47,11 @@
 {#if state.rendered}
 	<Dynamic
 		tag="div"
-		attributes={toRootProps(state, [state.attrs], toRootForward(binding.forwardProps))}
+		attributes={toRootProps(
+			state,
+			[state.attrs, state.dataset],
+			toRootForward(binding.forwardProps),
+		)}
 		attach={binding.attachElement}
 	>
 		<div

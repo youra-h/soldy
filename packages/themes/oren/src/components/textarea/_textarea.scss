@@ -31,11 +31,12 @@
 // быть не должно: поле растёт вместе с набором, и переход отставал бы от
 // текста.
 //
-// Наведение красит рамку только у включённого поля: корень — `div`, и
-// выключенность тема читает с вложенного поля, как у Input
-// (`input.$input-enabled`). Нативный `disabled` поля ставит и выключенный
-// предок `<fieldset>` — его ядро не видит, а псевдокласс видит.
-$enabled: ':not(:has(> textarea:disabled))';
+// Выключенное поле гаснет рамкой целиком, с полем и счётчиком, а наведение
+// красит рамку только у включённого. Корень — `div`, и выключенность тема
+// читает с вложенного поля, как у Input (`input.$input-disabled`). Нативный
+// `disabled` поля ставит и выключенный предок `<fieldset>` — его ядро не
+// видит, а псевдокласс видит.
+$disabled: ':has(> textarea:disabled)';
 
 .so-textarea {
 	$this: &;
@@ -52,7 +53,7 @@ $enabled: ':not(:has(> textarea:disabled))';
 	// и без него обязан выглядеть умолчанием, как DateInput.
 	@include mixines.textarea-size('normal');
 
-	@include input.field-frame('textarea');
+	@include input.field-frame('textarea', $disabled);
 
 	// Кольцо — пока фокус в поле, мышью или клавиатурой: у поля ввода
 	// `:focus-visible` горит и от нажатия мышью, как у Input.
@@ -92,10 +93,9 @@ $enabled: ':not(:has(> textarea:disabled))';
 			@apply text-so-component-placeholder;
 		}
 
-		// Выключенное — гаснет текст, как ввод Input: рамка и поверхность
-		// остаются. Ручки нет: размер выключенного поля не меняют.
+		// Выключенное гаснет рамкой целиком (`input.field-frame`), с текстом и
+		// счётчиком. Здесь — курсор и ручка: размер выключенного поля не меняют.
 		&:disabled {
-			@apply opacity-so-component-disabled;
 			@apply cursor-default;
 			resize: none;
 		}
@@ -135,11 +135,6 @@ $enabled: ':not(:has(> textarea:disabled))';
 		color: var(--so-negative-800);
 	}
 
-	// Выключенное поле гасит и счётчик — всё содержимое рамки, как текст.
-	&:has(> textarea:disabled) > #{$this}__counter {
-		@apply opacity-so-component-disabled;
-	}
-
 	&--required {
 		&#{$this}::after {
 			@include required.required-indicator();
@@ -148,14 +143,14 @@ $enabled: ':not(:has(> textarea:disabled))';
 
 	@each $variant in input.$variants {
 		&--variant-#{$variant} {
-			@include input.input-variant($variant, $enabled);
+			@include input.input-variant($variant, $disabled);
 		}
 	}
 
 	// Невалидное поле — `data-invalid` корня, его пишет поле формы `Field`:
 	// рамка ошибки, как у Input (`input.field-invalid`).
 	&[data-invalid='true'] {
-		@include input.field-invalid('textarea', $enabled);
+		@include input.field-invalid('textarea', $disabled);
 	}
 
 	@each $size, $_ in input.$sizes {
@@ -183,5 +178,5 @@ $enabled: ':not(:has(> textarea:disabled))';
 // он совпадает с базой. Нулевая специфичность — вариант перекрывает базу, не
 // споря с ней.
 :where(.so-textarea) {
-	@include input.input-variant('neutral', $enabled);
+	@include input.input-variant('neutral', $disabled);
 }

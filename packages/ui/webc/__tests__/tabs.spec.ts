@@ -344,6 +344,22 @@ describe('разметка, на которую опирается тема', ()
 		expect(rendered.map((node) => (isTab(node) ? node.ctrl : null))).toEqual(el.state.shown)
 		expect(tabs().map((row) => row.textContent)).toEqual(['A', 'B', 'C'])
 	})
+
+	/**
+	 * Выключенный набор тема гасит корнем, вместе с панелями: `data-disabled`
+	 * пишет ядро, а разметка кладёт его на корень, а не на список табов.
+	 */
+	it('выключенность — data-disabled корня', async () => {
+		const el = await mountTabs({ items: ITEMS, disabled: true })
+
+		expect(el.dataset['disabled']).toBe('true')
+		expect(find(el, ':scope > .so-tabs__list', HTMLElement).dataset['disabled']).toBeUndefined()
+
+		el.disabled = false
+		await flush()
+
+		expect(el.dataset['disabled']).toBe('false')
+	})
 })
 
 /**
