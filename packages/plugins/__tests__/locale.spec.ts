@@ -83,6 +83,14 @@ describe('готовые локали', () => {
 	)
 
 	it.each(Object.entries(PACKS))(
+		'%s: счётчик Textarea несёт места для набранного и предела',
+		(_, locale) => {
+			expect(locale.translations.textarea.counter).toContain('{count}')
+			expect(locale.translations.textarea.counter).toContain('{max}')
+		},
+	)
+
+	it.each(Object.entries(PACKS))(
 		'%s: имя региона тостов называет клавишу, которая к ним ведёт',
 		(_, locale) => {
 			expect(locale.translations.toasts.region).toContain('F8')

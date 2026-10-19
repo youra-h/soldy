@@ -45,6 +45,7 @@ import {
 	TagsDescriptor,
 	TagsCollectionDescriptor,
 	TextableDescriptor,
+	TextareaDescriptor,
 	ToastsDescriptor,
 	ToastsCollectionDescriptor,
 	TooltipDescriptor,
@@ -83,6 +84,14 @@ export const COMPONENTS: readonly TComponentEntry[] = [
 		showcase: true,
 		span: 1,
 		description: 'Текстовое поле со слотами под иконки и кнопки',
+	},
+	{
+		id: 'textarea',
+		label: 'Textarea',
+		descriptor: TextareaDescriptor,
+		showcase: true,
+		span: 1,
+		description: 'Многострочное поле: высота по тексту до предела строк и счётчик символов',
 	},
 	{
 		id: 'check-box',

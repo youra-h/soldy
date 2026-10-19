@@ -22,7 +22,7 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import { TListHeightPlugin, TListScrollPlugin } from '@soldy-ui/plugins'
+import { TListHeightPlugin, TListScrollPlugin, TTextareaAutoresizePlugin } from '@soldy-ui/plugins'
 import {
 	ListBoxCollectionDescriptor,
 	ListBoxCollectionItemDescriptor,
@@ -30,6 +30,7 @@ import {
 	ListBoxItemDescriptor,
 	SelectCollectionDescriptor,
 	SelectDescriptor,
+	TextareaDescriptor,
 } from '../content/descriptors'
 import {
 	TCollectionExtension,
@@ -210,6 +211,37 @@ describe('сторож: сборка списка без узла и без requ
 
 		expect(select.instance.maxRows).toBe(2)
 		expect(valuesOf(batch.items)).toEqual(['a', 'b', 'c'])
+
+		unmount()
+	})
+})
+
+/**
+ * Авторост Textarea работает на кадр: мерит текст поля и пишет его высоту.
+ * Сборка поля идёт и на сервере, и значение, строки, потолок и размер там
+ * меняются, а узла нет — кадр плагин не планирует, высоту поставит `ready`.
+ */
+describe('сторож: сборка Textarea без узла и без requestAnimationFrame', () => {
+	/** Иначе сценарий ниже прошёл бы без того, кто работает на кадр. */
+	it('плагин автороста стоит в наборе Textarea', () => {
+		const textarea = createAdapterContext(TextareaDescriptor(), { props: {} })
+
+		expect(textarea.bundle?.get(TTextareaAutoresizePlugin)).toBeDefined()
+
+		textarea.destroy()
+	})
+
+	it('сборка с авторостом, приём, смена value, rows, maxRows, size и autoresize, уничтожение', () => {
+		const props = { autoresize: true, rows: 2, maxRows: 4, value: 'a', counter: true }
+		const textarea = createAdapterContext(TextareaDescriptor(), { props })
+		const { exchange, unmount } = accept(textarea)
+
+		exchange.inputs.full({ ...props, value: 'a\nb\nc', rows: 3, maxRows: 6, size: 'lg' })
+		exchange.inputs.full({ ...props, autoresize: false })
+
+		expect(textarea.instance.value).toBe('a')
+		expect(textarea.instance.rows).toBe(2)
+		expect(textarea.instance.autoresize).toBe(false)
 
 		unmount()
 	})
