@@ -62,11 +62,8 @@ const PHONES = [360, 375, 414]
 /** Ширина сетки витрины, с которой в неё помещаются две дорожки: 2 × 280 + 16. */
 const TWO_TRACKS = 576
 
-/** Колонка контрола в строке свойства (`.pg-prop__head`) — одна в любом окне. */
+/** Ширина контрола в строке свойства (`.pg-prop__head`) — одна в любом окне. */
 const CONTROL_WIDTH = 220
-
-/** Зазор под именем свойства в узком окне — как у подписи над полем Field. */
-const NAME_GAP = 4
 
 const settle = () => new Promise((resolve) => setTimeout(resolve, 300))
 
@@ -132,15 +129,20 @@ const expectNoSideScroll = () => {
 	expect(main.scrollWidth, `вылезает: ${overflowing(main)}`).toBeLessThanOrEqual(main.clientWidth)
 }
 
-/** Шапка каждой строки страницы свойств: имя свойства и коробки шапки, имени и контрола. */
+/**
+ * Шапка каждой строки страницы свойств — поле `Field`: имя свойства, коробки
+ * шапки, подписи и контрола и зазор поля между строками. Коробка имени — у
+ * подписи, а не у `<code>` в ней: строчная коробка ниже строки, и зазор до
+ * контрола разошёлся бы на полуинтерлиньяж.
+ */
 const propHeads = () => {
 	const heads = [...document.querySelectorAll('.pg-prop__head')]
 
 	if (heads.length === 0) throw new Error('строк свойств на странице нет')
 
 	return heads.map((head) => {
-		const name = head.querySelector('.pg-prop__name')
-		const control = head.querySelector('.pg-prop__control')
+		const name = head.querySelector(':scope > .so-field__label')
+		const control = head.querySelector(':scope > .so-field__control')
 
 		if (!name || !control)
 			throw new Error(`в шапке строки нет имени или контрола: ${label(head)}`)
@@ -150,6 +152,7 @@ const propHeads = () => {
 			head: head.getBoundingClientRect(),
 			name: name.getBoundingClientRect(),
 			control: control.getBoundingClientRect(),
+			gap: parseFloat(getComputedStyle(head).rowGap),
 		}
 	})
 }
@@ -173,11 +176,11 @@ describe('стенд в узком окне не прокручивается в
 
 			expectNoSideScroll()
 
-			for (const { prop, head, name, control } of propHeads()) {
+			for (const { prop, head, name, control, gap } of propHeads()) {
 				expect(
 					control.top - name.bottom,
 					`${prop}: имя над контролом, зазор подписи`,
-				).toBeCloseTo(NAME_GAP, 0)
+				).toBeCloseTo(gap, 0)
 				expect(control.right, `${prop}: контрол в своей строке`).toBeLessThanOrEqual(
 					head.right + 0.5,
 				)
@@ -278,14 +281,17 @@ const openPanel = async (title: string): Promise<HTMLElement> => {
 	return node
 }
 
+/** Подпись контрола — подпись его поля `Field`. */
+const CAPTION = '.pg__control > .so-field__label'
+
 /** Подписи контролов в порядке разметки. */
 const labelsOf = (scope: Element) =>
-	[...scope.querySelectorAll('.pg__control-label')].map((node) => node.textContent?.trim())
+	[...scope.querySelectorAll(CAPTION)].map((node) => node.textContent?.trim())
 
 /** Контрол по подписи. */
 const controlOf = (scope: Element, label: string): HTMLElement => {
 	const found = [...scope.querySelectorAll('.pg__control')].find(
-		(node) => node.querySelector('.pg__control-label')?.textContent?.trim() === label,
+		(node) => node.querySelector(CAPTION)?.textContent?.trim() === label,
 	)
 
 	if (!(found instanceof HTMLElement)) throw new Error(`контрола «${label}» нет`)
@@ -416,7 +422,7 @@ describe('шапка в узком окне', () => {
 
 		for (const label of SETTINGS) {
 			const control = controlOf(settings, label)
-			const caption = boxIn(control, '.pg__control-label')
+			const caption = boxIn(control, CAPTION)
 			const field = boxIn(control, ':is(.so-select, .so-switch)')
 
 			expect(caption.bottom, `${label}: подпись над контролом`).toBeLessThanOrEqual(field.top)

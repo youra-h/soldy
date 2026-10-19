@@ -190,11 +190,35 @@ const ringNames = (row: DOMWrapper<Element>) =>
 
 /** Текст в поле строки — то, что человек видит в редакторе пропа. */
 function fieldText(row: DOMWrapper<Element>): string {
-	const field = row.get('.pg-prop__control input').element
+	const field = row.get('.pg-prop__head > .so-field__control input').element
 
 	if (!(field instanceof HTMLInputElement)) throw new Error('у строки нет поля ввода')
 
 	return field.value
+}
+
+/**
+ * Строки, чья шапка не связана с редактором. Шапка — поле формы `Field`, и
+ * связывает его само: `for` подписи ведёт на `<input>` редактора, а `id`
+ * подсказки с описанием пропа стоит в `aria-describedby` того же `<input>`.
+ * Описание — из строки, а не из DOM: пропавшая подсказка тоже находка.
+ */
+function unlinkedHeads(wrapper: VueWrapper): string[] {
+	return wrapper.findAllComponents(PropRow).flatMap((row) => {
+		const { name, description } = row.props('control')
+		const input = row.get('.pg-prop__head > .so-field__control input').element
+		const target = row.get('.pg-prop__head > .so-field__label').attributes('for')
+		const helper = row.find('.pg-prop__head > .so-field__helper')
+		const described = input.getAttribute('aria-describedby')?.split(/\s+/) ?? []
+		const labelled = input.id !== '' && target === input.id
+		const explained =
+			description === '' || (helper.exists() && described.includes(helper.element.id))
+
+		return [
+			...(labelled ? [] : [`${name}: подпись не ведёт на поле`]),
+			...(explained ? [] : [`${name}: описания нет в aria-describedby поля`]),
+		]
+	})
 }
 
 /**
@@ -316,7 +340,7 @@ describe('страница компонента', () => {
 	)
 
 	it.each(PAGES)(
-		'%s/%s открывается и рисует строку на каждый проп',
+		'%s/%s открывается и рисует строку на каждый проп, имя и описание — у её редактора',
 		async (framework, id, entry) => {
 			const wrapper = await openPage(framework, id)
 
@@ -328,6 +352,7 @@ describe('страница компонента', () => {
 				componentControls.length + collectionControls.length + pluginControls.length
 
 			expect(wrapper.findAll('.pg-prop')).toHaveLength(rows)
+			expect(unlinkedHeads(wrapper)).toEqual([])
 			expect(firstLines()).toEqual([])
 		},
 	)
@@ -687,7 +712,7 @@ describe('пресет строки', () => {
 		async (framework) => {
 			const wrapper = await openPage(framework, 'dialog')
 			const row = rowOf(wrapper, 'offset')
-			const field = row.find('.pg-prop__control input')
+			const field = row.find('.pg-prop__head > .so-field__control input')
 			const tops = async () =>
 				(await dialogPanels(row)).map((panel) =>
 					panel.style.getPropertyValue('--so-dialog-offset-top'),
@@ -996,7 +1021,7 @@ describe('код колонок', () => {
 		async (framework) => {
 			const expected = WIDTH_CODE[framework]
 			const wrapper = await openPage(framework, 'skeleton')
-			const field = rowOf(wrapper, 'width').find('.pg-prop__control input')
+			const field = rowOf(wrapper, 'width').find('.pg-prop__head > .so-field__control input')
 			const views = () => rowComponentOf(wrapper, 'width').findAllComponents(CodeView)
 			const codes = () => views().map((view) => view.props('code'))
 
