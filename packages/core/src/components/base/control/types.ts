@@ -8,6 +8,12 @@ export type TControlEvents = TStylableEvents & {
 	'change:focused': (value: boolean) => void
 	/** Запись `focused` — подправить или отменить (`TChangeEvent`) */
 	'change:focused:before': (e: TChangeEvent<boolean>) => void
+	/**
+	 * change:labelable — элемент с `aria` стал или перестал быть labelable: у
+	 * `aria` на корне — сменился тег, у ползунка — число ручек. По нему поле
+	 * формы `Field` переводит подпись между `for` и ссылкой
+	 */
+	'change:labelable': (value: boolean) => void
 }
 
 export interface IControlProps extends IStylableProps {
@@ -23,7 +29,7 @@ export interface IControl<
 	focused: boolean
 	/**
 	 * Labelable ли элемент с `aria`: подпись называет его `for`, а не ссылкой
-	 * `aria-labelledby`, как группу
+	 * `aria-labelledby`, как группу. Сменился — `change:labelable`
 	 */
 	readonly labelable: boolean
 }

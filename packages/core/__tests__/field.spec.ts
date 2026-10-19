@@ -10,6 +10,7 @@ import {
 	TRadioGroup,
 	TRating,
 	TSelect,
+	TSlider,
 	TSwitch,
 	TValueControl,
 } from '@soldy-ui/core'
@@ -365,7 +366,9 @@ describe('TDateInput · итог invalid', () => {
 
 /**
  * Labelable ли элемент с `aria`: подпись поля формы называет его `for` и
- * передаёт ему клик. Решает тег элемента с `aria`, а не корня.
+ * передаёт ему клик. Решает тег элемента с `aria`, а не корня, у ползунка —
+ * ещё и число ручек. Сменился — `change:labelable`: по нему поле переводит
+ * подпись между `for` и ссылкой.
  */
 describe('TControl · labelable', () => {
 	it.each([
@@ -374,6 +377,7 @@ describe('TControl · labelable', () => {
 		['CheckBox', () => new TCheckBox()],
 		['Switch', () => new TSwitch()],
 		['Rating', () => new TRating()],
+		['Slider с одной ручкой', () => new TSlider()],
 		['Button', () => new TButton()],
 	])('%s — labelable', (_name, create) => {
 		expect(create().labelable).toBe(true)
@@ -383,6 +387,7 @@ describe('TControl · labelable', () => {
 		['DateInput', () => new TDateInput()],
 		['DatePicker', () => new TDatePicker()],
 		['RadioGroup', () => new TRadioGroup()],
+		['Slider с несколькими ручками', () => new TSlider({ value: [20, 80] })],
 	])('%s — группа, не labelable', (_name, create) => {
 		expect(create().labelable).toBe(false)
 	})
@@ -395,6 +400,33 @@ describe('TControl · labelable', () => {
 		button.tag = 'button'
 
 		expect(button.labelable).toBe(true)
+	})
+
+	it('тег сменил labelable — change:labelable за change:tag; не сменил — события нет', () => {
+		const button = new TButton({ tag: 'div' })
+		const seen: string[] = []
+
+		button.events.on('change:tag', () => seen.push('tag'))
+		button.events.on('change:labelable', (value) => seen.push(`labelable: ${value}`))
+
+		// div → button → div → span: labelable сменили только первые две записи
+		button.tag = 'button'
+		button.tag = 'div'
+		button.tag = 'span'
+
+		expect(seen).toEqual(['tag', 'labelable: true', 'tag', 'labelable: false', 'tag'])
+	})
+
+	it('aria на вложенном поле: тег корня labelable не меняет — события нет', () => {
+		const input = new TInput()
+		const changed = vi.fn()
+
+		input.events.on('change:labelable', changed)
+
+		input.tag = 'span'
+
+		expect(input.labelable).toBe(true)
+		expect(changed).not.toHaveBeenCalled()
 	})
 
 	it('Select — aria на поле: aria-disabled рядом с нативным disabled не пишется', () => {
