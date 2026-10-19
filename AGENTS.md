@@ -532,9 +532,10 @@ Setup — всё, что у шести адаптеров общее: описа
 
 **Имя элемента стоит на теге внешнего узла компонента.** Обычно это и его
 корень, а у таблицы внешний узел — окно вокруг корня `table`:
-`<div is="so-table">`, корень строит шаблон, и атрибуты потребителя достаются
-окну, как у Vue и React (`TRootSpec.wrapped`, `ui/webc/src/adapter/runtime/`);
-части таблицы — `<th is="so-table-column">` и `<tr is="so-table-row">`.
+`<div is="so-table">`, корень строит шаблон, и атрибуты потребителя делятся,
+как у Vue и React: класс и стиль — окну, остальное — `table`
+(`TRootSpec.wrapped` и `control`, `ui/webc/src/adapter/runtime/`); части
+таблицы — `<th is="so-table-column">` и `<tr is="so-table-row">`.
 Компоненту, у которого во Vue и React своего узла нет, расширять нечего: он
 автономный элемент без коробки и без `is`, как провайдер локали, — окно
 `<so-virtual>` (`defineAutonomousElement`, `displayContents`), как

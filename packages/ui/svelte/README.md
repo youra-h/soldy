@@ -23,8 +23,9 @@ slot is `children`.
 > panel into `target` (`body` by default) on the client; with `contained` it stays in place, on
 > the server too. A field gives its class and style to the root and every other attribute to its
 > `<input>`; an item of a collection gives them to its row; a list box and tabs give them to the
-> list itself, `[role=listbox]` or `[role=tablist]`; a table gives them, and its `ref`, to the
-> scroll viewport around the `<table>`. `Label` names the control it wraps; `LocaleProvider`
+> list itself, `[role=listbox]` or `[role=tablist]`; a table gives them to the `<table>` itself,
+> and its class, style and `ref` to the scroll viewport around it. `Label` names the control it
+> wraps; `LocaleProvider`
 > gives a subtree its language and library strings, such as the name of the clear button of
 > `Input`. See [the adapter table](https://github.com/youra-h/soldy#components).
 

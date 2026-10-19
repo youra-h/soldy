@@ -10,10 +10,11 @@
  * чекбоксам доходят до модели и возвращаются в разметку — и тогда, когда
  * модель выбор отменила.
  *
- * Своё у Angular — разметка. Элемент потребителя (`<div so-table>`) — окно
+ * Своё у Angular — разметка. Элемент компонента (`<so-table>`) — окно
  * таблицы, а корень — `table` в шаблоне (корень внутри обёртки, `'wrapped'`):
- * атрибуты потребителя и скрытие — окну, классы, наборы и `TElementPlugin` —
- * таблице. Заголовки и строки — `th[so-table-column]` и `tr[so-table-row]`,
+ * класс, стиль потребителя и скрытие — окну, остальные его атрибуты, классы,
+ * наборы и `TElementPlugin` — таблице. Заголовки и строки —
+ * `th[so-table-column]` и `tr[so-table-row]`,
  * их рисует сама таблица. Слоты `header` и `cell` — шаблоны, и шаблон,
  * заданный таблице, рисуется в каждом заголовке и ячейке вместо текста — и
  * там, где ничего не нарисовал, как сниппет у Svelte. «Перерисовка ячеек»
@@ -200,7 +201,7 @@ abstract class TEngineHost {
 @Component({
 	standalone: true,
 	imports: [TTableComponent],
-	template: `<div so-table [engine]="engine()"></div>`,
+	template: `<so-table [engine]="engine()"></so-table>`,
 })
 class EngineHost extends TEngineHost {}
 
@@ -230,7 +231,7 @@ abstract class TDataHost {
 @Component({
 	standalone: true,
 	imports: [TTableComponent],
-	template: `<div so-table [items]="items()" [columns]="columns()"></div>`,
+	template: `<so-table [items]="items()" [columns]="columns()"></so-table>`,
 })
 class DataHost extends TDataHost {}
 
@@ -300,15 +301,14 @@ describe('разметка', () => {
 	@Component({
 		standalone: true,
 		imports: [TTableComponent],
-		template: `<div
-			so-table
+		template: `<so-table
 			[items]="items"
 			[columns]="columns"
 			stickyHead
 			mode="single"
 			aria_label="Сотрудники"
 			(soElementReady)="ready.push($event)"
-		></div>`,
+		></so-table>`,
 	})
 	class ViewportHost {
 		readonly items = [{ data: ANNA }]
@@ -320,18 +320,16 @@ describe('разметка', () => {
 		await render(ViewportHost)
 
 		const table = find('table.so-table')
-		const viewport = find('[so-table]')
+		const viewport = find('so-table')
 
 		expect(table.parentElement).toBe(viewport)
-		expect(viewport.tagName).toBe('DIV')
+		expect(viewport.localName).toBe('so-table')
 		expect(table.dataset['stickyHead']).toBe('true')
 		expect(table.getAttribute('aria-label')).toBe('Сотрудники')
-		// У окна — только свой класс и селектор: ни наборов, ни имени, ни входов
+		// У окна — только свой класс: ни наборов, ни имени, ни входов
 		expect(viewport.className).toBe('so-table__viewport')
 		expect(
-			viewport
-				.getAttributeNames()
-				.filter((name) => !['class', 'style', 'so-table'].includes(name)),
+			viewport.getAttributeNames().filter((name) => !['class', 'style'].includes(name)),
 		).toEqual([])
 	})
 
@@ -349,30 +347,40 @@ describe('разметка', () => {
 	@Component({
 		standalone: true,
 		imports: [TTableComponent],
-		template: `<div
-			so-table
+		template: `<so-table
 			[items]="items"
 			[columns]="columns"
 			class="staff"
 			style="max-height: 320px"
+			aria-label="Сотрудники"
+			id="staff"
 			data-testid="staff"
-		></div>`,
+		></so-table>`,
 	})
 	class ConsumerHost {
 		readonly items = [{ data: ANNA }]
 		readonly columns = [NAME]
 	}
 
-	it('атрибуты потребителя — окну: оно внешний узел компонента', async () => {
+	/**
+	 * Атрибуты потребителя делятся, как у поля: класс и стиль — окну, внешнему
+	 * узлу компонента, остальные статические атрибуты разметки база переносит
+	 * на `table`, где роль и имя таблицы.
+	 */
+	it('атрибуты потребителя: aria-label, id и data-* — table, класс и стиль — окну', async () => {
 		await render(ConsumerHost)
 
 		const viewport = find('.so-table__viewport')
 		const table = find('table.so-table')
 
+		expect(table.getAttribute('aria-label')).toBe('Сотрудники')
+		expect(table.id).toBe('staff')
+		expect(table.dataset['testid']).toBe('staff')
+		expect(
+			['aria-label', 'id', 'data-testid'].filter((name) => viewport.hasAttribute(name)),
+		).toEqual([])
 		expect(viewport.classList.contains('staff')).toBe(true)
-		expect(viewport.dataset['testid']).toBe('staff')
 		expect(viewport.style.maxHeight).toBe('320px')
-		expect(table.hasAttribute('data-testid')).toBe(false)
 		expect(table.classList.contains('staff')).toBe(false)
 		expect(table.classList.contains('so-table__viewport')).toBe(false)
 		expect(table.hasAttribute('style')).toBe(false)
@@ -381,7 +389,7 @@ describe('разметка', () => {
 	@Component({
 		standalone: true,
 		imports: [TTableComponent],
-		template: `<div so-table [items]="items" [columns]="columns" [visible]="visible()"></div>`,
+		template: `<so-table [items]="items" [columns]="columns" [visible]="visible()"></so-table>`,
 	})
 	class HiddenHost {
 		readonly items = [{ data: ANNA }]
@@ -418,7 +426,7 @@ describe('раскладка колонок', () => {
 	@Component({
 		standalone: true,
 		imports: [TTableComponent],
-		template: `<div so-table [engine]="engine()" [columnFit]="fit()"></div>`,
+		template: `<so-table [engine]="engine()" [columnFit]="fit()"></so-table>`,
 	})
 	class FitHost extends TEngineHost {
 		readonly fit = signal<TTableColumnFit | undefined>(undefined)
@@ -484,11 +492,11 @@ describe('слоты', () => {
 	@Component({
 		standalone: true,
 		imports: [TTableComponent, SlotDirective],
-		template: `<div so-table [items]="items()" [columns]="columns()">
+		template: `<so-table [items]="items()" [columns]="columns()">
 			<ng-template slot="header" let-column="column"
 				><b>{{ column.field }}:{{ column.text }}</b></ng-template
 			>
-		</div>`,
+		</so-table>`,
 	})
 	class HeaderHost extends TDataHost {}
 
@@ -506,13 +514,13 @@ describe('слоты', () => {
 	@Component({
 		standalone: true,
 		imports: [TTableComponent, SlotDirective],
-		template: `<div so-table [engine]="engine()">
+		template: `<so-table [engine]="engine()">
 			<ng-template slot="header" let-column="column" let-text="text"
 				><button type="button" class="menu" (click)="opened.push(column.field)">
 					{{ text }}
 				</button></ng-template
 			>
-		</div>`,
+		</so-table>`,
 	})
 	class HeaderButtonHost extends TEngineHost {
 		readonly opened: string[] = []
@@ -540,11 +548,11 @@ describe('слоты', () => {
 	@Component({
 		standalone: true,
 		imports: [TTableComponent, SlotDirective],
-		template: `<div so-table [items]="items()" [columns]="columns()">
+		template: `<so-table [items]="items()" [columns]="columns()">
 			<ng-template slot="header" let-column="column" let-text="text" let-sortable="sortable"
 				><b>{{ column.field }}:{{ text }}:{{ sortable }}</b></ng-template
 			>
-		</div>`,
+		</so-table>`,
 	})
 	class HeaderScopeHost extends TDataHost {}
 
@@ -564,13 +572,13 @@ describe('слоты', () => {
 	@Component({
 		standalone: true,
 		imports: [TTableComponent, SlotDirective],
-		template: `<div so-table [items]="items()" [columns]="columns()">
+		template: `<so-table [items]="items()" [columns]="columns()">
 			<ng-template slot="header" let-column="column">
 				@if (column.field === 'age') {
 					<b>{{ column.text }}</b>
 				}
 			</ng-template>
-		</div>`,
+		</so-table>`,
 	})
 	class OpaqueHeaderHost extends TDataHost {}
 
@@ -588,7 +596,7 @@ describe('слоты', () => {
 	@Component({
 		standalone: true,
 		imports: [TTableComponent, SlotDirective],
-		template: `<div so-table [items]="items()" [columns]="columns()">
+		template: `<so-table [items]="items()" [columns]="columns()">
 			<ng-template slot="cell" let-row="row" let-column="column" let-value="value">
 				@if (column.field === 'age') {
 					<i>{{ idOf(row.data) }}/{{ value }}</i>
@@ -596,7 +604,7 @@ describe('слоты', () => {
 					{{ value }}
 				}
 			</ng-template>
-		</div>`,
+		</so-table>`,
 	})
 	class CellHost extends TDataHost {
 		readonly idOf = idOf
@@ -644,7 +652,7 @@ describe('слоты', () => {
 	@Component({
 		standalone: true,
 		imports: [TTableComponent, SlotDirective, TextPipe],
-		template: `<div so-table [items]="items()" [columns]="columns()">
+		template: `<so-table [items]="items()" [columns]="columns()">
 			<ng-template slot="cell" let-column="column" let-value="value">
 				@if (column.field === 'age') {
 					<i>{{ value }}</i>
@@ -652,7 +660,7 @@ describe('слоты', () => {
 					{{ value | soText }}
 				}
 			</ng-template>
-		</div>`,
+		</so-table>`,
 	})
 	class TextCellHost extends TDataHost {}
 
@@ -675,9 +683,9 @@ describe('слоты', () => {
 	@Component({
 		standalone: true,
 		imports: [TTableComponent],
-		template: `<div so-table [items]="items()" [columns]="columns()" mode="multiple">
+		template: `<so-table [items]="items()" [columns]="columns()" mode="multiple">
 			<p slot="empty">Нет данных</p>
-		</div>`,
+		</so-table>`,
 	})
 	class EmptyHost extends TDataHost {}
 
@@ -767,7 +775,7 @@ describe('сортировка', () => {
 		standalone: true,
 		imports: [TTableComponent, LocaleProviderDirective],
 		template: `<ng-container so-locale-provider [locale]="locale()">
-			<div so-table [engine]="engine()"></div>
+			<so-table [engine]="engine()"></so-table>
 		</ng-container>`,
 	})
 	class LocaleHost extends TEngineHost {
@@ -803,7 +811,7 @@ describe('сортировка', () => {
 	@Component({
 		standalone: true,
 		imports: [TTableComponent],
-		template: `<div so-table [engine]="engine()" disabled></div>`,
+		template: `<so-table [engine]="engine()" disabled></so-table>`,
 	})
 	class DisabledHost extends TEngineHost {}
 
@@ -959,7 +967,7 @@ describe('колонка выбора', () => {
 	@Component({
 		standalone: true,
 		imports: [TTableComponent],
-		template: `<div so-table [ctrl]="owner" [engine]="engine()"></div>`,
+		template: `<so-table [ctrl]="owner" [engine]="engine()"></so-table>`,
 	})
 	class SizedHost extends TEngineHost {
 		readonly owner = new TTable({ size: 'lg' })
@@ -1006,7 +1014,7 @@ describe('имена чекбоксов', () => {
 		standalone: true,
 		imports: [TTableComponent, LocaleProviderDirective],
 		template: `<ng-container so-locale-provider [locale]="locale()">
-			<div so-table [engine]="engine()"></div>
+			<so-table [engine]="engine()"></so-table>
 		</ng-container>`,
 	})
 	class LocaleHost extends TEngineHost {
@@ -1075,7 +1083,7 @@ describe('ручка ширины', () => {
 	@Component({
 		standalone: true,
 		imports: [TTableComponent],
-		template: `<div so-table [items]="items()" [columns]="columns()" disabled></div>`,
+		template: `<so-table [items]="items()" [columns]="columns()" disabled></so-table>`,
 	})
 	class DisabledDataHost extends TDataHost {}
 
@@ -1106,11 +1114,10 @@ describe('ручка ширины', () => {
 	@Component({
 		standalone: true,
 		imports: [TTableComponent],
-		template: `<div
-			so-table
+		template: `<so-table
 			[engine]="engine()"
 			(soColumnResize)="resizes.push($event)"
-		></div>`,
+		></so-table>`,
 	})
 	class ResizeHost extends TEngineHost {
 		readonly resizes: TTableColumnResize[] = []
@@ -1175,7 +1182,7 @@ describe('перестановка колонок', () => {
 	@Component({
 		standalone: true,
 		imports: [TTableComponent],
-		template: `<div so-table [engine]="engine()" (soColumnMove)="moves.push($event)"></div>`,
+		template: `<so-table [engine]="engine()" (soColumnMove)="moves.push($event)"></so-table>`,
 	})
 	class MoveHost extends TEngineHost {
 		readonly moves: TTableColumnMove[] = []
@@ -1200,7 +1207,7 @@ describe('перестановка колонок', () => {
 	@Component({
 		standalone: true,
 		imports: [TTableComponent],
-		template: `<div so-table [engine]="engine()" [reorderPreview]="preview()"></div>`,
+		template: `<so-table [engine]="engine()" [reorderPreview]="preview()"></so-table>`,
 	})
 	class PreviewHost extends TEngineHost {
 		readonly preview = signal<TTableReorderPreview>('head')
@@ -1297,13 +1304,12 @@ describe('сетка', () => {
 	@Component({
 		standalone: true,
 		imports: [TTableComponent],
-		template: `<div
-			so-table
+		template: `<so-table
 			[items]="items()"
 			[columns]="columns()"
 			mode="multiple"
 			grid
-		></div>`,
+		></so-table>`,
 	})
 	class GridHost extends TDataHost {}
 
@@ -1335,7 +1341,7 @@ describe('сетка', () => {
 	@Component({
 		standalone: true,
 		imports: [TTableComponent],
-		template: `<div so-table [items]="items()" [columns]="columns()" mode="multiple"></div>`,
+		template: `<so-table [items]="items()" [columns]="columns()" mode="multiple"></so-table>`,
 	})
 	class PlainHost extends TDataHost {}
 
@@ -1391,7 +1397,7 @@ describe('перерисовка ячеек', () => {
 	@Component({
 		standalone: true,
 		imports: [TTableComponent, SlotDirective],
-		template: `<div so-table [engine]="engine()" [aria_label]="label()">
+		template: `<so-table [engine]="engine()" [aria_label]="label()">
 			@if (marked()) {
 				<ng-template slot="cell" let-value="value"
 					><i class="probe">{{ value }}!</i></ng-template
@@ -1401,7 +1407,7 @@ describe('перерисовка ячеек', () => {
 					><i class="probe">{{ value }}</i></ng-template
 				>
 			}
-		</div>`,
+		</so-table>`,
 	})
 	class ProbeHost extends TEngineHost {
 		readonly label = signal<string | undefined>(undefined)
@@ -1616,7 +1622,7 @@ describe('окно', () => {
 	@Component({
 		standalone: true,
 		imports: [TTableComponent, TVirtualComponent],
-		template: `<so-virtual><div so-table [engine]="engine()"></div></so-virtual>`,
+		template: `<so-virtual><so-table [engine]="engine()"></so-table></so-virtual>`,
 	})
 	class WindowHost extends TEngineHost {}
 
@@ -1709,12 +1715,11 @@ describe('закреплённая шапка', () => {
 	@Component({
 		standalone: true,
 		imports: [TTableComponent],
-		template: `<div
-			so-table
+		template: `<so-table
 			[items]="items()"
 			[columns]="columns()"
 			[stickyHead]="sticky()"
-		></div>`,
+		></so-table>`,
 	})
 	class StickyHost extends TDataHost {
 		readonly sticky = signal(false)
@@ -1739,7 +1744,7 @@ describe('закреплённая шапка', () => {
 	@Component({
 		standalone: true,
 		imports: [TTableComponent],
-		template: `<div so-table [ctrl]="owner" [engine]="engine()"></div>`,
+		template: `<so-table [ctrl]="owner" [engine]="engine()"></so-table>`,
 	})
 	class OwnerHost extends TEngineHost {
 		readonly owner = new TTable()

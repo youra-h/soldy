@@ -287,9 +287,16 @@ describe('Table · серверный рендер', () => {
 		expect(field?.attributes.value).toBe('120')
 	})
 
-	it('окно таблицы — внешний узел, корень и наборы — у table', () => {
+	it('окно таблицы — внешний узел, корень, наборы и атрибуты потребителя — у table', () => {
 		const { body } = render(Table, {
-			props: { items: ROWS, columns: [NAME], class: 'staff', aria_label: 'Сотрудники' },
+			props: {
+				items: ROWS,
+				columns: [NAME],
+				class: 'staff',
+				aria_label: 'Сотрудники',
+				id: 'staff',
+				'data-probe': '1',
+			},
 		})
 		const [viewport] = withClass(body, 'so-table__viewport')
 		const [table] = withClass(body, 'so-table')
@@ -299,8 +306,11 @@ describe('Table · серверный рендер', () => {
 		expect(viewport?.name).toBe('div')
 		expect(classes(viewport)).toEqual(['so-table__viewport', 'staff'])
 		expect(viewport?.attributes['aria-label']).toBeUndefined()
+		expect(viewport?.attributes['id']).toBeUndefined()
 		expect(table?.name).toBe('table')
 		expect(table?.attributes['aria-label']).toBe('Сотрудники')
+		expect(table?.attributes['id']).toBe('staff')
+		expect(table?.attributes['data-probe']).toBe('1')
 		expect(classes(table)).not.toContain('staff')
 	})
 })

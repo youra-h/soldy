@@ -1647,7 +1647,7 @@ Select стоит здесь особняком: он единственный, 
 
 There is no `adapter/static/`: React takes prop names from the descriptor types, not from runtime declarations.
 
-- `adapter/common/` — `ReactProfile` (`naming: ReactNaming`, `defaultSlot: 'children'`) и `ReactNaming`, который целиком собран из общих стратегий: `prop: underscorePropNaming`, `event: callbackEventNaming`; `toAriaProps` (HTML-имена атрибутов наборов → имена пропов React: `tabindex` → `tabIndex`); `toRootProps` / `toRootLayout` (корень компонента в одном порядке, см. ниже), `toWrappedRootProps` (корень внутри своей обёртки — окно таблицы вокруг `table`: обёртке атрибуты потребителя и скрытие, корню классы, наборы и `ref`); `renderSlot` / `TSlotContent`
+- `adapter/common/` — `ReactProfile` (`naming: ReactNaming`, `defaultSlot: 'children'`) и `ReactNaming`, который целиком собран из общих стратегий: `prop: underscorePropNaming`, `event: callbackEventNaming`; `toAriaProps` (HTML-имена атрибутов наборов → имена пропов React: `tabindex` → `tabIndex`); `toRootProps` / `toRootLayout` (корень компонента в одном порядке, см. ниже), `toWrappedRootProps` (корень внутри своей обёртки — окно таблицы вокруг `table`: обёртке класс, стиль и `ref` потребителя и скрытие, корню классы, наборы, поверх них остальные атрибуты потребителя и `ref` адаптера); `renderSlot` / `TSlotContent`
   - props: same as Vue (`namespace_name`); events: `onXxx` callbacks (`change:visible` → `onChangeVisible`, `element:ready` → `onElementReady`)
   - тип-зеркало `TCallbackEventProps` живёт в `packages/setup/protected/naming` (им же пользуются Svelte и Solid). **Descriptor = единственный источник типов**: React НЕ импортирует `IXxxProps`/`TXxxEvents`/`TXxxPluginEvents` из core/plugins. Component event props = `EventProps<typeof XxxDescriptor>` (`src/types.ts`) = `DescriptorCallbackEvents<typeof XxxDescriptor>` из `@soldy-ui/setup` — `TCallbackEventProps<DescriptorAllEvents<…>>`, где `DescriptorAllEvents` включает свои + namespaced события плагинов из tuple (`TPlugins` phantom на `IComponentDescriptor`).
 - `adapter/runtime/` — `useAdapterContext(factory)` (отдаёт фабрике `create` — `createAdapterContext` с основой `id` от `useId` — и лифт компонента; фабрика возвращает контекст или несколько — у коллекции свой и фасада; хук держит их одной единицей, уничтожает в обратном порядке и собирает заново фабрикой последнего рендера, когда React повторяет установку эффекта или сменилось прочитанное через лифт; без `ctrl` инстанс при этом новый; после сборки и каждой пересборки принимает контексты (`attach()`) в порядке сборки; возвращает `{ contexts, layer }`), `useAdapter(adapter, props)` (main hook over the exchange `adapter.connect(ReactProfile)` — takes a READY adapter; снимок состояния отдаёт React через `TStableSnapshot`: то же по содержимому остаётся прежним объектом, и повторное чтение при подписке не перерисовывает), `useCollectionAdapter(adapter, props, forward)` (фасад коллекции: состояние, входы и события без `ctrl` и `ref`), `withRenderBoundary(component)` (граница перерисовки — `memo` без своего сравнения: родитель перерисовывает компонент, только когда сменился проп по идентичности, своё состояние — как обычно; под ней строки `Table` и их ячейки, AGENTS.md, «Механизмы фреймворка — только в адаптерном слое»)
@@ -1962,12 +1962,14 @@ ListBox и Tabs (`so-list-box`, `so-tabs`) селектор элементный
   остаются на корне — их Angular ставит на элемент из разметки потребителя.
 
 Стратегия `'wrapped'` — корень внутри обёртки, у таблицы: элемент
-потребителя (`<div so-table>`) — окно вокруг корня, а корень — `table` в
+компонента (`<so-table>`) — окно вокруг корня, а корень — `table` в
 шаблоне, `#root`, как `div.so-table__viewport` вокруг `table` у Vue и React;
 окно обязано быть родителем корня — по нему плагин раскладки мерит место
 под колонки. Обёртке база снимает атрибуты-входы и прячет её привязкой
-`[style.display]`, а атрибуты, класс и стиль потребителя остаются на ней; свой
-класс окна компонент ставит статикой хоста. Тег обёртки ядру не уходит.
+`[style.display]`, класс и стиль потребителя остаются на ней, а остальные
+статические атрибуты его разметки база переносит на корень, где роль и имя
+таблицы, — тем же приёмом, что на поле `#control`, и раньше раскладки ядра;
+свой класс окна компонент ставит статикой хоста. Тег обёртки ядру не уходит.
 Корню база кладёт классы, наборы и стиль ядра теми же эффектами, что
 корню-хосту, — они читают его запрос, и память раскладки у каждого узла
 своя, — а `TElementPlugin` получает его после отрисовки, как у `'view'`.
@@ -2162,8 +2164,9 @@ Svelte 5 на рунах. Структура зеркалит React, потом�
   `createSvelteAdapterContext` — сборка с id монтирования от `$props.id()`
   компонента и локалью поддерева; раскладка корня `toRootProps` (наборы ядра,
   поверх атрибуты потребителя, класс, стиль слоями); корень внутри обёртки —
-  `toWrappedRootProps` (окно таблицы вокруг `table`: обёртке атрибуты и
-  attachment-ы потребителя и скрытие, корню классы и наборы ядра); делёж
+  `toWrappedRootProps` (окно таблицы вокруг `table`: обёртке класс и стиль
+  потребителя и скрытие, корню классы и наборы ядра, поверх них остальные
+  атрибуты и attachment-ы потребителя); делёж
   атрибутов потребителя у поля — `toRootForward` (класс и стиль корню) и
   `toControlAttrs` (остальное `<input>`; так же делит их элемент коллекции —
   строке, а ListBox и Tabs — узлу списка); `roleIcon(role)` — метка иконки по
@@ -2271,8 +2274,9 @@ Svelte 5 на рунах. Структура зеркалит React, потом�
   `toRootProps` / `toRootLayout` (наборы ядра, поверх атрибуты потребителя,
   класс, стиль объектом по-CSS) и её мемо `createRootProps`; корень внутри
   обёртки — `toWrappedRootProps` и мемо `createWrappedRootProps` (окно
-  таблицы вокруг `table`: обёртке атрибуты потребителя и скрытие, корню
-  классы и наборы ядра); делёж атрибутов потребителя у поля —
+  таблицы вокруг `table`: обёртке класс и стиль потребителя и скрытие, корню
+  классы и наборы ядра, поверх них остальные атрибуты потребителя, кроме
+  `ref`); делёж атрибутов потребителя у поля —
   `toRootForward` (класс и стиль корню) и
   `toControlAttrs` (остальное, кроме `ref`, — `<input>`; так же делит их
   элемент коллекции — строке, у радио — полю, а ListBox и Tabs — узлу
@@ -2508,11 +2512,13 @@ Skeleton, — стоит ли корень по месту в коллекции
 `{ sets: ['attrs', 'dataset'], control: true }` у радио, у таба и секции
 полем служит строка, а у ListBox и Tabs — узел списка с ролью, как у Angular
 (см. «Поле» и «Коллекция» в «Решениях по DOM»), — и не обёртка ли элемент
-вокруг корня (`wrapped`): `{ wrapped: true }`
+вокруг корня (`wrapped`): `{ wrapped: true, control: true }`
 у Table — элемент `<div is="so-table">` и есть окно таблицы, а корень `table`
 строит шаблон (`TTemplateParts.root`); на него база кладёт классы, наборы и
 стиль ядра, с ним связывает `TElementPlugin` и его тег отдаёт ядру, а элементу
-оставляет скрытие и атрибуты потребителя. Компонент бывает и невизуальным —
+оставляет скрытие и класс и стиль потребителя. Тот же `table` — и поле окна
+(`TTemplateParts.control`): остальные статические атрибуты разметки окна база
+переносит на него, как на поле. Компонент бывает и невизуальным —
 окно `<so-virtual>` (`SoldyElement(HTMLElement, …)`, регистрация
 `defineAutonomousElement`): классы, наборы и видимость база читает из
 состояния по имени, и у него их нет.

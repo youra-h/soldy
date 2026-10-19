@@ -209,8 +209,9 @@ markup items join again with what their attributes and properties say, so a choi
 A table takes its columns and rows as data only — `columns` and `items` (`el.columns = [...]`, or
 JSON in the attribute), or an `engine` — and draws the column headers and rows itself:
 `<th is="so-table-column">` and `<tr is="so-table-row">` over the core column and row. The element
-you write is the table's viewport, its outer box: your class, style and attributes and hiding go
-there, while the `table` inside is the root that the classes, `data-*` and roles go to. Sorting
+you write is the table's viewport, its outer box: your class and style and hiding go there, while
+the `table` inside is the root that the classes, `data-*` and roles go to — and so do the other
+attributes of your markup, `aria-label` and `id` among them, which name the table. Sorting
 buttons, row selection with "select all" (`mode`), column resizing and reordering, the grid mode
 (`grid`) and the sticky head (`sticky-head`) work as in the other adapters; a resized or moved
 column is reported by `so:column:resize` and `so:column:move`.
