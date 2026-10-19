@@ -1,6 +1,6 @@
 /**
  * Маркер обязательного поля в настоящем браузере — точка в углу начала
- * строки у Input, DateInput, CheckBox и Switch.
+ * строки у Input, NumberInput, DateInput, CheckBox и Switch.
  *
  * Маркер — псевдоэлемент `::after` с абсолютной позицией, и угол ему задаёт
  * одно определение темы (`themes/oren/src/mixins/_required.scss`). Сторона у
@@ -17,7 +17,7 @@
 import { describe, it, expect, afterEach } from 'vitest'
 import { render, cleanup } from 'vitest-browser-vue'
 import { defineComponent, h, nextTick, type VNode } from 'vue'
-import { CheckBox, DateInput, Input, Switch } from '@soldy-ui/vue'
+import { CheckBox, DateInput, Input, NumberInput, Switch } from '@soldy-ui/vue'
 
 import { find, style } from './colors'
 
@@ -33,6 +33,11 @@ type TDir = 'ltr' | 'rtl'
 /** Обязательный контрол и узел, чей `::after` рисует маркер. */
 const CASES: readonly { name: string; host: string; markup: () => VNode }[] = [
 	{ name: 'Input', host: '.so-input', markup: () => h(Input, { required: true }) },
+	{
+		name: 'NumberInput',
+		host: '.so-number-input',
+		markup: () => h(NumberInput, { required: true, aria_label: 'Количество' }),
+	},
 	{
 		name: 'DateInput',
 		host: '.so-date-input',

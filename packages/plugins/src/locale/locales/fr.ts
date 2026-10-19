@@ -13,6 +13,7 @@ export const frFR = freezeLocale({
 		scroller: { prev: 'Défiler vers l’arrière', next: 'Défiler vers l’avant' },
 		pagination: { prev: 'Page précédente', next: 'Page suivante' },
 		field: { clear: 'Effacer {name}' },
+		numberInput: { increment: 'Augmenter {name}', decrement: 'Diminuer {name}' },
 		table: { selectAll: 'Tout sélectionner', sort: 'Trier par {name}' },
 		calendar: {
 			prevMonth: 'Mois précédent',

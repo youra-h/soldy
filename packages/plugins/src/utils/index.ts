@@ -1,6 +1,7 @@
 export { toCssValue } from './toCssValue'
 export { isMeasurableElement } from './isMeasurableElement'
 export { isFocusableElement } from './isFocusableElement'
+export { isAppleTouch } from './isAppleTouch'
 export { tabStops, closestControl } from './tabStops'
 export { tabStopsAfter } from './tabStopsAfter'
 export { tabStopsBefore } from './tabStopsBefore'

@@ -23,6 +23,7 @@ import {
 	ListBoxCollectionDescriptor,
 	MenuDescriptor,
 	MenuCollectionDescriptor,
+	NumberInputDescriptor,
 	PaginationDescriptor,
 	PaginationCollectionDescriptor,
 	PopoverDescriptor,
@@ -84,6 +85,15 @@ export const COMPONENTS: readonly TComponentEntry[] = [
 		showcase: true,
 		span: 1,
 		description: 'Текстовое поле со слотами под иконки и кнопки',
+	},
+	{
+		id: 'number-input',
+		label: 'NumberInput',
+		descriptor: NumberInputDescriptor,
+		showcase: true,
+		span: 1,
+		description:
+			'Поле числа в формате языка: шаг и границы, клавиши и кнопки «−» и «+» с удержанием',
 	},
 	{
 		id: 'textarea',

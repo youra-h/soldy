@@ -32,6 +32,7 @@ import {
 	DatePicker,
 	Field,
 	Input,
+	NumberInput,
 	RadioGroup,
 	Rating,
 	Select,
@@ -169,6 +170,7 @@ describe('клик по подписи', () => {
  */
 const CONTROLS: ReadonlyArray<readonly [string, (size: TComponentSize) => VNode, string]> = [
 	['Input', (size) => h(Input, { size }), '.so-input'],
+	['NumberInput', (size) => h(NumberInput, { size }), '.so-number-input'],
 	['Select', (size) => h(Select, { size }), '.so-select__field'],
 	['DateInput', (size) => h(DateInput, { size }), '.so-date-input'],
 	['DatePicker', (size) => h(DatePicker, { size }), '.so-date-picker__field'],

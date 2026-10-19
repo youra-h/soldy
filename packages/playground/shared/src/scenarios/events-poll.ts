@@ -40,7 +40,10 @@ function nextValue(control: TPropControl, current: unknown): unknown {
 		case 'switch':
 			return !current
 		case 'select':
-			return control.options?.find((option) => option !== current)
+			// Пресеты — значения не строками: другое значение, а не другое имя
+			return control.values
+				? Object.values(control.values).find((value) => value !== current)
+				: control.options?.find((option) => option !== current)
 		case 'number':
 		case 'number-or-text':
 			return (typeof current === 'number' ? current : 0) + 1

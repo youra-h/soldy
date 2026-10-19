@@ -273,10 +273,18 @@ export default class TRating
 
 	/**
 	 * Шкала — от 0 до целого числа звёзд: дорожка — звёзды встык, и доля её
-	 * коробки ложится на звёзды без остатка.
+	 * коробки ложится на звёзды без остатка. Число звёзд конечно: бесконечность
+	 * шкала сочла бы открытым концом, а ряд без конца не нарисовать — такой
+	 * `max` даёт пустой ряд, как и не число.
 	 */
 	protected _createScale(): IScale {
-		return createScale({ min: 0, max: Math.floor(this._max), step: this._step })
+		const stars = Math.floor(this._max)
+
+		return createScale({
+			min: 0,
+			max: Number.isFinite(stars) ? stars : 0,
+			step: this._step,
+		})
 	}
 
 	/**

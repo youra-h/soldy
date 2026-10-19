@@ -1,4 +1,4 @@
-import { DEFAULT_LOCALE, calendarLocale } from '../../../../common'
+import { DEFAULT_LOCALE, calendarLocale, digitsOf, directionOf } from '../../../../common'
 import { groupSpecsOf } from '../date-time'
 import type { TFieldPart } from '../segments'
 import type { TDateFieldPart, TDateInputKind, TTimePrecision } from '../types'
@@ -12,28 +12,6 @@ import type { IDateFieldFormat, TDateFieldToken, TPartGroup } from './types'
  */
 const SAMPLE = Date.UTC(2026, 4, 12, 14, 30, 15)
 const SAMPLE_YEAR = 2026
-
-/** Цифры от нуля до девяти — то, что форматирует система счисления. */
-const DIGITS: readonly number[] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
-
-/** Метки направления — сильные знаки сами по себе. */
-const RLM = '‏'
-const ALM = '؜'
-const LRM = '‎'
-
-/**
- * Слабые цифры: европейские (ASCII и полноширинные) и арабские обоих видов —
- * направления они не задают. Цифры остальных систем сильные, как буквы своей
- * письменности.
- */
-const WEAK_DIGIT = /[0-9٠-٩۰-۹０-９]/
-
-/** Буква или цифра — знак, который может быть сильным. */
-const ALPHANUMERIC = /[\p{L}\p{N}]/u
-
-/** Письменности справа налево: их буквы и сильные цифры (`nkoo`, `adlm`). */
-const RTL_SCRIPT =
-	/[\p{Script=Hebrew}\p{Script=Arabic}\p{Script=Syriac}\p{Script=Thaana}\p{Script=Nko}\p{Script=Samaritan}\p{Script=Mandaic}\p{Script=Adlam}\p{Script=Hanifi_Rohingya}]/u
 
 /**
  * Форматы по тегу, как его задали, виду поля и точности времени. Карта
@@ -153,44 +131,6 @@ function isoTokensOf(groups: readonly TPartGroup[]): readonly TDateFieldToken[] 
 	return groups.flatMap((group, index): readonly TDateFieldToken[] =>
 		index === 0 ? group.isoTokens : [{ type: 'literal', text: ' ' }, ...group.isoTokens],
 	)
-}
-
-/**
- * Цифры системы счисления — по знаку на цифру. Система, которая цифру одним
- * знаком не пишет, — цифры ASCII: такую Intl для чисел даты не выбирает.
- */
-function digitsOf(numberingSystem: string): readonly string[] {
-	try {
-		const format = new Intl.NumberFormat(DEFAULT_LOCALE, {
-			numberingSystem,
-			useGrouping: false,
-		})
-		const digits = DIGITS.map((digit) => format.format(digit))
-
-		if (digits.every((digit) => [...digit].length === 1)) return digits
-	} catch {
-		// Неизвестная система — цифры ASCII ниже
-	}
-
-	return DIGITS.map(String)
-}
-
-/**
- * Направление по первому сильному знаку текста: буква или сильная цифра
- * письменности справа налево и метки RLM и ALM — справа налево, остальные
- * буквы, сильные цифры и метка LRM — слева направо. Европейские и арабские
- * цифры, знаки и пробелы — слабые. Сильного знака нет — слева направо.
- */
-function directionOf(text: string): 'ltr' | 'rtl' {
-	for (const char of text) {
-		if (char === RLM || char === ALM) return 'rtl'
-		if (char === LRM) return 'ltr'
-		if (WEAK_DIGIT.test(char) || !ALPHANUMERIC.test(char)) continue
-
-		return RTL_SCRIPT.test(char) ? 'rtl' : 'ltr'
-	}
-
-	return 'ltr'
 }
 
 /**

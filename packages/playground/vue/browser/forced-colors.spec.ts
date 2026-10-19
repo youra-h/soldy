@@ -49,6 +49,7 @@ import {
 	Input,
 	ListBox,
 	ListBoxItem,
+	NumberInput,
 	Popover,
 	Select,
 	SelectItem,
@@ -297,7 +298,7 @@ describe('Popover: панель под фокусом', () => {
 })
 
 /**
- * Кольцо фокуса поля — у Input и DateInput: коробка поля у них общая
+ * Кольцо фокуса поля — у Input, NumberInput и DateInput: коробка поля у них общая
  * (`field` в `themes/oren/src/components/input/_mixins.scss`). В покое кольцо
  * — прозрачный контур: так под фокусом его цвет проявляется переходом. В
  * режиме принудительных цветов браузер заменил бы прозрачный цвет системным,
@@ -311,6 +312,12 @@ const FIELDS = [
 		field: '.so-input',
 		target: '.so-input input',
 		markup: () => h(Input, { aria_label: 'Имя' }),
+	},
+	{
+		name: 'NumberInput',
+		field: '.so-number-input',
+		target: '.so-number-input__input',
+		markup: () => h(NumberInput, { aria_label: 'Количество' }),
 	},
 	{
 		name: 'DateInput',
