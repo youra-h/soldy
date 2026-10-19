@@ -301,14 +301,18 @@ tools: Read, Write, Edit, Glob, Grep, Bash, mcp__clickup__clickup_take, mcp__cli
    все пустые — остановись: вернись на `main`, удали ветку
    (`git switch main && git branch -D release/next`) и сообщи «выпускать
    нечего». Пустые changeset'ы уйдут со следующим настоящим выпуском.
-4. `npm ci`, затем `npm run changeset:version`. Команда сама поднимает версии,
-   пишет `CHANGELOG.md`, удаляет changeset'ы и обновляет `package-lock.json`.
+4. `npm ci`, затем `npm run changeset:version`. Команда сама поднимает версии
+   (до `1.0` — с суффиксом: `0.3.0-alpha.0`, changesets в pre-режиме, см.
+   `docs/agents/build.md`, «Версии пакетов»), пишет `CHANGELOG.md`, переносит
+   changeset'ы в `.changeset/pre/` и обновляет `package-lock.json`. Из
+   pre-режима не выходишь и тег не меняешь — это решение владельца.
    Ни версии, ни `CHANGELOG.md` руками не правишь — даже если текст
    changeset'а кривой: это правка к PR задачи, а не к выпуску, её называешь
    в отчёте.
 5. Проверь дифф: версия поднялась у всех пакетов группы `fixed` и только у
-   них, стенд и корневой `package.json` не тронуты, в `.changeset/` остались
-   только `config.json` и `README.md`. Прогон: `npm run test:setup` (сторож
+   них и несёт суффикс `alpha`, стенд и корневой `package.json` не тронуты, в
+   `.changeset/` остались только `config.json`, `README.md`, `pre.json` и
+   папка `pre/`. Прогон: `npm run test:setup` (сторож
    версий) и `npx prettier --check .`.
 6. Ветку переименуй по версии: `git branch -m release/v<версия>`.
 7. Коммит `chore(release): <версия>`, пуш, `gh pr create` с заголовком
@@ -323,6 +327,6 @@ tools: Read, Write, Edit, Glob, Grep, Bash, mcp__clickup__clickup_take, mcp__cli
 `.github/workflows/release.yml`. `npm publish` и `changeset publish` ты не
 запускаешь.
 
-Проверка CI `changeset` на ветках `release/*` не запускается: changeset'ы в
-выпуске уже удалены, и она уронила бы его. Поэтому ветку `release/*` ни для
+Проверка CI `changeset` на ветках `release/*` не запускается: changeset'ы
+выпуск уже унёс в `.changeset/pre/`, и она уронила бы его. Поэтому ветку `release/*` ни для
 чего, кроме выпуска, не заводишь.

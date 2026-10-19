@@ -4,9 +4,10 @@
  * Части — разметка поля: часть стоит, пока задан её текст, ошибка — при
  * `invalid` и на месте подсказки. С контролом поле связывает проводка: поле
  * опускает связку по лифту, контрол её берёт. Labelable-контрол (Input,
- * Textarea, Select, CheckBox, Switch, Rating) подпись называет своим `for`, группу
- * (DateInput, DatePicker, RadioGroup) — ссылкой `aria-labelledby`. Справку
- * контрол получает в `aria-describedby`, ошибку — `aria-invalid` и
+ * NumberInput, Textarea, Select, CheckBox, Switch, Rating, Slider с одной
+ * ручкой) подпись называет своим `for`, группу (DateInput, DatePicker,
+ * RadioGroup, Slider с несколькими ручками) — ссылкой `aria-labelledby`.
+ * Справку контрол получает в `aria-describedby`, ошибку — `aria-invalid` и
  * `data-invalid` на своём корне.
  *
  * Раскладку сторон, выравнивание по первой строке и клик по подписи jsdom не
@@ -18,7 +19,7 @@ import { mount } from '@vue/test-utils'
 import { defineComponent, h, nextTick, shallowRef, type VNode } from 'vue'
 import { renderToString } from 'vue/server-renderer'
 import { createSSRApp } from 'vue'
-import { TField, TInput } from '@soldy-ui/core'
+import { TField, TInput, TSlider } from '@soldy-ui/core'
 import {
 	CheckBox,
 	DateInput,
@@ -26,11 +27,13 @@ import {
 	Field,
 	Input,
 	Label,
+	NumberInput,
 	RadioGroup,
 	RadioGroupItem,
 	Rating,
 	Select,
 	SelectItem,
+	Slider,
 	Switch,
 	Textarea,
 } from '@soldy-ui/vue'
@@ -162,6 +165,7 @@ describe('разметка', () => {
  */
 const LABELABLES: ReadonlyArray<readonly [string, () => VNode, string, string]> = [
 	['Input', () => h(Input), '.so-input', '.so-input input'],
+	['NumberInput', () => h(NumberInput), '.so-number-input', '.so-number-input__input'],
 	['Textarea', () => h(Textarea), '.so-textarea', '.so-textarea textarea'],
 	[
 		'Select',
@@ -176,6 +180,7 @@ const LABELABLES: ReadonlyArray<readonly [string, () => VNode, string, string]> 
 	['CheckBox', () => h(CheckBox), '.so-check-box', '.so-check-box input'],
 	['Switch', () => h(Switch), '.so-switch', '.so-switch input'],
 	['Rating', () => h(Rating), '.so-rating', '.so-rating input'],
+	['Slider', () => h(Slider), '.so-slider', '.so-slider input'],
 ]
 
 describe.each(LABELABLES)('%s в поле', (_name, control, root, element) => {
@@ -252,6 +257,81 @@ describe.each(GROUPS)('%s в поле', (_name, control, group) => {
 
 		expect(refsOf(find(group), 'aria-describedby')).toEqual([find('.so-field__error').id])
 		expect(find(group).getAttribute('aria-invalid')).toBe('true')
+	})
+})
+
+/**
+ * Ползунок с несколькими ручками — группа: `for` назвал бы одно поле из них, а
+ * ссылка на подпись в наборе полей перекрыла бы имена ручек (`thumbLabels`).
+ * Подпись и справка — у корня (`role="group"`), а ошибка — `aria-invalid` на
+ * каждом поле: на группе ARIA ошибки не объявляет.
+ */
+describe('Slider с несколькими ручками в поле', () => {
+	const range = () => h(Slider, { value: [20, 80], thumbLabels: ['От', 'До'] })
+	const root = () => find('.so-slider')
+	const thumbs = () => [...document.querySelectorAll('.so-slider input')]
+
+	it('for у подписи нет, корень — группа со ссылкой на подпись, имена ручек целы', async () => {
+		await render(() => h(Field, { label: 'Цена' }, range))
+
+		expect(label().hasAttribute('for')).toBe(false)
+		expect(root().getAttribute('role')).toBe('group')
+		expect(refsOf(root(), 'aria-labelledby')).toEqual([label().id])
+		expect(thumbs().map((thumb) => thumb.getAttribute('aria-label'))).toEqual(['От', 'До'])
+		expect(thumbs().map((thumb) => thumb.hasAttribute('aria-labelledby'))).toEqual([
+			false,
+			false,
+		])
+		expect(thumbs().map((thumb) => thumb.id)).toEqual(['', ''])
+	})
+
+	it('справка — у группы, ошибка — aria-invalid на каждой ручке, data-invalid на корне', async () => {
+		const ctrl = new TField({ label: 'Цена', helper: 'Подсказка', error: 'Ошибка' })
+
+		await render(() => h(Field, { ctrl }, range))
+
+		expect(refsOf(root(), 'aria-describedby')).toEqual([find('.so-field__helper').id])
+		expect(thumbs().map((thumb) => thumb.hasAttribute('aria-describedby'))).toEqual([
+			false,
+			false,
+		])
+
+		ctrl.invalid = true
+		await nextTick()
+
+		expect(refsOf(root(), 'aria-describedby')).toEqual([find('.so-field__error').id])
+		expect(thumbs().map((thumb) => thumb.getAttribute('aria-invalid'))).toEqual([
+			'true',
+			'true',
+		])
+		expect(root().hasAttribute('aria-invalid')).toBe(false)
+		expect(root().dataset.invalid).toBe('true')
+	})
+
+	it('число ручек сменилось — подпись за ним: for у одной, ссылка группы у нескольких', async () => {
+		const ctrl = new TSlider({ value: 30 })
+
+		await render(() => h(Field, { label: 'Цена' }, () => h(Slider, { ctrl })))
+
+		expect(label().getAttribute('for')).toBe(find('.so-slider input').id)
+
+		ctrl.value = [20, 80]
+		await nextTick()
+
+		expect(label().hasAttribute('for')).toBe(false)
+		expect(root().getAttribute('role')).toBe('group')
+		expect(refsOf(root(), 'aria-labelledby')).toEqual([label().id])
+		expect(thumbs().map((thumb) => thumb.id)).toEqual(['', ''])
+
+		ctrl.value = 50
+		await nextTick()
+
+		const input = find('.so-slider input')
+
+		expect(input.id).not.toBe('')
+		expect(label().getAttribute('for')).toBe(input.id)
+		expect(root().hasAttribute('role')).toBe(false)
+		expect(root().hasAttribute('aria-labelledby')).toBe(false)
 	})
 })
 
@@ -361,5 +441,24 @@ describe('сервер и гидратация', () => {
 
 		expect(find('label', host).getAttribute('for')).toBe(input.id)
 		expect(refsOf(input, 'aria-describedby')).toEqual([find('.so-field__helper', host).id])
+	})
+
+	it('ползунок с несколькими ручками: сервер рисует группу со ссылками на подпись и справку', async () => {
+		const app = createSSRApp({
+			render: () =>
+				h(Field, { label: 'Цена', helper: 'Подсказка' }, () =>
+					h(Slider, { value: [20, 80], thumbLabels: ['От', 'До'] }),
+				),
+		})
+		const html = await renderToString(app)
+		const host = document.createElement('div')
+
+		host.innerHTML = html
+
+		const group = find('.so-slider', host)
+
+		expect(group.getAttribute('role')).toBe('group')
+		expect(refsOf(group, 'aria-labelledby')).toEqual([find('label', host).id])
+		expect(refsOf(group, 'aria-describedby')).toEqual([find('.so-field__helper', host).id])
 	})
 })

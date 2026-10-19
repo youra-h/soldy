@@ -119,24 +119,62 @@ describe('разметка', () => {
 		})
 
 		const [first, second] = fields()
+		const root = find('.so-slider')
 
 		expect(first.type).toBe('range')
 		expect([first.min, first.max, first.step, first.value]).toEqual(['0', '55', '5', '20'])
 		expect([second.min, second.max, second.value]).toEqual(['25', '100', '60'])
 		expect(first.name).toBe('price')
-		// Общий набор — на каждое поле, имя ручки из thumbLabels сильнее aria_label
-		expect(first.getAttribute('aria-orientation')).toBe('vertical')
+		// Ориентация — на каждом поле, имя — у каждой ручки своё, из thumbLabels;
+		// имя ползунка (aria_label) у нескольких ручек — у группы, корня
+		expect([first, second].map((node) => node.getAttribute('aria-orientation'))).toEqual([
+			'vertical',
+			'vertical',
+		])
 		expect(first.getAttribute('aria-label')).toBe('От')
 		expect(second.getAttribute('aria-label')).toBe('До')
+		expect(root.getAttribute('aria-label')).toBe('Цена')
+		expect(root.hasAttribute('aria-orientation')).toBe(false)
 		expect(first.hasAttribute('aria-disabled')).toBe(false)
 	})
 
-	it('без имён ручек поле называет aria_label; выключенный — нативный disabled', async () => {
+	it('одна ручка: aria_label называет её поле, корень — без роли и имени', async () => {
+		await render({ value: 30, aria_label: 'Громкость' })
+
+		const root = find('.so-slider')
+
+		expect(field().getAttribute('aria-label')).toBe('Громкость')
+		expect(root.hasAttribute('role')).toBe(false)
+		expect(root.hasAttribute('aria-label')).toBe(false)
+	})
+
+	it('несколько ручек: корень — группа с aria_label, у полей его нет; выключенный — нативный disabled', async () => {
 		await render({ value: [20, 60], aria_label: 'Цена', disabled: true })
 
-		expect(fields().map((node) => node.getAttribute('aria-label'))).toEqual(['Цена', 'Цена'])
+		const root = find('.so-slider')
+
+		expect(root.getAttribute('role')).toBe('group')
+		expect(root.getAttribute('aria-label')).toBe('Цена')
+		expect(fields().map((node) => node.hasAttribute('aria-label'))).toEqual([false, false])
 		expect(fields().every((node) => node.disabled)).toBe(true)
-		expect(find('.so-slider').dataset.disabled).toBe('true')
+		expect(root.dataset.disabled).toBe('true')
+	})
+
+	it('число ручек сменилось — набор корня и полей за ним', async () => {
+		const mounted = await render({ value: 30, aria_label: 'Цена' })
+		const root = find('.so-slider')
+
+		await mounted.setProps({ value: [20, 80] })
+
+		expect(root.getAttribute('role')).toBe('group')
+		expect(root.getAttribute('aria-label')).toBe('Цена')
+		expect(fields().map((node) => node.hasAttribute('aria-label'))).toEqual([false, false])
+
+		await mounted.setProps({ value: 50 })
+
+		expect(root.hasAttribute('role')).toBe(false)
+		expect(root.hasAttribute('aria-label')).toBe(false)
+		expect(field().getAttribute('aria-label')).toBe('Цена')
 	})
 
 	it('у шага списком поле без шага: step="any"', async () => {

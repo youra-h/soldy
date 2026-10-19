@@ -47,6 +47,12 @@ export type TPropControl = TPropOwner & {
 	kind: TControlKind
 	/** Значения для `select`; у остальных пусто. */
 	options?: readonly string[]
+	/**
+	 * Значения пунктов `select`, если они не строки: имя пункта → значение
+	 * компоненту (пресеты `formatOptions` поля числа). Нет — значение пункта и
+	 * есть его имя.
+	 */
+	values?: Readonly<Record<string, unknown>>
 	description: string
 	/**
 	 * Значение по умолчанию из описания пропа (`TPropSpec.default`).

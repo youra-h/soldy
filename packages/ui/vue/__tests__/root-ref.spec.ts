@@ -2,8 +2,9 @@
  * `ref` потребителя во Vue — экземпляр, и путь к корню у него — `$el`.
  *
  * Корень — узел, на который ложатся класс и атрибуты потребителя: у поля
- * (Input, CheckBox, Switch, RadioGroup.Item, Textarea) — корень, а не поле, у
- * элемента коллекции — корень, а не строка, у таблицы — окно, внешний узел. У
+ * (Input, NumberInput, CheckBox, Switch, RadioGroup.Item, Textarea) — корень, а
+ * не поле, у элемента коллекции — корень, а не строка, у таблицы — окно,
+ * внешний узел. У
  * всех, кроме таблицы, это тот же узел, что привязан к `TElementPlugin`: с ним
  * приходит `element:ready`.
  *
@@ -58,6 +59,7 @@ import {
 	MenuGroup,
 	MenuItem,
 	MenuSeparator,
+	NumberInput,
 	Pagination,
 	Popover,
 	ProgressLinear,
@@ -177,6 +179,7 @@ const ROOTS: ReadonlyArray<readonly [string, (props: TProbeProps) => VNode, stri
 	['Scroller', (props) => h(Scroller, props), '.so-scroller', '.so-scroller'],
 	['Pagination', (props) => h(Pagination, props), '.so-pagination', '.so-pagination'],
 	['Input', (props) => h(Input, props), '.so-input', '.so-input'],
+	['NumberInput', (props) => h(NumberInput, props), '.so-number-input', '.so-number-input'],
 	['Textarea', (props) => h(Textarea, props), '.so-textarea', '.so-textarea'],
 	['CheckBox', (props) => h(CheckBox, props), '.so-check-box', '.so-check-box'],
 	['Switch', (props) => h(Switch, props), '.so-switch', '.so-switch'],
@@ -274,6 +277,7 @@ const BOUND_ROOTS = ROOTS.filter(([, , root, bound]) => root === bound)
 /** Поле каждого компонента-поля: `$el` — корень, а не оно. */
 const FIELDS: Readonly<Record<string, string>> = {
 	Input: 'input',
+	NumberInput: 'input',
 	CheckBox: 'input',
 	Switch: 'input',
 	'RadioGroup.Item': 'input',

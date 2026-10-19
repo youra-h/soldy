@@ -40,11 +40,12 @@ Web Components connect that model to a framework and render the markup: BEM clas
   event, and items come from the `items` prop or from markup. Calendar is a collection too: its
   days are items, built from the months on screen. A Table is two: rows and columns.
 - **Accessibility from the WAI-ARIA Authoring Practices.** Tabs, Tags, Accordion, Select, Switch,
-  RadioGroup, Slider, Rating, Popover, Tooltip, Dialog, Drawer, Calendar, DatePicker and Table take
-  roles and relations from their APG patterns, and ProgressLinear and ProgressSpinner use the
-  `progressbar` role. Select implements the Combobox keyboard model, and Tabs the Tabs one: arrow
-  keys and Home/End with automatic activation, and a single Tab stop. ARIA is computed outside the
-  framework and rendered with the markup, so it is in place from the first render.
+  RadioGroup, Slider, Rating, NumberInput, Popover, Tooltip, Dialog, Drawer, Calendar, DatePicker
+  and Table take roles and relations from their APG patterns, and ProgressLinear and
+  ProgressSpinner use the `progressbar` role. Select implements the Combobox keyboard model, and
+  Tabs the Tabs one: arrow keys and Home/End with automatic activation, and a single Tab stop. ARIA
+  is computed outside the framework and rendered with the markup, so it is in place from the first
+  render.
 - **Themes and icon packs are pluggable contracts.** A theme styles `so-*` classes and `data-*`
   attributes, never `aria-*`, so an accessibility fix does not break the look. An icon pack is
   plain data for a fixed set of roles, with no bundler-specific imports.
@@ -188,6 +189,7 @@ queued for development:
 | ----------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
 | Button                                                                              | Button: text, icons in slots, four views                                                       |
 | Input                                                                               | Text field with slots for icons and buttons                                                    |
+| NumberInput                                                                         | Number field in the locale's format: step and bounds, arrow keys, − and + buttons with hold    |
 | CheckBox                                                                            | Checkbox with a third, indeterminate state                                                     |
 | Switch                                                                              | Switch: the same value as a checkbox, a different metaphor                                     |
 | Label                                                                               | Control label: clicking the text toggles the control, and the text is its accessible name      |
@@ -218,7 +220,6 @@ queued for development:
 | Pagination ![in development](https://img.shields.io/badge/in%20development-orange)  | Page navigation: page numbers with gaps, previous and next, first and last                     |
 | Menu ![in development](https://img.shields.io/badge/in%20development-orange)        | Action menu at a button or on right click: submenus, checkbox and radio items                  |
 | Textarea ![in development](https://img.shields.io/badge/in%20development-orange)    | Multi-line text field that grows with its content                                              |
-| NumberInput ![in development](https://img.shields.io/badge/in%20development-orange) | Number field: step, bounds, increment buttons, the locale's number format                      |
 | Field ![in development](https://img.shields.io/badge/in%20development-orange)       | Field wrapper: description, error message and invalid state linked to the control              |
 | Alert ![in development](https://img.shields.io/badge/in%20development-orange)       | Inline message by severity: info, success, warning, error                                      |
 | Badge ![in development](https://img.shields.io/badge/in%20development-orange)       | Counter or status mark, on its own or over another element                                     |

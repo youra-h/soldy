@@ -2,6 +2,7 @@ import type { IDateInput, TDateFieldPart } from '@soldy-ui/core'
 import { TBasePlugin } from '../../../base'
 import type { IPluginContext } from '../../../base'
 import { TElementPlugin } from '../../element'
+import { isAppleTouch } from '../../../utils'
 import type { IDomEventTarget } from '../../../utils'
 import {
 	formatPartsOf,
@@ -372,16 +373,4 @@ function restoreText(owner: IDateInput, part: TDateFieldPart, element: Element):
 	}
 
 	element.textContent = text
-}
-
-/**
- * Сенсорное устройство Apple — iPhone, iPod или iPad. iPadOS называет себя
- * `MacIntel`, как Mac, и отличает его сенсорный экран: у Mac точек касания нет.
- */
-function isAppleTouch(navigator: Navigator | undefined): boolean {
-	if (!navigator) return false
-
-	const { platform, maxTouchPoints } = navigator
-
-	return /^(iPhone|iPod|iPad)/.test(platform) || (/^Mac/.test(platform) && maxTouchPoints > 1)
 }

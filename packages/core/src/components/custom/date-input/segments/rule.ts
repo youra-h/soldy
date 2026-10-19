@@ -1,4 +1,5 @@
-import { digitOf, formatFieldNumber } from './digits'
+import { digitOf } from '../../../../common'
+import { formatFieldNumber } from './digits'
 import type { TPartEntry, TPartErase, TPartRule } from './types'
 import type { TDatePartLimits } from '../types'
 

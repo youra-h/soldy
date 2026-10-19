@@ -64,6 +64,20 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           NPM_CONFIG_PROVENANCE: true
 
+      # В pre-режиме changesets публикует под тегом режима (`alpha`), и
+      # `npm i @soldy-ui/vue` без версии ставил бы выпуск до суффикса. Пока
+      # готового выпуска нет, `latest` — свежий предварительный (см.
+      # docs/agents/build.md, «Версии пакетов»). Без условия публикации:
+      # перезапуск после упавшего шага дотягивает тег, повтор безвреден.
+      - name: Тег latest — на выпуск
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          VERSION: ${{ steps.check.outputs.version }}
+        run: |
+          for name in $(node -p "require('./.changeset/config.json').fixed[0].join(' ')"); do
+            npm dist-tag add "$name@$VERSION" latest
+          done
+
       # Раздел версии у пакетов группы разный: changeset пишет пункт только
       # названным в нём пакетам. Поэтому в заметках — ссылки на CHANGELOG
       # каждого пакета на коммите выпуска (тег `пакет@версия` GitHub в ссылке на файл не разбирает), а не раздел одного из них.
@@ -82,4 +96,7 @@ jobs:
               echo "- [$name]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/blob/$GITHUB_SHA/$f)"
             done
           } > notes.md
-          gh release create "v$VERSION" --title "v$VERSION" --target "$GITHUB_SHA" --notes-file notes.md
+          # Версия с суффиксом (`0.3.0-alpha.0`) — предварительный выпуск
+          flags=()
+          case "$VERSION" in *-*) flags+=(--prerelease) ;; esac
+          gh release create "v$VERSION" --title "v$VERSION" --target "$GITHUB_SHA" --notes-file notes.md "${flags[@]}"

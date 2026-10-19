@@ -191,12 +191,36 @@ describe('подписи меток', () => {
  * вошло бы в имя первого: «80 Цена». Поэтому у нескольких ручек имя каждой,
  * первой тоже, даёт `thumbLabels`: `aria-label` поля сильнее подписи. Имена
  * сверяются точно: в них нет ни текста подписи, ни значения соседнего поля.
+ * Имя самого ползунка (`aria_label`) у нескольких ручек называет их группу —
+ * корень, — а не каждое поле.
  */
 describe('имена ручек', () => {
 	it('в подписи Label имя каждой ручки — ровно её имя из thumbLabels', async () => {
 		await mount({ value: [20, 80], thumbLabels: ['От', 'До'] }, { label: true })
 
 		expect(fields().every((node) => find('.so-label').contains(node))).toBe(true)
+		expect(page.getByRole('slider', { name: 'От', exact: true }).query()).toBe(field(0))
+		expect(page.getByRole('slider', { name: 'До', exact: true }).query()).toBe(field(1))
+	})
+
+	it('aria_label называет группу ручек, имя каждой ручки — её имя из thumbLabels', async () => {
+		render(
+			defineComponent({
+				render: () =>
+					h('div', { style: 'width: 400px; padding: 48px 24px 24px' }, [
+						h(Slider, {
+							value: [20, 80],
+							thumbLabels: ['От', 'До'],
+							aria_label: 'Цена',
+						}),
+					]),
+			}),
+		)
+		await nextFrame()
+
+		expect(page.getByRole('group', { name: 'Цена', exact: true }).query()).toBe(
+			find('.so-slider'),
+		)
 		expect(page.getByRole('slider', { name: 'От', exact: true }).query()).toBe(field(0))
 		expect(page.getByRole('slider', { name: 'До', exact: true }).query()).toBe(field(1))
 	})
