@@ -8,12 +8,18 @@
  * пропа без входа хост не глушит; экземпляр ядра адаптер берёт при сборке, и
  * смена `ctrl` ставит компонент заново; обёртку и содержимое превью хост
  * собирает сам — части на своих элементах в проекциях, после владельца и с
- * его инжектором.
+ * его инжектором, и в разметке содержимого тоже; рамка вокруг компонента идёт
+ * за пропсами оболочки, а данные превью ложатся под них.
  */
 
 import { describe, it, expect, afterEach } from 'vitest'
 import { TButton, TListBox, createEngine } from '@soldy-ui/core'
-import { COLLECTION_ITEMS } from '@soldy-ui/playground-shared'
+import {
+	COLLECTION_ITEMS,
+	TABLE_COLUMNS,
+	TABLE_ROWS,
+	TABLE_SCROLL_ROWS,
+} from '@soldy-ui/playground-shared'
 import { loadHost } from '../src/hosts'
 
 const host = await loadHost('angular')
@@ -274,6 +280,71 @@ describe('хост Angular · обёртка и содержимое', () => {
 			'3',
 			'4',
 		])
+
+		handle.unmount()
+
+		expect(node.childNodes).toHaveLength(0)
+	})
+})
+
+describe('хост Angular · рамка и разметка содержимого', () => {
+	/**
+	 * Таблица — в рамке: разметке без компонента со стилем от пропсов
+	 * оболочки, как `div` вокруг Table у Vue и React. Строки и колонки —
+	 * данные превью, а пропсы строки ложатся поверх: с закреплённой шапкой у
+	 * таблицы сорок своих строк, а рамка — окно прокрутки. Смена пропа меняет
+	 * то и другое на той же таблице.
+	 */
+	it('таблица — в рамке: данные превью под пропсами строки, рамка идёт за пропсом', () => {
+		const node = stage()
+		const handle = host.mount(node, { component: 'table', props: {} })
+		const frame = node.querySelector('[pg-angular-frame]')
+		const viewport = frame?.querySelector(':scope > .so-table__viewport')
+
+		if (!(frame instanceof HTMLElement)) throw new Error('рамки нет')
+
+		expect(viewport?.querySelector(':scope > table.so-table')).not.toBe(null)
+		expect(frame.style.width).toBe('100%')
+		expect(frame.style.overflow).toBe('')
+		expect(all(node, '.so-table-row')).toHaveLength(TABLE_ROWS.length)
+		expect(all(node, '.so-table-column').map((header) => header.textContent?.trim())).toEqual(
+			TABLE_COLUMNS.map((column) => column.text),
+		)
+
+		handle.update({ stickyHead: true })
+
+		expect(node.querySelector('[pg-angular-frame]')).toBe(frame)
+		expect(frame.style.height).toBe('320px')
+		expect(frame.style.overflow).toBe('auto')
+		expect(all(node, '.so-table-row')).toHaveLength(TABLE_SCROLL_ROWS.length)
+		expect(node.querySelector('table.so-table')?.getAttribute('data-sticky-head')).toBe('true')
+
+		handle.unmount()
+
+		expect(node.childNodes).toHaveLength(0)
+	})
+
+	/**
+	 * Содержимое обёртки окна — разметка со своим содержимым: ряд, а в нём
+	 * список и окно прокрутки с таблицей. Части в разметке собираются, как
+	 * части обёртки, — с её инжектором, — и окно обёртки подхватывают обе
+	 * коллекции: до замера каждая рисует первые 50 из тысячи.
+	 */
+	it('окно: список и таблица — частями в разметке обёртки, окно у обоих', () => {
+		const node = stage()
+		const handle = host.mount(node, { component: 'virtual', props: {} })
+		const row = node.querySelector('so-virtual > div')
+
+		if (!(row instanceof HTMLElement)) throw new Error('ряда нет')
+
+		expect(row.style.display).toBe('flex')
+		expect([...row.children].map((child) => child.className)).toEqual([
+			expect.stringContaining('so-list-box'),
+			'',
+		])
+		expect(row.querySelector(':scope > div > .so-table__viewport')).not.toBe(null)
+		expect(all(node, '.so-list-box-item')).toHaveLength(50)
+		expect(all(node, '.so-table-row')).toHaveLength(50)
 
 		handle.unmount()
 

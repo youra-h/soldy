@@ -1,0 +1,103 @@
+<!--
+	Корень — сам хост (`<tr so-table-row>`), поэтому шаблон — ячейки строки,
+	детьми `tr`, без обёртки. Слот контракта: cell (scope { row, column, value })
+	— содержимое ячейки; таблица отдаёт в него свой слот, а строку в scope
+	кладёт сама строка.
+
+	Ячейка колонки выбора — только пока выбор строк включён (`selecting`: режим
+	не `none`), как её заголовок в шапке. Чекбокс строки — CheckBox
+	(`embedded: 'table.select'`) над экземпляром, который держит таблица:
+	отметку, «выключен», размер и вариант она пишет ему от выбора и строки, а
+	клик по нему — просьба, которую она выполняет выбором строки. Поэтому ни
+	значения, ни обработчиков здесь нет: отменённый выбор отметку не меняет.
+	Чекбокс берётся у контекста строки только в этой ветке: геттер item-адаптера
+	таблицы его создаёт, и у таблицы без выбора чекбоксов строк нет. Имя —
+	ссылка на заголовок строки (`aria-labelledby` на `rowHeaderId`); заголовка
+	нет — нет и ссылки.
+
+	Ячейки — по одной на ячейку строки (`cells`), петля по колонке ячейки:
+	ячейки строки — новые записи на каждую смену, а узел ячейки держит её
+	колонку, и новая запись рисуется в том же узле — с фокусом сетки на нём.
+	Ячейка колонки `rowHeader` — заголовок строки: `th` с `scope="row"`, на её
+	текст ссылается имя чекбокса строки. Остальные — `td`. Класс один: тема
+	различает их тегом. Набор ячейки — `data-align` колонки, набор ячеек строки
+	(`cellAria`: в сетке ячейка принимает фокус) и, у заголовка строки, его
+	`id`; экземпляра у ячейки нет.
+
+	Содержимое — шаблон `cell` со scope `{ row, column, value }`, без него —
+	значение текстом (`soText`): тип поля записи таблица не знает, а
+	интерполяция Angular нарисовала бы объект как `[object Object]`. Текст —
+	свойством ячейки (`textContent`), а не интерполяцией внутри неё: Prettier
+	переносит содержимое ячейки таблицы на свою строку, и Angular оставил бы от
+	отступа пробелы по краям текста. Шаблон непрозрачен: заданный, он рисуется в
+	каждой ячейке вместо значения. Ветка по шаблону — над петлёй, а не в каждой
+	ячейке: блок `@if` на ячейку — ещё один узел-якорь и представление на каждую
+	ячейку строки, которую таблица размножает тысячами. Шаблон появился или
+	пропал — ячейки строки рисуются заново.
+
+	Выбор строки меняет её `dataset` и перерисовывает шаблон строки, но не
+	пересоздаёт ни ячеек — петля держит их по колонке, — ни содержимого шаблона
+	`cell`: контекст его вывода — литерал, и Angular держит его, пока не
+	сменились строка, колонка или значение, а смена контекста представление
+	вывода не пересоздаёт.
+-->
+@if (state()['selecting']) {
+	<td class="so-table-row__select" [so-attributes]="state()['cellAria']">
+		<so-check-box
+			embedded="table.select"
+			[ctrl]="facade()?.context?.adapters.table.checkBox"
+			[aria_labelledBy]="state()['rowHeaderId']"
+		/>
+	</td>
+}
+@if (slot('cell'); as content) {
+	@for (cell of state()['cells'] ?? []; track cell.column.uid) {
+		@if (cell.rowHeader) {
+			<th
+				class="so-table-row__cell"
+				scope="row"
+				[so-attributes]="{ ...cell.dataset, ...state()['cellAria'], ...cell.aria }"
+			>
+				<ng-container
+					[ngTemplateOutlet]="content"
+					[ngTemplateOutletContext]="{
+						row: instance(),
+						column: cell.column,
+						value: cell.value,
+					}"
+				/>
+			</th>
+		} @else {
+			<td
+				class="so-table-row__cell"
+				[so-attributes]="{ ...cell.dataset, ...state()['cellAria'], ...cell.aria }"
+			>
+				<ng-container
+					[ngTemplateOutlet]="content"
+					[ngTemplateOutletContext]="{
+						row: instance(),
+						column: cell.column,
+						value: cell.value,
+					}"
+				/>
+			</td>
+		}
+	}
+} @else {
+	@for (cell of state()['cells'] ?? []; track cell.column.uid) {
+		@if (cell.rowHeader) {
+			<th
+				class="so-table-row__cell"
+				scope="row"
+				[so-attributes]="{ ...cell.dataset, ...state()['cellAria'], ...cell.aria }"
+				[textContent]="cell.value | soText"
+			></th>
+		} @else {
+			<td
+				class="so-table-row__cell"
+				[so-attributes]="{ ...cell.dataset, ...state()['cellAria'], ...cell.aria }"
+				[textContent]="cell.value | soText"
+			></td>
+		}
+	}
+}

@@ -11,7 +11,9 @@
  * (`pg-angular-root`) в раскладке не участвует (`display: contents`), и
  * компонент стоит в ячейке так же, как компонент хоста Vue, — то же место и
  * тот же размер. У превью с обёрткой и содержимым так же стоят и обёртка, и
- * части: подпись вокруг флажка, элементы коллекций, панель активного таба.
+ * части: подпись вокруг флажка, элементы коллекций, панель активного таба, —
+ * а у таблицы её окно, корень, заголовки и строки: ширину колонок плагин
+ * раскладки мерит по окну, и раскладка совпадает, только если окно он нашёл.
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
@@ -101,6 +103,10 @@ describe('хост Angular', () => {
 		['list-box', '.so-list-box, .so-list-box-item'],
 		['tabs', '.so-tabs, .so-tabs-item, .so-tabs__panel'],
 		['accordion', '.so-accordion, .so-accordion-item'],
+		// Таблица — окно, корень, заголовки и строки: рамку превью задаёт хост.
+		// Окна Virtual здесь нет — у Vue в его ряду ещё и Select, которого у
+		// Angular нет
+		['table', '.so-table__viewport, .so-table, .so-table-column, .so-table-row'],
 	])('%s стоит в ячейке так же, как у Vue', async (component, selector) => {
 		const vue = await boxesOf('vue', component, selector)
 		const angular = await boxesOf('angular', component, selector)

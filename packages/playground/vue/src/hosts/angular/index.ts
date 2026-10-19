@@ -12,9 +12,10 @@ import {
 } from '@angular/core'
 import { createApplication } from '@angular/platform-browser'
 import { findComponent, type IPreviewHost } from '@soldy-ui/playground-shared'
-import { PREVIEWS, type TContent, type TPart, type TProps } from './previews'
+import { PREVIEWS, type TContent, type TPart, type TPreview, type TProps } from './previews'
 import { FIXTURES } from './fixtures'
 import { listen, listenersOf, type TOutputListener } from './events'
+import { PreviewFrameComponent } from './frame.component'
 import { PreviewRootComponent, language } from './root.component'
 
 /** Компонент в корне: новые пропсы и снятие. */
@@ -45,10 +46,14 @@ type TInsertOptions = {
 	readonly projected?: Node[][]
 }
 
-/** Узел содержимого: элемент части, на котором она соберётся, или разметка. */
+/**
+ * Узел содержимого: элемент части, на котором она соберётся, разметка со своим
+ * содержимым — его узлы уже в ней — или разметка без компонента.
+ */
 type TContentNode =
-	| { readonly node: Node; readonly part?: undefined }
-	| { readonly node: Element; readonly part: TPart }
+	| { readonly node: Node; readonly part?: undefined; readonly nested?: undefined }
+	| { readonly node: Element; readonly part: TPart; readonly nested?: undefined }
+	| { readonly node: Element; readonly part?: undefined; readonly nested: TContentNode[] }
 
 /**
  * Пропсы, которым у компонента Angular нет входа: тег корня — у самого
@@ -129,11 +134,23 @@ function insert<T extends object>(
 /**
  * Узлы содержимого — до сборки компонента: компонент получает их проекцией при
  * создании, а части соберутся на своих элементах позже (`assembleParts`).
+ * Содержимое разметки ложится в неё детьми сразу — с элементами своих частей.
  */
 function nodesOf(content: readonly TContent[] = []): TContentNode[] {
-	return content.map((entry) =>
-		typeof entry === 'function' ? { node: entry() } : { node: entry.element(), part: entry },
-	)
+	return content.map((entry): TContentNode => {
+		if (typeof entry === 'function') return { node: entry() }
+
+		if ('markup' in entry) {
+			const node = entry.markup()
+			const nested = nodesOf(entry.content)
+
+			for (const child of nested) node.appendChild(child.node)
+
+			return { node, nested }
+		}
+
+		return { node: entry.element(), part: entry }
+	})
 }
 
 /**
@@ -170,15 +187,19 @@ function assemble(ref: ComponentRef<unknown>): void {
 
 /**
  * Части содержимого — каждая на свой элемент в проекции владельца, с его
- * инжектором, после его сборки и по порядку; у части — свои части. Собранное
- * копится в `built`: снимается вместе с превью.
+ * инжектором, после его сборки и по порядку; у части — свои части. Части в
+ * разметке со своим содержимым — тоже части владельца: разметка компонента не
+ * заводит, и DI идёт мимо неё, как в шаблоне. Собранное копится в `built`:
+ * снимается вместе с превью.
  */
 function assembleParts(
 	owner: ComponentRef<unknown>,
 	nodes: readonly TContentNode[],
 	built: ComponentRef<unknown>[],
 ): void {
-	for (const { node, part } of nodes) {
+	for (const { node, part, nested } of nodes) {
+		if (nested) assembleParts(owner, nested, built)
+
 		if (!part) continue
 
 		const content = nodesOf(part.content)
@@ -193,13 +214,23 @@ function assembleParts(
 }
 
 /**
- * Превью: компонент адаптера по описанию карты — в обёртке и с содержимым;
- * пропсы оболочки — пропсы превью и строки — уходят его входам, его выходы и
- * слушают.
+ * Пропсы компонента превью: данные превью (`props` описания), а поверх —
+ * пропсы оболочки, как `{ items, columns, ...bind }` у Vue и React.
+ */
+function propsOf(preview: TPreview, props: TProps): TProps {
+	return preview.props ? { ...preview.props(props), ...props } : props
+}
+
+/**
+ * Превью: компонент адаптера по описанию карты — в обёртке или рамке и с
+ * содержимым; пропсы оболочки — пропсы превью и строки — уходят его входам,
+ * его выходы и слушают.
  *
- * Обёртка — в месте корня, компонент — на своём элементе в её проекции,
- * части — на своих в проекциях компонента. Собирается всё снаружи внутрь
- * (`assemble`): обёртка раньше компонента, компонент раньше частей.
+ * Обёртка или рамка — в месте корня, компонент — на своём элементе в её
+ * проекции, части — на своих в проекциях компонента. Собирается всё снаружи
+ * внутрь (`assemble`): обёртка раньше компонента, компонент раньше частей.
+ * Новые пропсы оболочки рамка получает вместе с компонентом: её стиль — от
+ * них.
  */
 function drawPreview(
 	outlet: ViewContainerRef,
@@ -213,6 +244,7 @@ function drawPreview(
 
 	const built: ComponentRef<unknown>[] = []
 	let unlisten = (): void => {}
+	let reframe: (next: TProps) => void = () => {}
 
 	// Снимается в порядке сборки, как представление шаблона: владелец раньше
 	// частей
@@ -237,12 +269,26 @@ function drawPreview(
 			built.push(wrapper)
 			assemble(wrapper)
 			place = projectionPlace(wrapper, element)
+		} else if (preview.frame) {
+			const { frame } = preview
+			const element = preview.element()
+			const { ref, write } = insert(
+				outletPlace(outlet),
+				PreviewFrameComponent,
+				{ frame: frame(props) },
+				{ projected: project(PreviewFrameComponent, [{ node: element }]) },
+			)
+
+			built.push(ref)
+			assemble(ref)
+			place = projectionPlace(ref, element)
+			reframe = (next) => write({ frame: frame(next) })
 		} else {
 			place = outletPlace(outlet, preview.element?.())
 		}
 
 		const content = nodesOf(preview.content)
-		const { ref, write } = insert(place, preview.component, props, {
+		const { ref, write } = insert(place, preview.component, propsOf(preview, props), {
 			directives: preview.directives,
 			projected: project(preview.component, content),
 		})
@@ -254,7 +300,13 @@ function drawPreview(
 		assemble(ref)
 		assembleParts(ref, content, built)
 
-		return { write, destroy }
+		return {
+			write(next) {
+				reframe(next)
+				write(propsOf(preview, next))
+			},
+			destroy,
+		}
 	} catch (error) {
 		destroy()
 		throw error

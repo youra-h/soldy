@@ -17,12 +17,19 @@
  * рендера одной страницы, параллельные или нет, дают одни и те же `id`, и
  * браузер после гидратации — тоже.
  *
+ * Таблица из данных — так же: строки в её коллекции с самой сборки, и сервер
+ * рисует их вместе с `id` заголовков строк и ссылками чекбоксов на них, а
+ * подписи колонок — с их `id` и именем кнопки сортировки от локали. Окно
+ * обёртки `<so-virtual>` коллекция подхватывает при сборке, и сервер отдаёт
+ * уже окно — первые 50 элементов, — а гидратация собирает то же окно.
+ *
  * Разметка сервера проверяется разобранной документом: порядок атрибутов у
  * сервера свой (`server.ts`).
  */
 
 import { describe, it, expect, afterEach, vi } from 'vitest'
 import { Component, type ApplicationRef, type Type } from '@angular/core'
+import type { TTableColumnSource } from '@soldy-ui/core'
 import {
 	TAccordionComponent,
 	TAccordionItemComponent,
@@ -30,9 +37,11 @@ import {
 	TListBoxItemComponent,
 	TRadioGroupComponent,
 	TRadioGroupItemComponent,
+	TTableComponent,
 	TTabsComponent,
 	TTabsContentComponent,
 	TTabsItemComponent,
+	TVirtualComponent,
 } from '@soldy-ui/angular'
 import { hydrate, leavePage, loadPage, renderOnServer } from './server'
 
@@ -390,5 +399,180 @@ describe('гидратация', () => {
 		expect(attributeOf(all(document, '.so-list-box-item .so-button'), 'aria-selected')).toEqual(
 			['false', 'true'],
 		)
+	})
+})
+
+const NAME: TTableColumnSource = { field: 'name', text: 'Имя', rowHeader: true }
+const AGE: TTableColumnSource = { field: 'age', text: 'Возраст', align: 'end', sortable: true }
+
+/** Таблица из данных с колонкой выбора, сортируемой колонкой и ручкой ширины. */
+@Component({
+	selector: 'app-root',
+	standalone: true,
+	imports: [TTableComponent],
+	template: `<div so-table [items]="items" [columns]="columns" mode="multiple"></div>`,
+})
+class TablePage {
+	readonly items = [
+		{ data: { id: 1, name: 'Анна', age: 30 } },
+		{ data: { id: 2, name: 'Борис', age: 41 } },
+	]
+	readonly columns = [NAME, { ...AGE, resizable: true, width: 120 }]
+}
+
+/** Связки таблицы: `id` заголовков строк и подписей колонок и ссылки на них. */
+function tableIdsOf(page: ParentNode) {
+	return {
+		rowHeaders: attributeOf(all(page, 'th[scope="row"]'), 'id'),
+		captions: attributeOf(all(page, '.so-table-column__text'), 'id'),
+		checkBoxes: attributeOf(all(page, '.so-table-row__select input'), 'aria-labelledby'),
+		headers: attributeOf(all(page, '.so-table-column'), 'aria-labelledby'),
+		resizers: attributeOf(all(page, '.so-table-column__resizer input'), 'aria-labelledby'),
+		sorts: attributeOf(all(page, '.so-table-column__sort'), 'aria-label'),
+	}
+}
+
+describe('Table · серверный рендер', () => {
+	/**
+	 * Строки из данных — в коллекции с самой сборки: сервер рисует их со
+	 * ссылками чекбоксов на заголовки строк. Имя кнопки сортировки плагин имён
+	 * пишет при сборке — оно уже в разметке сервера.
+	 */
+	it('таблица из данных — со строками, связками и именем кнопки сортировки', async () => {
+		const page = await serverPage(TablePage)
+		const ids = tableIdsOf(page)
+
+		expect(page.querySelector('div[so-table].so-table__viewport > table.so-table')).not.toBe(
+			null,
+		)
+		expect(all(page, '.so-table-row').map((row) => row.textContent?.trim())).toEqual([
+			'Анна30',
+			'Борис41',
+		])
+		expect(ids.rowHeaders).toHaveLength(2)
+		expect(ids.captions).toHaveLength(2)
+		expect([...ids.rowHeaders, ...ids.captions].every((id) => id?.startsWith('ng-'))).toBe(true)
+		expect(ids.checkBoxes).toEqual(ids.rowHeaders)
+		expect(ids.headers).toEqual(ids.captions)
+		expect(ids.resizers).toEqual([ids.captions[1]])
+		expect(ids.sorts).toEqual(['Sort by Возраст'])
+	})
+
+	it('поле ручки — с ходом и шириной колонки', async () => {
+		const page = await serverPage(TablePage)
+		const field = page.querySelector('.so-table-column__resizer input')
+
+		expect(field?.getAttribute('type')).toBe('range')
+		expect(field?.getAttribute('value')).toBe('120')
+	})
+})
+
+describe('Table · гидратация', () => {
+	afterEach(() => {
+		vi.restoreAllMocks()
+		leavePage()
+	})
+
+	it('узлы сервера переиспользуются, id и ссылки у браузера те же, ошибок нет', async () => {
+		const error = vi.spyOn(console, 'error')
+		const warn = vi.spyOn(console, 'warn')
+
+		loadPage(await renderOnServer(TablePage))
+
+		const server = tableIdsOf(document)
+		const table = document.querySelector('table.so-table')
+		const row = document.querySelector('.so-table-row')
+		const app = await hydrate(TablePage)
+
+		await app.whenStable()
+
+		expect(document.querySelector('table.so-table')).toBe(table)
+		expect(document.querySelector('.so-table-row')).toBe(row)
+		expect(tableIdsOf(document)).toEqual(server)
+		expect(error).not.toHaveBeenCalled()
+		expect(warn).not.toHaveBeenCalled()
+	})
+
+	/**
+	 * Клик по чекбоксу слушает его плагин, а узел плагины получают кадром после
+	 * отрисовки (`TElementPlugin`) — и после гидратации тоже.
+	 */
+	it('после гидратации выбор строки доходит до разметки', async () => {
+		loadPage(await renderOnServer(TablePage))
+
+		const app = await hydrate(TablePage)
+
+		await app.whenStable()
+		await new Promise((resolve) => requestAnimationFrame(resolve))
+
+		const [anna] = all(document, '.so-table-row')
+		const input = anna?.querySelector('.so-table-row__select input')
+
+		if (!(input instanceof HTMLInputElement)) throw new Error('чекбокса строки нет')
+
+		input.click()
+		await app.whenStable()
+
+		expect(attributeOf(all(document, '.so-table-row'), 'data-selected')).toEqual([
+			'true',
+			'false',
+		])
+		expect(input.checked).toBe(true)
+	})
+})
+
+/** Список из восьмидесяти элементов в окне обёртки. */
+@Component({
+	selector: 'app-root',
+	standalone: true,
+	imports: [TListBoxComponent, TVirtualComponent],
+	template: `<so-virtual><div so-list-box [items]="items"></div></so-virtual>`,
+})
+class VirtualPage {
+	readonly items = Array.from({ length: 80 }, (_, index) => ({
+		value: `v${index + 1}`,
+		text: `Пункт ${index + 1}`,
+	}))
+}
+
+describe('Virtual · серверный рендер и гидратация', () => {
+	afterEach(() => {
+		vi.restoreAllMocks()
+		leavePage()
+	})
+
+	/**
+	 * Окно коллекция подхватывает при сборке, а сборка идёт и на сервере:
+	 * сервер отдаёт уже окно, первые 50 элементов, без распорок — замера на
+	 * сервере нет.
+	 */
+	it('сервер отдаёт окно — первые 50 элементов, без распорок', async () => {
+		const page = await serverPage(VirtualPage)
+
+		expect(all(page, '.so-list-box-item')).toHaveLength(50)
+		expect(all(page, '.so-list-box__filler')).toEqual([])
+		expect(attributeOf(all(page, '.so-list-box-item .so-button'), 'aria-posinset').at(-1)).toBe(
+			'50',
+		)
+	})
+
+	it('гидратация сходится: то же окно на тех же узлах, ошибок нет', async () => {
+		const error = vi.spyOn(console, 'error')
+		const warn = vi.spyOn(console, 'warn')
+
+		loadPage(await renderOnServer(VirtualPage))
+
+		const first = document.querySelector('.so-list-box-item')
+		const app = await hydrate(VirtualPage)
+
+		await app.whenStable()
+
+		expect(all(document, '.so-list-box-item')).toHaveLength(50)
+		expect(document.querySelector('.so-list-box-item')).toBe(first)
+		expect(
+			attributeOf(all(document, '.so-list-box-item .so-button'), 'aria-setsize').at(-1),
+		).toBe('80')
+		expect(error).not.toHaveBeenCalled()
+		expect(warn).not.toHaveBeenCalled()
 	})
 })
