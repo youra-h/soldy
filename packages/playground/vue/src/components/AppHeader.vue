@@ -1,143 +1,62 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { Button, Select, Switch } from '@soldy-ui/vue'
-import { useTheme } from '../composables/useTheme'
-import { useIconPack } from '../composables/useIconPack'
-import { useLanguage } from '../composables/useLanguage'
+import { Button, Drawer, Icon } from '@soldy-ui/vue'
 import { useSidebar } from '../composables/useSidebar'
-import { useMotionMode, type TMotionOffReason } from '../composables/useMotionMode'
-import { FRAMEWORKS, isFramework } from '../hosts'
-import { frameworkOf, isTestsRoute, propertiesPath, withFramework } from '../navigation'
+import { MENU_GLYPH, SETTINGS_GLYPH } from '../icons'
+import AppSettings from './AppSettings.vue'
+import PageSwitch from './PageSwitch.vue'
 
-const { theme, dark, themes } = useTheme()
-const { pack, packs, apply } = useIconPack()
-const { mode, modes, offReason, choose } = useMotionMode()
-const { language, languages, choose: chooseLanguage } = useLanguage()
-const { narrow, open: sidebarOpen } = useSidebar()
-
-/** Чем выключено движение — в плашке шапки. */
-const OFF_REASONS: Record<TMotionOffReason, string> = {
-	system: 'так просит система',
-	stand: 'режимом стенда',
-}
-
-/**
- * Плашка, пока движение выключено: пропавшая анимация иначе выглядит поломкой
- * компонента. Тот же текст — в `title`: в тесной шапке плашка режет его
- * многоточием.
- */
-const motionOff = computed(
-	() =>
-		offReason.value &&
-		`Движение выключено — ${OFF_REASONS[offReason.value]}. «${modes.full}» вернёт его`,
-)
-
-const route = useRoute()
-const router = useRouter()
-
-/** Фреймворк превью — первый сегмент адреса. */
-const framework = computed(() => frameworkOf(route))
-
-/**
- * Сменить фреймворк: меняется первый сегмент адреса, остаток пути тот же.
- * Пропсы, выставленные на странице, остаются у оболочки — заново рисуются
- * только сцены.
- */
-function chooseFramework(value: unknown): void {
-	if (isFramework(value) && value !== framework.value) {
-		router.push(withFramework(route.path, value))
-	}
-}
-
-/**
- * Переход между страницей свойств и страницей тестов — в пределах
- * фреймворка. Со страницы тестов — обратно на ту страницу свойств, с которой
- * ушли.
- */
-const counterpart = computed(() =>
-	isTestsRoute(route)
-		? { to: propertiesPath(framework.value), label: 'Свойства' }
-		: { to: `/${framework.value}/tests`, label: 'Тесты' },
-)
+const { narrow, menuOpen, settingsOpen } = useSidebar()
 </script>
 
 <template>
-	<header class="pg__header">
-		<!-- Узкое окно: меню спрятано в выезжающую панель, открывает её эта кнопка -->
-		<Button v-if="narrow" size="sm" type="button" @click="sidebarOpen = true">Меню</Button>
-		<div class="pg__brand">soldy <span>· playground</span></div>
-		<RouterLink :to="counterpart.to" class="pg__switch">{{ counterpart.label }}</RouterLink>
-
+	<header class="pg__header" :class="{ 'pg__header--narrow': narrow }">
 		<!--
-			Фреймворк — первым из контролов: он решает, чем нарисованы все
-			компоненты страницы. Плашка движения остаётся у своего переключателя
+			Узкое окно — шапка полоской в одну строку: меню, название, настройки.
+			Меню и настройки уезжают в выезжающие панели, открывают их кнопки с
+			глифами (`icons.ts`). Глиф декоративный — имя кнопке даёт `aria_label`
 		-->
-		<div class="pg__control">
-			<span class="pg__control-label">Фреймворк</span>
-			<Select :value="framework" size="sm" @update:value="chooseFramework($event)">
-				<Select.Item
-					v-for="item in FRAMEWORKS"
-					:key="item.id"
-					:value="item.id"
-					:text="item.label"
-				/>
-			</Select>
-		</div>
+		<Button
+			v-if="narrow"
+			size="sm"
+			view="plain"
+			type="button"
+			class="pg__glyph-button"
+			aria_label="Меню"
+			@click="menuOpen = true"
+		>
+			<Icon :tag="MENU_GLYPH" />
+		</Button>
 
-		<p v-if="motionOff" class="pg__motion-off" :title="motionOff">{{ motionOff }}</p>
+		<div class="pg__brand">soldy-ui <span>· playground</span></div>
 
-		<div class="pg__control">
-			<span class="pg__control-label">Анимация движения</span>
-			<Select :value="mode" size="sm" @update:value="choose($event)">
-				<Select.Item
-					v-for="(label, value) in modes"
-					:key="value"
-					:value="value"
-					:text="label"
-				/>
-			</Select>
-		</div>
+		<template v-if="narrow">
+			<Button
+				size="sm"
+				view="plain"
+				type="button"
+				class="pg__glyph-button"
+				aria_label="Настройки"
+				@click="settingsOpen = true"
+			>
+				<Icon :tag="SETTINGS_GLYPH" />
+			</Button>
 
-		<div class="pg__control">
-			<span class="pg__control-label">Язык</span>
-			<Select :value="language" size="sm" @update:value="chooseLanguage($event)">
-				<Select.Item
-					v-for="(entry, value) in languages"
-					:key="value"
-					:value="value"
-					:text="entry.label"
-				/>
-			</Select>
-		</div>
+			<!--
+				Закрытая панель спрятана, а не размонтирована, и настройки в ней
+				действуют, пока она закрыта: тему и режим движения странице ставят
+				они (`useTheme`, `useMotionMode`). Смена адреса панель не закрывает
+				(`useSidebar`)
+			-->
+			<Drawer v-model:visible="settingsOpen" placement="end" class="pg__drawer">
+				<template #title>Настройки</template>
+				<AppSettings />
+			</Drawer>
+		</template>
 
-		<div class="pg__control">
-			<span class="pg__control-label">Тема</span>
-			<Select :value="theme" size="sm" @update:value="theme = String($event)">
-				<Select.Item
-					v-for="item in themes"
-					:key="item.id"
-					:value="item.value"
-					:text="item.label"
-				/>
-			</Select>
-		</div>
-
-		<div class="pg__control">
-			<span class="pg__control-label">Иконки</span>
-			<Select :value="pack" size="sm" @update:value="apply(String($event))">
-				<Select.Item
-					v-for="item in packs"
-					:key="item.id"
-					:value="item.id"
-					:text="item.label"
-				/>
-			</Select>
-		</div>
-
-		<div class="pg__control">
-			<span class="pg__control-label">Тёмная</span>
-			<Switch :value="dark" size="sm" @update:value="dark = Boolean($event)" />
-		</div>
+		<!-- Широкое окно: ссылка сразу за названием, контролы — до конца шапки -->
+		<template v-else>
+			<PageSwitch />
+			<AppSettings />
+		</template>
 	</header>
 </template>
