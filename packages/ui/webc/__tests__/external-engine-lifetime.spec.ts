@@ -8,18 +8,33 @@
  * связка новая на каждое подключение: элемент, переставленный в документе,
  * собирается заново, и прежняя сборка обязана уйти с движка целиком. Здесь —
  * настоящий цикл Web Components, как `ui/angular/__tests__/external-engine-lifetime.spec.ts`
- * у Angular: набор табов и список, переставленные трижды и снятые, и на шинах
- * владельца, движка и его расширений ни подписки, ни перехватчика, ни
- * слушателя обмена.
+ * у Angular: набор табов, список и таблица, переставленные трижды и снятые, и
+ * на шинах владельца, движка и его расширений ни подписки, ни перехватчика, ни
+ * слушателя обмена. У таблицы — ещё строки, колонки и «выбрать все»: их держат
+ * элементы частей и чекбоксы, а в окне `<so-virtual>` — и выключатель обёртки.
  */
 
 import { describe, it, expect, afterEach, vi } from 'vitest'
-import { TEvented, TListBox, TTabs, createEngineListBox, createEngineTabs } from '@soldy-ui/core'
+import {
+	TEvented,
+	TListBox,
+	TTable,
+	TTabs,
+	TVirtual,
+	createEngineListBox,
+	createEngineTable,
+	createEngineTabs,
+	type TTableCollection,
+} from '@soldy-ui/core'
 import {
 	TListBoxElement,
+	TTableElement,
 	TTabsElement,
+	TVirtualElement,
 	type TListBoxElementProps,
+	type TTableElementProps,
 	type TTabsElementProps,
+	type TVirtualElementProps,
 } from '@soldy-ui/webc'
 
 /** Отрисовка коалесцируется в микротаске — ждём её перед проверкой. */
@@ -41,6 +56,66 @@ function isTabs(node: Element): node is TTabsElementProps {
 
 function isListBox(node: Element): node is TListBoxElementProps {
 	return node instanceof TListBoxElement
+}
+
+function isTable(node: Element): node is TTableElementProps {
+	return node instanceof TTableElement
+}
+
+function isVirtual(node: Element): node is TVirtualElementProps {
+	return node instanceof TVirtualElement
+}
+
+/**
+ * Движок строк таблицы снаружи: две строки из данных, колонка с заголовком
+ * строки, сортировкой и ручкой и выбор нескольких — так таблица рисует и
+ * кнопку сортировки, и ручку, и колонку выбора.
+ */
+function tableEngine(owner?: TTable): TTableCollection {
+	const engine = createEngineTable({
+		owner,
+		items: ITEMS.map((data, index) => ({ data: { id: index + 1, ...data } })),
+	})
+
+	engine.extensions.columns.columns = [
+		{
+			field: 'text',
+			text: 'Текст',
+			rowHeader: true,
+			sortable: true,
+			resizable: true,
+			width: 150,
+		},
+	]
+	engine.extensions.selection.mode = 'multiple'
+
+	return engine
+}
+
+/** Шины движка таблицы: сам движок, расширения, строки, колонки и «выбрать все». */
+function tableBuses(engine: TTableCollection): TEvented<any>[] {
+	return [
+		engine.events,
+		...Object.values(engine.extensions).flatMap((extension) =>
+			extension ? [extension.events] : [],
+		),
+		...engine.extensions.batch.items.map((row) => row.events),
+		...engine.extensions.columns.columns.map((column) => column.events),
+		engine.extensions.table.selectAll.events,
+	]
+}
+
+/** Таблица над движком снаружи, ещё не подключённая. */
+function createTable(engine: TTableCollection, owner?: TTable): TTableElementProps {
+	const el = document.createElement('div', { is: 'so-table' })
+
+	if (!isTable(el)) throw new Error('<div is="so-table"> нет')
+
+	if (owner) el.ctrl = owner
+
+	el.engine = engine
+
+	return el
 }
 
 /**
@@ -177,5 +252,55 @@ describe('ListBox над движком и владельцем снаружи',
 		el.engine = engine
 
 		await moveThriceAndRemove(el, live, 'so-list-box-item')
+	})
+})
+
+/**
+ * Как у Solid — на Table: строки — элементы частей над строками движка, у
+ * каждой чекбокс выбора, в шапке — колонки с кнопкой сортировки и ручкой и
+ * «выбрать все». Каждая перестановка — новые связки и таблицы, и строк, и
+ * колонок, и чекбоксов над теми же экземплярами.
+ */
+describe('Table над движком и владельцем снаружи', () => {
+	it('переставленная трижды и снятая — на шинах владельца, движка, строк и колонок ничего', async () => {
+		const owner = new TTable()
+		const engine = tableEngine(owner)
+		const live = watchBuses([owner.events, ...tableBuses(engine)])
+		const el = createTable(engine, owner)
+
+		await moveThriceAndRemove(el, live, 'so-table-row')
+
+		// Собиралась по-настоящему: кнопка сортировки, ручка и чекбоксы на месте
+		expect(el.querySelectorAll('.so-table-column__sort')).toHaveLength(1)
+		expect(el.querySelectorAll('.so-table-column__resizer')).toHaveLength(1)
+		expect(el.querySelectorAll('.so-check-box')).toHaveLength(3)
+	})
+
+	/**
+	 * Обёртка своей шины коллекции не отдаёт: на выключатель таблица
+	 * подписывается при приёме и отписывается со снятием, — и окно, переставленное
+	 * вместе с таблицей, на `ctrl` обёртки ничего не оставляет.
+	 */
+	it('в окне: на ctrl обёртки и шинах движка ничего', async () => {
+		const virtual = new TVirtual()
+		const engine = tableEngine()
+		// Окно на каждом подключении — до слежки: своя подписка теста не в счёт
+		const windows: boolean[] = []
+
+		engine.extensions.draw.events.on('change:virtual', (on) => windows.push(on))
+
+		const live = watchBuses([virtual.events, ...tableBuses(engine)])
+		const el = document.createElement('so-virtual')
+
+		if (!isVirtual(el)) throw new Error('<so-virtual> нет')
+
+		el.ctrl = virtual
+		el.appendChild(createTable(engine))
+
+		await moveThriceAndRemove(el, live, 'so-table-row')
+
+		// Подключение и три перестановки — окно на каждом, снятие — без окна
+		expect(windows).toEqual([true, false, true, false, true, false, true, false])
+		expect(engine.extensions.draw.virtual).toBe(false)
 	})
 })

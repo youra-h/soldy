@@ -45,6 +45,15 @@ export class TKeyedLoop<TRecord, TKey, TElement extends Element = Element> {
 	) {}
 
 	/**
+	 * Нарисованный элемент записи — по её ключу; не нарисован — `undefined`.
+	 * Так шаблон отдаёт элементам то, что меняется мимо записей петли: набор
+	 * ячеек строки таблицы сменился, а ячейки — нет.
+	 */
+	elementOf(record: TRecord): TElement | undefined {
+		return this._drawn.get(this._keyOf(record))
+	}
+
+	/**
 	 * Элементы — по записям: новым ключам — `create`, живым — их элементы, и
 	 * запись им отдаёт `update` (см. шапку).
 	 */

@@ -2341,7 +2341,7 @@ Svelte 5 на рунах. Структура зеркалит React, потом�
 
 ## Layer 8d: Web Components Adapter (`packages/ui/webc/src`)
 
-### ✅ IMPLEMENTED (Component / ComponentView / Stylable / Control / Textable / Button / Icon / Label / Frame / ProgressSpinner / Skeleton / Input / CheckBox / Switch / RadioGroup / Tabs / Accordion / ListBox)
+### ✅ IMPLEMENTED (Component / ComponentView / Stylable / Control / Textable / Button / Icon / Label / Frame / ProgressSpinner / Skeleton / Input / CheckBox / Switch / RadioGroup / Tabs / Accordion / ListBox / Table / Virtual)
 
 Единственный таргет без фреймворка — и потому самый показательный тест
 архитектуры: ядро уже событийное, а `CustomEvent` это родная модель DOM.
@@ -2358,7 +2358,8 @@ Svelte 5 на рунах. Структура зеркалит React, потом�
   `<so-locale-provider>` вверх от хоста; `icon` — иконка по роли из реестра:
   `drawRoleIcon` (рисунок роли — `viewBox` и содержимое — на готовом `<svg>`)
   и `roleIcon` (голый `<svg>` с рисунком роли — для разметки, где иконка не
-  компонент, и для приложения).
+  компонент, и для приложения); `toText` — значение неизвестного типа текстом
+  по правилу интерполяции Vue (ячейка таблицы без образца `cell`).
 - `adapter/runtime/` — `useAdapter` поверх связки
   `adapter.connect(WebcProfile)` (о пропе ядра она сообщает элементу колбэком
   `onUpdate`), `useCollectionAdapter` (связка фасада коллекции — без `ctrl` и
@@ -2371,7 +2372,10 @@ Svelte 5 на рунах. Структура зеркалит React, потом�
   элемент классы, стиль и скрытие, а атрибуты — раскладчик элемента
   `TElementAttributes` по правилу `applyAttributes`: один на узел, со слоями —
   наборы ядра самого элемента снизу, набор владельца сверху, —
-  `defineAutonomousElement` (регистрация провайдера локали без `extends`),
+  `defineAutonomousElement` (регистрация без `extends` элементов, у которых в
+  остальных адаптерах узла нет: провайдера локали и окна `<so-virtual>`),
+  `displayContents` (их коробка — теневой корень со `<slot>` и
+  `:host { display: contents }`),
   `isDefining` (признак идущей регистрации), `teleport.ts` (`TTeleport` —
   телепорт корня слоя в цель), `relocation.ts` (`relocate` и `isRelocating` —
   перенос силами базы), `waiting.ts` (ожидание: подключение внутри чужого
@@ -2451,7 +2455,14 @@ Skeleton, — стоит ли корень по месту в коллекции
 (`control`): `{ sets: ['attrs'], control: true }` у Input, CheckBox и Switch,
 `{ sets: ['attrs', 'dataset'], control: true }` у радио, а у таба и секции
 полем служит строка, как у Angular (см. «Поле» и «Коллекция» в «Решениях по
-DOM»).
+DOM»), — и не обёртка ли элемент вокруг корня (`wrapped`): `{ wrapped: true }`
+у Table — элемент `<div is="so-table">` и есть окно таблицы, а корень `table`
+строит шаблон (`TTemplateParts.root`); на него база кладёт классы, наборы и
+стиль ядра, с ним связывает `TElementPlugin` и его тег отдаёт ядру, а элементу
+оставляет скрытие и атрибуты потребителя. Компонент бывает и невизуальным —
+окно `<so-virtual>` (`SoldyElement(HTMLElement, …)`, регистрация
+`defineAutonomousElement`): классы, наборы и видимость база читает из
+состояния по имени, и у него их нет.
 
 Свои атрибуты элемента сверх пропов дескриптора — то, что элемент читает
 сам и ядру не отдаёт, — называет описание элемента (`attributes`): роль
@@ -2794,11 +2805,23 @@ WebKit:
   шаблон, а шапка и подвал стоят в корне рядом с ним. У радио поле —
   `<input type="radio">`.
   Неактивная панель таба скрыта (`shownBy: 'active'`), и её содержимое вне
-  документа (`showSlot`): поля в нём не уходят с формой, как у Vue. Сторожат
+  документа (`showSlot`): поля в нём не уходят с формой, как у Vue. Таблица
+  рисует части сама, петлями по ключу: заголовки `<th is="so-table-column">`
+  по показанным колонкам, строки `<tr is="so-table-row">` и распорки
+  `tr.so-table__filler-row` по `drawn`, а строка — свои ячейки по ключу
+  колонки (тег — в ключе: колонка, ставшая заголовком строки, — новый узел).
+  Образец `header` уходит копией в слот `default` заголовка, `cell` — в слот
+  `cell` строки, а строка копирует его в каждую ячейку заново на смену своих
+  ячеек; без образца — значение текстом (`toText`). Чекбоксы колонки выбора —
+  детали CheckBox над экземплярами, которые держит таблица: экземпляр сменился
+  (новая связка — новый контекст) — ячейка строится заново. Окно
+  `<so-virtual>` опускает подключение лифтом своему хосту, и коллекция в его
+  свете подхватывает его при сборке. Сторожат
   `ui/webc/__tests__/tabs.spec.ts`, `accordion.spec.ts`, `radio-group.spec.ts`,
-  `list-box.spec.ts`, `collection-elevator.spec.ts`,
-  `collection-item-lifetime.spec.ts`, `external-engine-lifetime.spec.ts` и
-  `browser/webc-collections.spec.ts` стенда.
+  `list-box.spec.ts`, `table.spec.ts`, `virtual.spec.ts`,
+  `collection-elevator.spec.ts`, `collection-item-lifetime.spec.ts`,
+  `external-engine-lifetime.spec.ts` и `browser/webc-collections.spec.ts`
+  стенда.
 
 **Типы.** Класс элемента собирает фабрика `SoldyElement(Native, spec)`: база
 одна, а нативный класс у каждого тега свой. Тип результата объявлен явно —

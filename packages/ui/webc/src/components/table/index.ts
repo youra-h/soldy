@@ -1,0 +1,5 @@
+export { setupTable } from './setup.component'
+export { TTableElement, type TTableElementProps } from './Table.element'
+export { tableTemplate, TABLE_COLUMN_SLOTS, TABLE_ROW_SLOTS } from './table.template'
+export * from './column'
+export * from './row'

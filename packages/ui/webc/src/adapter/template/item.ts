@@ -15,8 +15,14 @@
  * слотов Web Components нет, поэтому образец — общий на все элементы, и каждый
  * получает свою копию — назначением в свой слот (`lend`), вместе с текстом.
  * Данные элемента копия берёт у него самого (`el.ctrl`).
+ *
+ * Слот, который у элемента сам образец, — `cell` строки таблицы: строка
+ * копирует его в каждую свою ячейку, — получает копию в `<template>`
+ * (`lendTemplates`). Копия лежит в элементе инертной: элементы потребителя в
+ * ней не подключаются там, где им не место, — в строке, вне ячеек.
  */
 
+import { isContent } from '../runtime/content'
 import { lend } from './lend'
 import type { ITemplateContext } from './types'
 
@@ -53,5 +59,29 @@ export function lendSamples(
 		const copy = ctx.sample(from)
 
 		if (copy) lend(element, to, copy)
+	}
+}
+
+/**
+ * Копии образцов владельца — в образцы элемента из данных, по карте слотов:
+ * каждая в `<template>` в свой слот элемента, а элемент сам копирует его
+ * дальше, в свои узлы (см. шапку). Образца нет или копия без содержимого
+ * (`isContent`: пустой `<template>` владельца) — слот элемента не задан, и
+ * элемент рисует своё: `<template>` содержимым был бы всегда.
+ */
+export function lendTemplates(
+	ctx: Pick<ITemplateContext, 'sample'>,
+	element: Element,
+	slots: TItemSlots,
+): void {
+	for (const [from, to] of Object.entries(slots)) {
+		const copy = ctx.sample(from)
+
+		if (!copy || !Array.from(copy.childNodes).some(isContent)) continue
+
+		const template = element.ownerDocument.createElement('template')
+
+		template.content.append(copy)
+		lend(element, to, template)
 	}
 }

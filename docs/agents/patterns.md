@@ -1253,7 +1253,14 @@ useToasts()`. API опускает лифт (`TOASTS_ELEVATOR`, расширен
   ядра — по показанным колонкам и строкам, как Calendar рисует день. Ячейка —
   разметка строки, а содержимое заголовка и ячейки — статические слоты
   таблицы `header` (`{ column }`) и `cell` (`{ row, column, value }`): колонку
-  выбирают условием по `column.field`. Ширину колонки тема берёт из
+  выбирают условием по `column.field`. В Web Components scope у слотов нет, и
+  оба — образцы (`<template slot="cell">`): копию получает каждый заголовок и
+  каждая ячейка — `cell` таблица отдаёт строке, а строка копирует его в свои
+  ячейки, — а данные копия находит у элементов: колонку у заголовка
+  (`<th is="so-table-column">`, `el.ctrl`), строку у строки
+  (`<tr is="so-table-row">`), колонку ячейки — по её месту среди ячеек колонок
+  строки в показанных колонках таблицы (`shownColumns`); в разметке для этого
+  ничего нового. Ширину колонки тема берёт из
   переменной `--so-table-column-width` (`widthStyle`, считает ядро, см.
   «Ширина колонки» ниже).
   **Сортировка** — маленькая кнопка (Button) рядом с подписью в заголовке
@@ -1336,10 +1343,16 @@ useToasts()`. API опускает лифт (`TOASTS_ELEVATOR`, расширен
   `TElementPlugin` (`bindRef`). В Svelte их разводит тот же помощник
   `toWrappedRootProps`, и окну достаются ещё и attachment-ы потребителя, а
   attachment корня адаптер отдаёт теми же половинами: окну — запись `ref`
-  (`consumerRef`), `table` — привязку (`bindRef`). Значение ячейки без слота —
-  текстом по правилу интерполяции Vue: в React, Solid и Svelte его переводит
-  помощник адаптера `toText` — React и Solid объект не нарисуют, а Svelte
-  нарисовал бы его как `[object Object]`.
+  (`consumerRef`), `table` — привязку (`bindRef`). В Web Components окно —
+  сам элемент таблицы, `<div is="so-table">`: корень `table` строит шаблон, и
+  база кладёт на него классы, наборы и стиль ядра, с ним связывает
+  `TElementPlugin` и его тег отдаёт ядру, а элементу оставляет скрытие и
+  атрибуты потребителя (`TRootSpec.wrapped` в описании корня,
+  `ui/webc/src/adapter/runtime/element.base.ts`). Значение ячейки без слота —
+  текстом по правилу интерполяции Vue: в React, Solid, Svelte и Web
+  Components его переводит помощник адаптера `toText` — React и Solid объект
+  не нарисуют, а Svelte и `textContent` Web Components нарисовали бы его как
+  `[object Object]`.
   Прокрутку окну включает тема по `data-overflow` таблицы — его пишет
   расширение `columns`, колонки шире места: признака нет (места ещё нет) —
   окно ничего не обрезает, `false` —
@@ -1616,7 +1629,8 @@ useToasts()`. API опускает лифт (`TOASTS_ELEVATOR`, расширен
   теряют. Окно таблицы сторожат `core/__tests__/table-virtual.spec.ts`,
   `playground/vue/browser/table-virtual.spec.ts` и «окно» в
   `ui/vue/__tests__/table.spec.ts`, `ui/react/__tests__/table.spec.tsx`,
-  `ui/solid/__tests__/table.spec.tsx` и `ui/svelte/__tests__/table.spec.ts`.
+  `ui/solid/__tests__/table.spec.tsx`, `ui/svelte/__tests__/table.spec.ts` и
+  `ui/webc/__tests__/table.spec.ts`.
   **Закреплённая шапка** (`stickyHead`, по
   умолчанию нет — решение владельца: кому-то шапка в потоке как раз нужна) —
   шапка стоит у верхнего края ближайшей прокрутки, контейнера или страницы, а
@@ -1655,8 +1669,15 @@ useToasts()`. API опускает лифт (`TOASTS_ELEVATOR`, расширен
   `ui/svelte/__tests__/table.spec.ts` (сверх сценариев Vue — узел ячейки,
   переживший смену записи, и непрозрачные сниппеты: заданный `header` или
   `cell` рисуется в каждом заголовке и ячейке, и там, где ничего не
-  нарисовал), «Table» в `ui/svelte/__tests__/collections.server.spec.ts`
-  и `playground/vue/browser/table.spec.ts`.
+  нарисовал), «Table» в `ui/svelte/__tests__/collections.server.spec.ts`,
+  `ui/webc/__tests__/table.spec.ts` (сверх сценариев Vue — окно — внешний
+  узел, а корень и `TElementPlugin` — `table`, образцы `header` и `cell` и
+  данные, которые копия находит у элементов, узлы ячеек и копий, пережившие
+  выбор, и копии, построенные заново только у сменившейся записи), строки
+  Table в `ui/webc/__tests__/external-engine-lifetime.spec.ts`,
+  `playground/vue/browser/table.spec.ts` и
+  `playground/vue/browser/webc-table.spec.ts` (раскладка Web Components — как
+  у Vue, окно `<so-virtual>` в настоящей прокрутке).
 - **Окно** (`Virtual`) — длинный список рисует только видимые элементы, а на
   месте остальных — распорки той же высоты. Невизуальная обёртка, как
   DragAndDrop: `<Virtual><ListBox :items /></Virtual>`, так же Select и Table;
@@ -1732,7 +1753,8 @@ useToasts()`. API опускает лифт (`TOASTS_ELEVATOR`, расширен
   элементов одна на все; элементы разметкой (`ListBox.Item`, `Select.Item` в
   слоте) окно не прячет — оно у элементов данными (`items`, `engine`); поиск
   по странице и печать видят только нарисованное — для печати приложение
-  выключает окно (`enabled`). **Адаптеры**: Vue, React, Solid и Svelte. В React
+  выключает окно (`enabled`). **Адаптеры**: Vue, React, Solid, Svelte и Web
+  Components. В React
   `Virtual` своего узла тоже не рисует — детям отдаёт слой лифта (`Elevate`);
   пересобранная обёртка (StrictMode, `<Activity>`) опускает новое
   подключение, и список пересобирается вслед за ней — сменилось прочитанное
@@ -1744,8 +1766,17 @@ useToasts()`. API опускает лифт (`TOASTS_ELEVATOR`, расширен
   дети, а подключение к окну её проводка опускает контекстом (`setContext`) при
   инициализации, и коллекция в детях подхватывает его своей; сборка одна, как
   у Solid, а стиль распорки ядра — строкой атрибута (`toStyleText`): чужого на
-  распорке нет. Select в React, Solid и Svelte нет — окно у него пока только
-  во Vue. Сторожат
+  распорке нет. В Web Components узел у обёртки есть — автономный
+  `<so-virtual>`, без `is` и без коробки (`displayContents`: теневой корень
+  со `<slot>` и `:host { display: contents }`), и коллекции стоят в нём
+  светом; дочерний комбинатор селектора через него не проходит. Подключение к
+  окну её сборка опускает лифтом своему хосту, коллекция в свете подхватывает
+  его при своей сборке, а связка у элементов новая на каждое подключение:
+  список, вынутый из окна, собирается без окна и снимает окно с движка,
+  вставленный обратно — снова в окне. Обёртку модуль регистрирует раньше
+  коллекций — при апгрейде разметки она собирается раньше списков в ней.
+  Стиль распорки — по свойствам из записи. Select в React, Solid, Svelte и
+  Web Components нет — окно у него пока только во Vue. Сторожат
   `core/__tests__/collection.draw.spec.ts`,
   `core/__tests__/list-box-virtual.spec.ts`,
   `core/__tests__/select-virtual.spec.ts`,
@@ -1765,6 +1796,10 @@ useToasts()`. API опускает лифт (`TOASTS_ELEVATOR`, расширен
   `ui/svelte/__tests__/virtual.spec.ts` (вместо StrictMode — снятый список и
   снятая вместе с ним обёртка снимают окно с движка снаружи), «Virtual» в
   `ui/svelte/__tests__/collections.server.spec.ts`,
+  `ui/webc/__tests__/virtual.spec.ts` (вместо StrictMode — снятая обёртка
+  снимает окно с движка снаружи, список, вынутый из окна, его теряет, а
+  вставленный обратно — снова в окне; окно в разметке и элемент без коробки),
+  окно над таблицей в `ui/webc/__tests__/external-engine-lifetime.spec.ts`,
   `playground/vue/browser/list-box-virtual.spec.ts` и
   `playground/vue/browser/select-virtual.spec.ts`; окно таблицы — выше.
 

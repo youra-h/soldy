@@ -12,8 +12,12 @@ export * from './input'
 export * from './progress-spinner'
 export * from './skeleton'
 export * from './frame'
+// Окно — раньше коллекций: при апгрейде разметки элемент, зарегистрированный
+// раньше, собирается раньше, и списки в окне его находят
+export * from './virtual'
 // Коллекции: модуль владельца регистрирует свои части после себя
 export * from './radio-group'
 export * from './tabs'
 export * from './accordion'
 export * from './list-box'
+export * from './table'
