@@ -310,7 +310,10 @@ tools: Read, Write, Edit, Glob, Grep, Bash, mcp__clickup__clickup_take, mcp__cli
    changeset'а кривой: это правка к PR задачи, а не к выпуску, её называешь
    в отчёте.
 5. Проверь дифф: версия поднялась у всех пакетов группы `fixed` и только у
-   них и несёт суффикс `alpha`, стенд и корневой `package.json` не тронуты, в
+   них и несёт суффикс `alpha`, корневой `package.json` не тронут, у стенда
+   версия прежняя (`0.0.0`) и `CHANGELOG.md` нет — меняются только его
+   зависимости на библиотечные пакеты, на новую версию (docs/agents/build.md,
+   «Версии пакетов»), в
    `.changeset/` остались только `config.json`, `README.md`, `pre.json` и
    папка `pre/`. Прогон: `npm run test:setup` (сторож
    версий) и `npx prettier --check .`.
