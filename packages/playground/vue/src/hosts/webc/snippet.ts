@@ -91,8 +91,13 @@ export function propSnippet(
 	return [
 		...moduleScript([REGISTER], body),
 		'',
-		`<${element.tag} is="${element.is}"${attributes.join('')}></${element.tag}>`,
+		`<${element.tag}${isOf(element)}${attributes.join('')}></${element.tag}>`,
 	].join('\n')
+}
+
+/** Атрибут `is` в разметке — у встроенного элемента; автономный — один тег (`<so-virtual>`). */
+function isOf(element: TPreview): string {
+	return element.is === undefined ? '' : ` is="${element.is}"`
 }
 
 /**
@@ -201,12 +206,14 @@ function instanceExample(
 		.filter(([name]) => !isHostProp(name))
 		.map(([name, value]) => `element.${name} = ${snippetLiteral(value)}`)
 
+	const options = element.is === undefined ? '' : `, { is: '${element.is}' }`
+
 	return moduleScript(
 		[REGISTER, ...imports],
 		[
 			...instance,
 			'',
-			`const element = document.createElement('${element.tag}', { is: '${element.is}' })`,
+			`const element = document.createElement('${element.tag}'${options})`,
 			'',
 			given,
 			...own,
@@ -314,7 +321,7 @@ function attribute(name: string, raw: string): string {
 
 /** Селектор элемента примера — для модуля, который пишет ему свойства. */
 function selectorOf(element: TPreview): string {
-	return `${element.tag}[is="${element.is}"]`
+	return element.is === undefined ? element.tag : `${element.tag}[is="${element.is}"]`
 }
 
 /** Строка на уровень глубже. Пустая остаётся пустой — без хвостового отступа. */

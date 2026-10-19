@@ -30,10 +30,10 @@
  *
  * Провайдер — автономный элемент, а не встроенный: нативного поведения,
  * которое стоило бы сохранить, у него нет, это не компонент. Своей коробки у
- * него тоже нет: теневой корень несёт только `<slot>` и `:host { display:
- * contents }`, поэтому содержимое остаётся светом — его раскладывает родитель
- * провайдера, а стили документа до него доходят. Правило `:host` слабее стилей
- * документа, и `display` потребителя главнее.
+ * него тоже нет (`displayContents`): теневой корень несёт только `<slot>` и
+ * `:host { display: contents }`, поэтому содержимое остаётся светом — его
+ * раскладывает родитель провайдера, а стили документа до него доходят. Правило
+ * `:host` слабее стилей документа, и `display` потребителя главнее.
  *
  * Регистрируется в модуле адаптера, раньше компонентов: модули компонентов
  * импортируют адаптер, и провайдер из разметки оживает раньше детей — они
@@ -46,10 +46,8 @@
 import { TLocaleSource, enUS } from '@soldy-ui/plugins'
 import type { TLocale } from '@soldy-ui/plugins'
 import { defineAutonomousElement } from '../runtime/defineElement'
+import { displayContents } from '../runtime/display-contents'
 import { provideLocale } from './context'
-
-/** Своя коробка провайдеру не нужна: место в раскладке у его детей. */
-const HOST_STYLE = ':host { display: contents }'
 
 /**
  * Локаль ли значение — проверка формы, а не приведение: свойство,
@@ -77,11 +75,8 @@ export class TLocaleProviderElement extends HTMLElement {
 		provideLocale(this, this._source)
 		this._upgradeLocale()
 
-		const { ownerDocument } = this
-		const style = ownerDocument.createElement('style')
-
-		style.textContent = HOST_STYLE
-		this.attachShadow({ mode: 'open' }).append(style, ownerDocument.createElement('slot'))
+		// Своя коробка провайдеру не нужна: место в раскладке у его детей
+		displayContents(this)
 	}
 
 	/** Локаль поддерева: тег для Intl и строки библиотеки (`ruRU`, `extendLocale(...)`). */

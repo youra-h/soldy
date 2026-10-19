@@ -130,9 +130,10 @@ type TFacadeEvents = Pick<TBatchEvents<TItem>, 'items:added' | 'items:removed'>
   цикле Vue, Angular и Solid, на ListBox, а у Solid ещё и на Table — со
   строками, колонками и «выбрать все», в окне `Virtual` и без;
 - `ui/webc/__tests__/external-engine-lifetime.spec.ts` — в настоящем цикле Web
-  Components, на Tabs и ListBox: связка у элемента новая на каждое
-  подключение, и набор, переставленный в документе трижды и снятый, ничего на
-  владельце и движке не оставляет;
+  Components, на Tabs, ListBox и Table — у таблицы со строками, колонками и
+  «выбрать все», в окне `<so-virtual>` и без: связка у элемента новая на
+  каждое подключение, и набор, переставленный в документе трижды и снятый,
+  ничего на владельце и движке не оставляет;
 - `ui/react/__tests__/external-lifetime.spec.tsx` — в настоящем цикле React,
   по всем компонентам адаптера (см. «Отброшенный рендер React»).
 
@@ -451,8 +452,9 @@ Solid петля по ключу — `KeyedFor` адаптера (сторожа
 «окно» в `ui/angular/__tests__/table.spec.ts` и «цикл Angular» в
 `ui/angular/__tests__/virtual.spec.ts`), у Web Components — `TKeyedLoop`
 шаблона: узлу живого ключа она отдаёт его новую запись (`update`), и распорка
-берёт из неё стиль (сторожит «распорки окна» в
-`ui/webc/__tests__/list-box.spec.ts`).
+берёт из неё стиль (сторожат «распорки окна» в
+`ui/webc/__tests__/list-box.spec.ts` и «окно» в
+`ui/webc/__tests__/table.spec.ts`).
 
 - **Стратегия, а не флаг.** По умолчанию рисуются все показанные. Окно
   (`TWindowStrategy`, отдельным модулем) ставит тот, кто его включает
@@ -775,9 +777,13 @@ webc) типизируется по инстансу: `TInstanceState<TInstance>
 (`C['plugins']['outputs']`). `useAdapter` React, Solid и Svelte отдаёт `state`
 типа `TAdapterState<C>`: к свойствам инстанса добавлены выходы того же вида —
 снимок, только чтение, необязательный ключ. Граница та же, `toInstanceState`.
-У Angular и webc состояние шаблону отдаёт базовый класс, и компонента, который
-читает выход, там нет: `state` у них — `TInstanceState` инстанса, выходы
-понадобятся вместе с портом Frame или Select.
+У Angular и webc состояние шаблону отдаёт базовый класс. У Angular в нём и
+выходы: базе их называет сгенерированная поверхность
+(`DescriptorPluginOutputs`), и шаблон таблицы читает имя чекбокса «выбрать
+все» из `state()` по типу. У webc `state` — `TInstanceState` инстанса, без
+выходов, и выход читают по имени, с проверкой вида значения: база — выход
+плагина раскладки (`layout_styles`), шаблон таблицы — то же имя
+(`names_selectAll`).
 
 Vue отдаёт шаблону не `state`, а рефы (`TBinding`: пропы `TProps`, свойства
 инстанса и выходы плагинов контракта), и граница у него своя —
