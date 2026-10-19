@@ -79,7 +79,7 @@ function build(
 
 	if (bind.ctrl !== undefined) Reflect.set(element, 'ctrl', bind.ctrl)
 
-	fill(element, preview, propsOf(preview, bind))
+	fill(element, preview, propsOf(preview, bind), bind)
 
 	for (const { type, listener } of listeners) element.addEventListener(type, listener)
 
@@ -89,7 +89,7 @@ function build(
 
 	const outer = elementOf(wrapper)
 
-	fill(outer, wrapper, propsOf(wrapper, {}))
+	fill(outer, wrapper, propsOf(wrapper, {}), {})
 	styleWrapper(outer, wrapper, bind)
 	outer.appendChild(element)
 
@@ -110,7 +110,7 @@ function childOf(child: TContent): Node {
 
 	const node = elementOf(child)
 
-	fill(node, child, propsOf(child, {}))
+	fill(node, child, propsOf(child, {}), {})
 
 	return node
 }
@@ -119,9 +119,15 @@ function childOf(child: TContent): Node {
  * Описание на элементе: свои атрибуты — атрибутами, как в разметке, пропсы —
  * свойствами, а дети по слотам — светом, элемент — с атрибутом `slot` (у слота
  * по умолчанию его нет). Всё — до вставки: первая сборка разложит свет по
- * слотам, и элементы коллекции соберутся следом за владельцем.
+ * слотам, и элементы коллекции соберутся следом за владельцем. Дети, которые
+ * зависят от пропсов строки (`TPreview.slots` функцией), — по `bind`.
  */
-function fill(element: HTMLElement, preview: TPreview, props: Map<string, unknown>): void {
+function fill(
+	element: HTMLElement,
+	preview: TPreview,
+	props: Map<string, unknown>,
+	bind: TPreviewProps,
+): void {
 	for (const [name, value] of Object.entries(preview.attributes ?? {})) {
 		element.setAttribute(toAttributeName(name), value)
 	}
@@ -130,7 +136,9 @@ function fill(element: HTMLElement, preview: TPreview, props: Map<string, unknow
 		if (value !== undefined) Reflect.set(element, name, value)
 	}
 
-	for (const [slot, children] of Object.entries(preview.slots ?? {})) {
+	const slots = typeof preview.slots === 'function' ? preview.slots(bind) : preview.slots
+
+	for (const [slot, children] of Object.entries(slots ?? {})) {
 		for (const child of children) {
 			const node = childOf(child)
 

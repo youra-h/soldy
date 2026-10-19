@@ -1,6 +1,6 @@
-@use 'sass:map';
 @use '../button/mixins' as button;
 @use '../../mixins/anchored';
+@use '../../mixins/group';
 @use '../../mixins/place';
 @use '../../mixins/veil';
 
@@ -14,16 +14,6 @@
 // Поле списка от кромки панели — в шагах шкалы отступов. Тем же числом
 // разделитель выходит за поле — линия во всю ширину списка.
 $list-inset: 1;
-
-// Кегль подписи группы — на ступень мельче строки пункта того же размера: у
-// строки кегль по шкале Button (`button.$sizes`).
-$label-text: (
-	'sm': 'text-xs',
-	'normal': 'text-sm',
-	'lg': 'text-base',
-	'xl': 'text-lg',
-	'2xl': 'text-xl',
-);
 
 // Корень — обёртка триггера и якорь панели, как у Popover. Строчный флекс: в
 // строке текста корень встаёт строчным элементом и не рвёт её, во флекс-ряду
@@ -234,31 +224,24 @@ $label-text: (
 	@include button.button-view('none');
 }
 
-// Группа — пункты под общей подписью. Подпись приглушённая, мельче пункта и
-// среднего начертания, как подписи колонок Table и дни недели Calendar: это
-// справка над пунктами, а не пункт. Встаёт по полю строк пунктов — там, где у
-// них начинается первая колонка, — и режется многоточием, как текст пункта.
-// Группа без подписи обёртку подписи не рисует, а пустая места не занимает.
+// Группа — пункты под общей подписью. Подпись — та же, что у групп ListBox и
+// Select (`group.label`): справка над пунктами, а не пункт. Встаёт по полю
+// строк пунктов — там, где у них начинается первая колонка.
 .so-menu-group {
 	@apply flex shrink-0 flex-col;
 
 	&__label {
-		@apply shrink-0 truncate font-medium text-so-neutral-500;
+		@include group.label;
 		@apply pt-2 pb-1;
-
-		&:empty {
-			@apply hidden;
-		}
 	}
 }
 
 // Размер подписи — размер меню. Его модификатор несёт панель, а группа стоит в
 // ней: поле — поле строки пункта по шкале Button, кегль — на ступень мельче
-// строки (`$label-text`).
-@each $size, $scale in button.$sizes {
+// строки (`group.label-size`).
+@each $size, $_ in button.$sizes {
 	.so-menu__panel--size-#{$size} .so-menu-group__label {
-		@apply #{map.get($label-text, $size)};
-		@apply #{'px-' + map.get($scale, 'px')};
+		@include group.label-size($size);
 	}
 }
 

@@ -492,6 +492,41 @@ a {
 	}
 }
 
+/*
+ * Блок без строки свойства (`GroupsDemo`): шапка — имя и пояснение, колонки —
+ * как у строки. Свой класс, а не `.pg-prop`: строка свойства — это проп с
+ * редактором, и дымовой тест считает их по дескриптору.
+ */
+.pg-demo {
+	padding: 18px 0;
+	border-top: 1px solid var(--so-neutral-200);
+}
+
+.pg-demo__head {
+	display: grid;
+	grid-template-columns: 125px minmax(0, 1fr);
+	gap: 4px 16px;
+	align-items: baseline;
+	margin-bottom: 14px;
+}
+
+.pg-demo__name {
+	font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+	font-weight: 600;
+}
+
+.pg-demo__lead {
+	margin: 0;
+	color: var(--so-neutral-500);
+	font-size: 13px;
+}
+
+@media (max-width: 768px) {
+	.pg-demo__head {
+		grid-template-columns: minmax(0, 1fr);
+	}
+}
+
 .pg-col {
 	display: flex;
 	flex-direction: column;

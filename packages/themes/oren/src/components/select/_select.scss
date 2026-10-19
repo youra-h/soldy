@@ -2,6 +2,7 @@
 @use '../button/mixins' as button;
 @use '../input/mixins' as input;
 @use '../../mixins/anchored';
+@use '../../mixins/group';
 @use '../../mixins/motion';
 @use '../../mixins/place';
 
@@ -271,8 +272,8 @@
 //
 // Раньше здесь стояло обратное пояснение — «высота ограничивается тут, а не
 // плагином». Оно описывало настоящее ограничение: плагин писал в корень
-// компонента, то есть в само поле. Теперь он пишет родителю элементов, а это
-// и есть `.so-select__list`.
+// компонента, то есть в само поле. Теперь он пишет списку, в котором стоят
+// опции, — и опции групп, — а это и есть `.so-select__list`.
 .so-select__list {
 	@apply flex flex-col overflow-y-auto;
 	@apply max-h-64;
@@ -299,6 +300,29 @@
 	@apply shrink-0 p-0 border-0 -mb-1;
 	block-size: var(--so-filler-height, 0);
 }
+
+// Разделитель между секциями групп (`drawnSections`) — то же устройство, что у
+// `.so-list-box__separator`: линия во всю ширину списка, отступы до соседей —
+// зазор списка (`group.separator`).
+.so-select__separator {
+	@include group.separator;
+}
+
+// Группа опций (`Select.Group`) — то же устройство, что у `.so-list-box-group`:
+// столбец с зазором списка, не сжимается, а место опции в составе (`order`)
+// действует внутри неё.
+.so-select-group {
+	@apply flex shrink-0 flex-col gap-1;
+
+	&__label {
+		@include group.label;
+		@apply pt-1;
+	}
+}
+
+// Размер подписи — размер строк группы (`group.label-sizes`): у телепортированной
+// панели модификатора размера Select нет, а строки опций его несут.
+@include group.label-sizes('so-select-group', 'so-select-item');
 
 .so-select-item {
 	> * {

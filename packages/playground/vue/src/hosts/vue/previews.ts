@@ -92,6 +92,27 @@ type TMenuTriggerScope = DescriptorSlots<typeof MenuDescriptor>['trigger']
 const ITEMS = COLLECTION_ITEMS
 
 /**
+ * Пункты меню разметкой: группа флажков с подписью, действия с подсказками
+ * сочетаний, выключенное действие и «опасный» пункт своего варианта.
+ */
+const menuItems = () => [
+	h(Menu.Group, { label: 'Вид' }, () => [
+		h(Menu.CheckboxItem, { value: 'grid', text: 'Сетка', selected: true }),
+		h(Menu.CheckboxItem, { value: 'ruler', text: 'Линейка' }),
+	]),
+	h(Menu.Separator),
+	h(Menu.Item, { value: 'edit', text: 'Изменить' }, { trailing: () => 'Ctrl+E' }),
+	h(Menu.Item, { value: 'copy', text: 'Дублировать' }, { trailing: () => 'Ctrl+D' }),
+	h(Menu.Item, { value: 'archive', text: 'В архив', disabled: true }),
+	h(Menu.Separator),
+	h(
+		Menu.Item,
+		{ value: 'remove', text: 'Удалить', variant: 'negative' },
+		{ trailing: () => 'Del' },
+	),
+]
+
+/**
  * Иконка превью Icon.
  *
  * `tag` у Icon — корень: тег или компонент, и глиф рисует компонент
@@ -336,9 +357,15 @@ export const PREVIEWS: Record<string, TPreview> = {
 			),
 		),
 
+	// Опции — разметкой, а пришли данными (`items` блока групп страницы) — из
+	// них: разметка заменила бы данные, а группы Select рисует из данных
 	select: (bind) =>
-		h(Select as Component, bind, () =>
-			ITEMS.map((item) => h(Select.Item, { key: item.value, ...item })),
+		h(
+			Select as Component,
+			bind,
+			bind.items
+				? undefined
+				: () => ITEMS.map((item) => h(Select.Item, { key: item.value, ...item })),
 		),
 
 	// Содержимого у календаря нет: дни кладёт в коллекцию вид по месяцам
@@ -372,7 +399,9 @@ export const PREVIEWS: Record<string, TPreview> = {
 	// вызова. Режим область берёт из пропсов колонки, как таблица своё окно:
 	// у колонки экземпляра его нет, и там меню вызывают над кнопкой. Пункты —
 	// разметкой: группа флажков с подписью, действия с подсказками сочетаний,
-	// выключенное действие и «опасный» пункт своего варианта
+	// выключенное действие и «опасный» пункт своего варианта. Пришли данными
+	// (`items` блока групп страницы) — из них: разметка заменила бы данные, а
+	// группы меню рисует из данных
 	menu: (bind) =>
 		h(Menu as Component, bind, {
 			trigger: ({ triggerAria, triggerDataset }: TMenuTriggerScope) =>
@@ -386,22 +415,7 @@ export const PREVIEWS: Record<string, TPreview> = {
 							'Правая кнопка, долгое касание или Shift+F10',
 						)
 					: h(Button, { text: 'Действия', ...triggerAria, ...triggerDataset }),
-			default: () => [
-				h(Menu.Group, { label: 'Вид' }, () => [
-					h(Menu.CheckboxItem, { value: 'grid', text: 'Сетка', selected: true }),
-					h(Menu.CheckboxItem, { value: 'ruler', text: 'Линейка' }),
-				]),
-				h(Menu.Separator),
-				h(Menu.Item, { value: 'edit', text: 'Изменить' }, { trailing: () => 'Ctrl+E' }),
-				h(Menu.Item, { value: 'copy', text: 'Дублировать' }, { trailing: () => 'Ctrl+D' }),
-				h(Menu.Item, { value: 'archive', text: 'В архив', disabled: true }),
-				h(Menu.Separator),
-				h(
-					Menu.Item,
-					{ value: 'remove', text: 'Удалить', variant: 'negative' },
-					{ trailing: () => 'Del' },
-				),
-			],
+			...(bind.items ? {} : { default: menuItems }),
 		}),
 
 	// Триггер — Button, ссылку на панель (`aria-describedby`) он берёт из
@@ -446,9 +460,15 @@ export const PREVIEWS: Record<string, TPreview> = {
 			),
 		]),
 
+	// Элементы — разметкой, а пришли данными (`items` блока групп страницы) —
+	// из них: разметка заменила бы данные, а группы список рисует из данных
 	'list-box': (bind) =>
-		h(ListBox as Component, bind, () =>
-			ITEMS.map((item) => h(ListBox.Item, { key: item.value, ...item })),
+		h(
+			ListBox as Component,
+			bind,
+			bind.items
+				? undefined
+				: () => ITEMS.map((item) => h(ListBox.Item, { key: item.value, ...item })),
 		),
 
 	/**
