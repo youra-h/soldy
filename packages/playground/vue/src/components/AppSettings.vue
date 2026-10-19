@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { Select, Switch } from '@soldy-ui/vue'
+import { Field, Select, Switch } from '@soldy-ui/vue'
 import { useTheme } from '../composables/useTheme'
 import { useIconPack } from '../composables/useIconPack'
 import { useLanguage } from '../composables/useLanguage'
@@ -57,14 +57,18 @@ function chooseFramework(value: unknown): void {
 			Обёртка в шапке своей коробки не даёт (`display: contents`): контролы и
 			плашка остаются flex-элементами шапки, и на этом держатся правила
 			плашки. В панели обёртка ставит их столбцом (styles.css, «Каркас»)
+
+			Контрол с подписью — поле формы `Field`, подпись сбоку: её `for` поле
+			ведёт на `<input>` контрола само, и подпись — его имя. Колонки поля
+			задаёт стенд (`--so-field-columns`): в шапке подпись рядом с
+			контролом, в панели — над ним
 		-->
 
 		<!--
 			Фреймворк — первым из контролов: он решает, чем нарисованы все
 			компоненты страницы. Плашка движения остаётся у своего переключателя
 		-->
-		<div class="pg__control">
-			<span class="pg__control-label">Фреймворк</span>
+		<Field class="pg__control" position="start" size="sm" label="Фреймворк">
 			<Select :value="framework" size="sm" @update:value="chooseFramework($event)">
 				<Select.Item
 					v-for="item in FRAMEWORKS"
@@ -73,12 +77,11 @@ function chooseFramework(value: unknown): void {
 					:text="item.label"
 				/>
 			</Select>
-		</div>
+		</Field>
 
 		<p v-if="motionOff" class="pg__motion-off" :title="motionOff">{{ motionOff }}</p>
 
-		<div class="pg__control">
-			<span class="pg__control-label">Анимация движения</span>
+		<Field class="pg__control" position="start" size="sm" label="Анимация движения">
 			<Select :value="mode" size="sm" @update:value="choose($event)">
 				<Select.Item
 					v-for="(label, value) in modes"
@@ -87,10 +90,9 @@ function chooseFramework(value: unknown): void {
 					:text="label"
 				/>
 			</Select>
-		</div>
+		</Field>
 
-		<div class="pg__control">
-			<span class="pg__control-label">Язык</span>
+		<Field class="pg__control" position="start" size="sm" label="Язык">
 			<Select :value="language" size="sm" @update:value="chooseLanguage($event)">
 				<Select.Item
 					v-for="(entry, value) in languages"
@@ -99,10 +101,9 @@ function chooseFramework(value: unknown): void {
 					:text="entry.label"
 				/>
 			</Select>
-		</div>
+		</Field>
 
-		<div class="pg__control">
-			<span class="pg__control-label">Тема</span>
+		<Field class="pg__control" position="start" size="sm" label="Тема">
 			<Select :value="theme" size="sm" @update:value="theme = String($event)">
 				<Select.Item
 					v-for="item in themes"
@@ -111,10 +112,9 @@ function chooseFramework(value: unknown): void {
 					:text="item.label"
 				/>
 			</Select>
-		</div>
+		</Field>
 
-		<div class="pg__control">
-			<span class="pg__control-label">Иконки</span>
+		<Field class="pg__control" position="start" size="sm" label="Иконки">
 			<Select :value="pack" size="sm" @update:value="apply(String($event))">
 				<Select.Item
 					v-for="item in packs"
@@ -123,11 +123,10 @@ function chooseFramework(value: unknown): void {
 					:text="item.label"
 				/>
 			</Select>
-		</div>
+		</Field>
 
-		<div class="pg__control">
-			<span class="pg__control-label">Тёмная</span>
+		<Field class="pg__control" position="start" size="sm" label="Тёмная">
 			<Switch :value="dark" size="sm" @update:value="dark = Boolean($event)" />
-		</div>
+		</Field>
 	</div>
 </template>
