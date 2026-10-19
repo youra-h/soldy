@@ -32,6 +32,7 @@ import {
 	Label,
 	ListBox,
 	Menu,
+	NumberInput,
 	Pagination,
 	Popover,
 	ProgressLinear,
@@ -301,6 +302,7 @@ export const PREVIEWS: Record<string, TPreview> = {
 	button: (bind) => h(Button, bind),
 
 	input: (bind) => h(Input, bind),
+	'number-input': (bind) => h(NumberInput, bind),
 
 	// Текста у чекбокса и переключателя нет, оба — голый контрол: подпись даёт
 	// обёртка Label. Её пропы задаёт превью, строки страницы правят контрол

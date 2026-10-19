@@ -226,6 +226,24 @@ describe('propControls: пропы плагинов', () => {
 		expect(pluginRow('anchor_placement').default).toBe('bottom-start')
 	})
 
+	/**
+	 * Объект строкой в поле не набрать: опции формата поля числа выбирают
+	 * пресетом по имени, а компоненту уходит объект пресета.
+	 */
+	it('formatOptions поля числа — пресеты: имена в списке, значения — объекты', () => {
+		const row = propControls(entryOf('number-input')).componentControls.find(
+			(control) => control.name === 'formatOptions',
+		)
+
+		expect(row?.kind).toBe('select')
+		expect(row?.options).toEqual(['percent', 'currency', 'unit'])
+		expect(row?.values?.percent).toEqual({ style: 'percent', maximumFractionDigits: 1 })
+	})
+
+	it('у списка строк значений-пресетов нет', () => {
+		expect(pluginRow('anchor_placement')).not.toHaveProperty('values')
+	})
+
 	it('anchor_anchor строки не получает', () => {
 		const names = Object.values(propControls(frame))
 			.flat()

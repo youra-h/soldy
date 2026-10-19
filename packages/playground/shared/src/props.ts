@@ -95,7 +95,7 @@ const SHARED: Record<string, string> = {
 	required: 'Поле обязательно. Рисует маркер и попадает в валидацию формы',
 	id: 'Идентификатор поля. Пусто — берётся uid экземпляра',
 
-	// Кнопка очистки — часть поля: общая у Input, DateInput и DatePicker (у
+	// Кнопка очистки — часть поля: общая у Input, NumberInput, DateInput и DatePicker (у
 	// диапазона — одна на период), Select отдаёт её своему полю
 	clearable: 'Показывать кнопку очистки значения',
 
@@ -142,6 +142,16 @@ const OWN: Record<string, Record<string, string>> = {
 		view: 'Оформление: заливка, только текст, контур или ничего',
 	},
 	input: {
+		placeholder: 'Подсказка в пустом поле',
+	},
+	'number-input': {
+		value: 'Число. Хранится как задано, а поле показывает его прижатым к min и max; к шагу не приводится. Пусто — числа нет',
+		min: 'Наименьшее значение. Пусто — снизу границы нет; меньше нуля или пусто — минус набирается',
+		max: 'Наибольшее значение. Пусто — сверху границы нет. У края кнопка шага в его сторону выключена',
+		step: 'Шаг стрелок и кнопок: сетка от min, без него — от нуля. Число вне сетки шагает к соседнему узлу',
+		largeStep: 'Сколько шагов делают Shift со стрелкой, PageUp и PageDown',
+		formatOptions:
+			'Формат числа — опции Intl.NumberFormat: процент, валюта, единица, точность. Здесь — пресетами, кодом — любым объектом',
 		placeholder: 'Подсказка в пустом поле',
 	},
 	'check-box': {
@@ -476,6 +486,9 @@ export const PREVIEW_PROPS: Readonly<Record<string, Readonly<Record<string, unkn
 	// строка `text` не меняла бы ничего видимого
 	button: { text: 'Кнопка' },
 	input: { placeholder: 'Введите текст' },
+	// Число с группой и дробью: формат локали видно с первой отрисовки. Имени
+	// без подписи у поля нет
+	'number-input': { value: 1234.5, aria_label: 'Количество' },
 	// Подпись — пропом `text`, контрол — содержимым превью
 	label: { text: 'Согласен' },
 	// Тексты частей поля, контрол — содержимым превью. Текста ошибки нет:
@@ -673,8 +686,36 @@ export function describeProp(componentId: string, prop: string): string | undefi
 	return OWN[componentId]?.[prop] ?? SHARED[prop] ?? PLUGIN[prop]
 }
 
+/**
+ * Значения списка, которые не строки, — пресеты по имени: имя пункта — в
+ * списке строки, значение — компоненту. Опции формата поля числа — объект, и
+ * набрать его в поле строки нечем, а без них не видно, как поле пишет процент,
+ * валюту и единицу.
+ */
+const PRESET_VALUES: Record<string, Record<string, Readonly<Record<string, unknown>>>> = {
+	'number-input': {
+		formatOptions: {
+			percent: { style: 'percent', maximumFractionDigits: 1 },
+			currency: { style: 'currency', currency: 'RUB' },
+			unit: { style: 'unit', unit: 'kilogram' },
+		},
+	},
+}
+
 export function optionsForProp(componentId: string, prop: string): readonly string[] | undefined {
+	const values = valuesForProp(componentId, prop)
+
+	if (values) return Object.keys(values)
+
 	return OPTIONS[componentId]?.[prop] ?? OPTIONS['*'][prop]
+}
+
+/** Значения пунктов списка по имени — у пропа, чьи значения не строки; иначе нет. */
+export function valuesForProp(
+	componentId: string,
+	prop: string,
+): Readonly<Record<string, unknown>> | undefined {
+	return PRESET_VALUES[componentId]?.[prop]
 }
 
 /**
@@ -764,6 +805,9 @@ export function propControl(
 		preset: presetForProp(componentId, name),
 	}
 
+	const values = valuesForProp(componentId, name)
+
+	if (values) control.values = values
 	if (Object.hasOwn(prop, 'default')) control.default = prop.default
 	if (Object.hasOwn(preview, name)) control.initial = preview[name]
 
