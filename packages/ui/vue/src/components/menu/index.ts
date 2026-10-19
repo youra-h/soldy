@@ -3,6 +3,7 @@ import type { TClosedComponent } from '../../adapter'
 import MenuComponent from './Menu.vue'
 import { MenuItem } from './item'
 import { MenuCheckboxItem } from './checkbox-item'
+import { MenuSubmenu } from './submenu'
 import { MenuGroup } from './group'
 import { MenuSeparator } from './separator'
 
@@ -10,6 +11,7 @@ export { default as BaseMenu } from './base.component'
 export * from './base.component'
 export * from './item'
 export * from './checkbox-item'
+export * from './submenu'
 export * from './group'
 export * from './separator'
 
@@ -17,12 +19,14 @@ export * from './separator'
 const MenuOwner: TClosedComponent<typeof MenuComponent> = MenuComponent
 
 /**
- * Основная форма — `<Menu.Item>`, `<Menu.CheckboxItem>`, `<Menu.Group>` и
- * `<Menu.Separator>`; плоские `MenuItem` и соседи работают так же.
+ * Основная форма — `<Menu.Item>`, `<Menu.CheckboxItem>`, `<Menu.Submenu>`,
+ * `<Menu.Group>` и `<Menu.Separator>`; плоские `MenuItem` и соседи работают
+ * так же.
  */
 export const Menu = withParts(MenuOwner, {
 	Item: MenuItem,
 	CheckboxItem: MenuCheckboxItem,
+	Submenu: MenuSubmenu,
 	Group: MenuGroup,
 	Separator: MenuSeparator,
 })

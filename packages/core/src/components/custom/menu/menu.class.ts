@@ -10,6 +10,7 @@ import type {
 	TMenuPlacement,
 	TMenuPoint,
 } from './types'
+import type { IMenuItem } from './item/types'
 
 /** Одна ли это точка: координаты те же, или точки нет у обеих. */
 const samePoint = (a: TMenuPoint | null, b: TMenuPoint | null): boolean =>
@@ -113,6 +114,15 @@ export class TMenu extends TStylable<IMenuProps, TMenuEvents> implements IMenu {
 
 		this._applyOpen(value)
 		this.events.emit('change:open', value)
+	}
+
+	/**
+	 * Пункт-действие выбрали — в панели меню или в любом его подменю: меню
+	 * закрывается целиком. Открытые подменю закрывает его коллекция, когда
+	 * закрылось само меню, а фокус возвращает на триггер модель фокуса.
+	 */
+	notifyChoose(_item: IMenuItem): void {
+		this.open = false
 	}
 
 	/**

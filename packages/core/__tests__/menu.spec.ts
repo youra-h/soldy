@@ -6,8 +6,11 @@ import {
 	TMenuGroup,
 	TMenuItem,
 	TMenuSeparator,
+	TMenuSubmenu,
 	createEngineMenu,
 	createEngineSelection,
+	isMenuSubmenu,
+	menuOf,
 } from '@soldy-ui/core'
 import type { IMenuItem, TGroupSection } from '@soldy-ui/core'
 
@@ -537,6 +540,319 @@ describe('фасад меню', () => {
 
 		expect(engine.extensions.selection.mode).toBe('multiple')
 		expect(facade.selected).toEqual([grid, ruler])
+	})
+})
+
+/**
+ * Пункт с подменю — пункт меню, в котором стоит, и владелец своих пунктов.
+ * Клавиши уровней, наведение и фокус — плагины
+ * (`plugins/__tests__/menu-submenu.plugin.spec.ts`); здесь — состояние
+ * пункта и то, что его коллекция и коллекция меню делают с открытостью и
+ * выбором.
+ */
+describe('TMenuSubmenu · пункт', () => {
+	it('пункт меню с ролью menuitem: объявляет подменю и закрыт', () => {
+		const share = new TMenuSubmenu({ value: 'share', text: 'Поделиться' })
+
+		expect(share).toBeInstanceOf(TMenuItem)
+		expect(isMenuSubmenu(share)).toBe(true)
+		expect(isMenuSubmenu(new TMenuItem())).toBe(false)
+		expect(share.open).toBe(false)
+		expect(share.checkable).toBe(false)
+		expect(share.tag).toBe('div')
+		expect(share.classes.toArray()).toContain('so-menu-item')
+		expect(share.aria.toObject()).toEqual({
+			role: 'menuitem',
+			'aria-haspopup': 'menu',
+			'aria-expanded': 'false',
+		})
+		expect(share.dataset.get('open')).toBe('false')
+	})
+
+	it('открытость — aria-expanded на строке и data-open для темы', () => {
+		const share = new TMenuSubmenu({ open: true })
+
+		expect(share.aria.get('aria-expanded')).toBe('true')
+		expect(share.dataset.get('open')).toBe('true')
+		expect(share.getProps()).toMatchObject({ open: true })
+
+		share.open = false
+
+		expect(share.aria.get('aria-expanded')).toBe('false')
+		expect(share.dataset.get('open')).toBe('false')
+	})
+
+	it('change:open — только на смену', () => {
+		const share = new TMenuSubmenu()
+		const handler = vi.fn()
+
+		share.events.on('change:open', handler)
+		share.open = false
+		share.open = true
+		share.open = true
+
+		expect(handler).toHaveBeenCalledOnce()
+		expect(handler).toHaveBeenCalledWith(true)
+	})
+
+	// `id` и ссылки ядро не пишет: их пишет плагин связок (plugins, ids.plugin.spec)
+	it('панель — меню, без id; набор панели живой', () => {
+		const share = new TMenuSubmenu()
+		const handler = vi.fn()
+
+		expect(share.panelAria.toObject()).toEqual({ role: 'menu' })
+
+		share.events.on('change:panelAria', handler)
+		share.panelAria.add('id', 'x')
+
+		expect(handler).toHaveBeenCalledWith({ role: 'menu', id: 'x' })
+	})
+
+	it('классы панели — блок панели меню с размером и вариантом подменю', () => {
+		const share = new TMenuSubmenu({ variant: 'danger' })
+		const handler = vi.fn()
+
+		expect(share.panelClasses.toArray()).toEqual([
+			'so-menu__panel',
+			'so-menu__panel--size-normal',
+			'so-menu__panel--variant-danger',
+		])
+
+		share.events.on('change:panelClasses', handler)
+		share.size = 'lg'
+		share.variant = undefined
+
+		expect(share.panelClasses.toArray()).toEqual(['so-menu__panel', 'so-menu__panel--size-lg'])
+		expect(handler).toHaveBeenLastCalledWith(['so-menu__panel', 'so-menu__panel--size-lg'])
+	})
+
+	it('выбор в подменю: сообщает choose и закрывается', () => {
+		const share = new TMenuSubmenu({ open: true })
+		const link = new TMenuItem({ value: 'link' })
+		const seen: boolean[] = []
+
+		share.events.on('choose', (item) => {
+			expect(item).toBe(link)
+			seen.push(share.open)
+		})
+		share.notifyChoose(link)
+
+		// Сообщает раньше, чем закрывается: меню над ним закрывает всю цепочку само
+		expect(seen).toEqual([true])
+		expect(share.open).toBe(false)
+	})
+})
+
+describe('коллекция меню · подменю', () => {
+	/**
+	 * Меню с подменю «Поделиться» (ссылка, почта) и действием «Изменить»;
+	 * у подменю своя коллекция — так их собирает разметка.
+	 */
+	function tree() {
+		const root = new TMenu({ open: true })
+		const share = new TMenuSubmenu({ value: 'share', text: 'Поделиться' })
+		const send = new TMenuSubmenu({ value: 'send', text: 'Отправить' })
+		const edit = new TMenuItem({ value: 'edit', text: 'Изменить' })
+		const link = new TMenuItem({ value: 'link', text: 'Ссылка' })
+		const mail = new TMenuItem({ value: 'mail', text: 'Почта' })
+		const engine = createEngineMenu({ owner: root, items: [share, send, edit] })
+		const shareEngine = createEngineMenu({ owner: share, items: [link, mail] })
+
+		return { root, share, send, edit, link, mail, engine, shareEngine }
+	}
+
+	it('подменю, пришедшее готовым, остаётся подменю', () => {
+		const { share, send, edit, engine } = tree()
+
+		expect(engine.extensions.batch.items).toEqual([share, send, edit])
+		expect(share.aria.get('tabindex')).toBe('-1')
+	})
+
+	it('openItem открывает подменю, выключенному и действию — отказ', () => {
+		const { share, edit, engine } = tree()
+		const { menu } = engine.extensions
+
+		expect(menu.openItem(share)).toBe(true)
+		expect(share.open).toBe(true)
+		expect(menu.opened).toBe(share)
+
+		// Открывает, а не переключает: открытое наведением клик не закроет
+		expect(menu.openItem(share)).toBe(true)
+		expect(share.open).toBe(true)
+
+		expect(menu.openItem(edit)).toBe(false)
+
+		const off = new TMenuSubmenu({ value: 'off', disabled: true })
+
+		engine.extensions.plain.push(off)
+
+		expect(menu.openItem(off)).toBe(false)
+		expect(off.open).toBe(false)
+	})
+
+	it('пункт с подменю — не действие: chooseItem ему отказывает, меню открыто', () => {
+		const { root, share, engine } = tree()
+		const choose = vi.fn()
+
+		engine.extensions.menu.events.on('choose', choose)
+
+		expect(engine.extensions.menu.chooseItem(share)).toBe(false)
+		expect(root.open).toBe(true)
+		expect(choose).not.toHaveBeenCalled()
+	})
+
+	it('открыто одно: открывшееся закрывает прежнее — и из кода тоже', () => {
+		const { share, send, engine } = tree()
+
+		engine.extensions.menu.openItem(share)
+		send.open = true
+
+		expect(share.open).toBe(false)
+		expect(send.open).toBe(true)
+		expect(engine.extensions.menu.opened).toBe(send)
+	})
+
+	it('закрылось меню — закрылись подменю всех уровней', () => {
+		const { root, share } = tree()
+		const deep = new TMenuSubmenu({ value: 'deep' })
+
+		createEngineMenu({ owner: share, items: [deep] })
+
+		share.open = true
+		deep.open = true
+		root.open = false
+
+		expect(share.open).toBe(false)
+		expect(deep.open).toBe(false)
+	})
+
+	it('закрылось подменю — меню над ним открыто: уровень закрывается один', () => {
+		const { root, share } = tree()
+
+		share.open = true
+		share.open = false
+
+		expect(root.open).toBe(true)
+	})
+
+	it('выбор в подменю закрывает меню целиком и сообщает choose — уже закрытым', () => {
+		const { root, share, link, engine, shareEngine } = tree()
+		const seen: string[] = []
+
+		share.open = true
+
+		engine.extensions.menu.events.on('choose', (item) =>
+			seen.push(`меню ${String(item.value)} ${root.open} ${share.open}`),
+		)
+		shareEngine.extensions.menu.events.on('choose', (item) =>
+			seen.push(`подменю ${String(item.value)} ${root.open} ${share.open}`),
+		)
+
+		expect(shareEngine.extensions.menu.chooseItem(link)).toBe(true)
+
+		// Выбор доходит до каждого меню над подменю: корень узнаёт первым
+		expect(seen).toEqual(['меню link false false', 'подменю link false false'])
+	})
+
+	it('выбор на втором уровне доходит до корня', () => {
+		const { root, share, engine } = tree()
+		const deep = new TMenuSubmenu({ value: 'deep' })
+		const leaf = new TMenuItem({ value: 'leaf' })
+		const chosen = vi.fn()
+
+		const shareEngine = createEngineMenu({ owner: share, items: [deep] })
+		const deepEngine = createEngineMenu({ owner: deep, items: [leaf] })
+
+		share.open = true
+		deep.open = true
+		engine.extensions.menu.events.on('choose', chosen)
+
+		deepEngine.extensions.menu.createItem(leaf).choose()
+
+		expect(chosen).toHaveBeenCalledWith(leaf)
+		expect([root.open, share.open, deep.open]).toEqual([false, false, false])
+		expect(shareEngine.extensions.menu.opened).toBe(null)
+	})
+
+	it('выключенный пункт подменю не выбирается: никто не закрывается', () => {
+		const { root, share, shareEngine } = tree()
+		const off = new TMenuItem({ value: 'off', disabled: true })
+
+		shareEngine.extensions.plain.push(off)
+		share.open = true
+
+		expect(shareEngine.extensions.menu.chooseItem(off)).toBe(false)
+		expect([root.open, share.open]).toEqual([true, true])
+	})
+
+	it('флажок в подменю отмечается, меню открыты', () => {
+		const { root, share } = tree()
+		const grid = new TMenuCheckboxItem({ value: 'grid' })
+		const { menu, selection } = createEngineMenu({ owner: share, items: [grid] }).extensions
+
+		share.open = true
+
+		expect(menu.toggleItem(grid)).toBe(true)
+		expect(selection.selected).toEqual([grid])
+		expect([root.open, share.open]).toEqual([true, true])
+	})
+
+	it('размер меню — подменю, а от подменю — его пунктам', () => {
+		const { root, share, link } = tree()
+
+		root.size = 'lg'
+
+		expect(share.size).toBe('lg')
+		expect(link.size).toBe('lg')
+		expect(share.panelClasses.toArray()).toContain('so-menu__panel--size-lg')
+	})
+
+	it('пункт с подменю, снятый из коллекции, меню больше не трогает', () => {
+		const { root, share, send, engine } = tree()
+		const chosen = vi.fn()
+
+		engine.extensions.menu.events.on('choose', chosen)
+		engine.extensions.plain.remove(share)
+
+		share.open = true
+		send.open = true
+		share.notifyChoose(new TMenuItem({ value: 'x' }))
+
+		expect(chosen).not.toHaveBeenCalled()
+		expect(root.open).toBe(true)
+	})
+
+	it('нажатие строки пункта с подменю — через item-адаптер: открывает', () => {
+		const { share, engine } = tree()
+
+		engine.extensions.menu.createItem(share).open()
+
+		expect(share.open).toBe(true)
+	})
+
+	it('охранник menuOf находит расширение меню, у чужой коллекции — нет', () => {
+		const { engine } = tree()
+
+		expect(menuOf(engine)).toBe(engine.extensions.menu)
+		expect(menuOf(createEngineSelection())).toBeUndefined()
+		expect(menuOf(null)).toBeUndefined()
+	})
+})
+
+describe('фасад подменю', () => {
+	it('владелец — пункт с подменю: выбор в фасаде закрывает его и сообщает choose', () => {
+		const share = new TMenuSubmenu({ open: true })
+		const facade = new TMenuCollectionFacade(
+			{ items: [{ value: 'link' }, { value: 'mail' }] },
+			{ owner: share },
+		)
+		const choose = vi.fn()
+
+		facade.events.on('choose', choose)
+		facade.extensions.menu.chooseItem(itemOf(facade.items, 'link'))
+
+		expect(choose).toHaveBeenCalledWith(itemOf(facade.items, 'link'))
+		expect(share.open).toBe(false)
 	})
 })
 

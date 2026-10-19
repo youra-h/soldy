@@ -655,3 +655,259 @@ describe('контекстное меню', () => {
 		expect(panel().getAttribute('aria-labelledby')).toBe(triggerNode().id)
 	})
 })
+
+/**
+ * Подменю — `Menu.Submenu`: пункт меню, в котором стоит, и меню своих
+ * пунктов. Переходы плагинов — `plugins/__tests__/menu-submenu.plugin.spec.ts`,
+ * сборка через лифт — `setup/__tests__/menu-submenu.spec.ts`; здесь — что во
+ * Vue пункт входит в коллекцию меню над ним, а его пункты — в его
+ * собственную, связки стоят на своих узлах, клавиши и нажатие ходят между
+ * уровнями, а выбор в подменю закрывает всё меню.
+ */
+describe('подменю', () => {
+	/** Строка пункта с подменю — узел с ролью у пункта «Поделиться». */
+	const shareRow = () => {
+		const row = [...document.querySelectorAll<HTMLElement>('[aria-haspopup="menu"]')].find(
+			(candidate) => candidate.textContent?.trim().startsWith('Поделиться'),
+		)
+
+		if (!row) throw new Error('строки «Поделиться» нет')
+
+		return row
+	}
+
+	/** Панель по `id` — так на неё ссылается `aria-controls`. */
+	const panelOf = (node: HTMLElement): HTMLElement =>
+		find(`#${node.getAttribute('aria-controls') ?? ''}`)
+
+	const rootPanel = () => panelOf(triggerNode())
+	const subPanel = () => panelOf(shareRow())
+	const shown = (node: HTMLElement) => node.style.display !== 'none'
+
+	/** Строка пункта по тексту в панели. */
+	const rowIn = (scope: HTMLElement, text: string): HTMLElement => {
+		const row = [...scope.querySelectorAll<HTMLElement>('[role^="menuitem"]')].find(
+			(candidate) => candidate.textContent?.trim().startsWith(text),
+		)
+
+		if (!row) throw new Error(`строки «${text}» нет`)
+
+		return row
+	}
+
+	/** Тексты строк пунктов панели по порядку. */
+	const texts = (scope: HTMLElement) =>
+		[...scope.querySelectorAll('[role="menuitem"]')].map((row) => row.textContent?.trim())
+
+	/** Клавиша на узле и кадр модели фокуса. */
+	async function press(target: HTMLElement, key: string): Promise<KeyboardEvent> {
+		const event = new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true })
+
+		target.dispatchEvent(event)
+		await nextTick()
+		await nextFrame()
+
+		return event
+	}
+
+	/** Меню «Изменить · Поделиться → (Ссылка, Почта) · Удалить» разметкой. */
+	const markup = (menu: Record<string, unknown> = {}, share: Record<string, unknown> = {}) =>
+		h(Menu, menu, {
+			trigger,
+			default: () => [
+				h(Menu.Item, { value: 'edit', text: 'Изменить' }),
+				h(Menu.Submenu, { value: 'share', text: 'Поделиться', ...share }, () => [
+					h(Menu.Item, { value: 'link', text: 'Ссылка' }),
+					h(Menu.Item, { value: 'mail', text: 'Почта' }),
+				]),
+				h(Menu.Item, { value: 'remove', text: 'Удалить' }),
+			],
+		})
+
+	/** Открыть меню клавишей и спуститься на «Поделиться». */
+	async function openOnShare(): Promise<void> {
+		triggerNode().focus()
+		await press(triggerNode(), 'ArrowDown')
+		await press(rowIn(rootPanel(), 'Изменить'), 'ArrowDown')
+	}
+
+	it('строка — пункт меню, панель подменю — меню с именем от строки, в body и скрыта', async () => {
+		await render(() => markup())
+
+		const row = shareRow()
+
+		expect(row.getAttribute('role')).toBe('menuitem')
+		expect(row.getAttribute('tabindex')).toBe('-1')
+		expect(row.getAttribute('aria-expanded')).toBe('false')
+		expect(row.id).not.toBe('')
+		expect(subPanel().getAttribute('role')).toBe('menu')
+		expect(subPanel().getAttribute('aria-labelledby')).toBe(row.id)
+		expect(subPanel().getAttribute('tabindex')).toBe('-1')
+		expect(subPanel().parentElement).toBe(document.body)
+		expect(subPanel()).not.toBe(rootPanel())
+		expect(shown(subPanel())).toBe(false)
+		// Стрелка у конца строки — немая: подменю объявляет aria-haspopup
+		expect(find('.so-menu-item__arrow', row).getAttribute('aria-hidden')).toBe('true')
+		expect(row.querySelector('.so-menu-item__arrow .so-icon')).not.toBeNull()
+	})
+
+	it('пункт входит в меню над ним, его пункты — в его собственное меню', async () => {
+		await render(() => markup())
+
+		expect(texts(rootPanel())).toEqual(['Изменить', 'Поделиться', 'Удалить'])
+		expect(texts(subPanel())).toEqual(['Ссылка', 'Почта'])
+
+		// Стрелки меню ходят по его пунктам: из «Поделиться» вниз — «Удалить»
+		await openOnShare()
+
+		expect(document.activeElement).toBe(shareRow())
+
+		await press(shareRow(), 'ArrowDown')
+
+		expect(document.activeElement).toBe(rowIn(rootPanel(), 'Удалить'))
+	})
+
+	it('→ открывает подменю на первом пункте, ← закрывает уровень — фокус на строке', async () => {
+		await render(() => markup())
+
+		await openOnShare()
+		await press(shareRow(), 'ArrowRight')
+
+		expect(shown(subPanel())).toBe(true)
+		expect(shareRow().getAttribute('aria-expanded')).toBe('true')
+		expect(document.activeElement).toBe(rowIn(subPanel(), 'Ссылка'))
+		// Пункт подменю горит, пока открыта его панель
+		expect(shareRow().parentElement?.dataset.open).toBe('true')
+
+		await press(rowIn(subPanel(), 'Ссылка'), 'ArrowLeft')
+
+		expect(shown(subPanel())).toBe(false)
+		expect(shown(rootPanel())).toBe(true)
+		expect(document.activeElement).toBe(shareRow())
+	})
+
+	it('Escape закрывает один уровень, следующий — меню', async () => {
+		await render(() => markup())
+
+		await openOnShare()
+		await press(shareRow(), 'Enter')
+		await press(rowIn(subPanel(), 'Ссылка'), 'Escape')
+
+		expect(shown(subPanel())).toBe(false)
+		expect(shown(rootPanel())).toBe(true)
+		expect(document.activeElement).toBe(shareRow())
+
+		await press(shareRow(), 'Escape')
+
+		expect(shown(rootPanel())).toBe(false)
+		expect(document.activeElement).toBe(triggerNode())
+	})
+
+	it('клик по строке открывает подменю, повторный его не закрывает', async () => {
+		await render(() => markup())
+
+		await open()
+		await click(shareRow())
+
+		expect(shown(subPanel())).toBe(true)
+
+		await click(shareRow())
+
+		expect(shown(subPanel())).toBe(true)
+	})
+
+	it('выбор в подменю закрывает всё меню, сообщает choose меню и подменю, фокус — на триггер', async () => {
+		const root: unknown[] = []
+		const nested: unknown[] = []
+
+		await render(() =>
+			markup(
+				{ onChoose: (item: IMenuItem) => root.push(item.value) },
+				{ onChoose: (item: IMenuItem) => nested.push(item.value) },
+			),
+		)
+
+		await openOnShare()
+		await press(shareRow(), 'ArrowRight')
+		await click(rowIn(subPanel(), 'Почта'))
+		await nextFrame()
+
+		expect(root).toEqual(['mail'])
+		expect(nested).toEqual(['mail'])
+		expect(shown(rootPanel())).toBe(false)
+		expect(shown(subPanel())).toBe(false)
+		expect(document.activeElement).toBe(triggerNode())
+	})
+
+	it('Tab в подменю закрывает всё меню и ведёт к остановке за ним', async () => {
+		await render(() => h('div', [markup(), h('button', { class: 'so-test-after' }, 'После')]))
+
+		await openOnShare()
+		await press(shareRow(), 'ArrowRight')
+		await press(rowIn(subPanel(), 'Ссылка'), 'Tab')
+
+		expect(shown(rootPanel())).toBe(false)
+		expect(shown(subPanel())).toBe(false)
+		expect(document.activeElement).toBe(find('.so-test-after'))
+	})
+
+	it('v-model:open — в обе стороны', async () => {
+		const open = ref(false)
+
+		await render(() =>
+			markup(
+				{},
+				{ open: open.value, 'onUpdate:open': (value: boolean) => (open.value = value) },
+			),
+		)
+
+		await openOnShare()
+		await press(shareRow(), 'ArrowRight')
+
+		expect(open.value).toBe(true)
+
+		open.value = false
+		await nextTick()
+
+		expect(shown(subPanel())).toBe(false)
+	})
+
+	it('размер меню — у панели подменю и у его пунктов', async () => {
+		await render(() => markup({ size: 'lg' }))
+
+		expect(subPanel().classList).toContain('so-menu__panel')
+		expect(subPanel().classList).toContain('so-menu__panel--size-lg')
+		expect(rowIn(subPanel(), 'Ссылка').parentElement?.classList).toContain(
+			'so-menu-item--size-lg',
+		)
+	})
+
+	it('пункты подменю данными (items) — с группами и пробросом слотов, как у меню', async () => {
+		await render(() =>
+			h(
+				Menu,
+				{},
+				{
+					trigger,
+					default: () =>
+						h(
+							Menu.Submenu,
+							{
+								value: 'share',
+								text: 'Поделиться',
+								items: [
+									{ value: 'link', text: 'Ссылка' },
+									{ value: 'mail', text: 'Почта', _: { group: 'send' } },
+								],
+								groups: [{ key: 'send', label: 'Отправить' }],
+							},
+							{ item: ({ text }: { text: string }) => `${text}…` },
+						),
+				},
+			),
+		)
+
+		expect(texts(subPanel())).toEqual(['Почта…', 'Ссылка…'])
+		expect(find('.so-menu-group__label', subPanel()).textContent).toBe('Отправить')
+	})
+})

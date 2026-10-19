@@ -156,6 +156,17 @@ export abstract class TOverlayFocusPlugin<
 	}
 
 	/**
+	 * Возвращать ли фокус при этом закрытии — сверх того, что решила стратегия
+	 * (`_restore`): у той ответ один на причину закрытия, а здесь наследник
+	 * смотрит, где фокус сейчас. По умолчанию — да. Подменю отказывает, когда
+	 * фокус уже не в нём: закрылось оно вместе с меню, а фокус меню вернуло на
+	 * триггер, — и строка спрятанной панели его не перехватывает.
+	 */
+	protected _returnsFocus(_root: Element): boolean {
+		return true
+	}
+
+	/**
 	 * Закрыть владельца записью — у немодального оверлея Tab из панели. Это
 	 * не просьба пользователя закрыть: фокус ушёл дальше по странице, и
 	 * держать панель открытой за ним незачем.
@@ -203,7 +214,7 @@ export abstract class TOverlayFocusPlugin<
 		this._returnTo = null
 		this._restore = true
 
-		if (restore && root) this._returnFocus(root, returnTo)
+		if (restore && root && this._returnsFocus(root)) this._returnFocus(root, returnTo)
 	}
 
 	/**
