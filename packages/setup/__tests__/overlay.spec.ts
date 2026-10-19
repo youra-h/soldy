@@ -735,6 +735,211 @@ describe('центр: top и bottom без суффикса', () => {
 })
 
 /**
+ * Точка вместо якоря — место вызова контекстного меню: прямоугольник нулевого
+ * размера в координатах окна. Расчёт тот же — flip, shift, RTL,
+ * `data-placement`; своего — `fixed`, пересчёт только на ресайз окна и ни
+ * одного наблюдателя якоря. Точка главнее якоря, пока задана.
+ */
+describe('точка вместо якоря', () => {
+	/** Плагин у Frame с разложенной панелью `width × height`. */
+	const withPanel = async (width = 120, height = 60) => {
+		const frame = new TFrame({ position: 'absolute' })
+		const panel = panelOf(width, height)
+		const plugin = anchorFor(frame, panel.plugin)
+
+		panel.plugin.element = panel.element
+		await nextFrame()
+
+		return { frame, plugin, panel }
+	}
+
+	it('панель встаёт у точки: bottom-start — левым верхним углом, fixed', async () => {
+		const { frame, plugin } = await withPanel()
+
+		plugin.point = { x: 300, y: 200 }
+
+		expect(frame.position).toBe('fixed')
+		expect(frame.x).toBe(300)
+		expect(frame.y).toBe(200)
+		expect(frame.dataset.get('placement')).toBe('bottom-start')
+	})
+
+	it('offset отодвигает панель от точки, как от якоря', async () => {
+		const { frame, plugin } = await withPanel()
+
+		plugin.offset = 4
+		plugin.point = { x: 300, y: 200 }
+
+		expect(frame.y).toBe(204)
+	})
+
+	it('точка главнее якоря, а снятая возвращает панель к нему', async () => {
+		const { frame, plugin } = await withPanel()
+
+		plugin.setAnchor(anchorAt({ left: 100, top: 220, bottom: 250, right: 300 }))
+
+		expect(frame.position).toBe('absolute')
+		expect(frame.y).toBe(250)
+
+		plugin.point = { x: 500, y: 400 }
+
+		expect(frame.position).toBe('fixed')
+		expect(frame.x).toBe(500)
+		expect(frame.y).toBe(400)
+
+		plugin.point = null
+
+		expect(frame.position).toBe('absolute')
+		expect(frame.x).toBe(100)
+		expect(frame.y).toBe(250)
+	})
+
+	it('у нижнего края flip поднимает панель над точкой', async () => {
+		const { frame, plugin } = await withPanel(120, 100)
+
+		// Под точкой 50px, панели нужно 100, а над ней места много
+		plugin.point = { x: 300, y: 750 }
+
+		expect(frame.y).toBe(650)
+		expect(frame.dataset.get('placement')).toBe('top-start')
+	})
+
+	it('у правого края shift не даёт панели уйти за окно', async () => {
+		const { frame, plugin } = await withPanel()
+
+		plugin.point = { x: 950, y: 200 }
+
+		expect(frame.x).toBe(880) // 1000 - 120
+	})
+
+	it('в RTL -start ставит панель влево от точки: начало там, откуда идёт строка', async () => {
+		const { frame, plugin } = await withPanel()
+		const anchor = anchorAt({ left: 100, top: 220, bottom: 250, right: 600 })
+
+		anchor.style.direction = 'rtl'
+		plugin.setAnchor(anchor)
+		plugin.point = { x: 400, y: 300 }
+
+		expect(frame.x).toBe(280) // 400 - 120
+	})
+
+	it('без якоря направление — у самой панели', async () => {
+		const { frame, plugin, panel } = await withPanel()
+
+		panel.element.style.direction = 'rtl'
+		plugin.point = { x: 400, y: 300 }
+
+		expect(frame.x).toBe(280)
+	})
+
+	it('за якорем под точкой не следит: ни наблюдателя, ни прокрутки предков', async () => {
+		const { frame, plugin } = await withPanel()
+		const parent = document.createElement('div')
+		const anchor = anchorAt({ left: 100, top: 220, bottom: 250, right: 300 })
+
+		parent.appendChild(anchor)
+		document.body.appendChild(parent)
+		plugin.setAnchor(anchor)
+
+		expect(observerCount(anchor)).toBe(1)
+
+		const remove = vi.spyOn(parent, 'removeEventListener')
+
+		plugin.point = { x: 500, y: 400 }
+
+		expect(observerCount(anchor)).toBe(0)
+		expect(remove).toHaveBeenCalledWith('scroll', expect.any(Function))
+
+		// Якорь подвинулся и прислал scroll — у точки панель стоит
+		scrollAnchorTo(anchor, { left: 10, top: 20, bottom: 50, right: 200 })
+		triggerResize(anchor)
+
+		expect(frame.x).toBe(500)
+		expect(frame.y).toBe(400)
+
+		plugin.point = null
+
+		expect(observerCount(anchor)).toBe(1)
+		expect(frame.x).toBe(10)
+		expect(frame.y).toBe(50)
+	})
+
+	it('ресайз окна пересчитывает: у нового края другой flip', async () => {
+		const { frame, plugin } = await withPanel(120, 100)
+
+		plugin.point = { x: 300, y: 650 }
+
+		expect(frame.dataset.get('placement')).toBe('bottom-start')
+
+		frame.show()
+		window.innerHeight = 700
+		window.dispatchEvent(new Event('resize'))
+
+		expect(frame.dataset.get('placement')).toBe('top-start')
+		expect(frame.y).toBe(550)
+	})
+
+	it('matchWidth у точки не действует: ширины у неё нет', async () => {
+		const frame = new TFrame({ position: 'fixed', width: 42 })
+		const panel = panelOf(120, 60)
+		const plugin = anchorFor(frame, panel.plugin)
+
+		panel.plugin.element = panel.element
+		await nextFrame()
+		plugin.matchWidth = true
+		plugin.placement = 'bottom-end'
+		plugin.point = { x: 300, y: 200 }
+
+		expect(frame.width).toBe(42)
+		expect(frame.x).toBe(180) // 300 - 120: ширина панели — её собственная
+	})
+
+	it('новая точка у открытой панели выбирает сторону заново', async () => {
+		const { frame, plugin } = await withPanel(120, 100)
+
+		plugin.point = { x: 300, y: 750 }
+		frame.show()
+
+		expect(frame.dataset.get('placement')).toBe('top-start')
+
+		// Влезает с обеих сторон: удержание оставило бы панель сверху
+		plugin.point = { x: 300, y: 400 }
+
+		expect(frame.dataset.get('placement')).toBe('bottom-start')
+		expect(frame.y).toBe(400)
+	})
+
+	it('точка — значение: та же точка событий не шлёт, снятая — шлёт', async () => {
+		const { plugin } = await withPanel()
+		const handler = vi.fn()
+		const given = { x: 300, y: 200 }
+
+		plugin.events.on('change:point', handler)
+		plugin.point = given
+		plugin.point = { x: 300, y: 200 }
+
+		expect(handler).toHaveBeenCalledOnce()
+		expect(plugin.point).toEqual(given)
+		expect(plugin.point).not.toBe(given)
+
+		plugin.point = null
+
+		expect(handler).toHaveBeenLastCalledWith(null)
+	})
+
+	it('без якоря и точки стороны нет, и окна плагин не слушает', async () => {
+		const { frame, plugin } = await withPanel()
+		const remove = vi.spyOn(window, 'removeEventListener')
+
+		plugin.point = { x: 300, y: 200 }
+		plugin.point = null
+
+		expect(frame.dataset.has('placement')).toBe(false)
+		expect(remove).toHaveBeenCalledWith('resize', expect.any(Function))
+	})
+})
+
+/**
  * `position` панели у якоря выбирает плагин: `absolute` — панель лежит в
  * документе, и окно браузер прокручивает вместе с ней и полем, без пересчёта
  * по `scroll`, который на телефоне приходит кадром позже прокрутки; `fixed` —

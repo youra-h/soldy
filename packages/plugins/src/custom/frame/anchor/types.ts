@@ -1,4 +1,5 @@
 import type { TPluginEvents } from '../../../base'
+import type { TPoint } from '../../../utils'
 
 /**
  * Сторона и выравнивание панели относительно якоря.
@@ -14,6 +15,13 @@ import type { TPluginEvents } from '../../../base'
  */
 export type TFramePlacement =
 	'bottom-start' | 'bottom' | 'bottom-end' | 'top-start' | 'top' | 'top-end'
+
+/**
+ * Прямоугольник места панели в координатах окна: якоря — его
+ * `getBoundingClientRect()`, точки — нулевого размера. Расчёту хватает краёв
+ * и ширины.
+ */
+export type TAnchorRect = Pick<DOMRectReadOnly, 'left' | 'top' | 'right' | 'bottom' | 'width'>
 
 export interface IAnchorPluginOptions {
 	/** Сторона и выравнивание относительно якоря. По умолчанию `bottom-start`. */
@@ -36,6 +44,8 @@ export interface IAnchorPluginOptions {
 export type TAnchorPluginEvents = TPluginEvents & {
 	/** change:anchor */
 	'change:anchor': (element: Element | null) => void
+	/** change:point */
+	'change:point': (value: TPoint | null) => void
 	/** change:placement */
 	'change:placement': (value: TFramePlacement) => void
 	/** change:matchWidth */
@@ -54,6 +64,11 @@ export type TAnchorPluginEvents = TPluginEvents & {
  */
 export interface IAnchorPluginProps {
 	anchor?: Element | null
+	/**
+	 * Точка в координатах окна, у которой встаёт панель, — главнее якоря,
+	 * пока задана: контекстное меню встаёт у места вызова, а не у области.
+	 */
+	point?: TPoint | null
 	placement?: TFramePlacement
 	matchWidth?: boolean
 	flip?: boolean

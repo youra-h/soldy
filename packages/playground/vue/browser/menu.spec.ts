@@ -381,6 +381,119 @@ describe('закрытие', () => {
 	})
 })
 
+/**
+ * Контекстное меню — `open-on="contextmenu"`: в слоте `trigger` область
+ * («файл»), меню вызывают над ней правой кнопкой и клавишей, а панель встаёт у
+ * точки вызова. Точку от клавиатуры ставит браузер — у элемента под фокусом.
+ */
+describe('контекстное меню', () => {
+	/** Область с меню; `style` — где область стоит на странице. */
+	const contextPage = (style: string) => () =>
+		h('div', { style: 'padding: 40px' }, [
+			h(
+				Menu,
+				{ openOn: 'contextmenu', tag: 'div' },
+				{
+					trigger: () =>
+						h(
+							'div',
+							{
+								class: 'so-test-area',
+								tabindex: 0,
+								style: `width: 300px; height: 120px; ${style}`,
+							},
+							'Отчёт.pdf',
+						),
+					default: () => [
+						h(Menu.Item, { value: 'open', text: 'Открыть' }),
+						h(Menu.Item, { value: 'rename', text: 'Переименовать' }),
+						h(Menu.Item, { value: 'remove', text: 'Удалить' }),
+					],
+				},
+			),
+		])
+
+	/** Разметка на странице, корень объявлен плагинам. */
+	const showContext = async (style = '') => {
+		render(defineComponent({ render: contextPage(style) }))
+
+		await nextTick()
+		await nextFrame()
+		await nextFrame()
+	}
+
+	const area = () => find('.so-test-area')
+
+	it('правая кнопка — панель у точки вызова, системное меню погашено, фокус на панели', async () => {
+		let prevented: boolean | null = null
+
+		const watch = (event: Event) => {
+			prevented = event.defaultPrevented
+		}
+
+		document.addEventListener('contextmenu', watch)
+
+		try {
+			await showContext()
+			await userEvent.click(area(), { button: 'right', position: { x: 50, y: 30 } })
+			await expect.poll(isOpen).toBe(true)
+
+			const box = area().getBoundingClientRect()
+			const placed = panel().getBoundingClientRect()
+
+			expect(prevented).toBe(true)
+			expect(placed.left).toBeCloseTo(box.left + 50, 0)
+			expect(placed.top).toBeCloseTo(box.top + 30 + 4, 0)
+			await expect.poll(active).toBe(panel())
+		} finally {
+			document.removeEventListener('contextmenu', watch)
+		}
+	})
+
+	it('у нижнего края окна панель встаёт над точкой', async () => {
+		await showContext('position: fixed; left: 40px; bottom: 0')
+		await userEvent.click(area(), { button: 'right', position: { x: 50, y: 100 } })
+		await expect.poll(isOpen).toBe(true)
+
+		const point = area().getBoundingClientRect().top + 100
+
+		await expect.poll(() => panel().getBoundingClientRect().bottom).toBeCloseTo(point - 4, 0)
+		expect(panel().dataset.placement).toBe('top-start')
+	})
+
+	it('Shift+F10 — меню на первом пункте у области, Escape возвращает фокус на неё', async () => {
+		await showContext()
+		area().focus()
+		await userEvent.keyboard('{Shift>}{F10}{/Shift}')
+
+		await expect.poll(active).toBe(rowOf('Открыть'))
+
+		const box = area().getBoundingClientRect()
+		const placed = panel().getBoundingClientRect()
+
+		// Точку клавиатуры браузер ставит у элемента под фокусом
+		expect(placed.left).toBeGreaterThanOrEqual(box.left)
+		expect(placed.left).toBeLessThanOrEqual(box.right)
+		expect(placed.top).toBeGreaterThanOrEqual(box.top)
+
+		await userEvent.keyboard('{Escape}')
+
+		await expect.poll(isOpen).toBe(false)
+		expect(active()).toBe(area())
+	})
+
+	it('клик по области закрывает меню', async () => {
+		await showContext()
+		await userEvent.click(area(), { button: 'right', position: { x: 50, y: 30 } })
+		await expect.poll(isOpen).toBe(true)
+
+		// Мимо панели: она встала от точки вниз и вправо
+		await userEvent.click(area(), { position: { x: 290, y: 10 } })
+
+		await expect.poll(isOpen).toBe(false)
+	})
+})
+
 describe('строка пункта', () => {
 	it('пустые обёртки значка и подсказки — :empty, места не занимают', async () => {
 		await show()

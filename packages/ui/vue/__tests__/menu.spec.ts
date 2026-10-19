@@ -550,3 +550,103 @@ describe('группы из данных', () => {
 		expect(panel().querySelector('.so-menu-group, .so-menu-separator')).toBeNull()
 	})
 })
+
+/**
+ * Контекстное меню — `open-on="contextmenu"`: в слоте `trigger` область, меню
+ * вызывают над ней, и панель встаёт у точки вызова. Переходы плагинов —
+ * `plugins/__tests__/menu.plugin.spec.ts`, расчёт у точки —
+ * `setup/__tests__/overlay.spec.ts`; здесь — что проводка доводит точку от
+ * ядра до якоря панели и что связка кнопки у области пуста.
+ */
+describe('контекстное меню', () => {
+	/** Scope слота у области — что разметка отдала ей последним. */
+	let scope: TTriggerScope | null = null
+
+	/** Область — строка «файла», как у потребителя: связку из scope она берёт, если она есть. */
+	const area = (given: TTriggerScope) => {
+		scope = given
+
+		return h('div', { class: 'so-test-area', ...given.triggerAria }, 'Отчёт.pdf')
+	}
+
+	const areaNode = () => find('.so-test-area')
+
+	/** Правая кнопка мыши над областью в точке окна. */
+	async function rightClick(x: number, y: number): Promise<void> {
+		areaNode().dispatchEvent(
+			new PointerEvent('pointerdown', { bubbles: true, pointerType: 'mouse', button: 2 }),
+		)
+		areaNode().dispatchEvent(
+			new MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: x, clientY: y }),
+		)
+
+		await nextTick()
+	}
+
+	afterEach(() => {
+		scope = null
+	})
+
+	it('у области связки кнопки нет, у панели — роль и id, но не имя от триггера', async () => {
+		await render(() => h(Menu, { items: ITEMS, openOn: 'contextmenu' }, { trigger: area }))
+
+		expect(scope?.triggerAria).toEqual({})
+		expect(areaNode().hasAttribute('aria-haspopup')).toBe(false)
+		expect(areaNode().hasAttribute('aria-expanded')).toBe(false)
+		expect(panel().getAttribute('role')).toBe('menu')
+		expect(panel().id).not.toBe('')
+		expect(panel().hasAttribute('aria-labelledby')).toBe(false)
+	})
+
+	it('правая кнопка открывает меню у точки вызова, повторная — переставляет панель', async () => {
+		await render(() => h(Menu, { items: ITEMS, openOn: 'contextmenu' }, { trigger: area }))
+
+		await rightClick(120, 80)
+
+		expect(isOpen()).toBe(true)
+		// Точка — в координатах окна: панель `fixed`, отступ 4px, как у кнопки
+		expect(panel().style.position).toBe('fixed')
+		expect(panel().style.left).toBe('120px')
+		expect(panel().style.top).toBe('84px')
+
+		await rightClick(300, 200)
+
+		expect(isOpen()).toBe(true)
+		expect(panel().style.left).toBe('300px')
+		expect(panel().style.top).toBe('204px')
+	})
+
+	it('нажатие в области мимо вызова закрывает меню', async () => {
+		await render(() => h(Menu, { items: ITEMS, openOn: 'contextmenu' }, { trigger: area }))
+
+		await rightClick(120, 80)
+
+		areaNode().dispatchEvent(
+			new PointerEvent('pointerdown', { bubbles: true, pointerType: 'mouse', button: 0 }),
+		)
+		await nextTick()
+
+		expect(isOpen()).toBe(false)
+	})
+
+	it('смена open-on на лету: у кнопки связка появляется, у области пропадает', async () => {
+		const openOn = ref<'press' | 'contextmenu'>('press')
+
+		await render(() => h(Menu, { items: ITEMS, openOn: openOn.value }, { trigger }))
+
+		expect(triggerNode().getAttribute('aria-haspopup')).toBe('menu')
+
+		openOn.value = 'contextmenu'
+		await nextTick()
+
+		expect(triggerNode().hasAttribute('aria-haspopup')).toBe(false)
+		expect(triggerNode().hasAttribute('aria-controls')).toBe(false)
+		expect(panel().hasAttribute('aria-labelledby')).toBe(false)
+
+		openOn.value = 'press'
+		await nextTick()
+
+		expect(triggerNode().getAttribute('aria-controls')).toBe(panel().id)
+		expect(panel().getAttribute('aria-labelledby')).toBe(triggerNode().id)
+	})
+})

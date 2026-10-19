@@ -1,12 +1,12 @@
 /**
  * Определение TAnchorPlugin (namespace `anchor`) — привязка Frame к чужому элементу.
  *
- * Пропсы — `anchor_anchor`, `anchor_placement`, `anchor_matchWidth`,
- * `anchor_flip`, `anchor_offset`. Подключён к `FrameDescriptor`, то есть есть у
- * каждого Frame. Без якоря плагин ничего не делает и ни на что не подписан,
- * поэтому диалогу по центру или тосту в углу он не стоит ничего. Зато привязку
- * можно задать в разметке одним пропом — иначе пришлось бы доставать плагин из
- * bundle.
+ * Пропсы — `anchor_anchor`, `anchor_point`, `anchor_placement`,
+ * `anchor_matchWidth`, `anchor_flip`, `anchor_offset`. Подключён к
+ * `FrameDescriptor`, то есть есть у каждого Frame. Без якоря и точки плагин
+ * ничего не делает и ни на что не подписан, поэтому диалогу по центру или
+ * тосту в углу он не стоит ничего. Зато привязку можно задать в разметке одним
+ * пропом — иначе пришлось бы доставать плагин из bundle.
  */
 
 import { definePlugin } from '../../../protected/define'
@@ -37,6 +37,15 @@ export const AnchorPluginDescriptor = definePlugin({
 						plugin.removeAnchor()
 					}
 				},
+			},
+			/**
+			 * Точка в координатах окна вместо якоря — главнее него, пока задана:
+			 * контекстное меню встаёт у места вызова. Знает её тот, кто панель
+			 * открыл, поэтому и она пишется снаружи.
+			 */
+			point: {
+				type: Object,
+				triggers: ['change:point'],
 			},
 			placement: {
 				type: String,

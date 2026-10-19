@@ -3,10 +3,12 @@ import { TBasePlugin } from '../../../base'
 import type { IPluginContext } from '../../../base'
 import { TElementPlugin } from '../../element'
 import { isPinnedToViewport, positionOriginOf } from '../../../utils'
+import type { TPoint } from '../../../utils'
 import type {
 	IAnchorPluginOptions,
 	IAnchorPluginProps,
 	TAnchorPluginEvents,
+	TAnchorRect,
 	TFramePlacement,
 } from './types'
 
@@ -25,6 +27,10 @@ type TAnchorSide = 'top' | 'bottom'
 
 /** Сторона напротив. */
 const opposite = (side: TAnchorSide): TAnchorSide => (side === 'top' ? 'bottom' : 'top')
+
+/** Одна ли это точка: координаты те же, или точки нет у обеих. */
+const samePoint = (a: TPoint | null, b: TPoint | null): boolean =>
+	a === b || (a !== null && b !== null && a.x === b.x && a.y === b.y)
 
 /**
  * TAnchorPlugin — привязка Frame к чужому элементу.
@@ -91,6 +97,17 @@ const opposite = (side: TAnchorSide): TAnchorSide => (side === 'top' ? 'bottom' 
  * Positioning, где место считает браузер, — или `target` панели в самом
  * блоке, и тогда она едет вместе с ним.
  *
+ * **Точка** (`point`) — место вместо якоря: контекстное меню встаёт у места
+ * вызова, а не у области, в которой его вызвали. Точка главнее якоря, пока
+ * задана, — иначе выбирать, к чему привязать панель, пришлось бы шаблону, —
+ * а снятая возвращает панель к якорю. Это прямоугольник нулевого размера в
+ * координатах окна, и расчёт у него тот же: flip, shift, RTL (направление —
+ * якоря, без него — самой панели) и `data-placement`. Своего у точки три
+ * вещи: панель `fixed` — точка стоит в окне, как якорь в `fixed`-шапке;
+ * пересчёт только на смену размера окна — прокрутка и размер чужого элемента
+ * точку не двигают, и наблюдателя якоря у неё нет; `matchWidth` не действует —
+ * ширины у точки нет. Новая точка, как новый якорь, выбирает сторону заново.
+ *
  * Считается всё в координатах окна (`getBoundingClientRect()`), а во Frame
  * уходит от угла блока, от которого браузер отсчитывает `left`/`top` панели
  * (`positionOriginOf`): у `absolute` в `body` это начало документа, в
@@ -115,13 +132,15 @@ export class TAnchorPlugin extends TBasePlugin<any, TAnchorPluginEvents> {
 	 * `anchor: null` — «панель ни к чему не привязана». Якорь не опция, его
 	 * задаёт только разметка, но умолчание объявлено и ему: снятый из разметки
 	 * проп связка возвращает к умолчанию декларации, и без него панель
-	 * оставалась бы привязанной к прежнему элементу.
+	 * оставалась бы привязанной к прежнему элементу. Так же `point: null` —
+	 * «точки нет, панель у якоря».
 	 */
 	static defaultValues: TDefaultValues<
 		IAnchorPluginProps,
-		'anchor' | 'placement' | 'matchWidth' | 'flip' | 'offset'
+		'anchor' | 'point' | 'placement' | 'matchWidth' | 'flip' | 'offset'
 	> = {
 		anchor: null,
+		point: null,
 		placement: 'bottom-start',
 		matchWidth: false,
 		flip: true,
@@ -132,6 +151,8 @@ export class TAnchorPlugin extends TBasePlugin<any, TAnchorPluginEvents> {
 	private _element: Element | null = null
 	/** Якорю нужны только `getBoundingClientRect()` и `parentElement` — хватает `Element`. */
 	private _anchor: Element | null = TAnchorPlugin.defaultValues.anchor
+	/** Точка в координатах окна — главнее якоря, пока задана. */
+	private _point: TPoint | null = TAnchorPlugin.defaultValues.point
 	private _placement: TFramePlacement = TAnchorPlugin.defaultValues.placement
 	private _matchWidth = TAnchorPlugin.defaultValues.matchWidth
 	private _flip = TAnchorPlugin.defaultValues.flip
@@ -203,10 +224,7 @@ export class TAnchorPlugin extends TBasePlugin<any, TAnchorPluginEvents> {
 		if (this._anchor === element) return
 
 		this._anchor = element
-		this._heldSide = null
-		this._choosePosition()
-		this._subscribe()
-		this._update()
+		this._onPlaceChange()
 		this.events.emit('change:anchor', element)
 	}
 
@@ -214,15 +232,29 @@ export class TAnchorPlugin extends TBasePlugin<any, TAnchorPluginEvents> {
 		if (!this._anchor) return
 
 		this._anchor = null
-		this._heldSide = null
-		this._unsubscribe()
-		this._actualPlacement = null
-		this._frame?.dataset.add(ANCHOR_PLACEMENT_ATTRIBUTE, null)
+		this._onPlaceChange()
 		this.events.emit('change:anchor', null)
 	}
 
 	get anchor(): Element | null {
 		return this._anchor
+	}
+
+	/**
+	 * Точка в координатах окна, у которой встаёт панель, — главнее якоря,
+	 * пока задана (см. описание класса). Значение: сверяется по координатам, и
+	 * та же точка ничего не пересчитывает.
+	 */
+	get point(): TPoint | null {
+		return this._point
+	}
+
+	set point(value: TPoint | null) {
+		if (samePoint(this._point, value)) return
+
+		this._point = value === null ? null : { x: value.x, y: value.y }
+		this._onPlaceChange()
+		this.events.emit('change:point', this._point)
 	}
 
 	get placement(): TFramePlacement {
@@ -285,8 +317,60 @@ export class TAnchorPlugin extends TBasePlugin<any, TAnchorPluginEvents> {
 		this._frame = null
 		this._element = null
 		this._anchor = null
+		this._point = null
 
 		super.destroy()
+	}
+
+	/**
+	 * Место панели сменилось — якорь или точка. Сторону следующий расчёт
+	 * выбирает заново (прошлую выбрали у другого места), `position` и подписки
+	 * — по новому месту. Места не осталось — панель ни к чему не привязана:
+	 * подписок нет, и стороны, которую видит тема, тоже.
+	 */
+	private _onPlaceChange(): void {
+		this._heldSide = null
+		this._subscribe()
+
+		if (!this._anchor && !this._point) {
+			this._actualPlacement = null
+			this._frame?.dataset.add(ANCHOR_PLACEMENT_ATTRIBUTE, null)
+
+			return
+		}
+
+		this._choosePosition()
+		this._update()
+	}
+
+	/**
+	 * Прямоугольник места панели в координатах окна: у точки — нулевого
+	 * размера, иначе якоря. Нет ни того, ни другого — `null`.
+	 */
+	private _placeRect(): TAnchorRect | null {
+		const point = this._point
+
+		if (point) return { left: point.x, right: point.x, top: point.y, bottom: point.y, width: 0 }
+
+		return this._anchor?.getBoundingClientRect() ?? null
+	}
+
+	/**
+	 * Письмо справа налево — у якоря, а у точки без якоря — у самой панели:
+	 * начало у точки там же, откуда идёт строка вокруг неё.
+	 */
+	private get _rtl(): boolean {
+		const source = this._anchor ?? this._element
+
+		return source !== null && getComputedStyle(source).direction === 'rtl'
+	}
+
+	/**
+	 * Тянуть ширину панели есть по чему, только пока место — якорь: ширины у
+	 * точки нет, и `matchWidth` с ней панель не сжимает.
+	 */
+	private get _matchesWidth(): boolean {
+		return this._matchWidth && this._point === null
 	}
 
 	/**
@@ -298,7 +382,6 @@ export class TAnchorPlugin extends TBasePlugin<any, TAnchorPluginEvents> {
 	 */
 	private _update(): void {
 		const frame = this._frame
-		const anchor = this._anchor
 
 		if (frame?.contained) {
 			this._heldSide = null
@@ -307,14 +390,15 @@ export class TAnchorPlugin extends TBasePlugin<any, TAnchorPluginEvents> {
 			return
 		}
 
-		if (!frame || !anchor) return
+		const rect = this._placeRect()
 
-		const rect = anchor.getBoundingClientRect()
+		if (!frame || !rect) return
+
 		const panel = this._panelSize(rect)
 
-		if (this._matchWidth) frame.width = rect.width
+		if (this._matchesWidth) frame.width = rect.width
 
-		const rtl = getComputedStyle(anchor).direction === 'rtl'
+		const rtl = this._rtl
 		const alignment = this._alignment
 		const side = this._resolveSide(rect, panel.height)
 		const origin = positionOriginOf(this._element, frame.position)
@@ -328,21 +412,29 @@ export class TAnchorPlugin extends TBasePlugin<any, TAnchorPluginEvents> {
 	}
 
 	/**
-	 * `position` панели: `fixed` у якоря, который стоит в окне, иначе
-	 * `absolute` (см. описание класса).
+	 * `position` панели: `fixed` у точки и у якоря, который стоит в окне, иначе
+	 * `absolute` (см. описание класса). Точка — в координатах окна и стоит в
+	 * нём, как якорь в `fixed`-шапке.
 	 *
-	 * Выбранное держится до следующего показа или смены якоря. Стили предков
+	 * Выбранное держится до следующего показа или смены места. Стили предков
 	 * якоря на каждом `scroll` не перечитываем: шапка, которая стала `fixed`
 	 * при открытой панели, — редкость, а обход предков со стилями на каждом
 	 * кадре прокрутки обошёлся бы всем.
 	 */
 	private _choosePosition(): void {
 		const frame = this._frame
+
+		if (!frame) return
+
+		if (this._point) {
+			frame.position = 'fixed'
+
+			return
+		}
+
 		const anchor = this._anchor
 
-		if (!frame || !anchor) return
-
-		frame.position = isPinnedToViewport(anchor) ? 'fixed' : 'absolute'
+		if (anchor) frame.position = isPinnedToViewport(anchor) ? 'fixed' : 'absolute'
 	}
 
 	/**
@@ -388,7 +480,7 @@ export class TAnchorPlugin extends TBasePlugin<any, TAnchorPluginEvents> {
 	 * выбирает правило (`_chooseSide`). Запоминает её только расчёт с
 	 * разложенной панелью (см. `_heldSide`).
 	 */
-	private _resolveSide(rect: DOMRect, panelHeight: number): TAnchorSide {
+	private _resolveSide(rect: TAnchorRect, panelHeight: number): TAnchorSide {
 		if (!this._flip) return this._wantedSide
 
 		const side =
@@ -417,7 +509,7 @@ export class TAnchorPlugin extends TBasePlugin<any, TAnchorPluginEvents> {
 	 * области, а на противоположной места больше, — противоположная. Не
 	 * влезает нигде — остаёмся на стороне потребителя.
 	 */
-	private _chooseSide(rect: DOMRect, panelHeight: number): TAnchorSide {
+	private _chooseSide(rect: TAnchorRect, panelHeight: number): TAnchorSide {
 		const wants = this._wantedSide
 		const needed = panelHeight + this._offset
 		const spaceWanted = this._spaceAt(wants, rect)
@@ -441,7 +533,7 @@ export class TAnchorPlugin extends TBasePlugin<any, TAnchorPluginEvents> {
 	 * между границами — не подобранное число пикселей, а вся полоса, где
 	 * панель влезает с обеих сторон или ни с одной.
 	 */
-	private _holdSide(side: TAnchorSide, rect: DOMRect, panelHeight: number): TAnchorSide {
+	private _holdSide(side: TAnchorSide, rect: TAnchorRect, panelHeight: number): TAnchorSide {
 		const needed = panelHeight + this._offset
 
 		if (this._spaceAt(side, rect) >= needed) return side
@@ -450,7 +542,7 @@ export class TAnchorPlugin extends TBasePlugin<any, TAnchorPluginEvents> {
 	}
 
 	/** Место по высоте видимой области над якорем (`top`) или под ним (`bottom`). */
-	private _spaceAt(side: TAnchorSide, rect: DOMRect): number {
+	private _spaceAt(side: TAnchorSide, rect: TAnchorRect): number {
 		return side === 'top' ? rect.top : this._viewport.height - rect.bottom
 	}
 
@@ -464,7 +556,7 @@ export class TAnchorPlugin extends TBasePlugin<any, TAnchorPluginEvents> {
 	 * остаётся видна целиком.
 	 */
 	private _resolveX(
-		rect: DOMRect,
+		rect: TAnchorRect,
 		panelWidth: number,
 		alignment: 'start' | 'center' | 'end',
 		rtl: boolean,
@@ -483,7 +575,7 @@ export class TAnchorPlugin extends TBasePlugin<any, TAnchorPluginEvents> {
 	 * `end` — правый, в RTL наоборот.
 	 */
 	private _alignX(
-		rect: DOMRect,
+		rect: TAnchorRect,
 		panelWidth: number,
 		alignment: 'start' | 'center' | 'end',
 		rtl: boolean,
@@ -520,51 +612,65 @@ export class TAnchorPlugin extends TBasePlugin<any, TAnchorPluginEvents> {
 	 * отрисовалась ли панель, и с `*-end` не мигает по устаревшей ширине.
 	 * Высоту якорь не знает — она всегда из DOM.
 	 */
-	private _panelSize(anchorRect: DOMRect): { width: number; height: number } {
+	private _panelSize(anchorRect: TAnchorRect): { width: number; height: number } {
 		const panel = this._element?.getBoundingClientRect()
 
 		return {
-			width: this._matchWidth ? anchorRect.width : (panel?.width ?? 0),
+			width: this._matchesWidth ? anchorRect.width : (panel?.width ?? 0),
 			height: panel?.height ?? 0,
 		}
 	}
 
 	/**
-	 * Следит за скроллом предков якоря, ресайзом окна и изменением размера
-	 * самого якоря (без скролла — например, у него пропал соседний тег).
-	 * Scroll и resize пересчитывают координаты сразу, уведомление наблюдателя
-	 * якоря — через `_onAnchorResize`.
+	 * Следит за тем, что двигает место панели.
 	 *
-	 * Каждый слушатель снимается по своей ссылке на элемент: одна переменная
-	 * цикла, захваченная всеми замыканиями, к моменту очистки была бы уже
-	 * `null`, и слушатели остались бы висеть.
+	 * У якоря — скролл его предков, ресайз окна и изменение размера самого
+	 * якоря (без скролла — например, у него пропал соседний тег). Scroll и
+	 * resize пересчитывают координаты сразу, уведомление наблюдателя якоря —
+	 * через `_onAnchorResize`. Каждый слушатель снимается по своей ссылке на
+	 * элемент: одна переменная цикла, захваченная всеми замыканиями, к моменту
+	 * очистки была бы уже `null`, и слушатели остались бы висеть.
+	 *
+	 * У точки — только ресайз окна: точка в координатах окна, прокрутка и
+	 * размер чужого элемента её не двигают, а у края окна по-другому решаются
+	 * flip и shift. Якорь, оставшийся под точкой, не наблюдается: точка
+	 * главнее.
 	 */
 	private _subscribe(): void {
 		this._unsubscribe()
 
-		if (!this._anchor) return
-
 		const update = () => this._update()
 
-		for (let el = this._anchor.parentElement; el; el = el.parentElement) {
+		if (this._point) {
+			this._listenWindow('resize', update)
+
+			return
+		}
+
+		const anchor = this._anchor
+
+		if (!anchor) return
+
+		for (let el = anchor.parentElement; el; el = el.parentElement) {
 			const target = el
 
 			target.addEventListener('scroll', update, { passive: true })
 			this._cleanups.push(() => target.removeEventListener('scroll', update))
 		}
 
-		window.addEventListener('resize', update, { passive: true })
-		window.addEventListener('scroll', update, { passive: true })
-
-		this._cleanups.push(() => {
-			window.removeEventListener('resize', update)
-			window.removeEventListener('scroll', update)
-		})
+		this._listenWindow('resize', update)
+		this._listenWindow('scroll', update)
 
 		const anchorObserver = new ResizeObserver(() => this._onAnchorResize())
 
-		anchorObserver.observe(this._anchor, { box: 'border-box' })
+		anchorObserver.observe(anchor, { box: 'border-box' })
 		this._cleanups.push(() => anchorObserver.disconnect())
+	}
+
+	/** Слушатель окна — с отпиской в общем списке подписок. */
+	private _listenWindow(type: 'resize' | 'scroll', listener: () => void): void {
+		window.addEventListener(type, listener, { passive: true })
+		this._cleanups.push(() => window.removeEventListener(type, listener))
 	}
 
 	private _unsubscribe(): void {

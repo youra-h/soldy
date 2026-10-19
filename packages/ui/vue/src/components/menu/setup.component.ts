@@ -14,10 +14,11 @@ import BaseMenu, { type MenuProps } from './base.component'
  * наборы связки) и коллекционный (пункты). Второй получает `owner` и общий
  * `bundle`, чтобы плагины видели коллекцию.
  *
- * Логики здесь нет: клик по триггеру и наведение — `TMenuPointerPlugin`,
- * клавиши — `TMenuKeyboardPlugin`, фокус, Escape и Tab — `TMenuFocusPlugin`,
- * нажатие мимо — `TDismissPlugin`, координаты панели — `TAnchorPlugin` её
- * Frame. Разметка раскладывает то, что отдали ядро и плагины.
+ * Логики здесь нет: открытие — клик по кнопке или контекстное меню у точки
+ * вызова — и наведение — `TMenuPointerPlugin`, клавиши — `TMenuKeyboardPlugin`,
+ * фокус, Escape и Tab — `TMenuFocusPlugin`, нажатие мимо — `TDismissPlugin`,
+ * координаты панели у корня или у точки — `TAnchorPlugin` её Frame. Разметка
+ * раскладывает то, что отдали ядро и плагины.
  */
 export default {
 	name: '_Menu',

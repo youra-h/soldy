@@ -15,7 +15,7 @@
 
 import { describe, it, expect, afterEach, vi } from 'vitest'
 import { TMenu, TMenuCheckboxItem, TMenuItem, createEngineMenu } from '@soldy-ui/core'
-import type { IMenuItem, IMenuItemProps } from '@soldy-ui/core'
+import type { IMenuItem, IMenuItemProps, IMenuProps } from '@soldy-ui/core'
 import {
 	TCollectionBundlesPlugin,
 	TCollectionElements,
@@ -63,8 +63,8 @@ const ACTIONS: TEntry[] = [
 	{ value: 'remove', text: 'Удалить' },
 ]
 
-async function setup(entries: TEntry[] = ACTIONS) {
-	const owner = new TMenu()
+async function setup(entries: TEntry[] = ACTIONS, props: Partial<IMenuProps> = {}) {
+	const owner = new TMenu(props)
 	const engine = createEngineMenu({ owner })
 	const items = entries.map(({ checkbox, ...props }) =>
 		engine.extensions.plain.push(
@@ -186,6 +186,8 @@ async function setup(entries: TEntry[] = ACTIONS) {
 
 afterEach(() => {
 	vi.useRealTimers()
+	vi.restoreAllMocks()
+	Reflect.deleteProperty(navigator, 'maxTouchPoints')
 	document.body.innerHTML = ''
 })
 
@@ -620,5 +622,398 @@ describe('модель фокуса', () => {
 		hover(rowOf('save'))
 
 		expect(lit()).toEqual([])
+	})
+})
+
+/** Нажатие указателя: тип, кнопка и точка; первый указатель — основной. */
+type TPress = { pointerType?: string; button?: number; pointerId?: number; x?: number; y?: number }
+
+/** Событие указателя `type` на узле — всплывает, как у пользователя. */
+function pointer(
+	target: Element,
+	type: string,
+	{ pointerType = 'mouse', button = 0, pointerId = 1, x = 0, y = 0 }: TPress = {},
+	init: PointerEventInit = {},
+): PointerEvent {
+	const event = new PointerEvent(type, {
+		bubbles: true,
+		cancelable: true,
+		pointerType,
+		button,
+		pointerId,
+		isPrimary: true,
+		clientX: x,
+		clientY: y,
+		...init,
+	})
+
+	target.dispatchEvent(event)
+
+	return event
+}
+
+/** `contextmenu` в точке окна — так его шлёт браузер на правую кнопку, касание и клавишу. */
+function contextMenu(target: Element, x: number, y: number): MouseEvent {
+	const event = new MouseEvent('contextmenu', {
+		bubbles: true,
+		cancelable: true,
+		clientX: x,
+		clientY: y,
+	})
+
+	target.dispatchEvent(event)
+
+	return event
+}
+
+/** Правая кнопка мыши: `pointerdown` второй кнопкой, за ним `contextmenu` в той же точке. */
+function rightClick(target: Element, x: number, y: number): MouseEvent {
+	pointer(target, 'pointerdown', { button: 2, x, y })
+
+	return contextMenu(target, x, y)
+}
+
+/**
+ * Платформа устройства на время теста: `navigator.platform` и число точек
+ * касания. У jsdom `maxTouchPoints` нет вовсе.
+ */
+function emulatePlatform(platform: string, maxTouchPoints = 0): void {
+	vi.spyOn(navigator, 'platform', 'get').mockReturnValue(platform)
+	Object.defineProperty(navigator, 'maxTouchPoints', {
+		value: maxTouchPoints,
+		configurable: true,
+	})
+}
+
+/**
+ * Контекстное меню (`openOn: 'contextmenu'`): в корне — область, вызов —
+ * `contextmenu` в точке, панель встаёт у неё (`owner.point`). Пункты,
+ * клавиши панели и фокус — те же, что у кнопки.
+ */
+describe('контекстное меню', () => {
+	const area = (entries?: TEntry[]) => setup(entries, { openOn: 'contextmenu' })
+
+	it('правая кнопка вызывает меню у точки и гасит системное', async () => {
+		const { owner, root, panel, highlighted } = await area()
+
+		const event = rightClick(root, 120, 80)
+
+		expect(event.defaultPrevented).toBe(true)
+		expect(owner.open).toBe(true)
+		expect(owner.point).toEqual({ x: 120, y: 80 })
+
+		await nextFrame()
+
+		// Вызов указателем — фокус на панели, как клик по кнопке
+		expect(document.activeElement).toBe(panel)
+		expect(highlighted()).toBe(null)
+	})
+
+	it('клавиша контекстного меню и Shift+F10 — меню на первом пункте, как кнопка с клавиатуры', async () => {
+		const { owner, trigger, press, focused } = await area()
+
+		trigger.focus()
+		press(trigger, 'Shift', { shiftKey: true })
+		press(trigger, 'F10', { shiftKey: true })
+		// Точку браузер ставит у элемента под фокусом
+		contextMenu(trigger, 40, 12)
+
+		expect(owner.point).toEqual({ x: 40, y: 12 })
+
+		await nextFrame()
+
+		expect(focused()).toBe('edit')
+	})
+
+	it('вызов без нажатия в области — ассистивной технологией — как с клавиатуры', async () => {
+		const { root, focused } = await area()
+
+		contextMenu(root, 10, 10)
+		await nextFrame()
+
+		expect(focused()).toBe('edit')
+	})
+
+	it('после клика указателем клавиша снова вызывает на первом пункте', async () => {
+		const { owner, root, trigger, press, focused } = await area()
+
+		rightClick(root, 10, 10)
+		owner.open = false
+		trigger.focus()
+		press(trigger, 'ContextMenu')
+		contextMenu(trigger, 40, 12)
+		await nextFrame()
+
+		expect(focused()).toBe('edit')
+	})
+
+	it('contextmenu, погашенный раньше (вложенное меню), не трогается: вызов один', async () => {
+		const { owner, trigger } = await area()
+
+		trigger.addEventListener('contextmenu', (event) => event.preventDefault())
+		rightClick(trigger, 10, 10)
+
+		expect(owner.open).toBe(false)
+		expect(owner.point).toBe(null)
+	})
+
+	it('повторный вызов у открытого меню переставляет панель, а не закрывает', async () => {
+		const { owner, root } = await area()
+		const opened = vi.fn()
+
+		owner.events.on('change:open', opened)
+		rightClick(root, 10, 10)
+		rightClick(root, 300, 200)
+
+		expect(owner.open).toBe(true)
+		expect(owner.point).toEqual({ x: 300, y: 200 })
+		expect(opened).toHaveBeenCalledOnce()
+	})
+
+	it('нажатие мышью в области мимо вызова закрывает меню — сразу, на pointerdown', async () => {
+		const { owner, root, trigger } = await area()
+
+		rightClick(root, 10, 10)
+		pointer(trigger, 'pointerdown')
+
+		expect(owner.open).toBe(false)
+	})
+
+	it('касание в области закрывает меню на отпускании, а ушедшее в прокрутку — нет', async () => {
+		const { owner, root, trigger } = await area()
+		const touch = { pointerType: 'touch', pointerId: 7, x: 30, y: 30 }
+
+		rightClick(root, 10, 10)
+
+		// Палец увёл прокрутку: дальше порога, и отпускание меню не закрывает
+		pointer(trigger, 'pointerdown', touch)
+		pointer(trigger, 'pointermove', { ...touch, y: 60 })
+		pointer(trigger, 'pointerup', { ...touch, y: 60 })
+
+		expect(owner.open).toBe(true)
+
+		// Касание забрал браузер — тоже
+		pointer(trigger, 'pointerdown', touch)
+		pointer(trigger, 'pointercancel', touch)
+		pointer(trigger, 'pointerup', touch)
+
+		expect(owner.open).toBe(true)
+
+		// С нажатия касание ещё ничего не решило — закрывает отпускание
+		pointer(trigger, 'pointerdown', touch)
+
+		expect(owner.open).toBe(true)
+
+		pointer(trigger, 'pointerup', touch)
+
+		expect(owner.open).toBe(false)
+	})
+
+	it('клавиши области — её: ↓, Enter и пробел меню не открывают и не гасятся', async () => {
+		const { owner, trigger, press } = await area()
+
+		trigger.focus()
+
+		for (const key of ['ArrowDown', 'ArrowUp', 'Enter', ' ']) {
+			expect(press(trigger, key).defaultPrevented).toBe(false)
+		}
+
+		expect(owner.open).toBe(false)
+	})
+
+	it('клик по области меню не переключает', async () => {
+		const { owner, trigger } = await area()
+
+		trigger.click()
+
+		expect(owner.open).toBe(false)
+	})
+
+	it('у кнопки contextmenu не трогается: системное меню остаётся браузеру', async () => {
+		const { owner, root } = await setup()
+
+		const event = rightClick(root, 10, 10)
+
+		expect(event.defaultPrevented).toBe(false)
+		expect(owner.open).toBe(false)
+	})
+
+	it('смена способа на лету меняет и открытие, и клавиши корня', async () => {
+		const { owner, root, trigger, press } = await setup()
+
+		owner.openOn = 'contextmenu'
+		trigger.click()
+
+		expect(owner.open).toBe(false)
+		expect(press(trigger, 'ArrowDown').defaultPrevented).toBe(false)
+
+		rightClick(root, 10, 10)
+
+		expect(owner.open).toBe(true)
+
+		owner.open = false
+		owner.openOn = 'press'
+
+		expect(rightClick(root, 10, 10).defaultPrevented).toBe(false)
+		expect(owner.open).toBe(false)
+
+		trigger.click()
+
+		expect(owner.open).toBe(true)
+	})
+
+	/**
+	 * Запомненного элемента нет — фокус был на `body`. Кнопка в корне — место,
+	 * откуда открыли, а область бывает нефокусируемой, и её первая остановка
+	 * Tab — не то место: фокус не возвращается никуда.
+	 */
+	it('Escape возвращает фокус туда, где он был, а с body — никуда', async () => {
+		const { owner, root, trigger, press, pressFocused } = await area()
+
+		rightClick(root, 10, 10)
+		await nextFrame()
+		pressFocused('Escape')
+
+		expect(owner.open).toBe(false)
+		expect(document.activeElement).not.toBe(trigger)
+
+		trigger.focus()
+		press(trigger, 'ContextMenu')
+		contextMenu(trigger, 40, 12)
+		await nextFrame()
+		pressFocused('Escape')
+
+		expect(document.activeElement).toBe(trigger)
+	})
+
+	it('у кнопки запасной возврат прежний — на неё', async () => {
+		const { root, trigger, pressFocused } = await setup()
+
+		pointer(root, 'pointerdown')
+		trigger.click()
+		await nextFrame()
+		pressFocused('Escape')
+
+		expect(document.activeElement).toBe(trigger)
+	})
+
+	/**
+	 * Долгое касание: на сенсорных Apple `contextmenu` на него браузер не
+	 * шлёт, и вызов — свой таймер. Остальным его шлёт браузер сам.
+	 */
+	describe('долгое касание', () => {
+		const touch = { pointerType: 'touch', pointerId: 3, x: 30, y: 40 }
+
+		/** Меню над областью на iPhone; таймеры — поддельные, после кадров сборки. */
+		async function onApple(entries?: TEntry[]) {
+			emulatePlatform('iPhone', 5)
+
+			const harness = await area(entries)
+
+			vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+
+			return harness
+		}
+
+		it('палец, продержанный полсекунды, вызывает меню у точки касания', async () => {
+			const { owner, trigger } = await onApple()
+
+			pointer(trigger, 'pointerdown', touch)
+			vi.advanceTimersByTime(499)
+
+			expect(owner.open).toBe(false)
+
+			vi.advanceTimersByTime(1)
+
+			expect(owner.open).toBe(true)
+			expect(owner.point).toEqual({ x: 30, y: 40 })
+		})
+
+		it('палец в пределах порога — вызов, дальше порога — прокрутка', async () => {
+			const { owner, trigger } = await onApple()
+
+			pointer(trigger, 'pointerdown', touch)
+			pointer(trigger, 'pointermove', { ...touch, x: 36, y: 46 })
+			vi.advanceTimersByTime(500)
+
+			expect(owner.open).toBe(true)
+
+			owner.open = false
+			pointer(trigger, 'pointerup', touch)
+			pointer(trigger, 'pointerdown', touch)
+			pointer(trigger, 'pointermove', { ...touch, y: 52 })
+			vi.advanceTimersByTime(1000)
+
+			expect(owner.open).toBe(false)
+		})
+
+		it('отпустили, сбросил браузер или лёг второй палец — вызова нет', async () => {
+			const { owner, trigger } = await onApple()
+
+			pointer(trigger, 'pointerdown', touch)
+			vi.advanceTimersByTime(300)
+			pointer(trigger, 'pointerup', touch)
+
+			pointer(trigger, 'pointerdown', touch)
+			pointer(trigger, 'pointercancel', touch)
+
+			pointer(trigger, 'pointerdown', touch)
+			pointer(trigger, 'pointerdown', { ...touch, pointerId: 4 }, { isPrimary: false })
+			vi.advanceTimersByTime(1000)
+
+			expect(owner.open).toBe(false)
+		})
+
+		it('contextmenu браузера раньше таймера — вызов один', async () => {
+			const { owner, trigger } = await onApple()
+			const opened = vi.fn()
+			const moved = vi.fn()
+
+			owner.events.on('change:open', opened)
+			owner.events.on('change:point', moved)
+			pointer(trigger, 'pointerdown', touch)
+			contextMenu(trigger, 30, 40)
+			vi.advanceTimersByTime(1000)
+
+			expect(opened).toHaveBeenCalledOnce()
+			expect(moved).toHaveBeenCalledOnce()
+		})
+
+		it('у открытого меню переставляет панель, и отпускание его не закрывает', async () => {
+			const { owner, root, trigger } = await onApple()
+
+			rightClick(root, 10, 10)
+			pointer(trigger, 'pointerdown', touch)
+			vi.advanceTimersByTime(500)
+
+			expect(owner.point).toEqual({ x: 30, y: 40 })
+
+			pointer(trigger, 'pointerup', touch)
+
+			expect(owner.open).toBe(true)
+		})
+
+		it('мышь на устройстве Apple таймера не заводит', async () => {
+			const { owner, trigger } = await onApple()
+
+			pointer(trigger, 'pointerdown', { ...touch, pointerType: 'mouse' })
+			vi.advanceTimersByTime(1000)
+
+			expect(owner.open).toBe(false)
+		})
+
+		it('на остальных устройствах своего таймера нет: долгое касание — contextmenu браузера', async () => {
+			const { owner, trigger } = await area()
+
+			vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+			pointer(trigger, 'pointerdown', touch)
+			vi.advanceTimersByTime(1000)
+
+			expect(owner.open).toBe(false)
+
+			contextMenu(trigger, 30, 40)
+
+			expect(owner.open).toBe(true)
+		})
 	})
 })

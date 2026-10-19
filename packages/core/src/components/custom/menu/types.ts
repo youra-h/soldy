@@ -14,12 +14,33 @@ import type { IMenuItem, IMenuItemProps } from './item/types'
  */
 export type TMenuPlacement = 'bottom-start' | 'bottom-end' | 'top-start' | 'top-end'
 
+/**
+ * Чем меню открывают.
+ *
+ * - `press` — нажатием кнопки в слоте `trigger` (APG Menu Button): клик, ↓,
+ *   Enter и пробел; панель встаёт у кнопки;
+ * - `contextmenu` — как контекстное меню области в слоте `trigger`: правая
+ *   кнопка мыши, долгое касание, клавиша контекстного меню и Shift+F10;
+ *   панель встаёт у точки вызова (`point`).
+ *
+ * Панель, пункты, клавиши в панели и модель фокуса у режимов общие —
+ * различаются способ открытия и якорь.
+ */
+export type TMenuOpenOn = 'press' | 'contextmenu'
+
+/** Точка в координатах окна — как `clientX` и `clientY` события. */
+export type TMenuPoint = { readonly x: number; readonly y: number }
+
 export type TMenuEvents = TStylableEvents &
 	TCollectionStorageDriverEvents<IMenuItem> & {
 		/** change:open */
 		'change:open': (value: boolean) => void
 		/** change:placement */
 		'change:placement': (value: TMenuPlacement) => void
+		/** change:openOn */
+		'change:openOn': (value: TMenuOpenOn) => void
+		/** change:point — точка вызова контекстного меню сменилась */
+		'change:point': (value: TMenuPoint | null) => void
 		/** change:triggerAria — набор атрибутов триггера изменился */
 		'change:triggerAria': (value: TAriaAttributes) => void
 		/** change:panelClasses — классы панели изменились */
@@ -32,6 +53,8 @@ export interface IMenuComponentProps extends IStylableProps {
 	open?: boolean
 	/** Сторона и выравнивание панели у триггера */
 	placement?: TMenuPlacement
+	/** Чем меню открывают: нажатием кнопки или как контекстное меню области */
+	openOn?: TMenuOpenOn
 }
 
 /** Полный набор пропсов Menu: свои и коллекции (`engine`, `items`, `trackBy`). */
@@ -39,17 +62,25 @@ export interface IMenuProps
 	extends IMenuComponentProps, IMenuCollectionProps<IMenuItemProps, IMenuItem> {}
 
 /**
- * Меню действий у кнопки (APG Menu Button): триггер потребителя и панель с
- * пунктами.
+ * Меню действий у кнопки (APG Menu Button) или контекстное меню области:
+ * триггер потребителя и панель с пунктами.
  */
 export interface IMenu extends IStylable<IMenuProps, TMenuEvents> {
 	/** Открыта ли панель */
 	open: boolean
 	/** Сторона и выравнивание панели у триггера */
 	placement: TMenuPlacement
+	/** Чем меню открывают: нажатием кнопки или как контекстное меню области */
+	openOn: TMenuOpenOn
+	/**
+	 * Точка вызова контекстного меню в координатах окна — панель встаёт у неё.
+	 * `null` — точки нет, и панель встаёт у триггера
+	 */
+	point: TMenuPoint | null
 	/**
 	 * ARIA триггера — второй стороны связки «кнопка ↔ меню»: `aria-haspopup`,
-	 * `aria-expanded`; `id` и `aria-controls` пишет плагин связок
+	 * `aria-expanded`; `id` и `aria-controls` пишет плагин связок. У области
+	 * контекстного меню (`openOn: 'contextmenu'`) набор пуст
 	 */
 	readonly triggerAria: TAria
 	/** `data-*` триггера для темы: открытый триггер выглядит нажатым */

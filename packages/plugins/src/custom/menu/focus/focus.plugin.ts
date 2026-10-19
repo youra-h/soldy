@@ -1,11 +1,16 @@
+import type { IMenu } from '@soldy-ui/core'
 import type { IPluginContext } from '../../../base'
 import { TPopoverFocusPlugin } from '../../popover/focus'
 import type { IOverlayOpenOptions } from '../../overlay/types'
 import { TMenuKeyboardPlugin } from '../keyboard'
 import { focusFirst, tabStopsAfter } from '../../../utils'
 
+/** Возвращать фокус некуда. */
+const NOWHERE = (): readonly Element[] => []
+
 /**
- * TMenuFocusPlugin — модель фокуса меню у кнопки (APG Menu Button).
+ * TMenuFocusPlugin — модель фокуса меню у кнопки (APG Menu Button) и
+ * контекстного меню.
  *
  * Немодальная, как у Popover, и от него наследует всё общее: запомнить,
  * откуда открыли, увести фокус в панель кадром позже, вернуть его при
@@ -14,29 +19,45 @@ import { focusFirst, tabStopsAfter } from '../../../utils'
  * пункта возвращают фокус на триггер, а нажатие мимо — нет: пользователь уже
  * там, куда нажал.
  *
- * Своё у меню — две вещи:
+ * Своё у меню — три вещи:
  *
  * - **куда при открытии.** Фокус в меню идёт за подсветкой
  *   (`TMenuKeyboardPlugin`): открыли клавишей — подсвечен крайний пункт, и
  *   фокус встаёт на его строку; открыли кликом — подсветки нет, фокус на самой
  *   панели (`tabindex="-1"`), и первая стрелка подсветит первый пункт. Первая
- *   остановка Tab панели не годится: у пунктов её нет вовсе;
+ *   остановка Tab панели не годится: у пунктов её нет вовсе. У контекстного
+ *   меню так же: клавиша контекстного меню — первый пункт, правая кнопка и
+ *   касание — панель;
  * - **Tab.** Остановок Tab в меню нет, и Tab из него закрывает меню (APG): Tab
  *   ведёт к первой остановке после корня — будто панель стоит в документе
  *   сразу за триггером — и фокус не возвращает; остановок после корня нет —
  *   Tab не гасится, фокус уводит браузер. Shift+Tab закрывает с возвратом:
- *   предыдущая остановка перед панелью — сам триггер.
+ *   предыдущая остановка перед панелью — сам триггер;
+ * - **куда вернуть фокус, когда возвращать некуда** — фокус был на `body`.
+ *   Запасной возврат Popover — на кнопку в корне — годится кнопке. У
+ *   контекстного меню в корне область, а она бывает нефокусируемой, и её
+ *   первая остановка Tab — не то место, откуда меню вызвали: фокус не
+ *   возвращается никуда. Запасной возврат выбирает подписка на смену способа
+ *   открытия, а не проверка при закрытии.
  */
 export class TMenuFocusPlugin extends TPopoverFocusPlugin {
+	private _owner: IMenu | null = null
 	private _keyboard: TMenuKeyboardPlugin | null = null
+	/** Запасной возврат фокуса — по способу открытия (`openOn`). */
+	private _fallback: (root: Element) => readonly Element[] = NOWHERE
 
 	override install(ctx: IPluginContext, options?: IOverlayOpenOptions): void {
 		super.install(ctx, options)
 
+		this._owner = ctx.getInstance<IMenu>() ?? null
 		this._keyboard = ctx.get(TMenuKeyboardPlugin) ?? null
+
+		this._syncFallback()
+		this._listenTo(this._owner?.events, 'change:openOn', () => this._syncFallback())
 	}
 
 	override destroy(): void {
+		this._owner = null
 		this._keyboard = null
 
 		super.destroy()
@@ -47,6 +68,11 @@ export class TMenuFocusPlugin extends TPopoverFocusPlugin {
 		const row = this._keyboard?.highlightedRow
 
 		return row ? [row, panel] : [panel]
+	}
+
+	/** Запомненного элемента нет — у кнопки на неё, у области никуда. */
+	protected override _returnCandidates(root: Element): readonly Element[] {
+		return this._fallback(root)
 	}
 
 	protected override _onTab(event: KeyboardEvent): void {
@@ -68,5 +94,11 @@ export class TMenuFocusPlugin extends TPopoverFocusPlugin {
 		this._close()
 
 		if (focusFirst(tabStopsAfter(root, panel))) event.preventDefault()
+	}
+
+	/** Запасной возврат: у области — никуда, у кнопки — остановки корня, как у Popover. */
+	private _syncFallback(): void {
+		this._fallback =
+			this._owner?.openOn === 'contextmenu' ? NOWHERE : (root) => super._returnCandidates(root)
 	}
 }

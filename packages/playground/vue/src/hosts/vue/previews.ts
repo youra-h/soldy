@@ -366,12 +366,26 @@ export const PREVIEWS: Record<string, TPreview> = {
 		}),
 
 	// Триггер — Button, связку с меню и вид «нажата» он берёт из scope слота.
-	// Пункты — разметкой: группа флажков с подписью, действия с подсказками
-	// сочетаний, выключенное действие и «опасный» пункт своего варианта
+	// У контекстного меню (`openOn: 'contextmenu'`) в слоте область, как
+	// «файл» у потребителя: меню вызывают над ней правой кнопкой, долгим
+	// касанием и Shift+F10 — она фокусируемая, — и панель встаёт у точки
+	// вызова. Режим область берёт из пропсов колонки, как таблица своё окно:
+	// у колонки экземпляра его нет, и там меню вызывают над кнопкой. Пункты —
+	// разметкой: группа флажков с подписью, действия с подсказками сочетаний,
+	// выключенное действие и «опасный» пункт своего варианта
 	menu: (bind) =>
 		h(Menu as Component, bind, {
 			trigger: ({ triggerAria, triggerDataset }: TMenuTriggerScope) =>
-				h(Button, { text: 'Действия', ...triggerAria, ...triggerDataset }),
+				bind.openOn === 'contextmenu'
+					? h(
+							'div',
+							{
+								tabindex: 0,
+								style: 'padding:24px 32px;border:1px dashed;border-radius:8px',
+							},
+							'Правая кнопка, долгое касание или Shift+F10',
+						)
+					: h(Button, { text: 'Действия', ...triggerAria, ...triggerDataset }),
 			default: () => [
 				h(Menu.Group, { label: 'Вид' }, () => [
 					h(Menu.CheckboxItem, { value: 'grid', text: 'Сетка', selected: true }),
