@@ -11,7 +11,7 @@
  * выпадающий список отличается от недоступного.
  */
 
-import { describe, it, expect, afterEach, vi } from 'vitest'
+import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest'
 import type { ISelectProps } from '@soldy-ui/core'
 import { createPluginContext, required } from './helpers'
 import { TSelect, TSelectItem, TSelectCollectionFacade, TItemContextRegistry } from '@soldy-ui/core'
@@ -26,7 +26,7 @@ import {
 	TSelectItemIdsPlugin,
 	useMotion,
 } from '@soldy-ui/plugins'
-import type { TMotionMode } from '@soldy-ui/plugins'
+import type { ISelectKeyboardPluginOptions, TMotionMode } from '@soldy-ui/plugins'
 
 const nextFrame = () => new Promise((resolve) => requestAnimationFrame(resolve))
 
@@ -50,12 +50,13 @@ const keydown = (target: Element, key: string, init: KeyboardEventInit = {}) => 
  * по `ready` корня (`querySelector('input')`), и `press` шлёт клавишу с него.
  *
  * `layoutProps` — списочные свойства поля: клавиатура читает `scrollBehavior`
- * прямо у инстанса.
+ * прямо у инстанса. `keyboardOptions` — опции установки клавиатуры.
  */
 async function setup(
 	texts: string[],
 	props: Partial<ISelectProps> = {},
 	layoutProps: Partial<ISelectProps> = {},
+	keyboardOptions?: ISelectKeyboardPluginOptions,
 ) {
 	const owner = new TSelect({ ...props, ...layoutProps })
 	const facade = new TSelectCollectionFacade({}, { owner })
@@ -78,7 +79,7 @@ async function setup(
 
 	bundles.install(ctx)
 	elements.install(ctx)
-	keyboard.install(ctx)
+	keyboard.install(ctx, keyboardOptions)
 
 	/** jsdom не умеет `scrollIntoView` — подменяем, чтобы видеть вызовы. */
 	const scrolls: Array<Record<string, unknown> | undefined> = []
@@ -458,7 +459,28 @@ describe('aria-activedescendant', () => {
 	})
 })
 
+/**
+ * Набор по первым буквам — правило, общее с меню (`TTypeahead`, его спек —
+ * `plugins/__tests__/typeahead.spec.ts`): следующая за подсвеченной опция на
+ * набранное, повтор буквы — по опциям на неё, без совпадения подсветка на
+ * месте. Паузы между буквами набор считает по `Date.now()`, поэтому время
+ * здесь подменено и стоит, пока тест его не сдвинет.
+ */
 describe('набор по буквам', () => {
+	const CITIES = ['Москва', 'Тверь', 'Тула', 'Углич', 'Тамбов']
+
+	beforeEach(() => {
+		vi.useFakeTimers({ toFake: ['Date'] })
+		vi.setSystemTime(0)
+	})
+
+	afterEach(() => {
+		vi.useRealTimers()
+	})
+
+	/** Следующая клавиша — через `ms` после прошлой. */
+	const later = (ms: number) => vi.setSystemTime(Date.now() + ms)
+
 	it('ищет по началу текста', async () => {
 		const { keyboard, press, items } = await setup(['Москва', 'Тверь', 'Тула'])
 
@@ -468,14 +490,111 @@ describe('набор по буквам', () => {
 		expect(keyboard.highlightedUid).toBe(items[1].uid)
 	})
 
-	it('накапливает буфер: «ту» находит Тулу, а не Тверь', async () => {
+	it('повтор буквы ведёт к следующей опции на неё и по кругу', async () => {
+		const { keyboard, press, items } = await setup(CITIES)
+
+		press('ArrowDown')
+
+		const seen = [0, 100, 100, 100].map((pause) => {
+			later(pause)
+			press('т')
+
+			return keyboard.highlightedUid
+		})
+
+		expect(seen).toEqual([items[1].uid, items[2].uid, items[4].uid, items[1].uid])
+	})
+
+	/** Так нашли дефект: «тт» искало опцию на «тт» и снимало подсветку. */
+	it('буква дважды на закрытой панели — вторая опция на неё, ссылка на неё', async () => {
+		const { owner, keyboard, press, items } = await setup(CITIES)
+
+		press('т')
+		later(100)
+		press('т')
+
+		expect(owner.open).toBe(true)
+		expect(keyboard.highlightedUid).toBe(items[2].uid)
+		expect(owner.field.aria.get('aria-activedescendant')).toBe(items[2].aria.get('id'))
+	})
+
+	it('закрытую панель буква открывает и ищет с первой опции — и при выбранной', async () => {
+		const { owner, keyboard, press, items } = await setup(CITIES)
+
+		owner.value = items[2].value
+		press('т')
+
+		expect(owner.open).toBe(true)
+		expect(keyboard.highlightedUid).toBe(items[1].uid)
+	})
+
+	it('буквы быстрее паузы — слово: «ту» находит Тулу, а не Тверь', async () => {
 		const { keyboard, press, items } = await setup(['Москва', 'Тверь', 'Тула'])
 
 		press('ArrowDown')
 		press('т')
+		later(100)
 		press('у')
 
 		expect(keyboard.highlightedUid).toBe(items[2].uid)
+	})
+
+	it('дописанная буква не уводит с опции, которая ещё подходит', async () => {
+		const { keyboard, press, items } = await setup(CITIES)
+
+		press('ArrowDown')
+		press('т')
+		later(100)
+		press('в')
+
+		expect(keyboard.highlightedUid).toBe(items[1].uid)
+	})
+
+	it('совпадения нет — подсветка на месте, ссылка на ту же опцию', async () => {
+		const { owner, keyboard, press, items } = await setup(CITIES)
+
+		press('ArrowDown')
+		press('я')
+
+		expect(keyboard.highlightedUid).toBe(items[0].uid)
+		expect(owner.field.aria.get('aria-activedescendant')).toBe(items[0].aria.get('id'))
+	})
+
+	it('после паузы буква начинает новый набор', async () => {
+		const { keyboard, press, items } = await setup(CITIES)
+
+		press('ArrowDown')
+		press('т')
+		later(501)
+		press('у')
+
+		// Слово «ту» нашло бы Тулу
+		expect(keyboard.highlightedUid).toBe(items[3].uid)
+	})
+
+	it('паузу задаёт опция typeaheadTimeout', async () => {
+		const { keyboard, press, items } = await setup(CITIES, {}, {}, { typeaheadTimeout: 1000 })
+
+		press('ArrowDown')
+		press('т')
+		later(700)
+		press('у')
+
+		expect(keyboard.highlightedUid).toBe(items[2].uid)
+	})
+
+	it('закрытие начинает новый набор: подсветки, от которой он шёл, больше нет', async () => {
+		const { owner, keyboard, press, items } = await setup(CITIES)
+
+		press('т')
+		press('Escape')
+
+		expect(owner.open).toBe(false)
+
+		press('у')
+
+		// Без сброса слово «ту» нашло бы Тулу
+		expect(keyboard.highlightedUid).toBe(items[3].uid)
 	})
 
 	it('регистр не важен', async () => {
@@ -502,12 +621,45 @@ describe('набор по буквам', () => {
 	 * ввода в поле `editable` в режиме `search` — там ищут подстроку в любом
 	 * месте (см. `select-editable.spec.ts`).
 	 */
-	it('подстрока не с начала текста не находится', async () => {
-		const { keyboard, press } = await setup(['Первый', 'Второй', 'Третий'])
+	it('подстрока не с начала текста не находится — подсветка на месте', async () => {
+		const { keyboard, press, items } = await setup(['Первый', 'Второй', 'Третий'])
 
 		press('ArrowDown')
 		press('о')
 		press('р')
+
+		expect(keyboard.highlightedUid).toBe(items[0].uid)
+	})
+})
+
+/**
+ * `highlightByText` — подсветка для ввода в поле (`TEditablePlugin`, режим
+ * `search`): подстрока в любом месте текста. Набор по буквам сюда не ходит,
+ * у него свои правила (выше).
+ */
+describe('highlightByText — подстрока для ввода в поле', () => {
+	it('подсвечивает первую опцию, в чьём тексте есть подстрока, без учёта регистра', async () => {
+		const { owner, keyboard, items } = await setup(['Москва', 'Тверь', 'Тула'])
+
+		keyboard.highlightByText('ВЕР')
+
+		expect(keyboard.highlightedUid).toBe(items[1].uid)
+		expect(owner.field.aria.get('aria-activedescendant')).toBe(items[1].aria.get('id'))
+	})
+
+	it('текст без совпадения и пустая строка снимают подсветку', async () => {
+		const { keyboard, items } = await setup(['Москва', 'Тверь', 'Тула'])
+
+		keyboard.highlightByText('ул')
+
+		expect(keyboard.highlightedUid).toBe(items[2].uid)
+
+		keyboard.highlightByText('я')
+
+		expect(keyboard.highlightedUid).toBeNull()
+
+		keyboard.highlightByText('ул')
+		keyboard.highlightByText('')
 
 		expect(keyboard.highlightedUid).toBeNull()
 	})
