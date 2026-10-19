@@ -11,7 +11,7 @@
 
 import { describe, it, expect } from 'vitest'
 import { COMPONENTS } from '../src/registry'
-import { describeProp, optionsForProp, PRESETS, propControls } from '../src/props'
+import { describeProp, optionsForProp, PRESETS, PREVIEW_PROPS, propControls } from '../src/props'
 import type { TPropControl } from '../src/types'
 
 /**
@@ -92,6 +92,42 @@ describe('пресеты строк', () => {
 
 		expect(broken).toEqual([])
 	})
+})
+
+/**
+ * Пропсы превью — тоже по имени. Переименуй `text` у Button — и превью молча
+ * нарисовало бы кнопку без подписи, а строка открылась бы с умолчанием. Имя —
+ * проп со строкой на странице: значение превью без строки задать нечему, и
+ * оно было бы не пропом превью, а содержимым, которому место в превью хоста.
+ */
+describe('пропсы превью', () => {
+	it.each(Object.entries(PREVIEW_PROPS))(
+		'%s: пропсы превью — настоящие пропы со строкой',
+		(id, props) => {
+			const entry = COMPONENTS.find((candidate) => candidate.id === id)
+
+			if (!entry) throw new Error(`нет компонента «${id}»`)
+
+			const names = new Set(editableControls(entry).map((control) => control.name))
+			const broken: string[] = []
+
+			for (const [name, value] of Object.entries(props)) {
+				if (!names.has(name)) {
+					broken.push(name)
+					continue
+				}
+
+				// Значение перечислимого пропа — из его же списка, как у пресетов
+				const options = optionsForProp(id, name)
+
+				if (options && (typeof value !== 'string' || !options.includes(value))) {
+					broken.push(`${name}=${String(value)}`)
+				}
+			}
+
+			expect(broken).toEqual([])
+		},
+	)
 })
 
 describe('реестр', () => {

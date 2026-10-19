@@ -194,7 +194,8 @@ function assembleParts(
 
 /**
  * Превью: компонент адаптера по описанию карты — в обёртке и с содержимым;
- * пропсы строки уходят его входам, его выходы и слушают.
+ * пропсы оболочки — пропсы превью и строки — уходят его входам, его выходы и
+ * слушают.
  *
  * Обёртка — в месте корня, компонент — на своём элементе в её проекции,
  * части — на своих в проекциях компонента. Собирается всё снаружи внутрь
@@ -241,13 +242,10 @@ function drawPreview(
 		}
 
 		const content = nodesOf(preview.content)
-		// Пропсы превью — под пропсами строки
-		const { ref, write } = insert(
-			place,
-			preview.component,
-			{ ...preview.props, ...props },
-			{ directives: preview.directives, projected: project(preview.component, content) },
-		)
+		const { ref, write } = insert(place, preview.component, props, {
+			directives: preview.directives,
+			projected: project(preview.component, content),
+		})
 
 		built.push(ref)
 		// Слушатели — раньше сборки, как подписки на выходы в шаблоне: события
@@ -256,7 +254,7 @@ function drawPreview(
 		assemble(ref)
 		assembleParts(ref, content, built)
 
-		return { write: (next) => write({ ...preview.props, ...next }), destroy }
+		return { write, destroy }
 	} catch (error) {
 		destroy()
 		throw error

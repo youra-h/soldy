@@ -18,10 +18,12 @@ import {
 	isEmptyField,
 	parseNumber,
 	parseNumberOrText,
+	previewProps,
 	propControl,
 	propControls,
 } from '../src/props'
 import { findComponent } from '../src/registry'
+import type { TPropControl } from '../src/types'
 
 /** Проп `button`, которого нет ни в списках значений, ни в пресетах. */
 function declaration(rest: { default?: unknown } = {}): TPropSpec {
@@ -100,16 +102,75 @@ function entryOf(id: string) {
 	return entry
 }
 
-/** Вид строки по имени — из любой группы страницы. */
-function kindOf(id: string, name: string) {
+/** Строка по имени — из любой группы страницы. */
+function rowOf(id: string, name: string): TPropControl {
 	const row = Object.values(propControls(entryOf(id)))
 		.flat()
 		.find((control) => control.name === name)
 
 	if (!row) throw new Error(`нет строки ${name} у ${id}`)
 
-	return row.kind
+	return row
 }
+
+/** Вид строки по имени — из любой группы страницы. */
+function kindOf(id: string, name: string) {
+	return rowOf(id, name).kind
+}
+
+/**
+ * Значение превью — то, что превью задаёт компоненту само, — строка получает
+ * отдельно от умолчания: открывается с ним, а умолчание остаётся тем, что
+ * получит экземпляр, когда поле стёрто. Семантика ключа — та же, что у
+ * умолчания.
+ */
+describe('propControl: значение превью', () => {
+	it('у пропа компонента — из пропсов превью, умолчание — из декларации', () => {
+		const row = rowOf('button', 'text')
+
+		expect(row.initial).toBe('Кнопка')
+		expect(row.default).toBe('')
+	})
+
+	it('у пропа плагина — по имени из разметки', () => {
+		const row = rowOf('progress-spinner', 'aria_label')
+
+		expect(row.scope).toBe('plugin')
+		expect(row.initial).toBe('Загрузка')
+		expect(Object.hasOwn(row, 'default')).toBe(true)
+		expect(row.default).toBeUndefined()
+	})
+
+	it('проп, которого превью не задаёт, ключа не получает', () => {
+		expect(Object.hasOwn(rowOf('button', 'size'), 'initial')).toBe(false)
+		expect(Object.hasOwn(rowOf('tabs', 'view'), 'initial')).toBe(false)
+	})
+})
+
+/**
+ * Пропсы превью строке — без её пропа: его колонки получают каждая по-своему.
+ * Витрине — целиком и тем же объектом: новый на каждую её отрисовку слал бы
+ * хосту обновление с теми же пропсами.
+ */
+describe('previewProps', () => {
+	it('без пропа строки — остальные пропсы превью', () => {
+		expect(previewProps('field', 'label')).toEqual({ helper: 'Не покажем никому' })
+		expect(previewProps('field', 'size')).toEqual({
+			label: 'Почта',
+			helper: 'Не покажем никому',
+		})
+	})
+
+	it('целиком — тот же объект на каждый вызов', () => {
+		expect(previewProps('button')).toEqual({ text: 'Кнопка' })
+		expect(previewProps('button')).toBe(previewProps('button'))
+	})
+
+	it('у компонента без пропсов превью — пусто', () => {
+		expect(previewProps('tabs')).toEqual({})
+		expect(previewProps('нет-такого', 'text')).toEqual({})
+	})
+})
 
 /**
  * Пропы плагинов — третья группа строк.
