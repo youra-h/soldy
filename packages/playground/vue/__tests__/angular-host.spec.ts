@@ -133,13 +133,14 @@ describe('хост Angular · обёртка и содержимое', () => {
 	 * Элементы списка — свои компоненты на своих элементах в основной проекции
 	 * владельца. Элемент читает лифт владельца при своей сборке, поэтому хост
 	 * собирает его после владельца и с его инжектором: вошёл в коллекцию —
-	 * встал на своё место в ней (`order`) и выбирается кликом. Снятое превью
-	 * уносит и части.
+	 * встал на своё место в ней (`order`) и выбирается кликом. Проекция — в узле
+	 * списка внутри корня: рядом с ним в корне стоят шапка и подвал. Снятое
+	 * превью уносит и части.
 	 */
 	it('элементы списка входят в коллекцию владельца в порядке разметки', async () => {
 		const node = stage()
 		const handle = host.mount(node, { component: 'list-box', props: {} })
-		const items = all(node, '.so-list-box > .so-list-box-item')
+		const items = all(node, '.so-list-box > .so-list-box__list > .so-list-box-item')
 
 		expect(textsOf(node, '.so-list-box-item')).toEqual(TEXTS)
 		expect(items.map((item) => item.style.order)).toEqual(['0', '1', '2', '3', '4'])

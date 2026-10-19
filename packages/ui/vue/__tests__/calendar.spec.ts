@@ -520,7 +520,10 @@ describe('выбор месяца и года', () => {
 		expect(title().getAttribute('aria-controls')).toBe(dialog.id)
 		expect(heading().textContent?.trim()).toBe('2026')
 		expect(dialog.getAttribute('aria-labelledby')).toBe(heading().id)
-		expect(find('.so-calendar__picker-list').getAttribute('aria-labelledby')).toBe(heading().id)
+		// Имя списка — у узла списка ListBox, где его роль, а не у корня
+		expect(
+			find('.so-calendar__picker-list [role="listbox"]').getAttribute('aria-labelledby'),
+		).toBe(heading().id)
 		expect(heading().id).not.toBe('')
 		expect(options()).toHaveLength(12)
 		expect(row('Sep').getAttribute('aria-selected')).toBe('true')

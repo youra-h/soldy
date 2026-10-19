@@ -1,8 +1,14 @@
 <!--
-	Корень — сам хост (`<div so-list-box>`), поэтому шаблон — только содержимое
-	списка. Слоты контракта: default — элементы, header и footer — над и под
+	Корень — сам хост (`<div so-list-box>`), поэтому шаблон — шапка, узел списка
+	и подвал. Слоты контракта: default — элементы, header и footer — над и под
 	списком, empty — пока элементов нет; item, item-leading, item-trailing и
 	item-indicator-icon — слоты элементов из данных.
+
+	Узел списка (`.so-list-box__list`) несёт набор `aria` владельца — роль
+	`listbox`, `aria-multiselectable` и имя — и остановку Tab: в `listbox` ARIA
+	пускает только опции, поэтому шапка и подвал стоят рядом с ним, в корне.
+	Внутри — элементы, распорки окна и `empty`. Предел строк (`maxRows`) плагин
+	высоты ставит родителю элементов — узлу списка: он и прокручивается.
 
 	Элементы — содержимое (`<so-list-box-item>`), а без него — то, что рисует
 	коллекция (`drawn`), запасным содержимым `<ng-content>`, ключ — ключ записи.
@@ -28,63 +34,65 @@
 	содержимым, и в основной проекции они сняли бы запасное содержимое —
 	список из данных не нарисовался бы.
 
-	Пока показанных элементов нет, на их месте слот `empty` — как у Select:
-	пустой `listbox` для скринридера — тупик.
+	Пока показанных элементов нет, на их месте слот `empty`, внутри списка, —
+	как у Select: пустой `listbox` для скринридера — тупик.
 -->
 <ng-content select="[slot=header]" />
-<ng-content>
-	@for (entry of state()['drawn'] ?? []; track entry.key) {
-		@if (entry.kind === 'filler') {
-			<div class="so-list-box__filler" aria-hidden="true" [style]="entry.style"></div>
-		} @else {
-			<so-list-box-item [ctrl]="entry.item">
-				@if (slot('item-leading'); as leading) {
-					<ng-container ngProjectAs="[slot=leading]">
-						<ng-container
-							[ngTemplateOutlet]="leading"
-							[ngTemplateOutletContext]="{ item: entry.item }"
-						/>
-					</ng-container>
-				}
-				@if (slot('item'); as content) {
-					<ng-template
-						slot="default"
-						ngProjectAs="ng-template[slot]"
-						let-text="text"
-						let-selected="selected"
-					>
-						<ng-container
-							[ngTemplateOutlet]="content"
-							[ngTemplateOutletContext]="{ item: entry.item, text, selected }"
-						/>
-					</ng-template>
-				}
-				@if (slot('item-trailing'); as trailing) {
-					<ng-container ngProjectAs="[slot=trailing]">
-						<ng-container
-							[ngTemplateOutlet]="trailing"
-							[ngTemplateOutletContext]="{ item: entry.item }"
-						/>
-					</ng-container>
-				}
-				@if (slot('item-indicator-icon'); as indicator) {
-					<ng-template
-						slot="indicator-icon"
-						ngProjectAs="ng-template[slot]"
-						let-selected="selected"
-					>
-						<ng-container
-							[ngTemplateOutlet]="indicator"
-							[ngTemplateOutletContext]="{ item: entry.item, selected }"
-						/>
-					</ng-template>
-				}
-			</so-list-box-item>
+<div class="so-list-box__list" tabindex="0" [so-attributes]="state()['aria']">
+	<ng-content>
+		@for (entry of state()['drawn'] ?? []; track entry.key) {
+			@if (entry.kind === 'filler') {
+				<div class="so-list-box__filler" aria-hidden="true" [style]="entry.style"></div>
+			} @else {
+				<so-list-box-item [ctrl]="entry.item">
+					@if (slot('item-leading'); as leading) {
+						<ng-container ngProjectAs="[slot=leading]">
+							<ng-container
+								[ngTemplateOutlet]="leading"
+								[ngTemplateOutletContext]="{ item: entry.item }"
+							/>
+						</ng-container>
+					}
+					@if (slot('item'); as content) {
+						<ng-template
+							slot="default"
+							ngProjectAs="ng-template[slot]"
+							let-text="text"
+							let-selected="selected"
+						>
+							<ng-container
+								[ngTemplateOutlet]="content"
+								[ngTemplateOutletContext]="{ item: entry.item, text, selected }"
+							/>
+						</ng-template>
+					}
+					@if (slot('item-trailing'); as trailing) {
+						<ng-container ngProjectAs="[slot=trailing]">
+							<ng-container
+								[ngTemplateOutlet]="trailing"
+								[ngTemplateOutletContext]="{ item: entry.item }"
+							/>
+						</ng-container>
+					}
+					@if (slot('item-indicator-icon'); as indicator) {
+						<ng-template
+							slot="indicator-icon"
+							ngProjectAs="ng-template[slot]"
+							let-selected="selected"
+						>
+							<ng-container
+								[ngTemplateOutlet]="indicator"
+								[ngTemplateOutletContext]="{ item: entry.item, selected }"
+							/>
+						</ng-template>
+					}
+				</so-list-box-item>
+			}
 		}
+	</ng-content>
+	@if (state()['shown']?.length === 0) {
+		<ng-content select="[slot=empty]" />
 	}
-</ng-content>
-@if (state()['shown']?.length === 0) {
-	<ng-content select="[slot=empty]" />
-}
+</div>
 <ng-content select="[slot=footer]" />
 <ng-content select="ng-template[slot]" />

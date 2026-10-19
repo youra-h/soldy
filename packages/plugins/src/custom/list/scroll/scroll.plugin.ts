@@ -44,6 +44,10 @@ type TScrollMode = 'center' | 'nearest'
  * Начальная прокрутка мгновенная и при `smooth`: показывать на монтировании
  * нечего, а плавный проход перерисовывал бы окно на каждом кадре. При `none`
  * её нет.
+ *
+ * **Контейнер — родитель элементов**, как у `TListHeightPlugin`: предел строк
+ * тот ставит ему, и прокручивается он. У ListBox это узел списка, а не
+ * корень: шапка и подвал стоят в корне рядом с ним и не прокручиваются.
  */
 export class TListScrollPlugin extends TBasePlugin<any, TListScrollPluginEvents> {
 	private _element: Element | null = null
@@ -181,7 +185,8 @@ export class TListScrollPlugin extends TBasePlugin<any, TListScrollPluginEvents>
 	}
 
 	private _scrollTo(target: Element, mode: TScrollMode, behavior: ScrollBehavior): void {
-		const container = this._element
+		// Корня уже нет — кадр пришёл после снятия
+		const container = this._element ? target.parentElement : null
 
 		if (!container) return
 
@@ -190,7 +195,7 @@ export class TListScrollPlugin extends TBasePlugin<any, TListScrollPluginEvents>
 			return
 		}
 
-		if (this._isFullyVisible(target)) return
+		if (this._isFullyVisible(target, container)) return
 
 		const containerRect = container.getBoundingClientRect()
 		const targetRect = target.getBoundingClientRect()
@@ -201,10 +206,8 @@ export class TListScrollPlugin extends TBasePlugin<any, TListScrollPluginEvents>
 		container.scrollTo({ top: scrollTop, behavior })
 	}
 
-	private _isFullyVisible(el: Element): boolean {
-		if (!this._element) return false
-
-		const containerRect = this._element.getBoundingClientRect()
+	private _isFullyVisible(el: Element, container: Element): boolean {
+		const containerRect = container.getBoundingClientRect()
 		const targetRect = el.getBoundingClientRect()
 
 		return targetRect.top >= containerRect.top && targetRect.bottom <= containerRect.bottom

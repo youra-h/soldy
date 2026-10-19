@@ -61,6 +61,10 @@ const listItems = () => [...document.querySelectorAll('.so-list-box-item')]
 const rootOf = (fixture: ComponentFixture<unknown>) =>
 	findIn(fixture, '[so-list-box]', HTMLDivElement)
 
+/** Узел списка в корне: на нём набор `aria` списка и остановка Tab. */
+const listOf = (fixture: ComponentFixture<unknown>) =>
+	findIn(fixture, '[so-list-box] > .so-list-box__list', HTMLDivElement)
+
 function click(fixture: ComponentFixture<unknown>, element: HTMLElement): void {
 	element.click()
 	fixture.detectChanges()
@@ -164,53 +168,93 @@ describe('выбор', () => {
 	})
 
 	/**
-	 * Roving tabindex (APG listbox): Tab фокусирует контейнер, а по элементам
+	 * Roving tabindex (APG listbox): Tab фокусирует узел списка, а по элементам
 	 * ходят стрелки. `tabindex="-1"` элемента пишет ядро в его `aria`, и на
 	 * строке он перекрывает `tabindex="0"`, который кнопка на `div` ставит себе
-	 * сама: набор владельца главнее.
+	 * сама: набор владельца главнее. Корень — рамка вокруг шапки, списка и
+	 * подвала, остановкой он не бывает.
 	 */
-	it('строки — не остановки Tab, контейнер — остановка', () => {
+	it('строки — не остановки Tab, узел списка — остановка, корень — нет', () => {
 		const fixture = mountHost(Harness)
 
-		expect(rootOf(fixture).getAttribute('tabindex')).toBe('0')
+		expect(listOf(fixture).parentElement).toBe(rootOf(fixture))
+		expect(listOf(fixture).getAttribute('tabindex')).toBe('0')
+		expect(rootOf(fixture).hasAttribute('tabindex')).toBe(false)
 		expect(rows().map((row) => row.getAttribute('tabindex'))).toEqual(['-1', '-1'])
 	})
 
 	/**
-	 * Роли пишет ядро: корень — `listbox`, в `multiple` — с
-	 * `aria-multiselectable`, строка — `option`. Набор элемента лежит верхним
+	 * Роли пишет ядро: узел списка — `listbox`, в `multiple` — с
+	 * `aria-multiselectable`, строка — `option`. Набор `aria` списка кладёт на
+	 * узел директива набора, а не база на корень. Набор элемента лежит верхним
 	 * слоем раскладчика строки, и `role="button"`, который кнопка на `div`
 	 * пишет себе сама, в разметку не попадает.
 	 */
-	it('корень — listbox с aria-multiselectable, строки — опции, а не кнопки', () => {
+	it('узел списка — listbox с aria-multiselectable, строки — опции, а не кнопки', () => {
 		const fixture = mountHost(Harness)
-		const root = rootOf(fixture)
+		const list = listOf(fixture)
 
-		expect(root.getAttribute('role')).toBe('listbox')
-		expect(root.getAttribute('aria-multiselectable')).toBe('true')
+		expect(list.getAttribute('role')).toBe('listbox')
+		expect(list.getAttribute('aria-multiselectable')).toBe('true')
+		expect(rootOf(fixture).hasAttribute('role')).toBe(false)
 		expect(rows().map((row) => row.getAttribute('role'))).toEqual(['option', 'option'])
 		expect(document.querySelectorAll('.so-list-box-item [role="button"]')).toHaveLength(0)
 	})
 
 	it('стрелки ведут подсветку, Enter и пробел переключают выбор', async () => {
 		const fixture = mountHost(Harness)
-		const root = rootOf(fixture)
+		const list = listOf(fixture)
 
 		// Клавиатура списка слушает корень с `element:ready` — через кадр
 		await nextFrame()
 
-		press(fixture, root, 'ArrowDown')
+		press(fixture, list, 'ArrowDown')
 
 		expect(rows().map((row) => row.getAttribute('data-highlighted'))).toEqual(['true', 'false'])
 
-		press(fixture, root, 'Enter')
+		press(fixture, list, 'Enter')
 
 		expect(selection()).toEqual(['true', 'false'])
 
-		press(fixture, root, 'ArrowDown')
-		press(fixture, root, ' ')
+		press(fixture, list, 'ArrowDown')
+		press(fixture, list, ' ')
 
 		expect(selection()).toEqual(['true', 'true'])
+	})
+
+	/**
+	 * В `listbox` ARIA пускает только опции, поэтому шапка и подвал — дети
+	 * корня рядом с узлом списка. Их клавиши — не списка: поле печатает,
+	 * кнопка нажимается.
+	 */
+	it('шапка и подвал — вне listbox; их клавиши подсветку не двигают', async () => {
+		@Component({
+			standalone: true,
+			imports: [TListBoxComponent, TListBoxItemComponent],
+			template: `<div so-list-box>
+				<input slot="header" class="so-test-header" />
+				<so-list-box-item value="a" text="A" />
+				<button slot="footer" class="so-test-footer">Готово</button>
+			</div>`,
+		})
+		class SlotsHost {}
+
+		const fixture = mountHost(SlotsHost)
+		const list = listOf(fixture)
+
+		await nextFrame()
+
+		const header = findIn(fixture, '.so-test-header', HTMLInputElement)
+		const footer = findIn(fixture, '.so-test-footer', HTMLButtonElement)
+
+		expect([...rootOf(fixture).children]).toEqual([header, list, footer])
+		expect(list.contains(header)).toBe(false)
+		expect(list.contains(footer)).toBe(false)
+
+		press(fixture, header, 'ArrowDown')
+		press(fixture, footer, 'ArrowDown')
+
+		expect(rows().map((row) => row.getAttribute('data-highlighted'))).toEqual(['false'])
 	})
 })
 
@@ -651,7 +695,7 @@ describe('отметка выбранного и слоты', () => {
 		expect(marks()).toEqual(['slot:true', 'empty'])
 	})
 
-	it('empty — пока элементов нет: после шапки, перед подвалом; появились — пропал', () => {
+	it('empty — пока элементов нет: в узле списка, между шапкой и подвалом; появились — пропал', () => {
 		@Component({
 			standalone: true,
 			imports: [TListBoxComponent],
@@ -669,9 +713,10 @@ describe('отметка выбранного и слоты', () => {
 
 		expect([...rootOf(fixture).children].map((child) => child.className)).toEqual([
 			'head',
-			'probe',
+			'so-list-box__list',
 			'foot',
 		])
+		expect([...listOf(fixture).children].map((child) => child.className)).toEqual(['probe'])
 
 		fixture.componentInstance.items.set(ITEMS.slice(0, 2))
 		fixture.detectChanges()

@@ -94,7 +94,8 @@ describe('ListBox в окне', () => {
 		engine.extensions.draw.notifyViewport({ top: 3000, bottom: 3300, step: 30 })
 		await settle()
 
-		const root = document.querySelector('.so-list-box')
+		// Элементы и распорки — в узле списка внутри корня
+		const root = document.querySelector('.so-list-box__list')
 
 		if (!root) throw new Error('списка нет')
 

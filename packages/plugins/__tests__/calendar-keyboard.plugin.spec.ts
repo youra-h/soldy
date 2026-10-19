@@ -439,9 +439,14 @@ describe('кнопки листания', () => {
  * календаря, и своей плагин узнаёт её по шапке: в ней `id` из наборов места.
  */
 describe('стрелки панели выбора месяца и года', () => {
-	/** Панель места 0 в `body`, как её телепортирует поповер: список, шапка, стрелки. */
+	/**
+	 * Панель места 0 в `body`, как её телепортирует поповер: список, шапка,
+	 * стрелки. Список — ListBox: корень с классом части календаря, а остановка
+	 * Tab — узел списка в нём, с ролью `listbox`.
+	 */
 	function panelOf(heading: string) {
 		const panel = document.createElement('div')
+		const listBox = document.createElement('div')
 		const list = document.createElement('div')
 		const header = document.createElement('div')
 		const prev = document.createElement('button')
@@ -449,13 +454,15 @@ describe('стрелки панели выбора месяца и года', ()
 		const next = document.createElement('button')
 
 		panel.className = 'so-calendar__picker'
-		list.className = 'so-calendar__picker-list'
+		listBox.className = 'so-calendar__picker-list'
+		list.setAttribute('role', 'listbox')
 		list.tabIndex = 0
+		listBox.append(list)
 		prev.className = 'so-calendar__picker-prev'
 		next.className = 'so-calendar__picker-next'
 		title.id = heading
 		header.append(prev, title, next)
-		panel.append(list, header)
+		panel.append(listBox, header)
 		document.body.appendChild(panel)
 
 		return { list, prev, next }

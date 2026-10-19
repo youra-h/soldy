@@ -32,6 +32,12 @@ import type { IListBoxProps, TListBoxView, TListBoxEvents, IListBox, TListBoxVal
  * она не зависит: роль по режиму — знание Tags, у которого без выбора набор —
  * простой список. Что выбрать можно несколько (`aria-multiselectable`), знает
  * коллекция: пишет это `TListBoxExtension`, рядом с `aria-selected` элементов.
+ *
+ * Набор `aria` разметка кладёт не на корень, а на узел списка внутри него
+ * (`so-list-box__list`): в `listbox` ARIA пускает только опции, а в корне
+ * рядом со списком стоят шапка и подвал с полями и кнопками. На узле списка —
+ * роль, имя от `TAriaPlugin` и остановка Tab; на корне — `attrs` и `dataset`,
+ * как у Tabs, чей набор лежит на списке табов.
  */
 export class TListBox
 	extends TValueControl<TListBoxValue, IListBoxProps, TListBoxEvents>
@@ -58,7 +64,7 @@ export class TListBox
 		const ctor = new.target as typeof TListBox
 
 		// Только то, что список знает о себе сам: он — listbox. Роль стоит на
-		// корне — там же фокус, клавиатура и имя от `TAriaPlugin`
+		// узле списка — там же фокус, клавиатура и имя от `TAriaPlugin`
 		this._aria.add('role', 'listbox')
 
 		this._applyView(props.view ?? ctor.defaultValues.view)
@@ -68,6 +74,17 @@ export class TListBox
 
 		this._applyContentFit(props.contentFit ?? ctor.defaultValues.contentFit)
 		this._applyIndicator(props.indicator ?? ctor.defaultValues.indicator)
+	}
+
+	/**
+	 * `aria` стоит на узле списка внутри корня, а тег у него фиксированный
+	 * (`div`), разметка задаёт его сама. Поэтому ARIA-половина правила
+	 * «нативный атрибут вместо ARIA-дубля» от `tag` корня не зависит: у `div`
+	 * своего `disabled` нет, и выключенный список узел объявляет
+	 * `aria-disabled`, каким бы ни был корень — как строка `ListBox.Item`.
+	 */
+	protected override get _ariaTag(): string {
+		return 'div'
 	}
 
 	get view(): TListBoxView | undefined {

@@ -271,7 +271,9 @@ describe('хост Web Components · коллекции', () => {
 			onEvent: (name) => events.push(name),
 		})
 		const rows = [
-			...node.querySelectorAll('.so-list-box > .so-list-box-item > .so-button'),
+			...node.querySelectorAll(
+				'.so-list-box > .so-list-box__list > .so-list-box-item > .so-button',
+			),
 		].filter((row): row is HTMLElement => row instanceof HTMLElement)
 
 		expect(texts(rows)).toEqual(['Первый', 'Второй', 'Третий', 'Четвёртый', 'Пятый'])

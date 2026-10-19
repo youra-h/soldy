@@ -1034,7 +1034,8 @@ const LISTS = [
 	{
 		name: 'ListBox',
 		rows: '.so-list-box-item > .so-button',
-		focus: '.so-list-box',
+		// Остановка Tab ListBox — узел списка в корне
+		focus: '.so-list-box > .so-list-box__list',
 		toLast: '{ArrowDown}',
 		markup: () =>
 			h(ListBox, { value: 'b' }, () => [
