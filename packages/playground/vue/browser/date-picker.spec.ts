@@ -6,8 +6,10 @@
  * плагинов (`plugins/__tests__/date-picker.plugin.spec.ts`), проводку —
  * `ui/vue/__tests__/date-picker.spec.ts`. Здесь — что они складываются с
  * браузером: фокус уходит на день сетки, Tab ходит по кругу в панели,
- * нажатие в соседнее поле отдаёт ему фокус с первого раза, а клавиши
- * календаря и поля — те же, что у них самих. Раскладка: коробка диапазона не
+ * закрытие возвращает фокус в поле, нажатие в соседнее поле отдаёт ему фокус
+ * с первого раза, а клавиши календаря и поля — те же, что у них самих.
+ * Панель открывается и одной клавиатурой: Tab с поля до кнопки календаря и
+ * Enter на ней. Раскладка: коробка диапазона не
  * меняет ширину, пока даты набирают, а панель у правого края окна не
  * сжимается. Тема: ошибку поля конца коробка диапазона показывает своей
  * рамкой, панель проявляется и гаснет на месте переходом, а день, выбор
@@ -141,13 +143,47 @@ describe('открытие', () => {
 
 		expect(isOpen()).toBe(false)
 	})
+
+	/**
+	 * Одной клавиатурой, как без мыши: Tab с поля страницы по частям поля до
+	 * кнопки календаря, Enter на ней открывает панель, и фокус уходит на день
+	 * — по дням его ведут стрелки. Enter выбирает день, закрывает панель и
+	 * возвращает фокус в поле — на первую часть, а не на кнопку.
+	 */
+	it('Tab до кнопки и Enter — фокус на дне, стрелки ведут его, Enter выбирает и возвращает фокус в поле', async () => {
+		const ctrl = await show({ value: '2026-05-12' })
+
+		await userEvent.click(find('.so-test-outside'))
+
+		// en-US: месяц, день, год, за ними — кнопка календаря
+		for (const stop of [segment('month'), segment('day'), segment('year'), trigger()]) {
+			await tab()
+			expect(active()).toBe(stop)
+		}
+
+		await userEvent.keyboard('{Enter}')
+		await expect.poll(active).toBe(day('2026-05-12'))
+
+		await userEvent.keyboard('{ArrowRight}')
+		await expect.poll(active).toBe(day('2026-05-13'))
+
+		await userEvent.keyboard('{ArrowLeft}{ArrowLeft}')
+		await expect.poll(active).toBe(day('2026-05-11'))
+
+		await userEvent.keyboard('{Enter}')
+
+		await expect.poll(isOpen).toBe(false)
+		expect(ctrl.value).toBe('2026-05-11')
+		await expect.poll(active).toBe(segment('month'))
+	})
 })
 
 describe('закрытие', () => {
+	/** Открыли с части дня, не первой: возврат — на неё, а не на первую часть. */
 	it('Enter выбирает день и закрывает панель, фокус — туда, откуда открыли', async () => {
 		const ctrl = await show({ value: '2026-05-12' })
 
-		await userEvent.click(segment('month'))
+		await userEvent.click(segment('day'))
 		await userEvent.keyboard('{Alt>}{ArrowDown}{/Alt}')
 		await expect.poll(active).toBe(day('2026-05-12'))
 
@@ -156,10 +192,10 @@ describe('закрытие', () => {
 		await expect.poll(isOpen).toBe(false)
 		expect(ctrl.value).toBe('2026-05-13')
 		expect(segment('day').textContent).toBe('13')
-		await expect.poll(active).toBe(segment('month'))
+		await expect.poll(active).toBe(segment('day'))
 	})
 
-	it('Escape закрывает и возвращает фокус на кнопку', async () => {
+	it('Escape закрывает и возвращает фокус в поле — на первую часть, а не на кнопку', async () => {
 		await show({ value: '2026-05-12' })
 
 		await userEvent.click(trigger())
@@ -168,7 +204,8 @@ describe('закрытие', () => {
 		await userEvent.keyboard('{Escape}')
 
 		await expect.poll(isOpen).toBe(false)
-		await expect.poll(active).toBe(trigger())
+		// en-US: первая часть — месяц
+		await expect.poll(active).toBe(segment('month'))
 	})
 
 	it('нажатие в соседнее поле закрывает панель и фокусирует поле с первого раза', async () => {
@@ -421,7 +458,7 @@ describe('диапазон', () => {
 		await expect.poll(isOpen).toBe(false)
 	})
 
-	it('второй день пишет пару в поля и закрывает панель', async () => {
+	it('второй день пишет пару в поля и закрывает панель, фокус — на первой части поля начала', async () => {
 		const ctrl = await show({ mode: 'range', value: ['2026-05-12', '2026-05-12'] })
 
 		await userEvent.click(trigger())
@@ -432,6 +469,8 @@ describe('диапазон', () => {
 		await expect.poll(isOpen).toBe(false)
 		expect(ctrl.value).toEqual(['2026-05-12', '2026-05-14'])
 		expect(segment('day', '.so-date-picker__end').textContent).toBe('14')
+		// Открыли кнопкой: возврат — в поле, у диапазона — на начало
+		await expect.poll(active).toBe(segment('month', '.so-date-picker__start'))
 	})
 
 	/**

@@ -13,9 +13,9 @@
  * Без движения панель с полосой гаснет на месте.
  *
  * Своё у каждого: у Select фокус всё время на поле, и нажатие на полосу его
- * не уводит; у DatePicker закрытие жестом возвращает фокус туда, откуда
- * открыли, как Escape, а прокручивается содержимое панели, и из него жест за
- * всю панель не начинается.
+ * не уводит; у DatePicker закрытие жестом возвращает фокус в поле, как
+ * Escape, а прокручивается содержимое панели, и из него жест за всю панель
+ * не начинается.
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
@@ -368,13 +368,16 @@ describe('DatePicker', () => {
 	const content = () => find('.so-date-picker__content')
 	const isOpen = () => getComputedStyle(panel()).display !== 'none'
 
-	it('после закрытия жестом фокус возвращается на кнопку, как после Escape', async () => {
+	/** Открыли кнопкой: возврат — в поле, на первую часть (en-US — месяц), а не на кнопку. */
+	it('после закрытия жестом фокус возвращается в поле, как после Escape', async () => {
 		await DATE_PICKER.show({ swipe: 'handle' })
 		await DATE_PICKER.open()
 		await drag(find('.so-date-picker__handle'), 150)
 
 		await expect.poll(isOpen).toBe(false)
-		await expect.poll(active).toBe(find('.so-date-picker__trigger'))
+		await expect
+			.poll(active)
+			.toBe(find('.so-date-picker .so-date-input__segment[data-type="month"]'))
 	})
 
 	it('за всю панель — тянут за место без контролов: шапку дней недели', async () => {
