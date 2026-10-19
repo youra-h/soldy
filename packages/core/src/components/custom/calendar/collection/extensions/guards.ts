@@ -21,7 +21,7 @@ function isView(ext: object): ext is ICalendarViewExtension {
 	return 'reveal' in ext && 'grids' in ext
 }
 
-function isCalendarSelection(ext: object): ext is ICalendarSelectionExtension {
+function isSelection(ext: object): ext is ICalendarSelectionExtension {
 	return 'chooseDate' in ext && 'multiselectable' in ext
 }
 
@@ -39,16 +39,16 @@ export function viewOf<TItem extends object>(
 }
 
 /**
- * Выбор дат, если он есть в коллекции. Имя с компонентом: под тем же именем
- * `selection` у других коллекций — стандартный выбор элементов (`selectionOf`),
- * другой контракт.
+ * Выбор дат, если он есть в коллекции. Под тем же именем `selection` у других
+ * коллекций — стандартный выбор элементов, другой контракт: у них охранник
+ * отдаёт `undefined`.
  */
-export function calendarSelectionOf<TItem extends object>(
+export function selectionOf<TItem extends object>(
 	neighbours: TNeighbours<TItem> | null | undefined,
 ): ICalendarSelectionExtension | undefined {
 	const ext = neighbours?.extensions.selection
 
-	return ext && isCalendarSelection(ext) ? ext : undefined
+	return ext && isSelection(ext) ? ext : undefined
 }
 
 /** Расширение фокуса, если оно есть в коллекции. */

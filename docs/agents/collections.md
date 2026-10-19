@@ -221,15 +221,26 @@ const selection = ctx.extensions.selection as ISelectionExtension<TItem> | undef
   циклом модулей.
 - **Соседи коллекции компонента** — охранники в её
   `collection/extensions/guards.ts`: `columnsOf` и `gridOf` у таблицы,
-  `viewOf`, `focusOf` и `calendarSelectionOf` у календаря, `selectOf` и
-  `selectTagsOf` у Select — эти два в экспорте, их зовут плагины поля.
-  `TNeighbours` они берут из модуля `neighbours.ts`, а не из бочки. Охранник с
-  контрактом компонента ищет в любой коллекции и у чужой отдаёт `undefined`,
-  поэтому тип её элементов ему не важен.
-- **Имя — `<имя расширения>Of`, а если у разных коллекций под одним именем
-  разные контракты, впереди компонент**: `selectTagsOf` — расширения `tags` у
-  Select и у Tags разные, `calendarSelectionOf` — календарь выбирает даты, а
-  не элементы.
+  `viewOf`, `focusOf` и `selectionOf` у календаря, `selectOf` и `tagsOf` у
+  Select — эти два в экспорте, их зовут плагины поля. `TNeighbours` они берут
+  из модуля `neighbours.ts`, а не из бочки. Охранник с контрактом компонента
+  ищет в любой коллекции и у чужой отдаёт `undefined`, поэтому тип её
+  элементов ему не важен.
+- **Имя — `<имя расширения>Of`, и ничего больше: ни префикса, ни постфикса
+  компонента.** Чей охранник, видно из пути импорта — `@soldy-ui/core` или
+  `../guards` коллекции. Под одним именем у разных коллекций бывают разные
+  контракты: `selectionOf` календаря выбирает даты, стандартный — элементы,
+  `tagsOf` Select — не расширение Tags. Встретились одноимённые охранники в
+  одном файле — их различает алиас в импорте, и только там:
+
+  ```ts
+  import { selectionOf } from '@soldy-ui/core'
+  import { selectionOf as calendarSelectionOf } from '../calendar/collection/extensions/guards'
+  ```
+
+  Без пересечения импорт идёт без переименования:
+  `import { focusOf, selectionOf } from '../guards'`.
+
 - **`?.` у `plain` и `batch` — только тип.** Они есть у любой коллекции (см.
   раздел выше), но охранник отвечает `… | undefined`, и ветки «соседа нет» за
   этим не стоит.
@@ -246,8 +257,8 @@ const selection = ctx.extensions.selection as ISelectionExtension<TItem> | undef
 типом (фикстуры — `tools/eslint/__tests__/no-casts.spec.ts`), — и
 `core/__tests__/collection.neighbours.spec.ts`: охранник отдаёт расширение
 коллекции, у которой оно есть, и `undefined`, когда его нет или под тем же
-именем другой контракт — `selectTagsOf` у Tags, `calendarSelectionOf` у
-ListBox, `selectionOf` у календаря. Приведение члена соседа
+именем другой контракт — `tagsOf` Select у Tags, `selectionOf` календаря у
+ListBox, стандартный `selectionOf` у календаря. Приведение члена соседа
 (`x.extensions.selection.selected as …`) и чтение соседа без проверки у
 движка без типа (`engine.extensions.batch.items` при
 `TCollectionEngine<any, any>`) блок не ловит.

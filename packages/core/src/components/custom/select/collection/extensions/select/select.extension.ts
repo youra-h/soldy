@@ -18,7 +18,7 @@ import {
 import type { TListIndicator } from '../../../../list'
 import type { ISelect } from '../../../types'
 import type { ISelectItem } from '../../../item/types'
-import { selectTagsOf } from '../guards'
+import { tagsOf } from '../guards'
 import type { ISelectTagsExtension } from '../tags'
 import { TSelectItemExtension, type ISelectItemExtension } from './item'
 import type { ISelectExtension, TSelectEngineOptions, TSelectExtensionEvents } from './types'
@@ -304,7 +304,7 @@ export class TSelectExtension<
 	}
 
 	private get _tags(): ISelectTagsExtension | undefined {
-		return selectTagsOf(this._ctx)
+		return tagsOf(this._ctx)
 	}
 
 	/**

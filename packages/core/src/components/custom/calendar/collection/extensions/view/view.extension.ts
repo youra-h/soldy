@@ -17,7 +17,7 @@ import { calendarBounds, datesOf, inBounds } from '../../../dates'
 import type { TCalendarBounds } from '../../../dates'
 import type { ICalendarItem, ICalendarItemProps } from '../../../item/types'
 import type { ICalendar } from '../../../types'
-import { calendarSelectionOf, focusOf } from '../guards'
+import { focusOf, selectionOf } from '../guards'
 import type {
 	ICalendarViewExtension,
 	TCalendarEngineOptions,
@@ -159,7 +159,7 @@ export class TCalendarViewExtension
 
 		if (!owner) return []
 
-		const multiselectable = calendarSelectionOf(this._ctx)?.multiselectable ? 'true' : null
+		const multiselectable = selectionOf(this._ctx)?.multiselectable ? 'true' : null
 		const days = new Map(this._ctx.driver.valueOf().map((item) => [item.date, item]))
 
 		return this._skeleton(owner).map(({ key, title, weeks }, index) => {

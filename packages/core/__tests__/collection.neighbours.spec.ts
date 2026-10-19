@@ -10,10 +10,12 @@ import {
 	filterOf,
 	plainOf,
 	selectOf,
-	selectTagsOf,
 	selectionOf,
+	tagsOf,
 } from '@soldy-ui/core'
-import { calendarSelectionOf } from '../src/components/custom/calendar/collection/extensions/guards'
+// Одноимённый охранник календаря: в этом файле рядом стандартный `selectionOf`,
+// и различает их алиас в импорте
+import { selectionOf as calendarSelectionOf } from '../src/components/custom/calendar/collection/extensions/guards'
 
 /**
  * Соседа по коллекции находят охранником контракта, а не приведением типа
@@ -49,14 +51,14 @@ describe('охранник отдаёт расширение коллекции,
 		expect(plainOf(engine)).toBe(engine.extensions.plain)
 	})
 
-	it('selectOf и selectTagsOf — расширения Select', () => {
+	it('selectOf и tagsOf Select — его расширения', () => {
 		const engine = createEngineSelect()
 
 		expect(selectOf(engine)).toBe(engine.extensions.select)
-		expect(selectTagsOf(engine)).toBe(engine.extensions.tags)
+		expect(tagsOf(engine)).toBe(engine.extensions.tags)
 	})
 
-	it('calendarSelectionOf — выбор дат календаря', () => {
+	it('selectionOf календаря — выбор дат', () => {
 		const engine = createEngineCalendar()
 
 		expect(calendarSelectionOf(engine)).toBe(engine.extensions.selection)
@@ -80,21 +82,21 @@ describe('расширения нет — undefined', () => {
 })
 
 describe('под тем же именем — другой контракт: undefined', () => {
-	it('selectTagsOf у Tags: расширение `tags` у Tags своё', () => {
+	it('tagsOf Select у Tags: расширение `tags` у Tags своё', () => {
 		const engine = createEngineTags()
 
 		expect(engine.extensions.tags).toBeDefined()
-		expect(selectTagsOf(engine)).toBeUndefined()
+		expect(tagsOf(engine)).toBeUndefined()
 	})
 
-	it('calendarSelectionOf у ListBox: `selection` — стандартный выбор элементов', () => {
+	it('selectionOf календаря у ListBox: `selection` — стандартный выбор элементов', () => {
 		const engine = createEngineListBox()
 
 		expect(engine.extensions.selection).toBeDefined()
 		expect(calendarSelectionOf(engine)).toBeUndefined()
 	})
 
-	it('selectionOf у календаря: `selection` выбирает даты, а не элементы', () => {
+	it('стандартный selectionOf у календаря: `selection` выбирает даты, а не элементы', () => {
 		const engine = createEngineCalendar()
 
 		expect(engine.extensions.selection).toBeDefined()
