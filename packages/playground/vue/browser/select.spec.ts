@@ -1,6 +1,6 @@
 /**
  * Select в настоящем браузере: появление и исчезание панели, форма кнопки
- * очистки и области стрелки.
+ * очистки и области стрелки, прозрачность выключенной опции.
  *
  * Панель — Frame, телепортированный в `body`, и открытость для темы ей пишет
  * её слой: `data-open` корня Select до телепортированной панели не доходит.
@@ -15,7 +15,7 @@ import { render, cleanup } from 'vitest-browser-vue'
 import { userEvent } from 'vitest/browser'
 import { defineComponent, h, nextTick } from 'vue'
 import { COMPONENT_SIZES } from '@soldy-ui/playground-shared'
-import { Select, SelectItem } from '@soldy-ui/vue'
+import { ListBox, ListBoxItem, Select, SelectItem } from '@soldy-ui/vue'
 
 import { expectClearSquare } from './clear-button'
 import { expectFadesInPlace, ownTransitionRuns, settled, whileLeaving } from './transitions'
@@ -56,9 +56,9 @@ const showClearable = (
 	props: Record<string, unknown> = {},
 ) => show({ clearable: true, size, value: '0', ...props })
 
-/** Узел по селектору; нет его — тест падает здесь, а не на чтении свойства. */
-const find = (selector: string): HTMLElement => {
-	const element = document.querySelector(selector)
+/** Узел по селектору внутри корня; нет его — тест падает здесь, а не на чтении свойства. */
+const find = (selector: string, root: ParentNode = document): HTMLElement => {
+	const element = root.querySelector(selector)
 
 	if (!(element instanceof HTMLElement)) throw new Error(`${selector}: HTML-узла нет`)
 
@@ -270,4 +270,65 @@ describe('стрелка', () => {
 			await expect.poll(() => panel().dataset.open).toBe('true')
 		},
 	)
+})
+
+/**
+ * Прозрачность, с которой узел виден на странице: своя, умноженная на
+ * прозрачность всех предков. Панель телепортирована в `body`, и предки опции —
+ * панель и её список, а не поле.
+ */
+const visibleOpacity = (element: Element): number => {
+	let opacity = 1
+
+	for (let node: Element | null = element; node; node = node.parentElement) {
+		opacity *= parseFloat(getComputedStyle(node).opacity)
+	}
+
+	return opacity
+}
+
+/**
+ * Выключенная опция гаснет одной строкой, как пункт ListBox: строка — Button и
+ * гасит себя сама по своему `data-disabled`, а обёртка опции прозрачность не
+ * трогает. Раньше гасла и обёртка, и опция выходила вдвое бледнее такого же
+ * пункта ListBox (`themes/oren/src/components/select/_select.scss`). Чисел
+ * темы проверка не знает: образец — выключенный пункт ListBox рядом.
+ */
+describe('выключенная опция', () => {
+	it('гаснет так же, как выключенный пункт ListBox', async () => {
+		render(
+			defineComponent({
+				render: () =>
+					h('div', { style: 'padding: 40px; width: 320px' }, [
+						h(ListBox, {}, () => [
+							h(ListBoxItem, { key: 'a', value: 'a', text: 'Москва' }),
+							h(ListBoxItem, { key: 'b', value: 'b', text: 'Тверь', disabled: true }),
+						]),
+						h(Select, {}, () => [
+							h(SelectItem, { key: 'a', value: 'a', text: 'Москва' }),
+							h(SelectItem, { key: 'b', value: 'b', text: 'Тверь', disabled: true }),
+						]),
+					]),
+			}),
+		)
+
+		await nextTick()
+		await nextFrame()
+		await nextFrame()
+
+		await userEvent.click(field())
+		await expect.poll(() => panel().dataset.open).toBe('true')
+		// Панель проявляется переходом прозрачности: мерить, когда он доиграл
+		await settled(panel())
+
+		const sample = visibleOpacity(
+			find('.so-list-box-item[data-disabled="true"] .so-button__text'),
+		)
+
+		expect(sample, 'пункт ListBox гаснет').toBeLessThan(1)
+		expect(
+			visibleOpacity(find('.so-button__text', option('Тверь'))),
+			'опция Select',
+		).toBeCloseTo(sample, 2)
+	})
 })
