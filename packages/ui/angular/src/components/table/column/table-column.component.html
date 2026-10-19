@@ -1,0 +1,71 @@
+<!--
+	Корень — сам хост (`<th so-table-column>`), поэтому шаблон — ряд содержимого
+	и ручка ширины. Слот контракта: default (scope { text, sortable }) —
+	подпись заголовка.
+
+	Ряд — подпись, а у сортируемой колонки за ней кнопка сортировки. Где ряд
+	стоит в ячейке и с какой стороны подписи кнопка, решает тема по
+	`data-align`. Подписью названы заголовок и поле ручки: на ней набор колонки
+	`textAria` с `id`. Выключенная таблица гасит подпись темой: своего состояния
+	у неё нет.
+
+	Кнопку рисует колонка, а не таблица через слот: подпись называет заголовок,
+	и кнопка в ней дописала бы своё имя к его имени. Текста у кнопки нет, в ней
+	одна стрелка: имя ей пишет плагин имён от локали вместе с подписью колонки
+	(`sortAria`) — «Sort by Имя», — и набор владельца ложится поверх того, что
+	кнопка пишет себе сама. Направление скринридер объявляет по `aria-sort`
+	заголовка, поэтому обёртка стрелки скрыта от него. Вида и размера разметка
+	кнопке и стрелке не передаёт: колонка не знает размера таблицы, а значения
+	вида объявляет тема.
+
+	Поле ручки — нативный `range`, как поле ручки Slider: мобильные скринридеры
+	двигают его своим жестом. Ход — значение ядра (`resizer`), имя — ссылка на
+	подпись (`resizerAria`). Ширину на поле пишет директива текста поля, только
+	когда она разошлась с узлом, — после хода: свойства `min` и `max` стоят в
+	шаблоне раньше, и ширина не прижимается к ходу по умолчанию, 0–100. Тема
+	делает поле прозрачным во всю полосу и не пускает к нему указатель: тянет
+	плагин, а не браузер.
+-->
+<span class="so-table-column__content">
+	<span class="so-table-column__text" [so-attributes]="state()['textAria']">
+		@if (slot('default'); as content) {
+			<ng-container
+				[ngTemplateOutlet]="content"
+				[ngTemplateOutletContext]="{
+					text: state()['text'] ?? '',
+					sortable: state()['sortable'] ?? false,
+				}"
+			/>
+		} @else {
+			<ng-content>{{ state()['text'] }}</ng-content>
+		}
+	</span>
+	@if (state()['sortable']) {
+		<button
+			so-button
+			embedded="table.sort"
+			type="button"
+			class="so-table-column__sort"
+			[disabled]="state()['disabled']"
+			[so-attributes]="state()['sortAria']"
+			(soActionPress)="toggleSort()"
+		>
+			<span class="so-table-column__sort-icon" aria-hidden="true">
+				<svg so-icon embedded="table.sort-icon" so-role-icon="arrowUpward"></svg>
+			</span>
+		</button>
+	}
+</span>
+@if (state()['resizerRendered'] && state()['resizer']; as resizer) {
+	<span class="so-table-column__resizer">
+		<input
+			class="so-table-column__input"
+			type="range"
+			[min]="resizer.min"
+			[max]="resizer.max"
+			[so-field-text]="resizer.value | soText"
+			[so-attributes]="state()['resizerAria']"
+		/>
+	</span>
+}
+<ng-content select="ng-template[slot]" />

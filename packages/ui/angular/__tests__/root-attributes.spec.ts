@@ -31,6 +31,7 @@ import {
 	TProgressSpinnerComponent,
 	TSkeletonComponent,
 	TSwitchComponent,
+	TTableComponent,
 } from '@soldy-ui/angular'
 import {
 	applyAttributes,
@@ -598,5 +599,127 @@ describe('свойство, записанное в узел мимо разме
 		expect(button.style.display).toBe('')
 		expect(el.style.getPropertyValue('--so-swipe-offset')).toBe('7px')
 		expect(el.style.width).toBe('20px')
+	})
+})
+
+/**
+ * Корень внутри обёртки — у таблицы (`'wrapped'`): элемент потребителя
+ * (`<div so-table>`) — окно, а корень — `table` в шаблоне, как
+ * `div.so-table__viewport` вокруг `table` у Vue и React. Атрибуты, класс и
+ * стиль потребителя стоят на окне, и его же прячет видимость; классы, наборы
+ * ядра и `TElementPlugin` — у `table`.
+ */
+@Component({
+	standalone: true,
+	imports: [TTableComponent],
+	template: `<div
+		so-table
+		[columns]="columns"
+		direction="rtl"
+		dir="ltr"
+		title="probe"
+		class="mine"
+		style="color: red"
+		[visible]="visible()"
+		[stickyHead]="sticky()"
+		(soElementReady)="ready.push($event)"
+	></div>`,
+})
+class TableProbe {
+	readonly columns = [{ field: 'name', text: 'Имя' }]
+	readonly visible = signal(true)
+	readonly sticky = signal(false)
+	readonly ready: Element[] = []
+}
+
+/** Окно таблицы — элемент потребителя — и `table` в нём. */
+function tableParts(fixture: ComponentFixture<unknown>): {
+	viewport: HTMLElement
+	table: HTMLElement
+} {
+	return {
+		viewport: findIn(fixture, '[so-table]', HTMLElement),
+		table: findIn(fixture, '[so-table] > table', HTMLElement),
+	}
+}
+
+describe('корень внутри обёртки: окно таблицы', () => {
+	it('класс, стиль и атрибуты потребителя — окну, рядом с его классом', () => {
+		const { viewport, table } = tableParts(mountHost(TableProbe))
+
+		expect([...viewport.classList].sort()).toEqual(['mine', 'so-table__viewport'])
+		expect(viewport.style.color).toBe('red')
+		expect(viewport.getAttribute('title')).toBe('probe')
+		// `dir` потребителя на окне — ядро пишет свой на корень
+		expect(viewport.getAttribute('dir')).toBe('ltr')
+		expect(table.classList.contains('mine')).toBe(false)
+		expect(table.hasAttribute('title')).toBe(false)
+		expect(table.style.color).toBe('')
+	})
+
+	it('классы и наборы ядра — table; смена набора доходит до неё, а не до окна', () => {
+		const fixture = mountHost(TableProbe)
+		const { viewport, table } = tableParts(fixture)
+
+		expect(table.classList.contains('so-table')).toBe(true)
+		expect(viewport.classList.contains('so-table')).toBe(false)
+		expect(table.getAttribute('dir')).toBe('rtl')
+		expect(table.dataset['stickyHead']).toBe('false')
+
+		fixture.componentInstance.sticky.set(true)
+		fixture.detectChanges()
+
+		expect(table.dataset['stickyHead']).toBe('true')
+		expect(viewport.hasAttribute('data-sticky-head')).toBe(false)
+	})
+
+	it('входы — не атрибуты окна: статические атрибуты входов база снимает', () => {
+		const { viewport } = tableParts(mountHost(TableProbe))
+
+		expect(viewport.hasAttribute('direction')).toBe(false)
+	})
+
+	it('скрытие — окну: visible=false прячет окно, table не трогает', () => {
+		const fixture = mountHost(TableProbe)
+		const { viewport, table } = tableParts(fixture)
+
+		fixture.componentInstance.visible.set(false)
+		fixture.detectChanges()
+
+		expect(viewport.style.display).toBe('none')
+		expect(table.style.display).toBe('')
+
+		fixture.componentInstance.visible.set(true)
+		fixture.detectChanges()
+
+		expect(viewport.style.display).toBe('')
+	})
+
+	it('soElementReady приходит с table, а не с окном', async () => {
+		const fixture = mountHost(TableProbe)
+
+		await nextFrame()
+
+		expect(fixture.componentInstance.ready).toEqual([tableParts(fixture).table])
+	})
+
+	/**
+	 * Окно — элемент потребителя: свойство, которое записали в него мимо
+	 * разметки, база не трогает — она пишет на него только скрытие.
+	 */
+	it('свойство, записанное в окно мимо разметки, переживает смену видимости и набора', () => {
+		const fixture = mountHost(TableProbe)
+		const { viewport } = tableParts(fixture)
+
+		viewport.style.setProperty('--so-probe', '7px')
+
+		fixture.componentInstance.visible.set(false)
+		fixture.componentInstance.sticky.set(true)
+		fixture.detectChanges()
+		fixture.componentInstance.visible.set(true)
+		fixture.detectChanges()
+
+		expect(viewport.style.getPropertyValue('--so-probe')).toBe('7px')
+		expect(viewport.style.color).toBe('red')
 	})
 })

@@ -1679,7 +1679,7 @@ There is no `adapter/static/`: React takes prop names from the descriptor types,
 
 ## Layer 8: Angular Adapter (`packages/ui/angular/src`)
 
-### ✅ IMPLEMENTED (Component / ComponentView / Stylable / Control / Textable / Button / Icon / Label / Frame / ProgressSpinner / Skeleton / Input / CheckBox / Switch / RadioGroup / ListBox / Tabs / Accordion)
+### ✅ IMPLEMENTED (Component / ComponentView / Stylable / Control / Textable / Button / Icon / Label / Frame / ProgressSpinner / Skeleton / Input / CheckBox / Switch / RadioGroup / ListBox / Tabs / Accordion / Table / Virtual)
 
 **Структура** зеркалит Vue/React: `adapter/{common,runtime,locale,elevator}` + `components/*`.
 
@@ -1714,8 +1714,10 @@ There is no `adapter/static/`: React takes prop names from the descriptor types,
   описанию корня `TRootSpec` — см. «DOM-биндинг»), `SlotDirective`
   (`<ng-template slot>`), `AttributesDirective` (`[so-attributes]`) — набор
   ядра на элементе шаблона: `aria` поля на `<input>`, `clearAria` на кнопке
-  очистки, — и `FieldTextDirective` (`input[so-field-text]`) — текст поля в
-  узел, только когда он разошёлся с узлом; в бочку не входят `booleanInput` —
+  очистки, — `FieldTextDirective` (`input[so-field-text]`) — текст поля в
+  узел, только когда он разошёлся с узлом, — и `TextPipe` (`soText`) —
+  значение неизвестного типа текстом по правилу интерполяции Vue (значение
+  ячейки таблицы); в бочку не входят `booleanInput` —
   transform булева входа, его импортируют сгенерированные метаданные, —
   `root-attributes.ts`: `applyAttributes`, `applyClasses` и `applyStyles`
   раскладывают наборы, классы и стиль ядра на корень-хост, а раскладчик
@@ -1732,7 +1734,8 @@ There is no `adapter/static/`: React takes prop names from the descriptor types,
   объявляет входы и выходы компонента вместе с их типами. Манифесты лежат и
   во вложенных папках частей (`tabs/item` — `tabs-item`), а манифест
   коллекции называет ещё и дескриптор фасада: поверхность одна на оба
-  контекста.
+  контекста. Базе поверхность называет фасад и выходы плагинов дескриптора
+  (`DescriptorPluginOutputs`) — их шаблон читает из `state()`.
 
 ### Почему Angular нужен кодогенератор
 
@@ -1942,6 +1945,17 @@ Zone.js и молча ломалось бы под `provideZonelessChangeDetecti
   напечатал сервер, остаются на корне. Привязки `[attr.x]` и слушатели
   остаются на корне — их Angular ставит на элемент из разметки потребителя.
 
+Стратегия `'wrapped'` — корень внутри обёртки, у таблицы: элемент
+потребителя (`<div so-table>`) — окно вокруг корня, а корень — `table` в
+шаблоне, `#root`, как `div.so-table__viewport` вокруг `table` у Vue и React;
+окно обязано быть родителем корня — по нему плагин раскладки мерит место
+под колонки. Обёртке база снимает атрибуты-входы и прячет её привязкой
+`[style.display]`, а атрибуты, класс и стиль потребителя остаются на ней; свой
+класс окна компонент ставит статикой хоста. Тег обёртки ядру не уходит.
+Корню база кладёт классы, наборы и стиль ядра теми же эффектами, что
+корню-хосту, — они читают его запрос, и память раскладки у каждого узла
+своя, — а `TElementPlugin` получает его после отрисовки, как у `'view'`.
+
 Набор ядра на элементе шаблона, а не на корне, кладёт директива адаптера
 `AttributesDirective` — `<input [so-attributes]="state()['aria']">`, тем же
 правилом, что база на корне. Элемент бывает корнем вложенного компонента —
@@ -1991,7 +2005,10 @@ DOM-эмуляция серверного рендера Angular запись `i
 неё — его корень сам `<so-input>`, а атрибуты потребителя база делит между
 ним и `<input>` (`control`). Шаблон без `#root` — компонент без корня: у
 `so-component` элементный селектор и пустой шаблон, и написанное внутри него не
-выводится, как и в остальных адаптерах.
+выводится, как и в остальных адаптерах, а у окна `so-virtual` шаблон — только
+содержимое, и бокса у элемента нет (`display: contents` статикой хоста: на
+нескрытом корне привязка скрытия отдаёт `undefined`, и Angular берёт
+статику).
 
 Запрос — именно поле: сигнальные запросы, как и `input`/`output`/`model`,
 компилятор Angular распознаёт только в инициализаторе поля. Вызов внутри
@@ -2045,9 +2062,23 @@ RadioGroup, ListBox, Tabs и Accordion собираются, как у Vue и Sv
 чему, а без `requestAnimationFrame` в Node `TElementPlugin` его и не объявил
 бы.
 
+Table — тот же рецепт, что ListBox, с окном `Virtual` и без drag-and-drop, но
+частей разметкой у неё нет: заголовки (`th[so-table-column]`) и строки
+(`tr[so-table-row]`) она рисует сама — петлями по `shownColumns` и `drawn`, —
+а шаблоны `header` и `cell` пробрасывает им тем же `<ng-template slot>` с
+`ngProjectAs`. Своей единицы перерисовки у ячеек, как `_TableRowCells` у Vue,
+нет — компонент Angular всегда элемент, а лишний узел в `tr` ломает таблицу:
+ячейки — в шаблоне строки, петлёй по колонке ячейки, и выбор строки
+перепроверяет её шаблон, но не пересоздаёт ни ячеек, ни узлов вывода шаблона
+`cell` (`ngTemplateOutlet` пересоздаёт представление только с новым
+шаблоном). Значение без шаблона — пайп `soText` и свойство `textContent`
+ячейки. `Virtual` — `<so-virtual>` без корня: подключение к окну проводка
+опускает в слой лифта обёртки, и коллекция в её содержимом подхватывает его
+своей сборкой.
+
 Сторожат спеки `packages/ui/angular/__tests__`: `list-box`, `tabs`,
-`accordion`, `radio-group`, `collection-elevator` (слой лифта, соседи,
-вложенные коллекции, порядок), `collection-item-lifetime`,
+`accordion`, `radio-group`, `table`, `virtual`, `collection-elevator` (слой
+лифта, соседи, вложенные коллекции, порядок), `collection-item-lifetime`,
 `external-engine-lifetime`, `collections.server` (сервер и гидратация) и
 `ssr.server` (узла на сервере плагины не получают).
 
@@ -2095,6 +2126,12 @@ RadioGroup, ListBox, Tabs и Accordion собираются, как у Vue и Sv
   `leading-icon` секции, `leading` и `trailing` набора табов), — только
   шаблоны `<ng-template slot>`: есть ли что-то в `<ng-content>`, Angular не
   сообщает.
+- Шаблоны `header` и `cell`, заданные таблице, рисуются в каждом заголовке и
+  ячейке вместо текста — и там, где ничего не нарисовали, как сниппеты у
+  Svelte.
+- Выбор строки таблицы перепроверяет выражения шаблона `cell` в её ячейках:
+  своей единицы перерисовки у ячеек нет. Узлы вывода шаблона он не
+  пересоздаёт.
 
 ## Layer 8b: Svelte Adapter (`packages/ui/svelte/src`)
 
