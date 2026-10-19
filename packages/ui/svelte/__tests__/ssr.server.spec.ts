@@ -178,6 +178,7 @@ describe('ref потребителя · серверный рендер', () => 
 		'RadioGroup.Item',
 		'ListBox',
 		'ListBox.Item',
+		'Table',
 	]
 
 	it.each(KINDS)('%s: bind:ref не пишется, ref в разметке нет', (kind) => {
