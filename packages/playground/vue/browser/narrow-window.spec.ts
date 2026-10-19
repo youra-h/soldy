@@ -11,6 +11,14 @@
  * случай с меню идёт отдельным окном, а широкое окно сверяет, что там
  * широкая ячейка по-прежнему занимает две дорожки.
  *
+ * Строку свойства тест сверяет в окнах телефонов от 360 до 414 px, у каждой
+ * строки страницы: имя стоит над контролом подписью, контрол не выходит из
+ * своей строки и шириной такой же, как рядом с именем в широком окне, — во
+ * всё окно он у края узкой раскладки тянулся бы почти на 700 px. В 414 px
+ * вбок не прокручивалось и при двух колонках, но сетка строки была шире своей
+ * коробки.
+ * Широкое окно сверяет, что там имя и контрол по-прежнему рядом.
+ *
  * Ширину задаёт окно (`page.viewport`), а не `body`: раскладку стенда считают
  * от окна правило `@media` в `src/styles.css` и `useSidebar`
  * (см. `tags-preview.spec.ts`). Каждый случай сверяет и саму раскладку, ради
@@ -34,8 +42,17 @@ useTheme(oren)
 
 const HEIGHT = 800
 
+/** Окна телефонов: в каждом стенд в узкой раскладке. */
+const PHONES = [360, 375, 414]
+
 /** Ширина сетки витрины, с которой в неё помещаются две дорожки: 2 × 280 + 16. */
 const TWO_TRACKS = 576
+
+/** Колонка контрола в строке свойства (`.pg-prop__head`) — одна в любом окне. */
+const CONTROL_WIDTH = 220
+
+/** Зазор под именем свойства в узком окне — как у подписи над полем Field. */
+const NAME_GAP = 4
 
 const settle = () => new Promise((resolve) => setTimeout(resolve, 300))
 
@@ -101,6 +118,28 @@ const expectNoSideScroll = () => {
 	expect(main.scrollWidth, `вылезает: ${overflowing(main)}`).toBeLessThanOrEqual(main.clientWidth)
 }
 
+/** Шапка каждой строки страницы свойств: имя свойства и коробки шапки, имени и контрола. */
+const propHeads = () => {
+	const heads = [...document.querySelectorAll('.pg-prop__head')]
+
+	if (heads.length === 0) throw new Error('строк свойств на странице нет')
+
+	return heads.map((head) => {
+		const name = head.querySelector('.pg-prop__name')
+		const control = head.querySelector('.pg-prop__control')
+
+		if (!name || !control)
+			throw new Error(`в шапке строки нет имени или контрола: ${label(head)}`)
+
+		return {
+			prop: name.textContent?.trim() ?? '',
+			head: head.getBoundingClientRect(),
+			name: name.getBoundingClientRect(),
+			control: control.getBoundingClientRect(),
+		}
+	})
+}
+
 /** Ширины широкой и обычной ячеек витрины и зазор между дорожками. */
 const cells = () => {
 	const gap = parseFloat(getComputedStyle(find('.pg-grid')).columnGap)
@@ -111,17 +150,40 @@ const cells = () => {
 }
 
 describe('стенд в узком окне не прокручивается вбок', () => {
-	it('375 px, страница свойств: имя свойства — над контролом, строка в ширину окна', async () => {
-		await open(375, '/vue/field')
+	it.each(PHONES)(
+		'%i px, страница свойств: имя — подписью над контролом, контрол той же ширины, что в широком окне',
+		async (width) => {
+			await open(width, '/vue/button')
 
-		expect(narrowLayout(), 'меню в выезжающей панели').toBe(true)
+			expect(narrowLayout(), 'меню в выезжающей панели').toBe(true)
 
-		expectNoSideScroll()
+			expectNoSideScroll()
 
-		const name = find('.pg-prop__head .pg-prop__name').getBoundingClientRect()
-		const control = find('.pg-prop__head .pg-prop__control').getBoundingClientRect()
+			for (const { prop, head, name, control } of propHeads()) {
+				expect(
+					control.top - name.bottom,
+					`${prop}: имя над контролом, зазор подписи`,
+				).toBeCloseTo(NAME_GAP, 0)
+				expect(control.right, `${prop}: контрол в своей строке`).toBeLessThanOrEqual(
+					head.right + 0.5,
+				)
+				expect(control.width, `${prop}: ширина контрола`).toBeCloseTo(CONTROL_WIDTH, 0)
+			}
+		},
+	)
 
-		expect(name.bottom, 'имя над контролом').toBeLessThanOrEqual(control.top + 0.5)
+	it('900 px, страница свойств: имя и контрол рядом', async () => {
+		await open(900, '/vue/button')
+
+		expect(narrowLayout(), 'меню колонкой').toBe(false)
+
+		for (const { prop, name, control } of propHeads()) {
+			expect(control.left, `${prop}: контрол справа от имени`).toBeGreaterThanOrEqual(
+				name.right,
+			)
+			expect(control.top, `${prop}: контрол на строке имени`).toBeLessThan(name.bottom)
+			expect(control.width, `${prop}: ширина контрола`).toBeCloseTo(CONTROL_WIDTH, 0)
+		}
 	})
 
 	it('375 px, витрина: широкая ячейка — в одну дорожку, превью не шире ячейки', async () => {

@@ -9,7 +9,7 @@ import {
 	createEngineMenu,
 	createEngineSelection,
 } from '@soldy-ui/core'
-import type { IMenuItem } from '@soldy-ui/core'
+import type { IMenuItem, TGroupSection } from '@soldy-ui/core'
 
 /**
  * Модель Menu: состояние меню и то, что из него следует для разметки, и
@@ -26,6 +26,25 @@ function itemOf(items: ReadonlyArray<IMenuItem>, value: string): IMenuItem {
 
 	return item
 }
+
+const values = (items: ReadonlyArray<IMenuItem>): unknown[] => items.map((item) => item.value)
+
+/** Секции коротко: ключ, подпись группы (`null` — без группы) и пункты. */
+const brief = (sections: ReadonlyArray<TGroupSection<IMenuItem>>) =>
+	sections.map(({ key, group, items }) => [
+		key,
+		group === null ? null : group.label,
+		values(items),
+	])
+
+/** Пример владельца: метка группы — в данных, «Переименовать» стоит между пунктами «Правки». */
+const GROUPED = [
+	{ value: 'cut', text: 'Вырезать', _: { group: 'edit' } },
+	{ value: 'rename', text: 'Переименовать' },
+	{ value: 'copy', text: 'Копировать', _: { group: 'edit' } },
+]
+
+const EDIT = [{ key: 'edit', label: 'Правка' }]
 
 describe('TMenu · умолчания', () => {
 	it('закрыто, панель снизу по началу, корень строчный — span', () => {
@@ -394,5 +413,94 @@ describe('фасад меню', () => {
 
 		expect(engine.extensions.selection.mode).toBe('multiple')
 		expect(facade.selected).toEqual([grid, ruler])
+	})
+})
+
+/**
+ * Группы пунктов — расширение коллекции `group`: показанное идёт по группам,
+ * и стрелки, которые ходят по показанному, идут тем же порядком, что экран.
+ * Разметку групп и разделителей проверяет `ui/vue/__tests__/menu.spec.ts`.
+ */
+describe('коллекция меню · группы', () => {
+	it('у createEngineMenu: показанное по группам, секции с подписью', () => {
+		const { batch, group } = createEngineMenu({ items: GROUPED }).extensions
+
+		group.groups = EDIT
+
+		expect(values(batch.shown)).toEqual(['cut', 'copy', 'rename'])
+		expect(values(batch.items)).toEqual(['cut', 'rename', 'copy'])
+		expect(brief(group.sections)).toEqual([
+			['group:edit', 'Правка', ['cut', 'copy']],
+			['free', null, ['rename']],
+		])
+	})
+
+	it('движок снаружи: фасад доставляет группировку, метки из данных доезжают', () => {
+		const engine = createEngineSelection({ items: GROUPED })
+		const facade = new TMenuCollectionFacade({ groups: EDIT }, { owner: new TMenu(), engine })
+
+		expect(engine.extensions.group).toBe(facade.extensions.group)
+		expect(values(facade.shown)).toEqual(['cut', 'copy', 'rename'])
+		expect(brief(facade.sections)).toEqual([
+			['group:edit', 'Правка', ['cut', 'copy']],
+			['free', null, ['rename']],
+		])
+	})
+})
+
+describe('фасад меню · группы', () => {
+	it('groupBy, groups и sections — проекция расширения, change:sections — пробросом', () => {
+		const facade = new TMenuCollectionFacade(
+			{ items: [{ value: 'a' }, { value: 'b' }] },
+			{ owner: new TMenu() },
+		)
+		const sections = vi.fn()
+		const by = (item: IMenuItem) => (item.value === 'b' ? 'first' : undefined)
+
+		facade.events.on('change:sections', sections)
+
+		facade.groupBy = by
+		facade.groups = [{ key: 'first', label: 'Первая' }]
+
+		expect(facade.extensions.group.groupBy).toBe(by)
+		expect(facade.groupBy).toBe(by)
+		expect(facade.groups).toEqual([{ key: 'first', label: 'Первая' }])
+		expect(values(facade.shown)).toEqual(['b', 'a'])
+		expect(facade.sections).toBe(facade.extensions.group.sections)
+		expect(brief(facade.sections)).toEqual([
+			['group:first', 'Первая', ['b']],
+			['free', null, ['a']],
+		])
+		expect(sections).toHaveBeenLastCalledWith(facade.sections)
+	})
+
+	it('пропсы конструктора: группировка — до состава', () => {
+		const facade = new TMenuCollectionFacade(
+			{
+				items: [{ value: 'a' }, { value: 'b' }, { value: 'c' }],
+				groupBy: (item) => (item.value === 'a' ? undefined : 'rest'),
+				groups: [{ key: 'rest', label: 'Остальное' }],
+			},
+			{ owner: new TMenu() },
+		)
+
+		expect(values(facade.shown)).toEqual(['b', 'c', 'a'])
+		expect(brief(facade.sections)).toEqual([
+			['group:rest', 'Остальное', ['b', 'c']],
+			['free', null, ['a']],
+		])
+	})
+
+	it('движок снаружи свою группировку не теряет: незаданное и пустое не применяется', () => {
+		const engine = createEngineMenu({ items: GROUPED })
+		const by = (item: IMenuItem) => (item.value === 'rename' ? 'edit' : undefined)
+
+		engine.extensions.group.groups = EDIT
+		engine.extensions.group.groupBy = by
+
+		new TMenuCollectionFacade({ groups: [] }, { owner: new TMenu(), engine })
+
+		expect(engine.extensions.group.groups).toEqual(EDIT)
+		expect(engine.extensions.group.groupBy).toBe(by)
 	})
 })
