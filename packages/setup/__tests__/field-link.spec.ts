@@ -39,7 +39,7 @@ import type {
 	TFieldControl,
 } from '@soldy-ui/setup'
 import { FIELD_ELEVATOR } from '../content/extensions/field/keys'
-import { createElevatorFactory, leftovers, required, spyBus } from './helpers'
+import { createElevatorFactory, leftovers, required, spyBus, subscribed } from './helpers'
 
 type TFieldProps = {
 	label?: string
@@ -282,6 +282,42 @@ describe('приём: связка контрола', () => {
 
 		expect(instance.aria.has('id')).toBe(false)
 	})
+
+	/**
+	 * У нескольких ручек ползунок — группа: `for` назвал бы одно поле из них, а
+	 * имя подписи на полях перекрыло бы имена ручек. Подпись — ссылкой в его
+	 * `aria`, а разметка кладёт имя и описание на корень.
+	 */
+	it('ползунок с несколькими ручками — группа: id не задаётся, for снят, подпись — ссылкой', () => {
+		const { factory } = createElevatorFactory()
+		const { field: owner } = field(factory, { label: 'Цена', helper: 'Подсказка' })
+		const slider = control(factory, SliderDescriptor(), { value: [20, 80] })
+
+		expect(slider.instance.labelable).toBe(false)
+		expect(slider.instance.aria.has('id')).toBe(false)
+		expect(owner.labelAria.has('for')).toBe(false)
+		expect(ariaOf(slider, 'aria-labelledby')).toBe('f-label')
+		expect(ariaOf(slider, 'aria-describedby')).toBe('f-helper')
+	})
+
+	it('число ручек сменилось после приёма — id поля, ссылка и for за ним', () => {
+		const { factory } = createElevatorFactory()
+		const { field: owner } = field(factory, { label: 'Цена' })
+		const slider = control(factory, SliderDescriptor())
+		const instance = slider.instance
+
+		instance.value = [20, 80]
+
+		expect(instance.aria.has('id')).toBe(false)
+		expect(ariaOf(slider, 'aria-labelledby')).toBe('f-label')
+		expect(owner.labelAria.has('for')).toBe(false)
+
+		instance.value = 50
+
+		expect(ariaOf(slider, 'id')).toBe('f-control')
+		expect(ariaOf(slider, 'aria-labelledby')).toBeUndefined()
+		expect(owner.labelAria.get('for')).toBe('f-control')
+	})
 })
 
 describe('снятие: записанное — назад', () => {
@@ -322,6 +358,26 @@ describe('снятие: записанное — назад', () => {
 		input.destroy()
 
 		expect(leftovers(buses)).toEqual([])
+	})
+
+	it.each([
+		['Input', (elevator: TElevatorFactory) => assemble(elevator, InputDescriptor())],
+		['ползунок', (elevator: TElevatorFactory) => assemble(elevator, SliderDescriptor())],
+	])('%s: принятый контрол слушает свой labelable, снятие отписывает', (_name, build) => {
+		const { factory } = createElevatorFactory()
+
+		field(factory)
+
+		const assembled = build(factory)
+		const bus = spyBus('контрол', assembled.instance)
+
+		assembled.attach()
+
+		expect(subscribed(bus)).toContain('контрол: change:labelable')
+
+		assembled.destroy()
+
+		expect(leftovers(bus)).toEqual([])
 	})
 
 	it('собранный и не принятый контрол снимается тоже', () => {

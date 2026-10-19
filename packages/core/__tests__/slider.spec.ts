@@ -393,6 +393,90 @@ describe('клавиши: шаг и край хода', () => {
 	})
 })
 
+/**
+ * Куда ложится `aria` ползунка, решает число ручек. Одна — её поле labelable:
+ * подпись называет его `for`, и набор целиком уходит полю. Несколько — подпись
+ * назвала бы `for` одно поле из них, а ссылка в наборе полей перекрыла бы
+ * имена ручек: корень — группа с именем и описанием, а на полях — то, что ядро
+ * пишет о поле, ориентация и ошибка.
+ */
+describe('наборы корня и полей: одна ручка — поле, несколько — группа', () => {
+	it('одна ручка: labelable, набор корня пуст, полю — весь aria', () => {
+		const instance = slider({ value: 30 })
+
+		instance.aria.add('aria-label', 'Громкость')
+
+		expect(instance.labelable).toBe(true)
+		expect(instance.rootAria).toEqual({})
+		expect(instance.thumbAria).toEqual({
+			'aria-orientation': 'horizontal',
+			'aria-label': 'Громкость',
+		})
+	})
+
+	it('массив из одного значения — тоже одна ручка', () => {
+		const instance = slider({ value: [30] })
+
+		expect(instance.labelable).toBe(true)
+		expect(instance.rootAria).toEqual({})
+	})
+
+	it('несколько ручек: корень — группа с именем и описанием, полям — ориентация и ошибка', () => {
+		const instance = slider({ value: [20, 80], orientation: 'vertical' })
+
+		instance.aria.add('aria-labelledby', 'label').add('aria-describedby', 'hint')
+		instance.invalid = true
+
+		expect(instance.labelable).toBe(false)
+		expect(instance.rootAria).toEqual({
+			role: 'group',
+			'aria-labelledby': 'label',
+			'aria-describedby': 'hint',
+		})
+		expect(instance.thumbAria).toEqual({
+			'aria-orientation': 'vertical',
+			'aria-invalid': 'true',
+		})
+	})
+
+	it('число ручек сменилось — change:labelable за change:value, наборы за ним', () => {
+		const instance = slider({ value: 30 })
+		const seen: string[] = []
+
+		instance.events.on('change:value', () => seen.push('value'))
+		instance.events.on('change:labelable', (value) => seen.push(`labelable: ${value}`))
+
+		instance.value = [20, 80]
+
+		expect(seen).toEqual(['value', 'labelable: false'])
+		expect(instance.rootAria).toEqual({ role: 'group' })
+		expect(instance.thumbAria).toEqual({ 'aria-orientation': 'horizontal' })
+
+		// Ручек по-прежнему несколько — labelable тот же
+		instance.value = [10, 50, 90]
+		instance.value = 40
+
+		expect(seen).toEqual(['value', 'labelable: false', 'value', 'value', 'labelable: true'])
+		expect(instance.rootAria).toEqual({})
+		expect(instance.thumbAria).toEqual({ 'aria-orientation': 'horizontal' })
+	})
+
+	it('жест, клавиша и смена шкалы числа ручек не меняют — change:labelable нет', () => {
+		const instance = slider({ value: [20, 80] })
+		const changed = vi.fn()
+
+		instance.events.on('change:labelable', changed)
+
+		instance.shift(0, 1)
+		instance.press(0.5)
+		instance.drag(0.6)
+		instance.release()
+		instance.max = 50
+
+		expect(changed).not.toHaveBeenCalled()
+	})
+})
+
 describe('выходы для разметки', () => {
 	it('ручки: значение, ход поля, шаг, позиция и имя', () => {
 		const instance = slider({

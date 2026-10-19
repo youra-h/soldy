@@ -26,6 +26,24 @@ function within(value: number, low: number, high: number): number {
 }
 
 /**
+ * Что ядро пишет в `aria` о поле ручки, а не о ползунке целиком: ориентацию
+ * — по ней скринридер объявляет, какими стрелками двигать ручку, — и ошибку.
+ * У нескольких ручек это стоит на каждом поле, а имя и описание — у группы:
+ * на `group` ни ориентации, ни ошибки ARIA не объявляет.
+ */
+const FIELD_ARIA: ReadonlySet<string> = new Set(['aria-orientation', 'aria-invalid'])
+
+/** Записи набора с именами из списка. */
+function pick(aria: TAriaAttributes, names: ReadonlySet<string>): TAriaAttributes {
+	return Object.fromEntries(Object.entries(aria).filter(([name]) => names.has(name)))
+}
+
+/** Записи набора без имён из списка. */
+function omit(aria: TAriaAttributes, names: ReadonlySet<string>): TAriaAttributes {
+	return Object.fromEntries(Object.entries(aria).filter(([name]) => !names.has(name)))
+}
+
+/**
  * Ползунок: число или несколько чисел, которые задают перетаскиванием,
  * клавишами и жестом скринридера.
  *
@@ -33,6 +51,12 @@ function within(value: number, low: number, high: number): number {
  * мобильный скринридер двигает её своим жестом, а `name`, `disabled` и
  * отправку формы даёт браузер. ARIA-дублей ядро полям не пишет, как CheckBox
  * и Switch (`_ariaTag` — `input`).
+ *
+ * Куда ложится `aria` ползунка, решает число ручек. У одной — её полю: оно
+ * labelable, и подпись называет его `for`. У нескольких корень — группа
+ * (`rootAria`) с именем и описанием ползунка, а поля держат только то, что
+ * ядро пишет о поле, — ориентацию и ошибку (`thumbAria`), — и свои имена из
+ * `thumbLabels`: подпись назвала бы `for` одно поле из нескольких.
  *
  * Границы слоёв: **значение — здесь, операция — в плагине.**
  *
@@ -167,8 +191,25 @@ export default class TSlider
 	override get value(): TSliderValue {
 		return this._normalize(this._value)
 	}
+	/**
+	 * Число ручек задаёт значение, а от него зависит labelable: сменилось оно
+	 * — `change:labelable` уходит за `change:value`.
+	 */
 	override set value(value: TSliderValue) {
+		const before = this.labelable
+
 		super.value = value
+		this._labelableChanged(before)
+	}
+
+	/**
+	 * Labelable — пока ручка одна: подпись поля формы называет её поле своим
+	 * `for`. У нескольких ручек `for` назвал бы одно поле из них, а ссылка на
+	 * подпись в их наборе перекрыла бы имена ручек (`thumbLabels`), — подпись
+	 * называет корень, группу полей (`rootAria`).
+	 */
+	override get labelable(): boolean {
+		return this.values.length === 1 && super.labelable
 	}
 
 	get min(): number {
@@ -474,6 +515,29 @@ export default class TSlider
 	/* ------------------------------------------------------------------ */
 
 	/**
+	 * Набор корня. У одной ручки корню ARIA не нужна: `aria` ползунка уходит её
+	 * полю (`thumbAria`). У нескольких корень — группа полей: роль и `aria`
+	 * ползунка — имя и описание, от подписи поля формы тоже, — кроме того, что
+	 * ядро пишет о самом поле: это остаётся на каждой ручке.
+	 */
+	get rootAria(): TAriaAttributes {
+		return this.labelable ? {} : { role: 'group', ...omit(this._aria.toObject(), FIELD_ARIA) }
+	}
+
+	/**
+	 * Набор полей ручек, общий для всех. У одной ручки — `aria` ползунка
+	 * целиком: имя, описание, ориентация, ошибка, `id` от поля формы. У
+	 * нескольких — только то, что ядро пишет о самом поле: ориентация и
+	 * ошибка; имя и описание ползунка — у группы (`rootAria`). Имя самой ручки
+	 * — её набор в `thumbs`, поверх этого.
+	 */
+	get thumbAria(): TAriaAttributes {
+		const aria = this._aria.toObject()
+
+		return this.labelable ? aria : pick(aria, FIELD_ARIA)
+	}
+
+	/**
 	 * Ручки: значение, границы и шаг поля, позиция, состояние и имя. Своего
 	 * экземпляра у ручки нет, поэтому её наборы отдаются значением.
 	 */
@@ -563,7 +627,7 @@ export default class TSlider
 			newClass: `--${newValue}`,
 		})
 		// Не для вида: по ориентации скринридер объявляет, какими стрелками
-		// двигать ручку. Набор уходит на каждое поле
+		// двигать ручку. Уходит на каждое поле и у нескольких ручек (`thumbAria`)
 		this._aria.add('aria-orientation', newValue)
 		this._orientation = newValue
 	}
@@ -709,7 +773,8 @@ export default class TSlider
 
 	/**
 	 * `aria` стоит на полях ручек, а не на корне: `disabled` у них нативный, и
-	 * `aria-disabled` рядом был бы дублем.
+	 * `aria-disabled` рядом был бы дублем. Группе нескольких ручек он тоже не
+	 * нужен: выключено каждое её поле.
 	 */
 	protected override get _ariaTag(): string {
 		return 'input'

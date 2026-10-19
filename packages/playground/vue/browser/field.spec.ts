@@ -3,14 +3,14 @@
  *
  * Подпись называет labelable-контрол своим `for`: клик по ней браузер доводит
  * до поля — у поля ввода это фокус, у флажка — переключение, — а текст
- * становится именем поля. Группу (DateInput, DatePicker, RadioGroup) подпись
- * называет ссылкой `aria-labelledby`, и клик по ней ничего не делает. Ни то
- * ни другое jsdom честно не выполняет.
+ * становится именем поля. Группу (DateInput, DatePicker, RadioGroup, ползунок
+ * с несколькими ручками) подпись называет ссылкой `aria-labelledby`, и клик по
+ * ней ничего не делает. Ни то ни другое jsdom честно не выполняет.
  *
  * Раскладку сторон jsdom не считает вовсе. Сбоку (`start`) первая строка
  * подписи стоит по центру контрола — у поля ввода, выбора и даты это строка
- * его текста, у флажка, переключателя и оценки — их середина, — на любом
- * размере. Колонку подписи задаёт `--so-field-columns`: одна колонка ставит
+ * его текста, у флажка, переключателя и оценки — их середина, у ползунка —
+ * полоса ручек, — на любом размере. Колонку подписи задаёт `--so-field-columns`: одна колонка ставит
  * подпись над контролом пиксель в пиксель, как `top`. Подсказка стоит под
  * колонкой контрола и от него не отрывается, сколько бы строк ни заняла
  * подпись.
@@ -33,6 +33,7 @@ import {
 	RadioGroup,
 	Rating,
 	Select,
+	Slider,
 	Switch,
 	Textarea,
 } from '@soldy-ui/vue'
@@ -159,6 +160,41 @@ describe('клик по подписи', () => {
 			find('.so-radio-group'),
 		)
 	})
+
+	it('ползунок с одной ручкой — фокус на поле ручки, имя — текст подписи', async () => {
+		await show(() => h(Field, { label: 'Громкость' }, () => h(Slider, { value: 40 })))
+
+		const input = find('.so-slider input')
+
+		await userEvent.click(find('.so-field__label'))
+
+		expect(document.activeElement).toBe(input)
+		expect(page.getByRole('slider', { name: 'Громкость', exact: true }).query()).toBe(input)
+	})
+
+	/**
+	 * Подпись называет группу ручек — корень ползунка, — а ручки сохраняют свои
+	 * имена из `thumbLabels`: ни текст подписи, ни значение соседнего поля в них
+	 * не входят. Клик по подписи группы ничего не делает, как у радио.
+	 */
+	it('ползунок с несколькими ручками — подпись называет группу, имена ручек целы', async () => {
+		await show(() =>
+			h(Field, { label: 'Цена' }, () =>
+				h(Slider, { value: [20, 80], thumbLabels: ['От', 'До'] }),
+			),
+		)
+
+		const [from, to] = [...document.querySelectorAll('.so-slider input')]
+
+		await userEvent.click(find('.so-field__label'))
+
+		expect([from, to]).not.toContain(document.activeElement)
+		expect(page.getByRole('group', { name: 'Цена', exact: true }).query()).toBe(
+			find('.so-slider'),
+		)
+		expect(page.getByRole('slider', { name: 'От', exact: true }).query()).toBe(from)
+		expect(page.getByRole('slider', { name: 'До', exact: true }).query()).toBe(to)
+	})
 })
 
 /**
@@ -173,6 +209,8 @@ const CONTROLS: ReadonlyArray<readonly [string, (size: TComponentSize) => VNode,
 	['CheckBox', (size) => h(CheckBox, { size }), '.so-check-box__container'],
 	['Switch', (size) => h(Switch, { size }), '.so-switch__track'],
 	['Rating', (size) => h(Rating, { size }), '.so-rating__track'],
+	// Ползунок — по полосе ручек: ручка стоит на ней во всю её высоту
+	['Slider', (size) => h(Slider, { size }), '.so-slider__thumb'],
 ]
 
 describe.each(CONTROLS)('%s: подпись сбоку', (_name, control, box) => {

@@ -7,8 +7,9 @@
  * labelable-контрола без своего `id`, `id` поля — на него ведёт `for`
  * подписи. Ссылки пишет `TAriaPlugin` контрола — вторым входом рядом с
  * пропсами `aria_*`, и своё имя контрола главнее подписи поля. Labelable-
- * контролу (Input, Select, CheckBox, Switch, Rating) имя даёт `for`, а не
- * ссылка: `aria-labelledby` перекрыл бы подпись `Label` у флажка в поле.
+ * контролу (Input, Select, CheckBox, Switch, Rating, ползунок с одной ручкой)
+ * имя даёт `for`, а не ссылка: `aria-labelledby` перекрыл бы подпись `Label`
+ * у флажка в поле.
  *
  * `id` поле задаёт каналом самого контрола. У контрола с `id` поля
  * (`TInputControl`: Input, Select, CheckBox, Switch, Rating) — значением его
@@ -25,15 +26,21 @@
  * знает. По ним плагин связок поля решает `for` подписи — `id` контрола или
  * ничего у группы.
  *
+ * Labelable контрол может сменить по ходу жизни: ползунок labelable, пока
+ * ручка одна, а у нескольких ручек он — группа, и имя подписи ложится на его
+ * корень, а не на поля ручек. Сменился (`change:labelable`) — подпись за ним:
+ * labelable-контрол получает `id` поля и `for`, группа — ссылку на подпись,
+ * а `id` от поля с неё снят.
+ *
  * Фазы — как у связки панели Tabs (`TTabsContentBindingExtension`):
  *
  * - **сборка** — ошибка, ссылки и `id`: всё это контрола, поэтому сервер и
  *   первый кадр рисуют его уже в поле;
  * - **вход** (`attach` контекста) — связка его: подписки на ошибку поля, его
- *   ссылки и свой `change:id` и сообщение полю о себе. Шины поля контролу
- *   чужие, а собранный контрол фреймворк вправе выбросить, так и не приняв;
- *   связку к этому времени мог взять контрол, принятый раньше, — тогда
- *   собранное снимается;
+ *   ссылки, свои `change:id` и `change:labelable` и сообщение полю о себе.
+ *   Шины поля контролу чужие, а собранный контрол фреймворк вправе выбросить,
+ *   так и не приняв; связку к этому времени мог взять контрол, принятый
+ *   раньше, — тогда собранное снимается;
  * - **снятие** (`destroy` контекста) — отписка, связка свободна, записанное
  *   контролу — назад. Контекст, собранный, но так и не принятый, снимается
  *   тоже.
@@ -52,7 +59,7 @@
 import { TAriaPlugin } from '@soldy-ui/plugins'
 import type { TInstanceContext } from '../../../protected/adapter/context'
 import { FIELD_ELEVATOR } from './keys'
-import type { IFieldControlExtensionOptions, TFieldControl } from './types'
+import type { IFieldControl, IFieldControlExtensionOptions, TFieldControl } from './types'
 
 export class TFieldControlExtension {
 	constructor(context: TInstanceContext<TFieldControl>, options: IFieldControlExtensionOptions) {
@@ -69,6 +76,8 @@ export class TFieldControlExtension {
 
 		const { field, ids } = link
 		const control = context.instance
+		/** Шина контрола как у любого контрола поля: смена labelable есть у каждого. */
+		const { events: controlEvents }: IFieldControl = control
 		const aria = context.bundle?.get(TAriaPlugin)
 		/** Контрол принят: связка его, на шины поля и контрола подписаны. */
 		let attached = false
@@ -85,12 +94,29 @@ export class TFieldControlExtension {
 			aria.links = { labelledBy: control.labelable ? undefined : labelledBy, describedBy }
 		}
 
+		/** `id` от поля — назад; свой `id` контрола не трогается. */
+		const releaseId = (): void => {
+			if (!('id' in control)) {
+				if (control.aria.get('id') === ids.controlId) control.aria.remove('id')
+
+				return
+			}
+
+			if (control.id === ids.controlId) control.id = undefined
+		}
+
 		/**
 		 * `id` поля — labelable-контролу без своего, каналом контрола: значением
-		 * `id`, а у контрола без `id` поля — в его `aria`.
+		 * `id`, а у контрола без `id` поля — в его `aria`. Группе `id` от поля
+		 * не нужен: подпись называет её ссылкой, — и снят, если контрол перестал
+		 * быть labelable.
 		 */
 		const syncId = (): void => {
-			if (!control.labelable) return
+			if (!control.labelable) {
+				releaseId()
+
+				return
+			}
 
 			if (!('id' in control)) {
 				control.aria.add('id', ids.controlId)
@@ -121,17 +147,23 @@ export class TFieldControlExtension {
 			bind()
 		}
 
+		/**
+		 * Labelable сменился (у ползунка — число ручек): `id` поля, ссылка на
+		 * подпись и `for` — за ним.
+		 */
+		const relabel = (): void => {
+			syncId()
+			syncLinks()
+			bind()
+		}
+
 		/** Всё, что связка записала контролу, — назад. */
 		const release = (): void => {
 			control.invalid = false
 
 			if (aria) aria.links = {}
 
-			if (!('id' in control)) {
-				if (control.aria.get('id') === ids.controlId) control.aria.remove('id')
-			} else if (control.id === ids.controlId) {
-				control.id = undefined
-			}
+			releaseId()
 		}
 
 		apply()
@@ -147,6 +179,7 @@ export class TFieldControlExtension {
 			attached = true
 			field.events.on('change:invalid', syncInvalid)
 			ids.events.on('change:links', syncLinks)
+			controlEvents.on('change:labelable', relabel)
 
 			if ('id' in control) control.events.on('change:id', rebind)
 
@@ -159,6 +192,7 @@ export class TFieldControlExtension {
 			if (attached) {
 				field.events.off('change:invalid', syncInvalid)
 				ids.events.off('change:links', syncLinks)
+				controlEvents.off('change:labelable', relabel)
 
 				if ('id' in control) control.events.off('change:id', rebind)
 

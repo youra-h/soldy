@@ -5,7 +5,8 @@
  * Наследует ValueControlDescriptor (value, name, disabled, focused, size,
  * variant, наборы, плагины element/ready/action/aria) и добавляет шкалу,
  * ось, метки, щелчок к меткам, имена ручек, подсказку со значением, выходы
- * для разметки и плагины указателя и клавиатуры.
+ * для разметки — с наборами корня и полей ручек — и плагины указателя и
+ * клавиатуры.
  */
 
 import { defineComponent, defineDescriptor, defineType } from '../../../protected/define'
@@ -78,6 +79,23 @@ export const SliderDescriptor = defineDescriptor(() =>
 				 */
 				tooltip: { type: String, triggers: ['change:tooltip'] },
 				tooltipRendered: { type: Boolean, protected: true, triggers: ['change:tooltip'] },
+				/**
+				 * Куда ложится `aria` ползунка: у одной ручки — целиком её полю,
+				 * у нескольких корень — группа с именем и описанием, а ориентация
+				 * и ошибка — на каждом поле. Решает ядро по числу ручек — форме
+				 * значения, — поэтому наборы перечитываются на смену `aria` и
+				 * значения.
+				 */
+				rootAria: {
+					type: Object,
+					protected: true,
+					triggers: ['change:aria', 'change:value'],
+				},
+				thumbAria: {
+					type: Object,
+					protected: true,
+					triggers: ['change:aria', 'change:value'],
+				},
 				/**
 				 * Ручки: значение, ход и шаг поля, позиция, `data-dragging` и имя.
 				 * Своего экземпляра у ручки нет — её наборы отдаются значением.

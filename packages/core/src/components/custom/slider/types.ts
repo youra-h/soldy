@@ -81,7 +81,10 @@ export type TSliderThumb = {
 	style: TSliderStyle
 	/** `data-dragging` — тянут эту ручку */
 	dataset: TDatasetAttributes
-	/** Имя ручки (`aria-label` из `thumbLabels`); у ручки без имени пусто */
+	/**
+	 * Имя ручки (`aria-label` из `thumbLabels`); у ручки без имени пусто.
+	 * Ложится поверх общего набора полей (`thumbAria`)
+	 */
 	aria: TAriaAttributes
 }
 
@@ -180,11 +183,12 @@ export interface ISliderProps extends IValueControlProps<TSliderValue> {
 	/**
 	 * Имена ручек для скринридера, по порядку (APG, Multi-Thumb Slider).
 	 *
-	 * Одной ручке имя даёт подпись `Label` или `aria_label`. У нескольких ручек
-	 * имя каждой — отсюда, первой тоже, и пишется полностью: ни текст подписи,
-	 * ни `aria_label` в него не входят, имя ручки их перекрывает. Первой —
-	 * потому что подпись называет первое поле своим содержимым, и значение
-	 * второго поля внутри неё вошло бы в его имя («80 Цена»).
+	 * Одной ручке имя даёт подпись `Label`, подпись поля формы `Field` или
+	 * `aria_label`. У нескольких ручек имя каждой — отсюда, первой тоже, и
+	 * пишется полностью: ни текст подписи, ни `aria_label` в него не входят.
+	 * Подпись поля формы и `aria_label` называют группу ручек — корень, — а
+	 * подпись `Label` называет первое поле своим содержимым, и значение второго
+	 * поля внутри неё вошло бы в его имя («80 Цена»): имя ручки его перекрывает.
 	 */
 	thumbLabels?: string[]
 	/**
@@ -243,6 +247,16 @@ export interface ISlider
 	readonly events: TEvented<TSliderEvents>
 	/** Идёт перетаскивание */
 	readonly dragging: boolean
+	/**
+	 * Набор корня: у нескольких ручек корень — группа полей с именем и
+	 * описанием ползунка, у одной — пусто
+	 */
+	readonly rootAria: TAriaAttributes
+	/**
+	 * Набор полей ручек, общий для всех: у одной ручки — `aria` ползунка
+	 * целиком, у нескольких — ориентация и ошибка
+	 */
+	readonly thumbAria: TAriaAttributes
 	/** Ручки — выход для разметки */
 	readonly thumbs: TSliderThumb[]
 	/** Края заливки — `--so-slider-range-start` и `--so-slider-range-end` */
