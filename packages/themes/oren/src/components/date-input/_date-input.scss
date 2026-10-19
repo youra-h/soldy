@@ -27,10 +27,16 @@
 // пустое место за ней читалось бы недописанным полем. Длина известна и пока
 // дату набирают: день, месяц, час, минуту и секунду ядро дописывает нулём до
 // двух цифр, а место под четыре цифры года держит его часть (см. часть ниже).
+
+// Выключенное поле гаснет коробкой целиком, а наведение красит рамку только у
+// включённого. Выключенность — `data-disabled` корня: нативного `disabled` у
+// корня нет, а частей много.
+$disabled: "[data-disabled='true']";
+
 .so-date-input {
 	$this: &;
 
-	@include input.field('date-input');
+	@include input.field('date-input', $disabled);
 
 	// Размер без модификатора — `normal`. Ядро пишет `--size-*` всегда, но блок
 	// и без него обязан выглядеть умолчанием.
@@ -75,7 +81,7 @@
 
 	@each $variant in input.$variants {
 		&--variant-#{$variant} {
-			@include input.input-variant($variant, $enabled: ":not([data-disabled='true'])");
+			@include input.input-variant($variant, $disabled);
 		}
 	}
 
@@ -84,7 +90,7 @@
 	// выглядит одинаково, задал её потребитель вариантом или посчитал код.
 	// Перекрывает и заданный вариант — атрибут сильнее модификатора.
 	&[data-invalid='true'] {
-		@include input.field-invalid('date-input', $enabled: ":not([data-disabled='true'])");
+		@include input.field-invalid('date-input', $disabled);
 	}
 
 	@each $size, $_ in input.$sizes {
@@ -93,15 +99,11 @@
 		}
 	}
 
-	// Выключенное поле гаснет датой, как Input — вводом: рамка и поверхность
-	// остаются, а содержимое слотов гаснет само (кнопка выключена своим
-	// `disabled`). Фокуса у частей нет — ядро не ставит им остановку Tab.
-	&[data-disabled='true'] {
+	// Гаснет не дата, а коробка целиком (`input.field-frame`), с кнопками и
+	// содержимым слотов: здесь только курсор. Фокуса у частей нет — ядро не
+	// ставит им остановку Tab.
+	&#{$disabled} {
 		@apply cursor-default;
-
-		#{$this}__segments {
-			@apply opacity-so-component-disabled;
-		}
 	}
 }
 
@@ -109,7 +111,7 @@
 // он совпадает с базой. Нулевая специфичность — вариант перекрывает базу, не
 // споря с ней.
 :where(.so-date-input) {
-	@include input.input-variant('neutral', $enabled: ":not([data-disabled='true'])");
+	@include input.input-variant('neutral', $disabled);
 }
 
 // Слоты — строкой поля и со сторонами по направлению поля, как у Input: в
