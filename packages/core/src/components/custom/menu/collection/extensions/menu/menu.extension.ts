@@ -4,7 +4,7 @@ import type {
 	IExtensionContext,
 	ISelectionExtension,
 } from '../../../../../base/collection'
-import { TBaseOwnerItemExtension } from '../../../../../base/collection'
+import { TBaseOwnerItemExtension, selectionOf } from '../../../../../base/collection'
 import type { IMenuItem } from '../../../item/types'
 import type { IMenu } from '../../../types'
 import type { IMenuExtension, TMenuEngineOptions, TMenuExtensionEvents } from './types'
@@ -141,7 +141,7 @@ export class TMenuExtension<TOwner extends IMenu = IMenu, TItem extends IMenuIte
 	}
 
 	private get _selection(): ISelectionExtension<TItem> | undefined {
-		return this._ctx?.extensions.selection as ISelectionExtension<TItem> | undefined
+		return selectionOf(this._ctx)
 	}
 
 	/** Размер меню на пункте. Владельца нет — пункт со своим. */

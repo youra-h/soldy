@@ -1,6 +1,7 @@
+import { plainOf } from '@soldy-ui/core'
 import { TBasePlugin } from '../../base'
 import type { IPluginBundle } from '../../base'
-import type { IControl, TCollectionEngine, TPlainExtension } from '@soldy-ui/core'
+import type { IControl, TCollectionEngine } from '@soldy-ui/core'
 import type { TBundlesEvents } from './types'
 
 /**
@@ -28,10 +29,10 @@ export class TCollectionBundlesPlugin extends TBasePlugin<any, TBundlesEvents> {
 
 		this._engine = engine
 
-		const plain = engine.extensions.plain as TPlainExtension<IControl>
+		const plain = plainOf<IControl>(engine)
 
 		// Синхронизация реестра bundles с жизненным циклом элементов коллекции.
-		this._listenTo(plain.events, 'item:removed', (e) => {
+		this._listenTo(plain?.events, 'item:removed', (e) => {
 			const uid = this._uid(e.item)
 
 			if (uid !== undefined) {
@@ -39,7 +40,7 @@ export class TCollectionBundlesPlugin extends TBasePlugin<any, TBundlesEvents> {
 			}
 		})
 
-		this._listenTo(plain.events, 'reset', () => {
+		this._listenTo(plain?.events, 'reset', () => {
 			this._bundles.clear()
 		})
 

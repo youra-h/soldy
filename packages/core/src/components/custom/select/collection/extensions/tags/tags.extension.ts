@@ -1,4 +1,4 @@
-import { TBaseExtension } from '../../../../../base/collection'
+import { TBaseExtension, selectionOf } from '../../../../../base/collection'
 import type {
 	IExtension,
 	IExtensionContext,
@@ -150,7 +150,7 @@ export class TSelectTagsExtension<
 	}
 
 	private get _selection(): ISelectionExtension<TItem> | undefined {
-		return this._ctx?.extensions.selection as ISelectionExtension<TItem> | undefined
+		return selectionOf(this._ctx)
 	}
 
 	/** Инстанс появляется в `multiple` и пропадает в любом другом режиме. */

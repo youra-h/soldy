@@ -986,6 +986,24 @@ describe('поповер', () => {
 		expect(popover.open).toBe(true)
 	})
 
+	/**
+	 * Сбоку от якоря панель тоже не смахивают: сторона на узле есть, но
+	 * смахиваемых боковых панелей у якоря нет. Ось у панели у якоря
+	 * вертикальная, и протяжка вниз начала бы жест, будь у неё сторона жеста.
+	 */
+	it.each(['end-start', 'start'])('сбоку от триггера (%s) жест не начинается', async (side) => {
+		const { popover, panel, handle } = await mountPopover({}, { placement: side })
+
+		pointer('pointerdown', handle, 250, 305, 0)
+		pointer('pointermove', panel, 250, 385, 16)
+
+		expect(popover.swiping).toBe(false)
+
+		pointer('pointerup', panel, 250, 385, 400)
+
+		expect(popover.open).toBe(true)
+	})
+
 	it('за всю панель — с текста, но не с кнопки', async () => {
 		const { popover, panel } = await mountPopover({ swipe: 'panel' })
 

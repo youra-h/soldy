@@ -29,7 +29,7 @@ import {
 	TFrameLayoutPlugin,
 	TPluginBundle,
 } from '@soldy-ui/plugins'
-import type { IDismissPluginOptions } from '@soldy-ui/plugins'
+import type { IDismissPluginOptions, TFramePlacement } from '@soldy-ui/plugins'
 import { FRAME_LAYER_ATTRIBUTE, TFrame, TPopover } from '@soldy-ui/core'
 
 /** Узел встаёт в заданный прямоугольник: jsdom сам ничего не раскладывает. */
@@ -735,6 +735,230 @@ describe('центр: top и bottom без суффикса', () => {
 })
 
 /**
+ * Стороны строки — `start` и `end`: панель сбоку от якоря, как подменю у
+ * строки меню. Выравнивание идёт вдоль якоря по вертикали, сторона —
+ * логическая: в RTL `start` и `end` меняются местами. Правила верха и низа
+ * повёрнуты на ось строки: flip — по ширине, shift — по `y`. Сверх того
+ * боковая панель прижимается к краям окна и по `x`: не влезла ни с одной
+ * стороны — накрывает якорь, но видна целиком.
+ */
+describe('боковые стороны', () => {
+	/** Строка посреди окна 1000 × 800: слева 300px, справа 500px. */
+	const ROW = { left: 300, top: 200, right: 500, bottom: 240 }
+
+	/** Панель `width` × `height` с выбором `placement`; узел объявлен. */
+	const beside = async (placement: TFramePlacement, width = 120, height = 60) => {
+		const frame = new TFrame({ position: 'fixed' })
+		const panel = panelOf(width, height)
+		const plugin = anchorFor(frame, panel.plugin)
+
+		plugin.placement = placement
+		panel.plugin.element = panel.element
+		await nextFrame()
+
+		return { frame, plugin }
+	}
+
+	/** Якорь `ROW` в RTL: `start` у него справа, `end` слева. */
+	const rtlAnchorAt = (rect: Partial<DOMRect>): HTMLElement => {
+		const anchor = anchorAt(rect)
+
+		anchor.style.direction = 'rtl'
+
+		return anchor
+	}
+
+	it.each<[TFramePlacement, number]>([
+		['end-start', 200], // верхние края вровень
+		['end-end', 180], // нижние: 240 - 60
+		['end', 190], // середина к середине: (200 + 240 - 60) / 2
+	])('%s — за правым краем якоря с offset, y по выравниванию', async (placement, y) => {
+		const { frame, plugin } = await beside(placement)
+
+		plugin.offset = 4
+		plugin.setAnchor(anchorAt(ROW))
+
+		expect(frame.x).toBe(504) // 500 + 4
+		expect(frame.y).toBe(y)
+		expect(frame.dataset.get('placement')).toBe(placement)
+	})
+
+	it.each<[TFramePlacement, number]>([
+		['start-start', 200],
+		['start-end', 180],
+		['start', 190],
+	])('%s — перед левым краем якоря с offset, y по выравниванию', async (placement, y) => {
+		const { frame, plugin } = await beside(placement)
+
+		plugin.offset = 4
+		plugin.setAnchor(anchorAt(ROW))
+
+		expect(frame.x).toBe(176) // 300 - 120 - 4
+		expect(frame.y).toBe(y)
+		expect(frame.dataset.get('placement')).toBe(placement)
+	})
+
+	it('в RTL end слева от якоря, start справа, а data-placement логический', async () => {
+		const end = await beside('end-start')
+
+		end.plugin.setAnchor(rtlAnchorAt(ROW))
+
+		expect(end.frame.x).toBe(180) // 300 - 120
+		expect(end.frame.y).toBe(200)
+		expect(end.frame.dataset.get('placement')).toBe('end-start')
+
+		const start = await beside('start-start')
+
+		start.plugin.setAnchor(rtlAnchorAt(ROW))
+
+		expect(start.frame.x).toBe(500)
+		expect(start.frame.dataset.get('placement')).toBe('start-start')
+	})
+
+	it('смена placement с bottom-start на end-start пересчитывает обе координаты', async () => {
+		const { frame, plugin } = await beside('bottom-start')
+
+		plugin.setAnchor(anchorAt(ROW))
+
+		expect(frame.x).toBe(300)
+		expect(frame.y).toBe(240)
+
+		plugin.placement = 'end-start'
+
+		expect(frame.x).toBe(500)
+		expect(frame.y).toBe(200)
+		expect(frame.dataset.get('placement')).toBe('end-start')
+	})
+
+	describe('flip — по ширине', () => {
+		/** У правого края: справа 50px, слева 800px. */
+		const NEAR_RIGHT = { left: 800, top: 200, right: 950, bottom: 240 }
+
+		it('у правого края окна end переходит в start, выравнивание остаётся', async () => {
+			const { frame, plugin } = await beside('end-start')
+
+			plugin.setAnchor(anchorAt(NEAR_RIGHT))
+
+			expect(frame.x).toBe(680) // 800 - 120
+			expect(frame.y).toBe(200)
+			expect(frame.dataset.get('placement')).toBe('start-start')
+		})
+
+		it('в RTL у левого края end переходит в start — направо, data-placement логический', async () => {
+			const { frame, plugin } = await beside('end-end')
+
+			// end в RTL — слева: там 50px, справа 800px
+			plugin.setAnchor(rtlAnchorAt({ left: 50, top: 200, right: 200, bottom: 240 }))
+
+			expect(frame.x).toBe(200)
+			expect(frame.y).toBe(180)
+			expect(frame.dataset.get('placement')).toBe('start-end')
+		})
+
+		/** Flip выключен — сторона потребителя, а прижим по x её не отменяет. */
+		it('flip = false: у правого края остаётся end, прижатый к краю окна', async () => {
+			const { frame, plugin } = await beside('end-start')
+
+			plugin.flip = false
+			plugin.setAnchor(anchorAt(NEAR_RIGHT))
+
+			expect(frame.x).toBe(880) // 1000 - 120: накрыла якорь, но видна целиком
+			expect(frame.dataset.get('placement')).toBe('end-start')
+		})
+
+		it('слева места меньше, чем справа, — flip не переносит', async () => {
+			const { frame, plugin } = await beside('end-start')
+
+			// Справа 40px, слева 30px: панель не влезает нигде, а слева ещё теснее
+			plugin.setAnchor(anchorAt({ left: 30, top: 200, right: 960, bottom: 240 }))
+
+			expect(frame.dataset.get('placement')).toBe('end-start')
+			expect(frame.x).toBe(880)
+		})
+
+		/**
+		 * Память у боковой та же, что у верха и низа: открытая панель держит
+		 * сторону, пока на ней влезает, а заново её выбирает показ.
+		 */
+		it('открытая панель держит сторону, показ выбирает её заново', async () => {
+			const { frame, plugin } = await beside('end-start')
+			const anchor = anchorAt(NEAR_RIGHT)
+
+			plugin.setAnchor(anchor)
+			frame.show()
+
+			expect(frame.dataset.get('placement')).toBe('start-start')
+
+			// Якорь уехал влево: справа 500px — панель влезла бы и там
+			scrollAnchorTo(anchor, ROW)
+
+			expect(frame.dataset.get('placement')).toBe('start-start')
+			expect(frame.x).toBe(180) // 300 - 120
+
+			frame.hide()
+			frame.show()
+
+			expect(frame.dataset.get('placement')).toBe('end-start')
+			expect(frame.x).toBe(500)
+		})
+	})
+
+	describe('shift — y внутрь окна', () => {
+		it('у нижнего края окна y прижат: панель не уходит вниз', async () => {
+			const { frame, plugin } = await beside('end-start')
+
+			plugin.setAnchor(anchorAt({ left: 300, top: 760, right: 500, bottom: 790 }))
+
+			expect(frame.y).toBe(740) // 800 - 60, а не 760
+			expect(frame.x).toBe(500)
+		})
+
+		it('у верхнего края окна y прижат: панель не уходит вверх', async () => {
+			const { frame, plugin } = await beside('end-end')
+
+			plugin.setAnchor(anchorAt({ left: 300, top: 0, right: 500, bottom: 30 }))
+
+			expect(frame.y).toBe(0) // 30 - 60 ушло бы за верх
+		})
+
+		it('выше окна — прижата к верхнему краю', async () => {
+			const { frame, plugin } = await beside('end', 120, 900)
+
+			plugin.setAnchor(anchorAt(ROW))
+
+			expect(frame.y).toBe(0)
+		})
+	})
+
+	describe('прижим по x', () => {
+		/**
+		 * Узкий экран и широкое содержимое: панель не влезает ни с одной
+		 * стороны. Она остаётся на стороне потребителя — места поровну, — и
+		 * прижата к краю окна: накрывает якорь, но видна целиком.
+		 */
+		it('панель шире обеих сторон прижата к краю окна', async () => {
+			const { frame, plugin } = await beside('end-start', 300)
+
+			visualViewportOf(400, 800)
+			// Слева и справа по 150px
+			plugin.setAnchor(anchorAt({ left: 150, top: 200, right: 250, bottom: 240 }))
+
+			expect(frame.dataset.get('placement')).toBe('end-start')
+			expect(frame.x).toBe(100) // 400 - 300
+		})
+
+		it('шире окна — прижата к левому краю, как панель над якорем и под ним', async () => {
+			const { frame, plugin } = await beside('start-start', 500)
+
+			visualViewportOf(400, 800)
+			plugin.setAnchor(anchorAt({ left: 150, top: 200, right: 250, bottom: 240 }))
+
+			expect(frame.x).toBe(0)
+		})
+	})
+})
+
+/**
  * Точка вместо якоря — место вызова контекстного меню: прямоугольник нулевого
  * размера в координатах окна. Расчёт тот же — flip, shift, RTL,
  * `data-placement`; своего — `fixed`, пересчёт только на ресайз окна и ни
@@ -810,6 +1034,18 @@ describe('точка вместо якоря', () => {
 		plugin.point = { x: 950, y: 200 }
 
 		expect(frame.x).toBe(880) // 1000 - 120
+	})
+
+	it('боковая сторона у точки: end-start — правее точки, верхний край на ней', async () => {
+		const { frame, plugin } = await withPanel()
+
+		plugin.placement = 'end-start'
+		plugin.offset = 2
+		plugin.point = { x: 300, y: 200 }
+
+		expect(frame.x).toBe(302)
+		expect(frame.y).toBe(200)
+		expect(frame.dataset.get('placement')).toBe('end-start')
 	})
 
 	it('в RTL -start ставит панель влево от точки: начало там, откуда идёт строка', async () => {
