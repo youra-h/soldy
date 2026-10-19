@@ -398,9 +398,12 @@ describe('клавиши: шаг и край хода', () => {
  * подпись называет его `for`, и набор целиком уходит полю. Несколько — подпись
  * назвала бы `for` одно поле из них, а ссылка в наборе полей перекрыла бы
  * имена ручек: корень — группа с именем и описанием, а на полях — то, что ядро
- * пишет о поле, ориентация и ошибка.
+ * пишет о поле, ориентация и ошибка. Набор поля ручки ядро отдаёт целиком, с
+ * именем ручки поверх.
  */
 describe('наборы корня и полей: одна ручка — поле, несколько — группа', () => {
+	const fieldsOf = (instance: TSlider) => instance.thumbs.map(({ aria }) => aria)
+
 	it('одна ручка: labelable, набор корня пуст, полю — весь aria', () => {
 		const instance = slider({ value: 30 })
 
@@ -408,10 +411,9 @@ describe('наборы корня и полей: одна ручка — пол�
 
 		expect(instance.labelable).toBe(true)
 		expect(instance.rootAria).toEqual({})
-		expect(instance.thumbAria).toEqual({
-			'aria-orientation': 'horizontal',
-			'aria-label': 'Громкость',
-		})
+		expect(fieldsOf(instance)).toEqual([
+			{ 'aria-orientation': 'horizontal', 'aria-label': 'Громкость' },
+		])
 	})
 
 	it('массив из одного значения — тоже одна ручка', () => {
@@ -421,36 +423,58 @@ describe('наборы корня и полей: одна ручка — пол�
 		expect(instance.rootAria).toEqual({})
 	})
 
-	it('несколько ручек: корень — группа с именем и описанием, полям — ориентация и ошибка', () => {
-		const instance = slider({ value: [20, 80], orientation: 'vertical' })
+	it('одна ручка: её имя из thumbLabels сильнее имени ползунка', () => {
+		const instance = slider({ value: 30, thumbLabels: ['Громкость звонка'] })
 
-		instance.aria.add('aria-labelledby', 'label').add('aria-describedby', 'hint')
+		instance.aria.add('aria-label', 'Громкость')
+
+		expect(fieldsOf(instance)).toEqual([
+			{ 'aria-orientation': 'horizontal', 'aria-label': 'Громкость звонка' },
+		])
+	})
+
+	it('несколько ручек: корень — группа с именем и описанием, полям — ориентация, ошибка и своё имя', () => {
+		const instance = slider({
+			value: [20, 80],
+			orientation: 'vertical',
+			thumbLabels: ['От', 'До'],
+		})
+
+		instance.aria
+			.add('aria-label', 'Цена')
+			.add('aria-labelledby', 'label')
+			.add('aria-describedby', 'hint')
 		instance.invalid = true
 
 		expect(instance.labelable).toBe(false)
 		expect(instance.rootAria).toEqual({
 			role: 'group',
+			'aria-label': 'Цена',
 			'aria-labelledby': 'label',
 			'aria-describedby': 'hint',
 		})
-		expect(instance.thumbAria).toEqual({
-			'aria-orientation': 'vertical',
-			'aria-invalid': 'true',
-		})
+		expect(fieldsOf(instance)).toEqual([
+			{ 'aria-orientation': 'vertical', 'aria-invalid': 'true', 'aria-label': 'От' },
+			{ 'aria-orientation': 'vertical', 'aria-invalid': 'true', 'aria-label': 'До' },
+		])
 	})
 
 	it('число ручек сменилось — change:labelable за change:value, наборы за ним', () => {
 		const instance = slider({ value: 30 })
 		const seen: string[] = []
 
+		instance.aria.add('aria-label', 'Цена')
 		instance.events.on('change:value', () => seen.push('value'))
 		instance.events.on('change:labelable', (value) => seen.push(`labelable: ${value}`))
 
 		instance.value = [20, 80]
 
 		expect(seen).toEqual(['value', 'labelable: false'])
-		expect(instance.rootAria).toEqual({ role: 'group' })
-		expect(instance.thumbAria).toEqual({ 'aria-orientation': 'horizontal' })
+		expect(instance.rootAria).toEqual({ role: 'group', 'aria-label': 'Цена' })
+		expect(fieldsOf(instance)).toEqual([
+			{ 'aria-orientation': 'horizontal' },
+			{ 'aria-orientation': 'horizontal' },
+		])
 
 		// Ручек по-прежнему несколько — labelable тот же
 		instance.value = [10, 50, 90]
@@ -458,7 +482,9 @@ describe('наборы корня и полей: одна ручка — пол�
 
 		expect(seen).toEqual(['value', 'labelable: false', 'value', 'value', 'labelable: true'])
 		expect(instance.rootAria).toEqual({})
-		expect(instance.thumbAria).toEqual({ 'aria-orientation': 'horizontal' })
+		expect(fieldsOf(instance)).toEqual([
+			{ 'aria-orientation': 'horizontal', 'aria-label': 'Цена' },
+		])
 	})
 
 	it('жест, клавиша и смена шкалы числа ручек не меняют — change:labelable нет', () => {
@@ -478,7 +504,7 @@ describe('наборы корня и полей: одна ручка — пол�
 })
 
 describe('выходы для разметки', () => {
-	it('ручки: значение, ход поля, шаг, позиция и имя', () => {
+	it('ручки: значение, ход поля, шаг, позиция и набор поля с именем', () => {
 		const instance = slider({
 			value: [20, 60],
 			minStepsBetweenThumbs: 5,
@@ -493,7 +519,7 @@ describe('выходы для разметки', () => {
 				step: 1,
 				style: { '--so-slider-position': '20%' },
 				dataset: { 'data-dragging': 'false' },
-				aria: { 'aria-label': 'Минимум' },
+				aria: { 'aria-orientation': 'horizontal', 'aria-label': 'Минимум' },
 			},
 			{
 				value: 60,
@@ -502,16 +528,16 @@ describe('выходы для разметки', () => {
 				step: 1,
 				style: { '--so-slider-position': '60%' },
 				dataset: { 'data-dragging': 'false' },
-				aria: { 'aria-label': 'Максимум' },
+				aria: { 'aria-orientation': 'horizontal', 'aria-label': 'Максимум' },
 			},
 		])
 	})
 
-	it('у списка шаг поля — any, у ручки без имени набор пуст', () => {
+	it('у списка шаг поля — any, у ручки без имени — только набор ползунка', () => {
 		const [thumb] = slider({ value: 5, step: [1, 5, 10], max: 10 }).thumbs
 
 		expect(thumb.step).toBe('any')
-		expect(thumb.aria).toEqual({})
+		expect(thumb.aria).toEqual({ 'aria-orientation': 'horizontal' })
 	})
 
 	it('ход поля всегда содержит значение', () => {

@@ -55,8 +55,9 @@ function omit(aria: TAriaAttributes, names: ReadonlySet<string>): TAriaAttribute
  * Куда ложится `aria` ползунка, решает число ручек. У одной — её полю: оно
  * labelable, и подпись называет его `for`. У нескольких корень — группа
  * (`rootAria`) с именем и описанием ползунка, а поля держат только то, что
- * ядро пишет о поле, — ориентацию и ошибку (`thumbAria`), — и свои имена из
- * `thumbLabels`: подпись назвала бы `for` одно поле из нескольких.
+ * ядро пишет о поле, — ориентацию и ошибку, — и свои имена из `thumbLabels`:
+ * подпись назвала бы `for` одно поле из нескольких. Набор поля каждой ручки
+ * ядро отдаёт целиком (`thumbs`).
  *
  * Границы слоёв: **значение — здесь, операция — в плагине.**
  *
@@ -516,7 +517,7 @@ export default class TSlider
 
 	/**
 	 * Набор корня. У одной ручки корню ARIA не нужна: `aria` ползунка уходит её
-	 * полю (`thumbAria`). У нескольких корень — группа полей: роль и `aria`
+	 * полю (`thumbs`). У нескольких корень — группа полей: роль и `aria`
 	 * ползунка — имя и описание, от подписи поля формы тоже, — кроме того, что
 	 * ядро пишет о самом поле: это остаётся на каждой ручке.
 	 */
@@ -525,31 +526,20 @@ export default class TSlider
 	}
 
 	/**
-	 * Набор полей ручек, общий для всех. У одной ручки — `aria` ползунка
-	 * целиком: имя, описание, ориентация, ошибка, `id` от поля формы. У
-	 * нескольких — только то, что ядро пишет о самом поле: ориентация и
-	 * ошибка; имя и описание ползунка — у группы (`rootAria`). Имя самой ручки
-	 * — её набор в `thumbs`, поверх этого.
-	 */
-	get thumbAria(): TAriaAttributes {
-		const aria = this._aria.toObject()
-
-		return this.labelable ? aria : pick(aria, FIELD_ARIA)
-	}
-
-	/**
-	 * Ручки: значение, границы и шаг поля, позиция, состояние и имя. Своего
-	 * экземпляра у ручки нет, поэтому её наборы отдаются значением.
+	 * Ручки: значение, границы и шаг поля, позиция, состояние и набор поля.
+	 * Своего экземпляра у ручки нет, поэтому её наборы отдаются значением, и
+	 * набор поля — целиком: какой атрибут ползунка ложится на поле и чьё имя
+	 * сильнее, решает ядро, а не порядок слияния в разметке.
 	 */
 	get thumbs(): TSliderThumb[] {
 		const values = this.values
 		const dragged = this._dragging ? this._activeThumb : undefined
 		const step = this._scale.interval ?? 'any'
+		const field = this._fieldAria()
 
 		return values.map((value, index) => {
 			const [min, max] = this._bounds(values, index)
 			const label = this._thumbLabels?.[index]
-			const aria: TAriaAttributes = label === undefined ? {} : { 'aria-label': label }
 
 			return {
 				value,
@@ -558,7 +548,8 @@ export default class TSlider
 				step,
 				style: { '--so-slider-position': this._position(value) },
 				dataset: { 'data-dragging': String(index === dragged) },
-				aria,
+				// Имя ручки сильнее имени ползунка
+				aria: label === undefined ? { ...field } : { ...field, 'aria-label': label },
 			}
 		})
 	}
@@ -627,7 +618,7 @@ export default class TSlider
 			newClass: `--${newValue}`,
 		})
 		// Не для вида: по ориентации скринридер объявляет, какими стрелками
-		// двигать ручку. Уходит на каждое поле и у нескольких ручек (`thumbAria`)
+		// двигать ручку. Уходит на каждое поле и у нескольких ручек (`_fieldAria`)
 		this._aria.add('aria-orientation', newValue)
 		this._orientation = newValue
 	}
@@ -761,6 +752,18 @@ export default class TSlider
 
 	protected _position(value: number): string {
 		return percent(this._axis(value))
+	}
+
+	/**
+	 * Что из `aria` ползунка ложится на поля ручек. У одной ручки — весь
+	 * набор: имя, описание, ориентация, ошибка, `id` от поля формы. У
+	 * нескольких — только то, что ядро пишет о самом поле, ориентация и ошибка:
+	 * имя и описание ползунка — у группы (`rootAria`).
+	 */
+	protected _fieldAria(): TAriaAttributes {
+		const aria = this._aria.toObject()
+
+		return this.labelable ? aria : pick(aria, FIELD_ARIA)
 	}
 
 	protected _commit(before: TSliderValue): void {

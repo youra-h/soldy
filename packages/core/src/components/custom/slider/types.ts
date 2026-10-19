@@ -82,8 +82,10 @@ export type TSliderThumb = {
 	/** `data-dragging` — тянут эту ручку */
 	dataset: TDatasetAttributes
 	/**
-	 * Имя ручки (`aria-label` из `thumbLabels`); у ручки без имени пусто.
-	 * Ложится поверх общего набора полей (`thumbAria`)
+	 * Набор поля — целиком. У одной ручки — `aria` ползунка: имя, описание,
+	 * ориентация, ошибка; у нескольких — ориентация и ошибка, а имя и
+	 * описание ползунка — у корня (`rootAria`). Поверх — имя ручки
+	 * (`aria-label` из `thumbLabels`): оно сильнее имени ползунка
 	 */
 	aria: TAriaAttributes
 }
@@ -252,12 +254,7 @@ export interface ISlider
 	 * описанием ползунка, у одной — пусто
 	 */
 	readonly rootAria: TAriaAttributes
-	/**
-	 * Набор полей ручек, общий для всех: у одной ручки — `aria` ползунка
-	 * целиком, у нескольких — ориентация и ошибка
-	 */
-	readonly thumbAria: TAriaAttributes
-	/** Ручки — выход для разметки */
+	/** Ручки — выход для разметки: с набором поля каждой ручки целиком */
 	readonly thumbs: TSliderThumb[]
 	/** Края заливки — `--so-slider-range-start` и `--so-slider-range-end` */
 	readonly rangeStyle: TSliderStyle
