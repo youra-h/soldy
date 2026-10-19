@@ -36,7 +36,8 @@ export default { ...SetupMenu, components: { Frame, MenuGroup, MenuItem, MenuSep
 			сторону связки (`aria-haspopup`, `aria-expanded`, `id`,
 			`aria-controls`) и вид «нажата» (`data-selected`) он получает через
 			scope — двумя наборами, ARIA и `data-*` врозь. Стрелку у кнопки
-			рисует потребитель.
+			рисует потребитель. У контекстного меню (`openOn: 'contextmenu'`)
+			здесь область — строка, файл, картинка, — и связка у неё пуста.
 		-->
 		<slot name="trigger" :triggerAria="triggerAria" :triggerDataset="triggerDataset" />
 
@@ -47,6 +48,10 @@ export default { ...SetupMenu, components: { Frame, MenuGroup, MenuItem, MenuSep
 			который ссылается `aria-controls` триггера, и `aria-labelledby` на
 			триггер — имя меню. `tabindex="-1"` — фокус встаёт на саму панель,
 			пока ни один пункт не подсвечен.
+
+			У контекстного меню панель встаёт у точки вызова (`point`): точка
+			главнее корня, пока задана, и выбирает между ними якорь, а не
+			шаблон. Корень остаётся якорем на случай, когда точки нет.
 
 			Открытость — `visible` панели, а не `rendered`: пункты входят в
 			коллекцию при монтировании, и закрытие не должно её вычищать.
@@ -65,6 +70,7 @@ export default { ...SetupMenu, components: { Frame, MenuGroup, MenuItem, MenuSep
 			:visible="open"
 			position="fixed"
 			:anchor_anchor="rootElement"
+			:anchor_point="point"
 			:anchor_placement="placement"
 			:anchor_offset="4"
 			v-bind="{ ...aria, ...dismiss_ownerAttribute }"

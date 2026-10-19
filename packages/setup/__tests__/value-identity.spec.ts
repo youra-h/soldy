@@ -1,7 +1,14 @@
 import { describe, it, expect } from 'vitest'
 import { required } from './helpers'
-import { TComponentView, TIcon, TButton, TCollectionEngine, TBatchExtension } from '@soldy-ui/core'
-import { IconDescriptor, ButtonDescriptor } from '../content/descriptors'
+import {
+	TComponentView,
+	TIcon,
+	TButton,
+	TCollectionEngine,
+	TBatchExtension,
+	TMenu,
+} from '@soldy-ui/core'
+import { IconDescriptor, ButtonDescriptor, MenuDescriptor } from '../content/descriptors'
 import { createAdapterContext, type IAdapterContext } from '../protected/adapter'
 import { CommonProfile } from '../protected/naming'
 
@@ -80,6 +87,33 @@ describe('Составные props меняют идентичность при 
 		expect(after).not.toBe(before)
 		// снимок отделён от самого драйвера
 		expect(driver.valueOf()).not.toBe(driver)
+	})
+
+	/**
+	 * Точку вызова контекстного меню разметка отдаёт якорю панели: смена точки
+	 * обязана дойти новым объектом, а та же точка — остаться прежним, иначе
+	 * адаптер перерисовывал бы панель на каждый повтор.
+	 */
+	it('point меню: новый объект на смену точки, та же точка — тот же объект', () => {
+		const menu = new TMenu({ openOn: 'contextmenu' })
+		const ctx = createAdapterContext(MenuDescriptor(), { ctrl: menu })
+
+		expect(read(ctx, 'point')).toBe(null)
+
+		menu.point = { x: 10, y: 20 }
+
+		const first = read(ctx, 'point')
+
+		expect(first).toEqual({ x: 10, y: 20 })
+
+		menu.point = { x: 10, y: 20 }
+
+		expect(read(ctx, 'point')).toBe(first)
+
+		menu.point = { x: 30, y: 20 }
+
+		expect(read(ctx, 'point')).not.toBe(first)
+		expect(read(ctx, 'point')).toEqual({ x: 30, y: 20 })
 	})
 })
 

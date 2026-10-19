@@ -124,6 +124,130 @@ describe('TMenu · связка «кнопка ↔ меню»', () => {
 })
 
 /**
+ * Контекстное меню — режим того же меню (`openOn`): в слоте `trigger` область,
+ * а не кнопка, и панель встаёт у точки вызова. Открывают его плагины
+ * (`plugins/__tests__/menu.plugin.spec.ts`); здесь — что режим значит для
+ * состояния и разметки.
+ */
+describe('TMenu · контекстное меню', () => {
+	it('по умолчанию меню открывают кнопкой, режим — из конструктора', () => {
+		expect(new TMenu().openOn).toBe('press')
+
+		const menu = new TMenu({ openOn: 'contextmenu' })
+
+		expect(menu.openOn).toBe('contextmenu')
+		expect(menu.getProps()).toMatchObject({ openOn: 'contextmenu' })
+	})
+
+	it('у области связки «кнопка ↔ меню» нет: набор триггера пуст и у открытого', () => {
+		const menu = new TMenu({ openOn: 'contextmenu' })
+
+		expect(menu.triggerAria.toObject()).toEqual({})
+
+		menu.open = true
+
+		expect(menu.triggerAria.toObject()).toEqual({})
+		// Панель — меню в любом режиме, корень несёт открытость
+		expect(menu.aria.get('role')).toBe('menu')
+		expect(menu.dataset.get('open')).toBe('true')
+	})
+
+	it('смена режима на лету ставит и снимает связку — с текущей открытостью', () => {
+		const menu = new TMenu({ open: true })
+		const handler = vi.fn()
+
+		menu.events.on('change:triggerAria', handler)
+		menu.openOn = 'contextmenu'
+
+		expect(menu.triggerAria.toObject()).toEqual({})
+		expect(handler).toHaveBeenLastCalledWith({})
+
+		menu.openOn = 'press'
+
+		expect(menu.triggerAria.toObject()).toEqual({
+			'aria-haspopup': 'menu',
+			'aria-expanded': 'true',
+		})
+	})
+
+	it('change:openOn — только на смену', () => {
+		const menu = new TMenu()
+		const handler = vi.fn()
+
+		menu.events.on('change:openOn', handler)
+		menu.openOn = 'press'
+		menu.openOn = 'contextmenu'
+		menu.openOn = 'contextmenu'
+
+		expect(handler).toHaveBeenCalledOnce()
+		expect(handler).toHaveBeenCalledWith('contextmenu')
+	})
+
+	it('точки нет, пока меню не вызвали', () => {
+		expect(new TMenu({ openOn: 'contextmenu' }).point).toBe(null)
+	})
+
+	/**
+	 * Точка уходит за границу core → ui значением: адаптер узнаёт о смене по
+	 * новому объекту, а та же точка — не смена.
+	 */
+	it('точка — значение: новый объект на смену, та же точка ничего не шлёт', () => {
+		const menu = new TMenu({ openOn: 'contextmenu' })
+		const handler = vi.fn()
+		const given = { x: 120, y: 80 }
+
+		menu.events.on('change:point', handler)
+		menu.point = given
+
+		const first = menu.point
+
+		expect(first).toEqual({ x: 120, y: 80 })
+		// Свой объект: чужой, поправленный после записи, точку не двигает
+		expect(first).not.toBe(given)
+		expect(handler).toHaveBeenCalledOnce()
+		expect(handler).toHaveBeenLastCalledWith(first)
+
+		menu.point = { x: 120, y: 80 }
+
+		expect(menu.point).toBe(first)
+		expect(handler).toHaveBeenCalledOnce()
+
+		menu.point = { x: 300, y: 80 }
+
+		expect(menu.point).toEqual({ x: 300, y: 80 })
+		expect(menu.point).not.toBe(first)
+		expect(handler).toHaveBeenCalledTimes(2)
+
+		menu.point = null
+
+		expect(menu.point).toBe(null)
+		expect(handler).toHaveBeenLastCalledWith(null)
+	})
+
+	it('закрытие точку не снимает: гаснущая панель стоит, где её открыли', () => {
+		const menu = new TMenu({ openOn: 'contextmenu' })
+
+		menu.point = { x: 40, y: 60 }
+		menu.open = true
+		menu.open = false
+
+		expect(menu.point).toEqual({ x: 40, y: 60 })
+	})
+
+	it('смена режима снимает точку: кнопка открывает меню у себя', () => {
+		const menu = new TMenu({ openOn: 'contextmenu' })
+		const handler = vi.fn()
+
+		menu.point = { x: 40, y: 60 }
+		menu.events.on('change:point', handler)
+		menu.openOn = 'press'
+
+		expect(menu.point).toBe(null)
+		expect(handler).toHaveBeenCalledWith(null)
+	})
+})
+
+/**
  * Панель телепортирована, и модификаторы корня до неё не доходят: размер и
  * вариант меню у неё свои модификаторы — набор `panelClasses`.
  */
