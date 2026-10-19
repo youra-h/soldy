@@ -21,8 +21,8 @@ render on the server (`@angular/platform-server`) and hydrate in the browser
 (`provideClientHydration`); component ids match on both sides.
 
 > **Status:** the Angular adapter is in progress — Button, Icon, Label, Frame, ProgressSpinner,
-> Skeleton, Input, CheckBox, Switch, RadioGroup, ListBox, Tabs and Accordion are ported, the rest
-> of the set is on its way. Frame moves
+> Skeleton, Input, CheckBox, Switch, RadioGroup, ListBox, Tabs, Accordion, Table and the `Virtual`
+> window for long lists are ported, the rest of the set is on its way. Frame moves
 > the element you wrote into `target` (`body` by default) in the browser; with `contained` it stays
 > in place. `so-locale-provider` gives a subtree its language and library strings. See
 > [the adapter table](https://github.com/youra-h/soldy#components).
@@ -142,6 +142,30 @@ arrows of an accordion section, the edges of the tab list — is an `<ng-templat
 template given to the owner renders in every item in place of its own. A tab panel that is not
 active stays in place hidden, its content not inserted; a markup tab closed with its close button
 is hidden the same way — the element is yours.
+
+A table takes its columns and rows as data only — `columns` and `items`, or an `engine` — and draws
+its headers (`th[so-table-column]`) and rows (`tr[so-table-row]`) itself: sorting, row selection
+with "select all", column resizing and reordering, a grid mode and a sticky head. The element you
+write is the table's scroll viewport, with the `<table>` inside it: your `class`, `style`,
+attributes and hiding go to the viewport, the classes and ARIA of the table to the `<table>`. A
+header and a cell are filled through templates — a template given to the table renders in every
+header or cell — and an empty table through the `empty` slot:
+
+```ts
+template: `<div so-table [items]="rows" [columns]="columns" mode="multiple" (soColumnResize)="save($event)">
+  <ng-template slot="cell" let-column="column" let-value="value">…</ng-template>
+  <p slot="empty">No data</p>
+</div>`
+```
+
+Without a `cell` template a value is rendered as text the way Vue interpolates it — an object as
+JSON; the `soText` pipe (`TextPipe`) gives your own template the same text. A long list renders only
+what is visible inside `<so-virtual>` — the same with a table; the wrapper has no box of its own,
+and `enabled` turns the window off:
+
+```ts
+template: `<so-virtual><div so-list-box [items]="cities"></div></so-virtual>`
+```
 
 A panel over the page is a Frame. The element you write is the panel, and it is that element which
 moves into `target` (`body` by default) once the page has rendered in the browser — with your

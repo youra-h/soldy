@@ -90,12 +90,22 @@ export type TOutputEmitter<
 > = EventEmitter<TOutputValue<DescriptorAllEvents<TDescriptorFn>[TEvent]>>
 
 /**
- * Состояние компонента, как его читает шаблон: свойства инстанса и, у
+ * Состояние компонента, как его читает шаблон: свойства инстанса, выходы
+ * плагинов дескриптора (`names_selectAll` у Table, `layout_styles`) и, у
  * коллекционного компонента, свойства фасада. Одноимённых у них нет: имена
- * пропсов фасада префиксуются (`tab_closable`).
+ * пропсов фасада префиксуются (`tab_closable`), выходов плагинов — тоже
+ * (`names_`, `layout_`).
+ *
+ * Выходы — в том же виде, что у остальных адаптеров (`TAdapterState` из
+ * setup): геттер плагина читается, как свойство инстанса. Без них в типе
+ * строгий шаблон не прочёл бы выход и по имени — TS7053 на
+ * `state()['names_selectAll']`.
  */
-export type TBindingState<TInstance, TFacade = unknown> = TInstanceState<TInstance> &
-	TInstanceState<TFacade>
+export type TBindingState<
+	TInstance,
+	TFacade = unknown,
+	TOutputs = unknown,
+> = TInstanceState<TInstance> & TInstanceState<TFacade> & TInstanceState<TOutputs>
 
 /** Поиск эмиттера выхода по имени: заведённый — эмиттер, иначе `undefined`. */
 export type TOutputOf = (name: string) => EventEmitter<unknown> | undefined
@@ -103,10 +113,15 @@ export type TOutputOf = (name: string) => EventEmitter<unknown> | undefined
 /**
  * Связка компонента для базы (`TComponentBase`). `TFacade` — фасад коллекции у
  * компонента с двумя контекстами (`joinBindings`); у остальных его нет.
+ * `TOutputs` — выходы плагинов дескриптора компонента (`DescriptorPluginOutputs`):
+ * их тоже читает шаблон.
  */
-export type TBinding<TInstance = any, TFacade = unknown> = {
-	/** Свойства инстанса и фасада со снимком через `valueOf()` — см. `TInstanceState`. */
-	readonly state: Signal<TBindingState<TInstance, TFacade>>
+export type TBinding<TInstance = any, TFacade = unknown, TOutputs = unknown> = {
+	/**
+	 * Свойства инстанса, выходы плагинов и свойства фасада со снимком через
+	 * `valueOf()` — см. `TInstanceState`.
+	 */
+	readonly state: Signal<TBindingState<TInstance, TFacade, TOutputs>>
 	readonly ctrl: TInstance
 	/** Фасад коллекции: шаблон зовёт через его контекст команды коллекции. */
 	readonly facade: TFacade
@@ -192,7 +207,7 @@ function useExchange<C extends IComponentContract>(
 
 export function useAdapter<C extends IComponentContract>(
 	adapter: IAdapterContext<C>,
-): TBinding<C['instance']> {
+): TBinding<C['instance'], unknown, C['plugins']['outputs']> {
 	return {
 		...useExchange(adapter),
 
@@ -237,10 +252,10 @@ export function useCollectionAdapter<C extends IComponentContract>(
  * - уничтожение — фасад раньше компонента, в порядке, обратном приёму, как у
  *   React: элемент выходит из коллекции, пока его набор плагинов цел.
  */
-export function joinBindings<TInstance, TFacade>(
-	owner: TBinding<TInstance>,
+export function joinBindings<TInstance, TFacade, TOutputs>(
+	owner: TBinding<TInstance, unknown, TOutputs>,
 	facade: TCollectionBinding<TFacade>,
-): TBinding<TInstance, TFacade> {
+): TBinding<TInstance, TFacade, TOutputs> {
 	return {
 		state: computed(() => ({ ...facade.state(), ...owner.state() })),
 		ctrl: owner.ctrl,

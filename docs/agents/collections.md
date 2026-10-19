@@ -446,7 +446,10 @@ Solid петля по ключу — `KeyedFor` адаптера (сторожа
 `ui/solid/__tests__/table.spec.tsx`), у Svelte — `{#each}` с ключом записи:
 узлу живого ключа он отдаёт его новую запись (сторожат «окно» в
 `ui/svelte/__tests__/table.spec.ts` и «цикл Svelte» в
-`ui/svelte/__tests__/virtual.spec.ts`), у Web Components — `TKeyedLoop`
+`ui/svelte/__tests__/virtual.spec.ts`), у Angular — `@for` с `track` по ключу
+записи: узел живого ключа он оставляет и отдаёт ему новую запись (сторожат
+«окно» в `ui/angular/__tests__/table.spec.ts` и «цикл Angular» в
+`ui/angular/__tests__/virtual.spec.ts`), у Web Components — `TKeyedLoop`
 шаблона: узлу живого ключа она отдаёт его новую запись (`update`), и распорка
 берёт из неё стиль (сторожит «распорки окна» в
 `ui/webc/__tests__/list-box.spec.ts`).
