@@ -13,6 +13,7 @@ export const zhCN = freezeLocale({
 		scroller: { prev: '向前滚动', next: '向后滚动' },
 		pagination: { prev: '上一页', next: '下一页' },
 		field: { clear: '清除{name}' },
+		numberInput: { increment: '增加{name}', decrement: '减少{name}' },
 		table: { selectAll: '全选', sort: '按{name}排序' },
 		calendar: {
 			prevMonth: '上个月',

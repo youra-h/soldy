@@ -58,6 +58,7 @@ import {
 	MenuGroup,
 	MenuItem,
 	MenuSeparator,
+	NumberInput,
 	Pagination,
 	Popover,
 	ProgressLinear,
@@ -176,6 +177,7 @@ const ROOTS: ReadonlyArray<readonly [string, (props: TProbeProps) => VNode, stri
 	['Scroller', (props) => h(Scroller, props), '.so-scroller', '.so-scroller'],
 	['Pagination', (props) => h(Pagination, props), '.so-pagination', '.so-pagination'],
 	['Input', (props) => h(Input, props), '.so-input', '.so-input'],
+	['NumberInput', (props) => h(NumberInput, props), '.so-number-input', '.so-number-input'],
 	['CheckBox', (props) => h(CheckBox, props), '.so-check-box', '.so-check-box'],
 	['Switch', (props) => h(Switch, props), '.so-switch', '.so-switch'],
 	['Select', (props) => h(Select, props), '.so-select', '.so-select'],
@@ -271,7 +273,7 @@ const BOUND_ROOTS = ROOTS.filter(([, , root, bound]) => root === bound)
 
 /** Поля: `$el` — корень, а не `<input>`. */
 const FIELD_ROOTS = ROOTS.filter(([name]) =>
-	['Input', 'CheckBox', 'Switch', 'RadioGroup.Item'].includes(name),
+	['Input', 'NumberInput', 'CheckBox', 'Switch', 'RadioGroup.Item'].includes(name),
 )
 
 /** Строка элемента коллекции — вложенный узел, который `$el` не отдаёт. */

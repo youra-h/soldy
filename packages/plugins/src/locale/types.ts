@@ -69,10 +69,17 @@ export type TTranslations = {
 		/** Имя стрелки «вперёд» — на следующую страницу */
 		readonly next: string
 	}
-	/** Поле ввода — текстовое и поле даты */
+	/** Поле ввода — текстовое, даты и числа */
 	readonly field: {
 		/** Имя кнопки очистки — шаблон с именем поля на месте `{name}` */
 		readonly clear: string
+	}
+	/** Поле числа */
+	readonly numberInput: {
+		/** Имя кнопки шага «больше» — шаблон с именем поля на месте `{name}` */
+		readonly increment: string
+		/** Имя кнопки шага «меньше» — шаблон с именем поля на месте `{name}` */
+		readonly decrement: string
 	}
 	/** Таблица */
 	readonly table: {

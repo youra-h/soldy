@@ -26,6 +26,7 @@ import {
 	Field,
 	Input,
 	Label,
+	NumberInput,
 	RadioGroup,
 	RadioGroupItem,
 	Rating,
@@ -161,6 +162,7 @@ describe('разметка', () => {
  */
 const LABELABLES: ReadonlyArray<readonly [string, () => VNode, string, string]> = [
 	['Input', () => h(Input), '.so-input', '.so-input input'],
+	['NumberInput', () => h(NumberInput), '.so-number-input', '.so-number-input__input'],
 	[
 		'Select',
 		() =>

@@ -35,6 +35,7 @@ import {
 	ListBox,
 	LocaleProvider,
 	Menu,
+	NumberInput,
 	Pagination,
 	Popover,
 	ProgressLinear,
@@ -341,6 +342,22 @@ const dragAndDrop = new TDragAndDrop()
 	<!-- @vue-expect-error — текст опции строкой -->
 	<Select.Item :text="42" />
 	<Select.Item text="Первый" />
+
+	<!-- @vue-expect-error — число поля — числом, а не строкой -->
+	<NumberInput value="4" />
+	<NumberInput :value="4" />
+
+	<!-- @vue-expect-error — граница числом -->
+	<NumberInput min="0" />
+	<NumberInput :min="0" />
+
+	<!-- @vue-expect-error — сокращённую запись поле обратно не разберёт -->
+	<NumberInput :formatOptions="{ notation: 'compact' }" />
+	<NumberInput :formatOptions="{ style: 'percent' }" />
+
+	<!-- @vue-expect-error — знак, который прячет минус, поле не пускает -->
+	<NumberInput :formatOptions="{ signDisplay: 'never' }" />
+	<NumberInput :formatOptions="{ signDisplay: 'exceptZero' }" />
 
 	<!-- @vue-expect-error — оценка числом, а не строкой -->
 	<Rating value="4" />

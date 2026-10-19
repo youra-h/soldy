@@ -13,6 +13,7 @@ export const ruRU = freezeLocale({
 		scroller: { prev: 'Прокрутить назад', next: 'Прокрутить вперёд' },
 		pagination: { prev: 'Предыдущая страница', next: 'Следующая страница' },
 		field: { clear: 'Очистить {name}' },
+		numberInput: { increment: 'Увеличить {name}', decrement: 'Уменьшить {name}' },
 		table: { selectAll: 'Выбрать все', sort: 'Сортировать по столбцу {name}' },
 		calendar: {
 			prevMonth: 'Предыдущий месяц',

@@ -47,6 +47,7 @@ import {
 	MenuGroupDescriptor,
 	MenuItemDescriptor,
 	MenuSeparatorDescriptor,
+	NumberInputDescriptor,
 	PaginationDescriptor,
 	PaginationItemDescriptor,
 	PopoverDescriptor,
@@ -110,6 +111,7 @@ const DESCRIPTORS: Readonly<Record<string, () => IComponentDescriptor>> = {
 	'menu/group/Group.vue': MenuGroupDescriptor,
 	'menu/item/Item.vue': MenuItemDescriptor,
 	'menu/separator/Separator.vue': MenuSeparatorDescriptor,
+	'number-input/NumberInput.vue': NumberInputDescriptor,
 	'pagination/Pagination.vue': PaginationDescriptor,
 	// Страница — внутренняя часть пагинации, но слот у неё свой
 	'pagination/item/Item.vue': PaginationItemDescriptor,

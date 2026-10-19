@@ -102,6 +102,12 @@ const NAMED: Record<string, Record<string, (locale: TLocale) => string>> = {
 	DateInputDescriptor: {
 		clearAria: ({ translations }) => formatName(translations.field.clear, ''),
 	},
+	// Кнопки шага и очистки — с именем поля: по умолчанию сборки оно пустое
+	NumberInputDescriptor: {
+		clearAria: ({ translations }) => formatName(translations.field.clear, ''),
+		decrementAria: ({ translations }) => formatName(translations.numberInput.decrement, ''),
+		incrementAria: ({ translations }) => formatName(translations.numberInput.increment, ''),
+	},
 	TableDescriptor: { names_selectAll: ({ translations }) => translations.table.selectAll },
 	// Кнопка сортировки в заголовке: подпись колонки по умолчанию сборки пустая
 	TableColumnDescriptor: {

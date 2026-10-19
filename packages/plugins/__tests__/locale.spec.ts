@@ -33,6 +33,8 @@ const NAMED: ReadonlyArray<readonly [keyof TTranslations, string]> = [
 	['tags', 'close'],
 	['toasts', 'close'],
 	['field', 'clear'],
+	['numberInput', 'increment'],
+	['numberInput', 'decrement'],
 	['table', 'sort'],
 ]
 

@@ -18,6 +18,7 @@ export const enUS = freezeLocale({
 		scroller: { prev: 'Scroll back', next: 'Scroll forward' },
 		pagination: { prev: 'Previous page', next: 'Next page' },
 		field: { clear: 'Clear {name}' },
+		numberInput: { increment: 'Increase {name}', decrement: 'Decrease {name}' },
 		table: { selectAll: 'Select all', sort: 'Sort by {name}' },
 		calendar: {
 			prevMonth: 'Previous month',
