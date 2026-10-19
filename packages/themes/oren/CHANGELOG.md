@@ -1,5 +1,63 @@
 # @soldy-ui/theme-oren
 
+## 0.3.0-alpha.0
+
+### Minor Changes
+
+- 3f19e5e: Table: атрибуты, которые приложение пишет на компонент, кроме класса и стиля, — `aria-label`, `id`, `data-*`, в Vue, React, Solid и Svelte и обработчики, у Svelte attachment-ы, в Angular и Web Components статические атрибуты разметки — теперь на `table`, где её роль и имя, а не на окне прокрутки `.so-table__viewport`; класс, стиль, скрытие и `ref` — по-прежнему окно. Angular: `<so-table>` вместо `<div so-table>`. Тема oren делает окно таблицы блоком сама (`display: block`) — и на незнакомом браузеру теге `<so-table>`.
+- 8e2e31e: ListBox и Select: группы пунктов из данных, как у Menu (`_: { group }`, `groupBy`, `groups`), части `ListBox.Group` и `Select.Group`. `TMenuGroupIdsPlugin` заменён общим плагином имени группы `TItemGroupIdsPlugin` (описание — `ItemGroupIdsPluginDescriptor` вместо `MenuGroupIdsPluginDescriptor`), типы `IMenuGroup`, `IMenuGroupProps`, `TMenuGroupEvents` — общими `IItemGroup`, `IItemGroupProps`, `TItemGroupEvents` — замените импорт. Рисование отдаёт разметке ListBox и Select секции: в поверхности компонента `drawnSections` вместо `drawn` (событие `change:drawnSections`). Список с группами окно `Virtual` не рисует.
+- 1411d88: Тост: вид сообщения `type` (`info`, `success`, `warning`, `error`) со значком вида и `loading` — кольцо на месте значка; ожидающий тост сам не закрывается. `variant` и `size` у тоста сняты: вместо `show({ variant: 'negative' })` пишите `show({ type: 'error' })`. Новые роли иконок `notification`, `info`, `success`, `warning` — свой пакет иконок должен их закрыть.
+- ce9316e: NumberInput (Vue): поле числа в формате локали — шаг и границы, ↑/↓, PageUp/PageDown, Home/End, кнопки «−» и «+» с удержанием, `formatOptions` (процент, валюта, единица), событие `commit`; `createScale` принимает открытые границы, а `shift` шкалы со значения вне сетки шагает к соседнему узлу со стороны сдвига (с 2,5 при шаге 1 — на 3 и на 2). Ломающее: роли иконок `minus` и `plus` — дополните ими свой пакет иконок; раздел локали `numberInput` — дополните им свой `TLocale` (`extendLocale` возьмёт из основы).
+- 958c866: ListBox: список — свой узел `.so-list-box__list` внутри корня, шапка и подвал — вне его. Роль, имя и остановка Tab — на этом узле, и прокручивается тоже он: в пределе `maxRows` ровно строки, а шапка и подвал при прокрутке стоят на месте. Стили фокуса и прокрутки и селекторы по `role` и `tabindex` корня ListBox переносите на него. `focused = true` из кода фокус в список пока не ставит — как у Input и Tabs, корень которых фокус не держит.
+
+### Patch Changes
+
+- 4206633: Тема oren: выключенные поля, Select, ListBox, Tabs, Tags, Table, Calendar и Pagination гаснут целиком — рамка, поверхность, иконки и кнопки вместе с текстом, как CheckBox. Вложенное выключенное второй раз не гаснет. Выключенный Tabs снова гасит табы вместе с панелями.
+- 63c882d: Точка обязательного поля у Input, Textarea, Select, DateInput, DatePicker, CheckBox и Switch больше не пропадает в режиме принудительных цветов (высокий контраст Windows): там она цветом текста системы, как точка у подписи Field.
+- f06e5f9: Меню: пункт с панелью `Menu.PopoverItem` (`MenuPopoverItem`) — строка открывает сбоку панель с любым содержимым, например календарём: нажатием, Enter, пробелом или → (в RTL ←); Escape возвращает к пункту, Tab из панели закрывает меню. Открыта одна панель на меню — подменю или пункта с панелью, — и связку строки с панелью у обоих пишет один плагин `TMenuPopupIdsPlugin`.
+- d4c3583: Тема oren: плашка тоста с видом (`type`) залита цветом вида, и всё на ней белое — заголовок, описание, значок, кольцо ожидания, крестик и подписи кнопок своего содержимого; фон кнопок на ней — тень, и подписи читаются в любом состоянии. Тост без вида — на белой плашке. Новые токены `--so-component-solid-{accent,positive,caution,negative}` — насыщенная заливка, на которой белый текст держит 4,5:1 в обеих схемах.
+- 3d6129b: Пункт Menu отвечает на нажатие вуалью нажатия, как строка ListBox.
+- 2cb76f6: Тема oren: белое на насыщенной заливке — подпись кнопок и тегов `filled` с вариантом, номер текущей страницы Pagination и выбранного дня Calendar, отметка CheckBox `filled` — держит контраст в обеих схемах и в каждом состоянии. Заливка — токен `--so-component-solid-*` (добавлен `--so-component-solid-neutral`), в светлой схеме она стала темнее; наведение, нажатие и выбор — её тень, темнее покоя. Крестик тега — цвета подписи тега.
+- 47e560d: Textarea: новый компонент (Vue) — многострочное поле с контрактом Input и подписью от `Field`: `rows`, авторост `autoresize` до `maxRows`, счётчик символов `counter` с пределом `maxlength`. Новая строка локали `textarea.counter`: свою полную `TLocale` дополните ею или соберите через `extendLocale`.
+- e977046: Меню: подменю — `Menu.Submenu` (`MenuSubmenu`). Пункт открывает сбоку своё меню наведением, стрелкой к концу строки, Enter и пробелом; путь указателя наискосок к открытой панели её не закрывает; стрелка к началу строки и Escape закрывают один уровень, а выбор пункта и Tab — всё меню, и `choose` приходит каждому меню над пунктом. Наведение в панели меню — теперь плагин `TMenuHoverPlugin`: `TMenuPointerPlugin` только открывает меню.
+- b39b864: Кнопка календаря DatePicker и стрелка Select на `sm` — зона нажатия 24×24, вид прежний
+- 51985f1: Кнопка очистки полей на размере sm принимает нажатие в квадрате 24×24 вокруг себя (WCAG 2.5.8); вид кнопки не меняется.
+- 6c54bfa: Выключенная опция Select гаснет так же, как выключенный пункт ListBox: тема больше не гасит её второй раз прозрачностью обёртки, и текст опции не выходит вдвое бледнее.
+- Updated dependencies [dca2a76]
+- Updated dependencies [8bbb7d8]
+- Updated dependencies [7731c71]
+- Updated dependencies [bc530a2]
+- Updated dependencies [7872e77]
+- Updated dependencies [a67b85a]
+- Updated dependencies [f4676b7]
+- Updated dependencies [5f4c58a]
+- Updated dependencies [7002663]
+- Updated dependencies [7f54086]
+- Updated dependencies [88a6ccf]
+- Updated dependencies [f06e5f9]
+- Updated dependencies [d4c3583]
+- Updated dependencies [51ce716]
+- Updated dependencies [0ad9f22]
+- Updated dependencies [8e2e31e]
+- Updated dependencies [b3b63db]
+- Updated dependencies [1411d88]
+- Updated dependencies [ce9316e]
+- Updated dependencies [a61b6a5]
+- Updated dependencies [47e560d]
+- Updated dependencies [10c38fe]
+- Updated dependencies [6408875]
+- Updated dependencies [e977046]
+- Updated dependencies [04fb073]
+- Updated dependencies [fb85110]
+- Updated dependencies [76329be]
+- Updated dependencies [958c866]
+- Updated dependencies [b810fa0]
+- Updated dependencies [4429cbc]
+- Updated dependencies [f256e0f]
+  - @soldy-ui/plugins@0.3.0-alpha.0
+  - @soldy-ui/core@0.3.0-alpha.0
+  - @soldy-ui/setup@0.3.0-alpha.0
+
 ## 0.2.0
 
 ### Minor Changes
