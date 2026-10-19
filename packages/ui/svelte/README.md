@@ -25,9 +25,8 @@ slot is `children`.
 > `<input>`; an item of a collection gives them to its row; a list box and tabs give them to the
 > list itself, `[role=listbox]` or `[role=tablist]`; a table gives them to the `<table>` itself,
 > and its class, style and `ref` to the scroll viewport around it. `Label` names the control it
-> wraps; `LocaleProvider`
-> gives a subtree its language and library strings, such as the name of the clear button of
-> `Input`. See [the adapter table](https://github.com/youra-h/soldy#components).
+> wraps; `LocaleProvider` gives a subtree its language and library strings, such as the name of the
+> clear button of `Input`. See [the adapter table](https://github.com/youra-h/soldy#components).
 
 ## Install
 
