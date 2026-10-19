@@ -13,3 +13,9 @@ export { scrollWindowOf, itemOf } from './scrollWindow'
 export { afterTransitions } from './afterTransitions'
 export { isScrollable, scrollParentOf, type TScrollAxis } from './scrollParent'
 export type { IDomEventTarget, TInlineSpan, TNearestShiftOptions } from './types'
+export {
+	positionOriginOf,
+	isPinnedToViewport,
+	type TPoint,
+	type TPositionStrategy,
+} from './positionOrigin'

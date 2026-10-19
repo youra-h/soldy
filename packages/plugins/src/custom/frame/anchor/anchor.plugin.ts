@@ -2,6 +2,7 @@ import type { IFrame, TDefaultValues } from '@soldy-ui/core'
 import { TBasePlugin } from '../../../base'
 import type { IPluginContext } from '../../../base'
 import { TElementPlugin } from '../../element'
+import { isPinnedToViewport, positionOriginOf } from '../../../utils'
 import type {
 	IAnchorPluginOptions,
 	IAnchorPluginProps,
@@ -72,11 +73,31 @@ const opposite = (side: TAnchorSide): TAnchorSide => (side === 'top' ? 'bottom' 
  * Frame (`frame.dataset`) — она не всегда совпадает с тем, что задал
  * потребитель в `placement`.
  *
- * Работает только при `position: 'fixed'`: координаты берутся из
- * `getBoundingClientRect()`, то есть относительно окна, а при `absolute`
- * отсчёт шёл бы от позиционированного предка. Панель внутри контейнера
- * (`contained`) якорь тоже не двигает: её место в контейнере решает тема, и
- * стороны у неё нет — `data-placement` снимается.
+ * `position` панели у якоря выбирает плагин (`_choosePosition`), как пишет
+ * её `x` и `y`: `absolute`, а у якоря, который стоит в окне, — `fixed`.
+ * Панель `fixed` прокрутку страницы не замечает, и сдвинуть её за полем
+ * может только пересчёт по `scroll`. На телефоне страницу прокручивает
+ * композитор, а `scroll` приходит в JS кадром позже: поле уже уехало, панель
+ * кадр стоит и догоняет — дрожит на каждом кадре прокрутки. Ни кадр
+ * (`requestAnimationFrame`), ни память стороны этого не снимают. Панель
+ * `absolute` лежит в документе, и окно браузер прокручивает вместе с ней и
+ * полем, без JS, — так у PrimeVue. Якорь в окне (`fixed` или `sticky` к
+ * окну, `isPinnedToViewport`) прокрутка окна не двигает, и панель `absolute`
+ * отставала бы от него наоборот — у него `fixed`. Выбирают заново там же, где
+ * забывают сторону: показ Frame и смена якоря.
+ *
+ * Внутренняя прокрутка — граница, а не недоделка. Поле в своём прокручиваемом
+ * блоке, а панель в `body`: её отставание на кадр снимет только CSS Anchor
+ * Positioning, где место считает браузер, — или `target` панели в самом
+ * блоке, и тогда она едет вместе с ним.
+ *
+ * Считается всё в координатах окна (`getBoundingClientRect()`), а во Frame
+ * уходит от угла блока, от которого браузер отсчитывает `left`/`top` панели
+ * (`positionOriginOf`): у `absolute` в `body` это начало документа, в
+ * позиционированном предке — его угол с прокруткой, у `fixed` — окно или
+ * предок с трансформацией. Панель внутри контейнера (`contained`) якорь не
+ * двигает: её место в контейнере решает тема, и стороны у неё нет —
+ * `data-placement` снимается.
  *
  * По той же причине оба наблюдателя (`ResizeObserver`) смотрят border-box:
  * наблюдать надо ровно то, что меряем. Умолчание `content-box` пропустило бы
@@ -172,6 +193,7 @@ export class TAnchorPlugin extends TBasePlugin<any, TAnchorPluginEvents> {
 		// тогда
 		this._listenTo(this._frame?.events, 'show', () => {
 			this._heldSide = null
+			this._choosePosition()
 			this._update()
 		})
 		this._listenTo(this._frame?.events, 'change:contained', () => this._update())
@@ -182,6 +204,7 @@ export class TAnchorPlugin extends TBasePlugin<any, TAnchorPluginEvents> {
 
 		this._anchor = element
 		this._heldSide = null
+		this._choosePosition()
 		this._subscribe()
 		this._update()
 		this.events.emit('change:anchor', element)
@@ -284,7 +307,7 @@ export class TAnchorPlugin extends TBasePlugin<any, TAnchorPluginEvents> {
 			return
 		}
 
-		if (!frame || !anchor || frame.position !== 'fixed') return
+		if (!frame || !anchor) return
 
 		const rect = anchor.getBoundingClientRect()
 		const panel = this._panelSize(rect)
@@ -294,12 +317,32 @@ export class TAnchorPlugin extends TBasePlugin<any, TAnchorPluginEvents> {
 		const rtl = getComputedStyle(anchor).direction === 'rtl'
 		const alignment = this._alignment
 		const side = this._resolveSide(rect, panel.height)
+		const origin = positionOriginOf(this._element, frame.position)
 
-		frame.x = this._resolveX(rect, panel.width, alignment, rtl)
+		frame.x = this._resolveX(rect, panel.width, alignment, rtl) - origin.x
 		frame.y =
-			side === 'top' ? rect.top - panel.height - this._offset : rect.bottom + this._offset
+			(side === 'top' ? rect.top - panel.height - this._offset : rect.bottom + this._offset) -
+			origin.y
 
 		this._applyPlacement(alignment === 'center' ? side : `${side}-${alignment}`)
+	}
+
+	/**
+	 * `position` панели: `fixed` у якоря, который стоит в окне, иначе
+	 * `absolute` (см. описание класса).
+	 *
+	 * Выбранное держится до следующего показа или смены якоря. Стили предков
+	 * якоря на каждом `scroll` не перечитываем: шапка, которая стала `fixed`
+	 * при открытой панели, — редкость, а обход предков со стилями на каждом
+	 * кадре прокрутки обошёлся бы всем.
+	 */
+	private _choosePosition(): void {
+		const frame = this._frame
+		const anchor = this._anchor
+
+		if (!frame || !anchor) return
+
+		frame.position = isPinnedToViewport(anchor) ? 'fixed' : 'absolute'
 	}
 
 	/**

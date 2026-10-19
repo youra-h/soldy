@@ -11,7 +11,10 @@ export interface IFrameProps extends ILayerProps {
 	width?: number | string
 	/** Высота (px или CSS-значение) */
 	height?: number | string
-	/** CSS-позиционирование: fixed (viewport) или absolute (родитель) */
+	/**
+	 * CSS-позиционирование: fixed (viewport) или absolute (родитель). У панели с
+	 * якорем его выбирает привязка, как и координаты
+	 */
 	position?: TFramePosition
 	/**
 	 * Панель внутри своего контейнера: не телепортируется, а остаётся в

@@ -9,12 +9,14 @@ import { isFocusableElement } from './isFocusableElement'
  * весь слой оверлея — база модели фокуса и обе её стратегии, немодальная и
  * модальная. Раскладку перебор не проверяет (в jsdom её нет), решает сам
  * браузер — потому кандидаты и перебираются по очереди.
+ *
+ * `options` уходят в `focus()` каждого кандидата как есть.
  */
-export function focusFirst(candidates: readonly Element[]): boolean {
+export function focusFirst(candidates: readonly Element[], options?: FocusOptions): boolean {
 	for (const candidate of candidates) {
 		if (!isFocusableElement(candidate)) continue
 
-		candidate.focus()
+		candidate.focus(options)
 
 		if (candidate.ownerDocument.activeElement === candidate) return true
 	}
