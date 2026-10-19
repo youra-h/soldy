@@ -2175,7 +2175,7 @@ Svelte 5 на рунах. Структура зеркалит React, потом�
 
 ## Layer 8c: Solid Adapter (`packages/ui/solid/src`)
 
-### ✅ IMPLEMENTED (Component / ComponentView / Stylable / Control / Textable / Button / Icon / Label / Frame / ProgressSpinner / Skeleton / Input / CheckBox / Switch / RadioGroup / ListBox / Tabs / Accordion)
+### ✅ IMPLEMENTED (Component / ComponentView / Stylable / Control / Textable / Button / Icon / Label / Frame / ProgressSpinner / Skeleton / Input / CheckBox / Switch / RadioGroup / ListBox / Tabs / Accordion / Table / Virtual)
 
 Структура зеркалит React — JSX и колбэк-пропы делают их почти близнецами, —
 а механика ближе к Vue и Svelte: тело компонента выполняется один раз, и
@@ -2188,7 +2188,11 @@ Svelte 5 на рунах. Структура зеркалит React, потом�
   монтирования от `createUniqueId()` и локалью поддерева, а на чужом наборе
   (фасад коллекции) — без них: они у того, кто набор собрал; раскладка корня
   `toRootProps` / `toRootLayout` (наборы ядра, поверх атрибуты потребителя,
-  класс, стиль объектом по-CSS) и её мемо `createRootProps`; делёж атрибутов
+  класс, стиль объектом по-CSS) и её мемо `createRootProps`; корень внутри
+  обёртки — `toWrappedRootProps` и мемо `createWrappedRootProps` (окно
+  таблицы вокруг `table`: обёртке атрибуты потребителя и скрытие, корню
+  классы и наборы ядра); `toText` — значение неизвестного типа текстом по
+  правилу интерполяции Vue (значение ячейки таблицы); делёж атрибутов
   потребителя у поля — `toRootForward` (класс и стиль корню) и
   `toControlAttrs` (остальное, кроме `ref`, — `<input>`; так же делит их
   элемент коллекции — строке, у радио — полю); `roleIcon(role)` — компонент
@@ -2200,9 +2204,11 @@ Svelte 5 на рунах. Структура зеркалит React, потом�
   `chainHandler` — своё, затем обработчик потребителя, и в форме пары
   `[handler, data]`.
 - `adapter/runtime/` — `useAdapter` поверх связки
-  `adapter.connect(SolidProfile)` и `useCollectionAdapter` — связка фасада
-  коллекции: те же состояние, входы, события, приём и уничтожение, но без
-  `ctrl` и привязки узла, а атрибуты — из того, что не съел компонент;
+  `adapter.connect(SolidProfile)` (callback-ref корня `ref` и его половины:
+  `bindRef` — только привязка к `TElementPlugin`, `consumerRef` — только `ref`
+  потребителя, для корня внутри обёртки) и `useCollectionAdapter` — связка
+  фасада коллекции: те же состояние, входы, события, приём и уничтожение, но
+  без `ctrl` и привязки узла, а атрибуты — из того, что не съел компонент;
   `joinState` — состояние двух контекстов компонента (свой и фасада) одним
   видом, прокси поверх обоих сторов; `KeyedFor` — петля по ключу записи;
   `rootTag` — корень по `tag` для `Dynamic` (строка или компонент Solid);
@@ -2237,7 +2243,9 @@ Svelte 5 на рунах. Структура зеркалит React, потом�
 - **DOM-биндинг — callback-ref** (`ref={binding.ref}`), как в React, —
   последним, после спреда раскладки: `ref` потребителя из атрибутов не выбьет
   привязку корня. Корень `ref` потребителя отдаёт он же, тем же вызовом, у
-  поля тоже: в раскладку и на `<input>` `ref` потребителя не идёт.
+  поля тоже: в раскладку и на `<input>` `ref` потребителя не идёт. У корня
+  внутри обёртки (окно таблицы) половины разведены: обёртке — `consumerRef`,
+  корню — `bindRef`.
 - **Динамический тег** — `<Dynamic component={rootTag(tag)}>` из
   `solid-js/web`: строка — элемент, функция — компонент Solid, он получает
   атрибуты корня, `ref` и содержимое пропсами.
@@ -2248,9 +2256,12 @@ Svelte 5 на рунах. Структура зеркалит React, потом�
   Label). Остальные слоты разметка рисует `renderSlot` прямо.
 - **Текст поля — `ref` поля `fieldText`**: привязку `value` Solid пишет в
   узел на каждую смену значения, не сверяя с узлом, — набор возвращал бы узлу
-  его же текст, и браузер переставал бы проверять `minlength`. Эффект
-  отрисовки в `ref` поля пишет текст, только когда он разошёлся с узлом; на
-  сервере текст уходит атрибутом `value`. Отметку и «выбрано частично»
+  его же текст, и браузер переставал бы проверять `minlength`. Эффект в `ref`
+  поля пишет текст, только когда он разошёлся с узлом; на сервере текст
+  уходит атрибутом `value`. Эффект — пользовательский, после атрибутов узла,
+  как `value` последним у Vue: `ref` Solid зовёт раньше атрибутов, и поле
+  `range` ручки ширины колонки прижало бы ширину к ходу по умолчанию, 0–100,
+  до своих `min` и `max`. Отметку и «выбрано частично»
   (`checked`, `prop:indeterminate`) Solid пишет свойствами сам, своего поля,
   как `NativeInput` у React, у адаптера нет.
 - **Id монтирования — `createUniqueId()`**: на сервере и при гидратации — от
@@ -2260,9 +2271,16 @@ Svelte 5 на рунах. Структура зеркалит React, потом�
   коллекции два (свой и фасада), и элемент входит в коллекцию на `attach()` в
   `useAdapter`, на сервере тоже. Слоя `TDrafts` и пересборки, как у React,
   нет. Элементы из данных — `<For>` по `shown`: элементы — экземпляры, и
-  ссылка на них устойчива. У ListBox — `KeyedFor` по `drawn`, с распорками
-  окна: записи `drawn` новые на каждую смену, и `<For>`, сравнивая их по
-  ссылке, пересоздавал бы все элементы вместе с узлами и фокусом.
+  ссылка на них устойчива. У ListBox и строк Table — `KeyedFor` по `drawn`, с
+  распорками окна: записи `drawn` новые на каждую смену, и `<For>`, сравнивая
+  их по ссылке, пересоздавал бы все элементы вместе с узлами и фокусом; у
+  ячеек строки — `KeyedFor` по колонке ячейки, по той же причине. Заголовки
+  колонок — `<For>` по `shownColumns`: колонки — экземпляры. Своей границы
+  перерисовки, как `withRenderBoundary` у React и `_TableRowCells` у Vue,
+  ячейкам не нужно: выбор строки меняет её атрибуты, а содержимое ячейки
+  читает только ячейку и слот `cell`. Table — тот же рецепт, что ListBox, с
+  окном `Virtual` и без drag-and-drop; `Virtual` — обёртка без узла, слой
+  лифта детям отдаёт `Elevate`.
 - **Лифт — слой значений в контексте, детям — `Elevate` (`Provider`).**
   Значение контекста Solid отдаёт только через `Provider`, а своего владельца
   у компонента в продакшене и на сервере нет — `createComponent` зовёт его
@@ -2292,7 +2310,6 @@ Svelte 5 на рунах. Структура зеркалит React, потом�
   фреймворка) Solid нарисовать не может, и корня нет.
 - Гидратацию пакет не проверяет: в одном прогоне компоненты собраны под одно
   окружение, а гидратации нужны обе сборки сразу.
-- Table и Virtual не портированы.
 
 ## Layer 8d: Web Components Adapter (`packages/ui/webc/src`)
 
@@ -3046,7 +3063,7 @@ Framework-agnostic dependency injection:
 | @soldy-ui/react          | Components (`Button`, `ComponentView`, …; collections with parts — `ListBox` with `ListBox.Item`, `Tabs` with `Tabs.Item` / `Tabs.Content`, `Accordion` with `Accordion.Item`, `RadioGroup` with `RadioGroup.Item`, `Table` with `Table.Column` / `Table.Row`, and flat `ListBoxItem`, `TabsItem`, `TabsContent`, `AccordionItem`, `RadioGroupItem`, `TableColumn`, `TableRow`), `useSetupXxx` hooks, `useAdapterContext`, `useAdapter`, `useCollectionAdapter`, `ReactProfile`, `ReactNaming`, `TReactElevator`, `Elevate`, `renderSlot`, `toAriaProps`, `toRootProps`, `toWrappedRootProps`, `toText`, prop types (`UseProps`, `UseDomProps`, `EventProps`, `SlotProps`)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | @soldy-ui/angular        | `TButtonComponent`, `TComponentViewComponent`, `TComponentComponent`, `TIconComponent`, `TProgressSpinnerComponent`, `TSkeletonComponent`, `TFrameComponent`, `TLabelComponent`, `TInputComponent`, `TCheckBoxComponent`, `TSwitchComponent`, `TRadioGroupComponent` / `TRadioGroupItemComponent`, `TListBoxComponent` / `TListBoxItemComponent`, `TTabsComponent` / `TTabsItemComponent` / `TTabsContentComponent`, `TAccordionComponent` / `TAccordionItemComponent`, `setupXxx`, generated names and surfaces (`ButtonInputNames` / `ButtonOutputNames` / `TButtonSurface`, …), `createAngularAdapterContext`, `useAdapter` / `useCollectionAdapter` / `joinBindings`, `TInputValue` / `TOutputEmitter`, `TComponentBase`, `TRootSpec`, `SlotDirective`, `RoleIconDirective`, `LocaleProviderDirective`, `AngularProfile`, `AngularNaming`, `useInputs` / `useOutputs`, `TAngularElevator`, `AngularElevatorFactory`, `provideElevator`                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | @soldy-ui/svelte         | `Button`, `ComponentView`, `setupXxx`, `useAdapter`, `SvelteProfile`, `SvelteNaming`, `TSvelteElevator`, `SvelteElevatorFactory`, prop types (`UseProps`, `UseDomProps`, `EventProps`, `SlotProps`, `TSnippetSlots`)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
-| @soldy-ui/solid          | `Button`, `ComponentView`, `Icon`, `Frame`, `ProgressSpinner`, `Skeleton`, collections with parts (`ListBox` with `ListBox.Item`, `Tabs` with `Tabs.Item` / `Tabs.Content`, `Accordion` with `Accordion.Item`, `RadioGroup` with `RadioGroup.Item`, and flat `ListBoxItem`, `TabsItem`, `TabsContent`, `AccordionItem`, `RadioGroupItem`), `setupXxx`, `createSolidAdapterContext`, `useAdapter`, `useCollectionAdapter`, `joinState`, `LocaleProvider`, `Teleport`, `KeyedFor`, `roleIcon`, `createRootProps`, `toRootProps`, `rootTag`, `SolidProfile`, `SolidNaming`, `TSolidElevator`, `useElevator`, `Elevate`, `renderSlot`, `resolveSlot`, `relaySlot`, `ResolvedSlot`, `chainHandler`, prop types (`UseProps`, `UseDomProps`, `EventProps`, `SlotProps`)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| @soldy-ui/solid          | `Button`, `ComponentView`, `Icon`, `Frame`, `ProgressSpinner`, `Skeleton`, `Virtual`, collections with parts (`ListBox` with `ListBox.Item`, `Tabs` with `Tabs.Item` / `Tabs.Content`, `Accordion` with `Accordion.Item`, `RadioGroup` with `RadioGroup.Item`, `Table` with `Table.Column` / `Table.Row`, and flat `ListBoxItem`, `TabsItem`, `TabsContent`, `AccordionItem`, `RadioGroupItem`, `TableColumn`, `TableRow`), `setupXxx`, `createSolidAdapterContext`, `useAdapter`, `useCollectionAdapter`, `joinState`, `LocaleProvider`, `Teleport`, `KeyedFor`, `roleIcon`, `createRootProps`, `createWrappedRootProps`, `toRootProps`, `toText`, `rootTag`, `SolidProfile`, `SolidNaming`, `TSolidElevator`, `useElevator`, `Elevate`, `renderSlot`, `resolveSlot`, `relaySlot`, `ResolvedSlot`, `chainHandler`, prop types (`UseProps`, `UseDomProps`, `EventProps`, `SlotProps`)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 | @soldy-ui/webc           | `<button is="so-button">` (`TButtonElement`), `<div is="so-component-view">` (`TComponentViewElement`), `<span is="so-icon">` (`TIconElement`), `<span is="so-progress-spinner">` (`TProgressSpinnerElement`), `<div is="so-skeleton">` (`TSkeletonElement`), `<so-locale-provider>` (`TLocaleProviderElement`), `setupXxx`, templates (`buttonTemplate`, `componentViewTemplate`, `iconTemplate`, `progressSpinnerTemplate`, `skeletonTemplate`), `SoldyElement`, `TRootSpec`, `defineElement`, `createWebcAdapterContext`, `useAdapter`, `useAttributes`, `HOST_PROPS`, `bind`, `roleIcon`, `drawRoleIcon`, `WebcProfile`, `WebcNaming`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | @soldy-ui/theme-oren     | CSS: `dist/index.css` (built by `npm run build --workspace=@soldy-ui/theme-oren`); types: `index.d.ts` — theme values of the appearance registries; `@soldy-ui/theme-oren/setup` — the theme object for `useTheme` and `TTabsViewPlugin`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | @soldy-ui/icons-material | Icons as data (`TIconSource`), a named export per icon — every role of `ICON_ROLES` and more; the app registers them via `setIcons`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |

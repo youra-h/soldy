@@ -7,13 +7,23 @@
  * с движка вместе со своими подписчиками — обменом адаптера. Здесь — настоящий
  * цикл Solid, как `ui/vue/__tests__/external-engine-lifetime.spec.ts` у Vue и
  * `ui/angular/__tests__/external-engine-lifetime.spec.ts` у Angular: три
- * монтирования ListBox подряд, и на шинах владельца, движка и его расширений
- * ни подписки, ни перехватчика, ни слушателя обмена.
+ * монтирования ListBox и Table подряд, и на шинах владельца, движка и его
+ * расширений ни подписки, ни перехватчика, ни слушателя обмена. У таблицы
+ * сверх них — строки, колонки и чекбокс «выбрать все»: заголовки и чекбоксы
+ * собираются над ними, как над `ctrl` снаружи, — и `ctrl` обёртки `Virtual`.
  */
 
 import { describe, it, expect, afterEach, vi } from 'vitest'
-import { TEvented, TListBox, createEngineListBox } from '@soldy-ui/core'
-import { ListBox } from '@soldy-ui/solid'
+import {
+	TEvented,
+	TListBox,
+	TTable,
+	TVirtual,
+	createEngineListBox,
+	createEngineTable,
+	type TTableCollection,
+} from '@soldy-ui/core'
+import { ListBox, Table, Virtual } from '@soldy-ui/solid'
 import { mount } from './mount'
 
 afterEach(() => {
@@ -90,6 +100,44 @@ function watchBuses(buses: readonly TEvented<any>[]): () => string[] {
 	return () => [...live.keys()].map((key) => key.replace(/#\d+$/, ''))
 }
 
+/**
+ * Движок строк таблицы снаружи: две строки из данных, колонка с заголовком
+ * строки, сортировкой и ручкой и выбор нескольких — так таблица рисует и
+ * кнопку сортировки, и ручку, и колонку выбора.
+ */
+function tableEngine(): TTableCollection {
+	const engine = createEngineTable({
+		items: [{ data: { id: 1, name: 'A' } }, { data: { id: 2, name: 'B' } }],
+	})
+
+	engine.extensions.columns.columns = [
+		{
+			field: 'name',
+			text: 'Имя',
+			rowHeader: true,
+			sortable: true,
+			resizable: true,
+			width: 150,
+		},
+	]
+	engine.extensions.selection.mode = 'multiple'
+
+	return engine
+}
+
+/** Шины движка таблицы: сам движок, расширения, строки, колонки и «выбрать все». */
+function tableBuses(engine: TTableCollection): TEvented<any>[] {
+	return [
+		engine.events,
+		...Object.values(engine.extensions).flatMap((extension) =>
+			extension ? [extension.events] : [],
+		),
+		...engine.extensions.batch.items.map((row) => row.events),
+		...engine.extensions.columns.columns.map((column) => column.events),
+		engine.extensions.table.selectAll.events,
+	]
+}
+
 describe('ListBox над движком и владельцем снаружи', () => {
 	it('после нескольких монтирований на шинах владельца и движка ничего', () => {
 		const owner = new TListBox()
@@ -106,6 +154,55 @@ describe('ListBox над движком и владельцем снаружи',
 			expect(container.querySelectorAll('.so-list-box-item')).toHaveLength(ITEMS.length)
 
 			destroy()
+		}
+
+		expect(live()).toEqual([])
+	})
+})
+
+describe('Table над движком и владельцем снаружи', () => {
+	it('после нескольких монтирований на шинах владельца, движка, строк и колонок ничего', () => {
+		const owner = new TTable()
+		const engine = tableEngine()
+		const live = watchBuses([owner.events, ...tableBuses(engine)])
+
+		for (let i = 0; i < 3; i++) {
+			const { container, destroy } = mount(() => <Table ctrl={owner} engine={engine} />)
+
+			// Смонтирована по-настоящему: строки, кнопка сортировки, ручка и чекбоксы
+			expect(container.querySelectorAll('.so-table-row')).toHaveLength(2)
+			expect(container.querySelectorAll('.so-table-column__sort')).toHaveLength(1)
+			expect(container.querySelectorAll('.so-table-column__resizer')).toHaveLength(1)
+			expect(container.querySelectorAll('.so-check-box')).toHaveLength(3)
+
+			destroy()
+		}
+
+		expect(live()).toEqual([])
+	})
+
+	/**
+	 * Обёртка своей шины коллекции не отдаёт: на выключатель таблица
+	 * подписывается при приёме и отписывается со снятием.
+	 */
+	it('в окне: на ctrl обёртки и шинах движка ничего', () => {
+		const virtual = new TVirtual()
+		const engine = tableEngine()
+		const live = watchBuses([virtual.events, ...tableBuses(engine)])
+
+		for (let i = 0; i < 3; i++) {
+			const { container, destroy } = mount(() => (
+				<Virtual ctrl={virtual}>
+					<Table engine={engine} />
+				</Virtual>
+			))
+
+			expect(container.querySelectorAll('.so-table-row')).toHaveLength(2)
+			expect(engine.extensions.draw.virtual).toBe(true)
+
+			destroy()
+
+			expect(engine.extensions.draw.virtual).toBe(false)
 		}
 
 		expect(live()).toEqual([])
