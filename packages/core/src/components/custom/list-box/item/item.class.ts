@@ -46,6 +46,13 @@ export default class TListBoxItem<
 		this._text = customProps.text ?? ctor.defaultValues.text
 
 		this._contentFit = customProps.contentFit ?? ctor.defaultValues.contentFit
+
+		// Только то, что элемент знает о себе сам: он — опция.
+		//
+		// `aria-selected` и `tabindex="-1"` — не отсюда: первый выражает выбор,
+		// второй — модель фокуса списка. И то и другое знает коллекция, а не
+		// элемент; пишет `TListBoxExtension`.
+		this._aria.add('role', 'option')
 	}
 
 	/**
@@ -62,6 +69,10 @@ export default class TListBoxItem<
 	 * ARIA-половина правила «нативный атрибут вместо ARIA-дубля» не зависит:
 	 * у `div` своего `disabled` нет, и состояние остаётся `aria-disabled`,
 	 * каким бы ни был корень.
+	 *
+	 * Набор ложится на строку поверх того, что `Button` пишет себе сам:
+	 * `role="option"` перекрывает его `role="button"`, и узел с ролью остаётся
+	 * один — строка и есть опция.
 	 */
 	protected override get _ariaTag(): string {
 		return 'div'

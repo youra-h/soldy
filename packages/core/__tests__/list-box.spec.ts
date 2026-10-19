@@ -24,6 +24,7 @@ import {
 	TListBoxCollectionFacade,
 	TListBoxItemCollectionFacade,
 	TItemContextRegistry,
+	createEngineListBox,
 } from '../src'
 import type {
 	IListBoxItem,
@@ -532,5 +533,88 @@ describe('aria-selected у элементов', () => {
 		facade.items = [...items, late] as IListBoxItem[]
 
 		expect(ariaSelected([...items, late])).toEqual(['false', 'true'])
+	})
+})
+
+/**
+ * Роли — природа компонента, и пишет их ядро в свои наборы: список — `listbox`,
+ * элемент — `option`, как `TSelectItem` и `TTabsItem`. От коллекции и режима
+ * выбора они не зависят: роль по режиму — знание Tags. Набор элемента ложится
+ * на строку поверх роли кнопки — это проверяют спеки адаптеров.
+ */
+describe('роли списка и элемента', () => {
+	it('список — listbox, элемент — option, и без движка', () => {
+		expect(new TListBox().aria.get('role')).toBe('listbox')
+		expect(new TListBoxItem().aria.get('role')).toBe('option')
+	})
+
+	it('режим выбора роли не меняет', () => {
+		const { owner, facade, items } = createListBox(['a', 'b'])
+
+		for (const mode of ['multiple', 'none', 'single'] as const) {
+			facade.mode = mode
+
+			expect(owner.aria.get('role')).toBe('listbox')
+			expect(items.map((item) => item.aria.get('role'))).toEqual(['option', 'option'])
+		}
+	})
+})
+
+/**
+ * Можно ли выбрать несколько, решает режим выбора — его знает коллекция, а не
+ * список. Поэтому `aria-multiselectable` пишет `TListBoxExtension` в `aria`
+ * владельца, как Select — в `listAria`, а Tags — в `aria` набора: в `multiple`
+ * — `true`, в `single` и `none` атрибута нет.
+ */
+describe('aria-multiselectable у списка', () => {
+	const multiselectable = (owner: TListBox) => owner.aria.get('aria-multiselectable')
+
+	it.each([
+		['multiple', 'true'],
+		['single', undefined],
+		['none', undefined],
+	] as const)('mode="%s" — %s', (mode, expected) => {
+		const owner = new TListBox()
+		const facade = new TListBoxCollectionFacade({ mode }, { owner })
+
+		expect(facade.mode).toBe(mode)
+		expect(multiselectable(owner)).toBe(expected)
+	})
+
+	it('смена режима ставит и снимает атрибут — туда и обратно', () => {
+		const { owner, facade } = createListBox(['a', 'b'])
+		const seen: Array<string | undefined> = []
+
+		for (const mode of ['multiple', 'single', 'multiple', 'none', 'multiple'] as const) {
+			facade.mode = mode
+			seen.push(multiselectable(owner))
+		}
+
+		expect(seen).toEqual(['true', undefined, 'true', undefined, 'true'])
+	})
+
+	/**
+	 * Владелец — опция движка: он приходит к движку, собранному без него, и
+	 * атрибут берёт по режиму, который у коллекции уже стоит. Дальше — на
+	 * каждую смену режима.
+	 */
+	it('владелец, пришедший к готовому движку, получает его по текущему режиму', () => {
+		const multiple = createEngineListBox()
+		const single = createEngineListBox()
+		const owner = new TListBox()
+		const other = new TListBox()
+
+		multiple.extensions.selection.mode = 'multiple'
+		multiple.options.set({ owner })
+		single.options.set({ owner: other })
+
+		expect(multiselectable(owner)).toBe('true')
+		expect(multiselectable(other)).toBeUndefined()
+
+		multiple.extensions.selection.mode = 'single'
+		single.extensions.selection.mode = 'multiple'
+
+		expect(multiselectable(owner)).toBeUndefined()
+		expect(multiselectable(other)).toBe('true')
 	})
 })
