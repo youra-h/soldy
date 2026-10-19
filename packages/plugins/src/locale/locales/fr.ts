@@ -33,5 +33,6 @@ export const frFR = freezeLocale({
 			value: '{value} sur {max}',
 			required: 'Veuillez choisir une note',
 		},
+		textarea: { counter: '{count} / {max}' },
 	},
 })

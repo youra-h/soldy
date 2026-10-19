@@ -144,6 +144,17 @@ const OWN: Record<string, Record<string, string>> = {
 	input: {
 		placeholder: 'Подсказка в пустом поле',
 	},
+	textarea: {
+		placeholder: 'Подсказка в пустом поле',
+		rows: 'Высота в строках, как у нативного поля. С autoresize — наименьшая высота',
+		maxRows:
+			'Сколько строк поле растёт с autoresize, дальше — прокрутка. 0 — без предела. Без autoresize ничего не меняет',
+		maxlength:
+			'Сколько символов можно набрать: больше браузер не даст. Значение из кода длиннее он не обрежет — счётчик покажет превышение',
+		autoresize:
+			'Высота по тексту — от rows до maxRows строк. Ручки размера при этом нет: высоту ведёт поле',
+		counter: 'Счётчик символов под полем: набрано / maxlength, без предела — одно число',
+	},
 	'check-box': {
 		indeterminate:
 			'Третье состояние: выбрано частично. Ставится извне, клик снимает его и отмечает чекбокс',
@@ -474,6 +485,7 @@ export const PREVIEW_PROPS: Readonly<Record<string, Readonly<Record<string, unkn
 	// строка `text` не меняла бы ничего видимого
 	button: { text: 'Кнопка' },
 	input: { placeholder: 'Введите текст' },
+	textarea: { placeholder: 'Комментарий' },
 	// Подпись — пропом `text`, контрол — содержимым превью
 	label: { text: 'Согласен' },
 	// Тексты частей поля, контрол — содержимым превью. Текста ошибки нет:
@@ -557,6 +569,14 @@ export const PRESETS: Record<string, Record<string, Record<string, unknown>>> = 
 		// Контрол помечается ошибкой и без текста, а сообщение встаёт на
 		// место подсказки, только когда текст есть
 		invalid: { error: 'Нет @' },
+	},
+	textarea: {
+		// Потолок — потолок автороста: без него поле не растёт, и строка ни на
+		// что не влияла бы
+		maxRows: { autoresize: true },
+		// Предел держит и сам — больше не набрать, — но сколько осталось,
+		// видно только по счётчику
+		maxlength: { counter: true },
 	},
 	select: {
 		removeOnBackspace: { editable: true, mode: 'multiple' },

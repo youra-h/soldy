@@ -33,5 +33,6 @@ export const esES = freezeLocale({
 			value: '{value} de {max}',
 			required: 'Selecciona una valoración',
 		},
+		textarea: { counter: '{count} / {max}' },
 	},
 })
