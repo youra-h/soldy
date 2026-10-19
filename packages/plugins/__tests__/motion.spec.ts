@@ -219,6 +219,8 @@ async function mountListBox(scrollBehavior: TScrollBehavior, order: TBindOrder =
 	const root = document.body.appendChild(document.createElement('div'))
 	const scrollTo = vi.fn()
 
+	// Список — узел с ролью `listbox`: его прокрутка ищет элемент (`closestList`)
+	root.setAttribute('role', 'listbox')
 	root.getBoundingClientRect = () => DOMRect.fromRect({ x: 0, y: 0, width: 200, height: 100 })
 	Object.defineProperty(root, 'scrollTo', { value: scrollTo })
 

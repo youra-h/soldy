@@ -8,10 +8,13 @@ import type {
 	TBatchEvents,
 	TSelectionEvents,
 	TActivationEvents,
+	TGroupEvents,
+	IGroupCollectionProps,
 	TOrderItemEventsExtension,
 	TSelectionItemEventsExtension,
 	TActivationItemEventsExtension,
 } from '../engine'
+import type { TSelectionFacadeProps } from './selection'
 
 /**
  * События фасада владельца коллекции — всё, что он отдаёт наружу.
@@ -42,6 +45,20 @@ export type TBatchCollectionFacadeEvents<TItem extends object> = TCollectionComp
 /** События фасада коллекции с расширением `selection`: набор `batch` плюс карта `selection`. */
 export type TSelectionCollectionFacadeEvents<TItem extends object> =
 	TBatchCollectionFacadeEvents<TItem> & TSelectionEvents<TItem>
+
+/**
+ * События фасада коллекции с выбором и расширением `group`: набор `selection`
+ * плюс карта `group`.
+ */
+export type TGroupCollectionFacadeEvents<TItem extends object> =
+	TSelectionCollectionFacadeEvents<TItem> & TGroupEvents<TItem>
+
+/** Входные props коллекции с выбором и группами: состав и режим плюс группировка. */
+export type TGroupFacadeProps<TItem = any, TItemProps = any> = TSelectionFacadeProps<
+	TItem,
+	TItemProps
+> &
+	IGroupCollectionProps<TItem>
 
 /** События фасада коллекции с расширением `activation`: набор `batch` плюс карта `activation`. */
 export type TActivationCollectionFacadeEvents<TItem extends object> =

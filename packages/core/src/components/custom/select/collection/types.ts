@@ -9,16 +9,18 @@ import {
 	TSelectionExtension,
 	TValueSelectionExtension,
 	TFilterExtension,
+	TGroupExtension,
 	TDrawExtension,
 	TPositionInSetExtension,
 } from '../../../base/collection'
 import type {
 	ICollectionProps,
 	IBatchCollectionProps,
+	IGroupCollectionProps,
 	ISelectionCollectionItemProps,
 	ISelectionCollectionProps,
 	TCollectionFacadeOptions,
-	TSelectionFacadeProps,
+	TGroupFacadeProps,
 	ISelectionItemExtension,
 	IOrderItemExtension,
 } from '../../../base/collection'
@@ -28,7 +30,7 @@ import type { ISelect } from '../types'
 import type { ISelectItem, ISelectItemProps } from '../item/types'
 import type {
 	TDrawEvents,
-	TSelectionCollectionFacadeEvents,
+	TGroupCollectionFacadeEvents,
 	TSelectionItemFacadeEvents,
 } from '../../../base/collection'
 import type { TSelectEngineOptions, TSelectTagsExtensionEvents } from './extensions'
@@ -44,7 +46,9 @@ export type TSelectCollectionExtensions<TItem extends ISelectItem = ISelectItem>
 	batch: TBatchExtension<TItem>
 	/** Отбор опций по тексту — сужает `shown`, хранилище не трогает. */
 	filter: TFilterExtension<TItem>
-	/** Что список панели рисует из показанных опций: все или окно с распорками. */
+	/** Группы опций: показанное по группам и его секции */
+	group: TGroupExtension<TItem>
+	/** Что список панели рисует из показанных опций: все или окно с распорками, по секциям. */
 	draw: TDrawExtension<TItem>
 	/** Место нарисованной опции в наборе, пока стоит окно. */
 	positionInSet: TPositionInSetExtension<TItem>
@@ -83,7 +87,8 @@ export type TSelectCollection = TCollectionEngine<
 export type TSelectCollectionFacadeEngine = TCollectionEngine<any, any>
 
 /**
- * Owner-level props коллекции Select.
+ * Owner-level props коллекции Select: состав, режим выбора, группы опций и
+ * переполнение тегов.
  *
  * `mode` приходит из selection и служит переключателем множественного выбора:
  * отдельного пропа `multiple` нет намеренно — два имени для одного состояния
@@ -98,7 +103,8 @@ export interface ISelectCollectionProps<TItemProps = ISelectItemProps, TItem = I
 	extends
 		ICollectionProps<TSelectCollectionFacadeEngine>,
 		IBatchCollectionProps<TItemProps, TItem>,
-		ISelectionCollectionProps {
+		ISelectionCollectionProps,
+		IGroupCollectionProps<TItem> {
 	/**
 	 * Что делать с тегами поля, когда они не помещаются в строку. Передаётся
 	 * своему `TTags` так же, как `size` и `variant`; по умолчанию `wrap` —
@@ -116,10 +122,10 @@ export type TSelectCollectionFacadeOptions = TCollectionFacadeOptions<
 >
 
 /**
- * Входные props фасада коллекции Select: состав и режим из базы плюс своё —
- * режим переполнения ряда тегов.
+ * Входные props фасада коллекции Select: состав, режим и группировка из базы
+ * плюс своё — режим переполнения ряда тегов.
  */
-export type TSelectCollectionFacadeProps = TSelectionFacadeProps<ISelectItem> &
+export type TSelectCollectionFacadeProps = TGroupFacadeProps<ISelectItem> &
 	Pick<ISelectCollectionProps, 'tags_overflow'>
 
 /** Item-адаптеры коллекции Select — типизированный доступ к `context.adapters`. */
@@ -130,10 +136,10 @@ export type TSelectAdapters = {
 }
 
 /**
- * События фасада коллекции Select: набор `selection`-базы плюс карты расширений
- * `tags` и рисования (`draw`).
+ * События фасада коллекции Select: набор базы группировки плюс карты
+ * расширений `tags` и рисования (`draw`).
  */
-export type TSelectCollectionFacadeEvents = TSelectionCollectionFacadeEvents<ISelectItem> &
+export type TSelectCollectionFacadeEvents = TGroupCollectionFacadeEvents<ISelectItem> &
 	TSelectTagsExtensionEvents &
 	TDrawEvents<ISelectItem>
 

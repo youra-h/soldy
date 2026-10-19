@@ -6,6 +6,7 @@ import { smoothScrollBehavior } from '../../../motion'
 import { TElementPlugin } from '../../element'
 import { TCollectionBundlesPlugin, TCollectionElements } from '../../collection'
 import { TListKeyboardPlugin } from '../keyboard'
+import { closestList } from '../row'
 import type { TListScrollPluginEvents } from './types'
 
 /** Куда довести элемент: в середину контейнера или до ближайшего края. */
@@ -45,9 +46,11 @@ type TScrollMode = 'center' | 'nearest'
  * нечего, а плавный проход перерисовывал бы окно на каждом кадре. При `none`
  * её нет.
  *
- * **Контейнер — родитель элементов**, как у `TListHeightPlugin`: предел строк
- * тот ставит ему, и прокручивается он. У ListBox это узел списка, а не
- * корень: шапка и подвал стоят в корне рядом с ним и не прокручиваются.
+ * **Контейнер — список, в котором стоят элементы** (`closestList`), как у
+ * `TListHeightPlugin`: предел строк тот ставит ему, и прокручивается он. У
+ * ListBox это узел списка, а не корень: шапка и подвал стоят в корне рядом с
+ * ним и не прокручиваются. Не родитель элемента: у элемента группы
+ * (`ListBox.Group`) родитель — группа, а прокручивается список вокруг групп.
  */
 export class TListScrollPlugin extends TBasePlugin<any, TListScrollPluginEvents> {
 	private _element: Element | null = null
@@ -186,7 +189,7 @@ export class TListScrollPlugin extends TBasePlugin<any, TListScrollPluginEvents>
 
 	private _scrollTo(target: Element, mode: TScrollMode, behavior: ScrollBehavior): void {
 		// Корня уже нет — кадр пришёл после снятия
-		const container = this._element ? target.parentElement : null
+		const container = this._element ? closestList(target) : null
 
 		if (!container) return
 

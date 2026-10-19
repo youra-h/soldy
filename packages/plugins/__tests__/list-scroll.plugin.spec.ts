@@ -56,9 +56,9 @@ afterEach(() => {
  * коробки задаёт тест: окно списка высотой `ROWS` шагов, элемент — на своём
  * месте от его верха.
  *
- * Разметка — как у ListBox: элементы — в узле списка внутри корня, и
- * прокручивается он, родитель элементов, а не корень (`rootScrollTo`): рядом с
- * ним в корне стоят шапка и подвал.
+ * Разметка — как у ListBox: элементы — в узле списка с ролью `listbox` внутри
+ * корня, и прокручивается он, а не корень (`rootScrollTo`): рядом с ним в
+ * корне стоят шапка и подвал.
  */
 async function setup(scrollBehavior: TScrollBehavior = 'smooth') {
 	const owner = new TListBox({ value: 'v151', scrollBehavior })
@@ -82,6 +82,7 @@ async function setup(scrollBehavior: TScrollBehavior = 'smooth') {
 	const scrollTo = vi.fn()
 	const rootScrollTo = vi.fn()
 
+	list.setAttribute('role', 'listbox')
 	list.getBoundingClientRect = () =>
 		DOMRect.fromRect({ x: 0, y: 0, width: 200, height: ROWS * STEP })
 	Object.defineProperty(list, 'clientHeight', { value: ROWS * STEP })
@@ -179,5 +180,76 @@ describe('выбранного окно ещё не нарисовало', () =>
 		await nextFrame()
 
 		expect(scrollTo).not.toHaveBeenCalled()
+	})
+})
+
+/**
+ * Элементы в группах (`ListBox.Group`): родитель элемента — группа, а
+ * прокручивается список вокруг групп. Окна у списка с группами нет — все
+ * элементы в документе.
+ */
+describe('элементы в группах', () => {
+	it('прокручивается узел списка, а не группа элемента', async () => {
+		const owner = new TListBox({ value: 'v40', scrollBehavior: 'smooth' })
+		const facade = new TListBoxCollectionFacade(
+			{
+				items: Array.from({ length: 40 }, (_, index) => ({
+					value: `v${index + 1}`,
+					_: { group: index < 20 ? 'first' : 'second' },
+				})),
+			},
+			{ owner },
+		)
+		const engine = facade.engine
+		const root = document.body.appendChild(document.createElement('div'))
+		const list = root.appendChild(document.createElement('div'))
+		const scrollTo = vi.fn()
+		const groupScrollTo = vi.fn()
+		const groups = new Map<unknown, HTMLElement>()
+
+		list.setAttribute('role', 'listbox')
+		list.getBoundingClientRect = () =>
+			DOMRect.fromRect({ x: 0, y: 0, width: 200, height: ROWS * STEP })
+		Object.defineProperty(list, 'clientHeight', { value: ROWS * STEP })
+		Object.defineProperty(list, 'scrollTo', { value: scrollTo })
+
+		const bundle = new TPluginBundle(owner)
+			.use(TElementPlugin)
+			.use(TCollectionBundlesPlugin)
+			.use(TCollectionElements)
+			.use(TListScrollPlugin)
+
+		bundles.push(bundle)
+
+		const registry = pluginOf(bundle, TCollectionBundlesPlugin)
+
+		registry.bindEngine(engine)
+
+		engine.extensions.batch.shown.forEach((item, place) => {
+			const key = engine.extensions.meta.get(item)?.group
+			let group = groups.get(key)
+
+			if (!group) {
+				group = list.appendChild(document.createElement('div'))
+				group.setAttribute('role', 'group')
+				Object.defineProperty(group, 'scrollTo', { value: groupScrollTo })
+				groups.set(key, group)
+			}
+
+			const itemBundle = new TPluginBundle(item).use(TElementPlugin)
+			const node = group.appendChild(document.createElement('div'))
+
+			node.getBoundingClientRect = () =>
+				DOMRect.fromRect({ x: 0, y: place * STEP, width: 200, height: STEP })
+			bundles.push(itemBundle)
+			registry.register(itemBundle, item)
+			pluginOf(itemBundle, TElementPlugin).element = node
+		})
+
+		pluginOf(bundle, TElementPlugin).element = root
+		await nextFrame()
+
+		expect(scrollTo).toHaveBeenCalledOnce()
+		expect(groupScrollTo).not.toHaveBeenCalled()
 	})
 })

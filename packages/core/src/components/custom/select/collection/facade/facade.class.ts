@@ -1,5 +1,5 @@
-import { TSelectionCollectionFacade } from '../../../../base/collection'
-import type { TDrawnEntry } from '../../../../base/collection'
+import { TGroupCollectionFacade } from '../../../../base/collection'
+import type { TDrawnEntry, TDrawnSection } from '../../../../base/collection'
 
 import { selectExtensions } from '../factory'
 import { completeEngine } from '../../../../base/collection/create/internal'
@@ -19,11 +19,13 @@ import type { TDefaultValues } from '../../../../base/component'
 /**
  * Фасад коллекции Select.
  *
- * Состав, режим и выбранное — из базы. Своё — теги поля и что рисует список
- * панели (`drawn`, расширение `draw`): без окна все показанные опции, в окне
- * обёртки `Virtual` — видимые и распорки на месте пропущенных, как у ListBox.
+ * Состав, режим, выбранное и группировка — из базы (`TGroupCollectionFacade`).
+ * Своё — теги поля и что рисует список панели (расширение `draw`): без окна
+ * все показанные опции, в окне обёртки `Virtual` — видимые и распорки на месте
+ * пропущенных, как у ListBox, а по секциям группировки — `drawnSections`,
+ * отсюда рисует разметка.
  */
-export class TSelectCollectionFacade extends TSelectionCollectionFacade<
+export class TSelectCollectionFacade extends TGroupCollectionFacade<
 	ISelectItem,
 	TSelectCollectionExtensions,
 	TSelectCollectionFacadeEvents
@@ -32,9 +34,9 @@ export class TSelectCollectionFacade extends TSelectionCollectionFacade<
 	 * Своё умолчание у фасада одно — режим переполнения ряда тегов: снятый из
 	 * разметки проп связка возвращает к нему. Остальные ключи приходят от баз.
 	 */
-	static override defaultValues: typeof TSelectionCollectionFacade.defaultValues &
+	static override defaultValues: typeof TGroupCollectionFacade.defaultValues &
 		TDefaultValues<ISelectCollectionProps, 'tags_overflow'> = {
-		...TSelectionCollectionFacade.defaultValues,
+		...TGroupCollectionFacade.defaultValues,
 		tags_overflow: 'wrap',
 	}
 
@@ -108,6 +110,15 @@ export class TSelectCollectionFacade extends TSelectionCollectionFacade<
 	 */
 	get drawn(): ReadonlyArray<TDrawnEntry<ISelectItem>> {
 		return this.extensions.draw.drawn
+	}
+
+	/**
+	 * Что рисует список панели, по секциям группировки: группа с подписью или
+	 * опции без группы, между соседними секциями — разделитель. Без групп
+	 * секция одна — все записи `drawn`
+	 */
+	get drawnSections(): ReadonlyArray<TDrawnSection<ISelectItem>> {
+		return this.extensions.draw.drawnSections
 	}
 
 	private get _tags(): TSelectTagsExtension<ISelect, ISelectItem> {

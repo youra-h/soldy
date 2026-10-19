@@ -30,6 +30,7 @@ export {
 	drawOf,
 	factoryOf,
 	filterOf,
+	groupOf,
 	metaOf,
 	plainOf,
 	selectionOf,

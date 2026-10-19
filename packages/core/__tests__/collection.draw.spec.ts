@@ -3,12 +3,13 @@ import {
 	TBatchExtension,
 	TCollectionEngine,
 	TDrawExtension,
+	TGroupExtension,
 	TListBoxCollectionFacade,
 	TPlainExtension,
 	TWindowStrategy,
 	createEngineSelection,
 } from '@soldy-ui/core'
-import type { TDrawnEntry, TQueryEvent } from '@soldy-ui/core'
+import type { TDrawnEntry, TDrawnSection, TQueryEvent } from '@soldy-ui/core'
 
 /**
  * Рисование коллекции (`draw`) — что коллекция рисует из показанных
@@ -297,4 +298,189 @@ it('движок снаружи любого уровня — фасад дос�
 
 	expect(facade.engine.extensions.draw.virtual).toBe(false)
 	expect(facade.drawn).toHaveLength(2)
+})
+
+/**
+ * Группы — секциями нарисованного, и без окна. Коллекция с группировкой
+ * рисует показанное секциями (`drawnSections`): записи `drawn` по секциям
+ * группировки, без групп — одна секция со всеми записями, распорками тоже.
+ * Окно считает строки одной высоты, а подпись группы и разделитель — не
+ * строки окна, поэтому сгруппированное показанное окно не рисует.
+ */
+describe('группы', () => {
+	type Grouped = { uid: number; name: string; kind?: string }
+
+	/**
+	 * Голая коллекция с группировкой и рисованием — группировка раньше, как в
+	 * наборах ListBox и Select. Каждый второй элемент — группы `even`, ключ
+	 * группы читает `groupBy`, пока его поставят.
+	 */
+	function groupedKit(count: number) {
+		const engine = new TCollectionEngine<
+			Grouped,
+			{
+				plain: TPlainExtension<Grouped>
+				batch: TBatchExtension<Grouped>
+				group: TGroupExtension<Grouped>
+				draw: TDrawExtension<Grouped>
+			}
+		>({
+			extensions: {
+				plain: new TPlainExtension<Grouped>(),
+				batch: new TBatchExtension<Grouped>(),
+				group: new TGroupExtension<Grouped>(),
+				draw: new TDrawExtension<Grouped>(),
+			},
+		})
+
+		engine.extensions.batch.set(
+			Array.from({ length: count }, (_, index) => ({
+				uid: next++,
+				name: `item ${index + 1}`,
+				kind: index % 2 === 1 ? 'even' : undefined,
+			})),
+		)
+
+		return { engine, ...engine.extensions }
+	}
+
+	const byKind = (item: Grouped) => item.kind
+
+	/** Секции нарисованного коротко: ключ, подпись (`null` — без группы) и записи. */
+	function brief(sections: ReadonlyArray<TDrawnSection<Grouped>>) {
+		return sections.map(({ key, group, entries }) => [
+			key,
+			group === null ? null : (group.label ?? ''),
+			drawn(entries),
+		])
+	}
+
+	it('без групп секция одна — все записи drawn, распорки окна тоже', () => {
+		const { draw } = groupedKit(100)
+
+		draw.useStrategy(new TWindowStrategy())
+		draw.notifyViewport(viewport(800, 1000))
+
+		expect(draw.virtual).toBe(true)
+		expect(draw.drawnSections).toHaveLength(1)
+		expect(draw.drawnSections[0].key).toBe('free')
+		expect(draw.drawnSections[0].group).toBeNull()
+		expect(draw.drawnSections[0].entries).toBe(draw.drawn)
+		expect(draw.drawn.some((entry) => entry.kind === 'filler')).toBe(true)
+	})
+
+	it('пустая коллекция — секций нет', () => {
+		const { draw } = groupedKit(0)
+
+		expect(draw.drawnSections).toEqual([])
+	})
+
+	it('по группам — записи секций в порядке показанного, места — среди показанных', () => {
+		const { draw, group } = groupedKit(4)
+
+		group.groups = [{ key: 'even', label: 'Чётные' }]
+		group.groupBy = byKind
+
+		expect(brief(draw.drawnSections)).toEqual([
+			['group:even', 'Чётные', ['item 2@0', 'item 4@1']],
+			['free', null, ['item 1@2', 'item 3@3']],
+		])
+		// Записи секций — те же записи `drawn`, а не копии
+		expect(draw.drawnSections.flatMap((section) => section.entries)).toEqual(draw.drawn)
+	})
+
+	it('сгруппированное окно не рисует: все показанные, virtual — false; группы сняли — окно снова рисует', () => {
+		const { draw, group } = groupedKit(100)
+		const virtual = vi.fn()
+
+		draw.useStrategy(new TWindowStrategy())
+		draw.notifyViewport(viewport(800, 1000))
+		draw.events.on('change:virtual', virtual)
+
+		group.groupBy = byKind
+
+		expect(draw.virtual).toBe(false)
+		expect(draw.drawn).toHaveLength(100)
+		expect(draw.drawn.every((entry) => entry.kind === 'item')).toBe(true)
+
+		// Замер и закрепление при группах окна не рисуют
+		draw.notifyViewport(viewport(0, 200))
+		draw.pin('focus', group.sections[0].items[0])
+
+		expect(draw.drawn).toHaveLength(100)
+
+		group.groupBy = undefined
+
+		expect(draw.virtual).toBe(true)
+		expect(draw.drawn.some((entry) => entry.kind === 'filler')).toBe(true)
+		expect(virtual.mock.calls).toEqual([[false], [true]])
+	})
+
+	it('окно поставили на сгруппированный список — не рисует и change:virtual не шлёт', () => {
+		const { draw, group } = groupedKit(100)
+		const virtual = vi.fn()
+
+		group.groupBy = byKind
+		draw.events.on('change:virtual', virtual)
+		draw.useStrategy(new TWindowStrategy())
+
+		expect(draw.virtual).toBe(false)
+		expect(draw.drawn).toHaveLength(100)
+		expect(virtual).not.toHaveBeenCalled()
+	})
+
+	it('сменилась подпись — change:drawnSections без change:drawn', () => {
+		const { draw, group } = groupedKit(4)
+		const drawnChanged = vi.fn()
+		const sectionsChanged = vi.fn()
+
+		group.groups = [{ key: 'even', label: 'Чётные' }]
+		group.groupBy = byKind
+		draw.events.on('change:drawn', drawnChanged)
+		draw.events.on('change:drawnSections', sectionsChanged)
+
+		group.groups = [{ key: 'even', label: 'Парные' }]
+
+		expect(drawnChanged).not.toHaveBeenCalled()
+		expect(sectionsChanged).toHaveBeenCalledOnce()
+		expect(sectionsChanged).toHaveBeenCalledWith(draw.drawnSections)
+		expect(brief(draw.drawnSections)[0][1]).toBe('Парные')
+	})
+
+	it('пересчёт без смены — тишина: снимок секций — тот же массив', () => {
+		const { draw, group } = groupedKit(4)
+		const sectionsChanged = vi.fn()
+
+		group.groupBy = byKind
+
+		const before = draw.drawnSections
+
+		draw.events.on('change:drawnSections', sectionsChanged)
+		// Окно на сгруппированном списке не рисует: пересчёт даёт те же секции
+		draw.useStrategy(new TWindowStrategy())
+
+		expect(sectionsChanged).not.toHaveBeenCalled()
+		expect(draw.drawnSections).toBe(before)
+	})
+
+	it('одна запись — события по порядку: drawn, drawnSections, virtual; состояние уже новое', () => {
+		const { draw, group } = groupedKit(100)
+		const order: string[] = []
+
+		draw.useStrategy(new TWindowStrategy())
+		draw.notifyViewport(viewport(800, 1000))
+
+		draw.events.on('change:drawn', () => {
+			order.push('drawn')
+			// Подписчик `change:drawn` видит уже новые секции и `virtual`
+			expect(draw.virtual).toBe(false)
+			expect(draw.drawnSections).toHaveLength(2)
+		})
+		draw.events.on('change:drawnSections', () => order.push('drawnSections'))
+		draw.events.on('change:virtual', () => order.push('virtual'))
+
+		group.groupBy = byKind
+
+		expect(order).toEqual(['drawn', 'drawnSections', 'virtual'])
+	})
 })

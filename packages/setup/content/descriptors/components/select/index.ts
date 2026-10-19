@@ -1,3 +1,4 @@
 export { SelectDescriptor } from './select.descriptor'
 export { SelectItemDescriptor } from './item.descriptor'
+export { SelectGroupDescriptor } from './group.descriptor'
 export { SelectCollectionDescriptor, SelectCollectionItemDescriptor } from './collection.descriptor'

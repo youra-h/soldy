@@ -9,6 +9,7 @@
 import { defineComponent, defineDescriptor } from '../../../../protected/define'
 import { TListBoxCollectionFacade, TListBoxItemCollectionFacade } from '@soldy-ui/core'
 import { CollectionDescriptor } from '../collection'
+import { GROUP_PROPS } from '../list'
 
 export const ListBoxCollectionDescriptor = defineDescriptor(() =>
 	defineComponent({
@@ -18,19 +19,26 @@ export const ListBoxCollectionDescriptor = defineDescriptor(() =>
 
 		/**
 		 * Коллекционные props/events владельца ListBox — то, что выводит фасад
-		 * `TListBoxCollectionFacade`: режим выбора, сам выбор и что рисует
+		 * `TListBoxCollectionFacade`: режим выбора, сам выбор, группы элементов
+		 * (общий фрагмент `GROUP_PROPS`, как у Menu и Select) и что рисует
 		 * список.
 		 */
 		contribution: {
 			props: {
 				mode: { type: String, triggers: ['change:mode'] },
 				selected: { type: Array, protected: true, triggers: ['change:selection'] },
+				...GROUP_PROPS,
 				/**
-				 * Что рисует список по порядку: элементы на своих местах и, в окне
-				 * обёртки `Virtual`, распорки на месте пропущенных. Без окна — все
-				 * показанные элементы
+				 * Что рисует список, по секциям: группа с подписью или элементы без
+				 * группы, а в секции — элементы на своих местах и, в окне обёртки
+				 * `Virtual`, распорки на месте пропущенных. Между соседними
+				 * секциями разметка рисует разделитель. Без групп секция одна
 				 */
-				drawn: { type: Array, protected: true, triggers: ['change:drawn'] },
+				drawnSections: {
+					type: Array,
+					protected: true,
+					triggers: ['change:drawnSections'],
+				},
 			},
 			events: [],
 		},

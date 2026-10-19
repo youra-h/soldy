@@ -1,4 +1,5 @@
 import type { IExtension } from '../types'
+import type { TGroup } from '../group/types'
 
 /**
  * Элемент, которого коллекция рисует: по `uid` у записи элемента и у распорки
@@ -38,6 +39,22 @@ export type TDrawnFiller = {
 export type TDrawnEntry<TItem extends TDrawable = TDrawable> = TDrawnItem<TItem> | TDrawnFiller
 
 /**
+ * Секция того, что рисует коллекция, — записи `drawn` одной группы (секция
+ * расширения `group`). Разметка рисует секции по порядку: группу — обёрткой с
+ * подписью, записи без группы — прямо в списке, а между соседними секциями —
+ * разделитель. Без групп секция одна — все записи `drawn`, распорки окна тоже.
+ *
+ * `key` — ключ секции группировки (`group:<ключ>`, у записей без группы —
+ * `free`): ключ петли разметки, уникальный в снимке.
+ */
+export type TDrawnSection<TItem extends TDrawable = TDrawable> = {
+	readonly key: string
+	/** Группа секции; `null` — записи без группы */
+	readonly group: TGroup | null
+	readonly entries: ReadonlyArray<TDrawnEntry<TItem>>
+}
+
+/**
  * Замер окна: видимая полоса в пикселях от верха первого показанного элемента
  * (`top`, `bottom` — могут выходить за список) и шаг (`step`) — расстояние
  * между верхами соседних элементов.
@@ -70,7 +87,9 @@ export interface IDrawStrategy {
 export type TDrawEvents<TItem extends TDrawable = TDrawable> = {
 	/** Сменилось, что рисовать: элементы или распорки */
 	'change:drawn': (value: ReadonlyArray<TDrawnEntry<TItem>>) => void
-	/** Окно поставили или сняли */
+	/** Сменились секции нарисованного: записи секции, её ключ или группа с подписью */
+	'change:drawnSections': (value: ReadonlyArray<TDrawnSection<TItem>>) => void
+	/** Окно поставили или сняли — само или тем, что показанное сгруппировали */
 	'change:virtual': (value: boolean) => void
 }
 
@@ -87,7 +106,15 @@ export interface IDrawExtension<TItem extends TDrawable = TDrawable> extends IEx
 	 * видимые, закреплённые на своих местах и распорки между ними
 	 */
 	readonly drawn: ReadonlyArray<TDrawnEntry<TItem>>
-	/** Стоит ли окно: в документе, возможно, не все показанные элементы */
+	/**
+	 * Записи `drawn` по секциям группировки (сосед `group`): что рисует
+	 * разметка, которая рисует группы. Без групп секция одна — все записи
+	 */
+	readonly drawnSections: ReadonlyArray<TDrawnSection<TItem>>
+	/**
+	 * Рисует ли окно: в документе, возможно, не все показанные элементы. Окно
+	 * поставили, а показанное не сгруппировано — сгруппированное окно не рисует
+	 */
 	readonly virtual: boolean
 	/** Поставить стратегию рисования; `null` — рисовать все показанные */
 	useStrategy(strategy: IDrawStrategy | null): void

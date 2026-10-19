@@ -18,6 +18,7 @@ import {
 	TDialog,
 	TDrawer,
 	TField,
+	TListBoxGroup,
 	TMenu,
 	TMenuGroup,
 	TPopover,
@@ -25,6 +26,7 @@ import {
 	TRadioGroupCollectionFacade,
 	TRadioGroupItem,
 	TSelect,
+	TSelectGroup,
 	TSelectItem,
 	TTableColumn,
 	TTableRow,
@@ -41,7 +43,7 @@ import {
 	TDialogIdsPlugin,
 	TDismissPlugin,
 	TFieldIdsPlugin,
-	TMenuGroupIdsPlugin,
+	TItemGroupIdsPlugin,
 	TMenuIdsPlugin,
 	TModalIdsPlugin,
 	TPluginBundle,
@@ -131,29 +133,50 @@ describe('оверлеи', () => {
 		expect(menu.aria.has('aria-labelledby')).toBe(false)
 	})
 
-	it('Menu.Group: имя группы — подпись, пока она не пуста', () => {
-		const group = new TMenuGroup({ label: 'Вид' })
+	/**
+	 * Плагин имени группы один на три формы: у группы меню, ListBox и Select
+	 * формула связки одна. Роль подписи — у формы, и плагин её не трогает.
+	 */
+	describe.each([
+		['Menu.Group', (label?: string) => new TMenuGroup({ label })],
+		['ListBox.Group', (label?: string) => new TListBoxGroup({ label })],
+		['Select.Group', (label?: string) => new TSelectGroup({ label })],
+	])('%s', (_name, create) => {
+		it('имя группы — подпись, пока она не пуста', () => {
+			const group = create('Вид')
 
-		new TPluginBundle(group, 'm1').use(TMenuGroupIdsPlugin)
+			new TPluginBundle(group, 'm1').use(TItemGroupIdsPlugin)
 
-		expect(group.labelAria.toObject()).toEqual({ id: 'm1-label' })
-		expect(group.aria.get('aria-labelledby')).toBe('m1-label')
+			expect(group.labelAria.get('id')).toBe('m1-label')
+			expect(group.aria.get('aria-labelledby')).toBe('m1-label')
 
-		group.label = ''
+			group.label = ''
 
-		expect(group.aria.has('aria-labelledby')).toBe(false)
+			expect(group.aria.has('aria-labelledby')).toBe(false)
 
-		group.label = 'Сортировка'
+			group.label = 'Сортировка'
 
-		expect(group.aria.get('aria-labelledby')).toBe('m1-label')
+			expect(group.aria.get('aria-labelledby')).toBe('m1-label')
+		})
+
+		it('без подписи ссылки нет с первой отрисовки', () => {
+			const group = create()
+
+			new TPluginBundle(group, 'm1').use(TItemGroupIdsPlugin)
+
+			expect(group.aria.has('aria-labelledby')).toBe(false)
+		})
 	})
 
-	it('Menu.Group: без подписи ссылки нет с первой отрисовки', () => {
-		const group = new TMenuGroup()
+	it('роль подписи плагин не трогает: у списков — presentation, у меню — нет', () => {
+		const list = new TListBoxGroup({ label: 'Фрукты' })
+		const menu = new TMenuGroup({ label: 'Вид' })
 
-		new TPluginBundle(group, 'm1').use(TMenuGroupIdsPlugin)
+		new TPluginBundle(list, 'm1').use(TItemGroupIdsPlugin)
+		new TPluginBundle(menu, 'm2').use(TItemGroupIdsPlugin)
 
-		expect(group.aria.has('aria-labelledby')).toBe(false)
+		expect(list.labelAria.toObject()).toEqual({ role: 'presentation', id: 'm1-label' })
+		expect(menu.labelAria.toObject()).toEqual({ id: 'm2-label' })
 	})
 
 	it('Tooltip: ссылка триггера по режиму, ровно одна', () => {
