@@ -64,7 +64,13 @@ function click(fixture: ComponentFixture<unknown>, input: HTMLInputElement): voi
 	fixture.detectChanges()
 }
 
+/**
+ * Хосты с атрибутами потребителя. Селектор у каждого свой: их разметка
+ * различается только тегом, а тег в id компонента Angular не входит — без
+ * селектора id совпал бы (предупреждение NG0912).
+ */
 @Component({
+	selector: 'probe-check-box-forward',
 	standalone: true,
 	imports: [TCheckBoxComponent],
 	template: `<so-check-box class="app-control" style="color: red" title="Согласие" />`,
@@ -72,6 +78,7 @@ function click(fixture: ComponentFixture<unknown>, input: HTMLInputElement): voi
 class CheckBoxForwardHost {}
 
 @Component({
+	selector: 'probe-switch-forward',
 	standalone: true,
 	imports: [TSwitchComponent],
 	template: `<so-switch class="app-control" style="color: red" title="Согласие" />`,

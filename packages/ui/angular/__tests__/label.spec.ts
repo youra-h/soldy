@@ -166,8 +166,13 @@ describe('Label · текст: проп и слот', () => {
 	})
 })
 
-/** Подпись с контролом и колбэком смены значения. */
+/**
+ * Подпись с контролом и колбэком смены значения. Селектор у хостов свой: их
+ * разметка различается только тегом контрола, а тег в id компонента Angular
+ * не входит — без селектора id совпал бы (предупреждение NG0912).
+ */
 @Component({
+	selector: 'probe-check-box-change',
 	standalone: true,
 	imports: [TLabelComponent, TCheckBoxComponent],
 	template: `<label so-label text="Согласен"
@@ -179,6 +184,7 @@ class CheckBoxChangeHost {
 }
 
 @Component({
+	selector: 'probe-switch-change',
 	standalone: true,
 	imports: [TLabelComponent, TSwitchComponent],
 	template: `<label so-label text="Согласен"

@@ -150,8 +150,13 @@ const COMPONENTS: ReadonlyArray<readonly [string, Type<TProbeHost>, string, stri
  * Проба поля: у него атрибуты потребителя делятся между корнем и `<input>`.
  * `dir` потребителя — атрибут из разметки, и он уезжает на поле, а `dir` ядра
  * по `direction` стоит на корне.
+ *
+ * Селектор свой у каждой пробы поля и списка: их разметка различается только
+ * тегом, а тег в id компонента Angular не входит — без селектора id совпал бы
+ * (предупреждение NG0912).
  */
 @Component({
+	selector: 'probe-check-box',
 	standalone: true,
 	imports: [TCheckBoxComponent],
 	template: `<so-check-box
@@ -166,6 +171,7 @@ const COMPONENTS: ReadonlyArray<readonly [string, Type<TProbeHost>, string, stri
 class CheckBoxProbe extends TProbeHost {}
 
 @Component({
+	selector: 'probe-switch',
 	standalone: true,
 	imports: [TSwitchComponent],
 	template: `<so-switch
@@ -180,6 +186,7 @@ class CheckBoxProbe extends TProbeHost {}
 class SwitchProbe extends TProbeHost {}
 
 @Component({
+	selector: 'probe-input',
 	standalone: true,
 	imports: [TInputComponent],
 	template: `<so-input
@@ -204,9 +211,10 @@ const FIELDS: ReadonlyArray<readonly [string, Type<TProbeHost>, string, string]>
  * Проба списка: у ListBox и Tabs атрибуты потребителя делятся, как у поля, —
  * между корнем и узлом списка, на котором роль и `aria` компонента. `dir`
  * потребителя уезжает на узел списка, а `dir` ядра по `direction` стоит на
- * корне.
+ * корне. Селектор свой — по той же причине, что у проб полей.
  */
 @Component({
+	selector: 'probe-list-box',
 	standalone: true,
 	imports: [TListBoxComponent],
 	template: `<so-list-box
@@ -221,6 +229,7 @@ const FIELDS: ReadonlyArray<readonly [string, Type<TProbeHost>, string, string]>
 class ListBoxProbe extends TProbeHost {}
 
 @Component({
+	selector: 'probe-tabs',
 	standalone: true,
 	imports: [TTabsComponent],
 	template: `<so-tabs
