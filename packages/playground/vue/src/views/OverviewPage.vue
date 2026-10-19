@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { previewProps } from '@soldy-ui/playground-shared'
 import { showcaseOf } from '../catalog'
 import { frameworkLabel, hostOf } from '../hosts'
 import PreviewStage from '../components/PreviewStage.vue'
@@ -10,9 +11,6 @@ const props = defineProps<{ framework: string }>()
 const host = computed(() => hostOf(props.framework))
 
 const showcase = computed(() => showcaseOf(host.value))
-
-/** Превью витрины — без пропов: компонент таким, каким его рисует превью. */
-const NO_PROPS: Readonly<Record<string, unknown>> = Object.freeze({})
 </script>
 
 <template>
@@ -32,7 +30,11 @@ const NO_PROPS: Readonly<Record<string, unknown>> = Object.freeze({})
 		>
 			<div class="pg-cell__title">{{ entry.label }}</div>
 			<div class="pg-cell__stage">
-				<PreviewStage :host="host" :component="entry.id" :bind="NO_PROPS" />
+				<!--
+					Пропсы превью и ничего сверх них: компонент таким, каким его рисует
+					превью, — с подписью кнопки и плейсхолдером поля
+				-->
+				<PreviewStage :host="host" :component="entry.id" :bind="previewProps(entry.id)" />
 			</div>
 			<div class="pg-cell__note">{{ entry.description }}</div>
 		</RouterLink>

@@ -5,4 +5,4 @@
 	const bind: TPreviewProps = $props()
 </script>
 
-<Skeleton width={160} height={16} {...bind} />
+<Skeleton {...bind} />

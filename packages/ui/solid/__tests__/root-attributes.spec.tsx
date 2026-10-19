@@ -25,7 +25,7 @@
 
 import { describe, it, expect, vi } from 'vitest'
 import { createSignal, type Component, type JSX } from 'solid-js'
-import { TButton } from '@soldy-ui/core'
+import { TButton, type TTableColumnSource } from '@soldy-ui/core'
 import {
 	Accordion,
 	Button,
@@ -40,6 +40,7 @@ import {
 	RadioGroup,
 	Skeleton,
 	Switch,
+	Table,
 	Tabs,
 	toControlAttrs,
 	toRootForward,
@@ -60,6 +61,7 @@ import {
 	type RadioGroupProps,
 	type SkeletonProps,
 	type SwitchProps,
+	type TableProps,
 	type TabsContentProps,
 	type TabsItemProps,
 	type TabsProps,
@@ -311,6 +313,64 @@ describe('элемент коллекции: атрибуты снаружи —
 	})
 })
 
+/**
+ * Корень таблицы стоит внутри окна (`div.so-table__viewport`), и окно — внешний
+ * узел компонента: атрибуты потребителя, его класс, стиль и скрытие — окну, а
+ * классы и наборы ядра — `table`, которую видят плагины и тема
+ * (`createWrappedRootProps`).
+ */
+describe('Table: корень внутри окна', () => {
+	it('класс, стиль и атрибуты потребителя — окну, классы и наборы ядра — table', () => {
+		mount(() => (
+			<TableProbe
+				class="mine"
+				style={{ color: 'red' }}
+				title="Сотрудники"
+				dir="ltr"
+				direction="rtl"
+				aria_label="Таблица"
+			/>
+		))
+
+		const viewport = find(document, '.so-table__viewport', HTMLElement)
+		const table = find(document, 'table.so-table', HTMLElement)
+
+		expect([...viewport.classList]).toEqual(['so-table__viewport', 'mine'])
+		expect(viewport.style.color).toBe('red')
+		expect(viewport.title).toBe('Сотрудники')
+		expect(viewport.getAttribute('dir')).toBe('ltr')
+		expect(table.classList.contains('mine')).toBe(false)
+		expect(table.classList[0]).toBe('so-table')
+		expect(table.hasAttribute('style')).toBe(false)
+		expect(table.hasAttribute('title')).toBe(false)
+		// Наборы ядра — у таблицы: `dir` из `direction`, имя — из `aria_label`
+		expect(table.getAttribute('dir')).toBe('rtl')
+		expect(table.getAttribute('aria-label')).toBe('Таблица')
+		expect(viewport.hasAttribute('aria-label')).toBe(false)
+	})
+
+	it('свойство, записанное в окно мимо разметки, переживает смену стиля потребителя и видимости', () => {
+		const [style, setStyle] = createSignal<JSX.CSSProperties>({ color: 'red' })
+		const [visible, setVisible] = createSignal(true)
+
+		mount(() => <TableProbe style={style()} visible={visible()} />)
+
+		const viewport = find(document, '.so-table__viewport', HTMLElement)
+
+		viewport.style.setProperty('--so-probe', '1')
+		setStyle({ color: 'blue' })
+		setVisible(false)
+
+		expect(viewport.style.display).toBe('none')
+
+		setVisible(true)
+
+		expect(viewport.style.color).toBe('blue')
+		expect(viewport.style.display).toBe('')
+		expect(viewport.style.getPropertyValue('--so-probe')).toBe('1')
+	})
+})
+
 /** Узлы сверяются по ссылке: `toEqual` сравнил бы узлы по разметке. */
 function expectNodes(actual: readonly Element[], expected: readonly Element[]): void {
 	expect(actual).toHaveLength(expected.length)
@@ -323,32 +383,75 @@ type TRefProbeProps = {
 	onElementReady?: (element: Element) => void
 }
 
+const COLUMNS: TTableColumnSource[] = [{ field: 'name', text: 'Имя', rowHeader: true }]
+
+/** Таблица из одной строки и одной колонки. */
+function TableProbe(props: TableProps): JSX.Element {
+	return <Table columns={COLUMNS} items={[{ data: { id: 1, name: 'Анна' } }]} {...props} />
+}
+
 /**
  * Компонент со своим корнем — каждый, и поле и часть коллекции тоже, — как
- * его рисовать и класс корня. Frame по умолчанию скрыт и уходит телепортом в
- * `body` — корень ищется по документу; у Icon тега по умолчанию нет; часть
- * коллекции — в своём владельце.
+ * его рисовать, класс узла, который получает `ref` потребителя, и класс узла,
+ * с которым приходит `element:ready`. Это один узел — у всех, кроме таблицы:
+ * её `ref` получает окно, внешний узел, куда ложатся атрибуты потребителя, а
+ * к `TElementPlugin` привязан корень `table`. Frame по умолчанию скрыт и
+ * уходит телепортом в `body` — корень ищется по документу; у Icon тега по
+ * умолчанию нет; часть коллекции — в своём владельце.
  */
-const ROOTS: ReadonlyArray<readonly [string, (props: TRefProbeProps) => JSX.Element, string]> = [
-	['Button', (props) => <Button {...props} />, '.so-button'],
-	['ComponentView', (props) => <ComponentView {...props} />, '.so-component-view'],
-	['Frame', (props) => <Frame visible {...props} />, '.so-frame'],
-	['Icon', (props) => <Icon tag="i" {...props} />, '.so-icon'],
-	['Label', (props) => <Label {...props} />, '.so-label'],
-	['ProgressSpinner', (props) => <ProgressSpinner {...props} />, '.so-progress-spinner'],
-	['Skeleton', (props) => <Skeleton {...props} />, '.so-skeleton'],
-	['CheckBox', (props) => <CheckBox {...props} />, '.so-check-box'],
-	['Switch', (props) => <Switch {...props} />, '.so-switch'],
-	['Input', (props) => <Input {...props} />, '.so-input'],
-	['Tabs', (props) => <Tabs {...props} />, '.so-tabs'],
-	['Tabs.Item', (props) => <TabsItemProbe {...props} />, '.so-tabs-item'],
-	['Tabs.Content', (props) => <TabsContentProbe {...props} />, '.so-tabs__panel'],
-	['Accordion', (props) => <Accordion {...props} />, '.so-accordion'],
-	['Accordion.Item', (props) => <AccordionItemProbe {...props} />, '.so-accordion-item'],
-	['RadioGroup', (props) => <RadioGroup {...props} />, '.so-radio-group'],
-	['RadioGroup.Item', (props) => <RadioGroupItemProbe {...props} />, '.so-radio-group-item'],
-	['ListBox', (props) => <ListBox {...props} />, '.so-list-box'],
-	['ListBox.Item', (props) => <ListBoxItemProbe {...props} />, '.so-list-box-item'],
+const ROOTS: ReadonlyArray<
+	readonly [string, (props: TRefProbeProps) => JSX.Element, string, string]
+> = [
+	['Button', (props) => <Button {...props} />, '.so-button', '.so-button'],
+	[
+		'ComponentView',
+		(props) => <ComponentView {...props} />,
+		'.so-component-view',
+		'.so-component-view',
+	],
+	['Frame', (props) => <Frame visible {...props} />, '.so-frame', '.so-frame'],
+	['Icon', (props) => <Icon tag="i" {...props} />, '.so-icon', '.so-icon'],
+	['Label', (props) => <Label {...props} />, '.so-label', '.so-label'],
+	[
+		'ProgressSpinner',
+		(props) => <ProgressSpinner {...props} />,
+		'.so-progress-spinner',
+		'.so-progress-spinner',
+	],
+	['Skeleton', (props) => <Skeleton {...props} />, '.so-skeleton', '.so-skeleton'],
+	['CheckBox', (props) => <CheckBox {...props} />, '.so-check-box', '.so-check-box'],
+	['Switch', (props) => <Switch {...props} />, '.so-switch', '.so-switch'],
+	['Input', (props) => <Input {...props} />, '.so-input', '.so-input'],
+	['Tabs', (props) => <Tabs {...props} />, '.so-tabs', '.so-tabs'],
+	['Tabs.Item', (props) => <TabsItemProbe {...props} />, '.so-tabs-item', '.so-tabs-item'],
+	[
+		'Tabs.Content',
+		(props) => <TabsContentProbe {...props} />,
+		'.so-tabs__panel',
+		'.so-tabs__panel',
+	],
+	['Accordion', (props) => <Accordion {...props} />, '.so-accordion', '.so-accordion'],
+	[
+		'Accordion.Item',
+		(props) => <AccordionItemProbe {...props} />,
+		'.so-accordion-item',
+		'.so-accordion-item',
+	],
+	['RadioGroup', (props) => <RadioGroup {...props} />, '.so-radio-group', '.so-radio-group'],
+	[
+		'RadioGroup.Item',
+		(props) => <RadioGroupItemProbe {...props} />,
+		'.so-radio-group-item',
+		'.so-radio-group-item',
+	],
+	['ListBox', (props) => <ListBox {...props} />, '.so-list-box', '.so-list-box'],
+	[
+		'ListBox.Item',
+		(props) => <ListBoxItemProbe {...props} />,
+		'.so-list-box-item',
+		'.so-list-box-item',
+	],
+	['Table', (props) => <TableProbe {...props} />, '.so-table__viewport', 'table.so-table'],
 ]
 
 /** Поля: `ref` потребителя — корень, а не `<input>`. */
@@ -356,14 +459,16 @@ const FIELD_ROOTS = ROOTS.filter(([name]) => ['RadioGroup.Item'].includes(name))
 
 /**
  * `ref` потребителя получает корень компонента — узел, на который ложатся его
- * класс и атрибуты. Отдаёт его `ref` адаптера тем же вызовом, после привязки
- * к `TElementPlugin`, и привязку он не выбивает. Как любой `ref` Solid, он
- * зовётся, когда узел создан, и при снятии узла не зовётся.
+ * класс и атрибуты, — а у таблицы окно. Отдаёт его `ref` адаптера тем же
+ * вызовом, после привязки к `TElementPlugin`, и привязку он не выбивает; у
+ * таблицы половины `ref` разведены: окну — `ref` потребителя, `table` —
+ * привязка. Как любой `ref` Solid, он зовётся, когда узел создан, и при снятии
+ * узла не зовётся.
  */
 describe('ref потребителя — корень компонента', () => {
 	it.each(ROOTS)(
-		'%s: ref — корень, element:ready — тот же корень',
-		async (_name, draw, selector) => {
+		'%s: ref — корень, element:ready — привязанный корень',
+		async (_name, draw, selector, bound) => {
 			const nodes: Element[] = []
 			const ready: Element[] = []
 
@@ -375,10 +480,8 @@ describe('ref потребителя — корень компонента', () 
 			)
 			await nextFrame()
 
-			const root = find(document, selector, HTMLElement)
-
-			expectNodes(nodes, [root])
-			expectNodes(ready, [root])
+			expectNodes(nodes, [find(document, selector, HTMLElement)])
+			expectNodes(ready, [find(document, bound, HTMLElement)])
 		},
 	)
 

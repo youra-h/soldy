@@ -62,13 +62,13 @@ function commitOf(confirmable: boolean, host: IDatePickerCommitHost): IDatePicke
  *
  * **Общее — вниз, от ядра.** `disabled`, `size`, `variant`, `locale`, `min`,
  * `max` и `unavailable` DatePicker отдаёт полям и календарю, `readonly`,
- * `required` и `invalid` — полям, `weekStart` и `timeZone` — календарю, `name` — полю
- * одной даты, `startName` и `endName` — полям концов, режим — выбору
- * коллекции. Разметка эти значения не пробрасывает: второй путь к тем же
- * данным разошёлся бы с первым. Строк библиотеки DatePicker не строит и вниз
- * не раздаёт: имя кнопки календаря (оно же имя панели) в наборы `triggerAria`
- * и `panelAria`, имя кнопки очистки в `clearAria` и имена полей концов
- * диапазона даёт его плагин имён (`TDatePickerNamesPlugin`), а поля и
+ * `required`, `invalid` и `validate` — полям, `weekStart` и `timeZone` —
+ * календарю, `name` — полю одной даты, `startName` и `endName` — полям концов,
+ * режим — выбору коллекции. Разметка эти значения не пробрасывает: второй путь
+ * к тем же данным разошёлся бы с первым. Строк библиотеки DatePicker не строит
+ * и вниз не раздаёт: имя кнопки календаря (оно же имя панели) в наборы
+ * `triggerAria` и `panelAria`, имя кнопки очистки в `clearAria` и имена полей
+ * концов диапазона даёт его плагин имён (`TDatePickerNamesPlugin`), а поля и
  * календарь, смонтированные своими компонентами, получают имена от своих
  * плагинов имён, как поле Select.
  *
@@ -136,6 +136,7 @@ export class TDatePicker
 			| 'open'
 			| 'closeOnSelect'
 			| 'confirmable'
+			| 'validate'
 			| 'locale'
 			| 'startName'
 			| 'endName'
@@ -150,6 +151,8 @@ export class TDatePicker
 		min: undefined,
 		max: undefined,
 		unavailable: undefined,
+		// Верна ли дата, по умолчанию решает приложение — как у поля
+		validate: false,
 		// Не задан — первый день недели даёт `locale`
 		weekStart: undefined,
 		locale: DEFAULT_LOCALE,
@@ -167,6 +170,7 @@ export class TDatePicker
 	protected _min: TCalendarDate | undefined
 	protected _max: TCalendarDate | undefined
 	protected _unavailable: TCalendarUnavailable | undefined
+	protected _validate: boolean
 	protected _weekStart: TWeekday | undefined
 	protected _locale: string
 	protected _timeZone: string | undefined
@@ -223,6 +227,7 @@ export class TDatePicker
 		this._min = props.min ?? ctor.defaultValues.min
 		this._max = props.max ?? ctor.defaultValues.max
 		this._unavailable = props.unavailable ?? ctor.defaultValues.unavailable
+		this._validate = props.validate ?? ctor.defaultValues.validate
 		this._weekStart = props.weekStart ?? ctor.defaultValues.weekStart
 		this._locale = props.locale ?? ctor.defaultValues.locale
 		this._timeZone = props.timeZone ?? ctor.defaultValues.timeZone
@@ -239,7 +244,12 @@ export class TDatePicker
 			min: this._min,
 			max: this._max,
 		}
-		const input = { ...shared, readonly: this.readonly, required: this.required }
+		const input = {
+			...shared,
+			readonly: this.readonly,
+			required: this.required,
+			validate: this._validate,
+		}
 		// Правило недоступности — полю одной даты и началу как есть; концу — с
 		// якорем «начало», когда начало разложено (`_syncEnd`)
 		const ruled = { ...input, unavailable: this._unavailable }
@@ -488,6 +498,23 @@ export class TDatePicker
 		this.events.emit('change:unavailable', value)
 	}
 
+	/**
+	 * Проверка набора — всем полям: одной даты и обоим концам диапазона.
+	 * Календарю она не нужна: набора у него нет. Набранного не меняет — поле
+	 * применяет её со следующей цифры.
+	 */
+	get validate(): boolean {
+		return this._validate
+	}
+
+	set validate(value: boolean) {
+		if (this._validate === value) return
+
+		this._validate = value
+		this._inputs.forEach((input) => (input.validate = value))
+		this.events.emit('change:validate', value)
+	}
+
 	get weekStart(): TWeekday | undefined {
 		return this._weekStart
 	}
@@ -679,6 +706,7 @@ export class TDatePicker
 			min: this._min,
 			max: this._max,
 			unavailable: this._unavailable,
+			validate: this._validate,
 			weekStart: this._weekStart,
 			locale: this._locale,
 			timeZone: this._timeZone,

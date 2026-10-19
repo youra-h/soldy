@@ -55,6 +55,13 @@
  * событий, и `aria-*`, и `data-*`: поведение, которое потребитель вешает на
  * поле, — подсказка, обработчик ввода — встаёт на сам `<input>`. `ref` туда не
  * уходит: он корня.
+ *
+ * Корень бывает и не внешним узлом компонента: окно таблицы
+ * (`div.so-table__viewport`) обёрнуто вокруг её корня `table`. Тогда атрибуты
+ * потребителя, его `ref` и скрытие достаются обёртке, а корню — только своё
+ * (`createWrappedRootProps`, как `toWrappedRootProps` у React). `ref` и здесь
+ * вне раскладки: обёртке — только `ref` потребителя (`consumerRef` адаптера),
+ * корню — только привязка к `TElementPlugin` (`bindRef`).
  */
 
 import { createMemo, type Accessor, type JSX } from 'solid-js'
@@ -115,6 +122,20 @@ export type TRootSource = {
 	readonly style?: TRootStyle
 }
 
+/** Обёртка корня и сам корень внутри неё — см. `toWrappedRootProps`. */
+export type TWrappedRootProps = {
+	/** Внешний узел компонента: свой класс, атрибуты потребителя и скрытие. */
+	readonly wrapper: TRootProps
+	/** Корень внутри обёртки: наборы ядра, классы и стиль ядра. */
+	readonly root: TRootProps
+}
+
+/** Из чего мемо собирает обёртку и корень — аргументы `toWrappedRootProps`. */
+export type TWrappedRootSource = TRootSource & {
+	/** Класс обёртки — её разметка: у окна таблицы `so-table__viewport`. */
+	readonly wrapper: string
+}
+
 const HIDDEN: TRootStyle = { display: 'none' }
 
 /** Свойство стиля с непустым значением. */
@@ -139,7 +160,7 @@ function declarationsOf(styles: object | undefined): TDeclaration[] {
 }
 
 /** Свойства — текстом атрибута: так склеиваются слои вокруг строки потребителя. */
-function toText(declarations: readonly TDeclaration[]): string[] {
+function toCssText(declarations: readonly TDeclaration[]): string[] {
 	return declarations.map(([name, value]) => `${name}: ${value}`)
 }
 
@@ -168,7 +189,7 @@ export function toRootLayout(
 	if (typeof consumer === 'string' && consumer !== '') {
 		return {
 			class: className,
-			style: [...toText(below), consumer, ...toText(above)].join('; '),
+			style: [...toCssText(below), consumer, ...toCssText(above)].join('; '),
 		}
 	}
 
@@ -217,6 +238,61 @@ export function createRootProps(read: () => TRootSource): Accessor<TRootProps> {
 		const { state, sets, forward, style } = read()
 
 		return toRootProps(state, sets, forward, style)
+	})
+}
+
+/**
+ * Корень внутри своей обёртки — у компонента, чей внешний узел не корень:
+ * окно таблицы (`div.so-table__viewport`) вокруг `table`. Корень — узел,
+ * который видят плагины и тема, обёртка — разметка вокруг него. Во Vue
+ * атрибуты потребителя сами достаются внешнему узлу шаблона, и `v-show` стоит
+ * на нём же; здесь то же разведение, как `toWrappedRootProps` у React:
+ *
+ * - обёртке — её класс `wrapper` и за ним класс потребителя, стиль
+ *   потребителя и `display: none` скрытого компонента, остальные атрибуты
+ *   потребителя — как есть, кроме `ref`: его обёртке отдаёт `consumerRef`
+ *   адаптера, вне раскладки (шапка файла);
+ * - корню — `toRootProps` без атрибутов потребителя и без своего скрытия:
+ *   спрятана обёртка — спрятан и корень внутри неё. Наборы ядра, классы и
+ *   стиль-выход `style` — его, а к `TElementPlugin` его привязывает `bindRef`
+ *   адаптера, без `ref` потребителя.
+ *
+ * Состояние корню отдаётся поимённо, без `visible`, а не остатком
+ * деструктуризации: состояние Solid — прокси (стор, `joinState`), и остаток
+ * прокси без своих ключей пуст.
+ */
+export function toWrappedRootProps(
+	state: TRootState,
+	sets: readonly (TAttributesMap | undefined)[],
+	forward: TRootForward & TConsumerRefForward,
+	wrapper: string,
+	style?: TRootStyle,
+): TWrappedRootProps {
+	return {
+		wrapper: toRootProps({ classes: [wrapper], visible: state.visible }, [], forward),
+		root: toRootProps(
+			{ classes: state.classes, layout_styles: state.layout_styles, order: state.order },
+			sets,
+			{},
+			style,
+		),
+	}
+}
+
+/**
+ * Обёртка и корень аксессором-мемо — то, что компонент спредит на оба узла:
+ * `<div {...layout().wrapper} ref={binding.consumerRef}>` и внутри
+ * `<Dynamic {...layout().root} component={rootTag(state.tag)} ref={binding.bindRef}>`.
+ * Мемо — по той же причине, что `createRootProps`: спред читает атрибуты по
+ * одному, а раскладка считается раз на смену того, что прочёл `read`.
+ */
+export function createWrappedRootProps(
+	read: () => TWrappedRootSource,
+): Accessor<TWrappedRootProps> {
+	return createMemo(() => {
+		const { state, sets, forward, wrapper, style } = read()
+
+		return toWrappedRootProps(state, sets, forward, wrapper, style)
 	})
 }
 

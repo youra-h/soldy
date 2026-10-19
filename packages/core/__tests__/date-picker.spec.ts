@@ -95,6 +95,7 @@ describe('общее — полям и календарю', () => {
 			min: '2026-01-01',
 			max: '2026-12-31',
 			unavailable,
+			validate: true,
 			weekStart: 1,
 			timeZone: 'Asia/Tokyo',
 			name: 'date',
@@ -104,6 +105,7 @@ describe('общее — полям и календарю', () => {
 			expect(input.disabled).toBe(true)
 			expect(input.readonly).toBe(true)
 			expect(input.required).toBe(true)
+			expect(input.validate).toBe(true)
 			expect(input.size).toBe('lg')
 			expect(input.locale).toBe('ru-RU')
 			expect(input.min).toBe('2026-01-01')
@@ -132,6 +134,7 @@ describe('общее — полям и календарю', () => {
 		target.max = '2026-02-28'
 		target.readonly = true
 		target.required = true
+		target.validate = true
 		target.weekStart = 0
 		target.timeZone = 'UTC'
 		target.name = 'when'
@@ -144,6 +147,7 @@ describe('общее — полям и календарю', () => {
 			expect(input.max).toBe('2026-02-28')
 			expect(input.readonly).toBe(true)
 			expect(input.required).toBe(true)
+			expect(input.validate).toBe(true)
 		}
 
 		expect(target.field.name).toBe('when')
@@ -154,6 +158,25 @@ describe('общее — полям и календарю', () => {
 		expect(target.calendar.max).toBe('2026-02-28')
 		expect(target.calendar.weekStart).toBe(0)
 		expect(target.calendar.timeZone).toBe('UTC')
+	})
+
+	it('validate по умолчанию выключен; change:validate — только на реальное изменение, getProps его отдаёт', () => {
+		const target = picker()
+		const handler = vi.fn()
+
+		expect(target.validate).toBe(false)
+		expect([target.field, target.start, target.end].map((input) => input.validate)).toEqual([
+			false,
+			false,
+			false,
+		])
+
+		target.events.on('change:validate', handler)
+		target.validate = true
+		target.validate = true
+
+		expect(handler.mock.calls).toEqual([[true]])
+		expect(target.getProps().validate).toBe(true)
 	})
 
 	it('режим — выбору коллекции календаря и модификатор корня', () => {

@@ -29,12 +29,14 @@
 import { describe, it, expect } from 'vitest'
 import { For, type JSX } from 'solid-js'
 import { renderToString } from 'solid-js/web'
-import { createEngineListBox } from '@soldy-ui/core'
+import { createEngineListBox, type TTableColumnSource } from '@soldy-ui/core'
 import {
 	Accordion,
 	ListBox,
 	RadioGroup,
+	Table,
 	Tabs,
+	Virtual,
 	type AccordionItemProps,
 	type RadioGroupItemProps,
 	type TabsItemProps,
@@ -332,6 +334,108 @@ describe('RadioGroup · серверный рендер', () => {
 		expect(fields.map((field) => 'checked' in field.attributes)).toEqual([false, true, false])
 		expect(names.size).toBe(1)
 		expect([...names][0]).not.toBe('')
+	})
+})
+
+/**
+ * Таблица из данных: строки в коллекции с самой сборки, и сервер рисует их со
+ * всем, что пишут им коллекция и плагины, — `id` заголовков строк и ссылки
+ * чекбоксов на них, `id` подписей колонок и ссылки заголовков и поля ручки на
+ * них, имя кнопки сортировки от локали.
+ */
+describe('Table · серверный рендер', () => {
+	const NAME: TTableColumnSource = { field: 'name', text: 'Имя', rowHeader: true }
+	const AGE: TTableColumnSource = {
+		field: 'age',
+		text: 'Возраст',
+		sortable: true,
+		resizable: true,
+		width: 120,
+	}
+	const ROWS = [
+		{ data: { id: 1, name: 'Анна', age: 30 } },
+		{ data: { id: 2, name: 'Борис', age: 41 } },
+	]
+
+	it('строки и колонки из данных — со связками, именами и шириной', () => {
+		const body = render(() => <Table items={ROWS} columns={[NAME, AGE]} mode="multiple" />)
+		const rowHeaders = attributeOf(tagsWith(body, 'scope', 'row'), 'id')
+		const captions = attributeOf(withClass(body, 'so-table-column__text'), 'id')
+		// Чекбоксы строк называет ссылка; у «выбрать все» — своё имя
+		const rowChecks = tagsWith(body, 'type', 'checkbox').filter(
+			(tag) => 'aria-labelledby' in tag.attributes,
+		)
+
+		expect(textOf(body)).toContain('Анна')
+		expect(textOf(body)).toContain('Борис')
+		expect(rowHeaders).toHaveLength(2)
+		expect(rowHeaders.every(Boolean)).toBe(true)
+		expect(attributeOf(rowChecks, 'aria-labelledby')).toEqual(rowHeaders)
+		expect(captions).toHaveLength(2)
+		expect(captions.every(Boolean)).toBe(true)
+		expect(attributeOf(withClass(body, 'so-table-column'), 'aria-labelledby')).toEqual(captions)
+		expect(attributeOf(withClass(body, 'so-table-column__sort'), 'aria-label')).toEqual([
+			'Sort by Возраст',
+		])
+
+		const [field] = withClass(body, 'so-table-column__input')
+
+		expect(field?.attributes['aria-labelledby']).toBe(captions[1])
+		expect(field?.attributes.value).toBe('120')
+	})
+
+	it('окно таблицы — внешний узел, корень и наборы — у table', () => {
+		const body = render(() => (
+			<Table items={ROWS} columns={[NAME]} class="staff" aria_label="Сотрудники" />
+		))
+		const [viewport] = withClass(body, 'so-table__viewport')
+		const [table] = withClass(body, 'so-table')
+		// Класс сервер Solid печатает с пробелом в конце — сверяются имена
+		const classes = (tag: TTag | undefined) =>
+			(tag?.attributes.class ?? '').split(' ').filter(Boolean)
+
+		expect(viewport?.name).toBe('div')
+		expect(classes(viewport)).toEqual(['so-table__viewport', 'staff'])
+		expect(viewport?.attributes['aria-label']).toBeUndefined()
+		expect(table?.name).toBe('table')
+		expect(table?.attributes['aria-label']).toBe('Сотрудники')
+		expect(classes(table)).not.toContain('staff')
+	})
+})
+
+/**
+ * Окно на сервере: подхват — при сборке коллекции, а она идёт и на сервере.
+ * Сервер рисует уже окно — первые 50 элементов, без распорок: замера нет.
+ */
+describe('Virtual · серверный рендер', () => {
+	const ITEMS = Array.from({ length: 80 }, (_, index) => ({
+		value: `v${index + 1}`,
+		text: `Пункт ${index + 1}`,
+	}))
+
+	it('список в окне — первые 50 элементов, распорок нет', () => {
+		const body = render(() => (
+			<Virtual>
+				<ListBox items={ITEMS} />
+			</Virtual>
+		))
+
+		expect(withClass(body, 'so-list-box-item')).toHaveLength(50)
+		expect(withClass(body, 'so-list-box__filler')).toEqual([])
+		expect(attributeOf(tagsWith(body, 'aria-posinset'), 'aria-posinset').at(-1)).toBe('50')
+	})
+
+	it('таблица в окне — первые 50 строк и число строк у таблицы', () => {
+		const rows = ITEMS.map((item, index) => ({ data: { id: index + 1, name: item.text } }))
+		const body = render(() => (
+			<Virtual>
+				<Table items={rows} columns={[{ field: 'name', text: 'Имя', rowHeader: true }]} />
+			</Virtual>
+		))
+
+		expect(withClass(body, 'so-table-row')).toHaveLength(50)
+		expect(withClass(body, 'so-table__filler-row')).toEqual([])
+		expect(withClass(body, 'so-table')[0]?.attributes['aria-rowcount']).toBe('81')
 	})
 })
 

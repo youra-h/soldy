@@ -50,5 +50,18 @@
       "WebSearch",
       "WebFetch"
     ]
+  },
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/tools/agent-flow/session-title.mjs\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
   }
 }

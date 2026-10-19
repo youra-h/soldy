@@ -2,6 +2,7 @@ import type { IFrame, TDefaultValues } from '@soldy-ui/core'
 import { TBasePlugin } from '../../../base'
 import type { IPluginContext } from '../../../base'
 import { TElementPlugin } from '../../element'
+import { isPinnedToViewport, positionOriginOf } from '../../../utils'
 import type {
 	IAnchorPluginOptions,
 	IAnchorPluginProps,
@@ -18,6 +19,12 @@ import type {
  * префиксом как есть.
  */
 export const ANCHOR_PLACEMENT_ATTRIBUTE = 'data-placement'
+
+/** Сторона панели у якоря — над ним или под ним. */
+type TAnchorSide = 'top' | 'bottom'
+
+/** Сторона напротив. */
+const opposite = (side: TAnchorSide): TAnchorSide => (side === 'top' ? 'bottom' : 'top')
 
 /**
  * TAnchorPlugin — привязка Frame к чужому элементу.
@@ -43,6 +50,21 @@ export const ANCHOR_PLACEMENT_ATTRIBUTE = 'data-placement'
  * числе, остаётся, — а shift не меняет `placement` и только ограничивает `x`.
  * Flip выключается свойством `flip` (по умолчанию включён): панель остаётся на
  * стороне потребителя, даже если там не влезает. Shift от него не зависит.
+ *
+ * У flip есть память. Правило выше только выбирает сторону (`_chooseSide`), а
+ * открытая панель свою держит (`_holdSide`): пока на ней влезает — стоит, не
+ * влезла — переходит на противоположную, только если влезает там, не влезает
+ * нигде — стоит. Правило без памяти скакало: одна и та же граница «снизу
+ * влезает» и уводила панель наверх, и возвращала её вниз. На телефоне палец
+ * двигает страницу по пикселю туда и обратно, адресная строка браузера
+ * прячется и выезжает, и поле всё время стоит на этой границе, а на коротком
+ * экране, где панель не влезает нигде, сторона менялась на каждом переходе
+ * поля через середину экрана. Так же поступает CSS Anchor Positioning — держит
+ * последний удачный вариант. Сторону забывают показ Frame, смена `placement` и
+ * `flip`, смена и снятие якоря и `contained`, и следующий расчёт выбирает её
+ * заново. Закрытие её не забывает: гаснущая панель держит сторону, как
+ * открытая.
+ *
  * `RTL` (`getComputedStyle(anchor).direction`) разворачивает `-start`/`-end`:
  * в RTL `-start` выравнивает панель по правому краю якоря, `-end` — по левому.
  * Центр от направления не зависит.
@@ -51,11 +73,31 @@ export const ANCHOR_PLACEMENT_ATTRIBUTE = 'data-placement'
  * Frame (`frame.dataset`) — она не всегда совпадает с тем, что задал
  * потребитель в `placement`.
  *
- * Работает только при `position: 'fixed'`: координаты берутся из
- * `getBoundingClientRect()`, то есть относительно окна, а при `absolute`
- * отсчёт шёл бы от позиционированного предка. Панель внутри контейнера
- * (`contained`) якорь тоже не двигает: её место в контейнере решает тема, и
- * стороны у неё нет — `data-placement` снимается.
+ * `position` панели у якоря выбирает плагин (`_choosePosition`), как пишет
+ * её `x` и `y`: `absolute`, а у якоря, который стоит в окне, — `fixed`.
+ * Панель `fixed` прокрутку страницы не замечает, и сдвинуть её за полем
+ * может только пересчёт по `scroll`. На телефоне страницу прокручивает
+ * композитор, а `scroll` приходит в JS кадром позже: поле уже уехало, панель
+ * кадр стоит и догоняет — дрожит на каждом кадре прокрутки. Ни кадр
+ * (`requestAnimationFrame`), ни память стороны этого не снимают. Панель
+ * `absolute` лежит в документе, и окно браузер прокручивает вместе с ней и
+ * полем, без JS, — так у PrimeVue. Якорь в окне (`fixed` или `sticky` к
+ * окну, `isPinnedToViewport`) прокрутка окна не двигает, и панель `absolute`
+ * отставала бы от него наоборот — у него `fixed`. Выбирают заново там же, где
+ * забывают сторону: показ Frame и смена якоря.
+ *
+ * Внутренняя прокрутка — граница, а не недоделка. Поле в своём прокручиваемом
+ * блоке, а панель в `body`: её отставание на кадр снимет только CSS Anchor
+ * Positioning, где место считает браузер, — или `target` панели в самом
+ * блоке, и тогда она едет вместе с ним.
+ *
+ * Считается всё в координатах окна (`getBoundingClientRect()`), а во Frame
+ * уходит от угла блока, от которого браузер отсчитывает `left`/`top` панели
+ * (`positionOriginOf`): у `absolute` в `body` это начало документа, в
+ * позиционированном предке — его угол с прокруткой, у `fixed` — окно или
+ * предок с трансформацией. Панель внутри контейнера (`contained`) якорь не
+ * двигает: её место в контейнере решает тема, и стороны у неё нет —
+ * `data-placement` снимается.
  *
  * По той же причине оба наблюдателя (`ResizeObserver`) смотрят border-box:
  * наблюдать надо ровно то, что меряем. Умолчание `content-box` пропустило бы
@@ -103,6 +145,17 @@ export class TAnchorPlugin extends TBasePlugin<any, TAnchorPluginEvents> {
 	private _panelResumeFrame: number | null = null
 	/** Сторона, реально отданная во Frame — по ней решаем, менялся ли `data-placement`. */
 	private _actualPlacement: TFramePlacement | null = null
+	/**
+	 * Сторона, которую держит панель (см. `_holdSide`); `null` — держать
+	 * нечего, и сторону выбирает `_chooseSide`.
+	 *
+	 * Запоминает её только расчёт с разложенной панелью — высотой больше нуля.
+	 * На `show` закрытая панель ещё не разложена (`display: none`), а нулевая
+	 * высота влезает с любой стороны: запомненная по ней сторона держалась бы
+	 * на первом настоящем измерении вместо выбора. Поэтому `_actualPlacement`
+	 * памятью не служит — его пишет любой расчёт.
+	 */
+	private _heldSide: TAnchorSide | null = null
 
 	override install(ctx: IPluginContext, options?: IAnchorPluginOptions): void {
 		super.install(ctx, options)
@@ -135,8 +188,14 @@ export class TAnchorPlugin extends TBasePlugin<any, TAnchorPluginEvents> {
 			this._element = null
 		})
 
-		// Панель могла открыться после того, как якорь уже назначен
-		this._listenTo(this._frame?.events, 'show', () => this._update())
+		// Панель могла открыться после того, как якорь уже назначен. Сторону
+		// показ выбирает заново: прошлое открытие встало там, где было место
+		// тогда
+		this._listenTo(this._frame?.events, 'show', () => {
+			this._heldSide = null
+			this._choosePosition()
+			this._update()
+		})
 		this._listenTo(this._frame?.events, 'change:contained', () => this._update())
 	}
 
@@ -144,6 +203,8 @@ export class TAnchorPlugin extends TBasePlugin<any, TAnchorPluginEvents> {
 		if (this._anchor === element) return
 
 		this._anchor = element
+		this._heldSide = null
+		this._choosePosition()
 		this._subscribe()
 		this._update()
 		this.events.emit('change:anchor', element)
@@ -153,6 +214,7 @@ export class TAnchorPlugin extends TBasePlugin<any, TAnchorPluginEvents> {
 		if (!this._anchor) return
 
 		this._anchor = null
+		this._heldSide = null
 		this._unsubscribe()
 		this._actualPlacement = null
 		this._frame?.dataset.add(ANCHOR_PLACEMENT_ATTRIBUTE, null)
@@ -171,6 +233,7 @@ export class TAnchorPlugin extends TBasePlugin<any, TAnchorPluginEvents> {
 		if (this._placement === value) return
 
 		this._placement = value
+		this._heldSide = null
 		this._update()
 		this.events.emit('change:placement', value)
 	}
@@ -195,6 +258,7 @@ export class TAnchorPlugin extends TBasePlugin<any, TAnchorPluginEvents> {
 		if (this._flip === value) return
 
 		this._flip = value
+		this._heldSide = null
 		this._update()
 		this.events.emit('change:flip', value)
 	}
@@ -237,12 +301,13 @@ export class TAnchorPlugin extends TBasePlugin<any, TAnchorPluginEvents> {
 		const anchor = this._anchor
 
 		if (frame?.contained) {
+			this._heldSide = null
 			this._applyPlacement(null)
 
 			return
 		}
 
-		if (!frame || !anchor || frame.position !== 'fixed') return
+		if (!frame || !anchor) return
 
 		const rect = anchor.getBoundingClientRect()
 		const panel = this._panelSize(rect)
@@ -252,12 +317,32 @@ export class TAnchorPlugin extends TBasePlugin<any, TAnchorPluginEvents> {
 		const rtl = getComputedStyle(anchor).direction === 'rtl'
 		const alignment = this._alignment
 		const side = this._resolveSide(rect, panel.height)
+		const origin = positionOriginOf(this._element, frame.position)
 
-		frame.x = this._resolveX(rect, panel.width, alignment, rtl)
+		frame.x = this._resolveX(rect, panel.width, alignment, rtl) - origin.x
 		frame.y =
-			side === 'top' ? rect.top - panel.height - this._offset : rect.bottom + this._offset
+			(side === 'top' ? rect.top - panel.height - this._offset : rect.bottom + this._offset) -
+			origin.y
 
 		this._applyPlacement(alignment === 'center' ? side : `${side}-${alignment}`)
+	}
+
+	/**
+	 * `position` панели: `fixed` у якоря, который стоит в окне, иначе
+	 * `absolute` (см. описание класса).
+	 *
+	 * Выбранное держится до следующего показа или смены якоря. Стили предков
+	 * якоря на каждом `scroll` не перечитываем: шапка, которая стала `fixed`
+	 * при открытой панели, — редкость, а обход предков со стилями на каждом
+	 * кадре прокрутки обошёлся бы всем.
+	 */
+	private _choosePosition(): void {
+		const frame = this._frame
+		const anchor = this._anchor
+
+		if (!frame || !anchor) return
+
+		frame.position = isPinnedToViewport(anchor) ? 'fixed' : 'absolute'
 	}
 
 	/**
@@ -297,28 +382,76 @@ export class TAnchorPlugin extends TBasePlugin<any, TAnchorPluginEvents> {
 	 * Сторона (`top`/`bottom`) с учётом flip.
 	 *
 	 * Выбор потребителя в `_placement` не перетирается — flip живёт только
-	 * здесь, в вычислении фактической стороны. Переключаемся на
-	 * противоположную, только если на выбранной панель не влезает по высоте
-	 * видимой области, а на противоположной места больше; если не влезает
-	 * нигде, остаёмся на стороне потребителя. С выключенным `flip` сторона
-	 * потребителя отдаётся сразу.
-	 *
-	 * Сторону называет начало значения, а не префикс `top-`: у центра
-	 * суффикса нет, и `top` по префиксу с дефисом уехал бы вниз.
+	 * здесь, в вычислении фактической стороны. С выключенным `flip` сторона
+	 * потребителя отдаётся сразу, и память не участвует. Иначе панель держит
+	 * запомненную сторону (`_holdSide`), а пока держать нечего, сторону
+	 * выбирает правило (`_chooseSide`). Запоминает её только расчёт с
+	 * разложенной панелью (см. `_heldSide`).
 	 */
-	private _resolveSide(rect: DOMRect, panelHeight: number): 'top' | 'bottom' {
-		const wants = this._placement.startsWith('top') ? 'top' : 'bottom'
+	private _resolveSide(rect: DOMRect, panelHeight: number): TAnchorSide {
+		if (!this._flip) return this._wantedSide
 
-		if (!this._flip) return wants
-		const spaceTop = rect.top
-		const spaceBottom = this._viewport.height - rect.bottom
+		const side =
+			this._heldSide === null
+				? this._chooseSide(rect, panelHeight)
+				: this._holdSide(this._heldSide, rect, panelHeight)
+
+		if (panelHeight > 0) this._heldSide = side
+
+		return side
+	}
+
+	/**
+	 * Сторона из выбора потребителя. Её называет начало значения, а не
+	 * префикс `top-`: у центра суффикса нет, и `top` по префиксу с дефисом
+	 * уехал бы вниз.
+	 */
+	private get _wantedSide(): TAnchorSide {
+		return this._placement.startsWith('top') ? 'top' : 'bottom'
+	}
+
+	/**
+	 * Выбор стороны — у панели, которая стороны ещё не держит.
+	 *
+	 * Сторона потребителя, а если на ней панель не влезает по высоте видимой
+	 * области, а на противоположной места больше, — противоположная. Не
+	 * влезает нигде — остаёмся на стороне потребителя.
+	 */
+	private _chooseSide(rect: DOMRect, panelHeight: number): TAnchorSide {
+		const wants = this._wantedSide
 		const needed = panelHeight + this._offset
-		const spaceWanted = wants === 'top' ? spaceTop : spaceBottom
-		const spaceOpposite = wants === 'top' ? spaceBottom : spaceTop
+		const spaceWanted = this._spaceAt(wants, rect)
+		const spaceOpposite = this._spaceAt(opposite(wants), rect)
 
 		if (spaceWanted >= needed || spaceOpposite <= spaceWanted) return wants
 
-		return wants === 'top' ? 'bottom' : 'top'
+		return opposite(wants)
+	}
+
+	/**
+	 * Удержание стороны: панель стоит на ней, пока там влезает. Не влезла —
+	 * переходит на противоположную, только если влезает там; не влезает
+	 * нигде — остаётся.
+	 *
+	 * Правило выбора для этого не годится: граница у него одна — «на стороне
+	 * потребителя влезает», а когда не влезает нигде, — середина экрана, — и
+	 * поле, которое стоит на ней, переводило бы панель туда и обратно на
+	 * каждом пикселе прокрутки. У удержания границы две — «здесь перестала
+	 * влезать» и «там влезает», — и между ними панель стоит, где стоит. Запас
+	 * между границами — не подобранное число пикселей, а вся полоса, где
+	 * панель влезает с обеих сторон или ни с одной.
+	 */
+	private _holdSide(side: TAnchorSide, rect: DOMRect, panelHeight: number): TAnchorSide {
+		const needed = panelHeight + this._offset
+
+		if (this._spaceAt(side, rect) >= needed) return side
+
+		return this._spaceAt(opposite(side), rect) >= needed ? opposite(side) : side
+	}
+
+	/** Место по высоте видимой области над якорем (`top`) или под ним (`bottom`). */
+	private _spaceAt(side: TAnchorSide, rect: DOMRect): number {
+		return side === 'top' ? rect.top : this._viewport.height - rect.bottom
 	}
 
 	/**

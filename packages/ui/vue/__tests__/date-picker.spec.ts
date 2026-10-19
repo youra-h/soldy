@@ -586,6 +586,43 @@ describe('ошибка в поле', () => {
 })
 
 /**
+ * Проверка набора — проп DatePicker'а: полям его отдаёт ядро, а разметка на
+ * `<DateInput>` его не пробрасывает. Здесь — весь путь: проп из разметки —
+ * ядру, ядро — полю, и смонтированный DateInput, которому проп не задан, не
+ * перетирает его своим умолчанием. Та же пара, что «00» на дне у DateInput
+ * (`date-input.spec.ts`), и на том же русском формате: день, месяц, год.
+ */
+describe('проверка набора', () => {
+	/** Часть поля одной даты по типу. */
+	const segment = (type: string) =>
+		find(`.so-date-picker__field .so-date-input__segment[data-type="${type}"]`)
+
+	/** DatePicker — в провайдере русской локали. */
+	const russian = (props: { validate?: boolean } = {}) =>
+		render(() => h(LocaleProvider, { locale: ruRU }, () => h(DatePicker, props)))
+
+	it('«00» на дне без validate — день 00, фокус уходит на месяц', async () => {
+		await russian()
+
+		segment('day').focus()
+		await type('00')
+
+		expect(segment('day').textContent).toBe('00')
+		expect(document.activeElement).toBe(segment('month'))
+	})
+
+	it('«00» на дне с validate — фокус стоит, часть ждёт цифры', async () => {
+		await russian({ validate: true })
+
+		segment('day').focus()
+		await type('00')
+
+		expect(segment('day').textContent).toBe('00')
+		expect(document.activeElement).toBe(segment('day'))
+	})
+})
+
+/**
  * Значение в форму отдают поля — скрытым полем DateInput. Что уйдёт при
  * отправке, считает сам браузер (`FormData`): поле без имени он пропускает.
  */

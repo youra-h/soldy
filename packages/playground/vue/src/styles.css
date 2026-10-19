@@ -37,7 +37,17 @@ a {
 
 /* ─── Каркас ─────────────────────────────────────────────── */
 
-/* Ширину колонки задаёт сама панель: у страницы тестов в ней два меню */
+/*
+ * Ширину колонки задаёт сама панель: у страницы тестов в ней два меню.
+ *
+ * Страницу прокручивает окно, а не своя колонка превью: шапка и меню
+ * прилипают (`sticky`), превью едет с документом. Так прокручивает почти любое
+ * приложение, и только так превью показывает панели у якоря, как у
+ * потребителя: панель Select лежит в `body`, и внутренняя прокрутка колонки
+ * везла бы поле без неё — на телефоне панель отставала бы на кадр
+ * (docs/agents/overlay.md, `TAnchorPlugin`). Высоту шапки для меню пишет
+ * оболочка в `--pg-header-height` (`App.vue`): узкая шапка — в две строки.
+ */
 .pg {
 	display: grid;
 	grid-template-rows: auto 1fr;
@@ -45,7 +55,7 @@ a {
 	grid-template-areas:
 		'header header'
 		'sidebar main';
-	height: 100vh;
+	min-height: 100vh;
 }
 
 /* Узкое окно: меню — в выезжающей панели, превью — на всю ширину */
@@ -56,8 +66,11 @@ a {
 		'main';
 }
 
-/* Колонка в панели — без своей рамки и фона: их даёт панель */
+/* Колонка в панели — без своей рамки и фона: их даёт панель. Прилипать ей не к чему:
+   прокручивает её сама панель */
 .pg__drawer .pg__sidebar {
+	position: static;
+	height: auto;
 	padding: 0;
 	border-right: none;
 	background: none;
@@ -66,6 +79,10 @@ a {
 /* Узкой шапке контролы уходят на вторую строку, к правому краю, а не за край окна */
 .pg__header {
 	grid-area: header;
+	position: sticky;
+	top: 0;
+	/* Над превью, но под слоями: их номера начинаются с 1000 (`TLayer.baseZIndex`) */
+	z-index: 100;
 	display: flex;
 	flex-wrap: wrap;
 	justify-content: flex-end;
@@ -147,6 +164,10 @@ a {
 
 .pg__sidebar {
 	grid-area: sidebar;
+	position: sticky;
+	top: var(--pg-header-height, 0px);
+	align-self: start;
+	height: calc(100vh - var(--pg-header-height, 0px));
 	width: 260px;
 	overflow-y: auto;
 	padding: 12px;
@@ -194,7 +215,7 @@ a {
 
 .pg__main {
 	grid-area: main;
-	overflow-y: auto;
+	min-width: 0;
 	padding: 24px 28px 64px;
 }
 
@@ -236,10 +257,12 @@ a {
 
 /* ─── Витрина ────────────────────────────────────────────── */
 
+/* Ширину сетки читает широкая ячейка — запросом контейнера, см. `.pg-cell--wide` */
 .pg-grid {
 	display: grid;
 	grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
 	gap: 16px;
+	container-type: inline-size;
 }
 
 /*
@@ -272,6 +295,18 @@ a {
 	grid-column: span 2;
 }
 
+/*
+ * Широкая ячейка встаёт на две дорожки, только когда их две. Одной дорожке
+ * `span 2` достроил бы вторую, неявную, и сетка вылезла бы за окно. Две
+ * дорожки помещаются с 576 px: две по 280 и зазор 16 (`.pg-grid`). Запрос — к
+ * сетке, а не к окну: при меню колонкой дорожка одна и в окне шире узкого.
+ */
+@container (width < 576px) {
+	.pg-cell--wide {
+		grid-column: auto;
+	}
+}
+
 .pg-cell__title {
 	font-weight: 600;
 }
@@ -282,6 +317,12 @@ a {
 	min-height: 2.5em;
 }
 
+/*
+ * Превью шире ячейки сцена обрезает, а не выпускает за край: в сетке из одной
+ * дорожки ячейка уже превью широких компонентов (Tabs, Virtual), а иногда и
+ * обычных (Calendar, Pagination), и вылезшее уводило бы страницу вбок. Так же
+ * обрезает колонка страницы свойств (`.pg-col`).
+ */
 .pg-cell__stage {
 	display: flex;
 	align-items: center;
@@ -290,6 +331,7 @@ a {
 	flex-wrap: wrap;
 	min-height: 84px;
 	padding: 12px;
+	overflow: hidden;
 	border-radius: 6px;
 	background: var(--so-neutral-100);
 	--so-place-surface: var(--so-neutral-100);
@@ -309,6 +351,10 @@ a {
  * широком экране редактор уезжал к правому краю и терял связь с именем.
  * Фиксированная ширина второй колонки выстраивает switch, select и input в одну
  * вертикаль по всей странице.
+ *
+ * В узком окне имя встаёт над редактором (`@media` ниже): две колонки с
+ * зазором — 361 px, шире места в окне телефона. Сжать вторую колонку мало —
+ * у поля темы минимальная ширина 160 px, и оно вылезло бы всё равно.
  */
 .pg-prop__head {
 	display: grid;
@@ -346,8 +392,15 @@ a {
 	gap: 16px;
 }
 
-/* Узкое окно — то же, где меню уходит в панель (useSidebar): блоки друг под другом */
+/*
+ * Узкое окно — то же, где меню уходит в панель (useSidebar): имя над
+ * редактором, блоки друг под другом
+ */
 @media (max-width: 768px) {
+	.pg-prop__head {
+		grid-template-columns: minmax(0, 1fr);
+	}
+
 	.pg-prop__columns {
 		grid-template-columns: minmax(0, 1fr);
 	}
