@@ -70,6 +70,7 @@ import {
 	TabsItemDescriptor,
 	TagsDescriptor,
 	TagsItemDescriptor,
+	TextareaDescriptor,
 	ToastsDescriptor,
 	ToastsItemDescriptor,
 	TooltipDescriptor,
@@ -138,6 +139,7 @@ const DESCRIPTORS: Readonly<Record<string, () => IComponentDescriptor>> = {
 	'tabs/item/Item.vue': TabsItemDescriptor,
 	'tags/Tags.vue': TagsDescriptor,
 	'tags/item/Item.vue': TagsItemDescriptor,
+	'textarea/Textarea.vue': TextareaDescriptor,
 	'toasts/Toasts.vue': ToastsDescriptor,
 	// Тост — внутренняя часть менеджера, но слоты у него свои
 	'toasts/item/Item.vue': ToastsItemDescriptor,

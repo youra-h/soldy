@@ -5,7 +5,7 @@ import { TElementPlugin } from '../element'
 import type { TInputPluginEvents } from './types'
 
 export class TInputPlugin extends TBasePlugin<any, TInputPluginEvents> {
-	private _input: HTMLInputElement | null = null
+	private _input: HTMLInputElement | HTMLTextAreaElement | null = null
 	private _instance: ITextInputControl | null = null
 	private _onInput = this._handleInput.bind(this)
 
@@ -18,7 +18,10 @@ export class TInputPlugin extends TBasePlugin<any, TInputPluginEvents> {
 			const el = elementPlugin.element
 			if (!el) return
 
-			const input = el.querySelector<HTMLInputElement>('input')
+			// Поле текста — `<input>` у Input, `<textarea>` у Textarea
+			const input = el.querySelector<HTMLInputElement | HTMLTextAreaElement>(
+				'input, textarea',
+			)
 			if (!input) return
 
 			this._input = input
@@ -48,7 +51,7 @@ export class TInputPlugin extends TBasePlugin<any, TInputPluginEvents> {
 			return
 		}
 
-		const target = event.target as HTMLInputElement | null
+		const target = event.target as HTMLInputElement | HTMLTextAreaElement | null
 		if (!target) return
 
 		this._instance.value = target.value

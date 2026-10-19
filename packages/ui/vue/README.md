@@ -73,6 +73,18 @@ useTheme(oren)
 createApp(App).mount('#app')
 ```
 
+## Several Vue apps on one page
+
+Soldy builds the `id`s of component parts and the owner marks of panels (`data-owner`) on Vue's
+`useId`, so that the server and the browser render the same markup. `useId` numbers ids within an
+app, and when a page runs several Vue apps — islands, micro-frontends — their ids coincide: a menu,
+popover or dialog of one app then finds the panel of another. Give each app a prefix of its own
+before it mounts — on the server too, if the app is rendered there:
+
+```ts
+app.config.idPrefix = 'cart'
+```
+
 ## Documentation
 
 - [Soldy UI README](https://github.com/youra-h/soldy#readme) — the component set and what each

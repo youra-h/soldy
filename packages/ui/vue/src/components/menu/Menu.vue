@@ -1,9 +1,11 @@
 <script lang="ts">
 import { Frame } from '../frame'
+import { MenuGroup } from './group'
 import { MenuItem } from './item'
+import { MenuSeparator } from './separator'
 import SetupMenu from './setup.component'
 
-export default { ...SetupMenu, components: { Frame, MenuItem } }
+export default { ...SetupMenu, components: { Frame, MenuGroup, MenuItem, MenuSeparator } }
 </script>
 
 <template>
@@ -77,22 +79,48 @@ export default { ...SetupMenu, components: { Frame, MenuItem } }
 				<slot>
 					<!--
 						Пункты из `items` — только действия: флажки ставят
-						разметкой. Петля — по показанным пунктам (`shown`), ключ —
-						`uid` пункта. Слоты пункта пробрасываются целиком: у каждого
-						есть `item-<слот>`, scope — scope слота пункта плюс сам пункт
-						(`item`).
+						разметкой. Петля — по секциям показанных пунктов
+						(`sections`), ключ — ключ секции: группа с подписью — в
+						`MenuGroup`, пункты без группы — прямо в списке, между
+						соседними секциями — разделитель. Секции идут порядком
+						показанного, поэтому стрелки ходят так же, как пункты стоят
+						на экране. Без групп секция одна — ни обёртки, ни
+						разделителя.
+
+						Пункт — по `uid`. Слоты пункта пробрасываются целиком: у
+						каждого есть `item-<слот>`, scope — scope слота пункта плюс
+						сам пункт (`item`). Проброс записан у пунктов группы и у
+						пунктов без неё: обёртка у них разная.
 					-->
-					<MenuItem v-for="item in shown" :key="item.uid" :ctrl="item">
-						<template #leading>
-							<slot name="item-leading" :item="item" />
+					<template v-for="(section, index) in sections" :key="section.key">
+						<MenuSeparator v-if="index > 0" />
+						<MenuGroup v-if="section.group" :label="section.group.label">
+							<MenuItem v-for="item in section.items" :key="item.uid" :ctrl="item">
+								<template #leading>
+									<slot name="item-leading" :item="item" />
+								</template>
+								<template #default="{ text }">
+									<slot name="item" :item="item" :text="text" />
+								</template>
+								<template #trailing>
+									<slot name="item-trailing" :item="item" />
+								</template>
+							</MenuItem>
+						</MenuGroup>
+						<template v-else>
+							<MenuItem v-for="item in section.items" :key="item.uid" :ctrl="item">
+								<template #leading>
+									<slot name="item-leading" :item="item" />
+								</template>
+								<template #default="{ text }">
+									<slot name="item" :item="item" :text="text" />
+								</template>
+								<template #trailing>
+									<slot name="item-trailing" :item="item" />
+								</template>
+							</MenuItem>
 						</template>
-						<template #default="{ text }">
-							<slot name="item" :item="item" :text="text" />
-						</template>
-						<template #trailing>
-							<slot name="item-trailing" :item="item" />
-						</template>
-					</MenuItem>
+					</template>
 				</slot>
 			</div>
 		</Frame>

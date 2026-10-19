@@ -14,6 +14,7 @@ import { describe, it, expect, afterEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { defineComponent, h, nextTick, ref, type VNode } from 'vue'
 import { Button, Menu } from '@soldy-ui/vue'
+import { createEngineMenu } from '@soldy-ui/core'
 import type { IMenuItem } from '@soldy-ui/core'
 import type { DescriptorSlots, MenuDescriptor } from '@soldy-ui/setup'
 
@@ -403,5 +404,149 @@ describe('группа и разделитель', () => {
 		await nextFrame()
 
 		expect(document.activeElement).toBe(rowOf('Изменить'))
+	})
+})
+
+/**
+ * Группы из данных: метка группы — `_.group` в `items` или `groupBy`, порядок
+ * и подписи — `groups`. Меню рисует секции показанного: группу с подписью —
+ * `Menu.Group`, пункты без группы — последними, прямо в списке, между
+ * секциями — разделитель. Стрелки ходят тем же порядком, что пункты стоят на
+ * экране.
+ */
+describe('группы из данных', () => {
+	/** В данных «Увеличить» и «Переименовать» стоят между пунктами «Правки». */
+	const GROUPED = [
+		{ value: 'cut', text: 'Вырезать', _: { group: 'edit' } },
+		{ value: 'zoom', text: 'Увеличить', _: { group: 'view' } },
+		{ value: 'rename', text: 'Переименовать' },
+		{ value: 'copy', text: 'Копировать', _: { group: 'edit' } },
+	]
+
+	const GROUPS = [
+		{ key: 'edit', label: 'Правка' },
+		{ key: 'view', label: 'Вид' },
+	]
+
+	/** Части списка по порядку: группа — по подписи, разделитель, пункт — по тексту. */
+	const parts = () =>
+		[...find('.so-menu__list').children].map((node) => {
+			if (node.classList.contains('so-menu-group')) {
+				return `группа ${node.querySelector('.so-menu-group__label')?.textContent ?? ''}`
+			}
+
+			if (node.classList.contains('so-menu-separator')) return '—'
+
+			return node.textContent?.trim()
+		})
+
+	/** Клавиша на узле и кадр модели фокуса. */
+	async function press(target: HTMLElement, key: string): Promise<void> {
+		target.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true }))
+
+		await nextTick()
+		await nextFrame()
+	}
+
+	it('группы с подписью, разделитель — только между секциями, без группы — последними', async () => {
+		await render(() => h(Menu, { items: GROUPED, groups: GROUPS }, { trigger }))
+
+		expect(parts()).toEqual(['группа Правка', '—', 'группа Вид', '—', 'Переименовать'])
+		expect(rows().map((row) => row.textContent?.trim())).toEqual([
+			'Вырезать',
+			'Копировать',
+			'Увеличить',
+			'Переименовать',
+		])
+
+		const groups = [...panel().querySelectorAll<HTMLElement>('.so-menu-group')]
+
+		for (const group of groups) {
+			const label = find('.so-menu-group__label', group)
+
+			expect(group.getAttribute('role')).toBe('group')
+			expect(group.getAttribute('aria-labelledby')).toBe(label.id)
+			expect(label.id).not.toBe('')
+		}
+
+		expect(groups[0].contains(rowOf('Копировать'))).toBe(true)
+		expect(
+			[...panel().querySelectorAll('.so-menu-separator')].map((node) =>
+				node.getAttribute('role'),
+			),
+		).toEqual(['separator', 'separator'])
+	})
+
+	it('стрелки ходят порядком экрана: ↓ с «Вырезать» — на «Копировать»', async () => {
+		await render(() => h(Menu, { items: GROUPED, groups: GROUPS }, { trigger }))
+
+		triggerNode().focus()
+		await press(triggerNode(), 'ArrowDown')
+
+		expect(document.activeElement).toBe(rowOf('Вырезать'))
+
+		await press(rowOf('Вырезать'), 'ArrowDown')
+
+		expect(document.activeElement).toBe(rowOf('Копировать'))
+
+		await press(rowOf('Копировать'), 'ArrowDown')
+
+		expect(document.activeElement).toBe(rowOf('Увеличить'))
+
+		await press(rowOf('Увеличить'), 'ArrowDown')
+
+		expect(document.activeElement).toBe(rowOf('Переименовать'))
+	})
+
+	it('смена подписи в groups перерисовывает подписи групп', async () => {
+		const groups = ref(GROUPS)
+
+		await render(() => h(Menu, { items: GROUPED, groups: groups.value }, { trigger }))
+
+		groups.value = [
+			{ key: 'edit', label: 'Edit' },
+			{ key: 'view', label: 'View' },
+		]
+		await nextTick()
+
+		expect(parts()).toEqual(['группа Edit', '—', 'группа View', '—', 'Переименовать'])
+	})
+
+	it('groupBy пропом: ключ группы — из пункта', async () => {
+		await render(() =>
+			h(
+				Menu,
+				{
+					items: ITEMS,
+					groupBy: (item: IMenuItem) =>
+						item.variant === 'danger' ? 'danger' : undefined,
+					groups: [{ key: 'danger', label: 'Опасное' }],
+				},
+				{ trigger },
+			),
+		)
+
+		expect(parts()).toEqual(['группа Опасное', '—', 'Изменить'])
+	})
+
+	it('группировка через движок: engine.extensions.group после монтирования', async () => {
+		const engine = createEngineMenu({ items: ITEMS })
+
+		await render(() => h(Menu, { engine }, { trigger }))
+
+		expect(parts()).toEqual(['Изменить', 'Удалить'])
+
+		engine.extensions.group.groupBy = (item) => (item.value === 'remove' ? 'danger' : undefined)
+		engine.extensions.group.groups = [{ key: 'danger', label: 'Опасное' }]
+		await nextTick()
+
+		expect(parts()).toEqual(['группа Опасное', '—', 'Изменить'])
+	})
+
+	it('без группировки — ни групп, ни разделителей: пункты прямо в списке', async () => {
+		await render(() => h(Menu, { items: ITEMS }, { trigger }))
+
+		expect(parts()).toEqual(['Изменить', 'Удалить'])
+		expect(panel().querySelector('.so-menu-group, .so-menu-separator')).toBeNull()
 	})
 })

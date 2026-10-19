@@ -47,6 +47,7 @@ import {
 	Table,
 	Tabs,
 	Tags,
+	Textarea,
 	Toasts,
 	Tooltip,
 	Virtual,
@@ -303,6 +304,8 @@ export const PREVIEWS: Record<string, TPreview> = {
 
 	input: (bind) => h(Input, bind),
 	'number-input': (bind) => h(NumberInput, bind),
+
+	textarea: (bind) => h(Textarea, bind),
 
 	// Текста у чекбокса и переключателя нет, оба — голый контрол: подпись даёт
 	// обёртка Label. Её пропы задаёт превью, строки страницы правят контрол

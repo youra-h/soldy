@@ -24,6 +24,7 @@ import {
 	TTableColumn,
 	TTabsItem,
 	TTagsItem,
+	TTextarea,
 	TToasts,
 	TToastsItem,
 } from '@soldy-ui/core'
@@ -43,6 +44,7 @@ import {
 	TTableNamesPlugin,
 	TTabsItemNamesPlugin,
 	TTagsItemNamesPlugin,
+	TTextareaNamesPlugin,
 	TToastsItemNamesPlugin,
 	TToastsNamesPlugin,
 	arEG,
@@ -404,6 +406,80 @@ describe('значение оценки: rating.value', () => {
 	})
 })
 
+/**
+ * Счётчик символов Textarea — не имя, а видимый текст, который рисует
+ * библиотека: выходом `counter`. При пределе — шаблон `textarea.counter`,
+ * без предела — одно число; числа — по тегу локали.
+ */
+describe('счётчик Textarea: textarea.counter', () => {
+	it('без предела — одно число, цифрами языка', () => {
+		const { source, plugin } = mount(new TTextarea({ value: 'abc' }), TTextareaNamesPlugin)
+
+		expect(plugin?.counter).toBe('3')
+
+		source.locale = arEG
+
+		expect(plugin?.counter).toBe((3).toLocaleString('ar-EG'))
+	})
+
+	it('с пределом — набранное и предел на местах шаблона, числа — по тегу', () => {
+		const textarea = new TTextarea({ value: 'x'.repeat(1234), maxlength: 5000 })
+		const { source, plugin } = mount(textarea, TTextareaNamesPlugin)
+
+		expect(plugin?.counter).toBe('1,234 / 5,000')
+
+		source.locale = ruRU
+
+		expect(plugin?.counter).toBe(
+			`${(1234).toLocaleString('ru-RU')} / ${(5000).toLocaleString('ru-RU')}`,
+		)
+	})
+
+	it('шаблон локали — свой порядок слов', () => {
+		const custom = extendLocale(enUS, {
+			translations: { textarea: { counter: '{max}:{count}' } },
+		})
+		const { plugin } = mount(
+			new TTextarea({ value: 'ab', maxlength: 9 }),
+			TTextareaNamesPlugin,
+			custom,
+		)
+
+		expect(plugin?.counter).toBe('9:2')
+	})
+
+	it('набранное считает ядро: перевод строки CR LF — один символ', () => {
+		const { plugin } = mount(
+			new TTextarea({ value: 'a\r\nb', maxlength: 3 }),
+			TTextareaNamesPlugin,
+		)
+
+		expect(plugin?.counter).toBe('3 / 3')
+	})
+
+	it('переписывает на смену значения и предела; то же — без события', () => {
+		const textarea = new TTextarea({ value: 'ab' })
+		const { plugin } = mount(textarea, TTextareaNamesPlugin)
+		const changes = vi.fn()
+
+		plugin?.events.on('change:counter', changes)
+
+		textarea.value = 'abcd'
+		expect(plugin?.counter).toBe('4')
+
+		textarea.maxlength = 10
+		expect(plugin?.counter).toBe('4 / 10')
+
+		textarea.maxlength = undefined
+		expect(plugin?.counter).toBe('4')
+
+		// Другой текст той же длины — тот же счётчик
+		textarea.value = 'wxyz'
+
+		expect(changes.mock.calls).toEqual([['4'], ['4 / 10'], ['4']])
+	})
+})
+
 describe('жизнь подписок', () => {
 	it('после destroy() набора ни смена локали, ни смена текста не пишут', () => {
 		const item = new TTabsItem({ text: 'Почта' })
@@ -440,5 +516,17 @@ describe('жизнь подписок', () => {
 		rating.value = 4
 
 		expect(rating.aria.get('aria-valuetext')).toBe('2 of 5')
+	})
+
+	it('счётчик: после destroy() набора ни локаль, ни значение, ни предел его не меняют', () => {
+		const textarea = new TTextarea({ value: 'ab' })
+		const { source, bundle, plugin } = mount(textarea, TTextareaNamesPlugin)
+
+		bundle.destroy()
+		source.locale = arEG
+		textarea.value = 'abcd'
+		textarea.maxlength = 10
+
+		expect(plugin?.counter).toBe('2')
 	})
 })

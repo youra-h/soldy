@@ -131,6 +131,9 @@ const NAMED: Record<string, Record<string, (locale: TLocale) => string>> = {
 		aria: ({ translations }) =>
 			translations.rating.value.replace('{value}', '0').replace('{max}', '5'),
 	},
+	// Не имя, а текст счётчика символов: без предела по умолчанию сборки —
+	// одно число, цифрами языка
+	TextareaDescriptor: { names_counter: ({ tag }) => (0).toLocaleString(tag) },
 }
 
 const descriptors = exportedDescriptors()

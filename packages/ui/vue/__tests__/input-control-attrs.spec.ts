@@ -1,5 +1,6 @@
 /**
- * Input, CheckBox и Switch рисуют корень-обёртку и вложенный `<input>`.
+ * Input, CheckBox и Switch рисуют корень-обёртку и вложенный `<input>`,
+ * Textarea — корень-рамку и вложенную `<textarea>`.
  *
  * Наборы ядра у них стоят на разных элементах: `attrs` — атрибуты корня
  * (`dir`), `aria` — на `<input>`. Нативные `disabled`/`required`/`readonly`
@@ -17,8 +18,8 @@
 
 import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
-import { TCheckBox, TInput, TSwitch } from '@soldy-ui/core'
-import { CheckBox, Input, Switch } from '@soldy-ui/vue'
+import { TCheckBox, TInput, TSwitch, TTextarea } from '@soldy-ui/core'
+import { CheckBox, Input, Switch, Textarea } from '@soldy-ui/vue'
 
 /** Контрол с ошибкой: её задают инстансу — в разметке её задаёт поле формы. */
 function invalid<T extends { invalid: boolean }>(ctrl: T): T {
@@ -89,6 +90,64 @@ describe('Input', () => {
 	it('корень рисуется по tag, по умолчанию — div', () => {
 		expect(mount(Input).element.localName).toBe('div')
 		expect(mount(Input, { props: { tag: 'span' } }).element.localName).toBe('span')
+	})
+})
+
+/**
+ * Textarea устроена как Input: корень — рамка поля, `aria` — у вложенной
+ * `<textarea>`, у которой `disabled`, `required` и `readonly` нативные.
+ */
+describe('Textarea', () => {
+	it('disabled и required — нативные атрибуты <textarea>, без ARIA-дублей', () => {
+		const field = mount(Textarea, { props: { disabled: true, required: true } }).find(
+			'textarea',
+		)
+
+		expect(field.attributes('disabled')).toBeDefined()
+		expect(field.attributes('required')).toBeDefined()
+		expect(field.attributes('aria-disabled')).toBeUndefined()
+		expect(field.attributes('aria-required')).toBeUndefined()
+	})
+
+	it('readonly — нативный атрибут <textarea>, без aria-readonly', () => {
+		const field = mount(Textarea, { props: { readonly: true } }).find('textarea')
+
+		expect(field.attributes('readonly')).toBeDefined()
+		expect(field.attributes('aria-readonly')).toBeUndefined()
+	})
+
+	it('required на readonly-поле дополняется aria-required: браузер его не валидирует', () => {
+		const field = mount(Textarea, { props: { required: true, readonly: true } }).find(
+			'textarea',
+		)
+
+		expect(field.attributes('aria-required')).toBe('true')
+	})
+
+	it('на корне нет disabled, dir — на корне, а не на <textarea>', () => {
+		const wrapper = mount(Textarea, { props: { disabled: true, direction: 'rtl' } })
+
+		expect(wrapper.attributes('disabled')).toBeUndefined()
+		expect(wrapper.attributes('dir')).toBe('rtl')
+		expect(wrapper.find('textarea').attributes('dir')).toBeUndefined()
+	})
+
+	it('dataset — на корне: data-disabled, data-invalid и data-limit, aria-invalid — у <textarea>', () => {
+		const ctrl = invalid(new TTextarea({ disabled: true, value: 'abc', maxlength: 3 }))
+		const wrapper = mount(Textarea, { props: { ctrl } })
+		const field = wrapper.find('textarea')
+
+		expect(wrapper.attributes('data-disabled')).toBe('true')
+		expect(wrapper.attributes('data-invalid')).toBe('true')
+		expect(wrapper.attributes('data-limit')).toBe('reached')
+		expect(field.attributes('data-invalid')).toBeUndefined()
+		expect(field.attributes('data-limit')).toBeUndefined()
+		expect(field.attributes('aria-invalid')).toBe('true')
+	})
+
+	it('корень рисуется по tag, по умолчанию — div', () => {
+		expect(mount(Textarea).element.localName).toBe('div')
+		expect(mount(Textarea, { props: { tag: 'span' } }).element.localName).toBe('span')
 	})
 })
 

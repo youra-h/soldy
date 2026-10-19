@@ -34,5 +34,6 @@ export const zhCN = freezeLocale({
 			value: '{value} 分，满分 {max} 分',
 			required: '请选择评分',
 		},
+		textarea: { counter: '{count} / {max}' },
 	},
 })

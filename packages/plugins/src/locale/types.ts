@@ -133,6 +133,15 @@ export type TTranslations = {
 		 */
 		readonly required: string
 	}
+	/** Многострочное поле */
+	readonly textarea: {
+		/**
+		 * Счётчик символов при пределе `maxlength` — шаблон: набрано на месте
+		 * `{count}`, предел — на месте `{max}`. Без предела счётчик — одно
+		 * число, и строки ему не нужно
+		 */
+		readonly counter: string
+	}
 }
 
 /**

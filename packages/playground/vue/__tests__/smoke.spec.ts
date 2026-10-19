@@ -332,6 +332,25 @@ describe('страница компонента', () => {
 		},
 	)
 
+	/**
+	 * Панель оверлея плагины слоя находят по пометке владельцем (`data-owner`
+	 * — от id монтирования) первой в документе: жест, фокус и немой фон. На
+	 * странице превью по два на строку, и совпавшая пометка увела бы их на
+	 * чужую панель — какую, решает порядок панелей в документе, а он меняется,
+	 * когда панели уходят и возвращаются. Превью Vue — отдельные приложения, и
+	 * `useId` у каждого считает заново: пометки различает только свой
+	 * `idPrefix` приложения (`src/hosts/vue/index.ts`).
+	 */
+	it.each(PAGES)('%s/%s: пометки панелей владельцами не повторяются', async (framework, id) => {
+		await openPage(framework, id)
+
+		const marks = [...document.querySelectorAll('[data-owner]')].map((node) =>
+			node.getAttribute('data-owner'),
+		)
+
+		expect(marks.filter((mark, index) => marks.indexOf(mark) !== index)).toEqual([])
+	})
+
 	it('на неизвестный идентификатор отвечает, а не падает', async () => {
 		const wrapper = await openPage('vue', 'нет-такого')
 

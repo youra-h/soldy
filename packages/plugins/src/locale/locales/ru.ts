@@ -34,5 +34,6 @@ export const ruRU = freezeLocale({
 			value: '{value} из {max}',
 			required: 'Поставьте оценку',
 		},
+		textarea: { counter: '{count} / {max}' },
 	},
 })

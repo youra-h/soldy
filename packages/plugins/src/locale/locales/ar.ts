@@ -37,5 +37,6 @@ export const arEG = freezeLocale({
 			value: '{value} من {max}',
 			required: 'يُرجى اختيار تقييم',
 		},
+		textarea: { counter: '{count} / {max}' },
 	},
 })
