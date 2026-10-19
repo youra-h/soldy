@@ -28,7 +28,12 @@ import type { TMenuKeyboardPluginEvents } from './types'
  * - **корень** — в нём только триггер: ↓, Enter и пробел открывают меню и
  *   подсвечивают первый пункт, ↑ — последний (APG). Клавиши гасятся
  *   `preventDefault`: иначе Enter и пробел нажали бы кнопку-триггер, а клик
- *   по ней переключил бы меню обратно;
+ *   по ней переключил бы меню обратно. Это клавиши кнопки (`openOn:
+ *   'press'`); у контекстного меню в корне область, и её клавиши — её:
+ *   стрелки ходят по её строкам, Enter нажимает её кнопки. Меню над ней
+ *   открывает `contextmenu` — плагин открытия. Какие клавиши корня
+ *   слушаются, выбирает подписка на смену способа, а не проверка в
+ *   обработчике;
  * - **панель**, пока меню открыто, — её находит `TDismissPlugin` по пометке
  *   владельцем: панель телепортирована, и до корня её клавиши не всплывают.
  *   ↑/↓ — по кругу, Home и End — к крайним, буква — набор по первым буквам
@@ -42,8 +47,10 @@ import type { TMenuKeyboardPluginEvents } from './types'
  * Клавишу панель берёт только с себя и со строк своих пунктов, как ListBox:
  * клавиши содержимого слотов (поле в пункте) принадлежат им.
  *
- * Наружу — подсветка пункта, её снятие и строка подсвеченного: подсвечивает
- * пункт и указатель (`TMenuPointerPlugin`), а строку берёт модель фокуса —
+ * Наружу — открытие на крайнем пункте, подсветка пункта, её снятие и строка
+ * подсвеченного: открывает и подсвечивает пункт и плагин открытия
+ * (`TMenuPointerPlugin`) — контекстное меню, вызванное клавишей, открывается
+ * на первом пункте, как кнопка с клавиатуры, — а строку берёт модель фокуса:
  * туда она ставит фокус при открытии.
  */
 export class TMenuKeyboardPlugin extends TListNavigationPlugin<TMenuKeyboardPluginEvents> {
@@ -55,6 +62,11 @@ export class TMenuKeyboardPlugin extends TListNavigationPlugin<TMenuKeyboardPlug
 	private readonly _typeahead = new TTypeahead()
 	/** Как ставить фокус на смене подсветки: указатель — без прокрутки. */
 	private _focusOptions: FocusOptions | undefined = undefined
+	/**
+	 * Клавиши корня по способу открытия: у кнопки — открыть меню, у области
+	 * контекстного меню — никаких, её клавиши принадлежат ей.
+	 */
+	private _rootKeys: ((e: KeyboardEvent) => void) | null = null
 
 	override install(ctx: IPluginContext, options?: unknown): void {
 		super.install(ctx, options)
@@ -68,6 +80,9 @@ export class TMenuKeyboardPlugin extends TListNavigationPlugin<TMenuKeyboardPlug
 
 		elementPlugin?.events.on('ready', () => this._syncPanel())
 		elementPlugin?.events.on('removed', () => this._unlistenPanel())
+
+		this._syncRootKeys()
+		this._listenTo(this._owner?.events, 'change:openOn', () => this._syncRootKeys())
 
 		this._listenTo(this._owner?.events, 'change:open', (open: boolean) => {
 			this._syncPanel()
@@ -129,23 +144,23 @@ export class TMenuKeyboardPlugin extends TListNavigationPlugin<TMenuKeyboardPlug
 		}
 	}
 
-	/** Клавиши корня — триггера: открыть меню на крайнем пункте. */
+	/**
+	 * Открыть меню и подсветить крайний пункт — фокус уйдёт на его строку.
+	 * Так открывают клавишей: кнопку — ↓, Enter, пробел и ↑, контекстное меню —
+	 * его клавиша и Shift+F10.
+	 */
+	openAt(edge: TListEdge): void {
+		const owner = this._owner
+
+		if (!owner) return
+
+		owner.open = true
+		this.highlightEdge(edge)
+	}
+
+	/** Клавиши корня — по способу открытия (`_rootKeys`). */
 	protected override onKeyDown(e: KeyboardEvent): void {
-		switch (e.key) {
-			case 'ArrowDown':
-			case 'Enter':
-			case ' ':
-				e.preventDefault()
-				this._openAt('first')
-
-				return
-
-			case 'ArrowUp':
-				e.preventDefault()
-				this._openAt('last')
-
-				return
-		}
+		this._rootKeys?.(e)
 	}
 
 	/**
@@ -159,14 +174,32 @@ export class TMenuKeyboardPlugin extends TListNavigationPlugin<TMenuKeyboardPlug
 		if (isFocusableElement(target)) target.focus(this._focusOptions)
 	}
 
-	/** Открыть меню и подсветить крайний пункт. */
-	private _openAt(edge: TListEdge): void {
-		const owner = this._owner
+	/**
+	 * Клавиши корня по способу открытия: у кнопки — свои, у области
+	 * контекстного меню — никаких. Подписка на смену способа, а не проверка в
+	 * обработчике.
+	 */
+	private _syncRootKeys(): void {
+		this._rootKeys = this._owner?.openOn === 'press' ? this._onTriggerKeyDown : null
+	}
 
-		if (!owner) return
+	/** Клавиши кнопки-триггера: открыть меню на крайнем пункте. */
+	private readonly _onTriggerKeyDown = (e: KeyboardEvent): void => {
+		switch (e.key) {
+			case 'ArrowDown':
+			case 'Enter':
+			case ' ':
+				e.preventDefault()
+				this.openAt('first')
 
-		owner.open = true
-		this.highlightEdge(edge)
+				return
+
+			case 'ArrowUp':
+				e.preventDefault()
+				this.openAt('last')
+
+				return
+		}
 	}
 
 	/** Панель открытого меню; закрытое фокус не получает. */

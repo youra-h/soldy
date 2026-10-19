@@ -2,10 +2,22 @@ import { TStylable } from '../../base/stylable'
 import type { TDefaultValues } from '../../base/component'
 import { TAria, TClasses } from '../../../common'
 import type { TComponentSize, TComponentVariant, TDatasetAttributes } from '../../../common'
-import type { IMenu, IMenuProps, TMenuEvents, TMenuPlacement } from './types'
+import type {
+	IMenu,
+	IMenuProps,
+	TMenuEvents,
+	TMenuOpenOn,
+	TMenuPlacement,
+	TMenuPoint,
+} from './types'
+
+/** Одна ли это точка: координаты те же, или точки нет у обеих. */
+const samePoint = (a: TMenuPoint | null, b: TMenuPoint | null): boolean =>
+	a === b || (a !== null && b !== null && a.x === b.x && a.y === b.y)
 
 /**
- * Меню действий у кнопки — паттерн APG Menu Button.
+ * Меню действий у кнопки — паттерн APG Menu Button — или контекстное меню
+ * области (`openOn`).
  *
  * Корень — обёртка триггера и якорь панели, как у Popover: кнопка потребителя
  * лежит в слоте `trigger` внутри корня, и нажатие по открытому триггеру —
@@ -14,6 +26,13 @@ import type { IMenu, IMenuProps, TMenuEvents, TMenuPlacement } from './types'
  * (`role="menu"`), который разметка раскладывает на Frame, триггеру —
  * `triggerAria` в scope слота. `id` и ссылки на них пишет плагин связок
  * `TMenuIdsPlugin`: `id` нужны документу, а не меню.
+ *
+ * Контекстное меню — режим того же меню, а не отдельный компонент: панель,
+ * пункты, клавиши и фокус те же, различаются способ открытия и якорь. В слоте
+ * `trigger` тогда область — строка, файл, картинка, — и панель встаёт у
+ * точки вызова (`point`), а не у корня. Точку пишет плагин открытия, разметка
+ * отдаёт её якорю панели. Связки «кнопка ↔ меню» у области нет: она не
+ * кнопка, и паттерна APG у контекстного меню нет.
  *
  * Пункты — коллекция меню (`createEngineMenu`): движок, выбор для флажков,
  * подсветка `TListItemPlugin`, навигация — наследник `TListNavigationPlugin`.
@@ -30,16 +49,19 @@ export class TMenu extends TStylable<IMenuProps, TMenuEvents> implements IMenu {
 	static override baseClass = 'so-menu'
 
 	static defaultValues: typeof TStylable.defaultValues &
-		TDefaultValues<IMenuProps, 'open' | 'placement'> = {
+		TDefaultValues<IMenuProps, 'open' | 'placement' | 'openOn'> = {
 		...TStylable.defaultValues,
 		// Строчный корень: меню встаёт и в строку текста, и в ряд кнопок
 		tag: 'span',
 		open: false,
 		placement: 'bottom-start',
+		openOn: 'press',
 	}
 
 	protected _open!: boolean
 	protected _placement: TMenuPlacement
+	protected _openOn: TMenuOpenOn
+	protected _point: TMenuPoint | null = null
 	protected _triggerAria: TAria
 	protected _panelClasses: TClasses
 
@@ -49,6 +71,7 @@ export class TMenu extends TStylable<IMenuProps, TMenuEvents> implements IMenu {
 		const ctor = new.target as typeof TMenu
 
 		this._placement = props.placement ?? ctor.defaultValues.placement
+		this._openOn = props.openOn ?? ctor.defaultValues.openOn
 
 		// Сторона панели связки: панель — меню. `id` и `aria-labelledby` на
 		// триггер пишет `TMenuIdsPlugin` в этот же набор
@@ -59,8 +82,6 @@ export class TMenu extends TStylable<IMenuProps, TMenuEvents> implements IMenu {
 		this._triggerAria.events.on('change', () =>
 			this.events.emit('change:triggerAria', this._triggerAria.toObject()),
 		)
-
-		this._triggerAria.add('aria-haspopup', 'menu')
 
 		// Блок панели — свой: модификаторы ставят его методы, как модификаторы
 		// корня ставит `TStylable`
@@ -110,6 +131,51 @@ export class TMenu extends TStylable<IMenuProps, TMenuEvents> implements IMenu {
 	}
 
 	/**
+	 * Чем меню открывают: нажатием кнопки (`press`) или как контекстное меню
+	 * области (`contextmenu`). Что именно открывает меню в каждом режиме,
+	 * решают плагины открытия и клавиатуры — здесь выбор потребителя и то,
+	 * что из него следует для разметки: связка триггера с панелью есть только
+	 * у кнопки.
+	 *
+	 * Смена режима снимает точку вызова: она — место, где вызвали контекстное
+	 * меню, и кнопке, которая открывает меню у себя, ни к чему.
+	 */
+	get openOn(): TMenuOpenOn {
+		return this._openOn
+	}
+
+	set openOn(value: TMenuOpenOn) {
+		if (this._openOn === value) return
+
+		this._openOn = value
+		this.point = null
+		this._syncTriggerAria()
+		this.events.emit('change:openOn', value)
+	}
+
+	/**
+	 * Точка вызова контекстного меню в координатах окна — у неё встаёт
+	 * панель: прямоугольник нулевого размера, главнее корня, пока задана.
+	 * `null` — точки нет, и панель встаёт у корня.
+	 *
+	 * Пишет её плагин открытия — правая кнопка, долгое касание, клавиша
+	 * контекстного меню, — разметка отдаёт якорю панели. Значение, а не живой
+	 * объект (AGENTS.md, «Контракт границы core → ui»): каждая смена — новый
+	 * объект, а та же точка ничего не меняет и события не шлёт. Закрытие
+	 * точку не снимает: гаснущая панель стоит там, где её открыли.
+	 */
+	get point(): TMenuPoint | null {
+		return this._point
+	}
+
+	set point(value: TMenuPoint | null) {
+		if (samePoint(this._point, value)) return
+
+		this._point = value === null ? null : { x: value.x, y: value.y }
+		this.events.emit('change:point', this._point)
+	}
+
+	/**
 	 * Сторона триггера в связке с панелью.
 	 *
 	 * Отдельный набор, а не часть `aria`: `aria` описывает панель, а это —
@@ -120,6 +186,11 @@ export class TMenu extends TStylable<IMenuProps, TMenuEvents> implements IMenu {
 	 * `aria-expanded` — меню, `id` и `aria-controls` — `TMenuIdsPlugin`. За
 	 * границу core → ui уходит снимок (`valueOf()`), об изменении набор
 	 * сообщает `change:triggerAria`.
+	 *
+	 * У области контекстного меню набор пуст: она не кнопка, и
+	 * `aria-haspopup` с `aria-expanded` объявили бы скринридеру кнопку меню
+	 * там, где её нет. Так и у Radix и Ark: паттерна APG у контекстного меню
+	 * нет, и связки у области они не ставят.
 	 */
 	get triggerAria(): TAria {
 		return this._triggerAria
@@ -151,11 +222,23 @@ export class TMenu extends TStylable<IMenuProps, TMenuEvents> implements IMenu {
 	protected _applyOpen(value: boolean): void {
 		this._open = value
 
-		this._triggerAria.add('aria-expanded', value ? 'true' : 'false')
+		this._syncTriggerAria()
 
 		// Потребитель, красящий свой триггер по контексту, читает открытость с
 		// корня — как у Popover
 		this._dataset.add('open', value)
+	}
+
+	/**
+	 * Свою сторону связки меню пишет у кнопки: она открывает меню, и меню
+	 * открыто или нет. У области контекстного меню — ничего (см.
+	 * `triggerAria`).
+	 */
+	protected _syncTriggerAria(): void {
+		const button = this._openOn === 'press'
+
+		this._triggerAria.add('aria-haspopup', button ? 'menu' : null)
+		this._triggerAria.add('aria-expanded', button ? String(this._open) : null)
 	}
 
 	protected _applyPanelSize(newValue: TComponentSize, oldValue?: TComponentSize): void {
@@ -175,6 +258,7 @@ export class TMenu extends TStylable<IMenuProps, TMenuEvents> implements IMenu {
 			...super.getProps(),
 			open: this._open,
 			placement: this._placement,
+			openOn: this._openOn,
 		}
 	}
 }

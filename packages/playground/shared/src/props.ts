@@ -19,6 +19,7 @@ import {
 	LABEL_POSITIONS,
 	LIST_CONTENT_FITS,
 	LIST_INDICATORS,
+	MENU_OPEN_ONS,
 	MENU_PLACEMENTS,
 	POPOVER_EDGES,
 	POPOVER_PLACEMENTS,
@@ -283,6 +284,7 @@ const OWN: Record<string, Record<string, string>> = {
 		open: 'Открыто ли меню. Закрывают его нажатие пункта, Escape, Tab, нажатие и фокус мимо',
 		placement:
 			'Сторона и выравнивание панели у кнопки. У края окна сторону переворачивает flip',
+		openOn: 'Чем меню открывают: press — кнопкой, contextmenu — как контекстное меню области: правой кнопкой, долгим касанием, клавишей контекстного меню и Shift+F10, и панель встаёт у точки вызова',
 		variant:
 			'Смысловой цвет пунктов меню. Свой вариант пункта сильнее: так красится «опасный» пункт',
 	},
@@ -443,7 +445,7 @@ const OPTIONS: Record<string, Record<string, readonly string[]>> = {
 		tags_overflow: TAGS_OVERFLOWS,
 	},
 	popover: { placement: POPOVER_PLACEMENTS, edge: POPOVER_EDGES, swipe: SWIPES },
-	menu: { placement: MENU_PLACEMENTS },
+	menu: { placement: MENU_PLACEMENTS, openOn: MENU_OPEN_ONS },
 	tooltip: { placement: TOOLTIP_PLACEMENTS, type: TOOLTIP_TYPES },
 	slider: { orientation: SLIDE_ORIENTATIONS, snap: SLIDE_SNAPS, tooltip: SLIDER_TOOLTIPS },
 	calendar: { mode: CALENDAR_MODES },
@@ -683,6 +685,9 @@ export const NON_EDITABLE = new Set([
 	'engine',
 	// Якорь — DOM-элемент, как `ctrl` и `engine`: вводить в контрол нечего
 	'anchor_anchor',
+	// Точка вместо якоря — координаты места вызова: их пишет тот, кто открыл
+	// панель (контекстное меню), а не строка стенда
+	'anchor_point',
 	// Атрибуты вьюпорта ленты от потребителя — набор, а не значение: роль ряда
 	// приносит тот, кто ленту применяет, и текстовым полем его не задать
 	'viewportAria',

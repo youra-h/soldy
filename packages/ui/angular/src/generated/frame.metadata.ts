@@ -20,6 +20,7 @@ export const FrameInputs = [
 	'position',
 	'contained',
 	'anchor_anchor',
+	'anchor_point',
 	'anchor_placement',
 	'anchor_matchWidth',
 	'anchor_flip',
@@ -63,6 +64,7 @@ export const FrameOutputs = [
 	'soChangeContained',
 	'soLayoutChangeStyles',
 	'soAnchorChangeAnchor',
+	'soAnchorChangePoint',
 	'soAnchorChangePlacement',
 	'soAnchorChangeMatchWidth',
 	'soAnchorChangeFlip',
@@ -97,6 +99,7 @@ export const FrameOutputs = [
 		'position',
 		{ name: 'contained', transform: booleanInput },
 		'anchor_anchor',
+		'anchor_point',
 		'anchor_placement',
 		{ name: 'anchor_matchWidth', transform: booleanInput },
 		{ name: 'anchor_flip', transform: booleanInput },
@@ -125,6 +128,7 @@ export abstract class TFrameSurface<TInstance extends IEntity> extends TComponen
 	declare position: TInputValue<typeof descriptor, 'position'>
 	declare contained: TInputValue<typeof descriptor, 'contained'>
 	declare anchor_anchor: TInputValue<typeof descriptor, 'anchor_anchor'>
+	declare anchor_point: TInputValue<typeof descriptor, 'anchor_point'>
 	declare anchor_placement: TInputValue<typeof descriptor, 'anchor_placement'>
 	declare anchor_matchWidth: TInputValue<typeof descriptor, 'anchor_matchWidth'>
 	declare anchor_flip: TInputValue<typeof descriptor, 'anchor_flip'>
@@ -233,6 +237,9 @@ export abstract class TFrameSurface<TInstance extends IEntity> extends TComponen
 	}
 	get soAnchorChangeAnchor(): TOutputEmitter<typeof descriptor, 'anchor:change:anchor'> {
 		return this.createOutput('soAnchorChangeAnchor')
+	}
+	get soAnchorChangePoint(): TOutputEmitter<typeof descriptor, 'anchor:change:point'> {
+		return this.createOutput('soAnchorChangePoint')
 	}
 	get soAnchorChangePlacement(): TOutputEmitter<typeof descriptor, 'anchor:change:placement'> {
 		return this.createOutput('soAnchorChangePlacement')
