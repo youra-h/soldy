@@ -1088,6 +1088,36 @@ describe('перестановка колонок', () => {
 	})
 
 	/**
+	 * Палец — не мышь. Касание браузер сам захватывает за узлом заголовка под
+	 * пальцем, и начало жеста, перенося захват на корень, этот узел захвата
+	 * лишает: его `lostpointercapture` всплывает до корня. Протяжка — командой
+	 * протокола DevTools (`commands.touchDrag`), от середины заголовка за
+	 * середину соседа.
+	 */
+	it('пальцем — колонка на новом месте, column:move один раз', async () => {
+		const engine = moveEngine()
+		const moves: string[][] = []
+
+		engine.extensions.columns.events.on('column:move', ({ order }) => moves.push(order))
+		await mount(engine, PLACE)
+		await laidOut()
+
+		const [name, city] = headers()
+
+		await commands.touchDrag(
+			'.so-table-column:first-child',
+			middleOf(city).x + 10 - middleOf(name).x,
+			0,
+		)
+
+		await expect.poll(() => fieldsOf(engine)).toEqual(['city', 'name', 'age'])
+		expect(moves).toEqual([['city', 'name', 'age']])
+		await expect
+			.poll(() => headers().map((header) => header.textContent?.trim()))
+			.toEqual(['Город', 'Имя', 'Возраст'])
+	})
+
+	/**
 	 * Пока несут заголовок — курсор «тащу» и запрет выделения на всей таблице:
 	 * указатель уходит со своего заголовка. Тема ставит их по признаку корня
 	 * (`data-dragging`), который ядро держит только в жесте, с приземлением, —

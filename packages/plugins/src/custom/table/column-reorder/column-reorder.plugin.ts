@@ -95,7 +95,11 @@ function landingOffset(gesture: TTableColumnReorderGesture, place: number): numb
  * до этого оно остаётся нажатием, и кнопка сортировки сортирует. Нажатие,
  * которое уже взяли (ручка ширины гасит своё), не наше. Жест захватывает
  * указатель на корне: протяжка за таблицей и отпускание где угодно приходят
- * сюда, а `click` отпускания до кнопки сортировки не доходит.
+ * сюда, а `click` отпускания до кнопки сортировки не доходит. Касание, в
+ * отличие от мыши, браузер с нажатия сам захватывает за узлом заголовка под
+ * пальцем, и начало жеста, перенося захват на корень, этот узел захвата
+ * лишает: его `lostpointercapture` всплывает до корня. Отнятым указатель
+ * считается, только когда захват потерял сам корень.
  *
  * Взяв колонку, плагин снимает коробки заголовков — относительно корня, один
  * раз — и направление строки, а потом пишет ширину взятого
@@ -125,9 +129,9 @@ function landingOffset(gesture: TTableColumnReorderGesture, place: number): numb
  * меток одной операцией, и переменные сняты тут же. К этому времени заголовки
  * и ячейки стоят там, где их поставит новая раскладка, а переходы тема
  * выключает вместе с жестом, — ничего не отъезжает. Без движения переходов
- * нет, и колонка встаёт через кадр. Отнятый указатель и Escape — то же
- * приземление на своё место и `dragCancel`. Сколько ждать, решает тема —
- * плагин режима движения не читает.
+ * нет, и колонка встаёт через кадр. Отнятый указатель (`pointercancel` или
+ * захват, потерянный корнем) и Escape — то же приземление на своё место и
+ * `dragCancel`. Сколько ждать, решает тема — плагин режима движения не читает.
  *
  * Нажатие и Ctrl+Shift+←/→, пришедшие, пока заголовок приземляется,
  * доводят приземление сразу: следующее действие видит модель и шапку в одном
@@ -186,7 +190,7 @@ export class TTableColumnReorderPlugin extends TBasePlugin<
 		target.addEventListener('pointermove', this._onPointerMove)
 		target.addEventListener('pointerup', this._onPointerUp)
 		target.addEventListener('pointercancel', this._onPointerCancel)
-		target.addEventListener('lostpointercapture', this._onPointerCancel)
+		target.addEventListener('lostpointercapture', this._onLostCapture)
 		target.addEventListener('keydown', this._onKeyDown)
 	}
 
@@ -200,7 +204,7 @@ export class TTableColumnReorderPlugin extends TBasePlugin<
 		target?.removeEventListener('pointermove', this._onPointerMove)
 		target?.removeEventListener('pointerup', this._onPointerUp)
 		target?.removeEventListener('pointercancel', this._onPointerCancel)
-		target?.removeEventListener('lostpointercapture', this._onPointerCancel)
+		target?.removeEventListener('lostpointercapture', this._onLostCapture)
 		target?.removeEventListener('keydown', this._onKeyDown)
 
 		this._root = null
@@ -413,11 +417,22 @@ export class TTableColumnReorderPlugin extends TBasePlugin<
 		this._release(true)
 	}
 
-	/** Браузер отнял указатель или корень ушёл — колонка возвращается на место. */
+	/** Браузер отнял указатель — колонка возвращается на место. */
 	private readonly _onPointerCancel = (event: PointerEvent): void => {
 		if (this._press?.pointer !== event.pointerId) return
 
 		this._release(false)
+	}
+
+	/**
+	 * Захват потерял корень — указатель у него отняли, и жест кончен, как от
+	 * `pointercancel`. Узел под пальцем теряет захват и посреди жеста: касание
+	 * браузер сам захватывает за ним, а начало жеста переносит захват на
+	 * корень. Это событие всплывает до корня, но жест не кончает — указатель
+	 * по-прежнему у корня.
+	 */
+	private readonly _onLostCapture = (event: PointerEvent): void => {
+		if (event.target === this._root) this._onPointerCancel(event)
 	}
 
 	/** Escape посреди жеста — отмена. Слушается на документе: фокус бывает вне таблицы. */
