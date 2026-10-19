@@ -145,8 +145,22 @@ const filled = (star: HTMLElement) => {
 	return fill.getBoundingClientRect().width / star.getBoundingClientRect().width
 }
 
-beforeEach(() => {
+/**
+ * Курсор — в угол страницы, мимо оценки: в отступ вокруг неё. Не `unhover`:
+ * тот уводит указатель в центр `body`, а он бывает и над рядом.
+ */
+const away = () => userEvent.hover(document.body, { position: { x: 1, y: 1 } })
+
+beforeEach(async () => {
 	document.documentElement.dataset.soTheme = 'oren'
+
+	// Мышь у страницы прогона одна на все файлы и стоит там, где её оставил
+	// прошлый тест или файл. Оценка встаёт у левого верхнего угла, и звезда под
+	// забытым курсором монтировалась бы уже поднятой — тема поднимает звезду под
+	// указателем, — а замер раскладки застал бы её крупнее соседей. Наведение
+	// задаёт тест, поэтому курсор уходит с места оценки до монтирования:
+	// уведённый после, он оставил бы звезде обратный переход.
+	await away()
 })
 
 afterEach(async () => {
@@ -277,9 +291,7 @@ describe('предпросмотр наведением', () => {
 		expect(fractions()).toEqual(['1', '1', '1', '0.5', '0'])
 		expect(ctrl.value).toBe(1)
 
-		// Мимо оценки — в отступ вокруг неё: `unhover` уводит указатель в центр body,
-		// а он бывает и над рядом
-		await userEvent.hover(document.body, { position: { x: 1, y: 1 } })
+		await away()
 
 		expect(ctrl.preview).toBeUndefined()
 		expect(fractions()).toEqual(['1', '0', '0', '0', '0'])
