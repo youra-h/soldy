@@ -518,8 +518,12 @@ ARIA пускает только `option` и `group` (axe — `aria-required-chi
   (у React ещё якорь — корень значением рендера: StrictMode, серверная
   разметка и гидратация, смена тега), `ui/solid/__tests__/popover.spec.tsx`
   (у Solid ещё — триггер тем же узлом после открытия и закрытия, фокус на нём
-  после закрытия кликом по нему), `playground/vue/browser/popover.spec.ts`
-  и `playground/vue/browser/popover-swipe.spec.ts`.
+  после закрытия кликом по нему), `ui/svelte/__tests__/popover.spec.ts`
+  (якорь панели — корень, руна `rootElement` адаптера),
+  `playground/vue/browser/popover.spec.ts`,
+  `playground/vue/browser/popover-swipe.spec.ts` и
+  `playground/vue/browser/svelte-host.spec.ts` (открытая панель Svelte стоит,
+  как у Vue).
 - **Menu** — Menu Button (APG): кнопка потребителя в слоте `trigger` внутри
   корня, как у Popover, панель — `Frame` с `role="menu"`, `id` и
   `aria-labelledby` на триггер (имя меню — текст кнопки), у триггера —
@@ -830,7 +834,8 @@ ARIA пускает только `option` и `group` (axe — `aria-required-chi
   `plugins/__tests__/tooltip-trigger.plugin.spec.ts`,
   `ui/vue/__tests__/tooltip.spec.ts`, `ui/react/__tests__/tooltip.spec.tsx`,
   `ui/solid/__tests__/tooltip.spec.tsx` (у Solid ещё — триггер тем же узлом
-  после показа и смены `type`) и `playground/vue/browser/tooltip.spec.ts`.
+  после показа и смены `type`), `ui/svelte/__tests__/tooltip.spec.ts` и
+  `playground/vue/browser/tooltip.spec.ts`.
 - **Dialog** — Dialog (Modal) pattern: `role="dialog"` и `aria-modal="true"`
   на панели, имя — видимый заголовок (`aria-labelledby` на слот `title`,
   который рисуется всегда; `id` он берёт из набора `titleAria`). `TAriaPlugin`
@@ -890,8 +895,10 @@ ARIA пускает только `option` и `group` (axe — `aria-required-chi
   `core/__tests__/dialog.spec.ts`,
   `plugins/__tests__/modal-focus.plugin.spec.ts`,
   `plugins/__tests__/dialog-layout.plugin.spec.ts`,
-  `ui/vue/__tests__/dialog.spec.ts`, `ui/react/__tests__/dialog.spec.tsx` и
-  `playground/vue/browser/dialog.spec.ts`.
+  `ui/vue/__tests__/dialog.spec.ts`, `ui/react/__tests__/dialog.spec.tsx`,
+  `ui/svelte/__tests__/dialog.spec.ts`, `playground/vue/browser/dialog.spec.ts`
+  и `playground/vue/browser/svelte-host.spec.ts` (открытое окно Svelte с
+  подложкой и частями стоит, как у Vue).
 - **Drawer** — выезжающая панель у края экрана. Своего паттерна APG у неё нет:
   это модальный Dialog, и модальность у неё общая с окном (`TModalLayer`, см.
   «Слой оверлея») — роль, `aria-modal`, имя от заголовка, крестик, Escape,
@@ -937,12 +944,15 @@ ARIA пускает только `option` и `group` (axe — `aria-required-chi
   `contained` пропал бы. Сторожат `core/__tests__/drawer.spec.ts`,
   `plugins/__tests__/swipe.plugin.spec.ts` (касание — его группа «касание»),
   `plugins/__tests__/drawer-layout.plugin.spec.ts`,
-  `ui/vue/__tests__/drawer.spec.ts`, `ui/react/__tests__/drawer.spec.tsx` (у
-  React смена `contained` на лету рисует панель новым узлом, и замок прокрутки
-  встаёт кадром позже) и `playground/vue/browser/drawer.spec.ts`
+  `ui/vue/__tests__/drawer.spec.ts`, `ui/react/__tests__/drawer.spec.tsx` и
+  `ui/svelte/__tests__/drawer.spec.ts` (у React и Svelte смена `contained` на
+  лету рисует панель новым узлом, и замок прокрутки встаёт кадром позже),
+  `playground/vue/browser/drawer.spec.ts`
   (жест пальцем — группа «пальцем»: за полосу и от абзаца в теле панель
   закрывается, а протяжка поперёк оси и по телу, которое прокручивается
-  вдоль оси, прокручивает тело, и панель остаётся открытой).
+  вдоль оси, прокручивает тело, и панель остаётся открытой) и
+  `playground/vue/browser/svelte-host.spec.ts` (открытая панель Svelte стоит,
+  как у Vue).
 - **Toasts** — всплывающие уведомления. Своего паттерна APG у них нет; ARIA —
   как у Zag и Radix: регион `role="region"` с `aria-live="polite"` и именем
   от локали («Уведомления (F8)», раздел `toasts`) стоит в документе и пустым —
@@ -1019,14 +1029,17 @@ useToasts()`. API опускает лифт (`TOASTS_ELEVATOR`, расширен
   (`TToastsFrontPlugin`, переменная `--so-toasts-front-height`). Без стопки
   колесо и стрелки остаются странице. **Своё содержимое (`render`)
   — `unknown` в ядре**: ядро его не читает, это значение разметки, и тип ему
-  даёт адаптер — во Vue компонент с пропом `toast` (`TToastRender`, через API
-  `useToasts()`), а рисует его разметка после проверки (`isToastRender`), без
-  приведения. Правило общее: значение, которое ядро только хранит для
-  разметки, в ядре — `unknown`, тип ему даёт API адаптера. Сторожат
+  даёт адаптер — во Vue и Svelte компонент своего фреймворка с пропом `toast`
+  (`TToastRender`, через API `useToasts()`), а рисует его разметка после
+  проверки (`isToastRender`), без приведения. Правило общее: значение, которое
+  ядро только хранит для разметки, в ядре — `unknown`, тип ему даёт API
+  адаптера. Сторожат
   `core/__tests__/toasts.spec.ts`, `plugins/__tests__/toasts.plugin.spec.ts`,
   `plugins/__tests__/swipe.plugin.spec.ts` («тост в регионе»),
-  `plugins/__tests__/names.plugin.spec.ts`, `ui/vue/__tests__/toasts.spec.ts`
-  и `playground/vue/browser/toasts.spec.ts`; вид и ожидание — их группы «вид
+  `plugins/__tests__/names.plugin.spec.ts`, `ui/vue/__tests__/toasts.spec.ts`,
+  `ui/svelte/__tests__/toasts.spec.ts`, `playground/vue/browser/toasts.spec.ts`
+  и `playground/vue/browser/svelte-host.spec.ts` (регион Svelte с тостом стоит,
+  как у Vue); вид и ожидание — их группы «вид
   сообщения», «отсчёт», «значок» и «вид»; стопку — их группы «стопка» и
   `TToastsCascadePlugin`, а её движение — `playground/vue/browser/motion-mode.spec.ts`.
 - **Slider** — Slider и Multi-Thumb Slider pattern, вариант на нативных

@@ -213,6 +213,22 @@ export function toStyleText(styles: TRootStyle | undefined): string | undefined 
 }
 
 /**
+ * Стиль узла без экземпляра, который виден вместе с компонентом, — строкой
+ * атрибута: подложка окна и выезжающей панели. Свойства ядра — как у
+ * `toStyleText`, поверх них `display: none`, пока компонент скрыт (`shown` —
+ * его видимость), как `v-show` у Vue: подложка гаснет вместе с панелью. Своего
+ * у подложки — только номер слоя (`layout_backdropStyles`), чужого на узле
+ * ничего нет, и свойствами стиль ставить незачем. Склейка одна на обе
+ * разметки: повторённая в каждой, она бы разошлась.
+ */
+export function toShownStyleText(
+	styles: TRootStyle | undefined,
+	shown: boolean,
+): string | undefined {
+	return toStyleText({ ...styles, ...(shown ? NONE : HIDDEN) })
+}
+
+/**
  * Атрибуты корня в одном порядке для всех компонентов: наборы ядра `sets` — в
  * том порядке, в каком их кладёт Vue, — поверх них атрибуты потребителя
  * `forward`, класс и стиль — раскладкой корня (`toRootLayout`, туда же
