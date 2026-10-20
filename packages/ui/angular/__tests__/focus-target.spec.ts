@@ -353,7 +353,13 @@ describe('Tabs · остановка по модели', () => {
 	})
 })
 
+/**
+ * Селектор свой: разметка та же, что у `RadioGroupHost`, разное только
+ * значение инстанса, а оно в id компонента Angular не входит — без селектора
+ * id совпал бы (предупреждение NG0912).
+ */
 @Component({
+	selector: 'probe-radio-group-model',
 	standalone: true,
 	imports: [TRadioGroupComponent, TRadioGroupItemComponent],
 	template: `<div so-radio-group [ctrl]="ctrl">
