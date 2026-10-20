@@ -1,13 +1,15 @@
 /**
- * Рамка табов на той поверхности, на которой табы реально стоят, — в обеих
- * цветовых схемах, по вычисленным стилям.
+ * Рамка табов и подложка списка `contained` на той поверхности, на которой
+ * табы реально стоят, — в обеих цветовых схемах, по вычисленным стилям.
  *
  * Цвета вида решает дизайн, и тест их не знает (`themes/oren/AGENTS.md`, «Что
  * тестом не проверяется»). Здесь — отношение, которое ломалось молча: рамка
  * таба и линия под списком брались ступенью 200, а роль ступени 200 —
  * поверхность, не граница. В тёмной схеме `--so-component-surface` равна ей же,
  * и на панели Select и Popover рамка у `view="outline"` совпадала с подложкой:
- * от «папочных вкладок» не оставалось ни одной линии.
+ * от «папочных вкладок» не оставалось ни одной линии. Подложка списка
+ * `contained` бралась ступенью 100 и на той же панели была темнее панели — не
+ * приподнималась над ней, а уходила под неё.
  *
  * Меряется одно: насколько цвет ушёл от подложки В СТОРОНУ ТЕКСТА.
  * Направление тест берёт у текста самой подложки — в светлой схеме уйти от
@@ -20,10 +22,12 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { render, cleanup } from 'vitest-browser-vue'
 import { userEvent } from 'vitest/browser'
-import { defineComponent, h } from 'vue'
-import { Tabs, TabsItem } from '@soldy-ui/vue'
+import { defineComponent, h, type Component, type VNode } from 'vue'
+import type { TComponentVariant } from '@soldy-ui/core'
+import { Button, Tabs, TabsItem } from '@soldy-ui/vue'
+import { COMPONENT_VARIANTS } from '@soldy-ui/playground-shared'
 
-import { find, settled, shift, style } from './colors'
+import { find, pixel, settled, shift, style } from './colors'
 
 import '@soldy-ui/theme-oren'
 
@@ -46,7 +50,8 @@ type TBackdrop = keyof typeof BACKDROPS
  * Виды с линиями: `outline` — рамка вокруг таба плюс линия под списком, вид по
  * умолчанию (`line`) — одна линия под списком. Значения у вида по умолчанию
  * нет намеренно: он и ломался бы без модификатора. `contained` сюда не входит —
- * ни рамки, ни линии у него нет вовсе, активный таб там карточка.
+ * ни рамки, ни линии у него нет вовсе, активный таб там карточка на подложке
+ * списка (своя сцена ниже).
  */
 const VIEWS = {
 	outline: 'outline',
@@ -65,17 +70,28 @@ const VISIBLE_BORDER = 0.04
 
 const TABS = ['Первый', 'Второй', 'Третий']
 
+/** Пропсы набора в сцене: вид и вариант. */
+type TTabsLook = { view?: 'outline' | 'contained'; variant?: TComponentVariant }
+
 /** Табы одного вида: первый активен — у `outline` под ним разрыв в линии. */
-const tabs = (view: (typeof VIEWS)[TView]) =>
+const tabs = (look: TTabsLook) =>
+	h(Tabs, look, {
+		default: () =>
+			TABS.map((text, index) =>
+				h(TabsItem, { key: text, value: String(index), text, active: index === 0 }),
+			),
+	})
+
+/** Подложка сцены: её цвет и цвет её текста — по нему тест узнаёт направление. */
+const backdrop = (name: string, color: string, children: VNode[]) =>
 	h(
-		Tabs,
-		{ view },
+		'div',
 		{
-			default: () =>
-				TABS.map((text, index) =>
-					h(TabsItem, { key: text, value: String(index), text, active: index === 0 }),
-				),
+			key: name,
+			'data-backdrop': name,
+			style: `background: ${color}; color: var(--so-component-text); padding: 8px; display: flex; flex-direction: column; gap: 16px`,
 		},
+		children,
 	)
 
 /** Сцена: обе подложки, на каждой — оба вида табов. */
@@ -84,17 +100,37 @@ const scene = defineComponent({
 		h('div', [
 			h('div', { class: 'so-test-away', style: 'height: 24px' }),
 			...Object.entries(BACKDROPS).map(([name, color]) =>
-				h(
-					'div',
-					{
-						key: name,
-						'data-backdrop': name,
-						style: `background: ${color}; color: var(--so-component-text); padding: 8px; display: flex; flex-direction: column; gap: 16px`,
-					},
+				backdrop(
+					name,
+					color,
 					Object.entries(VIEWS).map(([role, view]) =>
-						h('div', { key: role, 'data-view': role }, [tabs(view)]),
+						h('div', { key: role, 'data-view': role }, [tabs({ view })]),
 					),
 				),
+			),
+		]),
+})
+
+/**
+ * Сцена `contained`: обе подложки, на каждой — набор каждого варианта темы,
+ * `normal` тоже, и эталон — нейтральная залитая кнопка: её заливка — вуаль той
+ * плотности, которой «на шаг от своей поверхности» отходит и подложка списка.
+ */
+const containedScene = defineComponent({
+	render: () =>
+		h('div', [
+			h('div', { class: 'so-test-away', style: 'height: 24px' }),
+			...Object.entries(BACKDROPS).map(([name, color]) =>
+				backdrop(name, color, [
+					h('div', { key: 'эталон', 'data-filled': '' }, [
+						h(Button, { view: 'filled', text: 'Заливка' }),
+					]),
+					...COMPONENT_VARIANTS.map((variant) =>
+						h('div', { key: variant, 'data-variant': variant }, [
+							tabs({ view: 'contained', variant }),
+						]),
+					),
+				]),
 			),
 		]),
 })
@@ -149,10 +185,14 @@ function indicator(name: TBackdrop): number {
 	return away(style(listOf(under, 'по умолчанию'), '::after').backgroundColor, under)
 }
 
+/** Подложка списка `contained` варианта — фон самого списка. */
+const containerOf = (under: TBackdropUnder, variant: TComponentVariant): string =>
+	style(find(`[data-variant="${variant}"] .so-tabs__list`, under.root)).backgroundColor
+
 /** Сцена в заданной схеме, указатель уведён со всех табов. */
-async function show(scheme: (typeof SCHEMES)[number]): Promise<void> {
+async function show(scheme: (typeof SCHEMES)[number], component: Component = scene): Promise<void> {
 	document.documentElement.dataset.soTheme = scheme
-	render(scene)
+	render(component)
 
 	await userEvent.hover(find('.so-test-away'))
 	await settled(document.body)
@@ -166,6 +206,11 @@ const CASES = SCHEMES.flatMap((scheme) =>
 /** То же самое, но ещё и по видам: линия под списком есть у обоих. */
 const VIEW_CASES = CASES.flatMap((scenario) =>
 	(Object.keys(VIEWS) as TView[]).map((view) => ({ ...scenario, view })),
+)
+
+/** То же самое по вариантам темы: подложку `contained` красит семейство варианта. */
+const VARIANT_CASES = CASES.flatMap((scenario) =>
+	COMPONENT_VARIANTS.map((variant) => ({ ...scenario, variant })),
 )
 
 beforeEach(() => {
@@ -218,4 +263,42 @@ describe('полоса под активным табом стоит на шка
 			line(scenario.backdrop, 'по умолчанию'),
 		)
 	})
+})
+
+describe('contained: подложка списка отходит от своей поверхности', () => {
+	/**
+	 * Ступень 100 отсчитана от страницы, а на поверхности контрола тёмной
+	 * схемы (ступень 200) она темнее панели: подложка уходила под панель у
+	 * каждого варианта. Вуаль считает от того, что под списком.
+	 */
+	it.each(VARIANT_CASES)(
+		'$scheme, $backdrop, $variant: в сторону текста, а не за поверхность',
+		async (scenario) => {
+			await show(scenario.scheme, containedScene)
+
+			const under = backdropOf(scenario.backdrop)
+
+			expect(away(containerOf(under, scenario.variant), under)).toBeGreaterThan(0)
+		},
+	)
+
+	/**
+	 * Подложка значит «на шаг от своей поверхности» — то же, что заливка
+	 * нейтрального `filled`, — и у нейтрали она того же цвета: одна вуаль, а
+	 * не своя плотность. Как далеко и одинаково ли везде отходит сама заливка,
+	 * сторожит `button-view.spec.ts`.
+	 */
+	it.each(CASES)(
+		'$scheme, $backdrop: у нейтрали — цвета заливки нейтрального filled',
+		async (scenario) => {
+			await show(scenario.scheme, containedScene)
+
+			const under = backdropOf(scenario.backdrop)
+			const filled = style(find('[data-filled] .so-button', under.root)).backgroundColor
+
+			expect([...pixel([under.color, containerOf(under, 'normal')])]).toEqual([
+				...pixel([under.color, filled]),
+			])
+		},
+	)
 })

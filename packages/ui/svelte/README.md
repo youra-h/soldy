@@ -23,10 +23,14 @@ slot is `children`.
 > (`<Virtual><ListBox items={…} /></Virtual>`, the same with `Table`), the `DragAndDrop` wrapper
 > that lets users reorder the items of Tabs, ListBox and Accordion by dragging
 > (`<DragAndDrop onMove={…}><ListBox items={…} /></DragAndDrop>`, `onMoveBefore` can cancel),
-> Slider, Rating, ProgressLinear, Scroller and Pagination are ported, the rest of the set is on its
-> way. Icon renders the `tag` it is given: an element name, a Svelte component, or `roleIcon(role)`
-> — the icon of that role from the registered icon pack. Frame teleports its panel into `target`
-> (`body` by default) on the client; with `contained` it stays in place, on the server too. A field
+> Slider, Rating, ProgressLinear, Scroller, Pagination and the overlays — Popover (a panel at a
+> trigger with any content), Tooltip, Dialog (a modal window), Drawer (a panel that slides in at an
+> edge) and Toasts (notifications shown from code with `useToasts()`) — are ported, the rest of the
+> set is on its way. Icon renders the `tag` it is given: an element name, a Svelte component, or
+> `roleIcon(role)` — the icon of that role from the registered icon pack. Frame teleports its panel
+> into `target` (`body` by default) on the client; with `contained` it stays in place, on the
+> server too. Dialog, Drawer and the region of Toasts are teleported the same way, and `ref` of
+> Dialog and Drawer is the panel, of Toasts — the region. A field
 > gives its class and style to the root and every other attribute to its `<input>` (a textarea —
 > to its `<textarea>`); an item of a collection gives them to its row; a list box and tabs give
 > them to the list itself, `[role=listbox]` or `[role=tablist]`; a table gives them to the
@@ -113,6 +117,44 @@ Items given as data are drawn by the owner, and their slots are the owner's `ite
 with the item in the scope. A snippet is opaque: an item cannot tell that it drew nothing, so a
 snippet given to the owner replaces the item's own content for every item — draw the default
 yourself where you need it.
+
+A popover and a tooltip take their trigger as the `trigger` snippet: the trigger is the element of
+the application, so the link to the panel (`aria-expanded`, `aria-controls`) and the pressed look
+come to it in the scope:
+
+```svelte
+<script lang="ts">
+  import { Button, Popover } from '@soldy-ui/svelte'
+</script>
+
+<Popover aria_label="Filters">
+  {#snippet trigger({ triggerAria, triggerDataset })}
+    <Button text="Filters" {...triggerAria} {...triggerDataset} />
+  {/snippet}
+  Any content: text, fields, buttons
+</Popover>
+```
+
+Toasts are shown from code. The manager wraps the application, and any component under it takes
+the API while it initializes; your own content of a toast is a Svelte component with a `toast`
+prop:
+
+```svelte
+<!-- App.svelte -->
+<Toasts>
+  <Page />
+</Toasts>
+
+<!-- Page.svelte -->
+<script lang="ts">
+  import { Button, useToasts } from '@soldy-ui/svelte'
+  import Undo from './Undo.svelte'
+
+  const { show } = useToasts()
+</script>
+
+<Button text="Delete" onclick={() => show({ text: 'Deleted', render: Undo })} />
+```
 
 The application plugs in a theme and an icon pack once, in its entry point:
 

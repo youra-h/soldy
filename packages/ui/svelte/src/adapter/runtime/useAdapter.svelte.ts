@@ -12,7 +12,7 @@
  * 3. События (Core → колбэк-пропы onXxx)
  * 4. Компонент принят — adapter.attach()
  * 5. DOM-биндинг через attachment (аналог callback-ref в React), и тот же
- *    узел — связываемому пропу `ref` компонента
+ *    узел — связываемому пропу `ref` компонента и руне `rootElement`
  * 6. Очистка при уничтожении компонента
  *
  * Фасад коллекции связывает `useCollectionAdapter` — те же шаги, кроме
@@ -42,6 +42,15 @@
  * получает эти две половины attachment-а корня по отдельности: корню — только
  * привязку (`bindRef`), обёртке — только запись `ref` (`consumerRef`): внешний
  * узел — тот, на который легли атрибуты потребителя.
+ *
+ * Узел, привязанный к `TElementPlugin`, разметка компонента получает и сама —
+ * руной `rootElement`, как `rootElement` у Vue: корень Popover и Tooltip —
+ * якорь панели, и разметка отдаёт его своему Frame (`anchor_anchor`). `ref` для
+ * этого не годится: это привязка потребителя, и при `bind:ref={get, set}`
+ * разметка читала бы его код. Пишет руну та же половина attachment-а, что
+ * привязывает узел (`bindRef`), — у таблицы это `table`, — при снятии —
+ * `null`, и смена тега доходит до разметки новым узлом. На сервере
+ * attachment-ов нет, и узла там нет тоже.
  *
  * Файл `.svelte.ts` — иначе руны `$effect` / `$derived` недоступны.
  */
@@ -81,6 +90,13 @@ export type TBinding<
 	 * attachment-ы потребителя — пропсы с ключом-символом.
 	 */
 	readonly forwardProps: TForwardProps<TProps>
+	/**
+	 * Корень, привязанный к `TElementPlugin`, — руной: разметка, которая отдаёт
+	 * его дальше (якорь панели Frame у Popover и Tooltip), следит за ним, как за
+	 * состоянием. Не отрисован или снят — `null`; у корня внутри обёртки — сам
+	 * корень (`table`), а не обёртка.
+	 */
+	readonly rootElement: Element | null
 	/**
 	 * Svelte-attachment корня: `<div {@attach binding.attachElement}>` —
 	 * привязка к `TElementPlugin`, затем тот же узел — `ref` компонента.
@@ -221,13 +237,23 @@ export function useAdapter<C extends IComponentContract, TProps extends object>(
 	const { binding, state } = useExchange(adapter, getProps)
 	const forwardProps = $derived(forwardOf(binding, getProps()))
 
+	// Узел корня для разметки — сырой руной: прокси узлу не нужен, сравнивается
+	// он по ссылке
+	let rootElement = $state.raw<Element | null>(null)
+
 	// 5. DOM-биндинг: контекст сам знает, есть ли у набора TElementPlugin.
 	// Отвязка — очисткой attachment-а: смена тега пересоздаёт узел, и прежний
-	// отвязывается, а новый привязывается
+	// отвязывается, а новый привязывается. Тот же узел — руне разметки. Svelte
+	// эту запись пускает: attachment выполняется эффектом, а не блоком, а его
+	// очистка — вне реакции
 	const bindRef = (node: Element): (() => void) => {
 		adapter.bindElement(node)
+		rootElement = node
 
-		return () => adapter.bindElement(null)
+		return () => {
+			adapter.bindElement(null)
+			rootElement = null
+		}
 	}
 
 	// Узел — `ref` компонента, при снятии — `null`. Запись — мимо слежения
@@ -250,6 +276,10 @@ export function useAdapter<C extends IComponentContract, TProps extends object>(
 
 		get forwardProps() {
 			return forwardProps
+		},
+
+		get rootElement() {
+			return rootElement
 		},
 
 		// Корень и есть внешний узел: привязка, затем тот же узел — `ref`

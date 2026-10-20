@@ -71,28 +71,104 @@ describe('Frame · телепорт', () => {
 		expect(frame().style.left).toBe('')
 	})
 
-	it('contained на лету: узел возвращается на место и уходит обратно', () => {
-		const [contained, setContained] = createSignal(false)
-		const { container } = mount(() => <Frame contained={contained()} visible />)
+	/**
+	 * Смена `contained` переносит панель тем же узлом, как смена цели: поле в
+	 * ней не пересоздаётся, и набранное в нём остаётся. Новый узел дал бы ту же
+	 * разметку, поэтому сторож — тождество узлов. Первым содержимое
+	 * разворачивает то место, где панель стоит с самого начала, — цель или
+	 * место, — и проверены оба.
+	 */
+	it.each([
+		['из цели на место и обратно', false],
+		['с места в цель и обратно', true],
+	])('contained на лету, %s: тот же узел панели и поле с набранным', (_name, initial) => {
+		const [contained, setContained] = createSignal(initial)
+		const { container } = mount(() => (
+			<Frame contained={contained()} visible>
+				<input class="probe" />
+			</Frame>
+		))
+		const node = frame()
+		const field = find(node, '.probe', HTMLInputElement)
 
-		expect(container.contains(frame())).toBe(false)
+		field.value = 'набрано'
 
-		setContained(true)
+		/**
+		 * Панель одна, на своём месте, тем же узлом с тем же полем — и живая:
+		 * наборы ядра на перенесённом узле идут за `contained`.
+		 */
+		const expectPanel = (inPlace: boolean) => {
+			expect(document.querySelectorAll('.so-frame')).toHaveLength(1)
+			expect(frame()).toBe(node)
+			expect(node.parentElement === container).toBe(inPlace)
+			expect(document.body.contains(node)).toBe(true)
+			expect(node.dataset.contained).toBe(String(inPlace))
+			expect(node.querySelector('.probe')).toBe(field)
+			expect(field.value).toBe('набрано')
+		}
 
-		expect(frame().parentElement).toBe(container)
-		expect(document.querySelectorAll('.so-frame')).toHaveLength(1)
+		expectPanel(initial)
 
-		setContained(false)
+		setContained(!initial)
 
-		expect(container.contains(frame())).toBe(false)
-		expect(document.body.contains(frame())).toBe(true)
-		expect(document.querySelectorAll('.so-frame')).toHaveLength(1)
+		expectPanel(!initial)
+
+		setContained(initial)
+
+		expectPanel(initial)
 	})
 
-	it('цели нет — узла нет', () => {
-		mount(() => <Frame target="#missing" visible />)
+	/**
+	 * Содержимое разворачивается, только когда его есть где нарисовать: без
+	 * цели компонент в панели не собирается.
+	 */
+	it('цели нет — ни узла, ни собранного содержимого', async () => {
+		const bundles: unknown[] = []
+
+		mount(() => (
+			<Frame target="#missing" visible>
+				<Button onBundleCreate={(bundle: unknown) => bundles.push(bundle)} />
+			</Frame>
+		))
+		// Набор объявляется на микрозадаче после сборки
+		await Promise.resolve()
 
 		expect(document.querySelector('.so-frame')).toBeNull()
+		expect(bundles).toHaveLength(0)
+	})
+
+	/**
+	 * Содержимое живёт, пока жив Teleport: цель, пропавшая на лету, вынимает
+	 * панель из документа, а вернувшаяся получает тот же узел — как при смене
+	 * цели.
+	 */
+	it('цель пропала — панели в документе нет, вернулась — тот же узел в цели', () => {
+		const first = document.createElement('section')
+
+		first.id = 'first'
+		document.body.append(first)
+
+		const [target, setTarget] = createSignal('#first')
+
+		mount(() => (
+			<Frame target={target()} visible>
+				<input class="probe" />
+			</Frame>
+		))
+
+		const node = frame()
+		const field = find(node, '.probe', HTMLInputElement)
+
+		setTarget('#missing')
+
+		expect(document.querySelector('.so-frame')).toBeNull()
+		expect(first.children).toHaveLength(0)
+
+		setTarget('#first')
+
+		expect(frame()).toBe(node)
+		expect(first.contains(node)).toBe(true)
+		expect(node.querySelector('.probe')).toBe(field)
 	})
 
 	it('размонтирование убирает узел из цели', () => {

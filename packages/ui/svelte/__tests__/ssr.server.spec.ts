@@ -16,13 +16,17 @@ import { describe, it, expect } from 'vitest'
 import { createRawSnippet } from 'svelte'
 import { createAttachmentKey } from 'svelte/attachments'
 import { render } from 'svelte/server'
+import type { TAriaAttributes } from '@soldy-ui/core'
 import {
 	Button,
 	CheckBox,
+	Dialog,
+	Drawer,
 	Frame,
 	Icon,
 	Input,
 	NumberInput,
+	Popover,
 	ProgressLinear,
 	ProgressSpinner,
 	Rating,
@@ -30,12 +34,27 @@ import {
 	Skeleton,
 	Slider,
 	Textarea,
+	Toasts,
+	Tooltip,
 	roleIcon,
 } from '@soldy-ui/svelte'
 import RootRef, { type TRootKind } from './RootRef.test.svelte'
 
 /** Содержимое панели. */
 const content = createRawSnippet(() => ({ render: () => '<span>Панель</span>' }))
+
+/**
+ * Триггер поповера и подсказки: кнопка, которая печатает ссылки из scope —
+ * так видно, что сторона связки дошла до серверной разметки.
+ */
+const trigger = createRawSnippet((scope: () => { triggerAria: TAriaAttributes }) => ({
+	render: () => {
+		const aria = scope().triggerAria
+		const link = aria['aria-controls'] ?? aria['aria-describedby'] ?? ''
+
+		return `<button data-link="${link}">Открыть</button>`
+	},
+}))
 
 /**
  * Разметка сервера без комментариев: в них Svelte пишет метки гидратации
@@ -61,6 +80,69 @@ describe('Frame · серверный рендер', () => {
 		expect(body).toMatch(/style="position: absolute; [^"]*z-index: \d+"/)
 		expect(body).not.toMatch(/style="[^"]*\b(left|top):/)
 		expect(body).toContain('<span>Панель</span>')
+	})
+})
+
+/**
+ * Оверлеи на сервере: телепорта там нет, как у Frame, — панель, окно и регион
+ * тостов появляются после гидратации. Что стоит на месте, сервер рисует:
+ * корень поповера и подсказки с триггером, панель поповера и выезжающую
+ * панель с `contained`, приложение под менеджером тостов.
+ */
+describe('оверлеи · серверный рендер', () => {
+	it('Popover — корень с триггером и его связкой, панели нет', () => {
+		const body = markup(render(Popover, { props: { trigger, children: content } }).body)
+
+		expect(body).toMatch(/^<span [^>]*class="so-popover"/)
+		expect(body).toMatch(/<button data-link="[^"]+-panel">Открыть<\/button><\/span>$/)
+		expect(body).not.toContain('so-popover__panel')
+		expect(body).not.toContain('<span>Панель</span>')
+	})
+
+	it('Popover с contained — панель в корне, вместе с содержимым', () => {
+		const body = markup(
+			render(Popover, { props: { trigger, children: content, contained: true } }).body,
+		)
+
+		expect(body).toMatch(/^<span [^>]*class="so-popover"/)
+		expect(body).toMatch(/<div [^>]*class="so-frame so-popover__panel"/)
+		expect(body).toContain('data-contained="true"')
+		expect(body).toContain('role="dialog"')
+		expect(body).toContain('<span>Панель</span>')
+	})
+
+	it('Tooltip — корень с триггером и ссылкой на панель, панели нет', () => {
+		const body = markup(render(Tooltip, { props: { trigger, children: content } }).body)
+
+		expect(body).toMatch(/^<span [^>]*class="so-tooltip"/)
+		expect(body).toMatch(/<button data-link="[^"]+">Открыть<\/button><\/span>$/)
+		expect(body).not.toContain('so-tooltip__panel')
+	})
+
+	it('Dialog — пусто: телепорта на сервере нет', () => {
+		const body = markup(render(Dialog, { props: { visible: true, children: content } }).body)
+
+		expect(body).toBe('')
+	})
+
+	it('Drawer — пусто, а с contained — подложка и панель на месте', () => {
+		const teleported = markup(render(Drawer, { props: { children: content } }).body)
+		const contained = markup(
+			render(Drawer, { props: { contained: true, children: content } }).body,
+		)
+
+		expect(teleported).toBe('')
+		expect(contained).toMatch(
+			/^<div class="so-drawer__backdrop" style="[^"]*display: none"[^>]*><\/div><div [^>]*role="dialog"/,
+		)
+		expect(contained).toContain('class="so-drawer so-drawer--placement-end"')
+		expect(contained).toContain('<div class="so-drawer__body"><span>Панель</span></div>')
+	})
+
+	it('Toasts — приложение без региона', () => {
+		const body = markup(render(Toasts, { props: { children: content } }).body)
+
+		expect(body).toBe('<span>Панель</span>')
 	})
 })
 
@@ -253,6 +335,11 @@ describe('ref потребителя · серверный рендер', () => 
 		'Table',
 		'Scroller',
 		'Pagination',
+		'Popover',
+		'Tooltip',
+		'Dialog',
+		'Drawer',
+		'Toasts',
 	]
 
 	it.each(KINDS)('%s: bind:ref не пишется, ref в разметке нет', (kind) => {

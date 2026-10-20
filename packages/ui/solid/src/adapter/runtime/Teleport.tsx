@@ -14,10 +14,26 @@
  * клиенте, как у React и Svelte.
  *
  * `disabled` — как у Vue: содержимое рисуется на месте, без портала, и тогда
- * оно есть и на сервере.
+ * оно есть и на сервере. Смена `disabled`, как и смена цели, переносит те же
+ * узлы, а не рисует их заново: поле в панели сохраняет набранное. Геттер
+ * `children` в пропсах Solid на каждое чтение создаёт узлы заново, поэтому
+ * содержимое разворачивается один раз — мемо `children()` под владельцем
+ * Teleport, — и обе ветки, место и `Portal`, читают его. Снятая ветка уносит
+ * только себя (`Portal` — и свою обёртку из цели), а узлы содержимого живут,
+ * пока жив Teleport: цель, пропавшая на лету, вынимает их из документа, а
+ * вернувшаяся получает те же.
+ *
+ * Мемо заводит первое чтение, а не сборка Teleport, — как своё заводит
+ * `Portal`, в эффекте. Заведённое сразу собирало бы содержимое там, где его
+ * нет: без цели — впустую, а при гидратации в ветке портала — по разметке,
+ * которой сервер не рисовал. Ветка на месте читает его там же, где читала
+ * геттер, и разметка сервера и гидратация с `disabled` прежние. Владелец мемо —
+ * тот, под которым стоит Teleport, а не ветка, прочитавшая первой: смена ветки
+ * мемо не снимает, а контексты места (локаль поддерева) у содержимого те же в
+ * обеих ветках.
  */
 
-import { Show, type JSX } from 'solid-js'
+import { Show, children, getOwner, runWithOwner, type ChildrenReturn, type JSX } from 'solid-js'
 import { Portal, isServer } from 'solid-js/web'
 
 export type TTeleportProps = {
@@ -36,10 +52,22 @@ function targetOf(selector: string | undefined): Element | null {
 }
 
 export function Teleport(props: TTeleportProps): JSX.Element {
+	const owner = getOwner()
+	let resolved: ChildrenReturn | undefined
+
+	// Содержимое, одно на обе ветки: мемо — с первым чтением, под владельцем
+	// Teleport. Без мемо `runWithOwner` возвращается, только когда сборка
+	// содержимого бросила и ошибку взяла граница ошибок
+	const content = (): JSX.Element => {
+		resolved ??= runWithOwner(owner, () => children(() => props.children))
+
+		return resolved?.()
+	}
+
 	return (
-		<Show when={!props.disabled} fallback={props.children}>
+		<Show when={!props.disabled} fallback={content()}>
 			<Show when={targetOf(props.to)}>
-				{(target) => <Portal mount={target()}>{props.children}</Portal>}
+				{(target) => <Portal mount={target()}>{content()}</Portal>}
 			</Show>
 		</Show>
 	)

@@ -462,6 +462,30 @@ describe('таб из разметки', () => {
 	})
 
 	/**
+	 * Scope таба живой, и проброс сливает его с табом живыми полями: слот
+	 * набора, прочитавший scope в разметке, переживает активацию теми же
+	 * узлами — кнопка или поле в табе фокуса не теряют.
+	 */
+	it('item, читающий scope в разметке, — те же узлы после активации', () => {
+		mount(() => (
+			<Tabs
+				items={ITEMS.slice(0, 2)}
+				item={(scope) => (
+					<b class="probe">
+						{String(scope.item.value)}:{String(scope.active)}
+					</b>
+				)}
+			/>
+		))
+		const probes = [...document.querySelectorAll('.probe')]
+
+		tab('b:false').click()
+
+		expect([...document.querySelectorAll('.probe')]).toEqual(probes)
+		expect(probes.map((probe) => probe.textContent)).toEqual(['a:false', 'b:true'])
+	})
+
+	/**
 	 * Пустое, что вернул проброс, таб видит и рисует своё — как у Vue и React:
 	 * крестик одному табу, у остальных — иконка.
 	 */

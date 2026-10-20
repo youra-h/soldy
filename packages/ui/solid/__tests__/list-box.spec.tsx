@@ -592,6 +592,50 @@ describe('отметка выбранного и слоты', () => {
 	})
 
 	/**
+	 * Scope слота живой: слот, прочитавший его в разметке, переживает выбор
+	 * теми же узлами — кнопка или поле в пункте фокуса не теряют.
+	 */
+	it('children элемента, читающий scope в разметке, — тот же узел после выбора', () => {
+		mount(() => (
+			<ListBox>
+				<ListBox.Item value="a" text="A">
+					{(scope) => (
+						<b class="probe">
+							{scope.text}:{String(scope.selected)}
+						</b>
+					)}
+				</ListBox.Item>
+			</ListBox>
+		))
+		const probe = find(document, '.probe', HTMLElement)
+
+		rowOf('A:false').click()
+
+		expect(find(document, '.probe', HTMLElement)).toBe(probe)
+		expect(probe.textContent).toBe('A:true')
+	})
+
+	/** Проброс сливает scope элемента с элементом живыми полями — так же. */
+	it('item списка, читающий scope в разметке, — те же узлы после выбора', () => {
+		mount(() => (
+			<ListBox
+				items={ITEMS.slice(0, 2)}
+				item={(scope) => (
+					<b class="probe">
+						{String(scope.item.value)}:{String(scope.selected)}
+					</b>
+				)}
+			/>
+		))
+		const probes = [...document.querySelectorAll('.probe')]
+
+		rowOf('b:false').click()
+
+		expect([...document.querySelectorAll('.probe')]).toEqual(probes)
+		expect(probes.map((probe) => probe.textContent)).toEqual(['a:false', 'b:true'])
+	})
+
+	/**
 	 * Пустое, что вернул проброс, элемент видит и рисует своё — как у Vue и
 	 * React: отметка одному элементу, у остальных — иконка.
 	 */

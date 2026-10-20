@@ -2,7 +2,9 @@ import type { Component } from 'svelte'
 import AccordionPreview from './AccordionPreview.svelte'
 import ButtonPreview from './ButtonPreview.svelte'
 import CheckBoxPreview from './CheckBoxPreview.svelte'
+import DialogPreview from './DialogPreview.svelte'
 import DragAndDropPreview from './DragAndDropPreview.svelte'
+import DrawerPreview from './DrawerPreview.svelte'
 import FieldPreview from './FieldPreview.svelte'
 import IconPreview from './IconPreview.svelte'
 import InputPreview from './InputPreview.svelte'
@@ -10,6 +12,7 @@ import LabelPreview from './LabelPreview.svelte'
 import ListBoxPreview from './ListBoxPreview.svelte'
 import NumberInputPreview from './NumberInputPreview.svelte'
 import PaginationPreview from './PaginationPreview.svelte'
+import PopoverPreview from './PopoverPreview.svelte'
 import ProgressLinearPreview from './ProgressLinearPreview.svelte'
 import ProgressSpinnerPreview from './ProgressSpinnerPreview.svelte'
 import RadioGroupPreview from './RadioGroupPreview.svelte'
@@ -21,6 +24,8 @@ import SwitchPreview from './SwitchPreview.svelte'
 import TablePreview from './TablePreview.svelte'
 import TabsPreview from './TabsPreview.svelte'
 import TextareaPreview from './TextareaPreview.svelte'
+import ToastsPreview from './ToastsPreview.svelte'
+import TooltipPreview from './TooltipPreview.svelte'
 import VirtualPreview from './VirtualPreview.svelte'
 
 /** Пропсы превью: пропы строки, `ctrl` с экземпляром ядра и колбэки событий хоста. */
@@ -69,4 +74,9 @@ export const PREVIEWS: Record<string, TPreview> = {
 	virtual: VirtualPreview,
 	scroller: ScrollerPreview,
 	pagination: PaginationPreview,
+	popover: PopoverPreview,
+	tooltip: TooltipPreview,
+	dialog: DialogPreview,
+	drawer: DrawerPreview,
+	toasts: ToastsPreview,
 }
