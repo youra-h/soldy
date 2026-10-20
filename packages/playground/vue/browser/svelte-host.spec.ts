@@ -7,18 +7,19 @@
  * Vue его вырезает, и вне флекса и сетки такой пробел сдвинул бы части.
  * Поэтому компонент Svelte стоит в ячейке так же, как компонент хоста Vue, —
  * то же место и тот же размер. У превью с обёрткой и содержимым так же стоят
- * и обёртка, и части: подпись вокруг контрола, элементы коллекций, панель
- * активного таба, ручки и заливка ползунка, звёзды оценки, кнопки и вьюпорт
- * ленты, страницы и стрелки пагинации, — а у таблицы её окно, корень,
- * заголовки и строки. Окна Virtual здесь нет — у Vue в его ряду ещё и Select,
- * которого у Svelte нет.
+ * и обёртка, и части: подпись вокруг контрола, элементы коллекций, теги,
+ * поле Select с обёртками и стрелкой, панель активного таба, ручки и заливка
+ * ползунка, звёзды оценки, кнопки и вьюпорт ленты, страницы и стрелки
+ * пагинации, — а у таблицы её окно, корень, заголовки и строки; у окна
+ * Virtual — его ряд: список, Select и таблица.
  *
  * Оверлеи — дважды. В ячейке — то, что стоит на месте: корень поповера и
- * подсказки с триггером, кнопки окна, выезжающей панели и тостов. И открытые:
- * панель поповера, окно и выезжающая панель с подложкой и частями, регион с
- * тостом — телепортированы в `body`, мимо сцены, и их рамки сверяются от угла
- * окна, когда доиграли переходы темы. Пробелы Svelte внутри панелей jsdom не
- * видит: раскладку считает только браузер.
+ * подсказки с триггером, кнопки окна, выезжающей панели и тостов, поле
+ * Select. И открытые: панель поповера, список Select с опциями, окно и
+ * выезжающая панель с подложкой и частями, регион с тостом — телепортированы
+ * в `body`, мимо сцены, и их рамки сверяются от угла окна, когда доиграли
+ * переходы темы. Пробелы Svelte внутри панелей jsdom не видит: раскладку
+ * считает только браузер.
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
@@ -49,15 +50,16 @@ const propRow = (name: string): HTMLElement => {
 }
 
 /**
- * Рамки компонента и его нарисованных частей в первой колонке строки — от угла
- * сцены колонки, в порядке документа: по ним видно и место каждой части в
- * ячейке, и её размер.
+ * Рамки компонента и его нарисованных частей в первой колонке строки `row` —
+ * от угла сцены колонки, в порядке документа: по ним видно и место каждой
+ * части в ячейке, и её размер. Строка — `visible`, а у обёртки без
+ * представления (Virtual) — её выключатель.
  */
-async function boxesOf(framework: string, component: string, selector: string) {
+async function boxesOf(framework: string, component: string, selector: string, row = 'visible') {
 	await router.push(`/${framework}/${component}`)
 	await settle()
 
-	const stage = propRow('visible').querySelector('.pg-col__stage')
+	const stage = propRow(row).querySelector('.pg-col__stage')
 	const parts = [...(stage?.querySelectorAll(selector) ?? [])].filter(
 		(part) => part.getClientRects().length > 0,
 	)
@@ -80,32 +82,54 @@ async function boxesOf(framework: string, component: string, selector: string) {
 	})
 }
 
+/** Что открывает оверлей в сцене: узел, по которому кликнуть, и его имя для ошибки. */
+type TOpener = {
+	readonly name: string
+	readonly find: (stage: Element) => Element | undefined
+}
+
+/** Кнопка с текстом `text` — триггер поповера, кнопки окна, панели и тостов. */
+const button = (text: string): TOpener => ({
+	name: `кнопка «${text}»`,
+	find: (stage) =>
+		[...stage.querySelectorAll('.so-button')].find(
+			(candidate) => candidate.textContent?.trim() === text,
+		),
+})
+
+/**
+ * Узел по селектору — стрелка Select: превью стенда — `editable`, и панель
+ * там открывает клик по стрелке, а не по полю.
+ */
+const node = (selector: string): TOpener => ({
+	name: selector,
+	find: (stage) => stage.querySelector(selector) ?? undefined,
+})
+
 /**
  * Рамки открытого оверлея и его частей — от угла окна, в порядке документа:
  * панель телепортирована в `body`, мимо сцены, и стоит у триггера или у края
- * окна. Открывает её кнопка с текстом `opener` в первой колонке строки
+ * окна. Открывает её клик по узлу `opener` в первой колонке строки
  * `visible`; рамки снимаются, когда доиграли переходы темы — проявление,
  * въезд, место у якоря.
  */
 async function openedBoxesOf(
 	framework: string,
 	component: string,
-	opener: string,
+	opener: TOpener,
 	selector: string,
 ) {
 	await router.push(`/${framework}/${component}`)
 	await settle()
 
 	const stage = propRow('visible').querySelector('.pg-col__stage')
-	const button = [...(stage?.querySelectorAll('.so-button') ?? [])].find(
-		(candidate) => candidate.textContent?.trim() === opener,
-	)
+	const target = stage ? opener.find(stage) : undefined
 
-	if (!(button instanceof HTMLElement)) {
-		throw new Error(`${framework}/${component}: в сцене нет кнопки «${opener}»`)
+	if (!(target instanceof HTMLElement)) {
+		throw new Error(`${framework}/${component}: в сцене нет: ${opener.name}`)
 	}
 
-	button.click()
+	target.click()
 	await settle()
 	await Promise.all(document.getAnimations().map((animation) => animation.finished))
 
@@ -153,6 +177,11 @@ describe('хост Svelte', () => {
 		['field', '.so-field, .so-field__label, .so-field__control, .so-input, .so-field__helper'],
 		['radio-group', '.so-radio-group, .so-radio-group-item'],
 		['list-box', '.so-list-box, .so-list-box-item'],
+		['tags', '.so-tags, .so-tags-item, .so-tags-item .so-button__text'],
+		[
+			'select',
+			'.so-select, .so-select__field, .so-input__leading, .so-select__field input, .so-input__trailing, .so-select__arrow, .so-select__arrow svg',
+		],
 		['tabs', '.so-tabs, .so-tabs-item, .so-tabs__panel'],
 		['accordion', '.so-accordion, .so-accordion-item'],
 		['table', '.so-table__viewport, .so-table, .so-table-column, .so-table-row'],
@@ -189,33 +218,56 @@ describe('хост Svelte', () => {
 		expect(svelte).toEqual(vue)
 	})
 
-	// Кнопка, которая открывает оверлей, его части и их число: панель,
-	// подложка, заголовок, тело, подвал, крестик и содержимое; у тостов —
-	// регион с тостом (пустые регионы других колонок стоят у того же края),
-	// тост, плашка, значок, текст, кнопка «Отменить» и крестик. Число частей —
-	// чтобы неоткрывшийся оверлей не сошёлся сам с собой
+	/**
+	 * Ряд окна: список с пределом строк, Select в колонке своей ширины и
+	 * таблица в обёртке. Строки `visible` у обёртки нет — она без
+	 * представления, — и сцена берётся из строки её выключателя.
+	 */
+	it('virtual: ряд окна стоит в ячейке так же, как у Vue', async () => {
+		const selector =
+			'.so-list-box, .so-list-box-item, .so-select, .so-select__field, .so-table__viewport, .so-table, .so-table-row'
+		const vue = await boxesOf('vue', 'virtual', selector, 'enabled')
+		const svelte = await boxesOf('svelte', 'virtual', selector, 'enabled')
+
+		expect(svelte.length).toBeGreaterThan(3)
+		expect(svelte[0].width).toBeGreaterThan(0)
+		expect(svelte).toEqual(vue)
+	})
+
+	// Что открывает оверлей, его части и их число: панель, подложка,
+	// заголовок, тело, подвал, крестик и содержимое; у Select — панель,
+	// список и опции; у тостов — регион с тостом (пустые регионы других
+	// колонок стоят у того же края), тост, плашка, значок, текст, кнопка
+	// «Отменить» и крестик. Число частей — чтобы неоткрывшийся оверлей не
+	// сошёлся сам с собой
 	it.each([
 		[
 			'popover',
-			'Открыть',
+			button('Открыть'),
 			'.so-popover__panel, .so-popover__content, .so-popover__content > *, .so-popover__close',
 			5,
 		],
 		[
+			'select',
+			node('.so-select__arrow'),
+			'.so-select__panel, .so-select__list, .so-select-item',
+			7,
+		],
+		[
 			'dialog',
-			'Открыть окно',
+			button('Открыть окно'),
 			'.so-dialog__backdrop, .so-dialog, .so-dialog__title, .so-dialog__body, .so-dialog__body > *, .so-dialog__footer, .so-dialog__footer > *, .so-dialog__close',
 			10,
 		],
 		[
 			'drawer',
-			'Открыть панель',
+			button('Открыть панель'),
 			'.so-drawer__backdrop, .so-drawer, .so-drawer__title, .so-drawer__body, .so-drawer__body > *, .so-drawer__footer, .so-drawer__footer > *, .so-drawer__close',
 			10,
 		],
 		[
 			'toasts',
-			'обычное',
+			button('обычное'),
 			'.so-toasts:has(.so-toasts-item), .so-toasts-item, .so-toasts-item__card, .so-toasts-item__icon, .so-toasts-item__text, .so-toasts-item__content > *, .so-toasts-item__close',
 			7,
 		],
