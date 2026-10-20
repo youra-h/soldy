@@ -23,6 +23,7 @@ import {
 	createEngine,
 	createEngineListBox,
 	type IListBoxItem,
+	type TListBoxCollection,
 	type TListBoxValue,
 	type TListBoxView,
 	type TListIndicator,
@@ -669,13 +670,15 @@ describe('отметка выбранного и слоты', () => {
 })
 
 /**
- * Группы из данных — как у Vue (`ui/vue/__tests__/list-groups.spec.ts`):
+ * Группы — как у Vue (`ui/vue/__tests__/list-groups.spec.ts`). Из данных:
  * секции нарисованного (`drawnSections`) — группа с подписью в
- * `ListBox.Group`, элементы без группы — последними, прямо в списке, а между
- * секциями, пока их просит список (`groupSeparators`, по умолчанию выключен), —
- * немой разделитель. Стрелки ходят тем же порядком, что элементы стоят на
- * экране. Петля секций — по ключу секции: смена подписи группы и разделителей
- * узлов элементов не пересоздаёт.
+ * `ListBox.Group`, элементы без группы — прямо в списке, а между секциями,
+ * пока их просит список (`groupSeparators`, по умолчанию выключен), — немой
+ * разделитель; группы из `groups` — первыми, остальное — по месту. Разметкой:
+ * `ListBox.Group` входит в ту же группировку, и секции описывают её. Стрелки
+ * ходят тем же порядком, что элементы стоят на экране. Петля секций — по
+ * ключу секции: смена подписи группы и разделителей узлов элементов не
+ * пересоздаёт.
  */
 describe('группы', () => {
 	/** В данных «Морковь» стоит между фруктами, у «Воды» группы нет. */
@@ -791,6 +794,70 @@ describe('группы', () => {
 		mount(() => <ListBox items={ITEMS} />)
 
 		expect(parts()).toEqual(['Первый', 'Второй', 'Третий'])
+	})
+
+	/** «Вода» — над группой «Фрукты», «Сок» — под ней: группы не заявлены. */
+	function markup(engine: TListBoxCollection, label: () => string = () => 'Фрукты') {
+		return () => (
+			<ListBox engine={engine}>
+				<ListBox.Item value="water" text="Вода" />
+				<ListBox.Group label={label()}>
+					<ListBox.Item value="apple" text="Яблоко" />
+					<ListBox.Item value="pear" text="Груша" />
+				</ListBox.Group>
+				<ListBox.Item value="juice" text="Сок" />
+			</ListBox>
+		)
+	}
+
+	/** Секции коротко: подпись группы (`null` — без группы) и значения элементов. */
+	const brief = (engine: TListBoxCollection) =>
+		engine.extensions.group.sections.map(({ group, items }) => [
+			group === null ? null : (group.label ?? ''),
+			items.map((item) => item.value),
+		])
+
+	it('группа разметки — в группировке: секции с подписью, элементы вне группы — на местах', () => {
+		const engine = createEngineListBox()
+
+		mount(markup(engine))
+
+		expect(brief(engine)).toEqual([
+			[null, ['water']],
+			['Фрукты', ['apple', 'pear']],
+			[null, ['juice']],
+		])
+		expect(parts()).toEqual(['Вода', ['Фрукты', ['Яблоко', 'Груша']], 'Сок'])
+	})
+
+	it('стрелки по группе разметки — порядком экрана: «Вода» над группой — первой', async () => {
+		mount(markup(createEngineListBox()))
+
+		await nextFrame()
+
+		const highlighted = () =>
+			rows()
+				.find((row) => row.getAttribute('data-highlighted') === 'true')
+				?.textContent?.trim()
+		const visited: unknown[] = []
+
+		for (let step = 0; step < 4; step += 1) {
+			press(list(), 'ArrowDown')
+			visited.push(highlighted())
+		}
+
+		expect(visited).toEqual(['Вода', 'Яблоко', 'Груша', 'Сок'])
+	})
+
+	it('смена подписи группы разметки — новая подпись секции', () => {
+		const engine = createEngineListBox()
+		const [label, setLabel] = createSignal('Фрукты')
+
+		mount(markup(engine, label))
+
+		setLabel('Ягоды')
+
+		expect(brief(engine)[1]).toEqual(['Ягоды', ['apple', 'pear']])
 	})
 })
 

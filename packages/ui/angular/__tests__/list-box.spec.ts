@@ -24,13 +24,20 @@ import { Component, signal, type EventEmitter } from '@angular/core'
 import type { ComponentFixture } from '@angular/core/testing'
 import {
 	createEngine,
+	createEngineListBox,
 	type IListBoxItem,
+	type TListBoxCollection,
 	type TListBoxValue,
 	type TListIndicator,
 	type TSelectionMode,
 	type TValuePayload,
 } from '@soldy-ui/core'
-import { SlotDirective, TListBoxComponent, TListBoxItemComponent } from '@soldy-ui/angular'
+import {
+	SlotDirective,
+	TListBoxComponent,
+	TListBoxGroupComponent,
+	TListBoxItemComponent,
+} from '@soldy-ui/angular'
 import { find, findIn, mountHost, nextFrame } from './mount'
 
 type TItem = { value: string; text: string }
@@ -800,13 +807,15 @@ describe('отметка выбранного и слоты', () => {
 })
 
 /**
- * Группы из данных — как у Vue (`ui/vue/__tests__/list-groups.spec.ts`):
+ * Группы — как у Vue (`ui/vue/__tests__/list-groups.spec.ts`). Из данных:
  * секции нарисованного (`drawnSections`) — группа с подписью в
- * `<div so-list-box-group>`, элементы без группы — последними, прямо в
- * списке, а между секциями, пока их просит список (`groupSeparators`, по
- * умолчанию выключен), — немой разделитель. Стрелки ходят тем же порядком,
- * что элементы стоят на экране. Элементы в группе — из шаблона списка, и
- * слой лифта списка они видят и внутри группы.
+ * `<div so-list-box-group>`, элементы без группы — прямо в списке, а между
+ * секциями, пока их просит список (`groupSeparators`, по умолчанию выключен),
+ * — немой разделитель; группы из `groups` — первыми, остальное — по месту.
+ * Элементы в группе — из шаблона списка, и слой лифта списка они видят и
+ * внутри группы. Разметкой: `<div so-list-box-group>` входит в ту же
+ * группировку своим слоем лифта, и секции описывают её. Стрелки ходят тем же
+ * порядком, что элементы стоят на экране.
  */
 describe('группы', () => {
 	/** В данных «Морковь» стоит между фруктами, у «Воды» группы нет. */
@@ -938,6 +947,71 @@ describe('группы', () => {
 			['Vegetables', ['Морковь']],
 			'Вода',
 		])
+	})
+
+	/** «Вода» — над группой «Фрукты», «Сок» — под ней: группы не заявлены. */
+	@Component({
+		standalone: true,
+		imports: [TListBoxComponent, TListBoxItemComponent, TListBoxGroupComponent],
+		template: `<so-list-box [engine]="engine">
+			<so-list-box-item value="water" text="Вода" />
+			<div so-list-box-group [label]="label()">
+				<so-list-box-item value="apple" text="Яблоко" />
+				<so-list-box-item value="pear" text="Груша" />
+			</div>
+			<so-list-box-item value="juice" text="Сок" />
+		</so-list-box>`,
+	})
+	class MarkupHost {
+		readonly engine = createEngineListBox()
+		readonly label = signal('Фрукты')
+	}
+
+	/** Секции коротко: подпись группы (`null` — без группы) и значения элементов. */
+	const brief = (engine: TListBoxCollection) =>
+		engine.extensions.group.sections.map(({ group, items }) => [
+			group === null ? null : (group.label ?? ''),
+			items.map((item) => item.value),
+		])
+
+	it('группа разметки — в группировке: секции с подписью, элементы вне группы — на местах', () => {
+		const fixture = mountHost(MarkupHost)
+
+		expect(brief(fixture.componentInstance.engine)).toEqual([
+			[null, ['water']],
+			['Фрукты', ['apple', 'pear']],
+			[null, ['juice']],
+		])
+		expect(parts(fixture)).toEqual(['Вода', ['Фрукты', ['Яблоко', 'Груша']], 'Сок'])
+	})
+
+	it('стрелки по группе разметки — порядком экрана: «Вода» над группой — первой', async () => {
+		const fixture = mountHost(MarkupHost)
+		const list = listOf(fixture)
+
+		await nextFrame()
+
+		const highlighted = () =>
+			rows()
+				.find((row) => row.getAttribute('data-highlighted') === 'true')
+				?.textContent?.trim()
+		const visited: unknown[] = []
+
+		for (let step = 0; step < 4; step += 1) {
+			press(fixture, list, 'ArrowDown')
+			visited.push(highlighted())
+		}
+
+		expect(visited).toEqual(['Вода', 'Яблоко', 'Груша', 'Сок'])
+	})
+
+	it('смена подписи группы разметки — новая подпись секции', () => {
+		const fixture = mountHost(MarkupHost)
+
+		fixture.componentInstance.label.set('Ягоды')
+		fixture.detectChanges()
+
+		expect(brief(fixture.componentInstance.engine)[1]).toEqual(['Ягоды', ['apple', 'pear']])
 	})
 })
 

@@ -1,6 +1,6 @@
 import { Component, ChangeDetectionStrategy } from '@angular/core'
 import type { IItemGroup } from '@soldy-ui/core'
-import { AttributesDirective, type TBinding } from '../../../adapter'
+import { AttributesDirective, provideElevator, type TBinding } from '../../../adapter'
 import { ListBoxGroupInputNames, TListBoxGroupSurface } from './base.component'
 import { setupListBoxGroup } from './setup.component'
 
@@ -21,12 +21,18 @@ import { setupListBoxGroup } from './setup.component'
  * проекция: в коллекцию списка они входят сквозь группу, из слоя лифта
  * списка.
  *
+ * Свой слой лифта группа отдаёт поддереву провайдером (`provideElevator()`):
+ * в него проводка группы опускает её ключ, и элементы в содержимом входят в
+ * её группу. DI идёт по дереву объявлений, поэтому ключ видит элемент,
+ * которого потребитель написал внутри группы.
+ *
  * Selector: div[so-list-box-group], [so-list-box-group]
  */
 @Component({
 	selector: 'div[so-list-box-group], [so-list-box-group]',
 	standalone: true,
 	imports: [AttributesDirective],
+	providers: [provideElevator()],
 	changeDetection: ChangeDetectionStrategy.OnPush,
 	templateUrl: './list-box-group.component.html',
 })

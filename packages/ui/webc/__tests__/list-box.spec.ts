@@ -22,6 +22,7 @@ import { describe, it, expect, expectTypeOf, afterEach } from 'vitest'
 import {
 	TWindowStrategy,
 	createEngineListBox,
+	type TListBoxCollection,
 	type TListBoxValue,
 	type TSelectionMode,
 	type TValuePayload,
@@ -31,6 +32,7 @@ import {
 	TListBoxElement,
 	TListBoxGroupElement,
 	TListBoxItemElement,
+	defineElement,
 	registerButtonTag,
 	type ITemplate,
 	type TButtonElementProps,
@@ -954,12 +956,15 @@ describe('распорки окна', () => {
 })
 
 /**
- * Группы из данных — как у Vue (`ui/vue/__tests__/list-groups.spec.ts`):
+ * Группы — как у Vue (`ui/vue/__tests__/list-groups.spec.ts`). Из данных:
  * секции нарисованного (`drawnSections`) — группа с подписью в
- * `<div is="so-list-box-group">`, элементы без группы — последними, прямо в
- * списке, а между секциями, пока их просит список (`groupSeparators`, по
- * умолчанию выключен), — немой разделитель. Записи группы — её свет, и
- * элементы в ней находят движок списка лифтом сквозь группу.
+ * `<div is="so-list-box-group">`, элементы без группы — прямо в списке, а
+ * между секциями, пока их просит список (`groupSeparators`, по умолчанию
+ * выключен), — немой разделитель; группы из `groups` — первыми, остальное —
+ * по месту. Записи группы — её свет, и элементы в ней находят движок списка
+ * лифтом сквозь группу. Разметкой: группа входит в ту же группировку — ключ
+ * элементы её света находят лифтом вверх по документу, — и секции описывают
+ * её. Стрелки ходят тем же порядком, что элементы стоят на экране.
  */
 describe('группы', () => {
 	/** В данных «Морковь» стоит между фруктами, у «Воды» группы нет. */
@@ -1105,7 +1110,7 @@ describe('группы', () => {
 		expect(parts(list)).toEqual(['Первый', 'Второй', 'Третий'])
 	})
 
-	it('группа разметкой — обёртка: элементы в ней входят в коллекцию списка', async () => {
+	it('группа разметкой — группа с подписью, элементы в ней — в коллекции списка', async () => {
 		const host = await mount(`<div is="so-list-box">
 			<div is="so-list-box-group" label="Фрукты">
 				<div is="so-list-box-item" value="apple" text="Яблоко"></div>
@@ -1117,6 +1122,100 @@ describe('группы', () => {
 
 		expect(parts(listIn(host))).toEqual([['Фрукты', ['Яблоко']], 'Вода'])
 		expect(selection()).toEqual(['false', 'false'])
+	})
+
+	/** «Вода» — над группой «Фрукты», «Сок» — под ней: группы не заявлены. */
+	const MARKUP = `<div is="so-list-box-item" value="water" text="Вода"></div>
+		<div is="so-list-box-group" label="Фрукты">
+			<div is="so-list-box-item" value="apple" text="Яблоко"></div>
+			<div is="so-list-box-item" value="pear" text="Груша"></div>
+		</div>
+		<div is="so-list-box-item" value="juice" text="Сок"></div>`
+
+	/** Секции коротко: подпись группы (`null` — без группы) и значения элементов. */
+	const brief = (engine: TListBoxCollection) =>
+		engine.extensions.group.sections.map(({ group, items }) => [
+			group === null ? null : (group.label ?? ''),
+			items.map((item) => item.value),
+		])
+
+	it('группа разметки — в группировке: секции с подписью, элементы вне группы — на местах', async () => {
+		const engine = createEngineListBox()
+		const list = await mountList({ engine }, MARKUP)
+
+		await flush()
+
+		expect(brief(engine)).toEqual([
+			[null, ['water']],
+			['Фрукты', ['apple', 'pear']],
+			[null, ['juice']],
+		])
+		expect(parts(list)).toEqual(['Вода', ['Фрукты', ['Яблоко', 'Груша']], 'Сок'])
+	})
+
+	it('стрелки по группе разметки — порядком экрана: «Вода» над группой — первой', async () => {
+		const list = await mountList({ engine: createEngineListBox() }, MARKUP)
+
+		await flush()
+		await nextFrame()
+
+		const highlighted = () =>
+			rows()
+				.find((row) => row.getAttribute('data-highlighted') === 'true')
+				?.textContent?.trim()
+		const visited: unknown[] = []
+
+		for (let step = 0; step < 4; step += 1) {
+			await press(nodeOf(list), 'ArrowDown')
+			visited.push(highlighted())
+		}
+
+		expect(visited).toEqual(['Вода', 'Яблоко', 'Груша', 'Сок'])
+	})
+
+	it('смена подписи группы разметки — новая подпись секции', async () => {
+		const engine = createEngineListBox()
+		const list = await mountList({ engine }, MARKUP)
+
+		await flush()
+
+		Reflect.set(find(list, '.so-list-box-group', TListBoxGroupElement), 'label', 'Ягоды')
+		await flush()
+
+		expect(brief(engine)[1]).toEqual(['Ягоды', ['apple', 'pear']])
+	})
+
+	/**
+	 * Разметка написана раньше, чем зарегистрированы элементы: модуль списка
+	 * регистрирует группу раньше элемента, и при апгрейде группа успевает
+	 * опустить ключ, когда собираются элементы её света. Имена — свои у теста:
+	 * зарегистрированные пакетом уже живые.
+	 */
+	it('разметка до регистрации — элементы в группе входят в её группу', async () => {
+		document.body.innerHTML = `<div is="so-test-groups-list">
+			<div is="so-test-groups-group" label="Фрукты">
+				<div is="so-test-groups-item" value="apple" text="Яблоко"></div>
+			</div>
+			<div is="so-test-groups-item" value="water" text="Вода"></div>
+		</div>`
+
+		// Порядок — как в модуле списка: группа раньше элемента
+		defineElement('so-test-groups-list', class extends TListBoxElement {}, 'div')
+		defineElement('so-test-groups-group', class extends TListBoxGroupElement {}, 'div')
+		defineElement('so-test-groups-item', class extends TListBoxItemElement {}, 'div')
+
+		// Ожившие при регистрации собираются микрозадачей позже
+		await flush()
+		await flush()
+
+		const list = document.querySelector('[is="so-test-groups-list"]')
+
+		if (!isList(list)) throw new Error('списка нет')
+
+		expect(list.state.drawnSections?.map(({ group }) => group?.label ?? null)).toEqual([
+			'Фрукты',
+			null,
+		])
 	})
 })
 

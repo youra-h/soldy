@@ -12,14 +12,16 @@ import type { TCollectionEngineItemSource, TGroupSection, TQueryEvent } from '@s
 
 /**
  * Группировка коллекции (`group`) — выборка, а не перестановка хранилища:
- * показанное (`batch.shown`) идёт по группам — в порядке `groups`,
- * незаявленные следом по первому элементу, без ключа в конце, — а состав
- * (`batch.items`) остаётся порядком данных. Секции — непрерывные куски
- * показанного с одной группой. Ключ элемента — `groupBy` или метка `_.group`
- * из данных.
+ * показанное (`batch.shown`) идёт по группам — группы из `groups` первыми, в
+ * их порядке, остальное по месту: незаявленная группа — у своего первого
+ * элемента, элемент без ключа — где стоял, — а состав (`batch.items`)
+ * остаётся порядком данных. Секции — непрерывные куски показанного с одной
+ * группой. Ключ элемента — `groupBy` или метка `_.group` из отметок, подпись —
+ * из `groups` или регистрации (`register`) группы разметки.
  *
  * Здесь — голая коллекция, без компонента. Меню над ней — `menu.spec.ts`,
- * разметка — `ui/vue/__tests__/menu.spec.ts`.
+ * группы разметки — `setup/__tests__/item-group.spec.ts` и
+ * `ui/vue/__tests__/menu.spec.ts`.
  */
 
 type Item = { id: string; kind?: string }
@@ -100,7 +102,7 @@ const GROUPS = [
 ]
 
 describe('group · порядок показанного', () => {
-	it('группы — в порядке groups, без ключа — в конце, внутри группы — порядок данных', () => {
+	it('группы из groups — первыми, в их порядке, без ключа — следом, внутри группы — порядок данных', () => {
 		const { batch, group } = engineKit()
 
 		batch.set([
@@ -146,6 +148,84 @@ describe('group · порядок показанного', () => {
 		])
 	})
 
+	/**
+	 * Пример владельца из разметки: «Новый» над группой «Правка». Группа не
+	 * заявлена, и стрелки идут, как пункты стоят: «Новый» первым.
+	 */
+	it('элемент без ключа над незаявленной группой стоит первым', () => {
+		const { batch, group } = engineKit()
+
+		batch.set([source('new'), source('cut', 'edit'), source('copy', 'edit')])
+
+		expect(ids(batch.shown)).toEqual(['new', 'cut', 'copy'])
+		expect(brief(group.sections)).toEqual([
+			{ key: 'free', label: null, items: ['new'] },
+			{ key: 'group:edit', label: '', items: ['cut', 'copy'] },
+		])
+	})
+
+	it('незаявленная группа — у своего первого элемента, элемент без ключа — на своём месте', () => {
+		const { batch, group } = engineKit()
+
+		batch.set([
+			source('new'),
+			source('cut', 'edit'),
+			source('rename'),
+			source('copy', 'edit'),
+			source('zoom', 'view'),
+			source('close'),
+		])
+
+		expect(ids(batch.shown)).toEqual(['new', 'cut', 'copy', 'rename', 'zoom', 'close'])
+		// Без группы между группами — свои куски: `free`, `free~1`, `free~2`
+		expect(brief(group.sections)).toEqual([
+			{ key: 'free', label: null, items: ['new'] },
+			{ key: 'group:edit', label: '', items: ['cut', 'copy'] },
+			{ key: 'free~1', label: null, items: ['rename'] },
+			{ key: 'group:view', label: '', items: ['zoom'] },
+			{ key: 'free~2', label: null, items: ['close'] },
+		])
+	})
+
+	it('заявленные группы — первыми, а незаявленные и без ключа — по месту', () => {
+		const { batch, group } = engineKit()
+
+		group.groups = [{ key: 'view', label: 'Вид' }]
+		batch.set([
+			source('new'),
+			source('cut', 'edit'),
+			source('zoom', 'view'),
+			source('copy', 'edit'),
+			source('close'),
+		])
+
+		expect(ids(batch.shown)).toEqual(['zoom', 'new', 'cut', 'copy', 'close'])
+		expect(brief(group.sections)).toEqual([
+			{ key: 'group:view', label: 'Вид', items: ['zoom'] },
+			{ key: 'free', label: null, items: ['new'] },
+			{ key: 'group:edit', label: '', items: ['cut', 'copy'] },
+			{ key: 'free~1', label: null, items: ['close'] },
+		])
+	})
+
+	/**
+	 * Так приходят элементы разметки: группа в документе непрерывна, и порядок
+	 * показанного — порядок документа, как у опций `<select>` с `<optgroup>`.
+	 */
+	it('непрерывные группы без groups — показанное в порядке данных', () => {
+		const { batch } = engineKit()
+
+		batch.set([
+			source('new'),
+			source('cut', 'edit'),
+			source('copy', 'edit'),
+			source('rename'),
+			source('zoom', 'view'),
+		])
+
+		expect(ids(batch.shown)).toEqual(ids(batch.items))
+	})
+
 	it('без ключей — порядок как есть и одна секция без группы', () => {
 		const { batch, group } = engineKit()
 
@@ -169,10 +249,10 @@ describe('group · порядок показанного', () => {
 
 		batch.set([source('a', null), source('b', { key: 'x' }), source('c', true), source('d', 0)])
 
-		expect(ids(batch.shown)).toEqual(['d', 'a', 'b', 'c'])
+		expect(ids(batch.shown)).toEqual(['a', 'b', 'c', 'd'])
 		expect(brief(group.sections)).toEqual([
-			{ key: 'group:0', label: '', items: ['d'] },
 			{ key: 'free', label: null, items: ['a', 'b', 'c'] },
+			{ key: 'group:0', label: '', items: ['d'] },
 		])
 	})
 
@@ -404,6 +484,130 @@ describe('group · секции', () => {
 	})
 })
 
+/**
+ * Регистрация — подпись группы разметки: её ключа потребитель не знает, и в
+ * `groups` её нет. Регистрация отдельна от `groups` и порядка не задаёт.
+ */
+describe('group · регистрация', () => {
+	/** Пункт над группой — как в разметке: «Новый» над группой «Правка». */
+	function markupKit() {
+		const kit = engineKit()
+
+		kit.batch.set([
+			source('new'),
+			source('cut', 'markup:1'),
+			source('copy', 'markup:1'),
+			source('rename'),
+		])
+
+		return kit
+	}
+
+	it('даёт подпись секции группы; снятие её убирает', () => {
+		const { group } = markupKit()
+		const sections = vi.fn()
+
+		group.events.on('change:sections', sections)
+
+		const release = group.register({ key: 'markup:1', label: 'Правка' })
+
+		expect(sections).toHaveBeenCalledOnce()
+		expect(sections).toHaveBeenCalledWith(group.sections)
+		expect(brief(group.sections)).toEqual([
+			{ key: 'free', label: null, items: ['new'] },
+			{ key: 'group:markup:1', label: 'Правка', items: ['cut', 'copy'] },
+			{ key: 'free~1', label: null, items: ['rename'] },
+		])
+
+		release()
+
+		expect(sections).toHaveBeenCalledTimes(2)
+		expect(group.sections[1].group).toEqual({ key: 'markup:1' })
+	})
+
+	it('порядка не задаёт: выборка прежняя, зарегистрированная группа — не заявленная', () => {
+		const { batch, driver, group } = markupKit()
+		const invalidated = vi.fn()
+
+		driver.events.on('items:query:invalidated', invalidated)
+
+		group.register({ key: 'markup:1', label: 'Правка' })
+
+		expect(invalidated).not.toHaveBeenCalled()
+		expect(ids(batch.shown)).toEqual(['new', 'cut', 'copy', 'rename'])
+		expect(group.groups).toEqual([])
+	})
+
+	it('сброс groups регистрацию не трогает', () => {
+		const { group } = markupKit()
+
+		group.register({ key: 'markup:1', label: 'Правка' })
+		group.groups = [{ key: 'view', label: 'Вид' }]
+		group.groups = undefined
+
+		expect(group.sections[1].group).toEqual({ key: 'markup:1', label: 'Правка' })
+	})
+
+	it('подпись из groups главнее регистрации', () => {
+		const { group } = markupKit()
+
+		group.register({ key: 'markup:1', label: 'Правка' })
+		group.groups = [{ key: 'markup:1', label: 'Edit' }]
+
+		expect(brief(group.sections)[0]).toEqual({
+			key: 'group:markup:1',
+			label: 'Edit',
+			items: ['cut', 'copy'],
+		})
+	})
+
+	it('повтор ключа — новая подпись; снятие заменённой регистрации ничего не меняет', () => {
+		const { group } = markupKit()
+		const sections = vi.fn()
+
+		const first = group.register({ key: 'markup:1', label: 'Правка' })
+
+		group.events.on('change:sections', sections)
+
+		const second = group.register({ key: 'markup:1', label: 'Edit' })
+
+		expect(sections).toHaveBeenCalledOnce()
+		expect(group.sections[1].group).toEqual({ key: 'markup:1', label: 'Edit' })
+
+		first()
+
+		expect(sections).toHaveBeenCalledOnce()
+		expect(group.sections[1].group).toEqual({ key: 'markup:1', label: 'Edit' })
+
+		second()
+
+		expect(group.sections[1].group).toEqual({ key: 'markup:1' })
+	})
+
+	it('группа без элементов — секции те же и тишина', () => {
+		const { group } = markupKit()
+		const sections = vi.fn()
+		const before = group.sections
+
+		group.events.on('change:sections', sections)
+		group.register({ key: 'markup:2', label: 'Пусто' })
+
+		expect(sections).not.toHaveBeenCalled()
+		expect(group.sections).toBe(before)
+	})
+
+	it('запись — своя копия: правка объекта снаружи подпись не меняет', () => {
+		const { group } = markupKit()
+		const entry = { key: 'markup:1', label: 'Правка' }
+
+		group.register(entry)
+		entry.label = 'Другое'
+		group.groups = [{ key: 'view' }]
+
+		expect(group.sections[1].group).toEqual({ key: 'markup:1', label: 'Правка' })
+	})
+})
+
 describe('group · память выборки', () => {
 	/** Коллекция с памятью последней, как у строк таблицы. */
 	function rememberingKit() {
@@ -433,13 +637,13 @@ describe('group · память выборки', () => {
 	it('метка мимо записи видна с памятью', () => {
 		const { batch, meta } = rememberingKit()
 
-		batch.set([source('a'), source('b', 'edit')])
+		batch.set([source('a', 'edit'), source('b'), source('c')])
 
-		expect(ids(batch.shown)).toEqual(['b', 'a'])
+		expect(ids(batch.shown)).toEqual(['a', 'b', 'c'])
 
-		meta.apply(itemOf(batch.items, 'a'), { group: 'edit' })
+		meta.apply(itemOf(batch.items, 'c'), { group: 'edit' })
 
-		expect(ids(batch.shown)).toEqual(['a', 'b'])
+		expect(ids(batch.shown)).toEqual(['a', 'c', 'b'])
 	})
 
 	it('установка в наполненный движок — показанное по группам сразу', () => {
@@ -462,10 +666,10 @@ describe('group · память выборки', () => {
 		const { batch } = engine.extensions
 		const shown = vi.fn()
 
-		batch.set([source('a'), source('b', 'edit')])
+		batch.set([source('a', 'edit'), source('b'), source('c', 'edit')])
 
 		// Выборка запомнена до группировки
-		expect(ids(batch.shown)).toEqual(['a', 'b'])
+		expect(ids(batch.shown)).toEqual(['a', 'b', 'c'])
 
 		batch.events.on('change:shown', shown)
 
@@ -474,7 +678,7 @@ describe('group · память выборки', () => {
 		engine.use(group)
 
 		expect(shown).toHaveBeenCalled()
-		expect(ids(batch.shown)).toEqual(['b', 'a'])
+		expect(ids(batch.shown)).toEqual(['a', 'c', 'b'])
 		expect(brief(group.sections).map(({ key }) => key)).toEqual(['group:edit', 'free'])
 	})
 })

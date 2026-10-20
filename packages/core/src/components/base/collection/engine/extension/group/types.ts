@@ -58,8 +58,8 @@ export interface IGroupCollectionProps<TItem = any> {
 }
 
 /**
- * Контракт расширения группировки: порядок показанного по группам и секции
- * показанного для разметки.
+ * Контракт расширения группировки: порядок показанного по группам, секции
+ * показанного для разметки и регистрация групп разметки.
  */
 export interface IGroupExtension<TItem extends object = any> extends IExtension<
 	TItem,
@@ -82,4 +82,14 @@ export interface IGroupExtension<TItem extends object = any> extends IExtension<
 	 * тот же массив, пока секции не сменились
 	 */
 	readonly sections: ReadonlyArray<TGroupSection<TItem>>
+
+	/**
+	 * Зарегистрировать группу — ключ и подпись: подпись получают секции группы,
+	 * когда в `groups` её нет. Так подпись даёт группа разметки — её ключа
+	 * потребитель не знает. Регистрация отдельна от `groups` и порядка не
+	 * задаёт. Повтор ключа заменяет прежнюю регистрацию (новая подпись).
+	 * Возвращает снятие: оно убирает регистрацию, только пока она последняя у
+	 * ключа
+	 */
+	register(group: TGroup): () => void
 }

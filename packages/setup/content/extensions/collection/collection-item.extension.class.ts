@@ -5,10 +5,11 @@
  *
  * Работа разделена по фазам контекста:
  *
- * - **сборка** (конструктор) — движок своей коллекции и её регистратор через
- *   лифт, контекст элемента в фасад, `meta` из пропсов. В чужое хранилище она
- *   не пишет. Пропсы сборки контекст держит до `connect()`, поэтому
- *   расширение ставят до него — сразу за сборкой контекста;
+ * - **сборка** (конструктор) — движок своей коллекции, её регистратор и
+ *   связка группы разметки над элементом через лифт, контекст элемента в
+ *   фасад, `meta` из пропсов. В чужое хранилище она не пишет. Пропсы сборки
+ *   контекст держит до `connect()`, поэтому расширение ставят до него — сразу
+ *   за сборкой контекста;
  * - **вход** (`attach` контекста) — регистрация в коллекции владельца и
  *   `meta.apply`. Это запись в чужое хранилище, поэтому она ждёт, пока
  *   фреймворк примет компонент: у React сборка идёт на рендере, и отброшенный
@@ -52,15 +53,25 @@
  * Выход элемента разметки при снятии удалением не считается: элемент уходит
  * из коллекции потому, что кончилось его монтирование, и `rendered` чужого
  * `ctrl` остаётся его — смонтированный снова, он рисуется.
+ *
+ * Элемент внутри группы разметки (`Menu.Group`, `ListBox.Group` и соседи)
+ * входит в её группу: ключ, который опускает проводка группы
+ * (`TItemGroupExtension`), ложится в `meta` элемента меткой `group` — тем же
+ * каналом, что `_.group` в данных. Ключ берёт только элемент, которого вход
+ * добавляет в состав (сверка — до регистрации, как `owned` у регистратора):
+ * у элемента из данных метка своя, из данных, даже когда владелец рисует его
+ * в группе секции. И только из своей коллекции: пункты подменю в группе меню
+ * — элементы коллекции подменю, а не меню.
  */
 
-import { TItemContext, factoryOf, metaOf, plainOf } from '@soldy-ui/core'
+import { TItemContext, batchOf, factoryOf, metaOf, plainOf } from '@soldy-ui/core'
 import type { TCollectionEngine, TRemoveEvent } from '@soldy-ui/core'
 import type { TInstanceContext } from '../../../protected/adapter/context'
 import {
 	COLLECTION_ENGINE_ELEVATOR,
 	ITEM_CONTEXT_ELEVATOR,
 } from '../../../protected/adapter/elevator/keys'
+import { ITEM_GROUP_ELEVATOR } from '../item-group/keys'
 import { collectItemProps } from './item-props'
 import type { ICollectionItemExtensionOptions, TCollectionItemFacade } from './types'
 
@@ -97,6 +108,9 @@ export class TCollectionItemExtension {
 		// Регистратор кладёт тот же владелец, что и движок: у чужой коллекции
 		// и он чужой
 		const register = engine ? elevator(COLLECTION_ENGINE_ELEVATOR).up() : undefined
+		// Группа разметки над элементом — если она группа его коллекции
+		const link = engine ? elevator(ITEM_GROUP_ELEVATOR).up() : undefined
+		const groupKey = link && link.engine === engine ? link.key : undefined
 		// Пропсы элемента для `meta` движка — из пропсов сборки
 		const meta = collectItemProps(context.descriptor.props, props)
 		// Контекст элемента — этого монтирования. Фасад получает его при сборке:
@@ -114,10 +128,14 @@ export class TCollectionItemExtension {
 		context.events.on('attach', () => {
 			plain?.events.on('item:removed', removed)
 
+			// Ключ группы разметки — только элементу, которого вход добавит в
+			// состав: у элемента из данных метка группы — из данных
+			const grouped = groupKey !== undefined && !batchOf<object>(engine)?.items.includes(item)
+
 			if (register) this._leave = register(item, context.bundle)
 
 			// `meta` — после регистрации: движок применяет его к элементу, который уже в нём
-			metaOf<object>(engine)?.apply(item, meta)
+			metaOf<object>(engine)?.apply(item, grouped ? { ...meta, group: groupKey } : meta)
 		})
 
 		context.events.on('destroy', () => {

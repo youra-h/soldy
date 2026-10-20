@@ -4,10 +4,14 @@
  * Группы из данных: метка `_.group` в `items` или `groupBy`, порядок и
  * подписи — `groups`. Список рисует секции нарисованного (`drawnSections`):
  * группу с подписью — частью `ListBox.Group` или `Select.Group`
- * (`role="group"`, имя — подпись), элементы без группы — последними, прямо в
- * списке, а между секциями, пока их просит список (`groupSeparators`, по
- * умолчанию выключен), — немой разделитель (в `listbox` ARIA пускает только
- * опции и группы). Стрелки ходят тем же порядком, что элементы стоят на экране.
+ * (`role="group"`, имя — подпись), элементы без группы — прямо в списке, а
+ * между секциями, пока их просит список (`groupSeparators`, по умолчанию
+ * выключен), — немой разделитель (в `listbox` ARIA пускает только опции и
+ * группы). Группы из `groups` идут первыми, остальное — по месту. Стрелки
+ * ходят тем же порядком, что элементы стоят на экране.
+ *
+ * Группы разметки входят в ту же группировку: секции описывают и их, а
+ * элемент вне группы над группой стоит первым и на экране, и в стрелках.
  *
  * Модель — `core/__tests__/list-groups.spec.ts`, раскладка темы —
  * `playground/vue/browser/list-groups.spec.ts`.
@@ -17,8 +21,8 @@ import { describe, it, expect, afterEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { defineComponent, h, nextTick, ref, type VNode } from 'vue'
 import { ListBox, Select } from '@soldy-ui/vue'
-import { createEngineListBox } from '@soldy-ui/core'
-import type { IListBoxItem } from '@soldy-ui/core'
+import { createEngineListBox, createEngineSelect } from '@soldy-ui/core'
+import type { IListBoxItem, TGroupSection } from '@soldy-ui/core'
 
 const nextFrame = () => new Promise((resolve) => requestAnimationFrame(resolve))
 
@@ -257,7 +261,7 @@ describe('ListBox · группы из данных', () => {
 		expect(list().querySelector('.so-list-box-group, .so-list-box__separator')).toBeNull()
 	})
 
-	it('ListBox.Group разметкой — обёртка: элементы в ней входят в коллекцию списка', async () => {
+	it('ListBox.Group разметкой — группа с именем от подписи, элементы — в коллекции списка', async () => {
 		await render(() =>
 			h(ListBox, null, () => [
 				h(ListBox.Group, { label: 'Фрукты' }, () => [
@@ -370,5 +374,125 @@ describe('Select · группы из данных', () => {
 		await nextTick()
 
 		expect(parts(list(), 'so-select')).toEqual([['Овощи', ['Морковь']]])
+	})
+})
+
+/** Секции коротко: подпись группы (`null` — без группы) и значения элементов. */
+const brief = (sections: ReadonlyArray<TGroupSection<{ readonly value?: unknown }>>) =>
+	sections.map(({ group, items }) => [
+		group === null ? null : (group.label ?? ''),
+		items.map((item) => item.value),
+	])
+
+/**
+ * Группы разметки входят в группировку коллекции: ключ группы элементы внутри
+ * берут лифтом, подпись группа регистрирует сама. Группы не заявлены в
+ * `groups`, поэтому показанное идёт по месту: «Вода» над группой — первой.
+ */
+describe('ListBox · группы разметки', () => {
+	const list = () => find('.so-list-box__list')
+
+	/** «Вода» — над группой «Фрукты», «Сок» — под ней. */
+	async function renderMarkup(label = ref('Фрукты')) {
+		const engine = createEngineListBox()
+
+		await render(() =>
+			h(ListBox, { engine }, () => [
+				h(ListBox.Item, { value: 'water', text: 'Вода' }),
+				h(ListBox.Group, { label: label.value }, () => [
+					h(ListBox.Item, { value: 'apple', text: 'Яблоко' }),
+					h(ListBox.Item, { value: 'pear', text: 'Груша' }),
+				]),
+				h(ListBox.Item, { value: 'juice', text: 'Сок' }),
+			]),
+		)
+
+		return engine
+	}
+
+	it('секции — группа разметки с подписью, элементы вне группы — на своих местах', async () => {
+		const engine = await renderMarkup()
+
+		expect(brief(engine.extensions.group.sections)).toEqual([
+			[null, ['water']],
+			['Фрукты', ['apple', 'pear']],
+			[null, ['juice']],
+		])
+		// Разметка — как написана: группу рисует потребитель, а не секции
+		expect(parts(list(), 'so-list-box')).toEqual([
+			'Вода',
+			['Фрукты', ['Яблоко', 'Груша']],
+			'Сок',
+		])
+	})
+
+	it('стрелки ходят порядком экрана: «Вода» над группой — первой', async () => {
+		await renderMarkup()
+
+		const highlighted = () =>
+			document
+				.querySelector('.so-list-box-item [data-highlighted="true"]')
+				?.textContent?.trim()
+		const visited: unknown[] = []
+
+		list().focus()
+
+		for (let step = 0; step < 4; step += 1) {
+			list().dispatchEvent(
+				new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true, cancelable: true }),
+			)
+			await nextTick()
+			visited.push(highlighted())
+		}
+
+		expect(visited).toEqual(['Вода', 'Яблоко', 'Груша', 'Сок'])
+	})
+
+	it('смена подписи группы — новая подпись секции', async () => {
+		const label = ref('Фрукты')
+		const engine = await renderMarkup(label)
+
+		label.value = 'Ягоды'
+		await nextTick()
+
+		expect(brief(engine.extensions.group.sections)[1]).toEqual(['Ягоды', ['apple', 'pear']])
+	})
+})
+
+describe('Select · группы разметки', () => {
+	it('секции — группа разметки с подписью; стрелки — порядком экрана', async () => {
+		const engine = createEngineSelect()
+
+		await render(() =>
+			h(Select, { engine }, () => [
+				h(Select.Item, { value: 'water', text: 'Вода' }),
+				h(Select.Group, { label: 'Фрукты' }, () => [
+					h(Select.Item, { value: 'apple', text: 'Яблоко' }),
+					h(Select.Item, { value: 'pear', text: 'Груша' }),
+				]),
+			]),
+		)
+
+		expect(brief(engine.extensions.group.sections)).toEqual([
+			[null, ['water']],
+			['Фрукты', ['apple', 'pear']],
+		])
+
+		const input = find('.so-select input')
+		const active = () =>
+			document
+				.getElementById(input.getAttribute('aria-activedescendant') ?? '')
+				?.textContent?.trim()
+		const visited: unknown[] = []
+
+		for (let step = 0; step < 3; step += 1) {
+			input.dispatchEvent(
+				new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true, cancelable: true }),
+			)
+			await nextTick()
+			visited.push(active())
+		}
+
+		expect(visited).toEqual(['Вода', 'Яблоко', 'Груша'])
 	})
 })

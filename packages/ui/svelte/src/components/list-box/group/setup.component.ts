@@ -5,10 +5,19 @@
  * и движок они читают лифтом списка сквозь группу. Id монтирования
  * (`$props.id()`) и приёмник корня отдаёт компонент: компилятор пускает их
  * только туда.
+ *
+ * В группировку списка группа входит своей проводкой (`TItemGroupExtension`):
+ * ключ группы она опускает элементам внутри лифтом (`setContext`), а подпись
+ * регистрирует в группировке.
  */
 
-import { ListBoxGroupDescriptor } from '@soldy-ui/setup'
-import { createSvelteAdapterContext, useAdapter, type TRootReceiver } from '../../../adapter'
+import { ListBoxGroupDescriptor, TItemGroupExtension } from '@soldy-ui/setup'
+import {
+	SvelteElevatorFactory,
+	createSvelteAdapterContext,
+	useAdapter,
+	type TRootReceiver,
+} from '../../../adapter'
 import type { ListBoxGroupProps } from './base.component'
 
 export function setupListBoxGroup(
@@ -20,7 +29,7 @@ export function setupListBoxGroup(
 		ctrl: getProps().ctrl,
 		props: getProps(),
 		mountId,
-	})
+	}).use(TItemGroupExtension, { elevator: SvelteElevatorFactory })
 
 	return useAdapter(adapter, getProps, receive)
 }
