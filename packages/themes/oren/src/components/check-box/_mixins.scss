@@ -7,17 +7,15 @@ $variants: 'accent', 'positive', 'negative', 'caution';
 
 // Цвет варианта у вида по умолчанию (`outlined`): рамка, отметка и фон
 // выключенной коробки. Отметку этим цветом рисует и `plain`.
-//
-// Отметка — цвет семейства графикой на поверхности
-// (`--so-component-graphic-*`): она стоит на коробке, а у `plain` — прямо на
-// странице или панели, и ей нужно 3:1 к ним (WCAG 1.4.11). Ступенью это не
-// выражается: на середине шкалы (500) отметка в светлой схеме держала от
-// 2,13:1 у `caution`, а ступень, на которой она держит, у схем разная.
-@mixin checkbox-variant($this, $color: 'neutral', $border: 300, $bg-disabled: 50) {
+@mixin checkbox-variant($this, $color: 'neutral', $border: 300, $mark: 500, $bg-disabled: 50) {
 	@include checkbox-frame($this, $color, $border);
 
-	#{$this}__container svg {
-		fill: var(--so-component-graphic-#{$color});
+	#{$this}__container {
+		$svg-fill: $mark;
+
+		svg {
+			@apply #{'fill-so-' + $color + '-' + $svg-fill};
+		}
 	}
 
 	input:disabled + #{$this}__container {

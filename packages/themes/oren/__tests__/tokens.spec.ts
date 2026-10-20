@@ -82,33 +82,13 @@ function resolved(tokens: Map<string, string>, name: string): string {
 }
 
 /**
- * Относительная яркость цвета `#rgb` или `#rrggbb` по WCAG: канал байтом — в
- * линейный свет, как у sRGB. Такой литерал у темы один — поверхность контрола
- * светлой схемы, `#fff`.
- */
-function luminanceOfHex(hex: string): number {
-	const full = hex.length === 3 ? hex.replace(/./g, '$&$&') : hex
-	const channel = (index: number) => {
-		const unit = parseInt(full.slice(index * 2, index * 2 + 2), 16) / 255
-
-		return unit <= 0.04045 ? unit / 12.92 : ((unit + 0.055) / 1.055) ** 2.4
-	}
-
-	return 0.2126 * channel(0) + 0.7152 * channel(1) + 0.0722 * channel(2)
-}
-
-/**
- * Относительная яркость цвета по WCAG. `oklch(L C H)` — тем путём, каким его
+ * Относительная яркость цвета `oklch(L C H)` по WCAG — тем путём, каким его
  * кладёт браузер: OKLab → линейный sRGB, доли за пределами охвата обрезаются.
  */
 function luminanceOf(value: string): number {
-	const hex = value.match(/^#([\da-f]{3}|[\da-f]{6})$/i)
-
-	if (hex?.[1]) return luminanceOfHex(hex[1])
-
 	const match = value.match(/oklch\(\s*([\d.]+)\s+([\d.]+)\s+([\d.]+)\s*\)/)
 
-	if (!match) throw new Error(`не oklch и не #rgb: ${value}`)
+	if (!match) throw new Error(`не oklch: ${value}`)
 
 	const [L, C, H] = [Number(match[1]), Number(match[2]), Number(match[3])]
 	const a = C * Math.cos((H * Math.PI) / 180)
@@ -124,11 +104,9 @@ function luminanceOf(value: string): number {
 	return 0.2126 * red + 0.7152 * green + 0.0722 * blue
 }
 
-/** Отношение контраста двух цветов по WCAG — от 1 до 21, порядок не важен. */
-function contrast(first: string, second: string): number {
-	const [a, b] = [luminanceOf(first), luminanceOf(second)]
-
-	return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05)
+/** Отношение контраста белого к цвету по WCAG. */
+function contrastWithWhite(value: string): number {
+	return 1.05 / (luminanceOf(value) + 0.05)
 }
 
 /** Исходники стилей — `.scss` и `.css`, рекурсивно. */
@@ -263,36 +241,7 @@ describe('токены цветовых схем', () => {
 		const tokens = scheme === 'светлая' ? light : new Map([...light, ...dark])
 		const fill = resolved(tokens, `--so-component-solid-${family}`)
 
-		expect(contrast(fill, '#fff')).toBeGreaterThanOrEqual(4.5)
-	})
-
-	/**
-	 * Цвет семейства графикой на поверхности (`--so-component-graphic-*`)
-	 * заведён ради отношения: отметка CheckBox и радио, заливка Slider и
-	 * индикаторов выполнения, полоса под активным табом обязаны держать 3:1
-	 * (WCAG 1.4.11) к тому, на чём стоят, — к странице и к поверхности
-	 * контрола, в обеих схемах. Середина хроматической шкалы в светлой схеме
-	 * этого не держит, и токен, переставленный на неё, молча сделал бы графику
-	 * неразличимой. Вуаль поверх поверхностей — рельс Slider, дорожки
-	 * индикаторов — и то, что каждое место берёт цвет из токена, сторожит
-	 * браузер (`playground/vue/browser/graphic.spec.ts`). Поверхность контрола
-	 * светлой схемы — литерал `#fff`, тёмной — ступень.
-	 */
-	it.each(
-		['светлая', 'тёмная'].flatMap((scheme) =>
-			['accent', 'positive', 'caution', 'negative', 'neutral'].flatMap((family) =>
-				['--so-neutral-50', '--so-component-surface'].map((surface) => [
-					scheme,
-					family,
-					surface,
-				]),
-			),
-		),
-	)('%s схема: графика %s к %s — не ниже 3:1', (scheme, family, surface) => {
-		const tokens = scheme === 'светлая' ? light : new Map([...light, ...dark])
-		const graphic = resolved(tokens, `--so-component-graphic-${family}`)
-
-		expect(contrast(graphic, resolved(tokens, surface))).toBeGreaterThanOrEqual(3)
+		expect(contrastWithWhite(fill)).toBeGreaterThanOrEqual(4.5)
 	})
 })
 

@@ -20,7 +20,7 @@ declare module '@soldy-ui/core' {
 	 * Смысловой цвет. Без варианта — нейтраль, у ProgressLinear и
 	 * ProgressSpinner — `accent`, а в кнопке — цвет её текста, у звёзд Rating —
 	 * `caution`. Заданный вариант индикатора кнопка не перекрывает, и на её
-	 * заливке того же семейства он пропадёт: в светлой схеме это один цвет.
+	 * заливке того же семейства он почти пропадёт.
 	 */
 	interface IComponentVariants {
 		normal: true
