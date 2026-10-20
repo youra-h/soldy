@@ -14,7 +14,9 @@
  * `TMenuExtension` вариант элементу не пишут — ни при добавлении, ни на смену у
  * владельца, ни поверх патча. Элемент без своего варианта тема красит
  * вариантом владельца по его классу, поэтому у элемента нет ни значения, ни
- * модификатора. Размер элементу по-прежнему диктует владелец.
+ * модификатора. Размер элементу по-прежнему диктует владелец. Подменю среди
+ * пунктов вариант меню получает отдельным входом своей панели (`menuVariant`),
+ * а не своим `variant` — сценарий в конце файла.
  *
  * Сценарий один на все коллекции: забытая коллекция иначе прошла бы мимо.
  * Каждая сборка — замыкание на своей фабрике, как в `engine-create.spec.ts`:
@@ -31,6 +33,7 @@ import {
 	createEngineTable,
 	createEngineTabs,
 	createEngineTags,
+	isMenuSubmenu,
 	TAccordion,
 	TListBox,
 	TMenu,
@@ -41,6 +44,8 @@ import {
 	TTags,
 } from '@soldy-ui/core'
 import type {
+	IMenuItemSource,
+	IMenuSubmenu,
 	ITableRow,
 	TClasses,
 	TComponentSize,
@@ -468,3 +473,116 @@ describe.each(ownVariant)(
 		})
 	},
 )
+
+/**
+ * Menu: подменю среди пунктов — пункт, как любой, и вариант меню своим
+ * `variant` не получает. Вариант меню ему идёт отдельным входом
+ * (`menuVariant`): панель подменю телепортирована, и класс панели меню до её
+ * пунктов не доходит, поэтому панель красится сама — своим вариантом подменю,
+ * а без него вариантом меню (`panelVariant`). Уровни подменю и смена своего
+ * варианта — `menu.spec.ts`, группа «вариант меню».
+ */
+describe('Menu · подменю: вариант меню — входом панели, а не своим вариантом', () => {
+	function build(variant: TComponentVariant | undefined, items: IMenuItemSource[]) {
+		const owner = new TMenu({ variant })
+		const { batch, plain } = createEngineMenu({ owner, items }).extensions
+
+		batch.trackBy = (item) => item.value
+
+		/** Подменю по `value`: не подменю — сценарию дальше проверять нечего. */
+		const submenu = (value: string): IMenuSubmenu => {
+			const item = found(batch.items, value)
+
+			if (!isMenuSubmenu(item)) throw new Error(`пункт "${value}" — не подменю`)
+
+			return item
+		}
+
+		return {
+			owner,
+			submenu,
+			/** Сверить состав по `value` — `batch.patch`. */
+			patch: (sources: IMenuItemSource[]) => batch.patch(sources),
+			/** Вставить пункт в конец. */
+			push: (source: IMenuItemSource) => plain.push(source),
+		}
+	}
+
+	/** Модификаторы варианта набора классов, без базового класса. */
+	const variants = (classes: TClasses): string[] =>
+		classes
+			.toArray()
+			.filter((cls) => cls.startsWith(`${classes.base}--variant-`))
+			.map((cls) => cls.slice(classes.base.length))
+
+	it('из items: свой вариант — свой, вариант меню — во входе панели', () => {
+		const { submenu } = build('brand', [
+			{ value: 'a', variant: 'danger', items: [] },
+			{ value: 'b', items: [] },
+		])
+
+		expect(submenu('a').variant).toBe('danger')
+		expect(submenu('a').menuVariant).toBe('brand')
+		expect(variants(submenu('a').panelClasses)).toEqual(['--variant-danger'])
+
+		// Своего нет — ни значения, ни модификатора у строки; панель — вариантом меню
+		expect(submenu('b').variant).toBeUndefined()
+		expect(variants(submenu('b').classes)).toEqual([])
+		expect(submenu('b').menuVariant).toBe('brand')
+		expect(variants(submenu('b').panelClasses)).toEqual(['--variant-brand'])
+	})
+
+	it('batch.patch: свой вариант — из данных, вариант меню — во входе панели', () => {
+		const { submenu, patch } = build('brand', [{ value: 'a', items: [] }])
+		const a = submenu('a')
+
+		patch([{ value: 'a', variant: 'danger', items: [] }])
+
+		// Патч обновил то же подменю, а не заменил его
+		expect(submenu('a')).toBe(a)
+		expect(a.variant).toBe('danger')
+		expect(a.menuVariant).toBe('brand')
+		expect(variants(a.panelClasses)).toEqual(['--variant-danger'])
+
+		patch([{ value: 'a', variant: undefined, items: [] }])
+
+		expect(a.variant).toBeUndefined()
+		expect(variants(a.panelClasses)).toEqual(['--variant-brand'])
+	})
+
+	it('вставленное подменю: свой вариант — свой, вариант меню — во входе панели', () => {
+		const { push } = build('brand', [])
+		const pushed = push({ value: 'b', variant: 'danger', items: [] })
+
+		if (!isMenuSubmenu(pushed)) throw new Error('вставленный пункт — не подменю')
+
+		expect(pushed.variant).toBe('danger')
+		expect(pushed.menuVariant).toBe('brand')
+		expect(variants(pushed.panelClasses)).toEqual(['--variant-danger'])
+	})
+
+	it('смена у меню: вход панели — за ней, свой вариант не тронут', () => {
+		const { owner, submenu } = build('brand', [
+			{ value: 'a', variant: 'danger', items: [] },
+			{ value: 'b', items: [] },
+		])
+		const handler = vi.fn()
+
+		for (const value of ['a', 'b']) submenu(value).events.on('change:variant', handler)
+
+		owner.variant = 'danger'
+
+		expect(submenu('a').variant).toBe('danger')
+		expect(submenu('b').variant).toBeUndefined()
+		expect([submenu('a').menuVariant, submenu('b').menuVariant]).toEqual(['danger', 'danger'])
+		expect(variants(submenu('b').panelClasses)).toEqual(['--variant-danger'])
+
+		owner.variant = undefined
+
+		expect(submenu('a').menuVariant).toBeUndefined()
+		expect(variants(submenu('a').panelClasses)).toEqual(['--variant-danger'])
+		expect(submenu('b').menuVariant).toBeUndefined()
+		expect(variants(submenu('b').panelClasses)).toEqual([])
+		expect(handler).not.toHaveBeenCalled()
+	})
+})

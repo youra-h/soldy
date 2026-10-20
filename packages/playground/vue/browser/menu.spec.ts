@@ -13,7 +13,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { render, cleanup } from 'vitest-browser-vue'
 import { commands, userEvent } from 'vitest/browser'
-import { defineComponent, h, nextTick, type VNode } from 'vue'
+import { defineComponent, h, nextTick, ref, type VNode } from 'vue'
 import { Button, Calendar, Menu } from '@soldy-ui/vue'
 import type { DescriptorSlots, MenuDescriptor } from '@soldy-ui/setup'
 
@@ -835,6 +835,98 @@ describe('подменю', () => {
 		expect(shareRow().getAttribute('aria-expanded')).toBe('false')
 		// Закрытая панель гаснет переходом темы, а потом прячется
 		await expect.poll(subOpen).toBe(false)
+	})
+
+	/**
+	 * Цвет пунктов подменю — вариантом меню, как у пунктов самого меню: панель
+	 * подменю телепортирована, и класс панели меню до неё не доходит, поэтому
+	 * вариант меню она несёт своим модификатором. Свой вариант подменю сильнее.
+	 * Цветов темы спек не знает: пункт подменю сверяется с пунктом меню того
+	 * же варианта — без своего варианта и «Удалить» со своим `negative`.
+	 */
+	describe('вариант меню', () => {
+		type TVariant = 'accent' | 'negative' | undefined
+
+		/** Вариант меню и свой вариант подменю — разметка перерисовывается за ними. */
+		const menuVariant = ref<TVariant>()
+		const shareVariant = ref<TVariant>()
+
+		/** Меню «Изменить · Удалить (negative) · Поделиться → (Ссылка)». */
+		const variantPage = () =>
+			h('div', { style: 'padding: 40px' }, [
+				h(
+					Menu,
+					{ variant: menuVariant.value },
+					{
+						trigger: ({ triggerAria, triggerDataset }: TTriggerScope) =>
+							h(Button, {
+								text: 'Действия',
+								class: 'so-test-trigger',
+								...triggerAria,
+								...triggerDataset,
+							}),
+						default: () => [
+							h(Menu.Item, { value: 'edit', text: 'Изменить' }),
+							h(Menu.Item, { value: 'remove', text: 'Удалить', variant: 'negative' }),
+							h(
+								Menu.Submenu,
+								{ value: 'share', text: 'Поделиться', variant: shareVariant.value },
+								() => [h(Menu.Item, { value: 'link', text: 'Ссылка' })],
+							),
+						],
+					},
+				),
+			])
+
+		/** Переходы цвета обеих панелей доиграли. */
+		const settle = async () => {
+			await settled(rootPanel())
+			await settled(subPanel())
+		}
+
+		/** Меню с вариантами на странице, подменю открыто, переходы цвета доиграли. */
+		const showVariants = async (menu: TVariant, share: TVariant) => {
+			menuVariant.value = menu
+			shareVariant.value = share
+
+			render(defineComponent({ render: variantPage }))
+
+			await nextTick()
+			await nextFrame()
+			await nextFrame()
+			await openSubmenu()
+			await settle()
+		}
+
+		/** Цвет текста строки — его тема и красит вариантом. */
+		const colorOf = (scope: HTMLElement, text: string) => style(rowIn(scope, text)).color
+
+		it('пункт подменю без своего варианта — цвета пункта меню, и на смену варианта меню', async () => {
+			await showVariants('accent', undefined)
+
+			const accent = colorOf(rootPanel(), 'Изменить')
+
+			expect(colorOf(subPanel(), 'Ссылка')).toBe(accent)
+
+			menuVariant.value = undefined
+			await nextTick()
+			await settle()
+
+			const neutral = colorOf(rootPanel(), 'Изменить')
+
+			// Вариант меню виден: без него пункт меню другого цвета
+			expect(neutral).not.toBe(accent)
+			expect(colorOf(subPanel(), 'Ссылка')).toBe(neutral)
+		})
+
+		it('свой вариант подменю сильнее варианта меню: пункт подменю — цвета своего варианта', async () => {
+			await showVariants('accent', 'negative')
+
+			const negative = colorOf(rootPanel(), 'Удалить')
+
+			expect(negative).not.toBe(colorOf(rootPanel(), 'Изменить'))
+			expect(colorOf(subPanel(), 'Ссылка')).toBe(negative)
+		})
 	})
 })
 

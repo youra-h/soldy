@@ -21,6 +21,7 @@ import {
 import type {
 	IMenuItem,
 	IMenuItemSource,
+	TClasses,
 	TGroupSection,
 	TInsertEvent,
 	TMenuCollection,
@@ -372,6 +373,41 @@ describe('TMenu · классы панели', () => {
 
 		expect(snapshot).toEqual(['so-menu__panel', 'so-menu__panel--size-normal'])
 	})
+
+	/**
+	 * Вариант панели — то, что коллекция меню отдаёт подменю среди пунктов
+	 * (`IMenuOwner.panelVariant`). У меню это его вариант.
+	 */
+	it('вариант панели — вариант меню; change:panelVariant — только на его смену', () => {
+		const menu = new TMenu({ variant: 'brand' })
+		const handler = vi.fn()
+
+		expect(menu.panelVariant).toBe('brand')
+
+		menu.events.on('change:panelVariant', handler)
+		menu.variant = 'brand'
+		menu.variant = 'danger'
+		menu.variant = undefined
+
+		expect(menu.panelVariant).toBeUndefined()
+		expect(handler.mock.calls).toEqual([
+			[{ newValue: 'danger', oldValue: 'brand' }],
+			[{ newValue: undefined, oldValue: 'danger' }],
+		])
+	})
+
+	it('отменённая запись варианта вариант панели не меняет', () => {
+		const menu = new TMenu({ variant: 'brand' })
+		const handler = vi.fn()
+
+		menu.events.on('change:variant:before', (e) => e.preventDefault())
+		menu.events.on('change:panelVariant', handler)
+		menu.variant = 'danger'
+
+		expect(menu.panelVariant).toBe('brand')
+		expect(menu.panelClasses.toArray()).toContain('so-menu__panel--variant-brand')
+		expect(handler).not.toHaveBeenCalled()
+	})
 })
 
 describe('пункты меню', () => {
@@ -702,6 +738,103 @@ describe('TMenuSubmenu · пункт', () => {
 		expect(handler).toHaveBeenLastCalledWith(['so-menu__panel', 'so-menu__panel--size-lg'])
 	})
 
+	/**
+	 * Вариант меню над подменю — отдельный вход (`menuVariant`), его пишет
+	 * коллекция того меню. Свой вариант подменю он не трогает: в одном поле не
+	 * различить, задал ли его потребитель или записало меню.
+	 */
+	it('вариант панели — свой вариант подменю, без него — вариант меню над ним', () => {
+		const share = new TMenuSubmenu()
+		const panel = () => share.panelClasses.toArray()
+
+		expect(share.menuVariant).toBeUndefined()
+		expect(share.panelVariant).toBeUndefined()
+		expect(panel()).toEqual(['so-menu__panel', 'so-menu__panel--size-normal'])
+
+		share.menuVariant = 'brand'
+
+		expect(share.panelVariant).toBe('brand')
+		expect(panel()).toEqual([
+			'so-menu__panel',
+			'so-menu__panel--size-normal',
+			'so-menu__panel--variant-brand',
+		])
+		// Вариант меню — вход панели, а не свой вариант: строка его не несёт
+		expect(share.variant).toBeUndefined()
+		expect(share.classes.toArray().some((cls) => cls.includes('--variant-'))).toBe(false)
+
+		share.variant = 'danger'
+
+		expect(share.panelVariant).toBe('danger')
+		expect(panel()).toEqual([
+			'so-menu__panel',
+			'so-menu__panel--size-normal',
+			'so-menu__panel--variant-danger',
+		])
+
+		share.variant = undefined
+
+		expect(share.panelVariant).toBe('brand')
+		expect(panel()).toEqual([
+			'so-menu__panel',
+			'so-menu__panel--size-normal',
+			'so-menu__panel--variant-brand',
+		])
+
+		share.menuVariant = undefined
+
+		expect(share.panelVariant).toBeUndefined()
+		expect(panel()).toEqual(['so-menu__panel', 'so-menu__panel--size-normal'])
+	})
+
+	it('change:panelVariant — только на смену итога: вариант меню под своим вариантом не слышен', () => {
+		const share = new TMenuSubmenu({ variant: 'danger' })
+		const panelVariant = vi.fn()
+		const panelClasses = vi.fn()
+
+		share.events.on('change:panelVariant', panelVariant)
+		share.events.on('change:panelClasses', panelClasses)
+
+		share.menuVariant = 'brand'
+		share.menuVariant = 'brand'
+		share.menuVariant = undefined
+		share.menuVariant = 'brand'
+
+		expect(share.panelVariant).toBe('danger')
+		expect(panelVariant).not.toHaveBeenCalled()
+		expect(panelClasses).not.toHaveBeenCalled()
+
+		share.variant = undefined
+
+		expect(panelVariant.mock.calls).toEqual([[{ newValue: 'brand', oldValue: 'danger' }]])
+
+		// Свой вариант, равный варианту меню, итога не меняет — и снятый тоже
+		share.variant = 'brand'
+		share.variant = undefined
+
+		expect(panelVariant).toHaveBeenCalledOnce()
+
+		share.menuVariant = undefined
+
+		expect(panelVariant.mock.calls).toEqual([
+			[{ newValue: 'brand', oldValue: 'danger' }],
+			[{ newValue: undefined, oldValue: 'brand' }],
+		])
+		expect(share.panelClasses.toArray()).toEqual([
+			'so-menu__panel',
+			'so-menu__panel--size-normal',
+		])
+	})
+
+	it('вариант меню — не проп: в getProps() его нет', () => {
+		const share = new TMenuSubmenu()
+
+		share.menuVariant = 'brand'
+
+		expect(share.getProps()).not.toHaveProperty('menuVariant')
+		expect(share.getProps().variant).toBeUndefined()
+	})
+
 	it('выбор в подменю: сообщает choose и закрывается', () => {
 		const share = new TMenuSubmenu({ open: true })
 		const link = new TMenuItem({ value: 'link' })
@@ -883,6 +1016,119 @@ describe('коллекция меню · подменю', () => {
 		expect(share.panelClasses.toArray()).toContain('so-menu__panel--size-lg')
 	})
 
+	/**
+	 * Панель подменю телепортирована, и класс панели меню до её пунктов не
+	 * доходит: вариант меню подменю получает от коллекции своим входом
+	 * (`menuVariant`), а свои уровни — от него, вариантом его панели.
+	 */
+	describe('вариант меню', () => {
+		/** «Поделиться → (Ссылка, Почта, Ещё → (Скопировать))»: третий уровень — в подменю. */
+		function levels() {
+			const { root, share, link, shareEngine } = tree()
+			const more = new TMenuSubmenu({ value: 'more', text: 'Ещё' })
+			const copy = new TMenuItem({ value: 'copy', text: 'Скопировать' })
+
+			shareEngine.extensions.plain.push(more)
+			createEngineMenu({ owner: more, items: [copy] })
+
+			return { root, share, link, more, copy }
+		}
+
+		/** Модификаторы варианта набора классов. */
+		const variants = (classes: TClasses) =>
+			classes.toArray().filter((cls) => cls.includes('--variant-'))
+
+		it('панелям подменю всех уровней — вариант меню, пунктам — нет', () => {
+			const { root, share, link, more, copy } = levels()
+
+			root.variant = 'brand'
+
+			expect([share.menuVariant, more.menuVariant]).toEqual(['brand', 'brand'])
+			expect(variants(share.panelClasses)).toEqual(['so-menu__panel--variant-brand'])
+			expect(variants(more.panelClasses)).toEqual(['so-menu__panel--variant-brand'])
+			// Свой вариант не пишется ни подменю, ни пунктам: их строки тема красит с панели
+			for (const item of [share, link, more, copy]) {
+				expect(item.variant).toBeUndefined()
+				expect(variants(item.classes)).toEqual([])
+			}
+
+			root.variant = undefined
+
+			expect([share.menuVariant, more.menuVariant]).toEqual([undefined, undefined])
+			expect(variants(share.panelClasses)).toEqual([])
+			expect(variants(more.panelClasses)).toEqual([])
+		})
+
+		it('свой вариант подменю сильнее варианта меню — и для уровней под ним', () => {
+			const { root, share, more } = levels()
+			const changed = vi.fn()
+
+			root.variant = 'brand'
+			share.variant = 'danger'
+
+			expect(variants(share.panelClasses)).toEqual(['so-menu__panel--variant-danger'])
+			expect(more.menuVariant).toBe('danger')
+			expect(variants(more.panelClasses)).toEqual(['so-menu__panel--variant-danger'])
+
+			share.events.on('change:panelVariant', changed)
+
+			// Под своим вариантом подменю смена у меню не слышна
+			root.variant = undefined
+			root.variant = 'brand'
+
+			expect(share.menuVariant).toBe('brand')
+			expect(share.panelVariant).toBe('danger')
+			expect(more.menuVariant).toBe('danger')
+			expect(changed).not.toHaveBeenCalled()
+
+			// Сняли свой — подменю и уровни под ним красятся вариантом меню
+			share.variant = undefined
+
+			expect(variants(share.panelClasses)).toEqual(['so-menu__panel--variant-brand'])
+			expect(more.menuVariant).toBe('brand')
+			expect(variants(more.panelClasses)).toEqual(['so-menu__panel--variant-brand'])
+			expect(changed).toHaveBeenCalledOnce()
+		})
+
+		it('подменю, вставленное в меню с вариантом, получает его сразу', () => {
+			const root = new TMenu({ variant: 'brand' })
+			const { plain } = createEngineMenu({ owner: root }).extensions
+			const share = new TMenuSubmenu({ value: 'share' })
+
+			plain.push(share)
+
+			expect(share.menuVariant).toBe('brand')
+			expect(variants(share.panelClasses)).toEqual(['so-menu__panel--variant-brand'])
+		})
+
+		it('владелец пришёл позже — вариант его панели подменю получает догоном', () => {
+			const share = new TMenuSubmenu({ value: 'share' })
+			const engine = createEngineMenu({ items: [share] })
+
+			expect(share.menuVariant).toBeUndefined()
+
+			engine.options.set({ owner: new TMenu({ variant: 'danger' }) })
+
+			expect(share.menuVariant).toBe('danger')
+			expect(variants(share.panelClasses)).toEqual(['so-menu__panel--variant-danger'])
+		})
+
+		it('сменился владелец — вариант пишет новый, прежний больше не трогает', () => {
+			const share = new TMenuSubmenu({ value: 'share' })
+			const before = new TMenu({ variant: 'brand' })
+			const after = new TMenu({ variant: 'danger' })
+			const engine = createEngineMenu({ owner: before, items: [share] })
+
+			engine.options.set({ owner: after })
+
+			expect(share.menuVariant).toBe('danger')
+
+			before.variant = undefined
+
+			expect(share.menuVariant).toBe('danger')
+		})
+	})
+
 	it('пункт с подменю, снятый из коллекции, меню больше не трогает', () => {
 		const { root, share, send, engine } = tree()
 		const chosen = vi.fn()
@@ -893,9 +1139,12 @@ describe('коллекция меню · подменю', () => {
 		share.open = true
 		send.open = true
 		share.notifyChoose(new TMenuItem({ value: 'x' }))
+		root.variant = 'brand'
 
 		expect(chosen).not.toHaveBeenCalled()
 		expect(root.open).toBe(true)
+		expect(share.menuVariant).toBeUndefined()
+		expect(send.menuVariant).toBe('brand')
 	})
 
 	it('нажатие строки пункта с подменю — через item-адаптер: открывает', () => {
@@ -1074,6 +1323,39 @@ describe('коллекция меню · подменю из данных', () =
 		expect(messengers.engine.extensions.menu.chooseItem(telegram)).toBe(true)
 		expect(chosen).toHaveBeenCalledWith(telegram)
 		expect([root.open, share.ctrl.open, messengers.ctrl.open]).toEqual([false, false, false])
+	})
+
+	it('вариант меню — панелям подменю из данных всех уровней; свой вариант из патча сильнее', () => {
+		const nested: IMenuItemSource[] = [{ value: 'messengers', items: [{ value: 'telegram' }] }]
+		const patched: IMenuItemSource[] = [{ value: 'share', variant: 'danger', items: nested }]
+		const root = new TMenu({ variant: 'brand' })
+		const engine = createEngineMenu({ owner: root, items: [{ value: 'share', items: nested }] })
+		const { batch } = engine.extensions
+		const share = submenuAt(engine, 'share')
+		const messengers = submenuAt(engine, 'share', 'messengers')
+
+		// Владельца движку подменю пишет фасад смонтированного `Menu.Submenu`
+		new TMenuCollectionFacade({}, { owner: share.ctrl, engine: share.engine }).bindOwner()
+
+		expect(share.ctrl.menuVariant).toBe('brand')
+		expect(messengers.ctrl.menuVariant).toBe('brand')
+		expect(messengers.ctrl.panelClasses.toArray()).toContain('so-menu__panel--variant-brand')
+
+		batch.trackBy = (item) => item.value
+		batch.patch(patched)
+
+		// Патч правит подменю на месте: свой вариант — из данных, вариант меню — прежний
+		expect(submenuAt(engine, 'share', 'messengers').ctrl).toBe(messengers.ctrl)
+		expect(share.ctrl.variant).toBe('danger')
+		expect(share.ctrl.menuVariant).toBe('brand')
+		expect(share.ctrl.panelVariant).toBe('danger')
+		expect(messengers.ctrl.menuVariant).toBe('danger')
+		expect(messengers.ctrl.panelClasses.toArray()).toContain('so-menu__panel--variant-danger')
+
+		root.variant = undefined
+
+		expect(share.ctrl.menuVariant).toBeUndefined()
+		expect(messengers.ctrl.menuVariant).toBe('danger')
 	})
 
 	it('патч по trackBy: тот же пункт, запись и движок, вложенный состав — патчем; своего items у пунктов нет', () => {

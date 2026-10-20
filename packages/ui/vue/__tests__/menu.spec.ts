@@ -1252,6 +1252,51 @@ describe('подменю', () => {
 		)
 	})
 
+	/** Модификаторы варианта узла. */
+	const variantsOf = (node: Element | null | undefined) =>
+		[...(node?.classList ?? [])].filter((cls) => cls.includes('--variant-'))
+
+	/**
+	 * Панель подменю телепортирована, и класс панели меню до её пунктов не
+	 * доходит: вариант меню она несёт своим модификатором, а свой вариант
+	 * подменю сильнее. Строкам — ни подменю, ни его пунктов — вариант меню не
+	 * пишется: их тема красит с панели, в которой они стоят.
+	 */
+	it('вариант меню — у панели подменю, свой вариант подменю сильнее; смена на лету', async () => {
+		type TVariant = 'brand' | 'danger' | undefined
+
+		const variant = ref<TVariant>('brand')
+		const own = ref<TVariant>(undefined)
+
+		await render(() => markup({ variant: variant.value }, { variant: own.value }))
+
+		expect(variantsOf(subPanel())).toEqual(['so-menu__panel--variant-brand'])
+		expect(variantsOf(shareRow().parentElement)).toEqual([])
+		expect(variantsOf(rowIn(subPanel(), 'Ссылка').parentElement)).toEqual([])
+
+		variant.value = 'danger'
+		await nextTick()
+
+		expect(variantsOf(subPanel())).toEqual(['so-menu__panel--variant-danger'])
+
+		own.value = 'brand'
+		await nextTick()
+
+		expect(variantsOf(subPanel())).toEqual(['so-menu__panel--variant-brand'])
+		expect(variantsOf(shareRow().parentElement)).toEqual(['so-menu-item--variant-brand'])
+
+		// Под своим вариантом подменю смена у меню панели не трогает
+		variant.value = undefined
+		await nextTick()
+
+		expect(variantsOf(subPanel())).toEqual(['so-menu__panel--variant-brand'])
+
+		own.value = undefined
+		await nextTick()
+
+		expect(variantsOf(subPanel())).toEqual([])
+	})
+
 	it('пункты подменю данными (items) — с группами и пробросом слотов, как у меню', async () => {
 		await render(() =>
 			h(
@@ -1360,6 +1405,23 @@ describe('подменю', () => {
 
 			return row
 		}
+
+		it('вариант меню — у панелей подменю из данных всех уровней', async () => {
+			const variant = ref<'brand' | 'danger'>('brand')
+
+			await render(() => h(Menu, { items: DATA, variant: variant.value }, { trigger }))
+
+			const messengers = () => panelOf(submenuRow('Мессенджеры'))
+
+			expect(variantsOf(subPanel())).toEqual(['so-menu__panel--variant-brand'])
+			expect(variantsOf(messengers())).toEqual(['so-menu__panel--variant-brand'])
+
+			variant.value = 'danger'
+			await nextTick()
+
+			expect(variantsOf(subPanel())).toEqual(['so-menu__panel--variant-danger'])
+			expect(variantsOf(messengers())).toEqual(['so-menu__panel--variant-danger'])
+		})
 
 		it('пункт с items — подменю: строка объявляет меню, панель — его пункты, третий уровень — тоже', async () => {
 			await render(() => h(Menu, { items: DATA }, { trigger }))

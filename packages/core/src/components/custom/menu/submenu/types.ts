@@ -1,4 +1,4 @@
-import type { TClasses } from '../../../../common'
+import type { TClasses, TComponentVariant, TValuePayload } from '../../../../common'
 import type { IMenuCollectionProps, IMenuItemSource } from '../collection/types'
 import type { IMenuItem } from '../item/types'
 import type { IMenuPopupItem, IMenuPopupItemProps, TMenuPopupItemEvents } from '../popup-item/types'
@@ -7,6 +7,11 @@ import type { IMenuOwner } from '../types'
 export type TMenuSubmenuEvents = TMenuPopupItemEvents & {
 	/** change:panelClasses — классы панели подменю изменились */
 	'change:panelClasses': (value: string[]) => void
+	/**
+	 * change:panelVariant — вариант панели подменю сменился: свой вариант или,
+	 * без него, вариант меню над ним
+	 */
+	'change:panelVariant': (payload: TValuePayload<TComponentVariant | undefined>) => void
 	/** change:groupSeparators */
 	'change:groupSeparators': (value: boolean) => void
 	/**
@@ -50,8 +55,15 @@ export interface IMenuSubmenu
 	/** Рисовать ли разделитель между соседними секциями группировки пунктов */
 	groupSeparators: boolean
 	/**
-	 * Классы панели: блок панели меню с размером и вариантом подменю — до
-	 * телепортированной панели модификаторы пункта не доходят
+	 * Вариант меню, в котором стоит подменю, — вариант панели того меню. Не
+	 * проп: пишет коллекция того меню, как размер. Панель подменю красится им,
+	 * пока у подменю нет своего варианта (`panelVariant`)
+	 */
+	menuVariant: TComponentVariant | undefined
+	/**
+	 * Классы панели: блок панели меню с размером подменю и вариантом панели
+	 * (`panelVariant`) — до телепортированной панели модификаторы пункта не
+	 * доходят
 	 */
 	readonly panelClasses: TClasses
 }
