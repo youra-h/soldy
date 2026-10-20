@@ -102,7 +102,7 @@ export function TableColumn(props: TableColumnProps): ReactElement | null {
 						min={resizer.min}
 						max={resizer.max}
 						{...toAriaProps(resizerAria)}
-						live={{ value: String(resizer.value) }}
+						live={{ value: resizer.value }}
 					/>
 				</span>
 			) : null}
