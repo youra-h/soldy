@@ -1,7 +1,8 @@
 <!--
-	Хост (`<so-table>`) — окно таблицы, поэтому шаблон — сама таблица, корень
-	`#root`: классы, наборы и стиль ядра кладёт на неё база, а до них —
-	статические атрибуты потребителя, кроме класса и стиля. Слоты контракта:
+	Хост (`<div so-table>`) — окно таблицы, поэтому шаблон — сама таблица,
+	корень `#root`: классы, наборы и стиль ядра кладёт на неё база, а до них —
+	то, что потребитель написал на окне, кроме класса и стиля, — статику
+	переносит база, привязки и слушатели доносит рендерер адаптера. Слоты контракта:
 	header (scope { column, text, sortable }) и cell (scope { row, column,
 	value }) — шаблонами, empty — проекцией.
 
@@ -47,11 +48,12 @@
 		<tr class="so-table__head-row" [so-attributes]="state()['headRowAria']">
 			@if (state()['mode'] === 'multiple') {
 				<th class="so-table__select" [so-attributes]="state()['cellAria']">
-					<so-check-box
+					<span
+						so-check-box
 						embedded="table.select-all"
 						[ctrl]="facade()?.selectAll"
 						[aria_label]="state()['names_selectAll']"
-					/>
+					></span>
 				</th>
 			} @else if (state()['mode'] === 'single') {
 				<td class="so-table__select" [so-attributes]="state()['cellAria']"></td>

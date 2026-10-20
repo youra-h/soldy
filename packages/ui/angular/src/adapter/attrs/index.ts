@@ -1,0 +1,1 @@
+export { provideAttrs } from './provide'

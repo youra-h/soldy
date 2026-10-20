@@ -11,6 +11,7 @@ import {
 	type ViewRef,
 } from '@angular/core'
 import { createApplication } from '@angular/platform-browser'
+import { provideAttrs } from '@soldy-ui/angular'
 import { findComponent, type IPreviewHost } from '@soldy-ui/playground-shared'
 import { PREVIEWS, type TContent, type TPart, type TPreview, type TProps } from './previews'
 import { FIXTURES } from './fixtures'
@@ -66,9 +67,11 @@ const ELEMENT_PROPS: ReadonlySet<string> = new Set(['tag'])
  * Приложение хоста — одно на все корни, без Zone.js: адаптер рассчитан на
  * zoneless, состояние компонентов — сигналы. Одно, а не своё на корень: id
  * монтирования — номер сборки в приложении (`ng-1`, `ng-2`), и у двух
- * приложений на одной странице id частей совпали бы.
+ * приложений на одной странице id частей совпали бы. Рендерер адаптера
+ * (`provideAttrs()`) подключён, как в `appConfig` приложения: без него поля и
+ * коллекции не собираются.
  */
-const app = await createApplication()
+const app = await createApplication({ providers: [provideAttrs()] })
 
 /** Место корня: компонент — его представлением в месте, с инжектором места. */
 function outletPlace(outlet: ViewContainerRef, element?: Element): TPlace {

@@ -6,11 +6,12 @@
  * внутри, слоты по сторонам; наборы ядра — каждый на своём элементе: `attrs`
  * (`dir`) на корне, `aria` на поле; нативные атрибуты поля без ARIA-дублей.
  *
- * Угол зрения здесь свой. Селектор — элементный: корень — сам `<so-input>`,
- * а атрибуты, которые потребитель записал на нём в разметке, кроме класса и
- * стиля, база переносит на `<input>`. Текст в ядро несёт `TInputPlugin`, его
- * слушатель встаёт по `ready` узла — кадром позже, — а в узел текст пишет
- * директива текста поля, только когда он разошёлся с узлом.
+ * Угол зрения здесь свой. Селектор атрибутный: корень — сам `<div so-input>`,
+ * а всё, что потребитель записал на нём, кроме класса и стиля, доходит до
+ * `<input>`: статику переносит база, привязки и слушатели — рендерер адаптера
+ * (`provideAttrs()`, подключён провайдерами спеков). Текст в ядро несёт
+ * `TInputPlugin`, его слушатель встаёт по `ready` узла — кадром позже, — а в
+ * узел текст пишет директива текста поля, только когда он разошёлся с узлом.
  */
 
 import { describe, it, expect, afterEach, vi } from 'vitest'
@@ -34,7 +35,7 @@ function root(fixture: ComponentFixture<unknown>): HTMLElement {
 	return element
 }
 
-/** Input, созданный самим TestBed: корень — `<so-input>`. */
+/** Input, созданный самим TestBed: корень — `<div so-input>`. */
 function mount(inputs: Record<string, unknown> = {}): ComponentFixture<TInputComponent> {
 	const fixture = TestBed.createComponent(TInputComponent, { inferTagName: true })
 
@@ -55,28 +56,28 @@ function type(fixture: ComponentFixture<unknown>, input: HTMLInputElement, text:
 @Component({
 	standalone: true,
 	imports: [TInputComponent, SlotDirective],
-	template: `<so-input [ctrl]="ctrl">
+	template: `<div so-input [ctrl]="ctrl">
 		<ng-template slot="leading"><i>L</i></ng-template>
 		<ng-template slot="trailing" let-ctrl="ctrl"
 			><b>{{ ctrl.value }}</b></ng-template
 		>
-	</so-input>`,
+	</div>`,
 })
 class SidesHost {
 	readonly ctrl = new TInput({ value: 'текст' })
 }
 
 describe('Input · разметка', () => {
-	it('корень — so-input, внутри текстовое поле', () => {
+	it('корень — div по первому селектору, внутри текстовое поле', () => {
 		const el = root(mount())
 
-		expect(el.localName).toBe('so-input')
+		expect(el.localName).toBe('div')
 		expect(el.classList.contains('so-input')).toBe(true)
 		expect(field(el).type).toBe('text')
 	})
 
 	it('слоты leading и trailing — по сторонам поля, scope — инстанс поля', () => {
-		const el = findIn(mountHost(SidesHost), 'so-input', HTMLElement)
+		const el = findIn(mountHost(SidesHost), '[so-input]', HTMLElement)
 
 		expect([...el.children].map((part) => part.localName + '.' + part.className)).toEqual([
 			'div.so-input__leading',
@@ -96,7 +97,7 @@ describe('Input · разметка', () => {
 	})
 
 	it('слоты — не атрибуты поля и корня', () => {
-		const el = findIn(mountHost(SidesHost), 'so-input', HTMLElement)
+		const el = findIn(mountHost(SidesHost), '[so-input]', HTMLElement)
 
 		expect(el.hasAttribute('leading')).toBe(false)
 		expect(field(el).hasAttribute('leading')).toBe(false)
@@ -175,7 +176,8 @@ describe('Input · атрибуты', () => {
 	standalone: true,
 	imports: [TInputComponent],
 	styles: ['.app-field { color: red; }'],
-	template: `<so-input
+	template: `<div
+		so-input
 		class="app-field"
 		style="flex: 1"
 		data-testid="field"
@@ -183,7 +185,7 @@ describe('Input · атрибуты', () => {
 		name="email"
 		[attr.title]="title()"
 		(keydown)="keys.push($event.key)"
-	/>`,
+	></div>`,
 })
 class ForwardHost {
 	readonly title = signal('Почта')
@@ -192,7 +194,7 @@ class ForwardHost {
 
 describe('Input · атрибуты потребителя', () => {
 	it('класс и стиль — на корне, атрибуты из разметки — на поле', () => {
-		const el = findIn(mountHost(ForwardHost), 'so-input', HTMLElement)
+		const el = findIn(mountHost(ForwardHost), '[so-input]', HTMLElement)
 		const input = field(el)
 
 		expect(el.classList.contains('so-input')).toBe(true)
@@ -208,7 +210,7 @@ describe('Input · атрибуты потребителя', () => {
 	})
 
 	it('атрибут-вход доходит до ядра, а не до поля атрибутом потребителя', () => {
-		const el = findIn(mountHost(ForwardHost), 'so-input', HTMLElement)
+		const el = findIn(mountHost(ForwardHost), '[so-input]', HTMLElement)
 
 		expect(el.hasAttribute('name')).toBe(false)
 		expect(field(el).name).toBe('email')
@@ -227,7 +229,7 @@ describe('Input · атрибуты потребителя', () => {
 	})
 
 	it('атрибут инкапсуляции стилей хоста остаётся на корне', () => {
-		const el = findIn(mountHost(ForwardHost), 'so-input', HTMLElement)
+		const el = findIn(mountHost(ForwardHost), '[so-input]', HTMLElement)
 		const scoped = (element: Element) =>
 			element.getAttributeNames().filter((name) => name.startsWith('_ngcontent-'))
 
@@ -236,18 +238,25 @@ describe('Input · атрибуты потребителя', () => {
 	})
 
 	/**
-	 * Привязку и слушатель Angular ставит на элемент, который написан в
-	 * разметке, — они остаются на корне. Всплывающее событие поля до корня
-	 * доходит само.
+	 * Привязку и слушатель Angular отдаёт рендереру шаблона потребителя, и
+	 * рендерер адаптера доносит их до поля, как статику — база: на корне их
+	 * нет. Слушатель стоит на поле — событие, отправленное в корень, до него не
+	 * доходит.
 	 */
-	it('привязка [attr.x] и слушатель — на корне, keydown поля до него всплывает', () => {
+	it('привязка [attr.x] и слушатель — на поле, а не на корне', () => {
 		const fixture = mountHost(ForwardHost)
-		const el = findIn(fixture, 'so-input', HTMLElement)
+		const el = findIn(fixture, '[so-input]', HTMLElement)
 
-		expect(el.getAttribute('title')).toBe('Почта')
-		expect(field(el).hasAttribute('title')).toBe(false)
+		expect(field(el).getAttribute('title')).toBe('Почта')
+		expect(el.hasAttribute('title')).toBe(false)
+
+		fixture.componentInstance.title.set('Адрес')
+		fixture.detectChanges()
+
+		expect(field(el).getAttribute('title')).toBe('Адрес')
 
 		field(el).dispatchEvent(new KeyboardEvent('keydown', { key: 'a', bubbles: true }))
+		el.dispatchEvent(new KeyboardEvent('keydown', { key: 'b', bubbles: true }))
 
 		expect(fixture.componentInstance.keys).toEqual(['a'])
 	})
@@ -375,7 +384,7 @@ describe('Input · значение', () => {
 @Component({
 	standalone: true,
 	imports: [TInputComponent],
-	template: `<so-input (input)="onDomInput($event)" (soInput)="onInput($event)" />`,
+	template: `<div so-input (input)="onDomInput($event)" (soInput)="onInput($event)"></div>`,
 })
 class InputEventsHost {
 	readonly domInputs: Event[] = []
@@ -393,7 +402,7 @@ class InputEventsHost {
 describe('Input · события', () => {
 	it('(input) — событие браузера, (soInput) — событие ядра: по одному на нажатие', async () => {
 		const fixture = mountHost(InputEventsHost)
-		const input = field(findIn(fixture, 'so-input', HTMLElement))
+		const input = field(findIn(fixture, '[so-input]', HTMLElement))
 
 		await nextFrame()
 		type(fixture, input, 'a')
@@ -410,9 +419,9 @@ describe('Input · события', () => {
 @Component({
 	standalone: true,
 	imports: [TInputComponent, SlotDirective],
-	template: `<so-input clearable name="Город">
+	template: `<div so-input clearable name="Город">
 		<ng-template slot="trailing"><i class="probe"></i></ng-template>
-	</so-input>`,
+	</div>`,
 })
 class ClearableHost {}
 
@@ -420,11 +429,11 @@ class ClearableHost {}
 @Component({
 	standalone: true,
 	imports: [TInputComponent, SlotDirective],
-	template: `<so-input [ctrl]="ctrl" [clearable]="clearable()">
+	template: `<div so-input [ctrl]="ctrl" [clearable]="clearable()">
 		<ng-template slot="clear" let-clear="clear"
 			><button type="button" class="probe" (click)="clear()"></button
 		></ng-template>
-	</so-input>`,
+	</div>`,
 })
 class OwnClearHost {
 	readonly ctrl = new TInput({ value: 'текст' })
@@ -443,7 +452,7 @@ describe('Input · кнопка очистки', () => {
 	})
 
 	it('по clearable — первой в обёртке у конца, перед содержимым trailing', () => {
-		const el = findIn(mountHost(ClearableHost), 'so-input', HTMLElement)
+		const el = findIn(mountHost(ClearableHost), '[so-input]', HTMLElement)
 		const parts = ['.so-input__clear', '.probe']
 
 		expect(
@@ -461,7 +470,7 @@ describe('Input · кнопка очистки', () => {
 	 * Своё у кнопки остаётся рядом: классы, `data-disabled`.
 	 */
 	it('набор поля на кнопке — рядом с её собственными наборами и классами', () => {
-		const el = findIn(mountHost(ClearableHost), 'so-input', HTMLElement)
+		const el = findIn(mountHost(ClearableHost), '[so-input]', HTMLElement)
 		const button = clearOf(el)
 
 		expect(button.getAttribute('aria-label')).toBe('Clear Город')
@@ -536,7 +545,7 @@ describe('Input · кнопка очистки', () => {
 	 */
 	it('своя кнопка — слот clear с командой очистки в scope, вместо встроенной', () => {
 		const fixture = mountHost(OwnClearHost)
-		const el = findIn(fixture, 'so-input', HTMLElement)
+		const el = findIn(fixture, '[so-input]', HTMLElement)
 
 		expect(el.querySelector('.so-input__trailing > .probe')).not.toBeNull()
 		expect(el.querySelector('.so-input__clear')).toBeNull()

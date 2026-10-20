@@ -58,7 +58,7 @@ import { find, findIn, mountHost, nextFrame } from './mount'
 	selector: 'probe-input-focus',
 	standalone: true,
 	imports: [TInputComponent],
-	template: `<so-input [ctrl]="ctrl" />`,
+	template: `<div so-input [ctrl]="ctrl"></div>`,
 })
 class InputHost {
 	readonly ctrl = new TInput()
@@ -67,9 +67,9 @@ class InputHost {
 @Component({
 	standalone: true,
 	imports: [TInputComponent, SlotDirective],
-	template: `<so-input [ctrl]="ctrl">
+	template: `<div so-input [ctrl]="ctrl">
 		<ng-template slot="leading"><button class="before"></button></ng-template>
-	</so-input>`,
+	</div>`,
 })
 class InputLeadingHost {
 	readonly ctrl = new TInput()
@@ -79,7 +79,7 @@ class InputLeadingHost {
 	selector: 'probe-textarea-focus',
 	standalone: true,
 	imports: [TTextareaComponent],
-	template: `<so-textarea [ctrl]="ctrl" />`,
+	template: `<div so-textarea [ctrl]="ctrl"></div>`,
 })
 class TextareaHost {
 	readonly ctrl = new TTextarea()
@@ -89,7 +89,7 @@ class TextareaHost {
 	selector: 'probe-check-box-focus',
 	standalone: true,
 	imports: [TCheckBoxComponent],
-	template: `<so-check-box [ctrl]="ctrl" />`,
+	template: `<span so-check-box [ctrl]="ctrl"></span>`,
 })
 class CheckBoxHost {
 	readonly ctrl = new TCheckBox()
@@ -99,7 +99,7 @@ class CheckBoxHost {
 	selector: 'probe-switch-focus',
 	standalone: true,
 	imports: [TSwitchComponent],
-	template: `<so-switch [ctrl]="ctrl" />`,
+	template: `<span so-switch [ctrl]="ctrl"></span>`,
 })
 class SwitchHost {
 	readonly ctrl = new TSwitch()
@@ -120,9 +120,9 @@ class RadioHost {
 @Component({
 	standalone: true,
 	imports: [TListBoxComponent, TListBoxItemComponent],
-	template: `<so-list-box [ctrl]="ctrl">
-		<so-list-box-item value="a" text="A" />
-	</so-list-box>`,
+	template: `<div so-list-box [ctrl]="ctrl">
+		<div so-list-box-item value="a" text="A"></div>
+	</div>`,
 })
 class ListBoxHost {
 	readonly ctrl = new TListBox()
@@ -131,10 +131,10 @@ class ListBoxHost {
 @Component({
 	standalone: true,
 	imports: [TListBoxComponent, TListBoxItemComponent],
-	template: `<so-list-box [ctrl]="ctrl">
+	template: `<div so-list-box [ctrl]="ctrl">
 		<input slot="header" class="before" />
-		<so-list-box-item value="a" text="A" />
-	</so-list-box>`,
+		<div so-list-box-item value="a" text="A"></div>
+	</div>`,
 })
 class ListBoxHeaderHost {
 	readonly ctrl = new TListBox()
@@ -143,10 +143,10 @@ class ListBoxHeaderHost {
 @Component({
 	standalone: true,
 	imports: [TTabsComponent, TTabsItemComponent],
-	template: `<so-tabs [ctrl]="ctrl">
-		<so-tabs-item value="a" text="A" />
-		<so-tabs-item value="b" text="B" active />
-	</so-tabs>`,
+	template: `<div so-tabs [ctrl]="ctrl">
+		<div so-tabs-item value="a" text="A"></div>
+		<div so-tabs-item value="b" text="B" active></div>
+	</div>`,
 })
 class TabsHost {
 	readonly ctrl = new TTabs()
@@ -155,11 +155,11 @@ class TabsHost {
 @Component({
 	standalone: true,
 	imports: [TTabsComponent, TTabsItemComponent, SlotDirective],
-	template: `<so-tabs [ctrl]="ctrl">
+	template: `<div so-tabs [ctrl]="ctrl">
 		<ng-template slot="leading"><button class="before"></button></ng-template>
-		<so-tabs-item value="a" text="A" />
-		<so-tabs-item value="b" text="B" active />
-	</so-tabs>`,
+		<div so-tabs-item value="a" text="A"></div>
+		<div so-tabs-item value="b" text="B" active></div>
+	</div>`,
 })
 class TabsLeadingHost {
 	readonly ctrl = new TTabs()
@@ -193,8 +193,8 @@ class RadioGroupDisabledHost {
 	standalone: true,
 	imports: [TAccordionComponent, TAccordionItemComponent],
 	template: `<div so-accordion [ctrl]="ctrl">
-		<so-accordion-item value="a" text="A" class="target" />
-		<so-accordion-item value="b" text="B" />
+		<div so-accordion-item value="a" text="A" class="target"></div>
+		<div so-accordion-item value="b" text="B"></div>
 	</div>`,
 })
 class AccordionHost {
@@ -205,8 +205,8 @@ class AccordionHost {
 	standalone: true,
 	imports: [TAccordionComponent, TAccordionItemComponent],
 	template: `<div so-accordion [ctrl]="ctrl">
-		<so-accordion-item value="a" text="A" disabled />
-		<so-accordion-item value="b" text="B" class="target" />
+		<div so-accordion-item value="a" text="A" disabled></div>
+		<div so-accordion-item value="b" text="B" class="target"></div>
 	</div>`,
 })
 class AccordionDisabledHost {
@@ -216,10 +216,10 @@ class AccordionDisabledHost {
 @Component({
 	standalone: true,
 	imports: [TTabsComponent, TTabsItemComponent],
-	template: `<so-tabs>
-		<so-tabs-item value="a" text="A" active />
-		<so-tabs-item class="target" [ctrl]="ctrl" />
-	</so-tabs>`,
+	template: `<div so-tabs>
+		<div so-tabs-item value="a" text="A" active></div>
+		<div so-tabs-item class="target" [ctrl]="ctrl"></div>
+	</div>`,
 })
 class TabsItemHost {
 	readonly ctrl = new TTabsItem({ value: 'b', text: 'B' })
@@ -229,8 +229,8 @@ class TabsItemHost {
 	standalone: true,
 	imports: [TAccordionComponent, TAccordionItemComponent],
 	template: `<div so-accordion>
-		<so-accordion-item value="a" text="A" />
-		<so-accordion-item class="target" [ctrl]="ctrl" />
+		<div so-accordion-item value="a" text="A"></div>
+		<div so-accordion-item class="target" [ctrl]="ctrl"></div>
 	</div>`,
 })
 class AccordionItemHost {
@@ -240,10 +240,10 @@ class AccordionItemHost {
 @Component({
 	standalone: true,
 	imports: [TListBoxComponent, TListBoxItemComponent],
-	template: `<so-list-box>
-		<so-list-box-item value="a" text="A" />
-		<so-list-box-item class="target" [ctrl]="ctrl" />
-	</so-list-box>`,
+	template: `<div so-list-box>
+		<div so-list-box-item value="a" text="A"></div>
+		<div so-list-box-item class="target" [ctrl]="ctrl"></div>
+	</div>`,
 })
 class ListBoxItemHost {
 	readonly ctrl = new TListBoxItem({ value: 'b', text: 'B' })
@@ -325,7 +325,7 @@ describe.each(Object.entries(CASES))('%s', (_name, { host, target, before }) => 
 @Component({
 	standalone: true,
 	imports: [TTabsComponent],
-	template: `<so-tabs [ctrl]="ctrl" [engine]="engine" />`,
+	template: `<div so-tabs [ctrl]="ctrl" [engine]="engine"></div>`,
 })
 class TabsEngineHost {
 	readonly ctrl = new TTabs()

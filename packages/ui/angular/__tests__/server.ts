@@ -42,10 +42,12 @@ import {
 	type BootstrapContext,
 } from '@angular/platform-browser'
 import { provideServerRendering, renderApplication } from '@angular/platform-server'
+import { provideAttrs } from '@soldy-ui/angular'
 
 /**
  * Провайдеры приложения, общие для сервера и браузера, — `appConfig`:
- * гидратация и режим без Zone.js, в котором работает адаптер.
+ * гидратация, режим без Zone.js, в котором работает адаптер, и рендерер
+ * адаптера (`provideAttrs()`), без которого поля и коллекции не собираются.
  *
  * Функция, а не список, собранный при загрузке модуля: состав провайдеров
  * гидратации зависит от того, где их собирают, — сервер они узнают по флагу,
@@ -54,7 +56,7 @@ import { provideServerRendering, renderApplication } from '@angular/platform-ser
  * браузера.
  */
 function appProviders(): EnvironmentProviders[] {
-	return [provideClientHydration(), provideZonelessChangeDetection()]
+	return [provideClientHydration(), provideZonelessChangeDetection(), provideAttrs()]
 }
 
 /** Страница сервера: в `body` — только корень приложения, по его селектору. */

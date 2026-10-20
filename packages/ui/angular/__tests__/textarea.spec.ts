@@ -8,11 +8,12 @@
  * атрибуты у `<textarea>`, ввод — в ядро и выход `soChangeValue`, счётчик по
  * локали поддерева — пояснением поля, — и подпись и справка поля формы.
  *
- * Угол зрения здесь свой, как у Input. Селектор — элементный: корень — сам
- * `<so-textarea>`, а атрибуты, которые потребитель записал на нём в разметке,
- * кроме класса и стиля, база переносит на `<textarea>`. В узел текст пишет
- * директива текста поля, только когда он разошёлся с узлом. Серверный рендер
- * и гидратацию сторожит `fields.server.spec.ts`.
+ * Угол зрения здесь свой, как у Input. Селектор атрибутный: корень — сам
+ * `<div so-textarea>`, а всё, что потребитель записал на нём, кроме класса и
+ * стиля, доходит до `<textarea>`: статику переносит база, привязки и
+ * слушатели — рендерер адаптера. В узел текст пишет директива текста поля,
+ * только когда он разошёлся с узлом. Серверный рендер и гидратацию сторожит
+ * `fields.server.spec.ts`.
  */
 
 import { describe, it, expect, afterEach, vi } from 'vitest'
@@ -44,7 +45,7 @@ function root(fixture: ComponentFixture<unknown>): HTMLElement {
 	return element
 }
 
-/** Textarea, созданный самим TestBed: корень — `<so-textarea>`. */
+/** Textarea, созданный самим TestBed: корень — `<div so-textarea>`. */
 function mount(inputs: Record<string, unknown> = {}): ComponentFixture<TTextareaComponent> {
 	const fixture = TestBed.createComponent(TTextareaComponent, { inferTagName: true })
 
@@ -70,10 +71,10 @@ function type(fixture: ComponentFixture<unknown>, textarea: HTMLTextAreaElement,
 }
 
 describe('Textarea · разметка', () => {
-	it('корень — so-textarea с классами и dataset, внутри — поле без класса', () => {
+	it('корень — div с классами и dataset, внутри — поле без класса', () => {
 		const el = root(mount({ size: 'lg', readonly: true, required: true, direction: 'rtl' }))
 
-		expect(el.localName).toBe('so-textarea')
+		expect(el.localName).toBe('div')
 		expect([...el.classList]).toEqual(
 			expect.arrayContaining([
 				'so-textarea',
@@ -144,23 +145,23 @@ describe('Textarea · разметка', () => {
 })
 
 /**
- * Атрибуты потребителя делятся, как у Input: класс и стиль — корню, атрибуты
- * из разметки — полю. Привязку `[attr.x]` и слушатель Angular ставит на
- * элемент из разметки — они остаются на корне, а всплывающее событие поля до
- * него доходит само.
+ * Атрибуты потребителя делятся, как у Input: класс и стиль — корню, всё
+ * остальное — полю. Статику переносит база, а слушатель рендерер адаптера
+ * ставит на поле: событие, отправленное в корень, до него не доходит.
  */
 @Component({
 	selector: 'probe-textarea-forward',
 	standalone: true,
 	imports: [TTextareaComponent],
-	template: `<so-textarea
+	template: `<div
+		so-textarea
 		class="app-field"
 		style="flex: 1"
 		data-testid="field"
 		autocomplete="off"
 		name="about"
 		(keydown)="keys.push($event.key)"
-	/>`,
+	></div>`,
 })
 class ForwardHost {
 	readonly keys: string[] = []
@@ -168,7 +169,7 @@ class ForwardHost {
 
 describe('Textarea · атрибуты потребителя', () => {
 	it('класс и стиль — на корне, атрибуты из разметки — на поле', () => {
-		const el = findIn(mountHost(ForwardHost), 'so-textarea', HTMLElement)
+		const el = findIn(mountHost(ForwardHost), '[so-textarea]', HTMLElement)
 		const textarea = field(el)
 
 		expect(el.classList.contains('so-textarea')).toBe(true)
@@ -184,17 +185,18 @@ describe('Textarea · атрибуты потребителя', () => {
 	})
 
 	it('атрибут-вход доходит до ядра, а не до поля атрибутом потребителя', () => {
-		const el = findIn(mountHost(ForwardHost), 'so-textarea', HTMLElement)
+		const el = findIn(mountHost(ForwardHost), '[so-textarea]', HTMLElement)
 
 		expect(el.hasAttribute('name')).toBe(false)
 		expect(field(el).name).toBe('about')
 	})
 
-	it('слушатель — на корне, keydown поля до него всплывает', () => {
+	it('слушатель — на поле, а не на корне', () => {
 		const fixture = mountHost(ForwardHost)
-		const el = findIn(fixture, 'so-textarea', HTMLElement)
+		const el = findIn(fixture, '[so-textarea]', HTMLElement)
 
 		field(el).dispatchEvent(new KeyboardEvent('keydown', { key: 'a', bubbles: true }))
+		el.dispatchEvent(new KeyboardEvent('keydown', { key: 'b', bubbles: true }))
 
 		expect(fixture.componentInstance.keys).toEqual(['a'])
 	})
@@ -298,7 +300,7 @@ describe('Textarea · ввод', () => {
 	selector: 'probe-textarea-events',
 	standalone: true,
 	imports: [TTextareaComponent],
-	template: `<so-textarea (input)="onDomInput($event)" (soInput)="onInput($event)" />`,
+	template: `<div so-textarea (input)="onDomInput($event)" (soInput)="onInput($event)"></div>`,
 })
 class InputEventsHost {
 	readonly domInputs: Event[] = []
@@ -316,7 +318,7 @@ class InputEventsHost {
 describe('Textarea · события', () => {
 	it('(input) — событие браузера, (soInput) — событие ядра: по одному на нажатие', async () => {
 		const fixture = mountHost(InputEventsHost)
-		const textarea = field(findIn(fixture, 'so-textarea', HTMLElement))
+		const textarea = field(findIn(fixture, '[so-textarea]', HTMLElement))
 
 		await nextFrame()
 		type(fixture, textarea, 'a')
@@ -335,7 +337,7 @@ describe('Textarea · события', () => {
 	standalone: true,
 	imports: [TTextareaComponent, LocaleProviderDirective],
 	template: `<div so-locale-provider [locale]="locale">
-		<so-textarea [value]="value" [maxlength]="5000" counter />
+		<div so-textarea [value]="value" [maxlength]="5000" counter></div>
 	</div>`,
 })
 class LocaleHost {
@@ -405,7 +407,7 @@ describe('Textarea · счётчик', () => {
 	})
 
 	it('под провайдером — числа по его локали', () => {
-		const el = findIn(mountHost(LocaleHost), 'so-textarea', HTMLElement)
+		const el = findIn(mountHost(LocaleHost), '[so-textarea]', HTMLElement)
 
 		expect(counter(el)?.textContent).toBe(
 			`${(1234).toLocaleString('ru-RU')} / ${(5000).toLocaleString('ru-RU')}`,
@@ -443,7 +445,7 @@ describe('Textarea · авторост', () => {
 	selector: 'probe-textarea-field',
 	standalone: true,
 	imports: [TFieldComponent, TTextareaComponent],
-	template: `<div so-field label="О себе"><so-textarea /></div>`,
+	template: `<div so-field label="О себе"><div so-textarea></div></div>`,
 })
 class FieldHost {}
 
@@ -452,7 +454,7 @@ class FieldHost {}
 	standalone: true,
 	imports: [TFieldComponent, TTextareaComponent],
 	template: `<div so-field label="О себе" helper="Подсказка">
-		<so-textarea counter [maxlength]="200" />
+		<div so-textarea counter [maxlength]="200"></div>
 	</div>`,
 })
 class FieldCounterHost {}
@@ -460,7 +462,7 @@ class FieldCounterHost {}
 describe('Textarea · в поле формы', () => {
 	it('подпись называет поле своим for — на id поля, ссылки нет', () => {
 		const fixture = mountHost(FieldHost)
-		const textarea = field(findIn(fixture, 'so-textarea', HTMLElement))
+		const textarea = field(findIn(fixture, '[so-textarea]', HTMLElement))
 
 		expect(textarea.id).not.toBe('')
 		expect(findIn(fixture, '.so-field__label', HTMLLabelElement).htmlFor).toBe(textarea.id)
@@ -471,7 +473,7 @@ describe('Textarea · в поле формы', () => {
 		const fixture = mountHost(FieldCounterHost)
 
 		expect(
-			refsOf(field(findIn(fixture, 'so-textarea', HTMLElement)), 'aria-describedby'),
+			refsOf(field(findIn(fixture, '[so-textarea]', HTMLElement)), 'aria-describedby'),
 		).toEqual([
 			findIn(fixture, '.so-field__helper', HTMLElement).id,
 			findIn(fixture, '.so-textarea__counter', HTMLElement).id,
@@ -484,7 +486,7 @@ describe('Textarea · в поле формы', () => {
 	selector: 'probe-textarea-signal',
 	standalone: true,
 	imports: [TTextareaComponent],
-	template: `<so-textarea [value]="value()" counter />`,
+	template: `<div so-textarea [value]="value()" counter></div>`,
 })
 class SignalHost {
 	readonly value = signal('ab')
@@ -493,7 +495,7 @@ class SignalHost {
 describe('Textarea · вход из шаблона', () => {
 	it('смена привязки value — в поле и счётчик', () => {
 		const fixture = mountHost(SignalHost)
-		const el = findIn(fixture, 'so-textarea', HTMLElement)
+		const el = findIn(fixture, '[so-textarea]', HTMLElement)
 
 		expect(field(el).value).toBe('ab')
 		expect(counter(el)?.textContent).toBe('2')

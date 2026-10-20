@@ -35,7 +35,7 @@ class TLocaleTagPlugin extends TBasePlugin<TButton> {
 	imports: [TButtonComponent, TInputComponent, LocaleProviderDirective],
 	template: `<ng-container so-locale-provider [locale]="locale">
 		<button so-button class="probe"></button>
-		<so-input clearable name="Город" />
+		<div so-input clearable name="Город"></div>
 	</ng-container>`,
 })
 class LocalePage {

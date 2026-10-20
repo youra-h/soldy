@@ -9,12 +9,14 @@ import { setupSwitch } from './setup.component'
  * TSwitchComponent — переключатель: корень и нативный
  * `<input type="checkbox">` внутри, рядом — дорожка с ручкой.
  *
- * Селектор — элементный, `<so-switch>`, корень — сам элемент компонента, как
- * у CheckBox: строчный, и переключатель кладут в подпись `Label`. Классы,
- * `attrs` (`dir`), `dataset` (`data-disabled`, `data-invalid`) и скрытие
- * раскладывает на корень `TComponentBase` (стратегия `'host'`): тема красит
- * дорожку и подпись поля формы `Field` по корню; статические атрибуты потребителя, кроме `class` и
- * `style`, она переносит на `<input>` (`control`).
+ * Селектор атрибутный, как у CheckBox: `<span so-switch>`. Корень — сам
+ * элемент потребителя, строчный, и переключатель кладут в подпись `Label`.
+ * Классы, `attrs` (`dir`), `dataset` (`data-disabled`, `data-invalid`) и
+ * скрытие раскладывает на корень `TComponentBase` (стратегия `'host'`): тема
+ * красит дорожку и подпись поля формы `Field` по корню. Всё, что потребитель
+ * записал на переключатель, кроме `class` и `style`, доходит до `<input>`
+ * (`control`): статику переносит база, привязки и слушатели — рендерер
+ * адаптера (`provideAttrs()`).
  *
  * `role="switch"` ядро пишет в `aria` поля — его кладёт на `<input>`
  * директива набора (`AttributesDirective`). Состояние скринридеру сообщает
@@ -30,10 +32,14 @@ import { setupSwitch } from './setup.component'
  * части, а своему содержимому переключатель опускает пустую связку — в свой
  * слой лифта (`provideElevator()`).
  *
- * Selector: so-switch
+ * `span[so-switch]` стоит первым: по первому селектору Angular выбирает тег
+ * хоста, когда создаёт компонент сам (`createComponent`), — это тег ядра по
+ * умолчанию.
+ *
+ * Selector: span[so-switch], [so-switch]
  */
 @Component({
-	selector: 'so-switch',
+	selector: 'span[so-switch], [so-switch]',
 	standalone: true,
 	imports: [NgTemplateOutlet, AttributesDirective],
 	providers: [provideElevator()],

@@ -11,14 +11,15 @@ import { setupAccordionItem } from './setup.component'
  * TAccordionItemComponent — секция аккордеона: заголовок — Button — и панель
  * под ним, как у Vue.
  *
- * Селектор — элементный, `<so-accordion-item>`: атрибуты потребителя у секции
- * делятся между корнем и заголовком, как у элемента ListBox. Корень несёт
- * классы, `attrs`, `dataset` и место в коллекции (`order`) — тема раскрывает
- * панель по `data-selected` на нём. Заголовок несёт `aria`
- * (`aria-expanded`, `id` и `aria-controls` на панель) — её кладёт директива
- * набора; на панель — `contentAria` (`role="region"`, `id`,
- * `aria-labelledby`). Статические атрибуты, которые потребитель записал на
- * секцию, кроме `class` и `style`, база переносит на заголовок (`control`).
+ * Селектор атрибутный, как у Button: `<div so-accordion-item>`. Корень — сам
+ * элемент потребителя, а написанное на нём делится между корнем и
+ * заголовком, как у элемента ListBox. Корень несёт классы, `attrs`, `dataset`
+ * и место в коллекции (`order`) — тема раскрывает панель по `data-selected`
+ * на нём. Заголовок несёт `aria` (`aria-expanded`, `id` и `aria-controls` на
+ * панель) — её кладёт директива набора; на панель — `contentAria`
+ * (`role="region"`, `id`, `aria-labelledby`). Всё, что потребитель записал на
+ * секцию, кроме `class` и `style`, доходит до заголовка (`control`): статику
+ * переносит база, привязки и слушатели — рендерер адаптера (`provideAttrs()`).
  *
  * Стрелка — в обёртке, и класс стрелки на обёртке, а не на иконке: тема
  * поворачивает стрелку раскрытой секции по `.so-accordion-item__arrow`, и
@@ -31,10 +32,14 @@ import { setupAccordionItem } from './setup.component'
  * (`<ng-template slot="leading-icon">`): по ним секция решает, рисовать ли
  * обёртку стрелки, а есть ли что-то в `<ng-content>`, Angular не сообщает.
  *
- * Selector: so-accordion-item
+ * `div[so-accordion-item]` стоит первым: по первому селектору Angular выбирает
+ * тег хоста, когда создаёт компонент сам (`createComponent`), — это тег ядра
+ * по умолчанию.
+ *
+ * Selector: div[so-accordion-item], [so-accordion-item]
  */
 @Component({
-	selector: 'so-accordion-item',
+	selector: 'div[so-accordion-item], [so-accordion-item]',
 	standalone: true,
 	imports: [
 		NgTemplateOutlet,

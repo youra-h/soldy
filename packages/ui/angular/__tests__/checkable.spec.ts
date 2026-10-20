@@ -10,9 +10,9 @@
  * `Label`, поэтому всё внутри — строчная разметка, а декор скрыт
  * `aria-hidden`: всё внутри `label` входит в имя поля.
  *
- * Угол зрения здесь свой. Селектор поля — элементный: корень — сам
- * `<so-check-box>`, классы и `attrs` на него кладёт база компонента, `aria`
- * на `<input>` — директива набора. Отметку и «выбрано частично» сообщают
+ * Угол зрения здесь свой. Селектор поля атрибутный: корень — сам
+ * `<span so-check-box>`, классы и `attrs` на него кладёт база компонента,
+ * `aria` на `<input>` — директива набора. Отметку и «выбрано частично» сообщают
  * нативные `checked` и `indeterminate` — привязки свойств `<input>`, Angular
  * пишет их на смену значения ядра. Переключает значение `TInputBoolPlugin` по
  * `change` поля, его слушатели встают по `ready` — кадром позже.
@@ -73,7 +73,7 @@ function click(fixture: ComponentFixture<unknown>, input: HTMLInputElement): voi
 	selector: 'probe-check-box-forward',
 	standalone: true,
 	imports: [TCheckBoxComponent],
-	template: `<so-check-box class="app-control" style="color: red" title="Согласие" />`,
+	template: `<span so-check-box class="app-control" style="color: red" title="Согласие"></span>`,
 })
 class CheckBoxForwardHost {}
 
@@ -81,7 +81,7 @@ class CheckBoxForwardHost {}
 	selector: 'probe-switch-forward',
 	standalone: true,
 	imports: [TSwitchComponent],
-	template: `<so-switch class="app-control" style="color: red" title="Согласие" />`,
+	template: `<span so-switch class="app-control" style="color: red" title="Согласие"></span>`,
 })
 class SwitchForwardHost {}
 
@@ -100,7 +100,7 @@ const CHECKABLES: ReadonlyArray<readonly [string, TCheckableCase]> = [
 		{
 			component: TCheckBoxComponent,
 			forward: CheckBoxForwardHost,
-			selector: 'so-check-box',
+			selector: '[so-check-box]',
 			decor: '.so-check-box__container',
 			ctrl: (readonly = false) => new TCheckBox({ readonly }),
 		},
@@ -110,7 +110,7 @@ const CHECKABLES: ReadonlyArray<readonly [string, TCheckableCase]> = [
 		{
 			component: TSwitchComponent,
 			forward: SwitchForwardHost,
-			selector: 'so-switch',
+			selector: '[so-switch]',
 			decor: '.so-switch__track',
 			ctrl: (readonly = false) => new TSwitch({ readonly }),
 		},
@@ -120,13 +120,13 @@ const CHECKABLES: ReadonlyArray<readonly [string, TCheckableCase]> = [
 describe.each(CHECKABLES)('%s · разметка', (_name, { component, forward, selector, decor }) => {
 	/**
 	 * Контрол кладут в подпись `Label`, а внутри `label` HTML разрешает только
-	 * строчную разметку: `div` там невалиден. Корень — сам элемент компонента,
-	 * строчный.
+	 * строчную разметку: `div` там невалиден. Корень — элемент компонента, по
+	 * первому селектору — строчный `span`.
 	 */
-	it('корень — элемент компонента, и всё внутри — не div', () => {
+	it('корень — span, и всё внутри — не div', () => {
 		const el = root(mount(component))
 
-		expect(el.localName).toBe(selector)
+		expect(el.localName).toBe('span')
 		expect(el.querySelectorAll('div')).toHaveLength(0)
 	})
 
@@ -336,14 +336,14 @@ function bodyOf(source: TIconSource): string {
 @Component({
 	standalone: true,
 	imports: [TCheckBoxComponent, SlotDirective],
-	template: `<so-check-box [value]="value()" [indeterminate]="indeterminate()" [ctrl]="ctrl">
+	template: `<span so-check-box [value]="value()" [indeterminate]="indeterminate()" [ctrl]="ctrl">
 		<ng-template slot="icon" let-value="value" let-indeterminate="indeterminate"
 			><b>{{ value }}/{{ indeterminate }}</b></ng-template
 		>
 		<ng-template slot="indeterminate-icon" let-value="value" let-indeterminate="indeterminate"
 			><i>{{ value }}/{{ indeterminate }}</i></ng-template
 		>
-	</so-check-box>`,
+	</span>`,
 })
 class MarkSlotsHost {
 	readonly ctrl = new TCheckBox()
@@ -439,7 +439,7 @@ describe('CheckBox · отметка', () => {
 	})
 
 	it('слот icon подменяет иконку и получает scope', () => {
-		const el = findIn(mountHost(MarkSlotsHost), 'so-check-box', HTMLElement)
+		const el = findIn(mountHost(MarkSlotsHost), '[so-check-box]', HTMLElement)
 
 		expect(markupOf(mark(el))).toBe('<b>true/false</b>')
 	})
@@ -451,13 +451,13 @@ describe('CheckBox · отметка', () => {
 		fixture.componentInstance.indeterminate.set(true)
 		fixture.detectChanges()
 
-		expect(markupOf(mark(findIn(fixture, 'so-check-box', HTMLElement)))).toBe(
+		expect(markupOf(mark(findIn(fixture, '[so-check-box]', HTMLElement)))).toBe(
 			'<i>false/true</i>',
 		)
 	})
 
 	it('слоты — не атрибуты поля и корня', () => {
-		const el = findIn(mountHost(MarkSlotsHost), 'so-check-box', HTMLElement)
+		const el = findIn(mountHost(MarkSlotsHost), '[so-check-box]', HTMLElement)
 
 		expect(field(el).hasAttribute('icon')).toBe(false)
 		expect(el.hasAttribute('icon')).toBe(false)
@@ -467,14 +467,14 @@ describe('CheckBox · отметка', () => {
 @Component({
 	standalone: true,
 	imports: [TSwitchComponent, SlotDirective],
-	template: `<so-switch [ctrl]="ctrl">
+	template: `<span so-switch [ctrl]="ctrl">
 		<ng-template slot="on" let-value="value" let-ctrl="ctrl"
 			><i>вкл:{{ value }}:{{ ctrl === own }}</i></ng-template
 		>
 		<ng-template slot="off" let-value="value"
 			><i>выкл:{{ value }}</i></ng-template
 		>
-	</so-switch>`,
+	</span>`,
 })
 class ThumbSlotsHost {
 	readonly ctrl = new TSwitch()
@@ -494,7 +494,7 @@ describe('Switch · роль и ручка', () => {
 
 	it('в ручке — слот off у выключенного и on у включённого, scope — значение и инстанс', () => {
 		const fixture = mountHost(ThumbSlotsHost)
-		const el = findIn(fixture, 'so-switch', HTMLElement)
+		const el = findIn(fixture, '[so-switch]', HTMLElement)
 
 		expect(markupOf(thumb(el))).toBe('<i>выкл:false</i>')
 

@@ -1,11 +1,12 @@
 <!--
-	Корень — сам хост (`<so-tabs>`), поэтому шаблон — список табов и место
+	Корень — сам хост (`<div so-tabs>`), поэтому шаблон — список табов и место
 	панелей. Слоты контракта: leading и trailing — по краям списка, default —
 	табы, content — панели; item, item-leading, item-trailing и
 	item-close-icon — слоты табов из данных.
 
 	Список табов несёт набор `aria` владельца и помечен `#control`: на него
-	база переносит статические атрибуты потребителя.
+	ложится то, что потребитель написал на корне, кроме класса и стиля, —
+	статику переносит база, привязки и слушатели доносит рендерер адаптера.
 
 	Обёртки краёв списка стоят, только когда их слот задан, поэтому `leading` и
 	`trailing` — шаблоны (`<ng-template slot="leading">`): есть ли что-то в
@@ -29,7 +30,7 @@
 	}
 	<ng-content>
 		@for (item of state()['shown'] ?? []; track item.uid) {
-			<so-tabs-item [ctrl]="item">
+			<div so-tabs-item [ctrl]="item">
 				@if (slot('item-leading'); as leading) {
 					<ng-container ngProjectAs="[slot=leading]">
 						<ng-container
@@ -67,7 +68,7 @@
 						/>
 					</ng-template>
 				}
-			</so-tabs-item>
+			</div>
 		}
 	</ng-content>
 	@if (slot('trailing'); as trailing) {

@@ -232,7 +232,7 @@ describe('LocaleProviderDirective', () => {
 	standalone: true,
 	imports: [TInputComponent, LocaleProviderDirective],
 	template: `<ng-container so-locale-provider [locale]="locale()">
-		<so-input clearable name="Город" />
+		<div so-input clearable name="Город"></div>
 	</ng-container>`,
 })
 class ClearNameHost {
@@ -242,7 +242,7 @@ class ClearNameHost {
 @Component({
 	standalone: true,
 	imports: [TInputComponent],
-	template: `<so-input clearable name="Город" />`,
+	template: `<div so-input clearable name="Город"></div>`,
 })
 class BareClearNameHost {}
 
@@ -267,13 +267,13 @@ describe('Input · имя кнопки очистки', () => {
 		const fixture = mountHost(ClearNameHost)
 		const host: HTMLElement = fixture.nativeElement
 		const button = clearOf(host)
-		const input = find(host, 'so-input', HTMLElement)
+		const input = find(host, '[so-input]', HTMLElement)
 
 		fixture.componentInstance.locale.set(enUS)
 		fixture.detectChanges()
 
 		expect(clearOf(host)).toBe(button)
-		expect(find(host, 'so-input', HTMLElement)).toBe(input)
+		expect(find(host, '[so-input]', HTMLElement)).toBe(input)
 		expect(button.getAttribute('aria-label')).toBe('Clear Город')
 
 		fixture.componentInstance.locale.set(zhCN)

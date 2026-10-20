@@ -6,7 +6,7 @@
  * заголовке, режим нескольких раскрытых секций. Клавиатуры у аккордеона своей
  * нет: заголовок — нативная кнопка.
  *
- * Своё у Angular — разметка. Секция — `<so-accordion-item>`, атрибуты
+ * Своё у Angular — разметка. Секция — `<div so-accordion-item>`, атрибуты
  * потребителя у неё делятся между корнем и заголовком. Слоты, по которым
  * секция решает, рисовать ли обёртку стрелки (`leading-icon`,
  * `trailing-icon`), — шаблоны, и шаблон, заданный аккордеону, рисуется у
@@ -45,8 +45,8 @@ function click(fixture: ComponentFixture<unknown>, element: HTMLElement): void {
 	standalone: true,
 	imports: [TAccordionComponent, TAccordionItemComponent],
 	template: `<div so-accordion [mode]="mode()" (soChangeSelection)="selections = selections + 1">
-		<so-accordion-item text="Первый" value="a" selected><p>Содержимое A</p></so-accordion-item>
-		<so-accordion-item text="Второй" value="b"><p>Содержимое B</p></so-accordion-item>
+		<div so-accordion-item text="Первый" value="a" selected><p>Содержимое A</p></div>
+		<div so-accordion-item text="Второй" value="b"><p>Содержимое B</p></div>
 	</div>`,
 })
 class Harness {
@@ -161,7 +161,7 @@ describe('секция из разметки', () => {
 			standalone: true,
 			imports: [TAccordionComponent, TAccordionItemComponent],
 			template: `<div so-accordion>
-				<so-accordion-item text="A" value="a" (click)="clicks = clicks + 1" />
+				<div so-accordion-item text="A" value="a" (click)="clicks = clicks + 1"></div>
 			</div>`,
 		})
 		class ClickHost {
@@ -181,13 +181,14 @@ describe('секция из разметки', () => {
 			standalone: true,
 			imports: [TAccordionComponent, TAccordionItemComponent],
 			template: `<div so-accordion>
-				<so-accordion-item
+				<div
+					so-accordion-item
 					text="A"
 					value="a"
 					class="mine"
 					style="color: red"
 					title="Раздел"
-				/>
+				></div>
 			</div>`,
 		})
 		class SplitHost {}
@@ -207,13 +208,13 @@ describe('секция из разметки', () => {
 			standalone: true,
 			imports: [TAccordionComponent, TAccordionItemComponent, SlotDirective],
 			template: `<div so-accordion>
-				<so-accordion-item text="A" value="a">
+				<div so-accordion-item text="A" value="a">
 					<ng-template slot="header" let-text="text" let-selected="selected"
 						>{{ text }}:{{ selected }}</ng-template
 					>
-				</so-accordion-item>
-				<so-accordion-item text="B" value="b" />
-				<so-accordion-item text="C" value="c"><b slot="header">Свой</b></so-accordion-item>
+				</div>
+				<div so-accordion-item text="B" value="b"></div>
+				<div so-accordion-item text="C" value="c"><b slot="header">Свой</b></div>
 			</div>`,
 		})
 		class HeaderHost {}
@@ -242,17 +243,22 @@ describe('секция из разметки', () => {
 			template: `<div so-accordion>
 				@switch (variant()) {
 					@case ('trailing-icon') {
-						<so-accordion-item text="A" value="a" arrowPlacement="end">
+						<div so-accordion-item text="A" value="a" arrowPlacement="end">
 							<ng-template slot="trailing-icon"><b class="custom">›</b></ng-template>
-						</so-accordion-item>
+						</div>
 					}
 					@case ('leading-icon') {
-						<so-accordion-item text="A" value="a" arrowPlacement="end">
+						<div so-accordion-item text="A" value="a" arrowPlacement="end">
 							<ng-template slot="leading-icon"><b class="custom">•</b></ng-template>
-						</so-accordion-item>
+						</div>
 					}
 					@default {
-						<so-accordion-item text="A" value="a" [arrowPlacement]="placement()" />
+						<div
+							so-accordion-item
+							text="A"
+							value="a"
+							[arrowPlacement]="placement()"
+						></div>
 					}
 				}
 			</div>`,

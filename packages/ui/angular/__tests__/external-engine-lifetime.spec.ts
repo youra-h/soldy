@@ -107,7 +107,7 @@ describe('ListBox над движком и владельцем снаружи',
 		@Component({
 			standalone: true,
 			imports: [TListBoxComponent],
-			template: `<so-list-box [ctrl]="owner" [engine]="engine"></so-list-box>`,
+			template: `<div so-list-box [ctrl]="owner" [engine]="engine"></div>`,
 		})
 		class ExternalHost {
 			readonly owner = owner
@@ -151,7 +151,7 @@ function ownerOf(engine: TListBoxCollection): TListBox {
 	standalone: true,
 	imports: [TListBoxComponent],
 	template: `@if (shown()) {
-		<so-list-box [engine]="engine()" [disabled]="disabled()"></so-list-box>
+		<div so-list-box [engine]="engine()" [disabled]="disabled()"></div>
 	}`,
 })
 class ProbeListPlace {

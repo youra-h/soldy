@@ -35,7 +35,7 @@ import { hydrate, leavePage, loadPage, renderOnServer } from './server'
 			error="Нет @"
 			[invalid]="invalid()"
 		>
-			<so-input value="a" />
+			<div so-input value="a"></div>
 		</div>
 		<div so-field class="choice" label="Выбор" helper="Подсказка">
 			<div so-radio-group>
@@ -147,7 +147,7 @@ describe('гидратация', () => {
 		const input = find(document, '.email input', HTMLInputElement)
 
 		expect(input.getAttribute('aria-invalid')).toBe('true')
-		expect(find(document, '.email so-input', HTMLElement).dataset['invalid']).toBe('true')
+		expect(find(document, '.email [so-input]', HTMLElement).dataset['invalid']).toBe('true')
 		expect(refsOf(input, 'aria-describedby')).toEqual([
 			find(document, '.email .so-field__error', HTMLElement).id,
 		])

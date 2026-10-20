@@ -75,7 +75,7 @@ describe('ListBox · серверный рендер', () => {
 		selector: 'app-root',
 		standalone: true,
 		imports: [TListBoxComponent],
-		template: `<so-list-box [items]="items" value="b"></so-list-box>`,
+		template: `<div so-list-box [items]="items" value="b"></div>`,
 	})
 	class ItemsPage {
 		readonly items = ITEMS
@@ -85,10 +85,10 @@ describe('ListBox · серверный рендер', () => {
 		selector: 'app-root',
 		standalone: true,
 		imports: [TListBoxComponent, TListBoxItemComponent],
-		template: `<so-list-box>
-			<so-list-box-item value="a" text="A" />
-			<so-list-box-item value="b" text="B" selected />
-		</so-list-box>`,
+		template: `<div so-list-box>
+			<div so-list-box-item value="a" text="A"></div>
+			<div so-list-box-item value="b" text="B" selected></div>
+		</div>`,
 	})
 	class MarkupPage {}
 
@@ -120,10 +120,10 @@ describe('Tabs · серверный рендер', () => {
 		selector: 'app-root',
 		standalone: true,
 		imports: [TTabsComponent, TTabsContentComponent],
-		template: `<so-tabs [items]="items">
+		template: `<div so-tabs [items]="items">
 			<div so-tabs-content slot="content" value="a">Панель A</div>
 			<div so-tabs-content slot="content" value="b">Панель B</div>
-		</so-tabs>`,
+		</div>`,
 	})
 	class ItemsPage {
 		readonly items = [
@@ -136,11 +136,11 @@ describe('Tabs · серверный рендер', () => {
 		selector: 'app-root',
 		standalone: true,
 		imports: [TTabsComponent, TTabsItemComponent, TTabsContentComponent],
-		template: `<so-tabs>
-			<so-tabs-item value="a" text="A" />
-			<so-tabs-item value="b" text="B" active />
+		template: `<div so-tabs>
+			<div so-tabs-item value="a" text="A"></div>
+			<div so-tabs-item value="b" text="B" active></div>
 			<div so-tabs-content slot="content" value="b">Панель B</div>
-		</so-tabs>`,
+		</div>`,
 	})
 	class MarkupPage {}
 
@@ -190,8 +190,8 @@ describe('Accordion · серверный рендер', () => {
 		standalone: true,
 		imports: [TAccordionComponent, TAccordionItemComponent],
 		template: `<div so-accordion>
-			<so-accordion-item value="a" text="A" selected>Содержимое A</so-accordion-item>
-			<so-accordion-item value="b" text="B">Содержимое B</so-accordion-item>
+			<div so-accordion-item value="a" text="A" selected>Содержимое A</div>
+			<div so-accordion-item value="b" text="B">Содержимое B</div>
 		</div>`,
 	})
 	class MarkupPage {}
@@ -267,24 +267,24 @@ describe('RadioGroup · серверный рендер', () => {
 		TListBoxComponent,
 		TListBoxItemComponent,
 	],
-	template: `<so-tabs>
-			<so-tabs-item value="a" text="A" active />
-			<so-tabs-item value="b" text="B" />
+	template: `<div so-tabs>
+			<div so-tabs-item value="a" text="A" active></div>
+			<div so-tabs-item value="b" text="B"></div>
 			<div so-tabs-content slot="content" value="a">Панель A</div>
 			<div so-tabs-content slot="content" value="b">Панель B</div>
-		</so-tabs>
+		</div>
 		<div so-accordion>
-			<so-accordion-item value="a" text="A">Содержимое A</so-accordion-item>
-			<so-accordion-item value="b" text="B">Содержимое B</so-accordion-item>
+			<div so-accordion-item value="a" text="A">Содержимое A</div>
+			<div so-accordion-item value="b" text="B">Содержимое B</div>
 		</div>
 		<div so-radio-group>
 			<label so-radio-group-item value="a">Первый</label>
 			<label so-radio-group-item value="b">Второй</label>
 		</div>
-		<so-list-box>
-			<so-list-box-item value="a" text="Альфа" />
-			<so-list-box-item value="b" text="Бета" />
-		</so-list-box>`,
+		<div so-list-box>
+			<div so-list-box-item value="a" text="Альфа"></div>
+			<div so-list-box-item value="b" text="Бета"></div>
+		</div>`,
 })
 class CollectionsPage {}
 
@@ -414,13 +414,14 @@ const AGE: TTableColumnSource = { field: 'age', text: 'Возраст', align: '
 	selector: 'app-root',
 	standalone: true,
 	imports: [TTableComponent],
-	template: `<so-table
+	template: `<div
+		so-table
 		[items]="items"
 		[columns]="columns"
 		mode="multiple"
 		aria-label="Сотрудники"
 		data-probe="1"
-	></so-table>`,
+	></div>`,
 })
 class TablePage {
 	readonly items = [
@@ -452,7 +453,7 @@ describe('Table · серверный рендер', () => {
 		const page = await serverPage(TablePage)
 		const ids = tableIdsOf(page)
 
-		expect(page.querySelector('so-table.so-table__viewport > table.so-table')).not.toBe(null)
+		expect(page.querySelector('[so-table].so-table__viewport > table.so-table')).not.toBe(null)
 		expect(all(page, '.so-table-row').map((row) => row.textContent?.trim())).toEqual([
 			'Анна30',
 			'Борис41',
@@ -477,8 +478,8 @@ describe('Table · серверный рендер', () => {
 	/** Атрибуты разметки база переносит на `table` и на сервере: там роль и имя таблицы. */
 	it('атрибуты потребителя — на table, а не на окне', async () => {
 		const page = await serverPage(TablePage)
-		const viewport = page.querySelector('so-table')
-		const table = page.querySelector('so-table > table.so-table')
+		const viewport = page.querySelector('[so-table]')
+		const table = page.querySelector('[so-table] > table.so-table')
 
 		expect(table?.getAttribute('aria-label')).toBe('Сотрудники')
 		expect(table?.getAttribute('data-probe')).toBe('1')
@@ -525,8 +526,8 @@ describe('Table · гидратация', () => {
 
 		await app.whenStable()
 
-		const viewport = document.querySelector('so-table')
-		const table = document.querySelector('so-table > table.so-table')
+		const viewport = document.querySelector('[so-table]')
+		const table = document.querySelector('[so-table] > table.so-table')
 
 		expect(table?.getAttribute('aria-label')).toBe('Сотрудники')
 		expect(table?.getAttribute('data-probe')).toBe('1')
@@ -567,7 +568,7 @@ describe('Table · гидратация', () => {
 	selector: 'app-root',
 	standalone: true,
 	imports: [TListBoxComponent, TVirtualComponent],
-	template: `<so-virtual><so-list-box [items]="items"></so-list-box></so-virtual>`,
+	template: `<so-virtual><div so-list-box [items]="items"></div></so-virtual>`,
 })
 class VirtualPage {
 	readonly items = Array.from({ length: 80 }, (_, index) => ({
@@ -631,14 +632,14 @@ describe('Virtual · серверный рендер и гидратация', (
 		TAccordionItemComponent,
 	],
 	template: `<so-drag-and-drop>
-		<so-tabs>
-			<so-tabs-item value="a" text="A" active />
-			<so-tabs-item value="b" text="B" />
-		</so-tabs>
-		<so-list-box [items]="items"></so-list-box>
+		<div so-tabs>
+			<div so-tabs-item value="a" text="A" active></div>
+			<div so-tabs-item value="b" text="B"></div>
+		</div>
+		<div so-list-box [items]="items"></div>
 		<div so-accordion>
-			<so-accordion-item value="a" text="A">Содержимое A</so-accordion-item>
-			<so-accordion-item value="b" text="B">Содержимое B</so-accordion-item>
+			<div so-accordion-item value="a" text="A">Содержимое A</div>
+			<div so-accordion-item value="b" text="B">Содержимое B</div>
 		</div>
 	</so-drag-and-drop>`,
 })

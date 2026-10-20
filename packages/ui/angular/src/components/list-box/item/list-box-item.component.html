@@ -1,7 +1,8 @@
 <!--
-	Корень — сам хост (`<so-list-box-item>`), строка — `Button` на `div`,
-	помечена `#control`: на неё база переносит статические атрибуты
-	потребителя, а директива набора кладёт `aria` и `dataset` элемента. Слоты
+	Корень — сам хост (`<div so-list-box-item>`), строка — `Button` на `div`,
+	помечена `#control`: на неё ложится то, что потребитель написал на корне,
+	кроме класса и стиля, а директива набора кладёт `aria` и `dataset` элемента.
+	Слоты
 	контракта: leading, default (scope { text, selected }), trailing,
 	indicator-icon (scope { selected }).
 
