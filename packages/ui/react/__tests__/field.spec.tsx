@@ -5,9 +5,9 @@
  * адаптере есть. Части — разметка поля: часть стоит, пока задан её текст,
  * ошибка — при `invalid` и на месте подсказки. С контролом поле связывает
  * проводка: поле опускает связку по лифту (`Elevate`), контрол её берёт.
- * Labelable-контрол (Input, CheckBox, Switch, Rating, Slider с одной ручкой)
- * подпись называет своим `for`, группу (RadioGroup, Slider с несколькими
- * ручками) — ссылкой `aria-labelledby`. Справку контрол получает в
+ * Labelable-контрол (Input, NumberInput, CheckBox, Switch, Rating, Slider с
+ * одной ручкой) подпись называет своим `for`, группу (RadioGroup, Slider с
+ * несколькими ручками) — ссылкой `aria-labelledby`. Справку контрол получает в
  * `aria-describedby`, ошибку — `aria-invalid` и `data-invalid` на своём корне.
  *
  * Своё у React — момент приёма: контрол сообщает полю о себе при коммите, а
@@ -24,7 +24,17 @@ import { StrictMode, act, useState, type ReactElement, type ReactNode } from 're
 import { hydrateRoot } from 'react-dom/client'
 import { renderToString } from 'react-dom/server'
 import { TField, TInput, TSlider } from '@soldy-ui/core'
-import { CheckBox, Field, Input, Label, RadioGroup, Rating, Slider, Switch } from '@soldy-ui/react'
+import {
+	CheckBox,
+	Field,
+	Input,
+	Label,
+	NumberInput,
+	RadioGroup,
+	Rating,
+	Slider,
+	Switch,
+} from '@soldy-ui/react'
 import { find, mount, nextFrame, track } from './mount'
 
 /** Подпись поля на странице; нет её — тест падает здесь. */
@@ -148,6 +158,7 @@ describe('Field · разметка', () => {
  */
 const LABELABLES: ReadonlyArray<readonly [string, () => ReactNode, string, string]> = [
 	['Input', () => <Input />, '.so-input', '.so-input input'],
+	['NumberInput', () => <NumberInput />, '.so-number-input', '.so-number-input__input'],
 	['CheckBox', () => <CheckBox />, '.so-check-box', '.so-check-box input'],
 	['Switch', () => <Switch />, '.so-switch', '.so-switch input'],
 	['Rating', () => <Rating />, '.so-rating', '.so-rating input'],

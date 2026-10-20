@@ -18,6 +18,7 @@ import {
 	type DrawerProps,
 	type FrameProps,
 	type InputProps,
+	type NumberInputProps,
 	type PaginationProps,
 	type PopoverProps,
 	type ProgressLinearProps,
@@ -195,9 +196,10 @@ describe('содержимое — только слот default', () => {
 	 *
 	 * Тип проверяет не vitest, а шаг CI «Типы — React».
 	 */
-	it('у CheckBox и Input children нет, у Frame — есть: его разметка содержимое рисует', () => {
+	it('у CheckBox, Input и NumberInput children нет, у Frame — есть: его разметка содержимое рисует', () => {
 		expectTypeOf<CheckBoxProps>().not.toHaveProperty('children')
 		expectTypeOf<InputProps>().not.toHaveProperty('children')
+		expectTypeOf<NumberInputProps>().not.toHaveProperty('children')
 		expectTypeOf<FrameProps>().toHaveProperty('children')
 		expectTypeOf<FrameProps['children']>().toEqualTypeOf<ReactNode>()
 	})
