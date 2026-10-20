@@ -50,6 +50,7 @@ import {
 	Switch,
 	Table,
 	Tabs,
+	Textarea,
 	toControlAttrs,
 	toRootForward,
 	toRootLayout,
@@ -81,6 +82,7 @@ import {
 	type TabsContentProps,
 	type TabsItemProps,
 	type TabsProps,
+	type TextareaProps,
 } from '@soldy-ui/solid'
 import { find, mount, nextFrame } from './mount'
 
@@ -184,18 +186,22 @@ const ITEMS: ReadonlyArray<readonly [string, Component<TItemProbeProps>, string,
 ]
 
 /** Общие пропсы полей в таблице. */
-type TFieldProbeProps = CheckBoxProps & SwitchProps & InputProps
+type TFieldProbeProps = CheckBoxProps & SwitchProps & InputProps & TextareaProps
 
 /**
  * Поле и класс его корня. Атрибуты потребителя поле делит, как у Vue: класс и
- * стиль — корню, остальное — `<input>`, поверх его набора `aria`. Корень
- * остаётся за адаптером и у него.
+ * стиль — корню, остальное — `<input>` (у Textarea — `<textarea>`), поверх его
+ * набора `aria`. Корень остаётся за адаптером и у него.
  */
 const FIELDS: ReadonlyArray<readonly [string, Component<TFieldProbeProps>, string]> = [
 	['CheckBox', CheckBox, '.so-check-box'],
 	['Switch', Switch, '.so-switch'],
 	['Input', Input, '.so-input'],
+	['Textarea', Textarea, '.so-textarea'],
 ]
+
+/** Поле внутри корня: `<input>`, у Textarea — `<textarea>`. */
+const CONTROL = 'input, textarea'
 
 describe('атрибут снаружи перекрывает набор ядра', () => {
 	/** `dir` ядро пишет в `attrs` по `direction`, а `dir` снаружи — атрибут потребителя. */
@@ -250,12 +256,12 @@ describe('атрибут снаружи перекрывает набор ядр
 	})
 })
 
-describe('поле: атрибуты снаружи — <input>, поверх его aria', () => {
+describe('поле: атрибуты снаружи — полю, поверх его aria', () => {
 	/** Имя полю пишет плагин доступного имени в `aria`, а `aria-label` снаружи — атрибут потребителя. */
 	it.each(FIELDS)('%s: aria-label потребителя — поверх имени поля', (_name, Probe, selector) => {
 		mount(() => <Probe aria_label="Ядро" aria-label="Своё" />)
 
-		const field = find(document, `${selector} input`, HTMLInputElement)
+		const field = find(find(document, selector, HTMLElement), CONTROL, HTMLElement)
 
 		expect(field.getAttribute('aria-label')).toBe('Своё')
 		expect(find(document, selector, HTMLElement).hasAttribute('aria-label')).toBe(false)
@@ -265,7 +271,7 @@ describe('поле: атрибуты снаружи — <input>, поверх е
 		mount(() => <Probe class="mine" style={{ color: 'red' }} />)
 
 		const root = find(document, selector, HTMLElement)
-		const field = find(root, 'input', HTMLInputElement)
+		const field = find(root, CONTROL, HTMLElement)
 
 		expect([...root.classList].at(-1)).toBe('mine')
 		expect(root.style.color).toBe('red')
@@ -275,11 +281,12 @@ describe('поле: атрибуты снаружи — <input>, поверх е
 
 	/**
 	 * `ref` потребителя — не «остальное»: он получает корень поля, а не
-	 * `<input>`. До поля потребитель дойдёт от корня `querySelector`, а от поля
-	 * до корня — только по родителям, и этот путь ломается при правке разметки.
+	 * `<input>` или `<textarea>`. До поля потребитель дойдёт от корня
+	 * `querySelector`, а от поля до корня — только по родителям, и этот путь
+	 * ломается при правке разметки.
 	 */
 	it.each(FIELDS)(
-		'%s: ref потребителя — корень, а не <input>; element:ready — с корнем',
+		'%s: ref потребителя — корень, а не поле; element:ready — с корнем',
 		async (_name, Probe, selector) => {
 			const nodes: Element[] = []
 			const ready: Element[] = []
@@ -295,7 +302,7 @@ describe('поле: атрибуты снаружи — <input>, поверх е
 			const root = find(document, selector, HTMLElement)
 
 			expectNodes(nodes, [root])
-			expect(nodes).not.toContain(find(root, 'input', HTMLInputElement))
+			expect(nodes).not.toContain(find(root, CONTROL, HTMLElement))
 			expectNodes(ready, [root])
 		},
 	)
@@ -303,11 +310,11 @@ describe('поле: атрибуты снаружи — <input>, поверх е
 	/**
 	 * Тема красит коробку поля и подпись поля формы `Field` по корню поля —
 	 * прямому ребёнку обёртки контрола, — поэтому `dataset` (`data-disabled`,
-	 * `data-invalid`) — на корне, а ошибку скринридеру объявляет `<input>`.
+	 * `data-invalid`) — на корне, а ошибку скринридеру объявляет поле.
 	 * Ошибку контролу пишет поле формы.
 	 */
 	it.each(FIELDS)(
-		'%s: data-disabled и data-invalid — на корне, aria-invalid — у <input>',
+		'%s: data-disabled и data-invalid — на корне, aria-invalid — у поля',
 		(_name, Probe, selector) => {
 			mount(() => (
 				<Field invalid>
@@ -316,7 +323,7 @@ describe('поле: атрибуты снаружи — <input>, поверх е
 			))
 
 			const root = find(document, selector, HTMLElement)
-			const field = find(root, 'input', HTMLInputElement)
+			const field = find(root, CONTROL, HTMLElement)
 
 			expect(root.dataset['disabled']).toBe('true')
 			expect(root.dataset['invalid']).toBe('true')
@@ -671,6 +678,7 @@ const ROOTS: ReadonlyArray<
 	['CheckBox', (props) => <CheckBox {...props} />, '.so-check-box', '.so-check-box'],
 	['Switch', (props) => <Switch {...props} />, '.so-switch', '.so-switch'],
 	['Input', (props) => <Input {...props} />, '.so-input', '.so-input'],
+	['Textarea', (props) => <Textarea {...props} />, '.so-textarea', '.so-textarea'],
 	['Slider', (props) => <Slider {...props} />, '.so-slider', '.so-slider'],
 	['Rating', (props) => <Rating {...props} />, '.so-rating', '.so-rating'],
 	['Scroller', (props) => <Scroller {...props} />, '.so-scroller', '.so-scroller'],

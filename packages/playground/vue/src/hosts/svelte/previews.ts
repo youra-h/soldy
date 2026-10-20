@@ -2,6 +2,7 @@ import type { Component } from 'svelte'
 import AccordionPreview from './AccordionPreview.svelte'
 import ButtonPreview from './ButtonPreview.svelte'
 import CheckBoxPreview from './CheckBoxPreview.svelte'
+import DragAndDropPreview from './DragAndDropPreview.svelte'
 import FieldPreview from './FieldPreview.svelte'
 import IconPreview from './IconPreview.svelte'
 import InputPreview from './InputPreview.svelte'
@@ -13,6 +14,7 @@ import SkeletonPreview from './SkeletonPreview.svelte'
 import SwitchPreview from './SwitchPreview.svelte'
 import TablePreview from './TablePreview.svelte'
 import TabsPreview from './TabsPreview.svelte'
+import TextareaPreview from './TextareaPreview.svelte'
 import VirtualPreview from './VirtualPreview.svelte'
 
 /** Пропсы превью: пропы строки, `ctrl` с экземпляром ядра и колбэки событий хоста. */
@@ -40,6 +42,7 @@ export type TPreview = Component<TPreviewProps>
 export const PREVIEWS: Record<string, TPreview> = {
 	button: ButtonPreview,
 	input: InputPreview,
+	textarea: TextareaPreview,
 	'check-box': CheckBoxPreview,
 	switch: SwitchPreview,
 	label: LabelPreview,
@@ -52,5 +55,6 @@ export const PREVIEWS: Record<string, TPreview> = {
 	icon: IconPreview,
 	'progress-spinner': ProgressSpinnerPreview,
 	skeleton: SkeletonPreview,
+	'drag-and-drop': DragAndDropPreview,
 	virtual: VirtualPreview,
 }

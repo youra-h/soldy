@@ -28,6 +28,7 @@ import {
 	TSwitchElement,
 	TTabsElement,
 	TTabsItemElement,
+	TTextareaElement,
 } from '@soldy-ui/webc'
 
 /** Отрисовка коалесцируется в микротаске — ждём её перед проверкой. */
@@ -94,6 +95,12 @@ const CASES: Record<string, TCase> = {
 		owner: '[is="so-input"]',
 		target: 'input',
 		before: '.before',
+	},
+	Textarea: {
+		html: '<div is="so-textarea"></div>',
+		element: TTextareaElement,
+		owner: '[is="so-textarea"]',
+		target: 'textarea',
 	},
 	CheckBox: {
 		html: '<span is="so-check-box"></span>',

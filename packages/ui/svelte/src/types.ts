@@ -3,7 +3,7 @@
  */
 
 import type { Snippet } from 'svelte'
-import type { HTMLAttributes, HTMLInputAttributes } from 'svelte/elements'
+import type { HTMLAttributes, HTMLInputAttributes, HTMLTextareaAttributes } from 'svelte/elements'
 import type { IEntity } from '@soldy-ui/core'
 import type {
 	IComponentDescriptor,
@@ -107,6 +107,19 @@ export type TFieldAttributes = Omit<
 >
 
 /**
+ * Атрибуты `<textarea>` Textarea — как `TFieldAttributes` у `<input>`: всё,
+ * кроме того, что поле ведёт само. Текст разметка берёт из состояния ядра, а
+ * умолчание (`defaultValue` — в обоих регистрах, как его объявляет Svelte)
+ * переписало бы то, что поле показывает из ядра. `readonly` и `maxlength` —
+ * входы дескриптора: имена у пропа и атрибута одни, и `TDomAttributes`
+ * вычитает их и так.
+ */
+export type TTextareaAttributes = Omit<
+	HTMLTextareaAttributes,
+	'defaultValue' | 'defaultvalue' | 'readonly' | 'maxlength'
+>
+
+/**
  * Корень компонента — связываемый проп `ref` (`<Button bind:ref={button}>`):
  * `bind:this` у компонента Svelte даёт его экземпляр, а не узел. `ref` — не
  * атрибут: компонент берёт его из `$props()` сам, и ни на корень, ни на
@@ -125,7 +138,8 @@ export type TRootRefProps = {
  * (`TRootRefProps`).
  *
  * Атрибуты по умолчанию — `HTMLAttributes` корня; поля берут
- * `TFieldAttributes`: всё, кроме класса и стиля, у них уходит на `<input>`.
+ * `TFieldAttributes` (Textarea — `TTextareaAttributes`): всё, кроме класса и
+ * стиля, у них уходит на `<input>` или `<textarea>`.
  * Button берёт атрибуты кнопки (`HTMLButtonAttributes`): его корень по
  * умолчанию — `<button>`, и `type`, `form`, `name`, `value` доходят до неё —
  * так деталь разметки библиотеки ставит себе `type="button"`.

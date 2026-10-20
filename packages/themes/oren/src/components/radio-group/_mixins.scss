@@ -1,4 +1,5 @@
 @use 'sass:map';
+@use '../../mixins/boundary';
 @use '../../mixins/caption';
 @use '../../mixins/hover';
 
@@ -32,18 +33,18 @@ $sizes: (
 
 // Цвет варианта.
 //
-// Кольцо — ступень рамки, как у коробки CheckBox. Отметка выбранного — `color`
-// контрола: точку и толстое кольцо вид рисует через `currentColor`. Поэтому
-// вид решает только геометрию отметки, вариант — только её цвет, и матрицы
-// «вид × вариант» нет.
+// Кольцо — граница контрола, как рамка коробки CheckBox (`radio-ring`).
+// Отметка выбранного — `color` контрола: точку и толстое кольцо вид рисует
+// через `currentColor`. Поэтому вид решает только геометрию отметки, вариант —
+// только её цвет, и матрицы «вид × вариант» нет.
 //
 // Цвет отметки — тот же, что у отметки CheckBox: цвет семейства графикой на
 // поверхности (`--so-component-graphic-*`). Точка стоит на поверхности
 // контрола, толстое кольцо вида `ring` — ещё и на странице или панели, и обеим
 // нужно 3:1 к ним (WCAG 1.4.11). Радио и флажок стоят в форме рядом, и
 // отметка одного варианта у них одного цвета.
-@mixin radio-variant($this, $color: 'neutral', $ring: 300, $bg-disabled: 50) {
-	@include radio-ring($this, $color, $ring);
+@mixin radio-variant($this, $color: 'neutral', $bg-disabled: 50) {
+	@include radio-ring($this, $color);
 
 	> #{$this}__control {
 		color: var(--so-component-graphic-#{$color});
@@ -56,13 +57,14 @@ $sizes: (
 
 // Кольцо — в покое и под наведением. Его одно красит и ошибка группы
 // (`data-invalid`): отметка выбранного остаётся цветом варианта.
-@mixin radio-ring($this, $color, $ring: 300) {
-	// Одна ветка на обе схемы — см. комментарий в button/_mixins.scss
-	$ring-hover: $ring + 100;
-
+//
+// Кольцо — граница контрола (`mixins/_boundary.scss`), та же, что рамка
+// коробки CheckBox: невыбранное радио узнают только по нему, а радио и флажок
+// стоят в форме рядом. Под наведением — на ступень дальше от поверхности.
+@mixin radio-ring($this, $color) {
 	> #{$this}__control {
 		// Обычное объявление, не `@apply border-s-…` — почему, см. input/_mixins.scss
-		border-color: var(--so-#{$color}-#{$ring});
+		border-color: boundary.color($color);
 	}
 
 	// Наведение — только там, где клик что-то сделает: выбранное радио
@@ -81,6 +83,6 @@ $sizes: (
 			[data-disabled='true']
 		)
 		> #{$this}__control {
-		border-color: var(--so-#{$color}-#{$ring-hover});
+		border-color: boundary.color($color, 100);
 	}
 }

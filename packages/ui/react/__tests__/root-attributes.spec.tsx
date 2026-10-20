@@ -26,7 +26,14 @@ import { describe, it, expect, vi } from 'vitest'
 import { StrictMode, act, createRef, type ComponentType, type ReactNode, type Ref } from 'react'
 import { hydrateRoot } from 'react-dom/client'
 import { renderToString } from 'react-dom/server'
-import { TButton, TCheckBox, TInput, TSwitch, type TTableColumnSource } from '@soldy-ui/core'
+import {
+	TButton,
+	TCheckBox,
+	TInput,
+	TSwitch,
+	TTextarea,
+	type TTableColumnSource,
+} from '@soldy-ui/core'
 import {
 	Accordion,
 	Button,
@@ -38,12 +45,18 @@ import {
 	Input,
 	Label,
 	ListBox,
+	Pagination,
+	ProgressLinear,
 	ProgressSpinner,
 	RadioGroup,
+	Rating,
+	Scroller,
 	Skeleton,
+	Slider,
 	Switch,
 	Table,
 	Tabs,
+	Textarea,
 	type AccordionItemProps,
 	type AccordionProps,
 	type ButtonProps,
@@ -54,10 +67,15 @@ import {
 	type LabelProps,
 	type ListBoxItemProps,
 	type ListBoxProps,
+	type PaginationProps,
+	type ProgressLinearProps,
 	type ProgressSpinnerProps,
 	type RadioGroupItemProps,
 	type RadioGroupProps,
+	type RatingProps,
+	type ScrollerProps,
 	type SkeletonProps,
+	type SliderProps,
 	type TableProps,
 	type TabsContentProps,
 	type TabsItemProps,
@@ -76,12 +94,17 @@ type TProbeProps = ButtonProps &
 	FrameProps &
 	IconProps &
 	LabelProps &
+	ProgressLinearProps &
 	ProgressSpinnerProps &
 	SkeletonProps &
 	TabsProps &
 	AccordionProps &
 	RadioGroupProps &
-	TabsContentProps
+	TabsContentProps &
+	SliderProps &
+	RatingProps &
+	PaginationProps &
+	ScrollerProps
 
 /** Панель рисуется, пока активен её таб, — и только внутри набора. */
 function TabsContentProbe(props: TabsContentProps): ReactNode {
@@ -106,11 +129,16 @@ const COMPONENTS: ReadonlyArray<
 	['Frame', Frame, '.so-frame', {}],
 	['Icon', Icon, '.so-icon', { tag: 'i' }],
 	['Label', Label, '.so-label', {}],
+	['ProgressLinear', ProgressLinear, '.so-progress-linear', {}],
 	['ProgressSpinner', ProgressSpinner, '.so-progress-spinner', {}],
 	['Skeleton', Skeleton, '.so-skeleton', {}],
 	['Tabs.Content', TabsContentProbe, '.so-tabs__panel', {}],
 	['Accordion', Accordion, '.so-accordion', {}],
 	['RadioGroup', RadioGroup, '.so-radio-group', {}],
+	['Slider', Slider, '.so-slider', {}],
+	['Rating', Rating, '.so-rating', {}],
+	['Pagination', Pagination, '.so-pagination', {}],
+	['Scroller', Scroller, '.so-scroller', {}],
 ]
 
 /** Общие пропсы элементов коллекций в таблице. */
@@ -218,21 +246,30 @@ const FIELDS: ReadonlyArray<readonly [string, () => ReactNode, string]> = [
 		'.so-check-box',
 	],
 	['Switch', () => <Switch ctrl={invalid(new TSwitch({ disabled: true }))} />, '.so-switch'],
+	[
+		'Textarea',
+		() => <Textarea ctrl={invalid(new TTextarea({ disabled: true }))} />,
+		'.so-textarea',
+	],
 ]
+
+/** Поле внутри корня: `<input>`, у Textarea — `<textarea>`. */
+const CONTROL = 'input, textarea'
 
 /**
  * Тема красит коробку поля и подпись поля формы `Field` по корню поля —
  * прямому ребёнку обёртки контрола, — поэтому `dataset` (`data-disabled`,
- * `data-invalid`) — на корне, а ошибку скринридеру объявляет `<input>`.
+ * `data-invalid`) — на корне, а ошибку скринридеру объявляет поле: `<input>`,
+ * у Textarea — `<textarea>`.
  */
-describe('поле: dataset — на корне, aria — у <input>', () => {
+describe('поле: dataset — на корне, aria — у поля', () => {
 	it.each(FIELDS)(
-		'%s: data-disabled и data-invalid — на корне, aria-invalid — у <input>',
+		'%s: data-disabled и data-invalid — на корне, aria-invalid — у поля',
 		(_name, draw, selector) => {
 			mount(<>{draw()}</>)
 
 			const root = find(document, selector, HTMLElement)
-			const input = find(root, 'input', HTMLInputElement)
+			const input = find(root, CONTROL, HTMLElement)
 
 			expect(root.dataset['disabled']).toBe('true')
 			expect(root.dataset['invalid']).toBe('true')
@@ -365,13 +402,24 @@ const ROOTS: ReadonlyArray<
 	['Icon', (props) => <Icon tag="i" {...props} />, '.so-icon', '.so-icon'],
 	['Label', (props) => <Label {...props} />, '.so-label', '.so-label'],
 	[
+		'ProgressLinear',
+		(props) => <ProgressLinear {...props} />,
+		'.so-progress-linear',
+		'.so-progress-linear',
+	],
+	[
 		'ProgressSpinner',
 		(props) => <ProgressSpinner {...props} />,
 		'.so-progress-spinner',
 		'.so-progress-spinner',
 	],
 	['Skeleton', (props) => <Skeleton {...props} />, '.so-skeleton', '.so-skeleton'],
+	['Slider', (props) => <Slider {...props} />, '.so-slider', '.so-slider'],
+	['Rating', (props) => <Rating {...props} />, '.so-rating', '.so-rating'],
+	['Pagination', (props) => <Pagination {...props} />, '.so-pagination', '.so-pagination'],
+	['Scroller', (props) => <Scroller {...props} />, '.so-scroller', '.so-scroller'],
 	['Input', (props) => <Input {...props} />, '.so-input', '.so-input'],
+	['Textarea', (props) => <Textarea {...props} />, '.so-textarea', '.so-textarea'],
 	['CheckBox', (props) => <CheckBox {...props} />, '.so-check-box', '.so-check-box'],
 	['Switch', (props) => <Switch {...props} />, '.so-switch', '.so-switch'],
 	['Tabs', (props) => <Tabs {...props} />, '.so-tabs', '.so-tabs'],
@@ -413,9 +461,9 @@ const ROOTS: ReadonlyArray<
 	],
 ]
 
-/** Поля: `ref` потребителя — корень, а не `<input>`. */
+/** Поля: `ref` потребителя — корень, а не `<input>` или `<textarea>`. */
 const FIELD_ROOTS = ROOTS.filter(([name]) =>
-	['Input', 'CheckBox', 'Switch', 'RadioGroup.Item'].includes(name),
+	['Input', 'Textarea', 'CheckBox', 'Switch', 'RadioGroup.Item'].includes(name),
 )
 
 /** Узлы, которые получила `ref`-функция потребителя, — по порядку вызовов. */
@@ -490,7 +538,7 @@ describe('ref потребителя — корень компонента', () 
 		},
 	)
 
-	it.each(FIELD_ROOTS)('%s: ref — корень, а не <input>', (_name, draw, selector) => {
+	it.each(FIELD_ROOTS)('%s: ref — корень, а не поле', (_name, draw, selector) => {
 		const probe = refProbe()
 
 		mount(<>{draw({ ref: probe.ref })}</>)
@@ -498,7 +546,7 @@ describe('ref потребителя — корень компонента', () 
 		const root = find(document, selector, Element)
 
 		expect(probe.nodes[0]).toBe(root)
-		expect(probe.nodes).not.toContain(find(root, 'input', HTMLInputElement))
+		expect(probe.nodes).not.toContain(find(root, CONTROL, HTMLElement))
 	})
 
 	/** Смена тега пересоздаёт узел: прежний корень потребитель отпускает, новый получает. */
@@ -805,6 +853,13 @@ describe('раскладка корня: стиль-выход компонен�
 		const { root } = mount(<ProgressSpinner value={40} style={consumer} />)
 
 		expect(root().style.getPropertyValue('--so-progress-spinner-fraction')).toBe('0.9')
+	})
+
+	it('ProgressLinear: стиль потребителя — поверх доли', () => {
+		const percent: Record<string, string> = { '--so-progress-linear-percent': '90%' }
+		const { root } = mount(<ProgressLinear value={40} style={percent} />)
+
+		expect(root().style.getPropertyValue('--so-progress-linear-percent')).toBe('90%')
 	})
 
 	it('ProgressSpinner: display: none скрытого корня — поверх стиля потребителя и доли', () => {

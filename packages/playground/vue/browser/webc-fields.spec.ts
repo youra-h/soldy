@@ -1,7 +1,7 @@
 /**
  * Поля и подпись Web Components в настоящем браузере: `<div is="so-input">`,
- * `<span is="so-check-box">`, `<span is="so-switch">`, `<label is="so-label">`
- * и поле формы `<div is="so-field">`.
+ * `<div is="so-textarea">`, `<span is="so-check-box">`, `<span is="so-switch">`,
+ * `<label is="so-label">` и поле формы `<div is="so-field">`.
  *
  * Корень — элемент потребителя, а `<input>` — узел шаблона в обычном DOM
  * страницы, и всё, что браузер делает с полем, он делает сам: печать с
@@ -21,7 +21,7 @@ import { userEvent } from 'vitest/browser'
 import { defineComponent, h, nextTick } from 'vue'
 import { COMPONENT_SIZES } from '@soldy-ui/playground-shared'
 import type { TFieldPosition } from '@soldy-ui/core'
-import { CheckBox, Field, Input, Switch } from '@soldy-ui/vue'
+import { CheckBox, Field, Input, Switch, Textarea } from '@soldy-ui/vue'
 import { TInputElement, type TInputElementProps } from '@soldy-ui/webc'
 
 import '@soldy-ui/theme-oren'
@@ -176,6 +176,20 @@ describe.each(COMPONENT_SIZES)('размер %s — как у Vue', (scale) => {
 		)
 
 		for (const part of ['.so-input', '.so-input input', '.so-input__clear']) {
+			const vue = size(find(document, `.vue ${part}`, HTMLElement))
+
+			expect(vue.width).toBeGreaterThan(0)
+			expect(size(find(root, `.webc ${part}`, HTMLElement))).toEqual(vue)
+		}
+	})
+
+	it('Textarea: корень, поле и счётчик', async () => {
+		const root = await pair(
+			() => h(Textarea, { size: scale, value: 'текст', maxlength: 200, counter: true }),
+			`<div is="so-textarea" size="${scale}" value="текст" maxlength="200" counter></div>`,
+		)
+
+		for (const part of ['.so-textarea', '.so-textarea textarea', '.so-textarea__counter']) {
 			const vue = size(find(document, `.vue ${part}`, HTMLElement))
 
 			expect(vue.width).toBeGreaterThan(0)

@@ -26,9 +26,10 @@ import {
 	TSwitch,
 	TTabs,
 	TTabsItem,
+	TTextarea,
 	createEngineTabs,
 } from '@soldy-ui/core'
-import { CheckBox, Input, ListBox, Switch, Tabs } from '@soldy-ui/svelte'
+import { CheckBox, Input, ListBox, Switch, Tabs, Textarea } from '@soldy-ui/svelte'
 import AccordionHarness from './Accordion.test.svelte'
 import ListBoxHarness from './ListBox.test.svelte'
 import RadioGroupHarness from './RadioGroup.test.svelte'
@@ -69,6 +70,16 @@ const CASES: Record<string, TCase> = {
 		},
 		target: 'input',
 		before: '.before',
+	},
+	Textarea: {
+		render: () => {
+			const ctrl = new TTextarea()
+
+			mount(Textarea, { ctrl })
+
+			return ctrl
+		},
+		target: 'textarea',
 	},
 	CheckBox: {
 		render: () => {

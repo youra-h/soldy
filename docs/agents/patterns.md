@@ -250,7 +250,9 @@ ARIA пускает только `option` и `group` (axe — `aria-required-chi
   чекбоксе он дубль `checked`. «Выбрано частично» у CheckBox — DOM-свойство
   `indeterminate` вложенного `<input>`, его проводит разметка, как `checked`,
   а не `aria-checked="mixed"`. У разметки React привязки свойства DOM нет, и
-  `checked`, `indeterminate` и текст поля Input проводит поле адаптера
+  `checked`, `indeterminate`, текст поля Input и значение поля ползунка
+  (`input[type="range"]` Slider и Rating — ядро отдаёт его числом, в узел оно
+  уходит строкой, как `:value` у Vue) проводит поле адаптера
   `NativeInput` (`ui/react/src/adapter/runtime/`): умолчание — атрибутом
   (`defaultChecked`, `defaultValue` — это и серверная разметка), свойство — в
   узел после коммита, когда сменилось состояние ядра. Текст — только если
@@ -261,11 +263,13 @@ ARIA пускает только `option` и `group` (axe — `aria-required-chi
   поля React (`value` или `checked` с `onChange`) нет: `onChange` писал бы
   значение вторым путём рядом с плагинами ввода, а без него React ругается в
   консоль. Сторожат `ui/react/__tests__/input.spec.tsx`,
-  `ui/react/__tests__/checkable.spec.tsx` и
+  `ui/react/__tests__/checkable.spec.tsx`,
   `ui/react/__tests__/radio-group.spec.tsx` («радио, с которого отметку сняло
-  значение снаружи, выбирается снова»). У Svelte своего поля нет: `checked` и
-  `indeterminate` он пишет свойствами узла сам, а на сервере — атрибутами (HTML
-  из них знает только `checked`, «выбрано частично» встаёт с гидратацией).
+  значение снаружи, выбирается снова») и `ui/react/__tests__/slider.spec.tsx`
+  («жест скринридера — шаг ядра; ядро отказало — поле возвращается»). У Svelte
+  своего поля нет: `checked` и `indeterminate` он пишет свойствами узла сам, а
+  на сервере — атрибутами (HTML из них знает только `checked`, «выбрано
+  частично» встаёт с гидратацией).
   Текст — тоже свойством, но не спредом: наборы ядра и атрибуты потребителя
   ложатся на `<input>` спредом, а в спреде Svelte писал бы `value` на каждую
   смену значения, с узлом не сверяя, — набор возвращал бы узлу его же текст, и
@@ -438,17 +442,27 @@ ARIA пускает только `option` и `group` (axe — `aria-required-chi
   объявлял бы каждый символ. `id` счётчика — в его набор `counterAria`, а
   ссылку плагин связок (`TTextareaIdsPlugin`) пишет входом `parts` в
   `TAriaPlugin` поля: в `aria-describedby` она встаёт после справки поля
-  формы и перед своим `aria_describedBy`. Адаптеры: Vue. Сторожат
+  формы и перед своим `aria_describedBy`. Адаптеры: все шесть; разметка —
+  как у Input без слотов и кнопки очистки: корень по `tag` (в Angular —
+  элемент `<so-textarea>`, в Web Components — `<div is="so-textarea">`),
+  атрибуты потребителя делятся между корнем и `<textarea>`. Текст поля в узел
+  пишет помощник адаптера, только когда он разошёлся с узлом (`NativeTextarea`
+  у React, `textareaText` у Solid и Svelte, `[so-field-text]` у Angular,
+  привязка шаблона у Web Components), а на сервере текст — содержимое
+  `<textarea>`: атрибута `value` у неё нет. Сторожат
   `core/__tests__/textarea.spec.ts`,
   `plugins/__tests__/textarea-autoresize.plugin.spec.ts`,
   `plugins/__tests__/names.plugin.spec.ts`,
   `plugins/__tests__/ids.plugin.spec.ts` («счётчик Textarea»),
   `setup/__tests__/aria-plugin.spec.ts` («ссылки поля формы»),
-  `setup/__tests__/field-link.spec.ts`, `ui/vue/__tests__/textarea.spec.ts`,
-  `ui/vue/__tests__/ssr-ids.spec.ts`
-  и `playground/vue/browser/textarea.spec.ts` (рост до потолка и сжатие,
+  `setup/__tests__/field-link.spec.ts`, `textarea.spec.*` каждого адаптера
+  (у Solid и Svelte — и `textarea.server.spec.*`, у Angular сервер и
+  гидратацию — `fields.server.spec.ts`), спеки атрибутов корня адаптеров,
+  `ui/vue/__tests__/ssr-ids.spec.ts`,
+  `playground/vue/browser/textarea.spec.ts` (рост до потолка и сжатие,
   пересчёт от значения, ширины и размера, прокрутка страницы на вводе, Enter —
-  перевод строки, `rows="1"` — высота Input).
+  перевод строки, `rows="1"` — высота Input), `angular-host.spec.ts` и
+  `webc-fields.spec.ts` (поле стоит, как у Vue).
 - **Popover** — немодальный Dialog: `role="dialog"` на панели, имя —
   `aria_label` или `aria_labelledBy` (`TAriaPlugin`). Триггер — слот
   `trigger` внутри корня: корень служит панели якорем, а нажатие по открытому
@@ -1090,10 +1104,11 @@ useToasts()`. API опускает лифт (`TOASTS_ELEVATOR`, расширен
   `plugins/__tests__/slide-pointer.plugin.spec.ts`,
   `plugins/__tests__/slide-snap-strategies.spec.ts`,
   `plugins/__tests__/slide-keyboard.plugin.spec.ts`,
-  `ui/vue/__tests__/slider.spec.ts`, `ui/solid/__tests__/slider.spec.tsx`
-  (сверх сценариев Vue — ручки по месту и значение поля после хода, ниже) и
-  `playground/vue/browser/slider.spec.ts`; ползунок в поле формы —
-  `ui/vue/__tests__/field.spec.ts` и `ui/solid/__tests__/field.spec.tsx`
+  `ui/vue/__tests__/slider.spec.ts`, `ui/react/__tests__/slider.spec.tsx`,
+  `ui/solid/__tests__/slider.spec.tsx` (сверх сценариев Vue — ручки по месту и
+  значение поля после хода, ниже) и `playground/vue/browser/slider.spec.ts`;
+  ползунок в поле формы — `ui/vue/__tests__/field.spec.ts`,
+  `ui/react/__tests__/field.spec.tsx` и `ui/solid/__tests__/field.spec.tsx`
   («Slider с несколькими ручками в поле»), `playground/vue/browser/field.spec.ts`.
   **Solid**: выходы `thumbs` и `shownMarks` — новые записи на каждую смену, и
   петля идёт по месту (`Index`), как `:key="index"` у Vue: ручка остаётся тем
@@ -1149,11 +1164,12 @@ useToasts()`. API опускает лифт (`TOASTS_ELEVATOR`, расширен
   `plugins/__tests__/names.plugin.spec.ts`,
   `plugins/__tests__/rating-validity.plugin.spec.ts` (ошибка поля по оценке,
   обязательности, только для показа и локали, на новом узле, снятие),
-  `ui/vue/__tests__/rating.spec.ts`, `ui/solid/__tests__/rating.spec.tsx`
-  (сверх сценариев Vue — предпросмотр не пересоздаёт звёзды: петля по месту,
-  `Index`, как у ручек Slider) и `playground/vue/browser/rating.spec.ts`
-  (форма без оценки не уходит, сообщение и фокус от браузера, только для
-  показа уходит с 0, тон ошибки у пустых звёзд после попытки отправить).
+  `ui/vue/__tests__/rating.spec.ts`, `ui/react/__tests__/rating.spec.tsx`,
+  `ui/solid/__tests__/rating.spec.tsx` (сверх сценариев Vue — предпросмотр не
+  пересоздаёт звёзды: петля по месту, `Index`, как у ручек Slider) и
+  `playground/vue/browser/rating.spec.ts` (форма без оценки не уходит,
+  сообщение и фокус от браузера, только для показа уходит с 0, тон ошибки у
+  пустых звёзд после попытки отправить).
 - **NumberInput** — Spinbutton (APG) на текстовом поле: `<input type="text">`
   с `role="spinbutton"`, `aria-valuenow` и `aria-valuetext` — у числа (текст —
   строкой формата: «12 %», а не «0.12»), `aria-valuemin` и `aria-valuemax` —
@@ -1241,6 +1257,7 @@ useToasts()`. API опускает лифт (`TOASTS_ELEVATOR`, расширен
   рядом с `Highlight` во многих палитрах она почти того же цвета, и долю было
   не разглядеть. Сторожат `core/__tests__/progress-linear.spec.ts`,
   `ui/vue/__tests__/progress-linear.spec.ts`,
+  `ui/react/__tests__/progress-linear.spec.tsx`,
   `ui/solid/__tests__/progress-linear.spec.tsx` и
   `playground/vue/browser/progress-linear.spec.ts`; как бег и доля выглядят,
   оценивает глаз — ручные сценарии `/tests/motion/progress-linear` на стенде.
@@ -1546,7 +1563,9 @@ useToasts()`. API опускает лифт (`TOASTS_ELEVATOR`, расширен
   `core/__tests__/pagination.spec.ts`,
   `plugins/__tests__/names.plugin.spec.ts`,
   `plugins/__tests__/pagination-focus.plugin.spec.ts`,
-  `ui/vue/__tests__/pagination.spec.ts`, `ui/solid/__tests__/pagination.spec.tsx`
+  `ui/vue/__tests__/pagination.spec.ts`,
+  `ui/react/__tests__/pagination.spec.tsx` (в том числе окно и текущая в
+  серверной разметке и гидратация), `ui/solid/__tests__/pagination.spec.tsx`
   (сверх сценариев Vue — смена окна не зовёт слот страниц, оставшихся на
   экране), «Pagination» в `ui/solid/__tests__/collections.server.spec.tsx` и
   `playground/vue/browser/pagination.spec.ts` (фокус со стрелки, погасшей
@@ -2183,13 +2202,43 @@ useToasts()`. API опускает лифт (`TOASTS_ELEVATOR`, расширен
   плагин — движком и обёрткой. Фаз контекста нет: на шину обёртки никто не
   подписан, плагин уходит с набором коллекции. Своему поддереву коллекция
   опускает пустое: список в секции Accordion перестановку не наследует. Между
-  коллекциями обёртка не переносит. **Адаптеры**: Vue. Сторожат
+  коллекциями обёртка не переносит. **Адаптеры**: Vue, React, Solid, Svelte,
+  Angular и Web Components. События — в именах адаптера: `@move:before` и
+  `@move` у Vue, `onMoveBefore` и `onMove` у React, Solid и Svelte,
+  `(soMoveBefore)` и `(soMove)` у Angular, `so:move:before` и `so:move` у Web
+  Components (аргумент — `detail`, отмена — `preventDefault()` события). Обёртка
+  везде по образцу окна: у React и Solid своего узла нет — детям слой лифта
+  отдаёт `Elevate`, а пересобранная обёртка React (StrictMode, `<Activity>`)
+  опускает новый экземпляр, и коллекция пересобирается вслед за ней; у Svelte
+  узла тоже нет, экземпляр её проводка опускает контекстом при инициализации;
+  у Angular — `<so-drag-and-drop>` без бокса (`display: contents`) со своим
+  слоем лифта (`provideElevator()`); у Web Components — автономный
+  `<so-drag-and-drop>` без `is` и без коробки, коллекции — его свет, а
+  регистрирует его модуль раньше коллекций. Петля с ключом у элементов из
+  данных переставляет их узлы, и браузер шлёт `focusout` взятого посреди
+  отрисовки: у Svelte связка пишет такое состояние мимо слежения (см.
+  `ui/svelte/src/adapter/runtime/useAdapter.svelte.ts`). Сторожат
   `core/__tests__/drag-and-drop.spec.ts`,
   `plugins/__tests__/collection-elements.plugin.spec.ts`,
   «TDragAndDropCollectionExtension» в `setup/__tests__/adapter.spec.ts`,
-  `ui/vue/__tests__/drag-and-drop.spec.ts`, «превью drag-and-drop» в
-  `playground/vue/__tests__/smoke.spec.ts` и
-  `playground/vue/browser/drag-and-drop.spec.ts`.
+  `ui/vue/__tests__/drag-and-drop.spec.ts`,
+  `ui/react/__tests__/drag-and-drop.spec.tsx` (сверх сценариев Vue —
+  StrictMode, сервер с гидратацией), строки `DragAndDrop` в
+  `ui/react/__tests__/external-lifetime.spec.tsx`,
+  `ui/solid/__tests__/drag-and-drop.spec.tsx`,
+  `ui/svelte/__tests__/drag-and-drop.spec.ts`, «ядро меняется посреди
+  отрисовки Svelte» в `ui/svelte/__tests__/adapter.spec.ts`,
+  `ui/angular/__tests__/drag-and-drop.spec.ts` (обёртка без бокса),
+  `ui/webc/__tests__/drag-and-drop.spec.ts` (элемент без коробки, список,
+  вынутый из обёртки и вставленный обратно), «DragAndDrop» в
+  `ui/solid/__tests__/collections.server.spec.tsx`,
+  `ui/svelte/__tests__/collections.server.spec.ts` и
+  `ui/angular/__tests__/collections.server.spec.ts` (сервер — без
+  `draggable`, у Angular и гидратация), «превью drag-and-drop» в
+  `playground/vue/__tests__/smoke.spec.ts`, превью DragAndDrop в
+  `playground/vue/__tests__/webc-host.spec.ts` и
+  `playground/vue/browser/drag-and-drop.spec.ts` (и на странице стенда у
+  каждого фреймворка).
 
 **ComboBox отдельным компонентом не заводим.** Ark и Radix держат `Select` и
 `Combobox` врозь, потому что у них расходится модель значения: у select-only
