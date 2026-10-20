@@ -3,9 +3,13 @@ import { Frame } from '../frame'
 import { MenuGroup } from './group'
 import { MenuItem } from './item'
 import { MenuSeparator } from './separator'
+import { MenuSubmenu } from './submenu'
 import SetupMenu from './setup.component'
 
-export default { ...SetupMenu, components: { Frame, MenuGroup, MenuItem, MenuSeparator } }
+export default {
+	...SetupMenu,
+	components: { Frame, MenuGroup, MenuItem, MenuSeparator, MenuSubmenu },
+}
 </script>
 
 <template>
@@ -84,7 +88,7 @@ export default { ...SetupMenu, components: { Frame, MenuGroup, MenuItem, MenuSep
 			<div class="so-menu__list">
 				<slot>
 					<!--
-						Пункты из `items` — только действия: флажки ставят
+						Пункты из `items` — действия и подменю: флажки ставят
 						разметкой. Петля — по секциям показанных пунктов
 						(`sections`), ключ — ключ секции: группа с подписью — в
 						`MenuGroup`, пункты без группы — прямо в списке, между
@@ -94,38 +98,135 @@ export default { ...SetupMenu, components: { Frame, MenuGroup, MenuItem, MenuSep
 						на экране. Без групп секция одна — ни обёртки, ни
 						разделителя.
 
-						Пункт — по `uid`. Слоты пункта пробрасываются целиком: у
-						каждого есть `item-<слот>`, scope — scope слота пункта плюс
-						сам пункт (`item`). Проброс записан у пунктов группы и у
-						пунктов без неё: обёртка у них разная.
+						Пункт — по `uid`. Пункт с вложенным `items` — подменю из
+						данных: коллекция отдаёт его запись (`submenus`), и она
+						ложится в пропсы `MenuSubmenu` — пункт (`ctrl`) и движок его
+						пунктов (`engine`), — тем же входом, что у подменю
+						разметкой с движком снаружи. Остальные — действия.
+
+						Слоты пункта пробрасываются целиком: у каждого слота строки
+						есть `item-<слот>`, scope — scope слота строки плюс сам
+						пункт (`item`). `default` у действия — `item`, у подменю —
+						`item-content`: пусто — подменю рисует свои пункты из
+						данных. Свои `item` и `item-*` меню отдаёт подменю под теми
+						же именами — слоты одни на все уровни. Проброс записан у
+						пунктов группы и у пунктов без неё: обёртка у них разная.
 					-->
 					<template v-for="(section, index) in sections" :key="section.key">
 						<MenuSeparator v-if="groupSeparators && index > 0" />
 						<MenuGroup v-if="section.group" :label="section.group.label">
-							<MenuItem v-for="item in section.items" :key="item.uid" :ctrl="item">
-								<template #leading>
-									<slot name="item-leading" :item="item" />
-								</template>
-								<template #default="{ text }">
-									<slot name="item" :item="item" :text="text" />
-								</template>
-								<template #trailing>
-									<slot name="item-trailing" :item="item" />
-								</template>
-							</MenuItem>
+							<template v-for="item in section.items" :key="item.uid">
+								<MenuSubmenu v-if="submenus.has(item)" v-bind="submenus.get(item)">
+									<template #leading>
+										<slot name="item-leading" :item="item" />
+									</template>
+									<template #header="{ text, open }">
+										<slot
+											name="item-header"
+											:item="item"
+											:text="text"
+											:open="open"
+										/>
+									</template>
+									<template #arrow-icon>
+										<slot name="item-arrow-icon" :item="item" />
+									</template>
+									<template #default>
+										<slot name="item-content" :item="item" />
+									</template>
+									<template #item="{ item: child, text }">
+										<slot name="item" :item="child" :text="text" />
+									</template>
+									<template #item-leading="{ item: child }">
+										<slot name="item-leading" :item="child" />
+									</template>
+									<template #item-trailing="{ item: child }">
+										<slot name="item-trailing" :item="child" />
+									</template>
+									<template #item-header="{ item: child, text, open }">
+										<slot
+											name="item-header"
+											:item="child"
+											:text="text"
+											:open="open"
+										/>
+									</template>
+									<template #item-arrow-icon="{ item: child }">
+										<slot name="item-arrow-icon" :item="child" />
+									</template>
+									<template #item-content="{ item: child }">
+										<slot name="item-content" :item="child" />
+									</template>
+								</MenuSubmenu>
+								<MenuItem v-else :ctrl="item">
+									<template #leading>
+										<slot name="item-leading" :item="item" />
+									</template>
+									<template #default="{ text }">
+										<slot name="item" :item="item" :text="text" />
+									</template>
+									<template #trailing>
+										<slot name="item-trailing" :item="item" />
+									</template>
+								</MenuItem>
+							</template>
 						</MenuGroup>
 						<template v-else>
-							<MenuItem v-for="item in section.items" :key="item.uid" :ctrl="item">
-								<template #leading>
-									<slot name="item-leading" :item="item" />
-								</template>
-								<template #default="{ text }">
-									<slot name="item" :item="item" :text="text" />
-								</template>
-								<template #trailing>
-									<slot name="item-trailing" :item="item" />
-								</template>
-							</MenuItem>
+							<template v-for="item in section.items" :key="item.uid">
+								<MenuSubmenu v-if="submenus.has(item)" v-bind="submenus.get(item)">
+									<template #leading>
+										<slot name="item-leading" :item="item" />
+									</template>
+									<template #header="{ text, open }">
+										<slot
+											name="item-header"
+											:item="item"
+											:text="text"
+											:open="open"
+										/>
+									</template>
+									<template #arrow-icon>
+										<slot name="item-arrow-icon" :item="item" />
+									</template>
+									<template #default>
+										<slot name="item-content" :item="item" />
+									</template>
+									<template #item="{ item: child, text }">
+										<slot name="item" :item="child" :text="text" />
+									</template>
+									<template #item-leading="{ item: child }">
+										<slot name="item-leading" :item="child" />
+									</template>
+									<template #item-trailing="{ item: child }">
+										<slot name="item-trailing" :item="child" />
+									</template>
+									<template #item-header="{ item: child, text, open }">
+										<slot
+											name="item-header"
+											:item="child"
+											:text="text"
+											:open="open"
+										/>
+									</template>
+									<template #item-arrow-icon="{ item: child }">
+										<slot name="item-arrow-icon" :item="child" />
+									</template>
+									<template #item-content="{ item: child }">
+										<slot name="item-content" :item="child" />
+									</template>
+								</MenuSubmenu>
+								<MenuItem v-else :ctrl="item">
+									<template #leading>
+										<slot name="item-leading" :item="item" />
+									</template>
+									<template #default="{ text }">
+										<slot name="item" :item="item" :text="text" />
+									</template>
+									<template #trailing>
+										<slot name="item-trailing" :item="item" />
+									</template>
+								</MenuItem>
+							</template>
 						</template>
 					</template>
 				</slot>

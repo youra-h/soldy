@@ -10,6 +10,7 @@ import type {
 } from '../types'
 import type { IMenuItem } from '../../item/types'
 import type { IMenuOwner } from '../../types'
+import type { TMenuSubmenuEntries } from '../extensions'
 
 /**
  * Фасад коллекции меню.
@@ -18,7 +19,9 @@ import type { IMenuOwner } from '../../types'
  * группы пунктов и секции показанного, по которым меню рисует пункты с
  * подписями групп и — пока их просит меню (`groupSeparators`) —
  * разделителями. Своё — проброс расширения `menu`: событие `choose`, нажатие
- * пункта-действия.
+ * пункта-действия, — и подменю из данных (`submenus`, расширение
+ * `submenus`): пункт и движок его пунктов, из которых разметка собирает
+ * `Menu.Submenu`.
  *
  * Выбор у меню — отметки флажков, и режим у него всегда `multiple`: флажки
  * отмечаются независимо. Свой движок получает режим от `menuExtensions`, а
@@ -54,7 +57,17 @@ export class TMenuCollectionFacade extends TGroupCollectionFacade<
 		this.extensions.selection.mode = 'multiple'
 
 		this.events.relayAll(this.extensions.menu.events)
+		this.events.relayAll(this.extensions.submenus.events)
 
 		this.applyProps(props)
+	}
+
+	/**
+	 * Подменю из данных по пункту: пункт (`ctrl`) и движок его пунктов
+	 * (`engine`) — их разметка раскладывает в пропсы `Menu.Submenu`. Снимок: на
+	 * каждую смену новый
+	 */
+	get submenus(): TMenuSubmenuEntries {
+		return this.extensions.submenus.entries
 	}
 }

@@ -18,7 +18,17 @@ import {
 	isMenuSubmenu,
 	menuOf,
 } from '@soldy-ui/core'
-import type { IMenuItem, TGroupSection, TMenuRadioGroupValue } from '@soldy-ui/core'
+import type {
+	IMenuItem,
+	IMenuItemSource,
+	TGroupSection,
+	TInsertEvent,
+	TMenuCollection,
+	TMenuRadioGroupValue,
+	TMenuSubmenuEntries,
+	TMenuSubmenuEntry,
+	TUpdateEvent,
+} from '@soldy-ui/core'
 
 /**
  * Модель Menu: состояние меню и то, что из него следует для разметки, и
@@ -919,6 +929,358 @@ describe('фасад подменю', () => {
 
 		expect(choose).toHaveBeenCalledWith(itemOf(facade.items, 'link'))
 		expect(share.open).toBe(false)
+	})
+})
+
+/**
+ * Подменю из данных — расширение коллекции `submenus`: пункт данными с
+ * массивом `items` становится подменю, а его `items` — составом своего движка
+ * меню. Подменю из записи (`ctrl`, `engine`) рисует разметка —
+ * `ui/vue/__tests__/menu.spec.ts`, группа «подменю из данных».
+ */
+describe('коллекция меню · подменю из данных', () => {
+	/** «Изменить · Поделиться → (Ссылка, Почта)» данными. */
+	const SHARE: IMenuItemSource[] = [
+		{ value: 'edit', text: 'Изменить' },
+		{
+			value: 'share',
+			text: 'Поделиться',
+			items: [
+				{ value: 'link', text: 'Ссылка' },
+				{ value: 'mail', text: 'Почта' },
+			],
+		},
+	]
+
+	/** Те же пункты: «Изменить» с вложенным составом, у «Поделиться» другой текст и состав. */
+	const RESHARE: IMenuItemSource[] = [
+		{ value: 'edit', text: 'Изменить', items: [{ value: 'copy', text: 'Копировать' }] },
+		{
+			value: 'share',
+			text: 'Отправить',
+			items: [
+				{ value: 'link', text: 'Ссылкой' },
+				{ value: 'sms', text: 'СМС' },
+			],
+		},
+	]
+
+	/** Запись подменю по пункту; нет её — тест падает здесь. */
+	function entryOf(entries: TMenuSubmenuEntries, item: IMenuItem): TMenuSubmenuEntry {
+		const entry = entries.get(item)
+
+		if (!entry) throw new Error(`у пункта «${String(item.value)}» записи подменю нет`)
+
+		return entry
+	}
+
+	/** Запись подменю по пути `value` от движка вниз по уровням. */
+	function submenuAt(engine: TMenuCollection, ...path: string[]): TMenuSubmenuEntry {
+		const [head, ...rest] = path
+		const { batch, submenus } = engine.extensions
+		const entry = entryOf(submenus.entries, itemOf(batch.items, head))
+
+		return rest.length > 0 ? submenuAt(entry.engine, ...rest) : entry
+	}
+
+	it('пункт с items — подменю, а его items — состав своего движка меню', () => {
+		const engine = createEngineMenu({ items: SHARE })
+		const { batch, submenus } = engine.extensions
+		const share = itemOf(batch.items, 'share')
+		const edit = itemOf(batch.items, 'edit')
+		const { ctrl, engine: nested } = entryOf(submenus.entries, share)
+
+		expect(share).toBeInstanceOf(TMenuSubmenu)
+		expect(ctrl).toBe(share)
+		expect(share.text).toBe('Поделиться')
+		expect(edit).not.toBeInstanceOf(TMenuSubmenu)
+		expect(submenus.entries.has(edit)).toBe(false)
+		// Вложенный состав — в движке, у пункта своего `items` нет
+		expect(Object.hasOwn(share, 'items')).toBe(false)
+		expect(values(nested.extensions.batch.items)).toEqual(['link', 'mail'])
+		expect(nested.extensions.batch.items.every((item) => item instanceof TMenuItem)).toBe(true)
+		// Движок пунктов — движок меню: отметки флажков независимы
+		expect(nested).not.toBe(engine)
+		expect(nested.extensions.selection.mode).toBe('multiple')
+		// Владельца пишет фасад смонтированного подменю, а не коллекция
+		expect(nested.options.get('owner')).toBeUndefined()
+	})
+
+	it('пустой items — тоже подменю: пункты придут потом', () => {
+		const { batch, submenus } = createEngineMenu({
+			items: [{ value: 'recent', text: 'Недавние', items: [] }],
+		}).extensions
+		const recent = itemOf(batch.items, 'recent')
+
+		expect(recent).toBeInstanceOf(TMenuSubmenu)
+		expect(entryOf(submenus.entries, recent).engine.extensions.batch.items).toEqual([])
+	})
+
+	it('третий уровень из данных — подменю в подменю, со своим движком', () => {
+		const engine = createEngineMenu({
+			items: [
+				{
+					value: 'share',
+					items: [
+						{ value: 'mail' },
+						{
+							value: 'messengers',
+							items: [{ value: 'telegram' }, { value: 'whatsapp' }],
+						},
+					],
+				},
+			],
+		})
+		const messengers = submenuAt(engine, 'share', 'messengers')
+
+		expect(messengers.ctrl).toBeInstanceOf(TMenuSubmenu)
+		expect(values(submenuAt(engine, 'share').engine.extensions.batch.items)).toEqual([
+			'mail',
+			'messengers',
+		])
+		expect(values(messengers.engine.extensions.batch.items)).toEqual(['telegram', 'whatsapp'])
+	})
+
+	/** Владельцев движкам подменю пишут фасады смонтированных `Menu.Submenu` — здесь кодом. */
+	it('выбор на третьем уровне закрывает меню целиком и доходит до корня; размер меню — всем уровням', () => {
+		const root = new TMenu({ open: true, size: 'lg' })
+		const engine = createEngineMenu({
+			owner: root,
+			items: [
+				{
+					value: 'share',
+					items: [{ value: 'messengers', items: [{ value: 'telegram' }] }],
+				},
+			],
+		})
+		const share = submenuAt(engine, 'share')
+		const messengers = submenuAt(engine, 'share', 'messengers')
+		const telegram = itemOf(messengers.engine.extensions.batch.items, 'telegram')
+		const chosen = vi.fn()
+
+		new TMenuCollectionFacade({}, { owner: share.ctrl, engine: share.engine }).bindOwner()
+		new TMenuCollectionFacade(
+			{},
+			{ owner: messengers.ctrl, engine: messengers.engine },
+		).bindOwner()
+
+		expect(share.engine.options.get('owner')).toBe(share.ctrl)
+		expect(telegram.size).toBe('lg')
+
+		share.ctrl.open = true
+		messengers.ctrl.open = true
+		engine.extensions.menu.events.on('choose', chosen)
+
+		expect(messengers.engine.extensions.menu.chooseItem(telegram)).toBe(true)
+		expect(chosen).toHaveBeenCalledWith(telegram)
+		expect([root.open, share.ctrl.open, messengers.ctrl.open]).toEqual([false, false, false])
+	})
+
+	it('патч по trackBy: тот же пункт, запись и движок, вложенный состав — патчем; своего items у пунктов нет', () => {
+		const engine = createEngineMenu()
+		const { batch, submenus } = engine.extensions
+		const announced = vi.fn()
+
+		batch.trackBy = (item) => item.value
+		batch.items = SHARE
+
+		const share = itemOf(batch.items, 'share')
+		const edit = itemOf(batch.items, 'edit')
+		const entry = entryOf(submenus.entries, share)
+		const link = itemOf(entry.engine.extensions.batch.items, 'link')
+
+		submenus.events.on('change:submenus', announced)
+
+		batch.items = RESHARE
+
+		expect(itemOf(batch.items, 'share')).toBe(share)
+		expect(share.text).toBe('Отправить')
+		expect(submenus.entries.get(share)).toBe(entry)
+		// Вложенный движок сверяет тем же ключом: «Ссылка» — тот же пункт
+		expect(itemOf(entry.engine.extensions.batch.items, 'link')).toBe(link)
+		expect(link.text).toBe('Ссылкой')
+		expect(values(entry.engine.extensions.batch.items)).toEqual(['link', 'sms'])
+		// Вид пункта решила вставка: из действия патч подменю не сделал
+		expect(itemOf(batch.items, 'edit')).toBe(edit)
+		expect(edit).not.toBeInstanceOf(TMenuSubmenu)
+		expect(submenus.entries.has(edit)).toBe(false)
+		// Вложенный состав в пункт не записан — ни подменю, ни действию
+		expect(Object.hasOwn(share, 'items')).toBe(false)
+		expect(Object.hasOwn(edit, 'items')).toBe(false)
+		// Подменю не пришло и не ушло
+		expect(announced).not.toHaveBeenCalled()
+	})
+
+	it('trackBy движкам подменю — свой: новому при сборке, всем уровням — на смену', () => {
+		const engine = createEngineMenu({
+			items: [{ value: 'share', items: [{ value: 'messengers', items: [] }] }],
+		})
+		const { batch, plain } = engine.extensions
+		const more: IMenuItemSource = { value: 'more', items: [] }
+
+		batch.trackBy = (item) => item.value
+
+		const trackBy = batch.trackBy
+
+		expect(submenuAt(engine, 'share').engine.extensions.batch.trackBy).toBe(trackBy)
+		expect(submenuAt(engine, 'share', 'messengers').engine.extensions.batch.trackBy).toBe(
+			trackBy,
+		)
+
+		plain.push(more)
+
+		expect(submenuAt(engine, 'more').engine.extensions.batch.trackBy).toBe(trackBy)
+
+		batch.trackBy = undefined
+
+		expect(
+			submenuAt(engine, 'share', 'messengers').engine.extensions.batch.trackBy,
+		).toBeUndefined()
+	})
+
+	it('trackBy из пропсов фасада доходит до движков подменю, хотя фасад кладёт его после состава', () => {
+		const trackBy = (item: { value?: unknown }) => item.value
+		const facade = new TMenuCollectionFacade({ items: SHARE, trackBy }, { owner: new TMenu() })
+
+		expect(
+			entryOf(facade.submenus, itemOf(facade.items, 'share')).engine.extensions.batch.trackBy,
+		).toBe(trackBy)
+	})
+
+	it('замена без trackBy — новые подменю с новыми движками; снятое подменю уходит из записей', () => {
+		const engine = createEngineMenu({ items: SHARE })
+		const { batch, plain, submenus } = engine.extensions
+		const before = itemOf(batch.items, 'share')
+		const { engine: replaced } = entryOf(submenus.entries, before)
+
+		batch.items = [...SHARE]
+
+		const after = itemOf(batch.items, 'share')
+		const entry = entryOf(submenus.entries, after)
+
+		expect(after).not.toBe(before)
+		expect(submenus.entries.has(before)).toBe(false)
+		expect(entry.engine).not.toBe(replaced)
+		expect(values(entry.engine.extensions.batch.items)).toEqual(['link', 'mail'])
+
+		plain.remove(after)
+
+		expect(submenus.entries.size).toBe(0)
+	})
+
+	it('change:submenus — раз на запись и только когда подменю пришло или ушло; снимок на смену новый', () => {
+		const engine = createEngineMenu()
+		const { batch, plain, submenus } = engine.extensions
+		const announced = vi.fn()
+		const keys = () => values([...submenus.entries.keys()])
+		const empty = submenus.entries
+		const filled: IMenuItemSource[] = [
+			{ value: 'a', items: [] },
+			{ value: 'b', items: [] },
+			{ value: 'c' },
+		]
+		const pushed: IMenuItemSource = { value: 'e', items: [] }
+		const dropped: IMenuItemSource = { value: 'f', items: [] }
+
+		submenus.events.on('change:submenus', announced)
+
+		batch.set(filled)
+
+		expect(announced).toHaveBeenCalledOnce()
+		expect(announced).toHaveBeenLastCalledWith(submenus.entries)
+		expect(submenus.entries).not.toBe(empty)
+		expect(keys()).toEqual(['a', 'b'])
+
+		const snapshot = submenus.entries
+
+		// Действие — не подменю: ни события, ни нового снимка
+		plain.push({ value: 'd' })
+
+		expect(announced).toHaveBeenCalledOnce()
+		expect(submenus.entries).toBe(snapshot)
+
+		// Одна запись — одно событие, сколько бы подменю она ни задела
+		engine.batch(() => {
+			plain.remove(itemOf(batch.items, 'a'))
+			plain.push(pushed)
+		})
+
+		expect(announced).toHaveBeenCalledTimes(2)
+		expect(keys()).toEqual(['b', 'e'])
+		expect(submenus.entries).not.toBe(snapshot)
+
+		// Пришло и ушло в одной записи — состав подменю прежний, события нет
+		engine.batch(() => plain.remove(plain.push(dropped)))
+
+		expect(announced).toHaveBeenCalledTimes(2)
+		expect(keys()).toEqual(['b', 'e'])
+	})
+
+	it('отменённая вставка движка не оставляет; отменённый патч вложенный состав не трогает', () => {
+		const engine = createEngineMenu()
+		const { batch, plain, submenus } = engine.extensions
+		const { events } = engine.getCore().driver
+		const announced = vi.fn()
+		const converted: boolean[] = []
+		// Отменяет подписчик после расширения: пункт уже стал подменю
+		const vetoInsert = (e: TInsertEvent<IMenuItem>) => {
+			converted.push(isMenuSubmenu(e.item))
+			e.preventDefault()
+		}
+		const vetoUpdate = (e: TUpdateEvent<IMenuItem>) => e.preventDefault()
+
+		submenus.events.on('change:submenus', announced)
+
+		events.on('item:add:before', vetoInsert)
+		plain.push(SHARE[1])
+		events.off('item:add:before', vetoInsert)
+
+		expect(converted).toEqual([true])
+		expect(batch.items).toEqual([])
+		expect(submenus.entries.size).toBe(0)
+		expect(announced).not.toHaveBeenCalled()
+
+		batch.trackBy = (item) => item.value
+		batch.items = SHARE
+
+		const share = itemOf(batch.items, 'share')
+		const { engine: nested } = entryOf(submenus.entries, share)
+
+		events.on('item:update:before', vetoUpdate)
+		batch.items = RESHARE
+		events.off('item:update:before', vetoUpdate)
+
+		expect(share.text).toBe('Поделиться')
+		expect(values(nested.extensions.batch.items)).toEqual(['link', 'mail'])
+	})
+
+	it('движок снаружи: фасад доставляет подменю, и данные, лежавшие в нём до того, становятся подменю', () => {
+		const engine = createEngineSelection({ items: SHARE })
+		const facade = new TMenuCollectionFacade({}, { owner: new TMenu(), engine })
+		const share = itemOf(facade.items, 'share')
+
+		expect(share).toBeInstanceOf(TMenuSubmenu)
+		expect(itemOf(facade.items, 'edit')).toBeInstanceOf(TMenuItem)
+		expect(values(entryOf(facade.submenus, share).engine.extensions.batch.items)).toEqual([
+			'link',
+			'mail',
+		])
+	})
+})
+
+describe('фасад меню · подменю из данных', () => {
+	it('submenus — проекция расширения, change:submenus — пробросом', () => {
+		const facade = new TMenuCollectionFacade({}, { owner: new TMenu() })
+		const announced = vi.fn()
+		const recent: IMenuItemSource = { value: 'recent', items: [] }
+
+		facade.events.on('change:submenus', announced)
+		facade.extensions.plain.push(recent)
+
+		expect(facade.submenus).toBe(facade.extensions.submenus.entries)
+		expect(facade.submenus.size).toBe(1)
+		expect(announced).toHaveBeenCalledOnce()
+		expect(announced).toHaveBeenLastCalledWith(facade.submenus)
 	})
 })
 

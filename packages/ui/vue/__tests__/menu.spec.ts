@@ -15,7 +15,7 @@ import { mount } from '@vue/test-utils'
 import { defineComponent, h, nextTick, ref, type VNode } from 'vue'
 import { Button, Menu } from '@soldy-ui/vue'
 import { createEngineMenu } from '@soldy-ui/core'
-import type { IMenuItem, TMenuCollection } from '@soldy-ui/core'
+import type { IMenuItem, IMenuItemSource, TMenuCollection } from '@soldy-ui/core'
 import type { DescriptorSlots, MenuDescriptor } from '@soldy-ui/setup'
 
 const nextFrame = () => new Promise((resolve) => requestAnimationFrame(resolve))
@@ -1319,6 +1319,318 @@ describe('подменю', () => {
 		await nextTick()
 
 		expect(subPanel().querySelector('.so-menu-separator')).toBeNull()
+	})
+
+	/**
+	 * Подменю из данных: пункт `items` с вложенным `items` меню рисует
+	 * `Menu.Submenu` из записи коллекции (`ctrl`, `engine`), а подменю так же
+	 * рисует свои — уровней сколько угодно. Модель — `core/__tests__/menu.spec.ts`,
+	 * группа «коллекция меню · подменю из данных».
+	 */
+	describe('подменю из данных', () => {
+		/**
+		 * То же меню, что разметкой выше, — «Изменить · Поделиться → (Ссылка,
+		 * Почта, Мессенджеры → Telegram) · Удалить», — данными, с третьим уровнем.
+		 */
+		const DATA: IMenuItemSource[] = [
+			{ value: 'edit', text: 'Изменить' },
+			{
+				value: 'share',
+				text: 'Поделиться',
+				items: [
+					{ value: 'link', text: 'Ссылка' },
+					{ value: 'mail', text: 'Почта' },
+					{
+						value: 'messengers',
+						text: 'Мессенджеры',
+						items: [{ value: 'telegram', text: 'Telegram' }],
+					},
+				],
+			},
+			{ value: 'remove', text: 'Удалить' },
+		]
+
+		/** Строка подменю по тексту — на любом уровне. */
+		const submenuRow = (text: string): HTMLElement => {
+			const row = [...document.querySelectorAll<HTMLElement>('[aria-haspopup="menu"]')].find(
+				(candidate) => candidate.textContent?.trim().startsWith(text),
+			)
+
+			if (!row) throw new Error(`строки подменю «${text}» нет`)
+
+			return row
+		}
+
+		it('пункт с items — подменю: строка объявляет меню, панель — его пункты, третий уровень — тоже', async () => {
+			await render(() => h(Menu, { items: DATA }, { trigger }))
+
+			const messengers = submenuRow('Мессенджеры')
+
+			expect(texts(rootPanel())).toEqual(['Изменить', 'Поделиться', 'Удалить'])
+			expect(shareRow().getAttribute('role')).toBe('menuitem')
+			expect(shareRow().getAttribute('tabindex')).toBe('-1')
+			expect(shareRow().getAttribute('aria-expanded')).toBe('false')
+			expect(subPanel().getAttribute('role')).toBe('menu')
+			expect(subPanel().getAttribute('aria-labelledby')).toBe(shareRow().id)
+			expect(subPanel().parentElement).toBe(document.body)
+			expect(shown(subPanel())).toBe(false)
+			expect(texts(subPanel())).toEqual(['Ссылка', 'Почта', 'Мессенджеры'])
+			// Третий уровень подменю рисует само
+			expect(subPanel().contains(messengers)).toBe(true)
+			expect(texts(panelOf(messengers))).toEqual(['Telegram'])
+			expect(panelOf(messengers).getAttribute('aria-labelledby')).toBe(messengers.id)
+		})
+
+		/**
+		 * Себя подменю находит своей регистрацией: по одному имени файла Vue
+		 * ищет себя после глобальных компонентов приложения.
+		 */
+		it('третий уровень — само подменю: глобальный компонент приложения с тем же именем его не подменяет', async () => {
+			const foreign = defineComponent({
+				render: () => h('div', { class: 'so-test-foreign' }),
+			})
+
+			wrapper = mount(
+				defineComponent({ render: () => h(Menu, { items: DATA }, { trigger }) }),
+				{
+					attachTo: document.body,
+					global: { components: { Submenu: foreign } },
+				},
+			)
+
+			await nextTick()
+			await nextFrame()
+
+			expect(document.querySelector('.so-test-foreign')).toBeNull()
+			expect(texts(panelOf(submenuRow('Мессенджеры')))).toEqual(['Telegram'])
+		})
+
+		it('клик по строке открывает подменю из данных, повторный его не закрывает', async () => {
+			await render(() => h(Menu, { items: DATA }, { trigger }))
+
+			await open()
+			await click(shareRow())
+
+			expect(shown(subPanel())).toBe(true)
+			expect(shareRow().getAttribute('aria-expanded')).toBe('true')
+
+			await click(shareRow())
+
+			expect(shown(subPanel())).toBe(true)
+		})
+
+		it('→ открывает подменю из данных на первом пункте, ← закрывает уровень — фокус на строке', async () => {
+			await render(() => h(Menu, { items: DATA }, { trigger }))
+
+			await openOnShare()
+			await press(shareRow(), 'ArrowRight')
+
+			expect(shown(subPanel())).toBe(true)
+			expect(document.activeElement).toBe(rowIn(subPanel(), 'Ссылка'))
+
+			await press(rowIn(subPanel(), 'Ссылка'), 'ArrowLeft')
+
+			expect(shown(subPanel())).toBe(false)
+			expect(shown(rootPanel())).toBe(true)
+			expect(document.activeElement).toBe(shareRow())
+		})
+
+		it('клавиши и выбор на втором уровне: choose — корню, меню закрыто целиком, фокус — на триггер', async () => {
+			const chosen: unknown[] = []
+
+			await render(() =>
+				h(
+					Menu,
+					{ items: DATA, onChoose: (item: IMenuItem) => chosen.push(item.value) },
+					{ trigger },
+				),
+			)
+
+			await openOnShare()
+			await press(shareRow(), 'ArrowRight')
+			await press(rowIn(subPanel(), 'Ссылка'), 'ArrowDown')
+
+			expect(document.activeElement).toBe(rowIn(subPanel(), 'Почта'))
+
+			await press(rowIn(subPanel(), 'Почта'), 'Enter')
+
+			expect(chosen).toEqual(['mail'])
+			expect(shown(rootPanel())).toBe(false)
+			expect(shown(subPanel())).toBe(false)
+			expect(document.activeElement).toBe(triggerNode())
+		})
+
+		it('третий уровень: → открывает его, выбор доходит до корня и закрывает все уровни', async () => {
+			const chosen: unknown[] = []
+
+			await render(() =>
+				h(
+					Menu,
+					{ items: DATA, onChoose: (item: IMenuItem) => chosen.push(item.value) },
+					{ trigger },
+				),
+			)
+
+			await openOnShare()
+			await press(shareRow(), 'ArrowRight')
+			await press(rowIn(subPanel(), 'Ссылка'), 'End')
+
+			const messengers = submenuRow('Мессенджеры')
+			const deep = panelOf(messengers)
+
+			expect(document.activeElement).toBe(messengers)
+
+			await press(messengers, 'ArrowRight')
+
+			expect(shown(deep)).toBe(true)
+			expect(document.activeElement).toBe(rowIn(deep, 'Telegram'))
+
+			await press(rowIn(deep, 'Telegram'), 'Enter')
+
+			expect(chosen).toEqual(['telegram'])
+			expect([shown(rootPanel()), shown(subPanel()), shown(deep)]).toEqual([
+				false,
+				false,
+				false,
+			])
+			expect(document.activeElement).toBe(triggerNode())
+		})
+
+		it('патч по trackBy: строка, панель и пункты подменю — те же узлы, текст и состав — новые', async () => {
+			const items = ref<IMenuItemSource[]>(DATA)
+
+			await render(() =>
+				h(
+					Menu,
+					{ items: items.value, trackBy: (item: { value?: unknown }) => item.value },
+					{ trigger },
+				),
+			)
+
+			const row = shareRow()
+			const panel = subPanel()
+			const link = rowIn(panel, 'Ссылка')
+
+			items.value = [
+				{ value: 'edit', text: 'Изменить' },
+				{
+					value: 'share',
+					text: 'Отправить',
+					items: [
+						{ value: 'link', text: 'Ссылкой' },
+						{ value: 'sms', text: 'СМС' },
+					],
+				},
+				{ value: 'remove', text: 'Удалить' },
+			]
+			await nextTick()
+
+			expect(row.isConnected).toBe(true)
+			expect(row.textContent?.trim()).toBe('Отправить')
+			expect(panelOf(row)).toBe(panel)
+			expect(rowIn(panel, 'Ссылкой')).toBe(link)
+			expect(texts(panel)).toEqual(['Ссылкой', 'СМС'])
+		})
+
+		it('слоты пунктов из данных — одни на все уровни: значок, текст, строка и стрелка подменю', async () => {
+			const icon = ({ item }: { item: IMenuItem }) =>
+				h('i', { class: 'so-test-icon', 'data-value': String(item.value) })
+
+			await render(() =>
+				h(
+					Menu,
+					{ items: DATA },
+					{
+						trigger,
+						'item-leading': icon,
+						item: ({ text }: { text: string }) => `${text}…`,
+						'item-header': ({ text, open }: { text: string; open: boolean }) =>
+							open ? `${text} ▸` : text,
+						'item-arrow-icon': ({ item }: { item: IMenuItem }) =>
+							h('b', { class: 'so-test-arrow', 'data-value': String(item.value) }),
+					},
+				),
+			)
+
+			const messengers = submenuRow('Мессенджеры')
+			const label = (row: HTMLElement) => find('.so-button__text', row).textContent
+			const mark = (selector: string, row: HTMLElement) => find(selector, row).dataset.value
+
+			// Действия — слот `item`, строки подменю — `item-header`, на каждом уровне
+			expect(label(rowIn(rootPanel(), 'Изменить'))).toBe('Изменить…')
+			expect(label(shareRow())).toBe('Поделиться')
+			expect(label(rowIn(subPanel(), 'Ссылка'))).toBe('Ссылка…')
+			expect(label(messengers)).toBe('Мессенджеры')
+			expect(label(rowIn(panelOf(messengers), 'Telegram'))).toBe('Telegram…')
+			// Значок — у строк обоих видов, стрелка — у подменю, с пунктом в scope
+			expect(mark('.so-menu-item__icon .so-test-icon', rowIn(rootPanel(), 'Изменить'))).toBe(
+				'edit',
+			)
+			expect(mark('.so-menu-item__icon .so-test-icon', shareRow())).toBe('share')
+			expect(mark('.so-menu-item__icon .so-test-icon', messengers)).toBe('messengers')
+			expect(mark('.so-menu-item__arrow .so-test-arrow', shareRow())).toBe('share')
+			expect(mark('.so-menu-item__arrow .so-test-arrow', messengers)).toBe('messengers')
+
+			// Строка подменю получает его открытость
+			await open()
+			await click(shareRow())
+
+			expect(label(shareRow())).toBe('Поделиться ▸')
+			expect(label(messengers)).toBe('Мессенджеры')
+		})
+
+		it('item-content — пункты одного подменю разметкой, у другого остаются свои из данных', async () => {
+			const chosen: unknown[] = []
+
+			await render(() =>
+				h(
+					Menu,
+					{
+						items: [
+							{
+								value: 'share',
+								text: 'Поделиться',
+								items: [
+									{ value: 'link', text: 'Ссылка' },
+									{ value: 'mail', text: 'Почта' },
+								],
+							},
+							{ value: 'export', text: 'Экспорт', items: [] },
+						],
+						onChoose: (item: IMenuItem) => chosen.push(item.value),
+					},
+					{
+						trigger,
+						'item-content': ({ item }: { item: IMenuItem }) =>
+							item.value === 'export'
+								? [
+										h(Menu.Item, { value: 'pdf', text: 'PDF' }),
+										h(Menu.Item, { value: 'png', text: 'PNG' }),
+									]
+								: null,
+					},
+				),
+			)
+
+			const exportRow = submenuRow('Экспорт')
+
+			expect(texts(subPanel())).toEqual(['Ссылка', 'Почта'])
+			expect(texts(panelOf(exportRow))).toEqual(['PDF', 'PNG'])
+
+			// Пункты разметки — пункты этого подменю: стрелки и выбор идут по ним
+			triggerNode().focus()
+			await press(triggerNode(), 'ArrowDown')
+			await press(shareRow(), 'ArrowDown')
+			await press(exportRow, 'ArrowRight')
+
+			expect(document.activeElement).toBe(rowIn(panelOf(exportRow), 'PDF'))
+
+			await press(rowIn(panelOf(exportRow), 'PDF'), 'ArrowDown')
+			await press(rowIn(panelOf(exportRow), 'PNG'), 'Enter')
+
+			expect(chosen).toEqual(['png'])
+			expect(shown(rootPanel())).toBe(false)
+		})
 	})
 })
 

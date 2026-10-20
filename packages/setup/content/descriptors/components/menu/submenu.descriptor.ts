@@ -12,6 +12,8 @@
  * Слоты объявлены заново — они не наследуются, а разметка у пункта с подменю
  * своя: текст строки — слот `header` (`default` занят пунктами подменю, имя —
  * как у секции Accordion), у конца строки — стрелка, подсказки сочетания нет.
+ * Слоты пунктов из `items` — те же, что у меню (`item`, `item-*`): подменю
+ * из данных пункт отдаёт их под теми же именами, и они одни на все уровни.
  */
 
 import { defineComponent, defineDescriptor, defineType } from '../../../../protected/define'
@@ -58,15 +60,33 @@ export const MenuSubmenuDescriptor = defineDescriptor(() =>
 						item: defineType<IMenuItem>(Object),
 						text: defineType<string>(String),
 					},
-					description: 'Содержимое пункта подменю при работе через проп items',
+					description: 'Содержимое пункта-действия подменю при работе через проп items',
 				},
 				'item-leading': {
 					scope: { item: defineType<IMenuItem>(Object) },
-					description: 'Значок пункта подменю при работе через проп items',
+					description:
+						'Значок пункта подменю — действия и подменю — при работе через проп items',
 				},
 				'item-trailing': {
 					scope: { item: defineType<IMenuItem>(Object) },
 					description: 'Подсказка сочетания клавиш при работе через проп items',
+				},
+				'item-header': {
+					scope: {
+						item: defineType<IMenuItem>(Object),
+						text: defineType<string>(String),
+						open: defineType<boolean>(Boolean),
+					},
+					description: 'Текст строки вложенного подменю при работе через проп items',
+				},
+				'item-arrow-icon': {
+					scope: { item: defineType<IMenuItem>(Object) },
+					description: 'Стрелка вложенного подменю при работе через проп items',
+				},
+				'item-content': {
+					scope: { item: defineType<IMenuItem>(Object) },
+					description:
+						'Пункты вложенного подменю разметкой вместо его items. Пусто — оно рисует свои пункты из данных',
 				},
 			},
 			props: {

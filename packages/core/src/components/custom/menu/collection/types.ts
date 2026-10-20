@@ -17,9 +17,16 @@ import type {
 	TBatchExtension,
 	TSelectionExtension,
 	TSelectionItemFacadeEvents,
+	TCollectionEngineItemSource,
 } from '../../../base/collection'
 import type { IMenuItemExtension, TMenuItemEventsExtension } from './extensions/menu/item/types'
-import type { TMenuExtension, TMenuEngineOptions, TMenuExtensionEvents } from './extensions'
+import type {
+	TMenuExtension,
+	TMenuEngineOptions,
+	TMenuExtensionEvents,
+	TMenuSubmenusExtension,
+	TMenuSubmenusExtensionEvents,
+} from './extensions'
 import type { IMenuOwner } from '../types'
 import type { IMenuItem, IMenuItemProps } from '../item/types'
 
@@ -30,6 +37,8 @@ export type TMenuCollectionExtensions<TItem extends IMenuItem = IMenuItem> = {
 	order: TOrderExtension<TItem>
 	plain: TPlainExtension<TItem>
 	batch: TBatchExtension<TItem>
+	/** Подменю из данных: пункт с вложенным `items` и движок его пунктов */
+	submenus: TMenuSubmenusExtension
 	/** Отметки флажков — выбор в режиме `multiple`. */
 	selection: TSelectionExtension<TItem>
 	/** Группы пунктов: показанное по группам и его секции */
@@ -53,13 +62,29 @@ export type TMenuCollection = TCollectionEngine<
 export type TMenuCollectionFacadeEngine = TCollectionEngine<any, any>
 
 /**
+ * Пункт меню данными — его пропсы и, у подменю, его пункты тем же видом, что
+ * состав меню: пункт с массивом `items` становится подменю на любом уровне
+ * (расширение `submenus`). Флажков и переключателей данными нет — их ставят
+ * разметкой.
+ */
+export interface IMenuItemSource extends IMenuItemProps {
+	/**
+	 * Пункты подменю — данными или готовыми пунктами, как состав меню. Массив,
+	 * даже пустой, делает пункт подменю. Вид пункта решает вставка: патч
+	 * действие подменю не сделает, а подменю — действием
+	 */
+	items?: (TCollectionEngineItemSource<IMenuItemSource> | IMenuItem)[]
+}
+
+/**
  * Owner-level props коллекции меню: состав и группы пунктов.
  *
  * Режима выбора среди них нет: отметки флажков независимы, и режим у меню
- * всегда `multiple` — его ставит коллекция, а не разметка.
+ * всегда `multiple` — его ставит коллекция, а не разметка. Пункт данными —
+ * `IMenuItemSource`: с вложенным `items` он подменю.
  */
 export interface IMenuCollectionProps<
-	TItemProps = IMenuItemProps,
+	TItemProps = IMenuItemSource,
 	TItem = IMenuItem,
 	TCollection = TMenuCollectionFacadeEngine,
 >
@@ -95,9 +120,13 @@ export type TMenuAdapters<TItem extends IMenuItem = IMenuItem> = {
 	menu: IMenuItemExtension<TItem>
 }
 
-/** События фасада меню: база группировки плюс карта расширения `menu` (`choose`). */
+/**
+ * События фасада меню: база группировки плюс карты расширений `menu`
+ * (`choose`) и `submenus` (`change:submenus`).
+ */
 export type TMenuCollectionFacadeEvents = TGroupCollectionFacadeEvents<IMenuItem> &
-	TMenuExtensionEvents
+	TMenuExtensionEvents &
+	TMenuSubmenusExtensionEvents
 
 /** События фасада пункта: набор базы плюс карта адаптера `menu`. */
 export type TMenuItemCollectionFacadeEvents = TSelectionItemFacadeEvents & TMenuItemEventsExtension

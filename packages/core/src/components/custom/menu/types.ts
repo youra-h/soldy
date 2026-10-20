@@ -10,8 +10,8 @@ import type {
 	TEvented,
 	TValuePayload,
 } from '../../../common'
-import type { IMenuCollectionProps } from './collection/types'
-import type { IMenuItem, IMenuItemProps } from './item/types'
+import type { IMenuCollectionProps, IMenuItemSource } from './collection/types'
+import type { IMenuItem } from './item/types'
 
 /** События владельца пунктов меню, которые слушает его коллекция. */
 export type TMenuOwnerEvents = {
@@ -109,9 +109,12 @@ export interface IMenuComponentProps extends IStylableProps {
 	groupSeparators?: boolean
 }
 
-/** Полный набор пропсов Menu: свои и коллекции (`engine`, `items`, `trackBy`). */
+/**
+ * Полный набор пропсов Menu: свои и коллекции (`engine`, `items`, `trackBy`).
+ * Пункт данными с вложенным `items` — подменю (`IMenuItemSource`).
+ */
 export interface IMenuProps
-	extends IMenuComponentProps, IMenuCollectionProps<IMenuItemProps, IMenuItem> {}
+	extends IMenuComponentProps, IMenuCollectionProps<IMenuItemSource, IMenuItem> {}
 
 /**
  * Меню действий у кнопки (APG Menu Button) или контекстное меню области:
