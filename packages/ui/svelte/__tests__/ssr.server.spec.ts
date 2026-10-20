@@ -22,6 +22,7 @@ import {
 	Frame,
 	Icon,
 	Input,
+	NumberInput,
 	ProgressLinear,
 	ProgressSpinner,
 	Rating,
@@ -234,6 +235,7 @@ describe('ref потребителя · серверный рендер', () => 
 		'ProgressLinear',
 		'Skeleton',
 		'Input',
+		'NumberInput',
 		'Textarea',
 		'CheckBox',
 		'Switch',
@@ -267,6 +269,10 @@ describe('ref потребителя · серверный рендер', () => 
 		const pairs = [
 			[render(Button, { props: { ref: null } }), render(Button, { props: {} })],
 			[render(Input, { props: { ref: null } }), render(Input, { props: {} })],
+			[
+				render(NumberInput, { props: { ref: null, value: 5, clearable: true } }),
+				render(NumberInput, { props: { value: 5, clearable: true } }),
+			],
 			[
 				render(Textarea, { props: { ref: null, value: 'текст', counter: true } }),
 				render(Textarea, { props: { value: 'текст', counter: true } }),

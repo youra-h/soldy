@@ -11,6 +11,7 @@
 		| 'ProgressLinear'
 		| 'Skeleton'
 		| 'Input'
+		| 'NumberInput'
 		| 'Textarea'
 		| 'CheckBox'
 		| 'Switch'
@@ -55,6 +56,7 @@
 		Input,
 		Label,
 		ListBox,
+		NumberInput,
 		Pagination,
 		ProgressLinear,
 		ProgressSpinner,
@@ -120,6 +122,8 @@
 		<Skeleton bind:ref={get, set} {onElementReady} />
 	{:else if kind === 'Input'}
 		<Input bind:ref={get, set} {onElementReady} />
+	{:else if kind === 'NumberInput'}
+		<NumberInput bind:ref={get, set} {onElementReady} />
 	{:else if kind === 'Textarea'}
 		<Textarea bind:ref={get, set} {onElementReady} />
 	{:else if kind === 'CheckBox'}

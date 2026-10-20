@@ -93,6 +93,10 @@ describe('хост Svelte', () => {
 		['icon', '.so-icon'],
 		['skeleton', '.so-skeleton'],
 		['input', '.so-input'],
+		[
+			'number-input',
+			'.so-number-input, .so-number-input__input, .so-number-input__stepper, .so-number-input__decrement, .so-number-input__increment, .so-number-input svg',
+		],
 		['check-box', '.so-label, .so-check-box'],
 		['switch', '.so-label, .so-switch'],
 		['label', '.so-label, .so-check-box'],
