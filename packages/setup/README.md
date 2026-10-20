@@ -25,11 +25,11 @@ plugins, extensions, a theme or an icon pack.
 Registering what the application adds to the library — the entry point:
 
 ```ts
-import { setIcons, useTheme, usePlugins, useExtensions } from '@soldy-ui/setup'
+import { useIcons, useTheme, usePlugins, useExtensions } from '@soldy-ui/setup'
 import * as material from '@soldy-ui/icons-material'
 import oren from '@soldy-ui/theme-oren/setup'
 
-setIcons(material) // icon roles: check, close, arrowDown, …
+useIcons(material) // icon roles: check, close, arrowDown, …
 useTheme(oren) // plugins and extensions the theme's CSS reads
 usePlugins(TButton, [TTimerPlugin]) // your plugin on every Button
 useExtensions(TTags, [(owner) => new TTagsHistoryExtension({ owner })])

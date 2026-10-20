@@ -10,7 +10,7 @@ import {
 	useExpose,
 	useCollectionAdapter,
 	VueElevatorFactory,
-	useIcon,
+	roleIcon,
 	useSplitAttrs,
 	createVueAdapterContext,
 	type SetupContext,
@@ -75,7 +75,7 @@ export default {
 			 * `<Input :ctrl="field">` берёт его целиком.
 			 */
 			field: adapter.instance.field,
-			arrowIconTag: useIcon('arrowDown'),
+			arrowIconTag: roleIcon('arrowDown'),
 			...useSplitAttrs(),
 		}
 	},

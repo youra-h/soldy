@@ -15,7 +15,7 @@
 
 import { describe, it, expect, afterEach, beforeAll } from 'vitest'
 import { TIcon } from '@soldy-ui/core'
-import { IconDescriptor, setIcons, type TIconSource } from '@soldy-ui/setup'
+import { IconDescriptor, useIcons, type TIconSource } from '@soldy-ui/setup'
 import {
 	SoldyElement,
 	TIconElement,
@@ -47,7 +47,7 @@ const CROSS: TIconSource = {
 }
 
 beforeAll(() => {
-	setIcons({ 'test-arrow': ARROW, 'test-cross': CROSS })
+	useIcons({ 'test-arrow': ARROW, 'test-cross': CROSS })
 })
 
 afterEach(() => {
@@ -387,7 +387,7 @@ describe('roleIcon и drawRoleIcon', () => {
 	})
 
 	it('та же иконка второй раз не пишется, сменённая в реестре — пишется', () => {
-		setIcons({ 'test-late': CROSS })
+		useIcons({ 'test-late': CROSS })
 
 		const svg = roleIcon('test-late')
 		const [first] = svg.children
@@ -396,7 +396,7 @@ describe('roleIcon и drawRoleIcon', () => {
 
 		expect(svg.firstElementChild).toBe(first)
 
-		setIcons({ 'test-late': ARROW })
+		useIcons({ 'test-late': ARROW })
 		drawRoleIcon(svg, 'test-late')
 
 		expect(svg.getAttribute('viewBox')).toBe('0 0 10 10')

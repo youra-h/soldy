@@ -32,11 +32,11 @@ const reported = new Set<string>()
  * требует пересобирать весь набор:
  *
  * ```ts
- * setIcons(material)
- * setIcons({ close: myCloseIcon })
+ * useIcons(material)
+ * useIcons({ close: myCloseIcon })
  * ```
  */
-export function setIcons(pack: Partial<Record<string, TIconSource>>): void {
+export function useIcons(pack: Partial<Record<string, TIconSource>>): void {
 	for (const [role, source] of Object.entries(pack)) {
 		if (!source) continue
 
@@ -58,7 +58,7 @@ export function getIcon(role: string): TIconSource {
 
 	if (!reported.has(role)) {
 		reported.add(role)
-		console.warn(`[soldy] Иконка «${role}» не зарегистрирована. Вызовите setIcons().`)
+		console.warn(`[soldy] Иконка «${role}» не зарегистрирована. Вызовите useIcons().`)
 	}
 
 	return MISSING_ICON

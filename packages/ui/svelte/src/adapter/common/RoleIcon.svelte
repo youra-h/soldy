@@ -18,7 +18,7 @@
 
 	const { icon, attributes, attach }: TRoleIconProps = $props()
 
-	// Роль — из реестра на отрисовке, а не при вызове `roleIcon`: `setIcons()`
+	// Роль — из реестра на отрисовке, а не при вызове `roleIcon`: `useIcons()`
 	// может прийти после того, как метку уже взяли
 	const source = $derived(getIcon(icon.role))
 </script>

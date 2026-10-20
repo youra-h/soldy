@@ -8,7 +8,7 @@
  * здесь — строчный флекс по содержимому, какой была обёртка стрелки Select: в
  * блочном хосте `svg` без правила растягивается на ширину контейнера, и бокс у
  * него ненулевой.
- * Иконка — та же, что у компонентов: глиф из `useIcon`, с `viewBox`. Без него
+ * Иконка — та же, что у компонентов: глиф из `roleIcon`, с `viewBox`. Без него
  * `svg` раскладывается иначе. В jsdom раскладки нет.
  *
  * Корень другого тега берёт тот же размер: `span` — корень `<Icon>` без тега и
@@ -20,12 +20,12 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { render, cleanup } from 'vitest-browser-vue'
 import { defineComponent, h } from 'vue'
 import { COMPONENT_SIZES } from '@soldy-ui/playground-shared'
-import { Icon, useIcon } from '@soldy-ui/vue'
+import { Icon, roleIcon } from '@soldy-ui/vue'
 
 import '@soldy-ui/theme-oren'
 
 /** Глиф строится один раз: новый компонент на каждый рендер пересоздавал бы узел. */
-const CLOSE = useIcon('close')
+const CLOSE = roleIcon('close')
 
 /** Иконки заданных размеров, каждая в своём хосте, сжатом по содержимому. */
 const harness = (sizes: readonly (typeof COMPONENT_SIZES)[number][]) =>

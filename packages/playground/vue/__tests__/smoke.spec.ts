@@ -14,7 +14,7 @@
 import { describe, it, expect, beforeAll, beforeEach, afterEach, vi } from 'vitest'
 import { mount, type DOMWrapper, type VueWrapper } from '@vue/test-utils'
 import { nextTick } from 'vue'
-import { setIcons } from '@soldy-ui/setup'
+import { useIcons } from '@soldy-ui/setup'
 import * as material from '@soldy-ui/icons-material'
 import { COMPONENTS, findComponent, propControls } from '@soldy-ui/playground-shared'
 import { availableOf, showcaseOf } from '../src/catalog'
@@ -60,7 +60,7 @@ const drawing = (...components: string[]) =>
 const warnings: string[] = []
 
 beforeAll(async () => {
-	setIcons(material)
+	useIcons(material)
 	// Компоненты пишут в консоль события — в отчёте это шум
 	vi.spyOn(console, 'log').mockImplementation(() => {})
 

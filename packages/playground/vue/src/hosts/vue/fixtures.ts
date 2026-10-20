@@ -1,5 +1,5 @@
 import { h, type Component } from 'vue'
-import { Button, CheckBox, Icon, Label, RadioGroup, Switch, useIcon } from '@soldy-ui/vue'
+import { Button, CheckBox, Icon, Label, RadioGroup, Switch, roleIcon } from '@soldy-ui/vue'
 import { toComponents, type TPreview } from './previews'
 
 /**
@@ -15,9 +15,9 @@ import { toComponents, type TPreview } from './previews'
  * Фикстура без сценария и сценарий без фикстуры — ошибка: первую никто не
  * рисует, второй молча пропадает из меню (см. `__tests__/scenarios.spec.ts`).
  */
-/** Глифы — компонентами `useIcon`, один раз: `tag` у Icon — корень, а не роль. */
-const CHECK = useIcon('check')
-const ARROW_RIGHT = useIcon('arrowRight')
+/** Глифы — компонентами `roleIcon`, один раз: `tag` у Icon — корень, а не роль. */
+const CHECK = roleIcon('check')
+const ARROW_RIGHT = roleIcon('arrowRight')
 
 export const FIXTURES: Record<string, TPreview> = {
 	// Метки во всех трёх слотах: сценарий ищет их по `data-probe` и сверяет

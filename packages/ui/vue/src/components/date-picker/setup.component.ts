@@ -2,7 +2,7 @@ import { DatePickerDescriptor, TFieldControlExtension } from '@soldy-ui/setup'
 import {
 	useAdapter,
 	useExpose,
-	useIcon,
+	roleIcon,
 	VueElevatorFactory,
 	createVueAdapterContext,
 	type SetupContext,
@@ -49,8 +49,8 @@ export default {
 			end: picker.end,
 			calendar: picker.calendar,
 			engine: picker.engine,
-			clearIconTag: useIcon('close'),
-			calendarIconTag: useIcon('calendar'),
+			clearIconTag: roleIcon('close'),
+			calendarIconTag: roleIcon('calendar'),
 		}
 	},
 }

@@ -7,7 +7,7 @@ import {
 	useAdapter,
 	useExpose,
 	useCollectionAdapter,
-	useIcon,
+	roleIcon,
 	VueElevatorFactory,
 	createVueAdapterContext,
 	type SetupContext,
@@ -56,7 +56,7 @@ export default {
 			 * Одна иконка на все стрелки: роли «влево» в контракте иконок нет, и
 			 * ту стрелку, что смотрит в начало строки, зеркалит тема.
 			 */
-			arrowIconTag: useIcon('arrowRight'),
+			arrowIconTag: roleIcon('arrowRight'),
 		}
 	},
 }

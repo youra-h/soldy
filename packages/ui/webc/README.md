@@ -286,13 +286,13 @@ place, and a nested provider gives its subtree a language of its own:
 The application plugs in a theme and an icon pack once, in its entry point:
 
 ```ts
-import { setIcons, useTheme } from '@soldy-ui/setup'
+import { useIcons, useTheme } from '@soldy-ui/setup'
 import * as material from '@soldy-ui/icons-material'
 import oren from '@soldy-ui/theme-oren/setup'
 
 import '@soldy-ui/theme-oren'
 
-setIcons(material)
+useIcons(material)
 useTheme(oren)
 ```
 

@@ -1,4 +1,4 @@
-import { setIcons, useTheme } from '@soldy-ui/setup'
+import { useIcons, useTheme } from '@soldy-ui/setup'
 import * as material from '@soldy-ui/icons-material'
 import oren from '@soldy-ui/theme-oren/setup'
 
@@ -24,7 +24,7 @@ if (!('ResizeObserver' in globalThis)) {
 }
 
 /** Пакет иконок подключает приложение — в тестах эту роль играет setup. */
-setIcons(material)
+useIcons(material)
 
 /** Поведение темы подключает приложение (`src/main.ts`) — здесь тоже setup. */
 useTheme(oren)

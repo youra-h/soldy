@@ -1,6 +1,6 @@
 export { VueProfile } from './profile'
 export { VueNaming } from './naming'
-export * from './useIcon'
+export * from './icon'
 export * from './useSplitAttrs'
 export * from './createVueAdapterContext'
 export type { SetupContext } from 'vue'

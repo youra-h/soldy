@@ -132,14 +132,14 @@ tab:
 
 ```ts
 import { createApp } from 'vue'
-import { setIcons, useTheme } from '@soldy-ui/setup'
+import { useIcons, useTheme } from '@soldy-ui/setup'
 import * as material from '@soldy-ui/icons-material'
 import App from './App.vue'
 
 import '@soldy-ui/theme-oren'
 import oren from '@soldy-ui/theme-oren/setup'
 
-setIcons(material)
+useIcons(material)
 useTheme(oren)
 
 createApp(App).mount('#app')

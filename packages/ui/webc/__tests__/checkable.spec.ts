@@ -19,7 +19,7 @@
 
 import { describe, it, expect, afterEach } from 'vitest'
 import { TCheckBox, TSwitch } from '@soldy-ui/core'
-import { CheckBoxDescriptor, SwitchDescriptor, getIcon, setIcons } from '@soldy-ui/setup'
+import { CheckBoxDescriptor, SwitchDescriptor, getIcon, useIcons } from '@soldy-ui/setup'
 import * as material from '@soldy-ui/icons-material'
 import {
 	TCheckBoxElement,
@@ -550,7 +550,7 @@ describe('CheckBox · отметка', () => {
 		const el = mount('<span is="so-check-box" value></span>')
 
 		try {
-			setIcons({ check: { viewBox: '0 0 10 10', body: '<circle r="5"></circle>' } })
+			useIcons({ check: { viewBox: '0 0 10 10', body: '<circle r="5"></circle>' } })
 			el.value = false
 			await flush()
 			el.value = true
@@ -561,7 +561,7 @@ describe('CheckBox · отметка', () => {
 			expect(svg.getAttribute('viewBox')).toBe('0 0 10 10')
 			expect(svg.innerHTML).toBe(bodyOf('check'))
 		} finally {
-			setIcons(material)
+			useIcons(material)
 		}
 	})
 

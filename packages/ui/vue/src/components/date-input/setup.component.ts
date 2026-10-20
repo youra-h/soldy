@@ -2,7 +2,7 @@ import { DateInputDescriptor, TFieldControlExtension } from '@soldy-ui/setup'
 import {
 	useAdapter,
 	useExpose,
-	useIcon,
+	roleIcon,
 	VueElevatorFactory,
 	createVueAdapterContext,
 	type SetupContext,
@@ -26,6 +26,6 @@ export default {
 			props,
 		}).use(TFieldControlExtension, { elevator: VueElevatorFactory })
 
-		return { ...useAdapter(adapter, props, emit), clearIconTag: useIcon('close') }
+		return { ...useAdapter(adapter, props, emit), clearIconTag: roleIcon('close') }
 	},
 }

@@ -2,7 +2,7 @@ import { FieldDescriptor, TFieldExtension } from '@soldy-ui/setup'
 import {
 	useAdapter,
 	useExpose,
-	useIcon,
+	roleIcon,
 	VueElevatorFactory,
 	createVueAdapterContext,
 	type SetupContext,
@@ -25,6 +25,6 @@ export default {
 			props,
 		}).use(TFieldExtension, { elevator: VueElevatorFactory })
 
-		return { ...useAdapter(adapter, props, emit), errorIconTag: useIcon('error') }
+		return { ...useAdapter(adapter, props, emit), errorIconTag: roleIcon('error') }
 	},
 }

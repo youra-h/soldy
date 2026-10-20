@@ -2,7 +2,7 @@ import { RatingDescriptor, TFieldControlExtension } from '@soldy-ui/setup'
 import {
 	useAdapter,
 	useExpose,
-	useIcon,
+	roleIcon,
 	VueElevatorFactory,
 	createVueAdapterContext,
 	type SetupContext,
@@ -33,7 +33,7 @@ export default {
 
 		return {
 			...useAdapter(adapter, props, emit),
-			defaultIconTag: useIcon('star'),
+			defaultIconTag: roleIcon('star'),
 		}
 	},
 }

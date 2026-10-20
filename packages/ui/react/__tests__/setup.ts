@@ -8,7 +8,7 @@
 
 import { afterEach, beforeEach, expect } from 'vitest'
 import { format } from 'node:util'
-import { setIcons } from '@soldy-ui/setup'
+import { useIcons } from '@soldy-ui/setup'
 import * as material from '@soldy-ui/icons-material'
 
 /**
@@ -17,7 +17,7 @@ import * as material from '@soldy-ui/icons-material'
  * консоль о роли, которой нет, — а консоль здесь роняет тест.
  */
 
-setIcons(material)
+useIcons(material)
 
 /**
  * Заглушка `ResizeObserver`: jsdom его не реализует, а ListBox следит им за

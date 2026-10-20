@@ -24,11 +24,11 @@ npm install @soldy-ui/icons-material
 The application registers the pack once, in its entry point:
 
 ```ts
-import { setIcons } from '@soldy-ui/setup'
+import { useIcons } from '@soldy-ui/setup'
 import * as material from '@soldy-ui/icons-material'
 
-setIcons(material)
-setIcons({ close: myCloseIcon }) // a single role, on top of the pack
+useIcons(material)
+useIcons({ close: myCloseIcon }) // a single role, on top of the pack
 ```
 
 Without a registered pack the components render an empty placeholder and report the missing role

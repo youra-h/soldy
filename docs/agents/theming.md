@@ -51,11 +51,11 @@ export const close: TIconSource = {
 **Пакет подключает приложение, как тему:**
 
 ```ts
-import { setIcons } from '@soldy-ui/setup'
+import { useIcons } from '@soldy-ui/setup'
 import * as material from '@soldy-ui/icons-material'
 
-setIcons(material)
-setIcons({ close: myCloseIcon }) // точечно, поверх набора
+useIcons(material)
+useIcons({ close: myCloseIcon }) // точечно, поверх набора
 ```
 
 Без вызова компоненты рисуют пустую заглушку и один раз печатают, какой роли
@@ -63,9 +63,9 @@ setIcons({ close: myCloseIcon }) // точечно, поверх набора
 приложение.
 
 **Иконка по роли в Web Components — рисунок внутри корня.** В остальных
-адаптерах корень Icon по роли — сам `<svg>`: его строит адаптер (`useIcon` у
-Vue, `roleIcon` у React, Svelte и Solid, `RoleIconDirective` у Angular), и
-класс, размер и ARIA ложатся на него. Атрибут `is` расширяет только элементы
+адаптерах корень Icon по роли — сам `<svg>`: его строит адаптер (`roleIcon` у
+Vue, React, Svelte и Solid, `RoleIconDirective` у Angular), и класс, размер и
+ARIA ложатся на него. Атрибут `is` расширяет только элементы
 HTML, и `<svg>` элементом soldy не сделать, поэтому иконка Web Components —
 `<span is="so-icon" icon="close">`: корень — элемент потребителя, как у всех
 элементов Web Components, а роль — свой атрибут элемента (`icon`, свойство
@@ -124,7 +124,7 @@ Apache-2.0 требует пометить изменённые файлы: ша
 
 | Что                                | Чем решается                    |
 | ---------------------------------- | ------------------------------- |
-| откуда берётся иконка по умолчанию | пакет (`setIcons`)              |
+| откуда берётся иконка по умолчанию | пакет (`useIcons`)              |
 | как заменить её в одном месте      | слот (`#close-icon`, `#clear`)  |
 | как до неё доходит состояние       | обёртка с `data-*` вокруг слота |
 

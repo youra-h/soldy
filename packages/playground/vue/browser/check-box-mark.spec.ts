@@ -12,11 +12,11 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { render, cleanup } from 'vitest-browser-vue'
 import { defineComponent, h } from 'vue'
 import { COMPONENT_SIZES } from '@soldy-ui/playground-shared'
-import { CheckBox, Icon, useIcon } from '@soldy-ui/vue'
+import { CheckBox, Icon, roleIcon } from '@soldy-ui/vue'
 
 import '@soldy-ui/theme-oren'
 
-const CHECK = useIcon('check')
+const CHECK = roleIcon('check')
 
 /** Флажок и иконка одного размера — рядом, в одном кегле. */
 const harness = (size: (typeof COMPONENT_SIZES)[number]) =>

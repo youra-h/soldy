@@ -13,7 +13,7 @@ import { mount } from '@vue/test-utils'
 import { defineComponent, h, nextTick, ref, type ComponentOptions } from 'vue'
 import * as material from '@soldy-ui/icons-material'
 import { CheckBox } from '@soldy-ui/vue'
-import { useIcon } from '../src/adapter'
+import { roleIcon } from '../src/adapter'
 
 let wrapper: ReturnType<typeof mount> | null = null
 
@@ -90,7 +90,7 @@ describe('CheckBox · отметка', () => {
 	 * новый на каждый вызов умножался бы на экземпляры чекбоксов.
 	 */
 	it('компонент иконки роли — один на роль', () => {
-		expect(useIcon('check')).toBe(useIcon('check'))
-		expect(useIcon('check')).not.toBe(useIcon('checkIndeterminate'))
+		expect(roleIcon('check')).toBe(roleIcon('check'))
+		expect(roleIcon('check')).not.toBe(roleIcon('checkIndeterminate'))
 	})
 })

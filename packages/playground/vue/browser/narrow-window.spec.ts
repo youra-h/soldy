@@ -41,7 +41,7 @@
 import { afterEach, describe, it, expect } from 'vitest'
 import { render } from 'vitest-browser-vue'
 import { page, userEvent } from 'vitest/browser'
-import { setIcons, useTheme } from '@soldy-ui/setup'
+import { useIcons, useTheme } from '@soldy-ui/setup'
 import * as material from '@soldy-ui/icons-material'
 import App from '../src/App.vue'
 import { router } from '../src/router'
@@ -53,7 +53,7 @@ import '@soldy-ui/theme-oren'
 import oren from '@soldy-ui/theme-oren/setup'
 import '../src/styles.css'
 
-setIcons(material)
+useIcons(material)
 useTheme(oren)
 
 const HEIGHT = 800

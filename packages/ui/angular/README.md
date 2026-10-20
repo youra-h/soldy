@@ -77,7 +77,7 @@ template: `<button so-button [ctrl]="btn" (soActionPress)="btn.disabled = true">
 ```
 
 An icon from the registered pack is an `<svg>` with the icon's role — import `RoleIconDirective`
-next to `TIconComponent`. Your own drawing is registered as a role too (`setIcons`): the icon renders
+next to `TIconComponent`. Your own drawing is registered as a role too (`useIcons`): the icon renders
 nothing written inside it.
 
 ```ts
@@ -205,13 +205,13 @@ template: `<ng-container so-locale-provider [locale]="locale()"><router-outlet /
 The application plugs in a theme and an icon pack once, in its entry point:
 
 ```ts
-import { setIcons, useTheme } from '@soldy-ui/setup'
+import { useIcons, useTheme } from '@soldy-ui/setup'
 import * as material from '@soldy-ui/icons-material'
 import oren from '@soldy-ui/theme-oren/setup'
 
 import '@soldy-ui/theme-oren'
 
-setIcons(material)
+useIcons(material)
 useTheme(oren)
 ```
 

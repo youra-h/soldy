@@ -1,4 +1,4 @@
-import { setIcons } from '@soldy-ui/setup'
+import { useIcons } from '@soldy-ui/setup'
 import * as material from '@soldy-ui/icons-material'
 
 /**
@@ -24,4 +24,4 @@ if (!('ResizeObserver' in globalThis)) {
  * приложения, иначе компоненты рисуют заглушки и сыплют предупреждениями.
  */
 
-setIcons(material)
+useIcons(material)
