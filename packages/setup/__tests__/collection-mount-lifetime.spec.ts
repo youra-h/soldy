@@ -20,6 +20,11 @@
  * подписки самого ядра в сверку не попадают. Монтирований три: утечка растёт с
  * каждым.
  *
+ * Перекрытые монтирования — новое принято раньше, чем снято прежнее, — идут и
+ * с `ctrl` снаружи, и без него, когда у каждой сборки свой инстанс и свой
+ * владелец, в обоих порядках снятия: привязку владельца держит последнее
+ * живое монтирование из тех, что её брали.
+ *
  * Идёт по всем фасадам коллекций из экспорта: новая коллекция без строки в
  * таблице роняет сторож.
  */
@@ -96,8 +101,18 @@ import {
 /** Сколько раз коллекция монтируется и снимается. */
 const MOUNTS = 3
 
-/** Монтирование: принять контексты и вернуть их снятие. */
-type TMount = () => () => void
+/** Принятое монтирование: его владелец и снятие. */
+type TMounted = {
+	/** `ctrl` снаружи или инстанс, который монтирование собрало само. */
+	readonly owner: object
+	readonly unmount: () => void
+}
+
+/**
+ * Монтирование над движком снаружи: над `ctrl` или, без него, со своим
+ * инстансом — тогда у каждого монтирования свой владелец.
+ */
+type TMount = (ctrl?: object) => TMounted
 
 /** Коллекция под сторожем: владелец и движок снаружи и её монтирование над ними. */
 type TCollectionKit = () => {
@@ -129,14 +144,15 @@ function accept(contexts: readonly IAdapterContext[]): () => void {
 
 /**
  * Смонтировать коллекцию так, как её монтируют адаптеры: свой контекст над
- * `ctrl` и контекст фасада на его наборе, с движком снаружи.
+ * `ctrl` — или со своим инстансом, если `ctrl` нет, — и контекст фасада на его
+ * наборе, с движком снаружи.
  */
 function mountOver<TFacade extends TCollectionOwner, TPlugins extends IPluginsContract>(
 	own: IComponentDescriptor,
 	collectionDescriptor: IComponentDescriptor<TContextContract<TFacade, TPlugins>>,
-	ctrl: object,
+	ctrl: object | undefined,
 	engine: TCollectionEngine<any, any>,
-): () => void {
+): TMounted {
 	const { factory: elevator } = createElevatorFactory()
 	const adapter = createAdapterContext(own, { ctrl })
 	const facade = createAdapterContext(
@@ -145,7 +161,7 @@ function mountOver<TFacade extends TCollectionOwner, TPlugins extends IPluginsCo
 		{ bundle: adapter.bundle },
 	).use(TCollectionExtension, { elevator })
 
-	return accept([adapter, facade])
+	return { owner: adapter.instance, unmount: accept([adapter, facade]) }
 }
 
 /** Коллекции экспорта — ключ по дескриптору фасада коллекции. */
@@ -157,8 +173,8 @@ const COLLECTIONS: Readonly<Record<string, TCollectionKit>> = {
 		return {
 			owner,
 			engine,
-			mount: () =>
-				mountOver(AccordionDescriptor(), AccordionCollectionDescriptor(), owner, engine),
+			mount: (ctrl) =>
+				mountOver(AccordionDescriptor(), AccordionCollectionDescriptor(), ctrl, engine),
 		}
 	},
 	CalendarCollectionDescriptor: () => {
@@ -168,8 +184,8 @@ const COLLECTIONS: Readonly<Record<string, TCollectionKit>> = {
 		return {
 			owner,
 			engine,
-			mount: () =>
-				mountOver(CalendarDescriptor(), CalendarCollectionDescriptor(), owner, engine),
+			mount: (ctrl) =>
+				mountOver(CalendarDescriptor(), CalendarCollectionDescriptor(), ctrl, engine),
 		}
 	},
 	ListBoxCollectionDescriptor: () => {
@@ -179,8 +195,8 @@ const COLLECTIONS: Readonly<Record<string, TCollectionKit>> = {
 		return {
 			owner,
 			engine,
-			mount: () =>
-				mountOver(ListBoxDescriptor(), ListBoxCollectionDescriptor(), owner, engine),
+			mount: (ctrl) =>
+				mountOver(ListBoxDescriptor(), ListBoxCollectionDescriptor(), ctrl, engine),
 		}
 	},
 	MenuCollectionDescriptor: () => {
@@ -190,7 +206,7 @@ const COLLECTIONS: Readonly<Record<string, TCollectionKit>> = {
 		return {
 			owner,
 			engine,
-			mount: () => mountOver(MenuDescriptor(), MenuCollectionDescriptor(), owner, engine),
+			mount: (ctrl) => mountOver(MenuDescriptor(), MenuCollectionDescriptor(), ctrl, engine),
 		}
 	},
 	// Пункт с подменю — владелец своих пунктов: фасад тот же, что у меню
@@ -201,13 +217,8 @@ const COLLECTIONS: Readonly<Record<string, TCollectionKit>> = {
 		return {
 			owner,
 			engine,
-			mount: () =>
-				mountOver(
-					MenuSubmenuDescriptor(),
-					MenuSubmenuCollectionDescriptor(),
-					owner,
-					engine,
-				),
+			mount: (ctrl) =>
+				mountOver(MenuSubmenuDescriptor(), MenuSubmenuCollectionDescriptor(), ctrl, engine),
 		}
 	},
 	PaginationCollectionDescriptor: () => {
@@ -217,8 +228,8 @@ const COLLECTIONS: Readonly<Record<string, TCollectionKit>> = {
 		return {
 			owner,
 			engine,
-			mount: () =>
-				mountOver(PaginationDescriptor(), PaginationCollectionDescriptor(), owner, engine),
+			mount: (ctrl) =>
+				mountOver(PaginationDescriptor(), PaginationCollectionDescriptor(), ctrl, engine),
 		}
 	},
 	RadioGroupCollectionDescriptor: () => {
@@ -228,8 +239,8 @@ const COLLECTIONS: Readonly<Record<string, TCollectionKit>> = {
 		return {
 			owner,
 			engine,
-			mount: () =>
-				mountOver(RadioGroupDescriptor(), RadioGroupCollectionDescriptor(), owner, engine),
+			mount: (ctrl) =>
+				mountOver(RadioGroupDescriptor(), RadioGroupCollectionDescriptor(), ctrl, engine),
 		}
 	},
 	SelectCollectionDescriptor: () => {
@@ -239,7 +250,8 @@ const COLLECTIONS: Readonly<Record<string, TCollectionKit>> = {
 		return {
 			owner,
 			engine,
-			mount: () => mountOver(SelectDescriptor(), SelectCollectionDescriptor(), owner, engine),
+			mount: (ctrl) =>
+				mountOver(SelectDescriptor(), SelectCollectionDescriptor(), ctrl, engine),
 		}
 	},
 	TableCollectionDescriptor: () => {
@@ -249,7 +261,8 @@ const COLLECTIONS: Readonly<Record<string, TCollectionKit>> = {
 		return {
 			owner,
 			engine,
-			mount: () => mountOver(TableDescriptor(), TableCollectionDescriptor(), owner, engine),
+			mount: (ctrl) =>
+				mountOver(TableDescriptor(), TableCollectionDescriptor(), ctrl, engine),
 		}
 	},
 	TabsCollectionDescriptor: () => {
@@ -259,7 +272,7 @@ const COLLECTIONS: Readonly<Record<string, TCollectionKit>> = {
 		return {
 			owner,
 			engine,
-			mount: () => mountOver(TabsDescriptor(), TabsCollectionDescriptor(), owner, engine),
+			mount: (ctrl) => mountOver(TabsDescriptor(), TabsCollectionDescriptor(), ctrl, engine),
 		}
 	},
 	TagsCollectionDescriptor: () => {
@@ -269,7 +282,7 @@ const COLLECTIONS: Readonly<Record<string, TCollectionKit>> = {
 		return {
 			owner,
 			engine,
-			mount: () => mountOver(TagsDescriptor(), TagsCollectionDescriptor(), owner, engine),
+			mount: (ctrl) => mountOver(TagsDescriptor(), TagsCollectionDescriptor(), ctrl, engine),
 		}
 	},
 	ToastsCollectionDescriptor: () => {
@@ -279,21 +292,26 @@ const COLLECTIONS: Readonly<Record<string, TCollectionKit>> = {
 		return {
 			owner,
 			engine,
-			mount: () => mountOver(ToastsDescriptor(), ToastsCollectionDescriptor(), owner, engine),
+			mount: (ctrl) =>
+				mountOver(ToastsDescriptor(), ToastsCollectionDescriptor(), ctrl, engine),
 		}
 	},
 }
 
-/** Шины, которые переживают монтирование: владелец, движок, драйвер и каждое расширение. */
-function spyOutside(owner: object, engine: TCollectionEngine<any, any>): IBusSpy[] {
+/** Шины движка, которые переживают монтирование: сам движок, драйвер и каждое расширение. */
+function spyEngine(engine: TCollectionEngine<any, any>): IBusSpy[] {
 	const extensions: Readonly<Record<string, unknown>> = engine.extensions
 
 	return [
-		...spyBus('владелец', owner),
 		...spyBus('движок', engine),
 		...spyBus('driver', engine.getCore().driver),
 		...Object.entries(extensions).flatMap(([key, extension]) => spyBus(key, extension)),
 	]
+}
+
+/** Шины, которые переживают монтирование: владелец и шины движка. */
+function spyOutside(owner: object, engine: TCollectionEngine<any, any>): IBusSpy[] {
+	return [...spyBus('владелец', owner), ...spyEngine(engine)]
 }
 
 describe('сторож: коллекция над владельцем и движком снаружи ничего на них не оставляет', () => {
@@ -308,7 +326,7 @@ describe('сторож: коллекция над владельцем и дви
 	it('шпионы видят пробросы фасада и слушателя обмена: пока Tabs смонтирован, они стоят', () => {
 		const { owner, engine, mount } = required(COLLECTIONS.TabsCollectionDescriptor, 'Tabs')()
 		const spies = spyOutside(owner, engine)
-		const unmount = mount()
+		const { unmount } = mount(owner)
 
 		expect(leftovers(spies)).toEqual(
 			expect.arrayContaining([
@@ -327,30 +345,60 @@ describe('сторож: коллекция над владельцем и дви
 		const { owner, engine, mount } = kit()
 		const spies = spyOutside(owner, engine)
 
-		for (let i = 0; i < MOUNTS; i++) mount()()
+		for (let i = 0; i < MOUNTS; i++) mount(owner).unmount()
 
 		expect(leftovers(spies)).toEqual([])
 	})
 })
 
 /**
- * Новое монтирование над тем же владельцем и движком бывает принято раньше,
- * чем снято прежнее: компонент перенесён к другому родителю за одну
- * перерисовку. Привязка владельца — одно монтирование: снимает её только
- * держатель, фасад последнего принятого, и снятие прежнего её не трогает.
+ * Перекрытие: каждая коллекция с `ctrl` снаружи — владелец у монтирований
+ * один — и без него, когда у каждого монтирования свой инстанс.
  */
-describe('сторож: новое монтирование принято раньше, чем снято прежнее — владелец остаётся за новым', () => {
-	it.each(Object.entries(COLLECTIONS))('%s', (_name, kit) => {
+const OVERLAPS = Object.entries(COLLECTIONS).flatMap(([name, kit]) => [
+	[`${name} · с ctrl`, kit, true] as const,
+	[`${name} · без ctrl`, kit, false] as const,
+])
+
+/**
+ * Новое монтирование над тем же движком бывает принято раньше, чем снято
+ * прежнее: компонент перенесён к другому родителю за одну перерисовку, ветка
+ * Svelte уходит анимацией. Привязку владельца держит последнее живое
+ * монтирование из тех, что её брали: снятие прежнего её не трогает, а снятие
+ * нового, пока прежнее живо, возвращает её прежнему.
+ */
+describe('сторож: новое монтирование принято раньше, чем снято прежнее — привязка у последнего живого', () => {
+	it.each(OVERLAPS)('%s · прежнее снято первым', (_name, kit, external) => {
 		const { owner, engine, mount } = kit()
-		const spies = spyOutside(owner, engine)
-		const unmountFirst = mount()
-		const unmountSecond = mount()
+		const spies = external ? spyOutside(owner, engine) : spyEngine(engine)
+		const ctrl = external ? owner : undefined
+		const first = mount(ctrl)
+		const second = mount(ctrl)
 
-		unmountFirst()
+		expect(engine.options.get('owner')).toBe(second.owner)
 
-		expect(engine.options.get('owner')).toBe(owner)
+		first.unmount()
 
-		unmountSecond()
+		expect(engine.options.get('owner')).toBe(second.owner)
+
+		second.unmount()
+
+		expect(engine.options.get('owner')).toBeUndefined()
+		expect(leftovers(spies)).toEqual([])
+	})
+
+	it.each(OVERLAPS)('%s · новое снято первым', (_name, kit, external) => {
+		const { owner, engine, mount } = kit()
+		const spies = external ? spyOutside(owner, engine) : spyEngine(engine)
+		const ctrl = external ? owner : undefined
+		const first = mount(ctrl)
+		const second = mount(ctrl)
+
+		second.unmount()
+
+		expect(engine.options.get('owner')).toBe(first.owner)
+
+		first.unmount()
 
 		expect(engine.options.get('owner')).toBeUndefined()
 		expect(leftovers(spies)).toEqual([])

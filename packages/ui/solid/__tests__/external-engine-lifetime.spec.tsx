@@ -11,9 +11,14 @@
  * расширений ни подписки, ни перехватчика, ни слушателя обмена. У таблицы
  * сверх них — строки, колонки и чекбокс «выбрать все»: заголовки и чекбоксы
  * собираются над ними, как над `ctrl` снаружи, — и `ctrl` обёртки `Virtual`.
+ *
+ * Список над движком без `ctrl`, перенесённый в `<Show>` раньше по документу,
+ * Solid собирает раньше, чем снимает прежний: привязку владельца забирает
+ * новое монтирование, хотя прежнее ещё держит движок.
  */
 
 import { describe, it, expect, afterEach, vi } from 'vitest'
+import { Show, createSignal } from 'solid-js'
 import {
 	TEvented,
 	TListBox,
@@ -21,6 +26,7 @@ import {
 	TVirtual,
 	createEngineListBox,
 	createEngineTable,
+	type TListBoxCollection,
 	type TTableCollection,
 } from '@soldy-ui/core'
 import { ListBox, Table, Virtual } from '@soldy-ui/solid'
@@ -156,6 +162,77 @@ describe('ListBox над движком и владельцем снаружи',
 			destroy()
 		}
 
+		expect(live()).toEqual([])
+	})
+})
+
+/** Владелец в опциях движка: без `ctrl` его собирает монтирование. */
+function ownerOf(engine: TListBoxCollection): TListBox {
+	const owner = engine.options.get('owner')
+
+	if (!(owner instanceof TListBox)) throw new Error('владельца у движка нет')
+
+	return owner
+}
+
+/**
+ * Без `ctrl` каждое монтирование собирает своего владельца, а движок снаружи
+ * тот же. Solid обновляет вычисления в порядке подписки на сигнал: `<Show>`
+ * раньше по документу собирает новый список до того, как `<Show>` после него
+ * снимает прежний. Привязку забирает новое монтирование, а снятие прежнего её
+ * не трогает.
+ */
+describe('ListBox над движком снаружи без ctrl, перенесённый за одно обновление', () => {
+	it('перенос в <Show> раньше по документу: движок у владельца нового монтирования, после снятия на шинах ничего', () => {
+		const engine = createEngineListBox({ items: ITEMS })
+		const extensions = Object.values(engine.extensions).flatMap((extension) =>
+			extension ? [extension.events] : [],
+		)
+		const live = watchBuses([engine.events, ...extensions])
+		const [swapped, setSwapped] = createSignal(false)
+		const [disabled, setDisabled] = createSignal(false)
+		const { container, destroy } = mount(() => (
+			<>
+				<Show when={swapped()}>
+					<section class="so-test-second">
+						<ListBox engine={engine} disabled={disabled()} />
+					</section>
+				</Show>
+				<Show when={!swapped()}>
+					<div class="so-test-first">
+						<ListBox engine={engine} disabled={disabled()} />
+					</div>
+				</Show>
+			</>
+		))
+		const itemsDisabled = () =>
+			[...container.querySelectorAll('.so-list-box-item')].map((item) =>
+				item.getAttribute('data-disabled'),
+			)
+		const first = ownerOf(engine)
+
+		setSwapped(true)
+
+		// Перенесён: элементы одного списка, движок — у нового владельца
+		expect(container.querySelector('.so-test-first')).toBeNull()
+		expect(container.querySelectorAll('.so-test-second .so-list-box-item')).toHaveLength(
+			ITEMS.length,
+		)
+		expect(ownerOf(engine)).not.toBe(first)
+
+		// Прежний владелец отпущен: его `disabled` до элементов не доходит
+		first.disabled = true
+
+		expect(itemsDisabled()).not.toContain('true')
+
+		// Подписки на нового живы: его `disabled` доходит до элементов
+		setDisabled(true)
+
+		expect(itemsDisabled()).toEqual(['true', 'true'])
+
+		destroy()
+
+		expect(engine.options.get('owner')).toBeUndefined()
 		expect(live()).toEqual([])
 	})
 })
