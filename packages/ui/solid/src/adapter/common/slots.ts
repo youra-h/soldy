@@ -8,6 +8,10 @@
  * быть функцией (ленивое мемо от компилятора), но такие функции вызываются
  * БЕЗ аргументов. Наш признак — объявленная арность: `length > 0` есть только
  * у пользовательской функции слота, принимающей scope.
+ *
+ * Scope функция слота получает живой (`liveScope`): прочитанное в её
+ * разметке следует за scope на месте, и смена scope не пересоздаёт того, что
+ * слот нарисовал.
  */
 
 import { children, untrack, type Accessor, type JSX } from 'solid-js'
@@ -51,8 +55,17 @@ export function hasSlot(content: unknown): boolean {
  * `children()` Solid — один раз на смену того, что слот читает, — и оба
  * чтения идут из него.
  *
- * Scope — аксессором: его читает только функция слота. Готовые узлы слота от
- * смены scope не пересоздаются, функция слота — зовётся заново с новым.
+ * Scope — аксессором, а функция слота получает его живым (`liveScope`), и
+ * мемо `children` следит только за тем, что функция прочла сама, в теле.
+ * Прочитанное в разметке слота (`scope.text`) смена scope обновляет на месте:
+ * подсказка ручки Slider переживает шаг, содержимое пункта ListBox, таба и
+ * секции Accordion — выбор. Прочитанное в теле — деструктуризация, условие
+ * `scope.selected ? … : null` — функцию перезапускает: так слот решает,
+ * рисовать ли своё, а пустое, что он вернул при новом scope, уступает место
+ * запасному. Готовые узлы слота от смены scope не пересоздаются вовсе.
+ *
+ * Живой scope собирается на вызов функции слота, а не на разворот: слоту без
+ * функции он не нужен, и пункт или звезда без слота лишнего объекта не держат.
  */
 export function resolveSlot<TScope extends object>(
 	content: () => TSlotContent<TScope> | undefined,
@@ -61,7 +74,7 @@ export function resolveSlot<TScope extends object>(
 	const resolved = children(() => {
 		const value = content()
 
-		return isSlotFunction(value) ? value(scope()) : value
+		return isSlotFunction(value) ? value(liveScope(scope)) : value
 	})
 
 	return () => {
@@ -73,15 +86,17 @@ export function resolveSlot<TScope extends object>(
 
 /**
  * Живой scope слота — объект с геттерами по ключам scope: каждый геттер берёт
- * своё значение из аксессора `scope` на каждое чтение. Функции слота его
- * отдают так: `renderSlot(props.trigger, liveScope(() => ({ … })))`.
+ * своё значение из аксессора `scope` на каждое чтение. Его получают функции
+ * всех слотов со scope: `resolveSlot` и проброс `relaySlot` собирают его сами,
+ * а разметка, которая рисует слот `renderSlot`, отдаёт его так:
+ * `renderSlot(props.trigger, liveScope(() => ({ … })))`.
  *
- * Нужен, когда содержимое слота должно пережить смену scope. Связка триггера
- * Popover (`triggerAria`, `triggerDataset`) меняется на каждое открытие, а
- * свежий объект scope функцию слота перезапускает: и литерал scope в разметке,
- * и `resolveSlot` читают его там, где зовут функцию, — и Solid пересоздал бы
- * всё, что она нарисовала. Новый триггер на каждое открытие, а при закрытии
- * кликом по триггеру фокус с прежнего узла падал бы на `body`.
+ * Свежий объект scope перезапускал бы функцию слота на каждую смену: и литерал
+ * scope в разметке, и разворот слота читают его там, где зовут функцию, — и
+ * Solid пересоздавал бы всё, что она нарисовала. Подсказку ручки Slider — на
+ * каждый шаг, содержимое пункта ListBox — на каждый выбор, триггер Popover —
+ * на каждое открытие: кнопка или поле внутри теряли бы фокус и состояние, а
+ * при закрытии кликом по триггеру фокус с прежнего узла падал бы на `body`.
  *
  * С живым scope функция слота зовётся один раз, а чтение уходит туда, где
  * scope читают:
@@ -96,11 +111,6 @@ export function resolveSlot<TScope extends object>(
  * Тип scope тот же, что в дескрипторе и у остальных адаптеров: значения, а не
  * аксессоры. Ключи — первого чтения, вне слежения: scope — литерал компонента,
  * набор ключей у него постоянный, а слежение за аксессором остаётся геттерам.
- *
- * Чем отличается от `resolveSlot`: тот разворачивает слот один раз, чтобы
- * разметка выбрала запасное содержимое, а функцию слота зовёт со свежим
- * объектом scope — и перезапускает её на каждую смену. Живой scope — про то,
- * чтобы смена scope функцию не перезапускала.
  */
 export function liveScope<TScope extends object>(scope: () => TScope): TScope {
 	const first = untrack(scope)
@@ -117,6 +127,33 @@ export function liveScope<TScope extends object>(scope: () => TScope): TScope {
 }
 
 /**
+ * Scope элемента и добавка владельца одним объектом — живыми полями: ключ
+ * scope — геттер, который на каждое чтение берёт то же поле scope, ключ
+ * `extra` — значение поверх, как в спреде `{ ...scope, ...extra }`. Спред
+ * прочёл бы все поля scope там, где его собирают, — в теле проброса, — и
+ * перезапускал бы слот владельца на каждую смену scope элемента. Форму и тип
+ * объекту здесь даёт спред вне слежения, и его значения тут же сменяют
+ * геттеры.
+ */
+function joinScope<TScope extends object, TExtra extends object>(
+	scope: TScope,
+	extra: TExtra,
+): TScope & TExtra {
+	const joined = untrack(() => ({ ...scope, ...extra }))
+
+	for (const key of Object.keys(scope)) {
+		if (Object.hasOwn(extra, key)) continue
+
+		Object.defineProperty(joined, key, {
+			enumerable: true,
+			get: () => Reflect.get(scope, key),
+		})
+	}
+
+	return joined
+}
+
+/**
  * Проброс слота владельца коллекции в слот элемента — то, что у Vue пишут
  * `<template #default="{ text }"><slot name="item" :item :text /></template>`,
  * как `relaySlot` у React.
@@ -125,6 +162,11 @@ export function liveScope<TScope extends object>(scope: () => TScope): TScope {
  * владелец, — сам элемент (`extra`). Готовые узлы, нарисованные владельцем,
  * scope элемента теряли бы: `text`, `selected` и `active` держит элемент, и до
  * слота владельца они не доходили.
+ *
+ * Scope элемента живой (`resolveSlot` элемента), и проброс сливает его с
+ * `extra` живыми полями, без спреда: слот владельца, прочитавший scope в
+ * разметке (`scope.text`), переживает смену scope элемента — выбор пункта,
+ * активацию таба — теми же узлами.
  *
  * Проброс — функция с параметром: функцию слота `renderSlot` узнаёт по
  * арности, и без параметра проброс сочли бы ленивым мемо компилятора — готовым
@@ -143,5 +185,5 @@ export function relaySlot<TScope extends object, TExtra extends object>(
 ): ((scope: TScope) => JSX.Element) | undefined {
 	if (!hasSlot(content)) return undefined
 
-	return (scope) => renderSlot<TScope & TExtra>(content, { ...scope, ...extra })
+	return (scope) => renderSlot<TScope & TExtra>(content, joinScope(scope, extra))
 }

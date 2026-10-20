@@ -15,6 +15,7 @@ import { TButton } from '@soldy-ui/core'
 import {
 	Button,
 	liveScope,
+	relaySlot,
 	renderSlot,
 	type ButtonProps,
 	type CheckBoxProps,
@@ -110,15 +111,78 @@ describe('поведение слотов Button', () => {
 		expect(el.querySelector('.so-button__text b')).toBe(node)
 	})
 
-	it('функция слота зовётся заново со сменой text', () => {
+	/**
+	 * Scope функция слота получает живой (`liveScope`): прочитанное в её
+	 * разметке следует за ним на месте, и функция зовётся один раз — кнопка или
+	 * поле внутри слота не теряют ни узла, ни фокуса.
+	 */
+	it('scope, прочитанный в разметке, — содержимое следует за text на месте, узел тот же', () => {
 		const ctrl = new TButton({ text: 'a' })
+		let calls = 0
 		const el = mount(() => (
-			<Button ctrl={ctrl}>{(scope: { text: string }) => <b>{scope.text}!</b>}</Button>
+			<Button ctrl={ctrl}>
+				{(scope: { text: string }) => {
+					calls += 1
+
+					return <b>{scope.text}!</b>
+				}}
+			</Button>
+		)).root()
+		const node = el.querySelector('.so-button__text b')
+
+		ctrl.text = 'b'
+
+		expect(el.querySelector('.so-button__text b')).toBe(node)
+		expect(node?.textContent).toBe('b!')
+		expect(calls).toBe(1)
+	})
+
+	/**
+	 * Прочитанное в теле функции — деструктуризация — читается при вызове, и
+	 * смена scope функцию перезапускает, с новым значением.
+	 */
+	it('деструктурированный scope — функция зовётся заново, с новым text', () => {
+		const ctrl = new TButton({ text: 'a' })
+		let calls = 0
+		const el = mount(() => (
+			<Button ctrl={ctrl}>
+				{({ text }: { text: string }) => {
+					calls += 1
+
+					return <b>{text}!</b>
+				}}
+			</Button>
 		)).root()
 
 		ctrl.text = 'b'
 
 		expect(el.querySelector('.so-button__text')?.textContent).toBe('b!')
+		expect(calls).toBe(2)
+	})
+
+	/**
+	 * Рисовать ли своё, слот решает по scope в теле функции: пустое, что он
+	 * вернул при новом scope, уступает место тексту, а непустое вытесняет его
+	 * снова.
+	 */
+	it('пустое при новом scope уступает место text, непустое — вытесняет его', () => {
+		const ctrl = new TButton({ text: 'a' })
+		const el = mount(() => (
+			<Button ctrl={ctrl}>
+				{(scope: { text: string }) => (scope.text === 'a' ? <b>свой</b> : null)}
+			</Button>
+		)).root()
+		const content = () => el.querySelector('.so-button__text')?.innerHTML
+
+		expect(content()).toBe('<b>свой</b>')
+
+		ctrl.text = 'b'
+
+		expect(content()).toBe('b')
+
+		ctrl.text = 'a'
+
+		expect(content()).toBe('<b>свой</b>')
 	})
 
 	it('слот, заданный после монтирования, вытесняет text, снятый — возвращает', () => {
@@ -318,6 +382,59 @@ describe('живой scope', () => {
 
 		expect(Object.keys(scope)).toEqual(['text', 'aria'])
 		expect({ ...scope }).toEqual({ text: 'b', aria: { 'aria-label': 'b' } })
+	})
+
+	/**
+	 * Проброс (`relaySlot`) сливает живой scope элемента с тем, что добавил
+	 * владелец, живыми полями, а не спредом: спред прочёл бы scope в теле
+	 * проброса, и слот владельца перерисовывался бы на каждую его смену.
+	 */
+	it('проброс: scope элемента и добавка — живыми полями, слот владельца зовётся один раз', () => {
+		const { scope, setText } = live()
+		let joined: (TScope & { item: string }) | undefined
+		let calls = 0
+		const relay = relaySlot<TScope, { item: string }>(
+			(slot) => {
+				calls += 1
+				joined = slot
+
+				return (
+					<b>
+						{slot.text}:{slot.item}
+					</b>
+				)
+			},
+			{ item: 'x' },
+		)
+		const { container } = mount(() => <div>{renderSlot(relay, scope)}</div>)
+		const node = container.querySelector('b')
+
+		setText('b')
+
+		expect(container.querySelector('b')).toBe(node)
+		expect(node?.textContent).toBe('b:x')
+		expect(calls).toBe(1)
+		expect(Object.keys(joined ?? {})).toEqual(['text', 'aria', 'item'])
+		expect({ ...joined }).toEqual({ text: 'b', aria: { 'aria-label': 'b' }, item: 'x' })
+	})
+
+	it('проброс: добавка владельца — поверх scope элемента, как в спреде', () => {
+		let joined: { item: string } | undefined
+		const relay = relaySlot<{ item: string }, { item: string }>(
+			(slot) => {
+				joined = slot
+
+				return null
+			},
+			{ item: 'владелец' },
+		)
+
+		renderSlot(
+			relay,
+			liveScope(() => ({ item: 'элемент' })),
+		)
+
+		expect(joined?.item).toBe('владелец')
 	})
 
 	/**

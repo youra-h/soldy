@@ -13,7 +13,8 @@ are snippets, events arrive as callback props (`element:ready` → `onElementRea
 slot is `children`.
 
 > **Status:** the Svelte adapter is in progress — Button, Icon, Label, Frame, ProgressSpinner,
-> Skeleton, the fields Input, Textarea (multi-line, growing with its text, with a character
+> Skeleton, the fields Input, NumberInput (a number in the locale's format with − and + step
+> buttons; the form gets the number), Textarea (multi-line, growing with its text, with a character
 > counter), CheckBox and Switch, the form field `Field` (label, helper and error linked to the
 > control inside it), the collections ListBox, Tabs, Accordion, RadioGroup and Tags
 > (`<ListBox.Item>`, `<Tabs.Item>` with `<Tabs.Content>`, `<Accordion.Item>`,
@@ -22,9 +23,9 @@ slot is `children`.
 > search or filter, tags in the field in `multiple`), Table (columns and rows as data — `columns`,
 > `items` — with sorting, row selection, column resizing and reordering), the `Virtual` window for
 > long lists (`<Virtual><ListBox items={…} /></Virtual>`, the same with `Select` and `Table`), the
-> `DragAndDrop` wrapper
-> that lets users reorder the items of Tabs, ListBox and Accordion by dragging
-> (`<DragAndDrop onMove={…}><ListBox items={…} /></DragAndDrop>`, `onMoveBefore` can cancel),
+> `DragAndDrop` wrapper that lets users reorder the items of Tabs, ListBox and Accordion by
+> dragging (`<DragAndDrop onMove={…}><ListBox items={…} /></DragAndDrop>`, `onMoveBefore` can
+> cancel),
 > Slider, Rating, ProgressLinear, Scroller, Pagination and the overlays — Popover (a panel at a
 > trigger with any content), Tooltip, Dialog (a modal window), Drawer (a panel that slides in at an
 > edge) and Toasts (notifications shown from code with `useToasts()`) — are ported, the rest of the

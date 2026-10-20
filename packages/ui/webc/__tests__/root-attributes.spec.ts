@@ -39,6 +39,7 @@ import {
 	TLabelElement,
 	TListBoxElement,
 	TListBoxItemElement,
+	TNumberInputElement,
 	TProgressSpinnerElement,
 	TRadioGroupElement,
 	TRadioGroupItemElement,
@@ -60,6 +61,7 @@ import {
 	type TLabelElementProps,
 	type TListBoxElementProps,
 	type TListBoxItemElementProps,
+	type TNumberInputElementProps,
 	type TProgressSpinnerElementProps,
 	type TRadioGroupElementProps,
 	type TRadioGroupItemElementProps,
@@ -130,6 +132,10 @@ function isSwitch(node: Element | null): node is TSwitchElementProps {
 
 function isInput(node: Element | null): node is TInputElementProps {
 	return node instanceof TInputElement
+}
+
+function isNumberInput(node: Element | null): node is TNumberInputElementProps {
+	return node instanceof TNumberInputElement
 }
 
 function isTextarea(node: Element | null): node is TTextareaElementProps {
@@ -206,6 +212,14 @@ const COMPONENTS: ReadonlyArray<
 	['CheckBox', 'span', 'so-check-box', isCheckBox, 'so-check-box', 'input'],
 	['Switch', 'span', 'so-switch', isSwitch, 'so-switch', 'input'],
 	['Input', 'div', 'so-input', isInput, 'so-input', 'input'],
+	[
+		'NumberInput',
+		'div',
+		'so-number-input',
+		isNumberInput,
+		'so-number-input',
+		'.so-number-input__input',
+	],
 	['Textarea', 'div', 'so-textarea', isTextarea, 'so-textarea', 'textarea'],
 	['Tabs', 'div', 'so-tabs', isTabs, 'so-tabs', '[role="tablist"]'],
 	['Tabs.Item', 'div', 'so-tabs-item', isTabsItem, 'so-tabs-item', '[embedded="tabs.row"]'],
@@ -333,6 +347,7 @@ const INVALID_FIELDS = [
 	['CheckBox', '<span is="so-check-box" disabled></span>', '.so-check-box'],
 	['Switch', '<span is="so-switch" disabled></span>', '.so-switch'],
 	['Input', '<div is="so-input" disabled></div>', '.so-input'],
+	['NumberInput', '<div is="so-number-input" disabled></div>', '.so-number-input'],
 	['Textarea', '<div is="so-textarea" disabled></div>', '.so-textarea'],
 ] as const
 

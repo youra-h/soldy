@@ -10,6 +10,7 @@ import IconPreview from './IconPreview.svelte'
 import InputPreview from './InputPreview.svelte'
 import LabelPreview from './LabelPreview.svelte'
 import ListBoxPreview from './ListBoxPreview.svelte'
+import NumberInputPreview from './NumberInputPreview.svelte'
 import PaginationPreview from './PaginationPreview.svelte'
 import PopoverPreview from './PopoverPreview.svelte'
 import ProgressLinearPreview from './ProgressLinearPreview.svelte'
@@ -54,6 +55,7 @@ export type TPreview = Component<TPreviewProps>
 export const PREVIEWS: Record<string, TPreview> = {
 	button: ButtonPreview,
 	input: InputPreview,
+	'number-input': NumberInputPreview,
 	textarea: TextareaPreview,
 	'check-box': CheckBoxPreview,
 	switch: SwitchPreview,

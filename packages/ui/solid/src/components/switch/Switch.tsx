@@ -3,6 +3,7 @@ import { Dynamic } from 'solid-js/web'
 import {
 	Elevate,
 	createRootProps,
+	liveScope,
 	renderSlot,
 	rootTag,
 	toControlAttrs,
@@ -29,8 +30,9 @@ import type { SwitchAttributes, SwitchProps } from './base.component'
  *
  * Дорожка — декор: `aria-hidden` не пускает содержимое слотов в доступное
  * имя, которое переключателю даёт подпись. В ручке — слот `on` у включённого
- * и `off` у выключенного, scope `{ value, ctrl }`. Запасного содержимого у
- * них нет, и каждый слот читается один раз — когда ручка его показывает.
+ * и `off` у выключенного, scope `{ value, ctrl }` — живой (`liveScope`), как у
+ * всех слотов со scope. Запасного содержимого у них нет, и каждый слот
+ * читается один раз — когда ручка его показывает.
  *
  * Поле формы `Field` над переключателем отдаёт ему ошибку, `id` и ссылки на
  * части (`TFieldControlExtension`), а своему содержимому переключатель
@@ -47,7 +49,7 @@ export function Switch(props: SwitchProps): JSX.Element {
 		sets: [state.attrs, state.dataset],
 		forward: toRootForward(binding.forwardProps()),
 	}))
-	const scope = () => ({ value: state.value, ctrl })
+	const scope = liveScope(() => ({ value: state.value, ctrl }))
 
 	return (
 		<Show when={state.rendered}>
@@ -65,8 +67,8 @@ export function Switch(props: SwitchProps): JSX.Element {
 					/>
 					<span class="so-switch__track" aria-hidden="true">
 						<span class="so-switch__track--thumb">
-							<Show when={state.value} fallback={renderSlot(props.off, scope())}>
-								{renderSlot(props.on, scope())}
+							<Show when={state.value} fallback={renderSlot(props.off, scope)}>
+								{renderSlot(props.on, scope)}
 							</Show>
 						</span>
 					</span>

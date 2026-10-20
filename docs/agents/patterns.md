@@ -1248,14 +1248,30 @@ useToasts()`. API опускает лифт (`TOASTS_ELEVATOR`, расширен
   сенсорных устройствах Apple — роль `textbox` (VoiceOver на iOS счётчик не
   фокусирует), а при разрешённом минусе — `inputmode="text"`: у цифровой
   клавиатуры iOS минуса нет (`TNumberInputTouchPlugin`, набор `inputSets`). В
-  форму уходит скрытое поле с числом («1234.5»), а не текст. Подпись `Field`
-  называет ввод своим `for`. Адаптеры: Vue. Сторожат
-  `core/__tests__/number-input.spec.ts`, `core/__tests__/scale.spec.ts`,
-  `plugins/__tests__/number-input.plugin.spec.ts`,
-  `ui/vue/__tests__/number-input.spec.ts` и
+  форму уходит скрытое поле с числом («1234.5»), а не текст; без числа его
+  значение — пустая строка. Подпись `Field` называет ввод своим `for`.
+  Адаптеры: Vue, React, Solid, Svelte и Web Components
+  (`<div is="so-number-input">`), Angular — пока нет. Разметка у всех — Vue:
+  корень по `tag`, атрибуты потребителя делятся, как у Input (класс и стиль —
+  корню, остальное — вводу, поверх его наборов), на вводе — `inputAttrs`,
+  `aria` и `inputAria` в этом порядке, кнопки шага — Button-детали без
+  обработчиков, с классами, по которым их находит плагин. Текст ввода —
+  буфер правки ядра (`text`), и в узел его пишет помощник адаптера, только
+  когда он разошёлся с узлом: `NativeInput` у React, `fieldText` у Solid и
+  Svelte, привязка шаблона у Web Components; на сервере — атрибутом `value` в
+  формате локали. `inputmode` из набора React получает пропом `inputMode`
+  (таблица имён `toAriaProps`). У Web Components слой владельца у элемента
+  один, поэтому три набора ввода и оба набора каждой кнопки шага шаблон
+  кладёт одной привязкой. Сторожат `core/__tests__/number-input.spec.ts`,
+  `core/__tests__/scale.spec.ts`,
+  `plugins/__tests__/number-input.plugin.spec.ts`, `number-input.spec.*`
+  каждого адаптера (у Solid и Svelte — и `number-input.server.spec.*`, у React
+  — гидратация), спеки атрибутов корня, фокуса и поля формы адаптеров,
   `playground/vue/browser/number-input.spec.ts` (набор `ru-RU`, отказ знака без
   сдвига каретки, удержание до края, Enter отправляет форму с числом,
-  направление в RTL, зоны кнопок `sm`, вровень с Input в `Field`).
+  направление в RTL, зоны кнопок `sm`, вровень с Input в `Field`),
+  `svelte-host.spec.ts` и `webc-fields.spec.ts` (поле и кнопки стоят, как у
+  Vue; цифра в середину числа без сдвига каретки).
 - **ProgressLinear** — индикатор выполнения линией, роль `progressbar` на
   корне. Модель доли — у базы `TProgress`, общей с кольцом ProgressSpinner
   (ниже). `aria-valuemin` и `aria-valuemax` стоят всегда, `aria-valuenow` —

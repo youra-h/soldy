@@ -34,6 +34,7 @@ import {
 	TButton,
 	TCheckBox,
 	TInput,
+	TNumberInput,
 	TSwitch,
 	TTextarea,
 	createEngineTable,
@@ -52,6 +53,7 @@ import {
 	Input,
 	Label,
 	ListBox,
+	NumberInput,
 	Pagination,
 	Popover,
 	ProgressLinear,
@@ -88,6 +90,7 @@ import {
 	type InputProps,
 	type LabelProps,
 	type ListBoxProps,
+	type NumberInputProps,
 	type PaginationProps,
 	type PopoverProps,
 	type ProgressLinearProps,
@@ -178,22 +181,32 @@ const COMPONENTS: ReadonlyArray<readonly [string, (props: TProbeProps) => TMount
 ]
 
 /** Общие пропсы полей в таблице. */
-type TFieldProbeProps = CheckBoxProps & SwitchProps & InputProps & TextareaProps & SelectProps
+type TFieldProbeProps = CheckBoxProps &
+	SwitchProps &
+	InputProps &
+	NumberInputProps &
+	TextareaProps &
+	SelectProps
 
 /**
  * Поле и класс его корня. Атрибуты потребителя поле делит, как у Vue: класс и
- * стиль — корню, остальное — `<input>` (у Textarea — `<textarea>`), поверх его
- * набора `aria`. Корень остаётся за адаптером и у него.
+ * стиль — корню, остальное — `<input>` (у Textarea — `<textarea>`, у
+ * NumberInput — ввод), поверх его набора `aria`. Корень остаётся за адаптером
+ * и у него.
  */
 const FIELDS: ReadonlyArray<readonly [string, Component<TFieldProbeProps>, string]> = [
 	['CheckBox', CheckBox, '.so-check-box'],
 	['Switch', Switch, '.so-switch'],
 	['Input', Input, '.so-input'],
+	['NumberInput', NumberInput, '.so-number-input'],
 	['Textarea', Textarea, '.so-textarea'],
 	['Select', Select, '.so-select'],
 ]
 
-/** Поле внутри корня: `<input>`, у Textarea — `<textarea>`. */
+/**
+ * Поле внутри корня: `<input>`, у Textarea — `<textarea>`, у NumberInput —
+ * первый `<input>`, ввод: скрытое поле формы стоит последним.
+ */
 const CONTROL = 'input, textarea'
 
 /** Контрол с ошибкой: её задают инстансу — в разметке её задаёт поле формы. */
@@ -216,6 +229,11 @@ const INVALID_FIELDS: ReadonlyArray<readonly [string, () => TMounted, string]> =
 		'.so-switch',
 	],
 	['Input', () => mount(Input, { ctrl: invalid(new TInput({ disabled: true })) }), '.so-input'],
+	[
+		'NumberInput',
+		() => mount(NumberInput, { ctrl: invalid(new TNumberInput({ disabled: true })) }),
+		'.so-number-input',
+	],
 	[
 		'Textarea',
 		() => mount(Textarea, { ctrl: invalid(new TTextarea({ disabled: true })) }),
@@ -317,6 +335,7 @@ describe('поле: атрибуты снаружи — полю, поверх �
 		},
 	)
 
+	/** Свой класс у поля бывает — ввод NumberInput: по нему ввод находят плагины. */
 	it.each(FIELDS)('%s: класс и стиль — корню, а не полю', (_name, component, selector) => {
 		mount(component, { class: 'mine', style: 'color: red' })
 
@@ -325,7 +344,7 @@ describe('поле: атрибуты снаружи — полю, поверх �
 
 		expect([...root.classList].at(-1)).toBe('mine')
 		expect(root.style.color).toBe('red')
-		expect(field.hasAttribute('class')).toBe(false)
+		expect(field.classList.contains('mine')).toBe(false)
 		expect(field.hasAttribute('style')).toBe(false)
 	})
 
@@ -754,6 +773,7 @@ const ROOTS: ReadonlyArray<readonly [TRootKind, string, string]> = [
 	['ProgressLinear', '.so-progress-linear', '.so-progress-linear'],
 	['Skeleton', '.so-skeleton', '.so-skeleton'],
 	['Input', '.so-input', '.so-input'],
+	['NumberInput', '.so-number-input', '.so-number-input'],
 	['Textarea', '.so-textarea', '.so-textarea'],
 	['CheckBox', '.so-check-box', '.so-check-box'],
 	['Switch', '.so-switch', '.so-switch'],
@@ -784,7 +804,15 @@ const ROOTS: ReadonlyArray<readonly [TRootKind, string, string]> = [
 
 /** Поля: `ref` — корень, а не `<input>` или `<textarea>`. */
 const FIELD_ROOTS = ROOTS.filter(([kind]) =>
-	['Input', 'Textarea', 'CheckBox', 'Switch', 'RadioGroup.Item', 'Select'].includes(kind),
+	[
+		'Input',
+		'NumberInput',
+		'Textarea',
+		'CheckBox',
+		'Switch',
+		'RadioGroup.Item',
+		'Select',
+	].includes(kind),
 )
 
 /** Записи `ref` компонентом — по порядку; узлы сверяют по ссылке, как у `readyProbe`. */
