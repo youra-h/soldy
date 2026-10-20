@@ -120,10 +120,9 @@ In a form it is simply a button:
 A field — `<div is="so-input">`, `<div is="so-textarea">`, `<span is="so-check-box">`,
 `<span is="so-switch">` — is your element with a real `<input>` (a `<textarea>`) inside, in the
 page's ordinary DOM. The form sees that field by itself: `FormData`, `<fieldset disabled>`,
-validation and `<label>` work as with any input, no
-form-associated element involved. A checkbox and a switch get their visible name from
-`<label is="so-label">` around them: clicking the text toggles the control, and the text becomes
-its accessible name.
+validation and `<label>` work as with any input, no form-associated element involved. A checkbox
+and a switch get their visible name from `<label is="so-label">` around them: clicking the text
+toggles the control, and the text becomes its accessible name.
 
 ```html
 <form>
