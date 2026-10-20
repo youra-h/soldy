@@ -16,6 +16,11 @@ import {
 	type CheckBoxProps,
 	type FrameProps,
 	type InputProps,
+	type PaginationProps,
+	type ProgressLinearProps,
+	type RatingProps,
+	type ScrollerProps,
+	type SliderProps,
 	type UseDomProps,
 } from '@soldy-ui/react'
 
@@ -185,5 +190,20 @@ describe('содержимое — только слот default', () => {
 		expectTypeOf<InputProps>().not.toHaveProperty('children')
 		expectTypeOf<FrameProps>().toHaveProperty('children')
 		expectTypeOf<FrameProps['children']>().toEqualTypeOf<ReactNode>()
+	})
+
+	/**
+	 * У ползунков, оценки, пагинации и линии содержимого нет: ручки, звёзды и
+	 * страницы рисует сам компонент, а их содержимое — слоты со scope
+	 * (`thumb`, `mark`, `icon`, `item`). У ленты — есть: её содержимое лежит
+	 * прямо во вьюпорте.
+	 */
+	it('у Slider, Rating, Pagination и ProgressLinear children нет, у Scroller — есть', () => {
+		expectTypeOf<SliderProps>().not.toHaveProperty('children')
+		expectTypeOf<RatingProps>().not.toHaveProperty('children')
+		expectTypeOf<PaginationProps>().not.toHaveProperty('children')
+		expectTypeOf<ProgressLinearProps>().not.toHaveProperty('children')
+		expectTypeOf<ScrollerProps>().toHaveProperty('children')
+		expectTypeOf<ScrollerProps['children']>().toEqualTypeOf<ReactNode>()
 	})
 })

@@ -5,8 +5,9 @@
  * адаптере есть. Части — разметка поля: часть стоит, пока задан её текст,
  * ошибка — при `invalid` и на месте подсказки. С контролом поле связывает
  * проводка: поле опускает связку по лифту (`Elevate`), контрол её берёт.
- * Labelable-контрол (Input, CheckBox, Switch) подпись называет своим `for`,
- * группу (RadioGroup) — ссылкой `aria-labelledby`. Справку контрол получает в
+ * Labelable-контрол (Input, CheckBox, Switch, Rating, Slider с одной ручкой)
+ * подпись называет своим `for`, группу (RadioGroup, Slider с несколькими
+ * ручками) — ссылкой `aria-labelledby`. Справку контрол получает в
  * `aria-describedby`, ошибку — `aria-invalid` и `data-invalid` на своём корне.
  *
  * Своё у React — момент приёма: контрол сообщает полю о себе при коммите, а
@@ -22,8 +23,8 @@ import { describe, it, expect, vi } from 'vitest'
 import { StrictMode, act, useState, type ReactElement, type ReactNode } from 'react'
 import { hydrateRoot } from 'react-dom/client'
 import { renderToString } from 'react-dom/server'
-import { TField, TInput } from '@soldy-ui/core'
-import { CheckBox, Field, Input, Label, RadioGroup, Switch } from '@soldy-ui/react'
+import { TField, TInput, TSlider } from '@soldy-ui/core'
+import { CheckBox, Field, Input, Label, RadioGroup, Rating, Slider, Switch } from '@soldy-ui/react'
 import { find, mount, nextFrame, track } from './mount'
 
 /** Подпись поля на странице; нет её — тест падает здесь. */
@@ -149,6 +150,8 @@ const LABELABLES: ReadonlyArray<readonly [string, () => ReactNode, string, strin
 	['Input', () => <Input />, '.so-input', '.so-input input'],
 	['CheckBox', () => <CheckBox />, '.so-check-box', '.so-check-box input'],
 	['Switch', () => <Switch />, '.so-switch', '.so-switch input'],
+	['Rating', () => <Rating />, '.so-rating', '.so-rating input'],
+	['Slider', () => <Slider />, '.so-slider', '.so-slider input'],
 ]
 
 describe.each(LABELABLES)('%s в поле', (_name, control, root, element) => {
@@ -243,6 +246,92 @@ describe('RadioGroup в поле', () => {
 			false,
 			false,
 		])
+	})
+})
+
+/**
+ * Ползунок с несколькими ручками — группа: `for` назвал бы одно поле из них, а
+ * ссылка на подпись в наборе полей перекрыла бы имена ручек (`thumbLabels`).
+ * Подпись и справка — у корня (`role="group"`), а ошибка — `aria-invalid` на
+ * каждом поле: на группе ARIA ошибки не объявляет.
+ */
+describe('Slider с несколькими ручками в поле', () => {
+	const range = () => <Slider value={[20, 80]} thumbLabels={['От', 'До']} />
+	const root = () => find(document, '.so-slider', HTMLElement)
+	const thumbs = () => [...document.querySelectorAll('.so-slider input')]
+
+	it('for у подписи нет, корень — группа со ссылкой на подпись, имена ручек целы', () => {
+		mount(<Field label="Цена">{range()}</Field>)
+
+		expect(label().hasAttribute('for')).toBe(false)
+		expect(root().getAttribute('role')).toBe('group')
+		expect(refsOf(root(), 'aria-labelledby')).toEqual([label().id])
+		expect(thumbs().map((thumb) => thumb.getAttribute('aria-label'))).toEqual(['От', 'До'])
+		expect(thumbs().map((thumb) => thumb.hasAttribute('aria-labelledby'))).toEqual([
+			false,
+			false,
+		])
+		expect(thumbs().map((thumb) => thumb.id)).toEqual(['', ''])
+	})
+
+	it('справка — у группы, ошибка — aria-invalid на каждой ручке, data-invalid на корне', () => {
+		const ctrl = new TField({ label: 'Цена', helper: 'Подсказка', error: 'Ошибка' })
+
+		mount(<Field ctrl={ctrl}>{range()}</Field>)
+
+		expect(refsOf(root(), 'aria-describedby')).toEqual([
+			find(document, '.so-field__helper', HTMLElement).id,
+		])
+		expect(thumbs().map((thumb) => thumb.hasAttribute('aria-describedby'))).toEqual([
+			false,
+			false,
+		])
+
+		act(() => {
+			ctrl.invalid = true
+		})
+
+		expect(refsOf(root(), 'aria-describedby')).toEqual([
+			find(document, '.so-field__error', HTMLElement).id,
+		])
+		expect(thumbs().map((thumb) => thumb.getAttribute('aria-invalid'))).toEqual([
+			'true',
+			'true',
+		])
+		expect(root().hasAttribute('aria-invalid')).toBe(false)
+		expect(root().dataset['invalid']).toBe('true')
+	})
+
+	it('число ручек сменилось — подпись за ним: for у одной, ссылка группы у нескольких', () => {
+		const ctrl = new TSlider({ value: 30 })
+
+		mount(
+			<Field label="Цена">
+				<Slider ctrl={ctrl} />
+			</Field>,
+		)
+
+		expect(label().htmlFor).toBe(find(document, '.so-slider input', HTMLInputElement).id)
+
+		act(() => {
+			ctrl.value = [20, 80]
+		})
+
+		expect(label().hasAttribute('for')).toBe(false)
+		expect(root().getAttribute('role')).toBe('group')
+		expect(refsOf(root(), 'aria-labelledby')).toEqual([label().id])
+		expect(thumbs().map((thumb) => thumb.id)).toEqual(['', ''])
+
+		act(() => {
+			ctrl.value = 50
+		})
+
+		const input = find(document, '.so-slider input', HTMLInputElement)
+
+		expect(input.id).not.toBe('')
+		expect(label().htmlFor).toBe(input.id)
+		expect(root().hasAttribute('role')).toBe(false)
+		expect(root().hasAttribute('aria-labelledby')).toBe(false)
 	})
 })
 
@@ -542,5 +631,38 @@ describe('Field · серверный рендер', () => {
 			label(server).id,
 		])
 		expect(label(client).hasAttribute('for')).toBe(false)
+	})
+
+	it('ползунок с несколькими ручками: сервер рисует группу со ссылками на подпись и справку', () => {
+		const { server, client, onRecoverableError } = hydrate(
+			<Field label="Цена" helper="Подсказка">
+				<Slider value={[20, 80]} thumbLabels={['От', 'До']} />
+			</Field>,
+		)
+		const group = find(server, '.so-slider', HTMLElement)
+
+		expect(onRecoverableError).not.toHaveBeenCalled()
+		expect(group.getAttribute('role')).toBe('group')
+		expect(refsOf(group, 'aria-labelledby')).toEqual([label(server).id])
+		expect(refsOf(group, 'aria-describedby')).toEqual([
+			find(server, '.so-field__helper', HTMLElement).id,
+		])
+		expect(refsOf(find(client, '.so-slider', HTMLElement), 'aria-labelledby')).toEqual([
+			label(server).id,
+		])
+	})
+
+	it('оценка в поле формы: id поля и for подписи у сервера и браузера одни', () => {
+		const { server, client, onRecoverableError } = hydrate(
+			<Field label="Оценка">
+				<Rating value={3} />
+			</Field>,
+		)
+		const input = find(client, 'input', HTMLInputElement)
+
+		expect(onRecoverableError).not.toHaveBeenCalled()
+		expect(input.id).toBe(find(server, 'input', HTMLInputElement).id)
+		expect(label(client).htmlFor).toBe(input.id)
+		expect(input.value).toBe('3')
 	})
 })
