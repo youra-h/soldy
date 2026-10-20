@@ -6,8 +6,8 @@
  * часть стоит, пока задан её текст, ошибка — при `invalid` и на месте
  * подсказки. С контролом поле связывает проводка: поле опускает связку лифтом
  * своему хосту, контрол находит её вверх по документу. Labelable-контрол
- * (Input, CheckBox, Switch) подпись называет своим `for`, группу (RadioGroup)
- * — ссылкой `aria-labelledby`. Справку контрол получает в
+ * (Input, NumberInput, CheckBox, Switch) подпись называет своим `for`, группу
+ * (RadioGroup) — ссылкой `aria-labelledby`. Справку контрол получает в
  * `aria-describedby`, ошибку — `aria-invalid` и `data-invalid` на своём
  * корне.
  *
@@ -226,6 +226,12 @@ describe('Field · разметка', () => {
  */
 const LABELABLES = [
 	['Input', '<div is="so-input"></div>', '.so-input', '.so-input input'],
+	[
+		'NumberInput',
+		'<div is="so-number-input"></div>',
+		'.so-number-input',
+		'.so-number-input__input',
+	],
 	['CheckBox', '<span is="so-check-box"></span>', '.so-check-box', '.so-check-box input'],
 	['Switch', '<span is="so-switch"></span>', '.so-switch', '.so-switch input'],
 ] as const
