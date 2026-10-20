@@ -1,0 +1,130 @@
+/**
+ * Сторож узла фокуса: каждый компонент с `TActionPlugin` решил, куда запись
+ * `focused = true` ставит фокус.
+ *
+ * Плагин действия ставит фокус на узел, который называет правило дескриптора
+ * (`ActionPluginDescriptor.with({ focusTarget })`), а без правила — на
+ * корень. У компонента, чей корень фокус не держит (поле, ListBox, Tabs),
+ * запись без правила меняла только свойство: фокус оставался, где был, а
+ * `focused` показывал неправду. Поэтому решение обязано быть записано: правило
+ * в дескрипторе или имя в одном из списков ниже. Новый контрол без решения
+ * роняет тест, а имя, которое решение уже получило, — тоже: список не копит
+ * устаревшего.
+ */
+
+import { describe, it, expect } from 'vitest'
+import { TActionPlugin } from '@soldy-ui/plugins'
+import type { IComponentDescriptor } from '../protected/define'
+import { exportedDescriptors } from './helpers'
+
+/** Фокус держит сам корень: правило не нужно. */
+const ROOT_HOLDS_FOCUS = new Set([
+	'ButtonDescriptor',
+	// Остановка сетки — сама таблица: фокус по ячейкам водит её плагин сетки
+	'TableDescriptor',
+])
+
+/** Базы без разметки: рисует наследник, и правило — его. */
+const BASES = new Set([
+	'ControlDescriptor',
+	'ValueControlDescriptor',
+	'InputControlDescriptor',
+	'ClearableDescriptor',
+	'TextableDescriptor',
+])
+
+/** Временно, до 869fk4vf5: узел фокуса этих контролов ещё не назван. */
+const PENDING = new Set([
+	'DateInputDescriptor',
+	'DatePickerDescriptor',
+	'CalendarDescriptor',
+	'RadioGroupDescriptor',
+	'AccordionDescriptor',
+	'TagsDescriptor',
+	'PaginationDescriptor',
+	'ScrollerDescriptor',
+	'TabsItemDescriptor',
+	'AccordionItemDescriptor',
+	'ListBoxItemDescriptor',
+	'SelectItemDescriptor',
+	'TagsItemDescriptor',
+	'MenuItemDescriptor',
+	'MenuCheckboxItemDescriptor',
+	'MenuRadioItemDescriptor',
+	'MenuSubmenuDescriptor',
+	'MenuPopoverItemDescriptor',
+])
+
+/** Списки решений: имя в одном из них — решение без правила. */
+const LISTED = [ROOT_HOLDS_FOCUS, BASES, PENDING]
+
+/** Правило узла фокуса в опциях плагина действия; плагина нет — `undefined`. */
+function focusTargetOf(descriptor: IComponentDescriptor): unknown {
+	const options = descriptor.plugins.find((plugin) => plugin.ctor === TActionPlugin)?.options
+
+	return options && 'focusTarget' in options ? options.focusTarget : undefined
+}
+
+const withAction = exportedDescriptors().filter(([, descriptor]) =>
+	descriptor.plugins.some((plugin) => plugin.ctor === TActionPlugin),
+)
+
+describe('узел фокуса у дескрипторов с TActionPlugin', () => {
+	it('разбор не вхолостую: плагин действия есть у полей, списков и кнопки', () => {
+		const names = withAction.map(([name]) => name)
+
+		expect(names).toEqual(
+			expect.arrayContaining(['ButtonDescriptor', 'InputDescriptor', 'ListBoxDescriptor']),
+		)
+	})
+
+	it('у каждого — правило в дескрипторе или имя в списке решений', () => {
+		const undecided = withAction
+			.filter(([name, descriptor]) => {
+				if (typeof focusTargetOf(descriptor) === 'function') return false
+
+				return !LISTED.some((list) => list.has(name))
+			})
+			.map(([name]) => name)
+
+		expect(
+			undecided,
+			'Корень не держит фокус — ActionPluginDescriptor.with({ focusTarget }) в дескрипторе ' +
+				'(docs/agents/a11y.md, «Прочее»), держит — имя в ROOT_HOLDS_FOCUS',
+		).toEqual([])
+	})
+
+	it('в списках — только дескрипторы с плагином действия и без правила', () => {
+		const known = new Map(withAction)
+		const stale = LISTED.flatMap((list) => [...list]).filter((name) => {
+			const descriptor = known.get(name)
+
+			return !descriptor || typeof focusTargetOf(descriptor) === 'function'
+		})
+
+		expect(stale, 'Решение уже записано правилом — имя из списка убрать').toEqual([])
+	})
+
+	it('правило — у полей, ListBox и Tabs', () => {
+		const ruled = withAction
+			.filter(([, descriptor]) => typeof focusTargetOf(descriptor) === 'function')
+			.map(([name]) => name)
+			.sort()
+
+		expect(ruled).toEqual(
+			[
+				'CheckBoxDescriptor',
+				'InputDescriptor',
+				'ListBoxDescriptor',
+				'NumberInputDescriptor',
+				'RadioGroupItemDescriptor',
+				'RatingDescriptor',
+				'SelectDescriptor',
+				'SliderDescriptor',
+				'SwitchDescriptor',
+				'TabsDescriptor',
+				'TextareaDescriptor',
+			].sort(),
+		)
+	})
+})

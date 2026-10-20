@@ -1,2 +1,2 @@
-export type { TActionPluginEvents, IActionPluginOptions } from './types'
+export type { TActionPluginEvents, IActionPluginOptions, TFocusTarget } from './types'
 export { TActionPlugin } from './action.plugin'

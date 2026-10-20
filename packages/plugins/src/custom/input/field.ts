@@ -1,0 +1,20 @@
+/**
+ * Поле формы, которое держит фокус контрола: `input`, кроме скрытого, или
+ * `textarea`. Скрытое поле — значение для формы (число NumberInput), фокуса у
+ * него нет.
+ */
+const FIELD_SELECTOR = 'input:not([type="hidden"]), textarea'
+
+/**
+ * Поле контрола — первое поле формы в его корне. `null` — поля в корне нет.
+ *
+ * Узел фокуса компонентов, у которых корень — коробка вокруг поля: Input,
+ * NumberInput, Textarea, CheckBox, Switch, Rating, Slider, Select и радио
+ * (`focusTarget` плагина действия). По тегу поля, как его уже ищут
+ * `TInputPlugin` и клавиатура Select, а не первая остановка Tab: кнопка в
+ * слоте `leading` и крестики тегов Select стоят перед полем своими
+ * остановками, и фокус ушёл бы на них.
+ */
+export function fieldOf(root: Element): Element | null {
+	return root.querySelector(FIELD_SELECTOR)
+}

@@ -19,9 +19,9 @@ const ROW_SELECTOR = '[tabindex]'
  * в них бывают свои остановки Tab (кнопка на `div` пишет себе `tabindex`), а
  * роль `listbox` среди детей корня — только у узла списка. И не по классу
  * темы: правило одно на клавиатуру списка (с чьего узла пришла клавиша),
- * календарь (куда ставить фокус списку панели выбора), предел строк и
- * прокрутку списка (`closestList`): у ListBox и у Select блок класса свой, а
- * роль списка одна.
+ * календарь (куда ставить фокус списку панели выбора), узел фокуса ListBox
+ * (`focusTarget` плагина действия), предел строк и прокрутку списка
+ * (`closestList`): у ListBox и у Select блок класса свой, а роль списка одна.
  */
 const LIST_SELECTOR = '[role="listbox"]'
 
@@ -47,6 +47,9 @@ export function rowIn(node: Element | null): Element | null {
 /**
  * Узел списка ListBox — ребёнок его корня с ролью `listbox`. `null` — корня
  * нет или узла списка в нём нет.
+ *
+ * Он же узел фокуса ListBox: запись `focused = true` ставит фокус на него, а
+ * не на поле или кнопку шапки (`focusTarget` плагина действия в дескрипторе).
  */
 export function listOf(root: Element | null): Element | null {
 	if (!root) return null
