@@ -1,6 +1,8 @@
 /**
  * Группы ListBox и Select в настоящем браузере: раскладка подписи и
  * разделителя, порядок стрелок на экране и предел строк вместе с группами.
+ * Подпись группы у них и у Menu одна (`mixins/_group.scss` темы), и её вид —
+ * регистр, кегль, начертание, цвет и поля — сверяется у всех троих.
  *
  * Модель — `core/__tests__/list-groups.spec.ts`, разметка секций и ARIA —
  * `ui/vue/__tests__/list-groups.spec.ts`. Здесь — то, чего jsdom не видит:
@@ -8,21 +10,32 @@
  * видимая линия во всю ширину списка, что стрелки идут сверху вниз по экрану и
  * что предел строк (`maxRows`) режет список по низу последней из первых
  * строк, с подписями и разделителями между ними.
+ *
+ * Подпись — справка над строками: заглавными, начертания и цвета подсказки
+ * Field, а кегль — на ступень мельче её кегля того же размера. Чисел темы тест
+ * не знает: мера — сама подсказка.
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { render, cleanup } from 'vitest-browser-vue'
 import { userEvent } from 'vitest/browser'
 import { defineComponent, h, nextTick } from 'vue'
+import type { TComponentSize } from '@soldy-ui/core'
+import type { DescriptorSlots, MenuDescriptor } from '@soldy-ui/setup'
 import { COMPONENT_SIZES } from '@soldy-ui/playground-shared'
-import { ListBox, Select } from '@soldy-ui/vue'
+import { Button, Field, Input, ListBox, Menu, Select } from '@soldy-ui/vue'
 
 import { settled } from './transitions'
 
 import '@soldy-ui/theme-oren'
 
+type TTriggerScope = DescriptorSlots<typeof MenuDescriptor>['trigger']
+
 /** Допуск на субпиксельное округление, px. */
 const EPSILON = 1
+
+/** Обе схемы: цвет подписи и подсказки у каждой свой. */
+const SCHEMES = ['oren', 'oren-dark'] as const
 
 /**
  * В данных овощи стоят между фруктами, у «Воды» группы нет. На экране —
@@ -92,6 +105,22 @@ function textLeft(element: Element): number {
 	range.selectNodeContents(text)
 
 	return range.getBoundingClientRect().left
+}
+
+/**
+ * Строка текста подписи — её коробка без полей. Подпись в одну строку
+ * (`truncate`), и это строка целиком, с интерлиньяжем: коробку самих глифов
+ * браузер ставит в строку с округлением до пикселя, и половины интерлиньяжа
+ * над глифами и под ними расходятся на пиксель.
+ */
+function lineOf(label: HTMLElement): { top: number; bottom: number } {
+	const box = label.getBoundingClientRect()
+	const { paddingTop, paddingBottom } = getComputedStyle(label)
+
+	return {
+		top: box.top + parseFloat(paddingTop),
+		bottom: box.bottom - parseFloat(paddingBottom),
+	}
 }
 
 const fontSize = (element: Element): number => parseFloat(getComputedStyle(element).fontSize)
@@ -164,6 +193,74 @@ function contentBottom(list: HTMLElement): number {
 	)
 }
 
+/** Подсказка Field размера `size` — своей сценой на той же странице. */
+async function fieldHelper(size: TComponentSize = 'normal'): Promise<HTMLElement> {
+	const { container } = await render(
+		defineComponent({
+			render: () => h(Field, { size, helper: 'Не покажем никому' }, () => h(Input)),
+		}),
+	)
+
+	return find('.so-field__helper', container)
+}
+
+/** Подсказки Field: того же размера и на размер ниже — у `sm` её нет. */
+type THelpers = { readonly same: HTMLElement; readonly below: HTMLElement | null }
+
+async function helpersOf(size: TComponentSize): Promise<THelpers> {
+	const index = COMPONENT_SIZES.indexOf(size)
+
+	return {
+		same: await fieldHelper(size),
+		below: index > 0 ? await fieldHelper(COMPONENT_SIZES[index - 1]) : null,
+	}
+}
+
+/**
+ * Текст подписи — заглавными, начертания подсказки Field, а кегль — на ступень
+ * мельче её кегля. Выше `sm` ступень мельче — кегль подсказки на размер ниже,
+ * с её интерлиньяжем. У `sm` размера ниже нет, и ступень мельче `text-xs` —
+ * своя у темы: подпись мельче подсказки, а интерлиньяж у неё задан ступенью,
+ * а не `normal`.
+ */
+function expectLabelText(label: HTMLElement, { same, below }: THelpers): void {
+	const own = getComputedStyle(label)
+	const helper = getComputedStyle(same)
+
+	expect(own.textTransform).toBe('uppercase')
+	expect(own.fontWeight).toBe(helper.fontWeight)
+	expect(parseFloat(own.fontSize)).toBeLessThan(parseFloat(helper.fontSize))
+	expect(parseFloat(own.lineHeight)).toBeGreaterThan(parseFloat(own.fontSize))
+
+	if (!below) return
+
+	const lower = getComputedStyle(below)
+
+	expect(own.fontSize).toBe(lower.fontSize)
+	expect(own.lineHeight).toBe(lower.lineHeight)
+}
+
+/**
+ * Над текстом подписи и под ним свободно одинаково: от разделителя до строки
+ * подписи следующей группы — столько же, сколько от неё до первой строки
+ * группы. Сверху — зазор списка и поле подписи, снизу — её поле и зазор
+ * группы.
+ */
+function expectLabelSpace(list: HTMLElement, block: string): void {
+	const separator = find(`.${block}__separator`, list)
+	const group = separator.nextElementSibling
+
+	if (!(group instanceof HTMLElement)) throw new Error('за разделителем нет группы')
+
+	const line = lineOf(find(`.${block}-group__label`, group))
+	const [first] = findAll(`.${block}-item`, group)
+	const above = line.top - separator.getBoundingClientRect().bottom
+	const below = first.getBoundingClientRect().top - line.bottom
+
+	expect(above).toBeGreaterThan(0)
+	expect(Math.abs(above - below)).toBeLessThan(EPSILON)
+}
+
 beforeEach(() => {
 	document.documentElement.dataset.soTheme = 'oren'
 })
@@ -197,6 +294,35 @@ describe('ListBox', () => {
 			expectLabels(list(), 'so-list-box')
 		},
 	)
+
+	it.each(COMPONENT_SIZES)(
+		'%s: подпись — заглавными, начертания подсказки Field, кегль на ступень мельче её',
+		async (size) => {
+			const helpers = await helpersOf(size)
+
+			await show({ size })
+
+			expectLabelText(find('.so-list-box-group__label', list()), helpers)
+		},
+	)
+
+	it.each(SCHEMES)('%s: подпись — цвета подсказки Field', async (scheme) => {
+		document.documentElement.dataset.soTheme = scheme
+
+		const helper = await fieldHelper()
+
+		await show()
+
+		expect(getComputedStyle(find('.so-list-box-group__label', list())).color).toBe(
+			getComputedStyle(helper).color,
+		)
+	})
+
+	it('над текстом подписи и под ним свободно одинаково', async () => {
+		await show()
+
+		expectLabelSpace(list(), 'so-list-box')
+	})
 
 	it('разделитель — линия во всю ширину списка между секциями', async () => {
 		await show()
@@ -323,6 +449,35 @@ describe('Select', () => {
 		expect(new Set(sizes).size).toBe(COMPONENT_SIZES.length)
 	})
 
+	it.each(COMPONENT_SIZES)(
+		'%s: подпись — заглавными, начертания подсказки Field, кегль на ступень мельче её',
+		async (size) => {
+			const helpers = await helpersOf(size)
+
+			await open({ size })
+
+			expectLabelText(find('.so-select-group__label', list()), helpers)
+		},
+	)
+
+	it.each(SCHEMES)('%s: подпись — цвета подсказки Field', async (scheme) => {
+		document.documentElement.dataset.soTheme = scheme
+
+		const helper = await fieldHelper()
+
+		await open()
+
+		expect(getComputedStyle(find('.so-select-group__label', list())).color).toBe(
+			getComputedStyle(helper).color,
+		)
+	})
+
+	it('над текстом подписи и под ним свободно одинаково', async () => {
+		await open()
+
+		expectLabelSpace(list(), 'so-select')
+	})
+
 	it('разделитель — линия во всю ширину списка между секциями', async () => {
 		await open()
 
@@ -341,5 +496,79 @@ describe('Select', () => {
 					itemOf('so-select', 'Морковь', panel()).getBoundingClientRect().bottom,
 			),
 		).toBeLessThan(EPSILON)
+	})
+})
+
+/**
+ * Подпись группы меню — та же, что у ListBox и Select (`group.label`), а
+ * размер её тема берёт с модификатора панели: панель телепортирована. Зазоров
+ * у списка меню нет, и место над текстом подписи и под ним дают её поля.
+ */
+describe('Menu', () => {
+	const panel = () => find('.so-menu__panel')
+
+	async function open(props: Record<string, unknown> = {}): Promise<void> {
+		render(
+			defineComponent({
+				render: () =>
+					h('div', { style: 'padding: 40px' }, [
+						h(
+							Menu,
+							{ items: ITEMS, groups: GROUPS, ...props },
+							{
+								trigger: ({ triggerAria, triggerDataset }: TTriggerScope) =>
+									h(Button, {
+										text: 'Действия',
+										class: 'so-test-trigger',
+										...triggerAria,
+										...triggerDataset,
+									}),
+							},
+						),
+					]),
+			}),
+		)
+
+		await nextTick()
+		await frames()
+
+		await userEvent.click(find('.so-test-trigger'))
+		await expect.poll(() => getComputedStyle(panel()).display).not.toBe('none')
+		await settled(panel())
+		await frames()
+	}
+
+	it.each(COMPONENT_SIZES)(
+		'%s: подпись — заглавными, начертания подсказки Field, кегль на ступень мельче её',
+		async (size) => {
+			const helpers = await helpersOf(size)
+
+			await open({ size })
+
+			expectLabelText(find('.so-menu-group__label', panel()), helpers)
+		},
+	)
+
+	it.each(SCHEMES)('%s: подпись — цвета подсказки Field', async (scheme) => {
+		document.documentElement.dataset.soTheme = scheme
+
+		const helper = await fieldHelper()
+
+		await open()
+
+		expect(getComputedStyle(find('.so-menu-group__label', panel())).color).toBe(
+			getComputedStyle(helper).color,
+		)
+	})
+
+	it('поля подписи над текстом и под ним — поровну', async () => {
+		await open()
+
+		const { paddingTop, paddingBottom } = getComputedStyle(
+			find('.so-menu-group__label', panel()),
+		)
+
+		expect(parseFloat(paddingTop)).toBeGreaterThan(0)
+		expect(paddingBottom).toBe(paddingTop)
 	})
 })
