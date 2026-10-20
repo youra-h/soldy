@@ -224,7 +224,8 @@
   `setup/__tests__/overlay.spec.ts` (якорь едет подменой прямоугольника и
   `scroll` окна) и `playground/vue/browser/anchor.spec.ts` («flip»: Select у
   низа длинной страницы, окно едет по кадру на шаг через границу и обратно, а
-  `data-placement` не меняется ни разу).
+  `data-placement` не меняется ни разу; показ и во время угасания выбирает
+  сторону заново).
   **`position` панели у якоря выбирает плагин**, как пишет её `x` и `y`:
   `absolute`, а у якоря, который стоит в окне, — `fixed` (`isPinnedToViewport`,
   `plugins/src/utils/positionOrigin.ts`: сам якорь или предок `fixed`, или
