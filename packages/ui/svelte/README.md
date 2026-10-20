@@ -18,17 +18,19 @@ slot is `children`.
 > control inside it), the collections ListBox, Tabs, Accordion and
 > RadioGroup (`<ListBox.Item>`, `<Tabs.Item>` with `<Tabs.Content>`, `<Accordion.Item>`,
 > `<RadioGroup.Item>` or `items`), Table (columns and rows as data — `columns`, `items` — with
-> sorting, row selection, column resizing and reordering) and the `Virtual` window for long lists
-> (`<Virtual><ListBox items={…} /></Virtual>`, the same with `Table`) are ported, the rest of the
-> set is on its way. Icon renders the `tag` it is given: an element name, a Svelte component, or
-> `roleIcon(role)` — the icon of that role from the registered icon pack. Frame teleports its
-> panel into `target` (`body` by default) on the client; with `contained` it stays in place, on
-> the server too. A field gives its class and style to the root and every other attribute to its
-> `<input>` (a textarea — to its `<textarea>`); an item of a collection gives them to its row; a
-> list box and tabs give them to the list itself, `[role=listbox]` or `[role=tablist]`; a table
-> gives them to the `<table>` itself, and its class, style and `ref` to the scroll viewport around
-> it. `Label` names the control it wraps; `LocaleProvider` gives a subtree its language and library
-> strings, such as the name of the clear button of `Input`. See
+> sorting, row selection, column resizing and reordering), the `Virtual` window for long lists
+> (`<Virtual><ListBox items={…} /></Virtual>`, the same with `Table`) and the `DragAndDrop`
+> wrapper that lets users reorder the items of Tabs, ListBox and Accordion by dragging
+> (`<DragAndDrop onMove={…}><ListBox items={…} /></DragAndDrop>`, `onMoveBefore` can cancel) are
+> ported, the rest of the set is on its way. Icon renders the `tag` it is given: an element name,
+> a Svelte component, or `roleIcon(role)` — the icon of that role from the registered icon pack.
+> Frame teleports its panel into `target` (`body` by default) on the client; with `contained` it
+> stays in place, on the server too. A field gives its class and style to the root and every other
+> attribute to its `<input>` (a textarea — to its `<textarea>`); an item of a collection gives them
+> to its row; a list box and tabs give them to the list itself, `[role=listbox]` or
+> `[role=tablist]`; a table gives them to the `<table>` itself, and its class, style and `ref` to
+> the scroll viewport around it. `Label` names the control it wraps; `LocaleProvider` gives a
+> subtree its language and library strings, such as the name of the clear button of `Input`. See
 > [the adapter table](https://github.com/youra-h/soldy#components).
 
 ## Install

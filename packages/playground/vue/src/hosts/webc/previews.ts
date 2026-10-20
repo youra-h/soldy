@@ -31,8 +31,8 @@ export type TPreview = {
 	readonly tag: string
 	/**
 	 * Имя элемента soldy — значение `is`. Нет — элемент автономный, и имя —
-	 * сам тег (`<so-virtual>`), или это вовсе не элемент soldy: обёртка-граница
-	 * таблицы.
+	 * сам тег (`<so-virtual>`, `<so-drag-and-drop>`), или это вовсе не элемент
+	 * soldy: обёртка-граница таблицы, ряд превью DragAndDrop и его ячейки.
 	 */
 	readonly is?: string
 	/**
@@ -43,9 +43,11 @@ export type TPreview = {
 	 */
 	readonly props?: TPreviewProps | ((bind: TPreviewProps) => TPreviewProps)
 	/**
-	 * Стиль элемента от пропсов строки компонента — у обёртки без компонента:
-	 * граница ширины таблицы, а с закреплённой шапкой — ещё и окно прокрутки.
-	 * Смена пропсов строки пишет его заново.
+	 * Стиль элемента без компонента. У обёртки — от пропсов строки компонента:
+	 * граница ширины таблицы, а с закреплённой шапкой — ещё и окно прокрутки, и
+	 * смена пропсов строки пишет его заново. У ребёнка в слоте — ряд превью
+	 * DragAndDrop и его ячейки: пропсов строки ребёнок не получает, и стиль
+	 * пишется один раз, при постройке.
 	 */
 	readonly style?: (bind: TPreviewProps) => string
 	/**
@@ -149,6 +151,61 @@ const windowed = (): Node => {
 	return row
 }
 
+/**
+ * Табы и их панели — описанием, у превью Tabs и DragAndDrop. Первый таб
+ * активен сразу — иначе ни одна панель не покажется. Панели — слотом
+ * `content`, вне списка табов.
+ */
+const TABS: TPreview = {
+	tag: 'div',
+	is: 'so-tabs',
+	slots: {
+		default: ITEMS.map((item, index) => ({
+			tag: 'div',
+			is: 'so-tabs-item',
+			props: { active: index === 0, ...item },
+		})),
+		content: ITEMS.map((item) => ({
+			tag: 'div',
+			is: 'so-tabs-content',
+			props: { value: item.value },
+			slots: { default: [block('12px', `Панель «${item.text}»`)] },
+		})),
+	},
+}
+
+/** Секции с содержимым — описанием, у превью Accordion и DragAndDrop. */
+const ACCORDION: TPreview = {
+	tag: 'div',
+	is: 'so-accordion',
+	slots: {
+		default: ITEMS.map((item) => ({
+			tag: 'div',
+			is: 'so-accordion-item',
+			props: { ...item },
+			slots: { default: [block('4px 0', `Содержимое «${item.text}»`)] },
+		})),
+	},
+}
+
+/**
+ * Ряд превью DragAndDrop — как у Vue и React: Tabs и Accordion — теми же
+ * описаниями, что на их страницах, ListBox — данными. Ряд и ячейки — разметка
+ * без компонента со своим стилем: ряд — граница ширины, как у окна, табы — во
+ * всю ширину ряда, список и секции — под ними, рядом.
+ */
+const REORDERABLE: TPreview = {
+	tag: 'div',
+	style: () => 'display:flex; flex-wrap:wrap; gap:24px; align-items:flex-start; width:100%',
+	slots: {
+		default: [
+			{ tag: 'div', style: () => 'flex:1 1 100%; min-width:0', slots: { default: [TABS] } },
+			{ tag: 'div', is: 'so-list-box', props: { items: ITEMS, aria_label: 'Пункты' } },
+			{ tag: 'div', style: () => 'flex:1; min-width:200px', slots: { default: [ACCORDION] } },
+		],
+	},
+}
+
 export const PREVIEWS: Record<string, TPreview> = {
 	// Подпись — проп `text` из пропсов превью, а не содержимое: заданный слот
 	// перекрывает проп, и строка `text` не меняла бы ничего видимого
@@ -205,38 +262,9 @@ export const PREVIEWS: Record<string, TPreview> = {
 		},
 	},
 
-	// Первый таб активен сразу — иначе ни одна панель не покажется. Панели —
-	// слотом `content`, вне списка табов
-	tabs: {
-		tag: 'div',
-		is: 'so-tabs',
-		slots: {
-			default: ITEMS.map((item, index) => ({
-				tag: 'div',
-				is: 'so-tabs-item',
-				props: { active: index === 0, ...item },
-			})),
-			content: ITEMS.map((item) => ({
-				tag: 'div',
-				is: 'so-tabs-content',
-				props: { value: item.value },
-				slots: { default: [block('12px', `Панель «${item.text}»`)] },
-			})),
-		},
-	},
+	tabs: TABS,
 
-	accordion: {
-		tag: 'div',
-		is: 'so-accordion',
-		slots: {
-			default: ITEMS.map((item) => ({
-				tag: 'div',
-				is: 'so-accordion-item',
-				props: { ...item },
-				slots: { default: [block('4px 0', `Содержимое «${item.text}»`)] },
-			})),
-		},
-	},
+	accordion: ACCORDION,
 
 	// Элементы — разметкой, как у Vue и React. Строка элемента — кнопка на `div`
 	// (`<div is="so-button-div">`): её строит шаблон элемента. Пришли данными
@@ -282,6 +310,10 @@ export const PREVIEWS: Record<string, TPreview> = {
 	'progress-spinner': { tag: 'span', is: 'so-progress-spinner' },
 
 	skeleton: { tag: 'div', is: 'so-skeleton' },
+
+	// Перестановка — автономный элемент без коробки, своим тегом, как окно: у
+	// Vue и React узла у обёртки нет. Коллекции — в его свете, в ряду
+	'drag-and-drop': { tag: 'so-drag-and-drop', slots: { default: [REORDERABLE] } },
 
 	// Окно — автономный элемент без коробки, своим тегом: у Vue и React узла у
 	// обёртки нет. Строка `enabled` включает и выключает окно у обоих

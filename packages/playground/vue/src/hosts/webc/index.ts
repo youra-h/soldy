@@ -90,20 +90,25 @@ function build(
 	const outer = elementOf(wrapper)
 
 	fill(outer, wrapper, propsOf(wrapper, {}), {})
-	styleWrapper(outer, wrapper, bind)
+	applyStyle(outer, wrapper, bind)
 	outer.appendChild(element)
 
 	return { element, outer }
 }
 
-/** Стиль обёртки от пропсов строки компонента (`TPreview.style`); нет его — не трогается. */
-function styleWrapper(outer: HTMLElement, wrapper: TPreview, bind: TPreviewProps): void {
-	if (wrapper.style) outer.style.cssText = wrapper.style(bind)
+/**
+ * Стиль элемента без компонента (`TPreview.style`): обёртке — от пропсов строки
+ * компонента, ребёнку в слоте — без них. Нет его — не трогается.
+ */
+function applyStyle(element: HTMLElement, preview: TPreview, bind: TPreviewProps): void {
+	if (preview.style) element.style.cssText = preview.style(bind)
 }
 
 /**
- * Ребёнок в слоте: элемент soldy строит его описание тем же путём, без пропсов
- * строки, а разметку без компонента — её функция.
+ * Ребёнок в слоте. Элемент soldy и разметку без компонента со своим
+ * содержимым (ряд превью DragAndDrop) строит описание — тем же путём, что
+ * обёртку, со стилем, но без пропсов строки; разметку без содержимого — её
+ * функция.
  */
 function childOf(child: TContent): Node {
 	if (typeof child === 'function') return child()
@@ -111,6 +116,7 @@ function childOf(child: TContent): Node {
 	const node = elementOf(child)
 
 	fill(node, child, propsOf(child, {}), {})
+	applyStyle(node, child, {})
 
 	return node
 }
@@ -244,7 +250,7 @@ const host: IPreviewHost = {
 				} else {
 					write(built.element, propsOf(preview, bind), propsOf(preview, next))
 
-					if (preview.wrapper) styleWrapper(built.outer, preview.wrapper, next)
+					if (preview.wrapper) applyStyle(built.outer, preview.wrapper, next)
 				}
 
 				bind = next

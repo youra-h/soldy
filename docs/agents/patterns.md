@@ -2178,13 +2178,43 @@ useToasts()`. API опускает лифт (`TOASTS_ELEVATOR`, расширен
   плагин — движком и обёрткой. Фаз контекста нет: на шину обёртки никто не
   подписан, плагин уходит с набором коллекции. Своему поддереву коллекция
   опускает пустое: список в секции Accordion перестановку не наследует. Между
-  коллекциями обёртка не переносит. **Адаптеры**: Vue. Сторожат
+  коллекциями обёртка не переносит. **Адаптеры**: Vue, React, Solid, Svelte,
+  Angular и Web Components. События — в именах адаптера: `@move:before` и
+  `@move` у Vue, `onMoveBefore` и `onMove` у React, Solid и Svelte,
+  `(soMoveBefore)` и `(soMove)` у Angular, `so:move:before` и `so:move` у Web
+  Components (аргумент — `detail`, отмена — `preventDefault()` события). Обёртка
+  везде по образцу окна: у React и Solid своего узла нет — детям слой лифта
+  отдаёт `Elevate`, а пересобранная обёртка React (StrictMode, `<Activity>`)
+  опускает новый экземпляр, и коллекция пересобирается вслед за ней; у Svelte
+  узла тоже нет, экземпляр её проводка опускает контекстом при инициализации;
+  у Angular — `<so-drag-and-drop>` без бокса (`display: contents`) со своим
+  слоем лифта (`provideElevator()`); у Web Components — автономный
+  `<so-drag-and-drop>` без `is` и без коробки, коллекции — его свет, а
+  регистрирует его модуль раньше коллекций. Петля с ключом у элементов из
+  данных переставляет их узлы, и браузер шлёт `focusout` взятого посреди
+  отрисовки: у Svelte связка пишет такое состояние мимо слежения (см.
+  `ui/svelte/src/adapter/runtime/useAdapter.svelte.ts`). Сторожат
   `core/__tests__/drag-and-drop.spec.ts`,
   `plugins/__tests__/collection-elements.plugin.spec.ts`,
   «TDragAndDropCollectionExtension» в `setup/__tests__/adapter.spec.ts`,
-  `ui/vue/__tests__/drag-and-drop.spec.ts`, «превью drag-and-drop» в
-  `playground/vue/__tests__/smoke.spec.ts` и
-  `playground/vue/browser/drag-and-drop.spec.ts`.
+  `ui/vue/__tests__/drag-and-drop.spec.ts`,
+  `ui/react/__tests__/drag-and-drop.spec.tsx` (сверх сценариев Vue —
+  StrictMode, сервер с гидратацией), строки `DragAndDrop` в
+  `ui/react/__tests__/external-lifetime.spec.tsx`,
+  `ui/solid/__tests__/drag-and-drop.spec.tsx`,
+  `ui/svelte/__tests__/drag-and-drop.spec.ts`, «ядро меняется посреди
+  отрисовки Svelte» в `ui/svelte/__tests__/adapter.spec.ts`,
+  `ui/angular/__tests__/drag-and-drop.spec.ts` (обёртка без бокса),
+  `ui/webc/__tests__/drag-and-drop.spec.ts` (элемент без коробки, список,
+  вынутый из обёртки и вставленный обратно), «DragAndDrop» в
+  `ui/solid/__tests__/collections.server.spec.tsx`,
+  `ui/svelte/__tests__/collections.server.spec.ts` и
+  `ui/angular/__tests__/collections.server.spec.ts` (сервер — без
+  `draggable`, у Angular и гидратация), «превью drag-and-drop» в
+  `playground/vue/__tests__/smoke.spec.ts`, превью DragAndDrop в
+  `playground/vue/__tests__/webc-host.spec.ts` и
+  `playground/vue/browser/drag-and-drop.spec.ts` (и на странице стенда у
+  каждого фреймворка).
 
 **ComboBox отдельным компонентом не заводим.** Ark и Radix держат `Select` и
 `Combobox` врозь, потому что у них расходится модель значения: у select-only

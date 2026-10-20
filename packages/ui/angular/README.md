@@ -23,11 +23,12 @@ render on the server (`@angular/platform-server`) and hydrate in the browser
 > **Status:** the Angular adapter is in progress — Button, Icon, Label, Frame, ProgressSpinner,
 > Skeleton, Input, Textarea (multi-line, growing with its text, with a character counter),
 > CheckBox, Switch, the form field `<div so-field>` (label, helper and error linked to the control
-> inside it), RadioGroup, ListBox, Tabs, Accordion, Table and the `Virtual`
-> window for long lists are ported, the rest of the set is on its way. Frame moves
-> the element you wrote into `target` (`body` by default) in the browser; with `contained` it stays
-> in place. `so-locale-provider` gives a subtree its language and library strings. See
-> [the adapter table](https://github.com/youra-h/soldy#components).
+> inside it), RadioGroup, ListBox, Tabs, Accordion, Table, the `Virtual` window for long lists and
+> the `<so-drag-and-drop>` wrapper that lets users reorder the items of Tabs, ListBox and Accordion
+> by dragging (`(soMove)`, `(soMoveBefore)` can cancel) are ported, the rest of the set is on its
+> way. Frame moves the element you wrote into `target` (`body` by default) in the browser; with
+> `contained` it stays in place. `so-locale-provider` gives a subtree its language and library
+> strings. See [the adapter table](https://github.com/youra-h/soldy#components).
 
 ## Install
 

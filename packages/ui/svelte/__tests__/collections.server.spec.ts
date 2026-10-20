@@ -25,6 +25,7 @@ import { render } from 'svelte/server'
 import type { TTableColumnSource } from '@soldy-ui/core'
 import { Accordion, ListBox, RadioGroup, Table } from '@soldy-ui/svelte'
 import AccordionHarness from './Accordion.test.svelte'
+import DragAndDropHarness from './DragAndDrop.test.svelte'
 import ListBoxHarness from './ListBox.test.svelte'
 import RadioGroupHarness from './RadioGroup.test.svelte'
 import TabsHarness from './Tabs.test.svelte'
@@ -345,6 +346,24 @@ describe('Virtual · серверный рендер', () => {
 		expect(withClass(body, 'so-table-row')).toHaveLength(50)
 		expect(withClass(body, 'so-table__filler-row')).toEqual([])
 		expect(withClass(body, 'so-table')[0]?.attributes['aria-rowcount']).toBe('81')
+	})
+})
+
+/**
+ * Перестановка на сервере: обёртку коллекции подхватывают при инициализации,
+ * а она идёт и на сервере, но `draggable` ставит плагин перетаскивания на узлы
+ * элементов, а узлов на сервере нет. Своего узла у обёртки нет, и в разметке
+ * её не видно.
+ */
+describe('DragAndDrop · серверный рендер', () => {
+	it('элементы Tabs, ListBox и Accordion — без draggable, узла обёртки нет', () => {
+		const { body } = render(DragAndDropHarness, { props: {} })
+
+		expect(withClass(body, 'so-tabs-item')).toHaveLength(3)
+		expect(withClass(body, 'so-list-box-item')).toHaveLength(3)
+		expect(withClass(body, 'so-accordion-item')).toHaveLength(3)
+		expect(tagsWith(body, 'draggable')).toEqual([])
+		expect(tagsOf(body)[0]?.attributes.class?.split(' ')).toContain('so-tabs')
 	})
 })
 

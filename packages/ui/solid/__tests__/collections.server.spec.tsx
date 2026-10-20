@@ -32,6 +32,7 @@ import { renderToString } from 'solid-js/web'
 import { createEngineListBox, type TTableColumnSource } from '@soldy-ui/core'
 import {
 	Accordion,
+	DragAndDrop,
 	ListBox,
 	RadioGroup,
 	Table,
@@ -446,6 +447,35 @@ describe('Virtual · серверный рендер', () => {
 		expect(withClass(body, 'so-table-row')).toHaveLength(50)
 		expect(withClass(body, 'so-table__filler-row')).toEqual([])
 		expect(withClass(body, 'so-table')[0]?.attributes['aria-rowcount']).toBe('81')
+	})
+})
+
+/**
+ * Перестановка на сервере: обёртку коллекции подхватывают при сборке, а она
+ * идёт и на сервере, но `draggable` ставит плагин перетаскивания на узлы
+ * элементов, а узлов на сервере нет. Своего узла у обёртки нет, и в разметке
+ * её не видно.
+ */
+describe('DragAndDrop · серверный рендер', () => {
+	const ITEMS = ['a', 'b', 'c'].map((value) => ({ value, text: value.toUpperCase() }))
+
+	it('элементы Tabs, ListBox и Accordion — без draggable, узла обёртки нет', () => {
+		const body = render(() => (
+			<DragAndDrop>
+				<TabsMarkup
+					items={ITEMS.map((item, index) => ({ ...item, active: index === 0 }))}
+					panels={[]}
+				/>
+				<ListBox items={ITEMS} />
+				<AccordionMarkup items={ITEMS} />
+			</DragAndDrop>
+		))
+
+		expect(withClass(body, 'so-tabs-item')).toHaveLength(3)
+		expect(withClass(body, 'so-list-box-item')).toHaveLength(3)
+		expect(withClass(body, 'so-accordion-item')).toHaveLength(3)
+		expect(tagsWith(body, 'draggable')).toEqual([])
+		expect(tagsOf(body)[0]?.attributes.class?.split(' ')).toContain('so-tabs')
 	})
 })
 
