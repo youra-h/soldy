@@ -24,6 +24,7 @@ import {
 	Input,
 	ProgressSpinner,
 	Skeleton,
+	Textarea,
 	roleIcon,
 } from '@soldy-ui/svelte'
 import RootRef, { type TRootKind } from './RootRef.test.svelte'
@@ -168,6 +169,7 @@ describe('ref потребителя · серверный рендер', () => 
 		'ProgressSpinner',
 		'Skeleton',
 		'Input',
+		'Textarea',
 		'CheckBox',
 		'Switch',
 		'Tabs',
@@ -196,6 +198,10 @@ describe('ref потребителя · серверный рендер', () => 
 		const pairs = [
 			[render(Button, { props: { ref: null } }), render(Button, { props: {} })],
 			[render(Input, { props: { ref: null } }), render(Input, { props: {} })],
+			[
+				render(Textarea, { props: { ref: null, value: 'текст', counter: true } }),
+				render(Textarea, { props: { value: 'текст', counter: true } }),
+			],
 			[render(CheckBox, { props: { ref: null } }), render(CheckBox, { props: {} })],
 		]
 
