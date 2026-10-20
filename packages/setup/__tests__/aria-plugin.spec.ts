@@ -9,10 +9,10 @@
  * куда пишут ядро и расширения коллекции. Разметка биндит один набор.
  */
 
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { createPluginContext } from './helpers'
 import { TAriaPlugin, TIconLayoutPlugin, TSkeletonLayoutPlugin } from '@soldy-ui/plugins'
-import { TButton, TIcon, TSkeleton } from '@soldy-ui/core'
+import { TButton, TIcon, TSkeleton, TTextarea } from '@soldy-ui/core'
 import type { IComponentView, IComponentViewProps } from '@soldy-ui/core'
 import {
 	ButtonDescriptor,
@@ -105,7 +105,8 @@ describe('запись имени в общий набор', () => {
 /**
  * Второй вход плагина — ссылки от разметки вокруг (`links`): подпись и
  * пояснение поля формы. Пишет их связка поля с контролом, а сливает с пропсами
- * плагин: своё имя главнее подписи поля, пояснение поля — перед своим.
+ * плагин: своё имя главнее подписи поля, пояснение поля — перед своим. Третий
+ * вход — ссылки на части своей разметки (`parts`): они встают между ними.
  */
 describe('ссылки поля формы', () => {
 	it('подпись поля — имя, пока своего нет', () => {
@@ -167,6 +168,7 @@ describe('ссылки поля формы', () => {
 			.flatMap((plugin) => plugin.props.map((prop) => prop.name.name))
 
 		expect(names).not.toContain('links')
+		expect(names).not.toContain('parts')
 	})
 
 	it('после destroy ссылок нет, и запись в набор не идёт', () => {
@@ -179,6 +181,71 @@ describe('ссылки поля формы', () => {
 		plugin.links = { labelledBy: 'f-other' }
 
 		expect(button.aria.has('aria-labelledby')).toBe(false)
+	})
+
+	/**
+	 * Третий вход — ссылки на части своей разметки (`parts`): счётчик символов
+	 * Textarea. Пишет их плагин связок компонента, и в `aria-describedby` они
+	 * встают между справкой поля и своим пояснением.
+	 */
+	it('три входа в aria-describedby: справка поля, свои части, своё пояснение', () => {
+		const textarea = new TTextarea()
+		const plugin = install(textarea)
+
+		plugin.describedBy = 'own-hint'
+		plugin.parts = { describedBy: 'm1-counter' }
+		plugin.links = { describedBy: 'f-helper' }
+
+		expect(textarea.aria.get('aria-describedby')).toBe('f-helper m1-counter own-hint')
+
+		plugin.links = {}
+
+		expect(textarea.aria.get('aria-describedby')).toBe('m1-counter own-hint')
+
+		plugin.describedBy = undefined
+
+		expect(textarea.aria.get('aria-describedby')).toBe('m1-counter')
+
+		plugin.parts = {}
+
+		expect(textarea.aria.has('aria-describedby')).toBe(false)
+	})
+
+	it('свои части — только пояснение: именем не считаются', () => {
+		const textarea = new TTextarea()
+		const plugin = install(textarea)
+
+		plugin.parts = { describedBy: 'm1-counter' }
+
+		expect(plugin.named).toBe(false)
+		expect(textarea.aria.has('aria-labelledby')).toBe(false)
+	})
+
+	it('свои части сверяются по содержимому: те же — без записи в набор', () => {
+		const textarea = new TTextarea()
+		const plugin = install(textarea)
+		const handler = vi.fn()
+
+		plugin.parts = { describedBy: 'm1-counter' }
+		textarea.events.on('change:aria', handler)
+		plugin.parts = { describedBy: 'm1-counter' }
+
+		expect(handler).not.toHaveBeenCalled()
+	})
+
+	it('после destroy своих частей нет, и запись в набор не идёт', () => {
+		const textarea = new TTextarea()
+		const plugin = install(textarea)
+
+		plugin.parts = { describedBy: 'm1-counter' }
+		plugin.destroy()
+
+		expect(plugin.parts).toEqual({})
+
+		textarea.aria.remove('aria-describedby')
+		plugin.parts = { describedBy: 'm2-counter' }
+
+		expect(textarea.aria.has('aria-describedby')).toBe(false)
 	})
 })
 

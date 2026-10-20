@@ -31,6 +31,7 @@ import {
 	Tabs,
 	TabsContent,
 	TabsItem,
+	Textarea,
 	LocaleProvider,
 } from '@soldy-ui/vue'
 import { ruRU } from '@soldy-ui/plugins'
@@ -118,6 +119,22 @@ describe('id при гидратации', () => {
 		expect(attrs(client, '.so-date-input', 'aria-labelledby')).toEqual(
 			attrs(server, '.so-field__label', 'id'),
 		)
+	})
+
+	it('Textarea со счётчиком в поле формы: справка и счётчик у сервера и браузера одни', async () => {
+		const { server, client, warnings } = await hydrate(() =>
+			h(Field, { helper: 'Подсказка' }, () => h(Textarea, { counter: true })),
+		)
+		const parts = [
+			...attrs(server, '.so-field__helper', 'id'),
+			...attrs(server, '.so-textarea__counter', 'id'),
+		].join(' ')
+
+		expect(warnings).toEqual([])
+		expect(attrs(client, '.so-textarea__counter', 'id')).toEqual(
+			attrs(server, '.so-textarea__counter', 'id'),
+		)
+		expect(attrs(client, 'textarea', 'aria-describedby')).toEqual([parts])
 	})
 
 	it('табы из разметки: связка «таб ↔ панель» у сервера и браузера одна', async () => {

@@ -32,6 +32,7 @@ import {
 	TTabs,
 	TTabsCollectionFacade,
 	TTabsItem,
+	TTextarea,
 	TTooltip,
 } from '../src'
 import type { IAccordionItem, IRadioGroupItem, ISelectItem, ITabsItem } from '../src'
@@ -78,6 +79,13 @@ describe('ядро id в разметку не пишет', () => {
 		expect(idAttributes(owner.field.aria.toObject())).toEqual([])
 		expect(idAttributes(owner.listAria.toObject())).toEqual([])
 		expect(idAttributes(facade.items[0].aria.toObject())).toEqual([])
+	})
+
+	it('Textarea: поле и счётчик', () => {
+		const textarea = new TTextarea({ counter: true })
+
+		expect(idAttributes(textarea.aria.toObject())).toEqual([])
+		expect(idAttributes(textarea.counterAria.toObject())).toEqual([])
 	})
 
 	it('Tabs и Accordion: элементы из данных', () => {

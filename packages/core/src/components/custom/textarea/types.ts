@@ -3,6 +3,7 @@ import type {
 	IInputControlProps,
 	TInputControlEvents,
 } from '../../base/input-control'
+import type { TAria, TAriaAttributes } from '../../../common'
 
 /**
  * Набранное у предела `maxlength` — значение `data-limit` корня: `reached` —
@@ -24,6 +25,8 @@ export type TTextareaEvents = TInputControlEvents<string> & {
 	'change:autoresize': (value: boolean) => void
 	/** change:counter */
 	'change:counter': (value: boolean) => void
+	/** change:counterAria — набор атрибутов счётчика изменился */
+	'change:counterAria': (value: TAriaAttributes) => void
 }
 
 export interface ITextareaProps extends IInputControlProps<string> {
@@ -70,6 +73,11 @@ export interface ITextarea extends IInputControl<string, ITextareaProps, TTextar
 	autoresize: boolean
 	/** Показывать ли счётчик символов */
 	counter: boolean
+	/**
+	 * Атрибуты счётчика: его `id`, на который поле ссылается
+	 * `aria-describedby`, пишет плагин связок
+	 */
+	readonly counterAria: TAria
 	/**
 	 * Сколько символов набрано — так, как их считает браузер для `maxlength`
 	 * (`HTMLTextAreaElement.textLength`): единицы UTF-16, перевод строки —

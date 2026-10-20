@@ -1,10 +1,19 @@
 import type { IComponentView, TDefaultValues } from '@soldy-ui/core'
 import { TBasePlugin } from '../../base'
 import type { IPluginContext } from '../../base'
-import type { IAriaLinks, IAriaPluginOptions, IAriaPluginProps, TAriaPluginEvents } from './types'
+import type {
+	IAriaLinks,
+	IAriaParts,
+	IAriaPluginOptions,
+	IAriaPluginProps,
+	TAriaPluginEvents,
+} from './types'
 
 /** Ссылок от разметки вокруг нет. */
 const NO_LINKS: IAriaLinks = {}
+
+/** Ссылок на свои части нет. */
+const NO_PARTS: IAriaParts = {}
 
 /** Те же ли ссылки — по содержимому: связка пишет новый объект на каждую смену. */
 function sameLinks(a: IAriaLinks, b: IAriaLinks): boolean {
@@ -28,12 +37,14 @@ function sameLinks(a: IAriaLinks, b: IAriaLinks): boolean {
  * набор, что заполняют ядро и расширения коллекции, — а раскладывает набор
  * шаблон, синхронно.
  *
- * Входов у плагина два: пропсы (`aria_label`, `aria_labelledBy`,
- * `aria_describedBy`) — их задаёт разметка компонента — и ссылки от разметки
- * вокруг (`links`) — их пишет поле формы `Field` своему контролу. Сливает их
- * плагин: подпись поля — имя, пока своего нет, а пояснение поля встаёт перед
- * своим. Второго писателя тех же атрибутов нет, и ни один вход не стирает
- * другой.
+ * Входов у плагина три: пропсы (`aria_label`, `aria_labelledBy`,
+ * `aria_describedBy`) — их задаёт разметка компонента, — ссылки от разметки
+ * вокруг (`links`) — их пишет поле формы `Field` своему контролу — и ссылки
+ * на части своей разметки (`parts`) — их пишет плагин связок компонента
+ * (счётчик символов Textarea). Сливает их плагин: подпись поля — имя, пока
+ * своего нет, а в `aria-describedby` встают по порядку пояснение поля, свои
+ * части и своё пояснение. Второго писателя тех же атрибутов нет, и ни один
+ * вход не стирает другой.
  */
 export class TAriaPlugin extends TBasePlugin<any, TAriaPluginEvents> {
 	/**
@@ -58,6 +69,7 @@ export class TAriaPlugin extends TBasePlugin<any, TAriaPluginEvents> {
 	private _labelledBy = TAriaPlugin.defaultValues.labelledBy
 	private _describedBy = TAriaPlugin.defaultValues.describedBy
 	private _links: IAriaLinks = NO_LINKS
+	private _parts: IAriaParts = NO_PARTS
 	private _role: string | undefined
 
 	override install(ctx: IPluginContext, options?: IAriaPluginOptions): void {
@@ -141,6 +153,29 @@ export class TAriaPlugin extends TBasePlugin<any, TAriaPluginEvents> {
 	}
 
 	/**
+	 * Ссылки на части своей разметки — часть без своего экземпляра, которая
+	 * поясняет компонент: счётчик символов Textarea. Не проп: в контракт
+	 * плагина не входит, как и `links`, — пишет его плагин связок компонента,
+	 * который знает `id` части, а не разметка.
+	 *
+	 * Только пояснение: `describedBy` встаёт в `aria-describedby` после
+	 * пояснения поля формы и перед своим. Так части звучат на фокусе
+	 * компонента, вместе с ним, а не живым регионом на каждое изменение.
+	 *
+	 * Объект заменяется целиком, а не правится на месте.
+	 */
+	get parts(): IAriaParts {
+		return this._parts
+	}
+
+	set parts(value: IAriaParts) {
+		if (value.describedBy === this._parts.describedBy) return
+
+		this._parts = value
+		this._apply()
+	}
+
+	/**
 	 * Есть ли у компонента имя из этого плагина — своё или подпись поля.
 	 * Описание именем не считается.
 	 */
@@ -156,7 +191,10 @@ export class TAriaPlugin extends TBasePlugin<any, TAriaPluginEvents> {
 
 		// Своё имя главнее подписи поля: `aria-labelledby` перекрыл бы `aria-label`
 		const labelledBy = this._labelledBy || (this._label ? undefined : this._links.labelledBy)
-		const describedBy = [this._links.describedBy, this._describedBy].filter(Boolean).join(' ')
+		// Пояснения — от внешнего к своему: справка поля, свои части, своё
+		const describedBy = [this._links.describedBy, this._parts.describedBy, this._describedBy]
+			.filter(Boolean)
+			.join(' ')
 
 		aria.add('aria-label', this._label || null)
 		aria.add('aria-labelledby', labelledBy || null)
@@ -179,6 +217,7 @@ export class TAriaPlugin extends TBasePlugin<any, TAriaPluginEvents> {
 		this._labelledBy = undefined
 		this._describedBy = undefined
 		this._links = NO_LINKS
+		this._parts = NO_PARTS
 		this._role = undefined
 
 		super.destroy()

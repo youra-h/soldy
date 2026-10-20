@@ -44,8 +44,12 @@ export default { ...SetupTextarea }
 			Счётчик символов — только при `counter`. Стоит в рамке, под полем:
 			подсказка и ошибка `Field` встают под всем компонентом. Текст —
 			набрано и предел (`12 / 200`), без `maxlength` — одно число (`12`);
-			его пишет плагин имён по локали поддерева.
+			его пишет плагин имён по локали поддерева. Набор `counterAria` несёт
+			`id` счётчика: поле ссылается на него `aria-describedby`, и текст
+			звучит на фокусе поля, а не живым регионом на каждый символ.
 		-->
-		<div v-if="counter" class="so-textarea__counter">{{ names_counter }}</div>
+		<div v-if="counter" class="so-textarea__counter" v-bind="counterAria">
+			{{ names_counter }}
+		</div>
 	</component>
 </template>
