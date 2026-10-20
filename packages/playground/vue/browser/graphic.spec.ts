@@ -9,8 +9,14 @@
  * что с ней рядом: к странице и поверхности контрола, на которых компонент
  * стоит, к своей коробке и кольцу, к рельсу Slider — и под наведением — и к
  * дорожке индикатора. Раньше отметки и заливка Slider стояли на середине шкалы
- * (500), индикаторы и полоса — на ступени 600, и в светлой схеме до 3:1 не
- * дотягивали.
+ * (500) и в светлой схеме до 3:1 не дотягивали.
+ *
+ * Исключения — решение владельца о виде графики: в светлой схеме заливка
+ * Slider и индикаторов к своей вуали — рельсу и дорожке — держит 3:1 не у
+ * всех вариантов (`exempt` у случая; `themes/oren/AGENTS.md`, «Что тестом не
+ * проверяется», «заливка к рельсу и дорожке»). Список точный: пара из него,
+ * которая держит 3:1, и исключение, которому в сцене не нашлось пары, — тоже
+ * нарушения, иначе он устарел бы молча.
  *
  * Сторож токенов (`themes/oren/__tests__/tokens.spec.ts`) держит только пары
  * с самими поверхностями и только по числам токенов. Вуаль поверх них — рельс
@@ -45,7 +51,7 @@ import { contrast, find, settled, style } from './colors'
 
 import '@soldy-ui/theme-oren'
 
-/** Обе схемы: ступень графики у них разная, а правило одно. */
+/** Обе схемы: цвет графики у них свой, а правило одно. */
 const SCHEMES = ['oren', 'oren-dark'] as const
 
 type TScheme = (typeof SCHEMES)[number]
@@ -68,6 +74,16 @@ type TBackdrop = keyof typeof BACKDROPS
  */
 const VARIANTS: readonly (TComponentVariant | undefined)[] = [undefined, ...COMPONENT_VARIANTS]
 
+/** Варианты со своим цветом: `normal` — та же нейтраль, что и без варианта. */
+const COLORED = COMPONENT_VARIANTS.filter((variant) => variant !== 'normal')
+
+/**
+ * Варианты, у которых в светлой схеме заливка Slider и индикаторов к своей
+ * вуали в покое держит меньше 3:1 — 2,56–2,91:1. Под наведением рельс Slider
+ * плотнее, и там ниже 3:1 у всех вариантов со своим цветом — 2,40–2,88:1.
+ */
+const BELOW_ON_VEIL: readonly TComponentVariant[] = ['positive', 'caution']
+
 /** Порог WCAG 2 для графики (1.4.11). */
 const GRAPHIC = 3
 
@@ -78,6 +94,9 @@ const nextFrame = () => new Promise<void>((resolve) => requestAnimationFrame(() 
  * подложка, на которой стоит компонент.
  */
 type TPair = { name: string; color: string; under: string[] }
+
+/** Исключения схемы: имя пары — варианты, у которых она ниже 3:1. */
+type TExempt = Readonly<Record<string, readonly TComponentVariant[]>>
 
 interface IGraphic {
 	name: string
@@ -93,6 +112,11 @@ interface IGraphic {
 		changes: (root: HTMLElement) => string
 		pairs: (root: HTMLElement, backdrop: string) => TPair[]
 	}
+	/**
+	 * Пары ниже 3:1 по решению владельца (см. шапку) — по схеме, на обеих
+	 * подложках. Случай без варианта исключением не бывает.
+	 */
+	exempt?: Partial<Record<TScheme, TExempt>>
 }
 
 /** Часть по селектору — и SVG тоже; нет её — тест падает здесь, а не на чтении свойства. */
@@ -199,6 +223,12 @@ const GRAPHICS: readonly IGraphic[] = [
 				]
 			},
 		},
+		exempt: {
+			oren: {
+				'заливка к рельсу': BELOW_ON_VEIL,
+				'заливка к рельсу под наведением': COLORED,
+			},
+		},
 	},
 	{
 		name: 'заливка ProgressLinear',
@@ -213,6 +243,7 @@ const GRAPHICS: readonly IGraphic[] = [
 				backdrop,
 			)
 		},
+		exempt: { oren: { 'заливка к дорожке': BELOW_ON_VEIL } },
 	},
 	{
 		name: 'дуга ProgressSpinner',
@@ -223,6 +254,7 @@ const GRAPHICS: readonly IGraphic[] = [
 				{ name: 'дорожке', color: style(part(root, '.so-progress-spinner__track')).stroke },
 				backdrop,
 			),
+		exempt: { oren: { 'заливка к дорожке': BELOW_ON_VEIL } },
 	},
 	{
 		name: 'полоса под активным табом',
@@ -295,8 +327,14 @@ async function show(scheme: TScheme, graphic: IGraphic): Promise<void> {
 	await settled(document.body)
 }
 
-/** Случай сцены: подложка, её цвет и узел случая. */
-type TCase = { backdrop: TBackdrop; color: string; root: HTMLElement; name: string }
+/** Случай сцены: подложка, её цвет, вариант и узел случая. */
+type TCase = {
+	backdrop: TBackdrop
+	color: string
+	variant?: TComponentVariant
+	root: HTMLElement
+	name: string
+}
 
 const cases = (): TCase[] =>
 	(Object.keys(BACKDROPS) as TBackdrop[]).flatMap((backdrop) => {
@@ -306,17 +344,33 @@ const cases = (): TCase[] =>
 		return VARIANTS.map((variant) => ({
 			backdrop,
 			color,
+			variant,
 			root: find(`[data-case="${caseName(variant)}"]`, row),
 			name: `${backdrop} · ${caseName(variant)}`,
 		}))
 	})
 
-/** Пары ниже порога — с отношением, чтобы отчёт сразу называл число. */
-const faultsOf = (name: string, pairs: TPair[]): string[] =>
+/** Ключ исключения: пара и вариант. */
+const exemptKey = (pair: string, variant: TComponentVariant) => `${pair} · ${variant}`
+
+/**
+ * Нарушения пар случая — с отношением, чтобы отчёт сразу называл число: пара
+ * ниже порога, а исключённая — если держит. Исключения, которые встретились,
+ * пишутся в `seen`.
+ */
+const faultsOf = (exempt: TExempt, seen: Set<string>, scene: TCase, pairs: TPair[]): string[] =>
 	pairs.flatMap((pair) => {
 		const ratio = contrast(pair.color, pair.under)
+		const fault = `${scene.name} · ${pair.name}: ${ratio.toFixed(2)}:1`
+		const { variant } = scene
 
-		return ratio < GRAPHIC ? [`${name} · ${pair.name}: ${ratio.toFixed(2)}:1`] : []
+		if (variant === undefined || !exempt[pair.name]?.includes(variant)) {
+			return ratio < GRAPHIC ? [fault] : []
+		}
+
+		seen.add(exemptKey(pair.name, variant))
+
+		return ratio < GRAPHIC ? [] : [`${fault} — держит, исключение лишнее`]
 	})
 
 beforeEach(() => {
@@ -335,23 +389,36 @@ describe.each(SCHEMES)('%s: цветная графика держит 3:1 к с
 	it.each(GRAPHICS)('$name: на странице и на поверхности контрола', async (graphic) => {
 		await show(scheme, graphic)
 
-		const faults = cases().flatMap(({ root, color, name }) =>
-			faultsOf(name, graphic.pairs(root, color)),
+		const exempt = graphic.exempt?.[scheme] ?? {}
+		const seen = new Set<string>()
+		const faults = cases().flatMap((scene) =>
+			faultsOf(exempt, seen, scene, graphic.pairs(scene.root, scene.color)),
 		)
 
 		const { hovered } = graphic
 
 		if (hovered) {
-			for (const { root, color, name } of cases()) {
-				const resting = hovered.changes(root)
+			for (const scene of cases()) {
+				const resting = hovered.changes(scene.root)
 
-				await userEvent.hover(hovered.target(root))
+				await userEvent.hover(hovered.target(scene.root))
 				await settled(document.body)
 
-				if (hovered.changes(root) === resting) faults.push(`${name}: наведение не видно`)
+				if (hovered.changes(scene.root) === resting) {
+					faults.push(`${scene.name}: наведение не видно`)
+				}
 
-				faults.push(...faultsOf(name, hovered.pairs(root, color)))
+				faults.push(
+					...faultsOf(exempt, seen, scene, hovered.pairs(scene.root, scene.color)),
+				)
 			}
+		}
+
+		// Исключение без пары в сцене — опечатка в имени пары или пропавшая пара
+		for (const [pair, variants] of Object.entries(exempt)) {
+			const missing = variants.filter((variant) => !seen.has(exemptKey(pair, variant)))
+
+			faults.push(...missing.map((variant) => `исключение без пары: ${pair} · ${variant}`))
 		}
 
 		expect(faults).toEqual([])
