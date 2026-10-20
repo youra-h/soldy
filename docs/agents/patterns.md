@@ -2094,6 +2094,44 @@ useToasts()`. API опускает лифт (`TOASTS_ELEVATOR`, расширен
   окно над таблицей в `ui/webc/__tests__/external-engine-lifetime.spec.ts`,
   `playground/vue/browser/list-box-virtual.spec.ts` и
   `playground/vue/browser/select-virtual.spec.ts`; окно таблицы — выше.
+- **Перестановка** (`DragAndDrop`) — элементы коллекции переставляют
+  перетаскиванием. Невизуальная обёртка, как окно: `<DragAndDrop @move="…">`
+  вокруг Tabs, ListBox и Accordion; своего узла и пропсов у неё нет.
+  **Перестановка — команда обёртки** `move(engine, item, newIndex)`, как
+  `moveColumn` у таблицы: `move:before` (`TDragAndDropMoveEvent` — `engine`,
+  `item`, `oldIndex`, `newIndex`; `preventDefault()` оставляет элемент на
+  месте), перемещение в движке и `move` с местом, где элемент встал. Место в
+  `move:before` только для чтения: подменить его — хук движка
+  `item:move:before`, и перемещение, отменённое там, `move` не даёт. Пара — на
+  каждое перемещение жестом: перестановка живая, и жест через три места даёт
+  три пары. Это не дубль `item:move:before` и `item:moved`: те — о любом
+  перемещении, и из кода, эти — только о жесте, одной точкой на все коллекции
+  обёртки. Имена — как `show:before` и `show`: до — `move:before`, после —
+  `move`. **Кого берут, решает обёртка** (`canMove`): элемент своей
+  коллекции, не выключенный, — как колонку без `reorderable`; мимо
+  выключенного остальные проходят. **Жест** — плагин коллекции `TDragPlugin`:
+  нативное перетаскивание (`draggable` на узлах элементов, `dragstart`,
+  `dragover`, `drop` и `dragend` на корне) он переводит в команду — на
+  `dragover` над другим элементом зовёт `move` с местом того элемента, а места
+  взятого не помнит: оно в составе. Отменённое место над тем же элементом он
+  не переспрашивает — `dragover` идёт непрерывно, пока указатель стоит;
+  `dragstart` выключенного отменяет; своему жесту кладёт данные — без них
+  Firefox жест не начинает; `dragover` и `drop` принимает только у своего
+  жеста: файл или текст над списком идут как без плагина. Взятому — класс
+  `so-drag-and-drop__item`. **Доставка — лифтом**: обёртка
+  (`TDragAndDropExtension`) опускает свой экземпляр по ключу наполнения
+  (`setup/content/extensions/drag-and-drop/keys.ts`), а коллекция
+  (`TDragAndDropCollectionExtension`) берёт его при сборке и включает им свой
+  плагин — движком и обёрткой. Фаз контекста нет: на шину обёртки никто не
+  подписан, плагин уходит с набором коллекции. Своему поддереву коллекция
+  опускает пустое: список в секции Accordion перестановку не наследует. Между
+  коллекциями обёртка не переносит. **Адаптеры**: Vue. Сторожат
+  `core/__tests__/drag-and-drop.spec.ts`,
+  `plugins/__tests__/collection-elements.plugin.spec.ts`,
+  «TDragAndDropCollectionExtension» в `setup/__tests__/adapter.spec.ts`,
+  `ui/vue/__tests__/drag-and-drop.spec.ts`, «превью drag-and-drop» в
+  `playground/vue/__tests__/smoke.spec.ts` и
+  `playground/vue/browser/drag-and-drop.spec.ts`.
 
 **ComboBox отдельным компонентом не заводим.** Ark и Radix держат `Select` и
 `Combobox` врозь, потому что у них расходится модель значения: у select-only

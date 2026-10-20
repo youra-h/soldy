@@ -3,16 +3,21 @@
 /**
  * Реестр узлов элементов коллекции (`TCollectionElements` над
  * `TCollectionBundlesPlugin`) и его потребитель — перетаскивание
- * (`TDragPlugin`). Движок приходит к ним без типа, и состав и базовые
- * операции коллекции они находят охранниками (`batchOf`, `plainOf`), а не
- * чтением `engine.extensions` наугад (docs/agents/collections.md, «Сосед по
- * коллекции — по контракту»): узлы идут порядком состава, а перетаскивание
- * переставляет элементы в движке.
+ * (`TDragPlugin`). Движок приходит к ним без типа, и состав коллекции они
+ * находят охранником (`batchOf`), а не чтением `engine.extensions` наугад
+ * (docs/agents/collections.md, «Сосед по коллекции — по контракту»): узлы
+ * идут порядком состава.
+ *
+ * Перетаскивание переставляет не само: жест DOM оно переводит в команду
+ * обёртки `DragAndDrop` (`TDragAndDrop.move`), и команда шлёт свои события и
+ * переставляет элемент в движке. Правила команды —
+ * `core/__tests__/drag-and-drop.spec.ts`; здесь — жест: кого берут, когда
+ * спрашивают место и чьё перетаскивание принимают.
  */
 
 import { describe, it, expect, afterEach } from 'vitest'
-import { TListBox, TListBoxCollectionFacade } from '@soldy-ui/core'
-import type { IListBoxItem } from '@soldy-ui/core'
+import { TDragAndDrop, TListBox, TListBoxCollectionFacade } from '@soldy-ui/core'
+import type { IDragAndDropMove, IListBoxItem } from '@soldy-ui/core'
 import {
 	TCollectionBundlesPlugin,
 	TCollectionElements,
@@ -115,20 +120,185 @@ describe('TCollectionElements — узлы по составу коллекци�
 	})
 })
 
-describe('TDragPlugin — перестановка базовыми операциями коллекции', () => {
-	it('элемент, перетащенный на место третьего, переезжает в составе', async () => {
-		const { engine, items, nodeOf, drag } = setup()
-		const starts: { index: number; uid: number }[] = []
+/**
+ * Событие перетаскивания на узле — всплывает и отменяется, как у браузера.
+ * `DragEvent` и `DataTransfer` в jsdom нет: данные жеста, если они нужны
+ * тесту, — заглушка на месте `dataTransfer`.
+ */
+function fire(node: Element, type: string, dataTransfer?: object): Event {
+	const event = new Event(type, { bubbles: true, cancelable: true })
+
+	if (dataTransfer) Object.defineProperty(event, 'dataTransfer', { value: dataTransfer })
+
+	node.dispatchEvent(event)
+
+	return event
+}
+
+/**
+ * Перетаскивание включено командой обёртки: плагин переводит жест в
+ * `TDragAndDrop.move`, а события и перемещение в движке — её. Обработчики
+ * встают на корень, когда он объявлен, — кадром позже.
+ */
+async function activated() {
+	const context = setup()
+	const dnd = new TDragAndDrop()
+	const asked: { item: object; newIndex: number }[] = []
+	const moved: IDragAndDropMove[] = []
+
+	dnd.events.on('move:before', ({ item, newIndex }) => asked.push({ item, newIndex }))
+	dnd.events.on('move', (e) => moved.push(e))
+	context.drag.activate(context.engine, dnd)
+	await nextFrame()
+
+	return { ...context, dnd, asked, moved }
+}
+
+/** Порядок значений в составе коллекции. */
+const order = (items: ReadonlyArray<IListBoxItem>) => items.map((item) => item.value)
+
+describe('TDragPlugin — жест перестановки командой обёртки', () => {
+	it('элементы коллекции перетаскиваемые, после снятия набора — нет', async () => {
+		const { items, nodeOf, drag } = await activated()
+
+		expect(items.map((item) => nodeOf(item).getAttribute('draggable'))).toEqual([
+			'true',
+			'true',
+			'true',
+		])
+
+		drag.destroy()
+
+		expect(items.map((item) => nodeOf(item).hasAttribute('draggable'))).toEqual([
+			false,
+			false,
+			false,
+		])
+	})
+
+	it('элемент, перетащенный на место третьего, переставляет обёртка: move с местом в составе', async () => {
+		const { engine, items, nodeOf, drag, moved } = await activated()
+		const starts: { index: number; uid: string | number }[] = []
 
 		drag.events.on('drag:start', (payload) => starts.push(payload))
-		drag.activate(engine)
-		// Обработчики встают на корень, когда он объявлен, — кадром позже
-		await nextFrame()
 
-		nodeOf(items[0]).dispatchEvent(new Event('dragstart', { bubbles: true }))
-		nodeOf(items[2]).dispatchEvent(new Event('dragover', { bubbles: true, cancelable: true }))
+		fire(nodeOf(items[0]), 'dragstart')
+		fire(nodeOf(items[2]), 'dragover')
 
 		expect(starts).toEqual([{ index: 0, uid: items[0].uid }])
-		expect(engine.extensions.batch.items.map((item) => item.value)).toEqual(['b', 'c', 'a'])
+		expect(order(engine.extensions.batch.items)).toEqual(['b', 'c', 'a'])
+		expect(moved).toEqual([{ engine, item: items[0], oldIndex: 0, newIndex: 2 }])
+	})
+
+	it('жест через два места — две перестановки, место взятого — из состава', async () => {
+		const { engine, items, nodeOf, moved } = await activated()
+
+		fire(nodeOf(items[2]), 'dragstart')
+		fire(nodeOf(items[1]), 'dragover')
+		fire(nodeOf(items[0]), 'dragover')
+
+		expect(order(engine.extensions.batch.items)).toEqual(['c', 'a', 'b'])
+		expect(moved.map(({ oldIndex, newIndex }) => [oldIndex, newIndex])).toEqual([
+			[2, 1],
+			[1, 0],
+		])
+	})
+
+	it('отменённое место над тем же элементом не переспрашивается, над другим — спрашивается', async () => {
+		const { engine, items, nodeOf, dnd, asked } = await activated()
+
+		dnd.events.on('move:before', (e) => e.preventDefault())
+
+		fire(nodeOf(items[0]), 'dragstart')
+		// `dragover` идёт непрерывно, пока указатель стоит над элементом
+		fire(nodeOf(items[2]), 'dragover')
+		fire(nodeOf(items[2]), 'dragover')
+		fire(nodeOf(items[2]), 'dragover')
+
+		expect(asked).toEqual([{ item: items[0], newIndex: 2 }])
+
+		fire(nodeOf(items[1]), 'dragover')
+		fire(nodeOf(items[2]), 'dragover')
+
+		expect(asked).toEqual([
+			{ item: items[0], newIndex: 2 },
+			{ item: items[0], newIndex: 1 },
+			{ item: items[0], newIndex: 2 },
+		])
+		expect(order(engine.extensions.batch.items)).toEqual(['a', 'b', 'c'])
+	})
+
+	it('dragstart выключенного элемента отменён: жеста нет, перестановки нет', async () => {
+		const { engine, items, nodeOf, drag, asked } = await activated()
+		const starts: unknown[] = []
+
+		drag.events.on('drag:start', (payload) => starts.push(payload))
+		items[0].disabled = true
+
+		const start = fire(nodeOf(items[0]), 'dragstart')
+		const over = fire(nodeOf(items[2]), 'dragover')
+
+		expect(start.defaultPrevented).toBe(true)
+		expect(over.defaultPrevented).toBe(false)
+		expect(starts).toEqual([])
+		expect(asked).toEqual([])
+		expect(order(engine.extensions.batch.items)).toEqual(['a', 'b', 'c'])
+	})
+
+	it('чужое перетаскивание — файл, текст — не принято: dragover и drop как без плагина', async () => {
+		const { items, nodeOf, asked } = await activated()
+
+		const over = fire(nodeOf(items[1]), 'dragover')
+		const drop = fire(nodeOf(items[1]), 'drop')
+
+		expect(over.defaultPrevented).toBe(false)
+		expect(drop.defaultPrevented).toBe(false)
+		expect(asked).toEqual([])
+	})
+
+	it('свой жест принят: dragover и drop — без действия браузера, после dragend — снова чужие', async () => {
+		const { items, nodeOf } = await activated()
+
+		fire(nodeOf(items[0]), 'dragstart')
+
+		expect(fire(nodeOf(items[1]), 'dragover').defaultPrevented).toBe(true)
+		expect(fire(nodeOf(items[1]), 'drop').defaultPrevented).toBe(true)
+
+		fire(nodeOf(items[0]), 'dragend')
+
+		expect(fire(nodeOf(items[1]), 'dragover').defaultPrevented).toBe(false)
+	})
+
+	it('свой жест кладёт данные и разрешает только перемещение: без данных Firefox жест не начинает', async () => {
+		const { items, nodeOf } = await activated()
+		const data: [string, string][] = []
+		const transfer = {
+			effectAllowed: 'uninitialized',
+			dropEffect: 'none',
+			setData: (format: string, value: string) => data.push([format, value]),
+		}
+
+		fire(nodeOf(items[0]), 'dragstart', transfer)
+		fire(nodeOf(items[1]), 'dragover', transfer)
+
+		expect(data).toEqual([['text/plain', '']])
+		expect(transfer.effectAllowed).toBe('move')
+		expect(transfer.dropEffect).toBe('move')
+	})
+
+	it('взятый элемент помечен классом на время жеста', async () => {
+		const { items, nodeOf, drag } = await activated()
+		const ends: unknown[] = []
+
+		drag.events.on('drag:end', () => ends.push(true))
+
+		fire(nodeOf(items[0]), 'dragstart')
+
+		expect(items[0].classes.has('so-drag-and-drop__item', false)).toBe(true)
+
+		fire(nodeOf(items[0]), 'dragend')
+
+		expect(items[0].classes.has('so-drag-and-drop__item', false)).toBe(false)
+		expect(ends).toEqual([true])
 	})
 })

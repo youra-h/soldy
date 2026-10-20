@@ -33,7 +33,7 @@ Defines **headless (framework-agnostic)** component models with:
 ```
 TEntity (uid, getProps, assign, toJSON)
 ├── TComponent (events) — НЕВИЗУАЛЬНАЯ база
-│   ├── TDragAndDrop                        — провайдер контекста, ничего не рендерит
+│   ├── TDragAndDrop                        — команда перестановки жестом (move:before/move), ничего не рендерит
 │   ├── TCollectionComponent / TCollectionItemComponent — фасады коллекций
 │   └── TComponentView (rendered/visible/present, show/hide, tag, direction, classes, aria/dataset/attrs, ready)
 │       ├── TLayer (target, zIndex — общий стек слоёв, data-layer)
@@ -271,7 +271,7 @@ export const ElementPluginDescriptor = definePlugin({
   Узел, куда запись `focused` ставит фокус, называет дескриптор опцией `focusTarget` (см. `docs/agents/a11y.md`, «Прочее»).
   Элемент берёт у `TElementPlugin` через `ctx.get(...)` — композиция, а не наследование
 - `TReadyPlugin` - Syncs `IComponentView.ready` with `TElementPlugin` (`ready` / `removed`)
-- `TDragPlugin` (`custom/drag-and-drop/`) - DnD handler
+- `TDragPlugin` (`custom/drag-and-drop/`) - DnD gesture: native dragging of the collection's items becomes the `move` command of the `DragAndDrop` wrapper (`IDragAndDrop`); takes only items `canMove` allows and accepts `dragover`/`drop` only of its own gesture
 - `TInputPlugin`, `TInputBoolPlugin`, `TInputControlPlugin` - Value tracking
 - `TIconLayoutPlugin`, `TSkeletonLayoutPlugin`, `TFrameLayoutPlugin` - UI-specific layout
 - `TCollectionBundlesPlugin` (`custom/collection/bundles.plugin.ts`) - реестр item-bundles (uid → IPluginBundle) + ссылка на движок (`engine`)
@@ -343,7 +343,7 @@ Owns the `pluginProps` prop and emits `plugin:event`. It has no write, reset or 
 
 - `TCollectionExtension` - Provides child registration via elevator
 - `TCollectionItemExtension` - Child assembles itself under the parent (engine and register via elevator, `TItemContext`, `meta` from props) and joins the collection on the context's `attach`, which the adapter runtime fires at its framework's mount: Vue in `setup()`, React at commit (AGENTS.md, «Элемент входит в коллекцию при монтировании, а не при сборке»)
-- `TDragAndDropExtension` / `TDragAndDropCollectionExtension` - Drag/drop context and `TDragPlugin` activation
+- `TDragAndDropExtension` / `TDragAndDropCollectionExtension` - The wrapper lowers its instance by the content key (`DRAG_AND_DROP_ELEVATOR`, `content/extensions/drag-and-drop/keys.ts`); the collection picks it up at assembly, activates its `TDragPlugin` with its engine and the wrapper and lowers an empty value to its subtree — lists inside its items don't inherit reordering. No context phases: nobody listens to the wrapper bus
 - `TTabsContentBindingExtension` - Binds `Tabs.Content` to its tab by `value`, split by the same phases: at assembly it binds only what is the panel's own — its facade and `aria` — so a tab from `items`, already in the collection, gets its panel into the server markup; the second lookup, which finds the tabs of the markup, and the subscriptions to the engine and to `value` wait for the context's `attach`
 
 #### Elevator (`packages/setup/protected/adapter/elevator/`)
@@ -3099,9 +3099,9 @@ Key files:
 - `packages/plugins/src/custom/collection/collection-bundles-access.plugin.ts` — TCollectionBundlesAccess (abstract, доступ к bundles по uid/item/index)
 - `packages/plugins/src/custom/collection/collection-elements.plugin.ts` — TCollectionElements (доступ к DOM-элементам через bundle.get(TElementPlugin))
 - `packages/plugins/src/custom/tabs/` — TTabsLayoutPlugin / TTabsActiveTabPlugin (мигрированы из \_plugins), TTabsContentWarnPlugin, TTabsKeyboardPlugin (клавиатура APG Tabs: стрелки, Home/End, Delete). `TTabsViewPlugin` — плагин темы oren (`@soldy-ui/theme-oren/setup`), ставится её регистрацией `useTheme`
-- `packages/plugins/src/custom/drag-and-drop/` — TDragPlugin (мигрирован из \_plugins; activate(engine), использует TCollectionElements + TCollectionBundlesPlugin)
+- `packages/plugins/src/custom/drag-and-drop/` — TDragPlugin (мигрирован из \_plugins; activate(engine, dragAndDrop): жест — в команду обёртки `move`, использует TCollectionElements + TCollectionBundlesPlugin)
 - `packages/setup/content/extensions/collection/collection.extension.class.ts` — TCollectionExtension (движок берёт у фасада, передаёт его детям, bindEngine + push/register)
-- `packages/setup/content/extensions/drag-and-drop/drag-and-drop*.extension.class.ts` — TDragAndDropExtension (down(true)), TDragAndDropCollectionExtension (up() → TDragPlugin.activate(context.instance.engine))
+- `packages/setup/content/extensions/drag-and-drop/drag-and-drop*.extension.class.ts` — TDragAndDropExtension (down(context.instance) по DRAG_AND_DROP_ELEVATOR из `keys.ts`), TDragAndDropCollectionExtension (up() → TDragPlugin.activate(context.instance.engine, dragAndDrop), down(null) поддереву)
 - `packages/setup/content/extensions/collection/collection-item.extension.class.ts` — TCollectionItemExtension (TItemContext через ITEM_CONTEXT_ELEVATOR + регистрация через COLLECTION_ENGINE_ELEVATOR + meta через `engine.extensions.meta`)
 - `packages/setup/content/extensions/tabs/tabs-content-binding.extension.class.ts` — TTabsContentBindingExtension (панель находит таб по `value`, сторона панели в `aria`)
 - `packages/setup/content/descriptors/plugins/` — CollectionBundlesPluginDescriptor, CollectionElementsPluginDescriptor (wired into Tabs, Accordion, ListBox, Select, Tags), TabsLayoutPluginDescriptor, TabsActiveTabPluginDescriptor, TabsKeyboardPluginDescriptor (Tabs), DragPluginDescriptor (Tabs, Accordion, ListBox)
