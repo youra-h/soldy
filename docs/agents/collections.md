@@ -283,13 +283,19 @@ ListBox, стандартный `selectionOf` у календаря. Приве�
 `items:clear:before` — один хук на всю очистку, а не по хуку на элемент:
 отменить удаление части элементов оставило бы коллекцию непустой, а `clear`
 по смыслу значит «коллекция пуста». `TMoveEvent.oldIndex` доступен только для
-чтения — вычислен до хука; если хук привёл `newIndex` к значению `oldIndex`,
-перемещение становится no-op без мутации и без `item:moved`.
+чтения — это место элемента в составе до хука: старого места вызывающий не
+передаёт (`plain.move(item, newIndex)`). Перемещение — только такое, как его
+объявило событие, иначе после хука это no-op без мутации, без `item:moved` и
+без `change:items`: хук привёл `newIndex` к `oldIndex`; место вне состава (не
+целое в `[0, length)`) — из вызова или из хука; хук сдвинул состав, и на
+`oldIndex` стоит другой элемент. Проверка одна, после хука: место из вызова
+хук вправе вернуть в состав.
 
 Сторожит `packages/core/__tests__/collection.command.spec.ts` (`preventDefault`
-гасит команду целиком, включая `change:items`/`change:count`) и
-`collection-before-hooks-relay.spec.ts` (хуки доходят через `plain.events` и
-фасад коллекции).
+гасит команду целиком, включая `change:items`/`change:count`; перемещение на
+место вне состава и в сдвинутом хуком составе — ни `item:moved`, ни
+`change:items`) и `collection-before-hooks-relay.spec.ts` (хуки доходят через
+`plain.events` и фасад коллекции).
 
 Тем же приёмом отменяется «стать активным» и «стать выбранным»:
 `TActivationExtension.activate` шлёт `item:activate:before`

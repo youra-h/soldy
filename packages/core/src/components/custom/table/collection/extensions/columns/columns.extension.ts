@@ -508,7 +508,7 @@ export class TTableColumnsExtension<
 		const { batch, plain } = this._engine.extensions
 		const before = batch.items.indexOf(column)
 
-		plain.move(column, batch.items.indexOf(shown[place]), before)
+		plain.move(column, batch.items.indexOf(shown[place]))
 
 		// Перемещение отменил подписчик `item:move:before`
 		if (batch.items.indexOf(column) === before) return false
