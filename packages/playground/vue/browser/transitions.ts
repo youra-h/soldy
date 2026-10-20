@@ -66,26 +66,93 @@ export const easingOf = (transition: CSSTransition): string => {
 	return easing
 }
 
-/** Сколько кадров самое большее ждать исчезания: две секунды при 60 Гц. */
+/** Сколько кадров самое большее ждать исчезания после действия: две секунды при 60 Гц. */
 const LEAVING_FRAMES = 120
 
 const nextFrame = () => new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
 
 /**
- * Узел исчезает: `check` сразу и потом в каждом кадре, пока у узла не
- * `display: none`. Отдаёт, сколько раз узел застали на экране: исчезни он
- * сразу, проверять было бы нечего, и сторож прошёл бы сам.
+ * Действие закрывает узел, и узел исчезает: `check` — в каждом кадре, где узел
+ * уже закрыт (`data-open="false"` — его пишет слой у всех узлов вызова) и ещё
+ * на экране, — до `display: none`. Отдаёт, сколько таких кадров было: исчезни
+ * узел сразу, проверять было бы нечего, и сторож прошёл бы сам.
+ *
+ * Кадры смотрит цикл, заведённый до действия, а не после него: ответ
+ * `userEvent` и команд идёт кругом RPC и под нагрузкой приходит позже, чем узел
+ * успевает исчезнуть, — взгляд после действия застал бы уже `display: none`.
+ * Поэтому до действия узел обязан быть открыт (`data-open="true"`): иначе
+ * цикл не отличил бы это закрытие от прошлого, и сторож был бы пуст.
+ *
+ * Ошибку `check` цикл держит у себя и бросает, когда действие кончилось: так
+ * протяжка не доедет до следующего теста, а отклонение не останется без
+ * обработчика. Лимит кадров считается от конца действия — само действие идёт
+ * столько, сколько ему нужно.
  */
-export const whileLeaving = async (element: Element, check: () => void): Promise<number> => {
-	let seen = 0
-
-	while (getComputedStyle(element).display !== 'none') {
-		if (seen === LEAVING_FRAMES) throw new Error(`узел не исчез за ${LEAVING_FRAMES} кадров`)
-
-		check()
-		seen += 1
-		await nextFrame()
+export const whileLeaving = async (
+	element: HTMLElement,
+	action: () => Promise<unknown>,
+	check: () => void,
+): Promise<number> => {
+	if (element.dataset.open !== 'true') {
+		throw new Error(`до действия узел не открыт: data-open="${element.dataset.open}"`)
 	}
+
+	let seen = 0
+	/** Кадров после конца действия; пока оно идёт — `null`. */
+	let after: number | null = null
+	/** Действие упало: цикл кончается, не дожидаясь узла. */
+	let stopped = false
+
+	// Ошибка — значением, а не отклонением: пока идёт действие, обработчика у
+	// цикла нет
+	const leaving = new Promise<{ error: unknown } | null>((resolve) => {
+		const frame = () => {
+			if (stopped) return resolve(null)
+
+			const closed = element.dataset.open === 'false'
+
+			if (closed && getComputedStyle(element).display === 'none') return resolve(null)
+
+			if (after !== null) {
+				if (after === LEAVING_FRAMES) {
+					return resolve({
+						error: new Error(
+							`узел не исчез за ${LEAVING_FRAMES} кадров после действия`,
+						),
+					})
+				}
+
+				after += 1
+			}
+
+			if (closed) {
+				try {
+					check()
+				} catch (error) {
+					return resolve({ error })
+				}
+
+				seen += 1
+			}
+
+			requestAnimationFrame(frame)
+		}
+
+		requestAnimationFrame(frame)
+	})
+
+	try {
+		await action()
+	} catch (error) {
+		stopped = true
+		throw error
+	}
+
+	after = 0
+
+	const failure = await leaving
+
+	if (failure) throw failure.error
 
 	return seen
 }
@@ -166,11 +233,11 @@ export const expectHidesWhenFaded = (transitions: ReadonlyMap<string, CSSTransit
  * Панель гаснет на месте и только потом пропадает — так закрывается панель у
  * якоря без жеста (`themes/oren/src/mixins/_anchored.scss`): Popover, Select
  * и DatePicker, а без движения — и с жестом. Панель меряется открытой, `close`
- * её закрывает, и пока у неё не `display: none`, она закрыта (`data-open`),
- * нажатий не ловит — указатель в её середине попадает в то, что под ней, — не
- * сдвигается, а прозрачность у неё только убывает. Переходит одна
- * прозрачность: из переходов самой панели, кроме `display`, — только
- * `opacity`. Пропадает панель, когда догасла (`expectHidesWhenFaded`).
+ * её закрывает, и в каждом кадре, пока закрытая панель на экране
+ * (`whileLeaving`), она нажатий не ловит — указатель в её середине попадает в
+ * то, что под ней, — не сдвигается, а прозрачность у неё только убывает.
+ * Переходит одна прозрачность: из переходов самой панели, кроме `display`, —
+ * только `opacity`. Пропадает панель, когда догасла (`expectHidesWhenFaded`).
  */
 export const expectFadesInPlace = async (
 	panel: HTMLElement,
@@ -181,13 +248,10 @@ export const expectFadesInPlace = async (
 	const transitions = ownTransitions(panel)
 	const opacities: number[] = []
 
-	await close()
-
-	const seen = await whileLeaving(panel, () => {
+	const seen = await whileLeaving(panel, close, () => {
 		const box = panel.getBoundingClientRect()
 		const hit = document.elementFromPoint(left + width / 2, top + height / 2)
 
-		expect(panel.dataset.open, 'закрыта').toBe('false')
 		expect(getComputedStyle(panel).pointerEvents, 'нажатий не ловит').toBe('none')
 		expect(hit !== null && panel.contains(hit), 'нажатие в середину — мимо неё').toBe(false)
 		expect(Math.abs(box.top - top), 'на месте по вертикали').toBeLessThan(1)

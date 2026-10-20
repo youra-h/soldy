@@ -1390,18 +1390,28 @@ describe('выбор месяца и года', () => {
 	 * движется: уезжай карточка, её место на миг потемнело бы под ещё не
 	 * погасшей вуалью, — закрытие читалось бы вспышкой. Смахнутая карточка
 	 * гаснет там, где её отпустили, а не вернувшись сначала на место.
-	 * Пропадает панель, когда догасла: `transitions` — её переходы с закрытия.
+	 * Пропадает панель, когда догасла.
+	 *
+	 * `close` закрывает панель. Место карточки — `card`, а без него — где её
+	 * застал первый кадр ухода: смахнутую закрывает отпускание, и где оно было,
+	 * видно только тогда. Отдаёт это место.
 	 */
 	const expectFadingInPlace = async (
-		card: DOMRect,
-		transitions: ReadonlyMap<string, CSSTransition>,
-	) => {
+		close: () => Promise<unknown>,
+		card: DOMRect | null = null,
+	): Promise<DOMRect> => {
+		const panel = find('.so-popover__panel')
 		const backdrop = box('.so-popover__panel')
+		const transitions = ownTransitions(panel)
 		const opacities: number[] = []
-		const seen = await whileLeaving(find('.so-popover__panel'), () => {
+		let place = card
+
+		const seen = await whileLeaving(panel, close, () => {
+			place ??= box('.so-calendar__picker')
+
 			expectSameBox(box('.so-popover__panel'), backdrop)
-			expectSameBox(box('.so-calendar__picker'), card)
-			opacities.push(Number(style(find('.so-popover__panel')).opacity))
+			expectSameBox(box('.so-calendar__picker'), place)
+			opacities.push(Number(style(panel).opacity))
 		})
 
 		expect(seen).toBeGreaterThan(1)
@@ -1412,17 +1422,17 @@ describe('выбор месяца и года', () => {
 		}
 
 		expectHidesWhenFaded(transitions)
+
+		if (place === null) throw new Error('карточку на экране после закрытия не застали')
+
+		return place
 	}
 
 	it('закрытая карточка гаснет на месте вместе с подложкой', async () => {
 		await show({ months: ['2026-09-01'] })
 		await open()
 
-		const card = box('.so-calendar__picker')
-		const transitions = ownTransitions(find('.so-popover__panel'))
-
-		await userEvent.keyboard('{Escape}')
-		await expectFadingInPlace(card, transitions)
+		await expectFadingInPlace(() => userEvent.keyboard('{Escape}'), box('.so-calendar__picker'))
 	})
 
 	it('смахнутая карточка гаснет там, где её отпустили, вместе с подложкой', async () => {
@@ -1430,14 +1440,9 @@ describe('выбор месяца и года', () => {
 		await open()
 
 		const start = box('.so-calendar__picker').top
-		const transitions = ownTransitions(find('.so-popover__panel'))
+		const released = await expectFadingInPlace(() => dragGrip(-150))
 
-		await dragGrip(-150)
-
-		const card = box('.so-calendar__picker')
-
-		expect(card.top).toBeLessThan(start - EPSILON)
-		await expectFadingInPlace(card, transitions)
+		expect(released.top, 'отпустили выше, чем она стояла').toBeLessThan(start - EPSILON)
 	})
 
 	it('жест за полосу вверх закрывает панель, фокус — на заголовок; вниз — нет', async () => {

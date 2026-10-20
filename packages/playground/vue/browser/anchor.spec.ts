@@ -17,7 +17,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, cleanup } from 'vitest-browser-vue'
 import { userEvent } from 'vitest/browser'
-import { defineComponent, h } from 'vue'
+import { defineComponent, h, nextTick } from 'vue'
 import { DatePicker, Frame, Select, SelectItem } from '@soldy-ui/vue'
 import type { TSelectPlacement } from '@soldy-ui/core'
 
@@ -466,9 +466,41 @@ describe('измерение панели', () => {
 })
 
 describe('flip', () => {
+	/** Отступ панели от поля — `anchor_offset` у Select. */
+	const OFFSET = 4
+	/** Шаг прокрутки за кадр, px. */
+	const STEP = 3
+
 	const arrow = () => document.querySelector('.so-select__arrow') as HTMLElement
 	const field = () => document.querySelector('.so-select__field input') as HTMLElement
 	const selectPanel = () => document.querySelector('.so-select__panel') as HTMLElement
+
+	/** Место под полем — по корню Select: он и есть якорь панели. */
+	const below = () =>
+		(window.visualViewport?.height ?? window.innerHeight) -
+		find('.so-select').getBoundingClientRect().bottom
+
+	/** Место, которое нужно открытой панели с её стороны поля. */
+	const needed = () => selectPanel().getBoundingClientRect().height + OFFSET
+
+	/**
+	 * Сдвиг окна, с которого под полем влезает открытая панель, — с запасом в
+	 * восемь шагов прокрутки. Меряется при окне в начале.
+	 */
+	const farWhereBelowFits = () => Math.ceil(needed() - below()) + 8 * STEP
+
+	/**
+	 * Стрелка — кликом в странице, а не `userEvent`. После закрытия стрелка
+	 * ещё поворачивается переходом темы, и Playwright сочтёт её нестабильной:
+	 * повторяя клик, он прокручивает цель к низу окна
+	 * (`scrollIntoView({ block: 'end' })`) — туда, где снизу панель не влезает,
+	 * и сторону показ выбрал бы уже там. Эти случаи проверяют сторону, а не
+	 * ввод.
+	 */
+	const toggleInPage = async () => {
+		arrow().click()
+		await nextTick()
+	}
 
 	it('Select у низа окна открывается вверх', async () => {
 		render(selectAtBottom())
@@ -516,23 +548,14 @@ describe('flip', () => {
 	 * сторону выбирает следующее открытие.
 	 */
 	it('открытая панель держит сторону, пока окно едет через границу «снизу влезает»', async () => {
-		/** Отступ панели от поля — `anchor_offset` у Select. */
-		const OFFSET = 4
-		/** Шаг прокрутки за кадр, px. */
-		const STEP = 3
-
 		render(selectOnLongPage())
 
 		await userEvent.click(arrow())
 		await expect.poll(() => selectPanel().getAttribute('data-placement')).toBe('top-start')
 
-		const viewport = window.visualViewport?.height ?? window.innerHeight
-		/** Место под полем — по корню Select: он и есть якорь панели. */
-		const below = () => viewport - find('.so-select').getBoundingClientRect().bottom
-		const needed = selectPanel().getBoundingClientRect().height + OFFSET
 		// С этого сдвига окна снизу панель влезает, и прежнее правило увело бы
 		// её вниз. Окно проезжает его с запасом
-		const far = Math.ceil(needed - below()) + 8 * STEP
+		const far = farWhereBelowFits()
 
 		const placements: Array<string | null> = []
 		const record = () => placements.push(selectPanel().getAttribute('data-placement'))
@@ -552,7 +575,7 @@ describe('flip', () => {
 
 		for (let y = STEP; y <= far; y += STEP) await scrollWindow(y)
 
-		expect(below(), 'снизу панель влезает').toBeGreaterThanOrEqual(needed)
+		expect(below(), 'снизу панель влезает').toBeGreaterThanOrEqual(needed())
 
 		for (let y = far - STEP; y >= 0; y -= STEP) await scrollWindow(y)
 
@@ -561,16 +584,63 @@ describe('flip', () => {
 
 		expect(placements, 'смены стороны').toEqual([])
 
-		// Закрыли и открыли там, где снизу влезает, — сторону выбирает показ
+		// Закрыли и, когда панель исчезла, открыли там, где снизу влезает, —
+		// сторону выбирает показ
 		await scrollWindow(far)
-		await userEvent.click(arrow())
-		await expect.poll(() => selectPanel().dataset.open).toBe('false')
-		await userEvent.click(arrow())
+		await toggleInPage()
+		await expect.poll(() => getComputedStyle(selectPanel()).display).toBe('none')
+
+		expect(window.scrollY, 'окно там, где снизу влезает').toBe(far)
+
+		await toggleInPage()
 
 		await expect.poll(() => selectPanel().getAttribute('data-placement')).toBe('bottom-start')
 		await expect
 			.poll(() => selectPanel().getBoundingClientRect().top)
 			.toBeGreaterThanOrEqual(field().getBoundingClientRect().bottom - 1)
+		expect(window.scrollY, 'окно стоит').toBe(far)
+	})
+
+	/**
+	 * Сторону показ выбирает заново и тогда, когда закрытая панель ещё гаснет:
+	 * гаснущая держит сторону, как открытая, но забывает её показ, а не конец
+	 * угасания. Переходы закрытия стоят на паузе — показ застаёт панель
+	 * гаснущей, как бы ни медлил прогон.
+	 */
+	it('показ во время угасания выбирает сторону заново', async () => {
+		render(selectOnLongPage())
+
+		await userEvent.click(arrow())
+		await expect.poll(() => selectPanel().getAttribute('data-placement')).toBe('top-start')
+		await settled(selectPanel())
+
+		const far = farWhereBelowFits()
+
+		window.scrollTo(0, far)
+		await nextFrame()
+
+		// Открытая панель держит сторону и там, где снизу влезает
+		expect(selectPanel().getAttribute('data-placement')).toBe('top-start')
+
+		await toggleInPage()
+
+		const fading = selectPanel().getAnimations()
+
+		for (const animation of fading) animation.pause()
+
+		await nextFrame()
+
+		expect(fading.length, 'переходы закрытия').toBeGreaterThan(0)
+		expect(selectPanel().dataset.open, 'закрыта').toBe('false')
+		expect(getComputedStyle(selectPanel()).display, 'ещё на экране').not.toBe('none')
+
+		await toggleInPage()
+
+		await expect.poll(() => selectPanel().getAttribute('data-placement')).toBe('bottom-start')
+		await expect
+			.poll(() => selectPanel().getBoundingClientRect().top)
+			.toBeGreaterThanOrEqual(field().getBoundingClientRect().bottom - 1)
+		expect(window.scrollY, 'окно стоит').toBe(far)
 	})
 })
 
@@ -708,15 +778,17 @@ describe('слежение по открытости', () => {
 		const open = gap()
 		let scrolled = 0
 
-		await userEvent.click(arrow())
-
 		// Блок едет на каждом кадре исчезания. `scroll` приходит кадром позже, и
 		// к следующей проверке панель уже стоит за полем
-		const seen = await whileLeaving(selectPanel(), () => {
-			expect(Math.abs(gap() - open), `зазор, блок на ${scrolled}px`).toBeLessThan(1)
-			scrolled += 4
-			scroller.scrollTop = scrolled
-		})
+		const seen = await whileLeaving(
+			selectPanel(),
+			() => userEvent.click(arrow()),
+			() => {
+				expect(Math.abs(gap() - open), `зазор, блок на ${scrolled}px`).toBeLessThan(1)
+				scrolled += 4
+				scroller.scrollTop = scrolled
+			},
+		)
 
 		expect(seen, 'кадров на экране после закрытия').toBeGreaterThan(1)
 		expect(scroller.scrollTop, 'блок прокрутился').toBe(scrolled)

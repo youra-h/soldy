@@ -149,10 +149,7 @@ describe('отбор: гаснущая панель держит отобран�
 
 			const { height } = panel().getBoundingClientRect()
 
-			await close()
-
-			const seen = await whileLeaving(panel(), () => {
-				expect(panel().dataset.open, 'закрыта').toBe('false')
+			const seen = await whileLeaving(panel(), close, () => {
 				expect(shownOptions(), 'опции гаснущей панели').toEqual(['Москва'])
 				expect(
 					Math.abs(panel().getBoundingClientRect().height - height),
