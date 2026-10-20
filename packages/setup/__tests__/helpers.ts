@@ -246,6 +246,43 @@ export function createElevatorFactory(): {
 	return { factory, store }
 }
 
+/** Слой лифта-дерева: значения своего узла и родитель — как у `provide`/`inject`. */
+export type TElevatorLayer = {
+	readonly values: Map<IElevatorKey<unknown>, unknown>
+	readonly parent?: TElevatorLayer
+}
+
+/** Слой узла под родителем; без родителя — корень дерева. */
+export const childOf = (parent?: TElevatorLayer): TElevatorLayer => ({
+	values: new Map(),
+	parent,
+})
+
+/** Найти значение ключа у слоя и его предков — ближайшее. */
+function lookup(layer: TElevatorLayer | undefined, key: IElevatorKey<unknown>): unknown {
+	for (let current = layer; current; current = current.parent) {
+		if (current.values.has(key)) return current.values.get(key)
+	}
+
+	return undefined
+}
+
+/**
+ * Лифт узла дерева для тестов без фреймворка: `down()` пишет в свой слой,
+ * `up()` читает у предков, а не у себя, — как `inject` во Vue читает
+ * `provide` родителя. Поэтому порядок, в котором узел берёт и отдаёт значение
+ * одного ключа, не важен.
+ */
+export function elevatorOf(layer: TElevatorLayer): TElevatorFactory {
+	// Как `inject<T>` во фреймворках: тип значения задаёт ключ, хранилищу он неизвестен
+	return <T>(key: IElevatorKey<T>) => ({
+		down: (value: T) => {
+			layer.values.set(key, value)
+		},
+		up: () => lookup(layer.parent, key) as T | undefined,
+	})
+}
+
 /** Значение, которое тест обязан получить: без него дальше проверять нечего. */
 export function required<T>(value: T | null | undefined, what: string): T {
 	if (value === null || value === undefined) {

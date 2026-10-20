@@ -27,6 +27,7 @@ import {
 	ListBoxItemDescriptor,
 	MenuCheckboxItemDescriptor,
 	MenuItemDescriptor,
+	MenuRadioItemDescriptor,
 	RadioGroupItemDescriptor,
 	SelectItemDescriptor,
 	StylableDescriptor,
@@ -43,7 +44,7 @@ import type {
 	IDeclaration,
 } from '@soldy-ui/setup'
 import { TListBoxItem } from '@soldy-ui/core'
-import type { IListBoxItemProps, IRadioGroupItemProps } from '@soldy-ui/core'
+import type { IListBoxItemProps, IMenuRadioItemProps, IRadioGroupItemProps } from '@soldy-ui/core'
 import { inheritDeclarations } from '../protected/define/inherit'
 import { OWNER_STYLE_PROPS } from '../content/descriptors/components/stylable.descriptor'
 import { required } from './helpers'
@@ -248,6 +249,7 @@ describe.each([
 	['Tags.Item', TagsItemDescriptor],
 	['Menu.Item', MenuItemDescriptor],
 	['Menu.CheckboxItem', MenuCheckboxItemDescriptor],
+	['Menu.RadioItem', MenuRadioItemDescriptor],
 ])('%s: размер задаёт владелец, вариант — свой', (_name, factory) => {
 	it('в разметке size нет, variant есть', () => {
 		const descriptor: IComponentDescriptor = factory()
@@ -289,6 +291,35 @@ describe('в типах пропсов тега и пункта меню variant
 		expect([size, checkboxSize]).toEqual(['size', 'size'])
 		expectTypeOf<TItemProps>().toHaveProperty('variant')
 		expectTypeOf<TCheckboxProps>().toHaveProperty('variant')
+	})
+})
+
+/**
+ * Группу переключателю пишет проводка по месту в разметке — ближайшая
+ * `Menu.RadioGroup` над ним, — и вход у разметки обещал бы то, чего нет. Из
+ * кода группу по-прежнему передают конструктору: из интерфейса ядра она не
+ * уходит.
+ */
+describe('переключатель меню: группу задаёт место в разметке', () => {
+	it('в разметке группы нет, и в состояние она не идёт: триггеров нет', () => {
+		const descriptor = MenuRadioItemDescriptor()
+
+		expect(propOf(descriptor, 'group').protected).toBe(true)
+		expect(propOf(descriptor, 'group').triggers).toEqual([])
+		expect(inputs(descriptor)).not.toContain('group')
+	})
+
+	it('в типах пропсов её нет, в интерфейсе ядра есть', () => {
+		type TRadioProps = DescriptorProps<typeof MenuRadioItemDescriptor>
+
+		// @ts-expect-error — группу переключателя задаёт место в разметке
+		const group: keyof TRadioProps = 'group'
+		// @ts-expect-error — размер переключателя диктует меню
+		const size: keyof TRadioProps = 'size'
+		const variant: keyof TRadioProps = 'variant'
+
+		expect([group, size, variant]).toEqual(['group', 'size', 'variant'])
+		expectTypeOf<IMenuRadioItemProps>().toHaveProperty('group')
 	})
 })
 

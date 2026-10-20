@@ -58,6 +58,8 @@ import {
 	MenuCheckboxItem,
 	MenuGroup,
 	MenuItem,
+	MenuRadioGroup,
+	MenuRadioItem,
 	MenuSeparator,
 	MenuSubmenu,
 	MenuPopoverItem,
@@ -259,6 +261,12 @@ const ROOTS: ReadonlyArray<readonly [string, (props: TProbeProps) => VNode, stri
 		'.so-menu-item',
 		'.so-menu-item',
 	],
+	[
+		'Menu.RadioItem',
+		(props) => h(Menu, null, () => h(MenuRadioItem, { value: 'a', text: 'A', ...props })),
+		'.so-menu-item',
+		'.so-menu-item',
+	],
 	// Корень пункта с подменю — пункт, а не его телепортированная панель
 	[
 		'Menu.Submenu',
@@ -278,6 +286,12 @@ const ROOTS: ReadonlyArray<readonly [string, (props: TProbeProps) => VNode, stri
 	[
 		'Menu.Group',
 		(props) => h(Menu, null, () => h(MenuGroup, { label: 'Вид', ...props })),
+		'.so-menu-group',
+		'.so-menu-group',
+	],
+	[
+		'Menu.RadioGroup',
+		(props) => h(Menu, null, () => h(MenuRadioGroup, { label: 'Сортировка', ...props })),
 		'.so-menu-group',
 		'.so-menu-group',
 	],
@@ -313,6 +327,7 @@ const ITEM_ROWS: Readonly<Record<string, string>> = {
 	'Tags.Item': '.so-button',
 	'Menu.Item': '.so-button',
 	'Menu.CheckboxItem': '.so-button',
+	'Menu.RadioItem': '.so-button',
 	'Menu.Submenu': '.so-button',
 	'Menu.PopoverItem': '.so-button',
 }

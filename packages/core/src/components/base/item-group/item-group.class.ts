@@ -1,6 +1,7 @@
 import { TComponentView } from '../component-view'
 import type { TDefaultValues } from '../component'
 import { TAria } from '../../../common'
+import type { TEventSink } from '../../../common'
 import type { IItemGroup, IItemGroupProps, TItemGroupEvents } from './types'
 
 /**
@@ -24,10 +25,16 @@ import type { IItemGroup, IItemGroupProps, TItemGroupEvents } from './types'
  * только опции и группы, и подпись группы списка — `presentation`; у подписи
  * группы меню роли нет. Блок CSS тоже называет форма, поэтому своего
  * `baseClass` у базы нет.
+ *
+ * Пропсы и карта событий — параметры: группа переключателей меню
+ * (`TMenuRadioGroup`) — та же группа со своим значением.
  */
-export default class TItemGroup
-	extends TComponentView<IItemGroupProps, TItemGroupEvents>
-	implements IItemGroup
+export default class TItemGroup<
+	TProps extends IItemGroupProps = IItemGroupProps,
+	TEvents extends TItemGroupEvents = TItemGroupEvents,
+>
+	extends TComponentView<TProps, TEvents>
+	implements IItemGroup<TProps, TEvents>
 {
 	static defaultValues: typeof TComponentView.defaultValues &
 		TDefaultValues<IItemGroupProps, 'label'> = {
@@ -38,7 +45,7 @@ export default class TItemGroup
 	protected _label: string
 	protected _labelAria: TAria
 
-	constructor(props: Partial<IItemGroupProps> = {}) {
+	constructor(props: Partial<TProps> = {}) {
 		super(props)
 
 		const ctor = new.target as typeof TItemGroup
@@ -50,8 +57,16 @@ export default class TItemGroup
 		this._labelAria = new TAria()
 
 		this._labelAria.events.on('change', () =>
-			this.events.emit('change:labelAria', this._labelAria.toObject()),
+			this._sink.emit('change:labelAria', this._labelAria.toObject()),
 		)
+	}
+
+	/**
+	 * Эмит собственных событий группы — без приведения `this.events` к
+	 * конкретной карте (см. `TEventSink` в `common/event/types.ts`).
+	 */
+	protected override get _sink(): TEventSink<TItemGroupEvents> {
+		return this.events
 	}
 
 	get label(): string {
@@ -62,7 +77,7 @@ export default class TItemGroup
 		if (this._label === value) return
 
 		this._label = value
-		this.events.emit('change:label', value)
+		this._sink.emit('change:label', value)
 	}
 
 	/**
@@ -73,7 +88,7 @@ export default class TItemGroup
 		return this._labelAria
 	}
 
-	override getProps(): IItemGroupProps {
+	override getProps(): TProps {
 		return {
 			...super.getProps(),
 			label: this._label,

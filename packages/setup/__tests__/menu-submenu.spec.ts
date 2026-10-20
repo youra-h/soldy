@@ -25,36 +25,9 @@ import {
 } from '../content/descriptors'
 import { TCollectionExtension, TCollectionItemExtension } from '../content/extensions'
 import { createAdapterContext } from '../protected/adapter'
-import type { IAdapterContext, IElevatorKey, TElevatorFactory } from '../protected/adapter'
+import type { IAdapterContext } from '../protected/adapter'
 import { CommonProfile } from '../protected/naming'
-
-/** Слой лифта: значения своего узла и родитель — как у `provide`/`inject`. */
-type TLayer = { readonly values: Map<IElevatorKey<unknown>, unknown>; readonly parent?: TLayer }
-
-/** Найти значение ключа у предков слоя — ближайшее. */
-function lookup(layer: TLayer | undefined, key: IElevatorKey<unknown>): unknown {
-	for (let current = layer; current; current = current.parent) {
-		if (current.values.has(key)) return current.values.get(key)
-	}
-
-	return undefined
-}
-
-/**
- * Лифт узла дерева: `down()` пишет в свой слой, `up()` читает у предков, а не у
- * себя, — как `inject` во Vue читает `provide` родителя.
- */
-function elevatorOf(layer: TLayer): TElevatorFactory {
-	// Как `inject<T>` во фреймворках: тип значения задаёт ключ, хранилищу он неизвестен
-	return <T>(key: IElevatorKey<T>) => ({
-		down: (value: T) => {
-			layer.values.set(key, value)
-		},
-		up: () => lookup(layer.parent, key) as T | undefined,
-	})
-}
-
-const childOf = (parent?: TLayer): TLayer => ({ values: new Map(), parent })
+import { childOf, elevatorOf, type TElevatorLayer } from './helpers'
 
 /** Принять контексты, как рантайм адаптера: подписка на состояние и `attach`. */
 function accept(contexts: readonly IAdapterContext[]): void {
@@ -63,7 +36,10 @@ function accept(contexts: readonly IAdapterContext[]): void {
 }
 
 /** Меню — свой контекст и фасад меню на его наборе. */
-function mountMenu(layer: TLayer): { menu: TMenu; engine: TCollectionEngine<IMenuItem, any> } {
+function mountMenu(layer: TElevatorLayer): {
+	menu: TMenu
+	engine: TCollectionEngine<IMenuItem, any>
+} {
 	const menu = new TMenu({ open: true })
 	const own = createAdapterContext(MenuDescriptor(), { ctrl: menu })
 	const facade = createAdapterContext(
@@ -82,7 +58,7 @@ function mountMenu(layer: TLayer): { menu: TMenu; engine: TCollectionEngine<IMen
  * берёт коллекцию меню над ним, фасад меню отдаёт свою.
  */
 function mountSubmenu(
-	layer: TLayer,
+	layer: TElevatorLayer,
 	props: object,
 ): { submenu: TMenuSubmenu; engine: TCollectionEngine<IMenuItem, any> } {
 	const submenu = new TMenuSubmenu(props)
@@ -105,7 +81,7 @@ function mountSubmenu(
 }
 
 /** Пункт-действие разметкой. */
-function mountItem(layer: TLayer, props: object): TMenuItem {
+function mountItem(layer: TElevatorLayer, props: object): TMenuItem {
 	const own = createAdapterContext(MenuItemDescriptor(), { props })
 	const item = createAdapterContext(
 		MenuCollectionItemDescriptor(),

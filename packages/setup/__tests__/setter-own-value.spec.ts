@@ -39,6 +39,7 @@ import {
 	TMenuCheckboxItem,
 	TMenuCollectionFacade,
 	TMenuItemCollectionFacade,
+	TMenuRadioItem,
 	TMenuSubmenu,
 	TRadioGroup,
 	TRadioGroupCollectionFacade,
@@ -172,7 +173,8 @@ const COLLECTIONS: Readonly<Record<string, readonly [string | null, () => TMount
 			return withItem(facade, new TListBoxItemCollectionFacade())
 		},
 	],
-	// Записываемое у пункта — только отметка флажка: у фасада действия входов нет
+	// Записываемое у пункта — только отметка флажка и переключателя: у фасада
+	// действия входов нет. Отметку флажка сверяет строка меню
 	MenuCollectionDescriptor: [
 		'MenuCollectionCheckboxItemDescriptor',
 		() => {
@@ -184,13 +186,13 @@ const COLLECTIONS: Readonly<Record<string, readonly [string | null, () => TMount
 		},
 	],
 	// Пункты подменю — та же коллекция меню, владелец — пункт с подменю. Фасады
-	// пунктов у неё те же, что у меню, и их сверяет строка меню
+	// пунктов у неё те же, что у меню: здесь сверяется отметка переключателя
 	MenuSubmenuCollectionDescriptor: [
-		null,
+		'MenuCollectionRadioItemDescriptor',
 		() => {
 			const facade = new TMenuCollectionFacade({}, { owner: new TMenuSubmenu() })
 
-			facade.items = SOURCES.map((source) => new TMenuCheckboxItem(source))
+			facade.items = SOURCES.map((source) => new TMenuRadioItem(source))
 
 			return withItem(facade, new TMenuItemCollectionFacade())
 		},

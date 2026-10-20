@@ -6,16 +6,19 @@ import {
 	TMenuGroup,
 	TMenuItem,
 	TMenuPopoverItem,
+	TMenuRadioGroup,
+	TMenuRadioItem,
 	TMenuSeparator,
 	TMenuSubmenu,
 	createEngineMenu,
 	createEngineSelection,
 	isMenuPopoverItem,
 	isMenuPopupItem,
+	isMenuRadioItem,
 	isMenuSubmenu,
 	menuOf,
 } from '@soldy-ui/core'
-import type { IMenuItem, TGroupSection } from '@soldy-ui/core'
+import type { IMenuItem, TGroupSection, TMenuRadioGroupValue } from '@soldy-ui/core'
 
 /**
  * Модель Menu: состояние меню и то, что из него следует для разметки, и
@@ -1189,5 +1192,342 @@ describe('фасад меню · группы', () => {
 
 		expect(engine.extensions.group.groups).toEqual(EDIT)
 		expect(engine.extensions.group.groupBy).toBe(by)
+	})
+})
+
+/**
+ * Переключатели: отметка — тот же выбор коллекции `multiple`, что у флажка, а
+ * правило «в группе отмечен один» и связь значения группы с отметкой держит
+ * расширение меню. Группа в коллекцию не входит: её переключатели — пункты
+ * меню. Лифт группы до пункта — `setup/__tests__/menu-radio.spec.ts`,
+ * разметка — `ui/vue/__tests__/menu.spec.ts`.
+ */
+describe('переключатель и группа переключателей', () => {
+	it('переключатель — menuitemradio, отмечается, и он пункт; группы нет', () => {
+		const item = new TMenuRadioItem({ value: 'name', text: 'По имени' })
+
+		expect(item.aria.get('role')).toBe('menuitemradio')
+		expect(item.checkable).toBe(true)
+		expect(item).toBeInstanceOf(TMenuItem)
+		expect(item.classes.toArray()).toContain('so-menu-item')
+		expect(item.group).toBeNull()
+		expect(isMenuRadioItem(item)).toBe(true)
+		expect(isMenuRadioItem(new TMenuCheckboxItem())).toBe(false)
+	})
+
+	it('группа переключателя — из конструктора и кодом; change:group — только на смену', () => {
+		const sort = new TMenuRadioGroup()
+		const view = new TMenuRadioGroup()
+		const item = new TMenuRadioItem({ value: 'name', group: sort })
+		const changed = vi.fn()
+
+		item.events.on('change:group', changed)
+
+		item.group = sort
+		item.group = view
+
+		expect(item.group).toBe(view)
+		expect(item.getProps().group).toBe(view)
+		expect(changed).toHaveBeenCalledOnce()
+		expect(changed).toHaveBeenCalledWith(view)
+	})
+
+	it('группа переключателей — группа меню с подписью; роль group, а не radiogroup', () => {
+		const sort = new TMenuRadioGroup({ label: 'Сортировка' })
+
+		expect(sort).toBeInstanceOf(TMenuGroup)
+		expect(sort.aria.get('role')).toBe('group')
+		expect(sort.label).toBe('Сортировка')
+		expect(sort.classes.toArray()).toContain('so-menu-group')
+		expect(sort.value).toBeNull()
+	})
+
+	it('значение — из конструктора; change:value — только на смену, с прежним', () => {
+		const sort = new TMenuRadioGroup({ value: 'name' })
+		const changed = vi.fn()
+
+		sort.events.on('change:value', changed)
+
+		sort.value = 'name'
+		sort.value = 'date'
+		sort.value = null
+
+		expect(sort.getProps().value).toBeNull()
+		expect(changed.mock.calls).toEqual([
+			[{ newValue: 'date', oldValue: 'name' }],
+			[{ newValue: null, oldValue: 'date' }],
+		])
+	})
+})
+
+/** Меню «Сортировка: по имени, по дате» — переключатели одной группы. */
+function sortMenu(value: TMenuRadioGroupValue = null) {
+	const owner = new TMenu({ open: true })
+	const sort = new TMenuRadioGroup({ label: 'Сортировка', value })
+	const name = new TMenuRadioItem({ value: 'name', text: 'По имени', group: sort })
+	const date = new TMenuRadioItem({ value: 'date', text: 'По дате', group: sort })
+	const engine = createEngineMenu({ owner, items: [name, date] })
+
+	return { owner, sort, name, date, engine, ...engine.extensions }
+}
+
+describe('коллекция меню · переключатели', () => {
+	it('в группе отмечен один: нажатие переносит отметку, меню открыто, choose нет', () => {
+		const { owner, sort, name, date, menu, selection } = sortMenu()
+		const choose = vi.fn()
+
+		menu.events.on('choose', choose)
+
+		expect(menu.checkItem(name)).toBe(true)
+		expect(selection.selected).toEqual([name])
+		expect(sort.value).toBe('name')
+
+		expect(menu.checkItem(date)).toBe(true)
+		expect(selection.selected).toEqual([date])
+		expect(sort.value).toBe('date')
+
+		expect(owner.open).toBe(true)
+		expect(choose).not.toHaveBeenCalled()
+	})
+
+	it('нажатие отмеченного отметку не снимает', () => {
+		const { sort, name, menu, selection } = sortMenu('name')
+
+		expect(menu.checkItem(name)).toBe(true)
+		expect(selection.selected).toEqual([name])
+		expect(sort.value).toBe('name')
+	})
+
+	it('значение группы — за отметкой, отметка — за значением', () => {
+		const { sort, name, date, selection } = sortMenu('name')
+		const values: unknown[] = []
+
+		sort.events.on('change:value', ({ newValue }) => values.push(newValue))
+
+		expect(selection.selected).toEqual([name])
+
+		sort.value = 'date'
+
+		expect(selection.selected).toEqual([date])
+
+		selection.select(name)
+
+		expect(selection.selected).toEqual([name])
+		expect(values).toEqual(['date', 'name'])
+	})
+
+	it('значения нет среди переключателей — не отмечен ни один, и значение ждёт', () => {
+		const { sort, selection } = sortMenu('name')
+
+		sort.value = 'size'
+
+		expect(selection.selected).toEqual([])
+		expect(sort.value).toBe('size')
+
+		sort.value = null
+
+		expect(selection.selected).toEqual([])
+	})
+
+	/** Так переключатель разметки входит в меню: при монтировании, после того как задали значение. */
+	it('пришёл переключатель со значением группы — отмечен', () => {
+		const sort = new TMenuRadioGroup({ value: 'date' })
+		const { plain, selection } = createEngineMenu().extensions
+		const name = new TMenuRadioItem({ value: 'name', group: sort })
+		const date = new TMenuRadioItem({ value: 'date', group: sort })
+
+		plain.push(name)
+
+		expect(selection.selected).toEqual([])
+
+		plain.push(date)
+
+		expect(selection.selected).toEqual([date])
+		expect(date.aria.get('aria-checked')).toBe('true')
+		expect(sort.value).toBe('date')
+	})
+
+	it('две группы одного меню независимы, флажки — сами по себе', () => {
+		const sort = new TMenuRadioGroup()
+		const order = new TMenuRadioGroup()
+		const name = new TMenuRadioItem({ value: 'name', group: sort })
+		const date = new TMenuRadioItem({ value: 'date', group: sort })
+		const asc = new TMenuRadioItem({ value: 'asc', group: order })
+		const desc = new TMenuRadioItem({ value: 'desc', group: order })
+		const grid = new TMenuCheckboxItem({ value: 'grid' })
+		const { menu, selection } = createEngineMenu({
+			items: [name, date, asc, desc, grid],
+		}).extensions
+
+		menu.toggleItem(grid)
+		menu.checkItem(name)
+		menu.checkItem(desc)
+		menu.checkItem(date)
+
+		expect(selection.selected).toEqual([grid, desc, date])
+		expect([sort.value, order.value]).toEqual(['date', 'desc'])
+
+		order.value = 'asc'
+
+		expect(selection.selected).toEqual([grid, date, asc])
+		expect(sort.value).toBe('date')
+	})
+
+	it('переключатели без группы отмечаются каждый сам по себе', () => {
+		const one = new TMenuRadioItem({ value: 'one' })
+		const two = new TMenuRadioItem({ value: 'two' })
+		const { menu, selection } = createEngineMenu({ items: [one, two] }).extensions
+
+		menu.checkItem(one)
+		menu.checkItem(two)
+
+		expect(selection.selected).toEqual([one, two])
+	})
+
+	it('выключенный переключатель не отмечается', () => {
+		const { sort, name, date, menu, selection } = sortMenu('name')
+
+		date.disabled = true
+
+		expect(menu.checkItem(date)).toBe(false)
+		expect(selection.selected).toEqual([name])
+		expect(sort.value).toBe('name')
+	})
+
+	it('aria-checked — у всех переключателей, по отметке', () => {
+		const { name, date, menu } = sortMenu()
+		const checked = () => [name, date].map((item) => item.aria.get('aria-checked'))
+
+		expect(checked()).toEqual(['false', 'false'])
+
+		menu.checkItem(date)
+
+		expect(checked()).toEqual(['false', 'true'])
+		expect(date.dataset.get('selected')).toBe('true')
+
+		menu.checkItem(name)
+
+		expect(checked()).toEqual(['true', 'false'])
+		expect(date.dataset.get('selected')).toBe('false')
+	})
+
+	it('отметку кодом сняли с переключателя в коллекции — значение группы null', () => {
+		const { sort, name, selection } = sortMenu('name')
+
+		selection.deselect(name)
+
+		expect(sort.value).toBeNull()
+	})
+
+	it('ушедший отмеченный значения не трогает, вернувшийся снова отмечен', () => {
+		const { sort, name, plain, selection } = sortMenu('name')
+
+		plain.remove(name)
+
+		expect(selection.selected).toEqual([])
+		expect(sort.value).toBe('name')
+
+		plain.push(name)
+
+		expect(selection.selected).toEqual([name])
+		expect(sort.value).toBe('name')
+	})
+
+	it('отмена в item:select:before: нажатие не отмечает, значение кодом откатывается', () => {
+		const { sort, name, date, menu, selection } = sortMenu('name')
+
+		selection.events.on('item:select:before', (e) => {
+			if (e.item === date) e.preventDefault()
+		})
+
+		expect(menu.checkItem(date)).toBe(false)
+		expect(selection.selected).toEqual([name])
+		expect(sort.value).toBe('name')
+
+		sort.value = 'date'
+
+		expect(selection.selected).toEqual([name])
+		expect(sort.value).toBe('name')
+	})
+
+	it('отменённая отметка пришедшего переключателя откатывает значение к null', () => {
+		const sort = new TMenuRadioGroup({ value: 'date' })
+		const date = new TMenuRadioItem({ value: 'date', group: sort })
+		const { plain, selection } = createEngineMenu().extensions
+
+		selection.events.on('item:select:before', (e) => e.preventDefault())
+
+		plain.push(date)
+
+		expect(selection.selected).toEqual([])
+		expect(sort.value).toBeNull()
+	})
+
+	it('отметка из разметки (`meta`) — новая в группе: значение за ней', () => {
+		const { sort, date, meta, selection } = sortMenu('name')
+
+		meta.apply(date, { selected: true })
+
+		expect(selection.selected).toEqual([date])
+		expect(sort.value).toBe('date')
+	})
+
+	it('нажатие — через item-адаптер пункта', () => {
+		const { sort, date, menu, selection } = sortMenu('name')
+
+		menu.createItem(date).check()
+
+		expect(selection.selected).toEqual([date])
+		expect(sort.value).toBe('date')
+	})
+
+	it('переключатель, перешедший в другую группу, — как пришедший в неё', () => {
+		const { sort, name, date, selection } = sortMenu('name')
+		const view = new TMenuRadioGroup({ value: 'list' })
+
+		date.group = view
+
+		// Значение новой группы — не его: не отмечен
+		expect(selection.selected).toEqual([name])
+		expect(view.value).toBe('list')
+
+		name.group = view
+
+		// Отмеченный — новый в группе: значение группы — его. Прежняя группа
+		// значения не меняет, как от ушедшего, и меню за ней больше не следит
+		expect(selection.selected).toEqual([name])
+		expect(view.value).toBe('name')
+		expect(sort.value).toBe('name')
+
+		sort.value = 'date'
+
+		expect(selection.selected).toEqual([name])
+
+		view.value = 'date'
+
+		expect(selection.selected).toEqual([date])
+	})
+
+	it('подписка на группу живёт, пока в коллекции есть её переключатель', () => {
+		const sort = new TMenuRadioGroup()
+		const on = vi.spyOn(sort.events, 'on')
+		const off = vi.spyOn(sort.events, 'off')
+		const name = new TMenuRadioItem({ value: 'name', group: sort })
+		const date = new TMenuRadioItem({ value: 'date', group: sort })
+		const { plain } = createEngineMenu({ items: [name, date] }).extensions
+
+		expect(on.mock.calls.map(([event]) => event)).toEqual(['change:value'])
+
+		plain.remove(name)
+
+		expect(off).not.toHaveBeenCalled()
+
+		plain.remove(date)
+
+		expect(off.mock.calls).toEqual(on.mock.calls)
+	})
+
+	it('охранник menuOf отдаёт нажатие переключателя', () => {
+		expect(menuOf(createEngineMenu())?.checkItem).toBeTypeOf('function')
 	})
 })

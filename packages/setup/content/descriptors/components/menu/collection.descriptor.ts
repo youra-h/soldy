@@ -83,3 +83,18 @@ export const MenuCollectionCheckboxItemDescriptor = defineDescriptor(() =>
 		},
 	}),
 )
+
+/**
+ * Фасад переключателя — тот же фасад, что у флажка: отметка — выбор
+ * коллекции, записываемая (`v-model:selected`), а что в группе отмечен один,
+ * держит коллекция меню. Своего сверх флажка нет. Дескриптор — свой: это
+ * коллекционная часть `Menu.RadioItem`, и её пропсы входят в интерфейс
+ * переключателя (`IMenuRadioItemProps`), а не флажка.
+ */
+export const MenuCollectionRadioItemDescriptor = defineDescriptor(() =>
+	defineComponent({
+		ctor: TMenuItemCollectionFacade,
+
+		extends: MenuCollectionCheckboxItemDescriptor(),
+	}),
+)

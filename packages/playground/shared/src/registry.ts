@@ -211,7 +211,8 @@ export const COMPONENTS: readonly TComponentEntry[] = [
 		collectionDescriptor: MenuCollectionDescriptor,
 		showcase: true,
 		span: 1,
-		description: 'Меню действий у кнопки: пункты, флажки, группы, клавиши и набор по буквам',
+		description:
+			'Меню действий у кнопки: пункты, флажки, переключатели, группы, клавиши и набор по буквам',
 	},
 	{
 		id: 'tooltip',

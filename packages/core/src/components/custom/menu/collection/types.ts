@@ -79,6 +79,12 @@ export type TMenuCollectionFacadeProps = TCollectionFacadeProps<IMenuItem> &
 export interface IMenuCollectionCheckboxItemProps extends ISelectionCollectionItemProps {}
 
 /**
+ * Item-level props переключателя: отметка — выбор коллекции, как у флажка, а
+ * что в группе отмечен один, держит расширение меню.
+ */
+export interface IMenuCollectionRadioItemProps extends ISelectionCollectionItemProps {}
+
+/**
  * Item-адаптеры коллекции: выбор, порядок и делегат меню.
  *
  * Используется фасадом элемента для типизированного доступа к `adapters`.

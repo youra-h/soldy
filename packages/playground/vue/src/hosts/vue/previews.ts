@@ -92,15 +92,20 @@ type TMenuTriggerScope = DescriptorSlots<typeof MenuDescriptor>['trigger']
 const ITEMS = COLLECTION_ITEMS
 
 /**
- * Пункты меню разметкой: группа флажков с подписью, действия с подсказками
- * сочетаний, подменю с подменю внутри, пункт с панелью — календарём, который
- * монтируется с первым открытием, — выключенное действие и «опасный» пункт
- * своего варианта.
+ * Пункты меню разметкой: группа флажков с подписью, группа переключателей —
+ * отмечен один, — действия с подсказками сочетаний, подменю с подменю внутри,
+ * пункт с панелью — календарём, который монтируется с первым открытием, —
+ * выключенное действие и «опасный» пункт своего варианта.
  */
 const menuItems = () => [
 	h(Menu.Group, { label: 'Вид' }, () => [
 		h(Menu.CheckboxItem, { value: 'grid', text: 'Сетка', selected: true }),
 		h(Menu.CheckboxItem, { value: 'ruler', text: 'Линейка' }),
+	]),
+	h(Menu.Separator),
+	h(Menu.RadioGroup, { label: 'Сортировка', value: 'name' }, () => [
+		h(Menu.RadioItem, { value: 'name', text: 'По имени' }),
+		h(Menu.RadioItem, { value: 'date', text: 'По дате' }),
 	]),
 	h(Menu.Separator),
 	h(Menu.Item, { value: 'edit', text: 'Изменить' }, { trailing: () => 'Ctrl+E' }),

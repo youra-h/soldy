@@ -14,6 +14,9 @@ import type {
 } from '../../../popup-item/types'
 import { isMenuPopupItem } from '../../../popup-item/popup-item.class'
 import { isMenuSubmenu } from '../../../submenu/submenu.class'
+import { isMenuRadioItem } from '../../../radio-item/radio-item.class'
+import type { IMenuRadioItem } from '../../../radio-item/types'
+import type { IMenuRadioGroup, TMenuRadioGroupValue } from '../../../radio-group/types'
 import type { IMenuExtension, TMenuEngineOptions, TMenuExtensionEvents } from './types'
 import { TMenuItemExtension, type IMenuItemExtension } from './item'
 
@@ -25,7 +28,7 @@ import { TMenuItemExtension, type IMenuItemExtension } from './item'
  * с подменю (`IMenuOwner`): у каждого уровня меню своя коллекция, и для
  * пунктов подменю расширение то же, что для пунктов меню.
  *
- * Четыре обязанности:
+ * Пять обязанностей:
  *
  * 1. **Остановка Tab.** У меню её нет вовсе: в меню ведут кнопка и клавиши, а
  *    Tab закрывает его (APG Menu Button). Поэтому каждому пункту —
@@ -33,11 +36,11 @@ import { TMenuItemExtension, type IMenuItemExtension } from './item'
  *    Tab не входит, и остановку, которую `Button` на `div` ставит себе сам,
  *    набор пункта перекрывает. Пишет коллекция, а не плагин: атрибут обязан
  *    стоять с первой отрисовки, включая серверную.
- * 2. **Отметка флажков.** Отметка — выбор коллекции (режим `multiple`), и
- *    `aria-checked` флажку пишет меню: что пункт отмечается, знает пункт
- *    (`checkable`), а отмечен ли — коллекция. Всем флажкам, а не только
- *    отмеченным: скринридер объявляет «не отмечено», и для этого нужен
- *    атрибут. У действия `aria-checked` нет.
+ * 2. **Отметка флажков и переключателей.** Отметка — выбор коллекции (режим
+ *    `multiple`), и `aria-checked` пункту пишет меню: что пункт отмечается,
+ *    знает пункт (`checkable`), а отмечен ли — коллекция. Всем отмечаемым, а
+ *    не только отмеченным: скринридер объявляет «не отмечено», и для этого
+ *    нужен атрибут. У действия `aria-checked` нет.
  * 3. **Размер** пункта диктует меню, как у `TListBoxExtension`. **Вариант** у
  *    пункта свой, как у тега (`docs/agents/collections.md`, «`size` и
  *    `variant` элемента»): «опасный» пункт вроде «Удалить» красится своим
@@ -53,10 +56,25 @@ import { TMenuItemExtension, type IMenuItemExtension } from './item'
  *    уровня). Выбор в подменю доходит сюда событием подменю (`choose`) и
  *    закрывает это меню так же, как выбор своего пункта: подменю — ещё и
  *    владелец своих пунктов.
+ * 5. **Группы переключателей** (`Menu.RadioGroup`). Отметка переключателя —
+ *    тот же выбор `multiple`, что у флажка, а правило «в группе отмечен один»
+ *    держит меню: стал отмеченным переключатель — с остальных переключателей
+ *    его группы отметка снята. Значение группы (`value`) — проекция отметки,
+ *    и связь в обе стороны тоже здесь: отметили переключатель — группе
+ *    записано его значение, сняли с оставшегося в коллекции — `null`;
+ *    сменилось значение группы — отмечен её переключатель с этим значением,
+ *    нет такого — ни один. Пришёл в коллекцию переключатель со значением
+ *    группы — отмечен. Ушедший отмеченный значения не трогает: он мог уйти на
+ *    время. Отметку, отменённую в `item:select:before`, значение не меняет —
+ *    оно откатывается к отмеченному переключателю. Своей коллекции у группы
+ *    нет: её пункты выпали бы из навигации меню. Чья группа, переключатель
+ *    знает сам (`group`), а подписка на группу живёт, пока в коллекции есть её
+ *    переключатель.
  *
  * Через него идёт нажатие пункта: `chooseItem` у действия, `toggleItem` у
- * флажка, `openItem` у пункта со своей панелью. Выключенному пункту все три
- * отказывают — `item.disabled` из кода пункта; своего `disabled` у меню нет.
+ * флажка, `checkItem` у переключателя, `openItem` у пункта со своей панелью.
+ * Выключенному пункту все отказывают — `item.disabled` из кода пункта;
+ * своего `disabled` у меню нет.
  */
 export class TMenuExtension<
 	TOwner extends IMenuOwner<any> = IMenuOwner<any>,
@@ -81,6 +99,23 @@ export class TMenuExtension<
 		() => void
 	>()
 
+	/** Переключатели коллекции и подписки на смену их группы. */
+	private readonly _radios = new Map<TItem & IMenuRadioItem, () => void>()
+
+	/**
+	 * Подписки на группы переключателей: смена значения группы. Есть у каждой
+	 * группы, чей переключатель в коллекции, — ставится с приходом
+	 * переключателя, снимается на смене состава, когда ни одного не осталось.
+	 */
+	private readonly _groups = new Map<IMenuRadioGroup, () => void>()
+
+	/**
+	 * Идёт синхронизация значения групп и отметки переключателей. Флаг, а не
+	 * сравнение: то, что пишет сама синхронизация, — не смена, на которую ей
+	 * отвечать.
+	 */
+	private _syncing = false
+
 	constructor(options?: IBaseOwnerItemExtensionOptions<TItem, IMenuItemExtension<TItem>>) {
 		super(TMenuItemExtension, options)
 	}
@@ -90,16 +125,25 @@ export class TMenuExtension<
 
 		// Добавленному — только его атрибуты, размер меню и подписки: пачка
 		// шлёт `item:added` на каждый пункт разом, и проход по всем на каждый из
-		// них сделал бы наполнение квадратичным
+		// них сделал бы наполнение квадратичным. Переключатель со значением
+		// группы отмечается здесь же — он один на группу
 		ctx.driver.events.on('item:added', (e) => {
 			this._inheritOwner(e.item as TItem)
 			this._applyItem(e.item as TItem)
 			this._watch(e.item as TItem)
+			this._watchRadio(e.item as TItem)
 		})
 
 		// Подписки снятого пункта уходят вместе с ним: очистка тоже шлёт
 		// `item:removed` на каждый пункт
-		ctx.driver.events.on('item:removed', (e) => this._unwatch(e.item as TItem))
+		ctx.driver.events.on('item:removed', (e) => {
+			this._unwatch(e.item as TItem)
+			this._unwatchRadio(e.item as TItem)
+		})
+
+		// Подписки на группы — по составу, раз на запись: `change:items`
+		// приходит следом за всеми `item:*` команды и пачки
+		ctx.driver.events.on('change:items', () => this._releaseGroups())
 
 		// Догон: расширение приходит в коллекцию, которую могли наполнить
 		// раньше, — собрав её снаружи (`createEngine({ items })`). Тем пунктам
@@ -108,14 +152,21 @@ export class TMenuExtension<
 		ctx.driver.valueOf().forEach((item) => {
 			this._applyItem(item as TItem)
 			this._watch(item as TItem)
+			this._watchRadio(item as TItem)
 		})
+
+		// Отметки, которые выбор сложил до установки, — значениям групп
+		this._selectionToValues()
 
 		// Патч пишет пункту своё из данных — размер меню поверх
 		ctx.driver.events.on('item:updated', (e) => this._inheritOwner(e.item as TItem))
 
-		// Отметка сменилась — всем флажкам: смена выбора бывает и пачкой
+		// Отметка сменилась — всем отмечаемым: смена выбора бывает и пачкой.
+		// Значения групп — за отметкой
 		this._selection?.events.on('change:selection', () => {
 			ctx.driver.valueOf().forEach((item) => this._applyChecked(item as TItem))
+
+			this._selectionToValues()
 		})
 
 		// Владелец — опция движка: приходит и уходит после сборки. Подписки на
@@ -189,6 +240,27 @@ export class TMenuExtension<
 	}
 
 	/**
+	 * Нажатие переключателя: отметить его — выбор коллекции. Меню остаётся
+	 * открытым, как у флажка. Отмечает, а не переключает: в группе отмечен
+	 * один, и снять отметку, не отметив другой, нажатием нельзя. С остальных
+	 * переключателей группы отметку снимает и значение группе пишет сверка
+	 * отметки со значением (`change:selection`): путь у нажатия и у отметки
+	 * из кода один. Выбор, отменённый в `item:select:before`, отметку не
+	 * ставит.
+	 *
+	 * @returns отмечен ли переключатель после вызова
+	 */
+	checkItem(item: TItem): boolean {
+		const selection = this._selection
+
+		if (!selection) return false
+
+		if (!item.disabled) selection.select(item)
+
+		return selection.isSelected(item)
+	}
+
+	/**
 	 * Открыть панель пункта — подменю или панель пункта с панелью — нажатием
 	 * строки, наведением или клавишей. Открывает, а не переключает: панель,
 	 * открытая наведением, клик по строке не закроет. Прежняя открытая панель
@@ -255,6 +327,214 @@ export class TMenuExtension<
 	private _closePanels(keep: IMenuPopupItem | null): void {
 		for (const item of this._watched.keys()) {
 			if (item !== keep) item.open = false
+		}
+	}
+
+	/**
+	 * Переключатель пришёл в коллекцию: следить за сменой его группы и за
+	 * значением группы. Значение группы — его: он отмечен.
+	 *
+	 * Переключатель, перешедший в другую группу, — как пришедший в неё: её
+	 * значение — его, и он отмечен, а отмеченный — новый в ней, и значение
+	 * группы за ним. Прежняя группа значения не меняет, как от ушедшего.
+	 */
+	private _watchRadio(item: TItem): void {
+		if (!isMenuRadioItem(item) || this._radios.has(item)) return
+
+		const onGroup = (): void => {
+			this._followGroup(item.group)
+			this._releaseGroups()
+			this._checkByValue(item)
+			this._selectionToValues()
+		}
+
+		item.events.on('change:group', onGroup)
+		this._radios.set(item, () => item.events.off('change:group', onGroup))
+
+		this._followGroup(item.group)
+		this._checkByValue(item)
+	}
+
+	private _unwatchRadio(item: TItem): void {
+		if (!isMenuRadioItem(item)) return
+
+		this._radios.get(item)?.()
+		this._radios.delete(item)
+	}
+
+	/** Следить за значением группы, если ещё не следим. */
+	private _followGroup(group: IMenuRadioGroup | null): void {
+		if (!group || this._groups.has(group)) return
+
+		const onValue = (): void => this._valueToSelection(group)
+
+		group.events.on('change:value', onValue)
+		this._groups.set(group, () => group.events.off('change:value', onValue))
+	}
+
+	/** Перестать следить за группами, у которых в коллекции не осталось переключателя. */
+	private _releaseGroups(): void {
+		if (this._groups.size === 0) return
+
+		const present = this._radiosByGroup()
+
+		for (const [group, off] of this._groups) {
+			if (present.has(group)) continue
+
+			off()
+			this._groups.delete(group)
+		}
+	}
+
+	/** Переключатели коллекции по группам; переключатели вне группы не в счёт. */
+	private _radiosByGroup(): Map<IMenuRadioGroup, Array<TItem & IMenuRadioItem>> {
+		const groups = new Map<IMenuRadioGroup, Array<TItem & IMenuRadioItem>>()
+
+		for (const radio of this._radios.keys()) {
+			if (radio.group) groups.set(radio.group, [...(groups.get(radio.group) ?? []), radio])
+		}
+
+		return groups
+	}
+
+	/** Отмеченные переключатели группы — в порядке выбора. */
+	private _checkedOf(group: IMenuRadioGroup): Array<TItem & IMenuRadioItem> {
+		return (this._selection?.selected ?? []).filter(
+			(item): item is TItem & IMenuRadioItem => isMenuRadioItem(item) && item.group === group,
+		)
+	}
+
+	/** Значение группы — значение переключателя: отметить его в группе. */
+	private _checkByValue(radio: TItem & IMenuRadioItem): void {
+		const group = radio.group
+
+		if (!group || group.value === null || radio.value !== group.value) return
+
+		this._settle(group, radio)
+	}
+
+	/**
+	 * Значение группы сменилось: отметить её переключатель с этим значением,
+	 * нет такого — ни один. Значение без переключателя остаётся: переключатель
+	 * мог ещё не прийти, и отметит его приход.
+	 */
+	private _valueToSelection(group: IMenuRadioGroup): void {
+		if (this._syncing) return
+
+		const { value } = group
+		const target =
+			value === null
+				? undefined
+				: this._radiosByGroup()
+						.get(group)
+						?.find((radio) => radio.value === value)
+
+		this._settle(group, target)
+	}
+
+	/**
+	 * Отметить в группе `target` — нет его, ни один — и снять отметку с
+	 * остальных её переключателей.
+	 *
+	 * Отметку, отменённую в `item:select:before`, значение не меняет: прежняя
+	 * отметка остаётся, а значение откатывается к ней — нет её, к `null`.
+	 */
+	private _settle(group: IMenuRadioGroup, target: (TItem & IMenuRadioItem) | undefined): void {
+		const selection = this._selection
+
+		if (!selection) return
+
+		const others = this._checkedOf(group).filter((radio) => radio !== target)
+		let rejected = false
+
+		this._sync(() => {
+			if (target && !selection.select(target)) {
+				rejected = true
+
+				return
+			}
+
+			if (others.length > 0) selection.deselectMany(others)
+		})
+
+		if (!rejected) return
+
+		this._sync(() => {
+			group.value = others.at(-1)?.value ?? null
+		})
+	}
+
+	/**
+	 * Отметка сменилась — значения групп за ней.
+	 *
+	 * Пока синхронизация не идёт, отмеченный переключатель группы один и несёт
+	 * её значение. Поэтому новый в группе — отмеченный не со значением группы:
+	 * он и остаётся отмеченным, с остальных отметка снимается, а группе
+	 * пишется его значение. Нового нет, а отмеченных несколько — у них одно
+	 * значение, — остаётся последний отмеченный.
+	 *
+	 * В группе не отмечен ни один, а переключатель с её значением в коллекции
+	 * — отметку с него сняли, и значение группы — `null`. Такого нет — значение
+	 * ждёт: отмеченный мог уйти из коллекции на время, а нужный — ещё не
+	 * прийти.
+	 */
+	private _selectionToValues(): void {
+		const selection = this._selection
+
+		if (!selection || this._syncing || this._radios.size === 0) return
+
+		const checked = new Map<IMenuRadioGroup, Array<TItem & IMenuRadioItem>>()
+
+		for (const item of selection.selected) {
+			if (isMenuRadioItem(item) && item.group) {
+				checked.set(item.group, [...(checked.get(item.group) ?? []), item])
+			}
+		}
+
+		const surplus: Array<TItem & IMenuRadioItem> = []
+		const values: Array<[IMenuRadioGroup, TMenuRadioGroupValue]> = []
+
+		for (const [group, radios] of checked) {
+			const kept =
+				radios.filter((radio) => radio.value !== group.value).at(-1) ??
+				radios[radios.length - 1]
+
+			surplus.push(...radios.filter((radio) => radio !== kept))
+
+			if (kept.value !== group.value) values.push([group, kept.value])
+		}
+
+		for (const [group, radios] of this._radiosByGroup()) {
+			const { value } = group
+
+			if (checked.has(group) || value === null) continue
+
+			if (radios.some((radio) => radio.value === value)) values.push([group, null])
+		}
+
+		if (surplus.length === 0 && values.length === 0) return
+
+		this._sync(() => {
+			if (surplus.length > 0) selection.deselectMany(surplus)
+
+			for (const [group, value] of values) group.value = value
+		})
+	}
+
+	/**
+	 * Записать то, что решила синхронизация, не отвечая на свои же записи:
+	 * смена выбора и значения, которую она делает сама, — не повод сверять
+	 * снова.
+	 */
+	private _sync(write: () => void): void {
+		const syncing = this._syncing
+
+		this._syncing = true
+
+		try {
+			write()
+		} finally {
+			this._syncing = syncing
 		}
 	}
 

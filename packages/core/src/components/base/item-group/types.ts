@@ -15,9 +15,12 @@ export interface IItemGroupProps extends IComponentViewProps {
 
 /**
  * Группа элементов коллекции под общей подписью — `Menu.Group`,
- * `ListBox.Group` и `Select.Group`.
+ * `Menu.RadioGroup`, `ListBox.Group` и `Select.Group`.
  */
-export interface IItemGroup extends IComponentView<IItemGroupProps, TItemGroupEvents> {
+export interface IItemGroup<
+	TProps extends IItemGroupProps = IItemGroupProps,
+	TEvents extends TItemGroupEvents = TItemGroupEvents,
+> extends IComponentView<TProps, TEvents> {
 	/** Подпись группы. Пустая — подписи нет */
 	label: string
 	/** Атрибуты подписи: её `id`, на который ссылается группа, пишет плагин связок */
