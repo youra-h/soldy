@@ -56,6 +56,7 @@
   `setup/__tests__/overlay.spec.ts` (якорь и раскладка),
   `plugins/__tests__/popover-focus.plugin.spec.ts` («панель внутри корня»),
   `ui/vue/__tests__/popover.spec.ts`, `ui/react/__tests__/popover.spec.tsx`,
+  `ui/solid/__tests__/popover.spec.tsx`,
   `ui/react/__tests__/drawer.spec.tsx`, `ui/react/__tests__/frame.spec.tsx`,
   `ui/svelte/__tests__/frame.spec.ts`, `ui/solid/__tests__/frame.spec.tsx`,
   `ui/angular/__tests__/frame.spec.ts` и `ui/webc/__tests__/frame.spec.ts`.
@@ -492,7 +493,9 @@
 внутри»), `ui/vue/__tests__/drawer.spec.ts` («внутри модального окна») и
 их пары у React — `ui/react/__tests__/popover.spec.tsx` («вложенные слои»),
 `dialog.spec.tsx` («окно поверх окна», «Popover внутри»), `drawer.spec.tsx`
-(«внутри модального окна») и `tooltip.spec.tsx` («в открытом поповере»).
+(«внутри модального окна») и `tooltip.spec.tsx` («в открытом поповере»), — и
+у Solid: `ui/solid/__tests__/popover.spec.tsx` («вложенные слои») и
+`tooltip.spec.tsx` («в открытом поповере»).
 
 **Закрытие пользователем — запрос, а не запись.** Нажатие мимо, Escape и
 жест плагины слоя передают владельцу с причиной — `outside`, `escape` и

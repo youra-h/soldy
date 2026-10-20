@@ -11,28 +11,32 @@ markup — BEM classes `so-*` and `data-*` state attributes. Props, events and s
 component descriptor, so they match the other five adapters; only the spelling is Solid's: events
 arrive as callback props (`element:ready` → `onElementReady`), and the default slot is `children`.
 
-> **Status:** the Solid adapter is in progress — Button, Icon, Label, Frame, ProgressSpinner,
-> ProgressLinear, Skeleton, the fields Input, Textarea (multi-line, growing with its text, with a
-> character counter), CheckBox and Switch, Slider (a number or a range) and Rating, the form field
-> `Field` (label, helper and error linked to the control inside it), the collections ListBox,
-> Tabs, Accordion and RadioGroup (`<ListBox.Item>`, `<Tabs.Item>` with `<Tabs.Content>`,
-> `<Accordion.Item>`, `<RadioGroup.Item>` or `items`), Pagination, Table (columns and rows as data
-> — `columns`, `items` — with sorting, row selection, column resizing and reordering), the
-> `Scroller` strip, the `Virtual` window for long lists (`<Virtual><ListBox items={…} /></Virtual>`,
-> the same with `Table`) and the `DragAndDrop` wrapper that lets users reorder the items of Tabs,
-> ListBox and Accordion by dragging (`<DragAndDrop onMove={…}><ListBox items={…} /></DragAndDrop>`,
-> `onMoveBefore` can cancel) are ported, the rest of the set is on its way. Icon renders the `tag`
-> it is given: an element name, a Solid component, or `roleIcon(role)` — the icon of that role
-> from the registered icon pack. Frame teleports its panel into `target` (`body` by default) on the
-> client; with `contained` it stays in place. A field gives its class and style to the root and
-> every other attribute to its `<input>` (a textarea — to its `<textarea>`), except Slider and
-> Rating: they keep every attribute on the root — a slider has a field per thumb, and the pointer
-> never reaches the field. An item of a collection gives them to its row; a list box and tabs give
-> them to the list itself, `[role=listbox]` or `[role=tablist]`; a table gives them to the
-> `<table>` itself, and its class, style and `ref` to the scroll viewport around it; otherwise
-> `ref` gets the root. `Label` names the control it wraps; `LocaleProvider` gives a subtree its
-> language and library strings, such as the name of the clear button of `Input` or the arrows of
-> `Pagination`. See [the adapter table](https://github.com/youra-h/soldy#components).
+> **Status:** the Solid adapter is in progress — Button, Icon, Label, Frame, Popover (a non-modal
+> panel with any content at its trigger), Tooltip (a hint shown on hover and on keyboard focus),
+> ProgressSpinner, ProgressLinear, Skeleton, the fields Input, Textarea (multi-line, growing with
+> its text, with a character counter), CheckBox and Switch, Slider (a number or a range) and
+> Rating, the form field `Field` (label, helper and error linked to the control inside it), the
+> collections ListBox, Tabs, Accordion and RadioGroup (`<ListBox.Item>`, `<Tabs.Item>` with
+> `<Tabs.Content>`, `<Accordion.Item>`, `<RadioGroup.Item>` or `items`), Pagination, Table
+> (columns and rows as data — `columns`, `items` — with sorting, row selection, column resizing
+> and reordering), the `Scroller` strip, the `Virtual` window for long lists
+> (`<Virtual><ListBox items={…} /></Virtual>`, the same with `Table`) and the `DragAndDrop`
+> wrapper that lets users reorder the items of Tabs, ListBox and Accordion by dragging
+> (`<DragAndDrop onMove={…}><ListBox items={…} /></DragAndDrop>`, `onMoveBefore` can cancel) are
+> ported, the rest of the set is on its way. Icon renders the `tag` it is given: an element name,
+> a Solid component, or `roleIcon(role)` — the icon of that role from the registered icon pack.
+> Frame teleports its panel into `target` (`body` by default) on the client; with `contained` it
+> stays in place. Popover and Tooltip keep the trigger in their root and anchor their panel, a
+> Frame, to that root; your attributes and `ref` go to the root, not to the panel. A field gives
+> its class and style to the root and every other attribute to its `<input>` (a textarea — to its
+> `<textarea>`), except Slider and Rating: they keep every attribute on the root — a slider has a
+> field per thumb, and the pointer never reaches the field. An item of a collection gives them to
+> its row; a list box and tabs give them to the list itself, `[role=listbox]` or
+> `[role=tablist]`; a table gives them to the `<table>` itself, and its class, style and `ref` to
+> the scroll viewport around it; otherwise `ref` gets the root. `Label` names the control it
+> wraps; `LocaleProvider` gives a subtree its language and library strings, such as the name of
+> the clear button of `Input` or the arrows of `Pagination`. See
+> [the adapter table](https://github.com/youra-h/soldy#components).
 
 ## Install
 
@@ -105,6 +109,32 @@ export function Settings() {
 Items given as data are drawn by the owner, and their slots are the owner's `item-<slot>` props,
 with the item in the scope: `item={({ item, text }) => …}`. An item whose slot drew nothing draws
 its own content instead — its text, check mark or close icon.
+
+A popover opens a panel with any content at its trigger. The trigger is your own element in the
+`trigger` slot; the link to the panel comes in the slot scope — `triggerAria` (`aria-haspopup`,
+`aria-expanded`, `aria-controls`) and `triggerDataset` (`data-selected` of an open trigger):
+
+```tsx
+import { Button, Popover } from '@soldy-ui/solid'
+
+export function Filters() {
+  return (
+    <Popover
+      aria_label="Filters"
+      trigger={(scope) => (
+        <Button text="Filters" {...scope.triggerAria} {...scope.triggerDataset} />
+      )}
+    >
+      Any content: text, fields, buttons
+    </Popover>
+  )
+}
+```
+
+Read the scope in the markup, as above, rather than destructuring it: the link changes on every
+opening, and a spread of `scope.triggerAria` updates the same trigger in place, while a destructured
+scope draws a new trigger each time, and the focus on the old one is lost. `Tooltip` takes its
+trigger the same way, with `triggerAria` in the scope.
 
 The application plugs in a theme and an icon pack once, in its entry point:
 

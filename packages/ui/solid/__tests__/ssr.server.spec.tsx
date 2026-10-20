@@ -15,6 +15,7 @@
 import { describe, it, expect } from 'vitest'
 import type { JSX } from 'solid-js'
 import { renderToString } from 'solid-js/web'
+import type { DescriptorSlots, PopoverDescriptor, TooltipDescriptor } from '@soldy-ui/setup'
 import {
 	Button,
 	CheckBox,
@@ -25,6 +26,7 @@ import {
 	Input,
 	Label,
 	Pagination,
+	Popover,
 	ProgressLinear,
 	ProgressSpinner,
 	Rating,
@@ -33,6 +35,7 @@ import {
 	Slider,
 	Switch,
 	Textarea,
+	Tooltip,
 	roleIcon,
 } from '@soldy-ui/solid'
 
@@ -65,6 +68,79 @@ describe('Frame · серверный рендер', () => {
 		expect(body).toMatch(/style="position:absolute;[^"]*z-index:\d+"/)
 		expect(body).not.toMatch(/style="[^"]*\b(left|top):/)
 		expect(body).toContain('<span>Панель</span>')
+	})
+})
+
+/**
+ * Popover и Tooltip на сервере: корень с триггером и связкой в его scope — она
+ * собирается при сборке, и плагин связок пишет её и на сервере. Панель — их
+ * Frame, и телепорта на сервере нет, как у Frame: панель появляется на
+ * клиенте. С `contained` панель остаётся в корне, за триггером, — и на
+ * сервере тоже.
+ */
+describe('Popover и Tooltip · серверный рендер', () => {
+	type TPopoverScope = DescriptorSlots<typeof PopoverDescriptor>['trigger']
+	type TTooltipScope = DescriptorSlots<typeof TooltipDescriptor>['trigger']
+
+	const popover = (contained: boolean) =>
+		markup(
+			renderToString(() => (
+				<Popover
+					contained={contained}
+					trigger={(scope: TPopoverScope) => (
+						<Button text="Открыть" {...scope.triggerAria} {...scope.triggerDataset} />
+					)}
+				>
+					<span>Содержимое</span>
+				</Popover>
+			)),
+		)
+
+	it('Popover без contained — корень с триггером и связкой, панели нет', () => {
+		const body = popover(false)
+
+		expect(body).toMatch(/^<span [^>]*class="so-popover ?"/)
+		expect(body).toMatch(/<button [^>]*aria-haspopup="dialog"/)
+		expect(body).toContain('aria-expanded="false"')
+		expect(body).toMatch(/aria-controls="[^"]+"/)
+		expect(body).toContain('data-selected="false"')
+		expect(body).not.toContain('so-popover__panel')
+		expect(body).not.toContain('Содержимое')
+	})
+
+	it('Popover с contained — панель в корне, за триггером', () => {
+		const body = popover(true)
+
+		expect(body).toMatch(
+			/^<span [^>]*class="so-popover ?"[^>]*><button [^>]*>[\s\S]*<\/button><div [^>]*class="so-frame so-popover__panel ?"/,
+		)
+		expect(body).toMatch(/<div [^>]*role="dialog"/)
+		expect(body).toContain('data-contained="true"')
+		expect(body).toContain('<div class="so-popover__content"><span>Содержимое</span></div>')
+		// Ссылка триггера ведёт на панель рядом с ним
+		const [, controls] = /aria-controls="([^"]+)"/.exec(body) ?? []
+
+		expect(controls).toBeTruthy()
+		expect(body).toContain(`id="${controls}"`)
+	})
+
+	it('Tooltip — корень с триггером и ссылкой на панель, панели нет', () => {
+		const body = markup(
+			renderToString(() => (
+				<Tooltip
+					trigger={(scope: TTooltipScope) => (
+						<Button text="Сохранить" {...scope.triggerAria} />
+					)}
+				>
+					Сохранить черновик
+				</Tooltip>
+			)),
+		)
+
+		expect(body).toMatch(/^<span [^>]*class="so-tooltip ?"/)
+		expect(body).toMatch(/<button [^>]*aria-describedby="[^"]+"/)
+		expect(body).not.toContain('so-tooltip__panel')
+		expect(body).not.toContain('Сохранить черновик')
 	})
 })
 
@@ -243,6 +319,8 @@ describe('ref потребителя · серверный рендер', () => 
 			['ComponentView', (ref) => <ComponentView ref={ref} />],
 			['Field', (ref) => <Field ref={ref} />],
 			['Frame', (ref) => <Frame contained visible ref={ref} />],
+			['Popover', (ref) => <Popover ref={ref} />],
+			['Tooltip', (ref) => <Tooltip ref={ref} />],
 			['Icon', (ref) => <Icon tag="i" ref={ref} />],
 			['Label', (ref) => <Label ref={ref} />],
 			['ProgressLinear', (ref) => <ProgressLinear ref={ref} />],

@@ -19,7 +19,7 @@
 import { describe, it, expect } from 'vitest'
 import { createSignal, type JSX } from 'solid-js'
 import { TFrame } from '@soldy-ui/core'
-import { TPluginBundle, ruRU } from '@soldy-ui/plugins'
+import { TAnchorPlugin, TPluginBundle, ruRU } from '@soldy-ui/plugins'
 import { Button, Frame, LocaleProvider } from '@soldy-ui/solid'
 import { find, mount } from './mount'
 
@@ -199,6 +199,64 @@ describe('Frame · слой и раскладка', () => {
 		expect(frame().style.left).toBe('10px')
 		expect(frame().style.top).toBe('20px')
 		expect(frame().style.width).toBe('300px')
+	})
+})
+
+/**
+ * `anchor_anchor` у Frame, который объявлен разметкой, — так панель Popover и
+ * Tooltip встаёт у их корня. Снятый из разметки якорь обязан отвязать панель:
+ * у плагина якоря объявлено умолчание `null` — «ни к чему не привязана», — и
+ * связка возвращает к нему снятый проп. Без него панель оставалась бы
+ * привязанной к прежнему элементу и следила бы за его размером и прокруткой.
+ */
+describe('Frame · якорь из разметки', () => {
+	it('заданный доходит до плагина, снятый — отвязывает', async () => {
+		const element = document.createElement('button')
+		const [bound, setBound] = createSignal(true)
+		const created: { anchor?: TAnchorPlugin } = {}
+
+		document.body.appendChild(element)
+
+		mount(() => (
+			<Frame
+				onAnchorCreate={(plugin: unknown) => {
+					if (plugin instanceof TAnchorPlugin) created.anchor = plugin
+				}}
+				{...(bound() ? { anchor_anchor: element } : {})}
+			/>
+		))
+		// `anchor:create` отложен на микрозадачу
+		await Promise.resolve()
+
+		expect(created.anchor?.anchor).toBe(element)
+
+		setBound(false)
+
+		expect(created.anchor?.anchor).toBeNull()
+	})
+
+	it('null снимает якорь так же, как снятый проп', async () => {
+		const element = document.createElement('button')
+		const [anchor, setAnchor] = createSignal<Element | null>(element)
+		const created: { anchor?: TAnchorPlugin } = {}
+
+		document.body.appendChild(element)
+
+		mount(() => (
+			<Frame
+				onAnchorCreate={(plugin: unknown) => {
+					if (plugin instanceof TAnchorPlugin) created.anchor = plugin
+				}}
+				anchor_anchor={anchor()}
+			/>
+		))
+		await Promise.resolve()
+
+		expect(created.anchor?.anchor).toBe(element)
+
+		setAnchor(null)
+
+		expect(created.anchor?.anchor).toBeNull()
 	})
 })
 

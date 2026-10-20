@@ -11,11 +11,19 @@
  * 2. Solid → Core: входные пропсы в эффекте
  * 3. События (Core → колбэк-пропы onXxx)
  * 4. Компонент принят — adapter.attach()
- * 5. DOM-биндинг через callback-ref, и тот же узел — `ref` потребителя
+ * 5. DOM-биндинг через callback-ref, и тот же узел — `ref` потребителя и
+ *    аксессор привязанного корня (`rootElement`)
  * 6. Очистка при уничтожении компонента (onCleanup)
  *
  * Фасад коллекции связывает `useCollectionAdapter` — те же шаги, кроме
  * привязки узла: она принадлежит компоненту.
+ *
+ * Привязанный корень разметка читает аксессором `rootElement`, как
+ * `rootElement` у Vue: так Popover и Tooltip отдают свой корень якорем панели
+ * (`anchor_anchor`). У связки Solid узел приходит только callback-ref, а
+ * сигнала компонент не заводит, поэтому сигнал — здесь: узел ему пишет
+ * привязка (`bindRef`), её очистка ставит `null`, а смена тега (`Dynamic`) —
+ * новый узел. На сервере узлов нет, и корень там `null`.
  *
  * Props передаются как есть: в Solid это объект геттеров, деструктурировать
  * его нельзя, но читать напрямую — можно и нужно.
@@ -37,7 +45,7 @@
  * узел — тот, на который легли его класс и атрибуты.
  */
 
-import { createEffect, createMemo, onCleanup } from 'solid-js'
+import { createEffect, createMemo, createSignal, onCleanup, type Accessor } from 'solid-js'
 import { createStore } from 'solid-js/store'
 import { toInstanceState } from '@soldy-ui/setup'
 import type { IAdapterContext, IComponentContract, TAdapterState, TExchange } from '@soldy-ui/setup'
@@ -62,6 +70,12 @@ export type TBinding<
 	readonly state: TAdapterState<C>
 	/** Мемо: DOM-атрибуты, не съеденные компонентом */
 	forwardProps: () => Partial<TProps>
+	/**
+	 * Привязанный корень — узел, который получил `bindRef`; не отрисован или
+	 * снят — `null`. Сменился тег — новый узел. Аналог `rootElement` у Vue:
+	 * якорь панели у Popover и Tooltip (`anchor_anchor`).
+	 */
+	rootElement: Accessor<Element | null>
 	/** callback-ref корня: привязка к `TElementPlugin`, затем тот же узел — `ref` потребителя */
 	ref: (el: Element) => void
 	/**
@@ -142,14 +156,21 @@ export function useAdapter<C extends IComponentContract, TProps extends object>(
 ): TBinding<C, TProps> {
 	const { binding, state } = useExchange(adapter, props)
 	const forwardProps = createMemo(() => binding.forward(props))
+	const [rootElement, setRootElement] = createSignal<Element | null>(null)
 
 	// 5. DOM-биндинг: контекст сам знает, есть ли у набора `TElementPlugin`.
 	// Отвязка — очисткой того владельца, под которым Solid создал узел: смена
-	// тега (`Dynamic`) отвязывает прежний и привязывает новый
+	// тега (`Dynamic`) отвязывает прежний и привязывает новый. Тот же узел —
+	// привязанный корень разметке: очистка прежнего ставит `null` раньше, чем
+	// придёт новый
 	const bindRef = (el: Element): void => {
 		adapter.bindElement(el)
+		setRootElement(el)
 
-		onCleanup(() => adapter.bindElement(null))
+		onCleanup(() => {
+			adapter.bindElement(null)
+			setRootElement(null)
+		})
 	}
 
 	// `ref` потребителя: Solid читает `ref` один раз, когда создаёт узел, — и
@@ -165,6 +186,7 @@ export function useAdapter<C extends IComponentContract, TProps extends object>(
 		plugins: adapter.bundle,
 		state: toInstanceState<C>(state),
 		forwardProps,
+		rootElement,
 		bindRef,
 		consumerRef,
 
