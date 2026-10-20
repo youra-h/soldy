@@ -65,4 +65,53 @@ describe('владелец Tabs — опция движка', () => {
 
 		expect(() => facade.bindOwner()).not.toThrow()
 	})
+
+	/**
+	 * Новый компонент над тем же владельцем и движком бывает принят раньше, чем
+	 * снят прежний. Привязку снимает только её держатель — фасад, который
+	 * привязал владельца последним.
+	 */
+	it('второй фасад того же владельца привязал раньше, чем снят первый: снятие первого привязку не трогает', () => {
+		const engine = createEngine({ items: [{ value: 'a' }, { value: 'b' }] })
+		const owner = new TTabs({ size: 'lg' })
+		const first = new TTabsCollectionFacade({}, { owner, engine })
+		const second = new TTabsCollectionFacade({}, { owner, engine })
+		const sizes = () => tabsOf(engine.extensions.batch.items).map((tab) => tab.size)
+
+		first.bindOwner()
+		second.bindOwner()
+		first.releaseOwner()
+
+		expect(engine.options.get('owner')).toBe(owner)
+
+		// Подписки на владельца живы: размер доходит до табов
+		owner.size = 'sm'
+
+		expect(sizes()).toEqual(['sm', 'sm'])
+
+		second.releaseOwner()
+
+		expect(engine.options.get('owner')).toBeUndefined()
+
+		owner.size = 'xl'
+
+		expect(sizes()).toEqual(['sm', 'sm'])
+	})
+
+	it('фасад, который не привязывал, при снятии владельца не трогает', () => {
+		const engine = createEngine()
+		const owner = new TTabs()
+		const bound = new TTabsCollectionFacade({}, { owner, engine })
+		// Сборка над тем же владельцем, уничтоженная без приёма
+		const discarded = new TTabsCollectionFacade({}, { owner, engine })
+
+		bound.bindOwner()
+		discarded.releaseOwner()
+
+		expect(engine.options.get('owner')).toBe(owner)
+
+		bound.releaseOwner()
+
+		expect(engine.options.get('owner')).toBeUndefined()
+	})
 })

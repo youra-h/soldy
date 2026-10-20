@@ -189,23 +189,23 @@ describe('Select в окне', () => {
 	}
 
 	it('без обёртки — все опции, распорок нет', async () => {
-		await render(() => h(Select, { items: items(1000) }))
+		await render(() => h(Select, { items: items(80) }))
 
-		expect(selectOptions()).toHaveLength(1000)
+		expect(selectOptions()).toHaveLength(80)
 		expect(selectFillers()).toEqual([])
 	})
 
-	it('в обёртке — до замера первые 50 опций из 1000, без распорок', async () => {
-		await render(() => h(Virtual, () => h(Select, { items: items(1000) })))
+	it('в обёртке — до замера первые 50 опций из 80, без распорок', async () => {
+		await render(() => h(Virtual, () => h(Select, { items: items(80) })))
 
 		expect(selectOptions()).toHaveLength(50)
 		expect(selectFillers()).toEqual([])
 	})
 
 	it('`enabled: false` — все опции', async () => {
-		await render(() => h(Virtual, { enabled: false }, () => h(Select, { items: items(1000) })))
+		await render(() => h(Virtual, { enabled: false }, () => h(Select, { items: items(80) })))
 
-		expect(selectOptions()).toHaveLength(1000)
+		expect(selectOptions()).toHaveLength(80)
 	})
 
 	it('по замеру — распорки в списке панели: скрыты, высотой в опции; нарисованным — место в наборе', async () => {

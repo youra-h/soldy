@@ -2327,12 +2327,15 @@ describe('ручка ширины', () => {
 	/**
 	 * Указатель, который прошёл через полосу мимоходом, линию не зажигает:
 	 * она ждёт, задержится ли он. Курсор ручки при этом встаёт сразу. Ручку
-	 * взяли — ждать нечего, и линия встаёт без задержки и под указателем.
+	 * взяли — ждать нечего, и линия встаёт без задержки и под указателем, даже
+	 * посреди задержки наведения: переход, который её ждёт, отменяется, а не
+	 * доигрывает её. Гаснет линия и после жеста переходом.
 	 *
-	 * Мимоходом — по переходу линии, а не по часам: ответ наведения идёт кругом
-	 * RPC и под нагрузкой приходит позже задержки, когда линия уже горит.
-	 * Переход ловит слушатель, заведённый до наведения, и ставит на паузу, а
-	 * мгновение ухода выбирает тест — последний миг задержки.
+	 * Мимоходом и посреди задержки — по переходу линии, а не по часам: ответ
+	 * наведения идёт кругом RPC и под нагрузкой приходит позже задержки, когда
+	 * линия уже горит. Переход ловит слушатель, заведённый до наведения, и
+	 * ставит на паузу, а мгновение выбирает тест: уходит указатель в последний
+	 * миг задержки, нажимает — в её начале.
 	 */
 	it('линия ждёт задержки указателя: мимоходом не моргает; взяли ручку — сразу', async () => {
 		await mount(resizeEngine(ALL), PLACE)
@@ -2383,19 +2386,69 @@ describe('ручка ширины', () => {
 		await pointAt(away, y)
 		await expect.poll(() => line().opacity).toBe('0')
 
-		// Нажали на полосу сразу, не дожидаясь, — без задержки
-		await pointAt(on, y)
+		// Нажали на полосу, пока линия ждёт, — встаёт сразу: переход наведения
+		// отменён, а не доигрывает задержку. Он на паузе в её начале, и
+		// неотменённый так и держал бы линию погасшей
+		const waiting = await pausedPseudoTransition(resizer, '::before', 'opacity', () =>
+			pointAt(on, y),
+		)
 
-		expect(line().transitionDelay).not.toBe('0s')
+		expect(line().opacity, 'линия ждёт указателя').toBe('0')
 
 		await commands.mouseDown()
 
 		try {
 			await expect.poll(() => headers()[0].dataset.resizing).toBe('true')
-			expect(line().transitionDelay).toBe('0s')
+			expect(line().opacity, 'взяли ручку — линия сразу').toBe('1')
+			expect(waiting.playState, 'переход наведения отменён').toBe('idle')
 		} finally {
 			await commands.mouseUp()
 		}
+
+		// Отпустили на полосе — горит; ушёл — гаснет переходом, как без жеста.
+		// Слушатель — после событий отпускания: пока указатель захвачен,
+		// наведение у заголовка, и полосе оно возвращается позже, чем снят
+		// признак жеста. Переход, заведённый между ними, браузер отменяет в
+		// первый же миг — линию гасит не он
+		await expect.poll(() => line().opacity).toBe('1')
+		await transitionEvents()
+
+		const fading = pseudoTransitionRuns(resizer, '::before')
+
+		await pointAt(away, y)
+		await expect.poll(() => line().opacity).toBe('0')
+
+		expect(fading, 'ушёл — гаснет переходом').toContain('opacity')
+	})
+
+	/**
+	 * Фокус поля ручки с клавиатуры — намерение, как и нажатие: линия встаёт
+	 * сразу, и посреди задержки наведения переход, который её ждёт,
+	 * отменяется. Фокус с кольцом ставит скрипт (`focusVisible: true`), а
+	 * переход наведения ловится на паузе, как выше.
+	 */
+	it('фокус поля с клавиатуры посреди задержки наведения — линия сразу', async () => {
+		await mount(resizeEngine(ALL), PLACE)
+
+		const resizer = resizerOf(headers()[0])
+		const line = () => style(resizer, '::before')
+		const box = resizer.getBoundingClientRect()
+		const y = box.top + box.height / 2
+		const on = box.left + box.width / 2
+
+		await pointAt(on + 60, y)
+		await pseudoSettled(resizer, '::before')
+
+		const waiting = await pausedPseudoTransition(resizer, '::before', 'opacity', () =>
+			pointAt(on, y),
+		)
+
+		expect(line().opacity, 'линия ждёт указателя').toBe('0')
+
+		find('.so-table-column__input', resizer).focus({ focusVisible: true })
+
+		expect(line().opacity, 'фокус с клавиатуры — линия сразу').toBe('1')
+		expect(waiting.playState, 'переход наведения отменён').toBe('idle')
 	})
 
 	/**

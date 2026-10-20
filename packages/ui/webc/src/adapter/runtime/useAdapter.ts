@@ -15,6 +15,11 @@
  * элемента), а события уходят `CustomEvent` на элементе. Всплывают они у
  * элемента потребителя, а у детали чужой разметки (`embedded`) — нет.
  *
+ * Событие «до» — его аргумент `TActionEvent` (`so:show:before`,
+ * `so:hide:before`) — уходит отменяемым, как событие DOM:
+ * `event.preventDefault()` отменяет и событие ядра (`dispatch`). `detail` —
+ * то же событие ядра, и `detail.preventDefault()` отменяет, как прежде.
+ *
  * У коллекционного компонента контекстов два — свой и фасада коллекции, — и
  * фасад связывает `useCollectionAdapter`: всё то же, кроме `ctrl` и привязки
  * узла, они принадлежат компоненту. Базе элемента (`SoldyElement`) нужна одна
@@ -22,6 +27,7 @@
  * живым видом, входы и события — обоих, узел — только свой.
  */
 
+import { TActionEvent } from '@soldy-ui/core'
 import { toInstanceState } from '@soldy-ui/setup'
 import type {
 	IAdapterContext,
@@ -80,6 +86,37 @@ type TExchangeBinding<C extends IComponentContract> = {
 }
 
 /**
+ * Событие ядра — `CustomEvent` на элементе: `detail` — аргумент события, а у
+ * события с несколькими — их список.
+ *
+ * Событие «до» — аргумент `TActionEvent` (`show:before`, `close:before`,
+ * `item:remove:before`) — отменяемое, как событие DOM, и отменённое
+ * (`dispatchEvent` вернул `false`) отменяет событие ядра. Приёмник связки
+ * зовётся внутри эмита ядра, поэтому отмену ядро застаёт до того, как сверит
+ * `defaultPrevented`. Признак — тип аргумента, а не имя события: правило одно
+ * на все элементы. `detail` — само событие ядра, а не копия, поэтому
+ * `detail.preventDefault()` отменяет, как прежде.
+ */
+function dispatch(
+	host: HTMLElement,
+	name: string,
+	args: readonly unknown[],
+	bubbles: boolean,
+): void {
+	const detail = args.length > 1 ? args : args[0]
+	const action = detail instanceof TActionEvent ? detail : undefined
+	const event = new CustomEvent(name, {
+		detail,
+		bubbles,
+		composed: true,
+		cancelable: action !== undefined,
+	})
+
+	// `false` отдаёт только отменяемое, то есть событие «до»
+	if (!host.dispatchEvent(event)) action?.preventDefault()
+}
+
+/**
  * Общая часть `useAdapter` и `useCollectionAdapter`: связка контекста,
  * состояние, входы, события, приём и уничтожение. `bubbles` — всплывают ли
  * события контекста: у детали чужой разметки (`embedded`) — нет.
@@ -101,13 +138,7 @@ function useExchange<C extends IComponentContract>(
 	})
 
 	const unbindEvents = binding.events.listen((exportName, args) => {
-		host.dispatchEvent(
-			new CustomEvent(exportName, {
-				detail: args.length > 1 ? args : args[0],
-				bubbles,
-				composed: true,
-			}),
-		)
+		dispatch(host, exportName, args, bubbles)
 	})
 
 	// Компонент принят: связку заводит `connectedCallback`, отброшенных
