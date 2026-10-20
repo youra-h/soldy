@@ -260,9 +260,11 @@ const backdropRow = (backdrop: TBackdrop, graphic: IGraphic): VNode =>
 			style: `background: ${BACKDROPS[backdrop]}; color: var(--so-component-text); padding: 8px; display: flex; flex-wrap: wrap; gap: 16px`,
 		},
 		VARIANTS.map((variant) =>
-			h('div', { key: caseName(variant), 'data-case': caseName(variant), style: 'width: 240px' }, [
-				graphic.render(variant),
-			]),
+			h(
+				'div',
+				{ key: caseName(variant), 'data-case': caseName(variant), style: 'width: 240px' },
+				[graphic.render(variant)],
+			),
 		),
 	)
 

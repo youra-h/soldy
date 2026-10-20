@@ -337,14 +337,17 @@ describe('отмеченная коробка CheckBox filled', () => {
  * Наведения у включённой дорожки нет, поэтому только покой.
  */
 describe('ручка на включённой дорожке Switch', () => {
-	it.each(casesOf(COLORS))('$scheme, $name: ручка видна на дорожке', async ({ scheme, variant }) => {
-		await show(scheme, () => [h(Switch, { value: true, variant })])
+	it.each(casesOf(COLORS))(
+		'$scheme, $name: ручка видна на дорожке',
+		async ({ scheme, variant }) => {
+			await show(scheme, () => [h(Switch, { value: true, variant })])
 
-		const track = find('.so-switch__track')
-		const knob = find('.so-switch__track--thumb', track)
+			const track = find('.so-switch__track')
+			const knob = find('.so-switch__track--thumb', track)
 
-		expect(
-			contrast(style(knob).backgroundColor, [style(track).backgroundColor]),
-		).toBeGreaterThanOrEqual(GRAPHIC)
-	})
+			expect(
+				contrast(style(knob).backgroundColor, [style(track).backgroundColor]),
+			).toBeGreaterThanOrEqual(GRAPHIC)
+		},
+	)
 })
