@@ -72,8 +72,9 @@ export class TListBoxCollectionFacade extends TGroupCollectionFacade<
 
 	/**
 	 * Что рисует список, по секциям группировки: группа с подписью или
-	 * элементы без группы, между соседними секциями — разделитель. Без групп
-	 * секция одна — все записи `drawn`
+	 * элементы без группы, между соседними секциями — разделитель, если его
+	 * просит список (`groupSeparators`). Без групп секция одна — все записи
+	 * `drawn`
 	 */
 	get drawnSections(): ReadonlyArray<TDrawnSection<IListBoxItem>> {
 		return this.extensions.draw.drawnSections

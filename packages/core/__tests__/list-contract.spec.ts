@@ -1,11 +1,12 @@
 /**
  * Две реализации одного контракта не должны разойтись.
  *
- * `maxRows`, `contentFit`, `scrollBehavior` объявлены в `custom/list/types.ts`
- * и реализованы дважды — в `TListBox` и в `TSelect`. Копии сознательные:
- * общего предка у списка и поля выбора быть не может (`TValueControl` против
- * `TInputControl`), а попытка отдать свойства плагину сделала ядро
- * несамодостаточным — `new TListBox({ maxRows: 5 })` молча не срабатывал.
+ * `maxRows`, `contentFit`, `scrollBehavior`, `indicator` и `groupSeparators`
+ * объявлены в `custom/list/types.ts` и реализованы дважды — в `TListBox` и в
+ * `TSelect`. Копии сознательные: общего предка у списка и поля выбора быть не
+ * может (`TValueControl` против `TInputControl`), а попытка отдать свойства
+ * плагину сделала ядро несамодостаточным — `new TListBox({ maxRows: 5 })`
+ * молча не срабатывал.
  *
  * Цена копий — риск расхождения, и он не выдуманный: в этом же проекте три
  * копии `mode`/`selected` в фасадах дали три разных API, и `<Accordion
@@ -49,6 +50,7 @@ const PROPERTIES = [
 	['contentFit', 'change:contentFit', 'wrap'],
 	['scrollBehavior', 'change:scrollBehavior', 'instant'],
 	['indicator', 'change:indicator', 'start'],
+	['groupSeparators', 'change:groupSeparators', true],
 ] as const
 
 type TListProp = (typeof PROPERTIES)[number][0]

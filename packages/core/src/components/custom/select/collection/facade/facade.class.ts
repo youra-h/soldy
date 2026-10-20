@@ -114,8 +114,9 @@ export class TSelectCollectionFacade extends TGroupCollectionFacade<
 
 	/**
 	 * Что рисует список панели, по секциям группировки: группа с подписью или
-	 * опции без группы, между соседними секциями — разделитель. Без групп
-	 * секция одна — все записи `drawn`
+	 * опции без группы, между соседними секциями — разделитель, если его
+	 * просит Select (`groupSeparators`). Без групп секция одна — все записи
+	 * `drawn`
 	 */
 	get drawnSections(): ReadonlyArray<TDrawnSection<ISelectItem>> {
 		return this.extensions.draw.drawnSections

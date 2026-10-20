@@ -104,13 +104,14 @@ export default {
 				Список — то, что прокручивается, как у меню. Пункты из `items` —
 				только действия, по секциям показанного: группа с подписью — в
 				`MenuGroup`, пункты без группы — прямо в списке, между соседними
-				секциями — разделитель. Слоты пункта пробрасываются целиком:
-				`item-<слот>`, scope — scope слота пункта плюс сам пункт.
+				секциями, пока его просит подменю (`groupSeparators`), —
+				разделитель. Слоты пункта пробрасываются целиком: `item-<слот>`,
+				scope — scope слота пункта плюс сам пункт.
 			-->
 			<div class="so-menu__list">
 				<slot>
 					<template v-for="(section, index) in sections" :key="section.key">
-						<MenuSeparator v-if="index > 0" />
+						<MenuSeparator v-if="groupSeparators && index > 0" />
 						<MenuGroup v-if="section.group" :label="section.group.label">
 							<MenuItem v-for="item in section.items" :key="item.uid" :ctrl="item">
 								<template #leading>

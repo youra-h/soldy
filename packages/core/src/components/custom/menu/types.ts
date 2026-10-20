@@ -89,6 +89,8 @@ export type TMenuEvents = TStylableEvents &
 		'change:triggerAria': (value: TAriaAttributes) => void
 		/** change:panelClasses — классы панели изменились */
 		'change:panelClasses': (value: string[]) => void
+		/** change:groupSeparators */
+		'change:groupSeparators': (value: boolean) => void
 	}
 
 /** Пропсы самого меню (без коллекционной части). */
@@ -99,6 +101,12 @@ export interface IMenuComponentProps extends IStylableProps {
 	placement?: TMenuPlacement
 	/** Чем меню открывают: нажатием кнопки или как контекстное меню области */
 	openOn?: TMenuOpenOn
+	/**
+	 * Рисовать ли разделитель между соседними секциями группировки пунктов из
+	 * данных. Ручной `Menu.Separator` разметки свойство не трогает. По
+	 * умолчанию — да
+	 */
+	groupSeparators?: boolean
 }
 
 /** Полный набор пропсов Menu: свои и коллекции (`engine`, `items`, `trackBy`). */
@@ -116,6 +124,8 @@ export interface IMenu extends IStylable<IMenuProps, TMenuEvents>, IMenuOwner<TM
 	placement: TMenuPlacement
 	/** Чем меню открывают: нажатием кнопки или как контекстное меню области */
 	openOn: TMenuOpenOn
+	/** Рисовать ли разделитель между соседними секциями группировки пунктов */
+	groupSeparators: boolean
 	/**
 	 * Точка вызова контекстного меню в координатах окна — панель встаёт у неё.
 	 * `null` — точки нет, и панель встаёт у триггера

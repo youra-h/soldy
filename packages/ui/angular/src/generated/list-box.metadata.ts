@@ -23,6 +23,7 @@ export const ListBoxInputs = [
 	'contentFit',
 	'scrollBehavior',
 	'indicator',
+	'groupSeparators',
 	'aria_label',
 	'aria_labelledBy',
 	'aria_describedBy',
@@ -80,6 +81,7 @@ export const ListBoxOutputs = [
 	'soChangeContentFit',
 	'soChangeScrollBehavior',
 	'soChangeIndicator',
+	'soChangeGroupSeparators',
 	'soAriaChangeLabel',
 	'soAriaChangeLabelledBy',
 	'soAriaChangeDescribedBy',
@@ -138,6 +140,7 @@ export const ListBoxOutputs = [
 		'contentFit',
 		'scrollBehavior',
 		'indicator',
+		{ name: 'groupSeparators', transform: booleanInput },
 		'aria_label',
 		'aria_labelledBy',
 		'aria_describedBy',
@@ -171,6 +174,7 @@ export abstract class TListBoxSurface<TInstance extends IEntity> extends TCompon
 	declare contentFit: TInputValue<typeof descriptor, 'contentFit'>
 	declare scrollBehavior: TInputValue<typeof descriptor, 'scrollBehavior'>
 	declare indicator: TInputValue<typeof descriptor, 'indicator'>
+	declare groupSeparators: TInputValue<typeof descriptor, 'groupSeparators'>
 	declare aria_label: TInputValue<typeof descriptor, 'aria_label'>
 	declare aria_labelledBy: TInputValue<typeof descriptor, 'aria_labelledBy'>
 	declare aria_describedBy: TInputValue<typeof descriptor, 'aria_describedBy'>
@@ -317,6 +321,9 @@ export abstract class TListBoxSurface<TInstance extends IEntity> extends TCompon
 	}
 	get soChangeIndicator(): TOutputEmitter<typeof descriptor, 'change:indicator'> {
 		return this.createOutput('soChangeIndicator')
+	}
+	get soChangeGroupSeparators(): TOutputEmitter<typeof descriptor, 'change:groupSeparators'> {
+		return this.createOutput('soChangeGroupSeparators')
 	}
 	get soAriaChangeLabel(): TOutputEmitter<typeof descriptor, 'aria:change:label'> {
 		return this.createOutput('soAriaChangeLabel')

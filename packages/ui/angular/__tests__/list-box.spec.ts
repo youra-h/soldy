@@ -803,7 +803,8 @@ describe('отметка выбранного и слоты', () => {
  * Группы из данных — как у Vue (`ui/vue/__tests__/list-groups.spec.ts`):
  * секции нарисованного (`drawnSections`) — группа с подписью в
  * `<div so-list-box-group>`, элементы без группы — последними, прямо в
- * списке, между секциями — немой разделитель. Стрелки ходят тем же порядком,
+ * списке, а между секциями, пока их просит список (`groupSeparators`, по
+ * умолчанию выключен), — немой разделитель. Стрелки ходят тем же порядком,
  * что элементы стоят на экране. Элементы в группе — из шаблона списка, и
  * слой лифта списка они видят и внутри группы.
  */
@@ -816,6 +817,10 @@ describe('группы', () => {
 		{ value: 'pear', text: 'Груша', _: { group: 'fruit' } },
 	]
 
+	/** Секции `MIXED` на экране — без разделителей и с ними. */
+	const SECTIONS = [['Фрукты', ['Яблоко', 'Груша']], ['Овощи', ['Морковь']], 'Вода']
+	const SEPARATED = [['Фрукты', ['Яблоко', 'Груша']], '—', ['Овощи', ['Морковь']], '—', 'Вода']
+
 	@Component({
 		standalone: true,
 		imports: [TListBoxComponent],
@@ -827,6 +832,24 @@ describe('группы', () => {
 			{ key: 'fruit', label: 'Фрукты' },
 			{ key: 'veg', label: 'Овощи' },
 		])
+	}
+
+	@Component({
+		standalone: true,
+		imports: [TListBoxComponent],
+		template: `<so-list-box
+			[items]="items"
+			[groups]="groups"
+			[groupSeparators]="separated()"
+		></so-list-box>`,
+	})
+	class SeparatedHost {
+		readonly items = MIXED
+		readonly groups = [
+			{ key: 'fruit', label: 'Фрукты' },
+			{ key: 'veg', label: 'Овощи' },
+		]
+		readonly separated = signal(true)
 	}
 
 	/** Части списка: группа — подписью и текстами элементов, разделитель — `—`. */
@@ -846,16 +869,10 @@ describe('группы', () => {
 			return node.textContent?.trim()
 		})
 
-	it('группа с подписью, разделитель — между секциями, без группы — последними', () => {
+	it('группа с подписью, без группы — последними; разделителей по умолчанию нет', () => {
 		const fixture = mountHost(GroupsHost)
 
-		expect(parts(fixture)).toEqual([
-			['Фрукты', ['Яблоко', 'Груша']],
-			'—',
-			['Овощи', ['Морковь']],
-			'—',
-			'Вода',
-		])
+		expect(parts(fixture)).toEqual(SECTIONS)
 
 		for (const group of listOf(fixture).querySelectorAll('.so-list-box-group')) {
 			const label = find(group, '.so-list-box-group__label', HTMLElement)
@@ -866,13 +883,24 @@ describe('группы', () => {
 			expect(label.getAttribute('role')).toBe('presentation')
 		}
 
+		// Элементы группы — в коллекции списка: выбор пишет им `aria-selected`
+		expect(selection()).toEqual(['false', 'false', 'false', 'false'])
+	})
+
+	it('groupSeparators — немой разделитель между соседними секциями, на лету тоже', () => {
+		const fixture = mountHost(SeparatedHost)
+
+		expect(parts(fixture)).toEqual(SEPARATED)
 		expect(
 			[...listOf(fixture).querySelectorAll('.so-list-box__separator')].map((node) =>
 				node.getAttribute('aria-hidden'),
 			),
 		).toEqual(['true', 'true'])
-		// Элементы группы — в коллекции списка: выбор пишет им `aria-selected`
-		expect(selection()).toEqual(['false', 'false', 'false', 'false'])
+
+		fixture.componentInstance.separated.set(false)
+		fixture.detectChanges()
+
+		expect(parts(fixture)).toEqual(SECTIONS)
 	})
 
 	it('стрелки ходят порядком экрана: ↓ после «Яблока» — «Груша»', async () => {
@@ -907,9 +935,7 @@ describe('группы', () => {
 
 		expect(parts(fixture)).toEqual([
 			['Fruit', ['Яблоко', 'Груша']],
-			'—',
 			['Vegetables', ['Морковь']],
-			'—',
 			'Вода',
 		])
 	})

@@ -38,11 +38,11 @@ export default { ...SetupListBox, components: { ListBoxItem, ListBoxGroup } }
 					Элементы — то, что рисует коллекция, по секциям группировки
 					(`drawnSections`), ключ секции — её ключ. Группа с подписью — в
 					`ListBoxGroup`, элементы без группы — прямо в списке, между
-					соседними секциями — разделитель: немой `div` (`aria-hidden`), а не
-					`separator` — в `listbox` ARIA пускает только опции и группы. Секции
-					идут порядком показанного, поэтому стрелки ходят так же, как
-					элементы стоят на экране. Без групп секция одна — ни обёртки, ни
-					разделителя.
+					соседними секциями, пока его просит список (`groupSeparators`), —
+					разделитель: немой `div` (`aria-hidden`), а не `separator` — в
+					`listbox` ARIA пускает только опции и группы. Секции идут порядком
+					показанного, поэтому стрелки ходят так же, как элементы стоят на
+					экране. Без групп секция одна — ни обёртки, ни разделителя.
 
 					В секции — её записи по порядку, ключ — ключ записи. Без окна это
 					все показанные элементы секции. В окне обёртки `Virtual` (у списка
@@ -61,7 +61,11 @@ export default { ...SetupListBox, components: { ListBoxItem, ListBoxGroup } }
 					отметки отдаётся ему, только когда задан списку.
 				-->
 				<template v-for="(section, index) in drawnSections" :key="section.key">
-					<div v-if="index > 0" class="so-list-box__separator" aria-hidden="true"></div>
+					<div
+						v-if="groupSeparators && index > 0"
+						class="so-list-box__separator"
+						aria-hidden="true"
+					></div>
 					<ListBoxGroup v-if="section.group" :label="section.group.label">
 						<template v-for="entry in section.entries" :key="entry.key">
 							<div

@@ -24,9 +24,11 @@
  *   группу с подписью (`<div is="so-list-box-group">`, её записи — своей
  *   петлёй внутри неё), записи без группы прямо в списке и немой разделитель
  *   (`div.so-list-box__separator` под `aria-hidden`, не `separator`: в
- *   `listbox` ARIA пускает только опции и группы) между соседними секциями.
- *   Секции идут порядком показанного, и стрелки ходят так же, как элементы
- *   стоят на экране; без групп секция одна — ни группы, ни разделителя. Запись
+ *   `listbox` ARIA пускает только опции и группы) между соседними секциями,
+ *   пока его просит список (`groupSeparators`: строки пересобирает и его
+ *   смена). Секции идут порядком показанного, и стрелки ходят так же, как
+ *   элементы стоят на экране; без групп секция одна — ни группы, ни
+ *   разделителя. Запись
  *   элемента — `<div is="so-list-box-item">` с инстансом данных и копиями
  *   образцов `item-*`, а на месте пропущенных окном (у списка без групп) —
  *   распорка `div.so-list-box__filler` под `aria-hidden`, высоту и место
@@ -110,10 +112,15 @@ function isGroup(node: Element): node is TListBoxGroupElementProps {
 	return node instanceof TListBoxGroupElement
 }
 
-/** Строки списка по секциям: разделитель — перед всеми, кроме первой. */
-function rowsOf(sections: ReadonlyArray<TListBoxSection>): TListBoxRow[] {
+/**
+ * Строки списка по секциям: разделитель — перед всеми, кроме первой, пока
+ * список их просит (`separated`).
+ */
+function rowsOf(sections: ReadonlyArray<TListBoxSection>, separated: boolean): TListBoxRow[] {
 	return sections.flatMap((section, index): TListBoxRow[] => [
-		...(index > 0 ? [{ kind: 'separator' as const, key: `separator:${section.key}` }] : []),
+		...(separated && index > 0
+			? [{ kind: 'separator' as const, key: `separator:${section.key}` }]
+			: []),
 		...(section.group
 			? [{ kind: 'group' as const, key: section.key, section }]
 			: section.entries),
@@ -265,9 +272,9 @@ export const listBoxTemplate: ITemplate<IListBox, TListBoxCollectionFacade> = {
 			if (list) ownerAttributes(list, state.aria)
 		}),
 
-		bind('drawnSections', (ctx) => {
+		bind(['drawnSections', 'groupSeparators'], (ctx) => {
 			loops.get(ctx.root)?.draw(
-				rowsOf(ctx.state.drawnSections ?? []),
+				rowsOf(ctx.state.drawnSections ?? [], ctx.state.groupSeparators === true),
 				(row) => rowOf(ctx, row),
 				(node, row) => updateRow(ctx, node, row),
 			)
