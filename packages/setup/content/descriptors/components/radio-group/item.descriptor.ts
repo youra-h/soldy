@@ -16,8 +16,10 @@
 
 import { defineComponent, defineDescriptor, defineType } from '../../../../protected/define'
 import { TRadioGroupItem } from '@soldy-ui/core'
+import { fieldOf } from '@soldy-ui/plugins'
 import { ValueControlDescriptor } from '../value-control.descriptor'
 import { OWNER_STYLE_PROPS } from '../stylable.descriptor'
+import { ActionPluginDescriptor } from '../../plugins'
 
 export const RadioGroupItemDescriptor = defineDescriptor(() =>
 	defineComponent({
@@ -42,5 +44,11 @@ export const RadioGroupItemDescriptor = defineDescriptor(() =>
 				name: { protected: true },
 			},
 		},
+
+		plugins: [
+			// Фокус держит `<input>`, а корень — подпись вокруг него: туда
+			// `focused = true` и ставит фокус
+			ActionPluginDescriptor.with({ focusTarget: fieldOf }),
+		],
 	}),
 )

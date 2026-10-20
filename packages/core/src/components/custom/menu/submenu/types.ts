@@ -7,6 +7,8 @@ import type { IMenuOwner } from '../types'
 export type TMenuSubmenuEvents = TMenuPopupItemEvents & {
 	/** change:panelClasses — классы панели подменю изменились */
 	'change:panelClasses': (value: string[]) => void
+	/** change:groupSeparators */
+	'change:groupSeparators': (value: boolean) => void
 	/**
 	 * В подменю выбрали пункт-действие: меню, в котором стоит подменю,
 	 * закрывается целиком и сообщает выбор выше (`notifyChoose`)
@@ -23,7 +25,14 @@ export type TMenuSubmenuEvents = TMenuPopupItemEvents & {
  * пункт: так же у меню.
  */
 export interface IMenuSubmenuProps
-	extends IMenuPopupItemProps, IMenuCollectionProps<IMenuItemProps, IMenuItem> {}
+	extends IMenuPopupItemProps, IMenuCollectionProps<IMenuItemProps, IMenuItem> {
+	/**
+	 * Рисовать ли разделитель между соседними секциями группировки пунктов
+	 * подменю из данных, как у меню. Ручной `Menu.Separator` разметки свойство
+	 * не трогает. По умолчанию — да
+	 */
+	groupSeparators?: boolean
+}
 
 /**
  * Пункт с подменю (`Menu.Submenu`): строка в меню, у которой своя панель с
@@ -37,6 +46,8 @@ export interface IMenuSubmenu
 	extends IMenuPopupItem<IMenuSubmenuProps, TMenuSubmenuEvents>, IMenuOwner<TMenuSubmenuEvents> {
 	/** Открыта ли панель подменю */
 	open: boolean
+	/** Рисовать ли разделитель между соседними секциями группировки пунктов */
+	groupSeparators: boolean
 	/**
 	 * Классы панели: блок панели меню с размером и вариантом подменю — до
 	 * телепортированной панели модификаторы пункта не доходят

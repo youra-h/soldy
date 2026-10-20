@@ -13,7 +13,9 @@
 
 import { defineComponent, defineDescriptor, defineType } from '../../../protected/define'
 import { TRating } from '@soldy-ui/core'
+import { fieldOf } from '@soldy-ui/plugins'
 import {
+	ActionPluginDescriptor,
 	RatingHoverPluginDescriptor,
 	RatingNamesPluginDescriptor,
 	RatingValidityPluginDescriptor,
@@ -68,6 +70,9 @@ export const RatingDescriptor = defineDescriptor(() =>
 		},
 
 		plugins: [
+			// Фокус держит поле ручки, а корень — ряд звёзд вокруг: туда
+			// `focused = true` и ставит фокус
+			ActionPluginDescriptor.with({ focusTarget: fieldOf }),
 			SlidePointerPluginDescriptor,
 			SlideKeyboardPluginDescriptor,
 			RatingHoverPluginDescriptor,

@@ -72,6 +72,8 @@ export type TListEvents = {
 	'change:scrollBehavior': (value: TScrollBehavior) => void
 	/** change:indicator */
 	'change:indicator': (value: TListIndicator) => void
+	/** change:groupSeparators */
+	'change:groupSeparators': (value: boolean) => void
 }
 
 /** Props списочных свойств. */
@@ -88,6 +90,11 @@ export interface IListProps {
 	scrollBehavior?: TScrollBehavior
 	/** Где показывать отметку выбранного элемента */
 	indicator?: TListIndicator
+	/**
+	 * Рисовать ли разделитель между соседними секциями группировки — группами
+	 * из данных и элементами без группы. По умолчанию — нет
+	 */
+	groupSeparators?: boolean
 }
 
 /**
@@ -109,6 +116,11 @@ export interface IList {
 	scrollBehavior: TScrollBehavior
 	/** Где показывать отметку выбранного элемента */
 	indicator: TListIndicator
+	/**
+	 * Рисовать ли разделитель между соседними секциями группировки. Рисует его
+	 * разметка списка: разделитель — не данные коллекции, а её рисунок
+	 */
+	groupSeparators: boolean
 }
 
 /** Значения по умолчанию — одни на обе реализации, чтобы копии не разошлись. */
@@ -117,6 +129,7 @@ export const LIST_DEFAULTS: Required<IListProps> = {
 	contentFit: 'truncate',
 	scrollBehavior: 'smooth',
 	indicator: 'none',
+	groupSeparators: false,
 }
 
 /**

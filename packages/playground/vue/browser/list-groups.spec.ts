@@ -11,6 +11,11 @@
  * что предел строк (`maxRows`) режет список по низу последней из первых
  * строк, с подписями и разделителями между ними.
  *
+ * Разделитель рисуется, пока его просит компонент (`groupSeparators`: у
+ * ListBox и Select по умолчанию нет, у Menu — есть). Без него место линии
+ * остаётся пустым: секции стоят там же, где за линией, и не слипаются — у
+ * всех троих.
+ *
  * Подпись — справка над строками: заглавными, начертания и цвета подсказки
  * Field, а кегль — на ступень мельче её кегля того же размера. Чисел темы тест
  * не знает: мера — сама подсказка.
@@ -261,6 +266,50 @@ function expectLabelSpace(list: HTMLElement, block: string): void {
 	expect(Math.abs(above - below)).toBeLessThan(EPSILON)
 }
 
+/**
+ * Где стоят части списка: верх каждой строки, затем строка текста каждой
+ * подписи — от верха списка. Разделители в счёт не идут: сверяется место
+ * секций.
+ */
+function layoutOf(list: HTMLElement, block: string): number[] {
+	const top = list.getBoundingClientRect().top
+	const rows = findAll(`.${block}-item`, list).map(
+		(item) => item.getBoundingClientRect().top - top,
+	)
+	const labels = findAll(`.${block}-group__label`, list).map((label) => lineOf(label).top - top)
+
+	return [...rows, ...labels]
+}
+
+/** Части стоят там же: то же число и те же места с допуском на округление. */
+function expectSameLayout(actual: number[], expected: number[]): void {
+	expect(actual).toHaveLength(expected.length)
+
+	actual.forEach((place, index) =>
+		expect(Math.abs(place - expected[index])).toBeLessThan(EPSILON),
+	)
+}
+
+/**
+ * Секции без разделителя не слипаются. Строка без группы («Вода») отстоит от
+ * последней строки группы над ней дальше, чем строки одной группы друг от
+ * друга: иначе она читалась бы строкой «Овощей». Подпись второй группы ближе к
+ * своей первой строке, чем к последней строке группы над ней: она заголовок
+ * своих строк, а не строка посередине.
+ */
+function expectApart(list: HTMLElement, block: string): void {
+	const box = (text: string) => itemOf(block, text, list).getBoundingClientRect()
+	const [, second] = findAll(`.${block}-group`, list)
+	const line = lineOf(find(`.${block}-group__label`, second))
+	const step = box('Груша').top - box('Яблоко').bottom
+
+	expect(findAll(`.${block}__separator, .so-menu-separator`, list)).toHaveLength(0)
+	expect(box('Вода').top - box('Свёкла').bottom).toBeGreaterThan(step + EPSILON)
+	expect(line.top - box('Груша').bottom).toBeGreaterThan(
+		box('Морковь').top - line.bottom + EPSILON,
+	)
+}
+
 beforeEach(() => {
 	document.documentElement.dataset.soTheme = 'oren'
 })
@@ -319,15 +368,32 @@ describe('ListBox', () => {
 	})
 
 	it('над текстом подписи и под ним свободно одинаково', async () => {
-		await show()
+		await show({ groupSeparators: true })
 
 		expectLabelSpace(list(), 'so-list-box')
 	})
 
 	it('разделитель — линия во всю ширину списка между секциями', async () => {
-		await show()
+		await show({ groupSeparators: true })
 
 		expectSeparators(list(), 'so-list-box')
+	})
+
+	it('без разделителя (по умолчанию) секции не слипаются', async () => {
+		await show()
+
+		expectApart(list(), 'so-list-box')
+	})
+
+	it('без разделителя секции стоят там же, где с ним: место линии пусто', async () => {
+		await show({ groupSeparators: true })
+
+		const separated = layoutOf(list(), 'so-list-box')
+
+		cleanup()
+		await show()
+
+		expectSameLayout(layoutOf(list(), 'so-list-box'), separated)
 	})
 
 	/**
@@ -367,21 +433,25 @@ describe('ListBox', () => {
 
 	/**
 	 * Строки в группах — не дети узла списка, и между ними стоят подпись и
-	 * разделитель: предел считается по месту последней из первых строк.
+	 * разделитель или его пустое место: предел считается по месту последней из
+	 * первых строк.
 	 */
-	it('maxRows: в пределе — ровно первые строки вместе с подписями и разделителем', async () => {
-		await show({ maxRows: 3 })
+	it.each([false, true])(
+		'maxRows (groupSeparators: %s): в пределе — ровно первые строки вместе с подписями и местом между секциями',
+		async (groupSeparators) => {
+			await show({ maxRows: 3, groupSeparators })
 
-		await expect.poll(() => list().style.overflowY).toBe('auto')
-		await frames()
+			await expect.poll(() => list().style.overflowY).toBe('auto')
+			await frames()
 
-		expect(
-			Math.abs(
-				contentBottom(list()) -
-					itemOf('so-list-box', 'Морковь').getBoundingClientRect().bottom,
-			),
-		).toBeLessThan(EPSILON)
-	})
+			expect(
+				Math.abs(
+					contentBottom(list()) -
+						itemOf('so-list-box', 'Морковь').getBoundingClientRect().bottom,
+				),
+			).toBeLessThan(EPSILON)
+		},
+	)
 
 	it('выбранный в группе за пределом — прокручен узел списка, а не группа', async () => {
 		await show({ maxRows: 2, value: 'beet' })
@@ -473,39 +543,62 @@ describe('Select', () => {
 	})
 
 	it('над текстом подписи и под ним свободно одинаково', async () => {
-		await open()
+		await open({ groupSeparators: true })
 
 		expectLabelSpace(list(), 'so-select')
 	})
 
 	it('разделитель — линия во всю ширину списка между секциями', async () => {
-		await open()
+		await open({ groupSeparators: true })
 
 		expectSeparators(list(), 'so-select')
 	})
 
-	it('maxRows: в пределе — ровно первые опции вместе с подписями и разделителем', async () => {
-		await open({ maxRows: 3 })
+	it('без разделителя (по умолчанию) секции не слипаются', async () => {
+		await open()
 
-		await expect.poll(() => list().style.overflowY).toBe('auto')
-		await frames()
-
-		expect(
-			Math.abs(
-				contentBottom(list()) -
-					itemOf('so-select', 'Морковь', panel()).getBoundingClientRect().bottom,
-			),
-		).toBeLessThan(EPSILON)
+		expectApart(list(), 'so-select')
 	})
+
+	it('без разделителя секции стоят там же, где с ним: место линии пусто', async () => {
+		await open({ groupSeparators: true })
+
+		const separated = layoutOf(list(), 'so-select')
+
+		cleanup()
+		await open()
+
+		expectSameLayout(layoutOf(list(), 'so-select'), separated)
+	})
+
+	it.each([false, true])(
+		'maxRows (groupSeparators: %s): в пределе — ровно первые опции вместе с подписями и местом между секциями',
+		async (groupSeparators) => {
+			await open({ maxRows: 3, groupSeparators })
+
+			await expect.poll(() => list().style.overflowY).toBe('auto')
+			await frames()
+
+			expect(
+				Math.abs(
+					contentBottom(list()) -
+						itemOf('so-select', 'Морковь', panel()).getBoundingClientRect().bottom,
+				),
+			).toBeLessThan(EPSILON)
+		},
+	)
 })
 
 /**
  * Подпись группы меню — та же, что у ListBox и Select (`group.label`), а
  * размер её тема берёт с модификатора панели: панель телепортирована. Зазоров
  * у списка меню нет, и место над текстом подписи и под ним дают её поля.
+ * Разделитель между секциями у меню по умолчанию есть; выключенный оставляет
+ * пустым своё место — с полями, — как у списков.
  */
 describe('Menu', () => {
 	const panel = () => find('.so-menu__panel')
+	const list = () => find('.so-menu__list', panel())
 
 	async function open(props: Record<string, unknown> = {}): Promise<void> {
 		render(
@@ -570,5 +663,28 @@ describe('Menu', () => {
 
 		expect(parseFloat(paddingTop)).toBeGreaterThan(0)
 		expect(paddingBottom).toBe(paddingTop)
+	})
+
+	it('разделители между секциями — по умолчанию', async () => {
+		await open()
+
+		expect(findAll('.so-menu-separator', list())).toHaveLength(2)
+	})
+
+	it('groupSeparators=false: секции не слипаются', async () => {
+		await open({ groupSeparators: false })
+
+		expectApart(list(), 'so-menu')
+	})
+
+	it('без разделителя секции стоят там же, где с ним: место линии с полями пусто', async () => {
+		await open()
+
+		const separated = layoutOf(list(), 'so-menu')
+
+		cleanup()
+		await open({ groupSeparators: false })
+
+		expectSameLayout(layoutOf(list(), 'so-menu'), separated)
 	})
 })

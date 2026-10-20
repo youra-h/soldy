@@ -2,8 +2,9 @@
 
 /**
  * Пункт с панелью (`Menu.PopoverItem`): клавиши строки, модель фокуса между
- * меню и панелью пункта и указатель меню, пока панель открыта. Плагины меню и
- * пункта собраны вместе, как их ставят дескрипторы.
+ * меню и панелью пункта и указатель меню — открытие наведением и путь к
+ * открытой панели. Плагины меню и пункта собраны вместе, как их ставят
+ * дескрипторы.
  *
  * Разметку тест строит сам в том виде, в каком её рисует Vue: триггер в
  * корне меню, панель меню в конце `body`, в ней узлы пунктов со строками, и
@@ -82,14 +83,17 @@ function itemNode(panel: HTMLElement, item: IMenuItem): HTMLElement {
 	return node
 }
 
-/** Набор пункта с панелью — как его собирает дескриптор. */
+/**
+ * Набор пункта с панелью — как его собирает дескриптор: клавиатура строки
+ * после модели фокуса — берёт её при установке.
+ */
 function popoverItemBundle(item: TMenuPopoverItem): TPluginBundle {
 	return new TPluginBundle(item)
 		.use(TElementPlugin)
 		.use(TListItemPlugin)
 		.use(TDismissPlugin, { focusOutside: true })
-		.use(TMenuPopoverItemKeyboardPlugin)
 		.use(TMenuPopoverItemFocusPlugin)
+		.use(TMenuPopoverItemKeyboardPlugin)
 }
 
 /** Панель пункта с двумя остановками содержимого — как у календаря: листать назад и вперёд. */
@@ -310,6 +314,19 @@ describe('клавиши строки', () => {
 		expect(due.open).toBe(false)
 	})
 
+	it('стрелка к концу строки открытого пункта ведёт фокус в панель и гасится', async () => {
+		const { owner, due, rowOf, press, openDue } = await setup()
+
+		await openDue()
+		rowOf('due').focus()
+
+		const event = press(rowOf('due'), 'ArrowRight')
+
+		expect(event.defaultPrevented).toBe(true)
+		expect(document.activeElement).toBe(nodeOf('.earlier'))
+		expect([owner.open, due.open]).toEqual([true, true])
+	})
+
 	it('стрелки панели пункта меню не трогает: в ней своё содержимое', async () => {
 		const { lit, pressFocused, openDue } = await setup()
 
@@ -465,6 +482,24 @@ describe('фокус между меню и панелью пункта', () => 
 		expect(document.activeElement).not.toBe(trigger)
 	})
 
+	it('у закрытой панели операции модели фокуса ничего не делают: открытие клавишей ведёт фокус в панель', async () => {
+		const { due, dueBundle, rowOf, press, openOnDue } = await setup()
+		const focus = pluginOf(dueBundle, TMenuPopoverItemFocusPlugin)
+
+		await openOnDue()
+		focus.focusPanel()
+		focus.keepFocusOnRow()
+
+		expect(document.activeElement).toBe(rowOf('due'))
+		expect(due.open).toBe(false)
+
+		// Состояния между открытиями нет: следующее открытие — как обычно
+		press(rowOf('due'), 'ArrowRight')
+		await nextFrame()
+
+		expect(document.activeElement).toBe(nodeOf('.earlier'))
+	})
+
 	it('после уничтожения набора пункта Tab в его панели меню не трогает', async () => {
 		const { owner, due, dueBundle, openDue } = await setup()
 
@@ -574,14 +609,14 @@ describe('пункт с панелью в подменю', () => {
 	})
 })
 
-describe('указатель меню при открытой панели пункта', () => {
+describe('указатель меню и панель пункта', () => {
 	/** Мышь над строкой. */
 	const hover = (row: Element, x = 0, y = 0, pointerType = 'mouse') =>
 		pointer(row, 'pointermove', x, y, pointerType)
 
 	/** Открыть меню кликом по триггеру: фокус на панели, подсветки нет. */
-	async function clicked() {
-		const harness = await setup()
+	async function clicked(options?: { dueDisabled?: boolean }) {
+		const harness = await setup(options)
 
 		harness.trigger.click()
 		await nextFrame()
@@ -590,24 +625,115 @@ describe('указатель меню при открытой панели пу�
 		return harness
 	}
 
-	/** Навести на «Срок» у конца строки и открыть его панель — как нажатием строки. */
+	/** Навести на «Срок» у конца строки и простоять: панель открыта наведением. */
 	async function opened() {
 		const harness = await clicked()
 
 		hover(harness.rowOf('due'), 190, 50)
-		harness.engine.extensions.menu.createItem(harness.due).open()
+		vi.advanceTimersByTime(100)
 
 		return harness
 	}
 
-	it('наведение пункт с панелью не открывает: открывают нажатие и клавиши', async () => {
-		const { due, rowOf, lit } = await clicked()
+	it('простоявший на строке указатель открывает панель через 100 мс — фокус остаётся на строке', async () => {
+		const { owner, due, rowOf, lit } = await clicked()
 
 		hover(rowOf('due'))
+
+		expect(document.activeElement).toBe(rowOf('due'))
+
+		vi.advanceTimersByTime(99)
+
+		expect(due.open).toBe(false)
+
+		vi.advanceTimersByTime(1)
+
+		expect(due.open).toBe(true)
+
+		// Кадр, которым модель фокуса увела бы фокус в панель, позади
+		vi.useRealTimers()
+		await nextFrame()
+
+		expect(document.activeElement).toBe(rowOf('due'))
+		expect(lit()).toEqual(['due'])
+		expect(owner.open).toBe(true)
+	})
+
+	it('ушёл со строки раньше — панель не открывается', async () => {
+		const { due, rowOf } = await clicked()
+
+		hover(rowOf('due'))
+		vi.advanceTimersByTime(50)
+		hover(rowOf('remove'))
+		vi.advanceTimersByTime(200)
+
+		expect(due.open).toBe(false)
+	})
+
+	it('касание панель не открывает, выключенный пункт — тоже', async () => {
+		const touched = await clicked()
+
+		hover(touched.rowOf('due'), 0, 0, 'touch')
 		vi.advanceTimersByTime(500)
 
-		expect(lit()).toEqual(['due'])
+		expect(touched.due.open).toBe(false)
+
+		vi.useRealTimers()
+		document.body.innerHTML = ''
+
+		const off = await clicked({ dueDisabled: true })
+
+		hover(off.rowOf('due'))
+		vi.advanceTimersByTime(500)
+
+		expect(off.due.open).toBe(false)
+	})
+
+	it('строку нажали, пока указатель ждал, — фокус в панели: таймер его не забирает', async () => {
+		const { due, engine, rowOf } = await clicked()
+
+		hover(rowOf('due'))
+		vi.advanceTimersByTime(50)
+		// Нажатие строки — открытие через коллекцию, как клик и Enter
+		engine.extensions.menu.createItem(due).open()
+		vi.advanceTimersByTime(100)
+
+		expect(due.open).toBe(true)
+
+		vi.useRealTimers()
+		await nextFrame()
+
+		expect(document.activeElement).toBe(nodeOf('.earlier'))
+	})
+
+	it('стрелка к концу строки ведёт фокус в панель, открытую наведением', async () => {
+		const { owner, due, rowOf, press } = await opened()
+
+		vi.useRealTimers()
+		await nextFrame()
+
+		const event = press(rowOf('due'), 'ArrowRight')
+
+		expect(event.defaultPrevented).toBe(true)
+		expect(document.activeElement).toBe(nodeOf('.earlier'))
+		expect([owner.open, due.open]).toEqual([true, true])
+	})
+
+	it('открыта наведением, закрыта Escape, открыта стрелкой — фокус в панели', async () => {
+		const { due, rowOf, press } = await opened()
+
+		vi.useRealTimers()
+		await nextFrame()
+		press(rowOf('due'), 'Escape')
+
 		expect(due.open).toBe(false)
+		expect(document.activeElement).toBe(rowOf('due'))
+
+		press(rowOf('due'), 'ArrowRight')
+		await nextFrame()
+
+		expect(due.open).toBe(true)
+		expect(document.activeElement).toBe(nodeOf('.earlier'))
 	})
 
 	it('указатель ушёл с панели меню к панели пункта — подсветка у его строки, панель открыта', async () => {

@@ -21,7 +21,9 @@
 import { defineComponent, defineDescriptor, defineType } from '../../../protected/define'
 import { TNumberInput } from '@soldy-ui/core'
 import type { INumberInput } from '@soldy-ui/core'
+import { fieldOf } from '@soldy-ui/plugins'
 import {
+	ActionPluginDescriptor,
 	LocalePluginDescriptor,
 	NumberInputKeyboardPluginDescriptor,
 	NumberInputNamesPluginDescriptor,
@@ -165,6 +167,9 @@ export const NumberInputDescriptor = defineDescriptor(() =>
 		},
 
 		plugins: [
+			// Фокус держит ввод, а не коробка корня и не скрытое поле формы:
+			// туда `focused = true` и ставит фокус
+			ActionPluginDescriptor.with({ focusTarget: fieldOf }),
 			// Имена кнопок очистки и шага от локали — с первой отрисовки
 			NumberInputNamesPluginDescriptor,
 			// Язык приложения — до набора и клавиш: формат с первой отрисовки

@@ -10,7 +10,9 @@
 import { defineComponent, defineDescriptor, defineType } from '../../../protected/define'
 import { TInput } from '@soldy-ui/core'
 import type { IInput } from '@soldy-ui/core'
+import { fieldOf } from '@soldy-ui/plugins'
 import {
+	ActionPluginDescriptor,
 	ClearableNamesPluginDescriptor,
 	InputControlPluginDescriptor,
 	InputPluginDescriptor,
@@ -54,6 +56,9 @@ export const InputDescriptor = defineDescriptor(() =>
 		},
 
 		plugins: [
+			// Фокус держит `<input>`, а корень — коробка вокруг него: туда
+			// `focused = true` и ставит фокус, мимо кнопки в слоте `leading`
+			ActionPluginDescriptor.with({ focusTarget: fieldOf }),
 			// Имя кнопки очистки от локали — с первой отрисовки
 			ClearableNamesPluginDescriptor,
 			InputControlPluginDescriptor,

@@ -4,8 +4,9 @@
  * Группы из данных: метка `_.group` в `items` или `groupBy`, порядок и
  * подписи — `groups`. Список рисует секции нарисованного (`drawnSections`):
  * группу с подписью — частью `ListBox.Group` или `Select.Group`
- * (`role="group"`, имя — подпись), элементы без группы — прямо в списке,
- * между секциями — немой разделитель (в `listbox` ARIA пускает только опции и
+ * (`role="group"`, имя — подпись), элементы без группы — прямо в списке, а
+ * между секциями, пока их просит список (`groupSeparators`, по умолчанию
+ * выключен), — немой разделитель (в `listbox` ARIA пускает только опции и
  * группы). Группы из `groups` идут первыми, остальное — по месту. Стрелки
  * ходят тем же порядком, что элементы стоят на экране.
  *
@@ -67,6 +68,12 @@ const GROUPS = [
 	{ key: 'veg', label: 'Овощи' },
 ]
 
+/** Секции `MIXED` на экране — без разделителей. */
+const SECTIONS = [['Фрукты', ['Яблоко', 'Груша']], ['Овощи', ['Морковь']], 'Вода']
+
+/** Те же секции с разделителями между соседними. */
+const SEPARATED = [['Фрукты', ['Яблоко', 'Груша']], '—', ['Овощи', ['Морковь']], '—', 'Вода']
+
 /**
  * Части списка по порядку: группа — подписью и текстами её элементов,
  * разделитель — `—`, элемент без группы — текстом.
@@ -101,27 +108,48 @@ function expectGroupMarkup(group: Element, block: string): void {
 describe('ListBox · группы из данных', () => {
 	const list = () => find('.so-list-box__list')
 
-	it('группы с подписью, разделитель — между секциями, без группы — последними', async () => {
+	it('группы с подписью, без группы — последними; разделителей по умолчанию нет', async () => {
 		await render(() => h(ListBox, { items: MIXED, groups: GROUPS }))
 
-		expect(parts(list(), 'so-list-box')).toEqual([
-			['Фрукты', ['Яблоко', 'Груша']],
-			'—',
-			['Овощи', ['Морковь']],
-			'—',
-			'Вода',
-		])
+		expect(parts(list(), 'so-list-box')).toEqual(SECTIONS)
+		expect(list().querySelector('.so-list-box__separator')).toBeNull()
 
 		const groups = [...list().querySelectorAll('.so-list-box-group')]
 
 		expect(groups).toHaveLength(2)
 
 		for (const group of groups) expectGroupMarkup(group, 'so-list-box')
+	})
+
+	it('groupSeparators — немой разделитель только между соседними секциями', async () => {
+		await render(() => h(ListBox, { items: MIXED, groups: GROUPS, groupSeparators: true }))
+
+		expect(parts(list(), 'so-list-box')).toEqual(SEPARATED)
 
 		const separators = [...list().querySelectorAll('.so-list-box__separator')]
 
 		expect(separators.map((node) => node.getAttribute('aria-hidden'))).toEqual(['true', 'true'])
 		expect(separators.some((node) => node.hasAttribute('role'))).toBe(false)
+	})
+
+	it('groupSeparators на лету ставит и снимает разделители', async () => {
+		const separated = ref(true)
+
+		await render(() =>
+			h(ListBox, { items: MIXED, groups: GROUPS, groupSeparators: separated.value }),
+		)
+
+		expect(parts(list(), 'so-list-box')).toEqual(SEPARATED)
+
+		separated.value = false
+		await nextTick()
+
+		expect(parts(list(), 'so-list-box')).toEqual(SECTIONS)
+
+		separated.value = true
+		await nextTick()
+
+		expect(parts(list(), 'so-list-box')).toEqual(SEPARATED)
 	})
 
 	it('стрелки ходят порядком экрана: ↓ после «Яблока» — «Груша»', async () => {
@@ -169,9 +197,7 @@ describe('ListBox · группы из данных', () => {
 
 		expect(parts(list(), 'so-list-box')).toEqual([
 			['Fruit', ['Яблоко', 'Груша']],
-			'—',
 			['Vegetables', ['Морковь']],
-			'—',
 			'Вода',
 		])
 	})
@@ -188,7 +214,7 @@ describe('ListBox · группы из данных', () => {
 			}),
 		)
 
-		expect(parts(list(), 'so-list-box')).toEqual([['Вторые', ['Второй']], '—', 'Первый'])
+		expect(parts(list(), 'so-list-box')).toEqual([['Вторые', ['Второй']], 'Первый'])
 	})
 
 	it('группировка через движок: engine.extensions.group после монтирования', async () => {
@@ -199,7 +225,7 @@ describe('ListBox · группы из данных', () => {
 			],
 		})
 
-		await render(() => h(ListBox, { engine }))
+		await render(() => h(ListBox, { engine, groupSeparators: true }))
 
 		expect(parts(list(), 'so-list-box')).toEqual(['Первый', 'Второй'])
 
@@ -227,6 +253,7 @@ describe('ListBox · группы из данных', () => {
 					{ value: 'a', text: 'Первый' },
 					{ value: 'b', text: 'Второй' },
 				],
+				groupSeparators: true,
 			}),
 		)
 
@@ -263,27 +290,44 @@ describe('Select · группы из данных', () => {
 		await nextTick()
 	}
 
-	it('группы с подписью, разделитель — между секциями, без группы — последними', async () => {
+	it('группы с подписью, без группы — последними; разделителей по умолчанию нет', async () => {
 		await render(() => h(Select, { items: MIXED, groups: GROUPS }))
 		await open()
 
-		expect(parts(list(), 'so-select')).toEqual([
-			['Фрукты', ['Яблоко', 'Груша']],
-			'—',
-			['Овощи', ['Морковь']],
-			'—',
-			'Вода',
-		])
+		expect(parts(list(), 'so-select')).toEqual(SECTIONS)
+		expect(list().querySelector('.so-select__separator')).toBeNull()
 
 		for (const group of list().querySelectorAll('.so-select-group')) {
 			expectGroupMarkup(group, 'so-select')
 		}
+	})
 
+	it('groupSeparators — немой разделитель только между соседними секциями', async () => {
+		await render(() => h(Select, { items: MIXED, groups: GROUPS, groupSeparators: true }))
+		await open()
+
+		expect(parts(list(), 'so-select')).toEqual(SEPARATED)
 		expect(
 			[...list().querySelectorAll('.so-select__separator')].map((node) =>
 				node.getAttribute('aria-hidden'),
 			),
 		).toEqual(['true', 'true'])
+	})
+
+	it('groupSeparators на лету ставит и снимает разделители', async () => {
+		const separated = ref(false)
+
+		await render(() =>
+			h(Select, { items: MIXED, groups: GROUPS, groupSeparators: separated.value }),
+		)
+		await open()
+
+		expect(parts(list(), 'so-select')).toEqual(SECTIONS)
+
+		separated.value = true
+		await nextTick()
+
+		expect(parts(list(), 'so-select')).toEqual(SEPARATED)
 	})
 
 	it('стрелки подсвечивают опции порядком экрана', async () => {

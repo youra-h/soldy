@@ -11,7 +11,12 @@
 
 import { defineComponent, defineDescriptor, defineType } from '../../../protected/define'
 import { TSlider } from '@soldy-ui/core'
-import { SlideKeyboardPluginDescriptor, SlidePointerPluginDescriptor } from '../plugins'
+import { fieldOf } from '@soldy-ui/plugins'
+import {
+	ActionPluginDescriptor,
+	SlideKeyboardPluginDescriptor,
+	SlidePointerPluginDescriptor,
+} from '../plugins'
 import { ValueControlDescriptor } from './value-control.descriptor'
 
 /**
@@ -133,6 +138,12 @@ export const SliderDescriptor = defineDescriptor(() =>
 			events: ['commit'],
 		},
 
-		plugins: [SlidePointerPluginDescriptor, SlideKeyboardPluginDescriptor],
+		plugins: [
+			// Фокус держат поля ручек, а корень — дорожка вокруг: `focused = true`
+			// ставит фокус в поле первой ручки
+			ActionPluginDescriptor.with({ focusTarget: fieldOf }),
+			SlidePointerPluginDescriptor,
+			SlideKeyboardPluginDescriptor,
+		],
 	}),
 )

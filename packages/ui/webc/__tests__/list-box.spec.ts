@@ -958,9 +958,10 @@ describe('распорки окна', () => {
 /**
  * Группы — как у Vue (`ui/vue/__tests__/list-groups.spec.ts`). Из данных:
  * секции нарисованного (`drawnSections`) — группа с подписью в
- * `<div is="so-list-box-group">`, элементы без группы — прямо в списке, между
- * секциями — немой разделитель; группы из `groups` — первыми, остальное — по
- * месту. Записи группы — её свет, и элементы в ней находят движок списка
+ * `<div is="so-list-box-group">`, элементы без группы — прямо в списке, а
+ * между секциями, пока их просит список (`groupSeparators`, по умолчанию
+ * выключен), — немой разделитель; группы из `groups` — первыми, остальное —
+ * по месту. Записи группы — её свет, и элементы в ней находят движок списка
  * лифтом сквозь группу. Разметкой: группа входит в ту же группировку — ключ
  * элементы её света находят лифтом вверх по документу, — и секции описывают
  * её. Стрелки ходят тем же порядком, что элементы стоят на экране.
@@ -996,18 +997,16 @@ describe('группы', () => {
 			return node.textContent?.trim()
 		})
 
-	it('группа с подписью, разделитель — между секциями, без группы — последними', async () => {
+	/** Секции `MIXED` на экране — без разделителей и с ними. */
+	const SECTIONS = [['Фрукты', ['Яблоко', 'Груша']], ['Овощи', ['Морковь']], 'Вода']
+	const SEPARATED = [['Фрукты', ['Яблоко', 'Груша']], '—', ['Овощи', ['Морковь']], '—', 'Вода']
+
+	it('группа с подписью, без группы — последними; разделителей по умолчанию нет', async () => {
 		const list = await mountList({ items: MIXED, groups: GROUPS })
 
 		await flush()
 
-		expect(parts(list)).toEqual([
-			['Фрукты', ['Яблоко', 'Груша']],
-			'—',
-			['Овощи', ['Морковь']],
-			'—',
-			'Вода',
-		])
+		expect(parts(list)).toEqual(SECTIONS)
 
 		for (const group of nodeOf(list).querySelectorAll('.so-list-box-group')) {
 			const label = find(group, '.so-list-box-group__label', HTMLElement)
@@ -1021,13 +1020,43 @@ describe('группы', () => {
 			expect(group.firstElementChild).toBe(label)
 		}
 
+		// Элементы группы — в коллекции списка: выбор пишет им `aria-selected`
+		expect(selection()).toEqual(['false', 'false', 'false', 'false'])
+	})
+
+	it('groupSeparators — немой разделитель между соседними секциями; снятый — те же группы и элементы', async () => {
+		const list = await mountList({ items: MIXED, groups: GROUPS, groupSeparators: true })
+
+		await flush()
+
+		expect(parts(list)).toEqual(SEPARATED)
 		expect(
 			[...nodeOf(list).querySelectorAll('.so-list-box__separator')].map((node) =>
 				node.getAttribute('aria-hidden'),
 			),
 		).toEqual(['true', 'true'])
-		// Элементы группы — в коллекции списка: выбор пишет им `aria-selected`
-		expect(selection()).toEqual(['false', 'false', 'false', 'false'])
+
+		const group = find(nodeOf(list), '.so-list-box-group', HTMLElement)
+		const items = listItems()
+
+		list.groupSeparators = false
+		await flush()
+
+		expect(parts(list)).toEqual(SECTIONS)
+		expect(find(nodeOf(list), '.so-list-box-group', HTMLElement)).toBe(group)
+		listItems().forEach((node, index) => expect(node).toBe(items[index]))
+	})
+
+	it('атрибут group-separators без значения включает разделители', async () => {
+		const host = await mount('<div is="so-list-box" group-separators></div>')
+		const list = listIn(host)
+
+		list.items = MIXED
+		list.groups = GROUPS
+		await flush()
+		await flush()
+
+		expect(parts(list)).toEqual(SEPARATED)
 	})
 
 	it('стрелки ходят порядком экрана: ↓ после «Яблока» — «Груша»', async () => {
@@ -1068,9 +1097,7 @@ describe('группы', () => {
 
 		expect(parts(list)).toEqual([
 			['Fruit', ['Яблоко', 'Груша']],
-			'—',
 			['Vegetables', ['Морковь']],
-			'—',
 			'Вода',
 		])
 		expect(find(nodeOf(list), '.so-list-box-group', HTMLElement)).toBe(group)

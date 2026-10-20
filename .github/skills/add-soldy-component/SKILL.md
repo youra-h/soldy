@@ -65,6 +65,8 @@ Slots are declared in the same `contribution` under `slots`; a scope value is `d
 
 > A generic core class gets its type parameters' constraints, not their defaults: `ValueControlDescriptor` has `IValueControlProps<unknown>`, `InputControlDescriptor` — `IInputControlProps<unknown>`. A concrete component fixes the value type in its own class (`TInput extends TInputControl<string, …>`), and its descriptor gets exactly that.
 
+**The root does not hold focus — `focusTarget` in the descriptor.** A control (anything from `ControlDescriptor`) gets `TActionPlugin`, and writing `focused = true` — the prop or `ctrl.focused` — moves focus to the root. If focus lives on a node inside the root — a field inside a box, a list node next to a header and a footer, a roving tab stop — name that node in the descriptor: `plugins: [ActionPluginDescriptor.with({ focusTarget: fieldOf })]`. The rule is `(root, ctx) => Element | null` from `@soldy-ui/plugins` — `fieldOf`, `listOf`, `tabStopOf`, or a new one next to the plugins that already look that node up. If the root does hold focus, put the name into `ROOT_HOLDS_FOCUS` of `packages/setup/__tests__/focus-target.spec.ts`: a control without a decision fails it. See `docs/agents/a11y.md`, «Прочее».
+
 ### 3. Vue adapter — `packages/ui/vue/src/components/<name>/`
 
 - `base.component.ts`: runtime `props`/`emits` from `useProps(<Name>Descriptor())` / `useEmits(<Name>Descriptor())`, **plus** the precise props type derived from the descriptor:

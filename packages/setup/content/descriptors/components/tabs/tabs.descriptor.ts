@@ -10,8 +10,10 @@
 import { defineComponent, defineDescriptor, defineType } from '../../../../protected/define'
 import { TTabs } from '@soldy-ui/core'
 import type { ITabsItem } from '@soldy-ui/core'
+import { tabStopOf } from '@soldy-ui/plugins'
 import { ControlDescriptor } from '../control.descriptor'
 import {
+	ActionPluginDescriptor,
 	CollectionBundlesPluginDescriptor,
 	CollectionElementsPluginDescriptor,
 	DragPluginDescriptor,
@@ -83,6 +85,11 @@ export const TabsDescriptor = defineDescriptor(() =>
 		},
 
 		plugins: [
+			// Фокус держит таб-остановка, а корень — рамка со списком и панелями:
+			// туда `focused = true` и ставит фокус, как Tab, мимо кнопки в
+			// слоте `leading`. Остановку плагин берёт у модели, через реестр
+			// элементов ниже
+			ActionPluginDescriptor.with({ focusTarget: tabStopOf }),
 			// Коллекция: реестр bundles + доступ к DOM-элементам
 			CollectionBundlesPluginDescriptor,
 			CollectionElementsPluginDescriptor,

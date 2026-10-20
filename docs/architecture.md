@@ -268,6 +268,7 @@ export const ElementPluginDescriptor = definePlugin({
 - `TActionPlugin` (`custom/action/`, namespace `action`, на `ControlDescriptor`) - взаимодействие
   с пользователем: `press` (нормализованная активация: клик, с гейтом по `disabled`; из
   Enter/Space на не-нативном корне клик делает сам плагин, как браузер у `<button>`), сырой `click`, `focus`/`blur` и двусторонняя связь `focused` с DOM-фокусом.
+  Узел, куда запись `focused` ставит фокус, называет дескриптор опцией `focusTarget` (см. `docs/agents/a11y.md`, «Прочее»).
   Элемент берёт у `TElementPlugin` через `ctx.get(...)` — композиция, а не наследование
 - `TReadyPlugin` - Syncs `IComponentView.ready` with `TElementPlugin` (`ready` / `removed`)
 - `TDragPlugin` (`custom/drag-and-drop/`) - DnD handler

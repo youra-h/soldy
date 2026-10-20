@@ -583,11 +583,12 @@ describe('отметка выбранного и слоты', () => {
 /**
  * Группы — как у Vue (`ui/vue/__tests__/list-groups.spec.ts`). Из данных:
  * секции нарисованного (`drawnSections`) — группа с подписью в
- * `ListBox.Group`, элементы без группы — прямо в списке, между секциями —
- * немой разделитель; группы из `groups` — первыми, остальное — по месту.
- * Разметкой: `ListBox.Group` входит в ту же группировку, и секции описывают
- * её. Стрелки ходят тем же порядком, что элементы стоят на экране. Части
- * стоят вплотную — пробелов текстом нет ни в списке, ни в группе.
+ * `ListBox.Group`, элементы без группы — прямо в списке, а между секциями,
+ * пока их просит список (`groupSeparators`, по умолчанию выключен), — немой
+ * разделитель; группы из `groups` — первыми, остальное — по месту. Разметкой:
+ * `ListBox.Group` входит в ту же группировку, и секции описывают её. Стрелки
+ * ходят тем же порядком, что элементы стоят на экране. Части стоят вплотную —
+ * пробелов текстом нет ни в списке, ни в группе.
  */
 describe('группы', () => {
 	/** В данных «Морковь» стоит между фруктами, у «Воды» группы нет. */
@@ -620,16 +621,14 @@ describe('группы', () => {
 			return node.textContent?.trim()
 		})
 
-	it('группа с подписью, разделитель — между секциями, без группы — последними', () => {
+	/** Секции `MIXED` на экране — без разделителей и с ними. */
+	const SECTIONS = [['Фрукты', ['Яблоко', 'Груша']], ['Овощи', ['Морковь']], 'Вода']
+	const SEPARATED = [['Фрукты', ['Яблоко', 'Груша']], '—', ['Овощи', ['Морковь']], '—', 'Вода']
+
+	it('группа с подписью, без группы — последними; разделителей по умолчанию нет', () => {
 		mount(ListBox, { items: MIXED, groups: GROUPS })
 
-		expect(parts()).toEqual([
-			['Фрукты', ['Яблоко', 'Груша']],
-			'—',
-			['Овощи', ['Морковь']],
-			'—',
-			'Вода',
-		])
+		expect(parts()).toEqual(SECTIONS)
 
 		const groups = [...list().querySelectorAll('.so-list-box-group')]
 
@@ -644,11 +643,29 @@ describe('группы', () => {
 		}
 
 		expect(strayText(list())).toEqual([])
+	})
+
+	it('groupSeparators — немой разделитель между соседними секциями, на лету тоже', () => {
+		const props = reactiveProps<ListBoxProps>({
+			items: MIXED,
+			groups: GROUPS,
+			groupSeparators: true,
+		})
+
+		mount(ListBox, props)
+
+		expect(parts()).toEqual(SEPARATED)
+		expect(strayText(list())).toEqual([])
 		expect(
 			[...list().querySelectorAll('.so-list-box__separator')].map((node) =>
 				node.getAttribute('aria-hidden'),
 			),
 		).toEqual(['true', 'true'])
+
+		props.groupSeparators = false
+		flushSync()
+
+		expect(parts()).toEqual(SECTIONS)
 	})
 
 	it('стрелки ходят порядком экрана: ↓ после «Яблока» — «Груша»', async () => {
@@ -684,9 +701,7 @@ describe('группы', () => {
 
 		expect(parts()).toEqual([
 			['Fruit', ['Яблоко', 'Груша']],
-			'—',
 			['Vegetables', ['Морковь']],
-			'—',
 			'Вода',
 		])
 	})

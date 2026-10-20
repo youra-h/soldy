@@ -17,8 +17,10 @@
 import { defineComponent, defineDescriptor, defineType } from '../../../../protected/define'
 import { TListBox } from '@soldy-ui/core'
 import type { IListBoxItem } from '@soldy-ui/core'
+import { listOf } from '@soldy-ui/plugins'
 import { ValueControlDescriptor } from '../value-control.descriptor'
 import {
+	ActionPluginDescriptor,
 	CollectionBundlesPluginDescriptor,
 	CollectionElementsPluginDescriptor,
 	DragPluginDescriptor,
@@ -87,6 +89,9 @@ export const ListBoxDescriptor = defineDescriptor(() =>
 		},
 
 		plugins: [
+			// Фокус держит узел списка, а корень — рамка с шапкой и подвалом:
+			// туда `focused = true` и ставит фокус, мимо поля поиска в шапке
+			ActionPluginDescriptor.with({ focusTarget: listOf }),
 			// Коллекция: реестр bundles + доступ к DOM-элементам
 			CollectionBundlesPluginDescriptor,
 			CollectionElementsPluginDescriptor,

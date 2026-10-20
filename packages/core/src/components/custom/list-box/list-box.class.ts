@@ -17,15 +17,17 @@ import type { IListBoxProps, TListBoxView, TListBoxEvents, IListBox, TListBoxVal
  * ответ в значениях, и он же уходит в форму. Связь `value` ↔ выбор держит
  * `TValueSelectionExtension`.
  *
- * `maxRows`, `contentFit`, `scrollBehavior`, `indicator` объявлены контрактом `IList`
- * (см. `custom/list/types.ts`) и реализованы здесь же — своей копией. Копия
- * сознательная: общего предка у списка и поля выбора быть не может, а попытка
- * отдать свойства плагину сделала ядро несамодостаточным. Расхождение копий
- * стережёт `core/__tests__/list-contract.spec.ts`.
+ * `maxRows`, `contentFit`, `scrollBehavior`, `indicator`, `groupSeparators`
+ * объявлены контрактом `IList` (см. `custom/list/types.ts`) и реализованы здесь
+ * же — своей копией. Копия сознательная: общего предка у списка и поля выбора
+ * быть не может, а попытка отдать свойства плагину сделала ядро
+ * несамодостаточным. Расхождение копий стережёт
+ * `core/__tests__/list-contract.spec.ts`.
  *
  * Применять их ядру по силам не всё: `contentFit` уходит в `data-*`, что ядру
  * доступно, а `maxRows` требует измерений — его применяет `TListHeightPlugin`,
- * читая свойство отсюда. `scrollBehavior` отсюда только читают.
+ * читая свойство отсюда. `scrollBehavior` отсюда только читают, а
+ * `groupSeparators` — разметка: разделитель между секциями рисует она.
  *
  * Роль — природа компонента, и пишет её он сам: `role="listbox"` в свой
  * `aria`, как `TSelect` — в `listAria`, а `TMenu` — `menu`. От режима выбора
@@ -57,6 +59,7 @@ export class TListBox
 	protected _contentFit!: TListContentFit
 	protected _scrollBehavior: TScrollBehavior
 	protected _indicator!: TListIndicator
+	protected _groupSeparators: boolean
 
 	constructor(props: Partial<IListBoxProps> = {}) {
 		super(props)
@@ -71,6 +74,7 @@ export class TListBox
 
 		this._maxRows = props.maxRows ?? ctor.defaultValues.maxRows
 		this._scrollBehavior = props.scrollBehavior ?? ctor.defaultValues.scrollBehavior
+		this._groupSeparators = props.groupSeparators ?? ctor.defaultValues.groupSeparators
 
 		this._applyContentFit(props.contentFit ?? ctor.defaultValues.contentFit)
 		this._applyIndicator(props.indicator ?? ctor.defaultValues.indicator)
@@ -146,6 +150,21 @@ export class TListBox
 		this.events.emit('change:indicator', value)
 	}
 
+	/**
+	 * Рисовать ли разделитель между соседними секциями группировки. Рисует его
+	 * разметка, по секциям нарисованного (`drawnSections` фасада).
+	 */
+	get groupSeparators(): boolean {
+		return this._groupSeparators
+	}
+
+	set groupSeparators(value: boolean) {
+		if (this._groupSeparators === value) return
+
+		this._groupSeparators = value
+		this.events.emit('change:groupSeparators', value)
+	}
+
 	/** Модификатор вида — с префиксом `--view-`; `swap` пропускает пустое значение. */
 	protected _applyView(newValue: TListBoxView | undefined, oldValue?: TListBoxView): void {
 		this._classes.swap({
@@ -184,6 +203,7 @@ export class TListBox
 			contentFit: this._contentFit,
 			scrollBehavior: this._scrollBehavior,
 			indicator: this._indicator,
+			groupSeparators: this._groupSeparators,
 		} as IListBoxProps
 	}
 }
