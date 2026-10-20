@@ -1,5 +1,5 @@
 import { vi } from 'vitest'
-import { TEvented } from '@soldy-ui/core'
+import { TCollectionComponent, TCollectionItemComponent, TEvented } from '@soldy-ui/core'
 import { TPluginBundle } from '@soldy-ui/plugins'
 import type { IPlugin, IPluginConstructor, IPluginContext } from '@soldy-ui/plugins'
 import * as exported from '../content/descriptors'
@@ -31,6 +31,16 @@ export function exportedDescriptors(): Array<[string, IComponentDescriptor]> {
 
 	return result
 }
+
+/**
+ * Фасад коллекции или её элемента — класс дескриптора наследует
+ * `TCollectionComponent` или `TCollectionItemComponent`. Своего инстанса без
+ * владельца у них нет. Дескриптор без своего класса (`CollectionDescriptor`)
+ * фасадом не считается: его класс — `Object`.
+ */
+export const isFacade = (descriptor: IComponentDescriptor): boolean =>
+	descriptor.ctor.prototype instanceof TCollectionComponent ||
+	descriptor.ctor.prototype instanceof TCollectionItemComponent
 
 /**
  * Контекст установки плагина для тестов без адаптера фреймворка.
