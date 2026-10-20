@@ -514,7 +514,9 @@ ARIA пускает только `option` и `group` (axe — `aria-required-chi
   `core/__tests__/popover.spec.ts`,
   `plugins/__tests__/popover-focus.plugin.spec.ts`,
   `plugins/__tests__/swipe.plugin.spec.ts`,
-  `ui/vue/__tests__/popover.spec.ts`, `playground/vue/browser/popover.spec.ts`
+  `ui/vue/__tests__/popover.spec.ts`, `ui/react/__tests__/popover.spec.tsx`
+  (у React ещё якорь — корень значением рендера: StrictMode, серверная
+  разметка и гидратация, смена тега), `playground/vue/browser/popover.spec.ts`
   и `playground/vue/browser/popover-swipe.spec.ts`.
 - **Menu** — Menu Button (APG): кнопка потребителя в слоте `trigger` внутри
   корня, как у Popover, панель — `Frame` с `role="menu"`, `id` и
@@ -824,7 +826,8 @@ ARIA пускает только `option` и `group` (axe — `aria-required-chi
   не плагина (`tooltip/trigger/document-state.ts`, как замок прокрутки).
   Сторожат `core/__tests__/tooltip.spec.ts`,
   `plugins/__tests__/tooltip-trigger.plugin.spec.ts`,
-  `ui/vue/__tests__/tooltip.spec.ts` и `playground/vue/browser/tooltip.spec.ts`.
+  `ui/vue/__tests__/tooltip.spec.ts`, `ui/react/__tests__/tooltip.spec.tsx` и
+  `playground/vue/browser/tooltip.spec.ts`.
 - **Dialog** — Dialog (Modal) pattern: `role="dialog"` и `aria-modal="true"`
   на панели, имя — видимый заголовок (`aria-labelledby` на слот `title`,
   который рисуется всегда; `id` он берёт из набора `titleAria`). `TAriaPlugin`
@@ -884,7 +887,8 @@ ARIA пускает только `option` и `group` (axe — `aria-required-chi
   `core/__tests__/dialog.spec.ts`,
   `plugins/__tests__/modal-focus.plugin.spec.ts`,
   `plugins/__tests__/dialog-layout.plugin.spec.ts`,
-  `ui/vue/__tests__/dialog.spec.ts` и `playground/vue/browser/dialog.spec.ts`.
+  `ui/vue/__tests__/dialog.spec.ts`, `ui/react/__tests__/dialog.spec.tsx` и
+  `playground/vue/browser/dialog.spec.ts`.
 - **Drawer** — выезжающая панель у края экрана. Своего паттерна APG у неё нет:
   это модальный Dialog, и модальность у неё общая с окном (`TModalLayer`, см.
   «Слой оверлея») — роль, `aria-modal`, имя от заголовка, крестик, Escape,
@@ -930,7 +934,9 @@ ARIA пускает только `option` и `group` (axe — `aria-required-chi
   `contained` пропал бы. Сторожат `core/__tests__/drawer.spec.ts`,
   `plugins/__tests__/swipe.plugin.spec.ts` (касание — его группа «касание»),
   `plugins/__tests__/drawer-layout.plugin.spec.ts`,
-  `ui/vue/__tests__/drawer.spec.ts` и `playground/vue/browser/drawer.spec.ts`
+  `ui/vue/__tests__/drawer.spec.ts`, `ui/react/__tests__/drawer.spec.tsx` (у
+  React смена `contained` на лету рисует панель новым узлом, и замок прокрутки
+  встаёт кадром позже) и `playground/vue/browser/drawer.spec.ts`
   (жест пальцем — группа «пальцем»: за полосу и от абзаца в теле панель
   закрывается, а протяжка поперёк оси и по телу, которое прокручивается
   вдоль оси, прокручивает тело, и панель остаётся открытой).

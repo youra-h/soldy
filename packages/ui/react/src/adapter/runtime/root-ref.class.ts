@@ -29,17 +29,28 @@
  * атрибуты потребителя, — и ставит его там React, как любой атрибут. Такому
  * корню — `bind`: только привязка к `TElementPlugin`.
  *
- * Уничтоженный контекст ref отпускает — и его, и `ref` потребителя: узел,
- * ещё отданный потребителю, отпускается, и ссылок не остаётся ни на того, ни
- * на другого. Ref React хранит в узле своего дерева (fiber), и снятый узел
- * живёт дольше размонтирования: событийная система React DOM помнит узел
- * последнего события до следующего события на странице (`return_targetInst`).
- * У снятого узла React чистит пропсы, состояние и эффекты, но не `ref` — и
- * ref, замкнутый на контекст, держал бы через него размонтированный компонент
- * целиком: у таблицы — все строки с записями. Привязывать к уничтоженному
- * контексту нечего: его набор плагинов уничтожен вместе с ним, — и отдавать
- * потребителю тоже: пересобранный компонент (StrictMode, `<Activity>`) отдаст
- * ему корень своим контекстом.
+ * **Корень значением.** Разметке, которой корень нужен значением рендера, —
+ * Popover и Tooltip отдают его своему Frame якорем, — ref корня отдаёт узел
+ * подпиской (`TRootSource`: `subscribe` и `getSnapshot`), её читает хук
+ * `useRootElement`. Снимок — тот же узел, что ref корня получил от React и
+ * отдал потребителю: своё хранилище было бы вторым путём к нему. Подписчиков
+ * ref оповещает, только когда сменился сам узел, — смена `ref` потребителя их
+ * не трогает. Подписан только тот, кто корень значением читает, и множество
+ * подписчиков заводится с первым из них: у строк таблицы и их чекбоксов его
+ * нет. Корень внутри обёртки (`bind`) значением не отдаётся: снаружи от него
+ * видна обёртка.
+ *
+ * Уничтоженный контекст ref отпускает — и его, и `ref` потребителя, и
+ * подписчиков корня: узел, ещё отданный потребителю, отпускается, и ссылок не
+ * остаётся ни на кого из них. Ref React хранит в узле своего дерева (fiber), и
+ * снятый узел живёт дольше размонтирования: событийная система React DOM
+ * помнит узел последнего события до следующего события на странице
+ * (`return_targetInst`). У снятого узла React чистит пропсы, состояние и
+ * эффекты, но не `ref` — и ref, замкнутый на контекст, держал бы через него
+ * размонтированный компонент целиком: у таблицы — все строки с записями.
+ * Привязывать к уничтоженному контексту нечего: его набор плагинов уничтожен
+ * вместе с ним, — и отдавать потребителю тоже: пересобранный компонент
+ * (StrictMode, `<Activity>`) отдаст ему корень своим контекстом.
  *
  * Классом, а не замыканием в `useAdapter`: замыкание держит всю область
  * вызова, где его создали, а область `useAdapter` держит ещё пропсы и связку
@@ -64,6 +75,21 @@ import type { IAdapterContext } from '@soldy-ui/setup'
  * ждёт, — `useRef<HTMLButtonElement>(null)` сюда подходит.
  */
 export type TConsumerRef = Ref<Element> | undefined
+
+/**
+ * Корень компонента значением — только для чтения: подписка на смену узла и
+ * снимок, как их ждёт `useSyncExternalStore`. Читает его `useRootElement`, а
+ * узел ставит ref корня, а не тот, кто подписан.
+ */
+export type TRootSource = {
+	/** Подписка на смену корня; отдаёт отписку. */
+	readonly subscribe: (listener: () => void) => () => void
+	/** Корень сейчас: до коммита, после снятия и у уничтоженного — `null`. */
+	readonly getSnapshot: () => Element | null
+}
+
+/** Отписка уничтоженного ref: подписчика он не заводил. */
+const unsubscribed = (): void => {}
 
 /** Функция или объект `{ current }` — то, что React принимает как `ref`. */
 function isConsumerRef(value: unknown): value is NonNullable<TConsumerRef> {
@@ -109,7 +135,7 @@ function give(ref: NonNullable<TConsumerRef>, node: Element): () => void {
 	}
 }
 
-export class TRootRef {
+export class TRootRef implements TRootSource {
 	/** Контекст корня; уничтожен — `null`, и ref больше ничего не делает. */
 	private _context: IAdapterContext | null
 	/** Корень, который ref корня получил от React последним; снят — `null`. */
@@ -118,6 +144,8 @@ export class TRootRef {
 	private _consumer: TConsumerRef = undefined
 	/** Какой узел и какому `ref` потребителя отдан. */
 	private _given: TGiven | null = null
+	/** Подписчики смены корня; заводятся с первым — у большинства компонентов их нет. */
+	private _listeners: Set<() => void> | null = null
 
 	constructor(adapter: IAdapterContext) {
 		this._context = adapter
@@ -131,10 +159,34 @@ export class TRootRef {
 	readonly attach = (element: Element | null): void => {
 		if (!this._context) return
 
+		const changed = element !== this._node
+
 		this._context.bindElement(element)
 		this._node = element
 		this.sync()
+
+		// Подписчикам — после привязки: корень, который они прочтут, уже у плагинов
+		if (changed) this._listeners?.forEach((listener) => listener())
 	}
+
+	/**
+	 * Подписка на смену корня (`TRootSource`). Стрелка: её отдают
+	 * `useSyncExternalStore` без `this`. Уничтоженный подписчика не заводит:
+	 * узла у него больше не будет.
+	 */
+	readonly subscribe = (listener: () => void): (() => void) => {
+		if (!this._context) return unsubscribed
+
+		this._listeners ??= new Set()
+		this._listeners.add(listener)
+
+		return () => {
+			this._listeners?.delete(listener)
+		}
+	}
+
+	/** Корень сейчас (`TRootSource`). Стрелка — по той же причине, что `subscribe`. */
+	readonly getSnapshot = (): Element | null => this._node
 
 	/** Ref корня внутри обёртки: только привязка — `ref` потребителя получает обёртка. */
 	readonly bind = (element: Element | null): void => {
@@ -164,11 +216,16 @@ export class TRootRef {
 		if (node && ref) this._given = { ref, node, release: give(ref, node) }
 	}
 
-	/** Контекст уничтожен: узел отпускается, ссылок на контекст и потребителя не остаётся. */
+	/**
+	 * Контекст уничтожен: узел отпускается, ссылок на контекст, потребителя и
+	 * подписчиков не остаётся. Подписчиков не оповещают: компонент или снят,
+	 * или собирается заново — со своим ref корня.
+	 */
 	private _destroy(): void {
 		this._context = null
 		this._node = null
 		this._consumer = undefined
+		this._listeners = null
 		this.sync()
 	}
 }

@@ -39,6 +39,8 @@ import {
 	Button,
 	CheckBox,
 	ComponentView,
+	Dialog,
+	Drawer,
 	Field,
 	Frame,
 	Icon,
@@ -46,6 +48,7 @@ import {
 	Label,
 	ListBox,
 	Pagination,
+	Popover,
 	ProgressLinear,
 	ProgressSpinner,
 	RadioGroup,
@@ -57,10 +60,13 @@ import {
 	Table,
 	Tabs,
 	Textarea,
+	Tooltip,
 	type AccordionItemProps,
 	type AccordionProps,
 	type ButtonProps,
 	type ComponentViewProps,
+	type DialogProps,
+	type DrawerProps,
 	type FieldProps,
 	type FrameProps,
 	type IconProps,
@@ -68,6 +74,7 @@ import {
 	type ListBoxItemProps,
 	type ListBoxProps,
 	type PaginationProps,
+	type PopoverProps,
 	type ProgressLinearProps,
 	type ProgressSpinnerProps,
 	type RadioGroupItemProps,
@@ -80,6 +87,7 @@ import {
 	type TabsContentProps,
 	type TabsItemProps,
 	type TabsProps,
+	type TooltipProps,
 	toControlAttrs,
 	toRootForward,
 	toRootLayout,
@@ -104,7 +112,11 @@ type TProbeProps = ButtonProps &
 	SliderProps &
 	RatingProps &
 	PaginationProps &
-	ScrollerProps
+	ScrollerProps &
+	PopoverProps &
+	TooltipProps &
+	DialogProps &
+	DrawerProps
 
 /** Панель рисуется, пока активен её таб, — и только внутри набора. */
 function TabsContentProbe(props: TabsContentProps): ReactNode {
@@ -117,8 +129,8 @@ function TabsContentProbe(props: TabsContentProps): ReactNode {
 
 /**
  * Компонент, класс его корня и пропсы, без которых он не рисуется: у Icon
- * тега по умолчанию нет. Frame уходит телепортом в `body` — корень ищется
- * по документу.
+ * тега по умолчанию нет. Frame, окно и выезжающая панель уходят телепортом в
+ * `body` — корень ищется по документу.
  */
 const COMPONENTS: ReadonlyArray<
 	readonly [string, ComponentType<TProbeProps>, string, Partial<TProbeProps>]
@@ -139,6 +151,10 @@ const COMPONENTS: ReadonlyArray<
 	['Rating', Rating, '.so-rating', {}],
 	['Pagination', Pagination, '.so-pagination', {}],
 	['Scroller', Scroller, '.so-scroller', {}],
+	['Popover', Popover, '.so-popover', {}],
+	['Tooltip', Tooltip, '.so-tooltip', {}],
+	['Dialog', Dialog, '.so-dialog', {}],
+	['Drawer', Drawer, '.so-drawer', {}],
 ]
 
 /** Общие пропсы элементов коллекций в таблице. */
@@ -385,7 +401,8 @@ function ListBoxItemProbe(props: ListBoxItemProps): ReactNode {
  * потребителя, и узел, с которым приходит `element:ready`. Это один узел — у
  * всех, кроме таблицы: её `ref` получает окно, внешний узел, куда ложатся
  * атрибуты потребителя, а к `TElementPlugin` привязан корень `table`. Поле и
- * элемент коллекции отдают корень, а не `<input>` и не строку.
+ * элемент коллекции отдают корень, а не `<input>` и не строку, окно и
+ * выезжающая панель — панель в телепорте, а не подложку.
  */
 const ROOTS: ReadonlyArray<
 	readonly [string, (props: TRefProbeProps) => ReactNode, string, string]
@@ -398,6 +415,10 @@ const ROOTS: ReadonlyArray<
 		'.so-component-view',
 	],
 	['Frame', (props) => <Frame {...props} />, '.so-frame', '.so-frame'],
+	['Popover', (props) => <Popover {...props} />, '.so-popover', '.so-popover'],
+	['Tooltip', (props) => <Tooltip {...props} />, '.so-tooltip', '.so-tooltip'],
+	['Dialog', (props) => <Dialog {...props} />, '.so-dialog', '.so-dialog'],
+	['Drawer', (props) => <Drawer {...props} />, '.so-drawer', '.so-drawer'],
 	['Field', (props) => <Field {...props} />, '.so-field', '.so-field'],
 	['Icon', (props) => <Icon tag="i" {...props} />, '.so-icon', '.so-icon'],
 	['Label', (props) => <Label {...props} />, '.so-label', '.so-label'],
@@ -823,9 +844,7 @@ describe('корень внутри обёртки: атрибуты снару�
  * Имена стиля плагина раскладки React получает в camelCase (`z-index` →
  * `zIndex`, сторожит `frame.spec.tsx`), а пользовательское свойство — под
  * своим именем: `--dialogWidth` было бы другим свойством, и тема его не
- * прочла бы. Так размер отдают плагины раскладки окна и выезжающей панели, но
- * этих компонентов в React пока нет, и правило проверяется на самой раскладке
- * корня.
+ * прочла бы. Так размер отдают плагины раскладки окна и выезжающей панели.
  */
 describe('раскладка корня: пользовательское свойство — под своим именем', () => {
 	it('--* из layout_styles доходит до узла как есть', () => {
@@ -833,6 +852,22 @@ describe('раскладка корня: пользовательское сво
 		const { root } = mount(<div {...layout} />)
 
 		expect(root().style.getPropertyValue('--so-dialog-width')).toBe('320px')
+	})
+
+	it('Dialog и Drawer: размер — переменной под её именем', () => {
+		mount(
+			<>
+				<Dialog width={320} />
+				<Drawer height="40vh" />
+			</>,
+		)
+
+		expect(
+			find(document, '.so-dialog', HTMLElement).style.getPropertyValue('--so-dialog-width'),
+		).toBe('320px')
+		expect(
+			find(document, '.so-drawer', HTMLElement).style.getPropertyValue('--so-drawer-height'),
+		).toBe('40vh')
 	})
 })
 

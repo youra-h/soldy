@@ -781,6 +781,18 @@ describe('пресет строки', () => {
 	)
 
 	/**
+	 * `offset={40}` в коде колонки пропа — синтаксисом хоста, как `WIDTH_CODE`
+	 * у заглушки. Хост с окном и генератором кода без строки уронит проверку.
+	 */
+	const OFFSET_CODE: Record<string, string> = {
+		vue: ':offset="40"',
+		react: 'offset={40}',
+		svelte: 'offset={40}',
+		solid: 'offset={40}',
+		webc: 'offset="40"',
+	}
+
+	/**
 	 * Набор — в само поле строки, а не значением мимо контрола: проверяется
 	 * преобразование текста. `10%` уходит строкой как есть, `40` — числом, и
 	 * окно получает его пикселями.
@@ -816,7 +828,7 @@ describe('пресет строки', () => {
 				.map((view) => view.props('code'))
 
 			if (hostOf(framework).snippets) {
-				expect(propCode).toContain(':offset="40"')
+				expect(propCode).toContain(OFFSET_CODE[framework])
 				expect(instanceCode).toContain('instance.offset = 40')
 			}
 		},
