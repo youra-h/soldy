@@ -2283,7 +2283,7 @@ Svelte 5 на рунах. Структура зеркалит React, потом�
 
 ## Layer 8c: Solid Adapter (`packages/ui/solid/src`)
 
-### ✅ IMPLEMENTED (Component / ComponentView / Stylable / Control / Interactive / ValueControl / InputControl / Textable / Button / Icon / Label / Frame / ProgressSpinner / ProgressLinear / Skeleton / Input / CheckBox / Switch / Slider / Rating / RadioGroup / ListBox / Tabs / Accordion / Pagination / Scroller / Table / Virtual / DragAndDrop)
+### ✅ IMPLEMENTED (Component / ComponentView / Stylable / Control / Interactive / ValueControl / InputControl / Textable / Button / Icon / Label / Frame / Popover / Tooltip / ProgressSpinner / ProgressLinear / Skeleton / Input / CheckBox / Switch / Slider / Rating / RadioGroup / ListBox / Tabs / Accordion / Pagination / Scroller / Table / Virtual / DragAndDrop)
 
 Структура зеркалит React — JSX и колбэк-пропы делают их почти близнецами, —
 а механика ближе к Vue и Svelte: тело компонента выполняется один раз, и
@@ -2307,7 +2307,9 @@ Svelte 5 на рунах. Структура зеркалит React, потом�
   списка); `roleIcon(role)` — компонент
   иконки по роли для `tag` у Icon, один на роль, — он же рисует отметку
   CheckBox без слота; `renderSlot`, `hasSlot` и `resolveSlot` — слот,
-  развёрнутый один раз поверх `children()`; `ResolvedSlot` — то же
+  развёрнутый один раз поверх `children()`; `liveScope` — живой scope слота:
+  объект с геттерами по ключам scope, с которым функция слота зовётся один
+  раз (триггер Popover и Tooltip); `ResolvedSlot` — то же, что `resolveSlot`,
   компонентом, там, где он стоит в разметке, — под слоем лифта владельца
   коллекции; `relaySlot` — проброс слота элемента коллекции владельцем;
   `chainHandler` — своё, затем обработчик потребителя, и в форме пары
@@ -2315,7 +2317,9 @@ Svelte 5 на рунах. Структура зеркалит React, потом�
 - `adapter/runtime/` — `useAdapter` поверх связки
   `adapter.connect(SolidProfile)` (callback-ref корня `ref` и его половины:
   `bindRef` — только привязка к `TElementPlugin`, `consumerRef` — только `ref`
-  потребителя, для корня внутри обёртки) и `useCollectionAdapter` — связка
+  потребителя, для корня внутри обёртки; аксессор привязанного корня
+  `rootElement`, как `rootElement` у Vue, — якорь панели Popover и Tooltip)
+  и `useCollectionAdapter` — связка
   фасада коллекции: те же состояние, входы, события, приём и уничтожение, но
   без `ctrl` и привязки узла, а атрибуты — из того, что не съел компонент;
   `joinState` — состояние двух контекстов компонента (свой и фасада) одним
@@ -2363,6 +2367,18 @@ Svelte 5 на рунах. Структура зеркалит React, потом�
   бы второй экземпляр. Так же — слот, по которому разметка решает про обёртку
   (`leading` и `trailing` у Input) или про запасное (отметка CheckBox, текст
   Label). Остальные слоты разметка рисует `renderSlot` прямо.
+- **Слот триггера — живой scope (`liveScope`).** Связка триггера Popover
+  (`triggerAria`, `triggerDataset`) меняется на каждое открытие, ссылка
+  триггера Tooltip — со сменой `type`, а свежий объект scope перезапускал бы
+  функцию слота — и литералом в разметке, и `resolveSlot`: Solid рисовал бы
+  новый триггер на каждое открытие, и фокус с прежнего узла падал бы на
+  `body`. Поэтому функция слота триггера получает scope с геттерами один раз,
+  а прочитанное в её разметке — `<Button {...scope.triggerAria} />`, спред
+  компилятор отдаёт аксессором — обновляется на месте. Деструктуризация
+  читает scope при вызове функции и перезапускает её, как раньше. Тип scope
+  тот же, что в дескрипторе: значения, а не аксессоры. Якорь панели — корень
+  аксессором `rootElement`: связка отдаёт узел только callback-ref, а сигнала
+  компонент не заводит.
 - **Текст поля — `ref` поля `fieldText`**: привязку `value` Solid пишет в
   узел на каждую смену значения, не сверяя с узлом, — набор возвращал бы узлу
   его же текст, и браузер переставал бы проверять `minlength`. Эффект в `ref`

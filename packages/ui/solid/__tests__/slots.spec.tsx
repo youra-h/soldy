@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect, expectTypeOf } from 'vitest'
-import { createSignal, type JSX } from 'solid-js'
+import { createRenderEffect, createRoot, createSignal, type JSX } from 'solid-js'
 import {
 	ButtonDescriptor,
 	type CheckBoxDescriptor,
@@ -14,17 +14,21 @@ import {
 import { TButton } from '@soldy-ui/core'
 import {
 	Button,
+	liveScope,
+	renderSlot,
 	type ButtonProps,
 	type CheckBoxProps,
 	type FrameProps,
 	type InputProps,
 	type LabelProps,
 	type PaginationProps,
+	type PopoverProps,
 	type ProgressLinearProps,
 	type RatingProps,
 	type ScrollerProps,
 	type SliderProps,
 	type SwitchProps,
+	type TooltipProps,
 	type UseDomProps,
 } from '@soldy-ui/solid'
 import { mount } from './mount'
@@ -236,5 +240,106 @@ describe('содержимое — только слот default', () => {
 		expectTypeOf<PaginationProps>().not.toHaveProperty('children')
 		expectTypeOf<ScrollerProps>().toHaveProperty('children')
 		expectTypeOf<ScrollerProps['children']>().toEqualTypeOf<JSX.Element>()
+	})
+
+	/**
+	 * Содержимое поповера и текст подсказки — их панель, слот по умолчанию; то,
+	 * у чего панель встаёт, — слот `trigger` со scope связки.
+	 */
+	it('у Popover и Tooltip children — содержимое панели, триггер — слот trigger', () => {
+		expectTypeOf<PopoverProps['children']>().toEqualTypeOf<JSX.Element>()
+		expectTypeOf<TooltipProps['children']>().toEqualTypeOf<JSX.Element>()
+		expectTypeOf<PopoverProps>().toHaveProperty('trigger')
+		expectTypeOf<TooltipProps>().toHaveProperty('trigger')
+	})
+})
+
+/**
+ * Живой scope (`liveScope`) — объект с геттерами по ключам scope: функция
+ * слота получает его один раз, а читают его там, где он нужен. Прочитанное в
+ * разметке компилятор Solid отдаёт аксессором, и смена scope обновляет его на
+ * месте; прочитанное в теле функции — деструктуризация — перезапускает её,
+ * как свежий объект scope.
+ */
+describe('живой scope', () => {
+	type TScope = { text: string; aria: Record<string, string> }
+
+	/** Scope от сигнала теста — так scope слота меняет компонент. */
+	function live() {
+		const [text, setText] = createSignal('a')
+		const scope = liveScope<TScope>(() => ({ text: text(), aria: { 'aria-label': text() } }))
+
+		return { scope, setText }
+	}
+
+	it('прочитанный в разметке — узел тот же, значение новое', () => {
+		const { scope, setText } = live()
+		const { container } = mount(() => (
+			<div>
+				{renderSlot(
+					(slot: TScope) => (
+						<b {...slot.aria}>{slot.text}</b>
+					),
+					scope,
+				)}
+			</div>
+		))
+		const node = container.querySelector('b')
+
+		setText('b')
+
+		expect(container.querySelector('b')).toBe(node)
+		expect(node?.textContent).toBe('b')
+		expect(node?.getAttribute('aria-label')).toBe('b')
+	})
+
+	it('деструктурированный — значение тоже новое', () => {
+		const { scope, setText } = live()
+		const { container } = mount(() => (
+			<div>
+				{renderSlot(
+					({ text }: TScope) => (
+						<b>{text}</b>
+					),
+					scope,
+				)}
+			</div>
+		))
+
+		setText('b')
+
+		expect(container.querySelector('b')?.textContent).toBe('b')
+	})
+
+	it('ключи — перечислимые: спред и Object.keys видят текущие значения', () => {
+		const { scope, setText } = live()
+
+		setText('b')
+
+		expect(Object.keys(scope)).toEqual(['text', 'aria'])
+		expect({ ...scope }).toEqual({ text: 'b', aria: { 'aria-label': 'b' } })
+	})
+
+	/**
+	 * Ключи живой scope берёт первым чтением вне слежения: собранный внутри
+	 * вычисления (мемо разворота слота), он не подписывает его на scope — иначе
+	 * смена scope перезапускала бы функцию слота, как свежий объект.
+	 */
+	it('сборка за аксессором scope не следит', () => {
+		const [text, setText] = createSignal('a')
+		let runs = 0
+		const dispose = createRoot((dispose) => {
+			createRenderEffect(() => {
+				runs += 1
+				liveScope(() => ({ text: text() }))
+			})
+
+			return dispose
+		})
+
+		setText('b')
+		dispose()
+
+		expect(runs).toBe(1)
 	})
 })
