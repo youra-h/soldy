@@ -38,7 +38,13 @@ import {
 } from '@soldy-ui/angular'
 import { find, findIn, mountHost, nextFrame } from './mount'
 
+/**
+ * Хосты полей. Селектор свой у этого хоста, `CheckBoxHost` и `SwitchHost`:
+ * их разметка различается только тегом поля, а тег в id компонента Angular не
+ * входит — без селектора id совпал бы (предупреждение NG0912).
+ */
 @Component({
+	selector: 'probe-input-focus',
 	standalone: true,
 	imports: [TInputComponent],
 	template: `<so-input [ctrl]="ctrl" />`,
@@ -59,6 +65,7 @@ class InputLeadingHost {
 }
 
 @Component({
+	selector: 'probe-check-box-focus',
 	standalone: true,
 	imports: [TCheckBoxComponent],
 	template: `<so-check-box [ctrl]="ctrl" />`,
@@ -68,6 +75,7 @@ class CheckBoxHost {
 }
 
 @Component({
+	selector: 'probe-switch-focus',
 	standalone: true,
 	imports: [TSwitchComponent],
 	template: `<so-switch [ctrl]="ctrl" />`,
