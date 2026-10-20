@@ -1,6 +1,7 @@
 import { TBasePlugin } from '../../base'
 import type { IPluginContext } from '../../base'
 import { TElementPlugin } from '../element'
+import { TCollectionElements } from '../collection'
 import { isFocusableElement } from '../../utils'
 import type { IDomEventTarget } from '../../utils'
 import type { IControl } from '@soldy-ui/core'
@@ -41,6 +42,17 @@ const NATIVE_ACTIVATION = new Set(['button', 'input', 'select', 'textarea'])
  *    котором он стоит. Писатель фокуса один — этот плагин: своего обработчика
  *    `change:focused` у плагинов компонентов нет.
  *
+ *    Узла правило не нашло, корень фокус не принял, а компонент — владелец
+ *    коллекции (`TCollectionElements` в наборе): остановка в модели уже
+ *    новая, а её узел ещё не нарисован — день нового месяца календаря,
+ *    страница за окном пагинации, таб, добавленный в том же такте. Тогда
+ *    запись ждёт узла: элемент вошёл в коллекцию или объявлен его узел —
+ *    правило зовётся снова, и узел, который оно нашло, получает фокус.
+ *    Ожидание одно; снимают его запись `false` и `blur()`, любой `focusin` в
+ *    документе, снятие корня и `destroy()`. `focus()` идёт тем же путём, что
+ *    запись `true`. `focused` назад не пишется ни после записи, после которой
+ *    фокус не встал, ни после снятого ожидания.
+ *
  * 3. Пробрасывает сырой `click`. Нужен той стороне, у которой на руках только
  *    инстанс: в шаблоне DOM-события и так доступны через fallthrough
  *    (`<Button @click="...">`), а через ctrl — только отсюда.
@@ -54,6 +66,8 @@ export class TActionPlugin extends TBasePlugin<any, TActionPluginEvents> {
 	/** Правило узла фокуса из опций дескриптора; нет — фокус держит корень. */
 	private _focusTarget: TFocusTarget | null = null
 	private _syncingFocus = false
+	/** Снять ожидание узла фокуса (`_wait`); `null` — фокус узла не ждёт. */
+	private _waiting: (() => void) | null = null
 	/** Пробел нажат на корне: клик — когда его отпустят, как у `<button>`. */
 	private _spaceDown = false
 
@@ -90,28 +104,25 @@ export class TActionPlugin extends TBasePlugin<any, TActionPluginEvents> {
 	}
 
 	/**
-	 * Перевести фокус на контрол — на его узел фокуса (`_focusNode`): у поля
-	 * это `<input>`, а не коробка вокруг.
-	 *
-	 * Узел плагину приходит как `Element`, поэтому фокусируемость проверяется
-	 * гардом: у корня-`svg` фокус есть, а у произвольного `Element` — нет.
+	 * Перевести фокус на контрол — на его узел фокуса (`_moveFocus`): у поля
+	 * это `<input>`, а не коробка вокруг. Путь тот же, что у записи
+	 * `focused = true`, и узла, которого ещё нет, `focus()` ждёт так же.
 	 */
 	focus(): void {
 		const element = this._element
 
-		if (!element) return
-
-		const node = this._focusNode(element)
-
-		if (isFocusableElement(node)) node.focus()
+		if (element) this._moveFocus(element)
 	}
 
 	/**
 	 * Снять фокус с контрола — с того узла внутри корня, на котором он стоит,
 	 * как запись `focused = false`: у поля фокус держит вложенный `<input>`, и
-	 * `blur()` корня его бы не снял.
+	 * `blur()` корня его бы не снял. Фокус, который ещё ждёт узла, снимается
+	 * тоже: иначе узел, нарисованный позже, получил бы фокус после `blur()`.
 	 */
 	blur(): void {
+		this._stopWaiting()
+
 		const element = this._element
 		const active = element ? this._activeWithin(element) : null
 
@@ -136,6 +147,9 @@ export class TActionPlugin extends TBasePlugin<any, TActionPluginEvents> {
 	}
 
 	private _detach(): void {
+		// Узел в снятом корне не ждут: новый `ready` корня повторит запись
+		this._stopWaiting()
+
 		const target: IDomEventTarget | null = this._element
 
 		if (!target) return
@@ -271,10 +285,15 @@ export class TActionPlugin extends TBasePlugin<any, TActionPluginEvents> {
 	 * В фокусе ли компонент, считается по корню, как в обратную сторону
 	 * (`focusin` и `focusout` корня): фокус внутри корня — на кнопке очистки
 	 * поля или в поле шапки ListBox — `focused = true` не двигает. Ставит
-	 * фокус запись на узел фокуса (`_focusNode`), снимает — с узла внутри
+	 * фокус запись на узел фокуса (`_moveFocus`), снимает — с узла внутри
 	 * корня, на котором он стоит.
+	 *
+	 * Запись `false` снимает и ожидание узла — до проверки, есть ли что
+	 * снимать: пока узла ждут, фокуса в корне нет.
 	 */
 	private readonly _onFocusedChange = (value: boolean): void => {
+		if (!value) this._stopWaiting()
+
 		if (this._syncingFocus) return
 
 		const element = this._element
@@ -289,9 +308,7 @@ export class TActionPlugin extends TBasePlugin<any, TActionPluginEvents> {
 
 		try {
 			if (value) {
-				const node = this._focusNode(element)
-
-				if (isFocusableElement(node)) node.focus()
+				this._moveFocus(element)
 			} else if (isFocusableElement(active)) {
 				active.blur()
 			}
@@ -301,16 +318,103 @@ export class TActionPlugin extends TBasePlugin<any, TActionPluginEvents> {
 	}
 
 	/**
-	 * Узел фокуса компонента: что нашло правило дескриптора, иначе корень.
+	 * Фокус — на узел фокуса компонента: что нашло правило дескриптора, иначе
+	 * корень. Узла правило не нашло, а корень фокус не принял — ждать узла
+	 * (`_wait`). Попытка заменяет прежнее ожидание: оно всегда одно.
 	 *
 	 * Правило зовётся на каждую запись, а не один раз на `ready`: узел фокуса
 	 * бывает новым — у Tabs остановка переезжает с активацией.
+	 *
+	 * Узел плагину приходит как `Element`, поэтому фокусируемость проверяется
+	 * гардом: у корня-`svg` фокус есть, а у произвольного `Element` — нет.
 	 */
-	private _focusNode(root: Element): Element {
+	private _moveFocus(root: Element): void {
+		this._stopWaiting()
+
+		const node = this._ruleNode(root)
+
+		if (node) {
+			if (isFocusableElement(node)) node.focus()
+
+			return
+		}
+
+		if (isFocusableElement(root)) root.focus()
+
+		if (this._activeWithin(root) === null) this._wait(root)
+	}
+
+	/** Узел, который нашло правило дескриптора; без правила и когда не нашло — `null`. */
+	private _ruleNode(root: Element): Element | null {
 		const rule = this._focusTarget
 		const ctx = this._ctx
 
-		return (rule && ctx ? rule(root, ctx) : null) ?? root
+		return rule && ctx ? rule(root, ctx) : null
+	}
+
+	/**
+	 * Ждать узла фокуса, которого правило не нашло: у владельца коллекции
+	 * остановка в модели уже новая, а её узел ещё не нарисован — день нового
+	 * месяца, страница за окном, таб, добавленный в том же такте. Узел приносит
+	 * элемент коллекции, и ждёт его помощник реестра узлов
+	 * (`TCollectionElements.waitFor`), взятого в момент записи, как его берут
+	 * правила. Без правила и без коллекции ждать нечего: узел фокуса — корень,
+	 * и он уже отказал.
+	 *
+	 * Пока ждём, слушаем `focusin` документа в фазе перехвата: фокус, пришедший
+	 * куда угодно, ожидание снимает (`_onDocumentFocusIn`).
+	 */
+	private _wait(root: Element): void {
+		const elements = this._focusTarget ? this._ctx?.get(TCollectionElements) : undefined
+
+		if (!elements) return
+
+		const doc = root.ownerDocument
+		const stop = elements.waitFor(this._focusFound)
+
+		doc.addEventListener('focusin', this._onDocumentFocusIn, true)
+
+		this._waiting = () => {
+			stop()
+			doc.removeEventListener('focusin', this._onDocumentFocusIn, true)
+		}
+	}
+
+	/**
+	 * Проверка ожидания — на регистрацию элемента коллекции и на `ready` его
+	 * узла: правило зовётся снова, и цель — его ответ сейчас, а не узел,
+	 * запомненный при записи. Нашло — ожидание снимается до `focus()`: свой
+	 * `focusin` слушатель документа иначе счёл бы чужим. Не нашло — ждать
+	 * дальше.
+	 */
+	private readonly _focusFound = (): boolean => {
+		const root = this._element
+		const node = root ? this._ruleNode(root) : null
+
+		if (!node) return false
+
+		this._stopWaiting()
+
+		if (isFocusableElement(node)) node.focus()
+
+		return true
+	}
+
+	/**
+	 * Фокус пришёл куда-то, пока узла ждали. В корень — компонент уже в
+	 * фокусе; мимо него — пользователь ушёл туда сам, и узел, нарисованный
+	 * позже, увёл бы фокус из поля, где уже печатают. Ожидание снимается,
+	 * `focused` не трогается.
+	 */
+	private readonly _onDocumentFocusIn = (): void => {
+		this._stopWaiting()
+	}
+
+	private _stopWaiting(): void {
+		const stop = this._waiting
+
+		this._waiting = null
+		stop?.()
 	}
 
 	/** Узел под фокусом, если фокус на корне или внутри него; иначе `null`. */

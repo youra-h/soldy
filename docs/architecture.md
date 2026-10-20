@@ -275,7 +275,7 @@ export const ElementPluginDescriptor = definePlugin({
 - `TInputPlugin`, `TInputBoolPlugin`, `TInputControlPlugin` - Value tracking
 - `TIconLayoutPlugin`, `TSkeletonLayoutPlugin`, `TFrameLayoutPlugin` - UI-specific layout
 - `TCollectionBundlesPlugin` (`custom/collection/bundles.plugin.ts`) - реестр item-bundles (uid → IPluginBundle) + ссылка на движок (`engine`)
-- `TCollectionBundlesAccess` / `TCollectionElements` (`custom/collection/`) - доступ к bundles / DOM-элементам (не накапливают; element лежит в bundle, instance в движке)
+- `TCollectionBundlesAccess` / `TCollectionElements` (`custom/collection/`) - доступ к bundles / DOM-элементам (не накапливают; element лежит в bundle, instance в движке); узел, которого ещё нет в документе, ждёт `TCollectionElements.waitFor` — на входе элемента в коллекцию и на `ready` его узла
 
 ### Key Files
 
@@ -3097,7 +3097,7 @@ Key files:
 
 - `packages/plugins/src/custom/collection/bundles.plugin.ts` — TCollectionBundlesPlugin (+ TBundlesEvents) — реестр item-bundles + ссылка на движок; эмитит `engine:bound` при bindEngine, `bundle:registered` / `bundle:unregistered`
 - `packages/plugins/src/custom/collection/collection-bundles-access.plugin.ts` — TCollectionBundlesAccess (abstract, доступ к bundles по uid/item/index)
-- `packages/plugins/src/custom/collection/collection-elements.plugin.ts` — TCollectionElements (доступ к DOM-элементам через bundle.get(TElementPlugin))
+- `packages/plugins/src/custom/collection/collection-elements.plugin.ts` — TCollectionElements (доступ к DOM-элементам через bundle.get(TElementPlugin); ожидание узла — `waitFor`)
 - `packages/plugins/src/custom/tabs/` — TTabsLayoutPlugin / TTabsActiveTabPlugin (мигрированы из \_plugins), TTabsContentWarnPlugin, TTabsKeyboardPlugin (клавиатура APG Tabs: стрелки, Home/End, Delete). `TTabsViewPlugin` — плагин темы oren (`@soldy-ui/theme-oren/setup`), ставится её регистрацией `useTheme`
 - `packages/plugins/src/custom/drag-and-drop/` — TDragPlugin (мигрирован из \_plugins; activate(engine, dragAndDrop): жест — в команду обёртки `move`, использует TCollectionElements + TCollectionBundlesPlugin)
 - `packages/setup/content/extensions/collection/collection.extension.class.ts` — TCollectionExtension (движок берёт у фасада, передаёт его детям, bindEngine + push/register)

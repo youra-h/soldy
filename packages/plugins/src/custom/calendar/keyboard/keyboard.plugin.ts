@@ -1,6 +1,6 @@
 import type { ICalendar, ICalendarViewExtension, TCalendarCollection } from '@soldy-ui/core'
 import { TBasePlugin } from '../../../base'
-import type { IPluginBundle, IPluginContext } from '../../../base'
+import type { IPluginContext } from '../../../base'
 import { TElementPlugin } from '../../element'
 import { TCollectionBundlesPlugin, TCollectionElements } from '../../collection'
 import { isFocusableElement } from '../../../utils'
@@ -58,10 +58,11 @@ const PAGER_OFF: Readonly<Record<TCalendarPager, (view: ICalendarViewExtension) 
  * нажатия и `focus()` из кода, одним путём. Обратно — `change:focusedDate`:
  * если DOM-фокус стоял на дне, он переходит на день новой даты. Узла этого
  * дня может ещё не быть — PageDown увёл сетку в новый месяц, а разметка его
- * ещё не нарисовала. Тогда плагин ждёт регистрации дня в коллекции, а потом
- * его узла (`ready`). Ждёт он день с фокусом коллекции на момент прихода
- * узла, а не дату, запомненную заранее: ожидание одно, и фокус, сменившийся
- * за время ожидания, его заменяет. Снимают ожидание фокус, ушедший из
+ * ещё не нарисовала. Тогда плагин ждёт узла помощником реестра узлов
+ * (`TCollectionElements.waitFor`): на регистрацию дня в коллекции и на
+ * `ready` его узла. Ждёт он день с фокусом коллекции на момент прихода узла,
+ * а не дату, запомненную заранее: ожидание одно, и фокус, сменившийся за
+ * время ожидания, его заменяет. Снимают ожидание фокус, ушедший из
  * календаря, фокус на не-дне и `destroy()`.
  *
  * Фокус на кнопке листания остаётся на ней: листание двигает фокус коллекции
@@ -80,10 +81,11 @@ export class TCalendarKeyboardPlugin extends TBasePlugin<ICalendar, TCalendarKey
 	private _root: Element | null = null
 	private _elements: TCollectionElements | null = null
 	private _engine: TCalendarCollection | null = null
-	/** DOM-фокус ждёт узла дня с фокусом коллекции. */
-	private _following = false
-	/** Снять подписку на `ready` узла, которого ждёт фокус. */
-	private _stopWaiting: (() => void) | null = null
+	/**
+	 * Снять ожидание узла дня с фокусом коллекции; `null` — DOM-фокус узла не
+	 * ждёт.
+	 */
+	private _waiting: (() => void) | null = null
 
 	override install(ctx: IPluginContext): void {
 		super.install(ctx)
@@ -100,10 +102,6 @@ export class TCalendarKeyboardPlugin extends TBasePlugin<ICalendar, TCalendarKey
 
 		// Коллекция привязывается после install — ждём момент привязки
 		bundles?.events.on('engine:bound', (engine) => this._bindEngine(engine))
-		// День собран — может быть, его узла и ждёт фокус
-		bundles?.events.on('bundle:registered', ({ uid, bundle }) =>
-			this._onRegistered(uid, bundle),
-		)
 	}
 
 	override destroy(): void {
@@ -224,7 +222,7 @@ export class TCalendarKeyboardPlugin extends TBasePlugin<ICalendar, TCalendarKey
 
 		if (!engine) return
 
-		if (this._following || dayOf(engine, this._elements, this._activeElement)) this._follow()
+		if (this._waiting || dayOf(engine, this._elements, this._activeElement)) this._follow()
 	}
 
 	/**
@@ -266,54 +264,42 @@ export class TCalendarKeyboardPlugin extends TBasePlugin<ICalendar, TCalendarKey
 		if (isFocusableElement(list)) list.focus()
 	}
 
-	/** DOM-фокус — на день с фокусом коллекции; узла ещё нет — ждать его. */
+	/**
+	 * DOM-фокус — на день с фокусом коллекции; узла ещё нет — ждать его
+	 * помощником реестра узлов: день войдёт в коллекцию, и его узел объявят.
+	 */
 	private _follow(): void {
 		this._stopFollowing()
-		this._following = true
-		this._focusFollowed()
+
+		if (this._focusFollowed()) return
+
+		this._waiting = this._elements?.waitFor(() => this._focusFollowed()) ?? null
 	}
 
 	/**
-	 * Собран день, которого ждёт фокус, — ждать его узла: регистрация идёт при
-	 * сборке дня, раньше, чем фреймворк привяжет узел. Подписка — прямая: шина
-	 * узла умирает вместе с набором дня.
+	 * Узел дня с фокусом коллекции в документе — ожидание снято, фокус на нём.
+	 * Нашёлся ли узел — ответ для помощника ожидания: `false` — ждать дальше.
 	 */
-	private _onRegistered(uid: string | number, bundle: IPluginBundle): void {
-		const engine = this._engine
-
-		if (!engine || !this._following) return
-
-		const item = engine.extensions.batch.items.find((candidate) => candidate.uid === uid)
-		const element = bundle.get(TElementPlugin)
-
-		if (item?.date !== engine.extensions.focus.focusedDate || !element) return
-
-		this._stopWaiting?.()
-
-		const onReady = (): void => this._focusFollowed()
-
-		element.events.on('ready', onReady)
-		this._stopWaiting = () => element.events.off('ready', onReady)
-	}
-
-	/** Узел дня с фокусом коллекции в документе — фокус на него, ожидание снято. */
-	private _focusFollowed(): void {
+	private _focusFollowed(): boolean {
 		const engine = this._engine
 		const element = engine
 			? dayElementOf(engine, this._elements, engine.extensions.focus.focusedDate)
 			: null
 
-		if (!element) return
+		if (!element) return false
 
 		this._stopFollowing()
 
 		if (!element.contains(this._activeElement) && isFocusableElement(element)) element.focus()
+
+		return true
 	}
 
 	private _stopFollowing(): void {
-		this._stopWaiting?.()
-		this._stopWaiting = null
-		this._following = false
+		const stop = this._waiting
+
+		this._waiting = null
+		stop?.()
 	}
 
 	private get _activeElement(): Element | null {
