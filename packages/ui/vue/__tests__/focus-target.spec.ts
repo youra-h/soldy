@@ -12,7 +12,9 @@
  * `plugins/__tests__/focus-target.spec.ts`, здесь — что они находят узел в
  * настоящей разметке, в том числе когда перед главной частью стоит своя
  * остановка Tab, и берут остановку у модели, а не у разметки, которая в такте
- * смены ещё старая.
+ * смены ещё старая. А когда узла новой остановки в разметке ещё нет — день
+ * нового месяца, новый таб, — запись ждёт его и ставит фокус после
+ * перерисовки.
  */
 
 import { describe, it, expect, afterEach } from 'vitest'
@@ -524,6 +526,39 @@ describe('Tabs · остановка по модели', () => {
 		expect(document.activeElement?.textContent?.trim()).toBe('B')
 		expect(document.activeElement?.getAttribute('role')).toBe('tab')
 	})
+
+	/**
+	 * Таб добавили в движок и сделали активным в том же такте, что и запись
+	 * `focused`: остановка в модели — он, а его узла в разметке нет, и корень
+	 * Tabs фокус не держит. Запись ждёт узла: Vue нарисует таб в следующем
+	 * такте, его узел объявят кадром позже — и фокус встанет на него.
+	 */
+	it('новый таб и focused = true в одном такте — после перерисовки фокус на нём', async () => {
+		const ctrl = new TTabs()
+		const engine = createEngineTabs({ items: [{ value: 'a', text: 'A', _: { active: true } }] })
+
+		wrapper = mount(Tabs, { props: { ctrl, engine }, attachTo: document.body })
+
+		await nextTick()
+		await nextFrame()
+
+		engine.extensions.activation.activate(
+			engine.extensions.plain.push({ value: 'c', text: 'C' }),
+		)
+		ctrl.focused = true
+
+		// Такт тот же: таба в разметке нет, фокуса — тоже, а запись не откатилась
+		expect(document.querySelectorAll('[role="tab"]')).toHaveLength(1)
+		expect(document.activeElement).toBe(document.body)
+		expect(ctrl.focused).toBe(true)
+
+		await nextTick()
+		await nextFrame()
+
+		expect(document.activeElement?.textContent?.trim()).toBe('C')
+		expect(document.activeElement?.getAttribute('role')).toBe('tab')
+		expect(ctrl.focused).toBe(true)
+	})
 })
 
 describe('Calendar · остановка по модели', () => {
@@ -562,6 +597,48 @@ describe('Calendar · остановка по модели', () => {
 		expect(day?.closest('.so-calendar__month')).toBe(
 			document.querySelectorAll('.so-calendar__month')[1],
 		)
+	})
+
+	/**
+	 * Сетка одна, и листание в том же такте, что и запись `focused`, увело
+	 * фокус коллекции в месяц, которого в разметке ещё нет: правило дня не
+	 * находит, а корень календаря фокус не держит. Запись ждёт узла: Vue
+	 * нарисует дни нового месяца в следующем такте, их узлы объявят кадром
+	 * позже — и фокус встанет на день `focusedDate`.
+	 */
+	it('одна сетка: showNext() и focused = true в одном такте — после перерисовки фокус на дне нового месяца', async () => {
+		const ctrl = new TCalendar({ months: ['2026-01-01'] })
+		const engine = createEngineCalendar()
+
+		wrapper = mount(Calendar, { props: { ctrl, engine }, attachTo: document.body })
+
+		await nextTick()
+		await nextFrame()
+
+		const { focus, view } = engine.extensions
+
+		view.showNext()
+		ctrl.focused = true
+
+		const date = focus.focusedDate
+
+		// Такт тот же: фокус коллекции в феврале, а разметка ещё январская
+		expect(date.startsWith('2026-02-')).toBe(true)
+		expect(nodeOf('.so-calendar__title-text').textContent?.trim()).not.toBe(
+			view.grids[0]?.title,
+		)
+		expect(document.activeElement).toBe(document.body)
+		expect(ctrl.focused).toBe(true)
+
+		await nextTick()
+		await nextFrame()
+
+		const day = document.activeElement
+
+		expect(nodeOf('.so-calendar__title-text').textContent?.trim()).toBe(view.grids[0]?.title)
+		expect(day).toBe(nodeOf('.so-calendar-item[tabindex="0"]'))
+		expect(day?.textContent?.trim()).toBe(String(Number(date.slice(-2))))
+		expect(ctrl.focused).toBe(true)
 	})
 
 	/**

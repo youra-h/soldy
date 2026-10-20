@@ -8,6 +8,11 @@
  * (docs/agents/collections.md, «Сосед по коллекции — по контракту»): узлы
  * идут порядком состава.
  *
+ * Узел, которого ещё нет в документе, ждут помощником реестра (`waitFor`):
+ * на входе элемента в коллекцию и на `ready` его узла. Его потребители —
+ * запись `focused` (`action.plugin.spec.ts`) и клавиатура календаря
+ * (`calendar-keyboard.plugin.spec.ts`).
+ *
  * Перетаскивание переставляет не само: жест DOM оно переводит в команду
  * обёртки `DragAndDrop` (`TDragAndDrop.move`), и команда шлёт свои события и
  * переставляет элемент в движке. Правила команды —
@@ -15,7 +20,7 @@
  * спрашивают место и чьё перетаскивание принимают.
  */
 
-import { describe, it, expect, afterEach } from 'vitest'
+import { describe, it, expect, afterEach, vi } from 'vitest'
 import { TDragAndDrop, TListBox, TListBoxCollectionFacade } from '@soldy-ui/core'
 import type { IDragAndDropMove, IListBoxItem } from '@soldy-ui/core'
 import {
@@ -117,6 +122,141 @@ describe('TCollectionElements — узлы по составу коллекци�
 		expect(elements.getElementByIndex(1)).toBe(nodeOf(items[1]))
 		expect(elements.getUidByElement(nodeOf(items[2]))).toBe(items[2].uid)
 		expect(elements.getUidByElement(document.createElement('div'))).toBeUndefined()
+	})
+})
+
+describe('TCollectionElements.waitFor — ожидание узла', () => {
+	/**
+	 * Коллекция из двух элементов, ни один из которых ещё не нарисован. Вход
+	 * элемента в коллекцию (`register`) и привязка его узла (`bind`) — два
+	 * шага, и тест делает их порознь: их порядок решает адаптер.
+	 */
+	function undrawn() {
+		const owner = new TListBox()
+		const facade = new TListBoxCollectionFacade(
+			{ items: ['a', 'b'].map((value) => ({ value, text: value })) },
+			{ owner },
+		)
+		const engine = facade.engine
+		const bundle = new TPluginBundle(owner)
+			.use(TCollectionBundlesPlugin)
+			.use(TCollectionElements)
+		const registry = pluginOf(bundle, TCollectionBundlesPlugin)
+
+		bundles.push(bundle)
+		registry.bindEngine(engine)
+
+		const draw = (item: IListBoxItem) => {
+			const itemBundle = new TPluginBundle(item).use(TElementPlugin)
+			const node = document.createElement('div')
+
+			bundles.push(itemBundle)
+
+			return {
+				item,
+				node,
+				register: () => registry.register(itemBundle, item),
+				bind: () => {
+					document.body.appendChild(node)
+					pluginOf(itemBundle, TElementPlugin).element = node
+				},
+			}
+		}
+
+		const [a, b] = engine.extensions.batch.items
+
+		return { elements: pluginOf(bundle, TCollectionElements), a: draw(a), b: draw(b) }
+	}
+
+	it('проверка зовётся на входе элемента в коллекцию и ещё раз на ready его узла', async () => {
+		const { elements, a } = undrawn()
+		const check = vi.fn(() => false)
+
+		elements.waitFor(check)
+
+		// Первую попытку делает тот, кто ждёт: помощник проверку сам не зовёт
+		expect(check).not.toHaveBeenCalled()
+
+		a.register()
+
+		expect(check).toHaveBeenCalledTimes(1)
+
+		// Узел привязан, но объявят его кадром позже
+		a.bind()
+
+		expect(check).toHaveBeenCalledTimes(1)
+
+		await nextFrame()
+
+		expect(check).toHaveBeenCalledTimes(2)
+	})
+
+	/**
+	 * Бывает, что элемент входит в коллекцию после принятия компонента, когда
+	 * узел уже привязан и объявлен: `ready` пришло раньше входа, и подписка на
+	 * него опоздала бы. Проверка на входе узел уже видит.
+	 */
+	it('узел объявлен раньше, чем элемент вошёл в коллекцию, — проверка на входе его видит', async () => {
+		const { elements, a } = undrawn()
+		const seen: (Element | null)[] = []
+
+		elements.waitFor(() => {
+			seen.push(elements.getElementByItem(a.item))
+
+			return false
+		})
+
+		a.bind()
+		await nextFrame()
+
+		expect(seen).toEqual([])
+
+		a.register()
+
+		expect(seen).toEqual([a.node])
+	})
+
+	it('проверка вернула true — ожидание кончено: ни вход, ни ready её больше не зовут', async () => {
+		const { elements, a, b } = undrawn()
+		const check = vi.fn(() => true)
+
+		elements.waitFor(check)
+		a.register()
+		a.bind()
+		b.register()
+		b.bind()
+		await nextFrame()
+
+		expect(check).toHaveBeenCalledTimes(1)
+	})
+
+	it('снятое ожидание проверку не зовёт, повторное снятие ничего не делает', async () => {
+		const { elements, a, b } = undrawn()
+		const check = vi.fn(() => false)
+		const stop = elements.waitFor(check)
+
+		a.register()
+		stop()
+		stop()
+		a.bind()
+		b.register()
+		b.bind()
+		await nextFrame()
+
+		expect(check).toHaveBeenCalledTimes(1)
+	})
+
+	it('ожидания независимы: снятие одного другое не трогает', () => {
+		const { elements, a } = undrawn()
+		const first = vi.fn(() => false)
+		const second = vi.fn(() => false)
+
+		elements.waitFor(first)()
+		elements.waitFor(second)
+		a.register()
+
+		expect(first).not.toHaveBeenCalled()
+		expect(second).toHaveBeenCalledTimes(1)
 	})
 })
 

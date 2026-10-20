@@ -332,6 +332,37 @@ describe('Tabs · остановка по модели', () => {
 		expect(document.activeElement?.textContent?.trim()).toBe('B')
 		expect(document.activeElement?.getAttribute('role')).toBe('tab')
 	})
+
+	/**
+	 * Таб добавили в движок и сделали активным в том же такте, что и запись
+	 * `focused`: остановка в модели — он, а его узла в разметке нет, и корень
+	 * Tabs фокус не держит. Запись ждёт узла. React рисует таб на выходе из
+	 * `act`, а в коллекцию таб входит эффектом, когда его узел уже привязан, —
+	 * фокус встаёт на самом входе, внутри `act`, а не кадром позже.
+	 */
+	it('новый таб и focused = true в одном такте — после перерисовки фокус на нём', async () => {
+		const ctrl = new TTabs()
+		const engine = createEngineTabs({ items: [{ value: 'a', text: 'A', _: { active: true } }] })
+
+		mount(<Tabs ctrl={ctrl} engine={engine} />)
+		await nextFrame()
+
+		act(() => {
+			engine.extensions.activation.activate(
+				engine.extensions.plain.push({ value: 'c', text: 'C' }),
+			)
+			ctrl.focused = true
+
+			// Такт тот же: таба в разметке нет, фокуса — тоже, а запись не откатилась
+			expect(document.querySelectorAll('[role="tab"]')).toHaveLength(1)
+			expect(document.activeElement).toBe(document.body)
+			expect(ctrl.focused).toBe(true)
+		})
+
+		expect(document.activeElement?.textContent?.trim()).toBe('C')
+		expect(document.activeElement?.getAttribute('role')).toBe('tab')
+		expect(ctrl.focused).toBe(true)
+	})
 })
 
 describe('RadioGroup · отметка по модели', () => {

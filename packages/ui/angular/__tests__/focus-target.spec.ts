@@ -351,6 +351,38 @@ describe('Tabs · остановка по модели', () => {
 		expect(document.activeElement?.textContent?.trim()).toBe('B')
 		expect(document.activeElement?.getAttribute('role')).toBe('tab')
 	})
+
+	/**
+	 * Таб добавили в движок и сделали активным в том же такте, что и запись
+	 * `focused`: Angular нарисует таб на проверке изменений, а остановка в
+	 * модели — уже он, и корень Tabs фокус не держит. Запись ждёт узла: таб
+	 * входит в коллекцию при сборке, его узел объявляют кадром позже — и фокус
+	 * встаёт на него.
+	 */
+	it('новый таб и focused = true в одном такте — после перерисовки фокус на нём', async () => {
+		const fixture = mountHost(TabsEngineHost)
+		const { ctrl, engine } = fixture.componentInstance
+
+		await nextFrame()
+		fixture.detectChanges()
+
+		engine.extensions.activation.activate(
+			engine.extensions.plain.push({ value: 'c', text: 'C' }),
+		)
+		ctrl.focused = true
+
+		// Такт тот же: таба в разметке нет, фокуса — тоже, а запись не откатилась
+		expect(document.querySelectorAll('[role="tab"]')).toHaveLength(2)
+		expect(document.activeElement).toBe(document.body)
+		expect(ctrl.focused).toBe(true)
+
+		fixture.detectChanges()
+		await nextFrame()
+
+		expect(document.activeElement?.textContent?.trim()).toBe('C')
+		expect(document.activeElement?.getAttribute('role')).toBe('tab')
+		expect(ctrl.focused).toBe(true)
+	})
 })
 
 /**

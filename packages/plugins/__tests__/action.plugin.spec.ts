@@ -9,6 +9,10 @@
  * называет правило дескриптора (`focusTarget`), без правила — корень, как
  * раньше.
  *
+ * Остановка в модели бывает новее разметки: таб добавили и сделали активным в
+ * том же такте, что и запись. Тогда запись ждёт узла — входа таба в коллекцию
+ * и `ready` его узла (группа «ожидание узла»).
+ *
  * Плагины собраны настоящими bundle, как в рантайме, но без адаптера:
  * разметку тест строит сам в том виде, в каком её рисует Vue.
  */
@@ -26,7 +30,7 @@ import {
 	listOf,
 	tabStopOf,
 } from '../src'
-import type { IActionPluginOptions, IPlugin, IPluginConstructor } from '../src'
+import type { IActionPluginOptions, IPlugin, IPluginConstructor, TFocusTarget } from '../src'
 
 const nextFrame = () => new Promise((resolve) => requestAnimationFrame(resolve))
 
@@ -296,11 +300,12 @@ describe('правила узла фокуса', () => {
 		/**
 		 * Набор табов, как его рисует Vue: корень, в нём кнопка в слоте
 		 * `leading`, у каждого таба обёртка (узел элемента) и строка с
-		 * `role="tab"`, — и плагин действия с правилом таб-остановки. Движок —
+		 * `role="tab"`, — и плагин действия с правилом таб-остановки (своё
+		 * правило — у теста, который считает его вызовы). Движок —
 		 * `createEngineTabs`, как у компонента: остановку считает
 		 * `TTabsExtension`.
 		 */
-		async function tabs(props: Partial<ITabsItemProps>[]) {
+		async function tabs(props: Partial<ITabsItemProps>[], rule: TFocusTarget = tabStopOf) {
 			const owner = new TTabs()
 			const engine = createEngineTabs({ owner })
 			const items = props.map((item) => engine.extensions.plain.push(new TTabsItem(item)))
@@ -312,29 +317,46 @@ describe('правила узла фокуса', () => {
 
 			const bundle = new TPluginBundle(owner)
 				.use(TElementPlugin)
-				.use(TActionPlugin, { focusTarget: tabStopOf })
+				.use(TActionPlugin, { focusTarget: rule })
 				.use(TCollectionBundlesPlugin)
 				.use(TCollectionElements)
 
 			const bundles = pluginOf(bundle, TCollectionBundlesPlugin)
+			const rootElement = pluginOf(bundle, TElementPlugin)
 
-			for (const item of items) {
+			/**
+			 * Разметка таба: обёртка — узел элемента — и строка с ролью. Вход
+			 * таба в коллекцию (`register`) и привязка его узла (`bind`) — два
+			 * шага, порознь: их порядок решает адаптер.
+			 */
+			const draw = (item: ITabsItem) => {
 				const node = document.createElement('div')
 				const tab = document.createElement('button')
+				const itemBundle = new TPluginBundle(item).use(TElementPlugin)
 
 				tab.setAttribute('role', 'tab')
 				tab.dataset.value = String(item.value)
 				node.appendChild(tab)
-				root.appendChild(node)
 
-				const itemBundle = new TPluginBundle(item).use(TElementPlugin)
+				return {
+					item,
+					register: () => bundles.register(itemBundle, item),
+					bind: () => {
+						root.appendChild(node)
+						pluginOf(itemBundle, TElementPlugin).element = node
+					},
+				}
+			}
 
-				pluginOf(itemBundle, TElementPlugin).element = node
-				bundles.register(itemBundle, item)
+			for (const item of items) {
+				const drawn = draw(item)
+
+				drawn.bind()
+				drawn.register()
 			}
 
 			bundles.bindEngine(engine)
-			pluginOf(bundle, TElementPlugin).element = root
+			rootElement.element = root
 			await nextFrame()
 
 			const find = (value: string): ITabsItem => {
@@ -355,10 +377,24 @@ describe('правила узла фокуса', () => {
 
 			return {
 				owner,
+				bundle,
 				root,
+				leading,
+				rootElement,
+				action: pluginOf(bundle, TActionPlugin),
 				find,
 				tabNode,
 				activation,
+				/**
+				 * Новый таб: в движке он уже есть, а разметки у него нет — вход
+				 * в коллекцию и узел тест делает сам.
+				 */
+				add: (value: string) =>
+					draw(
+						engine.extensions.plain.push(
+							new TTabsItem({ value, text: value.toUpperCase() }),
+						),
+					),
 				/** Таб, на котором фокус. */
 				focused: () => document.activeElement?.getAttribute('data-value'),
 			}
@@ -416,6 +452,253 @@ describe('правила узла фокуса', () => {
 			owner.focused = true
 
 			expect(document.activeElement).toBe(root)
+		})
+
+		/**
+		 * Таб добавили и сделали активным в том же такте, что и запись
+		 * `focused`: остановка в модели — он, а узла у него ещё нет, и корень
+		 * фокус не держит. Запись ждёт узла и ставит фокус, когда таб вошёл в
+		 * коллекцию и его узел объявлен.
+		 */
+		describe('ожидание узла', () => {
+			it('новый таб и focused = true в одном такте — фокус встаёт, когда таб нарисован', async () => {
+				const { owner, add, activation, focused } = await tabs(ABC)
+				const d = add('d')
+
+				activation.activate(d.item)
+				owner.focused = true
+
+				// Узла таба нет: фокуса нет нигде, а запись не откатилась
+				expect(document.activeElement).toBe(document.body)
+				expect(owner.focused).toBe(true)
+
+				d.register()
+				d.bind()
+
+				// Узел привязан, но объявят его кадром позже
+				expect(document.activeElement).toBe(document.body)
+
+				await nextFrame()
+
+				expect(focused()).toBe('d')
+				expect(owner.focused).toBe(true)
+			})
+
+			/**
+			 * Узел привязан и объявлен раньше, чем таб вошёл в коллекцию: `ready`
+			 * прошло до входа, и фокус встаёт на самом входе.
+			 */
+			it('узел объявлен раньше входа таба в коллекцию — фокус встаёт на входе', async () => {
+				const { owner, add, activation, focused } = await tabs(ABC)
+				const d = add('d')
+
+				activation.activate(d.item)
+				owner.focused = true
+				d.bind()
+				await nextFrame()
+
+				expect(document.activeElement).toBe(document.body)
+
+				d.register()
+
+				expect(focused()).toBe('d')
+			})
+
+			/**
+			 * Цель плагин не запоминает: на каждое пробуждение правило ищет
+			 * остановку у модели заново, и остановка, сменившаяся за время
+			 * ожидания, ждётся уже новая.
+			 */
+			it('остановка сменилась за время ожидания — фокус на новой, а не на первой', async () => {
+				const { owner, add, activation, focused } = await tabs(ABC)
+				const d = add('d')
+				const e = add('e')
+
+				activation.activate(d.item)
+				owner.focused = true
+				activation.activate(e.item)
+
+				d.register()
+				d.bind()
+				await nextFrame()
+
+				expect(document.activeElement).toBe(document.body)
+
+				e.register()
+				e.bind()
+				await nextFrame()
+
+				expect(focused()).toBe('e')
+			})
+
+			it('focus() ждёт узел так же, а фокус, вставший на узел, пишет focused', async () => {
+				const { owner, action, add, activation, focused } = await tabs(ABC)
+				const d = add('d')
+
+				activation.activate(d.item)
+				action.focus()
+
+				expect(document.activeElement).toBe(document.body)
+				expect(owner.focused).toBe(false)
+
+				d.register()
+				d.bind()
+				await nextFrame()
+
+				expect(focused()).toBe('d')
+				expect(owner.focused).toBe(true)
+			})
+
+			it('ожидание одно: новая попытка заменяет прежнее, и вход таба зовёт правило один раз', async () => {
+				let calls = 0
+				const counted: TFocusTarget = (root, ctx) => {
+					calls++
+
+					return tabStopOf(root, ctx)
+				}
+				const { owner, action, add, activation } = await tabs(ABC, counted)
+				const d = add('d')
+
+				activation.activate(d.item)
+				owner.focused = true
+				action.focus()
+				calls = 0
+				d.register()
+
+				expect(calls).toBe(1)
+			})
+
+			/**
+			 * Что снимает ожидание. Действие отдаёт узел, на котором после него
+			 * стоит фокус: таб, нарисованный позже, его не уводит.
+			 */
+			it.each<[string, (setup: Awaited<ReturnType<typeof tabs>>) => Element]>([
+				[
+					'focused = false',
+					({ owner }) => {
+						owner.focused = false
+
+						return document.body
+					},
+				],
+				[
+					'blur()',
+					({ action }) => {
+						action.blur()
+
+						return document.body
+					},
+				],
+				[
+					'фокус ушёл мимо корня — в поле, где уже печатают',
+					() => {
+						const field = document.body.appendChild(document.createElement('input'))
+
+						field.focus()
+
+						return field
+					},
+				],
+				[
+					'фокус пришёл в корень — на кнопку в leading',
+					({ leading }) => {
+						leading.focus()
+
+						return leading
+					},
+				],
+				[
+					'снятие корня',
+					({ rootElement }) => {
+						rootElement.element = null
+
+						return document.body
+					},
+				],
+				[
+					'destroy()',
+					({ bundle }) => {
+						bundle.destroy()
+
+						return document.body
+					},
+				],
+			])('%s — таб нарисован, а фокус не тронут', async (_name, cancel) => {
+				const setup = await tabs(ABC)
+				const d = setup.add('d')
+
+				setup.activation.activate(d.item)
+				setup.owner.focused = true
+
+				const holder = cancel(setup)
+
+				d.register()
+				d.bind()
+				await nextFrame()
+
+				expect(document.activeElement).toBe(holder)
+			})
+
+			/**
+			 * Снятое ожидание `focused` не трогает, как и запись, после которой
+			 * фокус не встал: назад его плагин не пишет.
+			 */
+			it('снятое ожидание focused назад не пишет', async () => {
+				const { owner, add, activation } = await tabs(ABC)
+				const d = add('d')
+				const field = document.body.appendChild(document.createElement('input'))
+
+				activation.activate(d.item)
+				owner.focused = true
+				field.focus()
+				d.register()
+				d.bind()
+				await nextFrame()
+
+				expect(document.activeElement).toBe(field)
+				expect(owner.focused).toBe(true)
+			})
+
+			/**
+			 * `focus()` — просьба, а не состояние: `focused` она не пишет, и новый
+			 * `ready` корня её не повторит. Ожидание, снятое вместе с корнем,
+			 * таб, нарисованный под новым корнем, не будит.
+			 */
+			it('снятый корень снимает и ожидание focus(): под новым корнем таб фокус не получает', async () => {
+				const { root, rootElement, action, add, activation } = await tabs(ABC)
+				const d = add('d')
+
+				activation.activate(d.item)
+				action.focus()
+				rootElement.element = null
+				rootElement.element = root
+				await nextFrame()
+
+				d.register()
+				d.bind()
+				await nextFrame()
+
+				expect(document.activeElement).toBe(document.body)
+			})
+
+			it('снятый корень ожидание снимает, а новый ready корня повторяет запись', async () => {
+				const { owner, root, rootElement, add, activation, focused } = await tabs(ABC)
+				const d = add('d')
+
+				activation.activate(d.item)
+				owner.focused = true
+				rootElement.element = null
+				d.register()
+				d.bind()
+				await nextFrame()
+
+				expect(document.activeElement).toBe(document.body)
+
+				rootElement.element = root
+				await nextFrame()
+
+				expect(focused()).toBe('d')
+			})
 		})
 	})
 })

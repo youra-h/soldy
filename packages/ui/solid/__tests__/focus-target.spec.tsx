@@ -328,6 +328,39 @@ describe('Tabs · остановка по модели', () => {
 		expect(document.activeElement?.textContent?.trim()).toBe('B')
 		expect(document.activeElement?.getAttribute('role')).toBe('tab')
 	})
+
+	/**
+	 * Таб добавили в движок и сделали активным в том же такте, что и запись
+	 * `focused`: внутри `batch` Solid нарисует таб только на выходе, а
+	 * остановка в модели — уже он, и корень Tabs фокус не держит. Запись ждёт
+	 * узла: таб входит в коллекцию при сборке, его узел объявляют кадром позже
+	 * — и фокус встаёт на него.
+	 */
+	it('новый таб и focused = true в одном такте — после перерисовки фокус на нём', async () => {
+		const ctrl = new TTabs()
+		const engine = createEngineTabs({ items: [{ value: 'a', text: 'A', _: { active: true } }] })
+
+		mount(() => <Tabs ctrl={ctrl} engine={engine} />)
+		await nextFrame()
+
+		batch(() => {
+			engine.extensions.activation.activate(
+				engine.extensions.plain.push({ value: 'c', text: 'C' }),
+			)
+			ctrl.focused = true
+
+			// Такт тот же: таба в разметке нет, фокуса — тоже, а запись не откатилась
+			expect(document.querySelectorAll('[role="tab"]')).toHaveLength(1)
+			expect(document.activeElement).toBe(document.body)
+			expect(ctrl.focused).toBe(true)
+		})
+
+		await nextFrame()
+
+		expect(document.activeElement?.textContent?.trim()).toBe('C')
+		expect(document.activeElement?.getAttribute('role')).toBe('tab')
+		expect(ctrl.focused).toBe(true)
+	})
 })
 
 describe('RadioGroup · отметка по модели', () => {
