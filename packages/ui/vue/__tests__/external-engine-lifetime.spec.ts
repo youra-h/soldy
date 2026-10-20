@@ -10,13 +10,16 @@
  *
  * Привязка владельца к движку — тоже одно монтирование: перенесённый к другому
  * родителю за одну перерисовку компонент сохраняет владельца, хотя прежнее
- * монтирование снимается уже после того, как принято новое.
+ * монтирование снимается уже после того, как принято новое. Без `ctrl` у
+ * нового монтирования свой владелец, и привязку оно забирает у прежнего,
+ * которое в этот момент ещё держит движок.
  */
 
 import { describe, it, expect, afterEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { defineComponent, nextTick, ref } from 'vue'
 import { TEvented, TListBox, createEngineListBox } from '@soldy-ui/core'
+import type { TListBoxCollection } from '@soldy-ui/core'
 import { ListBox } from '@soldy-ui/vue'
 
 const ITEMS = [
@@ -159,4 +162,88 @@ describe('ListBox над движком и владельцем снаружи',
 		expect(engine.options.get('owner')).toBeUndefined()
 		expect(live()).toEqual([])
 	})
+})
+
+/** Владелец в опциях движка: без `ctrl` его собирает монтирование. */
+function ownerOf(engine: TListBoxCollection): TListBox {
+	const owner = engine.options.get('owner')
+
+	if (!(owner instanceof TListBox)) throw new Error('владельца у движка нет')
+
+	return owner
+}
+
+/** `data-disabled` элементов списка в документе. */
+function itemsDisabled(): (string | null)[] {
+	return [...document.querySelectorAll('.so-list-box-item')].map((item) =>
+		item.getAttribute('data-disabled'),
+	)
+}
+
+/**
+ * Без `ctrl` каждое монтирование собирает своего владельца, а движок снаружи
+ * тот же. Новый ListBox Vue принимает в `setup()`, а прежний снимает в
+ * `onUnmounted`, после прохода перерисовки, — смена `key` и перенос между
+ * родителями. Привязку забирает новое монтирование, хотя прежнее ещё держит
+ * движок, а снятие прежнего её не трогает.
+ */
+describe('ListBox над движком снаружи без ctrl, перемонтированный за одну перерисовку', () => {
+	it.each([
+		[
+			'смена key',
+			`<ListBox :key="swapped ? 'second' : 'first'" :engine="engine" :disabled="disabled" />`,
+		],
+		[
+			'перенос между родителями',
+			`
+				<div v-if="!swapped" class="so-test-first"><ListBox :engine="engine" :disabled="disabled" /></div>
+				<section v-else class="so-test-second"><ListBox :engine="engine" :disabled="disabled" /></section>
+			`,
+		],
+	])(
+		'%s: движок у владельца нового монтирования, после снятия на шинах ничего',
+		async (_name, template) => {
+			const engine = createEngineListBox({ items: ITEMS })
+			const extensions = Object.values(engine.extensions).flatMap((extension) =>
+				extension ? [extension.events] : [],
+			)
+			const live = watchBuses([engine.events, ...extensions])
+			const swapped = ref(false)
+			const disabled = ref(false)
+			const Host = defineComponent({
+				components: { ListBox },
+				setup: () => ({ swapped, disabled, engine }),
+				template,
+			})
+			const wrapper = mount(Host, { attachTo: document.body })
+
+			await nextTick()
+
+			const first = ownerOf(engine)
+
+			swapped.value = true
+			await nextTick()
+
+			// Перемонтирован: элементы одного списка, движок — у нового владельца
+			expect(document.querySelectorAll('.so-list-box-item')).toHaveLength(ITEMS.length)
+			expect(ownerOf(engine)).not.toBe(first)
+
+			// Прежний владелец отпущен: его `disabled` до элементов не доходит
+			first.disabled = true
+			await nextTick()
+
+			expect(itemsDisabled()).not.toContain('true')
+
+			// Подписки на нового живы: его `disabled` доходит до элементов
+			disabled.value = true
+			await nextTick()
+
+			expect(itemsDisabled()).toEqual(['true', 'true'])
+
+			wrapper.unmount()
+
+			expect(engine.options.get('owner')).toBeUndefined()
+			expect(live()).toEqual([])
+		},
+	)
 })
