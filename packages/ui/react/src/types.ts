@@ -2,7 +2,7 @@
  * Общие типы для React-адаптера @soldy-ui/react.
  */
 
-import type { HTMLAttributes, InputHTMLAttributes, ReactNode } from 'react'
+import type { HTMLAttributes, InputHTMLAttributes, ReactNode, TextareaHTMLAttributes } from 'react'
 import type { IEntity } from '@soldy-ui/core'
 import type {
 	IComponentDescriptor,
@@ -101,14 +101,27 @@ export type TFieldAttributes = Omit<
 >
 
 /**
+ * Атрибуты `<textarea>` Textarea — как `TFieldAttributes` у `<input>`: всё,
+ * кроме того, что поле ведёт само. Текст и его умолчание проводит поле
+ * адаптера (`NativeTextarea`) из состояния ядра, а `readonly` и `maxlength` —
+ * входы дескриптора: атрибуты `readOnly` и `maxLength` — те же свойства узла
+ * под именами DOM, второй путь к тому же состоянию.
+ */
+export type TTextareaAttributes = Omit<
+	TextareaHTMLAttributes<HTMLTextAreaElement>,
+	'defaultValue' | 'readOnly' | 'maxLength'
+>
+
+/**
  * Props DOM-компонента: UseProps + HTML-атрибуты без конфликтов с пропсами,
  * событиями и слотами дескриптора (см. `TDomAttributes`).
  *
- * Атрибуты по умолчанию — `HTMLAttributes` корня; поля берут `TFieldAttributes`:
- * всё, кроме класса и стиля, у них уходит на `<input>`. Button берёт атрибуты
- * кнопки (`ButtonHTMLAttributes`): его корень по умолчанию — `<button>`, и
- * `type`, `form`, `name`, `value` доходят до неё — так деталь разметки
- * библиотеки ставит себе `type="button"`.
+ * Атрибуты по умолчанию — `HTMLAttributes` корня; поля берут `TFieldAttributes`
+ * (Textarea — `TTextareaAttributes`): всё, кроме класса и стиля, у них уходит
+ * на `<input>` или `<textarea>`. Button берёт атрибуты кнопки
+ * (`ButtonHTMLAttributes`): его корень по умолчанию — `<button>`, и `type`,
+ * `form`, `name`, `value` доходят до неё — так деталь разметки библиотеки
+ * ставит себе `type="button"`.
  */
 export type UseDomProps<
 	TDescriptorFn extends (...args: any[]) => IComponentDescriptor,
