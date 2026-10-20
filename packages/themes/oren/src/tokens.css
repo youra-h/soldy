@@ -198,14 +198,14 @@
  * Tailwind.
  *
  * От схемы кегль не зависит: блок свой, тёмная схема его не переопределяет.
- * Утилиту `text-xs2` даёт регистрация в `@theme inline` ниже; имя — шаг
- * шкалы, как у соседних `text-xs` и `text-sm`. Ступень, объявленная прямо в
- * `@theme`, вышла бы на корень документа переменной Tailwind без префикса
- * `so-` (AGENTS.md пакета, «Открытые вопросы»).
+ * Утилиту `text-2xs` даёт регистрация в `@theme inline` ниже; имя — как у
+ * ступеней Tailwind мельче `xs` (`shadow-2xs`, `container-2xs`). Ступень,
+ * объявленная прямо в `@theme`, вышла бы на корень документа переменной
+ * Tailwind без префикса `so-` (AGENTS.md пакета, «Открытые вопросы»).
  */
 :root {
-	--so-text-xs2: 0.625rem;
-	--so-text-xs2--line-height: calc(0.875 / 0.625);
+	--so-text-2xs: 0.625rem;
+	--so-text-2xs--line-height: calc(0.875 / 0.625);
 }
 
 /* Регистрируем токены в Tailwind — цвета и ступень кегля (утилиты ссылаются
@@ -271,6 +271,6 @@
 	--color-so-neutral-900: var(--so-neutral-900);
 	--color-so-neutral-950: var(--so-neutral-950);
 
-	--text-xs2: var(--so-text-xs2);
-	--text-xs2--line-height: var(--so-text-xs2--line-height);
+	--text-2xs: var(--so-text-2xs);
+	--text-2xs--line-height: var(--so-text-2xs--line-height);
 }
