@@ -30,9 +30,12 @@ import { describe, it, expect } from 'vitest'
 import { For, type JSX } from 'solid-js'
 import { renderToString } from 'solid-js/web'
 import { createEngineListBox, type TTableColumnSource } from '@soldy-ui/core'
+import { ruRU } from '@soldy-ui/plugins'
 import {
 	Accordion,
 	ListBox,
+	LocaleProvider,
+	Pagination,
 	RadioGroup,
 	Table,
 	Tabs,
@@ -334,6 +337,73 @@ describe('RadioGroup · серверный рендер', () => {
 		expect(fields.map((field) => 'checked' in field.attributes)).toEqual([false, true, false])
 		expect(names.size).toBe(1)
 		expect([...names][0]).not.toBe('')
+	})
+})
+
+/**
+ * Пагинация: страницы окна кладёт в коллекцию её расширение при сборке, а
+ * сборка идёт и на сервере, — сервер рисует окно с текущей страницей и
+ * пропусками. Имена стрелок и цифры номеров пишут плагины имён и языка по
+ * локали поддерева, тоже при сборке.
+ */
+describe('Pagination · серверный рендер', () => {
+	/** Ряд строкой: пропуск — «…», текущая — в скобках. */
+	const row = (body: string) =>
+		[...markup(body).matchAll(/<li [^>]*>([\s\S]*?)<\/li>/g)]
+			.map(([, inner]) => {
+				const text = inner.replace(/<[^>]*>/g, '')
+
+				return inner.includes('aria-current="page"') ? `[${text}]` : text
+			})
+			.join(' ')
+
+	it('окно, текущая и имена — уже в разметке сервера', () => {
+		const body = render(() => (
+			<LocaleProvider locale={ruRU}>
+				<Pagination total={100} value={5} aria_label="Страницы" />
+			</LocaleProvider>
+		))
+
+		expect(row(body)).toBe('1 … 4 [5] 6 … 10')
+		expect(tagsOf(body)[0]).toEqual({
+			name: 'nav',
+			attributes: expect.objectContaining({ 'aria-label': 'Страницы' }),
+		})
+		expect(attributeOf(withClass(body, 'so-pagination__prev'), 'aria-label')).toEqual([
+			'Предыдущая страница',
+		])
+		expect(attributeOf(withClass(body, 'so-pagination__next'), 'aria-label')).toEqual([
+			'Следующая страница',
+		])
+		// Текущая — у кнопки и у места: обе отметки сервер рисует сразу
+		expect(attributeOf(withClass(body, 'so-pagination-item'), 'data-selected')).toEqual([
+			'false',
+			'false',
+			'true',
+			'false',
+			'false',
+		])
+	})
+
+	it('цифры номеров — по локали поддерева', () => {
+		const ru = new Intl.NumberFormat('ru-RU')
+		const body = render(() => (
+			<LocaleProvider locale={ruRU}>
+				<Pagination total={200_000} value={12_345} />
+			</LocaleProvider>
+		))
+
+		expect(row(body)).toBe(
+			[
+				'1',
+				'…',
+				ru.format(12_344),
+				`[${ru.format(12_345)}]`,
+				ru.format(12_346),
+				'…',
+				ru.format(20_000),
+			].join(' '),
+		)
 	})
 })
 
