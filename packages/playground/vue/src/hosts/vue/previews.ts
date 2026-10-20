@@ -1,5 +1,5 @@
 import { defineComponent, h, mergeProps, ref, watch, type Component } from 'vue'
-import type { IToastOptions, TToastsItemType } from '@soldy-ui/core'
+import type { TToastsItemType } from '@soldy-ui/core'
 import type {
 	DescriptorSlots,
 	MenuDescriptor,
@@ -14,6 +14,8 @@ import {
 	TABLE_ROWS,
 	TABLE_SCROLL_ROWS,
 	TOASTS_ITEM_TYPES,
+	TOAST_SAVING,
+	toastSample,
 } from '@soldy-ui/playground-shared'
 import {
 	Accordion,
@@ -281,33 +283,17 @@ const DrawerPreview = defineComponent({
 const ToastUndo: TToastRender = ({ toast }) =>
 	h(Button, { text: 'Отменить', onClick: () => toast.close() })
 
-/** Обычное сообщение — тост без вида: значок у него свой, нейтральный. */
-const TOAST_NORMAL: IToastOptions<TToastRender> = { text: 'Черновик сохранён', render: ToastUndo }
-
-/**
- * Что сообщает тост каждого вида — чтобы значок читался рядом с текстом.
- * Срочный (`alert`) — ошибка, своё содержимое — у успеха и обычного: так на
- * странице видно и обе роли, и кнопку «Отменить».
- */
-const TOAST_SAMPLES = {
-	info: { text: 'Вышла новая версия', description: 'Обновится при следующем входе' },
-	success: { text: 'Письмо отправлено', render: ToastUndo },
-	warning: { text: 'Место почти закончилось', description: 'Свободно 200 МБ из 15 ГБ' },
-	error: { text: 'Нет сети', description: 'Изменения сохранятся позже', alert: true },
-} satisfies Record<TToastsItemType, IToastOptions<TToastRender>>
-
-/** Сколько «Сохраняем…» ждёт, прежде чем тот же тост сообщит итог, мс. */
-const TOAST_SAVING = 2000
-
 /**
  * Тосты приходят из кода, а не из разметки: кнопки внутри менеджера берут API
  * (`useToasts()`) и показывают тост. Менеджер оборачивает их, как приложение,
  * а регион с тостами — телепортом у края окна, вне ячейки превью.
  *
  * Кнопка — на обычное сообщение и на каждый вид (`TOASTS_ITEM_TYPES`): тост
- * показывает значок своего вида. Строки свойств правят менеджер, а вида у него
- * нет и быть не должно: вид у каждого тоста свой, его задаёт `show`. Текст
- * начинается с номера: в стопке видно, какой тост где.
+ * показывает значок своего вида. Что сообщает тост, — образцы стенда, одни на
+ * все хосты (`toastSample`), своё содержимое к ним — кнопка «Отменить» этого
+ * хоста. Строки свойств правят менеджер, а вида у него нет и быть не должно:
+ * вид у каждого тоста свой, его задаёт `show`. Текст начинается с номера: в
+ * стопке видно, какой тост где.
  *
  * Последняя кнопка — ожидание: «Сохраняем…» с кольцом на месте значка
  * (`loading`) сам не закрывается, а через пару секунд тот же тост сообщает
@@ -321,7 +307,7 @@ const ToastsTrigger = defineComponent({
 		let count = 0
 
 		const notify = (type?: TToastsItemType) => {
-			const sample = type ? TOAST_SAMPLES[type] : TOAST_NORMAL
+			const sample = toastSample(type, ToastUndo)
 
 			count += 1
 			show({ ...sample, text: `${count}. ${sample.text}`, type })

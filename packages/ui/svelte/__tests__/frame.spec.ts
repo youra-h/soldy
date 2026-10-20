@@ -15,10 +15,10 @@
 import { describe, it, expect } from 'vitest'
 import { createRawSnippet, flushSync } from 'svelte'
 import { TFrame } from '@soldy-ui/core'
-import { TPluginBundle, ruRU } from '@soldy-ui/plugins'
+import { TAnchorPlugin, TPluginBundle, ruRU } from '@soldy-ui/plugins'
 import { Frame, type FrameProps } from '@soldy-ui/svelte'
 import FrameLocale from './FrameLocale.test.svelte'
-import { find, mount } from './mount'
+import { find, mount, nextFrame } from './mount'
 import { reactiveProps } from './reactive-props.svelte'
 
 /** Узел Frame — там, куда его увёл телепорт. */
@@ -201,6 +201,65 @@ describe('Frame · слой и раскладка', () => {
 		expect(frame().style.left).toBe('10px')
 		expect(frame().style.top).toBe('20px')
 		expect(frame().style.width).toBe('300px')
+	})
+})
+
+/**
+ * Привязка панели, объявленная разметкой: якорь — проп `anchor_anchor` плагина
+ * якоря (`TAnchorPlugin`), как у Vue (`frame-anchor.spec.ts`,
+ * `frame-anchor-flip.spec.ts`). Popover и Tooltip отдают своему Frame якорем
+ * свой корень.
+ */
+describe('Frame · якорь', () => {
+	/**
+	 * У плагина якоря объявлено умолчание `null` — «ни к чему не привязана», и
+	 * связка возвращает к нему снятый проп. Без этого панель оставалась бы
+	 * привязанной к прежнему элементу и следила бы за его размером и скроллом.
+	 */
+	it('снятый из разметки якорь отвязывает панель', async () => {
+		const element = document.createElement('button')
+		const created: { anchor?: TAnchorPlugin } = {}
+
+		document.body.appendChild(element)
+
+		const props = reactiveProps<FrameProps>({
+			anchor_anchor: element,
+			onAnchorCreate: (plugin: unknown) => {
+				if (plugin instanceof TAnchorPlugin) created.anchor = plugin
+			},
+		})
+
+		mount(Frame, props)
+		// `anchor:create` отложен на микрозадачу
+		await Promise.resolve()
+
+		expect(created.anchor?.anchor).toBe(element)
+
+		delete props.anchor_anchor
+		flushSync()
+
+		expect(created.anchor?.anchor).toBeNull()
+	})
+
+	/**
+	 * Сборка пропускает незаданный проп, а flip у плагина якоря по умолчанию
+	 * включён: Frame, в разметке которого `anchor_flip` не написан, оставляет
+	 * его включённым.
+	 */
+	it('Frame без anchor_flip оставляет flip включённым', async () => {
+		const created: { anchor?: TAnchorPlugin } = {}
+
+		mount(Frame, {
+			visible: true,
+			position: 'fixed',
+			onAnchorCreate: (plugin: unknown) => {
+				if (plugin instanceof TAnchorPlugin) created.anchor = plugin
+			},
+		})
+		await nextFrame()
+
+		expect(created.anchor).toBeInstanceOf(TAnchorPlugin)
+		expect(created.anchor?.flip).toBe(true)
 	})
 })
 

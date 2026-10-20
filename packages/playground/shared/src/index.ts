@@ -1,6 +1,7 @@
 export * from './types'
 export * from './enums'
 export * from './items'
+export * from './toasts'
 export * from './registry'
 export * from './props'
 export * from './instance'
