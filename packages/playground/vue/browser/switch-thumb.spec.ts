@@ -76,6 +76,12 @@ async function show(size: TComponentSize, { ancestor, direction }: TCase): Promi
 	await nextTick()
 	await nextFrame()
 
+	// Стиль до изменения. Переход заводится только от уже посчитанного стиля,
+	// а колбэк `requestAnimationFrame` идёт раньше расчёта стиля своего кадра:
+	// включённая сразу после него ручка получила бы первый стиль уже у конца
+	// строки и встала бы туда без перехода
+	void getComputedStyle(thumb()).insetInlineStart
+
 	return ctrl
 }
 
