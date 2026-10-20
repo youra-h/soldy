@@ -641,8 +641,10 @@ Select и строк таблицы. Выход `drawn` — что рисова�
 не берут), `setup/__tests__/facade-props.spec.ts` (сеттер у `groupBy` и
 `groups` трёх фасадов), `ui/vue/__tests__/menu.spec.ts` и
 `ui/vue/__tests__/list-groups.spec.ts` (группы и разделители в разметке,
-стрелки по секциям, группы разметки — в секциях) и спеки ListBox адаптеров
-(группа «группы»; у Web Components — и разметка до регистрации).
+стрелки по секциям, группы разметки — в секциях), спеки ListBox адаптеров
+(группа «группы»; у Web Components — и разметка до регистрации) и
+`ui/svelte/__tests__/select.spec.ts` («группы из данных», «группы разметки»:
+группа разметки — в телепортированной панели).
 `groupSeparators` сторожат `core/__tests__/list-contract.spec.ts` (ListBox и
 Select), «разделители секций группировки» в `core/__tests__/menu.spec.ts`
 (меню и подменю), те же спеки разметки — разделители по умолчанию, со
@@ -1319,10 +1321,15 @@ Vue, Svelte, Solid и Angular этой цены не платят: элемен�
 что пишет коллекция, и панель таба находит свой таб к своей инициализации
 (сторожат `ui/svelte/__tests__/collections.server.spec.ts`,
 `ui/solid/__tests__/collections.server.spec.tsx` и
-`ui/angular/__tests__/collections.server.spec.ts`). У Web Components сервера
-нет, и цены тоже: элемент входит в коллекцию при подключении, а то, что
-коллекция пишет ему и соседям, доходит до разметки отрисовкой — микрозадачей,
-до кадра.
+`ui/angular/__tests__/collections.server.spec.ts`). Исключение у Svelte —
+опции Select разметкой: они стоят в его панели, а панель — Frame, и её
+`Teleport` монтирует эффектом, которого на сервере нет. Такие опции входят в
+коллекцию только в браузере, и Select с ними сервер рисует с пустым полем;
+Select из данных — с текстом выбранного и тегами (сторожит «Select ·
+серверный рендер» в `ui/svelte/__tests__/collections.server.spec.ts`). У Web
+Components сервера нет, и цены тоже: элемент входит в коллекцию при
+подключении, а то, что коллекция пишет ему и соседям, доходит до разметки
+отрисовкой — микрозадачей, до кадра.
 
 Сторожат `setup/__tests__/adapter.spec.ts` («сборка и вход»),
 `ui/react/__tests__/list-box-elevator.spec.tsx` — лифт, StrictMode,

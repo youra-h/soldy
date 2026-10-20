@@ -505,9 +505,10 @@
 («внутри модального окна») и `tooltip.spec.tsx` («в открытом поповере»), — у
 Solid: `ui/solid/__tests__/popover.spec.tsx` («вложенные слои») и
 `tooltip.spec.tsx` («в открытом поповере») — и у Svelte:
-`ui/svelte/__tests__/popover.spec.ts` («вложенные слои»), `dialog.spec.ts`
-(«окно поверх окна», «Popover внутри»), `drawer.spec.ts` («внутри модального
-окна») и `tooltip.spec.ts` («в открытом поповере»).
+`ui/svelte/__tests__/popover.spec.ts` («вложенные слои», «Select внутри»),
+`dialog.spec.ts` («окно поверх окна», «Select внутри», «Popover внутри»),
+`drawer.spec.ts` («внутри модального окна») и `tooltip.spec.ts` («в открытом
+поповере»).
 
 **Закрытие пользователем — запрос, а не запись.** Нажатие мимо, Escape и
 жест плагины слоя передают владельцу с причиной — `outside`, `escape` и
@@ -591,5 +592,5 @@ Tab с `body` повёл бы на страницу под ним. Поэтом�
 `ui/vue/__tests__/hide-outside.spec.ts` (Select в модальном `Frame`),
 `ui/react/__tests__/dialog.spec.tsx` («Popover внутри»: закрытая панель
 поповера в окне спрятана, открытая — доступна) и
-`ui/svelte/__tests__/hide-outside.spec.ts` (поповер в модальном `Frame`: его
-панель — такая же соседка окна в `body`).
+`ui/svelte/__tests__/hide-outside.spec.ts` (Select и поповер в модальном
+`Frame`: список Select и панель поповера — такие же соседки окна в `body`).

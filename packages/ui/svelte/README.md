@@ -15,11 +15,14 @@ slot is `children`.
 > **Status:** the Svelte adapter is in progress — Button, Icon, Label, Frame, ProgressSpinner,
 > Skeleton, the fields Input, Textarea (multi-line, growing with its text, with a character
 > counter), CheckBox and Switch, the form field `Field` (label, helper and error linked to the
-> control inside it), the collections ListBox, Tabs, Accordion and
-> RadioGroup (`<ListBox.Item>`, `<Tabs.Item>` with `<Tabs.Content>`, `<Accordion.Item>`,
-> `<RadioGroup.Item>` or `items`), Table (columns and rows as data — `columns`, `items` — with
-> sorting, row selection, column resizing and reordering), the `Virtual` window for long lists
-> (`<Virtual><ListBox items={…} /></Virtual>`, the same with `Table`), the `DragAndDrop` wrapper
+> control inside it), the collections ListBox, Tabs, Accordion, RadioGroup and Tags
+> (`<ListBox.Item>`, `<Tabs.Item>` with `<Tabs.Content>`, `<Accordion.Item>`,
+> `<RadioGroup.Item>`, `<Tags.Item>` or `items`; tags close, select by mode and either wrap or
+> scroll), Select (a combobox: `<Select.Item>` and `<Select.Group>` or `items`, `editable` with
+> search or filter, tags in the field in `multiple`), Table (columns and rows as data — `columns`,
+> `items` — with sorting, row selection, column resizing and reordering), the `Virtual` window for
+> long lists (`<Virtual><ListBox items={…} /></Virtual>`, the same with `Select` and `Table`), the
+> `DragAndDrop` wrapper
 > that lets users reorder the items of Tabs, ListBox and Accordion by dragging
 > (`<DragAndDrop onMove={…}><ListBox items={…} /></DragAndDrop>`, `onMoveBefore` can cancel),
 > Slider, Rating, ProgressLinear, Scroller, Pagination and the overlays — Popover (a panel at a
@@ -28,8 +31,10 @@ slot is `children`.
 > set is on its way. Icon renders the `tag` it is given: an element name, a Svelte component, or
 > `roleIcon(role)` — the icon of that role from the registered icon pack. Frame teleports its panel
 > into `target` (`body` by default) on the client; with `contained` it stays in place, on the
-> server too. Dialog, Drawer and the region of Toasts are teleported the same way, and `ref` of
-> Dialog and Drawer is the panel, of Toasts — the region. A field
+> server too. Dialog, Drawer, the region of Toasts and the list panel of Select are teleported the
+> same way, and `ref` of Dialog and Drawer is the panel, of Toasts — the region. The server renders
+> a Select from `items` with the text of the selected option (with tags in `multiple`); options
+> given as markup live in the panel and join the collection on the client. A field — and Select —
 > gives its class and style to the root and every other attribute to its `<input>` (a textarea —
 > to its `<textarea>`); an item of a collection gives them to its row; a list box and tabs give
 > them to the list itself, `[role=listbox]` or `[role=tablist]`; a table gives them to the

@@ -2156,7 +2156,7 @@ Table — тот же рецепт, что ListBox, с окном `Virtual` и �
 
 ## Layer 8b: Svelte Adapter (`packages/ui/svelte/src`)
 
-### ✅ IMPLEMENTED (Component / ComponentView / Stylable / Interactive / Control / ValueControl / InputControl / Textable / Button / Icon / Label / Field / Frame / Popover / Tooltip / Dialog / Drawer / Toasts / ProgressSpinner / ProgressLinear / Skeleton / Input / Textarea / CheckBox / Switch / Slider / Rating / RadioGroup / ListBox / Tabs / Accordion / Table / Virtual / Scroller / Pagination / DragAndDrop)
+### ✅ IMPLEMENTED (Component / ComponentView / Stylable / Interactive / Control / ValueControl / InputControl / Textable / Button / Icon / Label / Field / Frame / Popover / Tooltip / Dialog / Drawer / Toasts / ProgressSpinner / ProgressLinear / Skeleton / Input / Textarea / CheckBox / Switch / Slider / Rating / RadioGroup / ListBox / Tabs / Accordion / Tags / Select / Table / Virtual / Scroller / Pagination / DragAndDrop)
 
 Svelte 5 на рунах. Структура зеркалит React, потому что механика событий та же —
 колбэк-пропы:
@@ -2182,8 +2182,8 @@ Svelte 5 на рунах. Структура зеркалит React, потом�
   `adapter.connect(SvelteProfile)` (attachment корня `attachElement` и его
   половины: `bindRef` — только привязка к `TElementPlugin`, `consumerRef` —
   только запись `ref`, для корня внутри обёртки; привязанный узел разметка
-  получает руной `rootElement` — у Popover и Tooltip это якорь панели их
-  Frame) и `useCollectionAdapter` — связка фасада
+  получает руной `rootElement` — у Popover, Tooltip и Select это якорь панели
+  их Frame) и `useCollectionAdapter` — связка фасада
   коллекции: те же состояние, входы, события, приём и уничтожение, но без
   `ctrl` и привязки узла, а атрибуты — из того, что не съел компонент.
   Расширение `.svelte.ts` обязательно там, где используются руны (`$state`,
@@ -2218,8 +2218,15 @@ Svelte 5 на рунах. Структура зеркалит React, потом�
   коллекции два (свой и фасада), лифт — контекст Svelte, и элемент входит в
   коллекцию при инициализации, на сервере тоже. Слоя `Elevate`, `TDrafts` и
   пересборки, как у React, нет. Элементы из данных — петля `{#each}` по `shown`
-  (у ListBox и строк Table — по `drawn`, с распорками окна), проброс слота
-  элемента — сниппет, объявленный в петле рядом с элементом. Петля — по ключу
+  (у ListBox и Select — по секциям `drawnSections`, у строк Table — по
+  `drawn`, с распорками окна), проброс слота элемента — сниппет, объявленный в
+  петле рядом с элементом. Опции Select стоят в его панели — Frame, а
+  `Teleport` монтирует её отдельным корнем со всеми контекстами места: лифт
+  Select опции и группы читают и там, и входят в коллекцию, когда панель
+  смонтирована. Поле Select — встроенный Input на экземпляре поля Select
+  (`ctrl={field}`), теги в нём в `multiple` — встроенный Tags на инстансе и
+  коллекции тегов Select; слоты поля по сторонам Select отдаёт ему всегда, как
+  Vue свои шаблоны `leading` и `trailing`. Петля — по ключу
   записи: записи `drawn` и ячейки строки новые на каждую смену, а узел живого
   ключа `{#each}` оставляет на месте и отдаёт ему новую запись. Своей границы
   перерисовки, как `withRenderBoundary` у React и `_TableRowCells` у Vue,
@@ -2274,6 +2281,11 @@ Svelte 5 на рунах. Структура зеркалит React, потом�
   вместо своего, и где у Vue и React пустой слот уступает место иконке, у
   Svelte остаётся пусто. Так же у таблицы: заданные `header` и `cell`
   рисуются в каждом заголовке и ячейке вместо текста и значения.
+- Опции Select разметкой (`<Select.Item>`, `<Select.Group>`) стоят в панели, а
+  панели — `Frame` — на сервере нет, как у всех оверлеев: в коллекцию они
+  входят только в браузере, после гидратации, и сервер рисует такой Select с
+  пустым полем. Select из данных (`items`, `engine`) сервер рисует с текстом
+  выбранного, в `multiple` — с тегами: его опции в коллекции с самой сборки.
 - `Teleport` нарисованные узлы не переносит, а рисует содержимое заново на
   новом месте: смена `contained` или цели у Frame, поповера и выезжающей
   панели пересобирает панель вместе с её содержимым, а новый корень
