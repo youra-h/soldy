@@ -29,12 +29,13 @@
  *
  * Атрибуты `fieldText` ложатся на `<input>` последними, после атрибутов
  * потребителя. `ref` потребителя среди тех нет: он ведёт к корню поля, а не к
- * `<input>`, и отдаёт его `ref` корня (`useAdapter`, `toControlAttrs`).
+ * `<input>`, и отдаёт его `ref` корня (`useAdapter`, `toControlAttrs`). У
+ * `<textarea>` Textarea — то же правило, атрибуты — `textareaText`.
  *
  * На сервере `ref` не зовётся, эффектов нет, и текст уходит атрибутом
- * `value`: его берёт геттер на отрисовке. Сервер от браузера отличает
- * `isServer` из `solid-js/web`, как `Teleport`. При гидратации узел уже держит
- * текст сервера, и эффект его не переписывает.
+ * `value`, у `<textarea>` — её содержимым: его берёт геттер на отрисовке.
+ * Сервер от браузера отличает `isServer` из `solid-js/web`, как `Teleport`.
+ * При гидратации узел уже держит текст сервера, и эффект его не переписывает.
  *
  * Отметку и «выбрано частично» флажка Solid пишет свойствами узла и так: их
  * запись, совпавшая с узлом, ничего у поля не снимает.
@@ -50,7 +51,32 @@ import { isServer } from 'solid-js/web'
 export type TFieldText =
 	{ readonly ref: (node: HTMLInputElement) => void } | { readonly value: string | undefined }
 
-/** Текст поля по геттеру `getText` — один раз на компонент. */
+/**
+ * Атрибуты `<textarea>` для текста поля — спредом на поле, последними: в
+ * браузере `ref` поля, на сервере — `textContent`.
+ */
+export type TTextareaText =
+	| { readonly ref: (node: HTMLTextAreaElement) => void }
+	| { readonly textContent: string | undefined }
+
+/**
+ * `ref` поля, который ведёт его текст: эффект перечитывает текст на каждую
+ * смену и пишет в узел, только когда он разошёлся с узлом.
+ */
+function textRef<TNode extends HTMLInputElement | HTMLTextAreaElement>(
+	getText: () => string | undefined,
+): (node: TNode) => void {
+	return (node) => {
+		// После атрибутов узла: `ref` Solid зовёт раньше них
+		createEffect(() => {
+			const text = getText() ?? ''
+
+			if (node.value !== text) node.value = text
+		})
+	}
+}
+
+/** Текст поля `<input>` по геттеру `getText` — один раз на компонент. */
 export function fieldText(getText: () => string | undefined): TFieldText {
 	if (isServer) {
 		return {
@@ -60,14 +86,26 @@ export function fieldText(getText: () => string | undefined): TFieldText {
 		}
 	}
 
-	return {
-		ref(node: HTMLInputElement) {
-			// После атрибутов узла: `ref` Solid зовёт раньше них
-			createEffect(() => {
-				const text = getText() ?? ''
+	return { ref: textRef<HTMLInputElement>(getText) }
+}
 
-				if (node.value !== text) node.value = text
-			})
-		},
+/**
+ * Текст поля `<textarea>` по геттеру `getText` — один раз на компонент.
+ *
+ * В браузере — тот же `ref` поля, что у `<input>`. На сервере текст у
+ * `<textarea>` — её содержимое, а не атрибут `value`: атрибута `value` у неё
+ * нет, и поле в разметке сервера было бы пустым. Содержимое из спреда сервер
+ * Solid берёт из `textContent` и экранирует сам. В браузере его нет: запись
+ * `textContent` сменила бы умолчание поля, а не его текст.
+ */
+export function textareaText(getText: () => string | undefined): TTextareaText {
+	if (isServer) {
+		return {
+			get textContent() {
+				return getText()
+			},
+		}
 	}
+
+	return { ref: textRef<HTMLTextAreaElement>(getText) }
 }

@@ -103,13 +103,15 @@ export type TFieldAttributes = Omit<
 /**
  * Атрибуты `<textarea>` Textarea — как `TFieldAttributes` у `<input>`: всё,
  * кроме того, что поле ведёт само. Текст и его умолчание проводит поле
- * адаптера (`NativeTextarea`) из состояния ядра, а `readonly` и `maxlength` —
- * входы дескриптора: атрибуты `readOnly` и `maxLength` — те же свойства узла
- * под именами DOM, второй путь к тому же состоянию.
+ * адаптера (`NativeTextarea`) из состояния ядра — содержимое разметкой
+ * (`dangerouslySetInnerHTML`) у `<textarea>` React не принимает вовсе, — а
+ * `readonly` и `maxlength` — входы дескриптора: атрибуты `readOnly` и
+ * `maxLength` — те же свойства узла под именами DOM, второй путь к тому же
+ * состоянию.
  */
 export type TTextareaAttributes = Omit<
 	TextareaHTMLAttributes<HTMLTextAreaElement>,
-	'defaultValue' | 'readOnly' | 'maxLength'
+	'defaultValue' | 'dangerouslySetInnerHTML' | 'readOnly' | 'maxLength'
 >
 
 /**
