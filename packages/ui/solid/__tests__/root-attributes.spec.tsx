@@ -39,9 +39,14 @@ import {
 	Input,
 	Label,
 	ListBox,
+	Pagination,
+	ProgressLinear,
 	ProgressSpinner,
 	RadioGroup,
+	Rating,
+	Scroller,
 	Skeleton,
+	Slider,
 	Switch,
 	Table,
 	Tabs,
@@ -63,10 +68,15 @@ import {
 	type LabelProps,
 	type ListBoxItemProps,
 	type ListBoxProps,
+	type PaginationProps,
+	type ProgressLinearProps,
 	type ProgressSpinnerProps,
 	type RadioGroupItemProps,
 	type RadioGroupProps,
+	type RatingProps,
+	type ScrollerProps,
 	type SkeletonProps,
+	type SliderProps,
 	type SwitchProps,
 	type TableProps,
 	type TabsContentProps,
@@ -83,8 +93,13 @@ type TProbeProps = ButtonProps &
 	FrameProps &
 	IconProps &
 	LabelProps &
+	ProgressLinearProps &
 	ProgressSpinnerProps &
 	SkeletonProps &
+	SliderProps &
+	RatingProps &
+	ScrollerProps &
+	PaginationProps &
 	TabsProps &
 	AccordionProps &
 	RadioGroupProps &
@@ -112,8 +127,13 @@ const COMPONENTS: ReadonlyArray<
 	['Frame', Frame, '.so-frame', { visible: true }],
 	['Icon', Icon, '.so-icon', { tag: 'i' }],
 	['Label', Label, '.so-label', {}],
+	['ProgressLinear', ProgressLinear, '.so-progress-linear', {}],
 	['ProgressSpinner', ProgressSpinner, '.so-progress-spinner', {}],
 	['Skeleton', Skeleton, '.so-skeleton', {}],
+	['Slider', Slider, '.so-slider', {}],
+	['Rating', Rating, '.so-rating', {}],
+	['Scroller', Scroller, '.so-scroller', {}],
+	['Pagination', Pagination, '.so-pagination', {}],
 	['Tabs.Content', TabsContentProbe, '.so-tabs__panel', {}],
 	['Accordion', Accordion, '.so-accordion', {}],
 	['RadioGroup', RadioGroup, '.so-radio-group', {}],
@@ -643,6 +663,12 @@ const ROOTS: ReadonlyArray<
 	['Icon', (props) => <Icon tag="i" {...props} />, '.so-icon', '.so-icon'],
 	['Label', (props) => <Label {...props} />, '.so-label', '.so-label'],
 	[
+		'ProgressLinear',
+		(props) => <ProgressLinear {...props} />,
+		'.so-progress-linear',
+		'.so-progress-linear',
+	],
+	[
 		'ProgressSpinner',
 		(props) => <ProgressSpinner {...props} />,
 		'.so-progress-spinner',
@@ -653,6 +679,10 @@ const ROOTS: ReadonlyArray<
 	['Switch', (props) => <Switch {...props} />, '.so-switch', '.so-switch'],
 	['Input', (props) => <Input {...props} />, '.so-input', '.so-input'],
 	['Textarea', (props) => <Textarea {...props} />, '.so-textarea', '.so-textarea'],
+	['Slider', (props) => <Slider {...props} />, '.so-slider', '.so-slider'],
+	['Rating', (props) => <Rating {...props} />, '.so-rating', '.so-rating'],
+	['Scroller', (props) => <Scroller {...props} />, '.so-scroller', '.so-scroller'],
+	['Pagination', (props) => <Pagination {...props} />, '.so-pagination', '.so-pagination'],
 	['Tabs', (props) => <Tabs {...props} />, '.so-tabs', '.so-tabs'],
 	['Tabs.Item', (props) => <TabsItemProbe {...props} />, '.so-tabs-item', '.so-tabs-item'],
 	[

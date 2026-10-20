@@ -17,9 +17,14 @@ import {
 	Input,
 	Label,
 	ListBox,
+	Pagination,
+	ProgressLinear,
 	ProgressSpinner,
 	RadioGroup,
+	Rating,
+	Scroller,
 	Skeleton,
+	Slider,
 	Switch,
 	Table,
 	Tabs,
@@ -132,6 +137,21 @@ export const PREVIEWS: Record<string, TPreview> = {
 		</Field>
 	),
 
+	// Имени у ползунка нет, как у чекбокса: видимое даёт подпись Label, над
+	// ползунком. Горизонтальный тянется на её ширину, вертикальный — своей высоты
+	slider: (bind) => (
+		<Label text="Громкость" position="top">
+			<Slider {...bind()} />
+		</Label>
+	),
+
+	// Имени у оценки нет, как у ползунка: видимое даёт подпись Label над звёздами
+	rating: (bind) => (
+		<Label text="Оценка" position="top">
+			<Rating {...bind()} />
+		</Label>
+	),
+
 	// Подпись — содержимым: текста у радио нет, оно голый контрол, как CheckBox
 	'radio-group': (bind) => (
 		<RadioGroup {...bind()}>
@@ -149,6 +169,28 @@ export const PREVIEWS: Record<string, TPreview> = {
 				<For each={ITEMS}>{(item) => <ListBox.Item {...item} />}</For>
 			)}
 		</ListBox>
+	),
+
+	// Содержимого у пагинации нет: страницы окна кладёт в коллекцию она сама.
+	// Язык номеров и имён стрелок — из шапки стенда
+	pagination: (bind) => <Pagination {...bind()} />,
+
+	// Содержимое ленты — просто разметка: каждый элемент — прямой ребёнок
+	// вьюпорта, по ним тема ставит точки снапа, а плагин считает края. Обёртка —
+	// граница ширины: сцена ячейки — флексбокс, и лента шириной по содержимому
+	// вылезла бы за колонку целиком — листать стало бы нечего
+	scroller: (bind) => (
+		<div style={{ width: '100%' }}>
+			<Scroller {...bind()}>
+				<For each={ITEMS}>
+					{(item) => (
+						<span style={{ padding: '4px 12px', 'white-space': 'nowrap' }}>
+							{item.text} пункт ленты
+						</span>
+					)}
+				</For>
+			</Scroller>
+		</div>
 	),
 
 	// Строки и колонки — данными, как у Vue и React: частей разметкой у таблицы
@@ -180,6 +222,16 @@ export const PREVIEWS: Record<string, TPreview> = {
 	accordion: (bind) => <Accordion {...bind()}>{accordionItems()}</Accordion>,
 
 	icon: (bind) => <Icon tag={ARROW_DOWN} {...bind()} />,
+
+	// Длину горизонтальной полосе даёт контейнер, своей у неё нет. Обёртка —
+	// граница ширины, как у ленты; вертикальная — строчный блок своей высоты, и
+	// обёртка ей не мешает. По умолчанию полоса пуста: доля — ноль, а бег — флаг
+	// `indeterminate`
+	'progress-linear': (bind) => (
+		<div style={{ width: '100%' }}>
+			<ProgressLinear {...bind()} />
+		</div>
+	),
 
 	// Кольцо строчное и своего размера. По умолчанию оно пусто — доля ноль, а
 	// бег — флаг `indeterminate`

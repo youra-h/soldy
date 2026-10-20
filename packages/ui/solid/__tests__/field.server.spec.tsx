@@ -21,7 +21,7 @@
 import { describe, it, expect } from 'vitest'
 import type { JSX } from 'solid-js'
 import { renderToString } from 'solid-js/web'
-import { Field, Input, RadioGroup } from '@soldy-ui/solid'
+import { Field, Input, RadioGroup, Rating, Slider } from '@soldy-ui/solid'
 
 /** Открывающий тег разметки: имя и атрибуты; атрибут без значения — пустая строка. */
 type TTag = {
@@ -123,6 +123,38 @@ describe('Field · серверный рендер', () => {
 			withClass(body, 'so-field__label').attributes.id,
 		)
 		expect(group.attributes['aria-describedby']).toBe(
+			withClass(body, 'so-field__helper').attributes.id,
+		)
+	})
+
+	it('ползунок с несколькими ручками: группа со ссылками на подпись и справку', () => {
+		const body = render(() => (
+			<Field label="Цена" helper="Подсказка">
+				<Slider value={[20, 80]} thumbLabels={['От', 'До']} />
+			</Field>
+		))
+		const group = withClass(body, 'so-slider')
+
+		expect(group.attributes.role).toBe('group')
+		expect(group.attributes['aria-labelledby']).toBe(
+			withClass(body, 'so-field__label').attributes.id,
+		)
+		expect(group.attributes['aria-describedby']).toBe(
+			withClass(body, 'so-field__helper').attributes.id,
+		)
+	})
+
+	it('оценка — labelable: for подписи — на id её поля, справка — у поля', () => {
+		const body = render(() => (
+			<Field label="Оценка" helper="Подсказка">
+				<Rating value={3} />
+			</Field>
+		))
+		const input = named(body, 'input')
+
+		expect(input.attributes.id).toBeTruthy()
+		expect(withClass(body, 'so-field__label').attributes.for).toBe(input.attributes.id)
+		expect(input.attributes['aria-describedby']).toBe(
 			withClass(body, 'so-field__helper').attributes.id,
 		)
 	})

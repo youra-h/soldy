@@ -1104,11 +1104,17 @@ useToasts()`. API опускает лифт (`TOASTS_ELEVATOR`, расширен
   `plugins/__tests__/slide-pointer.plugin.spec.ts`,
   `plugins/__tests__/slide-snap-strategies.spec.ts`,
   `plugins/__tests__/slide-keyboard.plugin.spec.ts`,
-  `ui/vue/__tests__/slider.spec.ts`, `ui/react/__tests__/slider.spec.tsx` и
-  `playground/vue/browser/slider.spec.ts`; ползунок в поле формы —
-  `ui/vue/__tests__/field.spec.ts` и `ui/react/__tests__/field.spec.tsx`
-  («Slider с несколькими ручками в поле») и
-  `playground/vue/browser/field.spec.ts`.
+  `ui/vue/__tests__/slider.spec.ts`, `ui/react/__tests__/slider.spec.tsx`,
+  `ui/solid/__tests__/slider.spec.tsx` (сверх сценариев Vue — ручки по месту и
+  значение поля после хода, ниже) и `playground/vue/browser/slider.spec.ts`;
+  ползунок в поле формы — `ui/vue/__tests__/field.spec.ts`,
+  `ui/react/__tests__/field.spec.tsx` и `ui/solid/__tests__/field.spec.tsx`
+  («Slider с несколькими ручками в поле»), `playground/vue/browser/field.spec.ts`.
+  **Solid**: выходы `thumbs` и `shownMarks` — новые записи на каждую смену, и
+  петля идёт по месту (`Index`), как `:key="index"` у Vue: ручка остаётся тем
+  же узлом, и фокус её поля переживает шаг клавишей. Значение поля пишет его
+  `ref` (`fieldText`) — после хода поля, как `value` последним у Vue: записанное
+  раньше нового `max`, оно встало бы на прежний край.
 - **Rating** — Rating Slider (APG): ползунок с одной ручкой, у которого
   шкала — ряд звёзд, а не группа радио. Звёзды потребитель не адресует, и
   элементами коллекции они не стали бы (см. «Часть или слот»), а
@@ -1158,7 +1164,9 @@ useToasts()`. API опускает лифт (`TOASTS_ELEVATOR`, расширен
   `plugins/__tests__/names.plugin.spec.ts`,
   `plugins/__tests__/rating-validity.plugin.spec.ts` (ошибка поля по оценке,
   обязательности, только для показа и локали, на новом узле, снятие),
-  `ui/vue/__tests__/rating.spec.ts`, `ui/react/__tests__/rating.spec.tsx` и
+  `ui/vue/__tests__/rating.spec.ts`, `ui/react/__tests__/rating.spec.tsx`,
+  `ui/solid/__tests__/rating.spec.tsx` (сверх сценариев Vue — предпросмотр не
+  пересоздаёт звёзды: петля по месту, `Index`, как у ручек Slider) и
   `playground/vue/browser/rating.spec.ts` (форма без оценки не уходит,
   сообщение и фокус от браузера, только для показа уходит с 0, тон ошибки у
   пустых звёзд после попытки отправить).
@@ -1249,7 +1257,8 @@ useToasts()`. API опускает лифт (`TOASTS_ELEVATOR`, расширен
   рядом с `Highlight` во многих палитрах она почти того же цвета, и долю было
   не разглядеть. Сторожат `core/__tests__/progress-linear.spec.ts`,
   `ui/vue/__tests__/progress-linear.spec.ts`,
-  `ui/react/__tests__/progress-linear.spec.tsx` и
+  `ui/react/__tests__/progress-linear.spec.tsx`,
+  `ui/solid/__tests__/progress-linear.spec.tsx` и
   `playground/vue/browser/progress-linear.spec.ts`; как бег и доля выглядят,
   оценивает глаз — ручные сценарии `/tests/motion/progress-linear` на стенде.
 - **ProgressSpinner** — индикатор выполнения кольцом: вторая форма той же
@@ -1548,12 +1557,17 @@ useToasts()`. API опускает лифт (`TOASTS_ELEVATOR`, расширен
   ключ места — `uid` страницы, у пропуска — `uid` страницы за ним с минусом.
   Пропуск — разметка владельца, а не элемент; страница (`PaginationItem`) —
   внутренняя часть, как тост у Toasts: в разметку её не ставят, наружу пакета
-  она не выходит. Сторожат `core/__tests__/pagination.spec.ts`,
+  она не выходит. В Solid петля по окну — по ключу места (`KeyedFor`): записи
+  `cells` новые на каждую смену, а `<For>`, сравнивая их по ссылке,
+  пересоздавал бы страницы вместе с фокусом. Сторожат
+  `core/__tests__/pagination.spec.ts`,
   `plugins/__tests__/names.plugin.spec.ts`,
   `plugins/__tests__/pagination-focus.plugin.spec.ts`,
   `ui/vue/__tests__/pagination.spec.ts`,
   `ui/react/__tests__/pagination.spec.tsx` (в том числе окно и текущая в
-  серверной разметке и гидратация) и
+  серверной разметке и гидратация), `ui/solid/__tests__/pagination.spec.tsx`
+  (сверх сценариев Vue — смена окна не зовёт слот страниц, оставшихся на
+  экране), «Pagination» в `ui/solid/__tests__/collections.server.spec.tsx` и
   `playground/vue/browser/pagination.spec.ts` (фокус со стрелки, погасшей
   у края, — на текущую, и Tab мимо погасшей стрелки).
 - **Table** — Table и Sortable Table (APG): нативные `table`, `thead`,

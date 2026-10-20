@@ -24,8 +24,13 @@ import {
 	Icon,
 	Input,
 	Label,
+	Pagination,
+	ProgressLinear,
 	ProgressSpinner,
+	Rating,
+	Scroller,
 	Skeleton,
+	Slider,
 	Switch,
 	Textarea,
 	roleIcon,
@@ -115,6 +120,15 @@ describe('стиль и наборы на сервере', () => {
 		expect(body).toContain('style="--so-progress-spinner-fraction:0.4"')
 	})
 
+	it('ProgressLinear — доля в стиле корня, роль, значения и заливка', () => {
+		const body = markup(renderToString(() => <ProgressLinear value={40} />))
+
+		expect(body).toMatch(/^<span [^>]*role="progressbar"/)
+		expect(body).toContain('aria-valuenow="40"')
+		expect(body).toContain('style="--so-progress-linear-percent:40%"')
+		expect(body).toContain('<span class="so-progress-linear__range"></span>')
+	})
+
 	it('Skeleton — заглушка и содержимое, корень не скрыт', () => {
 		const body = markup(
 			renderToString(() => (
@@ -128,6 +142,60 @@ describe('стиль и наборы на сервере', () => {
 		expect(body).toContain('aria-busy="true"')
 		expect(body).toContain('<span>Панель</span>')
 		expect(body).not.toContain('display:none')
+	})
+})
+
+/**
+ * Ползунок и оценка на сервере: поле со значением — атрибутом `value`, его
+ * отдаёт `fieldText` вместо `ref`. Ход, позиции и доли — в той же разметке,
+ * так что первый кадр клиента их уже видит.
+ */
+describe('Slider и Rating · серверный рендер', () => {
+	it('Slider — ручка на значение: позиция, поле с ходом и значением, подсказка', () => {
+		const body = markup(renderToString(() => <Slider value={[20, 80]} tooltip="always" />))
+
+		expect(body).toMatch(/^<span [^>]*role="group"/)
+		expect(body).toContain('style="--so-slider-range-start:20%;--so-slider-range-end:80%"')
+		expect(body.match(/<input [^>]*>/g)).toEqual([
+			expect.stringMatching(/min="0" max="80" step="1"[^>]* value="20"/),
+			expect.stringMatching(/min="20" max="100" step="1"[^>]* value="80"/),
+		])
+		expect(body.match(/style="--so-slider-position:\d+%"/g)).toEqual([
+			'style="--so-slider-position:20%"',
+			'style="--so-slider-position:80%"',
+		])
+		expect(body).toContain('<span class="so-slider__tooltip" aria-hidden="true">20</span>')
+	})
+
+	it('Rating — звёзды с долей заливки и поле со значением и тем, как оно звучит', () => {
+		const body = markup(renderToString(() => <Rating value={2} max={3} />))
+
+		expect(body.match(/--so-rating-fraction:[\d.]+/g)).toEqual([
+			'--so-rating-fraction:1',
+			'--so-rating-fraction:1',
+			'--so-rating-fraction:0',
+		])
+		expect(body.match(/<svg [^>]*class="so-rating__icon ?"/g)).toHaveLength(6)
+		expect(body).toMatch(/<input [^>]*min="0" max="3" step="1"[^>]*value="2"/)
+		expect(body).toContain('aria-valuetext="2 of 3"')
+	})
+})
+
+describe('Scroller · серверный рендер', () => {
+	/** Имена кнопок пишет плагин имён при сборке, а она идёт и на сервере. */
+	it('кнопки с именами и вьюпорт с содержимым', () => {
+		const body = markup(
+			renderToString(() => (
+				<Scroller>
+					<span>Пункт</span>
+				</Scroller>
+			)),
+		)
+
+		expect(body).toMatch(/^<div [^>]*data-can-prev="false"[^>]*data-can-next="false"/)
+		expect(body).toContain('aria-label="Scroll back"')
+		expect(body).toContain('aria-label="Scroll forward"')
+		expect(body).toMatch(/<div class="so-scroller__viewport ?" ><span>Пункт<\/span><\/div>/)
 	})
 })
 
@@ -177,12 +245,17 @@ describe('ref потребителя · серверный рендер', () => 
 			['Frame', (ref) => <Frame contained visible ref={ref} />],
 			['Icon', (ref) => <Icon tag="i" ref={ref} />],
 			['Label', (ref) => <Label ref={ref} />],
+			['ProgressLinear', (ref) => <ProgressLinear ref={ref} />],
 			['ProgressSpinner', (ref) => <ProgressSpinner ref={ref} />],
 			['Skeleton', (ref) => <Skeleton ref={ref} />],
 			['Input', (ref) => <Input ref={ref} />],
 			['Textarea', (ref) => <Textarea value="текст" counter ref={ref} />],
 			['CheckBox', (ref) => <CheckBox ref={ref} />],
 			['Switch', (ref) => <Switch ref={ref} />],
+			['Slider', (ref) => <Slider ref={ref} />],
+			['Rating', (ref) => <Rating ref={ref} />],
+			['Scroller', (ref) => <Scroller ref={ref} />],
+			['Pagination', (ref) => <Pagination total={30} ref={ref} />],
 		]
 
 	/**

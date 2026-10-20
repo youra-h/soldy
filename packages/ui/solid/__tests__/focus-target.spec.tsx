@@ -3,10 +3,12 @@
  *
  * Сценарии — те же, что у Vue (`focus-target.spec.ts`) и React
  * (`focus-target.spec.tsx`), по компонентам адаптера. У поля корень — коробка
- * вокруг `<input>`, у ListBox — рамка вокруг узла списка, у Tabs — рамка со
- * списком табов и панелями, у группы радио и аккордеона — контейнер
- * остановок, у элемента коллекции — обёртка вокруг строки; узел фокуса
- * называет правило дескриптора (`focusTarget` плагина действия).
+ * вокруг `<input>`, у ползунка и оценки — дорожка вокруг полей ручек, у ListBox
+ * — рамка вокруг узла списка, у Tabs — рамка со списком табов и панелями, у
+ * группы радио и аккордеона — контейнер остановок, у пагинации — `nav` без
+ * своей остановки, у ленты — ряд из кнопок и вьюпорта, у элемента коллекции —
+ * обёртка вокруг строки; узел фокуса называет правило дескриптора
+ * (`focusTarget` плагина действия).
  *
  * Своё у Solid — такт: смену состояния он применяет к DOM синхронно, и
  * разметка отстаёт от модели только внутри `batch`.
@@ -21,8 +23,12 @@ import {
 	TInput,
 	TListBox,
 	TListBoxItem,
+	TPagination,
 	TRadioGroup,
 	TRadioGroupItem,
+	TRating,
+	TScroller,
+	TSlider,
 	TSwitch,
 	TTabs,
 	TTabsItem,
@@ -34,7 +40,11 @@ import {
 	CheckBox,
 	Input,
 	ListBox,
+	Pagination,
 	RadioGroup,
+	Rating,
+	Scroller,
+	Slider,
 	Switch,
 	Tabs,
 	Textarea,
@@ -94,6 +104,52 @@ const CASES: Record<string, TCase> = {
 			return { ctrl, node: () => <Switch ctrl={ctrl} /> }
 		},
 		target: 'input',
+	},
+	// Фокус держит поле ручки, а корень — ряд звёзд вокруг
+	Rating: {
+		render: () => {
+			const ctrl = new TRating()
+
+			return { ctrl, node: () => <Rating ctrl={ctrl} /> }
+		},
+		target: 'input',
+	},
+	// Фокус держат поля ручек, а корень — дорожка вокруг: поле первой ручки
+	Slider: {
+		render: () => {
+			const ctrl = new TSlider({ value: [20, 80] })
+
+			return { ctrl, node: () => <Slider ctrl={ctrl} /> }
+		},
+		// Первое поле по документу — поле первой ручки
+		target: '.so-slider input',
+	},
+	// Корень — `nav` без своей остановки: фокус — на кнопке текущей страницы
+	Pagination: {
+		render: () => {
+			const ctrl = new TPagination()
+
+			return { ctrl, node: () => <Pagination ctrl={ctrl} total={50} value={3} /> }
+		},
+		target: '[aria-current="page"]',
+		// Стрелка «назад» на третьей странице включена — остановка перед страницами
+		before: '.so-pagination__prev',
+	},
+	'Scroller со своими остановками': {
+		render: () => {
+			const ctrl = new TScroller()
+
+			return {
+				ctrl,
+				node: () => (
+					<Scroller ctrl={ctrl}>
+						<button class="target">A</button>
+						<button>B</button>
+					</Scroller>
+				),
+			}
+		},
+		target: '.target',
 	},
 	'RadioGroup.Item': {
 		render: () => {
@@ -410,5 +466,29 @@ describe('RadioGroup · отметка по модели', () => {
 		})
 
 		expect(document.activeElement).toBe(target())
+	})
+})
+
+describe('Scroller · вьюпорт — остановка', () => {
+	/**
+	 * Своих остановок в ленте нет, а листать есть куда: остановка — сам
+	 * вьюпорт. Замер в jsdom нулевой, поэтому факт приносит инстанс — как
+	 * `scroller.spec.tsx`.
+	 */
+	it('своих остановок нет — фокус на вьюпорте, а не на кнопке «вперёд»', async () => {
+		const ctrl = new TScroller()
+
+		mount(() => (
+			<Scroller ctrl={ctrl}>
+				<span>A</span>
+			</Scroller>
+		))
+		await nextFrame()
+
+		ctrl.notifyViewport({ canPrev: false, canNext: true, hasTabStops: false })
+		ctrl.focused = true
+
+		expect(document.activeElement).toBe(find(document, '.so-scroller__viewport', HTMLElement))
+		expect(ctrl.focused).toBe(true)
 	})
 })
