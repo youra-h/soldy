@@ -28,6 +28,11 @@ import type { IOverlayOpenOptions, IOverlayOpenState } from '../types'
  * старта, обрабатывается так же, как только корень объявлен. Своё место
  * первого фокуса наследник подставляет точкой `_focusCandidates`: панель
  * DatePicker ставит его на день сетки, а не на первую кнопку календаря.
+ * Обе операции открытия наследнику доступны: снять кадр этого открытия
+ * (`_cancelFocusFrame`) — фокус остаётся, где был, — и увести фокус в
+ * открытую панель сейчас (`_focusPanel`). Так пункт меню с панелью оставляет
+ * фокус на строке, когда панель открыл указатель, и ведёт его в панель
+ * клавишей.
  *
  * **Закрытие.** Фокус возвращается на запомненный элемент, а если там был
  * `body` или элемент уже отсоединён — на то, что подставит наследник
@@ -218,7 +223,8 @@ export abstract class TOverlayFocusPlugin<
 	}
 
 	/**
-	 * Фокус — в панель, на первого из кандидатов, кто его примет.
+	 * Фокус — в панель, на первого из кандидатов, кто его примет. Панели нет —
+	 * оверлей закрыт или корня ещё нет — ничего.
 	 *
 	 * Окно к нему не прокручивается (`preventScroll`): место панели решает её
 	 * раскладка, а не фокус. Кадр фокуса идёт раньше наблюдателей размера, и
@@ -227,7 +233,7 @@ export abstract class TOverlayFocusPlugin<
 	 * Прокрутка к ней увела бы страницу, и панель осталась бы внизу, а не
 	 * встала над полем.
 	 */
-	private _focusPanel(): void {
+	protected _focusPanel(): void {
 		const panel = this._panel
 
 		if (panel) focusFirst(this._focusCandidates(panel), { preventScroll: true })
@@ -284,7 +290,12 @@ export abstract class TOverlayFocusPlugin<
 		if (event.key === 'Tab') this._onTab(event)
 	}
 
-	private _cancelFocusFrame(): void {
+	/**
+	 * Снять кадр, которым фокус уйдёт в панель при этом открытии: фокус
+	 * остаётся, где был. Кадра нет — оверлей закрыт или фокус уже увели —
+	 * ничего.
+	 */
+	protected _cancelFocusFrame(): void {
 		if (this._focusFrame === null) return
 
 		cancelAnimationFrame(this._focusFrame)

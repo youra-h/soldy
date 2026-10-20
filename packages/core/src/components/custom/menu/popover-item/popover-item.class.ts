@@ -19,9 +19,9 @@ import type { IMenuPopoverItem, IMenuPopoverItemProps, TMenuPopoverItemEvents } 
  * ARIA у строки, решает ядро, а наличия слота оно не видит. Своего у вида —
  * только содержимое панели: `lazyMount` не монтирует его до первого открытия,
  * как у Popover, — календарь каждого пункта иначе монтировался бы вместе с
- * меню. Открывается панель так же, как подменю, — нажатием строки, Enter,
- * пробелом и стрелкой к концу строки; фокус, Escape и Tab — у модели фокуса
- * пункта (плагин).
+ * меню. Открывается панель так же, как подменю, — наведением, нажатием
+ * строки, Enter, пробелом и стрелкой к концу строки; фокус, Escape и Tab — у
+ * модели фокуса пункта (плагин).
  */
 export default class TMenuPopoverItem
 	extends TMenuPopupItem<IMenuPopoverItemProps, TMenuPopoverItemEvents>

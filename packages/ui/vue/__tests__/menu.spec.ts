@@ -1286,6 +1286,23 @@ describe('пункт с панелью', () => {
 		expect(document.activeElement).toBe(find('.so-test-earlier'))
 	})
 
+	it('стрелка к концу строки открытого пункта ведёт фокус в его панель', async () => {
+		await render(() => markup())
+
+		await openOnDue()
+		await press(dueRow(), 'ArrowRight')
+		// Фокус на строке, панель открыта — как после открытия наведением
+		await press(find('.so-test-earlier'), 'Tab', { shiftKey: true })
+
+		expect(document.activeElement).toBe(dueRow())
+
+		const event = await press(dueRow(), 'ArrowRight')
+
+		expect(event.defaultPrevented).toBe(true)
+		expect(shown(duePanel())).toBe(true)
+		expect(document.activeElement).toBe(find('.so-test-earlier'))
+	})
+
 	it('Tab с последней остановки закрывает всё меню и ведёт к остановке за ним', async () => {
 		await render(() => h('div', [markup(), h('button', { class: 'so-test-after' }, 'После')]))
 
