@@ -332,3 +332,27 @@ describe('сторож: коллекция над владельцем и дви
 		expect(leftovers(spies)).toEqual([])
 	})
 })
+
+/**
+ * Новое монтирование над тем же владельцем и движком бывает принято раньше,
+ * чем снято прежнее: компонент перенесён к другому родителю за одну
+ * перерисовку. Привязка владельца — одно монтирование: снимает её только
+ * держатель, фасад последнего принятого, и снятие прежнего её не трогает.
+ */
+describe('сторож: новое монтирование принято раньше, чем снято прежнее — владелец остаётся за новым', () => {
+	it.each(Object.entries(COLLECTIONS))('%s', (_name, kit) => {
+		const { owner, engine, mount } = kit()
+		const spies = spyOutside(owner, engine)
+		const unmountFirst = mount()
+		const unmountSecond = mount()
+
+		unmountFirst()
+
+		expect(engine.options.get('owner')).toBe(owner)
+
+		unmountSecond()
+
+		expect(engine.options.get('owner')).toBeUndefined()
+		expect(leftovers(spies)).toEqual([])
+	})
+})

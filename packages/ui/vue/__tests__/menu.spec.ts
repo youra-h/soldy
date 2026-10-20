@@ -15,7 +15,12 @@ import { mount } from '@vue/test-utils'
 import { defineComponent, h, nextTick, ref, type VNode } from 'vue'
 import { Button, Menu } from '@soldy-ui/vue'
 import { createEngineMenu } from '@soldy-ui/core'
-import type { IMenuItem, IMenuItemSource, TMenuCollection } from '@soldy-ui/core'
+import type {
+	IMenuItem,
+	IMenuItemSource,
+	TCollectionEngineItemSource,
+	TMenuCollection,
+} from '@soldy-ui/core'
 import type { DescriptorSlots, MenuDescriptor } from '@soldy-ui/setup'
 
 const nextFrame = () => new Promise((resolve) => requestAnimationFrame(resolve))
@@ -1692,6 +1697,92 @@ describe('подменю', () => {
 
 			expect(chosen).toEqual(['png'])
 			expect(shown(rootPanel())).toBe(false)
+		})
+
+		/** Запись подменю из данных по значению пункта. */
+		function submenuOf(engine: TMenuCollection, value: string) {
+			const { batch, submenus } = engine.extensions
+			const item = batch.items.find((candidate) => candidate.value === value)
+			const entry = item ? submenus.entries.get(item) : undefined
+
+			if (!entry) throw new Error(`подменю «${value}» нет`)
+
+			return entry
+		}
+
+		/**
+		 * Подменю, переехавшее в другую секцию, Vue за одну перерисовку снимает
+		 * и монтирует заново — с той же записью: тем же пунктом и тем же
+		 * движком. Новое монтирование привязывает владельца движка подменю
+		 * раньше, чем снимается прежнее (`onUnmounted` — после прохода
+		 * перерисовки), и снятие прежнего привязку нового не трогает.
+		 */
+		it('переезд в другую группу: владелец движка подменю на месте, размер меню — у его пунктов, выбор — до корня', async () => {
+			const chosen: unknown[] = []
+			const size = ref<'lg' | 'sm'>('lg')
+			const engine = createEngineMenu()
+			const nested: IMenuItemSource[] = [
+				{ value: 'link', text: 'Ссылка' },
+				{ value: 'mail', text: 'Почта' },
+			]
+			const items = ref<TCollectionEngineItemSource<IMenuItemSource>[]>([
+				{ value: 'share', text: 'Поделиться', items: nested, _: { group: 'g' } },
+				{ value: 'remove', text: 'Удалить' },
+			])
+			const sections = () => engine.extensions.group.sections.map((section) => section.key)
+
+			engine.extensions.batch.trackBy = (item) => item.value
+
+			await render(() =>
+				h(
+					Menu,
+					{
+						engine,
+						items: items.value,
+						groups: [{ key: 'g' }],
+						size: size.value,
+						onChoose: (item: IMenuItem) => chosen.push(item.value),
+					},
+					{ trigger },
+				),
+			)
+
+			const share = submenuOf(engine, 'share')
+			const row = shareRow()
+
+			expect(sections()).toEqual(['group:g', 'free'])
+			expect(share.engine.options.get('owner')).toBe(share.ctrl)
+
+			// Патч снял группу: подменю переезжает в секцию без группы
+			items.value = [
+				{ value: 'share', text: 'Поделиться', items: nested, _: { group: undefined } },
+				{ value: 'remove', text: 'Удалить' },
+			]
+			await nextTick()
+			await nextFrame()
+
+			// Перемонтировано — новые узлы, та же запись
+			expect(sections()).toEqual(['free'])
+			expect(row.isConnected).toBe(false)
+			expect(submenuOf(engine, 'share')).toBe(share)
+			expect(share.engine.options.get('owner')).toBe(share.ctrl)
+
+			// Размер меню доходит до пунктов подменю через его владельца
+			size.value = 'sm'
+			await nextTick()
+
+			expect(rowIn(subPanel(), 'Ссылка').parentElement?.classList).toContain(
+				'so-menu-item--size-sm',
+			)
+
+			await open()
+			await click(shareRow())
+			await click(rowIn(subPanel(), 'Почта'))
+			await nextFrame()
+
+			expect(chosen).toEqual(['mail'])
+			expect(shown(rootPanel())).toBe(false)
+			expect(shown(subPanel())).toBe(false)
 		})
 	})
 })
