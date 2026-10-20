@@ -43,10 +43,11 @@ function fillerStyleOf(entry: TDrawnEntry<IListBoxItem>): JSX.CSSProperties | un
  * Элементы — содержимое (`<ListBox.Item>`), а без него — то, что рисует
  * коллекция, по секциям группировки (`drawnSections`): группа с подписью — в
  * `ListBoxGroup`, элементы без группы — прямо в списке, между соседними
- * секциями — немой разделитель (`aria-hidden`, не `separator`: в `listbox`
- * ARIA пускает только опции и группы). Секции идут порядком показанного, и
- * стрелки ходят так же, как элементы стоят на экране. Без групп секция одна —
- * ни обёртки, ни разделителя. В секции — её записи по порядку: без окна это
+ * секциями, пока его просит список (`groupSeparators`), — немой разделитель
+ * (`aria-hidden`, не `separator`: в `listbox` ARIA пускает только опции и
+ * группы). Секции идут порядком показанного, и стрелки ходят так же, как
+ * элементы стоят на экране. Без групп секция одна — ни обёртки, ни
+ * разделителя. В секции — её записи по порядку: без окна это
  * все показанные элементы секции, по `ListBoxItem` на каждый, в окне обёртки
  * `Virtual` (у списка без групп) — видимые и распорки на месте пропущенных:
  * `div` под `aria-hidden`, высоту которого тема берёт из его стиля, а стиль
@@ -125,12 +126,13 @@ export function ListBox(props: ListBoxProps): JSX.Element {
 		state.drawnSections?.[0]?.key === section().key
 
 	/**
-	 * Секция: разделитель перед всеми, кроме первой, а дальше группа с
-	 * подписью или записи без группы прямо в списке.
+	 * Секция: разделитель перед ней, если она не первая и список их просит
+	 * (`groupSeparators`), а дальше группа с подписью или записи без группы
+	 * прямо в списке.
 	 */
 	const drawSection = (section: Accessor<TDrawnSection<IListBoxItem>>) => (
 		<>
-			<Show when={!isFirst(section)}>
+			<Show when={state.groupSeparators && !isFirst(section)}>
 				<div class="so-list-box__separator" aria-hidden="true" />
 			</Show>
 			<Show when={section().group} fallback={drawEntries(section)}>

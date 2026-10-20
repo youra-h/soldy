@@ -88,7 +88,8 @@ export default { ...SetupMenu, components: { Frame, MenuGroup, MenuItem, MenuSep
 						разметкой. Петля — по секциям показанных пунктов
 						(`sections`), ключ — ключ секции: группа с подписью — в
 						`MenuGroup`, пункты без группы — прямо в списке, между
-						соседними секциями — разделитель. Секции идут порядком
+						соседними секциями, пока его просит меню
+						(`groupSeparators`), — разделитель. Секции идут порядком
 						показанного, поэтому стрелки ходят так же, как пункты стоят
 						на экране. Без групп секция одна — ни обёртки, ни
 						разделителя.
@@ -99,7 +100,7 @@ export default { ...SetupMenu, components: { Frame, MenuGroup, MenuItem, MenuSep
 						пунктов без неё: обёртка у них разная.
 					-->
 					<template v-for="(section, index) in sections" :key="section.key">
-						<MenuSeparator v-if="index > 0" />
+						<MenuSeparator v-if="groupSeparators && index > 0" />
 						<MenuGroup v-if="section.group" :label="section.group.label">
 							<MenuItem v-for="item in section.items" :key="item.uid" :ctrl="item">
 								<template #leading>

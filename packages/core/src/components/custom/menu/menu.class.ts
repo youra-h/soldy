@@ -47,23 +47,30 @@ const samePoint = (a: TMenuPoint | null, b: TMenuPoint | null): boolean =>
  * (`panelClasses`): панель телепортирована, и модификаторы корня до неё не
  * доходят, а размер подписей групп и цвет пунктов без своего варианта тема
  * берёт с неё. Пунктам размер пишет коллекция, вариант у пункта свой.
+ *
+ * Разделитель между секциями группировки пунктов из данных у меню по
+ * умолчанию есть (`groupSeparators`), у ListBox и Select — нет (решение
+ * владельца). Рисует его разметка, по секциям показанного (`sections` фасада
+ * меню).
  */
 export class TMenu extends TStylable<IMenuProps, TMenuEvents> implements IMenu {
 	static override baseClass = 'so-menu'
 
 	static defaultValues: typeof TStylable.defaultValues &
-		TDefaultValues<IMenuProps, 'open' | 'placement' | 'openOn'> = {
+		TDefaultValues<IMenuProps, 'open' | 'placement' | 'openOn' | 'groupSeparators'> = {
 		...TStylable.defaultValues,
 		// Строчный корень: меню встаёт и в строку текста, и в ряд кнопок
 		tag: 'span',
 		open: false,
 		placement: 'bottom-start',
 		openOn: 'press',
+		groupSeparators: true,
 	}
 
 	protected _open!: boolean
 	protected _placement: TMenuPlacement
 	protected _openOn: TMenuOpenOn
+	protected _groupSeparators: boolean
 	protected _point: TMenuPoint | null = null
 	protected _triggerAria: TAria
 	protected _panelClasses: TClasses
@@ -75,6 +82,7 @@ export class TMenu extends TStylable<IMenuProps, TMenuEvents> implements IMenu {
 
 		this._placement = props.placement ?? ctor.defaultValues.placement
 		this._openOn = props.openOn ?? ctor.defaultValues.openOn
+		this._groupSeparators = props.groupSeparators ?? ctor.defaultValues.groupSeparators
 
 		// Сторона панели связки: панель — меню. `id` и `aria-labelledby` на
 		// триггер пишет `TMenuIdsPlugin` в этот же набор
@@ -164,6 +172,22 @@ export class TMenu extends TStylable<IMenuProps, TMenuEvents> implements IMenu {
 		this.point = null
 		this._syncTriggerAria()
 		this.events.emit('change:openOn', value)
+	}
+
+	/**
+	 * Рисовать ли разделитель между соседними секциями группировки пунктов из
+	 * данных. Ручной `Menu.Separator` разметки свойство не трогает: его
+	 * поставил потребитель.
+	 */
+	get groupSeparators(): boolean {
+		return this._groupSeparators
+	}
+
+	set groupSeparators(value: boolean) {
+		if (this._groupSeparators === value) return
+
+		this._groupSeparators = value
+		this.events.emit('change:groupSeparators', value)
 	}
 
 	/**
@@ -272,6 +296,7 @@ export class TMenu extends TStylable<IMenuProps, TMenuEvents> implements IMenu {
 			open: this._open,
 			placement: this._placement,
 			openOn: this._openOn,
+			groupSeparators: this._groupSeparators,
 		}
 	}
 }

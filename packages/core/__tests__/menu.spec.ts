@@ -72,6 +72,63 @@ describe('TMenu · умолчания', () => {
 	})
 })
 
+/** Событие свойства, которое проверяют сторожа владельцев ниже. */
+type TGroupSeparatorsEvents = { 'change:groupSeparators': (value: boolean) => void }
+
+/**
+ * Владелец своих пунктов — меню или пункт с подменю — для проверок ниже:
+ * свойство, его событие и `getProps()`. `events` типизирован структурно, как в
+ * `list-contract.spec.ts`: карты событий у меню и подменю разные.
+ */
+interface IGroupSeparatorsOwner {
+	groupSeparators: boolean
+	readonly events: {
+		on<K extends keyof TGroupSeparatorsEvents>(
+			event: K,
+			handler: TGroupSeparatorsEvents[K],
+		): void
+	}
+	getProps(): { groupSeparators?: boolean }
+}
+
+const SEPARATED_OWNERS: Array<
+	[string, (props?: { groupSeparators?: boolean }) => IGroupSeparatorsOwner]
+> = [
+	['TMenu', (props) => new TMenu(props)],
+	['TMenuSubmenu', (props) => new TMenuSubmenu(props)],
+]
+
+/**
+ * Разделитель между секциями группировки пунктов из данных рисует разметка, а
+ * просит его владелец пунктов — меню и пункт с подменю, каждый за свои секции.
+ * У меню он по умолчанию есть, у ListBox и Select — нет
+ * (`list-contract.spec.ts`).
+ */
+describe.each(SEPARATED_OWNERS)('%s · разделители секций группировки', (_name, create) => {
+	it('по умолчанию есть', () => {
+		expect(create().groupSeparators).toBe(true)
+	})
+
+	it('выключаются конструктором и сеттером; change:groupSeparators — только на смену', () => {
+		expect(create({ groupSeparators: false }).groupSeparators).toBe(false)
+
+		const owner = create()
+		const seen: boolean[] = []
+
+		owner.events.on('change:groupSeparators', (value) => seen.push(value))
+		owner.groupSeparators = false
+		owner.groupSeparators = false
+		owner.groupSeparators = true
+
+		expect(seen).toEqual([false, true])
+	})
+
+	it('попадает в getProps()', () => {
+		expect(create({ groupSeparators: false }).getProps().groupSeparators).toBe(false)
+		expect(create().getProps().groupSeparators).toBe(true)
+	})
+})
+
 describe('TMenu · связка «кнопка ↔ меню»', () => {
 	// `id` и ссылки ядро не пишет: их пишет `TMenuIdsPlugin` (plugins, ids.plugin.spec)
 	it('панель — меню, без id', () => {
