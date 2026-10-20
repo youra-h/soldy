@@ -16,7 +16,18 @@ const TAB_SELECTOR = '[role="tab"]'
  * (`tabStopOf`): узел таба оба ищут одним правилом.
  */
 export function tabOf(elements: TCollectionElements | null, uid: string | number): Element | null {
-	return elements?.getElementByUid(uid)?.querySelector(TAB_SELECTOR) ?? null
+	return tabIn(elements?.getElementByUid(uid) ?? null)
+}
+
+/**
+ * Узел таба внутри узла элемента — тем же правилом, что `tabOf`, когда узел
+ * уже на руках. `null` — узла нет или таба в нём нет.
+ *
+ * Он же узел фокуса `Tabs.Item` (`focusTarget` плагина действия): запись
+ * `focused = true` ставит фокус на строку таба, а не на обёртку элемента.
+ */
+export function tabIn(node: Element | null): Element | null {
+	return node?.querySelector(TAB_SELECTOR) ?? null
 }
 
 /**

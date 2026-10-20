@@ -28,7 +28,9 @@
 import { defineComponent, defineDescriptor, defineType } from '../../../protected/define'
 import { TDatePicker } from '@soldy-ui/core'
 import type { ICalendarItem } from '@soldy-ui/core'
+import { fieldSegmentOf } from '@soldy-ui/plugins'
 import {
+	ActionPluginDescriptor,
 	DatePickerFocusPluginDescriptor,
 	DatePickerIdsPluginDescriptor,
 	DatePickerTriggerPluginDescriptor,
@@ -159,6 +161,10 @@ export const DatePickerDescriptor = defineDescriptor(() =>
 		},
 
 		plugins: [
+			// Фокус держат части поля, а корень — коробка вокруг полей и кнопок:
+			// `focused = true` ставит фокус на первую часть поля, у диапазона —
+			// поля начала, туда же, куда его возвращает панель
+			ActionPluginDescriptor.with({ focusTarget: fieldSegmentOf }),
 			// Язык — до поведения: формат полей с первой отрисовки
 			LocalePluginDescriptor,
 			// Закрытие по нажатию мимо — без возврата фокуса и без подложки:

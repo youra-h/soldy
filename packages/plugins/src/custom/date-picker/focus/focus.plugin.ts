@@ -4,6 +4,7 @@ import { TDismissPlugin } from '../../dismiss'
 import { TOverlayFocusPlugin } from '../../overlay/focus'
 import type { IOverlayOpenOptions } from '../../overlay/types'
 import { tabStops, trapTab } from '../../../utils'
+import { firstPartOf } from '../field'
 import type { TDatePickerFocusPluginEvents } from './types'
 
 /**
@@ -82,24 +83,14 @@ export class TDatePickerFocusPlugin extends TOverlayFocusPlugin<TDatePickerFocus
 		return !button || !root.contains(button)
 	}
 
-	/** Запомненного элемента нет или это кнопка календаря — фокус на первую часть поля. */
+	/**
+	 * Запомненного элемента нет или это кнопка календаря — фокус на первую часть
+	 * поля, у диапазона — поля начала (`firstPartOf`): туда же его ставит запись
+	 * `focused = true`.
+	 */
 	protected override _returnCandidates(root: Element): readonly Element[] {
-		const part = this._firstPart(root)
+		const part = this._owner ? firstPartOf(this._owner, root) : null
 
 		return part ? [part] : []
-	}
-
-	/**
-	 * Первая часть поля в корне: у одной даты — поля `field`, у диапазона —
-	 * поля начала `start`, оно стоит в корне раньше поля конца.
-	 */
-	private _firstPart(root: Element): Element | null {
-		const owner = this._owner
-
-		if (!owner) return null
-
-		const field = owner.mode === 'range' ? owner.start : owner.field
-
-		return root.querySelector(field.classes.resolve('__segment', { point: true }))
 	}
 }

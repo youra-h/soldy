@@ -10,7 +10,12 @@
 
 import { defineComponent, defineDescriptor } from '../../../protected/define'
 import { TScroller } from '@soldy-ui/core'
-import { ScrollerNamesPluginDescriptor, ScrollerViewportPluginDescriptor } from '../plugins'
+import { viewportStopOf } from '@soldy-ui/plugins'
+import {
+	ActionPluginDescriptor,
+	ScrollerNamesPluginDescriptor,
+	ScrollerViewportPluginDescriptor,
+} from '../plugins'
 import { ControlDescriptor } from './control.descriptor'
 
 export const ScrollerDescriptor = defineDescriptor(() =>
@@ -68,6 +73,10 @@ export const ScrollerDescriptor = defineDescriptor(() =>
 		},
 
 		plugins: [
+			// Фокус держит остановка ленты — вьюпорт или первая остановка в нём, —
+			// а корень — ряд из кнопок и вьюпорта: туда `focused = true` и ставит
+			// фокус, мимо кнопки «назад»
+			ActionPluginDescriptor.with({ focusTarget: viewportStopOf }),
 			// Замер краёв, прокрутка и клики по кнопкам: всё это операции над DOM
 			ScrollerViewportPluginDescriptor,
 			// Имена кнопок от локали

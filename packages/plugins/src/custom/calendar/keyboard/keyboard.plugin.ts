@@ -5,8 +5,7 @@ import { TElementPlugin } from '../../element'
 import { TCollectionBundlesPlugin, TCollectionElements } from '../../collection'
 import { isFocusableElement } from '../../../utils'
 import type { IDomEventTarget } from '../../../utils'
-import { listOf } from '../../list/row'
-import { dayElementOf, dayOf, pagerOf, pickerPartOf } from '../parts'
+import { dayElementOf, dayOf, pagerOf, pickerListOf, pickerPartOf } from '../parts'
 import type { TCalendarPager } from '../types'
 import type { TCalendarKeyboardPluginEvents, TCalendarMove } from './types'
 
@@ -246,7 +245,7 @@ export class TCalendarKeyboardPlugin extends TBasePlugin<ICalendar, TCalendarKey
 
 	/**
 	 * Стрелка панели выбора погасла, пока на ней фокус, — фокус на список панели.
-	 * Список — ListBox, и остановка Tab у него — узел списка в корне (`listOf`),
+	 * Список — ListBox, и остановка Tab у него — узел списка (`pickerListOf`),
 	 * а не корень с классом части календаря.
 	 */
 	private readonly _onPickers = (): void => {
@@ -262,9 +261,7 @@ export class TCalendarKeyboardPlugin extends TBasePlugin<ICalendar, TCalendarKey
 		if (!hit || !picker || hit.part === 'heading') return
 		if (!(hit.part === 'prev' ? picker.prevDisabled : picker.nextDisabled)) return
 
-		const list = listOf(
-			hit.panel.querySelector(owner.classes.resolve('__picker-list', { point: true })),
-		)
+		const list = pickerListOf(owner, hit.panel)
 
 		if (isFocusableElement(list)) list.focus()
 	}

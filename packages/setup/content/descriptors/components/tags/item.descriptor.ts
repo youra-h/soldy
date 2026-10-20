@@ -16,8 +16,9 @@
 
 import { defineComponent, defineDescriptor, defineType } from '../../../../protected/define'
 import { TTagsItem } from '@soldy-ui/core'
+import { rowIn } from '@soldy-ui/plugins'
 import { ValueControlDescriptor } from '../value-control.descriptor'
-import { TagsItemNamesPluginDescriptor } from '../../plugins'
+import { ActionPluginDescriptor, TagsItemNamesPluginDescriptor } from '../../plugins'
 
 export const TagsItemDescriptor = defineDescriptor(() =>
 	defineComponent({
@@ -62,6 +63,9 @@ export const TagsItemDescriptor = defineDescriptor(() =>
 		},
 
 		plugins: [
+			// Фокус держит строка тега, а корень — пилюля вокруг строки и
+			// крестика: туда `focused = true` и ставит фокус
+			ActionPluginDescriptor.with({ focusTarget: rowIn }),
 			// Имя крестика от локали — с первой отрисовки
 			TagsItemNamesPluginDescriptor,
 		],

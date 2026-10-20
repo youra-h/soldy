@@ -33,30 +33,16 @@ const BASES = new Set([
 	'TextableDescriptor',
 ])
 
-/** Временно, до 869fk4vf5: узел фокуса этих контролов ещё не назван. */
-const PENDING = new Set([
-	'DateInputDescriptor',
-	'DatePickerDescriptor',
-	'CalendarDescriptor',
-	'RadioGroupDescriptor',
-	'AccordionDescriptor',
-	'TagsDescriptor',
-	'PaginationDescriptor',
-	'ScrollerDescriptor',
-	'TabsItemDescriptor',
-	'AccordionItemDescriptor',
-	'ListBoxItemDescriptor',
-	'SelectItemDescriptor',
-	'TagsItemDescriptor',
-	'MenuItemDescriptor',
-	'MenuCheckboxItemDescriptor',
-	'MenuRadioItemDescriptor',
-	'MenuSubmenuDescriptor',
-	'MenuPopoverItemDescriptor',
-])
+/**
+ * DOM-фокус не переносится: он живёт не в компоненте. Опция Select — часть
+ * комбобокса, а у него фокус всегда на поле, и подсвеченную опцию объявляет
+ * `aria-activedescendant` (patterns.md, «Select»). Без правила плагин ставит
+ * фокус на корень опции, а остановки у него нет — фокус остаётся на месте.
+ */
+const FOCUS_STAYS_ELSEWHERE = new Set(['SelectItemDescriptor'])
 
 /** Списки решений: имя в одном из них — решение без правила. */
-const LISTED = [ROOT_HOLDS_FOCUS, BASES, PENDING]
+const LISTED = [ROOT_HOLDS_FOCUS, BASES, FOCUS_STAYS_ELSEWHERE]
 
 /** Правило узла фокуса в опциях плагина действия; плагина нет — `undefined`. */
 function focusTargetOf(descriptor: IComponentDescriptor): unknown {
@@ -105,7 +91,7 @@ describe('узел фокуса у дескрипторов с TActionPlugin', (
 		expect(stale, 'Решение уже записано правилом — имя из списка убрать').toEqual([])
 	})
 
-	it('правило — у полей, ListBox и Tabs', () => {
+	it('правило — у полей, списков, групп, коллекций и их элементов', () => {
 		const ruled = withAction
 			.filter(([, descriptor]) => typeof focusTargetOf(descriptor) === 'function')
 			.map(([name]) => name)
@@ -113,16 +99,33 @@ describe('узел фокуса у дескрипторов с TActionPlugin', (
 
 		expect(ruled).toEqual(
 			[
+				'AccordionDescriptor',
+				'AccordionItemDescriptor',
+				'CalendarDescriptor',
 				'CheckBoxDescriptor',
+				'DateInputDescriptor',
+				'DatePickerDescriptor',
 				'InputDescriptor',
 				'ListBoxDescriptor',
+				'ListBoxItemDescriptor',
+				'MenuCheckboxItemDescriptor',
+				'MenuItemDescriptor',
+				'MenuPopoverItemDescriptor',
+				'MenuRadioItemDescriptor',
+				'MenuSubmenuDescriptor',
 				'NumberInputDescriptor',
+				'PaginationDescriptor',
+				'RadioGroupDescriptor',
 				'RadioGroupItemDescriptor',
 				'RatingDescriptor',
+				'ScrollerDescriptor',
 				'SelectDescriptor',
 				'SliderDescriptor',
 				'SwitchDescriptor',
 				'TabsDescriptor',
+				'TabsItemDescriptor',
+				'TagsDescriptor',
+				'TagsItemDescriptor',
 				'TextareaDescriptor',
 			].sort(),
 		)

@@ -8,9 +8,10 @@
 
 import { defineComponent, defineDescriptor, defineType } from '../../../../protected/define'
 import { TAccordionItem } from '@soldy-ui/core'
+import { headerIn } from '@soldy-ui/plugins'
 import { ValueControlDescriptor } from '../value-control.descriptor'
 import { OWNER_STYLE_PROPS } from '../stylable.descriptor'
-import { AccordionItemIdsPluginDescriptor } from '../../plugins'
+import { AccordionItemIdsPluginDescriptor, ActionPluginDescriptor } from '../../plugins'
 
 export const AccordionItemDescriptor = defineDescriptor(() =>
 	defineComponent({
@@ -65,6 +66,9 @@ export const AccordionItemDescriptor = defineDescriptor(() =>
 		},
 
 		plugins: [
+			// Фокус держит заголовок, а корень — обёртка заголовка и панели: туда
+			// `focused = true` и ставит фокус
+			ActionPluginDescriptor.with({ focusTarget: headerIn }),
 			// Связка «заголовок ↔ панель»: `id` обеих и ссылки между ними
 			AccordionItemIdsPluginDescriptor,
 		],

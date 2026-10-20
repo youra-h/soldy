@@ -8,9 +8,10 @@
 
 import { defineComponent, defineDescriptor, defineType } from '../../../../protected/define'
 import { TListBoxItem } from '@soldy-ui/core'
+import { rowIn } from '@soldy-ui/plugins'
 import { ValueControlDescriptor } from '../value-control.descriptor'
 import { OWNER_STYLE_PROPS } from '../stylable.descriptor'
-import { ListItemPluginDescriptor } from '../../plugins'
+import { ActionPluginDescriptor, ListItemPluginDescriptor } from '../../plugins'
 
 export const ListBoxItemDescriptor = defineDescriptor(() =>
 	defineComponent({
@@ -48,6 +49,11 @@ export const ListBoxItemDescriptor = defineDescriptor(() =>
 			},
 		},
 
-		plugins: [ListItemPluginDescriptor],
+		plugins: [
+			// Фокус держит строка — опция с `tabindex` от списка, — а корень —
+			// обёртка вокруг неё: туда `focused = true` и ставит фокус
+			ActionPluginDescriptor.with({ focusTarget: rowIn }),
+			ListItemPluginDescriptor,
+		],
 	}),
 )

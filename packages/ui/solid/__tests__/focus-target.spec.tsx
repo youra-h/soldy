@@ -4,8 +4,9 @@
  * Сценарии — те же, что у Vue (`focus-target.spec.ts`) и React
  * (`focus-target.spec.tsx`), по компонентам адаптера. У поля корень — коробка
  * вокруг `<input>`, у ListBox — рамка вокруг узла списка, у Tabs — рамка со
- * списком табов и панелями; узел фокуса называет правило дескриптора
- * (`focusTarget` плагина действия).
+ * списком табов и панелями, у группы радио и аккордеона — контейнер
+ * остановок, у элемента коллекции — обёртка вокруг строки; узел фокуса
+ * называет правило дескриптора (`focusTarget` плагина действия).
  *
  * Своё у Solid — такт: смену состояния он применяет к DOM синхронно, и
  * разметка отстаёт от модели только внутри `batch`.
@@ -14,15 +15,20 @@
 import { describe, it, expect } from 'vitest'
 import { batch, type JSX } from 'solid-js'
 import {
+	TAccordion,
+	TAccordionItem,
 	TCheckBox,
 	TInput,
 	TListBox,
+	TListBoxItem,
+	TRadioGroup,
 	TRadioGroupItem,
 	TSwitch,
 	TTabs,
+	TTabsItem,
 	createEngineTabs,
 } from '@soldy-ui/core'
-import { CheckBox, Input, ListBox, RadioGroup, Switch, Tabs } from '@soldy-ui/solid'
+import { Accordion, CheckBox, Input, ListBox, RadioGroup, Switch, Tabs } from '@soldy-ui/solid'
 import { find, mount, nextFrame } from './mount'
 
 type TCase = {
@@ -151,6 +157,118 @@ const CASES: Record<string, TCase> = {
 		target: '[role="tab"][aria-selected="true"]',
 		before: '.before',
 	},
+	'RadioGroup с отметкой': {
+		render: () => {
+			const ctrl = new TRadioGroup({ value: 'b' })
+
+			return {
+				ctrl,
+				node: () => (
+					<RadioGroup ctrl={ctrl}>
+						<RadioGroup.Item value="a" />
+						<RadioGroup.Item value="b" class="target" />
+					</RadioGroup>
+				),
+			}
+		},
+		target: '.target input',
+	},
+	'RadioGroup без отметки, первое выключено': {
+		render: () => {
+			const ctrl = new TRadioGroup()
+
+			return {
+				ctrl,
+				node: () => (
+					<RadioGroup ctrl={ctrl}>
+						<RadioGroup.Item value="a" disabled />
+						<RadioGroup.Item value="b" class="target" />
+					</RadioGroup>
+				),
+			}
+		},
+		target: '.target input',
+	},
+	Accordion: {
+		render: () => {
+			const ctrl = new TAccordion()
+
+			return {
+				ctrl,
+				node: () => (
+					<Accordion ctrl={ctrl}>
+						<Accordion.Item value="a" text="A" class="target" />
+						<Accordion.Item value="b" text="B" />
+					</Accordion>
+				),
+			}
+		},
+		target: '.target .so-accordion-item__header',
+	},
+	'Accordion, первая секция выключена': {
+		render: () => {
+			const ctrl = new TAccordion()
+
+			return {
+				ctrl,
+				node: () => (
+					<Accordion ctrl={ctrl}>
+						<Accordion.Item value="a" text="A" disabled />
+						<Accordion.Item value="b" text="B" class="target" />
+					</Accordion>
+				),
+			}
+		},
+		target: '.target .so-accordion-item__header',
+	},
+	'Tabs.Item': {
+		render: () => {
+			const ctrl = new TTabsItem({ value: 'b', text: 'B' })
+
+			return {
+				ctrl,
+				node: () => (
+					<Tabs>
+						<Tabs.Item value="a" text="A" active />
+						<Tabs.Item ctrl={ctrl} class="target" />
+					</Tabs>
+				),
+			}
+		},
+		target: '.target [role="tab"]',
+	},
+	'Accordion.Item': {
+		render: () => {
+			const ctrl = new TAccordionItem({ value: 'b', text: 'B' })
+
+			return {
+				ctrl,
+				node: () => (
+					<Accordion>
+						<Accordion.Item value="a" text="A" />
+						<Accordion.Item ctrl={ctrl} class="target" />
+					</Accordion>
+				),
+			}
+		},
+		target: '.target .so-accordion-item__header',
+	},
+	'ListBox.Item': {
+		render: () => {
+			const ctrl = new TListBoxItem({ value: 'b', text: 'B' })
+
+			return {
+				ctrl,
+				node: () => (
+					<ListBox>
+						<ListBox.Item value="a" text="A" />
+						<ListBox.Item ctrl={ctrl} class="target" />
+					</ListBox>
+				),
+			}
+		},
+		target: '.target [role="option"]',
+	},
 }
 
 describe.each(Object.entries(CASES))('%s', (_name, { render, target, before }) => {
@@ -209,5 +327,37 @@ describe('Tabs · остановка по модели', () => {
 
 		expect(document.activeElement?.textContent?.trim()).toBe('B')
 		expect(document.activeElement?.getAttribute('role')).toBe('tab')
+	})
+})
+
+describe('RadioGroup · отметка по модели', () => {
+	/**
+	 * Значение сменилось в том же такте, что и запись `focused`: внутри `batch`
+	 * Solid перепишет `checked` полей только на выходе, а отмеченное радио
+	 * правило берёт у модели, — фокус встаёт на новое радио, а не на прежнее.
+	 */
+	it('смена значения и focused = true в одном такте — фокус на новом радио', async () => {
+		const ctrl = new TRadioGroup({ value: 'a' })
+
+		mount(() => (
+			<RadioGroup ctrl={ctrl}>
+				<RadioGroup.Item value="a" />
+				<RadioGroup.Item value="b" class="target" />
+			</RadioGroup>
+		))
+		await nextFrame()
+
+		const target = () => find(document, '.target input', HTMLInputElement)
+
+		batch(() => {
+			ctrl.value = 'b'
+
+			// Такт тот же: отмечено в разметке ещё прежнее
+			expect(target().checked).toBe(false)
+
+			ctrl.focused = true
+		})
+
+		expect(document.activeElement).toBe(target())
 	})
 })

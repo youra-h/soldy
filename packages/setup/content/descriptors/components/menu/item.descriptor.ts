@@ -12,8 +12,9 @@
 
 import { defineComponent, defineDescriptor, defineType } from '../../../../protected/define'
 import { TMenuItem } from '@soldy-ui/core'
+import { rowIn } from '@soldy-ui/plugins'
 import { ValueControlDescriptor } from '../value-control.descriptor'
-import { ListItemPluginDescriptor } from '../../plugins'
+import { ActionPluginDescriptor, ListItemPluginDescriptor } from '../../plugins'
 
 export const MenuItemDescriptor = defineDescriptor(() =>
 	defineComponent({
@@ -38,6 +39,12 @@ export const MenuItemDescriptor = defineDescriptor(() =>
 			},
 		},
 
-		plugins: [ListItemPluginDescriptor],
+		plugins: [
+			// Фокус держит строка пункта — ей фокус ставит и клавиатура меню, — а
+			// корень — обёртка вокруг неё: туда `focused = true` и ставит фокус.
+			// Флажок, переключатель и пункты со своей панелью наследуют правило
+			ActionPluginDescriptor.with({ focusTarget: rowIn }),
+			ListItemPluginDescriptor,
+		],
 	}),
 )

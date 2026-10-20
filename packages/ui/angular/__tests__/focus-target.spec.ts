@@ -4,8 +4,9 @@
  * Сценарии — те же, что у Vue (`focus-target.spec.ts`) и React
  * (`focus-target.spec.tsx`), по компонентам адаптера. У поля корень — коробка
  * вокруг `<input>`, у ListBox — рамка вокруг узла списка, у Tabs — рамка со
- * списком табов и панелями; узел фокуса называет правило дескриптора
- * (`focusTarget` плагина действия).
+ * списком табов и панелями, у группы радио и аккордеона — контейнер
+ * остановок, у элемента коллекции — обёртка вокруг строки; узел фокуса
+ * называет правило дескриптора (`focusTarget` плагина действия).
  *
  * Своё у Angular — разметка: корень — элемент компонента, своя остановка
  * перед главной частью — шаблон слота (`leading`) или проекция (`header`). И
@@ -16,16 +17,23 @@
 import { describe, it, expect } from 'vitest'
 import { Component, type Type } from '@angular/core'
 import {
+	TAccordion,
+	TAccordionItem,
 	TCheckBox,
 	TInput,
 	TListBox,
+	TListBoxItem,
+	TRadioGroup,
 	TRadioGroupItem,
 	TSwitch,
 	TTabs,
+	TTabsItem,
 	createEngineTabs,
 } from '@soldy-ui/core'
 import {
 	SlotDirective,
+	TAccordionComponent,
+	TAccordionItemComponent,
 	TCheckBoxComponent,
 	TInputComponent,
 	TListBoxComponent,
@@ -136,6 +144,90 @@ class TabsLeadingHost {
 	readonly ctrl = new TTabs()
 }
 
+@Component({
+	standalone: true,
+	imports: [TRadioGroupComponent, TRadioGroupItemComponent],
+	template: `<div so-radio-group [ctrl]="ctrl">
+		<label so-radio-group-item value="a"></label>
+		<label so-radio-group-item value="b" class="target"></label>
+	</div>`,
+})
+class RadioGroupHost {
+	readonly ctrl = new TRadioGroup({ value: 'b' })
+}
+
+@Component({
+	standalone: true,
+	imports: [TRadioGroupComponent, TRadioGroupItemComponent],
+	template: `<div so-radio-group [ctrl]="ctrl">
+		<label so-radio-group-item value="a" disabled></label>
+		<label so-radio-group-item value="b" class="target"></label>
+	</div>`,
+})
+class RadioGroupDisabledHost {
+	readonly ctrl = new TRadioGroup()
+}
+
+@Component({
+	standalone: true,
+	imports: [TAccordionComponent, TAccordionItemComponent],
+	template: `<div so-accordion [ctrl]="ctrl">
+		<so-accordion-item value="a" text="A" class="target" />
+		<so-accordion-item value="b" text="B" />
+	</div>`,
+})
+class AccordionHost {
+	readonly ctrl = new TAccordion()
+}
+
+@Component({
+	standalone: true,
+	imports: [TAccordionComponent, TAccordionItemComponent],
+	template: `<div so-accordion [ctrl]="ctrl">
+		<so-accordion-item value="a" text="A" disabled />
+		<so-accordion-item value="b" text="B" class="target" />
+	</div>`,
+})
+class AccordionDisabledHost {
+	readonly ctrl = new TAccordion()
+}
+
+@Component({
+	standalone: true,
+	imports: [TTabsComponent, TTabsItemComponent],
+	template: `<so-tabs>
+		<so-tabs-item value="a" text="A" active />
+		<so-tabs-item class="target" [ctrl]="ctrl" />
+	</so-tabs>`,
+})
+class TabsItemHost {
+	readonly ctrl = new TTabsItem({ value: 'b', text: 'B' })
+}
+
+@Component({
+	standalone: true,
+	imports: [TAccordionComponent, TAccordionItemComponent],
+	template: `<div so-accordion>
+		<so-accordion-item value="a" text="A" />
+		<so-accordion-item class="target" [ctrl]="ctrl" />
+	</div>`,
+})
+class AccordionItemHost {
+	readonly ctrl = new TAccordionItem({ value: 'b', text: 'B' })
+}
+
+@Component({
+	standalone: true,
+	imports: [TListBoxComponent, TListBoxItemComponent],
+	template: `<so-list-box>
+		<so-list-box-item value="a" text="A" />
+		<so-list-box-item class="target" [ctrl]="ctrl" />
+	</so-list-box>`,
+})
+class ListBoxItemHost {
+	readonly ctrl = new TListBoxItem({ value: 'b', text: 'B' })
+}
+
 /**
  * Хост с инстансом, которому тест пишет `focused`. Тип инстанса — только
  * свойство: карта событий у каждого контрола своя.
@@ -168,6 +260,19 @@ const CASES: Record<string, TCase> = {
 		target: '[role="tab"][aria-selected="true"]',
 		before: '.before',
 	},
+	'RadioGroup с отметкой': { host: RadioGroupHost, target: '.target input' },
+	'RadioGroup без отметки, первое выключено': {
+		host: RadioGroupDisabledHost,
+		target: '.target input',
+	},
+	Accordion: { host: AccordionHost, target: '.target .so-accordion-item__header' },
+	'Accordion, первая секция выключена': {
+		host: AccordionDisabledHost,
+		target: '.target .so-accordion-item__header',
+	},
+	'Tabs.Item': { host: TabsItemHost, target: '.target [role="tab"]' },
+	'Accordion.Item': { host: AccordionItemHost, target: '.target .so-accordion-item__header' },
+	'ListBox.Item': { host: ListBoxItemHost, target: '.target [role="option"]' },
 }
 
 describe.each(Object.entries(CASES))('%s', (_name, { host, target, before }) => {
@@ -237,5 +342,43 @@ describe('Tabs · остановка по модели', () => {
 
 		expect(document.activeElement?.textContent?.trim()).toBe('B')
 		expect(document.activeElement?.getAttribute('role')).toBe('tab')
+	})
+})
+
+@Component({
+	standalone: true,
+	imports: [TRadioGroupComponent, TRadioGroupItemComponent],
+	template: `<div so-radio-group [ctrl]="ctrl">
+		<label so-radio-group-item value="a"></label>
+		<label so-radio-group-item value="b" class="target"></label>
+	</div>`,
+})
+class RadioGroupModelHost {
+	readonly ctrl = new TRadioGroup({ value: 'a' })
+}
+
+describe('RadioGroup · отметка по модели', () => {
+	/**
+	 * Значение сменилось в том же такте, что и запись `focused`: Angular
+	 * перепишет `checked` полей на проверке изменений, а отмеченное радио
+	 * правило берёт у модели, — фокус встаёт на новое радио, а не на прежнее.
+	 */
+	it('смена значения и focused = true в одном такте — фокус на новом радио', async () => {
+		const fixture = mountHost(RadioGroupModelHost)
+		const { ctrl } = fixture.componentInstance
+
+		await nextFrame()
+		fixture.detectChanges()
+
+		const target = () => findIn(fixture, '.target input', HTMLInputElement)
+
+		ctrl.value = 'b'
+
+		// Такт тот же: отмечено в разметке ещё прежнее
+		expect(target().checked).toBe(false)
+
+		ctrl.focused = true
+
+		expect(document.activeElement).toBe(target())
 	})
 })

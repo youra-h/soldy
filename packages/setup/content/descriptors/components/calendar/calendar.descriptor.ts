@@ -17,8 +17,10 @@
 import { defineComponent, defineDescriptor, defineType } from '../../../../protected/define'
 import { TCalendar } from '@soldy-ui/core'
 import type { ICalendarItem } from '@soldy-ui/core'
+import { gridStopOf } from '@soldy-ui/plugins'
 import { ValueControlDescriptor } from '../value-control.descriptor'
 import {
+	ActionPluginDescriptor,
 	CalendarIdsPluginDescriptor,
 	CalendarKeyboardPluginDescriptor,
 	CalendarPointerPluginDescriptor,
@@ -95,6 +97,10 @@ export const CalendarDescriptor = defineDescriptor(() =>
 		},
 
 		plugins: [
+			// Фокус держит остановка сетки — день с фокусом коллекции, а пока
+			// открыта панель выбора — её список; корень фокус не держит. Остановку
+			// плагин берёт у модели, через реестр узлов дней ниже
+			ActionPluginDescriptor.with({ focusTarget: gridStopOf }),
 			// Язык — до поведения: подписи с первой отрисовки
 			LocalePluginDescriptor,
 			// Коллекция: реестр bundles + доступ к DOM-узлам дней

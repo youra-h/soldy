@@ -4,8 +4,9 @@
  * Сценарии — те же, что у Vue (`focus-target.spec.ts`) и React
  * (`focus-target.spec.tsx`), по компонентам адаптера. У поля корень — коробка
  * вокруг `<input>`, у ListBox — рамка вокруг узла списка, у Tabs — рамка со
- * списком табов и панелями; узел фокуса называет правило дескриптора
- * (`focusTarget` плагина действия).
+ * списком табов и панелями, у группы радио и аккордеона — контейнер
+ * остановок, у элемента коллекции — обёртка вокруг строки; узел фокуса
+ * называет правило дескриптора (`focusTarget` плагина действия).
  *
  * Своё у Svelte — такт: смену состояния он применяет к DOM на своём такте, и
  * до `flushSync()` разметка отстаёт от модели.
@@ -14,16 +15,24 @@
 import { describe, it, expect } from 'vitest'
 import { flushSync } from 'svelte'
 import {
+	TAccordion,
+	TAccordionItem,
 	TCheckBox,
 	TInput,
 	TListBox,
+	TListBoxItem,
+	TRadioGroup,
 	TRadioGroupItem,
 	TSwitch,
 	TTabs,
+	TTabsItem,
 	createEngineTabs,
 } from '@soldy-ui/core'
 import { CheckBox, Input, ListBox, Switch, Tabs } from '@soldy-ui/svelte'
+import AccordionHarness from './Accordion.test.svelte'
+import ListBoxHarness from './ListBox.test.svelte'
 import RadioGroupHarness from './RadioGroup.test.svelte'
+import TabsHarness from './Tabs.test.svelte'
 import { find, mount, nextFrame } from './mount'
 import { markup } from './snippets.svelte'
 
@@ -139,6 +148,112 @@ const CASES: Record<string, TCase> = {
 		target: '[role="tab"][aria-selected="true"]',
 		before: '.before',
 	},
+	'RadioGroup с отметкой': {
+		render: () => {
+			const ctrl = new TRadioGroup({ value: 'b' })
+
+			mount(RadioGroupHarness, {
+				group: { ctrl },
+				items: [{ value: 'a' }, { value: 'b', class: 'target' }],
+			})
+
+			return ctrl
+		},
+		target: '.target input',
+	},
+	'RadioGroup без отметки, первое выключено': {
+		render: () => {
+			const ctrl = new TRadioGroup()
+
+			mount(RadioGroupHarness, {
+				group: { ctrl },
+				items: [
+					{ value: 'a', disabled: true },
+					{ value: 'b', class: 'target' },
+				],
+			})
+
+			return ctrl
+		},
+		target: '.target input',
+	},
+	Accordion: {
+		render: () => {
+			const ctrl = new TAccordion()
+
+			mount(AccordionHarness, {
+				accordion: { ctrl },
+				items: [
+					{ value: 'a', text: 'A', class: 'target' },
+					{ value: 'b', text: 'B' },
+				],
+			})
+
+			return ctrl
+		},
+		target: '.target .so-accordion-item__header',
+	},
+	'Accordion, первая секция выключена': {
+		render: () => {
+			const ctrl = new TAccordion()
+
+			mount(AccordionHarness, {
+				accordion: { ctrl },
+				items: [
+					{ value: 'a', text: 'A', disabled: true },
+					{ value: 'b', text: 'B', class: 'target' },
+				],
+			})
+
+			return ctrl
+		},
+		target: '.target .so-accordion-item__header',
+	},
+	'Tabs.Item': {
+		render: () => {
+			const ctrl = new TTabsItem({ value: 'b', text: 'B' })
+
+			mount(TabsHarness, {
+				items: [
+					{ value: 'a', text: 'A', active: true },
+					{ ctrl, value: 'b', class: 'target' },
+				],
+			})
+
+			return ctrl
+		},
+		target: '.target [role="tab"]',
+	},
+	'Accordion.Item': {
+		render: () => {
+			const ctrl = new TAccordionItem({ value: 'b', text: 'B' })
+
+			mount(AccordionHarness, {
+				items: [
+					{ value: 'a', text: 'A' },
+					{ ctrl, value: 'b', class: 'target' },
+				],
+			})
+
+			return ctrl
+		},
+		target: '.target .so-accordion-item__header',
+	},
+	'ListBox.Item': {
+		render: () => {
+			const ctrl = new TListBoxItem({ value: 'b', text: 'B' })
+
+			mount(ListBoxHarness, {
+				items: [
+					{ value: 'a', text: 'A' },
+					{ ctrl, value: 'b', class: 'target' },
+				],
+			})
+
+			return ctrl
+		},
+		target: '.target [role="option"]',
+	},
 }
 
 /** Табы данными: активный — второй, остановка Tab не совпадает с первым табом. */
@@ -202,5 +317,33 @@ describe('Tabs · остановка по модели', () => {
 
 		expect(document.activeElement?.textContent?.trim()).toBe('B')
 		expect(document.activeElement?.getAttribute('role')).toBe('tab')
+	})
+})
+
+describe('RadioGroup · отметка по модели', () => {
+	/**
+	 * Значение сменилось в том же такте, что и запись `focused`: Svelte
+	 * перепишет `checked` полей на своём такте, а отмеченное радио правило берёт
+	 * у модели, — фокус встаёт на новое радио, а не на прежнее.
+	 */
+	it('смена значения и focused = true в одном такте — фокус на новом радио', async () => {
+		const ctrl = new TRadioGroup({ value: 'a' })
+
+		mount(RadioGroupHarness, {
+			group: { ctrl },
+			items: [{ value: 'a' }, { value: 'b', class: 'target' }],
+		})
+		await nextFrame()
+
+		const target = () => find(document, '.target input', HTMLInputElement)
+
+		ctrl.value = 'b'
+
+		// Такт тот же: отмечено в разметке ещё прежнее
+		expect(target().checked).toBe(false)
+
+		ctrl.focused = true
+
+		expect(document.activeElement).toBe(target())
 	})
 })

@@ -20,8 +20,10 @@
 import { defineComponent, defineDescriptor, defineType } from '../../../../protected/define'
 import { TRadioGroup } from '@soldy-ui/core'
 import type { IRadioGroupItem } from '@soldy-ui/core'
+import { radioStopOf } from '@soldy-ui/plugins'
 import { ValueControlDescriptor } from '../value-control.descriptor'
 import {
+	ActionPluginDescriptor,
 	CollectionBundlesPluginDescriptor,
 	CollectionElementsPluginDescriptor,
 	RadioGroupCheckedPluginDescriptor,
@@ -57,6 +59,11 @@ export const RadioGroupDescriptor = defineDescriptor(() =>
 		},
 
 		plugins: [
+			// Фокус держит поле радио-остановки — отмеченного, а без отметки
+			// первого доступного, — а корень — контейнер группы: туда
+			// `focused = true` и ставит фокус. Радио плагин берёт у модели, через
+			// реестр узлов ниже
+			ActionPluginDescriptor.with({ focusTarget: radioStopOf }),
 			// Коллекция: через реестр bundles плагины группы узнают её радио,
 			// через реестр узлов — их поля
 			CollectionBundlesPluginDescriptor,
