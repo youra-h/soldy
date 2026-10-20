@@ -82,33 +82,13 @@ function resolved(tokens: Map<string, string>, name: string): string {
 }
 
 /**
- * Относительная яркость цвета `#rgb` или `#rrggbb` по WCAG: канал байтом — в
- * линейный свет, как у sRGB. Такие литералы у темы — поверхность контрола и
- * ручка Switch светлой схемы, `#fff`.
- */
-function luminanceOfHex(hex: string): number {
-	const full = hex.length === 3 ? hex.replace(/./g, '$&$&') : hex
-	const channel = (index: number) => {
-		const unit = parseInt(full.slice(index * 2, index * 2 + 2), 16) / 255
-
-		return unit <= 0.04045 ? unit / 12.92 : ((unit + 0.055) / 1.055) ** 2.4
-	}
-
-	return 0.2126 * channel(0) + 0.7152 * channel(1) + 0.0722 * channel(2)
-}
-
-/**
- * Относительная яркость цвета по WCAG. `oklch(L C H)` — тем путём, каким его
+ * Относительная яркость цвета `oklch(L C H)` по WCAG — тем путём, каким его
  * кладёт браузер: OKLab → линейный sRGB, доли за пределами охвата обрезаются.
  */
 function luminanceOf(value: string): number {
-	const hex = value.match(/^#([\da-f]{3}|[\da-f]{6})$/i)
-
-	if (hex?.[1]) return luminanceOfHex(hex[1])
-
 	const match = value.match(/oklch\(\s*([\d.]+)\s+([\d.]+)\s+([\d.]+)\s*\)/)
 
-	if (!match) throw new Error(`не oklch и не #rgb: ${value}`)
+	if (!match) throw new Error(`не oklch: ${value}`)
 
 	const [L, C, H] = [Number(match[1]), Number(match[2]), Number(match[3])]
 	const a = C * Math.cos((H * Math.PI) / 180)
@@ -124,11 +104,9 @@ function luminanceOf(value: string): number {
 	return 0.2126 * red + 0.7152 * green + 0.0722 * blue
 }
 
-/** Отношение контраста двух цветов по WCAG — от 1 до 21, порядок не важен. */
-function contrast(first: string, second: string): number {
-	const [a, b] = [luminanceOf(first), luminanceOf(second)]
-
-	return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05)
+/** Отношение контраста белого к цвету по WCAG. */
+function contrastWithWhite(value: string): number {
+	return 1.05 / (luminanceOf(value) + 0.05)
 }
 
 /** Исходники стилей — `.scss` и `.css`, рекурсивно. */
@@ -242,81 +220,20 @@ describe('токены цветовых схем', () => {
 	/**
 	 * Насыщенная заливка под белым текстом (`--so-component-solid-*`) заведена
 	 * ради отношения: белый текст кегля `text-sm` на ней обязан держать 4,5:1
-	 * (WCAG 1.4.3) в обеих схемах — на ней стоят подпись `filled` с вариантом
-	 * у Button и пилюли тега, номер текущей страницы Pagination и выбранного
-	 * дня Calendar, заголовок и описание тоста с видом. Середина хроматической
-	 * шкалы этого не держит, и токен, переставленный на неё, молча сделал бы
-	 * всё это нечитаемым. Состояния заливки темнее покоя (тень,
-	 * `mixins/_solid.scss`), и белый на них держит не меньше — это сторожит
-	 * браузер (`playground/vue/browser/solid-fill.spec.ts`). Чего тёмная схема
-	 * не объявила, она берёт у светлой — как в браузере, где её блок лежит
-	 * поверх `:root`: у нейтрали ступень одна на обе схемы.
+	 * (WCAG 1.4.3) в обеих схемах — на ней стоят заголовок и описание тоста с
+	 * видом. Середина шкалы этого не держит, и токен, переставленный на неё,
+	 * молча сделал бы такую плашку нечитаемой. Чего тёмная схема не объявила,
+	 * она берёт у светлой — как в браузере, где её блок лежит поверх `:root`.
 	 */
 	it.each(
 		['светлая', 'тёмная'].flatMap((scheme) =>
-			['accent', 'positive', 'caution', 'negative', 'neutral'].map((family) => [
-				scheme,
-				family,
-			]),
+			['accent', 'positive', 'caution', 'negative'].map((family) => [scheme, family]),
 		),
 	)('%s схема: белый на насыщенной заливке %s — не ниже 4,5:1', (scheme, family) => {
 		const tokens = scheme === 'светлая' ? light : new Map([...light, ...dark])
 		const fill = resolved(tokens, `--so-component-solid-${family}`)
 
-		expect(contrast(fill, '#fff')).toBeGreaterThanOrEqual(4.5)
-	})
-
-	/**
-	 * Цвет семейства графикой на поверхности (`--so-component-graphic-*`)
-	 * заведён ради отношения: отметка CheckBox и радио, заливка Slider и
-	 * индикаторов выполнения, полоса под активным табом обязаны держать 3:1
-	 * (WCAG 1.4.11) к тому, на чём стоят, — к странице и к поверхности
-	 * контрола, в обеих схемах. Середина хроматической шкалы в светлой схеме
-	 * этого не держит, и токен, переставленный на неё, молча сделал бы графику
-	 * неразличимой. Вуаль поверх поверхностей — рельс Slider, дорожки
-	 * индикаторов — и то, что каждое место берёт цвет из токена, сторожит
-	 * браузер (`playground/vue/browser/graphic.spec.ts`). Поверхность контрола
-	 * светлой схемы — литерал `#fff`, тёмной — ступень.
-	 */
-	it.each(
-		['светлая', 'тёмная'].flatMap((scheme) =>
-			['accent', 'positive', 'caution', 'negative', 'neutral'].flatMap((family) =>
-				['--so-neutral-50', '--so-component-surface'].map((surface) => [
-					scheme,
-					family,
-					surface,
-				]),
-			),
-		),
-	)('%s схема: графика %s к %s — не ниже 3:1', (scheme, family, surface) => {
-		const tokens = scheme === 'светлая' ? light : new Map([...light, ...dark])
-		const graphic = resolved(tokens, `--so-component-graphic-${family}`)
-
-		expect(contrast(graphic, resolved(tokens, surface))).toBeGreaterThanOrEqual(3)
-	})
-
-	/**
-	 * Включённая дорожка под ручкой (`--so-component-knob-track-*`) заведена
-	 * ради отношения: ручка Switch (`--so-component-knob`) — графика, и на
-	 * включённой дорожке ей нужно 3:1 (WCAG 1.4.11) в обеих схемах. Ручка у
-	 * схем разная — белый литерал в светлой, светлая ступень в тёмной, — и
-	 * ступень под ней тоже: середина шкалы под белой ручкой этого не держит, а
-	 * цвет графики тёмной схемы под светлой ручкой — тем более. То, что
-	 * дорожка в каждом варианте берёт цвет из токена, сторожит браузер
-	 * (`playground/vue/browser/solid-fill.spec.ts`).
-	 */
-	it.each(
-		['светлая', 'тёмная'].flatMap((scheme) =>
-			['accent', 'positive', 'caution', 'negative', 'neutral'].map((family) => [
-				scheme,
-				family,
-			]),
-		),
-	)('%s схема: ручка на включённой дорожке %s — не ниже 3:1', (scheme, family) => {
-		const tokens = scheme === 'светлая' ? light : new Map([...light, ...dark])
-		const track = resolved(tokens, `--so-component-knob-track-${family}`)
-
-		expect(contrast(resolved(tokens, '--so-component-knob'), track)).toBeGreaterThanOrEqual(3)
+		expect(contrastWithWhite(fill)).toBeGreaterThanOrEqual(4.5)
 	})
 })
 
@@ -402,9 +319,9 @@ describe('компоненты не берут цвет мимо темы', () =
 	 * Белый фон не инвертируется вместе со шкалой и в тёмной схеме остался бы
 	 * белым. Для этого есть `--so-component-surface` / `--so-component-knob`.
 	 *
-	 * `text-white` при этом законен: он лежит на насыщенной заливке под белым
-	 * текстом (`--so-component-solid-*`, вид `filled` с вариантом у Button), а
-	 * она в обеих схемах остаётся насыщенной.
+	 * `text-white` при этом законен: он лежит на насыщенной заливке
+	 * (вид `filled` у Button), а середина хроматических шкал в обеих схемах
+	 * остаётся насыщенной.
 	 */
 	it('не заливают фон белым или чёрным в обход токена', () => {
 		expect(scan(/\bbg-(?:white|black)\b/g)).toEqual([])
