@@ -83,8 +83,8 @@ function resolved(tokens: Map<string, string>, name: string): string {
 
 /**
  * Относительная яркость цвета `#rgb` или `#rrggbb` по WCAG: канал байтом — в
- * линейный свет, как у sRGB. Такой литерал у темы один — поверхность контрола
- * светлой схемы, `#fff`.
+ * линейный свет, как у sRGB. Такие литералы у темы — поверхность контрола и
+ * ручка Switch светлой схемы, `#fff`.
  */
 function luminanceOfHex(hex: string): number {
 	const full = hex.length === 3 ? hex.replace(/./g, '$&$&') : hex
@@ -293,6 +293,30 @@ describe('токены цветовых схем', () => {
 		const graphic = resolved(tokens, `--so-component-graphic-${family}`)
 
 		expect(contrast(graphic, resolved(tokens, surface))).toBeGreaterThanOrEqual(3)
+	})
+
+	/**
+	 * Включённая дорожка под ручкой (`--so-component-knob-track-*`) заведена
+	 * ради отношения: ручка Switch (`--so-component-knob`) — графика, и на
+	 * включённой дорожке ей нужно 3:1 (WCAG 1.4.11) в обеих схемах. Ручка у
+	 * схем разная — белый литерал в светлой, светлая ступень в тёмной, — и
+	 * ступень под ней тоже: середина шкалы под белой ручкой этого не держит, а
+	 * цвет графики тёмной схемы под светлой ручкой — тем более. То, что
+	 * дорожка в каждом варианте берёт цвет из токена, сторожит браузер
+	 * (`playground/vue/browser/solid-fill.spec.ts`).
+	 */
+	it.each(
+		['светлая', 'тёмная'].flatMap((scheme) =>
+			['accent', 'positive', 'caution', 'negative', 'neutral'].map((family) => [
+				scheme,
+				family,
+			]),
+		),
+	)('%s схема: ручка на включённой дорожке %s — не ниже 3:1', (scheme, family) => {
+		const tokens = scheme === 'светлая' ? light : new Map([...light, ...dark])
+		const track = resolved(tokens, `--so-component-knob-track-${family}`)
+
+		expect(contrast(resolved(tokens, '--so-component-knob'), track)).toBeGreaterThanOrEqual(3)
 	})
 })
 
