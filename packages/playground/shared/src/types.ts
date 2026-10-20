@@ -92,6 +92,13 @@ export type TPropControlGroups = {
 	[TScope in TPropOwner['scope'] as `${TScope}Controls`]: TPropControl[]
 }
 
+/**
+ * Группа записи реестра — раздел меню страницы свойств. Порядок групп в меню
+ * и их подписи — `COMPONENT_GROUPS` в реестре.
+ */
+export type TComponentGroup =
+	'forms' | 'dates' | 'overlays' | 'collections' | 'display' | 'utilities' | 'layers'
+
 export type TComponentEntry = {
 	/** Ключ в маршруте — после фреймворка: `/vue/button`. */
 	id: string
@@ -109,10 +116,11 @@ export type TComponentEntry = {
 	 */
 	collectionDescriptor?: () => IComponentDescriptor
 	/**
-	 * Показывать ли на витрине. Слои вроде `Control` или `Stylable` компонентами
-	 * не являются — у них есть страница, но выставлять их незачем.
+	 * Группа в меню. `layers` — слои наследования вроде `Control` или
+	 * `Stylable`: страница у них есть, на витрине их нет — это уровни
+	 * контракта, а не компоненты.
 	 */
-	showcase: boolean
+	group: TComponentGroup
 	/** Ширина ячейки витрины в колонках сетки. */
 	span: 1 | 2
 	/** Короткая строка под заголовком страницы. */

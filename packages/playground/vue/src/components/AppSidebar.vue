@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ListBox } from '@soldy-ui/vue'
-import { layersOf, showcaseOf } from '../catalog'
+import { MENU_GROUPS, menuOf } from '../catalog'
 import { hostOf } from '../hosts'
 import { frameworkOf } from '../navigation'
 
@@ -13,8 +13,19 @@ const router = useRouter()
 const framework = computed(() => frameworkOf(route))
 const host = computed(() => hostOf(framework.value))
 
-const showcase = computed(() => showcaseOf(host.value))
-const layers = computed(() => layersOf(host.value))
+/**
+ * Пункты меню — данными, а не `ListBox.Item` в разметке: секции групп список
+ * рисует только из данных, по метке группы в отметках элемента (`_.group`).
+ * Порядок — `menuOf`: группы порядком `MENU_GROUPS`, внутри группы — по
+ * алфавиту.
+ */
+const items = computed(() =>
+	menuOf(host.value).map((entry) => ({
+		value: entry.id,
+		text: entry.label,
+		_: { group: entry.group },
+	})),
+)
 
 /**
  * Текущий пункт — производная от маршрута, а не отдельное состояние.
@@ -45,29 +56,19 @@ function open(id: unknown): void {
 			моделью коллекции. Теперь `TListBox` растёт от `TValueControl`, и на
 			вопрос «что выбрано» отвечает само поле, одним пропом.
 
-			Два списка делят один `current`: он совпадёт ровно с одним, поэтому
-			выбор в одном автоматически снимает подсветку в другом.
+			Список один: компоненты и слои наследования — группы реестра
+			(`MENU_GROUPS`), и «Слои» — последняя из них, а не второй список
+			рядом. Заголовков над списком нет — их заменили подписи групп, — а
+			имя списку даёт `aria-label`: его ListBox кладёт на узел списка.
 		-->
-		<div class="pg__sidebar-title">Компоненты</div>
-		<ListBox mode="single" class="pg__menu" :value="current" @update:value="open">
-			<ListBox.Item
-				v-for="entry in showcase"
-				:key="entry.id"
-				:value="entry.id"
-				:text="entry.label"
-			/>
-		</ListBox>
-
-		<template v-if="layers.length">
-			<div class="pg__sidebar-title">Слои</div>
-			<ListBox mode="single" class="pg__menu" :value="current" @update:value="open">
-				<ListBox.Item
-					v-for="entry in layers"
-					:key="entry.id"
-					:value="entry.id"
-					:text="entry.label"
-				/>
-			</ListBox>
-		</template>
+		<ListBox
+			mode="single"
+			class="pg__menu"
+			aria-label="Компоненты"
+			:items="items"
+			:groups="MENU_GROUPS"
+			:value="current"
+			@update:value="open"
+		/>
 	</nav>
 </template>
