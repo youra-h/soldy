@@ -15,6 +15,9 @@ let locale: TLocale = enUS
 /** Отрисовки живых корней: смена языка перерисовывает каждый. */
 const roots = new Set<() => void>()
 
+/** Сколько корней превью смонтировано — номер в префиксе id следующего (см. `mount`). */
+let mounted = 0
+
 /** Чем рисовать: фикстура по ключу, без ключа — превью компонента. */
 function drawing(component: string, fixture: string | undefined): TPreview {
 	const found = fixture === undefined ? PREVIEWS[component] : FIXTURES[fixture]
@@ -39,6 +42,15 @@ function drawing(component: string, fixture: string | undefined): TPreview {
  * `mount`, а пропсы и язык оболочка меняет из своих наблюдателей, вне
  * отрисовки React, и синхронный сброс там законен. Отрисовка тем же корнем —
  * обновление, а не новое монтирование: React сверяет дерево с прежним.
+ *
+ * Префикс id у каждого корня свой (`identifierPrefix`), как `idPrefix` у
+ * приложений хоста Vue. `useId` React выводит id из места в дереве корня, и у
+ * двух одинаковых превью — их по два на строку страницы — совпали бы id
+ * монтирования, а с ними `id` частей и пометки панелей владельцами
+ * (`data-owner`). Плагины слоя находят панель по пометке первой в документе, и
+ * жест, фокус и немой фон уходили бы на чужую скрытую панель. Несколько корней
+ * на странице React и просит различать префиксом. Сторожит «пометки панелей
+ * владельцами не повторяются» в `__tests__/smoke.spec.ts`.
  */
 const host: IPreviewHost = {
 	previews: Object.keys(PREVIEWS),
@@ -48,7 +60,7 @@ const host: IPreviewHost = {
 		const preview = drawing(component, fixture)
 		const entry = findComponent(component)
 		const listeners = entry && onEvent ? listenersOf(entry, onEvent) : {}
-		const root = createRoot(node)
+		const root = createRoot(node, { identifierPrefix: `preview${++mounted}-` })
 		let bind = props
 
 		const draw = () =>
