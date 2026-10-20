@@ -3,10 +3,11 @@
  *
  * Сценарии — те же, что у Vue (`focus-target.spec.ts`) и React
  * (`focus-target.spec.tsx`), по компонентам адаптера. У поля корень — коробка
- * вокруг `<input>`, у ListBox — рамка вокруг узла списка, у Tabs — рамка со
- * списком табов и панелями, у группы радио и аккордеона — контейнер
- * остановок, у элемента коллекции — обёртка вокруг строки; узел фокуса
- * называет правило дескриптора (`focusTarget` плагина действия).
+ * вокруг `<input>`, у Select — рамка вокруг поля и тегов, у ListBox — рамка
+ * вокруг узла списка, у Tabs — рамка со списком табов и панелями, у группы
+ * радио, аккордеона и набора тегов — контейнер остановок, у элемента
+ * коллекции — обёртка вокруг строки; узел фокуса называет правило
+ * дескриптора (`focusTarget` плагина действия).
  *
  * Своё у Svelte — такт: смену состояния он применяет к DOM на своём такте, и
  * до `flushSync()` разметка отстаёт от модели.
@@ -27,10 +28,14 @@ import {
 	TRadioGroupItem,
 	TRating,
 	TScroller,
+	TSelect,
+	TSelectItem,
 	TSlider,
 	TSwitch,
 	TTabs,
 	TTabsItem,
+	TTags,
+	TTagsItem,
 	TTextarea,
 	createEngineTabs,
 } from '@soldy-ui/core'
@@ -48,6 +53,8 @@ import {
 	Textarea,
 } from '@soldy-ui/svelte'
 import AccordionHarness from './Accordion.test.svelte'
+import SelectHarness from './Select.test.svelte'
+import TagsHarness from './Tags.test.svelte'
 import ListBoxHarness from './ListBox.test.svelte'
 import RadioGroupHarness from './RadioGroup.test.svelte'
 import TabsHarness from './Tabs.test.svelte'
@@ -330,6 +337,84 @@ const CASES: Record<string, TCase> = {
 		},
 		target: '.target .so-accordion-item__header',
 	},
+	Select: {
+		render: () => {
+			const ctrl = new TSelect()
+
+			mount(SelectHarness, { select: { ctrl }, items: [{ value: 'a', text: 'A' }] })
+
+			return ctrl
+		},
+		target: '.so-select__field input',
+	},
+	'Select multiple с тегами': {
+		render: () => {
+			const ctrl = new TSelect()
+
+			mount(SelectHarness, {
+				select: { ctrl, mode: 'multiple', value: ['a', 'b'] },
+				items: [
+					{ value: 'a', text: 'A' },
+					{ value: 'b', text: 'B' },
+				],
+			})
+
+			return ctrl
+		},
+		target: '.so-select__field input',
+		// Крестик тега — нативная остановка перед полем
+		before: '.so-tags-item__close',
+	},
+	'Tags с выбором': {
+		render: () => {
+			const ctrl = new TTags()
+
+			mount(TagsHarness, {
+				tags: { ctrl, mode: 'single', closable: true },
+				items: [
+					{ value: 'a', text: 'A' },
+					{ value: 'b', text: 'B', selected: true, class: 'target' },
+				],
+			})
+
+			return ctrl
+		},
+		// Остановка — выбранный тег, а не крестик первого и не первая строка
+		target: '.target [role="option"]',
+	},
+	'Tags без выбора': {
+		render: () => {
+			const ctrl = new TTags()
+
+			mount(TagsHarness, {
+				tags: { ctrl, closable: true },
+				items: [
+					{ value: 'a', text: 'A', class: 'target' },
+					{ value: 'b', text: 'B' },
+				],
+			})
+
+			return ctrl
+		},
+		// У строк остановки нет — остановка набора — крестик первого тега
+		target: '.target .so-tags-item__close',
+	},
+	'Tags.Item': {
+		render: () => {
+			const ctrl = new TTagsItem({ value: 'b', text: 'B' })
+
+			mount(TagsHarness, {
+				tags: { closable: true },
+				items: [
+					{ value: 'a', text: 'A' },
+					{ ctrl, value: 'b', class: 'target' },
+				],
+			})
+
+			return ctrl
+		},
+		target: '.target [role="listitem"]',
+	},
 	'ListBox.Item': {
 		render: () => {
 			const ctrl = new TListBoxItem({ value: 'b', text: 'B' })
@@ -513,5 +598,38 @@ describe('Pagination · текущая по модели', () => {
 		ctrl.focused = true
 
 		expect(document.activeElement?.textContent?.trim()).toBe('3')
+	})
+})
+
+describe('Select.Item · фокус остаётся на поле', () => {
+	/**
+	 * У комбобокса DOM-фокус всегда на поле, а подсвеченную опцию объявляет
+	 * `aria-activedescendant`: правила у опции нет, и запись её `focused`
+	 * фокус с поля не уводит.
+	 */
+	it('focused = true у опции фокус с поля не уводит', async () => {
+		const select = new TSelect()
+		const item = new TSelectItem({ value: 'b', text: 'B' })
+
+		mount(SelectHarness, {
+			select: { ctrl: select },
+			items: [
+				{ value: 'a', text: 'A' },
+				{ ctrl: item, value: 'b' },
+			],
+		})
+		await nextFrame()
+
+		select.focused = true
+		flushSync()
+
+		const field = find(document, '.so-select__field input', HTMLElement)
+
+		expect(document.activeElement).toBe(field)
+
+		item.focused = true
+		flushSync()
+
+		expect(document.activeElement).toBe(field)
 	})
 })

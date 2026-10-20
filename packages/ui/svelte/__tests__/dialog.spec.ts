@@ -5,13 +5,14 @@
  * нажатия мимо — плагины; здесь важно, что они сходятся: окно телепортировано
  * целиком, подложка — сосед панели с тем же слоем, панель помечена владельцем,
  * кнопки шапки говорят с ядром, три причины закрытия проходят через запрос, а
- * окно поверх окна и поповер внутри закрывают только свой слой. Сценарии —
+ * окно поверх окна, Select и поповер внутри закрывают только свой слой. Сценарии —
  * те же, что у Vue (`dialog.spec.ts`); открытость и разворот, которые Vue
  * держит `v-model`, здесь возвращают пропом колбэки `onChangeVisible` и
  * `onChangeMaximized`.
  *
- * Сценарии Vue с Select внутри здесь — с поповером: Select в Svelte ещё нет, а
- * правило слоёв то же — панель поповера тоже слой в `body` выше окна.
+ * Сценарии Vue с Select внутри — здесь те же, и рядом — те же с поповером:
+ * правило слоёв одно — список Select и панель поповера тоже слои в `body` выше
+ * окна.
  *
  * Раскладку, переходы темы и действие `mousedown` jsdom не выполняет: место,
  * размер, появление и исчезание и то, что нажатие по подложке не уносит
@@ -623,8 +624,66 @@ describe('окно поверх окна', () => {
 })
 
 /**
- * У Vue здесь Select внутри окна. Правило то же и для поповера: его панель —
- * слой в `body` выше окна, соседка окна, а не его потомок.
+ * Список Select — слой в `body` выше окна, соседка окна, а не его потомок,
+ * как у Vue.
+ */
+describe('Select внутри', () => {
+	const field = () => node('.so-test-select input')
+	const selectPanel = () => node('.so-select__panel')
+
+	/** Клик мышью целиком: нажатие, фокус от `mousedown`, клик. */
+	async function pointerClick(target: HTMLElement): Promise<void> {
+		target.dispatchEvent(
+			new PointerEvent('pointerdown', { bubbles: true, pointerType: 'mouse' }),
+		)
+		target.focus()
+		target.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }))
+		await settle()
+	}
+
+	it('список Select — слоем выше окна: нажатие в него окно не закрывает', async () => {
+		const { props } = await render({}, 'select')
+
+		await open(props)
+		await pointerClick(field())
+
+		expect(isOpen(selectPanel())).toBe(true)
+		expect(Number(selectPanel().dataset.layer)).toBeGreaterThan(Number(panel().dataset.layer))
+
+		const option = node('.so-select__panel [role="option"]')
+
+		option.dispatchEvent(
+			new PointerEvent('pointerdown', { bubbles: true, pointerType: 'mouse' }),
+		)
+		option.click()
+		await settle()
+
+		expect(props.visible).toBe(true)
+		expect(isOpen()).toBe(true)
+	})
+
+	it('Escape в открытом Select закрывает только Select, второй — окно', async () => {
+		const { props } = await render({}, 'select')
+
+		await open(props)
+		await pointerClick(field())
+
+		expect(isOpen(selectPanel())).toBe(true)
+
+		press('Escape')
+
+		expect(isOpen(selectPanel())).toBe(false)
+		expect(props.visible).toBe(true)
+
+		press('Escape')
+
+		expect(props.visible).toBe(false)
+	})
+})
+
+/**
+ * Правило то же и для поповера: его панель — слой в `body` выше окна,
+ * соседка окна, а не его потомок.
  */
 describe('Popover внутри', () => {
 	const popoverTrigger = () => node('.so-test-popover-trigger')

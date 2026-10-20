@@ -4,14 +4,12 @@
  * Модальным слоем служит `Frame`, которому плагин поставлен снаружи, из
  * `onBundleCreate`, с открытостью по `visible`: так плагин проверяется один,
  * без остальных плагинов модального окна (окно целиком — `dialog.spec.ts`).
- * Внутри слоя — поповер. Его панель телепортирована в `body` соседом окна, а
- * пока закрыта, лежит там без номера слоя выше окна: слой пишет номер только
- * при показе. Здесь проверяется то, ради чего плагин пересчитывает пометки, а
- * не снимает их при открытии: открытая панель получает номер выше окна и
- * остаётся доступной скринридеру.
- *
- * У Vue (`hide-outside.spec.ts`) внутри слоя — Select: его список — такая же
- * панель в `body`. Select в Svelte ещё нет, и правило проверяется на поповере.
+ * Внутри слоя — Select или поповер. Список Select и панель поповера
+ * телепортированы в `body` соседями окна, а пока закрыты, лежат там без номера
+ * слоя выше окна: слой пишет номер только при показе. Здесь проверяется то,
+ * ради чего плагин пересчитывает пометки, а не снимает их при открытии:
+ * открытая панель получает номер выше окна и остаётся доступной скринридеру.
+ * Сценарии с Select — те же, что у Vue (`hide-outside.spec.ts`).
  *
  * Правила пометки по отдельности — `plugins/__tests__/hide-outside.plugin.spec.ts`.
  */
@@ -23,11 +21,14 @@ import { find, mount, nextFrame } from './mount'
 import { reactiveProps } from './reactive-props.svelte'
 
 /**
- * Страница и модальный слой с поповером внутри. Отдаёт пропсы обёртки:
+ * Страница и модальный слой с поповером или Select внутри. Отдаёт пропсы обёртки:
  * открытость слоя (`shown`) — смонтирован он скрытым, как всякий `Frame`.
  */
-async function render(): Promise<{ shown?: boolean }> {
-	const props = reactiveProps<{ shown?: boolean }>({ shown: false })
+async function render(inside: 'popover' | 'select' = 'popover'): Promise<{ shown?: boolean }> {
+	const props = reactiveProps<{ shown?: boolean; inside: 'popover' | 'select' }>({
+		shown: false,
+		inside,
+	})
 
 	mount(Harness, props)
 	await settle()
@@ -107,5 +108,56 @@ describe('модальный слой с поповером внутри', () =>
 		expect(ariaHiddenNodes()).toEqual(before)
 		expect(muted(node('.so-test-page'))).toBe(false)
 		expect(muted(panel())).toBe(false)
+	})
+})
+
+describe('модальный слой с Select внутри', () => {
+	const field = () => node('.so-test-select input')
+	const list = () => node('.so-select__panel')
+
+	it('окно показано — страница под aria-hidden, окно и его содержимое доступны', async () => {
+		const props = await render('select')
+
+		props.shown = true
+		await settle()
+
+		expect(muted(node('.so-test-page'))).toBe(true)
+		expect(muted(node('.so-test-dialog'))).toBe(false)
+		expect(muted(field())).toBe(false)
+	})
+
+	it('закрытый список Select спрятан, открытый — доступен', async () => {
+		const props = await render('select')
+
+		props.shown = true
+		await settle()
+
+		// Список смонтирован и скрыт, номера слоя выше окна у него ещё нет
+		expect(muted(list())).toBe(true)
+
+		field().click()
+		await settle()
+
+		expect(field().getAttribute('aria-expanded')).toBe('true')
+		expect(muted(list())).toBe(false)
+		expect(muted(node('.so-select__panel [role="option"]'))).toBe(false)
+	})
+
+	it('окно скрыто — всё как было, в том числе чужие aria-hidden', async () => {
+		const props = await render('select')
+		const before = ariaHiddenNodes()
+
+		props.shown = true
+		await settle()
+
+		field().click()
+		await settle()
+
+		props.shown = false
+		await settle()
+
+		expect(ariaHiddenNodes()).toEqual(before)
+		expect(muted(node('.so-test-page'))).toBe(false)
+		expect(muted(list())).toBe(false)
 	})
 })

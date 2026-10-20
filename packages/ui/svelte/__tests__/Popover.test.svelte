@@ -9,10 +9,19 @@
 	 * - `nested` — страница, в панели внешнего поповера (`so-test-outer`) —
 	 *   остановка и внутренний поповер (`so-test-inner`);
 	 * - `tooltip` — поповер без крестика, в панели — кнопка с подсказкой;
+	 * - `select` — страница, в панели — Select с двумя опциями
+	 *   (`so-test-select`);
 	 * - `locale` — два поповера под провайдером локали `locale`: с крестиком и
 	 *   без него (`so-test-bare`).
 	 */
-	export type TPopoverCase = 'page' | 'text' | 'alone' | 'nested' | 'tooltip' | 'locale'
+	export type TPopoverCase =
+		| 'page'
+		| 'text'
+		| 'alone'
+		| 'nested'
+		| 'tooltip'
+		| 'select'
+		| 'locale'
 </script>
 
 <script lang="ts">
@@ -28,6 +37,7 @@
 		Button,
 		LocaleProvider,
 		Popover,
+		Select,
 		Tooltip,
 		type PopoverProps,
 		type TooltipProps,
@@ -85,6 +95,11 @@
 				<Popover class="so-test-inner" trigger={innerTrigger}>
 					<button class="so-test-inner-first">Внутри</button>
 				</Popover>
+			{:else if kind === 'select'}
+				<Select class="so-test-select">
+					<Select.Item value="a" text="Первый" />
+					<Select.Item value="b" text="Второй" />
+				</Select>
 			{:else if kind === 'tooltip'}
 				<Tooltip openDelay={0} closeDelay={0} {...tooltip} trigger={tooltipTrigger}>
 					Сохранить черновик

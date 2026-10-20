@@ -8,12 +8,15 @@
 	 * - `tabs` — таб в наборе;
 	 * - `content` — панель активного таба, в слоте `content` набора;
 	 * - `accordion` — секция в аккордеоне;
-	 * - `radio` — радио в группе.
+	 * - `radio` — радио в группе;
+	 * - `tags` — тег в наборе;
+	 * - `select` — опция в Select: она в его панели, телепортированной в
+	 *   `body`.
 	 */
-	import { Accordion, RadioGroup, Tabs } from '@soldy-ui/svelte'
+	import { Accordion, RadioGroup, Select, Tabs, Tags } from '@soldy-ui/svelte'
 
 	type THarnessProps = {
-		kind: 'tabs' | 'content' | 'accordion' | 'radio'
+		kind: 'tabs' | 'content' | 'accordion' | 'radio' | 'tags' | 'select'
 		[key: string]: unknown
 		[key: symbol]: unknown
 	}
@@ -37,6 +40,14 @@
 	<Accordion>
 		<Accordion.Item value="a" text="A" {...part} />
 	</Accordion>
+{:else if kind === 'tags'}
+	<Tags>
+		<Tags.Item value="a" text="A" {...part} />
+	</Tags>
+{:else if kind === 'select'}
+	<Select>
+		<Select.Item value="a" text="A" {...part} />
+	</Select>
 {:else}
 	<RadioGroup>
 		<RadioGroup.Item value="a" {...part} />

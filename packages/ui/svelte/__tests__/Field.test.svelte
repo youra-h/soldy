@@ -10,7 +10,8 @@
 	 *   контрола, а не контрол поля формы;
 	 * - `groupLabel` — своё имя группы радио;
 	 * - `slider` — экземпляр ползунка; `slider-range` — ползунок с двумя
-	 *   ручками и их именами.
+	 *   ручками и их именами;
+	 * - `select` — Select с опциями разметки: поле в нём — деталь его разметки.
 	 */
 	import type { TField, TInput, TSlider } from '@soldy-ui/core'
 	import {
@@ -21,6 +22,7 @@
 		NumberInput,
 		RadioGroup,
 		Rating,
+		Select,
 		Slider,
 		Switch,
 	} from '@soldy-ui/svelte'
@@ -35,6 +37,7 @@
 		| 'rating'
 		| 'slider'
 		| 'slider-range'
+		| 'select'
 
 	type THarnessProps = {
 		/** Экземпляр поля. */
@@ -88,6 +91,11 @@
 			<Slider ctrl={props.slider} />
 		{:else if control === 'slider-range'}
 			<Slider value={[20, 80]} thumbLabels={['От', 'До']} />
+		{:else if control === 'select'}
+			<Select>
+				<Select.Item value="msk" text="Москва" />
+				<Select.Item value="tver" text="Тверь" />
+			</Select>
 		{:else}
 			<Label text="Согласен"><CheckBox /></Label>
 		{/if}

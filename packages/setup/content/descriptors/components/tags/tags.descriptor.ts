@@ -48,7 +48,7 @@ export const TagsDescriptor = defineDescriptor(() =>
 			 */
 			slots: {
 				default: {
-					scope: { shown: defineType<ITagsItem[]>(Array) },
+					scope: { shown: defineType<ReadonlyArray<ITagsItem>>(Array) },
 					description: 'Теги — элементы коллекции; scope — показанные теги',
 				},
 				item: {

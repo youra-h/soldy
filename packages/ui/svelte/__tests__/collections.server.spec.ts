@@ -24,13 +24,15 @@ import { describe, it, expect } from 'vitest'
 import { render } from 'svelte/server'
 import type { TTableColumnSource } from '@soldy-ui/core'
 import { ruRU } from '@soldy-ui/plugins'
-import { Accordion, ListBox, RadioGroup, Table } from '@soldy-ui/svelte'
+import { Accordion, ListBox, RadioGroup, Select, Table, Tags } from '@soldy-ui/svelte'
 import AccordionHarness from './Accordion.test.svelte'
 import DragAndDropHarness from './DragAndDrop.test.svelte'
 import ListBoxHarness from './ListBox.test.svelte'
 import RadioGroupHarness from './RadioGroup.test.svelte'
+import SelectHarness from './Select.test.svelte'
 import Surround from './Surround.test.svelte'
 import TabsHarness from './Tabs.test.svelte'
+import TagsHarness from './Tags.test.svelte'
 import VirtualHarness from './Virtual.test.svelte'
 
 /** Открывающий тег разметки: имя и атрибуты; атрибут без значения — пустая строка. */
@@ -115,6 +117,107 @@ describe('ListBox · серверный рендер', () => {
 			'false',
 			'true',
 		])
+	})
+})
+
+describe('Tags · серверный рендер', () => {
+	const ITEMS = [
+		{ value: 'a', text: 'A' },
+		{ value: 'b', text: 'B' },
+		{ value: 'c', text: 'C' },
+	]
+
+	it('теги из items — полностью: выбранные — aria-selected, остановка Tab — у первого из них', () => {
+		const { body } = render(Tags, { props: { items: ITEMS, mode: 'multiple', value: ['b'] } })
+		const rows = tagsWith(body, 'role', 'option')
+
+		expect(tagsOf(body)[0]?.attributes.role).toBe('listbox')
+		expect(attributeOf(rows, 'aria-selected')).toEqual(['false', 'true', 'false'])
+		expect(attributeOf(rows, 'tabindex')).toEqual(['-1', '0', '-1'])
+		expect(attributeOf(withClass(body, 'so-tags-item'), 'data-selected')).toEqual([
+			'false',
+			'true',
+			'false',
+		])
+	})
+
+	/**
+	 * Остановку Tab выбранному тегу коллекция пишет, когда он входит, — и
+	 * сервер рисует его с ней. Тег выше него сервер уже нарисовал, пока
+	 * остановка была у него, и снимает её только гидратация — так же у табов
+	 * разметки. Поэтому остановка проверяется только у выбранного: временно,
+	 * до задачи https://app.clickup.com/t/869fkckpq.
+	 */
+	it('теги разметки — с выбором и остановкой Tab от коллекции, крестик назван', () => {
+		const { body } = render(TagsHarness, {
+			props: {
+				tags: { mode: 'single', closable: true },
+				items: [
+					{ value: 'a', text: 'A' },
+					{ value: 'b', text: 'B', selected: true },
+				],
+			},
+		})
+		const rows = tagsWith(body, 'role', 'option')
+
+		expect(attributeOf(rows, 'aria-selected')).toEqual(['false', 'true'])
+		expect(rows[1]?.attributes.tabindex).toBe('0')
+		expect(attributeOf(withClass(body, 'so-tags-item__close'), 'aria-label')).toEqual([
+			'Close A',
+			'Close B',
+		])
+	})
+})
+
+/**
+ * Панель Select — Frame, а телепорта на сервере нет, как у всех оверлеев:
+ * опций в разметке сервера нет. Опции из данных в коллекции с самой сборки, и
+ * поле сервер рисует с текстом выбранного, а в `multiple` — с тегами. Опции
+ * разметкой стоят в панели и входят в коллекцию, когда её смонтирует
+ * `Teleport`, — только в браузере: на сервере поле пустое.
+ */
+describe('Select · серверный рендер', () => {
+	const ITEMS = [
+		{ value: 'a', text: 'Первый' },
+		{ value: 'b', text: 'Второй' },
+		{ value: 'c', text: 'Третий' },
+	]
+
+	/** Поле комбобокса — единственный `<input>` разметки. */
+	const fieldOf = (body: string) => tagsOf(body).filter((tag) => tag.name === 'input')
+
+	it('из items — поле с текстом выбранного и связкой комбобокса, панели нет', () => {
+		const { body } = render(Select, { props: { items: ITEMS, value: 'b', name: 'Город' } })
+		const [field, ...rest] = fieldOf(body)
+
+		expect(rest).toEqual([])
+		expect(field?.attributes.role).toBe('combobox')
+		expect(field?.attributes.value).toBe('Второй')
+		expect(field?.attributes['aria-expanded']).toBe('false')
+		expect(field?.attributes['aria-controls']).toMatch(/.+/)
+		expect(withClass(body, 'so-select__panel')).toEqual([])
+		expect(tagsWith(body, 'role', 'option')).toEqual([])
+	})
+
+	it('из items в multiple — выбранное тегами в поле, текст поля пуст', () => {
+		const { body } = render(Select, {
+			props: { items: ITEMS, mode: 'multiple', value: ['a', 'c'] },
+		})
+
+		expect(withClass(body, 'so-select__tags')).toHaveLength(1)
+		expect(withClass(body, 'so-tags-item')).toHaveLength(2)
+		expect(textOf(body)).toContain('Первый')
+		expect(textOf(body)).toContain('Третий')
+		expect(textOf(body)).not.toContain('Второй')
+		expect(fieldOf(body)[0]?.attributes.value ?? '').toBe('')
+	})
+
+	it('опции разметкой — поле пустое: опции входят в коллекцию только в браузере', () => {
+		const { body } = render(SelectHarness, { props: { select: { value: 'tver' } } })
+
+		expect(fieldOf(body)[0]?.attributes.value ?? '').toBe('')
+		expect(textOf(body)).not.toContain('Тверь')
+		expect(withClass(body, 'so-select-item')).toEqual([])
 	})
 })
 

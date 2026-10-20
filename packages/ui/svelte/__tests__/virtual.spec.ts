@@ -1,5 +1,5 @@
 /**
- * Virtual в Svelte — окно над ListBox на настоящей разметке.
+ * Virtual в Svelte — окно над ListBox и Select на настоящей разметке.
  *
  * Обёртка своего узла не рисует: её окно подхватывает коллекция внутри
  * (`TVirtualCollectionExtension`), и список рисует только видимые элементы, а
@@ -20,9 +20,9 @@
 
 import { describe, it, expect } from 'vitest'
 import { flushSync } from 'svelte'
-import { createEngineListBox } from '@soldy-ui/core'
+import { createEngineListBox, createEngineSelect } from '@soldy-ui/core'
 import type { TListBoxCollection } from '@soldy-ui/core'
-import { ListBox } from '@soldy-ui/svelte'
+import { ListBox, Select } from '@soldy-ui/svelte'
 import Windowed from './Virtual.test.svelte'
 import { mount, nextFrame } from './mount'
 import { reactiveProps } from './reactive-props.svelte'
@@ -169,6 +169,79 @@ describe('ListBox в окне', () => {
 		expect(options(inner)).toHaveLength(55)
 		// У внешнего — окно: 50 своих элементов и 55 вложенного внутри первого
 		expect(options(document.querySelector('.outer') ?? document)).toHaveLength(50 + 55)
+	})
+})
+
+/**
+ * Select в окне: окно — у списка панели, он и прокручивается. Панель
+ * телепортирована, и опции входят в коллекцию, когда её смонтирует
+ * `Teleport`, — окно рисует их там же, по секциям нарисованного.
+ */
+describe('Select в окне', () => {
+	const selectOptions = () => [...document.querySelectorAll('.so-select__list .so-select-item')]
+	const selectFillers = () => [...document.querySelectorAll<HTMLElement>('.so-select__filler')]
+
+	/** Строка опции: на ней набор `aria` опции. */
+	function selectRow(text: string): HTMLElement {
+		const row = [
+			...document.querySelectorAll<HTMLElement>('.so-select-item > .so-button'),
+		].find((node) => node.textContent?.trim() === text)
+
+		if (!row) throw new Error(`${text}: строки нет`)
+
+		return row
+	}
+
+	it('без обёртки — все опции, распорок нет', () => {
+		mount(Select, { items: items(80) })
+
+		expect(selectOptions()).toHaveLength(80)
+		expect(selectFillers()).toEqual([])
+	})
+
+	it('в обёртке — до замера первые 50 опций из 80, без распорок', () => {
+		mount(Windowed, { kind: 'select', select: { items: items(80) } })
+
+		expect(selectOptions()).toHaveLength(50)
+		expect(selectFillers()).toEqual([])
+	})
+
+	it('`enabled: false` — все опции', () => {
+		mount(Windowed, {
+			kind: 'select',
+			virtual: { enabled: false },
+			select: { items: items(80) },
+		})
+
+		expect(selectOptions()).toHaveLength(80)
+	})
+
+	it('по замеру — распорки в списке панели: скрыты, высотой в опции; нарисованным — место в наборе', async () => {
+		const engine = createEngineSelect({ items: items(200) })
+
+		mount(Windowed, { kind: 'select', select: { engine } })
+		await nextFrame()
+
+		// Видны места 100–109: с запасом — 90–119
+		engine.extensions.draw.notifyViewport({ top: 3000, bottom: 3300, step: 30 })
+		flushSync()
+
+		const list = document.querySelector('.so-select__list')
+
+		if (!list) throw new Error('списка нет')
+
+		expect(selectFillers().map((filler) => filler.getAttribute('aria-hidden'))).toEqual([
+			'true',
+			'true',
+		])
+		expect(
+			selectFillers().map((filler) => filler.style.getPropertyValue('--so-filler-height')),
+		).toEqual(['2700px', '2400px'])
+		expect(list.firstElementChild).toBe(selectFillers()[0])
+		expect(list.lastElementChild).toBe(selectFillers()[1])
+		expect(selectOptions()).toHaveLength(30)
+		expect(selectRow('Пункт 91').getAttribute('aria-setsize')).toBe('200')
+		expect(selectRow('Пункт 91').getAttribute('aria-posinset')).toBe('91')
 	})
 })
 

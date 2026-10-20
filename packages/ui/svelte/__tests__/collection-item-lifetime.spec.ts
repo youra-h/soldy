@@ -14,7 +14,7 @@ import { describe, it, expect, afterEach, vi } from 'vitest'
 import { flushSync, type Component } from 'svelte'
 import { TEvented, TListBox, createEngine, createEngineListBox } from '@soldy-ui/core'
 import type { TCollectionEngine } from '@soldy-ui/core'
-import { Accordion, ListBox, RadioGroup, Tabs } from '@soldy-ui/svelte'
+import { Accordion, ListBox, RadioGroup, Select, Tabs, Tags } from '@soldy-ui/svelte'
 import { mount } from './mount'
 
 afterEach(() => {
@@ -61,6 +61,9 @@ const COLLECTIONS: ReadonlyArray<
 	['Tabs', Tabs],
 	['Accordion', Accordion],
 	['RadioGroup', RadioGroup],
+	['Tags', Tags],
+	// Опции — в панели, которую Teleport монтирует отдельным корнем
+	['Select', Select],
 ]
 
 describe.each(COLLECTIONS)('%s: фильтр прячет и показывает элемент', (_name, component) => {

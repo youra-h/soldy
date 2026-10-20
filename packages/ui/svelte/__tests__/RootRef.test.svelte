@@ -26,6 +26,10 @@
 		| 'RadioGroup.Item'
 		| 'ListBox'
 		| 'ListBox.Item'
+		| 'Tags'
+		| 'Tags.Item'
+		| 'Select'
+		| 'Select.Item'
 		| 'Table'
 		| 'Scroller'
 		| 'Pagination'
@@ -44,7 +48,8 @@
 	 * каждую обёртка отдаёт `onRef`. `shown` снимает компонент, оставляя
 	 * обёртку, — так видно, что после снятия `ref` снова `null`.
 	 *
-	 * Часть коллекции рисуется в своём владельце, панель — в слоте `content`
+	 * Часть коллекции рисуется в своём владельце (опция Select — в его панели,
+	 * телепортированной в `body`), панель — в слоте `content`
 	 * набора, под активным табом. Frame — показанный: скрытый уходит
 	 * телепортом, когда его покажут. Таблица — из одной строки и одной
 	 * колонки: её `ref` — окно, а к `TElementPlugin` привязана `table` внутри.
@@ -73,11 +78,13 @@
 		RadioGroup,
 		Rating,
 		Scroller,
+		Select,
 		Skeleton,
 		Slider,
 		Switch,
 		Table,
 		Tabs,
+		Tags,
 		Textarea,
 		Toasts,
 		Tooltip,
@@ -174,6 +181,18 @@
 		<ListBox>
 			<ListBox.Item value="a" text="A" bind:ref={get, set} {onElementReady} />
 		</ListBox>
+	{:else if kind === 'Tags'}
+		<Tags bind:ref={get, set} {onElementReady} />
+	{:else if kind === 'Tags.Item'}
+		<Tags>
+			<Tags.Item value="a" text="A" bind:ref={get, set} {onElementReady} />
+		</Tags>
+	{:else if kind === 'Select'}
+		<Select bind:ref={get, set} {onElementReady} />
+	{:else if kind === 'Select.Item'}
+		<Select>
+			<Select.Item value="a" text="A" bind:ref={get, set} {onElementReady} />
+		</Select>
 	{:else if kind === 'Table'}
 		<Table columns={COLUMNS} items={ROWS} bind:ref={get, set} {onElementReady} />
 	{:else if kind === 'Scroller'}

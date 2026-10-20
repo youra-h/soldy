@@ -6,7 +6,7 @@
  * пока задан её текст, ошибка — при `invalid` и на месте подсказки. С
  * контролом поле связывает проводка: поле опускает связку лифтом
  * (`setContext`), контрол её берёт (`getContext`). Labelable-контрол (Input,
- * NumberInput, CheckBox, Switch, Rating, Slider с одной ручкой) подпись
+ * NumberInput, Select, CheckBox, Switch, Rating, Slider с одной ручкой) подпись
  * называет своим `for`, группу (RadioGroup, Slider с несколькими ручками) —
  * ссылкой `aria-labelledby`. Справку контрол получает в `aria-describedby`,
  * ошибку — `aria-invalid` и `data-invalid` на своём корне.
@@ -21,7 +21,7 @@
 import { describe, it, expect } from 'vitest'
 import { flushSync } from 'svelte'
 import { TField, TInput, TSlider } from '@soldy-ui/core'
-import { Field, type FieldProps } from '@soldy-ui/svelte'
+import { Field, Select, type FieldProps } from '@soldy-ui/svelte'
 import FieldHarness from './Field.test.svelte'
 import { find, htmlOf, mount } from './mount'
 import { reactiveProps } from './reactive-props.svelte'
@@ -139,6 +139,7 @@ const LABELABLES = [
 	['Switch', 'switch', '.so-switch', '.so-switch input'],
 	['Rating', 'rating', '.so-rating', '.so-rating input'],
 	['Slider', 'slider', '.so-slider', '.so-slider input'],
+	['Select', 'select', '.so-select', '.so-select__field input'],
 ] as const
 
 describe.each(LABELABLES)('%s в поле', (_name, control, root, element) => {
@@ -349,6 +350,30 @@ describe('Field · имя контрола', () => {
 		expect(document.querySelector('.so-field__label')).toBeNull()
 		expect(checkbox.closest('label')?.classList.contains('so-label')).toBe(true)
 		expect(refsOf(checkbox, 'aria-describedby')).toEqual([node('.so-field__helper').id])
+	})
+})
+
+/**
+ * Поле Select — деталь его разметки (`embedded`): связку поля формы берёт
+ * сам Select, а не его Input, и свой набор `aria` с `id` от поля отдаёт
+ * `<input>` комбобокса.
+ */
+describe('Field · Select', () => {
+	it('поле Select — деталь его разметки: связку берёт Select, а не его Input', () => {
+		mount(FieldHarness, { label: 'Город', controls: ['select'] })
+
+		const combobox = input('.so-select__field input')
+
+		expect(combobox.getAttribute('role')).toBe('combobox')
+		expect(combobox.id).not.toBe('')
+		expect(label().htmlFor).toBe(combobox.id)
+	})
+
+	it('aria_label Select доходит до комбобокса', () => {
+		mount(Select, { aria_label: 'Город' })
+
+		expect(input('.so-select__field input').getAttribute('aria-label')).toBe('Город')
+		expect(node('.so-select').hasAttribute('aria-label')).toBe(false)
 	})
 })
 
