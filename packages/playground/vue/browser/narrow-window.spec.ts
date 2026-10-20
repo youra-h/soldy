@@ -48,6 +48,7 @@ import { page, userEvent } from 'vitest/browser'
 import { useIcons, useTheme } from '@soldy-ui/setup'
 import * as material from '@soldy-ui/icons-material'
 import App from '../src/App.vue'
+import { loadHost } from '../src/hosts'
 import { router } from '../src/router'
 
 import { reducedMotion } from './media'
@@ -549,6 +550,12 @@ describe('шапка в узком окне', () => {
 				expect(field.width, `${label}: поле во всю ширину`).toBeCloseTo(width, 0)
 			}
 		}
+
+		// Хост React — заранее, загрузчиком, как его грузит роутер. Адрес роутер
+		// меняет, только когда хост загружен, а первая загрузка хоста при
+		// соседних прогонах дольше ожидания адреса ниже. Тест про панель, а не
+		// про скорость загрузки — и ожидание не растягивается догадкой о машине
+		await loadHost('react')
 
 		await choose(controlOf(settings, 'Фреймворк'), 'React')
 
