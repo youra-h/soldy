@@ -243,8 +243,7 @@ export const PREVIEWS: Record<string, TPreview> = {
 	// той же разметкой, что на их страницах, ListBox — данными, как у Vue и
 	// React. Элемент переставляется в своей коллекции: между коллекциями
 	// обёртка не переносит. Ряд — граница ширины, как у окна: табы — во всю
-	// ширину ряда, список и секции — под ними, рядом. Состав списку — копией: в
-	// манифесте он только для чтения, а `items` у списка — массив
+	// ширину ряда, список и секции — под ними, рядом
 	'drag-and-drop': (bind) => (
 		<DragAndDrop {...bind()}>
 			<div
@@ -259,7 +258,7 @@ export const PREVIEWS: Record<string, TPreview> = {
 				<div style={{ flex: '1 1 100%', 'min-width': '0' }}>
 					<Tabs content={tabsPanels()}>{tabsItems()}</Tabs>
 				</div>
-				<ListBox items={[...ITEMS]} aria_label="Пункты" />
+				<ListBox items={ITEMS} aria_label="Пункты" />
 				<div style={{ flex: '1', 'min-width': '200px' }}>
 					<Accordion>{accordionItems()}</Accordion>
 				</div>

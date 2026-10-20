@@ -1265,6 +1265,37 @@ describe('коллекция меню · подменю из данных', () =
 		expect(entryOf(submenus.entries, recent).engine.extensions.batch.items).toEqual([])
 	})
 
+	it('состав и вложенный — только для чтения: уходят в движки без копии', () => {
+		// Заморожены оба уровня: запись в любой бросила бы `TypeError`, а тип
+		// замороженного — `readonly T[]`, как у данных, объявленных константой
+		const share: readonly IMenuItemSource[] = Object.freeze([
+			{
+				value: 'share',
+				text: 'Поделиться',
+				items: Object.freeze([
+					{ value: 'link', text: 'Ссылка' },
+					{ value: 'mail', text: 'Почта' },
+				]),
+			},
+		])
+		const reshare: readonly IMenuItemSource[] = Object.freeze([
+			{ value: 'share', items: Object.freeze([{ value: 'sms', text: 'СМС' }]) },
+		])
+		const engine = createEngineMenu({ items: share })
+		const { batch } = engine.extensions
+
+		expect(values(submenuAt(engine, 'share').engine.extensions.batch.items)).toEqual([
+			'link',
+			'mail',
+		])
+
+		// Патч по ключу несёт вложенный состав в движок подменю тем же видом
+		batch.trackBy = (item) => item.value
+		batch.items = reshare
+
+		expect(values(submenuAt(engine, 'share').engine.extensions.batch.items)).toEqual(['sms'])
+	})
+
 	it('третий уровень из данных — подменю в подменю, со своим движком', () => {
 		const engine = createEngineMenu({
 			items: [

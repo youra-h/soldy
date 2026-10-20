@@ -99,9 +99,12 @@ export interface ICollectionComponentOptions<
 /**
  * Входные props владельца коллекции, принимаемые фасадом.
  * Пока общие для всех коллекций (items + trackBy); специфичные выносятся отдельно.
+ *
+ * Состав — массив только для чтения: коллекция его не меняет, и данные,
+ * объявленные константой (`as const`), уходят ей без копии.
  */
 export type TCollectionFacadeProps<TItem = any, TItemProps = any> = {
-	items?: (TCollectionEngineItemSource<TItemProps> | TItem)[]
+	items?: ReadonlyArray<TCollectionEngineItemSource<TItemProps> | TItem>
 	trackBy?: (item: TCollectionEngineItemSource<TItem> | TItem) => unknown
 }
 

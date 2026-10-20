@@ -17,8 +17,8 @@ import type {
 	TMenuSubmenusExtensionEvents,
 } from './types'
 
-/** Вложенный состав данными — то, что уходит в движок подменю. */
-type TNestedItems = TCollectionEngineItemSource<IMenuItem>[]
+/** Вложенный состав данными — то, что уходит в движок подменю: массив данных, без копии. */
+type TNestedItems = ReadonlyArray<TCollectionEngineItemSource<IMenuItem>>
 
 /** Вложенный состав данных — массив `items`; нет массива — `undefined`. */
 function nestedOf(source: object): TNestedItems | undefined {
