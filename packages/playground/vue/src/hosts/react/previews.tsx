@@ -20,6 +20,7 @@ import {
 	Input,
 	Label,
 	ListBox,
+	NumberInput,
 	Pagination,
 	Popover,
 	ProgressLinear,
@@ -195,6 +196,7 @@ export const PREVIEWS: Record<string, TPreview> = {
 	button: (bind) => <Button {...bind} />,
 
 	input: (bind) => <Input {...bind} />,
+	'number-input': (bind) => <NumberInput {...bind} />,
 
 	textarea: (bind) => <Textarea {...bind} />,
 

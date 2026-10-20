@@ -18,6 +18,7 @@
 		Field,
 		Input,
 		Label,
+		NumberInput,
 		RadioGroup,
 		Rating,
 		Slider,
@@ -26,6 +27,7 @@
 
 	type TControl =
 		| 'input'
+		| 'number-input'
 		| 'check-box'
 		| 'switch'
 		| 'radio-group'
@@ -69,6 +71,8 @@
 		{#if control === 'input'}
 			{#snippet trailing()}<CheckBox />{/snippet}
 			<Input ctrl={props.input} id={props.id} trailing={props.nested ? trailing : undefined} />
+		{:else if control === 'number-input'}
+			<NumberInput />
 		{:else if control === 'check-box'}
 			<CheckBox />
 		{:else if control === 'switch'}

@@ -5,9 +5,10 @@
  * на контролах, которые в адаптере есть. Части — разметка поля: часть стоит,
  * пока задан её текст, ошибка — при `invalid` и на месте подсказки. С
  * контролом поле связывает проводка: поле опускает связку в слой своего лифта
- * (`Elevate`), контрол её берёт. Labelable-контрол (Input, CheckBox, Switch,
- * Rating, Slider с одной ручкой) подпись называет своим `for`, группу
- * (RadioGroup, Slider с несколькими ручками) — ссылкой `aria-labelledby`.
+ * (`Elevate`), контрол её берёт. Labelable-контрол (Input, NumberInput,
+ * CheckBox, Switch, Rating, Slider с одной ручкой) подпись называет своим
+ * `for`, группу (RadioGroup, Slider с несколькими ручками) — ссылкой
+ * `aria-labelledby`.
  * Справку контрол получает в `aria-describedby`, ошибку — `aria-invalid` и
  * `data-invalid` на своём корне.
  *
@@ -23,7 +24,17 @@ import { describe, it, expect } from 'vitest'
 import { Show, createSignal, useContext, type JSX } from 'solid-js'
 import { TField, TInput, TSlider } from '@soldy-ui/core'
 import type { TFieldPosition } from '@soldy-ui/core'
-import { CheckBox, Field, Input, Label, RadioGroup, Rating, Slider, Switch } from '@soldy-ui/solid'
+import {
+	CheckBox,
+	Field,
+	Input,
+	Label,
+	NumberInput,
+	RadioGroup,
+	Rating,
+	Slider,
+	Switch,
+} from '@soldy-ui/solid'
 import { ElevatorContext, type TElevatorLayer } from '../src/adapter/elevator/layer'
 import { find, mount } from './mount'
 
@@ -153,6 +164,7 @@ describe('Field · разметка', () => {
  */
 const LABELABLES: ReadonlyArray<readonly [string, () => JSX.Element, string, string]> = [
 	['Input', () => <Input />, '.so-input', '.so-input input'],
+	['NumberInput', () => <NumberInput />, '.so-number-input', '.so-number-input__input'],
 	['CheckBox', () => <CheckBox />, '.so-check-box', '.so-check-box input'],
 	['Switch', () => <Switch />, '.so-switch', '.so-switch input'],
 	['Rating', () => <Rating />, '.so-rating', '.so-rating input'],

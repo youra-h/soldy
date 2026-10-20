@@ -6,10 +6,10 @@
  * пока задан её текст, ошибка — при `invalid` и на месте подсказки. С
  * контролом поле связывает проводка: поле опускает связку лифтом
  * (`setContext`), контрол её берёт (`getContext`). Labelable-контрол (Input,
- * CheckBox, Switch, Rating, Slider с одной ручкой) подпись называет своим
- * `for`, группу (RadioGroup, Slider с несколькими ручками) — ссылкой
- * `aria-labelledby`. Справку контрол получает в `aria-describedby`, ошибку —
- * `aria-invalid` и `data-invalid` на своём корне.
+ * NumberInput, CheckBox, Switch, Rating, Slider с одной ручкой) подпись
+ * называет своим `for`, группу (RadioGroup, Slider с несколькими ручками) —
+ * ссылкой `aria-labelledby`. Справку контрол получает в `aria-describedby`,
+ * ошибку — `aria-invalid` и `data-invalid` на своём корне.
  *
  * Разметка с содержимым — в обёртке `Field.test.svelte`: содержимое
  * разметкой пишется только в `.svelte`.
@@ -134,6 +134,7 @@ describe('Field · разметка', () => {
  */
 const LABELABLES = [
 	['Input', 'input', '.so-input', '.so-input input'],
+	['NumberInput', 'number-input', '.so-number-input', '.so-number-input__input'],
 	['CheckBox', 'check-box', '.so-check-box', '.so-check-box input'],
 	['Switch', 'switch', '.so-switch', '.so-switch input'],
 	['Rating', 'rating', '.so-rating', '.so-rating input'],

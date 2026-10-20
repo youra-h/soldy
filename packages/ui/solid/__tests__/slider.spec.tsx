@@ -410,6 +410,31 @@ describe('слоты со scope', () => {
 			'so-slider__tooltip',
 		])
 	})
+
+	/**
+	 * Scope слота живой: значение ручки, прочитанное в разметке слота, следует
+	 * за шагом на месте, и своя подсказка не пересоздаётся на каждый шаг.
+	 */
+	it('шаг клавишей — своя подсказка thumb тем же узлом, с новым значением', async () => {
+		let calls = 0
+
+		await render([20, 80], {
+			tooltip: 'always',
+			thumb: (scope) => {
+				calls += 1
+
+				return <b class="so-test-thumb">{scope.value}</b>
+			},
+		})
+
+		const probes = all('.so-test-thumb')
+
+		press(field(1), 'ArrowLeft')
+
+		expect(all('.so-test-thumb')).toEqual(probes)
+		expect(probes.map((node) => node.textContent)).toEqual(['20', '79'])
+		expect(calls).toBe(2)
+	})
 })
 
 /**

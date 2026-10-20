@@ -9,11 +9,16 @@
 
 import type { TAriaAttributes } from '@soldy-ui/core'
 
-/** HTML-атрибут → имя пропа. Только те, где имена расходятся. */
+/**
+ * HTML-атрибут → имя пропа. Только те, где имена расходятся. `inputmode` —
+ * экранная клавиатура поля числа: её пишет ядро в набор ввода (`inputAttrs`
+ * NumberInput), а сенсорный плагин — поверх.
+ */
 const ATTRIBUTE_TO_PROP: Record<string, string> = {
 	tabindex: 'tabIndex',
 	readonly: 'readOnly',
 	for: 'htmlFor',
+	inputmode: 'inputMode',
 }
 
 export function toAriaProps(aria: TAriaAttributes | undefined): Record<string, unknown> {

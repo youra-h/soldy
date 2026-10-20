@@ -179,6 +179,31 @@ describe('ListBox · серверный рендер', () => {
 			'true',
 		])
 	})
+
+	/**
+	 * Scope слота живой и на сервере: проброс сливает scope элемента с самим
+	 * элементом живыми полями, и прочитанное в разметке слота сервер пишет тем,
+	 * что у элемента к рендеру.
+	 */
+	it('слот item, читающий scope в разметке, — текст и выбор каждого элемента', () => {
+		const body = render(() => (
+			<ListBox
+				items={[
+					{ value: 'a', text: 'Первый' },
+					{ value: 'b', text: 'Второй' },
+				]}
+				value="b"
+				item={(scope) => (
+					<b>
+						{scope.item.text}:{String(scope.selected)}
+					</b>
+				)}
+			/>
+		))
+
+		expect(markup(body)).toContain('<b>Первый:false</b>')
+		expect(markup(body)).toContain('<b>Второй:true</b>')
+	})
 })
 
 /**

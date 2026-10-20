@@ -42,6 +42,7 @@ import {
 	TInput,
 	TLabel,
 	TListBox,
+	TNumberInput,
 	TPagination,
 	TPopover,
 	TProgressLinear,
@@ -79,6 +80,7 @@ import {
 	Input,
 	Label,
 	ListBox,
+	NumberInput,
 	Pagination,
 	Popover,
 	ProgressLinear,
@@ -444,6 +446,12 @@ const COMPONENTS: Readonly<Record<string, Readonly<Record<string, TCase>>>> = {
 				buses: engineBuses(engine),
 			}
 		},
+	},
+	NumberInput: {
+		ctrl: overCtrl(
+			() => new TNumberInput({ value: 5 }),
+			(ctrl) => <NumberInput ctrl={ctrl} clearable />,
+		),
 	},
 	/**
 	 * Страницы окна кладёт в коллекцию расширение пагинации, когда приходит

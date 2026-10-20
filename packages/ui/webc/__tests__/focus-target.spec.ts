@@ -23,6 +23,7 @@ import {
 	TInputElement,
 	TListBoxElement,
 	TListBoxItemElement,
+	TNumberInputElement,
 	TRadioGroupElement,
 	TRadioGroupItemElement,
 	TSwitchElement,
@@ -94,6 +95,19 @@ const CASES: Record<string, TCase> = {
 		element: TInputElement,
 		owner: '[is="so-input"]',
 		target: 'input',
+		before: '.before',
+	},
+	NumberInput: {
+		html: '<div is="so-number-input"></div>',
+		element: TNumberInputElement,
+		owner: '[is="so-number-input"]',
+		target: '.so-number-input__input',
+	},
+	'NumberInput с кнопкой в leading': {
+		html: '<div is="so-number-input"><button slot="leading" class="before"></button></div>',
+		element: TNumberInputElement,
+		owner: '[is="so-number-input"]',
+		target: '.so-number-input__input',
 		before: '.before',
 	},
 	Textarea: {
