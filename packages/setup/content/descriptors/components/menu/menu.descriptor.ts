@@ -39,9 +39,12 @@ export const MenuDescriptor = defineDescriptor(() =>
 			 * область, по которой его вызывают, и связки у неё нет.
 			 *
 			 * Пункты — слот `default`; без него меню рисует пункты из `items` —
-			 * только действия. Каждый слот пункта есть у меню как `item-<слот>`
-			 * (`default` — `item`), и scope у него — scope слота пункта плюс сам
-			 * пункт.
+			 * действия, а пункт с вложенным `items` — подменю. Каждый слот строки
+			 * есть у меню как `item-<слот>`, и scope у него — scope слота строки
+			 * плюс сам пункт. `default` у действия — `item`, у подменю —
+			 * `item-content`, как панель у Accordion. Подменю из данных меню
+			 * отдаёт свои `item` и `item-*` под теми же именами, поэтому слоты
+			 * одни на все уровни.
 			 */
 			slots: {
 				trigger: {
@@ -58,15 +61,32 @@ export const MenuDescriptor = defineDescriptor(() =>
 						item: defineType<IMenuItem>(Object),
 						text: defineType<string>(String),
 					},
-					description: 'Содержимое пункта при работе через проп items',
+					description: 'Содержимое пункта-действия при работе через проп items',
 				},
 				'item-leading': {
 					scope: { item: defineType<IMenuItem>(Object) },
-					description: 'Значок пункта при работе через проп items',
+					description: 'Значок пункта — действия и подменю — при работе через проп items',
 				},
 				'item-trailing': {
 					scope: { item: defineType<IMenuItem>(Object) },
 					description: 'Подсказка сочетания клавиш при работе через проп items',
+				},
+				'item-header': {
+					scope: {
+						item: defineType<IMenuItem>(Object),
+						text: defineType<string>(String),
+						open: defineType<boolean>(Boolean),
+					},
+					description: 'Текст строки подменю при работе через проп items',
+				},
+				'item-arrow-icon': {
+					scope: { item: defineType<IMenuItem>(Object) },
+					description: 'Стрелка подменю при работе через проп items',
+				},
+				'item-content': {
+					scope: { item: defineType<IMenuItem>(Object) },
+					description:
+						'Пункты подменю разметкой вместо его items. Пусто — подменю рисует свои пункты из данных',
 				},
 			},
 			props: {

@@ -57,9 +57,10 @@ const DESCRIPTORS: Readonly<Record<string, () => IComponentDescriptor>> = {
 	ListBox: ListBoxDescriptor,
 	'ListBox.Item': ListBoxItemDescriptor,
 	Menu: MenuDescriptor,
-	// Из данных меню рисует только действия: флажок ставят разметкой
+	// Из данных меню рисует действия и подменю: флажок ставят разметкой
 	'Menu.Item': MenuItemDescriptor,
-	// Пункт с подменю — владелец своих пунктов: из данных рисует их, как меню
+	// Пункт с подменю — владелец своих пунктов: из данных рисует их, как меню, —
+	// и сам пункт меню из данных, когда у источника вложенный `items`
 	'Menu.Submenu': MenuSubmenuDescriptor,
 	Select: SelectDescriptor,
 	'Select.Item': SelectItemDescriptor,
@@ -107,9 +108,34 @@ const RELAYS: readonly TRelay[] = [
 	['Menu', 'item', 'Menu.Item', 'default', 'item'],
 	['Menu', 'item-trailing', 'Menu.Item', 'trailing', 'item'],
 
+	// Подменю из данных: слоты строки — с пунктом, панель — `item-content`, как
+	// у Accordion, а слоты его пунктов меню отдаёт под теми же именами — пункт
+	// уже в их scope
+	['Menu', 'item-leading', 'Menu.Submenu', 'leading', 'item'],
+	['Menu', 'item-header', 'Menu.Submenu', 'header', 'item'],
+	['Menu', 'item-arrow-icon', 'Menu.Submenu', 'arrow-icon', 'item'],
+	['Menu', 'item-content', 'Menu.Submenu', 'default', 'item'],
+	['Menu', 'item', 'Menu.Submenu', 'item', null],
+	['Menu', 'item-leading', 'Menu.Submenu', 'item-leading', null],
+	['Menu', 'item-trailing', 'Menu.Submenu', 'item-trailing', null],
+	['Menu', 'item-header', 'Menu.Submenu', 'item-header', null],
+	['Menu', 'item-arrow-icon', 'Menu.Submenu', 'item-arrow-icon', null],
+	['Menu', 'item-content', 'Menu.Submenu', 'item-content', null],
+
 	['Menu.Submenu', 'item-leading', 'Menu.Item', 'leading', 'item'],
 	['Menu.Submenu', 'item', 'Menu.Item', 'default', 'item'],
 	['Menu.Submenu', 'item-trailing', 'Menu.Item', 'trailing', 'item'],
+
+	['Menu.Submenu', 'item-leading', 'Menu.Submenu', 'leading', 'item'],
+	['Menu.Submenu', 'item-header', 'Menu.Submenu', 'header', 'item'],
+	['Menu.Submenu', 'item-arrow-icon', 'Menu.Submenu', 'arrow-icon', 'item'],
+	['Menu.Submenu', 'item-content', 'Menu.Submenu', 'default', 'item'],
+	['Menu.Submenu', 'item', 'Menu.Submenu', 'item', null],
+	['Menu.Submenu', 'item-leading', 'Menu.Submenu', 'item-leading', null],
+	['Menu.Submenu', 'item-trailing', 'Menu.Submenu', 'item-trailing', null],
+	['Menu.Submenu', 'item-header', 'Menu.Submenu', 'item-header', null],
+	['Menu.Submenu', 'item-arrow-icon', 'Menu.Submenu', 'item-arrow-icon', null],
+	['Menu.Submenu', 'item-content', 'Menu.Submenu', 'item-content', null],
 
 	['Select', 'item-leading', 'Select.Item', 'leading', 'item'],
 	['Select', 'item', 'Select.Item', 'default', 'item'],
@@ -153,6 +179,7 @@ const RELAYS: readonly TRelay[] = [
 const ITEMS = [
 	'ListBox.Item',
 	'Menu.Item',
+	'Menu.Submenu',
 	'Select.Item',
 	'Tabs.Item',
 	'Tags.Item',

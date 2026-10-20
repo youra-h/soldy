@@ -260,6 +260,10 @@ const dragAndDrop = new TDragAndDrop()
 	<Menu :groups="[{ label: 'Правка' }]" />
 	<Menu :groups="[{ key: 'edit', label: 'Правка' }]" />
 
+	<!-- @vue-expect-error — пункты подменю из данных — массивом, как состав меню -->
+	<Menu :items="[{ value: 'share', items: 'link' }]" />
+	<Menu :items="[{ value: 'share', items: [{ value: 'link', items: [{ value: 'mail' }] }] }]" />
+
 	<!-- @vue-expect-error — текст пункта строкой -->
 	<Menu.Item :text="42" />
 	<Menu.Item text="Изменить" />
@@ -287,6 +291,10 @@ const dragAndDrop = new TDragAndDrop()
 	<!-- @vue-expect-error — у подменю пункты данными — массивом -->
 	<Menu.Submenu :items="'link'" />
 	<Menu.Submenu :items="[{ value: 'link', text: 'Ссылка' }]" />
+
+	<!-- @vue-expect-error — пункт данными с вложенным `items` — подменю, и его пункты — тоже массивом -->
+	<Menu.Submenu :items="[{ value: 'messengers', items: 'telegram' }]" />
+	<Menu.Submenu :items="[{ value: 'messengers', items: [{ value: 'telegram' }] }]" />
 
 	<!-- @vue-expect-error — открытость панели пункта — флаг, а не строка -->
 	<Menu.PopoverItem :open="'yes'" />

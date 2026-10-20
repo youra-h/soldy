@@ -1,6 +1,6 @@
 import type { TClasses } from '../../../../common'
-import type { IMenuCollectionProps } from '../collection/types'
-import type { IMenuItem, IMenuItemProps } from '../item/types'
+import type { IMenuCollectionProps, IMenuItemSource } from '../collection/types'
+import type { IMenuItem } from '../item/types'
 import type { IMenuPopupItem, IMenuPopupItemProps, TMenuPopupItemEvents } from '../popup-item/types'
 import type { IMenuOwner } from '../types'
 
@@ -21,11 +21,12 @@ export type TMenuSubmenuEvents = TMenuPopupItemEvents & {
  * `items`, `trackBy`, группы), как у меню.
  *
  * Пункты подменю — его собственная коллекция: разметкой (слот `default`) или
- * данными (`items`). Коллекционные пропсы принимает его фасад меню, а не
- * пункт: так же у меню.
+ * данными (`items`), и пункт данными с вложенным `items` — подменю следующего
+ * уровня. Коллекционные пропсы принимает его фасад меню, а не пункт: так же у
+ * меню.
  */
 export interface IMenuSubmenuProps
-	extends IMenuPopupItemProps, IMenuCollectionProps<IMenuItemProps, IMenuItem> {
+	extends IMenuPopupItemProps, IMenuCollectionProps<IMenuItemSource, IMenuItem> {
 	/**
 	 * Рисовать ли разделитель между соседними секциями группировки пунктов
 	 * подменю из данных, как у меню. Ручной `Menu.Separator` разметки свойство
