@@ -13,10 +13,11 @@ arrive as callback props (`element:ready` → `onElementReady`), and the default
 
 > **Status:** the Solid adapter is in progress — Button, Icon, Label, Frame, Popover (a non-modal
 > panel with any content at its trigger), Tooltip (a hint shown on hover and on keyboard focus),
-> ProgressSpinner, ProgressLinear, Skeleton, the fields Input, Textarea (multi-line, growing with
-> its text, with a character counter), CheckBox and Switch, Slider (a number or a range) and
-> Rating, the form field `Field` (label, helper and error linked to the control inside it), the
-> collections ListBox, Tabs, Accordion and RadioGroup (`<ListBox.Item>`, `<Tabs.Item>` with
+> ProgressSpinner, ProgressLinear, Skeleton, the fields Input, NumberInput (a number in the
+> locale's format with − and + step buttons; the form gets the number), Textarea (multi-line,
+> growing with its text, with a character counter), CheckBox and Switch, Slider (a number or a
+> range) and Rating, the form field `Field` (label, helper and error linked to the control inside
+> it), the collections ListBox, Tabs, Accordion and RadioGroup (`<ListBox.Item>`, `<Tabs.Item>` with
 > `<Tabs.Content>`, `<Accordion.Item>`, `<RadioGroup.Item>` or `items`), Pagination, Table
 > (columns and rows as data — `columns`, `items` — with sorting, row selection, column resizing
 > and reordering), the `Scroller` strip, the `Virtual` window for long lists

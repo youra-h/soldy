@@ -240,6 +240,20 @@ describe('NumberInput · разметка', () => {
 		expect(node.hasAttribute('aria-valuenow')).toBe(false)
 	})
 
+	/** Три набора ввода лежат в одном слое владельца: смена одного не стирает другие. */
+	it('смена числа не стирает имя ввода и его клавиатуру', async () => {
+		const el = mount('<div is="so-number-input" aria_label="Количество" value="1"></div>')
+
+		el.value = 2
+		await flush()
+
+		const node = field(el)
+
+		expect(node.getAttribute('aria-valuenow')).toBe('2')
+		expect(node.getAttribute('aria-label')).toBe('Количество')
+		expect(node.getAttribute('inputmode')).toBe('decimal')
+	})
+
 	it('порядок узлов — как у Vue: слоты, ввод, обёртка у конца, кнопки шага, скрытое поле', () => {
 		const el = mount(`<div is="so-number-input" clearable>
 			<i slot="leading">№</i>
@@ -528,7 +542,11 @@ describe('NumberInput · значение и commit', () => {
 		expect(commits).toHaveLength(2)
 	})
 
-	it('пока кнопку держат — data-pressed в её наборе', async () => {
+	/**
+	 * Наборы кнопки — имя с остановкой Tab и удержание — лежат в одном слое
+	 * владельца: смена одного не стирает другой.
+	 */
+	it('пока кнопку держат — data-pressed в её наборе, имя и tabindex на месте', async () => {
 		const el = await mountModel('<div is="so-number-input" value="5"></div>')
 		const increment = buttonOf(el, '.so-number-input__increment')
 
@@ -536,11 +554,14 @@ describe('NumberInput · значение и commit', () => {
 		await flush()
 
 		expect(increment.dataset['pressed']).toBe('true')
+		expect(increment.getAttribute('aria-label')).toBe('Increase')
+		expect(increment.getAttribute('tabindex')).toBe('-1')
 
 		pointer(increment, 'pointerup')
 		await flush()
 
 		expect(increment.hasAttribute('data-pressed')).toBe(false)
+		expect(increment.getAttribute('aria-label')).toBe('Increase')
 	})
 
 	it('значение снаружи — текст строкой формата', async () => {
