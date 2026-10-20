@@ -107,8 +107,11 @@ export function Settings() {
 ```
 
 Items given as data are drawn by the owner, and their slots are the owner's `item-<slot>` props,
-with the item in the scope: `item={({ item, text }) => …}`. An item whose slot drew nothing draws
-its own content instead — its text, check mark or close icon.
+with the item in the scope: `item={(scope) => <b>{scope.item.text}</b>}`. Read the scope in the
+markup, as you read Solid props, rather than destructuring it: the markup follows the scope in
+place, while a destructured scope redraws the whole slot on every change — on every selection — and
+a button or field in the slot loses its focus. An item whose slot drew nothing draws its own content
+instead — its text, check mark or close icon.
 
 A popover opens a panel with any content at its trigger. The trigger is your own element in the
 `trigger` slot; the link to the panel comes in the slot scope — `triggerAria` (`aria-haspopup`,
@@ -131,10 +134,10 @@ export function Filters() {
 }
 ```
 
-Read the scope in the markup, as above, rather than destructuring it: the link changes on every
-opening, and a spread of `scope.triggerAria` updates the same trigger in place, while a destructured
-scope draws a new trigger each time, and the focus on the old one is lost. `Tooltip` takes its
-trigger the same way, with `triggerAria` in the scope.
+Here too the scope is read in the markup: the link changes on every opening, and a spread of
+`scope.triggerAria` updates the same trigger in place, while a destructured scope would draw a new
+trigger each time, and the focus on the old one would be lost. `Tooltip` takes its trigger the same
+way, with `triggerAria` in the scope.
 
 The application plugs in a theme and an icon pack once, in its entry point:
 
