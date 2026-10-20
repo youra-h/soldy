@@ -7,13 +7,18 @@
  * item-адаптеры держат движок, только пока их слушают (`TEvented`). Но React
  * собирает компонент на рендере и вправе выбросить рендер, ничего не сообщив:
  * сосед в той же группе `Suspense` ждёт данных. У выброшенной сборки нет ни
- * эффектов, ни `destroy()`, а её плагины уже подписаны. Один `ctrl` — один
- * компонент, один движок — один компонент, поэтому следующая сборка того же
- * `ctrl` или движка сначала уничтожает непринятую (`TDrafts`).
+ * эффектов, ни `destroy()`, а её плагины уже подписаны. Поэтому следующая
+ * сборка того же `ctrl` или движка сначала уничтожает непринятую (`TDrafts`).
  *
  * Идёт по всем компонентам адаптера: компонент без строки в таблице роняет
  * сторож. Каждый — тремя сценариями: три монтирования подряд, `StrictMode`
  * (лишний цикл эффектов) и `Suspense` (две выброшенные сборки).
+ *
+ * Движок без `ctrl` — своя группа: каждое монтирование собирает своего
+ * владельца, и привязку владельца к движку держит последнее принятое. Смена
+ * `key`, она же в `Suspense` и два живых компонента на одном движке: ошибки
+ * нет, сборки, которые React отбросил, привязку не берут, снятие держателя
+ * отдаёт её предыдущему живому, а на шинах движка после снятия ничего.
  */
 
 import { describe, it, expect, vi } from 'vitest'
@@ -48,7 +53,7 @@ import {
 	createEngineTable,
 	createEngineTabs,
 } from '@soldy-ui/core'
-import type { TTableCollection } from '@soldy-ui/core'
+import type { TListBoxCollection, TTableCollection } from '@soldy-ui/core'
 import {
 	Accordion,
 	Button,
@@ -587,5 +592,169 @@ describe('сборка, принятая после выброшенных, ра
 		)
 
 		expect(selected).toEqual(['false', 'true'])
+	})
+})
+
+/** Владелец в опциях движка: без `ctrl` его собирает монтирование. */
+function ownerOf(engine: TListBoxCollection): TListBox {
+	const owner = engine.options.get('owner')
+
+	if (!(owner instanceof TListBox)) throw new Error('владельца у движка нет')
+
+	return owner
+}
+
+/** `data-disabled` элементов списков в документе. */
+function itemsDisabled(): (string | null)[] {
+	return [...document.querySelectorAll('.so-list-box-item')].map((item) =>
+		item.getAttribute('data-disabled'),
+	)
+}
+
+/**
+ * Корень React в документе: перерисовка тем же корнем — в асинхронном `act`,
+ * чтобы дождаться ожидания, — и снятие всего, что в нём нарисовано.
+ */
+function rootInDocument(): { render: (node: ReactNode) => Promise<void>; unmount: () => void } {
+	const container = document.createElement('div')
+	const root = createRoot(container)
+
+	document.body.append(container)
+	track(root)
+
+	return {
+		render: async (node) => {
+			await act(async () => {
+				root.render(node)
+			})
+		},
+		unmount: () => act(() => root.render(<></>)),
+	}
+}
+
+/**
+ * Без `ctrl` каждое монтирование собирает своего владельца, а движок снаружи
+ * тот же. Привязку владельца держит последнее принятое монтирование. Приём и
+ * снятие в одном коммите у React не перекрываются: очистки удалённых идут
+ * раньше эффектов новых. Сборки, которые React отбросил, привязку не берут —
+ * она идёт на приёме, а их уничтожает `TDrafts`.
+ */
+describe('движок без ctrl', () => {
+	it('смена key: движок у владельца нового монтирования, после снятия на шинах ничего', async () => {
+		const engine = createEngineListBox({ items: ITEMS })
+		const live = watchBuses(engineBuses(engine))
+		const root = rootInDocument()
+
+		await root.render(<ListBox key="first" engine={engine} />)
+
+		const first = ownerOf(engine)
+
+		await root.render(<ListBox key="second" engine={engine} />)
+
+		expect(ownerOf(engine)).not.toBe(first)
+
+		// Прежний владелец отпущен: его `disabled` до элементов не доходит
+		act(() => {
+			first.disabled = true
+		})
+
+		expect(itemsDisabled()).not.toContain('true')
+
+		// Подписки на нового живы: его `disabled` доходит до элементов
+		await root.render(<ListBox key="second" engine={engine} disabled />)
+
+		expect(itemsDisabled()).toEqual(['true', 'true'])
+
+		root.unmount()
+
+		expect(engine.options.get('owner')).toBeUndefined()
+		expect(live()).toEqual([])
+	})
+
+	it('смена key в Suspense: отброшенные сборки нового привязку не берут, принятая — берёт, после снятия на шинах ничего', async () => {
+		const engine = createEngineListBox({ items: ITEMS })
+		const live = watchBuses(engineBuses(engine))
+		const root = rootInDocument()
+		let resolve: () => void = () => {}
+		const promise = new Promise<void>((done) => {
+			resolve = done
+		})
+
+		await root.render(
+			<Suspense fallback={<p>…</p>}>
+				<ListBox key="first" engine={engine} />
+			</Suspense>,
+		)
+
+		const first = ownerOf(engine)
+
+		// Новый список в группе с соседом, который ждёт данных: его сборки React
+		// отбрасывает, и привязка остаётся у прежнего
+		await root.render(
+			<Suspense fallback={<p>…</p>}>
+				<ListBox key="second" engine={engine} disabled />
+				<Wait promise={promise} />
+			</Suspense>,
+		)
+
+		expect(ownerOf(engine)).toBe(first)
+
+		await act(async () => {
+			resolve()
+			await promise
+		})
+
+		// Группа показана: прежний снят, движок — у принятого нового
+		expect(ownerOf(engine)).not.toBe(first)
+		expect(itemsDisabled()).toEqual(['true', 'true'])
+
+		root.unmount()
+
+		expect(engine.options.get('owner')).toBeUndefined()
+		expect(live()).toEqual([])
+	})
+
+	/**
+	 * Договор «один движок — один компонент» нарушен, а ошибки нет: в окне
+	 * перемонтирования два владельца законны, и отличить их от ошибки
+	 * потребителя нельзя. Сборки соседей, собранных одним рендером, уничтожают
+	 * черновики друг друга, эффект пересобирает уничтоженную, и на каждый
+	 * живой компонент остаётся одна сборка.
+	 */
+	it('два живых компонента на одном движке: ошибки нет, движок у последнего принятого, после его снятия — у первого', async () => {
+		const engine = createEngineListBox({ items: ITEMS })
+		const live = watchBuses(engineBuses(engine))
+		const root = rootInDocument()
+		const both = (first: boolean, second: boolean) => (
+			<>
+				<ListBox key="first" engine={engine} disabled={first} />
+				<ListBox key="second" engine={engine} disabled={second} />
+			</>
+		)
+
+		await root.render(both(false, false))
+
+		const second = ownerOf(engine)
+
+		// Движок — у последнего принятого: его `disabled` доходит до элементов
+		await root.render(both(false, true))
+
+		expect(itemsDisabled()).toEqual(['true', 'true', 'true', 'true'])
+
+		// `disabled` первого — нет
+		await root.render(both(true, false))
+
+		expect(itemsDisabled()).not.toContain('true')
+
+		// Снят последний: привязка вернулась к первому, и его `disabled` на месте
+		await root.render(<ListBox key="first" engine={engine} disabled />)
+
+		expect(ownerOf(engine)).not.toBe(second)
+		expect(itemsDisabled()).toEqual(['true', 'true'])
+
+		root.unmount()
+
+		expect(engine.options.get('owner')).toBeUndefined()
+		expect(live()).toEqual([])
 	})
 })

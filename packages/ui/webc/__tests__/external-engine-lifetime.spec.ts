@@ -12,6 +12,9 @@
  * на шинах владельца, движка и его расширений ни подписки, ни перехватчика, ни
  * слушателя обмена. У таблицы — ещё строки, колонки и «выбрать все»: их держат
  * элементы частей и чекбоксы, а в окне `<so-virtual>` — и выключатель обёртки.
+ *
+ * Список над движком без `ctrl`, подключённый раньше, чем снят прежний, берёт
+ * привязку владельца себе, хотя прежний ещё держит движок.
  */
 
 import { describe, it, expect, afterEach, vi } from 'vitest'
@@ -24,6 +27,7 @@ import {
 	createEngineListBox,
 	createEngineTable,
 	createEngineTabs,
+	type TListBoxCollection,
 	type TTableCollection,
 } from '@soldy-ui/core'
 import {
@@ -252,6 +256,84 @@ describe('ListBox над движком и владельцем снаружи',
 		el.engine = engine
 
 		await moveThriceAndRemove(el, live, 'so-list-box-item')
+	})
+})
+
+/** Владелец в опциях движка: без `ctrl` его собирает подключение. */
+function ownerOf(engine: TListBoxCollection): TListBox {
+	const owner = engine.options.get('owner')
+
+	if (!(owner instanceof TListBox)) throw new Error('владельца у движка нет')
+
+	return owner
+}
+
+/** Список над движком снаружи без `ctrl`, ещё не подключённый. */
+function createListBox(engine: TListBoxCollection): TListBoxElementProps {
+	const el = document.createElement('div', { is: 'so-list-box' })
+
+	if (!isListBox(el)) throw new Error('<div is="so-list-box"> нет')
+
+	el.engine = engine
+
+	return el
+}
+
+/**
+ * Без `ctrl` каждое подключение собирает своего владельца, а движок снаружи
+ * тот же. Новый список подключён раньше, чем снят прежний: привязку забирает
+ * новое подключение, а снятие прежнего её не трогает.
+ */
+describe('ListBox над движком снаружи без ctrl: новый подключён раньше, чем снят прежний', () => {
+	it('движок у владельца нового подключения, после снятия на шинах ничего', async () => {
+		const engine = createEngineListBox({ items: ITEMS })
+		const extensions = Object.values(engine.extensions).flatMap((extension) =>
+			extension ? [extension.events] : [],
+		)
+		const live = watchBuses([engine.events, ...extensions])
+		const previous = createListBox(engine)
+		const next = createListBox(engine)
+		const itemsDisabled = () =>
+			[...next.querySelectorAll('.so-list-box-item')].map((item) =>
+				item.getAttribute('data-disabled'),
+			)
+
+		document.body.appendChild(previous)
+		await flush()
+
+		const first = ownerOf(engine)
+
+		document.body.appendChild(document.createElement('section')).appendChild(next)
+		await flush()
+
+		// Прежний ещё подключён, а движок — уже у нового владельца
+		const second = ownerOf(engine)
+
+		expect(second).not.toBe(first)
+
+		previous.remove()
+		await flush()
+
+		// Снятие прежнего привязку не трогает, элементы нового на месте
+		expect(ownerOf(engine)).toBe(second)
+		expect(next.querySelectorAll('.so-list-box-item')).toHaveLength(ITEMS.length)
+
+		// Прежний владелец отпущен: его `disabled` до элементов не доходит
+		first.disabled = true
+		await flush()
+
+		expect(itemsDisabled()).not.toContain('true')
+
+		// Подписки на нового живы: его `disabled` доходит до элементов
+		next.disabled = true
+		await flush()
+
+		expect(itemsDisabled()).toEqual(['true', 'true'])
+
+		next.remove()
+
+		expect(engine.options.get('owner')).toBeUndefined()
+		expect(live()).toEqual([])
 	})
 })
 

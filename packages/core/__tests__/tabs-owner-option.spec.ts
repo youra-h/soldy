@@ -46,14 +46,93 @@ describe('владелец Tabs — опция движка', () => {
 		expect(tabsOf(engine.extensions.batch.items).every((tab) => tab.disabled)).toBe(true)
 	})
 
-	it('два живых владельца на одном движке — ошибка', () => {
+	/**
+	 * Без `ctrl` у каждого монтирования свой владелец, и новое бывает принято
+	 * раньше, чем снято прежнее. Привязку держит последний принятый: другой
+	 * владелец на занятом движке — не ошибка, а смена держателя.
+	 */
+	it('новый владелец вытесняет прежнего: свойства прежнего до табов не доходят, снятие прежнего привязку не трогает', () => {
+		const engine = createEngine({ items: [{ value: 'a' }, { value: 'b' }] })
+		const previous = new TTabs({ size: 'lg' })
+		const next = new TTabs({ size: 'xl' })
+		const first = new TTabsCollectionFacade({}, { owner: previous, engine })
+		const second = new TTabsCollectionFacade({}, { owner: next, engine })
+		const sizes = () => tabsOf(engine.extensions.batch.items).map((tab) => tab.size)
+
+		first.bindOwner()
+
+		expect(() => second.bindOwner()).not.toThrow()
+		expect(engine.options.get('owner')).toBe(next)
+		expect(sizes()).toEqual(['xl', 'xl'])
+
+		// Подписки на прежнего сняты
+		previous.size = 'sm'
+
+		expect(sizes()).toEqual(['xl', 'xl'])
+
+		// Снятие прежнего привязку нового не трогает
+		first.releaseOwner()
+
+		expect(engine.options.get('owner')).toBe(next)
+
+		next.size = '2xl'
+
+		expect(sizes()).toEqual(['2xl', '2xl'])
+
+		second.releaseOwner()
+
+		expect(engine.options.get('owner')).toBeUndefined()
+	})
+
+	/**
+	 * Новое монтирование снято раньше прежнего, а прежнее живо — Svelte, прервав
+	 * уход ветки, возобновляет её без нового приёма. Привязка возвращается к
+	 * предыдущему живому держателю.
+	 */
+	it('снят новый владелец — привязка возвращается к прежнему', () => {
+		const engine = createEngine({ items: [{ value: 'a' }, { value: 'b' }] })
+		const previous = new TTabs({ size: 'lg' })
+		const next = new TTabs({ size: 'xl' })
+		const first = new TTabsCollectionFacade({}, { owner: previous, engine })
+		const second = new TTabsCollectionFacade({}, { owner: next, engine })
+		const sizes = () => tabsOf(engine.extensions.batch.items).map((tab) => tab.size)
+
+		first.bindOwner()
+		second.bindOwner()
+		second.releaseOwner()
+
+		expect(engine.options.get('owner')).toBe(previous)
+		expect(sizes()).toEqual(['lg', 'lg'])
+
+		// Подписки на нового сняты, на прежнего — снова живы
+		next.size = '2xl'
+
+		expect(sizes()).toEqual(['lg', 'lg'])
+
+		previous.size = 'sm'
+
+		expect(sizes()).toEqual(['sm', 'sm'])
+
+		first.releaseOwner()
+
+		expect(engine.options.get('owner')).toBeUndefined()
+
+		previous.size = 'xl'
+
+		expect(sizes()).toEqual(['sm', 'sm'])
+	})
+
+	it('владельца, записанного в опции мимо фасадов, снятие держателя не трогает', () => {
 		const engine = createEngine()
+		const bound = new TTabs()
+		const written = new TTabs()
+		const facade = new TTabsCollectionFacade({}, { owner: bound, engine })
 
-		new TTabsCollectionFacade({}, { owner: new TTabs(), engine }).bindOwner()
+		facade.bindOwner()
+		engine.options.set({ owner: written })
+		facade.releaseOwner()
 
-		const second = new TTabsCollectionFacade({}, { owner: new TTabs(), engine })
-
-		expect(() => second.bindOwner()).toThrow(/движок уже принадлежит/)
+		expect(engine.options.get('owner')).toBe(written)
 	})
 
 	it('тот же владелец привязывается повторно без ошибки', () => {
