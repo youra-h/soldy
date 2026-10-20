@@ -1,5 +1,5 @@
-import { batchOf, plainOf } from '@soldy-ui/core'
-import type { IComponentView, TCollectionEngine } from '@soldy-ui/core'
+import { batchOf } from '@soldy-ui/core'
+import type { IComponentView, IDragAndDrop, TCollectionEngine } from '@soldy-ui/core'
 import { TBasePlugin } from '../../base'
 import type { IPluginContext, IPluginBundle } from '../../base'
 import { TElementPlugin } from '../element'
@@ -8,31 +8,46 @@ import { TCollectionBundlesPlugin, TCollectionElements } from '../collection'
 import type { TDragPluginEvents } from './types'
 
 /**
- * TDragPlugin — drag-and-drop для перетаскивания элементов коллекции.
+ * TDragPlugin — жест перестановки элементов коллекции: нативное
+ * перетаскивание DOM в команду обёртки `DragAndDrop`.
  *
- * Слушает нативные события `dragstart`, `dragend`, `dragover` на корневом
- * DOM-элементе компонента и при перетаскивании вызывает `move()` базовых операций
- * коллекции (`plain`), синхронизируя порядок DOM-узлов с порядком элементов в коллекции.
+ * Слушает `dragstart`, `dragover`, `drop` и `dragend` на корневом DOM-элементе
+ * компонента. Переставляет не плагин: на каждый `dragover` над другим
+ * элементом он зовёт команду обёртки (`IDragAndDrop.move`), а та шлёт свои
+ * события и переставляет элемент в движке. Место взятого плагин не помнит —
+ * оно в составе коллекции: отменённую перестановку и место, подменённое хуком
+ * движка, он не пересчитывает сам. Перестановка живая — элемент встаёт на
+ * место под указателем по ходу жеста.
+ *
+ * - **Взять** можно то, что разрешает обёртка (`IDragAndDrop.canMove`):
+ *   `dragstart` выключенного элемента отменён, и жеста нет вовсе.
+ * - **Место спрашивается, когда указатель пришёл на другой элемент**, а не на
+ *   каждый `dragover`: он идёт непрерывно, пока указатель стоит, и отменённое
+ *   место иначе переспрашивалось бы без конца.
+ * - **Принимает плагин только свой жест**: `dragover` и `drop` чужого
+ *   перетаскивания — файла, текста — идут как без него, и курсора
+ *   «переместить» над списком у них нет. Свой `drop` — без действия браузера
+ *   по умолчанию: перестановка уже сделана.
  *
  * Зависит от плагинов, которые должны присутствовать в том же бандле:
  * - {@link TElementPlugin} — корневой DOM-элемент компонента;
  * - {@link TCollectionElements} — доступ к DOM-элементам элементов коллекции;
  * - {@link TCollectionBundlesPlugin} — реестр bundles (для отслеживания новых элементов).
  *
- * Коллекция передаётся через {@link activate} (вызывается adapter-слоем).
+ * Коллекцию и обёртку передаёт {@link activate} (вызывает adapter-слой).
  *
- * @fires drag:start — при начале перетаскивания, передаёт `{ index, uid }` элемента.
- * @fires drag:end   — при завершении перетаскивания.
+ * @fires drag:start — свой жест начался, передаёт `{ index, uid }` взятого элемента.
+ * @fires drag:end   — свой жест кончился.
  */
 export class TDragPlugin extends TBasePlugin<any, TDragPluginEvents> {
 	/** CSS-класс визуального состояния перетаскиваемого элемента. */
 	private static readonly DRAGGING_CLASS = 'so-drag-and-drop__item'
 
-	/** Флаг: плагин активирован и ожидает/обрабатывает перетаскивание. */
-	private _active = false
-
-	/** Коллекция, порядок элементов которой синхронизируется при перетаскивании. */
+	/** Коллекция, элементы которой переставляют; `null` — перетаскивание не включено. */
 	private _engine: TCollectionEngine<any, any> | null = null
+
+	/** Обёртка, командой которой коллекция переставляется. */
+	private _dragAndDrop: IDragAndDrop | null = null
 
 	/** Корневой DOM-элемент, на котором висят обработчики drag-событий. */
 	private _element: Element | null = null
@@ -59,7 +74,7 @@ export class TDragPlugin extends TBasePlugin<any, TDragPluginEvents> {
 		this._elementPlugin?.events.on('ready', (element) => {
 			this._element = element
 			// DOM готов — можно навешивать обработчики, если плагин уже активирован.
-			if (this._active) this._setup()
+			this._setup()
 		})
 
 		this._elementPlugin?.events.on('removed', () => {
@@ -69,15 +84,17 @@ export class TDragPlugin extends TBasePlugin<any, TDragPluginEvents> {
 	}
 
 	/**
-	 * Активирует перетаскивание для указанной коллекции.
-	 * Если DOM-элемент уже готов, немедленно навешивает обработчики.
+	 * Включает перетаскивание элементов коллекции командой обёртки.
+	 * Если DOM-элемент уже готов, немедленно навешивает обработчики; включённое
+	 * раньше — с другой коллекцией или обёрткой — снимается.
 	 */
-	activate(engine: TCollectionEngine<any, any>): void {
+	activate(engine: TCollectionEngine<any, any>, dragAndDrop: IDragAndDrop): void {
+		this._teardown()
+
 		this._engine = engine
+		this._dragAndDrop = dragAndDrop
 
-		this._active = true
-
-		if (this._element) this._setup()
+		this._setup()
 	}
 
 	/**
@@ -86,9 +103,8 @@ export class TDragPlugin extends TBasePlugin<any, TDragPluginEvents> {
 	deactivate(): void {
 		this._teardown()
 
-		this._active = false
-
 		this._engine = null
+		this._dragAndDrop = null
 	}
 
 	/**
@@ -98,19 +114,25 @@ export class TDragPlugin extends TBasePlugin<any, TDragPluginEvents> {
 	private _setup(): void {
 		const element = this._element
 		const engine = this._engine
+		const dragAndDrop = this._dragAndDrop
 		const collectionElements = this._collectionElements
 
-		// Без корня, коллекции или TCollectionElements в бандле перетаскивать нечего.
-		if (this._cleanup || !element || !engine || !collectionElements) return
+		// Без корня, коллекции, обёртки или TCollectionElements в бандле перетаскивать нечего.
+		if (this._cleanup || !element || !engine || !dragAndDrop || !collectionElements) return
 
-		// Индекс перетаскиваемого элемента; null — перетаскивание не активно.
-		let draggingIndex: number | null = null
-		let draggingUid: string | number | null = null
-		// Последний DOM-узел, над которым находился курсор.
-		let lastDragOverTarget: HTMLElement | null = null
+		/** Взятый элемент, пока идёт свой жест; `null` — своего жеста нет. */
+		let dragging: IComponentView | null = null
+
+		/** Узел элемента под указателем на прошлом `dragover`: место спрошено для него. */
+		let over: Element | null = null
+
+		const markDraggable = (el: Element) => el.setAttribute('draggable', 'true')
 
 		// Помечаем уже существующие DOM-узлы как перетаскиваемые.
-		collectionElements.getAll().forEach((el) => el.setAttribute('draggable', 'true'))
+		collectionElements.getAll().forEach(markDraggable)
+
+		/** Узлы элементов, пришедших после включения: подписка снимается вместе с остальным. */
+		const watched: TElementPlugin[] = []
 
 		// Новые элементы (bundle зарегистрирован после активации) тоже помечаем.
 		const onBundleRegistered = ({
@@ -121,13 +143,12 @@ export class TDragPlugin extends TBasePlugin<any, TDragPluginEvents> {
 		}) => {
 			const elementPlugin = bundle.get(TElementPlugin)
 
-			const markDraggable = (el: Element) => el.setAttribute('draggable', 'true')
+			if (!elementPlugin) return
 
-			if (elementPlugin?.element) {
-				markDraggable(elementPlugin.element)
-			}
+			if (elementPlugin.element) markDraggable(elementPlugin.element)
 
-			elementPlugin?.events.on('ready', markDraggable)
+			elementPlugin.events.on('ready', markDraggable)
+			watched.push(elementPlugin)
 		}
 
 		this._bundles?.events.on('bundle:registered', onBundleRegistered)
@@ -137,85 +158,86 @@ export class TDragPlugin extends TBasePlugin<any, TDragPluginEvents> {
 		const collectionItems = (): ReadonlyArray<IComponentView> =>
 			batchOf<IComponentView>(engine)?.items ?? []
 
+		/**
+		 * Узел элемента, на котором случилось событие, — ближайший перетаскиваемый
+		 * предок цели внутри корня. Цель — не элемент (текст) — узла нет.
+		 */
+		const nodeOf = (target: EventTarget | null): Element | null => {
+			const node = target instanceof Element ? target.closest('[draggable="true"]') : null
+
+			return node && element.contains(node) ? node : null
+		}
+
+		/** Элемент этой коллекции по его узлу и `uid` из реестра; узел чужой — ничего. */
+		const itemOf = (node: Element | null) => {
+			const uid = node ? collectionElements.getUidByElement(node) : undefined
+			const item = collectionItems().find((each) => each.uid === uid)
+
+			return uid === undefined || !item ? undefined : { uid, item }
+		}
+
 		const onDragStart = (e: DragEvent) => {
-			const target = (e.target as HTMLElement).closest(
-				'[draggable="true"]',
-			) as HTMLElement | null
+			const found = itemOf(nodeOf(e.target))
 
-			if (!target || !element.contains(target)) return
+			if (!found) return
 
-			const uid = collectionElements.getUidByElement(target)
-			if (uid === undefined) return
-
-			const index = collectionItems().findIndex((item) => item.uid === uid)
-			if (index === -1) {
-				draggingIndex = null
-				draggingUid = null
+			// Взять нельзя — жеста нет вовсе: браузер его не начинает
+			if (!dragAndDrop.canMove(engine, found.item)) {
+				e.preventDefault()
 				return
 			}
 
-			draggingIndex = index
-			draggingUid = uid
-			lastDragOverTarget = null
+			dragging = found.item
+			over = null
 
-			if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move'
-
-			const item = collectionItems()[index]
-
-			if (item) {
-				item.classes.add(TDragPlugin.DRAGGING_CLASS, false)
-			} else {
-				target.classList.add(TDragPlugin.DRAGGING_CLASS)
+			if (e.dataTransfer) {
+				e.dataTransfer.effectAllowed = 'move'
+				// Без данных жеста Firefox перетаскивание не начинает
+				e.dataTransfer.setData('text/plain', '')
 			}
 
-			this.events.emit('drag:start', { index, uid: uid as number })
+			found.item.classes.add(TDragPlugin.DRAGGING_CLASS, false)
+
+			this.events.emit('drag:start', {
+				index: collectionItems().indexOf(found.item),
+				uid: found.uid,
+			})
 		}
 
-		const onDragEnd = (e: DragEvent) => {
-			if (draggingUid !== null) {
-				const item = collectionItems().find((i) => i.uid === draggingUid)
+		const onDragEnd = () => {
+			if (!dragging) return
 
-				if (item) {
-					item.classes.remove(TDragPlugin.DRAGGING_CLASS, false)
-				} else {
-					const target = (e.target as HTMLElement).closest(
-						'[draggable="true"]',
-					) as HTMLElement | null
-					if (target) target.classList.remove(TDragPlugin.DRAGGING_CLASS)
-				}
-			}
-
-			draggingIndex = null
-			draggingUid = null
-			lastDragOverTarget = null
+			dragging.classes.remove(TDragPlugin.DRAGGING_CLASS, false)
+			dragging = null
+			over = null
 
 			this.events.emit('drag:end')
 		}
 
 		const onDragOver = (e: DragEvent) => {
+			// Чужое перетаскивание — файл, текст — идёт как без плагина
+			if (!dragging) return
+
 			e.preventDefault()
 			if (e.dataTransfer) e.dataTransfer.dropEffect = 'move'
 
-			if (draggingIndex === null) return
+			const node = nodeOf(e.target)
 
-			const target = (e.target as HTMLElement).closest(
-				'[draggable="true"]',
-			) as HTMLElement | null
+			// Над тем же элементом место уже спрошено — и отменённое тоже
+			if (node === over) return
+			over = node
 
-			if (!target || !element.contains(target)) return
+			const target = itemOf(node)?.item
 
-			if (target === lastDragOverTarget) return
-			lastDragOverTarget = target
+			if (!target) return
 
-			const targetUid = collectionElements.getUidByElement(target)
-			if (targetUid === undefined) return
+			// Место взятого — в составе коллекции: команда сама знает, где он стоит
+			dragAndDrop.move(engine, dragging, collectionItems().indexOf(target))
+		}
 
-			const targetIndex = collectionItems().findIndex((item) => item.uid === targetUid)
-			if (targetIndex === -1 || targetIndex === draggingIndex) return
-
-			const draggingItem = collectionItems()[draggingIndex]
-			plainOf<IComponentView>(engine)?.move(draggingItem, targetIndex, draggingIndex)
-			draggingIndex = targetIndex
+		const onDrop = (e: DragEvent) => {
+			// Свой жест: перестановка уже сделана, действие браузера не нужно
+			if (dragging) e.preventDefault()
 		}
 
 		const target: IDomEventTarget = element
@@ -223,21 +245,21 @@ export class TDragPlugin extends TBasePlugin<any, TDragPluginEvents> {
 		target.addEventListener('dragstart', onDragStart)
 		target.addEventListener('dragend', onDragEnd)
 		target.addEventListener('dragover', onDragOver)
+		target.addEventListener('drop', onDrop)
 
 		this._cleanup = () => {
 			target.removeEventListener('dragstart', onDragStart)
 			target.removeEventListener('dragend', onDragEnd)
 			target.removeEventListener('dragover', onDragOver)
+			target.removeEventListener('drop', onDrop)
 			this._bundles?.events.off('bundle:registered', onBundleRegistered)
 
-			collectionItems().forEach((item) => {
-				item.classes.remove(TDragPlugin.DRAGGING_CLASS, false)
-			})
+			for (const elementPlugin of watched) elementPlugin.events.off('ready', markDraggable)
 
-			collectionElements.getAll().forEach((el) => {
-				el.removeAttribute('draggable')
-				el.classList.remove(TDragPlugin.DRAGGING_CLASS)
-			})
+			dragging?.classes.remove(TDragPlugin.DRAGGING_CLASS, false)
+			dragging = null
+
+			collectionElements.getAll().forEach((el) => el.removeAttribute('draggable'))
 		}
 	}
 

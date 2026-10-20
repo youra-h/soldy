@@ -365,7 +365,8 @@ export const COMPONENTS: readonly TComponentEntry[] = [
 		descriptor: DragAndDropDescriptor,
 		group: 'utilities',
 		span: 2,
-		description: 'Перетаскивание элементов коллекции',
+		description:
+			'Перестановка перетаскиванием: Tabs, ListBox и Accordion внутри переставляют свои элементы',
 	},
 	{
 		id: 'virtual',

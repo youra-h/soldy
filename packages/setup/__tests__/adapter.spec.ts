@@ -36,11 +36,12 @@ import {
 	TDragAndDropCollectionExtension,
 	COLLECTION_ENGINE_ELEVATOR,
 	ITEM_CONTEXT_ELEVATOR,
-	DRAG_CONTEXT_ELEVATOR,
 	type IAdapterContext,
 	type IComponentContract,
 	type TAdapterState,
+	type TElevatorFactory,
 } from '@soldy-ui/setup'
+import { DRAG_AND_DROP_ELEVATOR } from '../content/extensions/drag-and-drop/keys'
 import { CallbackProfile, createElevatorFactory, required } from './helpers'
 
 /**
@@ -297,64 +298,95 @@ describe('расширения коллекций', () => {
 		)
 	})
 
-	it('TDragAndDropExtension опускает флаг drag-контекста вниз', () => {
+	it('TDragAndDropExtension опускает по ключу свой экземпляр', () => {
 		const { factory, store } = createElevatorFactory()
 
-		const ctx = createAdapterContext(defineComponent({ ctor: class {} }), {})
+		const ctx = createAdapterContext(DragAndDropDescriptor(), {})
 
 		ctx.use(TDragAndDropExtension, { elevator: factory })
 
-		expect(store.get(DRAG_CONTEXT_ELEVATOR)).toBe(true)
+		expect(store.get(DRAG_AND_DROP_ELEVATOR)).toBe(ctx.instance)
 	})
+})
 
-	it('TDragAndDropCollectionExtension активирует TDragPlugin при наличии drag-контекста', () => {
-		const { factory, store } = createElevatorFactory()
-
-		// Родитель установил drag-контекст
-		store.set(DRAG_CONTEXT_ELEVATOR, true)
-
+/**
+ * Перестановка — обёртка `DragAndDrop` и подхват её коллекцией, без
+ * фреймворка. Обёртка опускает по лифту свой экземпляр, коллекция берёт его
+ * при сборке и включает им плагин перетаскивания своего набора — движком и
+ * обёрткой: жест плагин переводит в команду обёртки. Своему поддереву
+ * коллекция опускает пустое значение. Лифт здесь — в памяти, без дерева:
+ * значение, которое коллекция опустила, видит следующая коллекция, как
+ * вложенная.
+ */
+describe('TDragAndDropCollectionExtension', () => {
+	/** Коллекция под лифтом: свой движок и набор с плагином перетаскивания. */
+	function assembleCollection(factory: TElevatorFactory) {
 		const engine = createEngine()
 		const instance = new TEngineOwner(engine)
-
-		const bundle = new TPluginBundle(instance)
-		bundle.use(TDragPlugin)
-
-		const ctx = createAdapterContext(
+		const bundle = new TPluginBundle(instance).use(TDragPlugin)
+		const context = createAdapterContext(
 			defineComponent({ ctor: TEngineOwner }),
 			{ ctrl: instance },
 			{ bundle },
 		)
 
-		const activateSpy = vi.spyOn(TDragPlugin.prototype, 'activate')
+		context.use(TDragAndDropCollectionExtension, { elevator: factory })
 
-		ctx.use(TDragAndDropCollectionExtension, { elevator: factory })
+		return { engine }
+	}
 
-		expect(activateSpy).toHaveBeenCalledWith(engine)
+	/** Обёртка над лифтом — её экземпляр. */
+	const wrap = (factory: TElevatorFactory) =>
+		createAdapterContext(DragAndDropDescriptor(), {}).use(TDragAndDropExtension, {
+			elevator: factory,
+		}).instance
 
-		activateSpy.mockRestore()
+	it('под обёрткой включает плагин движком коллекции и обёрткой', () => {
+		const { factory } = createElevatorFactory()
+		const activate = vi.spyOn(TDragPlugin.prototype, 'activate')
+
+		try {
+			const dragAndDrop = wrap(factory)
+			const { engine } = assembleCollection(factory)
+
+			expect(activate).toHaveBeenCalledTimes(1)
+			expect(activate).toHaveBeenCalledWith(engine, dragAndDrop)
+		} finally {
+			activate.mockRestore()
+		}
 	})
 
-	it('TDragAndDropCollectionExtension не активирует плагин без drag-контекста', () => {
+	it('своему поддереву опускает пустое: коллекция в её элементах перестановку не наследует', () => {
+		const { factory, store } = createElevatorFactory()
+		const activate = vi.spyOn(TDragPlugin.prototype, 'activate')
+
+		try {
+			wrap(factory)
+
+			const outer = assembleCollection(factory)
+
+			expect(store.get(DRAG_AND_DROP_ELEVATOR)).toBeNull()
+
+			// Коллекция внутри элемента первой видит то, что та опустила
+			assembleCollection(factory)
+
+			expect(activate.mock.calls.map(([engine]) => engine)).toEqual([outer.engine])
+		} finally {
+			activate.mockRestore()
+		}
+	})
+
+	it('без обёртки плагин не включает', () => {
 		const { factory } = createElevatorFactory()
+		const activate = vi.spyOn(TDragPlugin.prototype, 'activate')
 
-		const instance = new TEngineOwner(createEngine())
+		try {
+			assembleCollection(factory)
 
-		const bundle = new TPluginBundle(instance)
-		bundle.use(TDragPlugin)
-
-		const ctx = createAdapterContext(
-			defineComponent({ ctor: TEngineOwner }),
-			{ ctrl: instance },
-			{ bundle },
-		)
-
-		const activateSpy = vi.spyOn(TDragPlugin.prototype, 'activate')
-
-		ctx.use(TDragAndDropCollectionExtension, { elevator: factory })
-
-		expect(activateSpy).not.toHaveBeenCalled()
-
-		activateSpy.mockRestore()
+			expect(activate).not.toHaveBeenCalled()
+		} finally {
+			activate.mockRestore()
+		}
 	})
 })
 

@@ -1,5 +1,5 @@
 /**
- * Опции расширений drag-and-drop: лифт, по которому идёт флаг drag-контекста.
+ * Опции расширений drag-and-drop: лифт, по которому обёртка идёт к коллекциям.
  */
 
 import type { TElevatorFactory } from '../../../protected/adapter/elevator'

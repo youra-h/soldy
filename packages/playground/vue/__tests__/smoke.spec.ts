@@ -16,7 +16,12 @@ import { mount, type DOMWrapper, type VueWrapper } from '@vue/test-utils'
 import { nextTick } from 'vue'
 import { useIcons } from '@soldy-ui/setup'
 import * as material from '@soldy-ui/icons-material'
-import { COMPONENTS, findComponent, propControls } from '@soldy-ui/playground-shared'
+import {
+	COLLECTION_ITEMS,
+	COMPONENTS,
+	findComponent,
+	propControls,
+} from '@soldy-ui/playground-shared'
 import { availableOf, showcaseOf } from '../src/catalog'
 import { FRAMEWORKS, hostOf, loadHost } from '../src/hosts'
 import { router } from '../src/router'
@@ -400,6 +405,79 @@ describe('страница компонента', () => {
 			expect(wrapper.findAll('.pg-prop')).toHaveLength(0)
 			expect(wrapper.get('.pg-empty').text()).toContain(label)
 			expect(wrapper.get('.pg-empty a').attributes('href')).toBe(`#/${framework}`)
+		},
+	)
+
+	/**
+	 * Страница, на которой строк нет ни в одной группе: править нечего, а
+	 * показать есть что — у DragAndDrop пропов нет, а перестановка коллекций
+	 * внутри есть. Её рисует одна сцена с колонками строки — пропсами и над
+	 * экземпляром, — без поля и кода; заголовка свойств нет. Список — из того
+	 * же источника, что строки.
+	 */
+	const ROWLESS = PAGES.filter(([, , entry]) => {
+		const { componentControls, collectionControls, pluginControls } = propControls(entry)
+
+		return componentControls.length + collectionControls.length + pluginControls.length === 0
+	})
+
+	it('страница без строк есть: DragAndDrop у Vue', () => {
+		expect(ROWLESS.map(([framework, id]) => `${framework}/${id}`)).toContain(
+			'vue/drag-and-drop',
+		)
+	})
+
+	it.each(ROWLESS)(
+		'%s/%s: без строк — одна сцена, обе колонки нарисованы',
+		async (framework, id) => {
+			const wrapper = await openPage(framework, id)
+			const scenes = wrapper.findAll('.pg-scene')
+
+			expect(wrapper.findAll('.pg-prop')).toHaveLength(0)
+			expect(wrapper.find('.pg__group').exists()).toBe(false)
+			expect(scenes).toHaveLength(1)
+
+			const columns = scenes[0].findAll('.pg-col')
+
+			expect(columns.map((column) => column.get('.pg-col__head').text())).toEqual([
+				'Component',
+				'Component Instance',
+			])
+			expect(
+				columns.filter((column) => !column.find('.pg-col__stage .pg-mount > *').exists()),
+			).toEqual([])
+			expect(scenes[0].findAllComponents(CodeView)).toHaveLength(0)
+			expect(firstLines()).toEqual([])
+		},
+	)
+})
+
+/**
+ * Превью DragAndDrop — три коллекции в обёртке, и обёртка доходит до каждой:
+ * элементы Tabs, ListBox и Accordion перетаскиваемые в обеих колонках. Что
+ * перетаскивание переставляет на экране, проверяет браузер
+ * (`browser/drag-and-drop.spec.ts`).
+ */
+describe('превью drag-and-drop', () => {
+	it.each(drawing('drag-and-drop'))(
+		'%s: элементы трёх коллекций перетаскиваемые в обеих колонках',
+		async (framework) => {
+			const wrapper = await openPage(framework, 'drag-and-drop')
+			const stages = wrapper.findAll('.pg-col__stage')
+			const items = ['.so-tabs-item', '.so-list-box-item', '.so-accordion-item']
+			/** Перетаскиваемость элементов каждой коллекции сцены. */
+			const draggable = (stage: DOMWrapper<Element>) =>
+				items.map((selector) =>
+					stage.findAll(selector).map((node) => node.attributes('draggable')),
+				)
+
+			expect(stages).toHaveLength(2)
+
+			for (const stage of stages) {
+				expect(draggable(stage)).toEqual(
+					items.map(() => COLLECTION_ITEMS.map(() => 'true')),
+				)
+			}
 		},
 	)
 })

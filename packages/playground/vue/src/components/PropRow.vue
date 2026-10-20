@@ -15,7 +15,7 @@ import {
 	type TPropControl,
 } from '@soldy-ui/playground-shared'
 import PropControl from './PropControl.vue'
-import PreviewStage from './PreviewStage.vue'
+import PreviewColumns from './PreviewColumns.vue'
 import CodeView from './CodeView.vue'
 
 const props = defineProps<{
@@ -255,46 +255,31 @@ const instanceBind = computed(() => ({
 			<PropControl :control="control" v-model="value" />
 		</Field>
 
-		<!--
-			Колонки рисует хост фреймворка (`PreviewStage`), код под ними — тоже
-			он: нет генератора у хоста — нет и блоков кода.
-		-->
-		<div class="pg-prop__columns">
-			<div class="pg-col">
-				<div class="pg-col__head">Component</div>
-				<div class="pg-col__stage">
-					<PreviewStage
-						:host="host"
-						:component="entry.id"
-						:bind="propBind"
-						:sink="propSink"
-					/>
-				</div>
+		<PreviewColumns
+			:host="host"
+			:component="entry.id"
+			:prop-bind="propBind"
+			:instance-bind="instanceBind"
+			:prop-sink="propSink"
+			:instance-sink="instanceSink"
+		>
+			<template #prop-code>
 				<CodeView
 					v-if="host.snippets"
 					:name="`${entry.label}-${control.name}`"
 					:code="host.snippets.propSnippet(entry, control.name, value, control.preset)"
 					:extension="host.snippets.extension"
 				/>
-			</div>
+			</template>
 
-			<div class="pg-col">
-				<div class="pg-col__head">Component Instance</div>
-				<div class="pg-col__stage">
-					<PreviewStage
-						:host="host"
-						:component="entry.id"
-						:bind="instanceBind"
-						:sink="instanceSink"
-					/>
-				</div>
+			<template #instance-code>
 				<CodeView
 					v-if="host.snippets"
 					:name="`${entry.label}-${control.name}-instance`"
 					:code="host.snippets.instanceSnippet(entry, control, value)"
 					:extension="host.snippets.extension"
 				/>
-			</div>
-		</div>
+			</template>
+		</PreviewColumns>
 	</section>
 </template>

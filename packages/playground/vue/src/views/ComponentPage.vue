@@ -10,6 +10,7 @@ import { findAvailable } from '../catalog'
 import { frameworkLabel, hostOf } from '../hosts'
 import PropRow from '../components/PropRow.vue'
 import GroupsDemo from '../components/GroupsDemo.vue'
+import ComponentScene from '../components/ComponentScene.vue'
 
 const props = defineProps<{ framework: string; id: string }>()
 
@@ -34,6 +35,19 @@ const elsewhere = computed(() => (entry.value ? undefined : findComponent(props.
  */
 const groups = computed(() => (entry.value ? propControls(entry.value) : null))
 
+/**
+ * Строк нет ни в одной группе: править у компонента нечего, а показать есть
+ * что — у DragAndDrop это перестановка коллекций внутри. Такую страницу рисует
+ * одна сцена, теми же колонками, что строка (`ComponentScene`).
+ */
+const rowless = computed(() => {
+	if (!groups.value) return false
+
+	const { componentControls, collectionControls, pluginControls } = groups.value
+
+	return componentControls.length + collectionControls.length + pluginControls.length === 0
+})
+
 /** События колонки — в консоль, с её пометкой. */
 function sink(column: 'props' | 'instance'): TPreviewEventSink {
 	return (name, args) => console.log(`[${column}] ${name}`, ...args)
@@ -48,6 +62,13 @@ function sink(column: 'props' | 'instance'): TPreviewEventSink {
 		</p>
 
 		<!--
+			Строк нет — одна сцена с теми же колонками. Ключ — идентификатор
+			компонента, как у строк: сцена держит экземпляр, и на странице
+			другого компонента он свой.
+		-->
+		<ComponentScene v-if="rowless" :key="entry.id" :entry="entry" :host="host" :sink="sink" />
+
+		<!--
 			Ключ с идентификатором компонента, а не одно имя пропа.
 
 			Маршрут `/:framework/:id` обслуживает один экземпляр страницы: при
@@ -60,7 +81,7 @@ function sink(column: 'props' | 'instance'): TPreviewEventSink {
 			Фреймворка в ключе нет: строка держит значение, экземпляр и движок,
 			и при смене фреймворка остаётся — заново рисуется только сцена.
 		-->
-		<h2 class="pg__group">Свойства компонента</h2>
+		<h2 v-if="!rowless" class="pg__group">Свойства компонента</h2>
 
 		<PropRow
 			v-for="control in groups.componentControls"

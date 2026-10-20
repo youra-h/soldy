@@ -92,6 +92,30 @@ type TMenuTriggerScope = DescriptorSlots<typeof MenuDescriptor>['trigger']
 const ITEMS = COLLECTION_ITEMS
 
 /**
+ * Табы разметкой и их панели — у превью Tabs и DragAndDrop. Первый таб
+ * активен сразу — иначе ни одна панель не смонтируется (`rendered && active`),
+ * и стенд никогда не покажет содержимое.
+ */
+const tabsSlots = () => ({
+	default: () =>
+		ITEMS.map((item, index) => h(Tabs.Item, { key: item.value, active: index === 0, ...item })),
+	content: () =>
+		ITEMS.map((item) =>
+			h(Tabs.Content, { key: `c-${item.value}`, value: item.value }, () =>
+				h('div', { style: 'padding:12px' }, `Панель «${item.text}»`),
+			),
+		),
+})
+
+/** Секции разметкой, с содержимым, — у превью Accordion и DragAndDrop. */
+const accordionItems = () =>
+	ITEMS.map((item) =>
+		h(Accordion.Item, { key: item.value, ...item }, () =>
+			h('div', { style: 'padding:4px 0' }, `Содержимое «${item.text}»`),
+		),
+	)
+
+/**
  * Пункты меню разметкой: группа флажков с подписью, группа переключателей —
  * отмечен один, — действия с подсказками сочетаний, подменю с подменю внутри,
  * пункт с панелью — календарём, который монтируется с первым открытием, —
@@ -521,21 +545,7 @@ export const PREVIEWS: Record<string, TPreview> = {
 			],
 		),
 
-	tabs: (bind) =>
-		h(Tabs as Component, bind, {
-			// Первый таб активен сразу — иначе ни одна панель не смонтируется
-			// (`rendered && active`), и стенд никогда не покажет содержимое
-			default: () =>
-				ITEMS.map((item, index) =>
-					h(Tabs.Item, { key: item.value, active: index === 0, ...item }),
-				),
-			content: () =>
-				ITEMS.map((item) =>
-					h(Tabs.Content, { key: `c-${item.value}`, value: item.value }, () =>
-						h('div', { style: 'padding:12px' }, `Панель «${item.text}»`),
-					),
-				),
-		}),
+	tabs: (bind) => h(Tabs as Component, bind, tabsSlots()),
 
 	/**
 	 * Обёртка — граница ширины: ряд обязан быть ровно по ячейке, иначе
@@ -555,14 +565,7 @@ export const PREVIEWS: Record<string, TPreview> = {
 	tags: (bind) =>
 		h('div', { style: 'width:100%' }, [h(Tags as Component, { items: ITEMS, ...bind })]),
 
-	accordion: (bind) =>
-		h(Accordion as Component, bind, () =>
-			ITEMS.map((item) =>
-				h(Accordion.Item, { key: item.value, ...item }, () =>
-					h('div', { style: 'padding:4px 0' }, `Содержимое «${item.text}»`),
-				),
-			),
-		),
+	accordion: (bind) => h(Accordion as Component, bind, accordionItems),
 
 	icon: (bind) => h(Icon, { tag: ARROW_DOWN, ...bind }),
 
@@ -584,10 +587,31 @@ export const PREVIEWS: Record<string, TPreview> = {
 
 	skeleton: (bind) => h(Skeleton, bind),
 
+	/**
+	 * Перестановка у трёх коллекций сразу, на одном составе: Tabs и Accordion —
+	 * той же разметкой, что на их страницах, ListBox — данными. Элемент
+	 * переставляется в своей коллекции: между коллекциями обёртка не переносит.
+	 *
+	 * Ряд — граница ширины, как у окна: сцена ячейки — флексбокс, и без неё
+	 * коллекции держали бы там только свой минимум. Табы — во всю ширину ряда,
+	 * список и секции — под ними, рядом.
+	 */
 	'drag-and-drop': (bind) =>
 		h(DragAndDrop as Component, bind, () =>
-			ITEMS.map((item) =>
-				h('div', { key: item.value, style: 'padding:6px 10px' }, item.text),
+			h(
+				'div',
+				{
+					style: 'display:flex; flex-wrap:wrap; gap:24px; align-items:flex-start; width:100%',
+				},
+				[
+					h('div', { style: 'flex:1 1 100%; min-width:0' }, [
+						h(Tabs as Component, null, tabsSlots()),
+					]),
+					h(ListBox as Component, { items: ITEMS, aria_label: 'Пункты' }),
+					h('div', { style: 'flex:1; min-width:200px' }, [
+						h(Accordion as Component, null, accordionItems),
+					]),
+				],
 			),
 		),
 
