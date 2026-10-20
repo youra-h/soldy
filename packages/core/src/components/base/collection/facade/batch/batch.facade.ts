@@ -86,7 +86,7 @@ export abstract class TBatchCollectionFacade<
 		return this.extensions.batch.items
 	}
 
-	set items(value: (TCollectionEngineItemSource<TItem> | TItem)[]) {
+	set items(value: ReadonlyArray<TCollectionEngineItemSource<TItem> | TItem>) {
 		this.extensions.batch.items = value
 	}
 

@@ -69,11 +69,11 @@ export type TMenuCollectionFacadeEngine = TCollectionEngine<any, any>
  */
 export interface IMenuItemSource extends IMenuItemProps {
 	/**
-	 * Пункты подменю — данными или готовыми пунктами, как состав меню. Массив,
-	 * даже пустой, делает пункт подменю. Вид пункта решает вставка: патч
-	 * действие подменю не сделает, а подменю — действием
+	 * Пункты подменю — данными или готовыми пунктами, как состав меню, и так же
+	 * только для чтения. Массив, даже пустой, делает пункт подменю. Вид пункта
+	 * решает вставка: патч действие подменю не сделает, а подменю — действием
 	 */
-	items?: (TCollectionEngineItemSource<IMenuItemSource> | IMenuItem)[]
+	items?: ReadonlyArray<TCollectionEngineItemSource<IMenuItemSource> | IMenuItem>
 }
 
 /**

@@ -25,8 +25,8 @@
  * а не замыкания в теле хука: замыкание держит всю область вызова с пропсами
  * своего рендера (см. шапку `TEventCallbacks`).
  *
- * Возвращает ctrl, plugins, ref и bindRef, forwardProps и state
- * (экспортированные props).
+ * Возвращает ctrl, plugins, ref и bindRef, корень значением для
+ * `useRootElement` (`root`), forwardProps и state (экспортированные props).
  *
  * Фасад коллекции связывает `useCollectionAdapter` — те же шаги 1–3 без
  * того, что принадлежит компоненту.
@@ -51,7 +51,7 @@ import type {
 import type { IPluginBundle } from '@soldy-ui/plugins'
 import { ReactProfile } from '../common'
 import { TEventCallbacks } from './event-callbacks.class'
-import { TRootRef, consumerRefOf } from './root-ref.class'
+import { TRootRef, consumerRefOf, type TRootSource } from './root-ref.class'
 import { TStableSnapshot } from './stable-snapshot.class'
 
 export type TBinding<
@@ -67,6 +67,14 @@ export type TBinding<
 	 * `TElementPlugin`: `ref` потребителя получает обёртка, с его атрибутами.
 	 */
 	bindRef: (el: Element | null) => void
+	/**
+	 * Корень значением — только для чтения: узел ставит `ref`. Значение рендера
+	 * из него делает `useRootElement` там, где корень нужен разметке (якорь
+	 * панели Popover и Tooltip), а не эта связка у всех: подписка на корень
+	 * перерисовывала бы после монтирования каждый компонент, вплоть до строк
+	 * таблицы.
+	 */
+	root: TRootSource
 	/** Пропсы, которые компонент не съел: уходят атрибутами в DOM. */
 	forwardProps: Partial<TProps>
 	/** Свойства инстанса и выходы плагинов со снимком через `valueOf()` — см. `TAdapterState`. */
@@ -194,6 +202,7 @@ export function useAdapter<C extends IComponentContract, TProps extends object>(
 		plugins: adapter.bundle,
 		ref: root.attach,
 		bindRef: root.bind,
+		root,
 		forwardProps,
 		state: toInstanceState<C>(state),
 	}

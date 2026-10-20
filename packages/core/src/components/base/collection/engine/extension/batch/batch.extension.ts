@@ -62,7 +62,7 @@ export class TBatchExtension<TItem extends object>
 	 * перевставляет что дали — так `TFactoryExtension` догоняет сырые объекты
 	 * тем же составом.
 	 */
-	set items(items: TCollectionEngineItemSource<TItem>[]) {
+	set items(items: ReadonlyArray<TCollectionEngineItemSource<TItem>>) {
 		const stored = this.items
 
 		if (
@@ -129,7 +129,7 @@ export class TBatchExtension<TItem extends object>
 		return this.items.find(predicate)
 	}
 
-	set(items: TCollectionEngineItemSource<TItem>[]): void {
+	set(items: ReadonlyArray<TCollectionEngineItemSource<TItem>>): void {
 		if (!items.length) return
 
 		this._ctx.batch(() => {
@@ -141,7 +141,7 @@ export class TBatchExtension<TItem extends object>
 		this.events.emit('items:added', items)
 	}
 
-	update(items: TCollectionEngineItemSource<TItem>[]): void {
+	update(items: ReadonlyArray<TCollectionEngineItemSource<TItem>>): void {
 		if (this._trackBy) {
 			this.patch(items)
 		} else {
@@ -157,7 +157,7 @@ export class TBatchExtension<TItem extends object>
 	 * во входе нет, то есть всё. Иначе `items = []` с `trackBy` оставлял бы
 	 * коллекцию как была, а без `trackBy` (`clear()` + `set()`) очищал бы её.
 	 */
-	patch(items: TCollectionEngineItemSource<TItem>[]): void {
+	patch(items: ReadonlyArray<TCollectionEngineItemSource<TItem>>): void {
 		const trackBy = this._trackBy
 
 		if (!trackBy) {
@@ -171,7 +171,7 @@ export class TBatchExtension<TItem extends object>
 		if (items.length) this.events.emit('items:added', items)
 	}
 
-	remove(items: TItem[]): void {
+	remove(items: ReadonlyArray<TItem>): void {
 		if (!items.length) return
 
 		this._ctx.batch(() => {

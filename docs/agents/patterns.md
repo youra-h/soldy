@@ -514,7 +514,9 @@ ARIA пускает только `option` и `group` (axe — `aria-required-chi
   `core/__tests__/popover.spec.ts`,
   `plugins/__tests__/popover-focus.plugin.spec.ts`,
   `plugins/__tests__/swipe.plugin.spec.ts`,
-  `ui/vue/__tests__/popover.spec.ts`, `ui/svelte/__tests__/popover.spec.ts`
+  `ui/vue/__tests__/popover.spec.ts`, `ui/react/__tests__/popover.spec.tsx`
+  (у React ещё якорь — корень значением рендера: StrictMode, серверная
+  разметка и гидратация, смена тега), `ui/svelte/__tests__/popover.spec.ts`
   (якорь панели — корень, руна `rootElement` адаптера),
   `playground/vue/browser/popover.spec.ts`,
   `playground/vue/browser/popover-swipe.spec.ts` и
@@ -828,8 +830,8 @@ ARIA пускает только `option` и `group` (axe — `aria-required-chi
   не плагина (`tooltip/trigger/document-state.ts`, как замок прокрутки).
   Сторожат `core/__tests__/tooltip.spec.ts`,
   `plugins/__tests__/tooltip-trigger.plugin.spec.ts`,
-  `ui/vue/__tests__/tooltip.spec.ts`, `ui/svelte/__tests__/tooltip.spec.ts` и
-  `playground/vue/browser/tooltip.spec.ts`.
+  `ui/vue/__tests__/tooltip.spec.ts`, `ui/react/__tests__/tooltip.spec.tsx`,
+  `ui/svelte/__tests__/tooltip.spec.ts` и `playground/vue/browser/tooltip.spec.ts`.
 - **Dialog** — Dialog (Modal) pattern: `role="dialog"` и `aria-modal="true"`
   на панели, имя — видимый заголовок (`aria-labelledby` на слот `title`,
   который рисуется всегда; `id` он берёт из набора `titleAria`). `TAriaPlugin`
@@ -889,9 +891,9 @@ ARIA пускает только `option` и `group` (axe — `aria-required-chi
   `core/__tests__/dialog.spec.ts`,
   `plugins/__tests__/modal-focus.plugin.spec.ts`,
   `plugins/__tests__/dialog-layout.plugin.spec.ts`,
-  `ui/vue/__tests__/dialog.spec.ts`, `ui/svelte/__tests__/dialog.spec.ts`,
-  `playground/vue/browser/dialog.spec.ts` и
-  `playground/vue/browser/svelte-host.spec.ts` (открытое окно Svelte с
+  `ui/vue/__tests__/dialog.spec.ts`, `ui/react/__tests__/dialog.spec.tsx`,
+  `ui/svelte/__tests__/dialog.spec.ts`, `playground/vue/browser/dialog.spec.ts`
+  и `playground/vue/browser/svelte-host.spec.ts` (открытое окно Svelte с
   подложкой и частями стоит, как у Vue).
 - **Drawer** — выезжающая панель у края экрана. Своего паттерна APG у неё нет:
   это модальный Dialog, и модальность у неё общая с окном (`TModalLayer`, см.
@@ -938,7 +940,9 @@ ARIA пускает только `option` и `group` (axe — `aria-required-chi
   `contained` пропал бы. Сторожат `core/__tests__/drawer.spec.ts`,
   `plugins/__tests__/swipe.plugin.spec.ts` (касание — его группа «касание»),
   `plugins/__tests__/drawer-layout.plugin.spec.ts`,
-  `ui/vue/__tests__/drawer.spec.ts`, `ui/svelte/__tests__/drawer.spec.ts`,
+  `ui/vue/__tests__/drawer.spec.ts`, `ui/react/__tests__/drawer.spec.tsx` и
+  `ui/svelte/__tests__/drawer.spec.ts` (у React и Svelte смена `contained` на
+  лету рисует панель новым узлом, и замок прокрутки встаёт кадром позже),
   `playground/vue/browser/drawer.spec.ts`
   (жест пальцем — группа «пальцем»: за полосу и от абзаца в теле панель
   закрывается, а протяжка поперёк оси и по телу, которое прокручивается

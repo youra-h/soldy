@@ -9,6 +9,10 @@
  *
  * Портал React серверный рендер роняет, поэтому на сервере и при гидратации
  * его нет, а после гидратации он появляется.
+ *
+ * Якорь (`anchor_anchor`) — проп плагина, как у Vue
+ * (`ui/vue/__tests__/frame-anchor.spec.ts`, `frame-anchor-flip.spec.ts`):
+ * снятый из разметки отвязывает панель, а flip без пропа остаётся включённым.
  */
 
 import { describe, it, expect, vi } from 'vitest'
@@ -16,8 +20,9 @@ import { act } from 'react'
 import { hydrateRoot } from 'react-dom/client'
 import { renderToString } from 'react-dom/server'
 import { TFrame } from '@soldy-ui/core'
+import { TAnchorPlugin } from '@soldy-ui/plugins'
 import { Frame } from '@soldy-ui/react'
-import { find, mount, track } from './mount'
+import { find, mount, nextFrame, track } from './mount'
 
 /** Узел Frame — там, куда его увёл телепорт. */
 const frame = () => find(document, '.so-frame', HTMLElement)
@@ -198,5 +203,56 @@ describe('Frame · серверный рендер', () => {
 		expect(onRecoverableError).not.toHaveBeenCalled()
 		expect(frame().parentElement).toBe(document.body)
 		expect(frame().textContent).toBe('Панель')
+	})
+})
+
+/**
+ * Плагин якоря — у каждого Frame: без якоря он ничего не делает. Его
+ * экземпляр приходит в `onAnchorCreate` — на микрозадаче, её дожидается кадр.
+ */
+describe('Frame · якорь', () => {
+	/** Колбэк `onAnchorCreate` и плагин, который он получил. */
+	function anchorProbe() {
+		const created: { plugin: TAnchorPlugin | null } = { plugin: null }
+
+		return {
+			created,
+			onAnchorCreate: (plugin: unknown) => {
+				if (plugin instanceof TAnchorPlugin) created.plugin = plugin
+			},
+		}
+	}
+
+	/**
+	 * Снятый проп связка возвращает к объявленному умолчанию плагина — `null`,
+	 * «ни к чему не привязана». Без него панель оставалась бы привязанной к
+	 * прежнему элементу и следила бы за его размером и прокруткой.
+	 */
+	it('снятый из разметки якорь отвязывает панель', async () => {
+		const element = document.createElement('button')
+		const { created, onAnchorCreate } = anchorProbe()
+
+		document.body.appendChild(element)
+
+		const { render } = mount(<Frame onAnchorCreate={onAnchorCreate} anchor_anchor={element} />)
+
+		await nextFrame()
+
+		expect(created.plugin?.anchor).toBe(element)
+
+		render(<Frame onAnchorCreate={onAnchorCreate} />)
+
+		expect(created.plugin?.anchor).toBeNull()
+	})
+
+	it('Frame без anchor_flip оставляет flip включённым', async () => {
+		const { created, onAnchorCreate } = anchorProbe()
+
+		mount(<Frame visible position="fixed" onAnchorCreate={onAnchorCreate} />)
+
+		await nextFrame()
+
+		expect(created.plugin).toBeInstanceOf(TAnchorPlugin)
+		expect(created.plugin?.flip).toBe(true)
 	})
 })

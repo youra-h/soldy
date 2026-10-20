@@ -14,13 +14,17 @@ import {
 	Button,
 	type ButtonProps,
 	type CheckBoxProps,
+	type DialogProps,
+	type DrawerProps,
 	type FrameProps,
 	type InputProps,
 	type PaginationProps,
+	type PopoverProps,
 	type ProgressLinearProps,
 	type RatingProps,
 	type ScrollerProps,
 	type SliderProps,
+	type TooltipProps,
 	type UseDomProps,
 } from '@soldy-ui/react'
 
@@ -171,6 +175,12 @@ describe('слот важнее одноимённого атрибута HTML',
 	it('content по TabsDescriptor принимает ReactNode, а не строку атрибута', () => {
 		expectTypeOf<UseDomProps<typeof TabsDescriptor>['content']>().toEqualTypeOf<ReactNode>()
 	})
+
+	/** `title` в `HTMLAttributes` — строка всплывающей подсказки браузера. */
+	it('title у Dialog и Drawer — слот заголовка: ReactNode, а не строка атрибута', () => {
+		expectTypeOf<DialogProps['title']>().toEqualTypeOf<ReactNode>()
+		expectTypeOf<DrawerProps['title']>().toEqualTypeOf<ReactNode>()
+	})
 })
 
 describe('содержимое — только слот default', () => {
@@ -198,6 +208,14 @@ describe('содержимое — только слот default', () => {
 	 * (`thumb`, `mark`, `icon`, `item`). У ленты — есть: её содержимое лежит
 	 * прямо во вьюпорте.
 	 */
+	/** Содержимое оверлея — его панель: слот `default`, а триггер — свой слот `trigger`. */
+	it('у Popover, Tooltip, Dialog и Drawer children есть: содержимое панели', () => {
+		expectTypeOf<PopoverProps['children']>().toEqualTypeOf<ReactNode>()
+		expectTypeOf<TooltipProps['children']>().toEqualTypeOf<ReactNode>()
+		expectTypeOf<DialogProps['children']>().toEqualTypeOf<ReactNode>()
+		expectTypeOf<DrawerProps['children']>().toEqualTypeOf<ReactNode>()
+	})
+
 	it('у Slider, Rating, Pagination и ProgressLinear children нет, у Scroller — есть', () => {
 		expectTypeOf<SliderProps>().not.toHaveProperty('children')
 		expectTypeOf<RatingProps>().not.toHaveProperty('children')

@@ -23,15 +23,18 @@
  * только проявляется.
  *
  * Вид сообщения — заливка плашки: обычное сообщение стоит на поверхности
- * контрола, у каждого вида заливка своя, и всё на ней читается — заголовок,
- * описание, значок, подписи кнопок своего содержимого и крестик, в покое, под
- * наведением и при нажатии, — а наведение и нажатие кнопки видно. Палитры спек
- * не знает: меряет он отношение контраста по WCAG, слоями, как их кладёт
- * браузер (`./colors`). Смена вида у открытого тоста — переход цвета плашки, а
- * не корня: переходов корня ждёт удаление закрытого тоста. Пока тост ждёт, на
- * месте значка бежит кольцо цвета значка — по кругу глифа, и текст не
- * сдвигается, когда кольцо сменилось значком. Значки всех видов — одного
- * рисунка с ошибкой: контур, фигура внутри пуста.
+ * контрола, и всё на нём читается — заголовок, описание, значок, подписи
+ * кнопок своего содержимого и крестик, в покое, под наведением и при нажатии.
+ * У каждого вида заливка своя, и всё на ней — цвета её текста: значок, подписи
+ * кнопок, крестик и кольцо фокуса; порогов контраста у заливки нет — она
+ * сигнал, ступень кнопки `filled` своего цвета. Наведение и нажатие кнопки
+ * видно, а на заливке оно уводит фон от подписи. Палитры спек не знает:
+ * контраст по WCAG он меряет слоями, как их кладёт браузер (`./colors`).
+ * Смена вида у открытого тоста — переход цвета плашки, а не корня: переходов
+ * корня ждёт удаление закрытого тоста. Пока тост ждёт, на месте значка бежит
+ * кольцо цвета значка — по кругу глифа, и текст не сдвигается, когда кольцо
+ * сменилось значком. Значки всех видов — одного рисунка с ошибкой: контур,
+ * фигура внутри пуста.
  */
 
 import { describe, it, expect, beforeEach, afterEach, onTestFinished } from 'vitest'
@@ -389,7 +392,7 @@ describe('части тоста', () => {
 })
 
 describe('вид', () => {
-	/** Обе схемы: заливка вида в них — разные ступени, а отношения те же. */
+	/** Обе схемы: цвета у них свои, а правила те же. */
 	const SCHEMES = ['oren', 'oren-dark'] as const
 
 	/** Виды тоста: обычное сообщение — тост без вида — и каждый вид. */
@@ -402,9 +405,11 @@ describe('вид', () => {
 	const CASES = SCHEMES.flatMap((scheme) => KINDS.map((kind) => ({ scheme, ...kind })))
 
 	/**
-	 * Пороги WCAG 2. Заголовок, описание и подписи кнопок — текст кегля
-	 * `text-sm`: 4,5:1 (1.4.3). Значок, крестик и кольцо фокуса — графика: 3:1
-	 * (1.4.11).
+	 * Пороги WCAG 2 — у белой плашки обычного сообщения. Заголовок, описание и
+	 * подписи кнопок — текст кегля `text-sm`: 4,5:1 (1.4.3). Значок и крестик —
+	 * графика: 3:1 (1.4.11). У заливки вида порогов нет: она — сигнал, ступень
+	 * кнопки `filled` своего цвета, и под пороги её не подгоняют
+	 * (`themes/oren/AGENTS.md`, «тосты Toasts»).
 	 */
 	const TEXT = 4.5
 	const GRAPHIC = 3
@@ -412,8 +417,9 @@ describe('вид', () => {
 	/**
 	 * Состояние кнопки видно, если фон под ним отошёл от фона в покое по
 	 * светлоте OKLab не меньше, чем вуаль-заливка от подложки, — порог
-	 * `VISIBLE_FILL` из `button-view.spec.ts`. По модулю: на заливке вида
-	 * состояния уводят фон от белой подписи, то есть темнее, а не к тексту.
+	 * `VISIBLE_FILL` из `button-view.spec.ts`. По модулю: на белой плашке
+	 * состояния ведут фон к тёмной подписи, а на заливке вида — от белой, то
+	 * есть темнее; это направление проверяется отдельно.
 	 */
 	const VISIBLE_FILL = 0.02
 
@@ -453,7 +459,7 @@ describe('вид', () => {
 	}
 
 	it.each(SCHEMES)(
-		'%s: у каждого вида своя заливка, и текст и значок на ней читаются',
+		'%s: у каждого вида своя заливка, значок на ней цвета заголовка, а белая плашка читается',
 		async (scheme) => {
 			document.documentElement.dataset.soTheme = scheme
 
@@ -477,8 +483,24 @@ describe('вид', () => {
 
 			for (const { name, type } of KINDS) {
 				const item = titled(name)
-				const plate = [style(card(item)).backgroundColor]
 				const icon = style(part(item, 'icon')).color
+
+				// Рисунок значка — цвета коробки
+				expect(pixel([style(glyph(item)).fill]), `${name}: рисунок значка`).toEqual(
+					pixel([icon]),
+				)
+
+				// На заливке вида значок — цвета заголовка: всё на ней одного цвета.
+				// Порогов контраста у заливки нет (см. `TEXT`)
+				if (type) {
+					expect(pixel([icon]), `${name}: значок цвета заголовка`).toEqual(
+						pixel([style(part(item, 'text')).color]),
+					)
+					continue
+				}
+
+				// Белая плашка: текст и значок держат пороги WCAG
+				const plate = [style(card(item)).backgroundColor]
 
 				expect(
 					contrast(style(part(item, 'text')).color, plate),
@@ -488,18 +510,7 @@ describe('вид', () => {
 					contrast(style(part(item, 'description')).color, plate),
 					`${name}: описание`,
 				).toBeGreaterThanOrEqual(TEXT)
-				// Рисунок значка — цвета коробки, а коробка — графика на плашке
-				expect(pixel([style(glyph(item)).fill]), `${name}: рисунок значка`).toEqual(
-					pixel([icon]),
-				)
 				expect(contrast(icon, plate), `${name}: значок`).toBeGreaterThanOrEqual(GRAPHIC)
-
-				// На заливке вида значок — цвета заголовка: всё на ней одного цвета
-				if (type) {
-					expect(pixel([icon]), `${name}: значок цвета заголовка`).toEqual(
-						pixel([style(part(item, 'text')).color]),
-					)
-				}
 			}
 		},
 	)
@@ -576,9 +587,10 @@ describe('вид', () => {
 
 	/**
 	 * Кнопки тоста в порядке разметки — порядке Tab: своё содержимое, потом
-	 * крестик. Подпись кнопки — текст, у крестика — значок, графика. У вида
-	 * `none` нет ни фона состояний, ни кольца фокуса и вне тоста
-	 * (`button/_button.scss`) — у него проверяется только подпись.
+	 * крестик. Подпись кнопки — текст, у крестика — значок, графика: порог
+	 * подписи на белой плашке свой (`label`). У вида `none` нет ни фона
+	 * состояний, ни кольца фокуса и вне тоста (`button/_button.scss`) — у него
+	 * проверяется только подпись.
 	 */
 	const CONTROLS = [
 		...BUTTON_VIEWS.map((view) => ({
@@ -590,12 +602,15 @@ describe('вид', () => {
 		{ name: 'крестик', selector: '.so-toasts-item__close', label: GRAPHIC, bare: false },
 	]
 
-	/** Что видно у кнопки: контраст подписи к своему фону и светлота этого фона. */
+	/**
+	 * Что видно у кнопки: цвет подписи, её контраст к своему фону и светлота
+	 * этого фона.
+	 */
 	const look = (item: HTMLElement, button: HTMLElement) => {
 		const { color, backgroundColor } = style(button)
 		const backdrop = [style(card(item)).backgroundColor, backgroundColor]
 
-		return { label: contrast(color, backdrop), fill: lightness(backdrop) }
+		return { color, label: contrast(color, backdrop), fill: lightness(backdrop) }
 	}
 
 	/**
@@ -621,8 +636,14 @@ describe('вид', () => {
 		}
 	}
 
+	/**
+	 * На белой плашке подпись держит порог WCAG к своему фону. На заливке вида
+	 * порогов нет (см. `TEXT`): там подпись — цвета текста плашки, как всё на
+	 * ней, и у `none` тоже, а наведение и нажатие — тень, фон уходит от белой
+	 * подписи, темнее.
+	 */
 	it.each(CASES)(
-		'$scheme, $name: подписи кнопок и крестик читаются в покое, под наведением и при нажатии, а состояние видно',
+		'$scheme, $name: подписи кнопок и крестика в покое, под наведением и при нажатии — по плашке, а состояние видно',
 		async ({ scheme, type }) => {
 			document.documentElement.dataset.soTheme = scheme
 
@@ -634,6 +655,8 @@ describe('вид', () => {
 			const [item] = items()
 
 			if (!item) throw new Error('тоста нет')
+
+			const text = style(card(item)).color
 
 			// Покой — у всех кнопок разом: указатель уведён с тоста
 			await userEvent.hover(find('.so-test-page'))
@@ -648,7 +671,16 @@ describe('вид', () => {
 				const looks = { покой: resting, ...(await press(item, find(selector, item))) }
 
 				for (const [state, seen] of Object.entries(looks)) {
-					expect(seen.label, `${name}, ${state}: подпись`).toBeGreaterThanOrEqual(label)
+					if (type) {
+						expect(
+							pixel([seen.color]),
+							`${name}, ${state}: подпись цвета плашки`,
+						).toEqual(pixel([text]))
+					} else {
+						expect(seen.label, `${name}, ${state}: подпись`).toBeGreaterThanOrEqual(
+							label,
+						)
+					}
 				}
 
 				if (bare) continue
@@ -658,6 +690,13 @@ describe('вид', () => {
 						Math.abs(looks[state].fill - resting.fill),
 						`${name}, ${state}: фон отошёл от покоя`,
 					).toBeGreaterThanOrEqual(VISIBLE_FILL)
+
+					if (type) {
+						expect(
+							looks[state].fill,
+							`${name}, ${state}: фон темнее покоя`,
+						).toBeLessThan(resting.fill)
+					}
 				}
 			}
 		},
@@ -665,12 +704,12 @@ describe('вид', () => {
 
 	/**
 	 * Кольцо фокуса кнопок с клавиатуры — по Tab от корня тоста, по кнопкам в
-	 * порядке разметки. На заливке вида оно цвета текста плашки: кольцо темы на
-	 * ней почти пропадает. Кольцо — графика, 3:1 к плашке, — и у крестика тоже.
-	 * У обычного тоста кольцо темы, как везде, — его не меряем.
+	 * порядке разметки. На заливке вида оно цвета текста плашки, как подписи:
+	 * кольцо темы на ней почти пропадает. У обычного тоста кольцо темы, как
+	 * везде, — его не меряем.
 	 */
 	it.each(CASES.filter(({ type }) => type))(
-		'$scheme, $name: кольцо фокуса кнопок с клавиатуры читается на заливке',
+		'$scheme, $name: кольцо фокуса кнопок с клавиатуры на заливке — цвета текста плашки',
 		async ({ scheme, type }) => {
 			document.documentElement.dataset.soTheme = scheme
 
@@ -683,7 +722,7 @@ describe('вид', () => {
 
 			if (!item) throw new Error('тоста нет')
 
-			const plate = [style(card(item)).backgroundColor]
+			const text = style(card(item)).color
 
 			item.focus()
 
@@ -699,10 +738,9 @@ describe('вид', () => {
 				await colorsSettled(item)
 
 				expect(outlined(button), `${name}: кольцо`).toBe(true)
-				expect(
-					contrast(style(button).outlineColor, plate),
-					`${name}: кольцо`,
-				).toBeGreaterThanOrEqual(GRAPHIC)
+				expect(pixel([style(button).outlineColor]), `${name}: кольцо цвета плашки`).toEqual(
+					pixel([text]),
+				)
 			}
 		},
 	)

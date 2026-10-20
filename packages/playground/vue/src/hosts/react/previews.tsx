@@ -1,4 +1,5 @@
-import type { ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
+import type { DescriptorSlots, PopoverDescriptor, TooltipDescriptor } from '@soldy-ui/setup'
 import {
 	COLLECTION_ITEMS,
 	COLLECTION_MANY_ITEMS,
@@ -11,13 +12,16 @@ import {
 	Accordion,
 	Button,
 	CheckBox,
+	Dialog,
 	DragAndDrop,
+	Drawer,
 	Field,
 	Icon,
 	Input,
 	Label,
 	ListBox,
 	Pagination,
+	Popover,
 	ProgressLinear,
 	ProgressSpinner,
 	RadioGroup,
@@ -29,6 +33,7 @@ import {
 	Table,
 	Tabs,
 	Textarea,
+	Tooltip,
 	Virtual,
 	roleIcon,
 } from '@soldy-ui/react'
@@ -81,6 +86,108 @@ const accordionItems = () =>
 			<div style={{ padding: '4px 0' }}>Содержимое «{item.text}»</div>
 		</Accordion.Item>
 	))
+
+/** Scope слота `trigger` у Popover — из объявления слота в дескрипторе. */
+type TPopoverTriggerScope = DescriptorSlots<typeof PopoverDescriptor>['trigger']
+
+/** Scope слота `trigger` у Tooltip — ссылка триггера на панель. */
+type TTooltipTriggerScope = DescriptorSlots<typeof TooltipDescriptor>['trigger']
+
+/**
+ * Открытость окна и выезжающей панели на стенде — своё состояние превью, как
+ * `v-model:visible` у Vue (`DialogPreview` в `hosts/vue/previews.ts`): кнопка
+ * открывает, крестик, Escape и подложка закрывают через `onChangeVisible`, а
+ * строка `visible` задаёт её снаружи — сменилась строка, открытость за ней. С
+ * экземпляром ядра (вторая колонка) путь тот же: запись в `visible` инстанса
+ * доходит сюда `onChangeVisible`. Колбэк журнала страницы (`onChangeVisible`
+ * из пропсов) зовётся вместе со своим, а не затирается им.
+ */
+function useShown(bind: Readonly<Record<string, unknown>>) {
+	const visible = bind.visible === true
+	const [shown, setShown] = useState(visible)
+	const [given, setGiven] = useState(visible)
+
+	if (given !== visible) {
+		setGiven(visible)
+		setShown(visible)
+	}
+
+	const journal = bind.onChangeVisible
+
+	return {
+		shown,
+		setShown,
+		onChangeVisible: (value: boolean) => {
+			setShown(value)
+
+			if (typeof journal === 'function') journal(value)
+		},
+	}
+}
+
+/**
+ * Окно на стенде открывает кнопка: закрытое оно спрятано, а открытое
+ * накрывает страницу подложкой, и показывать его сразу было бы нечестно по
+ * отношению к остальной странице.
+ */
+function DialogPreview(bind: Readonly<Record<string, unknown>>): ReactNode {
+	const { shown, setShown, onChangeVisible } = useShown(bind)
+
+	return (
+		<>
+			<Button text="Открыть окно" onClick={() => setShown(true)} />
+			<Dialog
+				{...bind}
+				visible={shown}
+				onChangeVisible={onChangeVisible}
+				title="Настройки"
+				footer={
+					<>
+						<Button text="Отмена" onClick={() => setShown(false)} />
+						<Button text="Сохранить" onClick={() => setShown(false)} />
+					</>
+				}
+			>
+				<p style={{ margin: '0 0 8px' }}>Произвольное содержимое: текст, поля, кнопки</p>
+				<Input placeholder="Имя" />
+			</Dialog>
+		</>
+	)
+}
+
+/**
+ * Выезжающую панель на стенде тоже открывает кнопка — по той же причине, что
+ * окно, и на том же своём состоянии (`useShown`).
+ *
+ * Кнопка и панель лежат в своей коробке с `position: relative`: с
+ * `contained` панель не телепортируется, а встаёт в ближайшем
+ * позиционированном предке, и строка `contained` показывает её в коробке
+ * превью, а не у края всей страницы.
+ */
+function DrawerPreview(bind: Readonly<Record<string, unknown>>): ReactNode {
+	const { shown, setShown, onChangeVisible } = useShown(bind)
+
+	return (
+		<div style={{ position: 'relative', width: '100%', minHeight: 240, overflow: 'hidden' }}>
+			<Button text="Открыть панель" onClick={() => setShown(true)} />
+			<Drawer
+				{...bind}
+				visible={shown}
+				onChangeVisible={onChangeVisible}
+				title="Фильтры"
+				footer={
+					<>
+						<Button text="Сбросить" onClick={() => setShown(false)} />
+						<Button text="Применить" onClick={() => setShown(false)} />
+					</>
+				}
+			>
+				<p style={{ margin: '0 0 8px' }}>Произвольное содержимое: текст, поля, кнопки</p>
+				<Input placeholder="Поиск" />
+			</Drawer>
+		</div>
+	)
+}
 
 export const PREVIEWS: Record<string, TPreview> = {
 	// Подпись — проп `text` из пропсов превью, а не слот: заданный слот
@@ -177,6 +284,39 @@ export const PREVIEWS: Record<string, TPreview> = {
 		</div>
 	),
 
+	// Триггер — Button, связку с панелью и вид «нажат» он берёт из scope
+	// слота. В содержимом есть кнопка: на неё при открытии уходит фокус
+	popover: (bind) => (
+		<Popover
+			{...bind}
+			trigger={({ triggerAria, triggerDataset }: TPopoverTriggerScope) => (
+				<Button text="Открыть" {...triggerAria} {...triggerDataset} />
+			)}
+		>
+			<p style={{ margin: '0 0 8px' }}>Произвольное содержимое: текст, поля, кнопки</p>
+			<Button text="Действие" />
+		</Popover>
+	),
+
+	// Триггер — Button, ссылку на панель (`aria-describedby`) он берёт из
+	// scope слота. Текст подсказки — содержимым: пропа текста у неё нет
+	tooltip: (bind) => (
+		<Tooltip
+			{...bind}
+			trigger={({ triggerAria }: TTooltipTriggerScope) => (
+				<Button text="Наведи" {...triggerAria} />
+			)}
+		>
+			Короткое пояснение к кнопке
+		</Tooltip>
+	),
+
+	// Кнопка открывает окно, окно — на своём состоянии (см. `DialogPreview`)
+	dialog: (bind) => <DialogPreview {...bind} />,
+
+	// Кнопка открывает панель, панель — на своём состоянии (см. `DrawerPreview`)
+	drawer: (bind) => <DrawerPreview {...bind} />,
+
 	// Строки и колонки — данными, как у Vue: частей разметкой у таблицы нет.
 	// Обёртка — граница ширины, а с закреплённой шапкой — ещё и окно прокрутки
 	// высотой 320 px на сорок строк. Окно таблицы — на странице Virtual
@@ -226,8 +366,7 @@ export const PREVIEWS: Record<string, TPreview> = {
 	// той же разметкой, что на их страницах, ListBox — данными, как у Vue.
 	// Элемент переставляется в своей коллекции: между коллекциями обёртка не
 	// переносит. Ряд — граница ширины, как у окна: табы — во всю ширину ряда,
-	// список и секции — под ними, рядом. Состав списку — копией: в манифесте он
-	// только для чтения, а `items` у списка — массив
+	// список и секции — под ними, рядом
 	'drag-and-drop': (bind) => (
 		<DragAndDrop {...bind}>
 			<div
@@ -242,7 +381,7 @@ export const PREVIEWS: Record<string, TPreview> = {
 				<div style={{ flex: '1 1 100%', minWidth: 0 }}>
 					<Tabs content={tabsPanels()}>{tabsItems()}</Tabs>
 				</div>
-				<ListBox items={[...ITEMS]} aria_label="Пункты" />
+				<ListBox items={ITEMS} aria_label="Пункты" />
 				<div style={{ flex: 1, minWidth: 200 }}>
 					<Accordion>{accordionItems()}</Accordion>
 				</div>

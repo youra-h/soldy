@@ -121,7 +121,7 @@ export function fillEngine<TItem extends object, TOptions extends TEngineOptions
 ): TCollectionEngine<TItem, any, TOptions> {
 	const batch: unknown = engine.extensions.batch
 
-	if (items?.length && batch instanceof TBatchExtension) batch.set([...items])
+	if (items?.length && batch instanceof TBatchExtension) batch.set(items)
 
 	return engine
 }
