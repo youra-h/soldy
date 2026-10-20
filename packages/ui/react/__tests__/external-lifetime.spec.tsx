@@ -32,6 +32,7 @@ import {
 	TButton,
 	TCheckBox,
 	TComponentView,
+	TDragAndDrop,
 	TEvented,
 	TField,
 	TFrame,
@@ -50,6 +51,7 @@ import {
 	TSwitch,
 	TTable,
 	TTabs,
+	TTextarea,
 	TVirtual,
 	createEngineAccordion,
 	createEngineListBox,
@@ -64,6 +66,7 @@ import {
 	Button,
 	CheckBox,
 	ComponentView,
+	DragAndDrop,
 	Field,
 	Frame,
 	Icon,
@@ -81,6 +84,7 @@ import {
 	Switch,
 	Table,
 	Tabs,
+	Textarea,
 	Virtual,
 } from '@soldy-ui/react'
 import { nextFrame, track } from './mount'
@@ -316,6 +320,39 @@ const COMPONENTS: Readonly<Record<string, Readonly<Record<string, TCase>>>> = {
 		),
 	},
 	/**
+	 * Обёртка опускает коллекции свой экземпляр, и плагин перетаскивания списка
+	 * держит его, пока жив набор списка. У списка из `items` нет ни `ctrl`, ни
+	 * движка снаружи — выброшенную сборку такого списка освободить некому, и
+	 * то, что она взяла у обёртки, осталось бы на её `ctrl` навсегда.
+	 */
+	DragAndDrop: {
+		'ctrl обёртки и движок списка': () => {
+			const ctrl = new TDragAndDrop()
+			const engine = createEngineListBox({ items: ITEMS })
+
+			return {
+				node: (
+					<DragAndDrop ctrl={ctrl}>
+						<ListBox engine={engine} />
+					</DragAndDrop>
+				),
+				buses: [ctrl.events, ...engineBuses(engine)],
+			}
+		},
+		'ctrl обёртки, список из items': () => {
+			const ctrl = new TDragAndDrop()
+
+			return {
+				node: (
+					<DragAndDrop ctrl={ctrl}>
+						<ListBox items={ITEMS} />
+					</DragAndDrop>
+				),
+				buses: [ctrl.events],
+			}
+		},
+	},
+	/**
 	 * Поле — над своим `ctrl` и `ctrl` контрола: связка контрола с полем
 	 * подписывается на шины обоих — ошибку поля, свой `id` и labelable, — и
 	 * снять обязана обе.
@@ -504,6 +541,12 @@ const COMPONENTS: Readonly<Record<string, Readonly<Record<string, TCase>>>> = {
 				buses: engineBuses(engine),
 			}
 		},
+	},
+	Textarea: {
+		ctrl: overCtrl(
+			() => new TTextarea(),
+			(ctrl) => <Textarea ctrl={ctrl} />,
+		),
 	},
 	/**
 	 * Обёртка своей шины коллекции не отдаёт: на выключатель коллекция

@@ -11,6 +11,7 @@ import {
 	Accordion,
 	Button,
 	CheckBox,
+	DragAndDrop,
 	Field,
 	Icon,
 	Input,
@@ -27,6 +28,7 @@ import {
 	Switch,
 	Table,
 	Tabs,
+	Textarea,
 	Virtual,
 	roleIcon,
 } from '@soldy-ui/react'
@@ -57,12 +59,37 @@ const ITEMS = COLLECTION_ITEMS
 /** Глиф превью Icon — компонент на роль: `tag` у Icon — корень, а не роль. */
 const ARROW_DOWN = roleIcon('arrowDown')
 
+/**
+ * Табы разметкой — у превью Tabs и DragAndDrop, как `tabsSlots` у Vue. Первый
+ * таб активен сразу — иначе ни одна панель не смонтируется.
+ */
+const tabsItems = () =>
+	ITEMS.map((item, index) => <Tabs.Item key={item.value} active={index === 0} {...item} />)
+
+/** Панели табов — слотом `content`, вне списка табов; у превью Tabs и DragAndDrop. */
+const tabsPanels = () =>
+	ITEMS.map((item) => (
+		<Tabs.Content key={`c-${item.value}`} value={item.value}>
+			<div style={{ padding: 12 }}>Панель «{item.text}»</div>
+		</Tabs.Content>
+	))
+
+/** Секции разметкой, с содержимым, — у превью Accordion и DragAndDrop. */
+const accordionItems = () =>
+	ITEMS.map((item) => (
+		<Accordion.Item key={item.value} {...item}>
+			<div style={{ padding: '4px 0' }}>Содержимое «{item.text}»</div>
+		</Accordion.Item>
+	))
+
 export const PREVIEWS: Record<string, TPreview> = {
 	// Подпись — проп `text` из пропсов превью, а не слот: заданный слот
 	// перекрывает проп, и строка `text` не меняла бы ничего видимого
 	button: (bind) => <Button {...bind} />,
 
 	input: (bind) => <Input {...bind} />,
+
+	textarea: (bind) => <Textarea {...bind} />,
 
 	// Текста у чекбокса и переключателя нет, оба — голый контрол: подпись даёт
 	// обёртка Label. Её пропы задаёт превью, строки страницы правят контрол
@@ -169,32 +196,13 @@ export const PREVIEWS: Record<string, TPreview> = {
 		</div>
 	),
 
-	// Первый таб активен сразу — иначе ни одна панель не смонтируется. Панели —
-	// слотом `content`, вне списка табов
 	tabs: (bind) => (
-		<Tabs
-			{...bind}
-			content={ITEMS.map((item) => (
-				<Tabs.Content key={`c-${item.value}`} value={item.value}>
-					<div style={{ padding: 12 }}>Панель «{item.text}»</div>
-				</Tabs.Content>
-			))}
-		>
-			{ITEMS.map((item, index) => (
-				<Tabs.Item key={item.value} active={index === 0} {...item} />
-			))}
+		<Tabs {...bind} content={tabsPanels()}>
+			{tabsItems()}
 		</Tabs>
 	),
 
-	accordion: (bind) => (
-		<Accordion {...bind}>
-			{ITEMS.map((item) => (
-				<Accordion.Item key={item.value} {...item}>
-					<div style={{ padding: '4px 0' }}>Содержимое «{item.text}»</div>
-				</Accordion.Item>
-			))}
-		</Accordion>
-	),
+	accordion: (bind) => <Accordion {...bind}>{accordionItems()}</Accordion>,
 
 	icon: (bind) => <Icon tag={ARROW_DOWN} {...bind} />,
 
@@ -213,6 +221,34 @@ export const PREVIEWS: Record<string, TPreview> = {
 	'progress-spinner': (bind) => <ProgressSpinner {...bind} />,
 
 	skeleton: (bind) => <Skeleton {...bind} />,
+
+	// Перестановка у трёх коллекций сразу, на одном составе: Tabs и Accordion —
+	// той же разметкой, что на их страницах, ListBox — данными, как у Vue.
+	// Элемент переставляется в своей коллекции: между коллекциями обёртка не
+	// переносит. Ряд — граница ширины, как у окна: табы — во всю ширину ряда,
+	// список и секции — под ними, рядом. Состав списку — копией: в манифесте он
+	// только для чтения, а `items` у списка — массив
+	'drag-and-drop': (bind) => (
+		<DragAndDrop {...bind}>
+			<div
+				style={{
+					display: 'flex',
+					flexWrap: 'wrap',
+					gap: 24,
+					alignItems: 'flex-start',
+					width: '100%',
+				}}
+			>
+				<div style={{ flex: '1 1 100%', minWidth: 0 }}>
+					<Tabs content={tabsPanels()}>{tabsItems()}</Tabs>
+				</div>
+				<ListBox items={[...ITEMS]} aria_label="Пункты" />
+				<div style={{ flex: 1, minWidth: 200 }}>
+					<Accordion>{accordionItems()}</Accordion>
+				</div>
+			</div>
+		</DragAndDrop>
+	),
 
 	// Окно на списке и таблице по тысяче элементов: на пяти его не видно.
 	// ListBox с пределом строк прокручивается сам, таблица — в обёртке высотой

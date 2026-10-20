@@ -30,6 +30,7 @@ import {
 	TSwitch,
 	TTabs,
 	TTabsItem,
+	TTextarea,
 	createEngineTabs,
 } from '@soldy-ui/core'
 import {
@@ -44,6 +45,7 @@ import {
 	Slider,
 	Switch,
 	Tabs,
+	Textarea,
 } from '@soldy-ui/react'
 import { find, mount, nextFrame } from './mount'
 
@@ -76,6 +78,14 @@ const CASES: Record<string, TCase> = {
 		},
 		target: 'input',
 		before: '.before',
+	},
+	Textarea: {
+		render: () => {
+			const ctrl = new TTextarea()
+
+			return { ctrl, node: <Textarea ctrl={ctrl} /> }
+		},
+		target: 'textarea',
 	},
 	CheckBox: {
 		render: () => {

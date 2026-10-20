@@ -7,9 +7,13 @@
  *   общий для всех запросов и при гидратации разошёлся бы.
  * - Компонент Svelte в `tag` получает атрибуты корня и привязку к
  *   `TElementPlugin` и кладёт их на свой корень, содержимое рисует внутри.
+ * - Ядро меняется и посреди отрисовки Svelte — от события DOM, которое
+ *   браузер шлёт внутри его эффекта, — и связка пишет состояние без ошибки.
  */
 
 import { describe, it, expect, expectTypeOf } from 'vitest'
+import { flushSync } from 'svelte'
+import { TButton } from '@soldy-ui/core'
 import { TPluginBundle } from '@soldy-ui/plugins'
 import {
 	Button,
@@ -18,7 +22,9 @@ import {
 	type TSvelteAdapterContextOptions,
 } from '@soldy-ui/svelte'
 import Link from './Link.test.svelte'
+import RenderEvent from './RenderEvent.test.svelte'
 import { find, mount, nextFrame, readyProbe } from './mount'
+import { reactiveProps } from './reactive-props.svelte'
 
 /** Набор кнопки — из `onBundleCreate`, на микрозадаче после сборки. */
 async function bundleOf(props: { text?: string } = {}): Promise<TPluginBundle> {
@@ -85,5 +91,49 @@ describe('компонент в tag', () => {
 		expect(isTagComponent('a')).toBe(false)
 		expect(isTagComponent(roleIcon('check'))).toBe(false)
 		expect(isTagComponent({})).toBe(false)
+	})
+})
+
+describe('ядро меняется посреди отрисовки Svelte', () => {
+	/**
+	 * Плагины слушают DOM своими обработчиками, мимо Svelte, и событие, которое
+	 * браузер шлёт посреди отрисовки, меняет ядро внутри эффекта блока: так
+	 * `focusout` узла в фокусе, который петля с ключом переставила, снимает
+	 * `focused` (перестановка элемента ListBox жестом). Свои обработчики
+	 * событий Svelte зовёт вне реактивного контекста, а запись связки в руну
+	 * состояния — та же внешняя запись, и Svelte не считает её мутацией из
+	 * шаблона (`state_unsafe_mutation`).
+	 */
+	it('focusout посреди отрисовки снимает focused — без ошибки', async () => {
+		const errors: string[] = []
+		const collect = (event: ErrorEvent): void => {
+			errors.push(event.message)
+			event.preventDefault()
+		}
+		const ctrl = new TButton({ text: 'Сохранить' })
+		const props = reactiveProps({ ctrl, blur: false })
+		const changes: boolean[] = []
+
+		ctrl.events.on('change:focused', (focused) => changes.push(focused))
+		mount(RenderEvent, props)
+
+		// Слушатели фокуса плагин ставит по `ready` узла — через кадр
+		await nextFrame()
+
+		const button = find(document, '.so-button', HTMLElement)
+
+		button.dispatchEvent(new FocusEvent('focusin', { bubbles: true }))
+		window.addEventListener('error', collect)
+
+		try {
+			props.blur = true
+			flushSync()
+		} finally {
+			window.removeEventListener('error', collect)
+		}
+
+		expect(errors).toEqual([])
+		expect(changes).toEqual([true, false])
+		expect(document.querySelector('.blurred')).not.toBeNull()
 	})
 })

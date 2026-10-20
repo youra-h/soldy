@@ -217,11 +217,11 @@ come in later releases.
 | ProgressLinear  | Linear progress indicator: the share done, or an indeterminate animation while it is unknown   | Vue, React | 0.2.0   |
 | ProgressSpinner | Circular progress indicator: the share done, or an indeterminate animation while it is unknown | *          | 0.2.0   |
 | Skeleton        | Placeholder while content loads                                                                | *          | 0.2.0   |
-| DragAndDrop     | Drag and drop of collection items                                                              | Vue        | 0.2.0   |
+| DragAndDrop     | Drag and drop of collection items                                                              | *          | 0.2.0   |
 | Virtual         | Window for long lists: ListBox and Table inside render only the visible items                  | *          | 0.2.0   |
 | Pagination      | Page navigation: page numbers with gaps, previous and next, first and last                     | Vue, React | 0.2.0   |
 | Menu            | Action menu at a button or on right click: submenus, checkbox and radio items                  | Vue        | 0.2.0   |
-| Textarea        | Multi-line text field that grows with its content                                              | Vue        | alpha   |
+| Textarea        | Multi-line text field that grows with its content                                              | *          | alpha   |
 | Field           | Field wrapper: description, error message and invalid state linked to the control              | *          | 0.2.0   |
 | Alert           | Inline message by severity: info, success, warning, error                                      | -          | future  |
 | Badge           | Counter or status mark, on its own or over another element                                     | -          | future  |

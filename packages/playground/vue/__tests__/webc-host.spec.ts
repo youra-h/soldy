@@ -7,14 +7,15 @@
  * нём, как в разметке, дети по слотам — его светом, и первая сборка
  * раскладывает их по слотам, а обёртка превью (подпись вокруг флажка) — свой
  * элемент, в слоте по умолчанию которого лежит компонент. У таблицы обёртка —
- * граница без компонента, со стилем от пропсов строки, а окно `<so-virtual>` —
- * автономный элемент, своим тегом.
+ * граница без компонента, со стилем от пропсов строки, а окно `<so-virtual>` и
+ * перестановка `<so-drag-and-drop>` — автономные элементы, своим тегом. Ребёнок
+ * без компонента — ряд коллекций в перестановке — тоже со своим стилем.
  */
 
 import { describe, it, expect, afterEach } from 'vitest'
 import { TCheckBox, createEngineAccordion } from '@soldy-ui/core'
 import { getIcon } from '@soldy-ui/setup'
-import { TABLE_ROWS, TABLE_SCROLL_ROWS } from '@soldy-ui/playground-shared'
+import { COLLECTION_ITEMS, TABLE_ROWS, TABLE_SCROLL_ROWS } from '@soldy-ui/playground-shared'
 import { loadHost } from '../src/hosts'
 
 /** Рендер элемента коалесцируется в микротаске — ждём её перед проверкой. */
@@ -357,6 +358,43 @@ describe('хост Web Components · коллекции', () => {
 		expect(virtual?.hasAttribute('is')).toBe(false)
 		expect(virtual?.querySelectorAll('.so-list-box-item')).toHaveLength(50)
 		expect(virtual?.querySelectorAll('.so-table-row')).toHaveLength(50)
+
+		handle.unmount()
+	})
+
+	/**
+	 * Перестановка — автономный `<so-drag-and-drop>` своим тегом, без `is`, как
+	 * окно. Ряд коллекций в нём — ребёнок без компонента, и стиль ему пишет
+	 * описание, как обёртке: ряд — флексом с переносом, табы — во всю его
+	 * ширину, список и секции — под ними.
+	 */
+	it('превью DragAndDrop: <so-drag-and-drop> вокруг ряда коллекций — ряд со своим стилем', async () => {
+		const node = stage()
+		const handle = host.mount(node, { component: 'drag-and-drop', props: {} })
+		const wrapper = node.querySelector('so-drag-and-drop')
+		const row = wrapper?.firstElementChild
+
+		await flush()
+
+		if (!(row instanceof HTMLElement)) throw new Error('ряда нет')
+
+		const [tabs, list, accordion] = [...row.children]
+
+		expect(wrapper?.hasAttribute('is')).toBe(false)
+		expect(wrapper?.children).toHaveLength(1)
+		expect([row.style.display, row.style.flexWrap, row.style.width]).toEqual([
+			'flex',
+			'wrap',
+			'100%',
+		])
+		expect(tabs instanceof HTMLElement ? tabs.style.flexBasis : undefined).toBe('100%')
+		expect(tabs.querySelectorAll(':scope > .so-tabs .so-tabs-item')).toHaveLength(
+			COLLECTION_ITEMS.length,
+		)
+		expect(list.classList.contains('so-list-box')).toBe(true)
+		expect(
+			accordion.querySelectorAll(':scope > .so-accordion > .so-accordion-item'),
+		).toHaveLength(COLLECTION_ITEMS.length)
 
 		handle.unmount()
 	})

@@ -19,7 +19,8 @@
  *
  * На сервере attachment-ов нет, и текст уходит атрибутом `value`: его берёт
  * геттер на отрисовке. Сервер от браузера отличает `BROWSER` из `esm-env`, как
- * стиль корня (`root-style.svelte.ts`).
+ * стиль корня (`root-style.svelte.ts`). У `<textarea>` атрибута `value` нет:
+ * её текст на сервере — содержимое (`textareaText`).
  *
  * Отметку и «выбрано частично» флажка Svelte и в спреде пишет свойствами: их
  * запись, совпавшая с узлом, ничего у поля не снимает.
@@ -37,8 +38,33 @@ export type TFieldText =
 	| { readonly value: string | undefined }
 
 /**
- * Текст поля по геттеру `getText` — один раз на компонент: attachment с тем
- * же ключом и той же функцией Svelte на узле не переставляет.
+ * Текст `<textarea>` — двумя частями разметки поля: спредом и атрибутом
+ * `value`, — см. `textareaText`.
+ */
+export type TTextareaText = {
+	/** Спредом на поле, последним: в браузере — attachment, на сервере — ничего. */
+	readonly attributes: { readonly [key: symbol]: Attachment<HTMLTextAreaElement> }
+	/** Атрибутом `value` поля: на сервере — текст, в браузере — `undefined`. */
+	readonly value: string | undefined
+}
+
+/**
+ * Attachment поля, который ведёт его текст: пишет в узел, только когда текст
+ * разошёлся с узлом.
+ */
+function textAttachment<TNode extends HTMLInputElement | HTMLTextAreaElement>(
+	getText: () => string | undefined,
+): Attachment<TNode> {
+	return (node) => {
+		const text = getText() ?? ''
+
+		if (node.value !== text) node.value = text
+	}
+}
+
+/**
+ * Текст поля `<input>` по геттеру `getText` — один раз на компонент:
+ * attachment с тем же ключом и той же функцией Svelte на узле не переставляет.
  */
 export function fieldText(getText: () => string | undefined): TFieldText {
 	if (!BROWSER) {
@@ -49,11 +75,33 @@ export function fieldText(getText: () => string | undefined): TFieldText {
 		}
 	}
 
-	return {
-		[createAttachmentKey()]: (node: HTMLInputElement) => {
-			const text = getText() ?? ''
+	return { [createAttachmentKey()]: textAttachment<HTMLInputElement>(getText) }
+}
 
-			if (node.value !== text) node.value = text
-		},
+/**
+ * Текст поля `<textarea>` по геттеру `getText` — один раз на компонент.
+ *
+ * В браузере — тот же attachment, что у `<input>` (`attributes`), а атрибут
+ * `value` пуст: `undefined` в спреде Svelte не пишет. На сервере текст у
+ * `<textarea>` — её содержимое, и сервер Svelte делает содержимым только
+ * атрибут `value`, написанный в разметке: из спреда он ушёл бы атрибутом,
+ * которого у `<textarea>` нет, и поле в разметке сервера было бы пустым.
+ * Поэтому текст — отдельной частью, `value`, а разметка пишет его атрибутом
+ * поля. При гидратации Svelte снимает содержимое сервера, а attachment
+ * возвращает текст в узел.
+ */
+export function textareaText(getText: () => string | undefined): TTextareaText {
+	if (!BROWSER) {
+		return {
+			attributes: {},
+			get value() {
+				return getText()
+			},
+		}
+	}
+
+	return {
+		attributes: { [createAttachmentKey()]: textAttachment<HTMLTextAreaElement>(getText) },
+		value: undefined,
 	}
 }

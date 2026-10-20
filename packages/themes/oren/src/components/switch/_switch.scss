@@ -38,11 +38,12 @@
 	}
 
 	// Блочная при любом теге: размер дорожки задаёт `switch-size`, и у
-	// строчного `span` без `display` он схлопнулся бы.
+	// строчного `span` без `display` он схлопнулся бы. Переходом идут цвет
+	// дорожки и её контур (`switch-track`): у включённой контура нет.
 	&__track {
 		@apply block relative;
 		@apply rounded-full;
-		@apply transition-colors duration-200;
+		@apply transition-[color,background-color,outline-color,box-shadow] duration-200;
 
 		// Ручка ходит от начала строки (`inset-inline-start`), как ручка
 		// Slider, и в RTL переключатель разворачивается сам: выключенная ручка
@@ -51,18 +52,43 @@
 		// по `[dir='rtl']` здесь нет: он зеркалил бы и переключатель с
 		// `direction="ltr"` внутри RTL-предка.
 		//
-		// Ход ручки — движение: переходом, только когда режим движения его
-		// разрешает (`motion.allowed`), а без движения ручка встаёт сразу.
+		// Кромка ручки — внутреннее кольцо в 1px цвета `--so-switch-knob-edge`:
+		// по умолчанию оно прозрачное, цвет ему даёт выключенный (ниже). Кромка
+		// гаснет переходом в любом режиме движения, а ход ручки — движение:
+		// переходом, только когда режим движения его разрешает
+		// (`motion.allowed`), а без движения ручка встаёт сразу.
 		&--thumb {
+			--so-switch-knob-edge: transparent;
+
 			@apply relative;
 			@apply flex items-center justify-center;
 			@apply bg-so-component-knob;
 			@apply rounded-full shadow-md;
+			@apply inset-ring-1 inset-ring-(--so-switch-knob-edge);
 			@apply absolute top-0.5 start-0.5;
+			@apply transition-[box-shadow] duration-200;
 
 			@include motion.allowed {
-				@apply transition-[inset-inline-start] duration-200;
+				@apply transition-[box-shadow,inset-inline-start];
 			}
+		}
+	}
+
+	// Ручка выключенного — с кромкой цвета графики нейтрали
+	// (`--so-component-graphic-neutral`) при любом варианте: по месту ручки
+	// читается состояние, и ей нужно 3:1 к дорожке под ней (WCAG 1.4.11), а
+	// дорожка — светлая вуаль, и белая ручка светлой схемы на ней держала
+	// 1,13–1,32:1. Кромка, а не другой цвет ручки: ручка остаётся поверхностью,
+	// как ручка Slider с кромкой цвета заливки. Нейтраль — потому что ручка
+	// своего цвета не несёт ни в каком состоянии, а цвет графики — потому что
+	// кромка лежит на вуали, а не на самой странице. В тёмной схеме светлая
+	// ручка держит к дорожке и сама, кромка там тише. Включённой кромка не
+	// нужна: ручка держит к насыщенной дорожке сама. В режиме принудительных
+	// цветов ручку красит система, и кромки нет: у ручки там снята подмена
+	// цветов, и браузер её тень не убрал бы.
+	input:not(:checked) + #{$this}__track #{$this}__track--thumb {
+		@media (forced-colors: none) {
+			--so-switch-knob-edge: var(--so-component-graphic-neutral);
 		}
 	}
 

@@ -14,6 +14,12 @@
  * пользователь, и часть, которую тема красит сама, обязана взять его
  * системный цвет. С ним спеки и сверяют её (`systemColor`, индикаторы
  * выполнения — `progress-linear.spec.ts` и `progress-spinner.spec.ts`).
+ *
+ * Линию, которую тема рисует не рамкой, а тенью, — контур дорожки Switch и
+ * рельса Slider, кромку ручки Switch — читает `insetRing`: цвет внутреннего
+ * кольца в 1px из вычисленной тени. По нему меряет границу контрола
+ * `graphic.spec.ts`, а `forced-colors.spec.ts` — что в режиме принудительных
+ * цветов этой тени нет.
  */
 
 /**
@@ -100,6 +106,55 @@ export const outlined = (element: Element, pseudo?: string): boolean => {
 	const { outlineStyle, outlineWidth, outlineColor } = style(element, pseudo)
 
 	return outlineStyle !== 'none' && parseFloat(outlineWidth) >= 1 && opacity(outlineColor) > 0
+}
+
+/** Длина в вычисленной тени — смещения, размытие и протяжка. */
+const LENGTH = /-?\d*\.?\d+px/g
+
+/** Тень внутрь. */
+const INSET = /\binset\b/
+
+/**
+ * Тени списка `box-shadow` по одной. Запятая делит список только вне скобок:
+ * внутри функции цвета (`rgba(0, 0, 0, 0)`) она своя.
+ */
+function shadows(value: string): string[] {
+	const list: string[] = []
+	let depth = 0
+	let start = 0
+
+	for (let index = 0; index < value.length; index++) {
+		const char = value[index]
+
+		if (char === '(') depth++
+		else if (char === ')') depth--
+		else if (char === ',' && depth === 0) {
+			list.push(value.slice(start, index))
+			start = index + 1
+		}
+	}
+
+	return [...list, value.slice(start)].map((shadow) => shadow.trim())
+}
+
+/** Цвет тени — всё, что в ней не длина и не `inset`. */
+const shadowColor = (shadow: string): string => shadow.replace(LENGTH, '').replace(INSET, '').trim()
+
+/**
+ * Цвет внутреннего кольца в 1px из тени узла или псевдоэлемента — тени без
+ * смещения и размытия, с протяжкой в 1px внутрь. Так тема рисует контур части,
+ * которая сама вуаль (дорожка Switch, рельс Slider), и кромку ручки Switch.
+ * Тень бывает составной — у ручки кромка стоит в одном списке с тенью
+ * `shadow-md` и пустыми слоями Tailwind, — поэтому кольцо ищется среди теней
+ * списка. Кольца нет или оно прозрачное — `undefined`: так и в режиме
+ * принудительных цветов, где тени темы нет.
+ */
+export function insetRing(element: Element, pseudo?: string): string | undefined {
+	return shadows(style(element, pseudo).boxShadow)
+		.filter((shadow) => INSET.test(shadow))
+		.filter((shadow) => (shadow.match(LENGTH) ?? []).join(' ') === '0px 0px 0px 1px')
+		.map(shadowColor)
+		.find((color) => opacity(color) > 0)
 }
 
 /**

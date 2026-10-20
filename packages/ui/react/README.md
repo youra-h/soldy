@@ -12,14 +12,17 @@ component descriptor, so they match the other five adapters; only the spelling i
 arrive as callback props (`element:ready` → `onElementReady`), and the default slot is `children`.
 
 > **Status:** the React adapter is in progress — Button, Icon, Label, Frame, Skeleton,
-> ProgressSpinner, ProgressLinear, Input, CheckBox, Switch, Slider, Rating, the form field `Field`
-> (label, helper and error linked to the control inside it), the collections ListBox, Tabs,
-> Accordion and RadioGroup (`<ListBox.Item>`, `<Tabs.Item>` with `<Tabs.Content>`,
-> `<Accordion.Item>`, `<RadioGroup.Item>` or `items`), Pagination, the `Scroller` strip, Table
-> (columns and rows as data — `columns`, `items` — with sorting, row selection, column resizing and
-> reordering) and the `Virtual` window for long lists (`<Virtual><ListBox items={…} /></Virtual>`,
-> the same with `Table`) are ported, the rest of the set is on its way. Icon renders the `tag` it is
-> given; `roleIcon(role)` makes that tag from the registered icon pack. See
+> ProgressSpinner, ProgressLinear, Input, Textarea (multi-line, growing with its text, with a
+> character counter), CheckBox, Switch, Slider, Rating, the form field `Field` (label, helper and
+> error linked to the control inside it), the collections ListBox, Tabs, Accordion and RadioGroup
+> (`<ListBox.Item>`, `<Tabs.Item>` with `<Tabs.Content>`, `<Accordion.Item>`, `<RadioGroup.Item>`
+> or `items`), Pagination, the `Scroller` strip, Table (columns and rows as data — `columns`,
+> `items` — with sorting, row selection, column resizing and reordering), the `Virtual` window for
+> long lists (`<Virtual><ListBox items={…} /></Virtual>`, the same with `Table`) and the
+> `DragAndDrop` wrapper that lets users reorder the items of Tabs, ListBox and Accordion by
+> dragging (`<DragAndDrop onMove={…}><ListBox items={…} /></DragAndDrop>`, `onMoveBefore` can
+> cancel) are ported, the rest of the set is on its way. Icon renders the `tag` it is given;
+> `roleIcon(role)` makes that tag from the registered icon pack. See
 > [the adapter table](https://github.com/youra-h/soldy#components).
 
 ## Install
