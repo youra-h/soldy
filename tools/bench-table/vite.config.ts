@@ -4,7 +4,7 @@ import react from '@vitejs/plugin-react'
 import path from 'node:path'
 
 /**
- * Стенд замера таблиц (см. BENCHMARKS.md в корне). soldy берётся исходниками,
+ * Стенд замера таблиц (см. benchmarks/table.md в корне). soldy берётся исходниками,
  * как в стенде Vue; таблицы других библиотек — из своих зависимостей стенда.
  * Страниц две: `index.html` — участники на Vue, `react.html` — на React.
  * Vue и React — по одному на всех (`dedupe`), иначе соседи принесли бы
