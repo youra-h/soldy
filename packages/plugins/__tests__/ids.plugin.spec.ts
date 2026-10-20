@@ -33,11 +33,13 @@ import {
 	TTableColumn,
 	TTableRow,
 	TTabsItem,
+	TTextarea,
 	TTooltip,
 } from '@soldy-ui/core'
 import type { IRadioGroupItem } from '@soldy-ui/core'
 import {
 	TAccordionItemIdsPlugin,
+	TAriaPlugin,
 	TCalendarIdsPlugin,
 	TCollectionBundlesPlugin,
 	TDateInputIdsPlugin,
@@ -57,6 +59,7 @@ import {
 	TTableColumnIdsPlugin,
 	TTableRowIdsPlugin,
 	TTabsItemIdsPlugin,
+	TTextareaIdsPlugin,
 	TTooltipIdsPlugin,
 } from '../src'
 
@@ -531,6 +534,93 @@ describe('поле формы', () => {
 
 		expect(seen).toEqual([])
 		expect(owner.labelAria.get('for')).toBe('m1-control')
+	})
+})
+
+/**
+ * Счётчик Textarea: пока он включён, `id` — в его набор, а ссылка поля на
+ * него — `aria-describedby` через `TAriaPlugin` поля, его третьим входом.
+ */
+describe('счётчик Textarea', () => {
+	function textarea(props: ConstructorParameters<typeof TTextarea>[0] = {}) {
+		const owner = new TTextarea(props)
+		const bundle = new TPluginBundle(owner, 'm1').use(TAriaPlugin).use(TTextareaIdsPlugin)
+		const aria = bundle.get(TAriaPlugin)
+		const ids = bundle.get(TTextareaIdsPlugin)
+
+		if (!aria || !ids) throw new Error('плагинов нет')
+
+		return { owner, aria, ids }
+	}
+
+	it('id счётчика — от монтирования, поле ссылается на него', () => {
+		const { owner } = textarea({ counter: true })
+
+		expect(owner.counterAria.get('id')).toBe('m1-counter')
+		expect(owner.aria.get('aria-describedby')).toBe('m1-counter')
+	})
+
+	it('без счётчика нет ни id, ни ссылки; включили — есть, выключили — сняты', () => {
+		const { owner } = textarea()
+
+		expect(owner.counterAria.has('id')).toBe(false)
+		expect(owner.aria.has('aria-describedby')).toBe(false)
+
+		owner.counter = true
+
+		expect(owner.counterAria.get('id')).toBe('m1-counter')
+		expect(owner.aria.get('aria-describedby')).toBe('m1-counter')
+
+		owner.counter = false
+
+		expect(owner.counterAria.has('id')).toBe(false)
+		expect(owner.aria.has('aria-describedby')).toBe(false)
+	})
+
+	it('справка поля формы и своё пояснение остаются: счётчик — между ними', () => {
+		const { owner, aria } = textarea({ counter: true })
+
+		aria.describedBy = 'hint'
+		aria.links = { describedBy: 'f-helper' }
+
+		expect(owner.aria.get('aria-describedby')).toBe('f-helper m1-counter hint')
+
+		owner.counter = false
+
+		expect(owner.aria.get('aria-describedby')).toBe('f-helper hint')
+	})
+
+	it('ссылка на счётчик — пояснение, не имя', () => {
+		const { owner, aria } = textarea({ counter: true })
+
+		expect(aria.named).toBe(false)
+		expect(owner.aria.has('aria-labelledby')).toBe(false)
+	})
+
+	it('живого региона у счётчика нет', () => {
+		const { owner } = textarea({ counter: true })
+
+		expect(owner.counterAria.has('aria-live')).toBe(false)
+		expect(owner.counterAria.has('role')).toBe(false)
+	})
+
+	it('без TAriaPlugin в наборе — только id счётчика', () => {
+		const owner = new TTextarea({ counter: true })
+
+		new TPluginBundle(owner, 'm1').use(TTextareaIdsPlugin)
+
+		expect(owner.counterAria.get('id')).toBe('m1-counter')
+		expect(owner.aria.has('aria-describedby')).toBe(false)
+	})
+
+	it('после destroy смену счётчика не слушает', () => {
+		const { owner, ids } = textarea({ counter: true })
+
+		ids.destroy()
+		owner.counter = false
+
+		expect(owner.counterAria.get('id')).toBe('m1-counter')
+		expect(owner.aria.get('aria-describedby')).toBe('m1-counter')
 	})
 })
 

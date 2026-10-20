@@ -26,6 +26,7 @@ import {
 	RadioGroupDescriptor,
 	SelectDescriptor,
 	SliderDescriptor,
+	TextareaDescriptor,
 	TFieldControlExtension,
 	TFieldExtension,
 	createAdapterContext,
@@ -193,6 +194,25 @@ describe('сборка: своё контролу — с первой отрис
 		const input = assemble(factory, InputDescriptor(), { aria_describedBy: 'own-hint' })
 
 		expect(ariaOf(input, 'aria-describedby')).toBe('f-helper own-hint')
+	})
+
+	/**
+	 * Счётчик Textarea — своя часть контрола: ссылку на него плагин связок
+	 * Textarea пишет третьим входом `TAriaPlugin`, между справкой поля и своим
+	 * пояснением.
+	 */
+	it('Textarea со счётчиком: справка поля, счётчик, своё пояснение — ещё до приёма', () => {
+		const { factory } = createElevatorFactory()
+
+		field(factory, { label: 'О себе', helper: 'Подсказка' })
+
+		const textarea = assemble(factory, TextareaDescriptor(), {
+			counter: true,
+			aria_describedBy: 'own-hint',
+		})
+
+		expect(textarea.instance.counterAria.get('id')).toBe('c-counter')
+		expect(ariaOf(textarea, 'aria-describedby')).toBe('f-helper c-counter own-hint')
 	})
 
 	it('сборка чужих шин не трогает: на поле и его плагине подписок нет', () => {

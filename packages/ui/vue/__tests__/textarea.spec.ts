@@ -6,12 +6,14 @@
  * `textarea-autoresize.plugin.spec.ts`), раскладку и настоящий ввод — браузер
  * (`playground/vue/browser/textarea.spec.ts`). Здесь важно, что они сходятся
  * в разметке: наборы на своих узлах, нативные атрибуты у `<textarea>`, ввод —
- * в `v-model`, счётчик по локали поддерева и подпись поля формы `Field`.
+ * в `v-model`, счётчик по локали поддерева — пояснением поля, — и подпись и
+ * справка поля формы `Field`.
  */
 
 import { describe, it, expect, afterEach } from 'vitest'
 import { mount } from '@vue/test-utils'
-import { h, nextTick } from 'vue'
+import { createSSRApp, h, nextTick } from 'vue'
+import { renderToString } from 'vue/server-renderer'
 import { TTextarea } from '@soldy-ui/core'
 import type { ITextareaProps } from '@soldy-ui/core'
 import { ruRU } from '@soldy-ui/plugins'
@@ -71,6 +73,10 @@ async function type(text: string): Promise<void> {
 }
 
 const counter = () => document.querySelector('.so-textarea__counter')
+
+/** Атрибут ссылок, разобранный на `id`. */
+const refsOf = (element: Element, name: string): string[] =>
+	(element.getAttribute(name) ?? '').split(' ').filter(Boolean)
 
 describe('разметка', () => {
 	it('корень — div с классами и dataset, внутри — поле без класса', async () => {
@@ -232,6 +238,30 @@ describe('счётчик', () => {
 		expect(root.hasAttribute('data-limit')).toBe(false)
 	})
 
+	it('счётчик — пояснение поля: aria-describedby на его id, без живого региона', async () => {
+		const mounted = await render({ value: 'abc', maxlength: 200, counter: true })
+		const id = counter()?.id ?? ''
+
+		expect(id).not.toBe('')
+		expect(field().getAttribute('aria-describedby')).toBe(id)
+		expect(counter()?.hasAttribute('aria-live')).toBe(false)
+
+		await mounted.setProps({ counter: false })
+
+		expect(counter()).toBeNull()
+		expect(field().hasAttribute('aria-describedby')).toBe(false)
+
+		await mounted.setProps({ counter: true })
+
+		expect(field().getAttribute('aria-describedby')).toBe(counter()?.id)
+	})
+
+	it('своё пояснение — после счётчика', async () => {
+		await render({ counter: true, aria_describedBy: 'hint' })
+
+		expect(field().getAttribute('aria-describedby')).toBe(`${counter()?.id} hint`)
+	})
+
 	it('под провайдером — числа по его локали', async () => {
 		wrapper = mount(() =>
 			h(LocaleProvider, { locale: ruRU }, () =>
@@ -280,5 +310,42 @@ describe('в поле формы', () => {
 		expect(textarea.id).not.toBe('')
 		expect(find('.so-field__label').getAttribute('for')).toBe(textarea.id)
 		expect(textarea.hasAttribute('aria-labelledby')).toBe(false)
+	})
+
+	it('в aria-describedby поля — справка, за ней счётчик', async () => {
+		wrapper = mount(
+			() =>
+				h(Field, { label: 'О себе', helper: 'Подсказка' }, () =>
+					h(Textarea, { counter: true, maxlength: 200 }),
+				),
+			{ attachTo: document.body },
+		)
+		await nextTick()
+		await nextFrame()
+
+		expect(refsOf(field(), 'aria-describedby')).toEqual([
+			find('.so-field__helper').id,
+			find('.so-textarea__counter').id,
+		])
+	})
+
+	it('ссылка на счётчик есть уже в серверной разметке', async () => {
+		const app = createSSRApp({
+			render: () =>
+				h(Field, { label: 'О себе', helper: 'Подсказка' }, () =>
+					h(Textarea, { counter: true, maxlength: 200 }),
+				),
+		})
+		const host = document.createElement('div')
+
+		host.innerHTML = await renderToString(app)
+
+		const parts = ['.so-field__helper', '.so-textarea__counter'].map(
+			(selector) => host.querySelector(selector)?.id ?? '',
+		)
+		const textarea = host.querySelector('textarea')
+
+		expect(parts).not.toContain('')
+		expect(textarea && refsOf(textarea, 'aria-describedby')).toEqual(parts)
 	})
 })
