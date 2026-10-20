@@ -151,15 +151,4 @@
 	 * ступеней нет. В светлой схеме роль играет серый, в тёмной —
 	 * чистый чёрный, потому что темнее самой тёмной ступени. */
 	--so-component-veil: #000;
-
-	/* Насыщенная заливка под белым текстом (см. tokens.css). Середина шкалы
-	 * (500) держит здесь белый у caution и negative, но не у accent и
-	 * positive — 4,41:1 и 4,27:1, — поэтому ступень на шаг ближе к
-	 * поверхности: у 400 белый держит от 6,59:1 у positive до 7,63:1 у
-	 * negative. Шкала здесь светлеет от 50, и тёмная насыщенная ступень —
-	 * ниже середины. */
-	--so-component-solid-accent: var(--so-accent-400);
-	--so-component-solid-positive: var(--so-positive-400);
-	--so-component-solid-caution: var(--so-caution-400);
-	--so-component-solid-negative: var(--so-negative-400);
 }
