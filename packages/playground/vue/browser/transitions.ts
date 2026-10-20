@@ -4,8 +4,10 @@
  * `popover.spec.ts`, `select.spec.ts`, `date-picker.spec.ts`,
  * `popover-swipe.spec.ts`, `anchored-swipe.spec.ts`, `calendar.spec.ts`), как
  * новое значение доезжает до места переходом (`slider.spec.ts`,
- * `progress-linear.spec.ts`, `tabs-line.spec.ts`, `tabs-contained.spec.ts`) и
- * что ведут кадры анимации (`progress-spinner.spec.ts`, `motion-mode.spec.ts`).
+ * `progress-linear.spec.ts`, `tabs-line.spec.ts`, `tabs-contained.spec.ts`,
+ * сосед перетаскиваемой колонки в `table.spec.ts`), когда переход начинается
+ * (линия ручки ширины там же ждёт задержки указателя) и что ведут кадры
+ * анимации (`progress-spinner.spec.ts`, `motion-mode.spec.ts`).
  *
  * Хуков под анимацию у кода нет: переход держит тема, и увидеть его можно
  * только на самом узле. Браузер заводит на каждое свойство, которое идёт
@@ -55,6 +57,15 @@ export const durationOf = (transition: CSSTransition): number => {
 	}
 
 	return duration
+}
+
+/** Задержка перехода, мс — `transition-delay`. `effect` бывает `null`. */
+export const delayOf = (transition: CSSTransition): number => {
+	const delay = transition.effect?.getTiming().delay
+
+	if (delay === undefined) throw new Error(`${transition.transitionProperty}: задержки нет`)
+
+	return delay
 }
 
 /** Кривая перехода — `transition-timing-function` в записи браузера. */
@@ -319,6 +330,76 @@ export const pseudoSettled = (element: Element, pseudo: string): Promise<unknown
 export const transitionEvents = async (): Promise<void> => {
 	await nextFrame()
 	await nextFrame()
+}
+
+/**
+ * Переход свойства у псевдоэлемента узла, который завело действие, — на паузе
+ * с его же `transitionrun`. Слушатель вешается до действия и ставит паузу в
+ * странице, в кадре, где пришло событие, — дальше мгновение перехода выбирает
+ * тест (`currentTime`), а не ответ действия. Ответ `userEvent` идёт кругом RPC
+ * и под нагрузкой приходит, когда переход уже идёт: так линия ручки ширины
+ * таблицы, которая ждёт задержки указателя, застигалась уже загоревшейся.
+ *
+ * Ловится первый такой переход, следующие идут своим ходом. Нет его и через
+ * два кадра после действия (`transitionEvents`) — тест падает здесь, а не по
+ * своему таймауту.
+ */
+export const pausedPseudoTransition = async (
+	element: HTMLElement,
+	pseudo: string,
+	property: string,
+	action: () => Promise<unknown>,
+): Promise<CSSTransition> => {
+	/** Что застал слушатель: переход на паузе или ошибку. */
+	const caught: Array<CSSTransition | Error> = []
+
+	const listener = (event: TransitionEvent) => {
+		if (
+			event.target !== element ||
+			event.pseudoElement !== pseudo ||
+			event.propertyName !== property
+		) {
+			return
+		}
+
+		element.removeEventListener('transitionrun', listener)
+
+		const found = element
+			.getAnimations({ subtree: true })
+			.find(
+				(animation) =>
+					animation instanceof CSSTransition &&
+					animation.transitionProperty === property &&
+					animation.effect instanceof KeyframeEffect &&
+					animation.effect.target === element &&
+					animation.effect.pseudoElement === pseudo,
+			)
+
+		if (found instanceof CSSTransition) {
+			found.pause()
+			caught.push(found)
+		} else {
+			caught.push(
+				new Error(`${pseudo} ${property}: переход кончился до своего transitionrun`),
+			)
+		}
+	}
+
+	element.addEventListener('transitionrun', listener)
+
+	try {
+		await action()
+		await transitionEvents()
+	} finally {
+		element.removeEventListener('transitionrun', listener)
+	}
+
+	const first = caught.at(0)
+
+	if (first === undefined) throw new Error(`${pseudo} ${property}: перехода не было`)
+	if (first instanceof Error) throw first
+
+	return first
 }
 
 /** Служебные ключи кадра `getKeyframes()` — не свойства. */
