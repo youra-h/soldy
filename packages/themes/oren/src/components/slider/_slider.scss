@@ -1,4 +1,3 @@
-@use '../../mixins/boundary';
 @use '../../mixins/motion';
 @use '../../mixins/tooltip';
 @use './mixins' as mixines;
@@ -89,14 +88,11 @@
 
 	// Рельс — от края до края корня: за края хода выходит на полстороны ручки,
 	// и ручка на краю лежит на нём, а не свисает. Скругление уходит под ручку.
-	// Граница рельса — контур (`slider-rail`): заливка лежит поверх и закрывает
-	// его там, где она есть.
 	&__track::before {
 		content: '';
 		@apply absolute rounded-full;
-		@apply transition-[background-color,box-shadow] duration-150;
+		@apply transition-colors duration-150;
 		background-color: var(--so-slider-rail);
-		@include boundary.contour(var(--so-slider-rail-edge));
 	}
 
 	&--horizontal > #{$this}__track {

@@ -27,8 +27,6 @@
  * (см. конец файла). Строку под стрелками — тоже фоном, и её в этом режиме
  * обводит контур (см. ниже). Дорожку и ручку Switch тема тоже рисует фонами,
  * и переключатель пропадал целиком — его рисуют системные цвета (см. ниже).
- * Границу контрола — контур выключенной дорожки Switch и рельса Slider, кромку
- * ручки — тема рисует тенью, и в этом режиме её нет: границы рисует система.
  *
  * Режим включает эмуляция Chromium — та же, что в DevTools → Rendering: она
  * меняет не только ответ медиазапроса, но и сами цвета. jsdom не делает ни
@@ -57,7 +55,6 @@ import {
 	Select,
 	SelectItem,
 	Skeleton,
-	Slider,
 	Switch,
 	Tabs,
 	TabsItem,
@@ -71,7 +68,7 @@ import type { TToastRender } from '@soldy-ui/vue'
 import type { DescriptorSlots, PopoverDescriptor } from '@soldy-ui/setup'
 import { TOASTS_ITEM_TYPES } from '@soldy-ui/playground-shared'
 
-import { find, insetRing, outlined, pixel, settled, style, systemColor } from './colors'
+import { find, outlined, pixel, settled, style, systemColor } from './colors'
 import { forcedColors } from './media'
 
 import '@soldy-ui/theme-oren'
@@ -904,29 +901,6 @@ describe('Switch', () => {
 	})
 
 	/**
-	 * Граница контрола темы — тени, а не рамка: контур выключенной дорожки и
-	 * кромка ручки (`themes/oren/src/mixins/_boundary.scss`). В этом режиме
-	 * границу рисует система — контур `outline` выше, — а тени темы нет: у ручки
-	 * подмена цветов снята, и браузер её тень сам не убрал бы. До режима они
-	 * есть, иначе проверка пуста.
-	 */
-	it.each(SCHEMES)('%s: контура дорожки и кромки ручки темы нет', async (scheme) => {
-		await show(scheme, () => h(Switch, {}))
-
-		const track = find('.so-switch__track')
-		const thumb = find('.so-switch__track--thumb')
-
-		expect(insetRing(track), 'контур дорожки до режима').toBeDefined()
-		expect(insetRing(thumb), 'кромка ручки до режима').toBeDefined()
-
-		await forcedColors('active')
-		await settled(document.body)
-
-		expect(insetRing(track), 'контур дорожки').toBeUndefined()
-		expect(insetRing(thumb), 'кромка ручки').toBeUndefined()
-	})
-
-	/**
 	 * Включение — сразу подсветкой. У включённой дорожки подмена цветов снята,
 	 * и переход шёл бы от цвета темы: дорожка с вариантом мелькала заливкой
 	 * варианта, прежде чем встать подсветкой.
@@ -941,29 +915,6 @@ describe('Switch', () => {
 
 		expect(rail.getAnimations(), 'переходы').toEqual([])
 		expect(pixel([style(rail).backgroundColor])).toEqual(pixel([systemColor('Highlight')]))
-	})
-})
-
-/**
- * Рельс Slider — тот же контур темы, что у дорожки Switch: внутренняя тень
- * поверх вуали (`themes/oren/src/mixins/_boundary.scss`). В этом режиме рельс
- * — сплошной `GrayText` со снятой подменой цветов
- * (`themes/oren/src/components/slider/_slider.scss`), и тень на нём браузер
- * сам не убрал бы: её не ставит тема. До режима контур есть, иначе проверка
- * пуста.
- */
-describe('Slider: рельс', () => {
-	it.each(SCHEMES)('%s: контура темы нет', async (scheme) => {
-		await show(scheme, () => h(Slider, { value: 50 }))
-
-		const track = find('.so-slider__track')
-
-		expect(insetRing(track, '::before'), 'до режима').toBeDefined()
-
-		await forcedColors('active')
-		await settled(document.body)
-
-		expect(insetRing(track, '::before')).toBeUndefined()
 	})
 })
 

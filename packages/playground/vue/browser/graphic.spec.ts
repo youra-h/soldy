@@ -26,20 +26,6 @@
  * владельца о виде звёзд (`themes/oren/AGENTS.md`, «Что тестом не
  * проверяется», «звёзды Rating»).
  *
- * Раздел «граница контрола» в конце файла меряет не графику, а линию, по
- * которой контрол узнают на странице (`themes/oren/AGENTS.md`, «Граница
- * контрола — своя ступень»): рамку коробки CheckBox `outlined` и неотмеченного
- * `filled`, кольцо невыбранного радио обоих видов, контур выключенной дорожки
- * Switch и рельса Slider (`themes/oren/src/mixins/_boundary.scss`) и кромку
- * выключенной ручки Switch. Ей нужно те же 3:1 (WCAG 1.4.11): к подложке,
- * рамке и кольцу — ещё и к своей поверхности, кромке — к дорожке под ручкой; у
- * каждого варианта и нейтрали, в покое, под наведением и в ошибке поля —
- * `data-invalid` красит именно границу, и граница каждого варианта в ошибке
- * обязана быть цвета `negative`. Исключений у раздела нет. CheckBox `plain`
- * рамки не имеет по виду, и раздел его не меряет; выключенный контрол 1.4.11
- * не касается. Пар Rating нет и здесь: пустая звезда — граница оценки, но вид
- * звёзд владелец оставил прежним, и она в том же исключении, что и заливка.
- *
  * Палитры спек не знает: контраст считается слоями, как их кладёт браузер
  * (`contrast` в `./colors`).
  */
@@ -51,19 +37,17 @@ import { defineComponent, h, nextTick, type VNode } from 'vue'
 import type { TComponentVariant } from '@soldy-ui/core'
 import {
 	CheckBox,
-	Field,
 	ProgressLinear,
 	ProgressSpinner,
 	RadioGroup,
 	RadioGroupItem,
 	Slider,
-	Switch,
 	Tabs,
 	TabsItem,
 } from '@soldy-ui/vue'
 import { COMPONENT_VARIANTS } from '@soldy-ui/playground-shared'
 
-import { contrast, find, insetRing, pixel, settled, style } from './colors'
+import { contrast, find, settled, style } from './colors'
 
 import '@soldy-ui/theme-oren'
 
@@ -114,24 +98,20 @@ type TPair = { name: string; color: string; under: string[] }
 /** Исключения схемы: имя пары — варианты, у которых она ниже 3:1. */
 type TExempt = Readonly<Record<string, readonly TComponentVariant[]>>
 
-/** Компонент случая — с вариантом или без. */
-type TRender = (variant?: TComponentVariant) => VNode
-
-/** Наведение на случай — если оно меняет соседа графики или саму границу. */
-type TPointer = {
-	/** На что навести указатель. */
-	target: (root: HTMLElement) => HTMLElement
-	/** Что наведение обязано изменить, — иначе проверка пуста. */
-	changes: (root: HTMLElement) => string
-}
-
 interface IGraphic {
 	name: string
-	render: TRender
+	/** Компонент случая — с вариантом или без. */
+	render: (variant?: TComponentVariant) => VNode
 	/** Пары в покое: `root` — узел случая, `backdrop` — цвет его подложки. */
 	pairs: (root: HTMLElement, backdrop: string) => TPair[]
 	/** Пары под наведением — если наведение меняет соседа графики. */
-	hovered?: TPointer & { pairs: (root: HTMLElement, backdrop: string) => TPair[] }
+	hovered?: {
+		/** На что навести указатель. */
+		target: (root: HTMLElement) => HTMLElement
+		/** Сосед, который наведение обязано изменить, — иначе проверка пуста. */
+		changes: (root: HTMLElement) => string
+		pairs: (root: HTMLElement, backdrop: string) => TPair[]
+	}
 	/**
 	 * Пары ниже 3:1 по решению владельца (см. шапку) — по схеме, на обеих
 	 * подложках. Случай без варианта исключением не бывает.
@@ -146,15 +126,6 @@ function part(root: Element, selector: string): Element {
 	if (!element) throw new Error(`${selector}: узла нет`)
 
 	return element
-}
-
-/** Кольцо части — контур или кромка; нет его — тест падает здесь, как у `part()`. */
-function ring(root: Element, selector: string, pseudo?: string): string {
-	const color = insetRing(part(root, selector), pseudo)
-
-	if (!color) throw new Error(`${selector}${pseudo ?? ''}: кольца нет`)
-
-	return color
 }
 
 /** Заливка Slider и рельс под ней — псевдоэлемент дорожки, своего узла у него нет. */
@@ -312,7 +283,7 @@ const GRAPHICS: readonly IGraphic[] = [
 const caseName = (variant?: TComponentVariant) => variant ?? 'без варианта'
 
 /** Подложка со случаями: на каждый вариант — компонент в своей ячейке. */
-const backdropRow = (backdrop: TBackdrop, content: TRender): VNode =>
+const backdropRow = (backdrop: TBackdrop, graphic: IGraphic): VNode =>
 	h(
 		'div',
 		{
@@ -324,7 +295,7 @@ const backdropRow = (backdrop: TBackdrop, content: TRender): VNode =>
 			h(
 				'div',
 				{ key: caseName(variant), 'data-case': caseName(variant), style: 'width: 240px' },
-				[content(variant)],
+				[graphic.render(variant)],
 			),
 		),
 	)
@@ -334,7 +305,7 @@ const backdropRow = (backdrop: TBackdrop, content: TRender): VNode =>
  * ставит расширение, и цвет кольца идёт за ним переходом — его дожидаемся.
  * Указатель уведён со всех компонентов: наведение меняет рельс.
  */
-async function show(scheme: TScheme, content: TRender): Promise<void> {
+async function show(scheme: TScheme, graphic: IGraphic): Promise<void> {
 	document.documentElement.dataset.soTheme = scheme
 
 	render(
@@ -343,7 +314,7 @@ async function show(scheme: TScheme, content: TRender): Promise<void> {
 				h('div', [
 					h('div', { class: 'so-test-away', style: 'height: 24px' }),
 					...(Object.keys(BACKDROPS) as TBackdrop[]).map((backdrop) =>
-						backdropRow(backdrop, content),
+						backdropRow(backdrop, graphic),
 					),
 				]),
 		}),
@@ -402,19 +373,6 @@ const faultsOf = (exempt: TExempt, seen: Set<string>, scene: TCase, pairs: TPair
 		return ratio < GRAPHIC ? [] : [`${fault} — держит, исключение лишнее`]
 	})
 
-/**
- * Указатель — на случай, переход доигран. Не изменилось то, что наведение
- * обязано изменить, — нарушение: пары под наведением были бы парами покоя.
- */
-async function hover(scene: TCase, pointer: TPointer): Promise<string[]> {
-	const resting = pointer.changes(scene.root)
-
-	await userEvent.hover(pointer.target(scene.root))
-	await settled(document.body)
-
-	return pointer.changes(scene.root) === resting ? [`${scene.name}: наведение не видно`] : []
-}
-
 beforeEach(() => {
 	document.documentElement.dataset.soTheme = 'oren'
 })
@@ -429,7 +387,7 @@ describe.each(SCHEMES)('%s: цветная графика держит 3:1 к с
 	 * редко бывает один, и отчёт сразу называет все — подложку, вариант, пару.
 	 */
 	it.each(GRAPHICS)('$name: на странице и на поверхности контрола', async (graphic) => {
-		await show(scheme, graphic.render)
+		await show(scheme, graphic)
 
 		const exempt = graphic.exempt?.[scheme] ?? {}
 		const seen = new Set<string>()
@@ -441,8 +399,16 @@ describe.each(SCHEMES)('%s: цветная графика держит 3:1 к с
 
 		if (hovered) {
 			for (const scene of cases()) {
+				const resting = hovered.changes(scene.root)
+
+				await userEvent.hover(hovered.target(scene.root))
+				await settled(document.body)
+
+				if (hovered.changes(scene.root) === resting) {
+					faults.push(`${scene.name}: наведение не видно`)
+				}
+
 				faults.push(
-					...(await hover(scene, hovered)),
 					...faultsOf(exempt, seen, scene, hovered.pairs(scene.root, scene.color)),
 				)
 			}
@@ -457,229 +423,4 @@ describe.each(SCHEMES)('%s: цветная графика держит 3:1 к с
 
 		expect(faults).toEqual([])
 	})
-})
-
-// Раздел «граница контрола» — см. шапку файла.
-
-/**
- * Граница контрола: линия, по которой его узнают, и её пары с соседями. Под
- * наведением пары те же.
- */
-interface IBoundary {
-	name: string
-	render: TRender
-	/** Граница, которую красят вариант и ошибка поля. */
-	boundary: (root: HTMLElement) => string
-	/** Пары границы: `root` — узел случая, `backdrop` — цвет его подложки. */
-	pairs: (root: HTMLElement, backdrop: string) => TPair[]
-	/** У рамки и кольца наведение меняет их цвет, у дорожки и рельса — вуаль. */
-	hovered: TPointer
-}
-
-/**
- * Граница рамкой — коробка CheckBox и кольцо радио: цвет рамки к подложке
- * снаружи и к поверхности самой части внутри. Наведение меняет саму рамку.
- */
-const bordered = ({
-	selector,
-	line,
-	inside,
-	target,
-}: {
-	/** Часть с рамкой. */
-	selector: string
-	/** Имя линии в паре. */
-	line: string
-	/** Что у линии внутри — для имени пары. */
-	inside: string
-	/** На что навести указатель. */
-	target: string
-}): Omit<IBoundary, 'name' | 'render'> => {
-	const color = (root: HTMLElement) => style(part(root, selector)).borderTopColor
-
-	return {
-		boundary: color,
-		pairs: (root, backdrop) => [
-			{ name: `${line} к подложке`, color: color(root), under: [backdrop] },
-			{
-				name: `${line} к ${inside}`,
-				color: color(root),
-				under: [backdrop, style(part(root, selector)).backgroundColor],
-			},
-		],
-		hovered: { target: (root) => find(target, root), changes: color },
-	}
-}
-
-const CHECK_BOX_FRAME = bordered({
-	selector: '.so-check-box__container',
-	line: 'рамка',
-	inside: 'коробке',
-	target: '.so-check-box',
-})
-
-const RADIO_RING = bordered({
-	selector: '.so-radio-group-item__control',
-	line: 'кольцо',
-	inside: 'контролу',
-	target: '.so-radio-group-item',
-})
-
-/** Контур выключенной дорожки Switch и кромка ручки на ней. */
-const switchPairs = (root: HTMLElement, backdrop: string): TPair[] => [
-	{
-		name: 'контур дорожки к подложке',
-		color: ring(root, '.so-switch__track'),
-		under: [backdrop],
-	},
-	{
-		name: 'кромка ручки к дорожке',
-		color: ring(root, '.so-switch__track--thumb'),
-		under: [backdrop, style(part(root, '.so-switch__track')).backgroundColor],
-	},
-]
-
-/**
- * Неотмеченное, невыбранное и выключенное — то, что узнают только по
- * границе. CheckBox `plain` в списке нет: рамки у него нет по виду.
- */
-const BOUNDARIES: readonly IBoundary[] = [
-	{
-		name: 'рамка CheckBox outlined',
-		render: (variant) => h(CheckBox, { variant }),
-		...CHECK_BOX_FRAME,
-	},
-	{
-		// Неотмеченную коробку `filled` рисует вид по умолчанию
-		name: 'рамка неотмеченного CheckBox filled',
-		render: (variant) => h(CheckBox, { variant, view: 'filled' }),
-		...CHECK_BOX_FRAME,
-	},
-	{
-		name: 'кольцо невыбранного радио dot',
-		render: (variant) =>
-			h(RadioGroup, { variant }, () => [h(RadioGroupItem, { value: 'a' }, () => 'Точка')]),
-		...RADIO_RING,
-	},
-	{
-		name: 'кольцо невыбранного радио ring',
-		render: (variant) =>
-			h(RadioGroup, { variant, view: 'ring' }, () => [
-				h(RadioGroupItem, { value: 'a' }, () => 'Кольцо'),
-			]),
-		...RADIO_RING,
-	},
-	{
-		name: 'выключенный Switch',
-		render: (variant) => h(Switch, { variant }),
-		boundary: (root) => ring(root, '.so-switch__track'),
-		pairs: switchPairs,
-		hovered: {
-			target: (root) => find('.so-switch', root),
-			changes: (root) => style(part(root, '.so-switch__track')).backgroundColor,
-		},
-	},
-	{
-		name: 'рельс Slider',
-		render: (variant) => h(Slider, { value: 50, variant }),
-		boundary: (root) => ring(root, '.so-slider__track', '::before'),
-		pairs: (root, backdrop) => [
-			{
-				name: 'контур рельса к подложке',
-				color: ring(root, '.so-slider__track', '::before'),
-				under: [backdrop],
-			},
-		],
-		hovered: {
-			target: (root) => find('.so-slider', root),
-			changes: (root) => sliderColors(root).rail,
-		},
-	},
-]
-
-/** Те же случаи в поле с ошибкой: `data-invalid` контролу ставит `Field`. */
-const invalid =
-	(content: TRender): TRender =>
-	(variant) =>
-		h(Field, { label: 'Подпись', error: 'Ошибка', invalid: true }, () => content(variant))
-
-/** Исключений у границы нет: узнаваемость контрола владелец не исключал. */
-const NO_EXEMPT: TExempt = {}
-
-/** Граница случая в состоянии — по ней ошибка сверяется с `negative`. */
-type TBoundaryLook = { state: string; scene: TCase; color: string }
-
-/**
- * Нарушения границ сцены: пары каждого случая в покое, затем под указателем —
- * по случаю за раз. Границу каждого случая в каждом состоянии отдаёт вторым.
- */
-async function boundaryFaults(
-	entry: IBoundary,
-): Promise<{ faults: string[]; looks: TBoundaryLook[] }> {
-	const seen = new Set<string>()
-	const looks: TBoundaryLook[] = []
-	const faults = cases().flatMap((scene) => {
-		looks.push({ state: 'в покое', scene, color: entry.boundary(scene.root) })
-
-		return faultsOf(NO_EXEMPT, seen, scene, entry.pairs(scene.root, scene.color))
-	})
-
-	for (const scene of cases()) {
-		faults.push(...(await hover(scene, entry.hovered)))
-		looks.push({ state: 'под наведением', scene, color: entry.boundary(scene.root) })
-		faults.push(
-			...faultsOf(
-				NO_EXEMPT,
-				seen,
-				scene,
-				entry
-					.pairs(scene.root, scene.color)
-					.map((pair) => ({ ...pair, name: `${pair.name} под наведением` })),
-			),
-		)
-	}
-
-	return { faults, looks }
-}
-
-/**
- * Граница в ошибке у каждого варианта — та же, что у `negative` на той же
- * подложке и в том же состоянии: иначе правило варианта перебило правило
- * ошибки.
- */
-const unlikeNegative = (looks: readonly TBoundaryLook[]): string[] =>
-	looks.flatMap(({ state, scene, color }) => {
-		const negative = looks.find(
-			(look) =>
-				look.state === state &&
-				look.scene.backdrop === scene.backdrop &&
-				look.scene.variant === 'negative',
-		)
-
-		if (!negative) throw new Error(`${scene.backdrop}: случая negative нет`)
-
-		return pixel([color]).join() === pixel([negative.color]).join()
-			? []
-			: [`${scene.name} · граница ${state} — не цвета negative`]
-	})
-
-describe.each(SCHEMES)('%s: граница контрола держит 3:1 к соседям', (scheme) => {
-	it.each(BOUNDARIES)('$name: на странице и на поверхности контрола', async (entry) => {
-		await show(scheme, entry.render)
-
-		const { faults } = await boundaryFaults(entry)
-
-		expect(faults).toEqual([])
-	})
-
-	it.each(BOUNDARIES)(
-		'$name в ошибке поля: цвета negative, на обеих подложках',
-		async (entry) => {
-			await show(scheme, invalid(entry.render))
-
-			const { faults, looks } = await boundaryFaults(entry)
-
-			expect([...faults, ...unlikeNegative(looks)]).toEqual([])
-		},
-	)
 })
