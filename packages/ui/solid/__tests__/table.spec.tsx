@@ -1230,6 +1230,39 @@ describe('перерисовка ячеек', () => {
 		after.forEach((cell, index) => expect(cell).toBe(before[index]))
 	})
 
+	/**
+	 * Scope слота живой: слот, прочитавший значение в разметке, рисует новую
+	 * запись в тех же узлах и заново не зовётся — поле в ячейке фокуса не
+	 * теряет. Деструктуризация, как у шпиона выше, перерисовывает ячейки строки.
+	 */
+	it('запись строки сменилась — слот, читающий scope в разметке, не зван, его узлы те же', async () => {
+		const engine = engineOf('none')
+		let calls = 0
+
+		await render(() => (
+			<Table
+				engine={engine}
+				cell={(scope) => {
+					calls += 1
+
+					return <b class="probe">{String(scope.value)}</b>
+				}}
+			/>
+		))
+
+		const boris = findAll('.so-table-row')[1]
+		const before = findAll('.probe', boris)
+
+		calls = 0
+		rowOf(engine, 2).data = { ...BORIS, age: 42 }
+
+		const after = findAll('.probe', boris)
+
+		expect(after.map(text)).toEqual(['Борис', '42'])
+		after.forEach((probe, index) => expect(probe).toBe(before[index]))
+		expect(calls).toBe(0)
+	})
+
 	it('в сетке выбор пробелом слот ячеек не зовёт', async () => {
 		const engine = engineOf('multiple')
 

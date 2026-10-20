@@ -1,7 +1,7 @@
 import type { Accessor, JSX } from 'solid-js'
 import { Dynamic } from 'solid-js/web'
 import type { ITableRow, TAriaAttributes, TTableCell } from '@soldy-ui/core'
-import { KeyedFor, renderSlot } from '../../../adapter'
+import { KeyedFor, liveScope, renderSlot } from '../../../adapter'
 import type { TableRowProps } from './base.component'
 
 /** Входы ячеек — то, что строка уже получила, и сама строка для scope слота. */
@@ -45,8 +45,26 @@ type TTableRowCellsProps = {
  * значение текстом (`text` ячейки): тип поля записи таблица не знает, и текст
  * считает ядро по правилу, общему для всех адаптеров, — Solid булево и `null`
  * пропустит, а объект — с предупреждением в консоли.
+ *
+ * Scope слота — живой (`liveScope`), как у всех слотов со scope: запись строки
+ * сменилась, а слот, прочитавший scope в разметке (`scope.value`), рисует
+ * новое значение в тех же узлах, и поле в ячейке фокуса не теряет.
+ * Деструктуризация читает scope при вызове и перерисовывает слот на смену
+ * записи. Собирается живой scope только для функции слота: ячеек в таблице
+ * тысячи, и ячейке без слота он ни к чему.
  */
 export function TableRowCells(props: TTableRowCellsProps): JSX.Element {
+	/** Содержимое ячейки: слот, а без него и на месте пустого — значение текстом. */
+	const content = (cell: Accessor<TTableCell>): JSX.Element => {
+		const slot = props.cell
+		const scope =
+			typeof slot === 'function'
+				? liveScope(() => ({ row: props.row, column: cell().column, value: cell().value }))
+				: undefined
+
+		return renderSlot(slot, scope) ?? cell().text
+	}
+
 	/** Ячейка колонки — заголовок строки или обычная. */
 	const drawCell = (cell: Accessor<TTableCell>) => (
 		<Dynamic
@@ -57,11 +75,7 @@ export function TableRowCells(props: TTableRowCellsProps): JSX.Element {
 			{...props.cellAria}
 			{...cell().aria}
 		>
-			{renderSlot(props.cell, {
-				row: props.row,
-				column: cell().column,
-				value: cell().value,
-			}) ?? cell().text}
+			{content(cell)}
 		</Dynamic>
 	)
 
