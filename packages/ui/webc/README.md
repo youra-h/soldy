@@ -12,7 +12,9 @@ component descriptor, so they match the other five adapters; only the spelling i
 props are attributes or element properties, and events are DOM events named `so:` + the core name
 (`so:show`, `so:show:before`, `so:action:press`, `so:change:disabled`). Every event has the prefix:
 events bubble from your element through the DOM, and the prefix tells a component's event from the
-browser's and your own.
+browser's and your own. A "before" event (`so:show:before`, `so:hide:before`) is cancelable, as a
+DOM event is: `event.preventDefault()` in a listener on the element or above it cancels the action.
+Its `detail` is the core event itself, so `event.detail.preventDefault()` cancels it too.
 
 Each component is a native element of its tag extended by Soldy (a customized built-in):
 `<button is="so-button">` is a real `<button>`, `<div is="so-component-view">` a real `<div>`.
@@ -37,12 +39,13 @@ get no scope: slot content is the element's own light DOM, so component data (th
 Button's `default` slot) cannot be passed into it — slot content reads it from the element,
 `el.ctrl`.
 
-> **Status:** the Web Components adapter is in progress — Button, Icon, Label, Input, CheckBox,
-> Switch, the form field `<div is="so-field">` (label, helper and error linked to the control
-> inside it), ProgressSpinner, Skeleton, Frame, RadioGroup, ListBox, Tabs, Accordion, Table, the
-> `<so-virtual>` window for long lists and the `<so-drag-and-drop>` wrapper that lets users
+> **Status:** the Web Components adapter is in progress — Button, Icon, Label, Input, Textarea
+> (`<div is="so-textarea">`: multi-line, growing with its text, with a character counter),
+> CheckBox, Switch, the form field `<div is="so-field">` (label, helper and error linked to the
+> control inside it), ProgressSpinner, Skeleton, Frame, RadioGroup, ListBox, Tabs, Accordion, Table,
+> the `<so-virtual>` window for long lists and the `<so-drag-and-drop>` wrapper that lets users
 > reorder the items of Tabs, ListBox and Accordion by dragging (`so:move`; `so:move:before` can
-> cancel with `event.detail.preventDefault()`) are ported, the rest of the set is on its way. See
+> cancel with `event.preventDefault()`) are ported, the rest of the set is on its way. See
 > [the adapter table](https://github.com/youra-h/soldy#components).
 
 ## Install
@@ -118,12 +121,12 @@ In a form it is simply a button:
 </form>
 ```
 
-A field — `<div is="so-input">`, `<span is="so-check-box">`, `<span is="so-switch">` — is your
-element with a real `<input>` inside, in the page's ordinary DOM. The form sees that input by
-itself: `FormData`, `<fieldset disabled>`, validation and `<label>` work as with any input, no
-form-associated element involved. A checkbox and a switch get their visible name from
-`<label is="so-label">` around them: clicking the text toggles the control, and the text becomes
-its accessible name.
+A field — `<div is="so-input">`, `<div is="so-textarea">`, `<span is="so-check-box">`,
+`<span is="so-switch">` — is your element with a real `<input>` (a `<textarea>`) inside, in the
+page's ordinary DOM. The form sees that field by itself: `FormData`, `<fieldset disabled>`,
+validation and `<label>` work as with any input, no form-associated element involved. A checkbox
+and a switch get their visible name from `<label is="so-label">` around them: clicking the text
+toggles the control, and the text becomes its accessible name.
 
 ```html
 <form>

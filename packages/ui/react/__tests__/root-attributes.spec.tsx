@@ -26,7 +26,14 @@ import { describe, it, expect, vi } from 'vitest'
 import { StrictMode, act, createRef, type ComponentType, type ReactNode, type Ref } from 'react'
 import { hydrateRoot } from 'react-dom/client'
 import { renderToString } from 'react-dom/server'
-import { TButton, TCheckBox, TInput, TSwitch, type TTableColumnSource } from '@soldy-ui/core'
+import {
+	TButton,
+	TCheckBox,
+	TInput,
+	TSwitch,
+	TTextarea,
+	type TTableColumnSource,
+} from '@soldy-ui/core'
 import {
 	Accordion,
 	Button,
@@ -44,6 +51,7 @@ import {
 	Switch,
 	Table,
 	Tabs,
+	Textarea,
 	type AccordionItemProps,
 	type AccordionProps,
 	type ButtonProps,
@@ -218,21 +226,30 @@ const FIELDS: ReadonlyArray<readonly [string, () => ReactNode, string]> = [
 		'.so-check-box',
 	],
 	['Switch', () => <Switch ctrl={invalid(new TSwitch({ disabled: true }))} />, '.so-switch'],
+	[
+		'Textarea',
+		() => <Textarea ctrl={invalid(new TTextarea({ disabled: true }))} />,
+		'.so-textarea',
+	],
 ]
+
+/** Поле внутри корня: `<input>`, у Textarea — `<textarea>`. */
+const CONTROL = 'input, textarea'
 
 /**
  * Тема красит коробку поля и подпись поля формы `Field` по корню поля —
  * прямому ребёнку обёртки контрола, — поэтому `dataset` (`data-disabled`,
- * `data-invalid`) — на корне, а ошибку скринридеру объявляет `<input>`.
+ * `data-invalid`) — на корне, а ошибку скринридеру объявляет поле: `<input>`,
+ * у Textarea — `<textarea>`.
  */
-describe('поле: dataset — на корне, aria — у <input>', () => {
+describe('поле: dataset — на корне, aria — у поля', () => {
 	it.each(FIELDS)(
-		'%s: data-disabled и data-invalid — на корне, aria-invalid — у <input>',
+		'%s: data-disabled и data-invalid — на корне, aria-invalid — у поля',
 		(_name, draw, selector) => {
 			mount(<>{draw()}</>)
 
 			const root = find(document, selector, HTMLElement)
-			const input = find(root, 'input', HTMLInputElement)
+			const input = find(root, CONTROL, HTMLElement)
 
 			expect(root.dataset['disabled']).toBe('true')
 			expect(root.dataset['invalid']).toBe('true')
@@ -372,6 +389,7 @@ const ROOTS: ReadonlyArray<
 	],
 	['Skeleton', (props) => <Skeleton {...props} />, '.so-skeleton', '.so-skeleton'],
 	['Input', (props) => <Input {...props} />, '.so-input', '.so-input'],
+	['Textarea', (props) => <Textarea {...props} />, '.so-textarea', '.so-textarea'],
 	['CheckBox', (props) => <CheckBox {...props} />, '.so-check-box', '.so-check-box'],
 	['Switch', (props) => <Switch {...props} />, '.so-switch', '.so-switch'],
 	['Tabs', (props) => <Tabs {...props} />, '.so-tabs', '.so-tabs'],
@@ -413,9 +431,9 @@ const ROOTS: ReadonlyArray<
 	],
 ]
 
-/** Поля: `ref` потребителя — корень, а не `<input>`. */
+/** Поля: `ref` потребителя — корень, а не `<input>` или `<textarea>`. */
 const FIELD_ROOTS = ROOTS.filter(([name]) =>
-	['Input', 'CheckBox', 'Switch', 'RadioGroup.Item'].includes(name),
+	['Input', 'Textarea', 'CheckBox', 'Switch', 'RadioGroup.Item'].includes(name),
 )
 
 /** Узлы, которые получила `ref`-функция потребителя, — по порядку вызовов. */
@@ -490,7 +508,7 @@ describe('ref потребителя — корень компонента', () 
 		},
 	)
 
-	it.each(FIELD_ROOTS)('%s: ref — корень, а не <input>', (_name, draw, selector) => {
+	it.each(FIELD_ROOTS)('%s: ref — корень, а не поле', (_name, draw, selector) => {
 		const probe = refProbe()
 
 		mount(<>{draw({ ref: probe.ref })}</>)
@@ -498,7 +516,7 @@ describe('ref потребителя — корень компонента', () 
 		const root = find(document, selector, Element)
 
 		expect(probe.nodes[0]).toBe(root)
-		expect(probe.nodes).not.toContain(find(root, 'input', HTMLInputElement))
+		expect(probe.nodes).not.toContain(find(root, CONTROL, HTMLElement))
 	})
 
 	/** Смена тега пересоздаёт узел: прежний корень потребитель отпускает, новый получает. */

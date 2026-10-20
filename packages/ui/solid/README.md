@@ -12,8 +12,9 @@ component descriptor, so they match the other five adapters; only the spelling i
 arrive as callback props (`element:ready` → `onElementReady`), and the default slot is `children`.
 
 > **Status:** the Solid adapter is in progress — Button, Icon, Label, Frame, ProgressSpinner,
-> Skeleton, the fields Input, CheckBox and Switch, the form field `Field` (label, helper and
-> error linked to the control inside it), the collections ListBox, Tabs, Accordion and
+> Skeleton, the fields Input, Textarea (multi-line, growing with its text, with a character
+> counter), CheckBox and Switch, the form field `Field` (label, helper and error linked to the
+> control inside it), the collections ListBox, Tabs, Accordion and
 > RadioGroup (`<ListBox.Item>`, `<Tabs.Item>` with `<Tabs.Content>`, `<Accordion.Item>`,
 > `<RadioGroup.Item>` or `items`), Table (columns and rows as data — `columns`, `items` — with
 > sorting, row selection, column resizing and reordering), the `Virtual` window for long lists
@@ -24,11 +25,11 @@ arrive as callback props (`element:ready` → `onElementReady`), and the default
 > a Solid component, or `roleIcon(role)` — the icon of that role from the registered icon pack.
 > Frame teleports its panel into `target` (`body` by default) on the client; with `contained` it
 > stays in place. A field gives its class and style to the root and every other attribute to its
-> `<input>`; an item of a collection gives them to its row; a list box and tabs give them to the
-> list itself, `[role=listbox]` or `[role=tablist]`; a table gives them to the `<table>` itself,
-> and its class, style and `ref` to the scroll viewport around it; otherwise `ref` gets the root.
-> `Label` names the control it wraps; `LocaleProvider` gives a subtree its language and library
-> strings, such as the name of the clear button of `Input`. See
+> `<input>` (a textarea — to its `<textarea>`); an item of a collection gives them to its row; a
+> list box and tabs give them to the list itself, `[role=listbox]` or `[role=tablist]`; a table
+> gives them to the `<table>` itself, and its class, style and `ref` to the scroll viewport around
+> it; otherwise `ref` gets the root. `Label` names the control it wraps; `LocaleProvider` gives a
+> subtree its language and library strings, such as the name of the clear button of `Input`. See
 > [the adapter table](https://github.com/youra-h/soldy#components).
 
 ## Install

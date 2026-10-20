@@ -47,6 +47,7 @@ import {
 	TTabsContentElement,
 	TTabsElement,
 	TTabsItemElement,
+	TTextareaElement,
 	registerButtonTag,
 	type TAccordionElementProps,
 	type TAccordionItemElementProps,
@@ -67,6 +68,7 @@ import {
 	type TTabsContentElementProps,
 	type TTabsElementProps,
 	type TTabsItemElementProps,
+	type TTextareaElementProps,
 } from '@soldy-ui/webc'
 import { TElementAttributes, applyStyles, stylesOf } from '../src/adapter/runtime/root-attributes'
 
@@ -128,6 +130,10 @@ function isSwitch(node: Element | null): node is TSwitchElementProps {
 
 function isInput(node: Element | null): node is TInputElementProps {
 	return node instanceof TInputElement
+}
+
+function isTextarea(node: Element | null): node is TTextareaElementProps {
+	return node instanceof TTextareaElement
 }
 
 function isTabs(node: Element | null): node is TTabsElementProps {
@@ -200,6 +206,7 @@ const COMPONENTS: ReadonlyArray<
 	['CheckBox', 'span', 'so-check-box', isCheckBox, 'so-check-box', 'input'],
 	['Switch', 'span', 'so-switch', isSwitch, 'so-switch', 'input'],
 	['Input', 'div', 'so-input', isInput, 'so-input', 'input'],
+	['Textarea', 'div', 'so-textarea', isTextarea, 'so-textarea', 'textarea'],
 	['Tabs', 'div', 'so-tabs', isTabs, 'so-tabs', '[role="tablist"]'],
 	['Tabs.Item', 'div', 'so-tabs-item', isTabsItem, 'so-tabs-item', '[embedded="tabs.row"]'],
 	['Tabs.Content', 'div', 'so-tabs-content', isTabsContent, 'so-tabs__panel', null],
@@ -326,21 +333,22 @@ const INVALID_FIELDS = [
 	['CheckBox', '<span is="so-check-box" disabled></span>', '.so-check-box'],
 	['Switch', '<span is="so-switch" disabled></span>', '.so-switch'],
 	['Input', '<div is="so-input" disabled></div>', '.so-input'],
+	['Textarea', '<div is="so-textarea" disabled></div>', '.so-textarea'],
 ] as const
 
 /**
  * Тема красит коробку поля и подпись поля формы `Field` по корню поля —
  * прямому ребёнку обёртки контрола, — поэтому `dataset` (`data-disabled`,
- * `data-invalid`) база кладёт на корень, а ошибку скринридеру объявляет
- * `<input>`.
+ * `data-invalid`) база кладёт на корень, а ошибку скринридеру объявляет поле:
+ * `<input>`, у Textarea — `<textarea>`.
  */
-describe('поле: dataset — на корне, aria — у <input>', () => {
+describe('поле: dataset — на корне, aria — у поля', () => {
 	it.each(INVALID_FIELDS)(
-		'%s: data-disabled и data-invalid — на корне, aria-invalid — у <input>',
+		'%s: data-disabled и data-invalid — на корне, aria-invalid — у поля',
 		(_name, control, selector) => {
 			const field = mount(`<div is="so-field" invalid>${control}</div>`, isField)
 			const root = field.querySelector(selector)
-			const input = root?.querySelector('input')
+			const input = root?.querySelector('input, textarea')
 
 			if (!(root instanceof HTMLElement) || !input) throw new Error('поля нет')
 

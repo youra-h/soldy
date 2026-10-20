@@ -438,17 +438,27 @@ ARIA пускает только `option` и `group` (axe — `aria-required-chi
   объявлял бы каждый символ. `id` счётчика — в его набор `counterAria`, а
   ссылку плагин связок (`TTextareaIdsPlugin`) пишет входом `parts` в
   `TAriaPlugin` поля: в `aria-describedby` она встаёт после справки поля
-  формы и перед своим `aria_describedBy`. Адаптеры: Vue. Сторожат
+  формы и перед своим `aria_describedBy`. Адаптеры: все шесть; разметка —
+  как у Input без слотов и кнопки очистки: корень по `tag` (в Angular —
+  элемент `<so-textarea>`, в Web Components — `<div is="so-textarea">`),
+  атрибуты потребителя делятся между корнем и `<textarea>`. Текст поля в узел
+  пишет помощник адаптера, только когда он разошёлся с узлом (`NativeTextarea`
+  у React, `textareaText` у Solid и Svelte, `[so-field-text]` у Angular,
+  привязка шаблона у Web Components), а на сервере текст — содержимое
+  `<textarea>`: атрибута `value` у неё нет. Сторожат
   `core/__tests__/textarea.spec.ts`,
   `plugins/__tests__/textarea-autoresize.plugin.spec.ts`,
   `plugins/__tests__/names.plugin.spec.ts`,
   `plugins/__tests__/ids.plugin.spec.ts` («счётчик Textarea»),
   `setup/__tests__/aria-plugin.spec.ts` («ссылки поля формы»),
-  `setup/__tests__/field-link.spec.ts`, `ui/vue/__tests__/textarea.spec.ts`,
-  `ui/vue/__tests__/ssr-ids.spec.ts`
-  и `playground/vue/browser/textarea.spec.ts` (рост до потолка и сжатие,
+  `setup/__tests__/field-link.spec.ts`, `textarea.spec.*` каждого адаптера
+  (у Solid и Svelte — и `textarea.server.spec.*`, у Angular сервер и
+  гидратацию — `fields.server.spec.ts`), спеки атрибутов корня адаптеров,
+  `ui/vue/__tests__/ssr-ids.spec.ts`,
+  `playground/vue/browser/textarea.spec.ts` (рост до потолка и сжатие,
   пересчёт от значения, ширины и размера, прокрутка страницы на вводе, Enter —
-  перевод строки, `rows="1"` — высота Input).
+  перевод строки, `rows="1"` — высота Input), `angular-host.spec.ts` и
+  `webc-fields.spec.ts` (поле стоит, как у Vue).
 - **Popover** — немодальный Dialog: `role="dialog"` на панели, имя —
   `aria_label` или `aria_labelledBy` (`TAriaPlugin`). Триггер — слот
   `trigger` внутри корня: корень служит панели якорем, а нажатие по открытому
@@ -2172,7 +2182,7 @@ useToasts()`. API опускает лифт (`TOASTS_ELEVATOR`, расширен
   Angular и Web Components. События — в именах адаптера: `@move:before` и
   `@move` у Vue, `onMoveBefore` и `onMove` у React, Solid и Svelte,
   `(soMoveBefore)` и `(soMove)` у Angular, `so:move:before` и `so:move` у Web
-  Components (аргумент — `detail`, отмена — `detail.preventDefault()`). Обёртка
+  Components (аргумент — `detail`, отмена — `preventDefault()` события). Обёртка
   везде по образцу окна: у React и Solid своего узла нет — детям слой лифта
   отдаёт `Elevate`, а пересобранная обёртка React (StrictMode, `<Activity>`)
   опускает новый экземпляр, и коллекция пересобирается вслед за ней; у Svelte

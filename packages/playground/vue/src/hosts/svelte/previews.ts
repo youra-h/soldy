@@ -14,6 +14,7 @@ import SkeletonPreview from './SkeletonPreview.svelte'
 import SwitchPreview from './SwitchPreview.svelte'
 import TablePreview from './TablePreview.svelte'
 import TabsPreview from './TabsPreview.svelte'
+import TextareaPreview from './TextareaPreview.svelte'
 import VirtualPreview from './VirtualPreview.svelte'
 
 /** Пропсы превью: пропы строки, `ctrl` с экземпляром ядра и колбэки событий хоста. */
@@ -41,6 +42,7 @@ export type TPreview = Component<TPreviewProps>
 export const PREVIEWS: Record<string, TPreview> = {
 	button: ButtonPreview,
 	input: InputPreview,
+	textarea: TextareaPreview,
 	'check-box': CheckBoxPreview,
 	switch: SwitchPreview,
 	label: LabelPreview,

@@ -2429,8 +2429,11 @@ Svelte 5 на рунах. Структура зеркалит React, потом�
   компонент, и для приложения).
 - `adapter/runtime/` — `useAdapter` поверх связки
   `adapter.connect(WebcProfile)` (о пропе ядра она сообщает элементу колбэком
-  `onUpdate`), `useCollectionAdapter` (связка фасада коллекции — без `ctrl` и
-  узла) и `joinBindings` (две связки коллекционного компонента — одной, как у
+  `onUpdate`, событие ядра уходит `CustomEvent` с элемента; событие «до», чей
+  аргумент `TActionEvent`, — отменяемое, как событие DOM:
+  `event.preventDefault()` отменяет и событие ядра, а `detail` — оно само),
+  `useCollectionAdapter` (связка фасада коллекции — без `ctrl` и узла) и
+  `joinBindings` (две связки коллекционного компонента — одной, как у
   Angular), `SoldyElement` (фабрика класса элемента поверх нативного класса
   тега: жизненный цикл, корень по описанию `TRootSpec` и свои атрибуты
   элемента, см. «Решения по DOM»), `defineElement` (регистрация с
@@ -2892,7 +2895,7 @@ WebKit:
   `<so-virtual>` опускает подключение лифтом своему хосту, и коллекция в его
   свете подхватывает его при сборке; перестановка `<so-drag-and-drop>` так же
   опускает свой экземпляр, а о перестановке сообщает событиями `so:move:before`
-  (отмена — `detail.preventDefault()`) и `so:move`. Сторожат
+  (отмена — `preventDefault()` события) и `so:move`. Сторожат
   `ui/webc/__tests__/tabs.spec.ts`, `accordion.spec.ts`, `radio-group.spec.ts`,
   `list-box.spec.ts`, `table.spec.ts`, `virtual.spec.ts`, `drag-and-drop.spec.ts`,
   `collection-elevator.spec.ts`, `collection-item-lifetime.spec.ts`,

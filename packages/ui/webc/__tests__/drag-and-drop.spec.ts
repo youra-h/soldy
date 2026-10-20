@@ -7,7 +7,7 @@
  * узлы их элементов становятся `draggable`, а жест — командой обёртки. О
  * перестановке обёртка сообщает событиями элемента в именах адаптера —
  * `so:move:before` и `so:move`, аргумент события ядра — в `detail`, и
- * `detail.preventDefault()` оставляет элемент на месте. Список в секции
+ * `preventDefault()` события оставляет элемент на месте. Список в секции
  * Accordion перестановку не наследует: коллекция опускает своему поддереву
  * пустое. Сценарии — те же, что у Vue, React, Solid, Svelte и Angular
  * (`ui/vue/__tests__/drag-and-drop.spec.ts` и соседи), без StrictMode и
@@ -220,7 +220,7 @@ describe('DragAndDrop: события перестановки', () => {
 
 			before.push(event.detail)
 
-			if (cancel) event.detail.preventDefault()
+			if (cancel) event.preventDefault()
 		})
 		wrapper.addEventListener('so:move', (event) => {
 			if (event instanceof CustomEvent && isMove(event.detail)) moved.push(event.detail)
@@ -242,7 +242,7 @@ describe('DragAndDrop: события перестановки', () => {
 		expect(moved[0].engine).toBe(before[0].engine)
 	})
 
-	it('detail.preventDefault() в обработчике so:move:before оставляет элемент на месте', async () => {
+	it('preventDefault() события so:move:before оставляет элемент на месте', async () => {
 		const wrapper = await inWrapper((node) => node.appendChild(createList()))
 		const { before, moved } = listen(wrapper, true)
 

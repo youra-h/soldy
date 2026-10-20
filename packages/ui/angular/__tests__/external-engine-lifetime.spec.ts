@@ -8,12 +8,17 @@
  * цикл Angular, как `ui/vue/__tests__/external-engine-lifetime.spec.ts` у Vue:
  * три монтирования ListBox подряд, и на шинах владельца, движка и его
  * расширений ни подписки, ни перехватчика, ни слушателя обмена.
+ *
+ * Список над движком без `ctrl`, перенесённый в компонент раньше по дереву,
+ * Angular собирает раньше, чем снимает прежний: привязку владельца забирает
+ * новое монтирование, хотя прежнее ещё держит движок.
  */
 
 import { describe, it, expect, afterEach, vi } from 'vitest'
-import { Component } from '@angular/core'
+import { Component, input, signal } from '@angular/core'
 import { TestBed } from '@angular/core/testing'
 import { TEvented, TListBox, createEngineListBox } from '@soldy-ui/core'
+import type { TListBoxCollection } from '@soldy-ui/core'
 import { TListBoxComponent } from '@soldy-ui/angular'
 
 afterEach(() => {
@@ -122,6 +127,113 @@ describe('ListBox над движком и владельцем снаружи',
 			fixture.destroy()
 		}
 
+		expect(live()).toEqual([])
+	})
+})
+
+/** Владелец в опциях движка: без `ctrl` его собирает монтирование. */
+function ownerOf(engine: TListBoxCollection): TListBox {
+	const owner = engine.options.get('owner')
+
+	if (!(owner instanceof TListBox)) throw new Error('владельца у движка нет')
+
+	return owner
+}
+
+/**
+ * Место списка — ветка `@if` в своём компоненте. Внутри одного шаблона Angular
+ * снимает прежнюю ветку раньше, чем зовёт `ngOnInit` новой, а компоненты
+ * проверяет по порядку дерева: место раньше по дереву собирает новый список
+ * до того, как место после него снимает прежний.
+ */
+@Component({
+	selector: 'probe-list-place',
+	standalone: true,
+	imports: [TListBoxComponent],
+	template: `@if (shown()) {
+		<so-list-box [engine]="engine()" [disabled]="disabled()"></so-list-box>
+	}`,
+})
+class ProbeListPlace {
+	readonly shown = input.required<boolean>()
+	readonly engine = input.required<TListBoxCollection>()
+	readonly disabled = input(false)
+}
+
+/**
+ * Без `ctrl` каждое монтирование собирает своего владельца, а движок снаружи
+ * тот же. Привязку забирает новое монтирование, а снятие прежнего её не
+ * трогает.
+ */
+describe('ListBox над движком снаружи без ctrl, перенесённый за одну проверку', () => {
+	it('перенос в компонент раньше по дереву: движок у владельца нового монтирования, после снятия на шинах ничего', () => {
+		const engine = createEngineListBox({ items: ITEMS })
+		const extensions = Object.values(engine.extensions).flatMap((extension) =>
+			extension ? [extension.events] : [],
+		)
+		const live = watchBuses([engine.events, ...extensions])
+
+		@Component({
+			selector: 'probe-list-move',
+			standalone: true,
+			imports: [ProbeListPlace],
+			template: `
+				<probe-list-place
+					class="so-test-second"
+					[shown]="swapped()"
+					[engine]="engine"
+					[disabled]="disabled()"
+				/>
+				<probe-list-place
+					class="so-test-first"
+					[shown]="!swapped()"
+					[engine]="engine"
+					[disabled]="disabled()"
+				/>
+			`,
+		})
+		class MoveHost {
+			readonly engine = engine
+			readonly swapped = signal(false)
+			readonly disabled = signal(false)
+		}
+
+		const fixture = TestBed.createComponent(MoveHost)
+		const host: HTMLElement = fixture.nativeElement
+		const itemsDisabled = () =>
+			[...host.querySelectorAll('.so-list-box-item')].map((item) =>
+				item.getAttribute('data-disabled'),
+			)
+
+		fixture.detectChanges()
+
+		const first = ownerOf(engine)
+
+		fixture.componentInstance.swapped.set(true)
+		fixture.detectChanges()
+
+		// Перенесён: элементы одного списка, движок — у нового владельца
+		expect(host.querySelectorAll('.so-test-first .so-list-box-item')).toHaveLength(0)
+		expect(host.querySelectorAll('.so-test-second .so-list-box-item')).toHaveLength(
+			ITEMS.length,
+		)
+		expect(ownerOf(engine)).not.toBe(first)
+
+		// Прежний владелец отпущен: его `disabled` до элементов не доходит
+		first.disabled = true
+		fixture.detectChanges()
+
+		expect(itemsDisabled()).not.toContain('true')
+
+		// Подписки на нового живы: его `disabled` доходит до элементов
+		fixture.componentInstance.disabled.set(true)
+		fixture.detectChanges()
+
+		expect(itemsDisabled()).toEqual(['true', 'true'])
+
+		fixture.destroy()
+
+		expect(engine.options.get('owner')).toBeUndefined()
 		expect(live()).toEqual([])
 	})
 })

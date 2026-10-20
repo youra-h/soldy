@@ -21,13 +21,14 @@ render on the server (`@angular/platform-server`) and hydrate in the browser
 (`provideClientHydration`); component ids match on both sides.
 
 > **Status:** the Angular adapter is in progress — Button, Icon, Label, Frame, ProgressSpinner,
-> Skeleton, Input, CheckBox, Switch, the form field `<div so-field>` (label, helper and error linked
-> to the control inside it), RadioGroup, ListBox, Tabs, Accordion, Table, the `Virtual` window
-> for long lists and the `<so-drag-and-drop>` wrapper that lets users reorder the items of Tabs,
-> ListBox and Accordion by dragging (`(soMove)`, `(soMoveBefore)` can cancel) are ported, the rest
-> of the set is on its way. Frame moves the element you wrote into `target` (`body` by default) in
-> the browser; with `contained` it stays in place. `so-locale-provider` gives a subtree its
-> language and library strings. See [the adapter table](https://github.com/youra-h/soldy#components).
+> Skeleton, Input, Textarea (multi-line, growing with its text, with a character counter),
+> CheckBox, Switch, the form field `<div so-field>` (label, helper and error linked to the control
+> inside it), RadioGroup, ListBox, Tabs, Accordion, Table, the `Virtual` window for long lists and
+> the `<so-drag-and-drop>` wrapper that lets users reorder the items of Tabs, ListBox and Accordion
+> by dragging (`(soMove)`, `(soMoveBefore)` can cancel) are ported, the rest of the set is on its
+> way. Frame moves the element you wrote into `target` (`body` by default) in the browser; with
+> `contained` it stays in place. `so-locale-provider` gives a subtree its language and library
+> strings. See [the adapter table](https://github.com/youra-h/soldy#components).
 
 ## Install
 
@@ -85,13 +86,13 @@ nothing written inside it.
 template: `<svg so-icon so-role-icon="close" aria_label="Close"></svg>`
 ```
 
-A field — Input, CheckBox, Switch — is an element of its own (`<so-input>`, `<so-check-box>`,
-`<so-switch>`) with a native `<input>` inside, so your markup is split the way Vue and React split
-it: `class` and `style` stay on the field, while the static attributes you write on it
-(`autocomplete`, `data-*`) move to the `<input>`. Bindings such as `[attr.title]` and event
-listeners stay on the field element — Angular attaches them where you wrote them; events that
-bubble from the `<input>` (`keydown`) reach them, `focus` and `blur` do not. A field gets its
-visible name from a Label around it:
+A field — Input, Textarea, CheckBox, Switch — is an element of its own (`<so-input>`,
+`<so-textarea>`, `<so-check-box>`, `<so-switch>`) with a native `<input>` (a `<textarea>`) inside,
+so your markup is split the way Vue and React split it: `class` and `style` stay on the field,
+while the static attributes you write on it (`autocomplete`, `data-*`) move to the `<input>`.
+Bindings such as `[attr.title]` and event listeners stay on the field element — Angular attaches
+them where you wrote them; events that bubble from the `<input>` (`keydown`) reach them, `focus`
+and `blur` do not. A field gets its visible name from a Label around it:
 
 ```ts
 template: `<label so-label text="Remember me"><so-check-box (soChangeValue)="remember($event)" /></label>

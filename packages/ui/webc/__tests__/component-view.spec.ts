@@ -9,10 +9,14 @@
  * Раскладка света — перенос силами базы: содержимое едет в точку шаблона
  * одной операцией, из документа не выходя, и кнопка внутри собирается один
  * раз — на своём месте, под провайдером вокруг.
+ *
+ * Событие «до» (`so:hide:before`) отменяется, как событие DOM, —
+ * `preventDefault()` самого события, — и, как прежде, `preventDefault()` его
+ * `detail`, события ядра.
  */
 
 import { describe, it, expect, afterEach } from 'vitest'
-import { TButton, TComponentView } from '@soldy-ui/core'
+import { TActionEvent, TButton, TComponentView } from '@soldy-ui/core'
 import { TBasePlugin, ruRU, type IPluginContext } from '@soldy-ui/plugins'
 import { usePlugins } from '@soldy-ui/setup'
 import {
@@ -174,6 +178,73 @@ describe('<div is="so-component-view"> · нативный div', () => {
 		await flush()
 
 		expect(el.style.display).toBe('')
+	})
+})
+
+describe('<div is="so-component-view"> · событие «до» отменяется', () => {
+	it('preventDefault() события so:hide:before оставляет элемент видимым', async () => {
+		const el = mount('<div is="so-component-view"><b>внутри</b></div>')
+
+		el.addEventListener('so:hide:before', (event) => event.preventDefault())
+
+		el.visible = false
+		await flush()
+
+		expect(el.visible).toBe(true)
+		expect(el.style.display).toBe('')
+	})
+
+	/** Событие всплывает, и отменить его может и слушатель предка — делегирование. */
+	it('отмена у предка, на всплытии, — тоже', () => {
+		const ctrl = new TComponentView()
+		const el = create()
+		const host = document.body.appendChild(document.createElement('section'))
+
+		el.ctrl = ctrl
+		host.appendChild(el)
+		host.addEventListener('so:hide:before', (event) => event.preventDefault())
+
+		ctrl.hide()
+
+		expect(ctrl.visible).toBe(true)
+	})
+
+	it('detail — событие ядра, и его preventDefault() отменяет, как прежде', async () => {
+		const ctrl = new TComponentView()
+		const el = mountCtrl(ctrl)
+
+		el.addEventListener('so:hide:before', (event) => {
+			if (!(event instanceof CustomEvent) || !(event.detail instanceof TActionEvent)) {
+				throw new Error('detail у so:hide:before — не событие ядра')
+			}
+
+			event.detail.preventDefault()
+		})
+
+		ctrl.hide()
+		await flush()
+
+		expect(ctrl.visible).toBe(true)
+		expect(el.style.display).toBe('')
+	})
+
+	it('отменяемо только событие «до»: so:change:visible и so:hide — нет', () => {
+		const ctrl = new TComponentView()
+		const el = mountCtrl(ctrl)
+		const cancelable: [string, boolean][] = []
+
+		for (const name of ['so:hide:before', 'so:change:visible', 'so:hide']) {
+			el.addEventListener(name, (event) => cancelable.push([name, event.cancelable]))
+		}
+
+		ctrl.hide()
+
+		expect(cancelable).toEqual([
+			['so:hide:before', true],
+			['so:change:visible', false],
+			['so:hide', false],
+		])
+		expect(ctrl.visible).toBe(false)
 	})
 })
 

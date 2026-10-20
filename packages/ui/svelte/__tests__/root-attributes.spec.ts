@@ -35,6 +35,7 @@ import {
 	TCheckBox,
 	TInput,
 	TSwitch,
+	TTextarea,
 	createEngineTable,
 	type TTableCollection,
 } from '@soldy-ui/core'
@@ -55,6 +56,7 @@ import {
 	Switch,
 	Table,
 	Tabs,
+	Textarea,
 	roleIcon,
 	toControlAttrs,
 	toRootForward,
@@ -78,6 +80,7 @@ import {
 	type TableProps,
 	type TabsContentProps,
 	type TabsProps,
+	type TextareaProps,
 } from '@soldy-ui/svelte'
 import Attach from './Attach.test.svelte'
 import BindRef from './BindRef.test.svelte'
@@ -123,18 +126,22 @@ const COMPONENTS: ReadonlyArray<readonly [string, (props: TProbeProps) => TMount
 ]
 
 /** Общие пропсы полей в таблице. */
-type TFieldProbeProps = CheckBoxProps & SwitchProps & InputProps
+type TFieldProbeProps = CheckBoxProps & SwitchProps & InputProps & TextareaProps
 
 /**
  * Поле и класс его корня. Атрибуты потребителя поле делит, как у Vue: класс и
- * стиль — корню, остальное — `<input>`, поверх его набора `aria`. Корень
- * остаётся за адаптером и у него.
+ * стиль — корню, остальное — `<input>` (у Textarea — `<textarea>`), поверх его
+ * набора `aria`. Корень остаётся за адаптером и у него.
  */
 const FIELDS: ReadonlyArray<readonly [string, Component<TFieldProbeProps>, string]> = [
 	['CheckBox', CheckBox, '.so-check-box'],
 	['Switch', Switch, '.so-switch'],
 	['Input', Input, '.so-input'],
+	['Textarea', Textarea, '.so-textarea'],
 ]
+
+/** Поле внутри корня: `<input>`, у Textarea — `<textarea>`. */
+const CONTROL = 'input, textarea'
 
 /** Контрол с ошибкой: её задают инстансу — в разметке её задаёт поле формы. */
 function invalid<T extends { invalid: boolean }>(ctrl: T): T {
@@ -156,6 +163,11 @@ const INVALID_FIELDS: ReadonlyArray<readonly [string, () => TMounted, string]> =
 		'.so-switch',
 	],
 	['Input', () => mount(Input, { ctrl: invalid(new TInput({ disabled: true })) }), '.so-input'],
+	[
+		'Textarea',
+		() => mount(Textarea, { ctrl: invalid(new TTextarea({ disabled: true })) }),
+		'.so-textarea',
+	],
 ]
 
 /** Рисование элемента коллекции в своём владельце — пропсами самого элемента. */
@@ -226,14 +238,14 @@ describe('атрибут снаружи перекрывает набор ядр
 	})
 })
 
-describe('поле: атрибуты снаружи — <input>, поверх его aria', () => {
+describe('поле: атрибуты снаружи — полю, поверх его aria', () => {
 	/** Имя полю пишет плагин доступного имени в `aria`, а `aria-label` снаружи — атрибут потребителя. */
 	it.each(FIELDS)(
 		'%s: aria-label потребителя — поверх имени поля',
 		(_name, component, selector) => {
 			mount(component, { aria_label: 'Ядро', 'aria-label': 'Своё' })
 
-			const field = find(document, `${selector} input`, HTMLInputElement)
+			const field = find(find(document, selector, HTMLElement), CONTROL, HTMLElement)
 
 			expect(field.getAttribute('aria-label')).toBe('Своё')
 			expect(find(document, selector, HTMLElement).hasAttribute('aria-label')).toBe(false)
@@ -244,7 +256,7 @@ describe('поле: атрибуты снаружи — <input>, поверх е
 		mount(component, { class: 'mine', style: 'color: red' })
 
 		const root = find(document, selector, HTMLElement)
-		const field = find(root, 'input', HTMLInputElement)
+		const field = find(root, CONTROL, HTMLElement)
 
 		expect([...root.classList].at(-1)).toBe('mine')
 		expect(root.style.color).toBe('red')
@@ -254,11 +266,11 @@ describe('поле: атрибуты снаружи — <input>, поверх е
 
 	/**
 	 * Attachment потребителя — тоже «остальное»: поведение, которое он вешает
-	 * на поле, встаёт на `<input>`. Привязка корня к `TElementPlugin` — за
-	 * адаптером: `element:ready` приходит с корнем.
+	 * на поле, встаёт на `<input>` или `<textarea>`. Привязка корня к
+	 * `TElementPlugin` — за адаптером: `element:ready` приходит с корнем.
 	 */
 	it.each(FIELDS)(
-		'%s: attachment потребителя — на <input>, element:ready — с корнем',
+		'%s: attachment потребителя — на поле, element:ready — с корнем',
 		async (_name, component, selector) => {
 			const consumer = attachmentProbe()
 			const ready = readyProbe()
@@ -272,7 +284,7 @@ describe('поле: атрибуты снаружи — <input>, поверх е
 			const root = find(document, selector, HTMLElement)
 
 			expect(consumer.attached).toHaveLength(1)
-			expect(consumer.attached[0]).toBe(find(root, 'input', HTMLInputElement))
+			expect(consumer.attached[0]).toBe(find(root, CONTROL, HTMLElement))
 			expect(ready.elements).toHaveLength(1)
 			expect(ready.elements[0]).toBe(root)
 		},
@@ -281,15 +293,15 @@ describe('поле: атрибуты снаружи — <input>, поверх е
 	/**
 	 * Тема красит коробку поля и подпись поля формы `Field` по корню поля —
 	 * прямому ребёнку обёртки контрола, — поэтому `dataset` (`data-disabled`,
-	 * `data-invalid`) — на корне, а ошибку скринридеру объявляет `<input>`.
+	 * `data-invalid`) — на корне, а ошибку скринридеру объявляет поле.
 	 */
 	it.each(INVALID_FIELDS)(
-		'%s: data-disabled и data-invalid — на корне, aria-invalid — у <input>',
+		'%s: data-disabled и data-invalid — на корне, aria-invalid — у поля',
 		(_name, draw, selector) => {
 			draw()
 
 			const root = find(document, selector, HTMLElement)
-			const field = find(root, 'input', HTMLInputElement)
+			const field = find(root, CONTROL, HTMLElement)
 
 			expect(root.dataset['disabled']).toBe('true')
 			expect(root.dataset['invalid']).toBe('true')
@@ -673,6 +685,7 @@ const ROOTS: ReadonlyArray<readonly [TRootKind, string, string]> = [
 	['ProgressSpinner', '.so-progress-spinner', '.so-progress-spinner'],
 	['Skeleton', '.so-skeleton', '.so-skeleton'],
 	['Input', '.so-input', '.so-input'],
+	['Textarea', '.so-textarea', '.so-textarea'],
 	['CheckBox', '.so-check-box', '.so-check-box'],
 	['Switch', '.so-switch', '.so-switch'],
 	['Tabs', '.so-tabs', '.so-tabs'],
@@ -687,9 +700,9 @@ const ROOTS: ReadonlyArray<readonly [TRootKind, string, string]> = [
 	['Table', '.so-table__viewport', 'table.so-table'],
 ]
 
-/** Поля: `ref` — корень, а не `<input>`. */
+/** Поля: `ref` — корень, а не `<input>` или `<textarea>`. */
 const FIELD_ROOTS = ROOTS.filter(([kind]) =>
-	['Input', 'CheckBox', 'Switch', 'RadioGroup.Item'].includes(kind),
+	['Input', 'Textarea', 'CheckBox', 'Switch', 'RadioGroup.Item'].includes(kind),
 )
 
 /** Записи `ref` компонентом — по порядку; узлы сверяют по ссылке, как у `readyProbe`. */
@@ -758,7 +771,7 @@ describe('ref потребителя — корень компонента', () 
 		expectNodes(probe.nodes, [root, null])
 	})
 
-	it.each(FIELD_ROOTS)('%s: ref — корень, а не <input>', (kind, selector) => {
+	it.each(FIELD_ROOTS)('%s: ref — корень, а не поле', (kind, selector) => {
 		const probe = refProbe()
 
 		mount(RootRef, { kind, onRef: probe.onRef })
@@ -766,7 +779,7 @@ describe('ref потребителя — корень компонента', () 
 		const root = find(document, selector, Element)
 
 		expectNodes(probe.nodes, [root])
-		expect(probe.nodes).not.toContain(find(root, 'input', HTMLInputElement))
+		expect(probe.nodes).not.toContain(find(root, CONTROL, HTMLElement))
 	})
 
 	/** Смена тега пересоздаёт узел: прежний корень `ref` отпускает, новый получает. */

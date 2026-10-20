@@ -23,6 +23,7 @@ import {
 	Switch,
 	Table,
 	Tabs,
+	Textarea,
 	Virtual,
 	roleIcon,
 } from '@soldy-ui/solid'
@@ -97,6 +98,8 @@ export const PREVIEWS: Record<string, TPreview> = {
 	button: (bind) => <Button {...bind()} />,
 
 	input: (bind) => <Input {...bind()} />,
+
+	textarea: (bind) => <Textarea {...bind()} />,
 
 	// Текста у чекбокса и переключателя нет, оба — голый контрол: подпись даёт
 	// обёртка Label. Её пропы задаёт превью, строки страницы правят контрол
