@@ -2,6 +2,7 @@ import type { ITextInputControl } from '@soldy-ui/core'
 import { TBasePlugin } from '../../base'
 import type { IPluginContext } from '../../base'
 import { TElementPlugin } from '../element'
+import { fieldOf } from './field'
 import type { TInputPluginEvents } from './types'
 
 export class TInputPlugin extends TBasePlugin<any, TInputPluginEvents> {
@@ -19,10 +20,8 @@ export class TInputPlugin extends TBasePlugin<any, TInputPluginEvents> {
 			if (!el) return
 
 			// Поле текста — `<input>` у Input, `<textarea>` у Textarea
-			const input = el.querySelector<HTMLInputElement | HTMLTextAreaElement>(
-				'input, textarea',
-			)
-			if (!input) return
+			const input = fieldOf(el)
+			if (!(input instanceof HTMLInputElement || input instanceof HTMLTextAreaElement)) return
 
 			this._input = input
 			input.addEventListener('input', this._onInput)
@@ -51,10 +50,10 @@ export class TInputPlugin extends TBasePlugin<any, TInputPluginEvents> {
 			return
 		}
 
-		const target = event.target as HTMLInputElement | HTMLTextAreaElement | null
-		if (!target) return
+		// Текст — из поля плагина: слушатель стоит на нём, и цель события — оно же
+		if (!this._input) return
 
-		this._instance.value = target.value
+		this._instance.value = this._input.value
 	}
 
 	private _removeInputListener(): void {

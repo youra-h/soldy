@@ -10,6 +10,7 @@ import { TBasePlugin } from '../../../base'
 import type { IPluginContext } from '../../../base'
 import { TElementPlugin } from '../../element'
 import { TCollectionBundlesPlugin } from '../../collection'
+import { fieldOf } from '../../input/field'
 import type { TSelectBackspacePluginEvents } from './types'
 
 /**
@@ -55,7 +56,9 @@ export class TSelectBackspacePlugin extends TBasePlugin<any, TSelectBackspacePlu
 		const elementPlugin = ctx.get(TElementPlugin)
 
 		elementPlugin?.events.on('ready', (element: Element) => {
-			this._input = element.querySelector<HTMLInputElement>('input')
+			const field = fieldOf(element)
+
+			this._input = field instanceof HTMLInputElement ? field : null
 			this._syncListener()
 		})
 
@@ -140,7 +143,8 @@ export class TSelectBackspacePlugin extends TBasePlugin<any, TSelectBackspacePlu
 			return
 		}
 
-		const value = (event.target as HTMLInputElement | null)?.value ?? ''
+		// Пусто ли поле — по тексту поля плагина: слушатель стоит на нём
+		const value = this._input?.value ?? ''
 
 		if (value) {
 			this._armed = false
