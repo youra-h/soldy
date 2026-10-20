@@ -9,7 +9,9 @@ Web Components.
 The adapter is wiring, not behavior: it connects a core model to Angular's signals and renders the
 markup — BEM classes `so-*` and `data-*` state attributes. Props, events and slots come from the
 component descriptor, so they match the other five adapters; only the spelling is Angular's: a
-component is a prefixed attribute on your own element (`<button so-button>`), events are outputs
+component is a prefixed attribute on your own element (`<button so-button>`, `<div so-input>`) —
+only the wrappers without a box of their own are elements (`<so-virtual>`, `<so-drag-and-drop>`) —
+events are outputs
 named `so` + the core name in camelCase (`show` → `soShow`, `show:before` → `soShowBefore`,
 `element:ready` → `soElementReady`), and slots are filled through the `slot` attribute. Every
 output has the prefix: Angular binds `(x)` both to an output and to the DOM event of that name, so
@@ -36,8 +38,25 @@ render on the server (`@angular/platform-server`) and hydrate in the browser
 npm install @soldy-ui/angular @soldy-ui/theme-oren @soldy-ui/icons-material
 ```
 
-`@angular/core` and `@angular/common` `^22.1` are peer dependencies. A theme and an icon pack are
-separate packages — pick the ones you want.
+`@angular/core`, `@angular/common` and `@angular/platform-browser` (Angular 21.1 or 22) are peer
+dependencies. A theme and an icon pack are separate packages — pick the ones you want.
+
+Add `provideAttrs()` to the providers of your application config — the one shared by the browser and
+the server:
+
+```ts
+import { ApplicationConfig } from '@angular/core'
+import { provideAttrs } from '@soldy-ui/angular'
+
+export const appConfig: ApplicationConfig = {
+  providers: [provideAttrs()],
+}
+```
+
+It lets the bindings and listeners you write on a component reach the node inside it they belong to
+(see the fields below). It is required: without it a field, a collection item, ListBox, Tabs and
+Table throw an error telling you to add it. Put it in the application config, not in the providers
+of a route or a component — there it cannot replace the renderer of the application.
 
 ## Usage
 
@@ -86,56 +105,60 @@ nothing written inside it.
 template: `<svg so-icon so-role-icon="close" aria_label="Close"></svg>`
 ```
 
-A field — Input, Textarea, CheckBox, Switch — is an element of its own (`<so-input>`,
-`<so-textarea>`, `<so-check-box>`, `<so-switch>`) with a native `<input>` (a `<textarea>`) inside,
-so your markup is split the way Vue and React split it: `class` and `style` stay on the field,
-while the static attributes you write on it (`autocomplete`, `data-*`) move to the `<input>`.
-Bindings such as `[attr.title]` and event listeners stay on the field element — Angular attaches
-them where you wrote them; events that bubble from the `<input>` (`keydown`) reach them, `focus`
-and `blur` do not. A field gets its visible name from a Label around it:
+A field — Input, Textarea, CheckBox, Switch — is written on a `div` or, for the inline CheckBox and
+Switch, a `span` (`<div so-input>`, `<div so-textarea>`, `<span so-check-box>`, `<span so-switch>`)
+and renders a native `<input>` (a `<textarea>`) inside, so your markup is split the way Vue and
+React split it: `class` and `style` stay on the field, while everything else you write on it goes
+to the `<input>` — static attributes (`autocomplete`, `data-*`), bindings (`[attr.aria-describedby]`,
+`[aria-label]`, `[title]`) and listeners (`(focus)`, `(blur)`), which is what `provideAttrs()` is
+for. A field is not an `<input>` itself — `<input so-input>` throws, since its template would have
+nowhere to render. A field gets its visible name from a Label around it:
 
 ```ts
-template: `<label so-label text="Remember me"><so-check-box (soChangeValue)="remember($event)" /></label>
-  <so-input clearable name="City" autocomplete="address-level2" />`
+template: `<label so-label text="Remember me"
+    ><span so-check-box (soChangeValue)="remember($event)"></span
+  ></label>
+  <div so-input clearable name="City" autocomplete="address-level2" (blur)="check()"></div>`
 ```
 
 Slots that hand data in are `<ng-template slot>` — the content next to an Input gets the field
 itself:
 
 ```ts
-template: `<so-input>
+template: `<div so-input>
   <ng-template slot="trailing" let-ctrl="ctrl">{{ ctrl.value?.length ?? 0 }}/40</ng-template>
-</so-input>`
+</div>`
 ```
 
-A collection — RadioGroup, ListBox, Tabs, Accordion — is an owner element with its items inside:
-your element for RadioGroup and Accordion (`<div so-radio-group>`, `<div so-accordion>`), an
-element of its own for ListBox and Tabs (`<so-list-box>`, `<so-tabs>`). The parts are components of
-their own, written as separate tags, since Angular has no dot syntax: `<so-list-box-item>`,
-`<so-tabs-item>`, `<so-accordion-item>`, `<label so-radio-group-item>` and the tab panel
-`<div so-tabs-content>`. Items written in the markup join the collection in document order, on the
-server too; without them the owner renders its `items`. Inputs of the collection — `items`,
-`engine`, `mode`, an item's `selected` or `active` — are inputs of the same element:
+A collection — RadioGroup, ListBox, Tabs, Accordion — is an owner element with its items inside
+(`<div so-radio-group>`, `<div so-list-box>`, `<div so-tabs>`, `<div so-accordion>`). The parts are
+components of their own, written as separate elements, since Angular has no dot syntax:
+`<div so-list-box-item>`, `<div so-tabs-item>`, `<div so-accordion-item>`,
+`<label so-radio-group-item>` and the tab panel `<div so-tabs-content>`. Items written in the markup
+join the collection in document order, on the server too; without them the owner renders its
+`items`. Inputs of the collection — `items`, `engine`, `mode`, an item's `selected` or `active` — are
+inputs of the same element:
 
 ```ts
-template: `<so-list-box mode="multiple" aria-label="Cities" (soChangeValue)="pick($event.newValue)">
-  <so-list-box-item value="a" text="Moscow" />
-  <so-list-box-item value="b" text="Kazan" selected />
-</so-list-box>
-<so-tabs>
-  <so-tabs-item value="a" text="General" active />
-  <so-tabs-item value="b" text="Mail" />
+template: `<div so-list-box mode="multiple" aria-label="Cities" (soChangeValue)="pick($event.newValue)">
+  <div so-list-box-item value="a" text="Moscow"></div>
+  <div so-list-box-item value="b" text="Kazan" selected></div>
+</div>
+<div so-tabs>
+  <div so-tabs-item value="a" text="General" active></div>
+  <div so-tabs-item value="b" text="Mail"></div>
   <div so-tabs-content slot="content" value="a">…</div>
   <div so-tabs-content slot="content" value="b">…</div>
-</so-tabs>`
+</div>`
 ```
 
 A list box and tabs split your markup like a field: `class` and `style` stay on the element — a
 frame around the list, next to the header and footer of a list box or the panels of tabs — while
-the static attributes you write on it (`aria-label`, `id`, `tabindex`, `data-*`) move to the list
-itself, `[role=listbox]` or `[role=tablist]`, which they name. An item splits your markup the same
-way: `class` and `style` stay on the item, the static attributes you write on it (`title`, `id`)
-move to its row — or to the `<input>` of a radio. Inside
+everything else you write on it (`aria-label`, `id`, `tabindex`, `data-*`, `[attr.x]`, `(keydown)`)
+goes to the list itself, `[role=listbox]` or `[role=tablist]`, which it names. An item splits your
+markup the same way: `class` and `style` stay on the item, the rest (`title`, `id`, `(click)`) goes
+to its row — or to the `<input>` of a radio. Animation and transition events (`(transitionend)`)
+stay on the element you wrote: that is where they happen. Inside
 a Label, write the radio on an inline tag, `<span so-radio-group-item>`: a `label` inside a `label`
 is not allowed. Items rendered from `items` get their slots from the owner — `item`, `item-leading`
 and the rest receive the item along with their scope:
@@ -154,18 +177,19 @@ is hidden the same way — the element is yours.
 
 A table takes its columns and rows as data only — `columns` and `items`, or an `engine` — and draws
 its headers (`th[so-table-column]`) and rows (`tr[so-table-row]`) itself: sorting, row selection
-with "select all", column resizing and reordering, a grid mode and a sticky head. The element of its
-own, `<so-table>`, is the table's scroll viewport, with the `<table>` inside it, and it splits your
-markup like a field: `class`, `style` and hiding stay on the viewport, while the static attributes
-you write on it (`aria-label`, `id`, `data-*`) move to the `<table>`, which they name, next to the
-classes and ARIA of the table. A header and a cell are filled through templates — a template given
-to the table renders in every header or cell — and an empty table through the `empty` slot:
+with "select all", column resizing and reordering, a grid mode and a sticky head. The element you
+write it on, `<div so-table>`, is the table's scroll viewport, with the `<table>` inside it, and it
+splits your markup like a field: `class`, `style` and hiding stay on the viewport, while everything
+else you write on it (`aria-label`, `id`, `data-*`, bindings and listeners) goes to the `<table>`,
+which it names, next to the classes and ARIA of the table. A header and a cell are filled through
+templates — a template given to the table renders in every header or cell — and an empty table
+through the `empty` slot:
 
 ```ts
-template: `<so-table [items]="rows" [columns]="columns" mode="multiple" aria-label="Staff" (soColumnResize)="save($event)">
+template: `<div so-table [items]="rows" [columns]="columns" mode="multiple" aria-label="Staff" (soColumnResize)="save($event)">
   <ng-template slot="cell" let-column="column" let-value="value">…</ng-template>
   <p slot="empty">No data</p>
-</so-table>`
+</div>`
 ```
 
 Without a `cell` template a value is rendered as the cell's text from the core (`cell.text`) — an
@@ -174,7 +198,7 @@ what is visible inside `<so-virtual>` — the same with a table; the wrapper has
 and `enabled` turns the window off:
 
 ```ts
-template: `<so-virtual><so-list-box [items]="cities" /></so-virtual>`
+template: `<so-virtual><div so-list-box [items]="cities"></div></so-virtual>`
 ```
 
 A panel over the page is a Frame. The element you write is the panel, and it is that element which
