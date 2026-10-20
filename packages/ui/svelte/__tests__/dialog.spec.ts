@@ -626,7 +626,7 @@ describe('окно поверх окна', () => {
  * У Vue здесь Select внутри окна. Правило то же и для поповера: его панель —
  * слой в `body` выше окна, соседка окна, а не его потомок.
  */
-describe('поповер внутри', () => {
+describe('Popover внутри', () => {
 	const popoverTrigger = () => node('.so-test-popover-trigger')
 	const popoverPanel = () => node('.so-popover__panel')
 
