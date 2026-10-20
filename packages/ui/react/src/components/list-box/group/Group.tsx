@@ -1,5 +1,5 @@
 import type { ElementType, ReactElement } from 'react'
-import { renderSlot, toAriaProps, toRootProps } from '../../../adapter'
+import { Elevate, renderSlot, toAriaProps, toRootProps } from '../../../adapter'
 import { useSetupListBoxGroup } from './setup.component'
 import type { ListBoxGroupProps } from './base.component'
 
@@ -13,9 +13,12 @@ import type { ListBoxGroupProps } from './base.component'
  * Подпись — текст `label`; нет подписи — нет и её узла, и ссылки на неё у
  * группы тоже нет. Набор подписи (`labelAria`) — её `id` и роль
  * `presentation`: в `listbox` ARIA пускает только опции и группы.
+ *
+ * Элементы — в слое лифта группы (`Elevate`): элемент, смонтированный внутри,
+ * прочтёт ключ группы при своей сборке и войдёт в её группу.
  */
 export function ListBoxGroup(props: ListBoxGroupProps): ReactElement | null {
-	const { ref, forwardProps, state } = useSetupListBoxGroup(props)
+	const { ref, forwardProps, state, layer } = useSetupListBoxGroup(props)
 
 	const { rendered, tag, label, labelAria, attrs, aria, dataset } = state
 
@@ -30,7 +33,7 @@ export function ListBoxGroup(props: ListBoxGroupProps): ReactElement | null {
 					{label}
 				</div>
 			) : null}
-			{renderSlot(props.children)}
+			<Elevate layer={layer}>{renderSlot(props.children)}</Elevate>
 		</Tag>
 	)
 }

@@ -54,7 +54,7 @@ function isFilter<TItem extends object>(ext: IExtension<TItem>): ext is IFilterE
 }
 
 function isGroup<TItem extends object>(ext: IExtension<TItem>): ext is IGroupExtension<TItem> {
-	return 'sections' in ext && 'groups' in ext && 'groupBy' in ext
+	return 'sections' in ext && 'groups' in ext && 'groupBy' in ext && 'register' in ext
 }
 
 function isMeta<TItem extends object>(ext: IExtension<TItem>): ext is IMetaExtension<TItem> {

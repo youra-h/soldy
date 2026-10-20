@@ -15,7 +15,7 @@ import { mount } from '@vue/test-utils'
 import { defineComponent, h, nextTick, ref, type VNode } from 'vue'
 import { Button, Menu } from '@soldy-ui/vue'
 import { createEngineMenu } from '@soldy-ui/core'
-import type { IMenuItem } from '@soldy-ui/core'
+import type { IMenuItem, TMenuCollection } from '@soldy-ui/core'
 import type { DescriptorSlots, MenuDescriptor } from '@soldy-ui/setup'
 
 const nextFrame = () => new Promise((resolve) => requestAnimationFrame(resolve))
@@ -622,9 +622,10 @@ describe('группа и разделитель', () => {
 /**
  * Группы из данных: метка группы — `_.group` в `items` или `groupBy`, порядок
  * и подписи — `groups`. Меню рисует секции показанного: группу с подписью —
- * `Menu.Group`, пункты без группы — последними, прямо в списке, между
- * секциями — разделитель. Стрелки ходят тем же порядком, что пункты стоят на
- * экране.
+ * `Menu.Group`, пункты без группы — прямо в списке, между секциями —
+ * разделитель. Группы из `groups` идут первыми, остальное — по месту, поэтому
+ * здесь, где заявлены все группы, пункты без группы — последними. Стрелки
+ * ходят тем же порядком, что пункты стоят на экране.
  */
 describe('группы из данных', () => {
 	/** В данных «Увеличить» и «Переименовать» стоят между пунктами «Правки». */
@@ -760,6 +761,111 @@ describe('группы из данных', () => {
 
 		expect(parts()).toEqual(['Изменить', 'Удалить'])
 		expect(panel().querySelector('.so-menu-group, .so-menu-separator')).toBeNull()
+	})
+})
+
+/**
+ * Группы разметки — `Menu.Group` и `Menu.RadioGroup` — входят в ту же
+ * группировку, что группы из данных: их ключ пункты внутри берут лифтом,
+ * подпись группа регистрирует в группировке, и `sections` описывают их.
+ * Пункт вне группы пишут и над группами («Новый» над «Правкой»): группы не
+ * заявлены в `groups`, и показанное идёт по месту — стрелки ходят, как пункты
+ * стоят.
+ */
+describe('группы разметки', () => {
+	/** «Новый» — над группой «Правка», «Закрыть» — под группой переключателей. */
+	async function renderMarkup(label = ref('Правка')): Promise<TMenuCollection> {
+		const engine = createEngineMenu()
+
+		await render(() =>
+			h(
+				Menu,
+				{ engine },
+				{
+					trigger,
+					default: () => [
+						h(Menu.Item, { value: 'new', text: 'Новый' }),
+						h(Menu.Group, { label: label.value }, () => [
+							h(Menu.Item, { value: 'cut', text: 'Вырезать' }),
+							h(Menu.Item, { value: 'copy', text: 'Копировать' }),
+						]),
+						h(Menu.Separator),
+						h(Menu.RadioGroup, { label: 'Сортировка', value: 'name' }, () => [
+							h(Menu.RadioItem, { value: 'name', text: 'По имени' }),
+							h(Menu.RadioItem, { value: 'date', text: 'По дате' }),
+						]),
+						h(Menu.Item, { value: 'close', text: 'Закрыть' }),
+					],
+				},
+			),
+		)
+
+		return engine
+	}
+
+	/** Секции коротко: подпись группы (`null` — без группы) и значения пунктов. */
+	const brief = (engine: TMenuCollection) =>
+		engine.extensions.group.sections.map(({ group, items }) => [
+			group === null ? null : (group.label ?? ''),
+			items.map((item) => item.value),
+		])
+
+	/** Клавиша на узле и кадр модели фокуса. */
+	async function press(target: HTMLElement, key: string): Promise<void> {
+		target.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true }))
+
+		await nextTick()
+		await nextFrame()
+	}
+
+	it('секции — группы разметки с подписью, пункты вне групп — на своих местах', async () => {
+		const engine = await renderMarkup()
+
+		expect(brief(engine)).toEqual([
+			[null, ['new']],
+			['Правка', ['cut', 'copy']],
+			['Сортировка', ['name', 'date']],
+			[null, ['close']],
+		])
+		expect(engine.extensions.group.groups).toEqual([])
+	})
+
+	it('стрелки ходят порядком экрана: «Новый» над группой — первым', async () => {
+		await renderMarkup()
+
+		triggerNode().focus()
+		await press(triggerNode(), 'ArrowDown')
+
+		const visited = [document.activeElement]
+
+		for (let step = 1; step < rows().length; step += 1) {
+			const current = document.activeElement
+
+			if (!(current instanceof HTMLElement)) throw new Error('фокус — не на строке')
+
+			await press(current, 'ArrowDown')
+			visited.push(document.activeElement)
+		}
+
+		expect(visited).toEqual(rows())
+		expect(rows().map((row) => row.textContent?.trim())).toEqual([
+			'Новый',
+			'Вырезать',
+			'Копировать',
+			'По имени',
+			'По дате',
+			'Закрыть',
+		])
+	})
+
+	it('смена подписи группы разметки — новая подпись секции', async () => {
+		const label = ref('Правка')
+		const engine = await renderMarkup(label)
+
+		label.value = 'Изменение'
+		await nextTick()
+
+		expect(brief(engine)[1]).toEqual(['Изменение', ['cut', 'copy']])
 	})
 })
 

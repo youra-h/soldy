@@ -18,7 +18,13 @@
 
 import { describe, it, expect, expectTypeOf, vi, afterEach } from 'vitest'
 import { flushSync, type ComponentProps, type Snippet } from 'svelte'
-import { createEngine, type IListBoxItem, type TListBoxValue } from '@soldy-ui/core'
+import {
+	createEngine,
+	createEngineListBox,
+	type IListBoxItem,
+	type TListBoxCollection,
+	type TListBoxValue,
+} from '@soldy-ui/core'
 import {
 	ListBox,
 	ListBoxGroup,
@@ -27,6 +33,7 @@ import {
 	type ListBoxProps,
 } from '@soldy-ui/svelte'
 import Harness from './ListBox.test.svelte'
+import Groups from './ListBoxGroups.test.svelte'
 import Slots from './ListBoxSlots.test.svelte'
 import { find, mount, nextFrame } from './mount'
 import { reactiveProps } from './reactive-props.svelte'
@@ -574,12 +581,13 @@ describe('отметка выбранного и слоты', () => {
 })
 
 /**
- * Группы из данных — как у Vue (`ui/vue/__tests__/list-groups.spec.ts`):
+ * Группы — как у Vue (`ui/vue/__tests__/list-groups.spec.ts`). Из данных:
  * секции нарисованного (`drawnSections`) — группа с подписью в
- * `ListBox.Group`, элементы без группы — последними, прямо в списке, между
- * секциями — немой разделитель. Стрелки ходят тем же порядком, что элементы
- * стоят на экране. Части стоят вплотную — пробелов текстом нет ни в списке,
- * ни в группе.
+ * `ListBox.Group`, элементы без группы — прямо в списке, между секциями —
+ * немой разделитель; группы из `groups` — первыми, остальное — по месту.
+ * Разметкой: `ListBox.Group` входит в ту же группировку, и секции описывают
+ * её. Стрелки ходят тем же порядком, что элементы стоят на экране. Части
+ * стоят вплотную — пробелов текстом нет ни в списке, ни в группе.
  */
 describe('группы', () => {
 	/** В данных «Морковь» стоит между фруктами, у «Воды» группы нет. */
@@ -687,6 +695,57 @@ describe('группы', () => {
 		mount(ListBox, { items: ITEMS })
 
 		expect(parts()).toEqual(['Первый', 'Второй', 'Третий'])
+	})
+
+	/** Секции коротко: подпись группы (`null` — без группы) и значения элементов. */
+	const brief = (engine: TListBoxCollection) =>
+		engine.extensions.group.sections.map(({ group, items }) => [
+			group === null ? null : (group.label ?? ''),
+			items.map((item) => item.value),
+		])
+
+	it('группа разметки — в группировке: секции с подписью, элементы вне группы — на местах', () => {
+		const engine = createEngineListBox()
+
+		mount(Groups, { engine })
+
+		expect(brief(engine)).toEqual([
+			[null, ['water']],
+			['Фрукты', ['apple', 'pear']],
+			[null, ['juice']],
+		])
+		expect(parts()).toEqual(['Вода', ['Фрукты', ['Яблоко', 'Груша']], 'Сок'])
+	})
+
+	it('стрелки по группе разметки — порядком экрана: «Вода» над группой — первой', async () => {
+		mount(Groups, { engine: createEngineListBox() })
+
+		await nextFrame()
+
+		const highlighted = () =>
+			rows()
+				.find((row) => row.getAttribute('data-highlighted') === 'true')
+				?.textContent?.trim()
+		const visited: unknown[] = []
+
+		for (let step = 0; step < 4; step += 1) {
+			press(list(), 'ArrowDown')
+			visited.push(highlighted())
+		}
+
+		expect(visited).toEqual(['Вода', 'Яблоко', 'Груша', 'Сок'])
+	})
+
+	it('смена подписи группы разметки — новая подпись секции', () => {
+		const engine = createEngineListBox()
+		const props = reactiveProps({ engine, label: 'Фрукты' })
+
+		mount(Groups, props)
+
+		props.label = 'Ягоды'
+		flushSync()
+
+		expect(brief(engine)[1]).toEqual(['Ягоды', ['apple', 'pear']])
 	})
 })
 

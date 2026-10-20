@@ -1,6 +1,6 @@
 import { Show, type JSX } from 'solid-js'
 import { Dynamic } from 'solid-js/web'
-import { createRootProps, renderSlot, rootTag } from '../../../adapter'
+import { Elevate, createRootProps, renderSlot, rootTag } from '../../../adapter'
 import { setupListBoxGroup } from './setup.component'
 import type { ListBoxGroupProps } from './base.component'
 
@@ -14,6 +14,10 @@ import type { ListBoxGroupProps } from './base.component'
  * Подпись — текст `label`; нет подписи — нет и её узла, и ссылки на неё у
  * группы тоже нет. Набор подписи (`labelAria`) — её `id` и роль
  * `presentation`: в `listbox` ARIA пускает только опции и группы.
+ *
+ * Элементы — в слое лифта группы (`Elevate`), и разворачиваются они там же:
+ * узлы слота Solid создаёт там, где его развернули, и элемент, собранный в
+ * теле группы, ключа группы не увидел бы.
  */
 export function ListBoxGroup(props: ListBoxGroupProps): JSX.Element {
 	const binding = setupListBoxGroup(props)
@@ -33,7 +37,7 @@ export function ListBoxGroup(props: ListBoxGroupProps): JSX.Element {
 						{state.label}
 					</div>
 				</Show>
-				{renderSlot(props.children)}
+				<Elevate layer={binding.layer}>{renderSlot(props.children)}</Elevate>
 			</Dynamic>
 		</Show>
 	)

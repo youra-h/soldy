@@ -447,6 +447,27 @@ describe('группы', () => {
 		expect(brief(draw.drawnSections)[0][1]).toBe('Парные')
 	})
 
+	it('подпись из регистрации группы — change:drawnSections без change:drawn', () => {
+		const { draw, group } = groupedKit(4)
+		const drawnChanged = vi.fn()
+		const sectionsChanged = vi.fn()
+
+		group.groupBy = byKind
+		draw.events.on('change:drawn', drawnChanged)
+		draw.events.on('change:drawnSections', sectionsChanged)
+
+		const release = group.register({ key: 'even', label: 'Чётные' })
+
+		expect(drawnChanged).not.toHaveBeenCalled()
+		expect(sectionsChanged).toHaveBeenCalledOnce()
+		expect(brief(draw.drawnSections).map(([, label]) => label)).toEqual([null, 'Чётные', null])
+
+		release()
+
+		expect(sectionsChanged).toHaveBeenCalledTimes(2)
+		expect(brief(draw.drawnSections)[1][1]).toBe('')
+	})
+
 	it('пересчёт без смены — тишина: снимок секций — тот же массив', () => {
 		const { draw, group } = groupedKit(4)
 		const sectionsChanged = vi.fn()
@@ -472,9 +493,14 @@ describe('группы', () => {
 
 		draw.events.on('change:drawn', () => {
 			order.push('drawn')
-			// Подписчик `change:drawn` видит уже новые секции и `virtual`
+			// Подписчик `change:drawn` видит уже новые секции и `virtual`:
+			// первый без группы, чётные к своему первому, остальные — по месту
 			expect(draw.virtual).toBe(false)
-			expect(draw.drawnSections).toHaveLength(2)
+			expect(draw.drawnSections.map((section) => section.key)).toEqual([
+				'free',
+				'group:even',
+				'free~1',
+			])
 		})
 		draw.events.on('change:drawnSections', () => order.push('drawnSections'))
 		draw.events.on('change:virtual', () => order.push('virtual'))
