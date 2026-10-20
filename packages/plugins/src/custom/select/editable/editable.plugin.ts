@@ -13,6 +13,7 @@ import { afterTransitions } from '../../../utils'
 import { TDismissPlugin } from '../../dismiss'
 import { TElementPlugin } from '../../element'
 import { TCollectionBundlesPlugin } from '../../collection'
+import { fieldOf } from '../../input/field'
 import { TSelectKeyboardPlugin } from '../keyboard'
 import type { TEditablePluginEvents } from './types'
 
@@ -43,9 +44,9 @@ import type { TEditablePluginEvents } from './types'
  *
  * Слушает `input` вложенного `<input>`, а не `keydown`: текст меняется не
  * только с клавиатуры, но и вставкой, автозаполнением, IME или очисткой поля
- * — всё это `input`-событие ловит одинаково. Узел ищется так же, как в
- * `TInputPlugin` (`el.querySelector('input')`) — разметку и адаптеры трогать
- * не пришлось.
+ * — всё это `input`-событие ловит одинаково. Узел — по общему правилу полей
+ * (`fieldOf`), так же, как у `TInputPlugin`, — разметку и адаптеры трогать не
+ * пришлось.
  *
  * **Возврат поля** — одна точка (`_returnField`): снимает набранное и отбор и
  * пишет текст возврата в `owner.field.value` — экземпляр `TInput`, которым
@@ -144,7 +145,9 @@ export class TEditablePlugin extends TBasePlugin<any, TEditablePluginEvents> {
 
 			if (!el) return
 
-			this._input = el.querySelector<HTMLInputElement>('input')
+			const field = fieldOf(el)
+
+			this._input = field instanceof HTMLInputElement ? field : null
 			this._syncListener()
 			this._syncFocusListener()
 		})
@@ -248,14 +251,14 @@ export class TEditablePlugin extends TBasePlugin<any, TEditablePluginEvents> {
 		this._listening = false
 	}
 
-	private _handleInput(event: Event): void {
+	private _handleInput(): void {
 		// Снова печатают, пока закрытая панель догасала: отбор теперь пишет
 		// ввод. Отменить ожидание — до записи: иначе открытие панели из
 		// `_filter` и `_highlight` сняло бы только что набранный отбор
 		this._cancelFilterReset()
 
-		const target = event.target as HTMLInputElement | null
-		const value = target?.value ?? ''
+		// Набранное — текст поля плагина: слушатель стоит на нём
+		const value = this._input?.value ?? ''
 
 		this._setQuery(value)
 

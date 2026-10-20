@@ -4,6 +4,7 @@ import type { IPluginContext } from '../../../base'
 import { smoothScrollBehavior } from '../../../motion'
 import { TElementPlugin } from '../../element'
 import { TCollectionElements } from '../../collection'
+import { fieldOf } from '../../input/field'
 import { TListNavigationPlugin } from '../../list/navigation'
 import type { TListEdge } from '../../list/navigation'
 import { TTypeahead, itemText } from '../../list/typeahead'
@@ -71,11 +72,14 @@ export class TSelectKeyboardPlugin
 		this._elements = ctx.get(TCollectionElements) ?? null
 		this._list = ctx.getInstance<IList>()
 
-		// Поле ищется так же, как в `TEditablePlugin` и `TSelectBackspacePlugin`
+		// Поле — по общему правилу полей (`fieldOf`), так же, как у
+		// `TEditablePlugin` и `TSelectBackspacePlugin`
 		const elementPlugin = ctx.get(TElementPlugin)
 
 		elementPlugin?.events.on('ready', (element: Element) => {
-			this._input = element.querySelector('input')
+			const field = fieldOf(element)
+
+			this._input = field instanceof HTMLInputElement ? field : null
 		})
 		elementPlugin?.events.on('removed', () => {
 			this._input = null

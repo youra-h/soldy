@@ -3,6 +3,7 @@ import { TBasePlugin } from '../../../base'
 import type { IPluginContext } from '../../../base'
 import { TElementPlugin } from '../../element'
 import { TCollectionBundlesPlugin, TCollectionElements } from '../../collection'
+import { fieldOf } from '../../input/field'
 import type { IDomEventTarget } from '../../../utils'
 
 /**
@@ -33,8 +34,8 @@ import type { IDomEventTarget } from '../../../utils'
  * без записи повторный клик по этому радио `onChange` не дал бы.
  *
  * Радио — из коллекции группы (`engine:bound`), его узел — у реестра узлов
- * (`TCollectionElements`), поле — первый `input` в узле. Радио без узла
- * пропускается: поля, которое надо вернуть, у него нет.
+ * (`TCollectionElements`), поле — по общему правилу полей (`fieldOf`) в
+ * узле. Радио без узла пропускается: поля, которое надо вернуть, у него нет.
  */
 export class TRadioGroupCheckedPlugin extends TBasePlugin {
 	/** Корень группы: на нём слушатель. */
@@ -91,9 +92,10 @@ export class TRadioGroupCheckedPlugin extends TBasePlugin {
 		const activation = engine.extensions.activation
 
 		for (const item of engine.extensions.batch.items) {
-			const input = this._elements?.getElementByItem(item)?.querySelector('input')
+			const element = this._elements?.getElementByItem(item)
+			const field = element ? fieldOf(element) : null
 
-			if (input) input.checked = activation.isActive(item)
+			if (field instanceof HTMLInputElement) field.checked = activation.isActive(item)
 		}
 	}
 }

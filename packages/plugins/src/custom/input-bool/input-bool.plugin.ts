@@ -2,6 +2,7 @@ import type { ICheckBox } from '@soldy-ui/core'
 import { TBasePlugin } from '../../base'
 import type { IPluginContext } from '../../base'
 import { TElementPlugin } from '../element'
+import { fieldOf } from '../input/field'
 import type { TInputBoolPluginEvents } from './types'
 
 export class TInputBoolPlugin extends TBasePlugin<any, TInputBoolPluginEvents> {
@@ -19,8 +20,8 @@ export class TInputBoolPlugin extends TBasePlugin<any, TInputBoolPluginEvents> {
 			const el = elementPlugin.element
 			if (!el) return
 
-			const input = el.querySelector<HTMLInputElement>('input')
-			if (!input) return
+			const input = fieldOf(el)
+			if (!(input instanceof HTMLInputElement)) return
 
 			this._input = input
 			input.addEventListener('click', this._onClick)

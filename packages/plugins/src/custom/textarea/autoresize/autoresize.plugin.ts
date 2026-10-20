@@ -3,6 +3,7 @@ import type { ITextarea } from '@soldy-ui/core'
 import { TBasePlugin } from '../../../base'
 import type { IPluginContext } from '../../../base'
 import { TElementPlugin } from '../../element'
+import { fieldOf } from '../../input/field'
 import type { TTextareaAutoresizePluginEvents } from './types'
 
 /** Число из вычисленного стиля в px; не число (`normal`) — 0. */
@@ -126,9 +127,9 @@ export class TTextareaAutoresizePlugin extends TBasePlugin<
 	private _attach(root: Element): void {
 		this._detach()
 
-		const field = root.querySelector('textarea')
+		const field = fieldOf(root)
 
-		if (!field) return
+		if (!(field instanceof HTMLTextAreaElement)) return
 
 		this._field = field
 		field.addEventListener('input', this._onInput)

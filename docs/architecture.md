@@ -1495,9 +1495,9 @@ AGENTS.md, «Клик и клавиатура — режим выбирает с
 
 Реакцию на ввод несёт `TEditablePlugin` (`plugins/src/custom/select/editable/`,
 namespace `editable`), подключённый после `TSelectKeyboardPlugin`: слушает
-`input` вложенного `<input>` (узел ищется как в `TInputPlugin`,
-`el.querySelector('input')`), и только пока `editable` включён, а режим не
-`none`. В `search` набранное уходит в публичный
+`input` вложенного `<input>` (узел — по общему правилу полей `fieldOf`, как у
+`TInputPlugin`), и только пока `editable` включён, а режим не `none`. В
+`search` набранное уходит в публичный
 `TSelectKeyboardPlugin.highlightByText(needle)` — подсветка остаётся у
 клавиатуры, но ищется подстрока в любом месте текста, и правила набора по
 буквам сюда не идут: источник другой (вставка, IME, автозаполнение,
