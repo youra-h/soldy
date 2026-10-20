@@ -53,7 +53,7 @@ export class TPlainExtension<TItem extends object>
 		this._ctx.execute(new TUpdateCommand(item, changes))
 	}
 
-	move(item: TItem, newIndex: number, oldIndex?: number): void {
-		this._ctx.execute(new TMoveCommand(item, newIndex, oldIndex))
+	move(item: TItem, newIndex: number): void {
+		this._ctx.execute(new TMoveCommand(item, newIndex))
 	}
 }

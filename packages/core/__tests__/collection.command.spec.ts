@@ -8,6 +8,7 @@ import {
 	TClearCommand,
 	TEvented,
 	TCollectionStorageDriver,
+	createEngine,
 } from '@soldy-ui/core'
 import type { TCollectionStorageDriverEvents, ICommandContext } from '@soldy-ui/core'
 
@@ -355,33 +356,22 @@ describe('TUpdateCommand', () => {
 })
 
 describe('TMoveCommand', () => {
-	it('apply: перемещает элемент по старому и новому индексу', () => {
+	it('apply: перемещает элемент с его места в составе на новое', () => {
 		const storage = new TArrayStorage<Item>()
 		const a: Item = { id: 1, name: 'a' }
 		const b: Item = { id: 2, name: 'b' }
+		const c: Item = { id: 3, name: 'c' }
 
 		storage.insert(a, 0)
 		storage.insert(b, 1)
+		storage.insert(c, 2)
 
-		new TMoveCommand(a, 1, 0).apply(createContext(storage))
+		new TMoveCommand(b, 2).apply(createContext(storage))
 
-		expect(storage.items).toEqual([b, a])
+		expect(storage.items).toEqual([a, c, b])
 	})
 
-	it('apply: auto-resolve старого индекса если не указан', () => {
-		const storage = new TArrayStorage<Item>()
-		const a: Item = { id: 1, name: 'a' }
-		const b: Item = { id: 2, name: 'b' }
-
-		storage.insert(a, 0)
-		storage.insert(b, 1)
-
-		new TMoveCommand(a, 1).apply(createContext(storage))
-
-		expect(storage.items).toEqual([b, a])
-	})
-
-	it('emitEvents: эмитит item:moved', () => {
+	it('emitEvents: не эмитит item:moved на то же место', () => {
 		const storage = new TArrayStorage<Item>()
 		const events = createEvents()
 		const moved = vi.fn()
@@ -393,12 +383,12 @@ describe('TMoveCommand', () => {
 		storage.insert(a, 0)
 
 		const ctx = createContext(storage, events)
-		const cmd = new TMoveCommand(a, 0, 0)
+		const cmd = new TMoveCommand(a, 0)
 
 		cmd.apply(ctx)
 		cmd.emitEvents(ctx)
 
-		expect(moved).not.toHaveBeenCalled() // oldIndex === newIndex — не эмитится
+		expect(moved).not.toHaveBeenCalled()
 	})
 
 	it('emitEvents: эмитит item:moved при реальном перемещении', () => {
@@ -415,7 +405,7 @@ describe('TMoveCommand', () => {
 		storage.insert(b, 1)
 
 		const ctx = createContext(storage, events)
-		const cmd = new TMoveCommand(a, 1, 0)
+		const cmd = new TMoveCommand(a, 1)
 
 		cmd.apply(ctx)
 		cmd.emitEvents(ctx)
@@ -435,11 +425,11 @@ describe('TMoveCommand', () => {
 		storage.insert(a, 0)
 		storage.insert(b, 1)
 
-		const noop = new TMoveCommand(a, 0, 0)
+		const noop = new TMoveCommand(a, 0)
 		noop.apply(createContext(storage))
 		expect(noop.changed).toBe(false)
 
-		const moved = new TMoveCommand(a, 1, 0)
+		const moved = new TMoveCommand(a, 1)
 		moved.apply(createContext(storage))
 		expect(moved.changed).toBe(true)
 	})
@@ -460,7 +450,7 @@ describe('TMoveCommand', () => {
 			event.newIndex = 2
 		})
 
-		const command = new TMoveCommand(a, 1, 0)
+		const command = new TMoveCommand(a, 1)
 		const ctx = createContext(storage, events)
 
 		command.apply(ctx)
@@ -483,7 +473,7 @@ describe('TMoveCommand', () => {
 		events.on('item:move:before', (event) => event.preventDefault())
 		events.on('item:moved', moved)
 
-		const command = new TMoveCommand(a, 1, 0)
+		const command = new TMoveCommand(a, 1)
 		const ctx = createContext(storage, events)
 
 		command.apply(ctx)
@@ -510,7 +500,7 @@ describe('TMoveCommand', () => {
 		})
 		events.on('item:moved', moved)
 
-		const command = new TMoveCommand(a, 1, 0)
+		const command = new TMoveCommand(a, 1)
 		const ctx = createContext(storage, events)
 
 		command.apply(ctx)
@@ -519,6 +509,111 @@ describe('TMoveCommand', () => {
 		expect(command.changed).toBe(false)
 		expect(storage.items).toEqual([a, b])
 		expect(moved).not.toHaveBeenCalled()
+	})
+})
+
+/**
+ * Хранилище место за концом молча пропускает, а дробное и не число усекает
+ * до целого. Команда, которая считала такое перемещение сделанным, слала
+ * `item:moved` и `change:items` о том, чего не было, или о другом месте.
+ */
+describe('TMoveCommand — место вне состава', () => {
+	/** За концом — и ровно `length`, — отрицательное, дробное и не число. */
+	const outside = [3, 10, -1, 1.5, Number.NaN]
+
+	function createFilled() {
+		const driver = new TCollectionStorageDriver<Item>(new TArrayStorage<Item>())
+		const a: Item = { id: 1, name: 'a' }
+		const b: Item = { id: 2, name: 'b' }
+		const c: Item = { id: 3, name: 'c' }
+
+		driver.execute(new TInsertCommand<Item>(a, 0))
+		driver.execute(new TInsertCommand<Item>(b, 1))
+		driver.execute(new TInsertCommand<Item>(c, 2))
+
+		const moved = vi.fn()
+		const changed = vi.fn()
+
+		driver.events.on('item:moved', moved)
+		driver.events.on('change:items', changed)
+
+		return { driver, a, b, c, moved, changed }
+	}
+
+	it.each(outside)('из вызова (%s): состав прежний, ни item:moved, ни change:items', (place) => {
+		const { driver, a, b, c, moved, changed } = createFilled()
+		const command = new TMoveCommand(a, place)
+
+		driver.execute(command)
+
+		expect(command.changed).toBe(false)
+		expect(driver.valueOf()).toEqual([a, b, c])
+		expect(moved).not.toHaveBeenCalled()
+		expect(changed).not.toHaveBeenCalled()
+	})
+
+	it.each(outside)('из хука (%s): состав прежний, ни item:moved, ни change:items', (place) => {
+		const { driver, a, b, c, moved, changed } = createFilled()
+
+		driver.events.on('item:move:before', (event) => {
+			event.newIndex = place
+		})
+
+		const command = new TMoveCommand(a, 1)
+
+		driver.execute(command)
+
+		expect(command.changed).toBe(false)
+		expect(driver.valueOf()).toEqual([a, b, c])
+		expect(moved).not.toHaveBeenCalled()
+		expect(changed).not.toHaveBeenCalled()
+	})
+
+	/** Место проверяется после хука: место из вызова хук вправе вернуть в состав. */
+	it('хук вернул место в состав — элемент перемещается', () => {
+		const { driver, a, b, c, moved, changed } = createFilled()
+
+		driver.events.on('item:move:before', (event) => {
+			event.newIndex = 2
+		})
+		driver.execute(new TMoveCommand(a, 10))
+
+		expect(driver.valueOf()).toEqual([b, c, a])
+		expect(moved).toHaveBeenCalledOnce()
+		expect(changed).toHaveBeenCalledOnce()
+	})
+
+	/**
+	 * Хук вставил элемент перед перемещаемым: на старом месте `b` теперь `a`,
+	 * и хранилище переставило бы его, а `item:moved` назвало бы `b`.
+	 */
+	it('хук сдвинул состав — чужой элемент не переставляется', () => {
+		const { driver, a, b, c, moved, changed } = createFilled()
+		const d: Item = { id: 4, name: 'd' }
+
+		driver.events.on('item:move:before', () => driver.execute(new TInsertCommand<Item>(d, 0)))
+		driver.execute(new TMoveCommand(b, 2))
+
+		expect(driver.valueOf()).toEqual([d, a, b, c])
+		expect(moved).not.toHaveBeenCalled()
+		// Одно — от вставки
+		expect(changed).toHaveBeenCalledOnce()
+	})
+
+	it('через движок: plain.move за конец ничего не сообщает', () => {
+		const engine = createEngine({ items: [{ uid: 'a' }, { uid: 'b' }, { uid: 'c' }] })
+		const { batch, plain } = engine.extensions
+		const items = batch.items
+		const moved = vi.fn()
+		const changed = vi.fn()
+
+		plain.events.on('item:moved', moved)
+		plain.events.on('change:items', changed)
+		plain.move(items[0], 10)
+
+		expect(batch.items).toEqual(items)
+		expect(moved).not.toHaveBeenCalled()
+		expect(changed).not.toHaveBeenCalled()
 	})
 })
 
@@ -698,7 +793,7 @@ describe('driver.execute — preventDefault в before-хуке гасит ком
 		driver.events.on('change:items', changeItems)
 		driver.events.on('item:move:before', (e) => e.preventDefault())
 
-		driver.execute(new TMoveCommand(a, 1, 0))
+		driver.execute(new TMoveCommand(a, 1))
 
 		expect(driver.valueOf()).toEqual([a, b])
 		expect(changeItems).not.toHaveBeenCalled()

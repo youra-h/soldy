@@ -56,7 +56,7 @@ export default class TDragAndDrop
 
 		if (before === -1) return false
 
-		plainOf<object>(engine)?.move(item, newIndex, before)
+		plainOf<object>(engine)?.move(item, newIndex)
 
 		const after = placeOf(engine, item)
 

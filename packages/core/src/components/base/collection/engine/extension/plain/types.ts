@@ -33,6 +33,9 @@ export interface IPlainExtension<TItem extends object = any> extends IExtension<
 	/** Обновить элемент: записать ему `changes`. */
 	update(item: TItem, changes: Partial<TItem>): void
 
-	/** Переместить элемент на место `newIndex`. */
-	move(item: TItem, newIndex: number, oldIndex?: number): void
+	/**
+	 * Переместить элемент на место `newIndex`. Старое место — из состава;
+	 * место вне состава и элемент не из коллекции — no-op без событий.
+	 */
+	move(item: TItem, newIndex: number): void
 }
