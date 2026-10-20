@@ -1,5 +1,7 @@
 import { defineConfig } from 'vite'
 import path from 'node:path'
+// Расширение обязательно: с ним конфиг читает и нативный загрузчик Vite
+import { tailwind } from './tailwind-postcss.ts'
 
 /**
  * Сборка стилей темы: SCSS-исходники компилируются в единый dist/index.css.
@@ -12,8 +14,10 @@ import path from 'node:path'
  * `__tests__/package-build.spec.ts`.
  *
  * В SCSS-вход инжектируется @import base.css (tailwind + токены + утилиты),
- * чтобы @apply в компонентных стилях корректно развернулся через
- * @tailwindcss/postcss.
+ * чтобы @apply в компонентных стилях развернул Tailwind — шаг PostCSS темы
+ * (`tailwind-postcss.ts`): это `@tailwindcss/postcss` без полифила
+ * `color-mix()`. Конфиг PostCSS встроен сюда, и файл `postcss.config.*` Vite
+ * при нём не ищет.
  */
 export default defineConfig({
 	build: {
@@ -27,6 +31,9 @@ export default defineConfig({
 		},
 	},
 	css: {
+		postcss: {
+			plugins: [tailwind()],
+		},
 		preprocessorOptions: {
 			scss: {
 				additionalData: (content: string) => {
