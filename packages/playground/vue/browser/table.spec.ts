@@ -37,7 +37,15 @@ import { Button, Table } from '@soldy-ui/vue'
 
 import { find, opacity, outlined, pixel, settled, shift, style, systemColor } from './colors'
 import { forcedColors } from './media'
-import { transitionRuns, transitioning } from './transitions'
+import {
+	delayOf,
+	pausedPseudoTransition,
+	pseudoSettled,
+	pseudoTransitionRuns,
+	transitionEvents,
+	transitionRuns,
+	transitioning,
+} from './transitions'
 
 import '@soldy-ui/theme-oren'
 
@@ -2320,6 +2328,11 @@ describe('ручка ширины', () => {
 	 * Указатель, который прошёл через полосу мимоходом, линию не зажигает:
 	 * она ждёт, задержится ли он. Курсор ручки при этом встаёт сразу. Ручку
 	 * взяли — ждать нечего, и линия встаёт без задержки и под указателем.
+	 *
+	 * Мимоходом — по переходу линии, а не по часам: ответ наведения идёт кругом
+	 * RPC и под нагрузкой приходит позже задержки, когда линия уже горит.
+	 * Переход ловит слушатель, заведённый до наведения, и ставит на паузу, а
+	 * мгновение ухода выбирает тест — последний миг задержки.
 	 */
 	it('линия ждёт задержки указателя: мимоходом не моргает; взяли ручку — сразу', async () => {
 		await mount(resizeEngine(ALL), PLACE)
@@ -2328,27 +2341,50 @@ describe('ручка ширины', () => {
 		const line = () => style(resizer, '::before')
 		const box = resizer.getBoundingClientRect()
 		const y = box.top + box.height / 2
+		const on = box.left + box.width / 2
+		const away = on + 60
 
-		await pointAt(box.left + box.width / 2, y)
+		// Сначала — мимо полосы, и линия в покое: указатель прошлого теста стоит
+		// там, где у новой таблицы полоса, и зажёг бы линию раньше наведения
+		await pointAt(away, y)
+		await pseudoSettled(resizer, '::before')
+
+		expect(line().opacity).toBe('0')
+
+		const transition = await pausedPseudoTransition(resizer, '::before', 'opacity', () =>
+			pointAt(on, y),
+		)
 
 		expect(style(resizer).cursor).toBe('col-resize')
+
+		const delay = delayOf(transition)
+
+		expect(delay, 'линия ждёт указателя').toBeGreaterThan(0)
+
+		// Последний миг задержки — линии ещё нет
+		transition.currentTime = delay - 1
+
 		expect(line().opacity).toBe('0')
 
-		// Ушёл раньше задержки — линия так и не появилась
-		await pointAt(box.left + box.width / 2 + 60, y)
-		await new Promise((resolve) => setTimeout(resolve, 400))
+		// Ушёл в этот миг — линия так и не появилась: переход отменён, а не
+		// доигран, и нового перехода прозрачности нет — гаснуть линии не из чего
+		const runs = pseudoTransitionRuns(resizer, '::before')
 
-		expect(line().opacity).toBe('0')
+		await pointAt(away, y)
+		await transitionEvents()
+
+		expect(transition.playState, 'переход линии отменён').toBe('idle')
+		expect(runs, 'гаснуть линии не из чего').not.toContain('opacity')
 
 		// Задержался — появилась
-		await pointAt(box.left + box.width / 2, y)
+		await pointAt(on, y)
 		await expect.poll(() => line().opacity).toBe('1')
 
-		await pointAt(box.left + box.width / 2 + 60, y)
+		await pointAt(away, y)
 		await expect.poll(() => line().opacity).toBe('0')
 
 		// Нажали на полосу сразу, не дожидаясь, — без задержки
-		await pointAt(box.left + box.width / 2, y)
+		await pointAt(on, y)
 
 		expect(line().transitionDelay).not.toBe('0s')
 

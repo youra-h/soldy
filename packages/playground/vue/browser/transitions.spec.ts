@@ -1,19 +1,26 @@
 /**
- * Сторож помощника `whileLeaving` (`transitions.ts`) — без темы: узел со своим
- * переходом прозрачности и `display` (`allow-discrete`) в инлайновом стиле и с
- * `data-open`, как у слоя.
+ * Сторож помощников `whileLeaving` и `pausedPseudoTransition`
+ * (`transitions.ts`) — без темы.
  *
- * Помощник смотрит кадры с начала действия, а не после него: ответ
+ * Помощники смотрят переход с начала действия, а не после него: ответ
  * `userEvent` и команд идёт кругом RPC и под нагрузкой приходит позже, чем
- * узел исчезает. Здесь действие так и устроено — закрывает узел и
- * возвращается, когда узел давно исчез, — и кадры ухода помощник всё равно
- * застаёт. Кадры до закрытия в `check` не попадают, а ошибку `check` помощник
- * бросает только после конца действия.
+ * узел исчезает или переход доигрывает. Здесь действие так и устроено —
+ * возвращается втрое позже перехода, — и помощник всё равно его застаёт.
+ *
+ * `whileLeaving` — на узле со своим переходом прозрачности и `display`
+ * (`allow-discrete`) в инлайновом стиле и с `data-open`, как у слоя: кадры
+ * ухода застаны, кадры до закрытия в `check` не попадают, а ошибку `check`
+ * помощник бросает только после конца действия.
+ *
+ * `pausedPseudoTransition` — на узле, у которого признак зажигает `::before`
+ * переходом с задержкой, а сам узел — переходом без неё: переход пойман на
+ * паузе недоигранным, и он псевдоэлемента, а не узла. Не завело действие
+ * перехода — ошибка сразу после действия, а не таймаут теста.
  */
 
 import { describe, it, expect, afterEach } from 'vitest'
 
-import { whileLeaving } from './transitions'
+import { delayOf, pausedPseudoTransition, whileLeaving } from './transitions'
 
 /** Длительность перехода закрытия у узла, мс. */
 const DURATION = 100
@@ -59,8 +66,49 @@ const lateClose = (node: HTMLElement) => async (): Promise<void> => {
 	expect(getComputedStyle(node).display, 'к концу действия узел исчез').toBe('none')
 }
 
+/** Задержка и длительность перехода у `::before`, мс. */
+const PSEUDO_DELAY = 100
+const PSEUDO_DURATION = 100
+
+/**
+ * Узел, у которого признак `data-on` зажигает `::before` переходом с
+ * задержкой, а сам узел — переходом без неё. Правила — листом стилей внутри
+ * узла: у псевдоэлемента инлайнового стиля нет, а уходит лист вместе с узлом.
+ * Стиль узла посчитан до возврата — без прежнего стиля переходу не с чего
+ * начаться.
+ */
+const mountPseudo = (): HTMLElement => {
+	const sheet = document.createElement('style')
+	const node = document.createElement('div')
+
+	sheet.textContent = `
+		.so-test-pseudo { opacity: 0.5; transition: opacity ${PSEUDO_DURATION}ms }
+		.so-test-pseudo[data-on='true'] { opacity: 1 }
+		.so-test-pseudo::before {
+			content: '';
+			display: block;
+			inline-size: 10px;
+			block-size: 10px;
+			opacity: 0;
+			transition: opacity ${PSEUDO_DURATION}ms ${PSEUDO_DELAY}ms;
+		}
+		.so-test-pseudo[data-on='true']::before { opacity: 1 }
+	`
+	node.className = 'so-test-pseudo'
+	node.append(sheet)
+	document.body.append(node)
+
+	expect(getComputedStyle(node, '::before').opacity, 'до признака псевдоэлемента не видно').toBe(
+		'0',
+	)
+
+	return node
+}
+
 afterEach(() => {
-	for (const node of document.querySelectorAll('.so-test-leaving')) node.remove()
+	for (const node of document.querySelectorAll('.so-test-leaving, .so-test-pseudo')) {
+		node.remove()
+	}
 })
 
 describe('whileLeaving', () => {
@@ -126,5 +174,29 @@ describe('whileLeaving', () => {
 		)
 
 		expect(outcome).toEqual({ error: new Error('проверка не прошла'), finished: true })
+	})
+})
+
+describe('pausedPseudoTransition', () => {
+	it('ответ действия позже перехода: переход псевдоэлемента пойман на паузе недоигранным', async () => {
+		const node = mountPseudo()
+		const transition = await pausedPseudoTransition(node, '::before', 'opacity', async () => {
+			node.dataset.on = 'true'
+			await delay((PSEUDO_DELAY + PSEUDO_DURATION) * 3)
+		})
+
+		// Псевдоэлемента, а не узла: у перехода узла задержки нет
+		expect(delayOf(transition)).toBe(PSEUDO_DELAY)
+		expect(transition.playState).toBe('paused')
+		// Без паузы к концу действия переход давно доиграл бы
+		expect(Number(transition.currentTime)).toBeLessThan(PSEUDO_DELAY + PSEUDO_DURATION)
+	})
+
+	it('действие перехода не завело — ошибка сразу после действия, а не таймаут', async () => {
+		const node = mountPseudo()
+
+		await expect(
+			pausedPseudoTransition(node, '::before', 'opacity', async () => {}),
+		).rejects.toThrow('::before opacity: перехода не было')
 	})
 })
