@@ -8,9 +8,12 @@
  * Меню обязано открывать страницу. Дымовой тест монтировал страницы напрямую,
  * минуя меню, и потому пропустил ровно то, что видно с первого клика:
  * `ListBox` был привязан через `value` и `@update:value` — пропа и события,
- * которых у него нет. Он коллекция, а не контрол значения: выбор живёт в
- * `selected` элементов. Проверка идёт через настоящее нажатие, а не через
- * вызов обработчика: беда была именно в проводке, а не в логике перехода.
+ * которых у него тогда не было. Проверка идёт через настоящее нажатие, а не
+ * через вызов обработчика: беда была именно в проводке, а не в логике
+ * перехода.
+ *
+ * Меню — один список с группами реестра (`COMPONENT_GROUPS`): пункты на экране
+ * идут порядком `menuOf`, у каждой группы — подпись, «Слои» — последними.
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
@@ -18,7 +21,8 @@ import { mount, flushPromises, type VueWrapper } from '@vue/test-utils'
 import { nextTick } from 'vue'
 import { setIcons } from '@soldy-ui/setup'
 import * as material from '@soldy-ui/icons-material'
-import { layersOf, showcaseOf } from '../src/catalog'
+import { COMPONENT_GROUPS } from '@soldy-ui/playground-shared'
+import { menuOf, showcaseOf } from '../src/catalog'
 import { DEFAULT_FRAMEWORK, FRAMEWORKS, hostOf, loadHost } from '../src/hosts'
 import { router } from '../src/router'
 import AppSidebar from '../src/components/AppSidebar.vue'
@@ -192,53 +196,128 @@ describe('меню', () => {
 		return wrapper
 	}
 
+	/** Группы списка по порядку: подпись и тексты её пунктов. */
+	function sectionsOf(wrapper: VueWrapper): [string, string[]][] {
+		return wrapper
+			.findAll('.so-list-box-group')
+			.map((group) => [
+				group.get('.so-list-box-group__label').text(),
+				group.findAll('.so-list-box-item').map((item) => item.text()),
+			])
+	}
+
+	/** Отмеченные пункты — текстами. */
+	function selectedOf(wrapper: VueWrapper): string[] {
+		return wrapper.findAll('[role="option"][aria-selected="true"]').map((item) => item.text())
+	}
+
 	it.each(FRAMEWORKS.map(({ id }) => id))(
-		'%s: показывает все компоненты и слои, которые умеет хост',
+		'%s: один список — все компоненты и слои хоста, группами реестра',
 		async (framework) => {
 			await router.push(`/${framework}`)
 
 			const wrapper = await mountSidebar()
-			const host = hostOf(framework)
+			const menu = menuOf(hostOf(framework))
 
-			expect(wrapper.findAll('.so-list-box-item')).toHaveLength(
-				showcaseOf(host).length + layersOf(host).length,
+			// Список один, и имя у него своё: заголовков над ним больше нет
+			expect(wrapper.findAll('[role="listbox"]')).toHaveLength(1)
+			expect(wrapper.get('[role="listbox"]').attributes('aria-label')).toBe('Компоненты')
+
+			// Пункты на экране — порядком данных меню
+			expect(wrapper.findAll('.so-list-box-item').map((item) => item.text())).toEqual(
+				menu.map((entry) => entry.label),
 			)
+
+			// Группы — непустые группы хоста порядком реестра, у каждой подпись и
+			// все её пункты; пунктов без группы нет
+			expect(sectionsOf(wrapper)).toEqual(
+				Object.entries(COMPONENT_GROUPS)
+					.map(([key, label]): [string, string[]] => [
+						label,
+						menu.filter((entry) => entry.group === key).map((entry) => entry.label),
+					])
+					.filter(([, labels]) => labels.length > 0),
+			)
+
+			// Внутри группы — по алфавиту
+			for (const [, labels] of sectionsOf(wrapper)) {
+				expect(labels).toEqual([...labels].sort((a, b) => a.localeCompare(b)))
+			}
 
 			wrapper.unmount()
 		},
 	)
+
+	/** Слои наследования — не второй список, а последняя группа того же. */
+	it('«Слои» — последняя группа, на витрину слои не попадают', async () => {
+		await router.push('/vue')
+
+		const wrapper = await mountSidebar()
+		const host = hostOf('vue')
+		const layers = menuOf(host).filter((entry) => entry.group === 'layers')
+
+		expect(layers.length).toBeGreaterThan(0)
+		expect(sectionsOf(wrapper).at(-1)).toEqual([
+			COMPONENT_GROUPS.layers,
+			layers.map((entry) => entry.label),
+		])
+		expect(showcaseOf(host).filter((entry) => layers.includes(entry))).toEqual([])
+		expect(showcaseOf(host)).toHaveLength(menuOf(host).length - layers.length)
+
+		wrapper.unmount()
+	})
 
 	it('нажатие на пункт открывает страницу компонента того же фреймворка', async () => {
 		await router.push('/react')
 
 		const wrapper = await clickItem(0)
 
-		expect(router.currentRoute.value.path).toBe(`/react/${showcaseOf(hostOf('react'))[0].id}`)
+		expect(router.currentRoute.value.path).toBe(`/react/${menuOf(hostOf('react'))[0].id}`)
 
 		wrapper.unmount()
 	})
 
 	it('нажатие на второй пункт уводит на него, а не остаётся на первом', async () => {
-		const showcase = showcaseOf(hostOf('vue'))
+		const menu = menuOf(hostOf('vue'))
 		const first = await clickItem(0)
 
 		first.unmount()
 
 		const second = await clickItem(1)
 
-		expect(router.currentRoute.value.path).toBe(`/vue/${showcase[1].id}`)
+		expect(router.currentRoute.value.path).toBe(`/vue/${menu[1].id}`)
 
 		second.unmount()
 	})
 
+	/**
+	 * Список один, поэтому и отметка одна: пункт из «Слоёв» снимает её с
+	 * компонента, как соседний пункт той же группы.
+	 */
+	it('нажатие на слой открывает его страницу, и отмечен только он', async () => {
+		const menu = menuOf(hostOf('vue'))
+		const layer = menu.length - 1
+
+		await router.push(`/vue/${menu[0].id}`)
+
+		const wrapper = await clickItem(layer)
+
+		expect(menu[layer].group).toBe('layers')
+		expect(router.currentRoute.value.path).toBe(`/vue/${menu[layer].id}`)
+		expect(selectedOf(wrapper)).toEqual([menu[layer].label])
+
+		wrapper.unmount()
+	})
+
 	/** Подсветка — производная маршрута: прямая ссылка обязана её восстановить. */
 	it('отмечает пункт, соответствующий адресу', async () => {
-		await router.push(`/vue/${showcaseOf(hostOf('vue'))[2].id}`)
+		const entry = menuOf(hostOf('vue'))[2]
+
+		await router.push(`/vue/${entry.id}`)
 
 		const wrapper = await mountSidebar()
-		const selected = wrapper.findAll('[data-selected="true"]')
 
-		expect(selected.length).toBeGreaterThan(0)
+		expect(selectedOf(wrapper)).toEqual([entry.label])
 
 		wrapper.unmount()
 	})
