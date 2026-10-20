@@ -156,6 +156,8 @@ export const PREVIEWS: Record<string, TPreview> = {
 
 	input: { tag: 'div', is: 'so-input' },
 
+	textarea: { tag: 'div', is: 'so-textarea' },
+
 	// Текста у флажка и переключателя нет, оба — голый контрол: подпись даёт
 	// обёртка Label. Её пропы задаёт превью, строки страницы правят контрол
 	'check-box': {

@@ -37,10 +37,11 @@ get no scope: slot content is the element's own light DOM, so component data (th
 Button's `default` slot) cannot be passed into it — slot content reads it from the element,
 `el.ctrl`.
 
-> **Status:** the Web Components adapter is in progress — Button, Icon, Label, Input, CheckBox,
-> Switch, the form field `<div is="so-field">` (label, helper and error linked to the control
-> inside it), ProgressSpinner, Skeleton, Frame, RadioGroup, ListBox, Tabs, Accordion, Table and the
-> `<so-virtual>` window for long lists are ported, the rest of the set is on its way. See
+> **Status:** the Web Components adapter is in progress — Button, Icon, Label, Input, Textarea
+> (`<div is="so-textarea">`: multi-line, growing with its text, with a character counter),
+> CheckBox, Switch, the form field `<div is="so-field">` (label, helper and error linked to the
+> control inside it), ProgressSpinner, Skeleton, Frame, RadioGroup, ListBox, Tabs, Accordion, Table
+> and the `<so-virtual>` window for long lists are ported, the rest of the set is on its way. See
 > [the adapter table](https://github.com/youra-h/soldy#components).
 
 ## Install
@@ -116,9 +117,10 @@ In a form it is simply a button:
 </form>
 ```
 
-A field — `<div is="so-input">`, `<span is="so-check-box">`, `<span is="so-switch">` — is your
-element with a real `<input>` inside, in the page's ordinary DOM. The form sees that input by
-itself: `FormData`, `<fieldset disabled>`, validation and `<label>` work as with any input, no
+A field — `<div is="so-input">`, `<div is="so-textarea">`, `<span is="so-check-box">`,
+`<span is="so-switch">` — is your element with a real `<input>` (a `<textarea>`) inside, in the
+page's ordinary DOM. The form sees that field by itself: `FormData`, `<fieldset disabled>`,
+validation and `<label>` work as with any input, no
 form-associated element involved. A checkbox and a switch get their visible name from
 `<label is="so-label">` around them: clicking the text toggles the control, and the text becomes
 its accessible name.
