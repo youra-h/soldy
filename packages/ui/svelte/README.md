@@ -13,7 +13,8 @@ are snippets, events arrive as callback props (`element:ready` → `onElementRea
 slot is `children`.
 
 > **Status:** the Svelte adapter is in progress — Button, Icon, Label, Frame, ProgressSpinner,
-> Skeleton, the fields Input, Textarea (multi-line, growing with its text, with a character
+> Skeleton, the fields Input, NumberInput (a number in the locale's format with − and + step
+> buttons; the form gets the number), Textarea (multi-line, growing with its text, with a character
 > counter), CheckBox and Switch, the form field `Field` (label, helper and error linked to the
 > control inside it), the collections ListBox, Tabs, Accordion and
 > RadioGroup (`<ListBox.Item>`, `<Tabs.Item>` with `<Tabs.Content>`, `<Accordion.Item>`,

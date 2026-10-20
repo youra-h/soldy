@@ -39,14 +39,15 @@ get no scope: slot content is the element's own light DOM, so component data (th
 Button's `default` slot) cannot be passed into it — slot content reads it from the element,
 `el.ctrl`.
 
-> **Status:** the Web Components adapter is in progress — Button, Icon, Label, Input, Textarea
-> (`<div is="so-textarea">`: multi-line, growing with its text, with a character counter),
-> CheckBox, Switch, the form field `<div is="so-field">` (label, helper and error linked to the
-> control inside it), ProgressSpinner, Skeleton, Frame, RadioGroup, ListBox, Tabs, Accordion, Table,
-> the `<so-virtual>` window for long lists and the `<so-drag-and-drop>` wrapper that lets users
-> reorder the items of Tabs, ListBox and Accordion by dragging (`so:move`; `so:move:before` can
-> cancel with `event.preventDefault()`) are ported, the rest of the set is on its way. See
-> [the adapter table](https://github.com/youra-h/soldy#components).
+> **Status:** the Web Components adapter is in progress — Button, Icon, Label, Input, NumberInput
+> (`<div is="so-number-input">`: a number in the locale's format with − and + step buttons; the
+> form gets the number), Textarea (`<div is="so-textarea">`: multi-line, growing with its text,
+> with a character counter), CheckBox, Switch, the form field `<div is="so-field">` (label, helper
+> and error linked to the control inside it), ProgressSpinner, Skeleton, Frame, RadioGroup,
+> ListBox, Tabs, Accordion, Table, the `<so-virtual>` window for long lists and the
+> `<so-drag-and-drop>` wrapper that lets users reorder the items of Tabs, ListBox and Accordion by
+> dragging (`so:move`; `so:move:before` can cancel with `event.preventDefault()`) are ported, the
+> rest of the set is on its way. See [the adapter table](https://github.com/youra-h/soldy#components).
 
 ## Install
 
@@ -121,10 +122,12 @@ In a form it is simply a button:
 </form>
 ```
 
-A field — `<div is="so-input">`, `<div is="so-textarea">`, `<span is="so-check-box">`,
-`<span is="so-switch">` — is your element with a real `<input>` (a `<textarea>`) inside, in the
-page's ordinary DOM. The form sees that field by itself: `FormData`, `<fieldset disabled>`,
-validation and `<label>` work as with any input, no form-associated element involved. A checkbox
+A field — `<div is="so-input">`, `<div is="so-number-input">`, `<div is="so-textarea">`,
+`<span is="so-check-box">`, `<span is="so-switch">` — is your element with a real `<input>` (a
+`<textarea>`) inside, in the page's ordinary DOM. The form sees that field by itself: `FormData`,
+`<fieldset disabled>`, validation and `<label>` work as with any input, no form-associated element
+involved. A number field sends the number, not the text it shows: its `name` goes to a hidden
+`<input>` with `1234.5` while the field reads `1,234.5`. A checkbox
 and a switch get their visible name from `<label is="so-label">` around them: clicking the text
 toggles the control, and the text becomes its accessible name.
 

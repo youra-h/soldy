@@ -40,6 +40,7 @@ import {
 	Input,
 	Label,
 	ListBox,
+	NumberInput,
 	Pagination,
 	Popover,
 	ProgressLinear,
@@ -71,6 +72,7 @@ import {
 	type LabelProps,
 	type ListBoxItemProps,
 	type ListBoxProps,
+	type NumberInputProps,
 	type PaginationProps,
 	type PopoverProps,
 	type ProgressLinearProps,
@@ -195,21 +197,26 @@ const ITEMS: ReadonlyArray<readonly [string, Component<TItemProbeProps>, string,
 ]
 
 /** Общие пропсы полей в таблице. */
-type TFieldProbeProps = CheckBoxProps & SwitchProps & InputProps & TextareaProps
+type TFieldProbeProps = CheckBoxProps & SwitchProps & InputProps & NumberInputProps & TextareaProps
 
 /**
  * Поле и класс его корня. Атрибуты потребителя поле делит, как у Vue: класс и
- * стиль — корню, остальное — `<input>` (у Textarea — `<textarea>`), поверх его
- * набора `aria`. Корень остаётся за адаптером и у него.
+ * стиль — корню, остальное — `<input>` (у Textarea — `<textarea>`, у
+ * NumberInput — ввод), поверх его набора `aria`. Корень остаётся за адаптером
+ * и у него.
  */
 const FIELDS: ReadonlyArray<readonly [string, Component<TFieldProbeProps>, string]> = [
 	['CheckBox', CheckBox, '.so-check-box'],
 	['Switch', Switch, '.so-switch'],
 	['Input', Input, '.so-input'],
+	['NumberInput', NumberInput, '.so-number-input'],
 	['Textarea', Textarea, '.so-textarea'],
 ]
 
-/** Поле внутри корня: `<input>`, у Textarea — `<textarea>`. */
+/**
+ * Поле внутри корня: `<input>`, у Textarea — `<textarea>`, у NumberInput —
+ * первый `<input>`, ввод: скрытое поле формы стоит последним.
+ */
 const CONTROL = 'input, textarea'
 
 describe('атрибут снаружи перекрывает набор ядра', () => {
@@ -308,6 +315,7 @@ describe('поле: атрибуты снаружи — полю, поверх �
 		expect(find(document, selector, HTMLElement).hasAttribute('aria-label')).toBe(false)
 	})
 
+	/** Свой класс у поля бывает — ввод NumberInput: по нему ввод находят плагины. */
 	it.each(FIELDS)('%s: класс и стиль — корню, а не полю', (_name, Probe, selector) => {
 		mount(() => <Probe class="mine" style={{ color: 'red' }} />)
 
@@ -316,7 +324,7 @@ describe('поле: атрибуты снаружи — полю, поверх �
 
 		expect([...root.classList].at(-1)).toBe('mine')
 		expect(root.style.color).toBe('red')
-		expect(field.hasAttribute('class')).toBe(false)
+		expect(field.classList.contains('mine')).toBe(false)
 		expect(field.hasAttribute('style')).toBe(false)
 	})
 
@@ -719,6 +727,7 @@ const ROOTS: ReadonlyArray<
 	['CheckBox', (props) => <CheckBox {...props} />, '.so-check-box', '.so-check-box'],
 	['Switch', (props) => <Switch {...props} />, '.so-switch', '.so-switch'],
 	['Input', (props) => <Input {...props} />, '.so-input', '.so-input'],
+	['NumberInput', (props) => <NumberInput {...props} />, '.so-number-input', '.so-number-input'],
 	['Textarea', (props) => <Textarea {...props} />, '.so-textarea', '.so-textarea'],
 	['Slider', (props) => <Slider {...props} />, '.so-slider', '.so-slider'],
 	['Rating', (props) => <Rating {...props} />, '.so-rating', '.so-rating'],

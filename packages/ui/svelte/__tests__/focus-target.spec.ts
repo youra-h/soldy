@@ -21,6 +21,7 @@ import {
 	TInput,
 	TListBox,
 	TListBoxItem,
+	TNumberInput,
 	TPagination,
 	TRadioGroup,
 	TRadioGroupItem,
@@ -37,6 +38,7 @@ import {
 	CheckBox,
 	Input,
 	ListBox,
+	NumberInput,
 	Pagination,
 	Rating,
 	Scroller,
@@ -84,6 +86,27 @@ const CASES: Record<string, TCase> = {
 			return ctrl
 		},
 		target: 'input',
+		before: '.before',
+	},
+	NumberInput: {
+		render: () => {
+			const ctrl = new TNumberInput()
+
+			mount(NumberInput, { ctrl })
+
+			return ctrl
+		},
+		target: '.so-number-input__input',
+	},
+	'NumberInput с кнопкой в leading': {
+		render: () => {
+			const ctrl = new TNumberInput()
+
+			mount(NumberInput, { ctrl, leading: markup('<button class="before"></button>') })
+
+			return ctrl
+		},
+		target: '.so-number-input__input',
 		before: '.before',
 	},
 	Textarea: {

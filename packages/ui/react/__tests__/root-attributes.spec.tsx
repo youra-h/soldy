@@ -30,6 +30,7 @@ import {
 	TButton,
 	TCheckBox,
 	TInput,
+	TNumberInput,
 	TSwitch,
 	TTextarea,
 	type TTableColumnSource,
@@ -47,6 +48,7 @@ import {
 	Input,
 	Label,
 	ListBox,
+	NumberInput,
 	Pagination,
 	Popover,
 	ProgressLinear,
@@ -257,6 +259,11 @@ function invalid<T extends { invalid: boolean }>(ctrl: T): T {
 const FIELDS: ReadonlyArray<readonly [string, () => ReactNode, string]> = [
 	['Input', () => <Input ctrl={invalid(new TInput({ disabled: true }))} />, '.so-input'],
 	[
+		'NumberInput',
+		() => <NumberInput ctrl={invalid(new TNumberInput({ disabled: true }))} />,
+		'.so-number-input',
+	],
+	[
 		'CheckBox',
 		() => <CheckBox ctrl={invalid(new TCheckBox({ disabled: true }))} />,
 		'.so-check-box',
@@ -269,7 +276,10 @@ const FIELDS: ReadonlyArray<readonly [string, () => ReactNode, string]> = [
 	],
 ]
 
-/** Поле внутри корня: `<input>`, у Textarea — `<textarea>`. */
+/**
+ * Поле внутри корня: `<input>`, у Textarea — `<textarea>`, у NumberInput —
+ * первый `<input>`, ввод: скрытое поле формы стоит последним.
+ */
 const CONTROL = 'input, textarea'
 
 /**
@@ -440,6 +450,7 @@ const ROOTS: ReadonlyArray<
 	['Pagination', (props) => <Pagination {...props} />, '.so-pagination', '.so-pagination'],
 	['Scroller', (props) => <Scroller {...props} />, '.so-scroller', '.so-scroller'],
 	['Input', (props) => <Input {...props} />, '.so-input', '.so-input'],
+	['NumberInput', (props) => <NumberInput {...props} />, '.so-number-input', '.so-number-input'],
 	['Textarea', (props) => <Textarea {...props} />, '.so-textarea', '.so-textarea'],
 	['CheckBox', (props) => <CheckBox {...props} />, '.so-check-box', '.so-check-box'],
 	['Switch', (props) => <Switch {...props} />, '.so-switch', '.so-switch'],
@@ -484,7 +495,7 @@ const ROOTS: ReadonlyArray<
 
 /** Поля: `ref` потребителя — корень, а не `<input>` или `<textarea>`. */
 const FIELD_ROOTS = ROOTS.filter(([name]) =>
-	['Input', 'Textarea', 'CheckBox', 'Switch', 'RadioGroup.Item'].includes(name),
+	['Input', 'NumberInput', 'Textarea', 'CheckBox', 'Switch', 'RadioGroup.Item'].includes(name),
 )
 
 /** Узлы, которые получила `ref`-функция потребителя, — по порядку вызовов. */

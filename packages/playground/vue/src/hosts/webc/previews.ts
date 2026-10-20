@@ -212,6 +212,7 @@ export const PREVIEWS: Record<string, TPreview> = {
 	button: { tag: 'button', is: 'so-button' },
 
 	input: { tag: 'div', is: 'so-input' },
+	'number-input': { tag: 'div', is: 'so-number-input' },
 
 	textarea: { tag: 'div', is: 'so-textarea' },
 
