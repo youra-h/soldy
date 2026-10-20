@@ -11,6 +11,7 @@
 		| 'ProgressLinear'
 		| 'Skeleton'
 		| 'Input'
+		| 'Textarea'
 		| 'CheckBox'
 		| 'Switch'
 		| 'Slider'
@@ -65,6 +66,7 @@
 		Switch,
 		Table,
 		Tabs,
+		Textarea,
 	} from '@soldy-ui/svelte'
 
 	type THarnessProps = {
@@ -118,6 +120,8 @@
 		<Skeleton bind:ref={get, set} {onElementReady} />
 	{:else if kind === 'Input'}
 		<Input bind:ref={get, set} {onElementReady} />
+	{:else if kind === 'Textarea'}
+		<Textarea bind:ref={get, set} {onElementReady} />
 	{:else if kind === 'CheckBox'}
 		<CheckBox bind:ref={get, set} {onElementReady} />
 	{:else if kind === 'Switch'}

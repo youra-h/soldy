@@ -36,17 +36,11 @@ $sizes: (
 // контрола: точку и толстое кольцо вид рисует через `currentColor`. Поэтому
 // вид решает только геометрию отметки, вариант — только её цвет, и матрицы
 // «вид × вариант» нет.
-//
-// Цвет отметки — тот же, что у отметки CheckBox: цвет семейства графикой на
-// поверхности (`--so-component-graphic-*`). Точка стоит на поверхности
-// контрола, толстое кольцо вида `ring` — ещё и на странице или панели, и обеим
-// нужно 3:1 к ним (WCAG 1.4.11). Радио и флажок стоят в форме рядом, и
-// отметка одного варианта у них одного цвета.
-@mixin radio-variant($this, $color: 'neutral', $ring: 300, $bg-disabled: 50) {
+@mixin radio-variant($this, $color: 'neutral', $ring: 300, $mark: 500, $bg-disabled: 50) {
 	@include radio-ring($this, $color, $ring);
 
 	> #{$this}__control {
-		color: var(--so-component-graphic-#{$color});
+		color: var(--so-#{$color}-#{$mark});
 	}
 
 	&[data-disabled='true'] > #{$this}__control {

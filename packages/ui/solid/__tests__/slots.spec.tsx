@@ -19,6 +19,11 @@ import {
 	type FrameProps,
 	type InputProps,
 	type LabelProps,
+	type PaginationProps,
+	type ProgressLinearProps,
+	type RatingProps,
+	type ScrollerProps,
+	type SliderProps,
 	type SwitchProps,
 	type UseDomProps,
 } from '@soldy-ui/solid'
@@ -217,5 +222,19 @@ describe('содержимое — только слот default', () => {
 		expectTypeOf<InputProps>().not.toHaveProperty('children')
 		expectTypeOf<LabelProps>().toHaveProperty('children')
 		expectTypeOf<LabelProps['children']>().toEqualTypeOf<JSX.Element>()
+	})
+
+	/**
+	 * Ручки, звёзды и страницы рисует сам компонент, а их содержимое — слоты со
+	 * scope (`thumb`, `mark`, `icon`, `item`); содержимого у полосы нет вовсе.
+	 * Лента — наоборот: её содержимое и есть слот по умолчанию.
+	 */
+	it('у Slider, Rating, ProgressLinear и Pagination children нет, у Scroller — есть', () => {
+		expectTypeOf<SliderProps>().not.toHaveProperty('children')
+		expectTypeOf<RatingProps>().not.toHaveProperty('children')
+		expectTypeOf<ProgressLinearProps>().not.toHaveProperty('children')
+		expectTypeOf<PaginationProps>().not.toHaveProperty('children')
+		expectTypeOf<ScrollerProps>().toHaveProperty('children')
+		expectTypeOf<ScrollerProps['children']>().toEqualTypeOf<JSX.Element>()
 	})
 })

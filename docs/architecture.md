@@ -478,15 +478,11 @@ useIcons({ close: myCloseIcon }) // точечно, поверх
 текст отдаёт краской. Зеркальны роли, числа подобраны отдельно — так же
 устроены dark-шкалы Radix Colors.
 
-**У хроматических шкал зеркальны только концы.** Середина в обеих схемах
-остаётся насыщенной: на ней стоит заливка под белым текстом — `filled` с
-вариантом у Button, выбранный день Calendar, текущая страница Pagination.
-Инвертируй её вслед за нейтралью — насыщенная ступень ушла бы в светлую
-пастель, и белая подпись стала бы нечитаемой. Ступень под белым у схем своя —
-семантический токен `--so-component-solid-*`, на котором белый держит 4,5:1:
-700 в светлой, 400 в тёмной, — а цвет на глаз один. Состояния этой заливки —
-не «+100», а тень, слой чёрного: «дальше от поверхности» в тёмной схеме
-светлее, то есть ближе к белой подписи.
+**У хроматических шкал зеркальны только концы.** Середина (500–700) в обеих
+схемах остаётся насыщенной заливкой, на которой держится `text-white` у
+вида `filled` у Button. Инвертируй её вслед за нейтралью — hover увёл бы заливку в
+светлую пастель, и подпись стала бы нечитаемой. Меняется только направление
+hover: в тёмной схеме заливка светлеет.
 
 **Что не выражается ступенью — семантический токен.** Их пять; в тёмной схеме
 переопределяются только те, у кого меняется сам выбор ступени.
@@ -1655,7 +1651,7 @@ There is no `adapter/static/`: React takes prop names from the descriptor types,
 - `adapter/runtime/` — `useAdapterContext(factory)` (отдаёт фабрике `create` — `createAdapterContext` с основой `id` от `useId` — и лифт компонента; фабрика возвращает контекст или несколько — у коллекции свой и фасада; хук держит их одной единицей, уничтожает в обратном порядке и собирает заново фабрикой последнего рендера, когда React повторяет установку эффекта или сменилось прочитанное через лифт; без `ctrl` инстанс при этом новый; после сборки и каждой пересборки принимает контексты (`attach()`) в порядке сборки; возвращает `{ contexts, layer }`), `useAdapter(adapter, props)` (main hook over the exchange `adapter.connect(ReactProfile)` — takes a READY adapter; снимок состояния отдаёт React через `TStableSnapshot`: то же по содержимому остаётся прежним объектом, и повторное чтение при подписке не перерисовывает), `useCollectionAdapter(adapter, props, forward)` (фасад коллекции: состояние, входы и события без `ctrl` и `ref`), `withRenderBoundary(component)` (граница перерисовки — `memo` без своего сравнения: родитель перерисовывает компонент, только когда сменился проп по идентичности, своё состояние — как обычно; под ней строки `Table` и их ячейки, AGENTS.md, «Механизмы фреймворка — только в адаптерном слое»)
 - `adapter/elevator/` — лифт: один контекст React, его значение — неизменяемый слой «ключ → значение» (`TElevatorLayer`). Сборка получает лифт своего слоя (`TReactElevatorScope`, лифты ключей — `TReactElevator`): `up()` читает родительский слой, который компонент увидел на рендере, `down()` пишет в слой компонента; детям слой отдаёт `Elevate`. Глобальной фабрики лифтов нет: лифт привязан к сборке
 - `components/` — each component = up to 3 modules: `base.component.ts` (типы/props) + `setup.component.ts` (`useSetupXxx` hook) + view (`*.tsx`)
-  - headless layers: `component` — only `base.component.ts`; `stylable`/`control`/`textable` — `base.component.ts` + `setup.component.ts` (no `.tsx` view, like Vue base layers)
+  - headless layers: `component` — only `base.component.ts`; `stylable`/`interactive`/`control`/`value-control`/`input-control`/`textable` — `base.component.ts` + `setup.component.ts` (no `.tsx` view, like Vue base layers)
   - concrete layers (`component-view`, `button`): `base.component.ts` + `setup.component.ts` + `.tsx` view
 
 **Key design decisions (React-specific):**
@@ -1667,7 +1663,7 @@ There is no `adapter/static/`: React takes prop names from the descriptor types,
 - Core → React: `useSyncExternalStore(link.state.subscribe, link.state.getSnapshot)` — the render reads the immutable snapshot, the subscription happens at commit, and React compares the snapshot again after subscribing, so a core change between render and commit is not lost (the snapshot object stays the same while nothing changed, so nothing re-renders). `useEffect(() => link.inputs.full(props), [props, link])` = React → Core: the effect gets the full props set on every parent render, and `inputs.full` writes only the props whose value changed since the previous set (the input cell compares by content with `sameValue`, the same rule as the state: an array literal like `value={['a', 'b']}` is a new object on every render, not a change), so a repeated prop doesn't roll back what the core or code through the instance changed since. The input memory starts from the props the context was assembled with, so the first `inputs.full` writes nothing that the assembly already applied. When the context is rebuilt, `useAdapter` binds the new one (`adapter.connect(ReactProfile)`) and `useSyncExternalStore` switches to its store: a rebuild is a mount like any other, and the assembly applies the props again
 - Events: `binding.events.listen` in `useLayoutEffect` (so rAF `ready` from TElementPlugin isn't missed); the receiver is `TEventCallbacks.sink` (`adapter/runtime/event-callbacks.class.ts`), an arrow field of an object that holds the latest render's `props`, and the callback is read from them. Not a closure in the hook body: React keeps the cleanup of the first commit for the whole mount, and a closure holds the whole scope of its render with that render's props (AGENTS.md, «Адаптер обязан адаптировать»)
 - Корень раскладывает `toRootProps` в одном порядке для всех компонентов: наборы ядра (`attrs`, `aria`, `dataset` — в порядке шаблона Vue), поверх — атрибуты снаружи, как у Vue, класс и стиль — `toRootLayout`, `ref` адаптера — последним: в React 19 `ref` — обычный проп, и `ref` потребителя из атрибутов выбил бы привязку к `TElementPlugin` (AGENTS.md, «Третий набор: `attrs`»). Стиль идёт слоями: выход плагина раскладки (`layout_styles`), поверх него стиль-выход самого компонента — стиль, который считает ядро (`fractionStyle` у ProgressSpinner); имя выхода у каждого компонента своё, и его называет разметка последним аргументом `toRootProps`, как наборы ядра, — затем место элемента коллекции (`order`), стиль потребителя и `display: none` скрытого корня. Имена по-CSS (`z-index`) раскладка переводит в camelCase, пользовательские свойства (`--*`) ставит как есть
-- Collections (ListBox, Tabs, Accordion, RadioGroup, Table): `useSetupListBox` собирает два контекста одной фабрикой — `ListBoxDescriptor` и `ListBoxCollectionDescriptor` на общем наборе, с `TCollectionExtension` и `TDragAndDropCollectionExtension` на лифте компонента; разметка отдаёт слой детям через `Elevate`. Элемент (`ListBox.Item`) собирает свой контекст и фасада с `TCollectionItemExtension` и входит в коллекцию, когда хук принимает контексты при коммите, а не на рендере; пересобранный владелец — новый движок, и элемент пересобирается, потому что сменилось прочитанное через лифт. Цена: серверная разметка и первый кадр элемента из разметки — без того, что пишет ему коллекция; список из данных сервер рисует полностью (AGENTS.md, «Элемент входит в коллекцию при монтировании, а не при сборке»). Tabs и Accordion собраны тем же рецептом; `Elevate` у Tabs оборачивает и список, и слот `content`: панель (`Tabs.Content`) собирает свой контекст и фасада с `TTabsContentBindingExtension` на лифте компонента и находит таб разметки, когда хук принимает её контексты, — табы, стоящие в документе раньше, к этому времени уже в коллекции. Крестик таба закрывает по `onActionClick` — нативному клику своего `TActionPlugin` — и гасит всплытие у нативного события: синтетический `stopPropagation` React не остановил бы нативные слушатели `TActionPlugin` на корнях таба и набора, и нажатие по крестику дало бы им `action:press`. RadioGroup — тот же рецепт без drag-and-drop: радио одной группы стоят где угодно в разметке, поэтому и места в коллекции (`order`) у корня радио нет: из фасада `useSetupRadioGroupItem` отдаёт разметке только отметку (`active`). Отметку радио проводит поле адаптера (`NativeInput`), выбор пользователя приходит его `onChange` — как `@change` у Vue. React выводит `onChange` радио из клика и сверяет его с отметкой, записанной в узел, а с соседа отметку снимает браузер без записи свойства, — поэтому поле пишет отметку в узел на каждую смену состояния ядра, даже совпавшую с узлом (текст — только разошедшийся: запись того же текста сбросила бы каретку). Table — тот же рецепт с окном `Virtual` и без drag-and-drop: строки (`Table.Row`) входят в коллекцию лифтом при коммите, заголовок колонки (`Table.Column`) — один контекст над экземпляром колонки, без фасада. Чекбоксы колонки выбора — экземпляры, которые держит таблица, и ключ CheckBox над ними — сам экземпляр: пересобранная строка (StrictMode, `<Activity>`) отпускает чекбокс и берёт у таблицы новый, пересобранная таблица без движка снаружи — новый «выбрать все», а компонент собирается над `ctrl` один раз за монтирование
+- Collections (ListBox, Tabs, Accordion, RadioGroup, Table, Pagination): `useSetupListBox` собирает два контекста одной фабрикой — `ListBoxDescriptor` и `ListBoxCollectionDescriptor` на общем наборе, с `TCollectionExtension` и `TDragAndDropCollectionExtension` на лифте компонента; разметка отдаёт слой детям через `Elevate`. Элемент (`ListBox.Item`) собирает свой контекст и фасада с `TCollectionItemExtension` и входит в коллекцию, когда хук принимает контексты при коммите, а не на рендере; пересобранный владелец — новый движок, и элемент пересобирается, потому что сменилось прочитанное через лифт. Цена: серверная разметка и первый кадр элемента из разметки — без того, что пишет ему коллекция; список из данных сервер рисует полностью (AGENTS.md, «Элемент входит в коллекцию при монтировании, а не при сборке»). Tabs и Accordion собраны тем же рецептом; `Elevate` у Tabs оборачивает и список, и слот `content`: панель (`Tabs.Content`) собирает свой контекст и фасада с `TTabsContentBindingExtension` на лифте компонента и находит таб разметки, когда хук принимает её контексты, — табы, стоящие в документе раньше, к этому времени уже в коллекции. Крестик таба закрывает по `onActionClick` — нативному клику своего `TActionPlugin` — и гасит всплытие у нативного события: синтетический `stopPropagation` React не остановил бы нативные слушатели `TActionPlugin` на корнях таба и набора, и нажатие по крестику дало бы им `action:press`. RadioGroup — тот же рецепт без drag-and-drop: радио одной группы стоят где угодно в разметке, поэтому и места в коллекции (`order`) у корня радио нет: из фасада `useSetupRadioGroupItem` отдаёт разметке только отметку (`active`). Отметку радио проводит поле адаптера (`NativeInput`), выбор пользователя приходит его `onChange` — как `@change` у Vue. React выводит `onChange` радио из клика и сверяет его с отметкой, записанной в узел, а с соседа отметку снимает браузер без записи свойства, — поэтому поле пишет отметку в узел на каждую смену состояния ядра, даже совпавшую с узлом (текст — только разошедшийся: запись того же текста сбросила бы каретку). Table — тот же рецепт с окном `Virtual` и без drag-and-drop: строки (`Table.Row`) входят в коллекцию лифтом при коммите, заголовок колонки (`Table.Column`) — один контекст над экземпляром колонки, без фасада. Чекбоксы колонки выбора — экземпляры, которые держит таблица, и ключ CheckBox над ними — сам экземпляр: пересобранная строка (StrictMode, `<Activity>`) отпускает чекбокс и берёт у таблицы новый, пересобранная таблица без движка снаружи — новый «выбрать все», а компонент собирается над `ctrl` один раз за монтирование. Pagination — тот же рецепт без drag-and-drop и без элементов разметки: страницы окна кладёт в коллекцию расширение пагинации ещё при сборке, поэтому окно и текущая есть и в серверной разметке, а разметка рисует по внутренней части `PaginationItem` на страницу окна (`cells`); текущей страницу делает активация коллекции по нажатию, как таб
 
 ### Theming (`@soldy-ui/theme-oren`) — foundation REMOVED
 
@@ -1694,7 +1690,7 @@ There is no `adapter/static/`: React takes prop names from the descriptor types,
 
 ## Layer 8: Angular Adapter (`packages/ui/angular/src`)
 
-### ✅ IMPLEMENTED (Component / ComponentView / Stylable / Control / Textable / Button / Icon / Label / Frame / ProgressSpinner / Skeleton / Input / CheckBox / Switch / RadioGroup / ListBox / Tabs / Accordion / Table / Virtual)
+### ✅ IMPLEMENTED (Component / ComponentView / Stylable / Control / Textable / Button / Icon / Label / Frame / ProgressSpinner / Skeleton / Input / CheckBox / Switch / RadioGroup / ListBox / Tabs / Accordion / Table / Virtual / DragAndDrop)
 
 **Структура** зеркалит Vue/React: `adapter/{common,runtime,locale,elevator}` + `components/*`.
 
@@ -2026,10 +2022,10 @@ DOM-эмуляция серверного рендера Angular запись `i
 неё — его корень сам `<so-input>`, а атрибуты потребителя база делит между
 ним и `<input>` (`control`). Шаблон без `#root` — компонент без корня: у
 `so-component` элементный селектор и пустой шаблон, и написанное внутри него не
-выводится, как и в остальных адаптерах, а у окна `so-virtual` шаблон — только
-содержимое, и бокса у элемента нет (`display: contents` статикой хоста: на
-нескрытом корне привязка скрытия отдаёт `undefined`, и Angular берёт
-статику).
+выводится, как и в остальных адаптерах, а у окна `so-virtual` и перестановки
+`so-drag-and-drop` шаблон — только содержимое, и бокса у элемента нет
+(`display: contents` статикой хоста: на нескрытом корне привязка скрытия
+отдаёт `undefined`, и Angular берёт статику).
 
 Запрос — именно поле: сигнальные запросы, как и `input`/`output`/`model`,
 компилятор Angular распознаёт только в инициализаторе поля. Вызов внутри
@@ -2095,10 +2091,13 @@ Table — тот же рецепт, что ListBox, с окном `Virtual` и �
 шаблоном). Значение без шаблона — текст ячейки от ядра (`cell.text`) в
 свойстве `textContent`. `Virtual` — `<so-virtual>` без корня: подключение к окну проводка
 опускает в слой лифта обёртки, и коллекция в её содержимом подхватывает его
-своей сборкой.
+своей сборкой. `DragAndDrop` — `<so-drag-and-drop>` так же: свой экземпляр
+проводка опускает в слой лифта обёртки, Tabs, ListBox и Accordion в её
+содержимом включают им перетаскивание, а о перестановке сообщают выходы
+`(soMoveBefore)` и `(soMove)`.
 
 Сторожат спеки `packages/ui/angular/__tests__`: `list-box`, `tabs`,
-`accordion`, `radio-group`, `table`, `virtual`, `collection-elevator` (слой
+`accordion`, `radio-group`, `table`, `virtual`, `drag-and-drop`, `collection-elevator` (слой
 лифта, соседи, вложенные коллекции, порядок), `collection-item-lifetime`,
 `external-engine-lifetime`, `collections.server` (сервер и гидратация) и
 `ssr.server` (узла на сервере плагины не получают).
@@ -2156,7 +2155,7 @@ Table — тот же рецепт, что ListBox, с окном `Virtual` и �
 
 ## Layer 8b: Svelte Adapter (`packages/ui/svelte/src`)
 
-### ✅ IMPLEMENTED (Component / ComponentView / Stylable / Interactive / Control / ValueControl / InputControl / Textable / Button / Icon / Label / Field / Frame / ProgressSpinner / ProgressLinear / Skeleton / Input / CheckBox / Switch / Slider / Rating / RadioGroup / ListBox / Tabs / Accordion / Table / Virtual / Scroller / Pagination)
+### ✅ IMPLEMENTED (Component / ComponentView / Stylable / Interactive / Control / ValueControl / InputControl / Textable / Button / Icon / Label / Field / Frame / ProgressSpinner / ProgressLinear / Skeleton / Input / CheckBox / Switch / Slider / Rating / RadioGroup / ListBox / Tabs / Accordion / Table / Virtual / Scroller / Pagination / DragAndDrop)
 
 Svelte 5 на рунах. Структура зеркалит React, потому что механика событий та же —
 колбэк-пропы:
@@ -2216,7 +2215,12 @@ Svelte 5 на рунах. Структура зеркалит React, потом�
   ячейкам не нужно: выбор строки меняет её атрибуты, а содержимое ячейки
   читает только ячейку и сниппет `cell`. Table — тот же рецепт, что ListBox, с
   окном `Virtual` и без drag-and-drop; `Virtual` — обёртка без узла,
-  подключение к окну опускает контекстом.
+  подключение к окну опускает контекстом, `DragAndDrop` — так же, свой
+  экземпляр. Перестановка элемента из данных двигает его узел петлёй с ключом,
+  и `focusout` узла в фокусе браузер шлёт посреди отрисовки — внутри эффекта
+  блока; запись ядра в руну состояния связка делает мимо слежения
+  (`untrack`), как Svelte зовёт свои обработчики событий вне реактивного
+  контекста, — иначе Svelte бросил бы `state_unsafe_mutation`.
 - **props передаются геттером** (`() => props`): в Svelte 5 захват `$props()`
   в переменную рвёт реактивность, читать нужно лениво. Компилятор ловит это
   предупреждением `state_referenced_locally`.
@@ -2262,7 +2266,7 @@ Svelte 5 на рунах. Структура зеркалит React, потом�
 
 ## Layer 8c: Solid Adapter (`packages/ui/solid/src`)
 
-### ✅ IMPLEMENTED (Component / ComponentView / Stylable / Control / Textable / Button / Icon / Label / Frame / ProgressSpinner / Skeleton / Input / CheckBox / Switch / RadioGroup / ListBox / Tabs / Accordion / Table / Virtual)
+### ✅ IMPLEMENTED (Component / ComponentView / Stylable / Control / Interactive / ValueControl / InputControl / Textable / Button / Icon / Label / Frame / ProgressSpinner / ProgressLinear / Skeleton / Input / CheckBox / Switch / Slider / Rating / RadioGroup / ListBox / Tabs / Accordion / Pagination / Scroller / Table / Virtual / DragAndDrop)
 
 Структура зеркалит React — JSX и колбэк-пропы делают их почти близнецами, —
 а механика ближе к Vue и Svelte: тело компонента выполняется один раз, и
@@ -2349,9 +2353,17 @@ Svelte 5 на рунах. Структура зеркалит React, потом�
   уходит атрибутом `value`. Эффект — пользовательский, после атрибутов узла,
   как `value` последним у Vue: `ref` Solid зовёт раньше атрибутов, и поле
   `range` ручки ширины колонки прижало бы ширину к ходу по умолчанию, 0–100,
-  до своих `min` и `max`. Отметку и «выбрано частично»
+  до своих `min` и `max`. Тем же `ref` значение получают поля `range` ручек
+  Slider и Rating: значение, записанное раньше нового `max`, браузер прижал
+  бы к прежнему ходу. Отметку и «выбрано частично»
   (`checked`, `prop:indeterminate`) Solid пишет свойствами сам, своего поля,
   как `NativeInput` у React, у адаптера нет.
+- **Петли по выходам ядра.** Выходы, которые ядро собирает заново на каждую
+  смену, — ручки и метки Slider (`thumbs`, `shownMarks`), звёзды Rating
+  (`stars`), окно Pagination (`cells`), — `<For>` сравнивал бы по ссылке и
+  пересоздавал бы узлы вместе с фокусом поля и слотами. Где у Vue ключ — место
+  (`:key="index"`, номер звезды), петля идёт по месту — `Index` Solid; окно
+  пагинации — `KeyedFor` по ключу места (`cell.key`).
 - **Id монтирования — `createUniqueId()`**: на сервере и при гидратации — от
   места компонента в дереве, и звать его можно из любой функции тела
   компонента, поэтому его берёт обёртка сборки, а не компонент.
@@ -2368,7 +2380,7 @@ Svelte 5 на рунах. Структура зеркалит React, потом�
   ячейкам не нужно: выбор строки меняет её атрибуты, а содержимое ячейки
   читает только ячейку и слот `cell`. Table — тот же рецепт, что ListBox, с
   окном `Virtual` и без drag-and-drop; `Virtual` — обёртка без узла, слой
-  лифта детям отдаёт `Elevate`.
+  лифта детям отдаёт `Elevate`, `DragAndDrop` — так же.
 - **Лифт — слой значений в контексте, детям — `Elevate` (`Provider`).**
   Значение контекста Solid отдаёт только через `Provider`, а своего владельца
   у компонента в продакшене и на сервере нет — `createComponent` зовёт его
@@ -2401,7 +2413,7 @@ Svelte 5 на рунах. Структура зеркалит React, потом�
 
 ## Layer 8d: Web Components Adapter (`packages/ui/webc/src`)
 
-### ✅ IMPLEMENTED (Component / ComponentView / Stylable / Control / Textable / Button / Icon / Label / Frame / ProgressSpinner / Skeleton / Input / CheckBox / Switch / RadioGroup / Tabs / Accordion / ListBox / Table / Virtual)
+### ✅ IMPLEMENTED (Component / ComponentView / Stylable / Control / Textable / Button / Icon / Label / Frame / ProgressSpinner / Skeleton / Input / CheckBox / Switch / RadioGroup / Tabs / Accordion / ListBox / Table / Virtual / DragAndDrop)
 
 Единственный таргет без фреймворка — и потому самый показательный тест
 архитектуры: ядро уже событийное, а `CustomEvent` это родная модель DOM.
@@ -2435,7 +2447,8 @@ Svelte 5 на рунах. Структура зеркалит React, потом�
   `TElementAttributes` по правилу `applyAttributes`: один на узел, со слоями —
   наборы ядра самого элемента снизу, набор владельца сверху, —
   `defineAutonomousElement` (регистрация без `extends` элементов, у которых в
-  остальных адаптерах узла нет: провайдера локали и окна `<so-virtual>`),
+  остальных адаптерах узла нет: провайдера локали, окна `<so-virtual>` и
+  перестановки `<so-drag-and-drop>`),
   `displayContents` (их коробка — теневой корень со `<slot>` и
   `:host { display: contents }`),
   `isDefining` (признак идущей регистрации), `teleport.ts` (`TTeleport` —
@@ -2525,9 +2538,9 @@ CheckBox, Switch и радио, у таба и секции
 оставляет скрытие и класс и стиль потребителя. Тот же `table` — и поле окна
 (`TTemplateParts.control`): остальные статические атрибуты разметки окна база
 переносит на него, как на поле. Компонент бывает и невизуальным —
-окно `<so-virtual>` (`SoldyElement(HTMLElement, …)`, регистрация
-`defineAutonomousElement`): классы, наборы и видимость база читает из
-состояния по имени, и у него их нет.
+окно `<so-virtual>` и перестановка `<so-drag-and-drop>`
+(`SoldyElement(HTMLElement, …)`, регистрация `defineAutonomousElement`):
+классы, наборы и видимость база читает из состояния по имени, и у них их нет.
 
 Свои атрибуты элемента сверх пропов дескриптора — то, что элемент читает
 сам и ядру не отдаёт, — называет описание элемента (`attributes`): роль
@@ -2884,9 +2897,11 @@ WebKit:
   детали CheckBox над экземплярами, которые держит таблица: экземпляр сменился
   (новая связка — новый контекст) — ячейка строится заново. Окно
   `<so-virtual>` опускает подключение лифтом своему хосту, и коллекция в его
-  свете подхватывает его при сборке. Сторожат
+  свете подхватывает его при сборке; перестановка `<so-drag-and-drop>` так же
+  опускает свой экземпляр, а о перестановке сообщает событиями `so:move:before`
+  (отмена — `preventDefault()` события) и `so:move`. Сторожат
   `ui/webc/__tests__/tabs.spec.ts`, `accordion.spec.ts`, `radio-group.spec.ts`,
-  `list-box.spec.ts`, `table.spec.ts`, `virtual.spec.ts`,
+  `list-box.spec.ts`, `table.spec.ts`, `virtual.spec.ts`, `drag-and-drop.spec.ts`,
   `collection-elevator.spec.ts`, `collection-item-lifetime.spec.ts`,
   `external-engine-lifetime.spec.ts` и `browser/webc-collections.spec.ts`
   стенда.
@@ -3184,7 +3199,7 @@ Framework-agnostic dependency injection:
 | @soldy-ui/react          | Components (`Button`, `ComponentView`, …; collections with parts — `ListBox` with `ListBox.Item`, `Tabs` with `Tabs.Item` / `Tabs.Content`, `Accordion` with `Accordion.Item`, `RadioGroup` with `RadioGroup.Item`, `Table` with `Table.Column` / `Table.Row`, and flat `ListBoxItem`, `TabsItem`, `TabsContent`, `AccordionItem`, `RadioGroupItem`, `TableColumn`, `TableRow`), `useSetupXxx` hooks, `useAdapterContext`, `useAdapter`, `useCollectionAdapter`, `ReactProfile`, `ReactNaming`, `TReactElevator`, `Elevate`, `renderSlot`, `toAriaProps`, `toRootProps`, `toWrappedRootProps`, prop types (`UseProps`, `UseDomProps`, `EventProps`, `SlotProps`)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | @soldy-ui/angular        | `TButtonComponent`, `TComponentViewComponent`, `TComponentComponent`, `TIconComponent`, `TProgressSpinnerComponent`, `TSkeletonComponent`, `TFrameComponent`, `TLabelComponent`, `TInputComponent`, `TCheckBoxComponent`, `TSwitchComponent`, `TRadioGroupComponent` / `TRadioGroupItemComponent`, `TListBoxComponent` / `TListBoxItemComponent`, `TTabsComponent` / `TTabsItemComponent` / `TTabsContentComponent`, `TAccordionComponent` / `TAccordionItemComponent`, `setupXxx`, generated names and surfaces (`ButtonInputNames` / `ButtonOutputNames` / `TButtonSurface`, …), `createAngularAdapterContext`, `useAdapter` / `useCollectionAdapter` / `joinBindings`, `TInputValue` / `TOutputEmitter`, `TComponentBase`, `TRootSpec`, `SlotDirective`, `RoleIconDirective`, `LocaleProviderDirective`, `AngularProfile`, `AngularNaming`, `useInputs` / `useOutputs`, `TAngularElevator`, `AngularElevatorFactory`, `provideElevator`                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | @soldy-ui/svelte         | `Button`, `ComponentView`, `setupXxx`, `useAdapter`, `SvelteProfile`, `SvelteNaming`, `TSvelteElevator`, `SvelteElevatorFactory`, prop types (`UseProps`, `UseDomProps`, `EventProps`, `SlotProps`, `TSnippetSlots`)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
-| @soldy-ui/solid          | `Button`, `ComponentView`, `Icon`, `Frame`, `ProgressSpinner`, `Skeleton`, `Virtual`, collections with parts (`ListBox` with `ListBox.Item`, `Tabs` with `Tabs.Item` / `Tabs.Content`, `Accordion` with `Accordion.Item`, `RadioGroup` with `RadioGroup.Item`, `Table` with `Table.Column` / `Table.Row`, and flat `ListBoxItem`, `TabsItem`, `TabsContent`, `AccordionItem`, `RadioGroupItem`, `TableColumn`, `TableRow`), `setupXxx`, `createSolidAdapterContext`, `useAdapter`, `useCollectionAdapter`, `joinState`, `LocaleProvider`, `Teleport`, `KeyedFor`, `roleIcon`, `createRootProps`, `createWrappedRootProps`, `toRootProps`, `rootTag`, `SolidProfile`, `SolidNaming`, `TSolidElevator`, `useElevator`, `Elevate`, `renderSlot`, `resolveSlot`, `relaySlot`, `ResolvedSlot`, `chainHandler`, prop types (`UseProps`, `UseDomProps`, `EventProps`, `SlotProps`)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| @soldy-ui/solid          | `Button`, `ComponentView`, `Icon`, `Frame`, `ProgressSpinner`, `ProgressLinear`, `Skeleton`, `Slider`, `Rating`, `Scroller`, `Pagination` (its page is an internal part), `Virtual`, collections with parts (`ListBox` with `ListBox.Item`, `Tabs` with `Tabs.Item` / `Tabs.Content`, `Accordion` with `Accordion.Item`, `RadioGroup` with `RadioGroup.Item`, `Table` with `Table.Column` / `Table.Row`, and flat `ListBoxItem`, `TabsItem`, `TabsContent`, `AccordionItem`, `RadioGroupItem`, `TableColumn`, `TableRow`), `setupXxx`, `createSolidAdapterContext`, `useAdapter`, `useCollectionAdapter`, `joinState`, `LocaleProvider`, `Teleport`, `KeyedFor`, `roleIcon`, `createRootProps`, `createWrappedRootProps`, `toRootProps`, `rootTag`, `SolidProfile`, `SolidNaming`, `TSolidElevator`, `useElevator`, `Elevate`, `renderSlot`, `resolveSlot`, `relaySlot`, `ResolvedSlot`, `chainHandler`, prop types (`UseProps`, `UseDomProps`, `EventProps`, `SlotProps`)                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | @soldy-ui/webc           | `<button is="so-button">` (`TButtonElement`), `<div is="so-component-view">` (`TComponentViewElement`), `<span is="so-icon">` (`TIconElement`), `<span is="so-progress-spinner">` (`TProgressSpinnerElement`), `<div is="so-skeleton">` (`TSkeletonElement`), `<so-locale-provider>` (`TLocaleProviderElement`), `setupXxx`, templates (`buttonTemplate`, `componentViewTemplate`, `iconTemplate`, `progressSpinnerTemplate`, `skeletonTemplate`), `SoldyElement`, `TRootSpec`, `defineElement`, `createWebcAdapterContext`, `useAdapter`, `useAttributes`, `HOST_PROPS`, `bind`, `roleIcon`, `drawRoleIcon`, `WebcProfile`, `WebcNaming`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | @soldy-ui/theme-oren     | CSS: `dist/index.css` (built by `npm run build --workspace=@soldy-ui/theme-oren`); types: `index.d.ts` — theme values of the appearance registries; `@soldy-ui/theme-oren/setup` — the theme object for `useTheme` and `TTabsViewPlugin`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | @soldy-ui/icons-material | Icons as data (`TIconSource`), a named export per icon — every role of `ICON_ROLES` and more; the app registers them via `useIcons`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |

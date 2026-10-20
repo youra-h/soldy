@@ -39,12 +39,18 @@ import {
 	Input,
 	Label,
 	ListBox,
+	Pagination,
+	ProgressLinear,
 	ProgressSpinner,
 	RadioGroup,
+	Rating,
+	Scroller,
 	Skeleton,
+	Slider,
 	Switch,
 	Table,
 	Tabs,
+	Textarea,
 	toControlAttrs,
 	toRootForward,
 	toRootLayout,
@@ -62,15 +68,21 @@ import {
 	type LabelProps,
 	type ListBoxItemProps,
 	type ListBoxProps,
+	type PaginationProps,
+	type ProgressLinearProps,
 	type ProgressSpinnerProps,
 	type RadioGroupItemProps,
 	type RadioGroupProps,
+	type RatingProps,
+	type ScrollerProps,
 	type SkeletonProps,
+	type SliderProps,
 	type SwitchProps,
 	type TableProps,
 	type TabsContentProps,
 	type TabsItemProps,
 	type TabsProps,
+	type TextareaProps,
 } from '@soldy-ui/solid'
 import { find, mount, nextFrame } from './mount'
 
@@ -81,8 +93,13 @@ type TProbeProps = ButtonProps &
 	FrameProps &
 	IconProps &
 	LabelProps &
+	ProgressLinearProps &
 	ProgressSpinnerProps &
 	SkeletonProps &
+	SliderProps &
+	RatingProps &
+	ScrollerProps &
+	PaginationProps &
 	TabsProps &
 	AccordionProps &
 	RadioGroupProps &
@@ -110,8 +127,13 @@ const COMPONENTS: ReadonlyArray<
 	['Frame', Frame, '.so-frame', { visible: true }],
 	['Icon', Icon, '.so-icon', { tag: 'i' }],
 	['Label', Label, '.so-label', {}],
+	['ProgressLinear', ProgressLinear, '.so-progress-linear', {}],
 	['ProgressSpinner', ProgressSpinner, '.so-progress-spinner', {}],
 	['Skeleton', Skeleton, '.so-skeleton', {}],
+	['Slider', Slider, '.so-slider', {}],
+	['Rating', Rating, '.so-rating', {}],
+	['Scroller', Scroller, '.so-scroller', {}],
+	['Pagination', Pagination, '.so-pagination', {}],
 	['Tabs.Content', TabsContentProbe, '.so-tabs__panel', {}],
 	['Accordion', Accordion, '.so-accordion', {}],
 	['RadioGroup', RadioGroup, '.so-radio-group', {}],
@@ -164,18 +186,22 @@ const ITEMS: ReadonlyArray<readonly [string, Component<TItemProbeProps>, string,
 ]
 
 /** Общие пропсы полей в таблице. */
-type TFieldProbeProps = CheckBoxProps & SwitchProps & InputProps
+type TFieldProbeProps = CheckBoxProps & SwitchProps & InputProps & TextareaProps
 
 /**
  * Поле и класс его корня. Атрибуты потребителя поле делит, как у Vue: класс и
- * стиль — корню, остальное — `<input>`, поверх его набора `aria`. Корень
- * остаётся за адаптером и у него.
+ * стиль — корню, остальное — `<input>` (у Textarea — `<textarea>`), поверх его
+ * набора `aria`. Корень остаётся за адаптером и у него.
  */
 const FIELDS: ReadonlyArray<readonly [string, Component<TFieldProbeProps>, string]> = [
 	['CheckBox', CheckBox, '.so-check-box'],
 	['Switch', Switch, '.so-switch'],
 	['Input', Input, '.so-input'],
+	['Textarea', Textarea, '.so-textarea'],
 ]
+
+/** Поле внутри корня: `<input>`, у Textarea — `<textarea>`. */
+const CONTROL = 'input, textarea'
 
 describe('атрибут снаружи перекрывает набор ядра', () => {
 	/** `dir` ядро пишет в `attrs` по `direction`, а `dir` снаружи — атрибут потребителя. */
@@ -230,12 +256,12 @@ describe('атрибут снаружи перекрывает набор ядр
 	})
 })
 
-describe('поле: атрибуты снаружи — <input>, поверх его aria', () => {
+describe('поле: атрибуты снаружи — полю, поверх его aria', () => {
 	/** Имя полю пишет плагин доступного имени в `aria`, а `aria-label` снаружи — атрибут потребителя. */
 	it.each(FIELDS)('%s: aria-label потребителя — поверх имени поля', (_name, Probe, selector) => {
 		mount(() => <Probe aria_label="Ядро" aria-label="Своё" />)
 
-		const field = find(document, `${selector} input`, HTMLInputElement)
+		const field = find(find(document, selector, HTMLElement), CONTROL, HTMLElement)
 
 		expect(field.getAttribute('aria-label')).toBe('Своё')
 		expect(find(document, selector, HTMLElement).hasAttribute('aria-label')).toBe(false)
@@ -245,7 +271,7 @@ describe('поле: атрибуты снаружи — <input>, поверх е
 		mount(() => <Probe class="mine" style={{ color: 'red' }} />)
 
 		const root = find(document, selector, HTMLElement)
-		const field = find(root, 'input', HTMLInputElement)
+		const field = find(root, CONTROL, HTMLElement)
 
 		expect([...root.classList].at(-1)).toBe('mine')
 		expect(root.style.color).toBe('red')
@@ -255,11 +281,12 @@ describe('поле: атрибуты снаружи — <input>, поверх е
 
 	/**
 	 * `ref` потребителя — не «остальное»: он получает корень поля, а не
-	 * `<input>`. До поля потребитель дойдёт от корня `querySelector`, а от поля
-	 * до корня — только по родителям, и этот путь ломается при правке разметки.
+	 * `<input>` или `<textarea>`. До поля потребитель дойдёт от корня
+	 * `querySelector`, а от поля до корня — только по родителям, и этот путь
+	 * ломается при правке разметки.
 	 */
 	it.each(FIELDS)(
-		'%s: ref потребителя — корень, а не <input>; element:ready — с корнем',
+		'%s: ref потребителя — корень, а не поле; element:ready — с корнем',
 		async (_name, Probe, selector) => {
 			const nodes: Element[] = []
 			const ready: Element[] = []
@@ -275,7 +302,7 @@ describe('поле: атрибуты снаружи — <input>, поверх е
 			const root = find(document, selector, HTMLElement)
 
 			expectNodes(nodes, [root])
-			expect(nodes).not.toContain(find(root, 'input', HTMLInputElement))
+			expect(nodes).not.toContain(find(root, CONTROL, HTMLElement))
 			expectNodes(ready, [root])
 		},
 	)
@@ -283,11 +310,11 @@ describe('поле: атрибуты снаружи — <input>, поверх е
 	/**
 	 * Тема красит коробку поля и подпись поля формы `Field` по корню поля —
 	 * прямому ребёнку обёртки контрола, — поэтому `dataset` (`data-disabled`,
-	 * `data-invalid`) — на корне, а ошибку скринридеру объявляет `<input>`.
+	 * `data-invalid`) — на корне, а ошибку скринридеру объявляет поле.
 	 * Ошибку контролу пишет поле формы.
 	 */
 	it.each(FIELDS)(
-		'%s: data-disabled и data-invalid — на корне, aria-invalid — у <input>',
+		'%s: data-disabled и data-invalid — на корне, aria-invalid — у поля',
 		(_name, Probe, selector) => {
 			mount(() => (
 				<Field invalid>
@@ -296,7 +323,7 @@ describe('поле: атрибуты снаружи — <input>, поверх е
 			))
 
 			const root = find(document, selector, HTMLElement)
-			const field = find(root, 'input', HTMLInputElement)
+			const field = find(root, CONTROL, HTMLElement)
 
 			expect(root.dataset['disabled']).toBe('true')
 			expect(root.dataset['invalid']).toBe('true')
@@ -636,6 +663,12 @@ const ROOTS: ReadonlyArray<
 	['Icon', (props) => <Icon tag="i" {...props} />, '.so-icon', '.so-icon'],
 	['Label', (props) => <Label {...props} />, '.so-label', '.so-label'],
 	[
+		'ProgressLinear',
+		(props) => <ProgressLinear {...props} />,
+		'.so-progress-linear',
+		'.so-progress-linear',
+	],
+	[
 		'ProgressSpinner',
 		(props) => <ProgressSpinner {...props} />,
 		'.so-progress-spinner',
@@ -645,6 +678,11 @@ const ROOTS: ReadonlyArray<
 	['CheckBox', (props) => <CheckBox {...props} />, '.so-check-box', '.so-check-box'],
 	['Switch', (props) => <Switch {...props} />, '.so-switch', '.so-switch'],
 	['Input', (props) => <Input {...props} />, '.so-input', '.so-input'],
+	['Textarea', (props) => <Textarea {...props} />, '.so-textarea', '.so-textarea'],
+	['Slider', (props) => <Slider {...props} />, '.so-slider', '.so-slider'],
+	['Rating', (props) => <Rating {...props} />, '.so-rating', '.so-rating'],
+	['Scroller', (props) => <Scroller {...props} />, '.so-scroller', '.so-scroller'],
+	['Pagination', (props) => <Pagination {...props} />, '.so-pagination', '.so-pagination'],
 	['Tabs', (props) => <Tabs {...props} />, '.so-tabs', '.so-tabs'],
 	['Tabs.Item', (props) => <TabsItemProbe {...props} />, '.so-tabs-item', '.so-tabs-item'],
 	[

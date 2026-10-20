@@ -1,7 +1,8 @@
 /**
  * NativeInput — `<input>`, чьё живое состояние ведёт ядро: текст поля,
- * отметку и «выбрано частично». Аналог привязок свойств DOM у Vue — `:value`,
- * `:checked`, `:indeterminate`: у разметки React таких привязок нет.
+ * значение ползунка, отметку и «выбрано частично». Аналог привязок свойств
+ * DOM у Vue — `:value`, `:checked`, `:indeterminate`: у разметки React таких
+ * привязок нет.
  *
  * Своих режимов поля у React два, и оба не подходят. Контролируемое поле
  * (`value` или `checked` пропом) без `onChange` React считает ошибкой, а
@@ -19,14 +20,16 @@
  *   радио отметку снимает и браузер — когда отмечают соседа. Без записи React
  *   считал бы радио отмеченным, и следующий выбор его не дал бы `onChange`.
  *
- * Ввод пользователя в ядро несут плагины (`TInputPlugin`, `TInputBoolPlugin`)
+ * Ввод пользователя в ядро несут плагины (`TInputPlugin`, `TInputBoolPlugin`,
+ * у ползунков Slider и Rating — `TSlideKeyboardPlugin` и `TSlidePointerPlugin`)
  * или разметка компонента — выбор радио приходит `onChange`, как `@change` у
  * Vue. Своего `onChange` у поля нет.
  *
  * Живое состояние — отдельно от атрибутов: у флажка и радио атрибут `value` —
  * значение для формы, а живое у них — отметка. Какие свойства ведёт ядро,
  * говорит сам набор `live`, ветки по `type` нет. `undefined` в наборе — пустое
- * поле и снятая отметка, как у Vue.
+ * поле и снятая отметка, как у Vue. Значение ползунка ядро отдаёт числом, а
+ * свойство узла — строка: число поле пишет строкой, как `:value` у Vue.
  *
  * `ref`, пришедший с атрибутами, свой не выбивает: без него поле не узнало бы
  * свой узел. `ref` потребителя поля сюда и не приходит — он ведёт к корню
@@ -38,8 +41,8 @@ import type { InputHTMLAttributes, ReactElement } from 'react'
 
 /** Живое состояние поля: свойства узла, которые ведёт ядро. */
 export type TNativeInputLive = {
-	/** Текст текстового поля. */
-	readonly value?: string
+	/** Текст текстового поля или значение ползунка (`type="range"`). */
+	readonly value?: string | number
 	/** Отметка флажка и радио. */
 	readonly checked?: boolean
 	/** «Выбрано частично» у флажка. */
@@ -68,7 +71,8 @@ type TProperties = {
 
 function toProperties(live: TNativeInputLive): TProperties {
 	return {
-		value: 'value' in live ? (live.value ?? '') : undefined,
+		// Свойство узла — строка: число ползунка — его строкой, как `:value` у Vue
+		value: 'value' in live ? String(live.value ?? '') : undefined,
 		checked: 'checked' in live ? live.checked === true : undefined,
 		indeterminate: 'indeterminate' in live ? live.indeterminate === true : undefined,
 	}

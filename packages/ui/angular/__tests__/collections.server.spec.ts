@@ -33,6 +33,7 @@ import type { TTableColumnSource } from '@soldy-ui/core'
 import {
 	TAccordionComponent,
 	TAccordionItemComponent,
+	TDragAndDropComponent,
 	TListBoxComponent,
 	TListBoxItemComponent,
 	TRadioGroupComponent,
@@ -612,6 +613,83 @@ describe('Virtual · серверный рендер и гидратация', (
 		expect(
 			attributeOf(all(document, '.so-list-box-item .so-button'), 'aria-setsize').at(-1),
 		).toBe('80')
+		expect(error).not.toHaveBeenCalled()
+		expect(warn).not.toHaveBeenCalled()
+	})
+})
+
+/** Табы и секции разметкой и список из данных — в обёртке перестановки. */
+@Component({
+	selector: 'app-root',
+	standalone: true,
+	imports: [
+		TDragAndDropComponent,
+		TTabsComponent,
+		TTabsItemComponent,
+		TListBoxComponent,
+		TAccordionComponent,
+		TAccordionItemComponent,
+	],
+	template: `<so-drag-and-drop>
+		<so-tabs>
+			<so-tabs-item value="a" text="A" active />
+			<so-tabs-item value="b" text="B" />
+		</so-tabs>
+		<so-list-box [items]="items"></so-list-box>
+		<div so-accordion>
+			<so-accordion-item value="a" text="A">Содержимое A</so-accordion-item>
+			<so-accordion-item value="b" text="B">Содержимое B</so-accordion-item>
+		</div>
+	</so-drag-and-drop>`,
+})
+class DragAndDropPage {
+	readonly items = [
+		{ value: 'a', text: 'A' },
+		{ value: 'b', text: 'B' },
+	]
+}
+
+/** Элементы трёх коллекций страницы — по порядку: табы, список, секции. */
+const ITEM_SELECTORS = ['.so-tabs-item', '.so-list-box-item', '.so-accordion-item']
+
+describe('DragAndDrop · серверный рендер и гидратация', () => {
+	afterEach(() => {
+		vi.restoreAllMocks()
+		leavePage()
+	})
+
+	/**
+	 * Обёртку коллекции подхватывают при сборке, а она идёт и на сервере, но
+	 * `draggable` ставит плагин перетаскивания на узлы элементов, а узлов
+	 * плагинам на сервере нет.
+	 */
+	it('сервер — элементы коллекций без draggable', async () => {
+		const page = await serverPage(DragAndDropPage)
+
+		expect(ITEM_SELECTORS.map((selector) => all(page, selector).length)).toEqual([2, 2, 2])
+		expect(all(page, '[draggable]')).toEqual([])
+	})
+
+	/**
+	 * Гидратация берёт узлы сервера, а узлы элементов плагин получает после
+	 * отрисовки и объявляет кадром позже: тогда на них и встаёт `draggable`.
+	 */
+	it('после гидратации — те же узлы, перетаскиваемые, ошибок нет', async () => {
+		const error = vi.spyOn(console, 'error')
+		const warn = vi.spyOn(console, 'warn')
+
+		loadPage(await renderOnServer(DragAndDropPage))
+
+		const first = document.querySelector('.so-list-box-item')
+		const app = await hydrate(DragAndDropPage)
+
+		await app.whenStable()
+		await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
+
+		expect(document.querySelector('.so-list-box-item')).toBe(first)
+		expect(
+			ITEM_SELECTORS.map((selector) => attributeOf(all(document, selector), 'draggable')),
+		).toEqual(ITEM_SELECTORS.map(() => ['true', 'true']))
 		expect(error).not.toHaveBeenCalled()
 		expect(warn).not.toHaveBeenCalled()
 	})

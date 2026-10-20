@@ -1,5 +1,4 @@
 @use '../../mixins/hover';
-@use '../../mixins/solid';
 
 // Варианты темы со своим цветом. `normal` сюда не входит: это нейтраль, и у
 // блока без варианта цвет тот же — отдельное правило ему не нужно.
@@ -7,18 +6,15 @@ $variants: 'accent', 'positive', 'negative', 'caution';
 
 // Цвет варианта у вида по умолчанию (`outlined`): рамка, отметка и фон
 // выключенной коробки. Отметку этим цветом рисует и `plain`.
-//
-// Отметка — цвет семейства графикой на поверхности
-// (`--so-component-graphic-*`): она стоит на коробке, а у `plain` — прямо на
-// странице или панели, и ей нужно 3:1 к ним (WCAG 1.4.11). Своей ступенью это
-// не пишется: на середине шкалы (500) отметка в светлой схеме держала от
-// 2,13:1 у `caution`, а цвет графики у темы один на все места, и ступень у
-// нейтрали в схемах разная.
-@mixin checkbox-variant($this, $color: 'neutral', $border: 300, $bg-disabled: 50) {
+@mixin checkbox-variant($this, $color: 'neutral', $border: 300, $mark: 500, $bg-disabled: 50) {
 	@include checkbox-frame($this, $color, $border);
 
-	#{$this}__container svg {
-		fill: var(--so-component-graphic-#{$color});
+	#{$this}__container {
+		$svg-fill: $mark;
+
+		svg {
+			@apply #{'fill-so-' + $color + '-' + $svg-fill};
+		}
 	}
 
 	input:disabled + #{$this}__container {
@@ -61,35 +57,23 @@ $variants: 'accent', 'positive', 'negative', 'caution';
 // `50` вида по умолчанию, а видно её рамкой этого же вида.
 //
 // От `outlined` вид отличается только отмеченным состоянием: насыщенная
-// заливка и белая отметка на ней, как подпись вида `filled` у Button, — та же
-// заливка под белым текстом (`mixins/_solid.scss`), а наведение — её тень.
-// Отметке как графике хватило бы 3:1, но на середине шкалы (500), где коробка
-// стояла раньше, не было и этого: в светлой схеме от 2,15:1 у `caution`, а
-// наведение («+100») в тёмной схеме светлело к белой отметке — до 2,99:1 у
-// `positive`. Кромка отмеченной коробки — в цвет заливки.
-//
-// Цвет — переменными на корне (`checkbox-filled-colors`), как у Calendar:
-// правила состояний объявлены один раз на все цвета, а вариант пишет только
-// переменные. Смесь тени в переменной корня собирается один раз на цвет, а не
-// в каждом длинном селекторе состояния.
-@mixin checkbox-filled-colors($color) {
-	--so-check-box-fill: #{solid.fill($color)};
-	--so-check-box-fill-hover: #{solid.fill($color, var(--so-component-state-hover))};
-}
+// ступень `$fill` и белая отметка на ней, как подпись вида `filled` у
+// Button. Середина хроматических шкал насыщенная в обеих схемах, а `500`
+// нейтрали — точка симметрии. Кромка отмеченной коробки — в цвет заливки.
+@mixin checkbox-filled($this, $color, $fill: 500) {
+	// Одна ветка на обе схемы — см. комментарий в button/_mixins.scss
+	$fill-hover: $fill + 100;
 
-@mixin checkbox-filled($this) {
 	// Отмечено — в коробке стоит отметка: галка отмеченного поля или черта
 	// частичного выбора при любом значении.
 	$on: '&:is(#{$this}--indeterminate, :has(> input:checked))';
 
 	// Сильнее, чем фон выключенной коробки у вида по умолчанию: `:is` даёт
-	// ступень специфичности, и с правилом варианта отмеченная выключенная
-	// коробка равна по ней и побеждает порядком (виды — после вариантов). Она
-	// остаётся залитой, её гасит только прозрачность блока.
+	// ступень специфичности и нейтрали, и варианту, — отмеченная выключенная
+	// коробка остаётся залитой, её гасит только прозрачность блока.
 	#{$on} #{$this}__container {
-		border-color: var(--so-check-box-fill);
-		background-color: var(--so-check-box-fill);
-		@apply text-white;
+		border-color: var(--so-#{$color}-#{$fill});
+		@apply #{'bg-so-' + $color + '-' + $fill} text-white;
 
 		// Белый — цветом текста, а не в `fill`. В режиме принудительных цветов
 		// браузер заменяет фон коробки системным, а `fill` не трогает: белая
@@ -103,21 +87,20 @@ $variants: 'accent', 'positive', 'negative', 'caution';
 	#{$on}
 		input:is(#{hover.$hovered-field}):not(:disabled, #{hover.readonly($this)})
 		+ #{$this}__container {
-		border-color: var(--so-check-box-fill-hover);
-		background-color: var(--so-check-box-fill-hover);
+		border-color: var(--so-#{$color}-#{$fill-hover});
+		@apply #{'bg-so-' + $color + '-' + $fill-hover};
 	}
 }
 
 // Вид `filled` целиком: нейтраль и каждый вариант, одним включением на
-// селектор, как `button-view` у Button. Состояния объявлены один раз, вариант
-// пишет только переменные цвета.
+// селектор, как `button-view` у Button. Матрица «вид × вариант» живёт здесь
+// одна.
 @mixin checkbox-filled-view($this) {
-	@include checkbox-filled-colors('neutral');
-	@include checkbox-filled($this);
+	@include checkbox-filled($this, 'neutral');
 
 	@each $variant in $variants {
 		&#{$this}--variant-#{$variant} {
-			@include checkbox-filled-colors($variant);
+			@include checkbox-filled($this, $variant);
 		}
 	}
 }

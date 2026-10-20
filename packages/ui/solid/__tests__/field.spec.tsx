@@ -5,10 +5,11 @@
  * на контролах, которые в адаптере есть. Части — разметка поля: часть стоит,
  * пока задан её текст, ошибка — при `invalid` и на месте подсказки. С
  * контролом поле связывает проводка: поле опускает связку в слой своего лифта
- * (`Elevate`), контрол её берёт. Labelable-контрол (Input, CheckBox, Switch)
- * подпись называет своим `for`, группу (RadioGroup) — ссылкой
- * `aria-labelledby`. Справку контрол получает в `aria-describedby`, ошибку —
- * `aria-invalid` и `data-invalid` на своём корне.
+ * (`Elevate`), контрол её берёт. Labelable-контрол (Input, CheckBox, Switch,
+ * Rating, Slider с одной ручкой) подпись называет своим `for`, группу
+ * (RadioGroup, Slider с несколькими ручками) — ссылкой `aria-labelledby`.
+ * Справку контрол получает в `aria-describedby`, ошибку — `aria-invalid` и
+ * `data-invalid` на своём корне.
  *
  * Своё у Solid — где создаются узлы слота: там, где слот развернули. Поле и
  * контрол разворачивают своё содержимое под своим слоем лифта, иначе контрол
@@ -20,9 +21,9 @@
 
 import { describe, it, expect } from 'vitest'
 import { Show, createSignal, useContext, type JSX } from 'solid-js'
-import { TField, TInput } from '@soldy-ui/core'
+import { TField, TInput, TSlider } from '@soldy-ui/core'
 import type { TFieldPosition } from '@soldy-ui/core'
-import { CheckBox, Field, Input, Label, RadioGroup, Switch } from '@soldy-ui/solid'
+import { CheckBox, Field, Input, Label, RadioGroup, Rating, Slider, Switch } from '@soldy-ui/solid'
 import { ElevatorContext, type TElevatorLayer } from '../src/adapter/elevator/layer'
 import { find, mount } from './mount'
 
@@ -154,6 +155,8 @@ const LABELABLES: ReadonlyArray<readonly [string, () => JSX.Element, string, str
 	['Input', () => <Input />, '.so-input', '.so-input input'],
 	['CheckBox', () => <CheckBox />, '.so-check-box', '.so-check-box input'],
 	['Switch', () => <Switch />, '.so-switch', '.so-switch input'],
+	['Rating', () => <Rating />, '.so-rating', '.so-rating input'],
+	['Slider', () => <Slider />, '.so-slider', '.so-slider input'],
 ]
 
 describe.each(LABELABLES)('%s в поле', (_name, control, root, element) => {
@@ -229,6 +232,82 @@ describe('RadioGroup в поле', () => {
 			false,
 			false,
 		])
+	})
+})
+
+/**
+ * Ползунок с несколькими ручками — группа: `for` назвал бы одно поле из них, а
+ * ссылка на подпись в наборе полей перекрыла бы имена ручек (`thumbLabels`).
+ * Подпись и справка — у корня (`role="group"`), а ошибка — `aria-invalid` на
+ * каждом поле: на группе ARIA ошибки не объявляет.
+ */
+describe('Slider с несколькими ручками в поле', () => {
+	const range = (): JSX.Element => <Slider value={[20, 80]} thumbLabels={['От', 'До']} />
+	const root = () => node('.so-slider')
+	const thumbs = () => [...document.querySelectorAll('.so-slider input')]
+
+	it('for у подписи нет, корень — группа со ссылкой на подпись, имена ручек целы', () => {
+		mount(() => <Field label="Цена">{range()}</Field>)
+
+		expect(label().hasAttribute('for')).toBe(false)
+		expect(root().getAttribute('role')).toBe('group')
+		expect(refsOf(root(), 'aria-labelledby')).toEqual([label().id])
+		expect(thumbs().map((thumb) => thumb.getAttribute('aria-label'))).toEqual(['От', 'До'])
+		expect(thumbs().map((thumb) => thumb.hasAttribute('aria-labelledby'))).toEqual([
+			false,
+			false,
+		])
+		expect(thumbs().map((thumb) => thumb.id)).toEqual(['', ''])
+	})
+
+	it('справка — у группы, ошибка — aria-invalid на каждой ручке, data-invalid на корне', () => {
+		const ctrl = new TField({ label: 'Цена', helper: 'Подсказка', error: 'Ошибка' })
+
+		mount(() => <Field ctrl={ctrl}>{range()}</Field>)
+
+		expect(refsOf(root(), 'aria-describedby')).toEqual([node('.so-field__helper').id])
+		expect(thumbs().map((thumb) => thumb.hasAttribute('aria-describedby'))).toEqual([
+			false,
+			false,
+		])
+
+		ctrl.invalid = true
+
+		expect(refsOf(root(), 'aria-describedby')).toEqual([node('.so-field__error').id])
+		expect(thumbs().map((thumb) => thumb.getAttribute('aria-invalid'))).toEqual([
+			'true',
+			'true',
+		])
+		expect(root().hasAttribute('aria-invalid')).toBe(false)
+		expect(root().dataset['invalid']).toBe('true')
+	})
+
+	it('число ручек сменилось — подпись за ним: for у одной, ссылка группы у нескольких', () => {
+		const ctrl = new TSlider({ value: 30 })
+
+		mount(() => (
+			<Field label="Цена">
+				<Slider ctrl={ctrl} />
+			</Field>
+		))
+
+		expect(label().htmlFor).toBe(input('.so-slider input').id)
+
+		ctrl.value = [20, 80]
+
+		expect(label().hasAttribute('for')).toBe(false)
+		expect(root().getAttribute('role')).toBe('group')
+		expect(refsOf(root(), 'aria-labelledby')).toEqual([label().id])
+		expect(thumbs().map((thumb) => thumb.id)).toEqual(['', ''])
+
+		ctrl.value = 50
+
+		const field = input('.so-slider input')
+
+		expect(field.id).not.toBe('')
+		expect(label().htmlFor).toBe(field.id)
+		expect(root().hasAttribute('role')).toBe(false)
+		expect(root().hasAttribute('aria-labelledby')).toBe(false)
 	})
 })
 
@@ -341,6 +420,62 @@ describe('Field · одно поле — один контрол', () => {
 		expect(refsOf(field, 'aria-describedby')).toEqual([node('.so-field__helper').id])
 		expect(nested.id).toBe('')
 		expect(nested.hasAttribute('aria-describedby')).toBe(false)
+	})
+
+	/**
+	 * Слоты ползунка и оценки разворачиваются под их слоем лифта, с пустой
+	 * связкой: контрол в подписи метки или в значке звезды — их содержимое, а не
+	 * контрол поля. Связку взял флажок раньше них, флажок сняли — связка
+	 * свободна, а переключатель, появившийся в слоте, её всё равно не берёт.
+	 */
+	it.each([
+		[
+			'Slider, слот mark',
+			(nested: () => boolean) => (
+				<Slider
+					value={20}
+					marks={[{ value: 50 }]}
+					mark={() => (
+						<Show when={nested()}>
+							<Switch />
+						</Show>
+					)}
+				/>
+			),
+		],
+		[
+			'Rating, слот icon',
+			(nested: () => boolean) => (
+				<Rating
+					max={1}
+					icon={({ filled }) => (
+						<Show when={filled && nested()}>
+							<Switch />
+						</Show>
+					)}
+				/>
+			),
+		],
+	])('%s: связка освободилась — контрол в слоте её не берёт', (_name, control) => {
+		const [first, setFirst] = createSignal(true)
+		const [nested, setNested] = createSignal(false)
+
+		mount(() => (
+			<Field label="Подпись" helper="Подсказка">
+				<Show when={first()}>
+					<CheckBox />
+				</Show>
+				{control(nested)}
+			</Field>
+		))
+
+		setFirst(false)
+		setNested(true)
+
+		const switchField = input('.so-switch input')
+
+		expect(switchField.id).toBe('')
+		expect(switchField.hasAttribute('aria-describedby')).toBe(false)
 	})
 
 	/**

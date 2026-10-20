@@ -21,14 +21,32 @@ import {
 	TInput,
 	TListBox,
 	TListBoxItem,
+	TPagination,
 	TRadioGroup,
 	TRadioGroupItem,
+	TRating,
+	TScroller,
+	TSlider,
 	TSwitch,
 	TTabs,
 	TTabsItem,
+	TTextarea,
 	createEngineTabs,
 } from '@soldy-ui/core'
-import { Accordion, CheckBox, Input, ListBox, RadioGroup, Switch, Tabs } from '@soldy-ui/react'
+import {
+	Accordion,
+	CheckBox,
+	Input,
+	ListBox,
+	Pagination,
+	RadioGroup,
+	Rating,
+	Scroller,
+	Slider,
+	Switch,
+	Tabs,
+	Textarea,
+} from '@soldy-ui/react'
 import { find, mount, nextFrame } from './mount'
 
 type TCase = {
@@ -61,6 +79,14 @@ const CASES: Record<string, TCase> = {
 		target: 'input',
 		before: '.before',
 	},
+	Textarea: {
+		render: () => {
+			const ctrl = new TTextarea()
+
+			return { ctrl, node: <Textarea ctrl={ctrl} /> }
+		},
+		target: 'textarea',
+	},
 	CheckBox: {
 		render: () => {
 			const ctrl = new TCheckBox()
@@ -76,6 +102,48 @@ const CASES: Record<string, TCase> = {
 			return { ctrl, node: <Switch ctrl={ctrl} /> }
 		},
 		target: 'input',
+	},
+	Rating: {
+		render: () => {
+			const ctrl = new TRating()
+
+			return { ctrl, node: <Rating ctrl={ctrl} /> }
+		},
+		target: 'input',
+	},
+	Slider: {
+		render: () => {
+			const ctrl = new TSlider()
+
+			return { ctrl, node: <Slider ctrl={ctrl} /> }
+		},
+		target: 'input',
+	},
+	Pagination: {
+		render: () => {
+			const ctrl = new TPagination()
+
+			return { ctrl, node: <Pagination ctrl={ctrl} total={50} value={3} /> }
+		},
+		target: '[aria-current="page"]',
+		// Стрелка «назад» на третьей странице включена — остановка перед страницами
+		before: '.so-pagination__prev:not([disabled])',
+	},
+	'Scroller со своими остановками': {
+		render: () => {
+			const ctrl = new TScroller()
+
+			return {
+				ctrl,
+				node: (
+					<Scroller ctrl={ctrl}>
+						<button className="target">A</button>
+						<button>B</button>
+					</Scroller>
+				),
+			}
+		},
+		target: '.target',
 	},
 	'RadioGroup.Item': {
 		render: () => {
@@ -394,5 +462,60 @@ describe('RadioGroup · отметка по модели', () => {
 		})
 
 		expect(document.activeElement).toBe(target())
+	})
+})
+
+describe('Scroller · вьюпорт — остановка', () => {
+	/**
+	 * Своих остановок в ленте нет, а листать есть куда: остановка — сам
+	 * вьюпорт. Замер в jsdom нулевой, поэтому факт приносит инстанс — как
+	 * `scroller.spec.tsx`.
+	 */
+	it('своих остановок нет — фокус на вьюпорте, а не на кнопке «вперёд»', async () => {
+		const ctrl = new TScroller()
+
+		mount(
+			<Scroller ctrl={ctrl}>
+				<span>A</span>
+			</Scroller>,
+		)
+		await nextFrame()
+
+		act(() => {
+			ctrl.notifyViewport({ canPrev: false, canNext: true, hasTabStops: false })
+		})
+
+		act(() => {
+			ctrl.focused = true
+		})
+
+		expect(document.activeElement).toBe(find(document, '.so-scroller__viewport', HTMLElement))
+		expect(ctrl.focused).toBe(true)
+	})
+})
+
+describe('Pagination · текущая по модели', () => {
+	/**
+	 * Значение сменилось в том же такте, что и запись `focused`: страницу окна
+	 * React перерисует после `act`, а текущую правило берёт по ключу значения,
+	 * — фокус встаёт на новую текущую, а не на прежнюю.
+	 */
+	it('смена значения и focused = true в одном такте — фокус на новой текущей', async () => {
+		const ctrl = new TPagination({ total: 50, value: 2 })
+
+		mount(<Pagination ctrl={ctrl} />)
+		await nextFrame()
+
+		act(() => {
+			ctrl.value = 3
+
+			// Такт тот же: текущая в разметке ещё прежняя
+			expect(find(document, '[aria-current="page"]', HTMLElement).textContent).toBe('2')
+
+			ctrl.focused = true
+		})
+
+		expect(document.activeElement?.textContent).toBe('3')
+		expect(document.activeElement?.getAttribute('aria-current')).toBe('page')
 	})
 })

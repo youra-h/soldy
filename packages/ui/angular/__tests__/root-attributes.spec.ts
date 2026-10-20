@@ -35,6 +35,7 @@ import {
 	TSwitchComponent,
 	TTableComponent,
 	TTabsComponent,
+	TTextareaComponent,
 } from '@soldy-ui/angular'
 import {
 	applyAttributes,
@@ -216,21 +217,47 @@ class SwitchProbe extends TProbeHost {}
 })
 class InputProbe extends TProbeHost {}
 
+@Component({
+	selector: 'probe-textarea',
+	standalone: true,
+	imports: [TTextareaComponent],
+	template: `<so-textarea
+		direction="rtl"
+		dir="ltr"
+		title="probe"
+		class="mine"
+		style="color: red"
+		(soElementReady)="ready.push($event)"
+	/>`,
+})
+class TextareaProbe extends TProbeHost {}
+
 /** Поля выключенные и с ошибкой — её пишет поле формы `Field` над каждым. */
 @Component({
 	standalone: true,
-	imports: [TFieldComponent, TCheckBoxComponent, TSwitchComponent, TInputComponent],
+	imports: [
+		TFieldComponent,
+		TCheckBoxComponent,
+		TSwitchComponent,
+		TInputComponent,
+		TTextareaComponent,
+	],
 	template: `<div so-field invalid><so-check-box disabled /></div>
 		<div so-field invalid><so-switch disabled /></div>
-		<div so-field invalid><so-input disabled /></div>`,
+		<div so-field invalid><so-input disabled /></div>
+		<div so-field invalid><so-textarea disabled /></div>`,
 })
 class InvalidFieldsHost {}
 
-/** Поле, хост его пробы, селектор корня и класс ядра на нём. */
-const FIELDS: ReadonlyArray<readonly [string, Type<TProbeHost>, string, string]> = [
-	['CheckBox', CheckBoxProbe, 'so-check-box', 'so-check-box'],
-	['Switch', SwitchProbe, 'so-switch', 'so-switch'],
-	['Input', InputProbe, 'so-input', 'so-input'],
+/**
+ * Поле, хост его пробы, селектор корня, класс ядра на нём и селектор поля
+ * внутри корня: `<input>`, у Textarea — `<textarea>`.
+ */
+const FIELDS: ReadonlyArray<readonly [string, Type<TProbeHost>, string, string, string]> = [
+	['CheckBox', CheckBoxProbe, 'so-check-box', 'so-check-box', 'input'],
+	['Switch', SwitchProbe, 'so-switch', 'so-switch', 'input'],
+	['Input', InputProbe, 'so-input', 'so-input', 'input'],
+	['Textarea', TextareaProbe, 'so-textarea', 'so-textarea', 'textarea'],
 ]
 
 /**
@@ -332,27 +359,27 @@ describe('имя, которое ядро называет не всегда', (
 })
 
 describe('корень связан с TElementPlugin', () => {
-	it.each([...COMPONENTS, ...FIELDS])(
-		'%s: soElementReady приходит с корнем',
-		async (_name, host, selector) => {
-			const fixture = mountHost(host)
-
-			await nextFrame()
-
-			expect(fixture.componentInstance.ready).toEqual([
-				findIn(fixture, selector, HTMLElement),
-			])
-		},
+	/** Компонент, хост его пробы и селектор корня — у компонентов и у полей. */
+	const ROOTS = [...COMPONENTS, ...FIELDS].map(
+		([name, host, selector]) => [name, host, selector] as const,
 	)
+
+	it.each(ROOTS)('%s: soElementReady приходит с корнем', async (_name, host, selector) => {
+		const fixture = mountHost(host)
+
+		await nextFrame()
+
+		expect(fixture.componentInstance.ready).toEqual([findIn(fixture, selector, HTMLElement)])
+	})
 })
 
 /**
  * У поля атрибуты потребителя делятся, как у Vue и React: класс и стиль —
- * корню, атрибуты из разметки — вложенному `<input>`, куда их переносит база
- * (`TRootSpec.control`). Наборы ядра — каждый на своём элементе: `attrs`
- * (`dir`) — на корне, `aria` — на поле.
+ * корню, атрибуты из разметки — вложенному полю (`<input>`, у Textarea —
+ * `<textarea>`), куда их переносит база (`TRootSpec.control`). Наборы ядра —
+ * каждый на своём элементе: `attrs` (`dir`) — на корне, `aria` — на поле.
  */
-describe('поле: атрибуты потребителя делятся между корнем и <input>', () => {
+describe('поле: атрибуты потребителя делятся между корнем и полем', () => {
 	it.each(FIELDS)(
 		'%s: класс и стиль — на корне рядом с классом ядра',
 		(_name, host, selector, own) => {
@@ -365,11 +392,11 @@ describe('поле: атрибуты потребителя делятся ме�
 	)
 
 	it.each(FIELDS)(
-		'%s: атрибуты из разметки — на <input>, не на корне',
-		(_name, host, selector) => {
+		'%s: атрибуты из разметки — на поле, не на корне',
+		(_name, host, selector, _own, control) => {
 			const fixture = mountHost(host)
 			const el = findIn(fixture, selector, HTMLElement)
-			const input = findIn(fixture, `${selector} input`, HTMLInputElement)
+			const input = findIn(fixture, `${selector} ${control}`, HTMLElement)
 
 			expect(el.hasAttribute('title')).toBe(false)
 			expect(input.getAttribute('title')).toBe('probe')
@@ -382,14 +409,14 @@ describe('поле: атрибуты потребителя делятся ме�
 	 * Тема красит коробку поля и подпись поля формы `Field` по корню поля —
 	 * прямому ребёнку обёртки контрола, — поэтому `dataset` (`data-disabled`,
 	 * `data-invalid`) база кладёт на корень, а ошибку скринридеру объявляет
-	 * `<input>`.
+	 * поле.
 	 */
 	it.each(FIELDS)(
-		'%s: data-disabled и data-invalid — на корне, aria-invalid — у <input>',
-		(_name, _host, selector) => {
+		'%s: data-disabled и data-invalid — на корне, aria-invalid — у поля',
+		(_name, _host, selector, _own, control) => {
 			const fixture = mountHost(InvalidFieldsHost)
 			const el = findIn(fixture, selector, HTMLElement)
-			const input = findIn(fixture, `${selector} input`, HTMLInputElement)
+			const input = findIn(fixture, `${selector} ${control}`, HTMLElement)
 
 			expect(el.dataset['disabled']).toBe('true')
 			expect(el.dataset['invalid']).toBe('true')
@@ -400,13 +427,13 @@ describe('поле: атрибуты потребителя делятся ме�
 	)
 
 	it.each(FIELDS)(
-		'%s: dir ядра — на корне, dir потребителя — на <input>',
-		(_name, host, selector) => {
+		'%s: dir ядра — на корне, dir потребителя — на поле',
+		(_name, host, selector, _own, control) => {
 			const fixture = mountHost(host)
 			const el = findIn(fixture, selector, HTMLElement)
 
 			expect(el.getAttribute('dir')).toBe('rtl')
-			expect(findIn(fixture, `${selector} input`, HTMLInputElement).getAttribute('dir')).toBe(
+			expect(findIn(fixture, `${selector} ${control}`, HTMLElement).getAttribute('dir')).toBe(
 				'ltr',
 			)
 		},

@@ -100,11 +100,27 @@ export type TFieldAttributes = Omit<
 >
 
 /**
+ * Атрибуты `<textarea>` Textarea — как `TFieldAttributes` у `<input>`: всё,
+ * кроме того, что поле ведёт само. `readonly` и `maxlength` — входы
+ * дескриптора: `TDomAttributes` вычитает их и так, а `readOnly` и `maxLength`
+ * — те же свойства узла под именами DOM. Текст поля — вход `value`, а
+ * содержимое `<textarea>` (`textContent`, `innerHTML`) — её умолчание:
+ * атрибутом потребителя оно было бы вторым путём к тексту. `ref` `<textarea>`
+ * здесь нет: `ref` потребителя ведёт к корню (`TDomAttributes`), а `ref`
+ * самой `<textarea>` — свой у поля (`textareaText`).
+ */
+export type TTextareaAttributes = Omit<
+	JSX.TextareaHTMLAttributes<HTMLTextAreaElement>,
+	'readonly' | 'readOnly' | 'maxlength' | 'maxLength' | 'textContent' | 'innerHTML' | 'ref'
+>
+
+/**
  * Props DOM-компонента: UseProps + HTML-атрибуты без конфликтов с пропсами,
  * событиями и слотами дескриптора (см. `TDomAttributes`).
  *
  * Атрибуты по умолчанию — `HTMLAttributes` корня; поля берут
- * `TFieldAttributes`: всё, кроме класса и стиля, у них уходит на `<input>`.
+ * `TFieldAttributes` (Textarea — `TTextareaAttributes`): всё, кроме класса и
+ * стиля, у них уходит на `<input>` или `<textarea>`.
  * Button берёт атрибуты кнопки (`ButtonHTMLAttributes`): его корень по
  * умолчанию — `<button>`, и `type`, `form`, `name`, `value` доходят до неё —
  * так деталь разметки библиотеки ставит себе `type="button"`.

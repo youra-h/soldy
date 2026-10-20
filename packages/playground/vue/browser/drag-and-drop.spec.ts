@@ -8,21 +8,42 @@
  * стоят флексом по месту в составе (`order`), а не порядком DOM, поэтому
  * порядок на экране — по коробкам элементов, а не по узлам.
  *
+ * Сначала — обёртка Vue на своей разметке, потом — страница стенда у каждого
+ * фреймворка (`FRAMEWORKS`): превью рисует хост фреймворка, и жест браузера
+ * переставляет элементы коллекций его адаптера так же, как у Vue.
+ *
  * Правила команды — `core/__tests__/drag-and-drop.spec.ts`, жест —
  * `plugins/__tests__/collection-elements.plugin.spec.ts`, разметка —
- * `ui/vue/__tests__/drag-and-drop.spec.ts`.
+ * `ui/<адаптер>/__tests__/drag-and-drop.spec.*`.
  */
 
-import { describe, it, expect, afterEach } from 'vitest'
+import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest'
 import { render, cleanup } from 'vitest-browser-vue'
 import { userEvent } from 'vitest/browser'
 import { defineComponent, h } from 'vue'
+import { useIcons } from '@soldy-ui/setup'
+import * as material from '@soldy-ui/icons-material'
 import { Accordion, DragAndDrop, ListBox, Tabs } from '@soldy-ui/vue'
 import type { IDragAndDropMove } from '@soldy-ui/core'
+import { COLLECTION_ITEMS } from '@soldy-ui/playground-shared'
+import App from '../src/App.vue'
+import { FRAMEWORKS } from '../src/hosts'
+import { router } from '../src/router'
 
 import '@soldy-ui/theme-oren'
+import '../src/styles.css'
 
-const ITEMS = ['a', 'b', 'c'].map((value) => ({ value, text: `Пункт ${value.toUpperCase()}` }))
+// Пакет иконок — как в точке входа стенда: стрелки секций рисуются по роли.
+// Поведение темы ставит общий файл настройки (`browser/setup.ts`)
+useIcons(material)
+
+/** Элемент коллекции: значение и текст. */
+type TItem = { readonly value: string; readonly text: string }
+
+const ITEMS: TItem[] = ['a', 'b', 'c'].map((value) => ({
+	value,
+	text: `Пункт ${value.toUpperCase()}`,
+}))
 
 /** Несколько кадров: узлы плагинам, перерисовка после перестановки. */
 async function frames(count = 3): Promise<void> {
@@ -76,9 +97,9 @@ async function mount(): Promise<void> {
 	await frames()
 }
 
-/** Узел элемента коллекции по тексту элемента. */
-function nodeOf(selector: string, text: string): HTMLElement {
-	const node = [...document.querySelectorAll<HTMLElement>(selector)].find((each) =>
+/** Узел элемента коллекции по тексту элемента — внутри `root`. */
+function nodeOf(root: ParentNode, selector: string, text: string): HTMLElement {
+	const node = [...root.querySelectorAll<HTMLElement>(selector)].find((each) =>
 		each.textContent?.includes(text),
 	)
 
@@ -87,12 +108,17 @@ function nodeOf(selector: string, text: string): HTMLElement {
 	return node
 }
 
-/** Значения элементов коллекции по их коробкам на экране — вдоль её оси. */
-function onScreen(selector: string, axis: 'x' | 'y'): string[] {
-	return [...document.querySelectorAll<HTMLElement>(selector)]
+/** Значения элементов коллекции внутри `root` по их коробкам на экране — вдоль её оси. */
+function onScreen(
+	root: ParentNode,
+	selector: string,
+	axis: 'x' | 'y',
+	items: readonly TItem[] = ITEMS,
+): string[] {
+	return [...root.querySelectorAll<HTMLElement>(selector)]
 		.map((node) => {
 			const box = node.getBoundingClientRect()
-			const item = ITEMS.find(({ text }) => node.textContent?.includes(text))
+			const item = items.find(({ text }) => node.textContent?.includes(text))
 
 			return { value: item?.value ?? '?', at: axis === 'x' ? box.left : box.top }
 		})
@@ -113,12 +139,15 @@ describe('перестановка мышью', () => {
 		async (_, item, handle, axis) => {
 			await mount()
 
-			expect(onScreen(item, axis)).toEqual(['a', 'b', 'c'])
+			expect(onScreen(document, item, axis)).toEqual(['a', 'b', 'c'])
 
-			await userEvent.dragAndDrop(nodeOf(handle, 'Пункт A'), nodeOf(handle, 'Пункт C'))
+			await userEvent.dragAndDrop(
+				nodeOf(document, handle, 'Пункт A'),
+				nodeOf(document, handle, 'Пункт C'),
+			)
 			await frames()
 
-			expect(onScreen(item, axis)).toEqual(['b', 'c', 'a'])
+			expect(onScreen(document, item, axis)).toEqual(['b', 'c', 'a'])
 			expect(moved.map(({ oldIndex, newIndex }) => [oldIndex, newIndex])).toEqual([[0, 2]])
 		},
 	)
@@ -127,13 +156,74 @@ describe('перестановка мышью', () => {
 		await mount()
 
 		await userEvent.dragAndDrop(
-			nodeOf('.so-list-box-item', 'Пункт A'),
-			nodeOf('.so-list-box-item', 'Пункт C'),
+			nodeOf(document, '.so-list-box-item', 'Пункт A'),
+			nodeOf(document, '.so-list-box-item', 'Пункт C'),
 		)
 		await frames()
 
-		expect(onScreen('.so-list-box-item', 'y')).toEqual(['b', 'c', 'a'])
-		expect(onScreen('.so-tabs-item', 'x')).toEqual(['a', 'b', 'c'])
-		expect(onScreen('.so-accordion-item', 'y')).toEqual(['a', 'b', 'c'])
+		expect(onScreen(document, '.so-list-box-item', 'y')).toEqual(['b', 'c', 'a'])
+		expect(onScreen(document, '.so-tabs-item', 'x')).toEqual(['a', 'b', 'c'])
+		expect(onScreen(document, '.so-accordion-item', 'y')).toEqual(['a', 'b', 'c'])
 	})
+})
+
+/** Ожидание после смены страницы: хост фреймворка грузится лениво, превью — его отрисовкой. */
+const settle = () => new Promise((resolve) => setTimeout(resolve, 300))
+
+/** Состав превью стенда — общий у всех хостов. */
+const PREVIEW_ITEMS: readonly TItem[] = COLLECTION_ITEMS
+
+/** Каждая коллекция у каждого фреймворка стенда. */
+const PAGES = FRAMEWORKS.flatMap(({ id }) =>
+	COLLECTIONS.map(([name, item, handle, axis]) => [id, name, item, handle, axis] as const),
+)
+
+describe('перестановка на странице стенда', () => {
+	beforeEach(async () => {
+		// Колонки пишут события компонентов в консоль — в отчёте прогона это шум
+		vi.spyOn(console, 'log').mockImplementation(() => {})
+		document.documentElement.dataset.soTheme = 'oren'
+
+		await router.push('/vue')
+
+		render(App, { global: { plugins: [router] } })
+
+		await settle()
+	})
+
+	/**
+	 * Сцена страницы без строк — колонки строки: пропсами превью и над
+	 * экземпляром. Жест — в первой колонке; вторая — свои коллекции со своим
+	 * составом.
+	 */
+	it.each(PAGES)(
+		'%s · %s: первый элемент первой колонки, перетащенный на третий, встаёт третьим на экране',
+		async (framework, _, item, handle, axis) => {
+			await router.push(`/${framework}/drag-and-drop`)
+			await settle()
+
+			const [stage, other] = [...document.querySelectorAll('.pg-scene .pg-col__stage')]
+
+			if (!stage || !other) throw new Error(`${framework}: колонок сцены нет`)
+
+			const [first, , third] = PREVIEW_ITEMS
+			const values = PREVIEW_ITEMS.map(({ value }) => value)
+
+			expect(onScreen(stage, item, axis, PREVIEW_ITEMS)).toEqual(values)
+
+			await userEvent.dragAndDrop(
+				nodeOf(stage, handle, first.text),
+				nodeOf(stage, handle, third.text),
+			)
+			await frames()
+
+			expect(onScreen(stage, item, axis, PREVIEW_ITEMS)).toEqual([
+				values[1],
+				values[2],
+				values[0],
+				...values.slice(3),
+			])
+			expect(onScreen(other, item, axis, PREVIEW_ITEMS)).toEqual(values)
+		},
+	)
 })
