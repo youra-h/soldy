@@ -23,10 +23,12 @@
 import { describe, it, expect } from 'vitest'
 import { render } from 'svelte/server'
 import type { TTableColumnSource } from '@soldy-ui/core'
+import { ruRU } from '@soldy-ui/plugins'
 import { Accordion, ListBox, RadioGroup, Table } from '@soldy-ui/svelte'
 import AccordionHarness from './Accordion.test.svelte'
 import ListBoxHarness from './ListBox.test.svelte'
 import RadioGroupHarness from './RadioGroup.test.svelte'
+import Surround from './Surround.test.svelte'
 import TabsHarness from './Tabs.test.svelte'
 import VirtualHarness from './Virtual.test.svelte'
 
@@ -312,6 +314,72 @@ describe('Table · серверный рендер', () => {
 		expect(table?.attributes['id']).toBe('staff')
 		expect(table?.attributes['data-probe']).toBe('1')
 		expect(classes(table)).not.toContain('staff')
+	})
+})
+
+/**
+ * Пагинация на сервере: страницы окна кладёт в коллекцию её расширение при
+ * сборке, а она идёт и на сервере. Поэтому сервер рисует окно целиком —
+ * страницы, пропуски и текущую с `aria-current` и `data-selected`, — а имена
+ * стрелок и цифры номеров — на языке провайдера.
+ */
+describe('Pagination · серверный рендер', () => {
+	/** Ряд строкой, как его видит пользователь: пропуск — «…», текущая — в скобках. */
+	function rowOf(body: string): string {
+		const clean = body.replace(/<!--[\s\S]*?-->/g, '')
+		const list = /<ol class="so-pagination__list">([\s\S]*?)<\/ol>/.exec(clean)?.[1] ?? ''
+
+		return [...list.matchAll(/<li ([^>]*)>([\s\S]*?)<\/li>/g)]
+			.map(([, attributes, inner]) => {
+				if (attributes.includes('so-pagination__ellipsis')) return inner
+
+				const text = textOf(inner).trim()
+				const current = inner.includes('aria-current="page"')
+
+				if (current !== attributes.includes('data-selected="true"')) {
+					throw new Error(`страница ${text}: наборы разошлись`)
+				}
+
+				return current ? `[${text}]` : text
+			})
+			.join(' ')
+	}
+
+	it('окно, текущая и имена — уже в разметке сервера', () => {
+		const { body } = render(Surround, {
+			props: {
+				around: 'locale',
+				control: 'pagination',
+				locale: ruRU,
+				pagination: { total: 100, value: 5, aria_label: 'Страницы' },
+			},
+		})
+		const [root] = withClass(body, 'so-pagination')
+		const [prev] = withClass(body, 'so-pagination__prev')
+		const [next] = withClass(body, 'so-pagination__next')
+
+		expect(root?.name).toBe('nav')
+		expect(root?.attributes['aria-label']).toBe('Страницы')
+		expect(rowOf(body)).toBe('1 … 4 [5] 6 … 10')
+		expect(prev?.attributes['aria-label']).toBe('Предыдущая страница')
+		expect(next?.attributes['aria-label']).toBe('Следующая страница')
+		expect(prev?.attributes['type']).toBe('button')
+	})
+
+	it('номера — в цифрах и с разрядами локали провайдера', () => {
+		const { body } = render(Surround, {
+			props: {
+				around: 'locale',
+				control: 'pagination',
+				locale: ruRU,
+				pagination: { total: 200_000, value: 12_345 },
+			},
+		})
+		const ru = new Intl.NumberFormat('ru-RU')
+
+		expect(rowOf(body)).toBe(
+			`1 … ${ru.format(12_344)} [${ru.format(12_345)}] ${ru.format(12_346)} … ${ru.format(20_000)}`,
+		)
 	})
 })
 

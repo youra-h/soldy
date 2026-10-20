@@ -242,7 +242,10 @@ Svelte. Разметка Svelte живёт только в `.svelte`, поэто
 `browser` (`resolve.conditions` в `vitest.config.ts`): без него `svelte`
 разрешается в серверную сборку, где `mount` нет; хосты Vue и React его
 переносят. svelte-check хоста берёт конфиг Svelte из `vite.config.ts` стенда —
-отсюда плагин Svelte в `vite.base.ts` и для неё.
+отсюда плагин Svelte в `vite.base.ts` и для неё. Что компонент, его обёртка
+и нарисованные части стоят в ячейке так же, как у Vue, сторожит
+`browser/svelte-host.spec.ts`: пробел между соседними узлами Svelte
+оставляет текстом, а Vue вырезает, и вне флекса и сетки он сдвинул бы части.
 
 **Хост Solid** (`src/hosts/solid/`) устроен как у React: превью и фикстуры —
 функции с JSX в `.tsx`, только `index.ts` — модуль без JSX, его берёт

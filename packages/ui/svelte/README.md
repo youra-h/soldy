@@ -17,9 +17,10 @@ slot is `children`.
 > error linked to the control inside it), the collections ListBox, Tabs, Accordion and
 > RadioGroup (`<ListBox.Item>`, `<Tabs.Item>` with `<Tabs.Content>`, `<Accordion.Item>`,
 > `<RadioGroup.Item>` or `items`), Table (columns and rows as data — `columns`, `items` — with
-> sorting, row selection, column resizing and reordering) and the `Virtual` window for long lists
-> (`<Virtual><ListBox items={…} /></Virtual>`, the same with `Table`) are ported, the rest of the
-> set is on its way. Icon renders the `tag` it is given: an element name, a Svelte component, or
+> sorting, row selection, column resizing and reordering), the `Virtual` window for long lists
+> (`<Virtual><ListBox items={…} /></Virtual>`, the same with `Table`), Slider, Rating,
+> ProgressLinear, Scroller and Pagination are ported, the rest of the set is on its way. Icon
+> renders the `tag` it is given: an element name, a Svelte component, or
 > `roleIcon(role)` — the icon of that role from the registered icon pack. Frame teleports its
 > panel into `target` (`body` by default) on the client; with `contained` it stays in place, on
 > the server too. A field gives its class and style to the root and every other attribute to its

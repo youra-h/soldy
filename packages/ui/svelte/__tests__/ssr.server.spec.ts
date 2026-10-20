@@ -22,8 +22,12 @@ import {
 	Frame,
 	Icon,
 	Input,
+	ProgressLinear,
 	ProgressSpinner,
+	Rating,
+	Scroller,
 	Skeleton,
+	Slider,
 	roleIcon,
 } from '@soldy-ui/svelte'
 import RootRef, { type TRootKind } from './RootRef.test.svelte'
@@ -142,6 +146,66 @@ describe('стиль и наборы на сервере', () => {
 		expect(body).toContain('style="--so-progress-spinner-fraction: 0.4; color: red"')
 	})
 
+	it('ProgressLinear — доля процентом в стиле корня, роль и значения', () => {
+		const body = markup(render(ProgressLinear, { props: { value: 40 } }).body)
+
+		expect(body).toMatch(/^<span [^>]*role="progressbar"/)
+		expect(body).toContain('aria-valuenow="40"')
+		expect(body).toContain('style="--so-progress-linear-percent: 40%"')
+		expect(body).toContain('<span class="so-progress-linear__range"></span>')
+	})
+
+	it('Rating — звёзды с долей заливки и поле со значением, как оно звучит', () => {
+		const body = markup(render(Rating, { props: { value: 2, max: 3, name: 'score' } }).body)
+		const stars = [...body.matchAll(/class="so-rating__star" style="([^"]*)"/g)]
+
+		expect(body).toMatch(/^<span [^>]*class="so-rating so-rating--size-normal"/)
+		expect(stars.map(([, style]) => style)).toEqual([
+			'--so-rating-fraction: 1',
+			'--so-rating-fraction: 1',
+			'--so-rating-fraction: 0',
+		])
+		// Значок по умолчанию — svg роли в обоих слоях каждой звезды
+		expect(body.match(/<svg class="so-rating__icon"/g)).toHaveLength(6)
+		expect(body).toMatch(
+			/<input class="so-rating__input" type="range" min="0" max="3" step="1" value="2" name="score" [^>]*aria-valuetext="2 of 3"/,
+		)
+	})
+
+	it('Slider — ручки с позицией, поля с ходом и значением, заливка и подсказка', () => {
+		const body = markup(render(Slider, { props: { value: [20, 70], tooltip: 'always' } }).body)
+		const thumbs = [...body.matchAll(/class="so-slider__thumb" style="([^"]*)"/g)]
+		const fields = [...body.matchAll(/<input class="so-slider__input" ([^>]*)\/>/g)]
+		const tooltips = [...body.matchAll(/<span class="so-slider__tooltip"[^>]*>([^<]*)</g)]
+
+		expect(body).toMatch(/^<span role="group" /)
+		expect(body).toContain('style="--so-slider-range-start: 20%; --so-slider-range-end: 70%"')
+		expect(thumbs.map(([, style]) => style)).toEqual([
+			'--so-slider-position: 20%',
+			'--so-slider-position: 70%',
+		])
+		// Ход поля — соседи: у первой ручки до второй, у второй — от первой
+		expect(
+			fields.map(([, attrs]) =>
+				/min="(\d+)" max="(\d+)" step="1" value="(\d+)"/.exec(attrs)?.slice(1),
+			),
+		).toEqual([
+			['0', '70', '20'],
+			['20', '100', '70'],
+		])
+		expect(tooltips.map(([, text]) => text)).toEqual(['20', '70'])
+	})
+
+	it('Scroller — кнопки с именами и значками, вьюпорт с содержимым', () => {
+		const body = markup(render(Scroller, { props: { children: content } }).body)
+
+		expect(body).toMatch(/^<div [^>]*data-can-prev="false" data-can-next="false"/)
+		expect(body).toMatch(/<button [^>]*so-scroller__prev" aria-label="Scroll back"/)
+		expect(body).toMatch(/<button [^>]*so-scroller__next" aria-label="Scroll forward"/)
+		expect(body.match(/<svg aria-hidden="true" class="so-icon /g)).toHaveLength(2)
+		expect(body).toContain('<div class="so-scroller__viewport"><span>Панель</span></div>')
+	})
+
 	it('Skeleton — заглушка и содержимое, корень не скрыт', () => {
 		const body = markup(render(Skeleton, { props: { children: content } }).body)
 
@@ -166,10 +230,13 @@ describe('ref потребителя · серверный рендер', () => 
 		'Icon',
 		'Label',
 		'ProgressSpinner',
+		'ProgressLinear',
 		'Skeleton',
 		'Input',
 		'CheckBox',
 		'Switch',
+		'Slider',
+		'Rating',
 		'Tabs',
 		'Tabs.Item',
 		'Tabs.Content',
@@ -180,6 +247,8 @@ describe('ref потребителя · серверный рендер', () => 
 		'ListBox',
 		'ListBox.Item',
 		'Table',
+		'Scroller',
+		'Pagination',
 	]
 
 	it.each(KINDS)('%s: bind:ref не пишется, ref в разметке нет', (kind) => {

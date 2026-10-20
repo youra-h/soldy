@@ -384,9 +384,10 @@ ARIA пускает только `option` и `group` (axe — `aria-required-chi
   `<Field helper="…"><Label text="…"><CheckBox /></Label></Field>`: имя даёт
   `Label`, справку — поле. Адаптеры: Vue, React, Solid, Svelte, Angular и Web
   Components; в пяти последних связку берут поля, которые в них есть, — Input,
-  CheckBox, Switch и RadioGroup. Проводка у всех одна — поле ставит
-  `TFieldExtension`, контрол — `TFieldControlExtension` на свой лифт, — а слой
-  лифта каждый адаптер отдаёт своим механизмом. Поле ставит под свой слой
+  CheckBox, Switch и RadioGroup, у Svelte — ещё Rating и Slider. Проводка у
+  всех одна — поле ставит `TFieldExtension`, контрол —
+  `TFieldControlExtension` на свой лифт, — а слой лифта каждый адаптер отдаёт
+  своим механизмом. Поле ставит под свой слой
   содержимое, контрол — содержимое своих слотов, иначе пустая связка контрола
   до них не дошла бы: React оборачивает слоты контрола `elevated` — без слотов
   обёртки нет, и флажок в строке таблицы лишних узлов дерева не несёт; Solid
@@ -1090,9 +1091,10 @@ useToasts()`. API опускает лифт (`TOASTS_ELEVATOR`, расширен
   `plugins/__tests__/slide-pointer.plugin.spec.ts`,
   `plugins/__tests__/slide-snap-strategies.spec.ts`,
   `plugins/__tests__/slide-keyboard.plugin.spec.ts`,
-  `ui/vue/__tests__/slider.spec.ts` и `playground/vue/browser/slider.spec.ts`;
-  ползунок в поле формы — `ui/vue/__tests__/field.spec.ts` («Slider с
-  несколькими ручками в поле») и `playground/vue/browser/field.spec.ts`.
+  `ui/vue/__tests__/slider.spec.ts`, `ui/svelte/__tests__/slider.spec.ts` и
+  `playground/vue/browser/slider.spec.ts`; ползунок в поле формы —
+  `field.spec.ts` Vue и Svelte («Slider с несколькими ручками в поле») и
+  `playground/vue/browser/field.spec.ts`.
 - **Rating** — Rating Slider (APG): ползунок с одной ручкой, у которого
   шкала — ряд звёзд, а не группа радио. Звёзды потребитель не адресует, и
   элементами коллекции они не стали бы (см. «Часть или слот»), а
@@ -1142,9 +1144,10 @@ useToasts()`. API опускает лифт (`TOASTS_ELEVATOR`, расширен
   `plugins/__tests__/names.plugin.spec.ts`,
   `plugins/__tests__/rating-validity.plugin.spec.ts` (ошибка поля по оценке,
   обязательности, только для показа и локали, на новом узле, снятие),
-  `ui/vue/__tests__/rating.spec.ts` и `playground/vue/browser/rating.spec.ts`
-  (форма без оценки не уходит, сообщение и фокус от браузера, только для
-  показа уходит с 0, тон ошибки у пустых звёзд после попытки отправить).
+  `ui/vue/__tests__/rating.spec.ts`, `ui/svelte/__tests__/rating.spec.ts` и
+  `playground/vue/browser/rating.spec.ts` (форма без оценки не уходит,
+  сообщение и фокус от браузера, только для показа уходит с 0, тон ошибки у
+  пустых звёзд после попытки отправить).
 - **NumberInput** — Spinbutton (APG) на текстовом поле: `<input type="text">`
   с `role="spinbutton"`, `aria-valuenow` и `aria-valuetext` — у числа (текст —
   строкой формата: «12 %», а не «0.12»), `aria-valuemin` и `aria-valuemax` —
@@ -1231,7 +1234,8 @@ useToasts()`. API опускает лифт (`TOASTS_ELEVATOR`, расширен
   иначе браузер заменил бы их фоны цветом поверхности. Не дорожка `GrayText`:
   рядом с `Highlight` во многих палитрах она почти того же цвета, и долю было
   не разглядеть. Сторожат `core/__tests__/progress-linear.spec.ts`,
-  `ui/vue/__tests__/progress-linear.spec.ts` и
+  `ui/vue/__tests__/progress-linear.spec.ts`,
+  `ui/svelte/__tests__/progress-linear.spec.ts` и
   `playground/vue/browser/progress-linear.spec.ts`; как бег и доля выглядят,
   оценивает глаз — ручные сценарии `/tests/motion/progress-linear` на стенде.
 - **ProgressSpinner** — индикатор выполнения кольцом: вторая форма той же
@@ -1533,7 +1537,8 @@ useToasts()`. API опускает лифт (`TOASTS_ELEVATOR`, расширен
   она не выходит. Сторожат `core/__tests__/pagination.spec.ts`,
   `plugins/__tests__/names.plugin.spec.ts`,
   `plugins/__tests__/pagination-focus.plugin.spec.ts`,
-  `ui/vue/__tests__/pagination.spec.ts` и
+  `ui/vue/__tests__/pagination.spec.ts`, `ui/svelte/__tests__/pagination.spec.ts`
+  с «Pagination · серверный рендер» в `collections.server.spec.ts` и
   `playground/vue/browser/pagination.spec.ts` (фокус со стрелки, погасшей
   у края, — на текущую, и Tab мимо погасшей стрелки).
 - **Table** — Table и Sortable Table (APG): нативные `table`, `thead`,
