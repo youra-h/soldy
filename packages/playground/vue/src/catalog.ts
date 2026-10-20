@@ -1,5 +1,7 @@
+import type { TGroup } from '@soldy-ui/core'
 import {
 	COMPONENTS,
+	COMPONENT_GROUPS,
 	SCENARIOS as SCENARIO_REGISTRY,
 	TOPICS as TOPIC_REGISTRY,
 	type IPreviewHost,
@@ -34,18 +36,40 @@ export function availableOf(host: IPreviewHost): readonly TComponentEntry[] {
  */
 const byLabel = (a: { label: string }, b: { label: string }) => a.label.localeCompare(b.label)
 
-/** Готовые компоненты — они и попадают на витрину. */
+/**
+ * Готовые компоненты — они и попадают на витрину. Слои наследования (группа
+ * `layers`) не попадают: страница у них есть, а выставлять их незачем.
+ */
 export function showcaseOf(host: IPreviewHost): readonly TComponentEntry[] {
 	return availableOf(host)
-		.filter((entry) => entry.showcase)
+		.filter((entry) => entry.group !== 'layers')
 		.sort(byLabel)
 }
 
-/** Слои наследования: страница есть, на витрине им делать нечего. */
-export function layersOf(host: IPreviewHost): readonly TComponentEntry[] {
-	return availableOf(host)
-		.filter((entry) => !entry.showcase)
-		.sort(byLabel)
+/**
+ * Группы меню — `groups` его ListBox: порядок и подписи — `COMPONENT_GROUPS`
+ * реестра, выведенные из него, а не переписанные. Группу, в которой у хоста
+ * нет ни одного компонента, список не рисует: секции строятся из элементов.
+ */
+export const MENU_GROUPS: TGroup[] = Object.entries(COMPONENT_GROUPS).map(([key, label]) => ({
+	key,
+	label,
+}))
+
+/**
+ * Меню страницы свойств: всё, что умеет хост, группами в порядке
+ * `MENU_GROUPS`, внутри группы — по алфавиту.
+ *
+ * Это сразу и порядок экрана. ListBox ставит группы порядком `groups`, а
+ * элементы внутри группы — порядком данных, и данные уже идут так, поэтому
+ * пункты меню на экране сверяются прямо с этим списком.
+ */
+export function menuOf(host: IPreviewHost): readonly TComponentEntry[] {
+	const available = availableOf(host)
+
+	return MENU_GROUPS.flatMap(({ key }) =>
+		available.filter((entry) => entry.group === key).sort(byLabel),
+	)
 }
 
 export function findAvailable(host: IPreviewHost, id: string): TComponentEntry | undefined {
@@ -101,10 +125,10 @@ export function topicsOf(scenarios: readonly TScenario[]): readonly TTopic[] {
 }
 
 /**
- * Компоненты, у которых в теме есть сценарии, — по алфавиту, как меню
- * страницы свойств. Каждый — своя страница: сценариев у компонента десятки,
- * и все компоненты темы на одной странице искать глазами было бы дольше, чем
- * открыть нужный.
+ * Компоненты, у которых в теме есть сценарии, — по алфавиту, как витрина и
+ * пункты группы в меню страницы свойств. Каждый — своя страница: сценариев у
+ * компонента десятки, и все компоненты темы на одной странице искать глазами
+ * было бы дольше, чем открыть нужный.
  */
 export function componentsOf(
 	scenarios: readonly TScenario[],

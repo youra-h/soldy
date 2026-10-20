@@ -162,6 +162,32 @@ describe('aria поля', () => {
 	})
 })
 
+/**
+ * Набор счётчика — разметки внутри поля без своего экземпляра, поэтому набор
+ * поля. `id` счётчика и ссылку поля на него пишет плагин связок
+ * (`plugins/__tests__/ids.plugin.spec.ts`), ядро только держит набор.
+ */
+describe('набор счётчика', () => {
+	it('пуст и при включённом счётчике: id и ссылку пишет не ядро', () => {
+		const textarea = new TTextarea({ counter: true })
+
+		expect(textarea.counterAria.toObject()).toEqual({})
+		expect(textarea.aria.has('aria-describedby')).toBe(false)
+	})
+
+	it('живой: запись — change:counterAria со снимком, та же — молча', () => {
+		const textarea = new TTextarea()
+		const handler = vi.fn()
+
+		textarea.events.on('change:counterAria', handler)
+
+		textarea.counterAria.add('id', 'm1-counter')
+		textarea.counterAria.add('id', 'm1-counter')
+
+		expect(handler).toHaveBeenCalledExactlyOnceWith({ id: 'm1-counter' })
+	})
+})
+
 describe('textLength — как считает браузер для maxlength', () => {
 	it('единицы UTF-16: символ вне BMP — два', () => {
 		expect(new TTextarea({ value: 'ab' }).textLength).toBe(2)

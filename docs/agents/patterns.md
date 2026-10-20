@@ -423,10 +423,20 @@ ARIA пускает только `option` и `group` (axe — `aria-required-chi
   плагина имён по локали; набранное считает ядро (`textLength`: перевод
   строки — один символ, как у браузера для `maxlength`), и по нему же
   `data-limit` корня: `reached` — ровно предел, `exceeded` — больше
-  (значение из кода браузер не обрезает). Скринридеру счётчик пока не
-  объявляется. Адаптеры: Vue. Сторожат `core/__tests__/textarea.spec.ts`,
+  (значение из кода браузер не обрезает). **Счётчик — пояснение поля**:
+  пока он включён, поле ссылается на него `aria-describedby`, и скринридер
+  читает «12 / 200» на фокусе поля, вместе с ним; живого региона нет — он
+  объявлял бы каждый символ. `id` счётчика — в его набор `counterAria`, а
+  ссылку плагин связок (`TTextareaIdsPlugin`) пишет входом `parts` в
+  `TAriaPlugin` поля: в `aria-describedby` она встаёт после справки поля
+  формы и перед своим `aria_describedBy`. Адаптеры: Vue. Сторожат
+  `core/__tests__/textarea.spec.ts`,
   `plugins/__tests__/textarea-autoresize.plugin.spec.ts`,
-  `plugins/__tests__/names.plugin.spec.ts`, `ui/vue/__tests__/textarea.spec.ts`
+  `plugins/__tests__/names.plugin.spec.ts`,
+  `plugins/__tests__/ids.plugin.spec.ts` («счётчик Textarea»),
+  `setup/__tests__/aria-plugin.spec.ts` («ссылки поля формы»),
+  `setup/__tests__/field-link.spec.ts`, `ui/vue/__tests__/textarea.spec.ts`,
+  `ui/vue/__tests__/ssr-ids.spec.ts`
   и `playground/vue/browser/textarea.spec.ts` (рост до потолка и сжатие,
   пересчёт от значения, ширины и размера, прокрутка страницы на вводе, Enter —
   перевод строки, `rows="1"` — высота Input).

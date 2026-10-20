@@ -1,5 +1,6 @@
 import { TInputControl } from '../../base/input-control'
 import type { TDefaultValues } from '../../base/component'
+import { TAria } from '../../../common'
 import type { ITextarea, ITextareaProps, TTextareaEvents, TTextareaLimit } from './types'
 
 /** Перевод строки в любой записи: CR LF и одиночный CR браузер считает одним LF. */
@@ -20,7 +21,9 @@ const LINE_BREAK = /\r\n?/g
  *   по содержимому мерит и пишет плагин автороста, ядро только хранит
  *   свойства;
  * - счётчик (`counter`) — его текст строка языка («12 / 200»), её пишет плагин
- *   имён; ядро считает набранное (`textLength`) и ставит `data-limit`.
+ *   имён; ядро считает набранное (`textLength`), ставит `data-limit` и держит
+ *   набор счётчика (`counterAria`), а `id` в него и ссылку поля на счётчик
+ *   пишет плагин связок.
  *
  * Границы слоёв: **значение — здесь, операция — в плагине.**
  */
@@ -55,6 +58,7 @@ export default class TTextarea
 	protected _maxlength: number | undefined
 	protected _autoresize: boolean
 	protected _counter: boolean
+	protected readonly _counterAria: TAria
 
 	constructor(props: Partial<ITextareaProps> = {}) {
 		super(props)
@@ -67,6 +71,12 @@ export default class TTextarea
 		this._maxlength = props.maxlength ?? ctor.defaultValues.maxlength
 		this._autoresize = props.autoresize ?? ctor.defaultValues.autoresize
 		this._counter = props.counter ?? ctor.defaultValues.counter
+
+		this._counterAria = new TAria()
+
+		this._counterAria.events.on('change', () =>
+			this.events.emit('change:counterAria', this._counterAria.toObject()),
+		)
 
 		this.events.on('change:value', () => this._syncLimit())
 		this.events.on('change:maxlength', () => this._syncLimit())
@@ -138,6 +148,17 @@ export default class TTextarea
 
 		this._counter = value
 		this.events.emit('change:counter', value)
+	}
+
+	/**
+	 * Набор счётчика символов — разметки внутри поля без своего экземпляра,
+	 * поэтому набор поля (AGENTS.md, «Часть или слот»), как `listAria` у
+	 * Select. Живой, как `aria`: `id` счётчика, на который ссылается поле, в
+	 * него пишет плагин связок `TTextareaIdsPlugin`. Об изменении набор
+	 * сообщает `change:counterAria`.
+	 */
+	get counterAria(): TAria {
+		return this._counterAria
 	}
 
 	/**
