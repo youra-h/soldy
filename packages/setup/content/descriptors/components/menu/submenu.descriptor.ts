@@ -103,9 +103,10 @@ export const MenuSubmenuDescriptor = defineDescriptor(() =>
 				 */
 				panelAria: { type: Object, protected: true, triggers: ['change:panelAria'] },
 				/**
-				 * Классы панели — блок `so-menu__panel` с размером и вариантом
-				 * подменю: панель телепортирована, и модификаторы пункта до неё не
-				 * доходят.
+				 * Классы панели — блок `so-menu__panel` с размером подменю и
+				 * вариантом его панели: своим вариантом подменю, а без него
+				 * вариантом меню над ним. Панель телепортирована, и модификаторы
+				 * пункта до неё не доходят.
 				 */
 				panelClasses: {
 					type: Object,

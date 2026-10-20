@@ -46,7 +46,9 @@ const samePoint = (a: TMenuPoint | null, b: TMenuPoint | null): boolean =>
  * Размер и вариант меню панель получает своими модификаторами
  * (`panelClasses`): панель телепортирована, и модификаторы корня до неё не
  * доходят, а размер подписей групп и цвет пунктов без своего варианта тема
- * берёт с неё. Пунктам размер пишет коллекция, вариант у пункта свой.
+ * берёт с неё. Пунктам размер пишет коллекция, вариант у пункта свой, а
+ * подменю среди них коллекция передаёт вариант панели меню (`panelVariant`):
+ * его панель телепортирована тоже.
  *
  * Разделитель между секциями группировки пунктов из данных у меню по
  * умолчанию есть (`groupSeparators`), у ListBox и Select — нет (решение
@@ -108,9 +110,11 @@ export class TMenu extends TStylable<IMenuProps, TMenuEvents> implements IMenu {
 		this.events.on('change:size', ({ newValue, oldValue }) =>
 			this._applyPanelSize(newValue, oldValue),
 		)
-		this.events.on('change:variant', ({ newValue, oldValue }) =>
-			this._applyPanelVariant(newValue, oldValue),
-		)
+		// Вариант панели меню — его вариант: сменился он — сменился и её
+		this.events.on('change:variant', (payload) => {
+			this._applyPanelVariant(payload.newValue, payload.oldValue)
+			this.events.emit('change:panelVariant', payload)
+		})
 
 		this._applyOpen(props.open ?? ctor.defaultValues.open)
 	}
@@ -254,6 +258,17 @@ export class TMenu extends TStylable<IMenuProps, TMenuEvents> implements IMenu {
 	 */
 	get panelClasses(): TClasses {
 		return this._panelClasses
+	}
+
+	/**
+	 * Вариант панели — вариант меню: им тема красит пункты без своего
+	 * варианта, а коллекция меню передаёт его подменю среди пунктов
+	 * (`menuVariant`) — их панели красятся им, пока у подменю нет своего.
+	 * Владелец пунктов отдаёт коллекции его, а не `variant`: у подменю вариант
+	 * панели — не его вариант.
+	 */
+	get panelVariant(): TComponentVariant | undefined {
+		return this.variant
 	}
 
 	protected _applyOpen(value: boolean): void {

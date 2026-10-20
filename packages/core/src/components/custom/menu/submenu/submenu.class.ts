@@ -28,13 +28,18 @@ import type { IMenuSubmenu, IMenuSubmenuProps, TMenuSubmenuEvents } from './type
  * `choose`, и то закрывается так же — до корня. Escape и стрелка к началу
  * строки закрывают один уровень — это плагины.
  *
- * Классы панели — свой набор (`panelClasses`): блок панели меню с размером и
- * вариантом подменю. Панель телепортирована, и ни модификаторы пункта, ни
- * модификаторы панели меню до неё не доходят.
+ * Классы панели — свой набор (`panelClasses`): блок панели меню с размером
+ * подменю и вариантом панели (`panelVariant`) — своим вариантом подменю, а без
+ * него вариантом меню над ним (`menuVariant`): пункты подменю без своего
+ * варианта красятся, как пункты меню. Панель телепортирована, и ни
+ * модификаторы пункта, ни модификаторы панели меню до неё не доходят, поэтому
+ * вариант меню над подменю — отдельный вход: его пишет коллекция того меню,
+ * как размер. В свой `variant` он не пишется — в одном поле не различить,
+ * задал ли его потребитель или записало меню.
  *
  * Разделитель между секциями группировки своих пунктов — своё свойство
  * (`groupSeparators`) с умолчанием меню: секции своих пунктов рисует разметка
- * подменю. От меню над ним значение не переходит, как и вариант.
+ * подменю. От меню над ним значение не переходит.
  */
 export default class TMenuSubmenu
 	extends TMenuPopupItem<IMenuSubmenuProps, TMenuSubmenuEvents>
@@ -48,6 +53,7 @@ export default class TMenuSubmenu
 
 	protected _panelClasses: TClasses
 	protected _groupSeparators: boolean
+	protected _menuVariant: TComponentVariant | undefined = undefined
 
 	constructor(props: Partial<IMenuSubmenuProps> = {}) {
 		super(props)
@@ -67,23 +73,55 @@ export default class TMenuSubmenu
 		)
 
 		this._applyPanelSize(this.size)
-		this._applyPanelVariant(this.variant)
+		this._applyPanelVariant(this.panelVariant)
 
 		this.events.on('change:size', ({ newValue, oldValue }) =>
 			this._applyPanelSize(newValue, oldValue),
 		)
-		this.events.on('change:variant', ({ newValue, oldValue }) =>
-			this._applyPanelVariant(newValue, oldValue),
+		// Свой вариант сменился — вариант панели был прежним своим, а без него
+		// вариантом меню над подменю
+		this.events.on('change:variant', ({ oldValue }) =>
+			this._syncPanelVariant(oldValue ?? this._menuVariant),
 		)
 	}
 
 	/**
-	 * Классы панели — блок `so-menu__panel` с размером и вариантом подменю.
-	 * Размер подменю — размер меню, в котором оно стоит (его пишет коллекция),
-	 * поэтому панели всех уровней одного размера.
+	 * Классы панели — блок `so-menu__panel` с размером подменю и вариантом
+	 * панели (`panelVariant`). Размер подменю — размер меню, в котором оно
+	 * стоит (его пишет коллекция), поэтому панели всех уровней одного размера.
 	 */
 	get panelClasses(): TClasses {
 		return this._panelClasses
+	}
+
+	/**
+	 * Вариант меню, в котором стоит подменю, — вариант панели того меню
+	 * (`IMenuOwner.panelVariant`). Не проп: пишет его коллекция того меню —
+	 * при добавлении пункта, поверх патча и на смену варианта панели меню, —
+	 * как размер. Панель подменю красится им, пока у подменю нет своего
+	 * варианта.
+	 */
+	get menuVariant(): TComponentVariant | undefined {
+		return this._menuVariant
+	}
+
+	set menuVariant(value: TComponentVariant | undefined) {
+		if (value === this._menuVariant) return
+
+		const before = this.panelVariant
+
+		this._menuVariant = value
+		this._syncPanelVariant(before)
+	}
+
+	/**
+	 * Вариант панели — свой вариант подменю, а без него вариант меню над ним
+	 * (`menuVariant`): пункты подменю без своего варианта красятся, как пункты
+	 * меню, а свой вариант подменю сильнее. Его же коллекция подменю передаёт
+	 * подменю следующего уровня — так вариант меню доходит до всех уровней.
+	 */
+	get panelVariant(): TComponentVariant | undefined {
+		return this.variant ?? this._menuVariant
 	}
 
 	/**
@@ -114,6 +152,22 @@ export default class TMenuSubmenu
 
 	protected _applyPanelSize(newValue: TComponentSize, oldValue?: TComponentSize): void {
 		this._panelClasses.swap({ prefix: '--size-', oldValue, newValue })
+	}
+
+	/**
+	 * Вход варианта панели сменился — свой вариант или вариант меню над
+	 * подменю. Итог сменился — модификатор панели и `change:panelVariant`;
+	 * не сменился (свой вариант перекрывает вариант меню) — ничего.
+	 *
+	 * @param before вариант панели до смены входа
+	 */
+	protected _syncPanelVariant(before: TComponentVariant | undefined): void {
+		const after = this.panelVariant
+
+		if (after === before) return
+
+		this._applyPanelVariant(after, before)
+		this.events.emit('change:panelVariant', { newValue: after, oldValue: before })
 	}
 
 	/** `swap` пропускает пустое значение: без варианта модификатора нет. */

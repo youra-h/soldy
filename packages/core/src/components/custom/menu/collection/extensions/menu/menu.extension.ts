@@ -48,7 +48,11 @@ import { TMenuItemExtension, type IMenuItemExtension } from './item'
  *    красит вариантом меню — с класса панели (`so-menu__panel--variant-<v>`),
  *    а свой модификатор пункта сильнее. Писать вариант меню пункту «если
  *    своего нет» значило бы завести второй путь: в одном поле не различить,
- *    задал ли его потребитель или записало меню.
+ *    задал ли его потребитель или записало меню. Подменю среди пунктов —
+ *    отдельный вход, `menuVariant`: вариант панели меню (`panelVariant`), как
+ *    размер, — при добавлении, поверх патча и на смену у меню. Панель подменю
+ *    телепортирована, и класс панели меню до её пунктов не доходит, поэтому
+ *    она красится сама: своим вариантом подменю, а без него — этим.
  * 4. **Панели пунктов** — у пунктов со своей панелью (`isMenuPopupItem`):
  *    подменю и пункта с панелью. Открыта одна: открывшаяся закрывает
  *    прежнюю, — у меню одна панель сбоку, какого бы вида ни был пункт, — а
@@ -123,10 +127,11 @@ export class TMenuExtension<
 	override install(ctx: IExtensionContext<TItem, TMenuEngineOptions<TOwner>>): void {
 		super.install(ctx)
 
-		// Добавленному — только его атрибуты, размер меню и подписки: пачка
-		// шлёт `item:added` на каждый пункт разом, и проход по всем на каждый из
-		// них сделал бы наполнение квадратичным. Переключатель со значением
-		// группы отмечается здесь же — он один на группу
+		// Добавленному — только его атрибуты, то, что он получает от меню, и
+		// подписки: пачка шлёт `item:added` на каждый пункт разом, и проход по
+		// всем на каждый из них сделал бы наполнение квадратичным.
+		// Переключатель со значением группы отмечается здесь же — он один на
+		// группу
 		ctx.driver.events.on('item:added', (e) => {
 			this._inheritOwner(e.item as TItem)
 			this._applyItem(e.item as TItem)
@@ -158,7 +163,8 @@ export class TMenuExtension<
 		// Отметки, которые выбор сложил до установки, — значениям групп
 		this._selectionToValues()
 
-		// Патч пишет пункту своё из данных — размер меню поверх
+		// Патч пишет пункту своё из данных — то, что пункт получает от меню,
+		// поверх
 		ctx.driver.events.on('item:updated', (e) => this._inheritOwner(e.item as TItem))
 
 		// Отметка сменилась — всем отмечаемым: смена выбора бывает и пачкой.
@@ -178,9 +184,15 @@ export class TMenuExtension<
 			ctx.driver.valueOf().forEach((item) => this._inheritOwner(item as TItem))
 
 			// Размер меню — всем пунктам. Вариант у пункта свой: смена варианта
-			// у меню пунктов не трогает
+			// у меню пунктов не трогает, а подменю среди них получают вариант
+			// панели меню своим входом
 			scope.on(owner.events, 'change:size', () =>
 				ctx.driver.valueOf().forEach((item) => this._applySize(item as TItem, owner)),
+			)
+			scope.on(owner.events, 'change:panelVariant', () =>
+				ctx.driver
+					.valueOf()
+					.forEach((item) => this._applyMenuVariant(item as TItem, owner)),
 			)
 
 			// Закрытое меню не держит открытых панелей пунктов: они стоят у
@@ -538,16 +550,30 @@ export class TMenuExtension<
 		}
 	}
 
-	/** Размер меню на пункте. Владельца нет — пункт со своим. */
+	/**
+	 * Размер меню на пункте, а у подменю — ещё и вариант панели меню. Владельца
+	 * нет — пункт со своими.
+	 */
 	private _inheritOwner(item: TItem): void {
 		const owner = this._ctx.options.get('owner')
 
-		if (owner) this._applySize(item, owner)
+		if (!owner) return
+
+		this._applySize(item, owner)
+		this._applyMenuVariant(item, owner)
 	}
 
 	/** `size` пункта — всегда меню. */
 	private _applySize(item: TItem, owner: TOwner): void {
 		item.size = owner.size
+	}
+
+	/**
+	 * `menuVariant` подменю — вариант панели меню. Свой `variant` подменю не
+	 * трогается: панель решает сама, чей вариант сильнее.
+	 */
+	private _applyMenuVariant(item: TItem, owner: TOwner): void {
+		if (isMenuSubmenu(item)) item.menuVariant = owner.panelVariant
 	}
 
 	/** Что пункт получает от меню: выход из обхода Tab и отметку флажка. */

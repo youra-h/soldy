@@ -19,16 +19,20 @@ export type TMenuOwnerEvents = {
 	'change:open': (value: boolean) => void
 	/** change:size */
 	'change:size': (payload: TValuePayload<TComponentSize>) => void
+	/** change:panelVariant — вариант панели с пунктами сменился */
+	'change:panelVariant': (payload: TValuePayload<TComponentVariant | undefined>) => void
 }
 
 /**
  * Владелец пунктов меню — тот, чья панель их показывает: меню (`TMenu`) или
  * пункт с подменю (`TMenuSubmenu`) — для пунктов подменю.
  *
- * Коллекции меню от владельца нужны три вещи: открытость — закрытое меню
+ * Коллекции меню от владельца нужны четыре вещи: открытость — закрытое меню
  * закрывает открытые панели своих пунктов (подменю и пункта с панелью);
- * размер — его пункты получают размер меню; и что делает выбор пункта (`notifyChoose`) — это решает владелец:
- * меню закрывается, подменю закрывает и меню, в котором стоит.
+ * размер — его пункты получают размер меню; вариант панели — подменю среди
+ * пунктов красит им свою панель, пока у него нет своего варианта; и что
+ * делает выбор пункта (`notifyChoose`) — это решает владелец: меню
+ * закрывается, подменю закрывает и меню, в котором стоит.
  *
  * Карта событий — параметр: шина инвариантна по своей карте, и у меню и у
  * подменю она своя. Коллекция требует от неё только `TMenuOwnerEvents`.
@@ -38,8 +42,13 @@ export interface IMenuOwner<TEvents extends TMenuOwnerEvents = TMenuOwnerEvents>
 	open: boolean
 	/** Размер меню — размер его пунктов */
 	size: TComponentSize
-	/** Вариант меню — цвет пунктов без своего варианта */
-	variant: TComponentVariant | undefined
+	/**
+	 * Вариант панели с пунктами — цвет пунктов без своего варианта: у меню —
+	 * его вариант, у подменю — свой, а без него — вариант меню над ним
+	 * (`menuVariant`). Его же несёт модификатор панели
+	 * (`so-menu__panel--variant-<v>`)
+	 */
+	readonly panelVariant: TComponentVariant | undefined
 	readonly events: TEvented<TEvents>
 	/**
 	 * Пункт-действие этого меню выбрали — меню закрывается. Зовёт коллекция
@@ -89,6 +98,8 @@ export type TMenuEvents = TStylableEvents &
 		'change:triggerAria': (value: TAriaAttributes) => void
 		/** change:panelClasses — классы панели изменились */
 		'change:panelClasses': (value: string[]) => void
+		/** change:panelVariant — вариант панели сменился: у меню — с его вариантом */
+		'change:panelVariant': (payload: TValuePayload<TComponentVariant | undefined>) => void
 		/** change:groupSeparators */
 		'change:groupSeparators': (value: boolean) => void
 	}
