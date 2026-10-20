@@ -1,5 +1,5 @@
 import { defineConfig } from 'vitest/config'
-import { aliases, plugins } from './vite.base.ts'
+import { aliases, constants, plugins } from './vite.base.ts'
 
 /**
  * Тесты стенда — дымовые: он существует ради того, чтобы дёргать компоненты, и
@@ -9,6 +9,7 @@ import { aliases, plugins } from './vite.base.ts'
  */
 export default defineConfig({
 	plugins: plugins(),
+	define: constants(),
 	test: {
 		environment: 'jsdom',
 		environmentOptions: {

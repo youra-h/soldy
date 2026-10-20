@@ -25,12 +25,16 @@
  * строк. В узком окне она теперь полоска в одну строку — кнопка меню,
  * название, кнопка настроек, — а контролы уезжают в панель настроек, ссылка
  * на тесты — в панель меню, над списком. Полоску тест сверяет в тех же окнах
- * телефонов. Панели — по содержимому и по закрытию: меню закрывает переход по
- * ссылке, настройки выбор фреймворка не закрывает, обе закрывает окно,
- * ставшее широким. Плашка «движение выключено» в панели переносит текст, а не
- * режет его. В окне шире узкого кнопок нет, ссылка и контролы — в шапке, как
- * прежде. Флаги панелей живут в модуле (`useSidebar`) и переживают тест,
- * поэтому открытые панели тест закрывает сам, после каждого случая.
+ * телефонов. Под названием — версия библиотеки, подписью, и в полоске не
+ * обрезаны ни название, ни она: продолжением названия в строку версия на
+ * шрифте шире системного Windows (DejaVu Sans) не помещалась в окно 360 px, а
+ * шапку окна в 900 px уводила в третий ряд контролов. Панели — по содержимому
+ * и по закрытию: меню закрывает переход по ссылке, настройки выбор фреймворка
+ * не закрывает, обе закрывает окно, ставшее широким. Плашка «движение
+ * выключено» в панели переносит текст, а не режет его. В окне шире узкого
+ * кнопок нет, ссылка и контролы — в шапке, как прежде. Флаги панелей живут в
+ * модуле (`useSidebar`) и переживают тест, поэтому открытые панели тест
+ * закрывает сам, после каждого случая.
  *
  * Ширину задаёт окно (`page.viewport`), а не `body`: раскладку стенда считают
  * от окна правило `@media` в `src/styles.css` и `useSidebar`
@@ -464,12 +468,26 @@ describe('шапка в узком окне', () => {
 			const menu = headerButton('Меню')
 			const settings = headerButton('Настройки')
 			const brand = bar.querySelector('.pg__brand')
+			const name = brand?.querySelector('.pg__name')
+			const version = brand?.querySelector('.pg__version')
 
-			if (!menu || !settings || !brand) {
-				throw new Error('в полоске нет меню, названия или настроек')
+			if (!menu || !settings || !brand || !name || !version) {
+				throw new Error('в полоске нет меню, названия с версией или настроек')
 			}
 
-			expect(brand.textContent?.replace(/\s+/g, ' ').trim()).toBe('soldy-ui · playground')
+			expect(name.textContent?.replace(/\s+/g, ' ').trim()).toBe('soldy-ui · playground')
+			expect(version.textContent?.trim()).toBe(`v${__SOLDY_VERSION__}`)
+			expect(
+				version.getBoundingClientRect().top,
+				'версия — под названием',
+			).toBeGreaterThanOrEqual(name.getBoundingClientRect().bottom)
+
+			for (const text of [name, version]) {
+				expect(text.scrollWidth, 'название и версия не обрезаны').toBeLessThanOrEqual(
+					text.clientWidth,
+				)
+			}
+
 			expect(bar.querySelector('.pg__control'), 'контролы — не в шапке').toBeNull()
 			expect(bar.querySelector('.pg__switch'), 'ссылка на тесты — не в шапке').toBeNull()
 
