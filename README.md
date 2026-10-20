@@ -217,7 +217,7 @@ come in later releases.
 | ProgressLinear  | Linear progress indicator: the share done, or an indeterminate animation while it is unknown   | Vue        | 0.2.0   |
 | ProgressSpinner | Circular progress indicator: the share done, or an indeterminate animation while it is unknown | *          | 0.2.0   |
 | Skeleton        | Placeholder while content loads                                                                | *          | 0.2.0   |
-| DragAndDrop     | Drag and drop of collection items                                                              | Vue        | 0.2.0   |
+| DragAndDrop     | Drag and drop of collection items                                                              | *          | 0.2.0   |
 | Virtual         | Window for long lists: ListBox and Table inside render only the visible items                  | *          | 0.2.0   |
 | Pagination      | Page navigation: page numbers with gaps, previous and next, first and last                     | Vue        | 0.2.0   |
 | Menu            | Action menu at a button or on right click: submenus, checkbox and radio items                  | Vue        | 0.2.0   |

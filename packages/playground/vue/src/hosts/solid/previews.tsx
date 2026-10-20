@@ -11,6 +11,7 @@ import {
 	Accordion,
 	Button,
 	CheckBox,
+	DragAndDrop,
 	Field,
 	Icon,
 	Input,
@@ -57,6 +58,38 @@ const ITEMS = COLLECTION_ITEMS
 
 /** Глиф превью Icon — компонент на роль: `tag` у Icon — корень, а не роль. */
 const ARROW_DOWN = roleIcon('arrowDown')
+
+/**
+ * Табы разметкой — у превью Tabs и DragAndDrop, как и панели и секции ниже.
+ * Первый таб активен сразу — иначе ни одна панель не смонтируется. Зовёт эти
+ * функции выражение в разметке владельца: Solid разворачивает его там, где
+ * владелец развернул слот, — внутри слоя его лифта, — а не в теле превью.
+ */
+const tabsItems = () => (
+	<For each={ITEMS}>{(item, index) => <Tabs.Item active={index() === 0} {...item} />}</For>
+)
+
+/** Панели табов — слотом `content`, вне списка табов. */
+const tabsPanels = () => (
+	<For each={ITEMS}>
+		{(item) => (
+			<Tabs.Content value={item.value}>
+				<div style={{ padding: '12px' }}>Панель «{item.text}»</div>
+			</Tabs.Content>
+		)}
+	</For>
+)
+
+/** Секции разметкой, с содержимым. */
+const accordionItems = () => (
+	<For each={ITEMS}>
+		{(item) => (
+			<Accordion.Item {...item}>
+				<div style={{ padding: '4px 0' }}>Содержимое «{item.text}»</div>
+			</Accordion.Item>
+		)}
+	</For>
+)
 
 export const PREVIEWS: Record<string, TPreview> = {
 	// Подпись — проп `text` из пропсов превью, а не слот: заданный слот
@@ -135,38 +168,13 @@ export const PREVIEWS: Record<string, TPreview> = {
 		</div>
 	),
 
-	// Первый таб активен сразу — иначе ни одна панель не смонтируется. Панели —
-	// слотом `content`, вне списка табов
 	tabs: (bind) => (
-		<Tabs
-			{...bind()}
-			content={
-				<For each={ITEMS}>
-					{(item) => (
-						<Tabs.Content value={item.value}>
-							<div style={{ padding: '12px' }}>Панель «{item.text}»</div>
-						</Tabs.Content>
-					)}
-				</For>
-			}
-		>
-			<For each={ITEMS}>
-				{(item, index) => <Tabs.Item active={index() === 0} {...item} />}
-			</For>
+		<Tabs {...bind()} content={tabsPanels()}>
+			{tabsItems()}
 		</Tabs>
 	),
 
-	accordion: (bind) => (
-		<Accordion {...bind()}>
-			<For each={ITEMS}>
-				{(item) => (
-					<Accordion.Item {...item}>
-						<div style={{ padding: '4px 0' }}>Содержимое «{item.text}»</div>
-					</Accordion.Item>
-				)}
-			</For>
-		</Accordion>
-	),
+	accordion: (bind) => <Accordion {...bind()}>{accordionItems()}</Accordion>,
 
 	icon: (bind) => <Icon tag={ARROW_DOWN} {...bind()} />,
 
@@ -175,6 +183,34 @@ export const PREVIEWS: Record<string, TPreview> = {
 	'progress-spinner': (bind) => <ProgressSpinner {...bind()} />,
 
 	skeleton: (bind) => <Skeleton {...bind()} />,
+
+	// Перестановка у трёх коллекций сразу, на одном составе: Tabs и Accordion —
+	// той же разметкой, что на их страницах, ListBox — данными, как у Vue и
+	// React. Элемент переставляется в своей коллекции: между коллекциями
+	// обёртка не переносит. Ряд — граница ширины, как у окна: табы — во всю
+	// ширину ряда, список и секции — под ними, рядом. Состав списку — копией: в
+	// манифесте он только для чтения, а `items` у списка — массив
+	'drag-and-drop': (bind) => (
+		<DragAndDrop {...bind()}>
+			<div
+				style={{
+					display: 'flex',
+					'flex-wrap': 'wrap',
+					gap: '24px',
+					'align-items': 'flex-start',
+					width: '100%',
+				}}
+			>
+				<div style={{ flex: '1 1 100%', 'min-width': '0' }}>
+					<Tabs content={tabsPanels()}>{tabsItems()}</Tabs>
+				</div>
+				<ListBox items={[...ITEMS]} aria_label="Пункты" />
+				<div style={{ flex: '1', 'min-width': '200px' }}>
+					<Accordion>{accordionItems()}</Accordion>
+				</div>
+			</div>
+		</DragAndDrop>
+	),
 
 	// Окно на списке и таблице по тысяче элементов: на пяти его не видно.
 	// ListBox с пределом строк прокручивается сам, таблица — в обёртке высотой

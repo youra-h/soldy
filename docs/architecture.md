@@ -1694,7 +1694,7 @@ There is no `adapter/static/`: React takes prop names from the descriptor types,
 
 ## Layer 8: Angular Adapter (`packages/ui/angular/src`)
 
-### ✅ IMPLEMENTED (Component / ComponentView / Stylable / Control / Textable / Button / Icon / Label / Frame / ProgressSpinner / Skeleton / Input / CheckBox / Switch / RadioGroup / ListBox / Tabs / Accordion / Table / Virtual)
+### ✅ IMPLEMENTED (Component / ComponentView / Stylable / Control / Textable / Button / Icon / Label / Frame / ProgressSpinner / Skeleton / Input / CheckBox / Switch / RadioGroup / ListBox / Tabs / Accordion / Table / Virtual / DragAndDrop)
 
 **Структура** зеркалит Vue/React: `adapter/{common,runtime,locale,elevator}` + `components/*`.
 
@@ -2026,10 +2026,10 @@ DOM-эмуляция серверного рендера Angular запись `i
 неё — его корень сам `<so-input>`, а атрибуты потребителя база делит между
 ним и `<input>` (`control`). Шаблон без `#root` — компонент без корня: у
 `so-component` элементный селектор и пустой шаблон, и написанное внутри него не
-выводится, как и в остальных адаптерах, а у окна `so-virtual` шаблон — только
-содержимое, и бокса у элемента нет (`display: contents` статикой хоста: на
-нескрытом корне привязка скрытия отдаёт `undefined`, и Angular берёт
-статику).
+выводится, как и в остальных адаптерах, а у окна `so-virtual` и перестановки
+`so-drag-and-drop` шаблон — только содержимое, и бокса у элемента нет
+(`display: contents` статикой хоста: на нескрытом корне привязка скрытия
+отдаёт `undefined`, и Angular берёт статику).
 
 Запрос — именно поле: сигнальные запросы, как и `input`/`output`/`model`,
 компилятор Angular распознаёт только в инициализаторе поля. Вызов внутри
@@ -2095,10 +2095,13 @@ Table — тот же рецепт, что ListBox, с окном `Virtual` и �
 шаблоном). Значение без шаблона — текст ячейки от ядра (`cell.text`) в
 свойстве `textContent`. `Virtual` — `<so-virtual>` без корня: подключение к окну проводка
 опускает в слой лифта обёртки, и коллекция в её содержимом подхватывает его
-своей сборкой.
+своей сборкой. `DragAndDrop` — `<so-drag-and-drop>` так же: свой экземпляр
+проводка опускает в слой лифта обёртки, Tabs, ListBox и Accordion в её
+содержимом включают им перетаскивание, а о перестановке сообщают выходы
+`(soMoveBefore)` и `(soMove)`.
 
 Сторожат спеки `packages/ui/angular/__tests__`: `list-box`, `tabs`,
-`accordion`, `radio-group`, `table`, `virtual`, `collection-elevator` (слой
+`accordion`, `radio-group`, `table`, `virtual`, `drag-and-drop`, `collection-elevator` (слой
 лифта, соседи, вложенные коллекции, порядок), `collection-item-lifetime`,
 `external-engine-lifetime`, `collections.server` (сервер и гидратация) и
 `ssr.server` (узла на сервере плагины не получают).
@@ -2156,7 +2159,7 @@ Table — тот же рецепт, что ListBox, с окном `Virtual` и �
 
 ## Layer 8b: Svelte Adapter (`packages/ui/svelte/src`)
 
-### ✅ IMPLEMENTED (Component / ComponentView / Stylable / Control / Textable / Button / Icon / Label / Frame / ProgressSpinner / Skeleton / Input / CheckBox / Switch / RadioGroup / ListBox / Tabs / Accordion / Table / Virtual)
+### ✅ IMPLEMENTED (Component / ComponentView / Stylable / Control / Textable / Button / Icon / Label / Frame / ProgressSpinner / Skeleton / Input / CheckBox / Switch / RadioGroup / ListBox / Tabs / Accordion / Table / Virtual / DragAndDrop)
 
 Svelte 5 на рунах. Структура зеркалит React, потому что механика событий та же —
 колбэк-пропы:
@@ -2216,7 +2219,12 @@ Svelte 5 на рунах. Структура зеркалит React, потом�
   ячейкам не нужно: выбор строки меняет её атрибуты, а содержимое ячейки
   читает только ячейку и сниппет `cell`. Table — тот же рецепт, что ListBox, с
   окном `Virtual` и без drag-and-drop; `Virtual` — обёртка без узла,
-  подключение к окну опускает контекстом.
+  подключение к окну опускает контекстом, `DragAndDrop` — так же, свой
+  экземпляр. Перестановка элемента из данных двигает его узел петлёй с ключом,
+  и `focusout` узла в фокусе браузер шлёт посреди отрисовки — внутри эффекта
+  блока; запись ядра в руну состояния связка делает мимо слежения
+  (`untrack`), как Svelte зовёт свои обработчики событий вне реактивного
+  контекста, — иначе Svelte бросил бы `state_unsafe_mutation`.
 - **props передаются геттером** (`() => props`): в Svelte 5 захват `$props()`
   в переменную рвёт реактивность, читать нужно лениво. Компилятор ловит это
   предупреждением `state_referenced_locally`.
@@ -2262,7 +2270,7 @@ Svelte 5 на рунах. Структура зеркалит React, потом�
 
 ## Layer 8c: Solid Adapter (`packages/ui/solid/src`)
 
-### ✅ IMPLEMENTED (Component / ComponentView / Stylable / Control / Textable / Button / Icon / Label / Frame / ProgressSpinner / Skeleton / Input / CheckBox / Switch / RadioGroup / ListBox / Tabs / Accordion / Table / Virtual)
+### ✅ IMPLEMENTED (Component / ComponentView / Stylable / Control / Textable / Button / Icon / Label / Frame / ProgressSpinner / Skeleton / Input / CheckBox / Switch / RadioGroup / ListBox / Tabs / Accordion / Table / Virtual / DragAndDrop)
 
 Структура зеркалит React — JSX и колбэк-пропы делают их почти близнецами, —
 а механика ближе к Vue и Svelte: тело компонента выполняется один раз, и
@@ -2368,7 +2376,7 @@ Svelte 5 на рунах. Структура зеркалит React, потом�
   ячейкам не нужно: выбор строки меняет её атрибуты, а содержимое ячейки
   читает только ячейку и слот `cell`. Table — тот же рецепт, что ListBox, с
   окном `Virtual` и без drag-and-drop; `Virtual` — обёртка без узла, слой
-  лифта детям отдаёт `Elevate`.
+  лифта детям отдаёт `Elevate`, `DragAndDrop` — так же.
 - **Лифт — слой значений в контексте, детям — `Elevate` (`Provider`).**
   Значение контекста Solid отдаёт только через `Provider`, а своего владельца
   у компонента в продакшене и на сервере нет — `createComponent` зовёт его
@@ -2401,7 +2409,7 @@ Svelte 5 на рунах. Структура зеркалит React, потом�
 
 ## Layer 8d: Web Components Adapter (`packages/ui/webc/src`)
 
-### ✅ IMPLEMENTED (Component / ComponentView / Stylable / Control / Textable / Button / Icon / Label / Frame / ProgressSpinner / Skeleton / Input / CheckBox / Switch / RadioGroup / Tabs / Accordion / ListBox / Table / Virtual)
+### ✅ IMPLEMENTED (Component / ComponentView / Stylable / Control / Textable / Button / Icon / Label / Frame / ProgressSpinner / Skeleton / Input / CheckBox / Switch / RadioGroup / Tabs / Accordion / ListBox / Table / Virtual / DragAndDrop)
 
 Единственный таргет без фреймворка — и потому самый показательный тест
 архитектуры: ядро уже событийное, а `CustomEvent` это родная модель DOM.
@@ -2432,7 +2440,8 @@ Svelte 5 на рунах. Структура зеркалит React, потом�
   `TElementAttributes` по правилу `applyAttributes`: один на узел, со слоями —
   наборы ядра самого элемента снизу, набор владельца сверху, —
   `defineAutonomousElement` (регистрация без `extends` элементов, у которых в
-  остальных адаптерах узла нет: провайдера локали и окна `<so-virtual>`),
+  остальных адаптерах узла нет: провайдера локали, окна `<so-virtual>` и
+  перестановки `<so-drag-and-drop>`),
   `displayContents` (их коробка — теневой корень со `<slot>` и
   `:host { display: contents }`),
   `isDefining` (признак идущей регистрации), `teleport.ts` (`TTeleport` —
@@ -2522,9 +2531,9 @@ CheckBox, Switch и радио, у таба и секции
 оставляет скрытие и класс и стиль потребителя. Тот же `table` — и поле окна
 (`TTemplateParts.control`): остальные статические атрибуты разметки окна база
 переносит на него, как на поле. Компонент бывает и невизуальным —
-окно `<so-virtual>` (`SoldyElement(HTMLElement, …)`, регистрация
-`defineAutonomousElement`): классы, наборы и видимость база читает из
-состояния по имени, и у него их нет.
+окно `<so-virtual>` и перестановка `<so-drag-and-drop>`
+(`SoldyElement(HTMLElement, …)`, регистрация `defineAutonomousElement`):
+классы, наборы и видимость база читает из состояния по имени, и у них их нет.
 
 Свои атрибуты элемента сверх пропов дескриптора — то, что элемент читает
 сам и ядру не отдаёт, — называет описание элемента (`attributes`): роль
@@ -2881,9 +2890,11 @@ WebKit:
   детали CheckBox над экземплярами, которые держит таблица: экземпляр сменился
   (новая связка — новый контекст) — ячейка строится заново. Окно
   `<so-virtual>` опускает подключение лифтом своему хосту, и коллекция в его
-  свете подхватывает его при сборке. Сторожат
+  свете подхватывает его при сборке; перестановка `<so-drag-and-drop>` так же
+  опускает свой экземпляр, а о перестановке сообщает событиями `so:move:before`
+  (отмена — `detail.preventDefault()`) и `so:move`. Сторожат
   `ui/webc/__tests__/tabs.spec.ts`, `accordion.spec.ts`, `radio-group.spec.ts`,
-  `list-box.spec.ts`, `table.spec.ts`, `virtual.spec.ts`,
+  `list-box.spec.ts`, `table.spec.ts`, `virtual.spec.ts`, `drag-and-drop.spec.ts`,
   `collection-elevator.spec.ts`, `collection-item-lifetime.spec.ts`,
   `external-engine-lifetime.spec.ts` и `browser/webc-collections.spec.ts`
   стенда.

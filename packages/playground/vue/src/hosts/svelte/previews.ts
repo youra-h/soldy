@@ -2,6 +2,7 @@ import type { Component } from 'svelte'
 import AccordionPreview from './AccordionPreview.svelte'
 import ButtonPreview from './ButtonPreview.svelte'
 import CheckBoxPreview from './CheckBoxPreview.svelte'
+import DragAndDropPreview from './DragAndDropPreview.svelte'
 import FieldPreview from './FieldPreview.svelte'
 import IconPreview from './IconPreview.svelte'
 import InputPreview from './InputPreview.svelte'
@@ -52,5 +53,6 @@ export const PREVIEWS: Record<string, TPreview> = {
 	icon: IconPreview,
 	'progress-spinner': ProgressSpinnerPreview,
 	skeleton: SkeletonPreview,
+	'drag-and-drop': DragAndDropPreview,
 	virtual: VirtualPreview,
 }

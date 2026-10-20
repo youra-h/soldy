@@ -13,6 +13,7 @@ import {
 	TAccordionItemComponent,
 	TButtonComponent,
 	TCheckBoxComponent,
+	TDragAndDropComponent,
 	TFieldComponent,
 	TIconComponent,
 	TInputComponent,
@@ -213,6 +214,34 @@ const markup = (style: string, content: readonly TContent[]): TMarkup => ({
 /** Содержимое коллекций — из общего манифеста, как у Vue и React. */
 const ITEMS = COLLECTION_ITEMS
 
+/**
+ * Табы и их панели частями — у превью Tabs и DragAndDrop. Первый таб активен
+ * сразу — иначе ни одна панель не смонтируется. Панели — слотом `content`,
+ * вне списка табов.
+ */
+const TABS_CONTENT: readonly TContent[] = [
+	...ITEMS.map((item, index) => ({
+		component: TTabsItemComponent,
+		element: tag('so-tabs-item'),
+		props: { active: index === 0, ...item },
+	})),
+	...ITEMS.map((item) => ({
+		component: TTabsContentComponent,
+		element: tag('div'),
+		slot: 'content',
+		props: { value: item.value },
+		content: [block('12px', `Панель «${item.text}»`)],
+	})),
+]
+
+/** Секции частями, с содержимым, — у превью Accordion и DragAndDrop. */
+const ACCORDION_CONTENT: readonly TContent[] = ITEMS.map((item) => ({
+	component: TAccordionItemComponent,
+	element: tag('so-accordion-item'),
+	props: { ...item },
+	content: [block('4px 0', `Содержимое «${item.text}»`)],
+}))
+
 export const PREVIEWS: Record<string, TPreview> = {
 	// Подпись — проп `text` из пропсов превью, а не содержимое: заданный слот
 	// перекрывает проп, и строка `text` не меняла бы ничего видимого
@@ -296,35 +325,9 @@ export const PREVIEWS: Record<string, TPreview> = {
 		}),
 	},
 
-	// Первый таб активен сразу — иначе ни одна панель не смонтируется. Панели —
-	// слотом `content`, вне списка табов
-	tabs: {
-		component: TTabsComponent,
-		content: [
-			...ITEMS.map((item, index) => ({
-				component: TTabsItemComponent,
-				element: tag('so-tabs-item'),
-				props: { active: index === 0, ...item },
-			})),
-			...ITEMS.map((item) => ({
-				component: TTabsContentComponent,
-				element: tag('div'),
-				slot: 'content',
-				props: { value: item.value },
-				content: [block('12px', `Панель «${item.text}»`)],
-			})),
-		],
-	},
+	tabs: { component: TTabsComponent, content: TABS_CONTENT },
 
-	accordion: {
-		component: TAccordionComponent,
-		content: ITEMS.map((item) => ({
-			component: TAccordionItemComponent,
-			element: tag('so-accordion-item'),
-			props: { ...item },
-			content: [block('4px 0', `Содержимое «${item.text}»`)],
-		})),
-	},
+	accordion: { component: TAccordionComponent, content: ACCORDION_CONTENT },
 
 	// `<svg so-icon so-role-icon="arrowDown">`: глиф роли кладёт на `<svg>`
 	// директива адаптера, а тег первого селектора Icon — `span`
@@ -344,6 +347,42 @@ export const PREVIEWS: Record<string, TPreview> = {
 	'progress-spinner': { component: TProgressSpinnerComponent },
 
 	skeleton: { component: TSkeletonComponent },
+
+	// Перестановка у трёх коллекций сразу, на одном составе: Tabs и Accordion —
+	// теми же частями, что на их страницах, ListBox — данными, как у Vue и React.
+	// Элемент переставляется в своей коллекции: между коллекциями обёртка не
+	// переносит. Ряд — граница ширины, как у окна: табы — во всю ширину ряда,
+	// список и секции — под ними, рядом. Коллекции в разметке ряда собираются
+	// частями обёртки — с её инжектором, и её слой лифта они видят
+	'drag-and-drop': {
+		component: TDragAndDropComponent,
+		content: [
+			markup(
+				'display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start; width: 100%',
+				[
+					markup('flex: 1 1 100%; min-width: 0', [
+						{
+							component: TTabsComponent,
+							element: tag('so-tabs'),
+							content: TABS_CONTENT,
+						},
+					]),
+					{
+						component: TListBoxComponent,
+						element: tag('so-list-box'),
+						props: { items: ITEMS, aria_label: 'Пункты' },
+					},
+					markup('flex: 1; min-width: 200px', [
+						{
+							component: TAccordionComponent,
+							element: tag('div'),
+							content: ACCORDION_CONTENT,
+						},
+					]),
+				],
+			),
+		],
+	},
 
 	// Окно на списке и таблице по тысяче элементов: на пяти его не видно.
 	// ListBox с пределом строк прокручивается сам, таблица — в окне прокрутки
