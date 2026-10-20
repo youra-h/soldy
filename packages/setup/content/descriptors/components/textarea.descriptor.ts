@@ -12,7 +12,9 @@
 
 import { defineComponent, defineDescriptor } from '../../../protected/define'
 import { TTextarea } from '@soldy-ui/core'
+import { fieldOf } from '@soldy-ui/plugins'
 import {
+	ActionPluginDescriptor,
 	InputPluginDescriptor,
 	TextareaAutoresizePluginDescriptor,
 	TextareaIdsPluginDescriptor,
@@ -58,6 +60,9 @@ export const TextareaDescriptor = defineDescriptor(() =>
 		},
 
 		plugins: [
+			// Фокус держит `<textarea>`, а корень — коробка вокруг него и
+			// счётчика: туда `focused = true` и ставит фокус
+			ActionPluginDescriptor.with({ focusTarget: fieldOf }),
 			// Текст счётчика от локали — с первой отрисовки
 			TextareaNamesPluginDescriptor,
 			// `id` счётчика и ссылка поля на него — с первой отрисовки. Ссылку

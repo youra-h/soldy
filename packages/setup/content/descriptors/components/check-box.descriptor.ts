@@ -8,7 +8,8 @@
 
 import { defineComponent, defineDescriptor, defineType } from '../../../protected/define'
 import { TCheckBox } from '@soldy-ui/core'
-import { InputBoolPluginDescriptor } from '../plugins'
+import { fieldOf } from '@soldy-ui/plugins'
+import { ActionPluginDescriptor, InputBoolPluginDescriptor } from '../plugins'
 import { InputControlDescriptor } from './input-control.descriptor'
 
 export const CheckBoxDescriptor = defineDescriptor(() =>
@@ -53,6 +54,11 @@ export const CheckBoxDescriptor = defineDescriptor(() =>
 			},
 		},
 
-		plugins: [InputBoolPluginDescriptor],
+		plugins: [
+			// Фокус держит `<input>`, а корень — `span` вокруг него и коробки:
+			// туда `focused = true` и ставит фокус
+			ActionPluginDescriptor.with({ focusTarget: fieldOf }),
+			InputBoolPluginDescriptor,
+		],
 	}),
 )

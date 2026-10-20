@@ -183,8 +183,9 @@ export default {
 						Опции — то, что рисует коллекция, по секциям группировки
 						(`drawnSections`), как у ListBox: группа с подписью — в
 						`SelectGroup`, опции без группы — прямо в списке, между соседними
-						секциями — немой разделитель (`aria-hidden`, не `separator`: в
-						`listbox` ARIA пускает только опции и группы). Секции идут
+						секциями, пока его просит Select (`groupSeparators`), — немой
+						разделитель (`aria-hidden`, не `separator`: в `listbox` ARIA
+						пускает только опции и группы). Секции идут
 						порядком показанного — стрелки подсвечивают опции так, как они
 						стоят на экране. Без групп секция одна — ни обёртки, ни
 						разделителя. Отбор, убравший все опции группы, убирает и её
@@ -205,7 +206,11 @@ export default {
 						и у опций без неё: обёртка у них разная.
 					-->
 					<template v-for="(section, index) in drawnSections" :key="section.key">
-						<div v-if="index > 0" class="so-select__separator" aria-hidden="true"></div>
+						<div
+							v-if="groupSeparators && index > 0"
+							class="so-select__separator"
+							aria-hidden="true"
+						></div>
 						<SelectGroup v-if="section.group" :label="section.group.label">
 							<template v-for="entry in section.entries" :key="entry.key">
 								<div

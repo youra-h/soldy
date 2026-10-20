@@ -315,7 +315,8 @@
 
 // Разделитель между секциями групп (`drawnSections`) — то же устройство, что у
 // `.so-list-box__separator`: линия во всю ширину списка, отступы до соседей —
-// зазор списка (`group.separator`).
+// зазор списка (`group.separator`). Его рисует Select, пока их просит
+// `groupSeparators`; без него место линии остаётся пустым (ниже).
 .so-select__separator {
 	@include group.separator;
 }
@@ -336,6 +337,14 @@
 // Размер подписи — размер строк группы (`group.label-sizes`): у телепортированной
 // панели модификатора размера Select нет, а строки опций его несут.
 @include group.label-sizes('so-select-group', 'so-select-item');
+
+// Секции без разделителя — то же устройство, что у ListBox: секция отступает
+// на зазор списка и место линии (`group.unseparated`) и встаёт там же, где
+// стояла бы за разделителем.
+:is(.so-select-group, .so-select-item) + .so-select-group,
+.so-select-group + .so-select-item {
+	@include group.unseparated(calc(var(--spacing) * 1));
+}
 
 .so-select-item {
 	> * {

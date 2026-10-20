@@ -46,27 +46,27 @@ function drawEntry(props: ListBoxProps, entry: TDrawnEntry<IListBoxItem>): React
 }
 
 /**
- * Секция того, что рисует список, — узлами списка: разделитель перед всеми,
- * кроме первой, а дальше группа с подписью или записи без группы прямо в
- * списке. Ключи — разные у всех видов: у записи — её ключ (число), у группы —
- * ключ секции, у разделителя — свой от ключа секции.
+ * Секция того, что рисует список, — узлами списка: разделитель перед ней, если
+ * она не первая и список их просит (`separated`), а дальше группа с подписью
+ * или записи без группы прямо в списке. Ключи — разные у всех видов: у записи
+ * — её ключ (число), у группы — ключ секции, у разделителя — свой от ключа
+ * секции.
  */
 function drawSection(
 	props: ListBoxProps,
 	section: TDrawnSection<IListBoxItem>,
-	index: number,
+	separated: boolean,
 ): ReactElement[] {
 	const entries = section.entries.map((entry) => drawEntry(props, entry))
-	const separator =
-		index > 0
-			? [
-					<div
-						key={`separator:${section.key}`}
-						className="so-list-box__separator"
-						aria-hidden="true"
-					/>,
-				]
-			: []
+	const separator = separated
+		? [
+				<div
+					key={`separator:${section.key}`}
+					className="so-list-box__separator"
+					aria-hidden="true"
+				/>,
+			]
+		: []
 
 	if (!section.group) return [...separator, ...entries]
 
@@ -96,10 +96,11 @@ function drawSection(
  * Элементы — дети (`<ListBox.Item>`), а без детей — то, что рисует коллекция,
  * по секциям группировки (`drawnSections`): группа с подписью — в
  * `ListBoxGroup`, элементы без группы — прямо в списке, между соседними
- * секциями — немой разделитель (`aria-hidden`, не `separator`: в `listbox`
- * ARIA пускает только опции и группы). Секции идут порядком показанного, и
- * стрелки ходят так же, как элементы стоят на экране. Без групп секция одна —
- * ни обёртки, ни разделителя. В секции — её записи по порядку, ключ — ключ
+ * секциями, пока его просит список (`groupSeparators`), — немой разделитель
+ * (`aria-hidden`, не `separator`: в `listbox` ARIA пускает только опции и
+ * группы). Секции идут порядком показанного, и стрелки ходят так же, как
+ * элементы стоят на экране. Без групп секция одна — ни обёртки, ни
+ * разделителя. В секции — её записи по порядку, ключ — ключ
  * записи: без окна это все показанные элементы секции, по `ListBoxItem` на
  * каждый, в окне обёртки `Virtual` (у списка без групп) — видимые и распорки
  * на месте пропущенных: `div` под `aria-hidden`, высоту которого тема берёт из
@@ -123,7 +124,7 @@ function drawSection(
 export function ListBox(props: ListBoxProps): ReactElement | null {
 	const { ref, forwardProps, state, layer } = useSetupListBox(props)
 
-	const { rendered, drawnSections, shown, attrs, aria, dataset } = state
+	const { rendered, drawnSections, groupSeparators, shown, attrs, aria, dataset } = state
 
 	if (!rendered) return null
 
@@ -140,7 +141,7 @@ export function ListBox(props: ListBoxProps): ReactElement | null {
 					{hasSlot(props.children)
 						? renderSlot(props.children)
 						: drawnSections?.flatMap((section, index) =>
-								drawSection(props, section, index),
+								drawSection(props, section, groupSeparators === true && index > 0),
 							)}
 					{shown?.length === 0 ? renderSlot(props.empty) : null}
 				</div>

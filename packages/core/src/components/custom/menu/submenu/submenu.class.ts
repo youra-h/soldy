@@ -1,5 +1,6 @@
 import TMenuPopupItem from '../popup-item/popup-item.class'
 import { TMenu } from '../menu.class'
+import type { TDefaultValues } from '../../../base/component'
 import { TClasses } from '../../../../common'
 import type { TComponentSize, TComponentVariant } from '../../../../common'
 import type { IMenuItem } from '../item/types'
@@ -30,15 +31,30 @@ import type { IMenuSubmenu, IMenuSubmenuProps, TMenuSubmenuEvents } from './type
  * Классы панели — свой набор (`panelClasses`): блок панели меню с размером и
  * вариантом подменю. Панель телепортирована, и ни модификаторы пункта, ни
  * модификаторы панели меню до неё не доходят.
+ *
+ * Разделитель между секциями группировки своих пунктов — своё свойство
+ * (`groupSeparators`) с умолчанием меню: секции своих пунктов рисует разметка
+ * подменю. От меню над ним значение не переходит, как и вариант.
  */
 export default class TMenuSubmenu
 	extends TMenuPopupItem<IMenuSubmenuProps, TMenuSubmenuEvents>
 	implements IMenuSubmenu
 {
+	static defaultValues: typeof TMenuPopupItem.defaultValues &
+		TDefaultValues<IMenuSubmenuProps, 'groupSeparators'> = {
+		...TMenuPopupItem.defaultValues,
+		groupSeparators: TMenu.defaultValues.groupSeparators,
+	}
+
 	protected _panelClasses: TClasses
+	protected _groupSeparators: boolean
 
 	constructor(props: Partial<IMenuSubmenuProps> = {}) {
 		super(props)
+
+		const ctor = new.target as typeof TMenuSubmenu
+
+		this._groupSeparators = props.groupSeparators ?? ctor.defaultValues.groupSeparators
 
 		// Панель подменю — меню: строка объявляет его, у панели — роль `menu`
 		this._declarePopup('menu')
@@ -71,6 +87,21 @@ export default class TMenuSubmenu
 	}
 
 	/**
+	 * Рисовать ли разделитель между соседними секциями группировки своих
+	 * пунктов из данных. Ручной `Menu.Separator` разметки свойство не трогает.
+	 */
+	get groupSeparators(): boolean {
+		return this._groupSeparators
+	}
+
+	set groupSeparators(value: boolean) {
+		if (this._groupSeparators === value) return
+
+		this._groupSeparators = value
+		this.events.emit('change:groupSeparators', value)
+	}
+
+	/**
 	 * Пункт подменю выбрали: подменю сообщает о выборе меню, в котором стоит
 	 * (`choose` — его слушает коллекция того меню), — и оно закрывается
 	 * целиком, до корня. Само подменю закрывается следом и тогда, когда его
@@ -91,6 +122,13 @@ export default class TMenuSubmenu
 		oldValue?: TComponentVariant,
 	): void {
 		this._panelClasses.swap({ prefix: '--variant-', oldValue, newValue })
+	}
+
+	override getProps(): IMenuSubmenuProps {
+		return {
+			...super.getProps(),
+			groupSeparators: this._groupSeparators,
+		}
 	}
 }
 

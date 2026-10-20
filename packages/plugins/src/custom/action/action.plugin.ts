@@ -4,7 +4,7 @@ import { TElementPlugin } from '../element'
 import { isFocusableElement } from '../../utils'
 import type { IDomEventTarget } from '../../utils'
 import type { IControl } from '@soldy-ui/core'
-import type { IActionPluginOptions, TActionPluginEvents } from './types'
+import type { IActionPluginOptions, TActionPluginEvents, TFocusTarget } from './types'
 
 /** Теги, где браузер сам превращает Enter/Space в click. */
 const NATIVE_ACTIVATION = new Set(['button', 'input', 'select', 'textarea'])
@@ -31,8 +31,15 @@ const NATIVE_ACTIVATION = new Set(['button', 'input', 'select', 'textarea'])
  *
  * 2. Связывает `focused` с настоящим фокусом. До этого плагина `focused` был
  *    булевым флагом, который никто не выставлял и который ничего не делал.
- *    Связь двусторонняя: DOM-фокус пишет в инстанс, запись в инстанс зовёт
- *    element.focus().
+ *    Связь двусторонняя: фокус на корне или внутри него пишет в инстанс, а
+ *    запись в инстанс ставит фокус на узел фокуса компонента. Его называет
+ *    правило дескриптора (`focusTarget`): у поля фокус держит вложенный
+ *    `<input>`, у ListBox — узел списка, у Tabs — таб-остановка, а корень у
+ *    них — коробка вокруг. Без правила, и когда оно узла не нашло, узел
+ *    фокуса — корень. Фокус уже внутри корня запись не двигает: компонент и
+ *    так в фокусе. Запись `false` снимает фокус с того узла внутри корня, на
+ *    котором он стоит. Писатель фокуса один — этот плагин: своего обработчика
+ *    `change:focused` у плагинов компонентов нет.
  *
  * 3. Пробрасывает сырой `click`. Нужен той стороне, у которой на руках только
  *    инстанс: в шаблоне DOM-события и так доступны через fallthrough
@@ -41,7 +48,11 @@ const NATIVE_ACTIVATION = new Set(['button', 'input', 'select', 'textarea'])
 export class TActionPlugin extends TBasePlugin<any, TActionPluginEvents> {
 	private _element: Element | null = null
 	private _instance: IControl | null = null
+	/** Контекст набора: его получает правило узла фокуса. */
+	private _ctx: IPluginContext | null = null
 	private _keys: readonly string[] = ['Enter', ' ']
+	/** Правило узла фокуса из опций дескриптора; нет — фокус держит корень. */
+	private _focusTarget: TFocusTarget | null = null
 	private _syncingFocus = false
 	/** Пробел нажат на корне: клик — когда его отпустят, как у `<button>`. */
 	private _spaceDown = false
@@ -49,9 +60,12 @@ export class TActionPlugin extends TBasePlugin<any, TActionPluginEvents> {
 	override install(ctx: IPluginContext, options?: IActionPluginOptions): void {
 		super.install(ctx, options)
 
+		this._ctx = ctx
 		this._instance = ctx.getInstance<IControl>()
 
 		if (options?.keys) this._keys = options.keys
+
+		this._focusTarget = options?.focusTarget ?? null
 
 		const elementPlugin = ctx.get(TElementPlugin)
 
@@ -65,6 +79,7 @@ export class TActionPlugin extends TBasePlugin<any, TActionPluginEvents> {
 		this._detach()
 
 		this._instance = null
+		this._ctx = null
 
 		super.destroy()
 	}
@@ -75,7 +90,8 @@ export class TActionPlugin extends TBasePlugin<any, TActionPluginEvents> {
 	}
 
 	/**
-	 * Перевести фокус на контрол.
+	 * Перевести фокус на контрол — на его узел фокуса (`_focusNode`): у поля
+	 * это `<input>`, а не коробка вокруг.
 	 *
 	 * Узел плагину приходит как `Element`, поэтому фокусируемость проверяется
 	 * гардом: у корня-`svg` фокус есть, а у произвольного `Element` — нет.
@@ -83,13 +99,23 @@ export class TActionPlugin extends TBasePlugin<any, TActionPluginEvents> {
 	focus(): void {
 		const element = this._element
 
-		if (isFocusableElement(element)) element.focus()
+		if (!element) return
+
+		const node = this._focusNode(element)
+
+		if (isFocusableElement(node)) node.focus()
 	}
 
+	/**
+	 * Снять фокус с контрола — с того узла внутри корня, на котором он стоит,
+	 * как запись `focused = false`: у поля фокус держит вложенный `<input>`, и
+	 * `blur()` корня его бы не снял.
+	 */
 	blur(): void {
 		const element = this._element
+		const active = element ? this._activeWithin(element) : null
 
-		if (isFocusableElement(element)) element.blur()
+		if (isFocusableElement(active)) active.blur()
 	}
 
 	private _attach(element: Element): void {
@@ -241,6 +267,12 @@ export class TActionPlugin extends TBasePlugin<any, TActionPluginEvents> {
 	/**
 	 * Инстанс → DOM. Флаг `_syncingFocus` рвёт цикл: focus() вызовет focusin,
 	 * тот запишет focused, тот снова придёт сюда.
+	 *
+	 * В фокусе ли компонент, считается по корню, как в обратную сторону
+	 * (`focusin` и `focusout` корня): фокус внутри корня — на кнопке очистки
+	 * поля или в поле шапки ListBox — `focused = true` не двигает. Ставит
+	 * фокус запись на узел фокуса (`_focusNode`), снимает — с узла внутри
+	 * корня, на котором он стоит.
 	 */
 	private readonly _onFocusedChange = (value: boolean): void => {
 		if (this._syncingFocus) return
@@ -249,22 +281,43 @@ export class TActionPlugin extends TBasePlugin<any, TActionPluginEvents> {
 
 		if (!element) return
 
-		const active = element.ownerDocument.activeElement
-		const hasFocus = active === element || element.contains(active)
+		const active = this._activeWithin(element)
 
-		if (value === hasFocus) return
+		if (value === (active !== null)) return
 
 		this._syncingFocus = true
 
 		try {
 			if (value) {
-				if (isFocusableElement(element)) element.focus()
+				const node = this._focusNode(element)
+
+				if (isFocusableElement(node)) node.focus()
 			} else if (isFocusableElement(active)) {
 				active.blur()
 			}
 		} finally {
 			this._syncingFocus = false
 		}
+	}
+
+	/**
+	 * Узел фокуса компонента: что нашло правило дескриптора, иначе корень.
+	 *
+	 * Правило зовётся на каждую запись, а не один раз на `ready`: узел фокуса
+	 * бывает новым — у Tabs остановка переезжает с активацией.
+	 */
+	private _focusNode(root: Element): Element {
+		const rule = this._focusTarget
+		const ctx = this._ctx
+
+		return (rule && ctx ? rule(root, ctx) : null) ?? root
+	}
+
+	/** Узел под фокусом, если фокус на корне или внутри него; иначе `null`. */
+	private _activeWithin(root: Element): Element | null {
+		const active = root.ownerDocument.activeElement
+
+		return active && root.contains(active) ? active : null
 	}
 
 	private _writeFocused(value: boolean): void {

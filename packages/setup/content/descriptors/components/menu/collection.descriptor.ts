@@ -32,7 +32,7 @@ export const MenuCollectionDescriptor = defineDescriptor(() =>
 				/**
 				 * Секции показанных пунктов по порядку: группа с подписью или
 				 * пункты без группы. Между соседними секциями разметка рисует
-				 * разделитель
+				 * разделитель, если его просит меню (`groupSeparators`)
 				 */
 				sections: { type: Array, protected: true, triggers: ['change:sections'] },
 			},

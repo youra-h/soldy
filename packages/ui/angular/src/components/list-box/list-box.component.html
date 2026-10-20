@@ -16,10 +16,11 @@
 	коллекция, по секциям группировки (`drawnSections`), запасным содержимым
 	`<ng-content>`, ключ секции — её ключ. Группа с подписью — в
 	`<div so-list-box-group>`, элементы без группы — прямо в списке, между
-	соседними секциями — немой разделитель (`aria-hidden`, не `separator`: в
-	`listbox` ARIA пускает только опции и группы). Секции идут порядком
-	показанного, и стрелки ходят так же, как элементы стоят на экране. Без групп
-	секция одна — ни обёртки, ни разделителя.
+	соседними секциями, пока его просит список (`groupSeparators`), — немой
+	разделитель (`aria-hidden`, не `separator`: в `listbox` ARIA пускает только
+	опции и группы). Секции идут порядком показанного, и стрелки ходят так же,
+	как элементы стоят на экране. Без групп секция одна — ни обёртки, ни
+	разделителя.
 
 	В секции — её записи по порядку (шаблон `entries`, один на группу и на
 	элементы без неё), ключ — ключ записи. Без окна это все показанные элементы
@@ -104,7 +105,7 @@
 <div #control class="so-list-box__list" tabindex="0" [so-attributes]="state()['aria']">
 	<ng-content>
 		@for (section of state()['drawnSections'] ?? []; track section.key; let first = $first) {
-			@if (!first) {
+			@if (state()['groupSeparators'] && !first) {
 				<div class="so-list-box__separator" aria-hidden="true"></div>
 			}
 			@if (section.group; as group) {

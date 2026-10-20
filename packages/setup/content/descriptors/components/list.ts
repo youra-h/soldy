@@ -5,7 +5,7 @@
  * раз и подмешиваются в contribution обоих компонентов. Это зеркало контракта
  * `IList` из ядра: там типы, здесь декларация для обмена. Общего предка у
  * компонентов нет и быть не может (`TValueControl` против `TInputControl`),
- * поэтому наследовать нечего — но повторять четыре декларации в двух файлах
+ * поэтому наследовать нечего — но повторять пять деклараций в двух файлах
  * тоже незачем. Что копии не разойдутся с ядром, проверяет
  * `core/__tests__/list-contract.spec.ts`.
  *
@@ -15,7 +15,9 @@
  * фасадов — `CollectionDescriptor`, у которого группировки нет, поэтому
  * фрагмент. Что разметка рисует по секциям, объявляет каждый сам: меню —
  * секции показанного (`sections`), списки — секции нарисованного
- * (`drawnSections`).
+ * (`drawnSections`). Рисовать ли разделитель между секциями — не группировка,
+ * а разметка владельца, поэтому `groupSeparators` здесь нет: у списков он в
+ * `LIST_PROPS`, у Menu и `Menu.Submenu` — в их дескрипторах.
  *
  * `satisfies`, а не аннотация словарём: с аннотацией `Record<string, …>` спред
  * в `props` терял свои ключи в типах, и `defineComponent` не видел триггеров
@@ -43,6 +45,11 @@ export const LIST_PROPS = {
 	indicator: {
 		type: String,
 		triggers: ['change:indicator'],
+	},
+	/** Рисовать ли разделитель между соседними секциями группировки */
+	groupSeparators: {
+		type: Boolean,
+		triggers: ['change:groupSeparators'],
 	},
 } satisfies Record<string, IComponentPropDefinition<keyof TListEvents>>
 

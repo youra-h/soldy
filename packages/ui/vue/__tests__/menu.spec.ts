@@ -761,6 +761,58 @@ describe('группы из данных', () => {
 		expect(parts()).toEqual(['Изменить', 'Удалить'])
 		expect(panel().querySelector('.so-menu-group, .so-menu-separator')).toBeNull()
 	})
+
+	it('groupSeparators=false — секции без разделителей, порядок и группы те же', async () => {
+		await render(() =>
+			h(Menu, { items: GROUPED, groups: GROUPS, groupSeparators: false }, { trigger }),
+		)
+
+		expect(parts()).toEqual(['группа Правка', 'группа Вид', 'Переименовать'])
+		expect(panel().querySelector('.so-menu-separator')).toBeNull()
+	})
+
+	it('groupSeparators на лету ставит и снимает разделители', async () => {
+		const separated = ref(false)
+
+		await render(() =>
+			h(
+				Menu,
+				{ items: GROUPED, groups: GROUPS, groupSeparators: separated.value },
+				{ trigger },
+			),
+		)
+
+		expect(parts()).toEqual(['группа Правка', 'группа Вид', 'Переименовать'])
+
+		separated.value = true
+		await nextTick()
+
+		expect(parts()).toEqual(['группа Правка', '—', 'группа Вид', '—', 'Переименовать'])
+
+		separated.value = false
+		await nextTick()
+
+		expect(parts()).toEqual(['группа Правка', 'группа Вид', 'Переименовать'])
+	})
+
+	it('ручной Menu.Separator разметки свойство не трогает', async () => {
+		await render(() =>
+			h(
+				Menu,
+				{ groupSeparators: false },
+				{
+					trigger,
+					default: () => [
+						h(Menu.Item, { value: 'edit', text: 'Изменить' }),
+						h(Menu.Separator),
+						h(Menu.Item, { value: 'remove', text: 'Удалить' }),
+					],
+				},
+			),
+		)
+
+		expect(parts()).toEqual(['Изменить', '—', 'Удалить'])
+	})
 })
 
 /**
@@ -1122,6 +1174,46 @@ describe('подменю', () => {
 		expect(texts(subPanel())).toEqual(['Почта…', 'Ссылка…'])
 		expect(find('.so-menu-group__label', subPanel()).textContent).toBe('Отправить')
 	})
+
+	/**
+	 * Разделители между секциями своих пунктов подменю просит само: свойство
+	 * своё, с умолчанием меню, и от меню над ним не переходит.
+	 */
+	it('разделители секций подменю — свои: по умолчанию есть, groupSeparators снимает их только у него', async () => {
+		const separated = ref<boolean | undefined>(undefined)
+		const SEND = {
+			items: [
+				{ value: 'link', text: 'Ссылка' },
+				{ value: 'mail', text: 'Почта', _: { group: 'send' } },
+			],
+			groups: [{ key: 'send', label: 'Отправить' }],
+		}
+
+		await render(() =>
+			h(
+				Menu,
+				{ groupSeparators: false },
+				{
+					trigger,
+					default: () =>
+						h(Menu.Submenu, {
+							value: 'share',
+							text: 'Поделиться',
+							...SEND,
+							groupSeparators: separated.value,
+						}),
+				},
+			),
+		)
+
+		// Меню своих разделителей не просит, а подменю — по своему умолчанию
+		expect(subPanel().querySelectorAll('.so-menu-separator')).toHaveLength(1)
+
+		separated.value = false
+		await nextTick()
+
+		expect(subPanel().querySelector('.so-menu-separator')).toBeNull()
+	})
 })
 
 /**
@@ -1283,6 +1375,23 @@ describe('пункт с панелью', () => {
 
 		await press(dueRow(), 'Tab')
 
+		expect(document.activeElement).toBe(find('.so-test-earlier'))
+	})
+
+	it('стрелка к концу строки открытого пункта ведёт фокус в его панель', async () => {
+		await render(() => markup())
+
+		await openOnDue()
+		await press(dueRow(), 'ArrowRight')
+		// Фокус на строке, панель открыта — как после открытия наведением
+		await press(find('.so-test-earlier'), 'Tab', { shiftKey: true })
+
+		expect(document.activeElement).toBe(dueRow())
+
+		const event = await press(dueRow(), 'ArrowRight')
+
+		expect(event.defaultPrevented).toBe(true)
+		expect(shown(duePanel())).toBe(true)
 		expect(document.activeElement).toBe(find('.so-test-earlier'))
 	})
 

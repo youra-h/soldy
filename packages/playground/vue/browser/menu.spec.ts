@@ -841,6 +841,7 @@ describe('подменю', () => {
 /**
  * Пункт с панелью — `Menu.PopoverItem`: сбоку от строки немодальная панель с
  * любым содержимым, у края окна — с другой стороны, в RTL — зеркально;
+ * указатель открывает её, постояв на строке, — фокус остаётся на строке;
  * путь указателя к панели через соседний пункт её не закрывает, а нажатие в
  * содержимом — день календаря — не закрывает меню. Переходы плагинов —
  * `plugins/__tests__/menu-popover-item.plugin.spec.ts`; здесь — настоящая
@@ -935,6 +936,20 @@ describe('пункт с панелью', () => {
 		await nextFrame()
 	}
 
+	/** Открыть меню кликом и навести на «Срок» у конца строки: панель открывается наведением. */
+	const hoverDue = async () => {
+		await userEvent.click(trigger())
+		await expect.poll(rootOpen).toBe(true)
+
+		const row = dueRow().getBoundingClientRect()
+
+		await userEvent.hover(dueRow(), { position: { x: row.width - 12, y: row.height / 2 } })
+		await expect.poll(dueOpen).toBe(true)
+		// Кадр, которым модель фокуса уводит фокус в панель после нажатия, позади
+		await nextFrame()
+		await nextFrame()
+	}
+
 	afterEach(() => {
 		document.documentElement.removeAttribute('dir')
 	})
@@ -955,6 +970,42 @@ describe('пункт с панелью', () => {
 		expect(Number(duePanel().dataset.layer)).toBeGreaterThan(Number(rootPanel().dataset.layer))
 		// Строка открытого пункта горит, пока фокус в его панели
 		await expect.poll(litRows).toEqual(['Срок'])
+	})
+
+	it('наведение у конца строки открывает панель — фокус остался на строке, она горит', async () => {
+		await showPopover()
+		await hoverDue()
+
+		expect(active()).toBe(dueRow())
+		expect(dueItem().dataset.open).toBe('true')
+		expect(dueRow().getAttribute('aria-expanded')).toBe('true')
+		await expect.poll(litRows).toEqual(['Срок'])
+	})
+
+	it('стрелка к концу строки ведёт фокус в панель, открытую наведением', async () => {
+		await showPopover()
+		await hoverDue()
+
+		await userEvent.keyboard('{ArrowRight}')
+
+		await expect.poll(active).toBe(find('.so-test-earlier'))
+		expect(dueOpen()).toBe(true)
+		expect(rootOpen()).toBe(true)
+	})
+
+	it('наведение на другой пункт прочь от панели закрывает её: подсветка — у пункта под указателем', async () => {
+		await showPopover()
+		await hoverDue()
+
+		const remove = menuRow('Удалить')
+
+		await userEvent.hover(remove, { position: { x: 10, y: 10 } })
+		await userEvent.hover(remove, { position: { x: 6, y: 14 } })
+
+		await expect.poll(dueOpen).toBe(false)
+		await expect.poll(active).toBe(remove)
+		// Строка закрытого пункта гаснет переходом темы — ждём его конца
+		await expect.poll(litRows).toEqual(['Удалить'])
 	})
 
 	it('у правого края окна панель встаёт у начала строки', async () => {

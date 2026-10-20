@@ -42,11 +42,10 @@ import type {
  * же расширение коллекции и клавиатурный плагин — имена и `id` списка/опции
  * знают они, не поле.
  *
- * `maxRows`, `contentFit`, `scrollBehavior`, `indicator` — общий с ListBox
- * контракт `IList`
- * (см. `custom/list/types.ts`), реализованный здесь своей копией: общего предка
- * у списка и поля выбора быть не может. Копии сверяет
- * `core/__tests__/list-contract.spec.ts`.
+ * `maxRows`, `contentFit`, `scrollBehavior`, `indicator`, `groupSeparators` —
+ * общий с ListBox контракт `IList` (см. `custom/list/types.ts`), реализованный
+ * здесь своей копией: общего предка у списка и поля выбора быть не может.
+ * Копии сверяет `core/__tests__/list-contract.spec.ts`.
  *
  * `value`/`name`/`readonly`/`required` от `TInputControl` — служебное
  * состояние самого Select, не то, что пользователь видит внутри поля и что
@@ -122,6 +121,7 @@ export class TSelect<
 	protected _contentFit!: TListContentFit
 	protected _scrollBehavior!: TScrollBehavior
 	protected _indicator!: TListIndicator
+	protected _groupSeparators!: boolean
 	protected _editable!: boolean
 	protected _editableMode!: TSelectEditableMode
 	protected _removeOnBackspace!: boolean
@@ -170,6 +170,7 @@ export class TSelect<
 
 		this._maxRows = own.maxRows ?? ctor.defaultValues.maxRows
 		this._scrollBehavior = own.scrollBehavior ?? ctor.defaultValues.scrollBehavior
+		this._groupSeparators = own.groupSeparators ?? ctor.defaultValues.groupSeparators
 
 		this._applyContentFit(own.contentFit ?? ctor.defaultValues.contentFit)
 		this._applyIndicator(own.indicator ?? ctor.defaultValues.indicator)
@@ -525,6 +526,22 @@ export class TSelect<
 	}
 
 	/**
+	 * Рисовать ли разделитель между соседними секциями группировки в списке
+	 * панели. Рисует его разметка, по секциям нарисованного (`drawnSections`
+	 * фасада).
+	 */
+	get groupSeparators(): boolean {
+		return this._groupSeparators
+	}
+
+	set groupSeparators(value: boolean) {
+		if (this._groupSeparators === value) return
+
+		this._groupSeparators = value
+		this._sink.emit('change:groupSeparators', value)
+	}
+
+	/**
 	 * Подгонять ли ширину панели под ширину поля.
 	 *
 	 * Производное от `contentFit`, и вычисляется здесь, а не в разметке:
@@ -679,6 +696,7 @@ export class TSelect<
 			contentFit: this._contentFit,
 			scrollBehavior: this._scrollBehavior,
 			indicator: this._indicator,
+			groupSeparators: this._groupSeparators,
 		} as TProps
 	}
 }
