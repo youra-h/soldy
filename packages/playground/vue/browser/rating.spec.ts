@@ -146,6 +146,24 @@ const filled = (star: HTMLElement) => {
 }
 
 /**
+ * Ячейка звезды — коробка её раскладки: нарисованный прямоугольник, приведённый
+ * к масштабу 1 вокруг центра. Звезду под указателем тема поднимает масштабом
+ * (`scale`, переходом), а ячейка от подъёма не меняется — по контракту темы:
+ * ряд не сдвигается, и доля под указателем та же. Нарисованный прямоугольник
+ * включает масштаб, и замер ячейки зависел бы от того, где стоит мышь, — а она
+ * одна на страницу прогона и бывает над звездой, которая только что встала.
+ * Центр — середина прямоугольника: `transform-origin` у звезды по умолчанию.
+ */
+const cellOf = (star: HTMLElement): { left: number; width: number } => {
+	const { left, width } = star.getBoundingClientRect()
+	const scale = getComputedStyle(star).scale
+	const factor = scale === 'none' ? 1 : Number(scale.split(' ')[0])
+	const own = width / factor
+
+	return { left: left + (width - own) / 2, width: own }
+}
+
+/**
  * Курсор — в угол страницы, мимо оценки: в отступ вокруг неё. Не `unhover`:
  * тот уводит указатель в центр `body`, а он бывает и над рядом.
  */
@@ -156,10 +174,11 @@ beforeEach(async () => {
 
 	// Мышь у страницы прогона одна на все файлы и стоит там, где её оставил
 	// прошлый тест или файл. Оценка встаёт у левого верхнего угла, и звезда под
-	// забытым курсором монтировалась бы уже поднятой — тема поднимает звезду под
-	// указателем, — а замер раскладки застал бы её крупнее соседей. Наведение
-	// задаёт тест, поэтому курсор уходит с места оценки до монтирования:
-	// уведённый после, он оставил бы звезде обратный переход.
+	// забытым курсором монтировалась бы уже под указателем: с предпросмотром
+	// оценки и поднятой — тема поднимает звезду под указателем. Наведение задаёт
+	// тест, поэтому курсор уходит с места оценки до монтирования: уведённый
+	// после, он оставил бы звезде обратный переход. Замер ячеек от подъёма не
+	// зависит (`cellOf`).
 	await away()
 })
 
@@ -173,7 +192,7 @@ describe('раскладка', () => {
 		await mount()
 
 		const box = track().getBoundingClientRect()
-		const cells = stars().map((star) => star.getBoundingClientRect())
+		const cells = stars().map(cellOf)
 		const width = box.width / 5
 
 		expect(cells).toHaveLength(5)
@@ -187,9 +206,9 @@ describe('раскладка', () => {
 		await mount({}, { dir: 'rtl' })
 
 		const box = track().getBoundingClientRect()
-		const [first] = stars()
+		const first = cellOf(stars()[0])
 
-		expect(Math.abs(first.getBoundingClientRect().right - box.right)).toBeLessThan(0.5)
+		expect(Math.abs(first.left + first.width - box.right)).toBeLessThan(0.5)
 	})
 
 	it('заливка — доля коробки звезды: половина — ровно половина, от начала строки', async () => {

@@ -473,13 +473,9 @@ describe('въезд и выезд', () => {
 
 		const place = panel().getBoundingClientRect().left
 
-		await escapeInPage()
-
-		expect(panel().dataset.open).toBe('false')
-		expect(transitioning(panel())).not.toContain('translate')
-
 		// Гаснет на месте и до конца перехода остаётся в документе
-		const seen = await whileLeaving(panel(), () => {
+		const seen = await whileLeaving(panel(), escapeInPage, () => {
+			expect(transitioning(panel()), 'не едет').not.toContain('translate')
 			expect(panel().getBoundingClientRect().left, 'панель на месте').toBe(place)
 		})
 
@@ -567,10 +563,7 @@ describe('прокрутка страницы', () => {
 		// Место панели без выезда: `offsetLeft` не видит `translate`, а рамку
 		// двигает сам выезд
 		const place = panel().offsetLeft
-
-		await escapeInPage()
-
-		const seen = await whileLeaving(panel(), () => {
+		const seen = await whileLeaving(panel(), escapeInPage, () => {
 			expect(locked(), 'прокрутка заперта').toBe(true)
 			expect(panel().offsetLeft, 'панель не сдвинута').toBe(place)
 		})

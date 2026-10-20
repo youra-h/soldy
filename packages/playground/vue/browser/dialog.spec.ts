@@ -567,10 +567,7 @@ describe('прокрутка страницы', () => {
 		await settled(panel())
 
 		const place = frame()
-
-		await escapeInPage()
-
-		const seen = await whileLeaving(panel(), () => {
+		const seen = await whileLeaving(panel(), escapeInPage, () => {
 			expect(locked(), 'прокрутка заперта').toBe(true)
 			expect(frame(), 'окно на месте').toEqual(place)
 		})

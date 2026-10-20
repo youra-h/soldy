@@ -368,11 +368,8 @@ describe('уход смахнутой панели', () => {
 	 */
 	const leaving = async (axis: 'top' | 'left', swipe: () => Promise<unknown>) => {
 		const transitions = ownTransitions(panel())
-
-		await swipe()
-
 		const positions: number[] = []
-		const seen = await whileLeaving(panel(), () => {
+		const seen = await whileLeaving(panel(), swipe, () => {
 			positions.push(panel().getBoundingClientRect()[axis])
 		})
 

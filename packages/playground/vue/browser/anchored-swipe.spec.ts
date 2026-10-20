@@ -302,13 +302,14 @@ describe.each([SELECT, DATE_PICKER])('$name', ({ show, open, ...selectors }) => 
 
 		const start = panel().getBoundingClientRect().top
 		const transitions = ownTransitions(panel())
-
-		await drag(handle(), 150)
-
 		const positions: number[] = []
-		const seen = await whileLeaving(panel(), () => {
-			positions.push(panel().getBoundingClientRect().top)
-		})
+		const seen = await whileLeaving(
+			panel(),
+			() => drag(handle(), 150),
+			() => {
+				positions.push(panel().getBoundingClientRect().top)
+			},
+		)
 
 		expect(seen).toBeGreaterThan(1)
 		expect(positions[0]).toBeGreaterThan(start + EPSILON)
