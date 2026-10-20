@@ -6,6 +6,11 @@ import AppSettings from './AppSettings.vue'
 import PageSwitch from './PageSwitch.vue'
 
 const { narrow, menuOpen, settingsOpen } = useSidebar()
+
+// Версия библиотеки — константа сборки (`define` Vite). Её подставляет замена
+// в коде модуля, а выражение шаблона компилируется в `_ctx.…`, мимо замены,
+// поэтому константа берётся здесь
+const version = __SOLDY_VERSION__
 </script>
 
 <template>
@@ -27,7 +32,10 @@ const { narrow, menuOpen, settingsOpen } = useSidebar()
 			<Icon :tag="MENU_GLYPH" />
 		</Button>
 
-		<div class="pg__brand">soldy-ui <span>· playground</span></div>
+		<div class="pg__brand">
+			<div class="pg__name">soldy-ui <span>· playground</span></div>
+			<div class="pg__version">v{{ version }}</div>
+		</div>
 
 		<template v-if="narrow">
 			<Button

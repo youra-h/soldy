@@ -2,16 +2,17 @@ import vue from '@vitejs/plugin-vue'
 import react from '@vitejs/plugin-react'
 import solid from 'vite-plugin-solid'
 import { svelte } from '@sveltejs/vite-plugin-svelte'
+import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import type { PluginOption } from 'vite'
 import { angular } from './src/vite-angular.ts'
 
 /**
- * Плагины и алиасы стенда — одни на три конфига: dev-сервер и сборку
- * (`vite.config.ts`), дымовые тесты в jsdom (`vitest.config.ts`) и браузерный
- * прогон (`vitest.browser.config.ts`). Пока у каждого был свой список, они
- * расходились молча: хост фреймворка, подключённый в одном, падал бы в
- * другом.
+ * Плагины, константы и алиасы стенда — одни на три конфига: dev-сервер и
+ * сборку (`vite.config.ts`), дымовые тесты в jsdom (`vitest.config.ts`) и
+ * браузерный прогон (`vitest.browser.config.ts`). Пока у каждого был свой
+ * список, они расходились молча: хост фреймворка, подключённый в одном, падал
+ * бы в другом.
  *
  * Стенд потребляет соседние воркспейсы **исходниками**, а не сборкой: правка в
  * `packages/core` видна сразу, без промежуточного билда.
@@ -65,6 +66,30 @@ export function plugins(): PluginOption[] {
 			],
 		}),
 	]
+}
+
+/**
+ * Константы сборки (`define`): версия библиотеки — под названием стенда в
+ * шапке (`AppHeader.vue`, объявлена в `env.d.ts`).
+ *
+ * Версия у библиотечных пакетов одна, и двигает её выпуск, поэтому стенд не
+ * держит свою копию, а берёт её из манифеста ядра: написанная руками, она
+ * отстала бы с первым же выпуском.
+ */
+export function constants(): Record<string, string> {
+	const file = resolve('../../core/package.json')
+	const manifest: unknown = JSON.parse(readFileSync(file, 'utf-8'))
+
+	if (
+		typeof manifest !== 'object' ||
+		manifest === null ||
+		!('version' in manifest) ||
+		typeof manifest.version !== 'string'
+	) {
+		throw new Error(`[playground] ${file}: нет версии`)
+	}
+
+	return { __SOLDY_VERSION__: JSON.stringify(manifest.version) }
 }
 
 /**

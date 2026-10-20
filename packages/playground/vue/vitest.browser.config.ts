@@ -1,7 +1,7 @@
 import { defineConfig } from 'vitest/config'
 import type { BrowserCommandContext } from 'vitest/node'
 import { defineBrowserCommand, playwright } from '@vitest/browser-playwright'
-import { aliases, plugins } from './vite.base.ts'
+import { aliases, constants, plugins } from './vite.base.ts'
 
 /**
  * Кнопка мыши отдельно от движения. `userEvent` жмёт и отпускает её только
@@ -159,11 +159,12 @@ const compose = defineBrowserCommand(async ({ page }, text: string) => {
  * гонять в нём дымовые тесты незачем. Тема здесь, в отличие от jsdom-конфига,
  * подключена — проверяем мы именно её CSS, и берётся он собранным
  * (`dist/index.css`), поэтому перед прогоном тему надо собрать. Корневой
- * `npm run test:layout` делает это сам. Плагины и алиасы — общие с
- * остальными конфигами стенда (`vite.base.ts`).
+ * `npm run test:layout` делает это сам. Плагины, константы и алиасы — общие
+ * с остальными конфигами стенда (`vite.base.ts`).
  */
 export default defineConfig({
 	plugins: plugins(),
+	define: constants(),
 	test: {
 		name: 'layout',
 		include: ['browser/**/*.spec.ts'],

@@ -16,6 +16,8 @@
  * идут порядком `menuOf`, у каждой группы — подпись, «Слои» — последними.
  */
 
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount, flushPromises, type VueWrapper } from '@vue/test-utils'
 import { nextTick } from 'vue'
@@ -166,6 +168,46 @@ describe('контролы шапки', () => {
 		wrapper.unmount()
 
 		expect(links).toEqual(SETTINGS.map((label) => [label, true]))
+	})
+})
+
+/** Версия библиотеки — из манифеста ядра: у библиотечных пакетов она одна. */
+function libraryVersion(): string {
+	const file = join(import.meta.dirname, '../../../core/package.json')
+	const manifest: unknown = JSON.parse(readFileSync(file, 'utf-8'))
+
+	if (
+		typeof manifest !== 'object' ||
+		manifest === null ||
+		!('version' in manifest) ||
+		typeof manifest.version !== 'string'
+	) {
+		throw new Error(`${file}: нет версии`)
+	}
+
+	return manifest.version
+}
+
+/**
+ * Название стенда в шапке кончается версией библиотеки — подписью под ним. Её
+ * стенд получает константой сборки (`constants` в `vite.base.ts`), а тест
+ * читает манифест ядра сам: версия, написанная руками, разошлась бы с ним с
+ * первым же выпуском.
+ */
+describe('название в шапке', () => {
+	it('кончается версией библиотеки', async () => {
+		const wrapper = mount(AppHeader, mountOptions)
+
+		await nextTick()
+		await nextFrame()
+
+		const name = wrapper.get('.pg__brand > .pg__name').text()
+		const version = wrapper.get('.pg__brand > .pg__version:last-child').text()
+
+		wrapper.unmount()
+
+		expect(name).toBe('soldy-ui · playground')
+		expect(version).toBe(`v${libraryVersion()}`)
 	})
 })
 

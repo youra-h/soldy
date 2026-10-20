@@ -152,8 +152,11 @@ a {
 .pg__header--narrow .pg__brand {
 	flex: 1 1 auto;
 	min-width: 0;
-	overflow: hidden;
 	white-space: nowrap;
+}
+
+.pg__header--narrow .pg__name {
+	overflow: hidden;
 	text-overflow: ellipsis;
 }
 
@@ -176,9 +179,15 @@ a {
 	padding-inline: 0;
 }
 
+/*
+ * Название стенда и под ним версия библиотеки. Строки плотнее, чем у текста
+ * страницы: две встают в ряд контролов шапки и в полоску узкого окна, почти не
+ * раздвигая их.
+ */
 .pg__brand {
 	font-weight: 600;
 	letter-spacing: 0.02em;
+	line-height: 1.2;
 }
 
 /* Переход между свойствами и тестами — сразу за названием, контролы темы справа */
@@ -199,6 +208,19 @@ a {
 .pg__brand span {
 	color: var(--so-neutral-500);
 	font-weight: 400;
+}
+
+/*
+ * Версия библиотеки — подписью под названием, а не продолжением его в строку:
+ * в строку название вырастало больше чем на две трети, шапка окна в 900 px
+ * уходила в третий ряд контролов, а полоска телефона на шрифте шире
+ * системного Windows (DejaVu Sans) его не вмещала и выталкивала кнопку
+ * настроек за край окна.
+ */
+.pg__version {
+	font-size: 11px;
+	font-weight: 400;
+	color: var(--so-neutral-500);
 }
 
 /*
