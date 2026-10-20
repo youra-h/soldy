@@ -44,6 +44,8 @@ import {
 	Button,
 	CheckBox,
 	ComponentView,
+	Dialog,
+	Drawer,
 	Field,
 	Frame,
 	Icon,
@@ -51,6 +53,7 @@ import {
 	Label,
 	ListBox,
 	Pagination,
+	Popover,
 	ProgressLinear,
 	ProgressSpinner,
 	RadioGroup,
@@ -62,16 +65,21 @@ import {
 	Table,
 	Tabs,
 	Textarea,
+	Toasts,
+	Tooltip,
 	roleIcon,
 	toControlAttrs,
 	toRootForward,
 	toRootLayout,
 	toRootProps,
+	toShownStyleText,
 	toWrappedRootProps,
 	type AccordionProps,
 	type ButtonProps,
 	type CheckBoxProps,
 	type ComponentViewProps,
+	type DialogProps,
+	type DrawerProps,
 	type FieldProps,
 	type FrameProps,
 	type IconProps,
@@ -79,6 +87,7 @@ import {
 	type LabelProps,
 	type ListBoxProps,
 	type PaginationProps,
+	type PopoverProps,
 	type ProgressLinearProps,
 	type ProgressSpinnerProps,
 	type RadioGroupProps,
@@ -91,6 +100,8 @@ import {
 	type TabsContentProps,
 	type TabsProps,
 	type TextareaProps,
+	type ToastsProps,
+	type TooltipProps,
 } from '@soldy-ui/svelte'
 import Attach from './Attach.test.svelte'
 import BindRef from './BindRef.test.svelte'
@@ -118,7 +129,12 @@ type TProbeProps = ButtonProps &
 	SliderProps &
 	RatingProps &
 	ScrollerProps &
-	PaginationProps
+	PaginationProps &
+	PopoverProps &
+	TooltipProps &
+	DialogProps &
+	DrawerProps &
+	ToastsProps
 
 /**
  * Компонент, как его рисовать, и класс его корня. Пропсы, без которых корень
@@ -127,7 +143,9 @@ type TProbeProps = ButtonProps &
  * нет; панель рисуется, пока активен её таб, — и только внутри набора.
  * Оценка, ползунок, лента и пагинация атрибуты потребителя не делят: полей у
  * оценки и ползунка столько, сколько ручек, а указатель поле не ловит, — и
- * всё ложится на корень.
+ * всё ложится на корень. Корень поповера и подсказки — обёртка триггера, а не
+ * панель; корень окна и выезжающей панели — панель, и уходит она в `body`
+ * телепортом и закрытой; корень менеджера тостов — регион в `body`.
  */
 const COMPONENTS: ReadonlyArray<readonly [string, (props: TProbeProps) => TMounted, string]> = [
 	['Button', (props) => mount(Button, props), '.so-button'],
@@ -146,6 +164,11 @@ const COMPONENTS: ReadonlyArray<readonly [string, (props: TProbeProps) => TMount
 	['Rating', (props) => mount(Rating, props), '.so-rating'],
 	['Scroller', (props) => mount(Scroller, props), '.so-scroller'],
 	['Pagination', (props) => mount(Pagination, { total: 30, ...props }), '.so-pagination'],
+	['Popover', (props) => mount(Popover, props), '.so-popover'],
+	['Tooltip', (props) => mount(Tooltip, props), '.so-tooltip'],
+	['Dialog', (props) => mount(Dialog, props), '.so-dialog'],
+	['Drawer', (props) => mount(Drawer, props), '.so-drawer'],
+	['Toasts', (props) => mount(Toasts, props), '.so-toasts'],
 ]
 
 /** Общие пропсы полей в таблице. */
@@ -696,7 +719,10 @@ describe('привязка корня к TElementPlugin', () => {
  * `element:ready`. Это один узел — корень, у поля и элемента коллекции тоже
  * корень, а не `<input>` и не строка, — у всех, кроме таблицы: её `ref`
  * получает окно, внешний узел, куда ложатся атрибуты потребителя, а к
- * `TElementPlugin` привязан корень `table`.
+ * `TElementPlugin` привязан корень `table`. У окна и выезжающей панели `ref` —
+ * панель, у менеджера тостов — регион: корень, который телепорт увёл в цель,
+ * и `ref` ему пишет тот же attachment корня, что и всем, — своего пути, как
+ * `exposeRoot` у Vue, нет.
  */
 const ROOTS: ReadonlyArray<readonly [TRootKind, string, string]> = [
 	['Button', '.so-button', '.so-button'],
@@ -726,6 +752,11 @@ const ROOTS: ReadonlyArray<readonly [TRootKind, string, string]> = [
 	['Table', '.so-table__viewport', 'table.so-table'],
 	['Scroller', '.so-scroller', '.so-scroller'],
 	['Pagination', '.so-pagination', '.so-pagination'],
+	['Popover', '.so-popover', '.so-popover'],
+	['Tooltip', '.so-tooltip', '.so-tooltip'],
+	['Dialog', '.so-dialog', '.so-dialog'],
+	['Drawer', '.so-drawer', '.so-drawer'],
+	['Toasts', '.so-toasts', '.so-toasts'],
 ]
 
 /** Поля: `ref` — корень, а не `<input>` или `<textarea>`. */
@@ -1052,9 +1083,10 @@ describe('attachment потребителя — на корне', () => {
  * Стиль раскладка отдаёт слоями: свойства ядра и плагинов — объектом, стиль
  * потребителя — его строкой. Имена плагины и ядро пишут по-CSS:
  * пользовательское свойство остаётся под своим именем, `z-index` — тоже. Так
- * размер отдают плагины раскладки окна и выезжающей панели, но этих
- * компонентов в Svelte пока нет, и правило проверяется на самой раскладке
- * корня и на узле, куда её ставит attachment стиля.
+ * размер отдают плагины раскладки окна и выезжающей панели — на самих
+ * компонентах это видно в `dialog.spec.ts` и `drawer.spec.ts`, — а здесь
+ * правило проверяется на самой раскладке корня и на узле, куда её ставит
+ * attachment стиля.
  */
 describe('раскладка корня: имена стиля — как в CSS', () => {
 	it('--* и z-index из layout_styles — под своими именами, значения строкой', () => {
@@ -1193,5 +1225,27 @@ describe('раскладка корня: слои стиля на узле', () 
 		expect(node.style.getPropertyPriority('color')).toBe('important')
 
 		attached.detach()
+	})
+})
+
+/**
+ * Узел без экземпляра, который виден вместе с компонентом, — подложка окна и
+ * выезжающей панели: свойства ядра строкой, поверх них `display: none`, пока
+ * компонент скрыт, как `v-show`. Чужого на подложке ничего нет, и стиль
+ * целиком — строкой атрибута (`toShownStyleText`).
+ */
+describe('стиль подложки: видимость компонента поверх свойств ядра', () => {
+	it('показан — свойства ядра как есть', () => {
+		expect(toShownStyleText({ 'z-index': 3 }, true)).toBe('z-index: 3')
+	})
+
+	it('скрыт — поверх свойств display: none', () => {
+		expect(toShownStyleText({ 'z-index': 3 }, false)).toBe('z-index: 3; display: none')
+		expect(toShownStyleText({ display: 'block' }, false)).toBe('display: none')
+	})
+
+	it('свойств нет: показан — без атрибута, скрыт — одно скрытие', () => {
+		expect(toShownStyleText(undefined, true)).toBeUndefined()
+		expect(toShownStyleText(undefined, false)).toBe('display: none')
 	})
 })

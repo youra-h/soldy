@@ -28,6 +28,11 @@
 		| 'Table'
 		| 'Scroller'
 		| 'Pagination'
+		| 'Popover'
+		| 'Tooltip'
+		| 'Dialog'
+		| 'Drawer'
+		| 'Toasts'
 </script>
 
 <script lang="ts">
@@ -42,6 +47,8 @@
 	 * набора, под активным табом. Frame — показанный: скрытый уходит
 	 * телепортом, когда его покажут. Таблица — из одной строки и одной
 	 * колонки: её `ref` — окно, а к `TElementPlugin` привязана `table` внутри.
+	 * Окно и выезжающая панель — закрытые: телепорт уводит их в `body` и
+	 * такими, и `ref` у них — панель; у менеджера тостов `ref` — регион.
 	 */
 	import type { TButton } from '@soldy-ui/core'
 	import {
@@ -49,6 +56,8 @@
 		Button,
 		CheckBox,
 		ComponentView,
+		Dialog,
+		Drawer,
 		Field,
 		Frame,
 		Icon,
@@ -56,6 +65,7 @@
 		Label,
 		ListBox,
 		Pagination,
+		Popover,
 		ProgressLinear,
 		ProgressSpinner,
 		RadioGroup,
@@ -67,6 +77,8 @@
 		Table,
 		Tabs,
 		Textarea,
+		Toasts,
+		Tooltip,
 	} from '@soldy-ui/svelte'
 
 	type THarnessProps = {
@@ -162,6 +174,16 @@
 		<Table columns={COLUMNS} items={ROWS} bind:ref={get, set} {onElementReady} />
 	{:else if kind === 'Scroller'}
 		<Scroller bind:ref={get, set} {onElementReady} />
+	{:else if kind === 'Popover'}
+		<Popover bind:ref={get, set} {onElementReady} />
+	{:else if kind === 'Tooltip'}
+		<Tooltip bind:ref={get, set} {onElementReady} />
+	{:else if kind === 'Dialog'}
+		<Dialog bind:ref={get, set} {onElementReady} />
+	{:else if kind === 'Drawer'}
+		<Drawer bind:ref={get, set} {onElementReady} />
+	{:else if kind === 'Toasts'}
+		<Toasts bind:ref={get, set} {onElementReady} />
 	{:else}
 		<Pagination total={30} bind:ref={get, set} {onElementReady} />
 	{/if}
