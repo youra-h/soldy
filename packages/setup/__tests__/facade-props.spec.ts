@@ -15,27 +15,15 @@
  * Проверяется контракт, а не реализация: берём объявленные пропы дескриптора
  * и спрашиваем у класса, есть ли у него сеттер. `protected` пропы —
  * односторонние, ядро отдаёт их наружу, и сеттер им не нужен.
+ *
+ * Фасады берутся из экспорта, а не ручным списком: ручной список не видел
+ * Table, Calendar, Pagination, Toasts и `Tabs.Content`, и новый проп без
+ * сеттера у них прошёл бы молча. Новая коллекция встаёт под проверку сама.
  */
 
 import { describe, it, expect } from 'vitest'
-import type { IComponentDescriptor, TComponentCtor } from '../protected/define'
-import {
-	AccordionCollectionDescriptor,
-	AccordionCollectionItemDescriptor,
-	ListBoxCollectionDescriptor,
-	ListBoxCollectionItemDescriptor,
-	MenuCollectionCheckboxItemDescriptor,
-	MenuCollectionDescriptor,
-	MenuCollectionRadioItemDescriptor,
-	RadioGroupCollectionDescriptor,
-	RadioGroupCollectionItemDescriptor,
-	SelectCollectionDescriptor,
-	SelectCollectionItemDescriptor,
-	TabsCollectionDescriptor,
-	TabsCollectionItemDescriptor,
-	TagsCollectionDescriptor,
-	TagsCollectionItemDescriptor,
-} from '../content/descriptors'
+import type { TComponentCtor } from '../protected/define'
+import { exportedDescriptors, isFacade } from './helpers'
 
 /** Ищет сеттер по всей цепочке прототипов — свойство может прийти из базы. */
 function hasSetter(ctor: TComponentCtor, name: string): boolean {
@@ -52,24 +40,6 @@ function hasSetter(ctor: TComponentCtor, name: string): boolean {
 	return false
 }
 
-const descriptors: Array<[string, () => IComponentDescriptor]> = [
-	['Accordion', AccordionCollectionDescriptor],
-	['Accordion.Item', AccordionCollectionItemDescriptor],
-	['ListBox', ListBoxCollectionDescriptor],
-	['ListBox.Item', ListBoxCollectionItemDescriptor],
-	['Menu', MenuCollectionDescriptor],
-	['Menu.CheckboxItem', MenuCollectionCheckboxItemDescriptor],
-	['Menu.RadioItem', MenuCollectionRadioItemDescriptor],
-	['RadioGroup', RadioGroupCollectionDescriptor],
-	['RadioGroup.Item', RadioGroupCollectionItemDescriptor],
-	['Select', SelectCollectionDescriptor],
-	['Select.Item', SelectCollectionItemDescriptor],
-	['Tabs', TabsCollectionDescriptor],
-	['Tabs.Item', TabsCollectionItemDescriptor],
-	['Tags', TagsCollectionDescriptor],
-	['Tags.Item', TagsCollectionItemDescriptor],
-]
-
 /**
  * Пропы, которые компонент **принимает**, а не хранит.
  *
@@ -81,8 +51,22 @@ const descriptors: Array<[string, () => IComponentDescriptor]> = [
 const PASS_THROUGH = new Set(['engine'])
 
 describe('коллекционные фасады отвечают своему contribution', () => {
-	it.each(descriptors)('%s: у каждого записываемого пропа есть сеттер', (_name, factory) => {
-		const descriptor = factory()
+	const descriptors = exportedDescriptors().filter(([, descriptor]) => isFacade(descriptor))
+
+	// Якорь: пустой или урезанный вывод не должен пройти молча
+	it('фасады найдены в экспорте', () => {
+		expect(descriptors.map(([name]) => name)).toEqual(
+			expect.arrayContaining([
+				'TableCollectionRowDescriptor',
+				'CalendarCollectionDescriptor',
+				'PaginationCollectionDescriptor',
+				'ToastsCollectionDescriptor',
+				'TabsCollectionContentDescriptor',
+			]),
+		)
+	})
+
+	it.each(descriptors)('%s: у каждого записываемого пропа есть сеттер', (_name, descriptor) => {
 		const writable = descriptor.props.filter(
 			(prop) => !prop.protected && !PASS_THROUGH.has(prop.name.name),
 		)

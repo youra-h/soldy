@@ -61,8 +61,8 @@ import {
 	TToastsItemCollectionFacade,
 } from '@soldy-ui/core'
 import { createAdapterContext } from '../protected/adapter'
-import type { IComponentDescriptor, TPropSpec } from '../protected/define'
-import { exportedDescriptors, required } from './helpers'
+import type { TPropSpec } from '../protected/define'
+import { exportedDescriptors, isFacade, required } from './helpers'
 
 /** Пропы, которые пишет разметка: незащищённые, с триггерами. */
 const writtenByMarkup = (props: readonly TPropSpec[]) =>
@@ -268,11 +268,6 @@ const COLLECTIONS: Readonly<Record<string, readonly [string | null, () => TMount
 		},
 	],
 }
-
-/** Фасад коллекции или её элемента: у них нет своего инстанса без владельца. */
-const isFacade = (descriptor: IComponentDescriptor): boolean =>
-	descriptor.ctor.prototype instanceof TCollectionComponent ||
-	descriptor.ctor.prototype instanceof TCollectionItemComponent
 
 describe('сторож: повторная запись того же значения молчит', () => {
 	// У дескриптора без своего класса (`CollectionDescriptor`) инстанса нет
