@@ -51,7 +51,7 @@ import {
 	Toasts,
 	Tooltip,
 	Virtual,
-	useIcon,
+	roleIcon,
 	useToasts,
 	type TToastRender,
 } from '@soldy-ui/vue'
@@ -129,11 +129,11 @@ const menuItems = () => [
  * Иконка превью Icon.
  *
  * `tag` у Icon — корень: тег или компонент, и глиф рисует компонент
- * `useIcon(роль)`. Строка с ролью (`tag: 'arrowDown'`) давала пустой
+ * `roleIcon(роль)`. Строка с ролью (`tag: 'arrowDown'`) давала пустой
  * элемент `<arrowdown>`, и ячейка Icon на витрине была пустой. Компонент
  * строится один раз: новый на каждый рендер Vue пересоздавал бы узел.
  */
-const ARROW_DOWN = useIcon('arrowDown')
+const ARROW_DOWN = roleIcon('arrowDown')
 
 /**
  * Окно на стенде открывает кнопка: закрытое оно спрятано, а открытое

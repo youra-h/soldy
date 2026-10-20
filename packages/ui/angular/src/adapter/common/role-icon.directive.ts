@@ -3,19 +3,19 @@ import { getIcon } from '@soldy-ui/setup'
 
 /**
  * RoleIconDirective — иконка по роли из реестра на `<svg>` Icon (аналог
- * `useIcon` у Vue и `roleIcon` у React, Svelte и Solid).
+ * `roleIcon` у Vue, React, Svelte и Solid).
  *
  * ```html
  * <svg so-icon so-role-icon="close" aria_label="Закрыть"></svg>
  * ```
  *
- * Иконка приходит данными (`{ viewBox, body }`, `setIcons`), а корень `<svg>`
+ * Иконка приходит данными (`{ viewBox, body }`, `useIcons`), а корень `<svg>`
  * пишет потребитель — это сам корень Icon. Директива кладёт на него только
  * рисунок: `viewBox` и содержимое. Класс, стиль размера, ARIA и связь с
  * `TElementPlugin` ведёт база Icon (`TComponentBase`), как у любого корня, —
  * директива о них не знает и их не трогает.
  *
- * Роль резолвится при отрисовке, а не при создании модуля: `setIcons()` может
+ * Роль резолвится при отрисовке, а не при создании модуля: `useIcons()` может
  * прийти после импорта. Смена роли (`[so-role-icon]="role()"`) меняет рисунок
  * на том же узле.
  *

@@ -22,7 +22,7 @@ import { describe, it, expect, afterEach, vi } from 'vitest'
 import { Component, signal, type Type } from '@angular/core'
 import { TestBed, type ComponentFixture } from '@angular/core/testing'
 import { TCheckBox, TSwitch, type ISwitch } from '@soldy-ui/core'
-import { setIcons, type TIconSource } from '@soldy-ui/setup'
+import { useIcons, type TIconSource } from '@soldy-ui/setup'
 import * as material from '@soldy-ui/icons-material'
 import { SlotDirective, TCheckBoxComponent, TSwitchComponent } from '@soldy-ui/angular'
 import { find, findIn, markupOf, mountHost, nextFrame } from './mount'
@@ -425,7 +425,7 @@ describe('CheckBox · отметка', () => {
 		const fixture = mount(TCheckBoxComponent, { value: false })
 
 		try {
-			setIcons({ check: custom })
+			useIcons({ check: custom })
 			fixture.componentRef.setInput('value', true)
 			fixture.detectChanges()
 
@@ -434,7 +434,7 @@ describe('CheckBox · отметка', () => {
 			expect(svg.getAttribute('viewBox')).toBe('0 0 10 10')
 			expect(svg.innerHTML).toBe(bodyOf(custom))
 		} finally {
-			setIcons(material)
+			useIcons(material)
 		}
 	})
 

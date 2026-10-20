@@ -2,7 +2,7 @@ import { TableColumnDescriptor } from '@soldy-ui/setup'
 import {
 	useAdapter,
 	useExpose,
-	useIcon,
+	roleIcon,
 	createVueAdapterContext,
 	type SetupContext,
 } from '../../../adapter'
@@ -35,7 +35,7 @@ export default {
 			 * сортировки зовёт его `toggleSort()`.
 			 */
 			column: adapter.instance,
-			sortIconTag: useIcon('arrowUpward'),
+			sortIconTag: roleIcon('arrowUpward'),
 		}
 	},
 }

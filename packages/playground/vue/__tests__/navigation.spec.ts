@@ -19,7 +19,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount, flushPromises, type VueWrapper } from '@vue/test-utils'
 import { nextTick } from 'vue'
-import { setIcons } from '@soldy-ui/setup'
+import { useIcons } from '@soldy-ui/setup'
 import * as material from '@soldy-ui/icons-material'
 import { COMPONENT_GROUPS } from '@soldy-ui/playground-shared'
 import { menuOf, showcaseOf } from '../src/catalog'
@@ -28,7 +28,7 @@ import { router } from '../src/router'
 import AppSidebar from '../src/components/AppSidebar.vue'
 import AppHeader from '../src/components/AppHeader.vue'
 
-setIcons(material)
+useIcons(material)
 vi.spyOn(console, 'log').mockImplementation(() => {})
 
 const nextFrame = () => new Promise((resolve) => requestAnimationFrame(resolve))

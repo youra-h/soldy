@@ -2,7 +2,7 @@ import { NumberInputDescriptor, TFieldControlExtension } from '@soldy-ui/setup'
 import {
 	useAdapter,
 	useExpose,
-	useIcon,
+	roleIcon,
 	useSplitAttrs,
 	VueElevatorFactory,
 	createVueAdapterContext,
@@ -32,9 +32,9 @@ export default {
 		return {
 			...useAdapter(adapter, props, emit),
 			...useSplitAttrs(),
-			clearIconTag: useIcon('close'),
-			minusIconTag: useIcon('minus'),
-			plusIconTag: useIcon('plus'),
+			clearIconTag: roleIcon('close'),
+			minusIconTag: roleIcon('minus'),
+			plusIconTag: roleIcon('plus'),
 		}
 	},
 }

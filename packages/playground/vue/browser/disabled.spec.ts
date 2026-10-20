@@ -43,7 +43,7 @@ import {
 	Tags,
 	TagsItem,
 	Textarea,
-	useIcon,
+	roleIcon,
 } from '@soldy-ui/vue'
 
 import { find, settled, style } from './colors'
@@ -56,7 +56,7 @@ type TProps = Record<string, unknown>
 const SCHEMES = ['oren', 'oren-dark'] as const
 
 /** Иконка слота — глиф строится один раз на модуль. */
-const INFO = useIcon('info')
+const INFO = roleIcon('info')
 
 const nextFrame = () => new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
 

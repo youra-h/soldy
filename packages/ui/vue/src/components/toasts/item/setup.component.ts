@@ -8,7 +8,7 @@ import {
 	isToastRender,
 	useAdapter,
 	useExpose,
-	useIcon,
+	roleIcon,
 	VueElevatorFactory,
 	createVueAdapterContext,
 	type SetupContext,
@@ -51,7 +51,7 @@ export default {
 			 * приходит ему пропом `toast`, и кнопка внутри может его закрыть.
 			 */
 			toast: adapter.instance,
-			closeIconTag: useIcon('close'),
+			closeIconTag: roleIcon('close'),
 			/**
 			 * Значок вида — по роли, своей у каждого вида: в режиме принудительных
 			 * цветов вид различает только глиф. Роль выбирает разметка, как отметку
@@ -59,13 +59,13 @@ export default {
 			 * (`satisfies`): новый вид без своего значка не соберётся.
 			 */
 			typeIconTags: {
-				info: useIcon('info'),
-				success: useIcon('success'),
-				warning: useIcon('warning'),
-				error: useIcon('error'),
+				info: roleIcon('info'),
+				success: roleIcon('success'),
+				warning: roleIcon('warning'),
+				error: roleIcon('error'),
 			} satisfies Record<TToastsItemType, unknown>,
 			/** Значок обычного сообщения — тоста без вида */
-			notificationIconTag: useIcon('notification'),
+			notificationIconTag: roleIcon('notification'),
 			/** Своё содержимое рисуется, только когда это компонент Vue */
 			isToastRender,
 		}

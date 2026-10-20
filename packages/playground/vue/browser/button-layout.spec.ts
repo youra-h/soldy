@@ -28,13 +28,13 @@ import {
 	ListBoxItem,
 	Select,
 	SelectItem,
-	useIcon,
+	roleIcon,
 } from '@soldy-ui/vue'
 
 import '@soldy-ui/theme-oren'
 
 /** Глиф строится один раз: новый компонент на каждый рендер пересоздавал бы узел. */
-const CLOSE = useIcon('close')
+const CLOSE = roleIcon('close')
 
 const DIRECTIONS = ['ltr', 'rtl'] as const
 

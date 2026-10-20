@@ -22,7 +22,7 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
 import { createRawSnippet, flushSync } from 'svelte'
 import { TCheckBox, TSwitch, type ISwitch } from '@soldy-ui/core'
-import { setIcons, type TIconSource } from '@soldy-ui/setup'
+import { useIcons, type TIconSource } from '@soldy-ui/setup'
 import * as material from '@soldy-ui/icons-material'
 import { CheckBox, Switch, type CheckBoxProps, type SwitchProps } from '@soldy-ui/svelte'
 import { contentOf, find, htmlOf, mount, nextFrame, type TMounted } from './mount'
@@ -378,7 +378,7 @@ describe('CheckBox · отметка', () => {
 		const { root } = mount(CheckBox, props)
 
 		try {
-			setIcons({ check: custom })
+			useIcons({ check: custom })
 			props.value = true
 			flushSync()
 
@@ -387,7 +387,7 @@ describe('CheckBox · отметка', () => {
 			expect(svg.getAttribute('viewBox')).toBe('0 0 10 10')
 			expect(svg.innerHTML).toBe(bodyOf(custom))
 		} finally {
-			setIcons(material)
+			useIcons(material)
 		}
 	})
 

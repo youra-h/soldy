@@ -19,7 +19,7 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
 import { createSignal, type JSX } from 'solid-js'
 import { TCheckBox, TSwitch, type ISwitch } from '@soldy-ui/core'
-import { setIcons, type TIconSource } from '@soldy-ui/setup'
+import { useIcons, type TIconSource } from '@soldy-ui/setup'
 import * as material from '@soldy-ui/icons-material'
 import { CheckBox, Switch, type CheckBoxProps, type SwitchProps } from '@soldy-ui/solid'
 import { find, mount, nextFrame, type TMounted } from './mount'
@@ -358,7 +358,7 @@ describe('CheckBox · отметка', () => {
 		const { root } = mount(() => <CheckBox ctrl={ctrl} />)
 
 		try {
-			setIcons({ check: custom })
+			useIcons({ check: custom })
 			ctrl.value = true
 
 			const svg = find(mark(root()), 'svg', SVGSVGElement)
@@ -366,7 +366,7 @@ describe('CheckBox · отметка', () => {
 			expect(svg.getAttribute('viewBox')).toBe('0 0 10 10')
 			expect(svg.innerHTML).toBe(bodyOf(custom))
 		} finally {
-			setIcons(material)
+			useIcons(material)
 		}
 	})
 

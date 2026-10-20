@@ -7,7 +7,7 @@ import {
 	useAdapter,
 	useExpose,
 	VueElevatorFactory,
-	useIcon,
+	roleIcon,
 	useSplitAttrs,
 	createVueAdapterContext,
 	type SetupContext,
@@ -41,7 +41,7 @@ export default {
 			...itemBinding,
 			...ownerBinding,
 			context: itemAdapter.instance.context,
-			indicatorIconTag: useIcon('check'),
+			indicatorIconTag: roleIcon('check'),
 			...useSplitAttrs(),
 		}
 	},

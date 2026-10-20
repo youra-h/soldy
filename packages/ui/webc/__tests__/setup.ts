@@ -2,7 +2,7 @@
  * Окружение тестов Web Components (`setupFiles` в `vitest.config.ts`).
  */
 
-import { setIcons } from '@soldy-ui/setup'
+import { useIcons } from '@soldy-ui/setup'
 import * as material from '@soldy-ui/icons-material'
 
 /**
@@ -12,7 +12,7 @@ import * as material from '@soldy-ui/icons-material'
  * в настройке тестов React и Angular.
  */
 
-setIcons(material)
+useIcons(material)
 
 /**
  * Заглушка `ResizeObserver`: jsdom его не реализует, а Frame следит им за

@@ -3,14 +3,14 @@
  * React (`react/soldy.tsx`): одна тема, одни колонки и пропсы таблицы.
  */
 import type { TTableColumnFit } from '@soldy-ui/core'
-import { setIcons, useTheme } from '@soldy-ui/setup'
+import { useIcons, useTheme } from '@soldy-ui/setup'
 import * as material from '@soldy-ui/icons-material'
 import { useMotion } from '@soldy-ui/plugins'
 import '@soldy-ui/theme-oren'
 import oren from '@soldy-ui/theme-oren/setup'
 import { COLUMNS } from './data'
 
-setIcons(material)
+useIcons(material)
 useTheme(oren)
 const query = new URLSearchParams(location.search)
 // `?motion=reduce` — без движения (`useMotion('reduce')`): соседи взятого

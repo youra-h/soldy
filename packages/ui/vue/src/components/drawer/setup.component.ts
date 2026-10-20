@@ -3,7 +3,7 @@ import {
 	exposeRoot,
 	useAdapter,
 	useExpose,
-	useIcon,
+	roleIcon,
 	createVueAdapterContext,
 	type SetupContext,
 } from '../../adapter'
@@ -40,7 +40,7 @@ export default {
 			 * не знает.
 			 */
 			drawer: adapter.instance,
-			closeIconTag: useIcon('close'),
+			closeIconTag: roleIcon('close'),
 		}
 	},
 }

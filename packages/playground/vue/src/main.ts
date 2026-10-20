@@ -1,5 +1,5 @@
 import { createApp } from 'vue'
-import { setIcons, useTheme } from '@soldy-ui/setup'
+import { useIcons, useTheme } from '@soldy-ui/setup'
 import * as material from '@soldy-ui/icons-material'
 import App from './App.vue'
 import { router } from './router'
@@ -11,7 +11,7 @@ import './styles.css'
 
 // Пакет иконок и поведение темы — общие на страницу: их видят и оболочка, и
 // хосты превью всех фреймворков
-setIcons(material)
+useIcons(material)
 useTheme(oren)
 
 // Прямая ссылка сильнее умолчания: перезагрузка страницы компонента должна

@@ -7,7 +7,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { MISSING_ICON, getIcon, hasIcon, resetIcons, setIcons } from '../protected/registry/icons'
+import { MISSING_ICON, getIcon, hasIcon, resetIcons, useIcons } from '../protected/registry/icons'
 import { ICON_ROLES, missingIconRoles } from '../content/icons/roles'
 import * as material from '@soldy-ui/icons-material'
 
@@ -22,7 +22,7 @@ afterEach(() => {
 
 describe('реестр ролей', () => {
 	it('отдаёт зарегистрированную иконку', () => {
-		setIcons({ close: anIcon })
+		useIcons({ close: anIcon })
 
 		expect(getIcon('close')).toBe(anIcon)
 	})
@@ -31,8 +31,8 @@ describe('реестр ролей', () => {
 		// Точечная подмена одной иконки не должна требовать пересборки набора
 		const other = { viewBox: '0 0 16 16', body: '<circle r="8"/>' }
 
-		setIcons({ close: anIcon, check: anIcon })
-		setIcons({ close: other })
+		useIcons({ close: anIcon, check: anIcon })
+		useIcons({ close: other })
 
 		expect(getIcon('close')).toBe(other)
 		expect(getIcon('check')).toBe(anIcon)
@@ -59,7 +59,7 @@ describe('реестр ролей', () => {
 		const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
 
 		getIcon('nope')
-		setIcons({ nope: anIcon })
+		useIcons({ nope: anIcon })
 		resetIcons()
 		getIcon('nope')
 
@@ -67,15 +67,15 @@ describe('реестр ролей', () => {
 	})
 
 	it('hasIcon отличает зарегистрированную роль от заглушки', () => {
-		setIcons({ close: anIcon })
+		useIcons({ close: anIcon })
 
 		expect(hasIcon('close')).toBe(true)
 		expect(hasIcon('nope')).toBe(false)
 	})
 
 	it('undefined в наборе не затирает уже зарегистрированное', () => {
-		setIcons({ close: anIcon })
-		setIcons({ close: undefined })
+		useIcons({ close: anIcon })
+		useIcons({ close: undefined })
 
 		expect(getIcon('close')).toBe(anIcon)
 	})

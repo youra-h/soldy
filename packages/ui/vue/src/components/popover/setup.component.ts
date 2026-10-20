@@ -2,7 +2,7 @@ import { PopoverDescriptor } from '@soldy-ui/setup'
 import {
 	useAdapter,
 	useExpose,
-	useIcon,
+	roleIcon,
 	createVueAdapterContext,
 	type SetupContext,
 } from '../../adapter'
@@ -31,7 +31,7 @@ export default {
 			 * Возврат фокуса — забота плагина, разметка о нём не знает.
 			 */
 			popover: adapter.instance,
-			closeIconTag: useIcon('close'),
+			closeIconTag: roleIcon('close'),
 		}
 	},
 }

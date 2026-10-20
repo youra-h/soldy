@@ -2,7 +2,7 @@ import { InputDescriptor, TFieldControlExtension } from '@soldy-ui/setup'
 import {
 	useAdapter,
 	useExpose,
-	useIcon,
+	roleIcon,
 	useSplitAttrs,
 	VueElevatorFactory,
 	createVueAdapterContext,
@@ -25,7 +25,7 @@ export default {
 		return {
 			...useAdapter(adapter, props, emit),
 			...useSplitAttrs(),
-			clearIconTag: useIcon('close'),
+			clearIconTag: roleIcon('close'),
 		}
 	},
 }

@@ -26,7 +26,7 @@
 import { describe, it, expect, afterEach } from 'vitest'
 import { render, cleanup } from 'vitest-browser-vue'
 import { defineComponent, h, nextTick } from 'vue'
-import { Accordion, AccordionItem, Icon, Select, useIcon } from '@soldy-ui/vue'
+import { Accordion, AccordionItem, Icon, Select, roleIcon } from '@soldy-ui/vue'
 import { TIconElement } from '@soldy-ui/webc'
 
 import { pixel, settled, style } from './colors'
@@ -39,7 +39,7 @@ const nextFrame = () => new Promise<void>((resolve) => requestAnimationFrame(() 
 const SCHEMES = ['oren', 'oren-dark'] as const
 
 /** Глиф строится один раз, как у компонентов. */
-const CLOSE = useIcon('close')
+const CLOSE = roleIcon('close')
 
 /** Место со своим цветом текста — текстом темы. */
 const PLACE = 'color: var(--so-component-text)'

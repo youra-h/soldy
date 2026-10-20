@@ -3,7 +3,7 @@ import {
 	exposeRoot,
 	useAdapter,
 	useExpose,
-	useIcon,
+	roleIcon,
 	createVueAdapterContext,
 	type SetupContext,
 } from '../../adapter'
@@ -40,9 +40,9 @@ export default {
 			 * — забота плагина, разметка о нём не знает.
 			 */
 			dialog: adapter.instance,
-			closeIconTag: useIcon('close'),
-			maximizeIconTag: useIcon('arrowsOutward'),
-			restoreIconTag: useIcon('arrowsInward'),
+			closeIconTag: roleIcon('close'),
+			maximizeIconTag: roleIcon('arrowsOutward'),
+			restoreIconTag: roleIcon('arrowsInward'),
 		}
 	},
 }

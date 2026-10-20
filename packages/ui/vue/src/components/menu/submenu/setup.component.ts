@@ -10,7 +10,7 @@ import {
 	useCollectionAdapter,
 	useExpose,
 	VueElevatorFactory,
-	useIcon,
+	roleIcon,
 	useSplitAttrs,
 	createVueAdapterContext,
 	type SetupContext,
@@ -74,7 +74,7 @@ export default {
 			...ownerBinding,
 			...collectionBinding,
 			context: itemAdapter.instance.context,
-			arrowIconTag: useIcon('arrowRight'),
+			arrowIconTag: roleIcon('arrowRight'),
 			...useSplitAttrs(),
 		}
 	},
