@@ -16,26 +16,26 @@
 	/**
 	 * Тестовая обёртка: менеджер тостов вокруг приложения. Под менеджером —
 	 * приложение, которое берёт API тостов (`useToasts()`) и отдаёт его тесту в
-	 * `onApi`, одиночный элемент списка (`item`) или список с элементом
-	 * (`list-box`, пропсы списка — `listBox`). С `locale` — под провайдером
+	 * `onApi`, одиночный тег (`tag`) или набор с тегом (`tags`, пропсы
+	 * набора — `tags`). С `locale` — под провайдером
 	 * локали. Сниппеты слотов разметкой пишутся только в `.svelte`.
 	 */
 	import type { IToastsApi, IToastsItem, TToastsItemType } from '@soldy-ui/core'
 	import type { TLocale } from '@soldy-ui/plugins'
 	import {
-		ListBox,
 		LocaleProvider,
+		Tags,
 		Toasts,
-		type ListBoxProps,
 		type TToastRender,
+		type TagsProps,
 		type ToastsProps,
 	} from '@soldy-ui/svelte'
 	import App from './ToastsApp.test.svelte'
 
 	type THarnessProps = {
 		toasts?: ToastsProps
-		content?: 'app' | 'item' | 'list-box'
-		listBox?: ListBoxProps
+		content?: 'app' | 'tag' | 'tags'
+		tags?: TagsProps
 		locale?: TLocale
 		slots?: readonly TToastsSlot[]
 		onApi?: (api: IToastsApi<TToastRender>) => void
@@ -44,7 +44,7 @@
 	const {
 		toasts = {},
 		content = 'app',
-		listBox = {},
+		tags = {},
 		locale,
 		slots = [],
 		onApi,
@@ -79,12 +79,12 @@
 		item-content={slots.includes('item-content') ? itemContent : undefined}
 		item-close-icon={slots.includes('item-close-icon') ? itemCloseIcon : undefined}
 	>
-		{#if content === 'item'}
-			<ListBox.Item value="a" text="Элемент" />
-		{:else if content === 'list-box'}
-			<ListBox {...listBox}>
-				<ListBox.Item value="a" text="Элемент" />
-			</ListBox>
+		{#if content === 'tag'}
+			<Tags.Item value="a" text="Тег" />
+		{:else if content === 'tags'}
+			<Tags {...tags}>
+				<Tags.Item value="a" text="Тег" />
+			</Tags>
 		{:else}
 			<App {onApi} />
 		{/if}

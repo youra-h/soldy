@@ -59,11 +59,13 @@ import {
 	RadioGroup,
 	Rating,
 	Scroller,
+	Select,
 	Skeleton,
 	Slider,
 	Switch,
 	Table,
 	Tabs,
+	Tags,
 	Textarea,
 	Toasts,
 	Tooltip,
@@ -93,12 +95,14 @@ import {
 	type RadioGroupProps,
 	type RatingProps,
 	type ScrollerProps,
+	type SelectProps,
 	type SkeletonProps,
 	type SliderProps,
 	type SwitchProps,
 	type TableProps,
 	type TabsContentProps,
 	type TabsProps,
+	type TagsProps,
 	type TextareaProps,
 	type ToastsProps,
 	type TooltipProps,
@@ -123,6 +127,7 @@ type TProbeProps = ButtonProps &
 	ProgressLinearProps &
 	SkeletonProps &
 	TabsProps &
+	TagsProps &
 	AccordionProps &
 	RadioGroupProps &
 	TabsContentProps &
@@ -159,6 +164,7 @@ const COMPONENTS: ReadonlyArray<readonly [string, (props: TProbeProps) => TMount
 	['Skeleton', (props) => mount(Skeleton, props), '.so-skeleton'],
 	['Tabs.Content', (props) => mount(ItemProbe, { kind: 'content', ...props }), '.so-tabs__panel'],
 	['Accordion', (props) => mount(Accordion, props), '.so-accordion'],
+	['Tags', (props) => mount(Tags, props), '.so-tags'],
 	['RadioGroup', (props) => mount(RadioGroup, props), '.so-radio-group'],
 	['Slider', (props) => mount(Slider, props), '.so-slider'],
 	['Rating', (props) => mount(Rating, props), '.so-rating'],
@@ -172,7 +178,7 @@ const COMPONENTS: ReadonlyArray<readonly [string, (props: TProbeProps) => TMount
 ]
 
 /** Общие пропсы полей в таблице. */
-type TFieldProbeProps = CheckBoxProps & SwitchProps & InputProps & TextareaProps
+type TFieldProbeProps = CheckBoxProps & SwitchProps & InputProps & TextareaProps & SelectProps
 
 /**
  * Поле и класс его корня. Атрибуты потребителя поле делит, как у Vue: класс и
@@ -184,6 +190,7 @@ const FIELDS: ReadonlyArray<readonly [string, Component<TFieldProbeProps>, strin
 	['Switch', Switch, '.so-switch'],
 	['Input', Input, '.so-input'],
 	['Textarea', Textarea, '.so-textarea'],
+	['Select', Select, '.so-select'],
 ]
 
 /** Поле внутри корня: `<input>`, у Textarea — `<textarea>`. */
@@ -242,6 +249,18 @@ const ITEMS: ReadonlyArray<readonly [string, TItemDraw, string, string]> = [
 		(props) => mount(ItemProbe, { kind: 'radio', ...props }),
 		'.so-radio-group-item',
 		'.so-radio-group-item__input',
+	],
+	[
+		'Tags.Item',
+		(props) => mount(ItemProbe, { kind: 'tags', ...props }),
+		'.so-tags-item',
+		'.so-tags-item [role="listitem"]',
+	],
+	[
+		'Select.Item',
+		(props) => mount(ItemProbe, { kind: 'select', ...props }),
+		'.so-select-item',
+		'.so-select-item [role="option"]',
 	],
 ]
 
@@ -749,6 +768,10 @@ const ROOTS: ReadonlyArray<readonly [TRootKind, string, string]> = [
 	['RadioGroup.Item', '.so-radio-group-item', '.so-radio-group-item'],
 	['ListBox', '.so-list-box', '.so-list-box'],
 	['ListBox.Item', '.so-list-box-item', '.so-list-box-item'],
+	['Tags', '.so-tags', '.so-tags'],
+	['Tags.Item', '.so-tags-item', '.so-tags-item'],
+	['Select', '.so-select', '.so-select'],
+	['Select.Item', '.so-select-item', '.so-select-item'],
 	['Table', '.so-table__viewport', 'table.so-table'],
 	['Scroller', '.so-scroller', '.so-scroller'],
 	['Pagination', '.so-pagination', '.so-pagination'],
@@ -761,7 +784,7 @@ const ROOTS: ReadonlyArray<readonly [TRootKind, string, string]> = [
 
 /** Поля: `ref` — корень, а не `<input>` или `<textarea>`. */
 const FIELD_ROOTS = ROOTS.filter(([kind]) =>
-	['Input', 'Textarea', 'CheckBox', 'Switch', 'RadioGroup.Item'].includes(kind),
+	['Input', 'Textarea', 'CheckBox', 'Switch', 'RadioGroup.Item', 'Select'].includes(kind),
 )
 
 /** Записи `ref` компонентом — по порядку; узлы сверяют по ссылке, как у `readyProbe`. */

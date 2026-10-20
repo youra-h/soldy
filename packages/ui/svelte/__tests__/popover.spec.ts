@@ -8,9 +8,9 @@
  * Сценарии — те же, что у Vue (`popover.spec.ts`); открытость, которую Vue
  * держит `v-model`, здесь возвращает пропом колбэк `onChangeOpen`.
  *
- * Сценарии Vue с Select внутри здесь — с вложенным поповером: Select в Svelte
- * ещё нет, а правило слоёв то же — вложенная панель тоже слой в `body` выше
- * панели владельца.
+ * Сценарии Vue с Select внутри — здесь те же, и рядом — те же с вложенным
+ * поповером: правило слоёв одно — список Select и вложенная панель тоже слои
+ * в `body` выше панели владельца.
  *
  * Порядок Tab, который ведёт сам браузер, jsdom не считает: здесь проверены
  * переходы, которые делает плагин (Tab в панель, из неё, Shift+Tab на
@@ -528,9 +528,8 @@ describe('вложенные слои', () => {
 	})
 
 	/**
-	 * У Vue это сценарий с Select внутри: Escape закрывает сперва вложенный
-	 * слой, и только второй — сам поповер, — внешний слой клавишу с
-	 * `defaultPrevented` пропускает.
+	 * Escape закрывает сперва вложенный слой, и только второй — сам поповер, —
+	 * внешний слой клавишу с `defaultPrevented` пропускает, как у Select внутри.
 	 */
 	it('Escape во вложенном не доходит до внешнего, второй Escape — уже внешнему', async () => {
 		await nested()
@@ -544,6 +543,46 @@ describe('вложенные слои', () => {
 		press('Escape')
 
 		expect(isOpen(panelOf(trigger()))).toBe(false)
+	})
+})
+
+describe('Select внутри', () => {
+	const field = () => node('.so-test-select input')
+	const selectPanel = () => node('.so-select__panel')
+
+	it('Escape в открытом Select закрывает только Select', async () => {
+		await render({}, 'select')
+		await open()
+		click(field())
+		await nextFrame()
+
+		expect(isOpen(selectPanel())).toBe(true)
+
+		press('Escape')
+
+		expect(isOpen(selectPanel())).toBe(false)
+		expect(isOpen()).toBe(true)
+
+		// Второй Escape — уже поповеру: Select закрыт и клавишу не тратит
+		press('Escape')
+
+		expect(isOpen()).toBe(false)
+	})
+
+	it('клик в список Select поповер не закрывает', async () => {
+		await render({}, 'select')
+		await open()
+		click(field())
+		await nextFrame()
+
+		const option = node('.so-select__panel [role="option"]')
+
+		pointerDown(option)
+		option.click()
+		flushSync()
+
+		expect(isOpen()).toBe(true)
+		expect(field().getAttribute('aria-expanded')).toBe('false')
 	})
 })
 

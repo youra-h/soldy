@@ -22,7 +22,7 @@
 
 import { describe, it, expect } from 'vitest'
 import { flushSync } from 'svelte'
-import { createEngineListBox, createEngineToasts } from '@soldy-ui/core'
+import { createEngineTags, createEngineToasts } from '@soldy-ui/core'
 import type { IToastsApi, IToastsItem, TToastsItemType } from '@soldy-ui/core'
 import { ruRU } from '@soldy-ui/plugins'
 import { getIcon } from '@soldy-ui/setup'
@@ -193,28 +193,27 @@ describe('Toasts · стопка', () => {
 /**
  * Менеджер оборачивает приложение, и его коллекция — ближайшая выше почти
  * везде в дереве. Элемент коллекции входит только в коллекцию своего типа:
- * элемент вне своего списка под менеджером рисуется сам по себе, а не
- * становится тостом и не роняет сборку приложения. У Vue это тег вне Tags — у
- * Svelte тегов ещё нет, и элементом служит одиночный `ListBox.Item`.
+ * тег вне своего набора (чип) под менеджером рисуется сам по себе, а не
+ * становится тостом и не роняет сборку приложения.
  */
 describe('Toasts · элемент чужой коллекции под менеджером', () => {
-	it('элемент списка вне ListBox рисуется сам по себе, тостом не становится', () => {
+	it('тег вне Tags рисуется сам по себе, тостом не становится', () => {
 		const engine = createEngineToasts()
 
-		mount(Harness, { toasts: { engine }, content: 'item' })
+		mount(Harness, { toasts: { engine }, content: 'tag' })
 
-		expect(node('.so-list-box-item').textContent).toContain('Элемент')
+		expect(node('.so-tags-item').textContent).toContain('Тег')
 		expect(engine.extensions.batch.items).toEqual([])
 		expect(toasts()).toEqual([])
 	})
 
-	it('элемент в своём ListBox под менеджером входит в ListBox', () => {
+	it('тег в своём Tags под менеджером входит в Tags', () => {
 		const engine = createEngineToasts()
-		const list = createEngineListBox()
+		const tags = createEngineTags()
 
-		mount(Harness, { toasts: { engine }, content: 'list-box', listBox: { engine: list } })
+		mount(Harness, { toasts: { engine }, content: 'tags', tags: { engine: tags } })
 
-		expect(list.extensions.batch.items.map((item) => item.value)).toEqual(['a'])
+		expect(tags.extensions.batch.items.map((item) => item.value)).toEqual(['a'])
 		expect(engine.extensions.batch.items).toEqual([])
 		expect(toasts()).toEqual([])
 	})

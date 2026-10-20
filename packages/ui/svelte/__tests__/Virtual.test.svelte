@@ -4,6 +4,7 @@
 	 *
 	 * - `list` — ListBox, пропсы — `list`;
 	 * - `table` — Table, пропсы — `table`;
+	 * - `select` — Select, пропсы — `select`: окно — у списка его панели;
 	 * - `nested` — ListBox из данных (`list`), в слоте первого элемента — свой
 	 *   ListBox на 55 элементов: списки в слотах элементов окна не наследуют.
 	 *
@@ -13,18 +14,21 @@
 	import type { IListBoxItem } from '@soldy-ui/core'
 	import {
 		ListBox,
+		Select,
 		Table,
 		Virtual,
 		type ListBoxProps,
+		type SelectProps,
 		type TableProps,
 		type VirtualProps,
 	} from '@soldy-ui/svelte'
 
 	type THarnessProps = {
-		kind?: 'list' | 'table' | 'nested'
+		kind?: 'list' | 'table' | 'nested' | 'select'
 		virtual?: VirtualProps
 		list?: ListBoxProps
 		table?: TableProps
+		select?: SelectProps
 		/** Рисовать ли коллекцию в обёртке. */
 		listed?: boolean
 	}
@@ -46,6 +50,8 @@
 	{#if props.listed ?? true}
 		{#if props.kind === 'table'}
 			<Table {...props.table} />
+		{:else if props.kind === 'select'}
+			<Select {...props.select} />
 		{:else if props.kind === 'nested'}
 			<ListBox class="outer" {...props.list} {item} />
 		{:else}

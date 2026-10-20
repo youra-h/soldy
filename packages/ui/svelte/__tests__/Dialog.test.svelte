@@ -6,10 +6,11 @@
 	 *   двумя остановками Tab;
 	 * - `footer` — то же, с подвалом (кнопка «Готово»);
 	 * - `popover` — в окне поповер с двумя остановками в панели;
+	 * - `select` — в окне Select с двумя опциями (`so-test-select`);
 	 * - `nested` — нижнее окно (`so-test-lower`), в нём — верхнее
 	 *   (`so-test-upper`): пропсы нижнего — `dialog`, верхнего — `upper`.
 	 */
-	export type TDialogCase = 'page' | 'footer' | 'popover' | 'nested'
+	export type TDialogCase = 'page' | 'footer' | 'popover' | 'select' | 'nested'
 </script>
 
 <script lang="ts">
@@ -19,7 +20,7 @@
 	 * Заголовок, содержимое и подвал разметкой пишутся только в `.svelte`.
 	 */
 	import type { DescriptorSlots, PopoverDescriptor } from '@soldy-ui/setup'
-	import { Button, Dialog, Popover, type DialogProps } from '@soldy-ui/svelte'
+	import { Button, Dialog, Popover, Select, type DialogProps } from '@soldy-ui/svelte'
 
 	type TTriggerScope = DescriptorSlots<typeof PopoverDescriptor>['trigger']
 
@@ -56,6 +57,11 @@
 					<button class="so-test-popover-first">Первая</button>
 					<button class="so-test-popover-second">Вторая</button>
 				</Popover>
+			{:else if kind === 'select'}
+				<Select class="so-test-select">
+					<Select.Item value="a" text="Первый" />
+					<Select.Item value="b" text="Второй" />
+				</Select>
 			{:else}
 				<button class="so-test-first">Первая</button>
 				<button class="so-test-second">Вторая</button>
