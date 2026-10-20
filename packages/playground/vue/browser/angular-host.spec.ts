@@ -96,6 +96,9 @@ describe('хост Angular', () => {
 		['icon', '.so-icon'],
 		['skeleton', '.so-skeleton'],
 		['input', '.so-input'],
+		// Корень — элемент компонента `<so-textarea>`, а не `div`: строчный тег
+		// без своей раскладки, и рамкой его делает только тема
+		['textarea', '.so-textarea, .so-textarea textarea'],
 		['check-box', '.so-label, .so-check-box'],
 		['switch', '.so-label, .so-switch'],
 		['label', '.so-label, .so-check-box'],

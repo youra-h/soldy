@@ -3,9 +3,9 @@
  *
  * Разметка сервера несёт то, что поле пишет само: текст — атрибутом `value`
  * (директива текста поля пишет его в узел эмуляции DOM, а она отдаёт его
- * атрибутом), отметку — атрибутом `checked`, наборы `aria` и `clearAria` — на
- * `<input>` и кнопке очистки, а атрибуты потребителя — уже на `<input>`: их
- * туда перенесла база.
+ * атрибутом), у `<textarea>` — её содержимым, отметку — атрибутом `checked`,
+ * наборы `aria` и `clearAria` — на `<input>` и кнопке очистки, а атрибуты
+ * потребителя — уже на поле: их туда перенесла база.
  *
  * При гидратации Angular ставит статические атрибуты разметки потребителя на
  * узел сервера заново, и база переносит их так же — на `<input>` из разметки
@@ -23,6 +23,7 @@ import {
 	TInputComponent,
 	TLabelComponent,
 	TSwitchComponent,
+	TTextareaComponent,
 } from '@soldy-ui/angular'
 import { find } from './mount'
 import { hydrate, leavePage, loadPage, renderOnServer } from './server'
@@ -30,7 +31,13 @@ import { hydrate, leavePage, loadPage, renderOnServer } from './server'
 @Component({
 	selector: 'app-root',
 	standalone: true,
-	imports: [TLabelComponent, TCheckBoxComponent, TSwitchComponent, TInputComponent],
+	imports: [
+		TLabelComponent,
+		TCheckBoxComponent,
+		TSwitchComponent,
+		TInputComponent,
+		TTextareaComponent,
+	],
 	template: `<label so-label text="Согласен" class="agree"
 			><so-check-box [value]="checked()" title="Согласие"
 		/></label>
@@ -42,11 +49,21 @@ import { hydrate, leavePage, loadPage, renderOnServer } from './server'
 			clearable
 			name="Город"
 			direction="rtl"
+		/>
+		<so-textarea
+			[value]="note()"
+			autocomplete="off"
+			class="note"
+			name="about"
+			counter
+			[maxlength]="200"
+			direction="rtl"
 		/>`,
 })
 class FieldsPage {
 	readonly checked = signal(true)
 	readonly text = signal('abc')
+	readonly note = signal('строка\nещё')
 }
 
 /** Страница сервера, разобранная документом, — как её получил бы браузер. */
@@ -97,6 +114,29 @@ describe('серверный рендер', () => {
 			'Clear Город',
 		)
 	})
+
+	/**
+	 * Атрибута `value` у `<textarea>` нет: директива текста поля пишет текст в
+	 * узел эмуляции DOM, и она отдаёт его содержимым поля.
+	 */
+	it('Textarea — текст содержимым поля, атрибуты потребителя на поле, счётчик пояснением', async () => {
+		const page = await serverPage()
+		const root = find(page, 'so-textarea', HTMLElement)
+		const textarea = find(root, 'textarea', HTMLTextAreaElement)
+		const counter = find(root, '.so-textarea__counter', HTMLElement)
+
+		expect(textarea.value).toBe('строка\nещё')
+		expect(textarea.hasAttribute('value')).toBe(false)
+		expect(textarea.getAttribute('autocomplete')).toBe('off')
+		expect(textarea.getAttribute('name')).toBe('about')
+		expect(textarea.getAttribute('maxlength')).toBe('200')
+		expect(root.hasAttribute('autocomplete')).toBe(false)
+		expect([...root.classList]).toEqual(expect.arrayContaining(['note', 'so-textarea']))
+		expect(root.getAttribute('dir')).toBe('rtl')
+		expect(counter.textContent).toBe('10 / 200')
+		expect(counter.id).not.toBe('')
+		expect(textarea.getAttribute('aria-describedby')).toBe(counter.id)
+	})
 })
 
 /** Разметка сервера в документе и гидратация над ней: приложение браузера и его страница. */
@@ -129,6 +169,8 @@ describe('гидратация', () => {
 		const input = find(document, 'so-input input', HTMLInputElement)
 		const box = find(document, 'so-check-box input', HTMLInputElement)
 		const clear = find(document, '.so-input__clear', HTMLButtonElement)
+		const textarea = find(document, 'so-textarea textarea', HTMLTextAreaElement)
+		const counter = find(document, '.so-textarea__counter', HTMLElement)
 		const app = await hydrate(FieldsPage)
 
 		await app.whenStable()
@@ -136,6 +178,8 @@ describe('гидратация', () => {
 		expect(find(document, 'so-input input', HTMLInputElement)).toBe(input)
 		expect(find(document, 'so-check-box input', HTMLInputElement)).toBe(box)
 		expect(find(document, '.so-input__clear', HTMLButtonElement)).toBe(clear)
+		expect(find(document, 'so-textarea textarea', HTMLTextAreaElement)).toBe(textarea)
+		expect(find(document, '.so-textarea__counter', HTMLElement)).toBe(counter)
 		expect(error).not.toHaveBeenCalled()
 		expect(warn).not.toHaveBeenCalled()
 	})
@@ -164,15 +208,34 @@ describe('гидратация', () => {
 		const { app, page } = await hydrated()
 		const input = find(document, 'so-input input', HTMLInputElement)
 		const box = find(document, 'so-check-box input', HTMLInputElement)
+		const textarea = find(document, 'so-textarea textarea', HTMLTextAreaElement)
+		const counter = find(document, '.so-textarea__counter', HTMLElement)
 
 		expect(input.value).toBe('abc')
 		expect(box.checked).toBe(true)
+		expect(textarea.value).toBe('строка\nещё')
 
 		page.text.set('xyz')
 		page.checked.set(false)
+		page.note.set('новое')
 		await app.whenStable()
 
 		expect(input.value).toBe('xyz')
 		expect(box.checked).toBe(false)
+		expect(textarea.value).toBe('новое')
+		expect(counter.textContent).toBe('5 / 200')
+	})
+
+	it('Textarea: атрибуты потребителя — на поле, ссылка на счётчик — его id после гидратации', async () => {
+		await hydrated()
+
+		const root = find(document, 'so-textarea', HTMLElement)
+		const textarea = find(root, 'textarea', HTMLTextAreaElement)
+
+		expect(root.hasAttribute('autocomplete')).toBe(false)
+		expect(textarea.getAttribute('autocomplete')).toBe('off')
+		expect(textarea.getAttribute('aria-describedby')).toBe(
+			find(root, '.so-textarea__counter', HTMLElement).id,
+		)
 	})
 })

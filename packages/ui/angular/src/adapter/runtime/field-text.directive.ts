@@ -7,6 +7,7 @@ import { Directive, ElementRef, Input, inject } from '@angular/core'
  *
  * ```html
  * <input type="text" [so-field-text]="state()['value']" />
+ * <textarea [so-field-text]="state()['value']"></textarea>
  * ```
  *
  * Привязку свойства `[value]` Angular пишет в узел на каждую смену значения,
@@ -24,26 +25,28 @@ import { Directive, ElementRef, Input, inject } from '@angular/core'
  * привязки поля узел не трогают вовсе. `undefined` — пустое поле, как у Vue.
  *
  * На сервере тот же сеттер пишет текст в узел эмуляции DOM, и она отдаёт его
- * атрибутом `value` разметки. При гидратации узел уже держит текст сервера, и
+ * атрибутом `value` разметки, а у `<textarea>` — её содержимым: атрибута
+ * `value` у неё нет. При гидратации узел уже держит текст сервера, и
  * директива его не переписывает.
  *
  * Отметку и «выбрано частично» флажка разметка пишет привязками `[checked]`
  * и `[indeterminate]`: их запись, совпавшая с узлом, ничего у поля не снимает.
  *
- * Selector: input[so-field-text]
+ * Selector: input[so-field-text], textarea[so-field-text]
  */
 @Directive({
-	selector: 'input[so-field-text]',
+	selector: 'input[so-field-text], textarea[so-field-text]',
 	standalone: true,
 })
 export class FieldTextDirective {
-	private readonly _input = inject<ElementRef<HTMLInputElement>>(ElementRef).nativeElement
+	private readonly _field =
+		inject<ElementRef<HTMLInputElement | HTMLTextAreaElement>>(ElementRef).nativeElement
 
 	/** Текст поля — значение ядра; `undefined` — пусто. */
 	@Input({ alias: 'so-field-text', required: true })
 	set text(value: string | undefined) {
 		const text = value ?? ''
 
-		if (this._input.value !== text) this._input.value = text
+		if (this._field.value !== text) this._field.value = text
 	}
 }

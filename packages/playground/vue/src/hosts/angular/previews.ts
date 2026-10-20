@@ -28,6 +28,7 @@ import {
 	TTabsComponent,
 	TTabsContentComponent,
 	TTabsItemComponent,
+	TTextareaComponent,
 	TVirtualComponent,
 } from '@soldy-ui/angular'
 
@@ -219,6 +220,8 @@ export const PREVIEWS: Record<string, TPreview> = {
 	button: { component: TButtonComponent },
 
 	input: { component: TInputComponent },
+
+	textarea: { component: TTextareaComponent },
 
 	// Текста у чекбокса и переключателя нет, оба — голый контрол: подпись даёт
 	// обёртка Label. Её пропы задаёт превью, строки страницы правят контрол

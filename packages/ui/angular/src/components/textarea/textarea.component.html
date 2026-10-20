@@ -1,0 +1,34 @@
+<!--
+	Корень — сам хост (`<so-textarea>`), поэтому шаблон — поле и счётчик под
+	ним. Слотов нет.
+
+	Поле помечено `#control`: на него база переносит статические атрибуты
+	потребителя, а директива набора кладёт `aria` ядра. Текст в узел пишет
+	директива текста поля — только когда он разошёлся с узлом.
+-->
+<textarea
+	#control
+	[so-field-text]="state()['value']"
+	[attr.id]="state()['id'] ?? null"
+	[attr.name]="state()['name'] ?? null"
+	[attr.rows]="state()['rows'] ?? null"
+	[attr.maxlength]="state()['maxlength'] ?? null"
+	[attr.placeholder]="state()['placeholder'] ?? null"
+	[disabled]="state()['disabled'] === true"
+	[readOnly]="state()['readonly'] === true"
+	[required]="state()['required'] === true"
+	[so-attributes]="state()['aria']"
+></textarea>
+<!--
+	Счётчик символов — только при `counter`. Текст — свойством узла, а не
+	интерполяцией: Prettier переносит содержимое на свою строку, и от отступа
+	Angular оставил бы пробелы по краям текста. Набор `counterAria` несёт `id`
+	счётчика: поле ссылается на него `aria-describedby`.
+-->
+@if (state()['counter']) {
+	<div
+		class="so-textarea__counter"
+		[so-attributes]="state()['counterAria']"
+		[textContent]="state()['names_counter']"
+	></div>
+}

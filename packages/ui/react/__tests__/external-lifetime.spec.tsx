@@ -45,6 +45,7 @@ import {
 	TSwitch,
 	TTable,
 	TTabs,
+	TTextarea,
 	TVirtual,
 	createEngineAccordion,
 	createEngineListBox,
@@ -70,6 +71,7 @@ import {
 	Switch,
 	Table,
 	Tabs,
+	Textarea,
 	Virtual,
 } from '@soldy-ui/react'
 import { nextFrame, track } from './mount'
@@ -448,6 +450,12 @@ const COMPONENTS: Readonly<Record<string, Readonly<Record<string, TCase>>>> = {
 				buses: engineBuses(engine),
 			}
 		},
+	},
+	Textarea: {
+		ctrl: overCtrl(
+			() => new TTextarea(),
+			(ctrl) => <Textarea ctrl={ctrl} />,
+		),
 	},
 	/**
 	 * Обёртка своей шины коллекции не отдаёт: на выключатель коллекция

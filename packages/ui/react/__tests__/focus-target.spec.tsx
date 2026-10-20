@@ -26,9 +26,19 @@ import {
 	TSwitch,
 	TTabs,
 	TTabsItem,
+	TTextarea,
 	createEngineTabs,
 } from '@soldy-ui/core'
-import { Accordion, CheckBox, Input, ListBox, RadioGroup, Switch, Tabs } from '@soldy-ui/react'
+import {
+	Accordion,
+	CheckBox,
+	Input,
+	ListBox,
+	RadioGroup,
+	Switch,
+	Tabs,
+	Textarea,
+} from '@soldy-ui/react'
 import { find, mount, nextFrame } from './mount'
 
 type TCase = {
@@ -60,6 +70,14 @@ const CASES: Record<string, TCase> = {
 		},
 		target: 'input',
 		before: '.before',
+	},
+	Textarea: {
+		render: () => {
+			const ctrl = new TTextarea()
+
+			return { ctrl, node: <Textarea ctrl={ctrl} /> }
+		},
+		target: 'textarea',
 	},
 	CheckBox: {
 		render: () => {

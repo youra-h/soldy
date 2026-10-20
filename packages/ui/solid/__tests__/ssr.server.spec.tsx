@@ -27,6 +27,7 @@ import {
 	ProgressSpinner,
 	Skeleton,
 	Switch,
+	Textarea,
 	roleIcon,
 } from '@soldy-ui/solid'
 
@@ -179,6 +180,7 @@ describe('ref потребителя · серверный рендер', () => 
 			['ProgressSpinner', (ref) => <ProgressSpinner ref={ref} />],
 			['Skeleton', (ref) => <Skeleton ref={ref} />],
 			['Input', (ref) => <Input ref={ref} />],
+			['Textarea', (ref) => <Textarea value="текст" counter ref={ref} />],
 			['CheckBox', (ref) => <CheckBox ref={ref} />],
 			['Switch', (ref) => <Switch ref={ref} />],
 		]
