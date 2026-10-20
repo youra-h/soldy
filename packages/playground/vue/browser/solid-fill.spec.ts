@@ -4,15 +4,16 @@
  * Белым по цвету тема пишет подпись `filled` с вариантом у Button и у пилюли
  * тега, номер текущей страницы Pagination, номер выбранного дня Calendar и
  * отметку коробки CheckBox `filled`; значок крестика на пилюле — цвета её
- * подписи. Заливка у всех одна — заливка под белым текстом, а состояния — её
- * тень (`themes/oren/src/mixins/_solid.scss`). Раньше заливка стояла на
- * середине шкалы, и белый на ней в светлой схеме держал от 2,15:1, а
- * состояния брали ступени «+100», которые в тёмной схеме светлели к белому —
- * до 2,17:1 при нажатии.
+ * подписи, а светлая ручка Switch стоит на включённой дорожке. Заливка у всех
+ * одна — заливка под белым текстом, а состояния — её тень
+ * (`themes/oren/src/mixins/_solid.scss`). Раньше заливка стояла на середине
+ * шкалы, и белый на ней в светлой схеме держал от 2,15:1, а состояния брали
+ * ступени «+100», которые в тёмной схеме светлели к белому — до 2,17:1 при
+ * нажатии.
  *
- * Здесь: подпись держит 4,5:1 (WCAG 1.4.3), значок и отметка — 3:1 (1.4.11) —
- * в покое и в каждом состоянии, а состояние видно и уводит фон от подписи, а
- * не к ней. Сторож токенов (`themes/oren/__tests__/tokens.spec.ts`) держит
+ * Здесь: подпись держит 4,5:1 (WCAG 1.4.3), значок, отметка и ручка — 3:1
+ * (1.4.11) — в покое и в каждом состоянии, а состояние видно и уводит фон от
+ * подписи, а не к ней. Сторож токенов (`themes/oren/__tests__/tokens.spec.ts`) держит
  * только покой, и только по числам токенов; состояния и то, что заливку в
  * каждом месте берут из токена, видно лишь здесь.
  *
@@ -25,7 +26,7 @@ import { render, cleanup } from 'vitest-browser-vue'
 import { commands, userEvent } from 'vitest/browser'
 import { defineComponent, h, nextTick } from 'vue'
 import type { VNode } from 'vue'
-import { Button, Calendar, CheckBox, Pagination, Tags, TagsItem } from '@soldy-ui/vue'
+import { Button, Calendar, CheckBox, Pagination, Switch, Tags, TagsItem } from '@soldy-ui/vue'
 import { COMPONENT_VARIANTS } from '@soldy-ui/playground-shared'
 
 import { contrast, find, lightness, settled, style } from './colors'
@@ -46,7 +47,10 @@ const COLORS = [
 	...COLORED.map((variant) => ({ name: variant, variant })),
 ]
 
-/** Пороги WCAG 2: подпись кегля `text-sm` — 4,5:1 (1.4.3), значок и отметка — 3:1 (1.4.11). */
+/**
+ * Пороги WCAG 2: подпись кегля `text-sm` — 4,5:1 (1.4.3), значок, отметка и
+ * ручка — 3:1 (1.4.11).
+ */
 const TEXT = 4.5
 const GRAPHIC = 3
 
@@ -324,4 +328,23 @@ describe('отмеченная коробка CheckBox filled', () => {
 			expectStates({ наведение: of() }, resting, GRAPHIC)
 		},
 	)
+})
+
+/**
+ * Ручка Switch на включённой дорожке — графика: светлая ручка
+ * (`--so-component-knob`) на насыщенной заливке. На середине шкалы, где
+ * дорожка стояла раньше, белая ручка в светлой схеме держала от 2,15:1.
+ * Наведения у включённой дорожки нет, поэтому только покой.
+ */
+describe('ручка на включённой дорожке Switch', () => {
+	it.each(casesOf(COLORS))('$scheme, $name: ручка видна на дорожке', async ({ scheme, variant }) => {
+		await show(scheme, () => [h(Switch, { value: true, variant })])
+
+		const track = find('.so-switch__track')
+		const knob = find('.so-switch__track--thumb', track)
+
+		expect(
+			contrast(style(knob).backgroundColor, [style(track).backgroundColor]),
+		).toBeGreaterThanOrEqual(GRAPHIC)
+	})
 })
