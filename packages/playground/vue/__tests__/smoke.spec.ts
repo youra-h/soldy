@@ -275,6 +275,52 @@ async function dialogPanels(row: DOMWrapper<Element>): Promise<HTMLElement[]> {
 	return panels
 }
 
+/** Проп в коде колонки: имя и значение — синтаксисом хоста. */
+type TPropCode = {
+	/** Число: в коде то же значение, что у компонента, — числом. */
+	readonly number: (name: string, value: number) => string
+	/** Строка. */
+	readonly text: (name: string, value: string) => string
+	/** Расширение файла примера. */
+	readonly extension: string
+}
+
+/**
+ * Код колонок пишет хост фреймворка — своим синтаксисом, и файл примера для
+ * «Открыть в VS Code» у него того же синтаксиса. Строка на каждый фреймворк
+ * стенда, у хоста которого есть генератор кода: такой хост без строки уронит
+ * проверку, а не пропустит её.
+ */
+const PROP_CODE: Record<string, TPropCode> = {
+	vue: {
+		number: (name, value) => `:${name}="${value}"`,
+		text: (name, value) => `:${name}="'${value}'"`,
+		extension: 'vue',
+	},
+	react: {
+		number: (name, value) => `${name}={${value}}`,
+		text: (name, value) => `${name}="${value}"`,
+		extension: 'tsx',
+	},
+	svelte: {
+		number: (name, value) => `${name}={${value}}`,
+		text: (name, value) => `${name}="${value}"`,
+		extension: 'svelte',
+	},
+	solid: {
+		number: (name, value) => `${name}={${value}}`,
+		text: (name, value) => `${name}="${value}"`,
+		extension: 'tsx',
+	},
+	// Атрибутом, а тип пропа (`[Number, String]`) читает `40` числом, `10%` —
+	// строкой: в коде то же значение, что у компонента
+	webc: {
+		number: (name, value) => `${name}="${value}"`,
+		text: (name, value) => `${name}="${value}"`,
+		extension: 'html',
+	},
+}
+
 describe.each(IDS)('каталог хоста %s', (framework) => {
 	/**
 	 * Ключи карты превью — те же идентификаторы, что в общем реестре. Опечатка
@@ -816,7 +862,7 @@ describe('пресет строки', () => {
 				.map((view) => view.props('code'))
 
 			if (hostOf(framework).snippets) {
-				expect(propCode).toContain(':offset="40"')
+				expect(propCode).toContain(PROP_CODE[framework].number('offset', 40))
 				expect(instanceCode).toContain('instance.offset = 40')
 			}
 		},
@@ -1068,22 +1114,6 @@ describe('значение превью в строке', () => {
 })
 
 /**
- * Код колонок пишет хост фреймворка — своим синтаксисом, и файл примера для
- * «Открыть в VS Code» у него того же синтаксиса. Строка на каждый фреймворк
- * стенда, у хоста которого есть генератор кода: такой хост без строки уронит
- * проверку, а не пропустит её.
- */
-const WIDTH_CODE: Record<string, { number: string; text: string; extension: string }> = {
-	vue: { number: ':width="40"', text: `:width="'10%'"`, extension: 'vue' },
-	react: { number: 'width={40}', text: 'width="10%"', extension: 'tsx' },
-	svelte: { number: 'width={40}', text: 'width="10%"', extension: 'svelte' },
-	solid: { number: 'width={40}', text: 'width="10%"', extension: 'tsx' },
-	// Атрибутом, а тип пропа (`[Number, String]`) читает `40` числом, `10%` —
-	// строкой: в коде то же значение, что у компонента
-	webc: { number: 'width="40"', text: 'width="10%"', extension: 'html' },
-}
-
-/**
  * Набранное в поле «число или текст» уходит в код тем же значением, что и
  * компоненту: `40` — числом, `10%` — строкой. По превью их не отличить —
  * ширину в пикселях заглушка получила бы и от строки `'40'`, — а код учит
@@ -1097,7 +1127,7 @@ describe('код колонок', () => {
 	it.each(coded)(
 		'%s: набранное в поле — в коде обеих колонок синтаксисом хоста',
 		async (framework) => {
-			const expected = WIDTH_CODE[framework]
+			const expected = PROP_CODE[framework]
 			const wrapper = await openPage(framework, 'skeleton')
 			const field = rowOf(wrapper, 'width').find('.pg-prop__head > .so-field__control input')
 			const views = () => rowComponentOf(wrapper, 'width').findAllComponents(CodeView)
@@ -1111,13 +1141,13 @@ describe('код колонок', () => {
 			await field.setValue('40')
 			await nextTick()
 
-			expect(codes()[0]).toContain(expected.number)
+			expect(codes()[0]).toContain(expected.number('width', 40))
 			expect(codes()[1]).toContain('instance.width = 40')
 
 			await field.setValue('10%')
 			await nextTick()
 
-			expect(codes()[0]).toContain(expected.text)
+			expect(codes()[0]).toContain(expected.text('width', '10%'))
 			expect(codes()[1]).toContain("instance.width = '10%'")
 		},
 	)

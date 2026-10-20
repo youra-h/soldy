@@ -483,7 +483,12 @@
 `core/__tests__/frame.spec.ts` (`data-layer`), `core/__tests__/dialog.spec.ts`
 («слой»), `ui/vue/__tests__/popover.spec.ts` («вложенные слои», «Select
 внутри»), `ui/vue/__tests__/dialog.spec.ts` («окно поверх окна», «Select
-внутри») и `ui/vue/__tests__/drawer.spec.ts` («внутри модального окна»).
+внутри») и `ui/vue/__tests__/drawer.spec.ts` («внутри модального окна»), а
+у Svelte — `ui/svelte/__tests__/popover.spec.ts` («вложенные слои»),
+`ui/svelte/__tests__/dialog.spec.ts` («окно поверх окна», «поповер внутри» —
+у Svelte ещё нет Select, и вложенный слой — панель поповера),
+`ui/svelte/__tests__/drawer.spec.ts` («внутри модального окна») и
+`ui/svelte/__tests__/tooltip.spec.ts` («в открытом поповере»).
 
 **Закрытие пользователем — запрос, а не запись.** Нажатие мимо, Escape и
 жест плагины слоя передают владельцу с причиной — `outside`, `escape` и
@@ -563,5 +568,7 @@ Tab с `body` повёл бы на страницу под ним. Поэтом�
 первой пометки. Исключений для живых областей нет — фон прячется целиком,
 как у нативного `<dialog>`. `aria-modal` плагин не пишет: это значение, и
 пишет его в свой `aria` ядро компонента (см. «Прочее» в «Доступность
-(a11y)»). Сторожат `plugins/__tests__/hide-outside.plugin.spec.ts` и
-`ui/vue/__tests__/hide-outside.spec.ts` (Select в модальном `Frame`).
+(a11y)»). Сторожат `plugins/__tests__/hide-outside.plugin.spec.ts`,
+`ui/vue/__tests__/hide-outside.spec.ts` (Select в модальном `Frame`) и
+`ui/svelte/__tests__/hide-outside.spec.ts` (поповер в модальном `Frame`: его
+панель — такая же соседка окна в `body`).

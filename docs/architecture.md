@@ -2155,7 +2155,7 @@ Table — тот же рецепт, что ListBox, с окном `Virtual` и �
 
 ## Layer 8b: Svelte Adapter (`packages/ui/svelte/src`)
 
-### ✅ IMPLEMENTED (Component / ComponentView / Stylable / Interactive / Control / ValueControl / InputControl / Textable / Button / Icon / Label / Field / Frame / ProgressSpinner / ProgressLinear / Skeleton / Input / CheckBox / Switch / Slider / Rating / RadioGroup / ListBox / Tabs / Accordion / Table / Virtual / Scroller / Pagination / DragAndDrop)
+### ✅ IMPLEMENTED (Component / ComponentView / Stylable / Interactive / Control / ValueControl / InputControl / Textable / Button / Icon / Label / Field / Frame / Popover / Tooltip / Dialog / Drawer / Toasts / ProgressSpinner / ProgressLinear / Skeleton / Input / Textarea / CheckBox / Switch / Slider / Rating / RadioGroup / ListBox / Tabs / Accordion / Table / Virtual / Scroller / Pagination / DragAndDrop)
 
 Svelte 5 на рунах. Структура зеркалит React, потому что механика событий та же —
 колбэк-пропы:
@@ -2171,13 +2171,18 @@ Svelte 5 на рунах. Структура зеркалит React, потом�
   атрибуты и attachment-ы потребителя); делёж
   атрибутов потребителя у поля — `toRootForward` (класс и стиль корню) и
   `toControlAttrs` (остальное `<input>`; так же делит их элемент коллекции —
-  строке, а ListBox и Tabs — узлу списка); `roleIcon(role)` — метка иконки по
+  строке, а ListBox и Tabs — узлу списка); `toStyleText` — стиль узла без
+  экземпляра строкой, `toShownStyleText` — то же с `display: none` поверх,
+  пока компонент скрыт (подложка окна и выезжающей панели, как `v-show`);
+  `roleIcon(role)` — метка иконки по
   роли для `tag` у Icon и `RoleIcon`, который рисует её `<svg>`, — он же
   рисует отметку CheckBox без слота.
 - `adapter/runtime/` — `useAdapter.svelte.ts`: `useAdapter` поверх связки
   `adapter.connect(SvelteProfile)` (attachment корня `attachElement` и его
   половины: `bindRef` — только привязка к `TElementPlugin`, `consumerRef` —
-  только запись `ref`, для корня внутри обёртки) и `useCollectionAdapter` — связка фасада
+  только запись `ref`, для корня внутри обёртки; привязанный узел разметка
+  получает руной `rootElement` — у Popover и Tooltip это якорь панели их
+  Frame) и `useCollectionAdapter` — связка фасада
   коллекции: те же состояние, входы, события, приём и уничтожение, но без
   `ctrl` и привязки узла, а атрибуты — из того, что не съел компонент.
   Расширение `.svelte.ts` обязательно там, где используются руны (`$state`,
@@ -2194,6 +2199,11 @@ Svelte 5 на рунах. Структура зеркалит React, потом�
   (ограничение то же, что у Vue: только во время инициализации компонента).
   Владелец коллекции опускает движок и регистратор в сборке, элемент читает их
   в своей.
+- `adapter/toasts/` — API тостов: `useToasts()` берёт его лифтом менеджера
+  (`TOASTS_ELEVATOR`) при инициализации компонента под `<Toasts>`, без
+  менеджера — ошибка; своё содержимое тоста (`render`) — компонент Svelte с
+  пропом `toast` (`TToastRender`), разметка рисует его после проверки
+  `isToastRender` — компонент Svelte 5 это функция.
 
 ### Svelte-специфика
 
@@ -2259,10 +2269,16 @@ Svelte 5 на рунах. Структура зеркалит React, потом�
 - `tag` — строка, компонент Svelte или метка `roleIcon`. Другой объект
   (компонент чужого фреймворка) Svelte нарисовать не может, и корня нет.
 - Сниппет непрозрачен: заданный владельцу слот элемента (`item-close-icon`,
-  `item-indicator-icon`) рисуется у каждого элемента вместо своего, и где у
-  Vue и React пустой слот уступает место иконке, у Svelte остаётся пусто. Так
-  же у таблицы: заданные `header` и `cell` рисуются в каждом заголовке и
-  ячейке вместо текста и значения.
+  `item-indicator-icon`, `item-icon` тостов) рисуется у каждого элемента
+  вместо своего, и где у Vue и React пустой слот уступает место иконке, у
+  Svelte остаётся пусто. Так же у таблицы: заданные `header` и `cell`
+  рисуются в каждом заголовке и ячейке вместо текста и значения.
+- `Teleport` нарисованные узлы не переносит, а рисует содержимое заново на
+  новом месте: смена `contained` или цели у Frame, поповера и выезжающей
+  панели пересобирает панель вместе с её содержимым, а новый корень
+  `TElementPlugin` объявляет кадром позже — замок прокрутки выезжающей панели,
+  вернувшейся из контейнера, встаёт с ним. У Vue узел тот же, и замок встаёт
+  сразу.
 
 ## Layer 8c: Solid Adapter (`packages/ui/solid/src`)
 

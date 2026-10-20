@@ -12,6 +12,13 @@
  * ленты, страницы и стрелки пагинации, — а у таблицы её окно, корень,
  * заголовки и строки. Окна Virtual здесь нет — у Vue в его ряду ещё и Select,
  * которого у Svelte нет.
+ *
+ * Оверлеи — дважды. В ячейке — то, что стоит на месте: корень поповера и
+ * подсказки с триггером, кнопки окна, выезжающей панели и тостов. И открытые:
+ * панель поповера, окно и выезжающая панель с подложкой и частями, регион с
+ * тостом — телепортированы в `body`, мимо сцены, и их рамки сверяются от угла
+ * окна, когда доиграли переходы темы. Пробелы Svelte внутри панелей jsdom не
+ * видит: раскладку считает только браузер.
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
@@ -73,6 +80,53 @@ async function boxesOf(framework: string, component: string, selector: string) {
 	})
 }
 
+/**
+ * Рамки открытого оверлея и его частей — от угла окна, в порядке документа:
+ * панель телепортирована в `body`, мимо сцены, и стоит у триггера или у края
+ * окна. Открывает её кнопка с текстом `opener` в первой колонке строки
+ * `visible`; рамки снимаются, когда доиграли переходы темы — проявление,
+ * въезд, место у якоря.
+ */
+async function openedBoxesOf(
+	framework: string,
+	component: string,
+	opener: string,
+	selector: string,
+) {
+	await router.push(`/${framework}/${component}`)
+	await settle()
+
+	const stage = propRow('visible').querySelector('.pg-col__stage')
+	const button = [...(stage?.querySelectorAll('.so-button') ?? [])].find(
+		(candidate) => candidate.textContent?.trim() === opener,
+	)
+
+	if (!(button instanceof HTMLElement)) {
+		throw new Error(`${framework}/${component}: в сцене нет кнопки «${opener}»`)
+	}
+
+	button.click()
+	await settle()
+	await Promise.all(document.getAnimations().map((animation) => animation.finished))
+
+	const parts = [...document.querySelectorAll(selector)].filter(
+		(part) => part.getClientRects().length > 0,
+	)
+
+	if (parts.length === 0) throw new Error(`${framework}/${component}: открытого ${selector} нет`)
+
+	return parts.map((part) => {
+		const box = part.getBoundingClientRect()
+
+		return {
+			x: Math.round(box.left),
+			y: Math.round(box.top),
+			width: Math.round(box.width),
+			height: Math.round(box.height),
+		}
+	})
+}
+
 beforeEach(async () => {
 	// Колонки пишут события компонентов в консоль — в отчёте прогона это шум
 	vi.spyOn(console, 'log').mockImplementation(() => {})
@@ -120,10 +174,56 @@ describe('хост Svelte', () => {
 			'pagination',
 			'.so-pagination, .so-pagination__prev, .so-pagination-item, .so-pagination__ellipsis, .so-pagination__next, .so-pagination svg',
 		],
+		// Оверлеи в ячейке: корень с триггером, кнопки, которые открывают окно,
+		// панель и тосты, — панели и регион телепортированы мимо сцены
+		['popover', '.so-popover, .so-popover .so-button'],
+		['tooltip', '.so-tooltip, .so-tooltip .so-button'],
+		['dialog', '.so-button'],
+		['drawer', '.so-button'],
+		['toasts', '.so-button'],
 	])('%s стоит в ячейке так же, как у Vue', async (component, selector) => {
 		const vue = await boxesOf('vue', component, selector)
 		const svelte = await boxesOf('svelte', component, selector)
 
+		expect(svelte[0].width).toBeGreaterThan(0)
+		expect(svelte).toEqual(vue)
+	})
+
+	// Кнопка, которая открывает оверлей, его части и их число: панель,
+	// подложка, заголовок, тело, подвал, крестик и содержимое; у тостов —
+	// регион с тостом (пустые регионы других колонок стоят у того же края),
+	// тост, плашка, значок, текст, кнопка «Отменить» и крестик. Число частей —
+	// чтобы неоткрывшийся оверлей не сошёлся сам с собой
+	it.each([
+		[
+			'popover',
+			'Открыть',
+			'.so-popover__panel, .so-popover__content, .so-popover__content > *, .so-popover__close',
+			5,
+		],
+		[
+			'dialog',
+			'Открыть окно',
+			'.so-dialog__backdrop, .so-dialog, .so-dialog__title, .so-dialog__body, .so-dialog__body > *, .so-dialog__footer, .so-dialog__footer > *, .so-dialog__close',
+			10,
+		],
+		[
+			'drawer',
+			'Открыть панель',
+			'.so-drawer__backdrop, .so-drawer, .so-drawer__title, .so-drawer__body, .so-drawer__body > *, .so-drawer__footer, .so-drawer__footer > *, .so-drawer__close',
+			10,
+		],
+		[
+			'toasts',
+			'обычное',
+			'.so-toasts:has(.so-toasts-item), .so-toasts-item, .so-toasts-item__card, .so-toasts-item__icon, .so-toasts-item__text, .so-toasts-item__content > *, .so-toasts-item__close',
+			7,
+		],
+	])('%s: открытый стоит так же, как у Vue', async (component, opener, selector, parts) => {
+		const vue = await openedBoxesOf('vue', component, opener, selector)
+		const svelte = await openedBoxesOf('svelte', component, opener, selector)
+
+		expect(svelte).toHaveLength(parts)
 		expect(svelte[0].width).toBeGreaterThan(0)
 		expect(svelte).toEqual(vue)
 	})
