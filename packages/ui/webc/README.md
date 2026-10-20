@@ -12,7 +12,9 @@ component descriptor, so they match the other five adapters; only the spelling i
 props are attributes or element properties, and events are DOM events named `so:` + the core name
 (`so:show`, `so:show:before`, `so:action:press`, `so:change:disabled`). Every event has the prefix:
 events bubble from your element through the DOM, and the prefix tells a component's event from the
-browser's and your own.
+browser's and your own. A "before" event (`so:show:before`, `so:hide:before`) is cancelable, as a
+DOM event is: `event.preventDefault()` in a listener on the element or above it cancels the action.
+Its `detail` is the core event itself, so `event.detail.preventDefault()` cancels it too.
 
 Each component is a native element of its tag extended by Soldy (a customized built-in):
 `<button is="so-button">` is a real `<button>`, `<div is="so-component-view">` a real `<div>`.
