@@ -7,15 +7,27 @@
  *   общий для всех запросов и при гидратации разошёлся бы.
  * - Компонент Solid в `tag` получает атрибуты корня и `ref` адаптера и кладёт
  *   их на свой корень, содержимое рисует внутри.
+ * - Привязанный корень разметка читает аксессором (`rootElement`): узел, снятие
+ *   и смена тега доходят до читающих.
  * - Состояние двух контекстов коллекции — один вид (`joinState`), и он идёт за
  *   обоими сторами, в том числе за свойством, которого к сборке не было.
  */
 
 import { describe, it, expect, vi, onTestFinished } from 'vitest'
-import { createRenderEffect, createRoot, type JSX } from 'solid-js'
+import { Show, createRenderEffect, createRoot, type Accessor, type JSX } from 'solid-js'
 import { createStore } from 'solid-js/store'
+import { Dynamic } from 'solid-js/web'
+import { TComponentView } from '@soldy-ui/core'
 import { TPluginBundle } from '@soldy-ui/plugins'
-import { Button, isTagComponent, joinState, roleIcon, rootTag } from '@soldy-ui/solid'
+import {
+	Button,
+	isTagComponent,
+	joinState,
+	roleIcon,
+	rootTag,
+	setupComponentView,
+	type ComponentViewProps,
+} from '@soldy-ui/solid'
 import { find, mount, nextFrame } from './mount'
 
 /** Набор кнопки — из `onBundleCreate`, на микрозадаче после сборки. */
@@ -91,6 +103,98 @@ describe('компонент в tag', () => {
 		expect(isTagComponent(Link)).toBe(true)
 		expect(isTagComponent('a')).toBe(false)
 		expect(isTagComponent({})).toBe(false)
+	})
+})
+
+/**
+ * Привязанный корень — аксессором (`rootElement`), как `rootElement` у Vue:
+ * так Popover и Tooltip отдают корень якорем своей панели. Узел пишет
+ * привязка корня, её очистка ставит `null`, смена тега — новый узел, и
+ * читающие узнают о каждой смене.
+ */
+describe('аксессор привязанного корня', () => {
+	type TProbeProps = ComponentViewProps & {
+		/** Аксессор корня — тесту, при сборке. */
+		onRootElement: (root: Accessor<Element | null>) => void
+	}
+
+	/** Корень по `tag`, как у ComponentView; аксессор привязанного корня — наружу. */
+	function RootProbe(props: TProbeProps): JSX.Element {
+		const binding = setupComponentView(props)
+
+		props.onRootElement(binding.rootElement)
+
+		return (
+			<Show when={binding.state.rendered}>
+				<Dynamic component={rootTag(binding.state.tag)} ref={binding.ref} />
+			</Show>
+		)
+	}
+
+	/** Смонтировать пробу; аксессор и то, что видел читающий его эффект. */
+	function probe(ctrl: TComponentView, ref?: (node: Element) => void) {
+		const roots: Array<Accessor<Element | null>> = []
+		const mounted = mount(() => (
+			<RootProbe ctrl={ctrl} ref={ref} onRootElement={(root) => roots.push(root)} />
+		))
+		const [root] = roots
+
+		if (!root) throw new Error('аксессор корня не отдан')
+
+		const seen: Array<Element | null> = []
+
+		createRoot((dispose) => {
+			createRenderEffect(() => seen.push(root()))
+
+			onTestFinished(dispose)
+		})
+
+		return { ...mounted, rootElement: root, seen }
+	}
+
+	it('отдаёт узел, который получил ref', () => {
+		const nodes: Element[] = []
+		const { container, rootElement } = probe(new TComponentView(), (node) => nodes.push(node))
+		const root = find(container, ':scope > *', HTMLElement)
+
+		expect(rootElement()).toBe(root)
+		expect(nodes).toEqual([root])
+	})
+
+	it('смена tag — новый узел, и читающий его видит', () => {
+		const ctrl = new TComponentView()
+		const { container, rootElement, seen } = probe(ctrl)
+		const first = rootElement()
+
+		ctrl.tag = 'section'
+
+		const next = find(container, ':scope > section', HTMLElement)
+
+		expect(rootElement()).toBe(next)
+		expect(next).not.toBe(first)
+		expect(seen.at(-1)).toBe(next)
+	})
+
+	it('корень снят — null, отрисован снова — новый узел', () => {
+		const ctrl = new TComponentView()
+		const { container, rootElement, seen } = probe(ctrl)
+
+		ctrl.rendered = false
+
+		expect(rootElement()).toBeNull()
+		expect(seen.at(-1)).toBeNull()
+
+		ctrl.rendered = true
+
+		expect(rootElement()).toBe(find(container, ':scope > *', HTMLElement))
+	})
+
+	it('после снятия компонента — null', () => {
+		const { rootElement, destroy } = probe(new TComponentView())
+
+		destroy()
+
+		expect(rootElement()).toBeNull()
 	})
 })
 

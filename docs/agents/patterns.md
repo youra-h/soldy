@@ -514,7 +514,9 @@ ARIA пускает только `option` и `group` (axe — `aria-required-chi
   `core/__tests__/popover.spec.ts`,
   `plugins/__tests__/popover-focus.plugin.spec.ts`,
   `plugins/__tests__/swipe.plugin.spec.ts`,
-  `ui/vue/__tests__/popover.spec.ts`, `playground/vue/browser/popover.spec.ts`
+  `ui/vue/__tests__/popover.spec.ts`, `ui/solid/__tests__/popover.spec.tsx`
+  (у Solid ещё — триггер тем же узлом после открытия и закрытия, фокус на нём
+  после закрытия кликом по нему), `playground/vue/browser/popover.spec.ts`
   и `playground/vue/browser/popover-swipe.spec.ts`.
 - **Menu** — Menu Button (APG): кнопка потребителя в слоте `trigger` внутри
   корня, как у Popover, панель — `Frame` с `role="menu"`, `id` и
@@ -824,7 +826,9 @@ ARIA пускает только `option` и `group` (axe — `aria-required-chi
   не плагина (`tooltip/trigger/document-state.ts`, как замок прокрутки).
   Сторожат `core/__tests__/tooltip.spec.ts`,
   `plugins/__tests__/tooltip-trigger.plugin.spec.ts`,
-  `ui/vue/__tests__/tooltip.spec.ts` и `playground/vue/browser/tooltip.spec.ts`.
+  `ui/vue/__tests__/tooltip.spec.ts`, `ui/solid/__tests__/tooltip.spec.tsx`
+  (у Solid ещё — триггер тем же узлом после показа и смены `type`) и
+  `playground/vue/browser/tooltip.spec.ts`.
 - **Dialog** — Dialog (Modal) pattern: `role="dialog"` и `aria-modal="true"`
   на панели, имя — видимый заголовок (`aria-labelledby` на слот `title`,
   который рисуется всегда; `id` он берёт из набора `titleAria`). `TAriaPlugin`

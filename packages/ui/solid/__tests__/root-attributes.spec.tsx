@@ -18,7 +18,8 @@
  * за адаптером. Элемент коллекции (`Tabs.Item`, `Accordion.Item`,
  * `RadioGroup.Item`) делит их так же: остальное — строке, у радио — полю. И
  * ListBox с Tabs: остальное — узлу списка с ролью (`listbox`, `tablist`), а
- * Table — корню `table` внутри окна, которому остаются класс и стиль.
+ * Table — корню `table` внутри окна, которому остаются класс и стиль. У
+ * Popover и Tooltip атрибуты — корню, обёртке триггера, а не панели.
  *
  * Стиль Solid ставит объектом по свойству и не трогает того, что плагины
  * пишут в узел сами: сдвиг смахиваемой панели (`--so-swipe-offset`) переживает
@@ -40,6 +41,7 @@ import {
 	Label,
 	ListBox,
 	Pagination,
+	Popover,
 	ProgressLinear,
 	ProgressSpinner,
 	RadioGroup,
@@ -51,6 +53,7 @@ import {
 	Table,
 	Tabs,
 	Textarea,
+	Tooltip,
 	toControlAttrs,
 	toRootForward,
 	toRootLayout,
@@ -69,6 +72,7 @@ import {
 	type ListBoxItemProps,
 	type ListBoxProps,
 	type PaginationProps,
+	type PopoverProps,
 	type ProgressLinearProps,
 	type ProgressSpinnerProps,
 	type RadioGroupItemProps,
@@ -83,6 +87,7 @@ import {
 	type TabsItemProps,
 	type TabsProps,
 	type TextareaProps,
+	type TooltipProps,
 } from '@soldy-ui/solid'
 import { find, mount, nextFrame } from './mount'
 
@@ -100,6 +105,8 @@ type TProbeProps = ButtonProps &
 	RatingProps &
 	ScrollerProps &
 	PaginationProps &
+	PopoverProps &
+	TooltipProps &
 	TabsProps &
 	AccordionProps &
 	RadioGroupProps &
@@ -134,6 +141,8 @@ const COMPONENTS: ReadonlyArray<
 	['Rating', Rating, '.so-rating', {}],
 	['Scroller', Scroller, '.so-scroller', {}],
 	['Pagination', Pagination, '.so-pagination', {}],
+	['Popover', Popover, '.so-popover', {}],
+	['Tooltip', Tooltip, '.so-tooltip', {}],
 	['Tabs.Content', TabsContentProbe, '.so-tabs__panel', {}],
 	['Accordion', Accordion, '.so-accordion', {}],
 	['RadioGroup', RadioGroup, '.so-radio-group', {}],
@@ -254,6 +263,38 @@ describe('атрибут снаружи перекрывает набор ядр
 
 		expect(root().getAttribute('tabindex')).toBe('-1')
 	})
+})
+
+/** Компонент с панелью, класс его корня и класс панели. */
+const OVERLAYS: ReadonlyArray<
+	readonly [string, Component<PopoverProps & TooltipProps>, string, string]
+> = [
+	['Popover', Popover, '.so-popover', '.so-popover__panel'],
+	['Tooltip', Tooltip, '.so-tooltip', '.so-tooltip__panel'],
+]
+
+/**
+ * У Popover и Tooltip корень — обёртка триггера, а панель — их Frame: атрибуты
+ * потребителя ложатся на корень, как у Vue, а панель получает только наборы
+ * компонента — ARIA, `data-*` и пометку владельцем.
+ */
+describe('Popover, Tooltip: атрибуты снаружи — корню, а не панели', () => {
+	it.each(OVERLAYS)(
+		'%s: класс, id и data-* потребителя — на корне',
+		(_name, Overlay, root, panel) => {
+			mount(() => <Overlay class="mine" id="mine" data-probe="1" />)
+
+			const rootNode = find(document, root, HTMLElement)
+			const panelNode = find(document, panel, HTMLElement)
+
+			expect([...rootNode.classList].at(-1)).toBe('mine')
+			expect(rootNode.id).toBe('mine')
+			expect(rootNode.dataset['probe']).toBe('1')
+			expect(panelNode.classList.contains('mine')).toBe(false)
+			expect(panelNode.id).not.toBe('mine')
+			expect(panelNode.hasAttribute('data-probe')).toBe(false)
+		},
+	)
 })
 
 describe('поле: атрибуты снаружи — полю, поверх его aria', () => {
@@ -683,6 +724,8 @@ const ROOTS: ReadonlyArray<
 	['Rating', (props) => <Rating {...props} />, '.so-rating', '.so-rating'],
 	['Scroller', (props) => <Scroller {...props} />, '.so-scroller', '.so-scroller'],
 	['Pagination', (props) => <Pagination {...props} />, '.so-pagination', '.so-pagination'],
+	['Popover', (props) => <Popover {...props} />, '.so-popover', '.so-popover'],
+	['Tooltip', (props) => <Tooltip {...props} />, '.so-tooltip', '.so-tooltip'],
 	['Tabs', (props) => <Tabs {...props} />, '.so-tabs', '.so-tabs'],
 	['Tabs.Item', (props) => <TabsItemProbe {...props} />, '.so-tabs-item', '.so-tabs-item'],
 	[

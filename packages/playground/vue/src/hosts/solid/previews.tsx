@@ -7,6 +7,7 @@ import {
 	TABLE_ROWS,
 	TABLE_SCROLL_ROWS,
 } from '@soldy-ui/playground-shared'
+import type { DescriptorSlots, PopoverDescriptor, TooltipDescriptor } from '@soldy-ui/setup'
 import {
 	Accordion,
 	Button,
@@ -18,6 +19,7 @@ import {
 	Label,
 	ListBox,
 	Pagination,
+	Popover,
 	ProgressLinear,
 	ProgressSpinner,
 	RadioGroup,
@@ -29,6 +31,7 @@ import {
 	Table,
 	Tabs,
 	Textarea,
+	Tooltip,
 	Virtual,
 	roleIcon,
 } from '@soldy-ui/solid'
@@ -58,6 +61,12 @@ export type TPreviewProps = Record<string, unknown>
  * Solid чужой проп ушёл бы атрибутом в корень.
  */
 export type TPreview = (bind: Accessor<TPreviewProps>) => JSX.Element
+
+/** Scope слота триггера Popover — связка с панелью и вид «нажат». */
+type TPopoverTriggerScope = DescriptorSlots<typeof PopoverDescriptor>['trigger']
+
+/** Scope слота триггера Tooltip — ссылка на панель. */
+type TTooltipTriggerScope = DescriptorSlots<typeof TooltipDescriptor>['trigger']
 
 /** Содержимое коллекций — из общего манифеста, как у Vue, React и Svelte. */
 const ITEMS = COLLECTION_ITEMS
@@ -174,6 +183,36 @@ export const PREVIEWS: Record<string, TPreview> = {
 	// Содержимого у пагинации нет: страницы окна кладёт в коллекцию она сама.
 	// Язык номеров и имён стрелок — из шапки стенда
 	pagination: (bind) => <Pagination {...bind()} />,
+
+	// Триггер — Button, связку с панелью и вид «нажат» он берёт из scope
+	// слота и читает его в разметке: связка меняется на открытии, а триггер
+	// остаётся тем же узлом, с фокусом на нём. В содержимом есть кнопка: на неё
+	// при открытии уходит фокус
+	popover: (bind) => (
+		<Popover
+			{...bind()}
+			trigger={(scope: TPopoverTriggerScope) => (
+				<Button text="Открыть" {...scope.triggerAria} {...scope.triggerDataset} />
+			)}
+		>
+			<p style={{ margin: '0 0 8px' }}>Произвольное содержимое: текст, поля, кнопки</p>
+			<Button text="Действие" />
+		</Popover>
+	),
+
+	// Триггер — Button, ссылку на панель (`aria-describedby`) он берёт из
+	// scope слота, тоже в разметке. Текст подсказки — слотом: пропа текста у
+	// неё нет
+	tooltip: (bind) => (
+		<Tooltip
+			{...bind()}
+			trigger={(scope: TTooltipTriggerScope) => (
+				<Button text="Наведи" {...scope.triggerAria} />
+			)}
+		>
+			Короткое пояснение к кнопке
+		</Tooltip>
+	),
 
 	// Содержимое ленты — просто разметка: каждый элемент — прямой ребёнок
 	// вьюпорта, по ним тема ставит точки снапа, а плагин считает края. Обёртка —

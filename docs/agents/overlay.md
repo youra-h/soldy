@@ -55,7 +55,8 @@
   корне. Сторожат
   `setup/__tests__/overlay.spec.ts` (якорь и раскладка),
   `plugins/__tests__/popover-focus.plugin.spec.ts` («панель внутри корня»),
-  `ui/vue/__tests__/popover.spec.ts`, `ui/react/__tests__/frame.spec.tsx`,
+  `ui/vue/__tests__/popover.spec.ts`, `ui/solid/__tests__/popover.spec.tsx`,
+  `ui/react/__tests__/frame.spec.tsx`,
   `ui/svelte/__tests__/frame.spec.ts`, `ui/solid/__tests__/frame.spec.tsx`,
   `ui/angular/__tests__/frame.spec.ts` и `ui/webc/__tests__/frame.spec.ts`.
 - **Телепорт — у каждого адаптера свой, поведение одно.** Цель — по
@@ -482,7 +483,8 @@
 («слои», «уход фокуса», «порядок: сообщить, потом закрыть»),
 `core/__tests__/frame.spec.ts` (`data-layer`), `core/__tests__/dialog.spec.ts`
 («слой»), `ui/vue/__tests__/popover.spec.ts` («вложенные слои», «Select
-внутри»), `ui/vue/__tests__/dialog.spec.ts` («окно поверх окна», «Select
+внутри»), `ui/solid/__tests__/popover.spec.tsx` («вложенные слои»),
+`ui/vue/__tests__/dialog.spec.ts` («окно поверх окна», «Select
 внутри») и `ui/vue/__tests__/drawer.spec.ts` («внутри модального окна»).
 
 **Закрытие пользователем — запрос, а не запись.** Нажатие мимо, Escape и

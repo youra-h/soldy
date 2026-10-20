@@ -202,8 +202,8 @@ come in later releases.
 | Calendar        | Month grids: pick a single date, several dates or a range                                      | Vue                       | 0.2.0   |
 | DateInput       | Date and time field typed in parts in the locale's format, selected and copied as a whole      | Vue                       | 0.2.0   |
 | DatePicker      | Date field and a calendar in a panel: a single date or a range                                 | Vue                       | 0.2.0   |
-| Popover         | Panel at a trigger with any content: a non-modal dialog                                        | Vue                       | 0.2.0   |
-| Tooltip         | Hint for an element, shown on hover and on keyboard focus                                      | Vue                       | 0.2.0   |
+| Popover         | Panel at a trigger with any content: a non-modal dialog                                        | Vue, Solid                | 0.2.0   |
+| Tooltip         | Hint for an element, shown on hover and on keyboard focus                                      | Vue, Solid                | 0.2.0   |
 | Dialog          | Modal window: centered or at an edge of the screen, can be maximized to full screen            | Vue                       | 0.2.0   |
 | Drawer          | Panel that slides in at an edge of the screen or a container, can be swiped away               | Vue                       | 0.2.0   |
 | Toasts          | Pop-up notifications shown from code: a queue, auto-dismiss with a pause, swipe to close       | Vue                       | 0.2.0   |

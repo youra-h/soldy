@@ -1,7 +1,7 @@
 export { SolidProfile } from './profile'
 export { SolidNaming } from './naming'
 export { createSolidAdapterContext } from './createSolidAdapterContext'
-export { renderSlot, hasSlot, resolveSlot, relaySlot, type TSlotContent } from './slots'
+export { renderSlot, hasSlot, resolveSlot, liveScope, relaySlot, type TSlotContent } from './slots'
 export { ResolvedSlot, type TResolvedSlotProps } from './ResolvedSlot'
 export { chainHandler, type THandlerUnion } from './handlers'
 export {

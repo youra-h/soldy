@@ -10,7 +10,7 @@
  * у пользовательской функции слота, принимающей scope.
  */
 
-import { children, type Accessor, type JSX } from 'solid-js'
+import { children, untrack, type Accessor, type JSX } from 'solid-js'
 
 export type TSlotContent<TScope extends object = object> =
 	JSX.Element | ((scope: TScope) => JSX.Element)
@@ -69,6 +69,51 @@ export function resolveSlot<TScope extends object>(
 
 		return hasSlot(nodes) ? nodes : undefined
 	}
+}
+
+/**
+ * Живой scope слота — объект с геттерами по ключам scope: каждый геттер берёт
+ * своё значение из аксессора `scope` на каждое чтение. Функции слота его
+ * отдают так: `renderSlot(props.trigger, liveScope(() => ({ … })))`.
+ *
+ * Нужен, когда содержимое слота должно пережить смену scope. Связка триггера
+ * Popover (`triggerAria`, `triggerDataset`) меняется на каждое открытие, а
+ * свежий объект scope функцию слота перезапускает: и литерал scope в разметке,
+ * и `resolveSlot` читают его там, где зовут функцию, — и Solid пересоздал бы
+ * всё, что она нарисовала. Новый триггер на каждое открытие, а при закрытии
+ * кликом по триггеру фокус с прежнего узла падал бы на `body`.
+ *
+ * С живым scope функция слота зовётся один раз, а чтение уходит туда, где
+ * scope читают:
+ *
+ * - в разметке — `<Button {...scope.triggerAria} />`, `{scope.text}`:
+ *   компилятор Solid отдаёт спред и выражение аксессором, и смена scope
+ *   обновляет их на месте — узлы те же;
+ * - в теле функции — деструктуризация `({ triggerAria }) => …`, условие
+ *   `scope.selected ? … : null`: читается при вызове, и смена scope функцию
+ *   перезапускает, как свежий объект.
+ *
+ * Тип scope тот же, что в дескрипторе и у остальных адаптеров: значения, а не
+ * аксессоры. Ключи — первого чтения, вне слежения: scope — литерал компонента,
+ * набор ключей у него постоянный, а слежение за аксессором остаётся геттерам.
+ *
+ * Чем отличается от `resolveSlot`: тот разворачивает слот один раз, чтобы
+ * разметка выбрала запасное содержимое, а функцию слота зовёт со свежим
+ * объектом scope — и перезапускает её на каждую смену. Живой scope — про то,
+ * чтобы смена scope функцию не перезапускала.
+ */
+export function liveScope<TScope extends object>(scope: () => TScope): TScope {
+	const first = untrack(scope)
+	const live: TScope = { ...first }
+
+	for (const key of Object.keys(first)) {
+		Object.defineProperty(live, key, {
+			enumerable: true,
+			get: () => Reflect.get(scope(), key),
+		})
+	}
+
+	return live
 }
 
 /**
