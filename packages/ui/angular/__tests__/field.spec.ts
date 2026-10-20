@@ -52,14 +52,14 @@ const input = (fixture: ComponentFixture<unknown>, selector: string) =>
 @Component({
 	standalone: true,
 	imports: [TFieldComponent, TInputComponent],
-	template: `<div so-field label="Почта" helper="Не покажем никому"><so-input /></div>`,
+	template: `<div so-field label="Почта" helper="Не покажем никому"><div so-input></div></div>`,
 })
 class MarkupHost {}
 
 @Component({
 	standalone: true,
 	imports: [TFieldComponent, TInputComponent],
-	template: `<div so-field><so-input /></div>`,
+	template: `<div so-field><div so-input></div></div>`,
 })
 class BareHost {}
 
@@ -69,7 +69,7 @@ class BareHost {}
 	template: `<div so-field label="Почта">
 		<b slot="label-content">Почта *</b>
 		<a slot="helper-content" href="#">Подробнее</a>
-		<so-input />
+		<div so-input></div>
 	</div>`,
 })
 class PartSlotsHost {}
@@ -79,7 +79,7 @@ class PartSlotsHost {}
 	imports: [TFieldComponent, TInputComponent],
 	template: `<div so-field error="Ошибка" invalid>
 		<b slot="error-content">Нет @</b>
-		<so-input />
+		<div so-input></div>
 	</div>`,
 })
 class ErrorSlotHost {}
@@ -120,13 +120,13 @@ type TControl = 'input' | 'check-box' | 'switch' | 'radio-group'
 	template: `<div so-field [ctrl]="field">
 		@switch (control) {
 			@case ('input') {
-				<so-input />
+				<div so-input></div>
 			}
 			@case ('check-box') {
-				<so-check-box />
+				<span so-check-box></span>
 			}
 			@case ('switch') {
-				<so-switch />
+				<span so-switch></span>
 			}
 			@case ('radio-group') {
 				<div so-radio-group>
@@ -171,7 +171,7 @@ describe('Field · разметка', () => {
 		])
 		expect(labelOf(fixture).textContent).toBe('Почта')
 		expect(node(fixture, '.so-field__helper').textContent).toBe('Не покажем никому')
-		expect(root.querySelector('.so-field__control > so-input')).not.toBeNull()
+		expect(root.querySelector('.so-field__control > [so-input]')).not.toBeNull()
 	})
 
 	it('часть без текста не рисуется', () => {
@@ -242,9 +242,9 @@ describe('Field · разметка', () => {
  * наборе поля. Селекторы — корень контрола и поле, которое называет подпись.
  */
 const LABELABLES = [
-	['Input', 'input', 'so-input', 'so-input input'],
-	['CheckBox', 'check-box', 'so-check-box', 'so-check-box input'],
-	['Switch', 'switch', 'so-switch', 'so-switch input'],
+	['Input', 'input', '[so-input]', '[so-input] input'],
+	['CheckBox', 'check-box', '[so-check-box]', '[so-check-box] input'],
+	['Switch', 'switch', '[so-switch]', '[so-switch] input'],
 ] as const
 
 describe.each(LABELABLES)('%s в поле', (_name, control, root, element) => {
@@ -333,7 +333,7 @@ describe('RadioGroup в поле', () => {
 @Component({
 	standalone: true,
 	imports: [TFieldComponent, TInputComponent],
-	template: `<div so-field label="Почта"><so-input id="email" /></div>`,
+	template: `<div so-field label="Почта"><div so-input id="email"></div></div>`,
 })
 class OwnIdHost {}
 
@@ -342,7 +342,7 @@ class OwnIdHost {}
 	imports: [TFieldComponent, TInputComponent],
 	template: `<div so-field label="Почта">
 		@if (shown()) {
-			<so-input [ctrl]="input" />
+			<div so-input [ctrl]="input"></div>
 		}
 	</div>`,
 })
@@ -355,7 +355,7 @@ describe('Field · id поля', () => {
 	it('свой id контрола — его, и for подписи ведёт на него', () => {
 		const fixture = mountHost(OwnIdHost)
 
-		expect(input(fixture, 'so-input input').id).toBe('email')
+		expect(input(fixture, '[so-input] input').id).toBe('email')
 		expect(labelOf(fixture).htmlFor).toBe('email')
 	})
 
@@ -365,13 +365,13 @@ describe('Field · id поля', () => {
 		fixture.componentInstance.input.id = 'email'
 		fixture.detectChanges()
 
-		expect(input(fixture, 'so-input input').id).toBe('email')
+		expect(input(fixture, '[so-input] input').id).toBe('email')
 		expect(labelOf(fixture).htmlFor).toBe('email')
 	})
 
 	it('контрол сняли — его id от поля снят, for — снова на id поля', () => {
 		const fixture = mountHost(ShownHost)
-		const id = input(fixture, 'so-input input').id
+		const id = input(fixture, '[so-input] input').id
 
 		fixture.componentInstance.shown.set(false)
 		fixture.detectChanges()
@@ -396,7 +396,7 @@ class OwnNameHost {}
 	standalone: true,
 	imports: [TFieldComponent, TLabelComponent, TCheckBoxComponent],
 	template: `<div so-field helper="Можно отказаться в любой момент">
-		<label so-label text="Согласен"><so-check-box /></label>
+		<label so-label text="Согласен"><span so-check-box></span></label>
 	</div>`,
 })
 class LabelledHost {}
@@ -412,7 +412,7 @@ describe('Field · имя контрола', () => {
 
 	it('флажок в подписи Label внутри поля: Label называет его, поле даёт справку', () => {
 		const fixture = mountHost(LabelledHost)
-		const checkbox = input(fixture, 'so-check-box input')
+		const checkbox = input(fixture, '[so-check-box] input')
 
 		expect(fixture.nativeElement.querySelector('.so-field__label')).toBeNull()
 		expect(checkbox.closest('label')?.classList.contains('so-label')).toBe(true)
@@ -426,8 +426,8 @@ describe('Field · имя контрола', () => {
 	standalone: true,
 	imports: [TFieldComponent, TInputComponent, TCheckBoxComponent],
 	template: `<div so-field label="Подпись" helper="Подсказка">
-		<so-input />
-		<so-check-box />
+		<div so-input></div>
+		<span so-check-box></span>
 	</div>`,
 })
 class TwoControlsHost {}
@@ -436,9 +436,9 @@ class TwoControlsHost {}
 	standalone: true,
 	imports: [TFieldComponent, TInputComponent, TCheckBoxComponent, SlotDirective],
 	template: `<div so-field label="Почта" helper="Подсказка">
-		<so-input>
-			<ng-template slot="trailing"><so-check-box /></ng-template>
-		</so-input>
+		<div so-input>
+			<ng-template slot="trailing"><span so-check-box></span></ng-template>
+		</div>
 	</div>`,
 })
 class NestedHost {}
@@ -458,15 +458,15 @@ class NestedHost {}
 	],
 	template: `<div so-field label="Почта" helper="Подсказка">
 		@if (first()) {
-			<so-check-box />
+			<span so-check-box></span>
 		}
-		<so-input>
+		<div so-input>
 			<ng-template slot="trailing">
 				@if (nested()) {
-					<so-switch />
+					<span so-switch></span>
 				}
 			</ng-template>
-		</so-input>
+		</div>
 	</div>`,
 })
 class ReleasedHost {
@@ -479,7 +479,7 @@ class ReleasedHost {
 	imports: [TFieldComponent, TInputComponent],
 	template: `<div so-field label="Почта" helper="Подсказка">
 		@if (shown()) {
-			<so-input />
+			<div so-input></div>
 		}
 	</div>`,
 })
@@ -490,18 +490,18 @@ class LaterHost {
 describe('Field · одно поле — один контрол', () => {
 	it('второй контрол в поле связки не берёт', () => {
 		const fixture = mountHost(TwoControlsHost)
-		const second = input(fixture, 'so-check-box input')
+		const second = input(fixture, '[so-check-box] input')
 
 		expect(second.id).toBe('')
 		expect(second.hasAttribute('aria-describedby')).toBe(false)
-		expect(labelOf(fixture).htmlFor).toBe(input(fixture, 'so-input > input').id)
+		expect(labelOf(fixture).htmlFor).toBe(input(fixture, '[so-input] > input').id)
 	})
 
 	/** Шаблон слота объявлен внутри поля ввода: DI ведёт из него в слой поля ввода. */
 	it('контрол в слоте поля связки не берёт — её берёт само поле', () => {
 		const fixture = mountHost(NestedHost)
-		const field = input(fixture, 'so-input > input')
-		const nested = input(fixture, 'so-check-box input')
+		const field = input(fixture, '[so-input] > input')
+		const nested = input(fixture, '[so-check-box] input')
 
 		expect(labelOf(fixture).htmlFor).toBe(field.id)
 		expect(refsOf(field, 'aria-describedby')).toEqual([node(fixture, '.so-field__helper').id])
@@ -523,7 +523,7 @@ describe('Field · одно поле — один контрол', () => {
 		fixture.componentInstance.nested.set(true)
 		fixture.detectChanges()
 
-		const nested = input(fixture, 'so-switch input')
+		const nested = input(fixture, '[so-switch] input')
 
 		expect(nested.id).toBe('')
 		expect(nested.hasAttribute('aria-describedby')).toBe(false)
@@ -535,7 +535,7 @@ describe('Field · одно поле — один контрол', () => {
 		fixture.componentInstance.shown.set(true)
 		fixture.detectChanges()
 
-		const field = input(fixture, 'so-input input')
+		const field = input(fixture, '[so-input] input')
 
 		expect(labelOf(fixture).htmlFor).toBe(field.id)
 		expect(refsOf(field, 'aria-describedby')).toEqual([node(fixture, '.so-field__helper').id])

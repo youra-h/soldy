@@ -17,17 +17,18 @@ import { setupInput } from './setup.component'
  * TInputComponent — текстовое поле: корень и `<input>` внутри, по сторонам —
  * слоты `leading` и `trailing`.
  *
- * Селектор — элементный, `<so-input>`: у поля атрибуты потребителя делятся
- * между корнем и вложенным `<input>`, и корнем служит сам элемент компонента.
- * Наборы ядра стоят на разных элементах: `attrs` (`dir`) и `dataset`
- * (`data-disabled`, `data-invalid`) — на корне, их кладёт `TComponentBase`
- * (стратегия `'host'`): тема красит коробку поля и подпись поля формы
- * `Field` по корню; `aria` — на `<input>`, его кладёт директива набора
- * (`AttributesDirective`). Нативные `disabled`,
- * `readonly` и `required` поля проводит разметка, поэтому ARIA-дублей ядро
- * рядом с ними не пишет. Статические атрибуты, которые потребитель записал на
- * поле (`autocomplete`), кроме `class` и `style`, база переносит на `<input>`
- * (`control`).
+ * Селектор атрибутный, как у Button: `<div so-input>`. Корень — сам элемент
+ * потребителя, а написанное на нём делится между корнем и вложенным
+ * `<input>`, как у Vue и React. Наборы ядра стоят на разных элементах: `attrs`
+ * (`dir`) и `dataset` (`data-disabled`, `data-invalid`) — на корне, их кладёт
+ * `TComponentBase` (стратегия `'host'`): тема красит коробку поля и подпись
+ * поля формы `Field` по корню; `aria` — на `<input>`, его кладёт директива
+ * набора (`AttributesDirective`). Нативные `disabled`, `readonly` и `required`
+ * поля проводит разметка, поэтому ARIA-дублей ядро рядом с ними не пишет. Всё,
+ * что потребитель записал на поле, кроме `class` и `style`, — `autocomplete`,
+ * `[attr.aria-describedby]`, `(focus)` — доходит до `<input>` (`control`):
+ * статику переносит база, привязки и слушатели — рендерер адаптера
+ * (`provideAttrs()`).
  *
  * Текст поля ведёт ядро: в ядро его несёт плагин ввода, в узел — директива
  * текста поля (`FieldTextDirective`), и только когда текст разошёлся с узлом:
@@ -53,10 +54,14 @@ import { setupInput } from './setup.component'
  * своему содержимому поле опускает пустую связку — в свой слой лифта
  * (`provideElevator()`): контролы в его слотах — его содержимое.
  *
- * Selector: so-input
+ * `div[so-input]` стоит первым: по первому селектору Angular выбирает тег
+ * хоста, когда создаёт компонент сам (`createComponent`), — это тег ядра по
+ * умолчанию.
+ *
+ * Selector: div[so-input], [so-input]
  */
 @Component({
-	selector: 'so-input',
+	selector: 'div[so-input], [so-input]',
 	standalone: true,
 	imports: [
 		NgTemplateOutlet,

@@ -6,11 +6,12 @@
  * ↔ панель», кнопка закрытия, клавиатура по APG Tabs.
  *
  * Своё у Angular — разметка. Корень набора — сам элемент компонента
- * (`<so-tabs>`): атрибуты потребителя у него делятся между корнем и списком
- * табов. Корень панели — элемент потребителя (`<div so-tabs-content
- * slot="content">`), таб — `<so-tabs-item>`. Неактивную панель убрать компонент не может — элемент
- * написал потребитель, — поэтому она скрыта, а её содержимое в документ не
- * вставлено. Слоты со scope и слоты, по которым таб решает, рисовать ли своё
+ * (`<div so-tabs>`): атрибуты потребителя у него делятся между корнем и
+ * списком табов. Корень панели — элемент потребителя (`<div so-tabs-content
+ * slot="content">`), таб — `<div so-tabs-item>`. Неактивную панель убрать
+ * компонент не может — элемент написал потребитель, — поэтому она скрыта, а
+ * её содержимое в документ не вставлено. Слоты со scope и слоты, по которым
+ * таб решает, рисовать ли своё
  * (`close-icon`), — шаблоны; шаблон, заданный набору, рисуется у каждого таба
  * вместо своего, как сниппет у Svelte.
  *
@@ -90,11 +91,11 @@ function panel(): HTMLElement {
 }
 
 /** Корень набора в разметке хоста. */
-const rootOf = (fixture: ComponentFixture<unknown>) => findIn(fixture, 'so-tabs', HTMLElement)
+const rootOf = (fixture: ComponentFixture<unknown>) => findIn(fixture, '[so-tabs]', HTMLElement)
 
 /** Список табов в корне: на нём набор `aria` набора и атрибуты потребителя. */
 const listOf = (fixture: ComponentFixture<unknown>) =>
-	findIn(fixture, 'so-tabs > .so-tabs__list', HTMLDivElement)
+	findIn(fixture, '[so-tabs] > .so-tabs__list', HTMLDivElement)
 
 function click(fixture: ComponentFixture<unknown>, element: HTMLElement): void {
 	element.click()
@@ -117,12 +118,12 @@ function press(fixture: ComponentFixture<unknown>, target: Element, key: string)
 @Component({
 	standalone: true,
 	imports: [TTabsComponent, TTabsItemComponent, TTabsContentComponent],
-	template: `<so-tabs>
-		<so-tabs-item value="a" text="First" active />
-		<so-tabs-item value="b" text="Second" />
+	template: `<div so-tabs>
+		<div so-tabs-item value="a" text="First" active></div>
+		<div so-tabs-item value="b" text="Second"></div>
 		<div so-tabs-content slot="content" value="a">Панель A</div>
 		<div so-tabs-content slot="content" value="b">Панель B</div>
-	</so-tabs>`,
+	</div>`,
 })
 class Harness {}
 
@@ -189,14 +190,14 @@ describe('показ панели по активному табу', () => {
 		@Component({
 			standalone: true,
 			imports: [TTabsComponent, TTabsItemComponent, TTabsContentComponent],
-			template: `<so-tabs>
-				<so-tabs-item value="a" text="First" [active]="!withB()" />
+			template: `<div so-tabs>
+				<div so-tabs-item value="a" text="First" [active]="!withB()"></div>
 				@if (withB()) {
-					<so-tabs-item value="b" text="Second" active />
+					<div so-tabs-item value="b" text="Second" active></div>
 				}
 				<div so-tabs-content slot="content" value="a">Панель A</div>
 				<div so-tabs-content slot="content" value="b">Панель B</div>
-			</so-tabs>`,
+			</div>`,
 		})
 		class LateHost {
 			readonly withB = signal(false)
@@ -219,10 +220,10 @@ describe('показ панели по активному табу', () => {
 		@Component({
 			standalone: true,
 			imports: [TTabsComponent, TTabsItemComponent, TTabsContentComponent],
-			template: `<so-tabs>
-				<so-tabs-item value="a" text="First" active />
+			template: `<div so-tabs>
+				<div so-tabs-item value="a" text="First" active></div>
 				<div so-tabs-content value="a">Панель A</div>
-			</so-tabs>`,
+			</div>`,
 		})
 		class InsideHost {}
 
@@ -277,9 +278,9 @@ describe('разметка, на которую опирается тема', ()
 		@Component({
 			standalone: true,
 			imports: [TTabsComponent, TTabsContentComponent],
-			template: `<so-tabs [items]="items">
+			template: `<div so-tabs [items]="items">
 				<div so-tabs-content slot="content" value="a">Панель A</div>
-			</so-tabs>`,
+			</div>`,
 		})
 		class ItemsHost {
 			readonly items = ITEMS
@@ -298,7 +299,7 @@ describe('разметка, на которую опирается тема', ()
 		@Component({
 			standalone: true,
 			imports: [TTabsComponent],
-			template: `<so-tabs [items]="items" [disabled]="off()"></so-tabs>`,
+			template: `<div so-tabs [items]="items" [disabled]="off()"></div>`,
 		})
 		class DisabledHost {
 			readonly items = ITEMS
@@ -326,11 +327,11 @@ describe('смена value у панели', () => {
 	@Component({
 		standalone: true,
 		imports: [TTabsComponent, TTabsItemComponent, TTabsContentComponent],
-		template: `<so-tabs>
-			<so-tabs-item value="a" text="First" active />
-			<so-tabs-item value="b" text="Second" />
+		template: `<div so-tabs>
+			<div so-tabs-item value="a" text="First" active></div>
+			<div so-tabs-item value="b" text="Second"></div>
 			<div so-tabs-content slot="content" [value]="value()">Панель</div>
-		</so-tabs>`,
+		</div>`,
 	})
 	class ValueHost {
 		readonly value = signal('a')
@@ -440,10 +441,10 @@ describe('таб из разметки', () => {
 		@Component({
 			standalone: true,
 			imports: [TTabsComponent, TTabsItemComponent],
-			template: `<so-tabs>
-				<so-tabs-item value="a" text="A" active />
-				<so-tabs-item value="b" text="B" (click)="clicks = clicks + 1" />
-			</so-tabs>`,
+			template: `<div so-tabs>
+				<div so-tabs-item value="a" text="A" active></div>
+				<div so-tabs-item value="b" text="B" (click)="clicks = clicks + 1"></div>
+			</div>`,
 		})
 		class ClickHost {
 			clicks = 0
@@ -461,16 +462,17 @@ describe('таб из разметки', () => {
 		@Component({
 			standalone: true,
 			imports: [TTabsComponent, TTabsItemComponent],
-			template: `<so-tabs>
-				<so-tabs-item
+			template: `<div so-tabs>
+				<div
+					so-tabs-item
 					value="a"
 					text="A"
 					active
 					class="mine"
 					style="color: red"
 					title="Раздел"
-				/>
-			</so-tabs>`,
+				></div>
+			</div>`,
 		})
 		class SplitHost {}
 
@@ -486,14 +488,14 @@ describe('таб из разметки', () => {
 		@Component({
 			standalone: true,
 			imports: [TTabsComponent, TTabsItemComponent, SlotDirective],
-			template: `<so-tabs>
-				<so-tabs-item value="a" text="A" active>
+			template: `<div so-tabs>
+				<div so-tabs-item value="a" text="A" active>
 					<ng-template slot="default" let-text="text" let-active="active"
 						>{{ text }}:{{ active }}</ng-template
 					>
-				</so-tabs-item>
-				<so-tabs-item value="b" text="B" />
-			</so-tabs>`,
+				</div>
+				<div so-tabs-item value="b" text="B"></div>
+			</div>`,
 		})
 		class DefaultHost {}
 
@@ -510,7 +512,7 @@ describe('таб из разметки', () => {
 		@Component({
 			standalone: true,
 			imports: [TTabsComponent, SlotDirective],
-			template: `<so-tabs [items]="items">
+			template: `<div so-tabs [items]="items">
 				<ng-template slot="leading"><i class="head">до</i></ng-template>
 				<ng-template slot="trailing"><i class="tail">после</i></ng-template>
 				<ng-template slot="item" let-item="item">[{{ item.text }}]</ng-template>
@@ -520,7 +522,7 @@ describe('таб из разметки', () => {
 				<ng-template slot="item-trailing" let-item="item"
 					><s class="trail">{{ item.value }}</s></ng-template
 				>
-			</so-tabs>`,
+			</div>`,
 		})
 		class RelayHost {
 			readonly items = ITEMS.slice(0, 2)
@@ -552,11 +554,11 @@ describe('таб из разметки', () => {
 		@Component({
 			standalone: true,
 			imports: [TTabsComponent, SlotDirective],
-			template: `<so-tabs [items]="items">
+			template: `<div so-tabs [items]="items">
 				<ng-template slot="item" let-item="item" let-text="text" let-active="active"
 					>{{ item.value }}:{{ text }}:{{ active }}</ng-template
 				>
-			</so-tabs>`,
+			</div>`,
 		})
 		class ScopeHost {
 			readonly items = ITEMS.slice(0, 2)
@@ -579,13 +581,13 @@ describe('таб из разметки', () => {
 		@Component({
 			standalone: true,
 			imports: [TTabsComponent, SlotDirective],
-			template: `<so-tabs closable [items]="items">
+			template: `<div so-tabs closable [items]="items">
 				<ng-template slot="item-close-icon" let-item="item">
 					@if (item.value === 'a') {
 						<b class="probe">×</b>
 					}
 				</ng-template>
-			</so-tabs>`,
+			</div>`,
 		})
 		class CloseIconHost {
 			readonly items = ITEMS.slice(0, 2)
@@ -608,7 +610,7 @@ describe('таб из разметки', () => {
 		@Component({
 			standalone: true,
 			imports: [TTabsComponent],
-			template: `<so-tabs [items]="items"></so-tabs>`,
+			template: `<div so-tabs [items]="items"></div>`,
 		})
 		class BareHost {
 			readonly items = ITEMS
@@ -625,7 +627,7 @@ describe('таб из разметки', () => {
 		@Component({
 			standalone: true,
 			imports: [TTabsComponent],
-			template: `<so-tabs [items]="items" title="Разделы"></so-tabs>`,
+			template: `<div so-tabs [items]="items" title="Разделы"></div>`,
 		})
 		class AttributesHost {
 			readonly items = ITEMS
@@ -650,7 +652,8 @@ describe('таб из разметки', () => {
 		@Component({
 			standalone: true,
 			imports: [TTabsComponent],
-			template: `<so-tabs
+			template: `<div
+				so-tabs
 				[items]="items"
 				direction="rtl"
 				aria-label="Разделы"
@@ -658,7 +661,7 @@ describe('таб из разметки', () => {
 				data-testid="tabs"
 				class="mine"
 				style="color: red"
-			></so-tabs>`,
+			></div>`,
 		})
 		class NameHost {
 			readonly items = ITEMS
@@ -687,10 +690,10 @@ describe('кнопка закрытия: разметка', () => {
 	@Component({
 		standalone: true,
 		imports: [TTabsComponent, TTabsItemComponent],
-		template: `<so-tabs closable>
-			<so-tabs-item value="settings" text="Настройки" active />
-			<so-tabs-item value="mail" text="Почта" />
-		</so-tabs>`,
+		template: `<div so-tabs closable>
+			<div so-tabs-item value="settings" text="Настройки" active></div>
+			<div so-tabs-item value="mail" text="Почта"></div>
+		</div>`,
 	})
 	class ClosableHost {}
 
@@ -730,7 +733,7 @@ describe('кнопка закрытия: разметка', () => {
 		@Component({
 			standalone: true,
 			imports: [TTabsComponent],
-			template: `<so-tabs closable [items]="items"></so-tabs>`,
+			template: `<div so-tabs closable [items]="items"></div>`,
 		})
 		class ItemsHost {
 			readonly items = ITEMS
@@ -749,7 +752,7 @@ describe('кнопка закрытия: разметка', () => {
 		@Component({
 			standalone: true,
 			imports: [TTabsComponent, TTabsItemComponent],
-			template: `<so-tabs><so-tabs-item value="a" text="A" active /></so-tabs>`,
+			template: `<div so-tabs><div so-tabs-item value="a" text="A" active></div></div>`,
 		})
 		class PlainHost {}
 
@@ -763,11 +766,11 @@ describe('кнопка закрытия: разметка', () => {
 		@Component({
 			standalone: true,
 			imports: [TTabsComponent, TTabsItemComponent, SlotDirective],
-			template: `<so-tabs closable>
-				<so-tabs-item value="a" text="A" active>
+			template: `<div so-tabs closable>
+				<div so-tabs-item value="a" text="A" active>
 					<ng-template slot="close-icon"><b class="custom">×</b></ng-template>
-				</so-tabs-item>
-			</so-tabs>`,
+				</div>
+			</div>`,
 		})
 		class CloseIconHost {}
 
@@ -785,7 +788,7 @@ describe('кнопка закрытия: поведение', () => {
 		@Component({
 			standalone: true,
 			imports: [TTabsComponent],
-			template: `<so-tabs closable [items]="items"></so-tabs>`,
+			template: `<div so-tabs closable [items]="items"></div>`,
 		})
 		class ItemsHost {
 			readonly items = ITEMS
@@ -810,10 +813,15 @@ describe('кнопка закрытия: поведение', () => {
 		@Component({
 			standalone: true,
 			imports: [TTabsComponent, TTabsItemComponent],
-			template: `<so-tabs closable (soActionPress)="setPresses = setPresses + 1">
-				<so-tabs-item value="a" text="A" active />
-				<so-tabs-item value="b" text="B" (soActionPress)="tabPresses = tabPresses + 1" />
-			</so-tabs>`,
+			template: `<div so-tabs closable (soActionPress)="setPresses = setPresses + 1">
+				<div so-tabs-item value="a" text="A" active></div>
+				<div
+					so-tabs-item
+					value="b"
+					text="B"
+					(soActionPress)="tabPresses = tabPresses + 1"
+				></div>
+			</div>`,
 		})
 		class PressHost {
 			setPresses = 0
@@ -844,9 +852,9 @@ describe('кнопка закрытия: поведение', () => {
 		@Component({
 			standalone: true,
 			imports: [TTabsComponent, TTabsItemComponent],
-			template: `<so-tabs closable size="lg">
-				<so-tabs-item value="a" text="A" active />
-			</so-tabs>`,
+			template: `<div so-tabs closable size="lg">
+				<div so-tabs-item value="a" text="A" active></div>
+			</div>`,
 		})
 		class SizeHost {}
 
@@ -863,9 +871,9 @@ describe('кнопка закрытия: поведение', () => {
 		@Component({
 			standalone: true,
 			imports: [TTabsComponent, TTabsItemComponent],
-			template: `<so-tabs closable>
-				<so-tabs-item value="a" text="A" active [closable]="own()" />
-			</so-tabs>`,
+			template: `<div so-tabs closable>
+				<div so-tabs-item value="a" text="A" active [closable]="own()"></div>
+			</div>`,
 		})
 		class OwnHost {
 			readonly own = signal<boolean | undefined>(false)
@@ -891,11 +899,11 @@ describe('у выключенного таба кнопки закрытия н�
 	@Component({
 		standalone: true,
 		imports: [TTabsComponent, TTabsItemComponent],
-		template: `<so-tabs closable [disabled]="setOff()">
-			<so-tabs-item value="a" text="A" active />
-			<so-tabs-item value="b" text="B" disabled />
-			<so-tabs-item value="c" text="C" [disabled]="tabOff()" />
-		</so-tabs>`,
+		template: `<div so-tabs closable [disabled]="setOff()">
+			<div so-tabs-item value="a" text="A" active></div>
+			<div so-tabs-item value="b" text="B" disabled></div>
+			<div so-tabs-item value="c" text="C" [disabled]="tabOff()"></div>
+		</div>`,
 	})
 	class DisabledHost {
 		readonly tabOff = signal(false)
@@ -947,15 +955,16 @@ describe('клавиатура', () => {
 	@Component({
 		standalone: true,
 		imports: [TTabsComponent, TTabsItemComponent],
-		template: `<so-tabs
+		template: `<div
+			so-tabs
 			[closable]="closable()"
 			[orientation]="orientation()"
 			aria_label="Разделы"
 		>
-			<so-tabs-item value="a" text="A" />
-			<so-tabs-item value="b" text="B" active />
-			<so-tabs-item value="c" text="C" />
-		</so-tabs>`,
+			<div so-tabs-item value="a" text="A"></div>
+			<div so-tabs-item value="b" text="B" active></div>
+			<div so-tabs-item value="c" text="C"></div>
+		</div>`,
 	})
 	class AbcHost {
 		readonly closable = signal(false)
@@ -1025,7 +1034,7 @@ describe('клавиатура', () => {
 		@Component({
 			standalone: true,
 			imports: [TTabsComponent],
-			template: `<so-tabs closable [items]="items"></so-tabs>`,
+			template: `<div so-tabs closable [items]="items"></div>`,
 		})
 		class DeleteHost {
 			readonly items = [

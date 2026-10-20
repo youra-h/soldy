@@ -91,30 +91,42 @@
  *   `teleportRoot` (`teleport.ts`) после отрисовки. Пока корень не в цели и не
  *   на месте — на сервере, до переноса, без цели, — слоя нет (`placed`): база
  *   корень прячет и классов, наборов и стиля ядра на нём не рисует;
- * - у поля (`TRootSpec.control` — Input, CheckBox, Switch, радио) атрибуты
- *   потребителя делятся между корнем и вложенным `<input>` (`#control` в
- *   шаблоне), как у Vue и React, у элемента коллекции (ListBox, Tabs,
- *   Accordion) — между корнем и строкой, а у самих ListBox и Tabs — между
- *   корнем и узлом списка с ролью (`listbox`, `tablist`): статические
- *   атрибуты, которые потребитель записал на компонент в разметке, кроме
- *   `class`, `style`, входов и меток soldy (`so-*` — селектор радио), база
- *   переносит с корня на `#control`. Привязки `[attr.x]` и слушатели
- *   потребителя остаются на корне: их Angular ставит на элемент, который
- *   написан в разметке, и перенести их нечем. Всплывающие события поля
- *   (`input`, `keydown`) доходят до корня сами, а `focus` и `blur` не
- *   всплывают — слушатель на корне их не получит.
+ * - у поля (`TRootSpec.control` — Input, Textarea, CheckBox, Switch, радио)
+ *   атрибуты потребителя делятся между корнем и вложенным `<input>`
+ *   (`#control` в шаблоне), как у Vue и React, у элемента коллекции (ListBox,
+ *   Tabs, Accordion) — между корнем и строкой, а у самих ListBox и Tabs —
+ *   между корнем и узлом списка с ролью (`listbox`, `tablist`). Класс и стиль
+ *   остаются на корне, а остальное, что потребитель написал на компоненте,
+ *   доходит до `#control` двумя путями. Статические атрибуты разметки Angular
+ *   ставит на корень ещё до конструктора, и их база переносит сама
+ *   (`_moveAttributes`). Привязки (`[attr.x]`, `[title]`) и слушатели
+ *   (`(focus)`) Angular отдаёт рендереру шаблона потребителя, и их доносит
+ *   рендерер адаптера (`provideAttrs()`): база регистрирует хост в его реестре
+ *   и отдаёт ему узел (`_forward`). Какие атрибуты остаются на корне, у обоих
+ *   путей одно правило (`staysOnHost`): класс, стиль, служебные атрибуты
+ *   Angular, метки soldy (`so-*` — селектор радио); остаются и входы, а у
+ *   рендерера ещё выходы `so*`, события движения и синтетика старых анимаций
+ *   (`attrs/host.ts`). Без `provideAttrs()` такой компонент бросает ошибку:
+ *   молча он работал бы наполовину — статика на поле, привязки и слушатели на
+ *   корне.
  *
  * Корень внутри обёртки (`'wrapped'`) — у таблицы: элемент потребителя
- * (`<so-table>`) — окно вокруг корня, а корень — элемент шаблона `#root`
+ * (`<div so-table>`) — окно вокруг корня, а корень — элемент шаблона `#root`
  * (`table`), как `div.so-table__viewport` вокруг `table` у Vue и React.
  * Атрибуты потребителя делятся, как у поля: класс и стиль потребителя стоят
  * на обёртке сами, атрибуты-входы база снимает, скрытие — та же привязка
- * `[style.display]`, а остальные статические атрибуты разметки база
- * переносит на корень, где роль и имя таблицы; свой класс окна ставит
- * компонент статикой хоста. Тег обёртки ядру не уходит: тег корня — тег
- * элемента шаблона, умолчание ядра (`table`). Корню — то, что ядро пишет на
- * корень: классы, наборы и стиль теми же эффектами, что у корня-хоста, и
- * `TElementPlugin` после отрисовки, как у `'view'`.
+ * `[style.display]`, а остальное, что потребитель написал на таблице, —
+ * статику и привязки со слушателями — база и рендерер адаптера доносят до
+ * корня, где роль и имя таблицы; свой класс окна ставит компонент статикой
+ * хоста. Тег обёртки ядру не уходит: тег корня — тег элемента шаблона,
+ * умолчание ядра (`table`). Корню — то, что ядро пишет на корень: классы,
+ * наборы и стиль теми же эффектами, что у корня-хоста, и `TElementPlugin`
+ * после отрисовки, как у `'view'`.
+ *
+ * Хост с шаблоном — элемент, который держит содержимое: на пустом элементе
+ * HTML (`<input so-input>`) и на поле с текстом (`<textarea so-textarea>`)
+ * атрибутный селектор тоже сработал бы, а шаблон в такой хост не отрисуется.
+ * Поэтому у `'host'` и `'wrapped'` такой хост — ошибка (`assertTemplateHost`).
  *
  * Сборка (`createBinding`) идёт в контексте инъекции компонента
  * (`runInInjectionContext`): обёртка сборки
@@ -146,6 +158,7 @@
  */
 
 import {
+	DestroyRef,
 	Directive,
 	ElementRef,
 	EventEmitter,
@@ -169,6 +182,8 @@ import {
 } from '@angular/core'
 import type { IEntity } from '@soldy-ui/core'
 import type { TStateSnapshot } from '@soldy-ui/setup'
+import { staysOnHost } from '../attrs/host'
+import { TForwardRegistry } from '../attrs/registry'
 import {
 	TElementAttributes,
 	applyClasses,
@@ -196,15 +211,14 @@ import type { TBinding, TBindingState } from './useAdapter'
  *   привязка разовая, через инжектированный `ElementRef`;
  * - `'view'` — корень в шаблоне компонента, помечен `#root` и может
  *   пересоздаваться: сигнальный `viewChild('root')` переустанавливает связь
- *   при каждом пересоздании узла. Так устроен компонент, чей корень не может
- *   быть элементом потребителя, — например поле, у которого атрибуты
- *   потребителя делятся между корнем и вложенным `<input>`. Шаблон без
- *   `#root` — компонент без корня (`so-component`, `so-virtual`);
+ *   при каждом пересоздании узла. Шаблон без `#root` — компонент без корня
+ *   (`so-component`, `so-virtual`, `so-drag-and-drop`): своего бокса у него
+ *   нет, и селектор у него элементный;
  * - `'wrapped'` — корень внутри обёртки: хост — обёртка, корень — элемент
- *   шаблона `#root` в ней (`<so-table>` и `table`). Обёртке база снимает
+ *   шаблона `#root` в ней (`<div so-table>` и `table`). Обёртке база снимает
  *   атрибуты-входы и прячет её по `visible` и `rendered`, класс и стиль
- *   потребителя остаются на ней, а остальные статические атрибуты разметки
- *   переезжают на корень, как на поле у `control`; тег обёртки ядру не
+ *   потребителя остаются на ней, а остальное, что потребитель на ней написал,
+ *   переезжает на корень, как на поле у `control`; тег обёртки ядру не
  *   уходит. Корню — классы, все три набора и стиль ядра, как корню-хосту без
  *   настроек, и привязка к `TElementPlugin`, как у `'view'`: связь идёт за
  *   узлом `#root`, и память раскладки у нового узла начинается пустой.
@@ -240,10 +254,12 @@ import type { TBinding, TBindingState } from './useAdapter'
  *   (`AttributesDirective` в шаблоне), а `dataset` — на корне, где его читает
  *   тема, как у остальных адаптеров;
  * - `control` — у корня есть вложенное поле, элемент шаблона `#control`
- *   (`<input>` у Input, CheckBox, Switch и радио, строка — у элемента
- *   коллекции, узел списка с ролью — у ListBox и Tabs), и статические
- *   атрибуты, которые потребитель записал на компонент, кроме `class`,
- *   `style`, входов и меток soldy (`so-*`), переезжают на него.
+ *   (`<input>` у Input, CheckBox, Switch и радио, `<textarea>` у Textarea,
+ *   строка — у элемента коллекции, узел списка с ролью — у ListBox и Tabs), и
+ *   всё, что потребитель записал на компонент, кроме того, что остаётся на
+ *   корне (`staysOnHost`, входы, выходы `so*`), переезжает на него: статику
+ *   переносит база, привязки и слушатели — рендерер адаптера
+ *   (`provideAttrs()`).
  */
 export type TRootSpec =
 	| { readonly strategy: 'view' }
@@ -312,23 +328,60 @@ const NO_STATE: TStateSnapshot = Object.freeze({})
 const ROOT_SETS: readonly TRootSet[] = ['attrs', 'aria', 'dataset']
 
 /**
- * Атрибуты элемента потребителя, которые не переезжают на вложенное поле
- * (`TRootSpec.control`) и на корень внутри обёртки (`'wrapped'`): класс и
- * стиль — вид корня или окна, как у `useSplitAttrs` Vue, и `ng-version` —
- * пометка Angular на корневом компоненте приложения. Её Angular записывает в
- * разметку хоста сам, и для `HostAttributeToken` она выглядит атрибутом из
- * разметки, хотя потребитель её не писал: компонент бывает и корневым —
- * созданным `createComponent` или `TestBed`.
+ * Элементы, в которые шаблон компонента не отрисуется: пустые элементы HTML —
+ * у них нет детей — и поля, у которых дети — текст (`textarea`) или опции
+ * (`select`). Атрибутный селектор совпадёт и с ними: `<input so-input>`,
+ * `<textarea so-textarea>`.
  */
-const ROOT_ATTRIBUTES: ReadonlySet<string> = new Set(['class', 'style', 'ng-version'])
+const NO_TEMPLATE_HOSTS: ReadonlySet<string> = new Set([
+	'area',
+	'base',
+	'br',
+	'col',
+	'embed',
+	'hr',
+	'img',
+	'input',
+	'link',
+	'meta',
+	'param',
+	'source',
+	'track',
+	'wbr',
+	'textarea',
+	'select',
+])
 
 /**
- * Метки soldy — атрибуты с префиксом `so-`: селектор компонента
- * (`<label so-radio-group-item>`) и директивы адаптера. Они метят элемент для
- * Angular, узлу шаблона они ни к чему, и на него не переезжают: у радио
- * селектор атрибутный, а атрибуты потребителя делятся, как у поля.
+ * Хост компонента с шаблоном (`'host'`, `'wrapped'`) держит содержимое, иначе
+ * ошибка: Angular положил бы шаблон в элемент, которого документ не покажет,
+ * и компонент молча остался бы пустым.
  */
-const MARKER_PREFIX = 'so-'
+function assertTemplateHost(host: Element): void {
+	if (!NO_TEMPLATE_HOSTS.has(host.localName)) return
+
+	throw new Error(
+		`@soldy-ui/angular: <${host.localName}> не может быть корнем компонента — его шаблон в этот элемент не отрисуется. Пишите компонент на элементе, который держит содержимое: по умолчанию это тег из селектора компонента (<div so-input>, <span so-check-box>).`,
+	)
+}
+
+/**
+ * Реестр рендерера адаптера (`provideAttrs()`) для хоста, который делит
+ * написанное на нём с внутренним узлом (`TRootSpec.control`, `'wrapped'`).
+ * Проверяется подмена рендерера, а не найденный реестр: `provideAttrs()` в
+ * провайдерах маршрута реестр даст, а рендерер приложения не подменит. Без
+ * подмены — ошибка, всегда, а не только при разработке: молча компонент
+ * работал бы наполовину — статика на узле, привязки и слушатели на корне.
+ */
+function forwardRegistry(host: Element): TForwardRegistry {
+	const registry = inject(TForwardRegistry, { optional: true })
+
+	if (registry?.served) return registry
+
+	throw new Error(
+		`@soldy-ui/angular: компонент на <${host.localName}> отдаёт привязки ([attr.x], [title]) и слушатели ((focus)) своему внутреннему узлу, а донести их может только provideAttrs(). Подключите provideAttrs() из @soldy-ui/angular в providers приложения (appConfig) — и в браузере, и на сервере: в провайдерах маршрута или компонента он рендерер не подменит.`,
+	)
+}
 
 @Directive({
 	standalone: true,
@@ -505,23 +558,37 @@ export abstract class TComponentBase<
 			// `Element`, и без явного параметра несовпадение типов здесь не видно.
 			const host = inject<ElementRef<Element>>(ElementRef).nativeElement
 
+			assertTemplateHost(host)
+
+			// Без рендерера адаптера поле не собирается — до всего остального
+			const registry = root.control ? forwardRegistry(host) : null
+
 			this._host = host
 			this._hides = root.hides ?? true
 			this._shownBy = root.shownBy
 			this.placed = root.teleport ? this._teleportHost(host, root.teleport) : IN_PLACE
 			this._bindHost(host, root)
 
-			// Поле — узел шаблона `#control`
-			const control = () => this._control()?.nativeElement ?? null
+			if (registry) {
+				// Поле — узел шаблона `#control`
+				const control = () => this._control()?.nativeElement ?? null
 
-			if (root.control) this._moveAttributes(host, control)
+				this._moveAttributes(host, control)
+				this._forward(registry, host, control)
+			}
 		} else if (root.strategy === 'wrapped') {
+			const wrapper = inject<ElementRef<Element>>(ElementRef).nativeElement
+
+			assertTemplateHost(wrapper)
+
+			const registry = forwardRegistry(wrapper)
+
 			// Хост — обёртка корня: её тег ядру не уходит, а прячет её видимость
 			this._host = null
 			this._hides = true
 			this._shownBy = undefined
 			this.placed = IN_PLACE
-			this._bindWrapped(inject<ElementRef<Element>>(ElementRef).nativeElement)
+			this._bindWrapped(wrapper, registry)
 		} else {
 			this._host = null
 			this._hides = false
@@ -621,10 +688,11 @@ export abstract class TComponentBase<
 	/**
 	 * Корень внутри обёртки (`'wrapped'`): хост — обёртка, корень — элемент
 	 * шаблона `#root`. С обёртки база снимает атрибуты-входы, как с корня-хоста,
-	 * класс и стиль на ней — потребителя, а остальные статические атрибуты его
-	 * разметки база переносит на корень (`_moveAttributes`), где роль и имя
-	 * компонента. Корень привязан к TElementPlugin, как у `'view'`, — после
-	 * отрисовки и за узлом `#root`, — а классы, наборы и стиль ядра база
+	 * класс и стиль на ней — потребителя, а остальное, что потребитель на ней
+	 * написал, доходит до корня, где роль и имя компонента: статику база
+	 * переносит сама (`_moveAttributes`), привязки и слушатели — рендерер
+	 * адаптера (`_forward`). Корень привязан к TElementPlugin, как у `'view'`, —
+	 * после отрисовки и за узлом `#root`, — а классы, наборы и стиль ядра база
 	 * раскладывает на него теми же эффектами, что на корень-хост. Узла `#root`
 	 * до первой отрисовки нет: эффекты переноса и раскладки ждут его запроса.
 	 *
@@ -635,12 +703,13 @@ export abstract class TComponentBase<
 	 * конструктора: `HostAttributeToken` разрешается только там, а эффектам
 	 * нужен injection context.
 	 */
-	private _bindWrapped(wrapper: Element): void {
+	private _bindWrapped(wrapper: Element, registry: TForwardRegistry): void {
 		const root = () => this._root()?.nativeElement ?? null
 
 		this._clearInputAttributes(wrapper)
 		this._bindView()
 		this._moveAttributes(wrapper, root)
+		this._forward(registry, wrapper, root)
 		this._paint(root, WRAPPED_PAINT)
 	}
 
@@ -719,11 +788,15 @@ export abstract class TComponentBase<
 	 * `'wrapped'`): статические атрибуты, которые потребитель записал на
 	 * компонент, переезжают с его элемента `host` на узел шаблона `target()`,
 	 * как атрибуты снаружи у Vue и React, — на вложенное поле `#control` или на
-	 * корень внутри обёртки `#root`. На элементе остаются класс и стиль — вид
-	 * корня или окна, — пометки Angular (`ROOT_ATTRIBUTES`) и метки soldy с
-	 * префиксом `so-` — селектор радио (`<label so-radio-group-item>`) и
-	 * директивы адаптера; атрибуты-входы база уже сняла
-	 * (`_clearInputAttributes`).
+	 * корень внутри обёртки `#root`. На элементе остаётся то же, что оставляет
+	 * на нём рендерер адаптера (`staysOnHost`): класс и стиль — вид корня или
+	 * окна, — служебные атрибуты Angular и метки soldy с префиксом `so-` —
+	 * селектор (`<label so-radio-group-item>`) и директивы адаптера;
+	 * атрибуты-входы база уже сняла (`_clearInputAttributes`). Пометку
+	 * `ng-version` Angular пишет в разметку хоста корневого компонента сам, и
+	 * для `HostAttributeToken` она выглядит атрибутом из разметки, хотя
+	 * потребитель её не писал: компонент бывает и корневым — созданным
+	 * `createComponent` или `TestBed`.
 	 *
 	 * Чей атрибут, база узнаёт не по узлу, а по скомпилированной разметке
 	 * потребителя (`HostAttributeToken`): на узле стоит и то, чего потребитель
@@ -746,7 +819,7 @@ export abstract class TComponentBase<
 		const moved = new Map<string, string>()
 
 		for (const name of host.getAttributeNames()) {
-			if (ROOT_ATTRIBUTES.has(name) || name.startsWith(MARKER_PREFIX)) continue
+			if (staysOnHost(name)) continue
 
 			const value = inject(new HostAttributeToken(name), { optional: true })
 
@@ -766,6 +839,33 @@ export abstract class TComponentBase<
 
 			for (const [name, value] of moved) node.setAttribute(name, value)
 		})
+	}
+
+	/**
+	 * Привязки и слушатели потребителя на хосте — узлу шаблона `target()`
+	 * (`TRootSpec.control` у корня-хоста и `'wrapped'`). Их Angular отдаёт
+	 * рендереру шаблона потребителя, а рендерер адаптера (`provideAttrs()`)
+	 * отдаёт команду на хост, зарегистрированный здесь, его записи в реестре:
+	 * та ставит значение на узел, а пока узла нет — держит. Узел записи отдаёт
+	 * обычный эффект, а не эффект после отрисовки: привязки нужны и разметке
+	 * сервера. Заводится после переноса статики (`_moveAttributes`), и
+	 * привязка на имени статического атрибута главнее него, как на обычном
+	 * элементе, — и раньше раскладки корня внутри обёртки: имя, которое
+	 * называет ядро, на первой отрисовке остаётся за ядром, как у `[attr.x]` на
+	 * корне-хосте. Снятый компонент снимает хост с реестра и слушатели — с узла.
+	 *
+	 * Атрибут с именем входа и `ctrl` остаётся на хосте: это запись входа, а не
+	 * атрибут поля (`_clearInputAttributes`).
+	 */
+	private _forward(
+		registry: TForwardRegistry,
+		host: Element,
+		target: () => Element | null,
+	): void {
+		const forwarded = registry.register(host, ['ctrl', ...this._inputNames])
+
+		effect(() => forwarded.attach(target()))
+		inject(DestroyRef).onDestroy(() => forwarded.release())
 	}
 
 	/**

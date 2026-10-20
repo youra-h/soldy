@@ -6,7 +6,7 @@
  * правок.
  *
  * Своё у Angular — разметка. Корень — сам элемент компонента
- * (`<so-list-box>`), элемент — `<so-list-box-item>`: атрибуты потребителя у
+ * (`<div so-list-box>`), элемент — `<div so-list-box-item>`: атрибуты потребителя у
  * списка делятся между корнем и узлом списка, у элемента — между корнем и
  * строкой. Входы фасада (`items`, `mode`,
  * `engine`, `selected` элемента) — входы того же элемента. Слоты со scope —
@@ -66,11 +66,11 @@ const selection = () => rows().map((row) => row.getAttribute('aria-selected'))
 const listItems = () => [...document.querySelectorAll('.so-list-box-item')]
 
 /** Корень списка в разметке хоста. */
-const rootOf = (fixture: ComponentFixture<unknown>) => findIn(fixture, 'so-list-box', HTMLElement)
+const rootOf = (fixture: ComponentFixture<unknown>) => findIn(fixture, '[so-list-box]', HTMLElement)
 
 /** Узел списка в корне: на нём набор `aria` списка и остановка Tab. */
 const listOf = (fixture: ComponentFixture<unknown>) =>
-	findIn(fixture, 'so-list-box > .so-list-box__list', HTMLDivElement)
+	findIn(fixture, '[so-list-box] > .so-list-box__list', HTMLDivElement)
 
 function click(fixture: ComponentFixture<unknown>, element: HTMLElement): void {
 	element.click()
@@ -93,14 +93,15 @@ type TEngineView = { extensions: { batch: { items: readonly object[] } } }
 @Component({
 	standalone: true,
 	imports: [TListBoxComponent, TListBoxItemComponent],
-	template: `<so-list-box
+	template: `<div
+		so-list-box
 		mode="multiple"
 		[disabled]="listOff()"
 		(soChangeValue)="changes.push($event)"
 	>
-		<so-list-box-item value="a" text="A" />
-		<so-list-box-item value="b" text="B" [disabled]="itemOff()" />
-	</so-list-box>`,
+		<div so-list-box-item value="a" text="A"></div>
+		<div so-list-box-item value="b" text="B" [disabled]="itemOff()"></div>
+	</div>`,
 })
 class Harness {
 	readonly itemOff = signal(false)
@@ -112,11 +113,11 @@ describe('выбор', () => {
 	@Component({
 		standalone: true,
 		imports: [TListBoxComponent, TListBoxItemComponent],
-		template: `<so-list-box (soEngineCreate)="engines.push($event)">
-			<so-list-box-item value="a" text="A" />
-			<so-list-box-item value="b" text="B" />
-			<so-list-box-item value="c" text="C" />
-		</so-list-box>`,
+		template: `<div so-list-box (soEngineCreate)="engines.push($event)">
+			<div so-list-box-item value="a" text="A"></div>
+			<div so-list-box-item value="b" text="B"></div>
+			<div so-list-box-item value="c" text="C"></div>
+		</div>`,
 	})
 	class OrderHost {
 		readonly engines: TEngineView[] = []
@@ -237,11 +238,11 @@ describe('выбор', () => {
 		@Component({
 			standalone: true,
 			imports: [TListBoxComponent, TListBoxItemComponent],
-			template: `<so-list-box>
+			template: `<div so-list-box>
 				<input slot="header" class="so-test-header" />
-				<so-list-box-item value="a" text="A" />
+				<div so-list-box-item value="a" text="A"></div>
 				<button slot="footer" class="so-test-footer">Готово</button>
-			</so-list-box>`,
+			</div>`,
 		})
 		class SlotsHost {}
 
@@ -274,15 +275,16 @@ describe('атрибуты потребителя — узлу списка', ()
 		@Component({
 			standalone: true,
 			imports: [TListBoxComponent, TListBoxItemComponent],
-			template: `<so-list-box
+			template: `<div
+				so-list-box
 				aria-label="Города"
 				id="cities"
 				data-testid="list"
 				class="mine"
 				style="color: red"
 			>
-				<so-list-box-item value="a" text="A" />
-			</so-list-box>`,
+				<div so-list-box-item value="a" text="A"></div>
+			</div>`,
 		})
 		class NameHost {}
 
@@ -306,9 +308,9 @@ describe('атрибуты потребителя — узлу списка', ()
 		@Component({
 			standalone: true,
 			imports: [TListBoxComponent, TListBoxItemComponent],
-			template: `<so-list-box tabindex="-1">
-				<so-list-box-item value="a" text="A" />
-			</so-list-box>`,
+			template: `<div so-list-box tabindex="-1">
+				<div so-list-box-item value="a" text="A"></div>
+			</div>`,
 		})
 		class TabStopHost {}
 
@@ -322,7 +324,7 @@ describe('атрибуты потребителя — узлу списка', ()
 		@Component({
 			standalone: true,
 			imports: [TListBoxComponent],
-			template: `<so-list-box direction="rtl" [items]="items"></so-list-box>`,
+			template: `<div so-list-box direction="rtl" [items]="items"></div>`,
 		})
 		class DirectionHost {
 			readonly items = ITEMS
@@ -339,7 +341,7 @@ describe('состав', () => {
 	@Component({
 		standalone: true,
 		imports: [TListBoxComponent],
-		template: `<so-list-box [items]="items" [value]="value()"></so-list-box>`,
+		template: `<div so-list-box [items]="items" [value]="value()"></div>`,
 	})
 	class ItemsHost {
 		readonly items = ITEMS
@@ -368,7 +370,7 @@ describe('состав', () => {
 		@Component({
 			standalone: true,
 			imports: [TListBoxComponent],
-			template: `<so-list-box [engine]="engine" [items]="items"></so-list-box>`,
+			template: `<div so-list-box [engine]="engine" [items]="items"></div>`,
 		})
 		class EngineItemsHost {
 			readonly engine = engine
@@ -388,7 +390,7 @@ describe('состав', () => {
 		@Component({
 			standalone: true,
 			imports: [TListBoxComponent],
-			template: `<so-list-box [engine]="engine"></so-list-box>`,
+			template: `<div so-list-box [engine]="engine"></div>`,
 		})
 		class EngineHost {
 			readonly engine = engine
@@ -424,7 +426,7 @@ describe('состав', () => {
 		@Component({
 			standalone: true,
 			imports: [TListBoxComponent],
-			template: `<so-list-box [engine]="engine"></so-list-box>`,
+			template: `<div so-list-box [engine]="engine"></div>`,
 		})
 		class ShownHost {
 			readonly engine = engine
@@ -452,9 +454,9 @@ describe('состав', () => {
 		@Component({
 			standalone: true,
 			imports: [TListBoxComponent, TListBoxItemComponent],
-			template: `<so-list-box mode="multiple" [items]="items" title="Города">
-				<so-list-box-item value="z" text="Z" selected title="Строка" />
-			</so-list-box>`,
+			template: `<div so-list-box mode="multiple" [items]="items" title="Города">
+				<div so-list-box-item value="z" text="Z" selected title="Строка"></div>
+			</div>`,
 		})
 		class AttributesHost {
 			readonly items = ITEMS
@@ -471,7 +473,9 @@ describe('состав', () => {
 		expect(root.hasAttribute('title')).toBe(false)
 		expect(listOf(fixture).getAttribute('title')).toBe('Города')
 		expect(rowOf('Z').hasAttribute('selected')).toBe(false)
-		expect(find(document, 'so-list-box-item', HTMLElement).hasAttribute('selected')).toBe(false)
+		expect(find(document, '[so-list-box-item]', HTMLElement).hasAttribute('selected')).toBe(
+			false,
+		)
 		expect(rowOf('Z').getAttribute('title')).toBe('Строка')
 	})
 
@@ -479,10 +483,10 @@ describe('состав', () => {
 		@Component({
 			standalone: true,
 			imports: [TListBoxComponent, TListBoxItemComponent],
-			template: `<so-list-box>
-				<so-list-box-item value="a" text="A" />
-				<so-list-box-item value="b" text="B" selected />
-			</so-list-box>`,
+			template: `<div so-list-box>
+				<div so-list-box-item value="a" text="A"></div>
+				<div so-list-box-item value="b" text="B" selected></div>
+			</div>`,
 		})
 		class SelectedHost {}
 
@@ -495,9 +499,16 @@ describe('состав', () => {
 		@Component({
 			standalone: true,
 			imports: [TListBoxComponent, TListBoxItemComponent],
-			template: `<so-list-box>
-				<so-list-box-item value="a" text="A" class="mine" style="color: red" id="row-a" />
-			</so-list-box>`,
+			template: `<div so-list-box>
+				<div
+					so-list-box-item
+					value="a"
+					text="A"
+					class="mine"
+					style="color: red"
+					id="row-a"
+				></div>
+			</div>`,
 		})
 		class SplitHost {}
 
@@ -516,9 +527,9 @@ describe('состав', () => {
 		@Component({
 			standalone: true,
 			imports: [TListBoxComponent, TListBoxItemComponent],
-			template: `<so-list-box>
-				<so-list-box-item value="a" text="A" (click)="clicks = clicks + 1" />
-			</so-list-box>`,
+			template: `<div so-list-box>
+				<div so-list-box-item value="a" text="A" (click)="clicks = clicks + 1"></div>
+			</div>`,
 		})
 		class ClickHost {
 			clicks = 0
@@ -546,7 +557,7 @@ describe('отметка выбранного и слоты', () => {
 	@Component({
 		standalone: true,
 		imports: [TListBoxComponent],
-		template: `<so-list-box [items]="items" [indicator]="indicator()" value="a"></so-list-box>`,
+		template: `<div so-list-box [items]="items" [indicator]="indicator()" value="a"></div>`,
 	})
 	class IndicatorHost {
 		readonly items = ITEMS
@@ -567,7 +578,7 @@ describe('отметка выбранного и слоты', () => {
 		@Component({
 			standalone: true,
 			imports: [TListBoxComponent],
-			template: `<so-list-box [items]="items" indicator="start"></so-list-box>`,
+			template: `<div so-list-box [items]="items" indicator="start"></div>`,
 		})
 		class MarksHost {
 			readonly items = ITEMS
@@ -614,15 +625,15 @@ describe('отметка выбранного и слоты', () => {
 		@Component({
 			standalone: true,
 			imports: [TListBoxComponent, TListBoxItemComponent, SlotDirective],
-			template: `<so-list-box indicator="start">
-				<so-list-box-item value="a" text="A">
+			template: `<div so-list-box indicator="start">
+				<div so-list-box-item value="a" text="A">
 					<ng-template slot="indicator-icon" let-selected="selected">
 						@if (selected) {
 							<b class="custom">V</b>
 						}
 					</ng-template>
-				</so-list-box-item>
-			</so-list-box>`,
+				</div>
+			</div>`,
 		})
 		class IndicatorSlotHost {}
 
@@ -642,15 +653,15 @@ describe('отметка выбранного и слоты', () => {
 		@Component({
 			standalone: true,
 			imports: [TListBoxComponent, TListBoxItemComponent, SlotDirective],
-			template: `<so-list-box>
-				<so-list-box-item value="a" text="A">
+			template: `<div so-list-box>
+				<div so-list-box-item value="a" text="A">
 					<ng-template slot="default" let-text="text" let-selected="selected"
 						>{{ text }}:{{ selected }}</ng-template
 					>
-				</so-list-box-item>
-				<so-list-box-item value="b" text="B" />
-				<so-list-box-item value="c" text="C">Свой</so-list-box-item>
-			</so-list-box>`,
+				</div>
+				<div so-list-box-item value="b" text="B"></div>
+				<div so-list-box-item value="c" text="C">Свой</div>
+			</div>`,
 		})
 		class DefaultSlotHost {}
 
@@ -667,7 +678,7 @@ describe('отметка выбранного и слоты', () => {
 		@Component({
 			standalone: true,
 			imports: [TListBoxComponent, SlotDirective],
-			template: `<so-list-box [items]="items">
+			template: `<div so-list-box [items]="items">
 				<i slot="header" class="head">шапка</i>
 				<i slot="footer" class="foot">подвал</i>
 				<ng-template slot="item" let-item="item">[{{ item.text }}]</ng-template>
@@ -677,7 +688,7 @@ describe('отметка выбранного и слоты', () => {
 				<ng-template slot="item-trailing" let-item="item"
 					><s class="trail">{{ item.value }}</s></ng-template
 				>
-			</so-list-box>`,
+			</div>`,
 		})
 		class RelayHost {
 			readonly items = ITEMS.slice(0, 2)
@@ -709,11 +720,11 @@ describe('отметка выбранного и слоты', () => {
 		@Component({
 			standalone: true,
 			imports: [TListBoxComponent, SlotDirective],
-			template: `<so-list-box [items]="items">
+			template: `<div so-list-box [items]="items">
 				<ng-template slot="item" let-item="item" let-text="text" let-selected="selected"
 					>{{ item.value }}:{{ text }}:{{ selected }}</ng-template
 				>
-			</so-list-box>`,
+			</div>`,
 		})
 		class ScopeHost {
 			readonly items = ITEMS.slice(0, 2)
@@ -743,13 +754,13 @@ describe('отметка выбранного и слоты', () => {
 		@Component({
 			standalone: true,
 			imports: [TListBoxComponent, SlotDirective],
-			template: `<so-list-box [items]="items" mode="multiple" indicator="start">
+			template: `<div so-list-box [items]="items" mode="multiple" indicator="start">
 				<ng-template slot="item-indicator-icon" let-item="item" let-selected="selected">
 					@if (item.value === 'a') {
 						<b class="probe">{{ selected }}</b>
 					}
 				</ng-template>
-			</so-list-box>`,
+			</div>`,
 		})
 		class RelayIndicatorHost {
 			readonly items = ITEMS.slice(0, 2)
@@ -779,11 +790,11 @@ describe('отметка выбранного и слоты', () => {
 		@Component({
 			standalone: true,
 			imports: [TListBoxComponent],
-			template: `<so-list-box [items]="items()">
+			template: `<div so-list-box [items]="items()">
 				<i slot="header" class="head"></i>
 				<p slot="empty" class="probe">Пусто</p>
 				<i slot="footer" class="foot"></i>
-			</so-list-box>`,
+			</div>`,
 		})
 		class EmptyHost {
 			readonly items = signal<TItem[]>([])
@@ -833,7 +844,7 @@ describe('группы', () => {
 	@Component({
 		standalone: true,
 		imports: [TListBoxComponent],
-		template: `<so-list-box [items]="items" [groups]="groups()"></so-list-box>`,
+		template: `<div so-list-box [items]="items" [groups]="groups()"></div>`,
 	})
 	class GroupsHost {
 		readonly items = MIXED
@@ -846,11 +857,12 @@ describe('группы', () => {
 	@Component({
 		standalone: true,
 		imports: [TListBoxComponent],
-		template: `<so-list-box
+		template: `<div
+			so-list-box
 			[items]="items"
 			[groups]="groups"
 			[groupSeparators]="separated()"
-		></so-list-box>`,
+		></div>`,
 	})
 	class SeparatedHost {
 		readonly items = MIXED
@@ -953,14 +965,14 @@ describe('группы', () => {
 	@Component({
 		standalone: true,
 		imports: [TListBoxComponent, TListBoxItemComponent, TListBoxGroupComponent],
-		template: `<so-list-box [engine]="engine">
-			<so-list-box-item value="water" text="Вода" />
+		template: `<div so-list-box [engine]="engine">
+			<div so-list-box-item value="water" text="Вода"></div>
 			<div so-list-box-group [label]="label()">
-				<so-list-box-item value="apple" text="Яблоко" />
-				<so-list-box-item value="pear" text="Груша" />
+				<div so-list-box-item value="apple" text="Яблоко"></div>
+				<div so-list-box-item value="pear" text="Груша"></div>
 			</div>
-			<so-list-box-item value="juice" text="Сок" />
-		</so-list-box>`,
+			<div so-list-box-item value="juice" text="Сок"></div>
+		</div>`,
 	})
 	class MarkupHost {
 		readonly engine = createEngineListBox()

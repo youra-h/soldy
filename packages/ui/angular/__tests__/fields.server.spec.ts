@@ -39,18 +39,20 @@ import { hydrate, leavePage, loadPage, renderOnServer } from './server'
 		TTextareaComponent,
 	],
 	template: `<label so-label text="Согласен" class="agree"
-			><so-check-box [value]="checked()" title="Согласие"
-		/></label>
-		<so-switch value direction="rtl" />
-		<so-input
+			><span so-check-box [value]="checked()" title="Согласие"></span
+		></label>
+		<span so-switch value direction="rtl"></span>
+		<div
+			so-input
 			[value]="text()"
 			autocomplete="email"
 			class="email"
 			clearable
 			name="Город"
 			direction="rtl"
-		/>
-		<so-textarea
+		></div>
+		<div
+			so-textarea
 			[value]="note()"
 			autocomplete="off"
 			class="note"
@@ -58,7 +60,7 @@ import { hydrate, leavePage, loadPage, renderOnServer } from './server'
 			counter
 			[maxlength]="200"
 			direction="rtl"
-		/>`,
+		></div>`,
 })
 class FieldsPage {
 	readonly checked = signal(true)
@@ -80,13 +82,13 @@ describe('серверный рендер', () => {
 			expect.arrayContaining(['agree', 'so-label', 'so-label--position-end']),
 		)
 		expect(label.querySelector('.so-label__text')?.textContent).toBe('Согласен')
-		expect(label.querySelector('.so-label__control so-check-box input')).not.toBeNull()
+		expect(label.querySelector('.so-label__control [so-check-box] input')).not.toBeNull()
 	})
 
 	it('CheckBox и Switch — отметка атрибутом checked, атрибут потребителя на поле', async () => {
 		const page = await serverPage()
-		const box = find(page, 'so-check-box', HTMLElement)
-		const toggle = find(page, 'so-switch', HTMLElement)
+		const box = find(page, '[so-check-box]', HTMLElement)
+		const toggle = find(page, '[so-switch]', HTMLElement)
 
 		expect(find(box, 'input', HTMLInputElement).hasAttribute('checked')).toBe(true)
 		expect(find(box, 'input', HTMLInputElement).getAttribute('title')).toBe('Согласие')
@@ -100,7 +102,7 @@ describe('серверный рендер', () => {
 
 	it('Input — текст атрибутом value, атрибуты потребителя на поле, имя кнопки очистки', async () => {
 		const page = await serverPage()
-		const root = find(page, 'so-input', HTMLElement)
+		const root = find(page, '[so-input]', HTMLElement)
 		const input = find(root, 'input', HTMLInputElement)
 
 		expect(input.getAttribute('value')).toBe('abc')
@@ -121,7 +123,7 @@ describe('серверный рендер', () => {
 	 */
 	it('Textarea — текст содержимым поля, атрибуты потребителя на поле, счётчик пояснением', async () => {
 		const page = await serverPage()
-		const root = find(page, 'so-textarea', HTMLElement)
+		const root = find(page, '[so-textarea]', HTMLElement)
 		const textarea = find(root, 'textarea', HTMLTextAreaElement)
 		const counter = find(root, '.so-textarea__counter', HTMLElement)
 
@@ -166,19 +168,19 @@ describe('гидратация', () => {
 
 		loadPage(await renderOnServer(FieldsPage))
 
-		const input = find(document, 'so-input input', HTMLInputElement)
-		const box = find(document, 'so-check-box input', HTMLInputElement)
+		const input = find(document, '[so-input] input', HTMLInputElement)
+		const box = find(document, '[so-check-box] input', HTMLInputElement)
 		const clear = find(document, '.so-input__clear', HTMLButtonElement)
-		const textarea = find(document, 'so-textarea textarea', HTMLTextAreaElement)
+		const textarea = find(document, '[so-textarea] textarea', HTMLTextAreaElement)
 		const counter = find(document, '.so-textarea__counter', HTMLElement)
 		const app = await hydrate(FieldsPage)
 
 		await app.whenStable()
 
-		expect(find(document, 'so-input input', HTMLInputElement)).toBe(input)
-		expect(find(document, 'so-check-box input', HTMLInputElement)).toBe(box)
+		expect(find(document, '[so-input] input', HTMLInputElement)).toBe(input)
+		expect(find(document, '[so-check-box] input', HTMLInputElement)).toBe(box)
 		expect(find(document, '.so-input__clear', HTMLButtonElement)).toBe(clear)
-		expect(find(document, 'so-textarea textarea', HTMLTextAreaElement)).toBe(textarea)
+		expect(find(document, '[so-textarea] textarea', HTMLTextAreaElement)).toBe(textarea)
 		expect(find(document, '.so-textarea__counter', HTMLElement)).toBe(counter)
 		expect(error).not.toHaveBeenCalled()
 		expect(warn).not.toHaveBeenCalled()
@@ -192,9 +194,9 @@ describe('гидратация', () => {
 	it('атрибуты потребителя — на поле, а не на корне; dir ядра — на корне', async () => {
 		await hydrated()
 
-		const root = find(document, 'so-input', HTMLElement)
+		const root = find(document, '[so-input]', HTMLElement)
 		const input = find(root, 'input', HTMLInputElement)
-		const box = find(document, 'so-check-box', HTMLElement)
+		const box = find(document, '[so-check-box]', HTMLElement)
 
 		expect(root.hasAttribute('autocomplete')).toBe(false)
 		expect(input.getAttribute('autocomplete')).toBe('email')
@@ -206,9 +208,9 @@ describe('гидратация', () => {
 
 	it('текст и отметка после гидратации идут за значением', async () => {
 		const { app, page } = await hydrated()
-		const input = find(document, 'so-input input', HTMLInputElement)
-		const box = find(document, 'so-check-box input', HTMLInputElement)
-		const textarea = find(document, 'so-textarea textarea', HTMLTextAreaElement)
+		const input = find(document, '[so-input] input', HTMLInputElement)
+		const box = find(document, '[so-check-box] input', HTMLInputElement)
+		const textarea = find(document, '[so-textarea] textarea', HTMLTextAreaElement)
 		const counter = find(document, '.so-textarea__counter', HTMLElement)
 
 		expect(input.value).toBe('abc')
@@ -229,7 +231,7 @@ describe('гидратация', () => {
 	it('Textarea: атрибуты потребителя — на поле, ссылка на счётчик — его id после гидратации', async () => {
 		await hydrated()
 
-		const root = find(document, 'so-textarea', HTMLElement)
+		const root = find(document, '[so-textarea]', HTMLElement)
 		const textarea = find(root, 'textarea', HTMLTextAreaElement)
 
 		expect(root.hasAttribute('autocomplete')).toBe(false)

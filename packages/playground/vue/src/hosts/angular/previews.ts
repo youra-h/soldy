@@ -38,7 +38,7 @@ export type TProps = Readonly<Record<string, unknown>>
 
 /**
  * Часть содержимого — компонент адаптера на своём элементе, как его пишут в
- * разметке владельца: `<so-list-box-item>`, `<label so-radio-group-item>`.
+ * разметке владельца: `<div so-list-box-item>`, `<label so-radio-group-item>`.
  * Пропсы части задаёт превью, строка страницы их не правит.
  */
 export type TPart = {
@@ -223,7 +223,7 @@ const ITEMS = COLLECTION_ITEMS
 const TABS_CONTENT: readonly TContent[] = [
 	...ITEMS.map((item, index) => ({
 		component: TTabsItemComponent,
-		element: tag('so-tabs-item'),
+		element: tag('div'),
 		props: { active: index === 0, ...item },
 	})),
 	...ITEMS.map((item) => ({
@@ -238,7 +238,7 @@ const TABS_CONTENT: readonly TContent[] = [
 /** Секции частями, с содержимым, — у превью Accordion и DragAndDrop. */
 const ACCORDION_CONTENT: readonly TContent[] = ITEMS.map((item) => ({
 	component: TAccordionItemComponent,
-	element: tag('so-accordion-item'),
+	element: tag('div'),
 	props: { ...item },
 	content: [block('4px 0', `Содержимое «${item.text}»`)],
 }))
@@ -256,13 +256,13 @@ export const PREVIEWS: Record<string, TPreview> = {
 	// обёртка Label. Её пропы задаёт превью, строки страницы правят контрол
 	'check-box': {
 		component: TCheckBoxComponent,
-		element: tag('so-check-box'),
+		element: tag('span'),
 		wrapper: { component: TLabelComponent, props: { text: 'Согласен' } },
 	},
 
 	switch: {
 		component: TSwitchComponent,
-		element: tag('so-switch'),
+		element: tag('span'),
 		wrapper: { component: TLabelComponent, props: { text: 'Включено' } },
 	},
 
@@ -270,7 +270,7 @@ export const PREVIEWS: Record<string, TPreview> = {
 	// страницы правят саму подпись: сторону, размер текста, вариант
 	label: {
 		component: TLabelComponent,
-		content: [{ component: TCheckBoxComponent, element: tag('so-check-box') }],
+		content: [{ component: TCheckBoxComponent, element: tag('span') }],
 	},
 
 	// Поле формы вокруг Input: тексты частей — пропсы превью, контрол —
@@ -281,7 +281,7 @@ export const PREVIEWS: Record<string, TPreview> = {
 		content: [
 			{
 				component: TInputComponent,
-				element: tag('so-input'),
+				element: tag('div'),
 				props: { placeholder: 'name@example.com' },
 			},
 		],
@@ -309,7 +309,7 @@ export const PREVIEWS: Record<string, TPreview> = {
 				? []
 				: ITEMS.map((item) => ({
 						component: TListBoxItemComponent,
-						element: tag('so-list-box-item'),
+						element: tag('div'),
 						props: { ...item },
 					})),
 	},
@@ -319,7 +319,7 @@ export const PREVIEWS: Record<string, TPreview> = {
 	// высотой 320 px на сорок строк. Окно таблицы — на странице Virtual
 	table: {
 		component: TTableComponent,
-		element: tag('so-table'),
+		element: tag('div'),
 		frame: (bind) =>
 			bind.stickyHead ? 'width: 100%; height: 320px; overflow: auto' : 'width: 100%',
 		props: (bind) => ({
@@ -366,13 +366,13 @@ export const PREVIEWS: Record<string, TPreview> = {
 					markup('flex: 1 1 100%; min-width: 0', [
 						{
 							component: TTabsComponent,
-							element: tag('so-tabs'),
+							element: tag('div'),
 							content: TABS_CONTENT,
 						},
 					]),
 					{
 						component: TListBoxComponent,
-						element: tag('so-list-box'),
+						element: tag('div'),
 						props: { items: ITEMS, aria_label: 'Пункты' },
 					},
 					markup('flex: 1; min-width: 200px', [
@@ -400,13 +400,13 @@ export const PREVIEWS: Record<string, TPreview> = {
 			markup('display: flex; gap: 24px; align-items: flex-start; width: 100%', [
 				{
 					component: TListBoxComponent,
-					element: tag('so-list-box'),
+					element: tag('div'),
 					props: { items: COLLECTION_MANY_ITEMS, maxRows: 8, aria_label: 'Пункты' },
 				},
 				markup('flex: 1; min-width: 0; height: 320px; overflow: auto', [
 					{
 						component: TTableComponent,
-						element: tag('so-table'),
+						element: tag('div'),
 						props: {
 							items: TABLE_MANY_ROWS,
 							columns: TABLE_COLUMNS,

@@ -45,11 +45,12 @@
 -->
 @if (state()['selecting']) {
 	<td class="so-table-row__select" [so-attributes]="state()['cellAria']">
-		<so-check-box
+		<span
+			so-check-box
 			embedded="table.select"
 			[ctrl]="facade()?.context?.adapters.table.checkBox"
 			[aria_labelledBy]="state()['rowHeaderId']"
-		/>
+		></span>
 	</td>
 }
 @if (slot('cell'); as content) {

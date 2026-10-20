@@ -14,16 +14,17 @@ import { setupCheckBox } from './setup.component'
  * TCheckBoxComponent — флажок: корень и нативный `<input type="checkbox">`
  * внутри, рядом — коробка с отметкой.
  *
- * Селектор — элементный, `<so-check-box>`: у поля атрибуты потребителя
- * делятся между корнем и вложенным `<input>`, и корнем служит сам элемент
- * компонента. Это строчный элемент, поэтому флажок кладут в подпись `Label`:
- * внутри `label` HTML разрешает только строчную разметку, и всё внутри — тоже
+ * Селектор атрибутный, как у Button: `<span so-check-box>`. Корень — сам
+ * элемент потребителя, а написанное на нём делится между корнем и вложенным
+ * `<input>`. Корень строчный, поэтому флажок кладут в подпись `Label`: внутри
+ * `label` HTML разрешает только строчную разметку, и всё внутри — тоже
  * `span`. Классы, `attrs` (`dir`), `dataset` (`data-disabled`, `data-invalid`)
  * и скрытие раскладывает на корень `TComponentBase` (стратегия `'host'`):
- * тема красит коробку и подпись поля формы `Field` по корню; `aria` стоит на `<input>` — его
- * кладёт директива набора (`AttributesDirective`). Статические атрибуты,
- * которые потребитель записал на флажок, кроме `class` и `style`, база
- * переносит на `<input>` (`control`).
+ * тема красит коробку и подпись поля формы `Field` по корню; `aria` стоит на
+ * `<input>` — его кладёт директива набора (`AttributesDirective`). Всё, что
+ * потребитель записал на флажок, кроме `class` и `style`, доходит до
+ * `<input>` (`control`): статику переносит база, привязки и слушатели —
+ * рендерер адаптера (`provideAttrs()`).
  *
  * Отметку и «выбрано частично» скринридеру сообщают нативные `checked` и
  * `indeterminate` поля, `aria-checked` ядро не пишет. Оба — привязки свойств
@@ -45,10 +46,14 @@ import { setupCheckBox } from './setup.component'
  * а своему содержимому флажок опускает пустую связку — в свой слой лифта
  * (`provideElevator()`).
  *
- * Selector: so-check-box
+ * `span[so-check-box]` стоит первым: по первому селектору Angular выбирает
+ * тег хоста, когда создаёт компонент сам (`createComponent`), — это тег ядра
+ * по умолчанию.
+ *
+ * Selector: span[so-check-box], [so-check-box]
  */
 @Component({
-	selector: 'so-check-box',
+	selector: 'span[so-check-box], [so-check-box]',
 	standalone: true,
 	imports: [NgTemplateOutlet, AttributesDirective, RoleIconDirective],
 	providers: [provideElevator()],

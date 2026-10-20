@@ -45,16 +45,16 @@ const ITEMS = ['a', 'b', 'c'].map((value) => ({ value, text: value.toUpperCase()
 
 /** Три коллекции: табы и секции — разметкой, список — данными. */
 const COLLECTIONS = `
-	<so-tabs>
-		<so-tabs-item value="a" text="A" active />
-		<so-tabs-item value="b" text="B" />
-		<so-tabs-item value="c" text="C" />
-	</so-tabs>
-	<so-list-box [items]="items" aria_label="Пункты"></so-list-box>
+	<div so-tabs>
+		<div so-tabs-item value="a" text="A" active></div>
+		<div so-tabs-item value="b" text="B"></div>
+		<div so-tabs-item value="c" text="C"></div>
+	</div>
+	<div so-list-box [items]="items" aria_label="Пункты"></div>
 	<div so-accordion>
-		<so-accordion-item value="a" text="A">Содержимое A</so-accordion-item>
-		<so-accordion-item value="b" text="B">Содержимое B</so-accordion-item>
-		<so-accordion-item value="c" text="C">Содержимое C</so-accordion-item>
+		<div so-accordion-item value="a" text="A">Содержимое A</div>
+		<div so-accordion-item value="b" text="B">Содержимое B</div>
+		<div so-accordion-item value="c" text="C">Содержимое C</div>
 	</div>
 `
 
@@ -165,9 +165,9 @@ describe('DragAndDrop: коллекции внутри', () => {
 		],
 		template: `<so-drag-and-drop>
 			<div so-accordion>
-				<so-accordion-item value="a" text="A">
-					<so-list-box [items]="items" aria_label="Пункты"></so-list-box>
-				</so-accordion-item>
+				<div so-accordion-item value="a" text="A">
+					<div so-list-box [items]="items" aria_label="Пункты"></div>
+				</div>
 			</div>
 		</so-drag-and-drop>`,
 	})
@@ -200,11 +200,16 @@ describe('DragAndDrop: коллекции внутри', () => {
 
 		if (!(wrapper instanceof HTMLElement)) throw new Error('обёртки нет')
 
+		// Компонент — по метке селектора на элементе
+		const marker = (child: Element) =>
+			child.getAttributeNames().find((name) => name.startsWith('so-'))
+		const component = (child: Element) => `${child.localName}[${marker(child)}]`
+
 		expect(wrapper.style.display).toBe('contents')
-		expect([...wrapper.children].map((child) => child.localName)).toEqual([
-			'so-tabs',
-			'so-list-box',
-			'div',
+		expect([...wrapper.children].map(component)).toEqual([
+			'div[so-tabs]',
+			'div[so-list-box]',
+			'div[so-accordion]',
 		])
 	})
 })
@@ -219,7 +224,7 @@ describe('DragAndDrop: коллекции внутри', () => {
 	standalone: true,
 	imports: [TDragAndDropComponent, TListBoxComponent],
 	template: `<so-drag-and-drop (soMoveBefore)="onMoveBefore($event)" (soMove)="onMove($event)">
-		<so-list-box [items]="items" aria_label="Пункты"></so-list-box>
+		<div so-list-box [items]="items" aria_label="Пункты"></div>
 	</so-drag-and-drop>`,
 })
 class EventsHost {

@@ -70,7 +70,7 @@ let engine: TCollectionEngine<any, any> = createEngine()
 	selector: 'probe-list-box',
 	standalone: true,
 	imports: [TListBoxComponent],
-	template: `<so-list-box [engine]="engine"></so-list-box>`,
+	template: `<div so-list-box [engine]="engine"></div>`,
 })
 class ListBoxHost {
 	readonly engine = engine
@@ -80,7 +80,7 @@ class ListBoxHost {
 	selector: 'probe-tabs',
 	standalone: true,
 	imports: [TTabsComponent],
-	template: `<so-tabs [engine]="engine"></so-tabs>`,
+	template: `<div so-tabs [engine]="engine"></div>`,
 })
 class TabsHost {
 	readonly engine = engine
@@ -162,7 +162,7 @@ describe('движок снаружи', () => {
 		@Component({
 			standalone: true,
 			imports: [TListBoxComponent],
-			template: `<so-list-box [ctrl]="owner" [engine]="engine"></so-list-box>`,
+			template: `<div so-list-box [ctrl]="owner" [engine]="engine"></div>`,
 		})
 		class ExternalHost {
 			readonly owner = owner

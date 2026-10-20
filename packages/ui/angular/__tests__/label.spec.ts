@@ -40,7 +40,7 @@ const textOf = (root: Element) => find(root, '.so-label__text', HTMLElement)
 @Component({
 	standalone: true,
 	imports: [TLabelComponent, TCheckBoxComponent],
-	template: `<label so-label text="Согласен"><so-check-box /></label>`,
+	template: `<label so-label text="Согласен"><span so-check-box></span></label>`,
 })
 class CheckBoxLabelHost {}
 
@@ -176,8 +176,8 @@ describe('Label · текст: проп и слот', () => {
 	standalone: true,
 	imports: [TLabelComponent, TCheckBoxComponent],
 	template: `<label so-label text="Согласен"
-		><so-check-box (soChangeValue)="changes.push($event)"
-	/></label>`,
+		><span so-check-box (soChangeValue)="changes.push($event)"></span
+	></label>`,
 })
 class CheckBoxChangeHost {
 	readonly changes: unknown[] = []
@@ -188,8 +188,8 @@ class CheckBoxChangeHost {
 	standalone: true,
 	imports: [TLabelComponent, TSwitchComponent],
 	template: `<label so-label text="Согласен"
-		><so-switch (soChangeValue)="changes.push($event)"
-	/></label>`,
+		><span so-switch (soChangeValue)="changes.push($event)"></span
+	></label>`,
 })
 class SwitchChangeHost {
 	readonly changes: unknown[] = []

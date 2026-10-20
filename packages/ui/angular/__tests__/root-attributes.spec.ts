@@ -176,14 +176,15 @@ const COMPONENTS: ReadonlyArray<readonly [string, Type<TProbeHost>, string, stri
 	selector: 'probe-check-box',
 	standalone: true,
 	imports: [TCheckBoxComponent],
-	template: `<so-check-box
+	template: `<span
+		so-check-box
 		direction="rtl"
 		dir="ltr"
 		title="probe"
 		class="mine"
 		style="color: red"
 		(soElementReady)="ready.push($event)"
-	/>`,
+	></span>`,
 })
 class CheckBoxProbe extends TProbeHost {}
 
@@ -191,14 +192,15 @@ class CheckBoxProbe extends TProbeHost {}
 	selector: 'probe-switch',
 	standalone: true,
 	imports: [TSwitchComponent],
-	template: `<so-switch
+	template: `<span
+		so-switch
 		direction="rtl"
 		dir="ltr"
 		title="probe"
 		class="mine"
 		style="color: red"
 		(soElementReady)="ready.push($event)"
-	/>`,
+	></span>`,
 })
 class SwitchProbe extends TProbeHost {}
 
@@ -206,14 +208,15 @@ class SwitchProbe extends TProbeHost {}
 	selector: 'probe-input',
 	standalone: true,
 	imports: [TInputComponent],
-	template: `<so-input
+	template: `<div
+		so-input
 		direction="rtl"
 		dir="ltr"
 		title="probe"
 		class="mine"
 		style="color: red"
 		(soElementReady)="ready.push($event)"
-	/>`,
+	></div>`,
 })
 class InputProbe extends TProbeHost {}
 
@@ -221,14 +224,15 @@ class InputProbe extends TProbeHost {}
 	selector: 'probe-textarea',
 	standalone: true,
 	imports: [TTextareaComponent],
-	template: `<so-textarea
+	template: `<div
+		so-textarea
 		direction="rtl"
 		dir="ltr"
 		title="probe"
 		class="mine"
 		style="color: red"
 		(soElementReady)="ready.push($event)"
-	/>`,
+	></div>`,
 })
 class TextareaProbe extends TProbeHost {}
 
@@ -242,10 +246,10 @@ class TextareaProbe extends TProbeHost {}
 		TInputComponent,
 		TTextareaComponent,
 	],
-	template: `<div so-field invalid><so-check-box disabled /></div>
-		<div so-field invalid><so-switch disabled /></div>
-		<div so-field invalid><so-input disabled /></div>
-		<div so-field invalid><so-textarea disabled /></div>`,
+	template: `<div so-field invalid><span so-check-box disabled></span></div>
+		<div so-field invalid><span so-switch disabled></span></div>
+		<div so-field invalid><div so-input disabled></div></div>
+		<div so-field invalid><div so-textarea disabled></div></div>`,
 })
 class InvalidFieldsHost {}
 
@@ -254,10 +258,10 @@ class InvalidFieldsHost {}
  * внутри корня: `<input>`, у Textarea — `<textarea>`.
  */
 const FIELDS: ReadonlyArray<readonly [string, Type<TProbeHost>, string, string, string]> = [
-	['CheckBox', CheckBoxProbe, 'so-check-box', 'so-check-box', 'input'],
-	['Switch', SwitchProbe, 'so-switch', 'so-switch', 'input'],
-	['Input', InputProbe, 'so-input', 'so-input', 'input'],
-	['Textarea', TextareaProbe, 'so-textarea', 'so-textarea', 'textarea'],
+	['CheckBox', CheckBoxProbe, '[so-check-box]', 'so-check-box', 'input'],
+	['Switch', SwitchProbe, '[so-switch]', 'so-switch', 'input'],
+	['Input', InputProbe, '[so-input]', 'so-input', 'input'],
+	['Textarea', TextareaProbe, '[so-textarea]', 'so-textarea', 'textarea'],
 ]
 
 /**
@@ -270,14 +274,15 @@ const FIELDS: ReadonlyArray<readonly [string, Type<TProbeHost>, string, string, 
 	selector: 'probe-list-box',
 	standalone: true,
 	imports: [TListBoxComponent],
-	template: `<so-list-box
+	template: `<div
+		so-list-box
 		direction="rtl"
 		dir="ltr"
 		title="probe"
 		class="mine"
 		style="color: red"
 		(soElementReady)="ready.push($event)"
-	/>`,
+	></div>`,
 })
 class ListBoxProbe extends TProbeHost {}
 
@@ -285,21 +290,22 @@ class ListBoxProbe extends TProbeHost {}
 	selector: 'probe-tabs',
 	standalone: true,
 	imports: [TTabsComponent],
-	template: `<so-tabs
+	template: `<div
+		so-tabs
 		direction="rtl"
 		dir="ltr"
 		title="probe"
 		class="mine"
 		style="color: red"
 		(soElementReady)="ready.push($event)"
-	/>`,
+	></div>`,
 })
 class TabsProbe extends TProbeHost {}
 
 /** Список, хост его пробы, селектор корня, класс ядра на нём и селектор узла списка. */
 const LISTS: ReadonlyArray<readonly [string, Type<TProbeHost>, string, string, string]> = [
-	['ListBox', ListBoxProbe, 'so-list-box', 'so-list-box', '[role="listbox"]'],
-	['Tabs', TabsProbe, 'so-tabs', 'so-tabs', '[role="tablist"]'],
+	['ListBox', ListBoxProbe, '[so-list-box]', 'so-list-box', '[role="listbox"]'],
+	['Tabs', TabsProbe, '[so-tabs]', 'so-tabs', '[role="tablist"]'],
 ]
 
 describe('что называет ядро, — за базой, остальное — потребителя', () => {
@@ -783,7 +789,7 @@ describe('свойство, записанное в узел мимо разме
 
 /**
  * Корень внутри обёртки — у таблицы (`'wrapped'`): элемент компонента
- * (`<so-table>`) — окно, а корень — `table` в шаблоне, как
+ * (`<div so-table>`) — окно, а корень — `table` в шаблоне, как
  * `div.so-table__viewport` вокруг `table` у Vue и React. Класс и стиль
  * потребителя стоят на окне, и его же прячет видимость; остальные статические
  * атрибуты разметки база переносит на `table`, как на поле, — там же классы,
@@ -792,7 +798,8 @@ describe('свойство, записанное в узел мимо разме
 @Component({
 	standalone: true,
 	imports: [TTableComponent],
-	template: `<so-table
+	template: `<div
+		so-table
 		[columns]="columns"
 		direction="rtl"
 		dir="ltr"
@@ -805,7 +812,7 @@ describe('свойство, записанное в узел мимо разме
 		[visible]="visible()"
 		[stickyHead]="sticky()"
 		(soElementReady)="ready.push($event)"
-	></so-table>`,
+	></div>`,
 })
 class TableProbe {
 	readonly columns = [{ field: 'name', text: 'Имя' }]
@@ -821,7 +828,7 @@ class TableProbe {
 @Component({
 	standalone: true,
 	imports: [TTableComponent],
-	template: `<so-table [columns]="columns" aria_label="Ядро" aria-label="Своё" />`,
+	template: `<div so-table [columns]="columns" aria_label="Ядро" aria-label="Своё"></div>`,
 })
 class TableNameProbe {
 	readonly columns = [{ field: 'name', text: 'Имя' }]
@@ -833,8 +840,8 @@ function tableParts(fixture: ComponentFixture<unknown>): {
 	table: HTMLElement
 } {
 	return {
-		viewport: findIn(fixture, 'so-table', HTMLElement),
-		table: findIn(fixture, 'so-table > table', HTMLElement),
+		viewport: findIn(fixture, '[so-table]', HTMLElement),
+		table: findIn(fixture, '[so-table] > table', HTMLElement),
 	}
 }
 

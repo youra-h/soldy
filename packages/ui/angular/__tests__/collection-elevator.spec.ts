@@ -164,10 +164,10 @@ describe('лифт', () => {
 	@Component({
 		standalone: true,
 		imports: [TListBoxComponent, TListBoxItemComponent],
-		template: `<so-list-box-item value="z" text="Z" />
-			<so-list-box (soEngineCreate)="engines.push($event)">
-				<so-list-box-item value="a" text="A" />
-			</so-list-box>`,
+		template: `<div so-list-box-item value="z" text="Z"></div>
+			<div so-list-box (soEngineCreate)="engines.push($event)">
+				<div so-list-box-item value="a" text="A"></div>
+			</div>`,
 	})
 	class OutsideHost {
 		readonly engines: TEngineView[] = []
@@ -192,15 +192,15 @@ describe('лифт', () => {
 		@Component({
 			standalone: true,
 			imports: [TListBoxComponent, TListBoxItemComponent],
-			template: `<so-list-box (soEngineCreate)="left = $event">
-					<so-list-box-item value="a" text="A" />
-					<so-list-box-item value="b" text="B" />
-				</so-list-box>
-				<so-list-box (soEngineCreate)="right = $event">
-					<so-list-box-item value="x" text="X" />
-					<so-list-box-item value="y" text="Y" />
-					<so-list-box-item value="z" text="Z" />
-				</so-list-box>`,
+			template: `<div so-list-box (soEngineCreate)="left = $event">
+					<div so-list-box-item value="a" text="A"></div>
+					<div so-list-box-item value="b" text="B"></div>
+				</div>
+				<div so-list-box (soEngineCreate)="right = $event">
+					<div so-list-box-item value="x" text="X"></div>
+					<div so-list-box-item value="y" text="Y"></div>
+					<div so-list-box-item value="z" text="Z"></div>
+				</div>`,
 		})
 		class SiblingsHost {
 			left: TEngineView | undefined
@@ -223,17 +223,17 @@ describe('лифт', () => {
 		@Component({
 			standalone: true,
 			imports: [TListBoxComponent, TListBoxItemComponent],
-			template: `<so-list-box (soEngineCreate)="outer = $event">
-				<so-list-box-item value="a" text="A">
+			template: `<div so-list-box (soEngineCreate)="outer = $event">
+				<div so-list-box-item value="a" text="A">
 					<span slot="trailing">
-						<so-list-box (soEngineCreate)="inner = $event">
-							<so-list-box-item value="x" text="X" />
-							<so-list-box-item value="y" text="Y" />
-						</so-list-box>
+						<div so-list-box (soEngineCreate)="inner = $event">
+							<div so-list-box-item value="x" text="X"></div>
+							<div so-list-box-item value="y" text="Y"></div>
+						</div>
 					</span>
-				</so-list-box-item>
-				<so-list-box-item value="b" text="B" />
-			</so-list-box>`,
+				</div>
+				<div so-list-box-item value="b" text="B"></div>
+			</div>`,
 		})
 		class NestedHost {
 			outer: TEngineView | undefined
@@ -259,12 +259,12 @@ describe('лифт', () => {
 				TListBoxItemComponent,
 			],
 			template: `<div so-accordion (soEngineCreate)="sections = $event">
-				<so-accordion-item value="s" text="Секция" selected>
-					<so-list-box (soEngineCreate)="list = $event">
-						<so-list-box-item value="x" text="X" />
-						<so-list-box-item value="y" text="Y" />
-					</so-list-box>
-				</so-accordion-item>
+				<div so-accordion-item value="s" text="Секция" selected>
+					<div so-list-box (soEngineCreate)="list = $event">
+						<div so-list-box-item value="x" text="X"></div>
+						<div so-list-box-item value="y" text="Y"></div>
+					</div>
+				</div>
 			</div>`,
 		})
 		class AccordionListHost {
@@ -288,11 +288,11 @@ describe('лифт', () => {
 		@Component({
 			standalone: true,
 			imports: [TListBoxComponent, TListBoxItemComponent],
-			template: `<so-list-box (soEngineCreate)="engine = $event">
+			template: `<div so-list-box (soEngineCreate)="engine = $event">
 				@for (value of values(); track value) {
-					<so-list-box-item [value]="value" [text]="value.toUpperCase()" />
+					<div so-list-box-item [value]="value" [text]="value.toUpperCase()"></div>
 				}
-			</so-list-box>`,
+			</div>`,
 		})
 		class ListHost {
 			readonly values = signal(['a', 'b'])
@@ -354,16 +354,16 @@ describe('элементы разметки в движке владельца',
 		standalone: true,
 		imports: [TTabsComponent, TTabsItemComponent, TTabsContentComponent],
 		template: `@if (shown()) {
-			<so-tabs (soEngineCreate)="engines.push($event)">
-				<so-tabs-item value="a" text="A" active />
-				<so-tabs-item value="b" text="B" />
-				<so-tabs-item value="c" text="C" />
+			<div so-tabs (soEngineCreate)="engines.push($event)">
+				<div so-tabs-item value="a" text="A" active></div>
+				<div so-tabs-item value="b" text="B"></div>
+				<div so-tabs-item value="c" text="C"></div>
 				@for (value of ['a', 'b', 'c']; track value) {
 					<div so-tabs-content slot="content" [value]="value">
 						Панель {{ value.toUpperCase() }}
 					</div>
 				}
-			</so-tabs>
+			</div>
 		}`,
 	})
 	class TabSetHost {
@@ -376,9 +376,9 @@ describe('элементы разметки в движке владельца',
 		imports: [TAccordionComponent, TAccordionItemComponent],
 		template: `@if (shown()) {
 			<div so-accordion (soEngineCreate)="engines.push($event)">
-				<so-accordion-item value="a" text="A" selected>Содержимое A</so-accordion-item>
-				<so-accordion-item value="b" text="B">Содержимое B</so-accordion-item>
-				<so-accordion-item value="c" text="C">Содержимое C</so-accordion-item>
+				<div so-accordion-item value="a" text="A" selected>Содержимое A</div>
+				<div so-accordion-item value="b" text="B">Содержимое B</div>
+				<div so-accordion-item value="c" text="C">Содержимое C</div>
 			</div>
 		}`,
 	})

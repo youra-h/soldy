@@ -92,7 +92,7 @@ class ButtonSlotIcons implements TFixture {
 	// основной проекции
 	template: `
 		<label so-label [ctrl]="ctrl()" [text]="text()">
-			<so-check-box />
+			<span so-check-box></span>
 		</label>
 	`,
 })
@@ -109,7 +109,7 @@ class LabelCheckBox implements TFixture {
 	host: { style: 'display: contents' },
 	template: `
 		<label so-label [ctrl]="ctrl()" [text]="text()">
-			<so-switch />
+			<span so-switch></span>
 		</label>
 	`,
 })
