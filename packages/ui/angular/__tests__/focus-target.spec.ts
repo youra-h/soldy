@@ -28,6 +28,7 @@ import {
 	TSwitch,
 	TTabs,
 	TTabsItem,
+	TTextarea,
 	createEngineTabs,
 } from '@soldy-ui/core'
 import {
@@ -43,13 +44,15 @@ import {
 	TSwitchComponent,
 	TTabsComponent,
 	TTabsItemComponent,
+	TTextareaComponent,
 } from '@soldy-ui/angular'
 import { find, findIn, mountHost, nextFrame } from './mount'
 
 /**
- * Хосты полей. Селектор свой у этого хоста, `CheckBoxHost` и `SwitchHost`:
- * их разметка различается только тегом поля, а тег в id компонента Angular не
- * входит — без селектора id совпал бы (предупреждение NG0912).
+ * Хосты полей. Селектор свой у этого хоста, `TextareaHost`, `CheckBoxHost` и
+ * `SwitchHost`: их разметка различается только тегом поля, а тег в id
+ * компонента Angular не входит — без селектора id совпал бы (предупреждение
+ * NG0912).
  */
 @Component({
 	selector: 'probe-input-focus',
@@ -70,6 +73,16 @@ class InputHost {
 })
 class InputLeadingHost {
 	readonly ctrl = new TInput()
+}
+
+@Component({
+	selector: 'probe-textarea-focus',
+	standalone: true,
+	imports: [TTextareaComponent],
+	template: `<so-textarea [ctrl]="ctrl" />`,
+})
+class TextareaHost {
+	readonly ctrl = new TTextarea()
 }
 
 @Component({
@@ -253,6 +266,7 @@ type TCase = {
 const CASES: Record<string, TCase> = {
 	Input: { host: InputHost, target: 'input' },
 	'Input с кнопкой в leading': { host: InputLeadingHost, target: 'input', before: '.before' },
+	Textarea: { host: TextareaHost, target: 'textarea' },
 	CheckBox: { host: CheckBoxHost, target: 'input' },
 	Switch: { host: SwitchHost, target: 'input' },
 	'RadioGroup.Item': { host: RadioHost, target: '.target input' },
