@@ -55,8 +55,9 @@
   корне. Сторожат
   `setup/__tests__/overlay.spec.ts` (якорь и раскладка),
   `plugins/__tests__/popover-focus.plugin.spec.ts` («панель внутри корня»),
-  `ui/vue/__tests__/popover.spec.ts`, `ui/solid/__tests__/popover.spec.tsx`,
-  `ui/react/__tests__/frame.spec.tsx`,
+  `ui/vue/__tests__/popover.spec.ts`, `ui/react/__tests__/popover.spec.tsx`,
+  `ui/solid/__tests__/popover.spec.tsx`,
+  `ui/react/__tests__/drawer.spec.tsx`, `ui/react/__tests__/frame.spec.tsx`,
   `ui/svelte/__tests__/frame.spec.ts`, `ui/solid/__tests__/frame.spec.tsx`,
   `ui/angular/__tests__/frame.spec.ts` и `ui/webc/__tests__/frame.spec.ts`.
 - **Телепорт — у каждого адаптера свой, поведение одно.** Цель — по
@@ -111,6 +112,9 @@
   рисует панель в ней — плагинам оверлея она не мешает: панель они находят
   по пометке владельца (`data-owner`), слой — по `closest`, а не по родителю.
   Сторожат `ui/react/__tests__/frame.spec.tsx`,
+  `ui/react/__tests__/dialog.spec.tsx` и `drawer.spec.tsx` (группы «React»:
+  окно на сервере пусто и появляется после гидратации, панель с `contained`
+  на сервере на месте),
   `ui/svelte/__tests__/frame.spec.ts`, `ui/svelte/__tests__/ssr.server.spec.ts`,
   `ui/solid/__tests__/frame.spec.tsx`, `ui/solid/__tests__/ssr.server.spec.tsx`,
   `ui/angular/__tests__/frame.spec.ts`, `ui/angular/__tests__/ssr.server.spec.ts`
@@ -123,7 +127,9 @@
   «содержимое панели — в контексте места» в `frame.spec.ts` Svelte и
   `frame.spec.tsx` Solid и «содержимое панели» в `frame.spec.ts` Web
   Components: кнопка в панели собрана с локалью провайдера вокруг Frame, а не
-  с английской.
+  с английской; у React — «крестик назван локалью поддерева» в
+  `ui/react/__tests__/popover.spec.tsx`: панель в `body`, а имя крестика — от
+  провайдера вокруг поповера.
 - **`TModalLayer`** (`core/src/components/base/modal-layer/`) — общая база
   модального окна **`TDialog`** и выезжающей панели **`TDrawer`**: всё, что
   следует из модальности, один раз — `role="dialog"`, `aria-modal`, имя от
@@ -483,9 +489,13 @@
 («слои», «уход фокуса», «порядок: сообщить, потом закрыть»),
 `core/__tests__/frame.spec.ts` (`data-layer`), `core/__tests__/dialog.spec.ts`
 («слой»), `ui/vue/__tests__/popover.spec.ts` («вложенные слои», «Select
-внутри»), `ui/solid/__tests__/popover.spec.tsx` («вложенные слои»),
-`ui/vue/__tests__/dialog.spec.ts` («окно поверх окна», «Select
-внутри») и `ui/vue/__tests__/drawer.spec.ts` («внутри модального окна»).
+внутри»), `ui/vue/__tests__/dialog.spec.ts` («окно поверх окна», «Select
+внутри»), `ui/vue/__tests__/drawer.spec.ts` («внутри модального окна») и
+их пары у React — `ui/react/__tests__/popover.spec.tsx` («вложенные слои»),
+`dialog.spec.tsx` («окно поверх окна», «Popover внутри»), `drawer.spec.tsx`
+(«внутри модального окна») и `tooltip.spec.tsx` («в открытом поповере»), — и
+у Solid: `ui/solid/__tests__/popover.spec.tsx` («вложенные слои») и
+`tooltip.spec.tsx` («в открытом поповере»).
 
 **Закрытие пользователем — запрос, а не запись.** Нажатие мимо, Escape и
 жест плагины слоя передают владельцу с причиной — `outside`, `escape` и
@@ -565,5 +575,7 @@ Tab с `body` повёл бы на страницу под ним. Поэтом�
 первой пометки. Исключений для живых областей нет — фон прячется целиком,
 как у нативного `<dialog>`. `aria-modal` плагин не пишет: это значение, и
 пишет его в свой `aria` ядро компонента (см. «Прочее» в «Доступность
-(a11y)»). Сторожат `plugins/__tests__/hide-outside.plugin.spec.ts` и
-`ui/vue/__tests__/hide-outside.spec.ts` (Select в модальном `Frame`).
+(a11y)»). Сторожат `plugins/__tests__/hide-outside.plugin.spec.ts`,
+`ui/vue/__tests__/hide-outside.spec.ts` (Select в модальном `Frame`) и
+`ui/react/__tests__/dialog.spec.tsx` («Popover внутри»: закрытая панель
+поповера в окне спрятана, открытая — доступна).

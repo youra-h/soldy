@@ -15,11 +15,11 @@
  * после размонтирования ни один из них не должен дойти до контекста.
  */
 
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, afterEach } from 'vitest'
 import type { TTableColumnSource, TTableRecord } from '@soldy-ui/core'
 import { ButtonDescriptor, createAdapterContext } from '@soldy-ui/setup'
 import type { IAdapterContext } from '@soldy-ui/setup'
-import { Button, Table } from '@soldy-ui/react'
+import { Button, Popover, Table } from '@soldy-ui/react'
 import { mount, nextFrame } from './mount'
 
 /** Ref узла: так React зовёт его — с узлом и с `null`. */
@@ -95,6 +95,12 @@ function contextPrototype(): Pick<IAdapterContext, 'bindElement'> {
 }
 
 describe('ref корня после размонтирования не держит компонент', () => {
+	// Шпион на прототипе — общий для всех контекстов: оставленный тестом, он
+	// считал бы и привязки следующего
+	afterEach(() => {
+		vi.restoreAllMocks()
+	})
+
 	it('таблица: замена данных по ключу и размонтирование — ref узлов до контекстов не доходит', async () => {
 		const view = (age: number) => (
 			<Table
@@ -150,6 +156,40 @@ describe('ref корня после размонтирования не держ
 
 		for (const ref of refs) ref(document.createElement('div'))
 
+		expect(nodes).toHaveLength(2)
+		expect(nodes[0]).toBe(root)
+		expect(nodes[1]).toBeNull()
+	})
+
+	/**
+	 * Корень поповера — ещё и значение рендера: на его ref корня подписан хук
+	 * `useRootElement`, а панель — Frame в `body`. Уничтоженный ref отпускает и
+	 * подписчиков, и контекст: ref корня и панели, вызванные после
+	 * размонтирования, до контекстов не доходят и потребителю узла не отдают.
+	 */
+	it('поповер: ref корня и панели после размонтирования до контекстов не доходят', async () => {
+		const nodes: (Element | null)[] = []
+		const { container, render } = mount(
+			<Popover open ref={(node) => void nodes.push(node)} trigger={<button>Открыть</button>}>
+				Содержимое
+			</Popover>,
+		)
+
+		await nextFrame()
+
+		const root = container.firstElementChild
+		// Панель телепортирована: её ref — в `body`, вне контейнера
+		const refs = keptRefs(document.body)
+
+		expect(refs.length).toBeGreaterThan(1)
+
+		render(<></>)
+
+		const bindElement = vi.spyOn(contextPrototype(), 'bindElement')
+
+		for (const ref of refs) ref(document.createElement('div'))
+
+		expect(bindElement).not.toHaveBeenCalled()
 		expect(nodes).toHaveLength(2)
 		expect(nodes[0]).toBe(root)
 		expect(nodes[1]).toBeNull()

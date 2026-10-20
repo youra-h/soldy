@@ -16,13 +16,15 @@ arrive as callback props (`element:ready` → `onElementReady`), and the default
 > character counter), CheckBox, Switch, Slider, Rating, the form field `Field` (label, helper and
 > error linked to the control inside it), the collections ListBox, Tabs, Accordion and RadioGroup
 > (`<ListBox.Item>`, `<Tabs.Item>` with `<Tabs.Content>`, `<Accordion.Item>`, `<RadioGroup.Item>`
-> or `items`), Pagination, the `Scroller` strip, Table (columns and rows as data — `columns`,
-> `items` — with sorting, row selection, column resizing and reordering), the `Virtual` window for
-> long lists (`<Virtual><ListBox items={…} /></Virtual>`, the same with `Table`) and the
-> `DragAndDrop` wrapper that lets users reorder the items of Tabs, ListBox and Accordion by
-> dragging (`<DragAndDrop onMove={…}><ListBox items={…} /></DragAndDrop>`, `onMoveBefore` can
-> cancel) are ported, the rest of the set is on its way. Icon renders the `tag` it is given;
-> `roleIcon(role)` makes that tag from the registered icon pack. See
+> or `items`), Pagination, the `Scroller` strip, the overlays Popover and Tooltip (the trigger in
+> the `trigger` slot, `trigger={({ triggerAria }) => <Button {...triggerAria} />}`), Dialog and
+> Drawer (open state in `visible`, user closing reported by `onChangeVisible`), Table (columns
+> and rows as data — `columns`, `items` — with sorting, row selection, column resizing and
+> reordering), the `Virtual` window for long lists (`<Virtual><ListBox items={…} /></Virtual>`,
+> the same with `Table`) and the `DragAndDrop` wrapper that lets users reorder the items of Tabs,
+> ListBox and Accordion by dragging (`<DragAndDrop onMove={…}><ListBox items={…} /></DragAndDrop>`,
+> `onMoveBefore` can cancel) are ported, the rest of the set is on its way. Icon renders the
+> `tag` it is given; `roleIcon(role)` makes that tag from the registered icon pack. See
 > [the adapter table](https://github.com/youra-h/soldy#components).
 
 ## Install

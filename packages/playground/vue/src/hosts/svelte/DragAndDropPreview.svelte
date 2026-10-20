@@ -13,15 +13,14 @@
 	превью их страниц, без пропсов строки, ListBox — данными, как у Vue, React
 	и Solid. Элемент переставляется в своей коллекции: между коллекциями
 	обёртка не переносит. Ряд — граница ширины, как у окна: табы — во всю
-	ширину ряда, список и секции — под ними, рядом. Состав списку — копией: в
-	манифесте он только для чтения, а `items` у списка — массив.
+	ширину ряда, список и секции — под ними, рядом.
 -->
 <DragAndDrop {...bind}>
 	<div style="display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start; width: 100%">
 		<div style="flex: 1 1 100%; min-width: 0">
 			<TabsPreview />
 		</div>
-		<ListBox items={[...COLLECTION_ITEMS]} aria_label="Пункты" />
+		<ListBox items={COLLECTION_ITEMS} aria_label="Пункты" />
 		<div style="flex: 1; min-width: 200px">
 			<AccordionPreview />
 		</div>

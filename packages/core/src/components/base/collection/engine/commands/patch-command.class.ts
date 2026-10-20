@@ -20,12 +20,15 @@ import { TUpdateCommand } from './update-command.class'
  * те же `TUpdateCommand` / `TInsertCommand` / `TRemoveCommand`. Так `selection`,
  * реестр контекстов и bundles по-прежнему узнают о судьбе каждого элемента, а
  * не только о том, что «состав изменился».
+ *
+ * Входной набор команда только проходит, поэтому он только для чтения: состав,
+ * объявленный константой, уходит сюда без копии.
  */
 export class TPatchCommand<TItem> implements ICommand<TItem> {
 	private _commands: ICommand<TItem>[] = []
 
 	constructor(
-		private _items: TCollectionEngineItemSource<TItem>[],
+		private _items: ReadonlyArray<TCollectionEngineItemSource<TItem>>,
 		private _trackBy: (item: TCollectionEngineItemSource<TItem> | TItem) => unknown,
 	) {}
 

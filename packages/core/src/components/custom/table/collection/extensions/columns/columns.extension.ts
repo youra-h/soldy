@@ -319,7 +319,7 @@ export class TTableColumnsExtension<
 		this._writing++
 
 		try {
-			this._engine.extensions.batch.items = [...sources]
+			this._engine.extensions.batch.items = sources
 		} finally {
 			this._writing--
 			this._flush()

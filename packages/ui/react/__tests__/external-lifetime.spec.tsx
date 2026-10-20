@@ -32,7 +32,9 @@ import {
 	TButton,
 	TCheckBox,
 	TComponentView,
+	TDialog,
 	TDragAndDrop,
+	TDrawer,
 	TEvented,
 	TField,
 	TFrame,
@@ -41,6 +43,7 @@ import {
 	TLabel,
 	TListBox,
 	TPagination,
+	TPopover,
 	TProgressLinear,
 	TProgressSpinner,
 	TRadioGroup,
@@ -52,6 +55,7 @@ import {
 	TTable,
 	TTabs,
 	TTextarea,
+	TTooltip,
 	TVirtual,
 	createEngineAccordion,
 	createEngineListBox,
@@ -66,7 +70,9 @@ import {
 	Button,
 	CheckBox,
 	ComponentView,
+	Dialog,
 	DragAndDrop,
+	Drawer,
 	Field,
 	Frame,
 	Icon,
@@ -74,6 +80,7 @@ import {
 	Label,
 	ListBox,
 	Pagination,
+	Popover,
 	ProgressLinear,
 	ProgressSpinner,
 	RadioGroup,
@@ -85,6 +92,7 @@ import {
 	Table,
 	Tabs,
 	Textarea,
+	Tooltip,
 	Virtual,
 } from '@soldy-ui/react'
 import { nextFrame, track } from './mount'
@@ -320,6 +328,16 @@ const COMPONENTS: Readonly<Record<string, Readonly<Record<string, TCase>>>> = {
 		),
 	},
 	/**
+	 * Видимое окно: у открытого подписаны все плагины модального слоя — фокус,
+	 * немой фон, замок прокрутки, нажатие мимо.
+	 */
+	Dialog: {
+		'ctrl видим': overCtrl(
+			() => new TDialog({ visible: true }),
+			(ctrl) => <Dialog ctrl={ctrl}>Содержимое</Dialog>,
+		),
+	},
+	/**
 	 * Обёртка опускает коллекции свой экземпляр, и плагин перетаскивания списка
 	 * держит его, пока жив набор списка. У списка из `items` нет ни `ctrl`, ни
 	 * движка снаружи — выброшенную сборку такого списка освободить некому, и
@@ -351,6 +369,13 @@ const COMPONENTS: Readonly<Record<string, Readonly<Record<string, TCase>>>> = {
 				buses: [ctrl.events],
 			}
 		},
+	},
+	/** Видимая панель — как окно, и ещё жест. */
+	Drawer: {
+		'ctrl видим': overCtrl(
+			() => new TDrawer({ visible: true }),
+			(ctrl) => <Drawer ctrl={ctrl}>Содержимое</Drawer>,
+		),
 	},
 	/**
 	 * Поле — над своим `ctrl` и `ctrl` контрола: связка контрола с полем
@@ -436,6 +461,16 @@ const COMPONENTS: Readonly<Record<string, Readonly<Record<string, TCase>>>> = {
 				buses: [ctrl.events, ...engineBuses(engine)],
 			}
 		},
+	},
+	/**
+	 * Открытый поповер: у открытого подписаны фокус и нажатие мимо, а якорем
+	 * панели служит корень — значение рендера, подписка на ref корня.
+	 */
+	Popover: {
+		'ctrl открыт': overCtrl(
+			() => new TPopover({ open: true }),
+			(ctrl) => <Popover ctrl={ctrl}>Содержимое</Popover>,
+		),
 	},
 	ProgressLinear: {
 		ctrl: overCtrl(
@@ -546,6 +581,13 @@ const COMPONENTS: Readonly<Record<string, Readonly<Record<string, TCase>>>> = {
 		ctrl: overCtrl(
 			() => new TTextarea(),
 			(ctrl) => <Textarea ctrl={ctrl} />,
+		),
+	},
+	/** Открытая подсказка — как поповер: показ ведёт плагин наведения. */
+	Tooltip: {
+		'ctrl открыт': overCtrl(
+			() => new TTooltip({ open: true }),
+			(ctrl) => <Tooltip ctrl={ctrl}>Подсказка</Tooltip>,
 		),
 	},
 	/**

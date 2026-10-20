@@ -4,18 +4,18 @@ import {
 	TPlainExtension,
 	TBatchExtension,
 	TSelectionExtension,
+	TBatchCollectionFacade,
 } from '@soldy-ui/core'
+import type { IBatchCollectionProps } from '@soldy-ui/core'
 
 type Item = { id: number; name: string }
+type Extensions = { plain: TPlainExtension<Item>; batch: TBatchExtension<Item> }
 
 function createCollection() {
 	const plain = new TPlainExtension<Item>()
 	const batch = new TBatchExtension<Item>()
 
-	return new TCollectionEngine<
-		Item,
-		{ plain: TPlainExtension<Item>; batch: TBatchExtension<Item> }
-	>({
+	return new TCollectionEngine<Item, Extensions>({
 		extensions: { plain, batch },
 	})
 }
@@ -328,5 +328,117 @@ describe('TBatchExtension — items тем же составом', () => {
 
 		expect(changeItems).toHaveBeenCalled()
 		expect(col.extensions.batch.items.map((item) => item.id)).toEqual([2, 1])
+	})
+})
+
+/**
+ * Состав на входе — массив только для чтения: сеттер, операции и команда
+ * сверки его только проходят. Поэтому данные, объявленные константой
+ * (`as const`, `ReadonlyArray`), уходят коллекции без копии.
+ *
+ * Вход здесь заморожен: запись в него бросила бы `TypeError`. Тип
+ * замороженного — `readonly T[]`, и те же вызовы держат входные типы: их
+ * проверяют «Типы — Core».
+ */
+describe('TBatchExtension — вход только для чтения', () => {
+	class TestBatchFacade extends TBatchCollectionFacade<Item, Extensions> {}
+
+	const frozen = (...items: Item[]): readonly Item[] => Object.freeze(items)
+
+	const ids = (items: ReadonlyArray<Item>): number[] => items.map((item) => item.id)
+
+	it('сеттер фасада принимает замороженный состав', () => {
+		const facade = new TestBatchFacade({}, { engine: createCollection() })
+		const items = frozen({ id: 1, name: 'a' }, { id: 2, name: 'b' })
+
+		facade.items = items
+
+		expect(facade.items).toEqual(items)
+
+		// Замена без `trackBy` — `clear()` + `set()`
+		facade.items = frozen({ id: 3, name: 'c' })
+
+		expect(ids(facade.items)).toEqual([3])
+	})
+
+	it('сеттер фасада с trackBy сверяет замороженный состав по ключу', () => {
+		const facade = new TestBatchFacade({}, { engine: createCollection() })
+		const a: Item = { id: 1, name: 'a' }
+
+		facade.trackBy = (item) => item.id
+		facade.items = frozen(a, { id: 2, name: 'b' })
+		facade.items = frozen({ id: 1, name: 'a-updated' }, { id: 3, name: 'c' })
+
+		expect(ids(facade.items)).toEqual([1, 3])
+		// Совпавший по ключу — тот же элемент, обновлённый на месте
+		expect(facade.items[0]).toBe(a)
+		expect(a.name).toBe('a-updated')
+	})
+
+	it('update без trackBy заменяет состав замороженным', () => {
+		const col = createCollection()
+
+		col.extensions.batch.set(frozen({ id: 1, name: 'a' }))
+		col.extensions.batch.update(frozen({ id: 2, name: 'b' }, { id: 3, name: 'c' }))
+
+		expect(ids(col.extensions.batch.items)).toEqual([2, 3])
+	})
+
+	it('update с trackBy сверяет замороженный состав: обновляет, добавляет, удаляет', () => {
+		const col = createCollection()
+		const a: Item = { id: 1, name: 'a' }
+
+		col.extensions.batch.trackBy = (item) => item.id
+		col.extensions.batch.set(frozen(a, { id: 2, name: 'b' }))
+		col.extensions.batch.update(frozen({ id: 1, name: 'a-updated' }, { id: 3, name: 'c' }))
+
+		expect(ids(col.extensions.batch.items)).toEqual([1, 3])
+		expect(col.extensions.batch.items[0]).toBe(a)
+		expect(a.name).toBe('a-updated')
+	})
+
+	it('remove удаляет по замороженному списку', () => {
+		const col = createCollection()
+		const a: Item = { id: 1, name: 'a' }
+		const b: Item = { id: 2, name: 'b' }
+		const c: Item = { id: 3, name: 'c' }
+
+		col.extensions.batch.set(frozen(a, b, c))
+		col.extensions.batch.remove(frozen(a, c))
+
+		expect(col.extensions.batch.items).toEqual([b])
+	})
+
+	it('items:added и items:removed отдают тот же массив, что дали операции', () => {
+		const col = createCollection()
+		const added = vi.fn()
+		const removed = vi.fn()
+		const a: Item = { id: 1, name: 'a' }
+		const items = frozen(a)
+		const gone = frozen(a)
+
+		col.extensions.batch.events.on('items:added', added)
+		col.extensions.batch.events.on('items:removed', removed)
+
+		col.extensions.batch.set(items)
+		col.extensions.batch.remove(gone)
+
+		expect(added).toHaveBeenCalledTimes(1)
+		expect(added.mock.calls[0][0]).toBe(items)
+		expect(removed).toHaveBeenCalledTimes(1)
+		expect(removed.mock.calls[0][0]).toBe(gone)
+	})
+
+	it('пропсы коллекции принимают состав, объявленный константой', () => {
+		const ITEMS = [
+			{ id: 1, name: 'a' },
+			{ id: 2, name: 'b' },
+		] as const
+		const props: IBatchCollectionProps<Item, Item> = { items: ITEMS }
+		const facade = new TestBatchFacade({}, { engine: createCollection() })
+
+		facade.items = props.items ?? []
+
+		expect(facade.items).toEqual(ITEMS)
 	})
 })
