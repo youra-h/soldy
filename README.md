@@ -195,8 +195,8 @@ come in later releases.
 | CheckBox        | Checkbox with a third, indeterminate state                                                     | *          | 0.2.0   |
 | Switch          | Switch: the same value as a checkbox, a different metaphor                                     | *          | 0.2.0   |
 | Label           | Control label: clicking the text toggles the control, and the text is its accessible name      | *          | 0.2.0   |
-| Slider          | Slider: a number or a range, set by dragging, with keys or with a screen reader gesture        | Vue        | 0.2.0   |
-| Rating          | Rating with stars: set by click, drag or arrow keys, halves, hover preview, read-only display  | Vue        | 0.2.0   |
+| Slider          | Slider: a number or a range, set by dragging, with keys or with a screen reader gesture        | Vue, React | 0.2.0   |
+| Rating          | Rating with stars: set by click, drag or arrow keys, halves, hover preview, read-only display  | Vue, React | 0.2.0   |
 | RadioGroup      | One option out of several: native radio buttons sharing a `name`                               | *          | 0.2.0   |
 | Select          | Select field: an input plus a list in an overlay, the Combobox pattern                         | Vue        | 0.2.0   |
 | Calendar        | Month grids: pick a single date, several dates or a range                                      | Vue        | 0.2.0   |
@@ -207,19 +207,19 @@ come in later releases.
 | Dialog          | Modal window: centered or at an edge of the screen, can be maximized to full screen            | Vue        | 0.2.0   |
 | Drawer          | Panel that slides in at an edge of the screen or a container, can be swiped away               | Vue        | 0.2.0   |
 | Toasts          | Pop-up notifications shown from code: a queue, auto-dismiss with a pause, swipe to close       | Vue        | 0.2.0   |
-| Scroller        | Single-row strip of any content, paged with two buttons                                        | Vue        | 0.2.0   |
+| Scroller        | Single-row strip of any content, paged with two buttons                                        | Vue, React | 0.2.0   |
 | ListBox         | List with single or multiple selection                                                         | *          | 0.2.0   |
 | Table           | Table: columns as data, sorting by column headers, row selection with checkboxes               | *          | 0.2.0   |
 | Tabs            | Tabs: a tab list and panels linked by value                                                    | *          | 0.2.0   |
 | Tags            | Tag set: close buttons, optional selection                                                     | Vue        | 0.2.0   |
 | Accordion       | Sections that expand one at a time or several at once                                          | *          | 0.2.0   |
 | Icon            | Icon from the registered pack, by role                                                         | *          | 0.2.0   |
-| ProgressLinear  | Linear progress indicator: the share done, or an indeterminate animation while it is unknown   | Vue        | 0.2.0   |
+| ProgressLinear  | Linear progress indicator: the share done, or an indeterminate animation while it is unknown   | Vue, React | 0.2.0   |
 | ProgressSpinner | Circular progress indicator: the share done, or an indeterminate animation while it is unknown | *          | 0.2.0   |
 | Skeleton        | Placeholder while content loads                                                                | *          | 0.2.0   |
 | DragAndDrop     | Drag and drop of collection items                                                              | Vue        | 0.2.0   |
 | Virtual         | Window for long lists: ListBox and Table inside render only the visible items                  | *          | 0.2.0   |
-| Pagination      | Page navigation: page numbers with gaps, previous and next, first and last                     | Vue        | 0.2.0   |
+| Pagination      | Page navigation: page numbers with gaps, previous and next, first and last                     | Vue, React | 0.2.0   |
 | Menu            | Action menu at a button or on right click: submenus, checkbox and radio items                  | Vue        | 0.2.0   |
 | Textarea        | Multi-line text field that grows with its content                                              | Vue        | alpha   |
 | Field           | Field wrapper: description, error message and invalid state linked to the control              | *          | 0.2.0   |

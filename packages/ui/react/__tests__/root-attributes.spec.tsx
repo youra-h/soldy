@@ -38,9 +38,14 @@ import {
 	Input,
 	Label,
 	ListBox,
+	Pagination,
+	ProgressLinear,
 	ProgressSpinner,
 	RadioGroup,
+	Rating,
+	Scroller,
 	Skeleton,
+	Slider,
 	Switch,
 	Table,
 	Tabs,
@@ -54,10 +59,15 @@ import {
 	type LabelProps,
 	type ListBoxItemProps,
 	type ListBoxProps,
+	type PaginationProps,
+	type ProgressLinearProps,
 	type ProgressSpinnerProps,
 	type RadioGroupItemProps,
 	type RadioGroupProps,
+	type RatingProps,
+	type ScrollerProps,
 	type SkeletonProps,
+	type SliderProps,
 	type TableProps,
 	type TabsContentProps,
 	type TabsItemProps,
@@ -76,12 +86,17 @@ type TProbeProps = ButtonProps &
 	FrameProps &
 	IconProps &
 	LabelProps &
+	ProgressLinearProps &
 	ProgressSpinnerProps &
 	SkeletonProps &
 	TabsProps &
 	AccordionProps &
 	RadioGroupProps &
-	TabsContentProps
+	TabsContentProps &
+	SliderProps &
+	RatingProps &
+	PaginationProps &
+	ScrollerProps
 
 /** Панель рисуется, пока активен её таб, — и только внутри набора. */
 function TabsContentProbe(props: TabsContentProps): ReactNode {
@@ -106,11 +121,16 @@ const COMPONENTS: ReadonlyArray<
 	['Frame', Frame, '.so-frame', {}],
 	['Icon', Icon, '.so-icon', { tag: 'i' }],
 	['Label', Label, '.so-label', {}],
+	['ProgressLinear', ProgressLinear, '.so-progress-linear', {}],
 	['ProgressSpinner', ProgressSpinner, '.so-progress-spinner', {}],
 	['Skeleton', Skeleton, '.so-skeleton', {}],
 	['Tabs.Content', TabsContentProbe, '.so-tabs__panel', {}],
 	['Accordion', Accordion, '.so-accordion', {}],
 	['RadioGroup', RadioGroup, '.so-radio-group', {}],
+	['Slider', Slider, '.so-slider', {}],
+	['Rating', Rating, '.so-rating', {}],
+	['Pagination', Pagination, '.so-pagination', {}],
+	['Scroller', Scroller, '.so-scroller', {}],
 ]
 
 /** Общие пропсы элементов коллекций в таблице. */
@@ -365,12 +385,22 @@ const ROOTS: ReadonlyArray<
 	['Icon', (props) => <Icon tag="i" {...props} />, '.so-icon', '.so-icon'],
 	['Label', (props) => <Label {...props} />, '.so-label', '.so-label'],
 	[
+		'ProgressLinear',
+		(props) => <ProgressLinear {...props} />,
+		'.so-progress-linear',
+		'.so-progress-linear',
+	],
+	[
 		'ProgressSpinner',
 		(props) => <ProgressSpinner {...props} />,
 		'.so-progress-spinner',
 		'.so-progress-spinner',
 	],
 	['Skeleton', (props) => <Skeleton {...props} />, '.so-skeleton', '.so-skeleton'],
+	['Slider', (props) => <Slider {...props} />, '.so-slider', '.so-slider'],
+	['Rating', (props) => <Rating {...props} />, '.so-rating', '.so-rating'],
+	['Pagination', (props) => <Pagination {...props} />, '.so-pagination', '.so-pagination'],
+	['Scroller', (props) => <Scroller {...props} />, '.so-scroller', '.so-scroller'],
 	['Input', (props) => <Input {...props} />, '.so-input', '.so-input'],
 	['CheckBox', (props) => <CheckBox {...props} />, '.so-check-box', '.so-check-box'],
 	['Switch', (props) => <Switch {...props} />, '.so-switch', '.so-switch'],
@@ -805,6 +835,13 @@ describe('раскладка корня: стиль-выход компонен�
 		const { root } = mount(<ProgressSpinner value={40} style={consumer} />)
 
 		expect(root().style.getPropertyValue('--so-progress-spinner-fraction')).toBe('0.9')
+	})
+
+	it('ProgressLinear: стиль потребителя — поверх доли', () => {
+		const percent: Record<string, string> = { '--so-progress-linear-percent': '90%' }
+		const { root } = mount(<ProgressLinear value={40} style={percent} />)
+
+		expect(root().style.getPropertyValue('--so-progress-linear-percent')).toBe('90%')
 	})
 
 	it('ProgressSpinner: display: none скрытого корня — поверх стиля потребителя и доли', () => {

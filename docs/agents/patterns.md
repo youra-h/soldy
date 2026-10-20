@@ -250,7 +250,9 @@ ARIA пускает только `option` и `group` (axe — `aria-required-chi
   чекбоксе он дубль `checked`. «Выбрано частично» у CheckBox — DOM-свойство
   `indeterminate` вложенного `<input>`, его проводит разметка, как `checked`,
   а не `aria-checked="mixed"`. У разметки React привязки свойства DOM нет, и
-  `checked`, `indeterminate` и текст поля Input проводит поле адаптера
+  `checked`, `indeterminate`, текст поля Input и значение поля ползунка
+  (`input[type="range"]` Slider и Rating — ядро отдаёт его числом, в узел оно
+  уходит строкой, как `:value` у Vue) проводит поле адаптера
   `NativeInput` (`ui/react/src/adapter/runtime/`): умолчание — атрибутом
   (`defaultChecked`, `defaultValue` — это и серверная разметка), свойство — в
   узел после коммита, когда сменилось состояние ядра. Текст — только если
@@ -261,9 +263,11 @@ ARIA пускает только `option` и `group` (axe — `aria-required-chi
   поля React (`value` или `checked` с `onChange`) нет: `onChange` писал бы
   значение вторым путём рядом с плагинами ввода, а без него React ругается в
   консоль. Сторожат `ui/react/__tests__/input.spec.tsx`,
-  `ui/react/__tests__/checkable.spec.tsx` и
+  `ui/react/__tests__/checkable.spec.tsx`,
   `ui/react/__tests__/radio-group.spec.tsx` («радио, с которого отметку сняло
-  значение снаружи, выбирается снова»). У Svelte своего поля нет: `checked` и
+  значение снаружи, выбирается снова») и `ui/react/__tests__/slider.spec.tsx`
+  («жест скринридера — шаг ядра; ядро отказало — поле возвращается»). У Svelte
+  своего поля нет: `checked` и
   `indeterminate` он пишет свойствами узла сам, а на сервере — атрибутами (HTML
   из них знает только `checked`, «выбрано частично» встаёт с гидратацией).
   Текст — тоже свойством, но не спредом: наборы ядра и атрибуты потребителя
@@ -1090,9 +1094,11 @@ useToasts()`. API опускает лифт (`TOASTS_ELEVATOR`, расширен
   `plugins/__tests__/slide-pointer.plugin.spec.ts`,
   `plugins/__tests__/slide-snap-strategies.spec.ts`,
   `plugins/__tests__/slide-keyboard.plugin.spec.ts`,
-  `ui/vue/__tests__/slider.spec.ts` и `playground/vue/browser/slider.spec.ts`;
-  ползунок в поле формы — `ui/vue/__tests__/field.spec.ts` («Slider с
-  несколькими ручками в поле») и `playground/vue/browser/field.spec.ts`.
+  `ui/vue/__tests__/slider.spec.ts`, `ui/react/__tests__/slider.spec.tsx` и
+  `playground/vue/browser/slider.spec.ts`; ползунок в поле формы —
+  `ui/vue/__tests__/field.spec.ts` и `ui/react/__tests__/field.spec.tsx`
+  («Slider с несколькими ручками в поле») и
+  `playground/vue/browser/field.spec.ts`.
 - **Rating** — Rating Slider (APG): ползунок с одной ручкой, у которого
   шкала — ряд звёзд, а не группа радио. Звёзды потребитель не адресует, и
   элементами коллекции они не стали бы (см. «Часть или слот»), а
@@ -1142,9 +1148,10 @@ useToasts()`. API опускает лифт (`TOASTS_ELEVATOR`, расширен
   `plugins/__tests__/names.plugin.spec.ts`,
   `plugins/__tests__/rating-validity.plugin.spec.ts` (ошибка поля по оценке,
   обязательности, только для показа и локали, на новом узле, снятие),
-  `ui/vue/__tests__/rating.spec.ts` и `playground/vue/browser/rating.spec.ts`
-  (форма без оценки не уходит, сообщение и фокус от браузера, только для
-  показа уходит с 0, тон ошибки у пустых звёзд после попытки отправить).
+  `ui/vue/__tests__/rating.spec.ts`, `ui/react/__tests__/rating.spec.tsx` и
+  `playground/vue/browser/rating.spec.ts` (форма без оценки не уходит,
+  сообщение и фокус от браузера, только для показа уходит с 0, тон ошибки у
+  пустых звёзд после попытки отправить).
 - **NumberInput** — Spinbutton (APG) на текстовом поле: `<input type="text">`
   с `role="spinbutton"`, `aria-valuenow` и `aria-valuetext` — у числа (текст —
   строкой формата: «12 %», а не «0.12»), `aria-valuemin` и `aria-valuemax` —
@@ -1231,7 +1238,8 @@ useToasts()`. API опускает лифт (`TOASTS_ELEVATOR`, расширен
   иначе браузер заменил бы их фоны цветом поверхности. Не дорожка `GrayText`:
   рядом с `Highlight` во многих палитрах она почти того же цвета, и долю было
   не разглядеть. Сторожат `core/__tests__/progress-linear.spec.ts`,
-  `ui/vue/__tests__/progress-linear.spec.ts` и
+  `ui/vue/__tests__/progress-linear.spec.ts`,
+  `ui/react/__tests__/progress-linear.spec.tsx` и
   `playground/vue/browser/progress-linear.spec.ts`; как бег и доля выглядят,
   оценивает глаз — ручные сценарии `/tests/motion/progress-linear` на стенде.
 - **ProgressSpinner** — индикатор выполнения кольцом: вторая форма той же
@@ -1533,7 +1541,9 @@ useToasts()`. API опускает лифт (`TOASTS_ELEVATOR`, расширен
   она не выходит. Сторожат `core/__tests__/pagination.spec.ts`,
   `plugins/__tests__/names.plugin.spec.ts`,
   `plugins/__tests__/pagination-focus.plugin.spec.ts`,
-  `ui/vue/__tests__/pagination.spec.ts` и
+  `ui/vue/__tests__/pagination.spec.ts`,
+  `ui/react/__tests__/pagination.spec.tsx` (в том числе окно и текущая в
+  серверной разметке и гидратация) и
   `playground/vue/browser/pagination.spec.ts` (фокус со стрелки, погасшей
   у края, — на текущую, и Tab мимо погасшей стрелки).
 - **Table** — Table и Sortable Table (APG): нативные `table`, `thead`,
