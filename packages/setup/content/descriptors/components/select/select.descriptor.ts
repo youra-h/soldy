@@ -9,8 +9,10 @@
 import { defineComponent, defineDescriptor, defineType } from '../../../../protected/define'
 import { TSelect } from '@soldy-ui/core'
 import type { IInput, ISelectItem, ITags, TTagsCollection } from '@soldy-ui/core'
+import { fieldOf } from '@soldy-ui/plugins'
 import { InputControlDescriptor } from '../input-control.descriptor'
 import {
+	ActionPluginDescriptor,
 	CollectionBundlesPluginDescriptor,
 	CollectionElementsPluginDescriptor,
 	DismissPluginDescriptor,
@@ -188,6 +190,9 @@ export const SelectDescriptor = defineDescriptor(() =>
 		},
 
 		plugins: [
+			// Фокус держит `<input>` поля, а не корень и не крестики тегов перед
+			// ним в `multiple`: туда `focused = true` и ставит фокус
+			ActionPluginDescriptor.with({ focusTarget: fieldOf }),
 			// Коллекция: реестр bundles + доступ к DOM-элементам опций
 			CollectionBundlesPluginDescriptor,
 			CollectionElementsPluginDescriptor,

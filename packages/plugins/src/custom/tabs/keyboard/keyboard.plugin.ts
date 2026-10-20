@@ -5,13 +5,8 @@ import { TElementPlugin } from '../../element'
 import { TCollectionBundlesPlugin, TCollectionElements } from '../../collection'
 import { isFocusableElement } from '../../../utils'
 import type { IDomEventTarget } from '../../../utils'
+import { tabOf } from '../tab'
 import type { TTabsKeyboardPluginEvents } from './types'
-
-/**
- * Узел таба внутри узла элемента. Корень элемента — обёртка для темы, а табом
- * со своей ролью является вложенная строка: на неё и уходит фокус.
- */
-const TAB_SELECTOR = '[role="tab"]'
 
 /** Стрелки «к предыдущему» и «к следующему» — на оси ориентации списка. */
 const AXIS_KEYS: Record<TTabsOrientation, readonly [back: string, forward: string]> = {
@@ -228,7 +223,7 @@ export class TTabsKeyboardPlugin extends TBasePlugin<ITabs, TTabsKeyboardPluginE
 
 	/** Фокус на узел таба с ролью. Гард нужен: узел плагину приходит `Element`. */
 	private _focus(item: ITabsItem): void {
-		const tab = this._elements?.getElementByUid(item.uid)?.querySelector(TAB_SELECTOR)
+		const tab = tabOf(this._elements, item.uid)
 
 		if (isFocusableElement(tab)) tab.focus()
 	}
