@@ -529,6 +529,116 @@ describe('строка пункта', () => {
 })
 
 /**
+ * Переключатели — `Menu.RadioGroup` с `Menu.RadioItem`: в группе отмечен
+ * один, нажатие меню не закрывает. Отметка — точка темы в колонке отметок, а
+ * не иконка. Модель и проводка — `core/__tests__/menu.spec.ts` и
+ * `ui/vue/__tests__/menu.spec.ts`; здесь — клик из пробела на строке, место
+ * точки и её цвет в принудительных цветах.
+ */
+describe('переключатели', () => {
+	afterEach(async () => {
+		await forcedColors('none')
+	})
+
+	/** Меню: флажок, разделитель и группа «Сортировка», где отмечено «По имени». */
+	const radioPage = () =>
+		h('div', { style: 'padding: 40px' }, [
+			h(
+				Menu,
+				{},
+				{
+					trigger: ({ triggerAria, triggerDataset }: TTriggerScope) =>
+						h(Button, {
+							text: 'Действия',
+							class: 'so-test-trigger',
+							...triggerAria,
+							...triggerDataset,
+						}),
+					default: () => [
+						h(Menu.CheckboxItem, { value: 'grid', text: 'Сетка' }),
+						h(Menu.Separator),
+						h(Menu.RadioGroup, { label: 'Сортировка', value: 'name' }, () => [
+							h(Menu.RadioItem, { value: 'name', text: 'По имени' }),
+							h(Menu.RadioItem, { value: 'date', text: 'По дате' }),
+						]),
+					],
+				},
+			),
+		])
+
+	const showRadios = async () => {
+		render(defineComponent({ render: radioPage }))
+
+		await nextTick()
+		await nextFrame()
+		await nextFrame()
+	}
+
+	const checked = () =>
+		['По имени', 'По дате'].map((text) => rowOf(text).getAttribute('aria-checked'))
+
+	it('пробел на переключателе отмечает его, отметка уходит с соседа, меню открыто', async () => {
+		await showRadios()
+		await openByKey()
+		await expect.poll(active).toBe(rowOf('Сетка'))
+
+		await userEvent.keyboard('{ArrowDown}{ArrowDown}')
+		await expect.poll(active).toBe(rowOf('По дате'))
+
+		await userEvent.keyboard(' ')
+
+		await expect.poll(checked).toEqual(['false', 'true'])
+		expect(isOpen()).toBe(true)
+		expect(active()).toBe(rowOf('По дате'))
+	})
+
+	it('точка — круг цвета текста строки в середине колонки отметок, только у отмеченного', async () => {
+		await showRadios()
+		await openByKey()
+		await settled(panel())
+
+		const row = rowOf('По имени')
+		const dot = find('.so-menu-item__dot', row)
+		const box = dot.getBoundingClientRect()
+		const column = find('.so-menu-item__indicator', row).getBoundingClientRect()
+
+		expect(box.width).toBeGreaterThan(0)
+		expect(box.height).toBeCloseTo(box.width, 1)
+		expect(style(dot).borderTopLeftRadius).not.toBe('0px')
+		expect(box.left + box.width / 2).toBeCloseTo(column.left + column.width / 2, 0)
+		expect(box.top + box.height / 2).toBeCloseTo(column.top + column.height / 2, 0)
+		expect(pixel([style(dot).backgroundColor])).toEqual(pixel([style(row).color]))
+
+		expect(rowOf('По дате').querySelector('.so-menu-item__dot')).toBeNull()
+
+		// Колонка отметок у переключателей та же, что у флажка: тексты — на одной линии
+		const lefts = ['Сетка', 'По имени', 'По дате'].map(
+			(text) => find('.so-button__text', rowOf(text)).getBoundingClientRect().left,
+		)
+
+		expect(lefts[1]).toBeCloseTo(lefts[0], 0)
+		expect(lefts[2]).toBeCloseTo(lefts[0], 0)
+	})
+
+	it('принудительные цвета: точка — системный текст, у подсвеченного — текст подсветки', async () => {
+		await forcedColors('active')
+		await showRadios()
+		await openByKey()
+		await expect.poll(active).toBe(rowOf('Сетка'))
+
+		const dot = () => find('.so-menu-item__dot', rowOf('По имени'))
+
+		expect(pixel([style(dot()).backgroundColor])).toEqual(pixel([systemColor('CanvasText')]))
+
+		await userEvent.keyboard('{ArrowDown}')
+		await expect.poll(active).toBe(rowOf('По имени'))
+		await settled(panel())
+
+		expect(pixel([style(dot()).backgroundColor])).toEqual(pixel([systemColor('HighlightText')]))
+	})
+})
+
+/**
  * Подменю — `Menu.Submenu`: панель сбоку от строки пункта, у края окна — с
  * другой стороны, в RTL — зеркально; указатель открывает его, постояв на
  * строке, и путь наискосок к панели через соседний пункт его не закрывает.

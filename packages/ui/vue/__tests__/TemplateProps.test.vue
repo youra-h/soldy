@@ -272,6 +272,14 @@ const dragAndDrop = new TDragAndDrop()
 	<Menu.CheckboxItem :selected="'yes'" />
 	<Menu.CheckboxItem selected />
 
+	<!-- @vue-expect-error — отметка переключателя — флаг, а не строка -->
+	<Menu.RadioItem :selected="'yes'" />
+	<Menu.RadioItem selected />
+
+	<!-- @vue-expect-error — значение группы переключателей — строка или число, а не флаг -->
+	<Menu.RadioGroup :value="true" />
+	<Menu.RadioGroup value="name" />
+
 	<!-- @vue-expect-error — открытость подменю — флаг, а не строка -->
 	<Menu.Submenu :open="'yes'" />
 	<Menu.Submenu open />

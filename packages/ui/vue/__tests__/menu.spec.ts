@@ -360,6 +360,218 @@ describe('нажатие пунктов', () => {
 	})
 })
 
+/**
+ * Переключатели: `Menu.RadioGroup` со своим значением и `Menu.RadioItem` в
+ * ней. Отметка — выбор коллекции меню, и в группе отмечен один; группу
+ * переключатель берёт лифтом. Модель — `core/__tests__/menu.spec.ts`, лифт без
+ * фреймворка — `setup/__tests__/menu-radio.spec.ts`.
+ */
+describe('переключатели', () => {
+	type TSortValue = string | number | null
+
+	/** Меню с группой «Сортировка» в `v-model:value` и флажком рядом. */
+	async function renderSort(
+		sort: { value: TSortValue },
+		listeners: { onChoose?: (item: IMenuItem) => void } = {},
+	): Promise<void> {
+		await render(() =>
+			h(
+				Menu,
+				{ ...listeners },
+				{
+					trigger,
+					default: () => [
+						h(
+							Menu.RadioGroup,
+							{
+								label: 'Сортировка',
+								value: sort.value,
+								'onUpdate:value': (value: TSortValue) => (sort.value = value),
+							},
+							() => [
+								h(Menu.RadioItem, { value: 'name', text: 'По имени' }),
+								h(Menu.RadioItem, { value: 'date', text: 'По дате' }),
+							],
+						),
+						h(Menu.Separator),
+						h(Menu.CheckboxItem, { value: 'grid', text: 'Сетка', selected: true }),
+					],
+				},
+			),
+		)
+	}
+
+	const checked = () => rows().map((row) => row.getAttribute('aria-checked'))
+
+	it('группа — group с именем от подписи, переключатели — menuitemradio вне обхода Tab', async () => {
+		await renderSort(ref<TSortValue>(null))
+
+		const group = find('.so-menu-group')
+		const label = find('.so-menu-group__label', group)
+
+		expect(group.getAttribute('role')).toBe('group')
+		expect(group.getAttribute('aria-labelledby')).toBe(label.id)
+		expect(label.textContent).toBe('Сортировка')
+
+		expect(rowOf('По имени').getAttribute('role')).toBe('menuitemradio')
+		expect(rowOf('По дате').getAttribute('tabindex')).toBe('-1')
+		expect(checked()).toEqual(['false', 'false', 'true'])
+	})
+
+	it('клик отмечает переключатель и меню не закрывает: v-model:value', async () => {
+		const sort = ref<TSortValue>(null)
+		const chosen: unknown[] = []
+
+		await renderSort(sort, { onChoose: (item: IMenuItem) => chosen.push(item.value) })
+		await open()
+		await click(rowOf('По имени'))
+
+		expect(sort.value).toBe('name')
+		expect(checked()).toEqual(['true', 'false', 'true'])
+
+		await click(rowOf('По дате'))
+
+		// В группе отмечен один, флажок — сам по себе
+		expect(sort.value).toBe('date')
+		expect(checked()).toEqual(['false', 'true', 'true'])
+
+		// Отмеченный нажатием не снимается
+		await click(rowOf('По дате'))
+
+		expect(sort.value).toBe('date')
+		expect(isOpen()).toBe(true)
+		expect(chosen).toEqual([])
+	})
+
+	it('значение из приложения отмечает свой переключатель, без него — ни один', async () => {
+		const sort = ref<TSortValue>('date')
+
+		await renderSort(sort)
+
+		expect(checked()).toEqual(['false', 'true', 'true'])
+
+		sort.value = 'name'
+		await nextTick()
+
+		expect(checked()).toEqual(['true', 'false', 'true'])
+
+		sort.value = 'size'
+		await nextTick()
+
+		expect(checked()).toEqual(['false', 'false', 'true'])
+	})
+
+	it('v-model:selected у переключателя — его отметка: значение группы и сосед за ней', async () => {
+		const sort = ref<TSortValue>('name')
+		const name = ref(true)
+		const date = ref(false)
+		const radio = (value: string, state: { value: boolean }) =>
+			h(Menu.RadioItem, {
+				value,
+				text: value,
+				selected: state.value,
+				'onUpdate:selected': (selected: boolean) => (state.value = selected),
+			})
+
+		await render(() =>
+			h(
+				Menu,
+				{},
+				{
+					trigger,
+					default: () =>
+						h(
+							Menu.RadioGroup,
+							{
+								value: sort.value,
+								'onUpdate:value': (value: TSortValue) => (sort.value = value),
+							},
+							() => [radio('name', name), radio('date', date)],
+						),
+				},
+			),
+		)
+
+		date.value = true
+		await nextTick()
+
+		expect(sort.value).toBe('date')
+		expect(name.value).toBe(false)
+		expect(checked()).toEqual(['false', 'true'])
+	})
+
+	it('точка рисуется только у отмеченного, обёртка отметки — у всех переключателей', async () => {
+		await renderSort(ref<TSortValue>('name'))
+
+		const indicator = (text: string) => find('.so-menu-item__indicator', rowOf(text))
+
+		expect(indicator('По имени').getAttribute('aria-hidden')).toBe('true')
+		expect(indicator('По имени').querySelector('.so-menu-item__dot')).not.toBeNull()
+		expect(indicator('По дате').querySelector('.so-menu-item__dot')).toBeNull()
+		expect(indicator('По дате').children).toHaveLength(0)
+	})
+
+	it('две группы одного меню независимы', async () => {
+		const sort = ref<TSortValue>('name')
+		const order = ref<TSortValue>('asc')
+		const group = (state: { value: TSortValue }, values: readonly string[]) =>
+			h(
+				Menu.RadioGroup,
+				{
+					value: state.value,
+					'onUpdate:value': (value: TSortValue) => (state.value = value),
+				},
+				() => values.map((value) => h(Menu.RadioItem, { value, text: value })),
+			)
+
+		await render(() =>
+			h(
+				Menu,
+				{},
+				{
+					trigger,
+					default: () => [group(sort, ['name', 'date']), group(order, ['asc', 'desc'])],
+				},
+			),
+		)
+		await open()
+		await click(rowOf('date'))
+		await click(rowOf('desc'))
+
+		expect([sort.value, order.value]).toEqual(['date', 'desc'])
+		expect(checked()).toEqual(['false', 'true', 'false', 'true'])
+	})
+
+	it('слот отметки подменяет точку, scope — отмечен ли переключатель', async () => {
+		await render(() =>
+			h(
+				Menu,
+				{},
+				{
+					trigger,
+					default: () =>
+						h(Menu.RadioGroup, { value: 'name' }, () => [
+							h(
+								Menu.RadioItem,
+								{ value: 'name', text: 'По имени' },
+								{
+									'indicator-icon': ({ selected }: { selected: boolean }) =>
+										h('i', {
+											class: 'so-test-mark',
+											'data-mark': String(selected),
+										}),
+								},
+							),
+						]),
+				},
+			),
+		)
+
+		expect(find('.so-test-mark', rowOf('По имени')).dataset.mark).toBe('true')
+		expect(rowOf('По имени').querySelector('.so-menu-item__dot')).toBeNull()
+	})
+})
+
 describe('группа и разделитель', () => {
 	it('группа — group с именем от подписи, пункты в ней — пункты меню', async () => {
 		await render(() =>

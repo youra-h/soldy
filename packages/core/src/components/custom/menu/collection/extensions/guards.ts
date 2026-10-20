@@ -15,7 +15,13 @@ import type { IMenuExtension } from './menu/types'
  */
 
 function isMenu(ext: object): ext is IMenuExtension {
-	return 'chooseItem' in ext && 'toggleItem' in ext && 'openItem' in ext && 'opened' in ext
+	return (
+		'chooseItem' in ext &&
+		'toggleItem' in ext &&
+		'checkItem' in ext &&
+		'openItem' in ext &&
+		'opened' in ext
+	)
 }
 
 /** Расширение меню, если оно есть в коллекции: нажатие пунктов и открытая панель пункта. */

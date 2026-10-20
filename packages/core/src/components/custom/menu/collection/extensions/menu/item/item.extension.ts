@@ -31,6 +31,11 @@ export class TMenuItemExtension<
 		this._parent.toggleItem(this._item)
 	}
 
+	/** Нажатие переключателя: решает меню — отметить его в группе или отказать. */
+	check(): void {
+		this._parent.checkItem(this._item)
+	}
+
 	/** Нажатие пункта со своей панелью: решает меню — открыть панель или отказать. */
 	open(): void {
 		this._parent.openItem(this._item)

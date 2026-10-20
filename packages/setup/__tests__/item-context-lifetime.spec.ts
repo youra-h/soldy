@@ -35,7 +35,12 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import { TCollectionItemComponent, TListBoxItem, TMenuCheckboxItem } from '@soldy-ui/core'
+import {
+	TCollectionItemComponent,
+	TListBoxItem,
+	TMenuCheckboxItem,
+	TMenuRadioItem,
+} from '@soldy-ui/core'
 import type { TCollectionEngine } from '@soldy-ui/core'
 import { TCollectionBundlesPlugin } from '@soldy-ui/plugins'
 import {
@@ -55,8 +60,10 @@ import {
 	MenuCollectionCheckboxItemDescriptor,
 	MenuCollectionDescriptor,
 	MenuCollectionItemDescriptor,
+	MenuCollectionRadioItemDescriptor,
 	MenuDescriptor,
 	MenuItemDescriptor,
+	MenuRadioItemDescriptor,
 	PaginationCollectionDescriptor,
 	PaginationCollectionItemDescriptor,
 	PaginationDescriptor,
@@ -263,6 +270,22 @@ const COLLECTIONS: Readonly<Record<string, TCollectionKit>> = {
 				source,
 			),
 	},
+	// Переключатель — тоже пункт коллекции меню: его список — меню из переключателей
+	MenuCollectionRadioItemDescriptor: {
+		list: (items) =>
+			mountList(
+				MenuDescriptor(),
+				MenuCollectionDescriptor(),
+				items.map((source) => new TMenuRadioItem(source)),
+			),
+		item: (elevator, source) =>
+			mountItem(
+				MenuRadioItemDescriptor(),
+				MenuCollectionRadioItemDescriptor(),
+				elevator,
+				source,
+			),
+	},
 	RadioGroupCollectionItemDescriptor: {
 		list: (items) => mountList(RadioGroupDescriptor(), RadioGroupCollectionDescriptor(), items),
 		item: (elevator, source) =>
@@ -351,17 +374,22 @@ const DATA_ONLY: Readonly<Record<string, TCollectionKit>> = {
 }
 
 /**
- * Части одной коллекции с разными фасадами элементов: флажок меню — пункт
- * той же коллекции, что и действие, и под её списком он в неё входит. Чужой
- * друг другу их коллекция не считается.
+ * Части одной коллекции с разными фасадами элементов: флажок и переключатель
+ * меню — пункты той же коллекции, что и действие, и под её списком они в неё
+ * входят. Чужой друг другу их коллекция не считается. Ключ — часть, значение —
+ * строка таблицы с её коллекцией.
  */
 const SIBLINGS: Readonly<Record<string, string>> = {
 	MenuCollectionCheckboxItemDescriptor: 'MenuCollectionItemDescriptor',
+	MenuCollectionRadioItemDescriptor: 'MenuCollectionItemDescriptor',
 }
 
-/** Своя ли коллекция у элемента и списка: та же строка таблицы или соседняя часть. */
+/** Строка таблицы с коллекцией части: своя или та, чья это соседняя часть. */
+const collectionOf = (name: string): string => SIBLINGS[name] ?? name
+
+/** Своя ли коллекция у элемента и списка: та же строка таблицы или соседние части. */
 const sameCollection = (item: string, list: string): boolean =>
-	item === list || SIBLINGS[item] === list || SIBLINGS[list] === item
+	collectionOf(item) === collectionOf(list)
 
 /**
  * Фасады, чей контекст берут не через вход в коллекцию: панель таба в
