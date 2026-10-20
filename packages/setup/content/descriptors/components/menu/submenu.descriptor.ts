@@ -100,7 +100,7 @@ export const MenuSubmenuDescriptor = defineDescriptor(() =>
 			// Клавиши строки и панели, подсветка — фокус. После dismiss: берёт у
 			// него панель
 			MenuSubmenuKeyboardPluginDescriptor,
-			// Указатель в панели: подсветка, подменю ниже и путь к ним
+			// Указатель в панели: подсветка, панели пунктов ниже и путь к ним
 			MenuHoverPluginDescriptor,
 			// Фокус при открытии и закрытии уровня, Escape и Tab. После dismiss и
 			// клавиатуры: берёт у них панель, `dismiss` и строку подсвеченного
