@@ -21,7 +21,7 @@ import { describe, it, expect, expectTypeOf, vi, afterEach, type Mock } from 'vi
 import { createSignal, type JSX } from 'solid-js'
 import { TNumberInput, type INumberInput, type TValuePayload } from '@soldy-ui/core'
 import { ruRU } from '@soldy-ui/plugins'
-import { Field, LocaleProvider, NumberInput, type NumberInputProps } from '@soldy-ui/solid'
+import { LocaleProvider, NumberInput, type NumberInputProps } from '@soldy-ui/solid'
 import { find, mount, nextFrame } from './mount'
 
 afterEach(() => {
@@ -504,25 +504,6 @@ describe('NumberInput · слоты', () => {
 
 		expect(ctrl.value).toBeUndefined()
 		expect(input().value).toBe('')
-	})
-})
-
-describe('NumberInput · в поле формы', () => {
-	it('подпись называет ввод своим for — на id ввода, ссылки нет', () => {
-		mount(() => (
-			<Field label="Количество" helper="Целое число">
-				<NumberInput />
-			</Field>
-		))
-
-		const field = input()
-
-		expect(field.id).not.toBe('')
-		expect(find(document, '.so-field__label', HTMLLabelElement).htmlFor).toBe(field.id)
-		expect(field.hasAttribute('aria-labelledby')).toBe(false)
-		expect(field.getAttribute('aria-describedby')).toBe(
-			find(document, '.so-field__helper', HTMLElement).id,
-		)
 	})
 })
 

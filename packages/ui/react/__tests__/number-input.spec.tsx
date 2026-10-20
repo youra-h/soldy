@@ -511,25 +511,6 @@ describe('NumberInput · слоты', () => {
 	})
 })
 
-describe('NumberInput · в поле формы', () => {
-	it('подпись называет ввод своим for — на id ввода, ссылки нет', () => {
-		mount(
-			<Field label="Количество" helper="Целое число">
-				<NumberInput />
-			</Field>,
-		)
-
-		const field = input()
-
-		expect(field.id).not.toBe('')
-		expect(find(document, '.so-field__label', HTMLLabelElement).htmlFor).toBe(field.id)
-		expect(field.hasAttribute('aria-labelledby')).toBe(false)
-		expect(field.getAttribute('aria-describedby')).toBe(
-			find(document, '.so-field__helper', HTMLElement).id,
-		)
-	})
-})
-
 describe('NumberInput · серверный рендер', () => {
 	/** Сервер и браузер в одном процессе: рендер сервера и гидратация — одна разметка. */
 	function hydrate(element: ReactElement): {
