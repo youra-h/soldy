@@ -8,11 +8,14 @@
 		| 'Icon'
 		| 'Label'
 		| 'ProgressSpinner'
+		| 'ProgressLinear'
 		| 'Skeleton'
 		| 'Input'
 		| 'Textarea'
 		| 'CheckBox'
 		| 'Switch'
+		| 'Slider'
+		| 'Rating'
 		| 'Tabs'
 		| 'Tabs.Item'
 		| 'Tabs.Content'
@@ -23,6 +26,8 @@
 		| 'ListBox'
 		| 'ListBox.Item'
 		| 'Table'
+		| 'Scroller'
+		| 'Pagination'
 </script>
 
 <script lang="ts">
@@ -50,9 +55,14 @@
 		Input,
 		Label,
 		ListBox,
+		Pagination,
+		ProgressLinear,
 		ProgressSpinner,
 		RadioGroup,
+		Rating,
+		Scroller,
 		Skeleton,
+		Slider,
 		Switch,
 		Table,
 		Tabs,
@@ -104,6 +114,8 @@
 		<Label bind:ref={get, set} {onElementReady} />
 	{:else if kind === 'ProgressSpinner'}
 		<ProgressSpinner bind:ref={get, set} {onElementReady} />
+	{:else if kind === 'ProgressLinear'}
+		<ProgressLinear bind:ref={get, set} {onElementReady} />
 	{:else if kind === 'Skeleton'}
 		<Skeleton bind:ref={get, set} {onElementReady} />
 	{:else if kind === 'Input'}
@@ -114,6 +126,10 @@
 		<CheckBox bind:ref={get, set} {onElementReady} />
 	{:else if kind === 'Switch'}
 		<Switch bind:ref={get, set} {onElementReady} />
+	{:else if kind === 'Slider'}
+		<Slider bind:ref={get, set} {onElementReady} />
+	{:else if kind === 'Rating'}
+		<Rating bind:ref={get, set} {onElementReady} />
 	{:else if kind === 'Tabs'}
 		<Tabs bind:ref={get, set} {onElementReady} />
 	{:else if kind === 'Tabs.Item'}
@@ -142,7 +158,11 @@
 		<ListBox>
 			<ListBox.Item value="a" text="A" bind:ref={get, set} {onElementReady} />
 		</ListBox>
-	{:else}
+	{:else if kind === 'Table'}
 		<Table columns={COLUMNS} items={ROWS} bind:ref={get, set} {onElementReady} />
+	{:else if kind === 'Scroller'}
+		<Scroller bind:ref={get, set} {onElementReady} />
+	{:else}
+		<Pagination total={30} bind:ref={get, set} {onElementReady} />
 	{/if}
 {/if}

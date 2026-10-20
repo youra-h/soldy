@@ -8,12 +8,31 @@
 	 * - `input` и `id` — экземпляр и свой `id` поля ввода;
 	 * - `nested` — флажок в слоте `trailing` поля ввода: контрол в слоте
 	 *   контрола, а не контрол поля формы;
-	 * - `groupLabel` — своё имя группы радио.
+	 * - `groupLabel` — своё имя группы радио;
+	 * - `slider` — экземпляр ползунка; `slider-range` — ползунок с двумя
+	 *   ручками и их именами.
 	 */
-	import type { TField, TInput } from '@soldy-ui/core'
-	import { CheckBox, Field, Input, Label, RadioGroup, Switch } from '@soldy-ui/svelte'
+	import type { TField, TInput, TSlider } from '@soldy-ui/core'
+	import {
+		CheckBox,
+		Field,
+		Input,
+		Label,
+		RadioGroup,
+		Rating,
+		Slider,
+		Switch,
+	} from '@soldy-ui/svelte'
 
-	type TControl = 'input' | 'check-box' | 'switch' | 'radio-group' | 'label-check-box'
+	type TControl =
+		| 'input'
+		| 'check-box'
+		| 'switch'
+		| 'radio-group'
+		| 'label-check-box'
+		| 'rating'
+		| 'slider'
+		| 'slider-range'
 
 	type THarnessProps = {
 		/** Экземпляр поля. */
@@ -32,6 +51,8 @@
 		nested?: boolean
 		/** Своё имя группы радио. */
 		groupLabel?: string
+		/** Экземпляр ползунка. */
+		slider?: TSlider
 	}
 
 	const props: THarnessProps = $props()
@@ -57,6 +78,12 @@
 				<RadioGroup.Item value="a">А</RadioGroup.Item>
 				<RadioGroup.Item value="b">Б</RadioGroup.Item>
 			</RadioGroup>
+		{:else if control === 'rating'}
+			<Rating />
+		{:else if control === 'slider'}
+			<Slider ctrl={props.slider} />
+		{:else if control === 'slider-range'}
+			<Slider value={[20, 80]} thumbLabels={['От', 'До']} />
 		{:else}
 			<Label text="Согласен"><CheckBox /></Label>
 		{/if}

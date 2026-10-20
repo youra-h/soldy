@@ -50,9 +50,14 @@ import {
 	Input,
 	Label,
 	ListBox,
+	Pagination,
+	ProgressLinear,
 	ProgressSpinner,
 	RadioGroup,
+	Rating,
+	Scroller,
 	Skeleton,
+	Slider,
 	Switch,
 	Table,
 	Tabs,
@@ -73,9 +78,14 @@ import {
 	type InputProps,
 	type LabelProps,
 	type ListBoxProps,
+	type PaginationProps,
+	type ProgressLinearProps,
 	type ProgressSpinnerProps,
 	type RadioGroupProps,
+	type RatingProps,
+	type ScrollerProps,
 	type SkeletonProps,
+	type SliderProps,
 	type SwitchProps,
 	type TableProps,
 	type TabsContentProps,
@@ -99,17 +109,25 @@ type TProbeProps = ButtonProps &
 	IconProps &
 	LabelProps &
 	ProgressSpinnerProps &
+	ProgressLinearProps &
 	SkeletonProps &
 	TabsProps &
 	AccordionProps &
 	RadioGroupProps &
-	TabsContentProps
+	TabsContentProps &
+	SliderProps &
+	RatingProps &
+	ScrollerProps &
+	PaginationProps
 
 /**
  * Компонент, как его рисовать, и класс его корня. Пропсы, без которых корень
  * не виден, рисование добавляет само: Frame по умолчанию скрыт и уходит
  * телепортом в `body` — корень ищется по документу; у Icon тега по умолчанию
  * нет; панель рисуется, пока активен её таб, — и только внутри набора.
+ * Оценка, ползунок, лента и пагинация атрибуты потребителя не делят: полей у
+ * оценки и ползунка столько, сколько ручек, а указатель поле не ловит, — и
+ * всё ложится на корень.
  */
 const COMPONENTS: ReadonlyArray<readonly [string, (props: TProbeProps) => TMounted, string]> = [
 	['Button', (props) => mount(Button, props), '.so-button'],
@@ -119,10 +137,15 @@ const COMPONENTS: ReadonlyArray<readonly [string, (props: TProbeProps) => TMount
 	['Icon', (props) => mount(Icon, { tag: 'i', ...props }), '.so-icon'],
 	['Label', (props) => mount(Label, props), '.so-label'],
 	['ProgressSpinner', (props) => mount(ProgressSpinner, props), '.so-progress-spinner'],
+	['ProgressLinear', (props) => mount(ProgressLinear, props), '.so-progress-linear'],
 	['Skeleton', (props) => mount(Skeleton, props), '.so-skeleton'],
 	['Tabs.Content', (props) => mount(ItemProbe, { kind: 'content', ...props }), '.so-tabs__panel'],
 	['Accordion', (props) => mount(Accordion, props), '.so-accordion'],
 	['RadioGroup', (props) => mount(RadioGroup, props), '.so-radio-group'],
+	['Slider', (props) => mount(Slider, props), '.so-slider'],
+	['Rating', (props) => mount(Rating, props), '.so-rating'],
+	['Scroller', (props) => mount(Scroller, props), '.so-scroller'],
+	['Pagination', (props) => mount(Pagination, { total: 30, ...props }), '.so-pagination'],
 ]
 
 /** Общие пропсы полей в таблице. */
@@ -683,11 +706,14 @@ const ROOTS: ReadonlyArray<readonly [TRootKind, string, string]> = [
 	['Icon', '.so-icon', '.so-icon'],
 	['Label', '.so-label', '.so-label'],
 	['ProgressSpinner', '.so-progress-spinner', '.so-progress-spinner'],
+	['ProgressLinear', '.so-progress-linear', '.so-progress-linear'],
 	['Skeleton', '.so-skeleton', '.so-skeleton'],
 	['Input', '.so-input', '.so-input'],
 	['Textarea', '.so-textarea', '.so-textarea'],
 	['CheckBox', '.so-check-box', '.so-check-box'],
 	['Switch', '.so-switch', '.so-switch'],
+	['Slider', '.so-slider', '.so-slider'],
+	['Rating', '.so-rating', '.so-rating'],
 	['Tabs', '.so-tabs', '.so-tabs'],
 	['Tabs.Item', '.so-tabs-item', '.so-tabs-item'],
 	['Tabs.Content', '.so-tabs__panel', '.so-tabs__panel'],
@@ -698,6 +724,8 @@ const ROOTS: ReadonlyArray<readonly [TRootKind, string, string]> = [
 	['ListBox', '.so-list-box', '.so-list-box'],
 	['ListBox.Item', '.so-list-box-item', '.so-list-box-item'],
 	['Table', '.so-table__viewport', 'table.so-table'],
+	['Scroller', '.so-scroller', '.so-scroller'],
+	['Pagination', '.so-pagination', '.so-pagination'],
 ]
 
 /** Поля: `ref` — корень, а не `<input>` или `<textarea>`. */
@@ -1103,6 +1131,17 @@ describe('раскладка корня: стиль-выход компонен�
 		expect(root().style.display).toBe('none')
 		// Скрытие трогает только `display`: доля остаётся на корне
 		expect(root().style.getPropertyValue('--so-progress-spinner-fraction')).toBe('0.4')
+	})
+
+	it('ProgressLinear: стиль потребителя — поверх доли, скрытие — поверх обоих', () => {
+		const { root } = mount(ProgressLinear, {
+			value: 40,
+			visible: false,
+			style: '--so-progress-linear-percent: 90%; display: block',
+		})
+
+		expect(root().style.getPropertyValue('--so-progress-linear-percent')).toBe('90%')
+		expect(root().style.display).toBe('none')
 	})
 
 	/** Плагина раскладки у кольца нет — правило проверяется на самой раскладке корня. */

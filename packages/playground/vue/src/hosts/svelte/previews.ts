@@ -8,9 +8,14 @@ import IconPreview from './IconPreview.svelte'
 import InputPreview from './InputPreview.svelte'
 import LabelPreview from './LabelPreview.svelte'
 import ListBoxPreview from './ListBoxPreview.svelte'
+import PaginationPreview from './PaginationPreview.svelte'
+import ProgressLinearPreview from './ProgressLinearPreview.svelte'
 import ProgressSpinnerPreview from './ProgressSpinnerPreview.svelte'
 import RadioGroupPreview from './RadioGroupPreview.svelte'
+import RatingPreview from './RatingPreview.svelte'
+import ScrollerPreview from './ScrollerPreview.svelte'
 import SkeletonPreview from './SkeletonPreview.svelte'
+import SliderPreview from './SliderPreview.svelte'
 import SwitchPreview from './SwitchPreview.svelte'
 import TablePreview from './TablePreview.svelte'
 import TabsPreview from './TabsPreview.svelte'
@@ -47,14 +52,19 @@ export const PREVIEWS: Record<string, TPreview> = {
 	switch: SwitchPreview,
 	label: LabelPreview,
 	field: FieldPreview,
+	slider: SliderPreview,
+	rating: RatingPreview,
 	'radio-group': RadioGroupPreview,
 	'list-box': ListBoxPreview,
 	table: TablePreview,
 	tabs: TabsPreview,
 	accordion: AccordionPreview,
 	icon: IconPreview,
+	'progress-linear': ProgressLinearPreview,
 	'progress-spinner': ProgressSpinnerPreview,
 	skeleton: SkeletonPreview,
 	'drag-and-drop': DragAndDropPreview,
 	virtual: VirtualPreview,
+	scroller: ScrollerPreview,
+	pagination: PaginationPreview,
 }

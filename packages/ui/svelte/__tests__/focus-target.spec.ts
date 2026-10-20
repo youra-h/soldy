@@ -21,15 +21,30 @@ import {
 	TInput,
 	TListBox,
 	TListBoxItem,
+	TPagination,
 	TRadioGroup,
 	TRadioGroupItem,
+	TRating,
+	TScroller,
+	TSlider,
 	TSwitch,
 	TTabs,
 	TTabsItem,
 	TTextarea,
 	createEngineTabs,
 } from '@soldy-ui/core'
-import { CheckBox, Input, ListBox, Switch, Tabs, Textarea } from '@soldy-ui/svelte'
+import {
+	CheckBox,
+	Input,
+	ListBox,
+	Pagination,
+	Rating,
+	Scroller,
+	Slider,
+	Switch,
+	Tabs,
+	Textarea,
+} from '@soldy-ui/svelte'
 import AccordionHarness from './Accordion.test.svelte'
 import ListBoxHarness from './ListBox.test.svelte'
 import RadioGroupHarness from './RadioGroup.test.svelte'
@@ -100,6 +115,48 @@ const CASES: Record<string, TCase> = {
 			return ctrl
 		},
 		target: 'input',
+	},
+	Rating: {
+		render: () => {
+			const ctrl = new TRating()
+
+			mount(Rating, { ctrl })
+
+			return ctrl
+		},
+		target: 'input',
+	},
+	Slider: {
+		render: () => {
+			const ctrl = new TSlider()
+
+			mount(Slider, { ctrl })
+
+			return ctrl
+		},
+		target: 'input',
+	},
+	Pagination: {
+		render: () => {
+			const ctrl = new TPagination()
+
+			mount(Pagination, { ctrl, total: 50, value: 3 })
+
+			return ctrl
+		},
+		target: '[aria-current="page"]',
+		// Стрелка «назад» на третьей странице включена — остановка перед страницами
+		before: '.so-pagination__prev',
+	},
+	'Scroller со своими остановками': {
+		render: () => {
+			const ctrl = new TScroller()
+
+			mount(Scroller, { ctrl, children: markup('<button class="target">A</button>') })
+
+			return ctrl
+		},
+		target: '.target',
 	},
 	'RadioGroup.Item': {
 		render: () => {
@@ -388,5 +445,50 @@ describe('RadioGroup · отметка по модели', () => {
 		ctrl.focused = true
 
 		expect(document.activeElement).toBe(target())
+	})
+})
+
+describe('Scroller · вьюпорт — остановка', () => {
+	/**
+	 * Своих остановок в ленте нет, а листать есть куда: остановка — сам
+	 * вьюпорт. Замер в jsdom нулевой, поэтому факт приносит инстанс — как
+	 * `scroller.spec.ts`.
+	 */
+	it('своих остановок нет — фокус на вьюпорте, а не на кнопке «вперёд»', async () => {
+		const ctrl = new TScroller()
+
+		mount(Scroller, { ctrl, children: markup('<span>A</span>') })
+		await nextFrame()
+
+		ctrl.notifyViewport({ canPrev: false, canNext: true, hasTabStops: false })
+		flushSync()
+
+		ctrl.focused = true
+
+		expect(document.activeElement).toBe(find(document, '.so-scroller__viewport', HTMLElement))
+		expect(ctrl.focused).toBe(true)
+	})
+})
+
+describe('Pagination · текущая по модели', () => {
+	/**
+	 * Значение сменилось в том же такте, что и запись `focused`: Svelte
+	 * перепишет `aria-current` на своём такте, а текущую правило берёт по ключу
+	 * значения, — фокус встаёт на новую текущую страницу, а не на прежнюю.
+	 */
+	it('смена значения и focused = true в одном такте — фокус на новой текущей', async () => {
+		const ctrl = new TPagination({ total: 50, value: 2 })
+
+		mount(Pagination, { ctrl })
+		await nextFrame()
+
+		ctrl.value = 3
+
+		// Такт тот же: текущая в разметке ещё прежняя
+		expect(find(document, '[aria-current="page"]', HTMLElement).textContent?.trim()).toBe('2')
+
+		ctrl.focused = true
+
+		expect(document.activeElement?.textContent?.trim()).toBe('3')
 	})
 })

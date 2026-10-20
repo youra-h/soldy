@@ -6,9 +6,10 @@
  * пока задан её текст, ошибка — при `invalid` и на месте подсказки. С
  * контролом поле связывает проводка: поле опускает связку лифтом
  * (`setContext`), контрол её берёт (`getContext`). Labelable-контрол (Input,
- * CheckBox, Switch) подпись называет своим `for`, группу (RadioGroup) —
- * ссылкой `aria-labelledby`. Справку контрол получает в `aria-describedby`,
- * ошибку — `aria-invalid` и `data-invalid` на своём корне.
+ * CheckBox, Switch, Rating, Slider с одной ручкой) подпись называет своим
+ * `for`, группу (RadioGroup, Slider с несколькими ручками) — ссылкой
+ * `aria-labelledby`. Справку контрол получает в `aria-describedby`, ошибку —
+ * `aria-invalid` и `data-invalid` на своём корне.
  *
  * Разметка с содержимым — в обёртке `Field.test.svelte`: содержимое
  * разметкой пишется только в `.svelte`.
@@ -19,7 +20,7 @@
 
 import { describe, it, expect } from 'vitest'
 import { flushSync } from 'svelte'
-import { TField, TInput } from '@soldy-ui/core'
+import { TField, TInput, TSlider } from '@soldy-ui/core'
 import { Field, type FieldProps } from '@soldy-ui/svelte'
 import FieldHarness from './Field.test.svelte'
 import { find, htmlOf, mount } from './mount'
@@ -135,6 +136,8 @@ const LABELABLES = [
 	['Input', 'input', '.so-input', '.so-input input'],
 	['CheckBox', 'check-box', '.so-check-box', '.so-check-box input'],
 	['Switch', 'switch', '.so-switch', '.so-switch input'],
+	['Rating', 'rating', '.so-rating', '.so-rating input'],
+	['Slider', 'slider', '.so-slider', '.so-slider input'],
 ] as const
 
 describe.each(LABELABLES)('%s в поле', (_name, control, root, element) => {
@@ -209,6 +212,80 @@ describe('RadioGroup в поле', () => {
 			false,
 			false,
 		])
+	})
+})
+
+/**
+ * Ползунок с несколькими ручками — группа: подпись называет корень ссылкой,
+ * `for` назвал бы одно поле из нескольких, а имена ручек — их `thumbLabels`.
+ * Число ручек задаёт значение, и подпись переходит между `for` и ссылкой
+ * вслед за ним.
+ */
+describe('Slider с несколькими ручками в поле', () => {
+	const root = () => node('.so-slider')
+	const thumbs = () => [...document.querySelectorAll('.so-slider input')]
+
+	it('for у подписи нет, корень — группа со ссылкой на подпись, имена ручек целы', () => {
+		mount(FieldHarness, { label: 'Цена', controls: ['slider-range'] })
+
+		expect(label().hasAttribute('for')).toBe(false)
+		expect(root().getAttribute('role')).toBe('group')
+		expect(refsOf(root(), 'aria-labelledby')).toEqual([label().id])
+		expect(thumbs().map((thumb) => thumb.getAttribute('aria-label'))).toEqual(['От', 'До'])
+		expect(thumbs().map((thumb) => thumb.hasAttribute('aria-labelledby'))).toEqual([
+			false,
+			false,
+		])
+		expect(thumbs().map((thumb) => thumb.id)).toEqual(['', ''])
+	})
+
+	it('справка — у группы, ошибка — aria-invalid на каждой ручке, data-invalid на корне', () => {
+		const ctrl = new TField({ label: 'Цена', helper: 'Подсказка', error: 'Ошибка' })
+
+		mount(FieldHarness, { ctrl, controls: ['slider-range'] })
+
+		expect(refsOf(root(), 'aria-describedby')).toEqual([node('.so-field__helper').id])
+		expect(thumbs().map((thumb) => thumb.hasAttribute('aria-describedby'))).toEqual([
+			false,
+			false,
+		])
+
+		ctrl.invalid = true
+		flushSync()
+
+		expect(refsOf(root(), 'aria-describedby')).toEqual([node('.so-field__error').id])
+		expect(thumbs().map((thumb) => thumb.getAttribute('aria-invalid'))).toEqual([
+			'true',
+			'true',
+		])
+		expect(root().hasAttribute('aria-invalid')).toBe(false)
+		expect(root().dataset['invalid']).toBe('true')
+	})
+
+	it('число ручек сменилось — подпись за ним: for у одной, ссылка группы у нескольких', () => {
+		const slider = new TSlider({ value: 30 })
+
+		mount(FieldHarness, { label: 'Цена', controls: ['slider'], slider })
+
+		expect(label().htmlFor).toBe(input('.so-slider input').id)
+
+		slider.value = [20, 80]
+		flushSync()
+
+		expect(label().hasAttribute('for')).toBe(false)
+		expect(root().getAttribute('role')).toBe('group')
+		expect(refsOf(root(), 'aria-labelledby')).toEqual([label().id])
+		expect(thumbs().map((thumb) => thumb.id)).toEqual(['', ''])
+
+		slider.value = 50
+		flushSync()
+
+		const field = input('.so-slider input')
+
+		expect(field.id).not.toBe('')
+		expect(label().htmlFor).toBe(field.id)
+		expect(root().hasAttribute('role')).toBe(false)
+		expect(root().hasAttribute('aria-labelledby')).toBe(false)
 	})
 })
 

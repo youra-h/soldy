@@ -388,9 +388,10 @@ ARIA пускает только `option` и `group` (axe — `aria-required-chi
   `<Field helper="…"><Label text="…"><CheckBox /></Label></Field>`: имя даёт
   `Label`, справку — поле. Адаптеры: Vue, React, Solid, Svelte, Angular и Web
   Components; в пяти последних связку берут поля, которые в них есть, — Input,
-  CheckBox, Switch и RadioGroup. Проводка у всех одна — поле ставит
-  `TFieldExtension`, контрол — `TFieldControlExtension` на свой лифт, — а слой
-  лифта каждый адаптер отдаёт своим механизмом. Поле ставит под свой слой
+  CheckBox, Switch и RadioGroup, у Svelte — ещё Rating и Slider. Проводка у
+  всех одна — поле ставит `TFieldExtension`, контрол —
+  `TFieldControlExtension` на свой лифт, — а слой лифта каждый адаптер отдаёт
+  своим механизмом. Поле ставит под свой слой
   содержимое, контрол — содержимое своих слотов, иначе пустая связка контрола
   до них не дошла бы: React оборачивает слоты контрола `elevated` — без слотов
   обёртки нет, и флажок в строке таблицы лишних узлов дерева не несёт; Solid
@@ -1105,10 +1106,11 @@ useToasts()`. API опускает лифт (`TOASTS_ELEVATOR`, расширен
   `plugins/__tests__/slide-snap-strategies.spec.ts`,
   `plugins/__tests__/slide-keyboard.plugin.spec.ts`,
   `ui/vue/__tests__/slider.spec.ts`, `ui/react/__tests__/slider.spec.tsx`,
-  `ui/solid/__tests__/slider.spec.tsx` (сверх сценариев Vue — ручки по месту и
-  значение поля после хода, ниже) и `playground/vue/browser/slider.spec.ts`;
-  ползунок в поле формы — `ui/vue/__tests__/field.spec.ts`,
-  `ui/react/__tests__/field.spec.tsx` и `ui/solid/__tests__/field.spec.tsx`
+  `ui/svelte/__tests__/slider.spec.ts`, `ui/solid/__tests__/slider.spec.tsx`
+  (сверх сценариев Vue — ручки по месту и значение поля после хода, ниже) и
+  `playground/vue/browser/slider.spec.ts`; ползунок в поле формы —
+  `ui/vue/__tests__/field.spec.ts`, `ui/react/__tests__/field.spec.tsx`,
+  `ui/svelte/__tests__/field.spec.ts` и `ui/solid/__tests__/field.spec.tsx`
   («Slider с несколькими ручками в поле»), `playground/vue/browser/field.spec.ts`.
   **Solid**: выходы `thumbs` и `shownMarks` — новые записи на каждую смену, и
   петля идёт по месту (`Index`), как `:key="index"` у Vue: ручка остаётся тем
@@ -1165,8 +1167,9 @@ useToasts()`. API опускает лифт (`TOASTS_ELEVATOR`, расширен
   `plugins/__tests__/rating-validity.plugin.spec.ts` (ошибка поля по оценке,
   обязательности, только для показа и локали, на новом узле, снятие),
   `ui/vue/__tests__/rating.spec.ts`, `ui/react/__tests__/rating.spec.tsx`,
-  `ui/solid/__tests__/rating.spec.tsx` (сверх сценариев Vue — предпросмотр не
-  пересоздаёт звёзды: петля по месту, `Index`, как у ручек Slider) и
+  `ui/svelte/__tests__/rating.spec.ts`, `ui/solid/__tests__/rating.spec.tsx`
+  (сверх сценариев Vue — предпросмотр не пересоздаёт звёзды: петля по месту,
+  `Index`, как у ручек Slider) и
   `playground/vue/browser/rating.spec.ts` (форма без оценки не уходит,
   сообщение и фокус от браузера, только для показа уходит с 0, тон ошибки у
   пустых звёзд после попытки отправить).
@@ -1258,6 +1261,7 @@ useToasts()`. API опускает лифт (`TOASTS_ELEVATOR`, расширен
   не разглядеть. Сторожат `core/__tests__/progress-linear.spec.ts`,
   `ui/vue/__tests__/progress-linear.spec.ts`,
   `ui/react/__tests__/progress-linear.spec.tsx`,
+  `ui/svelte/__tests__/progress-linear.spec.ts`,
   `ui/solid/__tests__/progress-linear.spec.tsx` и
   `playground/vue/browser/progress-linear.spec.ts`; как бег и доля выглядят,
   оценивает глаз — ручные сценарии `/tests/motion/progress-linear` на стенде.
@@ -1565,9 +1569,12 @@ useToasts()`. API опускает лифт (`TOASTS_ELEVATOR`, расширен
   `plugins/__tests__/pagination-focus.plugin.spec.ts`,
   `ui/vue/__tests__/pagination.spec.ts`,
   `ui/react/__tests__/pagination.spec.tsx` (в том числе окно и текущая в
-  серверной разметке и гидратация), `ui/solid/__tests__/pagination.spec.tsx`
-  (сверх сценариев Vue — смена окна не зовёт слот страниц, оставшихся на
-  экране), «Pagination» в `ui/solid/__tests__/collections.server.spec.tsx` и
+  серверной разметке и гидратация), `ui/svelte/__tests__/pagination.spec.ts`
+  с «Pagination · серверный рендер» в
+  `ui/svelte/__tests__/collections.server.spec.ts`,
+  `ui/solid/__tests__/pagination.spec.tsx` (сверх сценариев Vue — смена окна
+  не зовёт слот страниц, оставшихся на экране), «Pagination» в
+  `ui/solid/__tests__/collections.server.spec.tsx` и
   `playground/vue/browser/pagination.spec.ts` (фокус со стрелки, погасшей
   у края, — на текущую, и Tab мимо погасшей стрелки).
 - **Table** — Table и Sortable Table (APG): нативные `table`, `thead`,
