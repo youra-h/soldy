@@ -4,8 +4,9 @@
  * Сценарии — те же, что у Vue (`focus-target.spec.ts`) и Angular, по
  * компонентам адаптера, без `act` и сервера. У поля корень — коробка вокруг
  * `<input>`, у ListBox — рамка вокруг узла списка, у Tabs — рамка со списком
- * табов и панелями; узел фокуса называет правило дескриптора (`focusTarget`
- * плагина действия).
+ * табов и панелями, у группы радио и аккордеона — контейнер остановок, у
+ * элемента коллекции — обёртка вокруг строки; узел фокуса называет правило
+ * дескриптора (`focusTarget` плагина действия).
  *
  * Своё у Web Components — разметка: корень — элемент потребителя, инстанс —
  * его `ctrl`, своя остановка перед главной частью — свет слота (`leading`,
@@ -14,14 +15,19 @@
  */
 
 import { describe, it, expect, afterEach } from 'vitest'
-import { TControl, createEngineTabs } from '@soldy-ui/core'
+import { TControl, TRadioGroup, createEngineTabs } from '@soldy-ui/core'
 import {
+	TAccordionElement,
+	TAccordionItemElement,
 	TCheckBoxElement,
 	TInputElement,
 	TListBoxElement,
+	TListBoxItemElement,
+	TRadioGroupElement,
 	TRadioGroupItemElement,
 	TSwitchElement,
 	TTabsElement,
+	TTabsItemElement,
 } from '@soldy-ui/webc'
 
 /** Отрисовка коалесцируется в микротаске — ждём её перед проверкой. */
@@ -148,6 +154,69 @@ const CASES: Record<string, TCase> = {
 		target: '[role="tab"][aria-selected="true"]',
 		before: '.before',
 	},
+	'RadioGroup с отметкой': {
+		html: `<div is="so-radio-group" value="b">
+			<label is="so-radio-group-item" value="a"></label>
+			<label is="so-radio-group-item" value="b" class="target"></label>
+		</div>`,
+		element: TRadioGroupElement,
+		owner: '[is="so-radio-group"]',
+		target: '.target input',
+	},
+	'RadioGroup без отметки, первое выключено': {
+		html: `<div is="so-radio-group">
+			<label is="so-radio-group-item" value="a" disabled></label>
+			<label is="so-radio-group-item" value="b" class="target"></label>
+		</div>`,
+		element: TRadioGroupElement,
+		owner: '[is="so-radio-group"]',
+		target: '.target input',
+	},
+	Accordion: {
+		html: `<div is="so-accordion">
+			<div is="so-accordion-item" value="a" text="A" class="target"></div>
+			<div is="so-accordion-item" value="b" text="B"></div>
+		</div>`,
+		element: TAccordionElement,
+		owner: '[is="so-accordion"]',
+		target: '.target .so-accordion-item__header',
+	},
+	'Accordion, первая секция выключена': {
+		html: `<div is="so-accordion">
+			<div is="so-accordion-item" value="a" text="A" disabled></div>
+			<div is="so-accordion-item" value="b" text="B" class="target"></div>
+		</div>`,
+		element: TAccordionElement,
+		owner: '[is="so-accordion"]',
+		target: '.target .so-accordion-item__header',
+	},
+	'Tabs.Item': {
+		html: `<div is="so-tabs">
+			<div is="so-tabs-item" value="a" text="A" active></div>
+			<div is="so-tabs-item" value="b" text="B" class="target"></div>
+		</div>`,
+		element: TTabsItemElement,
+		owner: '.target',
+		target: '.target [role="tab"]',
+	},
+	'Accordion.Item': {
+		html: `<div is="so-accordion">
+			<div is="so-accordion-item" value="a" text="A"></div>
+			<div is="so-accordion-item" value="b" text="B" class="target"></div>
+		</div>`,
+		element: TAccordionItemElement,
+		owner: '.target',
+		target: '.target .so-accordion-item__header',
+	},
+	'ListBox.Item': {
+		html: `<div is="so-list-box">
+			<div is="so-list-box-item" value="a" text="A"></div>
+			<div is="so-list-box-item" value="b" text="B" class="target"></div>
+		</div>`,
+		element: TListBoxItemElement,
+		owner: '.target',
+		target: '.target [role="option"]',
+	},
 }
 
 describe.each(Object.entries(CASES))('%s', (_name, { html, element, owner, target, before }) => {
@@ -211,5 +280,34 @@ describe('Tabs · остановка по модели', () => {
 
 		expect(document.activeElement?.textContent?.trim()).toBe('B')
 		expect(document.activeElement?.getAttribute('role')).toBe('tab')
+	})
+})
+
+describe('RadioGroup · отметка по модели', () => {
+	/**
+	 * Значение сменилось в том же такте, что и запись `focused`: элемент
+	 * перепишет `checked` полей в микрозадаче, а отмеченное радио правило берёт
+	 * у модели, — фокус встаёт на новое радио, а не на прежнее.
+	 */
+	it('смена значения и focused = true в одном такте — фокус на новом радио', async () => {
+		await mount(`<div is="so-radio-group" value="a">
+			<label is="so-radio-group-item" value="a"></label>
+			<label is="so-radio-group-item" value="b" class="target"></label>
+		</div>`)
+
+		const ctrl = ctrlOf(nodeOf('[is="so-radio-group"]'))
+		const target = nodeOf('.target input')
+
+		if (!(ctrl instanceof TRadioGroup)) throw new Error('у группы нет инстанса группы')
+		if (!(target instanceof HTMLInputElement)) throw new Error('у радио нет поля')
+
+		ctrl.value = 'b'
+
+		// Такт тот же: отмечено в разметке ещё прежнее
+		expect(target.checked).toBe(false)
+
+		ctrl.focused = true
+
+		expect(document.activeElement).toBe(target)
 	})
 })

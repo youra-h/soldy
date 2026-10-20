@@ -21,7 +21,9 @@
 import { defineComponent, defineDescriptor, defineType } from '../../../protected/define'
 import { TDateInput } from '@soldy-ui/core'
 import type { IDateInput } from '@soldy-ui/core'
+import { firstSegmentOf } from '@soldy-ui/plugins'
 import {
+	ActionPluginDescriptor,
 	DateInputClipboardPluginDescriptor,
 	DateInputIdsPluginDescriptor,
 	DateInputKeyboardPluginDescriptor,
@@ -126,6 +128,9 @@ export const DateInputDescriptor = defineDescriptor(() =>
 		},
 
 		plugins: [
+			// Фокус держат части, а корень — коробка вокруг ряда: `focused = true`
+			// ставит фокус на первую часть, мимо кнопки в слоте `leading`
+			ActionPluginDescriptor.with({ focusTarget: firstSegmentOf }),
 			// Имя кнопки очистки от локали — с первой отрисовки
 			ClearableNamesPluginDescriptor,
 			// Язык приложения — до поведения частей: формат с первой отрисовки

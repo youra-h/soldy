@@ -5,13 +5,8 @@ import { TElementPlugin } from '../../element'
 import { TCollectionBundlesPlugin, TCollectionElements } from '../../collection'
 import { isFocusableElement } from '../../../utils'
 import type { IDomEventTarget } from '../../../utils'
+import { tagOf } from '../tag'
 import type { TTagsKeyboardPluginEvents } from './types'
-
-/**
- * Узел опции внутри узла тега. Корень элемента — пилюля для темы, а опцией со
- * своей ролью является вложенная строка: на неё и уходит фокус.
- */
-const OPTION_SELECTOR = '[role="option"]'
 
 /** Клавиши, которые закрывают тег. */
 const CLOSE_KEYS = new Set(['Delete', 'Backspace'])
@@ -281,7 +276,7 @@ export class TTagsKeyboardPlugin extends TBasePlugin<ITags, TTagsKeyboardPluginE
 
 	/** Фокус на строку тега с ролью. Гард нужен: узел плагину приходит `Element`. */
 	private _focus(item: ITagsItem): void {
-		const option = this._elements?.getElementByUid(item.uid)?.querySelector(OPTION_SELECTOR)
+		const option = tagOf(this._elements, item.uid)
 
 		if (isFocusableElement(option)) option.focus()
 	}

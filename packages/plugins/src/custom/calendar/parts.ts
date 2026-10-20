@@ -1,5 +1,6 @@
 import type { ICalendar, TCalendarCollection, TCalendarDate, TCalendarPicker } from '@soldy-ui/core'
 import type { TCollectionElements } from '../collection'
+import { listOf } from '../list/row'
 import type { TCalendarDay, TCalendarPager, TCalendarPickerHit, TCalendarPickerPart } from './types'
 
 /** Кнопки листания — по частям разметки владельца (`__prev`, `__next`). */
@@ -86,6 +87,39 @@ export function pickerPartOf(
 	}
 
 	return undefined
+}
+
+/**
+ * Карточка панели выбора места `picker` в корне — ту же карточку отдаёт
+ * `pickerPartOf` от кнопки её шапки. Своей её делает шапка места
+ * (`holdsHeading`), часть находят по классу владельца (`classes.resolve`).
+ * `null` — карточки в документе нет: содержимое поповера не смонтировано до
+ * первого открытия.
+ */
+export function pickerPanelOf(
+	owner: ICalendar,
+	root: Element,
+	picker: TCalendarPicker,
+): Element | null {
+	for (const panel of root.querySelectorAll(owner.classes.resolve('__picker', { point: true }))) {
+		if (holdsHeading(panel, picker)) return panel
+	}
+
+	return null
+}
+
+/**
+ * Список карточки панели выбора — узел списка ListBox (`listOf`): остановка
+ * Tab у списка — он, а не корень ListBox с классом части календаря. `null` —
+ * карточки или списка в ней нет.
+ *
+ * Один на клавиатуру календаря (кому отдать фокус со стрелки, погасшей у
+ * границы лет) и остановку календаря, пока панель открыта (`gridStopOf`).
+ */
+export function pickerListOf(owner: ICalendar, panel: Element | null): Element | null {
+	const list = panel?.querySelector(owner.classes.resolve('__picker-list', { point: true }))
+
+	return listOf(list ?? null)
 }
 
 /**

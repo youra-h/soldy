@@ -8,9 +8,14 @@
 
 import { defineComponent, defineDescriptor, defineType } from '../../../../protected/define'
 import { TTabsItem } from '@soldy-ui/core'
+import { tabIn } from '@soldy-ui/plugins'
 import { ValueControlDescriptor } from '../value-control.descriptor'
 import { OWNER_STYLE_PROPS } from '../stylable.descriptor'
-import { TabsItemIdsPluginDescriptor, TabsItemNamesPluginDescriptor } from '../../plugins'
+import {
+	ActionPluginDescriptor,
+	TabsItemIdsPluginDescriptor,
+	TabsItemNamesPluginDescriptor,
+} from '../../plugins'
 
 export const TabsItemDescriptor = defineDescriptor(() =>
 	defineComponent({
@@ -50,6 +55,9 @@ export const TabsItemDescriptor = defineDescriptor(() =>
 		},
 
 		plugins: [
+			// Фокус держит строка таба с ролью, а корень — обёртка вокруг неё и
+			// крестика: туда `focused = true` и ставит фокус
+			ActionPluginDescriptor.with({ focusTarget: tabIn }),
 			// Связка «таб ↔ панель»: `id` таба и `aria-controls` его панели
 			TabsItemIdsPluginDescriptor,
 			// Имя крестика от локали — с первой отрисовки

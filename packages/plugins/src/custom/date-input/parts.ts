@@ -1,4 +1,5 @@
 import type { IDateInput, TDateFieldPart, TDateInputPart } from '@soldy-ui/core'
+import type { IPluginContext } from '../../base'
 import type { TDateInputSegmentNode } from './types'
 
 /**
@@ -71,6 +72,18 @@ export function segmentsOf(owner: IDateInput, root: Element): TDateInputSegmentN
 
 		return isFieldPart(part) ? [{ part, element }] : []
 	})
+}
+
+/**
+ * Первая часть поля — узел фокуса DateInput (`focusTarget` плагина действия):
+ * запись `focused = true` ставит фокус на неё, а не на коробку корня и не на
+ * кнопку в слоте `leading`. Первая — по порядку документа: туда же ведёт Tab.
+ * `null` — инстанса или частей в корне нет.
+ */
+export function firstSegmentOf(root: Element, ctx: IPluginContext): Element | null {
+	const owner = ctx.getInstance<IDateInput>()
+
+	return owner ? (segmentsOf(owner, root)[0]?.element ?? null) : null
 }
 
 /** Узел части по её типу. */

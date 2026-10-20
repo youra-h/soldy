@@ -3,6 +3,7 @@ import { TBasePlugin } from '../../../base'
 import type { IPluginContext } from '../../../base'
 import { TElementPlugin } from '../../element'
 import { TCollectionBundlesPlugin, TCollectionElements } from '../../collection'
+import { currentButtonOf } from '../current'
 import type { TPaginationArrow, TPaginationFocusPluginEvents } from './types'
 
 /** Стрелки — по частям разметки владельца (`__prev`, `__next`). */
@@ -51,9 +52,8 @@ const ARROW_OFF: Readonly<Record<TPaginationArrow, (owner: IPagination) => boole
  * текущей есть всегда.
  *
  * Стрелки находят по классам владельца (`classes.resolve`) и только внутри
- * его корня, страницу — по реестру узлов коллекции (`TCollectionElements`).
- * Кнопка страницы — первая `button` в её узле: корень страницы — место в
- * списке (`li`), а кнопкой является строка внутри.
+ * его корня, кнопку текущей — по реестру узлов коллекции (`currentButtonOf`,
+ * тем же правилом, что узел фокуса пагинации).
  */
 export class TPaginationFocusPlugin extends TBasePlugin<IPagination, TPaginationFocusPluginEvents> {
 	private _owner: IPagination | null = null
@@ -113,7 +113,9 @@ export class TPaginationFocusPlugin extends TBasePlugin<IPagination, TPagination
 
 		const arrow = this._arrowUnderFocus(owner, root)
 
-		if (arrow && ARROW_OFF[arrow](owner)) this._currentButton(owner)?.focus()
+		if (arrow && ARROW_OFF[arrow](owner)) {
+			currentButtonOf(owner, this._engine, this._elements)?.focus()
+		}
 	}
 
 	/** Стрелка своего корня, в которой стоит фокус; фокус не на стрелке — `undefined`. */
@@ -127,13 +129,5 @@ export class TPaginationFocusPlugin extends TBasePlugin<IPagination, TPagination
 
 			return button !== null && root.contains(button)
 		})
-	}
-
-	/** Кнопка страницы с ключом значения, пока её узел в документе. */
-	private _currentButton(owner: IPagination): HTMLButtonElement | null {
-		const page = this._engine?.extensions.batch.items.find((item) => item.value === owner.value)
-		const element = page ? this._elements?.getElementByItem(page) : null
-
-		return element?.isConnected ? element.querySelector('button') : null
 	}
 }

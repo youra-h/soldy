@@ -3,7 +3,8 @@ export * from './navigation'
 export * from './height'
 export * from './keyboard'
 export * from './scroll'
-// Из правил узлов списка наружу — только узел списка ListBox: его называет
-// дескриптор узлом фокуса (`focusTarget` плагина действия). Одноимённый
-// охранник расширения ListBox в `@soldy-ui/core` различают алиасом в импорте.
-export { listOf } from './row'
+// Из правил узлов списка наружу — только узлы фокуса: узел списка ListBox и
+// строка элемента (ListBox, Tags, меню). Их называют дескрипторы
+// (`focusTarget` плагина действия). Одноимённый охранник расширения ListBox в
+// `@soldy-ui/core` различают алиасом в импорте.
+export { listOf, rowIn } from './row'

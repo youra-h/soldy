@@ -10,8 +10,10 @@
 import { defineComponent, defineDescriptor, defineType } from '../../../../protected/define'
 import { TAccordion } from '@soldy-ui/core'
 import type { IAccordionItem } from '@soldy-ui/core'
+import { firstHeaderOf } from '@soldy-ui/plugins'
 import { ControlDescriptor } from '../control.descriptor'
 import {
+	ActionPluginDescriptor,
 	CollectionBundlesPluginDescriptor,
 	CollectionElementsPluginDescriptor,
 	DragPluginDescriptor,
@@ -78,6 +80,10 @@ export const AccordionDescriptor = defineDescriptor(() =>
 		},
 
 		plugins: [
+			// Фокус держат заголовки секций, а корень — контейнер секций:
+			// `focused = true` ставит фокус на заголовок первой доступной секции.
+			// Секции плагин берёт у коллекции, через реестр элементов ниже
+			ActionPluginDescriptor.with({ focusTarget: firstHeaderOf }),
 			// Коллекция: реестр bundles + доступ к DOM-элементам
 			CollectionBundlesPluginDescriptor,
 			CollectionElementsPluginDescriptor,

@@ -14,8 +14,10 @@
 import { defineComponent, defineDescriptor, defineType } from '../../../../protected/define'
 import { TTags } from '@soldy-ui/core'
 import type { ITagsItem } from '@soldy-ui/core'
+import { tagStopOf } from '@soldy-ui/plugins'
 import { ValueControlDescriptor } from '../value-control.descriptor'
 import {
+	ActionPluginDescriptor,
 	CollectionBundlesPluginDescriptor,
 	CollectionElementsPluginDescriptor,
 	TagsKeyboardPluginDescriptor,
@@ -88,6 +90,11 @@ export const TagsDescriptor = defineDescriptor(() =>
 		},
 
 		plugins: [
+			// Фокус держит остановка набора — с выбором тег-остановка, без него
+			// первый крестик, — а корень — ряд тегов: туда `focused = true` и
+			// ставит фокус. Остановку плагин берёт у модели, через реестр
+			// элементов ниже
+			ActionPluginDescriptor.with({ focusTarget: tagStopOf }),
 			// Коллекция: реестр bundles + доступ к DOM-элементам
 			CollectionBundlesPluginDescriptor,
 			CollectionElementsPluginDescriptor,

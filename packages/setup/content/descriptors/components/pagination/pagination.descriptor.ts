@@ -21,8 +21,10 @@
 import { defineComponent, defineDescriptor, defineType } from '../../../../protected/define'
 import { TPagination } from '@soldy-ui/core'
 import type { IPaginationItem } from '@soldy-ui/core'
+import { currentPageOf } from '@soldy-ui/plugins'
 import { ValueControlDescriptor } from '../value-control.descriptor'
 import {
+	ActionPluginDescriptor,
 	CollectionBundlesPluginDescriptor,
 	CollectionElementsPluginDescriptor,
 	LocalePluginDescriptor,
@@ -115,6 +117,11 @@ export const PaginationDescriptor = defineDescriptor(() =>
 		},
 
 		plugins: [
+			// Фокус держат стрелки и страницы, а корень — `nav` без своей
+			// остановки: `focused = true` ставит фокус на кнопку текущей
+			// страницы, мимо стрелки «назад». Текущую плагин берёт по ключу
+			// значения, через реестр узлов страниц ниже
+			ActionPluginDescriptor.with({ focusTarget: currentPageOf }),
 			// Язык — до поведения: номера в цифрах локали с первой отрисовки
 			LocalePluginDescriptor,
 			// Коллекция: реестр bundles страниц + доступ к их DOM-узлам

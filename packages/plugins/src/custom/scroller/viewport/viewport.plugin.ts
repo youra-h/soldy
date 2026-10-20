@@ -7,6 +7,7 @@ import type { IDomEventTarget } from '../../../utils'
 import { smoothScrollBehavior } from '../../../motion'
 import { resolveEdges } from './edges'
 import { resolveFocusShift } from './focus'
+import { viewportOf } from './stop'
 import type { TScrollerViewportPluginEvents } from './types'
 
 /** Часть разметки — кнопка, которая листает в эту сторону. */
@@ -148,7 +149,7 @@ export class TScrollerViewportPlugin extends TBasePlugin<IScroller, TScrollerVie
 		this._cancelHandover()
 
 		this._root = root
-		this._viewport = root?.querySelector(this._selector('__viewport')) ?? null
+		this._viewport = root && this._owner ? viewportOf(this._owner, root) : null
 
 		this._listen()
 
