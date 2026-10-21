@@ -1,0 +1,100 @@
+<!--
+	Корень — сам хост (`<span so-popover>`), поэтому шаблон — то, что внутри
+	корня Vue, в том же порядке: триггер, панель, а в конце — слив шаблонов
+	слотов. Слоты контракта: trigger (scope { triggerAria, triggerDataset }),
+	default — содержимое панели, close-icon — значок крестика.
+
+	Триггер — шаблон слота: связку с панелью и вид «нажат» он получает в
+	контексте вывода. Новый контекст вывод отдаёт тому же представлению, поэтому
+	триггер — тот же узел при каждом открытии и закрытии, и фокус на нём
+	остаётся.
+-->
+@if (slot('trigger'); as trigger) {
+	<ng-container
+		[ngTemplateOutlet]="trigger"
+		[ngTemplateOutletContext]="{
+			triggerAria: state()['triggerAria'] ?? {},
+			triggerDataset: state()['triggerDataset'] ?? {},
+		}"
+	/>
+}
+<!--
+	Панель — Frame: телепорт, слой, привязка к корню, пометка владельцем. На неё
+	ложится `aria` поповера (`role="dialog"`, `id`, на который ссылается
+	`aria-controls` триггера, имя от `TAriaPlugin`), его `panelDataset`
+	(`data-swiping`, у панели в контейнере — `data-edge`) и пометка владельцем
+	`dismiss_ownerAttribute` — одним объектом: директива набора на элементе одна.
+	`data-open` панели пишет сам Frame — это видимость его слоя. `tabindex="-1"`
+	— фокус встаёт на саму панель, когда внутри нечего фокусировать.
+
+	Якорь — корень (`rootElement()` базы): на сервере и до первой отрисовки его
+	нет. `rendered` поповера панель получает сама: корень Angular только
+	прячется, а панель увезена в `body`. `visible` поповера ей не передаётся, как
+	у Vue, где `v-show` корня до телепортированной панели не доходит.
+-->
+<div
+	so-frame
+	embedded="popover.frame"
+	class="so-popover__panel"
+	tabindex="-1"
+	position="fixed"
+	[visible]="state()['open']"
+	[rendered]="state()['rendered']"
+	[contained]="state()['contained']"
+	[anchor_anchor]="rootElement()"
+	[anchor_placement]="state()['placement']"
+	[anchor_offset]="8"
+	[so-attributes]="{
+		...state()['aria'],
+		...state()['panelDataset'],
+		...state()['dismiss_ownerAttribute'],
+	}"
+>
+	<!--
+		Полоса, за которую панель тянут, — пока жест включён. Потребитель её не
+		адресует, скринридеру она не нужна (`aria-hidden`); ставит её тема.
+	-->
+	@if (state()['handleRendered']) {
+		<div class="so-popover__handle" aria-hidden="true"></div>
+	}
+	<!--
+		Содержимое в DOM раньше крестика — в том порядке, в каком читается верхний
+		ряд панели: фокус при открытии встаёт на первый фокусируемый элемент
+		содержимого, а крестик — последняя остановка Tab. `lazyMount` действует
+		только на проекцию: обёртка остаётся всегда.
+	-->
+	<div class="so-popover__content">
+		@if (state()['contentRendered']) {
+			<ng-content />
+		}
+	</div>
+	<!--
+		Крестик — в верхнем углу со стороны конца строки, есть, только пока
+		поповер можно закрыть. Не `rendered` кнопки, как у Vue: у Angular он
+		прячет корень, а не удаляет, и скрытая кнопка со своими плагинами стояла
+		бы в каждой панели. Вида и размера у кнопки нет: красит и держит квадрат
+		тема (`.so-popover__close`). Имя — набор `closeAria` от локали.
+	-->
+	@if (state()['closable']) {
+		<button
+			so-button
+			embedded="popover.close"
+			type="button"
+			class="so-popover__close"
+			[so-attributes]="state()['closeAria']"
+			(click)="close()"
+		>
+			@if (slot('close-icon'); as icon) {
+				<ng-container [ngTemplateOutlet]="icon" />
+			} @else {
+				<svg so-icon embedded="popover.close-icon" so-role-icon="close"></svg>
+			}
+		</button>
+	}
+</div>
+<!--
+	Шаблоны слотов, которые потребитель написал в поповере, — в слив, в конце
+	корня: Angular считает их содержимым, и в основной проекции их якоря легли
+	бы в панель.
+-->
+<ng-content select="ng-template[slot]" />

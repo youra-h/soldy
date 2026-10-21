@@ -32,6 +32,13 @@
  * конструкторе, а TS запрещает обращение к абстрактному свойству в
  * конструкторе; имена входов — тем же вызовом.
  *
+ * Корень значением шаблону — сигнал `rootElement()`: узел, который база отдала
+ * `TElementPlugin`, — `null` на сервере и до первой отрисовки, после неё —
+ * узел, как `rootElement` у Vue, Solid и Svelte и `useRootElement` у React.
+ * Свой хост компонент взять не может (`inject` в компонентах запрещён), а
+ * якорь панели — корень: Popover и Tooltip отдают его своему Frame
+ * (`[anchor_anchor]="rootElement()"`).
+ *
  * Корень-хост (`'host'`) — элемент, на котором потребитель написал селектор:
  * `<button so-button>`, `<a so-button href>`, `<div so-button>`. Всё, что
  * потребитель написал на элементе, относится к корню и работает без проброса,
@@ -445,6 +452,23 @@ export abstract class TComponentBase<
 	)
 	private _eventsCleanup?: () => void
 
+	/** Узел, который база отдала `TElementPlugin`, — его читает шаблон (`rootElement`). */
+	private readonly _boundRoot = signal<Element | null>(null)
+
+	/**
+	 * Корень компонента значением для шаблона — тот узел, который база отдала
+	 * `TElementPlugin`: `null` на сервере и до первой отрисовки, после неё —
+	 * узел. У корня в шаблоне (`'view'`, корень внутри обёртки `'wrapped'`) —
+	 * новый узел, когда `#root` пересоздан, и `null`, когда его нет. Аналог
+	 * `rootElement` у Vue, Solid и Svelte и `useRootElement` у React: Popover и
+	 * Tooltip отдают его своему Frame якорем (`[anchor_anchor]="rootElement()"`),
+	 * а взять свой хост сам компонент не может — `inject` в компонентах запрещён.
+	 *
+	 * Пишет его тот же эффект после отрисовки, что отдаёт узел плагинам: на
+	 * сервере его нет, а узел эмуляции DOM якорю ни к чему, как и плагинам.
+	 */
+	protected readonly rootElement: Signal<Element | null> = this._boundRoot.asReadonly()
+
 	/**
 	 * Инжектор компонента. В его контексте `createOutput` заводит эмиттер, а
 	 * `ngOnInit` собирает компонент. Эмиттер берёт из контекста `DestroyRef`
@@ -688,8 +712,16 @@ export abstract class TComponentBase<
 	private _bindHost(host: Element, root: TRootHost): void {
 		this._clearInputAttributes(host)
 
-		// Узел — плагинам только в браузере: на сервере эффекта после отрисовки нет
-		afterRenderEffect(() => this._binding()?.bindElement(host))
+		// Узел — плагинам только в браузере: на сервере эффекта после отрисовки
+		// нет. Тот же узел — шаблону (`rootElement`)
+		afterRenderEffect(() => {
+			const binding = this._binding()
+
+			if (!binding) return
+
+			binding.bindElement(host)
+			this._boundRoot.set(host)
+		})
 
 		this._paint(() => host, root)
 	}
@@ -908,7 +940,8 @@ export abstract class TComponentBase<
 	 * Корень в шаблоне (`'view'`, и внутри обёртки — `'wrapped'`): существует не
 	 * всегда и может пересоздаваться, поэтому эффект перечитывает `#root` и
 	 * переустанавливает связь — после отрисовки, только в браузере, как у
-	 * корня-хоста. Зовётся из конструктора: эффекту нужен injection context.
+	 * корня-хоста, — и тот же узел отдаёт шаблону (`rootElement`). Зовётся из
+	 * конструктора: эффекту нужен injection context.
 	 */
 	private _bindView(): void {
 		afterRenderEffect(() => {
@@ -917,7 +950,10 @@ export abstract class TComponentBase<
 
 			if (!binding) return
 
-			binding.bindElement(ref?.nativeElement ?? null)
+			const element = ref?.nativeElement ?? null
+
+			binding.bindElement(element)
+			this._boundRoot.set(element)
 		})
 	}
 

@@ -34,6 +34,7 @@ import {
 import * as material from '@soldy-ui/icons-material'
 import { Button, Popover, Tooltip } from '@soldy-ui/vue'
 import { TFrameElement, TLocaleProviderElement, type TFrameElementProps } from '@soldy-ui/webc'
+import { BOX, POPOVER_PARTS, TOOLTIP_PARTS, measure, type TBox } from './panel-boxes'
 
 import '@soldy-ui/theme-oren'
 
@@ -44,9 +45,6 @@ type TTooltipTriggerScope = DescriptorSlots<typeof TooltipDescriptor>['trigger']
 
 /** Флаш раскладки элемента — на микрозадаче. */
 const flush = () => new Promise<void>((resolve) => queueMicrotask(() => resolve()))
-
-/** Кадр: `TElementPlugin` объявляет узел через него, привязка панели считает место после. */
-const nextFrame = () => new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
 
 /** Сборки: вид компонента и тег локали, которые плагин видел при установке набора. */
 const assembled: (readonly [kind: string, locale: string])[] = []
@@ -200,78 +198,18 @@ describe('<div is="so-frame"> · перенос в браузере', () => {
 	})
 })
 
-/** Рамка узла от угла триггера, в пикселях. */
-type TBox = { x: number; y: number; width: number; height: number }
-
-/** Блок, в котором стоит компонент, — один на обе отрисовки, Vue и Web Components. */
-const BOX = 'padding: 48px 24px; width: 400px'
-
-/** Части открытого поповера: панель, обёртка содержимого, содержимое, крестик и иконка в нём. */
-const POPOVER_PARTS =
-	'.so-popover__panel, .so-popover__content, .so-popover__content > *, .so-popover__close, .so-popover__close .so-icon'
-
-/** Части открытой подсказки: панель и обёртка текста. */
-const TOOLTIP_PARTS = '.so-tooltip__panel, .so-tooltip__content'
-
 /** Содержимое панели поповера — абзац и кнопка, как в превью стенда. */
 const TEXT = 'Произвольное содержимое: текст, поля, кнопки'
 
-/**
- * Рамки триггера и открытой панели с её частями — от угла триггера: панель
- * встаёт у якоря, и её место сверяется не от угла окна, а от него. Панели
- * нет — пусто.
- */
-function boxesOf(parts: string): TBox[] {
-	const trigger = document.querySelector('.so-test-trigger')
-	const found = [...document.querySelectorAll(parts)].filter(
-		(node) => node.getClientRects().length > 0,
-	)
-
-	if (!trigger || found.length === 0) return []
-
-	const origin = trigger.getBoundingClientRect()
-
-	return [trigger, ...found].map((node) => {
-		const box = node.getBoundingClientRect()
-
-		return {
-			x: Math.round(box.left - origin.left),
-			y: Math.round(box.top - origin.top),
-			width: Math.round(box.width),
-			height: Math.round(box.height),
-		}
-	})
-}
-
-/**
- * Рамки, когда панель встала: доиграли переходы темы — проявление панели, — и
- * два кадра подряд рамки те же. Место панели привязка досчитывает кадром после
- * показа, а под нагрузкой кадры идут реже, и число кадров не загадывается.
- */
-async function measure(parts: string): Promise<TBox[]> {
-	let previous = ''
-
-	for (let frame = 0; frame < 60; frame += 1) {
-		await nextFrame()
-		await Promise.all(document.getAnimations().map((animation) => animation.finished))
-
-		const boxes = boxesOf(parts)
-		const current = JSON.stringify(boxes)
-
-		if (boxes.length > 0 && current === previous) return boxes
-
-		previous = current
-	}
-
-	throw new Error(`${parts}: открытая панель не встала за 60 кадров`)
-}
+/** Триггер теста — в обеих отрисовках у него свой класс. */
+const trigger = () => document.querySelector('.so-test-trigger')
 
 /** Vue: компонент в блоке, меряется и снимается — следующей отрисовке он не мешает. */
 async function measureVue(content: () => VNode, parts: string): Promise<TBox[]> {
 	render(defineComponent({ render: () => h('div', { style: BOX }, [content()]) }))
 	await nextTick()
 
-	const boxes = await measure(parts)
+	const boxes = await measure(trigger, parts)
 
 	cleanup()
 
@@ -287,7 +225,7 @@ async function measureWebc(html: string, parts: string): Promise<TBox[]> {
 	document.body.appendChild(root)
 	nodes.push(root)
 
-	return measure(parts)
+	return measure(trigger, parts)
 }
 
 describe('Popover и Tooltip · панель у триггера', () => {

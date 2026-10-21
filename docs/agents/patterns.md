@@ -528,6 +528,13 @@ ARIA пускает только `option` и `group` (axe — `aria-required-chi
   (у Solid ещё — триггер тем же узлом после открытия и закрытия, фокус на нём
   после закрытия кликом по нему), `ui/svelte/__tests__/popover.spec.ts`
   (якорь панели — корень, руна `rootElement` адаптера),
+  `ui/angular/__tests__/popover.spec.ts` (сверх сценариев Vue — триггер
+  шаблоном слота тем же узлом, фокус на нём после закрытия кликом, якорь —
+  корень, сигнал `rootElement()` базы, `rendered: false` прячет и открытую
+  панель, крестик без `closable` уходит из разметки, поповер первым узлом
+  `@for`) и `ui/angular/__tests__/ssr.server.spec.ts` (на сервере ссылка
+  триггера ведёт на пустую скрытую панель в корне, после гидратации — та же
+  панель в `body`),
   `ui/webc/__tests__/popover.spec.ts` (сверх сценариев Vue — наборы триггера на
   первом элементе слота, тот же узел; перенос в цель и `contained` не
   пересобирают кнопки в панели; Select внутри — вложенным поповером),
@@ -535,8 +542,14 @@ ARIA пускает только `option` и `group` (axe — `aria-required-chi
   `playground/vue/browser/popover.spec.ts`,
   `playground/vue/browser/popover-swipe.spec.ts`,
   `playground/vue/browser/svelte-host.spec.ts` (открытая панель Svelte стоит,
-  как у Vue) и `playground/vue/browser/webc-frame.spec.ts` (открытая панель Web
-  Components с частями стоит у триггера, как у Vue). **Web Components**
+  как у Vue), `playground/vue/browser/webc-frame.spec.ts` (открытая панель Web
+  Components с частями стоит у триггера, как у Vue) и
+  `playground/vue/browser/angular-host.spec.ts` (открытая панель Angular с
+  частями — так же). **Angular** (`<span so-popover>`): триггер — шаблон слота
+  (`<ng-template slot="trigger">`), оба набора связки — в его контексте, и на
+  свой элемент их кладёт потребитель директивой `[so-attributes]`; панель —
+  Frame в шаблоне, якорь — сигнал `rootElement()` базы, `rendered` панель
+  получает сама: корень Angular только прячется. **Web Components**
   (`<span is="so-popover">`): scope у слотов нет, и оба набора триггера шаблон
   кладёт на первый элемент слота `trigger` одним слоем владельца — узлы слота
   отдаёт контекст шаблона (`slotted`). Панель — деталь Frame
@@ -859,9 +872,17 @@ ARIA пускает только `option` и `group` (axe — `aria-required-chi
   `ui/solid/__tests__/tooltip.spec.tsx` (у Solid ещё — триггер тем же узлом
   после показа и смены `type`), `ui/svelte/__tests__/tooltip.spec.ts`,
   `ui/webc/__tests__/tooltip.spec.ts` (ссылка на панель сменяется на том же
-  узле триггера), `playground/vue/browser/tooltip.spec.ts` и
+  узле триггера), `ui/angular/__tests__/tooltip.spec.ts` (у Angular ещё —
+  триггер шаблоном слота тем же узлом после показа и смены `type`, якорь —
+  корень, `rendered: false` прячет и открытую панель),
+  `ui/angular/__tests__/ssr.server.spec.ts` (текст подсказки в панели после
+  гидратации), `playground/vue/browser/tooltip.spec.ts`,
   `playground/vue/browser/webc-frame.spec.ts` (подсказка Web Components стоит у
-  триггера, как у Vue). **Web Components** (`<span is="so-tooltip">`): ссылку
+  триггера, как у Vue) и `playground/vue/browser/angular-host.spec.ts`
+  (подсказка Angular — так же). **Angular** (`<span so-tooltip>`): ссылку на
+  панель (`triggerAria`) шаблон отдаёт в контексте шаблона слота `trigger`, и
+  на свой элемент её кладёт потребитель (`[so-attributes]`); панель — Frame в
+  шаблоне. **Web Components** (`<span is="so-tooltip">`): ссылку
   на панель (`triggerAria`) шаблон кладёт на первый элемент слота `trigger`
   слоем владельца, scope у слотов нет; панель — деталь Frame
   (`tooltip.frame`).

@@ -24,7 +24,7 @@ import { describe, it, expect, afterEach } from 'vitest'
 import { Component, TemplateRef, ViewContainerRef, input, signal, viewChild } from '@angular/core'
 import { TestBed } from '@angular/core/testing'
 import { TFrame } from '@soldy-ui/core'
-import { TPluginBundle, ruRU } from '@soldy-ui/plugins'
+import { TAnchorPlugin, TPluginBundle, ruRU } from '@soldy-ui/plugins'
 import { LocaleProviderDirective, TButtonComponent, TFrameComponent } from '@soldy-ui/angular'
 import { TELEPORT_ANCHOR } from '../src/adapter/runtime/teleport'
 import { find, mountHost, nextFrame } from './mount'
@@ -255,6 +255,21 @@ class WrappedProjectionHost {
 class DetachHost {
 	readonly panel = viewChild.required<TemplateRef<unknown>>('panel')
 	readonly outlet = viewChild.required('outlet', { read: ViewContainerRef })
+}
+
+/** Frame с якорем из разметки: плагин якоря хост берёт из `(soAnchorCreate)`. */
+@Component({
+	standalone: true,
+	imports: [TFrameComponent],
+	template: `<div so-frame [anchor_anchor]="anchor()" (soAnchorCreate)="collect($event)"></div>`,
+})
+class AnchorHost {
+	readonly anchor = signal<Element | null | undefined>(undefined)
+	plugin: TAnchorPlugin | null = null
+
+	collect(plugin: unknown): void {
+		if (plugin instanceof TAnchorPlugin) this.plugin = plugin
+	}
 }
 
 /** Обход NG05106: Frame внутри `@for` — не первым узлом элемента, а в обёртке. */
@@ -703,6 +718,39 @@ describe('Frame · слой и раскладка', () => {
 		expect(frame().style.left).toBe('10px')
 		expect(frame().style.top).toBe('20px')
 		expect(frame().style.width).toBe('300px')
+	})
+})
+
+/**
+ * `anchor_anchor` у Frame из разметки, как `ui/vue/__tests__/frame-anchor.spec.ts`.
+ *
+ * Снятый якорь обязан отвязать панель. У плагина якоря объявлено умолчание
+ * `null` — «ни к чему не привязана», — и связка возвращает к нему снятый проп:
+ * привязка Angular отдаёт входу `null` или `undefined`, и обмен читает оба как
+ * «не задан». Без объявленного умолчания панель оставалась бы привязанной к
+ * прежнему элементу и следила бы за его размером и прокруткой.
+ */
+describe('Frame · anchor_anchor', () => {
+	it.each([null, undefined])('якорь, снятый в %s, отвязывает панель', async (removed) => {
+		const element = document.createElement('button')
+
+		document.body.append(element)
+		targets.push(element)
+
+		const fixture = TestBed.createComponent(AnchorHost)
+		const host = fixture.componentInstance
+
+		host.anchor.set(element)
+		fixture.detectChanges()
+		// Набор объявляет плагины на микрозадаче после сборки
+		await Promise.resolve()
+
+		expect(host.plugin?.anchor).toBe(element)
+
+		host.anchor.set(removed)
+		fixture.detectChanges()
+
+		expect(host.plugin?.anchor).toBeNull()
 	})
 })
 
