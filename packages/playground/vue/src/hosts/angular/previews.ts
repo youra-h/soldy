@@ -7,6 +7,8 @@ import {
 	TABLE_ROWS,
 	TABLE_SCROLL_ROWS,
 } from '@soldy-ui/playground-shared'
+import type { TFixture } from './fixtures'
+import { PopoverPreview, TooltipPreview } from './templates'
 import {
 	RoleIconDirective,
 	TAccordionComponent,
@@ -150,8 +152,25 @@ type TPreviewBase = {
  * Чего у адаптера нет, того нет и в карте. Слоёв и `frame` здесь тоже нет: во
  * Vue это ComponentView с чужими пропами, а у компонента Angular чужого входа
  * нет вовсе.
+ *
+ * Превью, которому нужны шаблоны слотов, — своим шаблоном (`TTemplatePreview`).
  */
-export type TPreview = TPreviewBase &
+export type TPreview = TComponentPreview | TTemplatePreview
+
+/**
+ * Превью своим шаблоном: компонент хоста с разметкой, как у фикстур
+ * (`TFixture`), — когда компоненту нужны шаблоны слотов. Триггер Popover и
+ * Tooltip — шаблон слота со scope, а шаблоны слотов видит только разметка
+ * (`contentChildren`): у компонента, которого хост строит сам, их нет. Ставит
+ * такое превью хост путём фикстуры: пропсы оболочки уходят входам компонента
+ * превью, а выходы хост слушает у компонента в его разметке (`target`).
+ */
+export type TTemplatePreview = {
+	readonly template: Type<TFixture>
+}
+
+/** Превью описанием: компонент адаптера, обёртка или рамка вокруг него и содержимое. */
+export type TComponentPreview = TPreviewBase &
 	(
 		| {
 				readonly wrapper?: undefined
@@ -413,6 +432,15 @@ export const PREVIEWS: Record<string, TPreview> = {
 	// Кольцо строчное и своего размера. По умолчанию оно пусто — доля ноль, а
 	// бег — флаг `indeterminate`
 	'progress-spinner': { component: TProgressSpinnerComponent },
+
+	// Триггер — Button, связку с панелью и вид «нажат» он берёт из scope слота,
+	// поэтому превью — своим шаблоном. В содержимом есть кнопка: на неё при
+	// открытии уходит фокус
+	popover: { template: PopoverPreview },
+
+	// Триггер — Button, ссылку на панель он берёт из scope слота. Текст
+	// подсказки — содержимым: пропа текста у неё нет
+	tooltip: { template: TooltipPreview },
 
 	skeleton: { component: TSkeletonComponent },
 

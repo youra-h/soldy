@@ -13,8 +13,14 @@ import {
 import { createApplication } from '@angular/platform-browser'
 import { provideAttrs } from '@soldy-ui/angular'
 import { findComponent, type IPreviewHost } from '@soldy-ui/playground-shared'
-import { PREVIEWS, type TContent, type TPart, type TPreview, type TProps } from './previews'
-import { FIXTURES } from './fixtures'
+import {
+	PREVIEWS,
+	type TComponentPreview,
+	type TContent,
+	type TPart,
+	type TProps,
+} from './previews'
+import { FIXTURES, type TFixture } from './fixtures'
 import { listen, listenersOf, type TOutputListener } from './events'
 import { PreviewFrameComponent } from './frame.component'
 import { PreviewRootComponent, language } from './root.component'
@@ -220,7 +226,7 @@ function assembleParts(
  * Пропсы компонента превью: данные превью (`props` описания), а поверх —
  * пропсы оболочки, как `{ items, columns, ...bind }` у Vue и React.
  */
-function propsOf(preview: TPreview, props: TProps): TProps {
+function propsOf(preview: TComponentPreview, props: TProps): TProps {
 	return preview.props ? { ...preview.props(props), ...props } : props
 }
 
@@ -234,6 +240,9 @@ function propsOf(preview: TPreview, props: TProps): TProps {
  * внутрь (`assemble`): обёртка раньше компонента, компонент раньше частей.
  * Новые пропсы оболочки рамка получает вместе с компонентом: её стиль — от
  * них.
+ *
+ * Превью своим шаблоном ставится путём фикстуры (`drawTemplate`): компонент
+ * хоста со своей разметкой, пропсы — его входам, выходы — у компонента в ней.
  */
 function drawPreview(
 	outlet: ViewContainerRef,
@@ -244,6 +253,8 @@ function drawPreview(
 	const preview = PREVIEWS[component]
 
 	if (!preview) throw new Error(`[playground] хост Angular не умеет рисовать «${component}»`)
+
+	if ('template' in preview) return drawTemplate(outlet, preview.template, props, listeners)
 
 	const built: ComponentRef<unknown>[] = []
 	let unlisten = (): void => {}
@@ -319,7 +330,7 @@ function drawPreview(
 	}
 }
 
-/** Фикстура: свой компонент с разметкой слотов; слушают выходы компонента сценария в ней. */
+/** Фикстура: свой компонент с разметкой слотов — путём своей разметки (`drawTemplate`). */
 function drawFixture(
 	outlet: ViewContainerRef,
 	fixture: string,
@@ -330,6 +341,20 @@ function drawFixture(
 
 	if (!type) throw new Error(`[playground] хост Angular не умеет рисовать «${fixture}»`)
 
+	return drawTemplate(outlet, type, props, listeners)
+}
+
+/**
+ * Компонент хоста со своей разметкой — фикстура сценария или превью своим
+ * шаблоном: пропсы оболочки — его входам, а слушают выходы компонента в его
+ * разметке (`target`), как у превью — выходы самого компонента.
+ */
+function drawTemplate(
+	outlet: ViewContainerRef,
+	type: Type<TFixture>,
+	props: TProps,
+	listeners: readonly TOutputListener[],
+): TDrawn {
 	const { ref, write } = insert(outletPlace(outlet), type, props)
 	const unlisten = listen(ref.instance.target(), listeners)
 

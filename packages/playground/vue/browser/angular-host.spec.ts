@@ -15,6 +15,12 @@
  * коллекций, страницы пагинации, панель активного таба, — а у таблицы её окно,
  * корень, заголовки и строки: ширину колонок плагин раскладки мерит по окну, и
  * раскладка совпадает, только если окно он нашёл.
+ *
+ * Панели поповера и подсказки увезены в `body`, мимо ячейки, и стоят у
+ * якоря — корня, который Angular отдаёт панели значением (`rootElement()`
+ * базы). Открытая панель с частями сверяется с Vue от угла триггера
+ * (`panel-boxes.ts`, как у Web Components): превью обоих хостов — в одном
+ * блоке, по очереди.
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
@@ -22,7 +28,9 @@ import { render } from 'vitest-browser-vue'
 import { useIcons, useTheme } from '@soldy-ui/setup'
 import * as material from '@soldy-ui/icons-material'
 import App from '../src/App.vue'
+import { loadHost } from '../src/hosts'
 import { router } from '../src/router'
+import { BOX, POPOVER_PARTS, TOOLTIP_PARTS, measure, type TBox } from './panel-boxes'
 
 import '@soldy-ui/theme-oren'
 import oren from '@soldy-ui/theme-oren/setup'
@@ -78,19 +86,19 @@ async function boxesOf(framework: string, component: string, selector: string) {
 	})
 }
 
-beforeEach(async () => {
-	// Колонки пишут события компонентов в консоль — в отчёте прогона это шум
-	vi.spyOn(console, 'log').mockImplementation(() => {})
-	document.documentElement.dataset.soTheme = 'oren'
-
-	await router.push('/vue')
-
-	render(App, { global: { plugins: [router] } })
-
-	await settle()
-})
-
 describe('хост Angular', () => {
+	beforeEach(async () => {
+		// Колонки пишут события компонентов в консоль — в отчёте прогона это шум
+		vi.spyOn(console, 'log').mockImplementation(() => {})
+		document.documentElement.dataset.soTheme = 'oren'
+
+		await router.push('/vue')
+
+		render(App, { global: { plugins: [router] } })
+
+		await settle()
+	})
+
 	// Селектор — компонент и его части: обёртка, элементы коллекций, панели
 	it.each([
 		['button', '.so-button'],
@@ -136,6 +144,9 @@ describe('хост Angular', () => {
 		// Окна Virtual здесь нет — у Vue в его ряду ещё и Select, которого у
 		// Angular нет
 		['table', '.so-table__viewport, .so-table, .so-table-column, .so-table-row'],
+		// Корень и триггер в нём: панели в ячейке нет — она увезена в `body`
+		['popover', '.so-popover, .so-popover > .so-button'],
+		['tooltip', '.so-tooltip, .so-tooltip > .so-button'],
 	])('%s стоит в ячейке так же, как у Vue', async (component, selector) => {
 		const vue = await boxesOf('vue', component, selector)
 		const angular = await boxesOf('angular', component, selector)
@@ -143,4 +154,55 @@ describe('хост Angular', () => {
 		expect(angular[0].width).toBeGreaterThan(0)
 		expect(angular).toEqual(vue)
 	})
+})
+
+/**
+ * Превью хоста в блоке — открытым: рамки триггера и панели с её частями от
+ * угла триггера. Меряется и снимается — следующей отрисовке оно не мешает.
+ * Страницы стенда здесь нет: её превью — тоже панели в `body`, а бесконечные
+ * анимации витрины замер ждал бы вечно.
+ */
+async function panelOf(
+	framework: string,
+	component: string,
+	props: Readonly<Record<string, unknown>>,
+	parts: string,
+): Promise<TBox[]> {
+	const host = await loadHost(framework)
+	const node = document.createElement('div')
+
+	node.style.cssText = BOX
+	document.body.appendChild(node)
+
+	const handle = host.mount(node, { component, props })
+
+	try {
+		return await measure(() => node.querySelector(`.so-${component} > .so-button`), parts)
+	} finally {
+		handle.unmount()
+		node.remove()
+	}
+}
+
+describe('хост Angular · панель у триггера', () => {
+	beforeEach(() => {
+		document.documentElement.dataset.soTheme = 'oren'
+	})
+
+	// Части: у поповера — панель, обёртка содержимого, абзац и кнопка в ней,
+	// крестик и иконка в нём; у подсказки — панель и обёртка текста
+	it.each([
+		['popover', { open: true, aria_label: 'Пример поповера' }, POPOVER_PARTS, 7],
+		['tooltip', { open: true }, TOOLTIP_PARTS, 3],
+	])(
+		'%s: открытая панель с частями стоит у триггера так же, как у Vue',
+		async (component, props, parts, count) => {
+			const vue = await panelOf('vue', component, props, parts)
+			const angular = await panelOf('angular', component, props, parts)
+
+			expect(angular).toHaveLength(count)
+			expect(angular[1].height).toBeGreaterThan(0)
+			expect(angular).toEqual(vue)
+		},
+	)
 })
