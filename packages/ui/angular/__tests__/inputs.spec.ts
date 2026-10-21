@@ -450,6 +450,8 @@ describe('вход в строгом шаблоне · хосты компоне
 				'TProgressSpinnerComponent',
 				'TSkeletonComponent',
 				'TFrameComponent',
+				'TPopoverComponent',
+				'TTooltipComponent',
 				'TLabelComponent',
 				'TFieldComponent',
 				'TInputComponent',

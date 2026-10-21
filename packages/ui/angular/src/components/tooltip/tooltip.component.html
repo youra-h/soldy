@@ -1,0 +1,53 @@
+<!--
+	Корень — сам хост (`<span so-tooltip>`), поэтому шаблон — то, что внутри
+	корня Vue, в том же порядке: триггер, панель, а в конце — слив шаблонов
+	слотов. Слоты контракта: trigger (scope { triggerAria }), default — текст
+	подсказки.
+
+	Триггер — шаблон слота: ссылку на панель он получает в контексте вывода.
+	Новый контекст вывод отдаёт тому же представлению, поэтому триггер — тот же
+	узел при показе и смене `type`, и фокус на нём остаётся.
+-->
+@if (slot('trigger'); as trigger) {
+	<ng-container
+		[ngTemplateOutlet]="trigger"
+		[ngTemplateOutletContext]="{ triggerAria: state()['triggerAria'] ?? {} }"
+	/>
+}
+<!--
+	Панель — Frame: телепорт, слой, привязка к корню — по умолчанию над
+	триггером по центру, в 6 px от него — и пометка владельцем. На неё ложится
+	`aria` подсказки (`role="tooltip"` и `id`, на который ссылается триггер) и
+	пометка `dismiss_ownerAttribute` — одним объектом: директива набора на
+	элементе одна. Панель не фокусируется, крестика в ней нет.
+
+	Якорь — корень (`rootElement()` базы): на сервере и до первой отрисовки его
+	нет. `rendered` подсказки панель получает сама: корень Angular только
+	прячется, а панель увезена в `body`.
+-->
+<div
+	so-frame
+	embedded="tooltip.frame"
+	class="so-tooltip__panel"
+	position="fixed"
+	[visible]="state()['open']"
+	[rendered]="state()['rendered']"
+	[anchor_anchor]="rootElement()"
+	[anchor_placement]="state()['placement']"
+	[anchor_offset]="6"
+	[so-attributes]="{ ...state()['aria'], ...state()['dismiss_ownerAttribute'] }"
+>
+	<!--
+		Обёртка держит ширину панели: по тексту, до потолка темы, где бы у края
+		окна панель ни стояла.
+	-->
+	<div class="so-tooltip__content">
+		<ng-content />
+	</div>
+</div>
+<!--
+	Шаблон триггера, который потребитель написал в подсказке, — в слив, в конце
+	корня: Angular считает его содержимым, и в основной проекции его якорь лёг
+	бы в панель.
+-->
+<ng-content select="ng-template[slot]" />

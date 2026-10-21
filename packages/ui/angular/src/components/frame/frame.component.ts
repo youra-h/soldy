@@ -28,6 +28,14 @@ import { setupFrame } from './setup.component'
  * браузере — после гидратации. `contained` оставляет панель на месте: она
  * встаёт в ближайшем позиционированном предке — тоже только в браузере.
  *
+ * Поэтому и гидратации у слоя нет (`ngSkipHydration` статикой хоста): всё, что
+ * написано внутри `<div so-frame>`, браузер строит сам, а узел потребителя
+ * гидратация берёт тот же. Сервер этого содержимого не вставлял, и брать от
+ * него нечего, а без пометки Angular гидратировал бы представление того, кто
+ * Frame написал, и проекцию внутри панели считал бы уже стоящей на месте:
+ * текст подсказки, спроецированный в обёртку её панели, пропадал бы после
+ * гидратации.
+ *
  * `div[so-frame]` стоит первым: по первому селектору Angular выбирает тег
  * хоста, когда создаёт компонент сам (`createComponent`), — это тег ядра по
  * умолчанию.
@@ -38,6 +46,7 @@ import { setupFrame } from './setup.component'
 	selector: 'div[so-frame], [so-frame]',
 	standalone: true,
 	changeDetection: ChangeDetectionStrategy.OnPush,
+	host: { ngSkipHydration: 'true' },
 	templateUrl: './frame.component.html',
 })
 export class TFrameComponent extends TFrameSurface<IFrame> {
