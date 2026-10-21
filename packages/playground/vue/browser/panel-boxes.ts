@@ -56,13 +56,17 @@ function boxesOf(trigger: () => Element | null, parts: string): TBox[] {
  * Рамки, когда панель встала: доиграли переходы темы — проявление панели, — и
  * два кадра подряд рамки те же. Место панели привязка досчитывает кадром после
  * показа, а под нагрузкой кадры идут реже, и число кадров не загадывается.
+ * Переход, перебитый новым значением или переносом узла, отменяется, и его
+ * `finished` отклонён: для ожидания это тоже конец — устоялось ли, решают рамки.
  */
 export async function measure(trigger: () => Element | null, parts: string): Promise<TBox[]> {
 	let previous = ''
 
 	for (let frame = 0; frame < 60; frame += 1) {
 		await nextFrame()
-		await Promise.all(document.getAnimations().map((animation) => animation.finished))
+		await Promise.all(
+			document.getAnimations().map((animation) => animation.finished.catch(() => undefined)),
+		)
 
 		const boxes = boxesOf(trigger, parts)
 		const current = JSON.stringify(boxes)

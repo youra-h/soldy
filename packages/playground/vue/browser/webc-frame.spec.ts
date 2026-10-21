@@ -333,14 +333,17 @@ function windowBoxesOf(parts: string): TBox[] {
 
 /**
  * Рамки, когда слой встал: доиграли переходы темы — проявление окна, въезд
- * панели, — и два кадра подряд рамки те же.
+ * панели, — и два кадра подряд рамки те же. Перебитый переход отменяется, и
+ * его `finished` отклонён: для ожидания это тоже конец, как в `measure`.
  */
 async function settled(parts: string): Promise<TBox[]> {
 	let previous = ''
 
 	for (let frame = 0; frame < 60; frame += 1) {
 		await nextFrame()
-		await Promise.all(document.getAnimations().map((animation) => animation.finished))
+		await Promise.all(
+			document.getAnimations().map((animation) => animation.finished.catch(() => undefined)),
+		)
 
 		const boxes = windowBoxesOf(parts)
 		const current = JSON.stringify(boxes)
