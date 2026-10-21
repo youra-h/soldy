@@ -25,6 +25,8 @@ export * from './progress-linear'
 export * from './skeleton'
 export * from './scroller'
 export * from './frame'
+export * from './popover'
+export * from './tooltip'
 // Окно и перестановка — раньше коллекций: при апгрейде разметки элемент,
 // зарегистрированный раньше, собирается раньше, и коллекции в обёртке его
 // находят

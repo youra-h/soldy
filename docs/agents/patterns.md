@@ -528,10 +528,21 @@ ARIA пускает только `option` и `group` (axe — `aria-required-chi
   (у Solid ещё — триггер тем же узлом после открытия и закрытия, фокус на нём
   после закрытия кликом по нему), `ui/svelte/__tests__/popover.spec.ts`
   (якорь панели — корень, руна `rootElement` адаптера),
+  `ui/webc/__tests__/popover.spec.ts` (сверх сценариев Vue — наборы триггера на
+  первом элементе слота, тот же узел; перенос в цель и `contained` не
+  пересобирают кнопки в панели; Select внутри — вложенным поповером),
+  `ui/webc/__tests__/hide-outside.spec.ts` (поповер в модальном Frame),
   `playground/vue/browser/popover.spec.ts`,
-  `playground/vue/browser/popover-swipe.spec.ts` и
+  `playground/vue/browser/popover-swipe.spec.ts`,
   `playground/vue/browser/svelte-host.spec.ts` (открытая панель Svelte стоит,
-  как у Vue).
+  как у Vue) и `playground/vue/browser/webc-frame.spec.ts` (открытая панель Web
+  Components с частями стоит у триггера, как у Vue). **Web Components**
+  (`<span is="so-popover">`): scope у слотов нет, и оба набора триггера шаблон
+  кладёт на первый элемент слота `trigger` одним слоем владельца — узлы слота
+  отдаёт контекст шаблона (`slotted`). Панель — деталь Frame
+  (`popover.frame`), в цель её уводит база Frame; `lazyMount` держит
+  содержимое вне документа до первого открытия (`showSlot`), и элементы soldy
+  в нём не собираются.
 - **Menu** — Menu Button (APG): кнопка потребителя в слоте `trigger` внутри
   корня, как у Popover, панель — `Frame` с `role="menu"`, `id` и
   `aria-labelledby` на триггер (имя меню — текст кнопки), у триггера —
@@ -842,8 +853,14 @@ ARIA пускает только `option` и `group` (axe — `aria-required-chi
   `plugins/__tests__/tooltip-trigger.plugin.spec.ts`,
   `ui/vue/__tests__/tooltip.spec.ts`, `ui/react/__tests__/tooltip.spec.tsx`,
   `ui/solid/__tests__/tooltip.spec.tsx` (у Solid ещё — триггер тем же узлом
-  после показа и смены `type`), `ui/svelte/__tests__/tooltip.spec.ts` и
-  `playground/vue/browser/tooltip.spec.ts`.
+  после показа и смены `type`), `ui/svelte/__tests__/tooltip.spec.ts`,
+  `ui/webc/__tests__/tooltip.spec.ts` (ссылка на панель сменяется на том же
+  узле триггера), `playground/vue/browser/tooltip.spec.ts` и
+  `playground/vue/browser/webc-frame.spec.ts` (подсказка Web Components стоит у
+  триггера, как у Vue). **Web Components** (`<span is="so-tooltip">`): ссылку
+  на панель (`triggerAria`) шаблон кладёт на первый элемент слота `trigger`
+  слоем владельца, scope у слотов нет; панель — деталь Frame
+  (`tooltip.frame`).
 - **Dialog** — Dialog (Modal) pattern: `role="dialog"` и `aria-modal="true"`
   на панели, имя — видимый заголовок (`aria-labelledby` на слот `title`,
   который рисуется всегда; `id` он берёт из набора `titleAria`). `TAriaPlugin`
