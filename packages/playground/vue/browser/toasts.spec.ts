@@ -27,14 +27,16 @@
  * кнопок своего содержимого и крестик, в покое, под наведением и при нажатии.
  * У каждого вида заливка своя, и всё на ней — цвета её текста: значок, подписи
  * кнопок, крестик и кольцо фокуса; порогов контраста у заливки нет — она
- * сигнал, ступень кнопки `filled` своего цвета. Наведение и нажатие кнопки
- * видно, а на заливке оно уводит фон от подписи. Палитры спек не знает:
- * контраст по WCAG он меряет слоями, как их кладёт браузер (`./colors`).
- * Смена вида у открытого тоста — переход цвета плашки, а не корня: переходов
- * корня ждёт удаление закрытого тоста. Пока тост ждёт, на месте значка бежит
- * кольцо цвета значка — по кругу глифа, и текст не сдвигается, когда кольцо
- * сменилось значком. Значки всех видов — одного рисунка с ошибкой: контур,
- * фигура внутри пуста.
+ * сигнал, ступень кнопки `filled` своего цвета. Кромка — серое кольцо — только
+ * у белой плашки: у сигнала рамки нет, как у кнопки `filled`. Тень — у каждой
+ * плашки, а в режиме принудительных цветов край каждой держит рамка.
+ * Наведение и нажатие кнопки видно, а на заливке оно уводит фон от подписи.
+ * Палитры спек не знает: контраст по WCAG он меряет слоями, как их кладёт
+ * браузер (`./colors`). Смена вида у открытого тоста — переход цвета плашки и
+ * её кромки, а не корня: переходов корня ждёт удаление закрытого тоста. Пока
+ * тост ждёт, на месте значка бежит кольцо цвета значка — по кругу глифа, и
+ * текст не сдвигается, когда кольцо сменилось значком. Значки всех видов —
+ * одного рисунка с ошибкой: контур, фигура внутри пуста.
  */
 
 import { describe, it, expect, beforeEach, afterEach, onTestFinished } from 'vitest'
@@ -64,7 +66,7 @@ import {
 	style,
 } from './colors'
 import { setDir } from './directions'
-import { reducedMotion } from './media'
+import { forcedColors, reducedMotion } from './media'
 import {
 	durationOf,
 	easingOf,
@@ -172,6 +174,7 @@ afterEach(async () => {
 	cleanup()
 	setDir(document.documentElement)
 	await reducedMotion('no-preference')
+	await forcedColors('none')
 })
 
 describe('место', () => {
@@ -516,6 +519,91 @@ describe('вид', () => {
 	)
 
 	/**
+	 * Слои тени узла, которые видно, — как их отдаёт вычисленный стиль: цвет,
+	 * сдвиг по осям, размытие и разлёт. Пустые слои Tailwind — прозрачные и
+	 * нулевого размера — отсеяны. Запятая внутри цвета (`rgba(…)`) слоёв не
+	 * делит.
+	 */
+	const shadows = (element: Element) =>
+		style(element)
+			.boxShadow.split(/,(?![^(]*\))/)
+			.map((layer) => {
+				const lengths = (layer.match(/-?[\d.]+px/g) ?? []).map(parseFloat)
+				const [x = 0, y = 0, blur = 0, spread = 0] = lengths
+
+				return { color: layer.replace(/-?[\d.]+px/g, '').trim(), x, y, blur, spread }
+			})
+			.filter(({ color }) => color !== 'none' && opacity(color) > 0)
+
+	/**
+	 * Кромка — кольцо: слой тени без сдвига и размытия, с разлётом, — так кольцо
+	 * рисует Tailwind (`ring-1`). У тени слои со сдвигом и размытием.
+	 */
+	const ringed = (element: Element): boolean =>
+		shadows(element).some(
+			({ x, y, blur, spread }) => x === 0 && y === 0 && blur === 0 && spread >= 1,
+		)
+
+	/**
+	 * Кромка — серое кольцо ступени 300 — только у белой плашки: она держит край
+	 * там, где тени не видно, — в тёмной схеме и поверх панели того же цвета.
+	 * Залитая — сигнал, а рамки у сигнала в теме нет нигде — ни у кнопки
+	 * `filled`, ни у пилюли тега, — и кольцо на заливке читалось грязным
+	 * ободком. Тень — у каждой плашки.
+	 */
+	it.each(SCHEMES)('%s: кромка — только у белой плашки, тень — у каждой', async (scheme) => {
+		document.documentElement.dataset.soTheme = scheme
+
+		const { show, rest } = await mount({ max: KINDS.length })
+
+		await show(...KINDS.map(({ name, type }) => ({ text: name, type })))
+		await rest()
+
+		for (const { name, type } of KINDS) {
+			const plate = card(titled(name))
+
+			expect(ringed(plate), `${name}: кромка`).toBe(type === undefined)
+			expect(
+				shadows(plate).some(({ blur }) => blur > 0),
+				`${name}: тень`,
+			).toBe(true)
+		}
+	})
+
+	/**
+	 * В режиме принудительных цветов браузер снимает заливку, тень и кольцо, а
+	 * край держит рамка — вторая половина кромки, прозрачный контур, который он
+	 * красит системным цветом (`forced-colors.spec.ts`, «кромка панели»). Она —
+	 * у каждой плашки: у залитой кольца нет и в обычном режиме, а контур тот же.
+	 */
+	it.each(SCHEMES)(
+		'%s: в режиме принудительных цветов рамка — у каждой плашки',
+		async (scheme) => {
+			await forcedColors('active')
+			document.documentElement.dataset.soTheme = scheme
+
+			const { show, rest } = await mount({ max: KINDS.length })
+
+			await show(...KINDS.map(({ name, type }) => ({ text: name, type })))
+			await rest()
+
+			// Режим действует: тень, а с ней и кольцо, браузер убрал
+			expect(matchMedia('(forced-colors: active)').matches).toBe(true)
+
+			for (const { name } of KINDS) {
+				const plate = card(titled(name))
+				const { boxShadow, outlineColor, backgroundColor } = style(plate)
+
+				expect(boxShadow, `${name}: тени нет`).toBe('none')
+				expect(outlined(plate), `${name}: рамка`).toBe(true)
+				expect(pixel([outlineColor]), `${name}: рамка видна на фоне`).not.toEqual(
+					pixel([backgroundColor]),
+				)
+			}
+		},
+	)
+
+	/**
 	 * Точка внутри фигуры значка вида, мимо знака на ней, — в единицах `viewBox`
 	 * Material (x 0…960, y −960…0): у круга — под верхним краем, над знаком, у
 	 * колокольчика — посередине, у треугольника — над «!».
@@ -748,11 +836,13 @@ describe('вид', () => {
 	/**
 	 * «Сохраняем…» на белой плашке становится «Сохранено» на заливке успеха.
 	 * Плашка перекрашивается переходом — и фон, и текст на нём: текст, ставший
-	 * белым сразу, на миг пропал бы на ещё белой плашке. У корня переходов нет:
-	 * их ждёт удаление закрытого тоста (`afterTransitions`), а цвет переходом
-	 * идёт и без движения.
+	 * белым сразу, на миг пропал бы на ещё белой плашке. Кромка белой плашки
+	 * гаснет тем же переходом — тени: у залитой её нет, и снятая разом, она
+	 * оставила бы ещё белую плашку без края. У корня переходов нет: их ждёт
+	 * удаление закрытого тоста (`afterTransitions`), а цвет и тень переходом
+	 * идут и без движения.
 	 */
-	it('смена вида у открытого тоста — переход цвета плашки, а не корня', async () => {
+	it('смена вида у открытого тоста — переход цвета и кромки плашки, а не корня', async () => {
 		const { show, rest } = await mount()
 		const [toast] = await show({ text: 'Сохраняем…', loading: true })
 
@@ -771,7 +861,7 @@ describe('вид', () => {
 		await nextTick()
 		await transitionEvents()
 
-		expect(plate).toEqual(expect.arrayContaining(['background-color', 'color']))
+		expect(plate).toEqual(expect.arrayContaining(['background-color', 'color', 'box-shadow']))
 		expect(own).toEqual([])
 	})
 
