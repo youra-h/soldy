@@ -2474,7 +2474,7 @@ Svelte 5 на рунах. Структура зеркалит React, потом�
 
 ## Layer 8d: Web Components Adapter (`packages/ui/webc/src`)
 
-### ✅ IMPLEMENTED (Component / ComponentView / Stylable / Interactive / Control / ValueControl / InputControl / Textable / Button / Icon / Label / Field / Frame / ProgressSpinner / ProgressLinear / Skeleton / Input / NumberInput / Textarea / CheckBox / Switch / Slider / Rating / RadioGroup / Tabs / Accordion / ListBox / Pagination / Scroller / Table / Virtual / DragAndDrop)
+### ✅ IMPLEMENTED (Component / ComponentView / Stylable / Interactive / Control / ValueControl / InputControl / Textable / Button / Icon / Label / Field / Frame / Popover / Tooltip / ProgressSpinner / ProgressLinear / Skeleton / Input / NumberInput / Textarea / CheckBox / Switch / Slider / Rating / RadioGroup / Tabs / Accordion / ListBox / Pagination / Scroller / Table / Virtual / DragAndDrop)
 
 Единственный таргет без фреймворка — и потому самый показательный тест
 архитектуры: ядро уже событийное, а `CustomEvent` это родная модель DOM.
@@ -2496,7 +2496,9 @@ Svelte 5 на рунах. Структура зеркалит React, потом�
   `adapter.connect(WebcProfile)` (о пропе ядра она сообщает элементу колбэком
   `onUpdate`, событие ядра уходит `CustomEvent` с элемента; событие «до», чей
   аргумент `TActionEvent`, — отменяемое, как событие DOM:
-  `event.preventDefault()` отменяет и событие ядра, а `detail` — оно само),
+  `event.preventDefault()` отменяет и событие ядра, а `detail` — оно само;
+  состояние связки — свойства инстанса с выходами плагинов дескриптора,
+  `TBindingState` с `TOutputs`, как у Angular),
   `useCollectionAdapter` (связка фасада коллекции — без `ctrl` и узла) и
   `joinBindings` (две связки коллекционного компонента — одной, как у
   Angular), `SoldyElement` (фабрика класса элемента поверх нативного класса
@@ -2652,11 +2654,13 @@ export const buttonTemplate: ITemplate<IButton> = {
 База копит имена изменившихся props в `_dirty`, откладывает флаш в микротаску
 (одно изменение в ядре часто даёт несколько триггеров) и применяет только те
 привязки, чьи props изменились. Смена `text` не трогает классы. Контекст
-привязок — живой вид элемента: состояние и инстанс текущей связки (`ctrl`) он
-отдаёт в момент обращения, узел содержимого, заданные слоты (`hasSlot`) и
-вывод слота по состоянию (`showSlot`). Обработчик, который шаблон завёл на
-одной связке и который запомнил контекст, после перестановки зовёт инстанс
-новой — так кнопка очистки Input очищает инстанс, присвоенный полю.
+привязок — живой вид элемента: состояние (с выходами плагинов дескриптора —
+пометкой панели `dismiss_ownerAttribute` у Popover) и инстанс текущей связки
+(`ctrl`) он отдаёт в момент обращения, узел содержимого, заданные слоты
+(`hasSlot`), узлы слота (`slotted`) и вывод слота по состоянию (`showSlot`).
+Обработчик, который шаблон завёл на одной связке и который запомнил контекст,
+после перестановки зовёт инстанс новой — так кнопка очистки Input очищает
+инстанс, присвоенный полю.
 
 То, что ядро пишет на корень, — `classes`, наборы `aria`, `attrs` (в нём и
 `dir`, и нативный `disabled` кнопки) и `dataset`, стиль (выход плагина
@@ -2928,6 +2932,26 @@ WebKit:
   стоит якорь, и раскладка света берёт его за сам корень: слот — корня, и
   содержимое — он. Сторожат `ui/webc/__tests__/frame.spec.ts` и
   `browser/webc-frame.spec.ts` стенда.
+- **Панель у триггера** — Popover и Tooltip (`<span is="so-popover">`,
+  `<span is="so-tooltip">`). Корень — элемент потребителя, обёртка триггера и
+  якорь панели, на нём — `attrs` и `dataset` (`sets`), ARIA — у панели и у
+  триггера. Панель — деталь Frame (`popover.frame`, `tooltip.frame`): якорь —
+  корень, его шаблон пишет панели при построении, а в цель и обратно
+  (`contained`) панель уводит база самого Frame. Наборы панели — `aria`,
+  `panelDataset` у поповера и пометка владельцем `dismiss_ownerAttribute` —
+  шаблон кладёт одним слоем владельца; выход плагина он читает с типом:
+  состояние в контексте шаблона — с выходами плагинов дескриптора (`TOutputs`
+  описания элемента). Содержимое панели — свет детали (`lend`): у поповера
+  полоса жеста, обёртка со слотом `default` и крестик `popover.close`, у
+  подсказки — обёртка текста; `lazyMount` выводит слот привязкой
+  (`showSlot`). **Триггер без scope.** Связку с панелью остальные адаптеры
+  отдают триггеру в scope слота, а у Web Components scope нет, и привязать
+  набор потребитель не может. Поэтому `triggerAria` (у поповера с
+  `triggerDataset`) шаблон кладёт на первый элемент слота `trigger` слоем
+  владельца — узлы слота отдаёт контекст (`slotted`), — и триггер остаётся тем
+  узлом, что написал потребитель: набор на нём сменяется на месте. Сторожат
+  `ui/webc/__tests__/popover.spec.ts`, `tooltip.spec.ts`, `hide-outside.spec.ts`
+  и `browser/webc-frame.spec.ts` стенда (панель стоит у триггера, как у Vue).
 - **Коллекция** — RadioGroup, Tabs с `Tabs.Content`, Accordion и ListBox:
   владелец (`<div is="so-tabs">`) и его элементы (`<div is="so-tabs-item">`,
   `<label is="so-radio-group-item">`), корень каждого — элемент потребителя,
@@ -3148,6 +3172,9 @@ Svelte (`TSoldyElementProps` над `DescriptorComponentProps`): свои про
   Так же у образцов Slider, Rating и Pagination: данные — по месту узла копии.
 - Метки ползунка списком — только свойством (`el.marks = [...]`): первый тип
   пропа `marks` булев, и атрибут — флаг «точки шкалы».
+- Триггер Popover и Tooltip — первый элемент слота `trigger` к построению:
+  элемент, добавленный в корень потом, связку с панелью не получает —
+  наблюдателя за светом нет. Текст и пробелы в слоте набора не несут.
 
 ---
 
