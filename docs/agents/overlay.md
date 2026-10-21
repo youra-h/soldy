@@ -57,6 +57,7 @@
   `plugins/__tests__/popover-focus.plugin.spec.ts` («панель внутри корня»),
   `ui/vue/__tests__/popover.spec.ts`, `ui/react/__tests__/popover.spec.tsx`,
   `ui/solid/__tests__/popover.spec.tsx`, `ui/webc/__tests__/popover.spec.ts`,
+  `ui/angular/__tests__/popover.spec.ts`,
   `ui/react/__tests__/drawer.spec.tsx`, `ui/react/__tests__/frame.spec.tsx`,
   `ui/svelte/__tests__/frame.spec.ts`, `ui/solid/__tests__/frame.spec.tsx`,
   `ui/angular/__tests__/frame.spec.ts` и `ui/webc/__tests__/frame.spec.ts`.
@@ -74,7 +75,9 @@
   Убрать элемент потребителя компонент не может, и от панели остаётся он сам —
   на месте, пустой и скрытый, без классов, наборов и раскладки ядра; в цель
   он уезжает в браузере после отрисовки — после гидратации, — и только там
-  получает содержимое, номер слоя и раскладку.
+  получает содержимое, номер слоя и раскладку. Гидратации у слоя Angular нет
+  (`ngSkipHydration` статикой хоста Frame): всё, что написано внутри панели,
+  браузер строит сам — и у Popover и Tooltip, чья панель — Frame в их шаблоне.
   Панель уходит и возвращается вместе с местом: место, которое Angular вынул
   из документа, не снимая компонента (условный `<ng-content>` чужого
   компонента, отсоединённое представление), уводит из цели и её, а
@@ -129,17 +132,20 @@
   `ui/angular/__tests__/frame.spec.ts`, `ui/angular/__tests__/ssr.server.spec.ts`
   (у Angular на сервере — пустой скрытый элемент потребителя, и с
   `contained` тоже, после гидратации — в цели тем же узлом, с содержимым,
-  слоем и раскладкой браузера), `ui/webc/__tests__/frame.spec.ts` и
+  слоем и раскладкой браузера; у поповера и подсказки ссылка триггера ведёт
+  на этот элемент уже на сервере, а после гидратации в панели их содержимое,
+  текст подсказки тоже), `ui/webc/__tests__/frame.spec.ts` и
   `playground/vue/browser/webc-frame.spec.ts` (перенос, `contained` и смена
   цели не пересобирают ни Frame, ни кнопку в панели — и с колбэками
   полифила, — а перестановка потребителем пересобирает); контексты места —
   «содержимое панели — в контексте места» в `frame.spec.ts` Svelte и
   `frame.spec.tsx` Solid и «содержимое панели» в `frame.spec.ts` Web
   Components: кнопка в панели собрана с локалью провайдера вокруг Frame, а не
-  с английской; у React — «крестик назван локалью поддерева» в
-  `ui/react/__tests__/popover.spec.tsx` и у Web Components — «крестик назван
-  локалью провайдера вокруг поповера» в `ui/webc/__tests__/popover.spec.ts`:
-  панель в `body`, а имя крестика — от провайдера вокруг поповера.
+  с английской; у React и Angular — «крестик назван локалью поддерева» в
+  `ui/react/__tests__/popover.spec.tsx` и `ui/angular/__tests__/popover.spec.ts`
+  и у Web Components — «крестик назван локалью провайдера вокруг поповера» в
+  `ui/webc/__tests__/popover.spec.ts`: панель в `body`, а имя крестика — от
+  провайдера вокруг поповера.
 - **`TModalLayer`** (`core/src/components/base/modal-layer/`) — общая база
   модального окна **`TDialog`** и выезжающей панели **`TDrawer`**: всё, что
   следует из модальности, один раз — `role="dialog"`, `aria-modal`, имя от
@@ -509,8 +515,10 @@ Solid: `ui/solid/__tests__/popover.spec.tsx` («вложенные слои») �
 `ui/svelte/__tests__/popover.spec.ts` («вложенные слои», «Select внутри»),
 `dialog.spec.ts` («окно поверх окна», «Select внутри», «Popover внутри»),
 `drawer.spec.ts` («внутри модального окна») и `tooltip.spec.ts` («в открытом
-поповере») — и у Web Components: `ui/webc/__tests__/popover.spec.ts`
-(«вложенные слои») и `tooltip.spec.ts` («в открытом поповере»).
+поповере») — у Web Components: `ui/webc/__tests__/popover.spec.ts`
+(«вложенные слои») и `tooltip.spec.ts` («в открытом поповере») — и у
+Angular: `ui/angular/__tests__/popover.spec.ts` («вложенные слои») и
+`tooltip.spec.ts` («в открытом поповере»).
 
 **Закрытие пользователем — запрос, а не запись.** Нажатие мимо, Escape и
 жест плагины слоя передают владельцу с причиной — `outside`, `escape` и
