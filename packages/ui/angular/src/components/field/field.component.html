@@ -15,7 +15,10 @@
 		><ng-content select="[slot=label-content]">{{ state()['label'] }}</ng-content></label
 	>
 }
-<!-- Контрол — слот default: Input, CheckBox, Switch, RadioGroup или Label с контролом -->
+<!--
+	Контрол — слот default: Input, NumberInput, CheckBox, Switch, RadioGroup или
+	Label с контролом
+-->
 <div class="so-field__control"><ng-content /></div>
 <!--
 	Подсказка — проп `helper`, своя разметка — слот `helper-content`: в ней

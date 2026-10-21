@@ -394,7 +394,8 @@ ARIA пускает только `option` и `group` (axe — `aria-required-chi
   `<Field helper="…"><Label text="…"><CheckBox /></Label></Field>`: имя даёт
   `Label`, справку — поле. Адаптеры: Vue, React, Solid, Svelte, Angular и Web
   Components; в пяти последних связку берут поля, которые в них есть, — Input,
-  CheckBox, Switch и RadioGroup, у Svelte — ещё Rating, Slider и Select.
+  NumberInput, CheckBox, Switch и RadioGroup, у Svelte — ещё Rating, Slider и
+  Select.
   Проводка у всех одна — поле ставит `TFieldExtension`, контрол —
   `TFieldControlExtension` на свой лифт, — а слой лифта каждый адаптер отдаёт
   своим механизмом. Поле ставит под свой слой
@@ -404,12 +405,13 @@ ARIA пускает только `option` и `group` (axe — `aria-required-chi
   оборачивает содержимое `Elevate` и разворачивает слоты внутри него — узлы
   слота он создаёт там, где слот развернули, — а слой без своего (`empty`)
   провайдера не ставит; у Angular свой слой (`provideElevator()`) есть и у
-  поля, и у Input, CheckBox и Switch — `down()` без него — ошибка; Web
-  Components опускает связку хостом, и поле регистрируется раньше полей.
-  Контрол в слоте контрола связку не берёт, даже когда она освободилась:
-  держит его пустая связка, а не порядок приёма — React и вовсе принимает
-  детей раньше родителя. На корне Input, CheckBox и Switch во всех адаптерах —
-  `dataset`: тема читает там `data-disabled` и `data-invalid`. Сторожат
+  поля, и у Input, NumberInput, CheckBox и Switch — `down()` без него —
+  ошибка; Web Components опускает связку хостом, и поле регистрируется раньше
+  полей. Контрол в слоте контрола связку не берёт, даже когда она
+  освободилась: держит его пустая связка, а не порядок приёма — React и вовсе
+  принимает детей раньше родителя. На корне Input, NumberInput, CheckBox и
+  Switch во всех адаптерах — `dataset`: тема читает там `data-disabled` и
+  `data-invalid`. Сторожат
   `core/__tests__/field.spec.ts`, `plugins/__tests__/ids.plugin.spec.ts`
   («поле формы»), `setup/__tests__/field-link.spec.ts`,
   `setup/__tests__/aria-plugin.spec.ts` («ссылки поля формы»),
@@ -1250,28 +1252,36 @@ useToasts()`. API опускает лифт (`TOASTS_ELEVATOR`, расширен
   клавиатуры iOS минуса нет (`TNumberInputTouchPlugin`, набор `inputSets`). В
   форму уходит скрытое поле с числом («1234.5»), а не текст; без числа его
   значение — пустая строка. Подпись `Field` называет ввод своим `for`.
-  Адаптеры: Vue, React, Solid, Svelte и Web Components
-  (`<div is="so-number-input">`), Angular — пока нет. Разметка у всех — Vue:
-  корень по `tag`, атрибуты потребителя делятся, как у Input (класс и стиль —
+  Адаптеры: Vue, React, Solid, Svelte, Web Components
+  (`<div is="so-number-input">`) и Angular (`<div so-number-input>`). Разметка
+  у всех — Vue: корень по `tag` (у Angular и Web Components — элемент
+  потребителя), атрибуты потребителя делятся, как у Input (класс и стиль —
   корню, остальное — вводу, поверх его наборов), на вводе — `inputAttrs`,
   `aria` и `inputAria` в этом порядке, кнопки шага — Button-детали без
   обработчиков, с классами, по которым их находит плагин. Текст ввода —
   буфер правки ядра (`text`), и в узел его пишет помощник адаптера, только
   когда он разошёлся с узлом: `NativeInput` у React, `fieldText` у Solid и
-  Svelte, привязка шаблона у Web Components; на сервере — атрибутом `value` в
-  формате локали. `inputmode` из набора React получает пропом `inputMode`
-  (таблица имён `toAriaProps`). У Web Components слой владельца у элемента
-  один, поэтому три набора ввода и оба набора каждой кнопки шага шаблон
-  кладёт одной привязкой. Сторожат `core/__tests__/number-input.spec.ts`,
+  Svelte, привязка шаблона у Web Components, директива `[so-field-text]` у
+  Angular; на сервере — атрибутом `value` в формате локали. `inputmode` из
+  набора React получает пропом `inputMode` (таблица имён `toAriaProps`). У
+  Web Components слой владельца у элемента один, у Angular одна на элементе
+  директива набора `[so-attributes]`, поэтому три набора ввода и оба набора
+  каждой кнопки шага шаблон кладёт одной привязкой. Значки кнопок шага у
+  Angular — шаблоны слотов (`<ng-template slot="decrement-icon">`): есть ли
+  что-то в проекции, Angular не сообщает, а без слота кнопка рисует свою
+  иконку. Сторожат `core/__tests__/number-input.spec.ts`,
   `core/__tests__/scale.spec.ts`,
   `plugins/__tests__/number-input.plugin.spec.ts`, `number-input.spec.*`
   каждого адаптера (у Solid и Svelte — и `number-input.server.spec.*`, у React
-  — гидратация), спеки атрибутов корня, фокуса и поля формы адаптеров,
+  — гидратация, у Angular — сервер и гидратация в `fields.server.spec.ts`),
+  спеки атрибутов корня, фокуса и поля формы адаптеров, у Angular — и спеки
+  доставки атрибутов (`attrs.spec.ts`, `attrs.server.spec.ts`),
   `playground/vue/browser/number-input.spec.ts` (набор `ru-RU`, отказ знака без
   сдвига каретки, удержание до края, Enter отправляет форму с числом,
   направление в RTL, зоны кнопок `sm`, вровень с Input в `Field`),
-  `svelte-host.spec.ts` и `webc-fields.spec.ts` (поле и кнопки стоят, как у
-  Vue; цифра в середину числа без сдвига каретки).
+  `svelte-host.spec.ts`, `angular-host.spec.ts` и `webc-fields.spec.ts` (поле
+  и кнопки стоят, как у Vue; у Web Components — и цифра в середину числа без
+  сдвига каретки).
 - **ProgressLinear** — индикатор выполнения линией, роль `progressbar` на
   корне. Модель доли — у базы `TProgress`, общей с кольцом ProgressSpinner
   (ниже). `aria-valuemin` и `aria-valuemax` стоят всегда, `aria-valuenow` —

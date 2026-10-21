@@ -23,7 +23,8 @@ render on the server (`@angular/platform-server`) and hydrate in the browser
 (`provideClientHydration`); component ids match on both sides.
 
 > **Status:** the Angular adapter is in progress — Button, Icon, Label, Frame, ProgressSpinner,
-> Skeleton, Input, Textarea (multi-line, growing with its text, with a character counter),
+> Skeleton, Input, NumberInput (a number in the locale's format with − and + step buttons; the
+> form gets the number), Textarea (multi-line, growing with its text, with a character counter),
 > CheckBox, Switch, the form field `<div so-field>` (label, helper and error linked to the control
 > inside it), RadioGroup, ListBox, Tabs, Accordion, Table, the `Virtual` window for long lists and
 > the `<so-drag-and-drop>` wrapper that lets users reorder the items of Tabs, ListBox and Accordion
@@ -105,14 +106,15 @@ nothing written inside it.
 template: `<svg so-icon so-role-icon="close" aria_label="Close"></svg>`
 ```
 
-A field — Input, Textarea, CheckBox, Switch — is written on a `div` or, for the inline CheckBox and
-Switch, a `span` (`<div so-input>`, `<div so-textarea>`, `<span so-check-box>`, `<span so-switch>`)
-and renders a native `<input>` (a `<textarea>`) inside, so your markup is split the way Vue and
-React split it: `class` and `style` stay on the field, while everything else you write on it goes
-to the `<input>` — static attributes (`autocomplete`, `data-*`), bindings (`[attr.aria-describedby]`,
-`[aria-label]`, `[title]`) and listeners (`(focus)`, `(blur)`), which is what `provideAttrs()` is
-for. A field is not an `<input>` itself — `<input so-input>` throws, since its template would have
-nowhere to render. A field gets its visible name from a Label around it:
+A field — Input, NumberInput, Textarea, CheckBox, Switch — is written on a `div` or, for the inline
+CheckBox and Switch, a `span` (`<div so-input>`, `<div so-number-input>`, `<div so-textarea>`,
+`<span so-check-box>`, `<span so-switch>`) and renders a native `<input>` (a `<textarea>`) inside,
+so your markup is split the way Vue and React split it: `class` and `style` stay on the field,
+while everything else you write on it goes to the `<input>` — static attributes (`autocomplete`,
+`data-*`), bindings (`[attr.aria-describedby]`, `[aria-label]`, `[title]`) and listeners
+(`(focus)`, `(blur)`), which is what `provideAttrs()` is for. A field is not an `<input>` itself —
+`<input so-input>` throws, since its template would have nowhere to render. A field gets its
+visible name from a Label around it:
 
 ```ts
 template: `<label so-label text="Remember me"
@@ -128,6 +130,18 @@ itself:
 template: `<div so-input>
   <ng-template slot="trailing" let-ctrl="ctrl">{{ ctrl.value?.length ?? 0 }}/40</ng-template>
 </div>`
+```
+
+A number field shows its number in the locale's format — `1,234.5`, `12%` or `RUB 1,234.50` with
+`formatOptions` — and steps it within `min` and `max` with the arrow keys and the − and + buttons,
+which repeat while held. The form gets the number, not the text: `name` goes to a hidden `<input>`
+with `1234.5`, while what you write on the field goes to the text `<input>`. `(soChangeValue)`
+comes on every typed digit and step, `(soCommit)` once per finished action — leaving the field,
+Enter, releasing a step button. The icons of the step buttons are templates,
+`<ng-template slot="decrement-icon">` and `increment-icon`:
+
+```ts
+template: `<div so-number-input name="qty" [min]="0" [value]="qty()" (soCommit)="save($event.newValue)"></div>`
 ```
 
 A collection — RadioGroup, ListBox, Tabs, Accordion — is an owner element with its items inside
