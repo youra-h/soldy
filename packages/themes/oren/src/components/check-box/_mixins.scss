@@ -1,21 +1,19 @@
 @use '../../mixins/hover';
 @use '../../mixins/on-signal';
+@use '../../mixins/signal';
 
 // Варианты темы со своим цветом. `normal` сюда не входит: это нейтраль, и у
 // блока без варианта цвет тот же — отдельное правило ему не нужно.
 $variants: 'accent', 'positive', 'negative', 'caution';
 
 // Цвет варианта у вида по умолчанию (`outlined`): рамка, отметка и фон
-// выключенной коробки. Отметку этим цветом рисует и `plain`.
-@mixin checkbox-variant($this, $color: 'neutral', $border: 300, $mark: 500, $bg-disabled: 50) {
+// выключенной коробки. Отметку этим цветом рисует и `plain`. Отметка — сигнал
+// семейства (`mixins/_signal.scss`), как заливка отмеченной коробки `filled`.
+@mixin checkbox-variant($this, $color: 'neutral', $border: 300, $bg-disabled: 50) {
 	@include checkbox-frame($this, $color, $border);
 
-	#{$this}__container {
-		$svg-fill: $mark;
-
-		svg {
-			@apply #{'fill-so-' + $color + '-' + $svg-fill};
-		}
+	#{$this}__container svg {
+		fill: signal.fill($color);
 	}
 
 	input:disabled + #{$this}__container {
@@ -57,14 +55,12 @@ $variants: 'accent', 'positive', 'negative', 'caution';
 // ничего. Теперь выключенная неотмеченная коробка честно уходит к ступени
 // `50` вида по умолчанию, а видно её рамкой этого же вида.
 //
-// От `outlined` вид отличается только отмеченным состоянием: насыщенная
-// ступень `$fill` и белая отметка на ней, как подпись вида `filled` у
-// Button. Середина хроматических шкал насыщенная в обеих схемах, а `500`
-// нейтрали — точка симметрии. Кромка отмеченной коробки — в цвет заливки.
-@mixin checkbox-filled($this, $color, $fill: 500) {
-	// Одна ветка на обе схемы — см. комментарий в button/_mixins.scss
-	$fill-hover: $fill + 100;
-
+// От `outlined` вид отличается только отмеченным состоянием: сигнал семейства
+// (`mixins/_signal.scss`) и белая отметка на нём, как подпись вида `filled`
+// у Button. Середина хроматических шкал насыщенная в обеих схемах, а `500`
+// нейтрали — точка симметрии. Кромка отмеченной коробки — в цвет заливки, под
+// наведением обе — на ступень сигнала дальше.
+@mixin checkbox-filled($this, $color) {
 	// Отмечено — в коробке стоит отметка: галка отмеченного поля или черта
 	// частичного выбора при любом значении.
 	$on: '&:is(#{$this}--indeterminate, :has(> input:checked))';
@@ -73,8 +69,8 @@ $variants: 'accent', 'positive', 'negative', 'caution';
 	// ступень специфичности и нейтрали, и варианту, — отмеченная выключенная
 	// коробка остаётся залитой, её гасит только прозрачность блока.
 	#{$on} #{$this}__container {
-		border-color: var(--so-#{$color}-#{$fill});
-		@apply #{'bg-so-' + $color + '-' + $fill};
+		border-color: signal.fill($color);
+		background-color: signal.fill($color);
 		color: on-signal.$text;
 
 		// Белый — цветом текста, а не в `fill`. В режиме принудительных цветов
@@ -89,8 +85,8 @@ $variants: 'accent', 'positive', 'negative', 'caution';
 	#{$on}
 		input:is(#{hover.$hovered-field}):not(:disabled, #{hover.readonly($this)})
 		+ #{$this}__container {
-		border-color: var(--so-#{$color}-#{$fill-hover});
-		@apply #{'bg-so-' + $color + '-' + $fill-hover};
+		border-color: signal.hover($color);
+		background-color: signal.hover($color);
 	}
 }
 

@@ -1,6 +1,7 @@
 @use 'sass:map';
 @use '../../mixins/caption';
 @use '../../mixins/hover';
+@use '../../mixins/signal';
 
 // Сторона контрола по размеру — ступени `--spacing`, шкала коробки CheckBox
 // (`check-box/_check-box.scss`): радио и чекбокс одного размера стоят в форме
@@ -35,12 +36,13 @@ $sizes: (
 // Кольцо — ступень рамки, как у коробки CheckBox. Отметка выбранного — `color`
 // контрола: точку и толстое кольцо вид рисует через `currentColor`. Поэтому
 // вид решает только геометрию отметки, вариант — только её цвет, и матрицы
-// «вид × вариант» нет.
-@mixin radio-variant($this, $color: 'neutral', $ring: 300, $mark: 500, $bg-disabled: 50) {
+// «вид × вариант» нет. Цвет отметки — сигнал семейства
+// (`mixins/_signal.scss`), как отметка флажка.
+@mixin radio-variant($this, $color: 'neutral', $ring: 300, $bg-disabled: 50) {
 	@include radio-ring($this, $color, $ring);
 
 	> #{$this}__control {
-		color: var(--so-#{$color}-#{$mark});
+		color: signal.fill($color);
 	}
 
 	&[data-disabled='true'] > #{$this}__control {

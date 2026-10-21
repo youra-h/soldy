@@ -47,6 +47,7 @@ import { createEngineToasts } from '@soldy-ui/core'
 import type {
 	IToastsItem,
 	IToastsProps,
+	TComponentVariant,
 	TToastInput,
 	TToastsItemType,
 	TToastsPlacement,
@@ -518,6 +519,52 @@ describe('вид', () => {
 			}
 		},
 	)
+
+	/**
+	 * Семейство цвета вида — решение темы (`$types` в
+	 * `themes/oren/src/components/toasts/_toasts.scss`). Заливка вида — сигнал
+	 * этого семейства (`mixins/_signal.scss` темы), тот же, что у кнопки
+	 * `filled` своего цвета: синий тоста рядом с синей кнопкой — один синий.
+	 * Ступень сигнала у семейств не одна — у `caution` своя, — и плашка, которая
+	 * написала бы её сама, разошлась бы с кнопкой.
+	 */
+	const FAMILIES = {
+		info: 'accent',
+		success: 'positive',
+		warning: 'caution',
+		error: 'negative',
+	} satisfies Record<TToastsItemType, TComponentVariant>
+
+	it.each(SCHEMES)('%s: заливка вида — цвета кнопки filled своего семейства', async (scheme) => {
+		document.documentElement.dataset.soTheme = scheme
+
+		const { show, rest } = await mount({ max: TOASTS_ITEM_TYPES.length })
+
+		// Кнопки — под страницей высотой в окно: указатель на них не стоит
+		render(
+			defineComponent({
+				render: () =>
+					TOASTS_ITEM_TYPES.map((type) =>
+						h(Button, {
+							key: type,
+							variant: FAMILIES[type],
+							text: type,
+							'data-type': type,
+						}),
+					),
+			}),
+		)
+
+		await show(...TOASTS_ITEM_TYPES.map((type) => ({ text: type, type })))
+		await rest()
+
+		const colors = (fill: (type: TToastsItemType) => string) =>
+			Object.fromEntries(TOASTS_ITEM_TYPES.map((type) => [type, [...pixel([fill(type)])]]))
+
+		expect(colors((type) => style(card(titled(type))).backgroundColor)).toEqual(
+			colors((type) => style(find(`.so-button[data-type="${type}"]`)).backgroundColor),
+		)
+	})
 
 	/**
 	 * Слои тени узла, которые видно, — как их отдаёт вычисленный стиль: цвет,

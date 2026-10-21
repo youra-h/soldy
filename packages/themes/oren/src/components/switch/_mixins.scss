@@ -1,4 +1,5 @@
 @use '../../mixins/hover';
+@use '../../mixins/signal';
 @use '../../mixins/veil';
 
 // Размер дорожки и ручки. Ручка стоит в полушаге (`0.5`) от краёв дорожки:
@@ -23,11 +24,12 @@
 	}
 }
 
-@mixin switch-variant($this, $color: 'neutral', $bg-checked: 500) {
-	// Включённая дорожка остаётся ступенью: у насыщенной заливки своё место на
-	// шкале есть, в обеих схемах она одна и та же, и на ней держится ручка.
+@mixin switch-variant($this, $color: 'neutral') {
+	// Включённая дорожка остаётся ступенью — сигналом семейства
+	// (`mixins/_signal.scss`): у насыщенной заливки своё место на шкале есть, в
+	// обеих схемах она одна и та же, и на ней держится ручка.
 	input:checked + #{$this}__track {
-		@apply #{'bg-so-' + $color + '-' + $bg-checked};
+		background-color: signal.fill($color);
 	}
 
 	@include switch-track($this, $color);

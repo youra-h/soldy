@@ -1,5 +1,6 @@
 @use 'sass:map';
 @use '../../mixins/caption';
+@use '../../mixins/signal';
 @use '../../mixins/veil';
 
 // Шкала размеров — ступени утилит Tailwind.
@@ -80,9 +81,9 @@ $variants: 'accent', 'positive', 'negative', 'caution';
 //   треть ручки, и на двух шагах в тёмной схеме он почти сливался с
 //   подложкой, особенно на панели. Наведение прибавляет свой шаг — та же
 //   лесенка, что у дорожки Switch;
-// - заливка и кромка ручки — насыщенная ступень 500: своё место на шкале у
-//   неё есть, в обеих схемах она одна и та же. Заливка и кромка одного цвета —
-//   ручка читается концом заливки;
+// - заливка и кромка ручки — сигнал семейства (`mixins/_signal.scss`): своё
+//   место на шкале у него есть, в обеих схемах оно одно и то же. Заливка и
+//   кромка одного цвета — ручка читается концом заливки;
 // - ореол ручки — вуаль состояний, наведение и перетаскивание, но вдвое
 //   плотнее, чем у Button (`--so-component-state-*`): у кнопки вуаль — весь её
 //   фон, а ореол — кольцо в треть ручки, и плотностью фона оно в тёмной схеме
@@ -94,7 +95,7 @@ $variants: 'accent', 'positive', 'negative', 'caution';
 @mixin slider-colors($color) {
 	@include slider-rail($color);
 
-	--so-slider-fill: var(--so-#{$color}-500);
+	--so-slider-fill: #{signal.fill($color)};
 	--so-slider-halo-hover: #{veil.tint($color, calc(2 * var(--so-component-state-hover)))};
 	--so-slider-halo-active: #{veil.tint($color, calc(2 * var(--so-component-state-active)))};
 	--so-slider-tick: #{veil.tint($color, 45%)};

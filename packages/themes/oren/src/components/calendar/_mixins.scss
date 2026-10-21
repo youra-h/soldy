@@ -1,4 +1,5 @@
 @use 'sass:map';
+@use '../../mixins/signal';
 @use '../../mixins/veil';
 @use '../button/mixins' as button;
 
@@ -88,11 +89,11 @@ $variants: 'accent', 'positive', 'negative', 'caution';
 // календарь (`bindStyleToOwner`), — но цвет всё равно один на календарь, и
 // держать его на каждой ячейке незачем.
 //
-// - выбранный день и концы выбранного диапазона — насыщенная ступень 500 с
-//   белым текстом, как отмеченная коробка CheckBox `filled` и заливка Slider:
-//   своё место на шкале у неё есть, и в обеих схемах она одна и та же.
-//   Наведение и нажатие — ступени 600 и 700, как у Button `filled` с
-//   вариантом: вуаль той же ступени на такой заливке невидима;
+// - выбранный день и концы выбранного диапазона — сигнал семейства
+//   (`mixins/_signal.scss`) с белым текстом, как отмеченная коробка CheckBox
+//   `filled` и заливка Slider: своё место на шкале у него есть, и в обеих
+//   схемах оно одно и то же. Наведение и нажатие — ступени сигнала, как у
+//   Button `filled` с вариантом: вуаль на такой заливке невидима;
 // - наведение и нажатие у остальных дней — вуаль состояний Button
 //   (`--so-component-state-*`): календарь стоит и на странице, и на панели
 //   DatePicker, и ступень, отсчитанная от страницы, на панели пропала бы;
@@ -111,9 +112,9 @@ $variants: 'accent', 'positive', 'negative', 'caution';
 //   рядом, а 300 на вуали мало: в тёмной схеме на панели DatePicker лента
 //   почти ровно ступени 300, и рамка в ней пропадала.
 @mixin calendar-colors($color) {
-	--so-calendar-fill: var(--so-#{$color}-500);
-	--so-calendar-fill-hover: var(--so-#{$color}-600);
-	--so-calendar-fill-active: var(--so-#{$color}-700);
+	--so-calendar-fill: #{signal.fill($color)};
+	--so-calendar-fill-hover: #{signal.hover($color)};
+	--so-calendar-fill-active: #{signal.press($color)};
 	--so-calendar-hover: #{veil.tint($color, var(--so-component-state-hover))};
 	--so-calendar-press: #{veil.tint($color, var(--so-component-state-active))};
 	--so-calendar-band: #{veil.tint($color, var(--so-component-state-active))};
