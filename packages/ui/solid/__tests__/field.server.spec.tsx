@@ -21,7 +21,7 @@
 import { describe, it, expect } from 'vitest'
 import type { JSX } from 'solid-js'
 import { renderToString } from 'solid-js/web'
-import { Field, Input, RadioGroup, Rating, Slider } from '@soldy-ui/solid'
+import { DateInput, Field, Input, RadioGroup, Rating, Slider } from '@soldy-ui/solid'
 
 /** Открывающий тег разметки: имя и атрибуты; атрибут без значения — пустая строка. */
 type TTag = {
@@ -119,6 +119,23 @@ describe('Field · серверный рендер', () => {
 		))
 		const group = withClass(body, 'so-radio-group')
 
+		expect(group.attributes['aria-labelledby']).toBe(
+			withClass(body, 'so-field__label').attributes.id,
+		)
+		expect(group.attributes['aria-describedby']).toBe(
+			withClass(body, 'so-field__helper').attributes.id,
+		)
+	})
+
+	it('поле даты — группа: ссылки на подпись и справку — у её корня', () => {
+		const body = render(() => (
+			<Field label="Дата рождения" helper="Подсказка">
+				<DateInput />
+			</Field>
+		))
+		const group = withClass(body, 'so-date-input')
+
+		expect(group.attributes.role).toBe('group')
 		expect(group.attributes['aria-labelledby']).toBe(
 			withClass(body, 'so-field__label').attributes.id,
 		)
