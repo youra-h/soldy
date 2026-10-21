@@ -21,11 +21,12 @@
  * соседа и ресайз.
  *
  * Переходы ловит слушатель `transitionrun`, повешенный до действия, а не
- * снимок после него: переход короткий. Переходы самих табов — цвет строки под
- * указателем — тоже всплывают до списка, поэтому в счёт идут только переходы
- * его `::after`. Полосу тест меряет коробкой псевдоэлемента и сверяет с
- * коробкой обёртки таба по главной оси: полоса лежит под всем табом, вместе с
- * крестиком.
+ * снимок после него: переход короткий, — и признак переезда так же, наблюдатель
+ * стиля списка (`styleValues`): признак снимается, когда переход доиграл.
+ * Переходы самих табов — цвет строки под указателем — тоже всплывают до
+ * списка, поэтому в счёт идут только переходы его `::after`. Полосу тест
+ * меряет коробкой псевдоэлемента и сверяет с коробкой обёртки таба по главной
+ * оси: полоса лежит под всем табом, вместе с крестиком.
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
@@ -37,7 +38,7 @@ import { Tabs, TabsItem } from '@soldy-ui/vue'
 import { find } from './colors'
 import { reducedMotion } from './media'
 import { pseudoBox } from './pseudo-box'
-import { pseudoSettled, pseudoTransitionRuns, transitionEvents } from './transitions'
+import { pseudoSettled, pseudoTransitionRuns, styleValues, transitionEvents } from './transitions'
 
 import '@soldy-ui/theme-oren'
 
@@ -193,12 +194,13 @@ describe('переезд к новому табу', () => {
 			expect(lengthOf('b', axis)).not.toBeCloseTo(lengthOf('a', axis), 0)
 
 			const runs = stripRuns()
+			const flags = styleValues(list(), '--so-tabs-active-moving')
 
 			await userEvent.click(rowOf('b'))
 			await transitionEvents()
 
 			expect(runs).toEqual(expect.arrayContaining(['transform', SIZE[axis]]))
-			expect(moving()).toBe('1')
+			expect(flags).toContain('1')
 
 			await stripSettled()
 

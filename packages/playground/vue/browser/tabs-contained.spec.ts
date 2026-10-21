@@ -19,10 +19,12 @@
  * именно здесь, а запись в ядро этого не показала бы.
  *
  * Переходы ловит слушатель `transitionrun`, повешенный до действия, а не
- * снимок после него: переход короткий. Переходы самих табов — цвет строки под
- * указателем — тоже всплывают до списка, поэтому в счёт идут только переходы
- * его `::before`. Карточку тест меряет коробкой псевдоэлемента и сверяет с
- * коробкой обёртки таба: так видно и то, что карточка покрывает таб целиком.
+ * снимок после него: переход короткий, — и признак переезда так же, наблюдатель
+ * стиля списка (`styleValues`): признак снимается, когда переход доиграл.
+ * Переходы самих табов — цвет строки под указателем — тоже всплывают до
+ * списка, поэтому в счёт идут только переходы его `::before`. Карточку тест
+ * меряет коробкой псевдоэлемента и сверяет с коробкой обёртки таба: так видно
+ * и то, что карточка покрывает таб целиком.
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
@@ -34,7 +36,13 @@ import { Tabs, TabsItem } from '@soldy-ui/vue'
 import { find, style } from './colors'
 import { reducedMotion } from './media'
 import { pseudoBox } from './pseudo-box'
-import { pseudoSettled, pseudoTransitionRuns, settled, transitionEvents } from './transitions'
+import {
+	pseudoSettled,
+	pseudoTransitionRuns,
+	settled,
+	styleValues,
+	transitionEvents,
+} from './transitions'
 
 import '@soldy-ui/theme-oren'
 
@@ -188,13 +196,14 @@ describe('переезд к новому табу', () => {
 			await expectCardOn('a')
 
 			const runs = cardRuns()
+			const flags = styleValues(list(), '--so-tabs-active-moving')
 
 			await userEvent.click(rowOf('b'))
 			await transitionEvents()
 
 			// Место по главной оси и длина вдоль неё — `width` или `height`
 			expect(runs).toEqual(expect.arrayContaining(['transform', size]))
-			expect(moving()).toBe('1')
+			expect(flags).toContain('1')
 
 			await cardSettled()
 

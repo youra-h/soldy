@@ -11,6 +11,16 @@ declare module 'vitest/browser' {
 		mouseDown: () => Promise<void>
 		/** Отпустить основную кнопку мыши */
 		mouseUp: () => Promise<void>
+		/**
+		 * Протянуть мышь от `from` до `to` и отпустить без паузы — движение и
+		 * отпускание одним тактом, без круга RPC между ними. Точки — доли рамки
+		 * узла, селектор CSS — в рамке теста
+		 */
+		quickDrag: (
+			selector: string,
+			from: { x: number; y: number },
+			to: { x: number; y: number },
+		) => Promise<void>
 		/** Коснуться пальцем центра узла `count` раз подряд — селектор CSS в рамке теста */
 		tap: (selector: string, count?: number) => Promise<void>
 		/**
