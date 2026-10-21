@@ -7,8 +7,12 @@
  * `name` радио, остановки Tab. Панель таба находит свой таб к своей сборке, и
  * панель активного таба тоже в разметке сервера — с содержимым и связкой;
  * неактивная панель — скрытый элемент потребителя без содержимого. Так же, как
- * у Vue и Svelte; у React элементы разметки входят в коллекцию при коммите, и
- * сервер рисует их без этого.
+ * у Vue, Svelte и Solid, и точнее них: они пишут разметку строкой по ходу
+ * инициализации, и таб выше активного уходит в неё с остановкой Tab, которую
+ * держал как первый доступный, а сервер Angular отдаёт разметку своей
+ * эмуляции DOM, когда приложение стабильно, — остановка у него одна
+ * (`docs/agents/collections.md`, «Цена»). У React элементы разметки входят в
+ * коллекцию при коммите, и сервер рисует их без этого.
  *
  * `id` частей — связки «таб ↔ панель» и «заголовок ↔ панель» — и общий `name`
  * радио строят плагины связок от id монтирования, а он у Angular — номер
@@ -149,6 +153,26 @@ describe('Tabs · серверный рендер', () => {
 	})
 	class MarkupPage {}
 
+	/** Активный таб в своём компоненте: его шаблон Angular рисует после таба выше. */
+	@Component({
+		selector: 'app-active-tab',
+		standalone: true,
+		imports: [TTabsItemComponent],
+		template: `<div so-tabs-item value="b" text="B" active></div>`,
+	})
+	class ActiveTab {}
+
+	@Component({
+		selector: 'app-root',
+		standalone: true,
+		imports: [TTabsComponent, TTabsItemComponent, ActiveTab],
+		template: `<div so-tabs>
+			<div so-tabs-item value="a" text="A"></div>
+			<app-active-tab></app-active-tab>
+		</div>`,
+	})
+	class NestedPage {}
+
 	it.each([
 		['табы из items', ItemsPage],
 		['табы и панели из разметки', MarkupPage],
@@ -165,6 +189,24 @@ describe('Tabs · серверный рендер', () => {
 			expect(panels[0].getAttribute('aria-labelledby')).toBe(rows[1].id)
 		},
 	)
+
+	/**
+	 * У Vue, Svelte и Solid таб выше активного уходит в разметку сервера с
+	 * остановкой Tab, которую держал как первый доступный, — до гидратации
+	 * остановок две (`docs/agents/collections.md`, «Цена»). Angular эту цену не
+	 * платит: сервер рисует в эмуляцию DOM и отдаёт её разметку, когда
+	 * приложение стабильно, — таб, у которого остановку забрал активный, к
+	 * этому времени перерисован. Даже когда активный входит после того, как
+	 * шаблон таба выше уже нарисован, — из своего компонента.
+	 */
+	it.each([
+		['табы разметки', MarkupPage],
+		['активный в своём компоненте, после отрисовки таба выше', NestedPage],
+	] as const)('%s, активный вторым — остановка Tab одна, у него', async (_name, app) => {
+		const page = await serverPage(app)
+
+		expect(attributeOf(all(page, '[role="tab"]'), 'tabindex')).toEqual(['-1', '0'])
+	})
 
 	it('неактивная панель на сервере — скрытый элемент без содержимого', async () => {
 		const page = await serverPage(ItemsPage)
