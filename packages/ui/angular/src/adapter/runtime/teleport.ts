@@ -44,6 +44,15 @@
  *   представления Angular снимает сам и из цели (`removeChild` рендерера — это
  *   `el.remove()`), но узел, вложенный в снятый элемент, он не трогает: тот
  *   остался бы в цели.
+ * - Спутник корня — узел шаблона, который стоит прямо перед корнем: подложка
+ *   окна и выезжающей панели, соседка панели в телепорте Vue (`#companion`,
+ *   `TRootTeleport.companion`). После каждого приведения к месту он стоит
+ *   прямо перед корнем, где бы тот ни был, — в цели, на месте, у якоря в
+ *   снятом поддереве, — и переставляется, только если он не там; у корня без
+ *   родителя места нет, и спутник уходит из документа. Шаблон рисует его
+ *   внутри корня, и Angular о его месте не знает: свой узел он снимает
+ *   откуда угодно (`el.remove()`), а снятие компонента спутника не трогает —
+ *   его убирает перенос.
  *
  * Чего сверка не снимает: узлы `@for` Angular вставляет перед первым узлом
  * следующего представления, и если это увезённый корень, рендерер бросает
@@ -64,6 +73,7 @@ import {
 	afterRenderEffect,
 	inject,
 	signal,
+	untracked,
 	type Signal,
 } from '@angular/core'
 
@@ -71,12 +81,15 @@ import {
 export type TTeleportPlace = {
 	/** Селектор цели: `body`, `#layers`. `null` — цели нет. */
 	readonly target: Signal<string | null>
-	/** Корень остаётся на месте, без переноса (`contained` у Frame). */
+	/** Корень остаётся на месте, без переноса (`contained` у Frame и Drawer). */
 	readonly contained: Signal<boolean>
 }
 
 /** Текст якоря, который стоит на месте корня, пока корень в цели. */
 export const TELEPORT_ANCHOR = 'so-teleport'
+
+/** Спутника нет — у корня Frame. */
+const NO_COMPANION: Signal<Element | null> = signal(null).asReadonly()
 
 /** Корень увезён: якорь на его месте и цель, в которую его увёл перенос. */
 type TAway = {
@@ -85,10 +98,16 @@ type TAway = {
 }
 
 /**
- * Переносит корень `root` по `place`. Зовётся в контексте инъекции
- * компонента: хукам после отрисовки и снятию нужен его инжектор.
+ * Переносит корень `root` по `place`, а спутника `companion` (см. шапку)
+ * держит прямо перед ним. Спутник — узел шаблона, которого нет, пока шаблон
+ * его не нарисовал (`null`), и который бывает новым. Зовётся в контексте
+ * инъекции компонента: хукам после отрисовки и снятию нужен его инжектор.
  */
-export function teleportRoot(root: Element, place: TTeleportPlace): Signal<boolean> {
+export function teleportRoot(
+	root: Element,
+	place: TTeleportPlace,
+	companion: Signal<Element | null> = NO_COMPANION,
+): Signal<boolean> {
 	/**
 	 * Корень на своём месте. Пишет его только перенос — в браузере, после
 	 * отрисовки: на сервере и до первой отрисовки слоя нет, и с `contained`
@@ -132,10 +151,28 @@ export function teleportRoot(root: Element, place: TTeleportPlace): Signal<boole
 	}
 
 	/**
-	 * Приводит корень к его месту — в цель `wanted` или на место. Сначала
-	 * сверяет, где корень на самом деле, с тем, куда его увёл перенос: после
-	 * сверки корень либо там, где его поставил Angular, и якоря нет, либо в
-	 * цели, а якорь — в документе.
+	 * Спутник — прямо перед корнем, где бы тот ни стоял, и переставляется,
+	 * только если он не там. У корня без родителя места нет — спутник уходит
+	 * из документа. Читается без слежения: сверку после отрисовки зовёт и
+	 * эффект цели, а новый спутник появляется отрисовкой, после которой сверка
+	 * идёт всё равно.
+	 */
+	const escort = (): void => {
+		const node = untracked(companion)
+
+		if (node === null) return
+
+		const parent = root.parentNode
+
+		if (parent === null) node.remove()
+		else if (node.nextSibling !== root) parent.insertBefore(node, root)
+	}
+
+	/**
+	 * Приводит корень к его месту — в цель `wanted` или на место — и ставит
+	 * перед ним спутника. Сначала сверяет, где корень на самом деле, с тем,
+	 * куда его увёл перенос: после сверки корень либо там, где его поставил
+	 * Angular, и якоря нет, либо в цели, а якорь — в документе.
 	 */
 	const settle = (): void => {
 		if (away !== null && root.parentNode !== away.target) {
@@ -154,6 +191,8 @@ export function teleportRoot(root: Element, place: TTeleportPlace): Signal<boole
 		if (wanted === null) moveHome()
 		// Корень вне документа — места у него нет: ждёт, пока Angular его вставит
 		else if (root.parentNode !== wanted && root.isConnected) moveTo(wanted)
+
+		escort()
 	}
 
 	// Фаза записи: хуки меняют DOM, а раскладку не читают. Эффект — на смену
@@ -174,6 +213,10 @@ export function teleportRoot(root: Element, place: TTeleportPlace): Signal<boole
 	afterEveryRender({ write: settle })
 
 	inject(DestroyRef).onDestroy(() => {
+		// Спутник стоит рядом с корнем, а не в нём: снятие компонента его не
+		// убирает — ни в цели, ни на месте
+		untracked(companion)?.remove()
+
 		if (away === null) return
 
 		away.anchor.remove()

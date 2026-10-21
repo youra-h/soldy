@@ -20,7 +20,10 @@
  * якоря — корня, который Angular отдаёт панели значением (`rootElement()`
  * базы). Открытая панель с частями сверяется с Vue от угла триггера
  * (`panel-boxes.ts`, как у Web Components): превью обоих хостов — в одном
- * блоке, по очереди.
+ * блоке, по очереди. Окно и выезжающая панель — тоже в `body`, с
+ * подложкой-спутником перед собой, и стоят у края или по центру окна: в ячейке
+ * от них остаётся кнопка, а открытые, с подложкой и частями, сверяются с Vue от
+ * угла окна.
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
@@ -30,7 +33,16 @@ import * as material from '@soldy-ui/icons-material'
 import App from '../src/App.vue'
 import { loadHost } from '../src/hosts'
 import { router } from '../src/router'
-import { BOX, POPOVER_PARTS, TOOLTIP_PARTS, measure, type TBox } from './panel-boxes'
+import {
+	BOX,
+	DIALOG_PARTS,
+	DRAWER_PARTS,
+	POPOVER_PARTS,
+	TOOLTIP_PARTS,
+	measure,
+	measureLayer,
+	type TBox,
+} from './panel-boxes'
 
 import '@soldy-ui/theme-oren'
 import oren from '@soldy-ui/theme-oren/setup'
@@ -147,6 +159,9 @@ describe('хост Angular', () => {
 		// Корень и триггер в нём: панели в ячейке нет — она увезена в `body`
 		['popover', '.so-popover, .so-popover > .so-button'],
 		['tooltip', '.so-tooltip, .so-tooltip > .so-button'],
+		// Кнопка, которая открывает окно и панель: сами они увезены в `body`
+		['dialog', '.so-button'],
+		['drawer', '.so-button'],
 	])('%s стоит в ячейке так же, как у Vue', async (component, selector) => {
 		const vue = await boxesOf('vue', component, selector)
 		const angular = await boxesOf('angular', component, selector)
@@ -205,4 +220,46 @@ describe('хост Angular · панель у триггера', () => {
 			expect(angular).toEqual(vue)
 		},
 	)
+})
+
+/**
+ * Превью хоста в блоке — открытым (`visible`): рамки слоя с подложкой и
+ * частями от угла окна. Меряется и снимается — следующей отрисовке оно не
+ * мешает, а снятое окно отпускает замок прокрутки.
+ */
+async function layerOf(framework: string, component: string, parts: string): Promise<TBox[]> {
+	const host = await loadHost(framework)
+	const node = document.createElement('div')
+
+	node.style.cssText = BOX
+	document.body.appendChild(node)
+
+	const handle = host.mount(node, { component, props: { visible: true } })
+
+	try {
+		return await measureLayer(parts)
+	} finally {
+		handle.unmount()
+		node.remove()
+	}
+}
+
+describe('хост Angular · окно и выезжающая панель', () => {
+	beforeEach(() => {
+		document.documentElement.dataset.soTheme = 'oren'
+	})
+
+	// Части: подложка, окно или панель, заголовок, тело, абзац и поле в нём,
+	// подвал, две кнопки в нём, крестик
+	it.each([
+		['dialog', DIALOG_PARTS],
+		['drawer', DRAWER_PARTS],
+	])('%s: открытый с подложкой и частями стоит так же, как у Vue', async (component, parts) => {
+		const vue = await layerOf('vue', component, parts)
+		const angular = await layerOf('angular', component, parts)
+
+		expect(angular).toHaveLength(10)
+		expect(angular[1].width).toBeGreaterThan(0)
+		expect(angular).toEqual(vue)
+	})
 })

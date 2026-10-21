@@ -33,12 +33,14 @@ import {
  * пропсы сценария фикстура принимает своими входами — теми, что пишут её
  * сценарии (`text` и `ctrl`), — и передаёт компоненту сценария привязками.
  * Проп, которого у фикстуры нет, хост назовёт ошибкой, как и у превью.
- * Компонент сценария фикстура отдаёт хосту (`target`): его выходы хост
- * слушает, как у превью.
+ * Компонент сценария фикстура отдаёт хосту (`subject`): его выходы хост
+ * слушает, как у превью. Имя поля — не имя пропа: входы у фикстуры и превью
+ * своим шаблоном названы по пропам страницы, а `target` — проп слоя (окно,
+ * выезжающая панель).
  */
 export type TFixture = {
 	/** Компонент сценария в разметке фикстуры. */
-	readonly target: Signal<object>
+	readonly subject: Signal<object>
 }
 
 @Component({
@@ -61,7 +63,7 @@ export type TFixture = {
 class ButtonSlotLabels implements TFixture {
 	readonly ctrl = input<IButton>()
 	readonly text = input<string>()
-	readonly target = viewChild.required(TButtonComponent)
+	readonly subject = viewChild.required(TButtonComponent)
 }
 
 @Component({
@@ -80,7 +82,7 @@ class ButtonSlotLabels implements TFixture {
 class ButtonSlotIcons implements TFixture {
 	readonly ctrl = input<IButton>()
 	readonly text = input<string>()
-	readonly target = viewChild.required(TButtonComponent)
+	readonly subject = viewChild.required(TButtonComponent)
 }
 
 @Component({
@@ -99,7 +101,7 @@ class ButtonSlotIcons implements TFixture {
 class LabelCheckBox implements TFixture {
 	readonly ctrl = input<ILabel>()
 	readonly text = input<string>()
-	readonly target = viewChild.required(TLabelComponent)
+	readonly subject = viewChild.required(TLabelComponent)
 }
 
 @Component({
@@ -116,7 +118,7 @@ class LabelCheckBox implements TFixture {
 class LabelSwitch implements TFixture {
 	readonly ctrl = input<ILabel>()
 	readonly text = input<string>()
-	readonly target = viewChild.required(TLabelComponent)
+	readonly subject = viewChild.required(TLabelComponent)
 }
 
 @Component({
@@ -137,7 +139,7 @@ class LabelSwitch implements TFixture {
 class LabelRadio implements TFixture {
 	readonly ctrl = input<ILabel>()
 	readonly text = input<string>()
-	readonly target = viewChild.required(TLabelComponent)
+	readonly subject = viewChild.required(TLabelComponent)
 }
 
 export const FIXTURES: Record<string, Type<TFixture>> = {

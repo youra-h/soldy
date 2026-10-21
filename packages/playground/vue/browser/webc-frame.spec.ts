@@ -55,7 +55,16 @@ import {
 	type TFrameElementProps,
 	type TToastRender as TElementToastRender,
 } from '@soldy-ui/webc'
-import { BOX, POPOVER_PARTS, TOOLTIP_PARTS, measure, type TBox } from './panel-boxes'
+import {
+	BOX,
+	DIALOG_PARTS,
+	DRAWER_PARTS,
+	POPOVER_PARTS,
+	TOOLTIP_PARTS,
+	measure,
+	measureLayer,
+	type TBox,
+} from './panel-boxes'
 
 import '@soldy-ui/theme-oren'
 
@@ -66,9 +75,6 @@ type TTooltipTriggerScope = DescriptorSlots<typeof TooltipDescriptor>['trigger']
 
 /** Флаш раскладки элемента — на микрозадаче. */
 const flush = () => new Promise<void>((resolve) => queueMicrotask(() => resolve()))
-
-/** Кадр: рамки открытого слоя сверяются от кадра к кадру. */
-const nextFrame = () => new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
 
 /** Сборки: вид компонента и тег локали, которые плагин видел при установке набора. */
 const assembled: (readonly [kind: string, locale: string])[] = []
@@ -315,53 +321,12 @@ describe('Popover и Tooltip · панель у триггера', () => {
 	})
 })
 
-/** Рамки открытого слоя и его частей — от угла окна: они стоят у края или по центру экрана. */
-function windowBoxesOf(parts: string): TBox[] {
-	return [...document.querySelectorAll(parts)]
-		.filter((node) => node.getClientRects().length > 0)
-		.map((node) => {
-			const box = node.getBoundingClientRect()
-
-			return {
-				x: Math.round(box.left),
-				y: Math.round(box.top),
-				width: Math.round(box.width),
-				height: Math.round(box.height),
-			}
-		})
-}
-
-/**
- * Рамки, когда слой встал: доиграли переходы темы — проявление окна, въезд
- * панели, — и два кадра подряд рамки те же. Перебитый переход отменяется, и
- * его `finished` отклонён: для ожидания это тоже конец, как в `measure`.
- */
-async function settled(parts: string): Promise<TBox[]> {
-	let previous = ''
-
-	for (let frame = 0; frame < 60; frame += 1) {
-		await nextFrame()
-		await Promise.all(
-			document.getAnimations().map((animation) => animation.finished.catch(() => undefined)),
-		)
-
-		const boxes = windowBoxesOf(parts)
-		const current = JSON.stringify(boxes)
-
-		if (boxes.length > 0 && current === previous) return boxes
-
-		previous = current
-	}
-
-	throw new Error(`${parts}: открытый слой не встал за 60 кадров`)
-}
-
 /** Vue: слой открыт с первой отрисовки, меряется и снимается — следующей не мешает. */
 async function settledVue(content: () => VNode, parts: string): Promise<TBox[]> {
 	render(defineComponent({ render: content }))
 	await nextTick()
 
-	const boxes = await settled(parts)
+	const boxes = await measureLayer(parts)
 
 	cleanup()
 
@@ -381,16 +346,8 @@ async function settledWebc(
 	document.body.appendChild(root)
 	nodes.push(root)
 
-	return settled(parts)
+	return measureLayer(parts)
 }
-
-/** Части открытого окна: подложка, окно, заголовок, тело с содержимым, подвал с кнопками, крестик. */
-const DIALOG_PARTS =
-	'.so-dialog__backdrop, .so-dialog, .so-dialog__title, .so-dialog__body, .so-dialog__body > *, .so-dialog__footer, .so-dialog__footer > *, .so-dialog__close'
-
-/** Части открытой выезжающей панели — те же, что у окна. */
-const DRAWER_PARTS =
-	'.so-drawer__backdrop, .so-drawer, .so-drawer__title, .so-drawer__body, .so-drawer__body > *, .so-drawer__footer, .so-drawer__footer > *, .so-drawer__close'
 
 /** Части региона с тостом: регион, тост, плашка, значок, текст, своё содержимое, крестик. */
 const TOASTS_PARTS =

@@ -93,11 +93,19 @@
  *   связан с хостом всё время. Так же корень прячет выход, который называет
  *   описание корня (`TRootSpec.shownBy` — `active` у панели таба), пока он не
  *   `true`;
- * - слой (`TRootSpec.teleport` — Frame) есть только в браузере, как оверлей
- *   CDK: элемент потребителя, со всем, что на нём написано, переносит в цель
- *   `teleportRoot` (`teleport.ts`) после отрисовки. Пока корень не в цели и не
- *   на месте — на сервере, до переноса, без цели, — слоя нет (`placed`): база
- *   корень прячет и классов, наборов и стиля ядра на нём не рисует;
+ * - слой (`TRootSpec.teleport` — Frame, Dialog, Drawer) есть только в
+ *   браузере, как оверлей CDK: элемент потребителя, со всем, что на нём
+ *   написано, переносит в цель `teleportRoot` (`teleport.ts`) после
+ *   отрисовки. Пока корень не в цели и не на месте — на сервере, до переноса,
+ *   без цели, — слоя нет (`placed`): база корень прячет и классов, наборов и
+ *   стиля ядра на нём не рисует. Подложку окна и выезжающей панели — соседку
+ *   панели в телепорте Vue — шаблон рисует спутником корня (`#companion`):
+ *   её база держит прямо перед корнем, где бы он ни стоял, и прячет тем же
+ *   значением, что корень;
+ * - выходы плагинов, которые у Vue лежат в `v-bind` корня (пометка панели
+ *   владельцем `dismiss_ownerAttribute` у окна и выезжающей панели), база
+ *   кладёт на корень своим слоем раскладчика (`TRootSpec.plugins`): свой хост
+ *   шаблон Angular не адресует;
  * - у поля (`TRootSpec.control` — Input, NumberInput, Textarea, CheckBox,
  *   Switch, радио) атрибуты потребителя делятся между корнем и вложенным
  *   `<input>` (`#control` в шаблоне), как у Vue и React, у элемента коллекции
@@ -201,6 +209,7 @@ import {
 	stylesOf,
 	type TAppliedClasses,
 	type TAppliedStyles,
+	type TRootStyles,
 } from './root-attributes'
 import { SlotDirective } from './slot.directive'
 import { teleportRoot } from './teleport'
@@ -252,14 +261,21 @@ import type { TBinding, TBindingState } from './useAdapter'
  *   `visible` и `rendered`;
  * - `teleport` — корень уезжает в слой: имена выходов состояния с селектором
  *   цели и с признаком «на месте» (`{ target: 'target', contained: 'contained' }`
- *   у Frame), их называет компонент. Переносит корень `teleportRoot`
- *   (`teleport.ts`) — сам элемент потребителя. Пока корень не в цели и не на
- *   месте — на сервере, до переноса, без цели, — слоя нет (`placed`). Нет —
- *   корень стоит, где его написали;
+ *   у Frame и Drawer, у окна — без «на месте»), их называет компонент, и есть
+ *   ли у корня спутник (`companion` у Dialog и Drawer — подложка). Переносит
+ *   корень `teleportRoot` (`teleport.ts`) — сам элемент потребителя. Пока
+ *   корень не в цели и не на месте — на сервере, до переноса, без цели, —
+ *   слоя нет (`placed`). Нет — корень стоит, где его написали;
  * - `sets` — наборы ядра, которые база кладёт на корень, по умолчанию все три.
  *   У поля — `attrs` и `dataset`: его `aria` стоит на вложенном `<input>`
  *   (`AttributesDirective` в шаблоне), а `dataset` — на корне, где его читает
  *   тема, как у остальных адаптеров;
+ * - `plugins` — имена выходов плагинов, которые база кладёт на корень слоем
+ *   `plugins` своего раскладчика, поверх наборов ядра (`ATTRIBUTE_LAYERS`):
+ *   у окна и выезжающей панели — пометка владельцем `dismiss_ownerAttribute`,
+ *   без которой плагины слоя не нашли бы панель. У Vue выход лежит в
+ *   `v-bind` корня, а свой хост шаблон Angular не адресует. Нет — выходов
+ *   плагинов на корне нет;
  * - `aria` — имя выхода состояния, чей набор база кладёт на корень слоем
  *   `aria`, по умолчанию сам `aria`. У Slider — `rootAria`: у нескольких ручек
  *   корень — группа с именем ползунка, у одной набор пуст, а `aria` ползунка
@@ -287,6 +303,7 @@ export type TRootSpec =
 			readonly teleport?: TRootTeleport
 			readonly sets?: readonly TRootSet[]
 			readonly aria?: string
+			readonly plugins?: readonly string[]
 			readonly control?: boolean
 	  }
 
@@ -295,10 +312,11 @@ type TRootHost = Extract<TRootSpec, { readonly strategy: 'host' }>
 
 /**
  * Что база раскладывает на корень, — часть описания корня-хоста: стиль-выход,
- * место в коллекции, наборы и выход слоя `aria`. Корень внутри обёртки берёт
- * умолчания: все три набора из одноимённых выходов, без своего стиля и места.
+ * место в коллекции, наборы, выход слоя `aria` и выходы плагинов. Корень
+ * внутри обёртки берёт умолчания: все три набора из одноимённых выходов, без
+ * своего стиля, места и выходов плагинов.
  */
-type TRootPaint = Pick<TRootHost, 'style' | 'order' | 'sets' | 'aria'>
+type TRootPaint = Pick<TRootHost, 'style' | 'order' | 'sets' | 'aria' | 'plugins'>
 
 /**
  * Память раскладки на одном узле — что база поставила на него в прошлый раз.
@@ -313,15 +331,32 @@ const NO_APPLIED_CLASSES: TAppliedClasses = new Set()
 /** Ни одного свойства стиля база ещё не поставила. */
 const NO_APPLIED_STYLES: TAppliedStyles = new Map()
 
+/** Спутник на виду: своего стиля база ему не пишет. */
+const COMPANION_SHOWN: TRootStyles = new Map()
+
+/** Спутник скрыт — тем же значением, что корень (`_rootDisplay`). */
+const COMPANION_HIDDEN: TRootStyles = new Map([['display', 'none']])
+
 /** Набор ядра, который база может положить на корень-хост (`TRootSpec.sets`). */
 export type TRootSet = 'attrs' | 'aria' | 'dataset'
 
-/** Слой в описании корня (`TRootSpec.teleport`): имена выходов состояния. */
+/** Слой в описании корня (`TRootSpec.teleport`): имена выходов состояния и спутник. */
 export type TRootTeleport = {
-	/** Выход с селектором цели: `target` у Frame. */
+	/** Выход с селектором цели: `target` у Frame, Dialog и Drawer. */
 	readonly target: string
-	/** Выход «корень на месте, без переноса»: `contained` у Frame. */
-	readonly contained: string
+	/**
+	 * Выход «корень на месте, без переноса»: `contained` у Frame и Drawer. Нет
+	 * — места на месте у слоя нет (окно): корень всегда в цели.
+	 */
+	readonly contained?: string
+	/**
+	 * У корня есть спутник — узел шаблона `#companion`, который стоит прямо
+	 * перед корнем: подложка окна и выезжающей панели, у Vue — соседка панели в
+	 * телепорте. Ставит, увозит и снимает его перенос (`teleportRoot`), а
+	 * прячет база тем же значением, что корень. Привязки спутника — в шаблоне.
+	 * Нет — спутника нет.
+	 */
+	readonly companion?: boolean
 }
 
 /** Где корень компонента — см. `TRootSpec`. */
@@ -569,6 +604,17 @@ export abstract class TComponentBase<
 		read: ElementRef,
 	})
 
+	/**
+	 * Спутник корня, помеченный `#companion`, — у слоя со спутником
+	 * (`TRootTeleport.companion`): подложка окна и выезжающей панели. Шаблон
+	 * рисует его, только пока слой на своём месте, и после ухода места рисует
+	 * заново — узел бывает новым. Сигнальный запрос и поле — по тем же
+	 * причинам, что `_root`.
+	 */
+	private readonly _companion = viewChild<unknown, ElementRef<Element>>('companion', {
+		read: ElementRef,
+	})
+
 	/** Объявленные потребителем `<ng-template slot="...">`. */
 	private readonly _slots = contentChildren(SlotDirective)
 
@@ -802,6 +848,8 @@ export abstract class TComponentBase<
 			})
 		}
 
+		if (paint.plugins) this._paintPlugins(target, paint.plugins)
+
 		// Слои стиля — значения состояния как есть: связка заменяет их только
 		// на смену содержимого, и эффект не будит смена чужих свойств
 		const layout = computed(() => this._drawn()['layout_styles'])
@@ -823,6 +871,31 @@ export abstract class TComponentBase<
 				on: element,
 				applied: applyStyles(element, stylesOf(layout(), own(), orderOf(order())), applied),
 			}
+		})
+	}
+
+	/**
+	 * Выходы плагинов на корне (`TRootSpec.plugins`) — слоем `plugins`
+	 * раскладчика элемента, поверх наборов ядра, в порядке имён: у Vue они
+	 * лежат в `v-bind` корня следом за наборами (`dismiss_ownerAttribute` окна
+	 * и выезжающей панели). Выход — набор, как у ядра, и правило у него то же:
+	 * что называет, — за базой. Эффект один на слой и будит его смена одного из
+	 * выходов: каждый — значение состояния как есть, и связка заменяет его
+	 * только на смену содержимого.
+	 */
+	private _paintPlugins(target: () => Element | null, names: readonly string[]): void {
+		const outputs = names.map((name) => computed(() => attributesOf(this._drawn()[name])))
+
+		effect(() => {
+			const element = target()
+
+			if (!element) return
+
+			const layer: Record<string, unknown> = {}
+
+			for (const output of outputs) Object.assign(layer, output())
+
+			TElementAttributes.of(element).set('plugins', layer)
 		})
 	}
 
@@ -914,25 +987,62 @@ export abstract class TComponentBase<
 	/**
 	 * Слой (`TRootSpec.teleport`): корень-хост уезжает в цель. Цель и «на
 	 * месте» база читает из состояния по именам выходов, которые назвал
-	 * компонент, а переносит корень `teleportRoot`. Зовётся из конструктора:
-	 * эффекту после отрисовки нужен injection context.
+	 * компонент, а переносит корень `teleportRoot`. Выхода «на месте» нет — у
+	 * слоя нет места на месте (окно), и корень всегда в цели. Спутник корня
+	 * (`#companion`) база отдаёт переносу, а прячет сама (`_hideCompanion`).
+	 * Зовётся из конструктора: эффектам нужен injection context.
 	 *
 	 * Отдаёт сигнал «корень на своём месте» (`placed`): пока он ложь, слоя нет.
 	 */
 	private _teleportHost(host: Element, names: TRootTeleport): Signal<boolean> {
-		return teleportRoot(host, {
-			// Селектор — непустая строка, всё остальное — цели нет
-			target: computed(() => {
-				const state: TStateSnapshot = this.state()
-				const value = state[names.target]
+		const contained = names.contained
+		const companion = names.companion
+			? computed(() => this._companion()?.nativeElement ?? null)
+			: undefined
 
-				return typeof value === 'string' && value !== '' ? value : null
-			}),
-			contained: computed(() => {
-				const state: TStateSnapshot = this.state()
+		if (companion) this._hideCompanion(companion)
 
-				return state[names.contained] === true
-			}),
+		return teleportRoot(
+			host,
+			{
+				// Селектор — непустая строка, всё остальное — цели нет
+				target: computed(() => {
+					const state: TStateSnapshot = this.state()
+					const value = state[names.target]
+
+					return typeof value === 'string' && value !== '' ? value : null
+				}),
+				contained: computed(() => {
+					const state: TStateSnapshot = this.state()
+
+					return contained !== undefined && state[contained] === true
+				}),
+			},
+			companion,
+		)
+	}
+
+	/**
+	 * Спутник прячется тем же значением, что корень (`_rootDisplay`): закрытое
+	 * окно спрятано вместе с подложкой, как `v-show` обоих у Vue, — и
+	 * `rendered=false` тоже, ведь элемент потребителя не снимается, а
+	 * прячется. Скрытие — свойство стиля спутника, которое база пишет и
+	 * снимает по своей памяти, как стиль корня (`applyStyles`): привязки
+	 * спутника в шаблоне (`[style]` подложки — её `z-index`) его не трогают.
+	 * Узел спутника бывает новым, и на новом память начинается пустой.
+	 */
+	private _hideCompanion(companion: Signal<Element | null>): void {
+		let styled: TPainted<TAppliedStyles> = { on: null, applied: NO_APPLIED_STYLES }
+
+		effect(() => {
+			const element = companion()
+
+			if (!element) return
+
+			const styles = this._rootDisplay() === 'none' ? COMPANION_HIDDEN : COMPANION_SHOWN
+			const applied = styled.on === element ? styled.applied : NO_APPLIED_STYLES
+
+			styled = { on: element, applied: applyStyles(element, styles, applied) }
 		})
 	}
 

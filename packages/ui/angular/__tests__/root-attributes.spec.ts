@@ -25,6 +25,8 @@ import {
 	TButtonComponent,
 	TCheckBoxComponent,
 	TComponentViewComponent,
+	TDialogComponent,
+	TDrawerComponent,
 	TFieldComponent,
 	TIconComponent,
 	TInputComponent,
@@ -51,7 +53,7 @@ import {
 	applyStyles,
 	stylesOf,
 } from '../src/adapter/runtime/root-attributes'
-import { findIn, mountHost, nextFrame } from './mount'
+import { find, findIn, mountHost, nextFrame } from './mount'
 
 /** Хост пробы: корни, о которых сообщил `(soElementReady)`. */
 abstract class TProbeHost {
@@ -464,6 +466,51 @@ const LISTS: ReadonlyArray<readonly [string, Type<TProbeHost>, string, string, s
 	['Tabs', TabsProbe, '[so-tabs]', 'so-tabs', '[role="tablist"]'],
 ]
 
+/**
+ * Проба окна и выезжающей панели — открытых: корень уезжает в цель, и всё,
+ * что потребитель на нём написал, едет с ним. Селектор свой — по той же
+ * причине, что у проб полей.
+ */
+@Component({
+	selector: 'probe-dialog',
+	standalone: true,
+	imports: [TDialogComponent],
+	template: `<div
+		so-dialog
+		visible
+		direction="rtl"
+		dir="ltr"
+		title="probe"
+		class="mine"
+		style="color: red"
+		(soElementReady)="ready.push($event)"
+	></div>`,
+})
+class DialogProbe extends TProbeHost {}
+
+@Component({
+	selector: 'probe-drawer',
+	standalone: true,
+	imports: [TDrawerComponent],
+	template: `<div
+		so-drawer
+		visible
+		direction="rtl"
+		dir="ltr"
+		title="probe"
+		class="mine"
+		style="color: red"
+		(soElementReady)="ready.push($event)"
+	></div>`,
+})
+class DrawerProbe extends TProbeHost {}
+
+/** Слой с корнем в цели, хост его пробы, селектор корня и класс ядра на нём. */
+const LAYERS: ReadonlyArray<readonly [string, Type<TProbeHost>, string, string]> = [
+	['Dialog', DialogProbe, '[so-dialog]', 'so-dialog'],
+	['Drawer', DrawerProbe, '[so-drawer]', 'so-drawer'],
+]
+
 describe('что называет ядро, — за базой, остальное — потребителя', () => {
 	/**
 	 * `dir` ядро пишет в `attrs` по `direction`, и имя `dir` у него — за базой,
@@ -661,6 +708,48 @@ describe('ListBox и Tabs: атрибуты потребителя делятс�
 
 		expect(fixture.componentInstance.ready).toEqual([findIn(fixture, selector, HTMLElement)])
 	})
+})
+
+/**
+ * Окно и выезжающая панель: корень — элемент потребителя, и в цель он уезжает
+ * со всем, что на нём написано. Атрибут, класс и стиль потребителя стоят на
+ * нём рядом с наборами и классами ядра, раскладкой слоя и пометкой
+ * владельцем, которую база кладёт слоем выходов плагинов (`TRootSpec.plugins`).
+ * `tabindex="-1"` — статика хоста. Корень — в `body`, мимо хоста пробы, и
+ * ищется по документу.
+ */
+describe('окно и выезжающая панель: корень в цели', () => {
+	it.each(LAYERS)(
+		'%s: атрибуты, класс и стиль потребителя — рядом с наборами ядра и data-owner',
+		(_name, host, selector, own) => {
+			mountHost(host)
+
+			const el = find(document, selector, HTMLElement)
+
+			expect(el.parentElement).toBe(document.body)
+			expect(el.getAttribute('title')).toBe('probe')
+			expect(el.classList.contains('mine')).toBe(true)
+			expect(el.classList.contains(own)).toBe(true)
+			expect(el.style.color).toBe('red')
+			expect(el.getAttribute('dir')).toBe('rtl')
+			expect(el.getAttribute('role')).toBe('dialog')
+			expect(el.getAttribute('data-open')).toBe('true')
+			expect(el.getAttribute('data-owner')).toBeTruthy()
+			expect(el.getAttribute('tabindex')).toBe('-1')
+			expect(el.style.zIndex).toBe(el.getAttribute('data-layer'))
+		},
+	)
+
+	it.each(LAYERS)(
+		'%s: soElementReady приходит с корнем в цели',
+		async (_name, host, selector) => {
+			const fixture = mountHost(host)
+
+			await nextFrame()
+
+			expect(fixture.componentInstance.ready).toEqual([find(document, selector, HTMLElement)])
+		},
+	)
 })
 
 @Component({

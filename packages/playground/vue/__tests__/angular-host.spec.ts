@@ -10,8 +10,9 @@
  * собирает сам — части на своих элементах в проекциях, после владельца и с
  * его инжектором, и в разметке содержимого тоже; рамка вокруг компонента идёт
  * за пропсами оболочки, а данные превью ложатся под них; превью, которому
- * нужны шаблоны слотов (Popover, Tooltip), — свой шаблон, как у фикстуры:
- * пропсы — входам его компонента, выходы — у компонента в его разметке.
+ * нужны шаблоны слотов (Popover, Tooltip) или своё состояние (открытость
+ * Dialog и Drawer), — свой шаблон, как у фикстуры: пропсы — входам его
+ * компонента, выходы — у компонента в его разметке.
  */
 
 import { describe, it, expect, afterEach } from 'vitest'
@@ -346,6 +347,85 @@ describe('хост Angular · превью своим шаблоном', () => {
 
 		expect(node.childNodes).toHaveLength(0)
 		expect(panel.isConnected).toBe(false)
+	})
+
+	/**
+	 * Окно открывает кнопка превью, а открытость — своё состояние превью, как у
+	 * Vue: кнопка подвала закрывает окно записью этого состояния, строка
+	 * `visible` — вход превью — его переписывает. Пропсы оболочки уходят входам
+	 * превью и дальше окну, выходы хост слушает у окна. Окно уехало в `body`
+	 * вместе с подложкой, а снятое превью уносит обоих.
+	 */
+	it('окно: кнопка превью открывает, подвал закрывает, visible — входом превью', async () => {
+		const node = stage()
+		const events: string[] = []
+		const handle = host.mount(node, {
+			component: 'dialog',
+			props: { placement: 'end' },
+			onEvent: (name) => events.push(name),
+		})
+		const dialog = document.querySelector('.so-dialog')
+
+		if (!(dialog instanceof HTMLElement)) throw new Error('окна нет')
+
+		expect(dialog.parentElement).toBe(document.body)
+		expect(dialog.previousElementSibling?.className).toBe('so-dialog__backdrop')
+		expect(dialog.classList).toContain('so-dialog--placement-end')
+		expect(dialog.style.display).toBe('none')
+		expect(textsOf(dialog, '.so-dialog__title')).toEqual(['Настройки'])
+		expect(textsOf(dialog, '.so-dialog__footer > .so-button')).toEqual(['Отмена', 'Сохранить'])
+		expect(textsOf(node, '.so-button')).toEqual(['Открыть окно'])
+
+		// Своё состояние превью приложение перепроверяет само, на своём такте
+		all(node, '.so-button')[0]?.click()
+		await nextFrame()
+
+		expect(dialog.style.display).toBe('')
+		expect(events).toContain('change:visible')
+
+		all(dialog, '.so-dialog__footer > .so-button')[1]?.click()
+		await nextFrame()
+
+		expect(dialog.style.display).toBe('none')
+
+		handle.update({ placement: 'end', visible: true })
+
+		expect(dialog.style.display).toBe('')
+
+		handle.unmount()
+
+		expect(node.childNodes).toHaveLength(0)
+		expect(dialog.isConnected).toBe(false)
+		expect(document.querySelector('.so-dialog__backdrop')).toBe(null)
+	})
+
+	/**
+	 * Выезжающая панель — в коробке превью с `position: relative`, как у Vue:
+	 * поверх страницы она уехала в `body`, а с `contained` стоит в коробке, и
+	 * подложка — перед ней.
+	 */
+	it('выезжающая панель: contained ставит её с подложкой в коробку превью', () => {
+		const node = stage()
+		const handle = host.mount(node, { component: 'drawer', props: {} })
+		const box = node.querySelector('div')
+		const drawer = document.querySelector('.so-drawer')
+
+		if (!(drawer instanceof HTMLElement)) throw new Error('панели нет')
+
+		expect(box?.style.position).toBe('relative')
+		expect(drawer.parentElement).toBe(document.body)
+
+		handle.update({ contained: true, visible: true })
+
+		expect(drawer.parentElement).toBe(box)
+		expect(drawer.previousElementSibling?.className).toBe('so-drawer__backdrop')
+		expect(drawer.style.display).toBe('')
+		expect(textsOf(drawer, '.so-drawer__title')).toEqual(['Фильтры'])
+
+		handle.unmount()
+
+		expect(node.childNodes).toHaveLength(0)
+		expect(document.querySelector('.so-drawer, .so-drawer__backdrop')).toBe(null)
 	})
 
 	it('подсказка: ссылка триггера ведёт на панель с текстом, open — входом превью', () => {

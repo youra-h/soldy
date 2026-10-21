@@ -33,9 +33,10 @@ render on the server (`@angular/platform-server`) and hydrate in the browser
 > dragging (`(soMove)`, `(soMoveBefore)` can cancel) are ported, the rest of the set is on its
 > way. Frame moves the element you wrote into `target` (`body` by default) in the browser; with
 > `contained` it stays in place. Popover (`<span so-popover>`) and Tooltip (`<span so-tooltip>`)
-> are panels on a Frame anchored to the element you write them on. `so-locale-provider` gives a
-> subtree its language and library strings. See
-> [the adapter table](https://github.com/youra-h/soldy#components).
+> are panels on a Frame anchored to the element you write them on. The modal window Dialog
+> (`<div so-dialog>`) and the sliding panel Drawer (`<div so-drawer>`) are layers themselves, with a
+> backdrop placed before them. `so-locale-provider` gives a subtree its language and library
+> strings. See [the adapter table](https://github.com/youra-h/soldy#components).
 
 ## Install
 
@@ -297,6 +298,28 @@ template: `<span so-popover aria_label="Filters" (soChangeOpen)="opened.set($eve
   </ng-template>
   Save a draft
 </span>`
+```
+
+A modal window and a sliding panel are written on your element, `<div so-dialog>` and
+`<div so-drawer>`, and that element is the panel: it moves into `target` (`body` by default) with
+your `class`, attributes and listeners, while a drawer with `contained` stays in place, positioned
+in its nearest positioned ancestor. The backdrop is placed right before the panel by the component
+itself — in the target and in place — and hides with it. Whether the panel is open is `visible`:
+bind it and listen to `(soChangeVisible)`. The close button, Escape, a press on the backdrop and a
+drawer's swipe ask the panel to close, and `(soCloseBefore)` can refuse with
+`$event.preventDefault()`. The title and the footer are slots by the `slot` attribute
+(`<span slot="title">`, `<button so-button slot="footer">`), the rest of the content is the body;
+the icons of the header buttons are templates — `close-icon`, and for a dialog with `maximizable`
+also `maximize-icon` and `restore-icon`. Like a Frame, the panel exists only in the browser: on the
+server it is your element, empty and hidden, and inside `@for` it needs a wrapping element.
+
+```ts
+template: `<button so-button text="Settings" (click)="open.set(true)"></button>
+<div so-dialog [visible]="open()" (soChangeVisible)="open.set($event)">
+  <span slot="title">Settings</span>
+  …
+  <button so-button slot="footer" text="Done" (click)="open.set(false)"></button>
+</div>`
 ```
 
 The language and the strings the library renders itself come from the nearest
