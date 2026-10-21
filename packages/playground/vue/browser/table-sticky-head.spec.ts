@@ -27,7 +27,7 @@ import type { TSelectionMode, TTableCollection, TTableColumnSource } from '@sold
 import { TABLE_COLUMNS, TABLE_ROWS, TABLE_SCROLL_ROWS } from '@soldy-ui/playground-shared'
 import { Button, Dialog, Popover, Table, Virtual } from '@soldy-ui/vue'
 
-import { find, opacity, pixel, settled, style, systemColor } from './colors'
+import { find, gradientColor, opacity, pixel, settled, style, systemColor } from './colors'
 import { forcedColors } from './media'
 
 import '@soldy-ui/theme-oren'
@@ -408,16 +408,6 @@ describe('фон — поверхность места', () => {
 describe('линия под шапкой', () => {
 	const SCHEMES = ['oren', 'oren-dark'] as const
 
-	/** Цвет линии — цвет градиента в фоне шапки. */
-	function lineColor(head: Element): string {
-		const image = style(head).backgroundImage
-		const color = /(?:rgba?|hsla?|hwb|lab|lch|oklab|oklch|color)\([^()]*\)/.exec(image)
-
-		if (!color) throw new Error(`линии в фоне шапки нет: ${image}`)
-
-		return color[0]
-	}
-
 	/** Таблица и кнопка `outlined` рядом — на странице и на поверхности контрола. */
 	const BACKDROPS = {
 		страница: 'var(--so-neutral-50)',
@@ -453,7 +443,7 @@ describe('линия под шапкой', () => {
 		const head = headOf()
 
 		expect(style(find('.so-table__head-row')).borderBottomWidth).toBe('0px')
-		expect(pixel([lineColor(head)])).toEqual(
+		expect(pixel([gradientColor(head)])).toEqual(
 			pixel([style(find('.so-button--view-outlined')).borderTopColor]),
 		)
 	})
@@ -473,7 +463,7 @@ describe('линия под шапкой', () => {
 			const head = headOf()
 
 			expect(pixel([style(head).backgroundColor])).toEqual(pixel([systemColor('Canvas')]))
-			expect(pixel([lineColor(head)])).toEqual(pixel([systemColor('CanvasText')]))
+			expect(pixel([gradientColor(head)])).toEqual(pixel([systemColor('CanvasText')]))
 		},
 	)
 })
