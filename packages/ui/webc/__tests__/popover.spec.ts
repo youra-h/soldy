@@ -451,6 +451,33 @@ describe('открытие и закрытие', () => {
 		expect(isOpen()).toBe(false)
 		expect(document.activeElement).toBe(trigger())
 	})
+
+	/**
+	 * Корень — элемент потребителя, и `rendered=false` его прячет, а не
+	 * снимает. Панель уехала в `body`, и скрытие корня до неё не доходит:
+	 * прячется она своим `rendered`, который ей пишет шаблон. Открытость при
+	 * этом не меняется — показанный снова поповер открыт, как был.
+	 */
+	it('rendered=false прячет корень и открытую панель в body, rendered=true — панель снова открыта', async () => {
+		const el = await render()
+
+		await open()
+
+		el.rendered = false
+		await flush()
+
+		expect(el.style.display).toBe('none')
+		expect(panel().parentElement).toBe(document.body)
+		expect(isOpen()).toBe(false)
+		expect(el.open).toBe(true)
+
+		el.rendered = true
+		await flush()
+
+		expect(el.style.display).toBe('')
+		expect(isOpen()).toBe(true)
+		expect(panel().dataset.open).toBe('true')
+	})
 })
 
 describe('фокус', () => {

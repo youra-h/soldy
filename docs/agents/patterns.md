@@ -537,7 +537,8 @@ ARIA пускает только `option` и `group` (axe — `aria-required-chi
   панель в `body`),
   `ui/webc/__tests__/popover.spec.ts` (сверх сценариев Vue — наборы триггера на
   первом элементе слота, тот же узел; перенос в цель и `contained` не
-  пересобирают кнопки в панели; Select внутри — вложенным поповером),
+  пересобирают кнопки в панели; `rendered: false` прячет и открытую панель;
+  Select внутри — вложенным поповером),
   `ui/webc/__tests__/hide-outside.spec.ts` (поповер в модальном Frame),
   `playground/vue/browser/popover.spec.ts`,
   `playground/vue/browser/popover-swipe.spec.ts`,
@@ -553,9 +554,10 @@ ARIA пускает только `option` и `group` (axe — `aria-required-chi
   (`<span is="so-popover">`): scope у слотов нет, и оба набора триггера шаблон
   кладёт на первый элемент слота `trigger` одним слоем владельца — узлы слота
   отдаёт контекст шаблона (`slotted`). Панель — деталь Frame
-  (`popover.frame`), в цель её уводит база Frame; `lazyMount` держит
-  содержимое вне документа до первого открытия (`showSlot`), и элементы soldy
-  в нём не собираются.
+  (`popover.frame`), в цель её уводит база Frame, а `rendered` ей пишет
+  шаблон: корень Web Components, как у Angular, только прячется; `lazyMount`
+  держит содержимое вне документа до первого открытия (`showSlot`), и
+  элементы soldy в нём не собираются.
 - **Menu** — Menu Button (APG): кнопка потребителя в слоте `trigger` внутри
   корня, как у Popover, панель — `Frame` с `role="menu"`, `id` и
   `aria-labelledby` на триггер (имя меню — текст кнопки), у триггера —
@@ -872,7 +874,8 @@ ARIA пускает только `option` и `group` (axe — `aria-required-chi
   `ui/solid/__tests__/tooltip.spec.tsx` (у Solid ещё — триггер тем же узлом
   после показа и смены `type`), `ui/svelte/__tests__/tooltip.spec.ts`,
   `ui/webc/__tests__/tooltip.spec.ts` (ссылка на панель сменяется на том же
-  узле триггера), `ui/angular/__tests__/tooltip.spec.ts` (у Angular ещё —
+  узле триггера, `rendered: false` прячет и открытую панель),
+  `ui/angular/__tests__/tooltip.spec.ts` (у Angular ещё —
   триггер шаблоном слота тем же узлом после показа и смены `type`, якорь —
   корень, `rendered: false` прячет и открытую панель),
   `ui/angular/__tests__/ssr.server.spec.ts` (текст подсказки в панели после

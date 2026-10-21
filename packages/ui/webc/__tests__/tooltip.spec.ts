@@ -322,6 +322,33 @@ describe('показ и скрытие', () => {
 		expect(isOpen()).toBe(false)
 	})
 
+	/**
+	 * Корень — элемент потребителя, и `rendered=false` его прячет, а не
+	 * снимает. Панель уехала в `body`, и скрытие корня до неё не доходит:
+	 * прячется она своим `rendered`, который ей пишет шаблон. Открытость при
+	 * этом не меняется — показанная снова подсказка открыта, как была.
+	 */
+	it('rendered=false прячет корень и открытую панель в body, rendered=true — панель снова открыта', async () => {
+		const el = await render('open')
+
+		expect(isOpen()).toBe(true)
+
+		el.rendered = false
+		await flush()
+
+		expect(root().style.display).toBe('none')
+		expect(panel().parentElement).toBe(document.body)
+		expect(isOpen()).toBe(false)
+		expect(el.open).toBe(true)
+
+		el.rendered = true
+		await flush()
+
+		expect(root().style.display).toBe('')
+		expect(isOpen()).toBe(true)
+		expect(panel().dataset.open).toBe('true')
+	})
+
 	it('placement доходит до якоря: сторона панели — в data-placement', async () => {
 		await render('open placement="bottom-end"')
 		await nextFrame()

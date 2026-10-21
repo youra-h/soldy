@@ -23,10 +23,13 @@
  *   умолчанию над триггером по центру, сторону у края окна выбирает
  *   `TAnchorPlugin` поверх `placement`; неизменное шаблон пишет панели при
  *   построении, как оно стоит в разметке Vue. Открытость — `visible` панели:
- *   закрытая спрятана, а не убрана, и ссылка триггера ведёт на неё всегда. На
- *   панель — `aria` подсказки (`role="tooltip"` и `id`, на который ссылается
- *   триггер) и пометка владельцем `dismiss_ownerAttribute` — одним слоем
- *   владельца.
+ *   закрытая спрятана, а не убрана, и ссылка триггера ведёт на неё всегда. А
+ *   `rendered` панели — `rendered` подсказки: корень при `rendered=false`
+ *   база прячет, а до панели, увезённой в цель, это скрытие не доходит, и
+ *   открытая панель осталась бы на странице; у остальных адаптеров
+ *   `rendered=false` снимает её вместе с корнем. На панель — `aria` подсказки
+ *   (`role="tooltip"` и `id`, на который ссылается триггер) и пометка
+ *   владельцем `dismiss_ownerAttribute` — одним слоем владельца.
  * - Обёртка `div.so-tooltip__content` в панели — свет детали (`lend`) со
  *   слотом `default`: держит ширину панели по тексту, до потолка темы, где бы
  *   у края окна панель ни стояла.
@@ -86,13 +89,15 @@ export const tooltipTemplate: ITemplate<ITooltip, unknown, TTooltipOutputs> = {
 
 	bindings: [
 		// Пропсы панели — только сменившиеся
-		bind(['open', 'placement'], ({ root, state }) => {
+		bind(['rendered', 'open', 'placement'], ({ root, state }) => {
 			const panel = panels.get(root)
 
 			if (!panel) return
 
+			const rendered = state.rendered !== false
 			const visible = state.open === true
 
+			if (panel.rendered !== rendered) panel.rendered = rendered
 			if (panel.visible !== visible) panel.visible = visible
 			if (panel.anchor_placement !== state.placement) {
 				panel.anchor_placement = state.placement
