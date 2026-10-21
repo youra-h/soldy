@@ -18,14 +18,26 @@ beforeEach(() => {
 	TLayer.resetZIndexCounter()
 })
 
-/** Окно и его раскладка, собранные настоящим набором. */
-function setup(props: Partial<IDialogProps> = {}) {
+/** Окно и его раскладка, собранные настоящим набором, — ещё без узла. */
+function assemble(props: Partial<IDialogProps> = {}) {
 	const dialog = new TDialog(props)
 	const layout = new TPluginBundle(dialog).use(TDialogLayoutPlugin).get(TDialogLayoutPlugin)
 
 	if (!layout) throw new Error('TDialogLayoutPlugin не установлен в bundle')
 
 	return { dialog, layout }
+}
+
+/**
+ * Собранное окно с подключённым узлом. Номер слоя открыт только у слоя с
+ * узлом: `ready` ставит плагин узла после сборки, здесь — тест.
+ */
+function setup(props: Partial<IDialogProps> = {}) {
+	const assembled = assemble(props)
+
+	assembled.dialog.ready = true
+
+	return assembled
 }
 
 describe('размер', () => {
@@ -82,11 +94,35 @@ describe('слой', () => {
 		expect(layout.backdropStyles).toEqual({ 'z-index': dialog.zIndex })
 	})
 
-	it('окно, созданное видимым, стоит в своём слое с установки', () => {
+	it('окно, созданное видимым, стоит в своём слое с подключения узла', () => {
 		const { dialog, layout } = setup({ visible: true })
 
+		expect(dialog.zIndex).toBeGreaterThan(0)
 		expect(layout.styles['z-index']).toBe(dialog.zIndex)
 		expect(layout.backdropStyles['z-index']).toBe(dialog.zIndex)
+	})
+
+	/**
+	 * Так на сервере и в первой отрисовке браузера: узла нет, и номер счётчика
+	 * процесса в разметку не попадает — у сервера и браузера `z-index` один.
+	 */
+	it('без узла — z-index 0 у панели и подложки, узел открывает номер обоим', () => {
+		const { dialog, layout } = assemble({ visible: true })
+		const styles = vi.fn()
+		const backdrop = vi.fn()
+
+		expect(layout.styles).toEqual({ 'z-index': 0 })
+		expect(layout.backdropStyles).toEqual({ 'z-index': 0 })
+
+		layout.events.on('change:styles', styles)
+		layout.events.on('change:backdropStyles', backdrop)
+		dialog.ready = true
+
+		expect(dialog.zIndex).toBeGreaterThan(0)
+		expect(layout.styles).toEqual({ 'z-index': dialog.zIndex })
+		expect(layout.backdropStyles).toEqual({ 'z-index': dialog.zIndex })
+		expect(styles).toHaveBeenCalledOnce()
+		expect(backdrop).toHaveBeenCalledOnce()
 	})
 })
 

@@ -171,7 +171,8 @@ ARIA пускает только `option` и `group` (axe — `aria-required-chi
   только запасное: без памяти о фокусе выбор пробелом перекидывал бы остановку
   на первый выбранный тег. Сторожат `core/__tests__/tags.spec.ts`,
   `plugins/__tests__/tags-keyboard.plugin.spec.ts`,
-  `ui/vue/__tests__/tags-keyboard.spec.ts`, `ui/svelte/__tests__/tags.spec.ts` и
+  `ui/vue/__tests__/tags-keyboard.spec.ts`, `ui/svelte/__tests__/tags.spec.ts`,
+  `ui/solid/__tests__/tags.spec.tsx` и
   `playground/vue/browser/tags-keyboard.spec.ts`.
   **Тегам, которым не хватило ширины ряда, отвечает одно свойство —
   `overflow`** (`wrap` по умолчанию, `scroll`). В теме оно состоянием,
@@ -208,7 +209,8 @@ ARIA пускает только `option` и `group` (axe — `aria-required-chi
   ряда нет. Сторожат `core/__tests__/tags-overflow.spec.ts`,
   `plugins/__tests__/tags-scroll.plugin.spec.ts`,
   `ui/vue/__tests__/tags-overflow.spec.ts`, `ui/svelte/__tests__/tags.spec.ts`
-  («переполнение», «слот default») и `select.spec.ts` («слот tags»),
+  («переполнение», «слот default») и `select.spec.ts` («слот tags»), те же
+  группы в `ui/solid/__tests__/tags.spec.tsx` и `select.spec.tsx`,
   `playground/vue/browser/tags-overflow.spec.ts`,
   `playground/vue/browser/tags-variant.spec.ts` и
   `playground/vue/browser/select-tags.spec.ts`.
@@ -244,13 +246,24 @@ ARIA пускает только `option` и `group` (axe — `aria-required-chi
   начинается с опций и со списка, который прокручивается, — с ними работают
   сами. Сторожат `core/__tests__/select.spec.ts`,
   `plugins/__tests__/swipe.plugin.spec.ts`, `ui/vue/__tests__/select.spec.ts`,
-  `ui/svelte/__tests__/select.spec.ts` и
+  `ui/svelte/__tests__/select.spec.ts`, `ui/solid/__tests__/select.spec.tsx` и
   `playground/vue/browser/anchored-swipe.spec.ts`. У Svelte панель — отдельный
   корень в обёртке, которую `Teleport` держит в `body`, и монтирует он его
   эффектом со всеми контекстами места: опции в ней читают лифт Select, а на
   сервере панели нет, и опции
   разметкой входят в коллекцию только в браузере (см. «Цена» в
-  `collections.md`).
+  `collections.md`). У Solid панель — содержимое `Teleport` на `Portal`, как
+  у Menu: мемо содержимого собирается с первым чтением портала под
+  владельцем места, внутри `Elevate` Select, и опции в ней читают его лифт и
+  входят в его коллекцию после тела Select. На сервере портала нет, и опции
+  разметкой тоже входят в коллекцию только в браузере. Слоты, по которым
+  разметка решает, что рисовать, — поле (`field`), ряд тегов (`tags`),
+  стрелка и опции, — Solid разворачивает `ResolvedSlot` внутри `Elevate`
+  Select: своё поле так встаёт под пустую связку поля формы, а свои теги
+  входят в коллекцию своего набора. Тело компонента выполняется один раз, и
+  поле, ряд тегов и опции — узлы на всё монтирование: открытие, выбор и отбор
+  их не пересоздают (сторожит «узлы — те же» в
+  `ui/solid/__tests__/select.spec.tsx`).
 - **Switch** — Switch pattern, вариант на `input[type="checkbox"]`:
   `role="switch"` на вложенном `<input>`, состояние сообщает нативный
   `checked`. `aria-checked` ядро не пишет ни Switch, ни CheckBox: на нативном
@@ -395,8 +408,8 @@ ARIA пускает только `option` и `group` (axe — `aria-required-chi
   `<Field helper="…"><Label text="…"><CheckBox /></Label></Field>`: имя даёт
   `Label`, справку — поле. Адаптеры: Vue, React, Solid, Svelte, Angular и Web
   Components; в пяти последних связку берут поля, которые в них есть, — Input,
-  NumberInput, CheckBox, Switch и RadioGroup, у Svelte — ещё Rating, Slider и
-  Select.
+  NumberInput, CheckBox, Switch и RadioGroup, у Svelte и Solid — ещё Rating,
+  Slider и Select.
   Проводка у всех одна — поле ставит `TFieldExtension`, контрол —
   `TFieldControlExtension` на свой лифт, — а слой лифта каждый адаптер отдаёт
   своим механизмом. Поле ставит под свой слой
@@ -858,19 +871,26 @@ ARIA пускает только `option` и `group` (axe — `aria-required-chi
   `TTooltipTriggerPlugin`, и держат подсказку две причины: курсор на корне
   или панели (не касание) — показ через `openDelay` (400 мс), скрытие через
   `closeDelay` (150 мс), панель под курсором держит (WCAG 1.4.13); фокус с
-  клавиатуры (`:focus-visible`) — показ и скрытие сразу. Нажатие на корень и
-  Escape прячут подсказку и гасят обе причины вместе с отложенным показом:
-  снова её покажет только новый заход курсора или новый фокус. Escape
-  слушается на документе в фазе перехвата, пока подсказка открыта, и гасится
-  `preventDefault`, а не `stopPropagation`: поповер под подсказкой клавишу
-  пропустит. Слушает плагин корень, а не триггер: у выключенной кнопки
+  клавиатуры (`:focus-visible`) — показ и скрытие сразу. Уход курсора
+  прячет, только если его приход засчитан: подсказку, открытую разметкой или
+  из кода, курсор не держит. У открытой с первой отрисовки панель до первого
+  кадра лежит по нулевому размеру поверх триггера, а слушатели плагина
+  встают в первом кадре, и переезд панели на место из-под неподвижного
+  курсора — `pointerleave` без `pointerenter`: без правила подсказка
+  закрывалась сама. Нажатие на корень и Escape прячут подсказку и гасят обе
+  причины вместе с отложенным показом: снова её покажет только новый заход
+  курсора или новый фокус. Escape слушается на документе в фазе перехвата,
+  пока подсказка открыта, и гасится `preventDefault`, а не
+  `stopPropagation`: поповер под подсказкой клавишу пропустит. Слушает
+  плагин корень, а не триггер: у выключенной кнопки
   `pointer-events: none`, и курсор попадает в корень. Нажатие мимо —
   `TDismissPlugin` без `focusOutside`. Подсказка на экране одна на документ:
   открывшаяся закрывает прежнюю, а пока другая открыта или закрылась меньше
   300 мс назад, следующая показывается без задержки — состояние документа, а
   не плагина (`tooltip/trigger/document-state.ts`, как замок прокрутки).
   Сторожат `core/__tests__/tooltip.spec.ts`,
-  `plugins/__tests__/tooltip-trigger.plugin.spec.ts`,
+  `plugins/__tests__/tooltip-trigger.plugin.spec.ts` («уход без прихода» —
+  у открытой разметкой и из кода),
   `ui/vue/__tests__/tooltip.spec.ts`, `ui/react/__tests__/tooltip.spec.tsx`,
   `ui/solid/__tests__/tooltip.spec.tsx` (у Solid ещё — триггер тем же узлом
   после показа и смены `type`), `ui/svelte/__tests__/tooltip.spec.ts`,
@@ -880,7 +900,9 @@ ARIA пускает только `option` и `group` (axe — `aria-required-chi
   триггер шаблоном слота тем же узлом после показа и смены `type`, якорь —
   корень, `rendered: false` прячет и открытую панель),
   `ui/angular/__tests__/ssr.server.spec.ts` (текст подсказки в панели после
-  гидратации), `playground/vue/browser/tooltip.spec.ts`,
+  гидратации), `playground/vue/browser/tooltip.spec.ts` («открытая с первой
+  отрисовки»: панель, вставшая на место из-под неподвижного курсора,
+  подсказку не закрывает),
   `playground/vue/browser/webc-frame.spec.ts` (подсказка Web Components стоит у
   триггера, как у Vue) и `playground/vue/browser/angular-host.spec.ts`
   (подсказка Angular — так же). **Angular** (`<span so-tooltip>`): ссылку на
@@ -1125,17 +1147,25 @@ useToasts()`. API опускает лифт (`TOASTS_ELEVATOR`, расширен
   (`TToastsFrontPlugin`, переменная `--so-toasts-front-height`). Без стопки
   колесо и стрелки остаются странице. **Своё содержимое (`render`)
   — `unknown` в ядре**: ядро его не читает, это значение разметки, и тип ему
-  даёт адаптер — во Vue, Svelte и Solid компонент своего фреймворка с пропом
-  `toast` (`TToastRender`, через API `useToasts()`), у Angular — класс
-  компонента со входом `toast` (тоже `useToasts()`), у Web Components — функция,
-  которая получает тост и отдаёт узел (через `toastsOf`), а рисует его
-  разметка после проверки (`isToastRender`), без приведения. Правило общее: значение, которое
+  даёт адаптер — во Vue, React, Svelte и Solid компонент своего фреймворка с
+  пропом `toast` (`TToastRender`, через API `useToasts()`; у React — и
+  объект-компонент `memo`, `forwardRef`, `lazy`, но не готовый элемент), у
+  Angular — класс компонента со входом `toast` (тоже `useToasts()`), у Web
+  Components — функция, которая получает тост и отдаёт узел (через
+  `toastsOf`), а рисует его разметка после проверки (`isToastRender`), без
+  приведения. Правило общее: значение, которое
   ядро только хранит для разметки, в ядре — `unknown`, тип ему даёт API
   адаптера. Сторожат
   `core/__tests__/toasts.spec.ts`, `plugins/__tests__/toasts.plugin.spec.ts`,
   `plugins/__tests__/swipe.plugin.spec.ts` («тост в регионе»),
   `plugins/__tests__/names.plugin.spec.ts`, `ui/vue/__tests__/toasts.spec.ts`,
-  `ui/svelte/__tests__/toasts.spec.ts`, `ui/solid/__tests__/toasts.spec.tsx`
+  `ui/react/__tests__/toasts.spec.tsx` (сценарии Solid и своё у React —
+  StrictMode: регион один, пересобранный менеджер отдаёт новый API, и эффект с
+  `show` в зависимостях показывает тост в нём; между перерисовками API тот же;
+  `useToasts()` в окне под менеджером; `memo`, `forwardRef` и класс в `render`
+  рисуются, готовый элемент — нет; на сервере — приложение без региона, регион
+  — после гидратации), `ui/svelte/__tests__/toasts.spec.ts`,
+  `ui/solid/__tests__/toasts.spec.tsx`
   (сверх сценариев Vue — приложение без обёртки и регион в слое менеджера,
   `useToasts()` в окне под менеджером, у тоста нет CSS-свойства `order`,
   пустой `item-icon` уступает место значку вида, пункт ListBox под
@@ -2371,9 +2401,9 @@ useToasts()`. API опускает лифт (`TOASTS_ELEVATOR`, расширен
   из окна, собирается без окна и снимает окно с движка, вставленный обратно —
   снова в окне. Обёртку модуль регистрирует раньше коллекций — при апгрейде
   разметки она собирается раньше списков в ней. Стиль распорки — по свойствам
-  из записи. Select в React, Solid, Angular и Web Components нет — окно у
-  него во Vue и Svelte; у Svelte панель телепортирована, и окно рисует опции
-  в ней, по секциям нарисованного. Сторожат
+  из записи. Select в React, Angular и Web Components нет — окно у него во
+  Vue, Svelte и Solid; у Svelte и Solid панель телепортирована, и окно рисует
+  опции в ней, по секциям нарисованного. Сторожат
   `core/__tests__/collection.draw.spec.ts`,
   `core/__tests__/list-box-virtual.spec.ts`,
   `core/__tests__/select-virtual.spec.ts`,
@@ -2388,7 +2418,8 @@ useToasts()`. API опускает лифт (`TOASTS_ELEVATOR`, расширен
   StrictMode, сервер с гидратацией, подсветка дорисованного элемента), строки
   `Virtual` в `ui/react/__tests__/external-lifetime.spec.tsx`,
   `ui/solid/__tests__/virtual.spec.tsx` (вместо StrictMode — снятый список
-  снимает окно с движка снаружи и отписан от обёртки), «Virtual» в
+  снимает окно с движка снаружи и отписан от обёртки; Select в окне —
+  распорки в списке панели), «Virtual» в
   `ui/solid/__tests__/collections.server.spec.tsx`,
   `ui/svelte/__tests__/virtual.spec.ts` (вместо StrictMode — снятый список и
   снятая вместе с ним обёртка снимают окно с движка снаружи; Select в окне —

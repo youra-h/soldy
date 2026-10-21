@@ -72,6 +72,9 @@ describe('умолчания', () => {
 		expect(drawer).toBeInstanceOf(TModalLayer)
 		expect(dialog).toBeInstanceOf(TModalLayer)
 
+		// Номер слоя открыт только у слоя с узлом
+		dialog.ready = true
+		drawer.ready = true
 		dialog.show()
 		drawer.show()
 
@@ -157,10 +160,24 @@ describe('подложка', () => {
 	it('показанная — тот же номер слоя, что у панели, и её открытость', () => {
 		const drawer = new TDrawer({ contained: true })
 
+		// Номер слоя открыт только у слоя с узлом
+		drawer.ready = true
 		drawer.show()
 
 		expect(drawer.backdropDataset).toEqual({
 			[FRAME_LAYER_ATTRIBUTE]: String(drawer.zIndex),
+			'data-open': 'true',
+			'data-contained': 'true',
+		})
+	})
+
+	/** Так на сервере: открытая панель с `contained` есть в разметке, номера в ней нет. */
+	it('созданная видимой без узла — номера нет ни у панели, ни у подложки', () => {
+		const drawer = shown({ contained: true })
+
+		expect(drawer.zIndex).toBe(0)
+		expect(drawer.dataset.has(FRAME_LAYER_ATTRIBUTE)).toBe(false)
+		expect(drawer.backdropDataset).toEqual({
 			'data-open': 'true',
 			'data-contained': 'true',
 		})

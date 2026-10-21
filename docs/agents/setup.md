@@ -1126,9 +1126,12 @@ DatePicker совпадение слотов держалось руками: ш
   элементами из данных или рисует обёртку (края списка табов), разворачивает
   компонент адаптера `ResolvedSlot` — там, где он стоит в разметке, внутри
   `Elevate`: узлы, развёрнутые в теле владельца, оказались бы вне слоя его
-  лифта. Сторожат `ui/solid/__tests__/slots.spec.tsx`, `list-box.spec.tsx`,
-  `tabs.spec.tsx` и `accordion.spec.tsx`, живой scope — ещё
-  `slider.spec.tsx` и `table.spec.tsx`.
+  лифта. Слот со scope — тоже он, с аксессором `scope`: функция слота
+  получает scope живым, как от `resolveSlot`, — так Tags отдаёт показанные
+  теги слоту `default`, а Select свои экземпляры — слотам `field` и `tags`.
+  Сторожат `ui/solid/__tests__/slots.spec.tsx`, `list-box.spec.tsx`,
+  `tabs.spec.tsx`, `accordion.spec.tsx`, `tags.spec.tsx` и
+  `select.spec.tsx`, живой scope — ещё `slider.spec.tsx` и `table.spec.tsx`.
 - **Svelte**: сниппет непрозрачен — что он нарисовал, компонент не видит, и
   заданный слот рисуется вместо запасного содержимого, даже пустой. Проброс
   слота элемента коллекции владельцем (`item-<слот>`, см. «Слоты элементов:

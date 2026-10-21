@@ -307,9 +307,15 @@ describe('открытость для темы', () => {
 	})
 })
 
+/**
+ * Номер слоя открыт только у слоя с узлом: `ready` ему ставит плагин узла,
+ * здесь — тест.
+ */
 describe('слой', () => {
 	it('скрытое окно слоя не получает', () => {
 		const dialog = new TDialog()
+
+		dialog.ready = true
 
 		expect(dialog.zIndex).toBe(0)
 		expect(dialog.dataset.has(FRAME_LAYER_ATTRIBUTE)).toBe(false)
@@ -319,6 +325,7 @@ describe('слой', () => {
 	it('показанное — номер слоя в zIndex и data-layer, у подложки тот же', () => {
 		const dialog = new TDialog()
 
+		dialog.ready = true
 		dialog.show()
 
 		expect(dialog.zIndex).toBeGreaterThan(0)
@@ -329,16 +336,44 @@ describe('слой', () => {
 		})
 	})
 
-	it('созданное видимым получает слой сразу', () => {
+	/** Так на сервере: узла нет, и номер в разметку не попадает — ни окну, ни подложке. */
+	it('созданное видимым без узла номера не открывает, подключённый узел открывает обоим', () => {
 		const dialog = shown()
+
+		expect(dialog.zIndex).toBe(0)
+		expect(dialog.dataset.has(FRAME_LAYER_ATTRIBUTE)).toBe(false)
+		expect(dialog.backdropDataset).toEqual({ 'data-open': 'true' })
+
+		dialog.ready = true
 
 		expect(dialog.zIndex).toBeGreaterThan(0)
 		expect(dialog.backdropDataset[FRAME_LAYER_ATTRIBUTE]).toBe(String(dialog.zIndex))
 	})
 
+	/**
+	 * Выход подложки разметка перечитывает по `change:zIndex`, и номер в нём к
+	 * этому моменту уже стоит — и открытый, и снятый.
+	 */
+	it('у подложки номер к change:zIndex уже свой', () => {
+		const dialog = shown()
+		const seen: [number, string | null | undefined][] = []
+
+		dialog.events.on('change:zIndex', (value) =>
+			seen.push([value, dialog.backdropDataset[FRAME_LAYER_ATTRIBUTE]]),
+		)
+		dialog.ready = true
+		dialog.ready = false
+
+		expect(seen).toEqual([
+			[1001, '1001'],
+			[0, undefined],
+		])
+	})
+
 	it('повторный показ поднимает окно и его подложку', () => {
 		const dialog = new TDialog()
 
+		dialog.ready = true
 		dialog.show()
 
 		const first = dialog.zIndex
@@ -358,6 +393,8 @@ describe('слой', () => {
 		const dialog = new TDialog()
 		const list = new TFrame()
 		const nested = new TDialog()
+
+		for (const layer of [dialog, list, nested]) layer.ready = true
 
 		dialog.show()
 		list.show()

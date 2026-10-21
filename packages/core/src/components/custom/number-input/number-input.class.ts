@@ -233,7 +233,11 @@ export class TNumberInput
 		this.events.emit('change:largeStep', value)
 	}
 
-	/** Сверяются по содержимому: те же опции новым объектом — не смена. */
+	/**
+	 * Сверяются по содержимому: те же опции новым объектом — не смена. Формат
+	 * и текст — до события, как шкала у `min`: подписчик `change:formatOptions`
+	 * читает `text`, `inputAria` и `inputAttrs` уже в новом формате.
+	 */
 	get formatOptions(): TNumberInputFormatOptions | undefined {
 		return this._formatOptions
 	}
@@ -242,8 +246,8 @@ export class TNumberInput
 		if (sameOptions(this._formatOptions, value)) return
 
 		this._formatOptions = value
-		this.events.emit('change:formatOptions', value)
 		this._formatChanged()
+		this.events.emit('change:formatOptions', value)
 	}
 
 	get placeholder(): string {
@@ -261,13 +265,16 @@ export class TNumberInput
 		return this._locale
 	}
 
-	/** Значение то же; текст — строкой нового формата. */
+	/**
+	 * Значение то же; текст — строкой нового формата. Формат и текст — до
+	 * события, как у `formatOptions`.
+	 */
 	set locale(value: string) {
 		if (this._locale === value) return
 
 		this._locale = value
-		this.events.emit('change:locale', value)
 		this._formatChanged()
+		this.events.emit('change:locale', value)
 	}
 
 	/* ------------------------------------------------------------------ */

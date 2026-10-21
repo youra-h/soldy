@@ -672,6 +672,38 @@ describe('разметка', () => {
 		expect(input.inputAttrs.inputmode).toBe('text')
 	})
 
+	/**
+	 * Связка перечитывает `inputAria` и `inputAttrs` на `change:locale` и
+	 * `change:formatOptions` — это их триггеры в дескрипторе. Формат к событию
+	 * уже новый: иначе скринридер слышал бы прежнюю строку числа, а `lang` и
+	 * клавиатура оставались бы от прежнего формата до следующей правки.
+	 */
+	it('на change:locale и change:formatOptions формат уже новый: текст, lang, inputmode, aria-valuetext', () => {
+		const input = field({ value: 0.5, locale: 'ru-RU' })
+		const seen: Array<Record<string, string | null>> = []
+		const read = (): void => {
+			seen.push({
+				text: input.text,
+				lang: input.inputAttrs.lang,
+				inputmode: input.inputAttrs.inputmode,
+				valuetext: input.inputAria['aria-valuetext'],
+			})
+		}
+
+		input.events.on('change:locale', read)
+		input.events.on('change:formatOptions', read)
+		input.locale = 'zh-CN'
+		input.formatOptions = { style: 'percent' }
+
+		const number = intl(0.5, 'zh-CN')
+		const percent = intl(0.5, 'zh-CN', { style: 'percent' })
+
+		expect(seen).toEqual([
+			{ text: number, lang: 'zh-CN', inputmode: 'decimal', valuetext: number },
+			{ text: percent, lang: 'zh-CN', inputmode: 'numeric', valuetext: percent },
+		])
+	})
+
 	it('набор поля сообщает о смене: change:inputSets', () => {
 		const input = field()
 		const spy = vi.fn()

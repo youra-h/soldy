@@ -387,7 +387,8 @@ describe('после гидратации', () => {
 
 	/**
 	 * На сервере слоя нет, и номер слоя у браузера свой: `z-index` и
-	 * `data-layer` — от слоя браузера, без следов сервера.
+	 * `data-layer` — от слоя браузера, без следов сервера. Номер открывает узел
+	 * слоя — кадром после того, как база отдала его плагинам.
 	 */
 	it('Frame: в цели тем же узлом, с содержимым, слоем и раскладкой браузера', async () => {
 		loadPage(await renderOnServer(ChangesPage))
@@ -395,6 +396,8 @@ describe('после гидратации', () => {
 		const layer = find(document, '.layer', HTMLDivElement)
 		const app = await hydrate(ChangesPage)
 
+		await app.whenStable()
+		await nextFrame()
 		await app.whenStable()
 
 		expect(find(document, '.layer', HTMLDivElement)).toBe(layer)
@@ -421,7 +424,10 @@ describe('после гидратации', () => {
 		expect(layer.style.top).toBe('20px')
 	})
 
-	/** Показ после гидратации поднимает слой браузера в обоих местах. */
+	/**
+	 * Показ после гидратации поднимает слой браузера в обоих местах — с кадром
+	 * узла: показ пришёл раньше, чем база отдала узел плагинам.
+	 */
 	it('Frame: показ после гидратации — открытость, слой и раскладка на узле', async () => {
 		const { app, page } = await hydrated()
 		const menu = find(document, '.menu', HTMLDivElement)
@@ -431,6 +437,8 @@ describe('после гидратации', () => {
 		expect(menu.getAttribute('data-open')).toBe('false')
 
 		page.open.set(true)
+		await app.whenStable()
+		await nextFrame()
 		await app.whenStable()
 
 		const layer = menu.getAttribute('data-layer')
@@ -872,6 +880,8 @@ describe('Popover и Tooltip · гидратация', () => {
 
 		await app.whenStable()
 		await nextFrame()
+		// Номер слоя открыл кадр узла — до разметки его доводит проверка изменений
+		await app.whenStable()
 
 		const opened = linkedPanel(
 			document,

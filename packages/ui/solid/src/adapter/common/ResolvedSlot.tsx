@@ -13,26 +13,49 @@
  *   данных;
  * - заданный — его узлы, а с `children` — то, что `children` из них
  *   нарисует: обёртку, которая стоит, только когда в неё есть что положить
- *   (края списка табов).
+ *   (края списка табов);
+ * - слот со scope — с `scope`, аксессором: функция слота получает его живым
+ *   (`liveScope`), как от `resolveSlot`, и зовётся один раз, а прочитанное в
+ *   её разметке следует за scope на месте. Так Tags отдаёт слоту `default`
+ *   показанные теги, а Select слотам `field` и `tags` — свои экземпляры: свои
+ *   теги входят в коллекцию набора, а своё поле встаёт под пустую связку
+ *   поля формы, только когда развёрнуты в слое владельца. Без `scope` тип
+ *   функцию слота не пропускает: звать её было бы не с чем.
  */
 
 import { Show, type Accessor, type JSX } from 'solid-js'
-import { resolveSlot } from './slots'
+import { resolveSlot, type TSlotContent } from './slots'
 
-export type TResolvedSlotProps = {
-	/** Содержимое слота без scope — проп владельца. */
-	content: JSX.Element | undefined
+/** Общее у слота без scope и со scope: запасное и обёртка. */
+type TResolvedSlotBase = {
 	/** Что рисовать на месте незаданного слота. */
 	fallback?: JSX.Element
 	/** Обёртка вокруг заданного слота; без неё рисуются сами узлы. */
 	children?: (nodes: Accessor<JSX.Element | undefined>) => JSX.Element
 }
 
-export function ResolvedSlot(props: TResolvedSlotProps): JSX.Element {
-	const content = resolveSlot(
-		() => props.content,
-		() => ({}),
-	)
+/** Слот без scope: содержимое — готовые узлы, функция слота сюда не проходит. */
+type TPlainSlotProps = TResolvedSlotBase & {
+	/** Содержимое слота без scope — проп владельца. */
+	content: JSX.Element | undefined
+	scope?: undefined
+}
+
+/** Слот со scope: содержимое — узлы или функция слота. */
+type TScopedSlotProps<TScope extends object> = TResolvedSlotBase & {
+	/** Содержимое слота со scope — проп владельца: узлы или функция слота. */
+	content: TSlotContent<TScope> | undefined
+	/** Scope слота — аксессором: функция слота получает его живым. */
+	scope: () => TScope
+}
+
+export type TResolvedSlotProps<TScope extends object = object> =
+	TPlainSlotProps | TScopedSlotProps<TScope>
+
+export function ResolvedSlot<TScope extends object>(
+	props: TResolvedSlotProps<TScope>,
+): JSX.Element {
+	const content = resolvedOf(props)
 	const wrap = props.children
 
 	return (
@@ -40,4 +63,21 @@ export function ResolvedSlot(props: TResolvedSlotProps): JSX.Element {
 			{wrap ? wrap(content) : content()}
 		</Show>
 	)
+}
+
+/**
+ * Слот, развёрнутый один раз. Со scope он или без, решает сборка: `scope` —
+ * аксессор, и есть ли он у слота, за жизнь компонента не меняется.
+ */
+function resolvedOf<TScope extends object>(
+	props: TResolvedSlotProps<TScope>,
+): Accessor<JSX.Element | undefined> {
+	if (props.scope === undefined) {
+		return resolveSlot(
+			() => props.content,
+			() => ({}),
+		)
+	}
+
+	return resolveSlot(() => props.content, props.scope)
 }

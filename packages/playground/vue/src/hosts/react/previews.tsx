@@ -1,4 +1,5 @@
-import { useState, type ReactNode } from 'react'
+import { useRef, useState, type ReactNode } from 'react'
+import type { TToastsItemType } from '@soldy-ui/core'
 import type { DescriptorSlots, PopoverDescriptor, TooltipDescriptor } from '@soldy-ui/setup'
 import {
 	COLLECTION_ITEMS,
@@ -7,6 +8,9 @@ import {
 	TABLE_MANY_ROWS,
 	TABLE_ROWS,
 	TABLE_SCROLL_ROWS,
+	TOASTS_ITEM_TYPES,
+	TOAST_SAVING,
+	toastSample,
 } from '@soldy-ui/playground-shared'
 import {
 	Accordion,
@@ -34,9 +38,12 @@ import {
 	Table,
 	Tabs,
 	Textarea,
+	Toasts,
 	Tooltip,
 	Virtual,
 	roleIcon,
+	useToasts,
+	type TToastRender,
 } from '@soldy-ui/react'
 
 /**
@@ -190,6 +197,63 @@ function DrawerPreview(bind: Readonly<Record<string, unknown>>): ReactNode {
 	)
 }
 
+/** Своё содержимое тоста — кнопка «Отменить»: тост приходит ей пропом и закрывается ею. */
+const ToastUndo: TToastRender = ({ toast }) => (
+	<Button text="Отменить" onClick={() => toast.close()} />
+)
+
+/**
+ * Тосты приходят из кода, а не из разметки: кнопки внутри менеджера берут API
+ * (`useToasts()`) и показывают тост. Что сообщает тост, — образцы стенда, одни
+ * на все хосты (`toastSample`), своё содержимое к ним — кнопка «Отменить»
+ * этого хоста. Текст начинается с номера: в стопке видно, какой тост где.
+ * Номер — своё состояние превью (`useRef`): это код стенда, а не компонент
+ * библиотеки, и перерисовки он не требует.
+ *
+ * Кнопка — на обычное сообщение и на каждый вид (`TOASTS_ITEM_TYPES`): тост
+ * показывает значок своего вида. Последняя — ожидание: «Сохраняем…» с кольцом
+ * на месте значка сам не закрывается, а через пару секунд тот же тост сообщает
+ * успех. Ряд кнопок — с переносом: в ячейку витрины шесть кнопок одной
+ * строкой не встают.
+ */
+function ToastsTrigger(): ReactNode {
+	const { show } = useToasts()
+	const count = useRef(0)
+
+	const notify = (type?: TToastsItemType) => {
+		const sample = toastSample(type, ToastUndo)
+
+		count.current += 1
+		show({ ...sample, text: `${count.current}. ${sample.text}`, type })
+	}
+
+	// Работа идёт — тост ждёт; кончилась — тот же тост сообщает итог
+	const save = () => {
+		count.current += 1
+
+		const toast = show({ text: `${count.current}. Сохраняем…`, loading: true })
+		const done = `${count.current}. Сохранено`
+
+		setTimeout(() => {
+			if (!toast) return
+
+			toast.loading = false
+			toast.type = 'success'
+			toast.text = done
+		}, TOAST_SAVING)
+	}
+
+	return (
+		<div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+			<Button text="обычное" onClick={() => notify()} />
+			{TOASTS_ITEM_TYPES.map((type) => (
+				<Button key={type} text={type} onClick={() => notify(type)} />
+			))}
+			<Button text="загрузка → готово" onClick={save} />
+		</div>
+	)
+}
+
 export const PREVIEWS: Record<string, TPreview> = {
 	// Подпись — проп `text` из пропсов превью, а не слот: заданный слот
 	// перекрывает проп, и строка `text` не меняла бы ничего видимого
@@ -318,6 +382,15 @@ export const PREVIEWS: Record<string, TPreview> = {
 
 	// Кнопка открывает панель, панель — на своём состоянии (см. `DrawerPreview`)
 	drawer: (bind) => <DrawerPreview {...bind} />,
+
+	// Менеджер оборачивает кнопки, которые показывают тосты (см.
+	// `ToastsTrigger`). Регион с тостами — телепортом у края окна, вне ячейки
+	// превью
+	toasts: (bind) => (
+		<Toasts {...bind}>
+			<ToastsTrigger />
+		</Toasts>
+	),
 
 	// Строки и колонки — данными, как у Vue: частей разметкой у таблицы нет.
 	// Обёртка — граница ширины, а с закреплённой шапкой — ещё и окно прокрутки
