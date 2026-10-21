@@ -7,8 +7,8 @@
  * контролом поле связывает проводка: поле опускает связку в слой своего лифта
  * (`Elevate`), контрол её берёт. Labelable-контрол (Input, NumberInput,
  * Select, CheckBox, Switch, Rating, Slider с одной ручкой) подпись называет своим
- * `for`, группу (RadioGroup, Slider с несколькими ручками) — ссылкой
- * `aria-labelledby`.
+ * `for`, группу (DateInput, DatePicker, RadioGroup, Slider с несколькими
+ * ручками) — ссылкой `aria-labelledby`.
  * Справку контрол получает в `aria-describedby`, ошибку — `aria-invalid` и
  * `data-invalid` на своём корне.
  *
@@ -26,6 +26,8 @@ import { TField, TInput, TSlider } from '@soldy-ui/core'
 import type { TFieldPosition } from '@soldy-ui/core'
 import {
 	CheckBox,
+	DateInput,
+	DatePicker,
 	Field,
 	Input,
 	Label,
@@ -202,6 +204,42 @@ describe.each(LABELABLES)('%s в поле', (_name, control, root, element) => {
 
 		expect(input(element).hasAttribute('aria-invalid')).toBe(false)
 		expect(node(root).hasAttribute('data-invalid')).toBe(false)
+	})
+})
+
+/**
+ * Поле даты и DatePicker — группы: подпись называет их ссылкой, `for` нет.
+ * Селектор — элемент с именем группы: у одной даты группа — само поле
+ * DatePicker, у диапазона — его корень. Поля DatePicker — детали его разметки
+ * (`embedded`): связку поля формы берёт DatePicker и отдаёт её полю своим
+ * набором `aria`.
+ */
+const GROUPS: ReadonlyArray<readonly [string, () => JSX.Element, string]> = [
+	['DateInput', () => <DateInput />, '.so-date-input'],
+	['DatePicker', () => <DatePicker />, '.so-date-picker__field'],
+	['DatePicker range', () => <DatePicker mode="range" />, '.so-date-picker'],
+]
+
+describe.each(GROUPS)('%s в поле', (_name, control, group) => {
+	it('for у подписи нет, группа ссылается на подпись', () => {
+		mount(() => <Field label="Подпись">{control()}</Field>)
+
+		expect(label().hasAttribute('for')).toBe(false)
+		expect(label().id).not.toBe('')
+		expect(refsOf(node(group), 'aria-labelledby')).toEqual([label().id])
+	})
+
+	it('справка и ошибка — у группы', () => {
+		const ctrl = new TField({ label: 'Подпись', helper: 'Подсказка', error: 'Ошибка' })
+
+		mount(() => <Field ctrl={ctrl}>{control()}</Field>)
+
+		expect(refsOf(node(group), 'aria-describedby')).toEqual([node('.so-field__helper').id])
+
+		ctrl.invalid = true
+
+		expect(refsOf(node(group), 'aria-describedby')).toEqual([node('.so-field__error').id])
+		expect(node(group).getAttribute('aria-invalid')).toBe('true')
 	})
 })
 
@@ -385,6 +423,17 @@ describe('Field · имя контрола', () => {
 
 		expect(node('.so-radio-group').getAttribute('aria-label')).toBe('Своё')
 		expect(node('.so-radio-group').hasAttribute('aria-labelledby')).toBe(false)
+	})
+
+	it('своё имя поля даты главнее подписи поля', () => {
+		mount(() => (
+			<Field label="Подпись">
+				<DateInput aria_label="Своё" />
+			</Field>
+		))
+
+		expect(node('.so-date-input').getAttribute('aria-label')).toBe('Своё')
+		expect(node('.so-date-input').hasAttribute('aria-labelledby')).toBe(false)
 	})
 
 	it('флажок в подписи Label внутри поля: Label называет его, поле даёт справку', () => {
