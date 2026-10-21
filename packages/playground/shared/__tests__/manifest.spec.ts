@@ -10,8 +10,16 @@
  */
 
 import { describe, it, expect } from 'vitest'
+import { underscorePropNaming } from '@soldy-ui/setup'
 import { COMPONENTS } from '../src/registry'
-import { describeProp, optionsForProp, PRESETS, PREVIEW_PROPS, propControls } from '../src/props'
+import {
+	describeProp,
+	optionsForProp,
+	presetForProp,
+	PRESETS,
+	PREVIEW_PROPS,
+	propControls,
+} from '../src/props'
 import type { TPropControl } from '../src/types'
 
 /**
@@ -25,6 +33,22 @@ import type { TPropControl } from '../src/types'
  */
 function editableControls(entry: (typeof COMPONENTS)[number]): TPropControl[] {
 	return Object.values(propControls(entry)).flat()
+}
+
+/**
+ * Записываемые пропы компонента по имени разметки (`underscorePropNaming`) —
+ * со строкой и без: свои, фасада коллекции и плагинов. Без `protected`: обмен
+ * их не пишет, и пресет с таким пропом не выставил бы ничего.
+ */
+function writableProps(entry: (typeof COMPONENTS)[number]): Set<string> {
+	const props = [
+		...entry.descriptor().getProps(),
+		...(entry.collectionDescriptor?.().props ?? []),
+	]
+
+	return new Set(
+		props.filter((prop) => !prop.protected).map((prop) => underscorePropNaming(prop.name)),
+	)
 }
 
 describe('манифест покрывает контракт', () => {
@@ -61,6 +85,11 @@ describe('манифест покрывает контракт', () => {
  * `removeOnBackspace` или `mode` в компоненте — и строка молча перестала бы
  * выставлять то, без чего её проп не виден: ошибки нет, переключатель есть,
  * эффекта нет.
+ *
+ * Ключ пресета — строка страницы, а имена внутри — записываемые пропы
+ * компонента, со строкой или без: состав строки `groupSeparators` — данные
+ * (`items` и `groups`), а строки у них нет (`NON_EDITABLE`). Переименованный
+ * проп сверка с объявленными пропами ловит так же, как сверка со строками.
  */
 describe('пресеты строк', () => {
 	it.each(Object.entries(PRESETS))('%s: пресеты ссылаются на настоящие пропы', (id, rows) => {
@@ -68,14 +97,15 @@ describe('пресеты строк', () => {
 
 		if (!entry) throw new Error(`нет компонента «${id}»`)
 
-		const names = new Set(editableControls(entry).map((control) => control.name))
+		const withRow = new Set(editableControls(entry).map((control) => control.name))
+		const writable = writableProps(entry)
 		const broken: string[] = []
 
 		for (const [row, preset] of Object.entries(rows)) {
-			if (!names.has(row)) broken.push(`строка ${row}`)
+			if (!withRow.has(row)) broken.push(`строка ${row}`)
 
 			for (const [name, value] of Object.entries(preset)) {
-				if (!names.has(name)) {
+				if (!writable.has(name)) {
 					broken.push(`${row} → ${name}`)
 					continue
 				}
@@ -91,6 +121,23 @@ describe('пресеты строк', () => {
 		}
 
 		expect(broken).toEqual([])
+	})
+
+	/**
+	 * Разделитель встаёт только между секциями групп, а превью рисует состав без
+	 * групп — у Menu ещё и с ручными `Menu.Separator`, которых свойство не
+	 * трогает. Без состава с группами строка показала бы переключатель, который
+	 * ничего не меняет. Компоненты — по строке, а не списком: коллекция, которой
+	 * разделитель добавят, попадёт сюда сама.
+	 */
+	const SEPARATED = COMPONENTS.filter((entry) =>
+		editableControls(entry).some((control) => control.name === 'groupSeparators'),
+	).map((entry) => entry.id)
+
+	it.each(SEPARATED)('%s: строка groupSeparators рисует состав с группами', (id) => {
+		expect(Object.keys(presetForProp(id, 'groupSeparators'))).toEqual(
+			expect.arrayContaining(['items', 'groups']),
+		)
 	})
 })
 
