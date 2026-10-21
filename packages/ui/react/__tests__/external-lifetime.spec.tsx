@@ -42,6 +42,7 @@ import {
 	TInput,
 	TLabel,
 	TListBox,
+	TMenu,
 	TNumberInput,
 	TPagination,
 	TPopover,
@@ -61,6 +62,7 @@ import {
 	TVirtual,
 	createEngineAccordion,
 	createEngineListBox,
+	createEngineMenu,
 	createEnginePagination,
 	createEngineRadioGroup,
 	createEngineTable,
@@ -82,6 +84,7 @@ import {
 	Input,
 	Label,
 	ListBox,
+	Menu,
 	NumberInput,
 	Pagination,
 	Popover,
@@ -445,6 +448,69 @@ const COMPONENTS: Readonly<Record<string, Readonly<Record<string, TCase>>>> = {
 						<ListBox.Item value="a" text="A" />
 						<ListBox.Item value="b" text="B" />
 					</ListBox>
+				),
+				buses: engineBuses(engine),
+			}
+		},
+	},
+	/**
+	 * Открытое меню: у открытого подписаны фокус, клавиши и нажатие мимо, а
+	 * якорем панели служит корень. Пункты из данных — экземпляры движка, а
+	 * подменю из данных — пункт и движок его пунктов, которые заводит коллекция
+	 * меню: строка, подменю и его пункты собираются над ними, как над `ctrl` и
+	 * `engine` снаружи, поэтому шины движка подменю проверяются тоже. Пункты
+	 * разметкой — всех видов, с группами и пунктом с панелью: панели
+	 * телепортированы, и пункты в них — тоже монтирования этого меню.
+	 */
+	Menu: {
+		'ctrl открыт и движок, пункты и подменю из данных': () => {
+			const ctrl = new TMenu({ open: true })
+			const engine = createEngineMenu({
+				items: [
+					{ value: 'edit', text: 'Изменить' },
+					{
+						value: 'share',
+						text: 'Поделиться',
+						items: [
+							{ value: 'link', text: 'Ссылка' },
+							{ value: 'mail', text: 'Почта' },
+						],
+					},
+				],
+			})
+			const submenus = [...engine.extensions.submenus.entries.values()]
+
+			return {
+				node: <Menu ctrl={ctrl} engine={engine} />,
+				buses: [
+					ctrl.events,
+					...engineBuses(engine),
+					...submenus.flatMap((entry) => engineBuses(entry.engine)),
+				],
+			}
+		},
+		'движок, пункты всех видов в разметке': () => {
+			const engine = createEngineMenu()
+
+			return {
+				node: (
+					<Menu engine={engine}>
+						<Menu.Item value="edit" text="Изменить" />
+						<Menu.CheckboxItem value="grid" text="Сетка" selected />
+						<Menu.RadioGroup label="Сортировка" value="name">
+							<Menu.RadioItem value="name" text="По имени" />
+							<Menu.RadioItem value="date" text="По дате" />
+						</Menu.RadioGroup>
+						<Menu.Separator />
+						<Menu.Group label="Ещё">
+							<Menu.Submenu value="share" text="Поделиться">
+								<Menu.Item value="link" text="Ссылка" />
+							</Menu.Submenu>
+							<Menu.PopoverItem value="due" text="Срок">
+								Панель
+							</Menu.PopoverItem>
+						</Menu.Group>
+					</Menu>
 				),
 				buses: engineBuses(engine),
 			}

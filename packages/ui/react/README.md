@@ -18,7 +18,12 @@ arrive as callback props (`element:ready` → `onElementReady`), and the default
 > error linked to the control inside it), the collections ListBox, Tabs, Accordion and RadioGroup
 > (`<ListBox.Item>`, `<Tabs.Item>` with `<Tabs.Content>`, `<Accordion.Item>`, `<RadioGroup.Item>`
 > or `items`), Pagination, the `Scroller` strip, the overlays Popover and Tooltip (the trigger in
-> the `trigger` slot, `trigger={({ triggerAria }) => <Button {...triggerAria} />}`), Dialog and
+> the `trigger` slot, `trigger={({ triggerAria }) => <Button {...triggerAria} />}`), Menu (an
+> action menu at a button or a context menu on right click — `openOn="contextmenu"` — with
+> `<Menu.Item>`, `<Menu.CheckboxItem>`, `<Menu.RadioGroup>` with `<Menu.RadioItem>`,
+> `<Menu.Submenu>`, `<Menu.PopoverItem>`, `<Menu.Group>` and `<Menu.Separator>` or `items`, where
+> an item with nested `items` is a submenu; the items stand in its panel, so the server renders the
+> root with the trigger, and the items join the menu on the client), Dialog and
 > Drawer (open state in `visible`, user closing reported by `onChangeVisible`), Toasts
 > (notifications shown from code with `useToasts()`; the region is teleported into `target`, and
 > `ref` is the region), Table (columns and rows as data — `columns`, `items` — with sorting, row
@@ -60,6 +65,33 @@ const btn = new TButton({ text: 'Save' })
 
 export function Toolbar() {
   return <Button ctrl={btn} onActionPress={() => (btn.disabled = true)} />
+}
+```
+
+A menu takes its trigger in the `trigger` slot, like Popover: the link to the panel comes in the
+slot scope — `triggerAria` and `triggerDataset`. Choosing an action closes the menu and calls
+`onChoose`; a checkbox item and a radio item are checked in place, and the menu stays open:
+
+```tsx
+import { Button, Menu } from '@soldy-ui/react'
+
+export function Actions() {
+  return (
+    <Menu
+      trigger={({ triggerAria, triggerDataset }) => (
+        <Button text="Actions" {...triggerAria} {...triggerDataset} />
+      )}
+      onChoose={(item) => console.log(item.value)}
+    >
+      <Menu.Item value="edit" text="Edit" />
+      <Menu.Submenu value="share" text="Share">
+        <Menu.Item value="link" text="Copy link" />
+        <Menu.Item value="mail" text="Email" />
+      </Menu.Submenu>
+      <Menu.Separator />
+      <Menu.Item value="remove" text="Delete" />
+    </Menu>
+  )
 }
 ```
 
