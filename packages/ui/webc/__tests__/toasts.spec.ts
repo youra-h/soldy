@@ -477,6 +477,34 @@ describe('закрытие', () => {
 		expect(toasts()).toEqual([])
 	})
 
+	/**
+	 * Тост — разметка менеджера (`createItem`): его события слышно только на
+	 * нём самом, а закрытие приложению сообщает менеджер — `so:item:close`.
+	 */
+	it('закрытие сообщает менеджер; события тоста не всплывают', async () => {
+		const manager = await render()
+		const closed: unknown[] = []
+		const bubbled: unknown[] = []
+		const onBubbled = (event: Event) => bubbled.push(event.type)
+
+		manager.addEventListener('so:item:close', (event) => {
+			if (event instanceof CustomEvent) closed.push(event.detail)
+		})
+		document.addEventListener('so:change:open', onBubbled)
+
+		try {
+			const [toast] = await show('Сохранено')
+
+			find('.so-toasts-item__close').click()
+			await flush()
+
+			expect(closed).toEqual([toast])
+			expect(bubbled).toEqual([])
+		} finally {
+			document.removeEventListener('so:change:open', onBubbled)
+		}
+	})
+
 	it('без крестика: closable: false', async () => {
 		await render()
 		await show({ text: 'Важно', closable: false })

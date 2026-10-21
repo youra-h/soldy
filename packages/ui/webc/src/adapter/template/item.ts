@@ -5,10 +5,14 @@
  *
  * Деталью он не является: элементы своей коллекции признака `embedded` не
  * несут (`docs/agents/setup.md`, «`scope` и признак `embedded`»), и плагин
- * приложения на элементы ставится, как на элементы разметки. Вид элемента
- * проверяет `guard`, как у детали (`createDetail`): модуль владельца
- * регистрирует свои части, и незарегистрированная часть — ошибка, а не
- * обычный узел.
+ * приложения на элементы ставится, как на элементы разметки. Но и элементом
+ * потребителя он не является: его построил шаблон владельца, и, как у детали,
+ * его события не всплывают — их слышно на самом элементе, а что нужно
+ * приложению, сообщает владелец (`so:change:value`, `so:item:activated`,
+ * `so:item:close`). Это метка элемента (`runtime/owner-markup.ts`): помощник
+ * ставит её при создании, до вставки. Вид элемента проверяет `guard`, как у
+ * детали (`createDetail`): модуль владельца регистрирует свои части, и
+ * незарегистрированная часть — ошибка, а не обычный узел.
  *
  * Слоты элемента из данных владелец берёт у себя: его слот `item-<слот>` — тот
  * же слот элемента (таблица — `setup/__tests__/item-slots.spec.ts`). Scope у
@@ -22,6 +26,7 @@
  * ней не подключаются там, где им не место, — в строке, вне ячеек.
  */
 
+import { markOwnerMarkup } from '../runtime/owner-markup'
 import { lend } from './lend'
 import { sampleOf } from './sample'
 import type { ITemplateContext } from './types'
@@ -29,7 +34,10 @@ import type { ITemplateContext } from './types'
 /** Карта копий образцов: слот владельца (`item-leading`) → слот элемента (`leading`). */
 export type TItemSlots = Readonly<Record<string, string>>
 
-/** Элемент коллекции из данных — без `embedded`, вид проверяет `guard` (см. шапку). */
+/**
+ * Элемент коллекции из данных — без `embedded`, но разметкой владельца: его
+ * события не всплывают. Вид проверяет `guard` (см. шапку).
+ */
 export function createItem<T extends HTMLElement>(
 	owner: Document,
 	tag: string,
@@ -41,6 +49,8 @@ export function createItem<T extends HTMLElement>(
 	if (!guard(element)) {
 		throw new Error(`[soldy] <${tag} is="${is}"> не элемент soldy: модуль части не загружен`)
 	}
+
+	markOwnerMarkup(element)
 
 	return element
 }

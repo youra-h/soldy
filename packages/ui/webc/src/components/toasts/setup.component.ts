@@ -55,5 +55,5 @@ export function setupToasts(
 		.use(TCollectionExtension, { elevator })
 		.use(TToastsApiExtension, { elevator })
 
-	return joinBindings(owner, useCollectionAdapter(collectionAdapter, adapter, host, onUpdate))
+	return joinBindings(owner, useCollectionAdapter(collectionAdapter, host, onUpdate))
 }

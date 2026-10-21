@@ -31,8 +31,13 @@ import {
 	TLabelComponent,
 	TListBoxComponent,
 	TNumberInputComponent,
+	TPaginationComponent,
+	TProgressLinearComponent,
 	TProgressSpinnerComponent,
+	TRatingComponent,
+	TScrollerComponent,
 	TSkeletonComponent,
+	TSliderComponent,
 	TSwitchComponent,
 	TTableComponent,
 	TTabsComponent,
@@ -153,15 +158,100 @@ class LabelProbe extends TProbeHost {}
 })
 class FieldProbe extends TProbeHost {}
 
+@Component({
+	selector: 'probe-progress-linear',
+	standalone: true,
+	imports: [TProgressLinearComponent],
+	template: `<span
+		so-progress-linear
+		direction="rtl"
+		dir="ltr"
+		title="probe"
+		class="mine"
+		(soElementReady)="ready.push($event)"
+	></span>`,
+})
+class ProgressLinearProbe extends TProbeHost {}
+
+/**
+ * Ползунок и оценка — без деления атрибутов: полей у ползунка столько, сколько
+ * ручек, а поле оценки указатель не ловит, поэтому написанное потребителем
+ * остаётся на корне, как у Vue.
+ */
+@Component({
+	selector: 'probe-slider',
+	standalone: true,
+	imports: [TSliderComponent],
+	template: `<span
+		so-slider
+		direction="rtl"
+		dir="ltr"
+		title="probe"
+		class="mine"
+		(soElementReady)="ready.push($event)"
+	></span>`,
+})
+class SliderProbe extends TProbeHost {}
+
+@Component({
+	selector: 'probe-rating',
+	standalone: true,
+	imports: [TRatingComponent],
+	template: `<span
+		so-rating
+		direction="rtl"
+		dir="ltr"
+		title="probe"
+		class="mine"
+		(soElementReady)="ready.push($event)"
+	></span>`,
+})
+class RatingProbe extends TProbeHost {}
+
+@Component({
+	selector: 'probe-scroller',
+	standalone: true,
+	imports: [TScrollerComponent],
+	template: `<div
+		so-scroller
+		direction="rtl"
+		dir="ltr"
+		title="probe"
+		class="mine"
+		(soElementReady)="ready.push($event)"
+	></div>`,
+})
+class ScrollerProbe extends TProbeHost {}
+
+@Component({
+	selector: 'probe-pagination',
+	standalone: true,
+	imports: [TPaginationComponent],
+	template: `<nav
+		so-pagination
+		direction="rtl"
+		dir="ltr"
+		title="probe"
+		class="mine"
+		(soElementReady)="ready.push($event)"
+	></nav>`,
+})
+class PaginationProbe extends TProbeHost {}
+
 /** Компонент, хост его пробы, селектор корня и класс ядра на нём. */
 const COMPONENTS: ReadonlyArray<readonly [string, Type<TProbeHost>, string, string]> = [
 	['Button', ButtonProbe, '[so-button]', 'so-button'],
 	['ComponentView', ComponentViewProbe, '[so-component-view]', 'so-component-view'],
 	['Icon', IconProbe, '[so-icon]', 'so-icon'],
 	['ProgressSpinner', ProgressSpinnerProbe, '[so-progress-spinner]', 'so-progress-spinner'],
+	['ProgressLinear', ProgressLinearProbe, '[so-progress-linear]', 'so-progress-linear'],
 	['Skeleton', SkeletonProbe, '[so-skeleton]', 'so-skeleton'],
 	['Label', LabelProbe, '[so-label]', 'so-label'],
 	['Field', FieldProbe, '[so-field]', 'so-field'],
+	['Slider', SliderProbe, '[so-slider]', 'so-slider'],
+	['Rating', RatingProbe, '[so-rating]', 'so-rating'],
+	['Scroller', ScrollerProbe, '[so-scroller]', 'so-scroller'],
+	['Pagination', PaginationProbe, '[so-pagination]', 'so-pagination'],
 ]
 
 /**

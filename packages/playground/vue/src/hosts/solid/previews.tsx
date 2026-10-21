@@ -1,4 +1,4 @@
-import { For, type Accessor, type JSX } from 'solid-js'
+import { For, Show, type Accessor, type JSX } from 'solid-js'
 import {
 	COLLECTION_ITEMS,
 	COLLECTION_MANY_ITEMS,
@@ -7,7 +7,12 @@ import {
 	TABLE_ROWS,
 	TABLE_SCROLL_ROWS,
 } from '@soldy-ui/playground-shared'
-import type { DescriptorSlots, PopoverDescriptor, TooltipDescriptor } from '@soldy-ui/setup'
+import type {
+	DescriptorSlots,
+	MenuDescriptor,
+	PopoverDescriptor,
+	TooltipDescriptor,
+} from '@soldy-ui/setup'
 import {
 	Accordion,
 	Button,
@@ -18,6 +23,7 @@ import {
 	Input,
 	Label,
 	ListBox,
+	Menu,
 	NumberInput,
 	Pagination,
 	Popover,
@@ -69,6 +75,9 @@ type TPopoverTriggerScope = DescriptorSlots<typeof PopoverDescriptor>['trigger']
 /** Scope слота триггера Tooltip — ссылка на панель. */
 type TTooltipTriggerScope = DescriptorSlots<typeof TooltipDescriptor>['trigger']
 
+/** Scope слота триггера Menu — связка кнопки с меню и вид «нажата». */
+type TMenuTriggerScope = DescriptorSlots<typeof MenuDescriptor>['trigger']
+
 /** Содержимое коллекций — из общего манифеста, как у Vue, React и Svelte. */
 const ITEMS = COLLECTION_ITEMS
 
@@ -105,6 +114,46 @@ const accordionItems = () => (
 			</Accordion.Item>
 		)}
 	</For>
+)
+
+/**
+ * Пункты меню разметкой, как у Vue: группа флажков с подписью, группа
+ * переключателей — отмечен один, — действия с подсказками сочетаний, подменю
+ * с подменю внутри, пункт с панелью, которая монтируется с первым открытием,
+ * выключенное действие и «опасный» пункт своего варианта. Календаря в Solid
+ * нет, и в панели «Срок» — поле числа дней.
+ */
+const menuItems = () => (
+	<>
+		<Menu.Group label="Вид">
+			<Menu.CheckboxItem value="grid" text="Сетка" selected />
+			<Menu.CheckboxItem value="ruler" text="Линейка" />
+		</Menu.Group>
+		<Menu.Separator />
+		<Menu.RadioGroup label="Сортировка" value="name">
+			<Menu.RadioItem value="name" text="По имени" />
+			<Menu.RadioItem value="date" text="По дате" />
+		</Menu.RadioGroup>
+		<Menu.Separator />
+		<Menu.Item value="edit" text="Изменить" trailing="Ctrl+E" />
+		<Menu.Item value="copy" text="Дублировать" trailing="Ctrl+D" />
+		<Menu.Submenu value="share" text="Поделиться">
+			<Menu.Item value="link" text="Ссылка" />
+			<Menu.Item value="mail" text="Почта" />
+			<Menu.Submenu value="messengers" text="Мессенджеры">
+				<Menu.Item value="telegram" text="Telegram" />
+				<Menu.Item value="whatsapp" text="WhatsApp" />
+			</Menu.Submenu>
+		</Menu.Submenu>
+		<Menu.PopoverItem value="due" text="Срок" lazyMount>
+			<Field label="Через, дней">
+				<NumberInput value={3} min={0} />
+			</Field>
+		</Menu.PopoverItem>
+		<Menu.Item value="archive" text="В архив" disabled />
+		<Menu.Separator />
+		<Menu.Item value="remove" text="Удалить" variant="negative" trailing="Del" />
+	</>
 )
 
 export const PREVIEWS: Record<string, TPreview> = {
@@ -214,6 +263,44 @@ export const PREVIEWS: Record<string, TPreview> = {
 		>
 			Короткое пояснение к кнопке
 		</Tooltip>
+	),
+
+	// Триггер — Button, связку с меню и вид «нажата» он берёт из scope слота и
+	// читает его в разметке, как у Popover. У контекстного меню (`openOn:
+	// 'contextmenu'`) в слоте область, как «файл» у потребителя: меню вызывают
+	// над ней правой кнопкой, долгим касанием и Shift+F10 — она фокусируемая, —
+	// и панель встаёт у точки вызова. Режим область берёт из пропсов колонки,
+	// как у Vue: у колонки экземпляра его нет, и там меню вызывают над кнопкой.
+	// Выбирает `Show` в разметке слота, а не условие в теле его функции: тело
+	// читало бы пропсы при вызове, и смена любой строки рисовала бы триггер
+	// заново. Пункты — разметкой, а пришли данными (`items` блока групп
+	// страницы) — из них, как у списка: разметка заменила бы данные, а группы
+	// меню рисует из данных
+	menu: (bind) => (
+		<Menu
+			{...bind()}
+			trigger={(scope: TMenuTriggerScope) => (
+				<Show
+					when={bind().openOn === 'contextmenu'}
+					fallback={
+						<Button text="Действия" {...scope.triggerAria} {...scope.triggerDataset} />
+					}
+				>
+					<div
+						tabindex="0"
+						style={{
+							padding: '24px 32px',
+							border: '1px dashed',
+							'border-radius': '8px',
+						}}
+					>
+						Правая кнопка, долгое касание или Shift+F10
+					</div>
+				</Show>
+			)}
+		>
+			{bind().items ? undefined : menuItems()}
+		</Menu>
 	),
 
 	// Содержимое ленты — просто разметка: каждый элемент — прямой ребёнок

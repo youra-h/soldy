@@ -180,7 +180,9 @@ manager gets the queue with `toastsOf(node)` — the nearest manager above the n
 a dialog moved to `body` — and `show` takes a text or options; content of your own is a function
 that receives the toast and returns a node. The `item`, `item-icon`, `item-content` and
 `item-close-icon` slots are templates, as in collections: every toast gets a copy, and a copy finds
-its toast on the nearest `.so-toasts-item` (`el.ctrl`):
+its toast on the nearest `.so-toasts-item` (`el.ctrl`). A toast is the manager's markup, like an
+item drawn from data, so its events do not bubble: the manager reports a closed toast with
+`so:item:close`.
 
 ```html
 <so-toasts placement="top-end">
@@ -330,6 +332,12 @@ items have no scope either, so the owner's `item-*` slots are templates: each it
 gets its own copy, in its own slot — `<template slot="item-leading">★</template>` puts a star before
 every tab's text. The item's data is on the item element, `el.ctrl`.
 
+An item drawn from data is part of the owner's markup, like the built-in clear button of a field:
+its events (`so:element:ready`, `so:change:selected`) do not bubble to the owner and above. Listen
+on the item element itself, or take the owner's event, which is usually what an application needs
+— `so:change:value`, `so:item:activated`, `so:item:close`. Items you write in the markup are yours,
+and their events bubble as any element's.
+
 A radio is always a `<label>` root, so a radio cannot go inside `<label is="so-label">` the way
 other adapters write it with `tag="span"`. An item element you add after its owner is built joins
 the collection, but the owner does not move it into its markup — put a tab into `.so-tabs__list`
@@ -341,9 +349,11 @@ markup items join again with what their attributes and properties say, so a choi
 Pagination draws its pages itself — from `total` and `pageSize`, or from a list of `pages`
 (`el.pages = [{ text: 'Admin' }, …]`) — and has no content of its own. A page is an inner part,
 `<li is="so-pagination-item">` with a button in it; its `item` slot is a template too, and a copy
-finds its page on the nearest `.so-pagination-item` (`el.ctrl`). A scroller lays its content out in
-its viewport, between the two buttons; a role for the row and what goes with it comes to the
-viewport as `viewportAria` (`viewport-aria` with JSON, or a property):
+finds its page on the nearest `.so-pagination-item` (`el.ctrl`). A page's events do not bubble,
+as with items drawn from data: the pagination reports the page chosen with `so:change:value`. A
+scroller lays its content out in its viewport, between the two buttons; a role for the row and
+what goes with it comes to the viewport as `viewportAria` (`viewport-aria` with JSON, or a
+property):
 
 ```html
 <nav is="so-pagination" total="200" value="5" aria_label="Result pages"></nav>

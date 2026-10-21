@@ -8,6 +8,7 @@ export {
 	createRootProps,
 	createWrappedRootProps,
 	toControlAttrs,
+	toPartClass,
 	toRootForward,
 	toRootLayout,
 	toRootProps,

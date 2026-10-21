@@ -253,6 +253,12 @@ import type { TBinding, TBindingState } from './useAdapter'
  *   У поля — `attrs` и `dataset`: его `aria` стоит на вложенном `<input>`
  *   (`AttributesDirective` в шаблоне), а `dataset` — на корне, где его читает
  *   тема, как у остальных адаптеров;
+ * - `aria` — имя выхода состояния, чей набор база кладёт на корень слоем
+ *   `aria`, по умолчанию сам `aria`. У Slider — `rootAria`: у нескольких ручек
+ *   корень — группа с именем ползунка, у одной набор пуст, а `aria` ползунка
+ *   уходит полям ручек — его кладёт шаблон из `thumbs`. Говорит только об
+ *   источнике слоя: лежит ли он на корне, решает `sets`. Как `aria` в описании
+ *   корня Web Components;
  * - `control` — у корня есть вложенное поле, элемент шаблона `#control`
  *   (`<input>` у Input, CheckBox, Switch и радио, ввод числа — не скрытое поле
  *   формы — у NumberInput, `<textarea>` у Textarea, строка — у элемента
@@ -273,6 +279,7 @@ export type TRootSpec =
 			readonly shownBy?: string
 			readonly teleport?: TRootTeleport
 			readonly sets?: readonly TRootSet[]
+			readonly aria?: string
 			readonly control?: boolean
 	  }
 
@@ -281,10 +288,10 @@ type TRootHost = Extract<TRootSpec, { readonly strategy: 'host' }>
 
 /**
  * Что база раскладывает на корень, — часть описания корня-хоста: стиль-выход,
- * место в коллекции и наборы. Корень внутри обёртки берёт умолчания: все три
- * набора, без своего стиля и места.
+ * место в коллекции, наборы и выход слоя `aria`. Корень внутри обёртки берёт
+ * умолчания: все три набора из одноимённых выходов, без своего стиля и места.
  */
-type TRootPaint = Pick<TRootHost, 'style' | 'order' | 'sets'>
+type TRootPaint = Pick<TRootHost, 'style' | 'order' | 'sets' | 'aria'>
 
 /**
  * Память раскладки на одном узле — что база поставила на него в прошлый раз.
@@ -675,7 +682,8 @@ export abstract class TComponentBase<
 	 * context.
 	 *
 	 * Из описания корня здесь — имя стиль-выхода компонента (`style`), место в
-	 * коллекции (`order`) и наборы ядра на корне (`sets`).
+	 * коллекции (`order`), наборы ядра на корне (`sets`) и выход слоя `aria`
+	 * (`aria`).
 	 */
 	private _bindHost(host: Element, root: TRootHost): void {
 		this._clearInputAttributes(host)
@@ -749,9 +757,11 @@ export abstract class TComponentBase<
 
 		// Наборы — слоями раскладчика элемента: на корень вложенного компонента
 		// свой набор поверх кладёт ещё и разметка владельца (`AttributesDirective`).
-		// Раскладчик — у каждого узла свой, со своей памятью
+		// Раскладчик — у каждого узла свой, со своей памятью. Слой `aria` — из
+		// выхода, который назвало описание корня (`rootAria` у Slider)
 		for (const name of paint.sets ?? ROOT_SETS) {
-			const set = computed(() => attributesOf(this._drawn()[name]))
+			const output = name === 'aria' ? (paint.aria ?? 'aria') : name
+			const set = computed(() => attributesOf(this._drawn()[output]))
 
 			effect(() => {
 				const element = target()

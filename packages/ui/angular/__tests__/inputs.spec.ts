@@ -457,6 +457,11 @@ describe('вход в строгом шаблоне · хосты компоне
 				'TTextareaComponent',
 				'TCheckBoxComponent',
 				'TSwitchComponent',
+				'TProgressLinearComponent',
+				'TSliderComponent',
+				'TRatingComponent',
+				'TScrollerComponent',
+				'TPaginationComponent',
 			]),
 		)
 	})

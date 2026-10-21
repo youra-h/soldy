@@ -11,9 +11,10 @@
  * (`pg-angular-root`) в раскладке не участвует (`display: contents`), и
  * компонент стоит в ячейке так же, как компонент хоста Vue, — то же место и
  * тот же размер. У превью с обёрткой и содержимым так же стоят и обёртка, и
- * части: подпись вокруг флажка, элементы коллекций, панель активного таба, —
- * а у таблицы её окно, корень, заголовки и строки: ширину колонок плагин
- * раскладки мерит по окну, и раскладка совпадает, только если окно он нашёл.
+ * части: подпись вокруг флажка, ползунка и оценки, ручки и звёзды, элементы
+ * коллекций, страницы пагинации, панель активного таба, — а у таблицы её окно,
+ * корень, заголовки и строки: ширину колонок плагин раскладки мерит по окну, и
+ * раскладка совпадает, только если окно он нашёл.
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
@@ -106,12 +107,31 @@ describe('хост Angular', () => {
 		['textarea', '.so-textarea, .so-textarea textarea'],
 		['check-box', '.so-label, .so-check-box'],
 		['switch', '.so-label, .so-switch'],
+		// Ползунок и оценка — в подписи сверху: дорожка, заливка, ручка с полем;
+		// звёзды и их значки
+		[
+			'slider',
+			'.so-label, .so-slider, .so-slider__track, .so-slider__range, .so-slider__thumb, .so-slider__input',
+		],
+		['rating', '.so-label, .so-rating, .so-rating__star, .so-rating__icon, .so-rating__thumb'],
 		['label', '.so-label, .so-check-box'],
 		['field', '.so-field, .so-field__label, .so-field__control, .so-input, .so-field__helper'],
 		['radio-group', '.so-radio-group, .so-radio-group-item'],
 		['list-box', '.so-list-box, .so-list-box-item'],
 		['tabs', '.so-tabs, .so-tabs-item, .so-tabs__panel'],
 		['accordion', '.so-accordion, .so-accordion-item'],
+		// Стрелки, страницы и пропуски — в одну строку
+		[
+			'pagination',
+			'.so-pagination, .so-pagination__prev, .so-pagination-item, .so-pagination__ellipsis, .so-pagination__next',
+		],
+		// Лента и полоса — во всю ширину рамки: кнопки, вьюпорт и его
+		// содержимое; дорожка и заливка доли
+		[
+			'scroller',
+			'.so-scroller, .so-scroller__prev, .so-scroller__viewport, .so-scroller__viewport > *, .so-scroller__next',
+		],
+		['progress-linear', '.so-progress-linear, .so-progress-linear__range'],
 		// Таблица — окно, корень, заголовки и строки: рамку превью задаёт хост.
 		// Окна Virtual здесь нет — у Vue в его ряду ещё и Select, которого у
 		// Angular нет

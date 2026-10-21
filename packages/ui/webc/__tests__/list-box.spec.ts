@@ -639,9 +639,61 @@ describe('состав', () => {
 	})
 
 	/**
+	 * Событие элемента всплывает, только если элемент написал потребитель.
+	 * Элемент из данных построил шаблон списка (`createItem`) — это разметка
+	 * списка, и его события слышно на нём самом, а выбор приложению сообщает
+	 * список (`so:change:value`). Элемент разметки написал потребитель, и его
+	 * события всплывают. В одном списке двух видов не бывает — петля из данных
+	 * рисует, только когда элементов разметки нет, — поэтому списки стоят рядом,
+	 * под общим слушателем.
+	 */
+	it('событие элемента из данных не всплывает, элемента разметки — всплывает', async () => {
+		/** События элемента: сборка, узел и выбор — событие фасада коллекции. */
+		const names = ['so:bundle:create', 'so:element:ready', 'so:change:selected']
+		const host = document.createElement('div')
+		const data = document.createElement('div', { is: 'so-list-box' })
+		const bubbled: string[] = []
+		const onDrawn = new Set<string>()
+
+		if (!isList(data)) throw new Error('<div is="so-list-box"> нет')
+
+		host.innerHTML = `<div is="so-list-box">
+			<div is="so-list-box-item" value="a" text="Разметка"></div>
+		</div>`
+		data.items = [{ value: 'b', text: 'Данные' }]
+		host.append(data)
+
+		for (const name of names) {
+			host.addEventListener(name, ({ target }) => {
+				if (target instanceof Element && isItem(target)) {
+					bubbled.push(`${target.ctrl?.text}: ${name}`)
+				}
+			})
+		}
+
+		document.body.appendChild(host)
+
+		// Элемент из данных шаблон строит при сборке списка, а набор и узел он
+		// объявляет позже: микрозадачей и кадром
+		const drawn = data.querySelector('.so-list-box-item')
+
+		if (!drawn) throw new Error('элемента из данных нет')
+
+		for (const name of names) drawn.addEventListener(name, () => onDrawn.add(name))
+
+		await nextFrame()
+		await click(rowOf('Разметка'))
+		await click(rowOf('Данные'))
+
+		expect([...onDrawn].sort()).toEqual([...names].sort())
+		expect(bubbled.sort()).toEqual(names.map((name) => `Разметка: ${name}`).sort())
+	})
+
+	/**
 	 * Петля по ключу: запись новая на каждую смену, а элемент — тот же, пока
 	 * жив его ключ (`uid`). Переставленный едет переносом силами базы и не
-	 * пересобирается, ушедший снимается.
+	 * пересобирается, ушедший снимается. События элемента из данных не
+	 * всплывают, поэтому сборки элементов слушатель ловит в фазе захвата.
 	 */
 	it('перестановка и удаление в движке: живые элементы — те же узлы, порядок DOM — порядок данных', async () => {
 		const engine = createEngineListBox({ items: ITEMS })
@@ -652,7 +704,9 @@ describe('состав', () => {
 		const [a, b, c] = engine.extensions.batch.items
 		const bundles: unknown[] = []
 
-		list.addEventListener('so:bundle:create', (event) => bundles.push(event.target))
+		list.addEventListener('so:bundle:create', (event) => bundles.push(event.target), {
+			capture: true,
+		})
 		engine.extensions.plain.move(c, 0)
 		engine.extensions.plain.remove(b)
 		await flush()

@@ -27,8 +27,12 @@ import {
 	TButtonComponent,
 	TFrameComponent,
 	TIconComponent,
+	TProgressLinearComponent,
 	TProgressSpinnerComponent,
+	TRatingComponent,
+	TScrollerComponent,
 	TSkeletonComponent,
+	TSliderComponent,
 } from '@soldy-ui/angular'
 import { find } from './mount'
 import { hydrate, leavePage, loadPage, renderOnServer } from './server'
@@ -524,5 +528,147 @@ describe('id монтирования', () => {
 		await renderOnServer(IdsPage)
 
 		expect(mountIds).toEqual(['ng-1-probe', 'ng-2-probe', 'ng-1-probe', 'ng-2-probe'])
+	})
+})
+
+/**
+ * Полоса, ползунок, оценка и лента на сервере: доля, позиции, ход полей и
+ * имена — в разметке сервера, а значение поля — атрибутом `value`: его пишет
+ * директива текста поля в узел эмуляции. Первый кадр браузера их уже видит.
+ */
+@Component({
+	selector: 'app-root',
+	standalone: true,
+	imports: [TProgressLinearComponent, TSliderComponent, TRatingComponent, TScrollerComponent],
+	template: `<span so-progress-linear [value]="40"></span>
+		<span so-slider [value]="sliderValue()" tooltip="always"></span>
+		<span so-rating [value]="2" [max]="3"></span>
+		<div so-scroller><span class="item">Пункт</span></div>`,
+})
+class ControlsPage {
+	readonly sliderValue = signal([20, 80])
+}
+
+describe('ProgressLinear, Slider, Rating и Scroller · серверный рендер', () => {
+	it('ProgressLinear — доля в стиле корня, роль, значения и заливка', async () => {
+		const page = await serverPage(ControlsPage)
+		const bar = find(page, '[so-progress-linear]', HTMLSpanElement)
+
+		expect(bar.getAttribute('role')).toBe('progressbar')
+		expect(bar.getAttribute('aria-valuenow')).toBe('40')
+		expect(bar.style.getPropertyValue('--so-progress-linear-percent')).toBe('40%')
+		expect([...bar.children].map((child) => child.className)).toEqual([
+			'so-progress-linear__range',
+		])
+	})
+
+	it('Slider — группа, ручка на значение: позиция, поле с ходом и значением, подсказка', async () => {
+		const page = await serverPage(ControlsPage)
+		const slider = find(page, '[so-slider]', HTMLSpanElement)
+		const range = find(slider, '.so-slider__range', HTMLSpanElement)
+		const fields = [...slider.querySelectorAll('input')]
+
+		expect(slider.getAttribute('role')).toBe('group')
+		expect(range.style.getPropertyValue('--so-slider-range-start')).toBe('20%')
+		expect(range.style.getPropertyValue('--so-slider-range-end')).toBe('80%')
+		expect(
+			fields.map((field) =>
+				['min', 'max', 'step', 'value'].map((name) => field.getAttribute(name)),
+			),
+		).toEqual([
+			['0', '80', '1', '20'],
+			['20', '100', '1', '80'],
+		])
+		expect(
+			[...slider.querySelectorAll<HTMLElement>('.so-slider__thumb')].map((thumb) =>
+				thumb.style.getPropertyValue('--so-slider-position'),
+			),
+		).toEqual(['20%', '80%'])
+		expect(
+			[...slider.querySelectorAll('.so-slider__tooltip')].map(
+				(tooltip) => tooltip.textContent,
+			),
+		).toEqual(['20', '80'])
+	})
+
+	it('Rating — звёзды с долей заливки, значки и поле со значением и тем, как оно звучит', async () => {
+		const page = await serverPage(ControlsPage)
+		const rating = find(page, '[so-rating]', HTMLSpanElement)
+		const field = find(rating, 'input', HTMLInputElement)
+
+		expect(
+			[...rating.querySelectorAll<HTMLElement>('.so-rating__star')].map((star) =>
+				star.style.getPropertyValue('--so-rating-fraction'),
+			),
+		).toEqual(['1', '1', '0'])
+		expect(rating.querySelectorAll('svg.so-rating__icon')).toHaveLength(6)
+		expect(['min', 'max', 'step', 'value'].map((name) => field.getAttribute(name))).toEqual([
+			'0',
+			'3',
+			'1',
+			'2',
+		])
+		expect(field.getAttribute('aria-valuetext')).toBe('2 of 3')
+	})
+
+	/** Имена кнопок пишет плагин имён при сборке, а она идёт и на сервере. */
+	it('Scroller — кнопки с именами и вьюпорт с содержимым', async () => {
+		const page = await serverPage(ControlsPage)
+		const scroller = find(page, '[so-scroller]', HTMLDivElement)
+
+		expect(scroller.getAttribute('data-can-prev')).toBe('false')
+		expect(scroller.getAttribute('data-can-next')).toBe('false')
+		expect(
+			find(scroller, '.so-scroller__prev', HTMLButtonElement).getAttribute('aria-label'),
+		).toBe('Scroll back')
+		expect(
+			find(scroller, '.so-scroller__next', HTMLButtonElement).getAttribute('aria-label'),
+		).toBe('Scroll forward')
+		expect(
+			[...find(scroller, '.so-scroller__viewport', HTMLDivElement).children].map(
+				(child) => child.className,
+			),
+		).toEqual(['item'])
+	})
+})
+
+describe('ProgressLinear, Slider, Rating и Scroller · гидратация', () => {
+	afterEach(() => {
+		vi.restoreAllMocks()
+		leavePage()
+	})
+
+	it('узлы сервера переиспользуются, ошибок нет; значение после неё доходит до полей', async () => {
+		const error = vi.spyOn(console, 'error')
+		const warn = vi.spyOn(console, 'warn')
+
+		loadPage(await renderOnServer(ControlsPage))
+
+		const thumbs = [...document.querySelectorAll('.so-slider__input')]
+		const stars = [...document.querySelectorAll('.so-rating__star')]
+		const viewport = find(document, '.so-scroller__viewport', HTMLDivElement)
+		const app = await hydrate(ControlsPage)
+
+		await app.whenStable()
+
+		expect([...document.querySelectorAll('.so-slider__input')]).toEqual(thumbs)
+		expect([...document.querySelectorAll('.so-rating__star')]).toEqual(stars)
+		expect(find(document, '.so-scroller__viewport', HTMLDivElement)).toBe(viewport)
+		expect(error).not.toHaveBeenCalled()
+		expect(warn).not.toHaveBeenCalled()
+
+		const page: unknown = app.components[0]?.instance
+
+		if (!(page instanceof ControlsPage)) throw new Error('Корень приложения — не ControlsPage')
+
+		page.sliderValue.set([30, 70])
+		await app.whenStable()
+
+		expect(
+			[...document.querySelectorAll('.so-slider__input')]
+				.filter((field): field is HTMLInputElement => field instanceof HTMLInputElement)
+				.map((field) => field.value),
+		).toEqual(['30', '70'])
+		expect([...document.querySelectorAll('.so-slider__input')]).toEqual(thumbs)
 	})
 })
