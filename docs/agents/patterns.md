@@ -246,8 +246,9 @@ ARIA пускает только `option` и `group` (axe — `aria-required-chi
   `plugins/__tests__/swipe.plugin.spec.ts`, `ui/vue/__tests__/select.spec.ts`,
   `ui/svelte/__tests__/select.spec.ts` и
   `playground/vue/browser/anchored-swipe.spec.ts`. У Svelte панель — отдельный
-  корень в `body`, который `Teleport` монтирует эффектом со всеми контекстами
-  места: опции в ней читают лифт Select, а на сервере панели нет, и опции
+  корень в обёртке, которую `Teleport` держит в `body`, и монтирует он его
+  эффектом со всеми контекстами места: опции в ней читают лифт Select, а на
+  сервере панели нет, и опции
   разметкой входят в коллекцию только в браузере (см. «Цена» в
   `collections.md`).
 - **Switch** — Switch pattern, вариант на `input[type="checkbox"]`:
@@ -537,7 +538,8 @@ ARIA пускает только `option` и `group` (axe — `aria-required-chi
   панель в `body`),
   `ui/webc/__tests__/popover.spec.ts` (сверх сценариев Vue — наборы триггера на
   первом элементе слота, тот же узел; перенос в цель и `contained` не
-  пересобирают кнопки в панели; Select внутри — вложенным поповером),
+  пересобирают кнопки в панели; `rendered: false` прячет и открытую панель;
+  Select внутри — вложенным поповером),
   `ui/webc/__tests__/hide-outside.spec.ts` (поповер в модальном Frame),
   `playground/vue/browser/popover.spec.ts`,
   `playground/vue/browser/popover-swipe.spec.ts`,
@@ -553,9 +555,10 @@ ARIA пускает только `option` и `group` (axe — `aria-required-chi
   (`<span is="so-popover">`): scope у слотов нет, и оба набора триггера шаблон
   кладёт на первый элемент слота `trigger` одним слоем владельца — узлы слота
   отдаёт контекст шаблона (`slotted`). Панель — деталь Frame
-  (`popover.frame`), в цель её уводит база Frame; `lazyMount` держит
-  содержимое вне документа до первого открытия (`showSlot`), и элементы soldy
-  в нём не собираются.
+  (`popover.frame`), в цель её уводит база Frame, а `rendered` ей пишет
+  шаблон: корень Web Components, как у Angular, только прячется; `lazyMount`
+  держит содержимое вне документа до первого открытия (`showSlot`), и
+  элементы soldy в нём не собираются.
 - **Menu** — Menu Button (APG): кнопка потребителя в слоте `trigger` внутри
   корня, как у Popover, панель — `Frame` с `role="menu"`, `id` и
   `aria-labelledby` на триггер (имя меню — текст кнопки), у триггера —
@@ -872,7 +875,8 @@ ARIA пускает только `option` и `group` (axe — `aria-required-chi
   `ui/solid/__tests__/tooltip.spec.tsx` (у Solid ещё — триггер тем же узлом
   после показа и смены `type`), `ui/svelte/__tests__/tooltip.spec.ts`,
   `ui/webc/__tests__/tooltip.spec.ts` (ссылка на панель сменяется на том же
-  узле триггера), `ui/angular/__tests__/tooltip.spec.ts` (у Angular ещё —
+  узле триггера, `rendered: false` прячет и открытую панель),
+  `ui/angular/__tests__/tooltip.spec.ts` (у Angular ещё —
   триггер шаблоном слота тем же узлом после показа и смены `type`, якорь —
   корень, `rendered: false` прячет и открытую панель),
   `ui/angular/__tests__/ssr.server.spec.ts` (текст подсказки в панели после
@@ -946,7 +950,10 @@ ARIA пускает только `option` и `group` (axe — `aria-required-chi
   `plugins/__tests__/modal-focus.plugin.spec.ts`,
   `plugins/__tests__/dialog-layout.plugin.spec.ts`,
   `ui/vue/__tests__/dialog.spec.ts`, `ui/react/__tests__/dialog.spec.tsx`,
-  `ui/svelte/__tests__/dialog.spec.ts`, `ui/webc/__tests__/dialog.spec.ts`
+  `ui/svelte/__tests__/dialog.spec.ts`, `ui/solid/__tests__/dialog.spec.tsx`
+  (сверх сценариев Vue — смена цели переносит панель с подложкой теми же
+  узлами, с набранным в поле, а содержимое собрано с локалью места; Select
+  внутри — поповером), `ui/webc/__tests__/dialog.spec.ts`
   (сверх сценариев Vue — подложка-спутник ездит и прячется с окном, перенос не
   пересобирает кнопку в окне, значок разворота — в строке кнопки тем же
   узлом; Select внутри — поповером), `ui/angular/__tests__/dialog.spec.ts`
@@ -1017,7 +1024,11 @@ ARIA пускает только `option` и `group` (axe — `aria-required-chi
   `plugins/__tests__/drawer-layout.plugin.spec.ts`,
   `ui/vue/__tests__/drawer.spec.ts`, `ui/react/__tests__/drawer.spec.tsx`,
   `ui/svelte/__tests__/drawer.spec.ts` (у React и Svelte смена `contained` на
-  лету рисует панель новым узлом, и замок прокрутки встаёт кадром позже),
+  лету переносит панель тем же узлом — телепорт двигает свою обёртку, — и
+  замок прокрутки встаёт сразу),
+  `ui/solid/__tests__/drawer.spec.tsx` (у Solid — тоже тем же узлом: смена
+  `contained` и цели везёт подложку рядом и поле с набранным, замок встаёт
+  сразу),
   `ui/webc/__tests__/drawer.spec.ts` (у Web Components — тем же узлом, с
   подложкой рядом, и кнопки в панели не пересобираются),
   `ui/angular/__tests__/drawer.spec.ts` (у Angular — тем же узлом и той же
@@ -1114,8 +1125,8 @@ useToasts()`. API опускает лифт (`TOASTS_ELEVATOR`, расширен
   (`TToastsFrontPlugin`, переменная `--so-toasts-front-height`). Без стопки
   колесо и стрелки остаются странице. **Своё содержимое (`render`)
   — `unknown` в ядре**: ядро его не читает, это значение разметки, и тип ему
-  даёт адаптер — во Vue и Svelte компонент своего фреймворка с пропом `toast`
-  (`TToastRender`, через API `useToasts()`), у Web Components — функция,
+  даёт адаптер — во Vue, Svelte и Solid компонент своего фреймворка с пропом
+  `toast` (`TToastRender`, через API `useToasts()`), у Web Components — функция,
   которая получает тост и отдаёт узел (через `toastsOf`), а рисует его
   разметка после проверки (`isToastRender`), без приведения. Правило общее: значение, которое
   ядро только хранит для разметки, в ядре — `unknown`, тип ему даёт API
@@ -1123,7 +1134,11 @@ useToasts()`. API опускает лифт (`TOASTS_ELEVATOR`, расширен
   `core/__tests__/toasts.spec.ts`, `plugins/__tests__/toasts.plugin.spec.ts`,
   `plugins/__tests__/swipe.plugin.spec.ts` («тост в регионе»),
   `plugins/__tests__/names.plugin.spec.ts`, `ui/vue/__tests__/toasts.spec.ts`,
-  `ui/svelte/__tests__/toasts.spec.ts`, `ui/webc/__tests__/toasts.spec.ts`
+  `ui/svelte/__tests__/toasts.spec.ts`, `ui/solid/__tests__/toasts.spec.tsx`
+  (сверх сценариев Vue — приложение без обёртки и регион в слое менеджера,
+  `useToasts()` в окне под менеджером, у тоста нет CSS-свойства `order`,
+  пустой `item-icon` уступает место значку вида, пункт ListBox под
+  менеджером рисуется сам по себе), `ui/webc/__tests__/toasts.spec.ts`
   (сверх сценариев Vue — регион в цели, приложение на месте, атрибуты
   потребителя — на регионе, снятый менеджер уводит регион из цели;
   `toastsOf` изнутри окна в цели находит менеджер вокруг его места),

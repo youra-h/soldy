@@ -35,6 +35,8 @@ import {
 	Button,
 	CheckBox,
 	ComponentView,
+	Dialog,
+	Drawer,
 	Field,
 	Frame,
 	Icon,
@@ -56,6 +58,7 @@ import {
 	Table,
 	Tabs,
 	Textarea,
+	Toasts,
 	Tooltip,
 	toControlAttrs,
 	toRootForward,
@@ -67,6 +70,8 @@ import {
 	type ButtonProps,
 	type CheckBoxProps,
 	type ComponentViewProps,
+	type DialogProps,
+	type DrawerProps,
 	type FieldProps,
 	type FrameProps,
 	type IconProps,
@@ -97,6 +102,7 @@ import {
 	type TabsItemProps,
 	type TabsProps,
 	type TextareaProps,
+	type ToastsProps,
 	type TooltipProps,
 } from '@soldy-ui/solid'
 import { find, mount, nextFrame } from './mount'
@@ -117,6 +123,9 @@ type TProbeProps = ButtonProps &
 	PaginationProps &
 	PopoverProps &
 	TooltipProps &
+	DialogProps &
+	DrawerProps &
+	ToastsProps &
 	MenuProps &
 	TabsProps &
 	AccordionProps &
@@ -135,6 +144,8 @@ function TabsContentProbe(props: TabsContentProps): JSX.Element {
 /**
  * Компонент, класс его корня и пропсы, без которых его корень не виден: Frame
  * по умолчанию скрыт и уходит телепортом в `body` — корень ищется по документу.
+ * Так же уходят панели Dialog и Drawer и регион Toasts: их корень — панель и
+ * регион, а не подложка и не приложение.
  */
 const COMPONENTS: ReadonlyArray<
 	readonly [string, Component<TProbeProps>, string, Partial<TProbeProps>]
@@ -154,6 +165,9 @@ const COMPONENTS: ReadonlyArray<
 	['Pagination', Pagination, '.so-pagination', {}],
 	['Popover', Popover, '.so-popover', {}],
 	['Tooltip', Tooltip, '.so-tooltip', {}],
+	['Dialog', Dialog, '.so-dialog', {}],
+	['Drawer', Drawer, '.so-drawer', {}],
+	['Toasts', Toasts, '.so-toasts', {}],
 	['Menu', Menu, '.so-menu', {}],
 	['Tabs.Content', TabsContentProbe, '.so-tabs__panel', {}],
 	['Accordion', Accordion, '.so-accordion', {}],
@@ -809,6 +823,11 @@ const ROOTS: ReadonlyArray<
 	['Pagination', (props) => <Pagination {...props} />, '.so-pagination', '.so-pagination'],
 	['Popover', (props) => <Popover {...props} />, '.so-popover', '.so-popover'],
 	['Tooltip', (props) => <Tooltip {...props} />, '.so-tooltip', '.so-tooltip'],
+	// Корень окна и выезжающей панели — сама панель, а не подложка рядом с ней
+	['Dialog', (props) => <Dialog {...props} />, '.so-dialog', '.so-dialog'],
+	['Drawer', (props) => <Drawer {...props} />, '.so-drawer', '.so-drawer'],
+	// Корень менеджера тостов — регион, а не приложение, которое он оборачивает
+	['Toasts', (props) => <Toasts {...props} />, '.so-toasts', '.so-toasts'],
 	// Корень меню — обёртка триггера, а не его телепортированная панель
 	['Menu', (props) => <Menu {...props} />, '.so-menu', '.so-menu'],
 	['Menu.Item', (props) => <MenuItemProbe {...props} />, '.so-menu-item', '.so-menu-item'],
@@ -1061,9 +1080,9 @@ describe('свойство, записанное в узел мимо разме
 /**
  * Стиль Solid ставит объектом с именами как в CSS — так их и пишут плагины и
  * ядро: пользовательское свойство остаётся под своим именем, `z-index` — тоже.
- * Так размер отдают плагины раскладки окна и выезжающей панели, но этих
- * компонентов в Solid пока нет, и правило проверяется на самой раскладке
- * корня.
+ * Так размер отдают плагины раскладки окна и выезжающей панели: на узле его
+ * сторожат «размер — переменными темы» в `dialog.spec.tsx` и `drawer.spec.tsx`,
+ * а здесь — сама раскладка корня.
  */
 describe('раскладка корня: имена стиля — как в CSS', () => {
 	it('--* из layout_styles доходит до узла как есть', () => {

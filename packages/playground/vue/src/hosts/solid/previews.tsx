@@ -1,4 +1,14 @@
-import { For, Show, type Accessor, type JSX } from 'solid-js'
+import {
+	For,
+	Show,
+	createComputed,
+	createMemo,
+	createSignal,
+	on,
+	type Accessor,
+	type JSX,
+} from 'solid-js'
+import type { TToastsItemType } from '@soldy-ui/core'
 import {
 	COLLECTION_ITEMS,
 	COLLECTION_MANY_ITEMS,
@@ -6,6 +16,9 @@ import {
 	TABLE_MANY_ROWS,
 	TABLE_ROWS,
 	TABLE_SCROLL_ROWS,
+	TOASTS_ITEM_TYPES,
+	TOAST_SAVING,
+	toastSample,
 } from '@soldy-ui/playground-shared'
 import type {
 	DescriptorSlots,
@@ -17,7 +30,9 @@ import {
 	Accordion,
 	Button,
 	CheckBox,
+	Dialog,
 	DragAndDrop,
+	Drawer,
 	Field,
 	Icon,
 	Input,
@@ -38,9 +53,12 @@ import {
 	Table,
 	Tabs,
 	Textarea,
+	Toasts,
 	Tooltip,
 	Virtual,
 	roleIcon,
+	useToasts,
+	type TToastRender,
 } from '@soldy-ui/solid'
 
 /** Пропсы превью: пропы строки, `ctrl` с экземпляром ядра и колбэки событий хоста. */
@@ -156,6 +174,163 @@ const menuItems = () => (
 	</>
 )
 
+/**
+ * Открытость окна и выезжающей панели на стенде — своё состояние превью, как
+ * `v-model:visible` у Vue и `useShown` у React (это код стенда, а не компонент
+ * библиотеки): кнопка открывает, крестик, Escape и подложка закрывают через
+ * `onChangeVisible`. Строка `visible` задаёт его снаружи — своё состояние идёт
+ * за ней, только когда она сменилась (мемо строки сверяет значение), а не на
+ * каждую смену пропсов превью. С экземпляром ядра (вторая колонка) путь тот
+ * же: запись в `visible` инстанса доходит сюда `onChangeVisible`. Колбэк
+ * журнала страницы (`onChangeVisible` из пропсов) зовётся вслед за своим, а не
+ * затирается им.
+ */
+function useShown(bind: Accessor<TPreviewProps>) {
+	const row = createMemo(() => bind().visible === true)
+	const [shown, setShown] = createSignal(row())
+
+	createComputed(on(row, (value) => setShown(value), { defer: true }))
+
+	return {
+		shown,
+		setShown: (value: boolean) => setShown(value),
+		onChangeVisible: (value: boolean) => {
+			setShown(value)
+
+			const journal = bind().onChangeVisible
+
+			if (typeof journal === 'function') journal(value)
+		},
+	}
+}
+
+/**
+ * Окно на стенде открывает кнопка: закрытое оно спрятано, а открытое
+ * накрывает страницу подложкой, и показывать его сразу было бы нечестно по
+ * отношению к остальной странице. Кнопка — первой в ячейке, «Отмена» — в
+ * подвале: по ним окно колонки открывает и закрывает дымовая проверка стенда.
+ */
+function DialogPreview(props: { bind: Accessor<TPreviewProps> }): JSX.Element {
+	const { shown, setShown, onChangeVisible } = useShown(props.bind)
+
+	return (
+		<>
+			<Button text="Открыть окно" onClick={() => setShown(true)} />
+			<Dialog
+				{...props.bind()}
+				visible={shown()}
+				onChangeVisible={onChangeVisible}
+				title="Настройки"
+				footer={
+					<>
+						<Button text="Отмена" onClick={() => setShown(false)} />
+						<Button text="Сохранить" onClick={() => setShown(false)} />
+					</>
+				}
+			>
+				<p style={{ margin: '0 0 8px' }}>Произвольное содержимое: текст, поля, кнопки</p>
+				<Input placeholder="Имя" />
+			</Dialog>
+		</>
+	)
+}
+
+/**
+ * Выезжающую панель на стенде тоже открывает кнопка — по той же причине, что
+ * окно, и на том же своём состоянии (`useShown`).
+ *
+ * Кнопка и панель лежат в своей коробке с `position: relative`: с
+ * `contained` панель не телепортируется, а встаёт в ближайшем
+ * позиционированном предке, и строка `contained` показывает её в коробке
+ * превью, а не у края всей страницы.
+ */
+function DrawerPreview(props: { bind: Accessor<TPreviewProps> }): JSX.Element {
+	const { shown, setShown, onChangeVisible } = useShown(props.bind)
+
+	return (
+		<div
+			style={{
+				position: 'relative',
+				width: '100%',
+				'min-height': '240px',
+				overflow: 'hidden',
+			}}
+		>
+			<Button text="Открыть панель" onClick={() => setShown(true)} />
+			<Drawer
+				{...props.bind()}
+				visible={shown()}
+				onChangeVisible={onChangeVisible}
+				title="Фильтры"
+				footer={
+					<>
+						<Button text="Сбросить" onClick={() => setShown(false)} />
+						<Button text="Применить" onClick={() => setShown(false)} />
+					</>
+				}
+			>
+				<p style={{ margin: '0 0 8px' }}>Произвольное содержимое: текст, поля, кнопки</p>
+				<Input placeholder="Поиск" />
+			</Drawer>
+		</div>
+	)
+}
+
+/** Своё содержимое тоста — кнопка «Отменить»: тост приходит ей пропом и закрывается ею. */
+const ToastUndo: TToastRender = (props) => (
+	<Button text="Отменить" onClick={() => props.toast.close()} />
+)
+
+/**
+ * Тосты приходят из кода, а не из разметки: кнопки внутри менеджера берут API
+ * (`useToasts()`) и показывают тост. Что сообщает тост, — образцы стенда, одни
+ * на все хосты (`toastSample`), своё содержимое к ним — кнопка «Отменить»
+ * этого хоста. Текст начинается с номера: в стопке видно, какой тост где.
+ *
+ * Кнопка — на обычное сообщение и на каждый вид (`TOASTS_ITEM_TYPES`): тост
+ * показывает значок своего вида. Последняя — ожидание: «Сохраняем…» с кольцом
+ * на месте значка сам не закрывается, а через пару секунд тот же тост сообщает
+ * успех. Ряд кнопок — с переносом: в ячейку витрины шесть кнопок одной
+ * строкой не встают.
+ */
+function ToastsTrigger(): JSX.Element {
+	const { show } = useToasts()
+	let count = 0
+
+	const notify = (type?: TToastsItemType) => {
+		const sample = toastSample(type, ToastUndo)
+
+		count += 1
+		show({ ...sample, text: `${count}. ${sample.text}`, type })
+	}
+
+	// Работа идёт — тост ждёт; кончилась — тот же тост сообщает итог
+	const save = () => {
+		count += 1
+
+		const toast = show({ text: `${count}. Сохраняем…`, loading: true })
+		const done = `${count}. Сохранено`
+
+		setTimeout(() => {
+			if (!toast) return
+
+			toast.loading = false
+			toast.type = 'success'
+			toast.text = done
+		}, TOAST_SAVING)
+	}
+
+	return (
+		<div style={{ display: 'flex', 'flex-wrap': 'wrap', gap: '8px' }}>
+			<Button text="обычное" onClick={() => notify()} />
+			<For each={TOASTS_ITEM_TYPES}>
+				{(type) => <Button text={type} onClick={() => notify(type)} />}
+			</For>
+			<Button text="загрузка → готово" onClick={save} />
+		</div>
+	)
+}
+
 export const PREVIEWS: Record<string, TPreview> = {
 	// Подпись — проп `text` из пропсов превью, а не слот: заданный слот
 	// перекрывает проп, и строка `text` не меняла бы ничего видимого
@@ -263,6 +438,21 @@ export const PREVIEWS: Record<string, TPreview> = {
 		>
 			Короткое пояснение к кнопке
 		</Tooltip>
+	),
+
+	// Кнопка открывает окно, окно — на своём состоянии (см. `DialogPreview`)
+	dialog: (bind) => <DialogPreview bind={bind} />,
+
+	// Кнопка открывает панель, панель — на своём состоянии (см. `DrawerPreview`)
+	drawer: (bind) => <DrawerPreview bind={bind} />,
+
+	// Менеджер оборачивает кнопки, которые показывают тосты (см.
+	// `ToastsTrigger`). Регион с тостами — телепортом у края окна, вне ячейки
+	// превью
+	toasts: (bind) => (
+		<Toasts {...bind()}>
+			<ToastsTrigger />
+		</Toasts>
 	),
 
 	// Триггер — Button, связку с меню и вид «нажата» он берёт из scope слота и

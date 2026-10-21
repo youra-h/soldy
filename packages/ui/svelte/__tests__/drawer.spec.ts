@@ -88,11 +88,13 @@ async function open(props: DrawerProps): Promise<void> {
 }
 
 describe('разметка', () => {
+	// Телепорт кладёт их в свою обёртку: место — по `contains`, а не по родителю
 	it('поверх страницы: подложка и панель телепортированы соседями, подложка раньше', async () => {
 		await render()
 
-		expect(panel().parentElement).toBe(document.body)
-		expect(backdrop().parentElement).toBe(document.body)
+		expect(document.body.contains(panel())).toBe(true)
+		expect(node('.so-test-host').contains(panel())).toBe(false)
+		expect(backdrop().parentElement).toBe(panel().parentElement)
 		expect(backdrop().nextElementSibling).toBe(panel())
 	})
 
@@ -106,30 +108,41 @@ describe('разметка', () => {
 
 		const host = node('.so-test-host')
 
-		expect(panel().parentElement).toBe(host)
-		expect(backdrop().parentElement).toBe(host)
+		expect(host.contains(panel())).toBe(true)
+		expect(elsewhere.contains(panel())).toBe(false)
+		expect(backdrop().parentElement).toBe(panel().parentElement)
 		expect(backdrop().nextElementSibling).toBe(panel())
 		expect(panel().dataset.contained).toBe('true')
 		expect(backdrop().dataset.contained).toBe('true')
 	})
 
-	it('contained на лету переносит панель из body в контейнер и обратно', async () => {
+	/**
+	 * Телепорт двигает свою обёртку, а не монтирует панель заново: в контейнере
+	 * и обратно в `body` — тот же узел.
+	 */
+	it('contained на лету переносит панель из body в контейнер и обратно тем же узлом', async () => {
 		const drawer = new TDrawer()
 
 		await render({ ctrl: drawer })
 
-		expect(panel().parentElement).toBe(document.body)
+		const first = panel()
+		const host = node('.so-test-host')
+
+		expect(host.contains(first)).toBe(false)
 
 		drawer.contained = true
 		flushSync()
 
-		expect(panel().parentElement).toBe(node('.so-test-host'))
+		expect(panel()).toBe(first)
+		expect(host.contains(first)).toBe(true)
 		expect(document.querySelectorAll('.so-drawer')).toHaveLength(1)
 
 		drawer.contained = false
 		flushSync()
 
-		expect(panel().parentElement).toBe(document.body)
+		expect(panel()).toBe(first)
+		expect(host.contains(first)).toBe(false)
+		expect(document.body.contains(first)).toBe(true)
 		expect(document.querySelectorAll('.so-drawer')).toHaveLength(1)
 	})
 
@@ -371,11 +384,11 @@ describe('фон под панелью', () => {
 	})
 
 	/**
-	 * Своё у Svelte: телепорт не переносит нарисованные узлы, а рисует панель
-	 * заново на новом месте (`Teleport`), и новый корень замок получает с его
-	 * `ready` — кадром позже. У Vue узел тот же, и замок встаёт сразу.
+	 * Телепорт переносит панель тем же узлом, как у Vue, и замок держит не
+	 * узел, а производное ядра `locksScroll` — открыта и не `contained`:
+	 * отпускает он кадром позже, когда корень доиграл переходы, а ставит сразу.
 	 */
-	it('contained на открытой панели снимает замок, а обратно — ставит', async () => {
+	it('contained на открытой панели снимает замок, а обратно — сразу ставит', async () => {
 		const drawer = new TDrawer()
 		const { props } = await render({ ctrl: drawer })
 
@@ -383,14 +396,13 @@ describe('фон под панелью', () => {
 
 		expect(document.documentElement.style.overflow).toBe('hidden')
 
-		// Замок отпускается кадром позже, когда корень доиграл переходы
 		drawer.contained = true
 		await settle()
 
 		expect(document.documentElement.style.overflow).toBe('')
 
 		drawer.contained = false
-		await settle()
+		flushSync()
 
 		expect(document.documentElement.style.overflow).toBe('hidden')
 	})

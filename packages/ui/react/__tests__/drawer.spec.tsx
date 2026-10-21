@@ -9,9 +9,10 @@
  * панель стоит. Сценарии — те же, что у Vue (`ui/vue/__tests__/drawer.spec.ts`).
  *
  * Открытость — состояние родителя: смена приходит `onChangeVisible`, как
- * `v-model:visible` у Vue. Своё у React — смена `contained` на лету: портал и
- * место — разные позиции дерева, и панель рисуется заново, новым узлом,
- * который плагины получают кадром позже, — и портал, которого на сервере нет.
+ * `v-model:visible` у Vue. Своё у React — портал, которого на сервере нет.
+ * Смена `contained` на лету переносит панель тем же узлом: телепорт держит
+ * подложку и панель в своей обёртке и двигает её между целью и местом, —
+ * поэтому место проверяется по `contains`, а не по родителю.
  *
  * Раскладку, анимацию темы и настоящий указатель jsdom не выполняет — край,
  * размер, контейнер и жест мышью — `playground/vue/browser/drawer.spec.ts`.
@@ -137,8 +138,9 @@ describe('разметка', () => {
 	it('поверх страницы: подложка и панель телепортированы соседями, подложка раньше', async () => {
 		await render()
 
-		expect(panel().parentElement).toBe(document.body)
-		expect(backdrop().parentElement).toBe(document.body)
+		expect(document.body.contains(panel())).toBe(true)
+		expect(host().contains(panel())).toBe(false)
+		expect(backdrop().parentElement).toBe(panel().parentElement)
 		expect(backdrop().nextElementSibling).toBe(panel())
 	})
 
@@ -150,36 +152,42 @@ describe('разметка', () => {
 
 		await render({ props: { contained: true, target: '#so-test-elsewhere' } })
 
-		expect(panel().parentElement).toBe(host())
-		expect(backdrop().parentElement).toBe(host())
+		expect(host().contains(panel())).toBe(true)
+		expect(elsewhere.contains(panel())).toBe(false)
+		expect(backdrop().parentElement).toBe(panel().parentElement)
 		expect(backdrop().nextElementSibling).toBe(panel())
 		expect(panel().dataset.contained).toBe('true')
 		expect(backdrop().dataset.contained).toBe('true')
 	})
 
 	/**
-	 * Портал и место — разные позиции дерева React: панель рисуется заново,
-	 * новым узлом, — а инстанс и его открытость остаются.
+	 * Телепорт двигает свою обёртку, а не рисует панель заново: в контейнере и
+	 * обратно в `body` — тот же узел, и инстанс с его открытостью те же.
 	 */
-	it('contained на лету рисует панель в контейнере и обратно в body', async () => {
+	it('contained на лету переносит панель в контейнер и обратно в body тем же узлом', async () => {
 		const drawer = new TDrawer()
 
 		await render({ props: { ctrl: drawer } })
 
-		expect(panel().parentElement).toBe(document.body)
+		const first = panel()
+
+		expect(host().contains(first)).toBe(false)
 
 		act(() => {
 			drawer.contained = true
 		})
 
-		expect(panel().parentElement).toBe(host())
+		expect(panel()).toBe(first)
+		expect(host().contains(first)).toBe(true)
 		expect(document.querySelectorAll('.so-drawer')).toHaveLength(1)
 
 		act(() => {
 			drawer.contained = false
 		})
 
-		expect(panel().parentElement).toBe(document.body)
+		expect(panel()).toBe(first)
+		expect(host().contains(first)).toBe(false)
+		expect(document.body.contains(first)).toBe(true)
 		expect(document.querySelectorAll('.so-drawer')).toHaveLength(1)
 	})
 
@@ -424,11 +432,11 @@ describe('фон под панелью', () => {
 	})
 
 	/**
-	 * Панель на новом месте — новый узел (см. шапку файла): замок, который
-	 * держал прежний, отпущен с его снятием, а новый узел плагины получают
-	 * кадром позже — и замок встаёт снова.
+	 * Телепорт переносит панель тем же узлом, как у Vue, и замок держит не
+	 * узел, а производное ядра `locksScroll` — открыта и не `contained`:
+	 * отпускает он кадром позже, когда корень доиграл переходы, а ставит сразу.
 	 */
-	it('contained на открытой панели снимает замок, а обратно — ставит', async () => {
+	it('contained на открытой панели снимает замок, а обратно — сразу ставит', async () => {
 		const drawer = new TDrawer()
 		const shown = await render({ props: { ctrl: drawer } })
 
@@ -446,7 +454,6 @@ describe('фон под панелью', () => {
 		act(() => {
 			drawer.contained = false
 		})
-		await nextFrame()
 
 		expect(document.documentElement.style.overflow).toBe('hidden')
 	})

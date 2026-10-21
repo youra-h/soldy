@@ -29,7 +29,7 @@
 import { describe, it, expect } from 'vitest'
 import { For, type JSX } from 'solid-js'
 import { renderToString } from 'solid-js/web'
-import { createEngineListBox, type TTableColumnSource } from '@soldy-ui/core'
+import { createEngineListBox, createEngineToasts, type TTableColumnSource } from '@soldy-ui/core'
 import { ruRU } from '@soldy-ui/plugins'
 import {
 	Accordion,
@@ -40,7 +40,9 @@ import {
 	RadioGroup,
 	Table,
 	Tabs,
+	Toasts,
 	Virtual,
+	useToasts,
 	type AccordionItemProps,
 	type RadioGroupItemProps,
 	type TabsItemProps,
@@ -246,6 +248,56 @@ describe('лифт · серверный рендер', () => {
 
 		expect(left.extensions.batch.items.map((item) => item.value)).toEqual(['a', 'b'])
 		expect(right.extensions.batch.items.map((item) => item.value)).toEqual(['x'])
+	})
+})
+
+/**
+ * Менеджер тостов на сервере: приложение и регион — в слое лифта менеджера, и
+ * слой отдаёт `Elevate` — `Provider`, — а не запись в владельца, которого у
+ * компонента на сервере нет. Приложение берёт API из слоя, а список под
+ * менеджером — свою коллекцию: ближайшая коллекция над его пунктами — он сам.
+ * Регион телепортирован, и на сервере его нет.
+ */
+describe('Toasts · серверный рендер', () => {
+	it('useToasts() под менеджером берёт API его движка; приложение — без региона', () => {
+		const engine = createEngineToasts()
+		const taken: { show?: unknown } = {}
+
+		function App(): JSX.Element {
+			taken.show = useToasts().show
+
+			return <main>Приложение</main>
+		}
+
+		const body = render(() => (
+			<Toasts engine={engine}>
+				<App />
+			</Toasts>
+		))
+
+		expect(taken.show).toBe(engine.extensions.toasts.show)
+		expect(markup(body)).toBe('<main>Приложение</main>')
+	})
+
+	it('ListBox под менеджером — со своими элементами, тостами они не становятся', () => {
+		const engine = createEngineToasts()
+		const list = createEngineListBox()
+		const body = render(() => (
+			<Toasts engine={engine}>
+				<ListBox engine={list}>
+					<ListBox.Item value="a" text="A" />
+					<ListBox.Item value="b" text="B" selected />
+				</ListBox>
+			</Toasts>
+		))
+
+		// Рендер снимает корень следующей задачей: движки ещё держат своих
+		expect(list.extensions.batch.items.map((item) => item.value)).toEqual(['a', 'b'])
+		expect(engine.extensions.batch.items).toEqual([])
+		expect(attributeOf(tagsWith(body, 'aria-selected'), 'aria-selected')).toEqual([
+			'false',
+			'true',
+		])
 	})
 })
 

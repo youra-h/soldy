@@ -1669,7 +1669,7 @@ There is no `adapter/static/`: React takes prop names from the descriptor types,
 - Events: `binding.events.listen` in `useLayoutEffect` (so rAF `ready` from TElementPlugin isn't missed); the receiver is `TEventCallbacks.sink` (`adapter/runtime/event-callbacks.class.ts`), an arrow field of an object that holds the latest render's `props`, and the callback is read from them. Not a closure in the hook body: React keeps the cleanup of the first commit for the whole mount, and a closure holds the whole scope of its render with that render's props (AGENTS.md, «Адаптер обязан адаптировать»)
 - Корень раскладывает `toRootProps` в одном порядке для всех компонентов: наборы ядра (`attrs`, `aria`, `dataset` — в порядке шаблона Vue), поверх — атрибуты снаружи, как у Vue, класс и стиль — `toRootLayout`, `ref` адаптера — последним: в React 19 `ref` — обычный проп, и `ref` потребителя из атрибутов выбил бы привязку к `TElementPlugin` (AGENTS.md, «Третий набор: `attrs`»). Стиль идёт слоями: выход плагина раскладки (`layout_styles`), поверх него стиль-выход самого компонента — стиль, который считает ядро (`fractionStyle` у ProgressSpinner); имя выхода у каждого компонента своё, и его называет разметка последним аргументом `toRootProps`, как наборы ядра, — затем место элемента коллекции (`order`), стиль потребителя и `display: none` скрытого корня. Имена по-CSS (`z-index`) раскладка переводит в camelCase, пользовательские свойства (`--*`) ставит как есть
 - Collections (ListBox, Tabs, Accordion, RadioGroup, Table, Pagination): `useSetupListBox` собирает два контекста одной фабрикой — `ListBoxDescriptor` и `ListBoxCollectionDescriptor` на общем наборе, с `TCollectionExtension` и `TDragAndDropCollectionExtension` на лифте компонента; разметка отдаёт слой детям через `Elevate`. Элемент (`ListBox.Item`) собирает свой контекст и фасада с `TCollectionItemExtension` и входит в коллекцию, когда хук принимает контексты при коммите, а не на рендере; пересобранный владелец — новый движок, и элемент пересобирается, потому что сменилось прочитанное через лифт. Цена: серверная разметка и первый кадр элемента из разметки — без того, что пишет ему коллекция; список из данных сервер рисует полностью (AGENTS.md, «Элемент входит в коллекцию при монтировании, а не при сборке»). Tabs и Accordion собраны тем же рецептом; `Elevate` у Tabs оборачивает и список, и слот `content`: панель (`Tabs.Content`) собирает свой контекст и фасада с `TTabsContentBindingExtension` на лифте компонента и находит таб разметки, когда хук принимает её контексты, — табы, стоящие в документе раньше, к этому времени уже в коллекции. Крестик таба закрывает по `onActionClick` — нативному клику своего `TActionPlugin` — и гасит всплытие у нативного события: синтетический `stopPropagation` React не остановил бы нативные слушатели `TActionPlugin` на корнях таба и набора, и нажатие по крестику дало бы им `action:press`. RadioGroup — тот же рецепт без drag-and-drop: радио одной группы стоят где угодно в разметке, поэтому и места в коллекции (`order`) у корня радио нет: из фасада `useSetupRadioGroupItem` отдаёт разметке только отметку (`active`). Отметку радио проводит поле адаптера (`NativeInput`), выбор пользователя приходит его `onChange` — как `@change` у Vue. React выводит `onChange` радио из клика и сверяет его с отметкой, записанной в узел, а с соседа отметку снимает браузер без записи свойства, — поэтому поле пишет отметку в узел на каждую смену состояния ядра, даже совпавшую с узлом (текст — только разошедшийся: запись того же текста сбросила бы каретку). Table — тот же рецепт с окном `Virtual` и без drag-and-drop: строки (`Table.Row`) входят в коллекцию лифтом при коммите, заголовок колонки (`Table.Column`) — один контекст над экземпляром колонки, без фасада. Чекбоксы колонки выбора — экземпляры, которые держит таблица, и ключ CheckBox над ними — сам экземпляр: пересобранная строка (StrictMode, `<Activity>`) отпускает чекбокс и берёт у таблицы новый, пересобранная таблица без движка снаружи — новый «выбрать все», а компонент собирается над `ctrl` один раз за монтирование. Pagination — тот же рецепт без drag-and-drop и без элементов разметки: страницы окна кладёт в коллекцию расширение пагинации ещё при сборке, поэтому окно и текущая есть и в серверной разметке, а разметка рисует по внутренней части `PaginationItem` на страницу окна (`cells`); текущей страницу делает активация коллекции по нажатию, как таб
-- Overlays (Popover, Tooltip, Dialog, Drawer): разметка — шаблоны Vue один к одному, поведение — плагины слоя оверлея. Popover и Tooltip отдают своему Frame якорем корень значением рендера — `useRootElement` в `useSetupPopover` и `useSetupTooltip`, как `:anchor_anchor="rootElement"` у Vue: на сервере и до коммита якоря нет, после коммита и после смены тега — свой корень. Dialog и Drawer рисуют подложку и панель соседями в `Teleport` адаптера; стиль слоя и скрытие подложки кладёт та же раскладка корня (`toRootLayout`), что и панели, а `ref` потребителя получает панель от ref корня сам — аналога `exposeRoot` у Vue не нужно. Портал и место — разные позиции дерева React, поэтому смена `contained` на лету (Drawer, Frame, а с ним Popover) рисует панель заново, новым узлом: инстанс и открытость остаются, новый корень плагины получают кадром позже, а содержимое панели монтируется заново
+- Overlays (Popover, Tooltip, Dialog, Drawer): разметка — шаблоны Vue один к одному, поведение — плагины слоя оверлея. Popover и Tooltip отдают своему Frame якорем корень значением рендера — `useRootElement` в `useSetupPopover` и `useSetupTooltip`, как `:anchor_anchor="rootElement"` у Vue: на сервере и до коммита якоря нет, после коммита и после смены тега — свой корень. Dialog и Drawer рисуют подложку и панель соседями в `Teleport` адаптера; стиль слоя и скрытие подложки кладёт та же раскладка корня (`toRootLayout`), что и панели, а `ref` потребителя получает панель от ref корня сам — аналога `exposeRoot` у Vue не нужно. Портал `Teleport` рисует в свою обёртку — обычный `div` со стилем `display: contents`, один контейнер на всё монтирование, — а Teleport двигает её: в цель, с `contained` — в узел места (такой же `div`, его React рисует перед порталом), без цели — вон из документа. Поэтому смена `contained` и цели (Drawer, Frame, а с ним Popover) переносит панель тем же узлом, с содержимым; один раз панель собирается заново, только если начала на месте после серверной разметки и впервые уходит с места (docs/agents/overlay.md, «Телепорт — у каждого адаптера свой»)
 
 ### Theming (`@soldy-ui/theme-oren`) — foundation REMOVED
 
@@ -2243,7 +2243,9 @@ Svelte 5 на рунах. Структура зеркалит React, потом�
   `rootStyle` (`root-style.svelte.ts`) — attachment стиля корня по свойствам;
   `fieldText` — attachment текста поля, который пишет текст в узел, только
   когда он разошёлся с узлом;
-  `Teleport` — содержимое в цели отдельным корнем `mount` с контекстами места.
+  `Teleport` — содержимое отдельным корнем `mount` с контекстами места в
+  своей обёртке (`div` со стилем `display: contents`), которую он двигает в
+  цель, в узел места с `disabled` и вон из документа без цели.
 - `adapter/locale/` — `LocaleProvider`: свой `TLocaleSource` детям через
   `setContext`, смена пропа — в тот же источник.
 - `adapter/elevator/` — `TSvelteElevator` через `setContext`/`getContext`
@@ -2336,16 +2338,16 @@ Svelte 5 на рунах. Структура зеркалит React, потом�
   входят только в браузере, после гидратации, и сервер рисует такой Select с
   пустым полем. Select из данных (`items`, `engine`) сервер рисует с текстом
   выбранного, в `multiple` — с тегами: его опции в коллекции с самой сборки.
-- `Teleport` нарисованные узлы не переносит, а рисует содержимое заново на
-  новом месте: смена `contained` или цели у Frame, поповера и выезжающей
-  панели пересобирает панель вместе с её содержимым, а новый корень
-  `TElementPlugin` объявляет кадром позже — замок прокрутки выезжающей панели,
-  вернувшейся из контейнера, встаёт с ним. У Vue узел тот же, и замок встаёт
-  сразу.
+- Svelte не говорит компоненту, гидратация ли это, поэтому панель с
+  `contained` с первой отрисовки `Teleport` рисует прямо на месте, как сервер,
+  и при первом уходе с места она один раз собирается заново. Дальше смена
+  `contained` и цели у Frame, поповера и выезжающей панели переносит панель
+  тем же узлом, как у Vue (docs/agents/overlay.md, «Телепорт — у каждого
+  адаптера свой»).
 
 ## Layer 8c: Solid Adapter (`packages/ui/solid/src`)
 
-### ✅ IMPLEMENTED (Component / ComponentView / Stylable / Control / Interactive / ValueControl / InputControl / Textable / Button / Icon / Label / Frame / Popover / Tooltip / Menu / ProgressSpinner / ProgressLinear / Skeleton / Input / CheckBox / Switch / Slider / Rating / RadioGroup / ListBox / Tabs / Accordion / Pagination / Scroller / Table / Virtual / DragAndDrop)
+### ✅ IMPLEMENTED (Component / ComponentView / Stylable / Control / Interactive / ValueControl / InputControl / Textable / Button / Icon / Label / Field / Frame / Popover / Tooltip / Dialog / Drawer / Toasts / Menu / ProgressSpinner / ProgressLinear / Skeleton / Input / NumberInput / Textarea / CheckBox / Switch / Slider / Rating / RadioGroup / ListBox / Tabs / Accordion / Pagination / Scroller / Table / Virtual / DragAndDrop)
 
 Структура зеркалит React — JSX и колбэк-пропы делают их почти близнецами, —
 а механика ближе к Vue и Svelte: тело компонента выполняется один раз, и
@@ -2403,6 +2405,12 @@ Svelte 5 на рунах. Структура зеркалит React, потом�
   значение — слой (`TElevatorLayer`, своё поверх слоя предка, как у Angular).
   `useElevator()` отдаёт сборке фабрику лифтов (`TSolidElevator`: `up()` —
   слой предка, `down()` — свой) и слой компонента, детям его отдаёт `Elevate`.
+- `adapter/toasts/` — API тостов: `useToasts()` берёт его лифтом менеджера
+  (`TOASTS_ELEVATOR`) — `up()` из слоя, который компонент видит в теле
+  (`useElevator`), — в теле компонента под `<Toasts>`, без менеджера — ошибка;
+  своё содержимое тоста (`render`) — компонент Solid с пропом `toast`
+  (`TToastRender`), разметка рисует его `Dynamic` после проверки
+  `isToastRender` — компонент Solid это функция.
 
 ### Solid-специфика
 
@@ -2503,6 +2511,29 @@ Svelte 5 на рунах. Структура зеркалит React, потом�
   записи `sections` новые на каждую смену, — `<For>` по пунктам секции и
   подменю из данных — `Show` по записи (`keyed`): запись у пункта устойчива,
   а `ctrl` и `engine` подменю читает при сборке.
+- **Окно и выезжающая панель — `Teleport` адаптера, как Frame.** Подложка и
+  панель — два узла одного содержимого телепорта: в цели они соседи в обёртке
+  портала, подложка раньше. Её раскладывает та же `createRootProps`, что
+  панель, — класс, стиль слоя `layout_backdropStyles`, скрытие по `visible` и
+  набор `backdropDataset`. Содержимое `Teleport` разворачивает один раз, и
+  смена `contained` у панели и цели у обоих переносит их теми же узлами, как
+  у Vue: набранное в поле остаётся, а замок прокрутки панели, вернувшейся из
+  контейнера, встаёт сразу. `tabindex="-1"` панели стоит до спреда раскладки:
+  набор ядра и атрибуты потребителя его перекрывают.
+- **Toasts — приложение и регион в одном слое лифта.** `Elevate` менеджера
+  стоит вокруг обоих: приложение берёт из слоя API (`useToasts()`), а тосты в
+  регионе — движок, хотя регион телепортирован: мемо содержимого `Teleport`
+  собирается под владельцем места, где тот стоит. Так же API находит
+  компонент в окне под менеджером. Приложение — вне `Show` региона: оно
+  рисуется и без него. Тосты — `<For>` по `shown`: экземпляры, и перестановка
+  переносит их узлы. Состояние двух контекстов тоста несёт `order` фасада, и
+  раскладке корня оно отдаётся поимённо (`classes`, `visible`), а глубина —
+  стиль-выходом `--so-toasts-depth`: целиком раскладка поставила бы тосту
+  CSS-свойство `order`. Слоты тоста со scope (текст, значок) менеджер
+  пробрасывает функцией (`relaySlot`), без scope (содержимое, иконка
+  крестика) — рисует сам (`renderSlot`); тост разворачивает их
+  `resolveSlot`, и пустое, что вернул слот менеджера, уступает место своему —
+  как у Vue, а не как у Svelte.
 - **Лифт — слой значений в контексте, детям — `Elevate` (`Provider`).**
   Значение контекста Solid отдаёт только через `Provider`, а своего владельца
   у компонента в продакшене и на сервере нет — `createComponent` зовёт его
