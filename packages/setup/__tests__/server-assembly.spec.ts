@@ -34,7 +34,11 @@ import {
 	TTabsActiveTabPlugin,
 	TTextareaAutoresizePlugin,
 } from '@soldy-ui/plugins'
+import { FRAME_LAYER_ATTRIBUTE } from '@soldy-ui/core'
 import {
+	DialogDescriptor,
+	DrawerDescriptor,
+	FrameDescriptor,
 	ListBoxCollectionDescriptor,
 	ListBoxCollectionItemDescriptor,
 	ListBoxDescriptor,
@@ -46,6 +50,8 @@ import {
 	TabsDescriptor,
 	TabsItemDescriptor,
 	TextareaDescriptor,
+	ToastsCollectionDescriptor,
+	ToastsDescriptor,
 } from '../content/descriptors'
 import {
 	TCollectionExtension,
@@ -355,5 +361,79 @@ describe('сторож: сборка Tabs без узла и без requestAnima
 
 		expect(moved).toEqual(['c'])
 		expect(removed).toEqual(['c', 'b', 'a'])
+	})
+})
+
+/**
+ * Слой, открытый уже в разметке сервера: панель с `contained`, окно, регион
+ * тостов. Место в стеке слой берёт у счётчика процесса, и у сервера счётчик
+ * свой: номер, попавший в разметку, браузер при гидратации нарисовал бы
+ * другим. Номер открывает узел (`ready`), а на сервере узла нет — ни у панели,
+ * ни у подложки номера в разметке нет, и `z-index` раскладки — 0, как в первой
+ * отрисовке браузера.
+ */
+describe('сторож: слой, открытый на сервере, — без номера слоя', () => {
+	/** Открытые слои — так, как их собирает адаптер по разметке страницы. */
+	const frame = () =>
+		createAdapterContext(FrameDescriptor(), { props: { visible: true, contained: true } })
+	const drawer = () =>
+		createAdapterContext(DrawerDescriptor(), { props: { visible: true, contained: true } })
+	const dialog = () => createAdapterContext(DialogDescriptor(), { props: { visible: true } })
+
+	it.each([
+		['Frame с contained', frame],
+		['Drawer с contained', drawer],
+		['Dialog', dialog],
+	] as const)('%s: zIndex 0, data-layer нет, z-index раскладки — 0', (_, assemble) => {
+		const layer = assemble()
+		const { exchange, unmount } = accept(layer)
+		const state = exchange.state.getSnapshot()
+
+		expect(layer.instance.visible).toBe(true)
+		expect(layer.instance.zIndex).toBe(0)
+		expect(state.dataset).toMatchObject({ 'data-open': 'true' })
+		expect(state.dataset).not.toHaveProperty(FRAME_LAYER_ATTRIBUTE)
+		expect(state.layout_styles).toMatchObject({ 'z-index': 0 })
+
+		unmount()
+	})
+
+	it.each([
+		['Drawer с contained', drawer],
+		['Dialog', dialog],
+	] as const)('%s: у подложки тоже — номера нет, z-index 0', (_, assemble) => {
+		const layer = assemble()
+		const { exchange, unmount } = accept(layer)
+		const state = exchange.state.getSnapshot()
+
+		expect(state.backdropDataset).toMatchObject({ 'data-open': 'true' })
+		expect(state.backdropDataset).not.toHaveProperty(FRAME_LAYER_ATTRIBUTE)
+		expect(state.layout_backdropStyles).toEqual({ 'z-index': 0 })
+
+		unmount()
+	})
+
+	/** Регион виден всегда, а каждый новый тост поднимает его в стеке. */
+	it('Toasts с тостом: место поднято, номера нет, z-index раскладки — 0', () => {
+		const { factory: elevator } = createElevatorFactory()
+		const toasts = createAdapterContext(ToastsDescriptor(), { props: {} })
+		const own = accept(toasts)
+		const facade = createAdapterContext(
+			ToastsCollectionDescriptor(),
+			{ props: {}, options: { owner: toasts.instance } },
+			{ bundle: toasts.bundle },
+		).use(TCollectionExtension, { elevator })
+		const accepted = [own, accept(facade)]
+
+		facade.instance.engine.extensions.toasts.show('Сохранено')
+
+		const state = own.exchange.state.getSnapshot()
+
+		expect(facade.instance.engine.extensions.batch.shown).toHaveLength(1)
+		expect(toasts.instance.zIndex).toBe(0)
+		expect(state.dataset).not.toHaveProperty(FRAME_LAYER_ATTRIBUTE)
+		expect(state.layout_styles).toEqual({ 'z-index': 0 })
+
+		unmountAll(accepted)
 	})
 })
