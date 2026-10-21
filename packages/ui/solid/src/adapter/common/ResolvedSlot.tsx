@@ -50,8 +50,7 @@ type TScopedSlotProps<TScope extends object> = TResolvedSlotBase & {
 }
 
 export type TResolvedSlotProps<TScope extends object = object> =
-	| TPlainSlotProps
-	| TScopedSlotProps<TScope>
+	TPlainSlotProps | TScopedSlotProps<TScope>
 
 export function ResolvedSlot<TScope extends object>(
 	props: TResolvedSlotProps<TScope>,

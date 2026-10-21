@@ -87,12 +87,7 @@ export function SelectItem(props: SelectItemProps): JSX.Element {
 
 	return (
 		<Show when={state.rendered}>
-			<Dynamic
-				{...root()}
-				component={rootTag(state.tag)}
-				ref={binding.ref}
-				onClick={choose}
-			>
+			<Dynamic {...root()} component={rootTag(state.tag)} ref={binding.ref} onClick={choose}>
 				<Button
 					embedded="select.row"
 					tag="span"

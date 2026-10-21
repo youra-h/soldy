@@ -198,7 +198,7 @@ come in later releases.
 | Slider          | Slider: a number or a range, set by dragging, with keys or with a screen reader gesture        | *                                  | 0.2.0   |
 | Rating          | Rating with stars: set by click, drag or arrow keys, halves, hover preview, read-only display  | *                                  | 0.2.0   |
 | RadioGroup      | One option out of several: native radio buttons sharing a `name`                               | *                                  | 0.2.0   |
-| Select          | Select field: an input plus a list in an overlay, the Combobox pattern                         | Vue, Svelte                        | 0.2.0   |
+| Select          | Select field: an input plus a list in an overlay, the Combobox pattern                         | Vue, Svelte, Solid                 | 0.2.0   |
 | Calendar        | Month grids: pick a single date, several dates or a range                                      | Vue                                | 0.2.0   |
 | DateInput       | Date and time field typed in parts in the locale's format, selected and copied as a whole      | Vue                                | 0.2.0   |
 | DatePicker      | Date field and a calendar in a panel: a single date or a range                                 | Vue                                | 0.2.0   |
@@ -211,7 +211,7 @@ come in later releases.
 | ListBox         | List with single or multiple selection                                                         | *                                  | 0.2.0   |
 | Table           | Table: columns as data, sorting by column headers, row selection with checkboxes               | *                                  | 0.2.0   |
 | Tabs            | Tabs: a tab list and panels linked by value                                                    | *                                  | 0.2.0   |
-| Tags            | Tag set: close buttons, optional selection                                                     | Vue, Svelte                        | 0.2.0   |
+| Tags            | Tag set: close buttons, optional selection                                                     | Vue, Svelte, Solid                 | 0.2.0   |
 | Accordion       | Sections that expand one at a time or several at once                                          | *                                  | 0.2.0   |
 | Icon            | Icon from the registered pack, by role                                                         | *                                  | 0.2.0   |
 | ProgressLinear  | Linear progress indicator: the share done, or an indeterminate animation while it is unknown   | *                                  | 0.2.0   |

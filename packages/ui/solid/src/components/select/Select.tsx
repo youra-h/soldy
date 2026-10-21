@@ -171,11 +171,7 @@ export function Select(props: SelectProps): JSX.Element {
 			when={itemOf(entry())}
 			keyed
 			fallback={
-				<div
-					class="so-select__filler"
-					aria-hidden="true"
-					style={fillerStyleOf(entry())}
-				/>
+				<div class="so-select__filler" aria-hidden="true" style={fillerStyleOf(entry())} />
 			}
 		>
 			{drawItem}

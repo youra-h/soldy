@@ -760,7 +760,11 @@ describe('вариант тега', () => {
 			const [items, setItems] = createSignal<TagsProps['items']>(VARIANT_ITEMS)
 
 			mount(() => (
-				<Tags variant="brand" items={items()} trackBy={(tag) => Reflect.get(tag, 'value')} />
+				<Tags
+					variant="brand"
+					items={items()}
+					trackBy={(tag) => Reflect.get(tag, 'value')}
+				/>
 			))
 
 			const before = item('A')
@@ -904,7 +908,9 @@ describe('слоты', () => {
 		mount(() => (
 			<Tags
 				items={ITEMS.slice(0, 2)}
-				item-leading={({ item: tag }: TItemScope) => <u class="lead">{String(tag.value)}</u>}
+				item-leading={({ item: tag }: TItemScope) => (
+					<u class="lead">{String(tag.value)}</u>
+				)}
 				item-trailing={({ item: tag }: TItemScope) => (
 					<s class="trail">{String(tag.value)}</s>
 				)}
