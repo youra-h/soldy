@@ -116,14 +116,18 @@
   (`<div is="so-input">`), а селектор — тег ядра первым и голый атрибут за ним:
   `button[so-button], [so-button]` у Button, `span[so-icon], [so-icon]` у
   Icon, `span[so-progress-spinner], [so-progress-spinner]` у ProgressSpinner,
+  `span[so-progress-linear], [so-progress-linear]` у ProgressLinear,
   `div[so-frame], [so-frame]` у Frame, `label[so-label], [so-label]` у Label,
-  `div[so-field], [so-field]` у Field; у полей — `div[so-input], [so-input]`,
+  `div[so-field], [so-field]` у Field, `div[so-scroller], [so-scroller]` у
+  Scroller; у полей — `div[so-input], [so-input]`,
   `div[so-number-input], [so-number-input]`, `div[so-textarea], [so-textarea]`,
-  `span[so-check-box], [so-check-box]`, `span[so-switch], [so-switch]`; у
+  `span[so-check-box], [so-check-box]`, `span[so-switch], [so-switch]`,
+  `span[so-slider], [so-slider]`, `span[so-rating], [so-rating]`; у
   коллекций — владельцы, их элементы и панель таба: `div[so-list-box]`,
   `div[so-list-box-item]`, `div[so-list-box-group]`, `div[so-tabs]`,
   `div[so-tabs-item]`, `div[so-tabs-content]`, `div[so-accordion]`,
-  `div[so-accordion-item]`, `div[so-radio-group]`, `label[so-radio-group-item]`
+  `div[so-accordion-item]`, `div[so-radio-group]`, `label[so-radio-group-item]`,
+  `nav[so-pagination]` и её внутренняя страница `li[so-pagination-item]`
   (у каждого — и голый атрибут); у таблицы — окно `div[so-table], [so-table]` и
   части, которые она рисует сама: заголовок колонки
   `th[so-table-column], [so-table-column]` и строка
@@ -267,18 +271,28 @@
   элемент ложится их сумма, верхний поверх нижних, одной памятью. Две
   раскладки со своей памятью спорили бы за общее имя: снимая своё, одна
   снимала бы и значение другой. Какие наборы база кладёт на корень, задаёт
-  описание корня (`sets`, по умолчанию все три): у поля — `attrs` и
-  `dataset`. Директива на элементе одна, поэтому наборы, которые разметка
-  кладёт на один узел, она получает одним объектом, склеенными в порядке Vue:
-  `aria` и `dataset` строки элемента списка, `inputAttrs`, `aria` и
-  `inputAria` ввода NumberInput, имя и `data-pressed` его кнопки шага
-  (`decrementAria` и `decrementDataset`).
-  Сторожат `attributes.spec.ts` (набор на элементе; набор владельца на
-  `<div so-button>` главнее её роли и `tabindex` с первой отрисовки, смена
-  своего у кнопки его не снимает, снятое владельцем возвращает значение
-  кнопки; порядок записи в раскладчик не важен), `input.spec.ts` (`clearAria`
-  на кнопке очистки рядом с её наборами) и `number-input.spec.ts` (три набора
-  на вводе, `data-pressed` удержания на кнопке шага).
+  описание корня (`sets`, по умолчанию все три): у поля и оценки — `attrs` и
+  `dataset`. Из какого выхода база берёт слой `aria` корня, задаёт оно же
+  (`aria`, по умолчанию сам `aria`): у Slider — `rootAria`
+  (`{ strategy: 'host', aria: 'rootAria' }`), набор корня, который у
+  нескольких ручек делает корень группой с именем ползунка, а у одной пуст, —
+  `aria` ползунка шаблон кладёт на поле ручки из `thumbs`. Директива на
+  элементе одна, поэтому наборы, которые разметка кладёт на один узел, она
+  получает одним объектом, склеенными в порядке Vue: `aria` и `dataset`
+  строки элемента списка, `inputAttrs`, `aria` и `inputAria` ввода
+  NumberInput, имя и `data-pressed` его кнопки шага (`decrementAria` и
+  `decrementDataset`), `tabindex` вьюпорта Scroller и поверх него
+  `viewportAria` — строкой, как атрибут: значение не строкой набор не
+  называет. Сторожат `attributes.spec.ts` (набор на элементе; набор
+  владельца на `<div so-button>` главнее её роли и `tabindex` с первой
+  отрисовки, смена своего у кнопки его не снимает, снятое владельцем
+  возвращает значение кнопки; порядок записи в раскладчик не важен),
+  `input.spec.ts` (`clearAria` на кнопке очистки рядом с её наборами),
+  `number-input.spec.ts` (три набора на вводе, `data-pressed` удержания на
+  кнопке шага), `slider.spec.ts` (у одной ручки корень без роли и имени, у
+  нескольких — группа, и число ручек переводит набор между корнем и полем) и
+  `scroller.spec.ts` (`tabindex` вьюпорта, `viewportAria` потребителя
+  сильнее).
 - **Поле: атрибуты потребителя делятся между корнем и `<input>`**, как у Vue
   и React: класс и стиль — корню, всё остальное, что потребитель написал на
   поле, — `<input>`. Описание корня `control` у Input, NumberInput, Textarea,
