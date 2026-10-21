@@ -1,5 +1,6 @@
 export { bind } from './types'
 export { ownerAttributes } from './attributes'
+export { ownerStyles } from './styles'
 export { createDetail, type TDetailOptions } from './detail'
 export { lend, type TLendAt } from './lend'
 export { TKeyedLoop } from './loop'
