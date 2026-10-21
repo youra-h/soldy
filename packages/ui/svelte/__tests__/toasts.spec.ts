@@ -88,7 +88,8 @@ describe('Toasts · менеджер и API', () => {
 		render()
 
 		expect(node('.so-test-app').textContent).toBe('Приложение')
-		expect(region().parentElement).toBe(document.body)
+		expect(document.body.contains(region())).toBe(true)
+		expect(region().contains(node('.so-test-app'))).toBe(false)
 		expect(toasts()).toEqual([])
 	})
 

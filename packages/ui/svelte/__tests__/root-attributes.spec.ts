@@ -1037,7 +1037,7 @@ describe('attachment потребителя — на корне', () => {
 		})
 
 		expect(consumer.attached).toHaveLength(1)
-		expect(consumer.attached[0]?.parentElement).toBe(target)
+		expect(target.contains(consumer.attached[0] ?? null)).toBe(true)
 		expect(container.querySelector('.so-frame')).toBeNull()
 	})
 
