@@ -15,7 +15,12 @@
 import { describe, it, expect } from 'vitest'
 import type { JSX } from 'solid-js'
 import { renderToString } from 'solid-js/web'
-import type { DescriptorSlots, PopoverDescriptor, TooltipDescriptor } from '@soldy-ui/setup'
+import type {
+	DescriptorSlots,
+	MenuDescriptor,
+	PopoverDescriptor,
+	TooltipDescriptor,
+} from '@soldy-ui/setup'
 import {
 	Button,
 	CheckBox,
@@ -25,6 +30,7 @@ import {
 	Icon,
 	Input,
 	Label,
+	Menu,
 	NumberInput,
 	Pagination,
 	Popover,
@@ -142,6 +148,74 @@ describe('Popover и Tooltip · серверный рендер', () => {
 		expect(body).toMatch(/<button [^>]*aria-describedby="[^"]+"/)
 		expect(body).not.toContain('so-tooltip__panel')
 		expect(body).not.toContain('Сохранить черновик')
+	})
+})
+
+/**
+ * Menu на сервере — как Popover: корень с триггером и связкой в его scope, а
+ * панель — Frame, и телепорта на сервере нет. Пункты стоят в панели, поэтому
+ * их на сервере тоже нет: они собираются, когда портал впервые рисует
+ * содержимое, — на клиенте. У контекстного меню связки «кнопка ↔ меню» нет.
+ */
+describe('Menu · серверный рендер', () => {
+	type TMenuScope = DescriptorSlots<typeof MenuDescriptor>['trigger']
+
+	const trigger = (scope: TMenuScope) => (
+		<Button text="Действия" {...scope.triggerAria} {...scope.triggerDataset} />
+	)
+
+	it('у кнопки — корень с триггером и связкой, панели и пунктов нет', () => {
+		const body = markup(
+			renderToString(() => (
+				<Menu trigger={trigger}>
+					<Menu.Item value="edit" text="Изменить" />
+				</Menu>
+			)),
+		)
+
+		expect(body).toMatch(/^<span [^>]*class="so-menu[^"]*"/)
+		expect(body).toMatch(/<button [^>]*aria-haspopup="menu"/)
+		expect(body).toContain('aria-expanded="false"')
+		expect(body).toMatch(/<button [^>]*aria-controls="[^"]+"/)
+		expect(body).toMatch(/<button [^>]*\sid="[^"]+"/)
+		expect(body).toContain('data-selected="false"')
+		expect(body).not.toContain('so-menu__panel')
+		expect(body).not.toContain('Изменить')
+	})
+
+	it('у пунктов из данных — так же: панели и пунктов нет', () => {
+		const body = markup(
+			renderToString(() => (
+				<Menu items={[{ value: 'edit', text: 'Изменить' }]} trigger={trigger} />
+			)),
+		)
+
+		expect(body).toMatch(/<button [^>]*aria-haspopup="menu"/)
+		expect(body).not.toContain('so-menu__panel')
+		expect(body).not.toContain('Изменить')
+	})
+
+	it('у контекстного меню — область без связки', () => {
+		const body = markup(
+			renderToString(() => (
+				<Menu
+					openOn="contextmenu"
+					trigger={(scope: TMenuScope) => (
+						<div class="so-test-area" {...scope.triggerAria}>
+							Отчёт.pdf
+						</div>
+					)}
+				/>
+			)),
+		)
+
+		expect(body).toMatch(
+			/^<span [^>]*class="so-menu[^"]*"[^>]*><div [^>]*class="so-test-area ?"/,
+		)
+		expect(body).not.toContain('aria-haspopup')
+		expect(body).not.toContain('aria-expanded')
+		expect(body).not.toContain('aria-controls')
+		expect(body).not.toContain('so-menu__panel')
 	})
 })
 
@@ -322,6 +396,7 @@ describe('ref потребителя · серверный рендер', () => 
 			['Frame', (ref) => <Frame contained visible ref={ref} />],
 			['Popover', (ref) => <Popover ref={ref} />],
 			['Tooltip', (ref) => <Tooltip ref={ref} />],
+			['Menu', (ref) => <Menu ref={ref} />],
 			['Icon', (ref) => <Icon tag="i" ref={ref} />],
 			['Label', (ref) => <Label ref={ref} />],
 			['ProgressLinear', (ref) => <ProgressLinear ref={ref} />],

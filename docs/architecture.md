@@ -2308,7 +2308,7 @@ Svelte 5 на рунах. Структура зеркалит React, потом�
 
 ## Layer 8c: Solid Adapter (`packages/ui/solid/src`)
 
-### ✅ IMPLEMENTED (Component / ComponentView / Stylable / Control / Interactive / ValueControl / InputControl / Textable / Button / Icon / Label / Frame / Popover / Tooltip / ProgressSpinner / ProgressLinear / Skeleton / Input / CheckBox / Switch / Slider / Rating / RadioGroup / ListBox / Tabs / Accordion / Pagination / Scroller / Table / Virtual / DragAndDrop)
+### ✅ IMPLEMENTED (Component / ComponentView / Stylable / Control / Interactive / ValueControl / InputControl / Textable / Button / Icon / Label / Frame / Popover / Tooltip / Menu / ProgressSpinner / ProgressLinear / Skeleton / Input / CheckBox / Switch / Slider / Rating / RadioGroup / ListBox / Tabs / Accordion / Pagination / Scroller / Table / Virtual / DragAndDrop)
 
 Структура зеркалит React — JSX и колбэк-пропы делают их почти близнецами, —
 а механика ближе к Vue и Svelte: тело компонента выполняется один раз, и
@@ -2329,7 +2329,10 @@ Svelte 5 на рунах. Структура зеркалит React, потом�
   `toRootForward` (класс и стиль корню) и
   `toControlAttrs` (остальное, кроме `ref`, — `<input>`; так же делит их
   элемент коллекции — строке, у радио — полю, а ListBox и Tabs — узлу
-  списка); `roleIcon(role)` — компонент
+  списка); `toPartClass` — классы части без своего экземпляра строкой для
+  `class` компонента, на котором она стоит: снимок ядро отдаёт списком
+  (`TClasses` → `string[]`), а `class` у Solid — строка (панель Menu и
+  подменю — `panelClasses` на их Frame); `roleIcon(role)` — компонент
   иконки по роли для `tag` у Icon, один на роль, — он же рисует отметку
   CheckBox без слота; `renderSlot`, `hasSlot` и `resolveSlot` — слот,
   развёрнутый один раз поверх `children()`; `liveScope` — живой scope слота:
@@ -2344,8 +2347,8 @@ Svelte 5 на рунах. Структура зеркалит React, потом�
   `adapter.connect(SolidProfile)` (callback-ref корня `ref` и его половины:
   `bindRef` — только привязка к `TElementPlugin`, `consumerRef` — только `ref`
   потребителя, для корня внутри обёртки; аксессор привязанного корня
-  `rootElement`, как `rootElement` у Vue, — якорь панели Popover и Tooltip)
-  и `useCollectionAdapter` — связка
+  `rootElement`, как `rootElement` у Vue, — якорь панели Popover, Tooltip,
+  Menu и пунктов меню со своей панелью) и `useCollectionAdapter` — связка
   фасада коллекции: те же состояние, входы, события, приём и уничтожение, но
   без `ctrl` и привязки узла, а атрибуты — из того, что не съел компонент;
   `joinState` — состояние двух контекстов компонента (свой и фасада) одним
@@ -2448,6 +2451,21 @@ Svelte 5 на рунах. Структура зеркалит React, потом�
   читает только ячейку и слот `cell`. Table — тот же рецепт, что ListBox, с
   окном `Virtual` и без drag-and-drop; `Virtual` — обёртка без узла, слой
   лифта детям отдаёт `Elevate`, `DragAndDrop` — так же.
+- **Menu — коллекция в телепортированной панели.** Рецепт ListBox: два
+  контекста, `Elevate` вокруг всего содержимого корня — и триггера, как
+  `provide` у Vue. Пункты стоят в панели, внутри `Teleport` её Frame: мемо
+  содержимого заводит первое чтение портала под владельцем Teleport, и пункты
+  собираются в слое меню, но после его тела — а на сервере, где портала нет,
+  панели и пунктов нет, как содержимого Popover. Классы панели
+  (`panelClasses`) — снимок списком, и строкой для `class` Frame его
+  раскладывает `toPartClass`. Пункт с подменю — сразу пункт и владелец: три
+  контекста на одном `useElevator()` — фасад пункта читает `up()`, коллекцию
+  меню над ним, фасад меню пишет `down()`, — и панель в своём `Elevate`.
+  Пункты из данных — одна функция на меню и подменю (`drawItems` в модуле
+  подменю: оно рисует ею и свои уровни): `KeyedFor` по ключу секции —
+  записи `sections` новые на каждую смену, — `<For>` по пунктам секции и
+  подменю из данных — `Show` по записи (`keyed`): запись у пункта устойчива,
+  а `ctrl` и `engine` подменю читает при сборке.
 - **Лифт — слой значений в контексте, детям — `Elevate` (`Provider`).**
   Значение контекста Solid отдаёт только через `Provider`, а своего владельца
   у компонента в продакшене и на сервере нет — `createComponent` зовёт его

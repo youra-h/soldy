@@ -13,26 +13,31 @@ arrive as callback props (`element:ready` → `onElementReady`), and the default
 
 > **Status:** the Solid adapter is in progress — Button, Icon, Label, Frame, Popover (a non-modal
 > panel with any content at its trigger), Tooltip (a hint shown on hover and on keyboard focus),
-> ProgressSpinner, ProgressLinear, Skeleton, the fields Input, NumberInput (a number in the
-> locale's format with − and + step buttons; the form gets the number), Textarea (multi-line,
-> growing with its text, with a character counter), CheckBox and Switch, Slider (a number or a
-> range) and Rating, the form field `Field` (label, helper and error linked to the control inside
-> it), the collections ListBox, Tabs, Accordion and RadioGroup (`<ListBox.Item>`, `<Tabs.Item>` with
-> `<Tabs.Content>`, `<Accordion.Item>`, `<RadioGroup.Item>` or `items`), Pagination, Table
-> (columns and rows as data — `columns`, `items` — with sorting, row selection, column resizing
-> and reordering), the `Scroller` strip, the `Virtual` window for long lists
-> (`<Virtual><ListBox items={…} /></Virtual>`, the same with `Table`) and the `DragAndDrop`
-> wrapper that lets users reorder the items of Tabs, ListBox and Accordion by dragging
-> (`<DragAndDrop onMove={…}><ListBox items={…} /></DragAndDrop>`, `onMoveBefore` can cancel) are
-> ported, the rest of the set is on its way. Icon renders the `tag` it is given: an element name,
-> a Solid component, or `roleIcon(role)` — the icon of that role from the registered icon pack.
+> Menu (an action menu at a button or a context menu on right click — `openOn="contextmenu"` —
+> with `<Menu.Item>`, `<Menu.CheckboxItem>`, `<Menu.RadioGroup>` with `<Menu.RadioItem>`,
+> `<Menu.Submenu>`, `<Menu.PopoverItem>`, `<Menu.Group>` and `<Menu.Separator>` or `items`, where
+> an item with nested `items` is a submenu), ProgressSpinner, ProgressLinear, Skeleton, the fields
+> Input, NumberInput (a number in the locale's format with − and + step buttons; the form gets the
+> number), Textarea (multi-line, growing with its text, with a character counter), CheckBox and
+> Switch, Slider (a number or a range) and Rating, the form field `Field` (label, helper and error
+> linked to the control inside it), the collections ListBox, Tabs, Accordion and RadioGroup
+> (`<ListBox.Item>`, `<Tabs.Item>` with `<Tabs.Content>`, `<Accordion.Item>`, `<RadioGroup.Item>`
+> or `items`), Pagination, Table (columns and rows as data — `columns`, `items` — with sorting,
+> row selection, column resizing and reordering), the `Scroller` strip, the `Virtual` window for
+> long lists (`<Virtual><ListBox items={…} /></Virtual>`, the same with `Table`) and the
+> `DragAndDrop` wrapper that lets users reorder the items of Tabs, ListBox and Accordion by
+> dragging (`<DragAndDrop onMove={…}><ListBox items={…} /></DragAndDrop>`, `onMoveBefore` can
+> cancel) are ported, the rest of the set is on its way. Icon renders the `tag` it is given: an
+> element name, a Solid component, or `roleIcon(role)` — the icon of that role from the registered
+> icon pack.
 > Frame teleports its panel into `target` (`body` by default) on the client; with `contained` it
-> stays in place. Popover and Tooltip keep the trigger in their root and anchor their panel, a
-> Frame, to that root; your attributes and `ref` go to the root, not to the panel. A field gives
-> its class and style to the root and every other attribute to its `<input>` (a textarea — to its
+> stays in place. Popover, Tooltip and Menu keep the trigger in their root and anchor their panel,
+> a Frame, to that root; your attributes and `ref` go to the root, not to the panel. The items of a
+> menu stand in its panel, so they are drawn on the client, not on the server. A field gives its
+> class and style to the root and every other attribute to its `<input>` (a textarea — to its
 > `<textarea>`), except Slider and Rating: they keep every attribute on the root — a slider has a
-> field per thumb, and the pointer never reaches the field. An item of a collection gives them to
-> its row; a list box and tabs give them to the list itself, `[role=listbox]` or
+> field per thumb, and the pointer never reaches the field. An item of a collection, a menu item
+> too, gives them to its row; a list box and tabs give them to the list itself, `[role=listbox]` or
 > `[role=tablist]`; a table gives them to the `<table>` itself, and its class, style and `ref` to
 > the scroll viewport around it; otherwise `ref` gets the root. `Label` names the control it
 > wraps; `LocaleProvider` gives a subtree its language and library strings, such as the name of
@@ -139,6 +144,32 @@ Here too the scope is read in the markup: the link changes on every opening, and
 `scope.triggerAria` updates the same trigger in place, while a destructured scope would draw a new
 trigger each time, and the focus on the old one would be lost. `Tooltip` takes its trigger the same
 way, with `triggerAria` in the scope.
+
+A menu takes its trigger the same way. Choosing an action closes the menu and calls `onChoose`; a
+checkbox item and a radio item are checked in place, and the menu stays open:
+
+```tsx
+import { Button, Menu } from '@soldy-ui/solid'
+
+export function Actions() {
+  return (
+    <Menu
+      trigger={(scope) => (
+        <Button text="Actions" {...scope.triggerAria} {...scope.triggerDataset} />
+      )}
+      onChoose={(item) => console.log(item.value)}
+    >
+      <Menu.Item value="edit" text="Edit" />
+      <Menu.Submenu value="share" text="Share">
+        <Menu.Item value="link" text="Copy link" />
+        <Menu.Item value="mail" text="Email" />
+      </Menu.Submenu>
+      <Menu.Separator />
+      <Menu.Item value="remove" text="Delete" />
+    </Menu>
+  )
+}
+```
 
 The application plugs in a theme and an icon pack once, in its entry point:
 
