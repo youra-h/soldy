@@ -68,7 +68,8 @@ type TBuilt = {
  * вставки: инстанс, присвоенный подключённому элементу, достанется лишь
  * следующей сборке, после перестановки. Обёртка (`TPreview.wrapper`) — тем же
  * путём, со своими пропсами описания и стилем от пропсов строки, а компонент
- * — её светом, в слоте по умолчанию.
+ * — её светом, в слоте по умолчанию, следом за кнопкой, которая его
+ * открывает (`TPreview.opener`).
  */
 function build(
 	preview: TPreview,
@@ -83,17 +84,41 @@ function build(
 
 	for (const { type, listener } of listeners) element.addEventListener(type, listener)
 
-	const { wrapper } = preview
+	const { wrapper, opener } = preview
 
-	if (!wrapper) return { element, outer: element }
+	if (!wrapper) {
+		if (opener !== undefined) {
+			throw new Error('[playground] кнопке, которая открывает компонент, нужна обёртка')
+		}
+
+		return { element, outer: element }
+	}
 
 	const outer = elementOf(wrapper)
 
 	fill(outer, wrapper, propsOf(wrapper, {}), {})
 	applyStyle(outer, wrapper, bind)
+
+	if (opener !== undefined) outer.appendChild(openerOf(opener, element))
+
 	outer.appendChild(element)
 
 	return { element, outer }
+}
+
+/**
+ * Кнопка, которая открывает компонент (`TPreview.opener`): Button с подписью,
+ * а нажатие пишет компоненту `visible = true` — как кнопка превью Vue своё
+ * состояние `v-model:visible`. Закрывает компонент он сам — крестиком,
+ * подложкой, Escape, — а строка `visible` страницы задаёт открытость снаружи.
+ */
+function openerOf(text: string, element: HTMLElement): HTMLElement {
+	const button = document.createElement('button', { is: 'so-button' })
+
+	Reflect.set(button, 'text', text)
+	button.addEventListener('click', () => Reflect.set(element, 'visible', true))
+
+	return button
 }
 
 /**

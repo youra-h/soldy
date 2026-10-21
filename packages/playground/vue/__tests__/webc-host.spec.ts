@@ -9,7 +9,9 @@
  * элемент, в слоте по умолчанию которого лежит компонент. У таблицы обёртка —
  * граница без компонента, со стилем от пропсов строки, а окно `<so-virtual>` и
  * перестановка `<so-drag-and-drop>` — автономные элементы, своим тегом. Ребёнок
- * без компонента — ряд коллекций в перестановке — тоже со своим стилем.
+ * без компонента — ряд коллекций в перестановке — тоже со своим стилем. Окно и
+ * выезжающую панель открывает кнопка в обёртке (`opener` описания), а тосты
+ * показывают кнопки внутри менеджера `<so-toasts>` — API у своего места.
  */
 
 import { describe, it, expect, afterEach } from 'vitest'
@@ -544,6 +546,129 @@ describe('хост Web Components · оверлеи', () => {
 		expect(find(panel, '.so-tooltip__content').textContent).toBe('Короткое пояснение к кнопке')
 
 		handle.unmount()
+	})
+
+	/**
+	 * Окно открывает кнопка, как у Vue: она — в ячейке, а окно с подложкой
+	 * уехало в `body` и закрыто. Нажатие открывает окно записью `visible`, и в
+	 * журнал приходит смена открытости; кнопка подвала его закрывает. Снятое
+	 * превью уводит окно с подложкой из `body`.
+	 */
+	it('превью Dialog: кнопка в ячейке открывает окно в body, кнопка подвала закрывает', async () => {
+		const node = stage()
+		const events: string[] = []
+		const handle = host.mount(node, {
+			component: 'dialog',
+			props: {},
+			onEvent: (name) => events.push(name),
+		})
+		const opener = find(node, '.so-button')
+		const dialog = find(document.body, ':scope > .so-dialog')
+
+		expect(opener.textContent?.trim()).toBe('Открыть окно')
+		expect(dialog.previousElementSibling?.classList.contains('so-dialog__backdrop')).toBe(true)
+		expect(find(dialog, '.so-dialog__title').textContent).toBe('Настройки')
+		expect(texts(find(dialog, '.so-dialog__body').children)).toEqual([
+			'Произвольное содержимое: текст, поля, кнопки',
+			'',
+		])
+		expect(find(dialog, '.so-dialog__body .so-input input').getAttribute('placeholder')).toBe(
+			'Имя',
+		)
+		expect(texts(find(dialog, '.so-dialog__footer').children)).toEqual(['Отмена', 'Сохранить'])
+		expect(dialog.style.display).toBe('none')
+
+		await nextFrame()
+		opener.click()
+		await flush()
+
+		expect(dialog.style.display).toBe('')
+		expect(events).toContain('change:visible')
+
+		find(dialog, '.so-dialog__footer .so-button').click()
+		await flush()
+
+		expect(dialog.style.display).toBe('none')
+
+		handle.unmount()
+		await flush()
+
+		expect(document.querySelector('.so-dialog, .so-dialog__backdrop')).toBeNull()
+	})
+
+	/**
+	 * Выезжающая панель — в коробке превью вместе с кнопкой: с `contained` она
+	 * встаёт в ней, а без — уезжает в `body`, и строка переносит её туда и
+	 * обратно вместе с подложкой.
+	 */
+	it('превью Drawer: кнопка в коробке, contained ставит панель с подложкой в неё', async () => {
+		const node = stage()
+		const handle = host.mount(node, { component: 'drawer', props: { contained: true } })
+		const box = find(node, ':scope > so-locale-provider > div')
+		const opener = find(box, ':scope > .so-button')
+		const drawer = find(box, ':scope > .so-drawer')
+
+		expect(opener.textContent?.trim()).toBe('Открыть панель')
+		expect(box.style.position).toBe('relative')
+		expect(drawer.previousElementSibling?.classList.contains('so-drawer__backdrop')).toBe(true)
+		expect(find(drawer, '.so-drawer__title').textContent).toBe('Фильтры')
+		expect(texts(find(drawer, '.so-drawer__footer').children)).toEqual([
+			'Сбросить',
+			'Применить',
+		])
+
+		opener.click()
+		await flush()
+
+		expect(drawer.style.display).toBe('')
+
+		handle.update({ contained: false })
+		await flush()
+
+		expect(drawer.parentElement).toBe(document.body)
+		expect(drawer.previousElementSibling?.classList.contains('so-drawer__backdrop')).toBe(true)
+		expect(box.querySelector('.so-drawer__backdrop')).toBeNull()
+
+		handle.unmount()
+	})
+
+	/**
+	 * Менеджер тостов вокруг ряда кнопок — автономный элемент своим тегом: ряд
+	 * стоит в ячейке, регион уехал в `body`. Кнопка берёт API у своего места
+	 * (`toastsOf`) и показывает тост образца стенда, у обычного — с кнопкой
+	 * «Отменить», которая его закрывает.
+	 */
+	it('превью Toasts: кнопки в менеджере показывают тост в регионе у края окна', async () => {
+		const node = stage()
+		const handle = host.mount(node, { component: 'toasts', props: {} })
+		const manager = find(node, 'so-toasts')
+		const region = find(document.body, ':scope > .so-toasts')
+
+		expect(texts(manager.querySelectorAll('.so-button'))).toEqual([
+			'обычное',
+			'info',
+			'success',
+			'warning',
+			'error',
+			'загрузка → готово',
+		])
+		expect(manager.contains(region)).toBe(false)
+
+		find(manager, '.so-button').click()
+		await flush()
+
+		const toast = find(region, '.so-toasts-item')
+
+		expect(find(toast, '.so-toasts-item__text').textContent).toBe('1. Черновик сохранён')
+
+		find(toast, '.so-toasts-item__content .so-button').click()
+		await flush()
+
+		expect(toast.dataset.open).toBe('false')
+
+		handle.unmount()
+
+		expect(document.querySelector('.so-toasts')).toBeNull()
 	})
 })
 
