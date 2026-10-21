@@ -1,9 +1,10 @@
 /**
  * Virtual под Angular — окно над ListBox на настоящей разметке.
  *
- * Обёртка своего узла не рисует: элемент `<so-virtual>` Angular ставит, но
- * бокса у него нет (`display: contents`), а шаблон — только содержимое. Её
- * окно подхватывает коллекция внутри (`TVirtualCollectionExtension`), и список
+ * Своего узла у окна нет: корня у компонента нет, он директива и пишется
+ * атрибутом на `<ng-container>` (`<ng-container so-virtual>`), а на месте
+ * контейнера Angular ставит только комментарий-якорь. Окно подхватывает
+ * коллекция внутри (`TVirtualCollectionExtension`), и список
  * рисует только видимые элементы, а на месте остальных — распорки под
  * `aria-hidden`. Что попадает в окно, решает ядро
  * (`core/__tests__/collection.draw.spec.ts`), замер — плагин
@@ -13,8 +14,9 @@
  * `ui/react/__tests__/virtual.spec.tsx`); окно таблицы — «окно» в
  * `table.spec.ts`, сервер и гидратация — `collections.server.spec.ts`.
  *
- * Своё у Angular — слой лифта DI: обёртка отдаёт его поддереву провайдером, и
- * подключение к окну список читает из слоя, внутри которого его написали.
+ * Своё у Angular — слой лифта DI: окно отдаёт его поддереву провайдером
+ * директивы — инжектор у `<ng-container>` свой, — и подключение к окну список
+ * читает из слоя, внутри которого его написали.
  * Сборка одна, в `ngOnInit`, и пересборки вслед за обёрткой, как у React, нет:
  * вместо StrictMode — снятие списка и снятие обёртки вместе с ним снимают окно
  * с движка снаружи.
@@ -105,7 +107,7 @@ abstract class TEngineHost {
 @Component({
 	standalone: true,
 	imports: [TListBoxComponent, TVirtualComponent],
-	template: `<so-virtual><div so-list-box [engine]="engine()"></div></so-virtual>`,
+	template: `<ng-container so-virtual><div so-list-box [engine]="engine()"></div></ng-container>`,
 })
 class WindowHost extends TEngineHost {}
 
@@ -142,13 +144,13 @@ describe('ListBox в окне', () => {
 	@Component({
 		standalone: true,
 		imports: [TListBoxComponent, TVirtualComponent],
-		template: `<so-virtual><div so-list-box [items]="items"></div></so-virtual>`,
+		template: `<ng-container so-virtual><div so-list-box [items]="items"></div></ng-container>`,
 	})
 	class WrappedHost {
 		readonly items = items(80)
 	}
 
-	it('в обёртке — до замера первые 50, без распорок', () => {
+	it('в окне — до замера первые 50, без распорок', () => {
 		mountHost(WrappedHost)
 
 		expect(options()).toHaveLength(50)
@@ -156,20 +158,18 @@ describe('ListBox в окне', () => {
 	})
 
 	/**
-	 * Своего узла у обёртки нет: элемент Angular ставит, но бокса у него нет, а
-	 * в нём — только то, что написал потребитель.
+	 * Своего узла у окна нет: директиву пишут на `<ng-container>`, на его месте
+	 * Angular ставит только комментарий-якорь, и список стоит прямо в разметке
+	 * хоста, как без окна, — раскладка вокруг него та же.
 	 */
-	it('обёртка без бокса: display: contents, внутри — только содержимое', () => {
+	it('своего узла у окна нет: список — прямо в разметке хоста', () => {
 		const fixture = mountHost(WrappedHost)
 		const host: HTMLElement = fixture.nativeElement
-		const virtual = host.querySelector('so-virtual')
 
-		if (!(virtual instanceof HTMLElement)) throw new Error('обёртки нет')
-
-		expect(virtual.style.display).toBe('contents')
-		expect([...virtual.children].map((child) => child.className)).toEqual([
+		expect([...host.children].map((child) => child.className)).toEqual([
 			expect.stringContaining('so-list-box'),
 		])
+		expect(host.querySelector('[so-virtual]')).toBe(null)
 	})
 
 	it('по замеру — распорки на месте пропущенных: скрыты, высотой в элементы, на своём месте', () => {
@@ -210,9 +210,9 @@ describe('ListBox в окне', () => {
 	@Component({
 		standalone: true,
 		imports: [TListBoxComponent, TVirtualComponent],
-		template: `<so-virtual [enabled]="enabled()"
+		template: `<ng-container so-virtual [enabled]="enabled()"
 			><div so-list-box [items]="items"></div
-		></so-virtual>`,
+		></ng-container>`,
 	})
 	class SwitchHost {
 		readonly items = items(80)
@@ -240,7 +240,7 @@ describe('ListBox в окне', () => {
 	@Component({
 		standalone: true,
 		imports: [TListBoxComponent, TVirtualComponent, SlotDirective],
-		template: `<so-virtual>
+		template: `<ng-container so-virtual>
 			<div so-list-box class="outer" [items]="outer">
 				<ng-template slot="item" let-item="item">
 					@if (item.value === 'v1') {
@@ -250,7 +250,7 @@ describe('ListBox в окне', () => {
 					}
 				</ng-template>
 			</div>
-		</so-virtual>`,
+		</ng-container>`,
 	})
 	class NestedHost {
 		readonly outer = items(60)
@@ -300,11 +300,11 @@ describe('ListBox в окне — цикл Angular', () => {
 	@Component({
 		standalone: true,
 		imports: [TListBoxComponent, TVirtualComponent],
-		template: `<so-virtual [enabled]="enabled()">
+		template: `<ng-container so-virtual [enabled]="enabled()">
 			@if (listed()) {
 				<div so-list-box [engine]="engine()"></div>
 			}
-		</so-virtual>`,
+		</ng-container>`,
 	})
 	class ListedHost extends TEngineHost {
 		readonly enabled = signal(true)
@@ -313,8 +313,8 @@ describe('ListBox в окне — цикл Angular', () => {
 
 	/**
 	 * Движок снаружи живёт дольше монтирования: снятый список снимает окно с
-	 * его рисования и отписывается от обёртки — выключатель живой обёртки до
-	 * движка больше не доходит.
+	 * его рисования и отписывается от окна — выключатель живого окна до движка
+	 * больше не доходит.
 	 */
 	it('снятие списка снимает окно с движка снаружи; выключатель его больше не трогает', () => {
 		const engine = engineOf(80)

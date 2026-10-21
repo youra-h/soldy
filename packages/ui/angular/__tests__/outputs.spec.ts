@@ -30,13 +30,12 @@
 
 import { describe, it, expect, expectTypeOf } from 'vitest'
 import { DomElementSchemaRegistry } from '@angular/compiler'
-import { Component, EventEmitter, reflectComponentType, viewChild, type Type } from '@angular/core'
+import { Component, EventEmitter, viewChild } from '@angular/core'
 import { outputToObservable } from '@angular/core/rxjs-interop'
 import { TestBed } from '@angular/core/testing'
 import { TButton, TComponent, TComponentView, type TPluginEvent } from '@soldy-ui/core'
 import * as setup from '@soldy-ui/setup'
 import { ButtonDescriptor, InputDescriptor, type IComponentDescriptor } from '@soldy-ui/setup'
-import * as angular from '@soldy-ui/angular'
 import {
 	ButtonOutputNames,
 	ComponentOutputNames,
@@ -46,6 +45,7 @@ import {
 	TComponentViewComponent,
 	useOutputs,
 } from '@soldy-ui/angular'
+import { exportedDeclarations, type TDeclaration } from './declarations'
 
 @Component({
 	standalone: true,
@@ -77,7 +77,7 @@ class ComponentViewHost {
 @Component({
 	standalone: true,
 	imports: [TComponentComponent],
-	template: `<so-component [ctrl]="ctrl" (soPluginEvent)="onPluginEvent($event)" />`,
+	template: `<ng-container so-component [ctrl]="ctrl" (soPluginEvent)="onPluginEvent($event)" />`,
 })
 class ComponentHost {
 	readonly ctrl = new TComponent()
@@ -184,7 +184,7 @@ class BareComponentViewHost {
 @Component({
 	standalone: true,
 	imports: [TComponentComponent],
-	template: `<so-component [ctrl]="ctrl" />`,
+	template: `<ng-container so-component [ctrl]="ctrl" />`,
 })
 class BareComponentHost {
 	readonly ctrl = new TComponent()
@@ -323,41 +323,39 @@ describe('эмиттер выхода · заводит первое чтени�
 })
 
 /**
- * Класс из экспорта: `reflectComponentType` принимает только конструктор.
- * Утилиты экспорта (`useAdapter`, `setupButton`) для JS тоже функции с
- * прототипом, но компонента за ними она не найдёт.
+ * Экземпляр объявления в фикстуре: компонент TestBed строит сам, а директиву
+ * ставит на элемент. Хоста-контейнера, на который директиву компонента без
+ * корня пишет потребитель, TestBed не строит, а выходам всё равно, где она
+ * стоит.
  */
-function isConstructor(value: unknown): value is Type<unknown> {
-	return typeof value === 'function' && typeof value.prototype === 'object'
-}
+function mountDeclaration({ kind, type }: TDeclaration): {
+	readonly fixture: { detectChanges(): void }
+	readonly instance: unknown
+} {
+	if (kind === 'component') {
+		const fixture = TestBed.createComponent(type)
 
-/** Компоненты экспорта с их выходами — не ручным списком: новый попадёт под проверку сам. */
-function exportedComponents(): (readonly [name: string, type: Type<unknown>, outputs: string[]])[] {
-	const entries: Record<string, unknown> = angular
-	const result: (readonly [string, Type<unknown>, string[]])[] = []
-
-	for (const [name, value] of Object.entries(entries)) {
-		if (!isConstructor(value)) continue
-
-		const mirror = reflectComponentType(value)
-
-		if (mirror) result.push([name, value, mirror.outputs.map((output) => output.propName)])
+		return { fixture, instance: fixture.componentInstance }
 	}
 
-	return result
+	const fixture = TestBed.createDirective(type, { tagName: 'div' })
+
+	return { fixture, instance: fixture.directiveInstance }
 }
 
 /**
  * Выходы объявляет декоратор `T<Имя>Surface`, а эмиттер заводит его же
  * геттер — оба из одного списка генератора. Здесь видно, что на каждый
  * объявленный выход геттер есть: Angular читает выход, только когда его
- * привязали, и выход без геттера упал бы лишь у того, кто его привяжет.
+ * привязали, и выход без геттера упал бы лишь у того, кто его привяжет. У
+ * компонентов без корня — директив — так же.
  */
 describe('выходы компонентов экспорта · геттер на каждый выход', () => {
-	const components = exportedComponents()
+	// Компоненты soldy — не ручным списком: новый попадёт под проверку сам
+	const components = exportedDeclarations().filter(({ soldy }) => soldy)
 
 	it('компоненты найдены в экспорте', () => {
-		expect(components.map(([name]) => name)).toEqual(
+		expect(components.map(({ name }) => name)).toEqual(
 			expect.arrayContaining([
 				'TButtonComponent',
 				'TComponentViewComponent',
@@ -372,15 +370,17 @@ describe('выходы компонентов экспорта · геттер �
 				'TTextareaComponent',
 				'TCheckBoxComponent',
 				'TSwitchComponent',
+				'TVirtualComponent',
+				'TDragAndDropComponent',
 			]),
 		)
 	})
 
-	it.each(components)(
+	it.each(components.map((declaration) => [declaration.name, declaration] as const))(
 		'%s: чтение каждого выхода заводит ровно его эмиттер',
-		async (_name, type, outputs) => {
-			const fixture = TestBed.createComponent(type)
-			const instance = fixture.componentInstance
+		async (_name, declaration) => {
+			const { outputs } = declaration
+			const { fixture, instance } = mountDeclaration(declaration)
 
 			if (typeof instance !== 'object' || instance === null) {
 				throw new Error('Экземпляр компонента не создан')
