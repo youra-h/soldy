@@ -440,8 +440,15 @@ describe('Frame · rendered и visible', () => {
 })
 
 describe('Frame · слой и раскладка', () => {
-	it('у показанного style.zIndex равен data-layer', () => {
+	/** Номер слоя открыт только у слоя с узлом: созданному видимым его даёт кадр узла. */
+	it('у показанного style.zIndex равен data-layer', async () => {
 		mount('<div is="so-frame" visible></div>')
+		await flush()
+
+		expect(frame().hasAttribute('data-layer')).toBe(false)
+
+		await nextFrame()
+		await flush()
 
 		const layer = frame().getAttribute('data-layer')
 
@@ -455,10 +462,13 @@ describe('Frame · слой и раскладка', () => {
 
 		el.ctrl = ctrl
 		mountElement(el)
+		// Узел объявлен — показ даёт номер сразу
+		await nextFrame()
 
 		ctrl.show()
 		await flush()
 
+		expect(ctrl.zIndex).toBeGreaterThan(0)
 		expect(el.style.display).toBe('')
 		expect(el.style.zIndex).toBe(String(ctrl.zIndex))
 		expect(el.getAttribute('data-layer')).toBe(String(ctrl.zIndex))

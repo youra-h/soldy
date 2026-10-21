@@ -86,8 +86,18 @@ describe('регион (TToasts)', () => {
 		])
 	})
 
-	it('виден с конструктора — значит, у него уже есть номер слоя', () => {
+	/**
+	 * Номер слоя открыт только у слоя с узлом (`ready` ставит плагин узла, здесь
+	 * — тест): на сервере узла нет, и номер счётчика процесса в разметку не
+	 * попадает.
+	 */
+	it('виден с конструктора — место в стеке уже взято, номер открывает узел', () => {
 		const owner = new TToasts()
+
+		expect(owner.zIndex).toBe(0)
+		expect(owner.dataset.has(FRAME_LAYER_ATTRIBUTE)).toBe(false)
+
+		owner.ready = true
 
 		expect(owner.zIndex).toBeGreaterThan(0)
 		expect(owner.dataset.get(FRAME_LAYER_ATTRIBUTE)).toBe(String(owner.zIndex))
@@ -98,6 +108,8 @@ describe('регион (TToasts)', () => {
 		const dialog = new TLayer({ visible: true })
 		const onZIndex = vi.fn()
 
+		owner.ready = true
+		dialog.ready = true
 		owner.events.on('change:zIndex', onZIndex)
 		owner.raise()
 
@@ -467,9 +479,27 @@ describe('очередь (расширение toasts)', () => {
 		const { owner, engine } = engineOf()
 		const dialog = new TLayer({ visible: true })
 
+		owner.ready = true
+		dialog.ready = true
+
 		expect(owner.zIndex).toBeLessThan(dialog.zIndex)
 
 		engine.extensions.toasts.show('Поверх окна')
+
+		expect(owner.zIndex).toBeGreaterThan(dialog.zIndex)
+	})
+
+	/** Тост, показанный до первого кадра, — регион встаёт над окном с подключением узла. */
+	it('тост до подключения узла поднимает место региона — узел открывает поднятое', () => {
+		const { owner, engine } = engineOf()
+		const dialog = new TLayer({ visible: true })
+
+		engine.extensions.toasts.show('Поверх окна')
+
+		expect(owner.zIndex).toBe(0)
+
+		dialog.ready = true
+		owner.ready = true
 
 		expect(owner.zIndex).toBeGreaterThan(dialog.zIndex)
 	})

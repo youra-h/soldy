@@ -36,7 +36,7 @@ import type {
 	TSwipeableEvents,
 	TSwipeSide,
 } from '@soldy-ui/core'
-import { TDismissPlugin, TElementPlugin, TPluginBundle, TSwipePlugin } from '../src'
+import { TDismissPlugin, TElementPlugin, TPluginBundle, TReadyPlugin, TSwipePlugin } from '../src'
 import type { IListenable, IPlugin, IPluginConstructor, ISwipeOwner } from '../src'
 
 const nextFrame = () => new Promise((resolve) => requestAnimationFrame(resolve))
@@ -145,13 +145,16 @@ type TMountOptions = { dir?: 'ltr' | 'rtl' }
 
 /**
  * Открытая панель на странице: полоса, заголовок и тело с текстом и кнопкой.
- * Жест по умолчанию — за полосу.
+ * Жест по умолчанию — за полосу. Номер слоя (`data-layer`) панель открывает
+ * кадром узла, как у компонента: узел ей отдаёт `TReadyPlugin`, а набор с
+ * номером тест перекладывает на корень, как разметка.
  */
 async function mount(props: Partial<IDrawerProps> = {}, { dir = 'ltr' }: TMountOptions = {}) {
 	const drawer = new TDrawer({ visible: true, swipe: 'handle', ...props })
 	// Открытость модального слоя — `visible`, как в дескрипторе Drawer
 	const bundle = new TPluginBundle(drawer)
 		.use(TElementPlugin)
+		.use(TReadyPlugin)
 		.use(TSwipePlugin, { property: 'visible' })
 
 	bundles.push(bundle)
@@ -173,6 +176,7 @@ async function mount(props: Partial<IDrawerProps> = {}, { dir = 'ltr' }: TMountO
 
 	pluginOf(bundle, TElementPlugin).element = root
 	await nextFrame()
+	applyDataset(root, drawer)
 
 	const handle = nodeOf(`.${drawer.classes.resolve('__handle')}`, root)
 	const reasons: TCloseReason[] = []
@@ -354,6 +358,9 @@ describe('нажатие становится жестом', () => {
 	it('в панели, открытой внутри этой, жест — её, а не этой', async () => {
 		const { drawer, root, pointer } = await mount({ swipe: 'panel' })
 		const nested = document.createElement('div')
+
+		// Слой этой панели открыт кадром узла
+		expect(root.getAttribute('data-layer')).toBe(String(drawer.zIndex))
 
 		// Вложенная панель — свой слой: номер у неё свой
 		nested.setAttribute('data-layer', '9999')

@@ -550,7 +550,12 @@ describe('Toasts · ARIA', () => {
 		expect(region().getAttribute('role')).toBe('region')
 		expect(region().getAttribute('aria-live')).toBe('polite')
 		expect(region().getAttribute('aria-label')).toBe('Уведомления (F8)')
+
+		// Номер слоя открыт только у слоя с узлом: его даёт кадр узла
+		await nextFrame()
+
 		expect(region().dataset.layer).toBeDefined()
+		expect(region().style.zIndex).toBe(region().dataset.layer)
 	})
 
 	it('тост — status, срочный — alert; фокусируемый; крестик назван текстом', async () => {
