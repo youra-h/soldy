@@ -9,8 +9,8 @@
  * браузера, захват указателя доводит отпускание до корня, а стрелка делает
  * ровно один шаг — ядра, без нативного.
  *
- * Переходы темы и цвет ореола ручки — тоже здесь: jsdom стилей не считает и
- * переходов не заводит.
+ * Переходы темы, цвет ореола ручки и её тень — тоже здесь: jsdom стилей не
+ * считает и переходов не заводит.
  *
  * Позиции — от левого верхнего угла дорожки: её коробка — ход центров ручек,
  * 0 и 1 доли — её края по оси (контракт темы с плагином указателя).
@@ -23,9 +23,9 @@ import { defineComponent, h } from 'vue'
 import { TSlider } from '@soldy-ui/core'
 import type { ISliderProps, TComponentVariant, TSliderValue } from '@soldy-ui/core'
 import { COMPONENT_VARIANTS } from '@soldy-ui/playground-shared'
-import { Button, Label, Slider } from '@soldy-ui/vue'
+import { Button, Label, Slider, Switch } from '@soldy-ui/vue'
 
-import { pixel } from './colors'
+import { opacity, pixel } from './colors'
 import { reducedMotion } from './media'
 import { settled, transitionEvents, transitionRuns } from './transitions'
 
@@ -112,6 +112,35 @@ const centerX = (node: Element) => {
 	const box = node.getBoundingClientRect()
 
 	return box.left + box.width / 2
+}
+
+/**
+ * Слои `box-shadow` узла: цвет, сдвиг, размытие и разлёт. Запятая внутри
+ * скобок цвета слои не делит.
+ */
+function shadows(element: Element) {
+	return getComputedStyle(element)
+		.boxShadow.split(/,(?![^(]*\))/)
+		.map((layer) => {
+			const lengths = (layer.match(/-?[\d.]+px/g) ?? []).map(parseFloat)
+			const [x = 0, y = 0, blur = 0, spread = 0] = lengths
+
+			return { color: layer.replace(/-?[\d.]+px/g, '').trim(), x, y, blur, spread }
+		})
+}
+
+/**
+ * Цвет кольца ореола ручки — слоя без сдвига и размытия, с разлётом; кольца
+ * нет — тест падает здесь.
+ */
+function halo(thumb: Element): string {
+	const ring = shadows(thumb).find(
+		({ x, y, blur, spread }) => x === 0 && y === 0 && blur === 0 && spread >= 1,
+	)
+
+	if (!ring) throw new Error('кольца ореола нет')
+
+	return ring.color
 }
 
 /**
@@ -846,23 +875,6 @@ describe('ореол', () => {
 	/** Обе схемы: цвета у них свои, а плотности общие. */
 	const SCHEMES = ['oren', 'oren-dark'] as const
 
-	/** Цвет кольца ореола ручки; кольца нет — тест падает здесь. */
-	function halo(thumb: Element): string {
-		const ring = getComputedStyle(thumb)
-			.boxShadow.split(/,(?![^(]*\))/)
-			.map((layer) => {
-				const lengths = (layer.match(/-?[\d.]+px/g) ?? []).map(parseFloat)
-				const [x = 0, y = 0, blur = 0, spread = 0] = lengths
-
-				return { color: layer.replace(/-?[\d.]+px/g, '').trim(), x, y, blur, spread }
-			})
-			.find(({ x, y, blur, spread }) => x === 0 && y === 0 && blur === 0 && spread >= 1)
-
-		if (!ring) throw new Error('кольца ореола нет')
-
-		return ring.color
-	}
-
 	/** Указатель — на узел мимо ползунка и кнопки. */
 	const away = () => userEvent.hover(find('.so-test-away'))
 
@@ -958,5 +970,66 @@ describe('ореол', () => {
 				expect(pixel([drag]), 'протяжка').toEqual(pixel([button.press]))
 			},
 		)
+	})
+})
+
+/**
+ * Тень ручки — та же, что у ручки Switch: ручка контрола — одна роль, у неё
+ * один цвет (`--so-component-knob`) и одна тень (`themes/oren/AGENTS.md`,
+ * «Три роли цвета»). Тени спек не знает: эталон — ручка Switch рядом.
+ *
+ * Тень — слои `box-shadow` со сдвигом или размытием. Кольца в неё не входят:
+ * ни ореол ручки, ни пустые кольца, которые Tailwind кладёт в ту же
+ * `box-shadow`. Под наведением к тени ручки прибавляется ореол, а сама тень
+ * остаётся прежней.
+ */
+describe('тень ручки', () => {
+	/** Обе схемы: своя тень одной из ручек в тёмной схеме развела бы их там. */
+	const SCHEMES = ['oren', 'oren-dark'] as const
+
+	/** Тень узла — слои со сдвигом или размытием. */
+	const shade = (element: Element) =>
+		shadows(element).filter(({ x, y, blur }) => x !== 0 || y !== 0 || blur !== 0)
+
+	/** Ползунок и под ним эталон — выключенный Switch; указатель — мимо обоих. */
+	async function show() {
+		render(
+			defineComponent({
+				render: () =>
+					h('div', { style: 'width: 400px; padding: 24px' }, [
+						h('div', { class: 'so-test-away', style: 'height: 24px' }),
+						h(Slider, { value: 50 }),
+						h(Switch),
+					]),
+			}),
+		)
+
+		// Плагины получают корень кадром
+		await nextFrame()
+		await nextFrame()
+		await userEvent.hover(find('.so-test-away'))
+	}
+
+	describe.each(SCHEMES)('%s', (scheme) => {
+		beforeEach(() => {
+			document.documentElement.dataset.soTheme = scheme
+		})
+
+		it('у ручки Slider тень ручки Switch — в покое и под наведением, с ореолом', async () => {
+			await show()
+
+			const thumb = thumbs()[0]
+			const reference = shade(find('.so-switch__track--thumb'))
+
+			expect(reference, 'у ручки Switch тени нет').not.toEqual([])
+			expect(shade(thumb), 'в покое').toEqual(reference)
+
+			await userEvent.hover(thumb)
+			await settled(thumb)
+
+			// Ореол — кольцо в той же `box-shadow`; кольца нет — `halo` падает здесь
+			expect(opacity(halo(thumb)), 'ореол прозрачный').toBeGreaterThan(0)
+			expect(shade(thumb), 'под наведением').toEqual(reference)
+		})
 	})
 })

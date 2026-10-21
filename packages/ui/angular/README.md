@@ -23,12 +23,14 @@ render on the server (`@angular/platform-server`) and hydrate in the browser
 (`provideClientHydration`); component ids match on both sides.
 
 > **Status:** the Angular adapter is in progress — Button, Icon, Label, Frame, ProgressSpinner,
-> Skeleton, Input, NumberInput (a number in the locale's format with − and + step buttons; the
-> form gets the number), Textarea (multi-line, growing with its text, with a character counter),
-> CheckBox, Switch, the form field `<div so-field>` (label, helper and error linked to the control
-> inside it), RadioGroup, ListBox, Tabs, Accordion, Table, the `Virtual` window for long lists and
-> the `<so-drag-and-drop>` wrapper that lets users reorder the items of Tabs, ListBox and Accordion
-> by dragging (`(soMove)`, `(soMoveBefore)` can cancel) are ported, the rest of the set is on its
+> ProgressLinear (`<span so-progress-linear>`), Skeleton, Input, NumberInput (a number in the
+> locale's format with − and + step buttons; the form gets the number), Textarea (multi-line,
+> growing with its text, with a character counter), CheckBox, Switch, Slider (`<span so-slider>`),
+> Rating (`<span so-rating>`), the form field `<div so-field>` (label, helper and error linked to
+> the control inside it), Scroller (`<div so-scroller>`), RadioGroup, ListBox, Tabs, Accordion,
+> Pagination (`<nav so-pagination>`), Table, the `Virtual` window for long lists and the
+> `<so-drag-and-drop>` wrapper that lets users reorder the items of Tabs, ListBox and Accordion by
+> dragging (`(soMove)`, `(soMoveBefore)` can cancel) are ported, the rest of the set is on its
 > way. Frame moves the element you wrote into `target` (`body` by default) in the browser; with
 > `contained` it stays in place. `so-locale-provider` gives a subtree its language and library
 > strings. See [the adapter table](https://github.com/youra-h/soldy#components).
@@ -144,6 +146,23 @@ Enter, releasing a step button. The icons of the step buttons are templates,
 template: `<div so-number-input name="qty" [min]="0" [value]="qty()" (soCommit)="save($event.newValue)"></div>`
 ```
 
+A slider and a rating are fields as well: `<span so-slider>` has a native `<input type="range">` in
+each thumb, `<span so-rating>` one under its row of stars, and the form gets their values under
+`name`. A number is one thumb, an array is a thumb per item (`[value]="[20, 80]"`). The pointer
+works on the track, never on the inputs, so what you write on these two stays on the element; only
+a rating's `id` is an input, and it goes to its range input, where `<label for>` finds it. With
+several thumbs the slider is a group named by `aria_label`, and each thumb takes its own name from
+`thumbLabels`. The `mark` and `thumb` slots of a slider and the `icon` slot of a rating are
+templates with the data of their mark, thumb or star:
+
+```ts
+template: `<label so-label text="Volume" position="top"><span so-slider name="volume" [value]="40"></span></label>
+<span so-slider [value]="[20, 80]" aria_label="Price" [thumbLabels]="['From', 'To']" tooltip="always">
+  <ng-template slot="thumb" let-value="value">{{ value }} ₽</ng-template>
+</span>
+<span so-rating name="score" [value]="3.5" [step]="0.5" aria_label="Score" (soCommit)="rate($event.newValue)"></span>`
+```
+
 A collection — RadioGroup, ListBox, Tabs, Accordion — is an owner element with its items inside
 (`<div so-radio-group>`, `<div so-list-box>`, `<div so-tabs>`, `<div so-accordion>`). The parts are
 components of their own, written as separate elements, since Angular has no dot syntax:
@@ -188,6 +207,21 @@ arrows of an accordion section, the edges of the tab list — is an `<ng-templat
 template given to the owner renders in every item in place of its own. A tab panel that is not
 active stays in place hidden, its content not inserted; a markup tab closed with its close button
 is hidden the same way — the element is yours.
+
+Pagination draws its pages itself — from `total` and `pageSize`, or from a list of `pages` — and
+has no content of its own: a page is an inner part, `<li so-pagination-item>` with a button in it,
+and the `item` slot gives every page your template with the page and its text. A scroller lays its
+content out in its viewport, between the two buttons; a role for the row and what goes with it
+comes to the viewport as `viewportAria`. The arrow icons of both are templates, `prev-icon` and
+`next-icon`:
+
+```ts
+template: `<nav so-pagination [total]="200" [value]="page()" aria_label="Result pages" (soChangeValue)="page.set($event.newValue)"></nav>
+<div so-scroller>
+  <button so-button text="First"></button>
+  <button so-button text="Second"></button>
+</div>`
+```
 
 A table takes its columns and rows as data only — `columns` and `items`, or an `engine` — and draws
 its headers (`th[so-table-column]`) and rows (`tr[so-table-row]`) itself: sorting, row selection

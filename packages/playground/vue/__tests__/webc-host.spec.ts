@@ -481,6 +481,72 @@ describe('хост Web Components · контролы и навигация', ()
 	})
 })
 
+/**
+ * Оверлеи — как у Vue: триггер — Button в слоте `trigger`, панель уехала в
+ * `body`, мимо сцены. Связку с панелью триггер получает сам: scope у слотов
+ * нет, и наборы триггера кладёт шаблон. Пропсы строки и слушатели — у
+ * компонента: клик по триггеру приходит в журнал событием открытости.
+ */
+describe('хост Web Components · оверлеи', () => {
+	const texts = (nodes: Iterable<Element>) => [...nodes].map((node) => node.textContent?.trim())
+
+	/** Панель, на которую ссылается триггер; нет её — тест падает здесь. */
+	function panelOf(trigger: Element, reference: string): HTMLElement {
+		const panel = document.getElementById(trigger.getAttribute(reference) ?? '')
+
+		if (!panel) throw new Error(`панели по ${reference} нет`)
+
+		return panel
+	}
+
+	it('превью Popover: триггер в корне, панель с содержимым в body, клик — в журнал', async () => {
+		const node = stage()
+		const events: string[] = []
+		const handle = host.mount(node, {
+			component: 'popover',
+			props: { aria_label: 'Пример поповера' },
+			onEvent: (name) => events.push(name),
+		})
+		const trigger = find(node, '.so-popover > .so-button')
+		const panel = panelOf(trigger, 'aria-controls')
+
+		expect(trigger.textContent?.trim()).toBe('Открыть')
+		expect(trigger.getAttribute('slot')).toBe('trigger')
+		expect(panel.parentElement).toBe(document.body)
+		expect(panel.classList.contains('so-popover__panel')).toBe(true)
+		expect(panel.getAttribute('aria-label')).toBe('Пример поповера')
+		expect(texts(find(panel, '.so-popover__content').children)).toEqual([
+			'Произвольное содержимое: текст, поля, кнопки',
+			'Действие',
+		])
+
+		await nextFrame()
+		events.length = 0
+		trigger.click()
+		await flush()
+
+		expect(events).toContain('change:open')
+		expect(trigger.getAttribute('aria-expanded')).toBe('true')
+		expect(panel.style.display).toBe('')
+
+		handle.unmount()
+	})
+
+	it('превью Tooltip: триггер в корне, описание — панель с текстом подсказки', () => {
+		const node = stage()
+		const handle = host.mount(node, { component: 'tooltip', props: { openDelay: 0 } })
+		const trigger = find(node, '.so-tooltip > .so-button')
+		const panel = panelOf(trigger, 'aria-describedby')
+
+		expect(trigger.textContent?.trim()).toBe('Наведи')
+		expect(panel.parentElement).toBe(document.body)
+		expect(panel.getAttribute('role')).toBe('tooltip')
+		expect(find(panel, '.so-tooltip__content').textContent).toBe('Короткое пояснение к кнопке')
+
+		handle.unmount()
+	})
+})
+
 /** Узел по селектору; нет его — тест падает здесь. */
 function find(root: ParentNode, selector: string): HTMLElement {
 	const node = root.querySelector(selector)

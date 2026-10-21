@@ -528,10 +528,21 @@ ARIA пускает только `option` и `group` (axe — `aria-required-chi
   (у Solid ещё — триггер тем же узлом после открытия и закрытия, фокус на нём
   после закрытия кликом по нему), `ui/svelte/__tests__/popover.spec.ts`
   (якорь панели — корень, руна `rootElement` адаптера),
+  `ui/webc/__tests__/popover.spec.ts` (сверх сценариев Vue — наборы триггера на
+  первом элементе слота, тот же узел; перенос в цель и `contained` не
+  пересобирают кнопки в панели; Select внутри — вложенным поповером),
+  `ui/webc/__tests__/hide-outside.spec.ts` (поповер в модальном Frame),
   `playground/vue/browser/popover.spec.ts`,
-  `playground/vue/browser/popover-swipe.spec.ts` и
+  `playground/vue/browser/popover-swipe.spec.ts`,
   `playground/vue/browser/svelte-host.spec.ts` (открытая панель Svelte стоит,
-  как у Vue).
+  как у Vue) и `playground/vue/browser/webc-frame.spec.ts` (открытая панель Web
+  Components с частями стоит у триггера, как у Vue). **Web Components**
+  (`<span is="so-popover">`): scope у слотов нет, и оба набора триггера шаблон
+  кладёт на первый элемент слота `trigger` одним слоем владельца — узлы слота
+  отдаёт контекст шаблона (`slotted`). Панель — деталь Frame
+  (`popover.frame`), в цель её уводит база Frame; `lazyMount` держит
+  содержимое вне документа до первого открытия (`showSlot`), и элементы soldy
+  в нём не собираются.
 - **Menu** — Menu Button (APG): кнопка потребителя в слоте `trigger` внутри
   корня, как у Popover, панель — `Frame` с `role="menu"`, `id` и
   `aria-labelledby` на триггер (имя меню — текст кнопки), у триггера —
@@ -846,8 +857,14 @@ ARIA пускает только `option` и `group` (axe — `aria-required-chi
   `plugins/__tests__/tooltip-trigger.plugin.spec.ts`,
   `ui/vue/__tests__/tooltip.spec.ts`, `ui/react/__tests__/tooltip.spec.tsx`,
   `ui/solid/__tests__/tooltip.spec.tsx` (у Solid ещё — триггер тем же узлом
-  после показа и смены `type`), `ui/svelte/__tests__/tooltip.spec.ts` и
-  `playground/vue/browser/tooltip.spec.ts`.
+  после показа и смены `type`), `ui/svelte/__tests__/tooltip.spec.ts`,
+  `ui/webc/__tests__/tooltip.spec.ts` (ссылка на панель сменяется на том же
+  узле триггера), `playground/vue/browser/tooltip.spec.ts` и
+  `playground/vue/browser/webc-frame.spec.ts` (подсказка Web Components стоит у
+  триггера, как у Vue). **Web Components** (`<span is="so-tooltip">`): ссылку
+  на панель (`triggerAria`) шаблон кладёт на первый элемент слота `trigger`
+  слоем владельца, scope у слотов нет; панель — деталь Frame
+  (`tooltip.frame`).
 - **Dialog** — Dialog (Modal) pattern: `role="dialog"` и `aria-modal="true"`
   на панели, имя — видимый заголовок (`aria-labelledby` на слот `title`,
   который рисуется всегда; `id` он берёт из набора `titleAria`). `TAriaPlugin`
@@ -1140,16 +1157,18 @@ useToasts()`. API опускает лифт (`TOASTS_ELEVATOR`, расширен
   `plugins/__tests__/slide-snap-strategies.spec.ts`,
   `plugins/__tests__/slide-keyboard.plugin.spec.ts`,
   `ui/vue/__tests__/slider.spec.ts`, `ui/react/__tests__/slider.spec.tsx`,
-  `ui/svelte/__tests__/slider.spec.ts`, `ui/solid/__tests__/slider.spec.tsx`
-  и `ui/webc/__tests__/slider.spec.ts` (сверх сценариев Vue — ручки по месту и
-  значение поля после хода, ниже; у Web Components — ещё образцы `mark` и
-  `thumb`), `playground/vue/browser/slider.spec.ts` и
+  `ui/svelte/__tests__/slider.spec.ts`, `ui/solid/__tests__/slider.spec.tsx`,
+  `ui/webc/__tests__/slider.spec.ts` и `ui/angular/__tests__/slider.spec.ts`
+  (сверх сценариев Vue — ручки по месту и значение поля после хода, ниже; у
+  Web Components — ещё образцы `mark` и `thumb`),
+  `playground/vue/browser/slider.spec.ts`,
   `playground/vue/browser/webc-controls.spec.ts` (части Web Components стоят,
-  как у Vue, ручку тянет указатель); ползунок в поле формы —
+  как у Vue, ручку тянет указатель) и `playground/vue/browser/angular-host.spec.ts`
+  (части Angular стоят, как у Vue); ползунок в поле формы —
   `ui/vue/__tests__/field.spec.ts`, `ui/react/__tests__/field.spec.tsx`,
-  `ui/svelte/__tests__/field.spec.ts`, `ui/solid/__tests__/field.spec.tsx` и
-  `ui/webc/__tests__/field.spec.ts` («Slider с несколькими ручками в поле»),
-  `playground/vue/browser/field.spec.ts`.
+  `ui/svelte/__tests__/field.spec.ts`, `ui/solid/__tests__/field.spec.tsx`,
+  `ui/webc/__tests__/field.spec.ts` и `ui/angular/__tests__/field.spec.ts`
+  («Slider с несколькими ручками в поле»), `playground/vue/browser/field.spec.ts`.
   **Solid**: выходы `thumbs` и `shownMarks` — новые записи на каждую смену, и
   петля идёт по месту (`Index`), как `:key="index"` у Vue: ручка остаётся тем
   же узлом, и фокус её поля переживает шаг клавишей. Значение поля пишет его
@@ -1161,7 +1180,15 @@ useToasts()`. API опускает лифт (`TOASTS_ELEVATOR`, расширен
   выхода, `TRootSpec.aria`), атрибуты разметки остаются на корне. Слоты `mark`
   и `thumb` — образцы: копию получает каждая метка и подсказка каждой ручки, а
   данные копия берёт по номеру своего узла в `shownMarks` и `thumbs`. Метки
-  списком — свойством: атрибут `marks` — флаг точек шкалы.
+  списком — свойством: атрибут `marks` — флаг точек шкалы. **Angular**
+  (`<span so-slider>`): петли ручек и меток — по месту (`track $index`); ход
+  поля шаблон пишет свойствами (`[min]`, `[max]`, `[step]`) раньше значения, а
+  значение — директива текста поля (`[so-field-text]`), только разошедшееся с
+  узлом. Набор корня — `rootAria` (слой `aria` корня из другого выхода,
+  описание корня `aria`), атрибуты разметки остаются на корне. Слоты `mark` и
+  `thumb` — шаблоны (`<ng-template slot="thumb" let-value="value">`), а без
+  них подпись метки и подсказка — текст узла (`[textContent]`): пустая
+  подпись остаётся без детей, и тема прячет её по `:empty`.
 - **Rating** — Rating Slider (APG): ползунок с одной ручкой, у которого
   шкала — ряд звёзд, а не группа радио. Звёзды потребитель не адресует, и
   элементами коллекции они не стали бы (см. «Часть или слот»), а
@@ -1217,12 +1244,16 @@ useToasts()`. API опускает лифт (`TOASTS_ELEVATOR`, расширен
   `Index`, как у ручек Slider), `ui/webc/__tests__/rating.spec.ts` (то же —
   петлёй по номеру звезды; `id` — только на поле: атрибуты разметки остаются
   на корне, а `id` — проп поля, `TRootSpec.fieldId`; слот `icon` — образец,
-  копия в каждом слое каждой звезды),
+  копия в каждом слое каждой звезды), `ui/angular/__tests__/rating.spec.ts`
+  (то же — петлёй по номеру звезды, `track star.value`; `id` — вход оценки, его
+  шаблон пишет на поле; слот `icon` — шаблон в обоих слоях звезды),
   `playground/vue/browser/rating.spec.ts` (форма без оценки не уходит,
   сообщение и фокус от браузера, только для показа уходит с 0, тон ошибки у
-  пустых звёзд после попытки отправить) и
+  пустых звёзд после попытки отправить),
   `playground/vue/browser/webc-controls.spec.ts` (звёзды Web Components стоят,
-  как у Vue, нажатие ставит звезду целиком).
+  как у Vue, нажатие ставит звезду целиком) и
+  `playground/vue/browser/angular-host.spec.ts` (звёзды Angular стоят, как у
+  Vue).
 - **NumberInput** — Spinbutton (APG) на текстовом поле: `<input type="text">`
   с `role="spinbutton"`, `aria-valuenow` и `aria-valuetext` — у числа (текст —
   строкой формата: «12 %», а не «0.12»), `aria-valuemin` и `aria-valuemax` —
@@ -1338,9 +1369,12 @@ useToasts()`. API опускает лифт (`TOASTS_ELEVATOR`, расширен
   `ui/svelte/__tests__/progress-linear.spec.ts`,
   `ui/solid/__tests__/progress-linear.spec.tsx`,
   `ui/webc/__tests__/progress-linear.spec.ts`,
-  `playground/vue/browser/progress-linear.spec.ts` и
+  `ui/angular/__tests__/progress-linear.spec.ts` (доля — стиль-выход корня,
+  `percentStyle`, его называет описание корня),
+  `playground/vue/browser/progress-linear.spec.ts`,
   `playground/vue/browser/webc-controls.spec.ts` (полоса Web Components стоит,
-  как у Vue); как бег и доля выглядят, оценивает глаз — ручные сценарии
+  как у Vue) и `playground/vue/browser/angular-host.spec.ts` (полоса Angular —
+  тоже); как бег и доля выглядят, оценивает глаз — ручные сценарии
   `/tests/motion/progress-linear` на стенде.
 - **ProgressSpinner** — индикатор выполнения кольцом: вторая форма той же
   модели, а не режим линии. Ожидание без доли — то же кольцо с
@@ -1640,7 +1674,10 @@ useToasts()`. API опускает лифт (`TOASTS_ELEVATOR`, расширен
   внутренняя часть, как тост у Toasts: в разметку её не ставят, наружу пакета
   она не выходит. В Solid петля по окну — по ключу места (`KeyedFor`): записи
   `cells` новые на каждую смену, а `<For>`, сравнивая их по ссылке,
-  пересоздавал бы страницы вместе с фокусом. Сторожат
+  пересоздавал бы страницы вместе с фокусом; в Angular — тоже по ключу места
+  (`track cell.key`), страница — внутренний компонент
+  `<li so-pagination-item>` без экспорта, а слот `item` пагинация отдаёт ей
+  шаблоном `default` с `ngProjectAs`, как элементам коллекций. Сторожат
   `core/__tests__/pagination.spec.ts`,
   `plugins/__tests__/names.plugin.spec.ts`,
   `plugins/__tests__/pagination-focus.plugin.spec.ts`,
@@ -1656,10 +1693,14 @@ useToasts()`. API опускает лифт (`TOASTS_ELEVATOR`, расширен
   по ключу места `TKeyedLoop`, — фокус со стрелки, погасшей у края, — на
   текущую; слот `item` — образец, копия в каждой странице, а страницу копия
   берёт у ближайшего `.so-pagination-item`),
+  `ui/angular/__tests__/pagination.spec.ts` (страница и содержимое её слота
+  переживают сдвиг окна, страница из пакета не выходит) с «Pagination ·
+  серверный рендер и гидратация» в `ui/angular/__tests__/collections.server.spec.ts`,
   `playground/vue/browser/pagination.spec.ts` (фокус со стрелки, погасшей
-  у края, — на текущую, и Tab мимо погасшей стрелки) и
+  у края, — на текущую, и Tab мимо погасшей стрелки),
   `playground/vue/browser/webc-controls.spec.ts` (стрелки, страницы и пропуски
-  Web Components стоят, как у Vue).
+  Web Components стоят, как у Vue) и `playground/vue/browser/angular-host.spec.ts`
+  (у Angular — тоже).
 - **Table** — Table и Sortable Table (APG): нативные `table`, `thead`,
   `tbody`, `th` и `td`, роль `table` даёт тег, своей клавиатуры нет — у Grid
   другая модель фокуса, это отдельный режим (`grid`, ниже). Колонки и строки — только

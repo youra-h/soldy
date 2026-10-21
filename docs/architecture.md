@@ -458,19 +458,21 @@ useIcons({ close: myCloseIcon }) // точечно, поверх
 
 Вместо этого номер ступени переопределён как **роль, а не светлота**:
 
-| Ступень       | Роль                                                       |
-| ------------- | ---------------------------------------------------------- |
-| `50`          | поверхность (страница, панель)                             |
-| `100` / `200` | приподнято на шаг: hover, контейнер, поверхность контрола  |
-| `300` / `400` | границы                                                    |
-| `500`         | приглушённый текст; точка симметрии — ~0.55 в обеих схемах |
-| `800`         | основной текст                                             |
-| `950`         | максимальный контраст с поверхностью                       |
+| Ступень       | Роль                                                                                                                                                |
+| ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `50`          | поверхность: страница, панель; у выключенного поля и коробки — ступень 50 своего семейства                                                          |
+| `100` / `200` | на шаг и на два от страницы. Компоненты их не берут: «на шаг от своей поверхности» рисует вуаль, а 200 — поверхность контрола тёмной схемы, токеном |
+| `300` / `400` | граница; 400 — под наведением и фокусом                                                                                                             |
+| `500`         | сигнал и основа вуали; приглушённый текст; точка симметрии — ~0.55 в обеих схемах                                                                   |
+| `600` / `700` | наведение и нажатие сигнала                                                                                                                         |
+| `800`         | основной текст и цветной текст варианта                                                                                                             |
+| `950`         | максимальный контраст с поверхностью                                                                                                                |
 
 `tokens-dark.css` инвертирует шкалу по этим ролям. После этого арифметика
-`$hover-bg: $bg + 100` в миксинах в обеих схемах значит одно: «отойти дальше от
-поверхности». В светлой это темнее, в тёмной светлее, а SCSS не меняется вовсе
-— компонентные стили о схеме не знают.
+`$border-hover: $border + 100` в миксинах в обеих схемах значит одно: «отойти
+дальше от поверхности». В светлой это темнее, в тёмной светлее, а SCSS не
+меняется вовсе — компонентные стили о схеме не знают. Что брать новой части —
+сигнал, тихое или текст, — записано в инструкции темы, «Три роли цвета».
 
 **Значения не зеркальны механически.** Перестановка `50 ↔ 950` даёт плохой
 результат: тёмному интерфейсу нужны сжатые тёмные ступени (глаз хуже различает
@@ -479,25 +481,27 @@ useIcons({ close: myCloseIcon }) // точечно, поверх
 устроены dark-шкалы Radix Colors.
 
 **У хроматических шкал зеркальны только концы.** Середина (500–700) в обеих
-схемах остаётся насыщенной заливкой, на которой держится `text-white` у
+схемах остаётся насыщенной заливкой, на которой держится белая подпись у
 вида `filled` у Button. Инвертируй её вслед за нейтралью — hover увёл бы заливку в
 светлую пастель, и подпись стала бы нечитаемой. Меняется только направление
 hover: в тёмной схеме заливка светлеет.
 
-**Что не выражается ступенью — семантический токен.** Их пять; в тёмной схеме
-переопределяются только те, у кого меняется сам выбор ступени.
-`--so-component-text` не переопределяется вовсе: подстановка `var()` происходит
-в месте использования, поэтому `var(--so-neutral-800)` сам возьмёт тёмную
-ступень. Три новых появились там, где стоял литеральный `bg-white` — он не
-инвертируется вместе со шкалой:
+**Что не выражается ступенью — семантический токен.** Их десять (список — в
+инструкции темы, «Семантические токены»); в тёмной схеме переопределяются
+только те, у кого меняется сам выбор ступени. `--so-component-text` не
+переопределяется вовсе: подстановка `var()` происходит в месте использования,
+поэтому `var(--so-neutral-800)` сам возьмёт тёмную ступень. Три из них
+появились там, где стоял литеральный `bg-white` — он не инвертируется вместе со
+шкалой:
 
 - `--so-component-surface` — поверхность контрола (поле, коробка чекбокса,
   «таблетка» Tabs). В светлой схеме белый: ниже страницы уйти нельзя,
   приподняться можно только в белое. В тёмной наоборот — две ступени вверх.
   Асимметрия не небрежность, а то, как работает высота в тёмном интерфейсе;
-- `--so-component-knob` — ручка Switch. Отдельно от поверхности, потому что
-  обязана контрастировать и с серой дорожкой, и с включённой цветной;
-- `--so-component-veil` — вуаль для утопленных вкладок. Единственное, что
+- `--so-component-knob` — ручка Switch и Slider. Отдельно от поверхности,
+  потому что обязана контрастировать и с серой дорожкой, и с включённой цветной;
+- `--so-component-veil` — вуаль утопленного: подложка Dialog, Drawer и панели
+  выбора месяца Calendar, неактивные вкладки `outline`. Единственное, что
   ступенью не выражается вообще: «утопить» значит увести ЗА поверхность, а за
   поверхностью ступеней нет. В тёмной схеме это чистый чёрный.
 
@@ -1692,7 +1696,7 @@ There is no `adapter/static/`: React takes prop names from the descriptor types,
 
 ## Layer 8: Angular Adapter (`packages/ui/angular/src`)
 
-### ✅ IMPLEMENTED (Component / ComponentView / Stylable / Control / Textable / Button / Icon / Label / Field / Frame / ProgressSpinner / Skeleton / Input / NumberInput / Textarea / CheckBox / Switch / RadioGroup / ListBox / Tabs / Accordion / Table / Virtual / DragAndDrop)
+### ✅ IMPLEMENTED (Component / ComponentView / Stylable / Control / Interactive / ValueControl / InputControl / Textable / Button / Icon / Label / Field / Frame / ProgressSpinner / ProgressLinear / Skeleton / Input / NumberInput / Textarea / CheckBox / Switch / Slider / Rating / RadioGroup / ListBox / Tabs / Accordion / Pagination / Scroller / Table / Virtual / DragAndDrop)
 
 **Структура** зеркалит Vue/React: `adapter/{common,runtime,locale,elevator}` + `components/*`.
 
@@ -1943,6 +1947,10 @@ ListBox и Tabs (`so-list-box`, `so-tabs`) селектор элементный
   умолчанию все три. У поля — `attrs` и `dataset`: его `aria` стоит на
   вложенном `<input>`, а `dataset` — на корне, где его читает тема, как у
   остальных адаптеров;
+- `aria` в описании корня — из какого выхода база берёт слой `aria` корня, по
+  умолчанию из самого `aria`. У Slider — `rootAria`: у нескольких ручек корень
+  — группа с именем ползунка, у одной набор пуст, а `aria` ползунка шаблон
+  кладёт на поле ручки из `thumbs`; как `TRootSpec.aria` у Web Components;
 - `order` в описании корня — у элемента коллекции: `order` фасада уходит в
   стиль корня, ряд коллекции — флексбокс. У радио его нет: радио группы стоят
   где угодно;
@@ -2492,7 +2500,7 @@ Svelte 5 на рунах. Структура зеркалит React, потом�
 
 ## Layer 8d: Web Components Adapter (`packages/ui/webc/src`)
 
-### ✅ IMPLEMENTED (Component / ComponentView / Stylable / Interactive / Control / ValueControl / InputControl / Textable / Button / Icon / Label / Field / Frame / ProgressSpinner / ProgressLinear / Skeleton / Input / NumberInput / Textarea / CheckBox / Switch / Slider / Rating / RadioGroup / Tabs / Accordion / ListBox / Pagination / Scroller / Table / Virtual / DragAndDrop)
+### ✅ IMPLEMENTED (Component / ComponentView / Stylable / Interactive / Control / ValueControl / InputControl / Textable / Button / Icon / Label / Field / Frame / Popover / Tooltip / ProgressSpinner / ProgressLinear / Skeleton / Input / NumberInput / Textarea / CheckBox / Switch / Slider / Rating / RadioGroup / Tabs / Accordion / ListBox / Pagination / Scroller / Table / Virtual / DragAndDrop)
 
 Единственный таргет без фреймворка — и потому самый показательный тест
 архитектуры: ядро уже событийное, а `CustomEvent` это родная модель DOM.
@@ -2514,7 +2522,9 @@ Svelte 5 на рунах. Структура зеркалит React, потом�
   `adapter.connect(WebcProfile)` (о пропе ядра она сообщает элементу колбэком
   `onUpdate`, событие ядра уходит `CustomEvent` с элемента; событие «до», чей
   аргумент `TActionEvent`, — отменяемое, как событие DOM:
-  `event.preventDefault()` отменяет и событие ядра, а `detail` — оно само),
+  `event.preventDefault()` отменяет и событие ядра, а `detail` — оно само;
+  состояние связки — свойства инстанса с выходами плагинов дескриптора,
+  `TBindingState` с `TOutputs`, как у Angular),
   `useCollectionAdapter` (связка фасада коллекции — без `ctrl` и узла) и
   `joinBindings` (две связки коллекционного компонента — одной, как у
   Angular), `SoldyElement` (фабрика класса элемента поверх нативного класса
@@ -2670,11 +2680,13 @@ export const buttonTemplate: ITemplate<IButton> = {
 База копит имена изменившихся props в `_dirty`, откладывает флаш в микротаску
 (одно изменение в ядре часто даёт несколько триггеров) и применяет только те
 привязки, чьи props изменились. Смена `text` не трогает классы. Контекст
-привязок — живой вид элемента: состояние и инстанс текущей связки (`ctrl`) он
-отдаёт в момент обращения, узел содержимого, заданные слоты (`hasSlot`) и
-вывод слота по состоянию (`showSlot`). Обработчик, который шаблон завёл на
-одной связке и который запомнил контекст, после перестановки зовёт инстанс
-новой — так кнопка очистки Input очищает инстанс, присвоенный полю.
+привязок — живой вид элемента: состояние (с выходами плагинов дескриптора —
+пометкой панели `dismiss_ownerAttribute` у Popover) и инстанс текущей связки
+(`ctrl`) он отдаёт в момент обращения, узел содержимого, заданные слоты
+(`hasSlot`), узлы слота (`slotted`) и вывод слота по состоянию (`showSlot`).
+Обработчик, который шаблон завёл на одной связке и который запомнил контекст,
+после перестановки зовёт инстанс новой — так кнопка очистки Input очищает
+инстанс, присвоенный полю.
 
 То, что ядро пишет на корень, — `classes`, наборы `aria`, `attrs` (в нём и
 `dir`, и нативный `disabled` кнопки) и `dataset`, стиль (выход плагина
@@ -2946,6 +2958,26 @@ WebKit:
   стоит якорь, и раскладка света берёт его за сам корень: слот — корня, и
   содержимое — он. Сторожат `ui/webc/__tests__/frame.spec.ts` и
   `browser/webc-frame.spec.ts` стенда.
+- **Панель у триггера** — Popover и Tooltip (`<span is="so-popover">`,
+  `<span is="so-tooltip">`). Корень — элемент потребителя, обёртка триггера и
+  якорь панели, на нём — `attrs` и `dataset` (`sets`), ARIA — у панели и у
+  триггера. Панель — деталь Frame (`popover.frame`, `tooltip.frame`): якорь —
+  корень, его шаблон пишет панели при построении, а в цель и обратно
+  (`contained`) панель уводит база самого Frame. Наборы панели — `aria`,
+  `panelDataset` у поповера и пометка владельцем `dismiss_ownerAttribute` —
+  шаблон кладёт одним слоем владельца; выход плагина он читает с типом:
+  состояние в контексте шаблона — с выходами плагинов дескриптора (`TOutputs`
+  описания элемента). Содержимое панели — свет детали (`lend`): у поповера
+  полоса жеста, обёртка со слотом `default` и крестик `popover.close`, у
+  подсказки — обёртка текста; `lazyMount` выводит слот привязкой
+  (`showSlot`). **Триггер без scope.** Связку с панелью остальные адаптеры
+  отдают триггеру в scope слота, а у Web Components scope нет, и привязать
+  набор потребитель не может. Поэтому `triggerAria` (у поповера с
+  `triggerDataset`) шаблон кладёт на первый элемент слота `trigger` слоем
+  владельца — узлы слота отдаёт контекст (`slotted`), — и триггер остаётся тем
+  узлом, что написал потребитель: набор на нём сменяется на месте. Сторожат
+  `ui/webc/__tests__/popover.spec.ts`, `tooltip.spec.ts`, `hide-outside.spec.ts`
+  и `browser/webc-frame.spec.ts` стенда (панель стоит у триггера, как у Vue).
 - **Коллекция** — RadioGroup, Tabs с `Tabs.Content`, Accordion и ListBox:
   владелец (`<div is="so-tabs">`) и его элементы (`<div is="so-tabs-item">`,
   `<label is="so-radio-group-item">`), корень каждого — элемент потребителя,
@@ -3166,6 +3198,9 @@ Svelte (`TSoldyElementProps` над `DescriptorComponentProps`): свои про
   Так же у образцов Slider, Rating и Pagination: данные — по месту узла копии.
 - Метки ползунка списком — только свойством (`el.marks = [...]`): первый тип
   пропа `marks` булев, и атрибут — флаг «точки шкалы».
+- Триггер Popover и Tooltip — первый элемент слота `trigger` к построению:
+  элемент, добавленный в корень потом, связку с панелью не получает —
+  наблюдателя за светом нет. Текст и пробелы в слоте набора не несут.
 
 ---
 
@@ -3324,7 +3359,7 @@ Framework-agnostic dependency injection:
 | @soldy-ui/plugins        | `TBasePlugin`, `TPluginBundle`, `PLUGIN_EVENTS`, `IPlugin`, `IPluginContext`, `IPluginBundle`; plugin classes (`TElementPlugin`, `TReadyPlugin`, `TActionPlugin`, `TAriaPlugin`, `TAnchorPlugin`, `TDismissPlugin`, list, select, tabs and collection plugins, …); `toCssValue`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | @soldy-ui/vue            | Vue components (`Button`, `CheckBox`, …; collections with parts — `Tabs` with `Tabs.Item` / `Tabs.Content` and flat `TabsItem` / `TabsContent`; `Base*` declarations) + adapter (`createVueAdapterContext`, `useAdapter`, `useCollectionAdapter`, `useProps`, `useEmits`, `useExpose`, `exposeRoot`, `VueProfile`, `VueNaming`, `roleIcon`, `useSplitAttrs`, `TVueElevator`, `VueElevatorFactory`)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 | @soldy-ui/react          | Components (`Button`, `ComponentView`, …; collections with parts — `ListBox` with `ListBox.Item`, `Tabs` with `Tabs.Item` / `Tabs.Content`, `Accordion` with `Accordion.Item`, `RadioGroup` with `RadioGroup.Item`, `Table` with `Table.Column` / `Table.Row`, and flat `ListBoxItem`, `TabsItem`, `TabsContent`, `AccordionItem`, `RadioGroupItem`, `TableColumn`, `TableRow`), `useSetupXxx` hooks, `useAdapterContext`, `useAdapter`, `useCollectionAdapter`, `ReactProfile`, `ReactNaming`, `TReactElevator`, `Elevate`, `renderSlot`, `toAriaProps`, `toRootProps`, `toWrappedRootProps`, prop types (`UseProps`, `UseDomProps`, `EventProps`, `SlotProps`)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
-| @soldy-ui/angular        | `TButtonComponent`, `TComponentViewComponent`, `TComponentComponent`, `TIconComponent`, `TProgressSpinnerComponent`, `TSkeletonComponent`, `TFrameComponent`, `TLabelComponent`, `TInputComponent`, `TCheckBoxComponent`, `TSwitchComponent`, `TRadioGroupComponent` / `TRadioGroupItemComponent`, `TListBoxComponent` / `TListBoxItemComponent`, `TTabsComponent` / `TTabsItemComponent` / `TTabsContentComponent`, `TAccordionComponent` / `TAccordionItemComponent`, `setupXxx`, generated names and surfaces (`ButtonInputNames` / `ButtonOutputNames` / `TButtonSurface`, …), `createAngularAdapterContext`, `useAdapter` / `useCollectionAdapter` / `joinBindings`, `TInputValue` / `TOutputEmitter`, `TComponentBase`, `TRootSpec`, `SlotDirective`, `RoleIconDirective`, `LocaleProviderDirective`, `AngularProfile`, `AngularNaming`, `useInputs` / `useOutputs`, `TAngularElevator`, `AngularElevatorFactory`, `provideElevator`                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| @soldy-ui/angular        | `TButtonComponent`, `TComponentViewComponent`, `TComponentComponent`, `TIconComponent`, `TProgressSpinnerComponent`, `TProgressLinearComponent`, `TSkeletonComponent`, `TFrameComponent`, `TLabelComponent`, `TInputComponent`, `TCheckBoxComponent`, `TSwitchComponent`, `TSliderComponent`, `TRatingComponent`, `TScrollerComponent`, `TPaginationComponent` (its page is an internal part), `TRadioGroupComponent` / `TRadioGroupItemComponent`, `TListBoxComponent` / `TListBoxItemComponent`, `TTabsComponent` / `TTabsItemComponent` / `TTabsContentComponent`, `TAccordionComponent` / `TAccordionItemComponent`, `setupXxx`, generated names and surfaces (`ButtonInputNames` / `ButtonOutputNames` / `TButtonSurface`, …), `createAngularAdapterContext`, `useAdapter` / `useCollectionAdapter` / `joinBindings`, `TInputValue` / `TOutputEmitter`, `TComponentBase`, `TRootSpec`, `SlotDirective`, `RoleIconDirective`, `LocaleProviderDirective`, `AngularProfile`, `AngularNaming`, `useInputs` / `useOutputs`, `TAngularElevator`, `AngularElevatorFactory`, `provideElevator`                                                                                                                                                                                                                                                                                                                |
 | @soldy-ui/svelte         | `Button`, `ComponentView`, `setupXxx`, `useAdapter`, `SvelteProfile`, `SvelteNaming`, `TSvelteElevator`, `SvelteElevatorFactory`, prop types (`UseProps`, `UseDomProps`, `EventProps`, `SlotProps`, `TSnippetSlots`)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | @soldy-ui/solid          | `Button`, `ComponentView`, `Icon`, `Frame`, `ProgressSpinner`, `ProgressLinear`, `Skeleton`, `Slider`, `Rating`, `Scroller`, `Pagination` (its page is an internal part), `Virtual`, collections with parts (`ListBox` with `ListBox.Item`, `Tabs` with `Tabs.Item` / `Tabs.Content`, `Accordion` with `Accordion.Item`, `RadioGroup` with `RadioGroup.Item`, `Table` with `Table.Column` / `Table.Row`, and flat `ListBoxItem`, `TabsItem`, `TabsContent`, `AccordionItem`, `RadioGroupItem`, `TableColumn`, `TableRow`), `setupXxx`, `createSolidAdapterContext`, `useAdapter`, `useCollectionAdapter`, `joinState`, `LocaleProvider`, `Teleport`, `KeyedFor`, `roleIcon`, `createRootProps`, `createWrappedRootProps`, `toRootProps`, `rootTag`, `SolidProfile`, `SolidNaming`, `TSolidElevator`, `useElevator`, `Elevate`, `renderSlot`, `resolveSlot`, `liveScope`, `relaySlot`, `ResolvedSlot`, `chainHandler`, prop types (`UseProps`, `UseDomProps`, `EventProps`, `SlotProps`)                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | @soldy-ui/webc           | `<button is="so-button">` (`TButtonElement`), `<div is="so-component-view">` (`TComponentViewElement`), `<span is="so-icon">` (`TIconElement`), `<span is="so-progress-spinner">` (`TProgressSpinnerElement`), `<div is="so-skeleton">` (`TSkeletonElement`), `<so-locale-provider>` (`TLocaleProviderElement`), `setupXxx`, templates (`buttonTemplate`, `componentViewTemplate`, `iconTemplate`, `progressSpinnerTemplate`, `skeletonTemplate`), `SoldyElement`, `TRootSpec`, `defineElement`, `createWebcAdapterContext`, `useAdapter`, `useAttributes`, `HOST_PROPS`, `bind`, `roleIcon`, `drawRoleIcon`, `WebcProfile`, `WebcNaming`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |

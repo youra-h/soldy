@@ -56,7 +56,7 @@
   `setup/__tests__/overlay.spec.ts` (якорь и раскладка),
   `plugins/__tests__/popover-focus.plugin.spec.ts` («панель внутри корня»),
   `ui/vue/__tests__/popover.spec.ts`, `ui/react/__tests__/popover.spec.tsx`,
-  `ui/solid/__tests__/popover.spec.tsx`,
+  `ui/solid/__tests__/popover.spec.tsx`, `ui/webc/__tests__/popover.spec.ts`,
   `ui/react/__tests__/drawer.spec.tsx`, `ui/react/__tests__/frame.spec.tsx`,
   `ui/svelte/__tests__/frame.spec.ts`, `ui/solid/__tests__/frame.spec.tsx`,
   `ui/angular/__tests__/frame.spec.ts` и `ui/webc/__tests__/frame.spec.ts`.
@@ -137,8 +137,9 @@
   `frame.spec.tsx` Solid и «содержимое панели» в `frame.spec.ts` Web
   Components: кнопка в панели собрана с локалью провайдера вокруг Frame, а не
   с английской; у React — «крестик назван локалью поддерева» в
-  `ui/react/__tests__/popover.spec.tsx`: панель в `body`, а имя крестика — от
-  провайдера вокруг поповера.
+  `ui/react/__tests__/popover.spec.tsx` и у Web Components — «крестик назван
+  локалью провайдера вокруг поповера» в `ui/webc/__tests__/popover.spec.ts`:
+  панель в `body`, а имя крестика — от провайдера вокруг поповера.
 - **`TModalLayer`** (`core/src/components/base/modal-layer/`) — общая база
   модального окна **`TDialog`** и выезжающей панели **`TDrawer`**: всё, что
   следует из модальности, один раз — `role="dialog"`, `aria-modal`, имя от
@@ -508,7 +509,8 @@ Solid: `ui/solid/__tests__/popover.spec.tsx` («вложенные слои») �
 `ui/svelte/__tests__/popover.spec.ts` («вложенные слои», «Select внутри»),
 `dialog.spec.ts` («окно поверх окна», «Select внутри», «Popover внутри»),
 `drawer.spec.ts` («внутри модального окна») и `tooltip.spec.ts` («в открытом
-поповере»).
+поповере») — и у Web Components: `ui/webc/__tests__/popover.spec.ts`
+(«вложенные слои») и `tooltip.spec.ts` («в открытом поповере»).
 
 **Закрытие пользователем — запрос, а не запись.** Нажатие мимо, Escape и
 жест плагины слоя передают владельцу с причиной — `outside`, `escape` и
@@ -591,6 +593,7 @@ Tab с `body` повёл бы на страницу под ним. Поэтом�
 (a11y)»). Сторожат `plugins/__tests__/hide-outside.plugin.spec.ts`,
 `ui/vue/__tests__/hide-outside.spec.ts` (Select в модальном `Frame`),
 `ui/react/__tests__/dialog.spec.tsx` («Popover внутри»: закрытая панель
-поповера в окне спрятана, открытая — доступна) и
+поповера в окне спрятана, открытая — доступна),
 `ui/svelte/__tests__/hide-outside.spec.ts` (Select и поповер в модальном
-`Frame`: список Select и панель поповера — такие же соседки окна в `body`).
+`Frame`: список Select и панель поповера — такие же соседки окна в `body`) и
+`ui/webc/__tests__/hide-outside.spec.ts` (поповер в модальном `Frame`).

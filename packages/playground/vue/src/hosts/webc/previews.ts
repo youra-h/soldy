@@ -117,6 +117,19 @@ const strip = (value: string) => (): Node => {
 	return node
 }
 
+/** Абзац содержимого панели поповера — как у Vue: с отступом до кнопки под ним. */
+const paragraph = (value: string) => (): Node => {
+	const node = document.createElement('p')
+
+	node.style.margin = '0 0 8px'
+	node.textContent = value
+
+	return node
+}
+
+/** Кнопка с подписью — в слоте: триггер поповера и подсказки, кнопка в панели. */
+const button = (text: string): TPreview => ({ tag: 'button', is: 'so-button', props: { text } })
+
 /**
  * Граница ширины — как у Vue: сцена ячейки — флексбокс, и полоса или лента
  * держала бы там только свой минимум, а лента с шириной по содержимому
@@ -317,6 +330,33 @@ export const PREVIEWS: Record<string, TPreview> = {
 	// Содержимого у пагинации нет: страницы окна кладёт в коллекцию она сама,
 	// а рисует её шаблон. Язык номеров и имён стрелок — из шапки стенда
 	pagination: { tag: 'nav', is: 'so-pagination' },
+
+	// Триггер — Button в слоте `trigger`: связку с панелью и вид «нажат» он
+	// получает сам, scope у слотов нет. В содержимом есть кнопка: на неё при
+	// открытии уходит фокус
+	popover: {
+		tag: 'span',
+		is: 'so-popover',
+		slots: {
+			trigger: [button('Открыть')],
+			default: [
+				paragraph('Произвольное содержимое: текст, поля, кнопки'),
+				button('Действие'),
+			],
+		},
+	},
+
+	// Триггер — Button в слоте `trigger`: ссылку на панель (`aria-describedby`)
+	// он получает сам. Текст подсказки — слотом по умолчанию: пропа текста у неё
+	// нет
+	tooltip: {
+		tag: 'span',
+		is: 'so-tooltip',
+		slots: {
+			trigger: [button('Наведи')],
+			default: [text('Короткое пояснение к кнопке')],
+		},
+	},
 
 	// Элементы — разметкой, как у Vue и React. Строка элемента — кнопка на `div`
 	// (`<div is="so-button-div">`): её строит шаблон элемента. Пришли данными
