@@ -1,3 +1,4 @@
+@use 'sass:list';
 @use 'sass:map';
 @use '../button/mixins' as button;
 @use './mixins' as tags;
@@ -290,15 +291,71 @@ $focused: '&:has(> #{$row}:focus)';
 	@include button.button-view('plain');
 }
 
-// Выбранная пилюля в режиме принудительных цветов — системная подсветка с её
-// текстом и без подмены цветов браузером (`button-state-forced`), и внутри
-// пилюли подмены тоже нет. Строка берёт цвет пилюли и так (`color: inherit`
-// выше), а у крестика цвет свой, вида `plain`: на подсветке он остался бы
-// ступенью темы.
-@media (forced-colors: active) {
-	.so-tags-item[data-selected='true']:not([data-disabled='true']) > .so-tags-item__close {
-		color: inherit;
+// Цвет крестика — от пилюли. Варианта крестику разметка не передаёт, и свой
+// цвет у него — нейтраль кнопки (`:where(.so-button)`): на цветной пилюле он
+// был бы чужим — тёмным под белой подписью `filled`, серым пятном под
+// наведением.
+//
+// Подпись крестика — подпись пилюли: у вида `plain` это тон 800, и здесь он —
+// цвет места (`currentColor`), как у кнопок на залитой плашке тоста. В `color`
+// крестика он вычисляется в цвет, унаследованный от пилюли, то есть в её
+// подпись в любом виде, варианте и состоянии: на `filled` с вариантом —
+// белый, на `plain` и `outlined` — цвета варианта, у нейтрали и `none` — текст
+// компонента. Поэтому и в режиме принудительных цветов крестик выбранной
+// пилюли — текст подсветки сам: подмены цветов у неё нет, и он берёт её текст.
+:where(.so-tags-item__close) {
+	--so-tone-800: currentColor;
+}
+
+// На пилюле `plain` и `outlined` подпись — тон её семейства, и крестик —
+// `plain` того же семейства: вуаль его состояний — ступень 500 пилюли, та же,
+// что у её собственных состояний, а не нейтрали. У `filled` нейтрали и у
+// `none` подпись — текст компонента, и вуаль крестика остаётся нейтралью;
+// `filled` с вариантом — ниже.
+:where(
+	.so-tags--view-plain .so-tags-item > .so-tags-item__close,
+	.so-tags--view-outlined .so-tags-item > .so-tags-item__close
+) {
+	--so-tone-500: inherit;
+}
+
+// Виды набора, у которых пилюля не залита. Без них у набора вид `filled` —
+// база вида пилюли выше.
+$unfilled: ();
+
+@each $view in button.$views {
+	@if $view != 'filled' {
+		$unfilled: list.append($unfilled, '.so-tags--view-#{$view}', $separator: comma);
 	}
+}
+
+// Насыщенная пилюля — `filled` с вариантом, по тем же местам цвета, что у
+// пилюли выше: свой вариант тега или вариант набора, если свой у тега не
+// `normal`.
+$saturated: ();
+
+@each $variant in button.$variants {
+	$saturated: list.append(
+		$saturated,
+		'.so-tags:not(#{$unfilled}) .so-tags-item--variant-#{$variant}',
+		$separator: comma
+	);
+	$saturated: list.append(
+		$saturated,
+		'.so-tags--variant-#{$variant}:not(#{$unfilled}) .so-tags-item:not(.so-tags-item--variant-normal)',
+		$separator: comma
+	);
+}
+
+// Крестик на насыщенной пилюле — кнопка на насыщенной заливке места, тот же
+// приём, что у кнопок на залитой плашке тоста (`toasts/_toasts.scss`): вуаль
+// семейства на заливке той же ступени 500 невидима, поэтому состояния — тень,
+// слой чёрного (`button-text-colored-tones`), и фон уходит от белой подписи, а
+// не к ней. Кольцо фокуса — тоже цвет подписи: кольцо темы на заливке почти
+// пропадает. Нулевая специфичность и после Button, как у плашки тоста.
+:where(:is(#{$saturated}) > .so-tags-item__close) {
+	@include button.button-text-colored-tones(var(--color-black));
+	--so-component-focus-ring: currentColor;
 }
 
 // Теги внутри поля ввода: высоту задаёт строка поля, ширину — слот, а не
