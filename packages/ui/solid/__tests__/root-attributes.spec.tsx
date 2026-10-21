@@ -15,8 +15,9 @@
  *
  * У поля атрибуты потребителя делятся, как у Vue: класс и стиль — корню,
  * остальное, кроме `ref`, — `<input>`, поверх его `aria`, а корень остаётся
- * за адаптером. Элемент коллекции (`Tabs.Item`, `Accordion.Item`,
- * `RadioGroup.Item`) делит их так же: остальное — строке, у радио — полю. И
+ * за адаптером; у Select — `<input>` его поля. Элемент коллекции (`Tabs.Item`,
+ * `Accordion.Item`, `RadioGroup.Item`, `Tags.Item`, `Select.Item`) делит их
+ * так же: остальное — строке, у радио — полю. И
  * ListBox с Tabs: остальное — узлу списка с ролью (`listbox`, `tablist`), а
  * Table — корню `table` внутри окна, которому остаются класс и стиль. У
  * Popover, Tooltip и Menu атрибуты — корню, обёртке триггера, а не панели;
@@ -52,11 +53,13 @@ import {
 	RadioGroup,
 	Rating,
 	Scroller,
+	Select,
 	Skeleton,
 	Slider,
 	Switch,
 	Table,
 	Tabs,
+	Tags,
 	Textarea,
 	Toasts,
 	Tooltip,
@@ -94,6 +97,9 @@ import {
 	type RadioGroupProps,
 	type RatingProps,
 	type ScrollerProps,
+	type SelectGroupProps,
+	type SelectItemProps,
+	type SelectProps,
 	type SkeletonProps,
 	type SliderProps,
 	type SwitchProps,
@@ -101,6 +107,8 @@ import {
 	type TabsContentProps,
 	type TabsItemProps,
 	type TabsProps,
+	type TagsItemProps,
+	type TagsProps,
 	type TextareaProps,
 	type ToastsProps,
 	type TooltipProps,
@@ -130,6 +138,7 @@ type TProbeProps = ButtonProps &
 	TabsProps &
 	AccordionProps &
 	RadioGroupProps &
+	TagsProps &
 	TabsContentProps
 
 /** Панель рисуется, пока активен её таб, — и только внутри набора. */
@@ -172,17 +181,16 @@ const COMPONENTS: ReadonlyArray<
 	['Tabs.Content', TabsContentProbe, '.so-tabs__panel', {}],
 	['Accordion', Accordion, '.so-accordion', {}],
 	['RadioGroup', RadioGroup, '.so-radio-group', {}],
+	['Tags', Tags, '.so-tags', {}],
 ]
 
-/** Общие пропсы элементов коллекций в таблице. */
-type TItemProbeProps = TabsItemProps &
-	AccordionItemProps &
-	RadioGroupItemProps &
-	MenuItemProps &
-	MenuCheckboxItemProps &
-	MenuRadioItemProps &
-	MenuSubmenuProps &
-	MenuPopoverItemProps
+/**
+ * Атрибуты потребителя, которые таблица отдаёт элементу коллекции: `id` и
+ * `title` уходят строке, класс и стиль — корню. Пересечение пропсов всех
+ * элементов TypeScript уже не представляет (TS2590), а таблице нужны только
+ * они — их принимает каждый элемент.
+ */
+type TItemProbeProps = Pick<JSX.HTMLAttributes<HTMLElement>, 'id' | 'class' | 'style' | 'title'>
 
 /** Таб — в наборе: `id` строке пишет коллекция. */
 function TabsItemProbe(props: TabsItemProps): JSX.Element {
@@ -208,6 +216,38 @@ function RadioGroupItemProbe(props: RadioGroupItemProps): JSX.Element {
 		<RadioGroup>
 			<RadioGroup.Item value="a" {...props} />
 		</RadioGroup>
+	)
+}
+
+/** Тег — в наборе: роль и `tabindex` строке пишет коллекция. */
+function TagsItemProbe(props: TagsItemProps): JSX.Element {
+	return (
+		<Tags>
+			<Tags.Item value="a" text="A" {...props} />
+		</Tags>
+	)
+}
+
+/**
+ * Опция — в Select: `id` строке пишет плагин связок. Панель телепортирована,
+ * и опция ищется по документу.
+ */
+function SelectItemProbe(props: SelectItemProps): JSX.Element {
+	return (
+		<Select>
+			<Select.Item value="a" text="A" {...props} />
+		</Select>
+	)
+}
+
+/** Группа опций — в Select, в его телепортированной панели. */
+function SelectGroupProbe(props: SelectGroupProps): JSX.Element {
+	return (
+		<Select>
+			<Select.Group label="Фрукты" {...props}>
+				<Select.Item value="a" text="A" />
+			</Select.Group>
+		</Select>
 	)
 }
 
@@ -281,10 +321,17 @@ const ITEMS: ReadonlyArray<readonly [string, Component<TItemProbeProps>, string,
 	['Menu.RadioItem', MenuRadioItemProbe, '.so-menu-item', MENU_ROW],
 	['Menu.Submenu', MenuSubmenuProbe, '.so-menu-item', MENU_ROW],
 	['Menu.PopoverItem', MenuPopoverItemProbe, '.so-menu-item', MENU_ROW],
+	['Tags.Item', TagsItemProbe, '.so-tags-item', '.so-tags-item [role="listitem"]'],
+	['Select.Item', SelectItemProbe, '.so-select-item', '.so-select-item [role="option"]'],
 ]
 
 /** Общие пропсы полей в таблице. */
-type TFieldProbeProps = CheckBoxProps & SwitchProps & InputProps & NumberInputProps & TextareaProps
+type TFieldProbeProps = CheckBoxProps &
+	SwitchProps &
+	InputProps &
+	NumberInputProps &
+	TextareaProps &
+	SelectProps
 
 /**
  * Поле и класс его корня. Атрибуты потребителя поле делит, как у Vue: класс и
@@ -298,6 +345,7 @@ const FIELDS: ReadonlyArray<readonly [string, Component<TFieldProbeProps>, strin
 	['Input', Input, '.so-input'],
 	['NumberInput', NumberInput, '.so-number-input'],
 	['Textarea', Textarea, '.so-textarea'],
+	['Select', Select, '.so-select'],
 ]
 
 /**
@@ -910,11 +958,27 @@ const ROOTS: ReadonlyArray<
 		'.so-list-box-item',
 		'.so-list-box-item',
 	],
+	['Tags', (props) => <Tags {...props} />, '.so-tags', '.so-tags'],
+	['Tags.Item', (props) => <TagsItemProbe {...props} />, '.so-tags-item', '.so-tags-item'],
+	// Корень Select — рамка вокруг поля, а не `<input>` и не телепортированная панель
+	['Select', (props) => <Select {...props} />, '.so-select', '.so-select'],
+	[
+		'Select.Item',
+		(props) => <SelectItemProbe {...props} />,
+		'.so-select-item',
+		'.so-select-item',
+	],
+	[
+		'Select.Group',
+		(props) => <SelectGroupProbe {...props} />,
+		'.so-select-group',
+		'.so-select-group',
+	],
 	['Table', (props) => <TableProbe {...props} />, '.so-table__viewport', 'table.so-table'],
 ]
 
 /** Поля: `ref` потребителя — корень, а не `<input>`. */
-const FIELD_ROOTS = ROOTS.filter(([name]) => ['RadioGroup.Item'].includes(name))
+const FIELD_ROOTS = ROOTS.filter(([name]) => ['RadioGroup.Item', 'Select'].includes(name))
 
 /**
  * `ref` потребителя получает корень компонента — узел, на который ложатся его

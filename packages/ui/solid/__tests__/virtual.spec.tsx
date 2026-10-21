@@ -1,5 +1,5 @@
 /**
- * Virtual в Solid — окно над ListBox на настоящей разметке.
+ * Virtual в Solid — окно над ListBox и Select на настоящей разметке.
  *
  * Обёртка своего узла не рисует: её окно подхватывает коллекция внутри
  * (`TVirtualCollectionExtension`), и список рисует только видимые элементы, а
@@ -19,10 +19,10 @@
 
 import { describe, it, expect } from 'vitest'
 import { createSignal } from 'solid-js'
-import { createEngineListBox } from '@soldy-ui/core'
+import { createEngineListBox, createEngineSelect } from '@soldy-ui/core'
 import type { TListBoxCollection } from '@soldy-ui/core'
-import { ListBox, Virtual } from '@soldy-ui/solid'
-import { mount, nextFrame } from './mount'
+import { ListBox, Select, Virtual } from '@soldy-ui/solid'
+import { find, mount, nextFrame } from './mount'
 
 /** `count` элементов: значение `v1`… и текст. */
 function items(count: number) {
@@ -192,6 +192,131 @@ describe('ListBox в окне', () => {
 		expect(options(inner)).toHaveLength(55)
 		// У внешнего — окно: 50 своих элементов и 55 вложенного внутри первого
 		expect(options(document.querySelector('.outer') ?? document)).toHaveLength(50 + 55)
+	})
+})
+
+/**
+ * Select в окне: окно — у списка панели, он и прокручивается. Панель
+ * телепортирована, и опции собираются, когда её содержимое прочтёт портал, —
+ * в слое лифта Select, где коллекция подхватила окно обёртки; окно рисует их
+ * там же, по секциям нарисованного.
+ */
+describe('Select в окне', () => {
+	const selectOptions = () => [...document.querySelectorAll('.so-select__list .so-select-item')]
+	const selectFillers = () => [...document.querySelectorAll<HTMLElement>('.so-select__filler')]
+
+	/** Опция по тексту, если она в документе. */
+	function selectOptionOf(text: string): Element | undefined {
+		return selectOptions().find((node) => node.textContent?.trim() === text)
+	}
+
+	/** Строка опции: на ней набор `aria` опции. */
+	function selectRow(text: string): HTMLElement {
+		const row = selectOptionOf(text)?.querySelector(':scope > .so-button')
+
+		if (!(row instanceof HTMLElement)) throw new Error(`${text}: строки нет`)
+
+		return row
+	}
+
+	it('без обёртки — все опции, распорок нет', () => {
+		mount(() => <Select items={items(80)} />)
+
+		expect(selectOptions()).toHaveLength(80)
+		expect(selectFillers()).toEqual([])
+	})
+
+	it('в обёртке — до замера первые 50 опций из 80, без распорок', () => {
+		mount(() => (
+			<Virtual>
+				<Select items={items(80)} />
+			</Virtual>
+		))
+
+		expect(selectOptions()).toHaveLength(50)
+		expect(selectFillers()).toEqual([])
+	})
+
+	it('`enabled: false` — все опции', () => {
+		mount(() => (
+			<Virtual enabled={false}>
+				<Select items={items(80)} />
+			</Virtual>
+		))
+
+		expect(selectOptions()).toHaveLength(80)
+	})
+
+	it('по замеру — распорки в списке панели: скрыты, высотой в опции; нарисованным — место в наборе', async () => {
+		const engine = createEngineSelect({ items: items(200) })
+
+		mount(() => (
+			<Virtual>
+				<Select engine={engine} />
+			</Virtual>
+		))
+		await nextFrame()
+
+		// Видны места 100–109: с запасом — 90–119
+		engine.extensions.draw.notifyViewport({ top: 3000, bottom: 3300, step: 30 })
+
+		const list = find(document, '.so-select__list', HTMLElement)
+
+		expect(selectFillers().map((filler) => filler.getAttribute('aria-hidden'))).toEqual([
+			'true',
+			'true',
+		])
+		expect(
+			selectFillers().map((filler) => filler.style.getPropertyValue('--so-filler-height')),
+		).toEqual(['2700px', '2400px'])
+		expect(list.firstElementChild).toBe(selectFillers()[0])
+		expect(list.lastElementChild).toBe(selectFillers()[1])
+		expect(selectOptions()).toHaveLength(30)
+		expect(selectRow('Пункт 91').getAttribute('aria-setsize')).toBe('200')
+		expect(selectRow('Пункт 91').getAttribute('aria-posinset')).toBe('91')
+	})
+
+	/**
+	 * Опции и распорки — одной петлёй по ключу записи: опция, которая осталась
+	 * в окне, — тот же узел, хотя распорка перед ней сменилась.
+	 */
+	it('сдвиг окна не перемонтирует оставшуюся опцию — тот же узел', async () => {
+		const engine = createEngineSelect({ items: items(200) })
+
+		mount(() => (
+			<Virtual>
+				<Select engine={engine} />
+			</Virtual>
+		))
+		await nextFrame()
+
+		engine.extensions.draw.notifyViewport({ top: 3000, bottom: 3300, step: 30 })
+
+		const kept = selectOptionOf('Пункт 101')
+
+		// Окно ушло на десять мест вниз: места 100–129
+		engine.extensions.draw.notifyViewport({ top: 3300, bottom: 3600, step: 30 })
+
+		expect(selectOptionOf('Пункт 91')).toBeUndefined()
+		expect(selectOptionOf('Пункт 130')).toBeDefined()
+		expect(kept).toBeDefined()
+		expect(selectOptionOf('Пункт 101')).toBe(kept)
+	})
+
+	it('снятие Select снимает окно с движка снаружи', () => {
+		const engine = createEngineSelect({ items: items(80) })
+		const { destroy } = mount(() => (
+			<Virtual>
+				<Select engine={engine} />
+			</Virtual>
+		))
+
+		expect(engine.extensions.draw.virtual).toBe(true)
+
+		destroy()
+
+		expect(engine.extensions.draw.virtual).toBe(false)
+		expect(engine.extensions.draw.drawn).toHaveLength(80)
 	})
 })
 

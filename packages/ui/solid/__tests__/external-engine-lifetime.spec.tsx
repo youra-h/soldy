@@ -12,7 +12,10 @@
  * сверх них — строки, колонки и чекбокс «выбрать все»: заголовки и чекбоксы
  * собираются над ними, как над `ctrl` снаружи, — и `ctrl` обёртки `Virtual`.
  * У меню — пункты из данных и подменю из данных со своим движком: строки и
- * подменю собираются над ними, как над `ctrl` и `engine` снаружи.
+ * подменю собираются над ними, как над `ctrl` и `engine` снаружи. У Select —
+ * опции данными и разметкой, его поле (`TInput` владельца) и, в `multiple`,
+ * инстанс тегов с их движком и тегами: поле, ряд тегов и теги собираются над
+ * ними, как над `ctrl` и `engine` снаружи.
  *
  * Список над движком без `ctrl`, перенесённый в `<Show>` раньше по документу,
  * Solid собирает раньше, чем снимает прежний: привязку владельца забирает
@@ -25,16 +28,20 @@ import {
 	TEvented,
 	TListBox,
 	TMenu,
+	TSelect,
 	TTable,
 	TVirtual,
 	createEngineListBox,
 	createEngineMenu,
+	createEngineSelect,
 	createEngineTable,
 	type TListBoxCollection,
 	type TMenuCollection,
+	type TSelectCollection,
 	type TTableCollection,
+	type TTagsCollection,
 } from '@soldy-ui/core'
-import { ListBox, Menu, Table, Virtual } from '@soldy-ui/solid'
+import { ListBox, Menu, Select, Table, Virtual } from '@soldy-ui/solid'
 import { mount } from './mount'
 
 afterEach(() => {
@@ -285,6 +292,107 @@ describe('Table над движком и владельцем снаружи', (
 			destroy()
 
 			expect(engine.extensions.draw.virtual).toBe(false)
+		}
+
+		expect(live()).toEqual([])
+	})
+})
+
+/** Шины расширений движка. */
+function extensionBuses(engine: TSelectCollection | TTagsCollection): TEvented<any>[] {
+	return Object.values(engine.extensions).flatMap((extension) =>
+		extension ? [extension.events] : [],
+	)
+}
+
+/**
+ * Шины Select снаружи: владелец и его поле, движок, расширения и опции, а в
+ * `multiple` — инстанс тегов, его движок с расширениями и теги.
+ */
+function selectBuses(owner: TSelect, engine: TSelectCollection): TEvented<any>[] {
+	const { tags, engine: tagsEngine } = engine.extensions.tags
+
+	return [
+		owner.events,
+		owner.field.events,
+		engine.events,
+		...extensionBuses(engine),
+		...engine.extensions.batch.items.map((item) => item.events),
+		...(tags ? [tags.events] : []),
+		...(tagsEngine
+			? [
+					tagsEngine.events,
+					...extensionBuses(tagsEngine),
+					...tagsEngine.extensions.batch.items.map((tag) => tag.events),
+				]
+			: []),
+	]
+}
+
+describe('Select над движком и владельцем снаружи', () => {
+	/**
+	 * Опции из данных — экземпляры движка, а теги выбранных — элементы движка
+	 * тегов, который заводит коллекция Select в `multiple`: поле, ряд тегов,
+	 * теги и опции в телепортированной панели собираются над ними, как над
+	 * `ctrl` и `engine` снаружи.
+	 */
+	it('опции данными, теги в multiple: после нескольких монтирований на шинах ничего', () => {
+		const owner = new TSelect({ value: ['a', 'b'] })
+		const engine = createEngineSelect({ owner, items: ITEMS })
+
+		engine.extensions.selection.mode = 'multiple'
+
+		for (const item of engine.extensions.batch.items) engine.extensions.selection.select(item)
+
+		expect(engine.extensions.tags.engine?.extensions.batch.items).toHaveLength(2)
+
+		const live = watchBuses(selectBuses(owner, engine))
+
+		for (let i = 0; i < 3; i++) {
+			const { destroy } = mount(() => <Select ctrl={owner} engine={engine} />)
+
+			// Смонтирован по-настоящему: опции — в панели, теги — в поле
+			expect(document.querySelectorAll('.so-select__panel .so-select-item')).toHaveLength(
+				ITEMS.length,
+			)
+			expect(document.querySelectorAll('.so-select__tags .so-tags-item')).toHaveLength(2)
+
+			destroy()
+
+			expect(document.querySelector('.so-select__panel')).toBeNull()
+		}
+
+		expect(live()).toEqual([])
+	})
+
+	/**
+	 * Опции разметки входят в движок с монтированием и уходят с ним, а их теги
+	 * — с ними: движок тегов снаружи монтирования переживает, а тегов в нём не
+	 * остаётся.
+	 */
+	it('опции разметкой, теги в multiple: опции и теги уходят со снятием, на шинах ничего', () => {
+		const owner = new TSelect()
+		const engine = createEngineSelect({ owner })
+
+		engine.extensions.selection.mode = 'multiple'
+
+		const live = watchBuses(selectBuses(owner, engine))
+
+		for (let i = 0; i < 3; i++) {
+			const { destroy } = mount(() => (
+				<Select ctrl={owner} engine={engine}>
+					<Select.Item value="a" text="Первый" selected />
+					<Select.Item value="b" text="Второй" />
+				</Select>
+			))
+
+			expect(engine.extensions.batch.items.map((item) => item.value)).toEqual(['a', 'b'])
+			expect(document.querySelectorAll('.so-select__tags .so-tags-item')).toHaveLength(1)
+
+			destroy()
+
+			expect(engine.extensions.batch.items).toEqual([])
+			expect(engine.extensions.tags.engine?.extensions.batch.items).toEqual([])
 		}
 
 		expect(live()).toEqual([])
