@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, input, linkedSignal, viewChild } from '@angular/core'
+import type { IToastsItem, TToastsItemType } from '@soldy-ui/core'
 import {
 	AttributesDirective,
 	SlotDirective,
@@ -7,8 +8,12 @@ import {
 	TDrawerComponent,
 	TInputComponent,
 	TPopoverComponent,
+	TToastsComponent,
 	TTooltipComponent,
+	useToasts,
+	type TToastRender,
 } from '@soldy-ui/angular'
+import { TOASTS_ITEM_TYPES, TOAST_SAVING, toastSample } from '@soldy-ui/playground-shared'
 import type { TFixture } from './fixtures'
 
 /**
@@ -282,4 +287,120 @@ export class DrawerPreview implements TFixture {
 	/** Открытость панели — своя у превью, вход `visible` её переписывает. */
 	readonly shown = linkedSignal(() => this.visible() ?? false)
 	readonly subject = viewChild.required(TDrawerComponent)
+}
+
+/**
+ * Своё содержимое тоста — кнопка «Отменить»: тост приходит ей входом `toast`
+ * и закрывается ею. Коробки у компонента нет: кнопка встаёт в ряд своего
+ * содержимого тоста, как кнопка, которую рисует компонент Vue.
+ */
+@Component({
+	selector: 'pg-toast-undo',
+	imports: [TButtonComponent],
+	changeDetection: ChangeDetectionStrategy.OnPush,
+	host: { style: 'display: contents' },
+	template: `<button so-button text="Отменить" (click)="toast().close()"></button>`,
+})
+class ToastUndo {
+	readonly toast = input.required<IToastsItem>()
+}
+
+/** Своё содержимое образцов тостов этого хоста. */
+const undo: TToastRender = ToastUndo
+
+/**
+ * Тосты приходят из кода, а не из разметки: кнопки внутри менеджера берут API
+ * (`useToasts()` полем) и показывают тост. Что сообщает тост, — образцы
+ * стенда, одни на все хосты (`toastSample`), своё содержимое к ним — кнопка
+ * «Отменить» этого хоста. Текст начинается с номера: в стопке видно, какой
+ * тост где.
+ *
+ * Кнопка — на обычное сообщение и на каждый вид (`TOASTS_ITEM_TYPES`): тост
+ * показывает значок своего вида. Последняя — ожидание: «Сохраняем…» с кольцом
+ * на месте значка сам не закрывается, а через пару секунд тот же тост
+ * сообщает успех. Ряд кнопок — с переносом, как у Vue.
+ */
+@Component({
+	selector: 'pg-toasts-trigger',
+	imports: [TButtonComponent],
+	changeDetection: ChangeDetectionStrategy.OnPush,
+	host: { style: 'display: contents' },
+	template: `<div style="display: flex; flex-wrap: wrap; gap: 8px">
+		<button so-button text="обычное" (click)="notify()"></button>
+		@for (type of types; track type) {
+			<button so-button [text]="type" (click)="notify(type)"></button>
+		}
+		<button so-button text="загрузка → готово" (click)="save()"></button>
+	</div>`,
+})
+class ToastsTrigger {
+	protected readonly types = TOASTS_ITEM_TYPES
+
+	private readonly _toasts = useToasts()
+
+	private _count = 0
+
+	protected notify(type?: TToastsItemType): void {
+		const sample = toastSample(type, undo)
+
+		this._count += 1
+		this._toasts.show({ ...sample, text: `${this._count}. ${sample.text}`, type })
+	}
+
+	// Работа идёт — тост ждёт; кончилась — тот же тост сообщает итог
+	protected save(): void {
+		this._count += 1
+
+		const toast = this._toasts.show({ text: `${this._count}. Сохраняем…`, loading: true })
+		const done = `${this._count}. Сохранено`
+
+		setTimeout(() => {
+			if (!toast) return
+
+			toast.loading = false
+			toast.type = 'success'
+			toast.text = done
+		}, TOAST_SAVING)
+	}
+}
+
+/**
+ * Toasts: менеджер вокруг ряда кнопок, которые показывают тосты, как у Vue, —
+ * `<div so-toasts>` без своей коробки, а регион с тостами уехал к краю окна,
+ * мимо ячейки превью. Кнопкам нужен API менеджера над ними (`useToasts()`), а
+ * шаблон его отдаёт только разметке, поэтому превью — своим шаблоном.
+ */
+@Component({
+	selector: 'pg-toasts-preview',
+	imports: [TToastsComponent, ToastsTrigger],
+	changeDetection: ChangeDetectionStrategy.OnPush,
+	host: { style: 'display: contents' },
+	template: `
+		<div
+			so-toasts
+			[ctrl]="ctrl()"
+			[rendered]="rendered()"
+			[visible]="visible()"
+			[direction]="direction()"
+			[target]="target()"
+			[placement]="placement()"
+			[layout]="layout()"
+			[max]="max()"
+			[duration]="duration()"
+		>
+			<pg-toasts-trigger />
+		</div>
+	`,
+})
+export class ToastsPreview implements TFixture {
+	readonly ctrl = input<TToastsComponent['ctrl']>()
+	readonly rendered = input<TToastsComponent['rendered']>()
+	readonly visible = input<TToastsComponent['visible']>()
+	readonly direction = input<TToastsComponent['direction']>()
+	readonly target = input<TToastsComponent['target']>()
+	readonly placement = input<TToastsComponent['placement']>()
+	readonly layout = input<TToastsComponent['layout']>()
+	readonly max = input<TToastsComponent['max']>()
+	readonly duration = input<TToastsComponent['duration']>()
+	readonly subject = viewChild.required(TToastsComponent)
 }

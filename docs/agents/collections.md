@@ -1097,7 +1097,9 @@ Tabs — с расширением `tabs` (`TTabsExtension`). Сторожат �
 коллекцией» в `setup/__tests__/item-context-lifetime.spec.ts` — каждый
 элемент разметки под списком каждой другой коллекции, панель — под каждым
 списком, кроме Tabs, — `ui/vue/__tests__/toasts.spec.ts` (тег под
-`<Toasts>`), `ui/solid/__tests__/toasts.spec.tsx` и
+`<Toasts>`), `ui/angular/__tests__/toasts.spec.ts` (радио под
+`<div so-toasts>` — вне группы само по себе, в своей группе — в ней),
+`ui/solid/__tests__/toasts.spec.tsx` и
 `collections.server.spec.tsx` (пункт ListBox под `<Toasts>` — вне списка сам
 по себе, в своём списке — в нём, и на сервере тоже),
 `ui/react/__tests__/toasts.spec.tsx` (то же у React),
@@ -1358,6 +1360,21 @@ API тостов приложению: `<Toasts>` ставит `Elevate` вок�
 «Solid») и `collections.server.spec.tsx` — запись мимо `Provider` видна только
 в серверном прогоне: в браузерной сборке разработки у компонента свой
 владелец.
+
+**Лифт Angular — слой DI на владельца** (`ui/angular/src/adapter/elevator/`,
+подробно — `packages/ui/angular/AGENTS.md`, «Лифт — слой DI на владельца»).
+Владелец подключает свой слой провайдером (`provideElevator()`), `down()`
+пишет в него, `up()` читает слой над компонентом — в контексте инъекции,
+который сборке даёт база. DI идёт по дереву объявлений, поэтому тосты в
+увезённом регионе и компонент в окне под менеджером видят слой менеджера, где
+бы ни стояли их узлы. Своё у Angular — порядок: компонент, написанный прямо в
+`<div so-toasts>`, Angular создаёт раньше, чем зовёт `ngOnInit` менеджера, где
+сборка опускает API тостов. Поэтому `useToasts()`
+(`ui/angular/src/adapter/toasts/`) читает лифт «позже» (`upLater()`): слой над
+компонентом — в контексте инъекции его поля, а API из слоя — на каждый
+`show`. Сторожат `ui/angular/__tests__/collection-elevator.spec.ts` и
+`toasts.spec.ts` (компонент прямо в менеджере и в окне под ним показывает
+тост, без менеджера — ошибка `show`).
 
 **Лифт Web Components — контекст места** (`ui/webc/src/adapter/elevator/`).
 Своего дерева у Custom Elements нет, а дерево документа есть, и место

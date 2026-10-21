@@ -23,7 +23,9 @@
  * блоке, по очереди. Окно и выезжающая панель — тоже в `body`, с
  * подложкой-спутником перед собой, и стоят у края или по центру окна: в ячейке
  * от них остаётся кнопка, а открытые, с подложкой и частями, сверяются с Vue от
- * угла окна.
+ * угла окна. Регион тостов — тоже в `body`: в ячейке от менеджера без коробки
+ * остаётся ряд кнопок, а регион с тостом, которого показала кнопка, сверяется с
+ * Vue от угла окна.
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
@@ -159,9 +161,12 @@ describe('хост Angular', () => {
 		// Корень и триггер в нём: панели в ячейке нет — она увезена в `body`
 		['popover', '.so-popover, .so-popover > .so-button'],
 		['tooltip', '.so-tooltip, .so-tooltip > .so-button'],
-		// Кнопка, которая открывает окно и панель: сами они увезены в `body`
+		// Кнопка, которая открывает окно и панель: сами они увезены в `body`.
+		// У тостов — ряд кнопок, которые их показывают: менеджер без коробки, а
+		// регион увезён
 		['dialog', '.so-button'],
 		['drawer', '.so-button'],
+		['toasts', '.so-button'],
 	])('%s стоит в ячейке так же, как у Vue', async (component, selector) => {
 		const vue = await boxesOf('vue', component, selector)
 		const angular = await boxesOf('angular', component, selector)
@@ -260,6 +265,60 @@ describe('хост Angular · окно и выезжающая панель', ()
 
 		expect(angular).toHaveLength(10)
 		expect(angular[1].width).toBeGreaterThan(0)
+		expect(angular).toEqual(vue)
+	})
+})
+
+/**
+ * Части региона с тостом: регион, тост, плашка, коробка значка, текст, кнопка
+ * «Отменить» своего содержимого и крестик. Кнопка — потомком части, а не её
+ * ребёнком: у Angular своё содержимое — компонент со своим элементом без
+ * коробки, и кнопка лежит в нём.
+ */
+const TOASTS_PARTS =
+	'.so-toasts:has(.so-toasts-item), .so-toasts-item, .so-toasts-item__card, .so-toasts-item__icon, .so-toasts-item__text, .so-toasts-item__content .so-button, .so-toasts-item__close'
+
+/**
+ * Превью тостов хоста в блоке: кнопка «обычное» показывает тост — с кнопкой
+ * «Отменить», — и рамки региона с его частями снимаются от угла окна, когда
+ * тост встал. Меряется и снимается — снятое превью уносит регион.
+ */
+async function toastOf(framework: string): Promise<TBox[]> {
+	const host = await loadHost(framework)
+	const node = document.createElement('div')
+
+	node.style.cssText = BOX
+	document.body.appendChild(node)
+
+	const handle = host.mount(node, { component: 'toasts', props: {} })
+
+	try {
+		const button = [...node.querySelectorAll('.so-button')].find(
+			(candidate) => candidate.textContent?.trim() === 'обычное',
+		)
+
+		if (!(button instanceof HTMLElement)) throw new Error(`${framework}: кнопки «обычное» нет`)
+
+		button.click()
+
+		return await measureLayer(TOASTS_PARTS)
+	} finally {
+		handle.unmount()
+		node.remove()
+	}
+}
+
+describe('хост Angular · регион тостов', () => {
+	beforeEach(() => {
+		document.documentElement.dataset.soTheme = 'oren'
+	})
+
+	it('регион с тостом стоит у края окна так же, как у Vue', async () => {
+		const vue = await toastOf('vue')
+		const angular = await toastOf('angular')
+
+		expect(angular).toHaveLength(7)
+		expect(angular[0].width).toBeGreaterThan(0)
 		expect(angular).toEqual(vue)
 	})
 })

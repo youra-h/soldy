@@ -8,7 +8,13 @@ import {
 	TABLE_SCROLL_ROWS,
 } from '@soldy-ui/playground-shared'
 import type { TFixture } from './fixtures'
-import { DialogPreview, DrawerPreview, PopoverPreview, TooltipPreview } from './templates'
+import {
+	DialogPreview,
+	DrawerPreview,
+	PopoverPreview,
+	ToastsPreview,
+	TooltipPreview,
+} from './templates'
 import {
 	RoleIconDirective,
 	TAccordionComponent,
@@ -164,7 +170,9 @@ export type TPreview = TComponentPreview | TTemplatePreview
  * превью. Триггер Popover и Tooltip — шаблон слота со scope, а шаблоны слотов
  * видит только разметка (`contentChildren`): у компонента, которого хост
  * строит сам, их нет. Окно и выезжающую панель открывает кнопка превью, а
- * открытость — его своё состояние, как у Vue. Ставит такое превью хост путём
+ * открытость — его своё состояние, как у Vue. Тосты показывают кнопки внутри
+ * менеджера тостов, а API им даёт компонент под менеджером (`useToasts()`
+ * полем) — тоже разметка. Ставит такое превью хост путём
  * фикстуры: пропсы оболочки уходят входам компонента превью, а выходы хост
  * слушает у компонента в его разметке (`subject`).
  */
@@ -451,6 +459,11 @@ export const PREVIEWS: Record<string, TPreview> = {
 	// Кнопка открывает панель, панель — на своём состоянии превью, в коробке с
 	// `position: relative` для `contained` (см. `DrawerPreview`)
 	drawer: { template: DrawerPreview },
+
+	// Тосты приходят из кода: менеджер вокруг ряда кнопок, которые берут API
+	// `useToasts()` и показывают тосты (см. `ToastsPreview`). Регион с тостами
+	// уехал к краю окна, вне ячейки
+	toasts: { template: ToastsPreview },
 
 	skeleton: { component: TSkeletonComponent },
 
