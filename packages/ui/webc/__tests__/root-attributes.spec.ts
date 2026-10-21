@@ -515,8 +515,11 @@ describe('раскладчик элемента', () => {
 
 describe('корень связан с TElementPlugin', () => {
 	/**
-	 * Своё событие элемента — с него самого: страницы, которые рисует шаблон
-	 * пагинации, — элементы её коллекции, и их события тоже всплывают.
+	 * До элемента доходит только его `so:element:ready`. Элементы soldy, которые
+	 * построил его шаблон, — детали (строка таба, стрелки пагинации) и элементы
+	 * из данных (страницы пагинации), — разметка владельца: их события слышно
+	 * только на них самих. Это общий сторож: ни одна часть шаблона не всплывает
+	 * ни у одного компонента таблицы.
 	 */
 	it.each(COMPONENTS)('%s: so:element:ready приходит с корнем', async (_name, tag, is, guard) => {
 		const el = document.createElement(tag, { is })
@@ -525,7 +528,7 @@ describe('корень связан с TElementPlugin', () => {
 		expect(guard(el)).toBe(true)
 
 		el.addEventListener('so:element:ready', (event) => {
-			if (event instanceof CustomEvent && event.target === el) ready.push(event.detail)
+			if (event instanceof CustomEvent) ready.push(event.detail)
 		})
 		document.body.appendChild(el)
 		await nextFrame()

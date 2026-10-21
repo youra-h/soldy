@@ -46,5 +46,5 @@ export function setupAccordion(
 		.use(TCollectionExtension, { elevator })
 		.use(TDragAndDropCollectionExtension, { elevator })
 
-	return joinBindings(owner, useCollectionAdapter(collectionAdapter, adapter, host, onUpdate))
+	return joinBindings(owner, useCollectionAdapter(collectionAdapter, host, onUpdate))
 }

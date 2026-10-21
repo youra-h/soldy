@@ -47,7 +47,7 @@ export function setupTabsContent(
 		elevator: createWebcElevator(host),
 	})
 
-	const content = useCollectionAdapter(contentAdapter, adapter, host, onUpdate)
+	const content = useCollectionAdapter(contentAdapter, host, onUpdate)
 	const owner = useAdapter(adapter, host, onUpdate)
 
 	return joinBindings(owner, content)

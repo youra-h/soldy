@@ -1088,7 +1088,8 @@ describe('образцы item-* набора', () => {
 	/**
 	 * Петля по ключу: запись выборки новая на каждую смену, а элемент таба —
 	 * тот же, пока жив его ключ (`uid`). Переставленный едет переносом силами
-	 * базы и не пересобирается, ушедший снимается.
+	 * базы и не пересобирается, ушедший снимается. События таба из данных не
+	 * всплывают, поэтому сборки табов слушатель ловит в фазе захвата.
 	 */
 	it('перестановка и удаление в движке: живые табы — те же узлы, порядок DOM — порядок данных', async () => {
 		const engine = createEngineTabs({ items: ITEMS })
@@ -1102,7 +1103,9 @@ describe('образцы item-* набора', () => {
 		const [a, b, c] = engine.extensions.batch.items
 		const bundles: unknown[] = []
 
-		el.addEventListener('so:bundle:create', (event) => bundles.push(event.target))
+		el.addEventListener('so:bundle:create', (event) => bundles.push(event.target), {
+			capture: true,
+		})
 		engine.extensions.plain.move(c, 0)
 		engine.extensions.plain.remove(b)
 		await flush()

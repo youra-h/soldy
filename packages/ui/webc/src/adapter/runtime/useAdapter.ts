@@ -13,8 +13,12 @@
  * Общее с остальными адаптерами — в обмене `adapter.connect()` из setup. Своё
  * здесь: реактивности у платформы нет, поэтому состояние — обычный объект, об
  * изменении сообщает колбэк onUpdate (перерисовку планирует базовый класс
- * элемента), а события уходят `CustomEvent` на элементе. Всплывают они у
- * элемента потребителя, а у детали чужой разметки (`embedded`) — нет.
+ * элемента), а события уходят `CustomEvent` на элементе. Всплывают они, только
+ * если элемент написал потребитель — разметкой или кодом. Элемент, который
+ * построил шаблон библиотеки, — деталь (`createDetail`) или элемент из данных
+ * (`createItem`), — разметка владельца (`owner-markup.ts`), и его события
+ * слышно только на нём самом. `embedded` на всплытие не влияет: это признак
+ * для реестра плагинов, и у элемента из данных его нет.
  *
  * Событие «до» — его аргумент `TActionEvent` (`so:show:before`,
  * `so:hide:before`) — уходит отменяемым, как событие DOM:
@@ -38,6 +42,7 @@ import type {
 } from '@soldy-ui/setup'
 import type { IPluginBundle } from '@soldy-ui/plugins'
 import { WebcProfile } from '../common'
+import { isOwnerMarkup } from './owner-markup'
 
 /**
  * Состояние компонента, как его читают база и шаблон: свойства инстанса, выходы
@@ -133,16 +138,23 @@ function dispatch(
 
 /**
  * Общая часть `useAdapter` и `useCollectionAdapter`: связка контекста,
- * состояние, входы, события, приём и уничтожение. `bubbles` — всплывают ли
- * события контекста: у детали чужой разметки (`embedded`) — нет.
+ * состояние, входы, события, приём и уничтожение.
+ *
+ * События контекста всплывают, только если хост написал потребитель. Хост,
+ * который построил шаблон библиотеки, — разметка владельца: владелец слушает
+ * его события на самом элементе, как в остальных адаптерах, где событие
+ * вложенного компонента слышит только его разметка. Иначе `so:action:press`
+ * кнопки очистки дошёл бы до слушателей поля и до делегирования на форме как
+ * событие самого поля, а `so:element:ready` каждой страницы — до слушателей
+ * пагинации.
  */
 function useExchange<C extends IComponentContract>(
 	adapter: IAdapterContext<C>,
 	host: HTMLElement,
 	onUpdate: TUpdateListener,
-	bubbles: boolean,
 ): TExchangeBinding<C> {
 	const binding = adapter.connect(WebcProfile)
+	const bubbles = !isOwnerMarkup(host)
 	const state: Record<string, unknown> = {}
 
 	// Подписка сразу отдаёт значение каждого свойства — тем же вызовом, что и
@@ -184,14 +196,8 @@ export function useAdapter<C extends IComponentContract>(
 	host: HTMLElement,
 	onUpdate: TUpdateListener,
 ): TBinding<C['instance'], unknown, C['plugins']['outputs']> {
-	// Событие детали (`embedded`) не всплывает: деталь — разметка владельца, и
-	// владелец слушает её на самом элементе, как в остальных адаптерах. Иначе
-	// `so:action:press` кнопки очистки дошёл бы до слушателей поля и до
-	// делегирования на форме — как событие самого поля
-	const exchange = useExchange(adapter, host, onUpdate, adapter.embedded === undefined)
-
 	return {
-		...exchange,
+		...useExchange(adapter, host, onUpdate),
 
 		ctrl: adapter.instance,
 		facade: undefined,
@@ -206,28 +212,27 @@ export function useAdapter<C extends IComponentContract>(
 /**
  * Адаптер фасада коллекции — всё то же, кроме того, что принадлежит компоненту.
  *
- * У коллекционного компонента контекстов два: свой (`owner`) и фасада.
- * Состояние, входы, события, приём и уничтожение у фасада те же, что у
- * компонента, а `ctrl` и привязки узла — нет:
+ * У коллекционного компонента контекстов два: свой и фасада. Состояние,
+ * входы, события, приём и уничтожение у фасада те же, что у компонента, а
+ * `ctrl` и привязки узла — нет:
  *
  * - `ctrl` у фасада это `T*CollectionFacade`, тогда как под этим именем
  *   элемент отдаёт сам компонент;
  * - своего узла у фасада нет: он делит набор компонента, и корень к
  *   `TElementPlugin` привязывает связка компонента.
  *
- * События фасада уходят с того же элемента и всплывают по `embedded`
- * компонента: деталь чужой разметки — это компонент целиком, с его
- * коллекцией. Сам фасад связка отдаёт: элемент коллекции зовёт через его
- * контекст команды коллекции (`toggle`, `close`, активацию).
+ * События фасада уходят с того же хоста и всплывают по тому же правилу, что
+ * события компонента (`useExchange`): разметка владельца — это компонент
+ * целиком, с его коллекцией. Сам фасад связка отдаёт: элемент коллекции зовёт
+ * через его контекст команды коллекции (`toggle`, `close`, активацию).
  */
 export function useCollectionAdapter<C extends IComponentContract>(
 	adapter: IAdapterContext<C>,
-	owner: IAdapterContext,
 	host: HTMLElement,
 	onUpdate: TUpdateListener,
 ): TCollectionBinding<C['instance']> {
 	return {
-		...useExchange(adapter, host, onUpdate, owner.embedded === undefined),
+		...useExchange(adapter, host, onUpdate),
 		facade: adapter.instance,
 	}
 }
