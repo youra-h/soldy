@@ -41,6 +41,7 @@ import {
 	TListBoxItemElement,
 	TNumberInputElement,
 	TPaginationElement,
+	TPopoverElement,
 	TProgressLinearElement,
 	TProgressSpinnerElement,
 	TRadioGroupElement,
@@ -54,6 +55,7 @@ import {
 	TTabsElement,
 	TTabsItemElement,
 	TTextareaElement,
+	TTooltipElement,
 	registerButtonTag,
 	type TAccordionElementProps,
 	type TAccordionItemElementProps,
@@ -68,6 +70,7 @@ import {
 	type TListBoxItemElementProps,
 	type TNumberInputElementProps,
 	type TPaginationElementProps,
+	type TPopoverElementProps,
 	type TProgressLinearElementProps,
 	type TProgressSpinnerElementProps,
 	type TRadioGroupElementProps,
@@ -81,6 +84,7 @@ import {
 	type TTabsElementProps,
 	type TTabsItemElementProps,
 	type TTextareaElementProps,
+	type TTooltipElementProps,
 } from '@soldy-ui/webc'
 import { TElementAttributes, applyStyles, stylesOf } from '../src/adapter/runtime/root-attributes'
 import { ownerStyles } from '../src/adapter/template'
@@ -143,6 +147,14 @@ function isPagination(node: Element | null): node is TPaginationElementProps {
 
 function isScroller(node: Element | null): node is TScrollerElementProps {
 	return node instanceof TScrollerElement
+}
+
+function isPopover(node: Element | null): node is TPopoverElementProps {
+	return node instanceof TPopoverElement
+}
+
+function isTooltip(node: Element | null): node is TTooltipElementProps {
+	return node instanceof TTooltipElement
 }
 
 function isLabel(node: Element | null): node is TLabelElementProps {
@@ -245,6 +257,10 @@ const COMPONENTS: ReadonlyArray<
 	['Rating', 'span', 'so-rating', isRating, 'so-rating', null],
 	['Scroller', 'div', 'so-scroller', isScroller, 'so-scroller', null],
 	['Pagination', 'nav', 'so-pagination', isPagination, 'so-pagination', null],
+	// Корень — обёртка триггера: ARIA у панели и у триггера, на корне —
+	// `attrs` и `dataset`, и атрибуты разметки остаются на нём
+	['Popover', 'span', 'so-popover', isPopover, 'so-popover', null],
+	['Tooltip', 'span', 'so-tooltip', isTooltip, 'so-tooltip', null],
 	['Label', 'label', 'so-label', isLabel, 'so-label', null],
 	['Field', 'div', 'so-field', isField, 'so-field', null],
 	['CheckBox', 'span', 'so-check-box', isCheckBox, 'so-check-box', 'input'],
