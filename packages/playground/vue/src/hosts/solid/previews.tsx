@@ -29,7 +29,10 @@ import type {
 import {
 	Accordion,
 	Button,
+	Calendar,
 	CheckBox,
+	DateInput,
+	DatePicker,
 	Dialog,
 	DragAndDrop,
 	Drawer,
@@ -139,9 +142,8 @@ const accordionItems = () => (
 /**
  * Пункты меню разметкой, как у Vue: группа флажков с подписью, группа
  * переключателей — отмечен один, — действия с подсказками сочетаний, подменю
- * с подменю внутри, пункт с панелью, которая монтируется с первым открытием,
- * выключенное действие и «опасный» пункт своего варианта. Календаря в Solid
- * нет, и в панели «Срок» — поле числа дней.
+ * с подменю внутри, пункт с панелью — календарём, который монтируется с
+ * первым открытием, — выключенное действие и «опасный» пункт своего варианта.
  */
 const menuItems = () => (
 	<>
@@ -166,9 +168,7 @@ const menuItems = () => (
 			</Menu.Submenu>
 		</Menu.Submenu>
 		<Menu.PopoverItem value="due" text="Срок" lazyMount>
-			<Field label="Через, дней">
-				<NumberInput value={3} min={0} />
-			</Field>
+			<Calendar />
 		</Menu.PopoverItem>
 		<Menu.Item value="archive" text="В архив" disabled />
 		<Menu.Separator />
@@ -419,6 +419,18 @@ export const PREVIEWS: Record<string, TPreview> = {
 			)}
 		</Select>
 	),
+
+	// Содержимого у календаря нет: дни кладёт в коллекцию вид по месяцам
+	// сеток. Языка у превью нет: это локаль провайдера вокруг корня хоста —
+	// выбор языка в шапке (`setLocale` хоста)
+	calendar: (bind) => <Calendar {...bind()} />,
+
+	// Язык — из шапки стенда, как у календаря
+	'date-input': (bind) => <DateInput {...bind()} />,
+
+	// Поле и календарь — экземпляры DatePicker, содержимого у него нет. Язык —
+	// из шапки стенда, как у поля и календаря
+	'date-picker': (bind) => <DatePicker {...bind()} />,
 
 	// Обёртка — граница ширины, как у Vue: ряд обязан быть ровно по ячейке,
 	// иначе `overflow` не срабатывает вовсе. Сцена ячейки — флексбокс, и с

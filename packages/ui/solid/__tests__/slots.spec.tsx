@@ -19,7 +19,11 @@ import {
 	relaySlot,
 	renderSlot,
 	type ButtonProps,
+	type CalendarItemProps,
+	type CalendarProps,
 	type CheckBoxProps,
+	type DateInputProps,
+	type DatePickerProps,
 	type FrameProps,
 	type InputProps,
 	type LabelProps,
@@ -317,6 +321,24 @@ describe('содержимое — только слот default', () => {
 		expectTypeOf<TooltipProps['children']>().toEqualTypeOf<JSX.Element>()
 		expectTypeOf<PopoverProps>().toHaveProperty('trigger')
 		expectTypeOf<TooltipProps>().toHaveProperty('trigger')
+	})
+
+	/**
+	 * Части поля даты, дни календаря и поля DatePicker рисует сам компонент:
+	 * дни кладёт в коллекцию вид по месяцам сеток, и день из разметки попал бы
+	 * в неё мимо вида. Содержимое дня — слот `item` со scope, а у самого дня
+	 * содержимое — его слот по умолчанию, со scope `{ text }`.
+	 */
+	it('у DateInput, Calendar и DatePicker children нет, у Calendar.Item — есть, со scope', () => {
+		expectTypeOf<DateInputProps>().not.toHaveProperty('children')
+		expectTypeOf<CalendarProps>().not.toHaveProperty('children')
+		expectTypeOf<DatePickerProps>().not.toHaveProperty('children')
+		expectTypeOf<CalendarProps>().toHaveProperty('item')
+		expectTypeOf<DatePickerProps>().toHaveProperty('item')
+		expectTypeOf<CalendarItemProps>().toHaveProperty('children')
+		expectTypeOf<CalendarItemProps['children']>().toEqualTypeOf<
+			TSlotContent<{ text: string }>
+		>()
 	})
 })
 

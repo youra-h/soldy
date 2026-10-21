@@ -3,7 +3,9 @@
  *
  * Сценарии — те же, что у Vue (`focus-target.spec.ts`) и React
  * (`focus-target.spec.tsx`), по компонентам адаптера. У поля корень — коробка
- * вокруг `<input>`, у Select — рамка вокруг поля и тегов, у набора тегов —
+ * вокруг `<input>`, у поля даты — коробка вокруг ряда частей, у DatePicker —
+ * коробка вокруг полей и кнопок, у календаря — корень сеток без своей
+ * остановки, у Select — рамка вокруг поля и тегов, у набора тегов —
  * ряд, у ползунка и оценки — дорожка вокруг полей ручек, у ListBox
  * — рамка вокруг узла списка, у Tabs — рамка со списком табов и панелями, у
  * группы радио и аккордеона — контейнер остановок, у пагинации — `nav` без
@@ -20,7 +22,10 @@ import { batch, type JSX } from 'solid-js'
 import {
 	TAccordion,
 	TAccordionItem,
+	TCalendar,
 	TCheckBox,
+	TDateInput,
+	TDatePicker,
 	TInput,
 	TListBox,
 	TListBoxItem,
@@ -44,11 +49,15 @@ import {
 	TTags,
 	TTagsItem,
 	TTextarea,
+	createEngineCalendar,
 	createEngineTabs,
 } from '@soldy-ui/core'
 import {
 	Accordion,
+	Calendar,
 	CheckBox,
+	DateInput,
+	DatePicker,
 	Input,
 	ListBox,
 	Menu,
@@ -314,6 +323,57 @@ const CASES: Record<string, TCase> = {
 		},
 		target: '[role="tab"][aria-selected="true"]',
 		before: '.before',
+	},
+	// Фокус держат части, а корень — коробка вокруг ряда: первая часть
+	DateInput: {
+		render: () => {
+			const ctrl = new TDateInput()
+
+			return { ctrl, node: () => <DateInput ctrl={ctrl} /> }
+		},
+		target: '.so-date-input__segment',
+	},
+	'DateInput с кнопкой в leading': {
+		render: () => {
+			const ctrl = new TDateInput()
+
+			return {
+				ctrl,
+				node: () => (
+					<DateInput ctrl={ctrl} leading={<button class="before">Сегодня</button>} />
+				),
+			}
+		},
+		target: '.so-date-input__segment',
+		before: '.before',
+	},
+	// Корень — коробка вокруг полей и кнопок: первая часть поля, у диапазона — поля начала
+	'DatePicker, одна дата': {
+		render: () => {
+			const ctrl = new TDatePicker()
+
+			return { ctrl, node: () => <DatePicker ctrl={ctrl} /> }
+		},
+		target: '.so-date-picker__field .so-date-input__segment',
+	},
+	'DatePicker, диапазон': {
+		render: () => {
+			const ctrl = new TDatePicker({ mode: 'range' })
+
+			return { ctrl, node: () => <DatePicker ctrl={ctrl} /> }
+		},
+		target: '.so-date-picker__start .so-date-input__segment',
+	},
+	// Остановка сетки — день с фокусом коллекции, а корень календаря фокус не держит
+	Calendar: {
+		render: () => {
+			const ctrl = new TCalendar()
+
+			return { ctrl, node: () => <Calendar ctrl={ctrl} /> }
+		},
+		target: '.so-calendar-item[tabindex="0"]',
+		// Заголовок месяца и кнопки листания — остановки перед сеткой
+		before: '.so-calendar__title',
 	},
 	'RadioGroup с отметкой': {
 		render: () => {
@@ -629,6 +689,116 @@ describe('Tabs · остановка по модели', () => {
 
 		expect(document.activeElement?.textContent?.trim()).toBe('C')
 		expect(document.activeElement?.getAttribute('role')).toBe('tab')
+		expect(ctrl.focused).toBe(true)
+	})
+})
+
+describe('Calendar · остановка по модели', () => {
+	/**
+	 * Фокус коллекции ушёл в месяц второй сетки в том же такте, что и запись
+	 * `focused`: внутри `batch` Solid перенесёт `tabindex` только на выходе, а
+	 * остановку правило берёт у модели (`focusedDate`), — фокус встаёт на день
+	 * того месяца, а не на прежнюю остановку в первой сетке. Сеток две: день
+	 * месяца, который в такте листания только показывается, в разметке ещё не
+	 * нарисован.
+	 */
+	it('фокус коллекции в другом месяце и focused = true в одном такте — фокус на его дне', async () => {
+		const ctrl = new TCalendar({ months: ['2026-01-01', '2026-02-01'] })
+		const engine = createEngineCalendar()
+
+		mount(() => <Calendar ctrl={ctrl} engine={engine} />)
+		await nextFrame()
+
+		const stop = () => find(document, '.so-calendar-item[tabindex="0"]', HTMLElement)
+		const before = stop()
+
+		batch(() => {
+			engine.extensions.focus.focusDate('2026-02-10')
+
+			// Такт тот же: остановка в разметке ещё в январе
+			expect(stop()).toBe(before)
+			expect(engine.extensions.focus.focusedDate).toBe('2026-02-10')
+
+			ctrl.focused = true
+		})
+
+		const day = document.activeElement
+
+		expect(day).not.toBe(before)
+		expect(day?.classList.contains('so-calendar-item')).toBe(true)
+		expect(day?.textContent?.trim()).toBe('10')
+		expect(day?.closest('.so-calendar__month')).toBe(
+			document.querySelectorAll('.so-calendar__month')[1],
+		)
+	})
+
+	/**
+	 * Сетка одна, и листание в том же такте, что и запись `focused`, увело
+	 * фокус коллекции в месяц, которого в разметке ещё нет: правило дня не
+	 * находит, а корень календаря фокус не держит. Запись ждёт узла: Solid
+	 * нарисует дни нового месяца на выходе из `batch`, их узлы объявят кадром
+	 * позже — и фокус встанет на день `focusedDate`.
+	 */
+	it('одна сетка: showNext() и focused = true в одном такте — после перерисовки фокус на дне нового месяца', async () => {
+		const ctrl = new TCalendar({ months: ['2026-01-01'] })
+		const engine = createEngineCalendar()
+
+		mount(() => <Calendar ctrl={ctrl} engine={engine} />)
+		await nextFrame()
+
+		const { focus, view } = engine.extensions
+		const title = () => find(document, '.so-calendar__title-text', HTMLElement)
+
+		batch(() => {
+			view.showNext()
+			ctrl.focused = true
+
+			// Такт тот же: фокус коллекции в феврале, а разметка ещё январская
+			expect(focus.focusedDate.startsWith('2026-02-')).toBe(true)
+			expect(title().textContent?.trim()).not.toBe(view.grids[0]?.title)
+			expect(document.activeElement).toBe(document.body)
+			expect(ctrl.focused).toBe(true)
+		})
+
+		await nextFrame()
+
+		const date = focus.focusedDate
+		const day = document.activeElement
+
+		expect(title().textContent?.trim()).toBe(view.grids[0]?.title)
+		expect(day).toBe(find(document, '.so-calendar-item[tabindex="0"]', HTMLElement))
+		expect(day?.textContent?.trim()).toBe(String(Number(date.slice(-2))))
+		expect(ctrl.focused).toBe(true)
+	})
+
+	/**
+	 * Пока открыта панель выбора месяца и года, сетка под её подложкой, и
+	 * остановка календаря — список панели.
+	 */
+	it('панель выбора открыта — фокус на её списке, а не на дне под подложкой', async () => {
+		const ctrl = new TCalendar()
+		const engine = createEngineCalendar()
+
+		mount(() => <Calendar ctrl={ctrl} engine={engine} />)
+		await nextFrame()
+
+		const picker = engine.extensions.picker.pickers[0]
+
+		if (!picker) throw new Error('панели выбора нет')
+
+		picker.popover.open = true
+		await nextFrame()
+
+		// Фокус увели из календаря, а панель открыта
+		ctrl.focused = false
+
+		expect(picker.popover.open).toBe(true)
+
+		ctrl.focused = true
+
+		expect(document.activeElement).toBe(
+			find(document, '.so-calendar__picker-list [role="listbox"]', HTMLElement),
+		)
 		expect(ctrl.focused).toBe(true)
 	})
 })

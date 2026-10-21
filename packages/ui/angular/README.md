@@ -9,9 +9,11 @@ Web Components.
 The adapter is wiring, not behavior: it connects a core model to Angular's signals and renders the
 markup — BEM classes `so-*` and `data-*` state attributes. Props, events and slots come from the
 component descriptor, so they match the other five adapters; only the spelling is Angular's: a
-component is a prefixed attribute on your own element (`<button so-button>`, `<div so-input>`) —
-only the wrappers without a box of their own are elements (`<so-virtual>`, `<so-drag-and-drop>`) —
-events are outputs
+component is always a prefixed attribute, never a tag of its own — on your own element when it has
+an element to render into (`<button so-button>`, `<div so-input>`; the toasts manager has its
+region, so it is `<div so-toasts>`), and on an `<ng-container>` when it renders no element of its
+own (`<ng-container so-virtual>`, `<ng-container so-drag-and-drop>`, like
+`<ng-container so-locale-provider>`) — events are outputs
 named `so` + the core name in camelCase (`show` → `soShow`, `show:before` → `soShowBefore`,
 `element:ready` → `soElementReady`), and slots are filled through the `slot` attribute. Every
 output has the prefix: Angular binds `(x)` both to an output and to the DOM event of that name, so
@@ -29,14 +31,16 @@ render on the server (`@angular/platform-server`) and hydrate in the browser
 > Rating (`<span so-rating>`), the form field `<div so-field>` (label, helper and error linked to
 > the control inside it), Scroller (`<div so-scroller>`), RadioGroup, ListBox, Tabs, Accordion,
 > Pagination (`<nav so-pagination>`), Table, the `Virtual` window for long lists and the
-> `<so-drag-and-drop>` wrapper that lets users reorder the items of Tabs, ListBox and Accordion by
-> dragging (`(soMove)`, `(soMoveBefore)` can cancel) are ported, the rest of the set is on its
+> `<ng-container so-drag-and-drop>` wrapper that lets users reorder the items of Tabs, ListBox and
+> Accordion by dragging (`(soMove)`, `(soMoveBefore)` can cancel) are ported, the rest of the set is on its
 > way. Frame moves the element you wrote into `target` (`body` by default) in the browser; with
 > `contained` it stays in place. Popover (`<span so-popover>`) and Tooltip (`<span so-tooltip>`)
 > are panels on a Frame anchored to the element you write them on. The modal window Dialog
 > (`<div so-dialog>`) and the sliding panel Drawer (`<div so-drawer>`) are layers themselves, with a
-> backdrop placed before them. `so-locale-provider` gives a subtree its language and library
-> strings. See [the adapter table](https://github.com/youra-h/soldy#components).
+> backdrop placed before them. Toasts (`<div so-toasts>` around the application, a toast from code
+> with `useToasts().show(…)`) show notifications at an edge of the window. `so-locale-provider`
+> gives a subtree its language and library strings. See
+> [the adapter table](https://github.com/youra-h/soldy#components).
 
 ## Install
 
@@ -60,8 +64,8 @@ export const appConfig: ApplicationConfig = {
 ```
 
 It lets the bindings and listeners you write on a component reach the node inside it they belong to
-(see the fields below). It is required: without it a field, a collection item, ListBox, Tabs and
-Table throw an error telling you to add it. Put it in the application config, not in the providers
+(see the fields below). It is required: without it a field, a collection item, ListBox, Tabs,
+Table and Toasts throw an error telling you to add it. Put it in the application config, not in the providers
 of a route or a component — there it cannot replace the renderer of the application.
 
 ## Usage
@@ -245,11 +249,12 @@ template: `<div so-table [items]="rows" [columns]="columns" mode="multiple" aria
 
 Without a `cell` template a value is rendered as the cell's text from the core (`cell.text`) — an
 object as JSON; the `soText` pipe (`TextPipe`) gives your own template the same text. A long list renders only
-what is visible inside `<so-virtual>` — the same with a table; the wrapper has no box of its own,
-and `enabled` turns the window off:
+what is visible inside `<ng-container so-virtual>` — the same with a table; the window renders no
+element of its own, so the layout around the list stays as it is, and `enabled` turns the window
+off:
 
 ```ts
-template: `<so-virtual><div so-list-box [items]="cities"></div></so-virtual>`
+template: `<ng-container so-virtual><div so-list-box [items]="cities"></div></ng-container>`
 ```
 
 A panel over the page is a Frame. The element you write is the panel, and it is that element which
@@ -320,6 +325,43 @@ template: `<button so-button text="Settings" (click)="open.set(true)"></button>
   …
   <button so-button slot="footer" text="Done" (click)="open.set(false)"></button>
 </div>`
+```
+
+Toasts are shown from code. `<div so-toasts>` wraps the application and has no box of its own: the
+application inside it stays in place, and the region with the toasts moves to `target` (`body` by
+default) in the browser — with everything you wrote on the `div`: `class`, `style`, attributes,
+`[class.x]`, `[style.x]`, `[attr.x]` and listeners. A component under the manager takes the queue
+with `useToasts()` in a field or its constructor, and `show` takes a text or options and returns the
+toast — the core instance you can change or close. Content of your own (`render`) is a component
+class with a `toast` input. The `item`, `item-icon`, `item-content` and `item-close-icon` slots are
+templates with the toast in their context. Like the other layers, the region exists only in the
+browser; the application inside the manager renders on the server and hydrates as usual.
+
+```ts
+@Component({
+  selector: 'app-undo',
+  imports: [TButtonComponent],
+  template: `<button so-button text="Undo" (click)="toast().close()"></button>`,
+})
+export class Undo {
+  readonly toast = input.required<IToastsItem>()
+}
+
+@Component({
+  selector: 'app-save',
+  imports: [TButtonComponent],
+  template: `<button so-button text="Save" (click)="save()"></button>`,
+})
+export class Save {
+  private readonly toasts = useToasts()
+
+  save(): void {
+    this.toasts.show({ text: 'Draft saved', type: 'success', render: Undo })
+  }
+}
+
+// In the application template:
+// <div so-toasts placement="bottom-end"><router-outlet /></div>
 ```
 
 The language and the strings the library renders itself come from the nearest

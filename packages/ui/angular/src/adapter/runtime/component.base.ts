@@ -81,8 +81,10 @@
  * - стиль — тоже эффект базы, по свойствам и тем же правилом: снизу выход
  *   плагина раскладки (`layout_styles`), поверх него стиль-выход компонента
  *   (`fractionStyle` у ProgressSpinner) и место элемента коллекции (`order`
- *   фасада, `TRootSpec.order`): ряд коллекции — флексбокс, и элемент встаёт по
- *   номеру в коллекции, а не по месту в разметке, как у Vue и Svelte.
+ *   фасада) в свойстве, которое назвал компонент (`TRootSpec.order`): ряд
+ *   коллекции — флексбокс, и элемент встаёт по номеру в коллекции (CSS
+ *   `order`), а не по месту в разметке, как у Vue и Svelte; у тоста номер —
+ *   его глубина в стопке (`--so-toasts-depth`).
  *   Свойства, которых ядро не называет, — потребителя или плагина,
  *   записавшего его в узел сам, — база не трогает. Не привязка хоста
  *   `[style]` — по той же причине, что классы:
@@ -138,10 +140,23 @@
  * наборы и стиль теми же эффектами, что у корня-хоста, и `TElementPlugin`
  * после отрисовки, как у `'view'`.
  *
+ * Корень внутри обёртки уезжает и в слой (`'wrapped'` с `teleport`) — регион
+ * тостов в `<div so-toasts>`. Тогда обёртка — только место: в ней содержимое
+ * потребителя (приложение), своей коробки у неё нет (`display: contents`
+ * пишет база), и всё, что потребитель на ней написал, класс и стиль тоже, —
+ * корню, как `$attrs` региона у Vue: статику переносит база, привязки,
+ * `[class.x]`, `[style.x]` и слушатели — рендерер адаптера, у которого хост
+ * без коробки (`boxless`). `visible` и `rendered` прячут корень его стилем, а
+ * обёртку с содержимым не трогают. Корень шаблон рисует, только пока слой на
+ * своём месте (`@if (placed())`), и перенос (`teleportRoot`) идёт за узлом
+ * `#root`.
+ *
  * Хост с шаблоном — элемент, который держит содержимое: на пустом элементе
  * HTML (`<input so-input>`) и на поле с текстом (`<textarea so-textarea>`)
- * атрибутный селектор тоже сработал бы, а шаблон в такой хост не отрисуется.
- * Поэтому у `'host'` и `'wrapped'` такой хост — ошибка (`assertTemplateHost`).
+ * атрибутный селектор тоже сработал бы, а шаблон в такой хост не отрисуется,
+ * а на `<ng-container>` своего узла у хоста нет вовсе — Angular ставит на его
+ * месте комментарий. Поэтому у `'host'` и `'wrapped'` такой хост — ошибка
+ * (`assertTemplateHost`).
  *
  * Сборка (`createBinding`) идёт в контексте инъекции компонента
  * (`runInInjectionContext`): обёртка сборки
@@ -197,7 +212,7 @@ import {
 } from '@angular/core'
 import type { IEntity } from '@soldy-ui/core'
 import type { TStateSnapshot } from '@soldy-ui/setup'
-import { staysOnHost } from '../attrs/host'
+import { marksHost, staysOnHost, type TForwardOptions } from '../attrs/host'
 import { TForwardRegistry } from '../attrs/registry'
 import {
 	TElementAttributes,
@@ -227,9 +242,10 @@ import type { TBinding, TBindingState } from './useAdapter'
  *   привязка разовая, через инжектированный `ElementRef`;
  * - `'view'` — корень в шаблоне компонента, помечен `#root` и может
  *   пересоздаваться: сигнальный `viewChild('root')` переустанавливает связь
- *   при каждом пересоздании узла. Шаблон без `#root` — компонент без корня
- *   (`so-component`, `so-virtual`, `so-drag-and-drop`): своего бокса у него
- *   нет, и селектор у него элементный;
+ *   при каждом пересоздании узла. Без `#root` — компонент без корня
+ *   (`so-component`, `so-virtual`, `so-drag-and-drop`): это директива, её
+ *   пишут на `<ng-container>`, и ни шаблона, ни своего узла у неё нет —
+ *   запрос `#root` пуст, и `TElementPlugin` узла не получает;
  * - `'wrapped'` — корень внутри обёртки: хост — обёртка, корень — элемент
  *   шаблона `#root` в ней (`<div so-table>` и `table`). Обёртке база снимает
  *   атрибуты-входы и прячет её по `visible` и `rendered`, класс и стиль
@@ -238,6 +254,15 @@ import type { TBinding, TBindingState } from './useAdapter'
  *   уходит. Корню — классы, все три набора и стиль ядра, как корню-хосту без
  *   настроек, и привязка к `TElementPlugin`, как у `'view'`: связь идёт за
  *   узлом `#root`, и память раскладки у нового узла начинается пустой.
+ *
+ *   Настройка у такого корня одна — `teleport`: корень уезжает в слой (регион
+ *   тостов в `<div so-toasts>`), а обёртка остаётся местом — с содержимым
+ *   потребителя (приложением) и без своей коробки (`display: contents`, его
+ *   база пишет сама). Тогда внешний узел компонента — корень: всё, что
+ *   потребитель написал на обёртке, класс и стиль тоже, переезжает на него, а
+ *   `visible` и `rendered` прячут его, а не обёртку — содержимое остаётся на
+ *   виду. Корень шаблон рисует, только пока слой на своём месте (`placed`), и
+ *   перенос идёт за узлом `#root`.
  *
  * Корню-хосту база раскладывает ещё стиль и скрытие, и у него три настройки:
  *
@@ -249,11 +274,14 @@ import type { TBinding, TBindingState } from './useAdapter'
  * - `hides` — прячут ли `visible` и `rendered` корень, по умолчанию да. У
  *   Skeleton нет: они убирают только заглушку, а содержимое в корне остаётся
  *   на виду;
- * - `order` — корень встаёт по месту в коллекции: `order` фасада элемента
- *   уходит в стиль корня поверх стиль-выхода. У элементов ListBox, Tabs и
- *   Accordion да — их ряд флексбокс; у радио нет: радио одной группы стоят
- *   где угодно, хоть в строках чужого списка, и номер увёл бы радио по
- *   чужому флекс-ряду, — как у Vue и Svelte;
+ * - `order` — имя свойства стиля, в которое ложится место корня в коллекции —
+ *   `order` фасада элемента, поверх стиль-выхода. У элементов ListBox, Tabs и
+ *   Accordion это CSS `order` — их ряд флексбокс, и элемент встаёт по номеру в
+ *   коллекции; у тоста — глубина в стопке, переменная `--so-toasts-depth`, её
+ *   читает тема, как `:style` корня тоста у Vue. Нет — место в стиль не
+ *   ложится: у радио его нет, радио одной группы стоят где угодно, хоть в
+ *   строках чужого списка, и номер увёл бы радио по чужому флекс-ряду, — как у
+ *   Vue и Svelte;
  * - `shownBy` — выход состояния, без которого корень скрыт: пока он не
  *   `true`, корень прячется, как при `visible=false`. У панели таба это
  *   `active` фасада — панель видна, только пока активен её таб. Имя выхода
@@ -293,12 +321,12 @@ import type { TBinding, TBindingState } from './useAdapter'
  */
 export type TRootSpec =
 	| { readonly strategy: 'view' }
-	| { readonly strategy: 'wrapped' }
+	| { readonly strategy: 'wrapped'; readonly teleport?: TRootTeleport }
 	| {
 			readonly strategy: 'host'
 			readonly style?: string
 			readonly hides?: boolean
-			readonly order?: boolean
+			readonly order?: string
 			readonly shownBy?: string
 			readonly teleport?: TRootTeleport
 			readonly sets?: readonly TRootSet[]
@@ -334,8 +362,21 @@ const NO_APPLIED_STYLES: TAppliedStyles = new Map()
 /** Спутник на виду: своего стиля база ему не пишет. */
 const COMPANION_SHOWN: TRootStyles = new Map()
 
-/** Спутник скрыт — тем же значением, что корень (`_rootDisplay`). */
+/** Спутник скрыт — тем же значением, что корень (`_hidden`). */
 const COMPANION_HIDDEN: TRootStyles = new Map([['display', 'none']])
+
+/**
+ * Слой стиля скрытого корня, который база прячет стилем, а не привязкой хоста:
+ * корень в слое внутри обёртки (`_bindLayered`). Верхний: скрытие главнее
+ * раскладки.
+ */
+const HIDDEN_ROOT: object = Object.freeze({ display: 'none' })
+
+/**
+ * Обёртка без своей коробки: корень уехал в слой, и место в раскладке — у
+ * содержимого потребителя, как будто обёртки нет (`_bindLayered`).
+ */
+const BOXLESS: TRootStyles = new Map([['display', 'contents']])
 
 /** Набор ядра, который база может положить на корень-хост (`TRootSpec.sets`). */
 export type TRootSet = 'attrs' | 'aria' | 'dataset'
@@ -371,6 +412,9 @@ const WRAPPED_PAINT: TRootPaint = {}
 /** Корень, который в слой не уезжает, всегда на своём месте. */
 const IN_PLACE: Signal<boolean> = signal(true).asReadonly()
 
+/** Корень, которого стиль не прячет: скрытие у него — привязка хоста или его нет. */
+const NEVER_HIDDEN: Signal<boolean> = signal(false).asReadonly()
+
 /** Пустое состояние — его база рисует на корне слоя, которого нет. */
 const NO_STATE: TStateSnapshot = Object.freeze({})
 
@@ -402,16 +446,44 @@ const NO_TEMPLATE_HOSTS: ReadonlySet<string> = new Set([
 	'select',
 ])
 
+/** Узел — элемент: `nodeType` элемента DOM (`Node.ELEMENT_NODE`). */
+const ELEMENT_NODE = 1
+
+/** Узел хоста — элемент, а не комментарий `<ng-container>`. */
+function isElement(node: Node): node is Element {
+	return node.nodeType === ELEMENT_NODE
+}
+
 /**
- * Хост компонента с шаблоном (`'host'`, `'wrapped'`) держит содержимое, иначе
- * ошибка: Angular положил бы шаблон в элемент, которого документ не покажет,
- * и компонент молча остался бы пустым.
+ * Хост компонента с шаблоном (`'host'`, `'wrapped'`) — элемент, который держит
+ * содержимое, иначе ошибка.
+ *
+ * - `<ng-container so-toasts>`: узла у контейнера нет — Angular ставит на его
+ *   месте комментарий, — и всё, что потребитель написал на компоненте, ему
+ *   некуда положить: `[class.x]`, `[style.x]` и `(click)` Angular на
+ *   контейнере молча выкидывает. Корню компонента нужен элемент. В режиме
+ *   разработки компонент на контейнере называет ошибкой сам Angular, раньше
+ *   конструктора, а в продакшене его проверки нет, и без этой компонент упал
+ *   бы на первой записи в узел без подсказки;
+ * - пустой элемент HTML (`<input so-input>`) и поле с текстом
+ *   (`<textarea so-textarea>`): атрибутный селектор совпадёт и с ними, а
+ *   шаблон Angular положил бы в элемент, которого документ не покажет, и
+ *   компонент молча остался бы пустым.
+ *
+ * Из модуля выходит ради спека: хоста без узла в режиме разработки Angular до
+ * базы не доводит. Бочка адаптера её не отдаёт.
  */
-function assertTemplateHost(host: Element): void {
-	if (!NO_TEMPLATE_HOSTS.has(host.localName)) return
+export function assertTemplateHost(node: Node): asserts node is Element {
+	if (!isElement(node)) {
+		throw new Error(
+			`@soldy-ui/angular: компонент на <ng-container> — у контейнера нет своего узла, а корню компонента нужен элемент: на него ложится всё, что написано на компоненте. Пишите компонент на элементе: по умолчанию это тег из селектора компонента (<div so-toasts>, <button so-button>).`,
+		)
+	}
+
+	if (!NO_TEMPLATE_HOSTS.has(node.localName)) return
 
 	throw new Error(
-		`@soldy-ui/angular: <${host.localName}> не может быть корнем компонента — его шаблон в этот элемент не отрисуется. Пишите компонент на элементе, который держит содержимое: по умолчанию это тег из селектора компонента (<div so-input>, <span so-check-box>).`,
+		`@soldy-ui/angular: <${node.localName}> не может быть корнем компонента — его шаблон в этот элемент не отрисуется. Пишите компонент на элементе, который держит содержимое: по умолчанию это тег из селектора компонента (<div so-input>, <span so-check-box>).`,
 	)
 }
 
@@ -464,10 +536,20 @@ export abstract class TComponentBase<
 	private readonly _host: Element | null
 
 	/**
-	 * Прячет ли видимость хост: корень-хост (`TRootSpec.hides`) и обёртку корня
-	 * (`'wrapped'`); у корня в шаблоне — нет.
+	 * Прячет ли видимость (`visible`, `rendered`) внешний узел компонента:
+	 * корень-хост (`TRootSpec.hides`), обёртку корня (`'wrapped'`) и корень в
+	 * слое внутри обёртки; у корня в шаблоне — нет.
 	 */
 	private readonly _hides: boolean
+
+	/**
+	 * Скрытие ложится на корень — узел шаблона `#root`, — а не на хост: корень в
+	 * слое внутри обёртки (`'wrapped'` с `teleport`), регион тостов. Обёртка там
+	 * — только место с содержимым потребителя и остаётся на виду. Стиль корня
+	 * пишет база (`_paint`), а привязка хоста `[style.display]` молчит. У
+	 * остальных внешний узел — хост, и прячет его привязка.
+	 */
+	private readonly _hidesRoot: boolean
 
 	/** Выход, без которого корень-хост скрыт (`TRootSpec.shownBy`); нет — не прячет. */
 	private readonly _shownBy: string | undefined
@@ -547,37 +629,47 @@ export abstract class TComponentBase<
 	)
 
 	/**
-	 * Скрытие хоста — привязка `[style.display]` декоратора: прячут и
-	 * `visible`, и `rendered`. Хост — корень-хост или обёртка корня (окно
-	 * таблицы: прячется окно, а не `table` в нём). У корня в шаблоне и у
-	 * корня, который видимость не прячет (`hides: false`), хосту не достаётся
-	 * ничего. Слой прячется ещё и не на своём месте — на сервере, до переноса в
-	 * цель, без цели (`placed`): от элемента потребителя остаётся пустой
-	 * скрытый узел.
-	 *
-	 * Не скрыт — `undefined`, а не `null`: `undefined` привязки стиля Angular
-	 * понимает как «своего мнения нет» и берёт значение ниже по приоритету —
-	 * статику хоста самого компонента (`display: contents` у `so-virtual`), а
-	 * `null` сняла бы её. Статика и привязки потребителя главнее привязки хоста
-	 * при любом значении.
+	 * Внешний узел компонента скрыт: прячут и `visible`, и `rendered` — кроме
+	 * корня, который видимость не прячет (`hides: false`), — выход, без которого
+	 * корня нет (`shownBy`), и слой не на своём месте — на сервере, до переноса в
+	 * цель, без цели (`placed`): от элемента потребителя остаётся пустой скрытый
+	 * узел. У корня в шаблоне скрывать нечего.
 	 *
 	 * Инстанса компонента база не знает (у `so-component` нет ни классов, ни
 	 * наборов), поэтому состояние читает по именам — как запись
 	 * `имя → значение` — и вид значения проверяет на месте.
 	 */
-	protected readonly _rootDisplay = computed(() => {
+	private readonly _hidden = computed(() => {
 		const state: TStateSnapshot = this.state()
 		const hidden = this._hides && (state['rendered'] === false || state['visible'] === false)
 		// Выход, без которого корня нет: у панели таба — активен ли её таб
 		const absent = this._shownBy !== undefined && state[this._shownBy] !== true
 
-		return hidden || absent || !this.placed() ? 'none' : undefined
+		return hidden || absent || !this.placed()
 	})
 
 	/**
+	 * Скрытие хоста — привязка `[style.display]` декоратора (`_hidden`). Хост —
+	 * корень-хост или обёртка корня (окно таблицы: прячется окно, а не `table` в
+	 * нём). Корень в слое внутри обёртки база прячет стилем самого корня
+	 * (`_hidesRoot`), и обёртке привязка не достаётся ничего: в ней содержимое
+	 * потребителя.
+	 *
+	 * Не скрыт — `undefined`, а не `null`: `undefined` привязки стиля Angular
+	 * понимает как «своего мнения нет» и берёт значение ниже по приоритету —
+	 * статику хоста, — а `null` сняла бы её. Статика и привязки потребителя
+	 * главнее привязки хоста при любом значении. На `<ng-container>` (директива
+	 * без корня, `so-virtual`) стилей нет вовсе: привязку стиля на узле, который
+	 * не элемент, Angular пропускает.
+	 */
+	protected readonly _rootDisplay = computed(() =>
+		!this._hidesRoot && this._hidden() ? 'none' : undefined,
+	)
+
+	/**
 	 * Корень шаблона, помеченный `#root`. Читают его стратегии `'view'` (см.
-	 * `_bindView`) и `'wrapped'` — корень внутри обёртки (`_bindWrapped`): у
-	 * `'host'` корень — сам хост, и `#root` в шаблоне нет.
+	 * `_bindView`) и `'wrapped'` — корень внутри обёртки (`_bindWrapped`,
+	 * `_bindLayered`): у `'host'` корень — сам хост, и `#root` в шаблоне нет.
 	 *
 	 * Сигнальный viewChild(), а не @ViewChild: обычный запрос читается
 	 * один раз в ngAfterViewInit и после пересоздания узла указывает на
@@ -632,9 +724,10 @@ export abstract class TComponentBase<
 		this._inputNames = inputNames
 
 		if (root.strategy === 'host') {
-			// `ElementRef<Element>`, а не `any` по умолчанию: узел `TElementPlugin` —
-			// `Element`, и без явного параметра несовпадение типов здесь не видно.
-			const host = inject<ElementRef<Element>>(ElementRef).nativeElement
+			// `ElementRef<Node>`, а не `any` по умолчанию: на `<ng-container>` хост —
+			// комментарий, и что это элемент — узел `TElementPlugin`, — проверяет
+			// `assertTemplateHost`, а не параметр типа
+			const host = inject<ElementRef<Node>>(ElementRef).nativeElement
 
 			assertTemplateHost(host)
 
@@ -643,33 +736,46 @@ export abstract class TComponentBase<
 
 			this._host = host
 			this._hides = root.hides ?? true
+			this._hidesRoot = false
 			this._shownBy = root.shownBy
-			this.placed = root.teleport ? this._teleportHost(host, root.teleport) : IN_PLACE
+			this.placed = root.teleport ? this._teleport(() => host, root.teleport) : IN_PLACE
 			this._bindHost(host, root)
 
 			if (registry) {
 				// Поле — узел шаблона `#control`
 				const control = () => this._control()?.nativeElement ?? null
 
-				this._moveAttributes(host, control)
+				this._moveAttributes(host, control, staysOnHost)
 				this._forward(registry, host, control)
 			}
 		} else if (root.strategy === 'wrapped') {
-			const wrapper = inject<ElementRef<Element>>(ElementRef).nativeElement
+			const wrapper = inject<ElementRef<Node>>(ElementRef).nativeElement
 
 			assertTemplateHost(wrapper)
 
 			const registry = forwardRegistry(wrapper)
+			// Корень — узел шаблона `#root`: до первой отрисовки его нет, и он бывает новым
+			const node = () => this._root()?.nativeElement ?? null
 
-			// Хост — обёртка корня: её тег ядру не уходит, а прячет её видимость
+			// Хост — обёртка корня: её тег ядру не уходит. Видимость прячет её, а
+			// корень, который уехал в слой, — его самого: обёртка с содержимым
+			// потребителя остаётся на виду
 			this._host = null
 			this._hides = true
+			this._hidesRoot = root.teleport !== undefined
 			this._shownBy = undefined
-			this.placed = IN_PLACE
-			this._bindWrapped(wrapper, registry)
+
+			if (root.teleport) {
+				this.placed = this._teleport(node, root.teleport)
+				this._bindLayered(wrapper, registry, node)
+			} else {
+				this.placed = IN_PLACE
+				this._bindWrapped(wrapper, registry, node)
+			}
 		} else {
 			this._host = null
 			this._hides = false
+			this._hidesRoot = false
 			this._shownBy = undefined
 			this.placed = IN_PLACE
 			this._bindView()
@@ -790,14 +896,50 @@ export abstract class TComponentBase<
 	 * конструктора: `HostAttributeToken` разрешается только там, а эффектам
 	 * нужен injection context.
 	 */
-	private _bindWrapped(wrapper: Element, registry: TForwardRegistry): void {
-		const root = () => this._root()?.nativeElement ?? null
-
+	private _bindWrapped(
+		wrapper: Element,
+		registry: TForwardRegistry,
+		root: () => Element | null,
+	): void {
 		this._clearInputAttributes(wrapper)
 		this._bindView()
-		this._moveAttributes(wrapper, root)
+		this._moveAttributes(wrapper, root, staysOnHost)
 		this._forward(registry, wrapper, root)
 		this._paint(root, WRAPPED_PAINT)
+	}
+
+	/**
+	 * Корень внутри обёртки уезжает в слой (`'wrapped'` с `teleport`): регион
+	 * тостов в `<div so-toasts>`. Обёртка остаётся местом — с содержимым
+	 * потребителя (приложением) и без своей коробки: место в раскладке у
+	 * содержимого, как будто обёртки нет, а `display: contents` база пишет на неё
+	 * сама, мимо стилей Angular, — это вид компонента, а не потребителя. Внешний
+	 * узел компонента здесь — корень, как регион у Vue, у которого обёртки нет
+	 * вовсе, и всё, что потребитель написал на обёртке, — его: статику, класс и
+	 * стиль тоже, база переносит сама (`_moveAttributes`), а привязки, `[class.x]`,
+	 * `[style.x]` и слушатели — рендерер адаптера (`_forward`, хост без коробки).
+	 * На обёртке остаются только её метки — селектор, служебные атрибуты Angular
+	 * — и входы, которые база снимает, как с любого хоста.
+	 *
+	 * Остальное — как у корня внутри обёртки (`_bindWrapped`): привязка к
+	 * `TElementPlugin` и раскладка ядра идут за узлом `#root`, перенос статики и
+	 * привязок заведён раньше раскладки. Своё — скрытие: `visible` и `rendered`
+	 * прячут корень, стилем самого корня (`_paint`, `_hidesRoot`), а обёртку с
+	 * содержимым потребителя не трогают. Перенос в слой база завела раньше
+	 * (`_teleport`): корень шаблон рисует, только пока слой на своём месте.
+	 */
+	private _bindLayered(
+		wrapper: Element,
+		registry: TForwardRegistry,
+		root: () => Element | null,
+	): void {
+		this._clearInputAttributes(wrapper)
+		this._bindView()
+		this._moveAttributes(wrapper, root, marksHost)
+		// Статика потребителя снята — своя коробка обёртки, поверх ничего не осталось
+		applyStyles(wrapper, BOXLESS, NO_APPLIED_STYLES)
+		this._forward(registry, wrapper, root, { boxless: true })
+		this._paint(root, WRAPPED_PAINT, this._hidden)
 	}
 
 	/**
@@ -816,8 +958,16 @@ export abstract class TComponentBase<
 	 * она начинается пустой, и первая раскладка пишет всё. Пустой она
 	 * начинается и на гидратации: первая раскладка в браузере пишет всё, что
 	 * называет ядро, поверх напечатанного сервером.
+	 *
+	 * `hidden` — у корня, которого прячет не привязка хоста, а его стиль (корень
+	 * в слое внутри обёртки, `_hidesRoot`): скрытый корень получает
+	 * `display: none` верхним слоем стиля. Нет — скрытие не здесь.
 	 */
-	private _paint(target: () => Element | null, paint: TRootPaint): void {
+	private _paint(
+		target: () => Element | null,
+		paint: TRootPaint,
+		hidden: Signal<boolean> = NEVER_HIDDEN,
+	): void {
 		const styleName = paint.style
 		const classes = computed(() => classesOf(this._drawn()['classes']))
 
@@ -858,19 +1008,23 @@ export abstract class TComponentBase<
 
 		let styled: TPainted<TAppliedStyles> = { on: null, applied: NO_APPLIED_STYLES }
 
-		// Снизу выход плагина раскладки, поверх — стиль-выход компонента и место
-		// элемента коллекции, если корень стоит по нему
+		// Снизу выход плагина раскладки, поверх — стиль-выход компонента, место
+		// элемента коллекции, если корень стоит по нему, и скрытие корня, если
+		// его прячет стиль
 		effect(() => {
 			const element = target()
 
 			if (!element) return
 
 			const applied = styled.on === element ? styled.applied : NO_APPLIED_STYLES
+			const styles = stylesOf(
+				layout(),
+				own(),
+				orderOf(paint.order, order()),
+				hidden() ? HIDDEN_ROOT : undefined,
+			)
 
-			styled = {
-				on: element,
-				applied: applyStyles(element, stylesOf(layout(), own(), orderOf(order())), applied),
-			}
+			styled = { on: element, applied: applyStyles(element, styles, applied) }
 		})
 	}
 
@@ -905,14 +1059,19 @@ export abstract class TComponentBase<
 	 * компонент, переезжают с его элемента `host` на узел шаблона `target()`,
 	 * как атрибуты снаружи у Vue и React, — на вложенное поле `#control` или на
 	 * корень внутри обёртки `#root`. На элементе остаётся то же, что оставляет
-	 * на нём рендерер адаптера (`staysOnHost`): класс и стиль — вид корня или
-	 * окна, — служебные атрибуты Angular и метки soldy с префиксом `so-` —
-	 * селектор (`<label so-radio-group-item>`) и директивы адаптера;
-	 * атрибуты-входы база уже сняла (`_clearInputAttributes`). Пометку
+	 * на нём рендерер адаптера, — правило `stays` у них одно: у хоста с коробкой
+	 * (`staysOnHost`) класс и стиль — вид корня или окна, — служебные атрибуты
+	 * Angular и метки soldy с префиксом `so-` — селектор
+	 * (`<label so-radio-group-item>`) и директивы адаптера; у обёртки без
+	 * коробки (`marksHost`, корень в слое) — только метки, а класс и стиль — тоже
+	 * корню. Атрибуты-входы база уже сняла (`_clearInputAttributes`). Пометку
 	 * `ng-version` Angular пишет в разметку хоста корневого компонента сам, и
 	 * для `HostAttributeToken` она выглядит атрибутом из разметки, хотя
 	 * потребитель её не писал: компонент бывает и корневым — созданным
-	 * `createComponent` или `TestBed`.
+	 * `createComponent` или `TestBed`. Класс и стиль `HostAttributeToken`
+	 * отдаёт статикой разметки вместе со статикой хоста самого компонента
+	 * (`host` декоратора), поэтому у компонента, чья обёртка их отдаёт корню,
+	 * своих статических класса и стиля хоста нет: свой вид обёртки пишет база.
 	 *
 	 * Чей атрибут, база узнаёт не по узлу, а по скомпилированной разметке
 	 * потребителя (`HostAttributeToken`): на узле стоит и то, чего потребитель
@@ -931,11 +1090,15 @@ export abstract class TComponentBase<
 	 * `HostAttributeToken` разрешается только там, а эффекту нужен injection
 	 * context.
 	 */
-	private _moveAttributes(host: Element, target: () => Element | null): void {
+	private _moveAttributes(
+		host: Element,
+		target: () => Element | null,
+		stays: (name: string) => boolean,
+	): void {
 		const moved = new Map<string, string>()
 
 		for (const name of host.getAttributeNames()) {
-			if (staysOnHost(name)) continue
+			if (stays(name)) continue
 
 			const value = inject(new HostAttributeToken(name), { optional: true })
 
@@ -971,30 +1134,34 @@ export abstract class TComponentBase<
 	 * корне-хосте. Снятый компонент снимает хост с реестра и слушатели — с узла.
 	 *
 	 * Атрибут с именем входа и `ctrl` остаётся на хосте: это запись входа, а не
-	 * атрибут поля (`_clearInputAttributes`).
+	 * атрибут поля (`_clearInputAttributes`). У обёртки без коробки
+	 * (`options.boxless`, корень в слое) на узел уходят и класс со стилем —
+	 * `[class.x]`, `[style.x]`, `[ngClass]`.
 	 */
 	private _forward(
 		registry: TForwardRegistry,
 		host: Element,
 		target: () => Element | null,
+		options: TForwardOptions = {},
 	): void {
-		const forwarded = registry.register(host, ['ctrl', ...this._inputNames])
+		const forwarded = registry.register(host, ['ctrl', ...this._inputNames], options)
 
 		effect(() => forwarded.attach(target()))
 		inject(DestroyRef).onDestroy(() => forwarded.release())
 	}
 
 	/**
-	 * Слой (`TRootSpec.teleport`): корень-хост уезжает в цель. Цель и «на
-	 * месте» база читает из состояния по именам выходов, которые назвал
-	 * компонент, а переносит корень `teleportRoot`. Выхода «на месте» нет — у
-	 * слоя нет места на месте (окно), и корень всегда в цели. Спутник корня
+	 * Слой (`TRootSpec.teleport`): корень уезжает в цель — корень-хост или
+	 * корень внутри обёртки (`root()`, узел `#root`). Цель и «на месте» база
+	 * читает из состояния по именам выходов, которые назвал компонент, а
+	 * переносит корень `teleportRoot`. Выхода «на месте» нет — у слоя нет места
+	 * на месте (окно, регион тостов), и корень всегда в цели. Спутник корня
 	 * (`#companion`) база отдаёт переносу, а прячет сама (`_hideCompanion`).
 	 * Зовётся из конструктора: эффектам нужен injection context.
 	 *
 	 * Отдаёт сигнал «корень на своём месте» (`placed`): пока он ложь, слоя нет.
 	 */
-	private _teleportHost(host: Element, names: TRootTeleport): Signal<boolean> {
+	private _teleport(root: () => Element | null, names: TRootTeleport): Signal<boolean> {
 		const contained = names.contained
 		const companion = names.companion
 			? computed(() => this._companion()?.nativeElement ?? null)
@@ -1003,7 +1170,7 @@ export abstract class TComponentBase<
 		if (companion) this._hideCompanion(companion)
 
 		return teleportRoot(
-			host,
+			root,
 			{
 				// Селектор — непустая строка, всё остальное — цели нет
 				target: computed(() => {
@@ -1023,7 +1190,7 @@ export abstract class TComponentBase<
 	}
 
 	/**
-	 * Спутник прячется тем же значением, что корень (`_rootDisplay`): закрытое
+	 * Спутник прячется тем же значением, что корень (`_hidden`): закрытое
 	 * окно спрятано вместе с подложкой, как `v-show` обоих у Vue, — и
 	 * `rendered=false` тоже, ведь элемент потребителя не снимается, а
 	 * прячется. Скрытие — свойство стиля спутника, которое база пишет и
@@ -1039,7 +1206,7 @@ export abstract class TComponentBase<
 
 			if (!element) return
 
-			const styles = this._rootDisplay() === 'none' ? COMPANION_HIDDEN : COMPANION_SHOWN
+			const styles = this._hidden() ? COMPANION_HIDDEN : COMPANION_SHOWN
 			const applied = styled.on === element ? styled.applied : NO_APPLIED_STYLES
 
 			styled = { on: element, applied: applyStyles(element, styles, applied) }

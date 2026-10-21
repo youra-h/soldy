@@ -1,34 +1,41 @@
 /**
  * Коллекции Web Components в настоящем браузере: `<div is="so-tabs">`,
- * `<div is="so-accordion">`, `<div is="so-radio-group">` и
- * `<div is="so-list-box">`.
+ * `<div is="so-accordion">`, `<div is="so-radio-group">`,
+ * `<div is="so-list-box">` и `<span is="so-menu">`.
  *
  * Теме корень элемента коллекции Web Components — то же, что корень остальных
  * адаптеров: строка таба и его кнопка закрытия, заголовок секции и её стрелка,
  * радио и его кольцо, строка элемента списка — кнопка на `div` — и его отметка
  * каждого размера стоят так же, как у Vue. Клавиатура — то, чего jsdom не
  * выполняет: стрелки по табам и списку ведёт плагин владельца, а по радио —
- * сам браузер, по общему `name` группы. Разметку и наборы ядра сторожат
- * `ui/webc/__tests__/tabs.spec.ts`, `accordion.spec.ts`, `radio-group.spec.ts`
- * и `list-box.spec.ts`.
+ * сам браузер, по общему `name` группы. Открытые панели меню и подменю с
+ * частями стоят у триггера и у строки так же, как у Vue (замер
+ * `panel-boxes.ts`), а стрелки ведут фокус по пунктам и между уровнями.
+ * Разметку и наборы ядра сторожат `ui/webc/__tests__/tabs.spec.ts`,
+ * `accordion.spec.ts`, `radio-group.spec.ts`, `list-box.spec.ts` и
+ * `menu.spec.ts`.
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { render, cleanup } from 'vitest-browser-vue'
 import { userEvent } from 'vitest/browser'
-import { defineComponent, h, nextTick } from 'vue'
+import { defineComponent, h, nextTick, type VNode } from 'vue'
 import { COMPONENT_SIZES } from '@soldy-ui/playground-shared'
+import type { DescriptorSlots, MenuDescriptor } from '@soldy-ui/setup'
 import {
 	Accordion,
 	AccordionItem,
+	Button,
 	ListBox,
 	ListBoxItem,
+	Menu,
 	RadioGroup,
 	RadioGroupItem,
 	Tabs,
 	TabsItem,
 } from '@soldy-ui/vue'
 import { TRadioGroupElement, type TRadioGroupElementProps } from '@soldy-ui/webc'
+import { measure, type TBox } from './panel-boxes'
 
 import '@soldy-ui/theme-oren'
 
@@ -329,5 +336,211 @@ describe('клавиатура', () => {
 		off.focus()
 
 		expect(document.activeElement).toBe(off)
+	})
+})
+
+/** Scope слота `trigger` у Menu — связка кнопки с меню и вид «нажата». */
+type TMenuTriggerScope = DescriptorSlots<typeof MenuDescriptor>['trigger']
+
+/**
+ * Меню Web Components и меню Vue — одна разметка и одни классы: открытая
+ * панель меню с частями стоит у триггера, а панель подменю — у его строки, так
+ * же, как у Vue. Панели телепортированы, и рамки сверяются от угла якоря —
+ * триггера и строки подменю — замером `panel-boxes.ts`, как панели поповера в
+ * `webc-frame.spec.ts`. Панелей на экране две, и части каждой ищутся по её
+ * `id`, на который ссылается якорь: `aria-controls` триггера и строки.
+ */
+describe('Menu · панели меню и подменю — как у Vue', () => {
+	/** Блок, в котором стоит меню, — один на обе отрисовки. */
+	const BLOCK = 'padding: 48px 24px; width: 400px'
+
+	/** Части панели меню — флажки, группа, разделитель, подсказка, стрелка подменю. */
+	const PARTS = [
+		'.so-menu__list',
+		'.so-menu-group',
+		'.so-menu-group__label',
+		'.so-menu-separator',
+		'.so-menu-item',
+		'.so-menu-item > .so-button',
+		'.so-menu-item__indicator',
+		'.so-menu-item__icon',
+		'.so-menu-item__shortcut',
+		'.so-menu-item__arrow',
+	]
+
+	const trigger = () => document.querySelector<HTMLElement>('.so-test-trigger')
+	const shareRow = () =>
+		document.querySelector<HTMLElement>('.so-menu-item > [aria-haspopup="menu"]')
+
+	/** Панель якоря — по его `aria-controls`. */
+	const panelOf = (anchor: HTMLElement | null) =>
+		document.getElementById(anchor?.getAttribute('aria-controls') ?? '')
+
+	/** Селектор панели якоря и её частей — по её `id`. */
+	function partsOf(anchor: HTMLElement | null): string {
+		const panel = `#${CSS.escape(anchor?.getAttribute('aria-controls') ?? '')}`
+
+		return [panel, ...PARTS.map((part) => `${panel} ${part}`)].join(', ')
+	}
+
+	const shown = (node: HTMLElement | null) =>
+		node !== null && getComputedStyle(node).display !== 'none'
+
+	/**
+	 * Открыть меню кликом по триггеру, а с `submenu` — и подменю кликом по его
+	 * строке — и замерить открытую панель от её якоря.
+	 */
+	async function openAndMeasure(submenu: boolean): Promise<TBox[]> {
+		const button = trigger()
+
+		if (!button) throw new Error('триггера нет')
+
+		await userEvent.click(button)
+		await expect.poll(() => shown(panelOf(trigger()))).toBe(true)
+
+		if (!submenu) return measure(trigger, partsOf(trigger()))
+
+		const row = shareRow()
+
+		if (!row) throw new Error('строки подменю нет')
+
+		await userEvent.click(row)
+		await expect.poll(() => shown(panelOf(shareRow()))).toBe(true)
+
+		return measure(shareRow, partsOf(shareRow()))
+	}
+
+	/** Меню Vue в блоке — с группой флажков, разделителем, действием и подменю. */
+	const vueMenu = (): VNode =>
+		h('div', { style: BLOCK }, [
+			h(
+				Menu,
+				{},
+				{
+					trigger: ({ triggerAria, triggerDataset }: TMenuTriggerScope) =>
+						h(Button, {
+							text: 'Действия',
+							class: 'so-test-trigger',
+							...triggerAria,
+							...triggerDataset,
+						}),
+					default: () => [
+						h(Menu.Group, { label: 'Вид' }, () => [
+							h(Menu.CheckboxItem, { value: 'grid', text: 'Сетка', selected: true }),
+							h(Menu.CheckboxItem, { value: 'ruler', text: 'Линейка' }),
+						]),
+						h(Menu.Separator),
+						h(
+							Menu.Item,
+							{ value: 'edit', text: 'Изменить' },
+							{ trailing: () => 'Ctrl+E' },
+						),
+						h(Menu.Submenu, { value: 'share', text: 'Поделиться' }, () => [
+							h(Menu.Item, { value: 'link', text: 'Ссылка' }),
+							h(Menu.Item, { value: 'mail', text: 'Почта' }),
+						]),
+					],
+				},
+			),
+		])
+
+	/** То же меню Web Components — разметкой, как её пишет потребитель. */
+	const WEBC_MENU = `<div style="${BLOCK}"><span is="so-menu"><button is="so-button" slot="trigger" class="so-test-trigger" text="Действия"></button><div is="so-menu-group" label="Вид"><div is="so-menu-checkbox-item" value="grid" text="Сетка" selected></div><div is="so-menu-checkbox-item" value="ruler" text="Линейка"></div></div><div is="so-menu-separator"></div><div is="so-menu-item" value="edit" text="Изменить"><span slot="trailing">Ctrl+E</span></div><div is="so-menu-submenu" value="share" text="Поделиться"><div is="so-menu-item" value="link" text="Ссылка"></div><div is="so-menu-item" value="mail" text="Почта"></div></div></span></div>`
+
+	/** Vue: меню открывается, меряется и снимается — следующей отрисовке оно не мешает. */
+	async function measureVue(submenu: boolean): Promise<TBox[]> {
+		render(defineComponent({ render: vueMenu }))
+		await nextTick()
+		await nextFrame()
+
+		const boxes = await openAndMeasure(submenu)
+
+		cleanup()
+
+		return boxes
+	}
+
+	async function measureWebc(submenu: boolean): Promise<TBox[]> {
+		await show(WEBC_MENU)
+
+		return openAndMeasure(submenu)
+	}
+
+	it('открытая панель меню и её части стоят у триггера так же, как у Vue', async () => {
+		const vue = await measureVue(false)
+		const webc = await measureWebc(false)
+
+		// Триггер, панель, список, группа с подписью, разделитель, четыре пункта
+		// со строками и их части
+		expect(webc.length).toBeGreaterThan(10)
+		expect(webc[1].height).toBeGreaterThan(0)
+		expect(webc).toEqual(vue)
+	})
+
+	it('открытая панель подменю и её пункты стоят у его строки так же, как у Vue', async () => {
+		const vue = await measureVue(true)
+		const webc = await measureWebc(true)
+
+		// Строка, панель подменю, список, два пункта со строками и значками
+		expect(webc.length).toBeGreaterThan(5)
+		expect(webc[1].width).toBeGreaterThan(0)
+		expect(webc).toEqual(vue)
+	})
+})
+
+describe('Menu · клавиатура', () => {
+	/**
+	 * Фокус идёт за подсветкой: ↓ с триггера — на первый пункт, дальше по
+	 * порядку сквозь группу, выключенный пропускается; → на строке подменю —
+	 * его первый пункт, ← — назад на строку; Escape закрывает меню, фокус — на
+	 * триггер.
+	 */
+	it('стрелки ходят по пунктам и между уровнями, Escape возвращает фокус на триггер', async () => {
+		const root = await show(
+			`<span is="so-menu"><button is="so-button" slot="trigger" class="so-test-trigger" text="Действия"></button><div is="so-menu-group" label="Вид"><div is="so-menu-checkbox-item" value="grid" text="Сетка"></div></div><div is="so-menu-separator"></div><div is="so-menu-item" value="edit" text="Изменить"></div><div is="so-menu-item" value="archive" text="В архив" disabled></div><div is="so-menu-submenu" value="share" text="Поделиться"><div is="so-menu-item" value="link" text="Ссылка"></div><div is="so-menu-item" value="mail" text="Почта"></div></div></span>`,
+		)
+		const trigger = find(root, '.so-test-trigger', HTMLButtonElement)
+		const panelOf = (anchor: Element) =>
+			find(
+				document,
+				`#${CSS.escape(anchor.getAttribute('aria-controls') ?? '')}`,
+				HTMLElement,
+			)
+		const rowOf = (scope: HTMLElement, text: string): HTMLElement => {
+			const row = all(scope, '.so-menu-item > .so-button').find(
+				(candidate) =>
+					candidate.querySelector('.so-button__text')?.textContent?.trim() === text,
+			)
+
+			if (!row) throw new Error(`строки «${text}» нет`)
+
+			return row
+		}
+		const active = () => document.activeElement
+		const menu = () => panelOf(trigger)
+
+		trigger.focus()
+		await userEvent.keyboard('{ArrowDown}')
+		await expect.poll(active).toBe(rowOf(menu(), 'Сетка'))
+
+		await userEvent.keyboard('{ArrowDown}')
+		await expect.poll(active).toBe(rowOf(menu(), 'Изменить'))
+
+		await userEvent.keyboard('{ArrowDown}')
+		await expect.poll(active).toBe(rowOf(menu(), 'Поделиться'))
+
+		const share = rowOf(menu(), 'Поделиться')
+
+		await userEvent.keyboard('{ArrowRight}')
+		await expect.poll(active).toBe(rowOf(panelOf(share), 'Ссылка'))
+		expect(share.getAttribute('aria-expanded')).toBe('true')
+
+		await userEvent.keyboard('{ArrowLeft}')
+		await expect.poll(active).toBe(share)
+		expect(share.getAttribute('aria-expanded')).toBe('false')
+
+		await userEvent.keyboard('{Escape}')
+		await expect.poll(active).toBe(trigger)
+		expect(trigger.getAttribute('aria-expanded')).toBe('false')
 	})
 })

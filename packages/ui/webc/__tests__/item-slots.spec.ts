@@ -12,12 +12,22 @@
  * У таблицы частей две, и проброс у каждой свой: `header` — в слот `default`
  * заголовка колонки (`Table.Column`), `cell` — в слот `cell` строки
  * (`Table.Row`), а строка копирует его в каждую свою ячейку.
+ *
+ * У меню из данных пункты двух видов — действие (`Menu.Item`) и подменю
+ * (`Menu.Submenu`), — и пробросы у меню и у подменю одни: слоты одни на все
+ * уровни. Подменю один слот владельца получает дважды: копией в слот своей
+ * строки (`item-leading` — в `leading`) и образцом под тем же именем
+ * (`item-leading` — в `item-leading`), который копирует уже в свои пункты, —
+ * поэтому карт у подменю две, и с таблицей сверяется их сумма.
  */
 
 import { describe, it, expect } from 'vitest'
 import {
 	ACCORDION_ITEM_SLOTS,
 	LIST_BOX_ITEM_SLOTS,
+	MENU_ITEM_SLOTS,
+	MENU_SUBMENU_SLOTS,
+	MENU_SUBMENU_TEMPLATES,
 	PAGINATION_ITEM_SLOTS,
 	RADIO_GROUP_ITEM_SLOTS,
 	TABLE_COLUMN_SLOTS,
@@ -31,20 +41,25 @@ import RELAYS_SOURCE from '../../../setup/__tests__/item-slots.spec.ts?raw'
 
 /**
  * Строка таблицы пробросов: `['Tabs', 'item-leading', 'Tabs.Item', 'leading', 'item'],`,
- * у таблицы — `['Table', 'header', 'Table.Column', 'default', 'column'],`.
+ * у таблицы — `['Table', 'header', 'Table.Column', 'default', 'column'],`, у
+ * подменю — `['Menu.Submenu', 'item', 'Menu.Item', 'default', 'item'],`.
  */
-const RELAY_ROW = /\['(\w+)', '([\w-]+)', '\1\.(\w+)', '([\w-]+)', (?:'\w+'|null)\]/g
+const RELAY_ROW = /\['([\w.]+)', '([\w-]+)', '([\w.]+)', '([\w-]+)', (?:'\w+'|null)\]/g
 
-/** Пробросы владельца в его часть из таблицы сторожа: слот владельца → слот части. */
-function relaysOf(owner: string, part = 'Item'): TItemSlots {
-	const relays: Record<string, string> = {}
+/** Пробросы владельца в его часть из таблицы сторожа: «слот владельца → слот части». */
+function relaysOf(owner: string, source: string): string[] {
+	const relays: string[] = []
 
-	for (const [, name, slot, target, from] of RELAYS_SOURCE.matchAll(RELAY_ROW)) {
-		if (name === owner && target === part) relays[slot] = from
+	for (const [, name, slot, part, from] of RELAYS_SOURCE.matchAll(RELAY_ROW)) {
+		if (name === owner && part === source) relays.push(`${slot} → ${from}`)
 	}
 
-	return relays
+	return relays.sort()
 }
+
+/** Карты копий — тем же видом, что пробросы: «слот владельца → слот элемента». */
+const pairsOf = (...maps: TItemSlots[]): string[] =>
+	maps.flatMap((map) => Object.entries(map).map(([slot, from]) => `${slot} → ${from}`)).sort()
 
 describe('карта копий образцов — строки таблицы пробросов', () => {
 	it.each([
@@ -55,20 +70,32 @@ describe('карта копий образцов — строки таблицы
 		['Pagination', PAGINATION_ITEM_SLOTS],
 		['Toasts', TOASTS_ITEM_SLOTS],
 	] as const)('%s', (owner, slots) => {
-		const relays = relaysOf(owner)
+		const relays = relaysOf(owner, `${owner}.Item`)
 
 		// Сверка не впустую: строки владельца в таблице нашлись
-		expect(Object.keys(relays).length).toBeGreaterThan(0)
-		expect(slots).toEqual(relays)
+		expect(relays.length).toBeGreaterThan(0)
+		expect(pairsOf(slots)).toEqual(relays)
 	})
 
 	it.each([
 		['Column', TABLE_COLUMN_SLOTS],
 		['Row', TABLE_ROW_SLOTS],
 	] as const)('Table.%s', (part, slots) => {
-		const relays = relaysOf('Table', part)
+		const relays = relaysOf('Table', `Table.${part}`)
 
-		expect(Object.keys(relays).length).toBeGreaterThan(0)
-		expect(slots).toEqual(relays)
+		expect(relays.length).toBeGreaterThan(0)
+		expect(pairsOf(slots)).toEqual(relays)
+	})
+
+	it.each([
+		['Menu', 'Menu.Item', [MENU_ITEM_SLOTS]],
+		['Menu', 'Menu.Submenu', [MENU_SUBMENU_SLOTS, MENU_SUBMENU_TEMPLATES]],
+		['Menu.Submenu', 'Menu.Item', [MENU_ITEM_SLOTS]],
+		['Menu.Submenu', 'Menu.Submenu', [MENU_SUBMENU_SLOTS, MENU_SUBMENU_TEMPLATES]],
+	] as const)('%s → %s', (owner, part, maps) => {
+		const relays = relaysOf(owner, part)
+
+		expect(relays.length).toBeGreaterThan(0)
+		expect(pairsOf(...maps)).toEqual(relays)
 	})
 })

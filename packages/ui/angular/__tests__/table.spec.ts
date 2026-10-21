@@ -1611,7 +1611,7 @@ describe('отменённый выбор', () => {
 })
 
 /**
- * Окно (обёртка `<so-virtual>`): тело рисует то, что отдаёт коллекция
+ * Окно (`<ng-container so-virtual>`): тело рисует то, что отдаёт коллекция
  * (`drawn`), — строки окна и распорки на месте пропущенных. Что попадает в
  * окно, решает ядро (`core/__tests__/table-virtual.spec.ts`), замер — плагин
  * (`plugins/__tests__/virtual.plugin.spec.ts`); раскладки в jsdom нет, и замер
@@ -1632,7 +1632,9 @@ describe('окно', () => {
 	@Component({
 		standalone: true,
 		imports: [TTableComponent, TVirtualComponent],
-		template: `<so-virtual><div so-table [engine]="engine()"></div></so-virtual>`,
+		template: `<ng-container so-virtual
+			><div so-table [engine]="engine()"></div
+		></ng-container>`,
 	})
 	class WindowHost extends TEngineHost {}
 

@@ -12,7 +12,9 @@
  * снятые, и на шинах владельца, движка и его расширений ни подписки, ни
  * перехватчика, ни слушателя обмена. У таблицы — ещё строки, колонки и
  * «выбрать все»: их держат элементы частей и чекбоксы, а в окне `<so-virtual>`
- * — и выключатель обёртки.
+ * — и выключатель обёртки. У меню пункты — в панели, увезённой в `body`: она
+ * идёт за местом меню, когда его якорь ушёл из документа, поэтому меню здесь
+ * не переставляется одной операцией, а снимается и вставляется снова.
  *
  * Список над движком без `ctrl`, подключённый раньше, чем снят прежний, берёт
  * привязку владельца себе, хотя прежний ещё держит движок.
@@ -22,11 +24,13 @@ import { describe, it, expect, afterEach, vi } from 'vitest'
 import {
 	TEvented,
 	TListBox,
+	TMenu,
 	TPagination,
 	TTable,
 	TTabs,
 	TVirtual,
 	createEngineListBox,
+	createEngineMenu,
 	createEnginePagination,
 	createEngineTable,
 	createEngineTabs,
@@ -35,11 +39,13 @@ import {
 } from '@soldy-ui/core'
 import {
 	TListBoxElement,
+	TMenuElement,
 	TPaginationElement,
 	TTableElement,
 	TTabsElement,
 	TVirtualElement,
 	type TListBoxElementProps,
+	type TMenuElementProps,
 	type TPaginationElementProps,
 	type TTableElementProps,
 	type TTabsElementProps,
@@ -65,6 +71,10 @@ function isTabs(node: Element): node is TTabsElementProps {
 
 function isListBox(node: Element): node is TListBoxElementProps {
 	return node instanceof TListBoxElement
+}
+
+function isMenu(node: Element): node is TMenuElementProps {
+	return node instanceof TMenuElement
 }
 
 function isPagination(node: Element): node is TPaginationElementProps {
@@ -265,6 +275,56 @@ describe('ListBox над движком и владельцем снаружи',
 		el.engine = engine
 
 		await moveThriceAndRemove(el, live, 'so-list-box-item')
+	})
+})
+
+/**
+ * Меню — пункты из данных в панели, увезённой в `body`: каждое подключение
+ * собирает и меню, и панель с пунктами над тем же движком и владельцем.
+ * Панель идёт за местом меню, когда его якорь ушёл из документа — снятие
+ * замечает наблюдатель документа микрозадачей позже, — поэтому меню
+ * снимается и вставляется в другое место, а не переставляется одной
+ * операцией: временно, до задачи 869fkq4nm (панель идёт за перестановкой
+ * меню одной операцией).
+ */
+describe('Menu над движком и владельцем снаружи', () => {
+	it('снятое и вставленное трижды, потом снятое — на шинах владельца и движка ничего', async () => {
+		const owner = new TMenu()
+		const engine = createEngineMenu({ owner, items: ITEMS })
+		const extensions = Object.values(engine.extensions).flatMap((extension) =>
+			extension ? [extension.events] : [],
+		)
+		const live = watchBuses([owner.events, engine.events, ...extensions])
+		const el = document.createElement('span', { is: 'so-menu' })
+		const items = () => document.querySelectorAll('.so-menu__panel .so-menu-item')
+
+		if (!isMenu(el)) throw new Error('<span is="so-menu"> нет')
+
+		el.ctrl = owner
+		el.engine = engine
+		document.body.appendChild(el)
+		await flush()
+
+		let mounted: string[] | undefined
+
+		for (let i = 0; i < 3; i++) {
+			el.remove()
+			await flush()
+
+			document.body.appendChild(document.createElement('section')).appendChild(el)
+			await flush()
+
+			mounted ??= live().sort()
+
+			expect(items()).toHaveLength(ITEMS.length)
+			expect(live().sort()).toEqual(mounted)
+		}
+
+		el.remove()
+		await flush()
+
+		expect(items()).toHaveLength(0)
+		expect(live()).toEqual([])
 	})
 })
 

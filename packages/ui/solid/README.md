@@ -22,7 +22,11 @@ arrive as callback props (`element:ready` → `onElementReady`), and the default
 > Input, NumberInput (a number in the locale's format with − and + step buttons; the form gets the
 > number), Textarea (multi-line, growing with its text, with a character counter), CheckBox and
 > Switch, Slider (a number or a range) and Rating, the form field `Field` (label, helper and error
-> linked to the control inside it), the collections ListBox, Tabs, Accordion, RadioGroup and Tags
+> linked to the control inside it), the dates — DateInput (a date, or a date and time with
+> `kind="datetime"`, typed in parts in the locale's format; the form gets the date as a string),
+> Calendar (month grids of `Calendar.Item` days; a month heading opens the month and year picker)
+> and DatePicker (a date field and a calendar in a panel: a single date or a range, with Cancel
+> and OK buttons under `confirmable`), the collections ListBox, Tabs, Accordion, RadioGroup and Tags
 > (`<ListBox.Item>`, `<Tabs.Item>` with `<Tabs.Content>`, `<Accordion.Item>`, `<RadioGroup.Item>`,
 > `<Tags.Item>` or `items`; tags close, select by mode and either wrap or scroll), Select (a
 > combobox: `<Select.Item>` and `<Select.Group>` or `items`, `editable` with search or filter,
@@ -47,7 +51,10 @@ arrive as callback props (`element:ready` → `onElementReady`), and the default
 > join the collection on the client. A field — and Select — gives its class and style to the root
 > and every other attribute to its `<input>` (a textarea — to its `<textarea>`), except Slider and
 > Rating: they keep every attribute on the root — a slider has a field per thumb, and the pointer
-> never reaches the field. An item of a collection, a menu item too, gives them to its row; a list
+> never reaches the field. DateInput, Calendar and DatePicker keep every attribute on the root too:
+> a date field has no `<input>` to type in, only its parts. The panel of DatePicker is teleported
+> like the panel of Select, so the server renders the field and the calendar button, and the
+> calendar appears on the client. An item of a collection, a menu item too, gives them to its row; a list
 > box and tabs give them to the list itself, `[role=listbox]` or `[role=tablist]`; a table gives
 > them to the `<table>` itself, and its class, style and `ref` to the scroll viewport around it;
 > otherwise `ref` gets the root. `Label` names the control it wraps; `LocaleProvider` gives a

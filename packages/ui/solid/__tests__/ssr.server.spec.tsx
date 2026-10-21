@@ -25,6 +25,8 @@ import {
 	Button,
 	CheckBox,
 	ComponentView,
+	DateInput,
+	DatePicker,
 	Dialog,
 	Drawer,
 	Field,
@@ -301,6 +303,79 @@ describe('Menu · серверный рендер', () => {
 	})
 })
 
+/**
+ * Поле даты и DatePicker на сервере. Части — разметка поля с наборами ядра, а
+ * `id` частям пишет плагин связок от id монтирования, и на сервере тоже. Сервер
+ * рисует части нередактируемыми: редактируемыми их делает касание. Текст части
+ * — свойство `textContent` узла, и сервер Solid печатает его содержимым узла.
+ * Панель DatePicker — телепортированный Frame, и на сервере её нет, как у
+ * Select: появится она на клиенте, а связка кнопки календаря с ней — уже в
+ * разметке сервера.
+ */
+describe('DateInput и DatePicker · серверный рендер', () => {
+	/** Части поля по порядку — с открывающим тегом и текстом. */
+	const segmentsOf = (body: string) =>
+		body.match(/<span class="so-date-input__segment ?"[^>]*>[^<]*<\/span>/g) ?? []
+
+	/** Тип части — по её `data-type`. */
+	const typeOf = (segment: string) => /data-type="([^"]+)"/.exec(segment)?.[1]
+
+	it('DateInput — группа, части с id и текстом, нередактируемые; значение — в скрытом поле', () => {
+		const body = markup(renderToString(() => <DateInput value="2026-05-12" name="birthday" />))
+		const segments = segmentsOf(body)
+
+		expect(body).toMatch(/^<div [^>]*role="group"[^>]*class="so-date-input /)
+		// en-US: месяц, день, год — по `formatToParts`
+		expect(segments.map(typeOf)).toEqual(['month', 'day', 'year'])
+		expect(segments.map((segment) => />([^<]*)<\/span>$/.exec(segment)?.[1])).toEqual([
+			'05',
+			'12',
+			'2026',
+		])
+		expect(
+			segments.every((segment) => new RegExp(`id="[^"]+-${typeOf(segment)}"`).test(segment)),
+		).toBe(true)
+		expect(segments.every((segment) => segment.includes('role="spinbutton"'))).toBe(true)
+		expect(body).not.toContain('contenteditable')
+		expect(body).not.toContain('inputmode')
+		expect(body).toMatch(
+			/<span class="so-date-input__literal ?" aria-hidden="true" ?>\/<\/span>/,
+		)
+		expect(body).toContain('<input type="hidden" name="birthday" value="2026-05-12">')
+	})
+
+	it('DatePicker — поле и кнопка календаря со связкой, панели и календаря нет', () => {
+		const body = markup(renderToString(() => <DatePicker value="2026-09-10" />))
+		const [, controls] = /aria-controls="([^"]+)"/.exec(body) ?? []
+
+		expect(body).toMatch(/^<div [^>]*class="so-date-picker /)
+		expect(body).toMatch(
+			/<div role="group"[^>]*class="so-date-input [^"]*so-date-picker__field/,
+		)
+		expect(body).toMatch(/<button [^>]*class="[^"]*so-date-picker__trigger[^"]*"/)
+		expect(body).toContain('aria-haspopup="dialog"')
+		expect(body).toContain('aria-expanded="false"')
+		expect(body).toContain('data-selected="false"')
+		// Ссылка кнопки ведёт на `id` панели, которая появится на клиенте
+		expect(controls).toBeTruthy()
+		expect(body).not.toContain(`id="${controls}"`)
+		expect(body).not.toContain('so-date-picker__panel')
+		expect(body).not.toContain('so-calendar')
+		expect(body).toContain('value="2026-09-10"')
+	})
+
+	it('DatePicker с диапазоном — корень-группа, поля концов названы', () => {
+		const body = markup(renderToString(() => <DatePicker mode="range" aria_label="Поездка" />))
+
+		expect(body).toMatch(/^<div [^>]*role="group"/)
+		expect(body).toMatch(/^<div [^>]*aria-label="Поездка"/)
+		expect(body).toMatch(/class="so-date-input [^"]*so-date-picker__start/)
+		expect(body).toContain('aria-label="Start date"')
+		expect(body).toContain('aria-label="End date"')
+		expect(body).toContain('<span class="so-date-picker__dash" aria-hidden="true">–</span>')
+	})
+})
+
 describe('Button · серверный рендер', () => {
 	it('классы ядра и потребителя, наборы и текст', () => {
 		const body = markup(
@@ -489,6 +564,8 @@ describe('ref потребителя · серверный рендер', () => 
 			['Skeleton', (ref) => <Skeleton ref={ref} />],
 			['Input', (ref) => <Input ref={ref} />],
 			['NumberInput', (ref) => <NumberInput value={5} clearable ref={ref} />],
+			['DateInput', (ref) => <DateInput value="2026-05-12" clearable ref={ref} />],
+			['DatePicker', (ref) => <DatePicker value="2026-05-12" ref={ref} />],
 			['Textarea', (ref) => <Textarea value="текст" counter ref={ref} />],
 			['CheckBox', (ref) => <CheckBox ref={ref} />],
 			['Switch', (ref) => <Switch ref={ref} />],

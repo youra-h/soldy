@@ -142,7 +142,9 @@ ARIA пускает только `option` и `group` (axe — `aria-required-chi
   `tabindex="0"` только у активного таба, а если его нет или на него нельзя
   перейти — у первого доступного; у кнопки закрытия `-1`, следующая остановка
   — панель. `tabindex` пишет `TTabsExtension`, а не плагин: атрибут обязан
-  стоять с первой отрисовки. **Активация автоматическая** — переход сразу
+  стоять с первой отрисовки (кроме таба выше активного в серверной разметке
+  Vue, Svelte и Solid — до гидратации остановок две, см. «Цена» в
+  `collections.md`). **Активация автоматическая** — переход сразу
   активирует таб: APG советует так, когда панель показывается без задержки, а
   `Tabs.Content` рисуется локально. Поэтому фокус и активный таб не
   расходятся, и остановку Tab коллекция считает без знания о фокусе. Ручного
@@ -156,7 +158,9 @@ ARIA пускает только `option` и `group` (axe — `aria-required-chi
   `multiple` — `aria-multiselectable`. Модель фокуса — roving tabindex, как у
   Tabs, а не фокус на контейнере, как у ListBox: у каждого тега свой крестик,
   а фокус на самой строке объявляет опцию без `aria-activedescendant`. Весь
-  набор — одна остановка Tab, `tabindex` строк пишет `TTagsExtension`.
+  набор — одна остановка Tab, `tabindex` строк пишет `TTagsExtension` с первой
+  отрисовки (кроме тега выше выбранного в серверной разметке Vue, Svelte и
+  Solid — до гидратации остановок две, см. «Цена» в `collections.md`).
   Клавиатура — `TTagsKeyboardPlugin`, слушатели висят, пока выбор включён:
   ←/→ (в RTL наоборот) и ↑/↓ — к соседнему тегу по кругу, `Home`/`End` — к
   крайним, недоступные теги (`TTagsExtension.isEnabledTag`) пропускаются;
@@ -408,8 +412,8 @@ ARIA пускает только `option` и `group` (axe — `aria-required-chi
   `<Field helper="…"><Label text="…"><CheckBox /></Label></Field>`: имя даёт
   `Label`, справку — поле. Адаптеры: Vue, React, Solid, Svelte, Angular и Web
   Components; в пяти последних связку берут поля, которые в них есть, — Input,
-  NumberInput, CheckBox, Switch и RadioGroup, у Svelte и Solid — ещё Rating,
-  Slider и Select.
+  NumberInput, CheckBox, Switch и RadioGroup, у Svelte — ещё Rating, Slider и
+  Select, у Solid — ещё Rating, Slider, Select, DateInput и DatePicker.
   Проводка у всех одна — поле ставит `TFieldExtension`, контрол —
   `TFieldControlExtension` на свой лифт, — а слой лифта каждый адаптер отдаёт
   своим механизмом. Поле ставит под свой слой
@@ -853,7 +857,20 @@ ARIA пускает только `option` и `group` (axe — `aria-required-chi
   `core/__tests__/collection-style-inherit.spec.ts` (вариант меню — во входе
   панели, а не в своём), классы панели подменю в `ui/vue/__tests__/menu.spec.ts`
   и группа «вариант меню» в `playground/vue/browser/menu.spec.ts` (цвет пункта
-  подменю — цвет пункта меню того же варианта).
+  подменю — цвет пункта меню того же варианта); у Web Components —
+  `ui/webc/__tests__/menu.spec.ts` (сценарии Vue, а ещё — наборы триггера на
+  первом элементе слота, образцы `item-*` на всех уровнях подменю из данных,
+  разметка до регистрации) и `playground/vue/browser/webc-collections.spec.ts`
+  (панели меню и подменю стоят, как у Vue; стрелки — по пунктам и между
+  уровнями). **Web Components** (`<span is="so-menu">`): оба набора триггера
+  шаблон кладёт на первый элемент слота `trigger`, как у Popover; панели меню,
+  подменю и пункта с панелью — детали Frame (`menu.frame`,
+  `menu.submenu-frame`, `menu.popover-item-frame`), классы панели — слоем
+  владельца (`ownerClasses`). Части — элементы `so-menu-item` и соседи, строка
+  каждого пункта — Button на `div` (`<div is="so-button-div">`); пункт с
+  подменю — часть с тремя контекстами (фасад элемента и фасад владельца), а
+  слоты пунктов из данных — образцы, которые подменю из данных получает под
+  теми же именами.
 - **Tooltip** — Tooltip pattern: `role="tooltip"` и `id` на панели, фокус
   остаётся на триггере, кнопки закрытия нет. Отдельный компонент, а не режим
   Popover: роль и модель фокуса у них разные, общий у них только слой оверлея
@@ -1153,7 +1170,8 @@ useToasts()`. API опускает лифт (`TOASTS_ELEVATOR`, расширен
   — `unknown` в ядре**: ядро его не читает, это значение разметки, и тип ему
   даёт адаптер — во Vue, React, Svelte и Solid компонент своего фреймворка с
   пропом `toast` (`TToastRender`, через API `useToasts()`; у React — и
-  объект-компонент `memo`, `forwardRef`, `lazy`, но не готовый элемент), у Web
+  объект-компонент `memo`, `forwardRef`, `lazy`, но не готовый элемент), у
+  Angular — класс компонента со входом `toast` (тоже `useToasts()`), у Web
   Components — функция, которая получает тост и отдаёт узел (через
   `toastsOf`), а рисует его разметка после проверки (`isToastRender`), без
   приведения. Правило общее: значение, которое
@@ -1176,10 +1194,17 @@ useToasts()`. API опускает лифт (`TOASTS_ELEVATOR`, расширен
   (сверх сценариев Vue — регион в цели, приложение на месте, атрибуты
   потребителя — на регионе, снятый менеджер уводит регион из цели;
   `toastsOf` изнутри окна в цели находит менеджер вокруг его места),
+  `ui/angular/__tests__/toasts.spec.ts` (сверх сценариев Vue — у `div` нет
+  коробки, а статика, класс, стиль, привязки и слушатель с него — на регионе;
+  `useToasts()` в поле компонента прямо в `<div so-toasts>` и в окне под
+  менеджером; без менеджера ошибку бросает `show`; `<ng-container so-toasts>` —
+  ошибка) и `ui/angular/__tests__/ssr.server.spec.ts` (на сервере региона нет,
+  после гидратации — те же узлы приложения и регион в `body`),
   `playground/vue/browser/toasts.spec.ts`,
   `playground/vue/browser/svelte-host.spec.ts` (регион Svelte с тостом стоит,
-  как у Vue) и `playground/vue/browser/webc-frame.spec.ts` с
-  `webc-host.spec.ts` (регион Web Components — так же); вид и ожидание — их
+  как у Vue), `playground/vue/browser/webc-frame.spec.ts` с
+  `webc-host.spec.ts` (регион Web Components — так же) и
+  `playground/vue/browser/angular-host.spec.ts` (регион Angular — так же); вид и ожидание — их
   группы «вид сообщения», «отсчёт», «значок» и «вид»; стопку — их группы
   «стопка» и `TToastsCascadePlugin`, а её движение —
   `playground/vue/browser/motion-mode.spec.ts`. **Web Components**
@@ -1187,6 +1212,14 @@ useToasts()`. API опускает лифт (`TOASTS_ELEVATOR`, расширен
   приложения, корень — регион внутри него, и в цель уезжает он; API —
   `toastsOf(node)`, лифтом места от узла под менеджером, своё содержимое —
   функция `(toast) => Node` (`TToastRender`), слоты `item-*` — образцы.
+  **Angular** (`<div so-toasts>`): менеджер — атрибутом на элементе
+  потребителя, без коробки (`display: contents` пишет база), корень — регион
+  внутри него, и в цель уезжает он, а всё, что потребитель написал на `div`,
+  класс и стиль тоже, — региону; API — `useToasts()` в поле компонента под
+  менеджером, а из слоя лифта он читается на каждый `show`: компонент прямо в
+  `<div so-toasts>` Angular создаёт раньше, чем менеджер опустит API, — и
+  менеджера выше нет — ошибку бросает `show`; своё содержимое — класс
+  компонента со входом `toast`, слоты `item-*` — шаблоны.
 - **Slider** — Slider и Multi-Thumb Slider pattern, вариант на нативных
   `input[type="range"]`: поле на каждую ручку, прозрачное и без указателя
   (`pointer-events: none`). Роль, значение, границы, `disabled` и отправку
@@ -1608,7 +1641,10 @@ useToasts()`. API опускает лифт (`TOASTS_ELEVATOR`, расширен
   `core/__tests__/calendar-picker.spec.ts`,
   `plugins/__tests__/calendar-keyboard.plugin.spec.ts`,
   `plugins/__tests__/calendar-pointer.plugin.spec.ts`,
-  `ui/vue/__tests__/calendar.spec.ts` и `playground/vue/browser/calendar.spec.ts`.
+  `ui/vue/__tests__/calendar.spec.ts`, `ui/solid/__tests__/calendar.spec.tsx`
+  (у Solid ещё — кнопка заголовка, её поповер и живая область те же при
+  листании и выборе месяца, панель выбора — прямой потомок корня поповера) и
+  `playground/vue/browser/calendar.spec.ts`.
 - **DateInput** — поле даты из частей (`spinbutton`) в группе, с
   `kind: 'datetime'` — даты и времени, с `timePrecision: 'second'` — до
   секунды: корень — `role="group"`, имя — `aria_label` или `aria_labelledBy`
@@ -1669,7 +1705,10 @@ useToasts()`. API опускает лифт (`TOASTS_ELEVATOR`, расширен
   после `ready`. `id` частей пишет `TDateInputIdsPlugin` от монтирования.
   Сторожат `core/__tests__/date-input.spec.ts`,
   `plugins/__tests__/date-input.plugin.spec.ts`,
-  `ui/vue/__tests__/date-input.spec.ts` и
+  `ui/vue/__tests__/date-input.spec.ts`, `ui/solid/__tests__/date-input.spec.tsx`
+  (у Solid ещё — узел части тот же при наборе и при смене локали, а часть,
+  которую браузер оставил пустой, получает текст ядра: он — `textContent`
+  узла) и
   `playground/vue/browser/date-input.spec.ts` — протяжка с левого края дня и
   месяца, Ctrl+C и Ctrl+X без переводов строк, Ctrl+A, контекстное меню, ввод
   времени и секунд с клавиатуры, ширина поля при наборе года и у поля до
@@ -1733,6 +1772,7 @@ useToasts()`. API опускает лифт (`TOASTS_ELEVATOR`, расширен
   `core/__tests__/date-picker.spec.ts`,
   `plugins/__tests__/date-picker.plugin.spec.ts`,
   `ui/vue/__tests__/date-picker.spec.ts`,
+  `ui/solid/__tests__/date-picker.spec.tsx`,
   `playground/vue/browser/date-picker.spec.ts` и
   `playground/vue/browser/anchored-swipe.spec.ts`.
 - **Pagination** — постраничная навигация. Своего паттерна APG у неё нет:
@@ -2374,13 +2414,14 @@ useToasts()`. API опускает лифт (`TOASTS_ELEVATOR`, расширен
   дети, а подключение к окну её проводка опускает контекстом (`setContext`) при
   инициализации, и коллекция в детях подхватывает его своей; сборка одна, как
   у Solid, а стиль распорки ядра — строкой атрибута (`toStyleText`): чужого на
-  распорке нет. В Angular обёртка — `<so-virtual>`: элемент компонента Angular
-  ставит, но бокса у него нет (`display: contents` статикой хоста), а шаблон —
-  только содержимое; подключение к окну проводка опускает в слой лифта
-  обёртки (`provideElevator()`) в её `ngOnInit`, раньше хуков содержимого, и
+  распорке нет. В Angular обёртка тоже без узла — директива на
+  `<ng-container>`, `<ng-container so-virtual>`: шаблона у неё нет, и на месте
+  контейнера Angular ставит только комментарий-якорь; подключение к окну
+  проводка опускает в слой лифта обёртки (`provideElevator()` директивы — у
+  `<ng-container>` свой инжектор) в её `ngOnInit`, раньше хуков содержимого, и
   коллекция в содержимом подхватывает его своей сборкой. Сборка одна, как у
   Solid, а стиль распорки по-CSS Angular ставит привязкой `[style]` как есть.
-  В Web Components узел у обёртки тоже есть — автономный `<so-virtual>`, без
+  В Web Components узел у обёртки есть — автономный `<so-virtual>`, без
   `is` и без коробки (`displayContents`: теневой корень со `<slot>` и
   `:host { display: contents }`), и коллекции стоят в нём светом; дочерний
   комбинатор селектора через него не проходит. Подключение к окну её сборка
@@ -2471,8 +2512,8 @@ useToasts()`. API опускает лифт (`TOASTS_ELEVATOR`, расширен
   отдаёт `Elevate`, а пересобранная обёртка React (StrictMode, `<Activity>`)
   опускает новый экземпляр, и коллекция пересобирается вслед за ней; у Svelte
   узла тоже нет, экземпляр её проводка опускает контекстом при инициализации;
-  у Angular — `<so-drag-and-drop>` без бокса (`display: contents`) со своим
-  слоем лифта (`provideElevator()`); у Web Components — автономный
+  у Angular узла тоже нет — директива `<ng-container so-drag-and-drop>` со
+  своим слоем лифта (`provideElevator()`); у Web Components — автономный
   `<so-drag-and-drop>` без `is` и без коробки, коллекции — его свет, а
   регистрирует его модуль раньше коллекций. Петля с ключом у элементов из
   данных переставляет их узлы, и браузер шлёт `focusout` взятого посреди

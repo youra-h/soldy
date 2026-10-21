@@ -1,0 +1,84 @@
+<!--
+	Корень — сам хост (`<li so-toasts-item>`), место тоста в списке региона,
+	поэтому шаблон — плашка: то, что видно, — поверхность, кромка, тень и
+	кольцо фокуса корня. Отдельный узел, а не корень: место растёт и
+	схлопывается переходом высоты без замеров, а плашка своего размера не
+	меняет. Слоты контракта — шаблонами, их пробрасывает регион: icon (scope
+	{ type }), default (scope { text }), content, close-icon.
+-->
+<div class="so-toasts-item__card">
+	<!--
+		Коробка значка стоит всегда, и в ней одно из трёх:
+		- тост ждёт (`loading`) — бегущее кольцо, при любом виде и что бы ни
+		  стояло в слоте. Размер и вариант кольцу разметка не передаёт: диаметр и
+		  цвет даёт тема по месту — коробке значка;
+		- задан шаблон `icon` (scope — вид) — свой значок;
+		- иначе — значок вида по роли: `info`, `success`, `warning`, `error`, у
+		  обычного сообщения — `notification`.
+		Коробка — декор: что случилось, говорит текст, поэтому она спрятана от
+		скринридера вместе с ролью кольца.
+	-->
+	<span class="so-toasts-item__icon" aria-hidden="true">
+		@if (state()['loading']) {
+			<span so-progress-spinner embedded="toasts.spinner" indeterminate></span>
+		} @else if (slot('icon'); as icon) {
+			<ng-container
+				[ngTemplateOutlet]="icon"
+				[ngTemplateOutletContext]="{ type: state()['type'] }"
+			/>
+		} @else {
+			<svg so-icon embedded="toasts.icon" [so-role-icon]="typeRole()"></svg>
+		}
+	</span>
+	<!--
+		Текст: заголовок (шаблон `default`, без него — `text` тоста), описание
+		(`description` тоста) и своё содержимое (шаблон `content`, без него —
+		компонент `render` тоста: кнопка «Отменить» и подобное, тост приходит ему
+		входом `toast`, и он может его закрыть). Пустую часть тема сворачивает по
+		`:empty`.
+	-->
+	<div class="so-toasts-item__body">
+		<div class="so-toasts-item__text">
+			@if (slot('default'); as heading) {
+				<ng-container
+					[ngTemplateOutlet]="heading"
+					[ngTemplateOutletContext]="{ text: state()['text'] ?? '' }"
+				/>
+			} @else {
+				<ng-content>{{ state()['text'] }}</ng-content>
+			}
+		</div>
+		<div class="so-toasts-item__description" [textContent]="state()['description']"></div>
+		<div class="so-toasts-item__content">
+			@if (slot('content'); as content) {
+				<ng-container [ngTemplateOutlet]="content" />
+			} @else if (contentComponent(); as component) {
+				<ng-container *ngComponentOutlet="component; inputs: { toast: instance() }" />
+			}
+		</div>
+	</div>
+	<!--
+		Крестик — последним в DOM: последняя остановка Tab в тосте. Есть, только
+		пока тост можно им закрыть (`closable`). Имя — из локали вместе с текстом
+		тоста (`closeAria`). Вида и размера у него нет: квадрат и вид `plain` даёт
+		тема по контексту. Иконка — роль `close`. `type="button"` — как у каждой
+		кнопки-детали: в форме она форму не отправляет.
+	-->
+	@if (state()['closable']) {
+		<button
+			so-button
+			embedded="toasts.close"
+			type="button"
+			class="so-toasts-item__close"
+			[so-attributes]="state()['closeAria']"
+			(click)="close()"
+		>
+			@if (slot('close-icon'); as icon) {
+				<ng-container [ngTemplateOutlet]="icon" />
+			} @else {
+				<svg so-icon embedded="toasts.close-icon" so-role-icon="close"></svg>
+			}
+		</button>
+	}
+</div>
+<ng-content select="ng-template[slot]" />
