@@ -19,6 +19,8 @@ import {
 	TInputComponent,
 	TRadioGroupComponent,
 	TRadioGroupItemComponent,
+	TRatingComponent,
+	TSliderComponent,
 } from '@soldy-ui/angular'
 import { find } from './mount'
 import { hydrate, leavePage, loadPage, renderOnServer } from './server'
@@ -26,7 +28,14 @@ import { hydrate, leavePage, loadPage, renderOnServer } from './server'
 @Component({
 	selector: 'app-root',
 	standalone: true,
-	imports: [TFieldComponent, TInputComponent, TRadioGroupComponent, TRadioGroupItemComponent],
+	imports: [
+		TFieldComponent,
+		TInputComponent,
+		TRadioGroupComponent,
+		TRadioGroupItemComponent,
+		TRatingComponent,
+		TSliderComponent,
+	],
 	template: `<div
 			so-field
 			class="email"
@@ -41,6 +50,12 @@ import { hydrate, leavePage, loadPage, renderOnServer } from './server'
 			<div so-radio-group>
 				<label so-radio-group-item value="a">А</label>
 			</div>
+		</div>
+		<div so-field class="price" label="Цена" helper="Подсказка">
+			<span so-slider [value]="[20, 80]" [thumbLabels]="['От', 'До']"></span>
+		</div>
+		<div so-field class="score" label="Оценка" helper="Подсказка">
+			<span so-rating [value]="3"></span>
 		</div>`,
 })
 class FieldPage {
@@ -86,6 +101,34 @@ describe('серверный рендер', () => {
 		])
 		expect(refsOf(group, 'aria-describedby')).toEqual([
 			find(page, '.choice .so-field__helper', HTMLElement).id,
+		])
+	})
+
+	/**
+	 * Ползунок с несколькими ручками — группа: набор корня (`rootAria`) база
+	 * кладёт и на сервере, с ролью и ссылками на подпись и справку.
+	 */
+	it('ползунок с несколькими ручками: группа со ссылками на подпись и справку', async () => {
+		const page = await serverPage()
+		const group = find(page, '.price [so-slider]', HTMLElement)
+
+		expect(group.getAttribute('role')).toBe('group')
+		expect(refsOf(group, 'aria-labelledby')).toEqual([
+			find(page, '.price .so-field__label', HTMLLabelElement).id,
+		])
+		expect(refsOf(group, 'aria-describedby')).toEqual([
+			find(page, '.price .so-field__helper', HTMLElement).id,
+		])
+	})
+
+	it('оценка — labelable: for подписи — на id её поля, справка — у поля', async () => {
+		const page = await serverPage()
+		const input = find(page, '.score input', HTMLInputElement)
+
+		expect(input.id).not.toBe('')
+		expect(find(page, '.score .so-field__label', HTMLLabelElement).htmlFor).toBe(input.id)
+		expect(refsOf(input, 'aria-describedby')).toEqual([
+			find(page, '.score .so-field__helper', HTMLElement).id,
 		])
 	})
 })
