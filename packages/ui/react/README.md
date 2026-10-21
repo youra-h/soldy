@@ -19,13 +19,15 @@ arrive as callback props (`element:ready` → `onElementReady`), and the default
 > (`<ListBox.Item>`, `<Tabs.Item>` with `<Tabs.Content>`, `<Accordion.Item>`, `<RadioGroup.Item>`
 > or `items`), Pagination, the `Scroller` strip, the overlays Popover and Tooltip (the trigger in
 > the `trigger` slot, `trigger={({ triggerAria }) => <Button {...triggerAria} />}`), Dialog and
-> Drawer (open state in `visible`, user closing reported by `onChangeVisible`), Table (columns
-> and rows as data — `columns`, `items` — with sorting, row selection, column resizing and
-> reordering), the `Virtual` window for long lists (`<Virtual><ListBox items={…} /></Virtual>`,
-> the same with `Table`) and the `DragAndDrop` wrapper that lets users reorder the items of Tabs,
-> ListBox and Accordion by dragging (`<DragAndDrop onMove={…}><ListBox items={…} /></DragAndDrop>`,
-> `onMoveBefore` can cancel) are ported, the rest of the set is on its way. Icon renders the
-> `tag` it is given; `roleIcon(role)` makes that tag from the registered icon pack. See
+> Drawer (open state in `visible`, user closing reported by `onChangeVisible`), Toasts
+> (notifications shown from code with `useToasts()`; the region is teleported into `target`, and
+> `ref` is the region), Table (columns and rows as data — `columns`, `items` — with sorting, row
+> selection, column resizing and reordering), the `Virtual` window for long lists
+> (`<Virtual><ListBox items={…} /></Virtual>`, the same with `Table`) and the `DragAndDrop`
+> wrapper that lets users reorder the items of Tabs, ListBox and Accordion by dragging
+> (`<DragAndDrop onMove={…}><ListBox items={…} /></DragAndDrop>`, `onMoveBefore` can cancel) are
+> ported, the rest of the set is on its way. Icon renders the `tag` it is given; `roleIcon(role)`
+> makes that tag from the registered icon pack. See
 > [the adapter table](https://github.com/youra-h/soldy#components).
 
 ## Install
@@ -60,6 +62,35 @@ export function Toolbar() {
   return <Button ctrl={btn} onActionPress={() => (btn.disabled = true)} />
 }
 ```
+
+Toasts are shown from code. The manager wraps the application, and any component under it takes
+the API with the `useToasts()` hook — a component in a dialog under the manager too; your own
+content of a toast is a React component with a `toast` prop (`memo` and `forwardRef` components as
+well):
+
+```tsx
+import { Button, Toasts, useToasts, type TToastRender } from '@soldy-ui/react'
+
+const Undo: TToastRender = ({ toast }) => <Button text="Undo" onClick={() => toast.close()} />
+
+function Page() {
+  const { show } = useToasts()
+
+  return <Button text="Delete" onClick={() => show({ text: 'Deleted', render: Undo })} />
+}
+
+export function App() {
+  return (
+    <Toasts>
+      <Page />
+    </Toasts>
+  )
+}
+```
+
+The API belongs to the manager's assembly: a manager that React sets up again (StrictMode,
+`<Activity>`) without an `engine` of yours gives a new one, so an effect that shows a toast keeps
+`show` in its dependencies — `useEffect(() => { show('Saved') }, [show])`.
 
 The application plugs in a theme and an icon pack once, in its entry point:
 

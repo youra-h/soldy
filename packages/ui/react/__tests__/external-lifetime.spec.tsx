@@ -56,6 +56,7 @@ import {
 	TTable,
 	TTabs,
 	TTextarea,
+	TToasts,
 	TTooltip,
 	TVirtual,
 	createEngineAccordion,
@@ -64,6 +65,7 @@ import {
 	createEngineRadioGroup,
 	createEngineTable,
 	createEngineTabs,
+	createEngineToasts,
 } from '@soldy-ui/core'
 import type { TListBoxCollection, TTableCollection } from '@soldy-ui/core'
 import {
@@ -94,6 +96,7 @@ import {
 	Table,
 	Tabs,
 	Textarea,
+	Toasts,
 	Tooltip,
 	Virtual,
 } from '@soldy-ui/react'
@@ -590,6 +593,29 @@ const COMPONENTS: Readonly<Record<string, Readonly<Record<string, TCase>>>> = {
 			() => new TTextarea(),
 			(ctrl) => <Textarea ctrl={ctrl} />,
 		),
+	},
+	/**
+	 * Тосты приходят из кода, поэтому случай один: движок снаружи с тостом,
+	 * показанным до монтирования. Регион рисует его тостом — с плагинами жеста
+	 * и имени крестика, — отсчёт идёт по нему, а владельца в опции движка пишет
+	 * монтирование. Снятие отпускает и тост, и движок, и `ctrl`.
+	 */
+	Toasts: {
+		'ctrl и движок, показанный тост': () => {
+			const ctrl = new TToasts()
+			const engine = createEngineToasts()
+
+			engine.extensions.toasts.show('Сохранено')
+
+			return {
+				node: (
+					<Toasts ctrl={ctrl} engine={engine}>
+						<main>Приложение</main>
+					</Toasts>
+				),
+				buses: [ctrl.events, ...engineBuses(engine)],
+			}
+		},
 	},
 	/** Открытая подсказка — как поповер: показ ведёт плагин наведения. */
 	Tooltip: {
