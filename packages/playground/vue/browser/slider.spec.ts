@@ -433,13 +433,16 @@ describe('щелчок к меткам', () => {
 		expect(ctrl.value).toBe(freeValue(-20))
 	})
 
+	/**
+	 * «Сразу» — в окне стоянки (250 мс по часам), поэтому жест идёт командой
+	 * без паузы перед отпусканием (`quickDrag`): у `dragAndDrop` между
+	 * движением и отпусканием круг RPC, и под нагрузкой отпускание приходило,
+	 * когда стоянка уже кончилась и ручка честно догнала указатель.
+	 */
 	it('hold: отпустили сразу за меткой — ручка осталась на метке', async () => {
 		const ctrl = await mount({ value: 20, marks: MARK, snap: 'hold' })
 
-		await userEvent.dragAndDrop(track(), track(), {
-			sourcePosition: along(0.2),
-			targetPosition: along(0.6),
-		})
+		await commands.quickDrag('.so-slider__track', { x: 0.2, y: 0.5 }, { x: 0.6, y: 0.5 })
 
 		expect(ctrl.value).toBe(50)
 	})

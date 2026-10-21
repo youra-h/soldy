@@ -19,6 +19,62 @@ const mouseUp = defineBrowserCommand(async ({ page }) => {
 	await page.mouse.up()
 })
 
+/** Точка в долях рамки узла: `x` — по ширине, `y` — по высоте. */
+type TFraction = { x: number; y: number }
+
+/**
+ * Протяжка мышью без паузы перед отпусканием: нажать в точке `from`, довести
+ * до `to` и сразу отпустить. Движение и отпускание уходят в браузер одним
+ * тактом процесса прогона — событиями мыши протокола DevTools
+ * (`Input.dispatchMouseEvent`) одной сессии, а их браузер выполняет по
+ * порядку. У `dragAndDrop` между ними круг RPC, а под нагрузкой — и простой
+ * процесса прогона: окно, которое жест держит по часам (стоянка ручки на
+ * метке — 250 мс, `browser/slider.spec.ts`), кончалось до отпускания.
+ * Одновременные вызовы `page.mouse` порядка не обещают — отпускание обгоняло
+ * движение. Кнопку Playwright не нажимает, и его состояние мыши с браузером не
+ * расходится. Узел — селектор CSS в рамке теста, рамку страницы считает
+ * Playwright.
+ */
+const quickDrag = defineBrowserCommand<[selector: string, from: TFraction, to: TFraction]>(
+	async ({ page, frame }, selector, from, to) => {
+		const box = await (await frame()).locator(selector).boundingBox()
+
+		if (!box) throw new Error(`${selector}: узла нет или он не нарисован`)
+
+		const point = ({ x, y }: TFraction) => ({
+			x: box.x + box.width * x,
+			y: box.y + box.height * y,
+		})
+		const session = await page.context().newCDPSession(page)
+		const left = { button: 'left', clickCount: 1 } as const
+
+		try {
+			await session.send('Input.dispatchMouseEvent', {
+				type: 'mousePressed',
+				...point(from),
+				...left,
+				buttons: 1,
+			})
+			await Promise.all([
+				session.send('Input.dispatchMouseEvent', {
+					type: 'mouseMoved',
+					...point(to),
+					button: 'left',
+					buttons: 1,
+				}),
+				session.send('Input.dispatchMouseEvent', {
+					type: 'mouseReleased',
+					...point(to),
+					...left,
+					buttons: 0,
+				}),
+			])
+		} finally {
+			await session.detach()
+		}
+	},
+)
+
 /**
  * Пауза от прошлого касания, после которой касание уже не второе в двойном.
  * Двойное касание браузер разбирает иначе — выделяет слово и открывает
@@ -194,7 +250,7 @@ export default defineConfig({
 				launchOptions: { ignoreDefaultArgs: ['--hide-scrollbars'] },
 			}),
 			instances: [{ browser: 'chromium' }],
-			commands: { mouseDown, mouseUp, tap, touchDrag, insertText, compose },
+			commands: { mouseDown, mouseUp, quickDrag, tap, touchDrag, insertText, compose },
 		},
 	},
 	resolve: {
