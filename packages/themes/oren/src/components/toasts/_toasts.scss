@@ -3,6 +3,7 @@
 @use '../button/mixins' as button;
 @use '../../mixins/indicator';
 @use '../../mixins/motion';
+@use '../../mixins/on-signal';
 @use '../../mixins/place';
 @use '../../mixins/swipe';
 @use '../../mixins/veil';
@@ -384,7 +385,7 @@ $cascade-easing: cubic-bezier(0.21, 1.02, 0.73, 1);
 }
 
 #{$typed} {
-	--so-toasts-item-text: var(--color-white);
+	--so-toasts-item-text: #{on-signal.$text};
 	--so-toasts-item-muted: #{veil.layer(currentColor, $muted-on-fill)};
 	--so-toasts-item-tone: currentColor;
 }
@@ -583,7 +584,7 @@ $cascade-easing: cubic-bezier(0.21, 1.02, 0.73, 1);
 // (`:where(.so-button)`) порядком, а вариант, заданный кнопке потребителем, —
 // модификатор на класс сильнее — остаётся своим.
 :where(:is(#{$typed}) .so-button) {
-	@include button.button-text-colored-tones(var(--color-black));
+	@include button.button-text-colored-tones;
 	--so-component-text: currentColor;
 	--so-component-focus-ring: currentColor;
 }

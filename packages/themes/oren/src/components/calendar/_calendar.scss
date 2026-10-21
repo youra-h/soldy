@@ -2,6 +2,7 @@
 @use '../button/mixins' as button;
 @use '../../mixins/modal';
 @use '../../mixins/motion';
+@use '../../mixins/on-signal';
 @use '../../mixins/place';
 @use '../../mixins/swipe';
 @use '../popover/mixins' as popover;
@@ -525,7 +526,7 @@
 	// Правило после наведения, нажатия и недоступного: заливка перекрывает их
 	// вуаль и приглушённый текст той же специфичностью.
 	&[data-selected='true']:not([data-range-middle='true'], [data-preview='true']) > #{$this}__day {
-		@apply text-white;
+		color: on-signal.$text;
 		background-color: var(--so-calendar-fill);
 	}
 

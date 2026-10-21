@@ -354,7 +354,7 @@ $saturated: ();
 // не к ней. Кольцо фокуса — тоже цвет подписи: кольцо темы на заливке почти
 // пропадает. Нулевая специфичность и после Button, как у плашки тоста.
 :where(:is(#{$saturated}) > .so-tags-item__close) {
-	@include button.button-text-colored-tones(var(--color-black));
+	@include button.button-text-colored-tones;
 	--so-component-focus-ring: currentColor;
 }
 
