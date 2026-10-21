@@ -183,7 +183,8 @@ export class TTeleport {
 
 	/**
 	 * Корень со спутником возвращаются к якорю — каждый одной операцией, якорь
-	 * уходит. Якорь без родителя места не держит, и они просто уходят из цели.
+	 * уходит. Это перенос силами базы: из документа узлы не выходят. Якорь без
+	 * родителя места не держит, и они просто уходят из цели.
 	 */
 	private _home(): void {
 		const anchor = this._anchor
@@ -191,20 +192,7 @@ export class TTeleport {
 		if (anchor === null) return
 
 		this._forget(anchor)
-
-		if (!anchor.parentNode) {
-			for (const node of this._nodes()) node.remove()
-
-			return
-		}
-
-		const nodes = this._nodes()
-
-		relocate(nodes, () => {
-			for (const node of nodes) anchor.before(node)
-
-			anchor.remove()
-		})
+		relocate(this._nodes(), () => this._return(anchor))
 	}
 
 	/**
@@ -236,9 +224,11 @@ export class TTeleport {
 	}
 
 	/**
-	 * Корень со спутником — к якорю, якорь уходит; якорь без родителя — они
-	 * просто уходят. Настоящее отключение: место корня уже вне документа или
-	 * переставлено потребителем.
+	 * Корень со спутником — к якорю, каждый одной операцией, якорь уходит;
+	 * якорь без родителя — они просто уходят. Само по себе это настоящее
+	 * отключение: место корня уже вне документа или переставлено потребителем
+	 * (`_follow`, `release`). «На месте» (`_home`) зовёт его переносом силами
+	 * базы.
 	 */
 	private _return(anchor: Comment): void {
 		const nodes = this._nodes()
