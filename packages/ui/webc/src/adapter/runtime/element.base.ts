@@ -164,7 +164,10 @@
  * (`joinBindings`). Описание элемента называет и дескриптор фасада (`facade`):
  * его пропсы — тоже атрибуты-входы и свойства элемента (`items`, `engine`,
  * `active`, `selected`), его свойства — в том же состоянии, а сам фасад шаблон
- * получает из контекста (`ctx.facade`).
+ * получает из контекста (`ctx.facade`). У пункта с подменю контекстов три:
+ * он пункт меню над ним и меню своих пунктов, — и описание называет ещё и
+ * дескриптор фасада владельца (`ownerFacade`): его пропсы — тоже входы,
+ * его свойства — в том же состоянии, а `ctx.facade` — фасад пункта.
  *
  * Свойства пропов (`el.text = 'Click'`) база вешает на прототип, кроме тех, что
  * у элемента уже есть по тегу: `disabled` кнопки остаётся нативным свойством,
@@ -233,7 +236,7 @@
  * получает каждый элемент из данных.
  *
  * Узлы слота. Набор, который остальные адаптеры отдают содержимому слота в
- * scope, — связку с панелью триггеру Popover и Tooltip (`triggerAria`), —
+ * scope, — связку с панелью триггеру Popover, Tooltip и Menu (`triggerAria`), —
  * шаблон кладёт на первый элемент слота сам (`ownerAttributes`): scope у
  * слотов нет, и привязать набор потребитель не может. Узлы слота в его точке
  * — те самые, что написал потребитель, — отдаёт контекст (`slotted`): триггер
@@ -422,12 +425,13 @@ function attributesOf(
 }
 
 /** Что у элемента своего, помимо нативного: инстанс ядра и его состояние. */
-export interface ISoldyElement<TInstance, TFacade = unknown> {
+export interface ISoldyElement<TInstance, TFacade = unknown, TOwnerFacade = unknown> {
 	/**
 	 * Свойства инстанса со снимком через `valueOf()` — см. `TInstanceState`; у
-	 * коллекционного компонента — вместе со свойствами фасада.
+	 * коллекционного компонента — вместе со свойствами фасада, а у пункта с
+	 * подменю — и фасада своей коллекции.
 	 */
-	readonly state: TBindingState<TInstance, TFacade>
+	readonly state: TBindingState<TInstance, TFacade, unknown, TOwnerFacade>
 	/**
 	 * Готовый core-инстанс. Связку элемент заводит на каждое подключение, и
 	 * присвоенный инстанс достаётся следующей: подключённому элементу — после
@@ -549,9 +553,16 @@ export type TRootTeleport = {
  * Всё, чем элементы soldy отличаются друг от друга. `TOutputs` — выходы
  * плагинов дескриптора компонента (`DescriptorPluginOutputs`): их связка
  * отдаёт в состоянии, а шаблон читает с типом (пометку панели владельцем у
- * Popover и Tooltip).
+ * Popover и Tooltip). `TOwnerFacade` — фасад владельца, своей коллекции, у
+ * части, которая сразу и элемент коллекции над ней, и владелец своей (пункт с
+ * подменю).
  */
-export interface ISoldyElementSpec<TInstance, TFacade = unknown, TOutputs = unknown> {
+export interface ISoldyElementSpec<
+	TInstance,
+	TFacade = unknown,
+	TOutputs = unknown,
+	TOwnerFacade = unknown,
+> {
 	/** Дескриптор компонента: по нему строятся атрибуты и свойства пропов. */
 	readonly descriptor: IComponentDescriptor
 	/**
@@ -559,8 +570,16 @@ export interface ISoldyElementSpec<TInstance, TFacade = unknown, TOutputs = unkn
 	 * его пропсы — тоже атрибуты-входы и свойства элемента (см. шапку).
 	 */
 	readonly facade?: IComponentDescriptor
+	/**
+	 * Дескриптор фасада владельца — своей коллекции у части с тремя
+	 * контекстами, пункта с подменю (`MenuSubmenuCollectionDescriptor`): тогда
+	 * `facade` — дескриптор её фасада элемента, а пропсы своей коллекции
+	 * (`items`, `engine`, `trackBy`, группы) — тоже атрибуты-входы и свойства
+	 * элемента.
+	 */
+	readonly ownerFacade?: IComponentDescriptor
 	/** Шаблон: структура в корне и привязки пропов. */
-	readonly template: ITemplate<TInstance, TFacade, TOutputs>
+	readonly template: ITemplate<TInstance, TFacade, TOutputs, TOwnerFacade>
 	/** Описание корня — см. `TRootSpec`. */
 	readonly root?: TRootSpec
 	/**
@@ -575,7 +594,7 @@ export interface ISoldyElementSpec<TInstance, TFacade = unknown, TOutputs = unkn
 		ctrl: TInstance | undefined,
 		props: Record<string, unknown>,
 		onUpdate: TUpdateListener,
-	): TBinding<TInstance, TFacade, TOutputs>
+	): TBinding<TInstance, TFacade, TOutputs, TOwnerFacade>
 }
 
 /**
@@ -586,9 +605,9 @@ export interface ISoldyElementSpec<TInstance, TFacade = unknown, TOutputs = unkn
 export type TNativeElementClass = new (...args: any[]) => HTMLElement
 
 /** Класс элемента soldy — то, что база добавляет к нативному классу тега. */
-export type TSoldyElementClass<TInstance, TFacade = unknown> = (new (
+export type TSoldyElementClass<TInstance, TFacade = unknown, TOwnerFacade = unknown> = (new (
 	...args: any[]
-) => ISoldyElement<TInstance, TFacade>) & {
+) => ISoldyElement<TInstance, TFacade, TOwnerFacade>) & {
 	readonly observedAttributes: string[]
 }
 
@@ -609,12 +628,18 @@ export function SoldyElement<
 	TInstance extends IComponent<IComponentProps, any>,
 	TFacade = unknown,
 	TOutputs = unknown,
+	TOwnerFacade = unknown,
 >(
 	Native: TNative,
-	spec: ISoldyElementSpec<TInstance, TFacade, TOutputs>,
-): TNative & TSoldyElementClass<TInstance, TFacade> {
-	/** Описания элемента: своё и, у коллекционного компонента, фасада. */
-	const descriptors = spec.facade ? [spec.descriptor, spec.facade] : [spec.descriptor]
+	spec: ISoldyElementSpec<TInstance, TFacade, TOutputs, TOwnerFacade>,
+): TNative & TSoldyElementClass<TInstance, TFacade, TOwnerFacade> {
+	/**
+	 * Описания элемента: своё и, у коллекционного компонента, фасада, а у пункта
+	 * с подменю — ещё и фасада своей коллекции.
+	 */
+	const descriptors = [spec.descriptor, spec.facade, spec.ownerFacade].filter(
+		(descriptor): descriptor is IComponentDescriptor => descriptor !== undefined,
+	)
 	/** В корне поле (`TRootSpec.control`). */
 	const control = spec.root?.control === true
 	/** Элемент — обёртка вокруг корня (`TRootSpec.wrapped`). */
@@ -665,12 +690,12 @@ export function SoldyElement<
 	/** Имена выходов слоя (`TRootSpec.teleport`); нет — корень в слой не уезжает. */
 	const layer = spec.root?.teleport
 
-	class TSoldyElement extends Native implements ISoldyElement<TInstance, TFacade> {
+	class TSoldyElement extends Native implements ISoldyElement<TInstance, TFacade, TOwnerFacade> {
 		static get observedAttributes(): string[] {
 			return [...attributes.keys(), ...own.keys()]
 		}
 
-		private _binding?: TBinding<TInstance, TFacade, TOutputs>
+		private _binding?: TBinding<TInstance, TFacade, TOutputs, TOwnerFacade>
 
 		/**
 		 * Последнее значение каждого пропа, какое видел элемент: записанное
@@ -720,7 +745,8 @@ export function SoldyElement<
 		private _hiddenDisplay: THiddenDisplay = undefined
 
 		/** Контекст привязок шаблона — живой вид элемента (`_viewOf`). */
-		private readonly _view: ITemplateContext<TInstance, TFacade, TOutputs> = this._viewOf()
+		private readonly _view: ITemplateContext<TInstance, TFacade, TOutputs, TOwnerFacade> =
+			this._viewOf()
 
 		/** Телепорт корня слоя (`TRootSpec.teleport`) — заводит его построение. */
 		private _teleport?: TTeleport
@@ -731,7 +757,7 @@ export function SoldyElement<
 		/** Память скрытия спутника. */
 		private _companionDisplay: THiddenDisplay = undefined
 
-		get state(): TBindingState<TInstance, TFacade> {
+		get state(): TBindingState<TInstance, TFacade, unknown, TOwnerFacade> {
 			return this._binding?.state ?? {}
 		}
 
@@ -895,7 +921,7 @@ export function SoldyElement<
 		 * значение, а снятие доходит следом записью в связку — как снятие атрибута у
 		 * подключённого элемента.
 		 */
-		private _assemble(): TBinding<TInstance, TFacade> {
+		private _assemble(): TBinding<TInstance, TFacade, TOutputs, TOwnerFacade> {
 			const offline = this._offline
 			const props: Record<string, unknown> = {}
 
@@ -1193,9 +1219,9 @@ export function SoldyElement<
 		 * завёл на одной связке и который запомнил контекст, после перестановки
 		 * зовёт инстанс и фасад новой связки, а не прежней.
 		 */
-		private _viewOf(): ITemplateContext<TInstance, TFacade, TOutputs> {
+		private _viewOf(): ITemplateContext<TInstance, TFacade, TOutputs, TOwnerFacade> {
 			const content = (): HTMLElement => this._content
-			const state = (): TBindingState<TInstance, TFacade, TOutputs> =>
+			const state = (): TBindingState<TInstance, TFacade, TOutputs, TOwnerFacade> =>
 				this._binding?.state ?? {}
 			const instance = (): TInstance | undefined => this.ctrl
 			const facade = (): TFacade | undefined => this._binding?.facade

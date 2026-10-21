@@ -1,5 +1,6 @@
 /**
- * `id` в разметке — от места компонента в дереве, а не от счётчика процесса.
+ * `id` в разметке — от места компонента в дереве, а не от счётчика процесса, и
+ * номер слоя — тоже не от него.
  *
  * Связки «таб ↔ панель», «заголовок ↔ панель» у Accordion, имена сеток
  * календаря, `id` частей поля даты, общий `name` радио строят плагины связок от
@@ -9,6 +10,11 @@
  * элемента из данных (`items`), который рисуется с готовым экземпляром.
  * Счётчик процесса на сервере общий для всех запросов, в браузере начинается
  * заново, и гидратация видела бы другие `id`.
+ *
+ * Номер слоя (`data-layer` и `z-index` панели и подложки) выдаёт как раз
+ * счётчик процесса — стек слоёв в ядре один. Поэтому номер открывает узел
+ * слоя (`ready`): в разметке сервера у открытого окна и панели номера нет,
+ * гидратация с ней сходится, а номер приходит кадром узла.
  *
  * Сервер и браузер здесь — один процесс: рендер сервера уже сдвинул счётчик,
  * и экземпляры гидратации получают другие `uid`, как в настоящем браузере.
@@ -22,6 +28,8 @@ import {
 	Accordion,
 	Calendar,
 	DateInput,
+	Dialog,
+	Drawer,
 	Field,
 	Input,
 	RadioGroup,
@@ -34,9 +42,11 @@ import {
 	LocaleProvider,
 } from '@soldy-ui/vue'
 import { ruRU } from '@soldy-ui/plugins'
-import { hydrate, removeContainers } from './hydrate'
+import { hydrate, unmountHydrated } from './hydrate'
 
-afterEach(removeContainers)
+afterEach(unmountHydrated)
+
+const nextFrame = () => new Promise((resolve) => requestAnimationFrame(resolve))
 
 const attrs = (root: HTMLElement, selector: string, name: string) =>
 	[...root.querySelectorAll(selector)].map((element) => element.getAttribute(name))
@@ -221,5 +231,47 @@ describe('id при гидратации', () => {
 		expect(warnings).toEqual([])
 		expect(names).toEqual(attrs(server, 'input', 'name'))
 		expect(new Set(names).size).toBe(1)
+	})
+})
+
+/**
+ * Окно и выезжающая панель, открытые уже в разметке сервера: окно — в
+ * телепорте, панель с `contained` — на месте. Номер слоя у сервера свой,
+ * поэтому в разметке его нет, а у браузера он приходит кадром узла — у панели
+ * и подложки один, и `z-index` раскладки — он же.
+ */
+describe('номер слоя при гидратации', () => {
+	it.each([
+		['окно', () => h(Dialog, { visible: true }, () => 'Окно'), 'so-dialog'],
+		[
+			'выезжающая панель с contained',
+			() => h('div', [h(Drawer, { visible: true, contained: true }, () => 'Панель')]),
+			'so-drawer',
+		],
+	])('%s: без расхождений, номер — кадром узла', async (_, render, block) => {
+		const { server, teleported, warnings } = await hydrate(render)
+		const panel = `.${block}`
+		const backdrop = `.${block}__backdrop`
+		const printed = [server, teleported].flatMap((root) => [
+			...root.querySelectorAll(`${panel}, ${backdrop}`),
+		])
+
+		expect(warnings).toEqual([])
+		expect(printed).toHaveLength(2)
+		expect(printed.map((node) => node.getAttribute('data-layer'))).toEqual([null, null])
+
+		await nextFrame()
+
+		const layer = attrs(document.body, panel, 'data-layer')[0]
+
+		expect(layer).not.toBeNull()
+		expect(attrs(document.body, backdrop, 'data-layer')).toEqual([layer])
+		expect(
+			[panel, backdrop].map((selector) =>
+				[...document.body.querySelectorAll<HTMLElement>(selector)].map(
+					(node) => node.style.zIndex,
+				),
+			),
+		).toEqual([[layer], [layer]])
 	})
 })

@@ -19,9 +19,9 @@
 import { describe, it, expect, afterEach } from 'vitest'
 import { h, nextTick } from 'vue'
 import { Tabs, TabsItem, Tags, TagsItem } from '@soldy-ui/vue'
-import { hydrate, removeContainers } from './hydrate'
+import { hydrate, unmountHydrated } from './hydrate'
 
-afterEach(removeContainers)
+afterEach(unmountHydrated)
 
 /** `tabindex` строк с ролью `role` — по порядку. */
 const stops = (root: HTMLElement, role: string) =>

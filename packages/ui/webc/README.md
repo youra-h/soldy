@@ -50,7 +50,9 @@ Button's `default` slot) cannot be passed into it — slot content reads it from
 > (`<span is="so-rating">`), the form field `<div is="so-field">` (label, helper and error linked
 > to the control inside it), ProgressSpinner, ProgressLinear (`<span is="so-progress-linear">`),
 > Skeleton, Frame, Popover (`<span is="so-popover">`), Tooltip (`<span is="so-tooltip">`),
-> Dialog (`<div is="so-dialog">`), Drawer (`<div is="so-drawer">`), Toasts (`<so-toasts>`
+> Menu (`<span is="so-menu">`: an action menu at a button or a context menu, with submenus,
+> checkbox and radio items and items with a panel), Dialog (`<div is="so-dialog">`), Drawer
+> (`<div is="so-drawer">`), Toasts (`<so-toasts>`
 > around the application, a toast from code — `toastsOf(element).show(…)`),
 > Scroller (`<div is="so-scroller">`), RadioGroup, ListBox, Tabs, Accordion,
 > Pagination (`<nav is="so-pagination">`), Table, the `<so-virtual>` window for long lists and the
@@ -148,6 +150,41 @@ to `body` or back with `contained` (the panel stays in place, at an `edge` of th
 positioned ancestor). `lazy-mount` keeps the content out of the document until the panel is opened
 for the first time. The close button in the panel's corner shows the `close-icon` slot or a close
 icon; `el.closable = false` removes it — the attribute of a flag can only turn it on.
+
+A menu is an action menu at a button — or, with `open-on="contextmenu"`, a context menu of the area
+in its `trigger` slot, opened by the right button, a long touch or Shift+F10 at the point where it
+was called. The trigger gets its side of the link by itself, as at a popover (`aria-haspopup="menu"`,
+`aria-expanded`, `aria-controls`, `data-selected`; an area of a context menu gets no link). Items
+are the menu's own elements: an action `<div is="so-menu-item">`, a checkbox
+`<div is="so-menu-checkbox-item">` (`selected`), radio items `<div is="so-menu-radio-item">` in
+`<div is="so-menu-radio-group">` (its `value`), a submenu `<div is="so-menu-submenu">` with items
+of its own, an item with a panel of any content `<div is="so-menu-popover-item">` (its row text is
+the `header` slot), groups `<div is="so-menu-group">` with a `label` and separators
+`<div is="so-menu-separator">`. A shortcut hint goes to an item's `trailing` slot. Arrows, letters,
+the pointer, focus, Escape and Tab are handled for you; choosing an action closes the whole menu
+and reports `so:choose`, a checkbox and a radio item keep it open:
+
+```html
+<span is="so-menu">
+  <button is="so-button" slot="trigger" text="Actions"></button>
+  <div is="so-menu-group" label="View">
+    <div is="so-menu-checkbox-item" value="grid" text="Grid" selected></div>
+  </div>
+  <div is="so-menu-separator"></div>
+  <div is="so-menu-item" value="edit" text="Edit"><span slot="trailing">Ctrl+E</span></div>
+  <div is="so-menu-submenu" value="share" text="Share">
+    <div is="so-menu-item" value="link" text="Copy link"></div>
+  </div>
+</span>
+```
+
+Items given as data (`el.items = [...]`, or an `engine`) are actions, and an item with an `items`
+array of its own is a submenu, at any depth; groups come from `_.group` in the data or `groupBy`,
+and `groups` sets their order and labels. The `item-*` slots are templates, as in a list box, and a
+submenu drawn from data gets them too, under the same names — one set of templates for every
+level; `item-content` gives each submenu drawn from data items in markup instead of its own. The
+panels move to `body`, each a layer above the one it was opened from; a submenu's items join the
+submenu, not the menu above it.
 
 A dialog and a drawer are modal: the element you wrote is the panel, and it moves to `body` itself,
 like a frame, with its backdrop right before it — the component draws the backdrop, keeps it next
@@ -349,6 +386,13 @@ yourself. Moving a collection in the document rebuilds it, as any element is reb
 markup items join again with what their attributes and properties say, so a choice the user made
 (the active tab, an open section) does not survive the move. Items given as data in your own
 `engine` keep it.
+
+A menu's items live in its panel, and the panel is in `body`: it follows the menu when the menu
+leaves the document. A menu moved with a single DOM operation keeps its panel assembled for the old
+place — the items do not join the rebuilt menu, and the keyboard and the pointer no longer reach
+them, so remove the menu and insert it again instead. In markup written before the package is
+imported, items of different kinds — actions, checkboxes, radio items, submenus — join a menu one
+kind after another rather than in document order, and the arrows follow that order.
 
 Pagination draws its pages itself — from `total` and `pageSize`, or from a list of `pages`
 (`el.pages = [{ text: 'Admin' }, …]`) — and has no content of its own. A page is an inner part,

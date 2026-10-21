@@ -721,8 +721,8 @@ describe('ListBox и Tabs: атрибуты потребителя делятс�
 describe('окно и выезжающая панель: корень в цели', () => {
 	it.each(LAYERS)(
 		'%s: атрибуты, класс и стиль потребителя — рядом с наборами ядра и data-owner',
-		(_name, host, selector, own) => {
-			mountHost(host)
+		async (_name, host, selector, own) => {
+			const fixture = mountHost(host)
 
 			const el = find(document, selector, HTMLElement)
 
@@ -736,6 +736,12 @@ describe('окно и выезжающая панель: корень в цел�
 			expect(el.getAttribute('data-open')).toBe('true')
 			expect(el.getAttribute('data-owner')).toBeTruthy()
 			expect(el.getAttribute('tabindex')).toBe('-1')
+
+			// Номер слоя открыт только у слоя с узлом: его даёт кадр узла
+			await nextFrame()
+			fixture.detectChanges()
+
+			expect(el.getAttribute('data-layer')).not.toBeNull()
 			expect(el.style.zIndex).toBe(el.getAttribute('data-layer'))
 		},
 	)

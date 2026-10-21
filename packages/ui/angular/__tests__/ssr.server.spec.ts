@@ -18,7 +18,7 @@
  */
 
 import { describe, it, expect, afterEach, vi } from 'vitest'
-import { Component, signal, type ApplicationRef, type Type } from '@angular/core'
+import { Component, signal, viewChild, type ApplicationRef, type Type } from '@angular/core'
 import { TButton, type TComponentSize } from '@soldy-ui/core'
 import { TBasePlugin, TElementPlugin, type IPluginContext } from '@soldy-ui/plugins'
 import { getIcon, usePlugins } from '@soldy-ui/setup'
@@ -38,7 +38,9 @@ import {
 	TScrollerComponent,
 	TSkeletonComponent,
 	TSliderComponent,
+	TToastsComponent,
 	TTooltipComponent,
+	useToasts,
 } from '@soldy-ui/angular'
 import { find, nextFrame } from './mount'
 import { hydrate, leavePage, loadPage, renderOnServer } from './server'
@@ -385,7 +387,8 @@ describe('после гидратации', () => {
 
 	/**
 	 * На сервере слоя нет, и номер слоя у браузера свой: `z-index` и
-	 * `data-layer` — от слоя браузера, без следов сервера.
+	 * `data-layer` — от слоя браузера, без следов сервера. Номер открывает узел
+	 * слоя — кадром после того, как база отдала его плагинам.
 	 */
 	it('Frame: в цели тем же узлом, с содержимым, слоем и раскладкой браузера', async () => {
 		loadPage(await renderOnServer(ChangesPage))
@@ -393,6 +396,8 @@ describe('после гидратации', () => {
 		const layer = find(document, '.layer', HTMLDivElement)
 		const app = await hydrate(ChangesPage)
 
+		await app.whenStable()
+		await nextFrame()
 		await app.whenStable()
 
 		expect(find(document, '.layer', HTMLDivElement)).toBe(layer)
@@ -419,7 +424,10 @@ describe('после гидратации', () => {
 		expect(layer.style.top).toBe('20px')
 	})
 
-	/** Показ после гидратации поднимает слой браузера в обоих местах. */
+	/**
+	 * Показ после гидратации поднимает слой браузера в обоих местах — с кадром
+	 * узла: показ пришёл раньше, чем база отдала узел плагинам.
+	 */
 	it('Frame: показ после гидратации — открытость, слой и раскладка на узле', async () => {
 		const { app, page } = await hydrated()
 		const menu = find(document, '.menu', HTMLDivElement)
@@ -429,6 +437,8 @@ describe('после гидратации', () => {
 		expect(menu.getAttribute('data-open')).toBe('false')
 
 		page.open.set(true)
+		await app.whenStable()
+		await nextFrame()
 		await app.whenStable()
 
 		const layer = menu.getAttribute('data-layer')
@@ -870,6 +880,8 @@ describe('Popover и Tooltip · гидратация', () => {
 
 		await app.whenStable()
 		await nextFrame()
+		// Номер слоя открыл кадр узла — до разметки его доводит проверка изменений
+		await app.whenStable()
 
 		const opened = linkedPanel(
 			document,
@@ -997,6 +1009,95 @@ describe('Dialog и Drawer · гидратация', () => {
 		expect(
 			document.querySelectorAll('.so-dialog__backdrop, .so-drawer__backdrop'),
 		).toHaveLength(2)
+		expect(error).not.toHaveBeenCalled()
+		expect(warn).not.toHaveBeenCalled()
+	})
+})
+
+/** Приложение под менеджером тостов: API тостов берёт его компонент полем. */
+@Component({
+	selector: 'app-saver',
+	standalone: true,
+	template: `<main class="app-content">Приложение</main>`,
+})
+class SaverComponent {
+	readonly toasts = useToasts()
+}
+
+/** Менеджер тостов вокруг приложения, с классом и данными потребителя. */
+@Component({
+	selector: 'app-root',
+	standalone: true,
+	imports: [TToastsComponent, SaverComponent],
+	template: `<section class="place">
+		<div so-toasts class="app-toasts" data-test="toasts"><app-saver /></div>
+	</section>`,
+})
+class ToastsPage {
+	readonly saver = viewChild.required(SaverComponent)
+}
+
+/**
+ * Регион — слой, а слой есть только в браузере: на сервере от менеджера
+ * остаётся обёртка без коробки с приложением, а региона нет. Написанное
+ * потребителем на обёртке — региону, и на сервере ему лечь некуда.
+ */
+describe('Toasts · серверный рендер', () => {
+	it('приложение — в обёртке без коробки, региона в разметке сервера нет', async () => {
+		const page = await serverPage(ToastsPage)
+		const manager = find(page, '[so-toasts]', HTMLDivElement)
+
+		expect(manager.parentElement?.className).toBe('place')
+		expect(manager.style.display).toBe('contents')
+		expect(manager.querySelector('.app-content')?.textContent).toBe('Приложение')
+		expect(manager.classList).not.toContain('app-toasts')
+		expect(page.querySelector('.so-toasts, .so-toasts-item')).toBeNull()
+	})
+})
+
+/**
+ * После гидратации приложение — те же узлы, что напечатал сервер: ветка
+ * региона в шаблоне менеджера стоит вне проекции, и гидратация у менеджера
+ * есть. Регион браузер рисует сам и уводит в `body`, с тем, что потребитель
+ * написал на обёртке, а API тостов у приложения работает.
+ */
+describe('Toasts · гидратация', () => {
+	afterEach(() => {
+		vi.restoreAllMocks()
+		leavePage()
+	})
+
+	it('узлы приложения те же, регион — в body, show рисует тост; ошибок нет', async () => {
+		const error = vi.spyOn(console, 'error')
+		const warn = vi.spyOn(console, 'warn')
+
+		loadPage(await renderOnServer(ToastsPage))
+
+		const manager = find(document, '[so-toasts]', HTMLDivElement)
+		const content = find(document, '.app-content', HTMLElement)
+		const app = await hydrate(ToastsPage)
+
+		await app.whenStable()
+
+		const region = find(document, '.so-toasts', HTMLElement)
+
+		expect(find(document, '[so-toasts]', HTMLDivElement)).toBe(manager)
+		expect(find(document, '.app-content', HTMLElement)).toBe(content)
+		expect(manager.contains(content)).toBe(true)
+		expect(manager.style.display).toBe('contents')
+		expect(region.parentElement).toBe(document.body)
+		expect(region.classList).toContain('app-toasts')
+		expect(region.dataset.test).toBe('toasts')
+		expect(region.getAttribute('role')).toBe('region')
+
+		const page: unknown = app.components[0]?.instance
+
+		if (!(page instanceof ToastsPage)) throw new Error('Корень приложения — не ToastsPage')
+
+		page.saver().toasts.show('Сохранено')
+		await app.whenStable()
+
+		expect(region.querySelector('.so-toasts-item__text')?.textContent).toBe('Сохранено')
 		expect(error).not.toHaveBeenCalled()
 		expect(warn).not.toHaveBeenCalled()
 	})

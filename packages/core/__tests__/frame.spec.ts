@@ -1,6 +1,16 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { TFrame, TLayer, FRAME_LAYER_ATTRIBUTE } from '@soldy-ui/core'
 
+/**
+ * Слой с узлом. Номер места в стеке (`zIndex`, `data-layer`) открыт только у
+ * слоя, чей узел подключён: `ready` ему ставит плагин узла, здесь — тест.
+ */
+function mounted<T extends { ready: boolean }>(layer: T): T {
+	layer.ready = true
+
+	return layer
+}
+
 describe('TFrame', () => {
 	beforeEach(() => {
 		TFrame.resetZIndexCounter()
@@ -36,7 +46,7 @@ describe('TFrame', () => {
 	})
 
 	it('show() делает visible = true и присваивает z-index', () => {
-		const frame = new TFrame()
+		const frame = mounted(new TFrame())
 		expect(frame.visible).toBe(false)
 		expect(frame.zIndex).toBe(0)
 
@@ -54,11 +64,12 @@ describe('TFrame', () => {
 	})
 
 	it('show() при уже visible не меняет z-index', () => {
-		const frame = new TFrame({ visible: true })
+		const frame = mounted(new TFrame({ visible: true }))
 		frame.show()
 		const firstZ = frame.zIndex
 
 		frame.show()
+		expect(firstZ).toBeGreaterThan(0)
 		expect(frame.zIndex).toBe(firstZ)
 	})
 
@@ -76,8 +87,8 @@ describe('TFrame', () => {
 	})
 
 	it('z-index увеличивается с каждым новым show()', () => {
-		const frame1 = new TFrame()
-		const frame2 = new TFrame()
+		const frame1 = mounted(new TFrame())
+		const frame2 = mounted(new TFrame())
 
 		frame1.show()
 		const z1 = frame1.zIndex
@@ -89,7 +100,7 @@ describe('TFrame', () => {
 	})
 
 	it('z-index продолжает расти после hide/show (только инкремент)', () => {
-		const frame = new TFrame()
+		const frame = mounted(new TFrame())
 		frame.show()
 		const z1 = frame.zIndex
 
@@ -101,7 +112,7 @@ describe('TFrame', () => {
 	})
 
 	it('beforeShow может отменить показ', () => {
-		const frame = new TFrame()
+		const frame = mounted(new TFrame())
 		frame.events.on('show:before', (e) => e.preventDefault())
 
 		frame.show()
@@ -177,7 +188,7 @@ describe('TFrame', () => {
 	})
 
 	it('change:zIndex эмитится при show()', () => {
-		const frame = new TFrame()
+		const frame = mounted(new TFrame())
 		const zValues: number[] = []
 		frame.events.on('change:zIndex', (v: number) => zValues.push(v))
 
@@ -251,10 +262,15 @@ describe('TFrame', () => {
 	/**
 	 * Слой — для плагинов оверлея: панели телепортированы в `body` соседями, и
 	 * вложенность «список Select в поповере» видна только по номеру слоя.
+	 *
+	 * Номер открыт только у слоя с узлом: счётчик один на процесс, и номер,
+	 * напечатанный в разметке сервера, разошёлся бы с браузером при
+	 * гидратации. Место в стеке слой берёт по-прежнему при создании видимым,
+	 * показе и `raise()` — узел его только открывает.
 	 */
 	describe('data-layer', () => {
 		it('после show() равен zIndex', () => {
-			const frame = new TFrame()
+			const frame = mounted(new TFrame())
 
 			frame.show()
 
@@ -262,13 +278,15 @@ describe('TFrame', () => {
 			expect(frame.dataset.toObject()).toHaveProperty('data-layer', String(frame.zIndex))
 		})
 
-		it('пока не показан — слоя нет', () => {
+		it('пока не показан — слоя нет, и с узлом тоже', () => {
 			expect(new TFrame().dataset.has(FRAME_LAYER_ATTRIBUTE)).toBe(false)
+			expect(mounted(new TFrame()).dataset.has(FRAME_LAYER_ATTRIBUTE)).toBe(false)
+			expect(mounted(new TFrame()).zIndex).toBe(0)
 		})
 
 		it('повторный show() поднимает слой выше показанных после него', () => {
-			const lower = new TFrame()
-			const upper = new TFrame()
+			const lower = mounted(new TFrame())
+			const upper = mounted(new TFrame())
 
 			lower.show()
 			upper.show()
@@ -280,16 +298,110 @@ describe('TFrame', () => {
 			)
 		})
 
-		it('созданный видимым получает слой сразу — show для него не придёт', () => {
+		/** Так на сервере: узла нет, и номер в разметку не попадает. */
+		it('без узла номера нет — и у созданного видимым, и у показанного', () => {
+			const open = new TFrame({ visible: true })
+			const shown = new TFrame()
+			const raised = new TFrame({ visible: true })
+			const changes: number[] = []
+
+			for (const frame of [open, shown, raised]) {
+				frame.events.on('change:zIndex', (value) => changes.push(value))
+			}
+
+			shown.show()
+			raised.raise()
+
+			for (const frame of [open, shown, raised]) {
+				expect(frame.zIndex).toBe(0)
+				expect(frame.dataset.has(FRAME_LAYER_ATTRIBUTE)).toBe(false)
+			}
+
+			expect(changes).toEqual([])
+		})
+
+		it('подключённый узел открывает номер: zIndex, data-layer и change:zIndex', () => {
 			const frame = new TFrame({ visible: true })
+			const changes: number[] = []
+
+			frame.events.on('change:zIndex', (value) => changes.push(value))
+			frame.ready = true
 
 			expect(frame.zIndex).toBeGreaterThan(0)
 			expect(frame.dataset.get(FRAME_LAYER_ATTRIBUTE)).toBe(String(frame.zIndex))
+			expect(changes).toEqual([frame.zIndex])
+		})
+
+		/**
+		 * Место берётся при создании, а не при подключении: порядок привязки
+		 * узлов у каждого адаптера свой (бывает, узел потомка привязан раньше
+		 * узла предка), и поповер, открытый в окне, встал бы под окно.
+		 */
+		it('созданные видимыми и подключённые в обратном порядке — выше созданный позже', () => {
+			const outer = new TFrame({ visible: true })
+			const inner = new TFrame({ visible: true })
+
+			inner.ready = true
+			outer.ready = true
+
+			expect(inner.zIndex).toBeGreaterThan(outer.zIndex)
+			expect(Number(inner.dataset.get(FRAME_LAYER_ATTRIBUTE))).toBeGreaterThan(
+				Number(outer.dataset.get(FRAME_LAYER_ATTRIBUTE)),
+			)
+		})
+
+		it('снятый узел прячет номер, подключённый снова — возвращает тот же', () => {
+			const frame = mounted(new TFrame({ visible: true }))
+			const number = frame.zIndex
+			const changes: number[] = []
+
+			frame.events.on('change:zIndex', (value) => changes.push(value))
+			frame.ready = false
+
+			expect(frame.zIndex).toBe(0)
+			expect(frame.dataset.has(FRAME_LAYER_ATTRIBUTE)).toBe(false)
+
+			frame.ready = true
+
+			expect(frame.zIndex).toBe(number)
+			expect(frame.dataset.get(FRAME_LAYER_ATTRIBUTE)).toBe(String(number))
+			expect(changes).toEqual([0, number])
+		})
+
+		it('показ при подключённом узле даёт номер сразу', () => {
+			const frame = mounted(new TFrame())
+			const changes: number[] = []
+
+			frame.events.on('change:zIndex', (value) => changes.push(value))
+			frame.show()
+
+			expect(frame.zIndex).toBeGreaterThan(0)
+			expect(frame.dataset.get(FRAME_LAYER_ATTRIBUTE)).toBe(String(frame.zIndex))
+			expect(changes).toEqual([frame.zIndex])
+		})
+
+		/** По `change:zIndex` разметка перечитывает наборы — номер в них уже стоит. */
+		it('номер в data-layer раньше change:zIndex — и при открытии, и при снятии', () => {
+			const frame = new TFrame({ visible: true })
+			const seen: [number, string | undefined][] = []
+
+			frame.events.on('change:zIndex', (value) =>
+				seen.push([value, frame.dataset.get(FRAME_LAYER_ATTRIBUTE)]),
+			)
+			frame.ready = true
+			frame.raise()
+			frame.ready = false
+
+			expect(seen).toEqual([
+				[1001, '1001'],
+				[1002, '1002'],
+				[0, undefined],
+			])
 		})
 
 		it('показанный после созданного видимым — слоем выше', () => {
-			const open = new TFrame({ visible: true })
-			const later = new TFrame()
+			const open = mounted(new TFrame({ visible: true }))
+			const later = mounted(new TFrame())
 
 			later.show()
 
@@ -379,7 +491,7 @@ describe('TFrame', () => {
 		TLayer.baseZIndex = 5000
 		TLayer.resetZIndexCounter()
 
-		const frame = new TFrame()
+		const frame = mounted(new TFrame())
 		frame.show()
 
 		expect(frame.zIndex).toBe(5001)
