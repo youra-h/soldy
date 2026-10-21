@@ -2329,7 +2329,7 @@ Svelte 5 на рунах. Структура зеркалит React, потом�
 
 ## Layer 8c: Solid Adapter (`packages/ui/solid/src`)
 
-### ✅ IMPLEMENTED (Component / ComponentView / Stylable / Control / Interactive / ValueControl / InputControl / Textable / Button / Icon / Label / Frame / Popover / Tooltip / Menu / ProgressSpinner / ProgressLinear / Skeleton / Input / CheckBox / Switch / Slider / Rating / RadioGroup / ListBox / Tabs / Accordion / Pagination / Scroller / Table / Virtual / DragAndDrop)
+### ✅ IMPLEMENTED (Component / ComponentView / Stylable / Control / Interactive / ValueControl / InputControl / Textable / Button / Icon / Label / Field / Frame / Popover / Tooltip / Dialog / Drawer / Toasts / Menu / ProgressSpinner / ProgressLinear / Skeleton / Input / NumberInput / Textarea / CheckBox / Switch / Slider / Rating / RadioGroup / ListBox / Tabs / Accordion / Pagination / Scroller / Table / Virtual / DragAndDrop)
 
 Структура зеркалит React — JSX и колбэк-пропы делают их почти близнецами, —
 а механика ближе к Vue и Svelte: тело компонента выполняется один раз, и
@@ -2387,6 +2387,12 @@ Svelte 5 на рунах. Структура зеркалит React, потом�
   значение — слой (`TElevatorLayer`, своё поверх слоя предка, как у Angular).
   `useElevator()` отдаёт сборке фабрику лифтов (`TSolidElevator`: `up()` —
   слой предка, `down()` — свой) и слой компонента, детям его отдаёт `Elevate`.
+- `adapter/toasts/` — API тостов: `useToasts()` берёт его лифтом менеджера
+  (`TOASTS_ELEVATOR`) — `up()` из слоя, который компонент видит в теле
+  (`useElevator`), — в теле компонента под `<Toasts>`, без менеджера — ошибка;
+  своё содержимое тоста (`render`) — компонент Solid с пропом `toast`
+  (`TToastRender`), разметка рисует его `Dynamic` после проверки
+  `isToastRender` — компонент Solid это функция.
 
 ### Solid-специфика
 
@@ -2487,6 +2493,29 @@ Svelte 5 на рунах. Структура зеркалит React, потом�
   записи `sections` новые на каждую смену, — `<For>` по пунктам секции и
   подменю из данных — `Show` по записи (`keyed`): запись у пункта устойчива,
   а `ctrl` и `engine` подменю читает при сборке.
+- **Окно и выезжающая панель — `Teleport` адаптера, как Frame.** Подложка и
+  панель — два узла одного содержимого телепорта: в цели они соседи в обёртке
+  портала, подложка раньше. Её раскладывает та же `createRootProps`, что
+  панель, — класс, стиль слоя `layout_backdropStyles`, скрытие по `visible` и
+  набор `backdropDataset`. Содержимое `Teleport` разворачивает один раз, и
+  смена `contained` у панели и цели у обоих переносит их теми же узлами, как
+  у Vue: набранное в поле остаётся, а замок прокрутки панели, вернувшейся из
+  контейнера, встаёт сразу. `tabindex="-1"` панели стоит до спреда раскладки:
+  набор ядра и атрибуты потребителя его перекрывают.
+- **Toasts — приложение и регион в одном слое лифта.** `Elevate` менеджера
+  стоит вокруг обоих: приложение берёт из слоя API (`useToasts()`), а тосты в
+  регионе — движок, хотя регион телепортирован: мемо содержимого `Teleport`
+  собирается под владельцем места, где тот стоит. Так же API находит
+  компонент в окне под менеджером. Приложение — вне `Show` региона: оно
+  рисуется и без него. Тосты — `<For>` по `shown`: экземпляры, и перестановка
+  переносит их узлы. Состояние двух контекстов тоста несёт `order` фасада, и
+  раскладке корня оно отдаётся поимённо (`classes`, `visible`), а глубина —
+  стиль-выходом `--so-toasts-depth`: целиком раскладка поставила бы тосту
+  CSS-свойство `order`. Слоты тоста со scope (текст, значок) менеджер
+  пробрасывает функцией (`relaySlot`), без scope (содержимое, иконка
+  крестика) — рисует сам (`renderSlot`); тост разворачивает их
+  `resolveSlot`, и пустое, что вернул слот менеджера, уступает место своему —
+  как у Vue, а не как у Svelte.
 - **Лифт — слой значений в контексте, детям — `Elevate` (`Provider`).**
   Значение контекста Solid отдаёт только через `Provider`, а своего владельца
   у компонента в продакшене и на сервере нет — `createComponent` зовёт его

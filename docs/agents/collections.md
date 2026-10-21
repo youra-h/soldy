@@ -1093,8 +1093,11 @@ Tabs — с расширением `tabs` (`TTabsExtension`). Сторожат �
 коллекцией» в `setup/__tests__/item-context-lifetime.spec.ts` — каждый
 элемент разметки под списком каждой другой коллекции, панель — под каждым
 списком, кроме Tabs, — `ui/vue/__tests__/toasts.spec.ts` (тег под
-`<Toasts>`), `ui/vue/__tests__/tabs-content.spec.ts` (тег и радио в панели)
-и `factoryOf` в `core/__tests__/collection.factory.spec.ts`.
+`<Toasts>`), `ui/solid/__tests__/toasts.spec.tsx` и
+`collections.server.spec.tsx` (пункт ListBox под `<Toasts>` — вне списка сам
+по себе, в своём списке — в нём, и на сервере тоже),
+`ui/vue/__tests__/tabs-content.spec.ts` (тег и радио в панели) и `factoryOf`
+в `core/__tests__/collection.factory.spec.ts`.
 
 **Часть бывает сразу элементом и владельцем коллекции того же типа** —
 пункт с подменю (`Menu.Submenu`): пункт меню, в котором стоит, и меню своих
@@ -1319,10 +1322,18 @@ Solid, Svelte — в `useAdapter` при инициализации, Angular —
 `down()` — в слой компонента; помнить прочитанное, как React, незачем.
 Узлы детей Solid создаёт там, где развернули слот, поэтому владелец
 разворачивает своё содержимое внутри `Elevate` (`ResolvedSlot`): развёрнутое
-в теле владельца, оно собрало бы элементы вне его слоя. Сторожат
-`ui/solid/__tests__/collection-elevator.spec.tsx` и
-`collections.server.spec.tsx` — запись мимо `Provider` видна только в
-серверном прогоне: в браузерной сборке разработки у компонента свой владелец.
+в теле владельца, оно собрало бы элементы вне его слоя. Тот же слой отдаёт
+API тостов приложению: `<Toasts>` ставит `Elevate` вокруг приложения и своего
+региона, и `useToasts()` (`ui/solid/src/adapter/toasts/`) берёт API `up()`
+лифта из слоя, который компонент видит в теле, — контекст лифта за
+адаптерный слой не выходит. Регион телепортирован, но тосты в нём находят
+движок менеджера: мемо содержимого `Teleport` собирается под владельцем
+места, где тот стоит, — внутри `Elevate`; так же API находит компонент в
+окне под менеджером. Сторожат
+`ui/solid/__tests__/collection-elevator.spec.tsx`, `toasts.spec.tsx` (группа
+«Solid») и `collections.server.spec.tsx` — запись мимо `Provider` видна только
+в серверном прогоне: в браузерной сборке разработки у компонента свой
+владелец.
 
 **Лифт Web Components — контекст места** (`ui/webc/src/adapter/elevator/`).
 Своего дерева у Custom Elements нет, а дерево документа есть, и место

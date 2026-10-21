@@ -13,6 +13,8 @@ arrive as callback props (`element:ready` → `onElementReady`), and the default
 
 > **Status:** the Solid adapter is in progress — Button, Icon, Label, Frame, Popover (a non-modal
 > panel with any content at its trigger), Tooltip (a hint shown on hover and on keyboard focus),
+> Dialog (a modal window), Drawer (a panel that slides in at an edge and can be swiped away),
+> Toasts (notifications shown from code with `useToasts()`),
 > Menu (an action menu at a button or a context menu on right click — `openOn="contextmenu"` —
 > with `<Menu.Item>`, `<Menu.CheckboxItem>`, `<Menu.RadioGroup>` with `<Menu.RadioItem>`,
 > `<Menu.Submenu>`, `<Menu.PopoverItem>`, `<Menu.Group>` and `<Menu.Separator>` or `items`, where
@@ -31,7 +33,10 @@ arrive as callback props (`element:ready` → `onElementReady`), and the default
 > element name, a Solid component, or `roleIcon(role)` — the icon of that role from the registered
 > icon pack.
 > Frame teleports its panel into `target` (`body` by default) on the client; with `contained` it
-> stays in place. Popover, Tooltip and Menu keep the trigger in their root and anchor their panel,
+> stays in place. Dialog and Drawer are teleported the same way, with their backdrop next to the
+> panel, and so is the region of Toasts; `ref` of Dialog and Drawer is the panel, of Toasts — the
+> region. A change of `contained` or `target` moves the same nodes, and a field in the panel keeps
+> what was typed. Popover, Tooltip and Menu keep the trigger in their root and anchor their panel,
 > a Frame, to that root; your attributes and `ref` go to the root, not to the panel. The items of a
 > menu stand in its panel, so they are drawn on the client, not on the server. A field gives its
 > class and style to the root and every other attribute to its `<input>` (a textarea — to its
@@ -167,6 +172,30 @@ export function Actions() {
       <Menu.Separator />
       <Menu.Item value="remove" text="Delete" />
     </Menu>
+  )
+}
+```
+
+Toasts are shown from code. The manager wraps the application, and any component under it takes
+the API in its body, like `useContext` — a component in a dialog under the manager too; your own
+content of a toast is a Solid component with a `toast` prop:
+
+```tsx
+import { Button, Toasts, useToasts, type TToastRender } from '@soldy-ui/solid'
+
+const Undo: TToastRender = (props) => <Button text="Undo" onClick={() => props.toast.close()} />
+
+function Page() {
+  const { show } = useToasts()
+
+  return <Button text="Delete" onClick={() => show({ text: 'Deleted', render: Undo })} />
+}
+
+export function App() {
+  return (
+    <Toasts>
+      <Page />
+    </Toasts>
   )
 }
 ```
