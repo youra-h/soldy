@@ -14,19 +14,25 @@
  * шаблон компонента.
  *
  * Запись помнит последнее: у атрибута — значение или «снят» (`null` привязки),
- * у свойства — значение, у слушателя — где он стоит. Сменился узел — всё
- * переезжает на новый, а со старого снимаются атрибуты и слушатели; снятый
+ * у свойства — значение, у слушателя — где он стоит, у класса — стоит ли он, у
+ * свойства стиля — значение или «снято». Сменился узел — всё переезжает на
+ * новый, а со старого снимаются атрибуты, классы, стиль и слушатели; снятый
  * хост снимает слушатели с узла, и они больше не зовутся.
  *
- * На хосте остаётся то, что относится к нему самому: класс и стиль — вид
- * корня, служебные атрибуты Angular, метки soldy (`staysOnHost`), входы
- * компонента, его выходы `so*`, события движения и синтетика старых анимаций.
+ * На хосте остаётся то, что относится к нему самому: служебные атрибуты
+ * Angular и метки soldy (`marksHost`), входы компонента, его выходы `so*`,
+ * события движения и синтетика старых анимаций — и вид, класс и стиль, у
+ * хоста с коробкой: поля, окна таблицы (`staysOnHost`). У хоста без коробки
+ * (`boxless` — обёртка, чей корень уехал в слой: регион тостов) внешний узел
+ * компонента — корень внутри, и класс со стилем, привязки (`[class.x]`,
+ * `[style.x]`, `[ngClass]`) тоже, уходят на него. Правило — у записи хоста, а
+ * не в общем правиле атрибута: какой у хоста вид, решает его компонент.
  * Статические атрибуты разметки сюда не попадают: Angular ставит их ещё до
  * конструктора компонента, и переносит их база
- * (`TComponentBase._moveAttributes`) — по тому же правилу `staysOnHost`.
+ * (`TComponentBase._moveAttributes`) — по тому же правилу, что у его записи.
  */
 
-import type { Renderer2 } from '@angular/core'
+import type { Renderer2, RendererStyleFlags2 } from '@angular/core'
 
 /** Обработчик события — как его принимает `Renderer2.listen`. */
 export type TListenerCallback = Parameters<Renderer2['listen']>[2]
@@ -34,18 +40,30 @@ export type TListenerCallback = Parameters<Renderer2['listen']>[2]
 /** Параметры слушателя — как их принимает `Renderer2.listen`. */
 export type TListenerOptions = Parameters<Renderer2['listen']>[3]
 
+/** Как хост отдаёт написанное на нём узлу внутри — см. `TForwardRegistry.register`. */
+export type TForwardOptions = {
+	/**
+	 * Своей коробки у хоста нет (`display: contents`): внешний узел компонента —
+	 * узел внутри, и класс со стилем потребителя — тоже его. Обёртка региона
+	 * тостов. Нет — хост с коробкой: класс и стиль остаются на нём.
+	 */
+	readonly boxless?: boolean
+}
+
 /**
- * Атрибуты хоста, которые не уходят на внутренний узел, — строчными, как их
- * хранит документ. Класс и стиль — вид корня, их читает тема. Служебные
- * атрибуты Angular метят сам хост: `ngh` — пометка гидратации компонента
- * (увезённая на поле, она ломала гидратацию: Angular не узнавал компонент и
- * рисовал второе поле), `ng-version` и `ng-server-context` — корневой
- * компонент, `ngskiphydration` — хост без гидратации, `jsaction` — события,
- * которые сервер просит повторить.
+ * Вид хоста — класс и стиль, строчными, как их хранит документ: их читает
+ * тема у внешнего узла компонента. У хоста с коробкой они остаются на нём.
  */
-const HOST_ATTRIBUTES: ReadonlySet<string> = new Set([
-	'class',
-	'style',
+const LOOK_ATTRIBUTES: ReadonlySet<string> = new Set(['class', 'style'])
+
+/**
+ * Служебные атрибуты Angular, строчными: они метят сам хост, с коробкой он или
+ * без. `ngh` — пометка гидратации компонента (увезённая на поле, она ломала
+ * гидратацию: Angular не узнавал компонент и рисовал второе поле),
+ * `ng-version` и `ng-server-context` — корневой компонент, `ngskiphydration` —
+ * хост без гидратации, `jsaction` — события, которые сервер просит повторить.
+ */
+const SERVICE_ATTRIBUTES: ReadonlySet<string> = new Set([
 	'ngh',
 	'ng-version',
 	'ng-server-context',
@@ -61,8 +79,11 @@ const HOST_ATTRIBUTES: ReadonlySet<string> = new Set([
  */
 const HOST_PREFIXES: readonly string[] = ['ng-reflect-', '_ng', 'so-']
 
-/** Свойство хоста, которое не уходит на узел: класс — вид корня, как атрибут `class`. */
-const HOST_PROPERTIES: ReadonlySet<string> = new Set(['className'])
+/**
+ * Свойство вида хоста, которое у хоста с коробкой не уходит на узел: класс,
+ * как атрибут `class`.
+ */
+const LOOK_PROPERTIES: ReadonlySet<string> = new Set(['className'])
 
 /**
  * Синтетическое имя старых анимаций Angular — свойство `[@fade]` и слушатель
@@ -86,14 +107,23 @@ const SYNTHETIC_PREFIX = '@'
 const HOST_EVENT = /^(so[A-Z]|animation|transition)/
 
 /**
- * Атрибут остаётся на хосте, а не уходит на внутренний узел. Одно правило для
+ * Атрибут метит сам хост — служебный атрибут Angular или метка soldy — и
+ * остаётся на любом хосте, с коробкой или без.
+ */
+export function marksHost(name: string): boolean {
+	const lower = name.toLowerCase()
+
+	return SERVICE_ATTRIBUTES.has(lower) || HOST_PREFIXES.some((prefix) => lower.startsWith(prefix))
+}
+
+/**
+ * Атрибут остаётся на хосте с коробкой, а не уходит на внутренний узел: вид
+ * хоста (класс, стиль) или его метка (`marksHost`). Одно правило для
  * статических атрибутов разметки, которые переносит база, и для привязок,
  * которые доносит рендерер адаптера.
  */
 export function staysOnHost(name: string): boolean {
-	const lower = name.toLowerCase()
-
-	return HOST_ATTRIBUTES.has(lower) || HOST_PREFIXES.some((prefix) => lower.startsWith(prefix))
+	return LOOK_ATTRIBUTES.has(name.toLowerCase()) || marksHost(name)
 }
 
 /** Атрибут, который потребитель привязал к хосту: последнее значение, `null` — снят. */
@@ -109,6 +139,32 @@ type TForwardedProperty = {
 	readonly renderer: Renderer2
 	readonly value: unknown
 }
+
+/**
+ * Класс, который привязка поставила хосту без коробки или сняла с него, —
+ * последнее: стоит ли он (`[class.x]`, `[ngClass]`).
+ */
+type TForwardedClass = {
+	readonly renderer: Renderer2
+	readonly on: boolean
+}
+
+/** Флаги свойства стиля — как их принимает `Renderer2.setStyle`. */
+type TStyleFlags = RendererStyleFlags2 | undefined
+
+/**
+ * Свойство стиля, которое привязка поставила хосту без коробки или сняла с
+ * него (`[style.x]`, `[ngStyle]`), — последнее: значение или «снято», с
+ * флагами рендерера (имя через дефис, `!important`).
+ */
+type TForwardedStyle =
+	| {
+			readonly renderer: Renderer2
+			readonly flags: TStyleFlags
+			readonly set: true
+			readonly value: unknown
+	  }
+	| { readonly renderer: Renderer2; readonly flags: TStyleFlags; readonly set: false }
 
 /**
  * Слушатель, которым потребитель слушает хост: ставится на узел и снимается с
@@ -153,28 +209,43 @@ export class TForwardedHost {
 
 	private readonly _attributes = new Map<string, TForwardedAttribute>()
 	private readonly _properties = new Map<string, TForwardedProperty>()
+	private readonly _classes = new Map<string, TForwardedClass>()
+	private readonly _styles = new Map<string, TForwardedStyle>()
 	private readonly _listeners = new Set<TForwardedListener>()
 
 	/**
 	 * @param _own имена входов компонента и `ctrl`, строчными: атрибут с именем
 	 *   входа — запись входа, а не атрибут поля, и остаётся на хосте
+	 * @param _boxless своей коробки у хоста нет: класс и стиль — тоже узлу внутри
+	 *   (`TForwardOptions.boxless`)
 	 * @param _onRelease снять хост с реестра
 	 */
 	constructor(
 		private readonly _own: ReadonlySet<string>,
+		private readonly _boxless: boolean,
 		private readonly _onRelease: () => void,
 	) {}
 
+	/**
+	 * Класс и стиль остаются на хосте: это его вид, у хоста с коробкой. У хоста
+	 * без коробки их команды (`addClass`, `setStyle`) рендерер отдаёт записи.
+	 */
+	get keepsLook(): boolean {
+		return !this._boxless
+	}
+
 	/** Атрибут остаётся на хосте. */
 	keepsAttribute(name: string): boolean {
-		return staysOnHost(name) || this._own.has(name.toLowerCase())
+		const stays = this._boxless ? marksHost(name) : staysOnHost(name)
+
+		return stays || this._own.has(name.toLowerCase())
 	}
 
 	/** Свойство остаётся на хосте. */
 	keepsProperty(name: string): boolean {
 		return (
 			name.startsWith(SYNTHETIC_PREFIX) ||
-			HOST_PROPERTIES.has(name) ||
+			(this.keepsLook && LOOK_PROPERTIES.has(name)) ||
 			this._own.has(name.toLowerCase())
 		)
 	}
@@ -212,6 +283,34 @@ export class TForwardedHost {
 		if (this._node) renderer.setProperty(this._node, name, value)
 	}
 
+	/** Класс хоста без коробки — на узел (`keepsLook`). */
+	addClass(renderer: Renderer2, name: string): void {
+		this._classes.set(name, { renderer, on: true })
+
+		if (this._node) renderer.addClass(this._node, name)
+	}
+
+	/** Снятый класс хоста без коробки — с узла и снятым ждёт новый узел. */
+	removeClass(renderer: Renderer2, name: string): void {
+		this._classes.set(name, { renderer, on: false })
+
+		if (this._node) renderer.removeClass(this._node, name)
+	}
+
+	/** Свойство стиля хоста без коробки — на узел (`keepsLook`). */
+	setStyle(renderer: Renderer2, style: string, value: unknown, flags: TStyleFlags): void {
+		this._styles.set(style, { renderer, flags, set: true, value })
+
+		if (this._node) renderer.setStyle(this._node, style, value, flags)
+	}
+
+	/** Снятое свойство стиля хоста без коробки — с узла и снятым ждёт новый узел. */
+	removeStyle(renderer: Renderer2, style: string, flags: TStyleFlags): void {
+		this._styles.set(style, { renderer, flags, set: false })
+
+		if (this._node) renderer.removeStyle(this._node, style, flags)
+	}
+
 	/**
 	 * Слушатель потребителя — на узел, а нет узла — ждёт его. Отписка снимает
 	 * слушатель там, где он стоит, и работает в любом порядке со снятием
@@ -237,8 +336,9 @@ export class TForwardedHost {
 
 	/**
 	 * Внутренний узел — отрисованный или новый: написанное на хосте ложится на
-	 * него, а со старого снимаются атрибуты и слушатели. Свойство со старого не
-	 * снять — его значение там и остаётся, как у узла, который Angular убрал.
+	 * него, а со старого снимаются атрибуты, классы, стиль и слушатели. Свойство
+	 * со старого не снять — его значение там и остаётся, как у узла, который
+	 * Angular убрал.
 	 */
 	attach(node: Element | null): void {
 		if (this._released || node === this._node) return
@@ -272,12 +372,30 @@ export class TForwardedHost {
 			renderer.setProperty(node, name, value)
 		}
 
+		for (const [name, { renderer, on }] of this._classes) {
+			if (on) renderer.addClass(node, name)
+			else renderer.removeClass(node, name)
+		}
+
+		for (const [name, style] of this._styles) {
+			if (style.set) style.renderer.setStyle(node, name, style.value, style.flags)
+			else style.renderer.removeStyle(node, name, style.flags)
+		}
+
 		for (const listener of this._listeners) listener.on(node)
 	}
 
 	private _detach(node: Element): void {
 		for (const { renderer, name, namespace, value } of this._attributes.values()) {
 			if (value !== null) renderer.removeAttribute(node, name, namespace)
+		}
+
+		for (const [name, { renderer, on }] of this._classes) {
+			if (on) renderer.removeClass(node, name)
+		}
+
+		for (const [name, style] of this._styles) {
+			if (style.set) style.renderer.removeStyle(node, name, style.flags)
 		}
 
 		for (const listener of this._listeners) listener.off()

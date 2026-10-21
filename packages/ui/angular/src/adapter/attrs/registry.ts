@@ -3,8 +3,8 @@
  * его запись (`TForwardedHost`).
  *
  * Регистрирует хост база компонента (`TComponentBase`) — у поля, элемента
- * коллекции, ListBox, Tabs (`TRootSpec.control`) и таблицы (`'wrapped'`), — а
- * читает рендерер адаптера (`TForwardingRenderer`): команду рендереру на
+ * коллекции, ListBox, Tabs (`TRootSpec.control`), таблицы и менеджера тостов
+ * (`'wrapped'`), — а читает рендерер адаптера (`TForwardingRenderer`): команду рендереру на
  * зарегистрированный хост он отдаёт его записи. Реестр — у приложения
  * (`provideAttrs()`): сервер рисует каждый запрос своим приложением, и хосты
  * запросов не смешиваются.
@@ -17,7 +17,7 @@
  */
 
 import { Injectable } from '@angular/core'
-import { TForwardedHost } from './host'
+import { TForwardedHost, type TForwardOptions } from './host'
 
 @Injectable()
 export class TForwardRegistry {
@@ -40,14 +40,19 @@ export class TForwardRegistry {
 
 	/**
 	 * Хост с внутренним узлом. `own` — имена входов компонента и `ctrl`: такие
-	 * атрибуты остаются на хосте. Снятый с реестра (`release` записи), хост
-	 * снова пишется сам.
+	 * атрибуты остаются на хосте. `options.boxless` — своей коробки у хоста нет,
+	 * и класс со стилем тоже уходят на узел. Снятый с реестра (`release`
+	 * записи), хост снова пишется сам.
 	 */
-	register(host: Element, own: Iterable<string>): TForwardedHost {
+	register(host: Element, own: Iterable<string>, options: TForwardOptions = {}): TForwardedHost {
 		const names = new Set([...own].map((name) => name.toLowerCase()))
-		const forwarded: TForwardedHost = new TForwardedHost(names, () => {
-			if (this._hosts.get(host) === forwarded) this._hosts.delete(host)
-		})
+		const forwarded: TForwardedHost = new TForwardedHost(
+			names,
+			options.boxless ?? false,
+			() => {
+				if (this._hosts.get(host) === forwarded) this._hosts.delete(host)
+			},
+		)
 
 		this._hosts.set(host, forwarded)
 

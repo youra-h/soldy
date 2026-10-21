@@ -57,7 +57,7 @@ export class TAccordionItemComponent extends TAccordionItemSurface<IAccordionIte
 			strategy: 'host',
 			sets: ['attrs', 'dataset'],
 			control: true,
-			order: true,
+			order: 'order',
 		})
 	}
 

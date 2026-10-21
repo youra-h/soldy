@@ -1696,7 +1696,7 @@ There is no `adapter/static/`: React takes prop names from the descriptor types,
 
 ## Layer 8: Angular Adapter (`packages/ui/angular/src`)
 
-### ✅ IMPLEMENTED (Component / ComponentView / Stylable / Control / Interactive / ValueControl / InputControl / Textable / Button / Icon / Label / Field / Frame / Popover / Tooltip / Dialog / Drawer / ProgressSpinner / ProgressLinear / Skeleton / Input / NumberInput / Textarea / CheckBox / Switch / Slider / Rating / RadioGroup / ListBox / Tabs / Accordion / Pagination / Scroller / Table / Virtual / DragAndDrop)
+### ✅ IMPLEMENTED (Component / ComponentView / Stylable / Control / Interactive / ValueControl / InputControl / Textable / Button / Icon / Label / Field / Frame / Popover / Tooltip / Dialog / Drawer / Toasts / ProgressSpinner / ProgressLinear / Skeleton / Input / NumberInput / Textarea / CheckBox / Switch / Slider / Rating / RadioGroup / ListBox / Tabs / Accordion / Pagination / Scroller / Table / Virtual / DragAndDrop)
 
 **Структура** зеркалит Vue/React: `adapter/{common,runtime,locale,elevator}` + `components/*`.
 
@@ -1739,14 +1739,19 @@ There is no `adapter/static/`: React takes prop names from the descriptor types,
   `root-attributes.ts`: `applyAttributes`, `applyClasses` и `applyStyles`
   раскладывают наборы, классы и стиль ядра на корень-хост, а раскладчик
   элемента `TElementAttributes` сводит слоями наборы корня и набор владельца
-  на одном элементе, — и `teleport.ts`: `teleportRoot` уводит корень-хост слоя
-  в цель и держит перед ним спутника корня — подложку окна и выезжающей
-  панели (см. «DOM-биндинг»).
+  на одном элементе, — и `teleport.ts`: `teleportRoot` уводит корень слоя в
+  цель — корень-хост или регион тостов внутри обёртки — и держит перед ним
+  спутника корня — подложку окна и выезжающей панели (см. «DOM-биндинг»).
 - `adapter/locale/` — `LocaleProviderDirective` (`[so-locale-provider]`): свой
   `TLocaleSource` поддереву через `providers`, вход пишется в тот же источник.
 - `adapter/elevator/` — лифт: слой DI на владельца коллекции (`provideElevator()`
-  в его `providers`), `TAngularElevator` пишет в свой слой (`down`) и читает
-  слой предка (`up`), `AngularElevatorFactory`.
+  в его `providers`), `TAngularElevator` пишет в свой слой (`down`), читает
+  слой предка (`up`) и читает его «позже» (`upLater`: слой — сейчас, значение
+  ключа — в момент вызова), `AngularElevatorFactory`.
+- `adapter/toasts/` — API тостов приложению: `useToasts()` в поле компонента
+  под `<div so-toasts>` (слой лифта над компонентом — при вызове, API из слоя —
+  на каждый `show`), `TToastRender` — своё содержимое тоста, класс компонента
+  со входом `toast`, — и `isToastRender` (`reflectComponentType`).
 - `codegen/` — `collect-manifests` + `generate` → `src/generated/*.metadata.ts`:
   массивы имён и поверхность `T<Имя>Surface` — абстрактная директива, которая
   объявляет входы и выходы компонента вместе с их типами. Манифесты лежат и
@@ -1970,9 +1975,10 @@ ListBox и Tabs (`so-list-box`, `so-tabs`) селектор элементный
   умолчанию из самого `aria`. У Slider — `rootAria`: у нескольких ручек корень
   — группа с именем ползунка, у одной набор пуст, а `aria` ползунка шаблон
   кладёт на поле ручки из `thumbs`; как `TRootSpec.aria` у Web Components;
-- `order` в описании корня — у элемента коллекции: `order` фасада уходит в
-  стиль корня, ряд коллекции — флексбокс. У радио его нет: радио группы стоят
-  где угодно;
+- `order` в описании корня — у элемента коллекции: свойство стиля, в которое
+  уходит `order` фасада. У элементов ListBox, Tabs и Accordion — CSS `order`
+  (`order: 'order'`), ряд коллекции — флексбокс; у тоста — глубина в стопке,
+  `--so-toasts-depth`. У радио его нет: радио группы стоят где угодно;
 - `shownBy` в описании корня — выход, без которого корень скрыт: у панели
   таба `active` — неактивная панель скрыта, а её содержимое в документ не
   вставляется;
@@ -2005,6 +2011,22 @@ ListBox и Tabs (`so-list-box`, `so-tabs`) селектор элементный
 Корню база кладёт классы, наборы и стиль ядра теми же эффектами, что
 корню-хосту, — они читают его запрос, и память раскладки у каждого узла
 своя, — а `TElementPlugin` получает его после отрисовки, как у `'view'`.
+
+Корень внутри обёртки уезжает и в слой — у менеджера тостов
+(`{ strategy: 'wrapped', teleport: { target: 'target' } }`): `<div so-toasts>`
+вокруг приложения остаётся местом, а регион — `section` в шаблоне, `#root` —
+переносит `teleportRoot`, за его узлом: шаблон рисует регион, только пока слой
+на своём месте. У обёртки своей коробки нет — `display: contents` пишет на неё
+база, прямо в узел, — и внешний узел компонента — регион, как у Vue, у
+которого обёртки нет вовсе: всё, что потребитель написал на `div`, класс и
+стиль тоже, — региону. Статику база переносит по правилу «на хосте — только
+метки», а `[class.x]`, `[style.x]`, привязки и слушатели доносит рендерер
+адаптера: хост в его реестре без коробки, и `addClass`, `setStyle` на нём
+он отдаёт записи хоста. `visible` и `rendered` прячут регион его стилем, а не
+обёртку: приложение на виду. API тостов приложению — `useToasts()` в поле
+компонента под менеджером: слой лифта он берёт при вызове, а API из слоя — на
+каждый `show`, потому что компонент прямо в `<div so-toasts>` Angular создаёт
+раньше, чем сборка менеджера опустит API.
 
 Набор ядра на элементе шаблона, а не на корне, кладёт директива адаптера
 `AttributesDirective` — `<input [so-attributes]="state()['aria']">`, тем же

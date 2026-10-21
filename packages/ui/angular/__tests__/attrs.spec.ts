@@ -21,7 +21,7 @@
  */
 
 import { describe, it, expect, beforeEach } from 'vitest'
-import { Component, RendererFactory2, signal, type Type } from '@angular/core'
+import { Component, RendererFactory2, RendererStyleFlags2, signal, type Type } from '@angular/core'
 import { TestBed } from '@angular/core/testing'
 import { animate, style, transition, trigger } from '@angular/animations'
 import { provideAnimationsAsync } from '@angular/platform-browser/animations/async'
@@ -45,6 +45,7 @@ import type { TTableColumnSource } from '@soldy-ui/core'
 import { ɵDomRendererFactory2 } from '@angular/platform-browser'
 import { TForwardingRendererFactory } from '../src/adapter/attrs/factory'
 import { TForwardRegistry } from '../src/adapter/attrs/registry'
+import { assertTemplateHost } from '../src/adapter/runtime/component.base'
 import { find, findIn, mountHost, nextFrame } from './mount'
 
 /**
@@ -545,6 +546,17 @@ describe('хост, в который шаблон не отрисуется', (
 			/<textarea> не может быть корнем компонента/,
 		)
 	})
+
+	/**
+	 * Хост без узла — `<ng-container so-toasts>`: на месте контейнера Angular
+	 * ставит комментарий. В режиме разработки компонент на контейнере называет
+	 * ошибкой он сам, раньше базы (`toasts.spec.ts`), а в продакшене — база.
+	 */
+	it('хост без узла (<ng-container>) — ошибка с подсказкой: пишите на элементе', () => {
+		expect(() => assertTemplateHost(document.createComment('container'))).toThrow(
+			/<ng-container>.*<div so-toasts>/,
+		)
+	})
 })
 
 /**
@@ -634,6 +646,74 @@ describe('реестр', () => {
 		)
 		expect(host.className).toBe('mine')
 		expect(node.getAttributeNames()).toEqual([])
+
+		forwarded.release()
+	})
+
+	/**
+	 * Хост без коробки — обёртка, чей корень уехал в слой (`<div so-toasts>`):
+	 * внешний узел компонента — узел внутри, и класс со стилем уходят на него.
+	 * На хосте остаются только его метки — служебные атрибуты Angular, метки
+	 * soldy — и входы.
+	 */
+	it('хост без коробки: класс и стиль — на узел, метки и входы — на хосте', () => {
+		const registry = TestBed.inject(TForwardRegistry)
+		const renderer = TestBed.inject(RendererFactory2).createRenderer(null, null)
+		const host = document.createElement('div')
+		const forwarded = registry.register(host, ['size'], { boxless: true })
+		const node = document.createElement('section')
+
+		forwarded.attach(node)
+
+		for (const name of ['class', 'style', 'ngh', 'ng-version', 'so-toasts', 'size'])
+			renderer.setAttribute(host, name, 'x')
+
+		renderer.setProperty(host, 'className', 'mine')
+		renderer.addClass(host, 'dark')
+		renderer.setStyle(host, 'margin-top', '8px', RendererStyleFlags2.DashCase)
+
+		expect(host.getAttributeNames().sort()).toEqual(['ng-version', 'ngh', 'size', 'so-toasts'])
+		expect(node.className).toBe('mine dark')
+		expect(node.style.marginTop).toBe('8px')
+		expect(host.style.marginTop).toBe('')
+
+		renderer.removeClass(host, 'dark')
+		renderer.removeStyle(host, 'margin-top', RendererStyleFlags2.DashCase)
+
+		expect(node.className).toBe('mine')
+		expect(node.style.marginTop).toBe('')
+
+		forwarded.release()
+	})
+
+	it('класс и стиль хоста без коробки ждут узел и переезжают на новый, со старого сняты', () => {
+		const registry = TestBed.inject(TForwardRegistry)
+		const renderer = TestBed.inject(RendererFactory2).createRenderer(null, null)
+		const host = document.createElement('div')
+		const forwarded = registry.register(host, [], { boxless: true })
+		const first = document.createElement('section')
+		const second = document.createElement('section')
+
+		renderer.addClass(host, 'dark')
+		renderer.addClass(host, 'gone')
+		renderer.removeClass(host, 'gone')
+		renderer.setStyle(host, 'color', 'red')
+
+		// Узла ещё нет — написанное ждёт его
+		expect(host.className).toBe('')
+		expect(host.style.color).toBe('')
+
+		forwarded.attach(first)
+
+		expect([...first.classList]).toEqual(['dark'])
+		expect(first.style.color).toBe('red')
+
+		forwarded.attach(second)
+
+		expect(first.className).toBe('')
+		expect(first.style.color).toBe('')
+		expect([...second.classList]).toEqual(['dark'])
+		expect(second.style.color).toBe('red')
 
 		forwarded.release()
 	})
