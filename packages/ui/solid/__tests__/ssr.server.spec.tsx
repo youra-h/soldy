@@ -25,6 +25,8 @@ import {
 	Button,
 	CheckBox,
 	ComponentView,
+	Dialog,
+	Drawer,
 	Field,
 	Frame,
 	Icon,
@@ -42,6 +44,7 @@ import {
 	Slider,
 	Switch,
 	Textarea,
+	Toasts,
 	Tooltip,
 	roleIcon,
 } from '@soldy-ui/solid'
@@ -148,6 +151,64 @@ describe('Popover и Tooltip · серверный рендер', () => {
 		expect(body).toMatch(/<button [^>]*aria-describedby="[^"]+"/)
 		expect(body).not.toContain('so-tooltip__panel')
 		expect(body).not.toContain('Сохранить черновик')
+	})
+})
+
+/**
+ * Dialog, Drawer и регион Toasts на сервере — как Frame: телепорта нет, и в
+ * разметке их нет, а появляются они на клиенте. С `contained` выезжающая
+ * панель остаётся на месте вместе с подложкой — и на сервере тоже. Приложение
+ * менеджер тостов рисует всегда: оно вне телепорта.
+ */
+describe('Dialog, Drawer и Toasts · серверный рендер', () => {
+	it('Dialog — пусто: телепорта на сервере нет', () => {
+		const body = markup(
+			renderToString(() => (
+				<Dialog visible title="Настройки">
+					<span>Панель</span>
+				</Dialog>
+			)),
+		)
+
+		expect(body).toBe('')
+	})
+
+	it('Drawer — пусто, а с contained — подложка и панель на месте', () => {
+		const teleported = markup(
+			renderToString(() => (
+				<Drawer>
+					<span>Панель</span>
+				</Drawer>
+			)),
+		)
+		const contained = markup(
+			renderToString(() => (
+				<Drawer contained>
+					<span>Панель</span>
+				</Drawer>
+			)),
+		)
+
+		expect(teleported).toBe('')
+		expect(contained).toMatch(
+			/^<div [^>]*class="so-drawer__backdrop ?"[^>]*style="[^"]*display:none"[^>]*><\/div><div [^>]*role="dialog"/,
+		)
+		expect(contained).toMatch(/class="so-drawer so-drawer--placement-end ?"/)
+		expect(contained).toContain('tabindex="-1"')
+		expect(contained).toContain('data-contained="true"')
+		expect(contained).toContain('<div class="so-drawer__body"><span>Панель</span></div>')
+	})
+
+	it('Toasts — приложение без региона', () => {
+		const body = markup(
+			renderToString(() => (
+				<Toasts>
+					<span>Приложение</span>
+				</Toasts>
+			)),
+		)
+
+		expect(body).toBe('<span>Приложение</span>')
 	})
 })
 
@@ -396,6 +457,9 @@ describe('ref потребителя · серверный рендер', () => 
 			['Frame', (ref) => <Frame contained visible ref={ref} />],
 			['Popover', (ref) => <Popover ref={ref} />],
 			['Tooltip', (ref) => <Tooltip ref={ref} />],
+			['Dialog', (ref) => <Dialog ref={ref} />],
+			['Drawer', (ref) => <Drawer contained ref={ref} />],
+			['Toasts', (ref) => <Toasts ref={ref} />],
 			['Menu', (ref) => <Menu ref={ref} />],
 			['Icon', (ref) => <Icon tag="i" ref={ref} />],
 			['Label', (ref) => <Label ref={ref} />],
