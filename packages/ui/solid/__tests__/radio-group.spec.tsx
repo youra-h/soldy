@@ -302,6 +302,59 @@ describe('value ↔ checked', () => {
 })
 
 /**
+ * Отметка радио — в обе стороны, парой «проп + колбэк», без `ctrl`: `active`
+ * пропом пишет её, а `onChangeActive` приходит только радио, чья отметка
+ * сменилась, и несёт новую. Состояние приложения держит отметку само.
+ */
+describe('отметка радио: active и onChangeActive', () => {
+	/** Группа из трёх, отметки — в сигналах приложения; колбэки — в журнал. */
+	function app(log: string[]) {
+		const marks = ['a', 'b', 'c'].map((value, index) => {
+			const [active, setActive] = createSignal(index === 0)
+
+			return { value, active, setActive }
+		})
+
+		mount(() => (
+			<RadioGroup>
+				{marks.map(({ value, active, setActive }) => (
+					<RadioGroup.Item
+						value={value}
+						active={active()}
+						onChangeActive={(next) => {
+							log.push(`${value}: ${next}`)
+							setActive(next)
+						}}
+					/>
+				))}
+			</RadioGroup>
+		))
+
+		return () => marks.map(({ active }) => String(active())).join(' ')
+	}
+
+	it('выбор B: A получает false, B — true, C молчит; состояние сходится с отметкой', () => {
+		const log: string[] = []
+		const state = app(log)
+
+		expect(checked()).toEqual(['a'])
+
+		log.length = 0
+		choose('b')
+
+		expect(log).toEqual(['a: false', 'b: true'])
+		expect(state()).toBe('false true false')
+		expect(checked()).toEqual(['b'])
+	})
+
+	it('колбэк получает отметку: boolean', () => {
+		expectTypeOf<NonNullable<RadioGroupItemProps['onChangeActive']>>()
+			.parameter(0)
+			.toEqualTypeOf<boolean>()
+	})
+})
+
+/**
  * Приложение вправе отказать в выборе — подписчиком `item:activate:before`.
  * Браузер отмечает нажатое радио и снимает отметку с соседа ещё до `change`, а
  * модель запись не приняла и не сменилась: Solid пишет отметку только на

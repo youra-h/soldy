@@ -268,6 +268,56 @@ describe('value ↔ checked', () => {
 })
 
 /**
+ * Отметка радио — в обе стороны, парой «проп + колбэк», без `ctrl`: `active`
+ * пропом пишет её, а `onChangeActive` приходит только радио, чья отметка
+ * сменилась, и несёт новую. Состояние приложения — пропсы родителя
+ * (`reactiveProps`): колбэк пишет отметку туда, и радио получает её обратно
+ * пропом.
+ */
+describe('отметка радио: active и onChangeActive', () => {
+	/** Группа из трёх, отметки — в пропсах родителя; колбэки — в журнал. */
+	function app(log: string[]) {
+		const props = reactiveProps<THarnessProps>({ items: [] })
+		const radio = (value: string, active: boolean): RadioGroupItemProps => ({
+			value,
+			active,
+			onChangeActive: (next) => {
+				log.push(`${value}: ${next}`)
+
+				const own = props.items?.find((candidate) => candidate.value === value)
+
+				if (own) own.active = next
+			},
+		})
+
+		props.items = [radio('a', true), radio('b', false), radio('c', false)]
+		mount(Harness, props)
+
+		return () => props.items?.map(({ active }) => String(active)).join(' ')
+	}
+
+	it('выбор B: A получает false, B — true, C молчит; состояние сходится с отметкой', () => {
+		const log: string[] = []
+		const state = app(log)
+
+		expect(checked()).toEqual(['a'])
+
+		log.length = 0
+		choose('b')
+
+		expect(log).toEqual(['a: false', 'b: true'])
+		expect(state()).toBe('false true false')
+		expect(checked()).toEqual(['b'])
+	})
+
+	it('колбэк получает отметку: boolean', () => {
+		expectTypeOf<NonNullable<RadioGroupItemProps['onChangeActive']>>()
+			.parameter(0)
+			.toEqualTypeOf<boolean>()
+	})
+})
+
+/**
  * Приложение вправе отказать в выборе — подписчиком `item:activate:before`.
  * Браузер отмечает нажатое радио и снимает отметку с соседа ещё до `change`, а
  * модель запись не приняла и не сменилась: Svelte пишет отметку только на

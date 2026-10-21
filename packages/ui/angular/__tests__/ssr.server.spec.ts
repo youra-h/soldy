@@ -23,18 +23,22 @@ import { TButton, type TComponentSize } from '@soldy-ui/core'
 import { TBasePlugin, TElementPlugin, type IPluginContext } from '@soldy-ui/plugins'
 import { getIcon, usePlugins } from '@soldy-ui/setup'
 import {
+	AttributesDirective,
 	RoleIconDirective,
+	SlotDirective,
 	TButtonComponent,
 	TFrameComponent,
 	TIconComponent,
+	TPopoverComponent,
 	TProgressLinearComponent,
 	TProgressSpinnerComponent,
 	TRatingComponent,
 	TScrollerComponent,
 	TSkeletonComponent,
 	TSliderComponent,
+	TTooltipComponent,
 } from '@soldy-ui/angular'
-import { find } from './mount'
+import { find, nextFrame } from './mount'
 import { hydrate, leavePage, loadPage, renderOnServer } from './server'
 
 /** Пространство имён SVG: в нём документ разбирает рисунок иконки. */
@@ -670,5 +674,218 @@ describe('ProgressLinear, Slider, Rating и Scroller · гидратация', (
 				.map((field) => field.value),
 		).toEqual(['30', '70'])
 		expect([...document.querySelectorAll('.so-slider__input')]).toEqual(thumbs)
+	})
+})
+
+/**
+ * Поповер, открытый поповер и подсказка — триггер в шаблоне слота, связку с
+ * панелью он кладёт на себя директивой набора.
+ */
+@Component({
+	selector: 'app-root',
+	standalone: true,
+	imports: [
+		TPopoverComponent,
+		TTooltipComponent,
+		TButtonComponent,
+		SlotDirective,
+		AttributesDirective,
+	],
+	template: `<section class="place">
+		<span so-popover class="closed" aria_label="Фильтры">
+			<ng-template
+				slot="trigger"
+				let-triggerAria="triggerAria"
+				let-triggerDataset="triggerDataset"
+			>
+				<button
+					so-button
+					text="Фильтры"
+					class="closed-trigger"
+					[so-attributes]="{ ...triggerAria, ...triggerDataset }"
+				></button>
+			</ng-template>
+			<button class="inside">Внутри</button>
+		</span>
+		<span so-popover class="opened" open>
+			<ng-template
+				slot="trigger"
+				let-triggerAria="triggerAria"
+				let-triggerDataset="triggerDataset"
+			>
+				<button
+					so-button
+					text="Открыт"
+					class="opened-trigger"
+					[so-attributes]="{ ...triggerAria, ...triggerDataset }"
+				></button>
+			</ng-template>
+			<p>Открыт со старта</p>
+		</span>
+		<span so-tooltip class="tooltip">
+			<ng-template slot="trigger" let-triggerAria="triggerAria">
+				<button
+					so-button
+					text="Сохранить"
+					class="tooltip-trigger"
+					[so-attributes]="triggerAria"
+				></button>
+			</ng-template>
+			Сохранить черновик
+		</span>
+	</section>`,
+})
+class OverlaysPage {}
+
+/** Триггер, атрибут его ссылки на панель и что в панели — по каждому оверлею страницы. */
+const OVERLAYS = [
+	['.closed-trigger', 'aria-controls', '.inside'],
+	['.opened-trigger', 'aria-controls', 'p'],
+	['.tooltip-trigger', 'aria-describedby', '.so-tooltip__content'],
+] as const
+
+/** Панель, на которую ведёт ссылка триггера (`aria-controls`, `aria-describedby`). */
+function linkedPanel(scope: Document, trigger: Element, attribute: string): HTMLElement {
+	const panel = scope.getElementById(trigger.getAttribute(attribute) ?? '')
+
+	if (!(panel instanceof HTMLElement)) throw new Error(`${attribute} не ведёт на панель`)
+
+	return panel
+}
+
+/**
+ * Слой есть только в браузере, как у Frame: на сервере от панели поповера и
+ * подсказки остаётся элемент Frame в корне — пустой и скрытый, без классов и
+ * раскладки слоя. Связка у него от владельца — роль, `id`, имя, — и ссылка
+ * триггера ведёт на него уже в разметке сервера. Триггер — с набором связки и
+ * видом «нажат».
+ */
+describe('Popover и Tooltip · серверный рендер', () => {
+	it.each([
+		['закрытый поповер', '.closed', '.closed-trigger', 'false'],
+		['открытый поповер', '.opened', '.opened-trigger', 'true'],
+	])(
+		'%s — корень с триггером и связкой, панель в корне пустая и скрытая',
+		async (_case, rootSelector, triggerSelector, expanded) => {
+			const page = await serverPage(OverlaysPage)
+			const root = find(page, rootSelector, HTMLSpanElement)
+			const trigger = find(root, triggerSelector, HTMLButtonElement)
+			const panel = linkedPanel(page, trigger, 'aria-controls')
+
+			expect(root.classList).toContain('so-popover')
+			expect(root.getAttribute('data-open')).toBe(expanded)
+			expect(trigger.getAttribute('aria-haspopup')).toBe('dialog')
+			expect(trigger.getAttribute('aria-expanded')).toBe(expanded)
+			expect(trigger.getAttribute('data-selected')).toBe(expanded)
+			expect(panel.parentElement).toBe(root)
+			expect(panel.getAttribute('role')).toBe('dialog')
+			expect(panel.style.display).toBe('none')
+			expect(panel.children).toHaveLength(0)
+			expect(panel.textContent).toBe('')
+			expect(panel.classList.contains('so-frame')).toBe(false)
+			expect(panel.hasAttribute('data-layer')).toBe(false)
+		},
+	)
+
+	it('имя диалога — уже на скрытой панели сервера', async () => {
+		const page = await serverPage(OverlaysPage)
+		const trigger = find(page, '.closed-trigger', HTMLButtonElement)
+
+		expect(linkedPanel(page, trigger, 'aria-controls').getAttribute('aria-label')).toBe(
+			'Фильтры',
+		)
+	})
+
+	it('подсказка — корень с триггером и ссылкой, панель в корне пустая и скрытая', async () => {
+		const page = await serverPage(OverlaysPage)
+		const root = find(page, '.tooltip', HTMLSpanElement)
+		const trigger = find(root, '.tooltip-trigger', HTMLButtonElement)
+		const panel = linkedPanel(page, trigger, 'aria-describedby')
+
+		expect(root.classList).toContain('so-tooltip')
+		expect(panel.parentElement).toBe(root)
+		expect(panel.getAttribute('role')).toBe('tooltip')
+		expect(panel.style.display).toBe('none')
+		expect(panel.children).toHaveLength(0)
+		expect(panel.textContent).toBe('')
+	})
+})
+
+/**
+ * После гидратации триггер — узел сервера, а панель — элемент Frame, который
+ * напечатал сервер: он уезжает в `body` и получает содержимое, слой и якорь.
+ * Якорь — корень (`rootElement()` базы): у открытой панели сторону пишет плагин
+ * якоря (`data-placement`). Номера сборки у сервера и браузера одни, поэтому
+ * и `id` панели — тот же.
+ */
+describe('Popover и Tooltip · гидратация', () => {
+	afterEach(() => {
+		vi.restoreAllMocks()
+		leavePage()
+	})
+
+	it('тот же триггер и та же панель — в body, с содержимым; id сходятся, ошибок нет', async () => {
+		const error = vi.spyOn(console, 'error')
+		const warn = vi.spyOn(console, 'warn')
+
+		loadPage(await renderOnServer(OverlaysPage))
+
+		const triggers = OVERLAYS.map(([selector]) => find(document, selector, HTMLButtonElement))
+		const links = OVERLAYS.map(([, link], index) => triggers[index].getAttribute(link))
+		const panels = OVERLAYS.map(([, link], index) =>
+			linkedPanel(document, triggers[index], link),
+		)
+		const app = await hydrate(OverlaysPage)
+
+		await app.whenStable()
+		await nextFrame()
+
+		expect(OVERLAYS.map(([selector]) => find(document, selector, HTMLButtonElement))).toEqual(
+			triggers,
+		)
+		expect(OVERLAYS.map(([, link], index) => triggers[index].getAttribute(link))).toEqual(links)
+		expect(
+			OVERLAYS.map(([, link], index) => linkedPanel(document, triggers[index], link)),
+		).toEqual(panels)
+		expect(panels.map((panel) => panel.parentElement)).toEqual([
+			document.body,
+			document.body,
+			document.body,
+		])
+		expect(
+			OVERLAYS.map(([, , content], index) =>
+				panels[index].querySelector(content)?.textContent?.trim(),
+			),
+		).toEqual(['Внутри', 'Открыт со старта', 'Сохранить черновик'])
+		expect(error).not.toHaveBeenCalled()
+		expect(warn).not.toHaveBeenCalled()
+	})
+
+	it('открытый поповер — панель на виду, со слоем и стороной от якоря', async () => {
+		loadPage(await renderOnServer(OverlaysPage))
+
+		const app = await hydrate(OverlaysPage)
+
+		await app.whenStable()
+		await nextFrame()
+
+		const opened = linkedPanel(
+			document,
+			find(document, '.opened-trigger', HTMLButtonElement),
+			'aria-controls',
+		)
+		const closed = linkedPanel(
+			document,
+			find(document, '.closed-trigger', HTMLButtonElement),
+			'aria-controls',
+		)
+
+		expect(opened.style.display).toBe('')
+		expect(opened.classList).toContain('so-frame')
+		expect(opened.getAttribute('data-open')).toBe('true')
+		expect(opened.getAttribute('data-layer')).not.toBeNull()
+		expect(opened.getAttribute('data-placement')).toBe('bottom-start')
+		expect(closed.style.display).toBe('none')
+		expect(closed.getAttribute('data-open')).toBe('false')
 	})
 })

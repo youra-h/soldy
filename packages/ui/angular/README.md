@@ -32,8 +32,10 @@ render on the server (`@angular/platform-server`) and hydrate in the browser
 > `<so-drag-and-drop>` wrapper that lets users reorder the items of Tabs, ListBox and Accordion by
 > dragging (`(soMove)`, `(soMoveBefore)` can cancel) are ported, the rest of the set is on its
 > way. Frame moves the element you wrote into `target` (`body` by default) in the browser; with
-> `contained` it stays in place. `so-locale-provider` gives a subtree its language and library
-> strings. See [the adapter table](https://github.com/youra-h/soldy#components).
+> `contained` it stays in place. Popover (`<span so-popover>`) and Tooltip (`<span so-tooltip>`)
+> are panels on a Frame anchored to the element you write them on. `so-locale-provider` gives a
+> subtree its language and library strings. See
+> [the adapter table](https://github.com/youra-h/soldy#components).
 
 ## Install
 
@@ -267,6 +269,35 @@ NG05106. Wrap it in an element: `@for (item of items; track item.id) { <section>
 The panel follows its place. When Angular takes the place off the page while the component lives
 on — a Frame inside a conditional `<ng-content>` of another component, or in a detached view — the
 panel leaves the page with it, and when the place comes back, the panel is back in `target`.
+
+A popover and a tooltip are written on your element, `<span so-popover>` and `<span so-tooltip>`,
+which wraps the trigger and anchors their panel — a Frame of their own, moved into `body`. The
+trigger is a template, `<ng-template slot="trigger">`: its context carries what links the trigger
+to the panel — `triggerAria` (`aria-expanded`, `aria-controls` or the tooltip's `aria-describedby`)
+and, for a popover, `triggerDataset` with the pressed look — and you put it on your own element
+with the `[so-attributes]` directive. Import `SlotDirective` and `AttributesDirective` along with
+the component. The trigger stays the same node as the panel opens and closes, so focus stays on
+it. The content of a popover is its panel's content, next to a close button (`closable`, the
+`close-icon` template); the content of a tooltip is its text. `lazyMount` keeps a popover's content
+out of the document until it first opens, although Angular creates the components in it right
+away: they belong to the template that wrote them. `rendered` set to `false` hides the panel along
+with your element. Like a Frame, the panel exists only in the browser: on the server it is an empty
+hidden element inside yours, and the trigger already links to it.
+
+```ts
+template: `<span so-popover aria_label="Filters" (soChangeOpen)="opened.set($event)">
+  <ng-template slot="trigger" let-triggerAria="triggerAria" let-triggerDataset="triggerDataset">
+    <button so-button text="Filters" [so-attributes]="{ ...triggerAria, ...triggerDataset }"></button>
+  </ng-template>
+  …
+</span>
+<span so-tooltip>
+  <ng-template slot="trigger" let-triggerAria="triggerAria">
+    <button so-button text="Save" [so-attributes]="triggerAria"></button>
+  </ng-template>
+  Save a draft
+</span>`
+```
 
 The language and the strings the library renders itself come from the nearest
 `LocaleProviderDirective` above — it can sit on an `ng-container`, and changing `locale` updates

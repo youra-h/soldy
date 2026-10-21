@@ -16,12 +16,14 @@ export class TActivationItemExtension<TItem extends object = any>
 	constructor(item: TItem, parent: TActivationExtension<TItem>) {
 		super(item, parent)
 
-		this.events.relay(parent.events, [
-			{
-				from: 'change:activation',
-				as: 'change:active',
-			},
-		])
+		// `change:activation` приходит адаптерам всех элементов, а активность
+		// сменилась у двух — нового активного и прежнего. Своему элементу — его
+		// новая активность, остальным — ничего
+		this.events.follow(parent.events, 'change:activation', (active, previous) => {
+			if (active === this._item || previous === this._item) {
+				this.events.emit('change:active', this.active)
+			}
+		})
 	}
 
 	/**

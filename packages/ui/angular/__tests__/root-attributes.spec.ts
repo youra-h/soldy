@@ -32,6 +32,7 @@ import {
 	TListBoxComponent,
 	TNumberInputComponent,
 	TPaginationComponent,
+	TPopoverComponent,
 	TProgressLinearComponent,
 	TProgressSpinnerComponent,
 	TRatingComponent,
@@ -42,6 +43,7 @@ import {
 	TTableComponent,
 	TTabsComponent,
 	TTextareaComponent,
+	TTooltipComponent,
 } from '@soldy-ui/angular'
 import {
 	applyAttributes,
@@ -238,6 +240,41 @@ class ScrollerProbe extends TProbeHost {}
 })
 class PaginationProbe extends TProbeHost {}
 
+/**
+ * Поповер и подсказка — корень с наборами `attrs` и `dataset`: ARIA у них на
+ * панели и триггере, а написанное потребителем остаётся на корне, как у Vue.
+ * `(soElementReady)` — свой у корня: у Frame внутри шаблона выходы свои.
+ */
+@Component({
+	selector: 'probe-popover',
+	standalone: true,
+	imports: [TPopoverComponent],
+	template: `<span
+		so-popover
+		direction="rtl"
+		dir="ltr"
+		title="probe"
+		class="mine"
+		(soElementReady)="ready.push($event)"
+	></span>`,
+})
+class PopoverProbe extends TProbeHost {}
+
+@Component({
+	selector: 'probe-tooltip',
+	standalone: true,
+	imports: [TTooltipComponent],
+	template: `<span
+		so-tooltip
+		direction="rtl"
+		dir="ltr"
+		title="probe"
+		class="mine"
+		(soElementReady)="ready.push($event)"
+	></span>`,
+})
+class TooltipProbe extends TProbeHost {}
+
 /** Компонент, хост его пробы, селектор корня и класс ядра на нём. */
 const COMPONENTS: ReadonlyArray<readonly [string, Type<TProbeHost>, string, string]> = [
 	['Button', ButtonProbe, '[so-button]', 'so-button'],
@@ -252,6 +289,8 @@ const COMPONENTS: ReadonlyArray<readonly [string, Type<TProbeHost>, string, stri
 	['Rating', RatingProbe, '[so-rating]', 'so-rating'],
 	['Scroller', ScrollerProbe, '[so-scroller]', 'so-scroller'],
 	['Pagination', PaginationProbe, '[so-pagination]', 'so-pagination'],
+	['Popover', PopoverProbe, '[so-popover]', 'so-popover'],
+	['Tooltip', TooltipProbe, '[so-tooltip]', 'so-tooltip'],
 ]
 
 /**

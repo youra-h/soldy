@@ -1696,7 +1696,7 @@ There is no `adapter/static/`: React takes prop names from the descriptor types,
 
 ## Layer 8: Angular Adapter (`packages/ui/angular/src`)
 
-### ✅ IMPLEMENTED (Component / ComponentView / Stylable / Control / Interactive / ValueControl / InputControl / Textable / Button / Icon / Label / Field / Frame / ProgressSpinner / ProgressLinear / Skeleton / Input / NumberInput / Textarea / CheckBox / Switch / Slider / Rating / RadioGroup / ListBox / Tabs / Accordion / Pagination / Scroller / Table / Virtual / DragAndDrop)
+### ✅ IMPLEMENTED (Component / ComponentView / Stylable / Control / Interactive / ValueControl / InputControl / Textable / Button / Icon / Label / Field / Frame / Popover / Tooltip / ProgressSpinner / ProgressLinear / Skeleton / Input / NumberInput / Textarea / CheckBox / Switch / Slider / Rating / RadioGroup / ListBox / Tabs / Accordion / Pagination / Scroller / Table / Virtual / DragAndDrop)
 
 **Структура** зеркалит Vue/React: `adapter/{common,runtime,locale,elevator}` + `components/*`.
 
@@ -1853,7 +1853,8 @@ Zone.js и молча ломалось бы под `provideZonelessChangeDetecti
 `[so-component-view]` у ComponentView, `span[so-icon], [so-icon]` у Icon,
 `span[so-progress-spinner], [so-progress-spinner]` у ProgressSpinner,
 `[so-skeleton]` у Skeleton, `div[so-frame], [so-frame]` у Frame,
-`label[so-label], [so-label]` у Label, у владельцев коллекций и панели таба —
+`span[so-popover], [so-popover]` у Popover, `span[so-tooltip], [so-tooltip]` у
+Tooltip, `label[so-label], [so-label]` у Label, у владельцев коллекций и панели таба —
 `div[so-accordion]`, `div[so-radio-group]`, `div[so-tabs-content]` (и `[…]`
 без тега). Потребитель
 пишет `<button so-button>`, `<a so-button href>`, `<div so-button>`, и этот
@@ -1934,7 +1935,11 @@ ListBox и Tabs (`so-list-box`, `so-tabs`) селектор элементный
   ни классов, ни наборов, ни стиля ядра, а шаблон Frame — содержимого
   (`@if (placed())` вокруг `<ng-content>`). Поэтому номер слоя — счётчик
   процесса `TLayer`, у сервера и браузера разный, — в разметку сервера не
-  попадает. Снятый компонент убирает узел из цели и якорь: Angular сам
+  попадает, а гидратации у слоя нет: `ngSkipHydration` статикой хоста Frame,
+  и всё, что написано внутри `<div so-frame>`, браузер строит сам — иначе
+  Angular гидратировал бы представление того, кто Frame написал, и проекцию
+  внутри панели считал бы уже стоящей на месте (текст подсказки пропадал бы
+  после гидратации). Снятый компонент убирает узел из цели и якорь: Angular сам
   снимает из цели только корень своего представления, а узел, вложенный в
   снятый элемент, остался бы в цели. Панель идёт за местом: Angular вынимает
   и вставляет узлы своих представлений, не снимая компонента (условный
@@ -2006,6 +2011,20 @@ ListBox и Tabs (`so-list-box`, `so-tabs`) селектор элементный
 Отметку и «выбрано частично» шаблон пишет привязками `[checked]` и
 `[indeterminate]`. Инстанс ядра — для scope слотов (`{ ctrl }`) и команды
 `clear` кнопки очистки — шаблон берёт у базы (`instance()`).
+
+Корень значением шаблону — сигнал базы `rootElement()`: тот узел, который
+она отдала `TElementPlugin`, — `null` на сервере и до первой отрисовки, после
+неё — узел, как `rootElement` у Vue, Solid и Svelte и `useRootElement` у React.
+Пишет его тот же эффект после отрисовки. Свой хост компонент взять не может
+(`inject` в компонентах запрещён), а якорь панели — корень: Popover и Tooltip
+отдают его своему Frame (`[anchor_anchor]="rootElement()"`). Корень у них —
+элемент потребителя (`<span so-popover>`), обёртка триггера; триггер — шаблон
+слота (`<ng-template slot="trigger">`), и связку с панелью из его контекста
+(`triggerAria`, у Popover ещё `triggerDataset`) потребитель кладёт на свой
+элемент директивой `[so-attributes]`. Новый контекст вывод шаблона отдаёт тому
+же представлению, и триггер — тот же узел при каждом открытии. `rendered`
+панели они передают сами: корень Angular не снимается, а прячется, а панель
+увезена в `body`.
 
 Иконку из пакета иконок на `<svg>` Icon кладёт директива адаптера
 `RoleIconDirective` — `<svg so-icon so-role-icon="close">`: `viewBox` из

@@ -863,4 +863,78 @@ describe('TEvented: проброс держит источник, пока це�
 
 		expect(held()).toBe(0)
 	})
+
+	it('follow: реакция держит источник так же — с первым подписчиком цели, до последнего и до destroy', () => {
+		const source = new TEvented<TestEvents>()
+		const target = new TEvented<TestEvents>()
+		const held = heldBy(source)
+		const reaction = vi.fn()
+		const handler = vi.fn()
+
+		target.follow(source, 'submit', reaction)
+		source.emit('submit', 1)
+
+		// Цель не слушают — реакции на источнике нет
+		expect(held()).toBe(0)
+		expect(reaction).not.toHaveBeenCalled()
+
+		target.on('change', handler)
+		source.emit('submit', 2)
+
+		expect(held()).toBe(1)
+		expect(reaction.mock.calls).toEqual([[2]])
+
+		target.off('change', handler)
+
+		expect(held()).toBe(0)
+
+		const release = target.listen(vi.fn())
+
+		expect(held()).toBe(1)
+
+		target.destroy()
+		source.emit('submit', 3)
+
+		expect(held()).toBe(0)
+		expect(reaction.mock.calls).toEqual([[2]])
+
+		release()
+	})
+})
+
+/**
+ * Своя реакция на событие источника: `on` — подписка на свои события, `relay`
+ * и `relayAll` — проброс события источника в эту шину, `follow` — свой
+ * обработчик события источника на сроке пробросов. Что эмитить и эмитить ли
+ * вообще, решает обработчик: так item-адаптер отдаёт своему элементу событие
+ * расширения, которое приходит всем элементам, а касается не каждого.
+ */
+describe('TEvented: follow', () => {
+	it('обработчик получает аргументы события, а в шину сам ничего не эмитит', () => {
+		const source = new TEvented<TestEvents>()
+		const target = new TEvented<{ even: (id: number) => void }>()
+		const even = vi.fn()
+		const listener = vi.fn()
+
+		target.follow(source, 'submit', (id) => {
+			if (id % 2 === 0) target.emit('even', id)
+		})
+		target.on('even', even)
+		target.listen(listener)
+		source.emit('submit', 1)
+		source.emit('submit', 2)
+
+		expect(even.mock.calls).toEqual([[2]])
+		expect(listener.mock.calls).toEqual([['even', [2]]])
+	})
+
+	it('имя вне карты источника и чужой обработчик — ошибка типов', () => {
+		const source = new TEvented<TestEvents>()
+		const target = new TEvented<TestEvents>()
+
+		// @ts-expect-error — события `missing` нет в карте источника
+		target.follow(source, 'missing', () => {})
+		// @ts-expect-error — `submit` несёт число, обработчик ждёт строку
+		target.follow(source, 'submit', (value: string) => value.length)
+	})
 })

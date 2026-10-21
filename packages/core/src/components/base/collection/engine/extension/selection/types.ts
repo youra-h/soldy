@@ -26,7 +26,16 @@ export interface ISelectionCollectionProps {
 export type TSelectionEvents<TItem> = {
 	/** Элемент вот-вот станет выбранным; `preventDefault()` отменяет выбор */
 	'item:select:before': (e: TSelectEvent<TItem>) => void
-	'change:selection': (items: TItem[]) => void
+	/**
+	 * Выбор сменился. `items` — выбранные после смены, по порядку; `changed` —
+	 * элементы, чья отметка сменилась: ставшие выбранными и снятые, в том числе
+	 * удалённые из коллекции. Сменился только порядок выбранных
+	 * (`replaceSelection` перестановкой) — набор пуст.
+	 *
+	 * Набор, а не массив: item-адаптер каждого элемента спрашивает, есть ли в
+	 * нём его элемент, и «выбрать все» в таблице иначе стал бы квадратичным.
+	 */
+	'change:selection': (items: TItem[], changed: ReadonlySet<TItem>) => void
 	'change:mode': (value: TSelectionMode) => void
 }
 

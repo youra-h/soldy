@@ -9,7 +9,9 @@
  * смена `ctrl` ставит компонент заново; обёртку и содержимое превью хост
  * собирает сам — части на своих элементах в проекциях, после владельца и с
  * его инжектором, и в разметке содержимого тоже; рамка вокруг компонента идёт
- * за пропсами оболочки, а данные превью ложатся под них.
+ * за пропсами оболочки, а данные превью ложатся под них; превью, которому
+ * нужны шаблоны слотов (Popover, Tooltip), — свой шаблон, как у фикстуры:
+ * пропсы — входам его компонента, выходы — у компонента в его разметке.
  */
 
 import { describe, it, expect, afterEach } from 'vitest'
@@ -284,6 +286,95 @@ describe('хост Angular · обёртка и содержимое', () => {
 		handle.unmount()
 
 		expect(node.childNodes).toHaveLength(0)
+	})
+})
+
+/** Узел по `id` из атрибута ссылки на него; нет его — тест падает здесь. */
+function linked(element: Element, attribute: string): HTMLElement {
+	const target = document.getElementById(element.getAttribute(attribute) ?? '')
+
+	if (!(target instanceof HTMLElement)) throw new Error(`${attribute} ни на что не ведёт`)
+
+	return target
+}
+
+/** Триггер в корне превью — Button в шаблоне слота; нет его — тест падает здесь. */
+function triggerIn(node: HTMLElement, root: string): HTMLElement {
+	const trigger = node.querySelector(`${root} > .so-button`)
+
+	if (!(trigger instanceof HTMLElement)) throw new Error(`в ${root} нет триггера`)
+
+	return trigger
+}
+
+describe('хост Angular · превью своим шаблоном', () => {
+	/**
+	 * Триггер поповера — шаблон слота, а шаблоны слотов видит только разметка:
+	 * превью — компонент хоста со своим шаблоном, как фикстура. Пропсы оболочки
+	 * уходят его входам и дальше — поповеру в разметке, выходы хост слушает у
+	 * поповера в нём, а пропа без входа не глушит. Снятое превью уносит и
+	 * панель, увезённую в `body`.
+	 */
+	it('поповер: пропсы — входам превью и дальше поповеру, выходы — у поповера в нём', () => {
+		const node = stage()
+		const events: string[] = []
+		const handle = host.mount(node, {
+			component: 'popover',
+			props: { aria_label: 'Пример поповера' },
+			onEvent: (name) => events.push(name),
+		})
+		const trigger = triggerIn(node, '.so-popover')
+		const panel = linked(trigger, 'aria-controls')
+
+		expect(trigger.textContent?.trim()).toBe('Открыть')
+		expect(panel.parentElement).toBe(document.body)
+		expect(panel.getAttribute('aria-label')).toBe('Пример поповера')
+		expect(panel.style.display).toBe('none')
+		expect(textsOf(panel, '.so-popover__content > *')).toEqual([
+			'Произвольное содержимое: текст, поля, кнопки',
+			'Действие',
+		])
+
+		handle.update({ aria_label: 'Пример поповера', open: true })
+
+		expect(panel.style.display).toBe('')
+		expect(trigger.getAttribute('aria-expanded')).toBe('true')
+		expect(events).toContain('change:open')
+		expect(() => handle.update({ nothing: true })).toThrow('нет входов: nothing')
+
+		handle.unmount()
+
+		expect(node.childNodes).toHaveLength(0)
+		expect(panel.isConnected).toBe(false)
+	})
+
+	it('подсказка: ссылка триггера ведёт на панель с текстом, open — входом превью', () => {
+		const node = stage()
+		const events: string[] = []
+		const handle = host.mount(node, {
+			component: 'tooltip',
+			props: {},
+			onEvent: (name) => events.push(name),
+		})
+		const trigger = triggerIn(node, '.so-tooltip')
+		const panel = linked(trigger, 'aria-describedby')
+
+		expect(trigger.textContent?.trim()).toBe('Наведи')
+		expect(panel.parentElement).toBe(document.body)
+		expect(panel.getAttribute('role')).toBe('tooltip')
+		expect(textsOf(panel, '.so-tooltip__content')).toEqual(['Короткое пояснение к кнопке'])
+		expect(panel.style.display).toBe('none')
+
+		handle.update({ open: true, type: 'label' })
+
+		expect(panel.style.display).toBe('')
+		expect(linked(trigger, 'aria-labelledby')).toBe(panel)
+		expect(events).toEqual(expect.arrayContaining(['change:open', 'change:type']))
+
+		handle.unmount()
+
+		expect(node.childNodes).toHaveLength(0)
+		expect(panel.isConnected).toBe(false)
 	})
 })
 

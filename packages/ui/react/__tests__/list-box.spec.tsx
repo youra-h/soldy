@@ -12,7 +12,7 @@
  */
 
 import { describe, it, expect, expectTypeOf, vi } from 'vitest'
-import { act, type ReactNode } from 'react'
+import { act, useState, type ReactNode } from 'react'
 import {
 	createEngine,
 	createEngineListBox,
@@ -222,6 +222,79 @@ describe('выбор', () => {
 		press(footer, 'ArrowDown')
 
 		expect(rows().map((row) => row.getAttribute('data-highlighted'))).toEqual(['false'])
+	})
+})
+
+/**
+ * Отметка элемента — в обе стороны, парой «проп + колбэк», без `ctrl`:
+ * `selected` пропом пишет её, а `onChangeSelected` приходит только элементу,
+ * чья отметка сменилась, и несёт новую. Состояние приложения держит отметку
+ * само и коллекцию не читает.
+ */
+describe('отметка элемента: selected и onChangeSelected', () => {
+	/** Список из трёх, отметки — в состоянии приложения; колбэки — в журнал. */
+	function App({ log, mode }: { log: string[]; mode?: ListBoxProps['mode'] }): ReactNode {
+		const [a, setA] = useState(true)
+		const [b, setB] = useState(false)
+		const [c, setC] = useState(false)
+		const item = (value: string, selected: boolean, set: (selected: boolean) => void) => (
+			<ListBox.Item
+				value={value}
+				text={value.toUpperCase()}
+				selected={selected}
+				onChangeSelected={(next) => {
+					log.push(`${value}: ${next}`)
+					set(next)
+				}}
+			/>
+		)
+
+		return (
+			<>
+				<ListBox mode={mode}>
+					{item('a', a, setA)}
+					{item('b', b, setB)}
+					{item('c', c, setC)}
+				</ListBox>
+				<output className="so-test-state">{[a, b, c].map(String).join(' ')}</output>
+			</>
+		)
+	}
+
+	const state = () => document.querySelector('.so-test-state')?.textContent
+
+	it('клик по B: A получает false, B — true, C молчит; состояние сходится с выбором', () => {
+		const log: string[] = []
+
+		mount(<App log={log} />)
+
+		expect(selection()).toEqual(['true', 'false', 'false'])
+
+		log.length = 0
+		click(rowOf('B'))
+
+		expect(log).toEqual(['a: false', 'b: true'])
+		expect(state()).toBe('false true false')
+		expect(selection()).toEqual(['false', 'true', 'false'])
+	})
+
+	it('multiple: повторный клик снимает только свою отметку', () => {
+		const log: string[] = []
+
+		mount(<App log={log} mode="multiple" />)
+		log.length = 0
+		click(rowOf('C'))
+		click(rowOf('A'))
+
+		expect(log).toEqual(['c: true', 'a: false'])
+		expect(state()).toBe('false false true')
+		expect(selection()).toEqual(['false', 'false', 'true'])
+	})
+
+	it('колбэк получает отметку: boolean', () => {
+		expectTypeOf<NonNullable<ListBoxItemProps['onChangeSelected']>>()
+			.parameter(0)
+			.toEqualTypeOf<boolean>()
 	})
 })
 
