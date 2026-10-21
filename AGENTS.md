@@ -449,19 +449,24 @@ Web Components-компоненты собирают контекст через
 React-компоненты держат adapter-context между рендерами не сами: вместо
 своего `useRef` они зовут `useAdapterContext` (`packages/ui/react/src/adapter/runtime/`)
 с фабрикой, которая создаёт контекст (у коллекции — два: свой и фасада, см.
-«Элемент входит в коллекцию при монтировании»). Собирает фабрика функцией `create`,
+«Элемент входит в коллекцию при монтировании»; у `Menu.Submenu` — три: свой,
+фасад пункта и фасад меню). Собирает фабрика функцией `create`,
 которую ей отдаёт хук, — `(create) => create(XDescriptor(), { ctrl, props })`:
 это `createAdapterContext` с id монтирования от `useId` (см. «`id` в разметке —
 от монтирования, в плагинах»). Границу перерисовки компонент тоже ставит не
 сам, `memo`, а обёрткой адаптера `withRenderBoundary` (там же): под ней строки
 `Table` и их ячейки — таблица перерисовывается на каждый выбор, а их
 перерисовывают только своё состояние и смена входов. Корень значением
-рендера — якорь панели Popover и Tooltip, `:anchor_anchor="rootElement"` у
+рендера — якорь панели Popover, Tooltip, Menu и пунктов меню со своей панелью
+(`Menu.Submenu`, `Menu.PopoverItem`), `:anchor_anchor="rootElement"` у
 Vue, — компонент тоже берёт не своим `useState` из ref-функции, а хуком
 адаптера `useRootElement` (там же) от `root` связки: `null` на сервере и до
 коммита, узел после, а подписку на корень заводит только он — остальные
 компоненты лишней перерисовки после монтирования не получают (сторожит
-`ui/react/__tests__/root-element.spec.tsx`). Сторож — блок eslint
+`ui/react/__tests__/root-element.spec.tsx`). Классы части без своего
+экземпляра строкой для `className` (панель Menu и подменю на их Frame) отдаёт
+помощник адаптера `toPartClass` (`ui/react/src/adapter/common/`), а не `join`
+в разметке каждого. Сторож — блок eslint
 `soldy/react-components-no-framework` (`eslint.config.ts`): запрещает
 значения из `'react'` (в том числе `React.useRef` через namespace-импорт) и
 `createAdapterContext` из `@soldy-ui/setup` в

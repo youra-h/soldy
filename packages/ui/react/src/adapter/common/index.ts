@@ -6,6 +6,7 @@ export {
 	toRootForward,
 	toWrappedRootProps,
 	toControlAttrs,
+	toPartClass,
 	toReactStyle,
 	type TRootState,
 	type TRootStyle,

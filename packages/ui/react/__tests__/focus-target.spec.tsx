@@ -21,6 +21,11 @@ import {
 	TInput,
 	TListBox,
 	TListBoxItem,
+	TMenuCheckboxItem,
+	TMenuItem,
+	TMenuPopoverItem,
+	TMenuRadioItem,
+	TMenuSubmenu,
 	TNumberInput,
 	TPagination,
 	TRadioGroup,
@@ -36,9 +41,11 @@ import {
 } from '@soldy-ui/core'
 import {
 	Accordion,
+	Button,
 	CheckBox,
 	Input,
 	ListBox,
+	Menu,
 	NumberInput,
 	Pagination,
 	RadioGroup,
@@ -49,7 +56,24 @@ import {
 	Tabs,
 	Textarea,
 } from '@soldy-ui/react'
+import type { DescriptorSlots, MenuDescriptor } from '@soldy-ui/setup'
 import { find, mount, nextFrame } from './mount'
+
+type TMenuTriggerScope = DescriptorSlots<typeof MenuDescriptor>['trigger']
+
+/**
+ * Меню, открытое с первой отрисовки, с пунктом `a` перед пунктом теста: фокус
+ * встаёт на строку своего пункта, а не на первую строку меню.
+ */
+const menu = (item: ReactElement) => (
+	<Menu
+		open
+		trigger={({ triggerAria }: TMenuTriggerScope) => <Button text="M" {...triggerAria} />}
+	>
+		<Menu.Item value="a" text="A" />
+		{item}
+	</Menu>
+)
 
 type TCase = {
 	/**
@@ -358,6 +382,68 @@ const CASES: Record<string, TCase> = {
 			}
 		},
 		target: '.target [role="option"]',
+	},
+	// У пунктов меню фокус держит строка, а корень — обёртка вокруг неё
+	'Menu.Item': {
+		render: () => {
+			const ctrl = new TMenuItem({ value: 'b', text: 'B' })
+
+			return { ctrl, node: menu(<Menu.Item ctrl={ctrl} className="target" />) }
+		},
+		target: '.target [role="menuitem"]',
+	},
+	'Menu.CheckboxItem': {
+		render: () => {
+			const ctrl = new TMenuCheckboxItem({ value: 'b', text: 'B' })
+
+			return { ctrl, node: menu(<Menu.CheckboxItem ctrl={ctrl} className="target" />) }
+		},
+		target: '.target [role="menuitemcheckbox"]',
+	},
+	'Menu.RadioItem': {
+		render: () => {
+			const ctrl = new TMenuRadioItem({ value: 'b', text: 'B' })
+
+			return {
+				ctrl,
+				node: menu(
+					<Menu.RadioGroup label="Вид">
+						<Menu.RadioItem ctrl={ctrl} className="target" />
+					</Menu.RadioGroup>,
+				),
+			}
+		},
+		target: '.target [role="menuitemradio"]',
+	},
+	'Menu.Submenu': {
+		render: () => {
+			const ctrl = new TMenuSubmenu({ value: 'b', text: 'B' })
+
+			return {
+				ctrl,
+				node: menu(
+					<Menu.Submenu ctrl={ctrl} className="target">
+						<Menu.Item value="x" text="X" />
+					</Menu.Submenu>,
+				),
+			}
+		},
+		target: '.target [role="menuitem"]',
+	},
+	'Menu.PopoverItem': {
+		render: () => {
+			const ctrl = new TMenuPopoverItem({ value: 'b', text: 'B' })
+
+			return {
+				ctrl,
+				node: menu(
+					<Menu.PopoverItem ctrl={ctrl} className="target">
+						<p>Панель</p>
+					</Menu.PopoverItem>,
+				),
+			}
+		},
+		target: '.target [role="menuitem"]',
 	},
 }
 

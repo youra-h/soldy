@@ -1,6 +1,11 @@
 import { useRef, useState, type ReactNode } from 'react'
 import type { TToastsItemType } from '@soldy-ui/core'
-import type { DescriptorSlots, PopoverDescriptor, TooltipDescriptor } from '@soldy-ui/setup'
+import type {
+	DescriptorSlots,
+	MenuDescriptor,
+	PopoverDescriptor,
+	TooltipDescriptor,
+} from '@soldy-ui/setup'
 import {
 	COLLECTION_ITEMS,
 	COLLECTION_MANY_ITEMS,
@@ -24,6 +29,7 @@ import {
 	Input,
 	Label,
 	ListBox,
+	Menu,
 	NumberInput,
 	Pagination,
 	Popover,
@@ -100,6 +106,49 @@ type TPopoverTriggerScope = DescriptorSlots<typeof PopoverDescriptor>['trigger']
 
 /** Scope слота `trigger` у Tooltip — ссылка триггера на панель. */
 type TTooltipTriggerScope = DescriptorSlots<typeof TooltipDescriptor>['trigger']
+
+/** Scope слота `trigger` у Menu — связка кнопки с меню и вид «нажата». */
+type TMenuTriggerScope = DescriptorSlots<typeof MenuDescriptor>['trigger']
+
+/**
+ * Пункты меню разметкой, как у Vue: группа флажков с подписью, группа
+ * переключателей — отмечен один, — действия с подсказками сочетаний, подменю
+ * с подменю внутри, пункт с панелью, которая монтируется с первым открытием,
+ * выключенное действие и «опасный» пункт своего варианта. Календаря в React
+ * нет, и в панели «Срок» — поле числа дней, как у Solid.
+ */
+const menuItems = () => (
+	<>
+		<Menu.Group label="Вид">
+			<Menu.CheckboxItem value="grid" text="Сетка" selected />
+			<Menu.CheckboxItem value="ruler" text="Линейка" />
+		</Menu.Group>
+		<Menu.Separator />
+		<Menu.RadioGroup label="Сортировка" value="name">
+			<Menu.RadioItem value="name" text="По имени" />
+			<Menu.RadioItem value="date" text="По дате" />
+		</Menu.RadioGroup>
+		<Menu.Separator />
+		<Menu.Item value="edit" text="Изменить" trailing="Ctrl+E" />
+		<Menu.Item value="copy" text="Дублировать" trailing="Ctrl+D" />
+		<Menu.Submenu value="share" text="Поделиться">
+			<Menu.Item value="link" text="Ссылка" />
+			<Menu.Item value="mail" text="Почта" />
+			<Menu.Submenu value="messengers" text="Мессенджеры">
+				<Menu.Item value="telegram" text="Telegram" />
+				<Menu.Item value="whatsapp" text="WhatsApp" />
+			</Menu.Submenu>
+		</Menu.Submenu>
+		<Menu.PopoverItem value="due" text="Срок" lazyMount>
+			<Field label="Через, дней">
+				<NumberInput value={3} min={0} />
+			</Field>
+		</Menu.PopoverItem>
+		<Menu.Item value="archive" text="В архив" disabled />
+		<Menu.Separator />
+		<Menu.Item value="remove" text="Удалить" variant="negative" trailing="Del" />
+	</>
+)
 
 /**
  * Открытость окна и выезжающей панели на стенде — своё состояние превью, как
@@ -362,6 +411,34 @@ export const PREVIEWS: Record<string, TPreview> = {
 			<p style={{ margin: '0 0 8px' }}>Произвольное содержимое: текст, поля, кнопки</p>
 			<Button text="Действие" />
 		</Popover>
+	),
+
+	// Триггер — Button, связку с меню и вид «нажата» он берёт из scope слота,
+	// как у Popover. У контекстного меню (`openOn: 'contextmenu'`) в слоте
+	// область, как «файл» у потребителя: меню вызывают над ней правой кнопкой,
+	// долгим касанием и Shift+F10 — она фокусируемая, — и панель встаёт у точки
+	// вызова. Режим область берёт из пропсов колонки, как у Vue: у колонки
+	// экземпляра его нет, и там меню вызывают над кнопкой. Пункты — разметкой,
+	// а пришли данными (`items` блока групп страницы) — из них, как у списка:
+	// разметка заменила бы данные, а группы меню рисует из данных
+	menu: (bind) => (
+		<Menu
+			{...bind}
+			trigger={({ triggerAria, triggerDataset }: TMenuTriggerScope) =>
+				bind.openOn === 'contextmenu' ? (
+					<div
+						tabIndex={0}
+						style={{ padding: '24px 32px', border: '1px dashed', borderRadius: 8 }}
+					>
+						Правая кнопка, долгое касание или Shift+F10
+					</div>
+				) : (
+					<Button text="Действия" {...triggerAria} {...triggerDataset} />
+				)
+			}
+		>
+			{bind.items ? null : menuItems()}
+		</Menu>
 	),
 
 	// Триггер — Button, ссылку на панель (`aria-describedby`) он берёт из

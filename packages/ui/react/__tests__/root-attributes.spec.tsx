@@ -17,13 +17,23 @@
  * Элемент коллекции (`Tabs.Item`, `Accordion.Item`, `RadioGroup.Item`) делит
  * атрибуты потребителя, как у Vue: класс и стиль — корню, остальное — строке
  * (у радио — полю), поверх её набора `aria`. Корень остаётся за адаптером и у
- * него. ListBox и Tabs делят их так же: остальное — узлу списка с ролью
- * (`listbox`, `tablist`), поверх его `aria`. Table — между окном и корнем
- * `table` в нём: класс, стиль и `ref` — окну, остальное — `table`.
+ * него. Пункт меню — любого вида — делит их так же, как элемент коллекции:
+ * остальное — строке с ролью `menuitem*`. ListBox и Tabs делят их так же:
+ * остальное — узлу списка с ролью (`listbox`, `tablist`), поверх его `aria`.
+ * Table — между окном и корнем `table` в нём: класс, стиль и `ref` — окну,
+ * остальное — `table`.
  */
 
 import { describe, it, expect, vi } from 'vitest'
-import { StrictMode, act, createRef, type ComponentType, type ReactNode, type Ref } from 'react'
+import {
+	StrictMode,
+	act,
+	createRef,
+	type ComponentType,
+	type HTMLAttributes,
+	type ReactNode,
+	type Ref,
+} from 'react'
 import { hydrateRoot } from 'react-dom/client'
 import { renderToString } from 'react-dom/server'
 import {
@@ -48,6 +58,7 @@ import {
 	Input,
 	Label,
 	ListBox,
+	Menu,
 	NumberInput,
 	Pagination,
 	Popover,
@@ -76,6 +87,12 @@ import {
 	type LabelProps,
 	type ListBoxItemProps,
 	type ListBoxProps,
+	type MenuCheckboxItemProps,
+	type MenuItemProps,
+	type MenuPopoverItemProps,
+	type MenuProps,
+	type MenuRadioItemProps,
+	type MenuSubmenuProps,
 	type PaginationProps,
 	type PopoverProps,
 	type ProgressLinearProps,
@@ -123,6 +140,14 @@ type TProbeProps = ButtonProps &
 	DrawerProps &
 	ToastsProps
 
+/**
+ * Menu — пробником: его пропсы в пересечение пропсов таблицы TypeScript уже не
+ * вмещает (TS2590), а таблице от меню нужны только направление и `dir`.
+ */
+function MenuProbe({ direction, dir }: Pick<MenuProps, 'direction' | 'dir'>): ReactNode {
+	return <Menu direction={direction} dir={dir} />
+}
+
 /** Панель рисуется, пока активен её таб, — и только внутри набора. */
 function TabsContentProbe(props: TabsContentProps): ReactNode {
 	return (
@@ -158,13 +183,19 @@ const COMPONENTS: ReadonlyArray<
 	['Scroller', Scroller, '.so-scroller', {}],
 	['Popover', Popover, '.so-popover', {}],
 	['Tooltip', Tooltip, '.so-tooltip', {}],
+	['Menu', MenuProbe, '.so-menu', {}],
 	['Dialog', Dialog, '.so-dialog', {}],
 	['Drawer', Drawer, '.so-drawer', {}],
 	['Toasts', Toasts, '.so-toasts', {}],
 ]
 
-/** Общие пропсы элементов коллекций в таблице. */
-type TItemProbeProps = TabsItemProps & AccordionItemProps & RadioGroupItemProps
+/**
+ * Атрибуты потребителя, которые таблица отдаёт элементу коллекции: `id` уходит
+ * строке, класс и стиль — корню. Пересечение пропсов всех элементов
+ * TypeScript уже не представляет (TS2590), а таблице нужны только они — их
+ * принимает каждый элемент.
+ */
+type TItemProbeProps = Pick<HTMLAttributes<HTMLElement>, 'id' | 'className' | 'style'>
 
 /** Таб — в наборе: `id` строке пишет коллекция. */
 function TabsItemProbe(props: TabsItemProps): ReactNode {
@@ -193,11 +224,64 @@ function RadioGroupItemProbe(props: RadioGroupItemProps): ReactNode {
 	)
 }
 
+/** Пункт меню — в меню: роль, `tabindex` и связки строке пишет коллекция меню. */
+function MenuItemProbe(props: MenuItemProps): ReactNode {
+	return (
+		<Menu>
+			<Menu.Item value="a" text="A" {...props} />
+		</Menu>
+	)
+}
+
+function MenuCheckboxItemProbe(props: MenuCheckboxItemProps): ReactNode {
+	return (
+		<Menu>
+			<Menu.CheckboxItem value="a" text="A" {...props} />
+		</Menu>
+	)
+}
+
+/** Переключатель — в группе переключателей, как его пишут. */
+function MenuRadioItemProbe(props: MenuRadioItemProps): ReactNode {
+	return (
+		<Menu>
+			<Menu.RadioGroup value="a">
+				<Menu.RadioItem value="a" text="A" {...props} />
+			</Menu.RadioGroup>
+		</Menu>
+	)
+}
+
+/** Пункт с подменю — без своих пунктов: в документе один `.so-menu-item`. */
+function MenuSubmenuProbe(props: MenuSubmenuProps): ReactNode {
+	return (
+		<Menu>
+			<Menu.Submenu value="share" text="Поделиться" {...props} />
+		</Menu>
+	)
+}
+
+function MenuPopoverItemProbe(props: MenuPopoverItemProps): ReactNode {
+	return (
+		<Menu>
+			<Menu.PopoverItem value="due" text="Срок" {...props} />
+		</Menu>
+	)
+}
+
+/** Строка пункта меню любого вида — узел с ролью `menuitem*` прямо в его корне. */
+const MENU_ROW = '.so-menu-item > [role^="menuitem"]'
+
 /** Элемент коллекции, класс его корня и строка, которой уходят атрибуты потребителя. */
 const ITEMS: ReadonlyArray<readonly [string, ComponentType<TItemProbeProps>, string, string]> = [
 	['Tabs.Item', TabsItemProbe, '.so-tabs-item', '.so-tabs-item [role="tab"]'],
 	['Accordion.Item', AccordionItemProbe, '.so-accordion-item', '.so-accordion-item__header'],
 	['RadioGroup.Item', RadioGroupItemProbe, '.so-radio-group-item', '.so-radio-group-item__input'],
+	['Menu.Item', MenuItemProbe, '.so-menu-item', MENU_ROW],
+	['Menu.CheckboxItem', MenuCheckboxItemProbe, '.so-menu-item', MENU_ROW],
+	['Menu.RadioItem', MenuRadioItemProbe, '.so-menu-item', MENU_ROW],
+	['Menu.Submenu', MenuSubmenuProbe, '.so-menu-item', MENU_ROW],
+	['Menu.PopoverItem', MenuPopoverItemProbe, '.so-menu-item', MENU_ROW],
 ]
 
 describe('атрибут снаружи перекрывает набор ядра', () => {
@@ -432,6 +516,57 @@ const ROOTS: ReadonlyArray<
 	['Frame', (props) => <Frame {...props} />, '.so-frame', '.so-frame'],
 	['Popover', (props) => <Popover {...props} />, '.so-popover', '.so-popover'],
 	['Tooltip', (props) => <Tooltip {...props} />, '.so-tooltip', '.so-tooltip'],
+	['Menu', (props) => <Menu {...props} />, '.so-menu', '.so-menu'],
+	['Menu.Item', (props) => <MenuItemProbe {...props} />, '.so-menu-item', '.so-menu-item'],
+	[
+		'Menu.CheckboxItem',
+		(props) => <MenuCheckboxItemProbe {...props} />,
+		'.so-menu-item',
+		'.so-menu-item',
+	],
+	[
+		'Menu.RadioItem',
+		(props) => <MenuRadioItemProbe {...props} />,
+		'.so-menu-item',
+		'.so-menu-item',
+	],
+	['Menu.Submenu', (props) => <MenuSubmenuProbe {...props} />, '.so-menu-item', '.so-menu-item'],
+	[
+		'Menu.PopoverItem',
+		(props) => <MenuPopoverItemProbe {...props} />,
+		'.so-menu-item',
+		'.so-menu-item',
+	],
+	[
+		'Menu.Group',
+		(props) => (
+			<Menu>
+				<Menu.Group label="Вид" {...props} />
+			</Menu>
+		),
+		'.so-menu-group',
+		'.so-menu-group',
+	],
+	[
+		'Menu.RadioGroup',
+		(props) => (
+			<Menu>
+				<Menu.RadioGroup label="Сортировка" {...props} />
+			</Menu>
+		),
+		'.so-menu-group',
+		'.so-menu-group',
+	],
+	[
+		'Menu.Separator',
+		(props) => (
+			<Menu>
+				<Menu.Separator {...props} />
+			</Menu>
+		),
+		'.so-menu-separator',
+		'.so-menu-separator',
+	],
 	['Dialog', (props) => <Dialog {...props} />, '.so-dialog', '.so-dialog'],
 	['Drawer', (props) => <Drawer {...props} />, '.so-drawer', '.so-drawer'],
 	['Toasts', (props) => <Toasts {...props} />, '.so-toasts', '.so-toasts'],
