@@ -25,6 +25,7 @@ import {
 	type RatingProps,
 	type ScrollerProps,
 	type SliderProps,
+	type ToastsProps,
 	type TooltipProps,
 	type UseDomProps,
 } from '@soldy-ui/react'
@@ -216,6 +217,14 @@ describe('содержимое — только слот default', () => {
 		expectTypeOf<TooltipProps['children']>().toEqualTypeOf<ReactNode>()
 		expectTypeOf<DialogProps['children']>().toEqualTypeOf<ReactNode>()
 		expectTypeOf<DrawerProps['children']>().toEqualTypeOf<ReactNode>()
+	})
+
+	/**
+	 * Менеджер тостов оборачивает приложение, как `LocaleProvider`: его
+	 * `children` — само приложение, а тосты он рисует сам, в регионе.
+	 */
+	it('у Toasts children есть: приложение, которое он оборачивает', () => {
+		expectTypeOf<ToastsProps['children']>().toEqualTypeOf<ReactNode>()
 	})
 
 	it('у Slider, Rating, Pagination и ProgressLinear children нет, у Scroller — есть', () => {

@@ -1125,16 +1125,24 @@ useToasts()`. API опускает лифт (`TOASTS_ELEVATOR`, расширен
   (`TToastsFrontPlugin`, переменная `--so-toasts-front-height`). Без стопки
   колесо и стрелки остаются странице. **Своё содержимое (`render`)
   — `unknown` в ядре**: ядро его не читает, это значение разметки, и тип ему
-  даёт адаптер — во Vue, Svelte и Solid компонент своего фреймворка с пропом
-  `toast` (`TToastRender`, через API `useToasts()`), у Web Components — функция,
-  которая получает тост и отдаёт узел (через `toastsOf`), а рисует его
-  разметка после проверки (`isToastRender`), без приведения. Правило общее: значение, которое
+  даёт адаптер — во Vue, React, Svelte и Solid компонент своего фреймворка с
+  пропом `toast` (`TToastRender`, через API `useToasts()`; у React — и
+  объект-компонент `memo`, `forwardRef`, `lazy`, но не готовый элемент), у Web
+  Components — функция, которая получает тост и отдаёт узел (через
+  `toastsOf`), а рисует его разметка после проверки (`isToastRender`), без
+  приведения. Правило общее: значение, которое
   ядро только хранит для разметки, в ядре — `unknown`, тип ему даёт API
   адаптера. Сторожат
   `core/__tests__/toasts.spec.ts`, `plugins/__tests__/toasts.plugin.spec.ts`,
   `plugins/__tests__/swipe.plugin.spec.ts` («тост в регионе»),
   `plugins/__tests__/names.plugin.spec.ts`, `ui/vue/__tests__/toasts.spec.ts`,
-  `ui/svelte/__tests__/toasts.spec.ts`, `ui/solid/__tests__/toasts.spec.tsx`
+  `ui/react/__tests__/toasts.spec.tsx` (сценарии Solid и своё у React —
+  StrictMode: регион один, пересобранный менеджер отдаёт новый API, и эффект с
+  `show` в зависимостях показывает тост в нём; между перерисовками API тот же;
+  `useToasts()` в окне под менеджером; `memo`, `forwardRef` и класс в `render`
+  рисуются, готовый элемент — нет; на сервере — приложение без региона, регион
+  — после гидратации), `ui/svelte/__tests__/toasts.spec.ts`,
+  `ui/solid/__tests__/toasts.spec.tsx`
   (сверх сценариев Vue — приложение без обёртки и регион в слое менеджера,
   `useToasts()` в окне под менеджером, у тоста нет CSS-свойства `order`,
   пустой `item-icon` уступает место значку вида, пункт ListBox под
