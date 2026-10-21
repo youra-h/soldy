@@ -17,9 +17,10 @@
  * раскладке стиля (`stylesOf`, `applyStyles`), как в React, Solid и Angular.
  *
  * У корня с полем (Input, CheckBox, Switch, радио), у элемента коллекции
- * (таб, секция, элемент списка) и у ListBox и Tabs статические атрибуты
- * разметки база переносит на `<input>`, строку или узел списка с ролью, и там
- * они так же главнее набора ядра, который на поле кладёт шаблон.
+ * (таб, секция, элемент списка, пункт меню любого вида) и у ListBox и Tabs
+ * статические атрибуты разметки база переносит на `<input>`, строку или узел
+ * списка с ролью, и там они так же главнее набора ядра, который на поле кладёт
+ * шаблон.
  * Набор владельца на элементе шаблона и наборы самого элемента сходятся в
  * одном раскладчике элемента (`TElementAttributes`): набор владельца главнее
  * при любом порядке записи.
@@ -41,6 +42,15 @@ import {
 	TLabelElement,
 	TListBoxElement,
 	TListBoxItemElement,
+	TMenuCheckboxItemElement,
+	TMenuElement,
+	TMenuGroupElement,
+	TMenuItemElement,
+	TMenuPopoverItemElement,
+	TMenuRadioGroupElement,
+	TMenuRadioItemElement,
+	TMenuSeparatorElement,
+	TMenuSubmenuElement,
 	TNumberInputElement,
 	TPaginationElement,
 	TPopoverElement,
@@ -72,6 +82,15 @@ import {
 	type TLabelElementProps,
 	type TListBoxElementProps,
 	type TListBoxItemElementProps,
+	type TMenuCheckboxItemElementProps,
+	type TMenuElementProps,
+	type TMenuGroupElementProps,
+	type TMenuItemElementProps,
+	type TMenuPopoverItemElementProps,
+	type TMenuRadioGroupElementProps,
+	type TMenuRadioItemElementProps,
+	type TMenuSeparatorElementProps,
+	type TMenuSubmenuElementProps,
 	type TNumberInputElementProps,
 	type TPaginationElementProps,
 	type TPopoverElementProps,
@@ -233,6 +252,42 @@ function isListBoxItem(node: Element | null): node is TListBoxItemElementProps {
 	return node instanceof TListBoxItemElement
 }
 
+function isMenu(node: Element | null): node is TMenuElementProps {
+	return node instanceof TMenuElement
+}
+
+function isMenuItem(node: Element | null): node is TMenuItemElementProps {
+	return node instanceof TMenuItemElement
+}
+
+function isMenuCheckboxItem(node: Element | null): node is TMenuCheckboxItemElementProps {
+	return node instanceof TMenuCheckboxItemElement
+}
+
+function isMenuRadioItem(node: Element | null): node is TMenuRadioItemElementProps {
+	return node instanceof TMenuRadioItemElement
+}
+
+function isMenuSubmenu(node: Element | null): node is TMenuSubmenuElementProps {
+	return node instanceof TMenuSubmenuElement
+}
+
+function isMenuPopoverItem(node: Element | null): node is TMenuPopoverItemElementProps {
+	return node instanceof TMenuPopoverItemElement
+}
+
+function isMenuGroup(node: Element | null): node is TMenuGroupElementProps {
+	return node instanceof TMenuGroupElement
+}
+
+function isMenuRadioGroup(node: Element | null): node is TMenuRadioGroupElementProps {
+	return node instanceof TMenuRadioGroupElement
+}
+
+function isMenuSeparator(node: Element | null): node is TMenuSeparatorElementProps {
+	return node instanceof TMenuSeparatorElement
+}
+
 /**
  * Элемент разметки, подключённый к документу; узел не того вида — тест падает
  * здесь. Элемент берётся до вставки — живым он стал уже в `innerHTML`: слой
@@ -319,6 +374,47 @@ const COMPONENTS: ReadonlyArray<
 		'so-list-box-item',
 		'[embedded="list-box.row"]',
 	],
+	// Корень меню — обёртка триггера, как у Popover: ARIA у панели и у
+	// триггера, атрибуты разметки остаются на корне
+	['Menu', 'span', 'so-menu', isMenu, 'so-menu', null],
+	// Пункты всех видов — корень и строка, как элемент списка: атрибуты
+	// разметки — строке с ролью
+	['Menu.Item', 'div', 'so-menu-item', isMenuItem, 'so-menu-item', '[embedded="menu.row"]'],
+	[
+		'Menu.CheckboxItem',
+		'div',
+		'so-menu-checkbox-item',
+		isMenuCheckboxItem,
+		'so-menu-item',
+		'[embedded="menu.row"]',
+	],
+	[
+		'Menu.RadioItem',
+		'div',
+		'so-menu-radio-item',
+		isMenuRadioItem,
+		'so-menu-item',
+		'[embedded="menu.row"]',
+	],
+	[
+		'Menu.Submenu',
+		'div',
+		'so-menu-submenu',
+		isMenuSubmenu,
+		'so-menu-item',
+		'[embedded="menu.row"]',
+	],
+	[
+		'Menu.PopoverItem',
+		'div',
+		'so-menu-popover-item',
+		isMenuPopoverItem,
+		'so-menu-item',
+		'[embedded="menu.row"]',
+	],
+	['Menu.Group', 'div', 'so-menu-group', isMenuGroup, 'so-menu-group', null],
+	['Menu.RadioGroup', 'div', 'so-menu-radio-group', isMenuRadioGroup, 'so-menu-group', null],
+	['Menu.Separator', 'div', 'so-menu-separator', isMenuSeparator, 'so-menu-separator', null],
 ]
 
 /** Корни без поля: атрибуты разметки стоят на них самих. */

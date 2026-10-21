@@ -17,10 +17,12 @@ import type { TCollectionEngine } from '@soldy-ui/core'
 import {
 	TAccordionElement,
 	TListBoxElement,
+	TMenuElement,
 	TRadioGroupElement,
 	TTabsElement,
 	type TAccordionElementProps,
 	type TListBoxElementProps,
+	type TMenuElementProps,
 	type TRadioGroupElementProps,
 	type TTabsElementProps,
 } from '@soldy-ui/webc'
@@ -67,27 +69,65 @@ function watchSubscriptions(engine: TCollectionEngine<any, any>): () => number {
 
 /** Владелец коллекции, как его видит тест: движок — свойство элемента. */
 type TOwner =
-	TTabsElementProps | TAccordionElementProps | TRadioGroupElementProps | TListBoxElementProps
+	| TTabsElementProps
+	| TAccordionElementProps
+	| TRadioGroupElementProps
+	| TListBoxElementProps
+	| TMenuElementProps
 
 function isTabs(node: Element): node is TTabsElementProps {
 	return node instanceof TTabsElement
 }
 
-/** Коллекции адаптера: все берут движок снаружи свойством `engine`. */
-const COLLECTIONS: ReadonlyArray<readonly [string, string, (node: Element) => node is TOwner]> = [
-	['Tabs', 'so-tabs', (node): node is TOwner => node instanceof TTabsElement],
-	['Accordion', 'so-accordion', (node): node is TOwner => node instanceof TAccordionElement],
-	['RadioGroup', 'so-radio-group', (node): node is TOwner => node instanceof TRadioGroupElement],
-	['ListBox', 'so-list-box', (node): node is TOwner => node instanceof TListBoxElement],
+/** Где элементы коллекции владельца: в нём самом, а у меню — в панели, увезённой в `body`. */
+type TItemsScope = (owner: Element) => ParentNode
+
+/**
+ * Коллекции адаптера: все берут движок снаружи свойством `engine`. Тег
+ * корня, имя элемента, вид элемента и где искать его элементы.
+ */
+const COLLECTIONS: ReadonlyArray<
+	readonly [string, string, string, (node: Element) => node is TOwner, TItemsScope]
+> = [
+	['Tabs', 'div', 'so-tabs', (node): node is TOwner => node instanceof TTabsElement, (el) => el],
+	[
+		'Accordion',
+		'div',
+		'so-accordion',
+		(node): node is TOwner => node instanceof TAccordionElement,
+		(el) => el,
+	],
+	[
+		'RadioGroup',
+		'div',
+		'so-radio-group',
+		(node): node is TOwner => node instanceof TRadioGroupElement,
+		(el) => el,
+	],
+	[
+		'ListBox',
+		'div',
+		'so-list-box',
+		(node): node is TOwner => node instanceof TListBoxElement,
+		(el) => el,
+	],
+	[
+		'Menu',
+		'span',
+		'so-menu',
+		(node): node is TOwner => node instanceof TMenuElement,
+		() => document,
+	],
 ]
 
 /** Владелец над движком снаружи — кодом, движок свойством до вставки. */
 function mountOver(
+	tag: string,
 	is: string,
 	guard: (node: Element) => node is TOwner,
 	engine: TCollectionEngine<any, any>,
 ): TOwner {
-	const el = document.createElement('div', { is })
+	const el = document.createElement(tag, { is })
 
 	if (!guard(el)) throw new Error(`<div is="${is}"> нет`)
 
@@ -97,49 +137,52 @@ function mountOver(
 	return el
 }
 
-describe.each(COLLECTIONS)('%s: фильтр прячет и показывает элемент', (_name, is, guard) => {
-	it('подписок на движке не прибавляется с каждым показом', async () => {
-		const items = createEngine<TItem>({ items: ITEMS })
-		const { driver } = items.getCore()
-		let hidden = false
+describe.each(COLLECTIONS)(
+	'%s: фильтр прячет и показывает элемент',
+	(_name, tag, is, guard, scope) => {
+		it('подписок на движке не прибавляется с каждым показом', async () => {
+			const items = createEngine<TItem>({ items: ITEMS })
+			const { driver } = items.getCore()
+			let hidden = false
 
-		// Отбор без расширения фильтра — тот же механизм, что у `TFilterExtension`
-		driver.events.on('items:query:before', (e) => {
-			if (hidden) e.items = e.items.filter((item) => item.value !== 'b')
+			// Отбор без расширения фильтра — тот же механизм, что у `TFilterExtension`
+			driver.events.on('items:query:before', (e) => {
+				if (hidden) e.items = e.items.filter((item) => item.value !== 'b')
+			})
+
+			const el = mountOver(tag, is, guard, items)
+
+			await flush()
+
+			const live = watchSubscriptions(items)
+			const shown = () => scope(el).querySelectorAll(`[class~="${is}-item"]`).length
+
+			const cycle = async () => {
+				hidden = true
+				driver.invalidateQuery()
+				await flush()
+
+				expect(shown()).toBe(1)
+
+				hidden = false
+				driver.invalidateQuery()
+				await flush()
+
+				expect(shown()).toBe(2)
+			}
+
+			await cycle()
+
+			const afterFirst = live()
+
+			await cycle()
+			await cycle()
+
+			expect(items.extensions.batch.items).toHaveLength(2)
+			expect(live()).toBe(afterFirst)
 		})
-
-		const el = mountOver(is, guard, items)
-
-		await flush()
-
-		const live = watchSubscriptions(items)
-		const shown = () => el.querySelectorAll(`[class~="${is}-item"]`).length
-
-		const cycle = async () => {
-			hidden = true
-			driver.invalidateQuery()
-			await flush()
-
-			expect(shown()).toBe(1)
-
-			hidden = false
-			driver.invalidateQuery()
-			await flush()
-
-			expect(shown()).toBe(2)
-		}
-
-		await cycle()
-
-		const afterFirst = live()
-
-		await cycle()
-		await cycle()
-
-		expect(items.extensions.batch.items).toHaveLength(2)
-		expect(live()).toBe(afterFirst)
-	})
-})
+	},
+)
 
 describe('движок снаружи', () => {
 	it('после снятия набора подписок на движке не остаётся', async () => {
