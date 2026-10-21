@@ -421,8 +421,12 @@ describe('NumberInput · локаль поддерева', () => {
 		provider.locale = zhCN
 		await flush()
 
+		const text = new Intl.NumberFormat('zh-CN').format(1234.5)
+
 		expect(buttonOf(el, '.so-number-input__increment')).toBe(increment)
-		expect(field(el).value).toBe(new Intl.NumberFormat('zh-CN').format(1234.5))
+		expect(field(el).value).toBe(text)
+		expect(field(el).getAttribute('lang')).toBe('zh-CN')
+		expect(field(el).getAttribute('aria-valuetext')).toBe(text)
 		expect(increment.getAttribute('aria-label')).toContain('Количество')
 		expect(increment.getAttribute('aria-label')).not.toBe('Увеличить Количество')
 	})

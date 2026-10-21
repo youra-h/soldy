@@ -15,7 +15,7 @@ import { mount } from '@vue/test-utils'
 import { h, nextTick } from 'vue'
 import { TNumberInput } from '@soldy-ui/core'
 import type { INumberInputProps } from '@soldy-ui/core'
-import { ruRU } from '@soldy-ui/plugins'
+import { ruRU, zhCN } from '@soldy-ui/plugins'
 import { LocaleProvider, NumberInput } from '@soldy-ui/vue'
 
 /** Плагины цепляют слушатели по `element:ready`, а оно приходит кадром. */
@@ -200,6 +200,49 @@ describe('разметка', () => {
 		expect(find('.so-number-input__increment').getAttribute('aria-label')).toBe(
 			'Увеличить Количество',
 		)
+	})
+
+	/**
+	 * Строку числа для скринридера и язык ввода связка перечитывает на смену
+	 * языка и формата: они приходят в новом формате вместе с текстом, а не
+	 * со следующей правкой числа.
+	 */
+	it('смена локали провайдера — новые текст, lang и aria-valuetext того же ввода', async () => {
+		const mounted = mount(LocaleProvider, {
+			props: { locale: ruRU },
+			slots: { default: () => h(NumberInput, { value: 1234.5 }) },
+			attachTo: document.body,
+		})
+
+		wrapper = mounted
+		await nextTick()
+
+		const field = input()
+
+		expect(field.getAttribute('lang')).toBe('ru-RU')
+
+		await mounted.setProps({ locale: zhCN })
+
+		const text = new Intl.NumberFormat('zh-CN').format(1234.5)
+
+		expect(input()).toBe(field)
+		expect(field.value).toBe(text)
+		expect(field.getAttribute('lang')).toBe('zh-CN')
+		expect(field.getAttribute('aria-valuetext')).toBe(text)
+	})
+
+	it('смена formatOptions — новые текст, aria-valuetext и клавиатура ввода', async () => {
+		const mounted = await render({ value: 0.5 })
+
+		expect(input().getAttribute('inputmode')).toBe('decimal')
+
+		await mounted.setProps({ formatOptions: { style: 'percent' } })
+
+		const text = new Intl.NumberFormat('en-US', { style: 'percent' }).format(0.5)
+
+		expect(input().value).toBe(text)
+		expect(input().getAttribute('aria-valuetext')).toBe(text)
+		expect(input().getAttribute('inputmode')).toBe('numeric')
 	})
 })
 
