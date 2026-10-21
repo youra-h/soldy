@@ -21,10 +21,15 @@ import {
 	TListBoxComponent,
 	TListBoxItemComponent,
 	TNumberInputComponent,
+	TPaginationComponent,
+	TProgressLinearComponent,
 	TProgressSpinnerComponent,
 	TRadioGroupComponent,
 	TRadioGroupItemComponent,
+	TRatingComponent,
+	TScrollerComponent,
 	TSkeletonComponent,
+	TSliderComponent,
 	TSwitchComponent,
 	TTableComponent,
 	TTabsComponent,
@@ -201,6 +206,26 @@ const block = (padding: string, value: string) => (): Node => {
 	return node
 }
 
+/**
+ * Элемент ленты — разметка без компонента, как у Vue: строка без переноса с
+ * отступами, ширина — по тексту.
+ */
+const strip = (value: string) => (): Node => {
+	const node = document.createElement('span')
+
+	node.style.cssText = 'padding:4px 12px; white-space:nowrap'
+	node.textContent = value
+
+	return node
+}
+
+/**
+ * Граница ширины, как `div` вокруг компонента у Vue: компонент встаёт во всю
+ * ширину ячейки, а сцена ячейки — флексбокс, где он держал бы только свой
+ * минимум.
+ */
+const FULL_WIDTH = (): string => 'width: 100%'
+
 /** Разметка `div` со стилем строкой CSS и своим содержимым — ряд, окно прокрутки. */
 const markup = (style: string, content: readonly TContent[]): TMarkup => ({
 	markup: () => {
@@ -266,6 +291,22 @@ export const PREVIEWS: Record<string, TPreview> = {
 		component: TSwitchComponent,
 		element: tag('span'),
 		wrapper: { component: TLabelComponent, props: { text: 'Включено' } },
+	},
+
+	// Имени у ползунка нет, как у флажка: видимое даёт подпись Label над
+	// ползунком. Горизонтальный тянется на её ширину, вертикальный — своей
+	// высоты
+	slider: {
+		component: TSliderComponent,
+		element: tag('span'),
+		wrapper: { component: TLabelComponent, props: { text: 'Громкость', position: 'top' } },
+	},
+
+	// Имени у оценки нет, как у ползунка: видимое даёт подпись Label над звёздами
+	rating: {
+		component: TRatingComponent,
+		element: tag('span'),
+		wrapper: { component: TLabelComponent, props: { text: 'Оценка', position: 'top' } },
 	},
 
 	// Подпись — проп `text` из пропсов превью, контрол — содержимым. Строки
@@ -334,6 +375,20 @@ export const PREVIEWS: Record<string, TPreview> = {
 
 	accordion: { component: TAccordionComponent, content: ACCORDION_CONTENT },
 
+	// Лента во всю ширину ячейки: шириной по содержимому она вылезла бы за
+	// колонку целиком — листать стало бы нечего. Содержимое — строки без
+	// переноса, разметкой, как у Vue
+	scroller: {
+		component: TScrollerComponent,
+		element: tag('div'),
+		frame: FULL_WIDTH,
+		content: ITEMS.map((item) => strip(`${item.text} пункт ленты`)),
+	},
+
+	// Содержимого у пагинации нет: страницы окна кладёт в коллекцию она сама, а
+	// рисует её шаблон. Язык номеров и имён стрелок — из шапки стенда
+	pagination: { component: TPaginationComponent },
+
 	// `<svg so-icon so-role-icon="arrowDown">`: глиф роли кладёт на `<svg>`
 	// директива адаптера, а тег первого селектора Icon — `span`
 	icon: {
@@ -345,6 +400,14 @@ export const PREVIEWS: Record<string, TPreview> = {
 				bindings: [inputBinding('so-role-icon', () => 'arrowDown')],
 			},
 		],
+	},
+
+	// Полоса во всю ширину ячейки, как у Vue: у строчного корня своей ширины
+	// нет. По умолчанию она пуста — доля ноль, а бег — флаг `indeterminate`
+	'progress-linear': {
+		component: TProgressLinearComponent,
+		element: tag('span'),
+		frame: FULL_WIDTH,
 	},
 
 	// Кольцо строчное и своего размера. По умолчанию оно пусто — доля ноль, а
